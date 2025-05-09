@@ -6,6 +6,9 @@ Authors: Quang Dao
 
 -- import Mathlib.Data.Matrix.Mul
 import Mathlib.RingTheory.MvPolynomial.Basic
+import Mathlib.Data.Matrix.Basic
+import Mathlib.Data.Matrix.Kronecker
+import Mathlib.Data.Bool.Basic
 
 /-!
   # Multilinear Polynomials
@@ -176,6 +179,7 @@ instance [Semiring R] : Module R (MlPoly R n) where
 --     lagrangeBasisAux r evals ell (j + 1) size
 -- termination_by (ell - j)
 
+section
 variable [CommSemiring R]
 
 /-- TODO: define this in a functional way -/
@@ -195,6 +199,7 @@ def eval (p : MlPoly R n) (x : Vector R n) : R :=
 
 def eval₂ (p : MlPoly R n) (f : R →+* S) (x : Vector S n) : S := eval (map f p) x
 
+end
 -- Theorems about evaluations
 
 -- Evaluation at a point in the Boolean hypercube is equal to the corresponding evaluation in the
@@ -202,6 +207,150 @@ def eval₂ (p : MlPoly R n) (f : R →+* S) (x : Vector S n) : S := eval (map f
 -- theorem eval_eq_eval_array (p : MlPoly R) (x : Array Bool) (h : x.size = p.nVars): eval p
 -- x.map (fun b => b) = p.evals.get! (x.foldl (fun i elt => i * 2 + elt) 0) := by unfold eval unfold
 -- dotProduct simp [↓reduceIte, h] sorry
+
+open Matrix
+
+variable {α : Type*} [CommRing α] [DecidableEq α] [CommRing R]
+
+/-- Definition of the Hadamard matrix -/
+def hadamardMatrix : Π (n : ℕ), Matrix (Fin (2 ^ n)) (Fin (2 ^ n)) R
+  | 0 => 1
+  | (n+1) =>
+    let H := hadamardMatrix n
+    Matrix.reindex
+    -- Need to cast across an equivalence here, since `Fin (2 ^ n) ⊕ Fin (2 ^ n)` is not
+    -- the same as `Fin (2 ^ (n + 1))`
+      (by refine Equiv.trans finSumFinEquiv (Equiv.cast ?_); congr; simp)
+      (by refine Equiv.trans finSumFinEquiv (Equiv.cast ?_); congr; simp)
+      (Matrix.fromBlocks H 0 H H)
+
+-- @[simp] theorem hadamardMatrix_succ :
+
+def hadamardMatrix.symm (n : ℕ) [Field R] : Matrix (Fin (2^n)) (Fin (2^n)) R :=
+  (1 / (2^n : R)) • hadamardMatrix n
+
+/-- Walsh-Hadamard Transform -/
+def walshHadamardTransform (c : Fin (2 ^ n) → R) : Fin (2 ^ n) → R :=
+  mulVec (hadamardMatrix n) c
+
+/-- Walsh-Hadamard evaluation function -/
+def WHHeval (c : Fin (2^n) → R) (z : Fin n → R) : R :=
+  ∑ b : Fin (2^n), c b * ∏ i : Fin n, (z i) ^ ((BitVec.ofFin b)[i].toNat)
+
+/-try c0 and c1 separated-/
+theorem part1 (n : Nat) (c : Fin (2^(n+1)) → R) :
+    letI c0 : Fin (2^n) → R := fun i => c (Fin.castLE (sorry) i)
+    letI c1 : Fin (2^n) → R := fun i => c (Fin.natAdd (2^n) i)
+    mulVec (hadamardMatrix (n+1)) c = Fin.append (mulVec (hadamardMatrix n) (c0) )
+      (mulVec (hadamardMatrix n) (c0) +ᵥ mulVec (hadamardMatrix n) (c1) ) ∘ Fin.cast (by omega) := by
+  conv_lhs =>
+    unfold hadamardMatrix
+    simp only [reindex_apply]
+    rw [Matrix.submatrix_mulVec_equiv]
+  simp [fromBlocks_mulVec]
+  funext i /-for every index i-/
+  simp
+  sorry
+
+#check Fin.castAdd
+
+lemma add_eq_add_if_eq_and_eq {a b c d : R}
+    (h : a = c) (h' : b = d) : a + b = c + d := by
+  subst h h'
+  simp
+
+/-- Main theorem: equivalence of Walsh-Hadamard transform evaluation -/
+theorem walsh_hadamard_eval (c : Fin (2^n) → R) (z : Fin (2^n)) :
+    (walshHadamardTransform c) (z) = WHHeval c (fun i ↦ finFunctionFinEquiv.symm z i) := by
+  induction n with
+  | zero =>
+    simp [hadamardMatrix, walshHadamardTransform, WHHeval, mulVec, dotProduct]
+    have : z = 0 := by aesop
+    aesop
+  | succ n ih =>
+    let c₁ : Fin (2^n) → R := fun i => c (Fin.castLE (by gcongr <;> simp) i)
+    let c₂ : Fin (2^n) → R := fun i => c (Fin.natAdd (2^n) i)
+    rw [walshHadamardTransform, part1]
+    simp [walshHadamardTransform] at ih
+    simp [hadamardMatrix, WHHeval, mulVec, dotProduct, ih]
+    by_cases h : z < 2^n
+    · have z_val_lt : z.1 < 2^n := by
+        have := Fin.val_fin_lt.mpr h
+        convert this
+        sorry
+      have z_decomp : Fin.cast (m := 2^n + 2^n) (by omega) z =
+        (Fin.castAdd (2^n) (⟨z.1, z_val_lt⟩ : Fin (2^n))) := by
+        apply Fin.eq_of_val_eq
+        simp [Fin.append_left]
+      rw [z_decomp, Fin.append_left]
+      let ih1 := ih c₁ z
+      let ih2 := ih c₂ z
+      -- simp [ih1, ih2]
+      simp_all only [Fin.castAdd_mk, WHHeval, Fin.castLE]
+      conv =>
+        enter [2, 2, x, 2]
+        rw [Fin.prod_univ_castSucc]
+      rw [← Fin.sum_congr' (a := 2^n + 2^n) (b := 2^(n+1))]
+      case pos.h => omega
+      case pos =>
+      rw [Fin.sum_univ_add]
+      sorry
+      -- apply add_eq_add_if_eq_and_eq
+      -- · sorry
+    · push_neg at h
+      have z_val_ge : 2^n ≤ z.1 := by sorry
+      have z_val_lt : z.1 - 2^n < 2^n := by
+        rw [Nat.sub_lt_iff_lt_add z_val_ge]
+        calc
+          _ < 2^(n+1) := z.is_lt
+          _ = 2^n + 2^n := Nat.two_pow_succ n
+      have z_decomp : Fin.cast (by omega) z =
+        (Fin.natAdd (2^n) (⟨z.1 - 2^n, z_val_lt⟩ : Fin (2^n))) := by
+        apply Fin.eq_of_val_eq
+        simp
+        symm
+        exact Nat.sub_add_cancel z_val_ge
+      rw [z_decomp, Fin.append_right]
+      let ih1 := ih c₁ z
+      let ih2 := ih c₂ z
+      simp [ih1, ih2]
+      simp_all only [Fin.natAdd_mk, WHHeval, Fin.castLE]
+      conv =>
+        enter [2, 2, x, 2]
+        rw [Fin.prod_univ_castSucc]
+      rw [← Fin.sum_congr' (a := 2^n + 2^n) (b := 2^(n+1))]
+      case neg.h => omega
+      case neg =>
+      rw [Fin.sum_univ_add]
+      apply add_eq_add_if_eq_and_eq
+      · refine Finset.sum_congr (α := Fin (2^n)) (β := R)
+          (s₁ := Finset.univ) (s₂ := Finset.univ) rfl (fun x _ => ?_)
+        simp
+        have hz : (z.val / 2 ^n) % 2 = 1 := by sorry
+        simp_rw [hz]
+        simp
+        congr
+        · funext y;
+          have hm : ((z.val - 2 ^ n) / (2 ^ y.val)) % 2 = (z / (2 ^ y.val)) % 2 := by
+            calc
+            _ = (z.val / (2 ^ y.val) - 2 ^ n / (2 ^ y.val)) % 2 := by
+              congr; sorry
+            _ = _ := by sorry
+          simp_rw [hm]
+      · refine Finset.sum_congr (α := Fin (2^n)) (β := R)
+          (s₁ := Finset.univ) (s₂ := Finset.univ) rfl (fun x _ => ?_)
+        simp
+        have hz : (z.val / 2 ^n) % 2 = 1 := by sorry
+        simp_rw [hz]
+        simp
+        congr
+        · simp [Fin.addNat]
+          ext; dsimp; sorry
+        · funext y;
+          have hxy : Nat.testBit x.1 = Nat.testBit (x.1 + (2^n)) := by sorry
+          simp_rw [hxy]
+          have hm : ((z.val - 2 ^ n) / (2 ^ y.val))  % 2 = (z / (2 ^ y.val)) % 2 := by sorry
+          simp_rw [hm]
 
 end MlPoly
 
