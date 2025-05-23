@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 -- import Mathlib.Data.Matrix.Mul
 import Mathlib.RingTheory.MvPolynomial.Basic
+import ToMathlib.General
 
 /-!
   # Multilinear Polynomials
@@ -22,45 +23,12 @@ import Mathlib.RingTheory.MvPolynomial.Basic
 
 namespace Vector
 
+-- TODO: deprecate `nil` and `cons`, and use existing `Vector` definitions (like `insertIdx`)
+
 def nil {α} : Vector α 0 := ⟨#[], rfl⟩
 
 def cons {α} {n : ℕ} (hd : α) (tl : Vector α n) : Vector α (n + 1) :=
   ⟨⟨hd :: tl.toArray.toList⟩, by simp⟩
-
-def cases {α} {motive : {n : ℕ} → Vector α n → Sort*} (vNil : motive nil)
-  (vCons : {n : ℕ} → (hd : α) → (tl : Vector α n) → motive (cons hd tl)) {m : ℕ} :
-    (v : Vector α m) → motive v := match hm : m with
-  | 0 => fun v => match v with | ⟨⟨[]⟩, rfl⟩ => vNil
-  | n + 1 => fun v => match hv : v with
-    | ⟨⟨hd :: tl⟩, hSize⟩ => @vCons n hd ⟨⟨tl⟩, by simpa using hSize⟩
-
-def induction {α} {motive : {n : ℕ} → Vector α n → Sort*} (vNil : motive nil)
-  (vCons : {n : ℕ} → (hd : α) → (tl : Vector α n) → motive tl → motive (cons hd tl)) {m : ℕ} :
-    (v : Vector α m) → motive v := by induction m with
-  | zero => exact fun v => match v with | ⟨⟨[]⟩, rfl⟩ => vNil
-  | succ n ih => exact fun v => match v with
-    | ⟨⟨hd :: tl⟩, hSize⟩ =>
-      @vCons n hd ⟨⟨tl⟩, by simpa using hSize⟩ (ih ⟨⟨tl⟩, by simpa using hSize⟩)
-
-def cases₂ {α β} {motive : {n : ℕ} → Vector α n → Vector β n → Sort*} (vNil : motive nil nil)
-  (vCons : {n : ℕ} → (hd : α) → (tl : Vector α n) → (hd' : β) → (tl' : Vector β n) →
-    motive (cons hd tl) (cons hd' tl')) {m : ℕ} :
-    (v : Vector α m) → (v' : Vector β m) → motive v v' := match hm : m with
-  | 0 => fun v v' => match v, v' with | ⟨⟨[]⟩, rfl⟩, ⟨⟨[]⟩, rfl⟩ => vNil
-  | n + 1 => fun v v' => match hv : v, hv' : v' with
-    | ⟨⟨hd :: tl⟩, hSize⟩, ⟨⟨hd' :: tl'⟩, hSize'⟩ =>
-      @vCons n hd ⟨⟨tl⟩, by simpa using hSize⟩ hd' ⟨⟨tl'⟩, by simpa using hSize'⟩
-
-@[elab_as_elim]
-def induction₂ {α β} {motive : {n : ℕ} → Vector α n → Vector β n → Sort*} (vNil : motive nil nil)
-  (vCons : {n : ℕ} → (hd : α) → (tl : Vector α n) → (hd' : β) → (tl' : Vector β n) →
-    motive tl tl' → motive (cons hd tl) (cons hd' tl')) {m : ℕ} :
-    (v : Vector α m) → (v' : Vector β m) → motive v v' := by induction m with
-  | zero => exact fun v v' => match v, v' with | ⟨⟨[]⟩, rfl⟩, ⟨⟨[]⟩, rfl⟩ => vNil
-  | succ n ih => exact fun v v' => match hv : v, hv' : v' with
-    | ⟨⟨hd :: tl⟩, hSize⟩, ⟨⟨hd' :: tl'⟩, hSize'⟩ =>
-      @vCons n hd ⟨⟨tl⟩, by simpa using hSize⟩ hd' ⟨⟨tl'⟩, by simpa using hSize'⟩
-      (ih ⟨⟨tl⟩, by simpa using hSize⟩ ⟨⟨tl'⟩, by simpa using hSize'⟩)
 
 variable {R : Type*} [Mul R] [AddCommMonoid R] {n : ℕ}
 
@@ -80,11 +48,11 @@ def dotProduct_root_cons (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
     _root_.dotProduct (cons a b).get (cons c d).get = a * c + _root_.dotProduct b.get d.get := by
   sorry
 
-theorem dotProduct_eq_matrix_dotProduct (a b : Vector R n) :
-    dotProduct a b = _root_.dotProduct a.get b.get := by
-  refine induction₂ ?_ (fun hd tl hd' tl' ih => ?_) a b
-  · simp [nil, dotProduct, _root_.dotProduct]
-  · rw [dotProduct_cons, dotProduct_root_cons, ih]
+-- theorem dotProduct_eq_matrix_dotProduct (a b : Vector R n) :
+--     dotProduct a b = _root_.dotProduct a.get b.get := by
+--   refine Vector.induction₂ ?_ (fun hd tl hd' tl' ih => ?_) a b
+--   · simp [nil, dotProduct, _root_.dotProduct]
+--   · rw [dotProduct_cons, dotProduct_root_cons, ih]
 
 end Vector
 
@@ -111,10 +79,10 @@ instance inhabited [Inhabited R] : Inhabited (MlPoly R n) := by simp [MlPoly]; i
 -- Conform a list of coefficients to a `MlPoly` with a given number of variables
 -- May either pad with zeros or truncate
 def ofArray [Zero R] (coeffs : Array R) (n : ℕ): MlPoly R n :=
-  .ofFn (fun i => if h : i.1 < coeffs.size then coeffs.get i h else 0)
+  .ofFn (fun i => if h : i.1 < coeffs.size then coeffs[i] else 0)
 
 -- Create a zero polynomial over n variables
-def zero [Zero R] : MlPoly R n := ofArray (Array.mkArray (2 ^ n) 0) n
+def zero [Zero R] : MlPoly R n := ofArray (Array.replicate (2 ^ n) 0) n
 
 /-- Add two `MlPoly`s -/
 def add [Add R] (p q : MlPoly R n) : MlPoly R n := Vector.zipWith (· + ·) p q

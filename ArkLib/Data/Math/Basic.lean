@@ -96,12 +96,6 @@ universe u v w
 variable {m : Type u → Type v} [Monad m] [LawfulMonad m] {α : Type w} {β : Type u}
     (f : α → β) (l : List α)
 
-theorem mapM_pure : mapM (m := m) (fun x => pure (f x)) l = pure (.map f l) := by
-  rw [← List.mapM'_eq_mapM]
-  induction l with
-  | nil => simp only [mapM', List.map_nil]
-  | cons x xs ih => simp only [mapM', ih, bind_pure_comp, map_pure, List.map_cons]
-
 theorem mapM_single (f : α → m β) (a : α) : List.mapM f [a] = return [← f a] := by
   rw [← List.mapM'_eq_mapM]
   simp only [mapM', bind_pure_comp, map_pure]
@@ -236,9 +230,6 @@ def isBoolean {R : Type _} [Zero R] [One R] (a : Array R) : Prop :=
 def toNum {R : Type _} [Zero R] [DecidableEq R] (a : Array R) : ℕ :=
   (a.map (fun r => if r = 0 then 0 else 1)).reverse.foldl (fun acc elem => (acc * 2) + elem) 0
 
-/-- `Array` version of `List.replicate` is just `mkArray`. -/
-alias replicate := mkArray
-
 theorem leftpad_toList {a : Array α} {n : Nat} {unit : α} :
     a.leftpad n unit = mk (a.toList.leftpad n unit) := by
   induction h : a.toList with
@@ -268,7 +259,7 @@ theorem matchSize_toList {a b : Array α} {unit : α} :
   simp [matchSize, List.matchSize]
 
 theorem getElem?_eq_toList {a : Array α} {i : ℕ} : a.toList[i]? = a[i]? := by
-  rw (occs := .pos [2]) [← Array.toArray_toList a]
+  rw (occs := .pos [2]) [← Array.toArray_toList (xs := a)]
   rw [List.getElem?_toArray]
 
 attribute [simp] Array.getElem?_eq_getElem

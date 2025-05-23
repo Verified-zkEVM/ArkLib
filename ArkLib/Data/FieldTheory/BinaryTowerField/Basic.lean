@@ -74,7 +74,7 @@ structure BinaryTowerInductiveStepResult (k : ℕ) (prevBTField : Type _)
   eval_defining_poly_at_root: Eq.mp (eq_adjoin) binaryTowerResult.specialElement^2 +
     Eq.mp (eq_adjoin) binaryTowerResult.specialElement * (of prevPoly) prevBTResult.specialElement
     + 1 = 0
-set_option maxHeartbeats 1000000
+set_option maxHeartbeats 1000000 in
 def binary_tower_inductive_step
   (k : Nat)
   (prevBTField : Type _) [Field prevBTField]
@@ -685,7 +685,7 @@ instance BTFieldChar2 (k : ℕ): CharP (BTField k) 2 := by
       obtain ⟨m, rfl⟩ := h
       rw [Nat.cast_mul, Nat.cast_two, h_two]
       norm_num
-  let res : CharP (BTField k) 2 := { cast_eq_zero_iff' := cast_eq_zero_iff }
+  let res : CharP (BTField k) 2 := { cast_eq_zero_iff := cast_eq_zero_iff }
   exact res
 
 @[simp]

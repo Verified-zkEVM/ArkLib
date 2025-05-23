@@ -14,6 +14,9 @@ import ArkLib.Data.CodingTheory.ProximityGap
 /-!
   # Folding-based Polynomial Commitment Schemes
 
+  NOTE: this file should be deprecated now in favor of newer developments on FRI/STIR/WHIR in
+  `ProofSystem`
+
   We define the folding IOP underlying polynomial commitment schemes such as FRI, Circle-FRI,
   BaseFold, FRI-Binius, and so on.
 
@@ -75,13 +78,13 @@ instance : IsSingleRound (pSpec R n) where
 /-- Recognize that the (only) message from the prover to the verifier has type `Vector R (2 ^ n)`,
   and hence can be turned into an oracle for evaluating the polynomial -/
 instance instOracleInterfaceMessagePSpec : OracleInterface ((pSpec R n).Message default) := by
-  simp only [pSpec, default, Matrix.cons_val_zero, Message, getType]
+  simp [pSpec, default, Message, getType]
   exact instOracleInterfaceVector
 
 /-- Recognize that the challenge from the verifier to the prover has type `R`, and hence can be
   sampled uniformly at random -/
 instance instSampleableChallengePSpec : Sampleable ((pSpec R n).Challenge default) := by
-  simp only [pSpec, default, Matrix.cons_val_one, Matrix.head_cons, Challenge, getType]
+  simp [Challenge, pSpec, default]
   infer_instance
 
 structure PrvState (k : Fin n) where

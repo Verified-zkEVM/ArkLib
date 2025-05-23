@@ -40,31 +40,6 @@ lemma evalDist_cast (h : α = β) [spec.FiniteRange] :
       cast (congrArg (PMF ∘ Option) h) (evalDist oa) := by
   induction h; rfl
 
-universe u v
-
-theorem PMF.heq_iff {α β : Type u} {pa : PMF α} {pb : PMF β} (h : α = β) :
-    HEq pa pb ↔ ∀ x, pa x = pb (cast h x) := by
-  subst h; simp; constructor <;> intro h'
-  · intro x; rw [h']
-  · ext x; rw [h' x]
-
-theorem Option.cast_eq_some_iff {α β : Type u} {x : Option α} {b : β} (h : α = β) :
-    cast (congrArg Option h) x = some b ↔ x = some (cast h.symm b) := by
-  subst h; simp only [cast_eq]
-
-theorem PMF.uniformOfFintype_cast (α β : Type _) [ha : Fintype α] [Nonempty α]
-    [hb : Fintype β] [Nonempty β] (h : α = β) :
-      cast (congrArg PMF h) (PMF.uniformOfFintype α) = @PMF.uniformOfFintype β _ _ := by
-  subst h
-  ext x
-  simp only [cast_eq, uniformOfFintype_apply, inv_inj, Nat.cast_inj]
-  exact @Fintype.card_congr α α ha hb (Equiv.refl α)
-
-theorem tsum_cast {α β : Type u} {f : α → ENNReal} {g : β → ENNReal}
-    (h : α = β) (h' : ∀ a, f a = g (cast h a)) :
-      (∑' (a : α), f a) = (∑' (b : β), g b) := by
-  subst h; simp [h']
-
 end find_home
 
 open ProtocolSpec

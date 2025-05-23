@@ -84,12 +84,11 @@ theorem Iic_zero : Iic (0 : Fin (n + 1)) = {0} := by rw [← bot_eq_zero, Iic_bo
 theorem Iic_castSucc (i : Fin n) : Iic (castSucc i) = (Iic i).map Fin.castSuccEmb := by
   rw [Iic_eq_cons_Iio, Iic_eq_cons_Iio, map_cons]
   simp only [Iio_castSucc, cons_eq_insert, castSuccEmb_apply]
-  congr
 
 @[simp]
 theorem Ici_succ (i : Fin n) : Ici i.succ = (Ici i).map (Fin.succEmb _) := by
   rw [Ici_eq_cons_Ioi, Ici_eq_cons_Ioi, map_cons]
-  simp only [Ioi_succ, cons_eq_insert, val_succEmb]
+  simp only [Ioi_succ, cons_eq_insert, coe_succEmb]
 
 end Interval
 

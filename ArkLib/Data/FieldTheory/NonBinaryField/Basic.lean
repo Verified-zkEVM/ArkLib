@@ -57,10 +57,22 @@ private lemma comp_x_square_coeff_pos_deg {f : Polynomial F} {n : ℕ} (h : 0 < 
     aesop (add simp [Nat.div_eq_iff_eq_mul_left, even_iff_two_dvd])
   · rintro _ _ _ (_ | _ | n) <;> try simp [←mul_assoc]
     have : (n + 1 + 1) / 2 = n / 2 + 1 := by omega
-    aesop (add simp [Nat.even_iff, Nat.odd_iff], safe (by omega))
+    simp_all only [Nat.even_iff, coeff_mul_X]
+    split
+    next h_1 =>
+      split
+      next h_2 => simp_all only
+      next h_2 =>
+        simp_all only [Nat.mod_two_not_eq_zero]
+        (omega)
+    next h_1 =>
+      simp_all only [Nat.mod_two_not_eq_zero]
+      split
+      next h_2 => (omega)
+      next h_2 => simp_all only [Nat.mod_two_not_eq_zero]
   · rintro _ _ _ _ (_ | _ | n) <;> try simp_all
     have : (n + 1 + 1) / 2 = n / 2 + 1 := by omega
-    aesop (add safe (by omega))
+    simp_all only [coeff_C_succ, add_zero]
 
 theorem comp_x_square_coeff {f : Polynomial F} {n : ℕ} :
   (f.comp (X * X)).coeff n = if Even n then f.coeff (n / 2) else 0 := by

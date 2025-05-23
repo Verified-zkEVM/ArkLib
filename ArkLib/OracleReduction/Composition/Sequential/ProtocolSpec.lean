@@ -175,6 +175,21 @@ def snoc {pSpec : ProtocolSpec n} {NextMessage : Type}
         FullTranscript (pSpec ++ₚ .mkSingle dir NextMessage) :=
   append T fun _ => msg
 
+-- TODO: fill
+
+-- @[simp]
+-- theorem append_cast_left {n m : ℕ} {pSpec₁ pSpec₂ : ProtocolSpec n} {pSpec' : ProtocolSpec m}
+--     {T₁ : FullTranscript pSpec₁} {T₂ : FullTranscript pSpec'} (n' : ℕ)
+--     (h : n + m = n' + m) (hSpec : dcast h pSpec₁ = pSpec₂) :
+--       dcast₂ h (by simp) (T₁ ++ₜ T₂) = (dcast₂ (Nat.add_right_cancel h) (by simp) T₁) ++ₜ T₂ := by
+--   simp [append, dcast₂, ProtocolSpec.cast, Fin.append_cast_left]
+
+-- @[simp]
+-- theorem append_cast_right {n m : ℕ} (pSpec : ProtocolSpec n) (pSpec' : ProtocolSpec m) (m' : ℕ)
+--     (h : n + m = n + m') :
+--       dcast h (pSpec ++ₚ pSpec') = pSpec ++ₚ (dcast (Nat.add_left_cancel h) pSpec') := by
+--   simp [append, dcast, ProtocolSpec.cast, Fin.append_cast_right]
+
 @[simp]
 theorem take_append_left (T : FullTranscript pSpec₁) (T' : FullTranscript pSpec₂) :
     (T ++ₜ T').take m (Nat.le_add_right m n) =
@@ -284,10 +299,14 @@ theorem compose_zero {n : ℕ} {pSpec : ProtocolSpec n} :
 /-- Composition for `i + 1` equals composition for `i` appended with the `i + 1`-th `ProtocolSpec`
 -/
 theorem compose_append {m : ℕ} {n : Fin (m + 1) → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} (i : Fin m) :
-    compose (i + 1) (Fin.take (i + 1 + 1) (by omega) n) (Fin.take (i + 1 + 1) (by omega) pSpec)
-      = dcast (by simp [Fin.sum_univ_castSucc]; congr)
-          (compose i (Fin.take (i + 1) (by omega) n) (Fin.take (i + 1) (by omega) pSpec)
-            ++ₚ pSpec i.succ) := by
+    compose (i + 1)
+      (Fin.take (i + 1 + 1) (by omega) n)
+      (Fin.take (i + 1 + 1) (by omega) pSpec)
+    = dcast (by simp [Fin.sum_univ_castSucc]; congr)
+        (compose i
+          (Fin.take (i + 1) (by omega) n)
+          (Fin.take (i + 1) (by omega) pSpec)
+        ++ₚ pSpec i.succ) := by
   simp only [id_eq, Fin.take_apply, compose, dcast_eq,
     Fin.dfoldl_succ_last, Fin.succ_last, Nat.succ_eq_add_one, Function.comp_apply, dcast_trans]
   unfold Function.comp Fin.castSucc Fin.castAdd Fin.castLE Fin.last Fin.succ
@@ -296,11 +315,8 @@ theorem compose_append {m : ℕ} {n : Fin (m + 1) → ℕ} {pSpec : ∀ i, Proto
   refine congrArg (· ++ₚ pSpec i.succ) ?_
   rw [dcast_eq_root_cast]
   refine Fin.dfoldl_congr_dcast ?_ ?_ ?_
-  · intro j
-    have : (⟨j, by omega⟩ : Fin (i + 1 + 1)) = j.castSucc := rfl
-    simp [this, Fin.Iic_castSucc]
-  · intro j a; simp only [Fin.val_succ, Fin.coe_castSucc, dcast_trans,
-      dcast_eq_dcast_iff, append_cast_left, dcast_eq]
+  · intro j; simp [Fin.sum_Iic_eq_univ]
+  · intro j a; simp [dcast_eq_dcast_iff, append_cast_left]
   · simp
 
 namespace FullTranscript
@@ -322,14 +338,20 @@ def compose (m : ℕ) (n : Fin (m + 1) → ℕ) (pSpec : ∀ i, ProtocolSpec (n 
 theorem compose_zero {n : ℕ} {pSpec : ProtocolSpec n} {transcript : pSpec.FullTranscript} :
     compose 0 (fun _ => n) (fun _ => pSpec) (fun _ => transcript) = transcript := rfl
 
--- theorem compose_append {m : ℕ} {n : Fin (m + 1) → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
---     {T : ∀ i, FullTranscript (pSpec i)} (i : Fin m) :
---       compose (i + 1) (Fin.take (i + 1 + 1) (by omega) n) (Fin.take (i + 1 + 1) (by omega) pSpec)
---         (Fin.take (i + 1 + 1) (by omega) T) =
---       (cast (by simp [Fin.sum_univ_castSucc]; sorry) (ProtocolSpec.compose_append i)
---         (compose i (Fin.take (i + 1) (by omega) n) (Fin.take (i + 1) (by omega) pSpec)
---           (Fin.take (i + 1) (by omega) T)) ++ₜ T i.succ) := by
---   simp [compose, cast_trans, append_cast_left, cast_eq_cast_iff]
+theorem compose_append {m : ℕ} {n : Fin (m + 1) → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    {T : ∀ i, FullTranscript (pSpec i)} (i : Fin m) :
+    compose (i + 1)
+      (Fin.take (i + 1 + 1) (by omega) n)
+      (Fin.take (i + 1 + 1) (by omega) pSpec)
+      (Fin.take (i + 1 + 1) (by omega) T)
+    = dcast₂ (by simp [Fin.sum_univ_castSucc]; rfl) (by simp [compose_append])
+        (compose i
+          (Fin.take (i + 1) (by omega) n)
+          (Fin.take (i + 1) (by omega) pSpec)
+          (Fin.take (i + 1) (by omega) T)
+        ++ₜ T i.succ) := by
+  simp [compose, append_cast_left]
+  sorry
 
 end FullTranscript
 

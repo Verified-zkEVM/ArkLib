@@ -65,7 +65,7 @@ inductive PrattPartList : (p : ℕ) → (a : ZMod p) → ℕ → Prop
 
 /-- Alternative form of a Pratt certificate for `p`, which may take in Pratt certificates
   for a list of prime powers `r` less than `p` whose product is equal to `p - 1`. -/
-structure PrattCertificate' (p : ℕ) : Type :=
+structure PrattCertificate' (p : ℕ) : Type where
   a : ZMod p
   pow_eq_one : a ^ (p - 1) = 1
   part : PrattPartList p a (p - 1)
@@ -96,7 +96,7 @@ inductive PrattPart : (p : ℕ) → (a : ZMod p) → ℕ → Prop
   | split : {p : ℕ} → {a : ZMod p} → {n : ℕ} → (l r : ℕ) →
       PrattPart p a l → PrattPart p a r → l * r = n → PrattPart p a n
 
-structure PrattCertificate (p : ℕ) : Type :=
+structure PrattCertificate (p : ℕ) : Type where
   a : ZMod p
   pow_eq_one : a ^ (p - 1) = 1
   part : PrattPart p a (p - 1)
@@ -212,7 +212,7 @@ def powMod (a b m : ℕ) : ℕ := Id.run do
 
   return res
 
-structure PowTwoRepr :=
+structure PowTwoRepr where
   two_exp : ℕ
   odd_part : ℕ
 
@@ -289,7 +289,7 @@ partial def factor (n : ℕ) : Option (List ℕ) :=
     let rhs ← factor (n / f)
     return (lhs ++ rhs)
 
-structure PrimeWithMultiplicity : Type :=
+structure PrimeWithMultiplicity : Type where
   prime : ℕ
   multiplicity : ℕ
 deriving Repr
@@ -297,7 +297,7 @@ deriving Repr
 /-- Factor `n` into a list of prime numbers with their multiplicities -/
 def factor' (n : ℕ) : Option (List PrimeWithMultiplicity) := do
   let facts := List.mergeSort (← factor n)
-  let groups := List.groupBy (· = ·) facts
+  let groups := List.splitBy (· = ·) facts
   return groups.map (fun g => ⟨g[0]!, g.length⟩)
 
 mutual
@@ -471,9 +471,9 @@ partial def verifyCertificate (n' : Q(ℕ)) (n : ℕ) :
     have alit : Q(ℕ) := mkRawNatLit a
     let ⟨a', pa'⟩ ← mkOfNat q(ZMod $n') q(instAddMonoidWithOne) alit
     let hpow : Q($a' ^ ($n' - 1) = 1) ← verifyEqOne n' alit a' pa'
-    let ⟨nn, pnn⟩ ← generatePart n' a' alit pa' part
-    haveI : $nn =Q $n' - 1 := ⟨⟩
-    return q(PrattCertificate.mk $a' $hpow $pnn)
+    let result ← generatePart n' a' alit pa' part
+    haveI : $(result.1) =Q $n' - 1 := ⟨⟩
+    return q(PrattCertificate.mk $a' $hpow $(result.2))
   generatePart (n' : Q(ℕ)) (a : Q(ZMod $n')) (a' : Q(ℕ)) (pa' : Q(($a' : ZMod $n') = $a)) :
       UnverifiedPrattPart → MetaM ((nn : Q(ℕ)) × Q(PrattPart $n' $a $nn))
     | .prime p k hp => do

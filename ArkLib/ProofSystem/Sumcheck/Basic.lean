@@ -152,12 +152,12 @@ instance : IsSingleRound (pSpec R d) where
   verifier_last' := by simp [pSpec, getDir, Neg.neg]
 
 instance instOracleInterfaceMessagePSpec : OracleInterface ((pSpec R d).Message default) := by
-  simp only [pSpec, default, Matrix.cons_val_zero]
+  simp [pSpec, default]
   exact instOracleInterfacePolynomialDegreeLE
 
 instance instVCVCompatibleChallengePSpec [VCVCompatible R] :
     VCVCompatible ((pSpec R d).Challenge default) := by
-  simp only [pSpec, Challenge, default, Matrix.cons_val_one, Matrix.head_cons]
+  simp [pSpec, Challenge, default]
   infer_instance
 
 def prover : OracleProver (pSpec R d) []ₒ R Unit R Unit
@@ -256,7 +256,6 @@ lemma neverFails_map_iff' (oa : OracleComp spec α) (f : α → β) :
 
 end simp_lemmas
 
--- set_option maxHeartbeats 1000000 in
 theorem perfect_completeness : (reduction R d D).perfectCompleteness
     (inputRelation R d D) (outputRelation R d) := by
   rw [perfectCompleteness_eq_prob_one]
@@ -269,7 +268,6 @@ theorem perfect_completeness : (reduction R d D).perfectCompleteness
     · simp -- There's still some pathing issue here w/ simp, need to simp in steps which is sub-par
       unfold Prover.run Prover.runToRound
       simp [Fin.induction, Fin.induction.go, reduction, prover, neverFails_map_iff']
-      simp [neverFails, neverFailsWhen]
     · intro ⟨⟨stmt, oStmtOut⟩, _, transcript⟩
       simp -- Also some pathing issues, need to simp once before reducing `reduction`
       simp [reduction, verifier, Verifier.run]
@@ -277,9 +275,8 @@ theorem perfect_completeness : (reduction R d D).perfectCompleteness
       simp [Prover.run, Prover.runToRound, reduction, prover] at hSupport
       obtain ⟨h1, h2⟩ := hSupport
       simp [← h2, Transcript.snoc, Fin.snoc, h]
-      split_ifs with hEval
-      · simp [neverFails, neverFailsWhen]
-      · contrapose! hEval; simp [inputRelation, h] at hValid; exact hValid
+      simp [inputRelation, h] at hValid
+      exact hValid
   · intro ⟨⟨⟨prvStmtOut, prvOStmtOut⟩, _⟩, verStmtOut, transcript⟩ hSupport
     simp only [run, support_bind, liftM_eq_liftComp, Set.mem_iUnion, support_pure,
       Set.mem_singleton_iff, Prod.eq_iff_fst_eq_snd_eq, true_and] at hSupport

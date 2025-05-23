@@ -95,16 +95,16 @@ theorem eqPolynomial_eval_zeroOne (r x : σ → Fin 2) :
   by_cases h : x = r
   · simp [h]
     have (i : Fin 2) : (1 - (i : R)) * (1 - (i : R)) + i * i = 1 := by
-      fin_cases i <;> ring_nf
+      fin_cases i <;> ring_nf <;> simp
     simp [this]
   · simp [h]
     have : ∃ i : σ, x i ≠ r i := Function.ne_iff.mp h
     obtain ⟨i, hi⟩ := this
     refine Finset.prod_eq_zero (Finset.mem_univ i) ?_
     by_cases h' : r i = 0
-    · simp_all [Fin.eq_one_of_neq_zero]
+    · simp_all [Fin.eq_one_of_ne_zero]
     · have : x i = 0 := by fin_omega
-      simp_all [Fin.eq_one_of_neq_zero]
+      simp_all [Fin.eq_one_of_ne_zero]
 
 variable [DecidableEq σ]
 

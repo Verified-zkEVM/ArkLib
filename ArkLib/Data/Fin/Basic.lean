@@ -496,6 +496,7 @@ def modSum {m : ℕ} {n : Fin m → ℕ} (k : Fin (∑ j, n j)) : Fin (n (divSum
     have hk : k < ∑ j, n (Fin.castLE (divSum k).isLt j) := Fin.find_spec _ divSum_mem
     simp only [Fin.sum_univ_succAbove _ (Fin.last (divSum k)), val_last, succAbove_last] at hk
     rw [Nat.sub_lt_iff_lt_add' (sum_le_of_divSum?_eq_some divSum_mem)]
+    rw [add_comm]
     exact hk⟩
 
 open Finset in

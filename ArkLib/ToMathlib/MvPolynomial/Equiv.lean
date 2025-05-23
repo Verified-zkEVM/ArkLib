@@ -27,7 +27,7 @@ theorem finSuccEquivNth_eq :
   · simp only [finSuccEquivNth, optionEquivLeft_apply, aeval_C, AlgEquiv.coe_trans, RingHom.coe_coe,
       coe_eval₂Hom, comp_apply, renameEquiv_apply, eval₂_C, RingHom.coe_comp, rename_C]
     rfl
-  · refine Fin.succAboveCases p ?_ ?_ j <;> simp [finSuccEquivNth]
+  · refine Fin.succAboveCases p ?_ ?_ j <;> simp [finSuccEquivNth, optionEquivLeft]
 
 theorem finSuccEquivNth_apply (f : MvPolynomial (Fin (n + 1)) R) :
     finSuccEquivNth R p f =
@@ -230,8 +230,8 @@ theorem finSuccEquivNth_rename_finSuccEquivNth (e : σ ≃ Fin n) (φ : MvPolyno
       (Polynomial.mapRingHom (rename e).toRingHom).comp (optionEquivLeft R σ) by
     exact DFunLike.congr_fun this φ
   apply ringHom_ext
-  · simp [finSuccEquivNth_apply, Polynomial.algebraMap_apply, algebraMap_eq]
-  · rintro (i|i) <;> simp [finSuccEquivNth_apply]
+  · simp [finSuccEquivNth_apply, Polynomial.algebraMap_apply, algebraMap_eq, optionEquivLeft]
+  · rintro (i|i) <;> simp [finSuccEquivNth_apply, optionEquivLeft]
 
 end FinSuccEquivNth
 

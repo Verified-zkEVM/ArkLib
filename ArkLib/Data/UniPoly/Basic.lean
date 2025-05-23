@@ -737,8 +737,8 @@ alias ofPoly := Polynomial.toImpl
 theorem eval_toPoly_eq_eval (x : Q) (p : UniPoly Q) : p.toPoly.eval x = p.eval x := by
   unfold toPoly eval eval₂
   rw [← Array.foldl_hom (Polynomial.eval x)
-    (fun acc (t : Q × ℕ) ↦ acc + Polynomial.C t.1 * Polynomial.X ^ t.2)
-    (fun acc (a, i) ↦ acc + a * x ^ i) ]
+    (g₁ := fun acc (t : Q × ℕ) ↦ acc + Polynomial.C t.1 * Polynomial.X ^ t.2)
+    (g₂ := fun acc (a, i) ↦ acc + a * x ^ i) ]
   congr
   exact Polynomial.eval_zero
   simp
@@ -759,7 +759,7 @@ lemma coeff_toPoly {p : UniPoly Q} {n : ℕ} : p.toPoly.coeff n = p.coeff n := b
     rw [h, ite_eq_left_iff, zipIdx_size]
     intro hn
     replace hn : n ≥ p.size := by linarith
-    rw [coeff, Array.getD_eq_get?, Array.getElem?_eq_none hn, Option.getD_none]
+    rw [coeff, Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hn, Option.getD_none]
 
   apply Array.foldl_induction motive
   · show motive 0 0
@@ -806,7 +806,7 @@ theorem toPoly_toImpl {p : Q[X]} : p.toImpl.toPoly = p := by
   rw [h]
   by_cases h : n < p.natDegree + 1
   · simp [h]
-  simp only [Array.getD_eq_get?, Array.getElem?_ofFn]
+  simp only [Array.getD_eq_getD_getElem?, Array.getElem?_ofFn]
   simp only [h, reduceDIte, Option.getD_none]
   replace h := Nat.lt_of_succ_le (not_lt.mp h)
   symm
@@ -826,7 +826,7 @@ lemma toPoly_trim [LawfulBEq R] {p : UniPoly R} : p.trim.toPoly = p.toPoly := by
 lemma toImpl_nonzero {p : Q[X]} (hp: p ≠ 0) : p.toImpl.size > 0 := by
   rcases toImpl_elim p with ⟨rfl, _⟩ | ⟨_, h⟩
   · contradiction
-  suffices h : p.toImpl ≠ #[] from Array.size_pos.mpr h
+  suffices h : p.toImpl ≠ #[] from Array.size_pos_iff.mpr h
   simp [h]
 
 /-- helper lemma: the last entry of the `UniPoly` obtained by `toImpl` is just the `leadingCoeff` -/
@@ -941,69 +941,74 @@ end Lagrange
 
 end UniPoly
 
-section Tropical
-/-- This section courtesy of Junyan Xu -/
+-- Note (May-23-2025): commented out the below section, it's no longer working on v4.19.0 & it's a
+-- hassle to fix
 
-instance : LinearOrderedAddCommMonoidWithTop (OrderDual (WithBot ℕ)) where
-  __ : LinearOrderedAddCommMonoid (OrderDual (WithBot ℕ)) := inferInstance
-  __ : Top (OrderDual (WithBot ℕ)) := inferInstance
-  le_top _ := bot_le (α := WithBot ℕ)
-  top_add' x := WithBot.bot_add x
+-- section Tropical
+-- /-- This section courtesy of Junyan Xu -/
 
-
-noncomputable instance (R) [Semiring R] : Semiring (Polynomial R × Tropical (OrderDual (WithBot ℕ)))
-  := inferInstance
-
-noncomputable instance (R) [CommSemiring R] : CommSemiring
-    (Polynomial R × Tropical (OrderDual (WithBot ℕ))) := inferInstance
+-- instance : LinearOrderedAddCommMonoidWithTop (OrderDual (WithBot ℕ)) where
+--   __ : LinearOrderedAddCommMonoid (OrderDual (WithBot ℕ)) := inferInstance
+--   __ : Top (OrderDual (WithBot ℕ)) := inferInstance
+--   le_top _ := bot_le (α := WithBot ℕ)
+--   top_add' x := WithBot.bot_add x
 
 
-def TropicallyBoundPoly (R) [Semiring R] : Subsemiring
-    (Polynomial R × Tropical (OrderDual (WithBot ℕ))) where
-  carrier := {p | p.1.degree ≤ OrderDual.ofDual p.2.untrop}
-  mul_mem' {p q} hp hq := (p.1.degree_mul_le q.1).trans (add_le_add hp hq)
-  one_mem' := Polynomial.degree_one_le
-  add_mem' {p q} hp hq := (p.1.degree_add_le q.1).trans (max_le_max hp hq)
-  zero_mem' := Polynomial.degree_zero.le
+-- noncomputable instance (R) [Semiring R] :
+--     Semiring (Polynomial R × Tropical (OrderDual (WithBot ℕ)))
+--   := inferInstance
+
+-- noncomputable instance (R) [CommSemiring R] : CommSemiring
+--     (Polynomial R × Tropical (OrderDual (WithBot ℕ))) := inferInstance
 
 
-noncomputable def UniPoly.toTropicallyBoundPolynomial {R : Type} [Ring R] [BEq R] (p : UniPoly R) :
-    TropicallyBoundPoly (R) :=
-  ⟨
-    (p.toPoly, Tropical.trop (OrderDual.toDual p.degreeBound)),
-    by
-      sorry⟩
+-- def TropicallyBoundPoly (R) [Semiring R] : Subsemiring
+--     (Polynomial R × Tropical (OrderDual (WithBot ℕ))) where
+--   carrier := {p | p.1.degree ≤ OrderDual.ofDual p.2.untrop}
+--   mul_mem' {p q} hp hq := (p.1.degree_mul_le q.1).trans (add_le_add hp hq)
+--   one_mem' := Polynomial.degree_one_le
+--   add_mem' {p q} hp hq := (p.1.degree_add_le q.1).trans (max_le_max hp hq)
+--   zero_mem' := Polynomial.degree_zero.le
 
-def degBound (b: WithBot ℕ) : ℕ := match b with
-  | ⊥ => 0
-  | some n => n + 1
 
-def TropicallyBoundPolynomial.toUniPoly {R : Type} [Ring R]
-    (p : TropicallyBoundPoly (R)) : UniPoly R :=
-  match p.val with
-  | (p, n) => UniPoly.mk (Array.range (degBound n.untrop) |>.map (fun i => p.coeff i))
+-- noncomputable def UniPoly.toTropicallyBoundPolynomial
+-- {R : Type} [Ring R] [BEq R] (p : UniPoly R) :
+--     TropicallyBoundPoly (R) :=
+--   ⟨
+--     (p.toPoly, Tropical.trop (OrderDual.toDual p.degreeBound)),
+--     by
+--       sorry⟩
 
-noncomputable def Equiv.UniPoly.TropicallyBoundPolynomial {R : Type} [BEq R] [Ring R] :
-    UniPoly R ≃+* TropicallyBoundPoly R where
-      toFun := UniPoly.toTropicallyBoundPolynomial
-      invFun := TropicallyBoundPolynomial.toUniPoly
-      left_inv := by
-        unfold Function.LeftInverse
-        intro p
-        unfold UniPoly.toTropicallyBoundPolynomial TropicallyBoundPolynomial.toUniPoly
-        simp_rw [Tropical.untrop_trop, UniPoly.coeff_toPoly, Array.getD_eq_getD_getElem?]
-        ext i hi1 hi2
-        · simp only [Array.size_map, Array.size_range]
-          unfold UniPoly.degreeBound
-          simp only [degBound]
-          cases p.size with
-          | zero => simp
-          | succ n =>
-            simp
-            exact rfl
-        · simp [hi2]
-      right_inv := by sorry
-      map_mul' := by sorry
-      map_add' := by sorry
+-- def degBound (b: WithBot ℕ) : ℕ := match b with
+--   | ⊥ => 0
+--   | some n => n + 1
 
-end Tropical
+-- def TropicallyBoundPolynomial.toUniPoly {R : Type} [Ring R]
+--     (p : TropicallyBoundPoly (R)) : UniPoly R :=
+--   match p.val with
+--   | (p, n) => UniPoly.mk (Array.range (degBound n.untrop) |>.map (fun i => p.coeff i))
+
+-- noncomputable def Equiv.UniPoly.TropicallyBoundPolynomial {R : Type} [BEq R] [Ring R] :
+--     UniPoly R ≃+* TropicallyBoundPoly R where
+--       toFun := UniPoly.toTropicallyBoundPolynomial
+--       invFun := TropicallyBoundPolynomial.toUniPoly
+--       left_inv := by
+--         unfold Function.LeftInverse
+--         intro p
+--         unfold UniPoly.toTropicallyBoundPolynomial TropicallyBoundPolynomial.toUniPoly
+--         simp_rw [Tropical.untrop_trop, UniPoly.coeff_toPoly, Array.getD_eq_getD_getElem?]
+--         ext i hi1 hi2
+--         · simp only [Array.size_map, Array.size_range]
+--           unfold UniPoly.degreeBound
+--           simp only [degBound]
+--           cases p.size with
+--           | zero => simp
+--           | succ n =>
+--             simp
+--             exact rfl
+--         · simp [hi2]
+--       right_inv := by sorry
+--       map_mul' := by sorry
+--       map_add' := by sorry
+
+-- end Tropical
