@@ -17,19 +17,25 @@ $s_i(0) + s_i(1) = s_{i - 1}(r_{i - 1})$, with the convention that $s_0(r_0) = c
 
 \begin{theorem}
     The sum-check protocol is complete.
+    \label{thm:sumcheck_protocol_complete}
+    \uses{def:completeness}
 \end{theorem}
 
-We now proceed to break down this protocol into individual message, and then specify the predicates that should hold before and after each message is exchanged.
+We now proceed to break down this protocol into individual messages, and then specify the predicates that should hold before and after each message is exchanged.
 
 First, it is clear that we can consider each round in isolation. In fact, each round can be seen as an instantiation of the following simpler "virtual" protocol:
-\begin{enumerate}
-    \item In this protocol, the context is a pair $(p, d)$, where $p$ is now a \emph{univariate} polynomial of bounded degree. The predicate / relation is that $p(0) + p(1) = d$.
-    \item The prover first sends a univariate polynomial $s$ of the same bounded degree as $p$. In
-    the honest case, it would just send $p$ itself.
-    \item The verifier samples and sends a random challenge $r \gets \mathbb{F}$.
-    \item The verifier checks that $s(0) + s(1) = d$. The predicate on the resulting output context
-    is that $p(r) = s(r)$.
-\end{enumerate}
+
+\begin{definition}
+    \label{def:virtual_sumcheck_round_protocol}
+    \begin{enumerate}
+        \item In this protocol, the context is a pair $(p, d)$, where $p$ is now a \emph{univariate} polynomial of bounded degree. The predicate / relation is that $p(0) + p(1) = d$.
+        \item The prover first sends a univariate polynomial $s$ of the same bounded degree as $p$. In
+        the honest case, it would just send $p$ itself.
+        \item The verifier samples and sends a random challenge $r \gets \mathbb{F}$.
+        \item The verifier checks that $s(0) + s(1) = d$. The predicate on the resulting output context
+        is that $p(r) = s(r)$.
+    \end{enumerate}
+\end{definition}
 
 The reason why this simpler protocol is related to a sum-check round is that we can \emph{emulate} the simpler protocol using variables in the context at the time:
 \begin{itemize}
@@ -42,16 +48,36 @@ witness, also knowledge sound) since by the Schwartz-Zippel Lemma, the probabili
 and yet $p(r) = s(r)$ for a random challenge $r$ is at most the degree of $p$ over the size of the
 field.
 
-Note that there is no witness so knowledge soundness follows trivially from soundness. Moreover, we
+\begin{theorem}
+    The virtual sum-check round protocol is sound.
+    \label{thm:virtual_sumcheck_round_protocol_sound}
+    \uses{def:soundness, def:virtual_sumcheck_round_protocol, thm:schwartz_zippel}
+\end{theorem}
+
+Note that there is no witness, so knowledge soundness follows trivially from soundness. 
+
+\begin{theorem}
+    The virtual sum-check round protocol is knowledge sound.
+    \label{thm:virtual_sumcheck_round_protocol_knowledge_sound}
+    \uses{def:knowledge_soundness, thm:virtual_sumcheck_round_protocol_sound}
+\end{theorem}
+
+Moreover, we
 can define the following state function for the simpler protocol:
 \begin{enumerate}
-    \item The initial state funtion is the same as the predicate on the initial context, namely that
+    \item The initial state function is the same as the predicate on the initial context, namely that
     $p(0) + p(1) = d$.
     \item The state function after the prover sends $s$ is the predicate that $p(0) + p(1) = d$ and
     $s(0) + s(1) = d$. Essentially, we add in the verifier's check.
     \item The state function for the output context (after the verifier sends $r$) is the predicate that $s(0) + s(1) = d$ and $p(r) = s(r)$.
 \end{enumerate}
 Seen in this light, it should be clear that the simpler protocol satisfies round-by-round soundness.
+
+\begin{theorem}
+    The virtual sum-check round protocol is round-by-round sound.
+    \label{thm:virtual_sumcheck_round_protocol_rbr_sound}
+    \uses{def:round_by_round_soundness, thm:virtual_sumcheck_round_protocol_knowledge_sound}
+\end{theorem}
 
 In fact, we can break down this simpler protocol even more: consider the two sub-protocols that each
 consists of a single message. Then the intermediate state function is the same as the predicate on
