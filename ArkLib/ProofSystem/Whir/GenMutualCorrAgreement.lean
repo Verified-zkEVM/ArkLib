@@ -34,12 +34,12 @@ def proximityCondition (f : parℓ → ι → F) (δ : ℝ≥0) (GenFun : F → 
 /-- Definition 4.9
   Let `C` be a linear code, then Gen is a proximity generator with mutual correlated agreement,
   if for `parℓ` functions `fᵢ : ι → F` and distance `δ < 1 - B(C,parℓ)`,
-  `Pr_{ r ← F } [ proximityCondition(r) ] > errStar(δ)`. -/
+  `Pr_{ r ← F } [ proximityCondition(r) ] ≤ errStar(δ)`. -/
 noncomputable def genMutualCorrAgreement
   (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
   (BStar : ℝ) (errStar : ℝ → ENNReal) :=
     ∀ (f : Gen.parℓ → ι → F) (δ : ℝ≥0) (_hδ : δ < 1 - (Gen.B Gen.C Gen.parℓ)),
-    Pr_{let r ←$ᵖ F}[ (proximityCondition f δ Gen.Fun Gen.C) r ] > errStar δ
+    Pr_{let r ←$ᵖ F}[ (proximityCondition f δ Gen.Fun Gen.C) r ] ≤ errStar δ
 
 /--Lemma 4.10
   Let `C` be a linear code with minimum distance `δ_C`, `Gen` be a proximity generator for C
@@ -101,7 +101,7 @@ lemma genMutualCorrAgreement_rsc_le_bound
   (hrate : rate = LinearCode.rate (smoothCode φ m)) :
     BStar = (1 - rate) / 2 ∧
     errStar = fun _ => ENNReal.ofReal
-        ((Fintype.card Gen.parℓ - 1) • 2^m / rate • (Fintype.card F))
+        ((Fintype.card Gen.parℓ - 1) • (2^m / rate • (Fintype.card F)))
   := by sorry
 
 
@@ -169,7 +169,7 @@ def proximityListDecodingCondition
   Let C be a linear code with minimum distance δ_c and `Gen` be a proximity generator
   with mutual correlated agreement for `C`.
   Then for every `{f₁,..,f_parℓ}` and `δ ∈ (0, min δ_c (1 - BStar))`,
-  `Pr_{ r ← F} [ proximityListDecodingCondition(r) ] > errStar(δ)`. -/
+  `Pr_{ r ← F} [ proximityListDecodingCondition(r) ] ≤ errStar(δ)`. -/
 lemma mutualCorrAgreement_list_decoding
   [Fintype ι] [Nonempty ι]
   (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
