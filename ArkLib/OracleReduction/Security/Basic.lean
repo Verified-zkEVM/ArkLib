@@ -30,20 +30,6 @@ noncomputable section
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal
 
-section find_home
-
-universe u w
-
--- #print probEvent
-
--- #print probEvent_def
-
--- theorem probEvent_not {ι : Type u} {spec : OracleSpec ι} {α : Type w} {oa : OracleComp spec α}
---     [spec.FiniteRange] {p : α → Prop} : [p | oa] ≤ 1 - [fun a => ¬ p a | oa] := by
---   simp
-
-end find_home
-
 variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
   [oSpec.FiniteRange] [∀ i, VCVCompatible (pSpec.Challenge i)]
   {StmtIn WitIn StmtOut WitOut : Type}
