@@ -78,10 +78,6 @@ lemma nonsquare_mulVecLin [CommSemiring F] {ι' : ℕ} {α₁ : ι ↪ F} {α₂
 def nonsquareTranspose [Field F] (ι' : ℕ) (α : ι ↪ F) : Matrix (Fin ι') ι F :=
   (Vandermonde.nonsquare ι' α)ᵀ
 
-private lemma todoMoveOut {k : ℕ} : (List.finRange k).dedup = List.finRange k := by
-  induction k <;>
-  aesop (add simp [List.finRange_succ, List.dedup_map_of_injective, Fin.succ_injective])
-
 section
 
 variable [CommRing F] {m n : ℕ} {α : Fin m → F}
@@ -119,7 +115,7 @@ lemma rank_nonsquare_eq_deg_of_deg_le (inj : Function.Injective α) (h : n ≤ m
     Matrix.det_vandermonde_ne_zero_iff
   ]
   apply Function.Injective.comp <;> aesop (add simp Fin.castLE_injective)
-  
+
 /--
   The rank of a non-square Vandermonde matrix with more columns than rows is the number of rows.
 -/
