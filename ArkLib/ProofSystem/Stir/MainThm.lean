@@ -79,17 +79,17 @@ variable {n : ℕ}
 /--Statement for the STIR Vector IOPP consisting of a field `F`, evaluation domain `ι` and
   degree parameter `degree` -/
 structure Statement
-  (F : Type)[Field F][Fintype F][DecidableEq F]
+  (F : Type) [Field F] [Fintype F] [DecidableEq F]
   (ι : Type) [Fintype ι]
   (degree : ℕ)
   where
     eval : ι → F
 
-/--`OStmtOut` defines the oracle message type for a multi-indexed setting:
+/--`OracleStatement` defines the oracle message type for a multi-indexed setting:
   given index type `ιₛ`, base input type `ι`, and field `F`, the output type at each index `i : ιₛ`
   is a function `ι → F` representing an evaluation over `ι`.-/
 @[reducible]
-def OStmtOut (ιₛ ι F : Type) : ιₛ → Type :=
+def OracleStatement (ιₛ ι F : Type) : ιₛ → Type :=
     fun _ => ι → F
 
 /--Given a statement `stmt` and a collection of oracles, this relation
@@ -99,7 +99,7 @@ def stirRelation
   {F : Type} [Field F] [Fintype F] [DecidableEq F]
   {ι : Type} [Fintype ι] [Nonempty ι]
   {degree : ℕ} {ιₛ: Type} (φ : ι ↪ F) (err : ℝ)
-  : (Statement F ι degree × ∀ i, (OStmtOut ιₛ ι F i)) → Unit → Prop :=
+  : (Statement F ι degree × ∀ i, (OracleStatement ιₛ ι F i)) → Unit → Prop :=
   let C := code φ degree
   fun ⟨stmt, _oracles⟩ _ =>
     δᵣ(stmt.eval, C) ≤ err
@@ -126,9 +126,9 @@ theorem stir_main
   (vPSpec : ProtocolSpec.VectorSpec n)
   (oSpec : OracleSpec ι) [oSpec.FiniteRange]
   {ιₛ : Type}
-  [∀ i, OracleInterface (OStmtOut ιₛ ι F i)]
+  [∀ i, OracleInterface (OracleStatement ιₛ ι F i)]
   (ε_rbr : vPSpec.ChallengeIdx → ℝ≥0) :
-  ∃ π : VectorIOP vPSpec F oSpec (Statement F ι degree) Unit (OStmtOut ιₛ ι F),
+  ∃ π : VectorIOP vPSpec F oSpec (Statement F ι degree) Unit (OracleStatement ιₛ ι F),
     IsSecureWithGap (stirRelation φ 0)
                     (stirRelation φ (1 / 2^secpar))
                     ε_rbr π := by sorry
@@ -175,13 +175,13 @@ theorem stir_rbr_soundness
           - 1 / Fintype.card (ι j) : ℝ) ∧
         Dist.δ j < (1 - Bstar (rate (code (P.φ j) (degree ι hParams.deg P j)))))
     (vPSpec : ProtocolSpec.VectorSpec n)
-    [∀ i, OracleInterface (OStmtOut ιₛ (ι 0) F i)]
+    [∀ i, OracleInterface (OracleStatement ιₛ (ι 0) F i)]
     (oSpec : OracleSpec ιₒ) [oSpec.FiniteRange]
     (ε_fold : ℝ≥0) (ε_out : Fin (M + 1) → ℝ≥0)
     (ε_shift : Fin (M + 1) → ℝ≥0) (ε_fin : ℝ≥0)
     (ε_sound : ℝ≥0) (ε_rbr : vPSpec.ChallengeIdx → ℝ≥0) :
-    -- ∃ vector IOPP π with Statement(F, ι₀, deg), Witness = Unit, OStmtOut(ιₛ, ι₀, F) such that
-    ∃ π : VectorIOP vPSpec F oSpec (Statement F (ι 0) (hParams.deg)) Unit (OStmtOut ιₛ (ι 0) F),
+    -- ∃ vector IOPP π with Statement(F, ι₀, deg), Witness = Unit, OracleStatement(ιₛ, ι₀, F) such that
+    ∃ π : VectorIOP vPSpec F oSpec (Statement F (ι 0) (hParams.deg)) Unit (OracleStatement ιₛ (ι 0) F),
     -- ε_fold ≤ errStar(degree₀/foldingParam₀, ρ₀, δ₀, repeatParam₀)
       ε_fold ≤ err' F (hParams.deg / P.foldingParam 0) (rate (code (P.φ 0) hParams.deg))
                  (Dist.δ 0) (P.repeatParam 0)
