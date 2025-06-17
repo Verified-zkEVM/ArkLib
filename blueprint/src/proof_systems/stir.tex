@@ -9,13 +9,13 @@
 
 \begin{theorem}\label{thm:proximity_gap}
 \lean{proximity_gap}
-\uses{def:distance_from_code}
-    Let $\code := \rscode[\field,\evaldomain,\degree]$ be a Reed Solomon code with rate $\rate:=\frac{\degree}{|\evaldomain|}$ and let $B'(\rate):=\sqrt{\rate}$. For every $\distance \in (0,1 - B^*(\rate))$ and functions $f_0,\ldots,f_{m-1} : \evaldomain \to \field$, if
+\uses{def:distance_from_code,def:reed_solomon_code,def:list_close_codewords}
+    Let $\code := \rscode[\field,\evaldomain,\degree]$ be a Reed Solomon code with rate $\rate:=\frac{\degree}{|\evaldomain|}$ and let $B^*(\rate):=\sqrt{\rate}$. For every $\distance \in (0,1 - B^*(\rate))$ and functions $f_0,\ldots,f_{m-1} : \evaldomain \to \field$, if
     \[
     \Pr_{r\leftarrow\field}\!\Bigl[
-      \Delta\Bigl(\sum_{j=1}^m r^{j - 1}\cdot {f_j},\rscode[\field,\evaldomain,\degree]\Bigr)
+      \Delta\Bigl(\sum_{j=0}^{m-1} r^j\cdot {f_j},\rscode[\field,\evaldomain,\degree]\Bigr)
       \le \delta
-    \Bigr]>\err'(\degree,\rate,\distance,m),
+    \Bigr]>\err^*(\degree,\rate,\distance,m),
     \]
     then there exists a subset $S \subseteq \evaldomain$ with $|S| \ge (1 - \delta)\cdot|L|$,
     and for every $i \in [m]$, there exists $u \in \rscode[\field,\evaldomain,\degree]$ such that $f_i(S) = u(S)$.
@@ -23,15 +23,15 @@
     \medskip
     
     \noindent
-    Above, $\err'(\degree,\rate,\distance,m)$ is defined as follows:
+    Above, $\err^*(\degree,\rate,\distance,m)$ is defined as follows:
     \begin{itemize}
         \item if $\distance \in \left(0,\frac{1-\rate}{2}\right]$ then
             \[
-                \err'(\degree,\rate,\distance,m)=\frac{(m-1)\cdot \degree}{\rate\cdot|\field|}
+                \err^*(\degree,\rate,\distance,m)=\frac{(m-1)\cdot \degree}{\rate\cdot|\field|}
             \]
         \item if $\distance \in \Bigl(\frac{1-\rate}{2}, 1-\sqrt{\rate}\Bigr)$ then
         \[
-            \err'(\degree,\rate,\distance,m)=\frac{(m-1)\cdot {\degree}^2}{|\field|\cdot{\Bigl(2\cdot\min{1-\sqrt{\rate}-\distance,\frac{\sqrt{\rate}}{20}}\Bigr)}^7}
+            \err^*(\degree,\rate,\distance,m)=\frac{(m-1)\cdot {\degree}^2}{|\field|\cdot{\Bigl(2\cdot\min\{1-\sqrt{\rate}-\distance,\frac{\sqrt{\rate}}{20}\}\Bigr)}^7}
         \]
     \end{itemize}
 \end{theorem}
@@ -41,7 +41,6 @@
 In the following, we start by defining the \emph{quotient} of a univariate function.
 \begin{definition}\label{def:quotient}
 \lean{quotient}
-%\uses{}
     Let $f:\evaldomain\to\field$ be a function, $S\subseteq\field$ be a set, and $\mathsf{Ans},\mathsf{Fill}: S\rightarrow\field$ be functions. Let $\hat{\mathsf{Ans}}\in\field^{<|S|}[X]$ be the (unique) polynomial with $\hat{\mathsf{Ans}}(x)=\mathsf{Ans}(x)$ for every $x\in S$, and let $\hat{V}_S\in\field^{<|S|+1}[X]$ be the unique non-zero polynomial with $\hat{V}_S(x)=0$ for every $x\in S$.
     The \emph{quotient function} $\mathsf{Quotient}\bigl(f,S,\mathsf{Ans},\mathsf{Fill}\bigr): \evaldomain\to\field$
     is defined as follows:
@@ -62,13 +61,11 @@ Next we define the polynomial quotient operator, which quotients a polynomial re
 
 \begin{definition}\label{def:poly_quotient}
 \lean{polyQuotient}
-\leanok
-%\uses{}
     Let $\hat{f}\in\field^{<\degree}[X]$ be a polynomial and $S\subseteq\field$ be a set, let $\hat{V}_S\in\field^{<|S|+1}[X]$ be the unique non-zero polynomial with $\hat{V}_S(x)=0$ for every $x\in S$. The \emph{polynomial quotient} $\mathsf{PolyQuotient}(\hat{f},S)\in\field^{<d-|S|}[X]$ is defined as follows:
     \[
             \mathsf{PolyQuotient}(\hat{f},S)(X):=\frac{\hat{f}(X)-\hat{\mathsf{Ans}}(X)}{\hat{V}_S(X)}
     \]
-
+where $\hat{Ans}\in\field^{<|S|}[X]$ is the unique non-zero polynomial with $\hat{Ans}(x)=\hat{f}(x)$ for every $x \in S$.
 \end{definition}
 
 The following lemma, implicit in prior works, shows that if the function is ``quotiented by the wrong value'', then its quotient is far from low-degree.
@@ -76,7 +73,7 @@ The following lemma, implicit in prior works, shows that if the function is ``qu
 \begin{lemma}\label{lemma:quotienting}
 \lean{quotienting}
 \leanok
-\uses{def:quotient,def:reed_solomon_code,def:list_decodable}
+\uses{def:quotient,def:reed_solomon_code,def:distance_from_code,def:list_close_codewords}
     Let $f:\evaldomain\rightarrow\field$ be a function, $\degree\in\N$ be the degree parameter, $\distance\in(0,1)$
     be a distance parameter, $S\subseteq\field$ be a set with $|S|<\degree$, and $\mathsf{Ans},\mathsf{Fill}:S\rightarrow\field$ are functions. Suppose that for every $u\in\listcode(f,\degree,\distance)$ there exists $x\in S$ with $\hat{u}(x)\neq\mathsf{Ans}(x)$. Then 
     \[
@@ -88,7 +85,7 @@ The following lemma, implicit in prior works, shows that if the function is ``qu
 \subsubsection{Out of domain sampling}\label{sec:out_of_domain_smpl}
 \begin{lemma}\label{lemma:out_of_domain_smpl}
 \lean{out_of_dom_smpl_1, out_of_dom_smpl_2}
-\uses{def:reed_solomon_code,def:list_decodable}
+\uses{def:reed_solomon_code,def:list_decodable,def:list_close_codewords}
     Let $f:\evaldomain\rightarrow\field$ be a function, $\degree\in\N$ be a degree parameter, $s\in\N$ be a repetition parameter, and $\distance\in[0,1]$ be a distance parameter. If $\rscode[\field,\evaldomain,\degree]$ be $(\degree,l)$-list decodable then
     \begin{align*}
     \Pr_{r_1,\ldots,r_s\gets\field\setminus\evaldomain}[\exists\text{ distinct }u,u'\in\listcode(f,\degree,\distance):\forall i\in[s],\hat{u}(r_i)=\hat{u}'(r_i)] & \leq \binom{l}{2}\cdot{\Big(\frac{\degree-1}{|\field|-|\evaldomain|}\Big)}^s \\
@@ -97,9 +94,7 @@ The following lemma, implicit in prior works, shows that if the function is ``qu
 \end{lemma}
 
 \subsubsection{Folding univariate functions}\label{sec:folding_uf}
-STIR relies on $k$-wise folding of functions and polynomials - this is similar to prior works, although presented in a slightly different form. As shown below, folding a function preserves proximity from the Reed-Solomon code with high probability. 
-
-The folding operator is based on the following fact, decomposing univariate polynomials into bivariate ones.
+STIR relies on $k$-wise folding of functions and polynomials - this is similar to prior works, although presented in a slightly different form. As shown below, folding a function preserves proximity from the Reed-Solomon code with high probability. The folding operator is based on the following fact, decomposing univariate polynomials into bivariate ones.
 
 \begin{lemma}\label{fact:poly_folding} 
 \lean{exists_unique_bivariate,degree_bound_bivariate}
@@ -136,7 +131,7 @@ The following lemma shows that the distance of a function is preserved under fol
 
 \begin{lemma}\label{lemma:folding}
 \lean{folding}
-\uses{def:reed_solomon_code,def:fn_folding}
+\uses{def:reed_solomon_code,def:fn_folding,def:dist_from_code}
     For every function $f:\evaldomain\rightarrow\field$, degree parameter $\degree\in\N$, folding parameter $k\in\N$, distance parameter $\distance\in(0,\min\{{\Delta(\mathsf{Fold}[f,k,r^{\mathsf{fold}}],\rscode[\field,{\evaldomain}^k, \degree/k]),1-{\mathsf{B}}^*(\rate)}\})$, letting $\rate:=\frac{\degree}{|\evaldomain|}$,
     \[
         \Pr_{r^{\mathsf{fold}}\gets\field}[\Delta(\mathsf{Fold}[f,k,r^{\mathsf{fold}}],\rscode[\field,{\evaldomain}^k, \degree/k])<\distance]>\err^*(\degree/k,\rate,\distance,k).
@@ -161,28 +156,27 @@ We show a new method for combining functions of varying degrees with minimal pro
 
 \begin{definition}\label{def:combine}
 \lean{combineInterm,combineFinal}
-%\uses{}
-    Given target degree $\degree^*\in\N$, shifting parameter $r\in\field$, functions $f_1,\ldots,f_m:\evaldomain\rightarrow\field$, and degrees $0\leq \degree_1,\ldots,\degree_m\leq {\degree}^*$, we define $\combine(\degree^*,r,(f_1,\degree_1),\ldots,(f_m,\degree_m)):\evaldomain\rightarrow\field$ as follows:
+    Given target degree $\degree^*\in\N$, shifting parameter $r\in\field$, functions $f_0,\ldots,f_{m-1}:\evaldomain\rightarrow\field$, and degrees $0\leq \degree_0,\ldots,\degree_{m-1}\leq {\degree}^*$, we define $\combine(\degree^*,r,(f_0,\degree_0),\ldots,(f_{m-1},\degree_{m-1})):\evaldomain\rightarrow\field$ as follows:
     \begin{align*}
-        \combine({\degree}^*,r,(f_1,\degree_1),\ldots,(f_m,\degree_m))(x)&:=\sum_{i=1}^{m}r_i\cdot f_i(x)\cdot \Big(\sum_{l=0}^{\degree^*-\degree_i}{(r\cdot x)}^l\Big) \\
+        \combine({\degree}^*,r,(f_0,\degree_0),\ldots,(f_{m-1},\degree_{m-1}))(x)&:=\sum_{i=0}^{m-1}r_i\cdot f_i(x)\cdot \Big(\sum_{l=0}^{\degree^*-\degree_i}{(r\cdot x)}^l\Big) \\
         &= 
         \begin{cases}
-            \sum_{i=1}^{m}r_i\cdot f_i(x)\cdot \Big(\frac{1-{(xr)}^{\degree^*-\degree_i+1}}{1-xr}\Big) & x\cdot r\neq 1\\
-            \sum_{i=1}^{m}r_i\cdot f_i(x)\cdot (\degree^*-\degree_i+1) & x\cdot r= 1
+            \sum_{i=0}^{m-1}r_i\cdot f_i(x)\cdot \Big(\frac{1-{(xr)}^{\degree^*-\degree_i+1}}{1-xr}\Big) & x\cdot r\neq 1\\
+            \sum_{i=0}^{m-1}r_i\cdot f_i(x)\cdot (\degree^*-\degree_i+1) & x\cdot r= 1
         \end{cases}
     \end{align*}
-Above, $r_1:=1$, $r_i:=r^{i-1+\sum_{j<i}(\degree^*-\degree_i)}$ for $i>1$.
+Above, $r_i:=r^{i-1+\sum_{j<i}(\degree^*-\degree_j)}$.
 \end{definition}
 
 \begin{definition}\label{def:deg_corr}
 \lean{degreeCorrInterm,degreeCorrFinal}
-\uses{def:combine}
+\uses{def:combine,def:reed_solomon_code,def:dist_from_code}
     Given target degree $\degree^*\in\N$, shifting parameter $r\in\field$, function $f:\evaldomain\rightarrow\field$, and degree $0\leq\degree\leq\degree^*$, we define $\degcorr(\degree^*,r,f,\degree)$ as follows.
     \[
-        \degcorr(\degree^*,r,f,\degree)(x):=f(x)\cdot\Bigg(\sum_{i=0}^{m}{(r\cdot x)}^l\Bigg)=
+        \degcorr(\degree^*,r,f,\degree)(x):=f(x)\cdot\Bigg(\sum_{l=0}^{\degree^*-\degree}{(r\cdot x)}^l\Bigg)=
         \begin{cases}
             f(x)\cdot\frac{1-{(xr)}^{\degree^*-\degree_i+1}}{1-xr} & x\cdot r\neq 1\\
-            f(x)\cdot (\degree^*-\degree_i+1) & x\cdot r= 1
+            f(x)\cdot (\degree^*-\degree_i+1) & x\cdot r = 1
         \end{cases}
     \]
 (Observe that $\degcorr(\degree^*,r,f,\degree)=\combine(\degree^*,r,(f,\degree))$.)
@@ -192,14 +186,14 @@ Below it is shown that combining multiple polynomials of varying degrees can be 
 
 \begin{lemma}\label{lemma:combine}
 \lean{combine}
-\uses{def:reed_solomon_code,def:combine,def:deg_corr}
-    Let $\degree^*$ be a target degree, $f_1,\ldots,f_m:\evaldomain\rightarrow\field$ be functions, $0\leq \degree_1,\ldots,\degree_m\leq \degree^*$ be degrees, $\distance\in\min{\{1-{\mathsf{B}}^*(\rate),1-\rate-1/|\evaldomain|\}}$ be a distance parameter, where $\rate=\degree^*/|\evaldomain|$. If
+\uses{def:reed_solomon_code,def:combine,def:deg_corr,thm:proximity_gap}
+    Let $\degree^*$ be a target degree, $f_0,\ldots,f_{m-1}:\evaldomain\rightarrow\field$ be functions, $0\leq \degree_0,\ldots,\degree_{m-1}\leq \degree^*$ be degrees, $\distance\in\min{\{1-{\mathsf{B}}^*(\rate),1-\rate-1/|\evaldomain|\}}$ be a distance parameter, where $\rate=\degree^*/|\evaldomain|$. If
     \[
-        \Pr_{r\gets\field}[\Delta(\combine(\degree^*,r,(f_1,\degree_1),\ldots,(f_m,\degree_m)),\rscode[\field,\evaldomain,\degree^*])]>\err^*(\degree^*,\rate,\distance,m\cdot(\degree^*+1)-\sum_{i=1}^{m}\degree_i),
+        \Pr_{r\gets\field}[\Delta(\combine(\degree^*,r,(f_0,\degree_0),\ldots,(f_{m-1},\degree_{m-1})),\rscode[\field,\evaldomain,\degree^*])]>\err^*(\degree^*,\rate,\distance,m\cdot(\degree^*+1)-\sum_{i=0}^{m-1}\degree_i),
     \] 
     then there exists $S\subseteq \evaldomain$ with $|S|\geq(1-\distance)\cdot|\evaldomain|$, and
     \[
-        \forall i\in[m],\exists u\in\rscode[\field,\evaldomain,\degree_i], f_i(S)=u(S).
+        \forall i\in[m-1],\exists u\in\rscode[\field,\evaldomain,\degree_i], f_i(S)=u(S).
     \]
     Note that this implies $\Delta(f_i,\rscode[\field,\evaldomain,\degree_i])<\distance$ for every $i$. Above, ${\mathsf{B}}^*$ and ${\err}^*$ are the proximity bound and error (respectively) described in Section~\ref{sec:proximity_gap}.
 \end{lemma}
@@ -208,6 +202,7 @@ Below it is shown that combining multiple polynomials of varying degrees can be 
 
 \begin{theorem}[STIR Main Theorem]\label{thm:stir}
 \lean{stir_main}
+\uses{def:reed_solomon_code,lemma:rnd_by_rnd_soundness}
     Consider the following ingrediants:
     \begin{itemize}
         \item A security parameter $\lambda\in\N$.
@@ -227,6 +222,7 @@ If $|\field|=\Omega(\frac{\lambda\cdot2^\lambda\cdot\degree^2\cdot{|\evaldomain|
 
 \begin{lemma}\label{lemma:rnd_by_rnd_soundness}
 \lean{stir_rbr_soundness}
+\uses{def:reed_solomon_code,def:list_decodability,lemma:folding,lemma:out_of_domain_smpl,lemma:quotienting,lemma:combine}
     Consider $(\field,M,\degree,k_0,\ldots,k_M,\evaldomain_0,\ldots,\evaldomain_M,t_0,\ldots,t_M)$ and for every $i\in\{0,\ldots,M\}$, let $\degree_i:=\frac{\degree}{\prod_{j<i}k^j}$ and $\rate_i:=\degree_i/|\evaldomain_i|$. For every $f\notin\rscode[\field,\evaldomain_0,\degree_0]$ and every $\distance_0,\ldots,\distance_M$ where
     \begin{itemize}
         \item $\distance_0\in(0,\Delta(f,\rscode[\field,\evaldomain_0,\degree_0])]\cap(0,1-{\mathsf{B}}^*(\rate_0))$
