@@ -51,6 +51,8 @@ import ArkLib.Data.Polynomial.EvenAndOdd
 import ArkLib.Data.Polynomial.Interface
 import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.Notation
+import ArkLib.Data.Tree.Binary
+import ArkLib.Data.Tree.General
 import ArkLib.Data.UniPoly.Basic
 import ArkLib.Data.UniPoly.BasicOld
 import ArkLib.Data.UniPoly.PolynomialReflection
