@@ -55,6 +55,7 @@ def checkMatrix (deg : ℕ) [Fintype ι] : Matrix (Fin (Fintype.card ι - deg)) 
 open Classical
 open Polynomial
 open Matrix
+open Distance
 
 variable {F ι ι' : Type*}
          {C : Set (ι → F)}
@@ -235,7 +236,8 @@ lemma rateOfLinearCode_eq_div [NeZero n] (inj : Function.Injective α) (h : n �
   rwa [rate, dim_eq_deg_of_le, length_eq_domain_size]
 
 @[simp]
-lemma dist_le_length (inj : Function.Injective α) : minDist (ReedSolomon.code ⟨α, inj⟩ n) ≤ m := by
+lemma dist_le_length (inj : Function.Injective α) :
+    minDist ((ReedSolomon.code ⟨α, inj⟩ n) : Set (Fin m → F)) ≤ m := by
   convert minDist_UB
   simp
 
@@ -287,7 +289,7 @@ open Finset in
   The minimal code distance of an RS code of length `ι` and dimension `deg` is `ι - deg + 1`
 -/
 theorem minDist [Field F] (inj : Function.Injective α) [NeZero n] (h : n ≤ m) :
-  minDist (ReedSolomon.code ⟨α, inj⟩ n) = m - n + 1 := by
+  minDist ((ReedSolomon.code ⟨α, inj⟩ n) : Set (Fin m → F)) = m - n + 1 := by
   have : NeZero m := by constructor; aesop
   refine le_antisymm ?p₁ ?p₂
   case p₁ =>

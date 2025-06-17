@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši
 -/
 
+import ArkLib.Data.CodingTheory.Basic
 import ArkLib.Data.CodingTheory.ReedSolomon
 import Mathlib.Order.CompletePartialOrder
 import Mathlib.Probability.Distributions.Uniform
@@ -117,13 +118,14 @@ notation "Λᵢ(" U "," IC "," r ")" => relHammingBallInterleavedCode U IC r
   the minimal distance of its underlying linear code.
 -/
 lemma minDist_eq_minDist [DecidableEq F] {IC : LawfulInterleavedCode κ ι F} :
-  LinearCode.minDist (F := F) IC.1.LC = minDist IC.1.MF := by sorry
+  Distance.minDist (IC.1.LC : Set (ι → F)) = minDist IC.1.MF := by sorry
 
 end InterleavedCode
 
 noncomputable section
 
 open InterleavedCode
+open Distance
 
 variable {F : Type*} [Field F] [Finite F] [DecidableEq F]
          {κ : Type*} [Fintype κ] {ι : Type*} [Fintype ι]
