@@ -7,6 +7,8 @@ Authors: Quang Dao
 import VCVio
 import ArkLib.Data.Math.Basic
 import ArkLib.CommitmentScheme.Basic
+import ArkLib.Data.Tree.Binary
+import ArkLib.Data.Tree.General
 import Mathlib.Data.Vector.Snoc
 
 /-!
@@ -312,59 +314,7 @@ end MerkleTree
 
 -- Alternative definition of Merkle tree using inductive type
 
-/-- A binary tree with (possibly null) values stored at both leaf and internal nodes. -/
-inductive BinaryTree (α : Type*) where
-  | leaf : α → BinaryTree α
-  | node : α → BinaryTree α → BinaryTree α → BinaryTree α
-  | nil : BinaryTree α
-  deriving Inhabited, Repr
-
--- Example:
---        1
---       / \
---      2   3
---     / \   \
---    4   5   6
---       /
---      7
--- A tree with values at both leaf and internal nodes
-def BinaryTree.example : BinaryTree (Fin 10) :=
-  .node 1
-    (.node 2
-      (.leaf 4)
-      (.node 5 (.leaf 7) .nil))
-    (.node 3
-      .nil
-      (.leaf 6))
-
-/-- A binary tree where only leaf nodes can have values.
-
-Used as input to Merkle tree construction. -/
-inductive LeafTree (α : Type*) where
-  | leaf : α → LeafTree α
-  | node : LeafTree α → LeafTree α → LeafTree α
-  | nil : LeafTree α
-deriving Inhabited, Repr
-
 variable {α : Type}
-
-/-- Get the root value of a Merkle tree, if it exists. -/
-def getRoot : BinaryTree α → Option α
-  | BinaryTree.nil => none
-  | BinaryTree.leaf a => some a
-  | BinaryTree.node a _ _ => some a
-
-/-- Find the path from root to a leaf with the given value. -/
-def findPath [DecidableEq α] (a : α) : BinaryTree α → Option (List Bool)
-  | BinaryTree.nil => none
-  | BinaryTree.leaf b => if a = b then some [] else none
-  | BinaryTree.node _ left right =>
-    match findPath a left with
-    | some path => some (false :: path)
-    | none =>
-      match findPath a right with
-      | some path => some (true :: path)
-      | none => none
 
 /-- Helper function to get the proof for a value at a given path. -/
 def getProofHelper [DecidableEq α] : List Bool → BinaryTree α → List α
@@ -372,18 +322,18 @@ def getProofHelper [DecidableEq α] : List Bool → BinaryTree α → List α
   | _, BinaryTree.leaf _ => []
   | [], BinaryTree.node _ _ _ => []
   | false :: rest, BinaryTree.node _ l r =>
-    match getRoot r with
+    match BinaryTree.getRoot r with
     | none => getProofHelper rest l
     | some v => v :: getProofHelper rest l
   | true :: rest, BinaryTree.node _ l r =>
-    match getRoot l with
+    match BinaryTree.getRoot l with
     | none => getProofHelper rest r
     | some v => v :: getProofHelper rest r
 
 /-- Generate a Merkle proof for a leaf with value 'a'.
     The proof consists of the sibling hashes needed to recompute the root. -/
 def generateProof [DecidableEq α] (a : α) (tree : BinaryTree α) : Option (List α) :=
-  match findPath a tree with
+  match BinaryTree.findPath a tree with
   | none => none
   | some path => some (getProofHelper path tree)
 
