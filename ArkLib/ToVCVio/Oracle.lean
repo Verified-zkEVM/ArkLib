@@ -109,4 +109,93 @@ theorem OracleSpec.append_range_right {ι₁ ι₂ : Type} {spec₁ : OracleSpec
 --       exact ⟨ queryBind' i q _ (fun a =>Classical.choose (hBind' a)), by simp [map_bind, h'] ⟩
 --     | failure' _ => by sorry
 
+
+
+/-!
+# ROM equivalent to implementation with a random function
+-/
+
+
+/--
+An oracle implementation that implements `MerkleTree.spec`
+by simply applying a provided function `hash` to the input.
+
+TODO:
+The random oracle model is usually defined by assuming that the hash function is randomly selected
+from the space of all functions from `α × α` to `α`.
+This is in contrast to the actual `randomOracle` implementation in VCVio,
+which works by sampling random outputs when a query is made, and then caching the result.
+Clearly the latter is the sensible way to implement things,
+but the former seems like a more natural definition for proofs, since it's stateless.
+Perhaps both should be provided, with theorems establishing equivalence.
+Either way, this feels like it should be generalized
+and moved to VCVio,
+~~not sure if its already there somewhwere~~ seems like it's similar to the above `runWithOracle`, though this is monadic
+
+-/
+def implement_with_function (hash : α × α -> α) :
+    QueryImpl (spec α) (StateT Unit (OracleComp (emptySpec))) where
+  impl q := match q with
+    | ⟨_, ⟨left, right⟩⟩ =>
+        do
+          let out := hash (left, right)
+          return out
+
+lemma implement_with_function_impl_eq {hash : α × α -> α} (q : OracleQuery (spec α) α) :
+    (implement_with_function α hash).impl q = match q with
+      | ⟨_, ⟨left, right⟩⟩ => do
+          let out := hash (left, right)
+          return out := by
+  cases q with
+  | query i t => rfl
+
+theorem randomOracle_neverFails_of_implement_with_function_neverFails {β} [SelectableType α]
+    (oa : OracleComp (spec α) β) (preexisting_cache : (spec α).QueryCache)
+    :
+    (∀ hash : α × α -> α,
+      ((oa.simulateQ (implement_with_function α hash)).run ()).neverFails)
+    -- This is also fine. We are not in danger of queries to the same hash returning different values because now we are on the empty spec []ₒ (i.e., there are no oracles, no queries are made)
+    →
+    ((oa.simulateQ (randomOracle)).run preexisting_cache).neverFails
+    -- I think this is the right way to write it, we are not in danger of queries to the same hash returning different values because the lifting to randomOracle ensures each value is queried at most once
+      := by
+  intro h_impl
+
+  induction oa using OracleComp.inductionOn generalizing preexisting_cache with
+  | pure x => simp only [simulateQ_pure, StateT.run_pure, neverFails_pure]
+  | failure =>
+    simp at h_impl
+  | query_bind q t r ih =>
+    simp only [range_def, simulateQ_bind, simulateQ_query, QueryImpl.withCaching_apply,
+      unifOracle.apply_eq, LawfulMonad.bind_assoc, StateT.run_bind, StateT.run_get,
+      Function.comp_apply, pure_bind, neverFails_bind_iff, Prod.forall]
+    simp at h_impl
+    cases preexisting_cache q t with
+    | none =>
+      -- If the query is not in the cache, we can just use the implementation with a function
+      simp
+      intro a
+      apply ih
+      intros hash
+      specialize h_impl hash -- does this need to be modified?
+      rcases h_impl with ⟨h_impl1, h_impl2⟩
+      apply h_impl2
+      clear h_impl2
+      -- simp [support, supportWhen]
+      -- simp [neverFails, neverFailsWhen, allWhen] at h_impl1
+      -- set query_q_t := query (spec := spec α) q t
+      simp [implement_with_function_impl_eq] at h_impl1
+      cases query q t with
+      | query i t' =>
+        -- We can use the implementation with a function, since it never fails
+        simp only [implement_with_function_impl_eq, Prod.mk.eta, StateT.run_pure, support_pure,
+          Set.mem_singleton_iff, Prod.mk.injEq, and_true]
+
+        -- simp [implement_with_function_impl_eq] at h_impl1
+
+        -- We can use the implementation with a function, since it never fails
+        -- exact h_impl1
+        sorry
+
+
 end OracleComp
