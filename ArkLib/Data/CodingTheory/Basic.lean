@@ -696,7 +696,7 @@ lemma dist_eq_minWtCodewords [CommRing F] {LC : LinearCode ι F} :
     unfold Code.minDist minWtCodewords
     refine congrArg _ (Set.ext fun _ ↦ ⟨fun ⟨u, _, v, _⟩ ↦ ⟨u - v, ?p₁⟩, fun _ ↦ ⟨0, ?p₂⟩⟩) <;>
     aesop (add simp [hammingDist_eq_wt_sub, sub_eq_zero])
-    
+
 
 open Finset in
 

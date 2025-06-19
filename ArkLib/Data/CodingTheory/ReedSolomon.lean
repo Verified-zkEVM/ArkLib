@@ -55,7 +55,7 @@ def checkMatrix (deg : ℕ) [Fintype ι] : Matrix (Fin (Fintype.card ι - deg)) 
 open Classical
 open Polynomial
 open Matrix
-open Distance
+open Code LinearCode
 
 variable {F ι ι' : Type*}
          {C : Set (ι → F)}
@@ -238,7 +238,7 @@ lemma rateOfLinearCode_eq_div [NeZero n] (inj : Function.Injective α) (h : n �
 @[simp]
 lemma dist_le_length (inj : Function.Injective α) :
     minDist ((ReedSolomon.code ⟨α, inj⟩ n) : Set (Fin m → F)) ≤ m := by
-  convert minDist_UB
+  convert dist_UB
   simp
 
 end
@@ -299,7 +299,7 @@ theorem minDist [Field F] (inj : Function.Injective α) [NeZero n] (h : n ≤ m)
     zify [dist_le_length] at distUB
     omega
   case p₂ =>
-    rw [minDist_eq_minWtCodewords]
+    rw [dist_eq_minWtCodewords]
     apply le_csInf (by use m, constantCode 1 _; simp)
     intro b ⟨msg, ⟨p, p_deg, p_eval_on_α_eq_msg⟩, msg_neq_0, wt_c_eq_b⟩
     let zeroes : Finset _ := {i | msg i = 0}

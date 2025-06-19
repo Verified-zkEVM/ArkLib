@@ -125,7 +125,7 @@ end InterleavedCode
 noncomputable section
 
 open InterleavedCode
-open Distance
+open Code
 
 variable {F : Type*} [Field F] [Finite F] [DecidableEq F]
          {κ : Type*} [Fintype κ] {ι : Type*} [Fintype ι]

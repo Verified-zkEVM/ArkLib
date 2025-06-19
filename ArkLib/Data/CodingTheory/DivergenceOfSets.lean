@@ -14,7 +14,7 @@ namespace DivergenceOfSets
 
 noncomputable section
 
-open Classical RelativeHamming
+open Classical Code
 
 variable {ι : Type*} [Fintype ι] [Nonempty ι]
          {F : Type*}
