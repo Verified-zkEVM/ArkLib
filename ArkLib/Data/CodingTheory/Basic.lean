@@ -707,7 +707,7 @@ lemma dist_UB [CommRing F] {LC : LinearCode ι F} :
           s_def ▸ le_trans (card_le_card (subset_univ _)) (le_refl _)
 
 theorem singletonBound [Semiring F] (LC : LinearCode ι F) :
-  dim LC ≤ length LC - Code.dist (LC : Set (ι → F)) + 1 := by sorry
+  dim LC ≤ length LC - Code.minDist (LC : Set (ι → F)) + 1 := by sorry
 
 
 /-- The interleaving of a linear code `LC` over index set `ι` is the submodule spanned by
