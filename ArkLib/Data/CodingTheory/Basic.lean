@@ -26,10 +26,10 @@ import ArkLib.Data.Fin.Basic
 
   ## Main Definitions
 
-  - `codeDist C`: The Hamming distance of a code `C`, defined as the infimum (in `ℕ∞`) of the
+  - `dist C`: The Hamming distance of a code `C`, defined as the infimum (in `ℕ∞`) of the
     Hamming distances between any two distinct elements of `C`. This is noncomputable.
 
-  - `codeDist' C`: A computable version of `codeDist C`, assuming `C` is a `Fintype`.
+  - `dist' C`: A computable version of `dist C`, assuming `C` is a `Fintype`.
 
   We define the block length, rate, and distance of `C`. We prove simple properties of linear codes
   such as the singleton bound.
@@ -76,7 +76,7 @@ noncomputable def distFromCode (u : n → R) (C : Set (n → R)) : ℕ∞ :=
 notation "Δ₀(" u ", " C ")" => distFromCode u C
 
 noncomputable def minDist (C : Set (n → R)) : ℕ :=
-  sInf { d | ∃ u ∈ C, ∃ v ∈ C, u ≠ v ∧ hammingDist u v = d }
+  sInf {d | ∃ u ∈ C, ∃ v ∈ C, u ≠ v ∧ hammingDist u v = d}
 
 @[simp]
 theorem dist_empty : ‖ (∅ : Set (n → R) ) ‖₀ = 0 := by simp [dist]
