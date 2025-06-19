@@ -6,10 +6,11 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland, 
 
 import ArkLib.Data.CodingTheory.Prelims
 import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.Analysis.Normed.Field.Lemmas
+import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Data.ENat.Lattice
 import Mathlib.InformationTheory.Hamming
 import Mathlib.Topology.MetricSpace.Infsep
+import Mathlib.Tactic.Qify
 
 import ArkLib.Data.Fin.Basic
 
@@ -464,8 +465,8 @@ section
 
 variable [Nonempty ι] [DecidableEq F]
 
-def dist (u v : ι → F) : ℚ :=
-  (hammingDist u v : ℚ) / (Fintype.card ι : ℚ)
+def dist (u v : ι → F) : ℚ≥0 :=
+  hammingDist u v / Fintype.card ι
 
 /--
   `δᵣ(u,v)` denotes the relative Hamming distance between vectors `u` and `v`.
@@ -478,6 +479,7 @@ notation "δᵣ(" u ", " v ")" => dist u v
 @[simp]
 lemma relHammingDist_le_one : δᵣ(u, v) ≤ 1 := by
   unfold dist
+  qify
   rw [div_le_iff₀ (by simp)]
   simp [hammingDist_le_card_fintype]
 
@@ -487,6 +489,7 @@ lemma relHammingDist_le_one : δᵣ(u, v) ≤ 1 := by
 @[simp]
 lemma zero_le_relHammingDist : 0 ≤ δᵣ(u, v) := by
   unfold dist
+  qify
   rw [le_div_iff₀ (by simp)]
   simp
 
@@ -495,8 +498,8 @@ end
 /--
   The range of the relative Hamming distance function.
 -/
-def relHammingDistRange (ι : Type*) [Fintype ι] : Set ℚ :=
-  {d : ℚ | ∃ d' : ℕ, d' ≤ Fintype.card ι ∧ d = d' / Fintype.card ι}
+def relHammingDistRange (ι : Type*) [Fintype ι] : Set ℚ≥0 :=
+  {d : ℚ≥0 | ∃ d' : ℕ, d' ≤ Fintype.card ι ∧ d = d' / Fintype.card ι}
 
 /--
   The range of the relative Hamming distance is well-defined.
@@ -515,7 +518,7 @@ lemma finite_relHammingDistRange [Nonempty ι] : (relHammingDistRange ι).Finite
     finite_iff_exists_equiv_fin.2
       ⟨Fintype.card ι + 1,
         ⟨⟨
-        fun ⟨s, _⟩ ↦ ⟨(s * Fintype.card ι).num.toNat, by aesop (add safe (by omega))⟩,
+        fun ⟨s, _⟩ ↦ ⟨(s * Fintype.card ι).num, by aesop (add safe (by omega))⟩,
         fun n ↦ ⟨n / Fintype.card ι, by use n; simp [Nat.le_of_lt_add_one n.2]⟩,
         fun ⟨_, _, _, h₂⟩ ↦ by field_simp [h₂],
         fun _ ↦ by simp
@@ -535,7 +538,7 @@ variable [DecidableEq F]
 /--
   The set of possible distances between distinct codewords in a code.
 -/
-def possibleDists (C : Set (ι → F)) : Set ℚ :=
+def possibleDists (C : Set (ι → F)) : Set ℚ≥0 :=
   Distance.possibleDists C dist
 
 /--
@@ -560,7 +563,7 @@ open Classical in
 /--
   The minimum relative Hamming distance of a code.
 -/
-def minRelHammingDistCode (C : Set (ι → F)) : ℚ :=
+def minRelHammingDistCode (C : Set (ι → F)) : ℚ≥0 :=
   haveI : Fintype (possibleDists C) := @Fintype.ofFinite _ finite_possibleDists
   if h : (possibleDists C).Nonempty
   then (possibleDists C).toFinset.min' (Set.toFinset_nonempty.2 h)
@@ -597,7 +600,7 @@ open Classical in
 /--
   The relative Hamming distance from a vector to a code.
 -/
-def relHammingDistToCode [Nonempty ι] [DecidableEq F] (w : ι → F) (C : Set (ι → F)) : ℚ :=
+def relHammingDistToCode [Nonempty ι] [DecidableEq F] (w : ι → F) (C : Set (ι → F)) : ℚ≥0 :=
   if h : (Distance.possibleDistsToC w C dist).Nonempty
   then Distance.distToCode w C dist finite_possibleDistsToC |>.get (p h)
   else 0
@@ -630,7 +633,6 @@ lemma relHammingDistToCode_mem_relHammingDistRange [Nonempty ι] [DecidableEq F]
             (by simp_rw [Distance.distToCode_of_nonempty (h₁ := by simp) (h₂ := h)]
                 simp [←WithTop.some_eq_coe]
                 have := Finset.min'_mem
-                          (α := ℚ)
                           (s := (Distance.possibleDistsToC c C dist).toFinset)
                           (H := by simpa)
                 simpa)
@@ -652,6 +654,9 @@ variable {F : Type*}
 
 noncomputable def wt [DecidableEq F] [Zero F]
   (v : ι → F) : ℕ := #{i | v i ≠ 0}
+
+lemma wt_eq_hammingNorm [DecidableEq F] [Zero F] {v : ι → F} :
+  wt v = hammingNorm v := rfl
 
 lemma wt_eq_zero_iff [DecidableEq F] [Zero F] {v : ι → F} :
   wt v = 0 ↔ Fintype.card ι = 0 ∨ ∀ i, v i = 0 := by
@@ -686,8 +691,8 @@ lemma rank_eq_dim_fromColGenMat [CommRing F] {G : Matrix κ ι F} :
 
 def length [Semiring F] (_ : LinearCode ι F) : ℕ := Fintype.card ι
 
-noncomputable def rate [Semiring F] (LC : LinearCode ι F) : ℚ :=
-  (dim LC : ℚ) / (length LC : ℚ)
+noncomputable def rate [Semiring F] (LC : LinearCode ι F) : ℚ≥0 :=
+  (dim LC : ℚ≥0) / length LC
 
 /--
   `ρ LC` is the rate of the linear code `LC`.
