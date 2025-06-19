@@ -4,11 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.OracleReduction.Security.Basic
 import ArkLib.ProofSystem.ConstraintSystem.R1CS
 import ArkLib.Data.MvPolynomial.Multilinear
 import ArkLib.ProofSystem.Sumcheck.Spec.General
--- import ArkLib.ProofSystem.Components
+import ArkLib.ProofSystem.Component.SendWitness
+import ArkLib.ProofSystem.Component.RandomQuery
+import ArkLib.ProofSystem.Component.SendClaim
+import ArkLib.ProofSystem.Component.CheckClaim
 
 /-!
   # The Spartan PIOP (Polynomial Interactive Oracle Proof)
@@ -94,25 +96,36 @@ namespace Spartan
 
 noncomputable section
 
-namespace Spec
-
-/-!
-  ## First message
-  Prover sends `MLE 𝕨 : R⦃≤ 1⦄[X Fin ℓ_k]`.
--/
-
 structure PublicParams where
   ℓ_n : ℕ
   ℓ_m : ℕ
   ℓ_k : ℕ
 
-def sizeR1CS (pp : PublicParams) : R1CS.Size := {
+def PublicParams.toSizeR1CS (pp : PublicParams) : R1CS.Size := {
   m := 2 ^ pp.ℓ_m
   n_x := 2 ^ pp.ℓ_n - 2 ^ pp.ℓ_k
   n_w := 2 ^ pp.ℓ_k
 }
 
+namespace Spec
+
 variable (R : Type) [CommSemiring R] [IsDomain R] [Fintype R] (pp : PublicParams)
+
+/-- The input types and relation is just the R1CS relation for the given size -/
+
+abbrev InputStatement (pp : PublicParams) := R1CS.Statement R pp.toSizeR1CS
+
+abbrev InputOracleStatement (pp : PublicParams) := R1CS.OracleStatement R pp.toSizeR1CS
+
+abbrev InputWitness (pp : PublicParams) := R1CS.Witness R pp.toSizeR1CS
+
+abbrev inputRelation (pp : PublicParams) := R1CS.relation R pp.toSizeR1CS
+
+/-!
+  ## First message
+  We invoke the protocol `SendSingleWitness` to send the witness `𝕨` to the verifier.
+-/
+
 
 @[reducible]
 def WitnessMLE (pp : PublicParams) : Type := R⦃≤ 1⦄[X Fin pp.ℓ_k]
@@ -124,44 +137,48 @@ open ProtocolSpec in
 instance : ProverOnly (pSpecFirstMessage R pp) where
   prover_first' := by simp [pSpecFirstMessage]
 
-def relationR1CS := R1CS.relation R (sizeR1CS pp)
+def relationR1CS := R1CS.relation R (pp.toSizeR1CS)
 
-def proverFirstMessage : OracleProver (pSpecFirstMessage R pp) []ₒ
-    (R1CS.Statement R (sizeR1CS pp)) (R1CS.Witness R (sizeR1CS pp))
-    (R1CS.Statement R (sizeR1CS pp)) Unit
-    (R1CS.OracleStatement R (sizeR1CS pp))
-    (Sum.elim (R1CS.OracleStatement R (sizeR1CS pp)) (fun _ : Unit => WitnessMLE R pp)) where
-
-  PrvState
-  | ⟨0, _⟩ => R1CS.Statement R (sizeR1CS pp) × R1CS.Witness R (sizeR1CS pp)
-  | ⟨1, _⟩ => Fin pp.ℓ_m → R
-
-  input := fun _ => sorry
-
-  sendMessage := fun _ => sorry
-
-  receiveChallenge := fun _ => sorry
-
-  output := fun _ => sorry
-
--- def verifierFirstMessage : OracleVerifier (pSpecFirstMessage R pp) []ₒ
---     (R1CS.Statement R (sizeR1CS pp)) (R1CS.Statement R (sizeR1CS pp))
---     (R1CS.OracleStatement R (sizeR1CS pp))
---     (Sum.elim (R1CS.OracleStatement R (sizeR1CS pp)) (fun _ : Unit => WitnessMLE R pp)) where
-
---   verify := sorry
+/-!
+  ## First challenge
+  We invoke the protocol `RandomQuery` on the "virtual" polynomial:
+    `𝒢(Z) = ∑_{x} eq ⸨Z, x⸩ * (A ⸨x⸩ * B ⸨x⸩ - C ⸨x⸩)`
+-/
 
 def pSpecFirstChallenge : ProtocolSpec 1 := ![(.V_to_P, Fin pp.ℓ_m → R)]
 
--- First sumcheck
+/-!
+  ## First sum-check
+  We invoke the sum-check protocol the "virtual" polynomial:
+    `ℱ(X) = eq ⸨τ, X⸩ * (A ⸨X⸩ * B ⸨X⸩ - C ⸨X⸩)`
+-/
 
--- Send values `v_A, v_B, v_C`
+/-!
+  ## Send evaluation claims
 
--- Second sumcheck
+  We send the evaluation claims `v_A, v_B, v_C` to the verifier.
 
--- Send values ...
+  (i.e. invoking `SendClaim` on these "virtual" values)
+-/
 
--- Final check
+/-!
+  ## Random linear combination challenges
+
+  The verifier sends back random linear combination challenges `r_A, r_B, r_C : R`.
+-/
+
+/-!
+  ## Second sum-check
+  We invoke the sum-check protocol the "virtual" polynomial:
+    `ℳ(Y) = r_A * (MLE A) ⸨r_x, Y⸩ * (MLE 𝕫) ⸨Y⸩ + r_B * (MLE B) ⸨r_x, Y⸩ * (MLE 𝕫) ⸨Y⸩`
+      `+ r_C * (MLE C) ⸨r_x, Y⸩ * (MLE 𝕫) ⸨Y⸩`
+-/
+
+/-!
+  ## Final check
+
+  We invoke the `CheckClaim` protocol to check the two evaluation claims.
+-/
 
 end Spec
 
