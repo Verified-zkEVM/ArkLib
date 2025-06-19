@@ -21,7 +21,7 @@ variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
          [∀ i : Fin (M+1), DecidableEq (ι i)]
 
 /-- ** Per‑round protocol parameters. **
-For a fixed depth `M+1`, the reduction runs `M+1` rounds.
+For a fixed depth `M`, the reduction runs `M+1` rounds.
 In round `i ∈ {0,…,M}` we fold by a factor `foldingParamᵢ`,
 evaluate on the point set `ιᵢ` through the embedding `φᵢ : ιᵢ ↪ F`,
 and repeat certain proximity checks `repeatParamᵢ` times. -/
@@ -109,27 +109,36 @@ def predFin {n : ℕ} (i : Fin n) (h : i.val ≠ 0) : Fin n :=
 
 section RBR
 
-open OracleComp OracleSpec ProtocolSpec NNRat
+open NNRat OracleComp OracleSpec ProtocolSpec VectorIOP
 
-variable {n : ℕ}
-
-/--Statement for the WHIR Vector IOPP consisting of a field `F`, evaluation domain `ι` and
-  degree parameter `varCount` -/
-structure Statement
-  (F : Type)[Field F][Fintype F][DecidableEq F]
-  (ι : Type) [Fintype ι]
-  (varCount : ℕ)
-
-/--`OStmtOut` defines the oracle message type for a multi-indexed setting:
-  given index type `ιₛ`, base input type `ι`, and field `F`, the output type at each index `i : ιₛ`
+/--`OracleStatement` defines the oracle message type for a multi-indexed setting:
+  given base input type `ι`, and field `F`, the output type at each index
   is a function `ι → F` representing an evaluation over `ι`.-/
 @[reducible]
-def OStmtOut (ιₛ ι F : Type) : ιₛ → Type :=
+def OracleStatement (ι F : Type) : Unit → Type :=
     fun _ => ι → F
+
+/-- Provides a default OracleInterface instance that leverages
+  the oracle statement defined above. The oracle simply applies
+  the function `f : ι → F` to the query input `i : ι`,
+  producing the response. -/
+instance {ι : Type} : OracleInterface (OracleStatement ι F ()) where
+  Query := ι
+  Response := F
+  oracle := fun f i => f i
+
+/-- WHIR relation: the oracle's output is δᵣ-close to a codeword of a smooth ReedSolomon code
+with number of variables at most `varCount` over domain `φ`, within error `err`.-/
+def whirRelation
+    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    (varCount : ℕ) (φ : ι ↪ F) [Smooth φ] (err : ℝ)
+    : (Unit × ∀ i, (OracleStatement ι F i)) → Unit → Prop :=
+  fun ⟨_, oracle⟩ _ => δᵣ(oracle (), smoothCode φ varCount) ≤ err
 
 /-- **Round-by-round soundness of the WHIR Vector IOPP**-/
 theorem whir_rbr_soundness
-    [VCVCompatible F] {d dstar : ℕ} {ιₛ ιₒ : Type}
+    [VCVCompatible F] {d dstar : ℕ}
   -- P : set of M+1 parameters including foldingParamᵢ, varCountᵢ, φᵢ, repeatParamᵢ,
   -- where foldingParamᵢ > 0
     {P: Params ι F} {S : ∀ i : Fin (M+1), Finset (ι i)}
@@ -142,22 +151,30 @@ theorem whir_rbr_soundness
     {wPoly₀ : MvPolynomial (Fin (m_0 + 1)) F} {δ : ℝ}
     [Smooth (P.φ 0)] [Nonempty (ι 0)]
   -- ∀ f₀ : ι₀ → F, f₀ ∉ CRS[F,ι₀,m₀,wPoly₀,σ₀]
-    (h_not_code : ∀ f_0 : (ι 0) → F,
-      f_0 ∉ (constrainedCode (P.φ 0) m_0 wPoly₀ σ₀))
+    (h_not_code : ∀ f_0 : (ι 0) → F, f_0 ∉ (constrainedCode (P.φ 0) m_0 wPoly₀ σ₀))
   -- ∀ f₀ : ι₀ → F, δ₀ < δᵣ(f₀, CRS[F,ι₀,m₀,wPoly₀,σ₀]),
   -- where δᵣ denotes the relative Hamming distance
     (hδ₀Lt : ∀ f_0 : (ι 0) → F,
-      (h.δ 0) <
-        (δᵣ(f_0, (constrainedCode (P.φ 0) m_0 wPoly₀ σ₀)) : ℝ))
-    (vPSpec : ProtocolSpec.VectorSpec n)
-    (oSpec : OracleSpec ιₒ)
-    [oSpec.FiniteRange] [O : ∀ i, OracleInterface (OStmtOut ιₛ (ι 0) F i) ]
+      (h.δ 0) < (δᵣ(f_0, (constrainedCode (P.φ 0) m_0 wPoly₀ σ₀)) : ℝ))
     (ε_fold : (i : Fin (M+1)) → Fin (P.foldingParam i) → ℝ≥0) (ε_out : Fin (M+1) → ℝ≥0)
-    (ε_shift : Fin (M+1) → ℝ≥0) (ε_fin : ℝ≥0) :
-    -- ∃ a Vector IOPP π with Statement = (F ι₀ varCount), Witness = Unit, OStmtOut = (ιₛ ι₀ F)
+    (ε_shift : Fin M → ℝ≥0) (ε_fin : ℝ≥0) :
+    ∃ n : ℕ,
+    -- There exists an `n`-message vector IOPP,
+    ∃ vPSpec : ProtocolSpec.VectorSpec n,
+    -- such that there are `2 * M + 2` challenges from the verifier to the prover,
+    Fintype.card (vPSpec.ChallengeIdx) = 2 * M + 2 ∧
+    -- ∃ a Vector IOPP π with Statement = Unit, Witness = Unit, OracleStatement = (ι₀ F)
       ∃ π :
-        VectorIOP vPSpec F oSpec (Statement F (ι 0) (P.varCount 0))
-          Unit (OStmtOut ιₛ (ι 0) F),
+        VectorIOP vPSpec F []ₒ Unit Unit (OracleStatement (ι 0) F),
+        let max_ε_folds : (i : Fin (M+1)) → ℝ≥0 :=
+          fun i => (univ : Finset (Fin (P.foldingParam i))).sup (ε_fold i)
+        let ε_rbr : vPSpec.ChallengeIdx → ℝ≥0 :=
+          fun _ => (univ.image max_ε_folds ∪ {ε_fin} ∪ univ.image ε_out ∪ univ.image ε_shift).max'
+            (by simp)
+        (IsSecureWithGap (whirRelation m_0 (P.φ 0) 0)
+                         (whirRelation m_0 (P.φ 0) (h.δ 0))
+                          ε_rbr π) ∧
+
         let maxDeg := (Finset.univ : Finset (Fin m_0)).sup (fun i => wPoly₀.degreeOf (Fin.succ i))
       -- dstar = (1 + deg_Z(wPoly₀) + max_{i < m_0} deg_X(wPoly₀))
         let dstar := 1 + (wPoly₀.degreeOf 0) + maxDeg
@@ -167,23 +184,26 @@ theorem whir_rbr_soundness
         let _ : ∀ j : Fin (P.foldingParam 0), Fintype (indexPowT (S 0) (P.φ 0) j) := h.inst1 0
         let _ : ∀ j : Fin (P.foldingParam 0), Nonempty (indexPowT (S 0) (P.φ 0) j) := h.inst2 0
 
-        -- ε_fold(0,j) ≤ dstar • dist(0,j-1) / |F| + errStar(C_0j, 2, δ₀)
+        -- ε_fold(0,j) ≤ dstar * dist(0,j-1) / |F| + errStar(C_0j, 2, δ₀)
         ∀ j : Fin (P.foldingParam 0),
         (h_j : j.val ≠ 0) →
           let errStar_0 j := h.errStar 0 j (h.C 0 j) (h.Gen 0 j).parℓ (h.δ 0)
           let j_pred : Fin (P.foldingParam 0) := predFin j h_j
-          ε_fold 0 j ≤ ((dstar • (h.dist 0 j_pred)) / Fintype.card F) + (errStar_0 j)
+          ε_fold 0 j ≤ ((dstar * (h.dist 0 j_pred)) / Fintype.card F) + (errStar_0 j)
         ∧
-        -- ε_out(i) ≤ 2^(varCountᵢ) • dist(i,0)^2 / 2 • |F|
+        -- ε_out(i) ≤ 2^(varCountᵢ) * dist(i,0)^2 / 2 * |F|
         ∀ i : Fin (M+1),
           ε_out i ≤
-            2^(P.varCount i) • (h.dist i ⟨0, Fact.out⟩)^2 / (2 • Fintype.card F)
+            2^(P.varCount i) * (h.dist i ⟨0, Fact.out⟩)^2 / (2 * Fintype.card F)
         ∧
         -- ε_shift(i) ≤ (1 - δ_{i-1})^(repeatParam_{i-1})
-        --  + (dist(i,0) • (repeatParam_{i-1} + 1)) / |F|
-        ∀ i : Fin (M+1), (h_i : i.val ≠ 0) → let i_pred : Fin (M+1) := predFin i h_i
-        ε_shift i ≤ (1 - (h.δ i_pred))^(P.repeatParam i_pred)
-                      + ((h.dist i ⟨0, Fact.out⟩) • (P.repeatParam i_pred) + 1) / Fintype.card F
+        --                + (dist(i,0) * (repeatParam_{i-1} + 1)) / |F|
+        -- Note here that `i : Fin M`, so we need to cast into `Fin (M + 1)` for indexing of
+        -- `h.δ`, `h.dist` and `P.repeatParam`.
+        -- To get `i`, we use `.castSucc`, whereas to get `i + 1`, we use `.succ`.
+        ∀ i : Fin M,
+        ε_shift i ≤ (1 - (h.δ i.castSucc))^(P.repeatParam i.castSucc)
+            + ((h.dist i.succ ⟨0, Fact.out⟩) * (P.repeatParam i.castSucc) + 1) / Fintype.card F
         ∧
 
         -- necessary typeclasses for Gen_ij stating finiteness and non-emptiness of underlying ιᵢ^2ʲ
@@ -192,12 +212,12 @@ theorem whir_rbr_soundness
         let _ : ∀ i : Fin (M+1), ∀ j : Fin (P.foldingParam i),
           Nonempty (indexPowT (S i) (P.φ i) j) := h.inst2
 
-        -- ε_fold(i,j) ≤ d • dist(i,j-1) / |F| + errStar(C_ij,2,δᵢ)
+        -- ε_fold(i,j) ≤ d * dist(i,j-1) / |F| + errStar(C_ij,2,δᵢ)
         ∀ i : Fin (M+1), ∀ j : Fin (P.foldingParam i),
         (h_j : j.val ≠ 0) →
           let errStar i j := h.errStar i j (h.C i j) (h.Gen i j).parℓ (h.δ i)
           let j_pred : Fin (P.foldingParam i) := predFin j h_j
-          ε_fold i j ≤ d • (h.dist i j_pred) / Fintype.card F + errStar i j
+          ε_fold i j ≤ d * (h.dist i j_pred) / Fintype.card F + errStar i j
         ∧
         -- ε_fin ≤ (1 - δ_{M})^(repeatParam_{M})
         ε_fin ≤ (1 - (h.δ M))^(P.repeatParam M)

@@ -27,14 +27,14 @@ noncomputable def extract_x
   element `y ∈ LpowT S (k+1)`, hence `∃ x ∈ S, s.t. y = x ^ 2^(k+1)` and `α ∈ F`.
   It obtains the square root of y as `xPow := extract_x S φ k y`,
     here xPow is of the form `x ^ 2^k`.
-  It returns the value `f(xPow) + f(- xPow)/2 + α • (f(xPow) - f(- xPow))/ 2•xPow`. -/
+  It returns the value `f(xPow) + f(- xPow)/2 + α * (f(xPow) - f(- xPow))/ 2 * xPow`. -/
 noncomputable def foldf (S : Finset ι) (φ : ι ↪ F)
   {k : ℕ} [ Neg (indexPowT S φ k) ] (y : indexPowT S φ (k+1))
   (f : indexPowT S φ k → F) (α : F) : F :=
   let xPow := extract_x S φ k y
   let fx := f xPow
   let f_negx := f (-xPow)
-  (fx + f_negx) / 2 + α • ((fx - f_negx) / (2 * (xPow.val : F)))
+  (fx + f_negx) / 2 + α * ((fx - f_negx) / (2 * (xPow.val : F)))
 
 /--the function fold_k_core runs a recursion,
     for a function `f : ι → F` and a vector `αs` of size i
