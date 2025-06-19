@@ -51,7 +51,7 @@ def checkMatrix (deg : ℕ) [Fintype ι] : Matrix (Fin (Fintype.card ι - deg)) 
 --   simp [codeByGenMatrix, code]
 --   rw [LinearMap.range_eq_map]
 --   sorry
-
+end ReedSolomon
 open Classical
 open Polynomial
 open Matrix
@@ -340,18 +340,18 @@ private noncomputable def interpolate : (ι → F) →ₗ[F] F[X] :=
   Lagrange.interpolate univ domain
 
 /-- The linear map that maps a ReedSolomon codeword to its associated polynomial -/
-noncomputable def decode : (code domain deg) →ₗ[F] F[X] :=
+noncomputable def decode : (ReedSolomon.code domain deg) →ₗ[F] F[X] :=
   domRestrict
     (interpolate (domain := domain))
-    (code domain deg)
+    (ReedSolomon.code domain deg)
 
 /- ReedSolomon codewords are decoded into degree < deg polynomials-/
-lemma decoded_polynomial_lt_deg (c : code domain deg) :
+lemma decoded_polynomial_lt_deg (c : ReedSolomon.code domain deg) :
   decode c ∈ (degreeLT F deg : Submodule F F[X]) := by sorry
 
 /-- The linear map that maps a Reed Solomon codeword to its associated polynomial
     of degree < deg -/
-noncomputable def decodeLT : (code domain deg) →ₗ[F] (Polynomial.degreeLT F deg) :=
+noncomputable def decodeLT : (ReedSolomon.code domain deg) →ₗ[F] (Polynomial.degreeLT F deg) :=
   codRestrict
     (Polynomial.degreeLT F deg)
     decode
@@ -387,7 +387,7 @@ variable  {F : Type*} [Field F] [DecidableEq F]
   their decoded univariate polynomials are of degree < 2ᵐ for some m ∈ ℕ. -/
 def smoothCode
   (domain : ι ↪ F) [Smooth domain]
-  (m : ℕ): Submodule F (ι → F) := code domain (2^m)
+  (m : ℕ): Submodule F (ι → F) := ReedSolomon.code domain (2^m)
 
 /-- The linear map that maps Smooth Reed Solomon Code words
     to their decoded degree wise linear `m`-variate polynomial  -/
@@ -433,5 +433,3 @@ def multiConstrainedCode
         ∀ i : Fin t, weightConstraint (mVdecode (⟨f, h⟩ : smoothCode domain m)) (w i) (σ i)}
 
 end
-
-end ReedSolomon
