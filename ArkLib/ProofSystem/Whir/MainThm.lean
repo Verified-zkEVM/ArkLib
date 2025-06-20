@@ -136,7 +136,8 @@ def whirRelation
     : (Unit × ∀ i, (OracleStatement ι F i)) → Unit → Prop :=
   fun ⟨_, oracle⟩ _ => δᵣ(oracle (), smoothCode φ varCount) ≤ err
 
-/-- **Round-by-round soundness of the WHIR Vector IOPP**-/
+/-- Theorem 5.2
+  **Round-by-round soundness of the WHIR Vector IOPP**-/
 theorem whir_rbr_soundness
     [VCVCompatible F] {d dstar : ℕ}
   -- P : set of M+1 parameters including foldingParamᵢ, varCountᵢ, φᵢ, repeatParamᵢ,
