@@ -14,7 +14,7 @@ open NNReal ProbabilityTheory ReedSolomon
 /-- Theorem 4.1[BCIKS20] from STIR[ACFY24]
   Let `C = RS[F, ι, degree]` be a ReedSolomon code with rate `degree / |ι|`
   and let Bstar(ρ) = √ρ. For all `δ ∈ (0, 1 - Bstar(ρ))`, `f₁,...,fₘ : ι → F`, if
-  `Pr_{r ← F} [ δᵣ(rⱼ * fⱼ) ≤ δ] > err'(degree, ρ, δ, m)`
+  `Pr_{r ← F} [ δᵣ(rⱼ * fⱼ, C) ≤ δ] > err'(degree, ρ, δ, m)`
   then ∃ S ⊆ ι, |S| ≥ (1-δ) * |ι| and
   ∀ i : m, ∃ u : C, u(S)=fᵢ(S)
   -/
