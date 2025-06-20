@@ -623,13 +623,13 @@ noncomputable def byCheckMatrix [CommRing F] (H : Matrix ι κ F) : LinearCode �
 
 /-- The Hamming distance of a linear code can also be defined as the minimum Hamming norm of a
   non-zero vector in the code -/
-noncomputable def dist_from_HammingNorm [Semiring F] [DecidableEq F] (LC : LinearCode ι F) : ℕ :=
+noncomputable def disFromHammingNorm [Semiring F] [DecidableEq F] (LC : LinearCode ι F) : ℕ :=
   sInf {d | ∃ u ∈ LC, u ≠ 0 ∧ hammingNorm u ≤ d}
 
 -- Require `[CommRing R]`
 theorem dist_eq_dist_from_HammingNorm [Semiring F] [DecidableEq F] (LC : LinearCode ι F) :
-    Code.dist LC.carrier = dist_from_HammingNorm LC := by
-  simp [Code.dist, dist_from_HammingNorm]
+    Code.dist LC.carrier = disFromHammingNorm LC := by
+  simp [Code.dist, disFromHammingNorm]
   congr; unfold setOf; funext d
   apply Eq.propIntro <;> intro h
   · obtain ⟨u, hu, v, hv, huv, hDist⟩ := h
@@ -712,8 +712,9 @@ theorem singletonBound [Semiring F] (LC : LinearCode ι F) :
 
 /-- The interleaving of a linear code `LC` over index set `ι` is the submodule spanned by
 `ι × n`-matrices whose rows are elements of `LC`. -/
-def interleaveCode [Semiring F] [DecidableEq F] (LC : LinearCode n F) : Submodule F ((ι × n) → F) :=
-  Submodule.span F {v | ∀ i, ∃ c ∈ LC, c = fun j => v (i, j)}
+def interleaveCode [Semiring F] [DecidableEq F] (C : Submodule F (n → F)) (ι : Type*)
+  : Submodule F ((ι × n) → F) :=
+  Submodule.span F {v | ∀ i, ∃ c ∈ C, c = fun j => v (i, j)}
 
 notation:20 C "^⋈" ι => interleaveCode C ι
 
