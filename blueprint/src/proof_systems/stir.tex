@@ -44,17 +44,21 @@ In the following, we start by defining the \emph{quotient} of a univariate funct
     Let $f:\evaldomain\to\field$ be a function, $S\subseteq\field$ be a set, and $\mathsf{Ans},\mathsf{Fill}: S\rightarrow\field$ be functions. Let $\hat{\mathsf{Ans}}\in\field^{<|S|}[X]$ be the (unique) polynomial with $\hat{\mathsf{Ans}}(x)=\mathsf{Ans}(x)$ for every $x\in S$, and let $\hat{V}_S\in\field^{<|S|+1}[X]$ be the unique non-zero polynomial with $\hat{V}_S(x)=0$ for every $x\in S$.
     The \emph{quotient function} $\mathsf{Quotient}\bigl(f,S,\mathsf{Ans},\mathsf{Fill}\bigr): \evaldomain\to\field$
     is defined as follows:
+
     \[
-    \forall x \in \evaldomain,\quad
-    \mathsf{Quotient}\bigl(f,S,\mathsf{Ans},\mathsf{Fill}\bigr)(x)  
+    \forall x \in \evaldomain, \quad
+    \mathsf{Quotient}\bigl(f, S, \mathsf{Ans}, \mathsf{Fill} \bigr)(x)
     :=
-    \begin{cases}
+    \left\{
+    \begin{array}{ll}
         \mathsf{Fill}(x)
         & \text{if } x \in S \\[6pt]
         \dfrac{f(x) - \hat{\mathsf{Ans}}(x)}{\hat{V}_S(x)}
         & \text{otherwise}
-    \end{cases}
+    \end{array}
+    \right.
     \]
+
 \end{definition}
 
 Next we define the polynomial quotient operator, which quotients a polynomial relative to its output on evaluation points. The polynomial quotient is a polynomial of lower degree.
@@ -75,6 +79,7 @@ The following lemma, implicit in prior works, shows that if the function is ``qu
 \uses{def:quotient,def:reed_solomon_code,def:distance_from_code,def:list_close_codewords}
     Let $f:\evaldomain\rightarrow\field$ be a function, $\degree\in\N$ be the degree parameter, $\distance\in(0,1)$
     be a distance parameter, $S\subseteq\field$ be a set with $|S|<\degree$, and $\mathsf{Ans},\mathsf{Fill}:S\rightarrow\field$ are functions. Suppose that for every $u\in\listcode(f,\degree,\distance)$ there exists $x\in S$ with $\hat{u}(x)\neq\mathsf{Ans}(x)$. Then 
+
     \[
             \Delta(\mathsf{Quotient}(f,S,\mathsf{Ans},\mathsf{Fill}),\rscode[\field,\evaldomain,\degree-|S|])+\frac{|T|}{|\evaldomain|}>\distance,
     \]
@@ -86,10 +91,22 @@ The following lemma, implicit in prior works, shows that if the function is ``qu
 \lean{OutOfDomSmpl.out_of_dom_smpl_1, OutOfDomSmpl.out_of_dom_smpl_2}
 \uses{def:reed_solomon_code,def:list_decodable,def:list_close_codewords}
     Let $f:\evaldomain\rightarrow\field$ be a function, $\degree\in\N$ be a degree parameter, $s\in\N$ be a repetition parameter, and $\distance\in[0,1]$ be a distance parameter. If $\rscode[\field,\evaldomain,\degree]$ be $(\degree,l)$-list decodable then
-    \begin{align*}
-    \Pr_{r_1,\ldots,r_s\gets\field\setminus\evaldomain}[\exists\text{ distinct }u,u'\in\listcode(f,\degree,\distance):\forall i\in[s],\hat{u}(r_i)=\hat{u}'(r_i)] & \leq \binom{l}{2}\cdot{\Big(\frac{\degree-1}{|\field|-|\evaldomain|}\Big)}^s \\
-    & \leq \Big(\frac{l^2}{2}\Big)\cdot{\Big(\frac{\degree}{|\field|-|\evaldomain|}\Big)}^s
-    \end{align*}
+        \[
+        \begin{array}{rcl}
+        \Pr_{\substack{r_0, \ldots, r_{s-1} \gets \field \setminus \evaldomain}} 
+        \left[
+        \begin{array}{c}
+            \exists \text{ distinct } u, u' \in \listcode(f, \degree, \distance): \\
+            \forall i \in [s],\ \hat{u}(r_i) = \hat{u}'(r_i)
+        \end{array}
+        \right]
+        & \leq & \binom{l}{2} \cdot \left( \frac{\degree - 1}{|\field| - |\evaldomain|} \right)^s \\
+        & \leq & \left( \frac{l^2}{2} \right) \cdot \left( \frac{\degree}{|\field| - |\evaldomain|} \right)^s
+        \end{array}
+        \]
+
+        
+        
 \end{lemma}
 
 \subsubsection{Folding univariate functions}\label{sec:folding_uf}
@@ -145,25 +162,37 @@ We show a new method for combining functions of varying degrees with minimal pro
 \lean{Combine.geometric_sum_units}
     Let $\field$ be a field, $r\in\field$ be a field element, $a\in\N$ be a natural number. Then
     \[
-        \sum_{i=0}^{a}r^i:=
-        \begin{cases}
-        \Big(\frac{1-r^{a+1}}{1-r}\Big) & r\neq 1 \\
-        a+1 & r=1
-        \end{cases}
+    \sum_{i=0}^{a} r^i :=
+    \left\{
+    \begin{array}{ll}
+        \displaystyle\left(\frac{1 - r^{a+1}}{1 - r}\right)
+        & \text{if } r \neq 1 \\[6pt]
+        a + 1
+        & \text{if } r = 1
+    \end{array}
+    \right.
     \]
+
 \end{lemma}
 
 \begin{definition}\label{def:combine}
 \lean{Combine.combineInterm,Combine.combineFinal}
     Given target degree $\degree^*\in\N$, shifting parameter $r\in\field$, functions $f_0,\ldots,f_{m-1}:\evaldomain\rightarrow\field$, and degrees $0\leq \degree_0,\ldots,\degree_{m-1}\leq {\degree}^*$, we define $\combine(\degree^*,r,(f_0,\degree_0),\ldots,(f_{m-1},\degree_{m-1})):\evaldomain\rightarrow\field$ as follows:
-    \begin{align*}
-        \combine({\degree}^*,r,(f_0,\degree_0),\ldots,(f_{m-1},\degree_{m-1}))(x)&:=\sum_{i=0}^{m-1}r_i\cdot f_i(x)\cdot \Big(\sum_{l=0}^{\degree^*-\degree_i}{(r\cdot x)}^l\Big) \\
-        &= 
-        \begin{cases}
-            \sum_{i=0}^{m-1}r_i\cdot f_i(x)\cdot \Big(\frac{1-{(xr)}^{\degree^*-\degree_i+1}}{1-xr}\Big) & x\cdot r\neq 1\\
-            \sum_{i=0}^{m-1}r_i\cdot f_i(x)\cdot (\degree^*-\degree_i+1) & x\cdot r= 1
-        \end{cases}
-    \end{align*}
+        \[
+        \begin{array}{rcl}
+        \combine(\degree^*, r, (f_0, \degree_0), \ldots, (f_{m-1}, \degree_{m-1}))(x)
+        & := & \displaystyle\sum_{i=0}^{m-1} r_i \cdot f_i(x) \cdot \left( \sum_{l=0}^{\degree^* - \degree_i} (r \cdot x)^l \right) \\[10pt]
+        & = & \left\{
+        \begin{array}{ll}
+            \displaystyle\sum_{i=0}^{m-1} r_i \cdot f_i(x) \cdot \left( \dfrac{1 - (x r)^{\degree^* - \degree_i + 1}}{1 - x r} \right)
+            & \text{if } x \cdot r \neq 1 \\[8pt]
+            \displaystyle\sum_{i=0}^{m-1} r_i \cdot f_i(x) \cdot (\degree^* - \degree_i + 1)
+            & \text{if } x \cdot r = 1
+        \end{array}
+        \right.
+        \end{array}
+        \]
+
 Above, $r_i:=r^{i-1+\sum_{j<i}(\degree^*-\degree_j)}$.
 \end{definition}
 
@@ -172,12 +201,21 @@ Above, $r_i:=r^{i-1+\sum_{j<i}(\degree^*-\degree_j)}$.
 \uses{def:combine,def:reed_solomon_code,def:distance_from_code}
     Given target degree $\degree^*\in\N$, shifting parameter $r\in\field$, function $f:\evaldomain\rightarrow\field$, and degree $0\leq\degree\leq\degree^*$, we define $\degcorr(\degree^*,r,f,\degree)$ as follows.
     \[
-        \degcorr(\degree^*,r,f,\degree)(x):=f(x)\cdot\Bigg(\sum_{l=0}^{\degree^*-\degree}{(r\cdot x)}^l\Bigg)=
-        \begin{cases}
-            f(x)\cdot\frac{1-{(xr)}^{\degree^*-\degree_i+1}}{1-xr} & x\cdot r\neq 1\\
-            f(x)\cdot (\degree^*-\degree_i+1) & x\cdot r = 1
-        \end{cases}
+    \begin{array}{rcl}
+    \degcorr(\degree^*, r, f, \degree)(x) 
+    & := & \displaystyle f(x) \cdot \left( \sum_{l=0}^{\degree^* - \degree} (r \cdot x)^l \right) \\[10pt]
+    & = & \left\{
+    \begin{array}{ll}
+        \displaystyle f(x) \cdot \left( \dfrac{1 - (x r)^{\degree^* - \degree_i + 1}}{1 - x r} \right)
+        & \text{if } x \cdot r \neq 1 \\[8pt]
+        \displaystyle f(x) \cdot (\degree^* - \degree_i + 1)
+        & \text{if } x \cdot r = 1
+    \end{array}
+    \right.
+    \end{array}
     \]
+
+
 (Observe that $\degcorr(\degree^*,r,f,\degree)=\combine(\degree^*,r,(f,\degree))$.)
 \end{definition}
 
@@ -194,7 +232,7 @@ Below it is shown that combining multiple polynomials of varying degrees can be 
     \[
         \forall i\in[m-1],\exists u\in\rscode[\field,\evaldomain,\degree_i], f_i(S)=u(S).
     \]
-    Note that this implies $\Delta(f_i,\rscode[\field,\evaldomain,\degree_i])<\distance$ for every $i$. Above, ${\mathsf{B}}^*$ and ${\err}^*$ are the proximity bound and error (respectively) described in Section~\ref{sec:proximity_gap}.
+    Note that this implies $\Delta(f_i,\rscode[\field,\evaldomain,\degree_i])<\distance$ for every $i$. Above, ${\mathsf{B}}^*$ and ${\err}^*$ are the proximity bound and error (respectively) described in the proximity gap theorem.
 \end{lemma}
 
 \subsection{Stir Main theorems}
