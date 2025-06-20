@@ -252,7 +252,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 
 \begin{theorem}
 \lean{WhirIOP.whir_rbr_soundness}
-\uses{thm:folding_preserves_listdecoding,lemma:out_of_domain_sampling_crs_eq_rs,lemma:gen_mutual_corr_agreement}
+\uses{thm:folding_preserves_listdecoding,lemma:out_of_domain_sampling_crs_eq_rs,lemma:gen_mutual_corr_agreement,def:constrained_code}
     Consider $(\field, M, (k_i, m_i, \evaldomain_i, t_i)_{0 \leq i \leq M}, \widehat{w}_0, \sigma_0, m, d^\star, d)$ with the following ingrediants and conditions,
     \begin{itemize}
     \item a constrained Reed Solomon code $\crscode[\field, \evaldomain_0, m_0, \widehat{w}_0, \sigma_0]$;
