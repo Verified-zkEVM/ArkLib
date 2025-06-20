@@ -40,7 +40,7 @@
 
 In the following, we start by defining the \emph{quotient} of a univariate function.
 \begin{definition}\label{def:quotient}
-\lean{quotient}
+\lean{Quotienting.quotient}
     Let $f:\evaldomain\to\field$ be a function, $S\subseteq\field$ be a set, and $\mathsf{Ans},\mathsf{Fill}: S\rightarrow\field$ be functions. Let $\hat{\mathsf{Ans}}\in\field^{<|S|}[X]$ be the (unique) polynomial with $\hat{\mathsf{Ans}}(x)=\mathsf{Ans}(x)$ for every $x\in S$, and let $\hat{V}_S\in\field^{<|S|+1}[X]$ be the unique non-zero polynomial with $\hat{V}_S(x)=0$ for every $x\in S$.
     The \emph{quotient function} $\mathsf{Quotient}\bigl(f,S,\mathsf{Ans},\mathsf{Fill}\bigr): \evaldomain\to\field$
     is defined as follows:
@@ -60,7 +60,7 @@ In the following, we start by defining the \emph{quotient} of a univariate funct
 Next we define the polynomial quotient operator, which quotients a polynomial relative to its output on evaluation points. The polynomial quotient is a polynomial of lower degree.
 
 \begin{definition}\label{def:poly_quotient}
-\lean{polyQuotient}
+\lean{Quotienting.polyQuotient}
     Let $\hat{f}\in\field^{<\degree}[X]$ be a polynomial and $S\subseteq\field$ be a set, let $\hat{V}_S\in\field^{<|S|+1}[X]$ be the unique non-zero polynomial with $\hat{V}_S(x)=0$ for every $x\in S$. The \emph{polynomial quotient} $\mathsf{PolyQuotient}(\hat{f},S)\in\field^{<d-|S|}[X]$ is defined as follows:
     \[
             \mathsf{PolyQuotient}(\hat{f},S)(X):=\frac{\hat{f}(X)-\hat{\mathsf{Ans}}(X)}{\hat{V}_S(X)}
@@ -71,8 +71,7 @@ where $\hat{Ans}\in\field^{<|S|}[X]$ is the unique non-zero polynomial with $\ha
 The following lemma, implicit in prior works, shows that if the function is ``quotiented by the wrong value'', then its quotient is far from low-degree.
 
 \begin{lemma}\label{lemma:quotienting}
-\lean{quotienting}
-\leanok
+\lean{Quotienting.quotienting}
 \uses{def:quotient,def:reed_solomon_code,def:distance_from_code,def:list_close_codewords}
     Let $f:\evaldomain\rightarrow\field$ be a function, $\degree\in\N$ be the degree parameter, $\distance\in(0,1)$
     be a distance parameter, $S\subseteq\field$ be a set with $|S|<\degree$, and $\mathsf{Ans},\mathsf{Fill}:S\rightarrow\field$ are functions. Suppose that for every $u\in\listcode(f,\degree,\distance)$ there exists $x\in S$ with $\hat{u}(x)\neq\mathsf{Ans}(x)$. Then 
@@ -84,7 +83,7 @@ The following lemma, implicit in prior works, shows that if the function is ``qu
 
 \subsubsection{Out of domain sampling}\label{sec:out_of_domain_smpl}
 \begin{lemma}\label{lemma:out_of_domain_smpl}
-\lean{out_of_dom_smpl_1, out_of_dom_smpl_2}
+\lean{OutOfDomSmpl.out_of_dom_smpl_1, OutOfDomSmpl.out_of_dom_smpl_2}
 \uses{def:reed_solomon_code,def:list_decodable,def:list_close_codewords}
     Let $f:\evaldomain\rightarrow\field$ be a function, $\degree\in\N$ be a degree parameter, $s\in\N$ be a repetition parameter, and $\distance\in[0,1]$ be a distance parameter. If $\rscode[\field,\evaldomain,\degree]$ be $(\degree,l)$-list decodable then
     \begin{align*}
@@ -97,7 +96,7 @@ The following lemma, implicit in prior works, shows that if the function is ``qu
 STIR relies on $k$-wise folding of functions and polynomials - this is similar to prior works, although presented in a slightly different form. As shown below, folding a function preserves proximity from the Reed-Solomon code with high probability. The folding operator is based on the following fact, decomposing univariate polynomials into bivariate ones.
 
 \begin{lemma}\label{fact:poly_folding} 
-\lean{exists_unique_bivariate,degree_bound_bivariate}
+\lean{Folding.exists_unique_bivariate,Folding.degree_bound_bivariate}
 Given a polynomial $\hat{q}\in\field[X]$:
 \begin{itemize}
         \item For every univariate polynomial $\hat{f}\in\field[X]$, there exists a unique bivariate polynomial $\hat{Q}\in\field[X,Y]$ with:
@@ -113,13 +112,13 @@ Given a polynomial $\hat{q}\in\field[X]$:
 
 Below, we define folding of a polynomial followed by folding of a function.
 \begin{definition}\label{def:poly_folding}
-\lean{polyFold}
+\lean{Folding.polyFold}
 \uses{fact:poly_folding}
     Given a polynomial $\hat{f}\in\field^{<\degree}[X]$, a folding parameter $k\in\N$ and $r\in\field$, we define a polynomial $\mathsf{PolyFold}(\hat{f},k,r)\in\field^{\degree/k}[X]$ as follows. Let $\hat{Q}[X,Y]$ be the bivariate polynomial derived from $\hat{f}$ using Fact~\ref{fact:poly_folding} with $\hat{q}(X):=X^k$. Then $\mathsf{PolyFold}(\hat{f},k,r)(X):=\hat{Q}(X,r)$.
 \end{definition}
 
 \begin{definition}\label{def:fn_folding}
-\lean{fold}
+\lean{Folding.fold}
 Let $f:\evaldomain\rightarrow\field$ be a function, $k\in\N$ a folding parameter and $\alpha\in\field$. For every $x\in{\evaldomain}^k$, let $\hat{p}_x\in\field^{<k}[X]$ be the polynomial where $\hat{p}_x(y)=f(y)$ for every $y\in{\evaldomain}$ such that $y^k=x$. We define $\mathsf{Fold}(f,k,\alpha):\evaldomain\rightarrow\field$ as follows.
 \[
     \mathsf{Fold}(f,k,\alpha):=\hat{p}_x(\alpha).
@@ -130,7 +129,7 @@ In order to compute $\mathsf{Fold}(f,k,\alpha)(x)$ it suffices to interpolate th
 The following lemma shows that the distance of a function is preserved under folding. If a functions $f$ has distance $\distance$ to a Reed-Solomon code then, with high probability over the choice of folding randomness, its folding also has a distance of $\distance$ to the ``$k$-wise folded'' Reed-Solomon code.
 
 \begin{lemma}\label{lemma:folding}
-\lean{folding}
+\lean{Folding.folding}
 \uses{def:reed_solomon_code,def:fn_folding,def:dist_from_code}
     For every function $f:\evaldomain\rightarrow\field$, degree parameter $\degree\in\N$, folding parameter $k\in\N$, distance parameter $\distance\in(0,\min\{{\Delta(\mathsf{Fold}[f,k,r^{\mathsf{fold}}],\rscode[\field,{\evaldomain}^k, \degree/k]),1-{\mathsf{B}}^*(\rate)}\})$, letting $\rate:=\frac{\degree}{|\evaldomain|}$,
     \[
@@ -143,7 +142,7 @@ The following lemma shows that the distance of a function is preserved under fol
 We show a new method for combining functions of varying degrees with minimal proximity require- ments using geometric sums. We begin by recalling a fact about geometric sums.
 
 \begin{lemma}\label{fact:geometric_sum}
-\lean{geometric_sum_units}
+\lean{Combine.geometric_sum_units}
     Let $\field$ be a field, $r\in\field$ be a field element, $a\in\N$ be a natural number. Then
     \[
         \sum_{i=0}^{a}r^i:=
@@ -155,7 +154,7 @@ We show a new method for combining functions of varying degrees with minimal pro
 \end{lemma}
 
 \begin{definition}\label{def:combine}
-\lean{combineInterm,combineFinal}
+\lean{Combine.combineInterm,Combine.combineFinal}
     Given target degree $\degree^*\in\N$, shifting parameter $r\in\field$, functions $f_0,\ldots,f_{m-1}:\evaldomain\rightarrow\field$, and degrees $0\leq \degree_0,\ldots,\degree_{m-1}\leq {\degree}^*$, we define $\combine(\degree^*,r,(f_0,\degree_0),\ldots,(f_{m-1},\degree_{m-1})):\evaldomain\rightarrow\field$ as follows:
     \begin{align*}
         \combine({\degree}^*,r,(f_0,\degree_0),\ldots,(f_{m-1},\degree_{m-1}))(x)&:=\sum_{i=0}^{m-1}r_i\cdot f_i(x)\cdot \Big(\sum_{l=0}^{\degree^*-\degree_i}{(r\cdot x)}^l\Big) \\
@@ -169,7 +168,7 @@ Above, $r_i:=r^{i-1+\sum_{j<i}(\degree^*-\degree_j)}$.
 \end{definition}
 
 \begin{definition}\label{def:deg_corr}
-\lean{degreeCorrInterm,degreeCorrFinal}
+\lean{Combine.degreeCorrInterm,Combine.degreeCorrFinal}
 \uses{def:combine,def:reed_solomon_code,def:dist_from_code}
     Given target degree $\degree^*\in\N$, shifting parameter $r\in\field$, function $f:\evaldomain\rightarrow\field$, and degree $0\leq\degree\leq\degree^*$, we define $\degcorr(\degree^*,r,f,\degree)$ as follows.
     \[
@@ -185,7 +184,7 @@ Above, $r_i:=r^{i-1+\sum_{j<i}(\degree^*-\degree_j)}$.
 Below it is shown that combining multiple polynomials of varying degrees can be done as long as the proximity error is bounded by $(\min{\{1-{\mathsf{B}}^*(\rate),1-\rate-1/|\evaldomain|\}})$.
 
 \begin{lemma}\label{lemma:combine}
-\lean{combine}
+\lean{Combine.combine}
 \uses{def:reed_solomon_code,def:combine,def:deg_corr,thm:proximity_gap}
     Let $\degree^*$ be a target degree, $f_0,\ldots,f_{m-1}:\evaldomain\rightarrow\field$ be functions, $0\leq \degree_0,\ldots,\degree_{m-1}\leq \degree^*$ be degrees, $\distance\in\min{\{1-{\mathsf{B}}^*(\rate),1-\rate-1/|\evaldomain|\}}$ be a distance parameter, where $\rate=\degree^*/|\evaldomain|$. If
     \[
@@ -201,7 +200,7 @@ Below it is shown that combining multiple polynomials of varying degrees can be 
 \subsection{Stir Main theorems}
 
 \begin{theorem}[STIR Main Theorem]\label{thm:stir}
-\lean{stir_main}
+\lean{StirIOP.stir_main}
 \uses{def:reed_solomon_code,lemma:rnd_by_rnd_soundness}
     Consider the following ingrediants:
     \begin{itemize}
@@ -229,7 +228,7 @@ If $|\field|=\Omega(\frac{\lambda\cdot2^\lambda\cdot\degree^2\cdot{|\evaldomain|
         \item for every $0<i\leq M$: $\distance_i\in(0,\min{\{1-\rate_i-\frac{1}{|\evaldomain_i|},1-{\mathsf{B}^*(\rate_i)}\}})$, and
         \item for every $0<i\leq M$: $\rscode[\field,\evaldomain_i,\degree_i]$ is $(\distance_i,l_i)$-list decodable,
     \end{itemize}
-    There exists an IOPP that has round-by-round soundness error $(\epsilon^{\mathsf{fold}},\epsilon^{\mathsf{out}}_1,\epsilon^{\mathsf{shift}}_1,\ldots,\epsilon^{\mathsf{out}}_M,\epsilon^{\mathsf{shift}}_M,\epsilon^{\mathsf{fin}})$ where:
+    There exists an IOPP with above parameters, that has round-by-round soundness error $(\epsilon^{\mathsf{fold}},\epsilon^{\mathsf{out}}_1,\epsilon^{\mathsf{shift}}_1,\ldots,\epsilon^{\mathsf{out}}_M,\epsilon^{\mathsf{shift}}_M,\epsilon^{\mathsf{fin}})$ where:
     \begin{itemize}
         \item $\epsilon^{\mathsf{fold}}\leq\err^*(\degree_0/k_0,\rate_0,\distance_0,k_0)$.
         \item $\epsilon^{\mathsf{out}}_i\leq\frac{l^2_i}{2}\cdot{\big(\frac{\degree_i}{|\field|-|\evaldomain_i|}\big)}^s$
