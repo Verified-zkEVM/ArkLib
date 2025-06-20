@@ -1,7 +1,8 @@
 /-
 Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
+Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov,
+Mirco Richter
 -/
 
 import ArkLib.Data.CodingTheory.Basic
@@ -55,6 +56,7 @@ def checkMatrix (deg : ℕ) [Fintype ι] : Matrix (Fin (Fintype.card ι - deg)) 
 open Classical
 open Polynomial
 open Matrix
+open Distance
 
 variable {F ι ι' : Type*}
          {C : Set (ι → F)}
@@ -78,10 +80,6 @@ lemma nonsquare_mulVecLin [CommSemiring F] {ι' : ℕ} {α₁ : ι ↪ F} {α₂
 -/
 def nonsquareTranspose [Field F] (ι' : ℕ) (α : ι ↪ F) : Matrix (Fin ι') ι F :=
   (Vandermonde.nonsquare ι' α)ᵀ
-
-private lemma todoMoveOut {k : ℕ} : (List.finRange k).dedup = List.finRange k := by
-  induction k <;>
-  aesop (add simp [List.finRange_succ, List.dedup_map_of_injective, Fin.succ_injective])
 
 section
 
@@ -239,7 +237,8 @@ lemma rateOfLinearCode_eq_div [NeZero n] (inj : Function.Injective α) (h : n �
   rwa [rate, dim_eq_deg_of_le, length_eq_domain_size]
 
 @[simp]
-lemma dist_le_length (inj : Function.Injective α) : minDist (ReedSolomon.code ⟨α, inj⟩ n) ≤ m := by
+lemma dist_le_length (inj : Function.Injective α) :
+    minDist ((ReedSolomon.code ⟨α, inj⟩ n) : Set (Fin m → F)) ≤ m := by
   convert minDist_UB
   simp
 
@@ -291,7 +290,7 @@ open Finset in
   The minimal code distance of an RS code of length `ι` and dimension `deg` is `ι - deg + 1`
 -/
 theorem minDist [Field F] (inj : Function.Injective α) [NeZero n] (h : n ≤ m) :
-  minDist (ReedSolomon.code ⟨α, inj⟩ n) = m - n + 1 := by
+  minDist ((ReedSolomon.code ⟨α, inj⟩ n) : Set (Fin m → F)) = m - n + 1 := by
   have : NeZero m := by constructor; aesop
   refine le_antisymm ?p₁ ?p₂
   case p₁ =>

@@ -55,8 +55,8 @@ noncomputable def decoder (e k : ℕ) [NeZero n] (ωs f : Fin n → F) : Option 
     match x with 
     | none => none 
     | some x => 
-      let E := solution_to_E e k x
-      let Q := solution_to_Q e k x 
+      let E := solutionToE e k x
+      let Q := solutionToQ e k x 
       if Q % E = 0 then 
         let p := Q / E
         if Δ₀(f, p.eval ∘ ωs) ≤ e then 
@@ -114,7 +114,7 @@ theorem decoder_eq_some {e k : ℕ} [NeZero n] {ωs f : Fin n → F} {p : Polyno
         have h :=
           Q'_div_E'_eq_p
             h_deg he hn h_dist h_inj
-            (solution_to_Q_ne_zero (not_le.1 hif)
+            (solutionToQ_ne_zero (not_le.1 hif)
                                 (BerlekampWelchCondition_iff_Solution.2 h_cond) h_inj) hp h_cond
         simp_all
 

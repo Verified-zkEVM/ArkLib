@@ -717,18 +717,24 @@ lemma liftF_eval {f : Fin n → α} {i : Fin n} :
   liftF f i.val = f i := by
   aesop (add simp liftF)
 
-lemma liftF_ne_0 {f : Fin n → α} {i : ℕ}
+lemma lt_of_liftF_ne_zero {f : Fin n → α} {i : ℕ}
   (h : liftF f i ≠ 0)
   : i < n := by
   aesop (add simp liftF)
 
+lemma liftF_ne_zero_of_lt {i : ℕ} (h : i < n) : liftF f' i ≠ 0 ↔ f' ⟨i, h⟩ ≠ 0 := by
+  aesop (add simp liftF)
+
+lemma liftF_eq_of_lt {i : ℕ} (h : i < n) : liftF f' i = f' ⟨i, h⟩ := by
+  aesop (add simp liftF)
+
 @[simp]
-lemma liftF_0_eq_0
+lemma liftF_zero_eq_zero
   : liftF (fun (_ : Fin n) ↦ (0 : α)) = (fun _ ↦ (0 : α)) := by
   aesop (add simp liftF)
 
 @[simp]
-lemma liftF'_0_eq_0
+lemma liftF'_zero_eq_zero
   : liftF' (fun _ ↦ (0 : α)) = (fun (_ : Fin n) ↦ (0 : α)) := by
   aesop (add simp liftF')
 

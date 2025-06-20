@@ -88,9 +88,10 @@ def Verifier.liftContext
 
 /-- The outer reduction after lifting is the combination of the lifting of the prover and
   verifier -/
+
 def Reduction.liftContext
     [lens : ContextLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-      OuterWitIn OuterWitOut InnerWitIn InnerWitOut]
+                        OuterWitIn OuterWitOut InnerWitIn InnerWitOut]
     (R : Reduction pSpec oSpec InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut) :
       Reduction pSpec oSpec OuterStmtIn OuterWitIn OuterStmtOut OuterWitOut where
   prover := R.prover.liftContext
