@@ -191,3 +191,72 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
     \]
 \end{lemma}
 
+\begin{lemma}
+    Let $f : \evaldomain \rightarrow \field$ be a function, $m \in \mathbb{N}$ be a number of variables, $s \in \mathbb{N}$ be a repetition parameter, and let $\delta \in [0,1]$ be a distance parameter. For every $\vec{r_0}, \dots, \vec{r_{s-1}} \in \field^m$, the following are equivalent statements.
+\begin{itemize}
+    \item There exist distinct $u, u' \in \Lambda(\rscode[\field, \evaldomain, m], f, \delta)$ such that, for every $i \in [0,s-1]$, $\hat{u}(\vec{r_i}) = \hat{u}'(\vec{r_i})$.
+    \item There exists $\sigma_0, \dots, \sigma_{s-1} \in \field$ such that $\left| \Lambda(\crscode[\field, \evaldomain, m, ((Z \cdot \mathrm{eq}(\vec{r_0}, \cdot), \sigma_0), \dots, (Z \cdot \mathrm{eq}(\vec{r_{s-1}}, \cdot), \sigma_{s-1}))], f, \delta) \right| > 1$.
+\end{itemize}
+\end{lemma}
+
+\begin{lemma}
+    Let $f : \evaldomain \rightarrow \field$ be a function, $m \in \mathbb{N}$ be a number of variables, $s \in \mathbb{N}$ be a repetition parameter, and $\delta \in [0,1]$ be a distance parameter. If $\rscode[\field, \evaldomain, m]$ is $(\delta, \ell)$-list decodable then
+    \[
+    \Pr_{r_0, \dots, r_{s-1} \leftarrow \field} \left[
+    \begin{array}{c}
+    \exists \sigma_0, \dots, \sigma_{s-1} \in \field \text{ s.t.} \\
+    \left| \Lambda(\crscode[\field, \evaldomain, m, ((Z \cdot \mathrm{eq}(\mathrm{pow}(r_{i}, m), \cdot), \sigma_{i}))_{i \in [s]}], f, \delta) \right| > 1
+    \end{array}
+    \right]
+    \]
+
+    \[
+    = \Pr_{r_0, \dots, r_{s-1} \leftarrow \field} \left[
+    \begin{array}{c}
+    \exists \text{ distinct } u, u' \in \Lambda(\rscode[\field, \evaldomain, m], f, \delta) \\
+    \text{ s.t. } \forall i \in [s],\ \hat{u}(\mathrm{pow}(r_i, m)) = \hat{u}'(\mathrm{pow}(r_i, m))
+    \end{array}
+    \right]
+    \]
+
+    \[
+    \leq \frac{\ell^2}{2} \cdot \left( \frac{2^m}{|\field|} \right)^s.
+    \]
+\end{lemma}
+
+\begin{theorem}
+    Consider $(\field, M, (k_i, m_i, \evaldomain_i, t_i)_{0 \leq i \leq M}, \widehat{w}_0, \sigma_0, m_M, t_M, d^*, d)$ where,
+    \begin{itemize}
+  \item a constrained Reed Solomon code $\crscode[\field, \evaldomain_0, m_0, \widehat{w}_0, \sigma_0]$;
+  \item an iteration count $M \in \mathbb{N}$;
+  \item folding parameters $k_0, \ldots, k_{M}$ such that $\sum_{i=0}^{M} k_i \leq m$;
+  \item evaluation domains $evaldomain_1, \ldots, \evaldomain_{M} \subseteq \field$ where $\evaldomain_i$ is a smooth coset of $\field^*$ with order $|\evaldomain_i| \geq 2^{m_i}$;
+  \item repetition parameters $t_1, \ldots, t_M$ with $t_i \leq |\evaldomain_i|$;
+  \item define $m_0 := m$ and $m_i := m - \sum_{j < i} k_j$;
+  \item define $d^\star := 1 + \deg_{\mathbb{Z}}(\widehat{w}_0) + \max_{i \in [m_0]} \deg_{X_i}(\widehat{w}_0)$ and $d := \max\{d^\star, 3\}$.
+    \end{itemize}
+    For every $f \notin \crscode[\field, \evaldomain_0, m_0, \widehat{w}_0, \sigma_0]$ and every $\delta_0, \dots, \delta_{M}$ and $(\parl_{i,s})_{0 \leq i \leq M}^{0 \leq s \leq k_i}$ where
+    \begin{itemize}
+        \item $\delta_0 \in (0, \Delta(f, \crscode[\field, \evaldomain_0, m_0, \widehat{w}_0, \sigma_0]))$;
+        \item the function $\gen(\parl; \alpha) = (1, \alpha, \dots, \alpha^{\parl-1})$ is a proximity generator with mutual correlated agreement for the codes $(\mathcal{C}_{\mathrm{RS}}^{(i,s)})_{0 \leq i \leq M}^{0 \leq s \leq k_i}$ where $\mathcal{C}_{\mathrm{RS}}^{(i,s)} := \rscode[\field, \evaldomain_i^{(2^s)}, m_i - s]$ with bound ${\bound}^\star$ and error $\err^\star$;
+        \item for every $0 \leq i \le M$, $\delta_i \in (0, 1 - {\bound}^\star(\mathcal{C}_{\mathrm{RS}}^{(i,s)}, 2))$;
+        \item for every $0 \leq i \le M$, $\mathcal{C}_{\mathrm{RS}}^{(i,s)}$ is $(\ell_{i,s}, \delta_i)$-list decodable.
+    \end{itemize}
+   Then there exists an IOPP for $\crscode[\field, \evaldomain_0, m_0, \widehat{w}_0, \sigma_0]$ with round-by-round soundness error
+
+    \[
+((\varepsilon_{0,s}^{\mathrm{fold}})_{s \leq k_0},\ (\varepsilon_i^{\mathrm{out}},\ \varepsilon_i^{\mathrm{shift}},\ (\varepsilon_{i,s}^{\mathrm{fold}})_{s \leq k_i})_{i \leq M-1},\ \varepsilon^{\mathrm{fin}}),
+\]
+
+\textit{where:}
+
+\begin{itemize}
+    \item $\varepsilon_{0,s}^{\mathrm{fold}} \leq \dfrac{d^* \cdot \ell_{0,s-1}}{|\mathbb{F}|} + \mathrm{err}^*(\mathcal{C}_{\mathrm{RS}}^{(0,s)}, 2, \delta_0)$;
+    \item $\varepsilon_i^{\mathrm{out}} \leq \dfrac{2^{m_i} \cdot \ell_{i,0}^2}{2 \cdot |\mathbb{F}|}$;
+    \item $\varepsilon_i^{\mathrm{shift}} \leq (1 - \delta_{i-1})^{t_i - 1} + \dfrac{\ell_{i,0} \cdot (t_i - 1 + 1)}{|\mathbb{F}|}$;
+    \item $\varepsilon_{i,s}^{\mathrm{fold}} \leq \dfrac{d \cdot \ell_{i,s-1}}{|\mathbb{F}|} + \mathrm{err}^*(\mathcal{C}_{\mathrm{RS}}^{(i,s)}, 2, \delta_i)$;
+    \item $\varepsilon^{\mathrm{fin}} \leq (1 - \delta_{M-1})^{t_M - 1}$.
+\end{itemize}
+\end{theorem}
+
+
