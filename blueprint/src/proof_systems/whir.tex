@@ -10,7 +10,7 @@
 
 \begin{definition}\label{def:proximity_generator}
 \lean{Generator.ProximityGenerator}
-\uses{def:linear_code,def:dist_from_code}
+\uses{def:linear_code,def:distance_from_code}
 Let $\code\subseteq \field^{\evaldomain}$ be a linear code. We say that $\mathsf{Gen}$ is a proximity generator for $\code$ with proximity bounds ${\bound}$ and $\err$ if the following implication holds for $f_0,\ldots,f_{\parl-1} : \evaldomain \rightarrow \field$ and $\delta\in(0,1-{\bound}(\rate,\parl))$. If
 \begin{align*}
     \Pr_{r_0,\ldots,r_{\parl-1}\leftarrow \gen}[\Delta(\sum_{i\in[0,(\parl-1)]} r_i \cdot f_i, \code) \le \delta] > err(\code,\parl,\delta),
@@ -63,7 +63,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
     Let $\code := \rscode[\field, \evaldomain, m]$ be a Reed Solomon code with rate $\rate$. The function $\gen(\parl; \alpha) = (1, \alpha, \ldots, \alpha^{\parl - 1})$ is a proximity generator for $\code$ with mutual correlated agreement with proximity bound ${\bound}^\star(\code, \parl) := \frac{1 + \rate}{2}$ and error $\err^\star(\code, \parl, \delta) = \frac{(\parl - 1) \cdot 2^m}{\rate \cdot |\field|}$.
 \end{lemma}
 
-\begin{theorem}
+\begin{theorem}\label{conjecture:whir}
 \lean{CorrelatedAgreement.genMutualCorrAgreement_le_johnsonBound,CorrelatedAgreement.genMutualCorrAgreement_le_capacity}
 \uses{def:reed_solomon_code,lemma:gen_mutual_corr_agreement}
     The function $\gen(\parl; \alpha) := (1, \alpha, \ldots, \alpha^{\parl - 1})$ is a proximity generator with mutual correlated agreement for every smooth Reed Solomon code $\code := \rscode[\field, \evaldomain, m]$ (with rate $\rate := 2^m / |\evaldomain|$). We give two conjectures, for the parameters of the proximity bound ${\bound}^\star$ and the error $\err^\star$:
@@ -82,7 +82,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 
 \subsubsection{Mutual correlated agreement preserves list decoding}
 
-\begin{lemma}
+\begin{lemma}\label{lemma: mutual_corrAgr_listdecoding}
 \lean{CorrelatedAgreement.mutualCorrAgreement_list_decoding}
 \uses{def:reed_solomon_code,def:interleaved_code,def:list_close_codewords,lemma:gen_mutual_corr_agreement}
     Let $\code \subseteq \field^{\evaldomain}$ be a linear code with minimum distance $\delta_{\code}$, and let $\gen$ be a proximity generator for $\code$ with mutual correlated agreement with proximity bound ${\bound}^\star$ and error $\err^\star$. Then, for every $f_0, \ldots, f_{\parl-1} : \evaldomain \to \field$ and $\delta \in (0, \min\{\delta_{\code}, 1 - {\bound}^\star(\code, \parl)\})$:
@@ -166,14 +166,14 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 
 \begin{lemma}\label{lemma:block_rel_distance}
 \lean{BlockRelDistance.blockRelDistance_le_hammingDistance}
-\uses{def:block_rel_distance,def:dist_from_code,def:list_close_codewords_block,def:list_close_codewords}
+\uses{def:block_rel_distance,def:distance_from_code,def:list_close_codewords_block,def:list_close_codewords}
     For any $\code := \rscode[\field, \evaldomain, m]$, $k \in \mathbb{N}$, and $f, g : \evaldomain^{2^i} \to \field$, we have that $\Delta(f, g) \leq \Delta_{r}(\code, i, k, f, g)$. Consequently, $\Lambda_{r}(\code, i, k, f, \delta) \subseteq \Lambda(\code, f, \delta)$ for $\delta\in[0,1]$.
 \end{lemma}
 
 \subsubsection{Folding preserves list decoding}
 
 \begin{theorem}\label{thm:folding_preserves_listdecoding}
-\lean{BlockRelDistance.folding_listdecoding_if_genMutualCorrAgreement}
+\lean{Fold.folding_listdecoding_if_genMutualCorrAgreement}
 \uses{lemma:folding_preserves_listdecoding_base, lemma:folding_preserves_listdecoding_bound, lemma:folding_preserves_listdecoding_base_ne_subset}
     Let $\code = \rscode[\field, \evaldomain, m]$ be a smooth Reed Solomon code and $k \leq m$. For $0 \leq i \leq k$ let $\code^{(i)} := \rscode[\field, \evaldomain^{2^i}, m - i]$. Let $\gen(\parl; \alpha) = (1, \alpha, \ldots, \alpha^{\parl - 1})$ be a proximity generator with mutual correlated agreement for the codes $\code^{(0)}, \ldots, \mathcal{C}^{(k-1)}$ with proximity bound ${\bound}^\star$ and error $\err^\star$. Then for every $f : \evaldomain \to \field$ and $\delta \in \left(0, 1 - \max_{i \in [0,(k-1)]} \{ {\bound}^\star(\code^{(i)}, 2) \} \right)$,
     \[
@@ -185,7 +185,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \end{theorem}
 
 \begin{lemma}\label{lemma:folding_preserves_listdecoding_base}
-\lean{BlockRelDistance.folding_preserves_listdecoding_base}
+\lean{Fold.folding_preserves_listdecoding_base}
 \uses{def:list_close_codewords_block,def:fold_k,def:fold_k_set}
     Let $\code := \rscode[\field, \evaldomain, m]$ be a Reed Solomon code, and $k \leq m$ be a parameter. Denote $\code' := \rscode[\field, \evaldomain^{2}, m - 1]$. Then for every $f : \evaldomain \to \field$ and $\delta \in (0, 1 - {\bound}^\star(\code', 2))$,
     \[
@@ -197,13 +197,13 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \end{lemma}
     
 \begin{lemma}\label{lemma:folding_preserves_listdecoding_bound}
-\lean{BlockRelDistance.folding_preserves_listdecoding_bound}
+\lean{Fold.folding_preserves_listdecoding_bound}
 \uses{def:list_close_codewords_block,def:fold_k}
     For every $\alpha \in \field$, $\mathrm{Fold_S}(\Lambda_{r}(\code, 0, k, f, \delta), \alpha) \subseteq \Lambda_{r}(\code', 1, k, \mathrm{Fold}(f, \alpha), \delta)$.
 \end{lemma}
 
 \begin{lemma}\label{lemma:folding_preserves_listdecoding_base_ne_subset}
-\lean{BlockRelDistance.folding_preserves_listdecoding_base_ne_subset}
+\lean{Fold.folding_preserves_listdecoding_base_ne_subset}
 \uses{def:list_close_codewords_block,def:fold_k,def:fold_k_set}
     \[
     \Pr_{\alpha \leftarrow \field} \left[
@@ -250,7 +250,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
     \]
 \end{lemma}
 
-\begin{theorem}
+\begin{theorem}\label{thm: whir_rbr_soundness}
 \lean{WhirIOP.whir_rbr_soundness}
 \uses{thm:folding_preserves_listdecoding,lemma:out_of_domain_sampling_crs_eq_rs,lemma:gen_mutual_corr_agreement,def:constrained_code}
     Consider $(\field, M, (k_i, m_i, \evaldomain_i, t_i)_{0 \leq i \leq M}, \widehat{w}_0, \sigma_0, m, d^\star, d)$ with the following ingrediants and conditions,
