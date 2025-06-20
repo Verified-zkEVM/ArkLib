@@ -196,8 +196,8 @@ theorem whir_rbr_soundness
           ε_out i ≤
             2^(P.varCount i) * (h.dist i ⟨0, Fact.out⟩)^2 / (2 * Fintype.card F)
         ∧
-        -- ε_shift(i) ≤ (1 - δ_{i-1})^(repeatParam_{i-1})
-        --                + (dist(i,0) * (repeatParam_{i-1} + 1)) / |F|
+        -- ε_shift(i+1) ≤ (1 - δ_{i})^(repeatParam_{i})
+        --                + (dist(i+1,0) * (repeatParam_{i} + 1)) / |F|
         -- Note here that `i : Fin M`, so we need to cast into `Fin (M + 1)` for indexing of
         -- `h.δ`, `h.dist` and `P.repeatParam`.
         -- To get `i`, we use `.castSucc`, whereas to get `i + 1`, we use `.succ`.
