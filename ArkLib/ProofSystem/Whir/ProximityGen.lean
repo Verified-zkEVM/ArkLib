@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Least Authority
+Authors: Mirco Richter (Least Authority)
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon
@@ -17,11 +17,11 @@ variable  {F : Type*} [Semiring F] [Fintype F] [DecidableEq F]
 
 /-- For `l` functions `fᵢ : ι → 𝔽`, distance `δ`, generator function `GenFun: 𝔽 → parℓ → 𝔽ˡ`
     and linear code `C` the predicate `proximityCondition(r)` is true, if the linear
-    combination f := ∑ⱼ rⱼ • fⱼ is within relative Hamming distance `δ` to the linear
+    combination f := ∑ⱼ rⱼ * fⱼ is within relative Hamming distance `δ` to the linear
     code `C`.  -/
 noncomputable def proximityCondition
    (f : parℓ → ι → F) (δ : ℝ≥0) (GenFun : F → parℓ → F) (C : LinearCode ι F): F → Prop
-   | r => δᵣ( (fun x => ∑ j : parℓ, (GenFun r j) • f j x) , C ) ≤ (δ : ℝ)
+   | r => δᵣ( (fun x => ∑ j : parℓ, (GenFun r j) * f j x) , C ) ≤ (δ : ℝ)
 
 
 /-- A proximity generator for a linear code `C`, Definition 4.7 -/
