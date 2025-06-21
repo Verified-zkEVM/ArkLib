@@ -8,7 +8,7 @@ Mirco Richter
 import ArkLib.Data.CodingTheory.Basic
 import Mathlib.LinearAlgebra.Lagrange
 import Mathlib.RingTheory.Henselian
-import ArkLib.Data.Fin.Basic
+import ArkLib.Data.Fin.Lift
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLib.Data.Polynomial.Interface
 

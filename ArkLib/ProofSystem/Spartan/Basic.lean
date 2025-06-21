@@ -24,6 +24,9 @@ import ArkLib.ProofSystem.Component.CheckClaim
 
   Note that all dimensions are required to be powers of two.
 
+  (Maybe we shouldn't do this? And do the padding explicitly, so we can handle arbitrary
+  dimensions?)
+
   It is used to prove the correctness of R1CS relations: `(A *ᵥ 𝕫) * (B *ᵥ 𝕫) = (C *ᵥ 𝕫)`, where:
   - `A, B, C : Matrix (Fin m) (Fin n) R` are the R1CS constraint matrices.
   - `𝕩 : Fin (n - k) → R` is the public input.
@@ -39,50 +42,48 @@ import ArkLib.ProofSystem.Component.CheckClaim
   **I. Interaction Phase:**
 
   - **Stage 0:** The oracle verifier may optionally receive oracle access to the multilinear
-  extensions `MLE A, MLE B, MLE C : R[X Fin ℓ_n][X Fin ℓ_m]` of the R1CS matrices `A`, `B`,
-  and `C`. Otherwise, the oracle verifier may see the matrices `A`, `B`, and `C` directly
-  (as part of the input statement).
+    extensions `MLE A, MLE B, MLE C : R[X Fin ℓ_n][X Fin ℓ_m]` of the R1CS matrices `A`, `B`, and
+    `C`. Otherwise, the oracle verifier may see the matrices `A`, `B`, and `C` directly (as part of
+    the input statement).
 
   - **Stage 1:** The prover sends the multilinear extension `MLE 𝕨 : R[X Fin ℓ_k]` of the witness
-  `w` to the verifier. The verifier sends back a challenge `τ : Fin ℓ_m → R`.
+    `w` to the verifier. The verifier sends back a challenge `τ : Fin ℓ_m → R`.
 
   - **Stage 2:** The prover and verifier engage in a sum-check protocol to verify the computation:
       `∑ x ∈ {0, 1}^ℓ_m, eqPoly ⸨τ, x⸩ * (A_x ⸨x⸩ * B_x ⸨x⸩ - C_x ⸨x⸩) = 0`,
 
-    where `A_x ⸨X⸩ = ∑ y ∈ {0, 1}^ℓ_m, (MLE A) ⸨X, y⸩ * (MLE 𝕫) ⸨y⸩`, and similarly for
-    `B_x` and `C_x`.
+    where `A_x ⸨X⸩ = ∑ y ∈ {0, 1}^ℓ_m, (MLE A) ⸨X, y⸩ * (MLE 𝕫) ⸨y⸩`, and similarly for `B_x` and
+    `C_x`.
 
     The sum-check protocol terminates with random challenges `r_x : Fin ℓ_m → R`, and the purported
     evaluation `e_x` of `eqPoly ⸨τ, r_x⸩ * (A_x ⸨r_x⸩ * B_x ⸨r_x⸩ - C_x ⸨r_x⸩)`.
 
-  - **Stage 3:** The prover sends further evaluation claims to the verifier:
-    `v_A = A_x ⸨r_x⸩`, `v_B = B_x ⸨r_x⸩`, `v_C = C_x ⸨r_x⸩`
+  - **Stage 3:** The prover sends further evaluation claims to the verifier: `v_A = A_x ⸨r_x⸩`, `v_B
+    = B_x ⸨r_x⸩`, `v_C = C_x ⸨r_x⸩`
 
     The verifier sends back challenges `r_A, r_B, r_C : R`.
 
   - **Stage 4:** The prover and verifier engage in another sum-check protocol to verify the
-  computation:
-    `∑ y ∈ {0, 1}^ℓ_n, r_A * (MLE A) ⸨r_x, y⸩ * (MLE 𝕫) ⸨y⸩ + r_B * (MLE B) ⸨r_x, y⸩ * (MLE 𝕫) ⸨y⸩ `
-      `+ r_C * (MLE C) ⸨r_x, y⸩ * (MLE 𝕫) ⸨y⸩ = r_A * v_A + r_B * v_B + r_C * v_C`
+    computation: `∑ y ∈ {0, 1}^ℓ_n, r_A * (MLE A) ⸨r_x, y⸩ * (MLE 𝕫) ⸨y⸩ + r_B * (MLE B) ⸨r_x, y⸩ *
+    (MLE 𝕫) ⸨y⸩ ` `+ r_C * (MLE C) ⸨r_x, y⸩ * (MLE 𝕫) ⸨y⸩ = r_A * v_A + r_B * v_B + r_C * v_C`
 
     The sum-check protocol terminates with random challenges `r_y : Fin ℓ_n → R`, and the purported
-    evaluation `e_y` of
-      `(r_A * (MLE A) ⸨r_x, r_y⸩ + r_B * (MLE B) ⸨r_x, r_y⸩ + r_C * (MLE C) ⸨r_x, r_y⸩) `
-        `* (MLE 𝕫) ⸨r_y⸩`.
+    evaluation `e_y` of `(r_A * (MLE A) ⸨r_x, r_y⸩ + r_B * (MLE B) ⸨r_x, r_y⸩ + r_C * (MLE C) ⸨r_x,
+    r_y⸩) ` `* (MLE 𝕫) ⸨r_y⸩`.
 
   **II. Verification Phase:**
 
-  1. The verifier makes a query to the polynomial oracle `MLE 𝕨` at
-  `r_y [ℓ_n - ℓ_k :] : Fin ℓ_k → R`, and obtain an evaluation value `v_𝕨 : R`.
+  1. The verifier makes a query to the polynomial oracle `MLE 𝕨` at `r_y [ℓ_n - ℓ_k :] : Fin ℓ_k →
+     R`, and obtain an evaluation value `v_𝕨 : R`.
 
-  2. The verifier makes three queries to the polynomial oracles `MLE A, MLE B, MLE C` at
-  `r_y ‖ r_x : Fin (ℓ_n + ℓ_m) → R`, and obtain evaluation values `v_1, v_2, v_3 : R`.
+  2. The verifier makes three queries to the polynomial oracles `MLE A, MLE B, MLE C` at `r_y ‖ r_x
+     : Fin (ℓ_n + ℓ_m) → R`, and obtain evaluation values `v_1, v_2, v_3 : R`.
 
-  Alternatively, if the verifier does not receive oracle access, then it computes the
-  evaluation values directly.
+  Alternatively, if the verifier does not receive oracle access, then it computes the evaluation
+  values directly.
 
   3. The verifier computes `v_𝕫 := 𝕩 *ᵢₚ (⊗ i, (1, r_y i))[: n - k] + (∏ i < ℓ_k, r_y i) * v_𝕨`,
-  where `*ᵢₚ` denotes the inner product, and `⊗` denotes the tensor product.
+     where `*ᵢₚ` denotes the inner product, and `⊗` denotes the tensor product.
 
   4. The verifier accepts if and only if both of the following holds:
     - `e_x = eqPoly ⸨τ, r_x⸩ * (v_A * v_B - v_C)`
@@ -101,43 +102,79 @@ structure PublicParams where
   ℓ_m : ℕ
   ℓ_k : ℕ
 
-def PublicParams.toSizeR1CS (pp : PublicParams) : R1CS.Size := {
+namespace PublicParams
+
+/-- The R1CS dimensions / sizes are the powers of two of the public parameters. -/
+def toSizeR1CS (pp : PublicParams) : R1CS.Size := {
   m := 2 ^ pp.ℓ_m
   n_x := 2 ^ pp.ℓ_n - 2 ^ pp.ℓ_k
   n_w := 2 ^ pp.ℓ_k
 }
 
+@[simp]
+theorem toSizeR1CS_n (pp : PublicParams) (h : pp.ℓ_n ≥ pp.ℓ_k) : pp.toSizeR1CS.n = 2 ^ pp.ℓ_n := by
+  simp [toSizeR1CS, R1CS.Size.n]
+  have : 2 ^ pp.ℓ_n ≥ 2 ^ pp.ℓ_k := by exact Nat.pow_le_pow_right (by decide) h
+  exact Nat.sub_add_cancel this
+
+end PublicParams
+
 namespace Spec
 
-variable (R : Type) [CommSemiring R] [IsDomain R] [Fintype R] (pp : PublicParams)
+variable (R : Type) [CommRing R] [IsDomain R] [Fintype R] (pp : PublicParams)
+
+variable {ι : Type} (oSpec : OracleSpec ι)
+
+section Construction
 
 /-- The input types and relation is just the R1CS relation for the given size -/
 
-abbrev InputStatement (pp : PublicParams) := R1CS.Statement R pp.toSizeR1CS
+abbrev InputStatement := R1CS.Statement R pp.toSizeR1CS
 
-abbrev InputOracleStatement (pp : PublicParams) := R1CS.OracleStatement R pp.toSizeR1CS
+abbrev InputOracleStatement := R1CS.OracleStatement R pp.toSizeR1CS
 
-abbrev InputWitness (pp : PublicParams) := R1CS.Witness R pp.toSizeR1CS
+abbrev InputWitness := R1CS.Witness R pp.toSizeR1CS
 
-abbrev inputRelation (pp : PublicParams) := R1CS.relation R pp.toSizeR1CS
+abbrev inputRelation := R1CS.relation R pp.toSizeR1CS
+
+-- For the input oracle statement, we define its oracle interface to be the polynomial evaluation
+-- oracle of its multilinear extension.
+
+instance : ∀ i, OracleInterface (InputOracleStatement R pp i) :=
+  fun i => {
+    Query := (Fin pp.ℓ_m → R) × (Fin pp.ℓ_n → R)
+    Response := R
+    oracle := fun matrix ⟨x, y⟩ => by
+      let A := matrix.toMLE
+  }
+
+-- For the input witness, we define its oracle interface to be the polynomial evaluation oracle of
+-- its multilinear extension.
+
+-- TODO: define an `OracleInterface.ofEquiv` definition that transfers the oracle interface across
+-- an equivalence of types.
+instance : OracleInterface (InputWitness R pp) where
+  Query := Fin pp.ℓ_k → R
+  Response := R
+  oracle := fun 𝕨 evalPoint => (MLE (𝕨 ∘ finFunctionFinEquiv)) ⸨evalPoint⸩
 
 /-!
   ## First message
   We invoke the protocol `SendSingleWitness` to send the witness `𝕨` to the verifier.
 -/
 
+abbrev FirstMessageStatement : Type := InputStatement R pp
 
-@[reducible]
-def WitnessMLE (pp : PublicParams) : Type := R⦃≤ 1⦄[X Fin pp.ℓ_k]
+abbrev FirstMessageOracleStatement : R1CS.MatrixIdx ⊕ Fin 1 → Type :=
+  (InputOracleStatement R pp) ⊕ᵥ (fun _ => InputWitness R pp)
 
-@[reducible]
-def pSpecFirstMessage : ProtocolSpec 1 := ![(.P_to_V, WitnessMLE R pp)]
-
-open ProtocolSpec in
-instance : ProverOnly (pSpecFirstMessage R pp) where
-  prover_first' := by simp [pSpecFirstMessage]
-
-def relationR1CS := R1CS.relation R (pp.toSizeR1CS)
+def firstMessageOracleReduction :
+    OracleReduction ![(.P_to_V, InputWitness R pp)] oSpec
+      (InputStatement R pp) (InputWitness R pp)
+      (FirstMessageStatement R pp) Unit
+      (InputOracleStatement R pp) (FirstMessageOracleStatement R pp) :=
+  SendSingleWitness.oracleReduction oSpec
+    (InputStatement R pp) (InputOracleStatement R pp) (InputWitness R pp)
 
 /-!
   ## First challenge
@@ -145,7 +182,7 @@ def relationR1CS := R1CS.relation R (pp.toSizeR1CS)
     `𝒢(Z) = ∑_{x} eq ⸨Z, x⸩ * (A ⸨x⸩ * B ⸨x⸩ - C ⸨x⸩)`
 -/
 
-def pSpecFirstChallenge : ProtocolSpec 1 := ![(.V_to_P, Fin pp.ℓ_m → R)]
+-- def firstVirtualPolynomial
 
 /-!
   ## First sum-check
@@ -180,9 +217,15 @@ def pSpecFirstChallenge : ProtocolSpec 1 := ![(.V_to_P, Fin pp.ℓ_m → R)]
   We invoke the `CheckClaim` protocol to check the two evaluation claims.
 -/
 
+end Construction
+
+section Security
+
+
+end Security
+
 end Spec
 
 end
-
 
 end Spartan
