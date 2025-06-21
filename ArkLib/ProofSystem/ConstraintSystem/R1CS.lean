@@ -32,28 +32,39 @@ structure Size where
 
 attribute [simp] Size.n_w_le_n
 
+variable (sz : Size)
+
 /-- Number of public `𝕩` variables -/
-abbrev Size.n_x (sz : Size) : ℕ := sz.n - sz.n_w
+abbrev Size.n_x : ℕ := sz.n - sz.n_w
+
+lemma Size.n_eq_n_x_add_n_w : sz.n = sz.n_x + sz.n_w := by
+  simp [Size.n_x]
 
 @[reducible]
-def Statement (sz : Size) := Fin sz.n_x → R
+def Statement := Fin sz.n_x → R
 
 @[reducible]
-def OracleStatement (sz : Size) := fun _ : MatrixIdx => Matrix (Fin sz.m) (Fin sz.n) R
+def OracleStatement := fun _ : MatrixIdx => Matrix (Fin sz.m) (Fin sz.n) R
 
 @[reducible]
-def Witness (sz : Size) := Fin sz.n_w → R
+def Witness := Fin sz.n_w → R
 
+/-- The vector `𝕫` is the concatenation of the public input and witness variables -/
+@[reducible, inline]
+def 𝕫 {R} {sz} (stmt : Statement R sz) (wit : Witness R sz) : Fin sz.n → R :=
+  Fin.append stmt wit ∘ Fin.cast (by simp)
+
+/-- The R1CS relation: `(A *ᵥ 𝕫) * (B *ᵥ 𝕫) = (C *ᵥ 𝕫)`, where `*` is understood to mean
+  component-wise (Hadamard) vector multiplication. -/
 @[reducible]
--- The R1CS relation
-def relation (sz : Size) :
+def relation :
     (Fin sz.n_x → R) → -- public input `x`
     (MatrixIdx → Matrix (Fin sz.m) (Fin sz.n) R) → -- matrices `A`, `B`, `C` as oracle inputs
     (Fin sz.n_w → R) → -- witness input `w`
     Prop :=
-  fun stmt matrices wit =>
-    let z : Fin sz.n → R := Fin.append stmt wit ∘ Fin.cast (by simp)
-    (matrices .A *ᵥ z) * (matrices .B *ᵥ z) = (matrices .C *ᵥ z)
+  fun stmt matrix wit =>
+    letI 𝕫 := 𝕫 stmt wit
+    (matrix .A *ᵥ 𝕫) * (matrix .B *ᵥ 𝕫) = (matrix .C *ᵥ 𝕫)
 
 /-- Pad an R1CS instance (on the right) from `sz₁` to `sz₂` with zeros.
 
