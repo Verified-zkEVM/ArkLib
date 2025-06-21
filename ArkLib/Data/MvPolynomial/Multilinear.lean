@@ -108,9 +108,15 @@ theorem eqPolynomial_eval_zeroOne (r x : σ → Fin 2) :
 
 variable [DecidableEq σ]
 
-/-- Multilinear extension of evaluations on the hypercube -/
+/-- Multilinear extension of evaluations on the `σ`-indexed hypercube, where the evaluations are
+  represented as `(σ → Fin 2) → R` -/
 def MLE (evals : (σ → Fin 2) → R) : MvPolynomial σ R :=
     ∑ x : σ → Fin 2, (eqPolynomial (x : σ → R)) * C (evals x)
+
+/-- Multilinear extension of evaluations on the `n`-dimensional hypercube, where the evaluations are
+  represented as `Fin (2 ^ n) → R` -/
+def MLE' {n : ℕ} (evals : Fin (2 ^ n) → R) : MvPolynomial (Fin n) R :=
+  MLE (evals ∘ finFunctionFinEquiv)
 
 theorem MLE_expanded (evals : (σ → Fin 2) → R) : MLE evals =
     ∑ x : σ → Fin 2, (∏ i : σ, ((1 - C (x i : R)) * (1 - X i) + C (x i : R) * X i))

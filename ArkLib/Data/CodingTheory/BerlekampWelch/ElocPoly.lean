@@ -10,10 +10,10 @@ import Mathlib.Algebra.Polynomial.Degree.Definitions
 import Mathlib.Algebra.Polynomial.FieldDivision
 import Mathlib.Data.Finset.Insert
 import Mathlib.Data.Fintype.Card
-import Mathlib.Data.Matrix.Mul 
+import Mathlib.Data.Matrix.Mul
 
 import ArkLib.Data.CodingTheory.Basic
-import ArkLib.Data.Fin.Basic
+import ArkLib.Data.Fin.Lift
 
 namespace BerlekampWelch
 
@@ -21,12 +21,12 @@ variable {F : Type} [Field F]
          {m n : ℕ} {p : Polynomial F}
 variable [DecidableEq F]
 
-section ElocPoly 
+section ElocPoly
 
 open Polynomial
 
 protected noncomputable def ElocPoly (n : ℕ) (ωs f : ℕ → F) (p : Polynomial F) : Polynomial F :=
-  List.prod <| (List.range n).map fun i => 
+  List.prod <| (List.range n).map fun i =>
     if f i = p.eval (ωs i)
     then 1
     else X - C (ωs i)
@@ -47,9 +47,9 @@ protected lemma elocPoly_one :
 
 @[simp]
 protected lemma elocPoly_two :
-  ElocPoly 2 ωs f p = 
-  if f 1 = eval (ωs 1) p 
-  then if f 0 = eval (ωs 0) p then 1 
+  ElocPoly 2 ωs f p =
+  if f 1 = eval (ωs 1) p
+  then if f 0 = eval (ωs 0) p then 1
        else X - C (ωs 0)
   else if f 0 = eval (ωs 0) p then X - C (ωs 1)
        else (X - C (ωs 0)) * (X - C (ωs 1)) := by
@@ -58,7 +58,7 @@ protected lemma elocPoly_two :
 @[simp]
 protected lemma elocPoly_succ :
   ElocPoly (n + 1) ωs f p =
-  ElocPoly n ωs f p * 
+  ElocPoly n ωs f p *
     if f n = p.eval (ωs n)
     then 1
     else X - C (ωs n) := by
@@ -68,7 +68,7 @@ protected lemma elocPoly_succ :
 
 open BerlekampWelch (elocPoly_succ) in
 protected lemma roots_of_eloc_poly {x : F}
-  (h : (ElocPoly n ωs f p).eval x = 0) : 
+  (h : (ElocPoly n ωs f p).eval x = 0) :
   ∃ i, i < n ∧ f i ≠ p.eval (ωs i) := by
   induction' n with n ih generalizing x
   · aesop
@@ -95,13 +95,13 @@ protected lemma elocPoly_ne_zero : ElocPoly n ωs f p ≠ 0 := by
 
 @[simp]
 protected lemma elocPoly_leading_coeff_one : (ElocPoly n ωs f p).leadingCoeff = 1 := by
-  induction' n with n _ 
+  induction' n with n _
   · simp
   · aesop
 
 section
 
-open Fin 
+open Fin
 
 protected lemma elocPoly_congr {ωs' f' : ℕ → F}
   (h₁ : ∀ {m}, m < n → ωs m = ωs' m) (h₂ : ∀ {m}, m < n → f m = f' m) :
@@ -122,7 +122,7 @@ noncomputable def ElocPolyF (ωs f : Fin n → F) (p : Polynomial F) : Polynomia
 
 @[simp]
 protected lemma elocPolyF_eq_elocPoly :
-  ElocPolyF (n := n) (liftF' ωs) (liftF' f) = ElocPoly n ωs f := 
+  ElocPolyF (n := n) (liftF' ωs) (liftF' f) = ElocPoly n ωs f :=
   elocPoly_congr liftF_liftF'_of_lt liftF_liftF'_of_lt
 
 @[simp]
@@ -142,8 +142,8 @@ protected lemma errors_are_roots_of_elocPolyF {i : Fin n} {ωs f : Fin n → F}
   (h : f i ≠ p.eval (ωs i)) : (ElocPolyF ωs f p).eval (ωs i) = 0 := by
   rw [←liftF_eval (f := ωs)]
   aesop (config := {warnOnNonterminal := false})
-  rw [BerlekampWelch.errors_are_roots_of_elocPoly 
-    (i.isLt) 
+  rw [BerlekampWelch.errors_are_roots_of_elocPoly
+    (i.isLt)
     (by aesop (add simp [liftF_eval]))]
 
 @[simp]
@@ -174,7 +174,7 @@ lemma elocPolyF_deg {ωs f : Fin n → F} : (ElocPolyF ωs f p).natDegree = Δ�
       hammingDist.eq_def, Finset.card_filter, Finset.sum_fin_eq_sum_range, Finset.sum_range_succ
     ]) <;> (apply Finset.sum_congr rfl; aesop (add safe (by omega)))
 
-end 
+end
 
 end
 
