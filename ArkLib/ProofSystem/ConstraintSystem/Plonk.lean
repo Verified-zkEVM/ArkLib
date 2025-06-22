@@ -26,7 +26,7 @@ structure WireIndices (numWires : ℕ) where
 deriving DecidableEq
 
 /-- A selector for a Plonk constraint system is a set of coefficients that determine the gate type
-  -/
+-/
 structure Selector (𝓡 : Type*) where
   /-- left input -/
   qL : 𝓡

@@ -14,8 +14,7 @@ open OracleSpec OracleComp
 
 variable {ι : Type} {α β γ : Type}
 
-/--
-  A function that implements the oracle interface specified by `spec`, and queries no further
+/-- A function that implements the oracle interface specified by `spec`, and queries no further
   oracles.
 -/
 def Oracle (spec : OracleSpec ι) := (i : ι) → spec.domain i → spec.range i
@@ -37,8 +36,7 @@ namespace OracleComp
 
 variable {ι : Type} {spec : OracleSpec ι} {α σ : Type}
 
-/--
-  Run an oracle computation `OracleComp spec α` with an oracle coming from
+/-- Run an oracle computation `OracleComp spec α` with an oracle coming from
   a (deterministic) function `f` that queries no further oracles.
 
   TODO: add state for `f`

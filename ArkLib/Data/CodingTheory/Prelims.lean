@@ -68,8 +68,7 @@ end Matrix
 
 end
 
-/--
-  Affine line between two vectors with coefficients in a semiring.
+/-- Affine line between two vectors with coefficients in a semiring.
 -/
 def Affine.line {F : Type*} {ι : Type*} [Ring F] (u v : ι → F) : Submodule F (ι → F) :=
   vectorSpan _ {u, v}

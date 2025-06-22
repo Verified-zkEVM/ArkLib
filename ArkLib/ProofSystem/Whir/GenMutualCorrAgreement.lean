@@ -41,7 +41,7 @@ noncomputable def genMutualCorrAgreement
     ∀ (f : Gen.parℓ → ι → F) (δ : ℝ≥0) (_hδ : δ < 1 - (Gen.B Gen.C Gen.parℓ)),
     Pr_{let r ←$ᵖ F}[ (proximityCondition f δ Gen.Fun Gen.C) r ] ≤ errStar δ
 
-/--Lemma 4.10
+/-- Lemma 4.10
   Let `C` be a linear code with minimum distance `δ_C`, `Gen` be a proximity generator for C
   with parameters `B` and `err`, then Gen has mutual correlated agreement with proximity bounds
   `BStar = min {1 - δ_C/2, B}` and `errStar = err`. -/
@@ -54,19 +54,21 @@ lemma genMutualCorrAgreement_le_bound
     ∧
     errStar = Gen.err Gen.C Gen.parℓ := by sorry
 
-/--Corollary 4.11
+/-- Corollary 4.11
   Let `C` be a (smooth) ReedSolomon Code with rate `ρ`, then the function
   `Gen(parℓ,α)={1,α,..,α^(parℓ-1)}` is a proximity generator for Gen with
   mutual correlated agreement with proximity bounds
     `BStar = (1+ρ) / 2`
     `errStar = (parℓ-1)*2^m / ρ*|F|`.
 
-  function `Gen(parℓ,α)={1,α,..,α ^ parℓ-1}`-/
+  function `Gen(parℓ,α)={1,α,..,α ^ parℓ-1}`
+-/
 noncomputable def gen_α (α : F) (parℓ : Type) (exp : parℓ → ℕ): F → parℓ → F :=
   fun _ j => α ^ (exp j)
 
-/--the proximity generator for smooth ReedSolomon codes wrt function
-  `Gen(parℓ,α)={1,α,..,α ^ parℓ-1}`-/
+/-- The proximity generator for smooth ReedSolomon codes wrt function
+  `Gen(parℓ,α)={1,α,..,α ^ parℓ-1}`
+-/
 noncomputable def proximityGenerator_α
   [DecidableEq ι] (Gen : ProximityGenerator ι F) [hℓ : Fintype Gen.parℓ]
   (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ] (exp : Gen.parℓ → ℕ) :
@@ -83,7 +85,7 @@ noncomputable def proximityGenerator_α
       sorry
   }
 
-/--Corollary 4.11
+/-- Corollary 4.11
   Let `C` be a smooth ReedSolomon code with rate `ρ`, then `Gen_α` is the proximity generator with
   mutual correlated agreement with bounds
     BStar = (1-ρ) / 2
@@ -105,13 +107,13 @@ lemma genMutualCorrAgreement_rsc_le_bound
   := by sorry
 
 
-/--Conjecture 4.12
+/-- Conjecture 4.12
   The function `Gen(parℓ,α)={1,α,..,α ^ parℓ-1}` is a proximity generator with
   mutual correlated agreement for every (smooth) ReedSolomon code `C` with rate `ρ = 2^m / |ι|`.
   Below we state two conjectures for the parameters of the proximity bound.
 
   1. Upto Johnson bound: BStar = √ρ and
-                         errStar = (parℓ-1) * 2^2m / |F| * (2 * min {1 - √ρ - δ, √ρ/20}) ^ 7.-/
+                         errStar = (parℓ-1) * 2^2m / |F| * (2 * min {1 - √ρ - δ, √ρ/20}) ^ 7. -/
 theorem genMutualCorrAgreement_le_johnsonBound
   [DecidableEq ι] (Gen Gen_α: ProximityGenerator ι F)
   [Fintype Gen.parℓ] [Fintype Gen_α.parℓ]
@@ -128,8 +130,8 @@ theorem genMutualCorrAgreement_le_johnsonBound
           ((Fintype.card Gen.parℓ - 1) * 2 ^ (2 * m) / (Fintype.card ι * (2 * minval)^7))
   := by sorry
 
-/--2. Upto capacity: BStar = ρ and ∃ c₁,c₂,c₃ ∈ ℕ s.t. ∀ η > 0 and 0 < δ < 1 - ρ - η
-      errStar = (parℓ-1)^c₂ * d^c₂ / η^c₁ * ρ^(c₁+c₂) * |F|, where d = 2^m is the degree.-/
+/-- 2. Upto capacity: BStar = ρ and ∃ c₁,c₂,c₃ ∈ ℕ s.t. ∀ η > 0 and 0 < δ < 1 - ρ - η
+      errStar = (parℓ-1)^c₂ * d^c₂ / η^c₁ * ρ^(c₁+c₂) * |F|, where d = 2^m is the degree. -/
 theorem genMutualCorrAgreement_le_capacity
   [DecidableEq ι] (Gen Gen_α: ProximityGenerator ι F)
   [Fintype Gen.parℓ] [Fintype Gen_α.parℓ]
@@ -148,7 +150,7 @@ section
 
 open InterleavedCode ListDecodable
 
-/--For `parℓ` functions `{f₁,..,f_parℓ}`, `IC` be the `parℓ`-interleaved code from a linear code C,
+/-- For `parℓ` functions `{f₁,..,f_parℓ}`, `IC` be the `parℓ`-interleaved code from a linear code C,
   with `Gen` as a proximity generator with mutual correlated agreement,
   `proximityListDecodingCondition(r)` is true if,
   List(C, ∑ⱼ rⱼ*fⱼ, δ) ≠ { ∑ⱼ rⱼ*uⱼ, where {u₁,..u_parℓ} ∈ Λᵢ({f₁,..,f_parℓ}, IC, δ) } -/
@@ -165,7 +167,7 @@ def proximityListDecodingCondition
       listHamming ≠ listIC
 
 
-/--lemma 4.13: Mutual correlated agreement preserves list decoding
+/-- Lemma 4.13: Mutual correlated agreement preserves list decoding
   Let C be a linear code with minimum distance δ_c and `Gen` be a proximity generator
   with mutual correlated agreement for `C`.
   Then for every `{f₁,..,f_parℓ}` and `δ ∈ (0, min δ_c (1 - BStar))`,

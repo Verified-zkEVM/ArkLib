@@ -22,14 +22,14 @@ open MvPolynomial
 
 variable {F : Type*} [CommSemiring F] {m : ℕ}
 
-/- Given integers m and i this computes monomial exponents
-   ( σ(0), ..., σ(m-1) ) = ( bit₀(i), ..., bitₘ₋₁(i) )
-   such that we have X_0^σ(0)⬝  ⋯  ⬝ X_(m-1)^σ(m-1).
-   For i ≥ 2ᵐ this is the bit reprsentation of (i mod 2ᵐ) -/
+/-- Given integers m and i this computes monomial exponents
+  `( σ(0), ..., σ(m-1) ) = ( bit₀(i), ..., bitₘ₋₁(i) )`
+  such that we have `X_0^σ(0)⬝  ⋯  ⬝ X_(m-1)^σ(m-1)`.
+  For `i ≥ 2ᵐ` this is the bit reprsentation of `(i mod 2ᵐ)` -/
 def bitExpo (i : ℕ) : (Fin m) →₀ ℕ :=
   Finsupp.onFinset Finset.univ
     (fun j => if Nat.testBit i j.1 then 1 else 0)
-    (by intro j hj; simpa using hj)
+    (by intro j hj; simp)
 
 /-- The linear map that maps univariate polynomials of degree < 2ᵐ onto
     degree wise linear m-variate polynomials, sending
@@ -47,7 +47,7 @@ def linearMvExtension :
       simp [Polynomial.sum_smul_index]
       sorry
 
-/--partialEval takes a m-variate polynomial f and a k-vector α as input,
+/-- `partialEval` takes a m-variate polynomial f and a k-vector α as input,
   partially evaluates f(X_0, X_1,..X_(m-1)) at {X_0 = α_0, X_1 = α_1,.., X_{k-1} = α_{k-1}}
   and returns a (m-k)-variate polynomial. -/
 def partialEval {k : ℕ} (f : MvPolynomial (Fin m) F) (α : Fin k → F) (h : k ≤ m) :
@@ -62,9 +62,9 @@ def partialEval {k : ℕ} (f : MvPolynomial (Fin m) F) (α : Fin k → F) (h : k
   eval₂ C φ f
 
 /-- The Semiring morphism that maps m-variate polynomials onto univariate
-    polynomials by evaluating them at (X^(2⁰), ... , X^(2ᵐ⁻¹) ) , i.e. sending
-    aₑ X₀^σ(0) ⬝ ⋯ ⬝ Xₘ₋₁^σ(m-1) →  aₑ (X^(2⁰))^σ(0) ⬝ ⋯ ⬝ (X^(2ᵐ⁻¹))^σ(m-1)
-    for all σ : Fin m → ℕ  -/
+    polynomials by evaluating them at `(X^(2⁰), ... , X^(2ᵐ⁻¹))`, i.e. sending
+    `aₑ X₀^σ(0) ⬝ ⋯ ⬝ Xₘ₋₁^σ(m-1) →  aₑ (X^(2⁰))^σ(0) ⬝ ⋯ ⬝ (X^(2ᵐ⁻¹))^σ(m-1)`
+    for all `σ : Fin m → ℕ` -/
 def powAlgHom :
   MvPolynomial (Fin m) F →ₐ[F] Polynomial F :=
    aeval fun j => Polynomial.X ^ (2 ^ (j : ℕ))

@@ -22,7 +22,7 @@ open Polynomial
 
 For example the Array `#[1,2,3]` represents the polynomial `1 + 2x + 3x^2`. Two arrays may represent
 the same polynomial via zero-padding, for example `#[1,2,3] = #[1,2,3,0,0,0,...]`.
- -/
+-/
 @[reducible, inline, specialize]
 def UniPoly (R : Type*) := Array R
 
@@ -363,14 +363,14 @@ theorem non_zero_map [LawfulBEq R] (f : R → R) (hf : ∀ r, f r = 0 → r = 0)
   intro fp p_canon
   by_cases hp : p.size > 0
   -- positive case
-  apply canonical_iff.mpr
-  intro hfp
-  have h_nonzero := canonical_iff.mp p_canon hp
-  have : fp.getLast hfp = f (p.getLast hp) := by simp [Array.getLast, fp]
-  rw [this]
-  by_contra h_zero
-  specialize hf (p.getLast hp) h_zero
-  contradiction
+  · apply canonical_iff.mpr
+    intro hfp
+    have h_nonzero := canonical_iff.mp p_canon hp
+    have : fp.getLast hfp = f (p.getLast hp) := by simp [Array.getLast, fp]
+    rw [this]
+    by_contra h_zero
+    specialize hf (p.getLast hp) h_zero
+    contradiction
   -- zero case
   have : p.size = 0 := by linarith
   have : fp.size = 0 := by simp [this, fp]
@@ -739,8 +739,7 @@ theorem eval_toPoly_eq_eval (x : Q) (p : UniPoly Q) : p.toPoly.eval x = p.eval x
   rw [← Array.foldl_hom (Polynomial.eval x)
     (g₁ := fun acc (t : Q × ℕ) ↦ acc + Polynomial.C t.1 * Polynomial.X ^ t.2)
     (g₂ := fun acc (a, i) ↦ acc + a * x ^ i) ]
-  congr
-  exact Polynomial.eval_zero
+  · congr; exact Polynomial.eval_zero
   simp
 
 /-- characterize `p.toPoly` by showing that its coefficients are exactly the coefficients of `p` -/

@@ -15,7 +15,8 @@ open BlockRelDistance Vector Finset
 
 variable {F : Type} [Field F] {ι : Type} [Pow ι ℕ]
 
-/--∃ x ∈ S, such that `y = x ^ 2^(k+1)`. extract_x returns `z = x ^ 2^k` such that `y = z^2`.-/
+/-- `∃ x ∈ S`, such that `y = x ^ 2^(k+1)`. `extract_x` returns `z = x ^ 2^k` such that `y = z^2`.
+-/
 noncomputable def extract_x
   (S : Finset ι) (φ : ι ↪ F) (k : ℕ) (y : indexPowT S φ (k + 1)) : indexPowT S φ k :=
   let x := Classical.choose y.property
@@ -23,7 +24,7 @@ noncomputable def extract_x
   let z := (φ x) ^ (2^k)
   ⟨z, ⟨x, hx.1, rfl⟩⟩
 
-/--Given a function `f : (ι^(2ᵏ)) → F`, foldf operates on two inputs:
+/-- Given a function `f : (ι^(2ᵏ)) → F`, foldf operates on two inputs:
   element `y ∈ LpowT S (k+1)`, hence `∃ x ∈ S, s.t. y = x ^ 2^(k+1)` and `α ∈ F`.
   It obtains the square root of y as `xPow := extract_x S φ k y`,
     here xPow is of the form `x ^ 2^k`.
@@ -36,14 +37,14 @@ noncomputable def foldf (S : Finset ι) (φ : ι ↪ F)
   let f_negx := f (-xPow)
   (fx + f_negx) / 2 + α * ((fx - f_negx) / (2 * (xPow.val : F)))
 
-/--the function fold_k_core runs a recursion,
+/-- The function `fold_k_core` runs a recursion,
     for a function `f : ι → F` and a vector `αs` of size i
-  For i = 0, fold_k_core returns f evaluated at x ∈ S
-  For i = (k+1) ≠ 0,
+  For `i = 0`, `fold_k_core` returns `f` evaluated at `x ∈ S`
+  For `i = (k+1) ≠ 0`,
     αs is parsed as α || αs', where αs' is of size k
     function `fk : (ι^2ᵏ) → F` is obtained by making a recursive call to
       `fold_k_core` on input `αs'`
-    we obtain the final function `(ι^(2^(k+1))) → F` by invoking `foldf` with `fk` and `α`.-/
+    we obtain the final function `(ι^(2^(k+1))) → F` by invoking `foldf` with `fk` and `α`. -/
 noncomputable def fold_k_core {S : Finset ι} {φ : ι ↪ F} (f : (indexPowT S φ 0) → F)
   [∀ i : ℕ, Neg (indexPowT S φ i)] : (i : ℕ) → (αs : Fin i → F) →
     indexPowT S φ i → F
@@ -54,7 +55,7 @@ noncomputable def fold_k_core {S : Finset ι} {φ : ι ↪ F} (f : (indexPowT S 
     let fk := fold_k_core f k αs'
     foldf S φ y fk α
 
-/--Definition 4.14, part 1
+/-- Definition 4.14, part 1
   fold_k takes a function `f : ι → F` and a vector `αs` of size k
   and returns a function `Fold : (ι^2ᵏ) → F` -/
 noncomputable def fold_k
@@ -63,7 +64,7 @@ noncomputable def fold_k
   (f : (indexPowT S φ 0) → F) (αs : Fin k → F) : indexPowT S φ k → F :=
   fold_k_core f k αs
 
-/--Definition 4.14, part 2
+/-- Definition 4.14, part 2
   fold_k takes a set of functions `set : Set (ι → F)` and a vector `αs` of size k
   and returns a set of functions `Foldset : Set ((ι^2ᵏ) → F)` -/
 noncomputable def fold_k_set
@@ -80,11 +81,11 @@ open CorrelatedAgreement Generator LinearMvExtension ListDecodable
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
          {ι : Type} [Fintype ι] [Pow ι ℕ] [DecidableEq ι]
 
-/--Claim 4.15
+/-- Claim 4.15
   Let `f : ι → F`, `α ∈ Fᵏ` is the folding randomness, and let `g : (ι^(2ᵏ) → F) = fold_k(f,α)`
   for k ≤ m, `f ∈ RS[F,ι,m]` then we have `g ∈ RS[F,ι^(2ᵏ),(m-k)]`
   if fPoly be the multilinear extension of f, then we have
-  (m-k)-variate multilinear extension of g as `gPoly = fPoly(α₁,α₂,...αₖ,X_k,..,X_{m-1})`-/
+  (m-k)-variate multilinear extension of g as `gPoly = fPoly(α₁,α₂,...αₖ,X_k,..,X_{m-1})` -/
 lemma fold_f_g
   {S : Finset ι} {φ : ι ↪ F} {k m : ℕ}
   {φ_0 : (indexPowT S φ 0) ↪ F} {φ_k : (indexPowT S φ k) ↪ F}
@@ -149,7 +150,7 @@ class GenMutualCorrParams (S : Finset ι) (φ : ι ↪ F) (k : ℕ) where
   h_card : ∀ j : Fin (k + 1), Fintype.card ((Gen_α j).parℓ) = 2
   hδLe : δ ≤ 1 - Finset.univ.sup (fun j => BStar j (Gen_α j).C (Gen_α j).parℓ)
 
-/--Theorem 4.20
+/-- Theorem 4.20
   Let C = RS[F,ι,m] be a smooth ReedSolomon code
   For k ≤ m and 0 ≤ i < k,
   let Cⁱ = RS[F,ι^(2ⁱ),m-i] and let Gen(parℓ,α) be a proxmity generator with
@@ -198,7 +199,7 @@ theorem folding_listdecoding_if_genMutualCorrAgreement
                           params.errStar i (params.Gen_α i).C (params.Gen_α i).parℓ δ)
 := by sorry
 
-/--Lemma 4.21
+/-- Lemma 4.21
   Let `C = RS[F,ι,m]` be a smooth ReedSolomon code and k ≤ m
   Denote `C' = RS[F,ι^2,m-1]`, then for every `f : ι → F` and `δ ∈ (0, 1 - BStar(C',2))`
     `Pr_{α ← F} [ fold_k_set(Λᵣ(0,k,f,S_0,C,δ),α) ≠ Λᵣ(1,k-1,foldf(f,α),S_1,C',δ) ]`
@@ -207,7 +208,7 @@ theorem folding_listdecoding_if_genMutualCorrAgreement
     `S_0` and `S_1` denote finite sets of elements of type ι and ι², and
     `Λᵣ` denotes the list of δ-close codewords wrt block relative distance.
     `Λᵣ(0,k,f,S_0,C)` denotes Λᵣ at f : ι → F for code C and
-    `Λᵣ(1,k,foldf(f,α),S_1,C')` denotes Λᵣ at foldf : ι^2 → F for code C'.-/
+    `Λᵣ(1,k,foldf(f,α),S_1,C')` denotes Λᵣ at foldf : ι^2 → F for code C'. -/
 lemma folding_preserves_listdecoding_base
   {S : Finset ι} {k m : ℕ} {φ : ι ↪ F} [Smooth φ] {δ : ℝ≥0}
   {S_0 : Finset (indexPowT S φ 0)} {S_1 : Finset (indexPowT S φ 1)}
@@ -233,9 +234,9 @@ lemma folding_preserves_listdecoding_base
              ] < errStar C' 2 δ
   := by sorry
 
-/--Lemma 4.22
+/-- Lemma 4.22
   Following same parameters as Lemma 4.21 above, and states
-  `∀ α : F, Λᵣ(0,k,f,S_0,C,δ),α) ⊆ Λᵣ(1,k-1,foldf(f,α),S_1,C',δ)`-/
+  `∀ α : F, Λᵣ(0,k,f,S_0,C,δ),α) ⊆ Λᵣ(1,k-1,foldf(f,α),S_1,C',δ)` -/
 lemma folding_preserves_listdecoding_bound
   {S : Finset ι} {k m : ℕ} {φ : ι ↪ F} [Smooth φ] {δ : ℝ≥0} {f : (indexPowT S φ 0) → F}
   {S_0 : Finset (indexPowT S φ 0)} {S_1 : Finset (indexPowT S φ 1)}
@@ -261,9 +262,9 @@ lemma folding_preserves_listdecoding_bound
         foldSet ⊆ listBlock'
   := by sorry
 
-/--Lemma 4.23
-  following same parameters as Lemma 4.21 above, and states
-  `Pr_{α ← F} [ Λᵣ(1,k-1,foldf(f,α),S_1,C',δ) ¬ ⊆ Λᵣ(0,k,f,S_0,C,δ),α) ] < errStar(C',2,δ)`-/
+/-- Lemma 4.23
+  Following same parameters as Lemma 4.21 above, and states
+  `Pr_{α ← F} [ Λᵣ(1,k-1,foldf(f,α),S_1,C',δ) ¬ ⊆ Λᵣ(0,k,f,S_0,C,δ),α) ] < errStar(C',2,δ)` -/
 lemma folding_preserves_listdecoding_base_ne_subset
   {S : Finset ι} {k m : ℕ} {φ : ι ↪ F} [Smooth φ] {δ : ℝ≥0}
   {S_0 : Finset (indexPowT S φ 0)} {S_1 : Finset (indexPowT S φ 1)}

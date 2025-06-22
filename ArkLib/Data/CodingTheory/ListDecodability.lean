@@ -8,14 +8,12 @@ import Mathlib.InformationTheory.Hamming
 import Mathlib.Analysis.Normed.Field.Lemmas
 import ArkLib.Data.CodingTheory.Basic
 
-open Classical
-
 namespace ListDecodable
 
 noncomputable section
 
 variable {ι : Type*}
-         {F : Type*}
+         {F : Type*} [DecidableEq F]
 
 abbrev Code.{u, v} (ι : Type u) (S : Type v) : Type (max u v) := Set (ι → S)
 

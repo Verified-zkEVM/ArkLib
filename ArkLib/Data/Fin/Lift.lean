@@ -29,15 +29,13 @@ variable {α : Type*}
 
 variable [Zero α] {f : ℕ → α} {f' : Fin n → α}
 
-/--
-  `liftF` lifts functions over domains `Fin n` to functions over domains `ℕ`
+/-- `liftF` lifts functions over domains `Fin n` to functions over domains `ℕ`
   by returning `0` on points `≥ n`.
 -/
 def liftF (f : Fin n → α) : ℕ → α :=
   fun m ↦ if h : m < n then f ⟨m, h⟩ else 0
 
-/--
-  `liftF'` lifts functions over domains `ℕ` to functions over domains `Fin n`
+/-- `liftF'` lifts functions over domains `ℕ` to functions over domains `Fin n`
   by taking the obvious injection.
 -/
 def liftF' (f : ℕ → α) : Fin n → α :=

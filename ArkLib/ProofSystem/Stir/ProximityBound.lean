@@ -13,7 +13,7 @@ open NNReal
 /-- Proximity bound function -/
 noncomputable def Bstar (x : ℝ) : ℝ := x.sqrt
 
-/-- Proximity error function-/
+/-- Proximity error function -/
 noncomputable def err' (F : Type*) [Fintype F] (d : ℕ) (ρ : ℝ) (δ : ℝ) (m: ℕ) : ℝ :=
   if δ ≤ (1 - ρ) / 2 then
     ((m - 1) * d) / (ρ * (Fintype.card F))

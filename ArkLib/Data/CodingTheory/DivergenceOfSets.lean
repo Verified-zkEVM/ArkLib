@@ -14,33 +14,31 @@ namespace DivergenceOfSets
 
 noncomputable section
 
-open Classical RelativeHamming
+open RelativeHamming
 
 variable {ι : Type*} [Fintype ι] [Nonempty ι]
-         {F : Type*}
+         {F : Type*} [DecidableEq F]
          {U V C : Set (ι → F)}
 
-/--
-  The set of possible relative Hamming distances between two sets.
+/-- The set of possible relative Hamming distances between two sets.
 -/
 def possibleDeltas (U V : Set (ι → F)) : Set ℚ :=
   {d : ℚ | ∃ u ∈ U, δᵣ(u,V) = d}
 
-/--
-  The set of possible relative Hamming distances between two sets is well-defined.
+/-- The set of possible relative Hamming distances between two sets is well-defined.
 -/
 @[simp]
 lemma possibleDeltas_subset_relHammingDistRange :
   possibleDeltas U C ⊆ relHammingDistRange ι :=
   fun _ _ ↦ by aesop (add simp possibleDeltas)
 
-/--
-  The set of possible relative Hamming distances between two sets is finite.
+/-- The set of possible relative Hamming distances between two sets is finite.
 -/
 @[simp]
 lemma finite_possibleDeltas : (possibleDeltas U V).Finite :=
   Set.Finite.subset finite_relHammingDistRange possibleDeltas_subset_relHammingDistRange
 
+open Classical in
 def divergence (U V : Set (ι → F)) : ℚ :=
   haveI : Fintype (possibleDeltas U V) := @Fintype.ofFinite _ finite_possibleDeltas
   if h : (possibleDeltas U V).Nonempty

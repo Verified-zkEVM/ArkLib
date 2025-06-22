@@ -453,7 +453,7 @@ theorem ranges_eq_ranges_list {a : Fin n → ℕ} :
   otherwise.
 
   This is the dependent version of `Fin.divNat`.
-  -/
+-/
 def divSum? {m : ℕ} (n : Fin m → ℕ) (k : ℕ) : Option (Fin m) :=
   find (fun i => k < ∑ j, n (castLE i.isLt j))
 
