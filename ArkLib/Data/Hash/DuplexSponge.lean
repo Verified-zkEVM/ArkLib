@@ -4,10 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.Fin.Basic
-import Batteries.Data.ByteArray
-import Mathlib.Logic.Equiv.Defs
--- import Batteries.Data.ByteSubarray
+-- These are done after a `#min_imports` command
+import Mathlib.Algebra.GroupWithZero.Nat
+import Mathlib.Algebra.Notation.Pi
+import Mathlib.Logic.Embedding.Basic
 
 /-!
   # Duplex Sponge API
