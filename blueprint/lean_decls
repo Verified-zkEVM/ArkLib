@@ -90,6 +90,15 @@ Verifier.liftContext_rbr_knowledgeSoundness
 StraightlineExtractor.liftContext
 RBRExtractor.liftContext
 Verifier.StateFunction.liftContext
+instChallengeOracleInterfaceFiatShamir
+fiatShamirSpec
+Prover.processRoundFS
+Prover.runToRoundFS
+Prover.fiatShamir
+ProtocolSpec.Messages.deriveTranscriptFS
+Verifier.fiatShamir
+Reduction.fiatShamir
+fiatShamir_completeness
 DoNothing.reduction
 DoNothing.oracleReduction
 DoNothing.reduction_completeness
