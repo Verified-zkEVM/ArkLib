@@ -63,8 +63,6 @@ instance {pSpec : ProtocolSpec n} {StmtIn : Type} [∀ i, VCVCompatible (pSpec.C
   range_inhabited' := fun i => by simp [fiatShamirSpec, OracleSpec.range]; infer_instance
   range_fintype' := fun i => by simp [fiatShamirSpec, OracleSpec.range]; infer_instance
 
--- TODO: define the duplex sponge version
-
 variable {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn WitIn StmtOut WitOut : Type}
   [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
@@ -152,7 +150,8 @@ def Verifier.fiatShamir (V : Verifier pSpec oSpec StmtIn StmtOut) :
     let transcript ← messages.deriveTranscriptFS stmtIn (Fin.last n)
     V.verify stmtIn transcript
 
-/-- TODO: change `unifSpec` to something more appropriate (maybe a `CryptographicSponge`) -/
+/-- The Fiat-Shamir transformation for an (interactive) reduction, which consists of applying the
+  Fiat-Shamir transformation to both the prover and the verifier. -/
 def Reduction.fiatShamir (R : Reduction pSpec oSpec StmtIn WitIn StmtOut WitOut) :
     NonInteractiveReduction (∀ i, pSpec.Message i) (oSpec ++ₒ fiatShamirSpec pSpec StmtIn)
       StmtIn WitIn StmtOut WitOut where
