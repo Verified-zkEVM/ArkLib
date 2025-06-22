@@ -1,0 +1,291 @@
+/-
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
+
+import ArkLib.Data.Fin.Basic
+import Batteries.Data.ByteArray
+import Mathlib.Logic.Equiv.Defs
+-- import Batteries.Data.ByteSubarray
+
+/-!
+  # Duplex Sponge API
+
+  This file contains the API for the duplex sponge, which is a sponge that can be used to hash
+  data.
+
+  The API is based on the [spongefish](https://github.com/arkworks-rs/spongefish) Rust library.
+
+  The API is designed to be as close as possible to the Rust implementation (as of June 22, 2025).
+
+  The API is subject to change as spongefish changes.
+
+  TODO: we may want to split this file up, for instance `Serde` should be useful elsewhere
+-/
+
+/-- Type class for types that can be serialized to another type (most often `ByteArray` or
+  `String`). -/
+class Serialize (α : Type*) (β : Type*) where
+  serialize : α → β
+
+/-- Type class for types that can be deserialized from another type (most often `ByteArray` or
+  `String`), returning an `Option` if the deserialization fails. -/
+class Deserialize (α : Type*) (β : Type*) where
+  deserialize : β → Option α
+
+/-- Type class for types that can be serialized and deserialized to/from another type (most often
+  `ByteArray` or `String`). -/
+class Serde (α : Type*) (β : Type*) extends Serialize α β, Deserialize α β
+
+/-- Type class for types that can be zeroized. -/
+class Zeroize (α : Type*) where
+  zeroize : α → α
+
+/-- Derive `Zeroize` from `Zero`. -/
+instance {α : Type*} [Zero α] : Zeroize α where
+  zeroize := Zero.zero
+
+/-- Type class for types that can be initialized from a value of type `β`.
+
+This abstraction allows different types to be initialized from the same input type,
+providing a uniform interface for construction. In the context of cryptographic sponges,
+this is typically used to initialize states from a seed or initialization vector.
+-/
+class Initialize (α : Type*) (β : Type*) where
+  /-- Initialize a value of type `α` from a value of type `β`. -/
+  new : β → α
+
+/-- Type class for types that has an injective mapping to a vector of a given length `size` of
+  another type (often `UInt8`). -/
+class HasSize (α : Type*) (β : Type*) where
+  size : Nat
+  toFun : α ↪ Vector β size
+
+/-- Type class for types that can be used as units in a cryptographic sponge.
+
+Following the [spongefish](https://github.com/arkworks-rs/spongefish) Rust library, we require the
+following:
+
+- The type has zero (i.e. `zeroize` in Rust)
+- The type can be serialized and deserialized to/from `ByteArray`
+- The type has a fixed size in bytes
+- The type implements `write` and `read` methods, which are used to write and read the unit to/from
+  an IO stream. They are implemented by default using the `serialize` and `deserialize` methods, and
+  the `IO.FS.Stream.{read/write}` functions.
+-/
+class SpongeUnit (α : Type) extends Zeroize α, Serde α ByteArray, HasSize α UInt8 where
+  /--
+  Rust interface:
+  ```rust
+    /// Write a bunch of units in the wire.
+    fn write(bunch: &[Self], w: &mut impl std::io::Write) -> Result<(), std::io::Error>;
+  ```
+  Default implementation: serialize each unit of `α`, then write to stream
+  -/
+  write (stream : IO.FS.Stream) : Array α → IO Unit :=
+    Array.foldlM (fun _ a => IO.FS.Stream.write stream (serialize a)) ()
+  /--
+  Rust interface:
+  ```rust
+    /// Read a bunch of units from the wire
+    fn read(r: &mut impl std::io::Read, bunch: &mut [Self]) -> Result<(), std::io::Error>;
+  ```
+  Default implementation: read `byteSize * array.length` bytes from stream, deserialize each
+  unit of `α`, then return the array if there is no error, otherwise throw an error
+  -/
+  read (stream : IO.FS.Stream) : Array α → IO (Array α) :=
+    fun arr => do
+      let bytes ← Array.mapM (fun _ => IO.FS.Stream.read stream (HasSize.size α UInt8)) arr
+      let units := Array.mapM deserialize bytes
+      if h : units.isSome
+        then return units.get h
+        else IO.throwServerError "Failed to read units"
+
+/-- Type class for types that can be used as a duplex sponge, with respect to the sponge unit type
+  `U`.
+
+Following the [spongefish](https://github.com/arkworks-rs/spongefish) Rust library, we require the
+following:
+
+- The type is inhabited (`Default` in Rust), and can be zeroized (i.e. `Zeroize` in Rust)
+- The type can be initialized from a 32-byte vector (seed)
+- There are 3 methods:
+  - `absorbUnchecked` to absorb an array of units in the sponge
+  - `squeezeUnchecked` to squeeze out an array of units, changing the state of the sponge
+  - `ratchetUnchecked` to ratchet the state of the sponge
+-/
+class DuplexSpongeInterface (U : Type) [SpongeUnit U] (α : Type*)
+    extends Inhabited α, Zeroize α, Initialize α (Vector UInt8 32) where
+  /-- Absorb new elements in the sponge.
+  ```rust
+    fn absorb_unchecked(&mut self, input: &[U]) -> &mut Self;
+  ```
+  -/
+  absorbUnchecked : α × Array U → α
+
+  /-- Squeeze out new elements, changing the state of the sponge.
+  ```rust
+    fn squeeze_unchecked(&mut self, output: &mut [U]) -> &mut Self;
+  ```
+  -/
+  squeezeUnchecked : α × Array U → α × Array U
+
+  /-- Ratcheting.
+  ```rust
+    fn ratchet_unchecked(&mut self) -> &mut Self;
+  ```
+
+  More notes from the Rust implementation:
+  ```rust
+    /// This operations makes sure that different elements are processed in different blocks.
+    /// Right now, this is done by:
+    /// - permuting the state.
+    /// - zero rate elements.
+    /// This has the effect that state holds no information about the elements absorbed so far.
+    /// The resulting state is compressed.
+  ```
+  -/
+  ratchetUnchecked : α → α
+
+
+/-- Type class for storing the length & rate of a sponge permutation. -/
+class SpongePermutationSize where
+  /-- The width of the sponge, equal to rate R plus capacity. -/
+  N : Nat
+  /-- The rate of the sponge. -/
+  R : Nat
+  /-- The rate is less than or equal to the width. -/
+  R_le_N : R ≤ N := by omega
+  /-- The rate is non-zero. -/
+  [neZero_R : NeZero R]
+
+attribute [instance] SpongePermutationSize.neZero_R
+
+namespace SpongePermutationSize
+
+variable [sz : SpongePermutationSize]
+
+/-- The capacity of the sponge, defined as `N - R`, the width minus the rate. -/
+def C : Nat := sz.N - sz.R
+
+end SpongePermutationSize
+
+/-- Type class for cryptographic permutations used in sponge constructions.
+
+Rust interface:
+```rust
+pub trait Permutation: Zeroize + Default + Clone + AsRef<[Self::U]> + AsMut<[Self::U]> {
+    type U: Unit;
+    const N: usize;  // The width of the sponge
+    const R: usize;  // The rate of the sponge
+    fn new(iv: [u8; 32]) -> Self;
+    fn permute(&mut self);
+}
+```
+Note that we do not quite know how to handle `AsRef` and `AsMut`. My interpretation is that they
+basically provide a way to get to the underlying state of the sponge, which is `Vector U N`.
+Because of this, I give a tentative API for `AsRef` and `AsMut` basically as a lens between `α` and
+`Vector U N` (i.e. `view` and `update`).
+
+TODO: figure out the needed properties here
+-/
+class SpongePermutation (U : Type) [SpongeUnit U] (α : Type*) extends
+    Inhabited α,
+    Zeroize α,
+    SpongePermutationSize,
+    Initialize α (Vector UInt8 32) where
+  -- TENTATIVE: a lens between `α` and `Vector U N`
+  view : α → Vector U N
+  update : α → Vector U N → α
+
+  /-- Permute the **state** of the sponge. Note that this does _not_ imply a permutation (i.e.
+    bijection) for the entire type.
+
+    TODO: figure out the needed properties here (that it is a permutation on the state?) -/
+  permute : α → α
+
+
+-- need to "descend" from `permute : α → α` to `permuteState : Vector U N → Vector U N`, and then
+-- for the reverse direction
+
+class LawfulSpongePermutation (U : Type) [SpongeUnit U] (α : Type*) [SpongePermutation U α] where
+  /- TODO: the permutation is a bijection on the state. -/
+
+/-- A cryptographic duplex sponge.
+
+Rust interface:
+```rust
+#[derive(Clone, PartialEq, Eq, Default, Zeroize, ZeroizeOnDrop)]
+pub struct DuplexSponge<C: Permutation> {
+    permutation: C,
+    absorb_pos: usize,
+    squeeze_pos: usize,
+}
+```
+-/
+structure DuplexSponge (U : Type) [SpongeUnit U] (C : Type*) [SpongePermutation U C] where
+  permutation : C
+  /-- Current position in the rate portion for absorbing data (0 ≤ absorbPos < R) -/
+  absorbPos : Fin (SpongePermutationSize.R)
+  /-- Current position in the rate portion for squeezing data (0 ≤ squeezePos ≤ R) -/
+  squeezePos : Fin (SpongePermutationSize.R)
+deriving Inhabited
+
+namespace DuplexSponge
+
+variable {U : Type} {C : Type*} [SpongeUnit U] [SpongePermutation U C]
+
+-- Make DuplexSponge zeroizable
+instance : Zeroize (DuplexSponge U C) where
+  zeroize sponge := {
+    permutation := Zeroize.zeroize sponge.permutation,
+    absorbPos := 0,
+    squeezePos := 0
+  }
+
+-- Make DuplexSponge initializable from 32-byte vector
+instance : Initialize (DuplexSponge U C) (Vector UInt8 32) where
+  new iv := {
+    permutation := Initialize.new iv,
+    absorbPos := 0,
+    squeezePos := 0
+  }
+
+-- Implement DuplexSpongeInterface for DuplexSponge. TODO: port from the Rust implementation
+instance : DuplexSpongeInterface U (DuplexSponge U C) where
+  absorbUnchecked := sorry
+
+  squeezeUnchecked := sorry
+
+  ratchetUnchecked := sorry
+
+end DuplexSponge
+
+namespace UInt8
+
+-- Implement SpongeUnit for UInt8
+
+instance : Zeroize UInt8 where
+  zeroize _ := 0
+
+instance : Serialize UInt8 ByteArray where
+  serialize byte := ByteArray.mk #[byte]
+
+/-- Deserialize a single byte from a byte array. Gives `none` if the array is not of size 1. -/
+instance : Deserialize UInt8 ByteArray where
+  deserialize bytes :=
+    if h : bytes.size = 1 then
+      some bytes[0]
+    else
+      none
+
+instance : Serde UInt8 ByteArray where
+
+instance : HasSize UInt8 UInt8 where
+  size := 1
+  toFun := ⟨fun byte => #v[byte], by intro x y; simp⟩
+
+instance : SpongeUnit UInt8 where
+
+end UInt8
