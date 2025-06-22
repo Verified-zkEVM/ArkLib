@@ -20,23 +20,7 @@ import Mathlib.Logic.Embedding.Basic
   The API is designed to be as close as possible to the Rust implementation (as of June 22, 2025).
 
   The API is subject to change as spongefish changes.
-
-  TODO: we may want to split this file up, for instance `Serde` should be useful elsewhere
 -/
-
-/-- Type class for types that can be serialized to another type (most often `ByteArray` or
-  `String`). -/
-class Serialize (α : Type*) (β : Type*) where
-  serialize : α → β
-
-/-- Type class for types that can be deserialized from another type (most often `ByteArray` or
-  `String`), returning an `Option` if the deserialization fails. -/
-class Deserialize (α : Type*) (β : Type*) where
-  deserialize : β → Option α
-
-/-- Type class for types that can be serialized and deserialized to/from another type (most often
-  `ByteArray` or `String`). -/
-class Serde (α : Type*) (β : Type*) extends Serialize α β, Deserialize α β
 
 /-- Type class for types that can be zeroized. -/
 class Zeroize (α : Type*) where

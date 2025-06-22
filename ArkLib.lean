@@ -37,7 +37,6 @@ import ArkLib.Data.FieldTheory.NonBinaryField.Secp256k1
 import ArkLib.Data.Fin.Basic
 import ArkLib.Data.Fin.Lift
 import ArkLib.Data.Fin.Pad
-import ArkLib.Data.Hash.Codec
 import ArkLib.Data.Hash.DomainSep
 import ArkLib.Data.Hash.DuplexSponge
 import ArkLib.Data.Math.Basic
