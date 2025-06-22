@@ -71,7 +71,7 @@ variable {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
 -- a slightly altered execution for the prover
 
 /--
-  Prover's function for processing the next round, given the current result of the previous round.
+Prover's function for processing the next round, given the current result of the previous round.
 
   This is modified for Fiat-Shamir, where we only accumulate the messages and not the challenges.
 -/
@@ -93,7 +93,7 @@ def Prover.processRoundFS [∀ i, VCVCompatible (pSpec.Challenge i)] (j : Fin n)
     return ⟨messages.concat hDir msg, stmtIn, newState⟩
 
 /--
-  Run the prover in an interactive reduction up to round index `i`, via first inputting the
+Run the prover in an interactive reduction up to round index `i`, via first inputting the
   statement and witness, and then processing each round up to round `i`. Returns the transcript up
   to round `i`, and the prover's state after round `i`.
 -/
@@ -164,7 +164,7 @@ noncomputable section
 
 open scoped NNReal
 
-variable [DecidableEq ι] [oSpec.FiniteRange] [∀ i, VCVCompatible (pSpec.Challenge i)]
+variable [oSpec.FiniteRange] [∀ i, VCVCompatible (pSpec.Challenge i)]
 
 theorem fiatShamir_completeness (relIn : StmtIn → WitIn → Prop) (relOut : StmtOut → WitOut → Prop)
     (completenessError : ℝ≥0) (R : Reduction pSpec oSpec StmtIn WitIn StmtOut WitOut) :

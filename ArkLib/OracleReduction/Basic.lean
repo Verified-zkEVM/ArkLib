@@ -407,7 +407,8 @@ class VerifierLast (pSpec : ProtocolSpec n) [NeZero n] where
 
 class ProverOnly (pSpec : ProtocolSpec 1) extends ProverFirst pSpec
 
-/-- A non-interactive protocol specification with a single message from the prover to the verifier-/
+/-- A non-interactive protocol specification with a single message from the prover to the verifier
+-/
 alias NonInteractive := ProverOnly
 
 class VerifierOnly (pSpec : ProtocolSpec 1) extends VerifierFirst pSpec
