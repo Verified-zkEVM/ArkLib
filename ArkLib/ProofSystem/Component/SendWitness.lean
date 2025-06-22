@@ -225,7 +225,7 @@ omit [(i : ιₛ) → OracleInterface (OStatement i)] [OracleInterface Witness] 
 theorem oracleProver_run {stmt : Statement} {oStmt : ∀ i, OStatement i} {wit : Witness}:
     (oracleProver oSpec Statement OStatement Witness).run ⟨stmt, oStmt⟩ wit =
       pure (⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, (), fun i => by simpa using wit) := by
-  simp [Prover.run, Prover.runToRound, Prover.processRound, oracleProver, Transcript.snoc]
+  simp [Prover.run, Prover.runToRound, Prover.processRound, oracleProver, Transcript.concat]
   ext i; fin_cases i; simp [Fin.snoc]
 
 theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatement i}

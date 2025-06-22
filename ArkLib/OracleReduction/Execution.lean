@@ -61,10 +61,10 @@ def Prover.processRound [∀ i, VCVCompatible (pSpec.Challenge i)] (j : Fin n)
   | .V_to_P => do
     let challenge ← pSpec.getChallenge ⟨j, hDir⟩
     letI newState := prover.receiveChallenge ⟨j, hDir⟩ state challenge
-    return ⟨transcript.snoc challenge, newState⟩
+    return ⟨transcript.concat challenge, newState⟩
   | .P_to_V => do
     let ⟨msg, newState⟩ ← prover.sendMessage ⟨j, hDir⟩ state
-    return ⟨transcript.snoc msg, newState⟩
+    return ⟨transcript.concat msg, newState⟩
 
 /--
   Run the prover in an interactive reduction up to round index `i`, via first inputting the
@@ -252,7 +252,7 @@ theorem Prover.runToRound_one_of_prover_first [ProverOnly pSpec] (stmt : StmtIn)
   split <;> rename_i hDir
   · have : Direction.P_to_V = .V_to_P := by rw [← this, hDir]
     contradiction
-  · congr; funext a; congr; simp [default, Transcript.snoc]; funext i
+  · congr; funext a; congr; simp [default, Transcript.concat]; funext i
     have : i = 0 := by aesop
     rw [this]; simp [Fin.snoc]
 

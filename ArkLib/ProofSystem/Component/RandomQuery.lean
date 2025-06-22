@@ -122,7 +122,7 @@ theorem oracleReduction_completeness : (oracleReduction oSpec OStatement).perfec
   intro _ oStmt _ hOStmt
   simp [Reduction.run, Prover.run, Verifier.run, Prover.runToRound, Prover.processRound,
     OracleReduction.toReduction, OracleVerifier.toVerifier, oracleVerifier, oracleProver,
-    Transcript.snoc, FullTranscript.challenges]
+    Transcript.concat, FullTranscript.challenges]
   intro q oStmt' q' oStmt'' transcript h1 h2 h3 h4
   apply congrFun at h3
   simp_all [Fin.snoc]
@@ -183,7 +183,7 @@ theorem rbr_knowledge_soundness {d : ℕ} (h : OracleInterface.distanceLE OState
   simp [Prover.runWithLogToRound, Prover.runToRound, stateFunction]
   classical
   unfold Function.comp
-  simp [probEvent_liftM_eq_mul_inv, ProtocolSpec.Transcript.snoc, Fin.snoc, default]
+  simp [probEvent_liftM_eq_mul_inv, ProtocolSpec.Transcript.concat, Fin.snoc, default]
   rw [div_eq_mul_inv]
   gcongr
   simp [Finset.filter_and]

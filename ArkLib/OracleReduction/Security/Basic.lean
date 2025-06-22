@@ -352,7 +352,7 @@ structure StateFunction (pSpec : ProtocolSpec n) (oSpec : OracleSpec ι) [oSpec.
     prover to the verifier, then the state function is also false for the new partial transcript
     regardless of the message -/
   toFun_next : ∀ m, pSpec.getDir m = .P_to_V → ∀ stmt tr, ¬ toFun m.castSucc stmt tr →
-    ∀ msg, ¬ toFun m.succ stmt (tr.snoc msg)
+    ∀ msg, ¬ toFun m.succ stmt (tr.concat msg)
   /-- If the state function is false for a full transcript, the verifier will not output a statement
     in the output language -/
   toFun_full : ∀ stmt tr, ¬ toFun (.last n) stmt tr →
@@ -378,7 +378,7 @@ structure KnowledgeStateFunction (pSpec : ProtocolSpec n) (oSpec : OracleSpec ι
     regardless of the message and the next intermediate witness. -/
   toFun_next : ∀ m, pSpec.getDir m = .P_to_V →
     ∀ stmtIn tr, (∀ witMid, ¬ toFun m.castSucc stmtIn tr witMid) →
-    ∀ msg, (∀ witMid', ¬ toFun m.succ stmtIn (tr.snoc msg) witMid')
+    ∀ msg, (∀ witMid', ¬ toFun m.succ stmtIn (tr.concat msg) witMid')
   toFun_full : ∀ stmtIn tr, (∀ witMid, ¬ toFun (.last n) stmtIn tr witMid) →
     [fun stmtOut => ∃ witOut, relOut stmtOut witOut | verifier.run stmtIn tr ] = 0
 
@@ -448,7 +448,7 @@ def rbrSoundness (langIn : Set StmtIn) (langOut : Set StmtOut)
       return (← prover.runToRound i.1.castSucc stmtIn witIn, ← pSpec.getChallenge i)
     [fun ⟨⟨transcript, _⟩, challenge⟩ =>
       ¬ stateFunction i.1.castSucc stmtIn transcript ∧
-        stateFunction i.1.succ stmtIn (transcript.snoc challenge)
+        stateFunction i.1.succ stmtIn (transcript.concat challenge)
     | ex] ≤
       rbrSoundnessError i
 
@@ -496,7 +496,7 @@ def rbrKnowledgeSoundness (relIn : StmtIn → WitIn → Prop) (relOut : StmtOut 
       letI extractedWitIn := extractor i.1.castSucc stmtIn transcript proveQueryLog.fst
       ¬ relIn stmtIn extractedWitIn ∧
         ¬ stateFunction i.1.castSucc stmtIn transcript ∧
-          stateFunction i.1.succ stmtIn (transcript.snoc challenge)
+          stateFunction i.1.succ stmtIn (transcript.concat challenge)
     | ex] ≤ rbrKnowledgeError i
 
 -- Tentative new definition of rbr knowledge soundness, using the knowledge state function
@@ -517,8 +517,8 @@ def newRbrKnowledgeSoundness (relIn : StmtIn → WitIn → Prop) (relOut : StmtO
     [fun ⟨⟨transcript, _, proveQueryLog⟩, challenge⟩ =>
       ∃ witMid,
         ¬ kSF i.1.castSucc stmtIn transcript
-          (extractor.extractMid i.1 stmtIn (transcript.snoc challenge) witMid proveQueryLog) ∧
-          kSF i.1.succ stmtIn (transcript.snoc challenge) witMid
+          (extractor.extractMid i.1 stmtIn (transcript.concat challenge) witMid proveQueryLog) ∧
+          kSF i.1.succ stmtIn (transcript.concat challenge) witMid
     | ex] ≤ rbrKnowledgeError i
 
 /-- Type class for round-by-round knowledge soundness for a verifier
