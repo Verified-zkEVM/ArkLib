@@ -4,10 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
--- These are done after a `#min_imports` command
-import Mathlib.Algebra.GroupWithZero.Nat
-import Mathlib.Algebra.Notation.Pi
-import Mathlib.Logic.Embedding.Basic
+import ArkLib.Data.Hash.Serde
 
 /-!
   # Duplex Sponge API
@@ -304,7 +301,7 @@ instance : Serialize UInt8 ByteArray where
   serialize byte := ByteArray.mk #[byte]
 
 /-- Deserialize a single byte from a byte array. Gives `none` if the array is not of size 1. -/
-instance : Deserialize UInt8 ByteArray where
+instance : DeserializeOption UInt8 ByteArray where
   deserialize bytes :=
     if h : bytes.size = 1 then
       some bytes[0]
