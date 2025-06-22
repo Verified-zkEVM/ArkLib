@@ -157,14 +157,14 @@ where
 The verifier state contains a hash state and a reference to the NARG string
 (Non-interactive ARGument string) containing the proof transcript.
 -/
-structure VerifierState (U : Type) [SpongeUnit U] (H : Type*) [DuplexSpongeInterface U H] where
+structure FSVerifierState (U : Type) [SpongeUnit U] (H : Type*) [DuplexSpongeInterface U H] where
   /-- The hash state tracking expected operations. -/
   hashState : HashStateWithInstructions U H
   /-- The NARG string containing the proof transcript. -/
   nargString : ByteArray
 deriving Repr
 
-namespace VerifierState
+namespace FSVerifierState
 
 variable {U : Type} {H : Type*} [SpongeUnit U] [DuplexSpongeInterface U H]
 
@@ -176,7 +176,7 @@ pub fn new(domain_separator: &DomainSeparator<H, U>, narg_string: &'a [u8]) -> S
 ```
 -/
 def new (domainSeparator : DomainSeparator U H) (nargString : ByteArray) :
-    VerifierState U H :=
+    FSVerifierState U H :=
   { hashState := HashStateWithInstructions.new domainSeparator,
     nargString := nargString }
 
@@ -187,8 +187,8 @@ Rust interface:
 pub fn fill_next_units(&mut self, input: &mut [U]) -> Result<(), DomainSeparatorMismatch>
 ```
 -/
-def fillNextUnits (state : VerifierState U H) (count : Nat) :
-    Except DomainSeparatorMismatch (VerifierState U H × Array U) := do
+def fillNextUnits (state : FSVerifierState U H) (count : Nat) :
+    Except DomainSeparatorMismatch (FSVerifierState U H × Array U) := do
   -- Check if we have enough bytes in the NARG string
   let bytesNeeded := count * HasSize.size U UInt8
   if state.nargString.size < bytesNeeded then
@@ -218,8 +218,8 @@ Rust interface:
 pub fn hint_bytes(&mut self) -> Result<&'a [u8], DomainSeparatorMismatch>
 ```
 -/
-def hintBytes (state : VerifierState U H) :
-    Except DomainSeparatorMismatch (VerifierState U H × ByteArray) := do
+def hintBytes (state : FSVerifierState U H) :
+    Except DomainSeparatorMismatch (FSVerifierState U H × ByteArray) := do
   let newHashState ← state.hashState.hint
 
     -- Ensure at least 4 bytes are available for the length prefix
@@ -250,12 +250,12 @@ Rust interface:
 pub fn ratchet(&mut self) -> Result<(), DomainSeparatorMismatch>
 ```
 -/
-def ratchet (state : VerifierState U H) :
-    Except DomainSeparatorMismatch (VerifierState U H) := do
+def ratchet (state : FSVerifierState U H) :
+    Except DomainSeparatorMismatch (FSVerifierState U H) := do
   let newHashState ← state.hashState.ratchet
   .ok { hashState := newHashState, nargString := state.nargString }
 
-end VerifierState
+end FSVerifierState
 
 /-- A cryptographically-secure random number generator bound to the protocol transcript.
 
@@ -298,10 +298,10 @@ where
 }
 ```
 
-The prover state maintains secret randomness, tracks the protocol state, and builds
+The Fiat-Shamir prover state maintains secret randomness, tracks the protocol state, and builds
 the proof transcript.
 -/
-structure ProverState (U : Type) [SpongeUnit U] (H : Type*) [DuplexSpongeInterface U H]
+structure FSProverState (U : Type) [SpongeUnit U] (H : Type*) [DuplexSpongeInterface U H]
     (R : Type*) where
   /-- The randomness state of the prover. -/
   rng : ProverPrivateRng R
@@ -311,18 +311,18 @@ structure ProverState (U : Type) [SpongeUnit U] (H : Type*) [DuplexSpongeInterfa
   nargString : ByteArray
 deriving Repr
 
-namespace ProverState
+namespace FSProverState
 
 variable {U : Type} {H : Type*} {R : Type*} [SpongeUnit U] [DuplexSpongeInterface U H]
 
-/-- Create a new ProverState from a domain separator and RNG.
+/-- Create a new `FSProverState` from a domain separator and RNG.
 
 Rust interface:
 ```rust
 pub fn new(domain_separator: &DomainSeparator<H, U>, csrng: R) -> Self
 ```
 -/
-def new (domainSeparator : DomainSeparator U H) (csrng : R) : ProverState U H R :=
+def new (domainSeparator : DomainSeparator U H) (csrng : R) : FSProverState U H R :=
   let hashState := HashStateWithInstructions.new domainSeparator
   -- TODO: Initialize ProverPrivateRng properly
   let rng : ProverPrivateRng R := { ds := (), csrng := csrng }
@@ -335,8 +335,8 @@ Rust interface:
 pub fn add_units(&mut self, input: &[U]) -> Result<(), DomainSeparatorMismatch>
 ```
 -/
-def addUnits (state : ProverState U H R) (input : Array U) :
-    Except DomainSeparatorMismatch (ProverState U H R) :=
+def addUnits (state : FSProverState U H R) (input : Array U) :
+    Except DomainSeparatorMismatch (FSProverState U H R) :=
   match state.hashState.absorb input with
   | .ok newHashState =>
     -- TODO: Serialize units and append to NARG string
@@ -351,8 +351,8 @@ Rust interface:
 pub fn hint_bytes(&mut self, hint: &[u8]) -> Result<(), DomainSeparatorMismatch>
 ```
 -/
-def hintBytes (state : ProverState U H R) (hint : ByteArray) :
-    Except DomainSeparatorMismatch (ProverState U H R) :=
+def hintBytes (state : FSProverState U H R) (hint : ByteArray) :
+    Except DomainSeparatorMismatch (FSProverState U H R) :=
   match state.hashState.hint with
   | .ok newHashState =>
     -- TODO: Add length prefix and hint to NARG string
@@ -367,8 +367,8 @@ Rust interface:
 pub fn ratchet(&mut self) -> Result<(), DomainSeparatorMismatch>
 ```
 -/
-def ratchet (state : ProverState U H R) :
-    Except DomainSeparatorMismatch (ProverState U H R) :=
+def ratchet (state : FSProverState U H R) :
+    Except DomainSeparatorMismatch (FSProverState U H R) :=
   match state.hashState.ratchet with
   | .ok newHashState =>
     .ok { rng := state.rng, hashState := newHashState, nargString := state.nargString }
@@ -381,9 +381,9 @@ Rust interface:
 pub fn narg_string(&self) -> &[u8]
 ```
 -/
-def getNargString (state : ProverState U H R) : ByteArray := state.nargString
+def getNargString (state : FSProverState U H R) : ByteArray := state.nargString
 
-end ProverState
+end FSProverState
 
 /-- Type class for unit transcript operations.
 
@@ -401,9 +401,9 @@ class UnitTranscript (α : Type*) (U : Type) where
   /-- Fill array with challenge units. -/
   fillChallengeUnits : α → Nat → Except DomainSeparatorMismatch (α × Array U)
 
-/-- UnitTranscript instance for VerifierState. -/
+/-- UnitTranscript instance for FSVerifierState. -/
 instance {U : Type} {H : Type*} [SpongeUnit U] [DuplexSpongeInterface U H] :
-    UnitTranscript (VerifierState U H) U where
+    UnitTranscript (FSVerifierState U H) U where
   publicUnits state input := do
     let newHashState ← state.hashState.absorb input
     .ok { hashState := newHashState, nargString := state.nargString }
@@ -411,9 +411,9 @@ instance {U : Type} {H : Type*} [SpongeUnit U] [DuplexSpongeInterface U H] :
     let (newHashState, output) ← state.hashState.squeeze count
     .ok ({ hashState := newHashState, nargString := state.nargString }, output)
 
-/-- UnitTranscript instance for ProverState. -/
+/-- UnitTranscript instance for FSProverState. -/
 instance {U : Type} {H : Type*} {R : Type*} [SpongeUnit U] [DuplexSpongeInterface U H] :
-    UnitTranscript (ProverState U H R) U where
+    UnitTranscript (FSProverState U H R) U where
   publicUnits state input := do
     -- Public units are absorbed but not added to transcript
     -- let oldNargLen := state.nargString.size
@@ -437,17 +437,17 @@ Rust interface:
 pub fn to_prover_state(&self) -> crate::ProverState<H, U, crate::DefaultRng>
 ```
 -/
-def toProverState (ds : DomainSeparator U H) (rng : R) : ProverState U H R :=
-  ProverState.new ds rng
+def toProverState (ds : DomainSeparator U H) (rng : R) : FSProverState U H R :=
+  FSProverState.new ds rng
 
-/-- Create a VerifierState from this domain separator and transcript.
+/-- Create a FSVerifierState from this domain separator and transcript.
 
 Rust interface:
 ```rust
 pub fn to_verifier_state<'a>(&self, transcript: &'a [u8]) -> crate::VerifierState<'a, H, U>
 ```
 -/
-def toVerifierState (ds : DomainSeparator U H) (transcript : ByteArray) : VerifierState U H :=
-  VerifierState.new ds transcript
+def toVerifierState (ds : DomainSeparator U H) (transcript : ByteArray) : FSVerifierState U H :=
+  FSVerifierState.new ds transcript
 
 end DomainSeparator
