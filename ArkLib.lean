@@ -75,6 +75,7 @@ import ArkLib.OracleReduction.LiftContext.OracleReduction
 import ArkLib.OracleReduction.LiftContext.Reduction
 import ArkLib.OracleReduction.OracleInterface
 import ArkLib.OracleReduction.Prelude
+import ArkLib.OracleReduction.ProtocolSpec
 import ArkLib.OracleReduction.Security.Basic
 import ArkLib.OracleReduction.VectorIOR
 import ArkLib.ProofSystem.Component.CheckClaim
