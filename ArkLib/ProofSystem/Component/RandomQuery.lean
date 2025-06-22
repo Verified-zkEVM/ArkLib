@@ -61,10 +61,6 @@ def relOut : (StmtOut OStatement × ∀ i, OStmtOut OStatement i) → WitOut →
 @[reducible]
 def pSpec : ProtocolSpec 1 := ![(.V_to_P, Query OStatement)]
 
-instance : ∀ i, OracleInterface ((pSpec OStatement).Message i) | ⟨0, h⟩ => nomatch h
-@[reducible, simp] instance : ∀ i, VCVCompatible ((pSpec OStatement).Challenge i)
-  | ⟨0, _⟩ => by dsimp [pSpec, ProtocolSpec.Challenge]; exact inst
-
 /--
 The prover is trivial: it has no messages to send.  It only receives the verifier's challenge `q`,
 and outputs the same `q`.

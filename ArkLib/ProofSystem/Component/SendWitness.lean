@@ -89,12 +89,12 @@ variable {ιₛ : Type} (OStatement : ιₛ → Type) [∀ i, OracleInterface (O
 @[reducible, simp]
 def oraclePSpec : ProtocolSpec 1 := ![(.P_to_V, ∀ i, Witness i)]
 
-instance : IsEmpty (oraclePSpec Witness).ChallengeIdx where
-  false := by aesop
-instance : ∀ i, OracleInterface ((oraclePSpec Witness).Message i)
-  | ⟨0, _⟩ => OracleInterface.instForall _
-instance : ∀ i, VCVCompatible ((oraclePSpec Witness).Challenge i)
-  | ⟨0, _⟩ => by aesop
+-- instance : IsEmpty (oraclePSpec Witness).ChallengeIdx where
+--   false := by aesop
+-- instance : ∀ i, OracleInterface ((oraclePSpec Witness).Message i)
+--   | ⟨0, _⟩ => OracleInterface.instForall _
+-- instance : ∀ i, VCVCompatible ((oraclePSpec Witness).Challenge i)
+--   | ⟨0, _⟩ => by aesop
 
 /-- The oracle prover for the `SendWitness` oracle reduction.
 
@@ -159,7 +159,8 @@ def oracleProver : OracleProver (oraclePSpec Witness) oSpec
 -- theorem oracleReduction_completeness :
 --     (oracleReduction oSpec Statement OStatement Witness).perfectCompleteness oRelIn
 --     (toORelOut oRelIn) := by
---   simp [OracleReduction.perfectCompleteness, OracleReduction.toReduction, OracleVerifier.toVerifier]
+--   simp [OracleReduction.perfectCompleteness, OracleReduction.toReduction,
+--     OracleVerifier.toVerifier]
 --   intro stmt oStmt wit hRelIn
 --   unfold Reduction.run
 --   sorry
@@ -182,13 +183,6 @@ variable {ιₛ : Type} (OStatement : ιₛ → Type) [∀ i, OracleInterface (O
 
 @[reducible, simp]
 def oraclePSpec : ProtocolSpec 1 := ![(.P_to_V, Witness)]
-
-instance : IsEmpty (oraclePSpec Witness).ChallengeIdx where
-  false := by aesop
-instance : ∀ i, OracleInterface ((oraclePSpec Witness).Message i)
-  | ⟨0, _⟩ => by sorry
-instance : ∀ i, VCVCompatible ((oraclePSpec Witness).Challenge i)
-  | ⟨0, _⟩ => by aesop
 
 /-- The oracle prover for the `SendSingleWitness` oracle reduction.
 

@@ -32,10 +32,6 @@ variable {ι : Type} (oSpec : OracleSpec ι) (Statement : Type)
 @[reducible]
 def pSpec : ProtocolSpec 1 := ![(.P_to_V, OStatement default)]
 
-instance : ∀ i, OracleInterface ((pSpec OStatement).Message i)
-  | ⟨0, _⟩ => by dsimp; infer_instance
-instance : ∀ i, VCVCompatible ((pSpec OStatement).Challenge i) | ⟨0, h⟩ => nomatch h
-
 /--
 The prover takes in the old oracle statement as input, and sends it as the protocol message.
 -/

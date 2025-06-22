@@ -232,10 +232,6 @@ abbrev OracleStatement.AfterFirstChallenge : R1CS.MatrixIdx ⊕ Fin 1 → Type :
 @[simp]
 abbrev Witness.AfterFirstChallenge : Type := Unit
 
--- Don't know why this is necessary. Need to go back and define these instances
-instance : ∀ i, OracleInterface (ProtocolSpec.Message ![(Direction.V_to_P, FirstChallenge R pp)] i)
-  | ⟨0, h⟩ => nomatch h
-
 def oracleReduction.firstChallenge :
     OracleReduction ![(.V_to_P, FirstChallenge R pp)] oSpec
       (Statement.AfterFirstMessage R pp) Witness.AfterFirstMessage
@@ -295,6 +291,11 @@ abbrev Witness.AfterFirstSumcheck : Type := Unit
 
 @[simp]
 abbrev EvalClaim : R1CS.MatrixIdx → Type := fun _ => R
+
+/-- We equip each evaluation claim with the default oracle interface, which returns the claim upon a
+  trivial query `() : Unit`. -/
+instance : ∀ i, OracleInterface (EvalClaim R i) :=
+  fun _ => default
 
 @[simp]
 abbrev Statement.AfterSendEvalClaim : Type := Statement.AfterFirstSumcheck R pp

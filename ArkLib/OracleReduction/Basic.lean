@@ -164,6 +164,8 @@ def OracleMessages (pSpec : ProtocolSpec n) [OracleInterfaces pSpec] : Type :=
 
 end OracleInterfaces
 
+section Instances
+
 /-- There is only one protocol specification with 0 messages (the empty one) -/
 instance : Unique (ProtocolSpec 0) := inferInstance
 
@@ -174,6 +176,38 @@ instance : ∀ i, OracleInterface (Message ![] i) := fun ⟨i, _⟩ => Fin.elim0
 
 instance : ∀ i, VCVCompatible ((default : ProtocolSpec 0).Challenge i) := fun ⟨i, _⟩ => Fin.elim0 i
 instance : ∀ i, OracleInterface ((default : ProtocolSpec 0).Message i) := fun ⟨i, _⟩ => Fin.elim0 i
+
+variable {Msg Chal : Type}
+
+instance : IsEmpty (ChallengeIdx ![(.P_to_V, Msg)]) := by
+  simp [ChallengeIdx]
+  infer_instance
+
+instance : Unique (MessageIdx ![(.P_to_V, Msg)]) where
+  default := ⟨0, by simp⟩
+  uniq := fun i => by ext; simp
+
+instance [inst : OracleInterface Msg] : ∀ i, OracleInterface (Message ![(.P_to_V, Msg)] i)
+  | ⟨0, _⟩ => inst
+
+instance : ∀ i, VCVCompatible (Challenge ![(.P_to_V, Msg)] i)
+  | ⟨0, h⟩ => nomatch h
+
+instance : IsEmpty (MessageIdx ![(.V_to_P, Chal)]) := by
+  simp [MessageIdx]
+  infer_instance
+
+instance : Unique (ChallengeIdx ![(.V_to_P, Chal)]) where
+  default := ⟨0, by simp⟩
+  uniq := fun i => by ext; simp
+
+instance : ∀ i, OracleInterface (Message ![(.V_to_P, Chal)] i)
+  | ⟨0, h⟩ => nomatch h
+
+instance [inst : VCVCompatible Chal] : ∀ i, VCVCompatible (Challenge ![(.V_to_P, Chal)] i)
+  | ⟨0, _⟩ => inst
+
+end Instances
 
 /-- A (partial) transcript of a protocol specification, indexed by some `k : Fin (n + 1)`, is a
     list of messages from the protocol for all indices `i` less than `k`. -/

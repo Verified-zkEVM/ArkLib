@@ -37,23 +37,6 @@ open ProtocolSpec
 
 variable {n : ℕ}
 
-section Instances
-
-variable {Message : Type}
-
-instance : IsEmpty (ChallengeIdx ![(.P_to_V, Message)]) := by
-  simp [ChallengeIdx]
-  infer_instance
-
-instance : Unique (MessageIdx ![(.P_to_V, Message)]) where
-  default := ⟨0, by simp⟩
-  uniq := fun i => by ext; simp
-
-instance : ∀ i, VCVCompatible (Challenge ![(.P_to_V, Message)] i) :=
-  fun i => isEmptyElim i
-
-end Instances
-
 /-- Turn each verifier's challenge into an oracle, where one needs to query
   with an input statement
   and a prior transcript to get a challenge (useful for Fiat-Shamir) -/

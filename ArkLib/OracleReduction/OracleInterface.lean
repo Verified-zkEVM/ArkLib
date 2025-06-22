@@ -49,6 +49,17 @@ class OracleInterface (Message : Type u) where
 
 namespace OracleInterface
 
+/-- The default instance for `OracleInterface`, where the query is trivial (a `Unit`) and the
+  response returns the data. We do not register this as an instance, instead explicitly calling it
+  where necessary.-/
+def instDefault {Message : Type u} : OracleInterface Message where
+  Query := Unit
+  Response := Message
+  oracle := fun m _ => m
+
+instance {Message : Type u} : Inhabited (OracleInterface Message) :=
+  ⟨instDefault⟩
+
 open SimOracle
 
 /-- Converts an indexed type family of oracle interfaces into an oracle specification. -/
