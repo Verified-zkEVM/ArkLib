@@ -8,37 +8,67 @@ import ArkLib.OracleReduction.Security.Basic
 import ToMathlib.PFunctor.Basic
 
 /-!
-  ## Lens between (Oracle) Statements and between Witnesses
+  ## Lens between Input and Output Contexts of (Oracle) Reductions
 
   This file defines the different lenses required for the transformation / lifting of context for an
   (oracle) reduction, and the properties required for the transformation / lift to be complete /
-  sound / knowledge sound.
+  sound / knowledge sound (including an extra lens for the transformation / lifting of the
+  extractor).
 
   We also define simpler examples of lenses, when we don't need the full generality. For instance,
   lenses where we have (only) an equivalence between the statements / witnesses, or lenses where the
   witnesses are trivial.
 -/
 
-open OracleSpec OracleComp
+open OracleSpec OracleComp PFunctor
 
-/-- A lens for transporting (non-oracle) statements between outer and inner contexts -/
-class StatementLens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type) where
-  projStmt : OuterStmtIn → InnerStmtIn
-  liftStmt : OuterStmtIn × InnerStmtOut → OuterStmtOut
+/-- A lens for transporting input and output statements for the verifier of a (non-oracle)
+  reduction.
 
-/-- A lens for transporting both oracle and non-oracle statements between outer and inner contexts
+  Consists of two functions:
+  - `projStmt` : Transport input statements from the outer context to the inner context
+  - `liftStmt` : Transport output statements from the inner context to the outer context,
+    additionally relying on the input statements of the outer context.
 
-We require both a lens of the underlying (combined) statements (via the conversion from oracle
-reduction => reduction), but also simulation of oracle statements in terms of other values. -/
-class OStatementLens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
+  This is exactly the same as a `PFunctor.Lens` between two monomials defined by the input and
+  output statements (from the outer to the inner context).
+-/
+@[inline, reducible]
+def Verifier.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
+  := PFunctor.Lens (OuterStmtIn y^ OuterStmtOut) (InnerStmtIn y^ InnerStmtOut)
+
+namespace Verifier.Lens
+
+variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
+
+/-- Transport input statements from the outer context to the inner context -/
+@[inline, reducible]
+def projStmt (lens : Verifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) :
+    OuterStmtIn → InnerStmtIn :=
+  lens.mapPos
+
+/-- Transport output statements from the inner context to the outer context,
+  additionally relying on the input statements of the outer context. -/
+@[inline, reducible]
+def liftStmt (lens : Verifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) :
+    OuterStmtIn → InnerStmtOut → OuterStmtOut :=
+  lens.mapDir
+
+end Verifier.Lens
+
+/-- A lens for transporting input and output statements (both oracle and non-oracle) for the
+  oracle verifier of an oracle reduction.
+
+  TODO: figure out the right way to define this -/
+@[inline, reducible]
+def OracleVerifier.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
     {Outer_ιₛᵢ : Type} (OuterOStmtIn : Outer_ιₛᵢ → Type) [∀ i, OracleInterface (OuterOStmtIn i)]
     {Outer_ιₛₒ : Type} (OuterOStmtOut : Outer_ιₛₒ → Type) [∀ i, OracleInterface (OuterOStmtOut i)]
     {Inner_ιₛᵢ : Type} (InnerOStmtIn : Inner_ιₛᵢ → Type) [∀ i, OracleInterface (InnerOStmtIn i)]
     {Inner_ιₛₒ : Type} (InnerOStmtOut : Inner_ιₛₒ → Type) [∀ i, OracleInterface (InnerOStmtOut i)]
-  extends
-    StatementLens (OuterStmtIn × ∀ i, OuterOStmtIn i) (OuterStmtOut × ∀ i, OuterOStmtOut i)
+  :=
+    Verifier.Lens (OuterStmtIn × ∀ i, OuterOStmtIn i) (OuterStmtOut × ∀ i, OuterOStmtOut i)
                   (InnerStmtIn × ∀ i, InnerOStmtIn i) (InnerStmtOut × ∀ i, InnerOStmtOut i)
-  where
   -- TODO: fill in the extra conditions
   /- Basically, as we model the output oracle statement as a subset of the input oracle statement +
   the prover's messages, we need to make sure that this subset relation is satisfied in the
@@ -62,70 +92,142 @@ class OStatementLens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
   -- liftOStmt_neverFails : ∀ i, ∀ t, ∀ outerStmtIn, ∀ innerStmtOut,
   --   ((liftOStmt.impl (query i t)).run (outerStmtIn, innerStmtOut)).neverFails
 
-namespace OStatementLens
+namespace OracleVerifier.Lens
 
 variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
     {Outer_ιₛᵢ : Type} {OuterOStmtIn : Outer_ιₛᵢ → Type} [∀ i, OracleInterface (OuterOStmtIn i)]
     {Outer_ιₛₒ : Type} {OuterOStmtOut : Outer_ιₛₒ → Type} [∀ i, OracleInterface (OuterOStmtOut i)]
     {Inner_ιₛᵢ : Type} {InnerOStmtIn : Inner_ιₛᵢ → Type} [∀ i, OracleInterface (InnerOStmtIn i)]
     {Inner_ιₛₒ : Type} {InnerOStmtOut : Inner_ιₛₒ → Type} [∀ i, OracleInterface (InnerOStmtOut i)]
-    (oStmtLens : OStatementLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-      OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut)
 
-instance instStatementLens : StatementLens
-    (OuterStmtIn × ∀ i, OuterOStmtIn i) (OuterStmtOut × ∀ i, OuterOStmtOut i)
-    (InnerStmtIn × ∀ i, InnerOStmtIn i) (InnerStmtOut × ∀ i, InnerOStmtOut i)
-  := inferInstance
+/-- Transport input statements from the outer context to the inner context
 
-end OStatementLens
+TODO: refactor etc. -/
+@[inline, reducible]
+def projStmt (lens : OracleVerifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+              OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut) :
+    OuterStmtIn × (∀ i, OuterOStmtIn i) → InnerStmtIn × (∀ i, InnerOStmtIn i) :=
+  lens.mapPos
 
-/-- A lens for transporting witnesses between outer and inner contexts -/
-class WitnessLens (OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) where
-  projWit : OuterWitIn → InnerWitIn
-  liftWit : OuterWitIn × InnerWitOut → OuterWitOut
+/-- Transport output statements from the inner context to the outer context,
+  additionally relying on the input statements of the outer context.
 
-/-- A lens for transporting between outer and inner contexts of a (non-oracle) reduction -/
-class ContextLens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
-    (OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type)
-    extends StatementLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut,
-      WitnessLens OuterWitIn OuterWitOut InnerWitIn InnerWitOut
+  TODO: refactor etc. -/
+@[inline, reducible]
+def liftStmt (lens : OracleVerifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+              OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut) :
+    OuterStmtIn × (∀ i, OuterOStmtIn i) → InnerStmtOut × (∀ i, InnerOStmtOut i) →
+    OuterStmtOut × (∀ i, OuterOStmtOut i) :=
+  lens.mapDir
 
-/-- A lens for transporting between outer and inner contexts of an oracle reduction -/
-class OracleContextLens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
+-- def toVerifierLens : Verifier.Lens
+--     (OuterStmtIn × ∀ i, OuterOStmtIn i) (OuterStmtOut × ∀ i, OuterOStmtOut i)
+--     (InnerStmtIn × ∀ i, InnerOStmtIn i) (InnerStmtOut × ∀ i, InnerOStmtOut i)
+--   := oStmtLens
+
+end OracleVerifier.Lens
+
+/-- A lens for transporting the input and output contexts (statements + witnesses) for the prover
+  of a (non-oracle) reduction. -/
+@[inline, reducible]
+def Prover.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type)
+    := PFunctor.Lens ((OuterStmtIn × OuterWitIn) y^ (OuterStmtOut × OuterWitOut))
+                     ((InnerStmtIn × InnerWitIn) y^ (InnerStmtOut × InnerWitOut))
+
+namespace Prover.Lens
+
+variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+          OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
+
+/-- Transport input statements from the outer context to the inner context -/
+@[inline, reducible]
+def projCtx (lens : Prover.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+              OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
+    OuterStmtIn × OuterWitIn → InnerStmtIn × InnerWitIn :=
+  lens.mapPos
+
+/-- Transport output statements from the inner context to the outer context,
+  additionally relying on the input statements of the outer context. -/
+@[inline, reducible]
+def liftCtx (lens : Prover.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+              OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
+    OuterStmtIn × OuterWitIn → InnerStmtOut × InnerWitOut → OuterStmtOut × OuterWitOut :=
+  lens.mapDir
+
+end Prover.Lens
+
+/-- A lens for transporting the input and output contexts (statements + witnesses) for the prover
+  of an oracle reduction.
+
+  Since the prover in an oracle reduction is the same as for the associated non-oracle reduction
+  (oracle-ness only applies to the verifier), we can just use the prover lens for the non-oracle
+  reduction. -/
+@[inline, reducible]
+def OracleProver.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
     {Outer_ιₛᵢ : Type} (OuterOStmtIn : Outer_ιₛᵢ → Type) [∀ i, OracleInterface (OuterOStmtIn i)]
     {Outer_ιₛₒ : Type} (OuterOStmtOut : Outer_ιₛₒ → Type) [∀ i, OracleInterface (OuterOStmtOut i)]
     {Inner_ιₛᵢ : Type} (InnerOStmtIn : Inner_ιₛᵢ → Type) [∀ i, OracleInterface (InnerOStmtIn i)]
     {Inner_ιₛₒ : Type} (InnerOStmtOut : Inner_ιₛₒ → Type) [∀ i, OracleInterface (InnerOStmtOut i)]
-    (OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) extends
-      OStatementLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-                    OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut,
-      WitnessLens OuterWitIn OuterWitOut InnerWitIn InnerWitOut
+    (OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) :=
+  Prover.Lens (OuterStmtIn × ∀ i, OuterOStmtIn i) (OuterStmtOut × ∀ i, OuterOStmtOut i)
+             (InnerStmtIn × ∀ i, InnerOStmtIn i) (InnerStmtOut × ∀ i, InnerOStmtOut i)
+             OuterWitIn OuterWitOut InnerWitIn InnerWitOut
 
-namespace OracleContextLens
+namespace OracleProver.Lens
 
 variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
-  {Outer_ιₛᵢ : Type} (OuterOStmtIn : Outer_ιₛᵢ → Type) [∀ i, OracleInterface (OuterOStmtIn i)]
-  {Outer_ιₛₒ : Type} (OuterOStmtOut : Outer_ιₛₒ → Type) [∀ i, OracleInterface (OuterOStmtOut i)]
-  {Inner_ιₛᵢ : Type} (InnerOStmtIn : Inner_ιₛᵢ → Type) [∀ i, OracleInterface (InnerOStmtIn i)]
-  {Inner_ιₛₒ : Type} (InnerOStmtOut : Inner_ιₛₒ → Type) [∀ i, OracleInterface (InnerOStmtOut i)]
-  {OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
-  {oLens : OracleContextLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-                            OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
-                            OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
+    {Outer_ιₛᵢ : Type} {OuterOStmtIn : Outer_ιₛᵢ → Type} [∀ i, OracleInterface (OuterOStmtIn i)]
+    {Outer_ιₛₒ : Type} {OuterOStmtOut : Outer_ιₛₒ → Type} [∀ i, OracleInterface (OuterOStmtOut i)]
+    {Inner_ιₛᵢ : Type} {InnerOStmtIn : Inner_ιₛᵢ → Type} [∀ i, OracleInterface (InnerOStmtIn i)]
+    {Inner_ιₛₒ : Type} {InnerOStmtOut : Inner_ιₛₒ → Type} [∀ i, OracleInterface (InnerOStmtOut i)]
+    {OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
 
-/-- Converting an oracle context lens to a non-oracle context lens, via moving oracle statements
-into non-oracle statements -/
-instance instContextLens : ContextLens
-    (OuterStmtIn × ∀ i, OuterOStmtIn i) (OuterStmtOut × ∀ i, OuterOStmtOut i)
-    (InnerStmtIn × ∀ i, InnerOStmtIn i) (InnerStmtOut × ∀ i, InnerOStmtOut i)
-    OuterWitIn OuterWitOut InnerWitIn InnerWitOut where
-  -- projStmt := oLens.projStmt
-  -- liftStmt := oLens.liftStmt
-  -- projWit := oLens.projWit
-  -- liftWit := oLens.liftWit
+/-- Transport input statements from the outer context to the inner context -/
+@[inline, reducible]
+def projStmt (lens : OracleProver.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+              OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
+              OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
+    (OuterStmtIn × (∀ i, OuterOStmtIn i)) × OuterWitIn →
+    (InnerStmtIn × (∀ i, InnerOStmtIn i)) × InnerWitIn :=
+  lens.mapPos
 
-end OracleContextLens
+/-- Transport output statements from the inner context to the outer context,
+  additionally relying on the input statements of the outer context. -/
+@[inline, reducible]
+def liftStmt (lens : OracleProver.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+              OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
+              OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
+    (OuterStmtIn × (∀ i, OuterOStmtIn i)) × OuterWitIn →
+    (InnerStmtOut × (∀ i, InnerOStmtOut i)) × InnerWitOut →
+    (OuterStmtOut × (∀ i, OuterOStmtOut i)) × OuterWitOut :=
+  lens.mapDir
 
+end OracleProver.Lens
+
+/-- A structure collecting a lens for the prover, and a lens for the verifier, for transporting
+  between the contexts of an outer reduction and an inner reduction. -/
+@[ext]
+structure Reduction.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                          OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) where
+  proverLens : Prover.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+              OuterWitIn OuterWitOut InnerWitIn InnerWitOut
+  verifierLens : Verifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+
+/-- A structure collecting a lens for the prover, and a lens for the oracle verifier, for
+  transporting between the contexts of an outer oracle reduction and an inner oracle reduction. -/
+@[ext]
+structure OracleReduction.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
+    {Outer_ιₛᵢ : Type} (OuterOStmtIn : Outer_ιₛᵢ → Type) [∀ i, OracleInterface (OuterOStmtIn i)]
+    {Outer_ιₛₒ : Type} (OuterOStmtOut : Outer_ιₛₒ → Type) [∀ i, OracleInterface (OuterOStmtOut i)]
+    {Inner_ιₛᵢ : Type} (InnerOStmtIn : Inner_ιₛᵢ → Type) [∀ i, OracleInterface (InnerOStmtIn i)]
+    {Inner_ιₛₒ : Type} (InnerOStmtOut : Inner_ιₛₒ → Type) [∀ i, OracleInterface (InnerOStmtOut i)]
+    (OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) where
+  proverLens : OracleProver.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+              OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
+              OuterWitIn OuterWitOut InnerWitIn InnerWitOut
+  oracleVerifierLens : OracleVerifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                       OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
 
 /-
   Recall the interface of an extractor:
