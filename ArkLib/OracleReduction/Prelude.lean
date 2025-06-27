@@ -76,34 +76,37 @@ instance : Coe (Fin 2) Direction := ⟨directionEquivFin2.invFun⟩
 
 section Relation
 
-/-- The associated language `Set α` for a relation `α → β → Prop`. -/
-def Function.language {α β} (rel : α → β → Prop) : Set α :=
-  {stmt | ∃ wit, rel stmt wit}
+/-- The associated language `Set α` for a relation `Set (α × β)`. -/
+@[reducible]
+def Set.language {α β} (rel : Set (α × β)) : Set α :=
+  Prod.fst '' rel
 
 @[simp]
-theorem Function.mem_language_iff {α β} (rel : α → β → Prop) (stmt : α) :
-    stmt ∈ rel.language ↔ ∃ wit, rel stmt wit := by
-  simp [Function.language]
+theorem Set.mem_language_iff {α β} (rel : Set (α × β)) (stmt : α) :
+    stmt ∈ rel.language ↔ ∃ wit, (stmt, wit) ∈ rel := by
+  simp [language]
 
 @[simp]
-theorem Function.not_mem_language_iff {α β} (rel : α → β → Prop) (stmt : α) :
-    stmt ∉ rel.language ↔ ∀ wit, ¬ rel stmt wit := by
-  simp [Function.language]
+theorem Set.not_mem_language_iff {α β} (rel : Set (α × β)) (stmt : α) :
+    stmt ∉ rel.language ↔ ∀ wit, (stmt, wit) ∉ rel := by
+  simp [language]
 
 /-- The trivial relation on Boolean statement and unit witness, which outputs the Boolean (i.e.
   accepts or rejects). -/
-def acceptRejectRel : Bool → Unit → Prop := fun b _ => b
+def acceptRejectRel : Set (Bool × Unit) :=
+  { (true, ()) }
 
 /-- The trivial relation on Boolean statement, no oracle statements, and unit witness. -/
-def acceptRejectOracleRel : Bool × (∀ _ : Empty, Unit) → Unit → Prop := fun ⟨b, _⟩ _ => b
+def acceptRejectOracleRel : Set ((Bool × (∀ _ : Empty, Unit)) × Unit) :=
+  { ((true, isEmptyElim), ()) }
 
 @[simp]
 theorem acceptRejectRel_language : acceptRejectRel.language = { true } := by
-  unfold Function.language acceptRejectRel; simp
+  unfold Set.language acceptRejectRel; simp
 
 @[simp]
 theorem acceptRejectOracleRel_language :
-    acceptRejectOracleRel.language = { ⟨true, isEmptyElim⟩ } := by
-  unfold Function.language acceptRejectOracleRel; simp; ext; aesop
+    acceptRejectOracleRel.language = { (true, isEmptyElim) } := by
+  unfold Set.language acceptRejectOracleRel; simp
 
 end Relation

@@ -77,10 +77,8 @@ verifier).
 
 open OracleComp OracleSpec SubSpec ProtocolSpec
 
-variable {n : ℕ}
-
 -- Add an indexer?
-structure Indexer (pSpec : ProtocolSpec n) {ι : Type} (oSpec : OracleSpec ι) (Index : Type)
+structure Indexer {ι : Type} (oSpec : OracleSpec ι) {n : ℕ} (pSpec : ProtocolSpec n) (Index : Type)
     (Encoding : Type) where
   encode : Index → OracleComp oSpec Encoding
   [OracleInterface : OracleInterface Encoding]
@@ -109,7 +107,7 @@ For maximum simplicity, we only define the `sendMessage` function as an oracle c
 other functions are pure. We may revisit this decision in the future.
 -/
 @[ext]
-structure ProverRound {ι : Type} (oSpec : OracleSpec ι) (pSpec : ProtocolSpec n)
+structure ProverRound {ι : Type} (oSpec : OracleSpec ι) {n : ℕ} (pSpec : ProtocolSpec n)
     extends ProverState n where
   /-- Send a message and update the prover's state -/
   sendMessage (i : MessageIdx pSpec) :
@@ -138,7 +136,7 @@ the verifier. -/
 @[ext]
 structure Prover {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn WitIn StmtOut WitOut : Type)
-    (pSpec : ProtocolSpec n) extends
+    {n : ℕ} (pSpec : ProtocolSpec n) extends
       ProverState n,
       ProverIn StmtIn WitIn (PrvState 0),
       ProverRound oSpec pSpec,
@@ -148,7 +146,7 @@ structure Prover {ι : Type} (oSpec : OracleSpec ι)
   transcript, and performs an oracle computation that outputs a new statement -/
 @[ext]
 structure Verifier {ι : Type} (oSpec : OracleSpec ι)
-    (StmtIn StmtOut : Type) (pSpec : ProtocolSpec n) where
+    (StmtIn StmtOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
   verify : StmtIn → FullTranscript pSpec → OracleComp oSpec StmtOut
 
 /-- An **(oracle) prover** in an interactive **oracle** reduction is a prover in the non-oracle
@@ -158,7 +156,7 @@ structure Verifier {ι : Type} (oSpec : OracleSpec ι)
 def OracleProver {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn : Type) {ιₛᵢ : Type} (OStmtIn : ιₛᵢ → Type) (WitIn : Type)
     (StmtOut : Type) {ιₛₒ : Type} (OStmtOut : ιₛₒ → Type) (WitOut : Type)
-    (pSpec : ProtocolSpec n) :=
+    {n : ℕ} (pSpec : ProtocolSpec n) :=
   Prover oSpec (StmtIn × (∀ i, OStmtIn i)) WitIn (StmtOut × (∀ i, OStmtOut i)) WitOut pSpec
 
 /-- An **(oracle) verifier** of an interactive **oracle** reduction consists of:
@@ -178,7 +176,7 @@ other than specifying a subset of the ones it has received (and dropping the res
 structure OracleVerifier {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn : Type) {ιₛᵢ : Type} (OStmtIn : ιₛᵢ → Type)
     (StmtOut : Type) {ιₛₒ : Type} (OStmtOut : ιₛₒ → Type)
-    (pSpec : ProtocolSpec n)
+    {n : ℕ} (pSpec : ProtocolSpec n)
     [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
     [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
     where
@@ -224,7 +222,7 @@ namespace OracleVerifier
 variable {ι : Type} {oSpec : OracleSpec ι}
     {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type}
     {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
-    {pSpec : ProtocolSpec n}
+    {n : ℕ} {pSpec : ProtocolSpec n}
     [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
     [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
@@ -271,8 +269,9 @@ def numQueries (stmt : StmtIn) (challenges : ∀ i, pSpec.Challenge i)
 structure NonAdaptive {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn : Type) {ιₛᵢ : Type} (OStmtIn : ιₛᵢ → Type)
     (StmtOut : Type) {ιₛₒ : Type} (OStmtOut : ιₛₒ → Type)
-    (pSpec : ProtocolSpec n)
-    [Oₘ : ∀ i, OracleInterface (pSpec.Message i)] [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
+    {n : ℕ} (pSpec : ProtocolSpec n)
+    [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
+    [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
     where
 
   /-- Makes a list of queries to each of the oracle statements, given the input statement and the
@@ -349,7 +348,7 @@ end OracleVerifier
   defined by `oSpec`, consists of a prover and a verifier. -/
 @[ext]
 structure Reduction {ι : Type} (oSpec : OracleSpec ι)
-    (StmtIn WitIn StmtOut WitOut : Type) (pSpec : ProtocolSpec n) where
+    (StmtIn WitIn StmtOut WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
   prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec
   verifier : Verifier oSpec StmtIn StmtOut pSpec
 
@@ -359,7 +358,7 @@ structure Reduction {ι : Type} (oSpec : OracleSpec ι)
 structure OracleReduction {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn : Type) {ιₛᵢ : Type} (OStmtIn : ιₛᵢ → Type) (WitIn : Type)
     (StmtOut : Type) {ιₛₒ : Type} (OStmtOut : ιₛₒ → Type) (WitOut : Type)
-    (pSpec : ProtocolSpec n)
+    {n : ℕ} (pSpec : ProtocolSpec n)
     [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)] [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
     where
   prover : OracleProver oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec
@@ -367,20 +366,21 @@ structure OracleReduction {ι : Type} (oSpec : OracleSpec ι)
 
 /-- An interactive oracle reduction can be seen as an interactive reduction, via coercing the
   oracle verifier to a (normal) verifier -/
-def OracleReduction.toReduction {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
-    {StmtIn WitIn StmtOut WitOut : Type} [∀ i, OracleInterface (pSpec.Message i)]
-    {ιₛ : Type} {OStmtIn : ιₛ → Type} [Oₛ : ∀ i, OracleInterface (OStmtIn i)]
-    {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
-    (oracleReduction : OracleReduction pSpec oSpec StmtIn WitIn StmtOut WitOut OStmtIn OStmtOut) :
-      Reduction pSpec oSpec (StmtIn × (∀ i, OStmtIn i)) WitIn
-        (StmtOut × (∀ i, OStmtOut i)) WitOut :=
+def OracleReduction.toReduction {ι : Type} {oSpec : OracleSpec ι}
+    {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} {WitIn : Type}
+    {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} {WitOut : Type}
+    {n : ℕ} {pSpec : ProtocolSpec n}
+    [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)] [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
+    (oracleReduction : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec) :
+      Reduction oSpec (StmtIn × (∀ i, OStmtIn i)) WitIn
+        (StmtOut × (∀ i, OStmtOut i)) WitOut pSpec :=
   ⟨oracleReduction.prover, oracleReduction.verifier.toVerifier⟩
 
 /-- An **interactive proof (IP)** is an interactive reduction where the output statement is a
     boolean, the output witness is trivial (a `Unit`), and the relation checks whether the output
     statement is true. -/
 abbrev Proof {ι : Type} (oSpec : OracleSpec ι)
-    (Statement Witness : Type) (pSpec : ProtocolSpec n) :=
+    (Statement Witness : Type) {n : ℕ} (pSpec : ProtocolSpec n) :=
   Reduction oSpec Statement Witness Bool Unit pSpec
 
 /-- An **interactive oracle proof (IOP)** is an interactive oracle reduction where the output
@@ -389,27 +389,29 @@ abbrev Proof {ι : Type} (oSpec : OracleSpec ι)
 
     As a consequence, the output relation in an IOP is effectively a function `Bool → Prop`, which
     we can again assume to be the trivial one (sending `true` to `True`). -/
-abbrev OracleProof {ι : Type} (oSpec : OracleSpec ι) (Statement Witness : Type)
-    {ιₛ : Type} (OStatement : ιₛ → Type) [Oₛ : ∀ i, OracleInterface (OStatement i)]
-    (pSpec : ProtocolSpec n) [Oₘ : ∀ i, OracleInterface (pSpec.Message i)] :=
-  OracleReduction oSpec Statement Witness Bool Unit OStatement (fun _ : Empty => Unit) pSpec
+abbrev OracleProof {ι : Type} (oSpec : OracleSpec ι)
+    (Statement : Type) {ιₛᵢ : Type} (OStatement : ιₛᵢ → Type) (Witness : Type)
+    {n : ℕ} (pSpec : ProtocolSpec n)
+    [Oₛᵢ : ∀ i, OracleInterface (OStatement i)]
+    [Oₘ : ∀ i, OracleInterface (pSpec.Message i)] :=
+  OracleReduction oSpec Statement OStatement Witness Bool (fun _ : Empty => Unit) Unit pSpec
 
 /-- A **non-interactive prover** is a prover that only sends a single message to the verifier. -/
 abbrev NonInteractiveProver (Message : Type) {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn WitIn StmtOut WitOut : Type) :=
-  Prover ![(.P_to_V, Message)] oSpec StmtIn WitIn StmtOut WitOut
+  Prover oSpec StmtIn WitIn StmtOut WitOut ![(.P_to_V, Message)]
 
 /-- A **non-interactive verifier** is a verifier that only receives a single message from the
   prover. -/
 abbrev NonInteractiveVerifier (Message : Type) {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn StmtOut : Type) :=
-  Verifier ![(.P_to_V, Message)] oSpec StmtIn StmtOut
+  Verifier oSpec StmtIn StmtOut ![(.P_to_V, Message)]
 
 /-- A **non-interactive reduction** is an interactive reduction with only a single message from the
   prover to the verifier (and none in the other direction). -/
 abbrev NonInteractiveReduction (Message : Type) {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn WitIn StmtOut WitOut : Type) :=
-  Reduction ![(.P_to_V, Message)] oSpec StmtIn WitIn StmtOut WitOut
+  Reduction oSpec StmtIn WitIn StmtOut WitOut ![(.P_to_V, Message)]
 
 section Classes
 
@@ -572,18 +574,18 @@ end ProtocolSpec
 
 section IsPure
 
-variable {n : ℕ} {ι : Type} {pSpec : ProtocolSpec n} {oSpec : OracleSpec ι}
-    {StmtIn WitIn StmtOut WitOut : Type}
+variable {ι : Type} {oSpec : OracleSpec ι}
+    {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
 
-class Prover.IsPure (P : Prover pSpec oSpec StmtIn WitIn StmtOut WitOut) where
+class Prover.IsPure (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) where
     is_pure : ∃ sendMessage : ∀ _, _ → _, ∀ i st,
       P.sendMessage i st = pure (sendMessage i st)
 
-class Verifier.IsPure (V : Verifier pSpec oSpec StmtIn StmtOut) where
+class Verifier.IsPure (V : Verifier oSpec StmtIn StmtOut pSpec) where
     is_pure : ∃ verify : _ → _ → _, ∀ stmtIn transcript,
       V.verify stmtIn transcript = pure (verify stmtIn transcript)
 
-class Reduction.IsPure (R : Reduction pSpec oSpec StmtIn WitIn StmtOut WitOut) where
+class Reduction.IsPure (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) where
     prover_is_pure : R.prover.IsPure
     verifier_is_pure : R.verifier.IsPure
 
