@@ -76,24 +76,24 @@ end ProtocolSpec
 
 section Cast
 
-variable {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
 variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn StmtOut : Type}
+variable {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
 
 /-- To cast the verifier, we only need to cast the transcript. -/
 def Verifier.cast
     (h : m = n) (hSpec : dcast h pSpec₁ = pSpec₂)
-    (V : Verifier pSpec₁ oSpec StmtIn StmtOut) :
-    Verifier pSpec₂ oSpec StmtIn StmtOut where
+    (V : Verifier oSpec StmtIn StmtOut pSpec₁) :
+    Verifier oSpec StmtIn StmtOut pSpec₂ where
   verify := fun stmt transcript => V.verify stmt (dcast₂ h.symm (dcast_symm h hSpec) transcript)
 
 @[simp]
 def Verifier.cast_id
-    (V : Verifier pSpec₁ oSpec StmtIn StmtOut) :
+    (V : Verifier oSpec StmtIn StmtOut pSpec₁) :
       V.cast rfl rfl = V := by
   ext; simp [Verifier.cast]
 
 instance instDepCast₂Verifier :
-    DepCast₂ Nat ProtocolSpec (fun _ pSpec => Verifier pSpec oSpec StmtIn StmtOut) where
+    DepCast₂ Nat ProtocolSpec (fun _ pSpec => Verifier oSpec StmtIn StmtOut pSpec) where
   dcast₂ := Verifier.cast
   dcast₂_id := by intros; funext; simp
 

@@ -19,6 +19,40 @@ open scoped NNReal
 
 variable {ι : Type} {oSpec : OracleSpec ι} [oSpec.FiniteRange]
 
--- TODO: port here
+namespace Extractor
 
-end
+section Rewinding
+
+/-! TODO: under development -/
+
+/-- The oracle interface to call the prover as a black box -/
+def OracleSpec.proverOracle (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
+    OracleSpec pSpec.MessageIdx := fun i => (StmtIn × pSpec.Transcript i, pSpec.Message i)
+
+-- def SimOracle.proverImpl (P : Prover pSpec oSpec StmtIn WitIn StmtOut WitOut) :
+--     SimOracle.Stateless (OracleSpec.proverOracle pSpec StmtIn) oSpec := sorry
+
+structure Rewinding (oSpec : OracleSpec ι)
+    (StmtIn StmtOut WitIn WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
+  /-- The state of the extractor -/
+  ExtState : Type
+  /-- Simulate challenge queries for the prover -/
+  simChallenge : SimOracle.Stateful [pSpec.Challenge]ₒ [pSpec.Challenge]ₒ ExtState
+  /-- Simulate oracle queries for the prover -/
+  simOracle : SimOracle.Stateful oSpec oSpec ExtState
+  /-- Run the extractor with the prover's oracle interface, allowing for calling the prover multiple
+    times -/
+  runExt : StmtOut → WitOut → StmtIn →
+    StateT ExtState (OracleComp (OracleSpec.proverOracle StmtIn pSpec)) WitIn
+
+-- Challenge: need environment to update & maintain the prover's states after each extractor query
+-- This will hopefully go away after the refactor of prover's type to be an iterated monad
+
+-- def Rewinding.run
+--     (P : AdaptiveProver pSpec oSpec StmtIn WitIn StmtOut WitOut)
+--     (E : RewindingExtractor pSpec oSpec StmtIn StmtOut WitIn WitOut) :
+--     OracleComp oSpec WitIn := sorry
+
+end Rewinding
+
+end Extractor
