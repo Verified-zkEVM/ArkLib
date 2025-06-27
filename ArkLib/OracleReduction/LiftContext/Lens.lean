@@ -20,6 +20,17 @@ import ToMathlib.PFunctor.Basic
   witnesses are trivial.
 -/
 
+section find_home
+
+/-- Applies a pair of binary functions component-wise to a pair of pairs.
+
+TODO: move to mathlib -/
+def Prod.map₂ {α β γ α' β' γ' : Type*} (f : α → β → γ) (g : α' → β' → γ') :
+    (α × α') → (β × β') → (γ × γ') :=
+  fun ⟨a, a'⟩ ⟨b, b'⟩ => ⟨f a b, g a' b'⟩
+
+end find_home
+
 open OracleSpec OracleComp PFunctor
 
 /-- A lens for transporting input and output statements for the verifier of a (non-oracle)
@@ -261,7 +272,7 @@ structure OracleReduction.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOu
 def Extractor.Lens (OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) :=
   PFunctor.Lens (OuterWitOut y^ OuterWitIn) (InnerWitOut y^ InnerWitIn)
 
--- structure ContextLensInv (OuterStmtOut InnerStmtOut : Type)
+-- structure Reduction.LensInv (OuterStmtOut InnerStmtOut : Type)
 --     (OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) extends
 --       WitnessLens OuterWitOut OuterWitIn InnerWitOut InnerWitIn where
 --   projStmt : OuterStmtOut → InnerStmtOut
@@ -415,92 +426,176 @@ section SpecialCases
 -- reduces to the security of the zero-round reduction (that is either the on the input or the
 -- output context)
 
+variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
+  {Outer_ιₛᵢ : Type} {OuterOStmtIn : Outer_ιₛᵢ → Type} [∀ i, OracleInterface (OuterOStmtIn i)]
+  {Outer_ιₛₒ : Type} {OuterOStmtOut : Outer_ιₛₒ → Type} [∀ i, OracleInterface (OuterOStmtOut i)]
+  {Inner_ιₛᵢ : Type} {InnerOStmtIn : Inner_ιₛᵢ → Type} [∀ i, OracleInterface (InnerOStmtIn i)]
+  {Inner_ιₛₒ : Type} {InnerOStmtOut : Inner_ιₛₒ → Type} [∀ i, OracleInterface (InnerOStmtOut i)]
+  {OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
+
+namespace Verifier.Lens
+
+/-- The trivial lens for the verifier, which acts as identity on the input and output statements. -/
 @[inline, reducible, simp]
-def Verifier.Lens.trivial (StmtIn StmtOut : Type) :
-    Verifier.Lens StmtIn StmtOut StmtIn StmtOut :=
+def trivial :
+    Verifier.Lens OuterStmtIn OuterStmtOut OuterStmtIn OuterStmtOut :=
   ⟨id, fun _ => id⟩
 
-@[inline, reducible, simp]
-def Prover.Lens.trivial (StmtIn StmtOut WitIn WitOut : Type) :
-    Prover.Lens StmtIn StmtOut StmtIn StmtOut WitIn WitOut WitIn WitOut :=
-  ⟨id, fun _ => id⟩
-
+/-- Lens for the verifier which keeps the output statements the same, and hence only requires a
+  projection on the input statements. -/
 @[inline]
-def Verifier.Lens.ofInputOnly (OuterStmtIn InnerStmtIn StmtOut : Type)
-    (projStmt : OuterStmtIn → InnerStmtIn) :
-    Verifier.Lens OuterStmtIn StmtOut InnerStmtIn StmtOut :=
+def ofInputOnly (projStmt : OuterStmtIn → InnerStmtIn) :
+    Verifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn OuterStmtOut :=
   ⟨projStmt, fun _ => id⟩
 
+/-- Lens for the verifier which keeps the input statements the same, and hence only requires a
+  lift on the output statements. -/
 @[inline]
-def Verifier.Lens.ofOutputOnly (StmtIn OuterStmtOut InnerStmtOut : Type)
-    (liftStmt : InnerStmtOut → OuterStmtOut) :
-    Verifier.Lens StmtIn OuterStmtOut StmtIn InnerStmtOut :=
-  ⟨id, fun _ => liftStmt⟩
+def ofOutputOnly (liftStmt : OuterStmtIn → InnerStmtOut → OuterStmtOut) :
+    Verifier.Lens OuterStmtIn OuterStmtOut OuterStmtIn InnerStmtOut :=
+  ⟨id, liftStmt⟩
+
+end Verifier.Lens
+
+namespace Prover.Lens
+
+/-- The trivial lens for the prover, which acts as identity on the input and output contexts. -/
+@[inline, reducible, simp]
+def trivial :
+    Prover.Lens OuterStmtIn OuterStmtOut OuterStmtIn OuterStmtOut
+                OuterWitIn OuterWitOut OuterWitIn OuterWitOut :=
+  ⟨id, fun _ => id⟩
+
+/-- Lens for the prover which keeps the output context (statements + witnesses) the same, and hence
+  only requires a projection on the input context (statements + witnesses). -/
+@[inline]
+def ofInputOnly (projCtx : OuterStmtIn × OuterWitIn → InnerStmtIn × InnerWitIn) :
+    Prover.Lens OuterStmtIn OuterStmtOut InnerStmtIn OuterStmtOut
+                OuterWitIn OuterWitOut InnerWitIn OuterWitOut :=
+  ⟨projCtx, fun _ => id⟩
+
+/-- Lens for the prover which keeps the input context (statements + witnesses) the same, and hence
+  only requires a lift on the output context (statements + witnesses). -/
+@[inline]
+def ofOutputOnly
+    (liftCtx : OuterStmtIn × OuterWitIn → InnerStmtOut × InnerWitOut → OuterStmtOut × OuterWitOut) :
+    Prover.Lens OuterStmtIn OuterStmtOut OuterStmtIn InnerStmtOut
+                OuterWitIn OuterWitOut OuterWitIn InnerWitOut :=
+  ⟨id, liftCtx⟩
+
+/-- Lens for the prover which separates the mappings between the statements and the witnesses. -/
+def ofSeparateStmtWit
+    (projStmt : OuterStmtIn → InnerStmtIn) (liftStmt : OuterStmtIn → InnerStmtOut → OuterStmtOut)
+    (projWit : OuterWitIn → InnerWitIn) (liftWit : OuterWitIn → InnerWitOut → OuterWitOut) :
+    Prover.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                OuterWitIn OuterWitOut InnerWitIn InnerWitOut :=
+  ⟨Prod.map projStmt projWit, Prod.map₂ liftStmt liftWit⟩
+
+/-- Lens for the prover which keeps the witnesses the same, and hence only requires a projection
+  on the statements. -/
+@[inline]
+def ofStmtOnly
+    (projStmt : OuterStmtIn → InnerStmtIn) (liftStmt : OuterStmtIn → InnerStmtOut → OuterStmtOut) :
+    Prover.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                OuterWitIn OuterWitOut OuterWitIn OuterWitOut :=
+  ofSeparateStmtWit projStmt liftStmt id (fun _ => id)
+
+/-- Lens for the prover which keeps the statements the same, and hence only requires a lift on
+  the witnesses. -/
+@[inline]
+def ofWitOnly
+    (projWit : OuterWitIn → InnerWitIn) (liftWit : OuterWitIn → InnerWitOut → OuterWitOut) :
+    Prover.Lens OuterStmtIn OuterStmtOut OuterStmtIn OuterStmtOut
+                OuterWitIn OuterWitOut InnerWitIn InnerWitOut :=
+  ofSeparateStmtWit id (fun _ => id) projWit liftWit
+
+/-- Lens for the prover which keeps the witnesses the same, and also the output statements the same,
+  hence only requires a projection on the input statements. -/
+@[inline]
+def ofInputStmtOnly (projStmt : OuterStmtIn → InnerStmtIn) :
+    Prover.Lens OuterStmtIn OuterStmtOut InnerStmtIn OuterStmtOut
+                OuterWitIn OuterWitOut OuterWitIn OuterWitOut :=
+  ofStmtOnly projStmt (fun _ => id)
+
+/-- Lens for the prover which keeps the witnesses the same, and also the input statements the same,
+  hence only requires a lift on the output statements. -/
+@[inline]
+def ofOutputStmtOnly (liftStmt : OuterStmtIn → InnerStmtOut → OuterStmtOut) :
+    Prover.Lens OuterStmtIn OuterStmtOut OuterStmtIn InnerStmtOut
+                OuterWitIn OuterWitOut OuterWitIn OuterWitOut :=
+  ofStmtOnly id liftStmt
+
+/-- Lens for the prover which keeps the statements the same, and also the output witnesses the same,
+  hence only requires a projection on the input witnesses. -/
+@[inline]
+def ofInputWitOnly (projWit : OuterWitIn → InnerWitIn) :
+    Prover.Lens OuterStmtIn OuterStmtOut OuterStmtIn OuterStmtOut
+                OuterWitIn OuterWitOut InnerWitIn OuterWitOut :=
+  ofWitOnly projWit (fun _ => id)
+
+/-- Lens for the prover which keeps the witnesses the same, and also the input statements the same,
+  hence only requires a lift on the output statements. -/
+@[inline]
+def ofOutputWitOnly (liftWit : OuterWitIn → InnerWitOut → OuterWitOut) :
+    Prover.Lens OuterStmtIn OuterStmtOut OuterStmtIn OuterStmtOut
+                OuterWitIn OuterWitOut OuterWitIn InnerWitOut :=
+  ofWitOnly id liftWit
+
+end Prover.Lens
+
+namespace Reduction.Lens
 
 @[inline]
-def Extractor.Lens.ofInputOnly (OuterWitIn InnerWitIn WitOut : Type)
-    (projWit : OuterWitIn → InnerWitIn) :
-    Extractor.Lens OuterWitIn WitOut InnerWitIn WitOut :=
-  ⟨projWit, Prod.snd⟩
+def ofInputOnly
+    (proverProj : OuterStmtIn × OuterWitIn → InnerStmtIn × InnerWitIn)
+    (verifierProj : OuterStmtIn → InnerStmtIn) :
+    Reduction.Lens OuterStmtIn OuterStmtOut InnerStmtIn OuterStmtOut
+                OuterWitIn OuterWitOut InnerWitIn OuterWitOut where
+  prover := Prover.Lens.ofInputOnly proverProj
+  verifier := Verifier.Lens.ofInputOnly verifierProj
 
 @[inline]
-def WitnessLens.ofOutputOnly (WitIn OuterWitOut InnerWitOut : Type)
-    (liftWit : InnerWitOut → OuterWitOut) :
-    WitnessLens WitIn OuterWitOut WitIn InnerWitOut where
-  projWit := id
-  liftWit := liftWit ∘ Prod.snd
+def ofOutputOnly
+    (proverLift :
+      OuterStmtIn × OuterWitIn → InnerStmtOut × InnerWitOut → OuterStmtOut × OuterWitOut)
+    (verifierLift : OuterStmtIn → InnerStmtOut → OuterStmtOut) :
+    Reduction.Lens OuterStmtIn OuterStmtOut OuterStmtIn InnerStmtOut
+                OuterWitIn OuterWitOut OuterWitIn InnerWitOut where
+  prover := Prover.Lens.ofOutputOnly proverLift
+  verifier := Verifier.Lens.ofOutputOnly verifierLift
 
-@[inline]
-def ContextLens.ofInputOnly (OuterStmtIn InnerStmtIn StmtOut : Type)
-    (OuterWitIn InnerWitIn WitOut : Type)
-    (projStmt : OuterStmtIn → InnerStmtIn)
-    (projWit : OuterWitIn → InnerWitIn) :
-    ContextLens OuterStmtIn StmtOut InnerStmtIn StmtOut
-                OuterWitIn WitOut InnerWitIn WitOut where
-  toStatementLens := StatementLens.ofInputOnly OuterStmtIn InnerStmtIn StmtOut projStmt
-  toWitnessLens := WitnessLens.ofInputOnly OuterWitIn InnerWitIn WitOut projWit
+-- @[inline]
+-- def ofInputStmtOnly (OuterStmtIn InnerStmtIn StmtOut WitIn WitOut : Type)
+--     (projStmt : OuterStmtIn → InnerStmtIn) :
+--     Reduction.Lens OuterStmtIn StmtOut InnerStmtIn StmtOut
+--                 WitIn WitOut WitIn WitOut where
+--   toStatementLens := StatementLens.ofInputOnly OuterStmtIn InnerStmtIn StmtOut projStmt
+--   toWitnessLens := WitnessLens.trivial WitIn WitOut
 
-@[inline]
-def ContextLens.ofOutputOnly (StmtIn OuterStmtOut InnerStmtOut WitIn OuterWitOut InnerWitOut : Type)
-    (liftStmt : InnerStmtOut → OuterStmtOut)
-    (liftWit : InnerWitOut → OuterWitOut) :
-    ContextLens StmtIn OuterStmtOut StmtIn InnerStmtOut
-                WitIn OuterWitOut WitIn InnerWitOut where
-  toStatementLens := StatementLens.ofOutputOnly StmtIn OuterStmtOut InnerStmtOut liftStmt
-  toWitnessLens := WitnessLens.ofOutputOnly WitIn OuterWitOut InnerWitOut liftWit
+-- @[inline]
+-- def ofOutputStmtOnly (StmtIn OuterStmtOut InnerStmtOut WitIn WitOut : Type)
+--     (liftStmt : InnerStmtOut → OuterStmtOut) :
+--     Reduction.Lens StmtIn OuterStmtOut StmtIn InnerStmtOut
+--                 WitIn WitOut WitIn WitOut where
+--   toStatementLens := StatementLens.ofOutputOnly StmtIn OuterStmtOut InnerStmtOut liftStmt
+--   toWitnessLens := WitnessLens.trivial WitIn WitOut
 
-@[inline]
-def ContextLens.ofInputStmtOnly (OuterStmtIn InnerStmtIn StmtOut WitIn WitOut : Type)
-    (projStmt : OuterStmtIn → InnerStmtIn) :
-    ContextLens OuterStmtIn StmtOut InnerStmtIn StmtOut
-                WitIn WitOut WitIn WitOut where
-  toStatementLens := StatementLens.ofInputOnly OuterStmtIn InnerStmtIn StmtOut projStmt
-  toWitnessLens := WitnessLens.trivial WitIn WitOut
+-- @[inline]
+-- def ofInputWitOnly (StmtIn StmtOut OuterWitIn InnerWitIn WitOut : Type)
+--     (projWit : OuterWitIn → InnerWitIn) :
+--     Reduction.Lens StmtIn StmtOut StmtIn StmtOut
+--                 OuterWitIn WitOut InnerWitIn WitOut where
+--   toStatementLens := StatementLens.trivial StmtIn StmtOut
+--   toWitnessLens := WitnessLens.ofInputOnly OuterWitIn InnerWitIn WitOut projWit
 
-@[inline]
-def ContextLens.ofOutputStmtOnly (StmtIn OuterStmtOut InnerStmtOut WitIn WitOut : Type)
-    (liftStmt : InnerStmtOut → OuterStmtOut) :
-    ContextLens StmtIn OuterStmtOut StmtIn InnerStmtOut
-                WitIn WitOut WitIn WitOut where
-  toStatementLens := StatementLens.ofOutputOnly StmtIn OuterStmtOut InnerStmtOut liftStmt
-  toWitnessLens := WitnessLens.trivial WitIn WitOut
+-- @[inline]
+-- def ofOutputWitOnly (StmtIn StmtOut WitIn OuterWitOut InnerWitOut : Type)
+--     (liftWit : InnerWitOut → OuterWitOut) :
+--     Reduction.Lens StmtIn StmtOut StmtIn StmtOut
+--                 WitIn OuterWitOut WitIn InnerWitOut where
+--   toStatementLens := StatementLens.trivial StmtIn StmtOut
+--   toWitnessLens := WitnessLens.ofOutputOnly WitIn OuterWitOut InnerWitOut liftWit
 
-@[inline]
-def ContextLens.ofInputWitOnly (StmtIn StmtOut OuterWitIn InnerWitIn WitOut : Type)
-    (projWit : OuterWitIn → InnerWitIn) :
-    ContextLens StmtIn StmtOut StmtIn StmtOut
-                OuterWitIn WitOut InnerWitIn WitOut where
-  toStatementLens := StatementLens.trivial StmtIn StmtOut
-  toWitnessLens := WitnessLens.ofInputOnly OuterWitIn InnerWitIn WitOut projWit
-
-@[inline]
-def ContextLens.ofOutputWitOnly (StmtIn StmtOut WitIn OuterWitOut InnerWitOut : Type)
-    (liftWit : InnerWitOut → OuterWitOut) :
-    ContextLens StmtIn StmtOut StmtIn StmtOut
-                WitIn OuterWitOut WitIn InnerWitOut where
-  toStatementLens := StatementLens.trivial StmtIn StmtOut
-  toWitnessLens := WitnessLens.ofOutputOnly WitIn OuterWitOut InnerWitOut liftWit
-
-
+end Reduction.Lens
 
 end SpecialCases
