@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2024 ArkLib Contributors. All rights reserved.
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
@@ -108,8 +108,7 @@ end Reduction
 
 section Soundness
 
-/- We define 3 variants each of soundness and knowledge soundness, all in the adaptive setting: (our
-  definitions are automatically in the adaptive setting, since there is no `crs`?)
+/-! We define 3 variants each of soundness and knowledge soundness:
 
   1. (Plain) soundness
   2. Knowledge soundness
@@ -117,64 +116,20 @@ section Soundness
   4. State-restoration knowledge soundness
   5. Round-by-round soundness
   6. Round-by-round knowledge soundness
+
+  For adaptivity, we may want to seed the definition with a term
+    `chooseStmtIn : OracleComp oSpec StmtIn`
+  (though this is essentially the same as quantifying over all `stmtIn : StmtIn`).
+
+  Note: all soundness definitions are really defined for the **verifier** only. The (honest)
+prover does not feature into the definitions.
 -/
 
-section Prover
-
-/-! Note: all soundness definitions are really defined for the **verifier** only. The (honest)
-prover does not feature into the definitions.
-
-TODO: first define soundness in the `(Oracle)Verifier` namespace, then soundness for
-`(Oracle)Reduction` should just be a wrapper over the verifier's definitions. -/
-
-/-- It's not clear whether we need the stronger `AdaptiveProver` type, since the soundness notions
-  are stated with regards to an arbitrary statement anyway (for plain soundness, the statement is
-  arbitrary among the ones that are not in the language). -/
-structure AdaptiveProver {ι : Type} {oSpec : OracleSpec ι}
-    {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
-    extends Prover oSpec StmtIn WitIn StmtOut WitOut pSpec
-    where
-  chooseStmtIn : OracleComp oSpec StmtIn
-
-/-- Version of `challengeOracle` that requires querying with the statement and prior messages.
-
-This is a stepping stone toward the Fiat-Shamir transform. -/
-def srChallengeOracle (Statement : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
-    OracleSpec (pSpec.ChallengeIdx) :=
-  fun i => (Statement × pSpec.MessagesUpTo i.1, pSpec.Challenge i)
-
-/-- A **state-restoration** prover in a reduction is a modified prover that has query access to
-  challenge oracles that can return the `i`-th challenge, for all `i : pSpec.ChallengeIdx`, given
-  the input statement and the transcript up to that point.
-
-  It further takes in the input statement and witness, and outputs a full transcript of interaction,
-  along with the output statement and witness. -/
-structure SRProver {oSpec : OracleSpec ι}
-    {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
-    where
-  srProve : StmtIn → WitIn →
-    OracleComp (oSpec ++ₒ (srChallengeOracle StmtIn pSpec))
-      (pSpec.FullTranscript × StmtOut × WitOut)
-
--- /-- Running a state-restoration prover -/
--- def SRProver.run
---     (prover : SRProver pSpec oSpec StmtIn WitIn StmtOut WitOut)
---     (stmtIn : StmtIn) (witIn : WitIn) :
---     OracleComp (oSpec ++ₒ challengeOracle' pSpec StmtIn)
---     (StmtOut × WitOut × pSpec.FullTranscript ×
---       QueryLog (oSpec ++ₒ challengeOracle' pSpec StmtIn))
--- := do
---   let ⟨state, stmt, transcript⟩ ← prover.stateRestorationQuery stmtIn
---   return ⟨transcript, state⟩
-
-end Prover
-
-section Extractor
+namespace Extractor
 
 /- We define different types of extractors here -/
 
-variable {ι : Type} (oSpec : OracleSpec ι)
-    (StmtIn WitIn WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n)
+variable (oSpec : OracleSpec ι) (StmtIn WitIn WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n)
 
 /-- A straightline, deterministic, non-oracle-querying extractor takes in the output witness, the
   initial statement, the IOR transcript, and the query logs from the prover and verifier, and
@@ -186,7 +141,7 @@ variable {ι : Type} (oSpec : OracleSpec ι)
 
   This form of extractor suffices for proving knowledge soundness of most hash-based IOPs.
 -/
-def StraightlineExtractor :=
+def Straightline :=
   WitOut → -- output witness
   StmtIn → -- input statement
   FullTranscript pSpec → -- reduction transcript
@@ -198,7 +153,7 @@ def StraightlineExtractor :=
   of length `m`, the prover's query log, and returns a witness to the statement.
 
   Note that the RBR extractor does not need to take in the output statement or witness. -/
-def RBRExtractor := (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → QueryLog oSpec → WitIn
+def RoundByRound := (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → QueryLog oSpec → WitIn
 
 section Rewinding
 
@@ -211,7 +166,7 @@ def OracleSpec.proverOracle (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
 -- def SimOracle.proverImpl (P : Prover pSpec oSpec StmtIn WitIn StmtOut WitOut) :
 --     SimOracle.Stateless (OracleSpec.proverOracle pSpec StmtIn) oSpec := sorry
 
-structure RewindingExtractor (oSpec : OracleSpec ι)
+structure Rewinding (oSpec : OracleSpec ι)
     (StmtIn StmtOut WitIn WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
   /-- The state of the extractor -/
   ExtState : Type
@@ -225,8 +180,9 @@ structure RewindingExtractor (oSpec : OracleSpec ι)
     StateT ExtState (OracleComp (OracleSpec.proverOracle StmtIn pSpec)) WitIn
 
 -- Challenge: need environment to update & maintain the prover's states after each extractor query
+-- This will hopefully go away after the refactor of prover's type to be an iterated monad
 
--- def RewindingExtractor.run
+-- def Rewinding.run
 --     (P : AdaptiveProver pSpec oSpec StmtIn WitIn StmtOut WitOut)
 --     (E : RewindingExtractor pSpec oSpec StmtIn StmtOut WitIn WitOut) :
 --     OracleComp oSpec WitIn := sorry
@@ -287,7 +243,7 @@ class IsSound (langIn : Set StmtIn) (langOut : Set StmtOut)
 -/
 def knowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) (knowledgeError : ℝ≥0) : Prop :=
-  ∃ extractor : StraightlineExtractor oSpec StmtIn WitIn WitOut pSpec,
+  ∃ extractor : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec,
   ∀ stmtIn : StmtIn,
   ∀ witIn : WitIn,
   ∀ prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec,
@@ -309,9 +265,9 @@ class IsKnowledgeSound (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut ×
 
 /-- An extractor is **monotone** if its success probability on a given query log is the same as
   the success probability on any extension of that query log. -/
-class StraightlineExtractor.IsMonotone
+class Extractor.Straightline.IsMonotone
     (relIn : Set (StmtIn × WitIn))
-    (E : StraightlineExtractor oSpec StmtIn WitIn WitOut pSpec)
+    (E : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec)
     [oSpec.FiniteRange]
     where
   is_monotone : ∀ witOut stmtIn transcript, ∀ proveQueryLog₁ proveQueryLog₂ : oSpec.QueryLog,
@@ -325,22 +281,6 @@ class StraightlineExtractor.IsMonotone
       E witOut stmtIn transcript proveQueryLog₂ verifyQueryLog₂]
     -- Pr[extraction game succeeds on proveQueryLog₁, verifyQueryLog₁]
     -- ≤ Pr[extraction game succeeds on proveQueryLog₂, verifyQueryLog₂]
-
-section StateRestoration
-
--- /-- State-restoration soundness -/
--- def srSoundness (verifier : Verifier pSpec oSpec StmtIn StmtOut)
---     (langIn : Set StmtIn) (langOut : Set StmtOut) (SRSoundnessError : ENNReal) : Prop :=
---   ∀ stmtIn ∉ langIn,
---   ∀ witIn : WitIn,
---   ∀ SRProver : SRProver pSpec oSpec StmtIn WitIn StmtOut WitOut,
---     let ⟨_, witOut, transcript, queryLog⟩ ← (simulateQ ... (SRProver.run stmtIn witIn)).run
---     let stmtOut ← verifier.run stmtIn transcript
---     return stmtOut ∉ langOut
-
--- State-restoration knowledge soundness (w/ straightline extractor)
-
-end StateRestoration
 
 section RoundByRound
 
@@ -494,7 +434,7 @@ def rbrKnowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
   ∃ stateFunction : verifier.StateFunction oSpec relIn.language relOut.language pSpec,
-  ∃ extractor : RBRExtractor oSpec StmtIn WitIn pSpec,
+  ∃ extractor : Extractor.RoundByRound oSpec StmtIn WitIn pSpec,
   ∀ stmtIn : StmtIn,
   ∀ witIn : WitIn,
   ∀ prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec,
@@ -544,7 +484,7 @@ class IsRBRKnowledgeSound (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut
 
 /-- A round-by-round extractor is **monotone** if its success probability on a given query log
   is the same as the success probability on any extension of that query log. -/
-class RBRExtractor.IsMonotone (E : RBRExtractor oSpec StmtIn WitIn pSpec)
+class Extractor.RoundByRound.IsMonotone (E : Extractor.RoundByRound oSpec StmtIn WitIn pSpec)
     (relIn : Set (StmtIn × WitIn)) where
   is_monotone : ∀ roundIdx stmtIn transcript,
     ∀ proveQueryLog₁ proveQueryLog₂ : oSpec.QueryLog,

@@ -437,6 +437,35 @@ def getChallenge (pSpec : ProtocolSpec n) (i : pSpec.ChallengeIdx) :
     OracleComp [pSpec.Challenge]ₒ (pSpec.Challenge i) :=
   (query i () : OracleQuery [pSpec.Challenge]ₒ (pSpec.Challenge i))
 
+/-- Turn each verifier's challenge into an oracle, where one needs to query
+  with an input statement and prior messages up to that round to get a challenge -/
+@[reducible, inline, specialize]
+def instChallengeOracleInterfaceFiatShamir {pSpec : ProtocolSpec n} {i : pSpec.ChallengeIdx}
+    {StmtIn : Type} : OracleInterface (pSpec.Challenge i) where
+  Query := StmtIn × pSpec.MessagesUpTo i.1.castSucc
+  Response := pSpec.Challenge i
+  oracle := fun c _ => c
+
+/-- The oracle interface for Fiat-Shamir.
+
+This is the (inefficient) version where we hash the input statement and the entire transcript up to
+the point of deriving a new challenge.
+
+Some variants of Fiat-Shamir takes in a salt each round. We assume that such salts are included in
+the input statement (i.e. we can always transform a given reduction into one where every round has a
+random salt). -/
+@[inline, reducible]
+def srChallengeOracle (Statement : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
+    OracleSpec pSpec.ChallengeIdx :=
+  fun i => (Statement × pSpec.MessagesUpTo i.1.castSucc, pSpec.Challenge i)
+
+alias fiatShamirSpec := srChallengeOracle
+
+instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
+    OracleSpec.FiniteRange (srChallengeOracle Statement pSpec) where
+  range_inhabited' := fun i => by simp [srChallengeOracle, OracleSpec.range]; infer_instance
+  range_fintype' := fun i => by simp [fiatShamirSpec, OracleSpec.range]; infer_instance
+
 end ProtocolSpec
 
 -- Notation for the type signature of an interactive protocol

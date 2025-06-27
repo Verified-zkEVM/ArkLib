@@ -210,9 +210,9 @@ end OracleProver.Lens
 @[ext]
 structure Reduction.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                           OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) where
-  proverLens : Prover.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+  prover : Prover.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
               OuterWitIn OuterWitOut InnerWitIn InnerWitOut
-  verifierLens : Verifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+  verifier : Verifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
 
 /-- A structure collecting a lens for the prover, and a lens for the oracle verifier, for
   transporting between the contexts of an outer oracle reduction and an inner oracle reduction. -/
@@ -223,10 +223,10 @@ structure OracleReduction.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOu
     {Inner_ιₛᵢ : Type} (InnerOStmtIn : Inner_ιₛᵢ → Type) [∀ i, OracleInterface (InnerOStmtIn i)]
     {Inner_ιₛₒ : Type} (InnerOStmtOut : Inner_ιₛₒ → Type) [∀ i, OracleInterface (InnerOStmtOut i)]
     (OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) where
-  proverLens : OracleProver.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+  prover : OracleProver.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
               OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
               OuterWitIn OuterWitOut InnerWitIn InnerWitOut
-  oracleVerifierLens : OracleVerifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+  verifier : OracleVerifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                        OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
 
 /-
@@ -257,9 +257,10 @@ structure OracleReduction.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOu
 /-- Inverse lens between outer and inner witnesses (going the other direction with respect to
   input-output), for extractors / knowledge soundness.
 -/
-@[reducible]
-def WitnessLensInv (OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) :=
-  WitnessLens OuterWitOut OuterWitIn InnerWitOut InnerWitIn
+@[inline, reducible]
+def Extractor.Lens (OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) :=
+  PFunctor.Lens (OuterWitOut y^ OuterWitIn) (InnerWitOut y^ InnerWitIn)
+
 -- structure ContextLensInv (OuterStmtOut InnerStmtOut : Type)
 --     (OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) extends
 --       WitnessLens OuterWitOut OuterWitIn InnerWitOut InnerWitIn where
@@ -282,42 +283,44 @@ class RBRWitnessLensInv (OuterWitIn InnerWitIn : Type) where
 
 For `lift`, we require compatibility relations between the outer input statement/witness and
 the inner output statement/witness -/
-class ContextLens.IsComplete {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
+class Reduction.Lens.IsComplete {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
     {OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
-    (outerRelIn : OuterStmtIn → OuterWitIn → Prop)
-    (innerRelIn : InnerStmtIn → InnerWitIn → Prop)
-    (outerRelOut : OuterStmtOut → OuterWitOut → Prop)
-    (innerRelOut : InnerStmtOut → InnerWitOut → Prop)
-    (compat : OuterStmtIn × OuterWitIn → InnerStmtOut × InnerWitOut → Prop)
-    (lens : ContextLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+    (outerRelIn : Set (OuterStmtIn × OuterWitIn))
+    (innerRelIn : Set (InnerStmtIn × InnerWitIn))
+    (outerRelOut : Set (OuterStmtOut × OuterWitOut))
+    (innerRelOut : Set (InnerStmtOut × InnerWitOut))
+    (compatRel : Set ((OuterStmtIn × OuterWitIn) × (InnerStmtOut × InnerWitOut)))
+    (lens : Reduction.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                         OuterWitIn OuterWitOut InnerWitIn InnerWitOut) where
 
+  proj_compat : ∀ stmtIn witIn,
+    (lens.prover.projCtx (stmtIn, witIn)).fst = lens.verifier.projStmt stmtIn
+
   proj_complete : ∀ stmtIn witIn,
-    outerRelIn stmtIn witIn →
-    innerRelIn (lens.projStmt stmtIn) (lens.projWit witIn)
+    (stmtIn, witIn) ∈ outerRelIn →
+    (lens.prover.projCtx (stmtIn, witIn)) ∈ innerRelIn
 
   lift_complete : ∀ outerStmtIn outerWitIn innerStmtOut innerWitOut,
-    compat (outerStmtIn, outerWitIn) (innerStmtOut, innerWitOut) →
-    outerRelIn outerStmtIn outerWitIn →
-    innerRelOut innerStmtOut innerWitOut →
-    outerRelOut (lens.liftStmt (outerStmtIn, innerStmtOut))
-                (lens.liftWit (outerWitIn, innerWitOut))
+    ((outerStmtIn, outerWitIn), (innerStmtOut, innerWitOut)) ∈ compatRel →
+    (outerStmtIn, outerWitIn) ∈ outerRelIn →
+    (innerStmtOut, innerWitOut) ∈ innerRelOut →
+    lens.prover.liftCtx (outerStmtIn, outerWitIn) (innerStmtOut, innerWitOut) ∈ outerRelOut
 
 /-- Conditions for the lens / transformation to preserve soundness -/
-class StatementLens.IsSound {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
+class Verifier.Lens.IsSound {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
     (outerLangIn : Set OuterStmtIn) (outerLangOut : Set OuterStmtOut)
     (innerLangIn : Set InnerStmtIn) (innerLangOut : Set InnerStmtOut)
-    (compat : OuterStmtIn → InnerStmtOut → Prop)
-    (lens : StatementLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) where
+    (compatRel : Set (OuterStmtIn × InnerStmtOut))
+    (lens : Verifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) where
 
   proj_sound : ∀ outerStmtIn,
     outerStmtIn ∉ outerLangIn → lens.projStmt outerStmtIn ∉ innerLangIn
 
   lift_sound : ∀ outerStmtIn innerStmtOut,
-    compat outerStmtIn innerStmtOut →
+    (outerStmtIn, innerStmtOut) ∈ compatRel →
     outerStmtIn ∉ outerLangIn →
     innerStmtOut ∉ innerLangOut →
-      lens.liftStmt (outerStmtIn, innerStmtOut) ∉ outerLangOut
+    lens.liftStmt outerStmtIn innerStmtOut ∉ outerLangOut
 
 /-- Conditions for the lens / transformation to preserve round-by-round soundness
 
@@ -325,11 +328,11 @@ This is nearly identical to the `IsSound` condition, _except_ that we do not req
 `outerStmtIn ∉ outerLangIn` in the `lift_sound` condition.
 
 (we need to relax that condition to prove `toFun_full` of the lifted state function) -/
-class StatementLens.IsRBRSound {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
+class Verifier.Lens.IsRBRSound {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
     (outerLangIn : Set OuterStmtIn) (outerLangOut : Set OuterStmtOut)
     (innerLangIn : Set InnerStmtIn) (innerLangOut : Set InnerStmtOut)
-    (compat : OuterStmtIn → InnerStmtOut → Prop)
-    (lens : StatementLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) where
+    (compatRel : Set (OuterStmtIn × InnerStmtOut))
+    (lens : Verifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) where
 
   -- inner_to_outer for input
   proj_sound : ∀ outerStmtIn,
@@ -337,15 +340,15 @@ class StatementLens.IsRBRSound {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOu
 
   -- outer_to_inner for output
   lift_sound : ∀ outerStmtIn innerStmtOut,
-    compat outerStmtIn innerStmtOut →
+    (outerStmtIn, innerStmtOut) ∈ compatRel →
     innerStmtOut ∉ innerLangOut →
-    lens.liftStmt (outerStmtIn, innerStmtOut) ∉ outerLangOut
+    lens.liftStmt outerStmtIn innerStmtOut ∉ outerLangOut
 
 /-- Conditions for the lens / transformation to preserve knowledge soundness
 
 Note that we do _not_ require a witness lens in the input -> output direction, since we don't need
 to do anything with the (honest) prover -/
-class StatementLens.IsKnowledgeSound
+class Verifier.Lens.IsKnowledgeSound
     {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
     {OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
     (outerRelIn : OuterStmtIn → OuterWitIn → Prop)
@@ -354,28 +357,28 @@ class StatementLens.IsKnowledgeSound
     (innerRelOut : InnerStmtOut → InnerWitOut → Prop)
     (compatStmt : OuterStmtIn → InnerStmtOut → Prop)
     (compatWit : OuterWitOut → InnerWitIn → Prop)
-    (lensInv : WitnessLensInv OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
-    (lens : StatementLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) where
+    (lensE : Extractor.Lens OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
+    (lensV : Verifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) where
 
   -- outer_to_inner for output
   out_to_in : ∀ outerStmtIn innerStmtOut outerWitOut,
     compatStmt outerStmtIn innerStmtOut →
-    outerRelOut (lens.liftStmt (outerStmtIn, innerStmtOut)) outerWitOut →
-    innerRelOut innerStmtOut (lensInv.projWit outerWitOut)
+    outerRelOut (lensV.liftStmt outerStmtIn innerStmtOut) outerWitOut →
+    innerRelOut innerStmtOut (lensE.projWit outerWitOut)
 
   -- inner_to_outer for input
   in_to_out : ∀ outerStmtIn outerWitOut innerWitIn,
     compatWit outerWitOut innerWitIn →
-    innerRelIn (lens.projStmt outerStmtIn) innerWitIn →
-    outerRelIn outerStmtIn (lensInv.liftWit (outerWitOut, innerWitIn))
+    innerRelIn (lensV.projStmt outerStmtIn) innerWitIn →
+    outerRelIn outerStmtIn (lensE.liftWit (outerWitOut, innerWitIn))
 
-namespace ContextLens.IsKnowledgeSound
+namespace Verifier.Lens.IsKnowledgeSound
 
 -- Convert knowledge soundness into soundness
 
-end ContextLens.IsKnowledgeSound
+end Verifier.Lens.IsKnowledgeSound
 
-class StatementLens.IsRBRKnowledgeSound
+class Verifier.Lens.IsRBRKnowledgeSound
     {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
     {OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
     (outerRelIn : OuterStmtIn → OuterWitIn → Prop)
@@ -384,11 +387,11 @@ class StatementLens.IsRBRKnowledgeSound
     (innerRelOut : InnerStmtOut → InnerWitOut → Prop)
     (compatStmt : OuterStmtIn → InnerStmtOut → Prop)
     (compatWit : OuterWitOut → InnerWitIn → Prop)
-    (lensInv : WitnessLensInv OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
-    (lens : StatementLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut)
+    (lensE : Extractor.Lens OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
+    (lensV : Verifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut)
   -- TODO: double-check if we need any extra conditions
-  extends StatementLens.IsKnowledgeSound outerRelIn innerRelIn outerRelOut innerRelOut
-        compatStmt compatWit lensInv lens where
+  extends Verifier.Lens.IsKnowledgeSound outerRelIn innerRelIn outerRelOut innerRelOut
+        compatStmt compatWit lensE lensV where
 
 section SpecialCases
 
@@ -413,36 +416,32 @@ section SpecialCases
 -- output context)
 
 @[inline, reducible, simp]
-def StatementLens.trivial (StmtIn StmtOut : Type) :
-    StatementLens StmtIn StmtOut StmtIn StmtOut where
-  projStmt := id
-  liftStmt := Prod.snd
+def Verifier.Lens.trivial (StmtIn StmtOut : Type) :
+    Verifier.Lens StmtIn StmtOut StmtIn StmtOut :=
+  ⟨id, fun _ => id⟩
 
 @[inline, reducible, simp]
-def WitnessLens.trivial (WitIn WitOut : Type) : WitnessLens WitIn WitOut WitIn WitOut where
-  projWit := id
-  liftWit := Prod.snd
+def Prover.Lens.trivial (StmtIn StmtOut WitIn WitOut : Type) :
+    Prover.Lens StmtIn StmtOut StmtIn StmtOut WitIn WitOut WitIn WitOut :=
+  ⟨id, fun _ => id⟩
 
 @[inline]
-def StatementLens.ofInputOnly (OuterStmtIn InnerStmtIn StmtOut : Type)
+def Verifier.Lens.ofInputOnly (OuterStmtIn InnerStmtIn StmtOut : Type)
     (projStmt : OuterStmtIn → InnerStmtIn) :
-    StatementLens OuterStmtIn StmtOut InnerStmtIn StmtOut where
-  projStmt := projStmt
-  liftStmt := Prod.snd
+    Verifier.Lens OuterStmtIn StmtOut InnerStmtIn StmtOut :=
+  ⟨projStmt, fun _ => id⟩
 
 @[inline]
-def StatementLens.ofOutputOnly (StmtIn OuterStmtOut InnerStmtOut : Type)
+def Verifier.Lens.ofOutputOnly (StmtIn OuterStmtOut InnerStmtOut : Type)
     (liftStmt : InnerStmtOut → OuterStmtOut) :
-    StatementLens StmtIn OuterStmtOut StmtIn InnerStmtOut where
-  projStmt := id
-  liftStmt := liftStmt ∘ Prod.snd
+    Verifier.Lens StmtIn OuterStmtOut StmtIn InnerStmtOut :=
+  ⟨id, fun _ => liftStmt⟩
 
 @[inline]
-def WitnessLens.ofInputOnly (OuterWitIn InnerWitIn WitOut : Type)
+def Extractor.Lens.ofInputOnly (OuterWitIn InnerWitIn WitOut : Type)
     (projWit : OuterWitIn → InnerWitIn) :
-    WitnessLens OuterWitIn WitOut InnerWitIn WitOut where
-  projWit := projWit
-  liftWit := Prod.snd
+    Extractor.Lens OuterWitIn WitOut InnerWitIn WitOut :=
+  ⟨projWit, Prod.snd⟩
 
 @[inline]
 def WitnessLens.ofOutputOnly (WitIn OuterWitOut InnerWitOut : Type)
