@@ -53,11 +53,9 @@ instance : Fintype (pSpec.ChallengeIdx) := Subtype.fintype (fun i => pSpec.getDi
 
 /-- A (deterministic) state function for a verifier, with respect to input language `langIn` and
   output language `langOut`. This is used to define round-by-round soundness. -/
-structure StateFunction (oSpec : OracleSpec ι)
+structure StateFunction
     (langIn : Set StmtIn) (langOut : Set StmtOut)
-    {n : ℕ} (pSpec : ProtocolSpec n)
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    [oSpec.FiniteRange]
     where
   toFun : (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → Prop
   /-- For all input statement not in the language, the state function is false for the empty
@@ -77,11 +75,9 @@ structure StateFunction (oSpec : OracleSpec ι)
 /-- A knowledge state function for a verifier, with respect to input relation `relIn`, output
   relation `relOut`, and intermediate witness types `WitMid`. This is used to define
   round-by-round knowledge soundness. -/
-structure KnowledgeStateFunction (oSpec : OracleSpec ι)
+structure KnowledgeStateFunction
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    {n : ℕ} (pSpec : ProtocolSpec n)
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    [oSpec.FiniteRange]
     (WitMid : Fin (n + 1) → Type)
     where
   /-- The knowledge state function: takes in round index, input statement, transcript up to that
@@ -104,8 +100,8 @@ structure KnowledgeStateFunction (oSpec : OracleSpec ι)
 def KnowledgeStateFunction.toStateFunction
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec} {WitMid : Fin (n + 1) → Type}
-    (kSF : KnowledgeStateFunction oSpec relIn relOut pSpec verifier WitMid) :
-      StateFunction oSpec relIn.language relOut.language pSpec verifier where
+    (kSF : KnowledgeStateFunction relIn relOut verifier WitMid) :
+      verifier.StateFunction relIn.language relOut.language where
   toFun := fun m stmtIn tr => ∃ witMid, kSF.toFun m stmtIn tr witMid
   toFun_empty := fun stmtIn hStmtIn => by
     simp; exact kSF.toFun_empty stmtIn (by simpa [Set.language] using hStmtIn)
@@ -126,12 +122,12 @@ structure NewRBRExtractor (WitMid : Fin (n + 1) → Type) where
 
 instance {langIn : Set StmtIn} {langOut : Set StmtOut}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec} :
-    CoeFun (verifier.StateFunction oSpec langIn langOut pSpec)
+    CoeFun (verifier.StateFunction langIn langOut)
     (fun _ => (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → Prop) := ⟨fun f => f.toFun⟩
 
 instance {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec} {WitMid : Fin (n + 1) → Type} :
-    CoeFun (verifier.KnowledgeStateFunction oSpec relIn relOut pSpec WitMid)
+    CoeFun (verifier.KnowledgeStateFunction relIn relOut WitMid)
     (fun _ => (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → WitMid m → Prop) :=
       ⟨fun f => f.toFun⟩
 
@@ -155,7 +151,7 @@ instance {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
 def rbrSoundness (langIn : Set StmtIn) (langOut : Set StmtOut)
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
-  ∃ stateFunction : verifier.StateFunction oSpec langIn langOut pSpec,
+  ∃ stateFunction : verifier.StateFunction langIn langOut,
   ∀ stmtIn ∉ langIn,
   ∀ WitIn WitOut : Type,
   ∀ witIn : WitIn,
@@ -198,7 +194,7 @@ class IsRBRSound (langIn : Set StmtIn) (langOut : Set StmtOut)
 def rbrKnowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
-  ∃ stateFunction : verifier.StateFunction oSpec relIn.language relOut.language pSpec,
+  ∃ stateFunction : verifier.StateFunction relIn.language relOut.language,
   ∃ extractor : Extractor.RoundByRound oSpec StmtIn WitIn pSpec,
   ∀ stmtIn : StmtIn,
   ∀ witIn : WitIn,
@@ -220,7 +216,7 @@ def newRbrKnowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (Stmt
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
   ∃ WitMid : Fin (n + 1) → Type,
-  ∃ kSF : verifier.KnowledgeStateFunction oSpec relIn relOut pSpec WitMid,
+  ∃ kSF : verifier.KnowledgeStateFunction relIn relOut WitMid,
   ∃ extractor : NewRBRExtractor WitMid (WitIn := WitIn) (WitOut := WitOut),
   ∀ stmtIn : StmtIn,
   ∀ witIn : WitIn,
@@ -274,7 +270,7 @@ def StateFunction (oSpec : OracleSpec ι)
     [∀ i, OracleInterface (OStmtIn i)]
     [∀ i, OracleInterface (pSpec.Message i)]
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :=
-  verifier.toVerifier.StateFunction oSpec langIn langOut pSpec
+  verifier.toVerifier.StateFunction langIn langOut
 
 /-- Round-by-round soundness of an oracle reduction is the same as for non-oracle reductions. -/
 def rbrSoundness

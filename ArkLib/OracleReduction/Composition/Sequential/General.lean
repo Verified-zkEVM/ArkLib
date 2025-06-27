@@ -20,18 +20,18 @@ open ProtocolSpec
 
 universe u v
 
-variable {ι : Type} [DecidableEq ι] {oSpec : OracleSpec ι}
+variable {ι : Type} {oSpec : OracleSpec ι} {m : ℕ}
 
 section Instances
 
-variable {m : ℕ} {n : Fin (m + 1) → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+variable {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
 
 namespace ProtocolSpec
 
 /-- The equivalence between the challenge indices of the individual protocols and the challenge
     indices of the sequential composition. -/
 def composeChallengeEquiv :
-    (i : Fin (m + 1)) × (pSpec i).ChallengeIdx ≃ (compose m n pSpec).ChallengeIdx where
+    (i : Fin m) × (pSpec i).ChallengeIdx ≃ (compose pSpec).ChallengeIdx where
   -- TODO: write lemmas about `finSigmaFinEquiv` in mathlib with the one defined via `Fin.dfoldl`
   toFun := fun ⟨i, ⟨chalIdx, h⟩⟩ => ⟨finSigmaFinEquiv ⟨i, chalIdx⟩, by
     unfold compose; sorry⟩
@@ -44,7 +44,7 @@ def composeChallengeEquiv :
 /-- The equivalence between the message indices of the individual protocols and the message
     indices of the sequential composition. -/
 def composeMessageEquiv :
-    (i : Fin (m + 1)) × (pSpec i).MessageIdx ≃ (compose m n pSpec).MessageIdx where
+    (i : Fin m) × (pSpec i).MessageIdx ≃ (compose pSpec).MessageIdx where
   toFun := fun ⟨i, ⟨msgIdx, h⟩⟩ => ⟨finSigmaFinEquiv ⟨i, msgIdx⟩, by
     unfold compose; sorry⟩
   invFun := fun ⟨composedMsgIdx, h⟩ =>
@@ -58,7 +58,7 @@ end ProtocolSpec
 /-- If all protocols have sampleable challenges, then the challenges of their sequential
   composition also have sampleable challenges. -/
 instance [inst : ∀ i, ∀ j, Sampleable ((pSpec i).Challenge j)] :
-    ∀ j, Sampleable ((compose m n pSpec).Challenge j) := fun combinedIdx => by
+    ∀ j, Sampleable ((compose pSpec).Challenge j) := fun combinedIdx => by
   let combinedIdx' := composeChallengeEquiv.symm combinedIdx
   let this := inst combinedIdx'.1 combinedIdx'.2
   convert this using 1; sorry
@@ -66,7 +66,7 @@ instance [inst : ∀ i, ∀ j, Sampleable ((pSpec i).Challenge j)] :
 /-- If all protocols' messages have oracle interfaces, then the messages of their sequential
   composition also have oracle interfaces. -/
 instance [O : ∀ i, ∀ j, OracleInterface.{0, u, v} ((pSpec i).Message j)] :
-    ∀ i, OracleInterface.{0, u, v} ((compose m n pSpec).Message i) := fun combinedIdx => by
+    ∀ i, OracleInterface.{0, u, v} ((compose pSpec).Message i) := fun combinedIdx => by
   let combinedIdx' := composeMessageEquiv.symm combinedIdx
   let this := O combinedIdx'.1 combinedIdx'.2
   convert this using 1; sorry
@@ -75,18 +75,16 @@ end Instances
 
 section Composition
 
-variable {m : ℕ} {n : Fin (m + 1) → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
-
-def Prover.compose (m : ℕ) (n : Fin (m + 1) → ℕ) (pSpec : ∀ i, ProtocolSpec (n i))
-    (Stmt : Fin (m + 2) → Type) (Wit : Fin (m + 2) → Type)
-    (P : (i : Fin (m + 1)) → Prover (pSpec i) oSpec (Stmt i.castSucc) (Wit i.castSucc)
-      (Stmt i.succ) (Wit i.succ)) :
-      Prover (ProtocolSpec.compose m n pSpec) oSpec (Stmt 0) (Wit 0) (Stmt (Fin.last (m + 1)))
-        (Wit (Fin.last (m + 1))) :=
+def Prover.compose
+    (Stmt : Fin (m + 1) → Type) (Wit : Fin (m + 1) → Type)
+    {n : Fin m → ℕ} (pSpec : ∀ i, ProtocolSpec (n i))
+    (P : (i : Fin m) → Prover oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ)
+      (pSpec i)) :
+    Prover oSpec (Stmt 0) (Wit 0) (Stmt (Fin.last m)) (Wit (Fin.last m)) (compose pSpec) :=
   Fin.dfoldl m
     (fun i => Prover
-      (ProtocolSpec.compose i (Fin.take (i + 1) (by omega) n) (Fin.take (i + 1) (by omega) pSpec))
-        oSpec (Stmt 0) (Wit 0) (Stmt i.succ) (Wit i.succ))
+        oSpec (Stmt 0) (Wit 0) (Stmt i.succ) (Wit i.succ)
+        (ProtocolSpec.compose (Fin.take i (by omega) pSpec)))
     (fun i Pacc => by
       convert Prover.append Pacc (P i.succ)
       · simp [Fin.sum_univ_castSucc, Fin.last, Fin.succ]
