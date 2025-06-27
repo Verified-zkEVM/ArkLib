@@ -14,7 +14,7 @@ namespace DivergenceOfSets
 
 noncomputable section
 
-open RelativeHamming
+open Classical Code
 
 variable {ι : Type*} [Fintype ι] [Nonempty ι]
          {F : Type*} [DecidableEq F]
@@ -22,8 +22,8 @@ variable {ι : Type*} [Fintype ι] [Nonempty ι]
 
 /-- The set of possible relative Hamming distances between two sets.
 -/
-def possibleDeltas (U V : Set (ι → F)) : Set ℚ :=
-  {d : ℚ | ∃ u ∈ U, δᵣ(u,V) = d}
+def possibleDeltas (U V : Set (ι → F)) : Set ℚ≥0 :=
+  {d : ℚ≥0 | ∃ u ∈ U, δᵣ(u,V) = d}
 
 /-- The set of possible relative Hamming distances between two sets is well-defined.
 -/

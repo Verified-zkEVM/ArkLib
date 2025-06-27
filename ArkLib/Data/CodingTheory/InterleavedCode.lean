@@ -118,14 +118,14 @@ notation "Λᵢ(" U "," IC "," r ")" => relHammingBallInterleavedCode U IC r
   the minimal distance of its underlying linear code.
 -/
 lemma minDist_eq_minDist [DecidableEq F] {IC : LawfulInterleavedCode κ ι F} :
-  Distance.minDist (IC.1.LC : Set (ι → F)) = minDist IC.1.MF := by sorry
+  Code.minDist (IC.1.LC : Set (ι → F)) = minDist IC.1.MF := by sorry
 
 end InterleavedCode
 
 noncomputable section
 
 open InterleavedCode
-open Distance
+open Code
 
 variable {F : Type*} [Field F] [Finite F] [DecidableEq F]
          {κ : Type*} [Fintype κ] {ι : Type*} [Fintype ι]
@@ -138,7 +138,7 @@ local instance : Fintype F := Fintype.ofFinite F
 lemma distInterleavedCodeToCodeLB
   {IC : LawfulInterleavedCode κ ι F} {U : Matrix κ ι F} {e : ℕ}
   (hF: Fintype.card F ≥ e)
-  (he : (e : ℚ) ≤ (codeDist (IC.1.LC : Set (ι → F)) / 3)) (hU : e < Δ(U,IC.1.MF)) :
+  (he : (e : ℚ) ≤ (minDist (IC.1.LC : Set (ι → F)) / 3)) (hU : e < Δ(U,IC.1.MF)) :
   ∃ v ∈ Matrix.rowSpan U , e < distFromCode v IC.1.LC := sorry
 
 namespace ProximityToRS
