@@ -49,6 +49,17 @@ class OracleInterface (Message : Type u) where
 
 namespace OracleInterface
 
+/-- The default instance for `OracleInterface`, where the query is trivial (a `Unit`) and the
+  response returns the data. We do not register this as an instance, instead explicitly calling it
+  where necessary.-/
+def instDefault {Message : Type u} : OracleInterface Message where
+  Query := Unit
+  Response := Message
+  oracle := fun m _ => m
+
+instance {Message : Type u} : Inhabited (OracleInterface Message) :=
+  ⟨instDefault⟩
+
 open SimOracle
 
 /-- Converts an indexed type family of oracle interfaces into an oracle specification. -/
@@ -80,7 +91,7 @@ instance {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterface (v i)]
 @[reducible, inline]
 instance {ι₁ : Type u} {T₁ : ι₁ → Type v} [inst₁ : ∀ i, OracleInterface (T₁ i)]
     {ι₂ : Type u} {T₂ : ι₂ → Type v} [inst₂ : ∀ i, OracleInterface (T₂ i)] :
-    ∀ i, OracleInterface (Sum.elim T₁ T₂ i) :=
+    ∀ i, OracleInterface (Sum.rec T₁ T₂ i) :=
   fun i => match i with
     | .inl i => inst₁ i
     | .inr i => inst₂ i
@@ -149,7 +160,7 @@ instance instForall {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterfac
 
 def append {ι₁ : Type u} {T₁ : ι₁ → Type v} [∀ i, OracleInterface (T₁ i)]
     {ι₂ : Type u} {T₂ : ι₂ → Type v} [∀ i, OracleInterface (T₂ i)] : OracleSpec (ι₁ ⊕ ι₂) :=
-  [Sum.elim T₁ T₂]ₒ
+  [Sum.rec T₁ T₂]ₒ
 
 /-- Combines multiple oracle specifications into a single oracle by routing queries to the
       appropriate underlying oracle. Takes:

@@ -28,17 +28,9 @@ require seq from git "https://github.com/Vtec234/lean4-seq.git"
   (as well as `Archive`, `Counterexamples` and `test`).
 -/
 abbrev arklibOnlyLinters : Array LeanOption := #[
-  -- ⟨`linter.docPrime, true⟩,
-  ⟨`linter.hashCommand, true⟩,
-  ⟨`linter.oldObtain, true,⟩,
-  -- ⟨`linter.refine, true⟩,
-  ⟨`linter.style.cdot, true⟩,
-  ⟨`linter.style.dollarSyntax, true⟩,
-  ⟨`linter.style.lambdaSyntax, true⟩,
-  ⟨`linter.style.longLine, true⟩,
+  -- We use the same set of standard Mathlib linter options
+  ⟨`linter.mathlibStandardSet, true⟩,
   ⟨`linter.style.longFile, .ofNat 1500⟩,
-  ⟨`linter.style.missingEnd, true⟩,
-  ⟨`linter.style.setOption, true⟩
 ]
 
 /-- These options are passed as `leanOptions` to building arklib, as well as the
@@ -57,7 +49,7 @@ def moreServerArgs := #[
 package «Arklib» {
   -- add any package configuration options here
   leanOptions := arklibLeanOptions
-  -- Mathlib also enforces these linter options, which are not active by default.
+  -- ArkLib also enforces these linter options, which are not active by default.
   moreServerOptions := arklibOnlyLinters
 }
 

@@ -47,7 +47,7 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
   {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
 
 /--
-  Prover's function for processing the next round, given the current result of the previous round.
+Prover's function for processing the next round, given the current result of the previous round.
 -/
 @[inline, specialize]
 def Prover.processRound [∀ i, VCVCompatible (pSpec.Challenge i)] (j : Fin n)
@@ -61,13 +61,12 @@ def Prover.processRound [∀ i, VCVCompatible (pSpec.Challenge i)] (j : Fin n)
   | .V_to_P => do
     let challenge ← pSpec.getChallenge ⟨j, hDir⟩
     letI newState := prover.receiveChallenge ⟨j, hDir⟩ state challenge
-    return ⟨transcript.snoc challenge, newState⟩
+    return ⟨transcript.concat challenge, newState⟩
   | .P_to_V => do
     let ⟨msg, newState⟩ ← prover.sendMessage ⟨j, hDir⟩ state
-    return ⟨transcript.snoc msg, newState⟩
+    return ⟨transcript.concat msg, newState⟩
 
-/--
-  Run the prover in an interactive reduction up to round index `i`, via first inputting the
+/-- Run the prover in an interactive reduction up to round index `i`, via first inputting the
   statement and witness, and then processing each round up to round `i`. Returns the transcript up
   to round `i`, and the prover's state after round `i`.
 -/
@@ -80,8 +79,7 @@ def Prover.runToRound [∀ i, VCVCompatible (pSpec.Challenge i)] (i : Fin (n + 1
     prover.processRound
     i
 
-/--
-  Run the prover in an interactive reduction up to round `i`, logging all the queries made by the
+/-- Run the prover in an interactive reduction up to round `i`, logging all the queries made by the
   prover. Returns the transcript up to that round, the prover's state after that round, and the log
   of the prover's oracle queries.
 -/
@@ -94,8 +92,7 @@ def Prover.runWithLogToRound [∀ i, VCVCompatible (pSpec.Challenge i)] (i : Fin
     (simulateQ loggingOracle (prover.runToRound i stmt wit)).run
   return ⟨transcript, state, proveQueryLog⟩
 
-/--
-  Run the prover in an interactive reduction. Returns the output statement and witness, and the
+/-- Run the prover in an interactive reduction. Returns the output statement and witness, and the
   transcript. See `Prover.runWithLog` for a version that additionally returns the log of the
   prover's oracle queries.
 -/
@@ -107,8 +104,7 @@ def Prover.run [∀ i, VCVCompatible (pSpec.Challenge i)] (stmt : StmtIn) (wit :
   let ⟨stmtOut, witOut⟩ := prover.output state
   return ⟨stmtOut, witOut, transcript⟩
 
-/--
-  Run the prover in an interactive reduction, logging all the queries made by the prover. Returns
+/-- Run the prover in an interactive reduction, logging all the queries made by the prover. Returns
   the output statement and witness, the transcript, and the log of the prover's oracle queries.
 -/
 @[inline, specialize]
@@ -120,9 +116,8 @@ def Prover.runWithLog [∀ i, VCVCompatible (pSpec.Challenge i)] (stmt : StmtIn)
   let ⟨stmtOut, witOut⟩ := prover.output state
   return ⟨stmtOut, witOut, transcript, proveQueryLog⟩
 
-/--
-  Run the (non-oracle) verifier in an interactive reduction. It takes in the input statement and the
-  transcript, and return the output statement along with the log of oracle queries made by the
+/-- Run the (non-oracle) verifier in an interactive reduction. It takes in the input statement and
+  the transcript, and return the output statement along with the log of oracle queries made by the
   veirifer.
 -/
 @[inline, specialize, reducible]
@@ -153,8 +148,7 @@ theorem OracleVerifier.run_eq_run_verifier [∀ i, OracleInterface (pSpec.Messag
   simp only [run, bind_pure, Verifier.run, toVerifier, eq_mpr_eq_cast,
     bind_pure_comp, Functor.map_map, id_map']
 
-/--
-  An execution of an interactive reduction on a given initial statement and witness. Consists of
+/-- An execution of an interactive reduction on a given initial statement and witness. Consists of
   first running the prover, and then the verifier. Returns the output statement and witness, and the
   full transcript.
 
@@ -170,8 +164,7 @@ def Reduction.run [∀ i, VCVCompatible (pSpec.Challenge i)] (stmt : StmtIn) (wi
   let stmtOut ← liftM (reduction.verifier.run stmt transcript)
   return ((prvStmtOut, witOut), stmtOut, transcript)
 
-/--
-  An execution of an interactive reduction on a given initial statement and witness. Consists of
+/-- An execution of an interactive reduction on a given initial statement and witness. Consists of
   first running the prover, and then the verifier. Returns the output statement and witness, the
   full transcript, and the logs of the prover's and the verifier's oracle queries.
 -/
@@ -252,7 +245,7 @@ theorem Prover.runToRound_one_of_prover_first [ProverOnly pSpec] (stmt : StmtIn)
   split <;> rename_i hDir
   · have : Direction.P_to_V = .V_to_P := by rw [← this, hDir]
     contradiction
-  · congr; funext a; congr; simp [default, Transcript.snoc]; funext i
+  · congr; funext a; congr; simp [default, Transcript.concat]; funext i
     have : i = 0 := by aesop
     rw [this]; simp [Fin.snoc]
 

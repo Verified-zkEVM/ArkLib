@@ -289,7 +289,7 @@ theorem reduction_completeness : (reduction R deg D oSpec).perfectCompleteness
       intro hSupport
       simp [Prover.run, Prover.runToRound, Prover.processRound, reduction, prover] at hSupport
       obtain ⟨h1, h2⟩ := hSupport
-      simp [← h2, Transcript.snoc, Fin.snoc, h]
+      simp [← h2, Transcript.concat, Fin.snoc, h]
       simp [inputRelation, h] at hValid
       exact hValid
   · intro ⟨⟨⟨prvStmtOut, prvOStmtOut⟩, _⟩, verStmtOut, transcript⟩ hSupport
@@ -300,7 +300,7 @@ theorem reduction_completeness : (reduction R deg D oSpec).perfectCompleteness
     simp [Prover.processRound] at hx1
     obtain ⟨a, b, hab, hx1'⟩ := hx1
     simp only [Verifier.run, reduction, verifier] at hx2
-    simp [liftComp_support, Transcript.snoc, Fin.snoc] at hx2
+    simp [liftComp_support, Transcript.concat, Fin.snoc] at hx2
     obtain ⟨h1, h2, h3⟩ := hx2
     split; rename_i stuff prvStmtOut' _ verStmtOut' trans hEq
     simp at hEq

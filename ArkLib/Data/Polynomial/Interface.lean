@@ -1,4 +1,4 @@
-import ArkLib.Data.Fin.Basic
+import ArkLib.Data.Fin.Lift
 import Mathlib.RingTheory.Polynomial.Basic
 
 section PolynomialInterface

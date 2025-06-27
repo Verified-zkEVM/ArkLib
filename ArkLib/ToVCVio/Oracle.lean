@@ -14,8 +14,7 @@ open OracleSpec OracleComp
 
 variable {ι : Type} {α β γ : Type}
 
-/--
-  A function that implements the oracle interface specified by `spec`, and queries no further
+/-- A function that implements the oracle interface specified by `spec`, and queries no further
   oracles.
 -/
 def Oracle (spec : OracleSpec ι) := (i : ι) → spec.domain i → spec.range i
@@ -37,15 +36,42 @@ namespace OracleComp
 
 variable {ι : Type} {spec : OracleSpec ι} {α σ : Type}
 
-/--
-  Run an oracle computation `OracleComp spec α` with an oracle coming from
+/-- Run an oracle computation `OracleComp spec α` with an oracle coming from
   a (deterministic) function `f` that queries no further oracles.
 
   TODO: add state for `f`
 -/
 def runWithOracle (f : Oracle spec) : OracleComp spec α → Option α :=
-  OracleComp.construct' (spec := spec) (C := fun _ => Option α) (fun x => some x)
-    (fun i q _ g => g (f i q)) (none)
+  OracleComp.construct' (spec := spec) (C := fun _ => Option α)
+    -- For a pure value, return that value successfully
+    (fun x => some x)
+    -- When a query bind is made, run the oracle function `f` and compute on the result
+    (fun i q _ g => g (f i q))
+    -- If the computation fails, return `none`
+    (none)
+
+@[simp]
+theorem runWithOracle_pure (f : Oracle spec) (a : α) :
+    runWithOracle f (pure a) = some a := by
+  unfold runWithOracle OracleComp.construct'
+  simp only [construct_pure]
+
+@[simp]
+theorem runWithOracle_freeMonad_pure_some (f : Oracle spec) (a : α) :
+    runWithOracle f (FreeMonad.pure (a : Option α)) = a := by
+  exact rfl
+
+@[simp]
+theorem runWithOracle_freeMonad_pure_none (f : Oracle spec) :
+    runWithOracle f (FreeMonad.pure (none : Option α)) = none := by
+  exact rfl
+
+@[simp]
+theorem runWithOracle_freeMonad_pure (f : Oracle spec) (a : Option α) :
+    runWithOracle f (FreeMonad.pure a) = a := by
+  cases a with
+  | none => simp only [runWithOracle_freeMonad_pure_none]
+  | some val => simp only [runWithOracle_freeMonad_pure_some]
 
 -- Oracle with bounded use; returns `default` if the oracle is used more than `bound` times.
 -- We could then have the range be an `Option` type, so that `default` is `none`.

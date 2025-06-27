@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Least Authority
+Authors: Poulami Das (Least Authority)
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon
@@ -25,7 +25,7 @@ variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
              uPoly, uPoly' denotes the decoded multivariate polynomials of u and u'
     - ∃ σ₁,..,σₛ : F, such that |Λ(C',f,δ)| > 1
       where, C' is a multiconstrained RS = MCRS[F, ι, φ, m, s, w, σ]
-             σ = {σ₁,..,σₛ}, w = {w₁,..,wₛ}, wᵢ = Z • eqPolynomial(rᵢ) -/
+             σ = {σ₁,..,σₛ}, w = {w₁,..,wₛ}, wᵢ = Z * eqPolynomial(rᵢ) -/
 lemma crs_equiv_rs_randpompt_agreement
   {f : ι → F} {m s : ℕ} {φ : ι ↪ F} [Smooth φ] :
   ∀ (r : Fin s → Fin m → F) (δ : ℝ≥0) (hδLe : δ ≤ 1),
@@ -50,7 +50,7 @@ lemma crs_equiv_rs_randpompt_agreement
   `Pr_{r ← F} [ ∃ distinct u, u' ∈ RS[F, ι, φ, m] s.t. uPoly(pow(r)) = uPoly'(pow(r))]`
     where, pow(x,m) = {x^2⁰,x^2¹,....,x^2^{m-1}}
            C' = CRS [F, ι, φ, m, s, w, σ]
-           σ = {σ₁,..,σₛ}, w = {w₁,..,wₛ}, wᵢ = Z • eqPolynomial(pow(r,m))
+           σ = {σ₁,..,σₛ}, w = {w₁,..,wₛ}, wᵢ = Z * eqPolynomial(pow(r,m))
   -/
 lemma out_of_domain_sampling_crs_eq_rs
     {f : ι → F} {m s : ℕ} {φ : ι ↪ F} [Smooth φ]
@@ -80,7 +80,7 @@ lemma out_of_domain_sampling_crs_eq_rs
   Let `f : ι → F`, `m` be the number of variables, `s` be a repetition parameter
   and `δ ∈ [0,1]` be a distance parameter,
   if `C = RS [F, ι, m]` is `(δ,l)`-list decodable then
-  the above equation is bounded as `≤ l²/2 • (2ᵐ/|F|)ˢ` -/
+  the above equation is bounded as `≤ l²/2 * (2ᵐ/|F|)ˢ` -/
 lemma out_of_domain_sampling_rs_le_bound
     {f : ι → F} {k m s : ℕ} {φ : ι ↪ F} [Smooth φ]
     {GenFun : F → Fin s → F} (δ l : ℝ≥0) (hδLe : δ ≤ 1)
@@ -93,7 +93,7 @@ lemma out_of_domain_sampling_rs_le_bound
                           let ri := GenFun r i
                           let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
                         (mVdecode u).eval (rVec) = (mVdecode u').eval (rVec)
-                      ] ≤ l^2 / 2 • ((2^m) / Fintype.card F)^s
+                      ] ≤ l^2 / 2 * ((2^m) / Fintype.card F)^s
 := by sorry
 
 end OutOfDomSmpl

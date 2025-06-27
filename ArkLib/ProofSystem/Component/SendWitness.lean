@@ -89,12 +89,12 @@ variable {ιₛ : Type} (OStatement : ιₛ → Type) [∀ i, OracleInterface (O
 @[reducible, simp]
 def oraclePSpec : ProtocolSpec 1 := ![(.P_to_V, ∀ i, Witness i)]
 
-instance : IsEmpty (oraclePSpec Witness).ChallengeIdx where
-  false := by aesop
-instance : ∀ i, OracleInterface ((oraclePSpec Witness).Message i)
-  | ⟨0, _⟩ => OracleInterface.instForall _
-instance : ∀ i, VCVCompatible ((oraclePSpec Witness).Challenge i)
-  | ⟨0, _⟩ => by aesop
+-- instance : IsEmpty (oraclePSpec Witness).ChallengeIdx where
+--   false := by aesop
+-- instance : ∀ i, OracleInterface ((oraclePSpec Witness).Message i)
+--   | ⟨0, _⟩ => OracleInterface.instForall _
+-- instance : ∀ i, VCVCompatible ((oraclePSpec Witness).Challenge i)
+--   | ⟨0, _⟩ => by aesop
 
 /-- The oracle prover for the `SendWitness` oracle reduction.
 
@@ -159,7 +159,8 @@ def oracleProver : OracleProver (oraclePSpec Witness) oSpec
 -- theorem oracleReduction_completeness :
 --     (oracleReduction oSpec Statement OStatement Witness).perfectCompleteness oRelIn
 --     (toORelOut oRelIn) := by
---   simp [OracleReduction.perfectCompleteness, OracleReduction.toReduction, OracleVerifier.toVerifier]
+--   simp [OracleReduction.perfectCompleteness, OracleReduction.toReduction,
+--     OracleVerifier.toVerifier]
 --   intro stmt oStmt wit hRelIn
 --   unfold Reduction.run
 --   sorry
@@ -182,13 +183,6 @@ variable {ιₛ : Type} (OStatement : ιₛ → Type) [∀ i, OracleInterface (O
 
 @[reducible, simp]
 def oraclePSpec : ProtocolSpec 1 := ![(.P_to_V, Witness)]
-
-instance : IsEmpty (oraclePSpec Witness).ChallengeIdx where
-  false := by aesop
-instance : ∀ i, OracleInterface ((oraclePSpec Witness).Message i)
-  | ⟨0, _⟩ => by sorry
-instance : ∀ i, VCVCompatible ((oraclePSpec Witness).Challenge i)
-  | ⟨0, _⟩ => by aesop
 
 /-- The oracle prover for the `SendSingleWitness` oracle reduction.
 
@@ -231,7 +225,7 @@ omit [(i : ιₛ) → OracleInterface (OStatement i)] [OracleInterface Witness] 
 theorem oracleProver_run {stmt : Statement} {oStmt : ∀ i, OStatement i} {wit : Witness}:
     (oracleProver oSpec Statement OStatement Witness).run ⟨stmt, oStmt⟩ wit =
       pure (⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, (), fun i => by simpa using wit) := by
-  simp [Prover.run, Prover.runToRound, Prover.processRound, oracleProver, Transcript.snoc]
+  simp [Prover.run, Prover.runToRound, Prover.processRound, oracleProver, Transcript.concat]
   ext i; fin_cases i; simp [Fin.snoc]
 
 theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatement i}

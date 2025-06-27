@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Least Authority
+Authors: Mirco Richter, Poulami Das (Least Authority)
 -/
 
 import Mathlib.Data.Finset.Basic
@@ -13,7 +13,7 @@ open NNReal
 /-- Proximity bound function -/
 noncomputable def Bstar (x : ℝ) : ℝ := x.sqrt
 
-/-- Proximity error function-/
+/-- Proximity error function -/
 noncomputable def err' (F : Type*) [Fintype F] (d : ℕ) (ρ : ℝ) (δ : ℝ) (m: ℕ) : ℝ :=
   if δ ≤ (1 - ρ) / 2 then
     ((m - 1) * d) / (ρ * (Fintype.card F))

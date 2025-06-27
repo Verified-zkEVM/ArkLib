@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.Fin.Basic
 import ArkLib.ToMathlib.BigOperators.Fin
+import ArkLib.OracleReduction.ProtocolSpec
 import ArkLib.OracleReduction.Cast
 
 /-! # Sequential Composition of Protocol Specifications
@@ -14,32 +14,6 @@ This file collects all definitions and theorems about sequentially composing `Pr
 their associated data. -/
 
 namespace ProtocolSpec
-
-/-! ### Restriction of Protocol Specifications & Transcripts -/
-
-section Restrict
-
-variable {n : ℕ}
-
-/-- Take the first `m ≤ n` rounds of a `ProtocolSpec n` -/
-abbrev take (m : ℕ) (h : m ≤ n) (pSpec : ProtocolSpec n) := Fin.take m h pSpec
-
-/-- Take the last `m ≤ n` rounds of a `ProtocolSpec n` -/
-abbrev rtake (m : ℕ) (h : m ≤ n) (pSpec : ProtocolSpec n) := Fin.rtake m h pSpec
-
-/-- Take the first `m ≤ n` rounds of a (full) transcript for a protocol specification `pSpec` -/
-abbrev FullTranscript.take {pSpec : ProtocolSpec n} (m : ℕ) (h : m ≤ n)
-    (transcript : FullTranscript pSpec) : FullTranscript (pSpec.take m h) :=
-  Fin.take m h transcript
-
-/-- Take the last `m ≤ n` rounds of a (full) transcript for a protocol specification `pSpec` -/
-abbrev FullTranscript.rtake {pSpec : ProtocolSpec n} (m : ℕ) (h : m ≤ n)
-    (transcript : FullTranscript pSpec) : FullTranscript (pSpec.rtake m h) :=
-  Fin.rtake m h transcript
-
-end Restrict
-
-
 
 /-! ### Composition of Two Protocol Specifications -/
 

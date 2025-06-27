@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2024 ArkLib Contributors. All rights reserved.
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
@@ -33,34 +33,16 @@ import ArkLib.OracleReduction.Composition.Sequential.General
   are then de-serialized into challenges).
 -/
 
-open ProtocolSpec
+open ProtocolSpec OracleComp OracleSpec
 
 variable {n : ℕ}
 
-section Instances
-
-variable {Message : Type}
-
-instance : IsEmpty (ChallengeIdx ![(.P_to_V, Message)]) := by
-  simp [ChallengeIdx]
-  infer_instance
-
-instance : Unique (MessageIdx ![(.P_to_V, Message)]) where
-  default := ⟨0, by simp⟩
-  uniq := fun i => by ext; simp
-
-instance : ∀ i, VCVCompatible (Challenge ![(.P_to_V, Message)] i) :=
-  fun i => isEmptyElim i
-
-end Instances
-
 /-- Turn each verifier's challenge into an oracle, where one needs to query
-  with an input statement
-  and a prior transcript to get a challenge (useful for Fiat-Shamir) -/
+  with an input statement and prior messages up to that round to get a challenge -/
 @[reducible, inline, specialize]
 def instChallengeOracleInterfaceFiatShamir {pSpec : ProtocolSpec n} {i : pSpec.ChallengeIdx}
     {StmtIn : Type} : OracleInterface (pSpec.Challenge i) where
-  Query := StmtIn × Transcript i.1.castSucc pSpec
+  Query := StmtIn × pSpec.MessagesUpTo i.1.castSucc
   Response := pSpec.Challenge i
   oracle := fun c _ => c
 
@@ -72,49 +54,109 @@ the point of deriving a new challenge.
 Some variants of Fiat-Shamir takes in a salt each round. We assume that such salts are included in
 the input statement (i.e. we can always transform a given reduction into one where every round has a
 random salt). -/
+@[reducible]
 def fiatShamirSpec (pSpec : ProtocolSpec n) (StmtIn : Type) : OracleSpec pSpec.ChallengeIdx :=
-  fun i => (StmtIn × Transcript i.1.succ pSpec, pSpec.Challenge i)
+  fun i => (StmtIn × pSpec.MessagesUpTo i.1.castSucc, pSpec.Challenge i)
 
 instance {pSpec : ProtocolSpec n} {StmtIn : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
     OracleSpec.FiniteRange (fiatShamirSpec pSpec StmtIn) where
   range_inhabited' := fun i => by simp [fiatShamirSpec, OracleSpec.range]; infer_instance
   range_fintype' := fun i => by simp [fiatShamirSpec, OracleSpec.range]; infer_instance
 
--- TODO: define a more efficient version where one hashes the most recent challenge along with the
--- messages since that challenge (the first challenge is obtained by hashing the statement & the
--- messages so far)
-
 variable {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
-  {StmtIn WitIn StmtOut WitOut : Type} [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec i).2]
-  (Salt : Type) [VCVCompatible Salt]
+  {StmtIn WitIn StmtOut WitOut : Type}
+  [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
 
+-- In order to define the Fiat-Shamir transformation for the prover, we need to define
+-- a slightly altered execution for the prover
+
+/--
+Prover's function for processing the next round, given the current result of the previous round.
+
+  This is modified for Fiat-Shamir, where we only accumulate the messages and not the challenges.
+-/
+@[inline, specialize]
+def Prover.processRoundFS [∀ i, VCVCompatible (pSpec.Challenge i)] (j : Fin n)
+    (prover : Prover pSpec oSpec StmtIn WitIn StmtOut WitOut)
+    (currentResult : OracleComp (oSpec ++ₒ fiatShamirSpec pSpec StmtIn)
+      (pSpec.MessagesUpTo j.castSucc × StmtIn × prover.PrvState j.castSucc)) :
+      OracleComp (oSpec ++ₒ fiatShamirSpec pSpec StmtIn)
+        (pSpec.MessagesUpTo j.succ × StmtIn × prover.PrvState j.succ) := do
+  let ⟨messages, stmtIn, state⟩ ← currentResult
+  match hDir : pSpec.getDir j with
+  | .V_to_P => do
+    let challenge ← query (spec := fiatShamirSpec pSpec StmtIn) ⟨j, hDir⟩ ⟨stmtIn, messages⟩
+    letI newState := prover.receiveChallenge ⟨j, hDir⟩ state challenge
+    return ⟨messages.extend hDir, stmtIn, newState⟩
+  | .P_to_V => do
+    let ⟨msg, newState⟩ ← prover.sendMessage ⟨j, hDir⟩ state
+    return ⟨messages.concat hDir msg, stmtIn, newState⟩
+
+/--
+Run the prover in an interactive reduction up to round index `i`, via first inputting the
+  statement and witness, and then processing each round up to round `i`. Returns the transcript up
+  to round `i`, and the prover's state after round `i`.
+-/
+@[inline, specialize]
+def Prover.runToRoundFS [∀ i, VCVCompatible (pSpec.Challenge i)] (i : Fin (n + 1))
+    (stmt : StmtIn) (prover : Prover pSpec oSpec StmtIn WitIn StmtOut WitOut)
+    (state : prover.PrvState 0) :
+        OracleComp (oSpec ++ₒ fiatShamirSpec pSpec StmtIn)
+          (pSpec.MessagesUpTo i × StmtIn × prover.PrvState i) :=
+  Fin.induction
+    (pure ⟨default, stmt, state⟩)
+    prover.processRoundFS
+    i
+
+/-- The (slow) Fiat-Shamir transformation for the prover. -/
 def Prover.fiatShamir (P : Prover pSpec oSpec StmtIn WitIn StmtOut WitOut) :
-    NonInteractiveProver (oSpec ++ₒ fiatShamirSpec pSpec StmtIn)
-      StmtIn WitIn StmtOut WitOut (∀ i, pSpec.Message i) where
+    NonInteractiveProver (∀ i, pSpec.Message i) (oSpec ++ₒ fiatShamirSpec pSpec StmtIn)
+      StmtIn WitIn StmtOut WitOut where
   PrvState := fun i => match i with
-    | 0 => P.PrvState 0
+    | 0 => StmtIn × P.PrvState 0
     | _ => P.PrvState (Fin.last n)
-  input := P.input
-  --
-  sendMessage := fun idx state => by
-    simp [Unique.uniq _ idx, default] at state ⊢
-    sorry
+  input := fun stmt wit => ⟨stmt, P.input stmt wit⟩
+  -- Compute the messages to send via the modified `runToRoundFS`
+  sendMessage | ⟨0, _⟩ => fun ⟨stmtIn, state⟩ => do
+    let ⟨messages, _, state⟩ ← P.runToRoundFS (Fin.last n) stmtIn state
+    return ⟨messages, state⟩
   -- This function is never invoked so we apply the elimination principle
-  receiveChallenge := fun idx _ _ => isEmptyElim idx
+  receiveChallenge | ⟨0, h⟩ => nomatch h
   output := P.output
 
+/-- Derive the full transcript from the (full) messages, via querying the Fiat-Shamir oracle for the
+  challenges. -/
+def ProtocolSpec.Messages.deriveTranscriptFS (messages : pSpec.Messages) (stmt : StmtIn)
+    (k : Fin (n + 1)) :
+    OracleComp (oSpec ++ₒ fiatShamirSpec pSpec StmtIn) (pSpec.Transcript k) := do
+  Fin.induction
+    (pure default)
+    (fun i ih => do
+      let prevTranscript ← ih
+      match hDir : pSpec.getDir i with
+      | .V_to_P =>
+        let challenge ←
+          query (spec := fiatShamirSpec _ _) ⟨i, hDir⟩ ⟨stmt, messages.take i.castSucc⟩
+        return prevTranscript.concat challenge
+      | .P_to_V => return prevTranscript.concat (messages ⟨i, hDir⟩))
+    k
+
+/-- The (slow) Fiat-Shamir transformation for the verifier. -/
 def Verifier.fiatShamir (V : Verifier pSpec oSpec StmtIn StmtOut) :
-    NonInteractiveVerifier (oSpec ++ₒ fiatShamirSpec pSpec StmtIn)
-      StmtIn StmtOut (∀ i, pSpec.Message i) where
-  verify := fun stmtIn messages =>
-    let transcript := sorry
+    NonInteractiveVerifier (∀ i, pSpec.Message i) (oSpec ++ₒ fiatShamirSpec pSpec StmtIn)
+      StmtIn StmtOut where
+  verify := fun stmtIn proof => do
+    let messages : pSpec.Messages := proof 0
+    let transcript ← messages.deriveTranscriptFS stmtIn (Fin.last n)
     V.verify stmtIn transcript
 
-/-- TODO: change `unifSpec` to something more appropriate (maybe a `CryptographicSponge`) -/
+/-- The Fiat-Shamir transformation for an (interactive) reduction, which consists of applying the
+  Fiat-Shamir transformation to both the prover and the verifier. -/
 def Reduction.fiatShamir (R : Reduction pSpec oSpec StmtIn WitIn StmtOut WitOut) :
-    NonInteractiveReduction (oSpec ++ₒ fiatShamirSpec pSpec StmtIn)
-      StmtIn WitIn StmtOut WitOut (∀ i, pSpec.Message i) :=
-  ⟨R.prover.fiatShamir, R.verifier.fiatShamir⟩
+    NonInteractiveReduction (∀ i, pSpec.Message i) (oSpec ++ₒ fiatShamirSpec pSpec StmtIn)
+      StmtIn WitIn StmtOut WitOut where
+  prover := R.prover.fiatShamir
+  verifier := R.verifier.fiatShamir
 
 section Security
 
@@ -122,7 +164,7 @@ noncomputable section
 
 open scoped NNReal
 
-variable [DecidableEq ι] [oSpec.FiniteRange] [∀ i, VCVCompatible (pSpec.Challenge i)]
+variable [oSpec.FiniteRange] [∀ i, VCVCompatible (pSpec.Challenge i)]
 
 theorem fiatShamir_completeness (relIn : StmtIn → WitIn → Prop) (relOut : StmtOut → WitOut → Prop)
     (completenessError : ℝ≥0) (R : Reduction pSpec oSpec StmtIn WitIn StmtOut WitOut) :

@@ -8,8 +8,6 @@ import Mathlib.InformationTheory.Hamming
 import Mathlib.Analysis.Normed.Field.Lemmas
 import ArkLib.Data.CodingTheory.Basic
 
-open Classical
-
 namespace ListDecodable
 
 noncomputable section

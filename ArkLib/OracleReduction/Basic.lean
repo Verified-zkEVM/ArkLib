@@ -1,11 +1,10 @@
 /-
-Copyright (c) 2024 ArkLib Contributors. All rights reserved.
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.OracleReduction.Prelude
-import ArkLib.OracleReduction.OracleInterface
+import ArkLib.OracleReduction.ProtocolSpec
 
 /-!
 # Interactive (Oracle) Reductions
@@ -16,7 +15,7 @@ format:
 
   - The protocol proceeds over a number of steps. In each step, either the prover or the verifier
     sends a message to the other. We assume that this sequence of interactions is fixed in advance,
-    and is described by a specification `ProtocolSpec` (see below).
+    and is described by a protocol specification (see `ProtocolSpec.lean`).
 
     Note that we do _not_ require interleaving prover's messages with verifier's challenges, for
     maximum flexibility in defining reductions.
@@ -61,201 +60,9 @@ can be found in `Execution.lean`, while the security notions are found in the `S
 
 -/
 
-open OracleComp OracleSpec SubSpec
-
-section Format
-
-/-- Type signature for an interactive protocol, with `n` messages exchanged. -/
-@[reducible]
-def ProtocolSpec (n : ℕ) := Fin n → Direction × Type
+open OracleComp OracleSpec SubSpec ProtocolSpec
 
 variable {n : ℕ}
-
-namespace ProtocolSpec
-
-@[simp]
-abbrev getDir (pSpec : ProtocolSpec n) (i : Fin n) := pSpec i |>.1
-
-@[simp]
-abbrev getType (pSpec : ProtocolSpec n) (i : Fin n) := pSpec i |>.2
-
-/-- Subtype of `Fin n` for the indices corresponding to messages in a protocol specification -/
-@[reducible, simp]
-def MessageIdx (pSpec : ProtocolSpec n) :=
-  {i : Fin n // (pSpec i).1 = Direction.P_to_V}
-
-/-- Subtype of `Fin n` for the indices corresponding to challenges in a protocol specification -/
-@[reducible, simp]
-def ChallengeIdx (pSpec : ProtocolSpec n) :=
-  {i : Fin n // (pSpec i).1 = Direction.V_to_P}
-
-instance {pSpec : ProtocolSpec n} : CoeHead (MessageIdx pSpec) (Fin n) where
-  coe := fun i => i.1
-instance {pSpec : ProtocolSpec n} : CoeHead (ChallengeIdx pSpec) (Fin n) where
-  coe := fun i => i.1
-
-/-- The type of the `i`-th message in a protocol specification.
-
-This does not distinguish between messages received in full or as an oracle. -/
-@[reducible, inline, specialize, simp]
-def Message (pSpec : ProtocolSpec n) (i : MessageIdx pSpec) := (pSpec i.val).2
-
-/-- The type of the `i`-th challenge in a protocol specification -/
-@[reducible, inline, specialize, simp]
-def Challenge (pSpec : ProtocolSpec n) (i : ChallengeIdx pSpec) := (pSpec i.val).2
-
-/-- The type of all messages in a protocol specification. Uncurried version of `Message`. -/
-@[reducible, inline, specialize]
-def Messages (pSpec : ProtocolSpec n) : Type := ∀ i, pSpec.Message i
-
-/-- The type of all challenges in a protocol specification -/
-@[reducible, inline, specialize]
-def Challenges (pSpec : ProtocolSpec n) : Type := ∀ i, pSpec.Challenge i
-
-/-- The indexed family of messages from the prover up to round `k` -/
-@[reducible, inline, specialize]
-def MessagesUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) :=
-  (i : pSpec.MessageIdx) → i.1 < k → pSpec.Message i
-
-/-- The indexed family of challenges from the verifier up to round `k` -/
-@[reducible, inline, specialize]
-def ChallengesUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) :=
-  (i : pSpec.ChallengeIdx) → i.1 < k → pSpec.Challenge i
-
-/-- The specification of whether each message in a protocol specification is available in full
-    (`None`) or received as an oracle (`Some (instOracleInterface (pSpec.Message i))`).
-
-    This is defined as a type class for notational convenience. -/
-class OracleInterfaces (pSpec : ProtocolSpec n) where
-  oracleInterfaces : ∀ i, Option (OracleInterface (pSpec.Message i))
-
-section OracleInterfaces
-
-variable (pSpec : ProtocolSpec n) [inst : OracleInterfaces pSpec]
-
-/-- Subtype of `pSpec.MessageIdx` for messages that are received as oracles -/
-@[reducible, inline, specialize]
-def OracleMessageIdx := {i : pSpec.MessageIdx // (inst.oracleInterfaces i).isSome }
-
-/-- The oracle interface instances for messages that are received as oracles -/
-instance {i : OracleMessageIdx pSpec} : OracleInterface (pSpec.Message i) :=
-  (inst.oracleInterfaces i).get i.2
-
-/-- Subtype of `pSpec.MessageIdx` for messages that are received in full -/
-@[reducible, inline, specialize]
-def PlainMessageIdx := {i : pSpec.MessageIdx // (inst.oracleInterfaces i).isNone }
-
-/-- The type of messages that are received in full -/
-@[reducible, inline, specialize]
-def PlainMessage (i : pSpec.PlainMessageIdx) := pSpec.Message i.1
-
-/-- The type of messages that are received as oracles -/
-@[reducible, inline, specialize]
-def OracleMessage (i : pSpec.OracleMessageIdx) := pSpec.Message i.1
-
-def PlainMessages (pSpec : ProtocolSpec n) [OracleInterfaces pSpec] : Type :=
-  ∀ i, pSpec.PlainMessage i
-
-def OracleMessages (pSpec : ProtocolSpec n) [OracleInterfaces pSpec] : Type :=
-  ∀ i, pSpec.OracleMessage i
-
--- TODO: re-define `OracleReduction` to depend on these oracle interfaces
--- Currently, we assume that _all_ messages are available as oracles in an oracle reduction
-
-end OracleInterfaces
-
-/-- There is only one protocol specification with 0 messages (the empty one) -/
-instance : Unique (ProtocolSpec 0) := inferInstance
-
--- Two different ways to write the empty protocol specification: `![]` and `default`
-
-instance : ∀ i, VCVCompatible (Challenge ![] i) := fun ⟨i, _⟩ => Fin.elim0 i
-instance : ∀ i, OracleInterface (Message ![] i) := fun ⟨i, _⟩ => Fin.elim0 i
-
-instance : ∀ i, VCVCompatible ((default : ProtocolSpec 0).Challenge i) := fun ⟨i, _⟩ => Fin.elim0 i
-instance : ∀ i, OracleInterface ((default : ProtocolSpec 0).Message i) := fun ⟨i, _⟩ => Fin.elim0 i
-
-/-- A (partial) transcript of a protocol specification, indexed by some `k : Fin (n + 1)`, is a
-    list of messages from the protocol for all indices `i` less than `k`. -/
-@[reducible, inline, specialize]
-def Transcript (k : Fin (n + 1)) (pSpec : ProtocolSpec n) :=
-  (i : Fin k) → pSpec.getType (Fin.castLE (by omega) i)
-
-/-- There is only one transcript for the empty protocol -/
-instance {k : Fin 1} : Unique (Transcript k (default : ProtocolSpec 0)) where
-  default := fun i => ()
-  uniq := by solve_by_elim
-
-/-- There is only one transcript for any protocol with cutoff index 0 -/
-instance {pSpec : ProtocolSpec n} : Unique (Transcript 0 pSpec) where
-  default := fun i => Fin.elim0 i
-  uniq := fun T => by ext i; exact Fin.elim0 i
-
-/-- The full transcript of an interactive protocol, which is a list of messages and challenges.
-
-Note that this is definitionally equal to `Transcript (Fin.last n) pSpec`. -/
-@[reducible, inline, specialize]
-def FullTranscript (pSpec : ProtocolSpec n) := (i : Fin n) → pSpec.getType i
-
-/-- There is only one full transcript (the empty one) for an empty protocol -/
-instance : Unique (FullTranscript (default : ProtocolSpec 0)) := inferInstance
-
-variable {pSpec : ProtocolSpec n}
-
--- Potential natural re-indexing of messages and challenges.
--- Not needed for now, but could be useful.
-
--- instance instFinEnumMessageIdx : FinEnum pSpec.MessageIdx :=
---   FinEnum.Subtype.finEnum fun x ↦ pSpec.getDir x = Direction.P_to_V
--- instance instFinEnumChallengeIdx : FinEnum pSpec.ChallengeIdx :=
---   FinEnum.Subtype.finEnum fun x ↦ pSpec.getDir x = Direction.V_to_P
-
-/-- Nicely, a transcript up to the last round of the protocol is definitionally equivalent to a full
-    transcript. -/
-@[inline]
-abbrev Transcript.toFull (T : Transcript (Fin.last n) pSpec) : FullTranscript pSpec := T
-
-/-- Add a message to the end of a partial transcript. This is definitionally equivalent to
-    `Fin.snoc`. -/
-@[inline]
-abbrev Transcript.snoc {m : Fin n} (msg : pSpec.getType m)
-    (T : Transcript m.castSucc pSpec) : Transcript m.succ pSpec := Fin.snoc T msg
-
-@[reducible, inline, specialize]
-def FullTranscript.messages (transcript : FullTranscript pSpec) (i : MessageIdx pSpec) :=
-  transcript i.val
-
-@[reducible, inline, specialize]
-def FullTranscript.challenges (transcript : FullTranscript pSpec) (i : ChallengeIdx pSpec) :=
-  transcript i.val
-
-/-- Turn each verifier's challenge into an oracle, where querying a unit type gives back the
-  challenge -/
-@[reducible, inline, specialize]
-instance instChallengeOracleInterface {pSpec : ProtocolSpec n} {i : pSpec.ChallengeIdx} :
-    OracleInterface (pSpec.Challenge i) where
-  Query := Unit
-  Response := pSpec.Challenge i
-  oracle := fun c _ => c
-
-/-- Query a verifier's challenge for a given challenge round `i` -/
-@[reducible, inline, specialize]
-def getChallenge (pSpec : ProtocolSpec n) (i : pSpec.ChallengeIdx) :
-    OracleComp [pSpec.Challenge]ₒ (pSpec.Challenge i) :=
-  (query i () : OracleQuery [pSpec.Challenge]ₒ (pSpec.Challenge i))
-
-end ProtocolSpec
-
-open ProtocolSpec
-
--- Notation for the type signature of an interactive protocol
-notation "𝒫——⟦" term "⟧⟶𝒱" => (Direction.P_to_V, term)
-notation "𝒫⟵⟦" term "⟧——𝒱" => (Direction.V_to_P, term)
-
--- Test notation
-def pSpecNotationTest : ProtocolSpec 2 :=
-  ![ 𝒫——⟦ Polynomial (ZMod 101) ⟧⟶𝒱,
-     𝒫⟵⟦ ZMod 101 ⟧——𝒱]
 
 -- Add an indexer?
 structure Indexer (pSpec : ProtocolSpec n) {ι : Type} (oSpec : OracleSpec ι) (Index : Type)
@@ -561,21 +368,22 @@ abbrev OracleProof (pSpec : ProtocolSpec n) {ι : Type} (oSpec : OracleSpec ι)
     {ιₛ : Type} (OStatement : ιₛ → Type) [Oₛ : ∀ i, OracleInterface (OStatement i)] :=
   OracleReduction pSpec oSpec Statement Witness Bool Unit OStatement (fun _ : Empty => Unit)
 
-abbrev NonInteractiveProver {ι : Type} (oSpec : OracleSpec ι)
-    (StmtIn WitIn StmtOut WitOut : Type) (Message : Type) :=
+/-- A **non-interactive prover** is a prover that only sends a single message to the verifier. -/
+abbrev NonInteractiveProver (Message : Type) {ι : Type} (oSpec : OracleSpec ι)
+    (StmtIn WitIn StmtOut WitOut : Type) :=
   Prover ![(.P_to_V, Message)] oSpec StmtIn WitIn StmtOut WitOut
 
-abbrev NonInteractiveVerifier {ι : Type} (oSpec : OracleSpec ι)
-    (StmtIn StmtOut : Type) (Message : Type) :=
+/-- A **non-interactive verifier** is a verifier that only receives a single message from the
+  prover. -/
+abbrev NonInteractiveVerifier (Message : Type) {ι : Type} (oSpec : OracleSpec ι)
+    (StmtIn StmtOut : Type) :=
   Verifier ![(.P_to_V, Message)] oSpec StmtIn StmtOut
 
 /-- A **non-interactive reduction** is an interactive reduction with only a single message from the
   prover to the verifier (and none in the other direction). -/
-abbrev NonInteractiveReduction {ι : Type} (oSpec : OracleSpec ι)
-    (StmtIn WitIn StmtOut WitOut : Type) (Message : Type) :=
+abbrev NonInteractiveReduction (Message : Type) {ι : Type} (oSpec : OracleSpec ι)
+    (StmtIn WitIn StmtOut WitOut : Type) :=
   Reduction ![(.P_to_V, Message)] oSpec StmtIn WitIn StmtOut WitOut
-
-end Format
 
 section Classes
 
@@ -599,7 +407,8 @@ class VerifierLast (pSpec : ProtocolSpec n) [NeZero n] where
 
 class ProverOnly (pSpec : ProtocolSpec 1) extends ProverFirst pSpec
 
-/-- A non-interactive protocol specification with a single message from the prover to the verifier-/
+/-- A non-interactive protocol specification with a single message from the prover to the verifier
+-/
 alias NonInteractive := ProverOnly
 
 class VerifierOnly (pSpec : ProtocolSpec 1) extends VerifierFirst pSpec
@@ -722,8 +531,8 @@ def FullTranscript.mk2 {pSpec : ProtocolSpec 2} (msg0 : pSpec.getType 0) (msg1 :
 
 theorem FullTranscript.mk2_eq_snoc_snoc {pSpec : ProtocolSpec 2} (msg0 : pSpec.getType 0)
     (msg1 : pSpec.getType 1) :
-      FullTranscript.mk2 msg0 msg1 = ((default : pSpec.Transcript 0).snoc msg0).snoc msg1 := by
-  unfold FullTranscript.mk2 Transcript.snoc
+      FullTranscript.mk2 msg0 msg1 = ((default : pSpec.Transcript 0).concat msg0).concat msg1 := by
+  unfold FullTranscript.mk2 Transcript.concat
   simp only [default, Nat.mod_succ, Nat.lt_one_iff,
     not_lt_zero', ↓reduceDIte, Fin.zero_eta, Fin.isValue, Nat.reduceMod, Nat.succ_eq_add_one,
     Nat.reduceAdd, Fin.mk_one]

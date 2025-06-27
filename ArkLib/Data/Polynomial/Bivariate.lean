@@ -8,8 +8,6 @@ import Mathlib.Algebra.Polynomial.Eval.Defs
 import Mathlib.Algebra.Polynomial.Bivariate
 import Mathlib.Data.Fintype.Defs
 
-
-open Classical
 open Polynomial
 open Polynomial.Bivariate
 
@@ -24,10 +22,9 @@ variable {F : Type} [Semiring F]
 /--
 The set of coefficients of a bivariate polynomial.
 -/
-def coeffs : Finset F[X] := f.support.image (fun n => f.coeff n)
+def coeffs [DecidableEq F] : Finset F[X] := f.support.image (fun n => f.coeff n)
 
-/---
-The coeffiecient of `Y^n` is a polynomial in `X`.
+/-- The coeffiecient of `Y^n` is a polynomial in `X`.
 -/
 def coeff_Y_n (n : ℕ) : F[X] := f.coeff n
 
@@ -254,6 +251,7 @@ def totalDegree (f : F[X][Y]) : ℕ :=
 
 lemma monomial_xy_degree (n m : ℕ) (a : F) (ha : a ≠ 0) :
   totalDegree (monomial_xy n m a) = n + m := by
+  classical
   unfold totalDegree
   rw
     [

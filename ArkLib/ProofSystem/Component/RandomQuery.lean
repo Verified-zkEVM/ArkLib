@@ -61,10 +61,6 @@ def relOut : (StmtOut OStatement × ∀ i, OStmtOut OStatement i) → WitOut →
 @[reducible]
 def pSpec : ProtocolSpec 1 := ![(.V_to_P, Query OStatement)]
 
-instance : ∀ i, OracleInterface ((pSpec OStatement).Message i) | ⟨0, h⟩ => nomatch h
-@[reducible, simp] instance : ∀ i, VCVCompatible ((pSpec OStatement).Challenge i)
-  | ⟨0, _⟩ => by dsimp [pSpec, ProtocolSpec.Challenge]; exact inst
-
 /--
 The prover is trivial: it has no messages to send.  It only receives the verifier's challenge `q`,
 and outputs the same `q`.
@@ -126,7 +122,7 @@ theorem oracleReduction_completeness : (oracleReduction oSpec OStatement).perfec
   intro _ oStmt _ hOStmt
   simp [Reduction.run, Prover.run, Verifier.run, Prover.runToRound, Prover.processRound,
     OracleReduction.toReduction, OracleVerifier.toVerifier, oracleVerifier, oracleProver,
-    Transcript.snoc, FullTranscript.challenges]
+    Transcript.concat, FullTranscript.challenges]
   intro q oStmt' q' oStmt'' transcript h1 h2 h3 h4
   apply congrFun at h3
   simp_all [Fin.snoc]
@@ -187,7 +183,7 @@ theorem rbr_knowledge_soundness {d : ℕ} (h : OracleInterface.distanceLE OState
   simp [Prover.runWithLogToRound, Prover.runToRound, stateFunction]
   classical
   unfold Function.comp
-  simp [probEvent_liftM_eq_mul_inv, ProtocolSpec.Transcript.snoc, Fin.snoc, default]
+  simp [probEvent_liftM_eq_mul_inv, ProtocolSpec.Transcript.concat, Fin.snoc, default]
   rw [div_eq_mul_inv]
   gcongr
   simp [Finset.filter_and]

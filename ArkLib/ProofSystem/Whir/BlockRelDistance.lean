@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Least Authority
+Authors: Poulami Das (Least Authority)
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon
@@ -134,8 +134,9 @@ scoped notation "Λᵣ( "i", "k", "f", "S'", "C", "hcode", "δ")" =>
 
 /--Claim 4.19
   For a smooth ReedSolomon code `C = RS[F, ι^(2ⁱ), m]`, codewords `f, g : ι^(2ⁱ) → F`,
-  we have that the block relative distance `Δᵣ(i, k, f, S', φ', g)` is bounded by the
-  relative Hamming distance `δᵣ(f,g)`. As a result, we have
+  we have that the relative Hamming distance `δᵣ(f,g)` is bounded by the
+  block relative distance `Δᵣ(i, k, f, S', φ', g)`.
+  As a result, we have
     `Λᵣ(i, k, f, S', C, hcode, δ)` is bounded by
     `Λ(f, C, δ)` (list of codewords of C δ-close to f, wrt relative Hamming distance)
 -/
@@ -146,7 +147,7 @@ lemma blockRelDistance_le_hammingDistance
   [∀ i : ℕ, Fintype (indexPowT S φ i)] [DecidableEq (indexPowT S φ i)] [Smooth φ']
   (C : Set ((indexPowT S φ i) → F)) (hcode : C = smoothCode φ' m) (δ : ℝ≥0)
   [h : DecidableBlockDisagreement i k f S' φ']
-  (hBound :   Δᵣ(i, k, f, S', φ', g) ≤ (δᵣ(f, g) : ℝ)) :
+  (hBound : (δᵣ(f, g) : ℝ) ≤ Δᵣ(i, k, f, S', φ', g)) :
     ∀ {δ : ℝ≥0} (hδLe : δ ≤ 1),
       let listHamming := relHammingBall C f δ
       let listBlock := Λᵣ(i, k, f, S', C, hcode, δ)

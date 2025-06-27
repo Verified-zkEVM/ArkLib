@@ -171,7 +171,8 @@ def WitnessLensInv (OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) :=
   (imagine a reduction from R1 x R2 => R3 x R4, that is the sequential composition of R1 => R3 and
   then R2 => R4. This reduction is not round-by-round knowledge sound, since if we are in the
   R1 => R3 rounds, we have no way of invoking the second extractor for recovering the witness for
-  R2.)-/
+  R2.)
+-/
 class RBRWitnessLensInv (OuterWitIn InnerWitIn : Type) where
   liftWit : InnerWitIn → OuterWitIn
 
