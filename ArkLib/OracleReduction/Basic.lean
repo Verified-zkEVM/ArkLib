@@ -413,6 +413,60 @@ abbrev NonInteractiveReduction (Message : Type) {ι : Type} (oSpec : OracleSpec 
     (StmtIn WitIn StmtOut WitOut : Type) :=
   Reduction oSpec StmtIn WitIn StmtOut WitOut ![(.P_to_V, Message)]
 
+section Trivial
+
+variable {ι : Type} {oSpec : OracleSpec ι}
+    {Statement : Type} {ιₛ : Type} {OStatement : ιₛ → Type} {Witness : Type}
+    [Oₛ : ∀ i, OracleInterface (OStatement i)]
+
+/-- The trivial / identity prover, which does not send any messages to the verifier, and returns its
+  input context (statement & witness) as output. -/
+def Prover.id : Prover oSpec Statement Witness Statement Witness ![] where
+  PrvState := fun _ => Statement × Witness
+  input := _root_.id.curry
+  sendMessage := fun i => Fin.elim0 i
+  receiveChallenge := fun i => Fin.elim0 i
+  output := _root_.id
+
+/-- The trivial / identity verifier, which does not receive any messages from the prover, and
+  returns its input statement as output. -/
+def Verifier.id : Verifier oSpec Statement Statement ![] where
+  verify := fun stmt _ => pure stmt
+
+/-- The trivial / identity reduction, which consists of the trivial prover and verifier. -/
+def Reduction.id : Reduction oSpec Statement Witness Statement Witness ![] where
+  prover := Prover.id
+  verifier := Verifier.id
+
+/-- The trivial / identity prover in an oracle reduction, which unfolds to the trivial prover for
+  the associated non-oracle reduction. -/
+def OracleProver.id :
+    OracleProver oSpec Statement OStatement Witness Statement OStatement Witness ![] :=
+  Prover.id
+
+/-- The trivial / identity verifier in an oracle reduction, which receives no messages from the
+  prover, and returns its input statement as output. -/
+def OracleVerifier.id :
+    OracleVerifier oSpec Statement OStatement Statement OStatement ![] where
+  verify := fun stmt _ => pure stmt
+  embed := Function.Embedding.inl
+  hEq := fun _ => rfl
+
+/-- The trivial / identity oracle reduction, which consists of the trivial oracle prover and
+  verifier. -/
+def OracleReduction.id :
+    OracleReduction oSpec Statement OStatement Witness Statement OStatement Witness ![] :=
+  ⟨OracleProver.id, OracleVerifier.id⟩
+
+alias Prover.trivial := Prover.id
+alias Verifier.trivial := Verifier.id
+alias Reduction.trivial := Reduction.id
+alias OracleProver.trivial := OracleProver.id
+alias OracleVerifier.trivial := OracleVerifier.id
+alias OracleReduction.trivial := OracleReduction.id
+
+end Trivial
+
 section Classes
 
 namespace ProtocolSpec
