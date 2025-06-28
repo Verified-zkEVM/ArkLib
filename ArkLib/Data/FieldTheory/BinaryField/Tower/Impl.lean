@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen
 -/
 
-import ArkLib.Data.FieldTheory.BinaryTowerField.Basic
+import ArkLib.Data.FieldTheory.BinaryField.Tower.Basic
 import ArkLib.Data.Math.DepCast
 
 /-!
@@ -32,6 +32,7 @@ This file provides executable implementations for binary tower fields
   two". In: Proceedings of IEEE International Symposium on Information Theory. 1997.
 -/
 
+namespace BinaryTower
 namespace ConcreteDefinition
 open Polynomial
 
@@ -1957,3 +1958,6 @@ def runTests : IO Unit := do
 end Tests
 
 end ConcreteDefinition
+end BinaryTower
+
+#check BinaryTower.ConcreteDefinition.instFieldConcrete (k:=2)
