@@ -9,7 +9,7 @@ import Mathlib.Algebra.Order.Sub.Basic
 import Mathlib.Algebra.Polynomial.Eval.Defs
 import Mathlib.Data.Fin.Tuple.Take
 import Batteries.Data.Fin.Fold
-import ArkLib.Data.Math.DepCast
+import ArkLib.Data.Classes.DCast
 
 /-!
   # Lemmas on `Fin` and `Fin`-indexed tuples
@@ -597,12 +597,12 @@ theorem dfoldl_congr {n : ℕ}
   subst hinit
   rfl
 
-/-- Congruence for `dfoldl` whose type vectors are indexed by `ι` and have a `DepCast` instance
+/-- Congruence for `dfoldl` whose type vectors are indexed by `ι` and have a `DCast` instance
 
 Note that we put `cast` (instead of `dcast`) in the theorem statement for easier matching,
 but `dcast` inside the hypotheses for downstream proving. -/
 theorem dfoldl_congr_dcast {n : ℕ}
-    {ι : Type v} {α α' : Fin (n + 1) → ι} {β : ι → Type u} [DepCast ι β]
+    {ι : Type v} {α α' : Fin (n + 1) → ι} {β : ι → Type u} [DCast ι β]
     {f : (i : Fin n) → β (α i.castSucc) → β (α i.succ)}
     {f' : (i : Fin n) → β (α' i.castSucc) → β (α' i.succ)}
     {init : β (α 0)} {init' : β (α' 0)}
@@ -621,7 +621,7 @@ theorem dfoldl_congr_dcast {n : ℕ}
   rfl
 
 /-- Distribute `dcast` inside `dfoldl`. Requires the minimal condition of `α = α'` -/
-theorem dfoldl_dcast {ι : Type v} {β : ι → Type u} [DepCast ι β]
+theorem dfoldl_dcast {ι : Type v} {β : ι → Type u} [DCast ι β]
     {n : ℕ} {α α' : Fin (n + 1) → ι}
     {f : (i : Fin n) → β (α i.castSucc) → β (α i.succ)} {init : β (α 0)}
     (hα : ∀ i, α i = α' i) :

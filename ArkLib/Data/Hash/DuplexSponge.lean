@@ -4,8 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.Hash.Classes
-import ArkLib.Data.Hash.Serde
+import ArkLib.Data.Classes.HasSize
+import ArkLib.Data.Classes.Initialize
+import ArkLib.Data.Classes.Serde
+import ArkLib.Data.Classes.Zeroize
 
 /-!
   # Duplex Sponge API

@@ -38,23 +38,23 @@ theorem congrArg₄ {α β γ δ ε : Sort*} {f : α → β → γ → δ → ε
 
 end Prelude
 
-/-- `DepCast` is a type class for custom cast operations on an indexed type family `β a`
+/-- `DCast` is a type class for custom cast operations on an indexed type family `β a`
 
 We require the cast operation `dcast`, along with the property that `dcast` reduces to `id` under
 reflexivity. -/
-class DepCast (α : Sort*) (β : α → Sort*) where
+class DCast (α : Sort*) (β : α → Sort*) where
   dcast : ∀ {a a' : α}, a = a' → β a → β a'
   dcast_id : ∀ {a : α}, dcast (Eq.refl a) = id
 
-export DepCast (dcast dcast_id)
+export DCast (dcast dcast_id)
 attribute [simp] dcast_id
 
-section DepCast
+section DCast
 
-variable {α : Sort*} {β : α → Sort*} [DepCast α β] {a a' a'' : α} {b : β a} {b' : β a'}
+variable {α : Sort*} {β : α → Sort*} [DCast α β] {a a' a'' : α} {b : β a} {b' : β a'}
 
-/-- The default instance for `DepCast` -/
-instance (priority := low) : DepCast α β where
+/-- The default instance for `DCast` -/
+instance (priority := low) : DCast α β where
   dcast h := cast (congrArg β h)
   dcast_id := by intro a; funext b; simp only [cast_eq, id_eq]
 
@@ -92,28 +92,28 @@ theorem dcast_fun₂ {a₁ a₂ a₁' a₂' : α} {h₁ : a₁ = a₁'} {h₂ : 
 theorem dcast_eq_root_cast (h : a = a') : dcast h b = _root_.cast (congrArg β h) b := by
   cases h; simp
 
-end DepCast
+end DCast
 
-/-- `DepCast₂` is a type class for custom cast operations on a doubly-indexed type family `γ a b`,
-  given an underlying dependent cast `DepCast α β`
+/-- `DCast₂` is a type class for custom cast operations on a doubly-indexed type family `γ a b`,
+  given an underlying dependent cast `DCast α β`
 
 We require the cast operation `dcast₂`, along with the property that `dcast₂` reduces to `id` under
 reflexivity. -/
-class DepCast₂ (α : Sort*) (β : α → Sort*) (γ : (a : α) → β a → Sort*) [DepCast α β] where
+class DCast₂ (α : Sort*) (β : α → Sort*) (γ : (a : α) → β a → Sort*) [DCast α β] where
   dcast₂ : ∀ {a a' : α} {b : β a} {b' : β a'},
     (ha : a = a') → (dcast ha b = b') → γ a b → γ a' b'
   dcast₂_id : ∀ {a : α} {b : β a}, dcast₂ (Eq.refl a) dcast_eq = (id : γ a b → γ a b)
 
-export DepCast₂ (dcast₂ dcast₂_id)
+export DCast₂ (dcast₂ dcast₂_id)
 attribute [simp] dcast₂_id
 
-section DepCast₂
+section DCast₂
 
-variable {α : Sort*} {β : α → Sort*} {γ : (a : α) → β a → Sort*} [DepCast α β] [DepCast₂ α β γ]
+variable {α : Sort*} {β : α → Sort*} {γ : (a : α) → β a → Sort*} [DCast α β] [DCast₂ α β γ]
   {a a' a'' : α} {b : β a} {b' : β a'} {b'' : β a''} {c : γ a b} {c' : γ a' b'} {c'' : γ a'' b''}
 
-/-- Default instance for `DepCast₂` -/
-instance (priority := low) : DepCast₂ α β γ where
+/-- Default instance for `DCast₂` -/
+instance (priority := low) : DCast₂ α β γ where
   dcast₂ ha hb c := by
     refine cast ?_ c
     cases ha; simp at hb; cases hb; rfl
@@ -147,20 +147,20 @@ theorem dcast₂_eq_dcast₂_iff (ha : a = a'') (ha' : a' = a'')
 theorem dcast₂_dcast : dcast₂ rfl rfl c = dcast dcast_eq.symm c := by
   rw! [dcast_eq]; simp
 
-instance instDepCast₁₂ : DepCast (β a) (γ a) where
+instance instDCast₁₂ : DCast (β a) (γ a) where
   dcast hb c := dcast₂ (Eq.refl a) (by simp [hb]) c
   dcast_id := by intros; ext c; exact dcast₂_eq
 
-instance instDepCastPSigma : DepCast ((a : α) ×' β a) (fun a => γ a.1 a.2) where
+instance instDCastPSigma : DCast ((a : α) ×' β a) (fun a => γ a.1 a.2) where
   dcast hab c := dcast₂ (by cases hab; simp) (by cases hab; simp) c
   dcast_id := by intros; ext c; simp
 
-instance instDepCastSigma {α : Type*} {β : α → Type*} {γ : (a : α) → β a → Type*}
-    [DepCast α β] [DepCast₂ α β γ] : DepCast ((a : α) × β a) (fun a => γ a.1 a.2) where
+instance instDCastSigma {α : Type*} {β : α → Type*} {γ : (a : α) → β a → Type*}
+    [DCast α β] [DCast₂ α β γ] : DCast ((a : α) × β a) (fun a => γ a.1 a.2) where
   dcast hab c := dcast₂ (by cases hab; simp) (by cases hab; simp) c
   dcast_id := by intros; ext c; simp
 
-instance instDepCastForall : DepCast α (fun a => ∀ b : β a, γ a b) where
+instance instDCastForall : DCast α (fun a => ∀ b : β a, γ a b) where
   dcast ha f := fun b => dcast₂ ha ((dcast_trans ha.symm ha).trans dcast_eq) (f (dcast ha.symm b))
   dcast_id := by
     intros a; funext f; funext b
@@ -168,34 +168,34 @@ instance instDepCastForall : DepCast α (fun a => ∀ b : β a, γ a b) where
     rw! [dcast_eq]
     simp
 
-end DepCast₂
+end DCast₂
 
-/-- `DepCast₃` is a type class for custom cast operations on a triply-indexed type family `δ a b c`,
-  given underlying dependent casts `DepCast α β` and `DepCast₂ α β γ`
+/-- `DCast₃` is a type class for custom cast operations on a triply-indexed type family `δ a b c`,
+  given underlying dependent casts `DCast α β` and `DCast₂ α β γ`
 
 We require the cast operation `dcast₃`, along with the property that `dcast₃` reduces to `id` under
 reflexivity. -/
-class DepCast₃ (α : Sort*) (β : α → Sort*) (γ : (a : α) → β a → Sort*)
-    (δ : (a : α) → (b : β a) → γ a b → Sort*) [DepCast α β] [DepCast₂ α β γ] where
+class DCast₃ (α : Sort*) (β : α → Sort*) (γ : (a : α) → β a → Sort*)
+    (δ : (a : α) → (b : β a) → γ a b → Sort*) [DCast α β] [DCast₂ α β γ] where
   dcast₃ : ∀ {a a' : α} {b : β a} {b' : β a'} {c : γ a b} {c' : γ a' b'},
     (ha : a = a') → (hb : dcast ha b = b') → (hc : dcast₂ ha hb c = c') → δ a b c → δ a' b' c'
   dcast₃_id : ∀ {a : α} {b : β a} {c : γ a b},
     dcast₃ (Eq.refl a) dcast_eq dcast₂_eq = (id : δ a b c → δ a b c)
 
-export DepCast₃ (dcast₃ dcast₃_id)
+export DCast₃ (dcast₃ dcast₃_id)
 attribute [simp] dcast₃_id
 
-section DepCast₃
+section DCast₃
 
 variable {α : Sort*} {β : α → Sort*} {γ : (a : α) → β a → Sort*}
   {δ : (a : α) → (b : β a) → γ a b → Sort*}
-  [DepCast α β] [DepCast₂ α β γ] [DepCast₃ α β γ δ]
+  [DCast α β] [DCast₂ α β γ] [DCast₃ α β γ δ]
   {a a' a'' : α} {b : β a} {b' : β a'} {b'' : β a''}
   {c : γ a b} {c' : γ a' b'} {c'' : γ a'' b''}
   {d : δ a b c} {d' : δ a' b' c'} {d'' : δ a'' b'' c''}
 
-/-- Default instance for `DepCast₃` -/
-instance (priority := low) : DepCast₃ α β γ δ where
+/-- Default instance for `DCast₃` -/
+instance (priority := low) : DCast₃ α β γ δ where
   dcast₃ ha hb hc d := by
     refine cast ?_ d
     cases ha; simp at hb; cases hb; simp at hc; cases hc; rfl
@@ -225,70 +225,70 @@ theorem dcast₃_eq_dcast₃_iff (ha : a = a') (hb : dcast ha b = b') (hc : dcas
 theorem dcast₃_dcast₂ : dcast₃ rfl rfl rfl d = dcast₂ dcast_eq.symm dcast₂_dcast.symm d := by
   rw! [dcast_eq]; rw! [dcast₂_eq]; simp
 
-instance instDepCast₂₃ {a : α} : DepCast₂ (β a) (γ a) (δ a) where
+instance instDCast₂₃ {a : α} : DCast₂ (β a) (γ a) (δ a) where
   dcast₂ ha hb c := dcast₃ (Eq.refl a) (by cases ha; simp) (by cases ha; cases hb; simp) c
   dcast₂_id := by intros; funext; simp
 
-instance instDepCast₁₃ {a : α} {b : β a} : DepCast (γ a b) (δ a b) where
+instance instDCast₁₃ {a : α} {b : β a} : DCast (γ a b) (δ a b) where
   dcast hc d := dcast₃ (Eq.refl a) dcast_eq (by cases hc; simp) d
   dcast_id := by intros; ext; simp
 
-instance instDepCast₂PSigma : DepCast₂ ((a : α) ×' β a) (fun a => γ a.1 a.2) (fun a => δ a.1 a.2)
+instance instDCast₂PSigma : DCast₂ ((a : α) ×' β a) (fun a => γ a.1 a.2) (fun a => δ a.1 a.2)
     where
   dcast₂ ha hb c := dcast₃ (by cases ha; simp) (by cases ha; simp) (by cases ha; cases hb; simp) c
   dcast₂_id := by intros; funext; simp
 
-instance instDepCast₂Sigma {α : Type*} {β : α → Type*} {γ : (a : α) → β a → Type*}
+instance instDCast₂Sigma {α : Type*} {β : α → Type*} {γ : (a : α) → β a → Type*}
     {δ : (a : α) → (b : β a) → γ a b → Type*}
-    [DepCast α β] [DepCast₂ α β γ] [DepCast₃ α β γ δ] :
-    DepCast₂ ((a : α) × β a) (fun a => γ a.1 a.2) (fun a => δ a.1 a.2) where
+    [DCast α β] [DCast₂ α β γ] [DCast₃ α β γ δ] :
+    DCast₂ ((a : α) × β a) (fun a => γ a.1 a.2) (fun a => δ a.1 a.2) where
   dcast₂ ha hb c := dcast₃ (by cases ha; simp) (by cases ha; simp) (by cases ha; cases hb; simp) c
   dcast₂_id := by intros; funext; simp
 
-instance instDepCast₂Forall :
-    DepCast₂ α (fun a => ∀ b : β a, γ a b) (fun a f => ∀ b : β a, δ a b (f b)) where
+instance instDCast₂Forall :
+    DCast₂ α (fun a => ∀ b : β a, γ a b) (fun a f => ∀ b : β a, δ a b (f b)) where
   dcast₂ ha hb c := fun b => dcast₃ ha (by simp)
     (by cases ha; cases hb; rw! [dcast_eq]; simp) (c (dcast ha.symm b))
   dcast₂_id := by intros; funext; simp; rw! [dcast_eq]; simp
 
-instance instDepCastPSigmaPSigma :
-    DepCast ((a : α) ×' (b : β a) ×' γ a b) (fun a => δ a.1 a.2.1 a.2.2) where
+instance instDCastPSigmaPSigma :
+    DCast ((a : α) ×' (b : β a) ×' γ a b) (fun a => δ a.1 a.2.1 a.2.2) where
   dcast hc d := dcast₃ (by cases hc; simp) (by cases hc; simp) (by cases hc; simp) d
   dcast_id := by intros; ext; simp
 
-instance instDepCastSigmaSigma {α : Type*} {β : α → Type*} {γ : (a : α) → β a → Type*}
+instance instDCastSigmaSigma {α : Type*} {β : α → Type*} {γ : (a : α) → β a → Type*}
     {δ : (a : α) → (b : β a) → γ a b → Type*}
-    [DepCast α β] [DepCast₂ α β γ] [DepCast₃ α β γ δ] :
-    DepCast ((a : α) × (b : β a) × γ a b) (fun a => δ a.1 a.2.1 a.2.2) where
+    [DCast α β] [DCast₂ α β γ] [DCast₃ α β γ δ] :
+    DCast ((a : α) × (b : β a) × γ a b) (fun a => δ a.1 a.2.1 a.2.2) where
   dcast hc d := dcast₃ (by cases hc; simp) (by cases hc; simp) (by cases hc; simp) d
   dcast_id := by intros; ext; simp
 
-instance instDepCastForallForall :
-    DepCast α (fun a => ∀ b : β a, ∀ c : γ a b, δ a b c) where
+instance instDCastForallForall :
+    DCast α (fun a => ∀ b : β a, ∀ c : γ a b, δ a b c) where
   dcast ha d := fun b c => dcast₃ ha (by cases ha; simp) (by cases ha; simp)
     (d (dcast ha.symm b) (dcast₂ ha.symm rfl c))
   dcast_id := by intros; funext; simp; rw! [dcast_eq]; rw! [dcast₂_eq]; simp
 
-instance instDepCastPSigmaForall :
-    DepCast ((a : α) ×' (β a)) (fun ab => ∀ c : γ ab.1 ab.2, δ ab.1 ab.2 c) where
+instance instDCastPSigmaForall :
+    DCast ((a : α) ×' (β a)) (fun ab => ∀ c : γ ab.1 ab.2, δ ab.1 ab.2 c) where
   dcast hab d := fun c => dcast₃ (by cases hab; simp) (by cases hab; simp) (by cases hab; simp)
     (d (dcast₂ (by cases hab; simp) (by cases hab; simp) c))
   dcast_id := by intros; funext; simp; rw! [dcast₂_eq]; simp
 
-instance instDepCastSigmaForallForall {α : Type*} {β : α → Type*} {γ : (a : α) → β a → Type*}
+instance instDCastSigmaForallForall {α : Type*} {β : α → Type*} {γ : (a : α) → β a → Type*}
     {δ : (a : α) → (b : β a) → γ a b → Type*}
-    [DepCast α β] [DepCast₂ α β γ] [DepCast₃ α β γ δ] :
-    DepCast ((a : α) × (β a)) (fun ab => ∀ c : γ ab.1 ab.2, δ ab.1 ab.2 c) where
+    [DCast α β] [DCast₂ α β γ] [DCast₃ α β γ δ] :
+    DCast ((a : α) × (β a)) (fun ab => ∀ c : γ ab.1 ab.2, δ ab.1 ab.2 c) where
   dcast hab d := fun c => dcast₃ (by cases hab; simp) (by cases hab; simp) (by cases hab; simp)
     (d (dcast₂ (by cases hab; simp) (by cases hab; simp) c))
   dcast_id := by intros; funext; simp; rw! [dcast₂_eq]; simp
 
-end DepCast₃
+end DCast₃
 
 namespace Fin
 
-/-- `Fin.cast` as a `DepCast` (which should override the default instance). -/
-instance instDepCast : DepCast Nat Fin where
+/-- `Fin.cast` as a `DCast` (which should override the default instance). -/
+instance instDCast : DCast Nat Fin where
   dcast h := Fin.cast h
   dcast_id := by simp only [Fin.cast_refl, implies_true]
 

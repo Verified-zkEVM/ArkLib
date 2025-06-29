@@ -75,6 +75,25 @@ def Prover.liftContext
     let ⟨innerStmtOut, innerWitOut⟩ := P.output prvState
     ⟨lens.liftStmt (stmtIn, innerStmtOut), lens.liftWit (witIn, innerWitOut)⟩
 
+/-- The outer prover after lifting invokes the inner prover on the projected input, and
+  lifts the output -/
+def Prover.liftContext'
+    [lens : ProverLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                        OuterWitIn OuterWitOut InnerWitIn InnerWitOut]
+    (P : Prover pSpec oSpec InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut) :
+      Prover pSpec oSpec OuterStmtIn OuterWitIn OuterStmtOut OuterWitOut where
+  PrvState := fun i => P.PrvState i × OuterStmtIn × OuterWitIn
+  input := fun stmtIn witIn =>
+    ⟨P.input.uncurry (lens.projCtx (stmtIn, witIn)), stmtIn, witIn⟩
+  sendMessage := fun i ⟨prvState, stmtIn, witIn⟩ => do
+    let ⟨msg, prvState'⟩ ← P.sendMessage i prvState
+    return ⟨msg, ⟨prvState', stmtIn, witIn⟩⟩
+  receiveChallenge := fun i ⟨prvState, stmtIn, witIn⟩ chal =>
+    ⟨P.receiveChallenge i prvState chal, stmtIn, witIn⟩
+  output := fun ⟨prvState, stmtIn, witIn⟩ =>
+    let ⟨innerStmtOut, innerWitOut⟩ := P.output prvState
+    lens.liftCtx ⟨(stmtIn, witIn), (innerStmtOut, innerWitOut)⟩
+
 /-- The outer verifier after lifting invokes the inner verifier on the projected input, and
   lifts the output -/
 def Verifier.liftContext
