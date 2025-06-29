@@ -5,7 +5,6 @@ Authors: Quang Dao, Chung Thai Nguyen
 -/
 
 import ArkLib.Data.FieldTheory.BinaryTowerField.Prelude
-
 /-!
 # Binary Tower Fields
 
@@ -24,14 +23,14 @@ Define the binary tower field GF(2^{2^k}) as an iterated quadratic extension of 
 
 ## References
 
-- [Wie88] Doug Wiedemann. “An Iterated Quadratic Extension of GF(2)”. In: The Fibonacci Quarterly
+- [Wie88] Doug Wiedemann. "An Iterated Quadratic Extension of GF(2)" In: The Fibonacci Quarterly
   26.4 (1988), pp. 290–295.
 
-- [FP97] John L. Fan and Christof Paar. “On efficient inversion in tower fields of characteristic
-  two”. In: Proceedings of IEEE International Symposium on Information Theory. 1997.
+- [FP97] John L. Fan and Christof Paar. "On efficient inversion in tower fields of characteristic
+  two". In: Proceedings of IEEE International Symposium on Information Theory. 1997.
 
-- [LCH14] Sian-Jheng Lin, Wei-Ho Chung, and Yunghsiang S. Han. “Novel Polynomial Basis and Its
-  Application to Reed–Solomon Erasure Codes”. In: IEEE 55th Annual Symposium on Foundations of
+- [LCH14] Sian-Jheng Lin, Wei-Ho Chung, and Yunghsiang S. Han. "Novel Polynomial Basis and Its
+  Application to Reed–Solomon Erasure Codes". In: IEEE 55th Annual Symposium on Foundations of
   Computer Science. 2014, pp. 316–325. doi: 10.1109/FOCS.2014.41.
 
 - [DP23] Diamond, Benjamin E., and Jim Posen. "Succinct arguments over towers of binary fields."
@@ -39,6 +38,9 @@ Define the binary tower field GF(2^{2^k}) as an iterated quadratic extension of 
 
 - [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over Binary
   Towers." Cryptology ePrint Archive (2024).
+
+- [DT24b] Quang Dao, Justin Thaler. "More Optimizations to Sum-Check Proving".
+  Cryptology ePrint Archive (2024).
 
 -/
 
@@ -776,6 +778,25 @@ theorem poly_form (k : ℕ) : poly k = X^2 + (C (Z k) * X + 1) := by
   exact res
 
 @[simp]
+theorem eval_mapped_poly_at_root (k : ℕ) : eval₂ (AdjoinRoot.of (poly k)) (Z (k+1)) (poly k) = 0 := by
+  have h_field_eq_adjoinRoot_poly : BTField (k+1) = AdjoinRoot (poly k) := field_eq_adjoinRoot_poly k
+  have h_poly_form : poly k = X^2 + (C (Z k) * X + 1) := poly_form k
+  -- ⊢ eval₂ (of (poly k)) (Z (k + 1)) (poly k) = 0
+  set of_prev: BTField k →+* BTField (k+1) := AdjoinRoot.of (poly k) -- NOTE: we explicitly use the output of coercion as BTField (k+1) instead of AdjoinRoot (poly k) for consistency
+  calc
+    eval₂ of_prev (Z (k+1)) (poly k) = eval₂ of_prev (Z (k+1)) (X^2 + (C (Z k) * X + 1)) := by
+      rw [←h_poly_form]
+    _ = eval₂ of_prev (Z (k+1)) (X^2) + eval₂ of_prev (Z (k+1)) (C (Z k) * X) + eval₂ of_prev (Z (k+1)) 1 := by
+      rw [eval₂_add, add_assoc, eval₂_add]
+    _ = (Z (k+1))^2 + (of_prev (Z k)) * (Z (k+1)) + 1 := by
+      rw [eval₂_pow, eval₂_mul, eval₂_C, eval₂_X, eval₂_one]
+    _ = (Z (k+1))^2 + (Z (k+1)) * (of_prev (Z k)) + 1 := by
+      rw [mul_comm]
+    _ = (Z (k+1))^2 + (Z (k+1)) * (Z k) + 1 := by rfl -- x * (algegraMap scalar) = x * scalar
+    _ = 0 := by
+      rw [←eval_poly_at_root k]
+
+@[simp]
 lemma list_length (k : ℕ) : (list k).length = k + 1 := by
   unfold list
   rfl
@@ -795,22 +816,140 @@ instance polyIrreducible (n : ℕ) : Irreducible (poly n) := (BinaryTower n).2.i
 
 instance polyIrreducibleFact (n : ℕ) : Fact (Irreducible (poly n)) := ⟨polyIrreducible n⟩
 
--- TODO: multilinear basis
+instance polyMonic (n : ℕ) : Monic (poly n) := (BinaryTower n).2.newPolyIsMonic
+
+class BinaryTowerField (F : ℕ → Type*) where
+  field : ∀ k, Field (F k) -- field structure at each level, maybe we should make this an infered property and only the field structure of (F 0) is required
+  charP2 : ∀ k, CharP (F k) 2 -- characteristic 2 at each level
+  poly : ∀ k, Polynomial (F k) -- irreducible polynomial over F k
+  poly_monic: ∀ k, Monic (poly k) -- monic polynomial over F k
+  tower_is_adjoined_field : ∀ k, AdjoinRoot (poly k) = F (k+1) -- tower of adjoin roots
+  Z : ∀ k, F k -- special element (Z k is the root of poly k in F (k+1))
+  poly_irreducible : ∀ k, Irreducible (poly k)
+  canonical_embedding : ∀ k, F k →+* F (k+1) -- ring homomorphism
+  Z_is_root : ∀ k, (eval₂ (canonical_embedding k) (Z (k+1)) (poly k)) = 0
+
+attribute [instance] BinaryTowerField.field
+
+instance BinaryTowerField.instFactIrreducible {F : ℕ → Type*} [inst : BinaryTowerField F] (k : ℕ) : Fact (Irreducible (inst.poly k)) := ⟨inst.poly_irreducible k⟩
+
+instance BinaryTowerField.algebra_adjacent_tower {F : ℕ → Type*} [inst : BinaryTowerField F] (k : ℕ) :
+    Algebra (F k) (F (k+1)) := {
+      algebraMap := inst.canonical_embedding k,
+      commutes' := fun x y => by -- (canonical_embedding k) x * y = y * (canonical_embedding k) x
+        rw [mul_comm]
+      smul := fun r x => inst.canonical_embedding k r * x
+      smul_def' := fun r x => by rfl
+    }
+
+instance BinaryTowerField.field_abbrv {F : ℕ → Type*} [inst : BinaryTowerField F] (k : ℕ) : Field (AdjoinRoot (inst.poly k)) := AdjoinRoot.instField (f:=inst.poly k)
+
+instance BinaryTowerField.algebra_adjacent_tower_abbrv {F : ℕ → Type*} [inst : BinaryTowerField F] (k : ℕ): Algebra (F k) (AdjoinRoot (inst.poly k)) := inferInstance
+
+instance BinaryTowerField.module_adjacent_tower {F : ℕ → Type*} [inst : BinaryTowerField F] (k : ℕ) :
+    Module (F k) (F (k+1)) :=
+  (inst.algebra_adjacent_tower k).toModule
+
+def BinaryTowerField.powerBasisAbbrv {F : ℕ → Type*} [inst : BinaryTowerField F] (k : ℕ) :
+    PowerBasis (F k) (AdjoinRoot (inst.poly k)) := powerBasis' (inst.poly_monic k)
+
+def BinaryTowerField.powerBasis {F : ℕ → Type*} [inst : BinaryTowerField F] (k : ℕ) (algEquiv: AdjoinRoot (inst.poly k) ≃ₐ[F k] F (k+1)): -- NOTE: any better way to not pass the AlgEquiv?
+    PowerBasis (F k) (F (k+1)) :=
+  (powerBasis' (inst.poly_monic k)).map algEquiv
+
+/-- Constructs an `Algebra R A` instance from `Algebra R S`, `Algebra S A`, and `IsScalarTower R S A`. -/
+def algebraFromTower {R S A : Type*} [CommSemiring R] [CommSemiring S] [Semiring A] [Algebra R S] [Algebra S A] [SMul R A] [IsScalarTower R S A]: Algebra R A :=
+  RingHom.toAlgebra' ((algebraMap S A).comp (algebraMap R S)) (fun r a => by
+    rw [RingHom.comp_apply, Algebra.commutes])
+
+instance BinaryTowerField.algebra_cross_tower {F : ℕ → Type*} [inst : BinaryTowerField F] (κ τ : ℕ) (h : Fact (κ < τ)): Algebra (F κ) (F τ) := by
+  letI instleft: Algebra (F κ) (F (κ+1)) := sorry
+  letI instright: Algebra (F (κ+1)) (F τ) := sorry
+  letI instSMul: SMul (F κ) (F τ) := sorry
+  letI instIsScalarTower: IsScalarTower (F κ) (F (κ + 1)) (F τ) := sorry
+  letI inst_cross_tower: Algebra (F κ) (F τ) := algebraFromTower (R:=F κ) (S:=F (κ+1)) (A:=F τ)
+  exact inst_cross_tower
+
+instance BinaryTowerField.module_cross_tower {F : ℕ → Type*} [inst : BinaryTowerField F] (κ τ : ℕ) (h : Fact (κ < τ)): Module (F κ) (F τ) :=
+  (inst.algebra_cross_tower κ τ h).toModule
+
+-- list of special elements (generators) of BinaryTowerFields F κ -> F τ (inclusively)
+def BinaryTowerField.special_elements_of_range {F : ℕ → Type*} [inst : BinaryTowerField F] (κ τ : ℕ) (h : κ ≤ τ) : Fin (τ - κ + 1) → F τ :=
+  fun (i : Fin (τ - κ + 1)) => -- i = 0 -> τ - κ
+    if h_i_eq_τ_κ : i.val = τ - κ then
+      inst.Z τ -- if i == τ - κ, then use the special element Z τ directly
+    else -- if i < τ - κ, then use algebraMap to map Z (κ + i) to F τ
+      -- h_i_eq_τ_κ : ¬↑i = τ - κ, i : Fin (τ - κ + 1)
+      let h_lt : κ + i.val < τ := by
+        have h_i_bound : i.val < τ - κ + 1 := i.2 -- From i : Fin (τ - κ + 1)
+        have h_i_strict : i.val < τ - κ := by
+          apply Nat.lt_of_le_of_ne -- Using the lemma name you provided
+          · exact Nat.le_of_lt_succ h_i_bound -- This provides the hypothesis i.val ≤ τ - κ
+          · exact h_i_eq_τ_κ     -- This provides the hypothesis i.val ≠ τ - κ
+        calc
+          κ + i.val < κ + (τ - κ) := Nat.add_lt_add_left h_i_strict κ
+          _ = τ := by rw [Nat.add_sub_of_le h]
+      let fact_h_lt: Fact (κ + i < τ) := { out := h_lt }
+      let instAlgebra := inst.algebra_cross_tower (κ + i) τ fact_h_lt
+      algebraMap (F (κ + i)) (F τ) (inst.Z (κ + i))
+
+instance BinaryTowerField.multilinear_basis {F : ℕ → Type*} [inst : BinaryTowerField F] (κ τ : ℕ) (h : Fact (κ < τ)):
+  let _: Module (F κ) (F τ) := inst.module_cross_tower (κ:=κ) (τ:=τ) (h:=h)
+  Basis (Finset (Fin (τ - κ))) (F κ) (F τ) := by
+  let basis_vectors : Finset (Fin (τ - κ)) → F τ :=
+    fun s => s.prod (λ i => (BinaryTowerField.special_elements_of_range (κ+1) τ h.out) i)
+  let instModule: Module (F κ) (F τ) := inst.module_cross_tower (κ:=κ) (τ:=τ) (h:=h)
+  have hli: LinearIndependent (F κ) basis_vectors := by sorry
+  have hsp: ⊤ ≤ Submodule.span (F κ) (Set.range basis_vectors) := by sorry
+  exact Basis.mk (R:=F κ) (M:=F τ) (ι:=Finset (Fin (τ - κ))) (hli := hli) (hsp := hsp) (v := basis_vectors)
+
+-- Let special_elements_of_range(κ, τ) = [Z κ, Z (κ+1), ..., Z (τ-1)].
+-- The multilinear basis of F τ over F κ is the set of all products ∏_{s ∈ {0,1}^{τ-κ}} (product of elements of (special_elements_of_range(κ, τ)) indexed by subset s)
+theorem BinaryTowerField.multilinear_basis_value {F : ℕ → Type*} [inst : BinaryTowerField F] (κ τ : ℕ) (h : Fact (κ < τ)) (s : Finset (Fin (τ - κ))) :
+  let f : Fin (τ - κ) → F τ := λ i => BinaryTowerField.special_elements_of_range (κ+1) τ h.out i
+  (BinaryTowerField.multilinear_basis κ τ h) s = s.prod (λ i => f i) :=
+by
+  rw [BinaryTowerField.multilinear_basis]
+  simp only [Basis.mk_apply]
+
+instance WeidemannBinaryTowerField: BinaryTowerField BTField where
+  field := fun k => by exact BTFieldIsField k
+  charP2 := fun k => by exact BTFieldChar2 k
+  poly := fun k => poly k
+  poly_monic := fun k => by exact polyMonic k
+  tower_is_adjoined_field := fun k => field_eq_adjoinRoot_poly k
+  Z := fun k => Z k
+  poly_irreducible := fun k => by exact polyIrreducible k
+  canonical_embedding := fun k => by exact AdjoinRoot.of (poly k)
+  Z_is_root := fun k => by exact eval_mapped_poly_at_root k
+
+def WeidemannBTField_AlgEquiv (k : ℕ) : BTField (k+1) ≃ₐ[BTField k] AdjoinRoot (poly k) :=
+  { toEquiv := Equiv.cast (field_eq_adjoinRoot_poly k).symm,
+    map_add' := by intros; cases field_eq_adjoinRoot_poly k; rfl,
+    map_mul' := by intros; cases field_eq_adjoinRoot_poly k; rfl,
+    commutes' := by intros; cases field_eq_adjoinRoot_poly k; rfl }
+
+example : (WeidemannBinaryTowerField.multilinear_basis 0 1 ({out:=by norm_num})) ∅ = 1 := by
+  exact WeidemannBinaryTowerField.multilinear_basis_value 0 1 {out:=by norm_num} ∅
+
+example : (WeidemannBinaryTowerField.multilinear_basis 0 1 ({out:=by norm_num})) {0, 1} =
+  WeidemannBinaryTowerField.Z 1 := by
+  calc
+    (WeidemannBinaryTowerField.multilinear_basis 0 1 ({out:=by norm_num})) {0} =
+      ({0} : Finset (Fin 1)).prod (λ i => WeidemannBinaryTowerField.special_elements_of_range 1 1 (by norm_num) i) := by
+        rw [WeidemannBinaryTowerField.multilinear_basis_value 0 1 { out := by norm_num } {0}]
+        simp only [Finset.prod_singleton, BinaryTowerField.special_elements_of_range]
+        norm_num
+    _ = WeidemannBinaryTowerField.Z 1 := by
+      simp only [Finset.prod_singleton, BinaryTowerField.special_elements_of_range]
+      norm_num
+
 -- -- Possible direction: definition of BTF as Quotient of MvPolynomial (Fin n) GF(2)
 -- -- by the ideal generated by special field elements
 -- -- What would this definition give us?
 
+-- def f(C: Type*) [instField: Field C]
+
 end BinaryTower
 
 end
-
-/- TODO: Concrete implementation of BTF uses BitVec -/
-
-def ConcreteBinaryTower (k : ℕ) :=
-  match k with
-  | 0 => BitVec 1
-  | k + 1 => BitVec (2^k)
-
--- Define all arithmetic operations
--- Define cross-field operations
--- Define a field isomorphism
