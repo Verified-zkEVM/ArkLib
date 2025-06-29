@@ -42,7 +42,7 @@ import ArkLib.Data.Hash.DomainSep
 import ArkLib.Data.Hash.DuplexSponge
 import ArkLib.Data.Hash.Serde
 import ArkLib.Data.Math.Basic
-import ArkLib.Data.Math.DepCast
+import ArkLib.Data.Classes.DCast
 import ArkLib.Data.Math.HList
 import ArkLib.Data.Matrix.Basic
 import ArkLib.Data.Matrix.Sparse

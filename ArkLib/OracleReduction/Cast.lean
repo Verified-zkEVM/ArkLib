@@ -9,7 +9,7 @@ import ArkLib.OracleReduction.Security.Basic
 /-!
   # Casting for structures of oracle reductions
 
-  We define custom dependent casts (registered as `DepCast` instances) for the following structures:
+  We define custom dependent casts (registered as `DCast` instances) for the following structures:
   - `ProtocolSpec`
   - `(Full)Transcript`
   - `(Oracle)Prover`
@@ -17,44 +17,69 @@ import ArkLib.OracleReduction.Security.Basic
   - `(Oracle)Reduction`
 -/
 
-/-! ### Casting Protocol Specifications -/
 
 namespace ProtocolSpec
 
-variable {m n : ℕ}
+variable {m n : ℕ} (h : m = n)
+
+/-! ### Casting Protocol Specifications -/
 
 /-- Casting a `ProtocolSpec` across an equality of the number of rounds
 
 One should use the type-class function `dcast` instead of this one. -/
-protected def cast (h : m = n) (pSpec : ProtocolSpec m) : ProtocolSpec n :=
+protected def cast (pSpec : ProtocolSpec m) : ProtocolSpec n :=
   pSpec ∘ (Fin.cast h.symm)
 
 @[simp]
-theorem cast_id : ProtocolSpec.cast (Eq.refl n) = id := rfl
+theorem cast_id : ProtocolSpec.cast (Eq.refl m) = id := rfl
 
-instance instDepCast : DepCast Nat ProtocolSpec where
+instance instDCast : DCast Nat ProtocolSpec where
   dcast h := ProtocolSpec.cast h
   dcast_id := cast_id
 
-theorem cast_eq_dcast (h : m = n) (pSpec : ProtocolSpec m) :
+theorem cast_eq_dcast {h : m = n} {pSpec : ProtocolSpec m} :
     dcast h pSpec = ProtocolSpec.cast h pSpec := rfl
 
 /-! ### Casting (Partial) Transcripts -/
 
-variable {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n} {k : Fin (m + 1)} {l : Fin (n + 1)}
+variable {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n} (hSpec : dcast h pSpec₁ = pSpec₂)
+
+namespace MessageIdx
+
+/-- Casting a message index across an equality of `ProtocolSpec`s. -/
+protected def cast (i : MessageIdx pSpec₁) : MessageIdx pSpec₂ :=
+  ⟨Fin.cast h i.1, by simp [← hSpec, dcast, ProtocolSpec.cast, i.property]⟩
+
+@[simp]
+theorem cast_id : MessageIdx.cast (Eq.refl m) rfl = (id : pSpec₁.MessageIdx → _) := rfl
+
+instance instDCast : DCast Nat ProtocolSpec where
+  dcast h := ProtocolSpec.cast h
+  dcast_id := cast_id
+
+theorem cast_eq_dcast {h : m = n} {pSpec : ProtocolSpec m} :
+    dcast h pSpec = ProtocolSpec.cast h pSpec := rfl
+
+end MessageIdx
+
+/-- Casting a challenge index across an equality of `ProtocolSpec`s. -/
+protected def ChallengeIdx.cast (i : ChallengeIdx pSpec₁) : ChallengeIdx pSpec₂ :=
+  ⟨Fin.cast h i.1, by simp [← hSpec, dcast, ProtocolSpec.cast, i.property]⟩
+
+variable {k : Fin (m + 1)} {l : Fin (n + 1)}
 
 namespace Transcript
 
 /-- Casting two partial transcripts across an equality of `ProtocolSpec`s, where the cutoff indices
   are equal. -/
-protected def cast (h : m = n) (hIdx : k.val = l.val) (hSpec : dcast h pSpec₁ = pSpec₂)
+protected def cast (hIdx : k.val = l.val) (hSpec : dcast h pSpec₁ = pSpec₂)
     (T : pSpec₁.Transcript k) : pSpec₂.Transcript l :=
   fun i => _root_.cast (by rw [← hSpec]; rfl) (T (Fin.cast hIdx.symm i))
 
 @[simp]
 theorem cast_id : Transcript.cast rfl rfl rfl = (id : pSpec₁.Transcript k → _) := rfl
 
-instance instDepCast₃ : DepCast₃ Nat Fin (fun n _ => ProtocolSpec n)
+instance instDCast₃ : DCast₃ Nat Fin (fun n _ => ProtocolSpec n)
     (fun _ k pSpec => pSpec.Transcript k) where
   dcast₃ h h' h'' T := Transcript.cast h
     (by simp only [Fin.coe_eq_castSucc, Fin.coe_castSucc]; simp only [dcast] at h'; rw [← h']; rfl)
@@ -82,7 +107,7 @@ protected def cast (h : m = n) (hSpec : dcast h pSpec₁ = pSpec₂) (T : FullTr
 @[simp]
 theorem cast_id : FullTranscript.cast rfl rfl = (id : pSpec₁.FullTranscript → _) := rfl
 
-instance instDepCast₂ : DepCast₂ Nat ProtocolSpec (fun _ pSpec => FullTranscript pSpec) where
+instance instDCast₂ : DCast₂ Nat ProtocolSpec (fun _ pSpec => FullTranscript pSpec) where
   dcast₂ h h' T := FullTranscript.cast h h' T
   dcast₂_id := cast_id
 
@@ -101,12 +126,15 @@ variable {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
 namespace Prover
 
 /-- Casting the prover of a non-oracle reduction across an equality of `ProtocolSpec`s. -/
-def cast
+protected def cast
     (h : m = n) (hSpec : dcast h pSpec₁ = pSpec₂)
-    (V : Verifier oSpec StmtIn StmtOut pSpec₁) :
-    Verifier oSpec StmtIn StmtOut pSpec₂ where
-  verify := fun stmt transcript => V.verify stmt (dcast₂ h.symm (dcast_symm h hSpec) transcript)
-
+    (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec₁) :
+    Prover oSpec StmtIn WitIn StmtOut WitOut pSpec₂ where
+  PrvState := P.PrvState ∘ Fin.cast (congrArg (· + 1) h.symm)
+  input := P.input
+  sendMessage := fun i st => P.sendMessage (dcast₂ h hSpec i)
+  receiveChallenge := P.receiveChallenge
+  output := P.output ∘ (fun st => _root_.cast (by simp) st)
 
 end Prover
 
@@ -117,7 +145,7 @@ namespace Verifier
 /-- Casting the verifier of a non-oracle reduction across an equality of `ProtocolSpec`s.
 
 This boils down to casting the (full) transcript. -/
-def cast
+protected def cast
     (h : m = n) (hSpec : dcast h pSpec₁ = pSpec₂)
     (V : Verifier oSpec StmtIn StmtOut pSpec₁) :
     Verifier oSpec StmtIn StmtOut pSpec₂ where
@@ -129,8 +157,8 @@ def cast_id
       V.cast rfl rfl = V := by
   ext; simp [Verifier.cast]
 
-instance instDepCast₂Verifier :
-    DepCast₂ Nat ProtocolSpec (fun _ pSpec => Verifier oSpec StmtIn StmtOut pSpec) where
+instance instDCast₂Verifier :
+    DCast₂ Nat ProtocolSpec (fun _ pSpec => Verifier oSpec StmtIn StmtOut pSpec) where
   dcast₂ := Verifier.cast
   dcast₂_id := by intros; funext; simp
 

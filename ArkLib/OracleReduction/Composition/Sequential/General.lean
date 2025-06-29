@@ -101,7 +101,7 @@ def Verifier.seqCompose
     (fun i => Verifier oSpec (Stmt 0) (Stmt i)
       (ProtocolSpec.seqCompose (Fin.take i (by omega) pSpec)))
     (fun i Vacc => by
-      refine dcast₂ (self := instDepCast₂Verifier) ?_ ?_ (Vacc.append (V i))
+      refine dcast₂ (self := instDCast₂Verifier) ?_ ?_ (Vacc.append (V i))
       · simp [Fin.sum_univ_castSucc, Fin.last, Fin.succ]
       · simp [seqCompose_append, dcast_eq_root_cast])
     (Verifier.id)
