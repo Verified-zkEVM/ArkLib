@@ -23,9 +23,9 @@ import ArkLib.Data.CodingTheory.ProximityGap
 import ArkLib.Data.CodingTheory.ReedMuller
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.EllipticCurve.BN254
-import ArkLib.Data.FieldTheory.BinaryTowerField.Basic
-import ArkLib.Data.FieldTheory.BinaryTowerField.Impl
-import ArkLib.Data.FieldTheory.BinaryTowerField.Prelude
+import ArkLib.Data.FieldTheory.BinaryField.Tower.Basic
+import ArkLib.Data.FieldTheory.BinaryField.Tower.Impl
+import ArkLib.Data.FieldTheory.BinaryField.Tower.Prelude
 import ArkLib.Data.FieldTheory.NonBinaryField.BLS12_377
 import ArkLib.Data.FieldTheory.NonBinaryField.BLS12_381
 import ArkLib.Data.FieldTheory.NonBinaryField.BN254
