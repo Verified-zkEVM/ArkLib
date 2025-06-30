@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen
 -/
 
-import ArkLib.Data.FieldTheory.BinaryTowerField.Basic
+import ArkLib.Data.FieldTheory.BinaryField.Tower.Basic
 import ArkLib.Data.Classes.DCast
 
 /-!
@@ -32,6 +32,7 @@ This file provides executable implementations for binary tower fields
   two". In: Proceedings of IEEE International Symposium on Information Theory. 1997.
 -/
 
+namespace BinaryTower
 namespace ConcreteDefinition
 open Polynomial
 
@@ -39,8 +40,8 @@ section BaseDefinitions
 
 def ConcreteBinaryTower : ℕ → Type := fun k => BitVec (2^k)
 
-section BitVecDCast
-instance BitVec.instDCast : DCast Nat BitVec where
+section BitVecDepCast
+instance BitVec.instDepCast : DepCast Nat BitVec where
   dcast h := BitVec.cast h
   dcast_id := by
     intro n
@@ -48,12 +49,12 @@ instance BitVec.instDCast : DCast Nat BitVec where
     rw [BitVec.cast_eq, id_eq]
 
 theorem BitVec.bitvec_cast_eq_dcast {n m : Nat} (h : n = m) (bv : BitVec n) :
-  BitVec.cast h bv = DCast.dcast h bv := by
-  simp only [BitVec.cast, BitVec.instDCast]
+  BitVec.cast h bv = DepCast.dcast h bv := by
+  simp only [BitVec.cast, BitVec.instDepCast]
 
 theorem BitVec.dcast_id {n : Nat} (bv : BitVec n) :
-  DCast.dcast (Eq.refl n) bv = bv := by
-  simp only [BitVec.instDCast.dcast_id, id_eq]
+  DepCast.dcast (Eq.refl n) bv = bv := by
+  simp only [BitVec.instDepCast.dcast_id, id_eq]
 
 theorem BitVec.dcast_bitvec_eq {l r val: ℕ} (h_width_eq: l = r):
     dcast h_width_eq (BitVec.ofNat l val) = BitVec.ofNat r val := by
@@ -63,8 +64,8 @@ theorem BitVec.dcast_bitvec_eq {l r val: ℕ} (h_width_eq: l = r):
 @[simp] theorem BitVec.cast_zero {n m: ℕ} (h : n = m) : BitVec.cast h 0 = 0 := rfl
 @[simp] theorem BitVec.cast_one {n m: ℕ} (h : n = m) : BitVec.cast h 1 = 1#m := by
   simp only [BitVec.ofNat_eq_ofNat, BitVec.cast_ofNat]
-@[simp] theorem BitVec.dcast_zero {n m: ℕ} (h : n = m) : DCast.dcast h (0#n) = 0#m := rfl
-@[simp] theorem BitVec.dcast_one {n m: ℕ} (h : n = m) : DCast.dcast h (1#n) = 1#m := by
+@[simp] theorem BitVec.dcast_zero {n m: ℕ} (h : n = m) : DepCast.dcast h (0#n) = 0#m := rfl
+@[simp] theorem BitVec.dcast_one {n m: ℕ} (h : n = m) : DepCast.dcast h (1#n) = 1#m := by
   rw [←BitVec.bitvec_cast_eq_dcast]
   exact BitVec.cast_one (h:=h)
 
@@ -228,7 +229,7 @@ theorem BitVec.eq_append_iff_extract {lo_size hi_size: ℕ} (lo: BitVec lo_size)
     exact Nat.reconstruct_from_hi_and_lo_parts_or_ver (n:=x.toNat)
       (hi_len:=hi_size) (lo_len:=lo_size) (h_n:=by exact BitVec.isLt (x:=x))
 
-end BitVecDCast
+end BitVecDepCast
 
 def bitVecToString (width : ℕ) (bv : BitVec width) : String :=
   Fin.foldl width (fun (s : String) (idx : Fin width) =>
@@ -251,7 +252,7 @@ def fromNat {k : ℕ} (n : Nat) : ConcreteBinaryTower k :=
   (fromNat (BitVec.toNat bv) : ConcreteBinaryTower k) = bv := by
   simp only [BitVec.ofNat_toNat, BitVec.setWidth_eq, fromNat, ConcreteBinaryTower]
 
-instance ConcreteBinaryTower.instDCast_local : DCast ℕ ConcreteBinaryTower where
+instance ConcreteBinaryTower.instDepCast_local : DepCast ℕ ConcreteBinaryTower where
   dcast h_k_eq term_k1 := BitVec.cast (congrArg (fun n => 2^n) h_k_eq) term_k1
   dcast_id := by
     intro k_idx; funext x
@@ -1957,3 +1958,6 @@ def runTests : IO Unit := do
 end Tests
 
 end ConcreteDefinition
+end BinaryTower
+
+#check BinaryTower.ConcreteDefinition.instFieldConcrete (k:=2)
