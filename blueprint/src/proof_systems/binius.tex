@@ -1,0 +1,63 @@
+\section{Binius}\label{sec:binius}
+
+This section documents our formalization of the Binius commitment scheme protocols. These protocols are built upon the unique hierarchical structure of binary tower fields, which enables highly efficient arithmetic. We first describe the primitives used in the protocols, and then describe the protocols themselves.
+
+\subsection{Binary Tower Fields}
+
+We define the binary tower fields \cite{DP25} as defined originally as iterated quadratic extensions by Wie88\cite{Wie88}. These fields, denoted $(\mathcal{T})_{\iota \in \mathbb{N}}$, provide a chain of nested field extensions for efficient arithmetic, particularly for operations involving subfields, by leveraging a highly compatible basis structure across the tower.
+
+\begin{definition}[Binary Tower Field]
+    \lean{BinaryTower.BTField}
+    \label{def:binary_tower_field}
+    A binary tower field $\mathcal{T}_{\iota}$ for $\iota \in \mathbb{N}$ is defined inductively as the $\iota$-th field in the sequence of quadratic extensions over the ground field $\mathbb{F}_2$.
+    \begin{itemize}
+        \item $\mathcal{T}_{0} := \mathbb{F}_{2}$
+        \item $\forall \iota > 0$, $\mathcal{T}_{\iota} := \mathcal{T}_{\iota-1}[X_{\iota-1}] / (X_{\iota-1}^{2}+X_{\iota-2} \cdot X_{\iota-1}+1)$, where we conventionally set $X_{-1} := 1$.
+    \end{itemize}
+\end{definition}
+
+\begin{theorem}[Irreducible defining polynomial]
+    \lean{BinaryTower.polyIrreducible}
+    \label{thm:binary_tower_field_irreducible}
+    The defining polynomial $X_{\iota-1}^{2}+X_{\iota-2} \cdot X_{\iota-1}+1$ of $\mathcal{T}_{\iota}$ is irreducible over $\mathcal{T}_{\iota-1}$ for all $\iota > 0$.
+\end{theorem}
+
+\begin{theorem}[Binary Tower Fields are fields] 
+  \lean{BinaryTower.BTFieldIsField, BinaryTower.BTFieldCard, BinaryTower.BTFieldChar2}
+  \uses{def:binary_tower_field, thm:binary_tower_field_irreducible}
+  We prove that the binary tower fields are finite fields:
+  \label{thm:binary_tower_fields_are_fields}
+    \begin{itemize}
+      \item The ground field $\mathcal{T}_{0} := \mathbb{F}_2$ is a field. For all $\iota > 0$, $\mathcal{T}_{\iota}$ is the quotient ring of $\mathcal{T}_{\iota-1}[X_{\iota-1}]$ by the irreducible polynomial $X_{\iota-1}^{2}+X_{\iota-2} \cdot X_{\iota-1}+1$, therefore $\mathcal{T}_{\iota}$ is a field extension of $\mathcal{T}_{\iota-1}$.
+      \item For all $\iota \in \mathbb{N}$, the cardinality of $\mathcal{T}_{\iota}$ is $2^{2^{\iota}}$.
+      \item For all $\iota \in \mathbb{N}$, the characteristic of $\mathcal{T}_{\iota}$ is 2.
+    \end{itemize}
+\end{theorem}
+
+The structure of the tower provides a natural way to represent elements using a consistent set of variables. This leads to a family of multilinear bases that are compatible across different levels of the tower.
+
+\begin{definition}[Multilinear Bases for Tower Fields]
+    \uses{def:binary_tower_field, thm:binary_tower_fields_are_fields}
+    \label{def:multilinear_basis}
+    For any tower field $\mathcal{T}_\iota$, we define its canonical bases as follows:
+    \begin{itemize}
+        \item \textbf{$\mathbb{F}_2$-Basis of $\mathcal{T}_\iota$}: The set of multilinear monomials in the variables $\{X_0, \dots, X_{\iota-1}\}$ forms a basis for $\mathcal{T}_\iota$ as a $2^\iota$-dimensional vector space over $\mathbb{F}_2$. An element is typically stored as a $2^\iota$-bit string corresponding to this basis.
+        \item \textbf{$\mathcal{T}_\iota$-Basis of $\mathcal{T}_{\iota+\kappa}$}: For any $\kappa \ge 0$, the set of multilinear monomials in the variables $\{X_\iota, \dots, X_{\iota+\kappa-1}\}$ forms a basis for $\mathcal{T}_{\iota+\kappa}$ as a $2^\kappa$-dimensional vector space over the subfield $\mathcal{T}_\iota$.
+    \end{itemize}
+\end{definition}
+
+\begin{definition}[Computable Binary Tower Fields]
+  \lean{BinaryTower.ConcreteDefinition.instFieldConcrete}
+  \uses{def:binary_tower_field, def:multilinear_basis, thm:binary_tower_fields_are_fields}
+  \label{def:computable_binary_tower_field}
+  Building upon the abstract definition of binary tower fields, we define a concrete, computable representation of binary tower fields. This construction, which underpins our formalization, represents each element of the field $\mathcal{T}_\iota$ as a bit vector of length $2^\iota$ corresponding to the coefficients of the multilinear $\mathbb{F}_2$-basis.
+
+  The arithmetic operations on these bit-vector representations are defined as follows:
+  \begin{itemize}
+      \item \textbf{Addition}: The sum of two elements is defined as the bitwise XOR of their corresponding bit-vector representations.
+      
+      \item \textbf{Multiplication (in $\mathcal{T}_\iota$)}: The product of two elements within the same field $\mathcal{T}_\iota$ is defined via a recursive Karatsuba-based algorithm~\cite{FP97}. The complexity of this operation is $\Theta(2^{\log_2(3) \cdot \iota})$.
+      
+      \item \textbf{Cross-Level Multiplication}: The product of an element $\alpha \in \mathcal{T}_{\iota+\kappa}$ by a scalar $b \in \mathcal{T}_\iota$ is defined by representing $\alpha$ via its $2^\kappa$ coefficients $(a_u)_{u \in \{0,1\}^\kappa}$ in the $\mathcal{T}_\iota$-basis and performing the multiplication component-wise on those coefficients in the subfield $\mathcal{T}_\iota$. The total complexity is $2^\kappa \cdot \Theta(2^{\log_2(3) \cdot \iota})$.
+  \end{itemize}
+\end{definition}
