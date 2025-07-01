@@ -60,7 +60,7 @@ namespace MessageIdx
 
 /-- Casting a message index across an equality of `ProtocolSpec`s. -/
 protected def cast (i : MessageIdx pSpec₁) : MessageIdx pSpec₂ :=
-  ⟨Fin.cast h i.1, by simp [← hSpec, dcast, ProtocolSpec.cast, i.property]⟩
+  ⟨Fin.cast h i.1, by simp [← hSpec, ProtocolSpec.cast, i.property]⟩
 
 @[simp]
 theorem cast_id : MessageIdx.cast (Eq.refl m) rfl = (id : pSpec₁.MessageIdx → _) := rfl
@@ -84,7 +84,7 @@ namespace ChallengeIdx
 
 /-- Casting a challenge index across an equality of `ProtocolSpec`s. -/
 protected def cast (i : ChallengeIdx pSpec₁) : ChallengeIdx pSpec₂ :=
-  ⟨Fin.cast h i.1, by simp [← hSpec, dcast, ProtocolSpec.cast, i.property]⟩
+  ⟨Fin.cast h i.1, by simp [← hSpec, ProtocolSpec.cast, i.property]⟩
 
 @[simp]
 theorem cast_id : ChallengeIdx.cast (Eq.refl m) rfl = (id : pSpec₁.ChallengeIdx → _) := rfl
@@ -117,10 +117,10 @@ protected def cast (hIdx : k.val = l.val) (hSpec : pSpec₁.cast h = pSpec₂)
 @[simp]
 theorem cast_id : Transcript.cast rfl rfl rfl = (id : pSpec₁.Transcript k → _) := rfl
 
-instance instDCast₃ : DCast₃ Nat Fin (fun n _ => ProtocolSpec n)
+instance instDCast₃ : DCast₃ Nat (fun n => Fin (n + 1)) (fun n _ => ProtocolSpec n)
     (fun _ k pSpec => pSpec.Transcript k) where
   dcast₃ h h' h'' T := Transcript.cast h
-    (by simp only [Fin.coe_eq_castSucc, Fin.coe_castSucc]; simp only [dcast] at h'; rw [← h']; rfl)
+    (by simp only [dcast] at h'; rw [← h']; sorry)
     (by simp [ProtocolSpec.cast_eq_dcast, dcast_eq_root_cast]; exact h'')
     T
   dcast₃_id := cast_id

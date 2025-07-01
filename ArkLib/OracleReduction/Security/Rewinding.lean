@@ -27,7 +27,8 @@ section Rewinding
 
 /-- The oracle interface to call the prover as a black box -/
 def OracleSpec.proverOracle (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
-    OracleSpec pSpec.MessageIdx := fun i => (StmtIn × pSpec.Transcript i, pSpec.Message i)
+    OracleSpec pSpec.MessageIdx :=
+  fun i => (StmtIn × pSpec.Transcript i.val.castSucc, pSpec.Message i)
 
 -- def SimOracle.proverImpl (P : Prover pSpec oSpec StmtIn WitIn StmtOut WitOut) :
 --     SimOracle.Stateless (OracleSpec.proverOracle pSpec StmtIn) oSpec := sorry

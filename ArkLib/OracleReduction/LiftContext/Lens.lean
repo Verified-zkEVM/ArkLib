@@ -46,13 +46,13 @@ variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
 /-- Transport input statements from the outer context to the inner context -/
 @[inline, reducible]
 def proj : OuterStmtIn → InnerStmtIn :=
-  lens.mapPos
+  lens.toFunA
 
 /-- Transport output statements from the inner context to the outer context,
   additionally relying on the input statements of the outer context. -/
 @[inline, reducible]
 def lift : OuterStmtIn → InnerStmtOut → OuterStmtOut :=
-  lens.mapDir
+  lens.toFunB
 
 end Statement.Lens
 
@@ -106,7 +106,7 @@ variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
 TODO: refactor etc. -/
 @[inline, reducible]
 def proj : OuterStmtIn × (∀ i, OuterOStmtIn i) → InnerStmtIn × (∀ i, InnerOStmtIn i) :=
-  lens.mapPos
+  lens.toFunA
 
 /-- Transport output statements from the inner context to the outer context,
   additionally relying on the input statements of the outer context.
@@ -115,7 +115,7 @@ def proj : OuterStmtIn × (∀ i, OuterOStmtIn i) → InnerStmtIn × (∀ i, Inn
 @[inline, reducible]
 def lift : OuterStmtIn × (∀ i, OuterOStmtIn i) → InnerStmtOut × (∀ i, InnerOStmtOut i) →
     OuterStmtOut × (∀ i, OuterOStmtOut i) :=
-  lens.mapDir
+  lens.toFunB
 
 -- def toVerifierLens : Statement.Lens
 --     (OuterStmtIn × ∀ i, OuterOStmtIn i) (OuterStmtOut × ∀ i, OuterOStmtOut i)
@@ -149,13 +149,13 @@ variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
 /-- Transport input witness from the outer context to the inner context -/
 @[inline, reducible]
 def proj : OuterStmtIn × OuterWitIn → InnerWitIn :=
-  lens.mapPos
+  lens.toFunA
 
 /-- Transport output witness from the inner context to the outer context,
   additionally relying on the input statements of the outer context. -/
 @[inline, reducible]
 def lift : OuterStmtIn × OuterWitIn → InnerStmtOut × InnerWitOut → OuterWitOut :=
-  lens.mapDir
+  lens.toFunB
 
 end Witness.Lens
 
@@ -252,12 +252,12 @@ variable {OuterStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
 /-- Projection of the witness. -/
 @[inline, reducible]
 def proj : OuterStmtIn × OuterWitOut → InnerWitOut :=
-  lens.mapPos
+  lens.toFunA
 
 /-- Lifting of the witness. -/
 @[inline, reducible]
 def lift : OuterStmtIn × OuterWitOut → InnerWitIn → OuterWitIn :=
-  lens.mapDir
+  lens.toFunB
 
 end Witness.InvLens
 

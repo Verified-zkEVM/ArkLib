@@ -16,8 +16,8 @@ open BigOperators Finset ListDecodable NNReal ReedSolomon VectorIOP
 namespace StirIOP
 
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
-         {M : ℕ} (ι : Fin (M+1) → Type) [∀ i : Fin (M+1), Fintype (ι i)]
-         [∀ i : Fin (M+1), DecidableEq (ι i)]
+         {M : ℕ} (ι : Fin (M + 1) → Type) [∀ i : Fin (M + 1), Fintype (ι i)]
+         [∀ i : Fin (M + 1), DecidableEq (ι i)]
 
 /-- **Per‑round protocol parameters:**
   For a fixed depth `M`, the reduction runs `M + 1` rounds.
@@ -26,9 +26,9 @@ variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
   and repeat certain proximity checks `repeatParamᵢ` times. -/
 structure Params (F : Type*) where
   deg : ℕ -- initial degree
-  foldingParam : Fin (M+1) → ℕ
-  φ : (i : Fin (M+1)) → (ι i) ↪ F
-  repeatParam : Fin (M+1) → ℕ
+  foldingParam : Fin (M + 1) → ℕ
+  φ : (i : Fin (M + 1)) → (ι i) ↪ F
+  repeatParam : Fin (M + 1) → ℕ
 
 /-- **Degree after `i` folds:**
   The starting degree is `deg`;
@@ -39,18 +39,18 @@ def degree (P : Params ι F) : Fin (M + 1) → ℕ :=
 
 /-- **Conditions that protocol parameters must satisfy.**
   - `h_deg` : initial degree `deg` is a power of 2
-  - `h_foldingParams` : `∑ i : Fin (M+1), foldingParamᵢ` is a power of 2
+  - `h_foldingParams` : `∑ i : Fin (M + 1), foldingParamᵢ` is a power of 2
   - `h_deg_ge` : `deg ≥ ∏ i foldingParamᵢ`
   - `h_smooth` : each `φᵢ` must embed a smooth evaluation domain
   - `h_smooth_le` : `|ιᵢ| ≤ degreeᵢ`
-  - `h_repeatP_le` : `∀ i : Fin (M+1), repeatParamᵢ + 1 ≤ degreeᵢ` -/
+  - `h_repeatP_le` : `∀ i : Fin (M + 1), repeatParamᵢ + 1 ≤ degreeᵢ` -/
 structure ParamConditions (P : Params ι F) where
   h_deg : ∃ k : ℕ, P.deg = 2^k
-  h_foldingParams : ∀ i : Fin (M+1), ∃ k : ℕ, (P.foldingParam i) = 2^k
-  h_deg_ge : P.deg ≥ ∏ i < (M+1), (P.foldingParam i)
-  h_smooth : ∀ i : Fin (M+1), Smooth (P.φ i)
-  h_smooth_le : ∀ i : Fin (M+1), Fintype.card (ι i) ≤ (degree ι P i)
-  h_repeatP_le : ∀ i : Fin (M+1), P.repeatParam i + 1 ≤ (degree ι P i)
+  h_foldingParams : ∀ i : Fin (M + 1), ∃ k : ℕ, (P.foldingParam i) = 2^k
+  h_deg_ge : P.deg ≥ ∏ i : Fin (M + 1), (P.foldingParam i)
+  h_smooth : ∀ i : Fin (M + 1), Smooth (P.φ i)
+  h_smooth_le : ∀ i : Fin (M + 1), Fintype.card (ι i) ≤ (degree ι P i)
+  h_repeatP_le : ∀ i : Fin (M + 1), P.repeatParam i + 1 ≤ (degree ι P i)
 
 /-- Distance and list‑size targets per round. -/
 structure Distances (M : ℕ) where
@@ -62,9 +62,9 @@ structure Distances (M : ℕ) where
   `hlistDecode: codeᵢ` is `(δᵢ,lᵢ)`-list decodable
 -/
 structure CodeParams (P : Params ι F) (Dist : Distances M) where
-  C : ∀ i : Fin (M+1), Set ((ι i) → F)
-  h_code : ∀ i : Fin (M+1), C i = code (P.φ i) (degree ι P i)
-  h_listDecode : ∀ i : Fin (M+1), i ≠ 0 → listDecodable (C i) (Dist.δ i) (Dist.l i)
+  C : ∀ i : Fin (M + 1), Set ((ι i) → F)
+  h_code : ∀ i : Fin (M + 1), C i = code (P.φ i) (degree ι P i)
+  h_listDecode : ∀ i : Fin (M + 1), i ≠ 0 → listDecodable (C i) (Dist.δ i) (Dist.l i)
 
 section MainTheorem
 
@@ -166,7 +166,7 @@ open LinearCode
 -/
 theorem stir_rbr_soundness
     [VCVCompatible F] {s : ℕ}
-    {P : Params ι F} {φ : (i : Fin (M+1)) → (ι i ↪ F)}
+    {P : Params ι F} {φ : (i : Fin (M + 1)) → (ι i ↪ F)}
     [h_nonempty : ∀ i : Fin (M + 1), Nonempty (ι i)]
     {hParams : ParamConditions ι P} {Dist : Distances M}
     {Codes : CodeParams ι P Dist}

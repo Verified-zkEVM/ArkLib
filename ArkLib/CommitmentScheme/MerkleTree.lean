@@ -70,11 +70,13 @@ def Cache.upper (n : ℕ) (cache : Cache α (n + 1)) :
 def Cache.leaves (n : ℕ) (cache : Cache α (n + 1)) :
     List.Vector α (2 ^ (n + 1)) := cache (Fin.last _)
 
+omit [DecidableEq α] [Inhabited α] [Fintype α] in
 @[simp]
 lemma Cache.upper_cons (n : ℕ) (leaves : List.Vector α (2 ^ (n + 1))) (cache : Cache α n) :
     Cache.upper α n (Cache.cons α n leaves cache) = cache := by
   simp [Cache.upper, Cache.cons]
 
+omit [DecidableEq α] [Inhabited α] [Fintype α] in
 @[simp]
 lemma Cache.leaves_cons (n : ℕ) (leaves : List.Vector α (2 ^ (n + 1))) (cache : Cache α n) :
     Cache.leaves α n (Cache.cons α n leaves cache) = leaves := by
@@ -132,9 +134,9 @@ theorem getRoot_trivial (a : α) : getRoot α <$> (buildMerkleTree α 0 ⟨[a], 
 @[simp]
 theorem getRoot_single (a b : α) :
     getRoot α <$> buildMerkleTree α 1 ⟨[a, b], rfl⟩ = (query (spec := spec α) () (a, b)) := by
-  simp [buildMerkleTree, buildLayer, List.Vector.ofFn, List.Vector.head, List.Vector.get]
+  simp [buildMerkleTree, buildLayer, List.Vector.ofFn, List.Vector.get]
   unfold Cache.cons getRoot
-  simp [map_flatMap, Fin.snoc]
+  simp [Fin.snoc]
 
 section
 
@@ -146,7 +148,7 @@ def generateProof {n : ℕ} (i : Fin (2 ^ n)) (cache : Cache α n) :
     List.Vector α n :=
   match n with
   | 0 => List.Vector.nil
-  | n + 1 => List.Vector.snoc (generateProof (i/2) (cache.upper))
+  | n + 1 => List.Vector.snoc (generateProof ⟨i.val / 2, by omega⟩ (cache.upper))
                               ((cache.leaves).get (findNeighbors i (Fin.last _)))
 
 /--
@@ -157,21 +159,22 @@ according to its index.
 -/
 def getPutativeRoot {n : ℕ} (i : Fin (2 ^ n)) (leaf : α) (proof : List.Vector α n) :
     OracleComp (spec α) α := do
-  if h : n = 0 then
+  match h : n with
+  | 0 => do
     -- When we have an empty proof, the root is just the leaf
     return leaf
-  else
+  | n + 1 => do
     -- Get the sign bit of `i`
     let signBit := i.val % 2
     -- Show that `i / 2` is in `Fin (2 ^ (n - 1))`
-    let i' : Fin (2 ^ (n - 1)) := i.val / 2
+    let i' : Fin (2 ^ n) := ⟨i.val / 2, by omega⟩
     if signBit = 0 then
       -- `i` is a left child
-      let newLeaf ← query (spec := spec α) () ⟨leaf, proof.get ⟨n - 1, by omega⟩⟩
+      let newLeaf ← query (spec := spec α) () ⟨leaf, proof.get (Fin.last n)⟩
       getPutativeRoot i' newLeaf (proof.drop 1)
     else
       -- `i` is a right child
-      let newLeaf ← query (spec := spec α) () ⟨proof.get ⟨n - 1, by omega⟩, leaf⟩
+      let newLeaf ← query (spec := spec α) () ⟨proof.get (Fin.last n), leaf⟩
       getPutativeRoot i' newLeaf (proof.drop 1)
 
 /-- Verify a Merkle proof `proof` that a given `leaf` at index `i` is in the Merkle tree with given
@@ -189,7 +192,7 @@ theorem buildLayer_neverFails (α : Type) [inst : DecidableEq α] [inst_1 : Sele
     (leaves : List.Vector α (2 ^ (n + 1))) :
     ((simulateQ randomOracle (buildLayer α n leaves)).run preexisting_cache).neverFails := by
   simp_rw [buildLayer]
-  simp [neverFails_query_bind]
+  simp only [range_def, Prod.mk.eta, eq_mp_eq_cast, cast_eq, bind_pure]
   -- I now require a "neverFails_mmap_iff" lemma, but I don't see one in VCVio.
   -- Feels like evidence for avoiding Vector-based merkle trees in favor of inductive-based ones.
   sorry
@@ -206,7 +209,7 @@ theorem buildMerkleTree_neverFails (α : Type) [DecidableEq α] [SelectableType 
   -- and therefore can't fail.
   induction n generalizing preexisting_cache with
   | zero =>
-    simp [buildMerkleTree, getRoot, generateProof, verifyProof, getPutativeRoot]
+    simp [buildMerkleTree]
   | succ n ih =>
     simp [buildMerkleTree, neverFails_bind_iff]
     constructor
@@ -252,8 +255,10 @@ theorem completeness [SelectableType α] {n : ℕ}
 --     simp [Fin.instGetElemFinVal]
 --   | succ n ih =>
 --     -- simp_all [Fin.getElem_fin, Vector.getElem_eq_get, Fin.eta, getRoot, Fin.val_zero,
---     --   Nat.pow_zero, Fin.zero_eta, Vector.get_zero, bind_pure_comp, id_map', probFailure_eq_zero_iff,
---     --   neverFails_bind_iff, buildMerkleTree, generateProof, LawfulMonad.bind_assoc, bind_map_left,
+--     --   Nat.pow_zero, Fin.zero_eta, Vector.get_zero, bind_pure_comp,
+-- id_map', probFailure_eq_zero_iff,
+--     --   neverFails_bind_iff, buildMerkleTree, generateProof,
+-- LawfulMonad.bind_assoc, bind_map_left,
 --     --   Cache.upper_cons, Cache.leaves_cons]
 --     -- refine ⟨?_, ?_⟩
 --     -- ·
