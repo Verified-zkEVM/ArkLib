@@ -2,8 +2,7 @@ name: Compile blueprint
 
 on:
   push:
-    # branches:
-      # - main # Trigger on pushes to ANY branch now
+    branches: [main]
   workflow_dispatch: # Allow manual triggering of the workflow from the GitHub Actions interface
   pull_request:
     branches: [main]
