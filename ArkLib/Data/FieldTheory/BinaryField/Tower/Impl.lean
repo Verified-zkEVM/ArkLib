@@ -38,7 +38,7 @@ open Polynomial
 
 section BaseDefinitions
 
-def ConcreteBinaryTower : ℕ → Type := fun k => BitVec (2^k)
+def ConcreteBinaryTower : ℕ → Type := fun k => BitVec (2 ^ k)
 
 section BitVecDCast
 instance BitVec.instDCast : DCast Nat BitVec where
@@ -56,51 +56,52 @@ theorem BitVec.dcast_id {n : Nat} (bv : BitVec n) :
   DCast.dcast (Eq.refl n) bv = bv := by
   simp only [BitVec.instDCast.dcast_id, id_eq]
 
-theorem BitVec.dcast_bitvec_eq {l r val: ℕ} (h_width_eq: l = r):
+theorem BitVec.dcast_bitvec_eq {l r val : ℕ} (h_width_eq : l = r):
     dcast h_width_eq (BitVec.ofNat l val) = BitVec.ofNat r val := by
   subst h_width_eq
   rw [dcast_eq]
 
-@[simp] theorem BitVec.cast_zero {n m: ℕ} (h : n = m) : BitVec.cast h 0 = 0 := rfl
-@[simp] theorem BitVec.cast_one {n m: ℕ} (h : n = m) : BitVec.cast h 1 = 1#m := by
+@[simp] theorem BitVec.cast_zero {n m : ℕ} (h : n = m) : BitVec.cast h 0 = 0 := rfl
+@[simp] theorem BitVec.cast_one {n m : ℕ} (h : n = m) : BitVec.cast h 1 = 1#m := by
   simp only [BitVec.ofNat_eq_ofNat, BitVec.cast_ofNat]
-@[simp] theorem BitVec.dcast_zero {n m: ℕ} (h : n = m) : DCast.dcast h (0#n) = 0#m := rfl
-@[simp] theorem BitVec.dcast_one {n m: ℕ} (h : n = m) : DCast.dcast h (1#n) = 1#m := by
+@[simp] theorem BitVec.dcast_zero {n m : ℕ} (h : n = m) : DCast.dcast h (0#n) = 0#m := rfl
+@[simp] theorem BitVec.dcast_one {n m : ℕ} (h : n = m) : DCast.dcast h (1#n) = 1#m := by
   rw [←BitVec.bitvec_cast_eq_dcast]
   exact BitVec.cast_one (h:=h)
 
-theorem BitVec.dcast_bitvec_toNat_eq {w w2: ℕ} (x: BitVec w) (h_width_eq: w = w2):
+theorem BitVec.dcast_bitvec_toNat_eq {w w2 : ℕ} (x : BitVec w) (h_width_eq : w = w2):
     BitVec.toNat x = BitVec.toNat (dcast (h_width_eq) x) := by
   subst h_width_eq
   rw [dcast_eq]
 
-theorem BitVec.dcast_bitvec_eq_zero {l r: ℕ} (h_width_eq: l = r):
+theorem BitVec.dcast_bitvec_eq_zero {l r : ℕ} (h_width_eq : l = r):
   dcast (h_width_eq) 0#(l) = 0#(r) := by
   exact BitVec.dcast_bitvec_eq (l:=l) (r:=r) (val:=0) (h_width_eq:=h_width_eq)
 
-theorem BitVec.dcast_bitvec_extractLsb_eq {w hi1 lo1 hi2 lo2 : ℕ} (x: BitVec w) (h_lo_eq: lo1 = lo2)
-  (h_width_eq: hi1 - lo1 + 1 = hi2 - lo2 + 1):
-  dcast h_width_eq (BitVec.extractLsb (hi:=hi1) (lo:=lo1) x)
-    = BitVec.extractLsb (hi:=hi2) (lo:=lo2) (x) := by
+theorem BitVec.dcast_bitvec_extractLsb_eq {w hi1 lo1 hi2 lo2 : ℕ}
+    (x : BitVec w) (h_lo_eq : lo1 = lo2)
+    (h_width_eq : hi1 - lo1 + 1 = hi2 - lo2 + 1):
+    dcast h_width_eq (BitVec.extractLsb (hi:=hi1) (lo:=lo1) x)
+      = BitVec.extractLsb (hi:=hi2) (lo:=lo2) (x) := by
   unfold BitVec.extractLsb BitVec.extractLsb'
   have xToNat_eq: x.toNat >>> lo1 = x.toNat >>> lo2 := by rw [h_lo_eq]
   rw [xToNat_eq]
   rw! [h_width_eq]
   rw [BitVec.dcast_id]
 
-theorem BitVec.dcast_dcast_bitvec_extractLsb_eq {w hi lo: ℕ} (x: BitVec w)
-  (h_width_eq: w = hi - lo + 1): dcast h_width_eq (dcast (h_width_eq.symm)
+theorem BitVec.dcast_dcast_bitvec_extractLsb_eq {w hi lo : ℕ} (x : BitVec w)
+  (h_width_eq : w = hi - lo + 1): dcast h_width_eq (dcast (h_width_eq.symm)
   (BitVec.extractLsb (hi:=hi) (lo:=lo) x)) = BitVec.extractLsb (hi:=hi) (lo:=lo) x := by
   simp only [dcast, BitVec.cast_cast, BitVec.cast_eq]
 
-theorem BitVec.eq_mp_eq_dcast {w w2: ℕ} (x: BitVec w) (h_width_eq: w = w2)
-  (h_bitvec_eq: BitVec w = BitVec w2 := by rw [h_width_eq]):
+theorem BitVec.eq_mp_eq_dcast {w w2 : ℕ} (x : BitVec w) (h_width_eq : w = w2)
+  (h_bitvec_eq : BitVec w = BitVec w2 := by rw [h_width_eq]):
   Eq.mp (h:=h_bitvec_eq) (a:=x) = dcast (h_width_eq) (x) := by
   rw [eq_mp_eq_cast] -- convert Eq.mp into root.cast
   rw [dcast_eq_root_cast]
 
 theorem BitVec.extractLsb_concat_hi {hi_size lo_size : ℕ} (hi : BitVec hi_size)
-  (lo : BitVec lo_size) (h_hi: hi_size > 0):
+  (lo : BitVec lo_size) (h_hi : hi_size > 0):
   BitVec.extractLsb (hi:=hi_size + lo_size - 1) (lo:=lo_size)
   (BitVec.append (msbs:=hi) (lsbs:=lo)) = dcast (by
     rw [←Nat.sub_add_comm (by omega), Nat.sub_add_cancel (by omega), Nat.add_sub_cancel]
@@ -119,12 +120,12 @@ theorem BitVec.extractLsb_concat_lo {hi_size lo_size : ℕ} (hi : BitVec hi_size
     rw [←Nat.sub_add_comm (h:=by omega), Nat.sub_add_cancel (h:=by omega), Nat.sub_zero]
   ) lo := by
   simp only [BitVec.extractLsb]
-  simp [BitVec.extractLsb'_append_eq_ite (start:=0) (len:=lo_size)]
+  simp
   simp only [BitVec.extractLsb', Nat.shiftRight_zero, BitVec.ofNat_toNat]
   have lo_eq: lo = BitVec.ofNat lo_size (lo.toNat) := by rw [BitVec.ofNat_toNat, BitVec.setWidth_eq]
   rw [lo_eq]
   rw [dcast_bitvec_eq] -- un-dcast
-  simp only [dcast_bitvec_eq, BitVec.ofNat_toNat, BitVec.setWidth_eq]
+  simp only [BitVec.ofNat_toNat, BitVec.setWidth_eq]
   -- ⊢ BitVec.setWidth (n - 1 + 1) (hi ++ lo) = BitVec.setWidth (n - 1 + 1) lo
   rw [BitVec.setWidth_append]
   have h_le: lo_size - 1 + 1 ≤ lo_size := by rw [Nat.sub_add_cancel (by omega)]
@@ -248,7 +249,7 @@ def width (k : ℕ) : ℕ := 2^k
 def fromNat {k : ℕ} (n : Nat) : ConcreteBinaryTower k :=
   BitVec.ofNat (2^k) n
 
-@[simp] theorem fromNat_toNat_eq_self {k : ℕ} (bv : BitVec (2^k)) :
+@[simp] theorem fromNat_toNat_eq_self {k : ℕ} (bv : BitVec (2 ^ k)) :
   (fromNat (BitVec.toNat bv) : ConcreteBinaryTower k) = bv := by
   simp only [BitVec.ofNat_toNat, BitVec.setWidth_eq, fromNat, ConcreteBinaryTower]
 
@@ -391,13 +392,13 @@ noncomputable def fromConcreteBTF0 : ConcreteBinaryTower 0 → (GF(2)) :=
 lemma nsmul_succ {k : ℕ} (n : ℕ) (x : ConcreteBinaryTower k) :
   (if ↑n.succ % 2 = 0 then zero else x) = (if ↑n % 2 = 0 then zero else x) + x := by
   have h : ↑n.succ % 2 = (↑n % 2 + 1) % 2 := by
-    simp [Nat.cast_succ]
+    simp
   have zero_is_0: (zero: ConcreteBinaryTower k) = 0 := by rfl
   have h_n_mod_le: n % 2 < 2 := Nat.mod_lt n (by norm_num)
   match h_n_mod: n % 2 with
   | Nat.zero =>
     rw [h]
-    have h1 : (n + 1) % 2 = 1 := by simp [Nat.add_mod, h_n_mod, zero_add]
+    have h1 : (n + 1) % 2 = 1 := by simp [Nat.add_mod, h_n_mod]
     simp [h1]; rw [(add_zero x).symm]; rw [←add_assoc, ←add_comm];
     rw [zero_is_0];
     rw [zero_add];
@@ -581,7 +582,7 @@ theorem BitVec.extractLsb_eq_and_pow_2_minus_1_ofNat {n num_bits : Nat}
   BitVec.extractLsb (hi:= num_bits-1) (lo := 0) x =
     BitVec.ofNat (num_bits - 1 - 0 + 1) (x.toNat &&& (2^num_bits-1)) := by
   unfold BitVec.extractLsb BitVec.extractLsb'
-  simp only [Nat.sub_zero, Nat.add_zero, Nat.shiftRight_zero]
+  simp only [Nat.sub_zero, Nat.shiftRight_zero]
   have eq: num_bits - 1 + 1 = num_bits := Nat.sub_add_cancel (h:=h_num_bits)
   rw [eq]
   have lhs: BitVec.ofNat num_bits x.toNat = BitVec.ofNat num_bits (x.toNat % 2^num_bits) := by
@@ -656,7 +657,7 @@ theorem join_eq_iff_dcast_extractLsb {k : ℕ} (h_pos : k > 0) (x : ConcreteBina
     have h_x: x = dcast (h_sum_two_same_pow2 h_pos)
       (BitVec.append (msbs:=hi_btf) (lsbs:=lo_btf)) := by
       rw [h_join]
-      simp only [BitVec.cast_eq]
+      simp only
       rw [BitVec.eq_mp_eq_dcast]
     have h_x_symm := dcast_symm (hb:=h_x.symm)
     have h_hi : hi_btf = dcast (h_sub_middle h_pos)
@@ -850,7 +851,7 @@ theorem join_add_join {k: ℕ} (h_pos: k > 0) (hi₀ lo₀ hi₁ lo₁: Concrete
 theorem split_zero {k: ℕ} (h_pos: k > 0): split h_pos zero = (zero, zero) := by
   rw [split]
   simp only [zero, BitVec.zero_eq, BitVec.extractLsb_ofNat, Nat.zero_mod, Nat.zero_shiftRight,
-    Nat.sub_zero, Nat.shiftRight_zero, Prod.mk.injEq, BitVec.dcast_bitvec_eq_zero, and_self]
+    Nat.sub_zero, Nat.shiftRight_zero, BitVec.dcast_bitvec_eq_zero]
 
 lemma one_bitvec_toNat {width: ℕ} (h_width: width > 0): (1#width).toNat = 1 := by
   simp only [BitVec.toNat_ofNat, Nat.one_mod_two_pow_eq_one, h_width]
@@ -964,7 +965,7 @@ instance (k: ℕ) : Preorder (ConcreteBinaryTower k) where
   le_refl := fun x => BitVec.le_refl x
   le_trans := fun x y z hxy hyz => BitVec.le_trans hxy hyz
   lt := fun x y => x < y
-  lt_iff_le_not_le := fun x y => by
+  lt_iff_le_not_ge := fun x y => by
     unfold ConcreteBinaryTower at x y
     have bitvec_statement := (BitVec.not_lt_iff_le : ¬x < y ↔ y ≤ x)
     -- We need to prove: x < y ↔ x ≤ y ∧ ¬y ≤ x
@@ -1023,9 +1024,9 @@ theorem concrete_eq_zero_or_eq_one {k: ℕ} {a : ConcreteBinaryTower k} (h_k_zer
       rw [this, ha0]
       -- zero (k:=k) = Eq.mpr ... (zero (k:=0))
       have : zero = Eq.mpr (congrArg ConcreteBinaryTower h_k_zero) (zero (k:=0)) := by
-        simp only [zero, eq_mpr_eq_cast, eq_mp_eq_cast, cast_cast, cast_eq, BitVec.zero]
+        simp only [zero, eq_mpr_eq_cast, BitVec.zero]
         rw [←dcast_eq_root_cast]
-        simp [BitVec.dcast_bitvec_eq]
+        simp
         rw [BitVec.dcast_zero] -- ⊢ 1 = 2^k
         exact h_2_pow_k_eq_1.symm
       rw [this]
@@ -1035,9 +1036,9 @@ theorem concrete_eq_zero_or_eq_one {k: ℕ} {a : ConcreteBinaryTower k} (h_k_zer
         simp only [a0_is_eq_mp_a, eq_mp_eq_cast, eq_mpr_eq_cast, cast_cast, cast_eq]
       rw [this, ha1]
       have : one = Eq.mpr (congrArg ConcreteBinaryTower h_k_zero) (one (k:=0)) := by
-        simp only [one, eq_mpr_eq_cast, eq_mp_eq_cast, cast_cast, cast_eq]
+        simp only [one, eq_mpr_eq_cast]
         rw [←dcast_eq_root_cast]
-        simp [BitVec.dcast_bitvec_eq]
+        simp
         rw [BitVec.dcast_one] -- ⊢ 1 = 2^k
         exact h_2_pow_k_eq_1.symm
       rw [this]
@@ -1047,7 +1048,7 @@ theorem concrete_eq_zero_or_eq_one {k: ℕ} {a : ConcreteBinaryTower k} (h_k_zer
 lemma add_eq_one_iff (a b : ConcreteBinaryTower 0) :
   a + b = 1 ↔ (a = 0 ∧ b = 1) ∨ (a = 1 ∧ b = 0) := by
   rcases eq_zero_or_eq_one (a := a) with (ha | ha)
-  · simp [ha, concrete_mul, add_self_cancel, zero_is_0]  -- a = zero
+  · simp [ha, zero_is_0]  -- a = zero
   · simp [ha, one_is_1]
 
 def concrete_pow_nat {k: ℕ} (x : ConcreteBinaryTower k) (n : ℕ) : ConcreteBinaryTower k :=
@@ -1137,14 +1138,14 @@ lemma if_zero_then_zero_else_self (x : ConcreteBinaryTower 0) :
 lemma concrete_mul_left_distrib0 (a b c : ConcreteBinaryTower 0) :
   concrete_mul a (b + c) = concrete_mul a b + concrete_mul a c := by
   rcases eq_zero_or_eq_one (a := a) with (ha | ha)
-  · simp [ha, concrete_mul, add_self_cancel, zero_is_0]  -- a = zero
-  · simp [ha, concrete_mul, add_self_cancel, zero_is_0, concrete_one_ne_zero, one_is_1];
+  · simp [ha, concrete_mul, zero_is_0]  -- a = zero
+  · simp [ha, concrete_mul, zero_is_0, one_is_1];
     rcases eq_zero_or_eq_one (a := b + c) with (hb_add_c | hb_add_c)
     · simp [hb_add_c, zero_is_0];
       rw [zero_is_0] at hb_add_c
       have b_eq_c: b = c := (add_eq_zero_iff_eq b c).mp hb_add_c
       simp only [b_eq_c, add_self_cancel]
-    · simp [hb_add_c, concrete_one_ne_zero, one_is_1, zero_is_0];
+    · simp [hb_add_c, one_is_1];
       have c_cases := (add_eq_one_iff b c).mp hb_add_c
       rcases eq_zero_or_eq_one (a := b) with (hb | hb)
       · simp [hb, zero_is_0];
@@ -1155,7 +1156,7 @@ lemma concrete_mul_left_distrib0 (a b c : ConcreteBinaryTower 0) :
           simp only [c_cases, ne_eq, one_ne_zero, not_false_eq_true]
         rw [if_neg c_ne_0]
         exact c_cases.symm
-      · rw [one_is_1] at hb; simp [hb, concrete_one_ne_zero];
+      · rw [one_is_1] at hb; simp [hb];
         simp [hb] at c_cases
         exact c_cases
 
@@ -1208,7 +1209,7 @@ def intCast_ofNat {k:ℕ} (n : ℕ) : intCast (k:=k) (n : ℤ) = natCast n := by
   · -- Case: n % 2 ≠ 0
     have h' : n % 2 = 1 := by omega  -- For n : ℕ, if not 0, then 1
     have h_int : (n : ℤ) % 2 = 1 := by omega  -- Coercion preserves modulo
-    simp only [intCast, natCast, h, h_int, h']
+    simp only [intCast, natCast, h_int, h']
     rfl
 
 @[simp] lemma my_neg_mod_two (m : ℤ) : (-m) % 2 = if m % 2 = 0 then 0 else 1 := by omega
@@ -1372,7 +1373,7 @@ lemma concrete_one_mul {recArg : (m : ℕ) → m < k → ConcreteBTFStepResult m
   unfold concrete_mul
   by_cases h_k_zero : k = 0
   · -- Base case: k = 0
-    simp [h_k_zero, ↓reduceDIte, dif_pos, one_is_1, zero_is_0]; intro h; exact h.symm
+    simp [h_k_zero, ↓reduceDIte, one_is_1, zero_is_0]; intro h; exact h.symm
   · -- Inductive case: k > 0
     have h_k_gt_0 : k > 0 := by omega
     let recArgPrevLevel := recArg (k-1) (Nat.sub_one_lt_of_lt h_k_gt_0)
@@ -1394,7 +1395,7 @@ lemma concrete_mul_one {recArg : (m : ℕ) → m < k → ConcreteBTFStepResult m
   unfold concrete_mul
   by_cases h_k_zero : k = 0
   · -- Base case: k = 0
-    simp [h_k_zero, ↓reduceDIte, dif_pos, one_is_1, zero_is_0];
+    simp [h_k_zero, ↓reduceDIte, one_is_1, zero_is_0];
     conv =>
       lhs
       simp only [if_self_rfl]
@@ -1759,7 +1760,7 @@ lemma concrete_mul_inv_cancel {recArg : (m : ℕ) → m < k → ConcreteBTFStepR
         have h_a₀ : (split h_k_gt_0 a).2 = a₀ := by rfl
         simp [h_a₁, h_a₀] -- resolve the match of split a
         -- distribute all concrete_mul over the addition
-        simp only [recArgPrevLevel.mul_right_distrib, recArgPrevLevel.mul_left_distrib]
+        simp only [recArgPrevLevel.mul_left_distrib]
         -- NOTE: we have to exploit the special structure of concrete_inv for this
         sorry
 
@@ -1767,8 +1768,8 @@ lemma concrete_inv_one:
   concrete_inv (k:=k) 1 = 1 := by
   unfold concrete_inv
   by_cases h_k_zero : k = 0
-  · simp only [h_k_zero, ↓reduceIte]; norm_num
-  · simp only [h_k_zero, ↓reduceIte]; norm_num
+  · simp only [h_k_zero]; norm_num
+  · simp only [h_k_zero]; norm_num
 
 instance instHDivConcreteBTF: HDiv (ConcreteBinaryTower k) (ConcreteBinaryTower k)
   (ConcreteBinaryTower k) where hDiv a b := a * (concrete_inv b)

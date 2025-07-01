@@ -154,7 +154,7 @@ theorem induction_append_left {m n : ℕ} {motive : Fin (m + n + 1) → Sort*} {
       induction (motive := motive) zero succ ⟨i, by omega⟩ =
         @induction m (fun j => motive ⟨j, by omega⟩) zero (fun j x => succ ⟨j, by omega⟩ x) i := by
   induction i using Fin.induction with
-  | zero => simp [induction_zero, Fin.cast]
+  | zero => simp [induction_zero]; rfl
   | succ i ih =>
     simp at ih ⊢
     have : (⟨i.1 + 1, by omega⟩ : Fin (m + n + 1)) = (⟨i, by omega⟩ : Fin (m + n)).succ := rfl
@@ -171,7 +171,7 @@ theorem induction_append_right {m n : ℕ} {motive : Fin (m + n + 1) → Sort*} 
         (fun i x => succ (i.natAdd m) x) i := by
   induction i using Fin.induction with
   | zero =>
-    simp [castAdd, castLE, last, natAdd]
+    simp [castAdd, castLE, last, natAdd, HMod.hMod, Mod.mod, Nat.mod]
     rw [induction_append_left (i := ⟨m, by omega⟩)]
     rfl
   | succ i ih =>
@@ -279,7 +279,7 @@ theorem take_addCases'_left {n' : ℕ} {β : Fin n' → Sort u} (m : ℕ) (h : m
     take m (Nat.le_add_right_of_le h) (addCases' u v) i =
       (append_left α β (castLE h i)) ▸ (take m h u i) := by
   have : i < n := Nat.lt_of_lt_of_le i.isLt h
-  simp [take_apply, addCases', addCases, this, cast_eq_iff_heq, castLT, castLE]
+  simp [take_apply, addCases', addCases, this, cast_eq_iff_heq, castLE]
 
 -- theorem take_addCases'_right {n' : ℕ} {β : Fin n' → Sort u} (m : ℕ) (h : m ≤ n')
 --     (u : (i : Fin n) → α i) (v : (j : Fin n') → β j) (i : Fin (n + m)) :
@@ -385,7 +385,7 @@ theorem drop_tail {α : Fin (n + 1) → Sort*} (m : ℕ) (h : m ≤ n) (v : (i :
 
 theorem drop_repeat {α : Type*} {n' : ℕ} (m : ℕ) (h : m ≤ n) (a : Fin n' → α) :
     HEq (drop (m * n') (Nat.mul_le_mul_right n' h) (Fin.repeat n a)) (Fin.repeat (n - m) a) :=
-  (Fin.heq_fun_iff (Nat.sub_mul n m n').symm).mpr (fun i => by simp [cast, modNat])
+  (Fin.heq_fun_iff (Nat.sub_mul n m n').symm).mpr (fun i => by simp [modNat])
 
 end Drop
 
@@ -465,7 +465,7 @@ theorem divSum?_is_some_iff_lt_sum {m : ℕ} {n : Fin m → ℕ} {k : ℕ} :
     obtain ⟨i, hi⟩ := h
     have : i.val + 1 + (m - i.val - 1) = m := by omega
     rw [← Fin.sum_congr' _ this, Fin.sum_univ_add]
-    simp only [cast, coe_castAdd, coe_natAdd, gt_iff_lt]
+    simp only [gt_iff_lt]
     exact Nat.lt_add_right _ hi
   · intro isLt
     have : m ≠ 0 := fun h => by subst h; simp at isLt
@@ -486,7 +486,7 @@ theorem sum_le_of_divSum?_eq_some {m : ℕ} {n : Fin m → ℕ} {k : Fin (∑ j,
   · have : (i.val - 1) + 1 = i.val := by omega
     rw [← Fin.sum_congr' _ this]
     have := Fin.find_min (Option.mem_def.mp hi) (j := ⟨i.val - 1, by omega⟩) <| Fin.lt_def.mpr
-      (by simp only [and_true]; omega)
+      (by simp only; omega)
     exact not_lt.mp this
 
 def modSum {m : ℕ} {n : Fin m → ℕ} (k : Fin (∑ j, n j)) : Fin (n (divSum k)) :=
@@ -494,7 +494,7 @@ def modSum {m : ℕ} {n : Fin m → ℕ} (k : Fin (∑ j, n j)) : Fin (n (divSum
     have divSum_mem : divSum k ∈ divSum? n k := by
       simp only [divSum, divSum?, Option.mem_def, Option.some_get]
     have hk : k < ∑ j, n (Fin.castLE (divSum k).isLt j) := Fin.find_spec _ divSum_mem
-    simp only [Fin.sum_univ_succAbove _ (Fin.last (divSum k)), val_last, succAbove_last] at hk
+    simp only [Fin.sum_univ_succAbove _ (Fin.last (divSum k)), succAbove_last] at hk
     rw [Nat.sub_lt_iff_lt_add' (sum_le_of_divSum?_eq_some divSum_mem)]
     rw [add_comm]
     exact hk⟩
@@ -532,7 +532,7 @@ theorem finSigmaFinEquiv'_apply {m : ℕ} {n : Fin m → ℕ} (k : (i : Fin m) �
 
 theorem finSigmaFinEquiv'_pair {m : ℕ} {n : Fin m → ℕ} (i : Fin m) (k : Fin (n i)) :
     (finSigmaFinEquiv' ⟨i, k⟩ : ℕ) = ∑ j, n (Fin.castLE i.isLt.le j) + k := by
-  simp only [finSigmaFinEquiv', ↓reduceDIte, Equiv.ofRightInverseOfCardLE_apply]
+  simp only [finSigmaFinEquiv', Equiv.ofRightInverseOfCardLE_apply]
 
 end FinSigmaFinEquiv
 
@@ -613,7 +613,7 @@ theorem dfoldl_congr_dcast {n : ℕ}
         cast (by have := funext hα; subst this; simp) (dfoldl n (fun i => β (α' i)) f' init') := by
   have hα' : α = α' := funext hα
   cases hα'
-  simp_all [dcast_id, comp_apply]
+  simp_all only [dcast_eq, cast_eq]
   simp at hf
   have hf' : f = f' := funext₂ hf
   cases hf'
@@ -630,7 +630,7 @@ theorem dfoldl_dcast {ι : Type v} {β : ι → Type u} [DCast ι β]
           (fun i a => dcast (hα _) (f i (dcast (hα _).symm a))) (dcast (hα 0) init) := by
   have hα' : α = α' := funext hα
   subst hα'
-  simp_all [dcast_id, comp_apply]
+  simp_all only [dcast_eq]
 
 -- theorem dfoldl_dcast₂ {n : ℕ}
 --     {ι₁ : Type v} {ι₂ : ι₁ → Type w} {α α' : Fin (n + 1) → (i : ι₁) → ι₂ i}

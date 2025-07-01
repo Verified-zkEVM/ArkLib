@@ -480,12 +480,12 @@ class ProverFirst (pSpec : ProtocolSpec n) [NeZero n] where
 class VerifierFirst (pSpec : ProtocolSpec n) [NeZero n] where
   verifier_first' : (pSpec 0).1 = .V_to_P
 
-class ProverLast (pSpec : ProtocolSpec n) [NeZero n] where
-  prover_last' : (pSpec (n - 1)).1 = .P_to_V
+class ProverLast (pSpec : ProtocolSpec n) [inst : NeZero n] where
+  prover_last' : (pSpec ⟨n - 1, by simp [Nat.pos_of_neZero]⟩).1 = .P_to_V
 
 /-- A protocol specification with the verifier speaking last -/
 class VerifierLast (pSpec : ProtocolSpec n) [NeZero n] where
-  verifier_last' : (pSpec (n - 1)).1 = .V_to_P
+  verifier_last' : (pSpec ⟨n - 1, by simp [Nat.pos_of_neZero]⟩).1 = .V_to_P
 
 class ProverOnly (pSpec : ProtocolSpec 1) extends ProverFirst pSpec
 
@@ -505,11 +505,11 @@ theorem verifier_first (pSpec : ProtocolSpec n) [NeZero n] [h : VerifierFirst pS
 
 @[simp]
 theorem prover_last (pSpec : ProtocolSpec n) [NeZero n] [h : ProverLast pSpec] :
-    (pSpec (n - 1)).1 = .P_to_V := h.prover_last'
+    (pSpec ⟨n - 1, by simp [Nat.pos_of_neZero]⟩).1 = .P_to_V := h.prover_last'
 
 @[simp]
 theorem verifier_last (pSpec : ProtocolSpec n) [NeZero n] [h : VerifierLast pSpec] :
-    (pSpec (n - 1)).1 = .V_to_P := h.verifier_last'
+    (pSpec ⟨n - 1, by simp [Nat.pos_of_neZero]⟩).1 = .V_to_P := h.verifier_last'
 
 section SingleMessage
 
@@ -615,9 +615,7 @@ theorem FullTranscript.mk2_eq_snoc_snoc {pSpec : ProtocolSpec 2} (msg0 : pSpec.g
     (msg1 : pSpec.getType 1) :
       FullTranscript.mk2 msg0 msg1 = ((default : pSpec.Transcript 0).concat msg0).concat msg1 := by
   unfold FullTranscript.mk2 Transcript.concat
-  simp only [default, Nat.mod_succ, Nat.lt_one_iff,
-    not_lt_zero', ↓reduceDIte, Fin.zero_eta, Fin.isValue, Nat.reduceMod, Nat.succ_eq_add_one,
-    Nat.reduceAdd, Fin.mk_one]
+  simp only [default, Fin.isValue]
   funext i
   by_cases hi : i = 0
   · subst hi; simp [Fin.snoc]

@@ -41,7 +41,7 @@ scoped notation:80 a " *ᵥ " b => dotProduct a b
 
 def dotProduct_cons (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
   dotProduct (cons a b) (cons c d) = a * c + dotProduct b d := by
-  simp [dotProduct, cons, get, foldl]
+  simp [dotProduct, cons, foldl]
   -- rw [← Array.foldl_toList]
   sorry
 
@@ -122,47 +122,47 @@ def zsmul [SMul ℤ R] (m : ℤ) (p : MlPoly R n) : MlPoly R n := p.map (fun a =
 instance [AddCommMonoid R] : AddCommMonoid (MlPoly R n) where
   add := add
   add_assoc a b c := by
-    show Vector.zipWith (· + ·) (Vector.zipWith (· + ·) a b) c =
+    change Vector.zipWith (· + ·) (Vector.zipWith (· + ·) a b) c =
       Vector.zipWith (· + ·) a (Vector.zipWith (· + ·) b c)
     ext; simp [add_assoc]
   add_comm a b := by
-    show Vector.zipWith (· + ·) a b = Vector.zipWith (· + ·) b a
+    change Vector.zipWith (· + ·) a b = Vector.zipWith (· + ·) b a
     ext; simp [add_comm]
   zero := zero
   zero_add a := by
-    show Vector.zipWith (· + ·) (Vector.replicate (2 ^ n) 0) a = a
+    change Vector.zipWith (· + ·) (Vector.replicate (2 ^ n) 0) a = a
     ext; simp
   add_zero a := by
-    show Vector.zipWith (· + ·) a (Vector.replicate (2 ^ n) 0) = a
+    change Vector.zipWith (· + ·) a (Vector.replicate (2 ^ n) 0) = a
     ext; simp
   nsmul := nsmul
   nsmul_zero a := by
-    show Vector.map (fun a ↦ 0 • a) a = Vector.replicate (2 ^ n) 0
+    change Vector.map (fun a ↦ 0 • a) a = Vector.replicate (2 ^ n) 0
     ext; simp
   nsmul_succ n a := by
-    show a.map (fun a ↦ (n + 1) • a) = Vector.zipWith (· + ·) (Vector.map (fun a ↦ n • a) a) a
+    change a.map (fun a ↦ (n + 1) • a) = Vector.zipWith (· + ·) (Vector.map (fun a ↦ n • a) a) a
     ext i; simp; exact AddMonoid.nsmul_succ n a[i]
 
 instance [Semiring R] : Module R (MlPoly R n) where
   smul := smul
   one_smul a := by
-    show Vector.map (fun a ↦ 1 * a) a = a
+    change Vector.map (fun a ↦ 1 * a) a = a
     ext; simp
   mul_smul r s a := by
     simp [HSMul.hSMul, smul]
   smul_zero a := by
-    show Vector.map (fun a_1 ↦ a * a_1) (Vector.replicate (2 ^ n) 0) = Vector.replicate (2 ^ n) 0
+    change Vector.map (fun a_1 ↦ a * a_1) (Vector.replicate (2 ^ n) 0) = Vector.replicate (2 ^ n) 0
     ext; simp
   smul_add r a b := by
-    show Vector.map (fun a ↦ r * a) (Vector.zipWith (· + ·) a b) =
+    change Vector.map (fun a ↦ r * a) (Vector.zipWith (· + ·) a b) =
       Vector.zipWith (· + ·) (Vector.map (fun a ↦ r * a) a) (Vector.map (fun a ↦ r * a) b)
     ext; simp [left_distrib]
   add_smul r s a := by
-    show Vector.map (fun a ↦ (r + s) * a) a =
+    change Vector.map (fun a ↦ (r + s) * a) a =
       Vector.zipWith (· + ·) (Vector.map (fun a ↦ r * a) a) (Vector.map (fun a ↦ s * a) a)
     ext; simp [right_distrib]
   zero_smul a := by
-    show Vector.map (fun a ↦ 0 * a) a = Vector.replicate (2 ^ n) 0
+    change Vector.map (fun a ↦ 0 * a) a = Vector.replicate (2 ^ n) 0
     ext; simp
 
 variable [CommRing R]
@@ -228,12 +228,12 @@ Example: `lagrangeBasis #v[(1 : ℤ), 2, 3]` should return `[0, 0, 0, 0, 2, -3, 
     `eq([1,2,3], [1,1,1]) = (1·1 + 0·0)·(2·1 + (-1)·0)·(3·1 + (-2)·0) = 1·2·3 = 6`
 -/
 example : lagrangeBasis #v[(1 : ℤ), 2, 3] = #v[0, 0, 0, 0, 2, -3, -4, 6] := by
-  simp [lagrangeBasis, lagrangeBasisAux, Array.ofFn, Array.ofFn.go]
+  simp [lagrangeBasis, lagrangeBasisAux]
 
 /-- The `i`-th element of `lagrangeBasis w` is the product of `w[j]` if the `j`-th bit of `i` is 1,
     and `1 - w[j]` if the `j`-th bit of `i` is 0. -/
 theorem lagrangeBasis_getElem {w : Vector R n} (i : Fin (2 ^ n)) :
-    (lagrangeBasis w)[i] = ∏ j : Fin n, if (BitVec.ofFin i).getLsb' j then w[j] else 1 - w[j] := by
+    (lagrangeBasis w)[i] = ∏ j : Fin n, if (BitVec.ofFin i).getLsb j then w[j] else 1 - w[j] := by
   sorry
 
 variable {S : Type*} [CommRing S]
@@ -272,8 +272,8 @@ If the `j`‑th least significant bit of the index `i` is `1`, we replace `v[i]`
   fun v =>
     letI stride : ℕ := 2 ^ j.val    -- distance to the "partner" index
     Vector.ofFn (fun i : Fin (2 ^ n) =>
-      if (BitVec.ofFin i).getLsb' j then
-        v[i] + v[i - stride]
+      if (BitVec.ofFin i).getLsb j then
+        v[i] + v[i - stride]'(Nat.sub_lt_of_lt i.isLt)
       else
         v[i])
 
@@ -298,8 +298,8 @@ If the `j`‑th least significant bit of the index `i` is `1`, we replace `v[i]`
   fun v =>
     letI stride : ℕ := 2 ^ j.val  -- distance to the "partner" index
     Vector.ofFn (fun i : Fin (2 ^ n) =>
-      if (BitVec.ofFin i).getLsb' j then
-        v[i] - v[i - stride]
+      if (BitVec.ofFin i).getLsb j then
+        v[i] - v[i - stride]'(Nat.sub_lt_of_lt i.isLt)
       else
         v[i])
 
