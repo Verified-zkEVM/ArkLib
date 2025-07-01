@@ -176,7 +176,7 @@ namespace Verifier
     The soundness error of the seqComposed verifier is the sum of the individual errors. -/
 theorem seqCompose_soundness
     (lang : ∀ i, Set (Stmt i))
-    (soundnessError : Fin (m + 1) → ℝ≥0)
+    (soundnessError : Fin m → ℝ≥0)
     (V : ∀ i, Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
     (h : ∀ i, (V i).soundness (lang i.castSucc) (lang i.succ) (soundnessError i)) :
       (Verifier.seqCompose V).soundness (lang 0) (lang (Fin.last m))
@@ -188,7 +188,7 @@ theorem seqCompose_soundness
     The knowledge error of the seqComposed verifier is the sum of the individual errors. -/
 theorem seqCompose_knowledgeSoundness
     (rel : ∀ i, Set (Stmt i × Wit i))
-    (knowledgeError : Fin (m + 1) → ℝ≥0)
+    (knowledgeError : Fin m → ℝ≥0)
     (V : ∀ i, Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
     (h : ∀ i, (V i).knowledgeSoundness (rel i.castSucc) (rel i.succ) (knowledgeError i)) :
       (Verifier.seqCompose V).knowledgeSoundness (rel 0) (rel (Fin.last m))

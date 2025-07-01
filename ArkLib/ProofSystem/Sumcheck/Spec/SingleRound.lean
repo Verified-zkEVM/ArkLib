@@ -174,8 +174,8 @@ def outputRelation : Set ((StmtOut R × (∀ i, OStmtOut R deg i)) × Unit) :=
 def pSpec : ProtocolSpec 2 := ![(.P_to_V, R⦃≤ deg⦄[X]), (.V_to_P, R)]
 
 instance : IsSingleRound (pSpec R deg) where
-  prover_first' := by simp [pSpec, getDir]
-  verifier_last' := by simp [pSpec, getDir, Neg.neg]
+  prover_first' := by simp [pSpec]
+  verifier_last' := by simp [pSpec]
 
 instance instOracleInterfaceMessagePSpec : OracleInterface ((pSpec R deg).Message default) := by
   simp [pSpec, default]
@@ -241,7 +241,7 @@ def oracleVerifier : OracleVerifier oSpec (StmtIn R) (OStmtIn R deg) (StmtOut R)
     -- Needs to convert `evals` to `R⦃≤ deg⦄[X]`, and then evaluate at `chal`
     pure (sorry, chal default)
   embed := .inl
-  hEq := fun i => by simp [pSpec, default]
+  hEq := fun i => by simp [pSpec]
 
 def oracleReduction : OracleReduction oSpec (StmtIn R) (OStmtIn R deg) Unit
                                             (StmtOut R) (OStmtOut R deg) Unit (pSpec R deg) where
@@ -266,7 +266,7 @@ instance : [Challenge (pSpec R deg)]ₒ.FiniteRange := inferInstance
 theorem oracleVerifier_eq_verifier :
     (oracleVerifier R deg D oSpec).toVerifier = verifier R deg D oSpec := by
   ext
-  simp [OracleVerifier.toVerifier, verifier, oracleVerifier, OracleInterface.simOracle2]
+  simp [OracleVerifier.toVerifier, verifier, OracleInterface.simOracle2]
   sorry
 
 /-- The oracle reduction is equivalent to the non-oracle reduction -/
@@ -289,7 +289,7 @@ theorem reduction_completeness : (reduction R deg D oSpec).perfectCompleteness
     constructor
     · simp -- There's still some pathing issue here w/ simp, need to simp in steps which is sub-par
       unfold Prover.run Prover.runToRound Prover.processRound
-      simp [Fin.induction, Fin.induction.go, reduction, prover, neverFails_map_iff']
+      simp [Fin.induction, Fin.induction.go, reduction, prover]
     · stop
       intro ⟨⟨stmt, oStmtOut⟩, _, transcript⟩
       simp -- Also some pathing issues, need to simp once before reducing `reduction`
@@ -302,19 +302,18 @@ theorem reduction_completeness : (reduction R deg D oSpec).perfectCompleteness
       exact hValid
   · intro ⟨⟨⟨prvStmtOut, prvOStmtOut⟩, _⟩, verStmtOut, transcript⟩ hSupport
     simp only [run, support_bind, liftM_eq_liftComp, Set.mem_iUnion, support_pure,
-      Set.mem_singleton_iff, Prod.eq_iff_fst_eq_snd_eq, true_and] at hSupport
+      Set.mem_singleton_iff, Prod.eq_iff_fst_eq_snd_eq] at hSupport
     obtain ⟨x1, hx1, x2_1, hx2, ⟨⟨⟨h2_1, h2_2⟩, _⟩, ⟨⟨h3_1, h3_2⟩, h3_3⟩⟩⟩ := hSupport
     simp only [reduction, prover, Prover.run, Prover.runToRound] at hx1
     simp [Prover.processRound] at hx1
     obtain ⟨a, b, hab, hx1'⟩ := hx1
     simp only [Verifier.run, reduction, verifier] at hx2
-    simp [liftComp_support, Transcript.concat, Fin.snoc] at hx2
+    simp [Transcript.concat, Fin.snoc] at hx2
     obtain ⟨h1, h2, h3⟩ := hx2
     split; rename_i stuff prvStmtOut' _ verStmtOut' trans hEq
     simp at hEq
     obtain ⟨hPrvStmtOut, hVerStmtOut, hTranscript⟩ := hEq
-    simp only [outputRelation, ← hVerStmtOut, h3_1, StmtOut, OStmtOut, h3_2, ← hPrvStmtOut, h2_2,
-      true_and]
+    simp only [outputRelation, ← hVerStmtOut, StmtOut, OStmtOut, ← hPrvStmtOut, h2_2]
     aesop
 
 /-- Perfect completeness for the oracle reduction -/
@@ -354,20 +353,20 @@ from verifier to prover of a field element in `R`. -/
 def pSpec : ProtocolSpec 2 := ![(.P_to_V, R⦃≤ deg⦄[X]), (.V_to_P, R)]
 
 instance : IsSingleRound (pSpec R deg) where
-  prover_first' := by simp [pSpec, getDir]
-  verifier_last' := by simp [pSpec, getDir, Neg.neg]
+  prover_first' := by simp [pSpec]
+  verifier_last' := by simp [pSpec]
 
 /-- Recognize that the (only) message from the prover to the verifier has type `R⦃≤ deg⦄[X]`, and
   hence can be turned into an oracle for evaluating the polynomial -/
 instance instOracleInterfaceMessagePSpec : OracleInterface ((pSpec R deg).Message default) := by
-  simp only [pSpec, default, Matrix.cons_val_zero]
+  simp only [pSpec, default]
   exact instOracleInterfacePolynomialDegreeLE
 
 /-- Recognize that the challenge from the verifier to the prover has type `R`, and hence can be
   sampled uniformly at random -/
 instance instVCVCompatibleChallengePSpec [VCVCompatible R] :
     VCVCompatible ((pSpec R deg).Challenge default) := by
-  simp only [pSpec, default, Matrix.cons_val_one, Matrix.head_cons]
+  simp only [pSpec, default]
   infer_instance
 
 /-- Auxiliary lemma for proving that the polynomial sent by the honest prover is of degree at most
@@ -393,7 +392,7 @@ def oStmtLens (i : Fin n) : OracleStatement.Lens
     (OracleStatement R n deg) (OracleStatement R n deg)
     (Simple.OStmtIn R deg) (Simple.OStmtOut R deg) where
 
-  mapPos := fun ⟨⟨target, challenges⟩, oStmt⟩ =>
+  toFunA := fun ⟨⟨target, challenges⟩, oStmt⟩ =>
     ⟨target, fun _ =>
       match h : n with
       | 0 => ⟨Polynomial.C <| MvPolynomial.isEmptyAlgEquiv R (Fin 0) (oStmt ()), by
@@ -402,7 +401,7 @@ def oStmtLens (i : Fin n) : OracleStatement.Lens
       ⟨∑ x ∈ (univ.map D) ^ᶠ (n - i), (oStmt ()).val ⸨X ⦃i⦄, challenges, x⸩'(by simp; omega),
         sumcheck_roundPoly_degreeLE R n deg D i (oStmt ()).property⟩⟩
 
-  mapDir := fun ⟨⟨_oldTarget, challenges⟩, oStmt⟩ ⟨⟨newTarget, chal⟩, oStmt'⟩ =>
+  toFunB := fun ⟨⟨_oldTarget, challenges⟩, oStmt⟩ ⟨⟨newTarget, chal⟩, oStmt'⟩ =>
     ⟨⟨newTarget, Fin.snoc challenges chal⟩, oStmt⟩
 
 @[simp]
@@ -466,7 +465,7 @@ where
       -- Now it's a statement about polynomials
       sorry
   lift_complete := by
-    simp [relationRound, Simple.inputRelation]
+    simp [relationRound]
     unfold compatContext oStmtLens
     -- simp
     -- induction n with
@@ -483,11 +482,10 @@ instance extractorLens_rbr_knowledge_soundness :
       (fun _ _ => True)
       ⟨oStmtLens R n deg D i, Witness.InvLens.trivial⟩ where
   proj_knowledgeSound := by
-    simp [relationRound, Simple.inputRelation, Simple.outputRelation, Verifier.compatStatement,
+    simp [relationRound, Simple.outputRelation, Verifier.compatStatement,
       Simple.oracleVerifier_eq_verifier, Simple.verifier, Verifier.run]
   lift_knowledgeSound := by
-    simp [relationRound, Simple.inputRelation, Simple.outputRelation, Verifier.compatStatement,
-      Simple.oracleVerifier_eq_verifier, Simple.verifier, Verifier.run, Statement.Lens.proj]
+    simp [relationRound, Simple.inputRelation, Statement.Lens.proj]
     unfold oStmtLens
     induction n with
     | zero => exact Fin.elim0 i
