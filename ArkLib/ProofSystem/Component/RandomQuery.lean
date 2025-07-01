@@ -237,7 +237,7 @@ instance : ∀ i, OracleInterface ((pSpec OStatement).Message i) | ⟨0, h⟩ =>
 
 -- Perhaps it's time to test out the liftContext infrastructure
 
--- instance : OracleContextLens
+-- instance : OracleContext.Lens
 --     RandomQuery.StmtIn (RandomQuery.StmtOut OStatement)
 --     StmtIn (StmtOut OStatement)
 --     (RandomQuery.OStmtIn OStatement) (RandomQuery.OStmtOut OStatement)

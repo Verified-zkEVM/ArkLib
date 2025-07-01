@@ -168,25 +168,25 @@ For composing an arbitrary number of reductions, we provide a general compositio
     \label{def:protocol_spec_compose}
     Given a family of protocol specifications $\pSpec : \forall i : \Fin(m+1), \ProtocolSpec\ (n\ i)$, their composition is:
     \[ \compose\ m\ n\ \pSpec : \ProtocolSpec\ (\sum_{i} n\ i) \]
-    \lean{ProtocolSpec.compose}
+    \lean{ProtocolSpec.seqCompose}
     \uses{def:protocol_spec}
 \end{definition}
 
 \begin{definition}[General Prover Composition]
     \label{def:prover_compose}
-    \lean{Prover.compose}
+    \lean{Prover.seqCompose}
     \uses{def:prover, def:protocol_spec_compose}
 \end{definition}
 
 \begin{definition}[General Verifier Composition]
     \label{def:verifier_compose}
-    \lean{Verifier.compose}
+    \lean{Verifier.seqCompose}
     \uses{def:verifier, def:protocol_spec_compose}
 \end{definition}
 
 \begin{definition}[General Reduction Composition]
     \label{def:reduction_compose}
-    \lean{Reduction.compose}
+    \lean{Reduction.seqCompose}
     \uses{def:reduction, def:prover_compose, def:verifier_compose}
 \end{definition}
 
@@ -240,19 +240,19 @@ Similar preservation theorems hold for the general composition of multiple reduc
 
 \begin{theorem}[General Completeness Preservation]
     \label{thm:completeness_compose}
-    \lean{Reduction.completeness_compose}
+    \lean{Reduction.completeness_seqCompose}
     \uses{def:completeness, def:reduction_compose}
 \end{theorem}
 
 \begin{theorem}[General Soundness Preservation]
     \label{thm:soundness_compose}
-    \lean{Verifier.compose_soundness}
+    \lean{Verifier.seqCompose_soundness}
     \uses{def:soundness, def:verifier_compose}
 \end{theorem}
 
 \begin{theorem}[General Knowledge Soundness Preservation]
     \label{thm:knowledge_soundness_compose}
-    \lean{Verifier.compose_knowledgeSoundness}
+    \lean{Verifier.seqCompose_knowledgeSoundness}
     \uses{def:knowledge_soundness, def:verifier_compose}
 \end{theorem}
 
@@ -271,7 +271,7 @@ The fundamental abstraction for context adaptation is a \emph{context lens}, whi
         \item $\projStmt : \StmtIn_{\mathsf{outer}} \to \StmtIn_{\mathsf{inner}}$ (projection to inner context)
         \item $\liftStmt : \StmtIn_{\mathsf{outer}} \times \StmtOut_{\mathsf{inner}} \to \StmtOut_{\mathsf{outer}}$ (lifting back to outer context)
     \end{itemize}
-    \lean{StatementLens}
+    \lean{Statement.Lens}
 \end{definition}
 
 \begin{definition}[Witness Lens]
@@ -281,20 +281,20 @@ The fundamental abstraction for context adaptation is a \emph{context lens}, whi
         \item $\projWit : \WitIn_{\mathsf{outer}} \to \WitIn_{\mathsf{inner}}$ (projection to inner context)
         \item $\liftWit : \WitIn_{\mathsf{outer}} \times \WitOut_{\mathsf{inner}} \to \WitOut_{\mathsf{outer}}$ (lifting back to outer context)
     \end{itemize}
-    \lean{WitnessLens}
+    \lean{Witness.Lens}
 \end{definition}
 
 \begin{definition}[Context Lens]
     \label{def:context_lens}
     A context lens combines a statement lens and a witness lens for adapting complete reduction contexts.
-    \lean{ContextLens}
+    \lean{Context.Lens}
     \uses{def:statement_lens, def:witness_lens}
 \end{definition}
 
 \begin{definition}[Oracle Context Lens]
     \label{def:oracle_context_lens}
     For oracle reductions, we additionally need lenses for oracle statements that can simulate oracle access between contexts.
-    \lean{OracleContextLens}
+    \lean{OracleContext.Lens}
     \uses{def:context_lens, def:oracle_interface}
 \end{definition}
 
@@ -333,28 +333,28 @@ For lifting to preserve security properties, the context lens must satisfy certa
 \begin{definition}[Completeness-Preserving Context Lens]
     \label{def:context_lens_is_complete}
     A context lens preserves completeness if it maintains relation satisfaction under projection and lifting.
-    \lean{ContextLens.IsComplete}
+    \lean{Context.Lens.IsComplete}
     \uses{def:context_lens}
 \end{definition}
 
 \begin{definition}[Soundness-Preserving Statement Lens]
     \label{def:statement_lens_is_sound}
     A statement lens preserves soundness if it maps invalid statements to invalid statements.
-    \lean{StatementLens.IsSound}
+    \lean{Statement.Lens.IsSound}
     \uses{def:statement_lens}
 \end{definition}
 
 \begin{definition}[RBR Soundness-Preserving Statement Lens]
     \label{def:statement_lens_is_rbr_sound}
     For round-by-round soundness, we need a slightly relaxed soundness condition.
-    \lean{StatementLens.IsRBRSound}
+    \lean{Statement.Lens.IsSound}
     \uses{def:statement_lens}
 \end{definition}
 
 \begin{definition}[Knowledge Soundness-Preserving Context Lens]
     \label{def:context_lens_is_knowledge_sound}
     A context lens preserves knowledge soundness if it maintains witness extractability.
-    \lean{StatementLens.IsKnowledgeSound}
+    \lean{Extractor.Lens.IsKnowledgeSound}
     \uses{def:context_lens}
 \end{definition}
 
@@ -401,13 +401,13 @@ Context lifting also applies to extractors and state functions used in knowledge
 
 \begin{definition}[Straightline Extractor Lifting]
     \label{def:straightline_extractor_lift_context}
-    \lean{StraightlineExtractor.liftContext}
+    \lean{Extractor.Straightline.liftContext}
     \uses{def:straightline_extractor, def:context_lens}
 \end{definition}
 
 \begin{definition}[Round-by-Round Extractor Lifting]
     \label{def:rbr_extractor_lift_context}
-    \lean{RBRExtractor.liftContext}
+    \lean{Extractor.RoundByRound.liftContext}
     \uses{def:rbr_extractor, def:context_lens}
 \end{definition}
 

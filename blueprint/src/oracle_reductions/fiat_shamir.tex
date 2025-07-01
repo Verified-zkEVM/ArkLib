@@ -20,7 +20,7 @@ The key insight of the Fiat-Shamir transformation is to replace interactive chal
     \end{itemize}
 
     The query consists of the input statement and all prover messages sent up to (but not including) round $i$.
-    \lean{instChallengeOracleInterfaceFiatShamir}
+    % \lean{instChallengeOracleInterfaceFiatShamir}
 \end{definition}
 
 \begin{definition}[Fiat-Shamir Oracle Specification]
@@ -30,7 +30,7 @@ The key insight of the Fiat-Shamir transformation is to replace interactive chal
     where for each challenge index $i$, the oracle domain is $\StmtIn \times \pSpec.\MessagesUpTo \;i.\mathsf{val}.\mathsf{castSucc}$ and the range is $\pSpec.\Challenge \;i$.
 
     This specification defines a family of oracles, one for each challenge round, that deterministically computes challenges based on the statement and messages up to that round.
-    \lean{fiatShamirSpec}
+    \lean{ProtocolSpec.fiatShamirSpec}
 \end{definition}
 
 \subsection{Fiat-Shamir Transformation for Provers}\label{sec:fiat_shamir_prover}
@@ -69,7 +69,7 @@ The Fiat-Shamir transformation modifies the prover's execution to compute all me
     \label{def:prover_fiat_shamir}
     Given an interactive prover $P$ for protocol $\pSpec$, the Fiat-Shamir transformation produces a non-interactive prover:
 
-    \[ P.\mathsf{fiatShamir} : \NonInteractiveProver \;(\forall i, \pSpec.\Message \;i) \;(\oSpec \mathrel{++_\mathsf{o}} \mathsf{fiatShamirSpec} \;\pSpec \;\StmtIn) \;\StmtIn \;\WitIn \;\StmtOut \;\WitOut \]
+    \[ P.\mathsf{fiatShamir} : \NonInteractiveProver \;(\forall i, \pSpec.\Message \;i) \;(\oSpec \mathrel{++_\mathsf{o}} \mathsf{srChallengeOracle} \;\pSpec \;\StmtIn) \;\StmtIn \;\WitIn \;\StmtOut \;\WitOut \]
 
     The transformed prover:
     \begin{itemize}
@@ -91,7 +91,7 @@ The Fiat-Shamir verifier must reconstruct the full interactive transcript from t
     \label{def:derive_transcript_fs}
     Given a collection of prover messages and an input statement, the function $\mathsf{deriveTranscriptFS}$ reconstructs the full protocol transcript up to round $k$:
 
-    \[ \mathsf{messages}.\mathsf{deriveTranscriptFS} \;\mathsf{stmt} \;k : \OracleComp \;(\oSpec \mathrel{++_\mathsf{o}} \mathsf{fiatShamirSpec} \;\pSpec \;\StmtIn) \;(\pSpec.\Transcript \;k) \]
+    \[ \mathsf{messages}.\mathsf{deriveTranscriptFS} \;\mathsf{stmt} \;k : \OracleComp \;(\oSpec \mathrel{++_\mathsf{o}} \mathsf{srChallengeOracle} \;\pSpec \;\StmtIn) \;(\pSpec.\Transcript \;k) \]
 
     This is computed inductively:
     \begin{itemize}
@@ -108,7 +108,7 @@ The Fiat-Shamir verifier must reconstruct the full interactive transcript from t
     \label{def:verifier_fiat_shamir}
     Given an interactive verifier $V$ for protocol $\pSpec$, the Fiat-Shamir transformation produces a non-interactive verifier:
 
-    \[ V.\mathsf{fiatShamir} : \NonInteractiveVerifier \;(\forall i, \pSpec.\Message \;i) \;(\oSpec \mathrel{++_\mathsf{o}} \mathsf{fiatShamirSpec} \;\pSpec \;\StmtIn) \;\StmtIn \;\StmtOut \]
+    \[ V.\mathsf{fiatShamir} : \NonInteractiveVerifier \;(\forall i, \pSpec.\Message \;i) \;(\oSpec \mathrel{++_\mathsf{o}} \mathsf{srChallengeOracle} \;\pSpec \;\StmtIn) \;\StmtIn \;\StmtOut \]
 
     The transformed verifier:
     \begin{itemize}
@@ -126,7 +126,7 @@ The Fiat-Shamir verifier must reconstruct the full interactive transcript from t
     \label{def:reduction_fiat_shamir}
     Given an interactive reduction $R$ for protocol $\pSpec$, the Fiat-Shamir transformation produces a non-interactive reduction:
 
-    \[ R.\mathsf{fiatShamir} : \NonInteractiveReduction \;(\forall i, \pSpec.\Message \;i) \;(\oSpec \mathrel{++_\mathsf{o}} \mathsf{fiatShamirSpec} \;\pSpec \;\StmtIn) \;\StmtIn \;\WitIn \;\StmtOut \;\WitOut \]
+    \[ R.\mathsf{fiatShamir} : \NonInteractiveReduction \;(\forall i, \pSpec.\Message \;i) \;(\oSpec \mathrel{++_\mathsf{o}} \mathsf{srChallengeOracle} \;\pSpec \;\StmtIn) \;\StmtIn \;\WitIn \;\StmtOut \;\WitOut \]
 
     This transformation simply applies the Fiat-Shamir transformation to both the prover and verifier components of the reduction.
     \lean{Reduction.fiatShamir}

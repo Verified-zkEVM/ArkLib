@@ -568,7 +568,7 @@ theorem oracleVerifier_rbr_knowledge_soundness :
 --     sorry
 
 -- /-- Trivial extractor since witness is `Unit` -/
--- def rbrExtractor : RBRExtractor (pSpec R deg) oSpec (Statement R n i.castSucc) Unit :=
+-- def rbrExtractor : Extractor.RoundByRound (pSpec R deg) oSpec (Statement R n i.castSucc) Unit :=
 --   fun _ _ _ _ => ()
 
 end Security

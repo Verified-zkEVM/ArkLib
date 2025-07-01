@@ -452,7 +452,7 @@ For knowledge soundness, we need to consider different types of extractors that 
     log.
 
     This form of extractor suffices for proving knowledge soundness of most hash-based IOPs.
-    \lean{StraightlineExtractor}
+    \lean{Extractor.Straightline}
     \uses{def:transcript}
 \end{definition}
 
@@ -467,7 +467,7 @@ For knowledge soundness, we need to consider different types of extractors that 
     and returns a witness to the statement.
 
     Note that the RBR extractor does not need to take in the output statement or witness.
-    \lean{RBRExtractor}
+    \lean{Extractor.RoundByRound}
     \uses{def:transcript}
 \end{definition}
 
@@ -480,18 +480,18 @@ For knowledge soundness, we need to consider different types of extractors that 
         \item A function that runs the extractor with the prover's oracle interface, allowing for calling the prover multiple times
     \end{itemize}
     This allows the extractor to rewind the prover to earlier states and try different challenges.
-    \lean{RewindingExtractor}
+    \lean{Extractor.Rewinding}
     \uses{def:prover, def:oracle_interface}
 \end{definition}
 
 \subsubsection{Adversarial Provers}
 
-\begin{definition}[Adaptive Prover]
-    \label{def:adaptive_prover}
-    An \textbf{adaptive prover} extends the basic prover type with the ability to choose the input statement adaptively based on oracle access. This models stronger adversaries that can choose their statements after seeing some oracle responses.
-    \lean{AdaptiveProver}
-    \uses{def:prover}
-\end{definition}
+% \begin{definition}[Adaptive Prover]
+%     \label{def:adaptive_prover}
+%     An \textbf{adaptive prover} extends the basic prover type with the ability to choose the input statement adaptively based on oracle access. This models stronger adversaries that can choose their statements after seeing some oracle responses.
+%     \lean{Prover.Adaptive}
+%     \uses{def:prover}
+% \end{definition}
 
 \begin{definition}[State-Restoration Prover]
     \label{def:sr_prover}
@@ -501,7 +501,7 @@ For knowledge soundness, we need to consider different types of extractors that 
     along with the output statement and witness.
 
     This models adversaries in the state-restoration setting where challenges can be queried programmably.
-    \lean{SRProver}
+    \lean{Prover.StateRestoration}
     \uses{def:transcript}
 \end{definition}
 
@@ -645,7 +645,7 @@ These definitions are highly experimental and may change in the future. The goal
     An extractor is \textbf{monotone} if its success probability on a given query log is the same as
     the success probability on any extension of that query log. This property ensures that the extractor's
     performance does not degrade when given more information.
-    \lean{Verifier.StraightlineExtractor.IsMonotone}
+    \lean{Verifier.Extractor.Straightline.IsMonotone}
     \uses{def:straightline_extractor}
 \end{definition}
 
@@ -653,7 +653,7 @@ These definitions are highly experimental and may change in the future. The goal
     \label{def:monotone_rbr_extractor}
     A round-by-round extractor is \textbf{monotone} if its success probability on a given query log
     is the same as the success probability on any extension of that query log.
-    \lean{Verifier.RBRExtractor.IsMonotone}
+    \lean{Extractor.RoundByRound.IsMonotone}
     \uses{def:rbr_extractor}
 \end{definition}
 

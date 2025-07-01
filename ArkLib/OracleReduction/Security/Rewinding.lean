@@ -49,8 +49,8 @@ structure Rewinding (oSpec : OracleSpec ι)
 -- This will hopefully go away after the refactor of prover's type to be an iterated monad
 
 -- def Rewinding.run
---     (P : AdaptiveProver pSpec oSpec StmtIn WitIn StmtOut WitOut)
---     (E : RewindingExtractor pSpec oSpec StmtIn StmtOut WitIn WitOut) :
+--     (P : Prover.Adaptive pSpec oSpec StmtIn WitIn StmtOut WitOut)
+--     (E : Extractor.Rewinding pSpec oSpec StmtIn StmtOut WitIn WitOut) :
 --     OracleComp oSpec WitIn := sorry
 
 end Rewinding

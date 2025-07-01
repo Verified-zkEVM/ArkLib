@@ -48,8 +48,8 @@ namespace StateRestoration
 --     (langIn : Set StmtIn) (langOut : Set StmtOut) (SRSoundnessError : ENNReal) : Prop :=
 --   ∀ stmtIn ∉ langIn,
 --   ∀ witIn : WitIn,
---   ∀ SRProver : SRProver pSpec oSpec StmtIn WitIn StmtOut WitOut,
---     let ⟨_, witOut, transcript, queryLog⟩ ← (simulateQ ... (SRProver.run stmtIn witIn)).run
+--   ∀ Prover.StateRestoration : Prover.StateRestoration pSpec oSpec StmtIn WitIn StmtOut WitOut,
+--     let ⟨_, witOut, transcript, queryLog⟩ ← (simulateQ ... (Prover.StateRestoration.run stmtIn witIn)).run
 --     let stmtOut ← verifier.run stmtIn transcript
 --     return stmtOut ∉ langOut
 

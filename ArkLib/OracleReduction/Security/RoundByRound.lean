@@ -112,7 +112,7 @@ def KnowledgeStateFunction.toStateFunction
 
 /-- A round-by-round extractor basically goes backwards, extracting witnesses round-by-round in
 opposite to the prover. -/
-structure NewRBRExtractor (WitMid : Fin (n + 1) → Type) where
+structure NewExtractor.RoundByRound (WitMid : Fin (n + 1) → Type) where
   -- what if, just one function?
   -- extract : (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → WitMid m → QueryLog oSpec → WitIn
   extractIn : WitMid 0 → WitIn
@@ -217,7 +217,7 @@ def newRbrKnowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (Stmt
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
   ∃ WitMid : Fin (n + 1) → Type,
   ∃ kSF : verifier.KnowledgeStateFunction relIn relOut WitMid,
-  ∃ extractor : NewRBRExtractor WitMid (WitIn := WitIn) (WitOut := WitOut),
+  ∃ extractor : NewExtractor.RoundByRound WitMid (WitIn := WitIn) (WitOut := WitOut),
   ∀ stmtIn : StmtIn,
   ∀ witIn : WitIn,
   ∀ prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec,
