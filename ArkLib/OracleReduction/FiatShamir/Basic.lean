@@ -140,11 +140,10 @@ open scoped NNReal
 
 variable [oSpec.FiniteRange] [∀ i, VCVCompatible (pSpec.Challenge i)]
 
--- theorem fiatShamir_completeness (relIn : Set ((StmtIn × WitIn) × StmtOut × WitOut))
---     (relOut : Set ((StmtIn × WitIn) × StmtOut × WitOut))
---     (completenessError : ℝ≥0) (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
---   R.completeness relIn relOut completenessError →
---     (R.fiatShamir).completeness relIn relOut completenessError := sorry
+theorem fiatShamir_completeness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (completenessError : ℝ≥0) (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+  R.completeness relIn relOut completenessError →
+    R.fiatShamir.completeness relIn relOut completenessError := sorry
 
 -- TODO: state-restoration (knowledge) soundness implies (knowledge) soundness after Fiat-Shamir
 

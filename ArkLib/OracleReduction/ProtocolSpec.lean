@@ -466,6 +466,10 @@ instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpe
   range_inhabited' := fun i => by simp [srChallengeOracle, OracleSpec.range]; infer_instance
   range_fintype' := fun i => by simp [fiatShamirSpec, OracleSpec.range]; infer_instance
 
+instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
+    OracleSpec.FiniteRange (fiatShamirSpec Statement pSpec) :=
+  inferInstanceAs (OracleSpec.FiniteRange (srChallengeOracle Statement pSpec))
+
 end ProtocolSpec
 
 -- Notation for the type signature of an interactive protocol

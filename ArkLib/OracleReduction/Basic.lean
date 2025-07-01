@@ -379,7 +379,7 @@ def OracleReduction.toReduction {ι : Type} {oSpec : OracleSpec ι}
 /-- An **interactive proof (IP)** is an interactive reduction where the output statement is a
     boolean, the output witness is trivial (a `Unit`), and the relation checks whether the output
     statement is true. -/
-abbrev Proof {ι : Type} (oSpec : OracleSpec ι)
+@[reducible] def Proof {ι : Type} (oSpec : OracleSpec ι)
     (Statement Witness : Type) {n : ℕ} (pSpec : ProtocolSpec n) :=
   Reduction oSpec Statement Witness Bool Unit pSpec
 
@@ -389,7 +389,7 @@ abbrev Proof {ι : Type} (oSpec : OracleSpec ι)
 
     As a consequence, the output relation in an IOP is effectively a function `Bool → Prop`, which
     we can again assume to be the trivial one (sending `true` to `True`). -/
-abbrev OracleProof {ι : Type} (oSpec : OracleSpec ι)
+@[reducible] def OracleProof {ι : Type} (oSpec : OracleSpec ι)
     (Statement : Type) {ιₛᵢ : Type} (OStatement : ιₛᵢ → Type) (Witness : Type)
     {n : ℕ} (pSpec : ProtocolSpec n)
     [Oₛᵢ : ∀ i, OracleInterface (OStatement i)]
@@ -397,19 +397,19 @@ abbrev OracleProof {ι : Type} (oSpec : OracleSpec ι)
   OracleReduction oSpec Statement OStatement Witness Bool (fun _ : Empty => Unit) Unit pSpec
 
 /-- A **non-interactive prover** is a prover that only sends a single message to the verifier. -/
-abbrev NonInteractiveProver (Message : Type) {ι : Type} (oSpec : OracleSpec ι)
+@[reducible] def NonInteractiveProver (Message : Type) {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn WitIn StmtOut WitOut : Type) :=
   Prover oSpec StmtIn WitIn StmtOut WitOut ![(.P_to_V, Message)]
 
 /-- A **non-interactive verifier** is a verifier that only receives a single message from the
   prover. -/
-abbrev NonInteractiveVerifier (Message : Type) {ι : Type} (oSpec : OracleSpec ι)
+@[reducible] def NonInteractiveVerifier (Message : Type) {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn StmtOut : Type) :=
   Verifier oSpec StmtIn StmtOut ![(.P_to_V, Message)]
 
 /-- A **non-interactive reduction** is an interactive reduction with only a single message from the
   prover to the verifier (and none in the other direction). -/
-abbrev NonInteractiveReduction (Message : Type) {ι : Type} (oSpec : OracleSpec ι)
+@[reducible] def NonInteractiveReduction (Message : Type) {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn WitIn StmtOut WitOut : Type) :=
   Reduction oSpec StmtIn WitIn StmtOut WitOut ![(.P_to_V, Message)]
 
