@@ -20,17 +20,6 @@ import ToMathlib.PFunctor.Basic
   witnesses are trivial.
 -/
 
-section find_home
-
-/-- Applies a pair of binary functions component-wise to a pair of pairs.
-
-TODO: move to mathlib, add supporting lemmas -/
-def Prod.map₂ {α β γ α' β' γ' : Type*} (f : α → β → γ) (g : α' → β' → γ') :
-    (α × α') → (β × β') → (γ × γ') :=
-  fun ⟨a, a'⟩ ⟨b, b'⟩ => ⟨f a b, g a' b'⟩
-
-end find_home
-
 open OracleSpec OracleComp PFunctor
 
 /-- A lens for transporting input and output statements for the verifier of a (non-oracle)
@@ -52,18 +41,17 @@ def Statement.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
 namespace Statement.Lens
 
 variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
+  (lens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut)
 
 /-- Transport input statements from the outer context to the inner context -/
 @[inline, reducible]
-def proj (lens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) :
-    OuterStmtIn → InnerStmtIn :=
+def proj : OuterStmtIn → InnerStmtIn :=
   lens.mapPos
 
 /-- Transport output statements from the inner context to the outer context,
   additionally relying on the input statements of the outer context. -/
 @[inline, reducible]
-def lift (lens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) :
-    OuterStmtIn → InnerStmtOut → OuterStmtOut :=
+def lift : OuterStmtIn → InnerStmtOut → OuterStmtOut :=
   lens.mapDir
 
 end Statement.Lens
@@ -111,14 +99,13 @@ variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
     {Outer_ιₛₒ : Type} {OuterOStmtOut : Outer_ιₛₒ → Type} [∀ i, OracleInterface (OuterOStmtOut i)]
     {Inner_ιₛᵢ : Type} {InnerOStmtIn : Inner_ιₛᵢ → Type} [∀ i, OracleInterface (InnerOStmtIn i)]
     {Inner_ιₛₒ : Type} {InnerOStmtOut : Inner_ιₛₒ → Type} [∀ i, OracleInterface (InnerOStmtOut i)]
-
+    (lens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut)
 /-- Transport input statements from the outer context to the inner context
 
 TODO: refactor etc. -/
 @[inline, reducible]
-def proj (lens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-              OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut) :
-    OuterStmtIn × (∀ i, OuterOStmtIn i) → InnerStmtIn × (∀ i, InnerOStmtIn i) :=
+def proj : OuterStmtIn × (∀ i, OuterOStmtIn i) → InnerStmtIn × (∀ i, InnerOStmtIn i) :=
   lens.mapPos
 
 /-- Transport output statements from the inner context to the outer context,
@@ -126,9 +113,7 @@ def proj (lens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn Inner
 
   TODO: refactor etc. -/
 @[inline, reducible]
-def lift (lens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-              OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut) :
-    OuterStmtIn × (∀ i, OuterOStmtIn i) → InnerStmtOut × (∀ i, InnerOStmtOut i) →
+def lift : OuterStmtIn × (∀ i, OuterOStmtIn i) → InnerStmtOut × (∀ i, InnerOStmtOut i) →
     OuterStmtOut × (∀ i, OuterOStmtOut i) :=
   lens.mapDir
 
@@ -160,20 +145,16 @@ namespace Witness.Lens
 
 variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
           OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
-
+    (lens : Witness.Lens OuterStmtIn InnerStmtOut OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
 /-- Transport input witness from the outer context to the inner context -/
 @[inline, reducible]
-def proj (lens : Witness.Lens OuterStmtIn InnerStmtIn
-                                OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
-    OuterStmtIn × OuterWitIn → InnerWitIn :=
+def proj : OuterStmtIn × OuterWitIn → InnerWitIn :=
   lens.mapPos
 
 /-- Transport output witness from the inner context to the outer context,
   additionally relying on the input statements of the outer context. -/
 @[inline, reducible]
-def lift (lens : Witness.Lens OuterStmtIn InnerStmtOut
-                                OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
-    OuterStmtIn × OuterWitIn → InnerStmtOut × InnerWitOut → OuterWitOut :=
+def lift : OuterStmtIn × OuterWitIn → InnerStmtOut × InnerWitOut → OuterWitOut :=
   lens.mapDir
 
 end Witness.Lens
@@ -189,19 +170,16 @@ namespace Context.Lens
 
 variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
           OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
-
+    (lens : Context.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
 /-- Projection of the context. -/
 @[inline, reducible]
-def proj (lens : Context.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-                              OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
-    OuterStmtIn × OuterWitIn → InnerStmtIn × InnerWitIn :=
+def proj : OuterStmtIn × OuterWitIn → InnerStmtIn × InnerWitIn :=
   fun ⟨stmtIn, witIn⟩ => ⟨lens.stmt.proj stmtIn, lens.wit.proj (stmtIn, witIn)⟩
 
 /-- Lifting of the context. -/
 @[inline, reducible]
-def lift (lens : Context.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-                OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
-    OuterStmtIn × OuterWitIn → InnerStmtOut × InnerWitOut → OuterStmtOut × OuterWitOut :=
+def lift : OuterStmtIn × OuterWitIn → InnerStmtOut × InnerWitOut → OuterStmtOut × OuterWitOut :=
   fun ⟨stmtIn, witIn⟩ ⟨innerStmtOut, innerWitOut⟩ =>
     ⟨lens.stmt.lift stmtIn innerStmtOut, lens.wit.lift (stmtIn, witIn) (innerStmtOut, innerWitOut)⟩
 
@@ -228,23 +206,19 @@ variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
     {Inner_ιₛᵢ : Type} {InnerOStmtIn : Inner_ιₛᵢ → Type} [∀ i, OracleInterface (InnerOStmtIn i)]
     {Inner_ιₛₒ : Type} {InnerOStmtOut : Inner_ιₛₒ → Type} [∀ i, OracleInterface (InnerOStmtOut i)]
     {OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
-
+    (lens : OracleContext.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                                    OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
+                                    OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
 /-- Projection of the context. -/
 @[inline, reducible]
-def proj (lens : OracleContext.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-                                    OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
-                                    OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
-    (OuterStmtIn × (∀ i, OuterOStmtIn i)) × OuterWitIn →
+def proj : (OuterStmtIn × (∀ i, OuterOStmtIn i)) × OuterWitIn →
     (InnerStmtIn × (∀ i, InnerOStmtIn i)) × InnerWitIn :=
   fun ⟨stmtIn, witIn⟩ =>
     ⟨lens.stmt.proj stmtIn, lens.wit.proj (stmtIn, witIn)⟩
 
 /-- Lifting of the context. -/
 @[inline, reducible]
-def lift (lens : OracleContext.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-                                    OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
-                                    OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
-    (OuterStmtIn × (∀ i, OuterOStmtIn i)) × OuterWitIn →
+def lift : (OuterStmtIn × (∀ i, OuterOStmtIn i)) × OuterWitIn →
     (InnerStmtOut × (∀ i, InnerOStmtOut i)) × InnerWitOut →
     (OuterStmtOut × (∀ i, OuterOStmtOut i)) × OuterWitOut :=
   fun ⟨stmtIn, witIn⟩ ⟨innerStmtOut, innerWitOut⟩ =>
@@ -252,9 +226,7 @@ def lift (lens : OracleContext.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerSt
 
 /-- Convert the oracle context lens to a context lens. -/
 @[inline, reducible]
-def toContext (lens : OracleContext.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-                                    OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
-                                    OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
+def toContext :
     Context.Lens (OuterStmtIn × (∀ i, OuterOStmtIn i)) (OuterStmtOut × (∀ i, OuterOStmtOut i))
                 (InnerStmtIn × (∀ i, InnerOStmtIn i)) (InnerStmtOut × (∀ i, InnerOStmtOut i))
                 OuterWitIn OuterWitOut InnerWitIn InnerWitOut :=
@@ -262,38 +234,69 @@ def toContext (lens : OracleContext.Lens OuterStmtIn OuterStmtOut InnerStmtIn In
 
 end OracleContext.Lens
 
-/-- Lens for lifting the extractor from the inner reduction to the outer reduction.
+/-- Lens for lifting the witness extraction procedure from the inner reduction to the outer
+  reduction.
 
-Given that the extractor's input-output interface is of the form `StmtIn × WitOut → WitIn` (ignoring
-transcript and query logs), this is essentially the same as a lens for the prover, except the
-exchange of the input and output witness, and the omission of the output statement.
+This goes in the reverse direction (output to input) compared to the witness lens for the prover,
+and requires in addition the outer input statement.
 -/
 @[inline, reducible]
-def Extractor.Lens (OuterStmtIn InnerStmtIn
-                OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type)
+def Witness.InvLens (OuterStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type)
     := PFunctor.Lens ((OuterStmtIn × OuterWitOut) y^ OuterWitIn)
-                     ((InnerStmtIn × InnerWitOut) y^ InnerWitIn)
+                     (InnerWitOut y^ InnerWitIn)
+
+namespace Witness.InvLens
+
+variable {OuterStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
+  (lens : Witness.InvLens OuterStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
+
+/-- Projection of the witness. -/
+@[inline, reducible]
+def proj : OuterStmtIn × OuterWitOut → InnerWitOut :=
+  lens.mapPos
+
+/-- Lifting of the witness. -/
+@[inline, reducible]
+def lift : OuterStmtIn × OuterWitOut → InnerWitIn → OuterWitIn :=
+  lens.mapDir
+
+end Witness.InvLens
+
+/-- Lens for lifting the extractor from the inner reduction to the outer reduction.
+
+This consists of two components:
+- `stmt` : the statement lens
+- `wit` : the witness lens in the reverse direction, matching the input-output interface of the
+  extractor, i.e. `StmtIn × WitOut → WitIn` (ignoring transcript and query logs)
+-/
+@[ext]
+structure Extractor.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                          OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) where
+  stmt : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+  wit : Witness.InvLens OuterStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut
 
 namespace Extractor.Lens
 
 variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
           OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
-
+    (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
 /-- Transport the tuple of (input statement, output witness) from the outer context to the inner
   context -/
 @[inline, reducible]
-def proj (lens : Extractor.Lens OuterStmtIn InnerStmtIn
+def proj (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
               OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
     OuterStmtIn × OuterWitOut → InnerStmtIn × InnerWitOut :=
-  lens.mapPos
+  fun ⟨stmtIn, witOut⟩ => ⟨lens.stmt.proj stmtIn, lens.wit.proj (stmtIn, witOut)⟩
 
-/-- Transport the inner input witness to the outer input witness, also relying on the tuple (outer
-  input statement, outer output witness) -/
-@[inline, reducible]
-def lift (lens : Extractor.Lens OuterStmtIn InnerStmtIn
-              OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
-    OuterStmtIn × OuterWitOut → InnerWitIn → OuterWitIn :=
-  lens.mapDir
+-- /-- Transport the inner input witness to the outer input witness, also relying on the tuple
+-- (outer--   input statement, outer output witness) -/
+-- @[inline, reducible]
+-- def lift (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+--               OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
+--     OuterStmtIn × OuterWitOut → InnerWitIn → OuterWitIn :=
+--   fun ⟨stmtIn, witOut⟩ innerWitIn =>
+--     lens.wit.lift (stmtIn, witOut) innerWitIn
 
 end Extractor.Lens
 
@@ -326,45 +329,19 @@ class Context.Lens.IsComplete {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
 class Statement.Lens.IsSound {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
     (outerLangIn : Set OuterStmtIn) (outerLangOut : Set OuterStmtOut)
     (innerLangIn : Set InnerStmtIn) (innerLangOut : Set InnerStmtOut)
-    (compatRel : Set (OuterStmtIn × InnerStmtOut))
+    (compatStmt : Set (OuterStmtIn × InnerStmtOut))
     (lens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) where
 
   proj_sound : ∀ outerStmtIn,
     outerStmtIn ∉ outerLangIn → lens.proj outerStmtIn ∉ innerLangIn
 
   lift_sound : ∀ outerStmtIn innerStmtOut,
-    (outerStmtIn, innerStmtOut) ∈ compatRel →
-    outerStmtIn ∉ outerLangIn →
+    (outerStmtIn, innerStmtOut) ∈ compatStmt →
     innerStmtOut ∉ innerLangOut →
     lens.lift outerStmtIn innerStmtOut ∉ outerLangOut
 
-/-- Conditions for the lens / transformation to preserve round-by-round soundness
-
-This is nearly identical to the `IsSound` condition, _except_ that we do not require
-`outerStmtIn ∉ outerLangIn` in the `lift_sound` condition.
-
-(we need to relax that condition to prove `toFun_full` of the lifted state function) -/
-class Statement.Lens.IsRBRSound {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
-    (outerLangIn : Set OuterStmtIn) (outerLangOut : Set OuterStmtOut)
-    (innerLangIn : Set InnerStmtIn) (innerLangOut : Set InnerStmtOut)
-    (compatRel : Set (OuterStmtIn × InnerStmtOut))
-    (stmtLens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) where
-
-  -- inner_to_outer for input
-  proj_sound : ∀ outerStmtIn,
-    outerStmtIn ∉ outerLangIn → stmtLens.proj outerStmtIn ∉ innerLangIn
-
-  -- outer_to_inner for output
-  lift_sound : ∀ outerStmtIn innerStmtOut,
-    (outerStmtIn, innerStmtOut) ∈ compatRel →
-    innerStmtOut ∉ innerLangOut →
-    stmtLens.lift outerStmtIn innerStmtOut ∉ outerLangOut
-
-/-- Conditions for the lens / transformation to preserve knowledge soundness
-
-Note that we do _not_ require a witness lens in the input -> output direction, since we don't need
-to do anything with the (honest) prover -/
-class Statement.Lens.IsKnowledgeSound
+/-- Conditions for the extractor lens to preserve knowledge soundness -/
+class Extractor.Lens.IsKnowledgeSound
     {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
     {OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
     (outerRelIn : Set (OuterStmtIn × OuterWitIn))
@@ -373,41 +350,61 @@ class Statement.Lens.IsKnowledgeSound
     (innerRelOut : Set (InnerStmtOut × InnerWitOut))
     (compatStmt : Set (OuterStmtIn × InnerStmtOut))
     (compatWit : Set (OuterWitOut × InnerWitIn))
-    (lensE : Extractor.Lens OuterStmtIn InnerStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
-    (lensV : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) where
+    (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                            OuterWitIn OuterWitOut InnerWitIn InnerWitOut) where
 
-  -- outer_to_inner for output
-  out_to_in : ∀ outerStmtIn innerStmtOut outerWitOut,
+  /-- outer_to_inner for output witness (note: for statements, it's `lift` in this condition) -/
+  proj_knowledgeSound : ∀ outerStmtIn innerStmtOut outerWitOut,
     (outerStmtIn, innerStmtOut) ∈ compatStmt →
-    (lensV.lift outerStmtIn innerStmtOut, outerWitOut) ∈ outerRelOut →
-    (innerStmtOut, (lensE.proj (outerStmtIn, outerWitOut)).2) ∈ innerRelOut
+    (lens.stmt.lift outerStmtIn innerStmtOut, outerWitOut) ∈ outerRelOut →
+    (innerStmtOut, lens.wit.proj (outerStmtIn, outerWitOut)) ∈ innerRelOut
 
-  -- inner_to_outer for input
-  in_to_out : ∀ outerStmtIn outerWitOut innerWitIn,
+  /-- inner_to_outer for input witness (note: for statements, it's `proj` in this condition) -/
+  lift_knowledgeSound : ∀ outerStmtIn outerWitOut innerWitIn,
     (outerWitOut, innerWitIn) ∈ compatWit →
-    (lensV.proj outerStmtIn, innerWitIn) ∈ innerRelIn →
-    (outerStmtIn, lensE.lift (outerStmtIn, outerWitOut) innerWitIn) ∈ outerRelIn
+    (lens.stmt.proj outerStmtIn, innerWitIn) ∈ innerRelIn →
+    (outerStmtIn, lens.wit.lift (outerStmtIn, outerWitOut) innerWitIn) ∈ outerRelIn
 
-namespace Statement.Lens.IsKnowledgeSound
+namespace Extractor.Lens.IsKnowledgeSound
 
--- Convert knowledge soundness into soundness
-
-end Statement.Lens.IsKnowledgeSound
-
-class Statement.Lens.IsRBRKnowledgeSound
-    {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
+variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
     {OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
-    (outerRelIn : Set (OuterStmtIn × OuterWitIn))
-    (innerRelIn : Set (InnerStmtIn × InnerWitIn))
-    (outerRelOut : Set (OuterStmtOut × OuterWitOut))
-    (innerRelOut : Set (InnerStmtOut × InnerWitOut))
-    (compatStmt : Set (OuterStmtIn × InnerStmtOut))
-    (compatWit : Set (OuterWitOut × InnerWitIn))
-    (lensE : Extractor.Lens OuterStmtIn InnerStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
-    (lensV : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut)
-  -- TODO: double-check if we need any extra conditions
-  extends Statement.Lens.IsKnowledgeSound outerRelIn innerRelIn outerRelOut innerRelOut
-        compatStmt compatWit lensE lensV where
+    {outerRelIn : Set (OuterStmtIn × OuterWitIn)}
+    {innerRelIn : Set (InnerStmtIn × InnerWitIn)}
+    {outerRelOut : Set (OuterStmtOut × OuterWitOut)}
+    {innerRelOut : Set (InnerStmtOut × InnerWitOut)}
+    {compatStmt : Set (OuterStmtIn × InnerStmtOut)}
+    {compatWit : Set (OuterWitOut × InnerWitIn)}
+    (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
+
+/-- If an extractor lens is knowledge sound, then the associated statement lens is sound. -/
+instance [Inhabited OuterWitOut]
+    [instKS : lens.IsKnowledgeSound
+                outerRelIn innerRelIn
+                outerRelOut innerRelOut
+                compatStmt Set.univ] :
+    lens.stmt.IsSound
+      outerRelIn.language outerRelOut.language
+      innerRelIn.language innerRelOut.language
+      compatStmt where
+  proj_sound := fun outerStmtIn hCompat => by
+    simp [Set.language] at hCompat ⊢
+    intro innerWitIn hRelIn
+    contrapose! hCompat
+    let outerWitIn := lens.wit.lift (outerStmtIn, default) innerWitIn
+    have hOuterWitIn := instKS.lift_knowledgeSound outerStmtIn default innerWitIn (by simp) hRelIn
+    exact ⟨outerWitIn, hOuterWitIn⟩
+  lift_sound := fun outerStmtIn innerStmtOut hCompat hInnerRelOut => by
+    simp [Set.language] at hCompat hInnerRelOut ⊢
+    intro outerWitOut hOuterRelOut
+    contrapose! hInnerRelOut
+    let innerWitOut := lens.wit.proj (outerStmtIn, outerWitOut)
+    have hInnerWitOut :=
+      instKS.proj_knowledgeSound outerStmtIn innerStmtOut outerWitOut hCompat hOuterRelOut
+    exact ⟨innerWitOut, hInnerWitOut⟩
+
+end Extractor.Lens.IsKnowledgeSound
 
 section SpecialCases
 
