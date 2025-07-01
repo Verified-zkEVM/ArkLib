@@ -365,10 +365,10 @@ def equivMessagesChallenges :
   right_inv := fun ⟨messages, challenges⟩ => by
     ext i
     · have : (pSpec <| i.val.castLE (by omega)).1 = Direction.P_to_V := i.property
-      simp [ofMessagesChallenges, toMessagesChallenges, toMessagesUpTo, toChallengesUpTo]
+      simp [ofMessagesChallenges, toMessagesChallenges, toMessagesUpTo]
       split <;> aesop
     · have : (pSpec <| i.val.castLE (by omega)).1 = Direction.V_to_P := i.property
-      simp [ofMessagesChallenges, toMessagesChallenges, toMessagesUpTo, toChallengesUpTo]
+      simp [ofMessagesChallenges, toMessagesChallenges, toChallengesUpTo]
       split <;> aesop
 
 -- TODO: state theorem that `Transcript.concat` is equivalent to `MessagesUpTo.{concat/extend}` with
@@ -463,8 +463,8 @@ alias fiatShamirSpec := srChallengeOracle
 
 instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
     OracleSpec.FiniteRange (srChallengeOracle Statement pSpec) where
-  range_inhabited' := fun i => by simp [srChallengeOracle, OracleSpec.range]; infer_instance
-  range_fintype' := fun i => by simp [fiatShamirSpec, OracleSpec.range]; infer_instance
+  range_inhabited' := fun i => by simp [OracleSpec.range]; infer_instance
+  range_fintype' := fun i => by simp [OracleSpec.range]; infer_instance
 
 instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
     OracleSpec.FiniteRange (fiatShamirSpec Statement pSpec) :=

@@ -222,7 +222,7 @@ def OracleReduction.run [∀ i, OracleInterface (pSpec.Message i)]
 theorem Prover.runToRound_zero_of_prover_first
     (stmt : StmtIn) (wit : WitIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
       prover.runToRound 0 stmt wit = (pure (default, prover.input (stmt, wit))) := by
-  simp [Prover.run, Prover.runToRound]
+  simp [Prover.runToRound]
 
 end Execution
 

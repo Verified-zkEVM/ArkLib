@@ -51,7 +51,8 @@ namespace OracleInterface
 
 /-- The default instance for `OracleInterface`, where the query is trivial (a `Unit`) and the
   response returns the data. We do not register this as an instance, instead explicitly calling it
-  where necessary.-/
+  where necessary.
+-/
 def instDefault {Message : Type u} : OracleInterface Message where
   Query := Unit
   Response := Message
@@ -265,7 +266,7 @@ theorem distanceLE_polynomial_degreeLT : OracleInterface.distanceLE (R⦃< d⦄[
   intro p hp p' hp' hNe
   have : ∀ q ∈ Finset.univ, p.eval q = p'.eval q ↔ q ∈ (p - p').roots := by
     intro q _
-    simp [mem_roots]
+    simp
     constructor <;> intro h
     · constructor
       · intro h'; contrapose! hNe; exact sub_eq_zero.mp h'
@@ -350,8 +351,7 @@ theorem poly_query_list_mapM {m : ℕ} (D : Fin m ↪ R) (p : R[X]) :
     simulateQ (simOracle spec (fun _ : Unit => p))
       (List.finRange m |>.mapM (fun i => query (spec := [fun _ : Unit => R[X]]ₒ) () (D i)))
     = (pure (List.finRange m |>.map (fun i => p.eval (D i))) : OracleComp spec (List R)) := by
-  simp [simOracle, OracleSpec.SubSpec.liftM_query_eq_liftM_liftM, StateT.run'_eq,
-    simulateQ, StateT.run]
+  simp [simOracle, OracleSpec.SubSpec.liftM_query_eq_liftM_liftM, simulateQ]
   sorry
 
 end Test

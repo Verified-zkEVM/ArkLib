@@ -74,7 +74,7 @@ lemma iterateRec_lt_base {α : Type*} {b k : ℕ} (op : α → α) {h : b ≥ 2}
 theorem iterateRec_eq_iterate {α : Type*} {b : ℕ} {h : b ≥ 2} (op : α → α) (n : Nat) :
     Nat.iterateRec op n b h = op^[n] := by
   induction n using Nat.caseStrongRecOn with
-  | zero => simp [Nat.iterateRec]
+  | zero => simp
   | ind k ih =>
     unfold Nat.iterateRec
     have : (k + 1) / b ≤ k := by
@@ -145,7 +145,7 @@ theorem rightpad_eq_if_rightpad_eq_of_ge (l l' : List α) (m n n' : Nat) (h : n 
     max n l.length = (rightpad n unit l).length := Eq.symm (rightpad_length n unit l)
     _ = (rightpad n' unit l').length := congrArg length hEq
     _ = max n' l'.length := rightpad_length n' unit l'
-  simp [hEq, hLen]
+  simp [hLen]
   sorry
 
 @[simp] theorem rightpad_twice_eq_rightpad_max (m n : Nat) (unit : α) (l : List α) :
@@ -173,17 +173,17 @@ theorem rightpad_eq_if_rightpad_eq_of_ge (l l' : List α) (m n n' : Nat) (h : n 
   rcases (Nat.lt_or_ge i l.length) with h_lt | h_ge
   · have h_lt': i < (rightpad n unit l).length := by rw [rightpad_length]; omega
     simp only [h_lt, h_lt', getD_eq_getElem] -- eliminate `getD`
-    simp [h_lt, getElem_append]
+    simp [h_lt]
   rw [getD_eq_default _ _ h_ge] -- eliminate second `getD` for `unit`
   rcases (Nat.lt_or_ge i n) with h_lt₂ | h_ge₂
   · have h_lt' : i < (rightpad n unit l).length := by rw [rightpad_length]; omega
     rw [getD_eq_getElem _ _ h_lt'] -- eliminate first `getD`
-    simp [h_ge, getElem_append]
+    simp [h_ge]
   · have h_ge' : i ≥ (rightpad n unit l).length := by rw [rightpad_length]; omega
     rw [getD_eq_default _ _ h_ge'] -- eliminate first `getD`
 
 theorem rightpad_getElem_eq_getD {a b : List α} {unit : α} {i : Nat}
-  (h: i < (a.rightpad b.length unit).length) :
+  (h : i < (a.rightpad b.length unit).length) :
     (a.rightpad b.length unit)[i] = a.getD i unit := by
   rw [← rightpad_getD_eq_getD a b.length, getD_eq_getElem _ _ h]
 
@@ -233,14 +233,14 @@ def toNum {R : Type _} [Zero R] [DecidableEq R] (a : Array R) : ℕ :=
 theorem leftpad_toList {a : Array α} {n : Nat} {unit : α} :
     a.leftpad n unit = mk (a.toList.leftpad n unit) := by
   induction h : a.toList with
-  | nil => simp_all [h]
-  | cons hd tl ih => simp_all [ih, h, size_eq_length_toList]
+  | nil => simp_all
+  | cons hd tl ih => simp_all [size_eq_length_toList]
 
 theorem rightpad_toList {a : Array α} {n : Nat} {unit : α} :
     a.rightpad n unit = mk (a.toList.rightpad n unit) := by
   induction h : a.toList with
-  | nil => simp_all [h]
-  | cons hd tl ih => simp_all [ih, h, size_eq_length_toList]
+  | nil => simp_all
+  | cons hd tl ih => simp_all [size_eq_length_toList]
 
 theorem rightpad_getElem_eq_getD {a : Array α} {n : Nat} {unit : α} {i : Nat}
     (h : i < (a.rightpad n unit).size) : (a.rightpad n unit)[i] = a.getD i unit := by
@@ -281,7 +281,7 @@ where
         find ⟨ i, Nat.lt_of_succ_lt h ⟩
 
 /-- if findIdxRev? finds an index, the condition is satisfied on that element -/
-def findIdxRev?_def {cond} {as: Array α} {k : Fin as.size} :
+def findIdxRev?_def {cond} {as : Array α} {k : Fin as.size} :
   findIdxRev? cond as = some k → cond as[k] := by
   suffices aux : ∀ i, findIdxRev?.find cond as i = some k → cond as[k] by apply aux
   intro i
@@ -292,7 +292,7 @@ def findIdxRev?_def {cond} {as: Array α} {k : Fin as.size} :
   | case3 => unfold findIdxRev?.find; simp [*]; assumption
 
 /-- if findIdxRev? finds an index, then for every greater index the condition doesn't hold -/
-def findIdxRev?_maximal {cond} {as: Array α} {k : Fin as.size} :
+def findIdxRev?_maximal {cond} {as : Array α} {k : Fin as.size} :
   findIdxRev? cond as = some k → ∀ j : Fin as.size, j > k → ¬ cond as[j] := by
   suffices aux : ∀ i, findIdxRev?.find cond as i = some k →
     ∀ j : Fin as.size, j > k → j.val < i → ¬ cond as[j] by
@@ -343,7 +343,7 @@ theorem findIdxRev?_emtpy_none {cond} {as : Array α} (h : as = #[]) :
   simp
 
 /-- if the condition is true on some element, then findIdxRev? finds something -/
-theorem findIdxRev?_eq_some {cond} {as : Array α} (h: ∃ i, ∃ hi : i < as.size, cond as[i]) :
+theorem findIdxRev?_eq_some {cond} {as : Array α} (h : ∃ i, ∃ hi : i < as.size, cond as[i]) :
   ∃ k : Fin as.size, findIdxRev? cond as = some k
 := by
   obtain ⟨ i, hi, hcond ⟩ := h

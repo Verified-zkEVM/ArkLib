@@ -165,8 +165,8 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
             simpa only [Fin.last, Fin.succ_mk, this] using state
           return ⟨msg, P₂.input (P₁.output state)⟩)
     · haveI : ¬ i + 1 < m := by omega
-      simp [ProtocolSpec.append, Fin.append, Fin.addCases, Fin.init, hi, this,
-        Fin.cast, Fin.castLT, Fin.succ, Fin.castSucc] at h state ⊢
+      simp [ProtocolSpec.append, Fin.append, Fin.addCases, hi, this, Fin.cast, Fin.castLT, Fin.succ,
+        Fin.castSucc] at h state ⊢
       exact (do
         let ⟨msg, newState⟩ ← P₂.sendMessage ⟨⟨i - m, by omega⟩, h⟩ state
         haveI newState : P₂.PrvState ⟨i + 1 - m, by omega⟩ := by
@@ -191,8 +191,8 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
             simpa [Fin.last, this] using newState
           P₂.input (P₁.output newState))
     · haveI : ¬ i + 1 < m := by omega
-      simp [ProtocolSpec.append, Fin.append, Fin.addCases, Fin.init, hi, this,
-        Fin.cast, Fin.castLT, Fin.succ, Fin.castSucc] at h state chal ⊢
+      simp [ProtocolSpec.append, Fin.append, Fin.addCases, hi, this, Fin.cast, Fin.castLT, Fin.succ,
+        Fin.castSucc] at h state chal ⊢
       exact (
         letI newState := P₂.receiveChallenge ⟨⟨i - m, by omega⟩, h⟩ state chal
         haveI newState := by

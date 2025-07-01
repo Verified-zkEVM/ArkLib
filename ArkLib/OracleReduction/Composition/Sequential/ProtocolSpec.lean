@@ -157,7 +157,7 @@ theorem rtake_append_right (T : FullTranscript pSpec₁) (T' : FullTranscript pS
     Transcript.cast, Fin.val_last, Fin.cast_eq_self, Fin.castLE_refl]
   have : m + n - n + i.val - m = i.val := by omega
   rw! (castMode := .all) [this]
-  simp [_root_.cast_eq_cast_iff, eqRec_eq_cast]
+  simp [eqRec_eq_cast]
 
 /-- The first half of a transcript for a concatenated protocol -/
 def fst (T : FullTranscript (pSpec₁ ++ₚ pSpec₂)) : FullTranscript pSpec₁ :=
@@ -201,7 +201,7 @@ def MessageIdx.sumEquiv :
       exact Sum.inr ⟨⟨i - m, by omega⟩, h⟩
   left_inv := fun i => by
     rcases i with ⟨⟨i, isLt⟩, h⟩ | ⟨⟨i, isLt⟩, h⟩ <;>
-    simp [MessageIdx.inl, MessageIdx.inr, h, isLt]
+    simp [MessageIdx.inl, MessageIdx.inr, isLt]
   right_inv := fun ⟨i, h⟩ => by
     by_cases hi : i < m <;>
     simp [MessageIdx.inl, MessageIdx.inr, hi]
@@ -225,7 +225,7 @@ def ChallengeIdx.sumEquiv :
       exact Sum.inr ⟨⟨i - m, by omega⟩, h⟩
   left_inv := fun i => by
     rcases i with ⟨⟨i, isLt⟩, h⟩ | ⟨⟨i, isLt⟩, h⟩ <;>
-    simp [ChallengeIdx.inl, ChallengeIdx.inr, h, isLt]
+    simp [ChallengeIdx.inl, ChallengeIdx.inr, isLt]
   right_inv := fun ⟨i, h⟩ => by
     by_cases hi : i < m <;>
     simp [ChallengeIdx.inl, ChallengeIdx.inr, hi]
@@ -270,7 +270,7 @@ def seqCompose {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     (fun i => FullTranscript (ProtocolSpec.seqCompose (Fin.take i (by omega) pSpec)))
     (fun i acc => by
       refine dcast₂ ?_ ?_ (acc ++ₜ (T i))
-      · simp [Fin.take, Fin.sum_univ_castSucc, Fin.castLE]
+      · simp [Fin.sum_univ_castSucc, Fin.castLE]
       · simp [ProtocolSpec.seqCompose_append])
     (fun i => Fin.elim0 i)
 
@@ -285,7 +285,7 @@ theorem seqCompose_append {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, Protocol
     seqCompose (Fin.take (i + 1) (by omega) T)
     = dcast₂ (by simp [Fin.sum_univ_castSucc, Fin.castLE]) (by sorry)
         (seqCompose (Fin.take i (by omega) T) ++ₜ T i) := by
-  simp [seqCompose, append_cast_left]
+  simp [seqCompose]
   sorry
 
 end FullTranscript
