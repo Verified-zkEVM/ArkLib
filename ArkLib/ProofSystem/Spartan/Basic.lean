@@ -192,10 +192,10 @@ abbrev OracleStatement.AfterFirstMessage : R1CS.MatrixIdx ⊕ Fin 1 → Type :=
 abbrev Witness.AfterFirstMessage : Type := Unit
 
 def oracleReduction.firstMessage :
-    OracleReduction ![(.P_to_V, Witness R pp)] oSpec
-      (Statement R pp) (Witness R pp)
-      (Statement.AfterFirstMessage R pp) Unit
-      (OracleStatement R pp) (OracleStatement.AfterFirstMessage R pp) :=
+    OracleReduction oSpec
+      (Statement R pp) (OracleStatement R pp) (Witness R pp)
+      (Statement.AfterFirstMessage R pp) (OracleStatement.AfterFirstMessage R pp) Unit
+      ![(.P_to_V, Witness R pp)] :=
   SendSingleWitness.oracleReduction oSpec
     (Statement R pp) (OracleStatement R pp) (Witness R pp)
 
@@ -233,10 +233,10 @@ abbrev OracleStatement.AfterFirstChallenge : R1CS.MatrixIdx ⊕ Fin 1 → Type :
 abbrev Witness.AfterFirstChallenge : Type := Unit
 
 def oracleReduction.firstChallenge :
-    OracleReduction ![(.V_to_P, FirstChallenge R pp)] oSpec
-      (Statement.AfterFirstMessage R pp) Witness.AfterFirstMessage
-      (Statement.AfterFirstChallenge R pp) Witness.AfterFirstChallenge
-      (OracleStatement.AfterFirstMessage R pp) (OracleStatement.AfterFirstChallenge R pp) :=
+    OracleReduction oSpec
+      (Statement.AfterFirstMessage R pp) (OracleStatement.AfterFirstMessage R pp) (Witness R pp)
+      (Statement.AfterFirstChallenge R pp) (OracleStatement.AfterFirstChallenge R pp) Unit
+      ![(.V_to_P, FirstChallenge R pp)] :=
   sorry
   -- (RandomQuery.oracleReduction oSpec (Statement.AfterFirstMessage R pp)).liftContext sorry
 
@@ -308,10 +308,10 @@ abbrev OracleStatement.AfterSendEvalClaim : R1CS.MatrixIdx ⊕ R1CS.MatrixIdx �
 abbrev Witness.AfterSendEvalClaim : Type := Unit
 
 def oracleReduction.sendEvalClaim :
-    OracleReduction ![(.P_to_V, ∀ i, EvalClaim R i)] oSpec
-      (Statement.AfterFirstSumcheck R pp) Witness.AfterFirstSumcheck
-      (Statement.AfterSendEvalClaim R pp) Witness.AfterSendEvalClaim
-      (OracleStatement.AfterFirstSumcheck R pp) (OracleStatement.AfterSendEvalClaim R pp) :=
+    OracleReduction oSpec
+      (Statement.AfterFirstSumcheck R pp) (OracleStatement.AfterFirstSumcheck R pp) (Witness R pp)
+      (Statement.AfterSendEvalClaim R pp) (OracleStatement.AfterSendEvalClaim R pp) Unit
+      ![(.P_to_V, ∀ i, EvalClaim R i)] :=
   sorry
   -- SendClaim.oracleReduction oSpec
   --   (Statement.AfterFirstSumcheck R pp)
@@ -342,10 +342,10 @@ instance : ∀ i, OracleInterface (ProtocolSpec.Message ![(.V_to_P, LinearCombin
   | ⟨0, h⟩ => nomatch h
 
 def oracleReduction.linearCombination :
-    OracleReduction ![(.V_to_P, LinearCombinationChallenge R)] oSpec
-      (Statement.AfterFirstSumcheck R pp) Witness.AfterFirstSumcheck
-      (Statement.AfterLinearCombination R pp) Witness.AfterLinearCombination
-      (OracleStatement.AfterFirstSumcheck R pp) (OracleStatement.AfterLinearCombination R pp) :=
+    OracleReduction oSpec
+      (Statement.AfterFirstSumcheck R pp) (OracleStatement.AfterFirstSumcheck R pp) (Witness R pp)
+      (Statement.AfterLinearCombination R pp) (OracleStatement.AfterLinearCombination R pp) Unit
+      ![(.V_to_P, LinearCombinationChallenge R)] :=
   sorry
 
 /-!

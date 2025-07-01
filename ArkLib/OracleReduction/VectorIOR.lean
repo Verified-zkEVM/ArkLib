@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.OracleReduction.Security.Basic
+import ArkLib.OracleReduction.Security.RoundByRound
 
 /-!
 # Vector Interactive Oracle Reductions
@@ -92,11 +92,12 @@ variable {n : ℕ} {ι : Type}
   statements are vectors over some alphabet. We do _not_ require the (oracle) statements and
   witnesses to be vectors as well, though this can be done if needed. -/
 @[reducible]
-def VectorIOR (vPSpec : ProtocolSpec.VectorSpec n) (A : Type) (oSpec : OracleSpec ι)
-    (StmtIn WitIn StmtOut WitOut : Type)
-    {ιₛᵢ : Type} (OStmtIn : ιₛᵢ → Type) [∀ i, OracleInterface (OStmtIn i)]
-    {ιₛₒ : Type} (OStmtOut : ιₛₒ → Type) :=
-  OracleReduction (vPSpec.toProtocolSpec A) oSpec StmtIn WitIn StmtOut WitOut OStmtIn OStmtOut
+def VectorIOR (oSpec : OracleSpec ι)
+    (StmtIn : Type) {ιₛᵢ : Type} (OStmtIn : ιₛᵢ → Type) (WitIn : Type)
+    (StmtOut : Type) {ιₛₒ : Type} (OStmtOut : ιₛₒ → Type) (WitOut : Type)
+    (vPSpec : ProtocolSpec.VectorSpec n) (A : Type)
+    [∀ i, OracleInterface (OStmtIn i)] :=
+  OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut (vPSpec.toProtocolSpec A)
 
 /-- Vector Interactive Oracle Proofs
 
@@ -104,10 +105,11 @@ This is just a specialization of `OracleProof` to the case where all messages an
 are vectors over some alphabet. We do _not_ require the (oracle) statements and witnesses to be
 vectors as well, though this can be done if needed. -/
 @[reducible]
-def VectorIOP (vPSpec : ProtocolSpec.VectorSpec n) (A : Type) (oSpec : OracleSpec ι)
-    (Statement Witness : Type)
-    {ιₛ : Type} (OStatement : ιₛ → Type) [∀ i, OracleInterface (OStatement i)] :=
-  OracleProof (vPSpec.toProtocolSpec A) oSpec Statement Witness OStatement
+def VectorIOP (oSpec : OracleSpec ι)
+    (Statement : Type) {ιₛ : Type} (OStatement : ιₛ → Type) (Witness : Type)
+    (vPSpec : ProtocolSpec.VectorSpec n) (A : Type)
+    [∀ i, OracleInterface (OStatement i)] :=
+  OracleProof oSpec Statement OStatement Witness (vPSpec.toProtocolSpec A)
 
 variable {n : ℕ} {ι : Type} {vPSpec : ProtocolSpec.VectorSpec n} {A : Type} {oSpec : OracleSpec ι}
   [VCVCompatible A] [oSpec.FiniteRange]
@@ -123,10 +125,10 @@ variable {StmtIn WitIn StmtOut WitOut : Type} {ιₛᵢ : Type} {OStmtIn : ιₛ
     round-by-round knowledge error `ε_rbr` if it satisfies (perfect) completeness and round-by-round
     knowledge soundness with respect to `relIn`, `relOut`, and `ε_rbr`. -/
 class IsSecure
-    (relIn : (StmtIn × ∀ i, OStmtIn i) → WitIn → Prop)
-    (relOut : (StmtOut × ∀ i, OStmtOut i) → WitOut → Prop)
+    (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
+    (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (ε_rbr : vPSpec.ChallengeIdx → ℝ≥0)
-    (vectorIOR : VectorIOR vPSpec A oSpec StmtIn WitIn StmtOut WitOut OStmtIn OStmtOut) where
+    (vectorIOR : VectorIOR oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut vPSpec A) where
 
   /-- The reduction is perfectly complete. -/
   is_complete : vectorIOR.perfectCompleteness relIn relOut
@@ -149,9 +151,9 @@ variable {Statement Witness : Type} {ιₛ : Type} {OStatement : ιₛ → Type}
     error `ε_rbr` if it satisfies (perfect) completeness and round-by-round knowledge soundness
     with respect to `relation` and `ε_rbr`. -/
 class IsSecure
-    (relation : (Statement × ∀ i, OStatement i) → Witness → Prop)
+    (relation : Set ((Statement × ∀ i, OStatement i) × Witness))
     (ε_rbr : vPSpec.ChallengeIdx → ℝ≥0)
-    (vectorIOP : VectorIOP vPSpec A oSpec Statement Witness OStatement) where
+    (vectorIOP : VectorIOP oSpec Statement OStatement Witness vPSpec A) where
 
   /-- The reduction is perfectly complete. -/
   is_complete : vectorIOP.perfectCompleteness relation
@@ -167,10 +169,10 @@ class IsSecure
   - (perfect) completeness with respect to `completeRelation`,
   - round-by-round knowledge soundness with respect to `soundRelation` and `ε_rbr`. -/
 class IsSecureWithGap
-    (completeRelation : (Statement × ∀ i, OStatement i) → Witness → Prop)
-    (soundRelation : (Statement × ∀ i, OStatement i) → Witness → Prop)
+    (completeRelation : Set ((Statement × ∀ i, OStatement i) × Witness))
+    (soundRelation : Set ((Statement × ∀ i, OStatement i) × Witness))
     (ε_rbr : vPSpec.ChallengeIdx → ℝ≥0)
-    (vectorIOP : VectorIOP vPSpec A oSpec Statement Witness OStatement) where
+    (vectorIOP : VectorIOP oSpec Statement OStatement Witness vPSpec A) where
 
   /-- The reduction is perfectly complete. -/
   is_complete : vectorIOP.perfectCompleteness completeRelation

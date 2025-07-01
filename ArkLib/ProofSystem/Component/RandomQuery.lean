@@ -141,17 +141,17 @@ def stateFunction : (oracleVerifier oSpec OStatement).StateFunction
   | 1 => fun ⟨_, oracles⟩ chal =>
     let q : Query OStatement := by simpa [pSpec] using chal ⟨0, by aesop⟩
     OracleInterface.oracle (oracles 0) q = OracleInterface.oracle (oracles 1) q
-  toFun_empty := fun stmt hStmt => by simp_all [relIn, Function.language]
+  toFun_empty := fun stmt hStmt => by simp_all [relIn, Set.language]
   toFun_next := fun i hDir ⟨stmt, oStmt⟩ tr h => by simp_all
   toFun_full := fun ⟨stmt, oStmt⟩ tr h => by
-    simp_all [relOut, Function.language]
+    simp_all [relOut, Set.language]
     intro a b hSupp
     simp [OracleVerifier.toVerifier, Verifier.run, oracleVerifier] at hSupp
     simp [hSupp.1, hSupp.2, h]
 
 /-- The extractor is trivial since the output witness is `Unit`. -/
-def extractor : RBRExtractor (pSpec OStatement) oSpec
-    (Unit × (∀ _ : Fin 2, OStatement)) Unit :=
+def extractor : Extractor.RoundByRound oSpec
+    (Unit × (∀ _ : Fin 2, OStatement)) Unit (pSpec OStatement) :=
   fun _ _ _ _ => ()
 
 /-!
