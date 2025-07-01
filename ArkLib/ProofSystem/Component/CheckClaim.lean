@@ -33,9 +33,9 @@ section Reduction
 
 /-- The prover for the `CheckClaim` reduction. -/
 @[inline, specialize]
-def prover : Prover ![] oSpec Statement Unit Statement Unit where
+def prover : Prover oSpec Statement Unit Statement Unit ![] where
   PrvState := fun _ => Statement
-  input := fun stmt _ => stmt
+  input := Prod.fst
   sendMessage := fun i => nomatch i
   receiveChallenge := fun i => nomatch i
   output := fun stmt => (stmt, ())
@@ -44,22 +44,23 @@ variable (pred : Statement → Prop) [DecidablePred pred]
 
 /-- The verifier for the `CheckClaim` reduction. -/
 @[inline, specialize]
-def verifier : Verifier ![] oSpec Statement Statement where
+def verifier : Verifier oSpec Statement Statement ![] where
   verify := fun stmt _ => do guard (pred stmt); return stmt
 
 /-- The reduction for the `CheckClaim` reduction. -/
 @[inline, specialize]
-def reduction : Reduction ![] oSpec Statement Unit Statement Unit where
+def reduction : Reduction oSpec Statement Unit Statement Unit ![] where
   prover := prover oSpec Statement
   verifier := verifier oSpec Statement pred
 
 variable [oSpec.FiniteRange]
 
-/-- The `CheckClaim` reduction satisfies perfect completeness. -/
+/-- The `CheckClaim` reduction satisfies perfect completeness with respect to the predicate as the
+  input relation, and the output relation being always true. -/
 @[simp]
 theorem reduction_completeness :
-    (reduction oSpec Statement pred).perfectCompleteness (fun stmt _ => pred stmt)
-    (fun _ _ => True) := by
+    (reduction oSpec Statement pred).perfectCompleteness { ⟨stmt, _⟩ | pred stmt }
+    Set.univ := by
   simp [reduction, Reduction.run, Prover.run, Prover.runToRound, Prover.processRound, Verifier.run,
     prover, verifier]
 
@@ -74,10 +75,10 @@ variable {ιₛ : Type} (OStatement : ιₛ → Type) [∀ i, OracleInterface (O
 
 /-- The oracle prover for the `CheckClaim` oracle reduction. -/
 @[inline, specialize]
-def oracleProver : OracleProver ![] oSpec
-    Statement Unit Statement Unit OStatement OStatement where
+def oracleProver : OracleProver oSpec
+    Statement OStatement Unit Statement OStatement Unit ![] where
   PrvState := fun _ => Statement × (∀ i, OStatement i)
-  input := fun stmt _ => stmt
+  input := Prod.fst
   sendMessage := fun i => nomatch i
   receiveChallenge := fun i => nomatch i
   output := fun stmt => (stmt, ())
@@ -87,24 +88,23 @@ variable (pred : ReaderT Statement (OracleComp [OStatement]ₒ) Prop)
 
 /-- The oracle verifier for the `CheckClaim` oracle reduction. -/
 @[inline, specialize]
-def oracleVerifier : OracleVerifier ![] oSpec
-    Statement Statement OStatement OStatement where
+def oracleVerifier : OracleVerifier oSpec
+    Statement OStatement Statement OStatement ![] where
   verify := fun stmt _ => do let _ ← pred stmt; return stmt
   embed := Embedding.inl
   hEq := by intro i; simp
 
 /-- The oracle reduction for the `CheckClaim` oracle reduction. -/
 @[inline, specialize]
-def oracleReduction : OracleReduction ![] oSpec
-    Statement Unit Statement Unit OStatement OStatement where
+def oracleReduction : OracleReduction oSpec
+    Statement OStatement Unit Statement OStatement Unit ![] where
   prover := oracleProver oSpec Statement OStatement
   verifier := oracleVerifier oSpec Statement OStatement pred
 
 variable {Statement} {OStatement}
 
-def toRelInput : Statement × (∀ i, OStatement i) → Unit → Prop :=
-  fun ⟨stmt, oStmt⟩ _ =>
-    simulateQ' (toOracleImpl OStatement oStmt) (pred stmt) (hPred stmt)
+def toRelInput : Set ((Statement × (∀ i, OStatement i)) × Unit) :=
+  { ⟨⟨stmt, oStmt⟩, _⟩ | simulateQ' (toOracleImpl OStatement oStmt) (pred stmt) (hPred stmt) }
 
 -- theorem oracleProver_run
 
@@ -114,7 +114,7 @@ variable [oSpec.FiniteRange]
 @[simp]
 theorem oracleReduction_completeness :
     (oracleReduction oSpec Statement OStatement pred).perfectCompleteness (toRelInput pred hPred)
-    (fun _ _ => True) := by
+    Set.univ := by
   simp [OracleReduction.perfectCompleteness, OracleReduction.toReduction, OracleVerifier.toVerifier,
     oracleReduction, oracleProver, oracleVerifier, toRelInput]
   simp [Reduction.run, Prover.run, Verifier.run, simOracle2]

@@ -41,29 +41,29 @@ def pSpec : ProtocolSpec 1 := ![(.P_to_V, Witness)]
 instance : ∀ i, VCVCompatible ((pSpec Witness).Challenge i) | ⟨0, h⟩ => nomatch h
 
 @[inline, specialize]
-def prover : Prover (pSpec Witness) oSpec Statement Witness (Statement × Witness) Unit where
+def prover : Prover oSpec Statement Witness (Statement × Witness) Unit (pSpec Witness) where
   PrvState
   | 0 => Statement × Witness
   | 1 => Statement × Witness
-  input := fun stmt wit => ⟨stmt, wit⟩
+  input := id
   sendMessage | ⟨0, _⟩ => fun ⟨stmt, wit⟩ => pure (wit, ⟨stmt, wit⟩)
   receiveChallenge | ⟨0, h⟩ => nomatch h
   output := fun ⟨stmt, wit⟩ => (⟨stmt, wit⟩, ())
 
 @[inline, specialize]
-def verifier : Verifier (pSpec Witness) oSpec Statement (Statement × Witness) where
+def verifier : Verifier oSpec Statement (Statement × Witness) (pSpec Witness) where
   verify := fun stmt transcript => pure ⟨stmt, transcript 0⟩
 
 @[inline, specialize]
-def reduction : Reduction (pSpec Witness) oSpec Statement Witness (Statement × Witness) Unit where
+def reduction : Reduction oSpec Statement Witness (Statement × Witness) Unit (pSpec Witness) where
   prover := prover oSpec Statement Witness
   verifier := verifier oSpec Statement Witness
 
-variable {Statement} {Witness} [oSpec.FiniteRange] (relIn : Statement → Witness → Prop)
+variable {Statement} {Witness} [oSpec.FiniteRange] (relIn : Set (Statement × Witness))
 
 @[reducible, simp]
-def toRelOut : Statement × Witness → Unit → Prop :=
-  fun ⟨stmt, wit⟩ _ => relIn stmt wit
+def toRelOut : Set ((Statement × Witness) × Unit) :=
+  Prod.fst ⁻¹' relIn
 
 /-- The `SendWitness` reduction satisfies perfect completeness. -/
 @[simp]
@@ -102,15 +102,16 @@ For each round `i : Fin (FinEnum.card ιw)`, the prover sends the witness
 `wit (FinEnum.equiv.symm i)` to the verifier.
 -/
 @[inline, specialize]
-def oracleProver : OracleProver (oraclePSpec Witness) oSpec
-    Statement (∀ i, Witness i) Statement Unit
-    OStatement (OStatement ⊕ᵥ Witness) where
-  PrvState := fun _ => Statement × (∀ i, OStatement i) × (∀ i, Witness i)
-  input := fun ⟨stmt, oStmt⟩ wit => ⟨stmt, oStmt, wit⟩
-  sendMessage | ⟨0, _⟩ => fun ⟨stmt, oStmt, wit⟩ => pure (wit, ⟨stmt, oStmt, wit⟩)
+def oracleProver : OracleProver oSpec
+    Statement OStatement (∀ i, Witness i)
+    Statement (OStatement ⊕ᵥ Witness) Unit
+    (oraclePSpec Witness) where
+  PrvState := fun _ => (Statement × (∀ i, OStatement i)) × (∀ i, Witness i)
+  input := id
+  sendMessage | ⟨0, _⟩ => fun ⟨stmt, wit⟩ => pure (wit, ⟨stmt, wit⟩)
   -- No challenge is sent to the prover
   receiveChallenge | ⟨0, h⟩ => nomatch h
-  output := fun ⟨stmt, oStmt, wit⟩ => (⟨stmt, Sum.rec oStmt wit⟩, ())
+  output := fun ⟨⟨stmt, oStmt⟩, wit⟩ => (⟨stmt, Sum.rec oStmt wit⟩, ())
 
 -- /-- The oracle verifier for the `SendWitness` oracle reduction.
 
@@ -189,14 +190,15 @@ def oraclePSpec : ProtocolSpec 1 := ![(.P_to_V, Witness)]
 The prover sends the witness `wit` to the verifier as the only oracle message.
 -/
 @[inline, specialize]
-def oracleProver : OracleProver (oraclePSpec Witness) oSpec
-    Statement Witness Statement Unit
-    OStatement (OStatement ⊕ᵥ (fun _ : Fin 1 => Witness)) where
-  PrvState := fun _ => Statement × (∀ i, OStatement i) × Witness
-  input := fun ⟨stmt, oStmt⟩ wit => ⟨stmt, oStmt, wit⟩
-  sendMessage | ⟨0, _⟩ => fun state => pure (state.2.2, state)
+def oracleProver : OracleProver oSpec
+    Statement OStatement Witness
+    Statement (OStatement ⊕ᵥ (fun _ : Fin 1 => Witness)) Unit
+    (oraclePSpec Witness) where
+  PrvState := fun _ => (Statement × (∀ i, OStatement i)) × Witness
+  input := id
+  sendMessage | ⟨0, _⟩ => fun ⟨stmt, wit⟩ => pure (wit, ⟨stmt, wit⟩)
   receiveChallenge | ⟨0, h⟩ => nomatch h
-  output := fun ⟨stmt, oStmt, wit⟩ => (⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, ())
+  output := fun ⟨⟨stmt, oStmt⟩, wit⟩ => (⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, ())
 
 /-- The oracle verifier for the `SendSingleWitness` oracle reduction.
 
@@ -204,8 +206,9 @@ The verifier receives the input statement `stmt` and returns it, and also specif
 message as the output oracle statement.
 -/
 @[inline, specialize]
-def oracleVerifier : OracleVerifier (oraclePSpec Witness) oSpec
-    Statement Statement OStatement (OStatement ⊕ᵥ (fun _ : Fin 1 => Witness)) where
+def oracleVerifier : OracleVerifier oSpec
+    Statement OStatement Statement (OStatement ⊕ᵥ (fun _ : Fin 1 => Witness))
+    (oraclePSpec Witness) where
   verify := fun stmt _ => pure stmt
   embed := .sumMap (.refl _)
     <| Equiv.toEmbedding
@@ -213,9 +216,10 @@ def oracleVerifier : OracleVerifier (oraclePSpec Witness) oSpec
   hEq := by intro i; rcases i <;> simp
 
 @[inline, specialize]
-def oracleReduction : OracleReduction (oraclePSpec Witness) oSpec
-    Statement Witness Statement Unit
-    OStatement (OStatement ⊕ᵥ (fun _ : Fin 1 => Witness)) where
+def oracleReduction : OracleReduction oSpec
+    Statement OStatement Witness
+    Statement (OStatement ⊕ᵥ (fun _ : Fin 1 => Witness)) Unit
+    (oraclePSpec Witness) where
   prover := oracleProver oSpec Statement OStatement Witness
   verifier := oracleVerifier oSpec Statement OStatement Witness
 
@@ -224,7 +228,7 @@ variable {Statement} {OStatement} {Witness}
 omit [(i : ιₛ) → OracleInterface (OStatement i)] [OracleInterface Witness] in
 theorem oracleProver_run {stmt : Statement} {oStmt : ∀ i, OStatement i} {wit : Witness}:
     (oracleProver oSpec Statement OStatement Witness).run ⟨stmt, oStmt⟩ wit =
-      pure (⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, (), fun i => by simpa using wit) := by
+      pure (⟨⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, ()⟩, fun i => by simpa using wit) := by
   simp [Prover.run, Prover.runToRound, Prover.processRound, oracleProver, Transcript.concat]
   ext i; fin_cases i; simp [Fin.snoc]
 
@@ -235,12 +239,13 @@ theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatem
   simp [Verifier.run, OracleVerifier.toVerifier, oracleVerifier]
   ext i; rcases i <;> simp
 
-variable [oSpec.FiniteRange] (oRelIn : Statement × (∀ i, OStatement i) → Witness → Prop)
+variable [oSpec.FiniteRange] (oRelIn : Set ((Statement × (∀ i, OStatement i)) × Witness))
 
 @[reducible, simp]
-def toORelOut : Statement × (∀ i, (Sum.elim OStatement fun _ : Fin 1 => Witness) i) → Unit → Prop :=
-  fun ⟨stmt, oStmtAndWit⟩ _ =>
-    oRelIn ⟨stmt, fun i => oStmtAndWit (Sum.inl i)⟩ (oStmtAndWit (Sum.inr 0))
+def toORelOut :
+    Set ((Statement × (∀ i, (Sum.elim OStatement fun _ : Fin 1 => Witness) i)) × Unit) :=
+  setOf (fun ⟨⟨stmt, oStmtAndWit⟩, _⟩ =>
+    oRelIn ⟨⟨stmt, fun i => oStmtAndWit (Sum.inl i)⟩, (oStmtAndWit (Sum.inr 0))⟩)
 
 /-- The `SendSingleWitness` oracle reduction satisfies perfect completeness. -/
 @[simp]

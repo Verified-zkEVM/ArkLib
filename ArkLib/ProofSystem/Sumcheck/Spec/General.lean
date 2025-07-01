@@ -21,7 +21,7 @@ that those implementations derive security from that of the abstract protocol.
 
 The sum-check protocol is parameterized by the following:
 - `R`: the underlying ring (for soundness, required to be finite and a domain)
-- `n + 1 : ℕ+`: the number of variables (also number of rounds)
+- `n : ℕ+`: the number of variables (also number of rounds)
 - `deg : ℕ`: the individual degree bound for the polynomial
 - `D : Fin m ↪ R`: the set of `m` evaluation points for each variable (for some `m`), represented as
   an injection `Fin m ↪ R`. The image of `D` as a finite subset of `R` is written as
@@ -29,31 +29,31 @@ The sum-check protocol is parameterized by the following:
 - `oSpec : OracleSpec ι`: the set of underlying oracles (e.g. random oracles) that may be needed for
   other reductions. However, the sum-check protocol does _not_ use any oracles.
 
-The sum-check relation has no witness. The statement for the `i`-th round, where `i : Fin (n + 2)`,
+The sum-check relation has no witness. The statement for the `i`-th round, where `i : Fin (n + 1)`,
  contains:
 - `target : R`, which is the target value for sum-check
 - `challenges : Fin i → R`, which is the list of challenges sent from the verifier to the prover in
   previous rounds
 
 There is a single oracle statement, which is:
-- `poly : MvPolynomial (Fin (n + 2)) R`, the multivariate polynomial that is summed over
+- `poly : MvPolynomial (Fin n) R`, the multivariate polynomial that is summed over
 
-The sum-check relation for the `i`-th round checks that:
+The sum-check relation for the `i`-th round, where `i = 0, ..., n`, checks that:
 
-  `∑ x ∈ (univ.map D) ^ᶠ (n + 1 - i), poly ⸨challenges, x⸩ = target`.
+  `∑ x ∈ (univ.map D) ^ᶠ (n - i), poly ⸨challenges, x⸩ = target`.
 
 Note that the last statement (when `i = n`) is the output statement of the sum-check protocol.
 
-For `i = 0, ..., n`, the `i`-th round of the sum-check protocol consists of the following:
+For `i = 0, ..., n - 1`, the `i`-th round of the sum-check protocol consists of the following:
 
 1. The prover sends a univariate polynomial `pᵢ ∈ R⦃≤ deg⦄[X]` of degree at most `deg`. If the
    prover is honest, then we have:
 
-    `pᵢ(X) = ∑ x ∈ (univ.map D) ^ᶠ (n - i), poly ⸨X ⦃i⦄, challenges, x⸩`.
+    `pᵢ(X) = ∑ x ∈ (univ.map D) ^ᶠ (n - i - 1), poly ⸨X ⦃i⦄, challenges, x⸩`.
 
   Here, `poly ⸨X ⦃i⦄, challenges, x⸩` is the polynomial `poly` evaluated at the concatenation of the
   prior challenges `challenges`, the `i`-th variable as the new indeterminate `X`, and the rest of
-  the values `x ∈ (univ.map D) ^ᶠ (n - i)`.
+  the values `x ∈ (univ.map D) ^ᶠ (n - i - 1)`.
 
   In the oracle protocol, this polynomial `pᵢ` is turned into an oracle for which the verifier can
   query for evaluations at arbitrary points.
@@ -71,10 +71,6 @@ For `i = 0, ..., n`, the `i`-th round of the sum-check protocol consists of the 
 
 ## Notes & TODOs
 
-An annoying issue is that we need to index over `i : Fin (n + 2)`, not `i : Fin (n + 1)`. This is
-because existing `Fin` functions works better with `n + 1` which is clearly positive, and not `i :
-Fin (n + 1)` (which would imply `n > 0`, but this fact is not apparent).
-
 Note that to represent sum-check as a series of IORs, we will need to implicitly constrain the
 degree of the polynomials via using subtypes, such as `Polynomial.degreeLE` and
 `MvPolynomial.degreeOf`. This is because the oracle verifier only gets oracle access to evaluating
@@ -86,7 +82,7 @@ degree checks.
 
 There are some generalizations that we could consider later:
 
-- Generalize to `degs : Fin (n + 2) → ℕ` and `domain : Fin (n + 2) → (Fin m ↪ R)`, e.g. can vary the
+- Generalize to `degs : Fin n → ℕ` and `domain : Fin n → (Fin m ↪ R)`, e.g. can vary the
   degree bound and the summation domain for each variable
 
 - Generalize the challenges to come from a suitable subset of `R` (e.g. subtractive sets), and not
@@ -116,12 +112,13 @@ variable (R : Type) [CommSemiring R] (deg : ℕ) {m : ℕ} (D : Fin m ↪ R) (n 
 
 variable {ι : Type} (oSpec : OracleSpec ι)
 
--- This is the general sum-check protocol
+/-- The protocol specification for the general sum-check protocol, which is the composition of the
+  single-round protocol specifications -/
 @[reducible]
-def pSpec : ProtocolSpec (∑ _ : Fin (n + 1), 2) :=
-  -- (∑ _ : Fin (n + 1), 2)
-  ProtocolSpec.compose n (fun _ => 2) (fun _ => SingleRound.pSpec R deg)
-  -- (n + 1) * 2
+def pSpec : ProtocolSpec (∑ _ : Fin n, 2) :=
+  -- (∑ _ : Fin n, 2)
+  ProtocolSpec.seqCompose (fun _ => SingleRound.pSpec R deg)
+  -- n * 2
   -- fun i => if i % 2 = 0 then (.P_to_V, R⦃≤ d⦄[X]) else (.V_to_P, R)
 
 -- instance : ∀ i, OracleInterface ((pSpec R d n).Message i) := fun ⟨i, hDir⟩ => by
@@ -154,14 +151,17 @@ instance [VCVCompatible R] : ∀ i, VCVCompatible ((pSpec R deg n).Challenge i) 
 variable [VCVCompatible R]
 
 @[reducible]
-def reduction : Reduction (pSpec R deg n) oSpec
+def reduction : Reduction oSpec
     (Statement R n 0 × ∀ i, OracleStatement R n deg i) Unit
-    (Statement R n (.last (n + 1)) × ∀ i, OracleStatement R n deg i) Unit :=
-  Reduction.compose n (fun _ => 2) (fun _ => SingleRound.pSpec R deg)
-    (fun i => Statement R n i × (∀ j, OracleStatement R n deg j)) (fun _ => Unit)
-    (fun i => SingleRound.reduction R n deg D oSpec i)
+    (Statement R n (.last n) × ∀ i, OracleStatement R n deg i) Unit
+    (pSpec R deg n) :=
+  Reduction.seqCompose (oSpec := oSpec)
+    (Stmt := fun i => Statement R n i × (∀ j, OracleStatement R n deg j))
+    (Wit := fun _ => Unit)
+    (pSpec := fun _ => SingleRound.pSpec R deg)
+    (SingleRound.reduction R n deg D oSpec)
 
--- TODO: define the oracle reduction version once we have defined `OracleReduction.compose`
+-- TODO: define the oracle reduction version once we have defined `OracleReduction.seqCompose`
 
 variable [oSpec.FiniteRange]
 
@@ -169,7 +169,7 @@ variable [oSpec.FiniteRange]
 -- /-- Perfect completeness for the (full) sum-check protocol -/
 -- theorem reduction_complete : (reduction R deg D n oSpec).perfectCompleteness
 --     (relationRound R n deg D 0) (relationRound R n deg D (.last (n + 1))) :=
---   Reduction.completeness_compose (R := reduction R deg D n oSpec)
+--   Reduction.completeness_seqCompose (R := reduction R deg D n oSpec)
 --     (fun _ => 0) (fun i => sorry)
 
 -- def stateFunction : Reduction.StateFunction (pSpec R deg n) []ₒ

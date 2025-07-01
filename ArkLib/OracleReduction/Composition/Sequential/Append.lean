@@ -295,10 +295,10 @@ def Extractor.Straightline.append (E₁ : Extractor.Straightline oSpec Stmt₁ W
     (E₂ : Extractor.Straightline oSpec Stmt₂ Wit₂ Wit₃ pSpec₂)
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁) :
       Extractor.Straightline oSpec Stmt₁ Wit₁ Wit₃ (pSpec₁ ++ₚ pSpec₂) :=
-  fun wit₃ stmt₁ transcript proveQueryLog verifyQueryLog => do
+  fun stmt₁ wit₃ transcript proveQueryLog verifyQueryLog => do
     let stmt₂ ← V₁.verify stmt₁ transcript.fst
-    let wit₂ ← E₂ wit₃ stmt₂ transcript.snd proveQueryLog verifyQueryLog
-    let wit₁ ← E₁ wit₂ stmt₁ transcript.fst proveQueryLog verifyQueryLog
+    let wit₂ ← E₂ stmt₂ wit₃ transcript.snd proveQueryLog verifyQueryLog
+    let wit₁ ← E₁ stmt₁ wit₂ transcript.fst proveQueryLog verifyQueryLog
     return wit₁
 
 /-- The round-by-round extractor for the sequential composition of two (oracle) reductions

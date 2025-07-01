@@ -260,15 +260,9 @@ variable
 namespace OracleVerifier
 
 @[reducible, simp]
-def StateFunction (oSpec : OracleSpec ι)
-    (StmtIn : Type) {ιₛᵢ : Type} (OStmtIn : ιₛᵢ → Type)
-    (StmtOut : Type) {ιₛₒ : Type} (OStmtOut : ιₛₒ → Type)
+def StateFunction
     (langIn : Set (StmtIn × ∀ i, OStmtIn i))
     (langOut : Set (StmtOut × ∀ i, OStmtOut i))
-    {n : ℕ} (pSpec : ProtocolSpec n)
-    [oSpec.FiniteRange]
-    [∀ i, OracleInterface (OStmtIn i)]
-    [∀ i, OracleInterface (pSpec.Message i)]
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :=
   verifier.toVerifier.StateFunction langIn langOut
 

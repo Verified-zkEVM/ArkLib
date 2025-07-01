@@ -35,11 +35,13 @@ def pSpec : ProtocolSpec 1 := ![(.P_to_V, OStatement default)]
 /--
 The prover takes in the old oracle statement as input, and sends it as the protocol message.
 -/
-def prover : OracleProver (pSpec OStatement) oSpec Statement Unit Unit Unit
-    OStatement (OStatement ⊕ᵥ OStatement) where
-  PrvState | 0 => OStatement default | 1 => OStatement default
+def prover : OracleProver oSpec
+    Statement OStatement Unit
+    Unit (OStatement ⊕ᵥ OStatement) Unit
+    (pSpec OStatement) where
+  PrvState := fun _ => OStatement default
 
-  input := fun ⟨_, oStmt⟩ () => oStmt default
+  input := fun ⟨⟨_, oStmt⟩, _⟩ => oStmt default
 
   sendMessage | ⟨0, _⟩ => fun st => pure (st, st)
 
@@ -51,7 +53,7 @@ def prover : OracleProver (pSpec OStatement) oSpec Statement Unit Unit Unit
       | .inr default => by simpa [Unique.uniq] using st⟩,
      ())
 
-variable (rel : Statement × (∀ i, OStatement i) → Prop)
+variable (rel : Set ((Statement × (∀ i, OStatement i)) × Unit))
   (relComp : Statement → OracleComp [OStatement]ₒ Unit)
   -- (rel_eq : ∀ stmt oStmt, rel stmt oStmt ↔
   --   (OracleInterface.simOracle []ₒ (OracleInterface.oracle oStmt)).run = oStmt)
@@ -60,8 +62,8 @@ variable (rel : Statement × (∀ i, OStatement i) → Prop)
 The verifier checks that the relationship `rel oldStmt newStmt` holds.
 It has access to the original and new `OStatement` via their oracle indices.
 -/
-def verifier : OracleVerifier (pSpec OStatement) oSpec Statement Unit
-    OStatement (OStatement ⊕ᵥ OStatement) where
+def verifier : OracleVerifier oSpec Statement OStatement Unit (OStatement ⊕ᵥ OStatement)
+    (pSpec OStatement) where
 
   verify := fun stmt _ => relComp stmt
 
@@ -74,14 +76,14 @@ Combine the prover and verifier into an oracle reduction.
 The input has no statement or witness, but one `OStatement`.
 The output is also no statement or witness, but two `OStatement`s.
 -/
-def oracleReduction :
-    OracleReduction (pSpec OStatement) oSpec Statement Unit Unit Unit
-      OStatement (OStatement ⊕ᵥ OStatement) where
+def oracleReduction : OracleReduction oSpec
+      Statement OStatement Unit
+      Unit (OStatement ⊕ᵥ OStatement) Unit (pSpec OStatement) where
   prover := prover oSpec Statement OStatement
   verifier := verifier oSpec Statement OStatement relComp
 
-def relOut : Unit × (∀ i, (Sum.elim OStatement OStatement) i) → Unit → Prop :=
-  fun ⟨(), oracles⟩ () => oracles (.inl default) = oracles (.inr default)
+def relOut : Set ((Unit × (∀ i, (Sum.elim OStatement OStatement) i)) × Unit) :=
+  setOf (fun ⟨⟨(), oracles⟩, _⟩ => oracles (.inl default) = oracles (.inr default))
 
 variable [oSpec.FiniteRange]
 
@@ -90,7 +92,7 @@ Proof of perfect completeness: if `rel old new` holds in the real setting,
 it also holds in the ideal setting, etc.
 -/
 theorem completeness : (oracleReduction oSpec Statement OStatement relComp).perfectCompleteness
-    (fun x _ => rel x) (relOut OStatement) := by
+    rel (relOut OStatement) := by
   sorry
 
 end SendClaim

@@ -126,8 +126,8 @@ def OracleStatement : Unit → Type := fun _ => R⦃≤ deg⦄[X Fin n]
 /-- The sum-check relation for the `i`-th round, for `i ≤ n` -/
 def relationRound (i : Fin (n + 1)) :
     Set (((Statement R n i) × (∀ i, OracleStatement R n deg i)) × Unit) :=
-  setOf (fun ⟨⟨⟨target, challenges⟩, polyOracle⟩, _⟩ =>
-    ∑ x ∈ (univ.map D) ^ᶠ (n - i), (polyOracle ()).val ⸨challenges, x⸩ = target)
+  { ⟨⟨⟨target, challenges⟩, polyOracle⟩, _⟩ |
+    ∑ x ∈ (univ.map D) ^ᶠ (n - i), (polyOracle ()).val ⸨challenges, x⸩ = target }
 
 namespace SingleRound
 
@@ -165,10 +165,10 @@ def OStmtIn : Unit → Type := fun _ => R⦃≤ deg⦄[X]
 def OStmtOut : Unit → Type := fun _ => R⦃≤ deg⦄[X]
 
 def inputRelation : Set ((StmtIn R × (∀ i, OStmtIn R deg i)) × Unit) :=
-  setOf (fun ⟨⟨target, oStmt⟩, _⟩ => ∑ x ∈ (univ.map D), (oStmt ()).1.eval x = target)
+  { ⟨⟨target, oStmt⟩, _⟩ | ∑ x ∈ (univ.map D), (oStmt ()).1.eval x = target }
 
 def outputRelation : Set ((StmtOut R × (∀ i, OStmtOut R deg i)) × Unit) :=
-  setOf (fun ⟨⟨⟨newTarget, chal⟩, oStmt⟩, _⟩ => (oStmt ()).1.eval chal = newTarget)
+  { ⟨⟨⟨newTarget, chal⟩, oStmt⟩, _⟩ | (oStmt ()).1.eval chal = newTarget }
 
 @[reducible]
 def pSpec : ProtocolSpec 2 := ![(.P_to_V, R⦃≤ deg⦄[X]), (.V_to_P, R)]
@@ -188,11 +188,7 @@ instance instVCVCompatibleChallengePSpec [VCVCompatible R] :
 
 variable {ι : Type} (oSpec : OracleSpec ι)
 
--- By definition, also equals to
--- `Prover (pSpec R d) oSpec (R × ∀ i, OStmtIn R d i) Unit`
--- `(R × ∀ i, OStmtOut R d i) Unit`
-/--
-  The prover in the simple description of a single round of sum-check.
+/-- The prover in the simple description of a single round of sum-check.
 
   Takes in input `target : R` and `poly : R⦃≤ deg⦄[X]`, and:
   - Sends a message `poly' := poly` to the verifier
@@ -266,6 +262,19 @@ instance : [Challenge (pSpec R deg)]ₒ.FiniteRange := inferInstance
 --   · simp; exact default
 --   · simp; exact default
 
+-- TODO: show that the oracle verifier reduces to the (non-oracle) verifier
+theorem oracleVerifier_eq_verifier :
+    (oracleVerifier R deg D oSpec).toVerifier = verifier R deg D oSpec := by
+  ext
+  simp [OracleVerifier.toVerifier, verifier, oracleVerifier, OracleInterface.simOracle2]
+  sorry
+
+/-- The oracle reduction is equivalent to the non-oracle reduction -/
+theorem oracleReduction_eq_reduction :
+    (oracleReduction R deg D oSpec).toReduction = reduction R deg D oSpec := by
+  ext : 1 <;>
+  simp [OracleReduction.toReduction, oracleReduction, reduction, oracleVerifier_eq_verifier]
+
 variable [oSpec.FiniteRange]
 
 /-- Perfect completeness for the (non-oracle) reduction -/
@@ -307,19 +316,6 @@ theorem reduction_completeness : (reduction R deg D oSpec).perfectCompleteness
     simp only [outputRelation, ← hVerStmtOut, h3_1, StmtOut, OStmtOut, h3_2, ← hPrvStmtOut, h2_2,
       true_and]
     aesop
-
--- TODO: show that the oracle verifier reduces to the (non-oracle) verifier
-theorem oracleVerifier_eq_verifier :
-    (oracleVerifier R deg D oSpec).toVerifier = verifier R deg D oSpec := by
-  ext
-  simp [OracleVerifier.toVerifier, verifier, oracleVerifier, OracleInterface.simOracle2]
-  sorry
-
-/-- The oracle reduction is equivalent to the non-oracle reduction -/
-theorem oracleReduction_eq_reduction :
-    (oracleReduction R deg D oSpec).toReduction = reduction R deg D oSpec := by
-  ext : 1 <;>
-  simp [OracleReduction.toReduction, oracleReduction, reduction, oracleVerifier_eq_verifier]
 
 /-- Perfect completeness for the oracle reduction -/
 theorem oracleReduction_completeness : (oracleReduction R deg D oSpec).perfectCompleteness
@@ -409,6 +405,7 @@ def oStmtLens (i : Fin n) : OracleStatement.Lens
   mapDir := fun ⟨⟨_oldTarget, challenges⟩, oStmt⟩ ⟨⟨newTarget, chal⟩, oStmt'⟩ =>
     ⟨⟨newTarget, Fin.snoc challenges chal⟩, oStmt⟩
 
+@[simp]
 def oCtxLens (i : Fin n) : OracleContext.Lens
     (Statement R n i.castSucc) (Statement R n i.succ) (Simple.StmtIn R) (Simple.StmtOut R)
     (OracleStatement R n deg) (OracleStatement R n deg)
@@ -416,6 +413,16 @@ def oCtxLens (i : Fin n) : OracleContext.Lens
     Unit Unit Unit Unit where
   wit := Witness.Lens.trivial
   stmt := oStmtLens R n deg D i
+
+@[simp]
+def extractorLens (i : Fin n) : Extractor.Lens
+    (Statement R n i.castSucc × (∀ i, OracleStatement R n deg i))
+    (Statement R n i.succ × (∀ i, OracleStatement R n deg i))
+    (Simple.StmtIn R × (∀ i, Simple.OStmtIn R deg i))
+    (Simple.StmtOut R × (∀ i, Simple.OStmtOut R deg i))
+    Unit Unit Unit Unit where
+  stmt := oStmtLens R n deg D i
+  wit := Witness.InvLens.trivial
 
 variable {ι : Type} (oSpec : OracleSpec ι) [VCVCompatible R]
 
@@ -448,15 +455,48 @@ instance oCtxLens_complete :
       ((Simple.oracleReduction R deg D oSpec).toReduction.compatContext
         (oCtxLens R n deg D i).toContext)
 where
-  proj_complete := sorry
-  lift_complete := sorry
+  proj_complete := by
+    simp [relationRound, Simple.inputRelation]
+    unfold oStmtLens
+    induction n with
+    | zero => exact Fin.elim0 i
+    | succ n ih =>
+      intro stmt oStmt hRelIn
+      simp [← hRelIn]
+      -- Now it's a statement about polynomials
+      sorry
+  lift_complete := by
+    simp [relationRound, Simple.inputRelation]
+    unfold compatContext oStmtLens
+    -- simp
+    -- induction n with
+    -- | zero => exact Fin.elim0 i
+    -- | succ n ih =>
+    --   simp
+    sorry
 
-instance oCtxLens_rbr_knowledge_soundness :
-    (oCtxLens R n deg D i).toContext.IsRBRKnowledgeSound
+instance extractorLens_rbr_knowledge_soundness :
+    Extractor.Lens.IsKnowledgeSound
       (relationRound R n deg D i.castSucc) (Simple.inputRelation R deg D)
       (relationRound R n deg D i.succ) (Simple.outputRelation R deg)
-      (Set.univ) (Set.univ)
-      (WitnessLens.trivial) := sorry
+      ((Simple.oracleVerifier R deg D oSpec).toVerifier.compatStatement (oStmtLens R n deg D i))
+      (fun _ _ => True)
+      ⟨oStmtLens R n deg D i, Witness.InvLens.trivial⟩ where
+  proj_knowledgeSound := by
+    simp [relationRound, Simple.inputRelation, Simple.outputRelation, Verifier.compatStatement,
+      Simple.oracleVerifier_eq_verifier, Simple.verifier, Verifier.run]
+  lift_knowledgeSound := by
+    simp [relationRound, Simple.inputRelation, Simple.outputRelation, Verifier.compatStatement,
+      Simple.oracleVerifier_eq_verifier, Simple.verifier, Verifier.run, Statement.Lens.proj]
+    unfold oStmtLens
+    induction n with
+    | zero => exact Fin.elim0 i
+    | succ n ih =>
+      intro stmt oStmt hRelIn
+      simp at hRelIn ⊢
+      -- Now it's a statement about polynomials
+      sorry
+
 
 variable [oSpec.FiniteRange]
 
@@ -484,10 +524,10 @@ theorem oracleVerifier_rbr_knowledge_soundness :
     (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ)
     (fun _ => (deg : ℝ≥0) / Fintype.card R) :=
   OracleVerifier.liftContext_rbr_knowledgeSoundness
-    (lens := (oCtxLens R n deg D i).stmt)
-    (lensE := Extractor.Lens.trivial)
-    (lensKnowledgeSound := sorry)
+    (stmtLens := oStmtLens R n deg D i)
+    (witLens := Witness.InvLens.trivial)
     (Simple.oracleVerifier R deg D oSpec)
+    (lensKS := extractorLens_rbr_knowledge_soundness i)
     (Simple.oracleVerifier_rbr_knowledge_soundness R deg D oSpec)
 
 -- /-- State function for round-by-round soundness. No need for this manual definition -/
