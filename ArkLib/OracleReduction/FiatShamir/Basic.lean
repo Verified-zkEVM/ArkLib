@@ -51,15 +51,15 @@ Prover's function for processing the next round, given the current result of the
 -/
 @[inline, specialize]
 def Prover.processRoundFS [∀ i, VCVCompatible (pSpec.Challenge i)] (j : Fin n)
-    (prover : Prover pSpec oSpec StmtIn WitIn StmtOut WitOut)
-    (currentResult : OracleComp (oSpec ++ₒ fiatShamirSpec pSpec StmtIn)
+    (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (currentResult : OracleComp (oSpec ++ₒ fiatShamirSpec StmtIn pSpec)
       (pSpec.MessagesUpTo j.castSucc × StmtIn × prover.PrvState j.castSucc)) :
-      OracleComp (oSpec ++ₒ fiatShamirSpec pSpec StmtIn)
+      OracleComp (oSpec ++ₒ fiatShamirSpec StmtIn pSpec)
         (pSpec.MessagesUpTo j.succ × StmtIn × prover.PrvState j.succ) := do
   let ⟨messages, stmtIn, state⟩ ← currentResult
   match hDir : pSpec.getDir j with
   | .V_to_P => do
-    let challenge ← query (spec := fiatShamirSpec pSpec StmtIn) ⟨j, hDir⟩ ⟨stmtIn, messages⟩
+    let challenge ← query (spec := fiatShamirSpec StmtIn pSpec) ⟨j, hDir⟩ ⟨stmtIn, messages⟩
     letI newState := prover.receiveChallenge ⟨j, hDir⟩ state challenge
     return ⟨messages.extend hDir, stmtIn, newState⟩
   | .P_to_V => do
@@ -73,9 +73,9 @@ Run the prover in an interactive reduction up to round index `i`, via first inpu
 -/
 @[inline, specialize]
 def Prover.runToRoundFS [∀ i, VCVCompatible (pSpec.Challenge i)] (i : Fin (n + 1))
-    (stmt : StmtIn) (prover : Prover pSpec oSpec StmtIn WitIn StmtOut WitOut)
+    (stmt : StmtIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (state : prover.PrvState 0) :
-        OracleComp (oSpec ++ₒ fiatShamirSpec pSpec StmtIn)
+        OracleComp (oSpec ++ₒ fiatShamirSpec StmtIn pSpec)
           (pSpec.MessagesUpTo i × StmtIn × prover.PrvState i) :=
   Fin.induction
     (pure ⟨default, stmt, state⟩)
@@ -83,13 +83,13 @@ def Prover.runToRoundFS [∀ i, VCVCompatible (pSpec.Challenge i)] (i : Fin (n +
     i
 
 /-- The (slow) Fiat-Shamir transformation for the prover. -/
-def Prover.fiatShamir (P : Prover pSpec oSpec StmtIn WitIn StmtOut WitOut) :
-    NonInteractiveProver (∀ i, pSpec.Message i) (oSpec ++ₒ fiatShamirSpec pSpec StmtIn)
+def Prover.fiatShamir (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+    NonInteractiveProver (∀ i, pSpec.Message i) (oSpec ++ₒ fiatShamirSpec StmtIn pSpec)
       StmtIn WitIn StmtOut WitOut where
   PrvState := fun i => match i with
     | 0 => StmtIn × P.PrvState 0
     | _ => P.PrvState (Fin.last n)
-  input := fun stmt wit => ⟨stmt, P.input stmt wit⟩
+  input := fun ctx => ⟨ctx.1, P.input ctx⟩
   -- Compute the messages to send via the modified `runToRoundFS`
   sendMessage | ⟨0, _⟩ => fun ⟨stmtIn, state⟩ => do
     let ⟨messages, _, state⟩ ← P.runToRoundFS (Fin.last n) stmtIn state
@@ -102,7 +102,7 @@ def Prover.fiatShamir (P : Prover pSpec oSpec StmtIn WitIn StmtOut WitOut) :
   challenges. -/
 def ProtocolSpec.Messages.deriveTranscriptFS (messages : pSpec.Messages) (stmt : StmtIn)
     (k : Fin (n + 1)) :
-    OracleComp (oSpec ++ₒ fiatShamirSpec pSpec StmtIn) (pSpec.Transcript k) := do
+    OracleComp (oSpec ++ₒ fiatShamirSpec StmtIn pSpec) (pSpec.Transcript k) := do
   Fin.induction
     (pure default)
     (fun i ih => do
@@ -116,8 +116,8 @@ def ProtocolSpec.Messages.deriveTranscriptFS (messages : pSpec.Messages) (stmt :
     k
 
 /-- The (slow) Fiat-Shamir transformation for the verifier. -/
-def Verifier.fiatShamir (V : Verifier pSpec oSpec StmtIn StmtOut) :
-    NonInteractiveVerifier (∀ i, pSpec.Message i) (oSpec ++ₒ fiatShamirSpec pSpec StmtIn)
+def Verifier.fiatShamir (V : Verifier oSpec StmtIn StmtOut pSpec) :
+    NonInteractiveVerifier (∀ i, pSpec.Message i) (oSpec ++ₒ fiatShamirSpec StmtIn pSpec)
       StmtIn StmtOut where
   verify := fun stmtIn proof => do
     let messages : pSpec.Messages := proof 0
@@ -126,8 +126,8 @@ def Verifier.fiatShamir (V : Verifier pSpec oSpec StmtIn StmtOut) :
 
 /-- The Fiat-Shamir transformation for an (interactive) reduction, which consists of applying the
   Fiat-Shamir transformation to both the prover and the verifier. -/
-def Reduction.fiatShamir (R : Reduction pSpec oSpec StmtIn WitIn StmtOut WitOut) :
-    NonInteractiveReduction (∀ i, pSpec.Message i) (oSpec ++ₒ fiatShamirSpec pSpec StmtIn)
+def Reduction.fiatShamir (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+    NonInteractiveReduction (∀ i, pSpec.Message i) (oSpec ++ₒ fiatShamirSpec StmtIn pSpec)
       StmtIn WitIn StmtOut WitOut where
   prover := R.prover.fiatShamir
   verifier := R.verifier.fiatShamir
@@ -140,10 +140,11 @@ open scoped NNReal
 
 variable [oSpec.FiniteRange] [∀ i, VCVCompatible (pSpec.Challenge i)]
 
-theorem fiatShamir_completeness (relIn : StmtIn → WitIn → Prop) (relOut : StmtOut → WitOut → Prop)
-    (completenessError : ℝ≥0) (R : Reduction pSpec oSpec StmtIn WitIn StmtOut WitOut) :
-  R.completeness relIn relOut completenessError →
-    (R.fiatShamir).completeness relIn relOut completenessError := sorry
+-- theorem fiatShamir_completeness (relIn : Set ((StmtIn × WitIn) × StmtOut × WitOut))
+--     (relOut : Set ((StmtIn × WitIn) × StmtOut × WitOut))
+--     (completenessError : ℝ≥0) (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+--   R.completeness relIn relOut completenessError →
+--     (R.fiatShamir).completeness relIn relOut completenessError := sorry
 
 -- TODO: state-restoration (knowledge) soundness implies (knowledge) soundness after Fiat-Shamir
 
