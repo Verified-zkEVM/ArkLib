@@ -128,7 +128,8 @@ def snoc {pSpec : ProtocolSpec n} {NextMessage : Type}
 -- theorem append_cast_left {n m : ℕ} {pSpec₁ pSpec₂ : ProtocolSpec n} {pSpec' : ProtocolSpec m}
 --     {T₁ : FullTranscript pSpec₁} {T₂ : FullTranscript pSpec'} (n' : ℕ)
 --     (h : n + m = n' + m) (hSpec : dcast h pSpec₁ = pSpec₂) :
---       dcast₂ h (by simp) (T₁ ++ₜ T₂) = (dcast₂ (Nat.add_right_cancel h) (by simp) T₁) ++ₜ T₂ := by
+--       dcast₂ h (by simp) (T₁ ++ₜ T₂) = (dcast₂ (Nat.add_right_cancel h) (by simp) T₁) ++ₜ T₂ :=
+-- by
 --   simp [append, dcast₂, ProtocolSpec.cast, Fin.append_cast_left]
 
 -- @[simp]
@@ -143,15 +144,17 @@ theorem take_append_left (T : FullTranscript pSpec₁) (T' : FullTranscript pSpe
       T.cast rfl (by simp [ProtocolSpec.append]) := by
   ext i
   simp [take, append, ProtocolSpec.append, Fin.castLE, Fin.addCases', Fin.addCases,
-    FullTranscript.cast]
+    FullTranscript.cast, Transcript.cast]
 
 @[simp]
 theorem rtake_append_right (T : FullTranscript pSpec₁) (T' : FullTranscript pSpec₂) :
     (T ++ₜ T').rtake n (Nat.le_add_left n m) =
       T'.cast rfl (by simp [ProtocolSpec.append]) := by
   ext i
-  simp [rtake, append, ProtocolSpec.append, Fin.castLE, Fin.addCases', Fin.addCases,
-    Fin.natAdd, Fin.subNat, FullTranscript.cast]
+  simp only [ProtocolSpec.append, getType, Fin.rtake_apply, Fin.natAdd, Fin.cast_mk, rtake, append,
+    Fin.addCases', Fin.addCases, add_tsub_cancel_right, add_lt_iff_neg_left, not_lt_zero',
+    ↓reduceDIte, Fin.subNat_mk, Fin.natAdd_mk, eq_mpr_eq_cast, eq_mp_eq_cast, FullTranscript.cast,
+    Transcript.cast, Fin.val_last, Fin.cast_eq_self, Fin.castLE_refl]
   have : m + n - n + i.val - m = i.val := by omega
   rw! (castMode := .all) [this]
   simp [_root_.cast_eq_cast_iff, eqRec_eq_cast]

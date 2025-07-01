@@ -24,7 +24,7 @@ section find_home
 
 /-- Applies a pair of binary functions component-wise to a pair of pairs.
 
-TODO: move to mathlib -/
+TODO: move to mathlib, add supporting lemmas -/
 def Prod.map₂ {α β γ α' β' γ' : Type*} (f : α → β → γ) (g : α' → β' → γ') :
     (α × α') → (β × β') → (γ × γ') :=
   fun ⟨a, a'⟩ ⟨b, b'⟩ => ⟨f a b, g a' b'⟩
@@ -34,51 +34,52 @@ end find_home
 open OracleSpec OracleComp PFunctor
 
 /-- A lens for transporting input and output statements for the verifier of a (non-oracle)
-  reduction.
+    reduction.
 
   Consists of two functions:
-  - `projStmt` : Transport input statements from the outer context to the inner context
-  - `liftStmt` : Transport output statements from the inner context to the outer context,
-    additionally relying on the input statements of the outer context.
+  - `proj : OuterStmtIn → InnerStmtIn` : Transport input statements from the outer context to
+    the inner context
+  - `lift : OuterStmtIn → InnerStmtOut → OuterStmtOut` : Transport output statements from the
+    inner context to the outer context, additionally relying on the outer input statement.
 
   This is exactly the same as a `PFunctor.Lens` between two monomials defined by the input and
   output statements (from the outer to the inner context).
 -/
 @[inline, reducible]
-def Verifier.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
+def Statement.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
   := PFunctor.Lens (OuterStmtIn y^ OuterStmtOut) (InnerStmtIn y^ InnerStmtOut)
 
-namespace Verifier.Lens
+namespace Statement.Lens
 
 variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
 
 /-- Transport input statements from the outer context to the inner context -/
 @[inline, reducible]
-def projStmt (lens : Verifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) :
+def proj (lens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) :
     OuterStmtIn → InnerStmtIn :=
   lens.mapPos
 
 /-- Transport output statements from the inner context to the outer context,
   additionally relying on the input statements of the outer context. -/
 @[inline, reducible]
-def liftStmt (lens : Verifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) :
+def lift (lens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) :
     OuterStmtIn → InnerStmtOut → OuterStmtOut :=
   lens.mapDir
 
-end Verifier.Lens
+end Statement.Lens
 
 /-- A lens for transporting input and output statements (both oracle and non-oracle) for the
   oracle verifier of an oracle reduction.
 
   TODO: figure out the right way to define this -/
 @[inline, reducible]
-def OracleVerifier.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
+def OracleStatement.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
     {Outer_ιₛᵢ : Type} (OuterOStmtIn : Outer_ιₛᵢ → Type) [∀ i, OracleInterface (OuterOStmtIn i)]
     {Outer_ιₛₒ : Type} (OuterOStmtOut : Outer_ιₛₒ → Type) [∀ i, OracleInterface (OuterOStmtOut i)]
     {Inner_ιₛᵢ : Type} (InnerOStmtIn : Inner_ιₛᵢ → Type) [∀ i, OracleInterface (InnerOStmtIn i)]
     {Inner_ιₛₒ : Type} (InnerOStmtOut : Inner_ιₛₒ → Type) [∀ i, OracleInterface (InnerOStmtOut i)]
   :=
-    Verifier.Lens (OuterStmtIn × ∀ i, OuterOStmtIn i) (OuterStmtOut × ∀ i, OuterOStmtOut i)
+    Statement.Lens (OuterStmtIn × ∀ i, OuterOStmtIn i) (OuterStmtOut × ∀ i, OuterOStmtOut i)
                   (InnerStmtIn × ∀ i, InnerOStmtIn i) (InnerStmtOut × ∀ i, InnerOStmtOut i)
   -- TODO: fill in the extra conditions
   /- Basically, as we model the output oracle statement as a subset of the input oracle statement +
@@ -103,7 +104,7 @@ def OracleVerifier.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Typ
   -- liftOStmt_neverFails : ∀ i, ∀ t, ∀ outerStmtIn, ∀ innerStmtOut,
   --   ((liftOStmt.impl (query i t)).run (outerStmtIn, innerStmtOut)).neverFails
 
-namespace OracleVerifier.Lens
+namespace OracleStatement.Lens
 
 variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
     {Outer_ιₛᵢ : Type} {OuterOStmtIn : Outer_ιₛᵢ → Type} [∀ i, OracleInterface (OuterOStmtIn i)]
@@ -115,7 +116,7 @@ variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
 
 TODO: refactor etc. -/
 @[inline, reducible]
-def projStmt (lens : OracleVerifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+def proj (lens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
               OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut) :
     OuterStmtIn × (∀ i, OuterOStmtIn i) → InnerStmtIn × (∀ i, InnerOStmtIn i) :=
   lens.mapPos
@@ -125,120 +126,77 @@ def projStmt (lens : OracleVerifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn In
 
   TODO: refactor etc. -/
 @[inline, reducible]
-def liftStmt (lens : OracleVerifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+def lift (lens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
               OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut) :
     OuterStmtIn × (∀ i, OuterOStmtIn i) → InnerStmtOut × (∀ i, InnerOStmtOut i) →
     OuterStmtOut × (∀ i, OuterOStmtOut i) :=
   lens.mapDir
 
--- def toVerifierLens : Verifier.Lens
+-- def toVerifierLens : Statement.Lens
 --     (OuterStmtIn × ∀ i, OuterOStmtIn i) (OuterStmtOut × ∀ i, OuterOStmtOut i)
 --     (InnerStmtIn × ∀ i, InnerOStmtIn i) (InnerStmtOut × ∀ i, InnerOStmtOut i)
 --   := oStmtLens
 
-end OracleVerifier.Lens
+end OracleStatement.Lens
 
-/-- A lens for transporting the input and output contexts (statements + witnesses) for the prover
-  of a (non-oracle) reduction. -/
+/-- Lenses for transporting the input & output witnesses from an inner protocol to an outer
+    protocol.
+
+  It consists of two functions:
+  - `projWit : OuterStmtIn × OuterWitIn → InnerWitIn`, which derives the inner input witness from
+    the outer one, requiring also the outer input statement.
+  - `liftWit : OuterStmtIn × OuterWitIn → InnerStmtOut × InnerWitOut → OuterWitOut`, which
+    derives the outer output witness from outer input witness & the inner output one, requiring
+    also the associated statements.
+
+  The inclusion of the statements are necessary when we consider the full view of the prover. In
+  practice as well, oftentimes a lens between only witnesses are not enough. -/
 @[inline, reducible]
-def Prover.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-                OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type)
-    := PFunctor.Lens ((OuterStmtIn × OuterWitIn) y^ (OuterStmtOut × OuterWitOut))
-                     ((InnerStmtIn × InnerWitIn) y^ (InnerStmtOut × InnerWitOut))
+def Witness.Lens (OuterStmtIn InnerStmtOut OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type)
+    := PFunctor.Lens ((OuterStmtIn × OuterWitIn) y^ OuterWitOut)
+                     (InnerWitIn y^ (InnerStmtOut × InnerWitOut))
 
-namespace Prover.Lens
+namespace Witness.Lens
 
 variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
           OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
 
-/-- Transport input statements from the outer context to the inner context -/
+/-- Transport input witness from the outer context to the inner context -/
 @[inline, reducible]
-def projCtx (lens : Prover.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-              OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
-    OuterStmtIn × OuterWitIn → InnerStmtIn × InnerWitIn :=
+def proj (lens : Witness.Lens OuterStmtIn InnerStmtIn
+                                OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
+    OuterStmtIn × OuterWitIn → InnerWitIn :=
   lens.mapPos
 
-/-- Transport output statements from the inner context to the outer context,
+/-- Transport output witness from the inner context to the outer context,
   additionally relying on the input statements of the outer context. -/
 @[inline, reducible]
-def liftCtx (lens : Prover.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-              OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
-    OuterStmtIn × OuterWitIn → InnerStmtOut × InnerWitOut → OuterStmtOut × OuterWitOut :=
+def lift (lens : Witness.Lens OuterStmtIn InnerStmtOut
+                                OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
+    OuterStmtIn × OuterWitIn → InnerStmtOut × InnerWitOut → OuterWitOut :=
   lens.mapDir
 
-end Prover.Lens
-
-/-- A lens for transporting the input and output contexts (statements + witnesses) for the prover
-  of an oracle reduction.
-
-  Since the prover in an oracle reduction is the same as for the associated non-oracle reduction
-  (oracle-ness only applies to the verifier), we can just use the prover lens for the non-oracle
-  reduction. -/
-@[inline, reducible]
-def OracleProver.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
-    {Outer_ιₛᵢ : Type} (OuterOStmtIn : Outer_ιₛᵢ → Type) [∀ i, OracleInterface (OuterOStmtIn i)]
-    {Outer_ιₛₒ : Type} (OuterOStmtOut : Outer_ιₛₒ → Type) [∀ i, OracleInterface (OuterOStmtOut i)]
-    {Inner_ιₛᵢ : Type} (InnerOStmtIn : Inner_ιₛᵢ → Type) [∀ i, OracleInterface (InnerOStmtIn i)]
-    {Inner_ιₛₒ : Type} (InnerOStmtOut : Inner_ιₛₒ → Type) [∀ i, OracleInterface (InnerOStmtOut i)]
-    (OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) :=
-  Prover.Lens (OuterStmtIn × ∀ i, OuterOStmtIn i) (OuterStmtOut × ∀ i, OuterOStmtOut i)
-             (InnerStmtIn × ∀ i, InnerOStmtIn i) (InnerStmtOut × ∀ i, InnerOStmtOut i)
-             OuterWitIn OuterWitOut InnerWitIn InnerWitOut
-
-namespace OracleProver.Lens
-
-variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
-    {Outer_ιₛᵢ : Type} {OuterOStmtIn : Outer_ιₛᵢ → Type} [∀ i, OracleInterface (OuterOStmtIn i)]
-    {Outer_ιₛₒ : Type} {OuterOStmtOut : Outer_ιₛₒ → Type} [∀ i, OracleInterface (OuterOStmtOut i)]
-    {Inner_ιₛᵢ : Type} {InnerOStmtIn : Inner_ιₛᵢ → Type} [∀ i, OracleInterface (InnerOStmtIn i)]
-    {Inner_ιₛₒ : Type} {InnerOStmtOut : Inner_ιₛₒ → Type} [∀ i, OracleInterface (InnerOStmtOut i)]
-    {OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
-
-/-- Transport input statements from the outer context to the inner context -/
-@[inline, reducible]
-def projStmt (lens : OracleProver.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-              OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
-              OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
-    (OuterStmtIn × (∀ i, OuterOStmtIn i)) × OuterWitIn →
-    (InnerStmtIn × (∀ i, InnerOStmtIn i)) × InnerWitIn :=
-  lens.mapPos
-
-/-- Transport output statements from the inner context to the outer context,
-  additionally relying on the input statements of the outer context. -/
-@[inline, reducible]
-def liftStmt (lens : OracleProver.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-              OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
-              OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
-    (OuterStmtIn × (∀ i, OuterOStmtIn i)) × OuterWitIn →
-    (InnerStmtOut × (∀ i, InnerOStmtOut i)) × InnerWitOut →
-    (OuterStmtOut × (∀ i, OuterOStmtOut i)) × OuterWitOut :=
-  lens.mapDir
-
-end OracleProver.Lens
+end Witness.Lens
 
 /-- A structure collecting a lens for the prover, and a lens for the verifier, for transporting
   between the contexts of an outer reduction and an inner reduction. -/
-@[ext]
-structure Reduction.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+structure Context.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                           OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) where
-  prover : Prover.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-              OuterWitIn OuterWitOut InnerWitIn InnerWitOut
-  verifier : Verifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+  stmt : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+  wit : Witness.Lens OuterStmtIn InnerStmtOut OuterWitIn OuterWitOut InnerWitIn InnerWitOut
 
 /-- A structure collecting a lens for the prover, and a lens for the oracle verifier, for
   transporting between the contexts of an outer oracle reduction and an inner oracle reduction. -/
-@[ext]
-structure OracleReduction.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
+structure OracleContext.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
     {Outer_ιₛᵢ : Type} (OuterOStmtIn : Outer_ιₛᵢ → Type) [∀ i, OracleInterface (OuterOStmtIn i)]
     {Outer_ιₛₒ : Type} (OuterOStmtOut : Outer_ιₛₒ → Type) [∀ i, OracleInterface (OuterOStmtOut i)]
     {Inner_ιₛᵢ : Type} (InnerOStmtIn : Inner_ιₛᵢ → Type) [∀ i, OracleInterface (InnerOStmtIn i)]
     {Inner_ιₛₒ : Type} (InnerOStmtOut : Inner_ιₛₒ → Type) [∀ i, OracleInterface (InnerOStmtOut i)]
     (OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) where
-  prover : OracleProver.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-              OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
-              OuterWitIn OuterWitOut InnerWitIn InnerWitOut
-  verifier : OracleVerifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-                       OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
+  stmt : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                                  OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
+  wit : Witness.Lens (OuterStmtIn × ∀ i, OuterOStmtIn i) (InnerStmtOut × ∀ i, InnerOStmtOut i)
+                          OuterWitIn OuterWitOut InnerWitIn InnerWitOut
 
 /-
   Recall the interface of an extractor:
@@ -265,73 +223,81 @@ structure OracleReduction.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOu
   inner witness types.
 -/
 
-/-- Inverse lens between outer and inner witnesses (going the other direction with respect to
-  input-output), for extractors / knowledge soundness.
+/-- Lens for lifting the extractor from the inner reduction to the outer reduction.
+
+Given that the extractor's input-output interface is of the form `StmtIn × WitOut → WitIn` (ignoring
+transcript and query logs), this is essentially the same as a lens for the prover, except the
+exchange of the input and output witness, and the omission of the output statement.
 -/
 @[inline, reducible]
-def Extractor.Lens (OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) :=
-  PFunctor.Lens (OuterWitOut y^ OuterWitIn) (InnerWitOut y^ InnerWitIn)
+def Extractor.Lens (OuterStmtIn InnerStmtIn
+                OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type)
+    := PFunctor.Lens ((OuterStmtIn × OuterWitOut) y^ OuterWitIn)
+                     ((InnerStmtIn × InnerWitOut) y^ InnerWitIn)
 
--- structure Reduction.LensInv (OuterStmtOut InnerStmtOut : Type)
---     (OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) extends
---       WitnessLens OuterWitOut OuterWitIn InnerWitOut InnerWitIn where
---   projStmt : OuterStmtOut → InnerStmtOut
-  -- projWitInv : InnerWitOut → OuterWitOut
-  -- liftWitInv : InnerWitIn × OuterWitOut → OuterWitIn
+namespace Extractor.Lens
 
-/-- For round-by-round knowledge soundness, we require an _equivalence_ on the input witness
-  (inner <=> outer). Otherwise, we cannot extract.
+variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+          OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
 
-  (imagine a reduction from R1 x R2 => R3 x R4, that is the sequential composition of R1 => R3 and
-  then R2 => R4. This reduction is not round-by-round knowledge sound, since if we are in the
-  R1 => R3 rounds, we have no way of invoking the second extractor for recovering the witness for
-  R2.)
--/
-class RBRWitnessLensInv (OuterWitIn InnerWitIn : Type) where
-  liftWit : InnerWitIn → OuterWitIn
+/-- Transport the tuple of (input statement, output witness) from the outer context to the inner
+  context -/
+@[inline, reducible]
+def proj (lens : Extractor.Lens OuterStmtIn InnerStmtIn
+              OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
+    OuterStmtIn × OuterWitOut → InnerStmtIn × InnerWitOut :=
+  lens.mapPos
+
+/-- Transport the inner input witness to the outer input witness, also relying on the tuple (outer
+  input statement, outer output witness) -/
+@[inline, reducible]
+def lift (lens : Extractor.Lens OuterStmtIn InnerStmtIn
+              OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
+    OuterStmtIn × OuterWitOut → InnerWitIn → OuterWitIn :=
+  lens.mapDir
+
+end Extractor.Lens
 
 /-- Conditions for the lens / transformation to preserve completeness
 
 For `lift`, we require compatibility relations between the outer input statement/witness and
 the inner output statement/witness -/
-class Reduction.Lens.IsComplete {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
+class Context.Lens.IsComplete {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
     {OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
     (outerRelIn : Set (OuterStmtIn × OuterWitIn))
     (innerRelIn : Set (InnerStmtIn × InnerWitIn))
     (outerRelOut : Set (OuterStmtOut × OuterWitOut))
     (innerRelOut : Set (InnerStmtOut × InnerWitOut))
     (compatRel : Set ((OuterStmtIn × OuterWitIn) × (InnerStmtOut × InnerWitOut)))
-    (lens : Reduction.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+    (lens : Context.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                         OuterWitIn OuterWitOut InnerWitIn InnerWitOut) where
-
-  proj_compat : ∀ stmtIn witIn,
-    (lens.prover.projCtx (stmtIn, witIn)).fst = lens.verifier.projStmt stmtIn
 
   proj_complete : ∀ stmtIn witIn,
     (stmtIn, witIn) ∈ outerRelIn →
-    (lens.prover.projCtx (stmtIn, witIn)) ∈ innerRelIn
+    (lens.stmt.proj stmtIn, lens.wit.proj (stmtIn, witIn)) ∈ innerRelIn
 
   lift_complete : ∀ outerStmtIn outerWitIn innerStmtOut innerWitOut,
     ((outerStmtIn, outerWitIn), (innerStmtOut, innerWitOut)) ∈ compatRel →
     (outerStmtIn, outerWitIn) ∈ outerRelIn →
     (innerStmtOut, innerWitOut) ∈ innerRelOut →
-    lens.prover.liftCtx (outerStmtIn, outerWitIn) (innerStmtOut, innerWitOut) ∈ outerRelOut
+    (lens.stmt.lift outerStmtIn innerStmtOut,
+    lens.wit.lift (outerStmtIn, outerWitIn) (innerStmtOut, innerWitOut)) ∈ outerRelOut
 
 /-- Conditions for the lens / transformation to preserve soundness -/
-class Verifier.Lens.IsSound {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
+class Statement.Lens.IsSound {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
     (outerLangIn : Set OuterStmtIn) (outerLangOut : Set OuterStmtOut)
     (innerLangIn : Set InnerStmtIn) (innerLangOut : Set InnerStmtOut)
     (compatRel : Set (OuterStmtIn × InnerStmtOut))
-    (lens : Verifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) where
+    (lens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) where
 
   proj_sound : ∀ outerStmtIn,
-    outerStmtIn ∉ outerLangIn → lens.projStmt outerStmtIn ∉ innerLangIn
+    outerStmtIn ∉ outerLangIn → lens.proj outerStmtIn ∉ innerLangIn
 
   lift_sound : ∀ outerStmtIn innerStmtOut,
     (outerStmtIn, innerStmtOut) ∈ compatRel →
     outerStmtIn ∉ outerLangIn →
     innerStmtOut ∉ innerLangOut →
-    lens.liftStmt outerStmtIn innerStmtOut ∉ outerLangOut
+    lens.lift outerStmtIn innerStmtOut ∉ outerLangOut
 
 /-- Conditions for the lens / transformation to preserve round-by-round soundness
 
@@ -339,27 +305,27 @@ This is nearly identical to the `IsSound` condition, _except_ that we do not req
 `outerStmtIn ∉ outerLangIn` in the `lift_sound` condition.
 
 (we need to relax that condition to prove `toFun_full` of the lifted state function) -/
-class Verifier.Lens.IsRBRSound {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
+class Statement.Lens.IsRBRSound {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
     (outerLangIn : Set OuterStmtIn) (outerLangOut : Set OuterStmtOut)
     (innerLangIn : Set InnerStmtIn) (innerLangOut : Set InnerStmtOut)
     (compatRel : Set (OuterStmtIn × InnerStmtOut))
-    (lens : Verifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) where
+    (stmtLens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) where
 
   -- inner_to_outer for input
   proj_sound : ∀ outerStmtIn,
-    outerStmtIn ∉ outerLangIn → lens.projStmt outerStmtIn ∉ innerLangIn
+    outerStmtIn ∉ outerLangIn → stmtLens.proj outerStmtIn ∉ innerLangIn
 
   -- outer_to_inner for output
   lift_sound : ∀ outerStmtIn innerStmtOut,
     (outerStmtIn, innerStmtOut) ∈ compatRel →
     innerStmtOut ∉ innerLangOut →
-    lens.liftStmt outerStmtIn innerStmtOut ∉ outerLangOut
+    stmtLens.lift outerStmtIn innerStmtOut ∉ outerLangOut
 
 /-- Conditions for the lens / transformation to preserve knowledge soundness
 
 Note that we do _not_ require a witness lens in the input -> output direction, since we don't need
 to do anything with the (honest) prover -/
-class Verifier.Lens.IsKnowledgeSound
+class Statement.Lens.IsKnowledgeSound
     {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
     {OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
     (outerRelIn : OuterStmtIn → OuterWitIn → Prop)
@@ -368,28 +334,28 @@ class Verifier.Lens.IsKnowledgeSound
     (innerRelOut : InnerStmtOut → InnerWitOut → Prop)
     (compatStmt : OuterStmtIn → InnerStmtOut → Prop)
     (compatWit : OuterWitOut → InnerWitIn → Prop)
-    (lensE : Extractor.Lens OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
-    (lensV : Verifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) where
+    (lensE : Extractor.Lens OuterStmtIn InnerStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
+    (lensV : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) where
 
   -- outer_to_inner for output
   out_to_in : ∀ outerStmtIn innerStmtOut outerWitOut,
     compatStmt outerStmtIn innerStmtOut →
-    outerRelOut (lensV.liftStmt outerStmtIn innerStmtOut) outerWitOut →
-    innerRelOut innerStmtOut (lensE.projWit outerWitOut)
+    outerRelOut (lensV.lift outerStmtIn innerStmtOut) outerWitOut →
+    innerRelOut innerStmtOut (lensE.proj (outerStmtIn, outerWitOut)).2
 
   -- inner_to_outer for input
   in_to_out : ∀ outerStmtIn outerWitOut innerWitIn,
     compatWit outerWitOut innerWitIn →
-    innerRelIn (lensV.projStmt outerStmtIn) innerWitIn →
-    outerRelIn outerStmtIn (lensE.liftWit (outerWitOut, innerWitIn))
+    innerRelIn (lensV.proj outerStmtIn) innerWitIn →
+    outerRelIn outerStmtIn (lensE.lift (outerStmtIn, outerWitOut) innerWitIn)
 
-namespace Verifier.Lens.IsKnowledgeSound
+namespace Statement.Lens.IsKnowledgeSound
 
 -- Convert knowledge soundness into soundness
 
-end Verifier.Lens.IsKnowledgeSound
+end Statement.Lens.IsKnowledgeSound
 
-class Verifier.Lens.IsRBRKnowledgeSound
+class Statement.Lens.IsRBRKnowledgeSound
     {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
     {OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
     (outerRelIn : OuterStmtIn → OuterWitIn → Prop)
@@ -398,10 +364,10 @@ class Verifier.Lens.IsRBRKnowledgeSound
     (innerRelOut : InnerStmtOut → InnerWitOut → Prop)
     (compatStmt : OuterStmtIn → InnerStmtOut → Prop)
     (compatWit : OuterWitOut → InnerWitIn → Prop)
-    (lensE : Extractor.Lens OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
-    (lensV : Verifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut)
+    (lensE : Extractor.Lens OuterStmtIn InnerStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
+    (lensV : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut)
   -- TODO: double-check if we need any extra conditions
-  extends Verifier.Lens.IsKnowledgeSound outerRelIn innerRelIn outerRelOut innerRelOut
+  extends Statement.Lens.IsKnowledgeSound outerRelIn innerRelIn outerRelOut innerRelOut
         compatStmt compatWit lensE lensV where
 
 section SpecialCases
@@ -433,169 +399,122 @@ variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
   {Inner_ιₛₒ : Type} {InnerOStmtOut : Inner_ιₛₒ → Type} [∀ i, OracleInterface (InnerOStmtOut i)]
   {OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
 
-namespace Verifier.Lens
+namespace Statement.Lens
 
-/-- The trivial lens for the verifier, which acts as identity on the input and output statements. -/
-@[inline, reducible, simp]
+/-- The trivial lens for the statement, which acts as identity on the input and output. -/
+@[inline, reducible]
 def trivial :
-    Verifier.Lens OuterStmtIn OuterStmtOut OuterStmtIn OuterStmtOut :=
+    Statement.Lens OuterStmtIn OuterStmtOut OuterStmtIn OuterStmtOut :=
   ⟨id, fun _ => id⟩
 
-/-- Lens for the verifier which keeps the output statements the same, and hence only requires a
-  projection on the input statements. -/
+/-- Lens for the statement which keeps the output the same, and hence only requires a
+  projection on the input. -/
 @[inline]
 def ofInputOnly (projStmt : OuterStmtIn → InnerStmtIn) :
-    Verifier.Lens OuterStmtIn OuterStmtOut InnerStmtIn OuterStmtOut :=
+    Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn OuterStmtOut :=
   ⟨projStmt, fun _ => id⟩
 
-/-- Lens for the verifier which keeps the input statements the same, and hence only requires a
-  lift on the output statements. -/
+/-- Lens for the statement which keeps the input the same, and hence only requires a
+  lift on the output. -/
 @[inline]
 def ofOutputOnly (liftStmt : OuterStmtIn → InnerStmtOut → OuterStmtOut) :
-    Verifier.Lens OuterStmtIn OuterStmtOut OuterStmtIn InnerStmtOut :=
+    Statement.Lens OuterStmtIn OuterStmtOut OuterStmtIn InnerStmtOut :=
   ⟨id, liftStmt⟩
 
-end Verifier.Lens
+end Statement.Lens
 
-namespace Prover.Lens
+namespace OracleStatement.Lens
 
-/-- The trivial lens for the prover, which acts as identity on the input and output contexts. -/
-@[inline, reducible, simp]
+-- TODO: replace with new definitions when we figure out the right definition for oracle statements
+-- lens
+
+/-- The trivial lens for the statement, which acts as identity on the input and output. -/
+@[inline, reducible]
 def trivial :
-    Prover.Lens OuterStmtIn OuterStmtOut OuterStmtIn OuterStmtOut
-                OuterWitIn OuterWitOut OuterWitIn OuterWitOut :=
+    OracleStatement.Lens OuterStmtIn OuterStmtOut OuterStmtIn OuterStmtOut
+                        OuterOStmtIn OuterOStmtOut OuterOStmtIn OuterOStmtOut :=
   ⟨id, fun _ => id⟩
 
-/-- Lens for the prover which keeps the output context (statements + witnesses) the same, and hence
-  only requires a projection on the input context (statements + witnesses). -/
-@[inline]
-def ofInputOnly (projCtx : OuterStmtIn × OuterWitIn → InnerStmtIn × InnerWitIn) :
-    Prover.Lens OuterStmtIn OuterStmtOut InnerStmtIn OuterStmtOut
-                OuterWitIn OuterWitOut InnerWitIn OuterWitOut :=
-  ⟨projCtx, fun _ => id⟩
-
-/-- Lens for the prover which keeps the input context (statements + witnesses) the same, and hence
-  only requires a lift on the output context (statements + witnesses). -/
-@[inline]
-def ofOutputOnly
-    (liftCtx : OuterStmtIn × OuterWitIn → InnerStmtOut × InnerWitOut → OuterStmtOut × OuterWitOut) :
-    Prover.Lens OuterStmtIn OuterStmtOut OuterStmtIn InnerStmtOut
-                OuterWitIn OuterWitOut OuterWitIn InnerWitOut :=
-  ⟨id, liftCtx⟩
-
-/-- Lens for the prover which separates the mappings between the statements and the witnesses. -/
-def ofSeparateStmtWit
-    (projStmt : OuterStmtIn → InnerStmtIn) (liftStmt : OuterStmtIn → InnerStmtOut → OuterStmtOut)
-    (projWit : OuterWitIn → InnerWitIn) (liftWit : OuterWitIn → InnerWitOut → OuterWitOut) :
-    Prover.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-                OuterWitIn OuterWitOut InnerWitIn InnerWitOut :=
-  ⟨Prod.map projStmt projWit, Prod.map₂ liftStmt liftWit⟩
-
-/-- Lens for the prover which keeps the witnesses the same, and hence only requires a projection
-  on the statements. -/
-@[inline]
-def ofStmtOnly
-    (projStmt : OuterStmtIn → InnerStmtIn) (liftStmt : OuterStmtIn → InnerStmtOut → OuterStmtOut) :
-    Prover.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-                OuterWitIn OuterWitOut OuterWitIn OuterWitOut :=
-  ofSeparateStmtWit projStmt liftStmt id (fun _ => id)
-
-/-- Lens for the prover which keeps the statements the same, and hence only requires a lift on
-  the witnesses. -/
-@[inline]
-def ofWitOnly
-    (projWit : OuterWitIn → InnerWitIn) (liftWit : OuterWitIn → InnerWitOut → OuterWitOut) :
-    Prover.Lens OuterStmtIn OuterStmtOut OuterStmtIn OuterStmtOut
-                OuterWitIn OuterWitOut InnerWitIn InnerWitOut :=
-  ofSeparateStmtWit id (fun _ => id) projWit liftWit
-
-/-- Lens for the prover which keeps the witnesses the same, and also the output statements the same,
-  hence only requires a projection on the input statements. -/
-@[inline]
-def ofInputStmtOnly (projStmt : OuterStmtIn → InnerStmtIn) :
-    Prover.Lens OuterStmtIn OuterStmtOut InnerStmtIn OuterStmtOut
-                OuterWitIn OuterWitOut OuterWitIn OuterWitOut :=
-  ofStmtOnly projStmt (fun _ => id)
-
-/-- Lens for the prover which keeps the witnesses the same, and also the input statements the same,
-  hence only requires a lift on the output statements. -/
-@[inline]
-def ofOutputStmtOnly (liftStmt : OuterStmtIn → InnerStmtOut → OuterStmtOut) :
-    Prover.Lens OuterStmtIn OuterStmtOut OuterStmtIn InnerStmtOut
-                OuterWitIn OuterWitOut OuterWitIn OuterWitOut :=
-  ofStmtOnly id liftStmt
-
-/-- Lens for the prover which keeps the statements the same, and also the output witnesses the same,
-  hence only requires a projection on the input witnesses. -/
-@[inline]
-def ofInputWitOnly (projWit : OuterWitIn → InnerWitIn) :
-    Prover.Lens OuterStmtIn OuterStmtOut OuterStmtIn OuterStmtOut
-                OuterWitIn OuterWitOut InnerWitIn OuterWitOut :=
-  ofWitOnly projWit (fun _ => id)
-
-/-- Lens for the prover which keeps the witnesses the same, and also the input statements the same,
-  hence only requires a lift on the output statements. -/
-@[inline]
-def ofOutputWitOnly (liftWit : OuterWitIn → InnerWitOut → OuterWitOut) :
-    Prover.Lens OuterStmtIn OuterStmtOut OuterStmtIn OuterStmtOut
-                OuterWitIn OuterWitOut OuterWitIn InnerWitOut :=
-  ofWitOnly id liftWit
-
-end Prover.Lens
-
-namespace Reduction.Lens
-
+/-- Lens for the statement which keeps the output the same, and hence only requires a
+  projection on the input. -/
 @[inline]
 def ofInputOnly
-    (proverProj : OuterStmtIn × OuterWitIn → InnerStmtIn × InnerWitIn)
-    (verifierProj : OuterStmtIn → InnerStmtIn) :
-    Reduction.Lens OuterStmtIn OuterStmtOut InnerStmtIn OuterStmtOut
-                OuterWitIn OuterWitOut InnerWitIn OuterWitOut where
-  prover := Prover.Lens.ofInputOnly proverProj
-  verifier := Verifier.Lens.ofInputOnly verifierProj
+    (projStmt : OuterStmtIn × (∀ i, OuterOStmtIn i) → InnerStmtIn × (∀ i, InnerOStmtIn i)) :
+    OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn OuterStmtOut
+                        OuterOStmtIn OuterOStmtOut InnerOStmtIn OuterOStmtOut :=
+  ⟨projStmt, fun _ => id⟩
 
+/-- Lens for the statement which keeps the input the same, and hence only requires a
+  lift on the output. -/
 @[inline]
 def ofOutputOnly
-    (proverLift :
-      OuterStmtIn × OuterWitIn → InnerStmtOut × InnerWitOut → OuterStmtOut × OuterWitOut)
-    (verifierLift : OuterStmtIn → InnerStmtOut → OuterStmtOut) :
-    Reduction.Lens OuterStmtIn OuterStmtOut OuterStmtIn InnerStmtOut
+    (liftStmt : OuterStmtIn × (∀ i, OuterOStmtIn i) → InnerStmtOut × (∀ i, InnerOStmtOut i) →
+                OuterStmtOut × (∀ i, OuterOStmtOut i)) :
+    OracleStatement.Lens OuterStmtIn OuterStmtOut OuterStmtIn InnerStmtOut
+                        OuterOStmtIn OuterOStmtOut OuterOStmtIn InnerOStmtOut :=
+  ⟨id, liftStmt⟩
+
+end OracleStatement.Lens
+
+namespace Witness.Lens
+
+/-- The trivial lens for the witness, which acts as projection from the context (statement +
+  witness) to the witness. -/
+@[inline, reducible]
+def trivial :
+    Witness.Lens OuterStmtIn OuterStmtOut OuterWitIn OuterWitOut OuterWitIn OuterWitOut :=
+  ⟨Prod.snd, fun _ => Prod.snd⟩
+
+/-- Lens for the witness which keeps the output context (statement + witness) the same, and hence
+  only requires a projection for the input witness. -/
+@[inline]
+def ofInputOnly (projWit : OuterStmtIn × OuterWitIn → InnerWitIn) :
+    Witness.Lens OuterStmtIn OuterStmtOut OuterWitIn OuterWitOut InnerWitIn OuterWitOut :=
+  ⟨projWit, fun _ => Prod.snd⟩
+
+/-- Lens for the witness which keeps the input context (statement + witness) the same, and hence
+  only requires a lift for the output witness. -/
+@[inline]
+def ofOutputOnly
+    (liftWit : OuterStmtIn × OuterWitIn → InnerStmtOut × InnerWitOut → OuterWitOut) :
+    Witness.Lens OuterStmtIn InnerStmtOut OuterWitIn OuterWitOut OuterWitIn InnerWitOut :=
+  ⟨Prod.snd, liftWit⟩
+
+end Witness.Lens
+
+namespace Context.Lens
+
+/-- The trivial lens for the context, which combines the trivial statement and witness lenses. -/
+@[inline, reducible]
+def trivial :
+    Context.Lens OuterStmtIn OuterStmtOut OuterStmtIn OuterStmtOut
+                OuterWitIn OuterWitOut OuterWitIn OuterWitOut where
+  stmt := Statement.Lens.trivial
+  wit := Witness.Lens.trivial
+
+/-- Lens for the context which keeps the output contexts the same, and only requires projections on
+  the statement & witness for the input. -/
+@[inline]
+def ofInputOnly
+    (stmtProj : OuterStmtIn → InnerStmtIn)
+    (witProj : OuterStmtIn × OuterWitIn → InnerWitIn) :
+    Context.Lens OuterStmtIn OuterStmtOut InnerStmtIn OuterStmtOut
+                OuterWitIn OuterWitOut InnerWitIn OuterWitOut where
+  stmt := Statement.Lens.ofInputOnly stmtProj
+  wit := Witness.Lens.ofInputOnly witProj
+
+/-- Lens for the context which keeps the input contexts the same, and only requires lifts on the
+  statement & witness for the output. -/
+@[inline]
+def ofOutputOnly
+    (witLift :
+      OuterStmtIn × OuterWitIn → InnerStmtOut × InnerWitOut → OuterWitOut)
+    (stmtLift : OuterStmtIn → InnerStmtOut → OuterStmtOut) :
+    Context.Lens OuterStmtIn OuterStmtOut OuterStmtIn InnerStmtOut
                 OuterWitIn OuterWitOut OuterWitIn InnerWitOut where
-  prover := Prover.Lens.ofOutputOnly proverLift
-  verifier := Verifier.Lens.ofOutputOnly verifierLift
+  wit := Witness.Lens.ofOutputOnly witLift
+  stmt := Statement.Lens.ofOutputOnly stmtLift
 
--- @[inline]
--- def ofInputStmtOnly (OuterStmtIn InnerStmtIn StmtOut WitIn WitOut : Type)
---     (projStmt : OuterStmtIn → InnerStmtIn) :
---     Reduction.Lens OuterStmtIn StmtOut InnerStmtIn StmtOut
---                 WitIn WitOut WitIn WitOut where
---   toStatementLens := StatementLens.ofInputOnly OuterStmtIn InnerStmtIn StmtOut projStmt
---   toWitnessLens := WitnessLens.trivial WitIn WitOut
-
--- @[inline]
--- def ofOutputStmtOnly (StmtIn OuterStmtOut InnerStmtOut WitIn WitOut : Type)
---     (liftStmt : InnerStmtOut → OuterStmtOut) :
---     Reduction.Lens StmtIn OuterStmtOut StmtIn InnerStmtOut
---                 WitIn WitOut WitIn WitOut where
---   toStatementLens := StatementLens.ofOutputOnly StmtIn OuterStmtOut InnerStmtOut liftStmt
---   toWitnessLens := WitnessLens.trivial WitIn WitOut
-
--- @[inline]
--- def ofInputWitOnly (StmtIn StmtOut OuterWitIn InnerWitIn WitOut : Type)
---     (projWit : OuterWitIn → InnerWitIn) :
---     Reduction.Lens StmtIn StmtOut StmtIn StmtOut
---                 OuterWitIn WitOut InnerWitIn WitOut where
---   toStatementLens := StatementLens.trivial StmtIn StmtOut
---   toWitnessLens := WitnessLens.ofInputOnly OuterWitIn InnerWitIn WitOut projWit
-
--- @[inline]
--- def ofOutputWitOnly (StmtIn StmtOut WitIn OuterWitOut InnerWitOut : Type)
---     (liftWit : InnerWitOut → OuterWitOut) :
---     Reduction.Lens StmtIn StmtOut StmtIn StmtOut
---                 WitIn OuterWitOut WitIn InnerWitOut where
---   toStatementLens := StatementLens.trivial StmtIn StmtOut
---   toWitnessLens := WitnessLens.ofOutputOnly WitIn OuterWitOut InnerWitOut liftWit
-
-end Reduction.Lens
+end Context.Lens
 
 end SpecialCases

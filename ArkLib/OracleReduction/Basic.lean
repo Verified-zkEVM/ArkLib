@@ -94,7 +94,7 @@ structure ProverState (n : ℕ) where
 /-- Initialization of prover's state via inputting the statement and witness. -/
 @[ext]
 structure ProverIn (StmtIn WitIn PrvState : Type) where
-  input : StmtIn → WitIn → PrvState
+  input : StmtIn × WitIn → PrvState
   -- initState : PrvState
   -- if honest prover, then expect that PrvState 0 = WitIn
 
@@ -423,7 +423,7 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   input context (statement & witness) as output. -/
 protected def Prover.id : Prover oSpec Statement Witness Statement Witness ![] where
   PrvState := fun _ => Statement × Witness
-  input := _root_.id.curry
+  input := _root_.id
   sendMessage := fun i => Fin.elim0 i
   receiveChallenge := fun i => Fin.elim0 i
   output := _root_.id

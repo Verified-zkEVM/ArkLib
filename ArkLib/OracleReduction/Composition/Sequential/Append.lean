@@ -134,16 +134,16 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
 
   /- The combined prover's input function is the first prover's input function, except for when the
   first protocol is empty, in which case it is the second prover's input function -/
-  input := fun stmt wit => by
+  input := fun ctxIn => by
     by_cases h : m > 0
     · simp [Fin.append, Fin.addCases, Fin.init, Fin.castLT, h]
-      exact P₁.input stmt wit
+      exact P₁.input ctxIn
     · simp [Fin.append, Fin.addCases, h, Fin.subNat]
       exact (
-        letI state := P₁.input stmt wit
+        letI state := P₁.input ctxIn
         haveI : 0 = Fin.last m := by aesop
         haveI state : P₁.PrvState (Fin.last m) := by simpa [this] using state
-        P₂.input.uncurry (P₁.output state))
+        P₂.input (P₁.output state))
 
   /- The combined prover sends messages according to the round index `i` as follows:
   - if `i < m - 1`, then it sends the message & updates the state as the first prover
@@ -163,7 +163,7 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
           let ⟨msg, state⟩ ← P₁.sendMessage ⟨⟨i, hi⟩, h⟩ state
           haveI state : P₁.PrvState (Fin.last m) := by
             simpa only [Fin.last, Fin.succ_mk, this] using state
-          return ⟨msg, P₂.input.uncurry (P₁.output state)⟩)
+          return ⟨msg, P₂.input (P₁.output state)⟩)
     · haveI : ¬ i + 1 < m := by omega
       simp [ProtocolSpec.append, Fin.append, Fin.addCases, Fin.init, hi, this,
         Fin.cast, Fin.castLT, Fin.succ, Fin.castSucc] at h state ⊢
@@ -189,7 +189,7 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
           letI newState := P₁.receiveChallenge ⟨⟨i, hi⟩, h⟩ state chal
           haveI newState : P₁.PrvState (Fin.last m) := by
             simpa [Fin.last, this] using newState
-          P₂.input.uncurry (P₁.output newState))
+          P₂.input (P₁.output newState))
     · haveI : ¬ i + 1 < m := by omega
       simp [ProtocolSpec.append, Fin.append, Fin.addCases, Fin.init, hi, this,
         Fin.cast, Fin.castLT, Fin.succ, Fin.castSucc] at h state chal ⊢
@@ -360,10 +360,10 @@ The overall output is `stmt₃`, `wit₃`, and the combined transcript `transcri
 theorem Prover.append_run (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     (P₂ : Prover oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂) (stmt : Stmt₁) (wit : Wit₁) :
       (P₁.append P₂).run stmt wit = (do
-        let ⟨stmt₂, wit₂, transcript₁⟩ ← liftM (P₁.run stmt wit)
-        let ⟨stmt₃, wit₃, transcript₂⟩ ← liftM (P₂.run stmt₂ wit₂)
+        let ⟨⟨stmt₂, wit₂⟩, transcript₁⟩ ← liftM (P₁.run stmt wit)
+        let ⟨⟨stmt₃, wit₃⟩, transcript₂⟩ ← liftM (P₂.run stmt₂ wit₂)
         -- TODO: should we refactor the prover to take in a running query log?
-        return ⟨stmt₃, wit₃, transcript₁ ++ₜ transcript₂⟩) :=
+        return ⟨⟨stmt₃, wit₃⟩, transcript₁ ++ₜ transcript₂⟩) :=
   sorry
 
 -- TODO: Need to define a function that "extracts" a second prover from the combined prover
