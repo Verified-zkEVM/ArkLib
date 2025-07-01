@@ -20,13 +20,14 @@ open OracleSpec OracleComp ProtocolSpec
 
 open scoped NNReal
 
-variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
+variable {ι : Type} {oSpec : OracleSpec ι}
   {OuterStmtIn OuterWitIn OuterStmtOut OuterWitOut : Type}
   {Outer_ιₛᵢ : Type} {OuterOStmtIn : Outer_ιₛᵢ → Type} [∀ i, OracleInterface (OuterOStmtIn i)]
   {Outer_ιₛₒ : Type} {OuterOStmtOut : Outer_ιₛₒ → Type} [∀ i, OracleInterface (OuterOStmtOut i)]
   {Inner_ιₛᵢ : Type} {InnerOStmtIn : Inner_ιₛᵢ → Type} [∀ i, OracleInterface (InnerOStmtIn i)]
   {Inner_ιₛₒ : Type} {InnerOStmtOut : Inner_ιₛₒ → Type} [∀ i, OracleInterface (InnerOStmtOut i)]
   {InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut : Type}
+  {n : ℕ} {pSpec : ProtocolSpec n}
 
 /-- The lifting of the prover from an inner oracle reduction to an outer oracle reduction, requiring
   an associated oracle context lens -/
@@ -152,28 +153,27 @@ theorem liftContext_soundness
 
 theorem liftContext_knowledgeSoundness [Inhabited InnerWitIn]
     {knowledgeError : ℝ≥0}
-    {lens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+    {stmtLens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                                 OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut}
-    {lensE : Extractor.Lens (OuterStmtIn × (∀ i, OuterOStmtIn i))
-                            (InnerStmtIn × (∀ i, InnerOStmtIn i))
+    {witLens : Witness.InvLens (OuterStmtIn × ∀ i, OuterOStmtIn i)
                             OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
     (V : OracleVerifier oSpec InnerStmtIn InnerOStmtIn InnerStmtOut InnerOStmtOut pSpec)
-    [lensKnowledgeSound : lens.IsKnowledgeSound
+    [lensKS : Extractor.Lens.IsKnowledgeSound
       outerRelIn innerRelIn outerRelOut innerRelOut
-      (V.toVerifier.compatStatement lens) (Set.univ) lensE]
+      (V.toVerifier.compatStatement stmtLens) (fun _ _ => True) ⟨stmtLens, witLens⟩]
     (h : V.knowledgeSoundness innerRelIn innerRelOut knowledgeError) :
-      (V.liftContext lens).knowledgeSoundness outerRelIn outerRelOut
+      (V.liftContext stmtLens).knowledgeSoundness outerRelIn outerRelOut
         knowledgeError := by
   unfold OracleVerifier.knowledgeSoundness at h ⊢
   rw [liftContext_toVerifier_comm]
-  exact V.toVerifier.liftContext_knowledgeSoundness (lensE := lensE) h (lens := lens)
+  exact V.toVerifier.liftContext_knowledgeSoundness h (stmtLens := stmtLens) (witLens := witLens)
 
 theorem liftContext_rbr_soundness
     {rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0}
     {lens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                                 OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut}
     (V : OracleVerifier oSpec InnerStmtIn InnerOStmtIn InnerStmtOut InnerOStmtOut pSpec)
-    [lensRBRSound : lens.IsRBRSound
+    [lensSound : lens.IsSound
       outerLangIn outerLangOut innerLangIn innerLangOut
       (V.toVerifier.compatStatement lens)]
     (h : V.rbrSoundness innerLangIn innerLangOut rbrSoundnessError) :
@@ -184,21 +184,21 @@ theorem liftContext_rbr_soundness
 
 theorem liftContext_rbr_knowledgeSoundness [Inhabited InnerWitIn]
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
-    {lens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+    {stmtLens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                                 OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut}
-    {lensE : Extractor.Lens (OuterStmtIn × (∀ i, OuterOStmtIn i))
-                            (InnerStmtIn × (∀ i, InnerOStmtIn i))
+    {witLens : Witness.InvLens (OuterStmtIn × ∀ i, OuterOStmtIn i)
                             OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
     (V : OracleVerifier oSpec InnerStmtIn InnerOStmtIn InnerStmtOut InnerOStmtOut pSpec)
-    [lensKnowledgeSound : lens.IsKnowledgeSound
+    [lensKS : Extractor.Lens.IsKnowledgeSound
       outerRelIn innerRelIn outerRelOut innerRelOut
-      (V.toVerifier.compatStatement lens) (Set.univ) lensE]
+      (V.toVerifier.compatStatement stmtLens) (fun _ _ => True) ⟨stmtLens, witLens⟩]
     (h : V.rbrKnowledgeSoundness innerRelIn innerRelOut rbrKnowledgeError) :
-      (V.liftContext lens).rbrKnowledgeSoundness outerRelIn outerRelOut
+      (V.liftContext stmtLens).rbrKnowledgeSoundness outerRelIn outerRelOut
         rbrKnowledgeError := by
   unfold OracleVerifier.rbrKnowledgeSoundness at h ⊢
   rw [liftContext_toVerifier_comm]
-  exact V.toVerifier.liftContext_rbr_knowledgeSoundness (lensE := lensE) h (lens := lens)
+  exact V.toVerifier.liftContext_rbr_knowledgeSoundness h
+    (stmtLens := stmtLens) (witLens := witLens)
 
 end OracleVerifier
 

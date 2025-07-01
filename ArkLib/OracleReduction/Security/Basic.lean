@@ -137,8 +137,8 @@ variable (oSpec : OracleSpec ι) (StmtIn WitIn WitOut : Type) {n : ℕ} (pSpec :
   This form of extractor suffices for proving knowledge soundness of most hash-based IOPs.
 -/
 def Straightline :=
-  WitOut → -- output witness
   StmtIn → -- input statement
+  WitOut → -- output witness
   FullTranscript pSpec → -- reduction transcript
   QueryLog oSpec → -- prover's query log
   QueryLog oSpec → -- verifier's query log
@@ -209,7 +209,7 @@ def knowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut ×
       let ⟨(_, witOut), stmtOut, transcript, proveQueryLog, verifyQueryLog⟩ ←
         reduction.runWithLog stmtIn witIn
       let extractedWitIn ←
-        liftComp (extractor witOut stmtIn transcript proveQueryLog.fst verifyQueryLog) _
+        liftComp (extractor stmtIn witOut transcript proveQueryLog.fst verifyQueryLog) _
       return (stmtIn, extractedWitIn, stmtOut, witOut)] ≤ knowledgeError
 
 /-- Type class for knowledge soundness for a verifier -/
@@ -231,9 +231,9 @@ class Extractor.Straightline.IsMonotone
     verifyQueryLog₁.Sublist verifyQueryLog₂ →
     -- Placeholder probability for now, probably need to consider the whole game
     [fun witIn => (stmtIn, witIn) ∈ relIn |
-      E witOut stmtIn transcript proveQueryLog₁ verifyQueryLog₁] ≤
+      E stmtIn witOut transcript proveQueryLog₁ verifyQueryLog₁] ≤
     [fun witIn => (stmtIn, witIn) ∈ relIn |
-      E witOut stmtIn transcript proveQueryLog₂ verifyQueryLog₂]
+      E stmtIn witOut transcript proveQueryLog₂ verifyQueryLog₂]
     -- Pr[extraction game succeeds on proveQueryLog₁, verifyQueryLog₁]
     -- ≤ Pr[extraction game succeeds on proveQueryLog₂, verifyQueryLog₂]
 

@@ -101,21 +101,21 @@ open Verifier in
 /-- The outer extractor after lifting invokes the inner extractor on the projected input, and
   lifts the output -/
 def Extractor.Straightline.liftContext
-    (lens : Extractor.Lens OuterStmtIn InnerStmtIn
+    (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                         OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
     (E : Extractor.Straightline oSpec InnerStmtIn InnerWitIn InnerWitOut pSpec) :
       Extractor.Straightline oSpec OuterStmtIn OuterWitIn OuterWitOut pSpec :=
-  fun outerWitOut outerStmtIn fullTranscript proveQueryLog verifyQueryLog => do
+  fun outerStmtIn outerWitOut fullTranscript proveQueryLog verifyQueryLog => do
     let ⟨innerStmtIn, innerWitOut⟩ := lens.proj (outerStmtIn, outerWitOut)
-    let innerWitIn ← E innerWitOut innerStmtIn fullTranscript proveQueryLog verifyQueryLog
-    return lens.lift (outerStmtIn, outerWitOut) innerWitIn
+    let innerWitIn ← E innerStmtIn innerWitOut fullTranscript proveQueryLog verifyQueryLog
+    return lens.wit.lift (outerStmtIn, outerWitOut) innerWitIn
 
 open Verifier in
 /-- The outer round-by-round extractor after lifting invokes the inner extractor on the projected
   input, and lifts the output -/
 def Extractor.RoundByRound.liftContext
-    (lens : Extractor.Lens OuterStmtIn OuterStmtOut
-                        OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
+    (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                          OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
     (E : Extractor.RoundByRound oSpec InnerStmtIn InnerWitIn pSpec) :
       Extractor.RoundByRound oSpec OuterStmtIn OuterWitIn pSpec :=
   sorry
@@ -129,28 +129,26 @@ We require that the inner output statement is a possible output of the verifier 
 input statement, for any given transcript. Note that we have to existentially quantify over
 transcripts since we only reference the verifier, and there's no way to get the transcript without
 a prover. -/
-def Verifier.compatStatement {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
+def Verifier.compatStatement
     (lens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut)
     (V : Verifier oSpec InnerStmtIn InnerStmtOut pSpec) :
-      Set (OuterStmtIn × InnerStmtOut) :=
-  setOf (fun ⟨outerStmtIn, innerStmtOut⟩ =>
-    ∃ transcript, innerStmtOut ∈ (V.run (lens.proj outerStmtIn) transcript).support)
+      OuterStmtIn → InnerStmtOut → Prop :=
+  fun outerStmtIn innerStmtOut =>
+    ∃ transcript, innerStmtOut ∈ (V.run (lens.proj outerStmtIn) transcript).support
 
 /-- Compatibility relation between the outer input context and the inner output context, relative
 to a reduction.
 
 We require that the inner output context (statement + witness) is a possible output of the reduction
 on the outer input context (statement + witness). -/
-def Reduction.compatContext {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
-    {OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
+def Reduction.compatContext
     (lens : Context.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                         OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
     (R : Reduction oSpec InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut pSpec) :
-      Set ((OuterStmtIn × OuterWitIn) × (InnerStmtOut × InnerWitOut)) :=
-  setOf (fun ⟨outerCtxIn, innerCtxOut⟩ =>
+      (OuterStmtIn × OuterWitIn) → (InnerStmtOut × InnerWitOut) → Prop :=
+  fun outerCtxIn innerCtxOut =>
     innerCtxOut ∈
-      Prod.fst ''
-        (R.run (lens.stmt.proj outerCtxIn.1) (lens.wit.proj outerCtxIn)).support)
+      Prod.fst '' (R.run (lens.stmt.proj outerCtxIn.1) (lens.wit.proj outerCtxIn)).support
 
 /-- Compatibility relation between the outer input witness and the inner output witness, relative to
   a straightline extractor.
@@ -158,14 +156,14 @@ def Reduction.compatContext {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut :
 We require that the inner output witness is a possible output of the straightline extractor on the
 outer input witness, for a given input statement, transcript, and prover and verifier's query logs.
 -/
-def Extractor.Straightline.compatWit [oSpec.FiniteRange]
-    (lens : Extractor.Lens OuterStmtIn InnerStmtIn
+def Extractor.Straightline.compatWit
+    (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                         OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
     (E : Extractor.Straightline oSpec InnerStmtIn InnerWitIn InnerWitOut pSpec) :
       OuterStmtIn × OuterWitOut → InnerWitIn → Prop :=
   fun ⟨outerStmtIn, outerWitOut⟩ innerWitIn =>
     ∃ stmt tr logP logV, innerWitIn ∈
-      (E (lens.proj (outerStmtIn, outerWitOut)).2 stmt tr logP logV).support
+      (E stmt (lens.wit.proj (outerStmtIn, outerWitOut)) tr logP logV).support
 
 /-- The outer state function after lifting invokes the inner state function on the projected
   input, and lifts the output -/
@@ -174,7 +172,7 @@ def Verifier.StateFunction.liftContext [oSpec.FiniteRange]
     (V : Verifier oSpec InnerStmtIn InnerStmtOut pSpec)
     (outerLangIn : Set OuterStmtIn) (outerLangOut : Set OuterStmtOut)
     (innerLangIn : Set InnerStmtIn) (innerLangOut : Set InnerStmtOut)
-    [lensRBRSound : lens.IsRBRSound outerLangIn outerLangOut innerLangIn innerLangOut
+    [lensSound : lens.IsSound outerLangIn outerLangOut innerLangIn innerLangOut
       (V.compatStatement lens)]
     (stF : V.StateFunction innerLangIn innerLangOut) :
       (V.liftContext lens).StateFunction outerLangIn outerLangOut
@@ -182,14 +180,14 @@ where
   toFun := fun m outerStmtIn transcript =>
     stF m (lens.proj outerStmtIn) transcript
   toFun_empty := fun stmt hStmt =>
-    stF.toFun_empty (lens.proj stmt) (lensRBRSound.proj_sound stmt hStmt)
+    stF.toFun_empty (lens.proj stmt) (lensSound.proj_sound stmt hStmt)
   toFun_next := fun m hDir outerStmtIn transcript hStmt msg =>
     stF.toFun_next m hDir (lens.proj outerStmtIn) transcript hStmt msg
   toFun_full := fun outerStmtIn transcript hStmt => by
     have h := stF.toFun_full (lens.proj outerStmtIn) transcript hStmt
     simp [Verifier.run, Verifier.liftContext] at h ⊢
     intro innerStmtOut hSupport
-    apply lensRBRSound.lift_sound
+    apply lensSound.lift_sound
     · simp [compatStatement]; exact ⟨transcript, hSupport⟩
     · exact h innerStmtOut hSupport
 
@@ -362,8 +360,8 @@ theorem liftContext_completeness
     simp
     exact ⟨a, b, hSupport⟩
   simp_all
+  rw [← hRelOut'] at hRelOut ⊢
   refine lensComplete.lift_complete _ _ _ _ ?_ hRelIn hRelOut
-  rw [← hRelOut']
   simp [compatContext]; exact this
 
 theorem liftContext_perfectCompleteness
@@ -423,24 +421,30 @@ theorem liftContext_soundness [Inhabited InnerStmtOut]
   sorry
 
 /-
-  Lifting the reduction preserves knowledge soundness, assuming the lens satisfies its
-  knowledge soundness conditions
+  Lifting the reduction preserves knowledge soundness, assuming the lens satisfies its knowledge
+  soundness conditions
+
+  Note: since knowledge soundness is defined existentially in terms of the extractor, we also cannot
+  impose any meaningful compatibility conditions on the witnesses (outer output & inner input),
+  hence `compatWit` field is just always true
+
+  (future extensions may define lifting relative to a particular extractor, if needed)
 -/
 theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited InnerWitIn]
     {outerRelIn : Set (OuterStmtIn × OuterWitIn)} {outerRelOut : Set (OuterStmtOut × OuterWitOut)}
     {innerRelIn : Set (InnerStmtIn × InnerWitIn)} {innerRelOut : Set (InnerStmtOut × InnerWitOut)}
     {knowledgeError : ℝ≥0}
-    {lens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut}
-    {lensE : Extractor.Lens OuterStmtIn InnerStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
+    {stmtLens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut}
+    {witLens : Witness.InvLens OuterStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
     (V : Verifier oSpec InnerStmtIn InnerStmtOut pSpec)
-    [lensKnowledgeSound : lens.IsKnowledgeSound outerRelIn innerRelIn outerRelOut innerRelOut
-      (V.compatStatement lens) (Set.univ) lensE]
+    [lensKS : Extractor.Lens.IsKnowledgeSound outerRelIn innerRelIn outerRelOut innerRelOut
+      (V.compatStatement stmtLens) (fun _ _ => True) ⟨stmtLens, witLens⟩]
     (h : V.knowledgeSoundness innerRelIn innerRelOut knowledgeError) :
-      (V.liftContext lens).knowledgeSoundness outerRelIn outerRelOut
+      (V.liftContext stmtLens).knowledgeSoundness outerRelIn outerRelOut
         knowledgeError := by
   unfold knowledgeSoundness at h ⊢
   obtain ⟨E, h'⟩ := h
-  refine ⟨E.liftContext lensE, ?_⟩
+  refine ⟨E.liftContext ⟨stmtLens, witLens⟩, ?_⟩
   intro outerStmtIn outerWitIn outerP
   simp [Extractor.Straightline.liftContext]
   let innerP : Prover oSpec InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut pSpec :=
@@ -451,19 +455,19 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited Inner
       receiveChallenge := outerP.receiveChallenge
       output := fun state =>
         let ⟨outerStmtOut, outerWitOut⟩ := outerP.output state
-        ⟨default, (lensE.proj (outerStmtIn, outerWitOut)).2⟩
+        ⟨default, witLens.proj (outerStmtIn, outerWitOut)⟩
     }
   have h_innerP_input {innerStmtIn} {innerWitIn} :
       innerP.input (innerStmtIn, innerWitIn) = outerP.input (outerStmtIn, outerWitIn) := rfl
   simp at h'
-  have hR := h' (lens.proj outerStmtIn) default innerP
+  have hR := h' (stmtLens.proj outerStmtIn) default innerP
   simp at hR
   simp [Reduction.runWithLog, Verifier.liftContext, Verifier.run] at hR ⊢
   have h_innerP_runWithLog {innerStmtIn} {innerWitIn} :
       innerP.runWithLog innerStmtIn innerWitIn
       = do
         let ⟨⟨_, outerWitOut⟩, rest⟩ ← outerP.runWithLog outerStmtIn outerWitIn
-        return ⟨⟨default, (lensE.proj (outerStmtIn, outerWitOut)).2⟩, rest⟩ := by
+        return ⟨⟨default, witLens.proj (outerStmtIn, outerWitOut)⟩, rest⟩ := by
     sorry
   refine le_trans ?_ hR
   -- Massage the two `probEvent`s so that they have the same base computation `oa`?
@@ -482,14 +486,14 @@ theorem liftContext_rbr_soundness [Inhabited InnerStmtOut]
     {lens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut}
     (V : Verifier oSpec InnerStmtIn InnerStmtOut pSpec)
     -- TODO: figure out the right compatibility relation for the IsSound condition
-    [lensRBRSound : lens.IsRBRSound outerLangIn outerLangOut innerLangIn innerLangOut
+    [lensSound : lens.IsSound outerLangIn outerLangOut innerLangIn innerLangOut
       (V.compatStatement lens)]
     (h : V.rbrSoundness innerLangIn innerLangOut rbrSoundnessError) :
       (V.liftContext lens).rbrSoundness outerLangIn outerLangOut rbrSoundnessError := by
   unfold rbrSoundness at h ⊢
   obtain ⟨stF, h⟩ := h
   simp at h ⊢
-  refine ⟨stF.liftContext (lens := lens) (lensRBRSound := lensRBRSound), ?_⟩
+  refine ⟨stF.liftContext lens (lensSound := lensSound), ?_⟩
   intro outerStmtIn hOuterStmtIn WitIn WitOut witIn outerP roundIdx hDir
   have innerP : Prover oSpec InnerStmtIn WitIn InnerStmtOut WitOut pSpec := {
     PrvState := outerP.PrvState
@@ -500,7 +504,7 @@ theorem liftContext_rbr_soundness [Inhabited InnerStmtOut]
       let ⟨outerStmtOut, outerWitOut⟩ := outerP.output state
       ⟨default, outerWitOut⟩
   }
-  have h' := h (lens.proj outerStmtIn) (lensRBRSound.proj_sound _ hOuterStmtIn)
+  have h' := h (lens.proj outerStmtIn) (lensSound.proj_sound _ hOuterStmtIn)
     WitIn WitOut witIn innerP roundIdx hDir
   refine le_trans ?_ h'
   sorry
@@ -513,13 +517,13 @@ theorem liftContext_rbr_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited I
     {outerRelIn : Set (OuterStmtIn × OuterWitIn)} {outerRelOut : Set (OuterStmtOut × OuterWitOut)}
     {innerRelIn : Set (InnerStmtIn × InnerWitIn)} {innerRelOut : Set (InnerStmtOut × InnerWitOut)}
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
-    {lens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut}
-    {lensE : Extractor.Lens OuterStmtIn InnerStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
+    {stmtLens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut}
+    {witLens : Witness.InvLens OuterStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
     (V : Verifier oSpec InnerStmtIn InnerStmtOut pSpec)
-    [lensKnowledgeSound : lens.IsKnowledgeSound outerRelIn innerRelIn outerRelOut innerRelOut
-      (V.compatStatement lens) (Set.univ) lensE]
+    [lensKS : Extractor.Lens.IsKnowledgeSound outerRelIn innerRelIn outerRelOut innerRelOut
+      (V.compatStatement stmtLens) (fun _ _ => True) ⟨stmtLens, witLens⟩]
     (h : V.rbrKnowledgeSoundness innerRelIn innerRelOut rbrKnowledgeError) :
-      (V.liftContext lens).rbrKnowledgeSoundness outerRelIn outerRelOut
+      (V.liftContext stmtLens).rbrKnowledgeSoundness outerRelIn outerRelOut
         rbrKnowledgeError := by
   unfold rbrKnowledgeSoundness at h ⊢
   obtain ⟨stF, E, h⟩ := h
@@ -544,48 +548,59 @@ noncomputable section
 def OuterStmtIn_Test := ℤ[X] × ℤ[X] × ℤ
 def InnerStmtIn_Test := ℤ[X] × ℤ
 
+@[simp]
 def outerRelIn_Test : Set (OuterStmtIn_Test × Unit) :=
   setOf (fun ⟨⟨p, q, t⟩, _⟩ => ∑ x ∈ {0, 1}, (p * q).eval x = t)
+@[simp]
 def innerRelIn_Test : Set (InnerStmtIn_Test × Unit) :=
   setOf (fun ⟨⟨f, t⟩, _⟩ => ∑ x ∈ {0, 1}, f.eval x = t)
 
 def OuterStmtOut_Test := ℤ[X] × ℤ[X] × ℤ × ℤ
 def InnerStmtOut_Test := ℤ[X] × ℤ × ℤ
 
+@[simp]
 def outerRelOut_Test : Set (OuterStmtOut_Test × Unit) :=
   setOf (fun ⟨⟨p, q, t, r⟩, _⟩ => (p * q).eval r = t)
+@[simp]
 def innerRelOut_Test : Set (InnerStmtOut_Test × Unit) :=
   setOf (fun ⟨⟨f, t, r⟩, _⟩ => f.eval r = t)
 
+@[simp]
+def testStmtLens :
+    Statement.Lens OuterStmtIn_Test OuterStmtOut_Test InnerStmtIn_Test InnerStmtOut_Test :=
+  ⟨fun ⟨p, q, t⟩ => ⟨p * q, t⟩, fun ⟨p, q, _⟩ ⟨_, t', u⟩ => (p, q, t', u)⟩
+
+@[simp]
 def testLens : Context.Lens OuterStmtIn_Test OuterStmtOut_Test InnerStmtIn_Test InnerStmtOut_Test
                 Unit Unit Unit Unit where
-  stmt := ⟨fun ⟨p, q, t⟩ => ⟨p * q, t⟩, fun ⟨p, q, _⟩ ⟨_, t', u⟩ => (p, q, t', u)⟩
-  wit := ⟨fun _ => (), fun _ _=> ()⟩
+  stmt := testStmtLens
+  wit := Witness.Lens.id
 
--- def testLensE : Extractor.Lens OuterStmtIn_Test InnerStmtIn_Test Unit Unit Unit Unit :=
---   ⟨fun _ => (), fun _ _ => ()⟩
+@[simp]
+def testLensE : Extractor.Lens OuterStmtIn_Test OuterStmtOut_Test InnerStmtIn_Test InnerStmtOut_Test
+                Unit Unit Unit Unit where
+  stmt := testStmtLens
+  wit := Witness.InvLens.id
 
--- def testLensComplete : testLens.IsComplete
---       outerRelIn_Test innerRelIn_Test outerRelOut_Test innerRelOut_Test
---       (fun ⟨⟨p, q, _⟩, ()⟩ ⟨⟨f, _⟩, ()⟩ => p * q = f) where
---   proj_complete := fun ⟨p, q, t⟩ () hRelIn => by
---     simp [outerRelIn_Test] at hRelIn
---     simp [innerRelIn_Test, testLens, hRelIn]
---   lift_complete := fun ⟨p, q, t⟩ _ ⟨f, t', r⟩ _ hCompat hRelIn hRelOut' => by
---     simp [outerRelIn_Test] at hRelIn
---     simp [innerRelOut_Test] at hRelOut'
---     simp at hCompat
---     simp [outerRelOut_Test, testLens, hRelIn, ← hRelOut', hCompat]
+instance instTestLensComplete : testLens.IsComplete
+      outerRelIn_Test innerRelIn_Test outerRelOut_Test innerRelOut_Test
+      (fun ⟨⟨p, q, _⟩, _⟩ ⟨⟨f, _⟩, _⟩ => p * q = f) where
+  proj_complete := fun ⟨p, q, t⟩ () hRelIn => by simp_all
+  lift_complete := fun ⟨p, q, t⟩ _ ⟨f, t', r⟩ _ hCompat hRelIn hRelOut' => by
+    simp_all only [outerRelIn_Test, eval_mul, Finset.mem_singleton, zero_ne_one,
+      not_false_eq_true, Finset.sum_insert, Finset.sum_singleton, Set.mem_setOf_eq,
+      innerRelOut_Test, outerRelOut_Test, testLens, testStmtLens]
+    simp [← hRelOut', ← hCompat]
 
--- def testLensKnowledgeSound : testLens.IsKnowledgeSound
---       outerRelIn_Test innerRelIn_Test outerRelOut_Test innerRelOut_Test
---       (fun ⟨⟨p, q, _⟩, ()⟩ ⟨⟨f, _⟩, ()⟩ => p * q = f) testLensInv where
---   proj_knowledge_sound := fun ⟨p, q, t⟩ () hRelIn => by
---     simp [outerRelIn_Test] at hRelIn
---     simp [innerRelIn_Test, testLens, hRelIn]
---   lift_knowledge_sound := fun ⟨p, q, t⟩ _ ⟨f, t', r⟩ _ hRelIn hRelOut' hCompat => by
---     simp [outerRelIn_Test] at hRelIn
---     sorry
+def instTestLensKnowledgeSound : testLensE.IsKnowledgeSound
+      outerRelIn_Test innerRelIn_Test outerRelOut_Test innerRelOut_Test
+      (fun ⟨p, q, _⟩ ⟨f, _⟩ => p * q = f) (fun _ _ => True) where
+  proj_knowledgeSound := fun ⟨p, q, t⟩ ⟨f, t', r⟩ _ h h' => by
+    simp_all only [outerRelOut_Test, eval_mul, Statement.Lens.lift,
+      testLensE, testStmtLens, Set.mem_setOf_eq, innerRelOut_Test]
+    simp [← h', ← h]
+  lift_knowledgeSound := fun ⟨p, q, t⟩ _ _ _ _ => by
+    simp_all
 
 end
 
