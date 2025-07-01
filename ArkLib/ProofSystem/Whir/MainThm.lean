@@ -46,8 +46,7 @@ structure ParamConditions (P : Params ι F) where
   h_smooth : ∀ i : Fin (M+1), Smooth (P.φ i)
   h_repeatPLt : ∀ i : Fin (M+1), P.repeatParam i ≤ Fintype.card (ι i)
 
-/--
-  `GenMutualCorrParams` binds together a set of smooth ReedSolomon codes
+/-- `GenMutualCorrParams` binds together a set of smooth ReedSolomon codes
   `C_{i : M+1, j : foldingParamᵢ + 1} = RS[F, ιᵢ^(2ʲ), (varCountᵢ - j)]` with
   `Gen_α_ij` which is a proximity generator with mutual correlated agreement
   for `C_ij` with proximity parameters `BStar_ij` and `errStar_ij`.
@@ -55,7 +54,7 @@ structure ParamConditions (P : Params ι F) where
   Additionally, it includes the condition that
     C_ij is `(δᵢ, dist_ij)`-list decodeable,
   where `δᵢ = 1 - max_{j : foldingParamᵢ + 1} BStar(C_ij,2)`
---/
+-/
 class GenMutualCorrParams (P: Params ι F) (S: ∀ i : Fin (M+1), Finset (ι i)) where
 
   δ : Fin (M+1) → ℝ≥0
@@ -108,9 +107,10 @@ section RBR
 
 open NNRat OracleComp OracleSpec ProtocolSpec VectorIOP
 
-/--`OracleStatement` defines the oracle message type for a multi-indexed setting:
+/-- `OracleStatement` defines the oracle message type for a multi-indexed setting:
   given base input type `ι`, and field `F`, the output type at each index
-  is a function `ι → F` representing an evaluation over `ι`.-/
+  is a function `ι → F` representing an evaluation over `ι`.
+-/
 @[reducible]
 def OracleStatement (ι F : Type) : Unit → Type :=
     fun _ => ι → F
@@ -125,16 +125,16 @@ instance {ι : Type} : OracleInterface (OracleStatement ι F ()) where
   oracle := fun f i => f i
 
 /-- WHIR relation: the oracle's output is δᵣ-close to a codeword of a smooth ReedSolomon code
-with number of variables at most `varCount` over domain `φ`, within error `err`.-/
+with number of variables at most `varCount` over domain `φ`, within error `err`.
+-/
 def whirRelation
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {ι : Type} [Fintype ι] [Nonempty ι]
     (varCount : ℕ) (φ : ι ↪ F) [Smooth φ] (err : ℝ)
-    : (Unit × ∀ i, (OracleStatement ι F i)) → Unit → Prop :=
-  fun ⟨_, oracle⟩ _ => δᵣ(oracle (), smoothCode φ varCount) ≤ err
+    : Set ((Unit × ∀ i, (OracleStatement ι F i)) × Unit) :=
+  { ⟨⟨_, oracle⟩, _⟩ | δᵣ(oracle (), smoothCode φ varCount) ≤ err }
 
-/-- Theorem 5.2
-  **Round-by-round soundness of the WHIR Vector IOPP**-/
+/-- Theorem 5.2: **Round-by-round soundness of the WHIR Vector IOPP** -/
 theorem whir_rbr_soundness
     [VCVCompatible F] {d dstar : ℕ}
   -- P : set of M+1 parameters including foldingParamᵢ, varCountᵢ, φᵢ, repeatParamᵢ,
@@ -162,7 +162,7 @@ theorem whir_rbr_soundness
     Fintype.card (vPSpec.ChallengeIdx) = 2 * M + 2 ∧
     -- ∃ a Vector IOPP π with Statement = Unit, Witness = Unit, OracleStatement = (ι₀ F)
       ∃ π :
-        VectorIOP vPSpec F []ₒ Unit Unit (OracleStatement (ι 0) F),
+        VectorIOP []ₒ Unit (OracleStatement (ι 0) F) Unit vPSpec F,
         let max_ε_folds : (i : Fin (M+1)) → ℝ≥0 :=
           fun i => (univ : Finset (Fin (P.foldingParam i))).sup (ε_fold i)
         let ε_rbr : vPSpec.ChallengeIdx → ℝ≥0 :=
