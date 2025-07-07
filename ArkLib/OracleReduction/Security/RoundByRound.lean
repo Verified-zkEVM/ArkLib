@@ -23,16 +23,26 @@ variable [oSpec.FiniteRange] [∀ i, VCVCompatible (pSpec.Challenge i)]
 
 namespace Extractor
 
-/-- An (old) round-by-round extractor with index `m` is given the input statement, a partial
-    transcript of length `m`, the prover's query log, and returns a witness to the statement.
+/-- A **one-shot** round-by-round extractor is a function that:
+- Takes in index `m : Fin (n + 1)`
+- Takes in the input statement `stmtIn : StmtIn`
+- Takes in a partial transcript up to round `m`
+- Takes in the prover's query log (TODO: refine this, verifier's query log as well?)
 
-  Note that this RBR extractor does not need to take in the output statement or witness. -/
-def RoundByRoundOld (oSpec : OracleSpec ι) (StmtIn WitIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) :=
+and returns an input witness `witIn : WitIn`.
+
+This is the old definition of round-by-round extractor, which is less general than the new
+definition (i.e. the input witness is extracted immediately, "in one shot", unlike the general
+definition where the input witness is derived via intermediate witnesses). -/
+def RoundByRoundOneShot
+    (oSpec : OracleSpec ι) (StmtIn WitIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) :=
   (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → QueryLog oSpec → WitIn
 
-/-- An (old) round-by-round extractor is **monotone** if its success probability on a given query
-  log is the same as the success probability on any extension of that query log. -/
-class RoundByRoundOld.IsMonotone (E : RoundByRoundOld oSpec StmtIn WitIn pSpec)
+/-- A one-shot round-by-round extractor is **monotone** if its success probability on a given query
+  log is the same as the success probability on any extension of that query log.
+
+  TODO: refine this -/
+class RoundByRoundOneShot.IsMonotone (E : RoundByRoundOneShot oSpec StmtIn WitIn pSpec)
     (relIn : Set (StmtIn × WitIn)) where
   is_monotone : ∀ roundIdx stmtIn transcript,
     ∀ proveQueryLog₁ proveQueryLog₂ : oSpec.QueryLog,
@@ -43,10 +53,17 @@ class RoundByRoundOld.IsMonotone (E : RoundByRoundOld oSpec StmtIn WitIn pSpec)
     (stmtIn, E roundIdx stmtIn transcript proveQueryLog₁) ∈ relIn →
       (stmtIn, E roundIdx stmtIn transcript proveQueryLog₂) ∈ relIn
 
-/-- A round-by-round extractor works backwards through protocol rounds, extracting witnesses
-  step-by-step in the opposite direction to the prover's execution. The extractor processes
-  rounds in decreasing order: `n → n-1 → ... → 1 → 0`, using intermediate witness types
-  `WitMid m` for each round `m`.
+/-- A **round-by-round extractor** is a tuple of algorithms that iteratively extracts the input
+  witness from the output witness, through a series of intermediate witnesses
+  (indexed by `m : Fin (n + 1)`). Formally, it is a tuple of algorithms:
+
+  - `extractIn : StmtIn → WitMid 0 → WitIn`
+  - `extractMid : (m : Fin n) → StmtIn → Transcript m.succ pSpec`
+    `→ WitMid m.succ → WitMid m.castSucc`
+  - `extractOut : StmtIn → FullTranscript pSpec → WitOut → WitMid (.last n)`
+
+  The extractor processes rounds in decreasing order: `n → n-1 → ... → 1 → 0`, using
+  intermediate witness types `WitMid m` for each round `m`.
 -/
 structure RoundByRound
     (oSpec : OracleSpec ι) (StmtIn WitIn WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n)
@@ -59,20 +76,22 @@ structure RoundByRound
   /-- Construct the intermediate witness for the final round from the output witness -/
   extractOut : StmtIn → FullTranscript pSpec → WitOut → WitMid (.last n)
 
-namespace RoundByRoundOld
+namespace RoundByRoundOneShot
 
-/-- An old round-by-round extractor can be converted to the new format where all
-  intermediate witness types are equal to the input witness type.
+/-- A one-shot round-by-round extractor can be converted to the general round-by-round extractor
+  format, where all intermediate witness types are equal to the input witness type.
 
-  Note that the converse is _not_ true: it's not possible in general to convert a new rbr extractor
-  to an old one (since the new one is meant to be more general). -/
-def toRoundByRound (E : RoundByRoundOld oSpec StmtIn WitIn pSpec) :
+  (something is wrong here...)
+
+  Note that the converse is _not_ true: it's not possible in general to convert a general
+  round-by-round extractor to a one-shot one. -/
+def toRoundByRound (E : RoundByRoundOneShot oSpec StmtIn WitIn pSpec) :
     RoundByRound oSpec StmtIn WitIn WitOut pSpec (fun _ => WitIn) where
   extractIn := fun stmtIn _ => E 0 stmtIn default default
   extractMid := fun m stmtIn tr _ => E m.succ stmtIn tr default
   extractOut := fun stmtIn tr _ => E (.last n) stmtIn tr default
 
-end RoundByRoundOld
+end RoundByRoundOneShot
 
 end Extractor
 
@@ -89,9 +108,9 @@ structure StateFunction
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     where
   toFun : (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → Prop
-  /-- For all input statement not in the language, the state function is false for the empty
-    transcript -/
-  toFun_empty : ∀ stmt ∉ langIn, ¬ toFun 0 stmt default
+  /-- For all input statement not in the language, the state function is false for that statement
+    and the empty transcript -/
+  toFun_empty : ∀ stmt, stmt ∈ langIn ↔ toFun 0 stmt default
   /-- If the state function is false for a partial transcript, and the next message is from the
     prover to the verifier, then the state function is also false for the new partial transcript
     regardless of the message -/
@@ -117,8 +136,7 @@ structure KnowledgeStateFunction
   toFun : (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → WitMid m → Prop
   /-- If the state function is true for the empty transcript and some initial intermediate witness,
     then the input statement and extracted witness are in the input relation -/
-  toFun_empty : ∀ stmtIn witMid,
-    toFun 0 stmtIn default witMid → (stmtIn, extractor.extractIn stmtIn witMid) ∈ relIn
+  toFun_empty : ∀ stmtIn, stmtIn ∈ relIn.language ↔ ∃ witMid, toFun 0 stmtIn default witMid
   /-- If the state function is true for a partial transcript extended with a prover message, then
     the state function is also true for the original partial transcript with the extracted
     intermediate witness -/
@@ -140,47 +158,60 @@ def KnowledgeStateFunction.toStateFunction
     (kSF : KnowledgeStateFunction relIn relOut verifier WitMid extractor) :
       verifier.StateFunction relIn.language relOut.language where
   toFun := fun m stmtIn tr => ∃ witMid, kSF.toFun m stmtIn tr witMid
-  toFun_empty := fun stmtIn hStmtIn => by
-    simp only [not_exists]
-    intro witMid hToFun
-    have := kSF.toFun_empty stmtIn witMid hToFun
-    simp_all
+  toFun_empty := kSF.toFun_empty
+    -- simp only [not_exists]
+    -- intro witMid hToFun
+    -- have := kSF.toFun_empty stmtIn witMid hToFun
+    -- simp_all
   toFun_next := fun m hDir stmtIn tr hToFunNext msg => by
     simp only [not_exists]
     intro witMid hToFunNext
     have := kSF.toFun_next m hDir stmtIn tr msg witMid hToFunNext
     simp_all
   toFun_full := fun stmtIn tr hToFunFull => by
-    simp only [not_exists] at hToFunFull
     simp only [Fin.val_last, Set.mem_image, Prod.exists, exists_and_right, exists_eq_right,
       probEvent_eq_zero_iff, not_exists]
     intro stmtOut hStmtOut witOut hRelOut
-    have := kSF.toFun_full stmtIn tr witOut
     have hProb : [fun stmtOut ↦ (stmtOut, witOut) ∈ relOut | run stmtIn tr verifier] > 0 := by
       simp only [Fin.val_last, gt_iff_lt, probEvent_pos_iff]
       exact ⟨stmtOut, hStmtOut, hRelOut⟩
-    have := this hProb
+    have := kSF.toFun_full stmtIn tr witOut hProb
     simp_all
 
-/-- A state function & an old round-by-round extractor gives rise to a knowledge state function
+/-- A state function & a one-shot round-by-round extractor gives rise to a knowledge state function
   where the intermediate witness types are all equal to the input witness type -/
 def StateFunction.toKnowledgeStateFunction
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    (oldE : Extractor.RoundByRoundOld oSpec StmtIn WitIn pSpec)
+    (oneShotE : Extractor.RoundByRoundOneShot oSpec StmtIn WitIn pSpec)
     (stF : verifier.StateFunction relIn.language relOut.language) :
-    verifier.KnowledgeStateFunction relIn relOut (fun _ => WitIn) oldE.toRoundByRound where
-  toFun := fun m stmtIn tr witMid => stF.toFun m stmtIn tr
-  toFun_empty := fun stmtIn witMid hToFun => by sorry
-  toFun_next := fun m hDir stmtIn tr hToFunNext msg => by sorry
+    verifier.KnowledgeStateFunction relIn relOut (fun _ => WitIn) oneShotE.toRoundByRound where
+  toFun := fun m stmtIn tr _ => stF.toFun m stmtIn tr
+  toFun_empty := fun stmtIn => by
+    exact Iff.trans (stF.toFun_empty stmtIn) (by simp; sorry)
+    -- stop
+    -- contrapose! this
+    -- simp_all [Extractor.RoundByRoundOneShot.toRoundByRound]
+    -- sorry
+  toFun_next := fun m hDir stmtIn tr msg witMid h => by
+    have := stF.toFun_next m hDir stmtIn tr
+    contrapose! this
+    simp_all
+    exact ⟨msg, h⟩
+  toFun_full := fun stmtIn tr witOut h => by
+    have := stF.toFun_full stmtIn tr
+    contrapose! this
+    simp_all
+    obtain ⟨x, hx, hRelOut⟩ := h
+    exact ⟨x, hx, witOut, hRelOut⟩
 
-  toFun_full := fun stmtIn tr hToFunFull => by sorry
-
+/-- Coercion to the underlying function of a state function -/
 instance {langIn : Set StmtIn} {langOut : Set StmtOut}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec} :
     CoeFun (verifier.StateFunction langIn langOut)
     (fun _ => (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → Prop) := ⟨fun f => f.toFun⟩
 
+/-- Coercion to the underlying function of a knowledge state function -/
 instance {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec} {WitMid : Fin (n + 1) → Type}
     {extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid} :
@@ -248,11 +279,11 @@ class IsRBRSound (langIn : Set StmtIn) (langOut : Set StmtOut)
 
   is at most `rbrKnowledgeError i`.
 -/
-def rbrKnowledgeSoundnessOld (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+def rbrKnowledgeSoundnessOneShot (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
   ∃ stateFunction : verifier.StateFunction relIn.language relOut.language,
-  ∃ extractor : Extractor.RoundByRoundOld oSpec StmtIn WitIn pSpec,
+  ∃ extractor : Extractor.RoundByRoundOneShot oSpec StmtIn WitIn pSpec,
   ∀ stmtIn : StmtIn,
   ∀ witIn : WitIn,
   ∀ prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec,
@@ -302,19 +333,29 @@ class IsRBRKnowledgeSound (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut
 
 /-- Implication: old rbr knowledge soundness implies new rbr knowledge soundness (with the same
   error) -/
-theorem rbrKnowledgeSoundness_of_rbrKnowledgeSoundnessOld
+theorem rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
-    (h : verifier.rbrKnowledgeSoundnessOld relIn relOut rbrKnowledgeError) :
+    (h : verifier.rbrKnowledgeSoundnessOneShot relIn relOut rbrKnowledgeError) :
     verifier.rbrKnowledgeSoundness relIn relOut rbrKnowledgeError := by
   unfold rbrKnowledgeSoundness
-  unfold rbrKnowledgeSoundnessOld at h
-  obtain ⟨stF, oldE, h⟩ := h
-  refine ⟨fun _ => WitIn, oldE.toRoundByRound, stF.toKnowledgeStateFunction oldE, ?_⟩
+  unfold rbrKnowledgeSoundnessOneShot at h
+  obtain ⟨stF, oneShotE, h⟩ := h
+  refine ⟨fun _ => WitIn, oneShotE.toRoundByRound, stF.toKnowledgeStateFunction oneShotE, ?_⟩
   intro stmtIn witIn prover i
   have := h stmtIn witIn prover i
   simp at h ⊢
+  clear h
+  refine le_trans ?_ this
+  simp
+  refine probEvent_mono ?_
+  intro ⟨⟨tr, _, _⟩, chal⟩ hx
+  simp [StateFunction.toKnowledgeStateFunction]
+  intro hCastSucc witIn' hSucc
+  simp_all
+  have := stF.toFun_empty
+  -- refine ⟨?_, hCastSucc, hSucc⟩
   sorry
   -- obtain ⟨WitMid, extractor, kSF⟩
 
