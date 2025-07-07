@@ -27,12 +27,12 @@ namespace Extractor
   of length `m`, the prover's query log, and returns a witness to the statement.
 
   Note that the RBR extractor does not need to take in the output statement or witness. -/
-def RoundByRound (oSpec : OracleSpec ι) (StmtIn WitIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) :=
+def RoundByRoundOld (oSpec : OracleSpec ι) (StmtIn WitIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) :=
   (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → QueryLog oSpec → WitIn
 
 /-- A round-by-round extractor is **monotone** if its success probability on a given query log
   is the same as the success probability on any extension of that query log. -/
-class RoundByRound.IsMonotone (E : RoundByRound oSpec StmtIn WitIn pSpec)
+class RoundByRound.IsMonotone (E : RoundByRoundOld oSpec StmtIn WitIn pSpec)
     (relIn : Set (StmtIn × WitIn)) where
   is_monotone : ∀ roundIdx stmtIn transcript,
     ∀ proveQueryLog₁ proveQueryLog₂ : oSpec.QueryLog,
@@ -42,6 +42,15 @@ class RoundByRound.IsMonotone (E : RoundByRound oSpec StmtIn WitIn pSpec)
     -- Placeholder condition for now, will need to consider the whole game w/ probabilities
     (stmtIn, E roundIdx stmtIn transcript proveQueryLog₁) ∈ relIn →
       (stmtIn, E roundIdx stmtIn transcript proveQueryLog₂) ∈ relIn
+
+/-- A round-by-round extractor basically goes backwards, extracting witnesses round-by-round in
+opposite to the prover. -/
+structure RoundByRound
+    (oSpec : OracleSpec ι) (StmtIn WitIn WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n)
+    (WitMid : Fin (n + 1) → Type) where
+  extractIn : WitMid 0 → WitIn
+  extractMid : (m : Fin n) → StmtIn → Transcript m.succ pSpec → WitMid m.succ → WitMid m.castSucc
+  extractOut : WitOut → WitMid (.last n)
 
 end Extractor
 
@@ -79,46 +88,57 @@ structure KnowledgeStateFunction
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (WitMid : Fin (n + 1) → Type)
+    (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
     where
   /-- The knowledge state function: takes in round index, input statement, transcript up to that
       round, and intermediate witness of that round, and returns True/False. -/
   toFun : (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → WitMid m → Prop
-  /-- For all input statement such that for all input witness, the statement and witness is not
-    in the input relation, the state function is false for the empty transcript and any witness. -/
-  toFun_empty : ∀ stmtIn, stmtIn ∉ relIn.language →
-    ∀ witMid, ¬ toFun 0 stmtIn default witMid
-  /-- If the state function is false for a partial transcript, and the next message is from the
-    prover to the verifier, then the state function is also false for the new partial transcript
-    regardless of the message and the next intermediate witness. -/
+  /-- If the state function is true for the empty transcript and some initial intermediate witness,
+    then the input statement and extracted witness are in the input relation -/
+  toFun_empty : ∀ stmtIn witMid,
+    toFun 0 stmtIn default witMid → (stmtIn, extractor.extractIn witMid) ∈ relIn
+  /-- If the state function is true for a partial transcript extended with a prover message, then
+    the state function is also true for the original partial transcript with the extracted
+    intermediate witness -/
   toFun_next : ∀ m, pSpec.getDir m = .P_to_V →
-    ∀ stmtIn tr, (∀ witMid, ¬ toFun m.castSucc stmtIn tr witMid) →
-    ∀ msg, (∀ witMid', ¬ toFun m.succ stmtIn (tr.concat msg) witMid')
-  toFun_full : ∀ stmtIn tr, (∀ witMid, ¬ toFun (.last n) stmtIn tr witMid) →
-    [fun stmtOut => stmtOut ∈ relOut.language | verifier.run stmtIn tr ] = 0
+    ∀ stmtIn tr msg witMid, toFun m.succ stmtIn (tr.concat msg) witMid →
+      toFun m.castSucc stmtIn tr (extractor.extractMid m stmtIn (tr.concat msg) witMid)
+  /-- If the verifier can output a statement `stmtOut` that is in the output relation with some
+    output witness `witOut`, then the state function is true for the full transcript and the
+    extracted last middle witness. -/
+  toFun_full : ∀ stmtIn tr witOut,
+    [fun stmtOut => (stmtOut, witOut) ∈ relOut | verifier.run stmtIn tr ] > 0 →
+    toFun (.last n) stmtIn tr (extractor.extractOut witOut)
 
-/-- A knowledge state function gives rise to a state function -/
+/-- A knowledge state function gives rise to a state function via quantifying over the witness -/
 def KnowledgeStateFunction.toStateFunction
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec} {WitMid : Fin (n + 1) → Type}
-    (kSF : KnowledgeStateFunction relIn relOut verifier WitMid) :
+    {extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid}
+    (kSF : KnowledgeStateFunction relIn relOut verifier WitMid extractor) :
       verifier.StateFunction relIn.language relOut.language where
   toFun := fun m stmtIn tr => ∃ witMid, kSF.toFun m stmtIn tr witMid
   toFun_empty := fun stmtIn hStmtIn => by
-    simp; exact kSF.toFun_empty stmtIn (by simpa [Set.language] using hStmtIn)
+    simp only [not_exists]
+    intro witMid hToFun
+    have := kSF.toFun_empty stmtIn witMid hToFun
+    simp_all
   toFun_next := fun m hDir stmtIn tr hToFunNext msg => by
-    simp; exact kSF.toFun_next m hDir stmtIn tr (by simpa [Set.language] using hToFunNext) msg
+    simp only [not_exists]
+    intro witMid hToFunNext
+    have := kSF.toFun_next m hDir stmtIn tr msg witMid hToFunNext
+    simp_all
   toFun_full := fun stmtIn tr hToFunFull => by
-    exact kSF.toFun_full stmtIn tr (by simpa [Set.language] using hToFunFull)
-
-/-- A round-by-round extractor basically goes backwards, extracting witnesses round-by-round in
-opposite to the prover. -/
-structure NewExtractor.RoundByRound (WitMid : Fin (n + 1) → Type) where
-  -- what if, just one function?
-  -- extract : (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → WitMid m → QueryLog oSpec → WitIn
-  extractIn : WitMid 0 → WitIn
-  extractMid : (m : Fin n) → StmtIn → Transcript m.succ pSpec →
-    WitMid m.succ → QueryLog oSpec → WitMid m.castSucc
-  extractOut : WitOut → WitMid (.last n)
+    simp only [not_exists] at hToFunFull
+    simp only [Fin.val_last, Set.mem_image, Prod.exists, exists_and_right, exists_eq_right,
+      probEvent_eq_zero_iff, not_exists]
+    intro stmtOut hStmtOut witOut hRelOut
+    have := kSF.toFun_full stmtIn tr witOut
+    have hProb : [fun stmtOut ↦ (stmtOut, witOut) ∈ relOut | run stmtIn tr verifier] > 0 := by
+      simp only [Fin.val_last, gt_iff_lt, probEvent_pos_iff]
+      exact ⟨stmtOut, hStmtOut, hRelOut⟩
+    have := this hProb
+    simp_all
 
 instance {langIn : Set StmtIn} {langOut : Set StmtOut}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec} :
@@ -126,8 +146,9 @@ instance {langIn : Set StmtIn} {langOut : Set StmtOut}
     (fun _ => (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → Prop) := ⟨fun f => f.toFun⟩
 
 instance {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
-    {verifier : Verifier oSpec StmtIn StmtOut pSpec} {WitMid : Fin (n + 1) → Type} :
-    CoeFun (verifier.KnowledgeStateFunction relIn relOut WitMid)
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} {WitMid : Fin (n + 1) → Type}
+    {extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid} :
+    CoeFun (verifier.KnowledgeStateFunction relIn relOut WitMid extractor)
     (fun _ => (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → WitMid m → Prop) :=
       ⟨fun f => f.toFun⟩
 
@@ -191,11 +212,11 @@ class IsRBRSound (langIn : Set StmtIn) (langOut : Set StmtOut)
 
   is at most `rbrKnowledgeError i`.
 -/
-def rbrKnowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+def rbrKnowledgeSoundnessOld (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
   ∃ stateFunction : verifier.StateFunction relIn.language relOut.language,
-  ∃ extractor : Extractor.RoundByRound oSpec StmtIn WitIn pSpec,
+  ∃ extractor : Extractor.RoundByRoundOld oSpec StmtIn WitIn pSpec,
   ∀ stmtIn : StmtIn,
   ∀ witIn : WitIn,
   ∀ prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec,
@@ -212,24 +233,24 @@ def rbrKnowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut
     | ex] ≤ rbrKnowledgeError i
 
 -- Tentative new definition of rbr knowledge soundness, using the knowledge state function
-def newRbrKnowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+def rbrKnowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
   ∃ WitMid : Fin (n + 1) → Type,
-  ∃ kSF : verifier.KnowledgeStateFunction relIn relOut WitMid,
-  ∃ extractor : NewExtractor.RoundByRound WitMid (WitIn := WitIn) (WitOut := WitOut),
+  ∃ extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid,
+  ∃ kSF : verifier.KnowledgeStateFunction relIn relOut WitMid extractor,
   ∀ stmtIn : StmtIn,
   ∀ witIn : WitIn,
   ∀ prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec,
   ∀ i : pSpec.ChallengeIdx,
-    let ex : OracleComp (oSpec ++ₒ [pSpec.Challenge]ₒ) _ := (do
+    letI ex : OracleComp (oSpec ++ₒ [pSpec.Challenge]ₒ) _ := (do
       let result ← prover.runWithLogToRound i.1.castSucc stmtIn witIn
       let chal ← pSpec.getChallenge i
       return (result, chal))
-    [fun ⟨⟨transcript, _, proveQueryLog⟩, challenge⟩ =>
+    [fun ⟨⟨transcript, _, _⟩, challenge⟩ =>
       ∃ witMid,
         ¬ kSF i.1.castSucc stmtIn transcript
-          (extractor.extractMid i.1 stmtIn (transcript.concat challenge) witMid proveQueryLog) ∧
+          (extractor.extractMid i.1 stmtIn (transcript.concat challenge) witMid) ∧
           kSF i.1.succ stmtIn (transcript.concat challenge) witMid
     | ex] ≤ rbrKnowledgeError i
 
@@ -265,6 +286,16 @@ def StateFunction
     (langOut : Set (StmtOut × ∀ i, OStmtOut i))
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :=
   verifier.toVerifier.StateFunction langIn langOut
+
+@[reducible, simp]
+def KnowledgeStateFunction
+    (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
+    (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
+    (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
+    (WitMid : Fin (n + 1) → Type)
+    (extractor : Extractor.RoundByRound oSpec
+      (StmtIn × (∀ i, OStmtIn i)) WitIn WitOut pSpec WitMid) :=
+  verifier.toVerifier.KnowledgeStateFunction relIn relOut WitMid extractor
 
 /-- Round-by-round soundness of an oracle reduction is the same as for non-oracle reductions. -/
 def rbrSoundness
