@@ -23,16 +23,16 @@ variable [oSpec.FiniteRange] [∀ i, VCVCompatible (pSpec.Challenge i)]
 
 namespace Extractor
 
-/-- A round-by-round extractor with index `m` is given the input statement, a partial transcript
-  of length `m`, the prover's query log, and returns a witness to the statement.
+/-- An (old) round-by-round extractor with index `m` is given the input statement, a partial
+    transcript of length `m`, the prover's query log, and returns a witness to the statement.
 
-  Note that the RBR extractor does not need to take in the output statement or witness. -/
+  Note that this RBR extractor does not need to take in the output statement or witness. -/
 def RoundByRoundOld (oSpec : OracleSpec ι) (StmtIn WitIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) :=
   (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → QueryLog oSpec → WitIn
 
-/-- A round-by-round extractor is **monotone** if its success probability on a given query log
-  is the same as the success probability on any extension of that query log. -/
-class RoundByRound.IsMonotone (E : RoundByRoundOld oSpec StmtIn WitIn pSpec)
+/-- An (old) round-by-round extractor is **monotone** if its success probability on a given query
+  log is the same as the success probability on any extension of that query log. -/
+class RoundByRoundOld.IsMonotone (E : RoundByRoundOld oSpec StmtIn WitIn pSpec)
     (relIn : Set (StmtIn × WitIn)) where
   is_monotone : ∀ roundIdx stmtIn transcript,
     ∀ proveQueryLog₁ proveQueryLog₂ : oSpec.QueryLog,
@@ -43,14 +43,36 @@ class RoundByRound.IsMonotone (E : RoundByRoundOld oSpec StmtIn WitIn pSpec)
     (stmtIn, E roundIdx stmtIn transcript proveQueryLog₁) ∈ relIn →
       (stmtIn, E roundIdx stmtIn transcript proveQueryLog₂) ∈ relIn
 
-/-- A round-by-round extractor basically goes backwards, extracting witnesses round-by-round in
-opposite to the prover. -/
+/-- A round-by-round extractor works backwards through protocol rounds, extracting witnesses
+  step-by-step in the opposite direction to the prover's execution. The extractor processes
+  rounds in decreasing order: `n → n-1 → ... → 1 → 0`, using intermediate witness types
+  `WitMid m` for each round `m`.
+-/
 structure RoundByRound
     (oSpec : OracleSpec ι) (StmtIn WitIn WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n)
     (WitMid : Fin (n + 1) → Type) where
-  extractIn : WitMid 0 → WitIn
+  /-- Extract the input witness from the intermediate witness at round 0 -/
+  extractIn : StmtIn → WitMid 0 → WitIn
+  /-- Extract intermediate witness for round `m` from intermediate witness for round `m+1`,
+    using the transcript up to round `m+1` -/
   extractMid : (m : Fin n) → StmtIn → Transcript m.succ pSpec → WitMid m.succ → WitMid m.castSucc
-  extractOut : WitOut → WitMid (.last n)
+  /-- Construct the intermediate witness for the final round from the output witness -/
+  extractOut : StmtIn → FullTranscript pSpec → WitOut → WitMid (.last n)
+
+namespace RoundByRoundOld
+
+/-- An old round-by-round extractor can be converted to the new format where all
+  intermediate witness types are equal to the input witness type.
+
+  Note that the converse is _not_ true: it's not possible in general to convert a new rbr extractor
+  to an old one (since the new one is meant to be more general). -/
+def toRoundByRound (E : RoundByRoundOld oSpec StmtIn WitIn pSpec) :
+    RoundByRound oSpec StmtIn WitIn WitOut pSpec (fun _ => WitIn) where
+  extractIn := fun stmtIn _ => E 0 stmtIn default default
+  extractMid := fun m stmtIn tr _ => E m.succ stmtIn tr default
+  extractOut := fun stmtIn tr _ => E (.last n) stmtIn tr default
+
+end RoundByRoundOld
 
 end Extractor
 
@@ -96,7 +118,7 @@ structure KnowledgeStateFunction
   /-- If the state function is true for the empty transcript and some initial intermediate witness,
     then the input statement and extracted witness are in the input relation -/
   toFun_empty : ∀ stmtIn witMid,
-    toFun 0 stmtIn default witMid → (stmtIn, extractor.extractIn witMid) ∈ relIn
+    toFun 0 stmtIn default witMid → (stmtIn, extractor.extractIn stmtIn witMid) ∈ relIn
   /-- If the state function is true for a partial transcript extended with a prover message, then
     the state function is also true for the original partial transcript with the extracted
     intermediate witness -/
@@ -108,7 +130,7 @@ structure KnowledgeStateFunction
     extracted last middle witness. -/
   toFun_full : ∀ stmtIn tr witOut,
     [fun stmtOut => (stmtOut, witOut) ∈ relOut | verifier.run stmtIn tr ] > 0 →
-    toFun (.last n) stmtIn tr (extractor.extractOut witOut)
+    toFun (.last n) stmtIn tr (extractor.extractOut stmtIn tr witOut)
 
 /-- A knowledge state function gives rise to a state function via quantifying over the witness -/
 def KnowledgeStateFunction.toStateFunction
@@ -139,6 +161,20 @@ def KnowledgeStateFunction.toStateFunction
       exact ⟨stmtOut, hStmtOut, hRelOut⟩
     have := this hProb
     simp_all
+
+/-- A state function & an old round-by-round extractor gives rise to a knowledge state function
+  where the intermediate witness types are all equal to the input witness type -/
+def StateFunction.toKnowledgeStateFunction
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    (oldE : Extractor.RoundByRoundOld oSpec StmtIn WitIn pSpec)
+    (stF : verifier.StateFunction relIn.language relOut.language) :
+    verifier.KnowledgeStateFunction relIn relOut (fun _ => WitIn) oldE.toRoundByRound where
+  toFun := fun m stmtIn tr witMid => stF.toFun m stmtIn tr
+  toFun_empty := fun stmtIn witMid hToFun => by sorry
+  toFun_next := fun m hDir stmtIn tr hToFunNext msg => by sorry
+
+  toFun_full := fun stmtIn tr hToFunFull => by sorry
 
 instance {langIn : Set StmtIn} {langOut : Set StmtOut}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec} :
@@ -178,7 +214,7 @@ def rbrSoundness (langIn : Set StmtIn) (langOut : Set StmtOut)
   ∀ witIn : WitIn,
   ∀ prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec,
   ∀ i : pSpec.ChallengeIdx,
-    let ex : OracleComp (oSpec ++ₒ [pSpec.Challenge]ₒ) _ := do
+    letI ex : OracleComp (oSpec ++ₒ [pSpec.Challenge]ₒ) _ := do
       return (← prover.runToRound i.1.castSucc stmtIn witIn, ← pSpec.getChallenge i)
     [fun ⟨⟨transcript, _⟩, challenge⟩ =>
       ¬ stateFunction i.1.castSucc stmtIn transcript ∧
@@ -221,7 +257,7 @@ def rbrKnowledgeSoundnessOld (relIn : Set (StmtIn × WitIn)) (relOut : Set (Stmt
   ∀ witIn : WitIn,
   ∀ prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec,
   ∀ i : pSpec.ChallengeIdx,
-    let ex : OracleComp (oSpec ++ₒ [pSpec.Challenge]ₒ) _ := (do
+    letI ex : OracleComp (oSpec ++ₒ [pSpec.Challenge]ₒ) _ := (do
       let result ← prover.runWithLogToRound i.1.castSucc stmtIn witIn
       let chal ← pSpec.getChallenge i
       return (result, chal))
@@ -263,6 +299,24 @@ class IsRBRKnowledgeSound (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) where
   rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0
   is_rbr_knowledge_sound : rbrKnowledgeSoundness relIn relOut verifier rbrKnowledgeError
+
+/-- Implication: old rbr knowledge soundness implies new rbr knowledge soundness (with the same
+  error) -/
+theorem rbrKnowledgeSoundness_of_rbrKnowledgeSoundnessOld
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
+    (h : verifier.rbrKnowledgeSoundnessOld relIn relOut rbrKnowledgeError) :
+    verifier.rbrKnowledgeSoundness relIn relOut rbrKnowledgeError := by
+  unfold rbrKnowledgeSoundness
+  unfold rbrKnowledgeSoundnessOld at h
+  obtain ⟨stF, oldE, h⟩ := h
+  refine ⟨fun _ => WitIn, oldE.toRoundByRound, stF.toKnowledgeStateFunction oldE, ?_⟩
+  intro stmtIn witIn prover i
+  have := h stmtIn witIn prover i
+  simp at h ⊢
+  sorry
+  -- obtain ⟨WitMid, extractor, kSF⟩
 
 end RoundByRound
 
