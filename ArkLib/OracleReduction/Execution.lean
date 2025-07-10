@@ -137,7 +137,7 @@ def OracleVerifier.SimulateOnly.run
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
       OracleComp (oSpec ++ₒ ([OStmtIn]ₒ ++ₒ [pSpec.Message]ₒ)) StmtOut ×
         QueryImpl [OStmtOut]ₒ (OracleComp (oSpec ++ₒ ([OStmtIn]ₒ ++ₒ [pSpec.Message]ₒ))) :=
-  ⟨verifier.verify stmt challenges, verifier.simulate stmt challenges⟩
+  ⟨verifier.verify stmt challenges, verifier.simulate challenges⟩
 
 /-- Run the oracle verifier (with reification) in an (interactive) oracle reduction.
 

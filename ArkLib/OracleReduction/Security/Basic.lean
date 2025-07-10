@@ -374,13 +374,13 @@ def perfectCompleteness (relation : Set (Statement × Witness))
 
 @[reducible, simp]
 def soundness (langIn : Set Statement)
-    (verifier : Verifier oSpec Statement Bool pSpec)
+    (verifier : Verifier oSpec Statement TrivialStatement pSpec)
     (soundnessError : ℝ≥0) : Prop :=
   verifier.soundness langIn acceptRejectRel.language soundnessError
 
 @[reducible, simp]
-def knowledgeSoundness (relation : Set (Statement × Bool))
-    (verifier : Verifier oSpec Statement Bool pSpec)
+def knowledgeSoundness (relation : Set (Statement × TrivialStatement))
+    (verifier : Verifier oSpec Statement TrivialStatement pSpec)
     (knowledgeError : ℝ≥0) : Prop :=
   verifier.knowledgeSoundness relation acceptRejectRel knowledgeError
 
@@ -396,8 +396,7 @@ def completeness
     (relation : Set ((Statement × ∀ i, OStatement i) × Witness))
     (oracleProof : OracleProof oSpec Statement OStatement Witness pSpec)
     (completenessError : ℝ≥0) : Prop :=
-  OracleReduction.completeness (Oₛₒ := isEmptyElim)
-    relation acceptRejectOracleRel oracleProof completenessError
+  OracleReduction.completeness relation acceptRejectOracleRel oracleProof completenessError
 
 /-- Perfect completeness of an oracle reduction is the same as for non-oracle reductions. -/
 @[reducible, simp]
@@ -405,28 +404,25 @@ def perfectCompleteness
     (relation : Set ((Statement × ∀ i, OStatement i) × Witness))
     (oracleProof : OracleProof oSpec Statement OStatement Witness pSpec) :
       Prop :=
-  OracleReduction.perfectCompleteness (Oₛₒ := isEmptyElim)
-    relation acceptRejectOracleRel oracleProof
+  OracleReduction.perfectCompleteness relation acceptRejectOracleRel oracleProof
 
 /-- Soundness of an oracle reduction is the same as for non-oracle reductions. -/
 @[reducible, simp]
 def soundness
     (langIn : Set (Statement × ∀ i, OStatement i))
-    (verifier : OracleVerifier oSpec Statement OStatement Bool (fun _ : Empty => Unit)
-      (Oₛₒ := isEmptyElim) pSpec)
+    (verifier : OracleVerifier oSpec Statement OStatement TrivialStatement
+      TrivialOracleStatement pSpec)
     (soundnessError : ℝ≥0) : Prop :=
-  verifier.toVerifier (Oₛₒ := isEmptyElim).soundness
-    langIn acceptRejectOracleRel.language soundnessError
+  verifier.toVerifier.soundness langIn acceptRejectOracleRel.language soundnessError
 
 /-- Knowledge soundness of an oracle reduction is the same as for non-oracle reductions. -/
 @[reducible, simp]
 def knowledgeSoundness
     (relation : Set ((Statement × ∀ i, OStatement i) × Witness))
-    (verifier : OracleVerifier oSpec Statement OStatement Bool (fun _ : Empty => Unit)
-      (Oₛₒ := isEmptyElim) pSpec)
+    (verifier : OracleVerifier oSpec Statement OStatement TrivialStatement
+      TrivialOracleStatement pSpec)
     (knowledgeError : ℝ≥0) : Prop :=
-  verifier.toVerifier (Oₛₒ := isEmptyElim).knowledgeSoundness
-    relation acceptRejectOracleRel knowledgeError
+  verifier.toVerifier.knowledgeSoundness relation acceptRejectOracleRel knowledgeError
 
 end OracleProof
 

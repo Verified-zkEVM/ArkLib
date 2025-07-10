@@ -238,7 +238,11 @@ def OracleVerifier.append (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ 
     -- Return the final output statement
     sorry
 
-  simulate := fun stmt challenges => sorry
+  simulate := fun stmt₁ challenges =>
+    let sim₁ := V₁.simulate stmt₁ challenges.fst
+    let stmt₂ := V₁.verify stmt₁ challenges.fst
+    let sim₂ := V₂.simulate stmt₂ challenges.snd
+    return ⟨stmt₃, sim₂.snd⟩
 
   reify := fun ⟨stmt₁, oStmt₁⟩ transcript => do
     let ⟨stmt₂, oStmt₂⟩ ← V₁.run stmt₁ oStmt₁ transcript.fst

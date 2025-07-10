@@ -60,15 +60,26 @@ end Statement.Lens
   oracle verifier of an oracle reduction.
 
   TODO: figure out the right way to define this -/
-@[inline, reducible]
-def OracleStatement.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
+-- @[inline, reducible]
+structure OracleStatement.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
     {Outer_ιₛᵢ : Type} (OuterOStmtIn : Outer_ιₛᵢ → Type) [∀ i, OracleInterface (OuterOStmtIn i)]
     {Outer_ιₛₒ : Type} (OuterOStmtOut : Outer_ιₛₒ → Type) [∀ i, OracleInterface (OuterOStmtOut i)]
     {Inner_ιₛᵢ : Type} (InnerOStmtIn : Inner_ιₛᵢ → Type) [∀ i, OracleInterface (InnerOStmtIn i)]
     {Inner_ιₛₒ : Type} (InnerOStmtOut : Inner_ιₛₒ → Type) [∀ i, OracleInterface (InnerOStmtOut i)]
-  :=
+  extends
     Statement.Lens (OuterStmtIn × ∀ i, OuterOStmtIn i) (OuterStmtOut × ∀ i, OuterOStmtOut i)
                   (InnerStmtIn × ∀ i, InnerOStmtIn i) (InnerStmtOut × ∀ i, InnerOStmtOut i)
+  where
+    projStmt : OuterStmtIn → OracleComp [OuterOStmtIn]ₒ InnerStmtIn
+    projOStmt : QueryImpl [OuterOStmtIn]ₒ (ReaderT OuterStmtIn (OracleComp [InnerOStmtIn]ₒ))
+
+    liftStmt : OuterStmtIn → InnerStmtOut →
+      OracleComp ([OuterOStmtIn]ₒ ++ₒ [InnerOStmtOut]ₒ) OuterStmtOut
+
+    liftOStmt : QueryImpl [OuterOStmtOut]ₒ
+      (ReaderT (OuterStmtIn × InnerStmtOut) (OracleComp ([OuterOStmtIn]ₒ ++ₒ [InnerOStmtOut]ₒ)))
+
+    -- Compatibility conditions
   -- TODO: fill in the extra conditions
   /- Basically, as we model the output oracle statement as a subset of the input oracle statement +
   the prover's messages, we need to make sure that this subset relation is satisfied in the
