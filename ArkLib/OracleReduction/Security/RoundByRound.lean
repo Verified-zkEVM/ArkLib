@@ -368,10 +368,9 @@ open Verifier
 section OracleProtocol
 
 variable
-  {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type}
-  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
-  [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
-  [∀ i, OracleInterface (pSpec.Message i)]
+  {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
+  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)]
+  [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
 
 namespace OracleVerifier
 
@@ -439,16 +438,18 @@ namespace OracleProof
 @[reducible, simp]
 def rbrSoundness
     (langIn : Set (Statement × ∀ i, OStatement i))
-    (verifier : OracleVerifier oSpec Statement OStatement Bool (fun _ : Empty => Unit) pSpec)
+    (verifier : OracleVerifier oSpec Statement OStatement Bool (fun _ : Empty => Unit)
+      (Oₛₒ := isEmptyElim) pSpec)
     (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
-  verifier.rbrSoundness langIn acceptRejectOracleRel.language rbrSoundnessError
+  verifier.rbrSoundness (Oₛₒ := isEmptyElim) langIn acceptRejectOracleRel.language rbrSoundnessError
 
 /-- Round-by-round knowledge soundness of an oracle reduction is the same as for non-oracle
 reductions. -/
 def rbrKnowledgeSoundness
     (relIn : Set ((Statement × ∀ i, OStatement i) × Witness))
-    (verifier : OracleVerifier oSpec Statement OStatement Bool (fun _ : Empty => Unit) pSpec)
+    (verifier : OracleVerifier oSpec Statement OStatement Bool (fun _ : Empty => Unit)
+      (Oₛₒ := isEmptyElim) pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
-  verifier.rbrKnowledgeSoundness relIn acceptRejectOracleRel rbrKnowledgeError
+  verifier.rbrKnowledgeSoundness (Oₛₒ := isEmptyElim) relIn acceptRejectOracleRel rbrKnowledgeError
 
 end OracleProof

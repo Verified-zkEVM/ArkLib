@@ -292,11 +292,26 @@ def ofEmbed
       | Sum.inl j => OStmtIn j
       | Sum.inr j => pSpec.Message j)
     (hInterface : ∀ i, Oₛₒ i = match h : embed i with
-      | Sum.inl j => (by have := hData i; simp [h] at this; exact this) ▸ (Oₛᵢ j)
-      | Sum.inr j => (by have := hData i; simp [h] at this; exact this) ▸ (Oₘ j)) :
+      | Sum.inl j => by simpa [hData, h] using Oₛᵢ j
+      | Sum.inr j => by simpa [hData, h] using Oₘ j) :
   OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec where
   verify := verify
-  simulate := sorry
+  simulate := fun _ _ => {
+    impl | query i q => match h : embed i with
+      | Sum.inl j => sorry
+    -- liftM <| query (spec := [OStmtIn]ₒ) j
+    --     (by
+    --       have h1 := hData i
+    --       have h2 := hInterface i
+    --       rw! [h] at h2
+    --       simp [h] at h1 h2
+    --       -- rw [← cast_symm] at h2
+    --       simp [OracleInterface.toOracleSpec, OracleSpec.domain] at q ⊢
+    --       let q' := h2 ▸ q
+    --       sorry
+    --       )
+      | Sum.inr j => sorry
+  }
   reify := sorry
   reify_simulate := sorry
 

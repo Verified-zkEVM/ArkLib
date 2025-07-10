@@ -42,10 +42,11 @@ end loggingOracle
 section Execution
 
 variable {ι : Type} {oSpec : OracleSpec ι}
-  {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} {WitIn : Type}
-  {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} {WitOut : Type}
-  {n : ℕ} {pSpec : ProtocolSpec n}
-  [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
+  {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
+  {WitIn : Type}
+  {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)]
+  {WitOut : Type}
+  {n : ℕ} {pSpec : ProtocolSpec n} [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
 
 /--
 Prover's function for processing the next round, given the current result of the previous round.
@@ -124,28 +125,43 @@ def Verifier.run (stmt : StmtIn) (transcript : FullTranscript pSpec)
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) : OracleComp oSpec StmtOut :=
   verifier.verify stmt transcript
 
-/-- Run the oracle verifier in the interactive protocol. Returns the verifier's output and the log
-  of queries made by the verifier.
+/-- Running the oracle verifier without reification. Since we do not know the input oracle
+  statements nor the prover's messages, we return an oracle computation (with those as oracles) of
+  type `StmtOut` together with a simulation strategy for `OStmtOut` in terms of the rest.
+
+  Essentially, we call `verify` and `simulate` on the input statement & the challenges.
 -/
 @[inline, specialize]
-def OracleVerifier.run [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
+def OracleVerifier.SimulateOnly.run
+    (stmt : StmtIn) (challenges : pSpec.Challenges)
+    (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
+      OracleComp (oSpec ++ₒ ([OStmtIn]ₒ ++ₒ [pSpec.Message]ₒ)) StmtOut ×
+        QueryImpl [OStmtOut]ₒ (OracleComp (oSpec ++ₒ ([OStmtIn]ₒ ++ₒ [pSpec.Message]ₒ))) :=
+  ⟨verifier.verify stmt challenges, verifier.simulate stmt challenges⟩
+
+/-- Run the oracle verifier (with reification) in an (interactive) oracle reduction.
+
+We take in all available information (input statement, input oracle statements, and the full
+transcript), and use `verify` and `reify` to compute the output statement (non-oracle & oracle).
+-/
+@[inline, specialize]
+def OracleVerifier.run
     (stmt : StmtIn) (oStmtIn : ∀ i, OStmtIn i) (transcript : FullTranscript pSpec)
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
-      OracleComp oSpec StmtOut := do
+      OracleComp oSpec (StmtOut × (∀ i, OStmtOut i)) := do
   let f := OracleInterface.simOracle2 oSpec oStmtIn transcript.messages
   let stmtOut ← simulateQ f (verifier.verify stmt transcript.challenges)
-  return stmtOut
+  let oStmtOut ← verifier.reify ⟨stmt, oStmtIn⟩ transcript
+  return ⟨stmtOut, oStmtOut⟩
 
-/-- Running an oracle verifier then discarding the query list is equivalent to
-running a non-oracle verifier -/
+/-- Running an oracle verifier (with reification) is definitionally equal to first converting it to
+  a non-oracle verifier, and then running it. -/
 @[simp]
-theorem OracleVerifier.run_eq_run_verifier [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
+theorem OracleVerifier.run_eq_run_verifier
     {stmt : StmtIn} {oStmt : ∀ i, OStmtIn i} {transcript : FullTranscript pSpec}
     {verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec} :
       verifier.run stmt oStmt transcript =
-        Prod.fst <$> verifier.toVerifier.run ⟨stmt, oStmt⟩ transcript := by
-  simp only [run, bind_pure, Verifier.run, toVerifier, eq_mpr_eq_cast,
-    bind_pure_comp, Functor.map_map, id_map']
+        verifier.toVerifier.run ⟨stmt, oStmt⟩ transcript := rfl
 
 /-- An execution of an interactive reduction on a given initial statement and witness. Consists of
   first running the prover, and then the verifier. Returns the output statement and witness, and the
@@ -190,34 +206,62 @@ theorem Reduction.runWithLog_eq_run
   simp [run, runWithLog, Verifier.run, Prover.runWithLog, Prover.runWithLogToRound]
   sorry
 
-/-- Run an interactive oracle reduction. Returns the full transcript, the output statement and
-  witness, the log of all prover's oracle queries, and the log of all verifier's oracle queries to
-  the prover's messages and to the shared oracle.
+/-- Run an interactive oracle reduction (where the oracle verifier has reification).
+
+Returns the full transcript, the output statement and witness, the log of all prover's oracle
+queries, and the log of all verifier's oracle queries to the prover's messages and to the shared
+oracle.
 -/
 @[inline, specialize]
-def OracleReduction.run [∀ i, OracleInterface (pSpec.Message i)]
+def OracleReduction.run
     (stmt : StmtIn) (oStmt : ∀ i, OStmtIn i) (wit : WitIn)
     (reduction : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec) :
       OracleComp (oSpec ++ₒ [pSpec.Challenge]ₒ)
-        (((StmtOut × ∀ i, OStmtOut i) × WitOut) × StmtOut × FullTranscript pSpec ×
-          QueryLog (oSpec ++ₒ [pSpec.Challenge]ₒ) × QueryLog oSpec) := do
-  let ⟨⟨ctxOut, transcript⟩, proveQueryLog⟩ ←
-    (simulateQ loggingOracle (reduction.prover.run ⟨stmt, oStmt⟩ wit)).run
+        (((StmtOut × ∀ i, OStmtOut i) × WitOut) × (StmtOut × ∀ i, OStmtOut i)
+          × FullTranscript pSpec) := do
+  let ⟨ctxOut, transcript⟩ ← reduction.prover.run ⟨stmt, oStmt⟩ wit
+  let stmtOut ← liftM <| reduction.verifier.run stmt oStmt transcript
+  return (ctxOut, stmtOut, transcript)
+
+/-- Run an interactive oracle reduction (where the oracle verifier has reification), with logging
+  the oracle queries of the prover and the verifier.
+
+Returns the full transcript, the output statement and witness, the log of all prover's oracle
+queries, and the log of all verifier's oracle queries to the prover's messages and to the shared
+oracle.
+-/
+@[inline, specialize]
+def OracleReduction.runWithLog
+    (stmt : StmtIn) (oStmt : ∀ i, OStmtIn i) (wit : WitIn)
+    (reduction : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec) :
+      OracleComp (oSpec ++ₒ [pSpec.Challenge]ₒ)
+        (((StmtOut × ∀ i, OStmtOut i) × WitOut) × (StmtOut × ∀ i, OStmtOut i)
+          × FullTranscript pSpec × QueryLog (oSpec ++ₒ [pSpec.Challenge]ₒ) × QueryLog oSpec) := do
+  let ⟨ctxOut, transcript, proveQueryLog⟩ ← reduction.prover.runWithLog ⟨stmt, oStmt⟩ wit
   let ⟨stmtOut, verifyQueryLog⟩ ←
     liftM (simulateQ loggingOracle (reduction.verifier.run stmt oStmt transcript)).run
   return (ctxOut, stmtOut, transcript, proveQueryLog, verifyQueryLog)
 
--- /-- Running an oracle verifier then discarding the query list is equivalent to
--- running a non-oracle verifier -/
--- @[simp]
--- theorem OracleReduction.run_eq_run_reduction [DecidableEq ι]
---     [∀ i, VCVCompatible (pSpec.Challenge i)]
---     [∀ i, OracleInterface (pSpec.Message i)] {stmt : StmtIn} {wit : WitIn}
---     {oracleReduction : OracleReduction pSpec oSpec StmtIn WitIn StmtOut WitOut OStmt} :
---       Prod.snd <$> oracleReduction.run stmt wit = oracleReduction.toReduction.run stmt wit := by
---   simp [OracleReduction.run, Reduction.run, OracleReduction.toReduction, OracleVerifier.run,
---     Verifier.run, OracleVerifier.toVerifier, liftComp]
+/-- Running an oracle reduction (with reification for verifier) is definitionally equal to first
+  converting it to a non-oracle reduction, and then running it. -/
+@[simp]
+theorem OracleReduction.run_eq_run_reduction
+    {stmt : StmtIn} {oStmt : ∀ i, OStmtIn i} {wit : WitIn}
+    {oracleReduction : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec} :
+      oracleReduction.run stmt oStmt wit =
+        oracleReduction.toReduction.run ⟨stmt, oStmt⟩ wit := rfl
 
+
+/-- Running an oracle reduction (with reification for verifier) with logging is definitionally equal
+  to first converting it to a non-oracle reduction, and then running it with logging. -/
+@[simp]
+theorem OracleReduction.runWithLog_eq_runWithLog_reduction
+    {stmt : StmtIn} {oStmt : ∀ i, OStmtIn i} {wit : WitIn}
+    {oracleReduction : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec} :
+      oracleReduction.runWithLog stmt oStmt wit =
+        oracleReduction.toReduction.runWithLog ⟨stmt, oStmt⟩ wit := rfl
+
+omit Oₘ in
 @[simp]
 theorem Prover.runToRound_zero_of_prover_first
     (stmt : StmtIn) (wit : WitIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
