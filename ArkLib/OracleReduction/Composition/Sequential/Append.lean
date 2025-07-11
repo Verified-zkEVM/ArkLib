@@ -231,37 +231,55 @@ def OracleVerifier.append (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ 
       OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₃ OStmt₃ (pSpec₁ ++ₚ pSpec₂) where
   verify := fun stmt challenges => by
     -- First, invoke the first oracle verifier, handling queries as necessary
-    have := V₁.verify stmt (fun chal => sorry)
+    have := V₁.verify stmt
+      (fun i => by simpa [ProtocolSpec.append, ChallengeIdx.inl] using challenges i.inl)
     simp at this
     -- Then, invoke the second oracle verifier, handling queries as necessary
     -- Return the final output statement
     sorry
 
-  -- Need to provide an embedding `ιₛ₃ ↪ ιₛ₁ ⊕ (pSpec₁ ++ₚ pSpec₂).MessageIdx`
-  embed :=
-    -- `ιₛ₃ ↪ ιₛ₂ ⊕ pSpec₂.MessageIdx`
-    .trans V₂.embed <|
-    -- `ιₛ₂ ⊕ pSpec₂.MessageIdx ↪ (ιₛ₁ ⊕ pSpec₁.MessageIdx) ⊕ pSpec₂.MessageIdx`
-    .trans (.sumMap V₁.embed (.refl _)) <|
-    -- re-associate the sum `_ ↪ ιₛ₁ ⊕ (pSpec₁.MessageIdx ⊕ pSpec₂.MessageIdx)`
-    .trans (Equiv.sumAssoc _ _ _).toEmbedding <|
-    -- use the equivalence `pSpec₁.MessageIdx ⊕ pSpec₂.MessageIdx ≃ (pSpec₁ ++ₚ pSpec₂).MessageIdx`
-    .sumMap (.refl _) MessageIdx.sumEquiv.toEmbedding
+  simulate := fun stmt₁ challenges =>
+    let sim₁ := V₁.simulate stmt₁ challenges.fst
+    let stmt₂ := V₁.verify stmt₁ challenges.fst
+    let sim₂ := V₂.simulate stmt₂ challenges.snd
+    return ⟨stmt₃, sim₂.snd⟩
 
-  hEq := fun i => by
-    rcases h : V₂.embed i with j | j
-    · rcases h' : V₁.embed j with k | k
-      · have h1 := V₁.hEq j
-        have h2 := V₂.hEq i
-        simp [h, h'] at h1 h2 ⊢
-        exact h2.trans h1
-      · have h1 := V₁.hEq j
-        have h2 := V₂.hEq i
-        simp [h, h', MessageIdx.inl] at h1 h2 ⊢
-        exact h2.trans h1
-    · have := V₂.hEq i
-      simp [h] at this ⊢
-      simp [this, MessageIdx.inr]
+  reify := fun ⟨stmt₁, oStmt₁⟩ transcript => do
+    let ⟨stmt₂, oStmt₂⟩ ← V₁.run stmt₁ oStmt₁ transcript.fst
+    let ⟨stmt₃, oStmt₃⟩ ← V₂.run stmt₂ oStmt₂ transcript.snd
+    return oStmt₃
+
+  reify_simulate := sorry
+
+
+
+  -- TODO: these stuff can go in the composition of `ofEmbed` definitions
+
+  -- Need to provide an embedding `ιₛ₃ ↪ ιₛ₁ ⊕ (pSpec₁ ++ₚ pSpec₂).MessageIdx`
+  -- embed :=
+  --   -- `ιₛ₃ ↪ ιₛ₂ ⊕ pSpec₂.MessageIdx`
+  --   .trans V₂.embed <|
+  --   -- `ιₛ₂ ⊕ pSpec₂.MessageIdx ↪ (ιₛ₁ ⊕ pSpec₁.MessageIdx) ⊕ pSpec₂.MessageIdx`
+  --   .trans (.sumMap V₁.embed (.refl _)) <|
+  --   -- re-associate the sum `_ ↪ ιₛ₁ ⊕ (pSpec₁.MessageIdx ⊕ pSpec₂.MessageIdx)`
+  --   .trans (Equiv.sumAssoc _ _ _).toEmbedding <|
+    -- use the equivalence `pSpec₁.MessageIdx ⊕ pSpec₂.MessageIdx ≃ (pSpec₁ ++ₚ pSpec₂).MessageIdx`
+  --   .sumMap (.refl _) MessageIdx.sumEquiv.toEmbedding
+
+  -- hEq := fun i => by
+  --   rcases h : V₂.embed i with j | j
+  --   · rcases h' : V₁.embed j with k | k
+  --     · have h1 := V₁.hEq j
+  --       have h2 := V₂.hEq i
+  --       simp [h, h'] at h1 h2 ⊢
+  --       exact h2.trans h1
+  --     · have h1 := V₁.hEq j
+  --       have h2 := V₂.hEq i
+  --       simp [h, h', MessageIdx.inl] at h1 h2 ⊢
+  --       exact h2.trans h1
+  --   · have := V₂.hEq i
+  --     simp [h] at this ⊢
+  --     simp [this, MessageIdx.inr]
 
 /-- Sequential composition of oracle reductions is just the sequential composition of the oracle
   provers and oracle verifiers. -/
@@ -303,13 +321,24 @@ def Extractor.Straightline.append (E₁ : Extractor.Straightline oSpec Stmt₁ W
 
 /-- The round-by-round extractor for the sequential composition of two (oracle) reductions
 
-The nice thing is we just extend the first extractor to the concatenated protocol. The intuition is
-that RBR extraction happens on the very first message, so further messages don't matter. -/
-def Extractor.RoundByRound.append (E₁ : Extractor.RoundByRound oSpec Stmt₁ Wit₁ pSpec₁) :
-      Extractor.RoundByRound oSpec Stmt₁ Wit₁ (pSpec₁ ++ₚ pSpec₂) :=
-  -- (TODO: describe `Transcript.fst` and `Transcript.snd`)
-  fun roundIdx stmt₁ transcript proveQueryLog =>
-    E₁ ⟨min roundIdx m, by omega⟩ stmt₁ transcript.fst proveQueryLog
+The nice thing is we just extend the first extractor to the concatenated protocol. The intuition
+is that RBR extraction happens on the very first message, so further messages don't matter. -/
+def Extractor.RoundByRound.append
+    {WitMid₁ : Fin (m + 1) → Type} {WitMid₂ : Fin (n + 1) → Type}
+    (E₁ : Extractor.RoundByRound oSpec Stmt₁ Wit₁ Wit₂ pSpec₁ WitMid₁)
+    (E₂ : Extractor.RoundByRound oSpec Stmt₂ Wit₂ Wit₃ pSpec₂ WitMid₂) :
+      Extractor.RoundByRound oSpec Stmt₁ Wit₁ Wit₃ (pSpec₁ ++ₚ pSpec₂)
+        (Fin.append (m := m) (Fin.init WitMid₁) WitMid₂ ∘ Fin.cast (by omega)) where
+  extractIn := sorry
+  extractMid := sorry
+  extractOut := sorry
+  -- fun roundIdx stmt₁ transcript proveQueryLog => do
+  --   let wit₂ ← E₂ stmt₂ wit₃ transcript.snd proveQueryLog verifyQueryLog
+  --   let wit₁ ← E₁ stmt₁ wit₂ transcript.fst proveQueryLog verifyQueryLog
+  --   return wit₁
+  -- -- (TODO: describe `Transcript.fst` and `Transcript.snd`)
+  -- fun roundIdx stmt₁ transcript proveQueryLog =>
+  --   E₁ ⟨min roundIdx m, by omega⟩ stmt₁ transcript.fst proveQueryLog
 
 variable {lang₁ : Set Stmt₁} {lang₂ : Set Stmt₂} {lang₃ : Set Stmt₃}
 

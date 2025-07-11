@@ -114,10 +114,11 @@ open Verifier in
 /-- The outer round-by-round extractor after lifting invokes the inner extractor on the projected
   input, and lifts the output -/
 def Extractor.RoundByRound.liftContext
+    {WitMid : Fin (n + 1) → Type}
     (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                           OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
-    (E : Extractor.RoundByRound oSpec InnerStmtIn InnerWitIn pSpec) :
-      Extractor.RoundByRound oSpec OuterStmtIn OuterWitIn pSpec :=
+    (E : Extractor.RoundByRound oSpec InnerStmtIn InnerWitIn InnerWitOut pSpec WitMid) :
+      Extractor.RoundByRound oSpec OuterStmtIn OuterWitIn OuterWitOut pSpec WitMid :=
   sorry
   -- fun roundIdx outerStmtIn fullTranscript proveQueryLog =>
   --   rbrLensInv.liftWit (E roundIdx (lens.projStmt outerStmtIn) fullTranscript proveQueryLog)
@@ -179,8 +180,9 @@ def Verifier.StateFunction.liftContext [oSpec.FiniteRange]
 where
   toFun := fun m outerStmtIn transcript =>
     stF m (lens.proj outerStmtIn) transcript
-  toFun_empty := fun stmt hStmt =>
-    stF.toFun_empty (lens.proj stmt) (lensSound.proj_sound stmt hStmt)
+  toFun_empty := sorry
+    -- fun stmt hStmt =>
+    --   stF.toFun_empty (lens.proj stmt) (lensSound.proj_sound stmt hStmt)
   toFun_next := fun m hDir outerStmtIn transcript hStmt msg =>
     stF.toFun_next m hDir (lens.proj outerStmtIn) transcript hStmt msg
   toFun_full := fun outerStmtIn transcript hStmt => by

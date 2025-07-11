@@ -49,6 +49,16 @@ theorem append_cast_right {n m : ℕ} (pSpec : ProtocolSpec n) (pSpec' : Protoco
       dcast h (pSpec ++ₚ pSpec') = pSpec ++ₚ (dcast (Nat.add_left_cancel h) pSpec') := by
   simp [append, dcast, ProtocolSpec.cast, Fin.append_cast_right]
 
+@[simp]
+theorem append_left {n m : ℕ} {pSpec : ProtocolSpec n} {pSpec' : ProtocolSpec m} (i : Fin n) :
+    (pSpec ++ₚ pSpec') (Fin.castAdd m i) = pSpec i := by
+  simp [append, Fin.append_left]
+
+@[simp]
+theorem append_right {n m : ℕ} {pSpec : ProtocolSpec n} {pSpec' : ProtocolSpec m} (i : Fin m) :
+    (pSpec ++ₚ pSpec') (Fin.natAdd n i) = pSpec' i := by
+  simp [append, Fin.append_right]
+
 theorem append_left_injective {pSpec : ProtocolSpec n} :
     Function.Injective (@ProtocolSpec.append m n · pSpec) :=
   Fin.append_left_injective pSpec
@@ -78,7 +88,6 @@ variable {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
 @[simp]
 theorem take_append_left :
     (pSpec₁ ++ₚ pSpec₂).take m (Nat.le_add_right m n) = pSpec₁ := by
-  simp only [take, append]
   ext i : 1
   have : Fin.castLE (by omega) i = Fin.castAdd n i := rfl
   simp [Fin.take_apply, Fin.append_left, this]
@@ -86,7 +95,6 @@ theorem take_append_left :
 @[simp]
 theorem rtake_append_right :
     (pSpec₁ ++ₚ pSpec₂).rtake n (Nat.le_add_left n m) = pSpec₂ := by
-  simp only [rtake, append]
   ext i : 1
   simp [Fin.rtake_apply, Fin.append_right]
 
@@ -141,7 +149,7 @@ def snoc {pSpec : ProtocolSpec n} {NextMessage : Type}
 @[simp]
 theorem take_append_left (T : FullTranscript pSpec₁) (T' : FullTranscript pSpec₂) :
     (T ++ₜ T').take m (Nat.le_add_right m n) =
-      T.cast rfl (by simp [ProtocolSpec.append]) := by
+      T.cast rfl (by simp) := by
   ext i
   simp [take, append, ProtocolSpec.append, Fin.castLE, Fin.addCases', Fin.addCases,
     FullTranscript.cast, Transcript.cast]
@@ -149,7 +157,7 @@ theorem take_append_left (T : FullTranscript pSpec₁) (T' : FullTranscript pSpe
 @[simp]
 theorem rtake_append_right (T : FullTranscript pSpec₁) (T' : FullTranscript pSpec₂) :
     (T ++ₜ T').rtake n (Nat.le_add_left n m) =
-      T'.cast rfl (by simp [ProtocolSpec.append]) := by
+      T'.cast rfl (by simp) := by
   ext i
   simp only [ProtocolSpec.append, getType, Fin.rtake_apply, Fin.natAdd, Fin.cast_mk, rtake, append,
     Fin.addCases', Fin.addCases, add_tsub_cancel_right, add_lt_iff_neg_left, not_lt_zero',
@@ -161,13 +169,11 @@ theorem rtake_append_right (T : FullTranscript pSpec₁) (T' : FullTranscript pS
 
 /-- The first half of a transcript for a concatenated protocol -/
 def fst (T : FullTranscript (pSpec₁ ++ₚ pSpec₂)) : FullTranscript pSpec₁ :=
-  fun i => by
-    simpa [ProtocolSpec.append, Fin.append_left] using T (Fin.castAdd n i)
+  fun i => by simpa using T (Fin.castAdd n i)
 
 /-- The second half of a transcript for a concatenated protocol -/
 def snd (T : FullTranscript (pSpec₁ ++ₚ pSpec₂)) : FullTranscript pSpec₂ :=
-  fun i => by
-    simpa [ProtocolSpec.append, Fin.append_right] using T (Fin.natAdd m i)
+  fun i => by simpa using T (Fin.natAdd m i)
 
 @[simp]
 theorem append_fst (T₁ : FullTranscript pSpec₁) (T₂ : FullTranscript pSpec₂) :
@@ -183,53 +189,141 @@ theorem append_snd (T₁ : FullTranscript pSpec₁) (T₂ : FullTranscript pSpec
 
 end FullTranscript
 
-def MessageIdx.inl (i : MessageIdx pSpec₁) : MessageIdx (pSpec₁ ++ₚ pSpec₂) :=
+namespace MessageIdx
+
+def inl (i : MessageIdx pSpec₁) : MessageIdx (pSpec₁ ++ₚ pSpec₂) :=
+  ⟨Fin.castAdd n i.1, by simpa using i.2⟩
+
+def inr (i : MessageIdx pSpec₂) : MessageIdx (pSpec₁ ++ₚ pSpec₂) :=
+  ⟨Fin.natAdd m i.1, by simpa using i.2⟩
+
+@[simps!]
+def sumEquiv :
+    MessageIdx (pSpec₁ ++ₚ pSpec₂) ≃ MessageIdx pSpec₁ ⊕ MessageIdx pSpec₂ where
+  toFun := fun ⟨i, h⟩ => by
+    by_cases hi : i < m
+    · simp only [append, Fin.append, Fin.addCases, hi] at h
+      exact Sum.inl ⟨⟨i, hi⟩, h⟩
+    · simp only [append, Fin.append, Fin.addCases, hi, eq_rec_constant] at h
+      exact Sum.inr ⟨⟨i - m, by omega⟩, h⟩
+  invFun := Sum.elim inl inr
+  left_inv := fun ⟨i, h⟩ => by
+    by_cases hi : i < m <;>
+    simp [inl, inr, hi]
+    congr; omega
+  right_inv := fun i => by
+    rcases i with ⟨⟨i, isLt⟩, h⟩ | ⟨⟨i, isLt⟩, h⟩ <;>
+    simp [inl, inr, isLt]
+
+end MessageIdx
+
+namespace Messages
+
+/-- The first half of the messages for a concatenated protocol -/
+def fst (m : (pSpec₁ ++ₚ pSpec₂).Messages) : pSpec₁.Messages :=
+  fun i => by simpa [MessageIdx.inl] using m (MessageIdx.inl i)
+
+/-- The second half of the messages for a concatenated protocol -/
+def snd (m : (pSpec₁ ++ₚ pSpec₂).Messages) : pSpec₂.Messages :=
+  fun i => by simpa [MessageIdx.inr] using m (MessageIdx.inr i)
+
+/-- The equivalence between the messages for a concatenated protocol and the tuple of messages for
+    the two protocols -/
+def prodEquiv :
+    (pSpec₁ ++ₚ pSpec₂).Messages ≃ pSpec₁.Messages × pSpec₂.Messages where
+  toFun := fun m => ⟨m.fst, m.snd⟩
+  invFun := fun ⟨m₁, m₂⟩ => fun ⟨i, h⟩ => by
+    by_cases hi : i < m
+    · haveI : i = Fin.castAdd n ⟨i.val, hi⟩ := rfl
+      rw! [this] at h ⊢
+      simp only [ProtocolSpec.Message, ProtocolSpec.append_left] at h ⊢
+      exact m₁ ⟨⟨i.val, hi⟩, h⟩
+    · haveI : i = Fin.natAdd m ⟨i.val - m, by omega⟩ := by ext; simp; omega
+      rw! [this] at h ⊢
+      simp only [ProtocolSpec.Message, ProtocolSpec.append_right] at h ⊢
+      exact m₂ ⟨⟨i.val - m, by omega⟩, h⟩
+  left_inv := fun msgs => by
+    funext ⟨i, h⟩
+    by_cases hi : i.val < m
+    · simp [hi, fst, MessageIdx.inl]
+    · simp only [hi, ↓reduceDIte, snd, Message, MessageIdx.inr, Fin.natAdd_mk]
+      rw! [Nat.add_sub_of_le (Nat.le_of_not_lt hi)]
+      simp
+  right_inv := fun ⟨m₁, m₂⟩ => by
+    simp only [MessageIdx, Message, Prod.mk.injEq]
+    constructor
+    · funext i; simp [fst, MessageIdx.inl]
+    · funext i; simp only [snd, MessageIdx.inr]; rw! [Nat.add_sub_self_left]; simp
+
+end Messages
+
+namespace ChallengeIdx
+
+def inl (i : ChallengeIdx pSpec₁) : ChallengeIdx (pSpec₁ ++ₚ pSpec₂) :=
   ⟨Fin.castAdd n i.1, by simpa only [Fin.append_left] using i.2⟩
 
-def MessageIdx.inr (i : MessageIdx pSpec₂) : MessageIdx (pSpec₁ ++ₚ pSpec₂) :=
+def inr (i : ChallengeIdx pSpec₂) : ChallengeIdx (pSpec₁ ++ₚ pSpec₂) :=
   ⟨Fin.natAdd m i.1, by simpa only [Fin.append_right] using i.2⟩
 
 @[simps!]
-def MessageIdx.sumEquiv :
-    MessageIdx pSpec₁ ⊕ MessageIdx pSpec₂ ≃ MessageIdx (pSpec₁ ++ₚ pSpec₂) where
-  toFun := Sum.elim (MessageIdx.inl) (MessageIdx.inr)
-  invFun := fun ⟨i, h⟩ => by
+def sumEquiv :
+    ChallengeIdx (pSpec₁ ++ₚ pSpec₂) ≃ ChallengeIdx pSpec₁ ⊕ ChallengeIdx pSpec₂ where
+  toFun := fun ⟨i, h⟩ => by
     by_cases hi : i < m
     · simp [ProtocolSpec.append, Fin.append, Fin.addCases, hi] at h
       exact Sum.inl ⟨⟨i, hi⟩, h⟩
     · simp [ProtocolSpec.append, Fin.append, Fin.addCases, hi] at h
       exact Sum.inr ⟨⟨i - m, by omega⟩, h⟩
-  left_inv := fun i => by
-    rcases i with ⟨⟨i, isLt⟩, h⟩ | ⟨⟨i, isLt⟩, h⟩ <;>
-    simp [MessageIdx.inl, MessageIdx.inr, isLt]
-  right_inv := fun ⟨i, h⟩ => by
+  invFun := Sum.elim inl inr
+  left_inv := fun ⟨i, h⟩ => by
     by_cases hi : i < m <;>
-    simp [MessageIdx.inl, MessageIdx.inr, hi]
+    simp [inl, inr, hi]
     congr; omega
+  right_inv := fun i => by
+    rcases i with ⟨⟨i, isLt⟩, h⟩ | ⟨⟨i, isLt⟩, h⟩ <;>
+    simp [inl, inr, isLt]
 
-def ChallengeIdx.inl (i : ChallengeIdx pSpec₁) : ChallengeIdx (pSpec₁ ++ₚ pSpec₂) :=
-  ⟨Fin.castAdd n i.1, by simpa only [Fin.append_left] using i.2⟩
+end ChallengeIdx
 
-def ChallengeIdx.inr (i : ChallengeIdx pSpec₂) : ChallengeIdx (pSpec₁ ++ₚ pSpec₂) :=
-  ⟨Fin.natAdd m i.1, by simpa only [Fin.append_right] using i.2⟩
+namespace Challenges
 
-@[simps!]
-def ChallengeIdx.sumEquiv :
-    ChallengeIdx pSpec₁ ⊕ ChallengeIdx pSpec₂ ≃ ChallengeIdx (pSpec₁ ++ₚ pSpec₂) where
-  toFun := Sum.elim (ChallengeIdx.inl) (ChallengeIdx.inr)
-  invFun := fun ⟨i, h⟩ => by
+/-- The first half of the challenges for a concatenated protocol -/
+def fst (c : (pSpec₁ ++ₚ pSpec₂).Challenges) : pSpec₁.Challenges :=
+  fun i => by simpa [ChallengeIdx.inl] using c (ChallengeIdx.inl i)
+
+/-- The second half of the challenges for a concatenated protocol -/
+def snd (c : (pSpec₁ ++ₚ pSpec₂).Challenges) : pSpec₂.Challenges :=
+  fun i => by simpa [ChallengeIdx.inr] using c (ChallengeIdx.inr i)
+
+/-- The equivalence between the challenges for a concatenated protocol and the tuple of challenges
+  for the two protocols -/
+def prodEquiv :
+    (pSpec₁ ++ₚ pSpec₂).Challenges ≃ pSpec₁.Challenges × pSpec₂.Challenges where
+  toFun := fun c => ⟨c.fst, c.snd⟩
+  invFun := fun ⟨c₁, c₂⟩ => fun ⟨i, h⟩ => by
     by_cases hi : i < m
-    · simp [ProtocolSpec.append, Fin.append, Fin.addCases, hi] at h
-      exact Sum.inl ⟨⟨i, hi⟩, h⟩
-    · simp [ProtocolSpec.append, Fin.append, Fin.addCases, hi] at h
-      exact Sum.inr ⟨⟨i - m, by omega⟩, h⟩
-  left_inv := fun i => by
-    rcases i with ⟨⟨i, isLt⟩, h⟩ | ⟨⟨i, isLt⟩, h⟩ <;>
-    simp [ChallengeIdx.inl, ChallengeIdx.inr, isLt]
-  right_inv := fun ⟨i, h⟩ => by
-    by_cases hi : i < m <;>
-    simp [ChallengeIdx.inl, ChallengeIdx.inr, hi]
-    congr; omega
+    · haveI : i = Fin.castAdd n ⟨i.val, hi⟩ := rfl
+      rw! [this] at h ⊢
+      simp only [ProtocolSpec.Challenge, ProtocolSpec.append_left] at h ⊢
+      exact c₁ ⟨⟨i.val, hi⟩, h⟩
+    · haveI : i = Fin.natAdd m ⟨i.val - m, by omega⟩ := by ext; simp; omega
+      rw! [this] at h ⊢
+      simp only [ProtocolSpec.Challenge, ProtocolSpec.append_right] at h ⊢
+      exact c₂ ⟨⟨i.val - m, by omega⟩, h⟩
+  left_inv := fun challs => by
+    funext ⟨i, h⟩
+    by_cases hi : i.val < m
+    · simp [hi, fst, ChallengeIdx.inl]
+    · simp only [hi, ↓reduceDIte, snd, Challenge, ChallengeIdx.inr, Fin.natAdd_mk]
+      rw! [Nat.add_sub_of_le (Nat.le_of_not_lt hi)]
+      simp
+  right_inv := fun ⟨c₁, c₂⟩ => by
+    simp only [ChallengeIdx, Challenge, Prod.mk.injEq]
+    constructor
+    · funext i; simp [fst, ChallengeIdx.inl]
+    · funext i; simp only [snd, ChallengeIdx.inr]; rw! [Nat.add_sub_self_left]; simp
+
+end Challenges
 
 /-- Sequential composition of a family of `ProtocolSpec`s, indexed by `i : Fin m`.
 

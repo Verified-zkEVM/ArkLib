@@ -284,13 +284,30 @@ open Reduction
 section OracleProtocol
 
 variable
-  {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} {WitIn : Type}
-  {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} {WitOut : Type}
-  {n : ℕ} {pSpec : ProtocolSpec n}
-  [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
-  [∀ i, OracleInterface (pSpec.Message i)] [∀ i, VCVCompatible (pSpec.Challenge i)]
+  {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
+  {WitIn : Type}
+  {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)]
+  {WitOut : Type}
+  {n : ℕ} {pSpec : ProtocolSpec n} [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
+  [∀ i, VCVCompatible (pSpec.Challenge i)]
 
 namespace OracleReduction
+
+-- TODO: define more general definitions of completeness & soundness for oracle verifiers that are
+-- not necessarily reifiable (so just containing `verify` and `simulate`).
+
+-- What needs to be changed:
+--
+-- 1. For completeness, we need compatibility between the prover's output oracle statements and the
+-- oracle verifier's simulation of the output oracle statements.
+--
+-- 2. For (knowledge) soundness, we need to change relations to be of the form
+--   `Stmt{In/Out} (→ Wit{In/Out}) → OracleComp (oSpec ++ₒ [OStmt{In/Out}]ₒ) Prop`,
+--
+-- so that it can be checked by the data provided by the oracle verifier (this is especially true
+-- for output relation). Namely, we may first lift to
+-- `OracleComp (oSpec ++ₒ ([OStmtIn]ₒ ++ₒ [pSpec.Message]ₒ)) Prop`, and then check the relation
+-- using the provided values of `OStmtIn` and `pSpec.Message`.
 
 /-- Completeness of an oracle reduction is the same as for non-oracle reductions. -/
 def completeness
@@ -357,13 +374,13 @@ def perfectCompleteness (relation : Set (Statement × Witness))
 
 @[reducible, simp]
 def soundness (langIn : Set Statement)
-    (verifier : Verifier oSpec Statement Bool pSpec)
+    (verifier : Verifier oSpec Statement TrivialStatement pSpec)
     (soundnessError : ℝ≥0) : Prop :=
   verifier.soundness langIn acceptRejectRel.language soundnessError
 
 @[reducible, simp]
-def knowledgeSoundness (relation : Set (Statement × Bool))
-    (verifier : Verifier oSpec Statement Bool pSpec)
+def knowledgeSoundness (relation : Set (Statement × TrivialStatement))
+    (verifier : Verifier oSpec Statement TrivialStatement pSpec)
     (knowledgeError : ℝ≥0) : Prop :=
   verifier.knowledgeSoundness relation acceptRejectRel knowledgeError
 
@@ -393,7 +410,8 @@ def perfectCompleteness
 @[reducible, simp]
 def soundness
     (langIn : Set (Statement × ∀ i, OStatement i))
-    (verifier : OracleVerifier oSpec Statement OStatement Bool (fun _ : Empty => Unit) pSpec)
+    (verifier : OracleVerifier oSpec Statement OStatement TrivialStatement
+      TrivialOracleStatement pSpec)
     (soundnessError : ℝ≥0) : Prop :=
   verifier.toVerifier.soundness langIn acceptRejectOracleRel.language soundnessError
 
@@ -401,7 +419,8 @@ def soundness
 @[reducible, simp]
 def knowledgeSoundness
     (relation : Set ((Statement × ∀ i, OStatement i) × Witness))
-    (verifier : OracleVerifier oSpec Statement OStatement Bool (fun _ : Empty => Unit) pSpec)
+    (verifier : OracleVerifier oSpec Statement OStatement TrivialStatement
+      TrivialOracleStatement pSpec)
     (knowledgeError : ℝ≥0) : Prop :=
   verifier.toVerifier.knowledgeSoundness relation acceptRejectOracleRel knowledgeError
 
