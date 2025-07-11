@@ -45,6 +45,9 @@ noncomputable def genMutualCorrAgreement
   Let `C` be a linear code with minimum distance `δ_C`, `Gen` be a proximity generator for C
   with parameters `B` and `err`, then Gen has mutual correlated agreement with proximity bounds
   `BStar = min {1 - δ_C/2, B}` and `errStar = err`. -/
+
+-- This version of the lemma is incorrect, and its negation can be shown as in
+-- https://github.com/NethermindEth/ArkLibFri/blob/63bd02c7eaf9dc8a8f3b490b1dc212692ebfb1fa/ArkLib/ProofSystem/Whir/GenMutualCorrAgreement.lean#L65
 lemma genMutualCorrAgreement_le_bound
   (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
   (BStar : ℝ) (errStar : ℝ → ENNReal)
@@ -53,6 +56,14 @@ lemma genMutualCorrAgreement_le_bound
     BStar < min (1 - (δᵣ C) / 2 : ℝ) (Gen.B Gen.C Gen.parℓ)
     ∧
     errStar = Gen.err Gen.C Gen.parℓ := by sorry
+
+-- Possible fix
+lemma genMutualCorrAgreement_le_bound_fixed
+  (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
+  (C : LinearCode ι F) (hC : C = Gen.C) :
+    genMutualCorrAgreement Gen
+      (min (1 - (Code.minDist (C : Set (ι → F)) : ℝ) / 2) (Gen.B C Gen.parℓ))
+      (fun δ => Gen.err C Gen.parℓ δ) := by sorry
 
 /-- Corollary 4.11
   Let `C` be a (smooth) ReedSolomon Code with rate `ρ`, then the function
