@@ -208,7 +208,11 @@ alias Verify.reduce := Verify.verify
 This is sufficient for all downstream definitions, but at the expense of more verbosity due to not
 taking advantage of the reification.
 
-Since all known IORs have reifiable oracle verifiers, we have that as the default. -/
+Since all known IORs have reifiable oracle verifiers, we have that as the default.
+
+NOTE: given just the oracle simulation, there may not be an obvious target for reification. This is
+because, say, the oracle interface doesn't allow for reconstructing the underlying data (e.g. if
+it's a vector and we can only query a subset of it) -/
 @[ext] structure SimulateOnly extends
   Verify oSpec StmtIn OStmtIn StmtOut pSpec,
   Simulate oSpec OStmtIn OStmtOut pSpec

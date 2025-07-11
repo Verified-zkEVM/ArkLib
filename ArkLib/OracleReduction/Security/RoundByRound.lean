@@ -420,13 +420,13 @@ namespace Proof
 
 @[reducible, simp]
 def rbrSoundness (langIn : Set Statement)
-    (verifier : Verifier oSpec Statement Bool pSpec)
+    (verifier : Verifier oSpec Statement TrivialStatement pSpec)
     (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
   verifier.rbrSoundness langIn acceptRejectRel.language rbrSoundnessError
 
 @[reducible, simp]
-def rbrKnowledgeSoundness (relation : Set (Statement × Bool))
-    (verifier : Verifier oSpec Statement Bool pSpec)
+def rbrKnowledgeSoundness (relation : Set (Statement × Witness))
+    (verifier : Verifier oSpec Statement TrivialStatement pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
   verifier.rbrKnowledgeSoundness relation acceptRejectRel rbrKnowledgeError
 
@@ -438,18 +438,18 @@ namespace OracleProof
 @[reducible, simp]
 def rbrSoundness
     (langIn : Set (Statement × ∀ i, OStatement i))
-    (verifier : OracleVerifier oSpec Statement OStatement Bool (fun _ : Empty => Unit)
-      (Oₛₒ := isEmptyElim) pSpec)
+    (verifier : OracleVerifier oSpec Statement OStatement
+      TrivialStatement TrivialOracleStatement pSpec)
     (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
-  verifier.rbrSoundness (Oₛₒ := isEmptyElim) langIn acceptRejectOracleRel.language rbrSoundnessError
+  verifier.rbrSoundness langIn acceptRejectOracleRel.language rbrSoundnessError
 
 /-- Round-by-round knowledge soundness of an oracle reduction is the same as for non-oracle
 reductions. -/
 def rbrKnowledgeSoundness
     (relIn : Set ((Statement × ∀ i, OStatement i) × Witness))
-    (verifier : OracleVerifier oSpec Statement OStatement Bool (fun _ : Empty => Unit)
-      (Oₛₒ := isEmptyElim) pSpec)
+    (verifier : OracleVerifier oSpec Statement OStatement
+      TrivialStatement TrivialOracleStatement pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
-  verifier.rbrKnowledgeSoundness (Oₛₒ := isEmptyElim) relIn acceptRejectOracleRel rbrKnowledgeError
+  verifier.rbrKnowledgeSoundness relIn acceptRejectOracleRel rbrKnowledgeError
 
 end OracleProof

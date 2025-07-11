@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.OracleReduction.LiftContext.Reduction
+import ArkLib.OracleReduction.LiftContext.OracleLens
 
 /-!
   ## Lifting Oracle Reductions to Larger Contexts
@@ -50,12 +51,32 @@ def OracleVerifier.liftContext
                               OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut)
     (V : OracleVerifier oSpec InnerStmtIn InnerOStmtIn InnerStmtOut InnerOStmtOut pSpec) :
       OracleVerifier oSpec OuterStmtIn OuterOStmtIn OuterStmtOut OuterOStmtOut pSpec where
-  verify := fun outerStmtIn transcript => sorry
-  embed := by
-    have := V.embed
+  verify := fun outerStmtIn challenges => do
+    let innerStmtIn ← lens.verifier.projStmt outerStmtIn
+    let simOStmtIn := lens.verifier.projOStmt outerStmtIn
+    let liftedSim : QueryImpl ([InnerOStmtIn]ₒ ++ₒ [pSpec.Message]ₒ)
+      (OracleComp ([OuterOStmtIn]ₒ ++ₒ [pSpec.Message]ₒ)) :=
+      simOStmtIn ++ₛₒ idOracle
+    let lifted2Sim : QueryImpl (oSpec ++ₒ ([InnerOStmtIn]ₒ ++ₒ [pSpec.Message]ₒ))
+      (OracleComp (oSpec ++ₒ ([OuterOStmtIn]ₒ ++ₒ [pSpec.Message]ₒ))) :=
+      idOracle ++ₛₒ liftedSim
+    let innerStmtOut ← simulateQ lifted2Sim (V.verify innerStmtIn challenges)
+    let simOStmtOut := lens.verifier.liftOStmt outerStmtIn innerStmtOut
 
-    sorry
-  hEq := sorry
+    let outerStmtOut ← simulateQ sorry (lens.verifier.liftStmt outerStmtIn innerStmtOut)
+    return outerStmtOut
+
+  simulate := fun challenges => {
+    impl | query i t => do
+      let this := True
+      sorry
+  }
+
+  reify := sorry
+
+  reify_simulate := sorry
+
+#check idOracle
 
 /-- The lifting of an inner oracle reduction to an outer oracle reduction,
   requiring an associated oracle context lens -/
