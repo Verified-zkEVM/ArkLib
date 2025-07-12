@@ -53,7 +53,7 @@ def OracleVerifier.liftContext
       OracleVerifier oSpec OuterStmtIn OuterOStmtIn OuterStmtOut OuterOStmtOut pSpec where
   verify := fun outerStmtIn challenges => do
     let innerStmtIn ← lens.verifier.projStmt outerStmtIn
-    let simOStmtIn := lens.verifier.projOStmt outerStmtIn
+    let simOStmtIn := lens.verifier.projOStmt
     let liftedSim : QueryImpl ([InnerOStmtIn]ₒ ++ₒ [pSpec.Message]ₒ)
       (OracleComp ([OuterOStmtIn]ₒ ++ₒ [pSpec.Message]ₒ)) :=
       simOStmtIn ++ₛₒ idOracle
@@ -61,22 +61,31 @@ def OracleVerifier.liftContext
       (OracleComp (oSpec ++ₒ ([OuterOStmtIn]ₒ ++ₒ [pSpec.Message]ₒ))) :=
       idOracle ++ₛₒ liftedSim
     let innerStmtOut ← simulateQ lifted2Sim (V.verify innerStmtIn challenges)
-    let simOStmtOut := lens.verifier.liftOStmt outerStmtIn innerStmtOut
+    let simOStmtOut := lens.verifier.liftOStmt
 
     let outerStmtOut ← simulateQ sorry (lens.verifier.liftStmt outerStmtIn innerStmtOut)
     return outerStmtOut
 
-  simulate := fun challenges => {
-    impl | query i t => do
-      let this := True
-      sorry
-  }
+  simulate := fun challenges => by
+    letI simOStmtOut := lens.verifier.liftOStmt
+    letI simInner := V.simulate challenges
+    letI simOStmtIn := lens.verifier.projOStmt
+    refine QueryImpl.compose ?_ simOStmtOut
+    refine SimOracle.append idOracle ?_
+      (m₂ := OracleComp (oSpec ++ₒ ([OuterOStmtIn]ₒ ++ₒ [pSpec.Message]ₒ)))
+    refine QueryImpl.compose ?_ simInner
+    refine SimOracle.append idOracle ?_
+      (m₂ := OracleComp (oSpec ++ₒ ([OuterOStmtIn]ₒ ++ₒ [pSpec.Message]ₒ)))
+    exact SimOracle.append simOStmtIn idOracle
 
-  reify := sorry
+  reify := fun combinedOuterStmtIn transcript => do
+    let combinedInnerStmtIn := lens.prover.proj combinedOuterStmtIn
+    let combinedInnerStmtOut ← V.toVerifier.verify combinedInnerStmtIn transcript
+    return lens.prover.liftOStmt combinedOuterStmtIn combinedInnerStmtOut
 
-  reify_simulate := sorry
-
-#check idOracle
+  reify_simulate := by
+    simp [OracleVerifier.toVerifier]
+    sorry
 
 /-- The lifting of an inner oracle reduction to an outer oracle reduction,
   requiring an associated oracle context lens -/
@@ -91,6 +100,24 @@ def OracleReduction.liftContext
   prover := R.prover.liftContext lens
   verifier := R.verifier.liftContext lens.stmt
 
+@[reducible]
+def OracleVerifier.compatStatement
+    (lens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                              OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut)
+    (V : OracleVerifier oSpec InnerStmtIn InnerOStmtIn InnerStmtOut InnerOStmtOut pSpec) :
+      (OuterStmtIn × (∀ i, OuterOStmtIn i)) → (InnerStmtOut × (∀ i, InnerOStmtOut i)) → Prop :=
+  V.toVerifier.compatStatement lens.toStatement
+
+def OracleReduction.compatContext
+    (lens : OracleContext.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                              OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
+                              OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
+    (R : OracleReduction oSpec InnerStmtIn InnerOStmtIn InnerWitIn
+                            InnerStmtOut InnerOStmtOut InnerWitOut pSpec) :
+      (OuterStmtIn × (∀ i, OuterOStmtIn i)) × OuterWitIn →
+      (InnerStmtOut × (∀ i, InnerOStmtOut i)) × InnerWitOut → Prop :=
+  R.toReduction.compatContext lens.toContext
+
 section Execution
 
 /-- The lifting of the verifier commutes with the conversion from the oracle verifier to the
@@ -99,7 +126,7 @@ theorem OracleVerifier.liftContext_toVerifier_comm
     {lens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                               OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut}
     {V : OracleVerifier oSpec InnerStmtIn InnerOStmtIn InnerStmtOut InnerOStmtOut pSpec} :
-      (V.liftContext lens).toVerifier = V.toVerifier.liftContext lens := by
+      (V.liftContext lens).toVerifier = V.toVerifier.liftContext lens.toStatement := by
   sorry
 
 /-- The lifting of the reduction commutes with the conversion from the oracle reduction to the
@@ -165,29 +192,30 @@ theorem liftContext_soundness
                                 OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut}
     (V : OracleVerifier oSpec InnerStmtIn InnerOStmtIn InnerStmtOut InnerOStmtOut pSpec)
     [lensSound : lens.IsSound outerLangIn outerLangOut innerLangIn innerLangOut
-      (V.toVerifier.compatStatement lens)]
+      (V.compatStatement lens)]
     (h : V.soundness innerLangIn innerLangOut soundnessError) :
       (V.liftContext lens).soundness outerLangIn outerLangOut soundnessError := by
   unfold OracleVerifier.soundness at h ⊢
   rw [liftContext_toVerifier_comm]
-  exact V.toVerifier.liftContext_soundness h (lens := lens)
+  exact V.toVerifier.liftContext_soundness h (lens := lens.toStatement)
 
 theorem liftContext_knowledgeSoundness [Inhabited InnerWitIn]
     {knowledgeError : ℝ≥0}
-    {stmtLens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+    {oStmtLens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                                 OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut}
     {witLens : Witness.InvLens (OuterStmtIn × ∀ i, OuterOStmtIn i)
                             OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
     (V : OracleVerifier oSpec InnerStmtIn InnerOStmtIn InnerStmtOut InnerOStmtOut pSpec)
     [lensKS : Extractor.Lens.IsKnowledgeSound
       outerRelIn innerRelIn outerRelOut innerRelOut
-      (V.toVerifier.compatStatement stmtLens) (fun _ _ => True) ⟨stmtLens, witLens⟩]
+      (V.compatStatement oStmtLens) (fun _ _ => True) ⟨oStmtLens.toStatement, witLens⟩]
     (h : V.knowledgeSoundness innerRelIn innerRelOut knowledgeError) :
-      (V.liftContext stmtLens).knowledgeSoundness outerRelIn outerRelOut
+      (V.liftContext oStmtLens).knowledgeSoundness outerRelIn outerRelOut
         knowledgeError := by
   unfold OracleVerifier.knowledgeSoundness at h ⊢
   rw [liftContext_toVerifier_comm]
-  exact V.toVerifier.liftContext_knowledgeSoundness h (stmtLens := stmtLens) (witLens := witLens)
+  exact V.toVerifier.liftContext_knowledgeSoundness h
+    (stmtLens := oStmtLens.toStatement) (witLens := witLens)
 
 theorem liftContext_rbr_soundness
     {rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0}
@@ -196,30 +224,30 @@ theorem liftContext_rbr_soundness
     (V : OracleVerifier oSpec InnerStmtIn InnerOStmtIn InnerStmtOut InnerOStmtOut pSpec)
     [lensSound : lens.IsSound
       outerLangIn outerLangOut innerLangIn innerLangOut
-      (V.toVerifier.compatStatement lens)]
+      (V.compatStatement lens)]
     (h : V.rbrSoundness innerLangIn innerLangOut rbrSoundnessError) :
       (V.liftContext lens).rbrSoundness outerLangIn outerLangOut rbrSoundnessError := by
   unfold OracleVerifier.rbrSoundness at h ⊢
   rw [liftContext_toVerifier_comm]
-  exact V.toVerifier.liftContext_rbr_soundness h (lens := lens)
+  exact V.toVerifier.liftContext_rbr_soundness h (lens := lens.toStatement)
 
 theorem liftContext_rbr_knowledgeSoundness [Inhabited InnerWitIn]
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
-    {stmtLens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+    {oStmtLens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                                 OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut}
     {witLens : Witness.InvLens (OuterStmtIn × ∀ i, OuterOStmtIn i)
                             OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
     (V : OracleVerifier oSpec InnerStmtIn InnerOStmtIn InnerStmtOut InnerOStmtOut pSpec)
     [lensKS : Extractor.Lens.IsKnowledgeSound
       outerRelIn innerRelIn outerRelOut innerRelOut
-      (V.toVerifier.compatStatement stmtLens) (fun _ _ => True) ⟨stmtLens, witLens⟩]
+      (V.compatStatement oStmtLens) (fun _ _ => True) ⟨oStmtLens.toStatement, witLens⟩]
     (h : V.rbrKnowledgeSoundness innerRelIn innerRelOut rbrKnowledgeError) :
-      (V.liftContext stmtLens).rbrKnowledgeSoundness outerRelIn outerRelOut
+      (V.liftContext oStmtLens).rbrKnowledgeSoundness outerRelIn outerRelOut
         rbrKnowledgeError := by
   unfold OracleVerifier.rbrKnowledgeSoundness at h ⊢
   rw [liftContext_toVerifier_comm]
   exact V.toVerifier.liftContext_rbr_knowledgeSoundness h
-    (stmtLens := stmtLens) (witLens := witLens)
+    (stmtLens := oStmtLens.toStatement) (witLens := witLens)
 
 end OracleVerifier
 

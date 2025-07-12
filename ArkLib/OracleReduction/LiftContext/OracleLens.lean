@@ -87,17 +87,24 @@ structure Verifier where
   projStmt : OuterStmtIn → OracleComp [OuterOStmtIn]ₒ InnerStmtIn
 
   /-- Projection of the outer oracle statement to the inner oracle statement, which takes in the
-    outer input (non-oracle) statement and returns a simulation of the inner oracle statement in
-    terms of the outer oracle statement. -/
-  projOStmt : OuterStmtIn → QueryImpl [InnerOStmtIn]ₒ (OracleComp [OuterOStmtIn]ₒ)
+      outer input (non-oracle) statement and returns a simulation of the inner oracle statement in
+      terms of the outer oracle statement.
+
+    NOTE: we would like `OuterStmtIn → `this. Cannot have this for now since
+    `OracleVerifier.simulate` is also not as general as we want. -/
+  projOStmt : QueryImpl [InnerOStmtIn]ₒ (OracleComp [OuterOStmtIn]ₒ)
 
   /-- Lifting of the outer statement to the inner statement, with oracle access to the input
     oracle statement. -/
   liftStmt : OuterStmtIn → InnerStmtOut →
     OracleComp ([OuterOStmtIn]ₒ ++ₒ [InnerOStmtOut]ₒ) OuterStmtOut
 
-  liftOStmt : OuterStmtIn → InnerStmtOut → QueryImpl [OuterOStmtOut]ₒ
-    (OracleComp ([OuterOStmtIn]ₒ ++ₒ [InnerOStmtOut]ₒ))
+  /-- Lifting of the inner output oracle statement to outer one. Expressed as an oracle simulation
+    of `OuterOStmtOut` in terms of `OuterOStmtIn` and `InnerOStmtOut`.
+
+  NOTE: ideally, we would also have `OuterStmtIn → InnerStmtOut → ` this. Need to drop this for now
+  since `OracleVerifier.simulate` definition is also not as general as we want. -/
+  liftOStmt : QueryImpl [OuterOStmtOut]ₒ (OracleComp ([OuterOStmtIn]ₒ ++ₒ [InnerOStmtOut]ₒ))
 
 /-- The oracle statement lenses for the prover and verifier are **compatible** if the verifier's
 oracle-based "simulation" of the statement transformation matches the prover's data-level
@@ -140,7 +147,7 @@ class IsCompatible
 
   projOStmt : ∀ outerStmtIn outerOStmtIn i t,
     runWithOracle (fun i => oracle (outerOStmtIn i))
-      (simulateQ (lensV.projOStmt outerStmtIn) (query (spec := [InnerOStmtIn]ₒ) i t))
+      (simulateQ (lensV.projOStmt) (query (spec := [InnerOStmtIn]ₒ) i t))
       = some ((Inner_Oₛᵢ i).oracle ((lensP.projOStmt ⟨outerStmtIn, outerOStmtIn⟩) i) t)
 
   liftStmt : ∀ outerStmtIn outerOStmtIn innerStmtOut innerOStmtOut,
@@ -155,8 +162,7 @@ class IsCompatible
     runWithOracle (fun i => match i with
       | .inl j => oracle (outerOStmtIn j)
       | .inr j => oracle (innerOStmtOut j))
-        (simulateQ (lensV.liftOStmt outerStmtIn innerStmtOut)
-          (query (spec := [OuterOStmtOut]ₒ) i t))
+        (simulateQ (lensV.liftOStmt) (query (spec := [OuterOStmtOut]ₒ) i t))
       = some
         ((Outer_Oₛₒ i).oracle
           ((lensP.liftOStmt ⟨outerStmtIn, outerOStmtIn⟩ ⟨innerStmtOut, innerOStmtOut⟩) i) t)
