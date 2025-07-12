@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Chung Thai Nguyen
+Authors : Chung Thai Nguyen
 -/
 
 import ArkLib.Data.MvPolynomial.Notation
@@ -15,10 +15,12 @@ import ArkLib.Data.FieldTheory.BinaryField.Tower.Prelude
 - Field-vanishing polynomial equality in polynomial ring of algebras
 -/
 
+#check Nat.testBit
+
 namespace AdditiveNTT
 open Polynomial FiniteDimensional
 section BitwiseIdentities
--- We decompose each number `j < 2^ℓ` into its binary representation: `j = Σ k ∈ Fin ℓ, jₖ * 2ᵏ`
+-- We decompose each number `j < 2^ℓ` into its binary representation : `j = Σ k ∈ Fin ℓ, jₖ * 2ᵏ`
 def bit (k n : Nat) : Nat := (n >>> k) &&& 1 -- k'th LSB bit of `n`
 
 lemma bit_eq_zero_or_one {k n : Nat} :
@@ -27,19 +29,19 @@ lemma bit_eq_zero_or_one {k n : Nat} :
   rw [Nat.and_one_is_mod]
   simp only [Nat.mod_two_eq_zero_or_one]
 
-lemma lsb_of_single_bit {n: ℕ} (h_n: n < 2): bit 0 n = n := by
+lemma lsb_of_single_bit {n : ℕ} (h_n : n < 2) : bit 0 n = n := by
   unfold bit
   rw [Nat.shiftRight_zero]
   rw [Nat.and_one_is_mod]
   exact Nat.mod_eq_of_lt h_n
 
-lemma lsb_of_multiple_of_two {n: ℕ}: bit 0 (2*n) = 0 := by
+lemma lsb_of_multiple_of_two {n : ℕ} : bit 0 (2*n) = 0 := by
   unfold bit
   rw [Nat.shiftRight_zero, Nat.and_one_is_mod, Nat.mul_mod_right]
 
-lemma and_eq_zero_iff {n m: ℕ} : n &&& m = 0 ↔ ∀ k, (n >>> k) &&& (m >>> k) = 0 := by
+lemma and_eq_zero_iff {n m : ℕ} : n &&& m = 0 ↔ ∀ k, (n >>> k) &&& (m >>> k) = 0 := by
   constructor
-  · intro h_and_zero -- h_and_zero: n &&& m = 0
+  · intro h_and_zero -- h_and_zero : n &&& m = 0
     intro k
     rw [← Nat.shiftRight_and_distrib]
     rw [h_and_zero]
@@ -49,41 +51,41 @@ lemma and_eq_zero_iff {n m: ℕ} : n &&& m = 0 ↔ ∀ k, (n >>> k) &&& (m >>> k
     simp only [Nat.shiftRight_zero] at h_k_is_zero -- utilize n = (n >>> 0), m = (m >>> 0)
     exact h_k_is_zero
 
-lemma eq_iff_eq_all_bits {n m: ℕ} : n = m ↔ ∀ k, (n >>> k) &&& 1 = (m >>> k) &&& 1 := by
+lemma eq_iff_eq_all_bits {n m : ℕ} : n = m ↔ ∀ k, (n >>> k) &&& 1 = (m >>> k) &&& 1 := by
   constructor
   · intro h_eq -- h_eq : n = m
     intro k
     rw [h_eq]
-  · intro h_all_bits -- h_all_bits: ∀ k, (n >>> k) &&& 1 = (m >>> k) &&& 1
+  · intro h_all_bits -- h_all_bits : ∀ k, (n >>> k) &&& 1 = (m >>> k) &&& 1
     apply Nat.eq_of_testBit_eq
     intro k
     simp only [Nat.testBit, Nat.one_and_eq_mod_two, Nat.mod_two_bne_zero, beq_eq_beq]
     simp only [Nat.and_one_is_mod] at h_all_bits k
     rw [h_all_bits k]
 
-lemma shiftRight_and_one_distrib {n m k: ℕ} :
+lemma shiftRight_and_one_distrib {n m k : ℕ} :
   (n &&& m) >>> k &&& 1 = ((n >>> k) &&& 1) &&& ((m >>> k) &&& 1) := by
   rw [Nat.shiftRight_and_distrib]
   conv =>
     lhs
-    rw [←Nat.and_self (x:=1)]
+    rw [←Nat.and_self (x := 1)]
     rw [←Nat.and_assoc]
-    rw [Nat.and_assoc (y:=m >>> k) (z:=1), Nat.and_comm (x:=m>>>k) (y:=1), ←Nat.and_assoc]
+    rw [Nat.and_assoc (y := m >>> k) (z := 1), Nat.and_comm (x := m>>>k) (y := 1), ←Nat.and_assoc]
     rw [Nat.and_assoc]
 
-lemma and_eq_zero_iff_and_each_bit_eq_zero {n m: ℕ} :
+lemma and_eq_zero_iff_and_each_bit_eq_zero {n m : ℕ} :
   n &&& m = 0 ↔ ∀ k, ((n >>> k) &&& 1) &&& ((m >>> k) &&& 1) = 0 := by
   constructor
   · intro h_and_zero
     intro k
-    have h_k := shiftRight_and_one_distrib (n:=n) (m:=m) (k:=k)
+    have h_k := shiftRight_and_one_distrib (n := n) (m := m) (k := k)
     rw [←h_k]
     rw [h_and_zero, Nat.zero_shiftRight, Nat.zero_and]
   · intro h_forall_k -- h_forall_k : ∀ (k : ℕ), n >>> k &&& 1 &&& (m >>> k &&& 1) = 0
     apply eq_iff_eq_all_bits.mpr
     intro k
     -- ⊢ (n &&& m) >>> k &&& 1 = 0 >>> k &&& 1
-    have h_forall_k_eq: ∀ k, ((n &&& m) >>> k) &&& 1 = 0 := by
+    have h_forall_k_eq : ∀ k, ((n &&& m) >>> k) &&& 1 = 0 := by
       intro k
       rw [shiftRight_and_one_distrib]
       exact h_forall_k k
@@ -94,54 +96,54 @@ lemma and_one_eq_of_eq {a b : ℕ} : a = b → a &&& 1 = b &&& 1 := by
   intro h_eq
   rw [h_eq]
 
-lemma Nat.eq_zero_or_eq_one_of_lt_two {n: ℕ} (h_lt: n < 2): n = 0 ∨ n = 1 := by
+lemma Nat.eq_zero_or_eq_one_of_lt_two {n : ℕ} (h_lt : n < 2) : n = 0 ∨ n = 1 := by
   interval_cases n
   · left; rfl
   · right; rfl
 
-lemma div_2_form {nD2 bn: ℕ} (h_bn: bn < 2):
+lemma div_2_form {nD2 bn : ℕ} (h_bn : bn < 2):
   (nD2 * 2 + bn) / 2 = nD2 := by
   rw [←add_comm, ←mul_comm]
-  rw [Nat.add_mul_div_left (x:=bn) (y:=2) (z:=nD2) (H:=by norm_num)]
+  rw [Nat.add_mul_div_left (x := bn) (y := 2) (z := nD2) (H := by norm_num)]
   norm_num; exact h_bn;
 
-lemma and_of_chopped_lsb {n m n1 m1 bn bm: ℕ} (h_bn: bn < 2) (h_bm: bm < 2)
-  (h_n: n = n1 * 2 + bn) (h_m: m = m1 * 2 + bm):
-  n &&& m = (n1 &&& m1) * 2 + (bn &&& bm) := by -- main tool: Nat.div_add_mod /2
+lemma and_of_chopped_lsb {n m n1 m1 bn bm : ℕ} (h_bn : bn < 2) (h_bm : bm < 2)
+  (h_n : n = n1 * 2 + bn) (h_m : m = m1 * 2 + bm):
+  n &&& m = (n1 &&& m1) * 2 + (bn &&& bm) := by -- main tool : Nat.div_add_mod /2
   rw [h_n, h_m]
   -- ⊢ (n1 * 2 + bn) &&& (m1 * 2 + bm) = (n1 &&& m1) * 2 + (bn &&& bm)
-  have h_n1_mul_2_add_bn_div_2: (n1 * 2 + bn) / 2 = n1 := div_2_form h_bn;
-  have h_m1_mul_2_add_bm_div_2: (m1 * 2 + bm) / 2 = m1 := div_2_form h_bm;
-  have h_and_bn_bm: (bn &&& bm) < 2 := by
+  have h_n1_mul_2_add_bn_div_2 : (n1 * 2 + bn) / 2 = n1 := div_2_form h_bn;
+  have h_m1_mul_2_add_bm_div_2 : (m1 * 2 + bm) / 2 = m1 := div_2_form h_bm;
+  have h_and_bn_bm : (bn &&& bm) < 2 := by
     interval_cases bn
     · rw [Nat.zero_and]; norm_num;
     · interval_cases bm
       · rw [Nat.and_zero]; norm_num;
       · rw [Nat.and_self]; norm_num;
-  -- Part 1: Prove the `mod 2` parts are equal.
+  -- Part 1 : Prove the `mod 2` parts are equal.
   have h_mod_eq : ((n1 * 2 + bn) &&& (m1 * 2 + bm)) % 2 = ((n1 &&& m1) * 2 + (bn &&& bm)) % 2 := by
     simp only [Nat.and_mod_two_pow (n := 1), pow_one, Nat.mul_add_mod_self_right]
-  -- Part 2: Prove the `div 2` parts are equal.
+  -- Part 2 : Prove the `div 2` parts are equal.
   have h_div_eq : ((n1 * 2 + bn) &&& (m1 * 2 + bm)) / 2 = ((n1 &&& m1) * 2 + (bn &&& bm)) / 2 := by
     simp only [Nat.and_div_two_pow (n := 1), pow_one]
     -- ⊢ (n1 * 2 + bn) / 2 &&& (m1 * 2 + bm) / 2 = ((n1 &&& m1) * 2 + (bn &&& bm)) / 2
     rw [h_n1_mul_2_add_bn_div_2, h_m1_mul_2_add_bm_div_2]
     -- ⊢ n1 &&& m1 = ((n1 &&& m1) * 2 + (bn &&& bm)) / 2
-    have h_result: ((n1 &&& m1) * 2 + (bn &&& bm)) / 2 = n1 &&& m1 := by
+    have h_result : ((n1 &&& m1) * 2 + (bn &&& bm)) / 2 = n1 &&& m1 := by
       rw [←add_comm, ←mul_comm] -- (x + y * z) / y = x / y + z
-      rw [Nat.add_mul_div_left (x:=bn &&& bm) (y:=2) (z:=n1 &&& m1) (H:=by norm_num)]
-      rw [(Nat.div_eq_zero_iff_lt (x:=bn &&& bm) (k:=2) (h:=by norm_num)).mpr h_and_bn_bm, zero_add]
+      rw [Nat.add_mul_div_left (x := bn &&& bm) (y := 2) (z := n1 &&& m1) (H := by norm_num)]
+      rw [(Nat.div_eq_zero_iff_lt (h := by norm_num)).mpr h_and_bn_bm, zero_add]
     rw [h_result]
   rw [←Nat.div_add_mod ((n1 * 2 + bn) &&& (m1 * 2 + bm)) 2, h_div_eq, h_mod_eq, Nat.div_add_mod]
 
-lemma xor_of_chopped_lsb {n m n1 m1 bn bm: ℕ} (h_bn: bn < 2) (h_bm: bm < 2)
-  (h_n: n = n1 * 2 + bn) (h_m: m = m1 * 2 + bm):
+lemma xor_of_chopped_lsb {n m n1 m1 bn bm : ℕ} (h_bn : bn < 2) (h_bm : bm < 2)
+  (h_n : n = n1 * 2 + bn) (h_m : m = m1 * 2 + bm):
   n ^^^ m = (n1 ^^^ m1) * 2 + (bn ^^^ bm) := by
   rw [h_n, h_m]
   -- ⊢ (n1 * 2 + bn) ^^^ (m1 * 2 + bm) = (n1 ^^^ m1) * 2 + (bn ^^^ bm)
-  have h_n1_mul_2_add_bn_div_2: (n1 * 2 + bn) / 2 = n1 := div_2_form h_bn;
-  have h_m1_mul_2_add_bm_div_2: (m1 * 2 + bm) / 2 = m1 := div_2_form h_bm;
-  have h_xor_bn_bm: (bn ^^^ bm) < 2 := by
+  have h_n1_mul_2_add_bn_div_2 : (n1 * 2 + bn) / 2 = n1 := div_2_form h_bn;
+  have h_m1_mul_2_add_bm_div_2 : (m1 * 2 + bm) / 2 = m1 := div_2_form h_bm;
+  have h_xor_bn_bm : (bn ^^^ bm) < 2 := by
     interval_cases bn
     · interval_cases bm
       · rw [Nat.zero_xor]; norm_num;
@@ -149,30 +151,30 @@ lemma xor_of_chopped_lsb {n m n1 m1 bn bm: ℕ} (h_bn: bn < 2) (h_bm: bm < 2)
     · interval_cases bm
       · rw [Nat.xor_zero]; norm_num;
       · rw [Nat.xor_self]; norm_num;
-  -- Part 1: Prove the `mod 2` parts are equal.
+  -- Part 1 : Prove the `mod 2` parts are equal.
   have h_mod_eq : ((n1 * 2 + bn) ^^^ (m1 * 2 + bm)) % 2 = ((n1 ^^^ m1) * 2 + (bn ^^^ bm)) % 2 := by
     simp only [Nat.xor_mod_two_pow (n := 1), pow_one, Nat.mul_add_mod_self_right]
-  -- Part 2: Prove the `div 2` parts are equal.
+  -- Part 2 : Prove the `div 2` parts are equal.
   have h_div_eq : ((n1 * 2 + bn) ^^^ (m1 * 2 + bm)) / 2 = ((n1 ^^^ m1) * 2 + (bn ^^^ bm)) / 2 := by
     simp only [Nat.xor_div_two_pow (n := 1), pow_one]
     -- ⊢ (n1 * 2 + bn) / 2 &&& (m1 * 2 + bm) / 2 = ((n1 &&& m1) * 2 + (bn &&& bm)) / 2
     rw [h_n1_mul_2_add_bn_div_2, h_m1_mul_2_add_bm_div_2]
     -- ⊢ n1 &&& m1 = ((n1 &&& m1) * 2 + (bn &&& bm)) / 2
-    have h_result: ((n1 ^^^ m1) * 2 + (bn ^^^ bm)) / 2 = n1 ^^^ m1 := by
+    have h_result : ((n1 ^^^ m1) * 2 + (bn ^^^ bm)) / 2 = n1 ^^^ m1 := by
       rw [←add_comm, ←mul_comm] -- (x + y * z) / y = x / y + z
-      rw [Nat.add_mul_div_left (x:=bn ^^^ bm) (y:=2) (z:=n1 ^^^ m1) (H:=by norm_num)]
-      rw [(Nat.div_eq_zero_iff_lt (x:=bn ^^^ bm) (k:=2) (h:=by norm_num)).mpr h_xor_bn_bm, zero_add]
+      rw [Nat.add_mul_div_left (x := bn ^^^ bm) (y := 2) (z := n1 ^^^ m1) (H := by norm_num)]
+      rw [(Nat.div_eq_zero_iff_lt (h := by norm_num)).mpr h_xor_bn_bm, zero_add]
     rw [h_result]
   rw [←Nat.div_add_mod ((n1 * 2 + bn) ^^^ (m1 * 2 + bm)) 2, h_div_eq, h_mod_eq, Nat.div_add_mod]
 
-lemma or_of_chopped_lsb {n m n1 m1 bn bm: ℕ} (h_bn: bn < 2) (h_bm: bm < 2)
-  (h_n: n = n1 * 2 + bn) (h_m: m = m1 * 2 + bm):
+lemma or_of_chopped_lsb {n m n1 m1 bn bm : ℕ} (h_bn : bn < 2) (h_bm : bm < 2)
+  (h_n : n = n1 * 2 + bn) (h_m : m = m1 * 2 + bm):
   n ||| m = (n1 ||| m1) * 2 + (bn ||| bm) := by
   rw [h_n, h_m]
   -- ⊢ (n1 * 2 + bn) ||| (m1 * 2 + bm) = (n1 ||| m1) * 2 + (bn ||| bm)
-  have h_n1_mul_2_add_bn_div_2: (n1 * 2 + bn) / 2 = n1 := div_2_form h_bn;
-  have h_m1_mul_2_add_bm_div_2: (m1 * 2 + bm) / 2 = m1 := div_2_form h_bm;
-  have h_or_bn_bm: (bn ||| bm) < 2 := by
+  have h_n1_mul_2_add_bn_div_2 : (n1 * 2 + bn) / 2 = n1 := div_2_form h_bn;
+  have h_m1_mul_2_add_bm_div_2 : (m1 * 2 + bm) / 2 = m1 := div_2_form h_bm;
+  have h_or_bn_bm : (bn ||| bm) < 2 := by
     interval_cases bn
     · interval_cases bm
       · rw [Nat.zero_or]; norm_num;
@@ -180,23 +182,23 @@ lemma or_of_chopped_lsb {n m n1 m1 bn bm: ℕ} (h_bn: bn < 2) (h_bm: bm < 2)
     · interval_cases bm
       · rw [Nat.or_zero]; norm_num;
       · rw [Nat.or_self]; norm_num;
-  -- Part 1: Prove the `mod 2` parts are equal.
+  -- Part 1 : Prove the `mod 2` parts are equal.
   have h_mod_eq : ((n1 * 2 + bn) ||| (m1 * 2 + bm)) % 2 = ((n1 ||| m1) * 2 + (bn ||| bm)) % 2 := by
     simp only [Nat.or_mod_two_pow (n := 1), pow_one, Nat.mul_add_mod_self_right]
-  -- Part 2: Prove the `div 2` parts are equal.
+  -- Part 2 : Prove the `div 2` parts are equal.
   have h_div_eq : ((n1 * 2 + bn) ||| (m1 * 2 + bm)) / 2 = ((n1 ||| m1) * 2 + (bn ||| bm)) / 2 := by
     simp only [Nat.or_div_two_pow (n := 1), pow_one]
     -- ⊢ (n1 * 2 + bn) / 2 ||| (m1 * 2 + bm) / 2 = ((n1 ||| m1) * 2 + (bn ||| bm)) / 2
     rw [h_n1_mul_2_add_bn_div_2, h_m1_mul_2_add_bm_div_2]
     -- ⊢ n1 ||| m1 = ((n1 ||| m1) * 2 + (bn ||| bm)) / 2
-    have h_result: ((n1 ||| m1) * 2 + (bn ||| bm)) / 2 = n1 ||| m1 := by
+    have h_result : ((n1 ||| m1) * 2 + (bn ||| bm)) / 2 = n1 ||| m1 := by
       rw [←add_comm, ←mul_comm] -- (x + y * z) / y = x / y + z
-      rw [Nat.add_mul_div_left (x:=bn ||| bm) (y:=2) (z:=n1 ||| m1) (H:=by norm_num)]
-      rw [(Nat.div_eq_zero_iff_lt (x:=bn ||| bm) (k:=2) (h:=by norm_num)).mpr h_or_bn_bm, zero_add]
+      rw [Nat.add_mul_div_left (x := bn ||| bm) (y := 2) (z := n1 ||| m1) (H := by norm_num)]
+      rw [(Nat.div_eq_zero_iff_lt (h := by norm_num)).mpr h_or_bn_bm, zero_add]
     rw [h_result]
   rw [←Nat.div_add_mod ((n1 * 2 + bn) ||| (m1 * 2 + bm)) 2, h_div_eq, h_mod_eq, Nat.div_add_mod]
 
-lemma sum_eq_xor_plus_twice_and (n: Nat): ∀ m: ℕ, n + m = (n ^^^ m) + 2 * (n &&& m) := by
+lemma sum_eq_xor_plus_twice_and (n : Nat) : ∀ m : ℕ, n + m = (n ^^^ m) + 2 * (n &&& m) := by
   induction n using Nat.binaryRec with
   | z =>
     intro m
@@ -214,11 +216,11 @@ lemma sum_eq_xor_plus_twice_and (n: Nat): ∀ m: ℕ, n + m = (n ^^^ m) + 2 * (n
     set nVal := Nat.bit bn n2
     set bitN := bn.toNat
     set bitM := bm.toNat
-    have h_bitN: bitN < 2 := by
+    have h_bitN : bitN < 2 := by
       exact Bool.toNat_lt bn
-    have h_bitM: bitM < 2 := by
+    have h_bitM : bitM < 2 := by
       exact Bool.toNat_lt bm
-    have h_and_bitN_bitM: (bitN &&& bitM) < 2 := by
+    have h_and_bitN_bitM : (bitN &&& bitM) < 2 := by
       interval_cases bitN
       · interval_cases bitM
         · rw [Nat.zero_and]; norm_num;
@@ -226,13 +228,13 @@ lemma sum_eq_xor_plus_twice_and (n: Nat): ∀ m: ℕ, n + m = (n ^^^ m) + 2 * (n
       · interval_cases bitM
         · rw [Nat.and_zero]; norm_num;
         · rw [Nat.and_self]; norm_num;
-    have h_n: nVal = n2 * 2 + bitN := by
+    have h_n : nVal = n2 * 2 + bitN := by
       unfold nVal
       rw [Nat.bit_val, mul_comm]
-    have h_m: mVal = m2 * 2 + bitM := by
+    have h_m : mVal = m2 * 2 + bitM := by
       unfold mVal
       rw [Nat.bit_val, mul_comm]
-    have h_mVal_eq_m: mVal = m := by
+    have h_mVal_eq_m : mVal = m := by
       unfold mVal
       rw [Nat.bit_val, mul_comm]
       rw [←h_m]
@@ -242,15 +244,15 @@ lemma sum_eq_xor_plus_twice_and (n: Nat): ∀ m: ℕ, n + m = (n ^^^ m) + 2 * (n
     rw [←h_mVal_eq_m]
     -- h_prev : n2 + m2 = n2 ^^^ m2 + 2 * (n2 &&& m2)
     -- ⊢ nVal + mVal = nVal ^^^ mVal + 2 * (nVal &&& mVal)
-    have h_and: nVal &&& mVal = (n2 &&& m2) * 2 + (bitN &&& bitM) :=
-      and_of_chopped_lsb (n:=nVal) (m:=mVal) (h_bn:=h_bitN) (h_bm:=h_bitM) (h_n:=h_n) (h_m:=h_m)
-    have h_xor: nVal ^^^ mVal = (n2 ^^^ m2) * 2 + (bitN ^^^ bitM) :=
-      xor_of_chopped_lsb (n:=nVal) (m:=mVal) (h_bn:=h_bitN) (h_bm:=h_bitM) (h_n:=h_n) (h_m:=h_m)
-    have h_or: nVal ||| mVal = (n2 ||| m2) * 2 + (bitN ||| bitM) :=
-      or_of_chopped_lsb (n:=nVal) (m:=mVal) (h_bn:=h_bitN) (h_bm:=h_bitM) (h_n:=h_n) (h_m:=h_m)
+    have h_and : nVal &&& mVal = (n2 &&& m2) * 2 + (bitN &&& bitM) :=
+      and_of_chopped_lsb (h_bn := h_bitN) (h_bm := h_bitM) (h_n := h_n) (h_m := h_m)
+    have h_xor : nVal ^^^ mVal = (n2 ^^^ m2) * 2 + (bitN ^^^ bitM) :=
+      xor_of_chopped_lsb (h_bn := h_bitN) (h_bm := h_bitM) (h_n := h_n) (h_m := h_m)
+    have h_or : nVal ||| mVal = (n2 ||| m2) * 2 + (bitN ||| bitM) :=
+      or_of_chopped_lsb (h_bn := h_bitN) (h_bm := h_bitM) (h_n := h_n) (h_m := h_m)
     have h_prev := ih m2
     -- ⊢ nVal + mVal = (nVal ^^^ mVal) + (2 * (nVal &&& mVal))
-    have sum_eq: nVal + mVal = (n2 ^^^ m2) * 2 + 4 * (n2 &&& m2) + (bitN + bitM) := by
+    have sum_eq : nVal + mVal = (n2 ^^^ m2) * 2 + 4 * (n2 &&& m2) + (bitN + bitM) := by
       calc
         _ = (n2 * 2 + bitN) + (m2 * 2 + bitM) := by rw [h_n, h_m]
         _ = (n2 + m2) * 2 + (bitN + bitM) := by
@@ -260,8 +262,8 @@ lemma sum_eq_xor_plus_twice_and (n: Nat): ∀ m: ℕ, n + m = (n ^^^ m) + 2 * (n
     rw [sum_eq]
     -- From this point, we basically do case analysis on `bn &&& bm`
     -- rw [h_n, h_m]
-    by_cases h_and_bitN_bitM_eq_1: bitN &&& bitM = 1
-    · have h_bitN_and_bitM_eq_1: bitN = 1 ∧ bitM = 1 := by
+    by_cases h_and_bitN_bitM_eq_1 : bitN &&& bitM = 1
+    · have h_bitN_and_bitM_eq_1 : bitN = 1 ∧ bitM = 1 := by
         interval_cases bitN
         · interval_cases bitM
           · contradiction
@@ -269,38 +271,38 @@ lemma sum_eq_xor_plus_twice_and (n: Nat): ∀ m: ℕ, n + m = (n ^^^ m) + 2 * (n
         · interval_cases bitM
           · contradiction
           · and_intros; rfl; rfl;
-      have h_sum_bits: (bitN + bitM) = 2 := by omega
-      have h_xor_bits: bitN ^^^ bitM = 0 := by simp only [h_bitN_and_bitM_eq_1, Nat.xor_self];
-      have h_and_bits: bitN &&& bitM = 1 := by simp only [h_bitN_and_bitM_eq_1, Nat.and_self];
+      have h_sum_bits : (bitN + bitM) = 2 := by omega
+      have h_xor_bits : bitN ^^^ bitM = 0 := by simp only [h_bitN_and_bitM_eq_1, Nat.xor_self];
+      have h_and_bits : bitN &&& bitM = 1 := by simp only [h_bitN_and_bitM_eq_1, Nat.and_self];
       -- ⊢ (n2 ^^^ m2) * 2 + 4 * (n2 &&& m2) + (bitN + bitM) = (nVal ^^^ mVal) + 2 * (nVal &&& mVal)
-      have h_left: (n2 ^^^ m2) * 2 = (nVal ^^^ mVal) := by
+      have h_left : (n2 ^^^ m2) * 2 = (nVal ^^^ mVal) := by
         calc
           _ = (n2 ^^^ m2) * 2 + 0 := by omega;
           _ = (n2 ^^^ m2) * 2 + (bitN ^^^ bitM) := by rw [h_xor_bits];
           _ = _ := by exact h_xor.symm
       rw [h_left]
       rw [add_assoc]
-      have h_right: 4 * (n2 &&& m2) + (bitN + bitM) = 2 * (nVal &&& mVal) := by
+      have h_right : 4 * (n2 &&& m2) + (bitN + bitM) = 2 * (nVal &&& mVal) := by
         calc
           _ = 4 * (n2 &&& m2) + 2 := by rw [h_sum_bits];
           _ = 2 * (2 * (n2 &&& m2) + 1) := by omega;
           _ = 2 * ((n2 &&& m2) * 2 + (bitN &&& bitM)) := by
-            rw [h_and_bits, mul_comm (a:=(n2 &&& m2)) (b:=2)];
+            rw [h_and_bits, mul_comm (a := (n2 &&& m2)) (b := 2)];
           _ = 2 * (nVal &&& mVal) := by rw [h_and];
       rw [h_right]
     · push_neg at h_and_bitN_bitM_eq_1;
-      have h_and_bitN_bitM_eq_0: (bitN &&& bitM) = 0 := by
+      have h_and_bitN_bitM_eq_0 : (bitN &&& bitM) = 0 := by
         interval_cases (bitN &&& bitM)
         · rfl
         · contradiction
-      have h_bits_eq: bitN = 0 ∨ bitM = 0 := by
+      have h_bits_eq : bitN = 0 ∨ bitM = 0 := by
         interval_cases bitN
         · left; rfl
         · right;
           interval_cases bitM
           · rfl
           · contradiction
-      have h_sum_bits: (bitN + bitM) = (bitN ^^^ bitM) := by
+      have h_sum_bits : (bitN + bitM) = (bitN ^^^ bitM) := by
         interval_cases bitN
         · interval_cases bitM
           · rfl
@@ -309,25 +311,26 @@ lemma sum_eq_xor_plus_twice_and (n: Nat): ∀ m: ℕ, n + m = (n ^^^ m) + 2 * (n
           · rfl
           · contradiction -- with h_and_bitN_bitM_eq_0
       -- ⊢ (n2 ^^^ m2) * 2 + 4 * (n2 &&& m2) + (bitN + bitM) = (nVal ^^^ mVal) + 2 * (nVal &&& mVal)
-      rw [←add_assoc, add_assoc (b:=bitN) (c:=bitM), add_assoc]
-      rw [add_comm (b:=(bitN + bitM)), ←add_assoc]
-      have h_left: (n2 ^^^ m2) * 2 + (bitN + bitM) = (nVal ^^^ mVal) := by
+      rw [←add_assoc, add_assoc (b := bitN) (c := bitM), add_assoc]
+      rw [add_comm (b := (bitN + bitM)), ←add_assoc]
+      have h_left : (n2 ^^^ m2) * 2 + (bitN + bitM) = (nVal ^^^ mVal) := by
         calc
           _ = (n2 ^^^ m2) * 2 + (bitN ^^^ bitM) := by rw [h_sum_bits];
           _ = _ := by exact h_xor.symm
       rw [h_left]
 
       -- 4 * (n2 &&& m2) = 2 * (2 * (n2 &&& m2) + (bn &&& bm)) = 2 * (n &&& m)
-      have h_right: 4 * (n2 &&& m2) = 2 * (nVal &&& mVal) := by
+      have h_right : 4 * (n2 &&& m2) = 2 * (nVal &&& mVal) := by
         calc
           _ = 4 * (n2 &&& m2) + 0 := by omega;
           _ = 4 * (n2 &&& m2) + (bitN &&& bitM) := by rw [h_and_bitN_bitM_eq_0];
           _ = 2 * (2 * (n2 &&& m2) + (bitN &&& bitM)) := by omega;
-          _ = 2 * ((n2 &&& m2) * 2 + (bitN &&& bitM)) := by rw [mul_comm (a:=(n2 &&& m2)) (b:=2)];
+          _ = 2 * ((n2 &&& m2) * 2 + (bitN &&& bitM)) := by
+            rw [mul_comm (a := (n2 &&& m2)) (b := 2)];
           _ = 2 * (nVal &&& mVal) := by rw [h_and];
       rw [h_right]
 
-lemma add_shiftRight_distrib {n m k: ℕ} (h_and_zero: n &&& m = 0):
+lemma add_shiftRight_distrib {n m k : ℕ} (h_and_zero : n &&& m = 0):
   (n + m) >>> k = (n >>> k) + (m >>> k) := by
   rw [sum_eq_xor_plus_twice_and, h_and_zero, mul_zero, add_zero]
   conv =>
@@ -350,14 +353,14 @@ lemma xor_of_and_eq_zero_is_or {n m : ℕ} (h_n_AND_m : n &&& m = 0) : n ^^^ m =
   -- ⊢ (n >>> k &&& 1) ^^^ (m >>> k &&& 1) = (n >>> k &&& 1) ||| (m >>> k &&& 1)
   set bitN := n >>> k &&& 1
   set bitM := m >>> k &&& 1
-  have h_bitN: bitN < 2 := by
+  have h_bitN : bitN < 2 := by
     simp only [bitN, Nat.and_one_is_mod]
     simp only [gt_iff_lt, Nat.ofNat_pos, Nat.mod_lt (x := n >>> k) (y := 2)]
-  have h_bitM: bitM < 2 := by
+  have h_bitM : bitM < 2 := by
     simp only [bitM, Nat.and_one_is_mod]
     simp only [gt_iff_lt, Nat.ofNat_pos, Nat.mod_lt (x := m >>> k) (y := 2)]
   -- ⊢ bitN ^^^ bitM = bitN ||| bitM
-  have h_and_bitN_bitM: (bitN &&& bitM) = 0 := by
+  have h_and_bitN_bitM : (bitN &&& bitM) = 0 := by
     exact and_eq_zero_iff_and_each_bit_eq_zero.mp h_n_AND_m k
   interval_cases bitN -- case analysis on `bitN, bitM`
   · interval_cases bitM
@@ -371,45 +374,57 @@ lemma sum_of_and_eq_zero_is_or {n m : ℕ} (h_n_AND_m : n &&& m = 0) : n + m = n
   rw [sum_eq_xor_plus_twice_and, h_n_AND_m, mul_zero, add_zero]
   exact xor_of_and_eq_zero_is_or h_n_AND_m
 
-lemma bit_of_add_distrib {n m k: ℕ}
-  (h_n_AND_m: n &&& m = 0): bit k (n + m) = bit k n + bit k m := by
+lemma bit_of_add_distrib {n m k : ℕ}
+  (h_n_AND_m : n &&& m = 0) : bit k (n + m) = bit k n + bit k m := by
   unfold bit
   rw [sum_of_and_eq_zero_is_xor h_n_AND_m]
   rw [Nat.shiftRight_xor_distrib, Nat.and_xor_distrib_right]
   set bitN := n >>> k &&& 1
   set bitM := m >>> k &&& 1
-  have h_bitN: bitN < 2 := by
+  have h_bitN : bitN < 2 := by
     simp only [bitN, Nat.and_one_is_mod]
     simp only [gt_iff_lt, Nat.ofNat_pos, Nat.mod_lt (x := n >>> k) (y := 2)]
-  have h_bitM: bitM < 2 := by
+  have h_bitM : bitM < 2 := by
     simp only [bitM, Nat.and_one_is_mod]
     simp only [gt_iff_lt, Nat.ofNat_pos, Nat.mod_lt (x := m >>> k) (y := 2)]
-  have h_bitN_and_bitM: (bitN &&& bitM) = 0 := by
+  have h_bitN_and_bitM : (bitN &&& bitM) = 0 := by
     exact and_eq_zero_iff_and_each_bit_eq_zero.mp h_n_AND_m k
-  exact (sum_of_and_eq_zero_is_xor (n:=bitN) (m:=bitM) h_bitN_and_bitM).symm
+  exact (sum_of_and_eq_zero_is_xor (n := bitN) (m := bitM) h_bitN_and_bitM).symm
 
-lemma bit_of_multiple_of_power_of_two {n k p: ℕ}:
+lemma bit_of_multiple_of_power_of_two {n k p : ℕ}:
   bit (k+p) (2^p * n) = bit k n := by
   unfold bit
-  have h_eq: 2^p * n = n <<< p := by
+  have h_eq : 2^p * n = n <<< p := by
     rw [mul_comm]
     exact Eq.symm (Nat.shiftLeft_eq n p)
   rw [h_eq]
-  rw [add_comm (a:=k) (b:=p), Nat.shiftRight_add]
+  rw [add_comm (a := k) (b := p), Nat.shiftRight_add]
   rw [Nat.shiftLeft_shiftRight]
 
-lemma bit_of_shiftRight {n p: ℕ}:
+lemma bit_of_shiftRight {n p : ℕ}:
   ∀ k, bit k (n >>> p) = bit (k+p) n := by
   intro k
   unfold bit
   rw [←Nat.shiftRight_add]
   rw [←add_comm]
 
-theorem bit_repr {ℓ : Nat} (h_ℓ: ℓ > 0): ∀ j, j < 2^ℓ →
+lemma bit_eq_succ_bit_of_mul_two {n k : ℕ} : bit (k+1) (2*n) = bit k n := by
+  have h_n_eq: n = (2*n) >>> 1 := by omega
+  have res := (bit_of_shiftRight (n := 2*n) (p := 1) k).symm
+  conv_rhs at res => rw [←h_n_eq]
+  exact res
+
+lemma bit_eq_succ_bit_of_mul_two_add_one {n k : ℕ} : bit (k+1) (2*n + 1) = bit k n := by
+  have h_n_eq: n = (2*n + 1) >>> 1 := by omega
+  have res := (bit_of_shiftRight (n := 2*n + 1) (p := 1) k).symm
+  conv_rhs at res => rw [←h_n_eq]
+  exact res
+
+theorem bit_repr {ℓ : Nat} (h_ℓ : ℓ > 0) : ∀ j, j < 2^ℓ →
   j = ∑ k ∈ Finset.Icc 0 (ℓ-1), (bit k j) * 2^k := by
   induction ℓ with
   | zero =>
-    -- Base case: ℓ = 0
+    -- Base case : ℓ = 0
     intro j h_j
     have h_j_zero : j = 0 := by exact Nat.lt_one_iff.mp h_j
     subst h_j_zero
@@ -417,53 +432,53 @@ theorem bit_repr {ℓ : Nat} (h_ℓ: ℓ > 0): ∀ j, j < 2^ℓ →
     unfold bit
     rw [Nat.shiftRight_zero, Nat.and_one_is_mod]
   | succ ℓ₁ ih =>
-    by_cases h_ℓ₁: ℓ₁ = 0
+    by_cases h_ℓ₁ : ℓ₁ = 0
     · simp only [h_ℓ₁, zero_add, pow_one, tsub_self, Finset.Icc_self, Finset.sum_singleton,
       pow_zero, mul_one];
       intro j hj
       interval_cases j
       · simp only [bit, Nat.shiftRight_zero, Nat.and_one_is_mod, Nat.zero_mod]
-      · simp only [bit, Nat.shiftRight_zero, Nat.and_one_is_mod, Nat.zero_mod]
+      · simp only [bit, Nat.shiftRight_zero, Nat.and_one_is_mod]
     · push_neg at h_ℓ₁
       set ℓ := ℓ₁ + 1
-      have h_ℓ_eq: ℓ = ℓ₁ + 1 := by rfl
+      have h_ℓ_eq : ℓ = ℓ₁ + 1 := by rfl
       intro j h_j
-      -- Inductive step: assume theorem holds for ℓ₁ = ℓ - 1
+      -- Inductive step : assume theorem holds for ℓ₁ = ℓ - 1
       -- => show j = ∑ k ∈ Finset.range (ℓ + 1), (bit k j) * 2^k
       -- Split j into lsb (b) and higher bits (m) & reason inductively from the predicate of (m, ℓ₁)
-      set b := bit 0 j -- Least significant bit: j % 2
-      set m := j >>> 1 -- Higher bits: j / 2
-      have h_b_eq: b = bit 0 j := by rfl
-      have h_m_eq: m = j >>> 1 := by rfl
-      have h_bit_shift: ∀ k, bit (k+1) j = bit k m := by
+      set b := bit 0 j -- Least significant bit : j % 2
+      set m := j >>> 1 -- Higher bits : j / 2
+      have h_b_eq : b = bit 0 j := by rfl
+      have h_m_eq : m = j >>> 1 := by rfl
+      have h_bit_shift : ∀ k, bit (k+1) j = bit k m := by
         intro k
         rw [h_m_eq]
-        exact (bit_of_shiftRight (n:=j) (p:=1) k).symm
+        exact (bit_of_shiftRight (n := j) (p := 1) k).symm
       have h_j_eq : j = b + 2 * m := by
         calc
           _ = 2 * m + b := by
-            have h_m_eq: m = j/2 := by rfl
-            have h_b_eq: b = j%2 := by
+            have h_m_eq : m = j/2 := by rfl
+            have h_b_eq : b = j%2 := by
               rw [h_b_eq]; unfold bit; rw [Nat.shiftRight_zero]; rw [Nat.and_one_is_mod];
             rw [h_m_eq, h_b_eq];
-            rw [Nat.div_add_mod (m:=j) (n:=2)]; -- n * (m / n) + m % n = m := by
+            rw [Nat.div_add_mod (m := j) (n := 2)]; -- n * (m / n) + m % n = m := by
           _ = b + 2 * m := by omega;
       have h_m : m < 2^ℓ₁ := by
         by_contra h_m_ge_2_pow_ℓ
         push_neg at h_m_ge_2_pow_ℓ
-        have h_j_ge: j ≥ 2^ℓ := by
+        have h_j_ge : j ≥ 2^ℓ := by
           calc _ = 2 * m + b := by rw [h_j_eq]; omega
             _ ≥ 2 * (2^ℓ₁) + b := by omega
             _ = 2^ℓ + b := by rw [h_ℓ_eq]; omega;
             _ ≥ 2^ℓ := by omega;
         exact Nat.not_lt_of_ge h_j_ge h_j -- contradiction
-      have h_m_repr := ih (j:=m) (by omega) h_m
+      have h_m_repr := ih (j := m) (by omega) h_m
       have bit_shift : ∀ k, bit (k + 1) j = bit k m := by
         intro k
         rw [h_m_eq]
-        exact (bit_of_shiftRight (n:=j) (p:=1) k).symm
+        exact (bit_of_shiftRight (n := j) (p := 1) k).symm
       -- ⊢ j = ∑ k ∈ Finset.range ℓ, bit k j * 2 ^ k
-      have h_sum: ∑ k ∈ Finset.Icc 0 (ℓ-1), bit k j * 2 ^ k
+      have h_sum : ∑ k ∈ Finset.Icc 0 (ℓ-1), bit k j * 2 ^ k
         = (∑ k ∈ Finset.Icc 0 0, bit k j * 2 ^ k)
         + (∑ k ∈ Finset.Icc 1 (ℓ-1), bit k j * 2 ^ k) := by
         apply sum_Icc_split
@@ -473,7 +488,7 @@ theorem bit_repr {ℓ : Nat} (h_ℓ: ℓ > 0): ∀ j, j < 2^ℓ →
       rw [h_j_eq]
       rw [Finset.Icc_self, Finset.sum_singleton, pow_zero, mul_one]
 
-      have h_sum_2: ∑ k ∈ Finset.Icc 1 (ℓ-1), bit k (b + 2 * m) * 2 ^ k
+      have h_sum_2 : ∑ k ∈ Finset.Icc 1 (ℓ-1), bit k (b + 2 * m) * 2 ^ k
         = ∑ k ∈ Finset.Icc 0 (ℓ₁-1), bit k (m) * 2 ^ (k+1) := by
         apply Finset.sum_bij' (fun i _ => i - 1) (fun i _ => i + 1)
         · -- left inverse
@@ -505,19 +520,19 @@ theorem bit_repr {ℓ : Nat} (h_ℓ: ℓ > 0): ∀ j, j < 2^ℓ →
           apply And.intro
           · exact Nat.le_add_of_sub_le left_bound
           · rw [h_ℓ_eq]; rw [Nat.add_sub_cancel]; -- ⊢ j + 1 ≤ ℓ₁
-            have h_j_add_1_le_ℓ₁: j + 1 ≤ ℓ₁ := by
+            have h_j_add_1_le_ℓ₁ : j + 1 ≤ ℓ₁ := by
               calc j + 1 ≤ (ℓ₁ - 1) + 1 := by apply Nat.add_le_add_right; exact right_bound;
               _ = ℓ₁ := by rw [Nat.sub_add_cancel]; omega;
             exact h_j_add_1_le_ℓ₁
       rw [h_sum_2]
 
-      have h_sum_3: ∑ k ∈ Finset.Icc 0 (ℓ₁-1), bit k (m) * 2 ^ (k+1)
+      have h_sum_3 : ∑ k ∈ Finset.Icc 0 (ℓ₁-1), bit k (m) * 2 ^ (k+1)
         = 2 * ∑ k ∈ Finset.Icc 0 (ℓ₁-1), bit k (m) * 2 ^ k := by
         calc
           _ = ∑ k ∈ Finset.Icc 0 (ℓ₁-1), ((bit k (m) * 2^k) * 2) := by
             apply Finset.sum_congr rfl (fun k hk => by
               rw [Finset.mem_Icc] at hk -- hk : 0 ≤ k ∧ k ≤ ℓ₁ - 1
-              have h_res: bit k (m) * 2 ^ (k+1) = bit k (m) * 2 ^ k * 2 := by
+              have h_res : bit k (m) * 2 ^ (k+1) = bit k (m) * 2 ^ k * 2 := by
                 rw [Nat.pow_succ, ←mul_assoc]
               exact h_res
             )
@@ -528,30 +543,162 @@ theorem bit_repr {ℓ : Nat} (h_ℓ: ℓ > 0): ∀ j, j < 2^ℓ →
       conv =>
         rhs
         rw [←h_j_eq]
+
+variable {r : ℕ} [NeZero r]
+
+lemma Fin.val_add_one (a : Fin r) (h_a_add_1 : a + 1 < r) : (a + 1).val = a.val + 1 := by
+  rw [←Nat.mod_eq_of_lt (a := 1) (b := r) (by omega)] -- ⊢ ↑(b + 1) = ↑b + 1 % r
+  apply Fin.val_add_eq_of_add_lt -- ⊢ ↑b + ↑1 < r
+  rw [Fin.val_one', Nat.mod_eq_of_lt (by omega)]
+  exact h_a_add_1
+
+lemma Fin.val_sub_one (a : Fin r) (h_a_sub_1 : a > 0) : (a - 1).val = a.val - 1 := by
+  rw [Fin.val_sub_one_of_ne_zero (by omega)] -- can use Fin.sub_val_of_le
+
+lemma Fin.lt_iff_le_pred (a b : Fin r) (h_b : b > 0) : a < b ↔ a ≤ b - 1 := by
+  have h_b_sub_1 : (b - 1).val = b.val - 1 := Fin.val_sub_one (a := b) (h_a_sub_1 := h_b)
+  constructor
+  · intro h
+    apply Fin.mk_le_of_le_val
+    omega
+  · intro h
+    apply Fin.mk_lt_of_lt_val
+    omega
+
+lemma Fin.le_iff_lt_succ (a b : Fin r) (h_b : b + 1 < r) : a ≤ b ↔ a < b + 1 := by
+  have h_b_add_1 := Fin.val_add_one (a := b) (h_a_add_1 := h_b)
+  constructor
+  · intro h
+    apply Fin.mk_lt_of_lt_val
+    omega
+  · intro h
+    apply Fin.mk_le_of_le_val
+    omega
+
+lemma Fin.lt_succ (a : Fin r) (h_a_add_1 : a + 1 < r) : a < a + 1 := by
+  apply Fin.mk_lt_of_lt_val
+  rw [Fin.val_add_one (a := a) (h_a_add_1 := h_a_add_1)]
+  exact Nat.lt_succ_self a.val
+
+lemma Fin.le_succ (a : Fin r) (h_a_add_1 : a + 1 < r) : a ≤ a + 1 := by
+  apply Fin.le_of_lt
+  exact Fin.lt_succ (a := a) (h_a_add_1 := h_a_add_1)
+
+@[elab_as_elim] def Fin.succRecOnSameFinType {motive : Fin r → Sort _}
+    (zero : motive (0 : Fin r))
+    (succ : ∀ i : Fin r, i + 1 < r → motive i → motive (i + 1)) : ∀ (i : Fin r), motive i
+  | ⟨0, _⟩ => by exact zero
+  | ⟨Nat.succ i_val, h⟩ => by -- ⊢ motive ⟨i_val.succ, h⟩
+    simp only [Nat.succ_eq_add_one] at h
+    set i : Fin r := ⟨i_val, by omega⟩
+    set i_succ : Fin r := ⟨i_val.succ, by omega⟩
+    have i_succ_val_eq : i_succ.val = i_val.succ := by rfl
+    if h_i_add_1 : i + 1 < r then -- ⊢ motive ⟨i.succ, h⟩
+      have motive_prev : motive i := Fin.succRecOnSameFinType zero succ i
+      have res := succ (i := i) h_i_add_1 motive_prev
+      have h_i_succ_eq : i_succ = i + 1 := by
+        rw [Fin.eq_mk_iff_val_eq]
+        rw [i_succ_val_eq]
+        rw [Fin.val_add_one]
+        omega
+      rw [h_i_succ_eq]
+      exact res
+    else
+      by_contra h_i_add_1
+      simp only at h_i_add_1
+      contradiction
+
+-- The theorem statement and its proof.
+-- TODO: state a more generalized and reusable version of this, where f is from Fin r → M
+theorem Fin.sum_univ_odd_even {n : ℕ} {M : Type*} [AddCommMonoid M] (f : ℕ → M) :
+  (∑ i : Fin (2 ^ n), f (2 * i)) + (∑ i : Fin (2 ^ n), f (2 * i + 1)) = ∑ i: Fin (2 ^ (n+1)), f i := by
+  set f_even := fun i => f (2 * i)
+  set f_odd := fun i => f (2 * i + 1)
+  conv_lhs =>
+    enter [1, 2, i]
+    change f_even i
+  conv_lhs =>
+    enter [2, 2, i]
+    change f_odd i
+  simp only [Fin.sum_univ_eq_sum_range]
+
+  -- Let's define the sets of even and odd numbers.
+  let evens: Finset ℕ := Finset.image (fun i ↦ 2 * i) (Finset.range (2^n))
+  let odds: Finset ℕ := Finset.image (fun i ↦ 2 * i + 1) (Finset.range (2^n))
+
+  conv_lhs =>
+    enter [1];
+    rw [←Finset.sum_image (g:=fun i => 2 * i) (by simp)]
+
+  conv_lhs =>
+    enter [2];
+    rw [← Finset.sum_image (g:=fun i => 2 * i + 1) (by simp)]
+
+  -- First, we prove that the set on the RHS is the disjoint union of evens and odds.
+  have h_disjoint : Disjoint evens odds := by
+    apply Finset.disjoint_iff_ne.mpr
+  -- Assume for contradiction that an element `x` is in both sets.
+    rintro x hx y hy hxy
+    -- Unpack the definitions of `evens` and `odds`.
+    rcases Finset.mem_image.mp hx with ⟨k₁, _, rfl⟩
+    rcases Finset.mem_image.mp hy with ⟨k₂, _, rfl⟩
+    omega
+
+  have h_union : evens ∪ odds = Finset.range (2 ^ (n + 1)) := by
+    apply Finset.ext; intro x
+    simp only [Finset.mem_union, Finset.mem_range]
+    -- ⊢ x ∈ evens ∨ x ∈ odds ↔ x < 2 ^ (n + 1)
+    constructor
+    · -- First direction: `x ∈ evens ∪ odds → x < 2^(n+1)`
+      -- This follows from the bounds of the original range `Finset.range (2^n)`.
+      intro h
+      rcases h with (h_even | h_odd)
+      · rcases Finset.mem_image.mp h_even with ⟨k₁, hk₁, rfl⟩
+        simp at hk₁
+        omega
+      · rcases Finset.mem_image.mp h_odd with ⟨k₂, hk₂, rfl⟩
+        simp at hk₂
+        omega
+    · -- Second direction: `x < 2^(n+1) → x ∈ evens ∪ odds`
+      intro hx
+      obtain (⟨k, rfl⟩ | ⟨k, rfl⟩) := Nat.even_or_odd x
+      · left;
+        unfold evens
+        simp only [Finset.mem_image, Finset.mem_range]
+        use k;
+        omega
+      · right;
+        unfold odds
+        simp only [Finset.mem_image, Finset.mem_range]
+        use k;
+        omega
+  -- Now, rewrite the RHS using this partition.
+  rw [←h_union, Finset.sum_union h_disjoint]
+
 end BitwiseIdentities
 
 section FinFieldPolyHelper
 variable {Fq : Type*} [Field Fq] [Fintype Fq]
 
 section FieldVanishingPolynomialEquality
--- NOTE: We lift `∏_{c ∈ Fq} (X - c) = X^q - X` from `Fq[X]` to `L[X]`,
+-- NOTE : We lift `∏_{c ∈ Fq} (X - c) = X^q - X` from `Fq[X]` to `L[X]`,
 -- then achieve a generic version `∏_{c ∈ Fq} (p - c) = p^q - p` for any `p` in `L[X]`
 
 /--
 The polynomial `X^q - X` factors into the product of `(X - c)` ∀ `c` ∈ `Fq`,
 i.e. `∏_{c ∈ Fq} (X - c) = X^q - X`.
 -/
-theorem prod_X_sub_C_eq_X_pow_card_sub_X (h_Fq_card_gt_1: Fintype.card Fq > 1):
+theorem prod_X_sub_C_eq_X_pow_card_sub_X (h_Fq_card_gt_1 : Fintype.card Fq > 1):
   (∏ c ∈ (Finset.univ : Finset Fq), (Polynomial.X - Polynomial.C c)) =
     Polynomial.X^(Fintype.card Fq) - Polynomial.X := by
 
-  -- Step 1: Setup - Define P and Q for clarity.
+  -- Step 1 : Setup - Define P and Q for clarity.
   set P : Fq[X] := ∏ c ∈ (Finset.univ : Finset Fq), (Polynomial.X - Polynomial.C c)
   set Q : Fq[X] := Polynomial.X^(Fintype.card Fq) - Polynomial.X
 
   -- We will prove P = Q by showing they are both monic and have the same roots.
 
-  -- Step 2: Prove P and Q are monic.
+  -- Step 2 : Prove P and Q are monic.
   have hP_monic : P.Monic := by
     apply Polynomial.monic_prod_of_monic
     intro c _
@@ -569,7 +716,7 @@ theorem prod_X_sub_C_eq_X_pow_card_sub_X (h_Fq_card_gt_1: Fintype.card Fq > 1):
   have h_roots_Q : Q.roots = (Finset.univ : Finset Fq).val := by
     exact FiniteField.roots_X_pow_card_sub_X Fq
 
-  -- Step 3: Prove P and Q have the same set of roots.
+  -- Step 3 : Prove P and Q have the same set of roots.
   -- We show that both root sets are equal to `Finset.univ`.
   have h_roots_eq : P.roots = Q.roots := by
     rw [h_roots_P, h_roots_Q]
@@ -580,13 +727,13 @@ theorem prod_X_sub_C_eq_X_pow_card_sub_X (h_Fq_card_gt_1: Fintype.card Fq > 1):
     intro c _
     apply Polynomial.splits_X_sub_C
 
-  have hQ_card_roots: Q.roots.card = Fintype.card Fq := by
+  have hQ_card_roots : Q.roots.card = Fintype.card Fq := by
     rw [h_roots_Q]
     exact rfl
 
-  have natDegree_Q: Q.natDegree = Fintype.card Fq := by
+  have natDegree_Q : Q.natDegree = Fintype.card Fq := by
     unfold Q
-    have degLt: (X: Fq[X]).natDegree < ((X: Fq[X]) ^ Fintype.card Fq).natDegree := by
+    have degLt : (X : Fq[X]).natDegree < ((X : Fq[X]) ^ Fintype.card Fq).natDegree := by
       rw [Polynomial.natDegree_X_pow]
       rw [Polynomial.natDegree_X]
       exact h_Fq_card_gt_1
@@ -600,20 +747,20 @@ theorem prod_X_sub_C_eq_X_pow_card_sub_X (h_Fq_card_gt_1: Fintype.card Fq > 1):
     rw [hQ_card_roots]
     rw [natDegree_Q]
 
-  -- 4. CONCLUSION: Since P and Q are monic, split, and have the same roots, they are equal.
-  have hP_eq_prod: P = (Multiset.map (fun a ↦ Polynomial.X - Polynomial.C a) P.roots).prod := by
+  -- 4. CONCLUSION : Since P and Q are monic, split, and have the same roots, they are equal.
+  have hP_eq_prod : P = (Multiset.map (fun a ↦ Polynomial.X - Polynomial.C a) P.roots).prod := by
     apply Polynomial.eq_prod_roots_of_monic_of_splits_id hP_monic hP_splits
-  have hQ_eq_prod: Q = (Multiset.map (fun a ↦ Polynomial.X - Polynomial.C a) Q.roots).prod := by
+  have hQ_eq_prod : Q = (Multiset.map (fun a ↦ Polynomial.X - Polynomial.C a) Q.roots).prod := by
     apply Polynomial.eq_prod_roots_of_monic_of_splits_id hQ_monic hQ_splits
   rw [hP_eq_prod, hQ_eq_prod, h_roots_eq]
 
-variable {L: Type*} [CommRing L] [Algebra Fq L]
+variable {L : Type*} [CommRing L] [Algebra Fq L]
 /--
 The identity `∏_{c ∈ Fq} (X - c) = X^q - X` also holds in the polynomial ring `L[X]`,
 where `L` is any field extension of `Fq`.
 -/
 theorem prod_X_sub_C_eq_X_pow_card_sub_X_in_L
-  (h_Fq_card_gt_1: Fintype.card Fq > 1):
+  (h_Fq_card_gt_1 : Fintype.card Fq > 1):
   (∏ c ∈ (Finset.univ : Finset Fq), (Polynomial.X - Polynomial.C (algebraMap Fq L c))) =
     Polynomial.X^(Fintype.card Fq) - Polynomial.X := by
 
@@ -650,7 +797,7 @@ The identity `∏_{c ∈ Fq} (X - c) = X^q - X` also holds in the polynomial rin
 where `L` is any field extension of `Fq`.
 -/
 theorem prod_poly_sub_C_eq_poly_pow_card_sub_poly_in_L
-  (h_Fq_card_gt_1: Fintype.card Fq > 1) (p: L[X]):
+  (h_Fq_card_gt_1 : Fintype.card Fq > 1) (p : L[X]):
   (∏ c ∈ (Finset.univ : Finset Fq), (p - Polynomial.C (algebraMap Fq L c))) =
     p^(Fintype.card Fq) - p := by
 
@@ -663,9 +810,9 @@ theorem prod_poly_sub_C_eq_poly_pow_card_sub_poly_in_L
 
   -- From the previous theorem, we have the base identity in L[X]:
   -- `(∏ c, (X - C c)) = X^q - X`
-  let base_identity := prod_X_sub_C_eq_X_pow_card_sub_X_in_L (L:=L) h_Fq_card_gt_1
+  let base_identity := prod_X_sub_C_eq_X_pow_card_sub_X_in_L (L := L) h_Fq_card_gt_1
 
-  -- `APPROACH: f = g => f.comp(p) = g.comp(p)`
+  -- `APPROACH : f = g => f.comp(p) = g.comp(p)`
   have h_composed_eq : (∏ c ∈ (Finset.univ : Finset Fq), (X - C (algebraMap Fq L c))).comp p
     = ((X:L[X])^q - X).comp p := by
     rw [base_identity]
@@ -673,7 +820,7 @@ theorem prod_poly_sub_C_eq_poly_pow_card_sub_poly_in_L
   -- Now, we simplify the left-hand side (LHS) and right-hand side (RHS) of `h_composed_eq`
   -- to show they match the goal.
 
-  -- First, simplify the LHS: `(∏ c, (X - C c)).comp(p)`
+  -- First, simplify the LHS : `(∏ c, (X - C c)).comp(p)`
   have h_lhs_simp : (∏ c ∈ (Finset.univ : Finset Fq), (X - C (algebraMap Fq L c))).comp p =
                      ∏ c ∈ (Finset.univ : Finset Fq), (p - C (algebraMap Fq L c)) := by
     -- Use the theorem that composition distributes over products
@@ -683,7 +830,7 @@ theorem prod_poly_sub_C_eq_poly_pow_card_sub_poly_in_L
     --⊢ (X - C ((algebraMap Fq L) c)).comp p = p - C ((algebraMap Fq L) c)
     rw [Polynomial.sub_comp, Polynomial.X_comp, Polynomial.C_comp]
 
-  -- Next, simplify the RHS: `(X^q - X).comp(p)`
+  -- Next, simplify the RHS : `(X^q - X).comp(p)`
   have h_rhs_simp : ((X:L[X])^q - X).comp p = p^q - p := by
     -- Composition distributes over subtraction and powers.
     rw [Polynomial.sub_comp, Polynomial.pow_comp, Polynomial.X_comp]
@@ -695,13 +842,13 @@ theorem prod_poly_sub_C_eq_poly_pow_card_sub_poly_in_L
 end FieldVanishingPolynomialEquality
 
 section FrobeniusPolynomialIdentity
--- NOTE: We lift the Frobenius identity from `Fq[X]` to `L[X]`
+-- NOTE : We lift the Frobenius identity from `Fq[X]` to `L[X]`
 /--
 The Frobenius identity for polynomials in `Fq[X]`.
 The `q`-th power of a sum of polynomials is the sum of their `q`-th powers.
 -/
 theorem frobenius_identity_in_ground_field
-  {h_Fq_char_prime: Fact (Nat.Prime (ringChar Fq))} (f g : Fq[X]) :
+  {h_Fq_char_prime : Fact (Nat.Prime (ringChar Fq))} (f g : Fq[X]) :
     (f + g)^(Fintype.card Fq) = f^(Fintype.card Fq) + g^(Fintype.card Fq) := by
   -- The Freshman's Dream `(a+b)^e = a^e + b^e` holds if `e` is a power of the characteristic.
   -- First, we establish that `q = p^n` where `p` is the characteristic of `Fq`.
@@ -714,15 +861,14 @@ theorem frobenius_identity_in_ground_field
   -- Apply the general "Freshman's Dream" theorem for prime powers.
   exact add_pow_expChar_pow f g p ↑n
 
-variable {L: Type*} [CommRing L] [Algebra Fq L] [Nontrivial L]
-
+variable {L : Type*} [CommRing L] [Algebra Fq L] [Nontrivial L]
 
 /--
 The lifted Frobenius identity for polynomials in `L[X]`, where `L` is an `Fq`-algebra.
 The exponent `q` is the cardinality of the base field `Fq`.
 -/
-theorem frobenius_identity_in_algebra {h_Fq_char_prime: Fact (Nat.Prime (ringChar Fq))}
-  (f g : L[X]): (f + g)^(Fintype.card Fq) = f^(Fintype.card Fq) + g^(Fintype.card Fq) := by
+theorem frobenius_identity_in_algebra {h_Fq_char_prime : Fact (Nat.Prime (ringChar Fq))}
+  (f g : L[X]) : (f + g)^(Fintype.card Fq) = f^(Fintype.card Fq) + g^(Fintype.card Fq) := by
   -- The logic is identical. The key is that `L` inherits the characteristic of `Fq`.
   let p := ringChar Fq
   haveI : Fact p.Prime := h_Fq_char_prime
@@ -732,27 +878,28 @@ theorem frobenius_identity_in_algebra {h_Fq_char_prime: Fact (Nat.Prime (ringCha
   rw [hn]
 
   -- Since `L` is an `Fq`-algebra, it must have the same characteristic `p`.
-  have h_charP_Fq: CharP Fq p := by
+  have h_charP_Fq : CharP Fq p := by
     simp only [p]
     exact ringChar.charP Fq
 
-  have h_charP_L: CharP L p := by
-    have h_inj: Function.Injective (algebraMap Fq L) := by
+  have h_charP_L : CharP L p := by
+    have h_inj : Function.Injective (algebraMap Fq L) := by
       exact RingHom.injective (algebraMap Fq L) -- L must be nontrivial
-    have h_charP_L := (RingHom.charP_iff (A:=L) (f:=algebraMap Fq L) (H:=h_inj) p).mp h_charP_Fq
+    have h_charP_L := (RingHom.charP_iff (A := L) (f := algebraMap Fq L)
+      (H := h_inj) p).mp h_charP_Fq
     exact h_charP_L
   -- The polynomial ring `L[X]` also has characteristic `p`.
-  have h_charP_L_X: CharP L[X] p := by
+  have h_charP_L_X : CharP L[X] p := by
     exact Polynomial.charP
   exact add_pow_expChar_pow f g p ↑n
 
 omit [Fintype Fq] [Nontrivial L] in
-/--
-  Restricting a linear map on polynomial composition to a linear map on polynomial evaluation.
+/-- Restricting a linear map on polynomial composition to a linear map on polynomial evaluation.
 -/
-theorem linear_map_of_comp_to_linear_map_of_eval (f: L[X])
-  (h_f_linear : IsLinearMap (R:=Fq) (M:=L[X]) (M₂:=L[X]) (f:=fun inner_p ↦ f.comp inner_p)) :
-    IsLinearMap (R:=Fq) (M:=L) (M₂:=L) (f:=fun x ↦ f.eval x) := by
+theorem linear_map_of_comp_to_linear_map_of_eval (f : L[X])
+  (h_f_linear : IsLinearMap (R := Fq) (M := L[X]) (M₂ := L[X])
+    (f := fun inner_p ↦ f.comp inner_p)) :
+    IsLinearMap (R := Fq) (M := L) (M₂ := L) (f := fun x ↦ f.eval x) := by
   constructor
   · intro x y
     -- ⊢ eval (x + y) f = eval x f + eval y f
@@ -786,11 +933,11 @@ variable {L : Type u} [Field L] [Fintype L]
 variable {F₂ : Type u} [Field F₂] [Fintype F₂] (hF₂ : Fintype.card F₂ = 2)
 variable [Algebra F₂ L]
 -- We assume an `F₂`-basis for `L`, denoted by `(β₀, β₁, ..., β_{r-1})`, indexed by natural numbers.
-variable (β : Nat → L) (hβ_lin_indep : LinearIndependent (R:=F₂) (M:=L) (v:=β))
+variable (β : Nat → L) (hβ_lin_indep : LinearIndependent (R := F₂) (M := L) (v := β))
 
 omit [Fintype L] in
 @[simp]
-theorem sum_degreeLT_monomial_eq_subtype {n: ℕ} (p : L⦃< n⦄[X]) :
+theorem sum_degreeLT_monomial_eq_subtype {n : ℕ} (p : L⦃< n⦄[X]) :
   (⟨p.val.sum (fun n a => Polynomial.monomial n a), by
     -- degree of sum is degree of p.val, which is < n
     rw [Polynomial.sum_monomial_eq p.val]
@@ -799,16 +946,16 @@ theorem sum_degreeLT_monomial_eq_subtype {n: ℕ} (p : L⦃< n⦄[X]) :
       -- `span_le` changes the goal to showing every vector in the generating set
   Subtype.eq (Polynomial.sum_monomial_eq p.val)
 
-noncomputable def monomialBasisOfDegreeLT {n: ℕ} : Basis (Fin n) L (L⦃< n⦄[X]) := by
+noncomputable def monomialBasisOfDegreeLT {n : ℕ} : Basis (Fin n) L (L⦃< n⦄[X]) := by
   set monomials_in_submodule:Fin n → L⦃< n⦄[X] := fun ⟨i, hi⟩ =>
-  ⟨monomial (R:=L) (n:=i) (a:=1), by
+  ⟨monomial (R := L) (n := i) (a := 1), by
     simp only [Polynomial.mem_degreeLT]
     simp only [ne_eq, one_ne_zero, not_false_eq_true, degree_monomial, Nat.cast_lt]
     exact hi
   ⟩
 
   have h_li_submodule : LinearIndependent L monomials_in_submodule := by
-    rw [linearIndependent_iff] -- alternative: linearIndependent_powers_iff_aeval
+    rw [linearIndependent_iff] -- alternative : linearIndependent_powers_iff_aeval
     intro l hl -- l : Fin n →₀ L, hl : (Finsupp.linearCombination L monomials_in_submodule) l = 0
     apply Finsupp.ext -- ⊢ ∀ (a : Fin n), l a = 0 a
     intro i
@@ -820,10 +967,9 @@ noncomputable def monomialBasisOfDegreeLT {n: ℕ} : Basis (Fin n) L (L⦃< n⦄
       coeff (Finsupp.linearCombination L monomials_in_submodule l).val i = l i := by
       -- `span_le` changes the goal to showing every vector in the generating set
       set v := monomials_in_submodule
-      simp only [v, monomials_in_submodule, Subtype.coe_eq_iff, Subtype.coe_mk,
-              monomial_one_right_eq_X_pow, smul_eq_mul]
+      simp only [v, monomials_in_submodule, monomial_one_right_eq_X_pow]
       rw [Finsupp.linearCombination_apply]
-      simp only [SetLike.mk_smul_mk, monomials_in_submodule, v]
+      simp only [SetLike.mk_smul_mk]
       conv =>
         lhs
         simp only [Finsupp.sum, AddSubmonoidClass.coe_finset_sum, finset_sum_coeff, coeff_smul,
@@ -838,14 +984,14 @@ noncomputable def monomialBasisOfDegreeLT {n: ℕ} : Basis (Fin n) L (L⦃< n⦄
       · have l_i_is_zero : l i = 0 := by
           exact Finsupp.notMem_support_iff.mp h_i_in_l_support
         simp only [l_i_is_zero, Finset.sum_ite_eq, Finsupp.mem_support_iff, ne_eq,
-          not_true_eq_false, ↓reduceIte, monomials_in_submodule, v]
+          not_true_eq_false, ↓reduceIte]
     rw [h_poly_eq_zero] at h_coeff_eq_li
     simp only [coeff_zero] at h_coeff_eq_li
     exact h_coeff_eq_li.symm
 
-  have h_span_submodule : Submodule.span (R:=L) (Set.range monomials_in_submodule) = ⊤ :=by
+  have h_span_submodule : Submodule.span (R := L) (Set.range monomials_in_submodule) = ⊤ :=by
     apply le_antisymm
-    · -- First goal: Prove that your span is a subspace of the whole space.
+    · -- First goal : Prove that your span is a subspace of the whole space.
       -- `span_le` changes the goal to showing every vector in the generating set
       rw [Submodule.span_le]
       -- ⊢ ↑(Finset.image (fun n ↦ X ^ n) (Finset.range n)) ⊆ ↑L⦃< n⦄[X]
@@ -853,20 +999,20 @@ noncomputable def monomialBasisOfDegreeLT {n: ℕ} : Basis (Fin n) L (L⦃< n⦄
       intro j -- `j` is an index for your family, e.g., `j : Fin n`
       -- ⊢ monomials_in_submodule j ∈ ↑⊤
       simp only [Submodule.top_coe, Set.mem_univ, monomials_in_submodule]
-    · -- Second goal: Prove the whole space is a subspace of your span.
+    · -- Second goal : Prove the whole space is a subspace of your span.
       rw [Submodule.top_le_span_range_iff_forall_exists_fun]
       intro p
       have hp := p.property
-      have h_deg_p: p.val.degree < n := by
+      have h_deg_p : p.val.degree < n := by
         rw [Polynomial.mem_degreeLT] at hp
         exact hp
       -- ⊢ ∃ c, ∑ i, c i • monomials_in_submodule i = p
-      set c: Fin n → L := fun i => p.val.coeff i
-      have h_c: c = fun (i: Fin n) => p.val.coeff i := by rfl
+      set c : Fin n → L := fun i => p.val.coeff i
+      have h_c : c = fun (i : Fin n) => p.val.coeff i := by rfl
       use c
       -- ⊢ ∑ i, c i • monomials_in_submodule i = p
       apply Subtype.ext -- bring equality from ↑L⦃< n⦄[X] to L[X]
-      rw [←sum_degreeLT_monomial_eq_subtype (p:=p)] -- convert ↑p in rhs into (↑p).sum form
+      rw [←sum_degreeLT_monomial_eq_subtype (p := p)] -- convert ↑p in rhs into (↑p).sum form
       conv =>
         rhs -- ↑⟨(↑p).sum fun n a ↦ (monomial n) a, ⋯⟩
         -- we have to convert (↑p).sum into Fin n → L form using Polynomial.sum_fin
@@ -880,18 +1026,18 @@ noncomputable def monomialBasisOfDegreeLT {n: ℕ} : Basis (Fin n) L (L⦃< n⦄
       simp only [monomial_one_right_eq_X_pow]
       rw [←Polynomial.smul_X_eq_monomial]
 
-  apply Basis.mk (R:=L) (M:=degreeLT (R:=L) (n:=n))
-  exact h_li_submodule
-  exact le_of_eq (hab:=h_span_submodule.symm)
+  apply Basis.mk (R := L) (M := degreeLT (R := L) (n := n))
+  · exact h_li_submodule
+  · exact le_of_eq (hab := h_span_submodule.symm)
 
 omit [Fintype L] in
-theorem finrank_degreeLT_n (n: ℕ) : Module.finrank L (L⦃< n⦄[X]) = n := by
-  have monomial_basis: Basis (Fin n) (R:=L) (M:=L⦃< n⦄[X]) := monomialBasisOfDegreeLT (n:=n)
+theorem finrank_degreeLT_n (n : ℕ) : Module.finrank L (L⦃< n⦄[X]) = n := by
+  have monomial_basis : Basis (Fin n) (R := L) (M := L⦃< n⦄[X]) := monomialBasisOfDegreeLT (n := n)
   rw [Module.finrank_eq_card_basis monomial_basis]
   rw [Fintype.card_fin]
 
-instance finiteDimensional_degreeLT {n : ℕ} (h_n_pos: 0 < n) :
-  FiniteDimensional (K:=L) (V:=L⦃< n⦄[X]) := by
+instance finiteDimensional_degreeLT {n : ℕ} (h_n_pos : 0 < n) :
+  FiniteDimensional (K := L) (V := L⦃< n⦄[X]) := by
   have h : 0 < Module.finrank L (L⦃< n⦄[X]) := by
     rw [finrank_degreeLT_n n]
     omega
