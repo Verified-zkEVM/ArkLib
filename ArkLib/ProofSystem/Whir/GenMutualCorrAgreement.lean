@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Poulami Das (Least Authority)
+Authors: Poulami Das (Least Authority), Alexander Hicks,  Petar Maksimović
 -/
 
 import ArkLib.Data.CodingTheory.ListDecodability
@@ -9,6 +9,26 @@ import ArkLib.Data.CodingTheory.InterleavedCode
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.Probability.Notation
 import ArkLib.ProofSystem.Whir.ProximityGen
+
+
+/-!
+# Mutual Correlated Agreement for Proximity Generators
+
+This file formalizes the notion of mutual correlated agreement for proximity generators,
+introduced in the [Section 4 of the WHIR paper][todo: ArkLib bibliography].
+
+## Implementation notes
+
+Todo?
+
+## References
+
+* [G Arnon, A Chies, G Fenzi, and E Yogev, *WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification*][todo: ArkLib bibliography]
+Freely available at https://eprint.iacr.org/2024/1586
+
+## Tags
+Todo: should we aim to add tags?
+-/
 
 namespace CorrelatedAgreement
 
@@ -27,9 +47,9 @@ def proximityCondition (f : parℓ → ι → F) (δ : ℝ≥0) (GenFun : F → 
   (C : LinearCode ι F): F → Prop
     | r =>
       ∃ S : Finset ι,
-      (S.card : ℝ≥0) > (1-δ) * Fintype.card ι ∧
+      (S.card : ℝ≥0) ≥ (1-δ) * Fintype.card ι ∧
       ∃ u ∈ C, ∀ s ∈ S, u s = ∑ j : parℓ, GenFun r j * f j s ∧
-      ∃ i : parℓ, ∀ u' ∈ C, ∀ s ∈ S, u' s ≠ f i s
+      ∃ i : parℓ, ∀ u' ∈ C, ∃ s ∈ S, u' s ≠ f i s
 
 /-- Definition 4.9
   Let `C` be a linear code, then Gen is a proximity generator with mutual correlated agreement,
@@ -45,20 +65,7 @@ noncomputable def genMutualCorrAgreement
   Let `C` be a linear code with minimum distance `δ_C`, `Gen` be a proximity generator for C
   with parameters `B` and `err`, then Gen has mutual correlated agreement with proximity bounds
   `BStar = min {1 - δ_C/2, B}` and `errStar = err`. -/
-
--- This version of the lemma is incorrect, and its negation can be shown as in
--- https://github.com/NethermindEth/ArkLibFri/blob/63bd02c7eaf9dc8a8f3b490b1dc212692ebfb1fa/ArkLib/ProofSystem/Whir/GenMutualCorrAgreement.lean#L65
-lemma genMutualCorrAgreement_le_bound
-  (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
-  (BStar : ℝ) (errStar : ℝ → ENNReal)
-  (C : Set (ι → F)) (hC : C = Gen.C)
-  (h: genMutualCorrAgreement Gen BStar errStar) :
-    BStar < min (1 - (δᵣ C) / 2 : ℝ) (Gen.B Gen.C Gen.parℓ)
-    ∧
-    errStar = Gen.err Gen.C Gen.parℓ := by sorry
-
--- Possible fix
-lemma genMutualCorrAgreement_le_bound_fixed
+lemma gen_mca_le_bound
   (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
   (C : LinearCode ι F) (hC : C = Gen.C) :
     genMutualCorrAgreement Gen
@@ -79,82 +86,101 @@ noncomputable def gen_α (α : F) (parℓ : Type) (exp : parℓ → ℕ): F → 
 
 /-- The proximity generator for smooth ReedSolomon codes wrt function
   `Gen(parℓ,α)={1,α,..,α ^ parℓ-1}`
+  Based on the ProximityGenerator structure defined in Proximity.lean
 -/
+-- I don't think this is quite right in its current form
+-- This is meant for corollary 4.11 but should be better aligned with that of Theorem 4.8/ProximityGap.lean
 noncomputable def proximityGenerator_α
-  [DecidableEq ι] (Gen : ProximityGenerator ι F) [hℓ : Fintype Gen.parℓ]
-  (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ] (exp : Gen.parℓ → ℕ) :
-  ProximityGenerator ι F :=
+  [DecidableEq ι]
+  (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ]
+  (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type → ℕ)
+  : ProximityGenerator ι F :=
   {
+    -- The RS code
     C := smoothCode φ m,
-    parℓ := Gen.parℓ,
-    hℓ := hℓ,
-    Fun := gen_α α Gen.parℓ exp,
-    B := Gen.B,
-    err := Gen.err,
+    -- Type for ℓ
+    parℓ := parℓ_type,
+    -- Fintype instance of parℓ_type
+    hℓ := inferInstance,
+    -- Generator function
+    Fun := gen_α α parℓ_type exp,
+    -- BStar
+    B := fun _ _ => (1 + LinearCode.rate (smoothCode φ m)) / 2,
+    -- errStar
+    err := fun _ _ δ => ENNReal.ofReal
+        ((Fintype.card parℓ_type - 1) * (2^m / (LinearCode.rate (smoothCode φ m) * (Fintype.card F)))),
     proximity := by
-      intro f δ hδ hprob
       sorry
   }
 
-/-- Corollary 4.11
-  Let `C` be a smooth ReedSolomon code with rate `ρ`, then `Gen_α` is the proximity generator with
-  mutual correlated agreement with bounds
-    BStar = (1-ρ) / 2
-    errStar = (parℓ-1)*2^m / ρ*|F|. -/
-lemma genMutualCorrAgreement_rsc_le_bound
-  [DecidableEq ι] (Gen Gen_α: ProximityGenerator ι F)
-  [Fintype Gen.parℓ] [Fintype Gen_α.parℓ]
-  (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ] (exp : Gen.parℓ → ℕ)
-  (BStar rate : ℝ) (errStar : ℝ → ENNReal)
-  -- `Gen_α` is the proximity generator wrt function `Gen(parℓ, α)`
-  (hGen : Gen_α = proximityGenerator_α Gen α φ m exp)
-  -- the proof that `Gen_α` is the proximity generator with mutual correlated agreement
-  -- with proximity bound parameters BStar and errStar
-  (h : genMutualCorrAgreement Gen_α BStar errStar)
-  (hrate : rate = LinearCode.rate (smoothCode φ m)) :
-    BStar = (1 - rate) / 2 ∧
-    errStar = fun _ => ENNReal.ofReal
-        ((Fintype.card Gen.parℓ - 1) * (2^m / rate * (Fintype.card F)))
+lemma gen_mca_rsc_le_bound
+  [DecidableEq ι]
+  (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ]
+  (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type → ℕ) :
+  let Gen := proximityGenerator_α α φ m parℓ_type exp
+  let : Fintype Gen.parℓ := Gen.hℓ
+  genMutualCorrAgreement
+    -- Generator
+    Gen
+    -- BStar
+    ((1 + LinearCode.rate (smoothCode φ m)) / 2)
+    -- errStar
+    (fun δ => ENNReal.ofReal
+        ((Fintype.card parℓ_type - 1) * (2^m / (LinearCode.rate (smoothCode φ m) * (Fintype.card F)))))
   := by sorry
 
 
-/-- Conjecture 4.12
+/-- Conjecture 4.12 (Johnson Bound)
   The function `Gen(parℓ,α)={1,α,..,α ^ parℓ-1}` is a proximity generator with
   mutual correlated agreement for every (smooth) ReedSolomon code `C` with rate `ρ = 2^m / |ι|`.
-  Below we state two conjectures for the parameters of the proximity bound.
-
   1. Upto Johnson bound: BStar = √ρ and
-                         errStar = (parℓ-1) * 2^2m / |F| * (2 * min {1 - √ρ - δ, √ρ/20}) ^ 7. -/
-theorem genMutualCorrAgreement_le_johnsonBound
-  [DecidableEq ι] (Gen Gen_α: ProximityGenerator ι F)
-  [Fintype Gen.parℓ] [Fintype Gen_α.parℓ]
-  (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ] (exp : Gen.parℓ → ℕ)
-  (BStar rate δ: ℝ) (errStar : ℝ → ENNReal)
-  (hGen : Gen_α = proximityGenerator_α Gen α φ m exp)
-  (h : genMutualCorrAgreement Gen_α BStar errStar)
-  (hrate : rate = LinearCode.rate (smoothCode φ m)) :
-    let minval := min (1 - Real.sqrt rate - δ) (Real.sqrt rate / 20)
-    BStar = Real.sqrt rate ∧
-    ∀ {η : ℝ≥0} (hδPos : δ > 0) (hδLe : δ < 1 - Real.sqrt rate - η),
-      errStar = fun δ =>
-        ENNReal.ofReal
-          ((Fintype.card Gen.parℓ - 1) * 2 ^ (2 * m) / (Fintype.card ι * (2 * minval)^7))
+                         errStar = (parℓ-1) * 2^2m / |F| * (2 * min {1 - √ρ - δ, √ρ/20}) ^ 7.
+-/
+theorem mca_johnson_bound_CONJECTURE
+  [DecidableEq ι]
+  (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ]
+  (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type → ℕ) :
+  let Gen := proximityGenerator_α α φ m parℓ_type exp
+  let : Fintype Gen.parℓ := Gen.hℓ
+  let rate := LinearCode.rate Gen.C
+  genMutualCorrAgreement Gen
+    -- Conjectured BStar = √ρ
+    (Real.sqrt rate)
+    -- Conjectured errStar
+    (fun δ =>
+      let min_val := min (1 - Real.sqrt rate - (δ : ℝ)) (Real.sqrt rate / 20)
+      ENNReal.ofReal (
+        ((Fintype.card parℓ_type - 1) * 2^(2*m)) /
+        ((Fintype.card F) * (2 * min_val)^7)
+      )
+    )
   := by sorry
 
-/-- 2. Upto capacity: BStar = ρ and ∃ c₁,c₂,c₃ ∈ ℕ s.t. ∀ η > 0 and 0 < δ < 1 - ρ - η
+/-- Conjecture 4.12 (Capacity Bound)
+  The function `Gen(parℓ,α)={1,α,..,α ^ parℓ-1}` is a proximity generator with
+  mutual correlated agreement for every (smooth) ReedSolomon code `C` with rate `ρ = 2^m / |ι|`.
+  2. Up to capacity: BStar = ρ and ∃ c₁,c₂,c₃ ∈ ℕ s.t. ∀ η > 0 and 0 < δ < 1 - ρ - η
       errStar = (parℓ-1)^c₂ * d^c₂ / η^c₁ * ρ^(c₁+c₂) * |F|, where d = 2^m is the degree. -/
-theorem genMutualCorrAgreement_le_capacity
-  [DecidableEq ι] (Gen Gen_α: ProximityGenerator ι F)
-  [Fintype Gen.parℓ] [Fintype Gen_α.parℓ]
-  (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ] (exp : Gen.parℓ → ℕ)
-  (BStar rate δ: ℝ) (errStar : ℝ → ENNReal)
-  (hGen : Gen_α = proximityGenerator_α Gen α φ m exp)
-  (h : genMutualCorrAgreement Gen_α BStar errStar)
-  (hrate : rate = LinearCode.rate (smoothCode φ m)) :
-    BStar = rate ∧
-    ∃ (c₁ c₂ c₃ : ℕ), ∀ {η : ℝ≥0} (hδPos : δ > 0) (hδLe : δ < 1 - rate - η),
-      errStar = fun δ => ENNReal.ofReal
-        ((Fintype.card Gen.parℓ - 1)^c₂ * (2^m)^c₂ / (η^c₁ * rate^(c₁+c₂) * (Fintype.card ι)))
+theorem mca_capacity_bound_CONJECTURE
+  [DecidableEq ι]
+  (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ]
+  (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type → ℕ) :
+  let Gen := proximityGenerator_α α φ m parℓ_type exp
+  let : Fintype Gen.parℓ := Gen.hℓ
+  let rate := LinearCode.rate Gen.C
+  -- We expand the definition of genMutualCorrAgreement to handle the complex quantifiers.
+  -- The conjecture is that there exist constants c₁, c₂, c₃ such that the probability
+  -- is bounded for a specific range of δ and any η > 0.
+  ∃ (c₁ c₂ c₃ : ℕ),
+    ∀ (f : Gen.parℓ → ι → F) (η : ℝ) (_hη : 0 < η) (δ : ℝ≥0)
+      -- The condition on δ is δ < 1 - BStar - η, where BStar = ρ
+      (_hδ : δ < 1 - rate - η),
+      -- The probability bound is the conjectured errStar
+      Pr_{let r ←$ᵖ F}[ (proximityCondition f δ Gen.Fun Gen.C) r ] ≤
+        ENNReal.ofReal (
+          (((Fintype.card parℓ_type - 1) : ℝ)^c₂ * ((2^m) : ℝ)^c₂) /
+          (η^c₁ * rate^(c₁+c₂) * (Fintype.card F))
+        )
   := by sorry
 
 section

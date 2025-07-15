@@ -7,6 +7,25 @@ Authors: Mirco Richter (Least Authority)
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.Probability.Notation
 
+/-!
+# Proximity Generators
+
+This file formalizes the notion of proximity generators,
+introduced in the [Section 4 of the WHIR paper][todo: ArkLib bibliography].
+
+## Implementation notes
+
+Todo?
+
+## References
+
+* [G Arnon, A Chies, G Fenzi, and E Yogev, *WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification*][todo: ArkLib bibliography]
+Freely available at https://eprint.iacr.org/2024/1586
+
+## Tags
+Todo: should we aim to add tags?
+-/
+
 namespace Generator
 
 open NNReal ProbabilityTheory
@@ -18,7 +37,8 @@ variable  {F : Type*} [Semiring F] [Fintype F] [DecidableEq F]
 /-- For `l` functions `fᵢ : ι → 𝔽`, distance `δ`, generator function `GenFun: 𝔽 → parℓ → 𝔽ˡ`
     and linear code `C` the predicate `proximityCondition(r)` is true, if the linear
     combination f := ∑ⱼ rⱼ * fⱼ is within relative Hamming distance `δ` to the linear
-    code `C`.  -/
+    code `C`.
+-/
 noncomputable def proximityCondition
    (f : parℓ → ι → F) (δ : ℝ≥0) (GenFun : F → parℓ → F) (C : LinearCode ι F): F → Prop
    | r => δᵣ( (fun x => ∑ j : parℓ, (GenFun r j) * f j x) , C ) ≤ (δ : ℝ)
