@@ -90,6 +90,7 @@ noncomputable def gen_α (α : F) (parℓ : Type) (exp : parℓ → ℕ): F → 
 -/
 -- I don't think this is quite right in its current form
 -- This is meant for corollary 4.11 but should be better aligned with that of Theorem 4.8/ProximityGap.lean
+-- Todo: can we get a proximity generator that works is more flexible for different cases?
 noncomputable def proximityGenerator_α
   [DecidableEq ι]
   (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ]
@@ -168,14 +169,9 @@ theorem mca_capacity_bound_CONJECTURE
   let Gen := proximityGenerator_α α φ m parℓ_type exp
   let : Fintype Gen.parℓ := Gen.hℓ
   let rate := LinearCode.rate Gen.C
-  -- We expand the definition of genMutualCorrAgreement to handle the complex quantifiers.
-  -- The conjecture is that there exist constants c₁, c₂, c₃ such that the probability
-  -- is bounded for a specific range of δ and any η > 0.
   ∃ (c₁ c₂ c₃ : ℕ),
     ∀ (f : Gen.parℓ → ι → F) (η : ℝ) (_hη : 0 < η) (δ : ℝ≥0)
-      -- The condition on δ is δ < 1 - BStar - η, where BStar = ρ
       (_hδ : δ < 1 - rate - η),
-      -- The probability bound is the conjectured errStar
       Pr_{let r ←$ᵖ F}[ (proximityCondition f δ Gen.Fun Gen.C) r ] ≤
         ENNReal.ofReal (
           (((Fintype.card parℓ_type - 1) : ℝ)^c₂ * ((2^m) : ℝ)^c₂) /
