@@ -22,7 +22,14 @@ import ArkLib.OracleReduction.Security.RoundByRound
   of the reductions being composed (with extra conditions on the extractor).
 -/
 
+universe u v
+
 section find_home
+
+@[simp]
+theorem eqRec_eqRec_eq_self {α β : Sort u} {h : α = β} {h' : β = α} {a : α} :
+    h ▸ h' ▸ a = a := by
+  cases h; cases h'; rfl
 
 variable {ι ι' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'} {α β : Type}
     (oa : OracleComp spec α)
@@ -46,25 +53,44 @@ section Instances
 
 /-- If two protocols have sampleable challenges, then their concatenation also has sampleable
   challenges. -/
-instance [h₁ : ∀ i, Sampleable (pSpec₁.Challenge i)] [h₂ : ∀ i, Sampleable (pSpec₂.Challenge i)] :
-    ∀ i, Sampleable ((pSpec₁ ++ₚ pSpec₂).Challenge i) := fun ⟨⟨i, isLt⟩, h⟩ => by
-  dsimp [ProtocolSpec.append, Fin.append, Fin.addCases, Fin.castLT, Fin.subNat, Fin.cast] at h ⊢
-  by_cases h' : i < m <;> simp [h'] at h ⊢
-  · exact h₁ ⟨⟨i, by omega⟩, h⟩
-  · exact h₂ ⟨⟨i - m, by omega⟩, h⟩
+instance instSampleableChallengeAppend
+    [h₁ : ∀ i, Sampleable (pSpec₁.Challenge i)]
+    [h₂ : ∀ i, Sampleable (pSpec₂.Challenge i)] :
+      ∀ i, Sampleable ((pSpec₁ ++ₚ pSpec₂).Challenge i) :=
+  -- unfold ChallengeIdx Challenge at h₁ h₂
+  -- unfold ProtocolSpec.append at i ⊢
+  -- unfold ChallengeIdx at i
+  -- exact Fin.addCasesSubtypeFun
+  --   (α := fun i => (pSpec₁ i).2) (β := fun i => (pSpec₂ i).2)
+  --   (p := fun i => (pSpec₁ i).1 = .V_to_P) (q := fun i => (pSpec₂ i).1 = .V_to_P)
+  --   (f := Sampleable)
+  --   h₁ h₂ i
+  fun ⟨⟨i, isLt⟩, h⟩ => by
+    dsimp [ProtocolSpec.append, Fin.append, Fin.addCases, Fin.castLT, Fin.subNat, Fin.cast] at h ⊢
+    by_cases h' : i < m <;> simp [h'] at h ⊢
+    · exact h₁ ⟨⟨i, by omega⟩, h⟩
+    · exact h₂ ⟨⟨i - m, by omega⟩, h⟩
 
 /-- If two protocols' messages have oracle representations, then their concatenation's messages also
     have oracle representations. -/
-instance [O₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
+instance instOracleInterfaceMessageAppend
+    [O₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
     [O₂ : ∀ i, OracleInterface (pSpec₂.Message i)] :
-    ∀ i, OracleInterface ((pSpec₁ ++ₚ pSpec₂).Message i) := fun ⟨⟨i, isLt⟩, h⟩ => by
+      ∀ i, OracleInterface ((pSpec₁ ++ₚ pSpec₂).Message i) :=
+  fun ⟨⟨i, isLt⟩, h⟩ => by
   dsimp [ProtocolSpec.append, ProtocolSpec.getDir, Fin.append, Fin.addCases,
     Fin.castLT, Fin.subNat, Fin.cast] at h ⊢
   by_cases h' : i < m <;> simp [h'] at h ⊢
   · exact O₁ ⟨⟨i, by omega⟩, h⟩
   · exact O₂ ⟨⟨i - m, by omega⟩, h⟩
 
-open OracleComp OracleSpec SubSpec
+-- #print instOracleInterfaceMessageAppend
+
+open OracleComp OracleSpec SubSpec OracleInterface
+
+namespace ProtocolSpec
+
+namespace Challenge
 
 variable [∀ i, Sampleable (pSpec₁.Challenge i)] [∀ i, Sampleable (pSpec₂.Challenge i)]
 
@@ -72,11 +98,11 @@ instance instSubSpecOfProtocolSpecAppendChallenge :
     SubSpec ([pSpec₁.Challenge]ₒ ++ₒ [pSpec₂.Challenge]ₒ) ([(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) where
   monadLift | query i t => match i with
     | Sum.inl j => by
-      simpa [OracleSpec.append, OracleSpec.range, OracleInterface.toOracleSpec, ChallengeIdx.inl,
+      simpa [OracleSpec.append, OracleSpec.range, toOracleSpec, ChallengeIdx.inl,
         instChallengeOracleInterface] using
       query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) j.inl ()
     | Sum.inr j => by
-      simpa [OracleSpec.append, OracleSpec.range, OracleInterface.toOracleSpec, ChallengeIdx.inr,
+      simpa [OracleSpec.append, OracleSpec.range, toOracleSpec, ChallengeIdx.inr,
         instChallengeOracleInterface] using
       query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) j.inr ()
   -- evalDist_toFun' := fun i q => by
@@ -111,6 +137,54 @@ instance : SubSpec [pSpec₁.Challenge]ₒ ([(pSpec₁ ++ₚ pSpec₂).Challenge
 
 instance : SubSpec [pSpec₂.Challenge]ₒ ([(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) where
   monadLift | query i t => instSubSpecOfProtocolSpecAppendChallenge.monadLift (query (Sum.inr i) t)
+
+end Challenge
+
+namespace Message
+
+private lemma eqRec_aux {α β : Sort u} {f : Sort u → Sort v}
+    {h : β = α} {h' : f α = f β} {a : f α} : h ▸ h' ▸ a = a := by
+  cases h; cases h'; rfl
+
+variable [O₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
+  [O₂ : ∀ i, OracleInterface (pSpec₂.Message i)]
+
+instance instSubSpecOfProtocolSpecAppendMessage :
+    SubSpec ([pSpec₁.Message]ₒ ++ₒ [pSpec₂.Message]ₒ) ([(pSpec₁ ++ₚ pSpec₂).Message]ₒ) where
+  monadLift | query i t => match i with
+    | Sum.inl j => by
+      haveI hDoamin : [(pSpec₁ ++ₚ pSpec₂).Message]ₒ.domain j.inl = [pSpec₁.Message]ₒ.domain j := by
+        simp [OracleSpec.domain, MessageIdx.inl, ProtocolSpec.append,
+          instOracleInterfaceMessageAppend, toOracleSpec]
+        rw! (castMode := .all) [Fin.append_left]
+        congr
+        have : ⟨j.1, j.2⟩ = j := rfl
+        rw! (castMode := .all) [this]
+        simp [cast]
+        generalize_proofs h h1 h2 h3 h4 h5
+        -- rw! (castMode := .all) [h5]
+        -- exact eqRec_aux (f := fun α => OracleInterface (Prod.snd α)) (a := O₁ j)
+        -- rw! (castMode := .all) [eqRec_eqRec_eq_self (a := O₁ j)]
+        sorry
+        -- rw! (castMode := .all) [h5]
+      letI result := query (spec := [(pSpec₁ ++ₚ pSpec₂).Message]ₒ) j.inl (cast hDoamin.symm t)
+      haveI hRange : [(pSpec₁ ++ₚ pSpec₂).Message]ₒ.range j.inl = Response (pSpec₁ ↑j).2 := by
+        simp [OracleSpec.range, toOracleSpec, ProtocolSpec.Message, MessageIdx.inl,
+          ProtocolSpec.append, instOracleInterfaceMessageAppend]
+        rw! (castMode := .all) [Fin.append_left]
+        congr
+        sorry
+      exact cast (congrArg _ hRange) result
+    | Sum.inr j => by sorry
+      -- simpa [OracleSpec.append, OracleSpec.range, toOracleSpec, MessageIdx.inl,
+      --   instOracleInterfaceMessageAppend] using
+      -- query (spec := [(pSpec₁ ++ₚ pSpec₂).Message]ₒ) j.inr sorry
+
+#print instSubSpecOfProtocolSpecAppendMessage
+
+end Message
+
+end ProtocolSpec
 
 end Instances
 
@@ -238,11 +312,14 @@ def OracleVerifier.append (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ 
     -- Return the final output statement
     sorry
 
-  simulate := fun stmt₁ challenges =>
-    let sim₁ := V₁.simulate stmt₁ challenges.fst
-    let stmt₂ := V₁.verify stmt₁ challenges.fst
-    let sim₂ := V₂.simulate stmt₂ challenges.snd
-    return ⟨stmt₃, sim₂.snd⟩
+  simulate := fun challenges => by
+    let sim₁ := V₁.simulate challenges.fst
+    let sim₂ := V₂.simulate challenges.snd
+    refine QueryImpl.compose ?_ sim₂
+    refine SimOracle.append idOracle ?_
+      (m₂ := OracleComp (oSpec ++ₒ ([OStmt₁]ₒ ++ₒ [(pSpec₁ ++ₚ pSpec₂).Message]ₒ)))
+    refine SimOracle.append sim₁ ?_
+    -- return ⟨stmt₃, sim₂.snd⟩
 
   reify := fun ⟨stmt₁, oStmt₁⟩ transcript => do
     let ⟨stmt₂, oStmt₂⟩ ← V₁.run stmt₁ oStmt₁ transcript.fst

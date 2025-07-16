@@ -292,3 +292,57 @@ def OracleStatement.Lens.IsSound {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmt
     (lens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                                 OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut) :=
   Statement.Lens.IsSound outerLangIn outerLangOut innerLangIn innerLangOut compatStmt lens.prover
+
+/-
+
+Commit-and-open / generalized BCS transformation:
+
+Let's simplify the situation here:
+- Let's say there is a single oracle message of type `M` from the prover to the verifier, with
+  oracle interface specified by an instance `O`.
+- The reduction is from `R₁ : S → W → Prop` to `R₂ : S × M → W → Prop` (no oracle statements, output
+  witness is the same, output statement only appends `M` to the input statement)
+- We have a functional commitment scheme `FC = (Commit, Open)` for the oracle message. Let's also
+  assume that this is determnistic and does not use any oracle.
+
+The transformation produces a new oracle reduction and works as follows:
+
+A. First phase, commit:
+
+1. The prover, instead of sending `M`, computes `cm = Commit M` and sends `cm : CM` in the clear to
+   the verifier.
+2. The verifier, instead of receiving oracle access to `M`, receives full access to the commitment
+   `cm : CM` instead.
+3. Syntactically, this means we must change the definition of the statements and witnesses:
+  - We now go from `R₁ : S → W → Prop` to
+
+  `R₂' : S × CM × (List (M.Query × M.Response)) → W × M → Prop`
+
+To be more precise, the verifier changes from `S → OracleComp [M]ₒ (S × M)` to
+
+`S → CM → Option (S × CM × (List (M.Query × M.Response)))`.
+
+Note that `OracleComp` has a failure option. We should basically think of this as the verifier being
+able to run many checks before returning the data.
+
+What is the resulting relation? `R₂' := R₂ ∧ cm = Commit m`?
+
+What about all the queries? Query logs (dependent on `m : M`)! Or alternatively, assume a
+non-adaptive verifier, which makes the same queries throughout.
+
+So the right resulting relation is: `R₂' := R₂ ∧ cm = Commit m ∧ ∀ i, respᵢ = oracle m queryᵢ`.
+
+B. Second phase, open:
+
+`FC.Open` should be an interactive argument for the relation
+`cm = Commit m ∧ ∀ i, respᵢ = oracle m queryᵢ`.
+
+Guarantees:
+
+A. First transformation should preserve completeness & knowledge soundness.
+
+-> require straightline extraction right after the commitment
+
+(unlike rewinding extraction, which requires knowledge of the opening proofs as well?)
+
+-/

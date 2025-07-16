@@ -69,7 +69,7 @@ structure RoundByRound
     (oSpec : OracleSpec ι) (StmtIn WitIn WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n)
     (WitMid : Fin (n + 1) → Type) where
   /-- Extract the input witness from the intermediate witness at round 0 -/
-  extractIn : StmtIn → WitMid 0 → WitIn
+  extractIn : StmtIn → (WitMid 0 ≃ WitIn)
   /-- Extract intermediate witness for round `m` from intermediate witness for round `m+1`,
     using the transcript up to round `m+1` -/
   extractMid : (m : Fin n) → StmtIn → Transcript m.succ pSpec → WitMid m.succ → WitMid m.castSucc
@@ -87,7 +87,7 @@ namespace RoundByRoundOneShot
   round-by-round extractor to a one-shot one. -/
 def toRoundByRound (E : RoundByRoundOneShot oSpec StmtIn WitIn pSpec) :
     RoundByRound oSpec StmtIn WitIn WitOut pSpec (fun _ => WitIn) where
-  extractIn := fun stmtIn _ => E 0 stmtIn default default
+  extractIn := fun _ => Equiv.refl _
   extractMid := fun m stmtIn tr _ => E m.succ stmtIn tr default
   extractOut := fun stmtIn tr _ => E (.last n) stmtIn tr default
 
@@ -136,7 +136,9 @@ structure KnowledgeStateFunction
   toFun : (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → WitMid m → Prop
   /-- If the state function is true for the empty transcript and some initial intermediate witness,
     then the input statement and extracted witness are in the input relation -/
-  toFun_empty : ∀ stmtIn, stmtIn ∈ relIn.language ↔ ∃ witMid, toFun 0 stmtIn default witMid
+  toFun_empty : ∀ stmtIn witMid,
+    ⟨stmtIn, extractor.extractIn stmtIn witMid⟩ ∈ relIn ↔
+      toFun 0 stmtIn default witMid
   /-- If the state function is true for a partial transcript extended with a prover message, then
     the state function is also true for the original partial transcript with the extracted
     intermediate witness -/
@@ -158,7 +160,17 @@ def KnowledgeStateFunction.toStateFunction
     (kSF : KnowledgeStateFunction relIn relOut verifier WitMid extractor) :
       verifier.StateFunction relIn.language relOut.language where
   toFun := fun m stmtIn tr => ∃ witMid, kSF.toFun m stmtIn tr witMid
-  toFun_empty := kSF.toFun_empty
+  toFun_empty := by
+    intro stmtIn
+    simp only [Set.mem_image, Prod.exists, exists_and_right, exists_eq_right]
+    constructor
+    · intro ⟨witIn, h⟩
+      have := kSF.toFun_empty stmtIn ((extractor.extractIn stmtIn).symm witIn)
+      simp at this
+      exact ⟨_, this.mp h⟩
+    · intro ⟨witMid, h⟩
+      have := (kSF.toFun_empty stmtIn witMid).mpr h
+      exact ⟨_, this⟩
     -- simp only [not_exists]
     -- intro witMid hToFun
     -- have := kSF.toFun_empty stmtIn witMid hToFun
@@ -186,18 +198,22 @@ def StateFunction.toKnowledgeStateFunction
     (oneShotE : Extractor.RoundByRoundOneShot oSpec StmtIn WitIn pSpec)
     (stF : verifier.StateFunction relIn.language relOut.language) :
     verifier.KnowledgeStateFunction relIn relOut (fun _ => WitIn) oneShotE.toRoundByRound where
-  toFun := fun m stmtIn tr _ => stF.toFun m stmtIn tr
-  toFun_empty := fun stmtIn => by
-    exact Iff.trans (stF.toFun_empty stmtIn) (by simp; sorry)
+  toFun := fun m stmtIn tr wit => stF.toFun m stmtIn tr ∨ (stmtIn, wit) ∈ relIn
+  toFun_empty := fun stmtIn witIn => by
+    have := stF.toFun_empty stmtIn
+    simp_all
+    -- refine Iff.trans (stF.toFun_empty stmtIn).symm ?_
+    sorry
+    --   (by simp; intro h; have := (stF.toFun_empty stmtIn).mpr h; simp_all)
     -- stop
     -- contrapose! this
     -- simp_all [Extractor.RoundByRoundOneShot.toRoundByRound]
     -- sorry
-  toFun_next := fun m hDir stmtIn tr msg witMid h => by
-    have := stF.toFun_next m hDir stmtIn tr
-    contrapose! this
-    simp_all
-    exact ⟨msg, h⟩
+  toFun_next := fun m hDir stmtIn tr msg witMid h => by sorry
+    -- have := stF.toFun_next m hDir stmtIn tr
+    -- contrapose! this
+    -- simp_all
+    -- refine ⟨?_, ⟨msg, h.1⟩⟩
   toFun_full := fun stmtIn tr witOut h => by
     have := stF.toFun_full stmtIn tr
     contrapose! this
