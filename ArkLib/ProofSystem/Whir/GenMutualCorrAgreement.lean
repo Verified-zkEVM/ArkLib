@@ -88,31 +88,32 @@ noncomputable def gen_α (α : F) (parℓ : Type) (exp : parℓ → ℕ): F → 
   `Gen(parℓ,α)={1,α,..,α ^ parℓ-1}`
   Based on the ProximityGenerator structure defined in Proximity.lean
 -/
--- I don't think this is quite right in its current form
--- This is meant for corollary 4.11 but should be better aligned with that of Theorem 4.8/ProximityGap.lean
--- Todo: can we get a proximity generator that works is more flexible for different cases?
+
 noncomputable def proximityGenerator_α
   [DecidableEq ι]
   (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ]
   (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type → ℕ)
   : ProximityGenerator ι F :=
+  let rate := LinearCode.rate (smoothCode φ m)
   {
-    -- The RS code
     C := smoothCode φ m,
-    -- Type for ℓ
     parℓ := parℓ_type,
-    -- Fintype instance of parℓ_type
     hℓ := inferInstance,
-    -- Generator function
     Fun := gen_α α parℓ_type exp,
-    -- BStar
-    B := fun _ _ => (1 + LinearCode.rate (smoothCode φ m)) / 2,
-    -- errStar
-    err := fun _ _ δ => ENNReal.ofReal
-        ((Fintype.card parℓ_type - 1) * (2^m / (LinearCode.rate (smoothCode φ m) * (Fintype.card F)))),
+    -- B from proximity gap theorem
+    B := fun _ _ => Real.sqrt rate,
+    -- err from proximity gap theorem
+    err := fun _ _ δ => ENNReal.ofReal (
+        if δ ≤ (1 - rate) / 2 then
+          ((Fintype.card parℓ_type - 1) * 2^m) / (rate * Fintype.card F)
+        else
+          let min_val := min (1 - (Real.sqrt rate) - (δ : ℝ)) ((Real.sqrt rate) / 20)
+          ((Fintype.card parℓ_type - 1) * (2^(2 * m))) / ((Fintype.card F) * (2 * min_val)^7)
+        ),
     proximity := by
       sorry
   }
+
 
 lemma gen_mca_rsc_le_bound
   [DecidableEq ι]
@@ -120,21 +121,22 @@ lemma gen_mca_rsc_le_bound
   (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type → ℕ) :
   let Gen := proximityGenerator_α α φ m parℓ_type exp
   let : Fintype Gen.parℓ := Gen.hℓ
+  let rate := LinearCode.rate (smoothCode φ m)
   genMutualCorrAgreement
     -- Generator
     Gen
     -- BStar
-    ((1 + LinearCode.rate (smoothCode φ m)) / 2)
+    ((1 + rate) / 2)
     -- errStar
     (fun δ => ENNReal.ofReal
-        ((Fintype.card parℓ_type - 1) * (2^m / (LinearCode.rate (smoothCode φ m) * (Fintype.card F)))))
+        ((Fintype.card parℓ_type - 1) * (2^m / (rate * (Fintype.card F)))))
   := by sorry
 
 
 /-- Conjecture 4.12 (Johnson Bound)
   The function `Gen(parℓ,α)={1,α,..,α ^ parℓ-1}` is a proximity generator with
   mutual correlated agreement for every (smooth) ReedSolomon code `C` with rate `ρ = 2^m / |ι|`.
-  1. Upto Johnson bound: BStar = √ρ and
+  1. Up to Johnson bound: BStar = √ρ and
                          errStar = (parℓ-1) * 2^2m / |F| * (2 * min {1 - √ρ - δ, √ρ/20}) ^ 7.
 -/
 theorem mca_johnson_bound_CONJECTURE
