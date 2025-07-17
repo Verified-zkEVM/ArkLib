@@ -40,7 +40,7 @@ variable  {F : Type} [Field F] [Fintype F] [DecidableEq F]
 /-- For `parℓ` functions `fᵢ : ι → 𝔽`, distance `δ`, generator function `GenFun: 𝔽 → parℓ → 𝔽`
     and linear code `C` the predicate `proximityCondition(r)` is true, if `∃ S ⊆ ι`, s.t.
     the following three conditions hold
-      (i) `|S| > (1-δ)*|ι|` and
+      (i) `|S| ≥ (1-δ)*|ι|`
       (ii) `∃ u ∈ C, u(S) = ∑ j : parℓ, rⱼ * fⱼ(S)`
       (iii) `∃ i : parℓ, ∀ u' ∈ C, u'(S) ≠ fᵢ(S)` -/
 def proximityCondition (f : parℓ → ι → F) (δ : ℝ≥0) (GenFun : F → parℓ → F)
@@ -53,12 +53,16 @@ def proximityCondition (f : parℓ → ι → F) (δ : ℝ≥0) (GenFun : F → 
 
 /-- Definition 4.9
   Let `C` be a linear code, then Gen is a proximity generator with mutual correlated agreement,
-  if for `parℓ` functions `fᵢ : ι → F` and distance `δ < 1 - B(C,parℓ)`,
-  `Pr_{ r ← F } [ proximityCondition(r) ] ≤ errStar(δ)`. -/
+  if for `parℓ` functions `fᵢ : ι → F` and distance `δ < 1 - BStar(C,parℓ)`,
+  `Pr_{ r ← F } [ proximityCondition(r) ] ≤ errStar(δ)`.
+
+  Note that there is a typo in the paper:
+  it should `δ < 1 - BStar(C,parℓ)` in place of `δ < 1 - B(C,parℓ)` -/
+
 noncomputable def genMutualCorrAgreement
   (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
   (BStar : ℝ) (errStar : ℝ → ENNReal) :=
-    ∀ (f : Gen.parℓ → ι → F) (δ : ℝ≥0) (_hδ : δ < 1 - (Gen.B Gen.C Gen.parℓ)),
+    ∀ (f : Gen.parℓ → ι → F) (δ : ℝ≥0) (_hδ : δ < 1 - BStar),
     Pr_{let r ←$ᵖ F}[ (proximityCondition f δ Gen.Fun Gen.C) r ] ≤ errStar δ
 
 /-- Lemma 4.10
@@ -185,16 +189,16 @@ section
 
 open InterleavedCode ListDecodable
 
-/-- For `parℓ` functions `{f₁,..,f_parℓ}`, `IC` be the `parℓ`-interleaved code from a linear code C,
+/-- For `parℓ` functions `{f₀,..,f_{parℓ - 1}}`,
+  `IC` be the `parℓ`-interleaved code from a linear code C,
   with `Gen` as a proximity generator with mutual correlated agreement,
   `proximityListDecodingCondition(r)` is true if,
-  List(C, ∑ⱼ rⱼ*fⱼ, δ) ≠ { ∑ⱼ rⱼ*uⱼ, where {u₁,..u_parℓ} ∈ Λᵢ({f₁,..,f_parℓ}, IC, δ) } -/
+  List(C, ∑ⱼ rⱼ * fⱼ, δ) ≠ { ∑ⱼ rⱼ * uⱼ, where {u₁,..u_parℓ} ∈ Λᵢ({f₁,..,f_parℓ}, IC, δ) } -/
 def proximityListDecodingCondition
   [Fintype ι] [Nonempty ι]
   (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
-  (δ : ℝ) (fs us : Matrix Gen.parℓ ι F)
-  (IC : InterleavedCode Gen.parℓ ι F)
-  (haveIC : IC = codeOfLinearCode Gen.parℓ Gen.C) : F → Prop :=
+  (δ : ℝ) (fs : Matrix Gen.parℓ ι F)
+  (IC : InterleavedCode Gen.parℓ ι F) : F → Prop :=
     fun r =>
       let f_r := fun x => ∑ j, Gen.Fun r j * fs j x
       let listHamming := relHammingBall Gen.C f_r δ
@@ -205,7 +209,7 @@ def proximityListDecodingCondition
 /-- Lemma 4.13: Mutual correlated agreement preserves list decoding
   Let C be a linear code with minimum distance δ_c and `Gen` be a proximity generator
   with mutual correlated agreement for `C`.
-  Then for every `{f₁,..,f_parℓ}` and `δ ∈ (0, min δ_c (1 - BStar))`,
+  Then for every `{f₀,..,f_{parℓ - 1}}` and `δ ∈ (0, min δ_c (1 - BStar))`,
   `Pr_{ r ← F} [ proximityListDecodingCondition(r) ] ≤ errStar(δ)`. -/
 lemma mutualCorrAgreement_list_decoding
   [Fintype ι] [Nonempty ι]
@@ -218,7 +222,7 @@ lemma mutualCorrAgreement_list_decoding
   (C : Set (ι → F)) (hC : C = Gen.C) :
     ∀ {fs : Matrix Gen.parℓ ι F}
     (hδPos : δ > 0) (hδLt : δ < min (δᵣ C : ℝ) (1 - BStar)),
-      Pr_{let r ←$ᵖ F}[ proximityListDecodingCondition Gen δ fs us IC haveIC r]
+      Pr_{let r ←$ᵖ F}[ proximityListDecodingCondition Gen δ fs IC r]
         ≤ errStar δ
   := by sorry
 
