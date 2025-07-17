@@ -57,7 +57,8 @@ def proximityCondition (f : parℓ → ι → F) (δ : ℝ≥0) (GenFun : F → 
   `Pr_{ r ← F } [ proximityCondition(r) ] ≤ errStar(δ)`.
 
   Note that there is a typo in the paper:
-  it should `δ < 1 - BStar(C,parℓ)` in place of `δ < 1 - B(C,parℓ)` -/
+  it should `δ < 1 - BStar(C,parℓ)` in place of `δ < 1 - B(C,parℓ)`
+-/
 
 noncomputable def genMutualCorrAgreement
   (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
@@ -68,7 +69,8 @@ noncomputable def genMutualCorrAgreement
 /-- Lemma 4.10
   Let `C` be a linear code with minimum distance `δ_C`, `Gen` be a proximity generator for C
   with parameters `B` and `err`, then Gen has mutual correlated agreement with proximity bounds
-  `BStar = min {1 - δ_C/2, B}` and `errStar = err`. -/
+  `BStar = min {1 - δ_C/2, B}` and `errStar = err`.
+-/
 lemma gen_mca_le_bound
   (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
   (C : LinearCode ι F) (hC : C = Gen.C) :
