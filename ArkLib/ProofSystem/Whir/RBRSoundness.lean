@@ -217,9 +217,8 @@ theorem whir_rbr_soundness
         ∀ i : Fin (M + 1), ∀ j : Fin (P.foldingParam i),
           ε_fold i j ≤ d * (h.dist i j.castSucc) / Fintype.card F + errStar i j.succ
         ∧
-        -- ε_fin ≤ (1 - δ_{M-1})^(repeatParam_{M-1})
-        -- NOTE: The indices in the paper are M-1, not M as above.
-        ε_fin ≤ (1 - h.δ (Fin.last M-1))^(P.repeatParam (Fin.last M-1))
+        -- ε_fin ≤ (1 - δ_{M})^(repeatParam_{M})
+        ε_fin ≤ (1 - h.δ (Fin.last))^(P.repeatParam (Fin.last M))
     := by sorry
 
 end RBR
