@@ -161,6 +161,17 @@ def reduction : Reduction oSpec
     (pSpec := fun _ => SingleRound.pSpec R deg)
     (SingleRound.reduction R n deg D oSpec)
 
+@[reducible]
+def oracleReduction : OracleReduction oSpec
+    (Statement R n 0) (OracleStatement R n deg) Unit
+    (Statement R n (.last n)) (OracleStatement R n deg) Unit
+    (pSpec R deg n) := sorry
+  -- OracleReduction.seqCompose (oSpec := oSpec)
+  --   (Stmt := fun i => Statement R n i × (∀ j, OracleStatement R n deg j))
+  --   (Wit := fun _ => Unit)
+  --   (pSpec := fun _ => SingleRound.pSpec R deg)
+  --   (SingleRound.reduction R n deg D oSpec)
+
 -- TODO: define the oracle reduction version once we have defined `OracleReduction.seqCompose`
 
 variable [oSpec.FiniteRange]
