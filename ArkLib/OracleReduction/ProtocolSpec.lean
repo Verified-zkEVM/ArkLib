@@ -15,7 +15,28 @@ This file defines the `ProtocolSpec` type, which is used to specify the protocol
 and the verifier.
 -/
 
+universe u v
+
 open OracleComp OracleSpec
+
+variable {σ : Type u} {m : Type u → Type v} [Monad m] [LawfulMonad m]
+    {m' : Type u → Type v} [Monad m'] [LawfulMonad m']
+
+def StateT.monadHomWithState (hom : MonadHom (StateT σ m) m') (s : σ) : MonadHom m m' where
+  toFun := fun {α} a => StateT.run' (hom (a : StateT σ m α)) s
+  toFun_pure' := by intro α a; simp
+  toFun_bind' := by intro α β f g; simp
+
+namespace QueryImpl
+
+variable {ι : Type u} [DecidableEq ι] {spec : OracleSpec ι} [spec.DecidableEq] {m : Type u → Type v}
+  [Monad m]
+
+-- def composeM
+
+-- def withCaching' (so : QueryImpl spec m) : QueryImpl spec (StateT spec.QueryCache m) :=
+
+end QueryImpl
 
 /-- Type signature for an interactive protocol, with `n` messages exchanged. -/
 @[reducible]
@@ -437,6 +458,15 @@ def getChallenge (pSpec : ProtocolSpec n) (i : pSpec.ChallengeIdx) :
     OracleComp [pSpec.Challenge]ₒ (pSpec.Challenge i) :=
   (query i () : OracleQuery [pSpec.Challenge]ₒ (pSpec.Challenge i))
 
+/-- Define the query implementation for the verifier's challenge in terms of `ProbComp`.
+
+This is a randomness oracle: it simply calls the `selectElem` method inherited from the
+  `SelectableType` instance on the challenge types.
+-/
+def challengeQueryImpl {pSpec : ProtocolSpec n} [∀ i, SelectableType (pSpec.Challenge i)] :
+    QueryImpl [pSpec.Challenge]ₒ ProbComp where
+  impl | query i () => SelectableType.selectElem (β := pSpec.Challenge i)
+
 /-- Turn each verifier's challenge into an oracle, where one needs to query
   with an input statement and prior messages up to that round to get a challenge -/
 @[reducible, inline, specialize]
@@ -469,6 +499,22 @@ instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpe
 instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
     OracleSpec.FiniteRange (fiatShamirSpec Statement pSpec) :=
   inferInstanceAs (OracleSpec.FiniteRange (srChallengeOracle Statement pSpec))
+
+/-- Define the query implementation for the state-restoration / (slow) Fiat-Shamir oracle (returns a
+  challenge given messages up to that point) in terms of `ProbComp`.
+
+This is a randomness oracle: it simply calls the `selectElem` method inherited from the
+  `SelectableType` instance on the challenge types. We may then augment this with `withCaching` to
+  obtain a function-like implementation (caches and replays previous queries).
+-/
+def srChallengeQueryImplAux {Statement : Type} {pSpec : ProtocolSpec n}
+    [∀ i, SelectableType (pSpec.Challenge i)] :
+    QueryImpl (srChallengeOracle Statement pSpec) ProbComp where
+  impl | query i _ => SelectableType.selectElem (β := pSpec.Challenge i)
+
+def srChallengeQueryImpl {Statement : Type} {pSpec : ProtocolSpec n}
+    [∀ i, SelectableType (pSpec.Challenge i)] :
+    QueryImpl (srChallengeOracle Statement pSpec) ProbComp := sorry
 
 end ProtocolSpec
 

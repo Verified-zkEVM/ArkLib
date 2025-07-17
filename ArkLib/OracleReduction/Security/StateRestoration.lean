@@ -17,7 +17,7 @@ noncomputable section
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal
 
-variable {ι : Type} {oSpec : OracleSpec ι} [oSpec.FiniteRange]
+variable {ι : Type}
 
 namespace Prover
 
@@ -28,30 +28,47 @@ namespace Prover
   It further takes in the input statement and witness, and outputs a full transcript of interaction,
   along with the output statement and witness. -/
 def StateRestoration (oSpec : OracleSpec ι)
-    (StmtIn WitIn StmtOut WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) :=
-  StmtIn → WitIn → OracleComp (oSpec ++ₒ (srChallengeOracle StmtIn pSpec))
-      ((StmtOut × WitOut) × pSpec.FullTranscript)
+    (StmtIn StmtOut WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) :=
+  OracleComp (oSpec ++ₒ (srChallengeOracle StmtIn pSpec))
+      (StmtIn × (StmtOut × WitOut) × pSpec.FullTranscript)
 
 end Prover
 
+namespace OracleProver
+
+def StateRestoration (oSpec : OracleSpec ι)
+    (StmtIn : Type) {ιₛᵢ : Type} (OStmtIn : ιₛᵢ → Type)
+    (StmtOut : Type) {ιₛₒ : Type} (OStmtOut : ιₛₒ → Type) (WitOut : Type)
+    {n : ℕ} {pSpec : ProtocolSpec n} :=
+  Prover.StateRestoration oSpec
+    (StmtIn × (∀ i, OStmtIn i)) (StmtOut × (∀ i, OStmtOut i)) WitOut pSpec
+
+end OracleProver
+
 namespace Verifier
 
-variable {oSpec : OracleSpec ι}
-  {StmtIn WitIn StmtOut WitOut : Type}
-  {n : ℕ} {pSpec : ProtocolSpec n}
-  [oSpec.FiniteRange] [∀ i, VCVCompatible (pSpec.Challenge i)]
+variable {oSpec : OracleSpec ι} (impl : QueryImpl oSpec ProbComp)
+  {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
+  {WitIn : Type}
+  {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)]
+  {WitOut : Type}
+  {n : ℕ} {pSpec : ProtocolSpec n} [∀ i, SelectableType (pSpec.Challenge i)]
 
 namespace StateRestoration
 
--- /-- State-restoration soundness -/
--- def srSoundness (verifier : Verifier pSpec oSpec StmtIn StmtOut)
---     (langIn : Set StmtIn) (langOut : Set StmtOut) (SRSoundnessError : ENNReal) : Prop :=
---   ∀ stmtIn ∉ langIn,
---   ∀ witIn : WitIn,
---   ∀ Prover.StateRestoration : Prover.StateRestoration pSpec oSpec StmtIn WitIn StmtOut WitOut,
---     let ⟨_, witOut, transcript, queryLog⟩ ← (simulateQ ... (Prover.StateRestoration.run stmtIn witIn)).run
---     let stmtOut ← verifier.run stmtIn transcript
---     return stmtOut ∉ langOut
+/-- State-restoration soundness -/
+def srSoundness
+    (langIn : Set StmtIn) (langOut : Set StmtOut)
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (srSoundnessError : ENNReal) : Prop :=
+  ∀ srProver : Prover.StateRestoration oSpec StmtIn StmtOut WitOut pSpec,
+  [ fun ⟨stmtIn, stmtOut⟩ => stmtOut ∈ langOut ∧ stmtIn ∉ langIn |
+    simulateQ (impl ++ₛₒ srChallengeQueryImpl.withCaching : QueryImpl _ ProbComp)
+        <| (do
+    let ⟨stmtIn, ⟨stmtOut, _⟩, transcript⟩ ← srProver.run
+    let stmtOut ← liftComp (verifier.run stmtIn transcript) _
+    return ⟨stmtIn, stmtOut⟩)
+  ] ≤ srSoundnessError
 
 -- State-restoration knowledge soundness (w/ straightline extractor)
 
