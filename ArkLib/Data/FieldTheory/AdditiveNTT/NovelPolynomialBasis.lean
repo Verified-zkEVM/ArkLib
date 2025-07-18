@@ -36,6 +36,8 @@ algebra over its prime-characteristic subfield `𝔽q`, and an `𝔽q`-basis `β
   Computation, Zurich, Switzerland, 1996, pp. 1–9.
 -/
 
+set_option linter.style.longFile 1600
+
 open AdditiveNTT Polynomial FiniteDimensional Finset
 namespace AdditiveNTT
 
@@ -1510,7 +1512,7 @@ end NovelPolynomialBasisProof
 
 /-- The polynomial `P(X)` derived from coefficients `a` in the novel polynomial basis `(Xⱼ)`,
 `P(X) := ∑_{j=0}^{2^ℓ-1} aⱼ ⋅ Xⱼ(X)` -/
-noncomputable def polynomial_from_novel_coeffs (ℓ : ℕ) (h_ℓ : ℓ ≤ r)
+noncomputable def polynomialFromNovelCoeffs (ℓ : ℕ) (h_ℓ : ℓ ≤ r)
     (a : Fin (2 ^ ℓ) → L) : L[X] :=
   ∑ j, C (a j) * (Xⱼ 𝔽q β ℓ h_ℓ j)
 

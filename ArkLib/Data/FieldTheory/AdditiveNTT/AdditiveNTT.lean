@@ -16,14 +16,14 @@ original algorithm in [LCH14] through a different interpretation.
 
 ## Main Definitions
 
-- `S_domain`: The intermediate evaluation domain `S⁽ⁱ⁾` for
+- `sDomain`: The intermediate evaluation domain `S⁽ⁱ⁾` for
 the round `i` in the Additive NTT algorithm
-- `q_map`: The quotient map `q⁽ⁱ⁾(X)` that relates successive domains
-- `intermediate_norm_vpoly`: The `i`-th order subspace vanishing
+- `qMap`: The quotient map `q⁽ⁱ⁾(X)` that relates successive domains
+- `intermediateNormVpoly`: The `i`-th order subspace vanishing
 polynomials `Ŵₖ⁽ⁱ⁾` over domain `S⁽ⁱ⁾`
-- `intermediate_novel_basis_X`: The intermediate novel basis `Xⱼ⁽ⁱ⁾` for
+- `intermediateNovelBasisX`: The intermediate novel basis `Xⱼ⁽ⁱ⁾` for
 the round `i` in the Additive NTT algorithm
-- `intermediate_evaluation_poly`: The intermediate evaluation polynomial `P⁽ⁱ⁾(X)`
+- `intermediateEvaluationPoly`: The intermediate evaluation polynomial `P⁽ⁱ⁾(X)`
   for the round `i` in the Additive NTT algorithm
 
 - `additiveNTT`: The main implementation of the Additive NTT encoding algorithm.
@@ -50,6 +50,8 @@ this proves that if the previous round satisfies the invariant, then the current
   over F2 (extended abstract)", in Proceedings of the 1996 International Symposium on
   Symbolic and Algebraic Computation, Zurich, Switzerland, 1996, pp. 1–9.
 -/
+
+set_option linter.style.longFile 2400
 
 open Polynomial AdditiveNTT
 namespace AdditiveNTT
@@ -82,7 +84,7 @@ under the normalized subspace vanishing polynomial `Ŵᵢ(X)`.
 `∀ i ∈ {0, ..., r-1}`, we define `Uᵢ:= <β₀, ..., βᵢ₋₁>_{𝔽q}`, note that `Uᵣ` is not used.
 `∀ i ∈ {0, ..., r-1}, S⁽ⁱ⁾` is the image of the subspace `U_{ℓ+R}`
   under the `𝔽q`-linear map `x ↦ Ŵᵢ(x)`. -/
-noncomputable def S_domain (i : Fin r) : Subspace 𝔽q L :=
+noncomputable def sDomain (i : Fin r) : Subspace 𝔽q L :=
   let W_i_norm := normalizedW 𝔽q β i
   let h_W_i_norm_is_additive : IsLinearMap 𝔽q (fun x : L => W_i_norm.eval x) :=
     AdditiveNTT.normalizedW_is_additive 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep i
@@ -91,16 +93,16 @@ noncomputable def S_domain (i : Fin r) : Subspace 𝔽q L :=
 
 /-- The quotient map `q⁽ⁱ⁾(X)` that relates successive domains.
 `q⁽ⁱ⁾(X) := (Wᵢ(βᵢ)^q / Wᵢ₊₁(βᵢ₊₁)) * ∏_{c ∈ 𝔽q} (X - c)`. Usable range is `∀ i ∈ {0, ..., r-2}` -/
-noncomputable def q_map (i : Fin r) : L[X] :=
+noncomputable def qMap (i : Fin r) : L[X] :=
   let constMultiplier := ((W 𝔽q β i).eval (β i))^(Fintype.card 𝔽q)
     / ((W 𝔽q β (i + 1)).eval (β (i + 1)))
   C constMultiplier * ∏ c: 𝔽q, (X - C (algebraMap 𝔽q L c))
 
 omit [DecidableEq L] in
-theorem q_map_eval_𝔽q_eq_0 (i : Fin r):
-  ∀ c: 𝔽q, (q_map 𝔽q β i).eval (algebraMap 𝔽q L c) = 0 := by
+theorem qMap_eval_𝔽q_eq_0 (i : Fin r):
+  ∀ c: 𝔽q, (qMap 𝔽q β i).eval (algebraMap 𝔽q L c) = 0 := by
   intro u
-  rw [q_map]
+  rw [qMap]
   set vpoly𝔽q := ∏ c: 𝔽q, (X - C ((algebraMap 𝔽q L) c)) with h_vpoly𝔽q
 
   have h_right_term_vanish: eval ((algebraMap 𝔽q L) u) (vpoly𝔽q) = 0 := by
@@ -116,11 +118,11 @@ theorem q_map_eval_𝔽q_eq_0 (i : Fin r):
 
 /-- **Lemma 4.2.** The quotient maps compose with the `Ŵ` polynomials.
 `q⁽ⁱ⁾ ∘ Ŵᵢ = Ŵᵢ₊₁, ∀ i ∈ {0, ..., r-2}`. -/
-lemma q_map_comp_normalizedW
+lemma qMap_comp_normalizedW
   (h_Fq_card_gt_1: Fintype.card 𝔽q > 1)
   (h_Fq_char_prime: Fact (Nat.Prime (ringChar 𝔽q)))
   (hβ_lin_indep : LinearIndependent (R:=𝔽q) (M:=L) (v:=β)) (i : Fin r) (h_i_add_1 : i + 1 < r):
-  (q_map 𝔽q β i).comp (normalizedW 𝔽q β i) = normalizedW 𝔽q β (i + 1) := by
+  (qMap 𝔽q β i).comp (normalizedW 𝔽q β i) = normalizedW 𝔽q β (i + 1) := by
   let q := Fintype.card 𝔽q
   -- `q⁽ⁱ⁾ ∘ Ŵᵢ = ((Wᵢ(βᵢ)^q / Wᵢ₊₁(βᵢ₊₁)) * ∏_{c ∈ 𝔽q} (X - c)) ∘ Ŵᵢ`
   -- `= ((Wᵢ(βᵢ)^q / Wᵢ₊₁(βᵢ₊₁)) * (X^q - X)) ∘ Ŵᵢ` -- X^q - X = ∏_{c ∈ 𝔽q} (X - c)
@@ -147,10 +149,10 @@ lemma q_map_comp_normalizedW
 
   -- The proof proceeds by a chain of equalities
   calc
-    (q_map 𝔽q β i).comp (normalizedW 𝔽q β i)
+    (qMap 𝔽q β i).comp (normalizedW 𝔽q β i)
     _ = C (val_i ^ q / val_i_plus_1)
     * (∏ c:𝔽q, (X - C (algebraMap 𝔽q L c))).comp (normalizedW 𝔽q β i) := by
-      rw [q_map, mul_comp, C_comp]
+      rw [qMap, mul_comp, C_comp]
     _ = C (val_i ^ q / val_i_plus_1) * ((normalizedW 𝔽q β i) ^ q - normalizedW 𝔽q β i) := by
       simp_rw [prod_comp, sub_comp, X_comp, C_comp]
       rw [prod_poly_sub_C_eq_poly_pow_card_sub_poly_in_L h_Fq_card_gt_1]
@@ -192,15 +194,15 @@ lemma q_map_comp_normalizedW
 omit [DecidableEq L] in
 /-- The evaluation of the quotient map `q⁽ⁱ⁾(X)` is an `𝔽q`-linear map.
   Usable range is `∀ i ∈ {0, ..., r-2}`. -/
-theorem q_map_is_linear_map
+theorem qMap_is_linear_map
   (h_Fq_card_gt_1 : Fintype.card 𝔽q > 1)
   (h_Fq_char_prime : Fact (Nat.Prime (ringChar 𝔽q)))
   (i : Fin r):
-  IsLinearMap 𝔽q (f:=fun inner_p ↦ (q_map 𝔽q β i).comp inner_p) := by
+  IsLinearMap 𝔽q (f:=fun inner_p ↦ (qMap 𝔽q β i).comp inner_p) := by
   set q := Fintype.card 𝔽q
   set constMultiplier := ((W 𝔽q β i).eval (β i))^q / ((W 𝔽q β (i + 1)).eval (β (i + 1)))
-  have h_q_poly_form : q_map 𝔽q β i = C constMultiplier * (X ^ q - X) := by
-    rw [q_map, prod_poly_sub_C_eq_poly_pow_card_sub_poly_in_L h_Fq_card_gt_1 (p:=X)]
+  have h_q_poly_form : qMap 𝔽q β i = C constMultiplier * (X ^ q - X) := by
+    rw [qMap, prod_poly_sub_C_eq_poly_pow_card_sub_poly_in_L h_Fq_card_gt_1 (p:=X)]
   -- Linearity of `x ↦ c * (x^q - x)` over `𝔽q`
 
   constructor
@@ -228,7 +230,7 @@ theorem q_map_is_linear_map
         ring
       _ = (C constMultiplier) * (((X: L[X]) ^ q - X).comp (f) + ((X: L[X]) ^ q - X).comp (g)) := by
         rw [←sub_comp, ←sub_comp]
-      _ = (q_map 𝔽q β i).comp f + (q_map 𝔽q β i).comp g := by
+      _ = (qMap 𝔽q β i).comp f + (qMap 𝔽q β i).comp g := by
         rw [h_q_poly_form]
         rw [mul_add]
         rw [mul_comp, mul_comp, C_comp, C_comp]
@@ -260,32 +262,32 @@ theorem q_map_is_linear_map
           rw [←X_comp (p:=f)]
         rw [←pow_comp, ←sub_comp]
         rw [C_mul_comp]
-      _ = c • (q_map 𝔽q β i).comp f := by
+      _ = c • (qMap 𝔽q β i).comp f := by
         rw [h_q_poly_form]
 
 /-- **Theorem 4.3.** The quotient map `q⁽ⁱ⁾` maps the domain `S⁽ⁱ⁾` to `S⁽ⁱ⁺¹⁾`.
   Usable range is `∀ i ∈ {0, ..., r-2}`. -/
-theorem q_map_maps_S_domain
+theorem qMap_maps_sDomain
 (h_Fq_card_gt_1 : Fintype.card 𝔽q > 1)
 (h_Fq_char_prime : Fact (Nat.Prime (ringChar 𝔽q)))
 (hβ_lin_indep : LinearIndependent 𝔽q β)
 (ℓ R_rate : ℕ) (h_ℓ_add_R_rate : ℓ + R_rate < r)
 (i : Fin r) (h_i_add_1 : i + 1 < r) :
-  have q_comp_linear_map := q_map_is_linear_map 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime i
+  have q_comp_linear_map := qMap_is_linear_map 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime i
   have q_eval_linear_map := AdditiveNTT.linear_map_of_comp_to_linear_map_of_eval
-    (f:=q_map 𝔽q β i) q_comp_linear_map
-  let q_i_map := poly_eval_linear_map (q_map 𝔽q β i) q_eval_linear_map
-  let S_i: Subspace 𝔽q L := S_domain 𝔽q h_Fq_char_prime h_Fq_card_gt_1 β hβ_lin_indep
+    (f:=qMap 𝔽q β i) q_comp_linear_map
+  let q_i_map := poly_eval_linear_map (qMap 𝔽q β i) q_eval_linear_map
+  let S_i: Subspace 𝔽q L := sDomain 𝔽q h_Fq_char_prime h_Fq_card_gt_1 β hβ_lin_indep
     ℓ R_rate h_ℓ_add_R_rate i
-  let S_i_plus_1: Subspace 𝔽q L := S_domain 𝔽q h_Fq_char_prime h_Fq_card_gt_1 β hβ_lin_indep
+  let S_i_plus_1: Subspace 𝔽q L := sDomain 𝔽q h_Fq_char_prime h_Fq_card_gt_1 β hβ_lin_indep
     ℓ R_rate h_ℓ_add_R_rate (i + 1)
   Submodule.map q_i_map S_i = S_i_plus_1 :=
 by
-  set q_comp_linear_map := q_map_is_linear_map 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime i
+  set q_comp_linear_map := qMap_is_linear_map 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime i
   set q_eval_linear_map := AdditiveNTT.linear_map_of_comp_to_linear_map_of_eval
-    (f:=q_map 𝔽q β i) q_comp_linear_map
+    (f:=qMap 𝔽q β i) q_comp_linear_map
   -- Unfold definitions and apply submodule and polynomial composition properties
-  simp_rw [S_domain]
+  simp_rw [sDomain]
   -- `q⁽ⁱ⁾(S⁽ⁱ⁾) = q⁽ⁱ⁾(Ŵᵢ(⟨β₀, ..., β_{ℓ+R-1}⟩))`
   -- `= Ŵᵢ₊₁(⟨β₀, ..., β_{ℓ+R-1}⟩)`
   -- `= S⁽ⁱ⁺¹⁾`
@@ -293,12 +295,12 @@ by
   rw [←Submodule.map_comp] -- for two nested maps (composition) over the same subspace
   -- The goal becomes `q_i_map ∘ₗ Ŵᵢ_map = Ŵᵢ₊₁`
   congr
-  -- ⊢ poly_eval_linear_map (q_map 𝔽q β i) ⋯ ∘ₗ poly_eval_linear_map (normalizedW 𝔽q β i) ⋯ =
+  -- ⊢ poly_eval_linear_map (qMap 𝔽q β i) ⋯ ∘ₗ poly_eval_linear_map (normalizedW 𝔽q β i) ⋯ =
   -- poly_eval_linear_map (normalizedW 𝔽q β (i + 1)) ⋯
 
-  -- We now have `(q_map ...).eval ((normalizedW ... i).eval x) = (normalizedW ... (i + 1)).eval x`.
+  -- We now have `(qMap ...).eval ((normalizedW ... i).eval x) = (normalizedW ... (i + 1)).eval x`.
   -- The `Polynomial.eval_comp` lemma states `p.eval (q.eval x) = (p.comp q).eval x`.
-  set f := poly_eval_linear_map (q_map 𝔽q β i) q_eval_linear_map
+  set f := poly_eval_linear_map (qMap 𝔽q β i) q_eval_linear_map
   set g := poly_eval_linear_map (normalizedW 𝔽q β i)
     (normalizedW_is_additive 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep i)
   set t := poly_eval_linear_map (normalizedW 𝔽q β (i + 1))
@@ -313,32 +315,32 @@ by
   -- unfold the linearmaps into their definitions (toFun, map_add, map_smul)
   simp only [LinearMap.coe_mk, AddHom.coe_mk]
   -- NOTE: `LinearMap.coe_mk` and `AddHom.coe_mk` convert linear maps into their functions
-  -- ⊢ eval (eval x (normalizedW 𝔽q β i)) (q_map 𝔽q β i) = eval x (normalizedW 𝔽q β (i + 1))
+  -- ⊢ eval (eval x (normalizedW 𝔽q β i)) (qMap 𝔽q β i) = eval x (normalizedW 𝔽q β (i + 1))
   rw [←Polynomial.eval_comp]
-  rw [q_map_comp_normalizedW 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep i h_i_add_1]
+  rw [qMap_comp_normalizedW 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep i h_i_add_1]
 
 /-- The composition `q⁽ⁱ⁻¹⁾ ∘ ... ∘ q⁽⁰⁾ ∘ X`. -/
-noncomputable def q_composition_chain (i : Fin r) : L[X] :=
+noncomputable def qCompositionChain (i : Fin r) : L[X] :=
   match i with
   | ⟨0, _⟩ => X
-  | ⟨k + 1, h_k_add_1⟩ => (q_map 𝔽q β ⟨k, by omega⟩).comp (q_composition_chain ⟨k, by omega⟩)
+  | ⟨k + 1, h_k_add_1⟩ => (qMap 𝔽q β ⟨k, by omega⟩).comp (qCompositionChain ⟨k, by omega⟩)
 
 omit [DecidableEq L] in
 /-- Prove the equality between the recursive definition
-of `q_composition_chain` and the Fin.foldl form. -/
-lemma q_composition_chain_eq_foldl
+of `qCompositionChain` and the Fin.foldl form. -/
+lemma qCompositionChain_eq_foldl
   (ℓ R_rate : ℕ)
   (i : Fin r) :
-  q_composition_chain 𝔽q β (ℓ:=ℓ) (R_rate:=R_rate) i =
+  qCompositionChain 𝔽q β (ℓ:=ℓ) (R_rate:=R_rate) i =
   Fin.foldl (n:=i) (fun acc j =>
-    (q_map 𝔽q β ⟨j, by omega⟩).comp acc) (X) := by
+    (qMap 𝔽q β ⟨j, by omega⟩).comp acc) (X) := by
   induction i using Fin.succRecOnSameFinType with
   | zero =>
-    rw [q_composition_chain.eq_def]
+    rw [qCompositionChain.eq_def]
     simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, Fin.foldl_zero]
     rfl
   | succ k k_h i_h =>
-    rw [q_composition_chain.eq_def]
+    rw [qCompositionChain.eq_def]
     have h_eq: ⟨k.val.succ, k_h⟩ = k + 1 := by
       rw [Fin.mk_eq_mk]
       rw [Fin.val_add_one]
@@ -351,66 +353,66 @@ lemma q_composition_chain_eq_foldl
 **Corollary 4.4.** For each `i ∈ {0, ..., r-1}`, we have `Ŵᵢ = q⁽ⁱ⁻¹⁾ ∘ ... ∘ q⁽⁰⁾`
 (with the convention that for `i = 0`, this is just `X`).
 -/
-lemma normalizedW_eq_q_map_composition
+lemma normalizedW_eq_qMap_composition
   (h_W₀_eq_X : W 𝔽q β 0 = X)
   (h_β₀_eq_1 : β 0 = 1)
-  -- We also need the hypotheses for q_map_comp_normalizedW
+  -- We also need the hypotheses for qMap_comp_normalizedW
   (h_Fq_card_gt_1: Fintype.card 𝔽q > 1)
   (h_Fq_char_prime: Fact (Nat.Prime (ringChar 𝔽q)))
   (hβ_lin_indep : LinearIndependent 𝔽q β)
   (ℓ R_rate : ℕ)
   (i : Fin r) :
-  normalizedW 𝔽q β i = q_composition_chain 𝔽q β (ℓ:=ℓ) (R_rate:=R_rate) i :=
+  normalizedW 𝔽q β i = qCompositionChain 𝔽q β (ℓ:=ℓ) (R_rate:=R_rate) i :=
 by
   -- We proceed by induction on i.
   induction i using Fin.succRecOnSameFinType with
   | zero =>
     -- Base case: i = 0
-    -- We need to show `normalizedW ... 0 = q_composition_chain 0`.
+    -- We need to show `normalizedW ... 0 = qCompositionChain 0`.
     -- The RHS is `X` by definition of the chain.
-    rw [q_composition_chain.eq_def]
+    rw [qCompositionChain.eq_def]
     -- The LHS is `C (1 / eval (β 0) (W ... 0)) * (W ... 0)`.
     rw [normalizedW, h_W₀_eq_X, eval_X, h_β₀_eq_1, div_one, C_1, one_mul]
     rfl
   | succ k k_h i_h =>
     -- Inductive step: Assume the property holds for k, prove for k+1.
-    -- The goal is `normalizedW ... (k+1) = q_composition_chain (k+1)`.
-    -- The RHS is `(q_map k).comp (q_composition_chain k)` by definition.
-    rw [q_composition_chain.eq_def]
-    -- From Lemma 4.2, we know `normalizedW ... (k+1) = (q_map k).comp (normalizedW ... k)`.
+    -- The goal is `normalizedW ... (k+1) = qCompositionChain (k+1)`.
+    -- The RHS is `(qMap k).comp (qCompositionChain k)` by definition.
+    rw [qCompositionChain.eq_def]
+    -- From Lemma 4.2, we know `normalizedW ... (k+1) = (qMap k).comp (normalizedW ... k)`.
     -- How to choose the rhs?
     have h_eq: ⟨k.val.succ, k_h⟩ = k + 1 := by
       rw [Fin.mk_eq_mk]
       rw [Fin.val_add_one]
       exact k_h
     simp only [h_eq.symm, Nat.succ_eq_add_one, Fin.eta]
-    have h_res := q_map_comp_normalizedW 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep k k_h
-    -- ⊢ normalizedW 𝔽q β ⟨↑k + 1, k_h⟩ = (q_map 𝔽q β k).comp (q_composition_chain 𝔽q β k)
+    have h_res := qMap_comp_normalizedW 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep k k_h
+    -- ⊢ normalizedW 𝔽q β ⟨↑k + 1, k_h⟩ = (qMap 𝔽q β k).comp (qCompositionChain 𝔽q β k)
     rw [←i_h]
     rw [h_res]
     simp only [h_eq]
 
 /-- The vectors `y_j^{(i)} = Ŵᵢ(β_j)` for `j ∈ {i, ..., ℓ+R-1}`. -/
-noncomputable def s_domain_basis_vectors (i : Fin r) : Fin (ℓ + R_rate - i) → L :=
+noncomputable def sDomainBasisVectors (i : Fin r) : Fin (ℓ + R_rate - i) → L :=
   fun k => (normalizedW 𝔽q β i).eval (β ⟨i + k.val, by omega⟩)
 
-/-- The vectors `s_domain_basis_vectors` are indeed elements of the subspace `S_domain`,
+/-- The vectors `sDomainBasisVectors` are indeed elements of the subspace `sDomain`,
   `∀ i ∈ {0, ..., r-1}`. -/
-lemma s_domain_basis_vectors_mem_S_domain
+lemma sDomainBasisVectors_mem_sDomain
     (h_Fq_card_gt_1: Fintype.card 𝔽q > 1)
     (h_Fq_char_prime: Fact (Nat.Prime (ringChar 𝔽q)))
     (hβ_lin_indep : LinearIndependent 𝔽q β)
     (ℓ R_rate : ℕ) (h_ℓ_add_R_rate : ℓ + R_rate < r)
     (i : Fin r) (k : Fin (ℓ + R_rate - i)) :
-  s_domain_basis_vectors 𝔽q β ℓ R_rate h_ℓ_add_R_rate i k
-    ∈ S_domain 𝔽q h_Fq_char_prime h_Fq_card_gt_1 β hβ_lin_indep ℓ R_rate h_ℓ_add_R_rate i := by
+  sDomainBasisVectors 𝔽q β ℓ R_rate h_ℓ_add_R_rate i k
+    ∈ sDomain 𝔽q h_Fq_char_prime h_Fq_card_gt_1 β hβ_lin_indep ℓ R_rate h_ℓ_add_R_rate i := by
   have h_i_add_k_lt_r : i + k.val < r := by
     omega
   have h_i_add_k_lt_ℓ_add_R_rate : i + k.val < ℓ + R_rate := by
     omega
   have h_i_add_k_lt_ℓ_add_R_rate : i + k.val < ℓ + R_rate := by
     omega
-  simp_rw [S_domain, s_domain_basis_vectors]
+  simp_rw [sDomain, sDomainBasisVectors]
   -- The vector is `eval Ŵᵢ (β (i + k.val))`
   -- We must show it's in the image of U_{ℓ+R} under `eval Ŵᵢ`.
   -- This is true if the input `β (i + k.val)` is in `U_{ℓ+R}`.
@@ -467,11 +469,11 @@ lemma S_basis_range_eq (i : Fin r) (h_i : i < ℓ + R_rate):
 
 /-- S⁽ⁱ⁾ is the image over `Wᵢ(X)` of the the subspace spanned by `{βᵢ, ..., β_{ℓ+R-1}}`.
   Usable range is `∀ i ∈ {0, ..., ℓ+R-1}`. -/
-lemma S_domain_eq_image_of_upper_span (i: Fin r) (h_i: i < ℓ + R_rate):
+lemma sDomain_eq_image_of_upper_span (i: Fin r) (h_i: i < ℓ + R_rate):
     let V_i := Submodule.span 𝔽q (Set.range (S_basis 𝔽q β ℓ R_rate h_ℓ_add_R_rate i h_i))
     let W_i_map := poly_eval_linear_map (normalizedW 𝔽q β i)
       (normalizedW_is_additive 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep i)
-    S_domain 𝔽q h_Fq_char_prime h_Fq_card_gt_1 β hβ_lin_indep ℓ R_rate h_ℓ_add_R_rate i
+    sDomain 𝔽q h_Fq_char_prime h_Fq_card_gt_1 β hβ_lin_indep ℓ R_rate h_ℓ_add_R_rate i
     = Submodule.map W_i_map V_i :=
 by
   -- Proof: U_{ℓ+R} is the direct sum of Uᵢ and Vᵢ.
@@ -514,7 +516,7 @@ by
     rw [S_basis_range_eq 𝔽q β ℓ R_rate h_ℓ_add_R_rate i h_i]
 
   -- Now show that the image of U_{ℓ+R} under W_i_map is the same as the image of V_i
-  rw [S_domain, h_span_supremum_decomposition, Submodule.map_sup]
+  rw [sDomain, h_span_supremum_decomposition, Submodule.map_sup]
 
   -- The image of U_i under W_i_map is {0} because W_i vanishes on U_i
   have h_U_i_image : Submodule.map W_i_map (U 𝔽q β i) = ⊥ := by
@@ -533,9 +535,9 @@ by
   rw [bot_sup_eq]
 
 /-- **Corollary 4.5.** The set `{Ŵᵢ(βᵢ), ..., Ŵᵢ(β_{ℓ+R-1})}` is an `𝔽q`-basis for `S⁽ⁱ⁾`. -/
-noncomputable def S_domain_basis (i : Fin r) (h_i : i < ℓ + R_rate) :
+noncomputable def sDomain_basis (i : Fin r) (h_i : i < ℓ + R_rate) :
     Basis (Fin (ℓ + R_rate - i)) 𝔽q (
-      S_domain 𝔽q h_Fq_char_prime h_Fq_card_gt_1 β hβ_lin_indep ℓ R_rate h_ℓ_add_R_rate i) := by
+      sDomain 𝔽q h_Fq_char_prime h_Fq_card_gt_1 β hβ_lin_indep ℓ R_rate h_ℓ_add_R_rate i) := by
   -- Let V_i be the "upper" subspace spanned by {βᵢ, ..., β_{ℓ+R-1}}.
   let V_i := Submodule.span 𝔽q (Set.range (S_basis 𝔽q β ℓ R_rate h_ℓ_add_R_rate i h_i))
   -- Let W_i_map be the linear map given by evaluating the polynomial Ŵᵢ.
@@ -580,7 +582,7 @@ noncomputable def S_domain_basis (i : Fin r) (h_i : i < ℓ + R_rate) :
 
   -- We construct the isomorphism between Vᵢ and S⁽ⁱ⁾.
   -- S⁽ⁱ⁾ is the image of Vᵢ under W_i_map, and the map is injective on Vᵢ.
-  set S_i := S_domain 𝔽q h_Fq_char_prime h_Fq_card_gt_1 β hβ_lin_indep ℓ R_rate h_ℓ_add_R_rate i
+  set S_i := sDomain 𝔽q h_Fq_char_prime h_Fq_card_gt_1 β hβ_lin_indep ℓ R_rate h_ℓ_add_R_rate i
   let iso : V_i ≃ₗ[𝔽q] S_i :=
     LinearEquiv.ofBijective
       (LinearMap.codRestrict S_i (W_i_map.comp (Submodule.subtype V_i))
@@ -589,7 +591,7 @@ noncomputable def S_domain_basis (i : Fin r) (h_i : i < ℓ + R_rate) :
           -- ⊢ (W_i_map ∘ₗ V_i.subtype) x ∈ S_i
           have h_x_in_S_i : (W_i_map.comp (Submodule.subtype V_i)) x ∈ S_i := by
             simp only [LinearMap.coe_comp, Submodule.coe_subtype, Function.comp_apply, S_i]
-            rw [S_domain_eq_image_of_upper_span 𝔽q h_Fq_char_prime
+            rw [sDomain_eq_image_of_upper_span 𝔽q h_Fq_char_prime
               h_Fq_card_gt_1 β hβ_lin_indep ℓ R_rate h_ℓ_add_R_rate i h_i]
             exact
               Submodule.apply_coe_mem_map
@@ -642,12 +644,12 @@ noncomputable def S_domain_basis (i : Fin r) (h_i : i < ℓ + R_rate) :
             -- `y` is an element of `S_i` (which is a subtype).
             have h_y_in_image : y.val ∈ Submodule.map W_i_map V_i := by
               have h_y := y.property
-              -- From the lemma `S_domain_eq_image_of_upper_span`,
+              -- From the lemma `sDomain_eq_image_of_upper_span`,
               -- we know that S_i is *exactly* the image of V_i under W_i_map.
               unfold W_i_map V_i
               have h_S_i: S_i = Submodule.map W_i_map V_i := by
                 unfold S_i
-                rw [S_domain_eq_image_of_upper_span 𝔽q h_Fq_char_prime h_Fq_card_gt_1 β hβ_lin_indep
+                rw [sDomain_eq_image_of_upper_span 𝔽q h_Fq_char_prime h_Fq_card_gt_1 β hβ_lin_indep
                   ℓ R_rate h_ℓ_add_R_rate i h_i]
               rw [←h_S_i]
               exact h_y
@@ -669,48 +671,48 @@ noncomputable def S_domain_basis (i : Fin r) (h_i : i < ℓ + R_rate) :
 `Ŵₖ⁽ⁱ⁾ := q⁽ⁱ⁺ᵏ⁻¹⁾ ∘ ⋯ ∘ q⁽ⁱ⁾` for `k ∈ {1, ..., ℓ - i -1}`, and `X` for `k = 0`.
 -- k ∈ {0, ..., ℓ-i-1}
 -/
-noncomputable def intermediate_norm_vpoly
+noncomputable def intermediateNormVpoly
     -- Assuming you have this hypothesis available from the context:
     (i: Fin (ℓ+1)) (k : Fin (ℓ - i)) : L[X] :=
   -- This definition requires strict order
   Fin.foldl (n:=k) (fun acc j =>
-    (q_map 𝔽q β ⟨(i : ℕ) + (j : ℕ), by omega⟩).comp acc) (X)
+    (qMap 𝔽q β ⟨(i : ℕ) + (j : ℕ), by omega⟩).comp acc) (X)
 
 -- /--
 -- **Corollary 4.4.** For each `i ∈ {0, ..., r-1}`, we have `Ŵᵢ = q⁽ⁱ⁻¹⁾ ∘ ... ∘ q⁽⁰⁾`
 -- (with the convention that for `i = 0`, this is just `X`).
 -- -/
--- lemma normalizedW_eq_q_map_composition
+-- lemma normalizedW_eq_qMap_composition
 --   (h_W₀_eq_X : W 𝔽q β 0 = X)
 --   (h_β₀_eq_1 : β 0 = 1)
---   -- We also need the hypotheses for q_map_comp_normalizedW
+--   -- We also need the hypotheses for qMap_comp_normalizedW
 --   (h_Fq_card_gt_1: Fintype.card 𝔽q > 1)
 --   (h_Fq_char_prime: Fact (Nat.Prime (ringChar 𝔽q)))
 --   (hβ_lin_indep : LinearIndependent 𝔽q β)
 --   (ℓ R_rate : ℕ)
 --   (i : Fin r) :
---   normalizedW 𝔽q β i = q_composition_chain 𝔽q β (ℓ:=ℓ) (R_rate:=R_rate) i :=
+--   normalizedW 𝔽q β i = qCompositionChain 𝔽q β (ℓ:=ℓ) (R_rate:=R_rate) i :=
 -- by
 
 -- Ŵₖ⁽⁰⁾(X) = Ŵ(X)
-theorem base_intermediate_norm_vpoly
+theorem base_intermediateNormVpoly
   (h_W₀_eq_X : W 𝔽q β 0 = X)
   (h_β₀_eq_1 : β 0 = 1)
   (h_Fq_card_gt_1 : Fintype.card 𝔽q > 1)
   (h_Fq_char_prime : Fact (Nat.Prime (ringChar 𝔽q)))
   (hβ_lin_indep : LinearIndependent 𝔽q β)
-  (k : Fin (ℓ)):
-  intermediate_norm_vpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨0, by
+  (k : Fin ℓ) :
+  intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨0, by
     by_contra ht
     simp only [not_lt, nonpos_iff_eq_zero] at ht
     contradiction
   ⟩ k =
   normalizedW 𝔽q β ⟨k, by omega⟩ := by
-  unfold intermediate_norm_vpoly
+  unfold intermediateNormVpoly
   simp only [Fin.mk_zero', Fin.coe_ofNat_eq_mod, zero_add]
-  rw [normalizedW_eq_q_map_composition 𝔽q β h_W₀_eq_X
+  rw [normalizedW_eq_qMap_composition 𝔽q β h_W₀_eq_X
     h_β₀_eq_1 h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep ℓ R_rate ⟨k, by omega⟩]
-  rw [q_composition_chain_eq_foldl 𝔽q β ℓ R_rate]
+  rw [qCompositionChain_eq_foldl 𝔽q β ℓ R_rate]
 
 -- i = 0->l: Ŵᵢ = q(i-1) ∘ ⋯ ∘ q(0)
 -- Ŵᵢ is actually Ŵᵢ⁽⁰⁾ => deg(Ŵᵢ) = 2^i = |Uᵢ|, and it vanishes on Uᵢ = Uᵢ⁽⁰⁾ = ⟨β₀, ..., β_{i-1}⟩
@@ -751,63 +753,63 @@ theorem Polynomial.comp_same_inner_eq_if_same_outer (f g : L[X]) (h_f_eq_g : f =
 
 omit [DecidableEq L] in
 -- ∀ i ∈ {0, ..., ℓ-1}, ∀ k ∈ {0, ..., ℓ-i-2}, `Ŵₖ₊₁⁽ⁱ⁾ = Ŵₖ⁽ⁱ⁺¹⁾ ∘ q⁽ⁱ⁾`
-theorem intermediate_norm_vpoly_comp_qmap (i : Fin (ℓ))
+theorem intermediateNormVpoly_comp_qmap (i : Fin (ℓ))
     (k : Fin (ℓ - i - 1)):
-    intermediate_norm_vpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i, by omega⟩ ⟨k+1, by
+    intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i, by omega⟩ ⟨k+1, by
       simp only; omega⟩ =
-    (intermediate_norm_vpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i+1, by omega⟩ ⟨k, by
+    (intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i+1, by omega⟩ ⟨k, by
       simp only; omega;
-  ⟩).comp (q_map 𝔽q β ⟨i, by omega⟩) := by
-  unfold intermediate_norm_vpoly
+  ⟩).comp (qMap 𝔽q β ⟨i, by omega⟩) := by
+  unfold intermediateNormVpoly
   simp only -- Fin.foldl (↑k+1) ... = Fin.foldl (↑k+1) ...
   rw [Fin.foldl_succ] -- convert Fin.foldl (↑k+1) ... into (Fin.foldl (↑k) ...).comp (init value)
   simp only [Fin.val_succ, Fin.coe_ofNat_eq_mod, Nat.zero_mod, add_zero, comp_X]
   conv_lhs =>
-    rw [←X_comp (p:=q_map 𝔽q β ⟨↑i, by omega⟩)]
+    rw [←X_comp (p:=qMap 𝔽q β ⟨↑i, by omega⟩)]
     rw [Polynomial.foldl_comp]
   congr -- convert Fin.foldl equality into equality of accumulator functions
-  -- ⊢ (fun acc j ↦ (q_map 𝔽q β ⟨↑i + (↑j + 1), ⋯⟩).comp acc)
-  -- = fun acc j ↦ (q_map 𝔽q β ⟨↑(i + 1) + ↑j, ⋯⟩).comp acc
+  -- ⊢ (fun acc j ↦ (qMap 𝔽q β ⟨↑i + (↑j + 1), ⋯⟩).comp acc)
+  -- = fun acc j ↦ (qMap 𝔽q β ⟨↑(i + 1) + ↑j, ⋯⟩).comp acc
   funext acc j
   have h_id_eq: i.val + (j.val + 1) = i.val + 1 + j.val := by omega
   simp_rw [h_id_eq]
 
 omit [DecidableEq L] in
--- A helper derivation for intermediate_norm_vpoly_comp_qmap
+-- A helper derivation for intermediateNormVpoly_comp_qmap
 -- i is now in Fin (ℓ-1) instead of Fin ℓ, and k is in Fin (ℓ - (↑i + 1))
-theorem intermediate_norm_vpoly_comp_qmap_helper (i : Fin (ℓ))
+theorem intermediateNormVpoly_comp_qmap_helper (i : Fin (ℓ))
     (k : Fin (ℓ - (↑i + 1))):
-    (intermediate_norm_vpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate
-      ⟨↑i + 1, by omega⟩ k).comp (q_map 𝔽q β ⟨↑i, by omega⟩) =
-    intermediate_norm_vpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate
+    (intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate
+      ⟨↑i + 1, by omega⟩ k).comp (qMap 𝔽q β ⟨↑i, by omega⟩) =
+    intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate
       ⟨↑i, by omega⟩ ⟨k + 1, by simp only; omega⟩:= by
-    simp only [intermediate_norm_vpoly_comp_qmap 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i, by omega⟩
+    simp only [intermediateNormVpoly_comp_qmap 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i, by omega⟩
         k]
 
 /-- ∀ `i` ∈ {0, ..., ℓ}, The `i`-th order novel polynomial basis `Xⱼ⁽ⁱ⁾`.
 `Xⱼ⁽ⁱ⁾ := Π_{k=0}^{ℓ-i-1} (Ŵₖ⁽ⁱ⁾)^{jₖ}`, ∀ j ∈ {0, ..., 2^(ℓ-i)-1} -/
-noncomputable def intermediate_novel_basis_X (i : Fin (ℓ + 1)) (j : Fin (2 ^ (ℓ - i))): L[X] :=
+noncomputable def intermediateNovelBasisX (i : Fin (ℓ + 1)) (j : Fin (2 ^ (ℓ - i))): L[X] :=
   (Finset.univ: Finset (Fin (ℓ - i)) ).prod (fun k =>
-    (intermediate_norm_vpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate i k) ^ (bit k j))
+    (intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate i k) ^ (bit k j))
 -- NOTE: possibly we state some Basis for `(Xⱼ⁽ⁱ⁾)  `
 
 -- Xⱼ⁽⁰⁾ = Xⱼ
-theorem base_intermediate_novel_basis_X
-  (h_W₀_eq_X : W 𝔽q β 0 = X)
-  (h_β₀_eq_1 : β 0 = 1)
-  (h_Fq_card_gt_1 : Fintype.card 𝔽q > 1)
-  (h_Fq_char_prime : Fact (Nat.Prime (ringChar 𝔽q)))
-  (hβ_lin_indep : LinearIndependent 𝔽q β)
-  (j : Fin (2 ^ ℓ)):
-  intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨0, by
+theorem base_intermediateNovelBasisX
+    (h_W₀_eq_X : W 𝔽q β 0 = X)
+    (h_β₀_eq_1 : β 0 = 1)
+    (h_Fq_card_gt_1 : Fintype.card 𝔽q > 1)
+    (h_Fq_char_prime : Fact (Nat.Prime (ringChar 𝔽q)))
+    (hβ_lin_indep : LinearIndependent 𝔽q β)
+    (j : Fin (2 ^ ℓ)) :
+  intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨0, by
     by_contra ht
     simp only [not_lt, nonpos_iff_eq_zero] at ht
     contradiction
   ⟩ j =
   Xⱼ 𝔽q β ℓ (by omega) j := by
-  unfold intermediate_novel_basis_X Xⱼ
+  unfold intermediateNovelBasisX Xⱼ
   simp only [Fin.mk_zero', Fin.coe_ofNat_eq_mod]
-  have h_res := base_intermediate_norm_vpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate
+  have h_res := base_intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate
     h_W₀_eq_X h_β₀_eq_1 h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep
   simp only [Fin.mk_zero'] at h_res
   conv_lhs =>
@@ -816,26 +818,26 @@ theorem base_intermediate_novel_basis_X
   congr
 
 omit [DecidableEq L] in
--- X₂ⱼ⁽ⁱ⁾ = Xⱼ⁽ⁱ⁺¹⁾(q⁽ⁱ⁾(X)) ∀ j ∈ {0, ..., 2^(ℓ-i)-1}, ∀ i ∈ {0, ..., ℓ-1}
+/-- `X₂ⱼ⁽ⁱ⁾ = Xⱼ⁽ⁱ⁺¹⁾(q⁽ⁱ⁾(X)) ∀ j ∈ {0, ..., 2^(ℓ-i)-1}, ∀ i ∈ {0, ..., ℓ-1}` -/
 lemma even_index_intermediate_novel_basis_decomposition (i : Fin ℓ) (j : Fin (2 ^ (ℓ - i - 1))):
-  intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i, by omega⟩ ⟨j * 2, by
+  intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i, by omega⟩ ⟨j * 2, by
     apply mul_two_add_bit_lt_two_pow j (ℓ-i-1) (ℓ-i) ⟨0, by omega⟩ (by omega) (by omega)
-  ⟩  = (intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i+1, by omega⟩ ⟨j, by
+  ⟩  = (intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i+1, by omega⟩ ⟨j, by
     apply lt_two_pow_of_lt_two_pow_exp_le j (ℓ-i-1) (ℓ-(i+1)) (by omega) (by omega)
-  ⟩).comp (q_map 𝔽q β ⟨i, by omega⟩) := by
-  unfold intermediate_novel_basis_X
+  ⟩).comp (qMap 𝔽q β ⟨i, by omega⟩) := by
+  unfold intermediateNovelBasisX
   rw [prod_comp]
   -- ∏ k ∈ Fin (ℓ - i), (Wₖ⁽ⁱ⁾(X))^((2j)ₖ) = ∏ k ∈ Fin (ℓ - (i+1)), (Wₖ⁽ⁱ⁺¹⁾(X))^((j)ₖ) ∘ q⁽ⁱ⁾(X)
   simp only [pow_comp]
   conv_rhs =>
     enter [2, x]
-    rw [intermediate_norm_vpoly_comp_qmap_helper 𝔽q]
+    rw [intermediateNormVpoly_comp_qmap_helper 𝔽q]
 
-  -- ⊢ ∏ x, intermediate_norm_vpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, ⋯⟩ x ^ bit (↑x) (↑j * 2) =
-  -- ∏ x, intermediate_norm_vpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, ⋯⟩ ⟨↑x + 1, ⋯⟩ ^ bit ↑x ↑j
+  -- ⊢ ∏ x, intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, ⋯⟩ x ^ bit (↑x) (↑j * 2) =
+  -- ∏ x, intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, ⋯⟩ ⟨↑x + 1, ⋯⟩ ^ bit ↑x ↑j
 
   set fleft := fun x : Fin (ℓ - ↑i) =>
-    intermediate_norm_vpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ x ^ bit (↑x) (↑j * 2)
+    intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ x ^ bit (↑x) (↑j * 2)
   have h_n_shift: ℓ - (↑i + 1) + 1 = ℓ - ↑i := by omega
   have h_fin_n_shift: Fin (ℓ - (↑i + 1) + 1) = Fin (ℓ - ↑i) := by
     rw [h_n_shift]
@@ -873,15 +875,15 @@ lemma even_index_intermediate_novel_basis_decomposition (i : Fin ℓ) (j : Fin (
   rw [h_exp_eq]
 
 omit [DecidableEq L] in
--- X₂ⱼ₊₁⁽ⁱ⁾ = X * (Xⱼ⁽ⁱ⁺¹⁾(q⁽ⁱ⁾(X))) ∀ j ∈ {0, ..., 2^(ℓ-i)-1}, ∀ i ∈ {0, ..., ℓ-1}
+/-- `X₂ⱼ₊₁⁽ⁱ⁾ = X * (Xⱼ⁽ⁱ⁺¹⁾(q⁽ⁱ⁾(X))) ∀ j ∈ {0, ..., 2^(ℓ-i)-1}, ∀ i ∈ {0, ..., ℓ-1}` -/
 lemma odd_index_intermediate_novel_basis_decomposition
     (i : Fin ℓ) (j : Fin (2 ^ (ℓ - i - 1))):
-    intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i, by omega⟩ ⟨j * 2 + 1, by
+    intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i, by omega⟩ ⟨j * 2 + 1, by
       apply mul_two_add_bit_lt_two_pow j (ℓ-i-1) (ℓ-i) ⟨1, by omega⟩ (by omega) (by omega)
-    ⟩  = X * (intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i+1, by omega⟩ ⟨j, by
+    ⟩  = X * (intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i+1, by omega⟩ ⟨j, by
       apply lt_two_pow_of_lt_two_pow_exp_le j (ℓ-i-1) (ℓ-(i+1)) (by omega) (by omega)
-    ⟩).comp (q_map 𝔽q β ⟨i, by omega⟩) := by
-  unfold intermediate_novel_basis_X
+    ⟩).comp (qMap 𝔽q β ⟨i, by omega⟩) := by
+  unfold intermediateNovelBasisX
   rw [prod_comp]
   -- ∏ k ∈ Fin (ℓ - i), (Wₖ⁽ⁱ⁾(X))^((2j₊₁)ₖ)
   -- = X * ∏ k ∈ Fin (ℓ - (i+1)), (Wₖ⁽ⁱ⁺¹⁾(X))^((j)ₖ) ∘ q⁽ⁱ⁾(X)
@@ -890,14 +892,14 @@ lemma odd_index_intermediate_novel_basis_decomposition
   conv_rhs =>
     enter [2]
     enter [2, x, 1]
-    rw [intermediate_norm_vpoly_comp_qmap_helper 𝔽q β ℓ R_rate h_ℓ_add_R_rate
+    rw [intermediateNormVpoly_comp_qmap_helper 𝔽q β ℓ R_rate h_ℓ_add_R_rate
       ⟨i, by omega⟩ ⟨x, by simp only; omega⟩]
 
-  -- ⊢ ∏ x, intermediate_norm_vpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, ⋯⟩ x ^ bit (↑x) (↑j * 2 + 1) =
-  -- X * ∏ x, intermediate_norm_vpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, ⋯⟩ ⟨↑x + 1, ⋯⟩ ^ bit ↑x ↑j
+  -- ⊢ ∏ x, intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, ⋯⟩ x ^ bit (↑x) (↑j * 2 + 1) =
+  -- X * ∏ x, intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, ⋯⟩ ⟨↑x + 1, ⋯⟩ ^ bit ↑x ↑j
 
   set fleft := fun x : Fin (ℓ - ↑i) =>
-    intermediate_norm_vpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ x ^ bit (↑x) (↑j * 2 + 1)
+    intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ x ^ bit (↑x) (↑j * 2 + 1)
   have h_n_shift: ℓ - (↑i + 1) + 1 = ℓ - ↑i := by omega
   have h_fin_n_shift: Fin (ℓ - (↑i + 1) + 1) = Fin (ℓ - ↑i) := by
     rw [h_n_shift]
@@ -920,7 +922,7 @@ lemma odd_index_intermediate_novel_basis_decomposition
       simp only [Nat.shiftRight_zero, Nat.and_one_is_mod, Nat.mul_add_mod_self_right, Nat.mod_succ]
     rw [h_exp]
     simp only [pow_one, Fin.coe_ofNat_eq_mod, Nat.zero_mod]
-    unfold intermediate_norm_vpoly
+    unfold intermediateNormVpoly
     simp only [Fin.foldl_zero]
 
   rw [fleft_0_eq_X]
@@ -942,27 +944,27 @@ lemma odd_index_intermediate_novel_basis_decomposition
   polynomial `P(X)` we need to evaluate,
   and `coeffs` is the list of `2^(ℓ-i)` coefficients of the polynomial.
 -/
-noncomputable def intermediate_evaluation_poly (i : Fin (ℓ + 1))
+noncomputable def intermediateEvaluationPoly (i : Fin (ℓ + 1))
     (coeffs : Fin (2 ^ (ℓ - i)) → L) : L[X] :=
   ∑ (⟨j, hj⟩: Fin (2^(ℓ-i))), C (coeffs ⟨j, by omega⟩) *
-    (intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate i ⟨j, by omega⟩)
+    (intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate i ⟨j, by omega⟩)
 
 /-- The even and odd refinements of `P⁽ⁱ⁾(X)` which are polynomials in the `(i+1)`-th basis.
 `P₀⁽ⁱ⁺¹⁾(Y) = ∑_{j=0}^{2^{ℓ-i-1}-1} a_{2j} ⋅ Xⱼ⁽ⁱ⁺¹⁾(Y)`
 `P₁⁽ⁱ⁺¹⁾(Y) = ∑_{j=0}^{2^{ℓ-i-1}-1} a_{2j+1} ⋅ Xⱼ⁽ⁱ⁺¹⁾(Y)` -/
-noncomputable def even_refinement (i : Fin (ℓ))
+noncomputable def evenRefinement (i : Fin (ℓ))
     (coeffs : Fin (2 ^ (ℓ - i)) → L) : L[X] :=
   ∑ (⟨j, hj⟩: Fin (2^(ℓ-i-1))), C (coeffs ⟨j*2, by
     calc _ < 2 ^ (ℓ - i - 1) * 2 := by omega
       _ = 2 ^ (ℓ - i) := Nat.two_pow_pred_mul_two (w:=ℓ - i) (h:=by omega)
-  ⟩) * (intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i+1, by omega⟩ ⟨j, hj⟩)
+  ⟩) * (intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i+1, by omega⟩ ⟨j, hj⟩)
 
-noncomputable def odd_refinement (i : Fin (ℓ))
+noncomputable def oddRefinement (i : Fin (ℓ))
     (coeffs : Fin (2 ^ (ℓ - i)) → L) : L[X] :=
   ∑ (⟨j, hj⟩: Fin (2^(ℓ-i-1))), C (coeffs ⟨j*2+1, by
     calc _ < 2 ^ (ℓ - i - 1) * 2 := by omega
       _ = 2 ^ (ℓ - i) := Nat.two_pow_pred_mul_two (w:=ℓ - i) (h:=by omega)
-  ⟩) * (intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i+1, by omega⟩ ⟨j, hj⟩)
+  ⟩) * (intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i+1, by omega⟩ ⟨j, hj⟩)
 
 /-- **Key Polynomial Identity (Equation 39)**. This identity is the foundation for the
 butterfly operation in the Additive NTT. It relates a polynomial in the `i`-th basis to
@@ -970,30 +972,29 @@ its even and odd parts expressed in the `(i+1)`-th basis via the quotient map `q
 `∀ i ∈ {0, ..., ℓ-1}, P⁽ⁱ⁾(X) = P₀⁽ⁱ⁺¹⁾(q⁽ⁱ⁾(X)) + X ⋅ P₁⁽ⁱ⁺¹⁾(q⁽ⁱ⁾(X))` -/
 theorem evaluation_poly_split_identity (i : Fin (ℓ))
     (coeffs : Fin (2 ^ (ℓ - i)) → L) :
-  let P_i: L[X] := intermediate_evaluation_poly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i, by omega⟩ coeffs
-  let P_even_i_plus_1: L[X] := even_refinement 𝔽q β ℓ R_rate h_ℓ_add_R_rate i coeffs
-  let P_odd_i_plus_1: L[X] := odd_refinement 𝔽q β ℓ R_rate h_ℓ_add_R_rate i coeffs
-  let q_i: L[X] := q_map 𝔽q β ⟨i, by omega⟩
+  let P_i: L[X] := intermediateEvaluationPoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i, by omega⟩ coeffs
+  let P_even_i_plus_1: L[X] := evenRefinement 𝔽q β ℓ R_rate h_ℓ_add_R_rate i coeffs
+  let P_odd_i_plus_1: L[X] := oddRefinement 𝔽q β ℓ R_rate h_ℓ_add_R_rate i coeffs
+  let q_i: L[X] := qMap 𝔽q β ⟨i, by omega⟩
   P_i = (P_even_i_plus_1.comp q_i) + X * (P_odd_i_plus_1.comp q_i) := by
 
-  dsimp only [Lean.Elab.WF.paramLet]
-  simp only [intermediate_evaluation_poly, Fin.eta]
-  simp only [even_refinement, Fin.eta, sum_comp, mul_comp, C_comp, odd_refinement]
+  simp only [intermediateEvaluationPoly, Fin.eta]
+  simp only [evenRefinement, Fin.eta, sum_comp, mul_comp, C_comp, oddRefinement]
 
   set leftEvenTerm := ∑ ⟨j, hj⟩ : Fin (2 ^ (ℓ - ↑i - 1)), C (coeffs ⟨j * 2, by
     exact mul_two_add_bit_lt_two_pow j (ℓ-i-1) (ℓ-i) ⟨0, by omega⟩ (by omega) (by omega)
-  ⟩) * intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ ⟨j * 2, by
+  ⟩) * intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ ⟨j * 2, by
     exact mul_two_add_bit_lt_two_pow j (ℓ-i-1) (ℓ-i) ⟨0, by omega⟩ (by omega) (by omega)
   ⟩
   set leftOddTerm := ∑ ⟨j, hj⟩ : Fin (2 ^ (ℓ - ↑i - 1)), C (coeffs ⟨j * 2 + 1, by
     apply mul_two_add_bit_lt_two_pow j (ℓ-i-1) (ℓ-i) ⟨1, by omega⟩ (by omega) (by omega)
-  ⟩) * intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ ⟨j * 2 + 1, by
+  ⟩) * intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ ⟨j * 2 + 1, by
     exact mul_two_add_bit_lt_two_pow j (ℓ-i-1) (ℓ-i) ⟨1, by omega⟩ (by omega) (by omega)
   ⟩
 
   have h_split_P_i: ∑ ⟨j, hj⟩ : Fin (2 ^ (ℓ - ↑i)), C (coeffs ⟨j, by
     apply lt_two_pow_of_lt_two_pow_exp_le j (ℓ-i) (ℓ-i) (by omega) (by omega)
-  ⟩) * intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ ⟨j, by omega⟩ =
+  ⟩) * intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ ⟨j, by omega⟩ =
   leftEvenTerm + leftOddTerm
   := by
     unfold leftEvenTerm leftOddTerm
@@ -1006,12 +1007,12 @@ theorem evaluation_poly_split_identity (i : Fin (ℓ))
     set f1 := fun x: ℕ => -- => use a single function to represent the sum
       if hx: x < 2 ^ (ℓ - ↑i) then
         C (coeffs ⟨x, hx⟩) *
-          intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ ⟨x, by omega⟩
+          intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ ⟨x, by omega⟩
       else 0
 
     have h_x: ∀ x: Fin (2 ^ (ℓ - ↑i)), f1 x.val =
       C (coeffs ⟨x.val, by omega⟩) *
-        intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩
+        intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩
           ⟨x.val, by simp only; omega⟩ := by
       intro x
       unfold f1
@@ -1026,7 +1027,7 @@ theorem evaluation_poly_split_identity (i : Fin (ℓ))
         calc _ < 2 ^ (ℓ - i - 1) * 2 := by omega
           _ = 2 ^ (ℓ - i) := Nat.two_pow_pred_mul_two (w:=ℓ - i) (h:=by omega)
       ⟩) *
-        intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ ⟨x.val * 2, by
+        intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ ⟨x.val * 2, by
           exact mul_two_add_bit_lt_two_pow x.val (ℓ-i-1) (ℓ-i) ⟨0, by omega⟩ (by omega) (by omega)
         ⟩ := by
       intro x
@@ -1046,7 +1047,7 @@ theorem evaluation_poly_split_identity (i : Fin (ℓ))
         calc _ < 2 ^ (ℓ - i - 1) * 2 := by omega
           _ = 2 ^ (ℓ - i) := Nat.two_pow_pred_mul_two (w:=ℓ - i) (h:=by omega)
       ⟩) *
-        intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ ⟨x.val * 2 + 1, by
+        intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ ⟨x.val * 2 + 1, by
           exact mul_two_add_bit_lt_two_pow x.val (ℓ-i-1) (ℓ-i) ⟨1, by omega⟩ (by omega) (by omega)
         ⟩ := by
       intro x
@@ -1087,9 +1088,9 @@ theorem evaluation_poly_split_identity (i : Fin (ℓ))
         calc _ < 2 ^ (ℓ - i - 1) * 2 := by omega
           _ = 2 ^ (ℓ - i) := Nat.two_pow_pred_mul_two (w:=ℓ - i) (h:=by omega)
       ⟩) *
-        (intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i + 1, by omega⟩ ⟨j, by
+        (intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i + 1, by omega⟩ ⟨j, by
           apply lt_two_pow_of_lt_two_pow_exp_le (x:=j) (i:=ℓ-↑i-1) (j:=ℓ-↑i-1) (by omega) (by omega)
-        ⟩).comp (q_map 𝔽q β ⟨i, by omega⟩)
+        ⟩).comp (qMap 𝔽q β ⟨i, by omega⟩)
 
   set rightOddTerm :=
     X *
@@ -1098,10 +1099,10 @@ theorem evaluation_poly_split_identity (i : Fin (ℓ))
           calc _ < 2 ^ (ℓ - i - 1) * 2 := by omega
             _ = 2 ^ (ℓ - i) := Nat.two_pow_pred_mul_two (w:=ℓ - i) (h:=by omega)
         ⟩) *
-          (intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i + 1, by omega⟩ ⟨j, by
+          (intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i + 1, by omega⟩ ⟨j, by
             apply lt_two_pow_of_lt_two_pow_exp_le (x:=j)
               (i:=ℓ-↑i-1) (j:=ℓ-↑i-1) (by omega) (by omega)
-          ⟩).comp (q_map 𝔽q β ⟨i, by omega⟩)
+          ⟩).comp (qMap 𝔽q β ⟨i, by omega⟩)
 
   conv_rhs => change rightEvenTerm + rightOddTerm
 
@@ -1145,13 +1146,13 @@ lemma intermediate_poly_P_base
   (h_Fq_char_prime : Fact (Nat.Prime (ringChar 𝔽q)))
   (hβ_lin_indep : LinearIndependent 𝔽q β)
   (h_ℓ : ℓ ≤ r) (coeffs : Fin (2^ℓ) → L) :
-  intermediate_evaluation_poly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨0, by omega⟩ coeffs =
-    polynomial_from_novel_coeffs 𝔽q β ℓ h_ℓ coeffs := by
-  unfold polynomial_from_novel_coeffs intermediate_evaluation_poly
+  intermediateEvaluationPoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨0, by omega⟩ coeffs =
+    polynomialFromNovelCoeffs 𝔽q β ℓ h_ℓ coeffs := by
+  unfold polynomialFromNovelCoeffs intermediateEvaluationPoly
   simp only [Fin.mk_zero', Fin.coe_ofNat_eq_mod, Fin.eta]
   conv_rhs =>
     enter [2, j]
-    rw [←base_intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate h_W₀_eq_X
+    rw [←base_intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate h_W₀_eq_X
       h_β₀_eq_1 h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep j]
   congr
 
@@ -1167,7 +1168,7 @@ correctness theorem for the Additive NTT algorithm.
 -/
 
 /-- Constructs an evaluation point `ω` in the domain `S⁽ⁱ⁾` from a bit representation.
-This uses the `𝔽q`-basis of `S⁽ⁱ⁾` from `S_domain_basis`.
+This uses the `𝔽q`-basis of `S⁽ⁱ⁾` from `sDomain_basis`.
 `ω_{u,b,i} = b⋅Ŵᵢ(βᵢ) + ∑_{k=0}^{|u|-1} uₖ ⋅ Ŵᵢ(β_{i+1+k})`
 where `(u,b)` is a bit string of length `ℓ + R - i`.
 Computes the twiddle factor `t` for a given stage `i` and high-order bits `u`.
@@ -1188,11 +1189,11 @@ noncomputable def twiddleFactor (i : Fin ℓ) (u : Fin (2 ^ (ℓ + R_rate - i - 
   ∑ (⟨k, hk⟩: Fin (ℓ + R_rate - i - 1)),
     if bit k u.val = 1 then
       -- this branch maps to the above bit = 1 branch
-        -- (of evaluationPointω (i+1)) under (q_map i)(X)
+        -- (of evaluationPointω (i+1)) under (qMap i)(X)
       (normalizedW 𝔽q β ⟨i, by omega⟩).eval (β ⟨i + 1 + k, by omega⟩)
     else 0
       -- 0 maps to the below bit = 0 branch
-        -- (of evaluationPointω (i+1)) under (q_map i)(X)
+        -- (of evaluationPointω (i+1)) under (qMap i)(X)
 
 omit [DecidableEq L] in
 lemma evaluationPointω_eq_twiddleFactor_of_div_2 (i : Fin ℓ) (x : Fin (2 ^ (ℓ + R_rate - i))):
@@ -1259,25 +1260,25 @@ lemma eval_point_ω_eq_next_twiddleFactor_comp_qmap
   eval (twiddleFactor 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i, by omega⟩ ⟨x.val, by
     calc x.val < 2 ^ (ℓ + R_rate - (i.val + 1)) := by omega
       _ = 2 ^ (ℓ + R_rate - i.val - 1) := by rfl
-  ⟩) (q_map 𝔽q β ⟨i, by omega⟩) := by
+  ⟩) (qMap 𝔽q β ⟨i, by omega⟩) := by
   simp [evaluationPointω, twiddleFactor]
   have h_qmap_linear_map :=
-    q_map_is_linear_map 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime (i:=⟨i, by omega⟩)
-  have h_qmap_additive: IsLinearMap 𝔽q fun x ↦ eval x (q_map 𝔽q β ⟨↑i, by omega⟩) :=
-    AdditiveNTT.linear_map_of_comp_to_linear_map_of_eval (f := (q_map 𝔽q β ⟨i, by omega⟩))
+    qMap_is_linear_map 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime (i:=⟨i, by omega⟩)
+  have h_qmap_additive: IsLinearMap 𝔽q fun x ↦ eval x (qMap 𝔽q β ⟨↑i, by omega⟩) :=
+    AdditiveNTT.linear_map_of_comp_to_linear_map_of_eval (f := (qMap 𝔽q β ⟨i, by omega⟩))
     (h_f_linear := h_qmap_linear_map)
 
   set right_inner_func := fun x_1: Fin (ℓ + R_rate - i - 1) => if bit ↑x_1 ↑x = 1
     then eval (β ⟨↑i + 1 + ↑x_1, by omega⟩) (normalizedW 𝔽q β ⟨↑i, by omega⟩) else 0
 
   let eval_qmap_linear : L →ₗ[𝔽q] L := {
-    toFun    := fun x ↦ eval x (q_map 𝔽q β ⟨i, by omega⟩),
+    toFun    := fun x ↦ eval x (qMap 𝔽q β ⟨i, by omega⟩),
     map_add' := h_qmap_additive.map_add,
     map_smul' := h_qmap_additive.map_smul
   }
   have h_rhs: eval (∑ x_1: Fin (ℓ + R_rate - i - 1), right_inner_func x_1)
-      (q_map 𝔽q β ⟨↑i, by omega⟩) = ∑ x_1: Fin (ℓ + R_rate - i - 1),
-      (eval (right_inner_func x_1) (q_map 𝔽q β ⟨↑i, by omega⟩)) := by
+      (qMap 𝔽q β ⟨↑i, by omega⟩) = ∑ x_1: Fin (ℓ + R_rate - i - 1),
+      (eval (right_inner_func x_1) (qMap 𝔽q β ⟨↑i, by omega⟩)) := by
     change eval_qmap_linear (∑ x_1, right_inner_func x_1) = _
     rw [map_sum (g:=eval_qmap_linear) (f:=right_inner_func)
       (s:=(Finset.univ: Finset ( Fin (ℓ + R_rate - i - 1))))]
@@ -1298,8 +1299,8 @@ lemma eval_point_ω_eq_next_twiddleFactor_comp_qmap
 
 --   `q⁽ⁱ⁾ ∘ Ŵᵢ = Ŵᵢ₊₁`. -/
   have h_normalized_comp_qmap: normalizedW 𝔽q β ⟨i + 1, by omega⟩ =
-    (q_map 𝔽q β ⟨i, by omega⟩).comp (normalizedW 𝔽q β ⟨i, by omega⟩) := by
-    have res := q_map_comp_normalizedW 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime
+    (qMap 𝔽q β ⟨i, by omega⟩).comp (normalizedW 𝔽q β ⟨i, by omega⟩) := by
+    have res := qMap_comp_normalizedW 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime
       hβ_lin_indep (i:=⟨i, by omega⟩) (h_i_add_1:=by simp only; omega;)
     rw [res]
     congr
@@ -1313,7 +1314,7 @@ lemma eval_point_ω_eq_next_twiddleFactor_comp_qmap
     have h_0_is_algebra_map: (0: L) = (algebraMap 𝔽q L) 0 := by
       simp only [map_zero]
     conv_rhs => rw [h_0_is_algebra_map]
-    have h_res := q_map_eval_𝔽q_eq_0 𝔽q β (i:=⟨i, by omega⟩) (c:=0)
+    have h_res := qMap_eval_𝔽q_eq_0 𝔽q β (i:=⟨i, by omega⟩) (c:=0)
     rw [h_res]
   · push_neg at h_bit_of_x_eq_0
     have h_bit_lt_2 := bit_lt_2 (k:=x1) (n:=x)
@@ -1449,23 +1450,23 @@ omit [DecidableEq L] in
 Note that the even refinement `P₀, ₍ᵥ₎⁽ⁱ⁺¹⁾(X)` is constructed from the view of
 stage `i`, while the novel polynomial `P₍₀ᵥ₎⁽ⁱ⁺¹⁾(X)` is constructed from the view of stage `i+1`.
 -/
-theorem even_refinement_eq_novel_poly_of_0_leading_suffix (i : Fin ℓ) (v : Fin (2 ^ i.val))
+theorem evenRefinement_eq_novel_poly_of_0_leading_suffix (i : Fin ℓ) (v : Fin (2 ^ i.val))
     (original_coeffs : Fin (2 ^ ℓ) → L):
     have h_v: v.val < 2 ^ (i.val + 1) := by
       calc v.val < 2 ^ i.val := by omega
         _ < 2 ^ (i.val + 1) := by apply Nat.pow_lt_pow_right (by omega) (by omega)
-    even_refinement 𝔽q β ℓ R_rate h_ℓ_add_R_rate i (coeffsBySuffix (r:=r) 𝔽q ℓ
+    evenRefinement 𝔽q β ℓ R_rate h_ℓ_add_R_rate i (coeffsBySuffix (r:=r) 𝔽q ℓ
       R_rate original_coeffs ⟨i, by omega⟩ v) =
-    intermediate_evaluation_poly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i + 1, by omega⟩
+    intermediateEvaluationPoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i + 1, by omega⟩
       (coeffsBySuffix (r:=r) 𝔽q ℓ R_rate original_coeffs ⟨i + 1, by omega⟩ ⟨v, h_v⟩) := by
-  simp only [even_refinement, Fin.eta, intermediate_evaluation_poly]
+  simp only [evenRefinement, Fin.eta, intermediateEvaluationPoly]
 
   set right_inner_func := fun x: Fin (2^(ℓ - (i.val + 1))) =>
     C (coeffsBySuffix 𝔽q ℓ R_rate original_coeffs ⟨i.val + 1, by omega⟩ ⟨v.val, by
       calc v.val < 2 ^ i.val := by omega
         _ < 2 ^ (i.val + 1) := by apply Nat.pow_lt_pow_right (by omega) (by omega)
     ⟩ x) *
-      intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i + 1, by omega⟩ x
+      intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i + 1, by omega⟩ x
 
   have h_right_sum_eq := Fin.sum_congr' (M:=L[X]) (b:=2^(ℓ - (i.val + 1)))
     (a:=2^(ℓ - i - 1)) (f:=right_inner_func) (h:=by rfl)
@@ -1506,18 +1507,18 @@ omit [DecidableEq L] in
 Note that the odd refinement `P₁,₍ᵥ₎⁽ⁱ⁺¹⁾(X)` is constructed from the view of stage `i`,
 while the novel polynomial `P₍₁ᵥ₎⁽ⁱ⁺¹⁾(X)` is constructed from the view of stage `i+1`.
 -/
-theorem odd_refinement_eq_novel_poly_of_1_leading_suffix (i : Fin ℓ) (v : Fin (2 ^ i.val))
+theorem oddRefinement_eq_novel_poly_of_1_leading_suffix (i : Fin ℓ) (v : Fin (2 ^ i.val))
     (original_coeffs : Fin (2 ^ ℓ) → L):
     have h_v: v.val ||| (1 <<< i.val) < 2 ^ (i.val + 1) := by
       apply Nat.or_lt_two_pow (x:=v.val) (y:=1 <<< i.val) (n:=i.val + 1) (by omega)
       rw [Nat.shiftLeft_eq, one_mul]
       exact Nat.pow_lt_pow_right (by omega) (by omega)
-    odd_refinement 𝔽q β ℓ R_rate h_ℓ_add_R_rate i (coeffsBySuffix (r:=r) 𝔽q ℓ
+    oddRefinement 𝔽q β ℓ R_rate h_ℓ_add_R_rate i (coeffsBySuffix (r:=r) 𝔽q ℓ
       R_rate original_coeffs ⟨i, by omega⟩ v) =
-    intermediate_evaluation_poly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i + 1, by omega⟩
+    intermediateEvaluationPoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i + 1, by omega⟩
       (coeffsBySuffix (r:=r) 𝔽q ℓ R_rate original_coeffs ⟨i + 1, by omega⟩
         ⟨v ||| (1 <<< i.val), h_v⟩) := by
-  simp only [odd_refinement, Fin.eta, intermediate_evaluation_poly]
+  simp only [oddRefinement, Fin.eta, intermediateEvaluationPoly]
 
   set right_inner_func := fun x: Fin (2^(ℓ - (i.val + 1))) =>
     C (coeffsBySuffix 𝔽q ℓ R_rate original_coeffs
@@ -1528,7 +1529,7 @@ theorem odd_refinement_eq_novel_poly_of_1_leading_suffix (i : Fin ℓ) (v : Fin 
       · rw [Nat.shiftLeft_eq, one_mul]
         exact Nat.pow_lt_pow_right (by omega) (by omega)
     ⟩ x) *
-      intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i + 1, by omega⟩ x
+      intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i + 1, by omega⟩ x
 
   have h_right_sum_eq := Fin.sum_congr' (M:=L[X]) (b:=2^(ℓ - (i.val + 1)))
     (a:=2^(ℓ - i - 1)) (f:=right_inner_func) (h:=by rfl)
@@ -1637,7 +1638,7 @@ def additiveNTT_invariant (evaluation_buffer : Fin (2 ^ (ℓ + R_rate)) → L)
     let u := u_b / 2 -- the remaining high bits
     let coeffs_at_j: Fin (2 ^ (ℓ - i)) → L :=
       coeffsBySuffix (r:=r) 𝔽q ℓ R_rate original_coeffs i v
-    let P_i: L[X] := intermediate_evaluation_poly 𝔽q β ℓ R_rate h_ℓ_add_R_rate i coeffs_at_j
+    let P_i: L[X] := intermediateEvaluationPoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate i coeffs_at_j
     let ω := evaluationPointω 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i, by omega⟩ (Fin.mk u_b (by omega))
     evaluation_buffer j = P_i.eval ω
 
@@ -1652,7 +1653,7 @@ lemma initial_tiled_coeffs_correctness
     simp only
     intro j
     unfold coeffsBySuffix
-    simp only [tile_coeffs, evaluationPointω, intermediate_evaluation_poly, Fin.eta]
+    simp only [tile_coeffs, evaluationPointω, intermediateEvaluationPoly, Fin.eta]
     have h_ℓ_sub_ℓ: 2^(ℓ - ℓ) = 1 := by norm_num
 
     set f_right: Fin (2^(ℓ - ℓ)) → L[X] :=
@@ -1660,11 +1661,11 @@ lemma initial_tiled_coeffs_correctness
         simp only [tsub_self, pow_zero, Nat.lt_one_iff] at hx
         simp only [hx, Nat.zero_shiftLeft, Nat.zero_or]
         exact get_lsb_lt_two_pow (n:=j.val) (num_lsb_bits:=ℓ)
-      ⟩) * intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨ℓ, by omega⟩ ⟨x, by omega⟩
+      ⟩) * intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨ℓ, by omega⟩ ⟨x, by omega⟩
 
     have h_sum_right : ∑ (x: Fin (2^(ℓ - ℓ))), f_right x =
       C (a ⟨get_lsb (↑j) ℓ, by exact get_lsb_lt_two_pow ℓ⟩) *
-    intermediate_novel_basis_X 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨ℓ, by omega⟩ 0 := by
+    intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨ℓ, by omega⟩ 0 := by
       have h_sum_eq := Fin.sum_congr' (b:=2^(ℓ - ℓ)) (a:=1) (f:=f_right) (by omega)
       rw [←h_sum_eq]
       rw [Fin.sum_univ_one]
@@ -1682,15 +1683,15 @@ lemma initial_tiled_coeffs_correctness
 
     simp only [eval_mul, eval_C]
 
-    have h_eval : eval (Finset.univ.sum f_left) (intermediate_novel_basis_X 𝔽q β ℓ R_rate
+    have h_eval : eval (Finset.univ.sum f_left) (intermediateNovelBasisX 𝔽q β ℓ R_rate
       h_ℓ_add_R_rate ⟨ℓ, by omega⟩ 0) = 1 := by
-      have h_base_novel_basis := base_intermediate_novel_basis_X 𝔽q β ℓ R_rate
+      have h_base_novel_basis := base_intermediateNovelBasisX 𝔽q β ℓ R_rate
         h_ℓ_add_R_rate h_W₀_eq_X h_β₀_eq_1 h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep ⟨ℓ, by exact
         Nat.lt_two_pow_self⟩
-      simp only [intermediate_novel_basis_X, Fin.coe_ofNat_eq_mod, tsub_self, pow_zero,
+      simp only [intermediateNovelBasisX, Fin.coe_ofNat_eq_mod, tsub_self, pow_zero,
         Nat.zero_mod]
 
-      set f_inner : Fin (ℓ - ℓ) → L[X] := fun x => intermediate_norm_vpoly 𝔽q β ℓ R_rate
+      set f_inner : Fin (ℓ - ℓ) → L[X] := fun x => intermediateNormVpoly 𝔽q β ℓ R_rate
         h_ℓ_add_R_rate ⟨ℓ, by omega⟩ x ^ bit (x.val) 0
 
       have h_sum_eq := Fin.prod_congr' (b:=ℓ - ℓ) (a:=0) (f:=f_inner) (by omega)
@@ -1745,9 +1746,9 @@ lemma ntt_stage_correctness
 
   simp at h_P_i_split_even_odd
 
-  set P_i := intermediate_evaluation_poly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i, by omega⟩ cur_coeffs
-  set even_coeffs_poly := even_refinement 𝔽q β ℓ R_rate h_ℓ_add_R_rate i cur_coeffs
-  set odd_coeffs_poly := odd_refinement 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ cur_coeffs
+  set P_i := intermediateEvaluationPoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i, by omega⟩ cur_coeffs
+  set even_coeffs_poly := evenRefinement 𝔽q β ℓ R_rate h_ℓ_add_R_rate i cur_coeffs
+  set odd_coeffs_poly := oddRefinement 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ cur_coeffs
 
   conv_lhs =>
     unfold output_buffer ntt_stage
@@ -1756,15 +1757,15 @@ lemma ntt_stage_correctness
   have h_bit: bit i.val j.val = (j.val / (2 ^ i.val)) % 2 := by
     simp only [bit, Nat.and_one_is_mod, Nat.shiftRight_eq_div_pow]
 
-  have h_qmap_linear_map := q_map_is_linear_map 𝔽q β h_Fq_card_gt_1
+  have h_qmap_linear_map := qMap_is_linear_map 𝔽q β h_Fq_card_gt_1
     h_Fq_char_prime (i:=⟨i, by omega⟩)
 
-  have h_qmap_additive: IsLinearMap 𝔽q fun x ↦ eval x (q_map 𝔽q β ⟨↑i, by omega⟩)
+  have h_qmap_additive: IsLinearMap 𝔽q fun x ↦ eval x (qMap 𝔽q β ⟨↑i, by omega⟩)
     := AdditiveNTT.linear_map_of_comp_to_linear_map_of_eval
-      (f := (q_map 𝔽q β ⟨i, by omega⟩)) (h_f_linear := h_qmap_linear_map)
+      (f := (qMap 𝔽q β ⟨i, by omega⟩)) (h_f_linear := h_qmap_linear_map)
 
   let eval_qmap_linear : L →ₗ[𝔽q] L := {
-    toFun    := fun x ↦ eval x (q_map 𝔽q β ⟨i, by omega⟩),
+    toFun    := fun x ↦ eval x (qMap 𝔽q β ⟨i, by omega⟩),
     map_add' := h_qmap_additive.map_add,
     map_smul' := h_qmap_additive.map_smul
   }
@@ -1787,10 +1788,10 @@ lemma ntt_stage_correctness
     rw [←h_j_div_2_pow_left]
     exact h_j_div_2_pow_i_add_1_lt
 
-  have h_eval_qmap_at_1: eval 1 (q_map 𝔽q β ⟨↑i, by omega⟩) = 0 := by
+  have h_eval_qmap_at_1: eval 1 (qMap 𝔽q β ⟨↑i, by omega⟩) = 0 := by
     have h_1_is_algebra_map: (1: L) = algebraMap 𝔽q L 1 := by rw [map_one]
     rw [h_1_is_algebra_map]
-    apply q_map_eval_𝔽q_eq_0 𝔽q β (i:=⟨i, by omega⟩) (c:=1)
+    apply qMap_eval_𝔽q_eq_0 𝔽q β (i:=⟨i, by omega⟩) (c:=1)
 
   have h_msb_eq_j_xor_lsb: (j.val) / (2 ^ (i.val + 1)) * (2 ^ (i.val + 1))
       = j.val ^^^ get_lsb j.val (i.val + 1) := by
@@ -1823,7 +1824,7 @@ lemma ntt_stage_correctness
 
     -- EVEN REFINEMENT coeffs correspondence at index j of level i--
     have h_even_split: input_buffer j =
-      eval x0 (even_coeffs_poly.comp (q_map 𝔽q β ⟨↑i, by omega⟩)) := by
+      eval x0 (even_coeffs_poly.comp (qMap 𝔽q β ⟨↑i, by omega⟩)) := by
       rw [h_prev j]
 
       have h_twiddle_comp_qmap_eq_left := eval_point_ω_eq_next_twiddleFactor_comp_qmap
@@ -1849,7 +1850,7 @@ lemma ntt_stage_correctness
       congr
 
       simp only [even_coeffs_poly, cur_coeffs]
-      have h_res := even_refinement_eq_novel_poly_of_0_leading_suffix 𝔽q β ℓ R_rate h_ℓ_add_R_rate
+      have h_res := evenRefinement_eq_novel_poly_of_0_leading_suffix 𝔽q β ℓ R_rate h_ℓ_add_R_rate
         ⟨i, by omega⟩ ⟨get_lsb ↑j ↑i, by
           exact get_lsb_lt_two_pow (n:=j.val)  (num_lsb_bits:=i.val)⟩ original_coeffs
       simp only [Fin.eta] at h_res
@@ -1864,7 +1865,7 @@ lemma ntt_stage_correctness
 
     -- ODD REFINEMENT coeffs correspondence at index j of level i--
     have h_odd_split: input_buffer ⟨↑j + 2 ^ i.val, h_j_add_2_pow_i⟩
-      = eval x0 (odd_coeffs_poly.comp (q_map 𝔽q β ⟨↑i, by omega⟩)) := by
+      = eval x0 (odd_coeffs_poly.comp (qMap 𝔽q β ⟨↑i, by omega⟩)) := by
       rw [h_prev ⟨j.val + 2^i.val, by omega⟩]
 
       have h_j_div_2_pow_right: (⟨j.val + 2^i.val, by omega⟩: Fin (2^(ℓ + R_rate))).val
@@ -1916,7 +1917,7 @@ lemma ntt_stage_correctness
         simp only [h_j_div_2_pow_right] -- change the index of lhs to same as rhs
 
       simp only [odd_coeffs_poly, cur_coeffs]
-      have h_res := odd_refinement_eq_novel_poly_of_1_leading_suffix 𝔽q β ℓ R_rate h_ℓ_add_R_rate
+      have h_res := oddRefinement_eq_novel_poly_of_1_leading_suffix 𝔽q β ℓ R_rate h_ℓ_add_R_rate
         ⟨i, by omega⟩ ⟨get_lsb (↑j) ↑i, by
           exact get_lsb_lt_two_pow (n:=j.val)  (num_lsb_bits:=i.val)⟩ original_coeffs
       simp only [Fin.eta] at h_res
@@ -1998,7 +1999,7 @@ lemma ntt_stage_correctness
       exact get_lsb_lt_two_pow (n:=j.val) (num_lsb_bits:=i.val)
 
     have h_even_split: input_buffer ⟨↑j ^^^ 2 ^ i.val, h_j_xor_2_pow_i⟩
-      = eval x1 (even_coeffs_poly.comp (q_map 𝔽q β ⟨↑i, by omega⟩)) := by
+      = eval x1 (even_coeffs_poly.comp (qMap 𝔽q β ⟨↑i, by omega⟩)) := by
       rw [h_prev ⟨j.val ^^^ 2 ^ i.val, by omega⟩]
       -- left (top) is the full poly of level (i+1),
       -- right (bottom) is the even refinement of current level i
@@ -2067,7 +2068,7 @@ lemma ntt_stage_correctness
       -- congr
 
       simp only [even_coeffs_poly, cur_coeffs]
-      have h_res := even_refinement_eq_novel_poly_of_0_leading_suffix 𝔽q β ℓ R_rate h_ℓ_add_R_rate
+      have h_res := evenRefinement_eq_novel_poly_of_0_leading_suffix 𝔽q β ℓ R_rate h_ℓ_add_R_rate
         ⟨i, by omega⟩ ⟨get_lsb ↑j ↑i, by
           exact get_lsb_lt_two_pow (n:=j.val)  (num_lsb_bits:=i.val)⟩ original_coeffs
       simp only [Fin.eta] at h_res
@@ -2101,7 +2102,7 @@ lemma ntt_stage_correctness
       simp_rw [h_v_eq]
 
     have h_odd_split: input_buffer j = eval x1
-      (odd_coeffs_poly.comp (q_map 𝔽q β ⟨↑i, by omega⟩)) := by
+      (odd_coeffs_poly.comp (qMap 𝔽q β ⟨↑i, by omega⟩)) := by
       rw [h_prev j]
       -- left (top) is the full poly of level (i+1),
       -- right (bottom) is the odd refinement of current level i
@@ -2142,7 +2143,7 @@ lemma ntt_stage_correctness
         simp only [h_j_div_2_pow_left] -- change the index of lhs to same as rhs
 
       simp only [odd_coeffs_poly, cur_coeffs]
-      have h_res := odd_refinement_eq_novel_poly_of_1_leading_suffix 𝔽q β ℓ R_rate h_ℓ_add_R_rate
+      have h_res := oddRefinement_eq_novel_poly_of_1_leading_suffix 𝔽q β ℓ R_rate h_ℓ_add_R_rate
         ⟨i, by omega⟩ ⟨get_lsb ↑j ↑i, by
           exact get_lsb_lt_two_pow (n:=j.val)  (num_lsb_bits:=i.val)⟩ original_coeffs
       simp only [Fin.eta] at h_res
@@ -2219,7 +2220,7 @@ theorem additiveNTT_correctness
     (original_coeffs : Fin (2 ^ ℓ) → L)
     (output_buffer : Fin (2 ^ (ℓ + R_rate)) → L)
     (h_alg : output_buffer = additiveNTT 𝔽q β ℓ R_rate h_ℓ_add_R_rate original_coeffs) :
-    let P := polynomial_from_novel_coeffs 𝔽q β ℓ h_ℓ original_coeffs
+    let P := polynomialFromNovelCoeffs 𝔽q β ℓ h_ℓ original_coeffs
     ∀ (j : Fin (2^(ℓ + R_rate))),
       output_buffer j = P.eval (evaluationPointω 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨0, by omega⟩ j) :=
   by
