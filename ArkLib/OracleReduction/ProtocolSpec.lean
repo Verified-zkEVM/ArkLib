@@ -22,17 +22,19 @@ open OracleComp OracleSpec
 variable {σ : Type u} {m : Type u → Type v} [Monad m] [LawfulMonad m]
     {m' : Type u → Type v} [Monad m'] [LawfulMonad m']
 
-def StateT.monadHomWithState (hom : MonadHom (StateT σ m) m') (s : σ) : MonadHom m m' where
-  toFun := fun {α} a => StateT.run' (hom (a : StateT σ m α)) s
-  toFun_pure' := by intro α a; simp
-  toFun_bind' := by intro α β f g; simp
+-- def StateT.mapM (hom : (StateT σ m) →ᵐ m') (s : σ) : MonadHom m m' where
+--   toFun := fun {α} a => StateT.run' (hom (a : StateT σ m α)) s
+--   toFun_pure' := by intro α a; simp
+--   toFun_bind' := by intro α β f g; simp
 
 namespace QueryImpl
 
 variable {ι : Type u} [DecidableEq ι] {spec : OracleSpec ι} [spec.DecidableEq] {m : Type u → Type v}
   [Monad m]
 
--- def composeM
+def composeM {m' : Type u → Type v} [Monad m'] (hom : m →ᵐ m') (so : QueryImpl spec m) :
+    QueryImpl spec m' where
+  impl | query i t => hom (so.impl (query i t))
 
 -- def withCaching' (so : QueryImpl spec m) : QueryImpl spec (StateT spec.QueryCache m) :=
 
@@ -214,6 +216,11 @@ def extend {k : Fin n} (messages : MessagesUpTo k.castSucc pSpec)
       haveI := Fin.eq_last_of_not_lt hi
       haveI := i.property
       simp_all [Fin.castLE])
+
+instance [∀ i, DecidableEq (pSpec.Message i)] {k : Fin (n + 1)} :
+    DecidableEq (MessagesUpTo k pSpec) := by
+  unfold MessagesUpTo
+  infer_instance
 
 end MessagesUpTo
 
@@ -491,6 +498,19 @@ def srChallengeOracle (Statement : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
 
 alias fiatShamirSpec := srChallengeOracle
 
+/-- Decidable equality for the state-restoration / (slow) Fiat-Shamir oracle -/
+instance {pSpec : ProtocolSpec n} {Statement : Type}
+    [DecidableEq Statement]
+    [∀ i, DecidableEq (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Challenge i)] :
+    OracleSpec.DecidableEq (srChallengeOracle Statement pSpec) where
+  domain_decidableEq' := fun i => by
+    unfold OracleSpec.domain srChallengeOracle MessagesUpTo
+    infer_instance
+  range_decidableEq' := fun i => by
+    unfold OracleSpec.range
+    infer_instance
+
 instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
     OracleSpec.FiniteRange (srChallengeOracle Statement pSpec) where
   range_inhabited' := fun i => by simp [OracleSpec.range]; infer_instance
@@ -500,21 +520,27 @@ instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpe
     OracleSpec.FiniteRange (fiatShamirSpec Statement pSpec) :=
   inferInstanceAs (OracleSpec.FiniteRange (srChallengeOracle Statement pSpec))
 
-/-- Define the query implementation for the state-restoration / (slow) Fiat-Shamir oracle (returns a
-  challenge given messages up to that point) in terms of `ProbComp`.
+/-- Define the query implementation for the state-restoration / (slow) Fiat-Shamir oracle
+  (returns a challenge given messages up to that point) in terms of `ProbComp`.
 
-This is a randomness oracle: it simply calls the `selectElem` method inherited from the
-  `SelectableType` instance on the challenge types. We may then augment this with `withCaching` to
-  obtain a function-like implementation (caches and replays previous queries).
+  This is a randomness oracle: it simply calls the `selectElem` method inherited from the
+  `SelectableType` instance on the challenge types. We may then augment this with `withCaching`
+  to obtain a function-like implementation (caches and replays previous queries).
 -/
-def srChallengeQueryImplAux {Statement : Type} {pSpec : ProtocolSpec n}
+@[reducible, inline, specialize]
+def srChallengeQueryImplAux (Statement : Type) (pSpec : ProtocolSpec n)
     [∀ i, SelectableType (pSpec.Challenge i)] :
     QueryImpl (srChallengeOracle Statement pSpec) ProbComp where
   impl | query i _ => SelectableType.selectElem (β := pSpec.Challenge i)
 
-def srChallengeQueryImpl {Statement : Type} {pSpec : ProtocolSpec n}
-    [∀ i, SelectableType (pSpec.Challenge i)] :
-    QueryImpl (srChallengeOracle Statement pSpec) ProbComp := sorry
+@[reducible, inline, specialize]
+def srChallengeQueryImpl (Statement : Type) (pSpec : ProtocolSpec n)
+    [∀ i, SelectableType (pSpec.Challenge i)]
+    [DecidableEq Statement]
+    [∀ i, DecidableEq (pSpec.Challenge i)]
+    [∀ i, DecidableEq (pSpec.Message i)] :
+    QueryImpl (srChallengeOracle Statement pSpec) ProbComp :=
+  (srChallengeQueryImplAux Statement pSpec).withCaching.composeM (StateT.mapM ∅)
 
 end ProtocolSpec
 

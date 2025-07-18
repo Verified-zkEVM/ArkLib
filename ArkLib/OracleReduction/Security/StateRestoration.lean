@@ -63,11 +63,11 @@ def srSoundness
     (srSoundnessError : ENNReal) : Prop :=
   ∀ srProver : Prover.StateRestoration oSpec StmtIn StmtOut WitOut pSpec,
   [ fun ⟨stmtIn, stmtOut⟩ => stmtOut ∈ langOut ∧ stmtIn ∉ langIn |
-    simulateQ (impl ++ₛₒ srChallengeQueryImpl.withCaching : QueryImpl _ ProbComp)
+    simulateQ (impl ++ₛₒ (srChallengeQueryImpl Statement pSpec) : QueryImpl _ ProbComp)
         <| (do
-    let ⟨stmtIn, ⟨stmtOut, _⟩, transcript⟩ ← srProver.run
+    let ⟨stmtIn, _, transcript⟩ ← srProver.run
     let stmtOut ← liftComp (verifier.run stmtIn transcript) _
-    return ⟨stmtIn, stmtOut⟩)
+    return (stmtIn, stmtOut))
   ] ≤ srSoundnessError
 
 -- State-restoration knowledge soundness (w/ straightline extractor)
