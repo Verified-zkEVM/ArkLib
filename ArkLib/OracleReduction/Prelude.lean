@@ -74,6 +74,18 @@ def directionEquivFin2 : Direction ≃ Fin 2 where
 /-- This allows us to write `0` for `.V_to_P` and `1` for `.P_to_V`. -/
 instance : Coe (Fin 2) Direction := ⟨directionEquivFin2.invFun⟩
 
+/-- The trivial statement, which is a `Unit` type. -/
+@[reducible]
+def TrivialStatement := Unit
+
+/-- The trivial oracle statement, which is an `Empty`-indexed `Unit` family of types. -/
+@[reducible]
+def TrivialOracleStatement := fun _ : Empty => Unit
+
+/-- The trivial witness, which is a `Unit` type. -/
+@[reducible]
+def TrivialWitness := Unit
+
 section Relation
 
 /-- The associated language `Set α` for a relation `Set (α × β)`. -/
@@ -91,22 +103,23 @@ theorem Set.not_mem_language_iff {α β} (rel : Set (α × β)) (stmt : α) :
     stmt ∉ rel.language ↔ ∀ wit, (stmt, wit) ∉ rel := by
   simp [language]
 
-/-- The trivial relation on Boolean statement and unit witness, which outputs the Boolean (i.e.
-  accepts or rejects). -/
-def acceptRejectRel : Set (Bool × Unit) :=
-  { (true, ()) }
+/-- The trivial relation on the trivial statement and unit witness, which outputs the trivial
+  statement (i.e. `()`), which is the same as accepting. -/
+def acceptRejectRel : Set (TrivialStatement × TrivialWitness) :=
+  { ((()), ()) }
 
-/-- The trivial relation on Boolean statement, no oracle statements, and unit witness. -/
-def acceptRejectOracleRel : Set ((Bool × (∀ _ : Empty, Unit)) × Unit) :=
-  { ((true, isEmptyElim), ()) }
+/-- The trivial relation on the trivial statement, oracle statements, and witness. -/
+def acceptRejectOracleRel :
+    Set ((TrivialStatement × (∀ i, TrivialOracleStatement i)) × TrivialWitness) :=
+  { (((), isEmptyElim), ()) }
 
 @[simp]
-theorem acceptRejectRel_language : acceptRejectRel.language = { true } := by
+theorem acceptRejectRel_language : acceptRejectRel.language = { () } := by
   unfold Set.language acceptRejectRel; simp
 
 @[simp]
 theorem acceptRejectOracleRel_language :
-    acceptRejectOracleRel.language = { (true, isEmptyElim) } := by
+    acceptRejectOracleRel.language = { ((), isEmptyElim) } := by
   unfold Set.language acceptRejectOracleRel; simp
 
 end Relation

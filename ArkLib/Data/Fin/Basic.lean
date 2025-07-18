@@ -243,7 +243,43 @@ theorem append_right_injective (a : Fin m → α) : Function.Injective (@Fin.app
   simp only [append_right] at this
   exact this
 
+section Subtype
+
+variable {m n : ℕ} {α : Sort*} {p : Fin m → Prop} {q : Fin n → Prop}
+
+/-- Append two vectors defined on subtypes of `Fin m` and `Fin n` respectively. -/
+def appendSubtype (u : { i : Fin m // p i} → α) (v : { i : Fin n // q i} → α) :
+    { i : Fin (m + n) // Fin.append p q i } → α := fun x =>
+  if hi : x.1.1 < m then u ⟨⟨x.1.1, by omega⟩, by simpa [append, addCases, hi] using x.2⟩
+    else v ⟨⟨x.1.1 - m, by omega⟩, by simpa [append, addCases, hi] using x.2⟩
+
+variable {u : { i : Fin m // p i} → α} {v : { i : Fin n // q i} → α}
+
+@[simp]
+theorem appendSubtype_left (i : { i : Fin m // p i }) :
+      appendSubtype u v ⟨castAdd n i.1, by simpa [append, addCases] using i.2⟩ = u i := by
+  simp [appendSubtype]
+
+@[simp]
+theorem appendSubtype_right (i : { i : Fin n // q i }) :
+      appendSubtype u v ⟨natAdd m i.1, by simpa [append, addCases] using i.2⟩ = v i := by
+  simp [appendSubtype]
+
+theorem appendSubtype_left_injective : Function.Injective (@appendSubtype m n α p q · v) := by
+  intro x y h
+  ext i
+  simpa using funext_iff.mp h ⟨i.1.castAdd n, by simpa [append, addCases] using i.2⟩
+
+theorem appendSubtype_right_injective : Function.Injective (@appendSubtype m n α p q u ·) := by
+  intro x y h
+  ext i
+  simpa using funext_iff.mp h ⟨i.1.natAdd m, by simpa [append, addCases] using i.2⟩
+
+end Subtype
+
 end Append
+
+section AddCases
 
 /-- Version of `Fin.addCases` that splits the motive into two dependent vectors `α` and `β`, and
   the return type is `Fin.append α β`. -/
@@ -271,6 +307,59 @@ theorem addCases'_right {m n : ℕ} {α : Fin m → Sort u} {β : Fin n → Sort
 --   ext i
 --   refine addCasesFn_iff.mpr (fun i => ?_)
 --   simp [addCases']
+
+section Subtype
+
+variable {m n : ℕ} {α : Fin m → Sort u} {β : Fin n → Sort u} {p : Fin m → Prop} {q : Fin n → Prop}
+    (f : Sort u → Sort v)
+
+/-- Append two heterogeneous vectors defined on subtypes of `Fin m` and `Fin n` respectively, where
+  the return type is further transformed by a function `f` on types. -/
+def addCasesSubtypeFun (left : (i : { j : Fin m // p j }) → f (α i))
+    (right : (j : { i : Fin n // q i }) → f (β j)) :
+      (i : { j : Fin (m + n) // append p q j }) → f (append α β i) :=
+  fun x => if hi : x.1.1 < m then
+    (by simpa [append, addCases, hi] using
+      left ⟨⟨x.1.1, by omega⟩, by simpa [append, addCases, hi] using x.2⟩)
+  else
+    (by simpa [append, addCases, hi] using
+      right ⟨⟨x.1.1 - m, by omega⟩, by simpa [append, addCases, hi] using x.2⟩)
+
+/-- Append two heterogeneous vectors defined on subtypes of `Fin m` and `Fin n` respectively. -/
+def addCasesSubtype (left : (i : { j : Fin m // p j }) → α i)
+    (right : (j : { i : Fin n // q i }) → β j) :
+      (i : { j : Fin (m + n) // append p q j }) → append α β i :=
+  addCasesSubtypeFun id left right
+
+variable {f : Sort u → Sort v} {left : (i : { j : Fin m // p j }) → f (α i)}
+    {right : (j : { i : Fin n // q i }) → f (β j)}
+
+@[simp]
+theorem addCasesSubtypeFun_left (i : { j : Fin m // p j }) :
+      addCasesSubtypeFun f left right ⟨castAdd n i.1, by simpa [append, addCases] using i.2⟩ =
+        (by simpa [append, addCases] using left i) := by
+  simp [addCasesSubtypeFun]
+
+@[simp]
+theorem addCasesSubtypeFun_right (j : { i : Fin n // q i }) :
+      addCasesSubtypeFun f left right ⟨natAdd m j.1, by simpa [append, addCases] using j.2⟩ =
+        (by simpa [append, addCases] using right j) := by
+  simp [addCasesSubtypeFun]
+  congr 1
+  · simp
+  · simp
+  · rw! (castMode := .all) [Nat.add_sub_self_left]; simp
+
+theorem addCasesSubtypeFun_eq_appendSubtype {α : Sort u}
+    {left : (i : { j : Fin m // p j }) → f α} {right : (j : { i : Fin n // q i }) → f α}
+    {i : { j : Fin (m + n) // append p q j }} :
+    addCasesSubtypeFun (α := fun _ => α) (β := fun _ => α) f left right i =
+      (by simpa [append, addCases] using appendSubtype left right i) := by
+  by_cases h : i.1.1 < m <;> simp [addCasesSubtypeFun, appendSubtype, h]
+
+end Subtype
+
+end AddCases
 
 variable {n : ℕ} {α : Fin n → Sort u}
 
