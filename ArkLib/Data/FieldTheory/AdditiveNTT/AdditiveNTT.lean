@@ -27,11 +27,11 @@ the round `i` in the Additive NTT algorithm
   for the round `i` in the Additive NTT algorithm
 
 - `additiveNTT`: The main implementation of the Additive NTT encoding algorithm.
-- `ntt_stage`: The main implementation of each NTT stage in the Additive NTT encoding algorithm.
+- `NTTStage`: The main implementation of each NTT stage in the Additive NTT encoding algorithm.
 - `additiveNTT_correctness`: Main correctness statement of the encoding algorithm.
-- `additiveNTT_invariant`: Describes the invariant for each loop in the algorithm,
+- `additiveNTTInvariant`: Describes the invariant for each loop in the algorithm,
 which states whether the result of an encoding round is correct
-- `ntt_stage_correctness`: Main correctness statement of each NTT stage in the encoding algorithm,
+- `NTTStage_correctness`: Main correctness statement of each NTT stage in the encoding algorithm,
 this proves that if the previous round satisfies the invariant, then the current round also
 
 ## TODOs
@@ -88,7 +88,7 @@ noncomputable def sDomain (i : Fin r) : Subspace 𝔽q L :=
   let W_i_norm := normalizedW 𝔽q β i
   let h_W_i_norm_is_additive : IsLinearMap 𝔽q (fun x : L => W_i_norm.eval x) :=
     AdditiveNTT.normalizedW_is_additive 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep i
-  Submodule.map (poly_eval_linear_map W_i_norm h_W_i_norm_is_additive)
+  Submodule.map (polyEvalLinearMap W_i_norm h_W_i_norm_is_additive)
     (U 𝔽q β ⟨ℓ + R_rate, h_ℓ_add_R_rate⟩)
 
 /-- The quotient map `q⁽ⁱ⁾(X)` that relates successive domains.
@@ -276,7 +276,7 @@ theorem qMap_maps_sDomain
   have q_comp_linear_map := qMap_is_linear_map 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime i
   have q_eval_linear_map := AdditiveNTT.linear_map_of_comp_to_linear_map_of_eval
     (f:=qMap 𝔽q β i) q_comp_linear_map
-  let q_i_map := poly_eval_linear_map (qMap 𝔽q β i) q_eval_linear_map
+  let q_i_map := polyEvalLinearMap (qMap 𝔽q β i) q_eval_linear_map
   let S_i: Subspace 𝔽q L := sDomain 𝔽q h_Fq_char_prime h_Fq_card_gt_1 β hβ_lin_indep
     ℓ R_rate h_ℓ_add_R_rate i
   let S_i_plus_1: Subspace 𝔽q L := sDomain 𝔽q h_Fq_char_prime h_Fq_card_gt_1 β hβ_lin_indep
@@ -295,15 +295,15 @@ by
   rw [←Submodule.map_comp] -- for two nested maps (composition) over the same subspace
   -- The goal becomes `q_i_map ∘ₗ Ŵᵢ_map = Ŵᵢ₊₁`
   congr
-  -- ⊢ poly_eval_linear_map (qMap 𝔽q β i) ⋯ ∘ₗ poly_eval_linear_map (normalizedW 𝔽q β i) ⋯ =
-  -- poly_eval_linear_map (normalizedW 𝔽q β (i + 1)) ⋯
+  -- ⊢ polyEvalLinearMap (qMap 𝔽q β i) ⋯ ∘ₗ polyEvalLinearMap (normalizedW 𝔽q β i) ⋯ =
+  -- polyEvalLinearMap (normalizedW 𝔽q β (i + 1)) ⋯
 
   -- We now have `(qMap ...).eval ((normalizedW ... i).eval x) = (normalizedW ... (i + 1)).eval x`.
   -- The `Polynomial.eval_comp` lemma states `p.eval (q.eval x) = (p.comp q).eval x`.
-  set f := poly_eval_linear_map (qMap 𝔽q β i) q_eval_linear_map
-  set g := poly_eval_linear_map (normalizedW 𝔽q β i)
+  set f := polyEvalLinearMap (qMap 𝔽q β i) q_eval_linear_map
+  set g := polyEvalLinearMap (normalizedW 𝔽q β i)
     (normalizedW_is_additive 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep i)
-  set t := poly_eval_linear_map (normalizedW 𝔽q β (i + 1))
+  set t := polyEvalLinearMap (normalizedW 𝔽q β (i + 1))
     (normalizedW_is_additive 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep (i + 1))
   change f ∘ₗ g = t -- equality on composition of linear maps
   ext x
@@ -311,7 +311,7 @@ by
   -- (this automatically matches linearity of f ∘ g with linearity of t)
   rw [LinearMap.comp_apply]
   -- ⊢ f (g x) = t x
-  simp_rw [f, g, t, poly_eval_linear_map]
+  simp_rw [f, g, t, polyEvalLinearMap]
   -- unfold the linearmaps into their definitions (toFun, map_add, map_smul)
   simp only [LinearMap.coe_mk, AddHom.coe_mk]
   -- NOTE: `LinearMap.coe_mk` and `AddHom.coe_mk` convert linear maps into their functions
@@ -422,13 +422,14 @@ lemma sDomainBasisVectors_mem_sDomain
     exact Set.mem_image_of_mem β (Set.mem_Ico.mpr ⟨by norm_num, by omega⟩)
   exact Submodule.subset_span h_β_i_in_U
 
-def S_basis (i : Fin r) (h_i : i < ℓ + R_rate): Fin (ℓ + R_rate - i) → L :=
-  fun (k : Fin (ℓ + R_rate - i)) => β ⟨i + k.val, by omega⟩
+/-- The S basis -/
+def sBasis (i : Fin r) (h_i : i < ℓ + R_rate): Fin (ℓ + R_rate - i) → L :=
+  fun k => β ⟨i + k.val, by omega⟩
 
 omit [NeZero r] [Field L] [Fintype L] [DecidableEq L] [Field 𝔽q] [Algebra 𝔽q L] in
-lemma S_basis_range_eq (i : Fin r) (h_i : i < ℓ + R_rate):
+lemma sBasis_range_eq (i : Fin r) (h_i : i < ℓ + R_rate):
     β '' Set.Ico i ⟨ℓ + R_rate, h_ℓ_add_R_rate⟩
-    = Set.range (S_basis 𝔽q β ℓ R_rate h_ℓ_add_R_rate i h_i):= by
+    = Set.range (sBasis 𝔽q β ℓ R_rate h_ℓ_add_R_rate i h_i):= by
   ext x
   constructor
   · intro hx -- hx : x ∈ β '' Set.Ico i ⟨ℓ + R_rate, h_ℓ_add_R_rate⟩
@@ -442,7 +443,7 @@ lemma S_basis_range_eq (i : Fin r) (h_i : i < ℓ + R_rate):
       · exact hj.2
       · omega
     use ⟨j - i, h_j_sub_i⟩
-    unfold S_basis
+    unfold sBasis
     simp only
     have h_i_add_j_sub_i : i.val + (j.val - i.val) = j.val := by
       omega
@@ -470,8 +471,8 @@ lemma S_basis_range_eq (i : Fin r) (h_i : i < ℓ + R_rate):
 /-- S⁽ⁱ⁾ is the image over `Wᵢ(X)` of the the subspace spanned by `{βᵢ, ..., β_{ℓ+R-1}}`.
   Usable range is `∀ i ∈ {0, ..., ℓ+R-1}`. -/
 lemma sDomain_eq_image_of_upper_span (i: Fin r) (h_i: i < ℓ + R_rate):
-    let V_i := Submodule.span 𝔽q (Set.range (S_basis 𝔽q β ℓ R_rate h_ℓ_add_R_rate i h_i))
-    let W_i_map := poly_eval_linear_map (normalizedW 𝔽q β i)
+    let V_i := Submodule.span 𝔽q (Set.range (sBasis 𝔽q β ℓ R_rate h_ℓ_add_R_rate i h_i))
+    let W_i_map := polyEvalLinearMap (normalizedW 𝔽q β i)
       (normalizedW_is_additive 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep i)
     sDomain 𝔽q h_Fq_char_prime h_Fq_card_gt_1 β hβ_lin_indep ℓ R_rate h_ℓ_add_R_rate i
     = Submodule.map W_i_map V_i :=
@@ -482,8 +483,8 @@ by
   -- So the image of U_{ℓ+R} is the same as the image of Vᵢ.
 
   -- Define V_i and W_i_map for use in the proof
-  set V_i := Submodule.span 𝔽q (Set.range (S_basis 𝔽q β ℓ R_rate h_ℓ_add_R_rate i h_i))
-  set W_i_map := poly_eval_linear_map (normalizedW 𝔽q β i)
+  set V_i := Submodule.span 𝔽q (Set.range (sBasis 𝔽q β ℓ R_rate h_ℓ_add_R_rate i h_i))
+  set W_i_map := polyEvalLinearMap (normalizedW 𝔽q β i)
     (normalizedW_is_additive 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep i)
 
   -- First, show that U_{ℓ+R} = U_i ⊔ V_i (direct sum)
@@ -510,10 +511,10 @@ by
     rw [h_ico, Set.image_union, Submodule.span_union]
     congr
     -- ⊢ β '' Set.Ico i (ℓ + R_rate)
-    -- = Set.range (S_basis 𝔽q β (h_ℓ_add_R_rate:=h_ℓ_add_R_rate) i h_i)
+    -- = Set.range (sBasis 𝔽q β (h_ℓ_add_R_rate:=h_ℓ_add_R_rate) i h_i)
     -- Now how that the image of Set.Ico i (ℓ + R_rate)
     -- (from the definition of U_{ℓ+R}) is the same as V_i
-    rw [S_basis_range_eq 𝔽q β ℓ R_rate h_ℓ_add_R_rate i h_i]
+    rw [sBasis_range_eq 𝔽q β ℓ R_rate h_ℓ_add_R_rate i h_i]
 
   -- Now show that the image of U_{ℓ+R} under W_i_map is the same as the image of V_i
   rw [sDomain, h_span_supremum_decomposition, Submodule.map_sup]
@@ -539,9 +540,9 @@ noncomputable def sDomain_basis (i : Fin r) (h_i : i < ℓ + R_rate) :
     Basis (Fin (ℓ + R_rate - i)) 𝔽q (
       sDomain 𝔽q h_Fq_char_prime h_Fq_card_gt_1 β hβ_lin_indep ℓ R_rate h_ℓ_add_R_rate i) := by
   -- Let V_i be the "upper" subspace spanned by {βᵢ, ..., β_{ℓ+R-1}}.
-  let V_i := Submodule.span 𝔽q (Set.range (S_basis 𝔽q β ℓ R_rate h_ℓ_add_R_rate i h_i))
+  let V_i := Submodule.span 𝔽q (Set.range (sBasis 𝔽q β ℓ R_rate h_ℓ_add_R_rate i h_i))
   -- Let W_i_map be the linear map given by evaluating the polynomial Ŵᵢ.
-  let W_i_map := poly_eval_linear_map (normalizedW 𝔽q β i) (
+  let W_i_map := polyEvalLinearMap (normalizedW 𝔽q β i) (
       normalizedW_is_additive 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep i)
 
   have h_disjoint : Disjoint (U 𝔽q β i) V_i := by
@@ -558,7 +559,7 @@ noncomputable def sDomain_basis (i : Fin r) (h_i : i < ℓ + R_rate) :
     -- Since β is linearly independent, the spans of its images over disjoint sets are disjoint.
     unfold V_i
     have h_res := hβ_lin_indep.disjoint_span_image h_set_disjoint
-    rw [S_basis_range_eq 𝔽q β ℓ R_rate h_ℓ_add_R_rate i h_i] at h_res
+    rw [sBasis_range_eq 𝔽q β ℓ R_rate h_ℓ_add_R_rate i h_i] at h_res
     exact h_res
 
   have h_ker_eq_U : LinearMap.ker W_i_map = U 𝔽q β i := by
@@ -595,7 +596,7 @@ noncomputable def sDomain_basis (i : Fin r) (h_i : i < ℓ + R_rate) :
               h_Fq_card_gt_1 β hβ_lin_indep ℓ R_rate h_ℓ_add_R_rate i h_i]
             exact
               Submodule.apply_coe_mem_map
-                (poly_eval_linear_map (normalizedW 𝔽q β i)
+                (polyEvalLinearMap (normalizedW 𝔽q β i)
                   (normalizedW_is_additive 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep i))
                 x
           exact h_x_in_S_i
@@ -1330,7 +1331,7 @@ lemma eval_point_ω_eq_next_twiddleFactor_comp_qmap
 The `2^R_rate`-fold tiling of coefficients `a` into the initial buffer `b`.
 `b(v) = aⱼ`, where `j` are the `ℓ` LSBs of `v`.
 -/
-def tile_coeffs (a : Fin (2 ^ ℓ) → L) : Fin (2^(ℓ + R_rate)) → L :=
+def tileCoeffs (a : Fin (2 ^ ℓ) → L) : Fin (2^(ℓ + R_rate)) → L :=
   fun v => a (Fin.mk (v.val % (2^ℓ)) (Nat.mod_lt v.val (pow_pos (zero_lt_two) ℓ)))
 
 /--
@@ -1338,7 +1339,7 @@ A single stage of the Additive NTT for a given `i`.
 It takes the buffer `b` from the previous stage and applies the butterfly operations.
 This function implements one step of the `for i from ℓ-1 down to 0` loop.
 -/
-noncomputable def ntt_stage (i : Fin ℓ) (b : Fin (2 ^ (ℓ + R_rate)) → L) :
+noncomputable def NTTStage (i : Fin ℓ) (b : Fin (2 ^ (ℓ + R_rate)) → L) :
     Fin (2^(ℓ + R_rate)) → L :=
   have h_2_pow_i_lt_2_pow_ℓ_add_R_rate: 2^i.val < 2^(ℓ + R_rate) := by
     calc
@@ -1418,9 +1419,9 @@ Computes the Additive NTT on a given set of coefficients from the novel basis.
 - `a`: The initial coefficient array `(a₀, ..., a_{2^ℓ-1})`.
 -/
 noncomputable def additiveNTT (a : Fin (2 ^ ℓ) → L) : Fin (2^(ℓ + R_rate)) → L :=
-  let b: Fin (2^(ℓ + R_rate)) → L := tile_coeffs ℓ R_rate a -- Note: can optimize on this
+  let b: Fin (2^(ℓ + R_rate)) → L := tileCoeffs ℓ R_rate a -- Note: can optimize on this
   Fin.foldl (n:=ℓ) (f:= fun current_b i  =>
-    ntt_stage 𝔽q β ℓ R_rate h_ℓ_add_R_rate (i:=⟨ℓ - 1 - i, by omega⟩) current_b
+    NTTStage 𝔽q β ℓ R_rate h_ℓ_add_R_rate (i:=⟨ℓ - 1 - i, by omega⟩) current_b
   ) (init:=b)
 
 -- `∀ i ∈ {0, ..., ℓ}, coeffsBySuffix a i` represents the list of `2^(ℓ-i)` novel coefficients.
@@ -1615,7 +1616,7 @@ let `u_b_v := j.val` (as a natural number),
 then:
   b j = P⁽ⁱ⁾(ω_{u, b, i})
 -/
-def additiveNTT_invariant (evaluation_buffer : Fin (2 ^ (ℓ + R_rate)) → L)
+def additiveNTTInvariant (evaluation_buffer : Fin (2 ^ (ℓ + R_rate)) → L)
     (original_coeffs : Fin (2 ^ ℓ) → L) (i : Fin (ℓ + 1)): Prop :=
   ∀ (j : Fin (2^(ℓ + R_rate))),
     let u_b_v := j.val
@@ -1647,13 +1648,13 @@ lemma initial_tiled_coeffs_correctness
     (h_Fq_card_gt_1 : Fintype.card 𝔽q > 1) (h_Fq_char_prime : Fact (Nat.Prime (ringChar 𝔽q)))
     (hβ_lin_indep : LinearIndependent 𝔽q β) (h_ℓ : ℓ ≤ r)
     (a : Fin (2 ^ ℓ) → L) :
-    let b: Fin (2^(ℓ + R_rate)) → L := tile_coeffs ℓ R_rate a
-    additiveNTT_invariant 𝔽q β ℓ R_rate h_ℓ_add_R_rate b a (i:=⟨ℓ, by omega⟩) := by
-    unfold additiveNTT_invariant
+    let b: Fin (2^(ℓ + R_rate)) → L := tileCoeffs ℓ R_rate a
+    additiveNTTInvariant 𝔽q β ℓ R_rate h_ℓ_add_R_rate b a (i:=⟨ℓ, by omega⟩) := by
+    unfold additiveNTTInvariant
     simp only
     intro j
     unfold coeffsBySuffix
-    simp only [tile_coeffs, evaluationPointω, intermediateEvaluationPoly, Fin.eta]
+    simp only [tileCoeffs, evaluationPointω, intermediateEvaluationPoly, Fin.eta]
     have h_ℓ_sub_ℓ: 2^(ℓ - ℓ) = 1 := by norm_num
 
     set f_right: Fin (2^(ℓ - ℓ)) → L[X] :=
@@ -1706,27 +1707,27 @@ lemma initial_tiled_coeffs_correctness
 -- its even and odd parts expressed in the `(i+1)`-th basis via the quotient map `q⁽ⁱ⁾`.
 -- ∀ i ∈ {0, ..., ℓ-1}, `P⁽ⁱ⁾(X) = P₀⁽ⁱ⁺¹⁾(q⁽ⁱ⁾(X)) + X ⋅ P₁⁽ⁱ⁺¹⁾(q⁽ⁱ⁾(X))` -/
 /--
-The correctness theorem for the `ntt_stage` function. This is the inductive step
+The correctness theorem for the `NTTStage` function. This is the inductive step
 in the main proof. It asserts that if the invariant holds for `i+1`, then after
-applying `ntt_stage i`, the invariant holds for `i ∈ {0, ..., ℓ-1}`.
+applying `NTTStage i`, the invariant holds for `i ∈ {0, ..., ℓ-1}`.
 -/
-lemma ntt_stage_correctness
+lemma NTTStage_correctness
     (h_Fq_card_gt_1 : Fintype.card 𝔽q > 1) (h_Fq_char_prime : Fact (Nat.Prime (ringChar 𝔽q)))
     (hβ_lin_indep : LinearIndependent 𝔽q β)
     (i : Fin (ℓ))
     (input_buffer: Fin (2^(ℓ + R_rate)) → L) (original_coeffs : Fin (2 ^ ℓ) → L) :
-    additiveNTT_invariant 𝔽q β ℓ R_rate h_ℓ_add_R_rate
+    additiveNTTInvariant 𝔽q β ℓ R_rate h_ℓ_add_R_rate
     (evaluation_buffer:=input_buffer) (original_coeffs:=original_coeffs) (i:=⟨i.val+1, by omega⟩) →
-    additiveNTT_invariant 𝔽q β ℓ R_rate h_ℓ_add_R_rate
-    (evaluation_buffer:=ntt_stage 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i, by omega⟩ input_buffer)
+    additiveNTTInvariant 𝔽q β ℓ R_rate h_ℓ_add_R_rate
+    (evaluation_buffer:=NTTStage 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i, by omega⟩ input_buffer)
     (original_coeffs:=original_coeffs) ⟨i, by omega⟩ :=
   by
   -- This proof is the core of the work, using the `key_polynomial_identity`.
   intro h_prev
-  simp [additiveNTT_invariant] at h_prev
-  -- unfold ntt_stage
-  set output_buffer := ntt_stage 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i, by omega⟩ input_buffer
-  unfold additiveNTT_invariant at *
+  simp [additiveNTTInvariant] at h_prev
+  -- unfold NTTStage
+  set output_buffer := NTTStage 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i, by omega⟩ input_buffer
+  unfold additiveNTTInvariant at *
   simp only at *
   intro j
   -- prove that at any `j ∈ {0, ..., 2^(ℓ+R_rate)-1}`,
@@ -1751,7 +1752,7 @@ lemma ntt_stage_correctness
   set odd_coeffs_poly := oddRefinement 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ cur_coeffs
 
   conv_lhs =>
-    unfold output_buffer ntt_stage
+    unfold output_buffer NTTStage
     simp only [beq_iff_eq, Fin.eta]
 
   have h_bit: bit i.val j.val = (j.val / (2 ^ i.val)) % 2 := by
@@ -2173,16 +2174,16 @@ lemma ntt_stage_correctness
     rw [h_x1_eq_cur_evaluation_point]
     simp only [eval_comp, eval_add, eval_mul, eval_X]
 
--- foldl k times would result in the additiveNTT_invariant holding for the `ℓ - k`-th stage
-lemma foldl_ntt_stage_inductive_aux
+-- foldl k times would result in the additiveNTTInvariant holding for the `ℓ - k`-th stage
+lemma foldl_NTTStage_inductive_aux
     (h_W₀_eq_X : W 𝔽q β 0 = X) (h_β₀_eq_1 : β 0 = 1)
     (h_Fq_card_gt_1 : Fintype.card 𝔽q > 1) (h_Fq_char_prime : Fact (Nat.Prime (ringChar 𝔽q)))
     (hβ_lin_indep : LinearIndependent 𝔽q β)
     (h_ℓ : ℓ ≤ r) (k : Fin (ℓ + 1))
     (original_coeffs : Fin (2 ^ ℓ) → L):
-    additiveNTT_invariant 𝔽q β ℓ R_rate h_ℓ_add_R_rate
-    (Fin.foldl k (fun current_b i ↦ ntt_stage 𝔽q β ℓ R_rate h_ℓ_add_R_rate
-      ⟨ℓ - i -1, by omega⟩ current_b) (tile_coeffs ℓ R_rate original_coeffs))
+    additiveNTTInvariant 𝔽q β ℓ R_rate h_ℓ_add_R_rate
+    (Fin.foldl k (fun current_b i ↦ NTTStage 𝔽q β ℓ R_rate h_ℓ_add_R_rate
+      ⟨ℓ - i -1, by omega⟩ current_b) (tileCoeffs ℓ R_rate original_coeffs))
     original_coeffs ⟨ℓ - k, by omega⟩ := by
   have invariant_init := initial_tiled_coeffs_correctness 𝔽q β ℓ R_rate
     h_ℓ_add_R_rate h_W₀_eq_X h_β₀_eq_1 h_Fq_card_gt_1
@@ -2196,9 +2197,9 @@ lemma foldl_ntt_stage_inductive_aux
     simp only [h_k_add_one, Fin.coe_cast]
     simp only [Fin.foldl_succ_last, Fin.val_last, Fin.coe_castSucc]
     set ntt_round := ℓ - (k + 1)
-    set input_buffer := Fin.foldl k (fun current_b i ↦ ntt_stage 𝔽q β ℓ R_rate
-      h_ℓ_add_R_rate ⟨ℓ - i -1, by omega⟩ current_b) (tile_coeffs ℓ R_rate original_coeffs)
-    have correctness_transition := ntt_stage_correctness 𝔽q β ℓ R_rate h_ℓ_add_R_rate
+    set input_buffer := Fin.foldl k (fun current_b i ↦ NTTStage 𝔽q β ℓ R_rate
+      h_ℓ_add_R_rate ⟨ℓ - i -1, by omega⟩ current_b) (tileCoeffs ℓ R_rate original_coeffs)
+    have correctness_transition := NTTStage_correctness 𝔽q β ℓ R_rate h_ℓ_add_R_rate
       (i:=⟨ntt_round, by omega⟩) (input_buffer:=input_buffer) (original_coeffs:=original_coeffs)
     simp only at correctness_transition
     have h_ℓ_sub_k : ℓ - k = ntt_round + 1 := by omega
@@ -2228,12 +2229,12 @@ theorem additiveNTT_correctness
   intro j
   simp only [h_alg]
   unfold additiveNTT
-  set output_foldl := Fin.foldl ℓ (fun current_b i ↦ ntt_stage 𝔽q β ℓ R_rate
-    h_ℓ_add_R_rate ⟨ℓ - i -1, by omega⟩ current_b) (tile_coeffs ℓ R_rate original_coeffs)
+  set output_foldl := Fin.foldl ℓ (fun current_b i ↦ NTTStage 𝔽q β ℓ R_rate
+    h_ℓ_add_R_rate ⟨ℓ - i -1, by omega⟩ current_b) (tileCoeffs ℓ R_rate original_coeffs)
 
-  have output_foldl_correctness : additiveNTT_invariant 𝔽q β ℓ R_rate
+  have output_foldl_correctness : additiveNTTInvariant 𝔽q β ℓ R_rate
     h_ℓ_add_R_rate output_foldl original_coeffs ⟨0, by omega⟩ := by
-    have res := foldl_ntt_stage_inductive_aux 𝔽q β ℓ R_rate h_ℓ_add_R_rate h_W₀_eq_X h_β₀_eq_1
+    have res := foldl_NTTStage_inductive_aux 𝔽q β ℓ R_rate h_ℓ_add_R_rate h_W₀_eq_X h_β₀_eq_1
       h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep h_ℓ
       (k:=⟨ℓ, by omega⟩) original_coeffs
     simp only [tsub_self, Fin.zero_eta] at res
@@ -2243,7 +2244,7 @@ theorem additiveNTT_correctness
     have h_j_mod_2_eq_0: j.val % 2 < 2 := by omega
     exact Nat.div_add_mod' (↑j) 2
 
-  simp only [additiveNTT_invariant] at output_foldl_correctness
+  simp only [additiveNTTInvariant] at output_foldl_correctness
   have res := output_foldl_correctness j
   unfold output_foldl at res
   simp only [Fin.zero_eta, Nat.sub_zero, pow_zero, Nat.div_one, Fin.eta,
