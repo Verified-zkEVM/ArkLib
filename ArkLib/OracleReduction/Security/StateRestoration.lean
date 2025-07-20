@@ -84,6 +84,8 @@ def srGame (P : Prover.StateRestoration oSpec StmtIn StmtOut WitOut pSpec) :
 
 end Prover.StateRestoration
 
+namespace Verifier
+
 namespace StateRestoration
 
 /-- State-restoration soundness -/
