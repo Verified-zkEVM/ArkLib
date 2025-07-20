@@ -7,6 +7,7 @@ Authors: Quang Dao
 import ArkLib.Data.Fin.Basic
 import ArkLib.OracleReduction.Prelude
 import ArkLib.OracleReduction.OracleInterface
+import ArkLib.ToVCVio.Oracle
 
 /-!
 # Protocol Specifications for (Oracle) Reductions
@@ -520,27 +521,35 @@ instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpe
     OracleSpec.FiniteRange (fiatShamirSpec Statement pSpec) :=
   inferInstanceAs (OracleSpec.FiniteRange (srChallengeOracle Statement pSpec))
 
-/-- Define the query implementation for the state-restoration / (slow) Fiat-Shamir oracle
-  (returns a challenge given messages up to that point) in terms of `ProbComp`.
+/-- Define the query implementation for the state-restoration / (slow) Fiat-Shamir oracle (returns a
+    challenge given messages up to that point) in terms of `ProbComp`.
 
   This is a randomness oracle: it simply calls the `selectElem` method inherited from the
-  `SelectableType` instance on the challenge types. We may then augment this with `withCaching`
-  to obtain a function-like implementation (caches and replays previous queries).
+  `SelectableType` instance on the challenge types. We may then augment this with `withCaching` to
+  obtain a function-like implementation (caches and replays previous queries).
+
+  For implementation with caching, we add `withCaching`.
+
+  For implementation where the whole function is sampled ahead of time, and we answer with that
+  function, see `srChallengeQueryImpl'`.
 -/
-@[reducible, inline, specialize]
-def srChallengeQueryImplAux (Statement : Type) (pSpec : ProtocolSpec n)
+@[reducible, inline, specialize, simp]
+def srChallengeQueryImpl (Statement : Type) (pSpec : ProtocolSpec n)
     [∀ i, SelectableType (pSpec.Challenge i)] :
     QueryImpl (srChallengeOracle Statement pSpec) ProbComp where
   impl | query i _ => SelectableType.selectElem (β := pSpec.Challenge i)
 
-@[reducible, inline, specialize]
-def srChallengeQueryImpl (Statement : Type) (pSpec : ProtocolSpec n)
-    [∀ i, SelectableType (pSpec.Challenge i)]
-    [DecidableEq Statement]
-    [∀ i, DecidableEq (pSpec.Challenge i)]
-    [∀ i, DecidableEq (pSpec.Message i)] :
-    QueryImpl (srChallengeOracle Statement pSpec) ProbComp :=
-  (srChallengeQueryImplAux Statement pSpec).withCaching.composeM (StateT.mapM ∅)
+/-- Alternate version of query implementation that takes in a cached function `f` and returns
+  the result and the updated function.
+
+  TODO: upstream this as a more general construction in VCVio -/
+@[reducible, inline, specialize, simp]
+def srChallengeQueryImpl' (Statement : Type) (pSpec : ProtocolSpec n)
+    [∀ i, SelectableType (pSpec.Challenge i)] :
+    QueryImpl (srChallengeOracle Statement pSpec)
+      (StateT (srChallengeOracle Statement pSpec).FunctionType ProbComp)
+    where
+  impl | query i t => fun f => pure (f i t, f)
 
 end ProtocolSpec
 

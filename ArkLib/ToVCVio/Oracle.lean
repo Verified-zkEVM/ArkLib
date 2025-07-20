@@ -17,8 +17,7 @@ variable {ι : Type} {α β γ : Type}
 /-- A function that implements the oracle interface specified by `spec`, and queries no further
   oracles.
 -/
-def Oracle (spec : OracleSpec ι) := (i : ι) → spec.domain i → spec.range i
-
+def OracleSpec.FunctionType (spec : OracleSpec ι) := (i : ι) → spec.domain i → spec.range i
 
 variable [DecidableEq α] [DecidableEq β] [Inhabited β] [Fintype β] [Inhabited γ] [Fintype γ]
 
@@ -41,7 +40,7 @@ variable {ι : Type} {spec : OracleSpec ι} {α σ : Type}
 
   TODO: add state for `f`
 -/
-def runWithOracle (f : Oracle spec) : OracleComp spec α → Option α :=
+def runWithOracle (f : spec.FunctionType) : OracleComp spec α → Option α :=
   OracleComp.construct' (spec := spec) (C := fun _ => Option α)
     -- For a pure value, return that value successfully
     (fun x => some x)
@@ -51,23 +50,23 @@ def runWithOracle (f : Oracle spec) : OracleComp spec α → Option α :=
     (none)
 
 @[simp]
-theorem runWithOracle_pure (f : Oracle spec) (a : α) :
+theorem runWithOracle_pure (f : spec.FunctionType) (a : α) :
     runWithOracle f (pure a) = some a := by
   unfold runWithOracle OracleComp.construct'
   simp only [construct_pure]
 
 @[simp]
-theorem runWithOracle_freeMonad_pure_some (f : Oracle spec) (a : α) :
+theorem runWithOracle_freeMonad_pure_some (f : spec.FunctionType) (a : α) :
     runWithOracle f (FreeMonad.pure (a : Option α)) = a := by
   exact rfl
 
 @[simp]
-theorem runWithOracle_freeMonad_pure_none (f : Oracle spec) :
+theorem runWithOracle_freeMonad_pure_none (f : spec.FunctionType) :
     runWithOracle f (FreeMonad.pure (none : Option α)) = none := by
   exact rfl
 
 @[simp]
-theorem runWithOracle_freeMonad_pure (f : Oracle spec) (a : Option α) :
+theorem runWithOracle_freeMonad_pure (f : spec.FunctionType) (a : Option α) :
     runWithOracle f (FreeMonad.pure a) = a := by
   cases a with
   | none => simp only [runWithOracle_freeMonad_pure_none]

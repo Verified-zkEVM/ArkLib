@@ -36,6 +36,7 @@ end Prover
 
 namespace OracleProver
 
+@[reducible]
 def StateRestoration (oSpec : OracleSpec ι)
     (StmtIn : Type) {ιₛᵢ : Type} (OStmtIn : ιₛᵢ → Type)
     (StmtOut : Type) {ιₛₒ : Type} (OStmtOut : ιₛₒ → Type) (WitOut : Type)
@@ -45,14 +46,31 @@ def StateRestoration (oSpec : OracleSpec ι)
 
 end OracleProver
 
+namespace Extractor
+
+/-- A straightline extractor for state-restoration. -/
+def StateRestoration (oSpec : OracleSpec ι)
+    (StmtIn WitIn WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) :=
+  StmtIn → -- input statement
+  WitOut → -- output witness
+  pSpec.FullTranscript → -- transcript
+  QueryLog (oSpec ++ₒ (srChallengeOracle StmtIn pSpec)) → -- prover's query log
+  QueryLog oSpec → -- verifier's query log
+  OracleComp oSpec WitIn -- an oracle computation that outputs an input witness
+
+end Extractor
+
 namespace Verifier
 
-variable {oSpec : OracleSpec ι} (impl : QueryImpl oSpec ProbComp)
+variable {oSpec : OracleSpec ι}
   {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
   {WitIn : Type}
   {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)]
   {WitOut : Type}
   {n : ℕ} {pSpec : ProtocolSpec n} [∀ i, SelectableType (pSpec.Challenge i)]
+  [DecidableEq StmtIn] [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
+  (init : ProbComp (srChallengeOracle StmtIn pSpec).FunctionType)
+  (impl : QueryImpl oSpec (StateT (srChallengeOracle StmtIn pSpec).FunctionType ProbComp))
 
 namespace StateRestoration
 
@@ -63,11 +81,12 @@ def srSoundness
     (srSoundnessError : ENNReal) : Prop :=
   ∀ srProver : Prover.StateRestoration oSpec StmtIn StmtOut WitOut pSpec,
   [ fun ⟨stmtIn, stmtOut⟩ => stmtOut ∈ langOut ∧ stmtIn ∉ langIn |
-    simulateQ (impl ++ₛₒ (srChallengeQueryImpl Statement pSpec) : QueryImpl _ ProbComp)
+    do
+    (simulateQ (impl ++ₛₒ (srChallengeQueryImpl' StmtIn pSpec) : QueryImpl _ (StateT _ ProbComp))
         <| (do
     let ⟨stmtIn, _, transcript⟩ ← srProver.run
     let stmtOut ← liftComp (verifier.run stmtIn transcript) _
-    return (stmtIn, stmtOut))
+    return (stmtIn, stmtOut))).run' (← init)
   ] ≤ srSoundnessError
 
 -- State-restoration knowledge soundness (w/ straightline extractor)
