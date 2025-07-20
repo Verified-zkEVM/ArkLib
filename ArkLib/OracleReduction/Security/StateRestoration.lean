@@ -30,7 +30,7 @@ namespace Prover
 def StateRestoration (oSpec : OracleSpec ι)
     (StmtIn StmtOut WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) :=
   OracleComp (oSpec ++ₒ (srChallengeOracle StmtIn pSpec))
-      (StmtIn × (StmtOut × WitOut) × pSpec.FullTranscript)
+      (StmtIn × (StmtOut × WitOut) × pSpec.Messages)
 
 end Prover
 
@@ -60,8 +60,6 @@ def StateRestoration (oSpec : OracleSpec ι)
 
 end Extractor
 
-namespace Verifier
-
 variable {oSpec : OracleSpec ι}
   {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
   {WitIn : Type}
@@ -72,10 +70,24 @@ variable {oSpec : OracleSpec ι}
   (init : ProbComp (srChallengeOracle StmtIn pSpec).FunctionType)
   (impl : QueryImpl oSpec (StateT (srChallengeOracle StmtIn pSpec).FunctionType ProbComp))
 
+namespace Prover.StateRestoration
+
+/-- The state-restoration game. Basically a wrapper around the state-restoration prover to
+derive the full transcript from the messages output by the prover, with the challenges computed
+from the state-restoration oracle. -/
+def srGame (P : Prover.StateRestoration oSpec StmtIn StmtOut WitOut pSpec) :
+    OracleComp (oSpec ++ₒ (srChallengeOracle StmtIn pSpec))
+      (StmtIn × WitOut × pSpec.FullTranscript) := do
+  let ⟨stmtIn, (_, witOut), messages⟩ ← P
+  let transcript ← messages.deriveTranscriptSR stmtIn
+  return ⟨stmtIn, witOut, transcript⟩
+
+end Prover.StateRestoration
+
 namespace StateRestoration
 
 /-- State-restoration soundness -/
-def srSoundness
+def soundness
     (langIn : Set StmtIn) (langOut : Set StmtOut)
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (srSoundnessError : ENNReal) : Prop :=
@@ -84,12 +96,28 @@ def srSoundness
     do
     (simulateQ (impl ++ₛₒ (srChallengeQueryImpl' StmtIn pSpec) : QueryImpl _ (StateT _ ProbComp))
         <| (do
-    let ⟨stmtIn, _, transcript⟩ ← srProver.run
+    let ⟨stmtIn, _, transcript⟩ ← srProver.srGame
     let stmtOut ← liftComp (verifier.run stmtIn transcript) _
     return (stmtIn, stmtOut))).run' (← init)
   ] ≤ srSoundnessError
 
 -- State-restoration knowledge soundness (w/ straightline extractor)
+def knowledgeSoundness
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (srKnowledgeSoundnessError : ENNReal) : Prop :=
+  ∃ srExtractor : Extractor.StateRestoration oSpec StmtIn WitIn WitOut pSpec,
+  ∀ srProver : Prover.StateRestoration oSpec StmtIn StmtOut WitOut pSpec,
+    [ fun ⟨stmtIn, witIn, stmtOut, witOut⟩ =>
+        (stmtOut, witOut) ∈ relOut ∧ (stmtIn, witIn) ∉ relIn |
+      do
+      (simulateQ (impl ++ₛₒ (srChallengeQueryImpl' StmtIn pSpec) : QueryImpl _ (StateT _ ProbComp))
+          <| (do
+            let ⟨stmtIn, witOut, transcript⟩ ← srProver.srGame
+            let stmtOut ← liftComp (verifier.run stmtIn transcript) _
+            let witIn ← srExtractor stmtIn witOut transcript default default
+            return (stmtIn, witIn, stmtOut, witOut))).run' (← init)
+    ] ≤ srKnowledgeSoundnessError
 
 end StateRestoration
 

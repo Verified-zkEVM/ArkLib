@@ -35,7 +35,23 @@ import ArkLib.OracleReduction.Security.Basic
 
 open ProtocolSpec OracleComp OracleSpec
 
+open scoped BigOperators
+
+universe u v
+
 variable {n : ℕ}
+
+/-- Traverse a dependent function indexed by `Fin n` in any monad. -/
+def Fin.traverseM {m : Type u → Type v} [Monad m] {β : Fin n → Type u}
+    (f : (i : Fin n) → m (β i)) : m ((i : Fin n) → β i) :=
+  let rec aux (k : ℕ) (h : k ≤ n) : m ((i : Fin k) → β (Fin.castLE h i)) :=
+    match k with
+    | 0 => pure (fun i => i.elim0)
+    | k' + 1 => do
+      let tail ← aux k' (Nat.le_of_succ_le h)
+      let head ← f (Fin.castLE h (Fin.last k'))
+      return (Fin.snoc tail head)
+  aux n (le_refl n)
 
 variable {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn WitIn StmtOut WitOut : Type}
@@ -98,23 +114,6 @@ def Prover.fiatShamir (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
   receiveChallenge | ⟨0, h⟩ => nomatch h
   output := P.output
 
-/-- Derive the full transcript from the (full) messages, via querying the Fiat-Shamir oracle for the
-  challenges. -/
-def ProtocolSpec.Messages.deriveTranscriptFS (messages : pSpec.Messages) (stmt : StmtIn)
-    (k : Fin (n + 1)) :
-    OracleComp (oSpec ++ₒ fiatShamirSpec StmtIn pSpec) (pSpec.Transcript k) := do
-  Fin.induction
-    (pure default)
-    (fun i ih => do
-      let prevTranscript ← ih
-      match hDir : pSpec.getDir i with
-      | .V_to_P =>
-        let challenge ←
-          query (spec := fiatShamirSpec _ _) ⟨i, hDir⟩ ⟨stmt, messages.take i.castSucc⟩
-        return prevTranscript.concat challenge
-      | .P_to_V => return prevTranscript.concat (messages ⟨i, hDir⟩))
-    k
-
 /-- The (slow) Fiat-Shamir transformation for the verifier. -/
 def Verifier.fiatShamir (V : Verifier oSpec StmtIn StmtOut pSpec) :
     NonInteractiveVerifier (∀ i, pSpec.Message i) (oSpec ++ₒ fiatShamirSpec StmtIn pSpec)
@@ -138,12 +137,15 @@ noncomputable section
 
 open scoped NNReal
 
-variable [oSpec.FiniteRange] [∀ i, VCVCompatible (pSpec.Challenge i)]
+variable [∀ i, SelectableType (pSpec.Challenge i)]
+  {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
 theorem fiatShamir_completeness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (completenessError : ℝ≥0) (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
-  R.completeness relIn relOut completenessError →
-    R.fiatShamir.completeness relIn relOut completenessError := sorry
+  R.completeness init impl relIn relOut completenessError →
+    R.fiatShamir.completeness init
+      (impl : QueryImpl (oSpec ++ₒ fiatShamirSpec StmtIn pSpec) (StateT σ ProbComp))
+        relIn relOut completenessError := sorry
 
 -- TODO: state-restoration (knowledge) soundness implies (knowledge) soundness after Fiat-Shamir
 
