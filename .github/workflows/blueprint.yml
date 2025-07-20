@@ -2,11 +2,10 @@ name: Compile blueprint
 
 on:
   push:
-    # branches:
-      # - main # Trigger on pushes to ANY branch now
+    branches: [main]
   workflow_dispatch: # Allow manual triggering of the workflow from the GitHub Actions interface
-  # pull_request:
-    # branches: [main]
+  pull_request:
+    branches: [main]
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -38,7 +37,7 @@ jobs:
 
       - name: check that all files are imported
         run: git diff --exit-code
-  
+
   build_project:
     runs-on: ubuntu-latest
     name: Build project
@@ -56,7 +55,6 @@ jobs:
 
       - name: Build project
         run: ~/.elan/bin/lake build ArkLib
-
 
       - name: Build blueprint and copy to `home_page/blueprint`
         uses: xu-cheng/texlive-action@v2

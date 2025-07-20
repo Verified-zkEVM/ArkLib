@@ -4,10 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import Mathlib.Algebra.MvPolynomial.Equiv
-import Mathlib.Data.Multiset.Bind
 import ArkLib.Data.MvPolynomial.Degrees
-import Mathlib
+import Mathlib.Algebra.MvPolynomial.Monad
 
 /-!
   # Auxiliary functions for sum-check over multivariate polynomials
@@ -76,8 +74,7 @@ theorem degrees_peval {x : σ₁ → R} {f : σ → σ₁ ⊕ σ₂} {p : MvPoly
 
 end PartialEval
 
-/--
-  A `R`-linear mapping that sends
+/-- A `R`-linear mapping that sends
 
   `p(X_0,\dots,X_{m-1},X_m,\dots,X_{m+n-1})` to
 

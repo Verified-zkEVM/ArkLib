@@ -4,7 +4,7 @@
 
 % The theorem-like environments defined below are those that appear by default
 % in the dependency graph. See the README of leanblueprint if you need help to
-% customize this. 
+% customize this.
 % The configuration below use the theorem counter for all those environments
 % (this is what the [theorem] arguments mean) and never resets it.
 % If you want for instance to number them within chapters then you can add
@@ -21,9 +21,52 @@
 \newcommand{\Type}{\mathsf{Type}}
 \newcommand{\Dir}{\mathsf{Dir}}
 \newcommand{\OI}{\mathsf{OI}}
-\newcommand{\PSpec}{\mathsf{PSpec}}
-\newcommand{\OSpec}{\mathsf{OSpec}}
-\newcommand{\OComp}{\mathsf{OComp}}
+\newcommand{\PSpec}{\mathsf{ProtocolSpec}}
+\newcommand{\ProtocolSpec}{\mathsf{ProtocolSpec}}
+\newcommand{\OracleInterface}{\mathsf{OracleInterface}}
+\newcommand{\OracleSpec}{\mathsf{OracleSpec}}
+\newcommand{\OracleComp}{\mathsf{OracleComp}}
+
+\newcommand{\pSpec}{\mathsf{pSpec}}
+\newcommand{\oSpec}{\mathsf{oSpec}}
+
+% Custom command for quotient type notation
+\newcommand{\quotient}{\mathbin{/\!/}}
+
+% Common type shortcuts
+\newcommand{\Fin}{\mathsf{Fin}}
+\newcommand{\Unit}{\mathsf{Unit}}
+\newcommand{\Bool}{\mathsf{Bool}}
+\newcommand{\Prop}{\mathsf{Prop}}
+
+% Protocol and oracle related shortcuts
+\newcommand{\Direction}{\mathsf{Direction}}
+\newcommand{\PtoV}{\mathsf{P\_to\_V}}
+\newcommand{\VtoP}{\mathsf{V\_to\_P}}
+\newcommand{\MessageIdx}{\mathsf{MessageIdx}}
+\newcommand{\ChallengeIdx}{\mathsf{ChallengeIdx}}
+\newcommand{\Message}{\mathsf{Message}}
+\newcommand{\Challenge}{\mathsf{Challenge}}
+\newcommand{\Messages}{\mathsf{Messages}}
+\newcommand{\Challenges}{\mathsf{Challenges}}
+\newcommand{\Transcript}{\mathsf{Transcript}}
+\newcommand{\FullTranscript}{\mathsf{FullTranscript}}
+\newcommand{\Prover}{\mathsf{Prover}}
+\newcommand{\Verifier}{\mathsf{Verifier}}
+\newcommand{\OracleVerifier}{\mathsf{OracleVerifier}}
+\newcommand{\OracleProver}{\mathsf{OracleProver}}
+\newcommand{\Reduction}{\mathsf{Reduction}}
+\newcommand{\OracleReduction}{\mathsf{OracleReduction}}
+
+% Oracle computation shortcuts
+\newcommand{\OracleQuery}{\mathsf{OracleQuery}}
+\newcommand{\query}{\mathsf{query}}
+\newcommand{\pure}{\mathsf{pure}}
+\newcommand{\bind}{\mathsf{bind}}
+
+% Common mathematical operators and relations
+\newcommand{\defeq}{\mathrel{:=}}
+\newcommand{\eqdef}{\mathrel{=:}}
 
 \newcommand{\B}{\mathbb{B}}
 \newcommand{\F}{\mathbb{F}}
@@ -32,6 +75,60 @@
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\Q}{\mathbb{Q}}
 \newcommand{\C}{\mathbb{C}}
+
+\newcommand{\bba}{\mathbbm{a}}
+\newcommand{\bbb}{\mathbbm{b}}
+\newcommand{\bbc}{\mathbbm{c}}
+\newcommand{\bbd}{\mathbbm{d}}
+\newcommand{\bbe}{\mathbbm{e}}
+\newcommand{\bbf}{\mathbbm{f}}
+\newcommand{\bbg}{\mathbbm{g}}
+\newcommand{\bbh}{\mathbbm{h}}
+\newcommand{\bbi}{\mathbbm{i}}
+\newcommand{\bbj}{\mathbbm{j}}
+\newcommand{\bbk}{\mathbbm{k}}
+\newcommand{\bbl}{\mathbbm{l}}
+\newcommand{\bbm}{\mathbbm{m}}
+\newcommand{\bbn}{\mathbbm{n}}
+\newcommand{\bbo}{\mathbbm{o}}
+\newcommand{\bbp}{\mathbbm{p}}
+\newcommand{\bbq}{\mathbbm{q}}
+\newcommand{\bbr}{\mathbbm{r}}
+\newcommand{\bbs}{\mathbbm{s}}
+\newcommand{\bbt}{\mathbbm{t}}
+\newcommand{\bbu}{\mathbbm{u}}
+\newcommand{\bbv}{\mathbbm{v}}
+\newcommand{\bbw}{\mathbbm{w}}
+\newcommand{\bbx}{\mathbbm{x}}
+\newcommand{\bby}{\mathbbm{y}}
+\newcommand{\bbz}{\mathbbm{z}}
+
+\newcommand{\bbA}{\mathbb{A}}
+\newcommand{\bbB}{\mathbb{B}}
+\newcommand{\bbC}{\mathbb{C}}
+\newcommand{\bbD}{\mathbb{D}}
+\newcommand{\bbE}{\mathbb{E}}
+\newcommand{\bbF}{\mathbb{F}}
+\newcommand{\bbG}{\mathbb{G}}
+\newcommand{\bbH}{\mathbb{H}}
+\newcommand{\bbI}{\mathbb{I}}
+\newcommand{\bbJ}{\mathbb{J}}
+\newcommand{\bbK}{\mathbb{K}}
+\newcommand{\bbL}{\mathbb{L}}
+\newcommand{\bbM}{\mathbb{M}}
+\newcommand{\bbN}{\mathbb{N}}
+\newcommand{\bbO}{\mathbb{O}}
+\newcommand{\bbP}{\mathbb{P}}
+\newcommand{\bbQ}{\mathbb{Q}}
+\newcommand{\bbR}{\mathbb{R}}
+\newcommand{\bbS}{\mathbb{S}}
+\newcommand{\bbT}{\mathbb{T}}
+\newcommand{\bbU}{\mathbb{U}}
+\newcommand{\bbV}{\mathbb{V}}
+\newcommand{\bbW}{\mathbb{W}}
+\newcommand{\bbX}{\mathbb{X}}
+\newcommand{\bbY}{\mathbb{Y}}
+\newcommand{\bbZ}{\mathbb{Z}}
 
 \newcommand{\calA}{\mathcal{A}}
 \newcommand{\calB}{\mathcal{B}}
@@ -59,3 +156,103 @@
 \newcommand{\calX}{\mathcal{X}}
 \newcommand{\calY}{\mathcal{Y}}
 \newcommand{\calZ}{\mathcal{Z}}
+
+% Additional protocol and oracle shortcuts from Basic.lean
+\newcommand{\ProverState}{\mathsf{ProverState}}
+\newcommand{\ProverIn}{\mathsf{ProverIn}}
+\newcommand{\ProverRound}{\mathsf{ProverRound}}
+\newcommand{\ProverOut}{\mathsf{ProverOut}}
+\newcommand{\NonAdaptive}{\mathsf{NonAdaptive}}
+
+% Protocol specification components
+\newcommand{\MessagesUpTo}{\mathsf{MessagesUpTo}}
+\newcommand{\ChallengesUpTo}{\mathsf{ChallengesUpTo}}
+\newcommand{\MessageIdxUpTo}{\mathsf{MessageIdxUpTo}}
+\newcommand{\ChallengeIdxUpTo}{\mathsf{ChallengeIdxUpTo}}
+
+% Non-interactive protocol components
+\newcommand{\NonInteractiveProver}{\mathsf{NonInteractiveProver}}
+\newcommand{\NonInteractiveVerifier}{\mathsf{NonInteractiveVerifier}}
+\newcommand{\NonInteractiveReduction}{\mathsf{NonInteractiveReduction}}
+
+% Common Lean types and functions
+\newcommand{\List}{\mathsf{List}}
+\newcommand{\Option}{\mathsf{Option}}
+\newcommand{\Sum}{\mathsf{Sum}}
+\newcommand{\Prod}{\mathsf{Prod}}
+% \Sigma and \Pi already defined as mathematical symbols
+\newcommand{\LeanSigma}{\mathsf{Sigma}}
+\newcommand{\LeanPi}{\mathsf{Pi}}
+
+% Oracle computation related
+\newcommand{\simulateQ}{\mathsf{simulateQ}}
+\newcommand{\liftM}{\mathsf{liftM}}
+
+% Handle \mathbbm for plastex compatibility
+% plastex doesn't support \mathbbm, so we ensure it falls back to \mathbb
+\providecommand{\mathbbm}{\mathbb}
+
+% Note: For PDF compilation, bbm package in packages.tex will override this
+% For web compilation with plastex, this provides the fallback
+
+% Protocol flow notation (from Basic.lean)
+\newcommand{\PtoVmsg}[1]{\mathcal{P}——⟦#1⟧⟶\mathcal{V}}
+\newcommand{\VtoPmsg}[1]{\mathcal{P}⟵⟦#1⟧——\mathcal{V}}
+
+% Security properties
+\newcommand{\completeness}{\mathsf{completeness}}
+\newcommand{\soundness}{\mathsf{soundness}}
+\newcommand{\knowledgeSoundness}{\mathsf{knowledgeSoundness}}
+\newcommand{\rbrSoundness}{\mathsf{rbrSoundness}}
+\newcommand{\rbrKnowledgeSoundness}{\mathsf{rbrKnowledgeSoundness}}
+\newcommand{\StateFunction}{\mathsf{StateFunction}}
+
+% Direction notation shortcuts
+\newcommand{\PtoVdir}{\mathsf{P \!\!\rightarrow\!\! V}}
+\newcommand{\VtoPdir}{\mathsf{V \!\!\rightarrow\!\! P}}
+
+\newcommand{\Statement}{\mathsf{Statement}}
+\newcommand{\StmtIn}{\mathsf{StmtIn}}
+\newcommand{\StmtOut}{\mathsf{StmtOut}}
+\newcommand{\Witness}{\mathsf{Witness}}
+\newcommand{\WitIn}{\mathsf{WitIn}}
+\newcommand{\WitOut}{\mathsf{WitOut}}
+\newcommand{\OStatement}{\mathsf{OStatement}}
+\newcommand{\OStmtIn}{\mathsf{OStmtIn}}
+\newcommand{\OStmtOut}{\mathsf{OStmtOut}}
+
+% Composition and lifting
+\newcommand{\append}{\mathsf{append}}
+\newcommand{\compose}{\mathsf{compose}}
+\newcommand{\liftContext}{\mathsf{liftContext}}
+\newcommand{\ContextLens}{\mathsf{Context.Lens}}
+\newcommand{\StatementLens}{\mathsf{Statement.Lens}}
+\newcommand{\WitnessLens}{\mathsf{Witness.Lens}}
+\newcommand{\OracleContextLens}{\mathsf{OracleContext.Lens}}
+\newcommand{\projStmt}{\mathsf{projStmt}}
+\newcommand{\liftStmt}{\mathsf{liftStmt}}
+\newcommand{\projWit}{\mathsf{projWit}}
+\newcommand{\liftWit}{\mathsf{liftWit}}
+\newcommand{\ContextLensIsComplete}{\mathsf{Context.Lens.IsComplete}}
+\newcommand{\StatementLensIsSound}{\mathsf{Statement.Lens.IsSound}}
+\newcommand{\StatementLensIsRBRSound}{\mathsf{Statement.Lens.IsSound}}
+\newcommand{\ContextLensIsKnowledgeSound}{\mathsf{Context.Lens.IsKnowledgeSound}}
+\newcommand{\ContextLensIsRBRKnowledgeSound}{\mathsf{Context.Lens.IsRBRKnowledgeSound}}
+
+% coding theory related parameters
+\newcommand{\code}{\mathcal{C}}
+\newcommand{\listcode}{\mathsf{List}}
+\newcommand{\field}{\mathbb{F}}
+\newcommand{\evaldomain}{\mathcal{L}}
+\newcommand{\degree}{d}
+\newcommand{\rscode}{\mathrm{RS}}
+\newcommand{\crscode}{\mathrm{CRS}}
+\newcommand{\rate}{\rho}
+\newcommand{\distance}{\delta}
+\newcommand{\err}{\mathsf{err}}
+\newcommand{\bound}{\mathsf{B}}
+\newcommand{\polydeg}{\mathsf{deg}}
+\newcommand{\combine}{\mathsf{Combine}}
+\newcommand{\degcorr}{\mathsf{DegCor}}
+\newcommand{\parl}{\mathsf{par}\ell}
+\newcommand{\gen}{\mathsf{Gen}}

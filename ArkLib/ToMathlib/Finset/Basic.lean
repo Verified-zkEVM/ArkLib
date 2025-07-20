@@ -103,4 +103,4 @@ theorem divide_by_2_mem {s : Finset ℕ} {d : ℕ} :
 
 @[simp]
 theorem shift_left_mem {s : Finset ℕ} {d : ℕ} : d ∈ shift_left s ↔ (d + 1) ∈ s := by
-  aesop (add simp shift_left)
+  aesop (add simp shift_left) (add safe (by existsi d + 1))

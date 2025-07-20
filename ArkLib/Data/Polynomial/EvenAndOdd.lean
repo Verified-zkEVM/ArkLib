@@ -183,8 +183,6 @@ private lemma oddPart_eq_oddPart'_aux' {f : Polynomial F}
   simp [coeffs_of_comp_minus_x]
   by_cases hpar : Even n
   · simp [hpar]
-    rw [←Nat.not_odd_iff_even] at hpar
-    simp [hpar]
   · simp [hpar]
     simp only [← Nat.not_odd_iff_even, Decidable.not_not] at hpar
     simp [hpar]

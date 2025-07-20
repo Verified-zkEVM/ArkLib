@@ -1,5 +1,4 @@
 import ArkLib.Data.CodingTheory.Basic
-import Mathlib.Probability.ProbabilityMassFunction.Basic
 
 /-!
   # Definitions and Theorems about Proximity Gaps

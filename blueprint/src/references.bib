@@ -1,4 +1,4 @@
-@article{sumcheck-protocol,
+@article{sumcheck,
   author     = {Lund, Carsten and Fortnow, Lance and Karloff, Howard and Nisan, Noam},
   title      = {Algebraic methods for interactive proof systems},
   year       = {1992},
@@ -18,7 +18,7 @@
   keywords   = {interactive proof systems}
 }
 
-@inproceedings{sumcheck-formal-verification,
+@inproceedings{sumcheck-fv,
   title        = {Formal Verification of the Sumcheck Protocol},
   author       = {Bosshard, Azucena Garvia and Bootle, Jonathan and Sprenger, Christoph},
   booktitle    = {2024 IEEE 37th Computer Security Foundations Symposium (CSF)},
@@ -27,7 +27,7 @@
   organization = {IEEE Computer Society}
 }
 
-@inproceedings{interactive-oracle-proofs,
+@inproceedings{IOPs,
   title        = {Interactive oracle proofs},
   author       = {Ben-Sasson, Eli and Chiesa, Alessandro and Spooner, Nicholas},
   booktitle    = {Theory of Cryptography: 14th International Conference, TCC 2016-B, Beijing, China, October 31-November 3, 2016, Proceedings, Part II 14},
@@ -50,4 +50,104 @@
   title  = {Building Cryptographic Proofs from Hash Functions},
   url    = {https://github.com/hash-based-snargs-book},
   year   = {2024}
+}
+
+@inproceedings{ARoK,
+  title={Algebraic reductions of knowledge},
+  author={Kothapalli, Abhiram and Parno, Bryan},
+  booktitle={Annual International Cryptology Conference},
+  pages={669--701},
+  year={2023},
+  organization={Springer}
+}
+
+@article{WARP,
+  title={Linear-Time Accumulation Schemes},
+  author={B{\"u}nz, Benedikt and Chiesa, Alessandro and Fenzi, Giacomo and Wang, William},
+  journal={Cryptology ePrint Archive},
+  year={2025}
+}
+
+@article{Arc,
+  title={Arc: Accumulation for Reed--Solomon Codes},
+  author={B{\"u}nz, Benedikt and Mishra, Pratyush and Nguyen, Wilson and Wang, William},
+  journal={Cryptology ePrint Archive},
+  year={2024}
+}
+
+@article{fics-facs,
+  title={FICS and FACS: Fast IOPPs and Accumulation via Code-Switching},
+  author={Baweja, Anubhav and Mishra, Pratyush and Mopuri, Tushar and Shtepel, Matan},
+  journal={Cryptology ePrint Archive},
+  year={2025}
+}
+
+@inproceedings{WHIR,
+  title={WHIR: Reed--Solomon proximity testing with super-fast verification},
+  author={Arnon, Gal and Chiesa, Alessandro and Fenzi, Giacomo and Yogev, Eylon},
+  booktitle={Annual International Conference on the Theory and Applications of Cryptographic Techniques},
+  pages={214--243},
+  year={2025},
+  organization={Springer}
+}
+
+@inproceedings{Marlin,
+  title={Marlin: Preprocessing zkSNARKs with universal and updatable SRS},
+  author={Chiesa, Alessandro and Hu, Yuncong and Maller, Mary and Mishra, Pratyush and Vesely, Noah and Ward, Nicholas},
+  booktitle={Advances in Cryptology--EUROCRYPT 2020: 39th Annual International Conference on the Theory and Applications of Cryptographic Techniques, Zagreb, Croatia, May 10--14, 2020, Proceedings, Part I 39},
+  pages={738--768},
+  year={2020},
+  organization={Springer}
+}
+
+@inproceedings{DARK,
+  title={Transparent SNARKs from DARK compilers},
+  author={B{\"u}nz, Benedikt and Fisch, Ben and Szepieniec, Alan},
+  booktitle={Advances in Cryptology--EUROCRYPT 2020: 39th Annual International Conference on the Theory and Applications of Cryptographic Techniques, Zagreb, Croatia, May 10--14, 2020, Proceedings, Part I 39},
+  pages={677--706},
+  year={2020},
+  organization={Springer}
+}
+
+@article{Wie88,
+  author = {Wiedemann, Doug},
+  title = {An Iterated Quadratic Extension of GF(2)},
+  journal = {The Fibonacci Quarterly},
+  volume = {26},
+  number = {4},
+  pages = {290--295},
+  year = {1988},
+  publisher = {Taylor \& Francis},
+  doi = {10.1080/00150517.1988.12429608},
+  URL = {https://doi.org/10.1080/00150517.1988.12429608},
+  eprint = {https://doi.org/10.1080/00150517.1988.12429608}
+}
+
+@inproceedings{FP97,
+  author={Fan, J.L. and Paar, C.},
+  booktitle={Proceedings of IEEE International Symposium on Information Theory}, 
+  title={On efficient inversion in tower fields of characteristic two}, 
+  year={1997},
+  volume={},
+  number={},
+  pages={20-},
+  keywords={Poles and towers;Polynomials;Vectors;Galois fields;Hardware;Equations},
+  doi={10.1109/ISIT.1997.612935}
+}
+
+@inproceedings{DP25,
+  author = {Diamond, Benjamin E. and Posen, Jim},
+  title = {Succinct Arguments over Towers of Binary Fields},
+  year = {2025},
+  isbn = {978-3-031-91133-0},
+  publisher = {Springer-Verlag},
+  address = {Berlin, Heidelberg},
+  url = {https://doi.org/10.1007/978-3-031-91134-7_4},
+  doi = {10.1007/978-3-031-91134-7_4},
+  abstract = {We introduce an efficient SNARK for towers of binary fields. Adapting Brakedown (CRYPTO ’23), we construct a multilinear polynomial commitment scheme suitable for polynomials over tiny fields, including that with just two elements. Our commitment scheme, unlike those of previous works, treats small-field polynomials with no embedding overhead. We further introduce binary-field adaptations of HyperPlonk (EUROCRYPT ’23)’s product and permutation checks and of Lasso (EUROCRYPT ’24)’s lookup. Our binary PLONKish variant captures standard hash functions—like Keccak-256 and Gr\o{}stl—extremely efficiently. With recourse to thorough performance benchmarks, we argue that our scheme can efficiently generate precisely those Keccak-256-proofs which critically underlie modern efforts to scale Ethereum.},
+  booktitle = {Advances in Cryptology – EUROCRYPT 2025: 44th Annual International Conference on the Theory and Applications of Cryptographic Techniques, Madrid, Spain, May 4–8, 2025, Proceedings, Part IV},
+  pages = {93–122},
+  numpages = {30},
+  keywords = {succinct arguments, binary fields, error-correcting codes},
+  location = {Madrid, Spain}
 }

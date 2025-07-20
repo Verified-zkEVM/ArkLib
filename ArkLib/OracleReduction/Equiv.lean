@@ -1,4 +1,7 @@
+
+
 import ArkLib.OracleReduction.Security.Basic
+import ArkLib.OracleReduction.LiftContext.OracleReduction
 
 /-!
   # Equivalence / Isomorphism of Oracle Reductions
@@ -7,6 +10,8 @@ import ArkLib.OracleReduction.Security.Basic
 
   We also define equivalence between IORs, in the sense that the statements and witnesses are
   equivalent, and their mapping commute with the reduction (both for the prover and the verifier).
+
+  NOTE: this is now a special case of `liftContext`
 
   -----------------------------------------------------------------------------------------------
 
@@ -41,76 +46,16 @@ import ArkLib.OracleReduction.Security.Basic
 
 -/
 
--- First, what does it mean for two oracle computations to be equivalent?
-
-namespace OracleComp
-
-open OracleSpec
-
-variable {ι ιₜ : Type} {spec : OracleSpec ι} {specₜ : OracleSpec ιₜ} {α σ : Type} [spec.FiniteRange]
-
-#check OracleComp.PolyQueries
-
-def oa1 : ProbComp (ℕ × ℕ) := do
-  let x ← query (spec := unifSpec) 0 ()
-  let y ← query (spec := unifSpec) 1 ()
-  return (x, y)
-
-def oa2 : ProbComp (ℕ × ℕ) := do
-  let y ← query (spec := unifSpec) 1 ()
-  let x ← query (spec := unifSpec) 0 ()
-  return (x, y)
-
-theorem oa1_eq_oa2 : oa1 = oa2 := by
-  simp [oa1, oa2]
-  sorry
-
-@[simp]
-theorem unifSpec_range (n : ℕ) : unifSpec.range n = Fin (n + 1) := rfl
-
-def distEquiv (oa ob : OracleComp spec α) : Prop :=
-  evalDist oa = evalDist ob
-
-theorem oa1_distEquiv_oa2 : distEquiv oa1 oa2 := by
-  simp [oa1, oa2, distEquiv]
-  ext i
-  rcases i with none | ⟨x, y⟩
-  · simp [tsum_eq_sum (s := Finset.univ) (by simp)]
-    simp [OptionT.run, OptionT.lift, OptionT.mk, Functor.map, Option.elimM]
-    sorry
-  · simp [tsum_eq_sum (s := Finset.univ) (by simp)]
-    simp [OptionT.run, OptionT.lift, OptionT.mk, Functor.map]
-    -- simp [tsum_eq_sum (s := Finset.univ) (by simp)]
-    -- cases on x and y
-    sorry
-
-open SimOracle in
-def obsEquiv (oa ob : OracleComp spec α) : Prop :=
-  ∀ f : (i : ι) → spec.domain i → spec.range i,
-    simulateQ (fnOracle spec f) oa = simulateQ (fnOracle spec f) ob
-
--- Note: observational equivalence does not imply distributional equivalence, since the distribution
--- of each new query is independently random
-
-theorem oa1_obsEquiv_oa2 : obsEquiv oa1 oa2 := by
-  simp only [obsEquiv, unifSpec_range, oa1, Nat.reduceAdd, Fin.val_eq_zero, bind_pure_comp,
-    simulateQ_bind, simulateQ_query, simulateQ_map, oa2]
-  intro f
-  simp only [SimOracle.fnOracle, unifSpec_range, SimOracle.statelessOracle, liftM, monadLift,
-    MonadLift.monadLift, StateT.lift, Nat.reduceAdd, bind_pure_comp, map_pure, Prod.map_apply,
-    id_eq]
-  sorry
-
-end OracleComp
-
 section Relation
 
 variable {Stmt Wit Stmt' Wit' : Type}
 
-def Relation.equiv (f : Stmt ≃ Stmt') (g : Wit ≃ Wit') (R : Stmt → Wit → Prop) (R' : Stmt' → Wit' → Prop) : Prop :=
+def Relation.equiv (f : Stmt ≃ Stmt') (g : Wit ≃ Wit')
+    (R : Stmt → Wit → Prop) (R' : Stmt' → Wit' → Prop) : Prop :=
   ∀ stmt : Stmt, ∀ wit : Wit, R stmt wit ↔ R' (f stmt) (g wit)
 
-theorem Relation.equiv_symm (f : Stmt ≃ Stmt') (g : Wit ≃ Wit') (R : Stmt → Wit → Prop) (R' : Stmt' → Wit' → Prop) :
+theorem Relation.equiv_symm (f : Stmt ≃ Stmt') (g : Wit ≃ Wit')
+    (R : Stmt → Wit → Prop) (R' : Stmt' → Wit' → Prop) :
   Relation.equiv f g R R' ↔ Relation.equiv f.symm g.symm R' R := by
   simp [Relation.equiv]
   constructor
@@ -121,9 +66,74 @@ theorem Relation.equiv_symm (f : Stmt ≃ Stmt') (g : Wit ≃ Wit') (R : Stmt �
     intro stmt wit
     simpa using (h (f stmt) (g wit)).symm
 
--- TODO: define quotienting (i.e. statement is a product type and relation only depends on one component)
-
 end Relation
+
+namespace ProtocolSpec
+
+#check Equiv.instEquivLike
+
+/-- Two protocol specifications are equivalent if they have the same number of rounds, same
+  direction for each round, and an equivalence of types for each round. -/
+@[ext]
+structure Equiv {m n : ℕ} (pSpec : ProtocolSpec m) (pSpec' : ProtocolSpec n) where
+  round_eq : m = n
+  dir_eq : ∀ i, (pSpec i).1 = (pSpec' (Fin.cast round_eq i)).1
+  typeEquiv : ∀ i, (pSpec i).2 ≃ (pSpec' (Fin.cast round_eq i)).2
+
+namespace Equiv
+
+-- Note: this is not quite an `EquivLike` since `pSpec`s are terms, not types
+
+variable {m n k : ℕ} {pSpec : ProtocolSpec m} {pSpec' : ProtocolSpec n} {pSpec'' : ProtocolSpec k}
+
+@[simps]
+def refl (pSpec : ProtocolSpec n) : Equiv pSpec pSpec where
+  round_eq := rfl
+  dir_eq := fun _ => rfl
+  typeEquiv := fun _ => _root_.Equiv.refl _
+
+def symm (eqv : Equiv pSpec pSpec') : Equiv pSpec' pSpec where
+  round_eq := eqv.round_eq.symm
+  dir_eq := fun i => by simp [eqv.dir_eq]
+  typeEquiv := fun i => (eqv.typeEquiv (Fin.cast (eqv.round_eq.symm) i)).symm
+
+def trans (eqv : Equiv pSpec pSpec') (eqv' : Equiv pSpec' pSpec'') : Equiv pSpec pSpec'' where
+  round_eq := eqv.round_eq.trans eqv'.round_eq
+  dir_eq := fun i => by simp [eqv.dir_eq, eqv'.dir_eq]
+  typeEquiv := fun i => .trans (eqv.typeEquiv i) (eqv'.typeEquiv (Fin.cast eqv.round_eq i))
+
+end Equiv
+
+
+end ProtocolSpec
+
+/- Lots of TODOs here:
+
+1. Specify equivalence of transcripts, provers, verifiers, reductions
+2. Prove distributional equivalence of execution semantics
+3. Prove preservation of security properties
+-/
+
+variable {n : ℕ} {pSpec pSpec' : ProtocolSpec n}
+
+-- More targeted / limited version of equivalence only for the context, i.e.
+-- `ctxEquiv`, `stmtEquiv`, `oStmtEquiv`, `witEquiv`
+
+-- Also, equality and not just equivalence. many times we want observational **equality**. have to
+-- specify fewer things
+
+-- Finally, could we go for a general _simulation_ relation?
+
+-- structure Prover.ObsEquiv (P : Prover pSpec oSpec StmtIn WitIn StmtOut WitOut)
+--     (P' : Prover pSpec' oSpec' StmtIn' WitIn' StmtOut' WitOut') where
+--   pSpecDirEq : ∀ i, (pSpec i).1 = (pSpec' i).1
+--   pSpecEquiv : ∀ i, (pSpec i).2 ≃ (pSpec' i).2
+--   stmtInEquiv : StmtIn ≃ StmtIn'
+--   witInEquiv : WitIn ≃ WitIn'
+--   stmtOutEquiv : StmtOut ≃ StmtOut'
+--   witOutEquiv : WitOut ≃ WitOut'
+  -- All prover functions give the same output
+  -- proverEquiv : ∀ stmtIn witIn, ...
 
 namespace Reduction
 

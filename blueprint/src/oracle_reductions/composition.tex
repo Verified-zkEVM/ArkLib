@@ -1,171 +1,495 @@
-\section{A Program Logic for Oracle Reductions}
+\section{Composition of Oracle Reductions}\label{sec:composition_oracle_reductions}
 
-In this section, we describe a program logic for reasoning about oracle reductions. In other words, we define a number of rules (or theorems) that govern how oracle reductions can be composed to form larger reductions, and how the resulting reduction inherits the security properties of the components.
+In this section, we describe a suite of composition operators for building secure oracle reductions from simpler secure components. In other words, we define a number of definitions that govern how oracle reductions can be composed to form larger reductions, and how the resulting reduction inherits the security properties of the components.
 
-The first group of rules changes relations and shared oracles.
+% The first group of rules changes relations and shared oracles.
 
-\subsection{Changing Relations and Oracles}
+% \subsection{Changing Relations and Oracles}
 
-Here we express the consequence rule.  Namely, if we have an oracle reduction for 
-\(\mathcal{R}_1 \implies \mathcal{R}_2\), along with 
-\(\mathcal{R}_1' \implies \mathcal{R}_1\) and \(\mathcal{R}_2 \implies \mathcal{R}_2'\),
-then we obtain an oracle reduction for \(\mathcal{R}_1' \implies \mathcal{R}_2'\).
+% Here we express the consequence rule.  Namely, if we have an oracle reduction for
+% \(\mathcal{R}_1 \implies \mathcal{R}_2\), along with
+% \(\mathcal{R}_1' \implies \mathcal{R}_1\) and \(\mathcal{R}_2 \implies \mathcal{R}_2'\),
+% then we obtain an oracle reduction for \(\mathcal{R}_1' \implies \mathcal{R}_2'\).
 
-\[
-\frac{%
-  \begin{array}{c}
-    \Psi; \Theta; \Sigma \vdash \{\mathcal{R}_1\}\; \langle \mathcal{P},\, \mathcal{V},\, \mathcal{E}\rangle^{\mathcal{O}} : \tau \;\{\!\!\{\mathcal{R}_2; \,\mathsf{St};\, \epsilon\}\!\!\} \\[1.5ex]
-    \mathcal{R}_1' \implies \mathcal{R}_1 \\[1.5ex]
-    \mathcal{R}_2 \implies \mathcal{R}_2'
-  \end{array}%
-}{%
-  \Psi; \Theta; \Sigma \vdash \{\mathcal{R}_1'\}\; \langle \mathcal{P},\, \mathcal{V},\, \mathcal{E}\rangle^{\mathcal{O}} : \tau \;\{\!\!\{\mathcal{R}_2'; \,\mathsf{St};\, \epsilon\}\!\!\}
-} \quad \text{(Conseq)}
-\]
+% \[
+% \frac{%
+%   \begin{array}{c}
+%     \Psi; \Theta; \Sigma \vdash \{\mathcal{R}_1\}\; \langle \mathcal{P},\, \mathcal{V},\, \mathcal{E}\rangle^{\mathcal{O}} : \tau \;\{\!\!\{\mathcal{R}_2; \,\mathsf{St};\, \epsilon\}\!\!\} \\[1.5ex]
+%     \mathcal{R}_1' \implies \mathcal{R}_1 \\[1.5ex]
+%     \mathcal{R}_2 \implies \mathcal{R}_2'
+%   \end{array}%
+% }{%
+%   \Psi; \Theta; \Sigma \vdash \{\mathcal{R}_1'\}\; \langle \mathcal{P},\, \mathcal{V},\, \mathcal{E}\rangle^{\mathcal{O}} : \tau \;\{\!\!\{\mathcal{R}_2'; \,\mathsf{St};\, \epsilon\}\!\!\}
+% } \quad \text{(Conseq)}
+% \]
 
-% Lifting shared oracles: if $\mathcal{O}_1 \subset \mathcal{O}_2$, then reductions with $\mathcal{O}_1$ lift to reductions with $\mathcal{O}_2$ with the same security properties
+% % Lifting shared oracles: if $\mathcal{O}_1 \subset \mathcal{O}_2$, then reductions with $\mathcal{O}_1$ lift to reductions with $\mathcal{O}_2$ with the same security properties
 
-% Frame rule
-\[
-\frac{%
-  \Psi; \Theta; \Sigma \vdash \{\mathcal{R}_1\} \; \langle\mathcal{P}, \mathcal{V}, \mathcal{E}\rangle^{\mathcal{O}} : \tau \; \{\!\!\{\mathcal{R}_2; \mathsf{St}; \epsilon\}\!\!\}
-}{%
-  \Psi; \Theta; \Sigma \vdash \{\mathcal{R} \times \mathcal{R}_1\} \; \langle\mathcal{P}, \mathcal{V}, \mathcal{E}\rangle^{\mathcal{O}} : \tau \; \{\!\!\{\mathcal{R} \times \mathcal{R}_2; \mathsf{St}; \epsilon\}\!\!\}
-} \quad \text{(Frame)}
-\]
+% % Frame rule
+% \[
+% \frac{%
+%   \Psi; \Theta; \Sigma \vdash \{\mathcal{R}_1\} \; \langle\mathcal{P}, \mathcal{V}, \mathcal{E}\rangle^{\mathcal{O}} : \tau \; \{\!\!\{\mathcal{R}_2; \mathsf{St}; \epsilon\}\!\!\}
+% }{%
+%   \Psi; \Theta; \Sigma \vdash \{\mathcal{R} \times \mathcal{R}_1\} \; \langle\mathcal{P}, \mathcal{V}, \mathcal{E}\rangle^{\mathcal{O}} : \tau \; \{\!\!\{\mathcal{R} \times \mathcal{R}_2; \mathsf{St}; \epsilon\}\!\!\}
+% } \quad \text{(Frame)}
+% \]
 
-% Oracle lifting rule
-\[
-\frac{%
-  \begin{array}{c}
-    \Psi; \Theta; \Sigma \vdash \{\mathcal{R}_1\} \; \langle\mathcal{P}, \mathcal{V}, \mathcal{E}\rangle^{\mathcal{O}_1} : \tau \; \{\!\!\{\mathcal{R}_2; \mathsf{St}; \epsilon\}\!\!\} \\[1.5ex]
-    \mathcal{O}_1 \subset \mathcal{O}_2
-  \end{array}%
-}{%
-  \Psi; \Theta; \Sigma \vdash \{\mathcal{R}_1\} \; \langle\mathcal{P}, \mathcal{V}, \mathcal{E}\rangle^{\mathcal{O}_2} : \tau \; \{\!\!\{\mathcal{R}_2; \mathsf{St}; \epsilon\}\!\!\}
-} \quad \text{(Oracle-Lift)}
-\]
+% % Oracle lifting rule
+% \[
+% \frac{%
+%   \begin{array}{c}
+%     \Psi; \Theta; \Sigma \vdash \{\mathcal{R}_1\} \; \langle\mathcal{P}, \mathcal{V}, \mathcal{E}\rangle^{\mathcal{O}_1} : \tau \; \{\!\!\{\mathcal{R}_2; \mathsf{St}; \epsilon\}\!\!\} \\[1.5ex]
+%     \mathcal{O}_1 \subset \mathcal{O}_2
+%   \end{array}%
+% }{%
+%   \Psi; \Theta; \Sigma \vdash \{\mathcal{R}_1\} \; \langle\mathcal{P}, \mathcal{V}, \mathcal{E}\rangle^{\mathcal{O}_2} : \tau \; \{\!\!\{\mathcal{R}_2; \mathsf{St}; \epsilon\}\!\!\}
+% } \quad \text{(Oracle-Lift)}
+% \]
 
-TODO: figure out how the state function needs to change for these rules (they are basically the same, but not exactly)
+% TODO: figure out how the state function needs to change for these rules (they are basically the same, but not exactly)
 
-\subsection{Sequential Composition}
+% \subsection{Sequential Composition}
 
-The reason why we consider interactive (oracle) reductions at the core of our formalism is that we
-can \emph{compose} these reductions to form larger reductions. Equivalently, we can take a complex
-\emph{interactive (oracle) proof} (which differs only in that it reduces a relation to the
-\emph{trivial} relation that always outputs true) and break it down into a series of smaller
-reductions. The advantage of this approach is that we can prove security properties (completeness
-and soundness) for each of the smaller reductions, and these properties will automatically transfer
-to the larger reductions.
+% The reason why we consider interactive (oracle) reductions at the core of our formalism is that we
+% can \emph{compose} these reductions to form larger reductions. Equivalently, we can take a complex
+% \emph{interactive (oracle) proof} (which differs only in that it reduces a relation to the
+% \emph{trivial} relation that always outputs true) and break it down into a series of smaller
+% reductions. The advantage of this approach is that we can prove security properties (completeness
+% and soundness) for each of the smaller reductions, and these properties will automatically transfer
+% to the larger reductions.
 
-This section is devoted to the composition of interactive (oracle) reductions, and proofs that the
-resulting reductions inherit the security properties of the two (or more) constituent reductions.
+% This section is devoted to the composition of interactive (oracle) reductions, and proofs that the
+% resulting reductions inherit the security properties of the two (or more) constituent reductions.
 
-Sequential composition can be expressed as the folowing rule:
+% Sequential composition can be expressed as the folowing rule:
 
-\[
-\frac{%
-  \begin{array}{c}
-    \Psi; \Theta; \varSigma \vdash \{\mathcal{R}_1\} \; \langle\mathcal{P}_1, \mathcal{V}_1, \mathcal{E}_1\rangle^{\mathcal{O}} : \tau_1 \; \{\!\!\{\mathcal{R}_2; \mathsf{St}_1; \epsilon_1\}\!\!\} \\[1.5ex]
-    \Psi; (\Theta :: \tau_1) ; \varSigma \vdash \{\mathcal{R}_2\} \; \langle\mathcal{P}_2, \mathcal{V}_2, \mathcal{E}_2\rangle^{\mathcal{O}} : \tau_2 \; \{\!\!\{\mathcal{R}_3; \mathsf{St}_2; \epsilon_2\}\!\!\}
-  \end{array}%
-}{%
-  \Psi; (\Theta :: \tau_1 :: \tau_2) \ ; \varSigma \vdash \{\mathcal{R}_1\} \; \langle\mathcal{P}_1 \circ \mathcal{P}_2, \mathcal{V}_1 \circ \mathcal{V}_2, \mathcal{E}_1 \circ_{\mathcal{V}_2} \mathcal{E}_2\rangle^{\mathcal{O}} : \tau_1 \oplus \tau_2 \; \{\!\!\{\mathcal{R}_3; \mathsf{St}_1 \oplus \mathsf{St}_2; \epsilon_1 \oplus \epsilon_2\}\!\!\}
-} \quad \text{(Seq-Comp)}
-\]
+% \[
+% \frac{%
+%   \begin{array}{c}
+%     \Psi; \Theta; \varSigma \vdash \{\mathcal{R}_1\} \; \langle\mathcal{P}_1, \mathcal{V}_1, \mathcal{E}_1\rangle^{\mathcal{O}} : \tau_1 \; \{\!\!\{\mathcal{R}_2; \mathsf{St}_1; \epsilon_1\}\!\!\} \\[1.5ex]
+%     \Psi; (\Theta :: \tau_1) ; \varSigma \vdash \{\mathcal{R}_2\} \; \langle\mathcal{P}_2, \mathcal{V}_2, \mathcal{E}_2\rangle^{\mathcal{O}} : \tau_2 \; \{\!\!\{\mathcal{R}_3; \mathsf{St}_2; \epsilon_2\}\!\!\}
+%   \end{array}%
+% }{%
+%   \Psi; (\Theta :: \tau_1 :: \tau_2) \ ; \varSigma \vdash \{\mathcal{R}_1\} \; \langle\mathcal{P}_1 \circ \mathcal{P}_2, \mathcal{V}_1 \circ \mathcal{V}_2, \mathcal{E}_1 \circ_{\mathcal{V}_2} \mathcal{E}_2\rangle^{\mathcal{O}} : \tau_1 \oplus \tau_2 \; \{\!\!\{\mathcal{R}_3; \mathsf{St}_1 \oplus \mathsf{St}_2; \epsilon_1 \oplus \epsilon_2\}\!\!\}
+% } \quad \text{(Seq-Comp)}
+% \]
 
+% % \begin{definition}[Sequential Composition of Protocol Type Signatures]
+% %     \label{def:protocol_spec_composition}
+% %     \lean{ProtocolSpec.append}
+% % \end{definition}
 
-% \begin{definition}[Sequential Composition of Protocol Type Signatures]
-%     \label{def:protocol_spec_composition}
-%     \lean{ProtocolSpec.append}
-% \end{definition}
+% % \begin{definition}[Sequential Composition of Provers]
+% %     \label{def:prover_composition}
+% %     \lean{Prover.append}
+% % \end{definition}
 
-% \begin{definition}[Sequential Composition of Provers]
-%     \label{def:prover_composition}
-%     \lean{Prover.append}
-% \end{definition}
+% % \begin{definition}[Sequential Composition of Oracle Verifiers]
+% %     \label{def:oracle_verifier_composition}
+% %     \lean{OracleVerifier.append}
+% % \end{definition}
 
-% \begin{definition}[Sequential Composition of Oracle Verifiers]
-%     \label{def:oracle_verifier_composition}
-%     \lean{OracleVerifier.append}
-% \end{definition}
+% % \begin{definition}[Sequential Composition of Oracle Reductions]
+% %     \label{def:oracle_reduction_composition}
+% %     \lean{Reduction.append}
+% % \end{definition}
 
-% \begin{definition}[Sequential Composition of Oracle Reductions]
-%     \label{def:oracle_reduction_composition}
-%     \lean{Reduction.append}
-% \end{definition}
+\subsection{Sequential Composition}\label{sec:sequential_composition}
 
-\subsection{Virtualization}
+Sequential composition allows us to chain together oracle reductions where the output context of one reduction becomes the input context of the next reduction. This is fundamental for building complex protocols from simpler components.
 
-Another tool we will repeatedly use is the ability to change the context of an oracle reduction. This is often needed when we want to adapt an oracle reduction in a simple context into one for a more complex context.
+\subsubsection{Composition of Protocol Specifications}
 
-See the section on sum-check~\ref{sec:sumcheck} for an example.
+We begin by defining how to compose protocol specifications and their associated structures.
 
-\begin{definition}[Mapping into Virtual Context]
-    \label{def:virtual_context_mapping}
-    In order to apply an oracle reduction on virtual data, we will need to provide a mapping from the current context to the virtual context. This includes:
-    \begin{itemize}
-        \item A mapping from the current public inputs to the virtual public inputs.
-        \item A simulation of the oracle inputs for the virtual context using the public and oracle
-        inputs for the current context.
-        \item A mapping from the current private inputs to the virtual private inputs.
-        \item A simulation of the shared oracle for the virtual context using the shared oracle for
-        the current context.
-    \end{itemize}
+\begin{definition}[Protocol Specification Append]
+    \label{def:protocol_spec_append}
+    Given two protocol specifications $\pSpec_1 : \ProtocolSpec\ m$ and $\pSpec_2 : \ProtocolSpec\ n$, their sequential composition is:
+    \[ \pSpec_1 \mathrel{++_\mathsf{p}} \pSpec_2 : \ProtocolSpec\ (m + n) \]
+    \lean{ProtocolSpec.append}
+    \uses{def:protocol_spec}
 \end{definition}
 
-\begin{definition}[Virtual Oracle Reduction]
-    \label{def:virtual_oracle_reduction}
-    Given a suitable mapping into a virtual context, we may define an oracle reduction via the following construction:
-    \begin{itemize}
-        \item The prover first applies the mappings to obtain the virtual context. The verifier does the same, but only for the non-private inputs.
-        \item The prover and verifier then run the virtual oracle reduction on the virtual context.
-    \end{itemize}
+\begin{definition}[Full Transcript Append]
+    \label{def:transcript_append}
+    Given full transcripts $T_1 : \FullTranscript\ \pSpec_1$ and $T_2 : \FullTranscript\ \pSpec_2$, their sequential composition is:
+    \[ T_1 \mathrel{++_\mathsf{t}} T_2 : \FullTranscript\ (\pSpec_1 \mathrel{++_\mathsf{p}} \pSpec_2) \]
+    \lean{ProtocolSpec.FullTranscript.append}
+    \uses{def:transcript}
 \end{definition}
 
-We will show security properties for this virtualization process. One can see that completeness and soundness are inherited from the completeness and soundness of the virtual oracle reduction. However, (round-by-round) knowledge soundness is more tricky; this is because we must extract back to the witness of the original context from the virtual context.
+\subsubsection{Composition of Provers and Verifiers}
 
-% virtual-ctx rule of the form: if we have an oracle reduction from R1 to R2 for context prime, a mapping `f` from ctx to ctx prime, and an inverse mapping `g` from witness of ctx prime to witness of ctx, then we have an oracle reduction from (R1 \circ f) to (R2 \circ g) for ctx. The prover & verifier & the state function are composed with `f`, and the extractor needs to be composed with both `f` and `g`.
+\begin{definition}[Prover Append]
+    \label{def:prover_append}
+    Given provers $P_1 : \Prover\ \pSpec_1\ \oSpec\ \StmtIn_1\ \WitIn_1\ \StmtOut_1\ \WitOut_1$ and $P_2 : \Prover\ \pSpec_2\ \oSpec\ \StmtOut_1\ \WitOut_1\ \StmtOut_2\ \WitOut_2$, their sequential composition is:
+    \[ P_1.\append\ P_2 : \Prover\ (\pSpec_1 \mathrel{++_\mathsf{p}} \pSpec_2)\ \oSpec\ \StmtIn_1\ \WitIn_1\ \StmtOut_2\ \WitOut_2 \]
 
-% Virtualization rule
-\[
-\frac{%
-  \begin{array}{c}
-    \Psi'; \Theta'; \Sigma' \vdash \{\mathcal{R}_1\} \; \langle\mathcal{P}, \mathcal{V}, \mathcal{E}\rangle^{\mathcal{O}} : \tau \; \{\!\!\{\mathcal{R}_2; \mathsf{St}; \epsilon\}\!\!\} \\[1.5ex]
-    f : (\Psi, \Theta, \Sigma) \to (\Psi', \Theta', \Sigma') \\[1.5ex]
-    g : \Psi' \to \Psi \\[1.5ex]
-    f.\mathsf{fst} \circ g = \mathsf{id}
-  \end{array}%
-}{%
-  \Psi; \Theta; \Sigma \vdash \{\mathcal{R}_1 \circ f\} \; \langle\mathcal{P} \circ f, \mathcal{V} \circ f, \mathcal{E} \circ (f, g)\rangle^{\mathcal{O}} : \tau \; \{\!\!\{\mathcal{R}_2 \circ f; \mathsf{St} \circ f; \epsilon\}\!\!\}
-} \quad \text{(Virtual-Ctx)}
-\]
-
-\subsection{Substitution}
-
-Finally, we need a transformation / inference rule that allows us to change the message type in a given round of an oracle reduction. In other words, we substitute a value in the round with another value, followed by a reduction establishing the relationship between the new and old values.
-
-% May need multiple rules for different types of substitutions (i.e. whether in context or in protocol type, where replacing oracle / public message with oracle / public / private message, etc.)
-
-Examples include:
-\begin{enumerate}
-    \item Substituting an oracle input by a public input:
+    The composed prover works by:
     \begin{itemize}
-        \item Often by just revealing the underlying data. This has no change on the prover, and for
-        the verifier, this means that any query to the oracle input can be locally computed.
-        \item A variant of this is when the oracle input consists of a data along with a proof that
-        the data satisfies some predicate. In this case, the verifier needs to additionally check
-        that the predicate holds for the substituted data.
-        \item Another common substitution is to replace a vector with its Merkle commitment, or a
-        polynomial with its polynomial commitment.
+        \item Running $P_1$ on the input context to produce an intermediate context
+        \item Using this intermediate context as input to $P_2$
+        \item Outputting the final context from $P_2$
     \end{itemize}
-    \item Substituting an oracle input by another oracle input, followed by a reduction for each
-    oracle query the verifier makes to the old oracle:
+    \lean{Prover.append}
+    \uses{def:prover, def:protocol_spec_append}
+\end{definition}
+
+\begin{definition}[Verifier Append]
+    \label{def:verifier_append}
+    Given verifiers $V_1 : \Verifier\ \pSpec_1\ \oSpec\ \StmtIn_1\ \StmtOut_1$ and $V_2 : \Verifier\ \pSpec_2\ \oSpec\ \StmtOut_1\ \StmtOut_2$, their sequential composition is:
+    \[ V_1.\append\ V_2 : \Verifier\ (\pSpec_1 \mathrel{++_\mathsf{p}} \pSpec_2)\ \oSpec\ \StmtIn_1\ \StmtOut_2 \]
+
+    The composed verifier first runs $V_1$ on the first part of the transcript, then runs $V_2$ on the second part using the intermediate statement from $V_1$.
+    \lean{Verifier.append}
+    \uses{def:verifier, def:protocol_spec_append}
+\end{definition}
+
+\begin{definition}[Reduction Append]
+    \label{def:reduction_append}
+    Sequential composition of reductions combines the corresponding provers and verifiers:
+    \[ R_1.\append\ R_2 : \Reduction\ (\pSpec_1 \mathrel{++_\mathsf{p}} \pSpec_2)\ \oSpec\ \StmtIn_1\ \WitIn_1\ \StmtOut_2\ \WitOut_2 \]
+    \lean{Reduction.append}
+    \uses{def:reduction, def:prover_append, def:verifier_append}
+\end{definition}
+
+\begin{definition}[Oracle Reduction Append]
+    \label{def:oracle_reduction_append}
+    Sequential composition extends naturally to oracle reductions by composing the oracle provers and oracle verifiers.
+    \lean{OracleReduction.append}
+    \uses{def:oracle_reduction, def:prover_append, def:verifier_append}
+\end{definition}
+
+\subsubsection{General Sequential Composition}
+
+For composing an arbitrary number of reductions, we provide a general composition operation.
+
+\begin{definition}[General Protocol Specification Composition]
+    \label{def:protocol_spec_compose}
+    Given a family of protocol specifications $\pSpec : \forall i : \Fin(m+1), \ProtocolSpec\ (n\ i)$, their composition is:
+    \[ \compose\ m\ n\ \pSpec : \ProtocolSpec\ (\sum_{i} n\ i) \]
+    \lean{ProtocolSpec.seqCompose}
+    \uses{def:protocol_spec}
+\end{definition}
+
+\begin{definition}[General Prover Composition]
+    \label{def:prover_compose}
+    \lean{Prover.seqCompose}
+    \uses{def:prover, def:protocol_spec_compose}
+\end{definition}
+
+\begin{definition}[General Verifier Composition]
+    \label{def:verifier_compose}
+    \lean{Verifier.seqCompose}
+    \uses{def:verifier, def:protocol_spec_compose}
+\end{definition}
+
+\begin{definition}[General Reduction Composition]
+    \label{def:reduction_compose}
+    \lean{Reduction.seqCompose}
+    \uses{def:reduction, def:prover_compose, def:verifier_compose}
+\end{definition}
+
+\subsubsection{Security Properties of Sequential Composition}
+
+The key insight is that security properties are preserved under sequential composition.
+
+\begin{theorem}[Completeness Preservation under Append]
+    \label{thm:completeness_append}
+    If reductions $R_1$ and $R_2$ satisfy completeness with compatible relations and respective errors $\epsilon_1$ and $\epsilon_2$, then their sequential composition $R_1.\append\ R_2$ satisfies completeness with error $\epsilon_1 + \epsilon_2$.
+    \lean{Reduction.completeness_append}
+    \uses{def:completeness, def:reduction_append}
+\end{theorem}
+
+\begin{theorem}[Perfect Completeness Preservation under Append]
+    \label{thm:perfect_completeness_append}
+    If reductions $R_1$ and $R_2$ satisfy perfect completeness with compatible relations, then their sequential composition also satisfies perfect completeness.
+    \lean{Reduction.perfectCompleteness_append}
+    \uses{def:perfect_completeness, def:reduction_append}
+\end{theorem}
+
+\begin{theorem}[Soundness Preservation under Append]
+    \label{thm:soundness_append}
+    If verifiers $V_1$ and $V_2$ satisfy soundness with respective errors $\epsilon_1$ and $\epsilon_2$, then their sequential composition satisfies soundness with error $\epsilon_1 + \epsilon_2$.
+    \lean{Verifier.append_soundness}
+    \uses{def:soundness, def:verifier_append}
+\end{theorem}
+
+\begin{theorem}[Knowledge Soundness Preservation under Append]
+    \label{thm:knowledge_soundness_append}
+    If verifiers $V_1$ and $V_2$ satisfy knowledge soundness with respective errors $\epsilon_1$ and $\epsilon_2$, then their sequential composition satisfies knowledge soundness with error $\epsilon_1 + \epsilon_2$.
+    \lean{Verifier.append_knowledgeSoundness}
+    \uses{def:knowledge_soundness, def:verifier_append}
+\end{theorem}
+
+\begin{theorem}[Round-by-Round Soundness Preservation under Append]
+    \label{thm:rbr_soundness_append}
+    If verifiers $V_1$ and $V_2$ satisfy round-by-round soundness, then their sequential composition also satisfies round-by-round soundness.
+    \lean{Verifier.append_rbrSoundness}
+    \uses{def:round_by_round_soundness, def:verifier_append}
+\end{theorem}
+
+\begin{theorem}[Round-by-Round Knowledge Soundness Preservation under Append]
+    \label{thm:rbr_knowledge_soundness_append}
+    If verifiers $V_1$ and $V_2$ satisfy round-by-round knowledge soundness, then their sequential composition also satisfies round-by-round knowledge soundness.
+    \lean{Verifier.append_rbrKnowledgeSoundness}
+    \uses{def:round_by_round_knowledge_soundness, def:verifier_append}
+\end{theorem}
+
+Similar preservation theorems hold for the general composition of multiple reductions:
+
+\begin{theorem}[General Completeness Preservation]
+    \label{thm:completeness_compose}
+    \lean{Reduction.completeness_seqCompose}
+    \uses{def:completeness, def:reduction_compose}
+\end{theorem}
+
+\begin{theorem}[General Soundness Preservation]
+    \label{thm:soundness_compose}
+    \lean{Verifier.seqCompose_soundness}
+    \uses{def:soundness, def:verifier_compose}
+\end{theorem}
+
+\begin{theorem}[General Knowledge Soundness Preservation]
+    \label{thm:knowledge_soundness_compose}
+    \lean{Verifier.seqCompose_knowledgeSoundness}
+    \uses{def:knowledge_soundness, def:verifier_compose}
+\end{theorem}
+
+\subsection{Lifting Contexts}\label{sec:lifting_contexts}
+
+Another essential tool for modular oracle reductions is the ability to adapt reductions from one context to another. This allows us to apply reductions designed for simple contexts to more complex scenarios.
+
+\subsubsection{Context Lenses}
+
+The fundamental abstraction for context adaptation is a \emph{context lens}, which provides bidirectional mappings between outer and inner contexts.
+
+\begin{definition}[Statement Lens]
+    \label{def:statement_lens}
+    A statement lens between outer context types $(\StmtIn_{\mathsf{outer}}, \StmtOut_{\mathsf{outer}})$ and inner context types $(\StmtIn_{\mathsf{inner}}, \StmtOut_{\mathsf{inner}})$ consists of:
     \begin{itemize}
-        \item This is also a variant of the previous case, where we do not fully substitute with a
-        public input, but do a ``half-substitution'' by substituting with another oracle input. This
-        happens e.g. when using a polynomial commitment scheme that is itself based on a vector
-        commitment scheme. One can cast protocols like Ligero / Brakedown / FRI / STIR in this
-        two-step process.
+        \item $\projStmt : \StmtIn_{\mathsf{outer}} \to \StmtIn_{\mathsf{inner}}$ (projection to inner context)
+        \item $\liftStmt : \StmtIn_{\mathsf{outer}} \times \StmtOut_{\mathsf{inner}} \to \StmtOut_{\mathsf{outer}}$ (lifting back to outer context)
     \end{itemize}
-\end{enumerate}
+    \lean{Statement.Lens}
+\end{definition}
+
+\begin{definition}[Witness Lens]
+    \label{def:witness_lens}
+    A witness lens between outer witness types $(\WitIn_{\mathsf{outer}}, \WitOut_{\mathsf{outer}})$ and inner witness types $(\WitIn_{\mathsf{inner}}, \WitOut_{\mathsf{inner}})$ consists of:
+    \begin{itemize}
+        \item $\projWit : \WitIn_{\mathsf{outer}} \to \WitIn_{\mathsf{inner}}$ (projection to inner context)
+        \item $\liftWit : \WitIn_{\mathsf{outer}} \times \WitOut_{\mathsf{inner}} \to \WitOut_{\mathsf{outer}}$ (lifting back to outer context)
+    \end{itemize}
+    \lean{Witness.Lens}
+\end{definition}
+
+\begin{definition}[Context Lens]
+    \label{def:context_lens}
+    A context lens combines a statement lens and a witness lens for adapting complete reduction contexts.
+    \lean{Context.Lens}
+    \uses{def:statement_lens, def:witness_lens}
+\end{definition}
+
+\begin{definition}[Oracle Context Lens]
+    \label{def:oracle_context_lens}
+    For oracle reductions, we additionally need lenses for oracle statements that can simulate oracle access between contexts.
+    \lean{OracleContext.Lens}
+    \uses{def:context_lens, def:oracle_interface}
+\end{definition}
+
+\subsubsection{Lifting Reductions}
+
+Given a context lens, we can lift reductions from inner contexts to outer contexts.
+
+\begin{definition}[Prover Context Lifting]
+    \label{def:prover_lift_context}
+    Given a prover $P$ for the inner context and a context lens, the lifted prover works by:
+    \begin{itemize}
+        \item Projecting the outer input to the inner context
+        \item Running the inner prover
+        \item Lifting the output back to the outer context
+    \end{itemize}
+    \lean{Prover.liftContext}
+    \uses{def:prover, def:context_lens}
+\end{definition}
+
+\begin{definition}[Verifier Context Lifting]
+    \label{def:verifier_lift_context}
+    \lean{Verifier.liftContext}
+    \uses{def:verifier, def:statement_lens}
+\end{definition}
+
+\begin{definition}[Reduction Context Lifting]
+    \label{def:reduction_lift_context}
+    \lean{Reduction.liftContext}
+    \uses{def:reduction, def:prover_lift_context, def:verifier_lift_context}
+\end{definition}
+
+\subsubsection{Conditions for Security Preservation}
+
+For lifting to preserve security properties, the context lens must satisfy certain conditions.
+
+\begin{definition}[Completeness-Preserving Context Lens]
+    \label{def:context_lens_is_complete}
+    A context lens preserves completeness if it maintains relation satisfaction under projection and lifting.
+    \lean{Context.Lens.IsComplete}
+    \uses{def:context_lens}
+\end{definition}
+
+\begin{definition}[Soundness-Preserving Statement Lens]
+    \label{def:statement_lens_is_sound}
+    A statement lens preserves soundness if it maps invalid statements to invalid statements.
+    \lean{Statement.Lens.IsSound}
+    \uses{def:statement_lens}
+\end{definition}
+
+\begin{definition}[RBR Soundness-Preserving Statement Lens]
+    \label{def:statement_lens_is_rbr_sound}
+    For round-by-round soundness, we need a slightly relaxed soundness condition.
+    \lean{Statement.Lens.IsSound}
+    \uses{def:statement_lens}
+\end{definition}
+
+\begin{definition}[Knowledge Soundness-Preserving Context Lens]
+    \label{def:context_lens_is_knowledge_sound}
+    A context lens preserves knowledge soundness if it maintains witness extractability.
+    \lean{Extractor.Lens.IsKnowledgeSound}
+    \uses{def:context_lens}
+\end{definition}
+
+\subsubsection{Security Preservation Theorems for Context Lifting}
+
+\begin{theorem}[Completeness Preservation under Context Lifting]
+    \label{thm:lift_context_completeness}
+    If a reduction satisfies completeness and the context lens is completeness-preserving, then the lifted reduction also satisfies completeness.
+    \lean{Reduction.liftContext_completeness}
+    \uses{def:completeness, def:reduction_lift_context, def:context_lens_is_complete}
+\end{theorem}
+
+\begin{theorem}[Soundness Preservation under Context Lifting]
+    \label{thm:lift_context_soundness}
+    If a verifier satisfies soundness and the statement lens is soundness-preserving, then the lifted verifier also satisfies soundness.
+    \lean{Verifier.liftContext_soundness}
+    \uses{def:soundness, def:verifier_lift_context, def:statement_lens_is_sound}
+\end{theorem}
+
+\begin{theorem}[Knowledge Soundness Preservation under Context Lifting]
+    \label{thm:lift_context_knowledge_soundness}
+    If a verifier satisfies knowledge soundness and the context lens is knowledge soundness-preserving, then the lifted verifier also satisfies knowledge soundness.
+    \lean{Verifier.liftContext_knowledgeSoundness}
+    \uses{def:knowledge_soundness, def:verifier_lift_context, def:context_lens_is_knowledge_sound}
+\end{theorem}
+
+\begin{theorem}[RBR Soundness Preservation under Context Lifting]
+    \label{thm:lift_context_rbr_soundness}
+    If a verifier satisfies round-by-round soundness and the statement lens is RBR soundness-preserving, then the lifted verifier also satisfies round-by-round soundness.
+    \lean{Verifier.liftContext_rbr_soundness}
+    \uses{def:round_by_round_soundness, def:verifier_lift_context, def:statement_lens_is_rbr_sound}
+\end{theorem}
+
+\begin{theorem}[RBR Knowledge Soundness Preservation under Context Lifting]
+    \label{thm:lift_context_rbr_knowledge_soundness}
+    If a verifier satisfies round-by-round knowledge soundness and the context lens is knowledge soundness-preserving, then the lifted verifier also satisfies round-by-round knowledge soundness.
+    \lean{Verifier.liftContext_rbr_knowledgeSoundness}
+    \uses{def:round_by_round_knowledge_soundness, def:verifier_lift_context, def:context_lens_is_knowledge_sound}
+\end{theorem}
+
+\subsubsection{Extractors and State Functions}
+
+Context lifting also applies to extractors and state functions used in knowledge soundness and round-by-round soundness.
+
+\begin{definition}[Straightline Extractor Lifting]
+    \label{def:straightline_extractor_lift_context}
+    \lean{Extractor.Straightline.liftContext}
+    \uses{def:straightline_extractor, def:context_lens}
+\end{definition}
+
+\begin{definition}[Round-by-Round Extractor Lifting]
+    \label{def:rbr_extractor_lift_context}
+    \lean{Extractor.RoundByRound.liftContext}
+    \uses{def:rbr_extractor, def:context_lens}
+\end{definition}
+
+\begin{definition}[State Function Lifting]
+    \label{def:state_function_lift_context}
+    \lean{Verifier.StateFunction.liftContext}
+    \uses{def:state_function, def:statement_lens}
+\end{definition}
+
+These composition and lifting operators provide the essential building blocks for constructing complex oracle reductions from simpler components while preserving their security properties.
+
+% \subsection{Virtualization}
+
+% Another tool we will repeatedly use is the ability to change the context of an oracle reduction. This is often needed when we want to adapt an oracle reduction in a simple context into one for a more complex context.
+
+% See the section on sum-check~\ref{sec:sumcheck} for an example.
+
+% \begin{definition}[Mapping into Virtual Context]
+%     \label{def:virtual_context_mapping}
+%     In order to apply an oracle reduction on virtual data, we will need to provide a mapping from the current context to the virtual context. This includes:
+%     \begin{itemize}
+%         \item A mapping from the current public inputs to the virtual public inputs.
+%         \item A simulation of the oracle inputs for the virtual context using the public and oracle
+%         inputs for the current context.
+%         \item A mapping from the current private inputs to the virtual private inputs.
+%         \item A simulation of the shared oracle for the virtual context using the shared oracle for
+%         the current context.
+%     \end{itemize}
+% \end{definition}
+
+% \begin{definition}[Virtual Oracle Reduction]
+%     \label{def:virtual_oracle_reduction}
+%     Given a suitable mapping into a virtual context, we may define an oracle reduction via the following construction:
+%     \begin{itemize}
+%         \item The prover first applies the mappings to obtain the virtual context. The verifier does the same, but only for the non-private inputs.
+%         \item The prover and verifier then run the virtual oracle reduction on the virtual context.
+%     \end{itemize}
+% \end{definition}
+
+% We will show security properties for this virtualization process. One can see that completeness and soundness are inherited from the completeness and soundness of the virtual oracle reduction. However, (round-by-round) knowledge soundness is more tricky; this is because we must extract back to the witness of the original context from the virtual context.
+
+% % virtual-ctx rule of the form: if we have an oracle reduction from R1 to R2 for context prime, a mapping `f` from ctx to ctx prime, and an inverse mapping `g` from witness of ctx prime to witness of ctx, then we have an oracle reduction from (R1 \circ f) to (R2 \circ g) for ctx. The prover & verifier & the state function are composed with `f`, and the extractor needs to be composed with both `f` and `g`.
+
+% % Virtualization rule
+% \[
+% \frac{%
+%   \begin{array}{c}
+%     \Psi'; \Theta'; \Sigma' \vdash \{\mathcal{R}_1\} \; \langle\mathcal{P}, \mathcal{V}, \mathcal{E}\rangle^{\mathcal{O}} : \tau \; \{\!\!\{\mathcal{R}_2; \mathsf{St}; \epsilon\}\!\!\} \\[1.5ex]
+%     f : (\Psi, \Theta, \Sigma) \to (\Psi', \Theta', \Sigma') \\[1.5ex]
+%     g : \Psi' \to \Psi \\[1.5ex]
+%     f.\mathsf{fst} \circ g = \mathsf{id}
+%   \end{array}%
+% }{%
+%   \Psi; \Theta; \Sigma \vdash \{\mathcal{R}_1 \circ f\} \; \langle\mathcal{P} \circ f, \mathcal{V} \circ f, \mathcal{E} \circ (f, g)\rangle^{\mathcal{O}} : \tau \; \{\!\!\{\mathcal{R}_2 \circ f; \mathsf{St} \circ f; \epsilon\}\!\!\}
+% } \quad \text{(Virtual-Ctx)}
+% \]
+
+% \subsection{Substitution}
+
+% Finally, we need a transformation / inference rule that allows us to change the message type in a given round of an oracle reduction. In other words, we substitute a value in the round with another value, followed by a reduction establishing the relationship between the new and old values.
+
+% % May need multiple rules for different types of substitutions (i.e. whether in context or in protocol type, where replacing oracle / public message with oracle / public / private message, etc.)
+
+% Examples include:
+% \begin{enumerate}
+%     \item Substituting an oracle input by a public input:
+%     \begin{itemize}
+%         \item Often by just revealing the underlying data. This has no change on the prover, and for
+%         the verifier, this means that any query to the oracle input can be locally computed.
+%         \item A variant of this is when the oracle input consists of a data along with a proof that
+%         the data satisfies some predicate. In this case, the verifier needs to additionally check
+%         that the predicate holds for the substituted data.
+%         \item Another common substitution is to replace a vector with its Merkle commitment, or a
+%         polynomial with its polynomial commitment.
+%     \end{itemize}
+%     \item Substituting an oracle input by another oracle input, followed by a reduction for each
+%     oracle query the verifier makes to the old oracle:
+%     \begin{itemize}
+%         \item This is also a variant of the previous case, where we do not fully substitute with a
+%         public input, but do a ``half-substitution'' by substituting with another oracle input. This
+%         happens e.g. when using a polynomial commitment scheme that is itself based on a vector
+%         commitment scheme. One can cast protocols like Ligero / Brakedown / FRI / STIR in this
+%         two-step process.
+%     \end{itemize}
+% \end{enumerate}

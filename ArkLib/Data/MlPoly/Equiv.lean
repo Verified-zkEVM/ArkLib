@@ -16,17 +16,22 @@ open MvPolynomial
 
 #check MvPolynomial.restrictDegree
 
-variable {R : Type*} [CommSemiring R] {n : ℕ}
+variable {R : Type*} [CommRing R] {n : ℕ}
 
 -- def MlPolynomial R n := MvPolynomial.restrictDegree (Fin n) R 1
+
+noncomputable section
 
 namespace MlPoly
 
 def toSpec (p : MlPoly R n) : R⦃≤ 1⦄[X Fin n] :=
-  sorry
+  ⟨∑ i : Fin (2 ^ n), (C p[i]) * ∏ j : Fin n, if (BitVec.ofFin i).getLsb' j then X j else C 1 - X j,
+  by
+    sorry⟩
 
 def ofSpec (p : R⦃≤ 1⦄[X Fin n]) : MlPoly R n :=
-  sorry
+  Vector.ofFn (fun i : Fin (2 ^ n) =>
+    p.val.coeff (Finsupp.onFinset Finset.univ (fun j => finFunctionFinEquiv.invFun i j) (by simp)))
 
 def equivSpec : MlPoly R n ≃ R⦃≤ 1⦄[X Fin n] where
   toFun := toSpec
@@ -36,7 +41,7 @@ def equivSpec : MlPoly R n ≃ R⦃≤ 1⦄[X Fin n] where
 
 #check MvPolynomial.eval₂
 
-variable {S : Type*} [CommSemiring S]
+variable {S : Type*} [CommRing S]
 
 theorem equivSpec_add (p q : MlPoly R n) :
   (p + q).toSpec = p.toSpec + q.toSpec :=
@@ -56,3 +61,5 @@ namespace MlPolyEval
 -- the monomial basis
 
 end MlPolyEval
+
+end

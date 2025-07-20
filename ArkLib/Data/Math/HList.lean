@@ -92,8 +92,7 @@ variable {α : Type u} {n : ℕ}
 @[simp]
 lemma List.get_nil (i : Fin 0) (a : α) : [].get i = a := by exact isEmptyElim i
 
-/--
-  Dependent vectors
+/-- Dependent vectors
 -/
 def DVec {m : Type v} (α : m → Type u) : Type (max u v) := ∀ i, α i
 

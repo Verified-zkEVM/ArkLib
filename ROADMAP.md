@@ -4,7 +4,7 @@ We provide here a list of projects and extensions to ArkLib. Please note that th
 
 ## General Theory
 
-### 1. The Fiat-Shamir Transform
+### 1. The BCS & Fiat-Shamir Transform
 
 ### 2. Zero-Knowledge
 
@@ -17,15 +17,15 @@ We provide here a list of projects and extensions to ArkLib. Please note that th
 
 ## Proof Systems
 
-### 1. GKR, Lasso, and Jolt
-
-### 2. FRI, STIR, WHIR
+### 1. FRI, STIR, WHIR
 
 Note that this item is under active development.
 
-### 3. Binary Tower Fields and Binius.
+### 2. Binary Tower Fields and Binius.
 
 Note that this item is under active development.
+
+### 3. Twist & Shout
 
 ### 4. Pairing DLog based commitment schemes
 

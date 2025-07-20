@@ -6,7 +6,7 @@ Whether you are fixing bugs, improving documentation, or adding new formalizatio
 
 * **Active formalizations:** Please see the list of active formalization efforts and their blueprints.
 * **Open Issues:** Please see the list of open issues for bugs, requested features, and specific formalization tasks. Issues tagged as `good first issue` or `help wanted` are great places to start.
-* **Roadmap Goals:** We maintain a [ROADMAP](ROADMAP.md) outlining the planned direction and major goals for the library. 
+* **Roadmap Goals:** We maintain a [ROADMAP](ROADMAP.md) outlining the planned direction and major goals for the library.
 * **Documentation:** Documentation is actively being worked and will be available as soon as possible.
 
 If you are interested in contributing but unsure where to begin, please get in touch.
@@ -22,7 +22,7 @@ For substantial contributions, such as a new proof system, we strongly encourage
     * References to relevant literature.
     * Potential challenges and design choices.
 * **Why a Blueprint?** This helps align the contribution with the project's structure and goals *before* significant coding and proving effort is invested. It facilitates discussion and feedback from maintainers and the community. It also makes it easier to manage large efforts in a distributed way.
-* **Process:** Please open a new discussion or issue to propose your planned contribution and discuss the blueprint before starting implementation. 
+* **Process:** Please open a new discussion or issue to propose your planned contribution and discuss the blueprint before starting implementation.
 
 ### Style Guide
 

@@ -1,17 +1,19 @@
 /-
-Copyright (c) 2024 ArkLib Contributors. All rights reserved.
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import Mathlib.Data.Matrix.Hadamard
+import ArkLib.Data.Matrix.Basic
 
 /-!
-# R1CS
+# Rank-1 Constraint System (R1CS)
 
-This file defines the R1CS (Rank-1 Constraint System) relation. It also defines the sparse
-representation of a matrix.
-
+This file defines the R1CS (Rank-1 Constraint System) relation
+- The definition is in terms of `Fin` vectors and matrices. In the future, we may consider more
+  efficient representations such as `Vector` and `Vector m (Vector n α)`.
+- We define padding (on the right) for R1CS instances, and show that padding preserves the R1CS
+  relation.
 -/
 
 namespace R1CS
@@ -24,48 +26,67 @@ inductive MatrixIdx where | A | B | C deriving Inhabited, DecidableEq
 
 structure Size where
   m : ℕ -- number of columns
-  n_x : ℕ -- number of public variables
+  n : ℕ -- number of rows
   n_w : ℕ -- number of witness variables
+  n_w_le_n : n_w ≤ n := by omega -- Number of witness variables must be at most the number of rows
 
-abbrev Size.n (sz : Size) : ℕ := sz.n_x + sz.n_w
+attribute [simp] Size.n_w_le_n
 
-def Statement (sz : Size) := Fin sz.n_x → R
+variable (sz : Size)
 
-def OracleStatement (sz : Size) := fun _ : MatrixIdx => Matrix (Fin sz.m) (Fin sz.n) R
+/-- Number of public `𝕩` variables -/
+abbrev Size.n_x : ℕ := sz.n - sz.n_w
 
-def Witness (sz : Size) := Fin sz.n_w → R
+lemma Size.n_eq_n_x_add_n_w : sz.n = sz.n_x + sz.n_w := by
+  simp [Size.n_x]
 
--- The R1CS relation
-def relation (sz : Size) :
+@[reducible]
+def Statement := Fin sz.n_x → R
+
+@[reducible]
+def OracleStatement := fun _ : MatrixIdx => Matrix (Fin sz.m) (Fin sz.n) R
+
+@[reducible]
+def Witness := Fin sz.n_w → R
+
+/-- The vector `𝕫` is the concatenation of the public input and witness variables -/
+@[reducible, inline]
+def 𝕫 {R} {sz} (stmt : Statement R sz) (wit : Witness R sz) : Fin sz.n → R :=
+  Fin.append stmt wit ∘ Fin.cast (by simp)
+
+/-- The R1CS relation: `(A *ᵥ 𝕫) * (B *ᵥ 𝕫) = (C *ᵥ 𝕫)`, where `*` is understood to mean
+  component-wise (Hadamard) vector multiplication. -/
+@[reducible]
+def relation :
     (Fin sz.n_x → R) → -- public input `x`
     (MatrixIdx → Matrix (Fin sz.m) (Fin sz.n) R) → -- matrices `A`, `B`, `C` as oracle inputs
     (Fin sz.n_w → R) → -- witness input `w`
     Prop :=
-  fun stmt matrices wit =>
-    let z : Fin (sz.n_x + sz.n_w) → R := Fin.append stmt wit
-    (matrices .A *ᵥ z) * (matrices .B *ᵥ z) = (matrices .C *ᵥ z)
+  fun stmt matrix wit =>
+    letI 𝕫 := 𝕫 stmt wit
+    (matrix .A *ᵥ 𝕫) * (matrix .B *ᵥ 𝕫) = (matrix .C *ᵥ 𝕫)
+
+/-- Pad an R1CS instance (on the right) from `sz₁` to `sz₂` with zeros.
+
+Note that this results in truncation if the second size is smaller than the first one. -/
+def pad (sz₁ sz₂ : Size)
+    (stmt : Statement R sz₁)
+    (matrices : MatrixIdx → Matrix (Fin sz₁.m) (Fin sz₁.n) R)
+    (wit : Witness R sz₁) :
+    Statement R sz₂ × (MatrixIdx → Matrix (Fin sz₂.m) (Fin sz₂.n) R) × Witness R sz₂ :=
+  (Fin.rightpad sz₂.n_x 0 stmt,
+    fun idx => Matrix.rightpad sz₂.m sz₂.n 0 (matrices idx),
+    Fin.rightpad sz₂.n_w 0 wit)
+
+-- padding preserves the R1CS relation
+theorem pad_preserves_relation (sz₁ sz₂ : Size)
+    (stmt : Statement R sz₁)
+    (matrices : MatrixIdx → Matrix (Fin sz₁.m) (Fin sz₁.n) R)
+    (wit : Witness R sz₁) :
+    relation R sz₁ stmt matrices wit =
+      let (stmt', matrices', wit') := pad R sz₁ sz₂ stmt matrices wit
+      relation R sz₂ stmt' matrices' wit' := by
+  simp [pad, relation, rightpad]
+  sorry
 
 end R1CS
-
-/-- The sparse representation of a matrix `m → n → α` consists of:
-- The number of non-zero entries `k : ℕ`
-- The row indices `row : Fin k → m`
-- The column indices `col : Fin k → n`
-- The values `val : Fin k → α`
-
-This representation is **not** unique. In particular, we may have duplicate `(row, col)` pairs, and
-some `val` may be zero.
--/
-structure SparseMatrix (m n α : Type*) where
-  numEntries : ℕ
-  row : Fin numEntries → m
-  col : Fin numEntries → n
-  val : Fin numEntries → α
-deriving Inhabited, DecidableEq
-
-/-- Convert a sparse matrix to a regular (dense) matrix. For each entry `(i, j)` of the matrix, we
-  simply sum over all `k` such that `(row k, col k) = (i, j)`.
--/
-def SparseMatrix.toMatrix {m n α : Type*} [DecidableEq m] [DecidableEq n] [AddCommMonoid α]
-    (A : SparseMatrix m n α) : Matrix m n α :=
-  fun i j => ∑ k : Fin A.numEntries, if A.row k = i ∧ A.col k = j then A.val k else 0

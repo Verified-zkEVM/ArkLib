@@ -1,51 +1,143 @@
-\section{Definitions}
+\section{Definitions}\label{sec:oracle_reductions_defs}
 
 In this section, we give the basic definitions of a public-coin interactive oracle reduction
-(henceforth called an oracle reduction or IOR). In particular, we will define its building blocks,
-and various security properties.
+(henceforth called an oracle reduction or IOR). We will define its building blocks, and various
+security properties.
 
-\subsection{Format}
+\subsection{Format}\label{sec:oracle_reductions_defs_format}
 
-An \textbf{(interactive) oracle reduction} is an interactive protocol between two parties, a \emph{prover} $\mathcal{P}$
-and a \emph{verifier} $\mathcal{V}$. It takes place in the following setting:
+An \textbf{(interactive) oracle reduction (IOR)} is an interactive protocol between two parties, a
+\emph{prover} $\mathcal{P}$ and a \emph{verifier} $\mathcal{V}$. In ArkLib, IORs are defined in the
+following setting:
 \begin{enumerate}
     \item We work in an ambient dependent type theory (in our case, Lean).
+
     \item The protocol flow is fixed and defined by a given \emph{type signature}, which
     describes in each round which party sends a message to the other, and the type of that message.
-    \item The prover and verifier has access to some inputs (called the \emph{context}) at the beginning of the protocol. These inputs are classified as follows:
+
+    \item The prover and verifier has access to some inputs (called the \emph{(oracle) context}) at
+    the beginning of the protocol. These inputs are classified as follows:
     \begin{itemize}
-        \item \emph{Public inputs}: available to both parties;
-        \item \emph{Private inputs} (or \emph{witness}): available only to the prover;
-        \item \emph{Oracle inputs}: the underlying data is available to the prover, but it's only
-        exposed as an oracle to the verifier. An oracle interface for such inputs consists of a query type, a response type, and a function that takes in the underlying input, a query, and outputs a response.
-        \item \emph{Shared oracle}: the oracle is available to both parties via an interface; in most cases, it is either empty, a probabilistic sampling oracle, or a random oracle. See~\Cref{sec:vcvio} for more information on oracle computations.
+        \item \emph{Public inputs} (or \emph{statement}) $\mathbbm{x}$: available to both parties;
+        \item \emph{Private inputs} (or \emph{witness}) $\mathbbm{w}$: available only to the prover;
+        \item \emph{Oracle inputs} (or \emph{oracle statement}) $\mathbbm{ox}$: the underlying data
+        is available to the prover, but it's only exposed as an oracle to the verifier. See~\Cref{def:oracle_interface} for more information.
+        \item \emph{Shared oracle} $\mathcal{O}$: the oracle is available to both parties via an
+        interface; in most cases, it is either empty, a probabilistic sampling oracle, a random
+        oracle, or a group oracle (for the Algebraic Group Model). See~\Cref{sec:vcvio} for more
+        information on oracle computations.
     \end{itemize}
+
     \item The messages sent from the prover may either: 1) be seen directly by the verifier, or 2)
     only available to a verifier through an \emph{oracle interface} (which specifies the type for
     the query and response, and the oracle's behavior given the underlying message).
-    \item All messages from $\mathcal{V}$ are chosen uniformly at random from the finite type corresponding to that round. This property is called \emph{public-coin} in the literature.
+
+    Currently, in the oracle reduction setting, we \emph{only} allow messages sent to be available
+    through oracle interfaces. In the (non-oracle) reduction setting, all messages are available
+    directly. Future extensions may allow for mixed visibility for prover's messages.
+
+    \item $\mathcal{V}$ is assumed to be \emph{public-coin}, meaning that its challenges are chosen
+    uniformly at random from the finite type corresponding to that round, and it uses no randomness
+    otherwise, except from those coming from the shared oracle.
+
+    \item At the end of the protocol, the prover and verifier outputs a new (oracle) context, which consists of:
+    \begin{itemize}
+        \item The verifier takes in the input statement and the challenges, performs an \emph{oracle} computation on the input oracle statements and the oracle messages, and outputs a new output statement.
+
+        The verifier also outputs the new oracle statement in an implicit manner, by specifying a
+        subset of the input oracle statements \& the oracle messages. Future extensions may allow for more flexibility in specifying output oracle statements (i.e. not just a subset, but a linear combination, or any other function).
+        \item The prover takes in some final private state (maintained during protocol execution), and outputs a new output statement, new output oracle statement, and new output witness.
+    \end{itemize}
 \end{enumerate}
 
-We now go into more details on these objects.
+\begin{remark}[Literature Comparison]
+In the literature, our definition corresponds to the notion of \emph{functional} IORs. Historically,
+(vector) IOPs were the first notion to be introduced by~\cite{IOPs}; these are IORs where the output
+statement is true/false, all oracle statements and messages are vectors over some alphabet $\Sigma$,
+and the oracle interfaces are for querying specific positions in the vector. More recent works have
+considered other oracle interfaces, e.g., polynomial oracles~\cite{Marlin, DARK}, generalized proofs
+to reductions~\cite{ARoK, WARP, Arc, fics-facs}, and considered general oracle
+interfaces~\cite{WHIR}. Most of the IOP theory has been distilled in the
+textbook~\cite{ChiesaYogev2024}.
 
-\begin{definition}[Type Signature of an Oracle Reduction]
-    \label{def:oracle_reduction_type_signature}
-    A protocol specification $\rho : \mathsf{PSpec}\; n$ of an oracle reduction is parametrized by a fixed number of messages sent in total. For each step of interaction, it specifies a direction for the message (prover to verifier, or vice versa), and a type for the message. If a message from the prover to the verifier is further marked as oracle, then we also expect an oracle interface for that message. In Lean, we handle these oracle interfaces via the $\mathsf{OracleInterface}$ type class.
-    \lean{ProtocolSpec, OracleInterface}
+We have not seen any work that considers our most general setting, of IORs with arbitrary oracle interfaces.
+\end{remark}
+
+We now go into more details on these objects, and how they are represented in Lean. Our description will aim to be as close as possible to the Lean code, and hence may differ somewhat from ``mainstream'' mathematical \& cryptographic notation.
+
+\begin{definition}[Oracle Interface]
+    \label{def:oracle_interface}
+    An oracle interface for an underlying data type $\mathsf{D}$ consists of the following:
+    \begin{itemize}
+        \item A type $\mathsf{Q}$ for queries to the oracle,
+        \item A type $\mathsf{R}$ for responses from the oracle,
+        \item A function $\mathsf{oracle} : \mathsf{D} \to \mathsf{Q} \to \mathsf{R}$ that specifies
+        the oracle's behavior given the underlying data and a query.
+    \end{itemize}
+    \lean{OracleInterface}
 \end{definition}
 
-\begin{definition}[Context]\label{def:context}
-    In an oracle reduction, its \emph{context} (denoted $\Gamma$) consists of a list of public inputs, a list of witness inputs, a list of oracle inputs, and a shared oracle (possibly represented as a list of lazily sampled query-response pairs). These inputs have the expected visibility.
+See \texttt{OracleInterface.lean} for common instances of $\mathsf{OracleInterface}$.
 
-For simplicity, we imagine the context as \emph{append-only}, as we add new messages from the protocol execution.
+
+\begin{definition}[Context]
+    \label{def:context}
+    In an (oracle) reduction, its \emph{(oracle) context} consists of a statement type, a witness
+    type, and (in the oracle case) an indexed list of oracle statement types.
+
+    Currently, we do not abstract out / bundle the context as a separate structure, but rather
+    specifies the types explicitly. This may change in the future.
+\end{definition}
+
+\begin{definition}[Protocol Specification]
+    \label{def:protocol_spec}
+    A protocol specification for an $n$-message (oracle) reduction, is an element of the following type:
+    \begin{align*}
+        \ProtocolSpec\ n &:= \Fin\ n \to \Direction \times \Type.
+    \end{align*}
+    In the above, $\Direction := \{ \PtoVdir, \VtoPdir \}$ is the type of possible directions of messages, and $\Fin\ n := \{ i : \bbN \quotient i < n \}$ is the type of all natural numbers less than $n$.
+
+    In other words, for each step $i$ of interaction, the protocol specification describes the \emph{direction} of the message sent in that step, i.e., whether it is from the prover or from the verifier. It also describes the \emph{type} of that message.
+
+    In the oracle setting, we also expect an oracle interface for each message from the prover to the verifier.
+    \lean{ProtocolSpec}
 \end{definition}
 
 We define some supporting definitions for a protocol specification.
 
-\begin{definition}[Transcript \& Related Definitions]
-    \label{def:transcript_and_related_defs}
-    Given protocol specification $\rho : \mathsf{PSpec}\; n$, its \emph{transcript} up to round $i$ is an element of type $\rho_{[:i]} ::= \prod_{j < i} \rho\; j$. We define the type of all challenges sent by the verifier as $\rho.\mathsf{Chals} ::= \prod_{i \text{ s.t. } (\rho\; i).\mathsf{fst} = \mathsf{V2P}} (\rho\; i).\mathsf{snd}$.
+\begin{definition}[Protocol Specification Components]
+    \label{def:protocol_spec_components}
+    Given a protocol spec $\pSpec : \ProtocolSpec\ n$, we define:
+    \begin{itemize}
+        \item $\pSpec.\Dir\ i := (\pSpec\ i).\mathsf{fst}$ extracts the direction of the $i$-th message.
+        \item $\pSpec.\Type\ i := (\pSpec\ i).\mathsf{snd}$ extracts the type of the $i$-th message.
+        \item $\pSpec.\MessageIdx := \{i : \Fin\ n \quotient \pSpec.\Dir\ i = \PtoVdir\}$ is the subtype of indices corresponding to prover messages.
+        \item $\pSpec.\ChallengeIdx := \{i : \Fin\ n \quotient \pSpec.\Dir\ i = \VtoPdir\}$ is the subtype of indices corresponding to verifier challenges.
+        \item $\pSpec.\mathsf{Message}\ i := (i : \pSpec.\MessageIdx) \to \pSpec.\Type\ i.\mathsf{val}$ is an indexed family of message types in the protocol.
+        \item $\pSpec.\mathsf{Challenge}\ i := (i : \pSpec.\ChallengeIdx) \to \pSpec.\Type\ i.\mathsf{val}$ is an indexed family of challenge types in the protocol.
+    \end{itemize}
+    \lean{ProtocolSpec.getDir, ProtocolSpec.getType, ProtocolSpec.MessageIdx, ProtocolSpec.ChallengeIdx, ProtocolSpec.Message, ProtocolSpec.Challenge}
+    \uses{def:protocol_spec}
+\end{definition}
+
+\begin{definition}[Protocol Transcript]
+    \label{def:transcript}
+        Given protocol specification $\pSpec : \ProtocolSpec\ n$, we define:
+    \begin{itemize}
+        \item A \emph{transcript} up to round $k : \Fin\ (n + 1)$ is an element of type
+                \[ \Transcript\ k\ \pSpec := (i : \Fin\ k) \to \pSpec.\Type\ (\uparrow i : \Fin\ n) \]
+        where $\uparrow i : \Fin\ n$ denotes casting $i : \Fin\ k$ to $\Fin\ n$ (valid since $k \leq n + 1$).
+
+        \item A \emph{full transcript} is $\FullTranscript\ \pSpec := (i : \Fin\ n) \to \pSpec.\Type\ i$.
+
+        \item The type of all \emph{messages} from prover to verifier is
+        \[ \pSpec.\Messages := \prod_{i : \pSpec.\MessageIdx} \pSpec.\Message\ i \]
+
+        \item The type of all \emph{challenges} from verifier to prover is
+        \[ \pSpec.\Challenges := \prod_{i : \pSpec.\ChallengeIdx} \pSpec.\Challenge\ i \]
+    \end{itemize}
     \lean{ProtocolSpec.Transcript, ProtocolSpec.Message, ProtocolSpec.Challenge}
+    \uses{def:protocol_spec, def:protocol_spec_components}
 \end{definition}
 
 % In the interactive protocols we consider, both parties $P$ and $V$ may have access to a shared
@@ -61,17 +153,45 @@ We define some supporting definitions for a protocol specification.
 \end{remark}
 
 \begin{definition}[Type Signature of a Prover]
-    \label{def:prover_type_signature}
-    A prover $\mathcal{P}$ in an oracle reduction, given a context, is a stateful oracle computation
-    that at each step of the protocol, either takes in a new message from the verifier, or sends a
-    new message to the verifier.
-    \lean{Prover}
+    \label{def:prover}
+    A prover $\mathcal{P}$ in a reduction consists of the following components:
+
+    \begin{itemize}
+        \item \textbf{Prover State}: A family of types $\mathsf{PrvState} : \Fin(n+1) \to \Type$ representing the prover's internal state at each round of the protocol.
+
+        \item \textbf{Input Processing}: A function
+        \[ \mathsf{input} : \StmtIn \to \WitIn \to \mathsf{PrvState}(0) \]
+        that initializes the prover's state from the input statement and witness.
+
+        \item \textbf{Message Sending}: For each message index $i : \pSpec.\MessageIdx$, a function
+        \[ \mathsf{sendMessage}_i : \mathsf{PrvState}(i.\mathsf{val}.\mathsf{castSucc}) \to \OracleComp(\oSpec, \pSpec.\Message(i) \times \mathsf{PrvState}(i.\mathsf{val}.\mathsf{succ})) \]
+        that generates the message and updates the prover's state.
+
+        \item \textbf{Challenge Processing}: For each challenge index $i : \pSpec.\ChallengeIdx$, a function
+        \[ \mathsf{receiveChallenge}_i : \mathsf{PrvState}(i.\mathsf{val}.\mathsf{castSucc}) \to \pSpec.\Challenge(i) \to \mathsf{PrvState}(i.\mathsf{val}.\mathsf{succ}) \]
+        that updates the prover's state upon receiving a challenge.
+
+        \item \textbf{Output Generation}: A function
+        \[ \mathsf{output} : \mathsf{PrvState}(\Fin.\mathsf{last}(n)) \to \StmtOut \times \WitOut \]
+        that produces the final output statement and witness from the prover's final state.
+    \end{itemize}
+    \lean{Prover, ProverState, ProverIn, ProverRound, ProverOut}
 \end{definition}
 
-Our modeling of oracle reductions only consider \emph{public-coin} verifiers; that is, verifiers who
-only outputs uniformly random challenges drawn from the (finite) types, and uses no other
-randomness. Because of this fixed functionality, we can bake the verifier's behavior in the
-interaction phase directly into the protocol execution semantics.
+\begin{definition}[Type Signature of an Oracle Prover]
+    \label{def:oracle_prover}
+    An oracle prover is a prover whose input statement includes the underlying data for oracle statements, and whose output includes oracle statements. Formally, it is a prover with input statement type $\StmtIn \times (\forall i : \iota_{\mathsf{si}}, \OStmtIn(i))$ and output statement type $\StmtOut \times (\forall i : \iota_{\mathsf{so}}, \OStmtOut(i))$, where:
+    \begin{itemize}
+        \item $\OStmtIn : \iota_{\mathsf{si}} \to \Type$ are the input oracle statement types
+        \item $\OStmtOut : \iota_{\mathsf{so}} \to \Type$ are the output oracle statement types
+    \end{itemize}
+    \lean{OracleProver}
+\end{definition}
+
+% Our modeling of oracle reductions only consider \emph{public-coin} verifiers; that is, verifiers who
+% only outputs uniformly random challenges drawn from the (finite) types, and uses no other
+% randomness. Because of this fixed functionality, we can bake the verifier's behavior in the
+% interaction phase directly into the protocol execution semantics.
 
 After the interaction phase, the verifier may then run some verification procedure to check the
 validity of the prover's responses. In this procedure, the verifier gets access to the public part
@@ -82,81 +202,93 @@ of the context, and oracle access to either the shared oracle, or the oracle inp
 % \emph{interactive reduction (IR)}.
 
 \begin{definition}[Type Signature of a Verifier]
-    \label{def:verifier_type_signature}
-    A verifier $\mathcal{V}$ in an oracle reduction is an oracle computation that may perform a
-    series of checks (i.e. `Bool`-valued, or `Option Unit`) on the given context.
+    \label{def:verifier}
+    A verifier $\mathcal{V}$ in a reduction is specified by a single function:
+    \[ \mathsf{verify} : \StmtIn \to \FullTranscript(\pSpec) \to \OracleComp(\oSpec, \StmtOut) \]
+
+    This function takes the input statement and the complete transcript of the protocol interaction, and performs an oracle computation (potentially querying the shared oracle $\oSpec$) to produce an output statement.
+
+    The verifier is assumed to be \emph{public-coin}, meaning it only sends uniformly random challenges and uses no other randomness beyond what is provided by the shared oracle.
     \lean{Verifier}
 \end{definition}
 
-% \begin{definition}[Type Signature of an Oracle Verifier]
-%     \label{def:oracle_verifier_type_signature}
-%     \lean{OracleVerifier}
-% \end{definition}
+\begin{definition}[Type Signature of an Oracle Verifier]
+    \label{def:oracle_verifier}
+    An oracle verifier $\mathcal{V}$ consists of the following components:
+
+    \begin{itemize}
+        \item \textbf{Verification Logic}: A function
+        \[ \mathsf{verify} : \StmtIn \to \pSpec.\Challenges \to \OracleComp(\oSpec \mathrel{++_\mathsf{o}} ([\OStmtIn]_\mathsf{o} \mathrel{++_\mathsf{o}} [\pSpec.\Message]_\mathsf{o}), \StmtOut) \]
+        that takes the input statement and verifier challenges, and performs oracle queries to the shared oracle, input oracle statements, and prover messages to produce an output statement.
+
+        \item \textbf{Output Oracle Embedding}: An injective function
+        \[ \mathsf{embed} : \iota_{\mathsf{so}} \hookrightarrow \iota_{\mathsf{si}} \oplus \pSpec.\MessageIdx \]
+        that specifies how each output oracle statement is derived from either an input oracle statement or a prover message.
+
+        \item \textbf{Type Compatibility}: A proof term
+        \[ \mathsf{hEq} : \forall i : \iota_{\mathsf{so}}, \OStmtOut(i) = \begin{cases}
+            \OStmtIn(j) & \text{if } \mathsf{embed}(i) = \mathsf{inl}(j) \\
+            \pSpec.\Message(k) & \text{if } \mathsf{embed}(i) = \mathsf{inr}(k)
+        \end{cases} \]
+        ensuring that output oracle statement types match their sources.
+    \end{itemize}
+
+    This design ensures that output oracle statements are always a subset of the available input oracle statements and prover messages.
+    \lean{OracleVerifier}
+\end{definition}
+
+\begin{definition}[Oracle Verifier to Verifier Conversion]
+    \label{def:oracle_verifier_to_verifier}
+    An oracle verifier can be converted to a standard verifier through a natural simulation process. The key insight is that while an oracle verifier only has oracle access to certain data (input oracle statements and prover messages), a standard verifier can be given the actual underlying data directly.
+
+    The conversion works as follows: when the oracle verifier needs to make an oracle query to some data, the converted verifier can respond to this query immediately using the actual underlying data it possesses. This is accomplished through the \texttt{OracleInterface} type class, which specifies for each data type how to respond to queries given the underlying data.
+
+    Specifically, given an oracle verifier $\mathcal{V}_{\text{oracle}}$:
+    \begin{itemize}
+        \item The converted verifier $\mathcal{V}_{\text{oracle}}.\mathsf{toVerifier}$ takes as input both the statement \emph{and} the actual underlying data for all oracle statements
+        \item When $\mathcal{V}_{\text{oracle}}$ attempts to query an oracle statement or prover message, the converted verifier uses the corresponding \texttt{OracleInterface} instance to compute the response from the actual data
+        \item The output oracle statements are constructed according to the embedding specification, selecting the appropriate subset of input oracle statements and prover messages
+    \end{itemize}
+    \lean{OracleVerifier.toVerifier}
+    \uses{def:oracle_verifier}
+\end{definition}
 
 An oracle reduction then consists of a type signature for the interaction, and a pair of prover and
 verifier for that type signature.
 
-% \begin{definition}[Interactive Reduction]
-%     \label{def:interactive_reduction}
-%     \lean{Reduction}
-%     An interactive reduction is a combination of a type signature \verb|ProtocolSpec|, a prover for \verb|ProtocolSpec|, and a verifier for \verb|ProtocolSpec|.
-% \end{definition}
-l
-\begin{definition}[Interactive Oracle Reduction]
-    \label{def:interactive_oracle_reduction}
-    \lean{OracleReduction}
-    An interactive oracle reduction for a given context $\Gamma$ is a combination a prover and a verifier of the types specified above.
-    \uses{def:oracle_reduction_type_signature}
+\begin{definition}[Interactive Reduction]
+    \label{def:reduction}
+    An interactive reduction for protocol specification $\pSpec : \ProtocolSpec(n)$ and oracle specification $\oSpec$ consists of:
+    \begin{itemize}
+        \item A \textbf{prover} $\mathcal{P} : \Prover(\pSpec, \oSpec, \StmtIn, \WitIn, \StmtOut, \WitOut)$
+        \item A \textbf{verifier} $\mathcal{V} : \Verifier(\pSpec, \oSpec, \StmtIn, \StmtOut)$
+    \end{itemize}
+
+    The reduction establishes a relationship between input relations on $(\StmtIn, \WitIn)$ and output relations on $(\StmtOut, \WitOut)$ through the interactive protocol defined by $\pSpec$.
+    \lean{Reduction}
+    \uses{def:prover, def:verifier}
 \end{definition}
 
-\textbf{PL Formalization.} We write our definitions in PL notation in~\Cref{fig:type-defs}. The set of types $\Type$ is the same as Lean's dependent type theory (omitting universe levels); in particular, we care about basic dependent types (Pi and Sigma), finite natural numbers, finite fields, lists, vectors, and polynomials.
+\begin{definition}[Interactive Oracle Reduction]
+    \label{def:oracle_reduction}
+    An interactive oracle reduction for protocol specification $\pSpec : \ProtocolSpec(n)$ with oracle interfaces for all prover messages, and oracle specification $\oSpec$, consists of:
+    \begin{itemize}
+        \item An \textbf{oracle prover} $\mathcal{P} : \OracleProver(\pSpec, \oSpec, \StmtIn, \WitIn, \StmtOut, \WitOut, \OStmtIn, \OStmtOut)$
+        \item An \textbf{oracle verifier} $\mathcal{V} : \OracleVerifier(\pSpec, \oSpec, \StmtIn, \StmtOut, \OStmtIn, \OStmtOut)$
+    \end{itemize}
 
-\begin{figure}[t]
-    \[\begin{array}{rcl}
-        % Basic types
-        \mathsf{Type} &::=& \mathsf{Unit} \mid \mathsf{Bool} \mid \mathbb{N} \mid \mathsf{Fin}\; n \mid \mathbb{F}_q \mid \mathsf{List}\;(\alpha : \mathsf{Type}) \mid (i : \iota) \to \alpha\; i \mid (i : \iota) \times \alpha\; i \mid \dots \\[1em]
-        % Protocol message types
-        \mathsf{Dir} &::=& \mathsf{P2V.Pub} \mid \mathsf{P2V.Orac} \mid \mathsf{V2P} \\ 
-        \mathsf{OI}\; (\mathrm{M} : \Type) &::=& \langle \mathrm{Q}, \mathrm{R}, \mathrm{M} \to \mathrm{Q} \to \mathrm{R} \rangle \\
-        % Protocol type signature
-        \mathsf{PSpec}\; (n : \mathbb{N}) &::=& \mathsf{Fin}\; n \to (d : \mathsf{Dir}) \times (M : \Type) \times (\mathsf{if}\; d = \mathsf{P2V.Orac} \; \mathsf{then} \; \mathsf{OI}(M) \; \mathsf{else} \; \mathsf{Unit}) \\
-        % Oracle type signature
-        \mathsf{OSpec} \; (\iota : \mathsf{Type}) &::=& (i : \iota) \to \mathsf{dom}\; i \times \mathsf{range}\; i \\[1em]
-        % Contexts
-        \varSigma &::=& \emptyset \mid \varSigma \times \Type \\
-        \Omega &::=& \emptyset \mid \Omega \times \langle \mathrm{M} : \Type, \mathsf{OI}(\mathrm{M}) \rangle \\
-        \Psi &::=& \emptyset \mid \Psi \times \Type\\
-    \end{array}\]
-    \[\begin{array}{rcl}
-        \Gamma &::=& (\Psi; \Omega; \varSigma; \rho; \mathcal{O})\\
-        \mathsf{OComp}^{\mathcal{O}}\; (\alpha : \Type) &::=& \mid\; \mathsf{pure}\; (a : \alpha) \\
-        && \mid\; \mathsf{queryBind}\;(i : \iota)\; (q : \mathsf{dom}\; i)\; (k : \mathsf{range}\; i \to \mathsf{OComp}^{\mathcal{O}}\; \alpha) \\
-        && \mid\; \mathsf{fail} \\[1em]
-        \tau_{\mathsf{P}}(\Gamma) &::=& (i : \mathsf{Fin}\; n) \to (h : (\rho \; i).\mathsf{fst} = \mathsf{P2V}) \to \\
-        && \varSigma \to \Omega \to \Psi \to \rho_{[:i]} \to \mathsf{OComp}^{\mathcal{O}}\;\left( (\rho \; i).\mathsf{snd}\right) \\[1em]
+    where:
+    \begin{itemize}
+        \item $\OStmtIn : \iota_{\mathsf{si}} \to \Type$ are the input oracle statement types with oracle interfaces
+        \item $\OStmtOut : \iota_{\mathsf{so}} \to \Type$ are the output oracle statement types
+    \end{itemize}
 
-        \tau_{\mathsf{V}}(\Gamma) &::=& \varSigma \to (\rho.\mathsf{Chals}) \to \mathsf{OComp}^{\mathcal{O} :: \OI(\Omega) :: \OI(\rho.\mathsf{Msg.Orac})}\; \mathsf{Unit} \\[1em]
-        \tau_{\mathsf{E}}(\Gamma) &::=& \varSigma \to \Omega \to \rho.\mathsf{Transcript} \to \calO.\mathsf{QueryLog} \to \Psi
-    \end{array}\]
-    \caption{Type definitions for interactive oracle reductions}
-    \label{fig:type-defs}
-\end{figure}
+    The oracle reduction allows the verifier to access prover messages and oracle statements only through specified oracle interfaces, enabling more flexible and composable protocol designs.
+    \lean{OracleReduction}
+    \uses{def:oracle_prover, def:oracle_verifier}
+\end{definition}
 
-Using programming language notation, we can express an interactive oracle reduction as a typing judgment:
-\[
-    \Gamma := (\Psi; \Theta; \varSigma; \rho; \mathcal{O}) \vdash \mathcal{P} : \tau_{\mathsf{P}}(\Gamma), \; \mathcal{V} : \tau_{\mathsf{V}}(\Gamma)
-\]
-where:
-\begin{itemize}
-    \item $\Psi$ represents the witness (private) inputs
-    \item $\Theta$ represents the oracle inputs
-    \item $\varSigma$ represents the public inputs (i.e. statements)
-    \item $\mathcal{O} : \mathsf{OSpec}\; \iota$ represents the shared oracle
-    \item $\rho : \mathsf{PSpec}\; n$ represents the protocol type signature
-    \item $\mathcal{P}$ and $\mathcal{V}$ are the prover and verifier, respectively, being of the given types $\tau_{\mathsf{P}}(\Gamma)$ and $\tau_{\mathsf{V}}(\Gamma)$.
-\end{itemize}
-
-To exhibit valid elements for the prover and verifier types, we will use existing functions in the ambient programming language (e.g. Lean).
+\subsection{Execution Semantics}\label{sec:execution_semantics}
 
 We now define what it means to execute an oracle reduction. This is essentially achieved by first
 executing the prover, interspersed with oracle queries to get the verifier's challenges (these will
@@ -165,22 +297,103 @@ Any message exchanged in the protocol will be added to the context. We may also 
 about the execution, such as the log of oracle queries for the shared oracles, for analysis purposes
 (i.e. feeding information into the extractor).
 
-\begin{definition}[Execution of an Oracle Reduction]
-    \label{def:oracle_reduction_execution}
-    \lean{OracleReduction.run}
+\begin{definition}[Prover Execution to Round]
+    \label{def:prover_run_to_round}
+    The execution of a prover up to round $i : \Fin(n+1)$ is defined inductively:
+
+    \[ \mathsf{Prover}.\mathsf{runToRound}(i, \mathsf{stmt}, \mathsf{wit}) := \]
+    \[ \mathsf{Fin}.\mathsf{induction}( \]
+    \[ \quad \mathsf{pure}(\langle \mathsf{default}, \mathsf{prover}.\mathsf{input}(\mathsf{stmt}, \mathsf{wit}) \rangle), \]
+    \[ \quad \mathsf{prover}.\mathsf{processRound}, \]
+    \[ \quad i \]
+    \[ ) \]
+
+    where $\mathsf{processRound}$ handles individual rounds by either:
+    \begin{itemize}
+        \item \textbf{Verifier Challenge} ($\pSpec.\mathsf{getDir}(j) = \mathsf{V\_to\_P}$): Query for a challenge and update prover state
+        \item \textbf{Prover Message} ($\pSpec.\mathsf{getDir}(j) = \mathsf{P\_to\_V}$): Generate message via $\mathsf{sendMessage}$ and update state
+    \end{itemize}
+
+    Returns the transcript up to round $i$ and the prover's state after round $i$.
+    \lean{Prover.runToRound, Prover.processRound}
+    \uses{def:prover, def:protocol_spec, def:transcript}
 \end{definition}
 
-\begin{remark}[More efficient representation of oracle reductions]
-    The presentation of oracle reductions as protocols on an append-only context is useful for
-    reasoning, but it does not lead to the most efficient implementation for the prover and
-    verifier. In particular, the prover cannot keep intermediate state, and thus needs to recompute
-    everything from scratch for each new message.
+\begin{definition}[Complete Prover Execution]
+    \label{def:prover_run}
+    The complete execution of a prover is defined as:
 
-    To fix this mismatch, we will also define a stateful variant of the prover, and define a notion
-    of observational equivalence between the stateless and stateful reductions.
-\end{remark}
+    \[ \mathsf{Prover}.\mathsf{run}(\mathsf{stmt}, \mathsf{wit}) := \mathsf{do} \; \{ \]
+    \[ \quad \langle \mathsf{transcript}, \mathsf{state} \rangle \leftarrow \mathsf{prover}.\mathsf{runToRound}(\Fin.\mathsf{last}(n), \mathsf{stmt}, \mathsf{wit}) \]
+    \[ \quad \langle \mathsf{stmtOut}, \mathsf{witOut} \rangle := \mathsf{prover}.\mathsf{output}(\mathsf{state}) \]
+    \[ \quad \mathsf{return} \; \langle \mathsf{stmtOut}, \mathsf{witOut}, \mathsf{transcript} \rangle \]
+    \[ \} \]
 
-\subsection{Security properties}
+    Returns the output statement, output witness, and complete transcript.
+    \lean{Prover.run}
+    \uses{def:prover, def:prover_run_to_round}
+\end{definition}
+
+\begin{definition}[Verifier Execution]
+    \label{def:verifier_run}
+    The execution of a verifier is simply the application of its verification function:
+
+    \[ \mathsf{Verifier}.\mathsf{run}(\mathsf{stmt}, \mathsf{transcript}) := \mathsf{verifier}.\mathsf{verify}(\mathsf{stmt}, \mathsf{transcript}) \]
+
+    This takes the input statement and full transcript, and returns the output statement via an oracle computation.
+    \lean{Verifier.run}
+    \uses{def:verifier}
+\end{definition}
+
+\begin{definition}[Oracle Verifier Execution]
+    \label{def:oracle_verifier_run}
+    The execution of an oracle verifier is defined as:
+
+    \[ \mathsf{OracleVerifier}.\mathsf{run}(\mathsf{stmt}, \mathsf{oStmtIn}, \mathsf{transcript}) := \mathsf{do} \; \{ \]
+    \[ \quad \mathsf{f} := \mathsf{simOracle2}(\oSpec, \mathsf{oStmtIn}, \mathsf{transcript}.\mathsf{messages}) \]
+    \[ \quad \mathsf{stmtOut} \leftarrow \mathsf{simulateQ}(\mathsf{f}, \mathsf{verifier}.\mathsf{verify}(\mathsf{stmt}, \mathsf{transcript}.\mathsf{challenges})) \]
+    \[ \quad \mathsf{return} \; \mathsf{stmtOut} \]
+    \[ \} \]
+
+    This simulates the oracle access to input oracle statements and prover messages, then executes the verification logic.
+    \lean{OracleVerifier.run}
+    \uses{def:oracle_verifier, def:oracle_interface}
+\end{definition}
+
+\begin{definition}[Interactive Reduction Execution]
+    \label{def:reduction_run}
+    The execution of an interactive reduction consists of running the prover followed by the verifier:
+
+    \[ \mathsf{Reduction}.\mathsf{run}(\mathsf{stmt}, \mathsf{wit}) := \mathsf{do} \; \{ \]
+    \[ \quad \langle \mathsf{prvStmtOut}, \mathsf{witOut}, \mathsf{transcript} \rangle \leftarrow \mathsf{reduction}.\mathsf{prover}.\mathsf{run}(\mathsf{stmt}, \mathsf{wit}) \]
+    \[ \quad \mathsf{stmtOut} \leftarrow \mathsf{reduction}.\mathsf{verifier}.\mathsf{run}(\mathsf{stmt}, \mathsf{transcript}) \]
+    \[ \quad \mathsf{return} \; ((\mathsf{prvStmtOut}, \mathsf{witOut}), \mathsf{stmtOut}, \mathsf{transcript}) \]
+    \[ \} \]
+
+    Returns both the prover's output (statement and witness) and the verifier's output statement, along with the complete transcript.
+    \lean{Reduction.run}
+    \uses{def:reduction, def:prover_run, def:verifier_run}
+\end{definition}
+
+\begin{definition}[Oracle Reduction Execution]
+    \label{def:oracle_reduction_run}
+    The execution of an interactive oracle reduction is similar to a standard reduction but includes logging of oracle queries:
+
+    \[ \mathsf{OracleReduction}.\mathsf{run}(\mathsf{stmt}, \mathsf{wit}, \mathsf{oStmt}) := \mathsf{do} \; \{ \]
+    \[ \quad \langle \langle \mathsf{prvStmtOut}, \mathsf{witOut}, \mathsf{transcript} \rangle, \mathsf{proveQueryLog} \rangle \leftarrow \]
+    \[ \qquad (\mathsf{simulateQ}(\mathsf{loggingOracle}, \mathsf{reduction}.\mathsf{prover}.\mathsf{run}(\langle \mathsf{stmt}, \mathsf{oStmt} \rangle, \mathsf{wit}))).\mathsf{run} \]
+    \[ \quad \langle \mathsf{stmtOut}, \mathsf{verifyQueryLog} \rangle \leftarrow \]
+    \[ \qquad (\mathsf{simulateQ}(\mathsf{loggingOracle}, \mathsf{reduction}.\mathsf{verifier}.\mathsf{run}(\mathsf{stmt}, \mathsf{oStmt}, \mathsf{transcript}))).\mathsf{run} \]
+    \[ \quad \mathsf{return} \; ((\mathsf{prvStmtOut}, \mathsf{witOut}), \mathsf{stmtOut}, \mathsf{transcript}, \mathsf{proveQueryLog}, \mathsf{verifyQueryLog}) \]
+    \[ \} \]
+
+    Returns the same outputs as a standard reduction, plus logs of all oracle queries made by both the prover and verifier.
+    \lean{OracleReduction.run}
+    \uses{def:oracle_reduction, def:prover_run, def:oracle_verifier_run}
+\end{definition}
+
+
+\subsection{Security Properties}\label{sec:security}
 
 We can now define properties of interactive reductions. The two main properties we consider in this
 project are completeness and various notions of soundness. We will cover zero-knowledge at a later
@@ -194,12 +407,105 @@ error).
 
 \begin{definition}[Completeness]
     \label{def:completeness}
+    A reduction satisfies \textbf{completeness} with error $\epsilon \geq 0$ and with respect to
+    input relation $R_{\text{in}}$ and output relation $R_{\text{out}}$, if for all valid statement-witness pair
+    $(x_{\text{in}}, w_{\text{in}})$ for $R_{\text{in}}$, the execution between the honest prover and the honest verifier
+    will result in a tuple $((x_{\text{out}}^P, w_{\text{out}}), x_{\text{out}}^V)$ such that:
+    \begin{itemize}
+        \item $R_{\text{out}}(x_{\text{out}}^V, w_{\text{out}}) = \text{True}$ (the output statement-witness pair is valid), and
+        \item $x_{\text{out}}^P = x_{\text{out}}^V$ (the output statements are the same from both prover and verifier)
+    \end{itemize}
+    except with probability $\epsilon$.
     \lean{Reduction.completeness}
-    \uses{def:interactive_oracle_reduction}
+    \uses{def:reduction, def:reduction_run}
+\end{definition}
+
+\begin{definition}[Perfect Completeness]
+    \label{def:perfect_completeness}
+    A reduction satisfies \textbf{perfect completeness} if it satisfies completeness with error $0$.
+    This means that the probability of the reduction outputting a valid statement-witness pair is
+    \emph{exactly} 1 (instead of at least $1 - 0$).
+    \lean{Reduction.perfectCompleteness}
+    \uses{def:completeness}
 \end{definition}
 
 Almost all oracle reductions we consider actually satisfy \emph{perfect completeness}, which
 simplifies the proof obligation. In particular, this means we only need to show that no matter what challenges are chosen, the verifier will always accept given messages from the honest prover.
+
+\subsubsection{Extractors}
+
+For knowledge soundness, we need to consider different types of extractors that can recover witnesses from malicious provers.
+
+\begin{definition}[Straightline Extractor]
+    \label{def:straightline_extractor}
+    A \textbf{straightline, deterministic, non-oracle-querying extractor} takes in:
+    \begin{itemize}
+        \item the output witness $w_{\text{out}}$,
+        \item the initial statement $x_{\text{in}}$,
+        \item the IOR transcript $\tau$,
+        \item the query logs from the prover and verifier
+    \end{itemize}
+    and returns a corresponding initial witness $w_{\text{in}}$.
+
+    Note that the extractor does not need to take in the output statement, since it can be derived
+    via re-running the verifier on the initial statement, the transcript, and the verifier's query
+    log.
+
+    This form of extractor suffices for proving knowledge soundness of most hash-based IOPs.
+    \lean{Extractor.Straightline}
+    \uses{def:transcript}
+\end{definition}
+
+\begin{definition}[Round-by-Round Extractor]
+    \label{def:rbr_extractor}
+    A \textbf{round-by-round extractor} with index $m$ is given:
+    \begin{itemize}
+        \item the input statement $x_{\text{in}}$,
+        \item a partial transcript of length $m$,
+        \item the prover's query log
+    \end{itemize}
+    and returns a witness to the statement.
+
+    Note that the RBR extractor does not need to take in the output statement or witness.
+    \lean{Extractor.RoundByRound}
+    \uses{def:transcript}
+\end{definition}
+
+\begin{definition}[Rewinding Extractor]
+    \label{def:rewinding_extractor}
+    A \textbf{rewinding extractor} consists of:
+    \begin{itemize}
+        \item An extractor state type
+        \item Simulation oracles for challenges and oracle queries for the prover
+        \item A function that runs the extractor with the prover's oracle interface, allowing for calling the prover multiple times
+    \end{itemize}
+    This allows the extractor to rewind the prover to earlier states and try different challenges.
+    \lean{Extractor.Rewinding}
+    \uses{def:prover, def:oracle_interface}
+\end{definition}
+
+\subsubsection{Adversarial Provers}
+
+% \begin{definition}[Adaptive Prover]
+%     \label{def:adaptive_prover}
+%     An \textbf{adaptive prover} extends the basic prover type with the ability to choose the input statement adaptively based on oracle access. This models stronger adversaries that can choose their statements after seeing some oracle responses.
+%     \lean{Prover.Adaptive}
+%     \uses{def:prover}
+% \end{definition}
+
+\begin{definition}[State-Restoration Prover]
+    \label{def:sr_prover}
+    A \textbf{state-restoration prover} is a modified prover that has query access to challenge oracles that can return the $i$-th challenge, for all $i$, given the input statement and the transcript up to that point.
+
+    It takes in the input statement and witness, and outputs a full transcript of interaction,
+    along with the output statement and witness.
+
+    This models adversaries in the state-restoration setting where challenges can be queried programmably.
+    \lean{Prover.StateRestoration}
+    \uses{def:transcript}
+\end{definition}
+
+\subsubsection{Soundness Definitions}
 
 For soundness, we need to consider different notions. These notions differ in two main aspects:
 \begin{itemize}
@@ -216,39 +522,240 @@ special soundness (via rewinding). At the moment, we only care about non-rewindi
 
 \begin{definition}[Soundness]
     \label{def:soundness}
-    \lean{Reduction.soundness}
-    \uses{def:interactive_oracle_reduction}
+    A reduction satisfies \textbf{soundness} with error $\epsilon \geq 0$ and with respect to input
+    language $L_{\text{in}} \subseteq \text{Statement}_{\text{in}}$ and output language $L_{\text{out}} \subseteq \text{Statement}_{\text{out}}$ if:
+    \begin{itemize}
+        \item for all (malicious) provers with arbitrary types for witness types,
+        \item for all arbitrary input witness,
+        \item for all input statement $x_{\text{in}} \notin L_{\text{in}}$,
+    \end{itemize}
+    the execution between the prover and the honest verifier will result in an output statement
+    $x_{\text{out}} \in L_{\text{out}}$ with probability at most $\epsilon$.
+    \lean{Verifier.soundness}
+    \uses{def:verifier, def:prover_run}
 \end{definition}
-
-A (straightline) extractor for knowledge soundness is a deterministic algorithm that takes in the output public context after executing the oracle reduction, the side information (i.e. log of oracle queries from the malicious prover) observed during execution, and outputs the witness for the input context.
-
-Note that since we assume the context is append-only, and we append only the public (or oracle)
-messages obtained during protocol execution, it follows that the witness stays the same throughout
-the execution.
 
 \begin{definition}[Knowledge Soundness]
     \label{def:knowledge_soundness}
-    \lean{Reduction.knowledgeSoundness}
-    \uses{def:interactive_oracle_reduction}
+    A reduction satisfies \textbf{(straightline) knowledge soundness} with error $\epsilon \geq 0$ and
+    with respect to input relation $R_{\text{in}}$ and output relation $R_{\text{out}}$ if:
+    \begin{itemize}
+        \item there exists a straightline extractor $E$, such that
+        \item for all input statement $x_{\text{in}}$, witness $w_{\text{in}}$, and (malicious) prover,
+        \item if the execution with the honest verifier results in a pair $(x_{\text{out}}, w_{\text{out}})$,
+        \item and the extractor produces some $w'_{\text{in}}$,
+    \end{itemize}
+    then the probability that $(x_{\text{in}}, w'_{\text{in}})$ is not valid for $R_{\text{in}}$ and yet $(x_{\text{out}}, w_{\text{out}})$ is valid for $R_{\text{out}}$ is at most $\epsilon$.
+
+    A (straightline) extractor for knowledge soundness is a deterministic algorithm that takes in the output public context after executing the oracle reduction, the side information (i.e. log of oracle queries from the malicious prover) observed during execution, and outputs the witness for the input context.
+
+    Note that since we assume the context is append-only, and we append only the public (or oracle)
+    messages obtained during protocol execution, it follows that the witness stays the same throughout
+    the execution.
+    \lean{Verifier.knowledgeSoundness}
+    \uses{def:verifier, def:reduction_run, def:straightline_extractor}
 \end{definition}
+
+\subsubsection{Round-by-Round Security}
 
 To define round-by-round (knowledge) soundness, we need to define the notion of a \emph{state function}. This is a (possibly inefficient) function $\mathsf{StateF}$ that, for every challenge sent by the verifier, takes in the transcript of the protocol so far and outputs whether the state is doomed or not. Roughly speaking, the requirement of round-by-round soundness is that, for any (possibly malicious) prover $P$, if the state function outputs that the state is doomed on some partial transcript of the protocol, then the verifier will reject with high probability.
 
 \begin{definition}[State Function]
     \label{def:state_function}
-    \lean{Reduction.StateFunction}
+    A \textbf{(deterministic) state function} for a verifier, with respect to input language $L_{\text{in}}$ and
+    output language $L_{\text{out}}$, consists of a function that maps partial transcripts to boolean values, satisfying:
+    \begin{itemize}
+        \item For all input statements not in the language, the state function is false for the empty transcript
+        \item If the state function is false for a partial transcript, and the next message is from the
+        prover to the verifier, then the state function is also false for the new partial transcript
+        regardless of the message
+        \item If the state function is false for a full transcript, the verifier will not output a statement
+        in the output language
+    \end{itemize}
+    \lean{Verifier.StateFunction}
+\end{definition}
+
+\begin{definition}[Knowledge State Function]
+    \label{def:knowledge_state_function}
+    A \textbf{knowledge state function} for a verifier, with respect to input relation $R_{\text{in}}$, output
+    relation $R_{\text{out}}$, and intermediate witness types, extends the basic state function to track
+    witness validity throughout the protocol execution. This is used to define round-by-round knowledge soundness.
+    \lean{Verifier.KnowledgeStateFunction}
 \end{definition}
 
 \begin{definition}[Round-by-Round Soundness]
     \label{def:round_by_round_soundness}
-    \lean{Reduction.rbrSoundness}
-    \uses{def:interactive_oracle_reduction}
+    A protocol with verifier $\mathcal{V}$ satisfies \textbf{round-by-round soundness} with respect to input language
+    $L_{\text{in}}$, output language $L_{\text{out}}$, and error function $\epsilon: \text{ChallengeIdx} \to \mathbb{R}_{\geq 0}$ if:
+    \begin{itemize}
+        \item there exists a state function for the verifier and the input/output languages, such that
+        \item for all initial statements $x_{\text{in}} \notin L_{\text{in}}$,
+        \item for all initial witnesses,
+        \item for all provers,
+        \item for all challenge rounds $i$,
+    \end{itemize}
+    the probability that:
+    \begin{itemize}
+        \item the state function is false for the partial transcript output by the prover
+        \item the state function is true for the partial transcript appended by next challenge (chosen randomly)
+    \end{itemize}
+    is at most $\epsilon(i)$.
+    \lean{Verifier.rbrSoundness}
+    \uses{def:verifier, def:state_function, def:prover_run_to_round}
 \end{definition}
 
 \begin{definition}[Round-by-Round Knowledge Soundness]
     \label{def:round_by_round_knowledge_soundness}
-    \lean{Reduction.rbrKnowledgeSoundness}
-    \uses{def:interactive_oracle_reduction}
+    A protocol with verifier $\mathcal{V}$ satisfies \textbf{round-by-round knowledge soundness} with respect to input
+    relation $R_{\text{in}}$, output relation $R_{\text{out}}$, and error function $\epsilon: \text{ChallengeIdx} \to \mathbb{R}_{\geq 0}$ if:
+    \begin{itemize}
+        \item there exists a knowledge state function for the verifier and the languages of the input/output relations,
+        \item there exists a round-by-round extractor,
+        \item for all initial statements,
+        \item for all initial witnesses,
+        \item for all provers,
+        \item for all challenge rounds $i$,
+    \end{itemize}
+    the probability that:
+    \begin{itemize}
+        \item the extracted witness does not satisfy the input relation
+        \item the state function is false for the partial transcript output by the prover
+        \item the state function is true for the partial transcript appended by next challenge (chosen randomly)
+    \end{itemize}
+    is at most $\epsilon(i)$.
+    \lean{Verifier.rbrKnowledgeSoundness}
+    \uses{def:verifier, def:knowledge_state_function, def:rbr_extractor, def:prover_run_to_round}
+\end{definition}
+
+% \begin{remark}[Alternative Formulations of RBR Knowledge Soundness]
+%     There are different ways to formulate round-by-round knowledge soundness, differing in whether
+%     the extractor's failure to produce a valid witness is included as part of the security condition.
+%     Some formulations condition on the extractor producing an invalid witness while the state function
+%     transitions from false to true, while others may condition on the state function transition
+%     regardless of extractor success. The current formalization includes the extractor failure as
+%     part of the security condition.
+% \end{remark}
+
+\subsubsection{Extractor Properties}
+
+These definitions are highly experimental and may change in the future. The goal is to put some conditions on the extractor in order for prove sequential composition preserves knowledge soundness.
+
+\begin{definition}[Monotone Straightline Extractor]
+    \label{def:monotone_straightline_extractor}
+    An extractor is \textbf{monotone} if its success probability on a given query log is the same as
+    the success probability on any extension of that query log. This property ensures that the extractor's
+    performance does not degrade when given more information.
+    \lean{Verifier.Extractor.Straightline.IsMonotone}
+    \uses{def:straightline_extractor}
+\end{definition}
+
+\begin{definition}[Monotone RBR Extractor]
+    \label{def:monotone_rbr_extractor}
+    A round-by-round extractor is \textbf{monotone} if its success probability on a given query log
+    is the same as the success probability on any extension of that query log.
+    \lean{Extractor.RoundByRound.IsMonotone}
+    \uses{def:rbr_extractor}
+\end{definition}
+
+\subsubsection{Implications Between Security Notions}
+
+We have a lattice of security notions, with knowledge and round-by-round being two strengthenings of soundness.
+
+\begin{theorem}[Knowledge Soundness Implies Soundness]
+    \label{thm:knowledge_soundness_implies_soundness}
+    Knowledge soundness with knowledge error $\epsilon < 1$ implies soundness with the same
+    soundness error $\epsilon$, and for the corresponding input and output languages.
+    \lean{Verifier.knowledgeSoundness_implies_soundness}
+    \uses{def:knowledge_soundness, def:soundness}
+\end{theorem}
+
+\begin{theorem}[RBR Soundness Implies Soundness]
+    \label{thm:rbr_soundness_implies_soundness}
+    Round-by-round soundness with error function $\epsilon$ implies soundness with error
+    $\sum_i \epsilon(i)$, where the sum is over all challenge rounds $i$.
+    \lean{Verifier.rbrSoundness_implies_soundness}
+    \uses{def:round_by_round_soundness, def:soundness}
+\end{theorem}
+
+\begin{theorem}[RBR Knowledge Soundness Implies RBR Soundness]
+    \label{thm:rbr_knowledge_soundness_implies_rbr_soundness}
+    Round-by-round knowledge soundness with error function $\epsilon$ implies round-by-round
+    soundness with the same error function $\epsilon$.
+    \lean{Verifier.rbrKnowledgeSoundness_implies_rbrSoundness}
+    \uses{def:round_by_round_knowledge_soundness, def:round_by_round_soundness}
+\end{theorem}
+
+\begin{theorem}[RBR Knowledge Soundness Implies Knowledge Soundness]
+    \label{thm:rbr_knowledge_soundness_implies_knowledge_soundness}
+    Round-by-round knowledge soundness with error function $\epsilon$ implies knowledge soundness
+    with error $\sum_i \epsilon(i)$, where the sum is over all challenge rounds $i$.
+    \lean{Verifier.rbrKnowledgeSoundness_implies_knowledgeSoundness}
+    \uses{def:round_by_round_knowledge_soundness, def:knowledge_soundness}
+\end{theorem}
+
+\subsubsection{Zero-Knowledge}
+
+\begin{definition}[Simulator]
+    \label{def:simulator}
+    A \textbf{simulator} consists of:
+    \begin{itemize}
+        \item Oracle simulation capabilities for the shared oracles
+        \item A prover simulation function that takes an input statement and produces a transcript
+    \end{itemize}
+    The simulator should have programming access to the shared oracles and be able to generate
+    transcripts that are indistinguishable from real protocol executions.
+    \lean{Reduction.Simulator}
+\end{definition}
+
+\begin{remark}[Zero-Knowledge Definition]
+    We define honest-verifier zero-knowledge as follows: There exists a simulator such that for all
+    (malicious) verifiers, the distributions of transcripts generated by the simulator and the
+    interaction between the verifier and the prover are (statistically) indistinguishable.
+    A full definition will be provided in future versions.
+\end{remark}
+
+\subsubsection{Oracle-Specific Security}
+
+For oracle reductions, the security definitions are analogous to those for standard reductions, but adapted to work with oracle interfaces:
+
+\begin{definition}[Oracle Reduction Completeness]
+    \label{def:oracle_reduction_completeness}
+    Completeness of an oracle reduction is the same as for non-oracle reductions, but applied to the
+    converted reduction where oracle statements are handled through their interfaces.
+    \lean{OracleReduction.completeness}
+    \uses{def:oracle_reduction, def:completeness, def:oracle_verifier_to_verifier}
+\end{definition}
+
+\begin{definition}[Oracle Verifier Soundness]
+    \label{def:oracle_verifier_soundness}
+    Soundness of an oracle verifier is defined by converting it to a standard verifier and applying
+    the standard soundness definition.
+    \lean{OracleVerifier.soundness}
+    \uses{def:oracle_verifier, def:soundness, def:oracle_verifier_to_verifier}
+\end{definition}
+
+\begin{definition}[Oracle Verifier Knowledge Soundness]
+    \label{def:oracle_verifier_knowledge_soundness}
+    Knowledge soundness of an oracle verifier is defined by converting it to a standard verifier
+    and applying the standard knowledge soundness definition.
+    \lean{OracleVerifier.knowledgeSoundness}
+    \uses{def:oracle_verifier, def:knowledge_soundness, def:oracle_verifier_to_verifier}
+\end{definition}
+
+\begin{definition}[Oracle Verifier RBR Soundness]
+    \label{def:oracle_verifier_rbr_soundness}
+    Round-by-round soundness of an oracle verifier is defined by converting it to a standard verifier
+    and applying the standard round-by-round soundness definition.
+    \lean{OracleVerifier.rbrSoundness}
+    \uses{def:oracle_verifier, def:round_by_round_soundness, def:oracle_verifier_to_verifier}
+\end{definition}
+
+\begin{definition}[Oracle Verifier RBR Knowledge Soundness]
+    \label{def:oracle_verifier_rbr_knowledge_soundness}
+    Round-by-round knowledge soundness of an oracle verifier is defined by converting it to a standard
+    verifier and applying the standard round-by-round knowledge soundness definition.
+    \lean{OracleVerifier.rbrKnowledgeSoundness}
+    \uses{def:oracle_verifier, def:round_by_round_knowledge_soundness, def:oracle_verifier_to_verifier}
 \end{definition}
 
 By default, the properties we consider are perfect completeness and (straightline) round-by-round knowledge soundness. We can encapsulate these properties into the following typing judgement:
@@ -257,3 +764,154 @@ By default, the properties we consider are perfect completeness and (straightlin
     \Gamma := (\Psi; \Theta; \varSigma; \rho; \mathcal{O}) \vdash \{\mathcal{R}_1\} \quad \langle\mathcal{P}, \mathcal{V}, \mathcal{E}\rangle \quad \{\!\!\{\mathcal{R}_2; \mathsf{St}; \epsilon\}\!\!\}
 \]
 
+\subsubsection{State-Restoration Security}
+
+\begin{definition}[State-Restoration Soundness]
+    \label{def:sr_soundness}
+    \textbf{State-restoration soundness} is a security notion where the adversarial prover has access to
+    challenge oracles that can return the $i$-th challenge for any round $i$, given the input statement
+    and the transcript up to that point. This models stronger adversaries in the programmable random
+    oracle model or when challenges can be computed deterministically.
+
+    A verifier satisfies state-restoration soundness if for all input statements not in the language,
+    for all witnesses, and for all state-restoration provers, the probability that the verifier
+    outputs a statement in the output language is bounded by the soundness error.
+
+    \emph{Note: This definition is currently under development in the Lean formalization.}
+    % \lean{Verifier.srSoundness}
+\end{definition}
+
+\begin{definition}[State-Restoration Knowledge Soundness]
+    \label{def:sr_knowledge_soundness}
+    \textbf{State-restoration knowledge soundness} extends state-restoration soundness with the
+    requirement that there exists a straightline extractor that can recover valid witnesses from
+    any state-restoration prover that convinces the verifier.
+
+    \emph{Note: This definition is currently under development in the Lean formalization.}
+    % \lean{Verifier.srKnowledgeSoundness}
+\end{definition}
+
+
+% We can now define properties of interactive reductions. The two main properties we consider in this
+% project are completeness and various notions of soundness. We will cover zero-knowledge at a later
+% stage.
+
+% First, for completeness, this is essentially probabilistic Hoare-style conditions on the execution
+% of the oracle reduction (with the honest prover and verifier). In other words, given a predicate on
+% the initial context, and a predicate on the final context, we require that if the initial predicate
+% holds, then the final predicate holds with high probability (except for some \emph{completeness}
+% error).
+
+% \begin{definition}[Completeness]
+%     \label{def:completeness}
+%     \lean{Reduction.completeness}
+%     \uses{def:oracle_reduction}
+% \end{definition}
+
+% Almost all oracle reductions we consider actually satisfy \emph{perfect completeness}, which
+% simplifies the proof obligation. In particular, this means we only need to show that no matter what challenges are chosen, the verifier will always accept given messages from the honest prover.
+
+% For soundness, we need to consider different notions. These notions differ in two main aspects:
+% \begin{itemize}
+%     \item Whether we consider the plain soundness, or knowledge soundness. The latter relies on the
+%     notion of an \emph{extractor}.
+%     \item Whether we consider plain, state-restoration, round-by-round, or rewinding notion of
+%     soundness.
+% \end{itemize}
+
+% We note that state-restoration knowledge soundness is necessary for the security of the SNARK
+% protocol obtained from the oracle reduction after composing with a commitment scheme and applying
+% the Fiat-Shamir transform. It in turn is implied by either round-by-round knowledge soundness, or
+% special soundness (via rewinding). At the moment, we only care about non-rewinding soundness, so mostly we will care about round-by-round knowledge soundness.
+
+% \begin{definition}[Soundness]
+%     \label{def:soundness}
+%     \lean{Verifier.soundness}
+%     \uses{def:oracle_reduction}
+% \end{definition}
+
+% A (straightline) extractor for knowledge soundness is a deterministic algorithm that takes in the output public context after executing the oracle reduction, the side information (i.e. log of oracle queries from the malicious prover) observed during execution, and outputs the witness for the input context.
+
+% Note that since we assume the context is append-only, and we append only the public (or oracle)
+% messages obtained during protocol execution, it follows that the witness stays the same throughout
+% the execution.
+
+% \begin{definition}[Knowledge Soundness]
+%     \label{def:knowledge_soundness}
+%     \lean{Verifier.knowledgeSoundness}
+%     \uses{def:oracle_reduction}
+% \end{definition}
+
+% To define round-by-round (knowledge) soundness, we need to define the notion of a \emph{state function}. This is a (possibly inefficient) function $\mathsf{StateF}$ that, for every challenge sent by the verifier, takes in the transcript of the protocol so far and outputs whether the state is doomed or not. Roughly speaking, the requirement of round-by-round soundness is that, for any (possibly malicious) prover $P$, if the state function outputs that the state is doomed on some partial transcript of the protocol, then the verifier will reject with high probability.
+
+% \begin{definition}[State Function]
+%     \label{def:state_function}
+%     \lean{Verifier.StateFunction}
+% \end{definition}
+
+% \begin{definition}[Round-by-Round Soundness]
+%     \label{def:round_by_round_soundness}
+%     \lean{Verifier.rbrSoundness}
+%     \uses{def:oracle_reduction}
+% \end{definition}
+
+% \begin{definition}[Round-by-Round Knowledge Soundness]
+%     \label{def:round_by_round_knowledge_soundness}
+%     \lean{Verifier.rbrKnowledgeSoundness}
+%     \uses{def:oracle_reduction}
+% \end{definition}
+
+% \textbf{PL Formalization.} We write our definitions in PL notation in~\Cref{fig:type-defs}. The set of types $\Type$ is the same as Lean's dependent type theory (omitting universe levels); in particular, we care about basic dependent types (Pi and Sigma), finite natural numbers, finite fields, lists, vectors, and polynomials.
+
+% \begin{figure}[t]
+%     \[\begin{array}{rcl}
+%         % Basic types
+%         \mathsf{Type} &::=& \mathsf{Unit} \mid \mathsf{Bool} \mid \mathbb{N} \mid \mathsf{Fin}\; n \mid \mathbb{F}_q \mid \mathsf{List}\;(\alpha : \mathsf{Type}) \mid (i : \iota) \to \alpha\; i \mid (i : \iota) \times \alpha\; i \mid \dots \\[1em]
+%         % Protocol message types
+%         \mathsf{Dir} &::=& \mathsf{P2V.Pub} \mid \mathsf{P2V.Orac} \mid \mathsf{V2P} \\
+%         \mathsf{OI}\; (\mathrm{M} : \Type) &::=& \langle \mathrm{Q}, \mathrm{R}, \mathrm{M} \to \mathrm{Q} \to \mathrm{R} \rangle \\
+%         % Protocol type signature
+%         \pSpec\; (n : \mathbb{N}) &::=& \mathsf{Fin}\; n \to (d : \mathsf{Dir}) \times (M : \Type) \times (\mathsf{if}\; d = \mathsf{P2V.Orac} \; \mathsf{then} \; \mathsf{OI}(M) \; \mathsf{else} \; \mathsf{Unit}) \\
+%         % Oracle type signature
+%         \oSpec \; (\iota : \mathsf{Type}) &::=& (i : \iota) \to \mathsf{dom}\; i \times \mathsf{range}\; i \\[1em]
+%         % Contexts
+%         \varSigma &::=& \emptyset \mid \varSigma \times \Type \\
+%         \Omega &::=& \emptyset \mid \Omega \times \langle \mathrm{M} : \Type, \mathsf{OI}(\mathrm{M}) \rangle \\
+%         \Psi &::=& \emptyset \mid \Psi \times \Type\\
+%     \end{array}\]
+%     \[\begin{array}{rcl}
+%         \Gamma &::=& (\Psi; \Omega; \varSigma; \rho; \mathcal{O})\\
+%         \mathsf{OComp}^{\mathcal{O}}\; (\alpha : \Type) &::=& \mid\; \mathsf{pure}\; (a : \alpha) \\
+%         && \mid\; \mathsf{queryBind}\;(i : \iota)\; (q : \mathsf{dom}\; i)\; (k : \mathsf{range}\; i \to \mathsf{OComp}^{\mathcal{O}}\; \alpha) \\
+%         && \mid\; \mathsf{fail} \\[1em]
+%         \tau_{\mathsf{P}}(\Gamma) &::=& (i : \mathsf{Fin}\; n) \to (h : (\rho \; i).\mathsf{fst} = \mathsf{P2V}) \to \\
+%         && \varSigma \to \Omega \to \Psi \to \rho_{[:i]} \to \mathsf{OComp}^{\mathcal{O}}\;\left( (\rho \; i).\mathsf{snd}\right) \\[1em]
+
+%         \tau_{\mathsf{V}}(\Gamma) &::=& \varSigma \to (\rho.\mathsf{Chals}) \to \mathsf{OComp}^{\mathcal{O} :: \OI(\Omega) :: \OI(\rho.\mathsf{Msg.Orac})}\; \mathsf{Unit} \\[1em]
+%         \tau_{\mathsf{E}}(\Gamma) &::=& \varSigma \to \Omega \to \rho.\mathsf{Transcript} \to \calO.\mathsf{QueryLog} \to \Psi
+%     \end{array}\]
+%     \caption{Type definitions for interactive oracle reductions}
+%     \label{fig:type-defs}
+% \end{figure}
+
+% Using programming language notation, we can express an interactive oracle reduction as a typing judgment:
+% \[
+%     \Gamma := (\Psi; \Theta; \varSigma; \rho; \mathcal{O}) \vdash \mathcal{P} : \tau_{\mathsf{P}}(\Gamma), \; \mathcal{V} : \tau_{\mathsf{V}}(\Gamma)
+% \]
+% where:
+% \begin{itemize}
+%     \item $\Psi$ represents the witness (private) inputs
+%     \item $\Theta$ represents the oracle inputs
+%     \item $\varSigma$ represents the public inputs (i.e. statements)
+%     \item $\mathcal{O} : \oSpec\; \iota$ represents the shared oracle
+%     \item $\rho : \pSpec\; n$ represents the protocol type signature
+%     \item $\mathcal{P}$ and $\mathcal{V}$ are the prover and verifier, respectively, being of the given types $\tau_{\mathsf{P}}(\Gamma)$ and $\tau_{\mathsf{V}}(\Gamma)$.
+% \end{itemize}
+
+% To exhibit valid elements for the prover and verifier types, we will use existing functions in the ambient programming language (e.g. Lean).
+
+% By default, the properties we consider are perfect completeness and (straightline) round-by-round knowledge soundness. We can encapsulate these properties into the following typing judgement:
+
+% \[
+%     \Gamma := (\Psi; \Theta; \varSigma; \rho; \mathcal{O}) \vdash \{\mathcal{R}_1\} \quad \langle\mathcal{P}, \mathcal{V}, \mathcal{E}\rangle \quad \{\!\!\{\mathcal{R}_2; \mathsf{St}; \epsilon\}\!\!\}
+% \]

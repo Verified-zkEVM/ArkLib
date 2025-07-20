@@ -55,9 +55,7 @@ local instance : OracleInterface α where
   Response := α
   oracle := fun x _ => x
 
-def emptyPSpec : ProtocolSpec 0 := fun i => Fin.elim0 i
-
-def commitmentScheme : Commitment.Scheme emptyPSpec (oSpec α β γ) α β γ where
+def commitmentScheme : Commitment.Scheme (oSpec α β γ) α β γ ![] where
   commit := fun v r => commit v
   opening := .mk (sorry) (.mk (sorry))
 

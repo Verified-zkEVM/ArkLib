@@ -4,32 +4,57 @@ This section contains definitions and theorems about coding theory as they are u
 
 \begin{definition}[Code Distance]
     \label{def:code_distance}
-    \lean{codeDist}
+    \lean{Code.dist}
 \end{definition}
 
 \begin{definition}[Distance from a Code]
     \label{def:distance_from_code}
-    \lean{distFromCode}
+    \lean{Code.distFromCode}
 \end{definition}
 
 \begin{definition}[Generator Matrix]
     \label{def:generator_matrix}
-    \lean{codeByGenMatrix}
+    \lean{LinearCode.fromRowGenMat, LinearCode.fromColGenMat}
 \end{definition}
 
 \begin{definition}[Parity Check Matrix]
     \label{def:parity_check_matrix}
-    \lean{codeByCheckMatrix}
+    \lean{LinearCode.byCheckMatrix}
+\end{definition}
+
+\begin{definition}[Code]
+    \label{def:code}
+    \lean{ListDecodable.Code}
+\end{definition}
+
+\begin{definition}[Linear Code]
+    \label{def:linear_code}
+    \lean{LinearCode}
 \end{definition}
 
 \begin{definition}[Interleaved Code]
     \label{def:interleaved_code}
-    \lean{interleaveCode}
+    \lean{InterleavedCode}
 \end{definition}
 
 \begin{definition}[Reed-Solomon Code]
     \label{def:reed_solomon_code}
     \lean{ReedSolomon.code}
+\end{definition}
+
+\begin{definition}[Smooth Reed-Solomon Code]
+    \label{def:smooth_rs_code}
+    \lean{smoothCode}
+\end{definition}
+
+\begin{definition}[Constrained Code]
+    \label{def:constrained_code}
+    \lean{constrainedCode}
+\end{definition}
+
+\begin{definition}[Multi-constrained Code]
+    \label{def:multi_constrained_code}
+    \lean{multiConstrainedCode}
 \end{definition}
 
 \begin{definition}[Proximity Measure]
@@ -42,4 +67,16 @@ This section contains definitions and theorems about coding theory as they are u
     \label{def:proximity_gap}
     \lean{proximityGap}
     \uses{def:distance_from_code}
+\end{definition}
+
+\begin{definition}[List Decodability]
+    \label{def:list_decodable}
+    \lean{ListDecodable.listDecodable}
+    \uses{def:distance_from_code,def:code}
+\end{definition}
+
+\begin{definition}[List of Close Codewords]
+    \label{def:list_close_codewords}
+    \lean{ListDecodable.relHammingBall}
+    \uses{def:distance_from_code,def:code}
 \end{definition}

@@ -1,65 +1,316 @@
 \section{Simple Oracle Reductions}
 
-We start by introducing a number of simple oracle reductions.
+We start by introducing a number of simple oracle reductions that serve as fundamental building blocks for more complex proof systems. These components can be composed together to construct larger protocols.
 
-\subsection{Polynomial Equality Testing}
+\subsection{Trivial Reduction}
 
-Context: two univariate polynomials $P, Q \in \mathbb{F}[X]$ of degree at most $d$, available as polynomial evaluation oracles
+The simplest possible oracle reduction is one that performs no computation at all. Both the prover and verifier simply pass their inputs through unchanged. While seemingly trivial, this reduction serves as an important identity element for composition and provides a base case for lifting and lens operations.
 
-Input relation: $P = Q$ as polynomials
+\begin{definition}[DoNothing Reduction]
+    \label{def:donothing_reduction}
+    The DoNothing reduction is a zero-round protocol with the following components:
+    \begin{itemize}
+        \item \textbf{Protocol specification}: $\pSpec := []$ (empty protocol, no messages exchanged)
+        \item \textbf{Prover}: Simply stores the input statement and witness, and outputs them unchanged
+        \item \textbf{Verifier}: Takes the input statement and outputs it directly
+        \item \textbf{Input relation}: Any relation $R_{\mathsf{in}} : \StmtIn \to \WitIn \to \Prop$
+        \item \textbf{Output relation}: The same relation $R_{\mathsf{out}} := R_{\mathsf{in}}$
+    \end{itemize}
+    \lean{DoNothing.reduction, DoNothing.oracleReduction}
+\end{definition}
 
-Protocol type: a single message of type $\mathbb{F}$ from the verifier to the prover.
+\begin{theorem}[DoNothing Perfect Completeness]
+    The DoNothing reduction satisfies perfect completeness for any input relation.
+    \lean{DoNothing.reduction_completeness, DoNothing.oracleReduction_completeness}
+    \uses{def:donothing_reduction}
+\end{theorem}
 
-Honest prover: does nothing
+The oracle version of DoNothing handles oracle statements by passing them through unchanged as well. The prover receives both non-oracle and oracle statements as input, and outputs them in the same form to the verifier.
 
-Honest verifier: checks that $P(r) = Q(r)$
+\subsection{Sending the Witness}
 
-Output relation: $P(r) = Q(r)$
+A fundamental building block in many proof systems is the ability for the prover to transmit witness information to the verifier. The SendWitness reduction provides this functionality in both direct and oracle settings.
 
-Extractor: trivial since there is no witness
+\begin{definition}[SendWitness Reduction]
+    \label{def:sendwitness_reduction}
+    The SendWitness reduction is a one-round protocol where the prover sends the complete witness to the verifier:
+    \begin{itemize}
+        \item \textbf{Protocol specification}: $\pSpec := [(\PtoVdir, \WitIn)]$ (single message from prover to verifier)
+        \item \textbf{Prover}: Sends the witness $\mathbbm{w}$ as its single message
+        \item \textbf{Verifier}: Receives the witness and combines it with the input statement to form the output
+        \item \textbf{Input relation}: $R_{\mathsf{in}} : \StmtIn \to \WitIn \to \Prop$
+        \item \textbf{Output relation}: $R_{\mathsf{out}} : (\StmtIn \times \WitIn) \to \Unit \to \Prop$ defined by $((\mathsf{stmt}, \mathsf{wit}), ()) \mapsto R_{\mathsf{in}}(\mathsf{stmt}, \mathsf{wit})$
+    \end{itemize}
+    \lean{SendWitness.reduction}
+    \uses{def:reduction}
+\end{definition}
 
-Completenes: trivial
+\begin{theorem}[SendWitness Perfect Completeness]
+    The SendWitness reduction satisfies perfect completeness.
+    \lean{SendWitness.reduction_completeness}
+    \uses{def:sendwitness_reduction}
+\end{theorem}
 
-Round-by-round state function: corresponds precisely to input and output relation
+In the oracle setting, we consider two variants:
 
-\newcommand{\abs}[1]{\lvert #1 \rvert}
+\begin{definition}[SendWitness Oracle Reduction]
+    \label{def:sendwitness_oracle_reduction}
+    The oracle version handles witnesses that are indexed families of types with oracle interfaces:
+    \begin{itemize}
+        \item \textbf{Witness type}: $\WitIn : \iota_w \to \Type$ where each $\WitIn(i)$ has an oracle interface
+        \item \textbf{Protocol specification}: $\pSpec := [(\PtoVdir, \forall i, \WitIn(i))]$
+        \item \textbf{Output oracle statements}: Combination of input oracle statements and the transmitted witness
+    \end{itemize}
+    % \lean{SendWitness.oracleReduction}
+    \uses{def:oracle_reduction}
+\end{definition}
 
-Round-by-round error: $d / \abs{\mathbb{F}}$
+\begin{definition}[SendSingleWitness Oracle Reduction]
+    \label{def:sendsinglewitness_oracle_reduction}
+    A specialized variant for a single witness with oracle interface:
+    \begin{itemize}
+        \item \textbf{Witness type}: $\WitIn : \Type$ with oracle interface
+        \item \textbf{Protocol specification}: $\pSpec := [(\PtoVdir, \WitIn)]$
+        \item \textbf{Conversion}: Implicitly converts to indexed family $\WitIn : \Fin(1) \to \Type$
+    \end{itemize}
+    \lean{SendSingleWitness.oracleReduction}
+\end{definition}
 
-Round-by-round knowledge soundness: follows from Schwartz-Zippel
+\begin{theorem}[SendSingleWitness Perfect Completeness]
+    The SendSingleWitness oracle reduction satisfies perfect completeness.
+    \lean{SendSingleWitness.oracleReduction_completeness}
+    \uses{def:sendsinglewitness_oracle_reduction}
+\end{theorem}
 
-To summarize, we have the following judgment:
+\subsection{Oracle Equality Testing}
 
-\[
-    \begin{array}{c}
-        \Psi := (); \; \Theta := (P, Q); \; \Sigma := (); \; \tau := (\mathsf{V2P}, \mathbb{F}) \vdash \\[1ex]
-        \{P = Q\} \quad \left(
-        \begin{array}{l}
-            \mathcal{P} := (), \\
-            \mathcal{V} := (P,Q,r) \mapsto [P(r) \stackrel{?}{=} Q(r)], \\
-            \mathcal{E} := ()
-        \end{array}
-        \right)^{\emptyset} \quad \{\!\!\{P(r) = Q(r); \mathsf{St}_{P,Q}; \frac{d}{\abs{\mathbb{F}}}\}\!\!\}
-    \end{array}
-\]
-where $\mathsf{St}(i) = \begin{cases} P \stackrel{?}{=} Q \text{ if } i = 0 \\ P(r) \stackrel{?}{=} Q(r) \text{ if } i = 1 \end{cases}$
+One of the most fundamental oracle reductions is testing whether two oracles of the same type are equal. This is achieved through random sampling from the query space.
 
-\subsection{Batching Polynomial Evaluation Claims}
+\begin{definition}[RandomQuery Oracle Reduction]
+    \label{def:randomquery_oracle_reduction}
+    The RandomQuery reduction tests equality between two oracles by random querying:
+    \begin{itemize}
+        \item \textbf{Input}: Two oracles $\mathsf{a}, \mathsf{b}$ of the same type with oracle interface
+        \item \textbf{Protocol specification}: $\pSpec := [(\VtoPdir, \mathsf{Query})]$ (single challenge from verifier)
+        \item \textbf{Input relation}: $R_{\mathsf{in}}((), (\mathsf{a}, \mathsf{b}), ()) := (\mathsf{a} = \mathsf{b})$
+        \item \textbf{Verifier}: Samples random query $q$ and sends it to prover
+        \item \textbf{Prover}: Receives query $q$, performs no computation
+        \item \textbf{Output relation}: $R_{\mathsf{out}}((q, (\mathsf{a}, \mathsf{b})), ()) := (\mathsf{oracle}(\mathsf{a}, q) = \mathsf{oracle}(\mathsf{b}, q))$
+    \end{itemize}
+    \lean{RandomQuery.oracleReduction}
+    \uses{def:oracle_reduction}
+\end{definition}
 
-Context: $n$-tuple of values $v = (v_1, \ldots, v_n) \in \mathbb{F}^n$
+\begin{theorem}[RandomQuery Perfect Completeness]
+    The RandomQuery oracle reduction satisfies perfect completeness: if two oracles are equal, they will agree on any random query.
+    \lean{RandomQuery.oracleReduction_completeness}
+    \uses{def:randomquery_oracle_reduction}
+\end{theorem}
 
-Protocol type: one message of type $\mathbb{F}^k$ from the verifier to the prover, and another message of type $\mathbb{F}$ from the prover to the verifier
+The key security property of RandomQuery depends on the notion of oracle distance:
 
-Auxiliary function: a polynomial map $E : \mathbb{F}^k \to \mathbb{F}^n$
+\begin{definition}[Oracle Distance]
+    \label{def:oracle_distance}
+    For oracles $\mathsf{a}, \mathsf{b}$ of the same type, we define their distance as:
+    \[ \mathsf{distance}(\mathsf{a}, \mathsf{b}) := |\{q : \mathsf{Query} \mid \mathsf{oracle}(\mathsf{a}, q) \neq \mathsf{oracle}(\mathsf{b}, q)\}| \]
 
-Honest prover: given $r \gets \mathbb{F}^k$ from the verifier's message, computes $\langle E(r), v\rangle := E(r)_1 \cdot v_1 + \cdots + E(r)_n \cdot v_n$ and sends it to the verifier
+    We say an oracle type has distance bound $d$ if for any two distinct oracles $\mathsf{a} \neq \mathsf{b}$, we have $\mathsf{distance}(\mathsf{a}, \mathsf{b}) \geq |\mathsf{Query}| - d$.
+\end{definition}
 
-Honest verifier: checks that the received value $v'$ is equal to $\langle E(r), v\rangle$
+\begin{theorem}[RandomQuery Knowledge Soundness]
+    If the oracle type has distance bound $d$, then the RandomQuery oracle reduction satisfies round-by-round knowledge soundness with error probability $\frac{d}{|\mathsf{Query}|}$.
+    \lean{RandomQuery.rbr_knowledge_soundness}
+    \uses{def:randomquery_oracle_reduction, def:oracle_distance}
+\end{theorem}
 
-Extractor: trivial since there is no witness
+\begin{definition}[RandomQueryWithResponse Variant]
+    \label{def:randomquery_with_response}
+    A variant of RandomQuery where the second oracle is replaced with an explicit response:
+    \begin{itemize}
+        \item \textbf{Input}: Single oracle $\mathsf{a}$ and target response $r$
+        \item \textbf{Output relation}: $R_{\mathsf{out}}(((q, r), \mathsf{a}), ()) := (\mathsf{oracle}(\mathsf{a}, q) = r)$
+    \end{itemize}
+    This variant is useful when one wants to verify a specific query-response pair rather than oracle equality.
+    % \lean{RandomQueryWithResponse}
+    \uses{def:randomquery_oracle_reduction}
+\end{definition}
 
-Security: depends on the degree \& non-degeneracy of the polynomial map $E$
+We mention two special cases of RandomQuery that are useful for specific applications.
 
-% State function: TODO
+\subsubsection{Polynomial Equality Testing}
 
-% Round-by-round error: TODO
+A common application of oracle reductions is testing equality between polynomial oracles. This is a specific instance of the RandomQuery reduction applied to polynomial evaluation oracles.
+
+\begin{definition}[Polynomial Equality Testing]
+    \label{def:polynomial_equality_testing}
+    Consider two univariate polynomials $P, Q \in \mathbb{F}[X]$ of degree at most $d$, available as polynomial evaluation oracles. The polynomial equality testing reduction is defined as:
+    \begin{itemize}
+        \item \textbf{Input relation}: $P = Q$ as polynomials
+        \item \textbf{Protocol specification}: Single challenge of type $\mathbb{F}$ from verifier to prover
+        \item \textbf{Honest prover}: Receives the random field element $r$ but performs no computation
+        \item \textbf{Honest verifier}: Checks that $P(r) = Q(r)$ by querying both polynomial oracles
+        \item \textbf{Output relation}: $P(r) = Q(r)$ for the sampled point $r$
+    \end{itemize}
+\end{definition}
+
+\begin{theorem}[Polynomial Equality Testing Completeness]
+    The polynomial equality testing reduction satisfies perfect completeness: if $P = Q$ as polynomials, then $P(r) = Q(r)$ for any field element $r$.
+\end{theorem}
+
+\begin{theorem}[Polynomial Equality Testing Soundness]
+    The polynomial equality testing reduction satisfies round-by-round knowledge soundness with error probability $\frac{d}{|\mathbb{F}|}$, where $d$ is the maximum degree bound. This follows from the Schwartz-Zippel lemma: distinct polynomials of degree at most $d$ can agree on at most $d$ points.
+\end{theorem}
+
+The state function for this reduction corresponds precisely to the input and output relations, transitioning from checking polynomial equality to checking evaluation equality at the sampled point.
+
+\subsubsection{Batching Polynomial Evaluation Claims}
+
+Another important building block is the ability to batch multiple polynomial evaluation claims into a single check using random linear combinations.
+
+TODO: express this as a lifted version of $\mathsf{RandomQuery}$ over a virtual polynomial whose
+variables are the random linear combination coefficients.
+
+\begin{definition}[Batching Polynomial Evaluation Claims]
+    \label{def:batching_polynomial_evaluation}
+    Consider an $n$-tuple of values $v = (v_1, \ldots, v_n) \in \mathbb{F}^n$ and a polynomial map $E : \mathbb{F}^k \to \mathbb{F}^n$. The batching reduction is defined as:
+    \begin{itemize}
+        \item \textbf{Protocol specification}: Two messages:
+        \begin{enumerate}
+            \item Verifier sends random $r \in \mathbb{F}^k$ to prover
+            \item Prover sends $\langle E(r), v \rangle := \sum_{i=1}^n E(r)_i \cdot v_i$ to verifier
+        \end{enumerate}
+        \item \textbf{Honest prover}: Computes the inner product $\langle E(r), v \rangle$ and sends it
+        \item \textbf{Honest verifier}: Verifies that the received value equals the expected inner product
+        \item \textbf{Extractor}: Trivial since there is no witness to extract
+    \end{itemize}
+\end{definition}
+
+\begin{theorem}[Batching Completeness]
+    The batching polynomial evaluation reduction satisfies perfect completeness.
+\end{theorem}
+
+\begin{remark}[Batching Security]
+    The security of this reduction depends on the degree and non-degeneracy properties of the polynomial map $E$. The specific error bounds depend on the structure of $E$ and require careful analysis of the polynomial's properties.
+\end{remark}
+
+\subsection{Sending a Claim}
+
+The SendClaim reduction enables a prover to transmit a claim (oracle statement) to the verifier, who then verifies a relationship between the original and transmitted claims.
+
+\begin{definition}[SendClaim Oracle Reduction]
+    \label{def:sendclaim_oracle_reduction}
+    The SendClaim reduction is a one-round protocol for claim transmission:
+    \begin{itemize}
+        \item \textbf{Protocol specification}: $\pSpec := [(\PtoVdir, \OStmtIn)]$ (single oracle message)
+        \item \textbf{Input}: Statement and single oracle statement (via $\mathsf{Unique}$ index type)
+        \item \textbf{Prover}: Sends the input oracle statement as protocol message
+        \item \textbf{Verifier}: Executes oracle computation $\mathsf{relComp} : \StmtIn \to \OracleComp[\OStmtIn]_{\mathcal{O}} \Unit$
+        \item \textbf{Output oracle statements}: Sum type $\OStmtIn \oplus \OStmtIn$ containing both original and transmitted claims
+        \item \textbf{Output relation}: $R_{\mathsf{out}}((), \mathsf{oracles}) := \mathsf{oracles}(\mathsf{inl}) = \mathsf{oracles}(\mathsf{inr})$
+    \end{itemize}
+    \lean{SendClaim.oracleReduction}
+    \uses{def:oracle_reduction}
+\end{definition}
+
+\begin{theorem}[SendClaim Perfect Completeness]
+    The SendClaim oracle reduction satisfies perfect completeness when the input relation matches the oracle computation requirement.
+    \lean{SendClaim.completeness}
+    \uses{def:sendclaim_oracle_reduction}
+\end{theorem}
+
+\begin{remark}[SendClaim Development Status]
+    The SendClaim reduction is currently under active development in the Lean formalization. Several components including the verifier embedding and completeness proof require further implementation. The current version represents a specialized case that may be generalized in future iterations.
+    % TODO: Complete implementation as noted in the Lean code
+\end{remark}
+
+\subsection{Claim Reduction}
+
+A fundamental building block for constructing complex proof systems is the ability to locally reduce one type of claim to another. The ReduceClaim reduction provides this functionality through mappings between statement and witness types.
+
+\begin{definition}[ReduceClaim Reduction]
+    \label{def:reduceclaim_reduction}
+    The ReduceClaim reduction is a zero-round protocol that transforms claims via explicit mappings:
+    \begin{itemize}
+        \item \textbf{Protocol specification}: $\pSpec := []$ (no messages exchanged)
+        \item \textbf{Statement mapping}: $\mathsf{mapStmt} : \StmtIn \to \StmtOut$
+        \item \textbf{Witness mapping}: $\mathsf{mapWit} : \WitIn \to \WitOut$
+        \item \textbf{Prover}: Applies both mappings to input statement and witness
+        \item \textbf{Verifier}: Applies statement mapping to input statement
+        \item \textbf{Input relation}: $R_{\mathsf{in}} : \StmtIn \to \WitIn \to \Prop$
+        \item \textbf{Output relation}: $R_{\mathsf{out}} : \StmtOut \to \WitOut \to \Prop$
+        \item \textbf{Relation condition}: $R_{\mathsf{in}}(\mathsf{stmt}, \mathsf{wit}) \iff R_{\mathsf{out}}(\mathsf{mapStmt}(\mathsf{stmt}), \mathsf{mapWit}(\mathsf{wit}))$
+    \end{itemize}
+    \lean{ReduceClaim.reduction}
+    \uses{def:reduction}
+\end{definition}
+
+\begin{theorem}[ReduceClaim Perfect Completeness]
+    The ReduceClaim reduction satisfies perfect completeness when the relation condition holds.
+    \lean{ReduceClaim.reduction_completeness}
+    \uses{def:reduceclaim_reduction}
+\end{theorem}
+
+\begin{definition}[ReduceClaim Oracle Reduction]
+    \label{def:reduceclaim_oracle_reduction}
+    The oracle version additionally handles oracle statements through an embedding:
+    \begin{itemize}
+        \item \textbf{Oracle statement mapping}: Embedding $\mathsf{embedIdx} : \iota_{\mathsf{out}} \hookrightarrow \iota_{\mathsf{in}}$
+        \item \textbf{Type compatibility}: $\OStmtIn(\mathsf{embedIdx}(i)) = \OStmtOut(i)$ for all $i$
+        \item \textbf{Oracle embedding}: Maps output oracle indices to corresponding input oracle indices
+    \end{itemize}
+    \lean{ReduceClaim.oracleReduction}
+    \uses{def:oracle_reduction, def:reduceclaim_reduction}
+\end{definition}
+
+\begin{remark}[ReduceClaim Oracle Completeness]
+    The oracle version's completeness proof is currently under development in the Lean formalization.
+    % TODO: Complete when oracleReduction_completeness is implemented
+\end{remark}
+
+\subsection{Claim Verification}
+
+Another essential building block is the ability to verify that a given predicate holds for a statement without requiring additional witness information.
+
+\begin{definition}[CheckClaim Reduction]
+    \label{def:checkclaim_reduction}
+    The CheckClaim reduction is a zero-round protocol that verifies predicates:
+    \begin{itemize}
+        \item \textbf{Protocol specification}: $\pSpec := []$ (no messages exchanged)
+        \item \textbf{Predicate}: $\mathsf{pred} : \StmtIn \to \Prop$ (decidable)
+        \item \textbf{Prover}: Simply stores and outputs the input statement with unit witness
+        \item \textbf{Verifier}: Checks $\mathsf{pred}(\mathsf{stmt})$ and outputs statement if successful
+        \item \textbf{Input relation}: $R_{\mathsf{in}}(\mathsf{stmt}, ()) := \mathsf{pred}(\mathsf{stmt})$
+        \item \textbf{Output relation}: $R_{\mathsf{out}}(\mathsf{stmt}, ()) := \mathsf{True}$ (trivial after verification)
+    \end{itemize}
+    \lean{CheckClaim.reduction}
+    \uses{def:reduction}
+\end{definition}
+
+\begin{theorem}[CheckClaim Perfect Completeness]
+    The CheckClaim reduction satisfies perfect completeness.
+    \lean{CheckClaim.reduction_completeness}
+    \uses{def:checkclaim_reduction}
+\end{theorem}
+
+\begin{definition}[CheckClaim Oracle Reduction]
+    \label{def:checkclaim_oracle_reduction}
+    The oracle version handles predicates that require oracle access:
+    \begin{itemize}
+        \item \textbf{Oracle predicate}: $\mathsf{pred} : \StmtIn \to \OracleComp[\OStmtIn]_{\mathcal{O}} \Prop$
+        \item \textbf{Never-fails condition}: $\mathsf{pred}(\mathsf{stmt})$ never fails for any statement
+        \item \textbf{Oracle computation}: Verifier executes oracle computation to check predicate
+        \item \textbf{Input relation}: Defined via oracle simulation of the predicate
+    \end{itemize}
+    \lean{CheckClaim.oracleReduction}
+    \uses{def:oracle_reduction, def:checkclaim_reduction}
+\end{definition}
+
+\begin{theorem}[CheckClaim Oracle Perfect Completeness]
+    The CheckClaim oracle reduction satisfies perfect completeness.
+    \lean{CheckClaim.oracleReduction_completeness}
+    \uses{def:checkclaim_oracle_reduction}
+\end{theorem}
+
+\begin{remark}[CheckClaim Security Analysis]
+    The round-by-round knowledge soundness proofs for both reduction and oracle versions are currently under development in the Lean formalization.
+\end{remark}
