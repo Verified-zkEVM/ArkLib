@@ -19,7 +19,7 @@ lemma Polishchuk_Spielman {F : Type} [Semiring F] [Field F]
   (h_f_degX : a_x ≥ Bivariate.degreeX f) (h_g_degX : b_x ≥ Bivariate.degreeX g)
   (h_f_degY : a_y ≥ Bivariate.degreeY f) (h_g_degY : b_y ≥ Bivariate.degreeY g)
   (h_card_Px : n_x ≤ P_x.card) (h_card_Py : n_y ≤ P_y.card)
-  (h_le_1 : (1 : ℚ) > b_x / n_x + b_y / n_y)
+  (h_le_1 : 1 > (b_x : ℚ)/(n_x : ℚ) + (b_y : ℚ)/(n_y : ℚ))
   (h_quot_X : ∀ y ∈ P_y,
     (quot_X y).natDegree ≤ (b_x - a_x) ∧ Bivariate.evalY y g = (quot_X y) * (Bivariate.evalY y f))
   (h_quot_Y : ∀ x ∈ P_x,
@@ -30,5 +30,4 @@ lemma Polishchuk_Spielman {F : Type} [Semiring F] [Field F]
         ∀ x ∈ Q_x, Bivariate.evalX x q = quot_Y x)
     ∧ (∃ Q_y : Finset F, Q_y.card ≥ n_y - a_y ∧ Q_y ⊆ P_y ∧
         ∀ y ∈ Q_y, Bivariate.evalX y q = quot_X y)
-    := by
-  sorry
+    := sorry

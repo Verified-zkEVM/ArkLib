@@ -88,3 +88,40 @@ end sInf
 @[simp]
 lemma Fintype.zero_lt_card {ι : Type*} [Fintype ι] [Nonempty ι] : 0 < Fintype.card ι := by
   have := Fintype.card_ne_zero (α := ι); omega
+
+namespace Finset
+
+@[simp]
+theorem card_univ_filter_eq {α : Type*} [Fintype α] [DecidableEq α] {e : α} :
+  #{x : α | x ≠ e} = #(Finset.univ (α := α)) - 1 := by
+  rw [
+    Finset.filter_congr (q := (· ∉ ({e} : Finset _))) (by simp),
+    ←Finset.sdiff_eq_filter, Finset.card_univ_diff
+  ]
+  simp
+
+@[simp]
+theorem card_prod_self_eq {α : Type*} [Fintype α] [DecidableEq α] {s : Finset α} :
+  #(((s ×ˢ s : Finset _) ∩ ({x : α × α | x.1 = x.2} : Finset _)) : Finset _) = #s := by
+  rw [Finset.card_eq_of_equiv]
+  simp
+  exact ⟨
+    fun ⟨⟨x, _⟩, hx⟩ ↦ ⟨x, by tauto⟩,
+    (fun ⟨x, _⟩ ↦ by use ⟨x, x⟩),
+    by simp [Function.LeftInverse],
+    by simp [Function.RightInverse, Function.LeftInverse]
+  ⟩
+
+@[simp]
+theorem card_filter_prod_self_eq {α : Type*} [Fintype α] [DecidableEq α] {s : Finset α} :
+  #({x ∈ s ×ˢ s | x.1 = x.2}) = #s := by
+  rw [Finset.card_eq_of_equiv]
+  simp
+  exact ⟨
+    fun ⟨x, _⟩ ↦ ⟨x.1, by tauto⟩,
+    fun ⟨x, hx⟩ ↦ ⟨(x, x), by tauto⟩,
+    by simp [Function.LeftInverse],
+    by simp [Function.LeftInverse, Function.RightInverse]
+  ⟩
+
+end Finset

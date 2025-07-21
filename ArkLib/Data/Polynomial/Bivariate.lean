@@ -11,6 +11,8 @@ import Mathlib.Data.Fintype.Defs
 open Polynomial
 open Polynomial.Bivariate
 
+namespace Polynomial
+
 namespace Bivariate
 
 noncomputable section
@@ -307,3 +309,5 @@ theorem totalDegree_prod (hf : f ≠ 0) (hg : g ≠ 0) :
 
 end
 end Bivariate
+
+end Polynomial
