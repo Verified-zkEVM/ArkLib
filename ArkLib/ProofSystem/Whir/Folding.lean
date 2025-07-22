@@ -30,7 +30,7 @@ noncomputable def extract_x
     here xPow is of the form `x ^ 2^k`.
   It returns the value `f(xPow) + f(- xPow)/2 + α * (f(xPow) - f(- xPow))/ 2 * xPow`. -/
 noncomputable def foldf (S : Finset ι) (φ : ι ↪ F)
-  {k : ℕ} [ Neg (indexPowT S φ k) ] (y : indexPowT S φ (k+1))
+  {k : ℕ} [Neg (indexPowT S φ k)] (y : indexPowT S φ (k + 1))
   (f : indexPowT S φ k → F) (α : F) : F :=
   let xPow := extract_x S φ k y
   let fx := f xPow
