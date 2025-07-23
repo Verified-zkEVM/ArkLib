@@ -28,6 +28,11 @@ lemma bit_lt_2 {k n : Nat} : bit k n < 2 := by
   rw [Nat.and_one_is_mod]
   simp only [gt_iff_lt, Nat.ofNat_pos, Nat.mod_lt]
 
+lemma bit_zero_eq_zero {k : Nat} : bit k 0 = 0 := by
+  unfold bit
+  rw [Nat.zero_shiftRight]
+  rw [Nat.and_one_is_mod]
+
 lemma bit_eq_zero_or_one {k n : Nat} :
   bit k n = 0 ∨ bit k n = 1 := by
   unfold bit
@@ -668,6 +673,12 @@ lemma bit_eq_succ_bit_of_mul_two_add_one {n k : ℕ} : bit (k+1) (2*n + 1) = bit
   conv_rhs at res => rw [←h_n_eq]
   exact res
 
+lemma bit_eq_pred_bit_of_div_two {n k : ℕ} (h_k: k > 0) : bit k (n) = bit (k-1) (n/2) := by
+  rw [←Nat.pow_one 2]
+  rw [←Nat.shiftRight_eq_div_pow]
+  conv_lhs => rw [←Nat.sub_add_cancel (n:=k) (m:=1) (h:=by omega)]
+  exact Eq.symm (bit_of_shiftRight (k - 1))
+
 theorem bit_repr {ℓ : Nat} (h_ℓ : ℓ > 0) : ∀ j, j < 2^ℓ →
   j = ∑ k ∈ Finset.Icc 0 (ℓ-1), (bit k j) * 2^k := by
   induction ℓ with
@@ -859,7 +870,8 @@ lemma get_lsb_succ {n: ℕ} (num_lsb_bits: ℕ) : get_lsb n (num_lsb_bits + 1) =
       omega
 
 /-- This takes a argument for the number of lsbs to remove from the number -/
-def get_msb (n : ℕ) (num_lsb_bits : ℕ) : ℕ := (n >>> num_lsb_bits) <<< num_lsb_bits
+def get_msb_no_shl (n : ℕ) (num_lsb_bits : ℕ) : ℕ := n >>> num_lsb_bits
+def get_msb (n : ℕ) (num_lsb_bits : ℕ) : ℕ := (get_msb_no_shl n num_lsb_bits) <<< num_lsb_bits
 
 theorem msb_and_lsb_eq_zero {n : ℕ} (num_lsb_bits : ℕ) :
     get_msb n num_lsb_bits &&& get_lsb n num_lsb_bits = 0 := by
@@ -914,6 +926,24 @@ lemma num_eq_msb_xor_lsb {n: ℕ} (num_lsb_bits: ℕ) :
   rw [←sum_of_and_eq_zero_is_xor]
   · exact num_eq_msb_add_lsb (n := n) (num_lsb_bits := num_lsb_bits)
   · exact msb_and_lsb_eq_zero (n := n) (num_lsb_bits := num_lsb_bits)
+
+lemma bit_of_msb {n: ℕ} (num_lsb_bits : ℕ) : ∀ k, bit k (get_msb n num_lsb_bits) =
+    if k < num_lsb_bits then 0 else bit (k) (n) := by
+  intro k
+  simp only [get_msb, get_msb_no_shl]
+  rw [bit_of_shiftLeft]
+  if h_k: k < num_lsb_bits then
+    simp only [h_k, ↓reduceIte]
+  else
+    simp only [h_k, ↓reduceIte]
+    rw [bit_of_shiftRight]
+    rw [Nat.sub_add_cancel (by omega)]
+
+lemma bit_of_msb_no_shl {n: ℕ} (num_lsb_bits : ℕ) : ∀ k, bit k (get_msb_no_shl n num_lsb_bits)
+  = bit (k + num_lsb_bits) (n) := by
+  intro k
+  simp only [get_msb_no_shl]
+  exact bit_of_shiftRight k
 
 end BitwiseIdentities
 section FinNatHelper

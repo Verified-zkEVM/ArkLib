@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2024 ArkLib Contributors. All rights reserved.
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen
 -/
@@ -40,7 +40,7 @@ theorem non_zero_divisors_iff (M₀ : Type*) [Mul M₀] [Zero M₀] :
   ⟨fun h => h.1, fun h => ⟨h⟩⟩
 
 instance neZero_one_of_nontrivial_comm_monoid_zero {M₀ : Type*}
-  [CommMonoidWithZero M₀] [instNontrivial:Nontrivial M₀] : NeZero (1 : M₀) :=
+  [CommMonoidWithZero M₀] [instNontrivial : Nontrivial M₀] : NeZero (1 : M₀) :=
 {
   out := by
     -- Get witness of nontriviality
@@ -80,7 +80,7 @@ instance unit_of_nontrivial_comm_monoid_with_zero_is_not_zero
   rw [zero_mul_inv_eq_0] at zero_mul_inv_eq_1
 
   have one_ne_zero: NeZero (1: R) := by exact neZero_one_of_nontrivial_comm_monoid_zero
-  simp [one_ne_zero] at zero_mul_inv_eq_1
+  simp only [zero_ne_one] at zero_mul_inv_eq_1
 
 /-- Any element in `GF(2)` is either `0` or `1`. -/
 theorem GF_2_value_eq_zero_or_one (x : GF(2)) : x = 0 ∨ x = 1 := by
@@ -96,10 +96,12 @@ theorem GF_2_value_eq_zero_or_one (x : GF(2)) : x = 0 ∨ x = 1 := by
 
   -- Step 3: Transfer this property to `GF(2)` via the isomorphism
   have h := hZMod (φ x)
-  cases' h with h_x_is_0 h_x_is_1
+  cases h with
+  | inl h_x_is_0 =>
   · left
     exact (φ.map_eq_zero_iff).mp h_x_is_0 -- Since `φ` is an isomorphism, `φ x = 0` implies `x = 0`
-  · right
+  | inr h_x_is_1 =>
+    right
     exact (φ.map_eq_one_iff).mp h_x_is_1 -- Similarly, `φ x = 1` implies `x = 1`
 
 theorem GF_2_one_add_one_eq_zero : (1 + 1 : GF(2)) = 0 := by
@@ -134,7 +136,7 @@ theorem GF_2_one_add_one_eq_zero : (1 + 1 : GF(2)) = 0 := by
 
   exact h_1_add_1_eq_zero_in_GF_2
 
-theorem withBot_lt_one_cases (x : WithBot ℕ) (h : x < (1: ℕ)) : x = ⊥ ∨ x = (0: ℕ) := by
+theorem withBot_lt_one_cases (x : WithBot ℕ) (h : x < (1 : ℕ)) : x = ⊥ ∨ x = (0: ℕ) := by
   match x with
   | ⊥ =>
     left -- focus on the left constructof of the goal (in an OR statement)
@@ -249,8 +251,8 @@ theorem unique_repr {R : Type*} [CommRing R] {S : Type*} [CommRing S] [Algebra R
   rw [rerp_eq_rerp1] at rerpr_eq_rerp2
   exact rerpr_eq_rerp2
 
-theorem linear_sum_repr(R : Type*) [CommRing R] (S : Type*) [CommRing S] [Algebra R S]
-    (pb : PowerBasis R S) (h_dim : pb.dim = (2: ℕ)) (s : S) :
+theorem linear_sum_repr (R : Type*) [CommRing R] (S : Type*) [CommRing S] [Algebra R S]
+    (pb : PowerBasis R S) (h_dim : pb.dim = (2 : ℕ)) (s : S) :
     ∃ a b : R, s = a • pb.gen + algebraMap R S b := by
   let tmp: Basis (Fin pb.dim) R S := pb.basis
   let repr : (Fin pb.dim) →₀ R := pb.basis.repr s
@@ -399,7 +401,7 @@ theorem linear_form_of_elements_in_adjoined_commring
   have oleft: (a: R) • root (f: R[X]) = (AdjoinRoot.of f) a * root f := by
     simp [Algebra.smul_def] -- Definition of algebra scalar multiplication
   have oright: (algebraMap R (AdjoinRoot f)) b = (of f) b := by
-    simp [Algebra.smul_def]
+    simp only [AdjoinRoot.algebraMap_eq]
   rw [oleft, oright] at c1_linear_comb_over_a_b
   exact c1_linear_comb_over_a_b
 
@@ -508,11 +510,11 @@ theorem one_le_two_pow_n (n : ℕ) : 1 ≤ 2 ^ n := by
     1 = 2^0               := by rw [Nat.pow_zero]
     _ ≤ 2 ^ n         := Nat.pow_le_pow_right (by decide) (by exact Nat.zero_le n)
 
-theorem zero_lt_pow_n (m: ℕ) (n: ℕ) (h_m: m > 0): 0 < m^n := by
+theorem zero_lt_pow_n (m : ℕ) (n : ℕ) (h_m : m > 0): 0 < m^n := by
   exact Nat.pow_pos h_m
 
 -- 1 ≤ 2 ^ k - 2 ^ (k - 1)
-theorem one_le_sub_consecutive_two_pow (n: ℕ): 1 ≤ 2^(n+1) - 2^n := by
+theorem one_le_sub_consecutive_two_pow (n : ℕ): 1 ≤ 2^(n+1) - 2^n := by
   calc
     1 ≤ 2^n := Nat.one_le_pow _ _ (by decide)
     _ = 2^(n+1) - 2^n := by
@@ -527,9 +529,9 @@ theorem two_pow_ne_zero (n : ℕ) : 2 ^ n ≠ 0 := by
   exact Nat.not_le_of_gt (by decide) h_1_le_0
 
 /-- For any field element (x:F) where x^2 = x*z + 1, this theorem gives a closed form for x^(2^i) -/
-theorem pow_exp_of_2_repr_given_x_square_repr {F : Type*} [instField: Field F]
-  (sumZeroIffEq: ∀ (x y : F), x + y = 0 ↔ x = y) (x z: F) (h_z_non_zero: z ≠ 0)
-  (h_x_square: x^2 = x*z + 1)
+theorem pow_exp_of_2_repr_given_x_square_repr {F : Type*} [instField : Field F]
+  (sumZeroIffEq : ∀ (x y : F), x + y = 0 ↔ x = y) (x z : F) (h_z_non_zero : z ≠ 0)
+  (h_x_square : x ^ 2 = x * z + 1)
   : ∀ i : ℕ, x^(2^i) = x * z^(2^i - 1) + ∑ j ∈ Finset.Icc 1 i, z^(2^i - 2^j) := by
   intro i
   induction i with
@@ -644,7 +646,7 @@ theorem pow_exp_of_2_repr_given_x_square_repr {F : Type*} [instField: Field F]
             exact Nat.sub_add_cancel one_le_left_bound
           · -- function value match
             intro i hi
-            simp only [Nat.add_sub_cancel]
+            simp only
           · -- left membership preservation
             intro i hi
             -- ⊢ i + 1 ∈ Finset.Icc 2 (n + 1)
@@ -698,7 +700,7 @@ theorem pow_exp_of_2_repr_given_x_square_repr {F : Type*} [instField: Field F]
                   · exact h2
               rw [h]
               rw [Finset.sum_sdiff_eq_sub]
-              simp [Finset.singleton_subset_iff]
+              simp only [pow_one, Finset.sum_singleton, add_sub_cancel]
               -- ⊢ {1} ⊆ Finset.Icc 1 (n + 1)
               exact singleton_subset_Icc n
 
@@ -776,11 +778,12 @@ def PolyInstances (F : Type _) [Field F] (specialElement : F) :
   let newPoly : F[X] := X^2 + (t1 * X + 1)
   let poly_form: newPoly = X^2 + (t1 * X + 1) := rfl
 
-  have deg_X2 : (X^2 : F[X]).degree = 2 := by simp [degree_X_pow]
+  have deg_X2 : (X^2 : F[X]).degree = 2 := by simp only [degree_pow, degree_X, nsmul_eq_mul,
+    Nat.cast_ofNat, mul_one]
   have deg_1_le_0 : (1 : F[X]).degree ≤ 0 := by simp [degree_one]
   have deg_q_lt_2 : (t1 * X + 1).degree < 2 :=
     have deg_left_le_1 : (t1 * X).degree ≤ 1 := by
-      simp [degree_C_mul_X_le] -- Goal: t1.degree + 1 ≤ 1
+      simp only [degree_mul, degree_X] -- Goal: t1.degree + 1 ≤ 1
       calc
         t1.degree + 1 ≤ 0 + 1 := add_le_add_right deg_t1_le_0 1
         _ = 1 := by norm_num
@@ -789,7 +792,7 @@ def PolyInstances (F : Type _) [Field F] (specialElement : F) :
       -- Apply `degree_add_le`
     calc
       (t1 * X + 1).degree ≤ max (t1 * X).degree (1 : F[X]).degree := degree_add_le _ _
-      _ ≤ max (t1 * X).degree 0 := by simp [deg_left_le_1, deg_right]
+      _ ≤ max (t1 * X).degree 0 := by simp only [degree_mul, degree_X, deg_right, le_refl]
       _ ≤ 1 := by
         apply max_le
         · exact deg_left_le_1
@@ -881,10 +884,10 @@ theorem inverse_is_root_of_prevPoly
     (of_prev : prevBTField →+* curBTField)
     (u : curBTField) (t1 : prevBTField)
     (specialElementNeZero : u ≠ 0)
-    (eval_prevPoly_at_root : u^2 + of_prev t1 * u + 1 = 0)
-    (h_eval : ∀ (x: curBTField),
-      eval₂ of_prev x (X^2 + (C t1 * X + 1)) = x^2 + of_prev t1 * x + 1) :
-    eval₂ of_prev u⁻¹ (X^2 + (C t1 * X + 1)) = 0 := by
+    (eval_prevPoly_at_root : u ^ 2 + of_prev t1 * u + 1 = 0)
+    (h_eval : ∀ (x : curBTField),
+      eval₂ of_prev x (X ^ 2 + (C t1 * X + 1)) = x ^ 2 + of_prev t1 * x + 1) :
+    eval₂ of_prev u⁻¹ (X ^ 2 + (C t1 * X + 1)) = 0 := by
     let u1 := u⁻¹
     rw [h_eval u1]
     have u1_eq_u_pow_minus_1 : u1 = 1/u := by
@@ -918,9 +921,9 @@ theorem inverse_is_root_of_prevPoly
 
 theorem sum_of_root_and_inverse_is_t1
     {curBTField : Type*} [Field curBTField]
-    (u : curBTField) (t1: curBTField) -- here t1 is already lifted to curBTField
+    (u : curBTField) (t1 : curBTField) -- here t1 is already lifted to curBTField
     (specialElementNeZero : u ≠ 0)
-    (eval_prevPoly_at_root : u^2 + t1 * u + 1 = 0)
+    (eval_prevPoly_at_root : u ^ 2 + t1 * u + 1 = 0)
     (sumZeroIffEq : ∀ (x y : curBTField), x + y = 0 ↔ x = y) :
     u + u⁻¹ = t1 := by
   -- ⊢ u + u⁻¹ = t1
@@ -975,7 +978,7 @@ theorem self_sum_eq_zero
     _ = 0 := by ring
 
 theorem sum_zero_iff_eq_of_self_sum_zero {F : Type*} [AddGroup F]
-  (h_self_sum_eq_zero: ∀ (x : F), x + x = 0) : ∀ (x y : F), x + y = 0 ↔ x = y := by
+  (h_self_sum_eq_zero : ∀ (x : F), x + x = 0) : ∀ (x y : F), x + y = 0 ↔ x = y := by
   intro x y
   have y_sum_y_eq_0: y + y = 0 := h_self_sum_eq_zero y
   constructor
@@ -1104,12 +1107,12 @@ theorem galois_automorphism_power
     {curBTField : Type*} [Field curBTField]
     (u : curBTField) (t1 : curBTField) -- here t1 is already lifted to curBTField
     (k : ℕ)
-    (sumZeroIffEq: ∀ (x y : curBTField), x + y = 0 ↔ x = y)
+    (sumZeroIffEq : ∀ (x y : curBTField), x + y = 0 ↔ x = y)
     (specialElementNeZero : u ≠ 0)
     (prevSpecialElementNeZero : t1 ≠ 0)
     (u_plus_inv_eq_t1 : u + u⁻¹ = t1)
-    (h_u_square: u^2 = u*t1 + 1)
-    (h_t1_pow: t1^(2^(2^k)-1) = 1 ∧ (t1⁻¹)^(2^(2^k)-1) = 1)
+    (h_u_square : u ^ 2 = u * t1 + 1)
+    (h_t1_pow : t1 ^ (2 ^ (2 ^ k) - 1) = 1 ∧ (t1⁻¹) ^ (2 ^ (2 ^ k) - 1) = 1)
     (trace_map_roots : ∑ i ∈ Finset.range (2 ^ k), t1 ^ (2 ^ i) = 1 ∧
                       ∑ i ∈ Finset.range (2 ^ k), t1⁻¹ ^ (2 ^ i) = 1) :
     u^(2^(2^k)) = u⁻¹ ∧ (u⁻¹)^(2^(2^k)) = u := by
@@ -1146,7 +1149,8 @@ theorem galois_automorphism_power
         constructor
         · intro h; rw [h];
         · intro h;
-          simp [mul_inv_cancel] at h -- h : (u ^ 2)⁻¹ = u⁻¹ * t1 + 1 ∨ u = 0
+          simp only [inv_pow, mul_eq_mul_left_iff, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true,
+            pow_eq_zero_iff] at h -- h : (u ^ 2)⁻¹ = u⁻¹ * t1 + 1 ∨ u = 0
           have h1 : (u ^ 2)⁻¹ = u⁻¹ * t1 + 1 := by
             cases h with
             | inl h_left => exact h_left  -- (u ^ 2)⁻¹ = u⁻¹ * t1 + 1
@@ -1182,7 +1186,7 @@ theorem sum_Icc_split {α : Type*} [AddCommMonoid α] (f : ℕ → α) (a b c : 
       have h_false : b < b := Nat.lt_of_succ_le h_contradiction
       exact absurd h_false (lt_irrefl b)
     · intro h -- h : i ∈ ∅
-      exact absurd h (Finset.not_mem_empty i)
+      exact absurd h (Finset.notMem_empty i)
 
   rw [←Finset.sum_union h_disjoint]
   · congr
@@ -1313,10 +1317,10 @@ theorem rsum_eq_t1_square_aux
   {curBTField : Type*} [Field curBTField]
   (u : curBTField) -- here u is already lifted to curBTField
   (k : ℕ)
-  (x_pow_card: ∀ (x : curBTField), x^(2^(2^(k+1))) = x)
+  (x_pow_card : ∀ (x : curBTField), x ^ (2 ^ (2 ^ (k + 1))) = x)
   (u_ne_zero : u ≠ 0)
-  (trace_map_at_prev_root: ∑ i ∈ Finset.range (2^(k+1)), u ^ (2 ^ i)
-    = 1 ∧ ∑ i ∈ Finset.range (2^(k+1)), u⁻¹ ^ (2 ^ i) = 1):
+  (trace_map_at_prev_root : ∑ i ∈ Finset.range (2 ^ (k + 1)), u ^ (2 ^ i) = 1
+    ∧ ∑ i ∈ Finset.range (2 ^ (k + 1)), u⁻¹ ^ (2 ^ i) = 1):
    ∑ j ∈ Finset.Icc 1 (2 ^ (k + 1)), u ^ (2 ^ 2 ^ (k + 1) - 2 ^ j) = u := by
 
   have trace_map_icc_t1: ∑ j ∈ Finset.Icc 0 (2^(k+1)-1), u ^ (2^j) = 1 := by
@@ -1391,7 +1395,7 @@ theorem rsum_eq_t1_square_aux
         simp [Finset.mem_Icc] at hi
         by_cases h : i = 0
         · simp [h]
-        · simp [h]; -- hi : 1 ≤ i ∧ i ≤ 2 ^ (k + 1)
+        · simp only [Finset.mem_Icc, zero_le, true_and]; -- hi : 1 ≤ i ∧ i ≤ 2 ^ (k + 1)
           -- h : ¬i = 0
           -- ⊢ (if i = 2 ^ (k + 1) then 0 else i) ≤ 2 ^ (k + 1) - 1
           split_ifs with h2
@@ -1422,4 +1426,84 @@ theorem rsum_eq_t1_square_aux
                 (h:=one_le_two_pow_n (k+1))]
           exact ⟨one_le_i, tmp⟩
     _ = u := by rw [trace_map_icc_t1_inv, mul_one]
+
 end
+
+section TowerAglEquivDefs
+/-!
+# Tower Algebra Equivalences
+
+This section defines `TowerAlgebra` which specifies a tower of algebras.
+`TowerAlgEquiv` is an equivalence of algebras that are part of a tower structure.
+This is useful when working with constructions like towers of field extensions.
+-/
+
+class TowerAlgebra {ι : Type*} [Preorder ι] (TA : ι → Type*)
+  [∀ i, CommSemiring (TA i)] where
+  protected towerAlgebraMap : ∀ i j, (h: i ≤ j) → (TA i →+* TA j)
+  -- for case where smul is not derived from towerAlgebraMap
+  protected smul: ∀ i j, (h: i ≤ j) → (SMul (TA i) (TA j))
+  commutes' : ∀ (i j : ι) (h : i ≤ j) (r : TA i) (x : TA j),
+    (towerAlgebraMap i j h r) * x = x * (towerAlgebraMap i j h r)
+  smul_def' : ∀ (i j : ι) (h : i ≤ j) (r : TA i) (x : TA j),
+    (smul i j h).smul r x = (towerAlgebraMap i j h r) * x
+
+class AssocTowerAlgebra {ι : Type*} [Preorder ι] (TA : ι → Type*)
+  [∀ i, CommSemiring (TA i)] extends TowerAlgebra TA where
+  assoc': ∀ (i j k : ι) (h1 : i ≤ j) (h2 : j ≤ k),
+    towerAlgebraMap (i:=i) (j:=k) (h:=h1.trans h2) =
+      (towerAlgebraMap (i:=j) (j:=k) (h:=h2)).comp
+      (towerAlgebraMap (i:=i) (j:=j) (h:=h1))
+
+variable {ι : Type*} [Preorder ι]
+  {A : ι → Type*} [∀ i, CommSemiring (A i)] [TowerAlgebra A]
+  {B : ι → Type*} [∀ i, CommSemiring (B i)] [TowerAlgebra B]
+  {C : ι → Type*} [∀ i, CommSemiring (C i)] [AssocTowerAlgebra C]
+@[simp]
+def TowerAlgebra.toAlgebra {i j : ι} (h : i ≤ j) : Algebra (A i) (A j) :=
+  (TowerAlgebra.towerAlgebraMap (i:=i) (j:=j) (h:=h)).toAlgebra
+
+@[simp]
+instance AssocTowerAlgebra.toIsScalarTower (a : AssocTowerAlgebra C) {i j k : ι}
+    (h1 : i ≤ j) (h2 : j ≤ k) :
+    letI : Algebra (C i) (C j) := by exact a.toAlgebra h1
+    letI : Algebra (C j) (C k) := by exact a.toAlgebra h2
+    letI : Algebra (C i) (C k) := by exact a.toAlgebra (h1.trans h2)
+    IsScalarTower (C i) (C j) (C k) := by
+  letI instIJ: Algebra (C i) (C j) := by exact a.toAlgebra h1
+  letI instJK: Algebra (C j) (C k) := by exact a.toAlgebra h2
+  letI instIK: Algebra (C i) (C k) := by exact a.toAlgebra (h1.trans h2)
+  exact {
+    smul_assoc := fun (x : C i) (y : C j) (z : C k) => by
+      simp_rw [Algebra.smul_def]
+      simp only [map_mul]
+      rw [←RingHom.comp_apply]
+      unfold instIJ instJK instIK TowerAlgebra.toAlgebra
+      simp_rw [algebraMap, Algebra.algebraMap]
+      have h_assoc := a.assoc' (i:=i) (j:=j) (k:=k) (h1:=h1) (h2:=h2)
+      rw [h_assoc]
+      rw [mul_assoc]
+  }
+
+structure TowerAlgEquiv (A : ι → Type*) [∀ i, CommSemiring (A i)] [a : TowerAlgebra A]
+  (B : ι → Type*) [∀ i, CommSemiring (B i)] [TowerAlgebra B]
+  where
+    toRingEquiv: ∀ i, (A i ≃+* B i)
+    commutesLeft' : ∀ (i j : ι) (h : i ≤ j) (r : A i),
+      TowerAlgebra.towerAlgebraMap (TA:=B) (i:=i) (j:=j) (h:=h) ((toRingEquiv i) r) =
+      (toRingEquiv j) (TowerAlgebra.towerAlgebraMap (TA:=A) (i:=i) (j:=j) (h:=h) r)
+
+lemma TowerAlgEquiv.commutesRight' (e : TowerAlgEquiv A B) (i j : ι) (h : i ≤ j) (r : B i) :
+  TowerAlgebra.towerAlgebraMap (TA:=A) (i:=i) (j:=j) (h:=h) ((e.toRingEquiv i).symm r) =
+  (e.toRingEquiv j).symm (TowerAlgebra.towerAlgebraMap (TA:=B) (i:=i) (j:=j) (h:=h) r):= by
+  apply (e.toRingEquiv j).injective
+  set r2: A i := (e.toRingEquiv i).symm r
+  rw [←e.commutesLeft' (i:=i) (j:=j) (h:=h) (r:=r2)]
+  simp only [RingEquiv.apply_symm_apply]
+  have h_e_r2_rfl: e.toRingEquiv i r2 = r := by exact RingEquiv.apply_symm_apply (e.toRingEquiv i) r
+  rw [h_e_r2_rfl]
+
+structure AssocTowerEquiv (A : ι → Type*) [∀ i, CommSemiring (A i)] [AssocTowerAlgebra A]
+  (B : ι → Type*) [∀ i, CommSemiring (B i)] [AssocTowerAlgebra B] extends TowerAlgEquiv A B
+
+end TowerAglEquivDefs

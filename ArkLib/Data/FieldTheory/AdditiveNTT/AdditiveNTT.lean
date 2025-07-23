@@ -1807,7 +1807,7 @@ lemma NTTStage_correctness
       = j.val - get_lsb j.val (i.val + 1) := by
     have h_msb := num_eq_msb_add_lsb (n:=j.val) (num_lsb_bits:=i.val + 1)
     conv_rhs => enter [1]; rw [h_msb]
-    norm_num; rw [get_msb, Nat.shiftLeft_eq, Nat.shiftRight_eq_div_pow]
+    norm_num; rw [get_msb, get_msb_no_shl, Nat.shiftLeft_eq, Nat.shiftRight_eq_div_pow]
 
   by_cases h_b_bit_eq_0: (j.val / (2 ^ i.val)) % 2 = 0
   · simp only [h_b_bit_eq_0, ↓reduceDIte]
@@ -1890,7 +1890,7 @@ lemma NTTStage_correctness
           -- ⊢ ↑j < ↑j / 2 ^ (↑i + 1) * 2 ^ (↑i + 1) + 2 ^ ↑i
           have h_j: j = j / 2^(i.val + 1) * 2^(i.val + 1) + get_lsb j.val i.val := by
             conv_lhs => rw [num_eq_msb_add_lsb (n:=j.val) (num_lsb_bits:=i.val + 1)]
-            rw [get_msb, Nat.shiftLeft_eq, Nat.shiftRight_eq_div_pow]
+            rw [get_msb, get_msb_no_shl, Nat.shiftLeft_eq, Nat.shiftRight_eq_div_pow]
             apply Nat.add_left_cancel_iff.mpr
             rw [get_lsb_succ]
             conv_rhs => rw [←Nat.add_zero (n:=get_lsb j.val i.val)]
