@@ -69,7 +69,7 @@ structure ProximityGenerator
       `|S| ≥ (1-δ)⬝|ι|`) on which each `fᵢ` agrees with some codeword in `C`. -/
   proximity:
     ∀ (f : parℓ → ι → F)
-      (δ : ℝ)
+      (δ : ℝ≥0)
       (_hδ : 0 < δ ∧ δ < 1 - (B C parℓ)) ,
       Pr_{ let r ← $ᵖ F }[ (proximityCondition f δ Fun C r) ] > (err C parℓ δ) →
         ∃ S : Finset ι,
