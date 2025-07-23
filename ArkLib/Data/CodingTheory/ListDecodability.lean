@@ -29,7 +29,7 @@ open Classical in
 Ball of radius `r` centred at a word `y` with respect to the relative Hamming distance.
 -/
 def relHammingBall (C : Code ι F) (y : ι → F) (r : ℝ)  : Code ι F :=
-  { c | c ∈ C ∧ dist y c ≤ r }
+  { c | c ∈ C ∧ Code.relHammingDist y c ≤ r }
 
 /--
 The number of close codewords to a given word `y` with respect to the Hamming distance metric.
