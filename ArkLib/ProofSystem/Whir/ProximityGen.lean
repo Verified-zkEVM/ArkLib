@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mirco Richter (Least Authority)
+Authors: Mirco Richter, Poulami Das, Miguel Quaresma (Least Authority)
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon
@@ -61,14 +61,14 @@ structure ProximityGenerator
   err       : (LinearCode ι F) → Type → ℝ → ENNReal
   /- Proximity:
       For all `parℓ`-tuples of functions `fᵢ : ι → 𝔽`
-        and distance parameter `δ ∈ (0, 1-BStar(C,parℓ))` :
+        and distance parameter `δ ∈ (0, 1-B(C,parℓ))` :
       If the probability that `proximityCondition(r)` is true for uniformly random
       sampled  `r ← 𝔽 `, exceeds `err(C,parℓ,δ)`, then there exists a  subset `S ⊆ ι ` of size
       `|S| ≥ (1-δ)⬝|ι|`) on which each `fᵢ` agrees with some codeword in `C`. -/
   proximity:
     ∀ (f : parℓ → ι → F)
-      (δ : ℝ≥0)
-      (_hδ : δ < 1 - (B C parℓ)) ,
+      (δ : ℝ)
+      (_hδ : 0 < δ ∧ δ < 1 - (B C parℓ)) ,
       Pr_{ let r ← $ᵖ F }[ (proximityCondition f δ Fun C r) ] > (err C parℓ δ) →
         ∃ S : Finset ι,
           S.card ≥ (1 - δ) * (Fintype.card ι) ∧

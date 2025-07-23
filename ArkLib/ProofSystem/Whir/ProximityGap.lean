@@ -1,11 +1,29 @@
 /-
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mirco Richter (Least Authority)
+Authors: Mirco Richter, Poulami Das, Miguel Quaresma (Least Authority)
 -/
 
 import ArkLib.ProofSystem.Whir.ProximityGen
 import ArkLib.Data.CodingTheory.ReedSolomon
+
+/-!
+# Proximity Gap
+
+This file formalizes the proximity gap theorem, introduced in the [Section 4 of the WHIR paper][todo: ArkLib bibliography].
+
+## Implementation notes
+
+Todo?
+
+## References
+
+* [G Arnon, A Chies, G Fenzi, and E Yogev, *WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification*][todo: ArkLib bibliography]
+Freely available at https://eprint.iacr.org/2024/1586
+
+## Tags
+Todo: should we aim to add tags?
+-/
 
 namespace RSGenerator
 
@@ -35,7 +53,7 @@ noncomputable def proximityGapTheorem
       B      := fun _ _ => (Real.sqrt (rate φ m)),
       err    := fun _ _ δ =>
         ENNReal.ofReal (
-          if δ ≤ (1 - (rate φ m)) / 2 then
+          if 0 < δ ∧ δ ≤ (1 - (rate φ m)) / 2 then
           ((Fintype.card parℓ - 1) * 2^m) / ((rate φ m)  * Fintype.card F)
           else
             let min_val := min (1 - (Real.sqrt (rate φ m)) - δ)
