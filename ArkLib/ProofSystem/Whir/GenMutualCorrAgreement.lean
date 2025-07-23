@@ -75,7 +75,7 @@ lemma gen_mca_le_bound
   (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
   (C : LinearCode ι F) (hC : C = Gen.C) :
     genMutualCorrAgreement Gen
-      (min (1 - (Code.minDist (C : Set (ι → F)) : ℝ) / 2) (Gen.B C Gen.parℓ))
+      (min (1 - (δᵣ (C : Set (ι → F))) / 2) (Gen.B C Gen.parℓ))
       (fun δ => Gen.err C Gen.parℓ δ) := by sorry
 
 /-- Corollary 4.11
