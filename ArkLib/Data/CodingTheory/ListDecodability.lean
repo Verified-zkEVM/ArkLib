@@ -72,6 +72,20 @@ lemma listOfCloseCodewordsRel_eq_zero :
 
 end Lemmas
 
+def uniqueDecodable (C : Code ι F) (r : ℝ) : Prop :=
+  listDecodable C r 1
+
+/--
+todo: Unique decoding radius
+-/
+theorem uniqueDecodable_lt_half_min_dist [DecidableEq F] [Nonempty ι]
+  (C : Code ι F) (hC : C.Nonempty) (hC' : (C : Set (ι → F)).Finite)
+  {r : ℝ} (hr : r < Code.minRelHammingDistCode C / 2) :
+  uniqueDecodable C r := by
+  unfold uniqueDecodable listDecodable listOfCloseCodewordsRel relHammingBall
+  simp [Set.coe_setOf, Nat.cast_le_one]
+  sorry
+
 end
 
 end ListDecodable
