@@ -38,14 +38,16 @@ def verifier : Verifier oSpec Statement Statement ![] := Verifier.id
 @[inline, specialize, simp]
 def reduction : Reduction oSpec Statement Witness Statement Witness ![] := Reduction.id
 
-variable [oSpec.FiniteRange] (rel : Set (Statement × Witness))
+variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+  (rel : Set (Statement × Witness))
 
 /-- The `DoNothing` reduction satisfies perfect completeness for any relation. -/
 @[simp]
-theorem reduction_completeness :
-    (reduction oSpec Statement Witness).perfectCompleteness rel rel := by
-  simp [Reduction.run, Prover.run, Prover.runToRound, Prover.processRound, Verifier.run,
-    reduction, prover, verifier, Reduction.id, Prover.id, Verifier.id]
+theorem reduction_completeness (h : init.neverFails):
+    (reduction oSpec Statement Witness).perfectCompleteness init impl rel rel := by
+  simp [Reduction.run, Prover.run, Prover.runToRound, Verifier.run,
+    reduction, Reduction.id, Prover.id, Verifier.id, h]
+  aesop
 
 -- theorem reduction_rbr_knowledge_soundness :
 --     (reduction oSpec Statement Witness).rbrKnowledgeSoundness rel rel := by
@@ -76,17 +78,18 @@ def oracleVerifier : OracleVerifier oSpec Statement OStatement Statement OStatem
 def oracleReduction : OracleReduction oSpec
     Statement OStatement Witness Statement OStatement Witness ![] := OracleReduction.id
 
-variable [oSpec.FiniteRange] (rel : Set ((Statement × (∀ i, OStatement i)) × Witness))
+variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+  (rel : Set ((Statement × (∀ i, OStatement i)) × Witness))
 
 /-- The `DoNothing` oracle reduction satisfies perfect completeness for any relation. -/
 @[simp]
-theorem oracleReduction_completeness :
-    (oracleReduction oSpec Statement Witness OStatement).perfectCompleteness rel rel := by
-  simp [OracleReduction.perfectCompleteness, OracleReduction.toReduction, OracleVerifier.toVerifier,
-    oracleReduction, oracleProver, oracleVerifier]
+theorem oracleReduction_completeness (h : init.neverFails) :
+    (oracleReduction oSpec Statement Witness OStatement).perfectCompleteness init impl rel rel := by
+  simp only [OracleReduction.perfectCompleteness, OracleReduction.toReduction,
+    OracleVerifier.toVerifier, oracleReduction]
   -- Need to simp the below separately, otherwise we get timeout
   simp [Reduction.run, Prover.run, Verifier.run, OracleReduction.id, OracleProver.id,
-    OracleVerifier.id, Prover.id, Verifier.id]
+    OracleVerifier.id, Prover.id]
   aesop
 
 -- theorem oracleReduction_rbr_knowledge_soundness :

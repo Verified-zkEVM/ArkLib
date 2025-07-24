@@ -122,9 +122,11 @@ instance : Unique (ProtocolSpec 0) := inferInstance
 -- Two different ways to write the empty protocol specification: `![]` and `default`
 
 instance : ∀ i, VCVCompatible (Challenge ![] i) := fun ⟨i, _⟩ => Fin.elim0 i
+instance : ∀ i, SelectableType (Challenge ![] i) := fun ⟨i, _⟩ => Fin.elim0 i
 instance : ∀ i, OracleInterface (Message ![] i) := fun ⟨i, _⟩ => Fin.elim0 i
 
 instance : ∀ i, VCVCompatible ((default : ProtocolSpec 0).Challenge i) := fun ⟨i, _⟩ => Fin.elim0 i
+instance : ∀ i, SelectableType ((default : ProtocolSpec 0).Challenge i) := fun ⟨i, _⟩ => Fin.elim0 i
 instance : ∀ i, OracleInterface ((default : ProtocolSpec 0).Message i) := fun ⟨i, _⟩ => Fin.elim0 i
 
 variable {Msg Chal : Type}
@@ -132,29 +134,27 @@ variable {Msg Chal : Type}
 instance : IsEmpty (ChallengeIdx ![(.P_to_V, Msg)]) := by
   simp [ChallengeIdx]
   infer_instance
-
 instance : Unique (MessageIdx ![(.P_to_V, Msg)]) where
   default := ⟨0, by simp⟩
   uniq := fun i => by ext; simp
-
 instance [inst : OracleInterface Msg] : ∀ i, OracleInterface (Message ![(.P_to_V, Msg)] i)
   | ⟨0, _⟩ => inst
-
 instance : ∀ i, VCVCompatible (Challenge ![(.P_to_V, Msg)] i)
+  | ⟨0, h⟩ => nomatch h
+instance : ∀ i, SelectableType (Challenge ![(.P_to_V, Msg)] i)
   | ⟨0, h⟩ => nomatch h
 
 instance : IsEmpty (MessageIdx ![(.V_to_P, Chal)]) := by
   simp [MessageIdx]
   infer_instance
-
 instance : Unique (ChallengeIdx ![(.V_to_P, Chal)]) where
   default := ⟨0, by simp⟩
   uniq := fun i => by ext; simp
-
 instance : ∀ i, OracleInterface (Message ![(.V_to_P, Chal)] i)
   | ⟨0, h⟩ => nomatch h
-
 instance [inst : VCVCompatible Chal] : ∀ i, VCVCompatible (Challenge ![(.V_to_P, Chal)] i)
+  | ⟨0, _⟩ => inst
+instance [inst : SelectableType Chal] : ∀ i, SelectableType (Challenge ![(.V_to_P, Chal)] i)
   | ⟨0, _⟩ => inst
 
 end Instances
@@ -545,7 +545,7 @@ def srChallengeOracle (Statement : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
     OracleSpec pSpec.ChallengeIdx :=
   fun i => (Statement × pSpec.MessagesUpTo i.1.castSucc, pSpec.Challenge i)
 
-alias fiatShamirSpec := srChallengeOracle
+alias fsChallengeOracle := srChallengeOracle
 
 /-- Decidable equality for the state-restoration / (slow) Fiat-Shamir oracle -/
 instance {pSpec : ProtocolSpec n} {Statement : Type}
@@ -566,7 +566,7 @@ instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpe
   range_fintype' := fun i => by simp [OracleSpec.range]; infer_instance
 
 instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
-    OracleSpec.FiniteRange (fiatShamirSpec Statement pSpec) :=
+    OracleSpec.FiniteRange (fsChallengeOracle Statement pSpec) :=
   inferInstanceAs (OracleSpec.FiniteRange (srChallengeOracle Statement pSpec))
 
 /-- Define the query implementation for the state-restoration / (slow) Fiat-Shamir oracle (returns a
@@ -582,7 +582,7 @@ instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpe
   function, see `srChallengeQueryImpl'`.
 -/
 @[reducible, inline, specialize, simp]
-def srChallengeQueryImpl (Statement : Type) (pSpec : ProtocolSpec n)
+def srChallengeQueryImpl {Statement : Type} {pSpec : ProtocolSpec n}
     [∀ i, SelectableType (pSpec.Challenge i)] :
     QueryImpl (srChallengeOracle Statement pSpec) ProbComp where
   impl | query i _ => SelectableType.selectElem (β := pSpec.Challenge i)
@@ -592,12 +592,14 @@ def srChallengeQueryImpl (Statement : Type) (pSpec : ProtocolSpec n)
 
   TODO: upstream this as a more general construction in VCVio -/
 @[reducible, inline, specialize, simp]
-def srChallengeQueryImpl' (Statement : Type) (pSpec : ProtocolSpec n)
+def srChallengeQueryImpl' {Statement : Type} {pSpec : ProtocolSpec n}
     [∀ i, SelectableType (pSpec.Challenge i)] :
     QueryImpl (srChallengeOracle Statement pSpec)
       (StateT (srChallengeOracle Statement pSpec).FunctionType ProbComp)
     where
   impl | query i t => fun f => pure (f i t, f)
+
+alias fsChallengeQueryImpl' := srChallengeQueryImpl'
 
 namespace MessagesUpTo
 
@@ -608,7 +610,7 @@ namespace MessagesUpTo
 def deriveTranscriptSRAux {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
     (stmt : StmtIn) (k : Fin (n + 1)) (messages : pSpec.MessagesUpTo k)
     (j : Fin (k + 1)) :
-    OracleComp (oSpec ++ₒ fiatShamirSpec StmtIn pSpec)
+    OracleComp (oSpec ++ₒ fsChallengeOracle StmtIn pSpec)
       (pSpec.Transcript (j.castLE (by omega))) := do
   Fin.induction (n := k)
     (pure (fun i => i.elim0))
@@ -617,7 +619,7 @@ def deriveTranscriptSRAux {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
       match hDir : pSpec.getDir (i.castLE (by omega)) with
       | .V_to_P =>
         let challenge : pSpec.Challenge ⟨i.castLE (by omega), hDir⟩ ←
-          query (spec := fiatShamirSpec _ _) ⟨i.castLE (by omega), hDir⟩
+          query (spec := fsChallengeOracle _ _) ⟨i.castLE (by omega), hDir⟩
             (stmt, messages.take i.castSucc)
         return prevTranscript.concat challenge
       | .P_to_V => return prevTranscript.concat (messages ⟨i, hDir⟩))
@@ -627,7 +629,7 @@ def deriveTranscriptSRAux {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
     state-restoration / Fiat-Shamir oracle for the challenges. -/
 def deriveTranscriptSR {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
     (stmt : StmtIn) (k : Fin (n + 1)) (messages : pSpec.MessagesUpTo k) :
-    OracleComp (oSpec ++ₒ fiatShamirSpec StmtIn pSpec) (pSpec.Transcript k) := do
+    OracleComp (oSpec ++ₒ fsChallengeOracle StmtIn pSpec) (pSpec.Transcript k) := do
   deriveTranscriptSRAux stmt k messages (Fin.last k)
 
 alias deriveTranscriptFS := deriveTranscriptSR
@@ -640,7 +642,7 @@ namespace Messages
     state-restoration / Fiat-Shamir oracle for the challenges. -/
 def deriveTranscriptSR {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
     (stmt : StmtIn) (messages : pSpec.Messages) :
-    OracleComp (oSpec ++ₒ fiatShamirSpec StmtIn pSpec) pSpec.FullTranscript := do
+    OracleComp (oSpec ++ₒ fsChallengeOracle StmtIn pSpec) pSpec.FullTranscript := do
   MessagesUpTo.deriveTranscriptSR stmt (Fin.last n) messages
 
 alias deriveTranscriptFS := deriveTranscriptSR
