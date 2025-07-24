@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Poulami Das (Least Authority), Alexander Hicks,  Petar Maksimović
+Authors: Poulami Das, Miguel Quaresma (Least Authority), Alexander Hicks,  Petar Maksimović
 -/
 
 import ArkLib.Data.Probability.Notation
@@ -64,7 +64,7 @@ def proximityCondition (f : parℓ → ι → F) (δ : ℝ≥0) (GenFun : F → 
 noncomputable def MutualCorrAgreement
   (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
   (BStar : ℝ) (errStar : ℝ → ENNReal) :=
-    ∀ (f : Gen.parℓ → ι → F) (δ : ℝ≥0) (_hδ : δ < 1 - BStar),
+    ∀ (f : Gen.parℓ → ι → F) (δ : ℝ≥0) (_hδ : 0 < δ ∧ δ < 1 - BStar),
     Pr_{let r ←$ᵖ F}[ (proximityCondition f δ Gen.Fun Gen.C) r ] ≤ errStar δ
 
 /-- Lemma 4.10
@@ -99,7 +99,7 @@ lemma mca_rsc
   (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type ↪ ℕ) :
   let Gen := RSGenerator.genRSC parℓ_type φ m (exp := exp)
   let : Fintype Gen.parℓ := Gen.hℓ
-  let rate := LinearCode.rate (smoothCode φ m)
+  let rate := RSGenerator.rate φ m
   MutualCorrAgreement
     -- Generator
     Gen
@@ -123,7 +123,7 @@ theorem mca_johnson_bound_CONJECTURE
   (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type ↪ ℕ) :
   let Gen := RSGenerator.genRSC parℓ_type φ m (exp := exp)
   let : Fintype Gen.parℓ := Gen.hℓ
-  let rate := LinearCode.rate Gen.C
+  let rate := RSGenerator.rate φ m
   MutualCorrAgreement Gen
     -- Conjectured BStar = √ρ
     (Real.sqrt rate)
@@ -148,10 +148,10 @@ theorem mca_capacity_bound_CONJECTURE
   (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type ↪ ℕ) :
   let Gen := RSGenerator.genRSC parℓ_type φ m (exp := exp)
   let : Fintype Gen.parℓ := Gen.hℓ
-  let rate := LinearCode.rate Gen.C
+  let rate := RSGenerator.rate φ m
   ∃ (c₁ c₂ c₃ : ℕ),
     ∀ (f : Gen.parℓ → ι → F) (η : ℝ) (_hη : 0 < η) (δ : ℝ≥0)
-      (_hδ : δ < 1 - rate - η),
+      (_hδ : 0 < δ ∧ δ < 1 - rate - η),
       Pr_{let r ←$ᵖ F}[ (proximityCondition f δ Gen.Fun Gen.C) r ] ≤
         ENNReal.ofReal (
           (((Fintype.card parℓ_type - 1) : ℝ)^c₂ * ((2^m) : ℝ)^c₂) /
