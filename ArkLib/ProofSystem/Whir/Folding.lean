@@ -75,7 +75,7 @@ noncomputable def fold_k_set
 
 section FoldingLemmas
 
-open CorrelatedAgreement Generator LinearMvExtension ListDecodable
+open MutualCorrAgreement Generator LinearMvExtension ListDecodable
      NNReal ReedSolomon ProbabilityTheory
 
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
@@ -135,31 +135,29 @@ for `i ∈ [0,k]` :
 -/
 class GenMutualCorrParams (S : Finset ι) (φ : ι ↪ F) (k : ℕ) where
   m : ℕ
-  α : F
 
-  inst1 : ∀ i : Fin (k+1), Fintype (indexPowT S φ i)
-  inst2 : ∀ i : Fin (k+1), Nonempty (indexPowT S φ i)
-  inst3 : ∀ i : Fin (k+1), DecidableEq (indexPowT S φ i)
+  inst1 : ∀ i : Fin (k + 1), Fintype (indexPowT S φ i)
+  inst2 : ∀ i : Fin (k + 1), Nonempty (indexPowT S φ i)
+  inst3 : ∀ i : Fin (k + 1), DecidableEq (indexPowT S φ i)
 
-  φ_i : ∀ i : Fin (k+1), (indexPowT S φ i) ↪ F
-  inst4 : ∀ i : Fin (k+1), Smooth (φ_i i)
+  φ_i : ∀ i : Fin (k + 1), (indexPowT S φ i) ↪ F
+  inst4 : ∀ i : Fin (k + 1), Smooth (φ_i i)
 
-  Gen_α : ∀ i : Fin (k+1), ProximityGenerator (indexPowT S φ i) F
-  parℓ_type : ∀ _ : Fin (k+1), Type
-  exp : ∀ i : Fin (k+1), (parℓ_type i) → ℕ
+  parℓ_type : ∀ _ : Fin (k + 1), Type
+  inst5 : ∀ i : Fin (k + 1), Fintype (parℓ_type i)
 
-  inst5 : ∀ i : Fin (k+1), Fintype (Gen_α i).parℓ
-  inst6 : ∀ i : Fin (k+1), Fintype (parℓ_type i)
+  exp : ∀ i : Fin (k + 1), (parℓ_type i) ↪ ℕ
 
-  hgen : ∀ i : Fin (k+1), Gen_α i =
-    proximityGenerator_α α (φ_i i) (m - i) (parℓ_type i) (exp i)
+  Gen_α : ∀ i : Fin (k + 1), ProximityGenerator (indexPowT S φ i) F :=
+    fun i => RSGenerator.genRSC (parℓ_type i) (φ_i i) (m - i) (exp i)
+  inst6 : ∀ i : Fin (k + 1), Fintype (Gen_α i).parℓ
 
-  BStar : ∀ i : Fin (k+1), (Set (indexPowT S φ i → F)) → Type → ℝ≥0
-  errStar : ∀ i : Fin (k+1), (Set (indexPowT S φ i → F)) → Type → ℝ → ENNReal
+  BStar : ∀ i : Fin (k + 1), (Set (indexPowT S φ i → F)) → Type → ℝ≥0
+  errStar : ∀ i : Fin (k + 1), (Set (indexPowT S φ i → F)) → Type → ℝ → ENNReal
 
-  h : ∀ i : Fin (k+1), genMutualCorrAgreement (Gen_α i)
-                                              (BStar i (Gen_α i).C (Gen_α i).parℓ)
-                                              (errStar i (Gen_α i).C (Gen_α i).parℓ)
+  h : ∀ i : Fin (k + 1), MutualCorrAgreement (Gen_α i)
+                                             (BStar i (Gen_α i).C (Gen_α i).parℓ)
+                                             (errStar i (Gen_α i).C (Gen_α i).parℓ)
 
   hcard : ∀ i : Fin (k + 1), Fintype.card ((Gen_α i).parℓ) = 2
   hcard' : ∀ i : Fin (k + 1), Fintype.card (parℓ_type i) = 2

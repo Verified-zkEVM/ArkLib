@@ -99,7 +99,7 @@ noncomputable def rate (φ : ι ↪ F) (m : ℕ) [Smooth φ] : ℝ :=
                       for δ in ((1-ρ)/ 2, 1 - B(C,parℓ)) -/
 noncomputable def genRSC
   (parℓ : Type) [hℓ : Fintype parℓ] (φ : ι ↪ F) [Smooth φ]
-  (m : ℕ) {exp : parℓ ↪ ℕ} : ProximityGenerator ι F :=
+  (m : ℕ) (exp : parℓ ↪ ℕ) : ProximityGenerator ι F :=
     { C      := smoothCode φ m,
       parℓ   := parℓ,
       hℓ     := hℓ,
