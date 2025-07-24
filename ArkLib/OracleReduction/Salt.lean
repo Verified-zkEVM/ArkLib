@@ -41,29 +41,31 @@ variable {pSpec : ProtocolSpec n} {Salt : pSpec.MessageIdx → Type}
 
 @[simp]
 lemma addSalt_getDir (i : Fin n) :
-    (pSpec.addSalt Salt i).1 = (pSpec i).1 := sorry
+    (pSpec.addSalt Salt i).1 = (pSpec i).1 := by
+  simp only [addSalt]
+  split <;> simp_all
 
-def MessageIdx.toSalted (i : pSpec.MessageIdx) : (pSpec.addSalt Salt).MessageIdx :=
+def MessageIdx.toSaltedIdx (i : pSpec.MessageIdx) : (pSpec.addSalt Salt).MessageIdx :=
   match hDir : (pSpec i).1 with
     | .P_to_V => ⟨i, by simpa using hDir⟩
     | .V_to_P => by have := i.property; simp_all
 
-def ChallengeIdx.toSalted (i : pSpec.ChallengeIdx) : (pSpec.addSalt Salt).ChallengeIdx :=
+def ChallengeIdx.toSaltedIdx (i : pSpec.ChallengeIdx) : (pSpec.addSalt Salt).ChallengeIdx :=
   match hDir : (pSpec i).1 with
     | .P_to_V => by have := i.property; simp_all
     | .V_to_P => ⟨i, by simpa using hDir⟩
 
 @[simp]
-lemma MessageIdx.toSalted_val (i : pSpec.MessageIdx) :
-    (i.toSalted (Salt := Salt)).val = i.val := by
-  simp only [MessageIdx.toSalted]
+lemma MessageIdx.toSaltedIdx_val (i : pSpec.MessageIdx) :
+    (i.toSaltedIdx (Salt := Salt)).val = i.val := by
+  simp only [MessageIdx.toSaltedIdx]
   have := i.property
   split <;> simp_all
 
 @[simp]
-lemma ChallengeIdx.toSalted_val (i : pSpec.ChallengeIdx) :
-    (i.toSalted (Salt := Salt)).val = i.val := by
-  simp only [ChallengeIdx.toSalted]
+lemma ChallengeIdx.toSaltedIdx_val (i : pSpec.ChallengeIdx) :
+    (i.toSaltedIdx (Salt := Salt)).val = i.val := by
+  simp only [ChallengeIdx.toSaltedIdx]
   have := i.property
   split <;> simp_all
 
@@ -79,13 +81,13 @@ lemma addSalt_getType (i : Fin n) :
 --     (⟨cast (by simp) i, by simp [h]⟩)= (⟨i, h⟩ : Subtype p).val
 
 lemma addSalt_Message (i : pSpec.MessageIdx) :
-    (pSpec.addSalt Salt).Message i.toSalted = (pSpec.Message i × Salt i) := by
+    (pSpec.addSalt Salt).Message i.toSaltedIdx = (pSpec.Message i × Salt i) := by
   obtain ⟨i, hDir⟩ := i
   simp only [Message, addSalt]
   split <;> simp_all
 
 lemma addSalt_Challenge (i : pSpec.ChallengeIdx) :
-    (pSpec.addSalt Salt).Challenge i.toSalted = pSpec.Challenge i := by
+    (pSpec.addSalt Salt).Challenge i.toSaltedIdx = pSpec.Challenge i := by
   obtain ⟨i, hDir⟩ := i
   simp only [Challenge, addSalt]
   split <;> simp_all
@@ -93,19 +95,24 @@ lemma addSalt_Challenge (i : pSpec.ChallengeIdx) :
 
 /-- Remove the salt from a (partial) transcript of a salted protocol -/
 def Transcript.removeSalt {k : Fin (n + 1)} (transcript : (pSpec.addSalt Salt).Transcript k) :
-    pSpec.Transcript k := by
-  unfold Transcript at transcript ⊢
-  unfold addSalt at transcript
-  intro i
-  have data := transcript (i.castLE (by omega))
-  dsimp at data
-  exact (match (generalizing := true) hDir : (pSpec (i.castLE (by omega))).1 with
-    | .P_to_V => sorry
-    | .V_to_P => sorry)
+    pSpec.Transcript k :=
+-- TODO: would be nice not to need `by` block
+  fun i => by
+  letI data := transcript i
+  unfold addSalt at data
+  split at data
+  · exact data.1
+  · exact data
 
 /-- Extract the salt from a (partial) transcript of a salted protocol -/
 def Transcript.extractSalt {k : Fin (n + 1)} (transcript : (pSpec.addSalt Salt).Transcript k) :
-    (i : pSpec.MessageIdx) → Salt i := sorry
+    (i : pSpec.MessageIdxUpTo k) → Salt ⟨i.val.castLE (by omega), by simpa using i.property⟩ :=
+  fun ⟨i, hDir⟩ => by
+  letI data := transcript i
+  unfold addSalt at data
+  split at data
+  · exact data.2
+  · simp_all
 
 /-- Remove the salt from a full transcript of a salted protocol -/
 def FullTranscript.removeSalt (transcript : (pSpec.addSalt Salt).FullTranscript) :
@@ -209,3 +216,11 @@ def OracleReduction.addSalt
     OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut (pSpec.addSalt Salt) where
   prover := R.prover.addSalt Salt saltComp
   verifier := R.verifier.addSalt Salt
+
+-- Theorems to prove
+-- Execution returns the same transcript as the original reduction (modulo salt)
+-- Completeness is preserved (for any salt computation)
+-- (Knowledge) soundness should be preserved
+-- HOWEVER, state-restoration (knowledge) soundness is _not_ preserved
+-- There are counter-examples that we can formalize
+-- (the verifier sends one random bit per round, and accepts iff it sends zero for every round)
