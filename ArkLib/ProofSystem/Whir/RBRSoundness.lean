@@ -1,14 +1,14 @@
 /-
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Poulami Das (Least Authority)
+Authors: Poulami Das (Least Authority), Alexander Hicks
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.CodingTheory.ListDecodability
 import ArkLib.OracleReduction.VectorIOR
 import ArkLib.ProofSystem.Whir.BlockRelDistance
-import ArkLib.ProofSystem.Whir.GenMutualCorrAgreement
+import ArkLib.ProofSystem.Whir.MutualCorrAgreement
 import ArkLib.ProofSystem.Whir.ProximityGen
 
 namespace WhirIOP

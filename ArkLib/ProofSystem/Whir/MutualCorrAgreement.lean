@@ -4,10 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Poulami Das (Least Authority), Alexander Hicks,  Petar Maksimović
 -/
 
+import ArkLib.Data.Probability.Notation
 import ArkLib.Data.CodingTheory.ListDecodability
 import ArkLib.Data.CodingTheory.InterleavedCode
 import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.Probability.Notation
 import ArkLib.ProofSystem.Whir.ProximityGen
 
 
@@ -19,7 +19,8 @@ introduced in the [Section 4 of the WHIR paper][todo: ArkLib bibliography].
 
 ## Implementation notes
 
-Todo?
+The reference paper is phrased in terms of a minimum distance,
+which should be understood as being the minimum relative hamming distance, which is used here.
 
 ## References
 
@@ -30,12 +31,12 @@ Freely available at https://eprint.iacr.org/2024/1586
 Todo: should we aim to add tags?
 -/
 
-namespace CorrelatedAgreement
+namespace MutualCorrAgreement
 
 open NNReal Generator ProbabilityTheory ReedSolomon
 
 variable  {F : Type} [Field F] [Fintype F] [DecidableEq F]
-          {ι parℓ : Type} [Fintype ι] [Nonempty ι] [Fintype parℓ]
+          {ι parℓ : Type} [Fintype ι] [Nonempty ι] [Fintype parℓ] [Nonempty parℓ]
 
 /-- For `parℓ` functions `fᵢ : ι → 𝔽`, distance `δ`, generator function `GenFun: 𝔽 → parℓ → 𝔽`
     and linear code `C` the predicate `proximityCondition(r)` is true, if `∃ S ⊆ ι`, s.t.
@@ -60,7 +61,7 @@ def proximityCondition (f : parℓ → ι → F) (δ : ℝ≥0) (GenFun : F → 
   it should `δ < 1 - BStar(C,parℓ)` in place of `δ < 1 - B(C,parℓ)`
 -/
 
-noncomputable def genMutualCorrAgreement
+noncomputable def MutualCorrAgreement
   (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
   (BStar : ℝ) (errStar : ℝ → ENNReal) :=
     ∀ (f : Gen.parℓ → ι → F) (δ : ℝ≥0) (_hδ : δ < 1 - BStar),
@@ -71,11 +72,15 @@ noncomputable def genMutualCorrAgreement
   with parameters `B` and `err`, then Gen has mutual correlated agreement with proximity bounds
   `BStar = min {1 - δ_C/2, B}` and `errStar = err`.
 -/
-lemma gen_mca_le_bound
-  (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
+lemma mca_linearCode
+  (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ] [Nonempty Gen.parℓ]
   (C : LinearCode ι F) (hC : C = Gen.C) :
-    genMutualCorrAgreement Gen
-      (min (1 - (δᵣ (C : Set (ι → F))) / 2) (Gen.B C Gen.parℓ))
+    MutualCorrAgreement
+     -- Gen
+      Gen
+    -- BStar
+      (min (1 - Code.minRelHammingDistCode (C : Set (ι → F)) / 2) (Gen.B Gen.C Gen.parℓ))
+    -- errStar
       (fun δ => Gen.err C Gen.parℓ δ) := by sorry
 
 /-- Corollary 4.11
@@ -87,48 +92,15 @@ lemma gen_mca_le_bound
 
   function `Gen(parℓ,α)={1,α,..,α ^ parℓ-1}`
 -/
-noncomputable def gen_α (α : F) (parℓ : Type) (exp : parℓ → ℕ): F → parℓ → F :=
-  fun _ j => α ^ (exp j)
 
-/-- The proximity generator for smooth ReedSolomon codes wrt function
-  `Gen(parℓ,α)={1,α,..,α ^ parℓ-1}`
-  Based on the ProximityGenerator structure defined in Proximity.lean
--/
-
-noncomputable def proximityGenerator_α
+lemma mca_rsc
   [DecidableEq ι]
   (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ]
-  (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type → ℕ)
-  : ProximityGenerator ι F :=
-  let rate := LinearCode.rate (smoothCode φ m)
-  {
-    C := smoothCode φ m,
-    parℓ := parℓ_type,
-    hℓ := inferInstance,
-    Fun := gen_α α parℓ_type exp,
-    -- B from proximity gap theorem
-    B := fun _ _ => Real.sqrt rate,
-    -- err from proximity gap theorem
-    err := fun _ _ δ => ENNReal.ofReal (
-        if δ ≤ (1 - rate) / 2 then
-          ((Fintype.card parℓ_type - 1) * 2^m) / (rate * Fintype.card F)
-        else
-          let min_val := min (1 - (Real.sqrt rate) - (δ : ℝ)) ((Real.sqrt rate) / 20)
-          ((Fintype.card parℓ_type - 1) * (2^(2 * m))) / ((Fintype.card F) * (2 * min_val)^7)
-        ),
-    proximity := by
-      sorry
-  }
-
-
-lemma gen_mca_rsc_le_bound
-  [DecidableEq ι]
-  (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ]
-  (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type → ℕ) :
-  let Gen := proximityGenerator_α α φ m parℓ_type exp
+  (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type ↪ ℕ) :
+  let Gen := RSGenerator.genRSC parℓ_type φ m (exp := exp)
   let : Fintype Gen.parℓ := Gen.hℓ
   let rate := LinearCode.rate (smoothCode φ m)
-  genMutualCorrAgreement
+  MutualCorrAgreement
     -- Generator
     Gen
     -- BStar
@@ -148,11 +120,11 @@ lemma gen_mca_rsc_le_bound
 theorem mca_johnson_bound_CONJECTURE
   [DecidableEq ι]
   (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ]
-  (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type → ℕ) :
-  let Gen := proximityGenerator_α α φ m parℓ_type exp
+  (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type ↪ ℕ) :
+  let Gen := RSGenerator.genRSC parℓ_type φ m (exp := exp)
   let : Fintype Gen.parℓ := Gen.hℓ
   let rate := LinearCode.rate Gen.C
-  genMutualCorrAgreement Gen
+  MutualCorrAgreement Gen
     -- Conjectured BStar = √ρ
     (Real.sqrt rate)
     -- Conjectured errStar
@@ -173,8 +145,8 @@ theorem mca_johnson_bound_CONJECTURE
 theorem mca_capacity_bound_CONJECTURE
   [DecidableEq ι]
   (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ]
-  (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type → ℕ) :
-  let Gen := proximityGenerator_α α φ m parℓ_type exp
+  (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type ↪ ℕ) :
+  let Gen := RSGenerator.genRSC parℓ_type φ m (exp := exp)
   let : Fintype Gen.parℓ := Gen.hℓ
   let rate := LinearCode.rate Gen.C
   ∃ (c₁ c₂ c₃ : ℕ),
@@ -213,14 +185,14 @@ def proximityListDecodingCondition
   with mutual correlated agreement for `C`.
   Then for every `{f₀,..,f_{parℓ - 1}}` and `δ ∈ (0, min δ_c (1 - BStar))`,
   `Pr_{ r ← F} [ proximityListDecodingCondition(r) ] ≤ errStar(δ)`. -/
-lemma mutualCorrAgreement_list_decoding
+lemma mca_list_decoding
   [Fintype ι] [Nonempty ι]
   (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
   (δ BStar : ℝ) (errStar : ℝ → ENNReal)
   (fs us : Matrix Gen.parℓ ι F)
   (IC : InterleavedCode Gen.parℓ ι F)
   (haveIC : IC = codeOfLinearCode Gen.parℓ Gen.C)
-  (hGen : genMutualCorrAgreement Gen BStar errStar)
+  (hGen : MutualCorrAgreement Gen BStar errStar)
   (C : Set (ι → F)) (hC : C = Gen.C) :
     ∀ {fs : Matrix Gen.parℓ ι F}
     (hδPos : δ > 0) (hδLt : δ < min (δᵣ C : ℝ) (1 - BStar)),
@@ -230,4 +202,4 @@ lemma mutualCorrAgreement_list_decoding
 
 end
 
-end CorrelatedAgreement
+end MutualCorrAgreement

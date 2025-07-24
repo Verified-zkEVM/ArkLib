@@ -7,7 +7,7 @@ Authors: Poulami Das (Least Authority)
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLib.ProofSystem.Whir.BlockRelDistance
-import ArkLib.ProofSystem.Whir.GenMutualCorrAgreement
+import ArkLib.ProofSystem.Whir.MutualCorrAgreement
 
 namespace Fold
 
