@@ -19,7 +19,9 @@ Todo?
 
 ## References
 
-* [G Arnon, A Chies, G Fenzi, and E Yogev, *WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification*][todo: ArkLib bibliography]
+* [G Arnon, A Chies, G Fenzi, and E Yogev,
+*WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification*]
+[todo: ArkLib bibliography]
 Freely available at https://eprint.iacr.org/2024/1586
 
 ## Tags
@@ -30,9 +32,9 @@ namespace Generator
 
 open NNReal ProbabilityTheory
 
-variable  {F : Type*} [Semiring F] [Fintype F] [DecidableEq F]
-          {ι : Type*} [Fintype ι] [Nonempty ι]
-          {parℓ : Type*} [Fintype parℓ]
+variable {F : Type*} [Semiring F] [Fintype F] [DecidableEq F]
+         {ι : Type*} [Fintype ι] [Nonempty ι]
+         {parℓ : Type*} [Fintype parℓ]
 
 /-- For `l` functions `fᵢ : ι → 𝔽`, distance `δ`, generator function `GenFun: 𝔽 → parℓ → 𝔽ˡ`
     and linear code `C` the predicate `proximityCondition(r)` is true, if the linear
@@ -40,7 +42,7 @@ variable  {F : Type*} [Semiring F] [Fintype F] [DecidableEq F]
     code `C`.
 -/
 noncomputable def proximityCondition
-   (f : parℓ → ι → F) (δ : ℝ≥0) (GenFun : F → parℓ → F) (C : LinearCode ι F): F → Prop
+   (f : parℓ → ι → F) (δ : ℝ) (GenFun : F → parℓ → F) (C : LinearCode ι F): F → Prop
    | r => δᵣ( (fun x => ∑ j : parℓ, (GenFun r j) * f j x) , C ) ≤ (δ : ℝ)
 
 
@@ -49,7 +51,7 @@ structure ProximityGenerator
   (ι : Type) [Fintype ι] [Nonempty ι]
   (F : Type) [Semiring F] [Fintype F] [DecidableEq F] where
   -- Underlying linear code
-  C         : LinearCode ι F
+  C : LinearCode ι F
   -- Number of functions
   parℓ      : Type
   hℓ        : Fintype parℓ
