@@ -297,13 +297,13 @@ Note that by definition, `Transcript (Fin.last n) pSpec` is definitionally equal
 `FullTranscript pSpec`. -/
 @[reducible, inline, specialize]
 def Transcript (k : Fin (n + 1)) (pSpec : ProtocolSpec n) :=
-  (i : Fin k) → pSpec.getType (Fin.castLE (by omega) i)
+  (i : Fin k) → (pSpec (Fin.castLE (by omega) i)).2
 
 /-- The full transcript of an interactive protocol, which is a list of messages and challenges.
 
 Note that this is definitionally equal to `Transcript (Fin.last n) pSpec`. -/
 @[reducible, inline, specialize]
-def FullTranscript (pSpec : ProtocolSpec n) := (i : Fin n) → pSpec.getType i
+def FullTranscript (pSpec : ProtocolSpec n) := (i : Fin n) → (pSpec i).2
 
 namespace FullTranscript
 
@@ -377,8 +377,9 @@ instance : Unique (Transcript 0 pSpec) where
 /-- Concatenate a message to the end of a partial transcript. This is definitionally equivalent to
     `Fin.snoc`. -/
 @[inline]
-abbrev concat {m : Fin n} (msg : pSpec.getType m)
-    (T : Transcript m.castSucc pSpec) : Transcript m.succ pSpec := Fin.snoc T msg
+abbrev concat {m : Fin n} (msg : (pSpec m).2) (T : Transcript m.castSucc pSpec) :
+    Transcript m.succ pSpec :=
+  Fin.snoc T msg
 
 -- Define conversions to and from `Transcript` with `MessagesUpTo` and `ChallengesUpTo`
 
