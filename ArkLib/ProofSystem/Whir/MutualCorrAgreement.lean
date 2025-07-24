@@ -78,8 +78,8 @@ lemma mca_linearCode
     MutualCorrAgreement
      -- Gen
       Gen
-    -- BStar
-      (min (1 - Code.minRelHammingDistCode (C : Set (ι → F)) / 2) (Gen.B Gen.C Gen.parℓ))
+    -- BStar (using δᵣ produced )
+      (min (1 - (δᵣ (C : Set (ι → F))) / 2) (Gen.B Gen.C Gen.parℓ))
     -- errStar
       (fun δ => Gen.err C Gen.parℓ δ) := by sorry
 
