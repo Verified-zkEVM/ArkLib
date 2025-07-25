@@ -97,7 +97,7 @@ variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
                       for δ in ((1-ρ)/ 2, 1 - B(C,parℓ)) -/
 noncomputable def genRSC
   (parℓ : Type) [hℓ : Fintype parℓ] (φ : ι ↪ F) [Smooth φ]
-  (m : ℕ) {exp : parℓ ↪ ℕ} : ProximityGenerator ι F :=
+  (m : ℕ) (exp : parℓ ↪ ℕ) : ProximityGenerator ι F :=
     let r := LinearCode.rate (smoothCode φ m);
     { C      := smoothCode φ m,
       parℓ   := parℓ,

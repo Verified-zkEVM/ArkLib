@@ -97,7 +97,7 @@ lemma mca_rsc
   [DecidableEq ι]
   (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ]
   (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type ↪ ℕ) :
-  let Gen := RSGenerator.genRSC parℓ_type φ m (exp := exp)
+  let Gen := RSGenerator.genRSC parℓ_type φ m exp
   let : Fintype Gen.parℓ := Gen.hℓ
   MutualCorrAgreement
     -- Generator
@@ -120,7 +120,7 @@ theorem mca_johnson_bound_CONJECTURE
   [DecidableEq ι]
   (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ]
   (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type ↪ ℕ) :
-  let Gen := RSGenerator.genRSC parℓ_type φ m (exp := exp)
+  let Gen := RSGenerator.genRSC parℓ_type φ m exp
   let : Fintype Gen.parℓ := Gen.hℓ
   MutualCorrAgreement Gen
     -- Conjectured BStar = √ρ
@@ -147,7 +147,7 @@ theorem mca_capacity_bound_CONJECTURE
   [DecidableEq ι]
   (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ]
   (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type ↪ ℕ) :
-  let Gen := RSGenerator.genRSC parℓ_type φ m (exp := exp)
+  let Gen := RSGenerator.genRSC parℓ_type φ m exp
   let : Fintype Gen.parℓ := Gen.hℓ
   ∃ (c₁ c₂ : ℕ),
     ∀ (f : Gen.parℓ → ι → F) (η : ℝ) (_hη : 0 < η) (δ : ℝ≥0)
