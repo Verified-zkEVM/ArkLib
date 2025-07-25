@@ -147,7 +147,10 @@ def Adversary (ι : Type) (G : Type) (p : ℕ) (bitLength : ℕ) (α : Type) : T
 
 namespace Adversary
 
-variable {ι : Type} [DecidableEq ι] {G : Type} [Group G] {p : ℕ} {bitLength : ℕ} (α : Type)
+variable {ι : Type} [DecidableEq ι] {G : Type} [Group G] [DecidableEq G]
+    {p : ℕ} {bitLength : ℕ}
+    [Serialize G (BitVec bitLength)] [DeserializeOption G (BitVec bitLength)]
+    (α : Type)
 
 /-- Running the adversary on a given table, returning the list of group elements it is supposed to
   output, and the non-group-element result. -/
