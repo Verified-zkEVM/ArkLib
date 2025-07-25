@@ -66,6 +66,7 @@ import ArkLib.Data.MvPolynomial.Sumcheck
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.EvenAndOdd
 import ArkLib.Data.Polynomial.Interface
+import ArkLib.Data.Polynomial.PolynomialLike
 import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.Notation
 import ArkLib.Data.Tree.Binary
