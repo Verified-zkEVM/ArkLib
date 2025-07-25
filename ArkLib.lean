@@ -1,6 +1,7 @@
 import ArkLib.AGM.Basic
 import ArkLib.CommitmentScheme.Basic
 import ArkLib.CommitmentScheme.Fold
+import ArkLib.CommitmentScheme.KZG
 import ArkLib.CommitmentScheme.MerkleTree
 import ArkLib.CommitmentScheme.SimpleRO
 import ArkLib.CommitmentScheme.Tensor
@@ -47,6 +48,7 @@ import ArkLib.Data.FieldTheory.NonBinaryField.Secp256k1
 import ArkLib.Data.Fin.Basic
 import ArkLib.Data.Fin.Lift
 import ArkLib.Data.Fin.Pad
+import ArkLib.Data.GroupTheory.PrimeOrder
 import ArkLib.Data.Hash.DomainSep
 import ArkLib.Data.Hash.DuplexSponge
 import ArkLib.Data.Math.Basic
