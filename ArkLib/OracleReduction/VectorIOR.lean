@@ -93,10 +93,11 @@ variable {n : ℕ} {ι : Type}
   witnesses to be vectors as well, though this can be done if needed. -/
 @[reducible]
 def VectorIOR (oSpec : OracleSpec ι)
-    (StmtIn : Type) {ιₛᵢ : Type} (OStmtIn : ιₛᵢ → Type) (WitIn : Type)
-    (StmtOut : Type) {ιₛₒ : Type} (OStmtOut : ιₛₒ → Type) (WitOut : Type)
-    (vPSpec : ProtocolSpec.VectorSpec n) (A : Type)
-    [∀ i, OracleInterface (OStmtIn i)] :=
+    (StmtIn : Type) {ιₛᵢ : Type} (OStmtIn : ιₛᵢ → Type) [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
+    (WitIn : Type)
+    (StmtOut : Type) {ιₛₒ : Type} (OStmtOut : ιₛₒ → Type) [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)]
+    (WitOut : Type)
+    (vPSpec : ProtocolSpec.VectorSpec n) (A : Type) :=
   OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut (vPSpec.toProtocolSpec A)
 
 /-- Vector Interactive Oracle Proofs
@@ -118,8 +119,11 @@ open scoped NNReal
 
 namespace VectorIOR
 
-variable {StmtIn WitIn StmtOut WitOut : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type}
-  [∀ i, OracleInterface (OStmtIn i)] {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
+variable
+  {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
+  {WitIn : Type}
+  {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)]
+  {WitOut : Type}
 
 /-- A vector IOR is **secure** with respect to input relation `relIn`, output relation `relOut`, and
     round-by-round knowledge error `ε_rbr` if it satisfies (perfect) completeness and round-by-round
@@ -161,7 +165,7 @@ class IsSecure
   /-- The reduction is round-by-round knowledge sound with respect to `relIn`, `relOut`,
     `ε_rbr`, and the state function. -/
   is_rbr_knowledge_sound :
-    OracleProof.rbrKnowledgeSoundness relation vectorIOP.verifier ε_rbr
+    OracleProof.rbrKnowledgeSoundness relation (vectorIOP.verifier (Oₛₒ := isEmptyElim)) ε_rbr
 
 /-- A vector IOP **of proximity** is **secure** with respect to completeness relation
   `completeRelation`, soundness relation `soundRelation`, and round-by-round knowledge error
@@ -180,6 +184,6 @@ class IsSecureWithGap
   /-- The reduction is round-by-round knowledge sound with respect to `relIn`, `relOut`,
     `ε_rbr`, and the state function. -/
   is_rbr_knowledge_sound :
-    OracleProof.rbrKnowledgeSoundness soundRelation vectorIOP.verifier ε_rbr
+    OracleProof.rbrKnowledgeSoundness soundRelation (vectorIOP.verifier (Oₛₒ := isEmptyElim)) ε_rbr
 
 end VectorIOP
