@@ -5,6 +5,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 -/
 
 import Mathlib.FieldTheory.Finite.GaloisField
+import ArkLib.Data.Fin.BigOperators
 
 /-!
   # Prelude for Binary Tower Fields
@@ -1168,49 +1169,6 @@ theorem galois_automorphism_power
       (h_t1_pow_2_pow_2_pow_k) (h_t1_inv_pow_2_pow_2_pow_k) (trace_map_roots.2)
     rw [←u_is_inv_of_u1] at res
     exact res
-
-theorem sum_Icc_split {α : Type*} [AddCommMonoid α] (f : ℕ → α) (a b c : ℕ)
-    (h₁ : a ≤ b) (h₂ : b ≤ c):
-    ∑ i ∈ Finset.Icc a c, f i = ∑ i ∈ Finset.Icc a b, f i + ∑ i ∈ Finset.Icc (b+1) c, f i := by
-  have h_disjoint: Disjoint (Finset.Icc a b) (Finset.Icc (b+1) c) := by
-    apply Finset.disjoint_iff_inter_eq_empty.mpr
-    -- main theorem for converting disjoint condition into intersection = ∅ condition
-    ext i
-    simp only [Finset.mem_inter, Finset.mem_Icc]
-    constructor
-    · intro h
-      -- Alternatively, we can use a single line: linarith [h.1.2, h.2.1]
-      have h_le_b : i ≤ b := h.1.2
-      have h_ge_b_plus_1 : b + 1 ≤ i := h.2.1
-      have h_contradiction : b + 1 ≤ b := le_trans h_ge_b_plus_1 h_le_b
-      have h_false : b < b := Nat.lt_of_succ_le h_contradiction
-      exact absurd h_false (lt_irrefl b)
-    · intro h -- h : i ∈ ∅
-      exact absurd h (Finset.notMem_empty i)
-
-  rw [←Finset.sum_union h_disjoint]
-  · congr
-    ext j
-    simp only [Finset.mem_Icc, Finset.mem_union]
-    constructor
-    · intro h
-      -- h : a ≤ j ∧ j ≤ c
-      cases Nat.lt_or_ge j (b+1) with
-      | inl h_lt => -- j < (b+1)
-        left -- pick the left branch, for OR statement
-        exact ⟨h.1, Nat.le_of_lt_succ h_lt⟩
-      | inr h_ge => -- b + 1 ≤ j
-        right
-        exact ⟨h_ge, h.2⟩
-    · intro h
-      -- h : a ≤ j ∧ j ≤ b ∨ b + 1 ≤ j ∧ j ≤ c
-      cases h with
-      | inl h_left =>
-        -- h_left : a ≤ j ∧ j ≤ b
-        exact ⟨h_left.1, Nat.le_trans h_left.2 h₂⟩
-      | inr h_right =>
-        -- h_right : b + 1 ≤ j ∧ j ≤ c
-        exact ⟨Nat.le_trans h₁ (Nat.le_of_succ_le h_right.1), h_right.2⟩
 
 lemma lifted_trace_map_eval_at_roots_prev_BTField
   {curBTField : Type*} [Field curBTField]
