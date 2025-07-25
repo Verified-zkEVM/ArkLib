@@ -10,6 +10,30 @@ import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.Probability.Notation
 import ArkLib.ProofSystem.Whir.ProximityGen
 
+<<<<<<< Updated upstream
+=======
+
+/-!
+# Mutual Correlated Agreement for Proximity Generators
+
+This file formalizes the notion of mutual correlated agreement for proximity generators,
+introduced in the [Section 4 of the WHIR paper][todo: ArkLib bibliography].
+
+## Implementation notes
+
+The reference paper is phrased in terms of a minimum distance,
+which should be understood as being the minimum relative hamming distance, which is used here.
+
+## References
+
+* [G Arnon, A Chies, G Fenzi, and E Yogev, *WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification*][todo: ArkLib bibliography]
+Freely available at https://eprint.iacr.org/2024/1586
+
+## Tags
+Todo: should we aim to add tags?
+-/
+
+>>>>>>> Stashed changes
 namespace CorrelatedAgreement
 
 open NNReal Generator ProbabilityTheory ReedSolomon
@@ -47,12 +71,19 @@ noncomputable def genMutualCorrAgreement
   `BStar = min {1 - δ_C/2, B}` and `errStar = err`. -/
 lemma genMutualCorrAgreement_le_bound
   (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
+<<<<<<< Updated upstream
   (BStar : ℝ) (errStar : ℝ → ENNReal)
   (C : Set (ι → F)) (hC : C = Gen.C)
   (h: genMutualCorrAgreement Gen BStar errStar) :
     BStar < min (1 - (δᵣ C) / 2 : ℝ) (Gen.B Gen.C Gen.parℓ)
     ∧
     errStar = Gen.err Gen.C Gen.parℓ := by sorry
+=======
+  (C : LinearCode ι F) (hC : C = Gen.C) :
+    genMutualCorrAgreement Gen
+      (min (1 - (δᵣ C / 2 : ℝ) (Gen.B Gen.C Gen.parℓ))
+      (fun δ => Gen.err C Gen.parℓ δ) := by sorry
+>>>>>>> Stashed changes
 
 /-- Corollary 4.11
   Let `C` be a (smooth) ReedSolomon Code with rate `ρ`, then the function
