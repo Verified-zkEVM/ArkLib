@@ -167,7 +167,8 @@ open InterleavedCode ListDecodable
   `IC` be the `parℓ`-interleaved code from a linear code C,
   with `Gen` as a proximity generator with mutual correlated agreement,
   `proximityListDecodingCondition(r)` is true if,
-  List(C, ∑ⱼ rⱼ * fⱼ, δ) ≠ { ∑ⱼ rⱼ * uⱼ, where {u₁,..u_parℓ} ∈ Λᵢ({f₁,..,f_parℓ}, IC, δ) } -/
+  `List(C, ∑ⱼ rⱼ * fⱼ, δ) ≠ `
+  `{ ∑ⱼ rⱼ * uⱼ, where {u₀,..u_{parℓ-1}} ∈ Λᵢ({f₀,..,f_{parℓ-1}}, IC, δ) }` -/
 def proximityListDecodingCondition
   [Fintype ι] [Nonempty ι]
   (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
