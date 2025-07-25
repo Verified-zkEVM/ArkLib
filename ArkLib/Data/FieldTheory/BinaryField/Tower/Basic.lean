@@ -6,7 +6,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 
 import ArkLib.Data.FieldTheory.BinaryField.Tower.Prelude
 import ArkLib.Data.Classes.DCast
-import ArkLib.Data.FieldTheory.AdditiveNTT.Prelude
+import ArkLib.Data.Nat.Bitwise
 
 /-!
 # Binary Tower Fields
@@ -1051,7 +1051,6 @@ def BTField_succ_alg_equiv_adjoinRoot (k : ℕ) :
 end BinaryTowerAlgebra
 
 noncomputable section MultilinearBasis
-open AdditiveNTT
 
 @[simp]
 theorem BTField.Basis_cast_index_eq (i j k n : ℕ) (h_le : k ≤ n) (h_eq : i = j):
@@ -1166,18 +1165,18 @@ theorem Fin.cast_val_eq_val {n m : ℕ} [NeZero n] (a : Fin n) (h_eq : n = m):
 @[simp]
 theorem bit_finProdFinEquiv_symm_2_pow_succ {n : ℕ} (j : Fin (2 ^ (n + 1))) (i : Fin (n + 1)):
   let e:=finProdFinEquiv (m:=2^(n)) (n:=2).symm
-  bit (i) j = if i.val > 0 then bit (i.val-1) (e j).1 else (e j).2 := by
+  Nat.getLsb (i) j = if i.val > 0 then Nat.getLsb (i.val-1) (e j).1 else (e j).2 := by
   simp only [finProdFinEquiv_symm_apply, Fin.coe_divNat, Fin.coe_modNat]
   if h_i_gt_0: i.val > 0 then
     simp_rw [h_i_gt_0]
     simp only [↓reduceIte]
-    rw [bit_eq_pred_bit_of_div_two (by omega)]
+    rw [Nat.getLsb_eq_pred_getLsb_of_div_two (by omega)]
   else
     simp_rw [h_i_gt_0]
     simp only [↓reduceIte]
     simp only [gt_iff_lt, Fin.val_pos_iff, not_lt, Fin.le_zero_iff] at h_i_gt_0
     rw [h_i_gt_0]
-    rw [bit, Fin.val_zero, Nat.shiftRight_zero]
+    rw [Nat.getLsb, Fin.val_zero, Nat.shiftRight_zero]
     simp only [Nat.and_one_is_mod]
 
 /-- Equivalence between `Fin m × Fin n` and `Fin (m * n)`
@@ -1232,15 +1231,15 @@ theorem bit_revFinProdFinEquiv_symm_2_pow_succ {n : ℕ} (j : Fin (2 ^ (n + 1)))
     (h_m:=by exact Nat.two_pow_pos n).symm
   let msb: Fin 2 := (e j).2
   let lsbs: Fin (2 ^ n) := (e j).1
-  bit (i) j = if i.val < n then bit (i.val) lsbs else msb := by
+  Nat.getLsb (i) j = if i.val < n then Nat.getLsb (i.val) lsbs else msb := by
   simp only [revFinProdFinEquiv_symm_apply]
   if h_i_lt_n: i < n then
     simp_rw [h_i_lt_n]
     simp only [↓reduceIte]
     rw [leftModNat]
     simp only;
-    rw [←get_lsb_eq_mod_two_pow]
-    rw [bit_of_lsb]
+    rw [← Nat.get_lsb_eq_mod_two_pow]
+    rw [Nat.getLsb_of_lsb]
     simp only [h_i_lt_n, ↓reduceIte]
   else
     simp_rw [h_i_lt_n]
@@ -1256,10 +1255,10 @@ theorem bit_revFinProdFinEquiv_symm_2_pow_succ {n : ℕ} (j : Fin (2 ^ (n + 1)))
     have hi: i = i' + n := by omega
     rw [hi]
     have h_i': i' = 0 := by omega
-    rw [←bit_of_msb_no_shl]
-    rw [get_msb_no_shl, Nat.shiftRight_eq_div_pow]
+    rw [← Nat.getLsb_of_msb_no_shl]
+    rw [Nat.get_msb_no_shl, Nat.shiftRight_eq_div_pow]
     rw [h_i']
-    simp only [bit, Nat.shiftRight_zero, Nat.and_one_is_mod, Nat.mod_succ_eq_iff_lt,
+    simp only [Nat.getLsb, Nat.shiftRight_zero, Nat.and_one_is_mod, Nat.mod_succ_eq_iff_lt,
       Nat.succ_eq_add_one, Nat.reduceAdd, gt_iff_lt]
     have hj_lt : j.val < (2^n * 2) := by
       calc j.val < 2 ^ (n + 1) := j.2
@@ -1387,7 +1386,7 @@ theorem multilinearBasis_apply (r : ℕ): ∀ l: ℕ, (h_le : l ≤ r) → ∀ (
   multilinearBasis (l:=l) (r:=r) (h_le:=h_le) j =
     (Finset.univ: Finset (Fin (r - l))).prod (fun i =>
       (binaryTowerAlgebra (l:=l + i + 1) (r:=r) (h_le:=by omega)).algebraMap (
-        (𝕏 (l + i)) ^ (bit i j))) := by
+        (𝕏 (l + i)) ^ (Nat.getLsb i j))) := by
   -- letI instAlgebra: Algebra (BTField l) (BTField r) := binaryTowerAlgebra (h_le:=h_le)
   induction r with
   | zero => -- Fin (2^0) = Fin 1, so j = 0

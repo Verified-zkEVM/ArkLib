@@ -49,6 +49,7 @@ lemma lsb_of_multiple_of_two {n : ℕ} : getLsb 0 (2*n) = 0 := by
   unfold getLsb
   rw [Nat.shiftRight_zero, Nat.and_one_is_mod, Nat.mul_mod_right]
 
+/-- Get the `num_lsb_getLsbs` least significant bits of `n`. -/
 def get_lsb (n : ℕ) (num_lsb_getLsbs : ℕ) := n &&& ((1 <<< num_lsb_getLsbs) - 1)
 
 lemma get_zero_lsb_eq_zero {n : ℕ} : get_lsb n 0 = 0 := by
@@ -811,7 +812,8 @@ theorem getLsb_repr {ℓ : Nat} (h_ℓ : ℓ > 0) : ∀ j, j < 2^ℓ →
         rhs
         rw [←h_j_eq]
 
-lemma get_lsb_succ {n: ℕ} (num_lsb_getLsbs: ℕ) : get_lsb n (num_lsb_getLsbs + 1) = get_lsb n num_lsb_getLsbs
+lemma get_lsb_succ {n: ℕ} (num_lsb_getLsbs: ℕ) :
+    get_lsb n (num_lsb_getLsbs + 1) = get_lsb n num_lsb_getLsbs
     + (getLsb num_lsb_getLsbs n) <<< num_lsb_getLsbs := by
   apply eq_iff_eq_all_getLsbs.mpr
   intro k
@@ -879,7 +881,9 @@ lemma get_lsb_succ {n: ℕ} (num_lsb_getLsbs: ℕ) : get_lsb n (num_lsb_getLsbs 
 
 /-- This takes a argument for the number of lsbs to remove from the number -/
 def get_msb_no_shl (n : ℕ) (num_lsb_getLsbs : ℕ) : ℕ := n >>> num_lsb_getLsbs
-def get_msb (n : ℕ) (num_lsb_getLsbs : ℕ) : ℕ := (get_msb_no_shl n num_lsb_getLsbs) <<< num_lsb_getLsbs
+
+def get_msb (n : ℕ) (num_lsb_getLsbs : ℕ) : ℕ :=
+  (get_msb_no_shl n num_lsb_getLsbs) <<< num_lsb_getLsbs
 
 theorem msb_and_lsb_eq_zero {n : ℕ} (num_lsb_getLsbs : ℕ) :
     get_msb n num_lsb_getLsbs &&& get_lsb n num_lsb_getLsbs = 0 := by
@@ -889,7 +893,8 @@ theorem msb_and_lsb_eq_zero {n : ℕ} (num_lsb_getLsbs : ℕ) :
   have h_getLsb_lsb := getLsb_of_lsb (n := n) (num_lsb_getLsbs := num_lsb_getLsbs)
   apply and_eq_zero_iff_and_each_getLsb_eq_zero.mpr
   intro j
-  change getLsb j ((n >>> num_lsb_getLsbs) <<< num_lsb_getLsbs) &&& getLsb j (get_lsb n num_lsb_getLsbs) = 0
+  change getLsb j ((n >>> num_lsb_getLsbs) <<< num_lsb_getLsbs)
+    &&& getLsb j (get_lsb n num_lsb_getLsbs) = 0
   if h_j: j < num_lsb_getLsbs then
     have h_getLsb_lhs := h_getLsb_msb_shl (k:=j - num_lsb_getLsbs)
     have h_ne: ¬(num_lsb_getLsbs ≤ j) := by omega
@@ -908,7 +913,8 @@ lemma num_eq_msb_add_lsb {n: ℕ} (num_lsb_getLsbs: ℕ) :
   n = get_msb n num_lsb_getLsbs + get_lsb n num_lsb_getLsbs := by
   apply eq_iff_eq_all_getLsbs.mpr
   intro k
-  --- use 2 getLsb extractions to get the condition for getLsbs of ((n >>> num_lsb_getLsbs) <<< num_lsb_getLsbs)
+  --- use 2 getLsb extractions to get the condition for getLsbs of ((n >>> num_lsb_getLsbs) <<<
+  --  num_lsb_getLsbs)
   set msb_no_shl := n >>> num_lsb_getLsbs
   have h_getLsb_msb_shl := getLsb_of_shiftLeft (n := msb_no_shl) (p := num_lsb_getLsbs)
   have h_getLsb_lsb := getLsb_of_lsb (n := n) (num_lsb_getLsbs := num_lsb_getLsbs)
@@ -917,7 +923,8 @@ lemma num_eq_msb_add_lsb {n: ℕ} (num_lsb_getLsbs: ℕ) :
   rw [sum_of_and_eq_zero_is_or h_and]
   --- now reason on getLsbwise operation only
   rw [Nat.shiftRight_or_distrib, Nat.and_distrib_right]
-  change getLsb k n = getLsb k ((n >>> num_lsb_getLsbs) <<< num_lsb_getLsbs) ||| getLsb k (get_lsb n num_lsb_getLsbs)
+  change getLsb k n = getLsb k ((n >>> num_lsb_getLsbs) <<< num_lsb_getLsbs)
+    ||| getLsb k (get_lsb n num_lsb_getLsbs)
   rw [h_getLsb_msb_shl, h_getLsb_lsb]
   if h_k: k < num_lsb_getLsbs then
     simp only [h_k, ↓reduceIte, Nat.zero_or] at *
@@ -947,7 +954,8 @@ lemma getLsb_of_msb {n: ℕ} (num_lsb_getLsbs : ℕ) : ∀ k, getLsb k (get_msb 
     rw [getLsb_of_shiftRight]
     rw [Nat.sub_add_cancel (by omega)]
 
-lemma getLsb_of_msb_no_shl {n: ℕ} (num_lsb_getLsbs : ℕ) : ∀ k, getLsb k (get_msb_no_shl n num_lsb_getLsbs)
+lemma getLsb_of_msb_no_shl {n: ℕ} (num_lsb_getLsbs : ℕ) :
+    ∀ k, getLsb k (get_msb_no_shl n num_lsb_getLsbs)
   = getLsb (k + num_lsb_getLsbs) (n) := by
   intro k
   simp only [get_msb_no_shl]
