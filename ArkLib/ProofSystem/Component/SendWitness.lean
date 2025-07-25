@@ -3,7 +3,7 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.OracleReduction.Security.Basic
+import ArkLib.OracleReduction.Security.RoundByRound
 import Mathlib.Data.FinEnum
 
 /-!
@@ -59,7 +59,9 @@ def reduction : Reduction oSpec Statement Witness (Statement × Witness) Unit (p
   prover := prover oSpec Statement Witness
   verifier := verifier oSpec Statement Witness
 
-variable {Statement} {Witness} [oSpec.FiniteRange] (relIn : Set (Statement × Witness))
+variable {Statement} {Witness}
+  {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+  (relIn : Set (Statement × Witness))
 
 @[reducible, simp]
 def toRelOut : Set ((Statement × Witness) × Unit) :=
@@ -67,8 +69,8 @@ def toRelOut : Set ((Statement × Witness) × Unit) :=
 
 /-- The `SendWitness` reduction satisfies perfect completeness. -/
 @[simp]
-theorem reduction_completeness :
-    (reduction oSpec Statement Witness).perfectCompleteness relIn (toRelOut relIn) := by
+theorem reduction_completeness (h : init.neverFails) :
+    (reduction oSpec Statement Witness).perfectCompleteness init impl relIn (toRelOut relIn) := by
   simp [Reduction.run, Prover.run, Prover.runToRound, Prover.processRound, Verifier.run,
     reduction, prover, verifier]
   aesop
@@ -239,7 +241,8 @@ theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatem
   simp [Verifier.run, OracleVerifier.toVerifier, oracleVerifier]
   ext i; rcases i <;> simp
 
-variable [oSpec.FiniteRange] (oRelIn : Set ((Statement × (∀ i, OStatement i)) × Witness))
+variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+  (oRelIn : Set ((Statement × (∀ i, OStatement i)) × Witness))
 
 @[reducible, simp]
 def toORelOut :
@@ -249,11 +252,21 @@ def toORelOut :
 
 /-- The `SendSingleWitness` oracle reduction satisfies perfect completeness. -/
 @[simp]
-theorem oracleReduction_completeness :
-    (oracleReduction oSpec Statement OStatement Witness).perfectCompleteness oRelIn
+theorem oracleReduction_completeness (h : init.neverFails) :
+    (oracleReduction oSpec Statement OStatement Witness).perfectCompleteness init impl oRelIn
     (toORelOut oRelIn) := by
-  simp [OracleReduction.perfectCompleteness, OracleReduction.toReduction]
-  simp_rw [Reduction.run, oracleReduction, oracleVerifier_toVerifier_run, oracleProver_run]
+  -- TODO: clean up this proof
+  simp only [OracleReduction.perfectCompleteness, oraclePSpec, toORelOut, Fin.isValue,
+    OracleReduction.toReduction, MessageIdx, Reduction.perfectCompleteness_eq_prob_one,
+    ChallengeIdx, StateT.run'_eq, Set.mem_setOf_eq, probEvent_eq_one_iff, probFailure_eq_zero_iff,
+    neverFails_bind_iff, neverFails_map_iff, support_bind, support_map, Set.mem_iUnion,
+    Set.mem_image, Prod.exists, exists_and_right, exists_eq_right, exists_prop, forall_exists_index,
+    and_imp, Prod.forall, Prod.mk.injEq]
+  simp_rw [h, Reduction.run, oracleReduction, oracleVerifier_toVerifier_run, oracleProver_run]
+  simp only [ChallengeIdx, oraclePSpec, eq_mpr_eq_cast, eq_mp_eq_cast, id_eq, liftM_eq_liftComp,
+    liftComp_pure, bind_pure_comp, map_pure, cast_cast, cast_eq, simulateQ_pure, StateT.run_pure,
+    neverFails_pure, implies_true, and_self, support_pure, Set.mem_singleton_iff, Prod.mk.injEq,
+    and_true, Fin.isValue, and_imp, forall_const, true_and]
   aesop
 
 theorem oracleReduction_rbr_knowledge_soundness : True := sorry

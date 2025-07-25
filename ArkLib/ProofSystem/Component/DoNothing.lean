@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.OracleReduction.Security.Basic
+import ArkLib.OracleReduction.Security.RoundByRound
 
 /-!
   # The Trivial (Oracle) Reduction: Do Nothing!
