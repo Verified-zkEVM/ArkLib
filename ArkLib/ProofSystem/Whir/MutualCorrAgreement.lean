@@ -99,15 +99,14 @@ lemma mca_rsc
   (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type ↪ ℕ) :
   let Gen := RSGenerator.genRSC parℓ_type φ m (exp := exp)
   let : Fintype Gen.parℓ := Gen.hℓ
-  let rate := RSGenerator.rate φ m
   MutualCorrAgreement
     -- Generator
     Gen
     -- BStar
-    ((1 + rate) / 2)
+    ((1 + Gen.rate) / 2)
     -- errStar
     (fun δ => ENNReal.ofReal
-        ((Fintype.card parℓ_type - 1) * (2^m / (rate * (Fintype.card F)))))
+        ((Fintype.card parℓ_type - 1) * (2^m / (Gen.rate * (Fintype.card F)))))
   := by sorry
 
 
@@ -123,13 +122,12 @@ theorem mca_johnson_bound_CONJECTURE
   (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type ↪ ℕ) :
   let Gen := RSGenerator.genRSC parℓ_type φ m (exp := exp)
   let : Fintype Gen.parℓ := Gen.hℓ
-  let rate := RSGenerator.rate φ m
   MutualCorrAgreement Gen
     -- Conjectured BStar = √ρ
-    (Real.sqrt rate)
+    (Real.sqrt Gen.rate)
     -- Conjectured errStar
     (fun δ =>
-      let min_val := min (1 - Real.sqrt rate - (δ : ℝ)) (Real.sqrt rate / 20)
+      let min_val := min (1 - Real.sqrt Gen.rate - (δ : ℝ)) (Real.sqrt Gen.rate / 20)
       ENNReal.ofReal (
         ((Fintype.card parℓ_type - 1) * 2^(2*m)) /
         ((Fintype.card F) * (2 * min_val)^7)
@@ -140,22 +138,24 @@ theorem mca_johnson_bound_CONJECTURE
 /-- Conjecture 4.12 (Capacity Bound)
   The function `Gen(parℓ,α)={1,α,..,α ^ parℓ-1}` is a proximity generator with
   mutual correlated agreement for every (smooth) ReedSolomon code `C` with rate `ρ = 2^m / |ι|`.
-  2. Up to capacity: BStar = ρ and ∃ c₁,c₂,c₃ ∈ ℕ s.t. ∀ η > 0 and 0 < δ < 1 - ρ - η
-      errStar = (parℓ-1)^c₂ * d^c₂ / η^c₁ * ρ^(c₁+c₂) * |F|, where d = 2^m is the degree. -/
+  2. Up to capacity: BStar = ρ and ∃ c₁,c₂ ∈ ℕ s.t. ∀ η > 0 and 0 < δ < 1 - ρ - η
+      errStar = (parℓ-1)^c₂ * d^c₂ / η^c₁ * ρ^(c₁+c₂) * |F|, where d = 2^m is the degree.
+
+  N.b: there is a typo in the paper, c₃ is not needed and carried over from STIR paper definition
+-/
 theorem mca_capacity_bound_CONJECTURE
   [DecidableEq ι]
   (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ]
   (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type ↪ ℕ) :
   let Gen := RSGenerator.genRSC parℓ_type φ m (exp := exp)
   let : Fintype Gen.parℓ := Gen.hℓ
-  let rate := RSGenerator.rate φ m
-  ∃ (c₁ c₂ c₃ : ℕ),
+  ∃ (c₁ c₂ : ℕ),
     ∀ (f : Gen.parℓ → ι → F) (η : ℝ) (_hη : 0 < η) (δ : ℝ≥0)
-      (_hδ : 0 < δ ∧ δ < 1 - rate - η),
+      (_hδ : 0 < δ ∧ δ < 1 - Gen.rate - η),
       Pr_{let r ←$ᵖ F}[ (proximityCondition f δ Gen.Fun Gen.C) r ] ≤
         ENNReal.ofReal (
           (((Fintype.card parℓ_type - 1) : ℝ)^c₂ * ((2^m) : ℝ)^c₂) /
-          (η^c₁ * rate^(c₁+c₂) * (Fintype.card F))
+          (η^c₁ * Gen.rate^(c₁+c₂) * (Fintype.card F))
         )
   := by sorry
 

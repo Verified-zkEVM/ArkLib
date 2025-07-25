@@ -57,6 +57,8 @@ structure ProximityGenerator
   hℓ        : Fintype parℓ
   -- Generator function maps sampled randomness `r : 𝔽 ` to `parℓ`-tuples of field elements
   Fun       : F → parℓ → F
+  -- Rate
+  rate      : ℝ
   -- Distance threshold parameter
   B         : (LinearCode ι F) → Type → ℝ
   -- Error function bounding the probability of distance within `δ`
@@ -83,12 +85,8 @@ namespace RSGenerator
 
 open Generator NNReal ReedSolomon
 
-variable   {F : Type} [Field F] [Fintype F] [DecidableEq F]
-           {ι : Type} [Fintype ι] [DecidableEq ι] [Nonempty ι]
-
-noncomputable def rate (φ : ι ↪ F) (m : ℕ) [Smooth φ] : ℝ :=
-  LinearCode.rate (smoothCode φ m)
-
+variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+         {ι : Type} [Fintype ι] [DecidableEq ι] [Nonempty ι]
 
 /- Theorem 4.8 [BCIKS20] Proximity Gap Theorem
   Smooth Reed Solomon codes C:= RSC[F,ι,m] have proximity generators for any given `parℓ`
@@ -99,19 +97,21 @@ noncomputable def rate (φ : ι ↪ F) (m : ℕ) [Smooth φ] : ℝ :=
                       for δ in ((1-ρ)/ 2, 1 - B(C,parℓ)) -/
 noncomputable def genRSC
   (parℓ : Type) [hℓ : Fintype parℓ] (φ : ι ↪ F) [Smooth φ]
-  (m : ℕ) (exp : parℓ ↪ ℕ) : ProximityGenerator ι F :=
+  (m : ℕ) {exp : parℓ ↪ ℕ} : ProximityGenerator ι F :=
+    let r := LinearCode.rate (smoothCode φ m);
     { C      := smoothCode φ m,
       parℓ   := parℓ,
       hℓ     := hℓ,
+      rate   := r,
       Fun    := fun r j => r ^ (exp j),
-      B      := fun _ _ => (Real.sqrt (rate φ m)),
+      B      := fun _ _ => (Real.sqrt r),
       err    := fun _ _ δ =>
         ENNReal.ofReal (
-          if 0 < δ ∧ δ ≤ (1 - (rate φ m)) / 2 then
-          ((Fintype.card parℓ - 1) * 2^m) / ((rate φ m)  * Fintype.card F)
+          if 0 < δ ∧ δ ≤ (1 - r) / 2 then
+          ((Fintype.card parℓ - 1) * 2^m) / (r  * Fintype.card F)
           else
-            let min_val := min (1 - (Real.sqrt (rate φ m)) - δ)
-                               ((Real.sqrt (rate φ m)) / 20)
+            let min_val := min (1 - (Real.sqrt r) - δ)
+                               ((Real.sqrt r) / 20)
             ((Fintype.card parℓ - 1) * (2^(2 * m))) / ((Fintype.card F) * (2 * min_val)^7)
           ),
       proximity := by sorry
