@@ -300,15 +300,15 @@ def Extractor.Straightline.append (E₁ : Extractor.Straightline oSpec Stmt₁ W
     let wit₁ ← E₁ stmt₁ wit₂ transcript.fst proveQueryLog verifyQueryLog
     return wit₁
 
-/-- The round-by-round extractor for the sequential composition of two (oracle) reductions
+-- /-- The round-by-round extractor for the sequential composition of two (oracle) reductions
 
-The nice thing is we just extend the first extractor to the concatenated protocol. The intuition is
-that RBR extraction happens on the very first message, so further messages don't matter. -/
-def Extractor.RoundByRound.append (E₁ : Extractor.RoundByRound oSpec Stmt₁ Wit₁ pSpec₁) :
-      Extractor.RoundByRound oSpec Stmt₁ Wit₁ (pSpec₁ ++ₚ pSpec₂) :=
-  -- (TODO: describe `Transcript.fst` and `Transcript.snd`)
-  fun roundIdx stmt₁ transcript proveQueryLog =>
-    E₁ ⟨min roundIdx m, by omega⟩ stmt₁ transcript.fst proveQueryLog
+-- The nice thing is we just extend the first extractor to the concatenated protocol. The intuition is
+-- that RBR extraction happens on the very first message, so further messages don't matter. -/
+-- def Extractor.RoundByRound.append (E₁ : Extractor.RoundByRound oSpec Stmt₁ Wit₁ Wit₂ pSpec₁ ) :
+--       Extractor.RoundByRound oSpec Stmt₁ Wit₁ (pSpec₁ ++ₚ pSpec₂) :=
+--   -- (TODO: describe `Transcript.fst` and `Transcript.snd`)
+--   fun roundIdx stmt₁ transcript proveQueryLog =>
+--     E₁ ⟨min roundIdx m, by omega⟩ stmt₁ transcript.fst proveQueryLog
 
 variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     {lang₁ : Set Stmt₁} {lang₂ : Set Stmt₂} {lang₃ : Set Stmt₃}

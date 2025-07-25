@@ -53,16 +53,17 @@ def reduction : Reduction oSpec Statement Unit Statement Unit ![] where
   prover := prover oSpec Statement
   verifier := verifier oSpec Statement pred
 
-variable [oSpec.FiniteRange]
+variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 /-- The `CheckClaim` reduction satisfies perfect completeness with respect to the predicate as the
   input relation, and the output relation being always true. -/
 @[simp]
-theorem reduction_completeness :
-    (reduction oSpec Statement pred).perfectCompleteness { ⟨stmt, _⟩ | pred stmt }
-    Set.univ := by
-  simp [reduction, Reduction.run, Prover.run, Prover.runToRound, Prover.processRound, Verifier.run,
+theorem reduction_completeness (h : init.neverFails) :
+    (reduction oSpec Statement pred).perfectCompleteness init impl
+    { ⟨stmt, _⟩ | pred stmt } Set.univ := by
+  simp [reduction, Reduction.run, Prover.run, Prover.runToRound, Verifier.run,
     prover, verifier]
+  aesop
 
 /-- The `CheckClaim` reduction satisfies perfect round-by-round knowledge soundness. -/
 theorem reduction_rbr_knowledge_soundness : True := sorry
@@ -108,17 +109,18 @@ def toRelInput : Set ((Statement × (∀ i, OStatement i)) × Unit) :=
 
 -- theorem oracleProver_run
 
-variable [oSpec.FiniteRange]
+variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 /-- The `CheckClaim` reduction satisfies perfect completeness. -/
 @[simp]
-theorem oracleReduction_completeness :
-    (oracleReduction oSpec Statement OStatement pred).perfectCompleteness (toRelInput pred hPred)
-    Set.univ := by
-  simp [OracleReduction.perfectCompleteness, OracleReduction.toReduction, OracleVerifier.toVerifier,
-    oracleReduction, oracleProver, oracleVerifier, toRelInput]
-  simp [Reduction.run, Prover.run, Verifier.run, simOracle2]
+theorem oracleReduction_completeness (h : init.neverFails) :
+    (oracleReduction oSpec Statement OStatement pred).perfectCompleteness init impl
+    (toRelInput pred hPred) Set.univ := by
+  simp [OracleReduction.perfectCompleteness, OracleReduction.toReduction,
+    OracleVerifier.toVerifier, oracleReduction, oracleProver, oracleVerifier, toRelInput, h]
   sorry
+  -- simp [Reduction.run, Prover.run, Verifier.run, simOracle2]
+  -- aesop
 
 theorem oracleReduction_rbr_knowledge_soundness : True := sorry
 

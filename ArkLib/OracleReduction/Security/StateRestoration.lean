@@ -96,7 +96,7 @@ def soundness
   ∀ srProver : Prover.StateRestoration oSpec StmtIn StmtOut WitOut pSpec,
   [ fun ⟨stmtIn, stmtOut⟩ => stmtOut ∈ langOut ∧ stmtIn ∉ langIn |
     do
-    (simulateQ (impl ++ₛₒ (srChallengeQueryImpl' StmtIn pSpec) : QueryImpl _ (StateT _ ProbComp))
+    (simulateQ (impl ++ₛₒ srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
         <| (do
     let ⟨stmtIn, _, transcript⟩ ← srProver.srGame
     let stmtOut ← liftComp (verifier.run stmtIn transcript) _
@@ -113,7 +113,7 @@ def knowledgeSoundness
     [ fun ⟨stmtIn, witIn, stmtOut, witOut⟩ =>
         (stmtOut, witOut) ∈ relOut ∧ (stmtIn, witIn) ∉ relIn |
       do
-      (simulateQ (impl ++ₛₒ (srChallengeQueryImpl' StmtIn pSpec) : QueryImpl _ (StateT _ ProbComp))
+      (simulateQ (impl ++ₛₒ srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
           <| (do
             let ⟨stmtIn, witOut, transcript⟩ ← srProver.srGame
             let stmtOut ← liftComp (verifier.run stmtIn transcript) _
