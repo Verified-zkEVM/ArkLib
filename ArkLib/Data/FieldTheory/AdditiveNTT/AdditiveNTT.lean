@@ -223,7 +223,7 @@ theorem qMap_is_linear_map
       _ = (C constMultiplier) * (f^q + g^q - (X.comp f + X.comp g)) := by
         rw [pow_comp, X_comp]
         unfold q
-        rw [AdditiveNTT.frobenius_identity_in_algebra
+        rw [Polynomial.frobenius_identity_in_algebra
           (h_Fq_char_prime:=h_Fq_char_prime) (f:=f) (g:=g)]
       _ = (C constMultiplier) * (((X^q).comp f - X.comp f) + ((X^q).comp g - X.comp g)) := by
         rw [pow_comp, X_comp, X_comp, pow_comp, X_comp]
