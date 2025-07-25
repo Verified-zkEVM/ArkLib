@@ -10,18 +10,21 @@ import Mathlib.Algebra.Order.Star.Basic
 import Mathlib.Algebra.Polynomial.FieldDivision
 import Mathlib.RingTheory.Polynomial.Basic
 
-/-! ## The KZG Polynomial Commitment Scheme -/
+/-! ## The KZG Polynomial Commitment Scheme
+
+In this file, we define the KZG polynomial commitment scheme, and prove its correctness and
+straightline extraction in the AGM. -/
 
 open Polynomial
 
 namespace KZG
 
-variable {G : Type*} [CommGroup G] {p : ℕ} [hp : Fact (Nat.Prime p)] (hpG : Nat.card G = p)
+variable {G : Type*} [Group G] {p : outParam ℕ} [hp : Fact (Nat.Prime p)] [PrimeOrderWith G p]
   {g : G}
 
-variable {G₁ : Type*} [CommGroup G₁] {g₁ : G₁}
-  {G₂ : Type*} [CommGroup G₂] {g₂ : G₂}
-  {Gₜ : Type*} [CommGroup Gₜ]
+variable {G₁ : Type*} [Group G₁] [PrimeOrderWith G₁ p] {g₁ : G₁}
+  {G₂ : Type*} [Group G₂] [PrimeOrderWith G₂ p] {g₂ : G₂}
+  {Gₜ : Type*} [Group Gₜ] [PrimeOrderWith Gₜ p]
   -- TODO: need to make this a `ZMod p`-linear map
   (pairing : (Additive G₁) →ₗ[ℤ] (Additive G₂) →ₗ[ℤ] (Additive Gₜ))
 
