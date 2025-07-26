@@ -34,10 +34,10 @@ import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.EllipticCurve.BN254
 import ArkLib.Data.FieldTheory.AdditiveNTT.AdditiveNTT
 import ArkLib.Data.FieldTheory.AdditiveNTT.NovelPolynomialBasis
-import ArkLib.Data.FieldTheory.AdditiveNTT.Prelude
 import ArkLib.Data.FieldTheory.BinaryField.Tower.Basic
 import ArkLib.Data.FieldTheory.BinaryField.Tower.Impl
 import ArkLib.Data.FieldTheory.BinaryField.Tower.Prelude
+import ArkLib.Data.FieldTheory.BinaryField.Tower.TensorAlgebra
 import ArkLib.Data.FieldTheory.NonBinaryField.BLS12_377
 import ArkLib.Data.FieldTheory.NonBinaryField.BLS12_381
 import ArkLib.Data.FieldTheory.NonBinaryField.BN254
@@ -47,6 +47,7 @@ import ArkLib.Data.FieldTheory.NonBinaryField.Goldilocks
 import ArkLib.Data.FieldTheory.NonBinaryField.Mersenne
 import ArkLib.Data.FieldTheory.NonBinaryField.Secp256k1
 import ArkLib.Data.Fin.Basic
+import ArkLib.Data.Fin.BigOperators
 import ArkLib.Data.Fin.Lift
 import ArkLib.Data.Fin.Pad
 import ArkLib.Data.GroupTheory.PrimeOrder
@@ -65,12 +66,16 @@ import ArkLib.Data.MvPolynomial.Multilinear
 import ArkLib.Data.MvPolynomial.MvPolynomialLike
 import ArkLib.Data.MvPolynomial.Notation
 import ArkLib.Data.MvPolynomial.Sumcheck
+import ArkLib.Data.Nat.Bitwise
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.EvenAndOdd
+import ArkLib.Data.Polynomial.Frobenius
 import ArkLib.Data.Polynomial.Interface
+import ArkLib.Data.Polynomial.MonomialBasis
 import ArkLib.Data.Polynomial.PolynomialLike
 import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.Notation
+import ArkLib.Data.RingTheory.TowerOfAlgebra
 import ArkLib.Data.Tree.Binary
 import ArkLib.Data.Tree.General
 import ArkLib.Data.UniPoly.Basic
@@ -99,6 +104,7 @@ import ArkLib.OracleReduction.Security.Rewinding
 import ArkLib.OracleReduction.Security.RoundByRound
 import ArkLib.OracleReduction.Security.StateRestoration
 import ArkLib.OracleReduction.VectorIOR
+import ArkLib.ProofSystem.Binius.Basic
 import ArkLib.ProofSystem.Component.CheckClaim
 import ArkLib.ProofSystem.Component.DoNothing
 import ArkLib.ProofSystem.Component.RandomQuery

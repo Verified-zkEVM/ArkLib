@@ -122,7 +122,7 @@ BinaryTower.polyIrreducible
 BinaryTower.BTFieldIsField
 BinaryTower.BTFieldCard
 BinaryTower.BTFieldChar2
-BinaryTower.ConcreteDefinition.instFieldConcrete
+ConcreteBinaryTower.instFieldConcrete
 proximity_gap
 Quotienting.funcQuotient
 Quotienting.polyQuotient

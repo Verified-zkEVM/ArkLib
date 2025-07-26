@@ -1,10 +1,12 @@
 /-
-Copyright (c) 2024 ArkLib Contributors. All rights reserved.
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen
 -/
 
 import Mathlib.FieldTheory.Finite.GaloisField
+import ArkLib.Data.Fin.BigOperators
+import ArkLib.Data.Nat.Bitwise
 
 /-!
   # Prelude for Binary Tower Fields
@@ -40,7 +42,7 @@ theorem non_zero_divisors_iff (M₀ : Type*) [Mul M₀] [Zero M₀] :
   ⟨fun h => h.1, fun h => ⟨h⟩⟩
 
 instance neZero_one_of_nontrivial_comm_monoid_zero {M₀ : Type*}
-  [CommMonoidWithZero M₀] [instNontrivial:Nontrivial M₀] : NeZero (1 : M₀) :=
+  [CommMonoidWithZero M₀] [instNontrivial : Nontrivial M₀] : NeZero (1 : M₀) :=
 {
   out := by
     -- Get witness of nontriviality
@@ -80,7 +82,7 @@ instance unit_of_nontrivial_comm_monoid_with_zero_is_not_zero
   rw [zero_mul_inv_eq_0] at zero_mul_inv_eq_1
 
   have one_ne_zero: NeZero (1: R) := by exact neZero_one_of_nontrivial_comm_monoid_zero
-  simp [one_ne_zero] at zero_mul_inv_eq_1
+  simp only [zero_ne_one] at zero_mul_inv_eq_1
 
 /-- Any element in `GF(2)` is either `0` or `1`. -/
 theorem GF_2_value_eq_zero_or_one (x : GF(2)) : x = 0 ∨ x = 1 := by
@@ -96,10 +98,12 @@ theorem GF_2_value_eq_zero_or_one (x : GF(2)) : x = 0 ∨ x = 1 := by
 
   -- Step 3: Transfer this property to `GF(2)` via the isomorphism
   have h := hZMod (φ x)
-  cases' h with h_x_is_0 h_x_is_1
+  cases h with
+  | inl h_x_is_0 =>
   · left
     exact (φ.map_eq_zero_iff).mp h_x_is_0 -- Since `φ` is an isomorphism, `φ x = 0` implies `x = 0`
-  · right
+  | inr h_x_is_1 =>
+    right
     exact (φ.map_eq_one_iff).mp h_x_is_1 -- Similarly, `φ x = 1` implies `x = 1`
 
 theorem GF_2_one_add_one_eq_zero : (1 + 1 : GF(2)) = 0 := by
@@ -134,7 +138,7 @@ theorem GF_2_one_add_one_eq_zero : (1 + 1 : GF(2)) = 0 := by
 
   exact h_1_add_1_eq_zero_in_GF_2
 
-theorem withBot_lt_one_cases (x : WithBot ℕ) (h : x < (1: ℕ)) : x = ⊥ ∨ x = (0: ℕ) := by
+theorem withBot_lt_one_cases (x : WithBot ℕ) (h : x < (1 : ℕ)) : x = ⊥ ∨ x = (0: ℕ) := by
   match x with
   | ⊥ =>
     left -- focus on the left constructof of the goal (in an OR statement)
@@ -249,8 +253,8 @@ theorem unique_repr {R : Type*} [CommRing R] {S : Type*} [CommRing S] [Algebra R
   rw [rerp_eq_rerp1] at rerpr_eq_rerp2
   exact rerpr_eq_rerp2
 
-theorem linear_sum_repr(R : Type*) [CommRing R] (S : Type*) [CommRing S] [Algebra R S]
-    (pb : PowerBasis R S) (h_dim : pb.dim = (2: ℕ)) (s : S) :
+theorem linear_sum_repr (R : Type*) [CommRing R] (S : Type*) [CommRing S] [Algebra R S]
+    (pb : PowerBasis R S) (h_dim : pb.dim = (2 : ℕ)) (s : S) :
     ∃ a b : R, s = a • pb.gen + algebraMap R S b := by
   let tmp: Basis (Fin pb.dim) R S := pb.basis
   let repr : (Fin pb.dim) →₀ R := pb.basis.repr s
@@ -399,7 +403,7 @@ theorem linear_form_of_elements_in_adjoined_commring
   have oleft: (a: R) • root (f: R[X]) = (AdjoinRoot.of f) a * root f := by
     simp [Algebra.smul_def] -- Definition of algebra scalar multiplication
   have oright: (algebraMap R (AdjoinRoot f)) b = (of f) b := by
-    simp [Algebra.smul_def]
+    simp only [AdjoinRoot.algebraMap_eq]
   rw [oleft, oright] at c1_linear_comb_over_a_b
   exact c1_linear_comb_over_a_b
 
@@ -508,11 +512,11 @@ theorem one_le_two_pow_n (n : ℕ) : 1 ≤ 2 ^ n := by
     1 = 2^0               := by rw [Nat.pow_zero]
     _ ≤ 2 ^ n         := Nat.pow_le_pow_right (by decide) (by exact Nat.zero_le n)
 
-theorem zero_lt_pow_n (m: ℕ) (n: ℕ) (h_m: m > 0): 0 < m^n := by
+theorem zero_lt_pow_n (m : ℕ) (n : ℕ) (h_m : m > 0): 0 < m^n := by
   exact Nat.pow_pos h_m
 
 -- 1 ≤ 2 ^ k - 2 ^ (k - 1)
-theorem one_le_sub_consecutive_two_pow (n: ℕ): 1 ≤ 2^(n+1) - 2^n := by
+theorem one_le_sub_consecutive_two_pow (n : ℕ): 1 ≤ 2^(n+1) - 2^n := by
   calc
     1 ≤ 2^n := Nat.one_le_pow _ _ (by decide)
     _ = 2^(n+1) - 2^n := by
@@ -527,9 +531,9 @@ theorem two_pow_ne_zero (n : ℕ) : 2 ^ n ≠ 0 := by
   exact Nat.not_le_of_gt (by decide) h_1_le_0
 
 /-- For any field element (x:F) where x^2 = x*z + 1, this theorem gives a closed form for x^(2^i) -/
-theorem pow_exp_of_2_repr_given_x_square_repr {F : Type*} [instField: Field F]
-  (sumZeroIffEq: ∀ (x y : F), x + y = 0 ↔ x = y) (x z: F) (h_z_non_zero: z ≠ 0)
-  (h_x_square: x^2 = x*z + 1)
+theorem pow_exp_of_2_repr_given_x_square_repr {F : Type*} [instField : Field F]
+  (sumZeroIffEq : ∀ (x y : F), x + y = 0 ↔ x = y) (x z : F) (h_z_non_zero : z ≠ 0)
+  (h_x_square : x ^ 2 = x * z + 1)
   : ∀ i : ℕ, x^(2^i) = x * z^(2^i - 1) + ∑ j ∈ Finset.Icc 1 i, z^(2^i - 2^j) := by
   intro i
   induction i with
@@ -644,7 +648,7 @@ theorem pow_exp_of_2_repr_given_x_square_repr {F : Type*} [instField: Field F]
             exact Nat.sub_add_cancel one_le_left_bound
           · -- function value match
             intro i hi
-            simp only [Nat.add_sub_cancel]
+            simp only
           · -- left membership preservation
             intro i hi
             -- ⊢ i + 1 ∈ Finset.Icc 2 (n + 1)
@@ -698,7 +702,7 @@ theorem pow_exp_of_2_repr_given_x_square_repr {F : Type*} [instField: Field F]
                   · exact h2
               rw [h]
               rw [Finset.sum_sdiff_eq_sub]
-              simp [Finset.singleton_subset_iff]
+              simp only [pow_one, Finset.sum_singleton, add_sub_cancel]
               -- ⊢ {1} ⊆ Finset.Icc 1 (n + 1)
               exact singleton_subset_Icc n
 
@@ -776,11 +780,12 @@ def PolyInstances (F : Type _) [Field F] (specialElement : F) :
   let newPoly : F[X] := X^2 + (t1 * X + 1)
   let poly_form: newPoly = X^2 + (t1 * X + 1) := rfl
 
-  have deg_X2 : (X^2 : F[X]).degree = 2 := by simp [degree_X_pow]
+  have deg_X2 : (X^2 : F[X]).degree = 2 := by simp only [degree_pow, degree_X, nsmul_eq_mul,
+    Nat.cast_ofNat, mul_one]
   have deg_1_le_0 : (1 : F[X]).degree ≤ 0 := by simp [degree_one]
   have deg_q_lt_2 : (t1 * X + 1).degree < 2 :=
     have deg_left_le_1 : (t1 * X).degree ≤ 1 := by
-      simp [degree_C_mul_X_le] -- Goal: t1.degree + 1 ≤ 1
+      simp only [degree_mul, degree_X] -- Goal: t1.degree + 1 ≤ 1
       calc
         t1.degree + 1 ≤ 0 + 1 := add_le_add_right deg_t1_le_0 1
         _ = 1 := by norm_num
@@ -789,7 +794,7 @@ def PolyInstances (F : Type _) [Field F] (specialElement : F) :
       -- Apply `degree_add_le`
     calc
       (t1 * X + 1).degree ≤ max (t1 * X).degree (1 : F[X]).degree := degree_add_le _ _
-      _ ≤ max (t1 * X).degree 0 := by simp [deg_left_le_1, deg_right]
+      _ ≤ max (t1 * X).degree 0 := by simp only [degree_mul, degree_X, deg_right, le_refl]
       _ ≤ 1 := by
         apply max_le
         · exact deg_left_le_1
@@ -881,10 +886,10 @@ theorem inverse_is_root_of_prevPoly
     (of_prev : prevBTField →+* curBTField)
     (u : curBTField) (t1 : prevBTField)
     (specialElementNeZero : u ≠ 0)
-    (eval_prevPoly_at_root : u^2 + of_prev t1 * u + 1 = 0)
-    (h_eval : ∀ (x: curBTField),
-      eval₂ of_prev x (X^2 + (C t1 * X + 1)) = x^2 + of_prev t1 * x + 1) :
-    eval₂ of_prev u⁻¹ (X^2 + (C t1 * X + 1)) = 0 := by
+    (eval_prevPoly_at_root : u ^ 2 + of_prev t1 * u + 1 = 0)
+    (h_eval : ∀ (x : curBTField),
+      eval₂ of_prev x (X ^ 2 + (C t1 * X + 1)) = x ^ 2 + of_prev t1 * x + 1) :
+    eval₂ of_prev u⁻¹ (X ^ 2 + (C t1 * X + 1)) = 0 := by
     let u1 := u⁻¹
     rw [h_eval u1]
     have u1_eq_u_pow_minus_1 : u1 = 1/u := by
@@ -918,9 +923,9 @@ theorem inverse_is_root_of_prevPoly
 
 theorem sum_of_root_and_inverse_is_t1
     {curBTField : Type*} [Field curBTField]
-    (u : curBTField) (t1: curBTField) -- here t1 is already lifted to curBTField
+    (u : curBTField) (t1 : curBTField) -- here t1 is already lifted to curBTField
     (specialElementNeZero : u ≠ 0)
-    (eval_prevPoly_at_root : u^2 + t1 * u + 1 = 0)
+    (eval_prevPoly_at_root : u ^ 2 + t1 * u + 1 = 0)
     (sumZeroIffEq : ∀ (x y : curBTField), x + y = 0 ↔ x = y) :
     u + u⁻¹ = t1 := by
   -- ⊢ u + u⁻¹ = t1
@@ -975,7 +980,7 @@ theorem self_sum_eq_zero
     _ = 0 := by ring
 
 theorem sum_zero_iff_eq_of_self_sum_zero {F : Type*} [AddGroup F]
-  (h_self_sum_eq_zero: ∀ (x : F), x + x = 0) : ∀ (x y : F), x + y = 0 ↔ x = y := by
+  (h_self_sum_eq_zero : ∀ (x : F), x + x = 0) : ∀ (x y : F), x + y = 0 ↔ x = y := by
   intro x y
   have y_sum_y_eq_0: y + y = 0 := h_self_sum_eq_zero y
   constructor
@@ -1104,12 +1109,12 @@ theorem galois_automorphism_power
     {curBTField : Type*} [Field curBTField]
     (u : curBTField) (t1 : curBTField) -- here t1 is already lifted to curBTField
     (k : ℕ)
-    (sumZeroIffEq: ∀ (x y : curBTField), x + y = 0 ↔ x = y)
+    (sumZeroIffEq : ∀ (x y : curBTField), x + y = 0 ↔ x = y)
     (specialElementNeZero : u ≠ 0)
     (prevSpecialElementNeZero : t1 ≠ 0)
     (u_plus_inv_eq_t1 : u + u⁻¹ = t1)
-    (h_u_square: u^2 = u*t1 + 1)
-    (h_t1_pow: t1^(2^(2^k)-1) = 1 ∧ (t1⁻¹)^(2^(2^k)-1) = 1)
+    (h_u_square : u ^ 2 = u * t1 + 1)
+    (h_t1_pow : t1 ^ (2 ^ (2 ^ k) - 1) = 1 ∧ (t1⁻¹) ^ (2 ^ (2 ^ k) - 1) = 1)
     (trace_map_roots : ∑ i ∈ Finset.range (2 ^ k), t1 ^ (2 ^ i) = 1 ∧
                       ∑ i ∈ Finset.range (2 ^ k), t1⁻¹ ^ (2 ^ i) = 1) :
     u^(2^(2^k)) = u⁻¹ ∧ (u⁻¹)^(2^(2^k)) = u := by
@@ -1146,7 +1151,8 @@ theorem galois_automorphism_power
         constructor
         · intro h; rw [h];
         · intro h;
-          simp [mul_inv_cancel] at h -- h : (u ^ 2)⁻¹ = u⁻¹ * t1 + 1 ∨ u = 0
+          simp only [inv_pow, mul_eq_mul_left_iff, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true,
+            pow_eq_zero_iff] at h -- h : (u ^ 2)⁻¹ = u⁻¹ * t1 + 1 ∨ u = 0
           have h1 : (u ^ 2)⁻¹ = u⁻¹ * t1 + 1 := by
             cases h with
             | inl h_left => exact h_left  -- (u ^ 2)⁻¹ = u⁻¹ * t1 + 1
@@ -1164,49 +1170,6 @@ theorem galois_automorphism_power
       (h_t1_pow_2_pow_2_pow_k) (h_t1_inv_pow_2_pow_2_pow_k) (trace_map_roots.2)
     rw [←u_is_inv_of_u1] at res
     exact res
-
-theorem sum_Icc_split {α : Type*} [AddCommMonoid α] (f : ℕ → α) (a b c : ℕ)
-    (h₁ : a ≤ b) (h₂ : b ≤ c):
-    ∑ i ∈ Finset.Icc a c, f i = ∑ i ∈ Finset.Icc a b, f i + ∑ i ∈ Finset.Icc (b+1) c, f i := by
-  have h_disjoint: Disjoint (Finset.Icc a b) (Finset.Icc (b+1) c) := by
-    apply Finset.disjoint_iff_inter_eq_empty.mpr
-    -- main theorem for converting disjoint condition into intersection = ∅ condition
-    ext i
-    simp only [Finset.mem_inter, Finset.mem_Icc]
-    constructor
-    · intro h
-      -- Alternatively, we can use a single line: linarith [h.1.2, h.2.1]
-      have h_le_b : i ≤ b := h.1.2
-      have h_ge_b_plus_1 : b + 1 ≤ i := h.2.1
-      have h_contradiction : b + 1 ≤ b := le_trans h_ge_b_plus_1 h_le_b
-      have h_false : b < b := Nat.lt_of_succ_le h_contradiction
-      exact absurd h_false (lt_irrefl b)
-    · intro h -- h : i ∈ ∅
-      exact absurd h (Finset.not_mem_empty i)
-
-  rw [←Finset.sum_union h_disjoint]
-  · congr
-    ext j
-    simp only [Finset.mem_Icc, Finset.mem_union]
-    constructor
-    · intro h
-      -- h : a ≤ j ∧ j ≤ c
-      cases Nat.lt_or_ge j (b+1) with
-      | inl h_lt => -- j < (b+1)
-        left -- pick the left branch, for OR statement
-        exact ⟨h.1, Nat.le_of_lt_succ h_lt⟩
-      | inr h_ge => -- b + 1 ≤ j
-        right
-        exact ⟨h_ge, h.2⟩
-    · intro h
-      -- h : a ≤ j ∧ j ≤ b ∨ b + 1 ≤ j ∧ j ≤ c
-      cases h with
-      | inl h_left =>
-        -- h_left : a ≤ j ∧ j ≤ b
-        exact ⟨h_left.1, Nat.le_trans h_left.2 h₂⟩
-      | inr h_right =>
-        -- h_right : b + 1 ≤ j ∧ j ≤ c
-        exact ⟨Nat.le_trans h₁ (Nat.le_of_succ_le h_right.1), h_right.2⟩
 
 lemma lifted_trace_map_eval_at_roots_prev_BTField
   {curBTField : Type*} [Field curBTField]
@@ -1313,10 +1276,10 @@ theorem rsum_eq_t1_square_aux
   {curBTField : Type*} [Field curBTField]
   (u : curBTField) -- here u is already lifted to curBTField
   (k : ℕ)
-  (x_pow_card: ∀ (x : curBTField), x^(2^(2^(k+1))) = x)
+  (x_pow_card : ∀ (x : curBTField), x ^ (2 ^ (2 ^ (k + 1))) = x)
   (u_ne_zero : u ≠ 0)
-  (trace_map_at_prev_root: ∑ i ∈ Finset.range (2^(k+1)), u ^ (2 ^ i)
-    = 1 ∧ ∑ i ∈ Finset.range (2^(k+1)), u⁻¹ ^ (2 ^ i) = 1):
+  (trace_map_at_prev_root : ∑ i ∈ Finset.range (2 ^ (k + 1)), u ^ (2 ^ i) = 1
+    ∧ ∑ i ∈ Finset.range (2 ^ (k + 1)), u⁻¹ ^ (2 ^ i) = 1):
    ∑ j ∈ Finset.Icc 1 (2 ^ (k + 1)), u ^ (2 ^ 2 ^ (k + 1) - 2 ^ j) = u := by
 
   have trace_map_icc_t1: ∑ j ∈ Finset.Icc 0 (2^(k+1)-1), u ^ (2^j) = 1 := by
@@ -1391,7 +1354,7 @@ theorem rsum_eq_t1_square_aux
         simp [Finset.mem_Icc] at hi
         by_cases h : i = 0
         · simp [h]
-        · simp [h]; -- hi : 1 ≤ i ∧ i ≤ 2 ^ (k + 1)
+        · simp only [Finset.mem_Icc, zero_le, true_and]; -- hi : 1 ≤ i ∧ i ≤ 2 ^ (k + 1)
           -- h : ¬i = 0
           -- ⊢ (if i = 2 ^ (k + 1) then 0 else i) ≤ 2 ^ (k + 1) - 1
           split_ifs with h2
@@ -1422,4 +1385,130 @@ theorem rsum_eq_t1_square_aux
                 (h:=one_le_two_pow_n (k+1))]
           exact ⟨one_le_i, tmp⟩
     _ = u := by rw [trace_map_icc_t1_inv, mul_one]
+
 end
+
+section FinHelpers
+
+@[simp]
+theorem bit_finProdFinEquiv_symm_2_pow_succ {n : ℕ} (j : Fin (2 ^ (n + 1))) (i : Fin (n + 1)):
+  let e:=finProdFinEquiv (m:=2^(n)) (n:=2).symm
+  Nat.getBit (i) j = if i.val > 0 then Nat.getBit (i.val-1) (e j).1 else (e j).2 := by
+  simp only [finProdFinEquiv_symm_apply, Fin.coe_divNat, Fin.coe_modNat]
+  if h_i_gt_0: i.val > 0 then
+    simp_rw [h_i_gt_0]
+    simp only [↓reduceIte]
+    rw [Nat.getBit_eq_pred_getBit_of_div_two (by omega)]
+  else
+    simp_rw [h_i_gt_0]
+    simp only [↓reduceIte]
+    simp only [gt_iff_lt, Fin.val_pos_iff, not_lt, Fin.le_zero_iff] at h_i_gt_0
+    rw [h_i_gt_0]
+    rw [Nat.getBit, Fin.val_zero, Nat.shiftRight_zero]
+    simp only [Nat.and_one_is_mod]
+
+/-- Equivalence between `Fin m × Fin n` and `Fin (m * n)`
+which splits quotient part into Fin (n) and the remainder into Fin (m).
+If m and n are powers of 2, the Fin (n) holds MSBs and Fin (m) holds LSBs.
+This is a reversed version of `finProdFinEquiv`.
+We put `m` before `n` for integration with `Basis.smulTower` in `multilinearBasis`
+though it's a bit counter-intuitive.
+-/
+def leftDivNat {m n : ℕ} (i : Fin (m * n)) : Fin n := ⟨i / m, by
+  apply Nat.div_lt_of_lt_mul
+  exact i.2
+⟩
+
+def leftModNat {m n : ℕ} (h_m : m > 0) (i : Fin (m * n)) : Fin m := ⟨i % m, by
+  apply Nat.mod_lt
+  exact h_m
+⟩
+
+@[simps]
+def revFinProdFinEquiv {m n : ℕ} (h_m : m > 0) : Fin m × Fin n ≃ Fin (m * n) where
+  toFun x :=
+    ⟨x.1.val + m * x.2.val,
+      calc
+        x.1.val + m * x.2.val < m + m * x.2.val := Nat.add_lt_add_right x.1.is_lt _
+        _ = m * (1 + x.2.val) := by rw [Nat.left_distrib, mul_one]
+        _ = m * Nat.succ x.2.val := by rw [Nat.add_comm]
+        _ ≤ m * n := Nat.mul_le_mul_left _ (Nat.succ_le_of_lt x.2.is_lt)
+        ⟩
+  invFun := fun x => -- ⊢ Fin (m * n) → Fin m × Fin n
+    (leftModNat (m:=m) (n:=n) h_m (i:=x), leftDivNat (m:=m) (n:=n) (i:=x))
+  left_inv := fun ⟨x, y⟩ =>
+    -- We need a proof that m > 0 for the division properties.
+    -- This is provable because if m = 0, then Fin m is empty, so no `x` exists.
+    Prod.ext
+      (Fin.eq_of_val_eq <|
+        calc
+          (x.val + m * y.val) % m = x.val % m := by exact Nat.add_mul_mod_self_left (↑x) m ↑y
+          _ = x.val := Nat.mod_eq_of_lt x.is_lt
+          )
+      (Fin.eq_of_val_eq <|
+        calc
+          (x.val + m * y.val) / m = x.val / m + y.val := by exact Nat.add_mul_div_left (↑x) (↑y) h_m
+          _ = 0 + y.val := by rw [Nat.div_eq_of_lt x.is_lt]
+          _ = y.val := Nat.zero_add y.val
+          )
+  right_inv x := by exact Fin.eq_of_val_eq <| Nat.mod_add_div x.val m
+
+@[simp]
+theorem bit_revFinProdFinEquiv_symm_2_pow_succ {n : ℕ} (j : Fin (2 ^ (n + 1))) (i : Fin (n + 1)):
+  let e: Fin (2 ^ n * 2) ≃ Fin (2 ^ n) × Fin 2 :=revFinProdFinEquiv (m:=2^(n)) (n:=2)
+    (h_m:=by exact Nat.two_pow_pos n).symm
+  let msb: Fin 2 := (e j).2
+  let lsbs: Fin (2 ^ n) := (e j).1
+  Nat.getBit (i) j = if i.val < n then Nat.getBit (i.val) lsbs else msb := by
+  simp only [revFinProdFinEquiv_symm_apply]
+  if h_i_lt_n: i < n then
+    simp_rw [h_i_lt_n]
+    simp only [↓reduceIte]
+    rw [leftModNat]
+    simp only;
+    rw [← Nat.getLowBits_eq_mod_two_pow]
+    rw [Nat.getBit_of_lowBits]
+    simp only [h_i_lt_n, ↓reduceIte]
+  else
+    simp_rw [h_i_lt_n]
+    simp only [↓reduceIte]
+    rw [leftDivNat]
+    simp only;
+    simp at h_i_lt_n
+    have hi_eq_n: i = n := by
+      have h_i_lt : i < n + 1 := i.2
+      have h_i_le_n: i ≤ n := by omega
+      exact Eq.symm (Nat.le_antisymm h_i_lt_n h_i_le_n)
+    set i' := i - n with h_i'
+    have hi: i = i' + n := by omega
+    rw [hi]
+    have h_i': i' = 0 := by omega
+    rw [← Nat.getBit_of_highBits_no_shl]
+    rw [Nat.getHighBits_no_shl, Nat.shiftRight_eq_div_pow]
+    rw [h_i']
+    simp only [Nat.getBit, Nat.shiftRight_zero, Nat.and_one_is_mod, Nat.mod_succ_eq_iff_lt,
+      Nat.succ_eq_add_one, Nat.reduceAdd, gt_iff_lt]
+    have hj_lt : j.val < (2^n * 2) := by
+      calc j.val < 2 ^ (n + 1) := j.2
+      _ = 2 ^ n * 2 := by rw [Nat.pow_succ]
+    exact Nat.div_lt_of_lt_mul hj_lt
+
+end FinHelpers
+
+section LinearIndependentFin2
+universe u' u
+
+variable {ι : Type u'} {ι' : Type*} {R : Type*} {K : Type*} {s : Set ι}
+variable {M : Type*} {M' : Type*} {V : Type u}
+variable [DivisionRing K] [AddCommGroup V] [Module K V]
+variable {v : ι → V} {s t : Set ι} {x y : V}
+
+theorem linearIndependent_fin2' {f : Fin 2 → V} :
+    LinearIndependent K f ↔ f 0 ≠ 0 ∧ ∀ a : K, a • f 0 ≠ f 1 := by
+  rw [linearIndependent_fin_succ', linearIndependent_unique_iff, Set.range_unique,
+    Submodule.mem_span_singleton,
+    not_exists]
+  rw [show Fin.init f default = f 0 by rfl]
+  rfl
+
+end LinearIndependentFin2
