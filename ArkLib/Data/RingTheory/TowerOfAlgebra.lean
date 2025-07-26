@@ -87,5 +87,58 @@ lemma TowerOfAlgebraEquiv.commutesRight' (e : TowerOfAlgebraEquiv A B)
   have h_e_r2_rfl: e.toRingEquiv i r2 = r := by exact RingEquiv.apply_symm_apply (e.toRingEquiv i) r
   rw [h_e_r2_rfl]
 
+def TowerOfAlgebraEquiv.symm (e : TowerOfAlgebraEquiv A B) : TowerOfAlgebraEquiv B A where
+  toRingEquiv := fun i => (e.toRingEquiv i).symm
+  commutesLeft' := fun i j h r => by exact commutesRight' e h r
+
+def TowerOfAlgebraEquiv.algebraMapRightUp (e : TowerOfAlgebraEquiv A B) (i j : ι)
+    (h : i ≤ j): (A i) →+* (B j) := by
+  have hBij: B i →+* B j := TowerOfAlgebra.towerAlgebraMap (TA:=B) (i:=i) (j:=j) (h:=h)
+  have hiRingEquiv: RingEquiv (A i) (B i) := e.toRingEquiv i
+  exact hBij.comp hiRingEquiv.toRingHom
+
+def TowerOfAlgebraEquiv.algebraMapLeftUp (e : TowerOfAlgebraEquiv A B) (i j : ι)
+    (h : i ≤ j): (B i) →+* (A j) := by
+  have hAij: A i →+* A j := TowerOfAlgebra.towerAlgebraMap (TA:=A) (i:=i) (j:=j) (h:=h)
+  have hjRingEquiv: RingEquiv (B i) (A i) := (e.toRingEquiv i).symm
+  exact hAij.comp hjRingEquiv.toRingHom
+
+def TowerOfAlgebraEquiv.toAlgebraOverLeft (e : TowerOfAlgebraEquiv A B) (i j : ι)
+    (h : i ≤ j): Algebra (A i) (B j) := by
+  exact (e.algebraMapRightUp i j h).toAlgebra
+
+def TowerOfAlgebraEquiv.toAlgebraOverRight (e : TowerOfAlgebraEquiv A B) (i j : ι)
+    (h : i ≤ j): Algebra (B i) (A j) := by
+  exact (e.algebraMapLeftUp i j h).toAlgebra
+
+def TowerOfAlgebraEquiv.toAlgEquivOverLeft (e : TowerOfAlgebraEquiv A B) (i j : ι) (h : i ≤ j):
+  letI : Algebra (A i) (A j) := by exact TowerOfAlgebra.toAlgebra h
+  letI : Algebra (A i) (B j) := by exact e.toAlgebraOverLeft i j h
+  AlgEquiv (A i) (A j) (B j) := by
+  letI instAij: Algebra (A i) (A j) := by exact TowerOfAlgebra.toAlgebra h
+  letI instAiBij: Algebra (A i) (B j) := by exact e.toAlgebraOverLeft i j h
+  letI instAlgEquiv: AlgEquiv (A i) (A j) (B j) := by exact {
+    toEquiv := by
+      have hRingEquiv := e.toRingEquiv j
+      exact hRingEquiv.toEquiv
+    commutes' := fun r => by
+      simp only [RingEquiv.toEquiv_eq_coe, Equiv.toFun_as_coe, EquivLike.coe_coe]
+      unfold instAij instAiBij
+      rw [algebraMap, algebraMap, Algebra.algebraMap, Algebra.algebraMap,TowerOfAlgebra.toAlgebra,
+        TowerOfAlgebraEquiv.toAlgebraOverLeft, TowerOfAlgebraEquiv.algebraMapRightUp]
+      simp only [RingEquiv.toRingHom_eq_coe, RingHom.coe_comp, RingHom.coe_coe, Function.comp_apply]
+      exact Eq.symm (e.commutesLeft' i j h r)
+    map_mul' := fun x y => by
+      simp only [RingEquiv.toEquiv_eq_coe, Equiv.toFun_as_coe, EquivLike.coe_coe, map_mul]
+    map_add' := fun x y => by
+      simp only [RingEquiv.toEquiv_eq_coe, Equiv.toFun_as_coe, EquivLike.coe_coe, map_add]
+  }
+  exact instAlgEquiv
+
+def TowerOfAlgebraEquiv.toAlgEquivOverRight (e : TowerOfAlgebraEquiv A B) (i j : ι) (h : i ≤ j):
+  letI : Algebra (B i) (B j) := by exact TowerOfAlgebra.toAlgebra h
+  letI : Algebra (B i) (A j) := by exact e.toAlgebraOverRight i j h
+  AlgEquiv (B i) (B j) (A j) := (e.symm.toAlgEquivOverLeft i j h)
+
 structure AssocTowerOfAlgebraEquiv (A : ι → Type*) [∀ i, CommSemiring (A i)] [AssocTowerOfAlgebra A]
   (B : ι → Type*) [∀ i, CommSemiring (B i)] [AssocTowerOfAlgebra B] extends TowerOfAlgebraEquiv A B
