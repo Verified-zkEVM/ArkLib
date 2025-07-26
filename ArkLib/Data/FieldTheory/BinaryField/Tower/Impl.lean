@@ -6,6 +6,7 @@ Authors : Chung Thai Nguyen, Quang Dao
 
 import ArkLib.Data.FieldTheory.BinaryField.Tower.Basic
 import ArkLib.Data.Classes.DCast
+import Mathlib.Data.Finsupp.Defs
 
 /-!
 # Computable Binary Tower Fields
@@ -2021,6 +2022,14 @@ def concreteCanonicalEmbedding (k : ℕ) :
     map_zero' := by rw! [←zero_is_0, join_zero_zero, zero_is_0]
   }
 
+/-- `Z(k+1)` is the adjoined root of `poly k` to `ConcreteBTield (k+1)`, so it is not
+lifted to `ConcreteBTield (k+1)` by `concreteCanonicalEmbedding` -/
+@[simp]
+theorem generator_is_not_lifted_to_succ (k : ℕ) :
+  ∀ x : ConcreteBTield k, concreteCanonicalEmbedding k x ≠ Z (k + 1) := by
+  intro x
+  sorry
+
 @[simp]
 lemma ConcreteBTield_add_eq (k n m) :
       ConcreteBTield (k + n + m) = ConcreteBTield (k + (n + m)) := by
@@ -2166,6 +2175,15 @@ instance instAssocTowerOfAlgebraConcreteBTF: AssocTowerOfAlgebra (ConcreteBTield
 def ConcreteBTieldAlgebra {l r : ℕ} (h_le : l ≤ r) :
     Algebra (ConcreteBTield l) (ConcreteBTield r) := by exact TowerOfAlgebra.toAlgebra h_le
 
+@[simp]
+theorem join_eq_iff_split_into_sum_of_mul_Z {k : ℕ} (h_pos : k > 0) (x : ConcreteBTield k)
+  (hi_btf lo_btf : ConcreteBTield (k - 1)) :
+    letI : Algebra (ConcreteBTield (k - 1)) (ConcreteBTield k) :=
+    ConcreteBTieldAlgebra (h_le:=by omega)
+  x = join h_pos hi_btf lo_btf ↔
+    hi_btf • Z (k) + (algebraMap (R:=ConcreteBTield (k - 1)) (A:=ConcreteBTield k) lo_btf) = x := by
+      sorry
+
 lemma ConcreteBTieldAlgebra_def (l r : ℕ) (h_le : l ≤ r) :
     @ConcreteBTieldAlgebra (l:=l) (r:=r) (h_le:=h_le)
     = (concreteTowerAlgebraMap l r h_le).toAlgebra := by rfl
@@ -2280,6 +2298,48 @@ theorem Basis_cast_dest_apply {ι : Type*} (α β γ : ℕ)
   subst h_eq
   rfl
 
+
+universe u' u
+
+variable {ι : Type u'} {ι' : Type*} {R : Type*} {K : Type*} {s : Set ι}
+variable {M : Type*} {M' : Type*} {V : Type u}
+
+variable [DivisionRing K] [AddCommGroup V] [Module K V]
+variable {v : ι → V} {s t : Set ι} {x y : V}
+
+
+
+-- /-- See `LinearIndependent.fin_cons'` for an uglier version that works if you
+-- only have a module over a semiring. -/
+-- theorem LinearIndependent.fin_snoc {n} {v : Fin n → V} (hv : LinearIndependent K v)
+--     (hx : x ∉ Submodule.span K (Set.range v)) : LinearIndependent K (Fin.snoc v x : Fin (n + 1) → V) := by
+--   exact linearIndependent_fin_snoc.2 ⟨hv, hx⟩
+
+-- /-- Equivalence between `k + 1` vectors of length `n` and `k` vectors of length `n` along with a
+-- vector in the complement of their span.
+-- -/
+-- def equiv_linearIndependent (n : ℕ) :
+--     { s : Fin (n + 1) → V // LinearIndependent K s } ≃
+--       Σ s : { s : Fin n → V // LinearIndependent K s },
+--         ((Submodule.span K (Set.range (s : Fin n → V)))ᶜ : Set V) where
+--   toFun s := ⟨⟨Fin.tail s.val, (linearIndependent_fin_succ.mp s.property).left⟩,
+--     ⟨s.val 0, (linearIndependent_fin_succ.mp s.property).right⟩⟩
+--   invFun s := ⟨Fin.cons s.2.val s.1.val,
+--     linearIndependent_fin_cons.mpr ⟨s.1.property, s.2.property⟩⟩
+--   left_inv _ := by simp only [Fin.cons_self_tail, Subtype.coe_eta]
+--   right_inv := fun ⟨_, _⟩ => by simp only [Fin.cons_zero, Subtype.coe_eta, Sigma.mk.inj_iff,
+--     Fin.tail_cons, heq_eq_eq, and_self]
+
+#check linearIndependent_fin2
+
+theorem linearIndependent_fin2' {f : Fin 2 → V} :
+    LinearIndependent K f ↔ f 0 ≠ 0 ∧ ∀ a : K, a • f 0 ≠ f 1 := by
+  rw [linearIndependent_fin_succ', linearIndependent_unique_iff, Set.range_unique,
+    Submodule.mem_span_singleton,
+    not_exists]
+  rw [show Fin.init f default = f 0 by rfl]
+  rfl
+
 def basisSucc (k : ℕ) : Basis (Fin 2) (ConcreteBTield k) (ConcreteBTield (k + 1)) := by
   letI instAlgebra:= ConcreteBTieldAlgebra (l:=k) (r:=k + 1) (h_le:=by omega)
   let generator := Z (k + 1)
@@ -2287,14 +2347,74 @@ def basisSucc (k : ℕ) : Basis (Fin 2) (ConcreteBTield k) (ConcreteBTield (k + 
     _ _ instAlgebra.toModule (v:=fun i => generator ^ (i : ℕ))
   · -- This proof now works smoothly.
     set basisFunc := fun (i: Fin 2) => (generator) ^ (i: ℕ)
-    refine linearIndependent_fin2.mpr ?_
-    -- rw [add_eq_zero_iff_eq] at hg
-    sorry
+    refine linearIndependent_fin2'.mpr ?_
+    constructor
+    · simp only [basisFunc]
+      simp only [Fin.isValue, Fin.coe_ofNat_eq_mod, Nat.zero_mod, pow_zero, ne_eq, one_ne_zero,
+        not_false_eq_true]
+    · intro a
+      -- ⊢ a • basisFunc 1 ≠ basisFunc 0
+      unfold basisFunc
+      simp only [Fin.isValue, Fin.coe_ofNat_eq_mod, Nat.zero_mod, pow_zero, Nat.mod_succ, pow_one,
+        ne_eq]
+      change ¬((TowerOfAlgebra.smul (i:=k) (j:=k+1) (h:=by omega).smul a 1) = generator)
+      rw [TowerOfAlgebra.smul_def']
+      change (¬(concreteTowerAlgebraMap (l:=k) (r:=k+1) (h_le:=by omega) a) * 1 = generator)
+      rw [mul_one]
+      rw [concreteTowerAlgebraMap_succ_1]
+      -- ⊢ ¬(concreteCanonicalEmbedding k) a = generator
+      exact generator_is_not_lifted_to_succ k a
   · intro x hx
     -- proof that the span of powers of generator is ConcreteBTField (k+1)
     rw [Submodule.mem_span]
-    intro p
-    sorry
+    intro p h_p_contains_basis
+    have h_one_in_p : (1 : ConcreteBTield (k + 1)) ∈ p := by
+      convert h_p_contains_basis (Set.mem_range_self (0 : Fin 2));
+
+    have h_gen_in_p : generator ∈ p := by
+      convert h_p_contains_basis (Set.mem_range_self (1 : Fin 2)); simp
+
+    -- Now, use the lemma from your project that decomposes any element `x`
+    -- into a linear combination of the basis vectors.
+    -- I'm using `exists_decomp_lemma` as a placeholder for its name.
+    obtain ⟨a, b, hx_decomp⟩ : ∃ (a b : ConcreteBTield k),
+        x = (concreteTowerAlgebraMap (l:=k) (r:=k+1) (h_le:=by omega) a) +
+          (concreteTowerAlgebraMap (l:=k) (r:=k+1) (h_le:=by omega) b) * generator := by
+      -- ⊢ ∃ a b, x = (concreteTowerAlgebraMap k (k + 1)
+      -- ⋯) a + (concreteTowerAlgebraMap k (k + 1) ⋯) b * generator
+      let h_split_x_raw := split (k:=k+1) (h:=by omega) x
+      let hi_btf := h_split_x_raw.fst
+      let lo_btf := h_split_x_raw.snd
+      have h_split_x : split (k:=k+1) (h:=by omega) x = (hi_btf, lo_btf) := by rfl
+      have h_join_x : join (k:=k+1) (h_pos:=by omega) hi_btf lo_btf = x := by
+        rw [join_of_split (by omega) x hi_btf lo_btf h_split_x]
+      have h_sum_if_join := join_eq_iff_split_into_sum_of_mul_Z (h_pos:=by omega)
+        (x:=x) (hi_btf:=hi_btf) (lo_btf:=lo_btf)
+      have h_sum := h_sum_if_join.mp (by exact id (Eq.symm h_join_x))
+      use lo_btf, hi_btf
+      rw [←h_sum]
+      simp only [Nat.add_one_sub_one]
+      rw [algebraMap, Algebra.algebraMap, ConcreteBTieldAlgebra_def]
+      simp only
+      simp only [generator]
+      rw [add_comm]
+      congr -- .Q.E.D
+    rw [hx_decomp] -- Now we rewrite `x` using this decomposition.
+    -- Since `p` is a submodule, it's closed under scalar multiplication and addition.
+    -- We show each part of the sum is in `p`.
+    -- The first part of the sum is `a' • 1`.
+    have h_part1_in_p : (concreteTowerAlgebraMap (l:=k) (r:=k+1) (h_le:=by omega) a) ∈ p := by
+      rw [← mul_one (concreteTowerAlgebraMap (l:=k) (r:=k+1) (h_le:=by omega) a)]
+      -- , ← TowerOfAlgebra.smul_def']
+      exact p.smul_mem a h_one_in_p
+
+    -- The second part of the sum is `b' • generator`.
+    have h_part2_in_p : (concreteTowerAlgebraMap (l:=k) (r:=k+1) (h_le:=by omega) b)
+      * generator ∈ p := by
+      -- rw [← TowerOfAlgebra.m]
+      exact p.smul_mem b h_gen_in_p
+    -- Since both parts are in `p`, their sum is also in `p`.
+    exact p.add_mem h_part1_in_p h_part2_in_p
 
 /-!
 The power basis for `ConcreteBTield (k + 1)` over `ConcreteBTield k` is {1, Z (k + 1)}
