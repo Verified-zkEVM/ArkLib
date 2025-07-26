@@ -75,6 +75,7 @@ import ArkLib.Data.Polynomial.PolynomialLike
 import ArkLib.Data.Polynomial.MonomialBasis
 import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.Notation
+import ArkLib.Data.RingTheory.TowerOfAlgebra
 import ArkLib.Data.Tree.Binary
 import ArkLib.Data.Tree.General
 import ArkLib.Data.UniPoly.Basic
@@ -103,6 +104,7 @@ import ArkLib.OracleReduction.Security.Rewinding
 import ArkLib.OracleReduction.Security.RoundByRound
 import ArkLib.OracleReduction.Security.StateRestoration
 import ArkLib.OracleReduction.VectorIOR
+import ArkLib.ProofSystem.Binius.Basic
 import ArkLib.ProofSystem.Component.CheckClaim
 import ArkLib.ProofSystem.Component.DoNothing
 import ArkLib.ProofSystem.Component.RandomQuery

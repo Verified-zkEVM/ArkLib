@@ -2125,7 +2125,7 @@ theorem concreteTowerAlgebraMap_assoc :
 **Formalization of Cross - Level Algebra**  : For any `k ≤ τ`, `ConcreteBTield τ` is an
 algebra over `ConcreteBTield k`.
 -/
-instance instAssocTowerAlgebraConcreteBTF: AssocTowerAlgebra (ConcreteBTield) where
+instance instAssocTowerOfAlgebraConcreteBTF: AssocTowerOfAlgebra (ConcreteBTield) where
   towerAlgebraMap := concreteTowerAlgebraMap
   smul := fun i j h => by
     exact (concreteTowerAlgebraMap i j h).toAlgebra.toSMul -- derive same smul from algebra
@@ -2138,7 +2138,7 @@ instance instAssocTowerAlgebraConcreteBTF: AssocTowerAlgebra (ConcreteBTield) wh
     exact concreteTowerAlgebraMap_assoc k j i h1 h2
 
 def ConcreteBTieldAlgebra {l r : ℕ} (h_le : l ≤ r) :
-    Algebra (ConcreteBTield l) (ConcreteBTield r) := by exact TowerAlgebra.toAlgebra h_le
+    Algebra (ConcreteBTield l) (ConcreteBTield r) := by exact TowerOfAlgebra.toAlgebra h_le
 
 lemma ConcreteBTieldAlgebra_def (l r : ℕ) (h_le : l ≤ r) :
     @ConcreteBTieldAlgebra (l:=l) (r:=r) (h_le:=h_le)
@@ -2195,7 +2195,6 @@ lemma algebraMap_adjacent_tower_def (l : ℕ) :
 end ConcreteBTieldAlgebra
 
 noncomputable section ConcreteMultilinearBasis
-open AdditiveNTT
 
 @[simp]
 theorem Basis_cast_index_eq (i j k n : ℕ) (h_le : k ≤ n) (h_eq : i = j) :
@@ -2326,7 +2325,7 @@ def hli_level_diff_0 (l : ℕ) :
     rw [Ideal.span_singleton_one]
 
 def isScalarTower_succ_right (l r : ℕ) (h_le : l ≤ r) :=
-    instAssocTowerAlgebraConcreteBTF.toIsScalarTower (i:=l) (j:=r) (k:=r+1)
+    instAssocTowerOfAlgebraConcreteBTF.toIsScalarTower (i:=l) (j:=r) (k:=r+1)
     (h1:=by omega) (h2:=by omega)
 /--
 The multilinear basis for `ConcreteBTield τ` over `ConcreteBTield k`
@@ -2357,7 +2356,7 @@ def multilinearBasis (l r : ℕ) (h_le : l ≤ r) :
     letI instAlgebra : Algebra (ConcreteBTield l) (ConcreteBTield (r1 + 1)) :=
       ConcreteBTieldAlgebra (l:=l) (r:=r1 + 1) (h_le:=by omega)
     rw! [h_r_sub_l]
-    apply Basis.reindex (e:=BinaryTower.revFinProdFinEquiv (m:=2 ^ (n')) (n:=2)
+    apply Basis.reindex (e:=revFinProdFinEquiv (m:=2 ^ (n')) (n:=2)
       (h_m:=by exact Nat.two_pow_pos n'))
     -- ⊢ Basis (Fin 2 × Fin (2 ^ n')) (ConcreteBTield l) (ConcreteBTield (r))
     have h_eq : l + (n' + 1) = (r1) + 1 := by rw [←Nat.add_assoc]
@@ -2448,7 +2447,7 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
   multilinearBasis (l:=l) (r:=r) (h_le:=h_le) j =
     (Finset.univ : Finset (Fin (r - l))).prod (fun i =>
       (ConcreteBTieldAlgebra (l:=l + i + 1) (r:=r) (h_le:=by omega)).algebraMap (
-        (𝕏 (l + i)) ^ (bit i j))) := by
+        (𝕏 (l + i)) ^ (Nat.getBit i j))) := by
   induction r with
   | zero => -- Fin (2 ^ 0) = Fin 1, so j = 0
     intro l h_l_le_0 j
@@ -2489,7 +2488,7 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
         rw [←Nat.pow_succ, Nat.succ_eq_add_one, Nat.sub_add_cancel (by omega)]
       rw [Basis_cast_index_apply (h_eq:=by omega) (h_le:=by omega)]
       simp only [Basis.coe_reindex, Function.comp_apply,
-        BinaryTower.revFinProdFinEquiv_symm_apply]
+        revFinProdFinEquiv_symm_apply]
       rw [Basis_cast_dest_apply (h_eq:=by omega)
         (h_le1:=by omega) (h_le2:=by omega)]
 
@@ -2532,7 +2531,7 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
         rw [h_r]
         rw [Nat.sub_right_comm, Nat.add_sub_cancel r1 1]
       rw [Basis_cast_index_apply (h_eq:=h) (h_le:=by omega)]
-      simp only [BinaryTower.leftDivNat, Fin.coe_cast]
+      simp only [leftDivNat, Fin.coe_cast]
 
       set indexLeft : Fin 2 := ⟨j.val / 2 ^ (r - l - 1), by
         change j.val / 2 ^ (r - l - 1) < 2 ^ 1
@@ -2547,7 +2546,7 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       rw! [PowerBasis.coe_basis, powerBasisSucc_gen, ←𝕏, Fin.coe_cast]
       conv_lhs =>
         rw [ih_r1 (l:=l) (h_le:=by omega)] -- inductive hypothesis of level r - 1
-        rw [BinaryTower.Fin.cast_val_eq_val (h_eq:=by omega)]
+        rw [Fin.cast_val_eq_val (h_eq:=by omega)]
 
       conv_rhs =>
         rw [←Fin.prod_congr' (b:=r - l) (a:=prevDiff + 1) (h:=by omega)]
@@ -2566,21 +2565,21 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
         conv_rhs => rw! [←algebraMap, h_r1_eq_l_plus_prevDiff.symm]
         -- algebraMap.coe_pow] -- rhs
         --- The outtermost term
-        have hfinProd_msb := BinaryTower.bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)
+        have hfinProd_msb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)
           (i:=⟨prevDiff, by omega⟩) (j:=⟨j, by omega⟩)
         simp only [lt_self_iff_false, ↓reduceIte,
-          BinaryTower.revFinProdFinEquiv_symm_apply] at hfinProd_msb
+          revFinProdFinEquiv_symm_apply] at hfinProd_msb
         conv_rhs =>
-          simp only [hfinProd_msb, BinaryTower.leftDivNat];
+          simp only [hfinProd_msb, leftDivNat];
           simp only [h_prevDiff]
           rw! [ConcreteBTieldAlgebra_id (by omega), RingHom.id_apply]
         --- Inner - prod term
         congr
         funext i
-        have hfinProd_lsb := BinaryTower.bit_revFinProdFinEquiv_symm_2_pow_succ
+        have hfinProd_lsb := bit_revFinProdFinEquiv_symm_2_pow_succ
           (n:=prevDiff) (i:=⟨i, by omega⟩)
           (j:=⟨j, by omega⟩)
-        simp only [Fin.is_lt, ↓reduceIte, BinaryTower.revFinProdFinEquiv_symm_apply] at hfinProd_lsb
+        simp only [Fin.is_lt, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_lsb
         rw [hfinProd_lsb]
         simp_rw [←ConcreteBTieldAlgebra_apply_assoc]
         rfl
@@ -2636,7 +2635,7 @@ noncomputable def towerEquiv (n : ℕ) : BTField n ≃+* ConcreteBTield n := by
 
     sorry
 
-noncomputable instance : TowerAlgEquiv (BTField) (ConcreteBTield) where
+noncomputable instance : TowerOfAlgebraEquiv (BTField) (ConcreteBTield) where
   toRingEquiv := towerEquiv
   commutesLeft' := fun i j h r => by
     sorry

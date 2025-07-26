@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 
-import ArkLib.Data.FieldTheory.BinaryField.Tower.Prelude
 import ArkLib.Data.Nat.Bitwise
 import ArkLib.Data.Polynomial.Frobenius
 import ArkLib.Data.Polynomial.MonomialBasis
@@ -1313,7 +1312,7 @@ section NovelPolynomialBasisProof
 -- Definition of Novel Polynomial Basis: `Xⱼ(X) := Π_{i=0}^{ℓ-1} (Ŵᵢ(X))^{jᵢ}`
 noncomputable def Xⱼ (ℓ : ℕ) (h_ℓ : ℓ ≤ r) (j : Fin (2 ^ ℓ)) : L[X] :=
   (Finset.univ : Finset (Fin ℓ)).prod
-    (fun i => (normalizedW 𝔽q β (Fin.castLE h_ℓ i))^(Nat.getLsb (k := i) (n := j)))
+    (fun i => (normalizedW 𝔽q β (Fin.castLE h_ℓ i))^(Nat.getBit i j))
 
 /-- The degree of `Xⱼ(X)` is `j`:
   `deg(Xⱼ(X)) = Σ_{i=0}^{ℓ-1} jᵢ * deg(Ŵᵢ(X)) = Σ_{i=0}^{ℓ-1} jᵢ * 2ⁱ = j` -/
@@ -1335,12 +1334,12 @@ lemma degree_Xⱼ
     exact h_j
   · push_neg at h_ℓ_0
     have deg_each: ∀ i ∈ (Finset.univ : Finset (Fin ℓ)),
-      ((normalizedW 𝔽q β (Fin.castLE h_ℓ i))^(Nat.getLsb (k := i) (n := j))).degree
-      = if Nat.getLsb (k := i) (n := j) = 1 then (2:ℕ)^i.val else 0 := by
+      ((normalizedW 𝔽q β (Fin.castLE h_ℓ i))^(Nat.getBit i j)).degree
+      = if Nat.getBit i j = 1 then (2:ℕ)^i.val else 0 := by
       intro i _
       rw [degree_pow]
       rw [degree_normalizedW 𝔽q β (i :=Fin.castLE h_ℓ i) (hβ_lin_indep := hβ_lin_indep)]
-      simp only [Nat.getLsb, Nat.and_one_is_mod, Fin.coe_castLE, nsmul_eq_mul, Nat.cast_ite,
+      simp only [Nat.getBit, Nat.and_one_is_mod, Fin.coe_castLE, nsmul_eq_mul, Nat.cast_ite,
         Nat.cast_pow, Nat.cast_ofNat, CharP.cast_eq_zero, hF₂]
       -- simp? [Nat.and_one_is_mod, nsmul_eq_mul]
       -- ⊢ ↑(↑j >>> ↑i % 2) * 2 ^ ↑i = if ↑j >>> ↑i % 2 = 1 then 2 ^ ↑i else 0
@@ -1354,7 +1353,7 @@ lemma degree_Xⱼ
     -- We use the `Nat.digits` API for this.
     rw [Finset.sum_congr rfl deg_each] -- .degree introduces (WithBot ℕ)
     -- ⊢ ⊢ ∑ x, ↑(if bit ↑x ↑j = 1 then 2 ^ ↑x else 0) = ↑↑j
-    set f:= fun x: ℕ => if Nat.getLsb x j = 1 then (2: ℕ) ^ (x: ℕ) else 0
+    set f:= fun x: ℕ => if Nat.getBit x j = 1 then (2: ℕ) ^ (x: ℕ) else 0
     norm_cast -- from WithBot ℕ to ℕ
     change (∑ x : Fin ℓ, f x) = (j.val: WithBot ℕ)
     norm_cast
@@ -1367,21 +1366,21 @@ lemma degree_Xⱼ
       omega
     rw [h_range]
     have h_sum: (∑ x ∈ Icc 0 (ℓ - 1), f x)
-      = (∑ x ∈ Icc 0 (ℓ - 1), (Nat.getLsb x j) * 2^x) := by
+      = (∑ x ∈ Icc 0 (ℓ - 1), (Nat.getBit x j) * 2^x) := by
       apply sum_congr rfl (fun x hx => by
-        have h_res: (if Nat.getLsb x j = 1 then 2 ^ x else 0) = (Nat.getLsb x j) * 2^x := by
-          by_cases h: Nat.getLsb x j = 1
+        have h_res: (if Nat.getBit x j = 1 then 2 ^ x else 0) = (Nat.getBit x j) * 2^x := by
+          by_cases h: Nat.getBit x j = 1
           · simp only [h, if_true]; norm_num
           · simp only [h, if_false]; push_neg at h;
-            have h_bit_x_j_eq_0: Nat.getLsb x j = 0 := by
-              have h_either_eq := Nat.getLsb_eq_zero_or_one (k := x) (n := j)
+            have h_bit_x_j_eq_0: Nat.getBit x j = 0 := by
+              have h_either_eq := Nat.getBit_eq_zero_or_one (k := x) (n := j)
               simp only [h, or_false] at h_either_eq
               exact h_either_eq
             rw [h_bit_x_j_eq_0, zero_mul]
         exact h_res
       )
     simp only [h_sum]
-    have h_bit_repr_j := Nat.getLsb_repr (ℓ := ℓ) (h_ℓ := by omega) (j := j) (by omega)
+    have h_bit_repr_j := Nat.getBit_repr (ℓ := ℓ) (h_ℓ := by omega) (j := j) (by omega)
     rw [←h_bit_repr_j]
 
 /-- The basis vectors `{Xⱼ(X), j ∈ Fin 2^ℓ}` forms a basis for `L⦃<2^ℓ⦄[X]` -/

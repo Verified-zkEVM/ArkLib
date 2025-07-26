@@ -66,6 +66,12 @@ lemma Fin.val_add_one' (a : Fin r) (h_a_add_1 : a + 1 < r) : (a + 1).val = a.val
   rw [Fin.val_one', Nat.mod_eq_of_lt (by omega)]
   exact h_a_add_1
 
+@[simp]
+theorem Fin.cast_val_eq_val {n m : ℕ} [NeZero n] (a : Fin n) (h_eq : n = m):
+  (Fin.cast (h_eq) a).val = a.val := by
+  subst h_eq
+  rfl
+
 lemma Fin.val_sub_one (a : Fin r) (h_a_sub_1 : a > 0) : (a - 1).val = a.val - 1 := by
   rw [Fin.val_sub_one_of_ne_zero (by omega)] -- can use Fin.sub_val_of_le
 
