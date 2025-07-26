@@ -54,13 +54,25 @@ class PolynomialLike (R : outParam (Type u)) [CommSemiring R] (P : Type v) [Comm
   eval₂_eq {S : Type w} [CommSemiring S] (g : P →+* S) :
     g = eval₂ (g.comp (Algebra.ofId R P)) (g X)
 
+/--
+An extension of `PolynomialLike` that includes an explicit notion of coefficients.
+
+This is technically not needed, but is useful for concrete computations. There is always the default
+definition of first applying the equivalence to `Polynomial R`, and then getting the coefficients of
+that representation.
+-/
 class PolynomialLike.WithCoeffs (R : outParam (Type u)) [CommSemiring R]
     (P : Type v) [CommSemiring P] extends PolynomialLike R P where
-  coeff : P → ℕ → P
-  coeff_finite (p : P) : Set.Finite {n | coeff p n ≠ 0}
-  coeff_ext {p q : P} (h : ∀ n, coeff p n = coeff q n) : p = q
-  -- coeff_eval₂ {S : Type w} [CommSemiring S] (f : R →+* S) (x : S) (p : P) (n : ℕ) :
-  --   eval₂ f x p = ∑ n ∈ {n | coeff p n ≠ 0}, coeff p n * x ^ n
+  /-- The `n`-th coefficient of a polynomial. -/
+  coeff (p : P) (n : ℕ) : R
+  /-- A finite set of indices of non-zero coefficients. -/
+  support (p : P) : Finset ℕ
+  /-- The `support` of a polynomial is the set of indices of its non-zero coefficients. -/
+  mem_support_iff (p : P) (n : ℕ) : n ∈ support p ↔ coeff p n ≠ 0
+  /-- The evaluation of a polynomial is given by the sum of its coefficients.
+  This is the crucial axiom that connects the coefficient view with the universal property. -/
+  eval₂_eq_sum {S : Type w} [CommSemiring S] (f : R →+* S) (x : S) (p : P) :
+    eval₂ f x p = ∑ n ∈ support p, f (coeff p n) * x ^ n
 
 attribute [simp] PolynomialLike.eval₂_C PolynomialLike.eval₂_X
 
