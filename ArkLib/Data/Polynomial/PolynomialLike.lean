@@ -54,6 +54,14 @@ class PolynomialLike (R : outParam (Type u)) [CommSemiring R] (P : Type v) [Comm
   eval₂_eq {S : Type w} [CommSemiring S] (g : P →+* S) :
     g = eval₂ (g.comp (Algebra.ofId R P)) (g X)
 
+class PolynomialLike.WithCoeffs (R : outParam (Type u)) [CommSemiring R]
+    (P : Type v) [CommSemiring P] extends PolynomialLike R P where
+  coeff : P → ℕ → P
+  coeff_finite (p : P) : Set.Finite {n | coeff p n ≠ 0}
+  coeff_ext {p q : P} (h : ∀ n, coeff p n = coeff q n) : p = q
+  -- coeff_eval₂ {S : Type w} [CommSemiring S] (f : R →+* S) (x : S) (p : P) (n : ℕ) :
+  --   eval₂ f x p = ∑ n ∈ {n | coeff p n ≠ 0}, coeff p n * x ^ n
+
 attribute [simp] PolynomialLike.eval₂_C PolynomialLike.eval₂_X
 
 namespace PolynomialLike
