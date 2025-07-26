@@ -1,11 +1,13 @@
 import ArkLib.AGM.Basic
 import ArkLib.CommitmentScheme.Basic
 import ArkLib.CommitmentScheme.Fold
+import ArkLib.CommitmentScheme.KZG
 import ArkLib.CommitmentScheme.MerkleTree
 import ArkLib.CommitmentScheme.SimpleRO
 import ArkLib.CommitmentScheme.Tensor
 import ArkLib.CommitmentScheme.Trivial
 import ArkLib.Data.Classes.DCast
+import ArkLib.Data.Classes.FunEquiv
 import ArkLib.Data.Classes.HasSize
 import ArkLib.Data.Classes.Initialize
 import ArkLib.Data.Classes.Serde
@@ -47,6 +49,7 @@ import ArkLib.Data.FieldTheory.NonBinaryField.Secp256k1
 import ArkLib.Data.Fin.Basic
 import ArkLib.Data.Fin.Lift
 import ArkLib.Data.Fin.Pad
+import ArkLib.Data.GroupTheory.PrimeOrder
 import ArkLib.Data.Hash.DomainSep
 import ArkLib.Data.Hash.DuplexSponge
 import ArkLib.Data.Math.Basic
@@ -59,11 +62,13 @@ import ArkLib.Data.MvPolynomial.Degrees
 import ArkLib.Data.MvPolynomial.Interpolation
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLib.Data.MvPolynomial.Multilinear
+import ArkLib.Data.MvPolynomial.MvPolynomialLike
 import ArkLib.Data.MvPolynomial.Notation
 import ArkLib.Data.MvPolynomial.Sumcheck
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.EvenAndOdd
 import ArkLib.Data.Polynomial.Interface
+import ArkLib.Data.Polynomial.PolynomialLike
 import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.Notation
 import ArkLib.Data.Tree.Binary

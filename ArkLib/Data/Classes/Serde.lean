@@ -22,6 +22,8 @@ universe u v
 class Serialize (α : Type u) (β : Type v) where
   serialize : α → β
 
+export Serialize (serialize)
+
 /-- Type class for injective serialization. -/
 class Serialize.IsInjective (α : Type u) (β : Type v) [inst : Serialize α β] : Prop where
   serialize_inj : Function.Injective inst.serialize

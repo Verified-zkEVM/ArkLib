@@ -5,9 +5,8 @@ Authors: Quang Dao
 -/
 
 import VCVio
-import Mathlib.RingTheory.Polynomial.Basic
-import Mathlib.Algebra.Polynomial.FieldDivision
-import Mathlib.LinearAlgebra.BilinearForm.Properties
+import ArkLib.Data.GroupTheory.PrimeOrder
+import ArkLib.Data.Classes.Serde
 
 /-! # The Algebraic Group Model (With Oblivious Sampling)
 
@@ -15,178 +14,157 @@ We attempt to define the algebraic group model. Our mechanization follows recent
  Mohan [JM24](https://link.springer.com/content/pdf/10.1007/978-3-031-68388-6_2) and Lipmaa,
  Parisella, and Siim [LPS24](https://eprint.iacr.org/2024/994.pdf). -/
 
-class IsPrimeOrderWith (G : Type*) [Group G] (p : ℕ) [Fact (Nat.Prime p)] where
-  hCard : Nat.card G = p
+open OracleComp OracleSpec
 
-class IsPrimeOrder (G : Type*) [Group G] where
-  -- hCard : ∃p, IsPrimeOrderWith G p
-  hCard : ∃ p, Nat.Prime p ∧ Nat.card G = p
-
-namespace IsPrimeOrder
-
-variable {G : Type*} [Group G] {p : ℕ} [hp : Fact (Nat.Prime p)] [IsPrimeOrder G]
-
-instance : CommGroup G := sorry
-
--- instance : IsCyclic G := isCyclic_of_prime_card PrimeOrder.hCard
-
--- instance : Additive G ≃+ ZMod p := sorry
-
-end IsPrimeOrder
-
-open Polynomial
-
-section AGM
-
-/-- A type is **serializable** if it can be encoded and decoded to a bit string.
-
-This is highly similar but inequivalent to other type classes like `ToString` or `Repr`.
-
-A special case of `Encodable` except that we require all encodings have the same bit-length, and do
-not require decoding. -/
-class Serializable (α : Type*) where
-  len : ℕ
-  toBitVec : α → BitVec len
-
-/-- A type is **deserializable** if it can be decoded from a bit string of a given length. -/
-class Deserializable (α : Type*) where
-  len : ℕ
-  fromBitVec : BitVec len → Option α
-
--- #check LinearMap.mk₂'
-
--- #check LinearMap.BilinForm.linMulLin
-
--- #check isCyclic_of_prime_card
-
--- These imply a finite cyclic group of prime order `p`
-variable {G : Type*} [Group G] {p : ℕ} [Fact (Nat.Prime p)] (h : Nat.card G = p)
+namespace AGM
 
 @[ext]
-structure GroupRepresentation (prev : List G) (target : G) where
+structure GroupRepresentation {G : Type*} [Group G] {p : ℕ} (prev : List G) (target : G) where
   exponents : List (ZMod p)
   hEq : (prev.zipWith (fun g a => g ^ a.val) exponents).prod = target
-
--- #print GroupRepresentation
-
-/-- An adversary in the Algebraic Group Model (AGM) may only access group elements via handles.
-
-To formalize this, we let the handles be natural numbers, and assume that they are indices into an
-(infinite) array storing potential group elements. -/
-def GroupValTable (G : Type*) := Nat → Option G
 
 local instance {α : Type*} : Zero (Option α) where
   zero := none
 
--- This might be a better abstraction since the type is finite
--- We put `DFinsupp` since it's computable, not sure if really needed (if not we use `Finsupp`)
-def GroupVal (G : Type*) := Π₀ _ : Nat, Option G
+/-- A table of group elements, indexed by `ι`. We allow the table to be partially defined, i.e.
+  some indices may not have a group element yet. We also mandate that the table must be finitely
+  supported, e.g. via `Finsupp` or `DFinsupp`.
 
--- This allows an adversary to perform the group operation on group elements stored at the indices
--- `i` and `j` (if they are both defined), storing the result at index `k`.
-def GroupOpOracle : OracleSpec Unit := fun _ => (Nat × Nat × Nat, Unit)
+  Note that we use `DFinsupp` for now since it's computable, unlike `Finsupp`. This is just a
+  historical incident of mathlib, and we can switch to `Finsupp` if needed. -/
+@[reducible]
+def GroupValTable (ι : Type*) (G : Type*) := Π₀ _ : ι, Option G
 
-/-- This oracle interface allows an adversary to get the bit encoding of a group element. -/
-def GroupEncodeOracle (bitLength : ℕ) : OracleSpec Unit := fun _ => (Nat, BitVec bitLength)
+section OracleSpec
 
-/-- This oracle interface allows an adversary to get the bit encoding of a group element. -/
-def GroupDecodeOracle (bitLength : ℕ) (G : Type) : OracleSpec Unit :=
-  fun _ => (BitVec bitLength, Option G)
+variable (ι : Type) (p : ℕ)
 
-/-- An adversary in the Algebraic Group Model (AGM), given a single group `G` with elements having
-    representation size `bitLength`, is a stateful oracle computation with oracle access to the
-    `GroupOp` and `GroupEncode` oracles, and the state being the array of group elements (accessed
-    via handles).
+/-- The group operation oracle allows an adversary to perform the group operation on group elements
+  stored at the indices `i` and `j` (if they are both defined), storing the result at index `k`. -/
+@[reducible]
+def GroupOpOracle : OracleSpec Unit := fun _ => (ι × ι × ι, Unit)
 
-  How to make the adversary truly independent of the group description? It could have had `G`
-  hardwired. Perhaps we need to enforce parametricity, i.e. it should be of type
-  `∀ G, Group G → AGMAdversary G bitLength α`? -/
-def AGMAdversary (G : Type) (bitLength : ℕ) : Type → Type _ := fun α => StateT (GroupVal G)
-  (OracleComp ((GroupEncodeOracle bitLength) ++ₒ (GroupDecodeOracle bitLength G))) α
+/-- The group exponent oracle allows an adversary to compute the group element at the index `i`
+  raised to the power `a`, storing the result at index `j`.
 
-end AGM
+  Technically, this oracle can be implemented with just the group operation oracle, but we allow
+  this for faster implementation. -/
+@[reducible]
+def GroupExpOracle : OracleSpec Unit := fun _ => (ι × ZMod p × ι, Unit)
 
-namespace KZG
+/-- The group equality oracle allows an adversary to check if the group elements stored at the
+  indices `i` and `j` are equal. -/
+@[reducible]
+def GroupEqOracle : OracleSpec Unit := fun _ => (ι × ι, Bool)
 
-/-! ## The KZG Polynomial Commitment Scheme -/
+variable (bitLength : ℕ)
 
--- TODO: figure out how to get `CommGroup` for free
-variable {G : Type*} [CommGroup G] {p : ℕ} [Fact (Nat.Prime p)] (h : Nat.card G = p)
-  {g : G}
+/-- The group encoding oracle allows an adversary to get the bit encoding of a group element. -/
+@[reducible]
+def GroupEncodeOracle : OracleSpec Unit := fun _ => (ι, BitVec bitLength)
 
-instance {α : Type} [CommGroup α] : AddCommMonoid (Additive α) := inferInstance
+/-- The group decoding oracle allows an adversary to insert a group element corresponding to a
+  bit encoding into the table, if the bit encoding is valid. -/
+@[reducible]
+def GroupDecodeOracle : OracleSpec Unit := fun _ => (BitVec bitLength × ι, Unit)
 
-variable {G₁ : Type*} [CommGroup G₁] [IsPrimeOrderWith G₁ p] {g₁ : G₁}
-  {G₂ : Type*} [CommGroup G₂] [IsPrimeOrderWith G₂ p] {g₂ : G₂}
-  {Gₜ : Type*} [CommGroup Gₜ] [IsPrimeOrderWith Gₜ p]
-  -- TODO: need to make this a `ZMod p`-linear map
-  (pairing : (Additive G₁) →ₗ[ℤ] (Additive G₂) →ₗ[ℤ] (Additive Gₜ))
+end OracleSpec
 
--- instance : IsCyclic G := isCyclic_of_prime_card h
+section impl
 
--- #check unique_of_prime_card
+variable {ι : Type} [DecidableEq ι] {G : Type} [Group G] {p : ℕ}
 
-/-- The vector of length `n + 1` that consists of powers:
-  `#v[1, g, g ^ a.val, g ^ (a.val ^ 2), ..., g ^ (a.val ^ n)` -/
-def towerOfExponents (g : G) (a : ZMod p) (n : ℕ) : Vector G (n + 1) :=
-  .ofFn (fun i => g ^ (a.val ^ i.val))
+/-- Implementation of the group operation oracle, which changes some underlying table of group
+  elements, using the group operation `op`. If the indices `i` and `j` does not contain group
+  elements yet, the oracle will fail. -/
+def implGroupOpOracle : QueryImpl (GroupOpOracle ι) (StateT (GroupValTable ι G) Option) where
+  impl | query _ ⟨i, j, k⟩ => fun table =>
+    match table i, table j with
+    | some g₁, some g₂ => some ((), table.update k (some (g₁ * g₂)))
+    | _, _ => none
 
-variable {n : ℕ}
+/-- Implementation of the group exponent oracle, which computes the group element at the index `i`
+  raised to the power `a`, storing the result at index `j`. This will fail if the index `i` does
+  not contain a group element yet. -/
+def implGroupExpOracle : QueryImpl (GroupExpOracle ι p) (StateT (GroupValTable ι G) Option) where
+  impl | query _ ⟨i, a, j⟩ => fun table =>
+    match table i with
+    | some g => some ((), table.update j (some (g ^ a.val)))
+    | none => none
 
-/-- The `srs` (structured reference string) for the KZG commitment scheme with secret exponent `a`
-    is defined as `#v[g₁, g₁ ^ a, g₁ ^ (a ^ 2), ..., g₁ ^ (a ^ (n - 1))], #v[g₂, g₂ ^ a]` -/
-def generateSrs (n : ℕ) (a : ZMod p) : Vector G₁ (n + 1) × Vector G₂ 2 :=
-  (towerOfExponents g₁ a n, towerOfExponents g₂ a 1)
+/-- Implementation of the group equality oracle, which checks if the group elements at the indices
+  `i` and `j` are equal, and leave the table unchanged. -/
+def implGroupEqOracle [BEq G] :
+    QueryImpl (GroupEqOracle ι) (StateT (GroupValTable ι G) Option) where
+  impl | query _ ⟨i, j⟩ => fun table =>
+    match table i, table j with
+    | some g₁, some g₂ => some (g₁ == g₂, table)
+    | _, _ => none
 
-/-- One can verify that the `srs` is valid via using the pairing -/
-def checkSrs (proveSrs : Vector G₁ (n + 1)) (verifySrs : Vector G₂ 2) : Prop :=
-  ∀ i : Fin n,
-    pairing (proveSrs[i.succ]) (verifySrs[0]) = pairing (proveSrs[i.castSucc]) (verifySrs[1])
+variable {bitLength : ℕ}
 
-/-- To commit to an `n`-tuple of coefficients `coeffs` (corresponding to a polynomial of degree less
-    than `n`), we compute: `∏ i : Fin n, srs[i] ^ (p.coeff i)` -/
-def commit (srs : Vector G₁ n) (coeffs : Fin n → ZMod p) : G₁ :=
-  ∏ i : Fin n, srs[i] ^ (coeffs i).val
+/-- Implementation of the group encoding oracle, which returns the bit encoding of the group element
+  at the index `i`, leaving the table unchanged. This will fail if the index `i` does not contain
+  a group element yet. -/
+def implGroupEncodeOracle [Serialize G (BitVec bitLength)] :
+    QueryImpl (GroupEncodeOracle ι bitLength) (StateT (GroupValTable ι G) Option) where
+  impl | query _ i => fun table =>
+    match table i with
+    | some g => some (serialize g, table)
+    | none => none
 
-/-- When committing `coeffs` using `srs` generated by `towerOfExponents`, and `coeffs` correspond to
-  a polynomial `poly : (ZMod p)[X]` of degree `< n + 1`, we get the result `g₁ ^ (p.eval a).val` -/
-theorem commit_eq {g : G₁} {a : ZMod p} (poly : degreeLT (ZMod p) (n + 1)) :
-    commit (towerOfExponents g a n) (degreeLTEquiv _ _ poly) = g ^ (poly.1.eval a).val := by
-  simp [commit, towerOfExponents]
-  simp_rw [← pow_mul, Finset.prod_pow_eq_pow_sum]
-  rw [eval_eq_sum_degreeLTEquiv poly.property]
-  simp
-  -- simp_rw [← ZMod.val_pow]
+/-- Implementation of the group decoding oracle, which inserts a group element corresponding to a
+  bit encoding into the table, if the bit encoding is valid. This will fail if the bit encoding
+  is invalid. -/
+def implGroupDecodeOracle [DeserializeOption G (BitVec bitLength)] :
+    QueryImpl (GroupDecodeOracle ι bitLength) (StateT (GroupValTable ι G) Option) where
+  impl | query _ (b, i) => fun table =>
+    match DeserializeOption.deserialize b with
+    | some g => some ((), table.update i (some g))
+    | none => none
+
+end impl
+
+/-- An adversary in the Algebraic Group Model (AGM) is defined as follows:
+
+- It is given knowledge of the initial configuration of the group table
+- It may use any of the group oracles, including for group operation, group exponentiation, group
+  equality testing, and returning group encoding (no decoding of group elements allowed)
+- It returns a list of handles specifying the group elements it is supposed to output, and a
+  non-group-element result of type `α`
+
+Note: even if the adversary knows the initial group table, it can only output group elements
+implicitly, via indices in the table. This means the group element outputs can only be computed via
+utilizing the oracles.
+
+TODO: need to be sure this definition is correct.
+-/
+def Adversary (ι : Type) (G : Type) (p : ℕ) (bitLength : ℕ) (α : Type) : Type _ :=
+  ReaderT (GroupValTable ι G)
+    (OracleComp (GroupOpOracle ι ++ₒ GroupExpOracle ι p ++ₒ
+      GroupEqOracle ι ++ₒ GroupEncodeOracle ι bitLength))
+    (List ι × α)
+
+namespace Adversary
+
+variable {ι : Type} [DecidableEq ι] {G : Type} [Group G] [DecidableEq G]
+    {p : ℕ} {bitLength : ℕ}
+    [Serialize G (BitVec bitLength)] [DeserializeOption G (BitVec bitLength)]
+    (α : Type)
+
+/-- Running the adversary on a given table, returning the list of group elements it is supposed to
+  output, and the non-group-element result. -/
+def run (adversary : Adversary ι G p bitLength α) (table : GroupValTable ι G) : List G × α :=
   sorry
 
-/-- To generate an opening proving that a polynomial `poly` has a certain evaluation at `z`,
-  we return the commitment to the polynomial `q(X) = (poly(X) - poly.eval z) / (X - z)` -/
-noncomputable def generateOpening [Fact (Nat.Prime p)] (srs : Vector G₁ (n + 1))
-    (coeffs : Fin (n + 1) → ZMod p) (z : ZMod p) : G₁ :=
-  letI poly : degreeLT (ZMod p) (n + 1) := (degreeLTEquiv (ZMod p) (n + 1)).invFun coeffs
-  letI q : degreeLT (ZMod p) (n + 1) :=
-    ⟨(poly.val - C (poly.val.eval z)) / (X - C z), by
-      apply mem_degreeLT.mpr
-      have : Field (ZMod p) := sorry
-      sorry⟩
-      -- Don't know why `degree_div_le` time out here
-      -- refine lt_of_le_of_lt (degree_div_le _ (X - C z)) ?_
-      -- refine lt_of_le_of_lt (degree_sub_le _ _) (sup_lt_iff.mpr ?_)
-      -- constructor
-      -- · exact mem_degreeLT.mp poly.property
-      -- · exact lt_of_lt_of_le degree_C_lt (by norm_cast; omega)⟩
-  commit srs (degreeLTEquiv (ZMod p) (n + 1) q)
+end Adversary
 
-/-- To verify a KZG opening `opening` for a commitment `commitment` at point `z` with claimed
-  evaluation `v`, we use the pairing to check "in the exponent" that `p(a) - p(z) = q(a) * (a - z)`,
-  where `p` is the polynomial and `q` is the quotient of `p` at `z` -/
-noncomputable def verifyOpening (verifySrs : Vector G₂ 2) (commitment : G₁) (opening : G₁)
-    (z : ZMod p) (v : ZMod p) : Prop :=
-  pairing (commitment / g₁ ^ v.val) (verifySrs[0]) = pairing opening (verifySrs[1] / g₂ ^ z.val)
+-- How to make the adversary truly independent of the group description? It could have had `G`
+-- hardwired.
 
--- p(a) - p(z) = q(a) * (a - z)
--- e ( C / g₁ ^ v , g₂ ) = e ( O , g₂ ^ a / g₂ ^ z)
+-- Perhaps we need to enforce parametricity, i.e. it should be of type `∀ G, Group G →
+-- AGMAdversary G bitLength α`?
 
--- theorem correctness {g : G} {a : ZMod p} {coeffs : Fin n → ZMod p} {z : ZMod p} :
+-- TODO: talk about AGM in the pairing setting
 
-end KZG
+end AGM
