@@ -1987,7 +1987,33 @@ def concreteCanonicalEmbedding (k : ℕ) :
     map_one' := join_zero_one (k:=k + 1) (h_k:=by omega)
     map_mul' := fun x y => by
       -- ⊢ join ⋯ zero (x * y) = join ⋯ zero x * join ⋯ zero y
-      sorry
+      set hx := join (k:=k+1) (h_pos:=by omega) (hi:=zero (k:=k)) (lo:=x)
+      set hy := join (k:=k+1) (h_pos:=by omega) (hi:=zero (k:=k)) (lo:=y)
+      have h_inductive_succ := InductiveConcreteBTFProperties (k:=k + 1)
+      have h_inductive_cur := InductiveConcreteBTFProperties (k:=k)
+      have h_mul_eq := h_inductive_succ.mul_eq
+
+      have h_x_split := split_of_join (k:=k + 1) (h_pos:=by omega)
+        (x:=hx) (zero (k:=k)) (x) (h_join:=rfl)
+      have h_y_split := split_of_join (k:=k + 1) (h_pos:=by omega)
+        (x:=hy) (zero (k:=k)) (y) (h_join:=rfl)
+      have h_mul_eq_join_split := h_mul_eq hx hy (by omega) h_x_split h_y_split
+      -- rhs
+      simp_rw [HMul.hMul, Mul.mul] -- unfold mul
+      rw [h_mul_eq_join_split]
+      simp only [Nat.add_one_sub_one]
+
+      have h_left : zero (k:=k) = concrete_mul x zero + concrete_mul y zero +
+        concrete_mul (concrete_mul zero zero) (Z k) := by
+        simp only [h_inductive_cur.mul_zero, h_inductive_cur.zero_mul]
+        rw! [zero_is_0]
+        norm_num
+
+      have h_right : concrete_mul x y = concrete_mul x y + concrete_mul zero zero:= by
+        rw [h_inductive_cur.mul_zero, zero_is_0]
+        norm_num
+
+      rw [←h_left, ←h_right]
     map_add' := fun x y => by
       -- ⊢ join ⋯ zero (x + y) = join ⋯ zero x + join ⋯ zero y
       simp only [join_add_join, Nat.add_one_sub_one]
