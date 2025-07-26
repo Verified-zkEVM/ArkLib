@@ -8,7 +8,7 @@ import Mathlib.Algebra.Polynomial.AlgebraMap
 import Mathlib.RingTheory.Polynomial.DegreeLT
 
 /-!
-  # Polynomial-like structures
+  # Experimental API for `Polynomial`-like structures
 
   This file defines a generic type class for polynomial-like structures. The goal is to provide a
   generic interface for polynomials, which should be isomorphic to Mathlib's `Polynomial`, but also
@@ -28,13 +28,15 @@ rings:
 We can show that any `P` satisfying the `PolynomialLike` typeclass is isomorphic to `R[X]` as an
 `R`-algebra, and hence inherit all relevant properties of `R[X]`.
 
-TODO: make sure this universal property is actually correct!
+This is slightly less general than `Polynomial` in mathlib, since we put `R`,`S`,`P` to all be
+`CommSemiring` instead of just `Semiring`. We need the stronger requirement on `R` and `S` to ensure
+the instance `Algebra R P`, and that `eval₂` is a ring homomorphism.
 
-This is slightly less general than `Polynomial` in mathlib, where `R` and `S` are only required to
-be a `Semiring` instead of a `CommSemiring`. We need the stronger requirement on `R` and `S` to
-ensure the instance `Algebra R P`, and that `eval₂` is a ring homomorphism.
+TODO: make sure this universal property is actually correct! Currently there are several issues:
+  - Does this actually lead to a unique `R`-algebra isomorphism `P ≃ₐ[R] R[X]`?
+  - How to define coefficients and hence degree?
 -/
-class PolynomialLike (R : outParam (Type u)) [CommSemiring R] (P : Type v) [Semiring P]
+class PolynomialLike (R : outParam (Type u)) [CommSemiring R] (P : Type v) [CommSemiring P]
     extends Algebra R P where
 
   /-- The indeterminate `X` of the polynomial ring. -/
@@ -45,47 +47,78 @@ class PolynomialLike (R : outParam (Type u)) [CommSemiring R] (P : Type v) [Semi
   eval₂ {S : Type w} [CommSemiring S] (f : R →+* S) (x : S) : P →+* S
 
   eval₂_C {r : R} {S : Type w} [CommSemiring S] (f : R →+* S) (x : S) :
-    (eval₂ f x) (algebraMap r) = f r
+    (eval₂ f x) (_root_.algebraMap R P r) = f r
 
   eval₂_X {S : Type w} [CommSemiring S] (f : R →+* S) (x : S) : eval₂ f x X = x
 
-  eval₂_eq {S : Type w} [CommSemiring S] (f : R →+* S) (g : P →+* S) : g = eval₂ f (g X)
+  eval₂_eq {S : Type w} [CommSemiring S] (g : P →+* S) :
+    g = eval₂ (g.comp (Algebra.ofId R P)) (g X)
 
-attribute [simp] PolynomialLike.eval₂_C PolynomialLike.eval₂_X PolynomialLike.eval₂_eq
+attribute [simp] PolynomialLike.eval₂_C PolynomialLike.eval₂_X
 
 namespace PolynomialLike
 
-variable {R : Type u} [CommSemiring R] {P : Type v} [Semiring P] [PolynomialLike R P]
+variable {R : Type u} [CommSemiring R] {P : Type v} [CommSemiring P] [PolynomialLike R P]
 
 /-- The constant ring homomorphism from `R` to `P`, obtained from the `Algebra` instance. -/
 @[reducible]
 def C : R →+* P := algebraMap R P
+
+/-- The monomial `C r * X ^ n` in `P`. -/
+def monomial (n : ℕ) (r : R) : P := C r * X ^ n
+
+@[simp]
+lemma eval₂_C' {r : R} {S : Type w} [CommSemiring S] (f : R →+* S) (x : S) :
+    eval₂ (P := P) f x (C r) = f r := by
+  simp [C]
+
+lemma eval₂_f_eq_C (r : R) (x : P) : eval₂ (P := P) (C : R →+* P) x (C r) = C r := by simp
 
 @[simp]
 lemma eval₂_comp_C {S : Type w} [CommSemiring S] (f : R →+* S) (x : S) :
     (eval₂ f x).comp (C : R →+* P) = f := by
   ext; exact eval₂_C _ _
 
+lemma eval₂_eq' {S : Type w} [CommSemiring S] (g : P →+* S) (p : P) :
+    g p = eval₂ (g.comp (Algebra.ofId R P)) (g X) p := by
+  nth_rw 1 [eval₂_eq g]
+
 @[simp]
-lemma eval₂_eq' {S : Type w} [CommSemiring S] (f : R →+* S) (g : P →+* S) (p : P) :
-    g p = eval₂ f (g X) p := by
-  rw [eval₂_eq f g]
-  simp
+lemma eval₂_monomial {S : Type w} [CommSemiring S] (f : R →+* S) (x : S) (n : ℕ) (r : R) :
+    eval₂ (P := P) f x (monomial n r) = f r * x ^ n := by
+  simp [monomial]
+
+/-- `eval₂` is determined by its values on `C` and `X`. -/
+lemma eval₂_induction_on : True := sorry
+
+lemma C_injective : Function.Injective (C : R → P) := by
+  intro r₁ r₂ h
+  -- rw [← eval₂_f_eq_C (P := P) r₁]
+  sorry
+
+#print Polynomial.eval₂RingHom'
+
+#print Polynomial.eval₂AlgHom'
+
+#check IsScalarTower
 
 /-- `eval₂` as an `AlgHom`. -/
-def eval₂AlgHom {A : Type w} {B : Type*} [CommSemiring A] [CommSemiring B]
-    [Algebra R A] [Algebra R B] (f : A →ₐ[R] B) (b : B) : P →ₐ[R] B where
-  toFun := eval₂ (f.comp (Algebra.ofId R A)) b
-  map_one' := by simp
-  map_mul' := by simp
-  map_zero' := by simp
-  map_add' := by simp
-  commutes' := by intro r; simp; exact eval₂_C _ _
+def eval₂AlgHom {A : Type w} {B : Type*} [CommSemiring A] [CommSemiring B] [PolynomialLike A P]
+    [Algebra R A] [IsScalarTower R A P] [Algebra R B] (f : A →ₐ[R] B) (b : B) :
+      P →ₐ[R] B where
+  toRingHom := eval₂ f b
+  commutes' := by
+    intro r; simp;
+    refine .trans ?_ (f.commutes r)
+    change (eval₂ (↑f) b) ((algebraMap R P) r) = (f : A →+* B) ((algebraMap R A) r)
+    refine .trans ?_ (eval₂_C (P := P) (↑f) b (r := (algebraMap R A) r))
+    rw [IsScalarTower.algebraMap_apply (S := A)]
 
 @[simp]
 lemma eval₂AlgHom_apply {A : Type w} {B : Type*} [CommSemiring A] [CommSemiring B]
-    [Algebra R A] [Algebra R B] (f : A →ₐ[R] B) (b : B) (p : P) :
-    (eval₂AlgHom f b) p = eval₂ (f.comp (Algebra.ofId R A)) b p := by
+    [PolynomialLike A P] [Algebra R A] [IsScalarTower R A P] [Algebra R B]
+    (f : A →ₐ[R] B) (b : B) (p : P) :
+    (eval₂AlgHom f b) p = eval₂ f b p := by
   simp [eval₂AlgHom]
 
 /-- The (algebra) evaluation map, which is the (unique) `R`-algebra homomorphism from `P` to
@@ -106,13 +139,19 @@ lemma aeval_C {A : Type w} [CommSemiring A] [Algebra R A] (x : A) (r : R) :
 lemma aeval_X {A : Type w} [CommSemiring A] [Algebra R A] (s : A) : aeval s X (P := P) = s := by
   simp [aeval]
 
+lemma aeval_eq' {A : Type w} [CommSemiring A] [Algebra R A] (f : P →ₐ[R] A) (p : P) :
+    f p = aeval (f X) p := by
+  simp [aeval, eval₂AlgHom]
+  change (f : P →+* A) p = _
+  rw [eval₂_eq' (S := A) (↑f) p]
+  simp [Algebra.ofId]
+
 /-- Uniqueness: Any `R`-algebra homomorphism `f` from `P` to an `R`-algebra `A` is equal to the
 evaluation map at the value of `f X`. -/
-@[simp]
 lemma aeval_eq {A : Type w} [CommSemiring A] [Algebra R A] (f : P →ₐ[R] A) : f = aeval (f X) := by
-  simp only [aeval, eval₂AlgHom, Algebra.comp_ofId, RingHom.mk_coe]
+  simp only [aeval, eval₂AlgHom]
   ext p
-  exact eval₂_eq' _ _ _
+  exact aeval_eq' f p
 
 end PolynomialLike
 
@@ -123,7 +162,7 @@ noncomputable instance {R : Type u} [CommSemiring R] : PolynomialLike R R[X] whe
   eval₂ := Polynomial.eval₂RingHom
   eval₂_C := Polynomial.eval₂_C
   eval₂_X := Polynomial.eval₂_X
-  eval₂_eq f := sorry
+  eval₂_eq f := by ext r <;> simp [Algebra.ofId]
 
 end Polynomial
 
@@ -131,13 +170,32 @@ namespace PolynomialLike
 
 open Polynomial
 
-variable {R : Type u} [CommSemiring R] {P : Type w} [Semiring P] [PolynomialLike R P]
+variable {R : Type u} [CommSemiring R] {P : Type w} [CommSemiring P] [PolynomialLike R P]
 
 /-- The unique `R`-algebra homomorphism from a `PolynomialLike` type `P` to `R[X]`. -/
 noncomputable def toPolynomialAlgHom : P →ₐ[R] R[X] := PolynomialLike.aeval Polynomial.X
 
 /-- The unique `R`-algebra homomorphism from `R[X]` to a `PolynomialLike` type `P`. -/
 noncomputable def ofPolynomialAlgHom : R[X] →ₐ[R] P := Polynomial.aeval PolynomialLike.X
+
+@[simp]
+lemma toPolynomialAlgHom_X : toPolynomialAlgHom (X : P) = Polynomial.X := by
+  simp [toPolynomialAlgHom, aeval, Algebra.ofId, eval₂AlgHom]
+
+@[simp]
+lemma ofPolynomialAlgHom_X : ofPolynomialAlgHom (Polynomial.X : R[X]) = (X : P) := by
+  simp [ofPolynomialAlgHom]
+
+@[simp]
+lemma ofPolynomialAlgHom_toPolynomialAlgHom_C {r : R} :
+    ofPolynomialAlgHom (toPolynomialAlgHom (C r : P)) = (Polynomial.C r : R[X]) := by
+  simp [ofPolynomialAlgHom, toPolynomialAlgHom, aeval, Polynomial.aeval, Algebra.ofId,
+    eval₂AlgHom, instPolynomialLike]
+
+lemma ofPolynomialAlgHom_toPolynomialAlgHom_X :
+    ofPolynomialAlgHom (toPolynomialAlgHom (X : P)) = (Polynomial.X : R[X]) := by
+  simp [ofPolynomialAlgHom, toPolynomialAlgHom, aeval, Polynomial.aeval, Algebra.ofId,
+    eval₂AlgHom, instPolynomialLike]
 
 /--
 A `PolynomialLike` type `P` is isomorphic to `R[X]` as an `R`-algebra.
@@ -148,18 +206,19 @@ noncomputable def polynomialAlgEquiv : P ≃ₐ[R] R[X] where
   invFun := ofPolynomialAlgHom
   left_inv := by
     intro p
-    -- let f := ofPolynomialAlgHom.comp toPolynomialAlgHom
-    -- let g := AlgHom.id R P
+    let f : R[X] →ₐ[R] P := ofPolynomialAlgHom.comp toPolynomialAlgHom
+    simp [toPolynomialAlgHom]
+    -- rw [← aeval_eq' () p]
+    -- simp [ofPolynomialAlgHom, toPolynomialAlgHom, aeval, Polynomial.aeval,
+    --   Algebra.ofId, eval₂AlgHom]
+    -- Polynomial.eval₂ (algebraMap R P) X ((eval₂ Polynomial.C Polynomial.X) p) = p
     sorry
-    -- apply DFunLike.congr_fun (PolynomialLike.hom_ext (f := f) (g := g) (by simp [toPolynomialAlgHom, ofPolynomialAlgHom, PolynomialLike.aeval_X]))
   right_inv := by
-    intro p;
-    -- let f := toPolynomialAlgHom.comp ofPolynomialAlgHom
-    -- let g := AlgHom.id R R[X]
-    -- apply DFunLike.congr_fun (Polynomial.algHom_ext (f := f) (g := g) (by simp [toPolynomialAlgHom, ofPolynomialAlgHom, PolynomialLike.aeval_X, aeval_X]))
-    sorry
-  map_mul' := sorry
-  map_add' := sorry
-  commutes' := sorry
+    intro p
+    simp [ofPolynomialAlgHom, toPolynomialAlgHom, aeval, Polynomial.aeval, Algebra.ofId,
+      eval₂AlgHom]
+  map_mul' _ _ := by simp
+  map_add' _ _ := by simp
+  commutes' _ := by simp
 
 end PolynomialLike
