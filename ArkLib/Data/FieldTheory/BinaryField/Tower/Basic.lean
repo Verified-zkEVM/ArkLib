@@ -78,6 +78,7 @@ structure BinaryTowerInductiveStepResult (k : ℕ) (prevBTField : Type _)
   eval_defining_poly_at_root: Eq.mp (eq_adjoin) binaryTowerResult.specialElement^2 +
     Eq.mp (eq_adjoin) binaryTowerResult.specialElement * (of prevPoly) prevBTResult.specialElement
     + 1 = 0
+
 set_option maxHeartbeats 1000000 in
 -- it takes more heartbeats to prove this theorem
 def binary_tower_inductive_step
@@ -1110,7 +1111,7 @@ theorem BTField.Basis_cast_dest_apply {ι : Type*} (α β γ : ℕ) (h_le1 : α 
 /-!
 The power basis for `BTField (k+1)` over `BTField k` is {1, Z (k+1)}
 -/
-def basisSucc (k : ℕ) :
+def powerBasisSucc (k : ℕ) :
     PowerBasis (BTField k) (BTField (k+1)) := by
   let pb: PowerBasis (BTField k) (AdjoinRoot (poly k)) := AdjoinRoot.powerBasis' (polyMonic k)
   -- NOTE: pb.gen is definitionally equal to AdjoinRoot.root (poly k)
@@ -1118,13 +1119,41 @@ def basisSucc (k : ℕ) :
   -- ⊢ PowerBasis (BTField k) (BTField (k + 1))
   apply pb.map (e:=BTField_succ_alg_equiv_adjoinRoot k)
 
-lemma basisSucc_gen (k : ℕ) :
-  (basisSucc k).gen = (Z (k+1)) := by rfl -- Z (k+1) is generator of BTField (k+1) over (BTField k)
+lemma powerBasisSucc_gen (k : ℕ) :
+  (powerBasisSucc k).gen = (Z (k+1)) := by rfl -- Z (k+1) is generator of BTField (k+1) over (BTField k)
   -- Correctness: Both sides are definitionally equal to AdjoinRoot.root (poly k)
 
-lemma basisSucc_dim (k: ℕ):
-  basisSucc (k:=k).dim = 2 := by
-  simp only [BTField, CommRing, BTFieldIsField, basisSucc, poly, PowerBasis.map_dim,
+def join_via_add_smul (k : ℕ) (h_pos : k > 0) (hi_btf lo_btf : BTField (k - 1)) :
+    BTField k := by
+  letI instAlgebra := binaryTowerOfAlgebra (l:=k-1) (r:=k) (h_le:=by omega)
+  exact hi_btf • Z k + (algebraMap (BTField (k - 1)) (BTField k) lo_btf)
+
+theorem unique_linear_decomposition_succ (k : ℕ) :
+  ∀ (x : BTField (k+1)), ∃! (p : BTField k × BTField k),
+    x = join_via_add_smul (k+1) (by omega) p.1 p.2 := by
+  intro x
+  sorry
+
+def split (k : ℕ) (h_k : k > 0) (x : BTField k) : BTField (k-1) × BTField (k-1) := by
+  have h_eq: k - 1 + 1 = k := by omega
+  let x' : BTField (k-1+1) := cast (congrArg BTField h_eq.symm) x
+  have h_unique := unique_linear_decomposition_succ (k:=(k-1)) x'
+  exact h_unique.choose
+
+theorem eq_join_via_add_smul_eq_iff_split (k : ℕ) (h_pos : k > 0)
+    (x : BTField k) (hi_btf lo_btf : BTField (k - 1)):
+    x = join_via_add_smul (k:=k) (h_pos:=h_pos) hi_btf lo_btf ↔
+  split (k:=k) (h_k:=h_pos) x = (hi_btf, lo_btf) := by
+  sorry
+
+@[simp]
+theorem minPoly_of_powerBasisSucc_generator (k : ℕ) :
+  (minpoly (BTField k) (powerBasisSucc k).gen) = X^2 + (Z k) • X + 1 := by
+  sorry
+
+lemma powerBasisSucc_dim (k: ℕ):
+  powerBasisSucc (k:=k).dim = 2 := by
+  simp only [BTField, CommRing, BTFieldIsField, powerBasisSucc, poly, PowerBasis.map_dim,
     powerBasis'_dim]
   exact (BinaryTowerAux k).snd.natDegNewPolyIs2
 
@@ -1207,8 +1236,8 @@ def multilinearBasis (l r : ℕ) (h_le : l ≤ r):
       (b:=by
         convert prevMultilinearBasis;
       ) (c:=by
-        convert (basisSucc (r1)).basis
-        rw [basisSucc_dim (k:=r1)]
+        convert (powerBasisSucc (r1)).basis
+        rw [powerBasisSucc_dim (k:=r1)]
       )
     convert res
     -- Basis are equal under the same @binaryTowerOfAlgebra
@@ -1241,14 +1270,14 @@ theorem PowerBasis.cast_basis_succ_of_eq_rec_apply
       binaryTowerOfAlgebra (l:=r1) (r:=r) (h_le:=by omega)
     letI instAlgebraSucc: Algebra (BTField (r1 + 1)) (BTField (r)) :=
       binaryTowerOfAlgebra (l:=r1 + 1) (r:=r) (h_le:=by omega)
-    let b: PowerBasis (BTField r1) (BTField (r1 + 1)) := basisSucc (k:=r1)
+    let b: PowerBasis (BTField r1) (BTField (r1 + 1)) := powerBasisSucc (k:=r1)
     let bCast : PowerBasis (BTField r1) (BTField r) := Eq.rec (motive:=
       fun (x : ℕ) (_ : r1 + 1 = x) => by
         letI instAlgebraCur: Algebra (BTField r1) (BTField x) :=
           binaryTowerOfAlgebra (l:=r1) (r:=x) (h_le:=by omega)
         exact PowerBasis (BTField r1) (BTField x)) (refl:=b) (t:=h_r.symm)
     have h_pb_dim: b.dim = 2 := by
-      exact basisSucc_dim r1
+      exact powerBasisSucc_dim r1
 
     have h_pb'_dim: bCast.dim = 2 := by
       dsimp [bCast]
@@ -1268,7 +1297,7 @@ theorem PowerBasis.cast_basis_succ_of_eq_rec_apply
   subst h_r
   simp only [binaryTowerAlgebra_id,
     Algebra.id.map_eq_id, PowerBasis.coe_basis, Fin.coe_cast, RingHom.id_apply]
-  rw [BTField.Basis_cast_index_apply (h_eq:=by exact basisSucc_dim r1) (h_le:=by omega)]
+  rw [BTField.Basis_cast_index_apply (h_eq:=by exact powerBasisSucc_dim r1) (h_le:=by omega)]
   simp only [PowerBasis.coe_basis, Fin.coe_cast]
 
 /-!
@@ -1355,7 +1384,7 @@ theorem multilinearBasis_apply (r : ℕ): ∀ l: ℕ, (h_le : l ≤ r) → ∀ (
       letI instAlgebra2: Algebra (BTField r1) (BTField r) :=
         binaryTowerOfAlgebra (l:=r1) (r:=r) (h_le:=by omega)
       letI instModule2: Module (BTField r1) (BTField r) := instAlgebra2.toModule
-      set b := (basisSucc r1) with hb
+      set b := (powerBasisSucc r1) with hb
       rw! [←hb]
       simp_rw [eqRec_eq_cast]
       rw [cast_eq]
@@ -1391,11 +1420,11 @@ theorem multilinearBasis_apply (r : ℕ): ∀ l: ℕ, (h_le : l ≤ r) → ∀ (
       -- All casts eliminated, now we prove equality on revFinProdFinEquiv and bit stuff
       -- ⊢ (algebraMap (BTField r1) (BTField r)) (prevMultilinearBasis✝
       -- (Fin.cast ⋯ (leftModNat ⋯ (Fin.cast ⋯ j)))) * (algebraMap (BTField (r1 + 1)) (BTField r))
-      -- ((basisSucc r1).basis (Fin.cast ⋯ ⟨↑j / 2 ^ (r - l - 1), ⋯⟩)) =
+      -- ((powerBasisSucc r1).basis (Fin.cast ⋯ ⟨↑j / 2 ^ (r - l - 1), ⋯⟩)) =
       --   ∏ i, Algebra.algebraMap (𝕏 (l + ↑i) ^ bit ↑i ↑j)
       conv_lhs =>
         simp only [Fin.cast_mk, PowerBasis.coe_basis];
-        rw [basisSucc_gen, ←𝕏] -- convert to gen^i form
+        rw [powerBasisSucc_gen, ←𝕏] -- convert to gen^i form
         rw [ih_r1 (l:=l) (h_le:=by omega)] -- inductive hypothesis of level r - 1
         rw [Fin.cast_val_eq_val (h_eq:=by omega)]
 

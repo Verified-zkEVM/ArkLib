@@ -87,5 +87,9 @@ lemma TowerOfAlgebraEquiv.commutesRight' (e : TowerOfAlgebraEquiv A B)
   have h_e_r2_rfl: e.toRingEquiv i r2 = r := by exact RingEquiv.apply_symm_apply (e.toRingEquiv i) r
   rw [h_e_r2_rfl]
 
+def TowerOfAlgebraEquiv.symm (e : TowerOfAlgebraEquiv A B) : TowerOfAlgebraEquiv B A where
+  toRingEquiv := fun i => (e.toRingEquiv i).symm
+  commutesLeft' := fun i j h r => by exact commutesRight' e h r
+
 structure AssocTowerOfAlgebraEquiv (A : ι → Type*) [∀ i, CommSemiring (A i)] [AssocTowerOfAlgebra A]
   (B : ι → Type*) [∀ i, CommSemiring (B i)] [AssocTowerOfAlgebra B] extends TowerOfAlgebraEquiv A B
