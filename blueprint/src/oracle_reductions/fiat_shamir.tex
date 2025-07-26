@@ -26,11 +26,11 @@ The key insight of the Fiat-Shamir transformation is to replace interactive chal
 \begin{definition}[Fiat-Shamir Oracle Specification]
     \label{def:fiat_shamir_spec}
     The Fiat-Shamir oracle specification for a protocol $\pSpec$ with input statement type $\StmtIn$ is:
-    \[ \mathsf{fiatShamirSpec} \;\pSpec \;\StmtIn : \OracleSpec \;\pSpec.\ChallengeIdx \]
+    \[ \mathsf{fsChallengeOracle} \;\pSpec \;\StmtIn : \OracleSpec \;\pSpec.\ChallengeIdx \]
     where for each challenge index $i$, the oracle domain is $\StmtIn \times \pSpec.\MessagesUpTo \;i.\mathsf{val}.\mathsf{castSucc}$ and the range is $\pSpec.\Challenge \;i$.
 
     This specification defines a family of oracles, one for each challenge round, that deterministically computes challenges based on the statement and messages up to that round.
-    \lean{ProtocolSpec.fiatShamirSpec}
+    \lean{ProtocolSpec.fsChallengeOracle}
 \end{definition}
 
 \subsection{Fiat-Shamir Transformation for Provers}\label{sec:fiat_shamir_prover}

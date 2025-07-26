@@ -16,7 +16,7 @@ import ArkLib.OracleReduction.Composition.Sequential.Append
   from the case of composing two reductions.
 -/
 
-open ProtocolSpec
+open ProtocolSpec OracleComp
 
 universe u v
 
@@ -57,8 +57,8 @@ end ProtocolSpec
 
 /-- If all protocols have sampleable challenges, then the challenges of their sequential
   composition also have sampleable challenges. -/
-instance [inst : ∀ i, ∀ j, Sampleable ((pSpec i).Challenge j)] :
-    ∀ j, Sampleable ((seqCompose pSpec).Challenge j) := fun combinedIdx => by
+instance [inst : ∀ i, ∀ j, SelectableType ((pSpec i).Challenge j)] :
+    ∀ j, SelectableType ((seqCompose pSpec).Challenge j) := fun combinedIdx => by
   let combinedIdx' := seqComposeChallengeEquiv.symm combinedIdx
   let this := inst combinedIdx'.1 combinedIdx'.2
   convert this using 1; sorry
@@ -124,10 +124,11 @@ def Reduction.seqCompose
 end Composition
 
 variable {m : ℕ}
-    {Stmt : Fin (m + 1) → Type} {Wit : Fin (m + 1) → Type} {rel : ∀ i, Set (Stmt i × Wit i)}
+    {Stmt : Fin (m + 1) → Type} {Wit : Fin (m + 1) → Type}
     {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
-    [oSpec.FiniteRange]
-    [∀ i, ∀ j, Sampleable ((pSpec i).Challenge j)]
+    [∀ i, ∀ j, SelectableType ((pSpec i).Challenge j)]
+    {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+    {rel : ∀ i, Set (Stmt i × Wit i)}
 
 section Lemmas
 
@@ -158,8 +159,8 @@ theorem completeness_seqCompose
     (completenessError : Fin m → ℝ≥0)
     (R : ∀ i, Reduction oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ)
       (pSpec i))
-    (h : ∀ i, (R i).completeness (rel i.castSucc) (rel i.succ) (completenessError i)) :
-      (Reduction.seqCompose R).completeness (rel 0) (rel (Fin.last m))
+    (h : ∀ i, (R i).completeness init impl (rel i.castSucc) (rel i.succ) (completenessError i)) :
+      (Reduction.seqCompose R).completeness init impl (rel 0) (rel (Fin.last m))
         (∑ i, completenessError i) := by
   induction m with
   | zero =>
@@ -178,8 +179,8 @@ theorem seqCompose_soundness
     (lang : ∀ i, Set (Stmt i))
     (soundnessError : Fin m → ℝ≥0)
     (V : ∀ i, Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
-    (h : ∀ i, (V i).soundness (lang i.castSucc) (lang i.succ) (soundnessError i)) :
-      (Verifier.seqCompose V).soundness (lang 0) (lang (Fin.last m))
+    (h : ∀ i, (V i).soundness init impl (lang i.castSucc) (lang i.succ) (soundnessError i)) :
+      (Verifier.seqCompose V).soundness init impl (lang 0) (lang (Fin.last m))
         (∑ i, soundnessError i) := by
   sorry
 
@@ -190,8 +191,8 @@ theorem seqCompose_knowledgeSoundness
     (rel : ∀ i, Set (Stmt i × Wit i))
     (knowledgeError : Fin m → ℝ≥0)
     (V : ∀ i, Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
-    (h : ∀ i, (V i).knowledgeSoundness (rel i.castSucc) (rel i.succ) (knowledgeError i)) :
-      (Verifier.seqCompose V).knowledgeSoundness (rel 0) (rel (Fin.last m))
+    (h : ∀ i, (V i).knowledgeSoundness init impl (rel i.castSucc) (rel i.succ) (knowledgeError i)) :
+      (Verifier.seqCompose V).knowledgeSoundness init impl (rel 0) (rel (Fin.last m))
         (∑ i, knowledgeError i) := by
   sorry
 
@@ -201,11 +202,11 @@ theorem seqCompose_rbrSoundness
     (V : ∀ i, Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
     (lang : ∀ i, Set (Stmt i))
     (rbrSoundnessError : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0)
-    (h : ∀ i, (V i).rbrSoundness (lang i.castSucc) (lang i.succ) (rbrSoundnessError i))
+    (h : ∀ i, (V i).rbrSoundness init impl (lang i.castSucc) (lang i.succ) (rbrSoundnessError i))
     -- Deterministic verifier condition for state function composition
     (verify : ∀ i, Stmt i.castSucc → (pSpec i).FullTranscript → Stmt i.succ)
     (hVerify : ∀ i, V i = ⟨fun stmt tr => pure (verify i stmt tr)⟩) :
-      (Verifier.seqCompose V).rbrSoundness (lang 0) (lang (Fin.last m))
+      (Verifier.seqCompose V).rbrSoundness init impl (lang 0) (lang (Fin.last m))
         (fun combinedIdx =>
           let ⟨i, idx⟩ := seqComposeChallengeEquiv.symm combinedIdx
           rbrSoundnessError i idx) := by
@@ -218,11 +219,12 @@ theorem seqCompose_rbrKnowledgeSoundness
     (V : ∀ i, Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
     (rel : ∀ i, Set (Stmt i × Wit i))
     (rbrKnowledgeError : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0)
-    (h : ∀ i, (V i).rbrKnowledgeSoundness (rel i.castSucc) (rel i.succ) (rbrKnowledgeError i))
+    (h : ∀ i, (V i).rbrKnowledgeSoundness init impl
+      (rel i.castSucc) (rel i.succ) (rbrKnowledgeError i))
     -- Deterministic verifier condition for state function composition
     (verify : ∀ i, Stmt i.castSucc → (pSpec i).FullTranscript → Stmt i.succ)
     (hVerify : ∀ i, V i = ⟨fun stmt tr => pure (verify i stmt tr)⟩) :
-      (Verifier.seqCompose V).rbrKnowledgeSoundness (rel 0) (rel (Fin.last m))
+      (Verifier.seqCompose V).rbrKnowledgeSoundness init impl (rel 0) (rel (Fin.last m))
         (fun combinedIdx =>
           let ⟨i, idx⟩ := seqComposeChallengeEquiv.symm combinedIdx
           rbrKnowledgeError i idx) := by

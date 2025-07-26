@@ -89,7 +89,7 @@ Verifier.liftContext_rbr_knowledgeSoundness
 Extractor.Straightline.liftContext
 Extractor.RoundByRound.liftContext
 Verifier.StateFunction.liftContext
-ProtocolSpec.fiatShamirSpec
+ProtocolSpec.fsChallengeOracle
 Prover.processRoundFS
 Prover.runToRoundFS
 Prover.fiatShamir

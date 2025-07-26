@@ -11,7 +11,7 @@ import ArkLib.ProofSystem.Stir.ProximityBound
 
 /-!Section 5 STIR[ACFY24], Theorem 5.1 and Lemma 5.4 -/
 
-open BigOperators Finset ListDecodable NNReal ReedSolomon VectorIOP
+open BigOperators Finset ListDecodable NNReal ReedSolomon VectorIOP OracleComp LinearCode
 
 namespace StirIOP
 
@@ -68,8 +68,6 @@ structure CodeParams (P : Params ι F) (Dist : Distances M) where
 
 section MainTheorem
 
-open OracleComp OracleSpec ProtocolSpec LinearCode
-
 /-- `OracleStatement` defines the oracle message type for a multi-indexed setting:
   given base input type `ι`, and field `F`, the output type at each index
   is a function `ι → F` representing an evaluation over `ι`.
@@ -112,19 +110,19 @@ def stirRelation
   - `query complexity to proof strings = Oₖ(log degree + secpar * log(log degree / log(1/ρ)))`
 -/
 theorem stir_main
-  (secpar : ℕ) [VCVCompatible F]
+  (secpar : ℕ) [SelectableType F]
   {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
   {φ : ι ↪ F} {degree : ℕ} [hsmooth : Smooth φ]
   {k proofLen qNumtoInput qNumtoProofstr : ℕ}
-  (hk : ∃ p, k = 2^p) (hkGe : k ≥ 4)
+  (hk : ∃ p, k = 2 ^ p) (hkGe : k ≥ 4)
   (δ : ℝ≥0) (hδub : δ < 1 - 1.05 * Real.sqrt (degree / Fintype.card ι))
   (hF : Fintype.card F ≤
-        secpar * 2 ^ secpar * degree^2 * (Fintype.card ι)^(7/2) /
+        secpar * 2 ^ secpar * degree ^ 2 * (Fintype.card ι) ^ (7 / 2) /
           Real.log (1 / rate (code φ degree))) :
   ∃ n : ℕ,
   ∃ vPSpec : ProtocolSpec.VectorSpec n,
   ∃ ε_rbr : vPSpec.ChallengeIdx → ℝ≥0,
-  ∃ π : VectorIOP []ₒ Unit (OracleStatement ι F) Unit vPSpec F,
+  ∃ π : VectorIOP Unit (OracleStatement ι F) Unit vPSpec F,
   IsSecureWithGap (stirRelation degree φ 0)
                   (stirRelation degree φ δ)
                   ε_rbr π
@@ -165,7 +163,7 @@ open LinearCode
   `ε_fin ≤ (1 - δ_M)^repeatParam_M`
 -/
 theorem stir_rbr_soundness
-    [VCVCompatible F] {s : ℕ}
+    [SelectableType F] {s : ℕ}
     {P : Params ι F} {φ : (i : Fin (M + 1)) → (ι i ↪ F)}
     [h_nonempty : ∀ i : Fin (M + 1), Nonempty (ι i)]
     {hParams : ParamConditions ι P} {Dist : Distances M}
@@ -185,7 +183,7 @@ theorem stir_rbr_soundness
     Fintype.card (vPSpec.ChallengeIdx) = 2 * M + 2 ∧
     -- ∃ vector IOPP π with the aforementioned `vPSpec`, and for
     -- `Statement = Unit, Witness = Unit, OracleStatement(ι₀, F)` such that
-    ∃ π : VectorIOP []ₒ Unit (OracleStatement (ι 0) F) Unit vPSpec F,
+    ∃ π : VectorIOP Unit (OracleStatement (ι 0) F) Unit vPSpec F,
     let ε_rbr : vPSpec.ChallengeIdx → ℝ≥0 :=
       fun _ => ({ε_fold} ∪ {ε_fin} ∪ univ.image ε_out ∪ univ.image ε_shift).max' (by simp)
     (IsSecureWithGap (stirRelation (degree ι P 0) (P.φ 0) 0)

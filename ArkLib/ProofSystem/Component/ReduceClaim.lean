@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.OracleReduction.Security.Basic
+import ArkLib.OracleReduction.Security.RoundByRound
 
 /-!
   # Simple (Oracle) Reduction: Locally / non-interactively reduce a claim
@@ -54,16 +54,18 @@ def reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut ![] where
   prover := prover oSpec mapStmt mapWit
   verifier := verifier oSpec mapStmt
 
-variable [oSpec.FiniteRange] (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+  (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
 
 /-- The `ReduceClaim` reduction satisfies perfect completeness for any relation. -/
 @[simp]
-theorem reduction_completeness (hRel : ∀ stmtIn witIn, (stmtIn, witIn) ∈ relIn ↔
-    (mapStmt stmtIn, mapWit witIn) ∈ relOut) :
-    (reduction oSpec mapStmt mapWit).perfectCompleteness
-      relIn relOut := by
-  simp [reduction, Reduction.run, Prover.run, Prover.runToRound, Prover.processRound, Verifier.run,
-    prover, verifier, hRel]
+theorem reduction_completeness (h : init.neverFails)
+    (hRel : ∀ stmtIn witIn, (stmtIn, witIn) ∈ relIn ↔
+      (mapStmt stmtIn, mapWit witIn) ∈ relOut) :
+    (reduction oSpec mapStmt mapWit).perfectCompleteness init impl relIn relOut := by
+  simp [reduction, Reduction.run, Prover.run, Prover.runToRound, Verifier.run,
+    prover, verifier, hRel, h]
+  aesop
 
 -- TODO: round-by-round knowledge soundness
 
@@ -97,18 +99,37 @@ def oracleReduction : OracleReduction oSpec
   prover := oracleProver oSpec mapStmt mapWit embedIdx hEq
   verifier := oracleVerifier oSpec mapStmt embedIdx hEq
 
-variable [oSpec.FiniteRange]
+variable {oSpec} {mapStmt} {mapWit} {embedIdx} {hEq}
+  {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
   (relIn : Set ((StmtIn × (∀ i, OStmtIn i)) × WitIn))
   (relOut : Set ((StmtOut × (∀ i, OStmtOut i)) × WitOut))
 
 /-- The `ReduceClaim` oracle reduction satisfies perfect completeness for any relation. -/
 @[simp]
-theorem oracleReduction_completeness (hRel : ∀ stmtIn oStmtIn witIn,
-    ((stmtIn, oStmtIn), witIn) ∈ relIn ↔
-    ((mapStmt stmtIn, fun i => (hEq i) ▸ oStmtIn (embedIdx i)), mapWit witIn) ∈ relOut) :
-    (oracleReduction oSpec mapStmt mapWit embedIdx hEq).perfectCompleteness
+theorem oracleReduction_completeness (h : init.neverFails)
+    (hRel : ∀ stmtIn oStmtIn witIn,
+      ((stmtIn, oStmtIn), witIn) ∈ relIn ↔
+      ((mapStmt stmtIn, fun i => (hEq i) ▸ oStmtIn (embedIdx i)), mapWit witIn) ∈ relOut) :
+    (oracleReduction oSpec mapStmt mapWit embedIdx hEq).perfectCompleteness init impl
       relIn relOut := by
-  sorry
+  -- TODO: clean up this proof
+  simp only [OracleReduction.perfectCompleteness, oracleReduction, OracleReduction.toReduction,
+    OracleVerifier.toVerifier,
+    Reduction.perfectCompleteness_eq_prob_one, ProtocolSpec.ChallengeIdx, StateT.run'_eq,
+    OracleComp.probEvent_eq_one_iff, OracleComp.probFailure_eq_zero_iff,
+    OracleComp.neverFails_bind_iff, h, OracleComp.neverFails_map_iff, true_and,
+    OracleComp.support_bind, OracleComp.support_map, Set.mem_iUnion, Set.mem_image, Prod.exists,
+    exists_and_right, exists_eq_right, exists_prop, forall_exists_index, and_imp, Prod.forall,
+    Fin.forall_fin_zero_pi, Prod.mk.injEq]
+  simp only [Reduction.run, Prover.run, Verifier.run, oracleProver, oracleVerifier]
+  simp only [ProtocolSpec.ChallengeIdx, Fin.reduceLast, Nat.reduceAdd, ProtocolSpec.MessageIdx,
+    ProtocolSpec.Message, ProtocolSpec.Challenge, Prover.runToRound_zero_of_prover_first,
+    Fin.isValue, id_eq, bind_pure_comp, map_pure, OracleComp.simulateQ_pure,
+    Function.Embedding.trans_apply, Function.Embedding.inl_apply, eq_mpr_eq_cast,
+    OracleComp.liftM_eq_liftComp, OracleComp.liftComp_pure, StateT.run_pure,
+    OracleComp.neverFails_pure, implies_true, OracleComp.support_pure, Set.mem_singleton_iff,
+    Prod.mk.injEq, and_imp, true_and]
+  aesop
 
 -- TODO: round-by-round knowledge soundness
 

@@ -17,7 +17,10 @@ noncomputable section
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal
 
-variable {ι : Type} {oSpec : OracleSpec ι} [oSpec.FiniteRange]
+variable {ι : Type} {oSpec : OracleSpec ι}
+  {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
+  [∀ i, SelectableType (pSpec.Challenge i)]
+  {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
 namespace Extractor
 

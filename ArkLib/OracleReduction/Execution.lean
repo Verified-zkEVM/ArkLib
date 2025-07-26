@@ -211,7 +211,6 @@ def OracleReduction.run [∀ i, OracleInterface (pSpec.Message i)]
 -- running a non-oracle verifier -/
 -- @[simp]
 -- theorem OracleReduction.run_eq_run_reduction [DecidableEq ι]
---     [∀ i, VCVCompatible (pSpec.Challenge i)]
 --     [∀ i, OracleInterface (pSpec.Message i)] {stmt : StmtIn} {wit : WitIn}
 --     {oracleReduction : OracleReduction pSpec oSpec StmtIn WitIn StmtOut WitOut OStmt} :
 --       Prod.snd <$> oracleReduction.run stmt wit = oracleReduction.toReduction.run stmt wit := by

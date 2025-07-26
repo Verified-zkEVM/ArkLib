@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.OracleReduction.Security.Basic
+import ArkLib.OracleReduction.Security.RoundByRound
 
 /-!
   # Simple (Oracle) Reduction: Check if a predicate / claim on a statement is satisfied
@@ -53,19 +53,37 @@ def reduction : Reduction oSpec Statement Unit Statement Unit ![] where
   prover := prover oSpec Statement
   verifier := verifier oSpec Statement pred
 
-variable [oSpec.FiniteRange]
+@[reducible, simp]
+def relIn : Set (Statement × Unit) := { ⟨stmt, _⟩ | pred stmt }
+
+@[reducible, simp]
+def relOut : Set (Statement × Unit) := Set.univ
+
+variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 /-- The `CheckClaim` reduction satisfies perfect completeness with respect to the predicate as the
   input relation, and the output relation being always true. -/
 @[simp]
-theorem reduction_completeness :
-    (reduction oSpec Statement pred).perfectCompleteness { ⟨stmt, _⟩ | pred stmt }
-    Set.univ := by
-  simp [reduction, Reduction.run, Prover.run, Prover.runToRound, Prover.processRound, Verifier.run,
+theorem reduction_completeness (h : init.neverFails) :
+    (reduction oSpec Statement pred).perfectCompleteness init impl
+    (relIn Statement pred) (relOut Statement) := by
+  simp [reduction, Reduction.run, Prover.run, Prover.runToRound, Verifier.run,
     prover, verifier]
+  aesop
 
 /-- The `CheckClaim` reduction satisfies perfect round-by-round knowledge soundness. -/
-theorem reduction_rbr_knowledge_soundness : True := sorry
+theorem verifier_rbr_knowledge_soundness :
+    (verifier oSpec Statement pred).rbrKnowledgeSoundness init impl
+      (relIn Statement pred) (relOut Statement) 0 := by
+  simp only [Verifier.rbrKnowledgeSoundness, Nat.reduceAdd, relIn, relOut, verifier, guard_eq,
+    ChallengeIdx, Challenge, liftComp_query, OracleSpec.SubSpec.liftM_query_eq_liftM_liftM,
+    OracleSpec.liftM_append_right_eq, bind_pure_comp, simulateQ_bind, StateT.run'_eq,
+    StateT.run_bind, comp_apply, simulateQ_map, simulateQ_query, StateT.run_map, map_bind,
+    Functor.map_map, Pi.zero_apply, ENNReal.coe_zero, nonpos_iff_eq_zero, probEvent_eq_zero_iff,
+    support_bind, support_map, Set.mem_iUnion, Set.mem_image, Prod.exists, exists_and_right,
+    exists_prop, not_exists, not_and, forall_exists_index, and_imp, Prod.forall, Prod.mk.injEq,
+    IsEmpty.forall_iff, implies_true, exists_const_iff, and_true]
+  sorry
 
 end Reduction
 
@@ -103,22 +121,39 @@ def oracleReduction : OracleReduction oSpec
 
 variable {Statement} {OStatement}
 
+@[reducible, simp]
 def toRelInput : Set ((Statement × (∀ i, OStatement i)) × Unit) :=
   { ⟨⟨stmt, oStmt⟩, _⟩ | simulateQ' (toOracleImpl OStatement oStmt) (pred stmt) (hPred stmt) }
 
 -- theorem oracleProver_run
 
-variable [oSpec.FiniteRange]
+variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 /-- The `CheckClaim` reduction satisfies perfect completeness. -/
 @[simp]
-theorem oracleReduction_completeness :
-    (oracleReduction oSpec Statement OStatement pred).perfectCompleteness (toRelInput pred hPred)
-    Set.univ := by
-  simp [OracleReduction.perfectCompleteness, OracleReduction.toReduction, OracleVerifier.toVerifier,
-    oracleReduction, oracleProver, oracleVerifier, toRelInput]
-  simp [Reduction.run, Prover.run, Verifier.run, simOracle2]
+theorem oracleReduction_completeness (h : init.neverFails) :
+    (oracleReduction oSpec Statement OStatement pred).perfectCompleteness init impl
+    (toRelInput pred hPred) Set.univ := by
+  -- TODO: fix this proof once `OracleComp` no longer has failure
+  simp only [OracleReduction.perfectCompleteness, toRelInput, OracleReduction.toReduction,
+    oracleReduction, oracleProver, Nat.reduceAdd, Fin.isValue, MessageIdx, Message, ChallengeIdx,
+    Challenge, Fin.reduceLast, oracleVerifier, bind_pure_comp, OracleVerifier.toVerifier,
+    simulateQ_map, Embedding.inl_apply, eq_mpr_eq_cast, cast_eq, Functor.map_map,
+    Reduction.perfectCompleteness_eq_prob_one, Set.mem_setOf_eq, StateT.run'_eq, Set.mem_univ,
+    true_and, probEvent_eq_one_iff, probFailure_eq_zero_iff, neverFails_bind_iff, h,
+    neverFails_map_iff, support_bind, support_map, Set.mem_iUnion, Set.mem_image, Prod.exists,
+    exists_and_right, exists_eq_right, exists_prop, forall_exists_index, and_imp, Prod.forall,
+    Fin.forall_fin_zero_pi, Prod.mk.injEq]
+  simp only [Reduction.run, Prover.run, Verifier.run, toOracleImpl, simulateQ']
+  simp only[ChallengeIdx, Fin.reduceLast, Prover.runToRound_zero_of_prover_first, Fin.isValue,
+    bind_pure_comp, map_pure, liftM_eq_liftComp, liftComp_map, Functor.map_map, pure_bind,
+    simulateQ_map, StateT.run_map, neverFails_map_iff, support_map, Set.mem_image, Prod.mk.injEq,
+    and_true, Prod.exists, exists_eq_right_right, exists_and_right, and_imp, forall_exists_index,
+    forall_const]
+  intro stmt oStmt _
   sorry
+  -- simp [Reduction.run, Prover.run, Verifier.run, simOracle2]
+  -- aesop
 
 theorem oracleReduction_rbr_knowledge_soundness : True := sorry
 

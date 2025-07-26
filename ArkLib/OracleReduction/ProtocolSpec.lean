@@ -7,6 +7,7 @@ Authors: Quang Dao
 import ArkLib.Data.Fin.Basic
 import ArkLib.OracleReduction.Prelude
 import ArkLib.OracleReduction.OracleInterface
+import ArkLib.ToVCVio.Oracle
 
 /-!
 # Protocol Specifications for (Oracle) Reductions
@@ -15,7 +16,30 @@ This file defines the `ProtocolSpec` type, which is used to specify the protocol
 and the verifier.
 -/
 
+universe u v
+
 open OracleComp OracleSpec
+
+variable {σ : Type u} {m : Type u → Type v} [Monad m] [LawfulMonad m]
+    {m' : Type u → Type v} [Monad m'] [LawfulMonad m']
+
+-- def StateT.mapM (hom : (StateT σ m) →ᵐ m') (s : σ) : MonadHom m m' where
+--   toFun := fun {α} a => StateT.run' (hom (a : StateT σ m α)) s
+--   toFun_pure' := by intro α a; simp
+--   toFun_bind' := by intro α β f g; simp
+
+namespace QueryImpl
+
+variable {ι : Type u} [DecidableEq ι] {spec : OracleSpec ι} [spec.DecidableEq] {m : Type u → Type v}
+  [Monad m]
+
+def composeM {m' : Type u → Type v} [Monad m'] (hom : m →ᵐ m') (so : QueryImpl spec m) :
+    QueryImpl spec m' where
+  impl | query i t => hom (so.impl (query i t))
+
+-- def withCaching' (so : QueryImpl spec m) : QueryImpl spec (StateT spec.QueryCache m) :=
+
+end QueryImpl
 
 /-- Type signature for an interactive protocol, with `n` messages exchanged. -/
 @[reducible]
@@ -98,9 +122,11 @@ instance : Unique (ProtocolSpec 0) := inferInstance
 -- Two different ways to write the empty protocol specification: `![]` and `default`
 
 instance : ∀ i, VCVCompatible (Challenge ![] i) := fun ⟨i, _⟩ => Fin.elim0 i
+instance : ∀ i, SelectableType (Challenge ![] i) := fun ⟨i, _⟩ => Fin.elim0 i
 instance : ∀ i, OracleInterface (Message ![] i) := fun ⟨i, _⟩ => Fin.elim0 i
 
 instance : ∀ i, VCVCompatible ((default : ProtocolSpec 0).Challenge i) := fun ⟨i, _⟩ => Fin.elim0 i
+instance : ∀ i, SelectableType ((default : ProtocolSpec 0).Challenge i) := fun ⟨i, _⟩ => Fin.elim0 i
 instance : ∀ i, OracleInterface ((default : ProtocolSpec 0).Message i) := fun ⟨i, _⟩ => Fin.elim0 i
 
 variable {Msg Chal : Type}
@@ -108,48 +134,68 @@ variable {Msg Chal : Type}
 instance : IsEmpty (ChallengeIdx ![(.P_to_V, Msg)]) := by
   simp [ChallengeIdx]
   infer_instance
-
 instance : Unique (MessageIdx ![(.P_to_V, Msg)]) where
   default := ⟨0, by simp⟩
   uniq := fun i => by ext; simp
-
 instance [inst : OracleInterface Msg] : ∀ i, OracleInterface (Message ![(.P_to_V, Msg)] i)
   | ⟨0, _⟩ => inst
-
 instance : ∀ i, VCVCompatible (Challenge ![(.P_to_V, Msg)] i)
+  | ⟨0, h⟩ => nomatch h
+instance : ∀ i, SelectableType (Challenge ![(.P_to_V, Msg)] i)
   | ⟨0, h⟩ => nomatch h
 
 instance : IsEmpty (MessageIdx ![(.V_to_P, Chal)]) := by
   simp [MessageIdx]
   infer_instance
-
 instance : Unique (ChallengeIdx ![(.V_to_P, Chal)]) where
   default := ⟨0, by simp⟩
   uniq := fun i => by ext; simp
-
 instance : ∀ i, OracleInterface (Message ![(.V_to_P, Chal)] i)
   | ⟨0, h⟩ => nomatch h
-
 instance [inst : VCVCompatible Chal] : ∀ i, VCVCompatible (Challenge ![(.V_to_P, Chal)] i)
+  | ⟨0, _⟩ => inst
+instance [inst : SelectableType Chal] : ∀ i, SelectableType (Challenge ![(.V_to_P, Chal)] i)
   | ⟨0, _⟩ => inst
 
 end Instances
 
 variable {pSpec : ProtocolSpec n}
 
+namespace MessagesUpTo
+
+variable {k : Fin (n + 1)}
+
+/-- For a tuple of messages up to round `k`, take the messages up to round `j : Fin (k + 1)` -/
+def take (j : Fin (k + 1)) (messages : MessagesUpTo k pSpec) :
+    MessagesUpTo (j.castLE (by omega)) pSpec :=
+  fun i => messages ⟨i.val.castLE (by simp; omega), i.property⟩
+
+end MessagesUpTo
+
 namespace Messages
 
-/-- Take the messages up to round `k` -/
-def take (k : Fin (n + 1)) (messages : Messages pSpec) : MessagesUpTo k pSpec :=
-  fun i => messages ⟨i.val.castLE (by omega), i.property⟩
+/-- Take the messages up to round `j : Fin (n + 1)` -/
+def take (j : Fin (n + 1)) (messages : Messages pSpec) : MessagesUpTo j pSpec :=
+  by exact (by exact messages : MessagesUpTo (Fin.last n) pSpec).take j
 
 end Messages
 
+namespace ChallengesUpTo
+
+variable {k : Fin (n + 1)}
+
+/-- For a tuple of challenges up to round `k`, take the challenges up to round `j : Fin (k + 1)` -/
+def take (j : Fin (k + 1)) (challenges : ChallengesUpTo k pSpec) :
+    ChallengesUpTo (j.castLE (by omega)) pSpec :=
+  fun i => challenges ⟨i.val.castLE (by simp; omega), i.property⟩
+
+end ChallengesUpTo
+
 namespace Challenges
 
-/-- Take the challenges up to round `k` -/
-def take (k : Fin (n + 1)) (challenges : Challenges pSpec) : ChallengesUpTo k pSpec :=
-  fun i => challenges ⟨i.val.castLE (by omega), i.property⟩
+/-- Take the challenges up to round `j : Fin (n + 1)` -/
+def take (j : Fin (n + 1)) (challenges : Challenges pSpec) : ChallengesUpTo j pSpec :=
+  by exact (by exact challenges : ChallengesUpTo (Fin.last n) pSpec).take j
 
 end Challenges
 
@@ -193,6 +239,11 @@ def extend {k : Fin n} (messages : MessagesUpTo k.castSucc pSpec)
       haveI := Fin.eq_last_of_not_lt hi
       haveI := i.property
       simp_all [Fin.castLE])
+
+instance [∀ i, DecidableEq (pSpec.Message i)] {k : Fin (n + 1)} :
+    DecidableEq (MessagesUpTo k pSpec) := by
+  unfold MessagesUpTo
+  infer_instance
 
 end MessagesUpTo
 
@@ -246,13 +297,13 @@ Note that by definition, `Transcript (Fin.last n) pSpec` is definitionally equal
 `FullTranscript pSpec`. -/
 @[reducible, inline, specialize]
 def Transcript (k : Fin (n + 1)) (pSpec : ProtocolSpec n) :=
-  (i : Fin k) → pSpec.getType (Fin.castLE (by omega) i)
+  (i : Fin k) → (pSpec (Fin.castLE (by omega) i)).2
 
 /-- The full transcript of an interactive protocol, which is a list of messages and challenges.
 
 Note that this is definitionally equal to `Transcript (Fin.last n) pSpec`. -/
 @[reducible, inline, specialize]
-def FullTranscript (pSpec : ProtocolSpec n) := (i : Fin n) → pSpec.getType i
+def FullTranscript (pSpec : ProtocolSpec n) := (i : Fin n) → (pSpec i).2
 
 namespace FullTranscript
 
@@ -326,8 +377,9 @@ instance : Unique (Transcript 0 pSpec) where
 /-- Concatenate a message to the end of a partial transcript. This is definitionally equivalent to
     `Fin.snoc`. -/
 @[inline]
-abbrev concat {m : Fin n} (msg : pSpec.getType m)
-    (T : Transcript m.castSucc pSpec) : Transcript m.succ pSpec := Fin.snoc T msg
+abbrev concat {m : Fin n} (msg : (pSpec m).2) (T : Transcript m.castSucc pSpec) :
+    Transcript m.succ pSpec :=
+  Fin.snoc T msg
 
 -- Define conversions to and from `Transcript` with `MessagesUpTo` and `ChallengesUpTo`
 
@@ -375,6 +427,29 @@ def equivMessagesChallenges :
 -- `ChallengesUpTo.{extend/concat}`, depending on the direction of the round
 
 end Transcript
+
+namespace FullTranscript
+
+/-- Convert a full transcript to the tuple of messages and challenges -/
+def toMessagesChallenges (transcript : FullTranscript pSpec) : Messages pSpec × Challenges pSpec :=
+  by exact Transcript.toMessagesChallenges (by exact transcript : Transcript (Fin.last n) pSpec)
+
+/-- Convert the tuple of messages and challenges to a full transcript -/
+def ofMessagesChallenges (messages : Messages pSpec) (challenges : Challenges pSpec) :
+    FullTranscript pSpec :=
+  by exact
+    (Transcript.ofMessagesChallenges
+      (by exact messages : MessagesUpTo (Fin.last n) pSpec)
+      (by exact challenges : ChallengesUpTo (Fin.last n) pSpec))
+
+/-- An equivalence between full transcripts and the tuple of messages and challenges. -/
+@[simps!]
+def equivMessagesChallenges : FullTranscript pSpec ≃ (Messages pSpec × Challenges pSpec) := by
+  change Transcript (Fin.last n) pSpec ≃
+    (MessagesUpTo (Fin.last n) pSpec × ChallengesUpTo (Fin.last n) pSpec)
+  exact Transcript.equivMessagesChallenges
+
+end FullTranscript
 
 /-- The specification of whether each message in a protocol specification is available in full
     (`None`) or received as an oracle (`Some (instOracleInterface (pSpec.Message i))`).
@@ -437,6 +512,15 @@ def getChallenge (pSpec : ProtocolSpec n) (i : pSpec.ChallengeIdx) :
     OracleComp [pSpec.Challenge]ₒ (pSpec.Challenge i) :=
   (query i () : OracleQuery [pSpec.Challenge]ₒ (pSpec.Challenge i))
 
+/-- Define the query implementation for the verifier's challenge in terms of `ProbComp`.
+
+This is a randomness oracle: it simply calls the `selectElem` method inherited from the
+  `SelectableType` instance on the challenge types.
+-/
+def challengeQueryImpl {pSpec : ProtocolSpec n} [∀ i, SelectableType (pSpec.Challenge i)] :
+    QueryImpl [pSpec.Challenge]ₒ ProbComp where
+  impl | query i () => SelectableType.selectElem (β := pSpec.Challenge i)
+
 /-- Turn each verifier's challenge into an oracle, where one needs to query
   with an input statement and prior messages up to that round to get a challenge -/
 @[reducible, inline, specialize]
@@ -449,7 +533,9 @@ def instChallengeOracleInterfaceFiatShamir {pSpec : ProtocolSpec n} {i : pSpec.C
 /-- The oracle interface for Fiat-Shamir.
 
 This is the (inefficient) version where we hash the input statement and the entire transcript up to
-the point of deriving a new challenge.
+the point of deriving a new challenge. To be precise:
+- The domain of the oracle is `Statement × pSpec.MessagesUpTo i.1.castSucc`
+- The range of the oracle is `pSpec.Challenge i`
 
 Some variants of Fiat-Shamir takes in a salt each round. We assume that such salts are included in
 the input statement (i.e. we can always transform a given reduction into one where every round has a
@@ -459,7 +545,20 @@ def srChallengeOracle (Statement : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
     OracleSpec pSpec.ChallengeIdx :=
   fun i => (Statement × pSpec.MessagesUpTo i.1.castSucc, pSpec.Challenge i)
 
-alias fiatShamirSpec := srChallengeOracle
+alias fsChallengeOracle := srChallengeOracle
+
+/-- Decidable equality for the state-restoration / (slow) Fiat-Shamir oracle -/
+instance {pSpec : ProtocolSpec n} {Statement : Type}
+    [DecidableEq Statement]
+    [∀ i, DecidableEq (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Challenge i)] :
+    OracleSpec.DecidableEq (srChallengeOracle Statement pSpec) where
+  domain_decidableEq' := fun i => by
+    unfold OracleSpec.domain srChallengeOracle MessagesUpTo
+    infer_instance
+  range_decidableEq' := fun i => by
+    unfold OracleSpec.range
+    infer_instance
 
 instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
     OracleSpec.FiniteRange (srChallengeOracle Statement pSpec) where
@@ -467,8 +566,88 @@ instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpe
   range_fintype' := fun i => by simp [OracleSpec.range]; infer_instance
 
 instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
-    OracleSpec.FiniteRange (fiatShamirSpec Statement pSpec) :=
+    OracleSpec.FiniteRange (fsChallengeOracle Statement pSpec) :=
   inferInstanceAs (OracleSpec.FiniteRange (srChallengeOracle Statement pSpec))
+
+/-- Define the query implementation for the state-restoration / (slow) Fiat-Shamir oracle (returns a
+    challenge given messages up to that point) in terms of `ProbComp`.
+
+  This is a randomness oracle: it simply calls the `selectElem` method inherited from the
+  `SelectableType` instance on the challenge types. We may then augment this with `withCaching` to
+  obtain a function-like implementation (caches and replays previous queries).
+
+  For implementation with caching, we add `withCaching`.
+
+  For implementation where the whole function is sampled ahead of time, and we answer with that
+  function, see `srChallengeQueryImpl'`.
+-/
+@[reducible, inline, specialize, simp]
+def srChallengeQueryImpl {Statement : Type} {pSpec : ProtocolSpec n}
+    [∀ i, SelectableType (pSpec.Challenge i)] :
+    QueryImpl (srChallengeOracle Statement pSpec) ProbComp where
+  impl | query i _ => SelectableType.selectElem (β := pSpec.Challenge i)
+
+/-- Alternate version of query implementation that takes in a cached function `f` and returns
+  the result and the updated function.
+
+  TODO: upstream this as a more general construction in VCVio -/
+@[reducible, inline, specialize, simp]
+def srChallengeQueryImpl' {Statement : Type} {pSpec : ProtocolSpec n}
+    [∀ i, SelectableType (pSpec.Challenge i)] :
+    QueryImpl (srChallengeOracle Statement pSpec)
+      (StateT (srChallengeOracle Statement pSpec).FunctionType ProbComp)
+    where
+  impl | query i t => fun f => pure (f i t, f)
+
+alias fsChallengeQueryImpl' := srChallengeQueryImpl'
+
+namespace MessagesUpTo
+
+/-- Auxiliary function for deriving the transcript up to round `k` from the (full) messages, via
+  querying the state-restoration / Fiat-Shamir oracle for the challenges.
+
+  This is used to define `deriveTranscriptFS`. -/
+def deriveTranscriptSRAux {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
+    (stmt : StmtIn) (k : Fin (n + 1)) (messages : pSpec.MessagesUpTo k)
+    (j : Fin (k + 1)) :
+    OracleComp (oSpec ++ₒ fsChallengeOracle StmtIn pSpec)
+      (pSpec.Transcript (j.castLE (by omega))) := do
+  Fin.induction (n := k)
+    (pure (fun i => i.elim0))
+    (fun i ih => do
+      let prevTranscript ← ih
+      match hDir : pSpec.getDir (i.castLE (by omega)) with
+      | .V_to_P =>
+        let challenge : pSpec.Challenge ⟨i.castLE (by omega), hDir⟩ ←
+          query (spec := fsChallengeOracle _ _) ⟨i.castLE (by omega), hDir⟩
+            (stmt, messages.take i.castSucc)
+        return prevTranscript.concat challenge
+      | .P_to_V => return prevTranscript.concat (messages ⟨i, hDir⟩))
+    j
+
+/-- Derive the transcript up to round `k` from the (full) messages, via querying the
+    state-restoration / Fiat-Shamir oracle for the challenges. -/
+def deriveTranscriptSR {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
+    (stmt : StmtIn) (k : Fin (n + 1)) (messages : pSpec.MessagesUpTo k) :
+    OracleComp (oSpec ++ₒ fsChallengeOracle StmtIn pSpec) (pSpec.Transcript k) := do
+  deriveTranscriptSRAux stmt k messages (Fin.last k)
+
+alias deriveTranscriptFS := deriveTranscriptSR
+
+end MessagesUpTo
+
+namespace Messages
+
+/-- Derive the transcript up to round `k` from the (full) messages, via querying the
+    state-restoration / Fiat-Shamir oracle for the challenges. -/
+def deriveTranscriptSR {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
+    (stmt : StmtIn) (messages : pSpec.Messages) :
+    OracleComp (oSpec ++ₒ fsChallengeOracle StmtIn pSpec) pSpec.FullTranscript := do
+  MessagesUpTo.deriveTranscriptSR stmt (Fin.last n) messages
+
+alias deriveTranscriptFS := deriveTranscriptSR
+
+end Messages
 
 end ProtocolSpec
 
