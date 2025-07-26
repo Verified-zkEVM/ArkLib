@@ -136,7 +136,7 @@ instance [sz : SpongePermutationSize] : NeZero sz.C where
 
 end SpongePermutationSize
 
-/-- Type class for cryptographic permutations used in sponge constructions.
+/-- Type class for the state of a cryptographic permutation used in the duplex sponge construction.
 
 Rust interface:
 ```rust
@@ -155,27 +155,19 @@ Because of this, I give a tentative API for `AsRef` and `AsMut` basically as a l
 
 TODO: figure out the needed properties here
 -/
-class SpongePermutation (U : Type) [SpongeUnit U] (α : Type*) extends
+class SpongePermutationState (U : Type) [SpongeUnit U] (α : Type*) extends
     Inhabited α,
     Zeroize α,
     SpongePermutationSize,
     Initialize α (Vector UInt8 32) where
-  -- TENTATIVE: a lens between `α` and `Vector U N`
-  view : α → Vector U N
-  update : α → Vector U N → α
+  -- TENTATIVE: an equivalence between `α` and `Vector U N`
+  equiv : α ≃ Vector U N
 
   /-- Permute the **state** of the sponge. Note that this does _not_ imply a permutation (i.e.
     bijection) for the entire type.
 
     TODO: figure out the needed properties here (that it is a permutation on the state?) -/
-  permute : α → α
-
-
--- need to "descend" from `permute : α → α` to `permuteState : Vector U N → Vector U N`, and then
--- for the reverse direction
-
-class LawfulSpongePermutation (U : Type) [SpongeUnit U] (α : Type*) [SpongePermutation U α] where
-  /- TODO: the permutation is a bijection on the state. -/
+  permute : Vector U N ≃ Vector U N
 
 /-- A cryptographic duplex sponge.
 
@@ -189,7 +181,7 @@ pub struct DuplexSponge<C: Permutation> {
 }
 ```
 -/
-structure DuplexSponge (U : Type) [SpongeUnit U] (C : Type*) [SpongePermutation U C] where
+structure DuplexSponge (U : Type) [SpongeUnit U] (C : Type*) [SpongePermutationState U C] where
   permutation : C
   /-- Current position in the rate portion for absorbing data (0 ≤ absorbPos < R) -/
   absorbPos : Fin (SpongePermutationSize.R)
@@ -199,7 +191,7 @@ deriving Inhabited
 
 namespace DuplexSponge
 
-variable {U : Type} {C : Type*} [SpongeUnit U] [SpongePermutation U C]
+variable {U : Type} {C : Type*} [SpongeUnit U] [SpongePermutationState U C]
 
 -- Make DuplexSponge zeroizable
 instance : Zeroize (DuplexSponge U C) where
