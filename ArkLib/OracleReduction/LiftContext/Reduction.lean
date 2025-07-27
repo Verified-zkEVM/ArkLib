@@ -88,7 +88,6 @@ def Verifier.liftContext
 
 /-- The outer reduction after lifting is the combination of the lifting of the prover and
   verifier -/
-
 def Reduction.liftContext
     (lens : Context.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                         OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
@@ -114,10 +113,11 @@ open Verifier in
 /-- The outer round-by-round extractor after lifting invokes the inner extractor on the projected
   input, and lifts the output -/
 def Extractor.RoundByRound.liftContext
+    {WitMid : Fin (n + 1) → Type}
     (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                           OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
-    (E : Extractor.RoundByRound oSpec InnerStmtIn InnerWitIn pSpec) :
-      Extractor.RoundByRound oSpec OuterStmtIn OuterWitIn pSpec :=
+    (E : Extractor.RoundByRound oSpec InnerStmtIn InnerWitIn InnerWitOut pSpec WitMid) :
+      Extractor.RoundByRound oSpec OuterStmtIn OuterWitIn OuterWitOut pSpec WitMid :=
   sorry
   -- fun roundIdx outerStmtIn fullTranscript proveQueryLog =>
   --   rbrLensInv.liftWit (E roundIdx (lens.projStmt outerStmtIn) fullTranscript proveQueryLog)

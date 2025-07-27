@@ -157,6 +157,15 @@ instance [inst : VCVCompatible Chal] : ∀ i, VCVCompatible (Challenge ![(.V_to_
 instance [inst : SelectableType Chal] : ∀ i, SelectableType (Challenge ![(.V_to_P, Chal)] i)
   | ⟨0, _⟩ => inst
 
+variable {pSpec : ProtocolSpec n}
+
+instance : Fintype (pSpec.MessageIdx) := Subtype.fintype (fun i => pSpec.getDir i = .P_to_V)
+instance : Fintype (pSpec.ChallengeIdx) := Subtype.fintype (fun i => pSpec.getDir i = .V_to_P)
+instance {k : Fin (n + 1)} : Fintype (pSpec.MessageIdxUpTo k) :=
+  inferInstanceAs (Fintype <| MessageIdx (fun i => pSpec (i.castLE (by omega)) : ProtocolSpec k))
+instance {k : Fin (n + 1)} : Fintype (pSpec.ChallengeIdxUpTo k) :=
+  inferInstanceAs (Fintype <| ChallengeIdx (fun i => pSpec (i.castLE (by omega)) : ProtocolSpec k))
+
 end Instances
 
 variable {pSpec : ProtocolSpec n}
@@ -326,8 +335,25 @@ section Restrict
 
 variable {n : ℕ}
 
+/-
+TODOs:
+1. Change function signature to `m : Fin (n + 1)`
+2. Show that `(pSpec.take m).MessageIdx` is definitionally equal to `pSpec.MessageIdxUpTo m`
+-/
+
 /-- Take the first `m ≤ n` rounds of a `ProtocolSpec n` -/
-abbrev take (m : ℕ) (h : m ≤ n) (pSpec : ProtocolSpec n) := Fin.take m h pSpec
+abbrev take (m : ℕ) (h : m ≤ n) (pSpec : ProtocolSpec n) : ProtocolSpec m := Fin.take m h pSpec
+
+def take' (m : Fin (n + 1)) (pSpec : ProtocolSpec n) : ProtocolSpec m.val :=
+  Fin.take m.val m.is_le pSpec
+
+@[simp]
+lemma take'_MessageIdx (m : Fin (n + 1)) (pSpec : ProtocolSpec n) :
+    (pSpec.take' m).MessageIdx = pSpec.MessageIdxUpTo m := by
+  rfl
+
+lemma take'_Transcript (m : Fin (n + 1)) (pSpec : ProtocolSpec n) :
+    (pSpec.take' m).FullTranscript = pSpec.Transcript m := rfl
 
 /-- Take the last `m ≤ n` rounds of a `ProtocolSpec n` -/
 abbrev rtake (m : ℕ) (h : m ≤ n) (pSpec : ProtocolSpec n) := Fin.rtake m h pSpec
