@@ -269,6 +269,7 @@ theorem seqCompose_perfectCompleteness (hInit : init.neverFails)
   convert seqCompose_completeness hInit rel R 0 h
   simp
 
+
 end Reduction
 
 namespace Verifier
@@ -303,10 +304,7 @@ theorem seqCompose_rbrSoundness
     (lang : (i : Fin (m + 1)) → Set (Stmt i))
     (V : (i : Fin m) → Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
     (rbrSoundnessError : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0)
-    (h : ∀ i, (V i).rbrSoundness init impl (lang i.castSucc) (lang i.succ) (rbrSoundnessError i))
-    -- Deterministic verifier condition for state function composition
-    (verify : ∀ i, Stmt i.castSucc → (pSpec i).FullTranscript → Stmt i.succ)
-    (hVerify : ∀ i, V i = ⟨fun stmt tr => pure (verify i stmt tr)⟩) :
+    (h : ∀ i, (V i).rbrSoundness init impl (lang i.castSucc) (lang i.succ) (rbrSoundnessError i)) :
       (Verifier.seqCompose Stmt V).rbrSoundness init impl (lang 0) (lang (Fin.last m))
         (fun combinedIdx =>
           let ⟨i, idx⟩ := seqComposeChallengeEquiv.symm combinedIdx
@@ -317,14 +315,11 @@ theorem seqCompose_rbrSoundness
     knowledge errors, then their sequential composition also satisfies round-by-round knowledge
     soundness. -/
 theorem seqCompose_rbrKnowledgeSoundness
-    (V : ∀ i, Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
     (rel : ∀ i, Set (Stmt i × Wit i))
+    (V : ∀ i, Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
     (rbrKnowledgeError : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0)
     (h : ∀ i, (V i).rbrKnowledgeSoundness init impl
-      (rel i.castSucc) (rel i.succ) (rbrKnowledgeError i))
-    -- Deterministic verifier condition for state function composition
-    (verify : ∀ i, Stmt i.castSucc → (pSpec i).FullTranscript → Stmt i.succ)
-    (hVerify : ∀ i, V i = ⟨fun stmt tr => pure (verify i stmt tr)⟩) :
+      (rel i.castSucc) (rel i.succ) (rbrKnowledgeError i)) :
       (Verifier.seqCompose Stmt V).rbrKnowledgeSoundness init impl (rel 0) (rel (Fin.last m))
         (fun combinedIdx =>
           let ⟨i, idx⟩ := seqComposeChallengeEquiv.symm combinedIdx
@@ -359,12 +354,83 @@ theorem seqCompose_perfectCompleteness (hInit : init.neverFails)
   convert seqCompose_completeness hInit rel R 0 h
   simp
 
-
 end OracleReduction
 
 namespace OracleVerifier
 
--- soundness
+/-- If all verifiers in a sequence satisfy soundness with respective soundness errors, then their
+  sequential composition also satisfies soundness.
+  The soundness error of the sequentially composed oracle verifier is the sum of the individual
+  errors. -/
+theorem seqCompose_soundness
+    (lang : (i : Fin (m + 1)) → Set (Stmt i × ∀ j, OStmt i j))
+    (V : (i : Fin m) →
+      OracleVerifier oSpec (Stmt i.castSucc) (OStmt i.castSucc) (Stmt i.succ) (OStmt i.succ)
+        (pSpec i))
+    (soundnessError : Fin m → ℝ≥0)
+    (h : ∀ i, (V i).soundness init impl (lang i.castSucc) (lang i.succ) (soundnessError i)) :
+      (OracleVerifier.seqCompose Stmt OStmt V).soundness init impl (lang 0) (lang (Fin.last m))
+        (∑ i, soundnessError i) := by
+  unfold OracleVerifier.soundness
+  convert Verifier.seqCompose_soundness lang (fun i => (V i).toVerifier) soundnessError h
+  sorry
+
+/-- If all verifiers in a sequence satisfy knowledge soundness with respective knowledge errors,
+    then their sequential composition also satisfies knowledge soundness.
+    The knowledge error of the sequentially composed oracle verifier is the sum of the individual
+    errors. -/
+theorem seqCompose_knowledgeSoundness
+    (rel : (i : Fin (m + 1)) → Set ((Stmt i × ∀ j, OStmt i j) × Wit i))
+    (V : (i : Fin m) →
+      OracleVerifier oSpec (Stmt i.castSucc) (OStmt i.castSucc) (Stmt i.succ) (OStmt i.succ)
+        (pSpec i))
+    (knowledgeError : Fin m → ℝ≥0)
+    (h : ∀ i, (V i).knowledgeSoundness init impl (rel i.castSucc) (rel i.succ) (knowledgeError i)) :
+      (OracleVerifier.seqCompose Stmt OStmt V).knowledgeSoundness
+        init impl (rel 0) (rel (Fin.last m)) (∑ i, knowledgeError i) := by
+  unfold OracleVerifier.knowledgeSoundness
+  convert Verifier.seqCompose_knowledgeSoundness rel (fun i => (V i).toVerifier) knowledgeError h
+  sorry
+
+/-- If all verifiers in a sequence satisfy round-by-round soundness with respective RBR soundness
+    errors, then their sequential composition also satisfies round-by-round soundness. -/
+theorem seqCompose_rbrSoundness
+    (lang : (i : Fin (m + 1)) → Set (Stmt i × ∀ j, OStmt i j))
+    (V : (i : Fin m) →
+      OracleVerifier oSpec (Stmt i.castSucc) (OStmt i.castSucc) (Stmt i.succ) (OStmt i.succ)
+        (pSpec i))
+    (rbrSoundnessError : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0)
+    (h : ∀ i, (V i).rbrSoundness init impl (lang i.castSucc) (lang i.succ) (rbrSoundnessError i)) :
+      (OracleVerifier.seqCompose Stmt OStmt V).rbrSoundness
+        init impl (lang 0) (lang (Fin.last m))
+        (fun combinedIdx =>
+          let ⟨i, idx⟩ := seqComposeChallengeEquiv.symm combinedIdx
+          rbrSoundnessError i idx) := by
+  unfold OracleVerifier.rbrSoundness
+  convert Verifier.seqCompose_rbrSoundness lang (fun i => (V i).toVerifier)
+    rbrSoundnessError h
+  sorry
+
+/-- If all verifiers in a sequence satisfy round-by-round knowledge soundness with respective RBR
+    knowledge errors, then their sequential composition also satisfies round-by-round knowledge
+    soundness. -/
+theorem seqCompose_rbrKnowledgeSoundness
+    (rel : ∀ i, Set ((Stmt i × ∀ j, OStmt i j) × Wit i))
+    (V : (i : Fin m) → OracleVerifier oSpec (Stmt i.castSucc) (OStmt i.castSucc)
+      (Stmt i.succ) (OStmt i.succ) (pSpec i))
+    (rbrKnowledgeError : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0)
+    (h : ∀ i, (V i).rbrKnowledgeSoundness init impl
+      (rel i.castSucc) (rel i.succ) (rbrKnowledgeError i)) :
+    (OracleVerifier.seqCompose Stmt OStmt V).rbrKnowledgeSoundness
+        init impl (rel 0) (rel (Fin.last m))
+        (fun combinedIdx =>
+          let ⟨i, idx⟩ := seqComposeChallengeEquiv.symm combinedIdx
+          rbrKnowledgeError i idx) := by
+  unfold OracleVerifier.rbrKnowledgeSoundness
+  convert Verifier.seqCompose_rbrKnowledgeSoundness rel (fun i => (V i).toVerifier)
+    rbrKnowledgeError h
+  sorry
 
 end OracleVerifier
+
 end Security

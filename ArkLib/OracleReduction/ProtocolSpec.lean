@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.Fin.Basic
+import ArkLib.Data.Fin.TakeDrop
 import ArkLib.OracleReduction.Prelude
 import ArkLib.OracleReduction.OracleInterface
 import ArkLib.ToVCVio.Oracle
@@ -19,27 +19,6 @@ and the verifier.
 universe u v
 
 open OracleComp OracleSpec
-
-variable {σ : Type u} {m : Type u → Type v} [Monad m] [LawfulMonad m]
-    {m' : Type u → Type v} [Monad m'] [LawfulMonad m']
-
--- def StateT.mapM (hom : (StateT σ m) →ᵐ m') (s : σ) : MonadHom m m' where
---   toFun := fun {α} a => StateT.run' (hom (a : StateT σ m α)) s
---   toFun_pure' := by intro α a; simp
---   toFun_bind' := by intro α β f g; simp
-
-namespace QueryImpl
-
-variable {ι : Type u} [DecidableEq ι] {spec : OracleSpec ι} [spec.DecidableEq] {m : Type u → Type v}
-  [Monad m]
-
-def composeM {m' : Type u → Type v} [Monad m'] (hom : m →ᵐ m') (so : QueryImpl spec m) :
-    QueryImpl spec m' where
-  impl | query i t => hom (so.impl (query i t))
-
--- def withCaching' (so : QueryImpl spec m) : QueryImpl spec (StateT spec.QueryCache m) :=
-
-end QueryImpl
 
 /-- Type signature for an interactive protocol, with `n` messages exchanged. -/
 @[reducible]

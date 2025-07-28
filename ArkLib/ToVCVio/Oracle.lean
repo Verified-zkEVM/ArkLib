@@ -12,14 +12,14 @@ import Batteries.Data.Array.Monadic
 
 open OracleSpec OracleComp
 
+universe u v
+
 variable {ι : Type} {α β γ : Type}
 
 /-- A function that implements the oracle interface specified by `spec`, and queries no further
   oracles.
 -/
 def OracleSpec.FunctionType (spec : OracleSpec ι) := (i : ι) → spec.domain i → spec.range i
-
-variable [DecidableEq α] [DecidableEq β] [Inhabited β] [Fintype β] [Inhabited γ] [Fintype γ]
 
 namespace OracleSpec
 
@@ -135,3 +135,19 @@ theorem OracleSpec.append_range_right {ι₁ ι₂ : Type} {spec₁ : OracleSpec
 --     | failure' _ => by sorry
 
 end OracleComp
+
+variable {m : Type u → Type v} [Monad m] [LawfulMonad m]
+    {m' : Type u → Type v} [Monad m'] [LawfulMonad m']
+
+namespace QueryImpl
+
+variable {ι : Type u} [DecidableEq ι] {spec : OracleSpec ι} [spec.DecidableEq] {m : Type u → Type v}
+  [Monad m]
+
+/-- Compose a query implementation from `spec` to some monad `m`, with a further monad homomorphism
+  from `m` to `m'`. -/
+def composeM {m' : Type u → Type v} [Monad m'] (hom : m →ᵐ m') (so : QueryImpl spec m) :
+    QueryImpl spec m' where
+  impl | query i t => hom (so.impl (query i t))
+
+end QueryImpl
