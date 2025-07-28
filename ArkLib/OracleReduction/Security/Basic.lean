@@ -416,4 +416,29 @@ def knowledgeSoundness
 
 end OracleProof
 
+section Trivial
+
+-- We show that the trivial (oracle) reduction is perfectly complete, sound, and knowledge sound.
+
+theorem Reduction.id_perfectCompleteness {rel : Set (StmtIn × WitIn)} (hInit : init.neverFails) :
+    (Reduction.id : Reduction oSpec _ _ _ _ _).perfectCompleteness init impl rel := by
+  simp [Reduction.perfectCompleteness, Reduction.completeness, hInit,
+    Reduction.id, Prover.id, Verifier.id]
+  unfold Reduction.run
+  sorry
+  -- aesop
+
+theorem Reduction.id_soundness {lang : Set StmtIn} :
+    (Reduction.id : Reduction oSpec _ _ _ _ _).soundness init impl lang lang 0 := by
+  simp [Reduction.soundness]
+  sorry
+
+
+theorem Reduction.id_knowledgeSoundness {lang : Set StmtIn} :
+    (Reduction.id : Reduction oSpec _ _ _ _ _).knowledgeSoundness init impl lang lang 0 := by
+  simp [Reduction.knowledgeSoundness]
+  sorry
+
+end Trivial
+
 end
