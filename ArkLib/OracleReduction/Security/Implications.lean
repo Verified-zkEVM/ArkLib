@@ -39,7 +39,7 @@ theorem knowledgeSoundness_implies_soundness (relIn : Set (StmtIn × WitIn))
     (knowledgeError : ℝ≥0) (hLt : knowledgeError < 1) :
       knowledgeSoundness init impl relIn relOut verifier knowledgeError →
         soundness init impl relIn.language relOut.language verifier knowledgeError := by
-  simp [knowledgeSoundness, soundness, Set.language, Function.uncurry]
+  simp [knowledgeSoundness, soundness, Set.language]
   intro extractor hKS WitIn' WitOut' witIn' prover stmtIn hStmtIn
   sorry
   -- have hKS' := hKS stmtIn witIn' prover
@@ -66,11 +66,17 @@ theorem rbrSoundness_implies_soundness (langIn : Set StmtIn) (langOut : Set Stmt
 /-- Round-by-round knowledge soundness with error `rbrKnowledgeError` implies round-by-round
 soundness with the same error `rbrKnowledgeError`. -/
 theorem rbrKnowledgeSoundness_implies_rbrSoundness
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) :
-      rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError →
-        rbrSoundness init impl relIn.language relOut.language verifier rbrKnowledgeError := by
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
+    (h : verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError) :
+    verifier.rbrSoundness init impl relIn.language relOut.language rbrKnowledgeError := by
+  unfold rbrSoundness
+  unfold rbrKnowledgeSoundness at h
+  obtain ⟨WitMid, extractor, kSF, h⟩ := h
+  refine ⟨kSF.toStateFunction, ?_⟩
+  intro stmtIn hRelIn WitIn' WitOut' witIn' prover chalIdx
+  simp_all
   sorry
 
 /-- Round-by-round knowledge soundness with error `rbrKnowledgeError` implies knowledge soundness

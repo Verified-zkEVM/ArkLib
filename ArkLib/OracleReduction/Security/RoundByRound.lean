@@ -423,21 +423,6 @@ theorem rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness
   -- TODO: Complete this proof
   sorry
 
-/-- Round-by-round knowledge soundness implies round-by-round soundness -/
-theorem rbrKnowledgeSoundness_implies_rbrSoundness
-    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
-    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
-    (h : verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError) :
-    verifier.rbrSoundness init impl relIn.language relOut.language rbrKnowledgeError := by
-  unfold rbrSoundness
-  unfold rbrKnowledgeSoundness at h
-  obtain ⟨WitMid, extractor, kSF, h⟩ := h
-  refine ⟨kSF.toStateFunction, ?_⟩
-  intro stmtIn hRelIn WitIn' WitOut' witIn' prover chalIdx
-  simp_all
-  sorry
-
 end RoundByRound
 
 end Verifier
