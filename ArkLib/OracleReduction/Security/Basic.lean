@@ -420,24 +420,63 @@ section Trivial
 
 -- We show that the trivial (oracle) reduction is perfectly complete, sound, and knowledge sound.
 
+/-- The identity / trivial reduction is perfectly complete. -/
+@[simp]
 theorem Reduction.id_perfectCompleteness {rel : Set (StmtIn × WitIn)} (hInit : init.neverFails) :
-    (Reduction.id : Reduction oSpec _ _ _ _ _).perfectCompleteness init impl rel := by
-  simp [Reduction.perfectCompleteness, Reduction.completeness, hInit,
-    Reduction.id, Prover.id, Verifier.id]
-  unfold Reduction.run
-  sorry
+    (Reduction.id : Reduction oSpec _ _ _ _ _).perfectCompleteness init impl rel rel := by
+  simp [hInit]
+  aesop
+
+/-- The identity / trivial verifier is perfectly sound. -/
+@[simp]
+theorem Verifier.id_soundness {lang : Set StmtIn} :
+    (Verifier.id : Verifier oSpec _ _ _).soundness init impl lang lang 0 := by
+  simp [Verifier.soundness, Verifier.id, Reduction.run, Verifier.run]
+  aesop
+
+/-- The straightline extractor for the identity / trivial reduction, which just returns the input
+  witness. -/
+@[reducible]
+def Extractor.Straightline.id : Extractor.Straightline oSpec StmtIn WitIn WitIn ![] :=
+  fun _ witOut _ _ _ => pure witOut
+
+/-- The identity / trivial verifier is perfectly knowledge sound. -/
+@[simp]
+theorem Verifier.id_knowledgeSoundness {rel : Set (StmtIn × WitIn)} :
+    (Verifier.id : Verifier oSpec _ _ _).knowledgeSoundness init impl rel rel 0 := by
+  refine ⟨Extractor.Straightline.id, ?_⟩
+  simp only [Extractor.Straightline.id, Verifier.id, Reduction.runWithLog, Verifier.run]
+  simp only [liftM, monadLift, MonadLift.monadLift, liftComp]
+  simp only [simulateQ_pure, WriterT.run, StateT.run']
+  simp
+  intro stmtIn witIn prover stmtIn' witIn' stmtIn'' witIn'' s hs s' hSupport hRel'
+  -- simp only [support_bind]
   -- aesop
-
-theorem Reduction.id_soundness {lang : Set StmtIn} :
-    (Reduction.id : Reduction oSpec _ _ _ _ _).soundness init impl lang lang 0 := by
-  simp [Reduction.soundness]
   sorry
 
+/-- The identity / trivial reduction is perfectly complete. -/
+@[simp]
+theorem OracleReduction.id_perfectCompleteness
+    {rel : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)}
+    (hInit : init.neverFails) :
+    (OracleReduction.id : OracleReduction oSpec _ _ _ _ _ _ _).perfectCompleteness
+      init impl rel rel := by
+  simp [perfectCompleteness, hInit]
+  aesop
 
-theorem Reduction.id_knowledgeSoundness {lang : Set StmtIn} :
-    (Reduction.id : Reduction oSpec _ _ _ _ _).knowledgeSoundness init impl lang lang 0 := by
-  simp [Reduction.knowledgeSoundness]
-  sorry
+/-- The identity / trivial verifier is perfectly sound. -/
+@[simp]
+theorem OracleVerifier.id_soundness {lang : Set (StmtIn × ∀ i, OStmtIn i)} :
+    (OracleVerifier.id : OracleVerifier oSpec _ _ _ _ _).soundness
+      init impl lang lang 0 := by
+  simp [OracleVerifier.soundness]
+
+/-- The identity / trivial verifier is perfectly knowledge sound. -/
+@[simp]
+theorem OracleVerifier.id_knowledgeSoundness {rel : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)} :
+    (OracleVerifier.id : OracleVerifier oSpec _ _ _ _ _).knowledgeSoundness
+      init impl rel rel 0 := by
+  simp [OracleVerifier.knowledgeSoundness]
 
 end Trivial
 

@@ -531,3 +531,58 @@ def rbrKnowledgeSoundness
   verifier.rbrKnowledgeSoundness init impl relIn acceptRejectOracleRel rbrKnowledgeError
 
 end OracleProof
+
+section Trivial
+
+/-- The state function for the identity / trivial verifier, which just returns whether the
+  statement is in the language. -/
+def Verifier.StateFunction.id {lang : Set Statement} :
+    (Verifier.id : Verifier oSpec Statement _ _).StateFunction init impl lang lang where
+  toFun | ⟨0, _⟩ => fun stmtIn _ => stmtIn ∈ lang
+  toFun_empty := fun _ => by simp
+  toFun_next := fun i => Fin.elim0 i
+  toFun_full := fun _ _ _ => by simp_all [Verifier.id, Verifier.run]
+
+/-- The identity / trivial verifier is perfectly round-by-round sound. -/
+@[simp]
+lemma Verifier.id_rbrSoundness {lang : Set Statement} :
+    (Verifier.id : Verifier oSpec Statement _ _).rbrSoundness init impl lang lang 0 := by
+  refine ⟨Verifier.StateFunction.id init impl, ?_⟩
+  simp [Verifier.id]
+
+/-- The round-by-round extractor for the identity / trivial verifier, which just returns the
+  input witness. -/
+def Extractor.RoundByRound.id :
+    Extractor.RoundByRound oSpec Statement Witness Witness ![] (fun _ => Witness) where
+  eqIn := rfl
+  extractMid := fun i => Fin.elim0 i
+  extractOut := fun _ _ => _root_.id
+
+/-- The knowledge state function for the identity / trivial verifier, which just returns whether
+  the statement is in the relation. -/
+def Verifier.KnowledgeStateFunction.id {rel : Set (Statement × Witness)} :
+    (Verifier.id : Verifier oSpec Statement _ _).KnowledgeStateFunction init impl rel rel
+      (fun _ => Witness) (Extractor.RoundByRound.id) where
+  toFun | ⟨0, _⟩ => fun stmtIn _ witIn => (stmtIn, witIn) ∈ rel
+  toFun_empty := fun _ => by simp
+  toFun_next := fun i => Fin.elim0 i
+  toFun_full := fun _ _ _ _ => by simp_all [Verifier.id, Extractor.RoundByRound.id, Verifier.run]
+
+/-- The identity / trivial verifier is perfectly round-by-round knowledge sound. -/
+@[simp]
+lemma Verifier.id_rbrKnowledgeSoundness {rel : Set (Statement × Witness)} :
+    (Verifier.id : Verifier oSpec Statement _ _).rbrKnowledgeSoundness
+      init impl rel rel 0 := by
+  refine ⟨fun _ => Witness, Extractor.RoundByRound.id,
+    Verifier.KnowledgeStateFunction.id init impl, ?_⟩
+  simp [Verifier.id]
+
+/-- The identity / trivial oracle verifier is perfectly round-by-round knowledge sound. -/
+@[simp]
+lemma OracleVerifier.id_rbrKnowledgeSoundness
+    {rel : Set ((Statement × ∀ i, OStatement i) × Witness)} :
+    (OracleVerifier.id : OracleVerifier oSpec Statement OStatement _ _ _).rbrKnowledgeSoundness
+      init impl rel rel 0 :=
+  Verifier.id_rbrKnowledgeSoundness init impl
+
+end Trivial

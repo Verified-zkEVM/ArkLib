@@ -34,6 +34,8 @@ def verifier : Verifier oSpec Statement Statement ![] := Verifier.id
 /-- The reduction for the `DoNothing` reduction.
   - Prover simply returns the statement and witness.
   - Verifier simply returns the statement.
+
+  NOTE: this is just a wrapper around `Reduction.id`
 -/
 @[inline, specialize, simp]
 def reduction : Reduction oSpec Statement Witness Statement Witness ![] := Reduction.id
@@ -43,16 +45,15 @@ variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ Pro
 
 /-- The `DoNothing` reduction satisfies perfect completeness for any relation. -/
 @[simp]
-theorem reduction_completeness (h : init.neverFails):
-    (reduction oSpec Statement Witness).perfectCompleteness init impl rel rel := by
-  simp [Reduction.run, Prover.run, Prover.runToRound, Verifier.run,
-    reduction, Reduction.id, Prover.id, Verifier.id, h]
-  aesop
+theorem reduction_perfectCompleteness (hInit : init.neverFails):
+    (reduction oSpec Statement Witness).perfectCompleteness init impl rel rel :=
+  Reduction.id_perfectCompleteness init impl hInit
 
--- theorem reduction_rbr_knowledge_soundness :
---     (reduction oSpec Statement Witness).rbrKnowledgeSoundness rel rel := by
-  -- simp [Reduction.run, Prover.run, Prover.runToRound, Prover.processRound, Verifier.run,
-  --   reduction, prover, verifier]
+/-- The `DoNothing` verifier is perfectly round-by-round knowledge sound. -/
+@[simp]
+theorem verifier_rbrKnowledgeSoundness :
+    (verifier oSpec Statement).rbrKnowledgeSoundness init impl rel rel 0 :=
+  Verifier.id_rbrKnowledgeSoundness init impl
 
 end Reduction
 
@@ -73,6 +74,8 @@ def oracleVerifier : OracleVerifier oSpec Statement OStatement Statement OStatem
 /-- The oracle reduction for the `DoNothing` oracle reduction.
   - Prover simply returns the (non-oracle and oracle) statement and witness.
   - Verifier simply returns the (non-oracle and oracle) statement.
+
+  NOTE: this is just a wrapper around `OracleReduction.id`
 -/
 @[inline, specialize, simp]
 def oracleReduction : OracleReduction oSpec
@@ -83,22 +86,15 @@ variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ Pro
 
 /-- The `DoNothing` oracle reduction satisfies perfect completeness for any relation. -/
 @[simp]
-theorem oracleReduction_completeness (h : init.neverFails) :
-    (oracleReduction oSpec Statement Witness OStatement).perfectCompleteness init impl rel rel := by
-  simp only [OracleReduction.perfectCompleteness, OracleReduction.toReduction,
-    OracleVerifier.toVerifier, oracleReduction]
-  -- Need to simp the below separately, otherwise we get timeout
-  simp [Reduction.run, Prover.run, Verifier.run, OracleReduction.id, OracleProver.id,
-    OracleVerifier.id, Prover.id]
-  aesop
+theorem oracleReduction_perfectCompleteness (hInit : init.neverFails) :
+    (oracleReduction oSpec Statement Witness OStatement).perfectCompleteness init impl rel rel :=
+  OracleReduction.id_perfectCompleteness init impl hInit
 
--- theorem oracleReduction_rbr_knowledge_soundness :
---     (oracleReduction oSpec Statement Witness OStatement).rbrKnowledgeSoundness rel rel := by
---   simp [OracleReduction.rbrKnowledgeSoundness, OracleReduction.toReduction,
---     OracleVerifier.toVerifier, oracleReduction, oracleProver, oracleVerifier]
---   -- Need to simp the below separately, otherwise we get timeout
---   simp [Reduction.run, Prover.run, Verifier.run]
---   aesop
+/-- The `DoNothing` oracle verifier is perfectly round-by-round knowledge sound. -/
+@[simp]
+theorem oracleVerifier_rbrKnowledgeSoundness :
+    (oracleVerifier oSpec Statement OStatement).rbrKnowledgeSoundness init impl rel rel 0 :=
+  OracleVerifier.id_rbrKnowledgeSoundness init impl
 
 end OracleReduction
 
