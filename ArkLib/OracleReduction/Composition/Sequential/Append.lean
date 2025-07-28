@@ -129,7 +129,7 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
 
   /- The combined prover's states are the concatenation of the first prover's states, except the
   last one, and the second prover's states. -/
-  PrvState := Fin.append (m := m) (Fin.init P₁.PrvState) P₂.PrvState ∘ Fin.cast (by omega)
+  PrvState := Fin.append (m := m) (Fin.init P₁.PrvState) P₂.PrvState
 
   /- The combined prover's input function is the first prover's input function, except for when the
   first protocol is empty, in which case it is the second prover's input function -/
@@ -300,15 +300,23 @@ def Extractor.Straightline.append (E₁ : Extractor.Straightline oSpec Stmt₁ W
     let wit₁ ← E₁ stmt₁ wit₂ transcript.fst proveQueryLog verifyQueryLog
     return wit₁
 
--- /-- The round-by-round extractor for the sequential composition of two (oracle) reductions
-
--- The nice thing is we just extend the first extractor to the concatenated protocol. The intuition is
--- that RBR extraction happens on the very first message, so further messages don't matter. -/
--- def Extractor.RoundByRound.append (E₁ : Extractor.RoundByRound oSpec Stmt₁ Wit₁ Wit₂ pSpec₁ ) :
---       Extractor.RoundByRound oSpec Stmt₁ Wit₁ (pSpec₁ ++ₚ pSpec₂) :=
---   -- (TODO: describe `Transcript.fst` and `Transcript.snd`)
---   fun roundIdx stmt₁ transcript proveQueryLog =>
---     E₁ ⟨min roundIdx m, by omega⟩ stmt₁ transcript.fst proveQueryLog
+/-- The round-by-round extractor for the sequential composition of two (oracle) reductions -/
+def Extractor.RoundByRound.append
+    {WitMid₁ : Fin (m + 1) → Type} {WitMid₂ : Fin (n + 1) → Type}
+    (E₁ : Extractor.RoundByRound oSpec Stmt₁ Wit₁ Wit₂ pSpec₁ WitMid₁)
+    (E₂ : Extractor.RoundByRound oSpec Stmt₂ Wit₂ Wit₃ pSpec₂ WitMid₂) :
+      Extractor.RoundByRound oSpec Stmt₁ Wit₁ Wit₃ (pSpec₁ ++ₚ pSpec₂)
+        (Fin.append (m := m + 1) WitMid₁ (Fin.init WitMid₂) ∘ Fin.cast (by omega)) where
+  eqIn := by
+    simp [Fin.append, Fin.addCases, Fin.castLT]
+    exact E₁.eqIn
+  extractMid := fun idx stmt₁ tr h => by
+    simp at h ⊢
+    -- do casing
+    sorry
+  extractOut := fun stmt₁ tr wit₃ => by
+    simp [Fin.cast]
+    sorry
 
 variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     {lang₁ : Set Stmt₁} {lang₂ : Set Stmt₂} {lang₃ : Set Stmt₃}

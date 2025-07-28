@@ -180,8 +180,10 @@ def Verifier.StateFunction.liftContext
 where
   toFun := fun m outerStmtIn transcript =>
     stF m (lens.proj outerStmtIn) transcript
-  toFun_empty := fun stmt hStmt =>
-    stF.toFun_empty (lens.proj stmt) (lensSound.proj_sound stmt hStmt)
+  toFun_empty := fun stmt => by
+    have := stF.toFun_empty (lens.proj stmt)
+    sorry
+    -- stF.toFun_empty (lens.proj stmt) (lensSound.proj_sound stmt hStmt)
   toFun_next := fun m hDir outerStmtIn transcript hStmt msg =>
     stF.toFun_next m hDir (lens.proj outerStmtIn) transcript hStmt msg
   toFun_full := fun outerStmtIn transcript hStmt => by
@@ -189,6 +191,7 @@ where
     simp [Verifier.run, Verifier.liftContext] at h ⊢
     intro outerStmtOut s hs innerStmtOut s' h' hLens
     have := lensSound.lift_sound outerStmtIn innerStmtOut
+    sorry
     -- apply lensSound.lift_sound
     -- · simp [compatStatement]; exact ⟨transcript, hSupport⟩
     -- · exact h innerStmtOut hSupport

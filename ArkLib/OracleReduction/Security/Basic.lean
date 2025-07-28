@@ -99,7 +99,7 @@ instance [reduction.IsPerfectComplete init impl relIn relOut] :
 /-- Perfect completeness means that the probability of the reduction outputting a valid
   statement-witness pair is _exactly_ 1 (instead of at least `1 - 0`). -/
 @[simp]
-theorem perfectCompleteness_eq_prob_one [∀ i, VCVCompatible (pSpec.Challenge i)] :
+theorem perfectCompleteness_eq_prob_one :
     reduction.perfectCompleteness init impl relIn relOut ↔
       ∀ stmtIn witIn, (stmtIn, witIn) ∈ relIn →
         [fun ⟨(prvStmtOut, witOut), stmtOut, _⟩ => (stmtOut, witOut) ∈ relOut ∧ prvStmtOut = stmtOut
