@@ -212,7 +212,7 @@ theorem whir_rbr_soundness
         let _ : ∀ j : Fin ((P.foldingParam 0)+1), Fintype (indexPowT (S 0) (P.φ 0) j) := h.inst1 0
         let _ : ∀ j : Fin ((P.foldingParam 0)+1), Nonempty (indexPowT (S 0) (P.φ 0) j) := h.inst2 0
 
-        -- ε_fold(0,j+1) ≤ dstar * dist(0,j) / |F| + errStar(C_0j, 2, δ₀),
+        -- ε_fold(0,j+1) ≤ dstar * dist(0,j) / |F| + errStar(C_0{j+1}, 2, δ₀),
         -- Note here that `j : Fin (P.foldingParam 0)`,
         -- so we need to cast into `Fin ((P.foldingParam 0) + 1)` for indexing of `h.dist`
         -- To get `j`, we use `.castSucc`, whereas to get `j + 1`, we use `.succ`.
