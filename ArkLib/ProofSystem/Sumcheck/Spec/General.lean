@@ -201,6 +201,18 @@ def oracleReduction : OracleReduction oSpec
     (pSpec := fun _ => SingleRound.pSpec R deg)
     (SingleRound.oracleReduction R n deg D oSpec)
 
+omit [SelectableType R] in
+@[simp]
+lemma reduction_verifier_eq_verifier :
+    (reduction R deg D n oSpec).verifier = verifier R deg D n oSpec := by
+  rfl
+
+omit [SelectableType R] in
+@[simp]
+lemma oracleReduction_verifier_eq_oracleVerifier :
+    (oracleReduction R deg D n oSpec).verifier = oracleVerifier R deg D n oSpec := by
+  rfl
+
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 open NNReal
