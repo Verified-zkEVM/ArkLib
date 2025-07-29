@@ -196,7 +196,7 @@ open NNReal
   In other words, the oracle instance has distance at most `d`.
 -/
 @[simp]
-theorem oracleReduction_rbrKnowledgeSoundness
+theorem oracleVerifier_rbrKnowledgeSoundness
     {d : ℕ} (hDist : OracleInterface.distanceLE OStatement d) :
     (oracleVerifier oSpec OStatement).rbrKnowledgeSoundness init impl
       (relIn OStatement)
@@ -215,12 +215,24 @@ theorem oracleReduction_rbrKnowledgeSoundness
   classical
   simp only [probEvent_bind_eq_tsum]
   simp [ProtocolSpec.Transcript.concat, Fin.snoc, default]
+  unfold Function.comp
+  dsimp
+  unfold distanceLE at hDist
+  have := hDist (oracles 0) (oracles 1)
+  sorry
+  -- calc
+  -- _ ≤ ∑' x : σ, 1 *
+  --     (Finset.card {x | ¬oracles 0 = oracles 1 ∧ oracle (oracles 0) x = oracle (oracles 1) x} /
+  --       (Fintype.card (Query OStatement))) := by sorry
+  --   -- apply Summable.tsum_le_tsum
+  -- _ ≤ ((d : ℝ≥0) / (Fintype.card (Query OStatement)) : ENNReal) := by
+    -- sorry
   -- rw [div_eq_mul_inv]
-  stop
-  gcongr
-  simp [Finset.filter_and]
-  split_ifs with hOracles <;> simp
-  exact hDist (oracles 0) (oracles 1) hOracles
+  -- stop
+  -- gcongr
+  -- simp [Finset.filter_and]
+  -- split_ifs with hOracles <;> simp
+  -- exact hDist (oracles 0) (oracles 1) hOracles
 
 end RandomQuery
 

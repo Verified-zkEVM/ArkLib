@@ -67,7 +67,7 @@ Verifier.append_soundness
 Verifier.append_knowledgeSoundness
 Verifier.append_rbrSoundness
 Verifier.append_rbrKnowledgeSoundness
-Reduction.completeness_seqCompose
+Reduction.seqCompose_completeness
 Verifier.seqCompose_soundness
 Verifier.seqCompose_knowledgeSoundness
 Statement.Lens
@@ -99,15 +99,15 @@ Reduction.fiatShamir
 fiatShamir_completeness
 DoNothing.reduction
 DoNothing.oracleReduction
-DoNothing.reduction_completeness
-DoNothing.oracleReduction_completeness
+DoNothing.reduction_perfectCompleteness
+DoNothing.oracleReduction_perfectCompleteness
 SendWitness.reduction
 SendWitness.reduction_completeness
 SendSingleWitness.oracleReduction
 SendSingleWitness.oracleReduction_completeness
 RandomQuery.oracleReduction
 RandomQuery.oracleReduction_completeness
-RandomQuery.rbr_knowledge_soundness
+RandomQuery.oracleVerifier_rbrKnowledgeSoundness
 SendClaim.oracleReduction
 SendClaim.completeness
 ReduceClaim.reduction
