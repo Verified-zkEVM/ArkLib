@@ -203,20 +203,27 @@ def oracleReduction : OracleReduction oSpec
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
+open NNReal
+
 /-- Perfect completeness for the (full) sum-check protocol -/
 theorem reduction_perfectCompleteness (hInit : init.neverFails) :
     (reduction R deg D n oSpec).perfectCompleteness init impl
-      (relationRound R n deg D 0) (relationRound R n deg D (.last n)) := sorry
-  -- Reduction.seqCompose_perfectCompleteness hInit
-  --   (Stmt := fun i => Statement R n i × (∀ j, OracleStatement R n deg j))
-  --   (Wit := fun _ => Unit)
-  --   (pSpec := fun _ => SingleRound.pSpec R deg)
-  --   (rel := relationRound R n deg D)
-  --   (R := fun i => SingleRound.reduction R n deg D oSpec)
-  --   (h := fun i => by simp)
+      (relationRound R n deg D 0) (relationRound R n deg D (.last n)) :=
+  Reduction.seqCompose_perfectCompleteness hInit
+    (rel := relationRound R n deg D)
+    (R := SingleRound.reduction R n deg D oSpec)
+    (h := fun i => SingleRound.reduction_perfectCompleteness i hInit)
 
--- /-- Round-by-round knowledge soundness for the (full) sum-check protocol -/
--- theorem oracleReduction_rbrKnowledgeSoundness :
+/-- Round-by-round knowledge soundness with error `deg / |R|` per challenge for the (full)
+  sum-check protocol -/
+theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
+    (oracleVerifier R deg D n oSpec).rbrKnowledgeSoundness init impl
+      (relationRound R n deg D 0) (relationRound R n deg D (.last n))
+      (fun _ => (deg : ℝ≥0) / (Fintype.card R)) :=
+  OracleVerifier.seqCompose_rbrKnowledgeSoundness
+    (rel := relationRound R n deg D)
+    (V := SingleRound.oracleVerifier R n deg D oSpec)
+    (h := fun i => SingleRound.oracleVerifier_rbrKnowledgeSoundness i)
 
 end Spec
 

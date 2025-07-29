@@ -547,9 +547,12 @@ theorem oracleReduction_perfectCompleteness (hInit : init.neverFails) :
     (lensComplete := oCtxLens_complete i)
     (Simple.oracleReduction_perfectCompleteness R deg D oSpec hInit)
 
+
+local instance : Inhabited R := ⟨0⟩
+
 /-- Round-by-round knowledge soundness theorem for single-round of sum-check, obtained by
   transporting the knowledge soundness proof for the simplified version -/
-theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [Inhabited R] :
+theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
     (oracleVerifier R n deg D oSpec i).rbrKnowledgeSoundness init impl
     (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ)
     (fun _ => (deg : ℝ≥0) / Fintype.card R) :=
