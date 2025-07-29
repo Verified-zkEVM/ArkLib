@@ -278,7 +278,7 @@ theorem oracleReduction_eq_reduction :
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 /-- Perfect completeness for the (non-oracle) reduction -/
-theorem reduction_completeness (hInit : init.neverFails) :
+theorem reduction_perfectCompleteness (hInit : init.neverFails) :
     (reduction R deg D oSpec).perfectCompleteness init impl
       (inputRelation R deg D) (outputRelation R deg) := by
   rw [perfectCompleteness_eq_prob_one]
@@ -289,7 +289,7 @@ theorem reduction_completeness (hInit : init.neverFails) :
   · simp only [Reduction.run, probFailure_bind_eq_zero_iff]
     refine ⟨by simp [hInit], ?_⟩
     -- constructor
-    -- · simp -- There's still some pathing issue here w/ simp, need to simp in steps which is sub-par
+    -- · simp
     --   unfold Prover.run Prover.runToRound Prover.processRound
     --   simp [Fin.induction, Fin.induction.go, reduction, prover]
     · intro s hs
@@ -321,21 +321,21 @@ theorem reduction_completeness (hInit : init.neverFails) :
     aesop
 
 /-- Perfect completeness for the oracle reduction -/
-theorem oracleReduction_completeness (hInit : init.neverFails) :
+theorem oracleReduction_perfectCompleteness (hInit : init.neverFails) :
     (oracleReduction R deg D oSpec).perfectCompleteness init impl
       (inputRelation R deg D) (outputRelation R deg) := by
   unfold OracleReduction.perfectCompleteness
   rw [oracleReduction_eq_reduction]
-  exact reduction_completeness R deg D oSpec hInit
+  exact reduction_perfectCompleteness R deg D oSpec hInit
 
 /-- Round-by-round knowledge soundness for the verifier -/
-theorem verifier_rbr_knowledge_soundness [Fintype R] :
+theorem verifier_rbrKnowledgeSoundness [Fintype R] :
     (verifier R deg D oSpec).rbrKnowledgeSoundness init impl
     (inputRelation R deg D) (outputRelation R deg) (fun _ => (deg : ℝ≥0) / (Fintype.card R)) := by
   sorry
 
 /-- Round-by-round knowledge soundness for the oracle verifier -/
-theorem oracleVerifier_rbr_knowledge_soundness [Fintype R] :
+theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
     (oracleVerifier R deg D oSpec).rbrKnowledgeSoundness init impl
     (inputRelation R deg D) (outputRelation R deg) (fun _ => (deg : ℝ≥0) / (Fintype.card R)) := by
   sorry
@@ -424,17 +424,40 @@ def extractorLens (i : Fin n) : Extractor.Lens
 
 variable {ι : Type} (oSpec : OracleSpec ι) [DecidableEq R] [SelectableType R]
 
-/-- The sum-check reduction for the `i`-th round, where `i < n` and `n > 0` -/
+/-- The verifier for the `i`-th round of the sum-check protocol -/
+def verifier (i : Fin n) : Verifier oSpec
+    (Statement R n i.castSucc × (∀ i, OracleStatement R n deg i))
+    (Statement R n i.succ × (∀ i, OracleStatement R n deg i)) (pSpec R deg) :=
+  (Simple.verifier R deg D oSpec).liftContext (oStmtLens R n deg D i)
+
+/-- The oracle verifier for the `i`-th round of the sum-check protocol -/
+def oracleVerifier (i : Fin n) : OracleVerifier oSpec (Statement R n i.castSucc)
+    (OracleStatement R n deg) (Statement R n i.succ) (OracleStatement R n deg) (pSpec R deg) :=
+  (Simple.oracleVerifier R deg D oSpec).liftContext (oStmtLens R n deg D i)
+
+/-- The sum-check reduction for the `i`-th round of the sum-check protocol -/
 def reduction (i : Fin n) : Reduction oSpec
     ((Statement R n i.castSucc) × (∀ i, OracleStatement R n deg i)) Unit
     ((Statement R n i.succ) × (∀ i, OracleStatement R n deg i)) Unit (pSpec R deg) :=
   (Simple.reduction R deg D oSpec).liftContext (oCtxLens R n deg D i).toContext
 
-/-- The sum-check oracle reduction for the `i`-th round, where `i < n` and `n > 0` -/
+/-- The sum-check oracle reduction for the `i`-th round of the sum-check protocol -/
 def oracleReduction (i : Fin n) : OracleReduction oSpec
     (Statement R n i.castSucc) (OracleStatement R n deg) Unit
     (Statement R n i.succ) (OracleStatement R n deg) Unit (pSpec R deg) :=
   (Simple.oracleReduction R deg D oSpec).liftContext (oCtxLens R n deg D i)
+
+omit [SelectableType R] in
+@[simp]
+lemma reduction_verifier_eq_verifier {i : Fin n} :
+    (reduction R n deg D oSpec i).verifier = verifier R n deg D oSpec i := by
+  rfl
+
+omit [SelectableType R] in
+@[simp]
+lemma oracleReduction_verifier_eq_verifier {i : Fin n} :
+    (oracleReduction R n deg D oSpec i).verifier = oracleVerifier R n deg D oSpec i := by
+  rfl
 
 section Security
 
@@ -498,29 +521,36 @@ instance extractorLens_rbr_knowledge_soundness :
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
-theorem reduction_completeness (hInit : init.neverFails) :
+theorem reduction_perfectCompleteness (hInit : init.neverFails) :
     (reduction R n deg D oSpec i).perfectCompleteness init impl
-    (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ) := sorry
+    (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ) :=
+  Reduction.liftContext_perfectCompleteness
+    (lens := (oCtxLens R n deg D i).toContext)
+    (lensComplete := by simp; sorry)
+    (Simple.reduction_perfectCompleteness R deg D oSpec hInit)
 
-theorem verifier_rbr_knowledge_soundness [Fintype R] :
-    (reduction R n deg D oSpec i).verifier.rbrKnowledgeSoundness init impl
+theorem verifier_rbrKnowledgeSoundness [Fintype R] :
+    (verifier R n deg D oSpec i).rbrKnowledgeSoundness init impl
     (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ)
     (fun _ => (deg : ℝ≥0) / Fintype.card R) := sorry
+  -- Verifier.liftContext_rbrKnowledgeSoundness (lens := (oCtxLens R n deg D i).toContext)
+  --   (lensKS := extractorLens_rbr_knowledge_soundness i)
+  --   (Simple.verifier_rbrKnowledgeSoundness R deg D oSpec i)
 
 /-- Completeness theorem for single-round of sum-check, obtained by transporting the completeness
 proof for the simplified version -/
-theorem oracleReduction_completeness (hInit : init.neverFails) :
+theorem oracleReduction_perfectCompleteness (hInit : init.neverFails) :
     (oracleReduction R n deg D oSpec i).perfectCompleteness init impl
       (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ) :=
   OracleReduction.liftContext_perfectCompleteness
     (lens := oCtxLens R n deg D i)
     (lensComplete := oCtxLens_complete i)
-    (Simple.oracleReduction_completeness R deg D oSpec hInit)
+    (Simple.oracleReduction_perfectCompleteness R deg D oSpec hInit)
 
 /-- Round-by-round knowledge soundness theorem for single-round of sum-check, obtained by
   transporting the knowledge soundness proof for the simplified version -/
-theorem oracleVerifier_rbr_knowledge_soundness [Fintype R] [Inhabited R] :
-    (oracleReduction R n deg D oSpec i).verifier.rbrKnowledgeSoundness init impl
+theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [Inhabited R] :
+    (oracleVerifier R n deg D oSpec i).rbrKnowledgeSoundness init impl
     (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ)
     (fun _ => (deg : ℝ≥0) / Fintype.card R) :=
   OracleVerifier.liftContext_rbr_knowledgeSoundness
@@ -528,7 +558,7 @@ theorem oracleVerifier_rbr_knowledge_soundness [Fintype R] [Inhabited R] :
     (witLens := Witness.InvLens.trivial)
     (Simple.oracleVerifier R deg D oSpec)
     (lensKS := extractorLens_rbr_knowledge_soundness i)
-    (Simple.oracleVerifier_rbr_knowledge_soundness R deg D oSpec)
+    (Simple.oracleVerifier_rbrKnowledgeSoundness R deg D oSpec)
 
 -- /-- State function for round-by-round soundness. No need for this manual definition -/
 -- def stateFunction (i : Fin (n + 1)) : Verifier.StateFunction pSpec oSpec

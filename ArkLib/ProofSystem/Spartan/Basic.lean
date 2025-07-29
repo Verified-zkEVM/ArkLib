@@ -232,6 +232,8 @@ abbrev OracleStatement.AfterFirstChallenge : R1CS.MatrixIdx ⊕ Fin 1 → Type :
 @[simp]
 abbrev Witness.AfterFirstChallenge : Type := Unit
 
+#check RandomQuery.oracleReduction
+
 def oracleReduction.firstChallenge :
     OracleReduction oSpec
       (Statement.AfterFirstMessage R pp) (OracleStatement.AfterFirstMessage R pp) (Witness R pp)

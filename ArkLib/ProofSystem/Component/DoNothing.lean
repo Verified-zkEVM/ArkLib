@@ -19,7 +19,9 @@ import ArkLib.OracleReduction.Security.RoundByRound
 
 namespace DoNothing
 
-variable {ι : Type} (oSpec : OracleSpec ι) (Statement Witness : Type)
+variable {ι : Type} (oSpec : OracleSpec ι) (Statement : Type)
+  {ιₛ : Type} (OStatement : ιₛ → Type) [∀ i, OracleInterface (OStatement i)]
+  (Witness : Type)
 
 section Reduction
 
@@ -40,7 +42,8 @@ def verifier : Verifier oSpec Statement Statement ![] := Verifier.id
 @[inline, specialize, simp]
 def reduction : Reduction oSpec Statement Witness Statement Witness ![] := Reduction.id
 
-variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+variable {oSpec} {Statement} {Witness}
+  {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   (rel : Set (Statement × Witness))
 
 /-- The `DoNothing` reduction satisfies perfect completeness for any relation. -/
@@ -58,8 +61,6 @@ theorem verifier_rbrKnowledgeSoundness :
 end Reduction
 
 section OracleReduction
-
-variable {ιₛ : Type} (OStatement : ιₛ → Type) [∀ i, OracleInterface (OStatement i)]
 
 /-- The oracle prover for the `DoNothing` oracle reduction. -/
 @[inline, specialize, simp]
@@ -81,13 +82,15 @@ def oracleVerifier : OracleVerifier oSpec Statement OStatement Statement OStatem
 def oracleReduction : OracleReduction oSpec
     Statement OStatement Witness Statement OStatement Witness ![] := OracleReduction.id
 
-variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+variable {oSpec} {Statement} {OStatement} {Witness}
+  {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   (rel : Set ((Statement × (∀ i, OStatement i)) × Witness))
+  (relOut : Set ((Statement × Witness) × (∀ i, OStatement i)))
 
 /-- The `DoNothing` oracle reduction satisfies perfect completeness for any relation. -/
 @[simp]
 theorem oracleReduction_perfectCompleteness (hInit : init.neverFails) :
-    (oracleReduction oSpec Statement Witness OStatement).perfectCompleteness init impl rel rel :=
+    (oracleReduction oSpec Statement OStatement Witness).perfectCompleteness init impl rel rel :=
   OracleReduction.id_perfectCompleteness init impl hInit
 
 /-- The `DoNothing` oracle verifier is perfectly round-by-round knowledge sound. -/

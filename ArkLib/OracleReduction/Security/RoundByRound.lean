@@ -130,7 +130,7 @@ structure StateFunction
 structure KnowledgeStateFunction
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (WitMid : Fin (n + 1) → Type)
+    {WitMid : Fin (n + 1) → Type}
     (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
     where
   /-- The knowledge state function: takes in round index, input statement, transcript up to that
@@ -159,7 +159,7 @@ def KnowledgeStateFunction.toStateFunction
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec} {WitMid : Fin (n + 1) → Type}
     {extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid}
-    (kSF : KnowledgeStateFunction init impl relIn relOut verifier WitMid extractor) :
+    (kSF : KnowledgeStateFunction init impl relIn relOut verifier extractor) :
       verifier.StateFunction init impl relIn.language relOut.language where
   toFun := fun m stmtIn tr => ∃ witMid, kSF.toFun m stmtIn tr witMid
   toFun_empty := by
@@ -218,8 +218,7 @@ def KnowledgeStateFunctionOneShot.toKnowledgeStateFunction
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
     (stF : KnowledgeStateFunctionOneShot init impl relIn.language relOut.language verifier)
     (oneShotE : Extractor.RoundByRoundOneShot oSpec StmtIn WitIn pSpec) :
-    verifier.KnowledgeStateFunction init impl relIn relOut
-        (fun _ => WitIn) oneShotE.toRoundByRound where
+    verifier.KnowledgeStateFunction init impl relIn relOut oneShotE.toRoundByRound where
   toFun := fun m stmtIn tr witIn => if m = 0 then (stmtIn, witIn) ∈ relIn else
     stF.toFun m stmtIn tr ∨ (stmtIn, oneShotE m stmtIn tr default) ∈ relIn
   toFun_empty := fun stmtIn witIn => by
@@ -247,7 +246,7 @@ def KnowledgeStateFunctionOneShot.toKnowledgeStateFunction
       simp_all
       have hpSpec : pSpec = ![] := by ext i <;> exact Fin.elim0 i
       subst hpSpec
-      have hTr : tr = default := by ext i <;> exact Fin.elim0 i
+      have hTr : tr = default := by ext i; exact Fin.elim0 i
       subst hTr
       have := stF.toFun_empty stmtIn
       simp_all
@@ -271,7 +270,7 @@ instance {langIn : Set StmtIn} {langOut : Set StmtOut}
 instance {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec} {WitMid : Fin (n + 1) → Type}
     {extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid} :
-    CoeFun (verifier.KnowledgeStateFunction init impl relIn relOut WitMid extractor)
+    CoeFun (verifier.KnowledgeStateFunction init impl relIn relOut extractor)
     (fun _ => (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → WitMid m → Prop) :=
       ⟨fun f => f.toFun⟩
 
@@ -366,7 +365,7 @@ def rbrKnowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
   ∃ WitMid : Fin (n + 1) → Type,
   ∃ extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid,
-  ∃ kSF : verifier.KnowledgeStateFunction init impl relIn relOut WitMid extractor,
+  ∃ kSF : verifier.KnowledgeStateFunction init impl relIn relOut extractor,
   ∀ stmtIn : StmtIn,
   ∀ witIn : WitIn,
   ∀ prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec,
@@ -406,8 +405,7 @@ theorem rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness
   unfold rbrKnowledgeSoundness
   unfold rbrKnowledgeSoundnessOneShot at h
   obtain ⟨stF, oneShotE, h⟩ := h
-  refine ⟨fun _ => WitIn, oneShotE.toRoundByRound,
-    stF.toKnowledgeStateFunction init impl oneShotE, ?_⟩
+  refine ⟨_, oneShotE.toRoundByRound, stF.toKnowledgeStateFunction init impl oneShotE, ?_⟩
   intro stmtIn witIn prover i
   have := h stmtIn witIn prover i
   simp at h ⊢
@@ -451,10 +449,10 @@ def KnowledgeStateFunction
     (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
-    (WitMid : Fin (n + 1) → Type)
+    {WitMid : Fin (n + 1) → Type}
     (extractor : Extractor.RoundByRound oSpec
       (StmtIn × (∀ i, OStmtIn i)) WitIn WitOut pSpec WitMid) :=
-  verifier.toVerifier.KnowledgeStateFunction init impl relIn relOut WitMid extractor
+  verifier.toVerifier.KnowledgeStateFunction init impl relIn relOut extractor
 
 /-- Round-by-round soundness of an oracle reduction is the same as for non-oracle reductions. -/
 def rbrSoundness
@@ -547,7 +545,7 @@ def Extractor.RoundByRound.id :
   the statement is in the relation. -/
 def Verifier.KnowledgeStateFunction.id {rel : Set (Statement × Witness)} :
     (Verifier.id : Verifier oSpec Statement _ _).KnowledgeStateFunction init impl rel rel
-      (fun _ => Witness) (Extractor.RoundByRound.id) where
+      (Extractor.RoundByRound.id) where
   toFun | ⟨0, _⟩ => fun stmtIn _ witIn => (stmtIn, witIn) ∈ rel
   toFun_empty := fun _ => by simp
   toFun_next := fun i => Fin.elim0 i
@@ -558,8 +556,7 @@ def Verifier.KnowledgeStateFunction.id {rel : Set (Statement × Witness)} :
 lemma Verifier.id_rbrKnowledgeSoundness {rel : Set (Statement × Witness)} :
     (Verifier.id : Verifier oSpec Statement _ _).rbrKnowledgeSoundness
       init impl rel rel 0 := by
-  refine ⟨fun _ => Witness, Extractor.RoundByRound.id,
-    Verifier.KnowledgeStateFunction.id init impl, ?_⟩
+  refine ⟨_, _, Verifier.KnowledgeStateFunction.id init impl, ?_⟩
   simp [Verifier.id]
 
 /-- The identity / trivial oracle verifier is perfectly round-by-round knowledge sound. -/

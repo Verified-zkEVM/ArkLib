@@ -122,12 +122,16 @@ def pSpec : ProtocolSpec (∑ _ : Fin n, 2) :=
   -- n * 2
   -- fun i => if i % 2 = 0 then (.P_to_V, R⦃≤ d⦄[X]) else (.V_to_P, R)
 
+-- TODO: the input statement should not mention sum-check challenges at all (currently it does,
+-- initial challenge vector is empty). We can compose with a `ReduceClaim` (oracle) reduction to get
+-- the correct input statement type
+
 -- instance : ∀ i, OracleInterface ((pSpec R d n).Message i) := fun ⟨i, hDir⟩ => by
 --   by_cases h : i % 2 = 0
 --   · simp [pSpec, h]; infer_instance
 --   · simp [pSpec, h]; simp [MessageIdx, pSpec, h] at hDir
 
-instance [SelectableType R] : ∀ i, SelectableType ((pSpec R deg n).Challenge i) := sorry
+-- instance [SelectableType R] : ∀ i, SelectableType ((pSpec R deg n).Challenge i) := sorry
 -- fun ⟨i, hDir⟩ => by
 --   by_cases h : i % 2 = 0
 --   · simp [pSpec, h]; simp [pSpec, h] at hDir
@@ -151,15 +155,26 @@ def OStmtIn := OracleStatement R n deg
 -- def relOut : (StmtOut R n) × (∀ i, OStmtOut R d n i) → WitOut → Prop :=
 --   fun ⟨⟨target, challenges⟩, polyOracle⟩ _ => (polyOracle ()).1 ⸨challenges⸩ = target
 
--- def prover : OracleProver (pSpec R d n) oSpec
---     (Statement R n 0) Unit (Statement R n (.last (n + 1))) Unit
---     (OracleStatement R n d) (OracleStatement R n d) := sorry
-
--- def verifier : OracleVerifier (pSpec R d n) oSpec
---     (Statement R n 0) (Statement R n (.last (n + 1)))
---     (OracleStatement R n d) (OracleStatement R n d) := sorry
-
 variable [DecidableEq R] [SelectableType R]
+
+/-- The verifier for the (full) sum-check protocol -/
+@[reducible]
+def verifier : Verifier oSpec (Statement R n 0 × (∀ i, OracleStatement R n deg i))
+    (Statement R n (.last n) × (∀ i, OracleStatement R n deg i)) (pSpec R deg n) :=
+  Verifier.seqCompose (oSpec := oSpec)
+    (Stmt := fun i => Statement R n i × (∀ j, OracleStatement R n deg j))
+    (pSpec := fun _ => SingleRound.pSpec R deg)
+    (SingleRound.verifier R n deg D oSpec)
+
+/-- The oracle verifier for the (full) sum-check protocol -/
+@[reducible]
+def oracleVerifier : OracleVerifier oSpec (Statement R n 0) (OracleStatement R n deg)
+    (Statement R n (.last n)) (OracleStatement R n deg) (pSpec R deg n) :=
+  OracleVerifier.seqCompose (oSpec := oSpec)
+    (Stmt := Statement R n)
+    (OStmt := fun _ => OracleStatement R n deg)
+    (pSpec := fun _ => SingleRound.pSpec R deg)
+    (SingleRound.oracleVerifier R n deg D oSpec)
 
 /-- The sum-check protocol as a reduction -/
 @[reducible]
@@ -188,15 +203,20 @@ def oracleReduction : OracleReduction oSpec
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
--- Time-out for some reasons, will fix soon
--- /-- Perfect completeness for the (full) sum-check protocol -/
--- theorem reduction_complete : (reduction R deg D n oSpec).perfectCompleteness
---     (relationRound R n deg D 0) (relationRound R n deg D (.last (n + 1))) :=
---   Reduction.completeness_seqCompose (R := reduction R deg D n oSpec)
---     (fun _ => 0) (fun i => sorry)
+/-- Perfect completeness for the (full) sum-check protocol -/
+theorem reduction_perfectCompleteness (hInit : init.neverFails) :
+    (reduction R deg D n oSpec).perfectCompleteness init impl
+      (relationRound R n deg D 0) (relationRound R n deg D (.last n)) := sorry
+  -- Reduction.seqCompose_perfectCompleteness hInit
+  --   (Stmt := fun i => Statement R n i × (∀ j, OracleStatement R n deg j))
+  --   (Wit := fun _ => Unit)
+  --   (pSpec := fun _ => SingleRound.pSpec R deg)
+  --   (rel := relationRound R n deg D)
+  --   (R := fun i => SingleRound.reduction R n deg D oSpec)
+  --   (h := fun i => by simp)
 
 -- /-- Round-by-round knowledge soundness for the (full) sum-check protocol -/
--- theorem reduction_sound :
+-- theorem oracleReduction_rbrKnowledgeSoundness :
 
 end Spec
 
