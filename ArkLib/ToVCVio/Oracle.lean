@@ -17,8 +17,8 @@ variable {ι : Type} {α β γ : Type}
 /-- A function that implements the oracle interface specified by `spec`, and queries no further
   oracles.
 -/
+@[reducible, simp]
 def Oracle (spec : OracleSpec ι) := (i : ι) → spec.domain i → spec.range i
-
 
 variable [DecidableEq α] [DecidableEq β] [Inhabited β] [Fintype β] [Inhabited γ] [Fintype γ]
 
