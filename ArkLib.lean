@@ -76,7 +76,7 @@ import ArkLib.Data.Polynomial.MonomialBasis
 import ArkLib.Data.Polynomial.PolynomialLike
 import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.Notation
-import ArkLib.Data.RingTheory.TowerOfAlgebra
+import ArkLib.Data.RingTheory.AlgebraTower
 import ArkLib.Data.Tree.Binary
 import ArkLib.Data.Tree.General
 import ArkLib.Data.UniPoly.Basic

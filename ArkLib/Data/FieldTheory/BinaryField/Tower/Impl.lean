@@ -2160,7 +2160,7 @@ theorem concreteTowerAlgebraMap_assoc :
 **Formalization of Cross - Level Algebra**  : For any `k ≤ τ`, `ConcreteBTField τ` is an
 algebra over `ConcreteBTField k`.
 -/
-instance instAssocTowerOfAlgebraConcreteBTF: AssocTowerOfAlgebra (ConcreteBTField) where
+instance instCoherentAlgebraTowerConcreteBTF: CoherentAlgebraTower (ConcreteBTField) where
   towerAlgebraMap := concreteTowerAlgebraMap
   smul := fun i j h => by
     exact (concreteTowerAlgebraMap i j h).toAlgebra.toSMul -- derive same smul from algebra
@@ -2173,7 +2173,7 @@ instance instAssocTowerOfAlgebraConcreteBTF: AssocTowerOfAlgebra (ConcreteBTFiel
     exact concreteTowerAlgebraMap_assoc k j i h1 h2
 
 def ConcreteBTFieldAlgebra {l r : ℕ} (h_le : l ≤ r) :
-    Algebra (ConcreteBTField l) (ConcreteBTField r) := by exact TowerOfAlgebra.toAlgebra h_le
+    Algebra (ConcreteBTField l) (ConcreteBTField r) := by exact AlgebraTower.toAlgebra h_le
 
 def join_via_add_smul (k : ℕ) (h_pos : k > 0) (hi_btf lo_btf : ConcreteBTField (k - 1)) :
     ConcreteBTField k := by
@@ -2351,8 +2351,8 @@ def basisSucc (k : ℕ) : Basis (Fin 2) (ConcreteBTField k) (ConcreteBTField (k 
       unfold basisFunc
       simp only [Fin.isValue, Fin.coe_ofNat_eq_mod, Nat.zero_mod, pow_zero, Nat.mod_succ, pow_one,
         ne_eq]
-      change ¬((TowerOfAlgebra.smul (i:=k) (j:=k+1) (h:=by omega).smul a 1) = generator)
-      rw [TowerOfAlgebra.smul_def']
+      change ¬((AlgebraTower.smul (i:=k) (j:=k+1) (h:=by omega).smul a 1) = generator)
+      rw [AlgebraTower.smul_def']
       change (¬(concreteTowerAlgebraMap (l:=k) (r:=k+1) (h_le:=by omega) a) * 1 = generator)
       rw [mul_one]
       rw [concreteTowerAlgebraMap_succ_1]
@@ -2402,13 +2402,13 @@ def basisSucc (k : ℕ) : Basis (Fin 2) (ConcreteBTField k) (ConcreteBTField (k 
     -- The first part of the sum is `a' • 1`.
     have h_part1_in_p : (concreteTowerAlgebraMap (l:=k) (r:=k+1) (h_le:=by omega) a) ∈ p := by
       rw [← mul_one (concreteTowerAlgebraMap (l:=k) (r:=k+1) (h_le:=by omega) a)]
-      -- , ← TowerOfAlgebra.smul_def']
+      -- , ← AlgebraTower.smul_def']
       exact p.smul_mem a h_one_in_p
 
     -- The second part of the sum is `b' • generator`.
     have h_part2_in_p : (concreteTowerAlgebraMap (l:=k) (r:=k+1) (h_le:=by omega) b)
       * generator ∈ p := by
-      -- rw [← TowerOfAlgebra.m]
+      -- rw [← AlgebraTower.m]
       exact p.smul_mem b h_gen_in_p
     -- Since both parts are in `p`, their sum is also in `p`.
     exact p.add_mem h_part1_in_p h_part2_in_p
@@ -2473,7 +2473,7 @@ def hli_level_diff_0 (l : ℕ) :
     rw [Ideal.span_singleton_one]
 
 def isScalarTower_succ_right (l r : ℕ) (h_le : l ≤ r) :=
-    instAssocTowerOfAlgebraConcreteBTF.toIsScalarTower (i:=l) (j:=r) (k:=r+1)
+    instCoherentAlgebraTowerConcreteBTF.toIsScalarTower (i:=l) (j:=r) (k:=r+1)
     (h1:=by omega) (h2:=by omega)
 /--
 The multilinear basis for `ConcreteBTField τ` over `ConcreteBTField k`
@@ -2872,16 +2872,16 @@ noncomputable def towerEquiv (n : ℕ) : TowerEquivResult n := by
       mapSplit := fun h_pos x => by sorry
     }
 
-noncomputable instance instAssocTowerOfAlgebraEquiv: AssocTowerOfAlgebraEquiv
+noncomputable instance instCoherentAlgebraTowerEquiv: CoherentAlgebraTowerEquiv
   (ConcreteBTField) (BTField) where
   toRingEquiv := fun i => (towerEquiv i).ringEquiv
   commutesLeft' := fun i j h r => by
-    -- ⊢ (TowerOfAlgebra.towerAlgebraMap i j h) ((towerEquiv i) r)
-    -- = (towerEquiv j) ((TowerOfAlgebra.towerAlgebraMap i j h) r)
+    -- ⊢ (AlgebraTower.towerAlgebraMap i j h) ((towerEquiv i) r)
+    -- = (towerEquiv j) ((AlgebraTower.towerAlgebraMap i j h) r)
     sorry
 
-#check instAssocTowerOfAlgebraEquiv.toAlgEquivOverLeft 7 100 (by omega)
-#check instAssocTowerOfAlgebraEquiv.toAlgEquivOverRight 7 100 (by omega)
+#check instCoherentAlgebraTowerEquiv.toAlgEquivOverLeft 7 100 (by omega)
+#check instCoherentAlgebraTowerEquiv.toAlgEquivOverRight 7 100 (by omega)
 
 end BinaryTowerAlgebraEquiv
 

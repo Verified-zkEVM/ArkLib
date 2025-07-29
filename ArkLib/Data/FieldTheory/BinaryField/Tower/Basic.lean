@@ -7,7 +7,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 import ArkLib.Data.FieldTheory.BinaryField.Tower.Prelude
 import ArkLib.Data.Classes.DCast
 import ArkLib.Data.Nat.Bitwise
-import ArkLib.Data.RingTheory.TowerOfAlgebra
+import ArkLib.Data.RingTheory.AlgebraTower
 
 /-!
 # Binary Tower Fields
@@ -844,7 +844,7 @@ instance polyMonic (n : ℕ) : Monic (poly n) := (BinaryTowerAux n).2.newPolyIsM
 
 end BTFieldDefs
 
-section BinaryTowerOfAlgebra
+section BinaryAlgebraTower
 /--
 The canonical ring homomorphism embedding `BTField k` into `BTField (k+1)`.
 This is the `AdjoinRoot.of` map.
@@ -973,7 +973,7 @@ theorem towerAlgebraMap_assoc: ∀ r mid l: ℕ, (h_l_le_mid: l ≤ mid) → (h_
 **Formalization of Cross-Level Algebra**: For any `k ≤ τ`, `BTField τ` is an
 algebra over `BTField k`.
 -/
-instance : AssocTowerOfAlgebra (BTField) where
+instance : CoherentAlgebraTower (BTField) where
   towerAlgebraMap := towerAlgebraMap
   smul := fun i j h => by
     exact (towerAlgebraMap i j h).toAlgebra.toSMul -- derive same smul from algebra
@@ -983,24 +983,24 @@ instance : AssocTowerOfAlgebra (BTField) where
     exact CommMonoid.mul_comm ((towerAlgebraMap i j h) r) x
   assoc' := by exact fun i j k h1 h2 ↦ towerAlgebraMap_assoc k j i h1 h2
 
-def binaryTowerOfAlgebra {l r : ℕ} (h_le : l ≤ r) : Algebra (BTField l) (BTField r) := by
-  exact TowerOfAlgebra.toAlgebra h_le
+def binaryAlgebraTower {l r : ℕ} (h_le : l ≤ r) : Algebra (BTField l) (BTField r) := by
+  exact AlgebraTower.toAlgebra h_le
 
 lemma binaryTowerAlgebra_def (l r : ℕ) (h_le : l ≤ r) :
-    @binaryTowerOfAlgebra (l:=l) (r:=r) (h_le:=h_le)
+    @binaryAlgebraTower (l:=l) (r:=r) (h_le:=h_le)
     = (towerAlgebraMap l r h_le).toAlgebra := by rfl
 
 lemma algebraMap_binaryTowerAlgebra_def (l r : ℕ) (h_le : l ≤ r) :
-  (@binaryTowerOfAlgebra (l:=l) (r:=r) (h_le:=h_le)).algebraMap = towerAlgebraMap l r h_le := by rfl
+  (@binaryAlgebraTower (l:=l) (r:=r) (h_le:=h_le)).algebraMap = towerAlgebraMap l r h_le := by rfl
 
 lemma BTField.coe_one_succ (l : ℕ) :
-  (@binaryTowerOfAlgebra (l:=l) (r:=l+1) (h_le:=by omega)).algebraMap (1 : BTField l) =
+  (@binaryAlgebraTower (l:=l) (r:=l+1) (h_le:=by omega)).algebraMap (1 : BTField l) =
     (1 : BTField (l+1)) := by
-  exact RingHom.map_one (binaryTowerOfAlgebra (l:=l) (r:=l+1) (h_le:=by omega)).algebraMap
+  exact RingHom.map_one (binaryAlgebraTower (l:=l) (r:=l+1) (h_le:=by omega)).algebraMap
 
 @[simp]
 theorem binaryTowerAlgebra_id {l r : ℕ} (h_eq : l = r) :
-    @binaryTowerOfAlgebra l r (h_le:=by omega) =
+    @binaryAlgebraTower l r (h_le:=by omega) =
     (h_eq ▸ (Algebra.id (BTField l)) : Algebra (BTField l) (BTField r)) := by
   subst h_eq
   simp only [binaryTowerAlgebra_def, towerAlgebraMap_id]
@@ -1008,10 +1008,10 @@ theorem binaryTowerAlgebra_id {l r : ℕ} (h_eq : l = r) :
 
 theorem binaryTowerAlgebra_apply_assoc (l mid r : ℕ) (h_l_le_mid : l ≤ mid) (h_mid_le_r : mid ≤ r):
     ∀ x : BTField l,
-    (@binaryTowerOfAlgebra (l:=l) (r:=r) (h_le:=by
+    (@binaryAlgebraTower (l:=l) (r:=r) (h_le:=by
       exact Nat.le_trans h_l_le_mid h_mid_le_r)).algebraMap x =
-    (@binaryTowerOfAlgebra (l:=mid) (r:=r) (h_le:=h_mid_le_r)).algebraMap
-      ((@binaryTowerOfAlgebra (l:=l) (r:=mid) (h_le:=h_l_le_mid)).algebraMap x)
+    (@binaryAlgebraTower (l:=mid) (r:=r) (h_le:=h_mid_le_r)).algebraMap
+      ((@binaryAlgebraTower (l:=l) (r:=mid) (h_le:=h_l_le_mid)).algebraMap x)
     := by
   intro x
   simp_rw [algebraMap_binaryTowerAlgebra_def]
@@ -1021,11 +1021,11 @@ theorem binaryTowerAlgebra_apply_assoc (l mid r : ℕ) (h_l_le_mid : l ≤ mid) 
 
 /-- This also provides the corresponding Module instance. -/
 def binaryTowerModule {l r : ℕ} (h_le : l ≤ r) : Module (BTField l) (BTField r) :=
-  (binaryTowerOfAlgebra (h_le:=h_le)).toModule
+  (binaryAlgebraTower (h_le:=h_le)).toModule
 
 instance (priority := 1000) algebra_adjacent_tower (l : ℕ) :
   Algebra (BTField l) (BTField (l+1)) := by
-  exact binaryTowerOfAlgebra (h_le:=by omega)
+  exact binaryAlgebraTower (h_le:=by omega)
 
 lemma algebraMap_adjacent_tower_def (l : ℕ) :
   (algebraMap (BTField l) (BTField (l + 1))) = canonicalEmbedding l := by
@@ -1050,14 +1050,14 @@ def BTField_succ_alg_equiv_adjoinRoot (k : ℕ) :
     }
   }
 
-end BinaryTowerOfAlgebra
+end BinaryAlgebraTower
 
 noncomputable section MultilinearBasis
 
 @[simp]
 theorem BTField.Basis_cast_index_eq (i j k n : ℕ) (h_le : k ≤ n) (h_eq : i = j):
     letI instAlgebra: Algebra (BTField k) (BTField n)
-      := binaryTowerOfAlgebra (l:=k) (r:=n) (h_le:=h_le)
+      := binaryAlgebraTower (l:=k) (r:=n) (h_le:=h_le)
     letI : Module (BTField k) (BTField n) := instAlgebra.toModule
     (Basis (Fin (i)) (BTField k) (BTField n)) = (Basis (Fin (j)) (BTField k) (BTField n)) := by
   subst h_eq
@@ -1065,8 +1065,8 @@ theorem BTField.Basis_cast_index_eq (i j k n : ℕ) (h_le : k ≤ n) (h_eq : i =
 
 theorem BTField.Basis_cast_dest_eq {ι : Type*} (k n m : ℕ) (h_k_le_n : k ≤ n)
   (h_k_le_m : k ≤ m) (h_eq : m = n):
-  letI instLeftAlgebra := binaryTowerOfAlgebra (l:=k) (r:=m) (h_le:=h_k_le_m)
-  letI instRightAlgebra := binaryTowerOfAlgebra (l:=k) (r:=n) (h_le:=h_k_le_n)
+  letI instLeftAlgebra := binaryAlgebraTower (l:=k) (r:=m) (h_le:=h_k_le_m)
+  letI instRightAlgebra := binaryAlgebraTower (l:=k) (r:=n) (h_le:=h_k_le_n)
   @Basis ι (BTField k) (BTField m) _ _ instLeftAlgebra.toModule =
   @Basis ι (BTField k) (BTField n) _ _ instRightAlgebra.toModule := by
   subst h_eq
@@ -1074,8 +1074,8 @@ theorem BTField.Basis_cast_dest_eq {ι : Type*} (k n m : ℕ) (h_k_le_n : k ≤ 
 
 theorem BTField.PowerBasis_cast_dest_eq (k n m : ℕ) (h_k_le_n : k ≤ n)
   (h_k_le_m : k ≤ m) (h_eq : m = n):
-  letI instLeftAlgebra := binaryTowerOfAlgebra (l:=k) (r:=m) (h_le:=h_k_le_m)
-  letI instRightAlgebra := binaryTowerOfAlgebra (l:=k) (r:=n) (h_le:=h_k_le_n)
+  letI instLeftAlgebra := binaryAlgebraTower (l:=k) (r:=m) (h_le:=h_k_le_m)
+  letI instRightAlgebra := binaryAlgebraTower (l:=k) (r:=n) (h_le:=h_k_le_n)
   @PowerBasis (BTField k) (BTField m) _ _ instLeftAlgebra =
   @PowerBasis (BTField k) (BTField n) _ _ instRightAlgebra := by
   subst h_eq
@@ -1087,9 +1087,9 @@ via changing in index type: `Fin (i)` to `Fin (j)` when `α ≤ β`.
 @[simp]
 theorem BTField.Basis_cast_index_apply {α β i j : ℕ} {k : Fin j} (h_le : α ≤ β) (h_eq : i = j)
   {b : @Basis (Fin (i)) (BTField α) (BTField β) _ _
-    (@binaryTowerOfAlgebra (l := α) (r := β) (h_le := h_le)).toModule}:
+    (@binaryAlgebraTower (l := α) (r := β) (h_le := h_le)).toModule}:
   let castBasis: @Basis (Fin j) (BTField α) (BTField β) _ _
-    (@binaryTowerOfAlgebra (l:=α) (r:=β) (h_le:=h_le)).toModule :=
+    (@binaryAlgebraTower (l:=α) (r:=β) (h_le:=h_le)).toModule :=
     cast (by exact BTField.Basis_cast_index_eq i j α β h_le h_eq) b
   (castBasis k) = b (Fin.cast (h_eq.symm) k) := by
   subst h_eq
@@ -1098,9 +1098,9 @@ theorem BTField.Basis_cast_index_apply {α β i j : ℕ} {k : Fin j} (h_le : α 
 @[simp]
 theorem BTField.Basis_cast_dest_apply {ι : Type*} (α β γ : ℕ) (h_le1 : α ≤ β) (h_le2 : α ≤ γ)
     (h_eq : β = γ) {k : ι} (b : @Basis ι (BTField α) (BTField β) _ _
-    (@binaryTowerOfAlgebra (l := α) (r := β) (h_le := h_le1)).toModule):
+    (@binaryAlgebraTower (l := α) (r := β) (h_le := h_le1)).toModule):
     let castBasis: @Basis ι (BTField α) (BTField γ) _ _
-      (@binaryTowerOfAlgebra (l := α) (r := γ) (h_le := h_le2)).toModule :=
+      (@binaryAlgebraTower (l := α) (r := γ) (h_le := h_le2)).toModule :=
       cast (by
         exact Basis_cast_dest_eq α γ β h_le2 h_le1 h_eq
       ) b
@@ -1125,7 +1125,7 @@ lemma powerBasisSucc_gen (k : ℕ) :
 
 def join_via_add_smul (k : ℕ) (h_pos : k > 0) (hi_btf lo_btf : BTField (k - 1)) :
     BTField k := by
-  letI instAlgebra := binaryTowerOfAlgebra (l:=k-1) (r:=k) (h_le:=by omega)
+  letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   exact hi_btf • Z k + (algebraMap (BTField (k - 1)) (BTField k) lo_btf)
 
 theorem unique_linear_decomposition_succ (k : ℕ) :
@@ -1158,9 +1158,9 @@ lemma powerBasisSucc_dim (k: ℕ):
   exact (BinaryTowerAux k).snd.natDegNewPolyIs2
 
 def hli_level_diff_0 (l : ℕ):
-  letI instAlgebra:= binaryTowerOfAlgebra (l:=l) (r:=l) (h_le:=by omega)
+  letI instAlgebra:= binaryAlgebraTower (l:=l) (r:=l) (h_le:=by omega)
   @Basis (Fin 1) (BTField l) (BTField l) _ _ instAlgebra.toModule:= by
-  letI instAlgebra:= binaryTowerOfAlgebra (l:=l) (r:=l) (h_le:=by omega)
+  letI instAlgebra:= binaryAlgebraTower (l:=l) (r:=l) (h_le:=by omega)
   letI instModule:= instAlgebra.toModule
   apply @Basis.mk (ι:=Fin 1) (R:=BTField l) (M:=BTField l) _ _ instAlgebra.toModule (v:=fun _ => 1)
   · -- This proof now works smoothly.
@@ -1188,7 +1188,7 @@ def hli_level_diff_0 (l : ℕ):
     rw [Ideal.span_singleton_one]
 
 def BTField.isScalarTower_succ_right (l r : ℕ) (h_le : l ≤ r) :=
-  instAssocTowerOfAlgebraNatBTField.toIsScalarTower (i:=l) (j:=r) (k:=r+1)
+  instCoherentAlgebraTowerNatBTField.toIsScalarTower (i:=l) (j:=r) (k:=r+1)
   (h1:=by omega) (h2:=by omega)
 
 /--
@@ -1197,9 +1197,9 @@ in the tower generators `Z(k+1), ..., Z(τ)`.
 This is done via scalar tower multiplication of power basis across adjacent levels.
 -/
 def multilinearBasis (l r : ℕ) (h_le : l ≤ r):
-    letI instAlgebra: Algebra (BTField l) (BTField r) := binaryTowerOfAlgebra (h_le:=h_le)
+    letI instAlgebra: Algebra (BTField l) (BTField r) := binaryAlgebraTower (h_le:=h_le)
     Basis (Fin (2 ^ (r - l))) (BTField l) (BTField r) := by
-  letI instAlgebra: Algebra (BTField l) (BTField r) := binaryTowerOfAlgebra (h_le:=h_le)
+  letI instAlgebra: Algebra (BTField l) (BTField r) := binaryAlgebraTower (h_le:=h_le)
   if h_r_sub_l: r - l = 0 then -- Avoid using `match` to avoid `Eq.rec` when reasoning recursively
     have h_l_eq_r: l = r := by omega
     subst h_l_eq_r
@@ -1214,12 +1214,12 @@ def multilinearBasis (l r : ℕ) (h_le : l ≤ r):
     have h_r1_sub_l: r1 - l = n' := by omega
     have h_r: r = r1 + 1 := by omega
     letI instAlgebraPrev: Algebra (BTField l) (BTField (r1)) :=
-      binaryTowerOfAlgebra (l:=l) (r:=r1) (h_le:=by omega)
+      binaryAlgebraTower (l:=l) (r:=r1) (h_le:=by omega)
     set prevMultilinearBasis: Basis (Fin (2 ^ (r1 - l))) (BTField l) (BTField r1)
       := multilinearBasis (l:=l) (r:=r1) (h_le:=by omega)
     rw! [h_r1_sub_l] at prevMultilinearBasis
     letI instAlgebra: Algebra (BTField l) (BTField (r1 + 1)) :=
-      binaryTowerOfAlgebra (l:=l) (r:=r1 + 1) (h_le:=by omega)
+      binaryAlgebraTower (l:=l) (r:=r1 + 1) (h_le:=by omega)
     rw! [h_r_sub_l]
     apply Basis.reindex (e:=revFinProdFinEquiv (m:=2^(n')) (n:=2)
       (h_m:=by exact Nat.two_pow_pos n'))
@@ -1240,7 +1240,7 @@ def multilinearBasis (l r : ℕ) (h_le : l ≤ r):
         rw [powerBasisSucc_dim (k:=r1)]
       )
     convert res
-    -- Basis are equal under the same @binaryTowerOfAlgebra
+    -- Basis are equal under the same @binaryAlgebraTower
     -- ⊢ Basis (Fin (2 ^ n') × Fin 2) (BTField l) (BTField r)
     -- = Basis (Fin (2 ^ n') × Fin 2) (BTField l) (BTField (r1 + 1))
     unfold instModuleSucc -- Module used in rhs
@@ -1252,10 +1252,10 @@ theorem BTField.PowerBasis.dim_of_eq_rec
     (h_r : r = r1 + 1)
     (b : PowerBasis (BTField r1) (BTField (r1 + 1))) :
     letI instAlgebra: Algebra (BTField r1) (BTField r) :=
-      binaryTowerOfAlgebra (l:=r1) (r:=r) (h_le:=by omega)
+      binaryAlgebraTower (l:=r1) (r:=r) (h_le:=by omega)
     ((Eq.rec (motive:=fun (x : ℕ) (_ : r1 + 1 = x) => by
       letI instAlgebraCur: Algebra (BTField r1) (BTField x) :=
-        binaryTowerOfAlgebra (l:=r1) (r:=x) (h_le:=by omega)
+        binaryAlgebraTower (l:=r1) (r:=x) (h_le:=by omega)
       exact PowerBasis (BTField r1) (BTField x)) (refl:=b) (t:=h_r.symm)):
         PowerBasis (BTField r1) (BTField r)).dim
     = b.dim := by
@@ -1267,14 +1267,14 @@ theorem PowerBasis.cast_basis_succ_of_eq_rec_apply
     (r1 r : ℕ) (h_r : r = r1 + 1)
     (k : Fin 2) :
     letI instAlgebra: Algebra (BTField r1) (BTField r) :=
-      binaryTowerOfAlgebra (l:=r1) (r:=r) (h_le:=by omega)
+      binaryAlgebraTower (l:=r1) (r:=r) (h_le:=by omega)
     letI instAlgebraSucc: Algebra (BTField (r1 + 1)) (BTField (r)) :=
-      binaryTowerOfAlgebra (l:=r1 + 1) (r:=r) (h_le:=by omega)
+      binaryAlgebraTower (l:=r1 + 1) (r:=r) (h_le:=by omega)
     let b: PowerBasis (BTField r1) (BTField (r1 + 1)) := powerBasisSucc (k:=r1)
     let bCast : PowerBasis (BTField r1) (BTField r) := Eq.rec (motive:=
       fun (x : ℕ) (_ : r1 + 1 = x) => by
         letI instAlgebraCur: Algebra (BTField r1) (BTField x) :=
-          binaryTowerOfAlgebra (l:=r1) (r:=x) (h_le:=by omega)
+          binaryAlgebraTower (l:=r1) (r:=x) (h_le:=by omega)
         exact PowerBasis (BTField r1) (BTField x)) (refl:=b) (t:=h_r.symm)
     have h_pb_dim: b.dim = 2 := by
       exact powerBasisSucc_dim r1
@@ -1307,9 +1307,9 @@ the ON bits in binary representation of `j`.
 theorem multilinearBasis_apply (r : ℕ): ∀ l: ℕ, (h_le : l ≤ r) → ∀ (j : Fin (2  ^ (r - l))),
   multilinearBasis (l:=l) (r:=r) (h_le:=h_le) j =
     (Finset.univ: Finset (Fin (r - l))).prod (fun i =>
-      (binaryTowerOfAlgebra (l:=l + i + 1) (r:=r) (h_le:=by omega)).algebraMap (
+      (binaryAlgebraTower (l:=l + i + 1) (r:=r) (h_le:=by omega)).algebraMap (
         (𝕏 (l + i)) ^ (Nat.getBit i j))) := by
-  -- letI instAlgebra: Algebra (BTField l) (BTField r) := binaryTowerOfAlgebra (h_le:=h_le)
+  -- letI instAlgebra: Algebra (BTField l) (BTField r) := binaryAlgebraTower (h_le:=h_le)
   induction r with
   | zero => -- Fin (2^0) = Fin 1, so j = 0
     intro l h_l_le_0 j
@@ -1328,7 +1328,7 @@ theorem multilinearBasis_apply (r : ℕ): ∀ l: ℕ, (h_le : l ≤ r) → ∀ (
     set r := r1 + 1 with hr
     intro l h_l_le_r j
     haveI instAlgebraR: Algebra (BTField r) (BTField r) :=
-      binaryTowerOfAlgebra (l:=r) (r:=r) (h_le:=by omega)
+      binaryAlgebraTower (l:=r) (r:=r) (h_le:=by omega)
     haveI instModuleR: Module (BTField r) (BTField r) := instAlgebraR.toModule
     if h_r_sub_l: r - l = 0 then
       rw [multilinearBasis]
@@ -1360,12 +1360,12 @@ theorem multilinearBasis_apply (r : ℕ): ∀ l: ℕ, (h_le : l ≤ r) → ∀ (
       have h_r: r = r1 + 1 := by omega
       have h1 : l + (r - l - 1) = r1 := by omega
       letI instAlgebraPrev: Algebra (BTField l) (BTField (r1)) :=
-        binaryTowerOfAlgebra (l:=l) (r:=r1) (h_le:=by omega)
+        binaryAlgebraTower (l:=l) (r:=r1) (h_le:=by omega)
       set prevMultilinearBasis: Basis (Fin (2 ^ (r1 - l))) (BTField l) (BTField r1) :=
         multilinearBasis (l:=l) (r:=r1) (h_le:=by omega) with h_prevMultilinearBasis
       rw! [h_r1_sub_l] at prevMultilinearBasis
       letI instAlgebra: Algebra (BTField l) (BTField (r1 + 1)) :=
-        binaryTowerOfAlgebra (l:=l) (r:=r1 + 1) (h_le:=by omega)
+        binaryAlgebraTower (l:=l) (r:=r1 + 1) (h_le:=by omega)
       rw! (castMode:=.all) [h1]
 
       letI instAlgebraSucc: Algebra (BTField (r1)) (BTField (r1 + 1)) := by
@@ -1382,7 +1382,7 @@ theorem multilinearBasis_apply (r : ℕ): ∀ l: ℕ, (h_le : l ≤ r) → ∀ (
       rw [cast_eq, cast_eq]
 
       letI instAlgebra2: Algebra (BTField r1) (BTField r) :=
-        binaryTowerOfAlgebra (l:=r1) (r:=r) (h_le:=by omega)
+        binaryAlgebraTower (l:=r1) (r:=r) (h_le:=by omega)
       letI instModule2: Module (BTField r1) (BTField r) := instAlgebra2.toModule
       set b := (powerBasisSucc r1) with hb
       rw! [←hb]
