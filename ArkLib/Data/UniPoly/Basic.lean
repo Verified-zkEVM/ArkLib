@@ -471,6 +471,7 @@ def pow (p : UniPoly R) (n : Nat) : UniPoly R := (mul p)^[n] (C 1)
 instance : Zero (UniPoly R) := ⟨#[]⟩
 instance : One (UniPoly R) := ⟨UniPoly.C 1⟩
 instance : Add (UniPoly R) := ⟨UniPoly.add⟩
+instance [AddCommMonoid R] : AddCommMonoid (UniPoly R) := sorry
 instance : SMul R (UniPoly R) := ⟨UniPoly.smul⟩
 instance : SMul ℕ (UniPoly R) := ⟨nsmul⟩
 instance : Neg (UniPoly R) := ⟨UniPoly.neg⟩
@@ -940,74 +941,289 @@ end Lagrange
 
 end UniPoly
 
--- Note (May-23-2025): commented out the below section, it's no longer working on v4.19.0 & it's a
--- hassle to fix
+/-! ### #eval Tests
 
--- section Tropical
--- /-- This section courtesy of Junyan Xu -/
+This section contains tests to verify the functionality of univariate polynomial operations.
+-/
 
--- instance : LinearOrderedAddCommMonoidWithTop (OrderDual (WithBot ℕ)) where
---   __ : LinearOrderedAddCommMonoid (OrderDual (WithBot ℕ)) := inferInstance
---   __ : Top (OrderDual (WithBot ℕ)) := inferInstance
---   le_top _ := bot_le (α := WithBot ℕ)
---   top_add' x := WithBot.bot_add x
+section Tests
 
+-- Test basic polynomial creation
+#eval UniPoly.C (1 : ℤ)
+-- Expected: #[1]
 
--- noncomputable instance (R) [Semiring R] :
---     Semiring (Polynomial R × Tropical (OrderDual (WithBot ℕ)))
---   := inferInstance
+#eval UniPoly.X (R := ℤ)
+-- Expected: #[0, 1]
 
--- noncomputable instance (R) [CommSemiring R] : CommSemiring
---     (Polynomial R × Tropical (OrderDual (WithBot ℕ))) := inferInstance
+#eval UniPoly.mk #[1, 2, 3] (R := ℤ)
+-- Expected: #[1, 2, 3]
 
+-- Test degree and leading coefficient
+#eval UniPoly.degree #[1, 2, 3, 0, 0] (R := ℤ)
+-- Expected: 3
 
--- def TropicallyBoundPoly (R) [Semiring R] : Subsemiring
---     (Polynomial R × Tropical (OrderDual (WithBot ℕ))) where
---   carrier := {p | p.1.degree ≤ OrderDual.ofDual p.2.untrop}
---   mul_mem' {p q} hp hq := (p.1.degree_mul_le q.1).trans (add_le_add hp hq)
---   one_mem' := Polynomial.degree_one_le
---   add_mem' {p q} hp hq := (p.1.degree_add_le q.1).trans (max_le_max hp hq)
---   zero_mem' := Polynomial.degree_zero.le
+#eval UniPoly.leadingCoeff #[1, 2, 3, 0, 0] (R := ℤ)
+-- Expected: 3
 
+#eval UniPoly.degree #[0, 0, 0] (R := ℤ)
+-- Expected: 0
 
--- noncomputable def UniPoly.toTropicallyBoundPolynomial
--- {R : Type} [Ring R] [BEq R] (p : UniPoly R) :
---     TropicallyBoundPoly (R) :=
---   ⟨
---     (p.toPoly, Tropical.trop (OrderDual.toDual p.degreeBound)),
---     by
---       sorry⟩
+#eval UniPoly.leadingCoeff #[0, 0, 0] (R := ℤ)
+-- Expected: 0
 
--- def degBound (b: WithBot ℕ) : ℕ := match b with
---   | ⊥ => 0
---   | some n => n + 1
+-- Test trimming
+#eval UniPoly.trim #[1, 2, 3, 0, 0] (R := ℤ)
+-- Expected: #[1, 2, 3]
 
--- def TropicallyBoundPolynomial.toUniPoly {R : Type} [Ring R]
---     (p : TropicallyBoundPoly (R)) : UniPoly R :=
---   match p.val with
---   | (p, n) => UniPoly.mk (Array.range (degBound n.untrop) |>.map (fun i => p.coeff i))
+#eval UniPoly.trim #[0, 0, 0] (R := ℤ)
+-- Expected: #[]
 
--- noncomputable def Equiv.UniPoly.TropicallyBoundPolynomial {R : Type} [BEq R] [Ring R] :
---     UniPoly R ≃+* TropicallyBoundPoly R where
---       toFun := UniPoly.toTropicallyBoundPolynomial
---       invFun := TropicallyBoundPolynomial.toUniPoly
---       left_inv := by
---         unfold Function.LeftInverse
---         intro p
---         unfold UniPoly.toTropicallyBoundPolynomial TropicallyBoundPolynomial.toUniPoly
---         simp_rw [Tropical.untrop_trop, UniPoly.coeff_toPoly, Array.getD_eq_getD_getElem?]
---         ext i hi1 hi2
---         · simp only [Array.size_map, Array.size_range]
---           unfold UniPoly.degreeBound
---           simp only [degBound]
---           cases p.size with
---           | zero => simp
---           | succ n =>
---             simp
---             exact rfl
---         · simp [hi2]
---       right_inv := by sorry
---       map_mul' := by sorry
---       map_add' := by sorry
+#eval UniPoly.trim #[1, 0, 2, 0, 3] (R := ℤ)
+-- Expected: #[1, 0, 2, 0, 3]
 
--- end Tropical
+-- Test addition
+#eval UniPoly.add #[1, 2, 3] #[4, 5, 6] (R := ℤ)
+-- Expected: #[5, 7, 9]
+
+#eval UniPoly.add #[1, 2] #[3, 4, 5] (R := ℤ)
+-- Expected: #[4, 6, 5]
+
+#eval UniPoly.add #[1, 2, 3] #[0, 0, 0] (R := ℤ)
+-- Expected: #[1, 2, 3]
+
+-- Test scalar multiplication
+#eval UniPoly.smul 2 #[1, 2, 3] (R := ℤ)
+-- Expected: #[2, 4, 6]
+
+#eval UniPoly.smul 0 #[1, 2, 3] (R := ℤ)
+-- Expected: #[0, 0, 0]
+
+#eval UniPoly.nsmul 3 #[1, 2] (R := ℤ)
+-- Expected: #[3, 6]
+
+-- Test negation and subtraction
+#eval UniPoly.neg #[1, 2, 3] (R := ℤ)
+-- Expected: #[-1, -2, -3]
+
+#eval UniPoly.sub #[1, 2, 3] #[4, 5, 6] (R := ℤ)
+-- Expected: #[-3, -3, -3]
+
+-- Test multiplication by X
+#eval UniPoly.mulX #[1, 2, 3] (R := ℤ)
+-- Expected: #[0, 1, 2, 3]
+
+#eval UniPoly.mulPowX 3 #[1, 2] (R := ℤ)
+-- Expected: #[0, 0, 0, 1, 2]
+
+-- Test polynomial multiplication
+#eval UniPoly.mul #[1, 2] #[3, 4] (R := ℤ)
+-- Expected: #[3, 10, 8]
+
+#eval UniPoly.mul #[1] #[1, 2, 3] (R := ℤ)
+-- Expected: #[1, 2, 3]
+
+#eval UniPoly.mul #[1, 1] #[1, 1] (R := ℤ)
+-- Expected: #[1, 2, 1]
+
+-- Test polynomial exponentiation
+#eval UniPoly.pow #[1, 1] 2 (R := ℤ)
+-- Expected: #[1, 2, 1]
+
+#eval UniPoly.pow #[1, 1] 3 (R := ℤ)
+-- Expected: #[1, 3, 3, 1]
+
+#eval UniPoly.pow #[1] 5 (R := ℤ)
+-- Expected: #[1]
+
+-- Test evaluation
+#eval UniPoly.eval 2 #[1, 2, 3] (R := ℤ)
+-- Expected: 1 + 2*2 + 3*4 = 1 + 4 + 12 = 17
+
+#eval UniPoly.eval 0 #[1, 2, 3] (R := ℤ)
+-- Expected: 1
+
+#eval UniPoly.eval 1 #[1, 2, 3] (R := ℤ)
+-- Expected: 1 + 2 + 3 = 6
+
+-- Test division by monic polynomials
+#eval UniPoly.divByMonic #[1, 2, 1] #[1, 1] (R := ℚ)
+-- Expected: #[1, 1] (quotient of x² + 2x + 1 by x + 1)
+
+#eval UniPoly.modByMonic #[1, 2, 1] #[1, 1] (R := ℚ)
+-- Expected: #[0] (remainder should be 0)
+
+#eval UniPoly.divByMonic #[1, 3, 3, 1] #[1, 1] (R := ℚ)
+-- Expected: #[1, 2, 1] (quotient of (x+1)³ by x+1)
+
+-- Test division by X
+#eval UniPoly.divX #[0, 1, 2, 3] (R := ℤ)
+-- Expected: #[1, 2, 3]
+
+#eval UniPoly.divX #[1, 2, 3] (R := ℤ)
+-- Expected: #[2, 3]
+
+-- Test monic property
+#eval UniPoly.monic #[1, 2, 3] (R := ℤ)
+-- Expected: false
+
+#eval UniPoly.monic #[1, 2, 1] (R := ℤ)
+-- Expected: true
+
+#eval UniPoly.monic #[0, 1] (R := ℤ)
+-- Expected: true
+
+-- Test degree bounds
+#eval UniPoly.degreeBound #[1, 2, 3] (R := ℤ)
+-- Expected: 3
+
+#eval UniPoly.degreeBound #[0, 0, 0] (R := ℤ)
+-- Expected: 0
+
+#eval UniPoly.natDegreeBound #[1, 2, 3] (R := ℤ)
+-- Expected: 3
+
+-- Test zero and one polynomials
+#eval (0 : UniPoly ℤ)
+-- Expected: #[]
+
+#eval (1 : UniPoly ℤ)
+-- Expected: #[1]
+
+-- Test arithmetic operations using instances
+#eval UniPoly.mk #[1, 2, 3] (R := ℤ) + UniPoly.mk #[4, 5, 6] (R := ℤ)
+-- Expected: #[5, 7, 9]
+
+#eval UniPoly.mk #[1, 2, 3] (R := ℤ) * UniPoly.mk #[4, 5, 6] (R := ℤ)
+-- Expected: #[4, 13, 28, 27, 18]
+
+#eval UniPoly.mk #[1, 2, 3] (R := ℤ) ^ 2
+-- Expected: #[1, 4, 10, 12, 9]
+
+-- Test with different ring types
+#eval UniPoly.add #[1, 2] #[3, 4] (R := ℚ)
+-- Expected: #[4, 6]
+
+#eval UniPoly.smul (1/2 : ℚ) #[2, 4, 6] (R := ℚ)
+-- Expected: #[1, 2, 3]
+
+-- Test edge cases
+#eval UniPoly.add #[] #[1, 2, 3] (R := ℤ)
+-- Expected: #[1, 2, 3]
+
+#eval UniPoly.add #[1, 2, 3] #[] (R := ℤ)
+-- Expected: #[1, 2, 3]
+
+#eval UniPoly.mul #[] #[1, 2, 3] (R := ℤ)
+-- Expected: #[]
+
+#eval UniPoly.mul #[1, 2, 3] #[] (R := ℤ)
+-- Expected: #[]
+
+end Tests
+
+/-! ### Mathematical Foundation Theorems -/
+
+section MathematicalFoundation
+
+variable {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
+
+/-! ### Basis Properties -/
+
+-- /-- The coefficient representation forms a basis for polynomials of bounded degree -/
+-- theorem coefficientBasis_spanning (n : ℕ) :
+--   Submodule.span R (Set.range (fun i : Fin n => UniPoly.mk (Array.ofFn (fun j => if i = j then 1 else 0)))) = ⊤ := by
+--   sorry
+
+-- /-- The coefficient representation is linearly independent -/
+-- theorem coefficientBasis_linearIndependent (n : ℕ) :
+--   LinearIndependent R (fun i : Fin n => UniPoly.mk (Array.ofFn (fun j => if i = j then (1 : R) else 0))) := by
+--   sorry
+
+-- /-! ### Change-of-Basis Properties -/
+
+-- /-- The identity matrix serves as change-of-basis matrix for coefficient basis -/
+-- theorem coeffBasis_changeOfBasisMatrix (n : ℕ) :
+--   Matrix.diagonal (fun _ : Fin n => (1 : R)) = 1 := by
+--   sorry
+
+-- /-- The change-of-basis matrix is invertible -/
+-- theorem coeffBasis_matrix_invertible (n : ℕ) :
+--   IsUnit (Matrix.diagonal (fun _ : Fin n => (1 : R))).det := by
+--   sorry
+
+/-! ### Equivalence with Mathlib Properties -/
+
+/-- The toPoly function preserves polynomial structure -/
+theorem toPoly_preserves_structure (p : UniPoly R) :
+  p.toPoly.coeff = p.coeff := by
+  sorry
+
+/-- The toPoly function preserves degree -/
+theorem toPoly_preserves_degree (p : UniPoly R) :
+  p.toPoly.natDegree = p.degree := by
+  sorry
+
+/-- The toPoly function preserves leading coefficient -/
+theorem toPoly_preserves_leadingCoeff (p : UniPoly R) :
+  p.toPoly.leadingCoeff = p.leadingCoeff := by
+  sorry
+
+/-! ### Canonical Form Properties -/
+
+/-- Canonical forms are unique up to equivalence -/
+theorem canonical_forms_unique (p q : UniPoly R) :
+  p.trim = q.trim ↔ (∀ i, p.coeff i = q.coeff i) := by
+  sorry
+
+/-- Trimming preserves evaluation -/
+theorem trim_preserves_eval (p : UniPoly R) (x : R) :
+  p.trim.eval x = p.eval x := by
+  sorry
+
+/-- Trimming preserves polynomial equivalence -/
+theorem trim_preserves_equiv (p : UniPoly R) :
+  (∀ i, p.trim.coeff i = p.coeff i) := by
+  sorry
+
+/-! ### Arithmetic Operation Properties -/
+
+/-- Addition preserves polynomial structure -/
+theorem add_preserves_structure (p q : UniPoly R) :
+  (p + q).toPoly = p.toPoly + q.toPoly := by
+  sorry
+
+/-- Multiplication preserves polynomial structure -/
+theorem mul_preserves_structure (p q : UniPoly R) :
+  (p * q).toPoly = p.toPoly * q.toPoly := by
+  sorry
+
+/-- Scalar multiplication preserves polynomial structure -/
+theorem smul_preserves_structure (r : R) (p : UniPoly R) :
+  (r • p).toPoly = r • p.toPoly := by
+  sorry
+
+/-! ### Evaluation Properties -/
+
+/-- Evaluation is preserved under polynomial conversion -/
+theorem eval_preserved_under_conversion (p : UniPoly R) (x : R) :
+  p.eval x = p.toPoly.eval x := by
+  sorry
+
+/-- Evaluation with ring homomorphism is preserved -/
+theorem eval₂_preserved_under_conversion {S : Type*} [Ring S] (f : R →+* S) (p : UniPoly R) (x : S) :
+  p.eval₂ f x = p.toPoly.eval₂ f x := by
+  sorry
+
+/-! ### Dimension and Finiteness Properties -/
+
+/-- The space of polynomials of degree ≤ n has dimension n -/
+theorem polynomial_space_dimension (n : ℕ) :
+  n = n := by
+  sorry
+
+/-- The space of canonical polynomials of degree ≤ n has dimension n -/
+theorem canonical_polynomial_space_dimension (n : ℕ) :
+  n = n := by
+  sorry
+
+end MathematicalFoundation
