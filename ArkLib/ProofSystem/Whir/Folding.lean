@@ -9,6 +9,32 @@ import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLib.ProofSystem.Whir.BlockRelDistance
 import ArkLib.ProofSystem.Whir.MutualCorrAgreement
 
+/-!
+# Folding
+
+This file formalizes the notion of folding univariate functions and
+lemmas showing that folding preserves list decocidng,
+introduced in the [Section 4 of the WHIR paper][todo: ArkLib bibliography].
+
+## Implementation notes (corrections from paper)
+
+- Theorem 4.20:
+-- proximity generators should be defined for `C^(0),...,C^(k)` in place of `C^(1),...,C^(k)`
+-- `\delta \in (0, 1 - max_{i \in [0,k]} {....})` in place of
+   `\delta \in (0, 1 - max_{i \in [k]} {....})`
+- Theorem 4.20 holds for `l = 2` as can be seen with `BStar(..,2)` and `errStar(..,2,..)`
+  and so `Gen(l,alpha) = {1, alpha,...., alpha^{l-1}}` also corresponds to `l = 2`
+  and not for a generic l.
+
+## References
+
+* [G Arnon, A Chies, G Fenzi, and E Yogev, *WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification*][todo: ArkLib bibliography]
+Freely available at https://eprint.iacr.org/2024/1586
+
+## Tags
+Todo: should we aim to add tags?
+-/
+
 namespace Fold
 
 open BlockRelDistance Vector Finset
@@ -95,7 +121,7 @@ lemma fold_f_g
   (f : smoothCode φ_0 m) :
   let f_fun := (f : (indexPowT S φ 0) → F)
   let g := fold_k f_fun αs
-  g ∈ smoothCode φ_k (m-k) := by sorry
+  g ∈ smoothCode φ_k (m - k) := by sorry
 
 /-- Claim 4.5 part 2
   If fPoly be the multilinear extension of f, then we have
@@ -205,12 +231,12 @@ theorem folding_listdecoding_if_genMutualCorrAgreement
                       let vec_α := GenFun α
                       let fold := fold_k f vec_α
                       let foldSet := fold_k_set listBlock vec_α
-                      let kFin : Fin (k + 1) := ⟨k, sorry⟩
+                      let kFin : Fin (k + 1) := ⟨k, Nat.lt_succ_self k⟩
                       let Cₖ := (params.Gen_α kFin).C
                       let listHamming := relHammingBall Cₖ fold δ
 
                       foldSet ≠ listHamming
-                    ] < (∑ i : Fin (k+1),
+                    ] < (∑ i : Fin (k + 1),
                           params.errStar i (params.Gen_α i).C (params.Gen_α i).parℓ δ)
 := by sorry
 

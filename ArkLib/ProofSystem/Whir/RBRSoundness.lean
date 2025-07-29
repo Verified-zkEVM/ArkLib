@@ -11,6 +11,33 @@ import ArkLib.ProofSystem.Whir.BlockRelDistance
 import ArkLib.ProofSystem.Whir.MutualCorrAgreement
 import ArkLib.ProofSystem.Whir.ProximityGen
 
+/-!
+# Round by round soundness theorem
+
+This file formalizes the round by round soundness theorem of the WHIR IOPP,
+introduced in the [Section 5 of the WHIR paper][todo: ArkLib bibliography].
+
+## Implementation notes (corrections from paper)
+
+- Theorem 5.2:
+-- `(δᵢ, l_{i,s})`-list decodable in place of `(l_{i,s}, δᵢ)`-list decodable
+-- proximity generators should be defined for `C^(0),...,C^(k)` in place of `C^(1),...,C^(k)`
+
+- Theorem 5.2 holds for `l = 2` as can be seen with `BStar(..,2)` and `errStar(..,2,..)`
+  and so `Gen(l,alpha) = {1, alpha,...., alpha^{l-1}}` also corresponds to `l = 2`
+  and not for a generic l.
+
+- In in Construction 5.1 and Theorem 5.2,
+  we use M + 1 iterations instead of M, for ease of representation in Lean
+
+## References
+
+* [G Arnon, A Chies, G Fenzi, and E Yogev, *WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification*][todo: ArkLib bibliography]
+Freely available at https://eprint.iacr.org/2024/1586
+
+## Tags
+Todo: should we aim to add tags?
+-/
 namespace WhirIOP
 
 open BigOperators BlockRelDistance MutualCorrAgreement Generator Finset
@@ -185,8 +212,10 @@ theorem whir_rbr_soundness
         let _ : ∀ j : Fin ((P.foldingParam 0)+1), Fintype (indexPowT (S 0) (P.φ 0) j) := h.inst1 0
         let _ : ∀ j : Fin ((P.foldingParam 0)+1), Nonempty (indexPowT (S 0) (P.φ 0) j) := h.inst2 0
 
-        -- ε_fold(0,j) ≤ dstar * dist(0,j-1) / |F| + errStar(C_0j, 2, δ₀),
-        -- here j runs from 1 to (P.foldingParam 0) for ε_fold(0,j)
+        -- ε_fold(0,j+1) ≤ dstar * dist(0,j) / |F| + errStar(C_0j, 2, δ₀),
+        -- Note here that `j : Fin (P.foldingParam 0)`,
+        -- so we need to cast into `Fin ((P.foldingParam 0) + 1)` for indexing of `h.dist`
+        -- To get `j`, we use `.castSucc`, whereas to get `j + 1`, we use `.succ`.
         ∀ j : Fin ((P.foldingParam 0) + 1),
           let errStar_0 j := h.errStar 0 j (h.C 0 j) (h.Gen_α 0 j).parℓ (h.δ 0)
         ∀ j : Fin (P.foldingParam 0),
@@ -213,8 +242,10 @@ theorem whir_rbr_soundness
         let _ : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1),
           Nonempty (indexPowT (S i) (P.φ i) j) := h.inst2
 
-        -- ε_fold(i,j) ≤ d * dist(i,j-1) / |F| + errStar(C_ij,2,δᵢ)
-        -- here j runs from 1 to (P.foldingParam 0) for ε_fold(i,j)
+        -- ε_fold(i,j+1) ≤ d * dist(i,j) / |F| + errStar(C_i{j+1},2,δᵢ)
+        -- Note here that `j : Fin (P.foldingParam 0)`,
+        -- so we need to cast into `Fin ((P.foldingParam 0) + 1)` for indexing of `h.dist`
+        -- To get `j`, we use `.castSucc`, whereas to get `j + 1`, we use `.succ`.
         ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1),
           let errStar i j := h.errStar i j (h.C i j) (h.Gen_α i j).parℓ (h.δ i)
         ∀ i : Fin (M + 1), ∀ j : Fin (P.foldingParam i),
