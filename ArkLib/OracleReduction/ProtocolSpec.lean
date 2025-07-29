@@ -524,7 +524,7 @@ This is a randomness oracle: it simply calls the `selectElem` method inherited f
 -/
 def challengeQueryImpl {pSpec : ProtocolSpec n} [∀ i, SelectableType (pSpec.Challenge i)] :
     QueryImpl [pSpec.Challenge]ₒ ProbComp where
-  impl | query i () => SelectableType.selectElem (β := pSpec.Challenge i)
+  impl | query i () => uniformOfFintype (pSpec.Challenge i)
 
 /-- Turn each verifier's challenge into an oracle, where one needs to query
   with an input statement and prior messages up to that round to get a challenge -/
@@ -590,7 +590,7 @@ instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpe
 def srChallengeQueryImpl {Statement : Type} {pSpec : ProtocolSpec n}
     [∀ i, SelectableType (pSpec.Challenge i)] :
     QueryImpl (srChallengeOracle Statement pSpec) ProbComp where
-  impl | query i _ => SelectableType.selectElem (β := pSpec.Challenge i)
+  impl | query i _ => uniformOfFintype (pSpec.Challenge i)
 
 /-- Alternate version of query implementation that takes in a cached function `f` and returns
   the result and the updated function.

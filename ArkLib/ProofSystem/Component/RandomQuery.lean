@@ -215,7 +215,7 @@ theorem oracleReduction_rbrKnowledgeSoundness
   classical
   simp only [probEvent_bind_eq_tsum]
   simp [ProtocolSpec.Transcript.concat, Fin.snoc, default]
-  rw [div_eq_mul_inv]
+  -- rw [div_eq_mul_inv]
   stop
   gcongr
   simp [Finset.filter_and]
