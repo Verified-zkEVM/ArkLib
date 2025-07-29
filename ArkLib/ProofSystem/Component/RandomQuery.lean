@@ -171,7 +171,7 @@ def rbrExtractor : Extractor.RoundByRound oSpec
 /-- The knowledge state function for the `RandomQuery` oracle reduction. -/
 def knowledgeStateFunction :
     (oracleVerifier oSpec OStatement).KnowledgeStateFunction init impl
-    (relIn OStatement) (relOut OStatement) (fun _ => WitIn) (rbrExtractor oSpec OStatement) where
+    (relIn OStatement) (relOut OStatement) (rbrExtractor oSpec OStatement) where
   toFun
   | 0 => fun ⟨_, oracles⟩ _ _ => oracles 0 = oracles 1
   | 1 => fun ⟨_, oracles⟩ chal _ =>
@@ -181,10 +181,6 @@ def knowledgeStateFunction :
   toFun_next := fun i hDir ⟨stmt, oStmt⟩ tr h => by simp_all
   toFun_full := fun ⟨stmt, oStmt⟩ tr _ h => by
     simp_all [oracleVerifier, OracleVerifier.toVerifier, Verifier.run]
-
-/-!
-
--/
 
 variable [Fintype (Query OStatement)] [DecidableEq (Response OStatement)]
 
