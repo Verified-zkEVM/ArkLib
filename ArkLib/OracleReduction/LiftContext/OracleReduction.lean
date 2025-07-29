@@ -96,7 +96,8 @@ end Execution
 
 section Security
 
-variable [oSpec.FiniteRange] [∀ i, VCVCompatible (pSpec.Challenge i)]
+variable [∀ i, SelectableType (pSpec.Challenge i)]
+  {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   {outerRelIn : Set ((OuterStmtIn × (∀ i, OuterOStmtIn i)) × OuterWitIn)}
   {outerRelOut : Set ((OuterStmtOut × (∀ i, OuterOStmtOut i)) × OuterWitOut)}
   {innerRelIn : Set ((InnerStmtIn × (∀ i, InnerOStmtIn i)) × InnerWitIn)}
@@ -115,15 +116,15 @@ variable
   {completenessError : ℝ≥0}
 
 theorem liftContext_completeness
-    (h : R.completeness innerRelIn innerRelOut completenessError) :
-      (R.liftContext lens).completeness outerRelIn outerRelOut completenessError := by
+    (h : R.completeness init impl innerRelIn innerRelOut completenessError) :
+      (R.liftContext lens).completeness init impl outerRelIn outerRelOut completenessError := by
   unfold OracleReduction.completeness at h ⊢
   rw [liftContext_toReduction_comm]
   exact R.toReduction.liftContext_completeness h (lens := lens.toContext)
 
 theorem liftContext_perfectCompleteness
-    (h : R.perfectCompleteness innerRelIn innerRelOut) :
-      (R.liftContext lens).perfectCompleteness outerRelIn outerRelOut :=
+    (h : R.perfectCompleteness init impl innerRelIn innerRelOut) :
+      (R.liftContext lens).perfectCompleteness init impl outerRelIn outerRelOut :=
   liftContext_completeness h
 
 end OracleReduction
@@ -145,8 +146,8 @@ theorem liftContext_soundness
     (V : OracleVerifier oSpec InnerStmtIn InnerOStmtIn InnerStmtOut InnerOStmtOut pSpec)
     [lensSound : lens.IsSound outerLangIn outerLangOut innerLangIn innerLangOut
       (V.toVerifier.compatStatement lens)]
-    (h : V.soundness innerLangIn innerLangOut soundnessError) :
-      (V.liftContext lens).soundness outerLangIn outerLangOut soundnessError := by
+    (h : V.soundness init impl innerLangIn innerLangOut soundnessError) :
+      (V.liftContext lens).soundness init impl outerLangIn outerLangOut soundnessError := by
   unfold OracleVerifier.soundness at h ⊢
   rw [liftContext_toVerifier_comm]
   exact V.toVerifier.liftContext_soundness h (lens := lens)
@@ -161,8 +162,8 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerWitIn]
     [lensKS : Extractor.Lens.IsKnowledgeSound
       outerRelIn innerRelIn outerRelOut innerRelOut
       (V.toVerifier.compatStatement stmtLens) (fun _ _ => True) ⟨stmtLens, witLens⟩]
-    (h : V.knowledgeSoundness innerRelIn innerRelOut knowledgeError) :
-      (V.liftContext stmtLens).knowledgeSoundness outerRelIn outerRelOut
+    (h : V.knowledgeSoundness init impl innerRelIn innerRelOut knowledgeError) :
+      (V.liftContext stmtLens).knowledgeSoundness init impl outerRelIn outerRelOut
         knowledgeError := by
   unfold OracleVerifier.knowledgeSoundness at h ⊢
   rw [liftContext_toVerifier_comm]
@@ -176,8 +177,8 @@ theorem liftContext_rbr_soundness
     [lensSound : lens.IsSound
       outerLangIn outerLangOut innerLangIn innerLangOut
       (V.toVerifier.compatStatement lens)]
-    (h : V.rbrSoundness innerLangIn innerLangOut rbrSoundnessError) :
-      (V.liftContext lens).rbrSoundness outerLangIn outerLangOut rbrSoundnessError := by
+    (h : V.rbrSoundness init impl innerLangIn innerLangOut rbrSoundnessError) :
+      (V.liftContext lens).rbrSoundness init impl outerLangIn outerLangOut rbrSoundnessError := by
   unfold OracleVerifier.rbrSoundness at h ⊢
   rw [liftContext_toVerifier_comm]
   exact V.toVerifier.liftContext_rbr_soundness h (lens := lens)
@@ -192,8 +193,8 @@ theorem liftContext_rbr_knowledgeSoundness [Inhabited InnerWitIn]
     [lensKS : Extractor.Lens.IsKnowledgeSound
       outerRelIn innerRelIn outerRelOut innerRelOut
       (V.toVerifier.compatStatement stmtLens) (fun _ _ => True) ⟨stmtLens, witLens⟩]
-    (h : V.rbrKnowledgeSoundness innerRelIn innerRelOut rbrKnowledgeError) :
-      (V.liftContext stmtLens).rbrKnowledgeSoundness outerRelIn outerRelOut
+    (h : V.rbrKnowledgeSoundness init impl innerRelIn innerRelOut rbrKnowledgeError) :
+      (V.liftContext stmtLens).rbrKnowledgeSoundness init impl outerRelIn outerRelOut
         rbrKnowledgeError := by
   unfold OracleVerifier.rbrKnowledgeSoundness at h ⊢
   rw [liftContext_toVerifier_comm]

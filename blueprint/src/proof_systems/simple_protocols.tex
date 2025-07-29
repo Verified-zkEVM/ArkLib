@@ -21,7 +21,7 @@ The simplest possible oracle reduction is one that performs no computation at al
 
 \begin{theorem}[DoNothing Perfect Completeness]
     The DoNothing reduction satisfies perfect completeness for any input relation.
-    \lean{DoNothing.reduction_completeness, DoNothing.oracleReduction_completeness}
+    \lean{DoNothing.reduction_perfectCompleteness, DoNothing.oracleReduction_perfectCompleteness}
     \uses{def:donothing_reduction}
 \end{theorem}
 
@@ -119,7 +119,7 @@ The key security property of RandomQuery depends on the notion of oracle distanc
 
 \begin{theorem}[RandomQuery Knowledge Soundness]
     If the oracle type has distance bound $d$, then the RandomQuery oracle reduction satisfies round-by-round knowledge soundness with error probability $\frac{d}{|\mathsf{Query}|}$.
-    \lean{RandomQuery.rbr_knowledge_soundness}
+    \lean{RandomQuery.oracleVerifier_rbrKnowledgeSoundness}
     \uses{def:randomquery_oracle_reduction, def:oracle_distance}
 \end{theorem}
 

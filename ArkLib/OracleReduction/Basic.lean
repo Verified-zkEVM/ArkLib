@@ -465,6 +465,18 @@ alias OracleProver.trivial := OracleProver.id
 alias OracleVerifier.trivial := OracleVerifier.id
 alias OracleReduction.trivial := OracleReduction.id
 
+@[simp]
+lemma OracleVerifier.id_toVerifier :
+    (OracleVerifier.id : OracleVerifier oSpec Statement OStatement _ _ _).toVerifier =
+      Verifier.id := by
+  simp [OracleVerifier.id, OracleVerifier.toVerifier, Verifier.id]
+
+@[simp]
+lemma OracleReduction.id_toReduction :
+    (OracleReduction.id : OracleReduction oSpec Statement OStatement Witness _ _ _ _).toReduction =
+      Reduction.id := by
+  simp [OracleReduction.id, OracleReduction.toReduction, Reduction.id, OracleProver.id]
+
 end Trivial
 
 section Classes

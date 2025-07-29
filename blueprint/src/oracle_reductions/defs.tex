@@ -636,26 +636,26 @@ To define round-by-round (knowledge) soundness, we need to define the notion of 
 %     part of the security condition.
 % \end{remark}
 
-\subsubsection{Extractor Properties}
+% \subsubsection{Extractor Properties}
 
-These definitions are highly experimental and may change in the future. The goal is to put some conditions on the extractor in order for prove sequential composition preserves knowledge soundness.
+% These definitions are highly experimental and may change in the future. The goal is to put some conditions on the extractor in order for prove sequential composition preserves knowledge soundness.
 
-\begin{definition}[Monotone Straightline Extractor]
-    \label{def:monotone_straightline_extractor}
-    An extractor is \textbf{monotone} if its success probability on a given query log is the same as
-    the success probability on any extension of that query log. This property ensures that the extractor's
-    performance does not degrade when given more information.
-    \lean{Verifier.Extractor.Straightline.IsMonotone}
-    \uses{def:straightline_extractor}
-\end{definition}
+% \begin{definition}[Monotone Straightline Extractor]
+%     \label{def:monotone_straightline_extractor}
+%     An extractor is \textbf{monotone} if its success probability on a given query log is the same as
+%     the success probability on any extension of that query log. This property ensures that the extractor's
+%     performance does not degrade when given more information.
+%     \lean{Verifier.Extractor.Straightline.IsMonotone}
+%     \uses{def:straightline_extractor}
+% \end{definition}
 
-\begin{definition}[Monotone RBR Extractor]
-    \label{def:monotone_rbr_extractor}
-    A round-by-round extractor is \textbf{monotone} if its success probability on a given query log
-    is the same as the success probability on any extension of that query log.
-    \lean{Extractor.RoundByRound.IsMonotone}
-    \uses{def:rbr_extractor}
-\end{definition}
+% \begin{definition}[Monotone RBR Extractor]
+%     \label{def:monotone_rbr_extractor}
+%     A round-by-round extractor is \textbf{monotone} if its success probability on a given query log
+%     is the same as the success probability on any extension of that query log.
+%     \lean{Extractor.RoundByRound.IsMonotone}
+%     \uses{def:rbr_extractor}
+% \end{definition}
 
 \subsubsection{Implications Between Security Notions}
 
