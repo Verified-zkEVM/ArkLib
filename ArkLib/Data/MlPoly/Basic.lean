@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 -- import Mathlib.Data.Matrix.Mul
+import ArkLib.Data.Nat.Bitwise
 import Mathlib.RingTheory.MvPolynomial.Basic
 import ToMathlib.General
 
@@ -41,12 +42,33 @@ scoped notation:80 a " *ᵥ " b => dotProduct a b
 
 def dotProduct_cons (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
   dotProduct (cons a b) (cons c d) = a * c + dotProduct b d := by
-  simp [dotProduct, cons, foldl]
-  -- rw [← Array.foldl_toList]
+  -- Unfold the definition of dotProduct to expose zipWith and foldl
+  unfold dotProduct
+  -- Rewrite the goal using lemmas that connect Vector operations to List operations
+  -- This makes the structure of the computation explicit
+  -- rw [Vector.zipWith_cons_toList, Vector.foldl_cons_toList, zero_add]
+  -- Now, the goal is about how foldl on a list relates to adding an initial element
+  -- Since we have an AddCommMonoid, folding with an initial value `x` is the same as
+  -- `x` plus the fold starting from 0.
+  -- rw [List.foldl_add]
+  -- The remaining parts of the equation now match perfectly
+  -- rfl
   sorry
 
 def dotProduct_root_cons (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
     _root_.dotProduct (cons a b).get (cons c d).get = a * c + _root_.dotProduct b.get d.get := by
+  -- Unfold definitions to work with lists
+  -- simp [dotProduct, get, cons, toArray, Array.toList_eq, Array.data_mk]
+  -- The goal simplifies to properties of list operations
+  -- Use the cons property of zipWith and foldl for lists
+  -- rw [List.zipWith_cons, List.foldl_cons, zero_add]
+  -- Apply the commutativity of addition to align the terms
+  -- rw [add_comm]
+  -- The RHS is now expressed as a fold over the tail of the list.
+  -- We can rewrite it back into the dotProduct form.
+  -- rw [← List.foldl_map, ← List.zipWith_map_left, ← List.zipWith_map_right]
+  -- The equation is now an identity
+  -- rfl
   sorry
 
 -- theorem dotProduct_eq_matrix_dotProduct (a b : Vector R n) :
@@ -234,6 +256,47 @@ example : lagrangeBasis #v[(1 : ℤ), 2, 3] = #v[0, 0, 0, 0, 2, -3, -4, 6] := by
     and `1 - w[j]` if the `j`-th bit of `i` is 0. -/
 theorem lagrangeBasis_getElem {w : Vector R n} (i : Fin (2 ^ n)) :
     (lagrangeBasis w)[i] = ∏ j : Fin n, if (BitVec.ofFin i).getLsb j then w[j] else 1 - w[j] := by
+ -- We proceed by induction on n, the number of variables.
+  -- induction n using Nat.strongInductionOn with
+  -- | zero =>
+  --   -- Base case: n = 0. The space has one point, and the basis is just [1].
+  --   -- `subsingleton_fin_zero_iff` gives us the unique element `i`.
+  --   intros i
+  --   cases' (subsingleton_fin_zero_iff.mp (by infer_instance)) i with
+  --   -- The product over an empty set of variables (Fin 0) is 1.
+  --   -- The lagrange basis for n=0 is also #v[1].
+  --   simp [lagrangeBasis, lagrangeBasisAux, Fin.prod_empty]
+  -- | succ n ih =>
+  --   -- Inductive step: Assume the property holds for n, prove for n+1.
+  --   intros i
+  --   let w_head := w.head
+  --   let w_tail := w.tail
+  --   -- Unfold the definition of lagrangeBasis to see the recursive structure.
+  --   simp only [lagrangeBasis, lagrangeBasisAux, dif_neg (Nat.succ_ne_zero n)]
+  --   -- The logic branches based on the most significant bit of the index `i`.
+  --   -- This corresponds to whether we are in the "upper" or "lower" half of the vector.
+  --   if h : (BitVec.ofFin i).getLsb n then
+  --     -- Case 1: The n-th bit (MSB) of i is 1.
+  --     -- This means i is in the upper half, so we look at the second part of the flatMap result.
+  --     have : (lagrangeBasisAux w 1 (by omega) (Vector.flatMap (fun c => let cw := c * w_head; #v[c - cw, cw]) #v[1]))[i]
+  --       = ((lagrangeBasis w_tail).map (fun c => c * w_head))[i - (2^n)]'(by
+  --           rw [BitVec.getLsb_eq_testBit, Nat.testBit_succ_high] at h
+  --           exact Nat.sub_lt_of_lt_add_lt (by simpa using i.isLt)) :=
+  --       lagrangeBasisAux_succ_get_high w i (by rwa [BitVec.getLsb_eq_testBit, Nat.testBit_succ_high])
+  --     rw [this, Vector.get_map, ih]
+  --     -- Simplify the product expression by splitting off the n-th term.
+  --     simp [Fin.prod_univ_succ, h, mul_comm]
+  --   else
+  --     -- Case 2: The n-th bit of i is 0.
+  --     -- This means i is in the lower half.
+  --     have : (lagrangeBasisAux w 1 (by omega) (Vector.flatMap (fun c => let cw := c * w_head; #v[c - cw, cw]) #v[1]))[i]
+  --         = ((lagrangeBasis w_tail).map (fun c => c - c * w_head))[i] :=
+  --       lagrangeBasisAux_succ_get_low w i (by rwa [BitVec.getLsb_eq_testBit, Nat.testBit_succ_high])
+  --     rw [this, Vector.get_map, ih]
+  --     -- Simplify the product expression.
+  --     simp [Fin.prod_univ_succ, h]
+  --     -- The term `1 * x - 1 * x * y` simplifies to `(1 - y) * x`.
+  --     rw [← mul_one_sub, mul_comm]
   sorry
 
 variable {S : Type*} [CommRing S]
@@ -319,7 +382,96 @@ def evalToCoeff (n : ℕ) :
 def equivMonomialEval : MlPoly R n ≃ MlPolyEval R n where
   toFun := coeffToEval n
   invFun := evalToCoeff n
-  left_inv := sorry
-  right_inv := sorry
+  left_inv v := by
+    -- Prove that evalToCoeff (coeffToEval v) = v
+    -- This is done by showing that the operations cancel at each level.
+    let f := fun (j : Fin n) (p : Vector R (2^n)) => coeffToEvalLevel j p
+    let g := fun (j : Fin n) (p : Vector R (2^n)) => evalToCoeffLevel j p
+    -- Unfold the definitions
+    unfold coeffToEval evalToCoeff
+    -- Use a property of folding from left and right with inverse functions
+    -- rw [List.foldr_foldl_inv _ _ g f]
+    -- -- The core of the proof is showing that evalToCoeffLevel is the left inverse
+    -- -- of coeffToEvalLevel for any given level j.
+    -- intro j p
+    -- ext i
+    -- -- Unfold the level definitions
+    -- simp [coeffToEvalLevel, evalToCoeffLevel, BitVec.getLsb]
+    -- -- The logic splits on whether the j-th bit of i is set
+    -- split_ifs <;> simp [add_sub_cancel]
+    sorry
+  right_inv v := by
+    -- Prove that coeffToEval (evalToCoeff v) = v
+    let f := fun (j : Fin n) (p : Vector R (2^n)) => coeffToEvalLevel j p
+    let g := fun (j : Fin n) (p : Vector R (2^n)) => evalToCoeffLevel j p
+    -- This proof is symmetric to the left_inv case.
+    unfold coeffToEval evalToCoeff
+    -- rw [List.foldl_foldr_inv _ _ f g]
+    -- -- Show that coeffToEvalLevel is the left inverse of evalToCoeffLevel.
+    -- intro j p
+    -- ext i
+    -- simp [coeffToEvalLevel, evalToCoeffLevel, BitVec.getLsb]
+    -- split_ifs <;> simp [sub_add_cancel]
+    sorry
 
 end MlPoly
+
+/-! ### #eval Tests
+
+This section contains tests to verify the functionality of multilinear polynomial operations.
+-/
+
+section Tests
+
+-- Test basic operations
+#eval MlPoly.zero (n := 2) (R := ℤ)
+-- Expected: Vector with 4 zeros
+
+#eval MlPoly.add #v[1, 2, 3, 4] #v[5, 6, 7, 8] (n := 2) (R := ℤ)
+-- Expected: #v[6, 8, 10, 12]
+
+#eval MlPoly.smul 2 #v[1, 2, 3, 4] (n := 2) (R := ℤ)
+-- Expected: #v[2, 4, 6, 8]
+
+-- Test Lagrange basis computation
+#eval MlPoly.lagrangeBasis #v[(1 : ℤ), 2, 3] (n := 3)
+-- Expected: #v[0, 0, 0, 0, 2, -3, -4, 6]
+
+#eval MlPoly.lagrangeBasis #v[(1 : ℤ), 2] (n := 2)
+-- Expected: #v[0, 0, 2, -1]
+
+-- Test evaluation
+#eval MlPoly.eval #v[1, 2, 3, 4] #v[(1 : ℤ), 2] (n := 2)
+-- Expected: evaluation of polynomial 1 + 2X₀ + 3X₁ + 4X₀X₁ at point (1, 2)
+
+-- Test coefficient to evaluation transform
+#eval MlPoly.coeffToEval 2 #v[1, 2, 3, 4]
+-- Expected: #v[1, 3, 4, 10]
+
+-- Test evaluation to coefficient transform
+#eval MlPoly.evalToCoeff 2 #v[1, 3, 4, 10]
+-- Expected: #v[1, 2, 3, 4]
+
+-- Test round-trip: coeff → eval → coeff
+#eval MlPoly.evalToCoeff 2 (MlPoly.coeffToEval 2 #v[1, 2, 3, 4])
+-- Expected: #v[1, 2, 3, 4]
+
+-- Test round-trip: eval → coeff → eval
+#eval MlPoly.coeffToEval 2 (MlPoly.evalToCoeff 2 #v[1, 3, 4, 10])
+-- Expected: #v[1, 3, 4, 10]
+
+-- Test with different polynomial degrees
+#eval MlPoly.coeffToEval 1 #v[1, 2]
+-- Expected: #v[1, 3]
+
+#eval MlPoly.coeffToEval 3 #v[1, 2, 3, 4, 5, 6, 7, 8]
+-- Expected: 8-element vector with transformed coefficients
+
+-- Test Lagrange basis for different dimensions
+#eval MlPoly.lagrangeBasis #v[(1 : ℤ)] (n := 1)
+-- Expected: #v[0, 1]
+
+#eval MlPoly.lagrangeBasis #v[(1 : ℤ), 2, 3, 4] (n := 4)
+-- Expected: 16-element vector with Lagrange basis values
+
+end Tests
