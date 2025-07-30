@@ -181,10 +181,11 @@ instance instOracleInterfaceMessagePSpec : OracleInterface ((pSpec R deg).Messag
   simp [pSpec, default]
   exact instOracleInterfacePolynomialDegreeLE
 
-instance instVCVCompatibleChallengePSpec [VCVCompatible R] :
-    VCVCompatible ((pSpec R deg).Challenge default) := by
-  simp [pSpec, Challenge, default]
-  infer_instance
+instance instSelectableTypeChallengePSpec [SelectableType R] :
+    ∀ i, SelectableType ((pSpec R deg).Challenge i)
+  | ⟨1, _⟩ => by simp [pSpec]; infer_instance
+  -- simp [pSpec, Challenge, default]
+  -- infer_instance
 
 variable {ι : Type} (oSpec : OracleSpec ι)
 
@@ -214,7 +215,7 @@ def prover : OracleProver oSpec (StmtIn R) (OStmtIn R deg) Unit (StmtOut R) (OSt
 
   output := fun ⟨polyLE, chal⟩ => (((polyLE.val.eval chal, chal), fun _ => polyLE), ())
 
-variable [VCVCompatible R]
+variable [DecidableEq R] [SelectableType R]
 
 /-- The verifier for the simple description of a single round of sum-check -/
 def verifier : Verifier oSpec (StmtIn R × (∀ i, OStmtIn R deg i))
@@ -251,9 +252,8 @@ def oracleReduction : OracleReduction oSpec (StmtIn R) (OStmtIn R deg) Unit
 open Reduction
 open scoped NNReal
 
-instance : ∀ i, VCVCompatible (OracleInterface.Response (Challenge (pSpec R deg) i))
+instance : ∀ i, SelectableType (OracleInterface.Response (Challenge (pSpec R deg) i))
   | ⟨1, _⟩ => by dsimp [pSpec, OracleInterface.Response]; infer_instance
-instance : [Challenge (pSpec R deg)]ₒ.FiniteRange := inferInstance
 
 -- instance : Nonempty []ₒ.QueryLog := by simp [QueryLog]; infer_instance
 -- instance : Nonempty ((pSpec R deg).FullTranscript) := by
@@ -275,22 +275,25 @@ theorem oracleReduction_eq_reduction :
   ext : 1 <;>
   simp [OracleReduction.toReduction, oracleReduction, reduction, oracleVerifier_eq_verifier]
 
-variable [oSpec.FiniteRange]
+variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 /-- Perfect completeness for the (non-oracle) reduction -/
-theorem reduction_completeness : (reduction R deg D oSpec).perfectCompleteness
-    (inputRelation R deg D) (outputRelation R deg) := by
+theorem reduction_perfectCompleteness (hInit : init.neverFails) :
+    (reduction R deg D oSpec).perfectCompleteness init impl
+      (inputRelation R deg D) (outputRelation R deg) := by
   rw [perfectCompleteness_eq_prob_one]
   intro ⟨target, oStmt⟩ () hValid
   generalize h : oStmt () = p; obtain ⟨poly, hp⟩ := p
   -- Need `convert` because of some duplicate instances, should eventually track those down
   convert (probEvent_eq_one_iff _ _).2 ⟨?_, ?_⟩
   · simp only [Reduction.run, probFailure_bind_eq_zero_iff]
-    constructor
-    · simp -- There's still some pathing issue here w/ simp, need to simp in steps which is sub-par
-      unfold Prover.run Prover.runToRound Prover.processRound
-      simp [Fin.induction, Fin.induction.go, reduction, prover]
-    · stop
+    refine ⟨by simp [hInit], ?_⟩
+    -- constructor
+    -- · simp
+    --   unfold Prover.run Prover.runToRound Prover.processRound
+    --   simp [Fin.induction, Fin.induction.go, reduction, prover]
+    · intro s hs
+      stop
       intro ⟨⟨stmt, oStmtOut⟩, _, transcript⟩
       simp -- Also some pathing issues, need to simp once before reducing `reduction`
       simp [reduction, verifier, Verifier.run]
@@ -300,7 +303,8 @@ theorem reduction_completeness : (reduction R deg D oSpec).perfectCompleteness
       simp [← h2, Transcript.concat, Fin.snoc, h]
       simp [inputRelation, h] at hValid
       exact hValid
-  · intro ⟨⟨⟨prvStmtOut, prvOStmtOut⟩, _⟩, verStmtOut, transcript⟩ hSupport
+  · stop
+    intro ⟨⟨⟨prvStmtOut, prvOStmtOut⟩, _⟩, verStmtOut, transcript⟩ hSupport
     simp only [run, support_bind, liftM_eq_liftComp, Set.mem_iUnion, support_pure,
       Set.mem_singleton_iff, Prod.eq_iff_fst_eq_snd_eq] at hSupport
     obtain ⟨x1, hx1, x2_1, hx2, ⟨⟨⟨h2_1, h2_2⟩, _⟩, ⟨⟨h3_1, h3_2⟩, h3_3⟩⟩⟩ := hSupport
@@ -317,29 +321,24 @@ theorem reduction_completeness : (reduction R deg D oSpec).perfectCompleteness
     aesop
 
 /-- Perfect completeness for the oracle reduction -/
-theorem oracleReduction_completeness : (oracleReduction R deg D oSpec).perfectCompleteness
-    (inputRelation R deg D) (outputRelation R deg) := by
+theorem oracleReduction_perfectCompleteness (hInit : init.neverFails) :
+    (oracleReduction R deg D oSpec).perfectCompleteness init impl
+      (inputRelation R deg D) (outputRelation R deg) := by
   unfold OracleReduction.perfectCompleteness
   rw [oracleReduction_eq_reduction]
-  exact reduction_completeness R deg D oSpec
+  exact reduction_perfectCompleteness R deg D oSpec hInit
 
 /-- Round-by-round knowledge soundness for the verifier -/
-theorem verifier_rbr_knowledge_soundness : (verifier R deg D oSpec).rbrKnowledgeSoundness
+theorem verifier_rbrKnowledgeSoundness [Fintype R] :
+    (verifier R deg D oSpec).rbrKnowledgeSoundness init impl
     (inputRelation R deg D) (outputRelation R deg) (fun _ => (deg : ℝ≥0) / (Fintype.card R)) := by
   sorry
 
 /-- Round-by-round knowledge soundness for the oracle verifier -/
-theorem oracleVerifier_rbr_knowledge_soundness :
-    (oracleVerifier R deg D oSpec).rbrKnowledgeSoundness
+theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
+    (oracleVerifier R deg D oSpec).rbrKnowledgeSoundness init impl
     (inputRelation R deg D) (outputRelation R deg) (fun _ => (deg : ℝ≥0) / (Fintype.card R)) := by
   sorry
-
-theorem oracleReduction_rbr_knowledge_soundness :
-    (oracleVerifier R deg D oSpec).rbrKnowledgeSoundness
-    (inputRelation R deg D) (outputRelation R deg) (fun _ => (deg : ℝ≥0) / (Fintype.card R)) := by
-  unfold OracleVerifier.rbrKnowledgeSoundness
-  rw [oracleVerifier_eq_verifier]
-  exact verifier_rbr_knowledge_soundness R deg D oSpec
 
 -- TODO: break down the oracle reduction into a series of oracle reductions as stated above
 
@@ -364,9 +363,9 @@ instance instOracleInterfaceMessagePSpec : OracleInterface ((pSpec R deg).Messag
 
 /-- Recognize that the challenge from the verifier to the prover has type `R`, and hence can be
   sampled uniformly at random -/
-instance instVCVCompatibleChallengePSpec [VCVCompatible R] :
-    VCVCompatible ((pSpec R deg).Challenge default) := by
-  simp only [pSpec, default]
+instance instSelectableTypeChallengePSpec [SelectableType R] :
+    SelectableType ((pSpec R deg).Challenge default) := by
+  simp [pSpec, Challenge, default]
   infer_instance
 
 /-- Auxiliary lemma for proving that the polynomial sent by the honest prover is of degree at most
@@ -423,26 +422,50 @@ def extractorLens (i : Fin n) : Extractor.Lens
   stmt := oStmtLens R n deg D i
   wit := Witness.InvLens.trivial
 
-variable {ι : Type} (oSpec : OracleSpec ι) [VCVCompatible R]
+variable {ι : Type} (oSpec : OracleSpec ι) [DecidableEq R] [SelectableType R]
 
-/-- The sum-check reduction for the `i`-th round, where `i < n` and `n > 0` -/
+/-- The verifier for the `i`-th round of the sum-check protocol -/
+def verifier (i : Fin n) : Verifier oSpec
+    (Statement R n i.castSucc × (∀ i, OracleStatement R n deg i))
+    (Statement R n i.succ × (∀ i, OracleStatement R n deg i)) (pSpec R deg) :=
+  (Simple.verifier R deg D oSpec).liftContext (oStmtLens R n deg D i)
+
+/-- The oracle verifier for the `i`-th round of the sum-check protocol -/
+def oracleVerifier (i : Fin n) : OracleVerifier oSpec (Statement R n i.castSucc)
+    (OracleStatement R n deg) (Statement R n i.succ) (OracleStatement R n deg) (pSpec R deg) :=
+  (Simple.oracleVerifier R deg D oSpec).liftContext (oStmtLens R n deg D i)
+
+/-- The sum-check reduction for the `i`-th round of the sum-check protocol -/
 def reduction (i : Fin n) : Reduction oSpec
     ((Statement R n i.castSucc) × (∀ i, OracleStatement R n deg i)) Unit
     ((Statement R n i.succ) × (∀ i, OracleStatement R n deg i)) Unit (pSpec R deg) :=
   (Simple.reduction R deg D oSpec).liftContext (oCtxLens R n deg D i).toContext
 
-/-- The sum-check oracle reduction for the `i`-th round, where `i < n` and `n > 0` -/
+/-- The sum-check oracle reduction for the `i`-th round of the sum-check protocol -/
 def oracleReduction (i : Fin n) : OracleReduction oSpec
     (Statement R n i.castSucc) (OracleStatement R n deg) Unit
     (Statement R n i.succ) (OracleStatement R n deg) Unit (pSpec R deg) :=
   (Simple.oracleReduction R deg D oSpec).liftContext (oCtxLens R n deg D i)
+
+omit [SelectableType R] in
+@[simp]
+lemma reduction_verifier_eq_verifier {i : Fin n} :
+    (reduction R n deg D oSpec i).verifier = verifier R n deg D oSpec i := by
+  rfl
+
+omit [SelectableType R] in
+@[simp]
+lemma oracleReduction_verifier_eq_verifier {i : Fin n} :
+    (oracleReduction R n deg D oSpec i).verifier = oracleVerifier R n deg D oSpec i := by
+  rfl
 
 section Security
 
 open Reduction
 open scoped NNReal
 
-variable {R : Type} [CommSemiring R] [VCVCompatible R] {n : ℕ} {deg : ℕ} {m : ℕ} {D : Fin m ↪ R}
+variable {R : Type} [CommSemiring R] [DecidableEq R] [SelectableType R]
+  {n : ℕ} {deg : ℕ} {m : ℕ} {D : Fin m ↪ R}
   {ι : Type} {oSpec : OracleSpec ι} (i : Fin n)
 
 -- Showing that the lenses satisfy the completeness and rbr knowledge soundness conditions
@@ -496,29 +519,41 @@ instance extractorLens_rbr_knowledge_soundness :
       sorry
 
 
-variable [oSpec.FiniteRange]
+variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
-theorem reduction_completeness : (reduction R n deg D oSpec i).perfectCompleteness
-    (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ) := sorry
+theorem reduction_perfectCompleteness (hInit : init.neverFails) :
+    (reduction R n deg D oSpec i).perfectCompleteness init impl
+    (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ) :=
+  Reduction.liftContext_perfectCompleteness
+    (lens := (oCtxLens R n deg D i).toContext)
+    (lensComplete := by simp; sorry)
+    (Simple.reduction_perfectCompleteness R deg D oSpec hInit)
 
-theorem verifier_rbr_knowledge_soundness :
-    (reduction R n deg D oSpec i).verifier.rbrKnowledgeSoundness
+theorem verifier_rbrKnowledgeSoundness [Fintype R] :
+    (verifier R n deg D oSpec i).rbrKnowledgeSoundness init impl
     (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ)
     (fun _ => (deg : ℝ≥0) / Fintype.card R) := sorry
+  -- Verifier.liftContext_rbrKnowledgeSoundness (lens := (oCtxLens R n deg D i).toContext)
+  --   (lensKS := extractorLens_rbr_knowledge_soundness i)
+  --   (Simple.verifier_rbrKnowledgeSoundness R deg D oSpec i)
 
 /-- Completeness theorem for single-round of sum-check, obtained by transporting the completeness
 proof for the simplified version -/
-theorem oracleReduction_completeness : (oracleReduction R n deg D oSpec i).perfectCompleteness
-    (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ) :=
+theorem oracleReduction_perfectCompleteness (hInit : init.neverFails) :
+    (oracleReduction R n deg D oSpec i).perfectCompleteness init impl
+      (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ) :=
   OracleReduction.liftContext_perfectCompleteness
     (lens := oCtxLens R n deg D i)
     (lensComplete := oCtxLens_complete i)
-    (Simple.oracleReduction_completeness R deg D oSpec)
+    (Simple.oracleReduction_perfectCompleteness R deg D oSpec hInit)
+
+
+local instance : Inhabited R := ⟨0⟩
 
 /-- Round-by-round knowledge soundness theorem for single-round of sum-check, obtained by
   transporting the knowledge soundness proof for the simplified version -/
-theorem oracleVerifier_rbr_knowledge_soundness :
-    (oracleReduction R n deg D oSpec i).verifier.rbrKnowledgeSoundness
+theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
+    (oracleVerifier R n deg D oSpec i).rbrKnowledgeSoundness init impl
     (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ)
     (fun _ => (deg : ℝ≥0) / Fintype.card R) :=
   OracleVerifier.liftContext_rbr_knowledgeSoundness
@@ -526,7 +561,7 @@ theorem oracleVerifier_rbr_knowledge_soundness :
     (witLens := Witness.InvLens.trivial)
     (Simple.oracleVerifier R deg D oSpec)
     (lensKS := extractorLens_rbr_knowledge_soundness i)
-    (Simple.oracleVerifier_rbr_knowledge_soundness R deg D oSpec)
+    (Simple.oracleVerifier_rbrKnowledgeSoundness R deg D oSpec)
 
 -- /-- State function for round-by-round soundness. No need for this manual definition -/
 -- def stateFunction (i : Fin (n + 1)) : Verifier.StateFunction pSpec oSpec

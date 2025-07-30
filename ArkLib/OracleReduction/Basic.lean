@@ -83,6 +83,43 @@ structure Indexer {ι : Type} (oSpec : OracleSpec ι) {n : ℕ} (pSpec : Protoco
   encode : Index → OracleComp oSpec Encoding
   [OracleInterface : OracleInterface Encoding]
 
+/-
+Sketch of the upcoming refactor to the prover's type (dependent on VCVio refactor):
+
+Consider the prover's type in a sigma protocol, denoted using an iterated monad:
+
+`CtxIn → m (Message × m (Challenge → m (Response × m (CtxOut))))`
+
+where `m = OracleComp oSpec` for some `oSpec : OracleSpec`.
+
+How do we translate these into a stateful representation?
+
+Recall:
+
+- `input : CtxIn → PrvState 0`
+
+- `sendMessage 0 : PrvState 0 → m (Message × PrvState 1)`
+
+- `receiveChallenge 1 : PrvState 1 → m (Challenge → PrvState 2)`
+
+- `sendMessage 2 : PrvState 2 → m (Response × PrvState 3)`
+
+- `output : PrvState 3 → m (CtxOut)`
+
+What are `PrvState {0, 1, 2, 3}`?
+
+- `PrvState 0 = m (Message × m (Challenge → m (Response × m (CtxOut))))`
+
+- `PrvState 1 = m (Challenge → m (Response × m (CtxOut)))`
+
+- `PrvState 2 = m (Response × m (CtxOut))`
+
+- `PrvState 3 = m (CtxOut)`
+
+All maps (except `input`) are then identity!
+
+-/
+
 /-- The type signature for the prover's state at each round.
 
 For a protocol with `n` messages exchanged, there will be `(n + 1)` prover states, with the first
@@ -464,6 +501,18 @@ alias Reduction.trivial := Reduction.id
 alias OracleProver.trivial := OracleProver.id
 alias OracleVerifier.trivial := OracleVerifier.id
 alias OracleReduction.trivial := OracleReduction.id
+
+@[simp]
+lemma OracleVerifier.id_toVerifier :
+    (OracleVerifier.id : OracleVerifier oSpec Statement OStatement _ _ _).toVerifier =
+      Verifier.id := by
+  simp [OracleVerifier.id, OracleVerifier.toVerifier, Verifier.id]
+
+@[simp]
+lemma OracleReduction.id_toReduction :
+    (OracleReduction.id : OracleReduction oSpec Statement OStatement Witness _ _ _ _).toReduction =
+      Reduction.id := by
+  simp [OracleReduction.id, OracleReduction.toReduction, Reduction.id, OracleProver.id]
 
 end Trivial
 

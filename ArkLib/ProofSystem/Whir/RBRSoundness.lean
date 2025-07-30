@@ -137,7 +137,7 @@ def whirRelation
 
 /-- Theorem 5.2: **Round-by-round soundness of the WHIR Vector IOPP** -/
 theorem whir_rbr_soundness
-    [VCVCompatible F] {d dstar : ℕ}
+    [SelectableType F] {d dstar : ℕ}
   -- P : set of M + 1 parameters including foldingParamᵢ, varCountᵢ, φᵢ, repeatParamᵢ,
   -- where foldingParamᵢ > 0
     {P : Params ι F} {S : ∀ i : Fin (M + 1), Finset (ι i)}
@@ -163,7 +163,7 @@ theorem whir_rbr_soundness
     Fintype.card (vPSpec.ChallengeIdx) = 2 * M + 2 ∧
     -- ∃ a Vector IOPP π with Statement = Unit, Witness = Unit, OracleStatement = (ι₀ F)
       ∃ π :
-        VectorIOP []ₒ Unit (OracleStatement (ι 0) F) Unit vPSpec F,
+        VectorIOP Unit (OracleStatement (ι 0) F) Unit vPSpec F,
         let max_ε_folds : (i : Fin (M + 1)) → ℝ≥0 :=
           fun i => (univ : Finset (Fin (P.foldingParam i))).sup (ε_fold i)
         let ε_rbr : vPSpec.ChallengeIdx → ℝ≥0 :=

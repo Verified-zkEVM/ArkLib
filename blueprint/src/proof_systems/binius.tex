@@ -22,7 +22,7 @@ We define the binary tower fields \cite{DP25} as defined originally as iterated 
     The defining polynomial $X_{\iota-1}^{2}+X_{\iota-2} \cdot X_{\iota-1}+1$ of $\mathcal{T}_{\iota}$ is irreducible over $\mathcal{T}_{\iota-1}$ for all $\iota > 0$.
 \end{theorem}
 
-\begin{theorem}[Binary Tower Fields are fields] 
+\begin{theorem}[Binary Tower Fields are fields]
   \lean{BinaryTower.BTFieldIsField, BinaryTower.BTFieldCard, BinaryTower.BTFieldChar2}
   \uses{def:binary_tower_field, thm:binary_tower_field_irreducible}
   We prove that the binary tower fields are finite fields:
@@ -47,7 +47,7 @@ The structure of the tower provides a natural way to represent elements using a 
 \end{definition}
 
 \begin{definition}[Computable Binary Tower Fields]
-  \lean{BinaryTower.ConcreteDefinition.instFieldConcrete}
+  \lean{ConcreteBinaryTower.instFieldConcrete}
   \uses{def:binary_tower_field, def:multilinear_basis, thm:binary_tower_fields_are_fields}
   \label{def:computable_binary_tower_field}
   Building upon the abstract definition of binary tower fields, we define a concrete, computable representation of binary tower fields. This construction, which underpins our formalization, represents each element of the field $\mathcal{T}_\iota$ as a bit vector of length $2^\iota$ corresponding to the coefficients of the multilinear $\mathbb{F}_2$-basis.
@@ -55,9 +55,9 @@ The structure of the tower provides a natural way to represent elements using a 
   The arithmetic operations on these bit-vector representations are defined as follows:
   \begin{itemize}
       \item \textbf{Addition}: The sum of two elements is defined as the bitwise XOR of their corresponding bit-vector representations.
-      
+
       \item \textbf{Multiplication (in $\mathcal{T}_\iota$)}: The product of two elements within the same field $\mathcal{T}_\iota$ is defined via a recursive Karatsuba-based algorithm~\cite{FP97}. The complexity of this operation is $\Theta(2^{\log_2(3) \cdot \iota})$.
-      
+
       \item \textbf{Cross-Level Multiplication}: The product of an element $\alpha \in \mathcal{T}_{\iota+\kappa}$ by a scalar $b \in \mathcal{T}_\iota$ is defined by representing $\alpha$ via its $2^\kappa$ coefficients $(a_u)_{u \in \{0,1\}^\kappa}$ in the $\mathcal{T}_\iota$-basis and performing the multiplication component-wise on those coefficients in the subfield $\mathcal{T}_\iota$. The total complexity is $2^\kappa \cdot \Theta(2^{\log_2(3) \cdot \iota})$.
   \end{itemize}
 \end{definition}
