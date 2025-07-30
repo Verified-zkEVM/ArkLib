@@ -162,13 +162,9 @@ noncomputable def listBlockRelDistance
 scoped notation "Λᵣ( "i", "k", "f", "S'", "C", "hcode", "δ")" =>
   listBlockRelDistance i k f S' C hcode δ
 
-/--Claim 4.19
-  For a smooth ReedSolomon code `C = RS[F, ι^(2ⁱ), m]`, codewords `f, g : ι^(2ⁱ) → F`,
-  we have that the relative Hamming distance `δᵣ(f,g)` is bounded by the
-  block relative distance `Δᵣ(i, k, f, S', φ', g)`.
-  As a result, we have
-    `Λᵣ(i, k, f, S', C, hcode, δ)` is bounded by
-    `Λ(f, C, δ)` (list of codewords of C δ-close to f, wrt relative Hamming distance)
+/-- Claim 4.19, Part 1
+  For a smooth Reed-Solomon code, the standard relative Hamming distance `δᵣ(f,g)`
+  is a lower bound for the (i, k)-wise block relative distance `Δᵣ(i, k, f, S', φ', g)`.
 -/
 
 lemma relHammingDist_le_blockRelDistance
@@ -180,6 +176,11 @@ lemma relHammingDist_le_blockRelDistance
   [h_dec : DecidableBlockDisagreement i k f S' φ'] :
   δᵣ(f, g)  ≤ Δᵣ(i, k, f, S', φ', g) := by sorry
 
+/-- Claim 4.19, Part 2
+  As a consequence of `relHammingDist_le_blockRelDistance`, the list of codewords
+  within a certain block relative distance `δ` is a subset of the list of codewords
+  within the same relative Hamming distance `δ`.
+-/
 lemma listBlock_subset_listHamming
   (i k : ℕ) {S : Finset ι} {φ : ι ↪ F} {φ' : (indexPowT S φ i) ↪ F}
   {m : ℕ} [DecidableEq F] [DecidableEq ι] [Smooth φ]
