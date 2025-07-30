@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Poulami Das (Least Authority)
+Authors: Poulami Das, Miguel Quaresma (Least Authority)
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon
@@ -85,9 +85,9 @@ noncomputable def fold_k_core {S : Finset ι} {φ : ι ↪ F} (f : (indexPowT S 
   fold_k takes a function `f : ι → F` and a vector `αs` of size k
   and returns a function `Fold : (ι^2ᵏ) → F` -/
 noncomputable def fold_k
-  {S : Finset ι} {φ : ι ↪ F} {k : ℕ}
+  {S : Finset ι} {φ : ι ↪ F} {k m : ℕ}
   [∀ j : ℕ, Neg (indexPowT S φ j)]
-  (f : (indexPowT S φ 0) → F) (αs : Fin k → F) : indexPowT S φ k → F :=
+  (f : (indexPowT S φ 0) → F) (αs : Fin k → F) (_hk: k ≤ m): indexPowT S φ k → F :=
   fold_k_core f k αs
 
 /-- Definition 4.14, part 2
