@@ -135,10 +135,9 @@ import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 import ArkLib.ProofSystem.Whir
 import ArkLib.ProofSystem.Whir.BlockRelDistance
 import ArkLib.ProofSystem.Whir.Folding
-import ArkLib.ProofSystem.Whir.GenMutualCorrAgreement
+import ArkLib.ProofSystem.Whir.MutualCorrAgreement
 import ArkLib.ProofSystem.Whir.RBRSoundness
 import ArkLib.ProofSystem.Whir.OutofDomainSmpl
-import ArkLib.ProofSystem.Whir.ProximityGap
 import ArkLib.ProofSystem.Whir.ProximityGen
 import ArkLib.ToMathlib.BigOperators.Fin
 import ArkLib.ToMathlib.Finset.Basic

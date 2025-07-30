@@ -35,11 +35,6 @@ def pow (S : Finset ι) (φ : ι ↪ F) (k : ℕ) : indexPow S φ k ↪ F :=
 def powFiber (S : Finset ι) (φ : ι ↪ F) (k : ℕ) (y : indexPow S φ k) : Finset ι :=
   S.filter (fun x => (φ x) ^ k = y)
 
-/-- The fiber domain `f⁻¹(y) ↪ F` for the surjection `f : ι → ιᵏ, x → xᵏ` and `y ∈ ιᵏ`. -/
-def fiber (S : Finset ι) (φ : ι ↪ F) (k : ℕ)
-  (y : indexPow S φ k) : powFiber S φ k y ↪ F :=
-      Function.Embedding.mk (fun z => φ z) (φ.injective.comp Subtype.val_injective)
-
 end Domain
 
 namespace Folding
@@ -157,11 +152,12 @@ variable {ι F : Type*} [Field F] [Fintype F] [DecidableEq F] [DecidableEq ι]
 /--Definition 4.8
   For x ∈ ιᵏ, p_x ∈ 𝔽[X] is the degree < k polynomial
   where p_x(y) = f(y) for every y ∈ ι such that yᵏ = x.-/
+  --
 noncomputable def xPoly
   {S : Finset ι} (f : ι → F) (φ : ι ↪ F) (k : ℕ) (x : indexPow S φ k) : Polynomial F :=
   let dom := powFiber S φ k x
-  let emb : { y // y ∈ dom } ↪ F := fiber S φ k x
-  let g : { y // y ∈ dom } → F := fun y => f y.val
+  let emb : { y // y ∈ dom } → F := φ ∘ Subtype.val
+  let g : { y // y ∈ dom } → F := f ∘ Subtype.val
   Lagrange.interpolate univ emb g
 
 /--Definition 4.8
@@ -172,7 +168,7 @@ noncomputable def fold
 
 /-- min{δᵣ(f, RSC[F, ι, degree]), 1 − B^⋆(ρ)} -/
 noncomputable def foldingDistRange
-   (degree : ℕ) [Fintype ι] [Nonempty ι] (φ : ι ↪ F) (f : ι → F)  : ℝ :=
+   (degree : ℕ) [Fintype ι] [Nonempty ι] (φ : ι ↪ F) (f : ι → F) : ℝ :=
     let C : Set (ι → F) := code φ degree
     min δᵣ(f, C) (1 - Bstar (LinearCode.rate (code φ degree)))
 
@@ -187,7 +183,7 @@ variable {ι F : Type} [Field F] [Fintype F] [DecidableEq F] [DecidableEq ι]
   -/
 lemma folding
   [Nonempty ι]  {S : Finset ι} [Fintype ι]
-  (φ : ι ↪ F) (f : ι → F) (k : ℕ) (x : indexPow S φ k)
+  (φ : ι ↪ F) (f : ι → F) (k : ℕ)
   [Nonempty (indexPow S φ k)]
   {degree : ℕ} (δ : ℚ) (hδPos : δ > 0)
   (hδLt : δ < foldingDistRange degree φ f) :

@@ -11,9 +11,36 @@ import ArkLib.ProofSystem.Whir.BlockRelDistance
 import ArkLib.ProofSystem.Whir.MutualCorrAgreement
 import ArkLib.ProofSystem.Whir.ProximityGen
 
+/-!
+# Round by round soundness theorem
+
+This file formalizes the round by round soundness theorem of the WHIR IOPP,
+introduced in the [Section 5 of the WHIR paper][todo: ArkLib bibliography].
+
+## Implementation notes (corrections from paper)
+
+- Theorem 5.2:
+-- `(δᵢ, l_{i,s})`-list decodable in place of `(l_{i,s}, δᵢ)`-list decodable
+-- proximity generators should be defined for `C^(0),...,C^(k)` in place of `C^(1),...,C^(k)`
+
+- Theorem 5.2 holds for `l = 2` as can be seen with `BStar(..,2)` and `errStar(..,2,..)`
+  and so `Gen(l,alpha) = {1, alpha,...., alpha^{l-1}}` also corresponds to `l = 2`
+  and not for a generic l.
+
+- In in Construction 5.1 and Theorem 5.2,
+  we use M + 1 iterations instead of M, for ease of representation in Lean
+
+## References
+
+* [G Arnon, A Chies, G Fenzi, and E Yogev, *WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification*][todo: ArkLib bibliography]
+Freely available at https://eprint.iacr.org/2024/1586
+
+## Tags
+Todo: should we aim to add tags?
+-/
 namespace WhirIOP
 
-open BigOperators BlockRelDistance CorrelatedAgreement Generator Finset
+open BigOperators BlockRelDistance MutualCorrAgreement Generator Finset
      ListDecodable NNReal ReedSolomon
 
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
@@ -33,7 +60,7 @@ structure Params (F : Type) where
 
 /-- ** Conditions that protocol parameters must satisfy. **
   h_m : m = varCount₀
-  h_sumkLt : ∑ i : Fin (M + 1), varCountᵢ ≤ m
+  h_sumkLt : ∑ i : Fin (M + 1), foldingParamᵢ ≤ m
   h_varCount_i : ∀ i : Fin (M + 1), i ≠ 0, varCountᵢ = m - ∑ j < i foldingParamⱼ
   h_smooth : each φᵢ must embed a smooth evaluation domain
   h_repeatPLt : ∀ i : Fin (M + 1), repeatParamᵢ ≤ |ιᵢ| -/
@@ -70,20 +97,18 @@ class GenMutualCorrParams (P : Params ι F) (S : ∀ i : Fin (M + 1), Finset (ι
     DecidableEq (indexPowT (S i) (P.φ i) j)
   inst4 : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1), Smooth (φ i j)
 
-  Gen : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1),
-    ProximityGenerator (indexPowT (S i) (P.φ i) j) F
-  Gen_α : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1),
-    ProximityGenerator (indexPowT (S i) (P.φ i) j) F
+  parℓ_type : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1), Type
+  inst5 : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1), Fintype (parℓ_type i j)
 
-  inst5 : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1), Fintype (Gen i j).parℓ
-  inst6 : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1), Fintype (Gen_α i j).parℓ
-
-  exp : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1), (Gen i j).parℓ → ℕ
+  exp : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1), (parℓ_type i j) ↪ ℕ
 
 -- this ensures that Gen_α_ij is a proxmity generator for C_ij = RS[F, ιᵢ^(2^j), (varCountᵢ - j)]
 -- wrt proximity function Gen_α (α,l) = {1,α²,...,α^{parℓ-1}}
-  hgen : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1), ∀ α : F, Gen_α i j =
-    proximityGenerator_α (Gen i j) α (φ i j) (P.varCount i - j) (exp i j)
+  Gen_α : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1),
+    ProximityGenerator (indexPowT (S i) (P.φ i) j) F :=
+      fun i j => RSGenerator.genRSC (parℓ_type i j) (φ i j) (P.varCount i - j) (exp i j)
+
+  inst6 : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1), Fintype (Gen_α i j).parℓ
 
   BStar : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1),
     (Set ((indexPowT (S i) (P.φ i) j) → F)) → Type → ℝ≥0
@@ -94,12 +119,17 @@ class GenMutualCorrParams (P : Params ι F) (S : ∀ i : Fin (M + 1), Finset (ι
   hcode : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1), (C i j) = (Gen_α i j).C
 
   h : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1),
-    genMutualCorrAgreement (Gen_α i j)
-                           (BStar i j (C i j) (Gen_α i j).parℓ)
-                           (errStar i j (C i j) (Gen_α i j).parℓ)
+    MutualCorrAgreement  (Gen_α i j)
+                         (BStar i j (C i j) (Gen_α i j).parℓ)
+                         (errStar i j (C i j) (Gen_α i j).parℓ)
 
-  hℓ_bound : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1), Fintype.card (Gen i j).parℓ = 2
-  hδLe : ∀ i : Fin (M + 1), (δ i) ≤ 1 - Finset.univ.sup (fun j => BStar i j (C i j) (Gen i j).parℓ)
+  hℓ_bound : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1),
+    Fintype.card (Gen_α i j).parℓ = 2
+  hℓ_bound' : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1),
+    Fintype.card (parℓ_type i j) = 2
+
+  hδLe : ∀ i : Fin (M + 1),
+    (δ i) ≤ 1 - Finset.univ.sup (fun j => BStar i j (C i j) (Gen_α i j).parℓ)
 
   hlistDecode : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1),
     listDecodable (C i j) (δ i) (dist i j)
@@ -182,10 +212,12 @@ theorem whir_rbr_soundness
         let _ : ∀ j : Fin ((P.foldingParam 0)+1), Fintype (indexPowT (S 0) (P.φ 0) j) := h.inst1 0
         let _ : ∀ j : Fin ((P.foldingParam 0)+1), Nonempty (indexPowT (S 0) (P.φ 0) j) := h.inst2 0
 
-        -- ε_fold(0,j) ≤ dstar * dist(0,j-1) / |F| + errStar(C_0j, 2, δ₀),
-        -- here j runs from 1 to (P.foldingParam 0) for ε_fold(0,j)
+        -- ε_fold(0,j+1) ≤ dstar * dist(0,j) / |F| + errStar(C_0{j+1}, 2, δ₀),
+        -- Note here that `j : Fin (P.foldingParam 0)`,
+        -- so we need to cast into `Fin ((P.foldingParam 0) + 1)` for indexing of `h.dist`
+        -- To get `j`, we use `.castSucc`, whereas to get `j + 1`, we use `.succ`.
         ∀ j : Fin ((P.foldingParam 0) + 1),
-          let errStar_0 j := h.errStar 0 j (h.C 0 j) (h.Gen 0 j).parℓ (h.δ 0)
+          let errStar_0 j := h.errStar 0 j (h.C 0 j) (h.Gen_α 0 j).parℓ (h.δ 0)
         ∀ j : Fin (P.foldingParam 0),
           ε_fold 0 j ≤ ((dstar * (h.dist 0 j.castSucc)) / Fintype.card F) + (errStar_0 j.succ)
         ∧
@@ -210,15 +242,17 @@ theorem whir_rbr_soundness
         let _ : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1),
           Nonempty (indexPowT (S i) (P.φ i) j) := h.inst2
 
-        -- ε_fold(i,j) ≤ d * dist(i,j-1) / |F| + errStar(C_ij,2,δᵢ)
-        -- here j runs from 1 to (P.foldingParam 0) for ε_fold(i,j)
+        -- ε_fold(i,j+1) ≤ d * dist(i,j) / |F| + errStar(C_i{j+1},2,δᵢ)
+        -- Note here that `j : Fin (P.foldingParam 0)`,
+        -- so we need to cast into `Fin ((P.foldingParam 0) + 1)` for indexing of `h.dist`
+        -- To get `j`, we use `.castSucc`, whereas to get `j + 1`, we use `.succ`.
         ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1),
-          let errStar i j := h.errStar i j (h.C i j) (h.Gen i j).parℓ (h.δ i)
+          let errStar i j := h.errStar i j (h.C i j) (h.Gen_α i j).parℓ (h.δ i)
         ∀ i : Fin (M + 1), ∀ j : Fin (P.foldingParam i),
           ε_fold i j ≤ d * (h.dist i j.castSucc) / Fintype.card F + errStar i j.succ
         ∧
         -- ε_fin ≤ (1 - δ_{M})^(repeatParam_{M})
-        ε_fin ≤ (1 - h.δ (Fin.last))^(P.repeatParam (Fin.last M))
+        ε_fin ≤ (1 - h.δ (Fin.last M))^(P.repeatParam (Fin.last M))
     := by sorry
 
 end RBR
