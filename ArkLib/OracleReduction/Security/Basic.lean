@@ -55,7 +55,7 @@ TODO: the "right" factoring for the security definitions are the following:
 - Relations should be `Stmt → Wit → m Prop`, with `m` being the intermediate monad. When `m` is the
   result of `interpOStmt` above, for instance, we get `Stmt → Wit → OStmt → Prop`, which is what we
   want. Same for when we interpret `oSpec` into `Reader (oSpec.FunctionType)`; we then have
-  `m = Stmt → Wit → oSpec.FunctionType → Prop`, which allows us to define relations that rely
+  `Stmt → Wit → oSpec.FunctionType → Prop`, which allows us to define relations that rely
   on the (randomly sampled, at the beginning) values of the shared oracle.
 -/
 

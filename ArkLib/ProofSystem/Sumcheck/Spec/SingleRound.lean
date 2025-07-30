@@ -7,6 +7,10 @@ Authors: Quang Dao
 import ArkLib.OracleReduction.Security.Basic
 import ArkLib.OracleReduction.Composition.Sequential.General
 import ArkLib.OracleReduction.LiftContext.OracleReduction
+import ArkLib.ProofSystem.Component.SendClaim
+import ArkLib.ProofSystem.Component.CheckClaim
+import ArkLib.ProofSystem.Component.RandomQuery
+import ArkLib.ProofSystem.Component.ReduceClaim
 import ArkLib.Data.Fin.Basic
 import ArkLib.ToVCVio.Lemmas
 
@@ -131,14 +135,7 @@ def relationRound (i : Fin (n + 1)) :
 
 namespace SingleRound
 
-namespace Simple
-
--- Let's try to simplify a single round of sum-check, and appeal to compositionality to lift
--- the result to the full protocol.
-
--- In this simplified setting, the sum-check protocol consists of a _univariate_ polynomial
--- `p : R⦃≤ d⦄[X]` of degree at most `d`, and the relation is that
--- `∑ x ∈ univ.map D, p.eval x = newTarget`.
+namespace Simpler
 
 -- We further break it down into each message:
 -- In order of (witness, oracle statement, public statement ; relation):
@@ -150,8 +147,110 @@ namespace Simple
 -- (∅, (p, q) : R⦃≤ d⦄[X] × R⦃≤ d⦄[X], r : R ; p.eval r = q.eval r) =>[Random Query]
 -- (∅, p : R⦃≤ d⦄[X], new_claim : R ; ∑ x ∈ univ.map D, p.eval x = new_claim) =>[Reduce Claim]
 
--- Doesn't seem worth it for `Stmt{In/Out}`? Need to write `StmtIn R` and `StmtOut R` everywhere
--- instead of just `R`
+/-!
+### Composing a single sum-check round from components
+
+A single round of the sum-check protocol can be formally constructed by sequentially composing
+several simpler, reusable oracle reductions defined in `ArkLib/ProofSystem/Component/`. This modular
+construction simplifies the overall security proof, as we can prove security for each component and
+then use a composition theorem.
+
+The context for our single round is:
+- **Public Statement**: `a: R` (the claimed sum).
+- **Oracle Statement**: `p: R⦃≤ deg⦄[X]` (the claimed polynomial).
+- **Initial Relation**: `∑_{x ∈ D} p.eval(x) = a`.
+
+The protocol proceeds in four main steps, each corresponding to an oracle reduction:
+
+1. **`SendClaim`**: The prover sends its claimed polynomial `q`.
+   - **Action**: The prover, having oracle access to `p`, sends a polynomial `q` to the verifier. An
+     honest prover sends `q = p`.
+   - **Input Context**: `(Stmt: a, OStmt: p)` with relation `∑ p.eval = a`.
+   - **Output Context**: `(Stmt: a, OStmt: (p, q))` with relation `(∑ p.eval = a) ∧ (p = q)`. The
+     verifier now has oracle access to both the honest (`p`) and claimed (`q`) polynomials.
+
+2. **`CheckClaim`**: The verifier checks if the sum of evaluations of `q` over `D` equals the
+   target.
+   - **Action**: The verifier queries `q` at all points in the domain `D`, computes the sum, and
+     checks if it equals `a`. This is a non-interactive reduction (no messages exchanged).
+   - **Input Context**: `(Stmt: a, OStmt: (p, q))` with relation `(∑ q.eval = a) ∧ (p = q)`. The
+     predicate checked by `CheckClaim` is `∑ q.eval = a`.
+   - **Output Context**: `(Stmt: a, OStmt: (p, q))` with the remaining relation `p = q`.
+
+3. **`RandomQuery`**: The verifier sends a random challenge to reduce the polynomial identity check
+   to a single point evaluation. This is the core of the Schwartz-Zippel lemma.
+   - **Action**: The verifier samples a random challenge `r` from `R` and sends it to the prover.
+   - **Input Context**: `(OStmt: (p, q))` with relation `p = q`.
+   - **Output Context**: `(Stmt: r, OStmt: (p, q))` with relation `p.eval(r) = q.eval(r)`.
+
+4. **`ReduceClaim`**: The claim is updated for the next round of sum-check.
+   - **Action**: This is a non-interactive reduction to set up the context for the subsequent round.
+     The new target is computed as `b := q.eval(r)`.
+   - **Input Context**: `(Stmt: r, OStmt: (p, q))` with relation `p.eval(r) = q.eval(r)`.
+   - **Output Context**:
+     - `StmtOut`: `(b, r)` (to be part of the challenges for the next round).
+     - `OStmtOut`: The new honest polynomial for the next round, which is conceptually the original
+       multivariate polynomial with its first variable fixed to `r`.
+     - `RelOut`: `p.eval(r) = b`. This is the starting relation for the next round.
+-/
+
+@[reducible, simp] def StmtIn : Type := R
+@[reducible, simp] def OStmtIn : Unit → Type := fun _ => R⦃≤ deg⦄[X]
+
+def inputRelation : Set (((StmtIn R) × (∀ i, OStmtIn R deg i)) × Unit) :=
+  { ⟨⟨target, oStmt⟩, _⟩ | ∑ x ∈ (univ.map D), (oStmt ()).1.eval x = target }
+
+@[reducible, simp] def StmtAfterSendClaim : Type := R
+@[reducible, simp] def OStmtAfterSendClaim : Unit ⊕ Unit → Type := fun _ => R⦃≤ deg⦄[X]
+
+def relationAfterSendClaim :
+    Set (((StmtAfterSendClaim R) × (∀ i, OStmtAfterSendClaim R deg i)) × Unit) :=
+  { ⟨⟨target, oStmt⟩, _⟩ |
+    ∑ x ∈ (univ.map D), (oStmt (Sum.inl ())).1.eval x = target
+      ∧ oStmt (Sum.inr ()) = oStmt (Sum.inl ()) }
+
+@[reducible, simp] def StmtAfterCheckClaim : Type := R
+@[reducible, simp] def OStmtAfterCheckClaim : Unit ⊕ Unit → Type := fun _ => R⦃≤ deg⦄[X]
+
+def relationAfterCheckClaim :
+    Set (((StmtAfterCheckClaim R) × (∀ i, OStmtAfterCheckClaim R deg i)) × Unit) :=
+  { ⟨⟨_, oStmt⟩, _⟩ | oStmt (Sum.inr ()) = oStmt (Sum.inl ()) }
+
+@[reducible, simp] def StmtAfterRandomQuery : Type := R
+@[reducible, simp] def OStmtAfterRandomQuery : Unit ⊕ Unit → Type := fun _ => R⦃≤ deg⦄[X]
+
+def relationAfterRandomQuery :
+    Set (((StmtAfterRandomQuery R) × (∀ i, OStmtAfterRandomQuery R deg i)) × Unit) :=
+  { ⟨⟨chal, oStmt⟩, _⟩ | (oStmt (Sum.inr ())).1.eval chal = (oStmt (Sum.inl ())).1.eval chal }
+
+@[reducible, simp] def StmtOut : Type := R × R
+@[reducible, simp] def OStmtOut : Unit → Type := fun _ => R⦃≤ deg⦄[X]
+
+def outputRelation :
+    Set (((StmtOut R) × (∀ i, OStmtOut R deg i)) × Unit) :=
+  { ⟨⟨⟨newTarget, chal⟩, oStmt⟩, _⟩ | (oStmt ()).1.eval chal = newTarget }
+
+variable {ι : Type} (oSpec : OracleSpec ι)
+
+def oracleReduction.sendClaim : OracleReduction oSpec (StmtIn R) (OStmtIn R deg) Unit
+    (StmtAfterSendClaim R) (OStmtAfterSendClaim R deg) Unit ![(.P_to_V, R⦃≤ deg⦄[X])] :=
+  sorry
+  -- (SendClaim.oracleReduction oSpec (StmtIn R) (OStmtIn R deg) Unit)
+
+
+
+end Simpler
+
+
+namespace Simple
+
+-- Let's try to simplify a single round of sum-check, and appeal to compositionality to lift
+-- the result to the full protocol.
+
+-- In this simplified setting, the sum-check protocol consists of a _univariate_ polynomial
+-- `p : R⦃≤ d⦄[X]` of degree at most `d`, and the relation is that
+-- `∑ x ∈ univ.map D, p.eval x = newTarget`.
+
 @[reducible, simp]
 def StmtIn : Type := R
 
