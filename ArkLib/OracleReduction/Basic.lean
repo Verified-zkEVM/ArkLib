@@ -184,7 +184,7 @@ structure Prover {ι : Type} (oSpec : OracleSpec ι)
 @[ext]
 structure Verifier {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn StmtOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
-  verify : StmtIn → FullTranscript pSpec → OracleComp oSpec StmtOut
+  verify : StmtIn → FullTranscriptUpTo pSpec → OracleComp oSpec StmtOut
 
 /-- An **(oracle) prover** in an interactive **oracle** reduction is a prover in the non-oracle
       reduction whose input statement also consists of the underlying messages for the oracle

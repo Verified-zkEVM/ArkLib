@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.Fin.TakeDrop
+import ArkLib.Data.Fin.Notation
 import ArkLib.OracleReduction.Prelude
 import ArkLib.OracleReduction.OracleInterface
 import ArkLib.ToVCVio.Oracle
@@ -28,6 +28,8 @@ variable {n : ℕ}
 
 namespace ProtocolSpec
 
+section Defs
+
 @[simp]
 abbrev getDir (pSpec : ProtocolSpec n) (i : Fin n) := pSpec i |>.1
 
@@ -43,18 +45,6 @@ def MessageIdx (pSpec : ProtocolSpec n) :=
 @[reducible, simp]
 def ChallengeIdx (pSpec : ProtocolSpec n) :=
   {i : Fin n // (pSpec i).1 = Direction.V_to_P}
-
-/-- Subtype of `Fin k` for the indices corresponding to messages in a protocol specification up to
-  round `k` -/
-@[reducible, simp]
-def MessageIdxUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) :=
-  {i : Fin k // (pSpec <| i.castLE (by omega)).1 = Direction.P_to_V}
-
-/-- Subtype of `Fin k` for the indices corresponding to challenges in a protocol specification up to
-  round `k` -/
-@[reducible, simp]
-def ChallengeIdxUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) :=
-  {i : Fin k // (pSpec <| i.castLE (by omega)).1 = Direction.V_to_P}
 
 instance {pSpec : ProtocolSpec n} : CoeHead (MessageIdx pSpec) (Fin n) where
   coe := fun i => i.1
@@ -79,19 +69,82 @@ def Messages (pSpec : ProtocolSpec n) : Type := ∀ i, pSpec.Message i
 @[reducible, inline, specialize]
 def Challenges (pSpec : ProtocolSpec n) : Type := ∀ i, pSpec.Challenge i
 
-/-- The indexed family of messages from the prover up to round `k`.
+/-- The (full)) transcript of an interactive protocol, which is a list of messages and challenges.
 
-Note that by definition, `MessagesUpTo (Fin.last n)` is definitionally equal to `Messages`. -/
+Note that this is definitionally equal to `Transcript (Fin.last n) pSpec`. -/
 @[reducible, inline, specialize]
-def MessagesUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) :=
-  (i : pSpec.MessageIdxUpTo k) → pSpec.Message ⟨i.val.castLE (by omega), i.property⟩
+def FullTranscript (pSpec : ProtocolSpec n) := (i : Fin n) → (pSpec i).2
 
-/-- The indexed family of challenges from the verifier up to round `k`.
+section Restrict
 
-Note that by definition, `ChallengesUpTo (Fin.last n)` is definitionally equal to `Challenges`. -/
+variable {n : ℕ}
+
+/-- Take the first `m ≤ n` rounds of a `ProtocolSpec n` -/
+abbrev take (m : Fin (n + 1)) (pSpec : ProtocolSpec n) : ProtocolSpec m := pSpec[:m]
+
+/-- Take the last `m ≤ n` rounds of a `ProtocolSpec n` -/
+abbrev rtake (m : Fin (n + 1)) (pSpec : ProtocolSpec n) := Fin.rtake m m.is_le pSpec
+
+/-- Take the first `m ≤ n` rounds of a (full) transcript for a protocol specification `pSpec` -/
+abbrev FullTranscript.take {pSpec : ProtocolSpec n} (m : Fin (n + 1))
+    (transcript : FullTranscript pSpec) : FullTranscript (pSpec.take m) :=
+  Fin.take m m.is_le transcript
+
+/-- Take the last `m ≤ n` rounds of a (full) transcript for a protocol specification `pSpec` -/
+abbrev FullTranscript.rtake {pSpec : ProtocolSpec n} (m : Fin (n + 1))
+    (transcript : FullTranscript pSpec) : FullTranscript (pSpec.rtake m) :=
+  Fin.rtake m m.is_le transcript
+
+end Restrict
+
+/-- Subtype of `Fin k` for the indices corresponding to messages in a protocol specification up to
+  round `k` -/
+@[reducible, simp]
+def MessageIdxUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) : Type :=
+  (pSpec.take k).MessageIdx
+
+lemma MessageIdxUpTo.eq_MessageIdx {k : Fin (n + 1)} {pSpec : ProtocolSpec n} :
+    pSpec.MessageIdxUpTo k = {i : Fin k // (pSpec (i.castLE (by omega))).1 = .P_to_V} := rfl
+
+/-- Subtype of `Fin k` for the indices corresponding to challenges in a protocol specification up to
+  round `k` -/
+@[reducible, simp]
+def ChallengeIdxUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) : Type :=
+  (pSpec.take k).ChallengeIdx
+
+/-- The indexed family of messages from the prover up to round `k`. -/
 @[reducible, inline, specialize]
-def ChallengesUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) :=
-  (i : pSpec.ChallengeIdxUpTo k) → pSpec.Challenge ⟨i.val.castLE (by omega), i.property⟩
+def MessageUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) (i : pSpec.MessageIdxUpTo k) :=
+  (pSpec.take k).Message i
+
+/-- The indexed family of challenges from the verifier up to round `k`. -/
+@[reducible, inline, specialize]
+def ChallengeUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) (i : pSpec.ChallengeIdxUpTo k) :=
+  (pSpec.take k).Challenge i
+
+/-- The type of all messages from the prover up to round `k`. -/
+@[reducible, inline, specialize]
+def MessagesUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) : Type :=
+  ∀ i, pSpec.MessageUpTo k i
+
+/-- The type of all challenges from the verifier up to round `k`. -/
+@[reducible, inline, specialize]
+def ChallengesUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) : Type :=
+  ∀ i, (pSpec.take k).Challenge i
+
+/-- A (partial) transcript of a protocol specification, indexed by some `k : Fin (n + 1)`, is a
+list of messages from the protocol for all indices `i` less than `k`.
+
+This is defined as the full transcript of the protocol specification up to round `k`. -/
+@[reducible, inline, specialize]
+def Transcript (k : Fin (n + 1)) (pSpec : ProtocolSpec n) : Type :=
+  (pSpec.take k).FullTranscript
+
+@[simp]
+lemma Transcript.def_eq {k : Fin (n + 1)} {pSpec : ProtocolSpec n} :
+    (pSpec.take k).FullTranscript = ((i : Fin k) → (pSpec (Fin.castLE (by omega) i)).2) := rfl
+
+end Defs
 
 section Instances
 
@@ -215,7 +268,7 @@ instance : Unique (MessagesUpTo 0 pSpec) where
 def concat {k : Fin n} (messages : MessagesUpTo k.castSucc pSpec)
     (h : (pSpec k).1 = .P_to_V) (msg : pSpec.Message ⟨k, h⟩) : MessagesUpTo k.succ pSpec :=
   fun i => if hi : i.1.1 < k then messages ⟨⟨i.1.1, hi⟩, i.property⟩ else
-    (by simp [Fin.eq_last_of_not_lt hi]; exact msg)
+    (by simp [MessageUpTo, Fin.eq_last_of_not_lt hi]; exact msg)
 
 /-- Extend the tuple of messages up to round `k` to up to round `k + 1`, assuming round `k` is a
   challenge round (so no message from the prover is sent). -/
@@ -228,10 +281,9 @@ def extend {k : Fin n} (messages : MessagesUpTo k.castSucc pSpec)
       haveI := i.property
       simp_all [Fin.castLE])
 
-instance [∀ i, DecidableEq (pSpec.Message i)] {k : Fin (n + 1)} :
-    DecidableEq (MessagesUpTo k pSpec) := by
-  unfold MessagesUpTo
-  infer_instance
+instance [inst : ∀ i, DecidableEq (pSpec.Message i)] {k : Fin (n + 1)} :
+    DecidableEq (MessagesUpTo k pSpec) :=
+  @Fintype.decidablePiFintype _ _ (fun i => inst ⟨i.1.castLE (by omega), i.property⟩) _
 
 end MessagesUpTo
 
@@ -277,77 +329,6 @@ def extend {k : Fin n} (challenges : ChallengesUpTo k.castSucc pSpec)
       simp_all [Fin.castLE])
 
 end ChallengesUpTo
-
-/-- A (partial) transcript of a protocol specification, indexed by some `k : Fin (n + 1)`, is a
-list of messages from the protocol for all indices `i` less than `k`.
-
-Note that by definition, `Transcript (Fin.last n) pSpec` is definitionally equal to
-`FullTranscript pSpec`. -/
-@[reducible, inline, specialize]
-def Transcript (k : Fin (n + 1)) (pSpec : ProtocolSpec n) :=
-  (i : Fin k) → (pSpec (Fin.castLE (by omega) i)).2
-
-/-- The full transcript of an interactive protocol, which is a list of messages and challenges.
-
-Note that this is definitionally equal to `Transcript (Fin.last n) pSpec`. -/
-@[reducible, inline, specialize]
-def FullTranscript (pSpec : ProtocolSpec n) := (i : Fin n) → (pSpec i).2
-
-namespace FullTranscript
-
-@[reducible, inline, specialize]
-def messages (transcript : FullTranscript pSpec) (i : MessageIdx pSpec) :=
-  transcript i.val
-
-@[reducible, inline, specialize]
-def challenges (transcript : FullTranscript pSpec) (i : ChallengeIdx pSpec) :=
-  transcript i.val
-
-/-- There is only one full transcript (the empty one) for an empty protocol -/
-instance : Unique (FullTranscript (default : ProtocolSpec 0)) := inferInstance
-
-end FullTranscript
-
-/-! ### Restriction of Protocol Specifications & Transcripts -/
-
-section Restrict
-
-variable {n : ℕ}
-
-/-
-TODOs:
-1. Change function signature to `m : Fin (n + 1)`
-2. Show that `(pSpec.take m).MessageIdx` is definitionally equal to `pSpec.MessageIdxUpTo m`
--/
-
-/-- Take the first `m ≤ n` rounds of a `ProtocolSpec n` -/
-abbrev take (m : ℕ) (h : m ≤ n) (pSpec : ProtocolSpec n) : ProtocolSpec m := Fin.take m h pSpec
-
-def take' (m : Fin (n + 1)) (pSpec : ProtocolSpec n) : ProtocolSpec m.val :=
-  Fin.take m.val m.is_le pSpec
-
-@[simp]
-lemma take'_MessageIdx (m : Fin (n + 1)) (pSpec : ProtocolSpec n) :
-    (pSpec.take' m).MessageIdx = pSpec.MessageIdxUpTo m := by
-  rfl
-
-lemma take'_Transcript (m : Fin (n + 1)) (pSpec : ProtocolSpec n) :
-    (pSpec.take' m).FullTranscript = pSpec.Transcript m := rfl
-
-/-- Take the last `m ≤ n` rounds of a `ProtocolSpec n` -/
-abbrev rtake (m : ℕ) (h : m ≤ n) (pSpec : ProtocolSpec n) := Fin.rtake m h pSpec
-
-/-- Take the first `m ≤ n` rounds of a (full) transcript for a protocol specification `pSpec` -/
-abbrev FullTranscript.take {pSpec : ProtocolSpec n} (m : ℕ) (h : m ≤ n)
-    (transcript : FullTranscript pSpec) : FullTranscript (pSpec.take m h) :=
-  Fin.take m h transcript
-
-/-- Take the last `m ≤ n` rounds of a (full) transcript for a protocol specification `pSpec` -/
-abbrev FullTranscript.rtake {pSpec : ProtocolSpec n} (m : ℕ) (h : m ≤ n)
-    (transcript : FullTranscript pSpec) : FullTranscript (pSpec.rtake m h) :=
-  Fin.rtake m h transcript
-
-end Restrict
 
 namespace Transcript
 
@@ -434,6 +415,17 @@ def equivMessagesChallenges :
 end Transcript
 
 namespace FullTranscript
+
+@[reducible, inline, specialize]
+def messages (transcript : FullTranscript pSpec) (i : MessageIdx pSpec) :=
+  transcript i.val
+
+@[reducible, inline, specialize]
+def challenges (transcript : FullTranscript pSpec) (i : ChallengeIdx pSpec) :=
+  transcript i.val
+
+/-- There is only one full transcript (the empty one) for an empty protocol -/
+instance : Unique (FullTranscript (default : ProtocolSpec 0)) := inferInstance
 
 /-- Convert a full transcript to the tuple of messages and challenges -/
 def toMessagesChallenges (transcript : FullTranscript pSpec) : Messages pSpec × Challenges pSpec :=
