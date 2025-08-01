@@ -26,6 +26,9 @@ introduced in the [Section 4 of the WHIR paper][todo: ArkLib bibliography].
   and so `Gen(l,alpha) = {1, alpha,...., alpha^{l-1}}` also corresponds to `l = 2`
   and not for a generic l.
 
+- Lemmas 4.21,4.22,4.23
+-- these lemmas refer to the specifc case when k set to 1, so it's safe to use the hypothesis 1 ≤ m
+
 ## References
 
 * [G Arnon, A Chies, G Fenzi, and E Yogev, *WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification*][todo: ArkLib bibliography]
