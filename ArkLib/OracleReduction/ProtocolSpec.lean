@@ -80,7 +80,7 @@ section Restrict
 variable {n : ℕ}
 
 /-- Take the first `m ≤ n` rounds of a `ProtocolSpec n` -/
-abbrev take (m : Fin (n + 1)) (pSpec : ProtocolSpec n) : ProtocolSpec m := pSpec[:m]
+abbrev take (m : Fin (n + 1)) (pSpec : ProtocolSpec n) : ProtocolSpec m := Fin.take m m.is_le pSpec
 
 /-- Take the last `m ≤ n` rounds of a `ProtocolSpec n` -/
 abbrev rtake (m : Fin (n + 1)) (pSpec : ProtocolSpec n) := Fin.rtake m m.is_le pSpec
