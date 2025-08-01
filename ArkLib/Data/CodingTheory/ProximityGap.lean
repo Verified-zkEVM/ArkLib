@@ -36,4 +36,4 @@ def proximityGap (d : ℕ) (bound : ℕ) : Prop :=
   for all `i`. -/
 def correlatedAgreement (C : Set (n → F)) (δ : ℝ≥0) {k : ℕ} (W : Fin k → n → F) : Prop :=
   ∃ S : Finset n, #(S) ≥ (1 - δ) * (Fintype.card n) ∧
-    ∃ v : Fin k → n → F, ∀ i, v i ∈ C ∧ {j | v i j = W i j} ⊆ S
+    ∃ v : Fin k → n → F, ∀ i, v i ∈ C ∧ {j | v i j = W i j} = S
