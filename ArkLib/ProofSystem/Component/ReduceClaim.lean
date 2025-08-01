@@ -11,9 +11,10 @@ import ArkLib.OracleReduction.Security.RoundByRound
 
   This is a zero-round (oracle) reduction.
 
-  1. Reduction version: there are mappings between `StmtIn → StmtOut` and `WitIn → WitOut`. The
-     prover and verifier applies these mappings to the input statement and witness, and returns the
-     output statement and witness.
+  1. Reduction version: there are mappings between `StmtIn → StmtOut` and `StmtIn → WitIn → WitOut`.
+     Note the second mapping between witnesses may depend on the input statement as well. The prover
+     and verifier applies these mappings to the input statement and witness, and returns the output
+     statement and witness.
 
   This reduction is secure via pull-backs on relations. What this means is as follows:
   - Completeness holds if for the outputs of the reduction satisfies some relation `relOut` whenever
@@ -35,7 +36,7 @@ variable {ι : Type} (oSpec : OracleSpec ι)
   {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} {WitIn : Type}
   {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} {WitOut : Type}
   [∀ i, OracleInterface (OStmtIn i)]
-  (mapStmt : StmtIn → StmtOut) (mapWit : WitIn → WitOut)
+  (mapStmt : StmtIn → StmtOut) (mapWit : StmtIn → WitIn → WitOut)
 
 section Reduction
 
@@ -45,7 +46,7 @@ def prover : Prover oSpec StmtIn WitIn StmtOut WitOut ![] where
   input := id
   sendMessage := fun i => nomatch i
   receiveChallenge := fun i => nomatch i
-  output := fun ⟨stmt, wit⟩ => (mapStmt stmt, mapWit wit)
+  output := fun ⟨stmt, wit⟩ => (mapStmt stmt, mapWit stmt wit)
 
 /-- The verifier for the `ReduceClaim` reduction. -/
 def verifier : Verifier oSpec StmtIn StmtOut ![] where
@@ -64,7 +65,7 @@ variable {oSpec} {mapStmt} {mapWit}
 @[simp]
 theorem reduction_completeness (h : init.neverFails)
     (hRel : ∀ stmtIn witIn, (stmtIn, witIn) ∈ relIn ↔
-      (mapStmt stmtIn, mapWit witIn) ∈ relOut) :
+      (mapStmt stmtIn, mapWit stmtIn witIn) ∈ relOut) :
     (reduction oSpec mapStmt mapWit).perfectCompleteness init impl relIn relOut := by
   simp [reduction, Reduction.run, Prover.run, Prover.runToRound, Verifier.run,
     prover, verifier, hRel, h]
@@ -121,7 +122,7 @@ def oracleProver : OracleProver oSpec
   sendMessage := fun i => nomatch i
   receiveChallenge := fun i => nomatch i
   output := fun ⟨⟨stmt, oStmt⟩, wit⟩ =>
-    ((mapStmt stmt, mapOStmt embedIdx hEq oStmt), mapWit wit)
+    ((mapStmt stmt, mapOStmt embedIdx hEq oStmt), mapWit stmt wit)
 
 /-- The oracle verifier for the `ReduceClaim` oracle reduction. -/
 def oracleVerifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut ![] where
@@ -145,7 +146,7 @@ variable {oSpec} {mapStmt} {mapWit} {embedIdx} {hEq}
 theorem oracleReduction_completeness (h : init.neverFails)
     (hRel : ∀ stmtIn oStmtIn witIn,
       ((stmtIn, oStmtIn), witIn) ∈ relIn →
-      ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), mapWit witIn) ∈ relOut) :
+      ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), mapWit stmtIn witIn) ∈ relOut) :
     (oracleReduction oSpec mapStmt mapWit embedIdx hEq).perfectCompleteness init impl
       relIn relOut := by
   -- TODO: clean up this proof
