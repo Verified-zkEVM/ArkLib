@@ -6,6 +6,7 @@ Authors: Mirco Richter, Poulami Das (Least Authority)
 
 import Mathlib.Tactic.FieldSimp
 
+import ArkLib.Data.CodingTheory.ProximityGap
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.Probability.Notation
 import ArkLib.ProofSystem.Stir.ProximityBound
@@ -153,11 +154,7 @@ lemma combine_theorem
                    (1- (rate (code φ degree)) - 1/ Fintype.card ι)))
   (hProb : Pr_{ let r ←$ᵖ F }[ δᵣ((combine φ dstar r fs degs), (code φ dstar)) ≤ δ ]  >
     ENNReal.ofReal (err' F dstar (rate (code φ degree)) δ (m * (dstar + 1) - ∑ i, degs i))) :
-    ∃ S : Finset ι,
-      S.card ≥ (1 - δ) * Fintype.card ι ∧
-      ∀ i : Fin m, ∃ u : (ι → F),
-      u ∈ (code φ (degs i)) ∧
-      ∀ x ∈ S, fs i x = u x
-  := by sorry
+      correlatedAgreement (code φ degree) ⟨δ, by linarith⟩ fs
+      := by sorry
 
 end Combine
