@@ -45,7 +45,7 @@ def oracleProver : OracleProver oSpec
 
   receiveChallenge | ⟨0, h⟩ => nomatch h
 
-  output := fun st =>
+  output := fun st => pure
     (⟨(), fun x => match x with
       | .inl _ => by simpa [Unique.uniq] using st
       | .inr default => by simpa [Unique.uniq] using st⟩,

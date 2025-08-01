@@ -237,7 +237,51 @@ def oracleReduction.sendClaim : OracleReduction oSpec (StmtIn R) (OStmtIn R deg)
   sorry
   -- (SendClaim.oracleReduction oSpec (StmtIn R) (OStmtIn R deg) Unit)
 
+def oracleReduction.checkClaim : OracleReduction oSpec
+    (StmtAfterSendClaim R) (OStmtAfterSendClaim R deg) Unit
+    (StmtAfterCheckClaim R) (OStmtAfterCheckClaim R deg) Unit ![] :=
+  sorry
 
+def oracleReduction.randomQuery : OracleReduction oSpec
+    (StmtAfterCheckClaim R) (OStmtAfterCheckClaim R deg) Unit
+    (StmtAfterRandomQuery R) (OStmtAfterRandomQuery R deg) Unit ![(.V_to_P, R)] :=
+  sorry
+
+def oracleReduction.reduceClaim : OracleReduction oSpec
+    (StmtAfterRandomQuery R) (OStmtAfterRandomQuery R deg) Unit
+    (StmtOut R) (OStmtOut R deg) Unit ![] :=
+  sorry
+
+@[reducible]
+def pSpecCombined : ProtocolSpec 2 :=
+  ![(.P_to_V, ↥R⦃≤ ↑deg⦄[X])] ++ₚ ![] ++ₚ ![(.V_to_P, R)] ++ₚ ![]
+
+@[reducible]
+def pSpec : ProtocolSpec 2 := ![(.P_to_V, ↥R⦃≤ ↑deg⦄[X]), (.V_to_P, R)]
+
+lemma pSpec_eq_pSpecCombined : pSpec R deg = pSpecCombined R deg := by
+  ext i <;> fin_cases i <;> rfl
+
+instance : IsSingleRound (pSpec R deg) where
+  prover_first' := by simp [pSpec]
+  verifier_last' := by simp [pSpec]
+
+instance instOracleInterfaceMessagePSpec : OracleInterface ((pSpec R deg).Message default) := by
+  simp [pSpec, default]
+  exact instOracleInterfacePolynomialDegreeLE
+
+instance instSelectableTypeChallengePSpec [SelectableType R] :
+    ∀ i, SelectableType ((pSpec R deg).Challenge i)
+  | ⟨1, _⟩ => by simp [pSpec]; infer_instance
+  -- simp [pSpec, Challenge, default]
+  -- infer_instance
+
+def oracleReduction : OracleReduction oSpec (StmtIn R) (OStmtIn R deg) Unit
+    (StmtOut R) (OStmtOut R deg) Unit (pSpec R deg) :=
+  ((oracleReduction.sendClaim R deg oSpec)
+  |>.append (oracleReduction.checkClaim R deg oSpec)
+  |>.append (oracleReduction.randomQuery R deg oSpec)
+  |>.append (oracleReduction.reduceClaim R deg oSpec)).cast (by simp [pSpec_eq_pSpecCombined])
 
 end Simpler
 

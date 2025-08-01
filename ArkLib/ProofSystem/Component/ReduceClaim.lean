@@ -46,7 +46,7 @@ def prover : Prover oSpec StmtIn WitIn StmtOut WitOut ![] where
   input := id
   sendMessage := fun i => nomatch i
   receiveChallenge := fun i => nomatch i
-  output := fun ⟨stmt, wit⟩ => (mapStmt stmt, mapWit stmt wit)
+  output := fun ⟨stmt, wit⟩ => pure (mapStmt stmt, mapWit stmt wit)
 
 /-- The verifier for the `ReduceClaim` reduction. -/
 def verifier : Verifier oSpec StmtIn StmtOut ![] where
@@ -122,7 +122,7 @@ def oracleProver : OracleProver oSpec
   sendMessage := fun i => nomatch i
   receiveChallenge := fun i => nomatch i
   output := fun ⟨⟨stmt, oStmt⟩, wit⟩ =>
-    ((mapStmt stmt, mapOStmt embedIdx hEq oStmt), mapWit stmt wit)
+    pure ((mapStmt stmt, mapOStmt embedIdx hEq oStmt), mapWit stmt wit)
 
 /-- The oracle verifier for the `ReduceClaim` oracle reduction. -/
 def oracleVerifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut ![] where

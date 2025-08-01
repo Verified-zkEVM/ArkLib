@@ -3,7 +3,7 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.OracleReduction.LiftContext.Reduction
+import ArkLib.OracleReduction.LiftContext.OracleReduction
 
 /-!
 # Simple Oracle Reduction: Random Query
@@ -71,9 +71,9 @@ def oracleProver : OracleProver oSpec
 
   sendMessage | ⟨0, h⟩ => nomatch h
 
-  receiveChallenge | ⟨0, _⟩ => fun oracles q => (oracles, q)
+  receiveChallenge | ⟨0, _⟩ => fun oracles => pure fun q => (oracles, q)
 
-  output := fun (oracles, q) => ((q, oracles), ())
+  output := fun (oracles, q) => pure ((q, oracles), ())
 
 /--
 The oracle verifier simply returns the challenge, and performs no checks.

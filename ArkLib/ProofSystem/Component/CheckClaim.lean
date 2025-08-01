@@ -41,7 +41,7 @@ def prover : Prover oSpec Statement Unit Statement Unit ![] where
   input := Prod.fst
   sendMessage := fun i => nomatch i
   receiveChallenge := fun i => nomatch i
-  output := fun stmt => (stmt, ())
+  output := fun stmt => pure (stmt, ())
 
 variable (pred : Statement → Prop) [DecidablePred pred]
 
@@ -102,7 +102,7 @@ def oracleProver : OracleProver oSpec
   input := Prod.fst
   sendMessage := fun i => nomatch i
   receiveChallenge := fun i => nomatch i
-  output := fun stmt => (stmt, ())
+  output := fun stmt => pure (stmt, ())
 
 variable (pred : ReaderT Statement (OracleComp [OStatement]ₒ) Prop)
   (hPred : ∀ stmt, (pred stmt).neverFails)
@@ -148,11 +148,8 @@ theorem oracleReduction_completeness (h : init.neverFails) :
     exists_and_right, exists_eq_right, exists_prop, forall_exists_index, and_imp, Prod.forall,
     Fin.forall_fin_zero_pi, Prod.mk.injEq]
   simp only [Reduction.run, Prover.run, Verifier.run, toOracleImpl, simulateQ']
-  simp only[ChallengeIdx, Fin.reduceLast, Prover.runToRound_zero_of_prover_first, Fin.isValue,
-    bind_pure_comp, map_pure, liftM_eq_liftComp, liftComp_map, Functor.map_map, pure_bind,
-    simulateQ_map, StateT.run_map, neverFails_map_iff, support_map, Set.mem_image, Prod.mk.injEq,
-    and_true, Prod.exists, exists_eq_right_right, exists_and_right, and_imp, forall_exists_index,
-    forall_const]
+  simp only [ChallengeIdx, Fin.reduceLast, Prover.runToRound_zero_of_prover_first, Fin.isValue,
+    bind_pure_comp, liftM_eq_liftComp, liftComp_map, Functor.map_map, pure_bind]
   intro stmt oStmt _
   sorry
   -- simp [Reduction.run, Prover.run, Verifier.run, simOracle2]
