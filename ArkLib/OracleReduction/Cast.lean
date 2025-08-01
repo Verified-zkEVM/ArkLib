@@ -174,8 +174,9 @@ protected def cast (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec₁) :
   sendMessage := fun i st => do
     let ⟨msg, newSt⟩ ← P.sendMessage (i.cast h.symm (cast_symm hSpec)) st
     return ⟨(Message.cast_idx h hSpec) ▸ msg, newSt⟩
-  receiveChallenge := fun i st chal =>
-    P.receiveChallenge (i.cast h.symm (cast_symm hSpec)) st ((Challenge.cast_idx h hSpec) ▸ chal)
+  receiveChallenge := fun i st => do
+    let f ← P.receiveChallenge (i.cast h.symm (cast_symm hSpec)) st
+    return fun chal => f (Challenge.cast_idx h hSpec ▸ chal)
   output := P.output ∘ (fun st => _root_.cast (by simp) st)
 
 end Prover

@@ -21,6 +21,9 @@ import ArkLib.OracleReduction.Security.RoundByRound
 
   In both cases, the output relation is trivial (since the input relation has been checked by the
   verifier).
+
+  Note: after the refactor (to disallow failure in `OracleComp`), this may become a special case
+  of `ReduceClaim`.
 -/
 
 open OracleComp OracleInterface ProtocolSpec Function

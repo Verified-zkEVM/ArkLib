@@ -354,7 +354,7 @@ def rbrKnowledgeSoundnessOneShot (relIn : Set (StmtIn × WitIn)) (relOut : Set (
     | do
       (simulateQ (impl ++ₛₒ challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         (do
-          let ⟨transcript, _, proveQueryLog⟩ ← prover.runWithLogToRound i.1.castSucc stmtIn witIn
+          let ⟨⟨transcript, _⟩, proveQueryLog⟩ ← prover.runWithLogToRound i.1.castSucc stmtIn witIn
           let challenge ← liftComp (pSpec.getChallenge i) _
           return (transcript, challenge, proveQueryLog))).run' (← init)] ≤
       rbrKnowledgeError i
@@ -378,7 +378,7 @@ def rbrKnowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut
     | do
       (simulateQ (impl ++ₛₒ challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         (do
-          let ⟨transcript, _, proveQueryLog⟩ ← prover.runWithLogToRound i.1.castSucc stmtIn witIn
+          let ⟨⟨transcript, _⟩, proveQueryLog⟩ ← prover.runWithLogToRound i.1.castSucc stmtIn witIn
           let challenge ← liftComp (pSpec.getChallenge i) _
           return (transcript, challenge, proveQueryLog))).run' (← init)] ≤
       rbrKnowledgeError i

@@ -77,10 +77,10 @@ derive the full transcript from the messages output by the prover, with the chal
 from the state-restoration oracle. -/
 def srGame (P : Prover.StateRestoration oSpec StmtIn StmtOut WitOut pSpec) :
     OracleComp (oSpec ++ₒ (srChallengeOracle StmtIn pSpec))
-      (StmtIn × WitOut × pSpec.FullTranscript) := do
+      (pSpec.FullTranscript × StmtIn × WitOut) := do
   let ⟨stmtIn, (_, witOut), messages⟩ ← P
   let transcript ← messages.deriveTranscriptSR stmtIn
-  return ⟨stmtIn, witOut, transcript⟩
+  return ⟨transcript, stmtIn, witOut⟩
 
 end Prover.StateRestoration
 
@@ -98,7 +98,7 @@ def soundness
     do
     (simulateQ (impl ++ₛₒ srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
         <| (do
-    let ⟨stmtIn, _, transcript⟩ ← srProver.srGame
+    let ⟨transcript, stmtIn, _⟩ ← srProver.srGame
     let stmtOut ← liftComp (verifier.run stmtIn transcript) _
     return (stmtIn, stmtOut))).run' (← init)
   ] ≤ srSoundnessError
@@ -115,7 +115,7 @@ def knowledgeSoundness
       do
       (simulateQ (impl ++ₛₒ srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
           <| (do
-            let ⟨stmtIn, witOut, transcript⟩ ← srProver.srGame
+            let ⟨transcript, stmtIn, witOut⟩ ← srProver.srGame
             let stmtOut ← liftComp (verifier.run stmtIn transcript) _
             let witIn ← srExtractor stmtIn witOut transcript default default
             return (stmtIn, witIn, stmtOut, witOut))).run' (← init)

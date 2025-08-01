@@ -151,19 +151,25 @@ structure ProverRound {ι : Type} (oSpec : OracleSpec ι) {n : ℕ} (pSpec : Pro
     PrvState i.1.castSucc → OracleComp oSpec (pSpec.Message i × PrvState i.1.succ)
   /-- Receive a challenge and update the prover's state -/
   receiveChallenge (i : ChallengeIdx pSpec) :
-    PrvState i.1.castSucc → (pSpec.Challenge i) → PrvState i.1.succ
+    PrvState i.1.castSucc → OracleComp oSpec (pSpec.Challenge i → PrvState i.1.succ)
 
-/-- The output of the prover, which is a function from the prover's state to the output witness -/
+/-- The output function of the prover, which takes in the prover's final state and returns an oracle
+  computation that outputs the output statement and witness.
+
+  Note: this needs to be an oracle computation in order to match the type of the verifier
+  (especially when there is no interaction between the prover and verifier). -/
 @[ext]
-structure ProverOut (StmtOut WitOut PrvState : Type) where
-  output : PrvState → StmtOut × WitOut
+structure ProverOut {ι : Type} (oSpec : OracleSpec ι) (StmtOut WitOut PrvState : Type) where
+  output : PrvState → OracleComp oSpec (StmtOut × WitOut)
 
 /-- A prover for an interactive protocol with `n` messages consists of a sequence of internal states
     and a tuple of four functions:
   - `PrvState 0`, ..., `PrvState n` are the types for the prover's state at each round
   - `input` initializes the prover's state by taking in the input statement and witness
-  - `receiveChallenge` updates the prover's state given a challenge
-  - `sendMessage` sends a message and updates the prover's state
+  - `sendMessage` takes in the prover's state, then returns an oracle computation that outputs a
+    message and the next prover's state
+  - `receiveChallenge` takes in the prover's state, then returns an oracle computation that outputs
+    a function that takes in a challenge and returns the next prover's state
   - `output` returns the output statement and witness from the prover's state
 
 Note that the output statement by the prover is present only to facilitate composing two provers
@@ -177,7 +183,7 @@ structure Prover {ι : Type} (oSpec : OracleSpec ι)
       ProverState n,
       ProverIn StmtIn WitIn (PrvState 0),
       ProverRound oSpec pSpec,
-      ProverOut StmtOut WitOut (PrvState (Fin.last n))
+      ProverOut oSpec StmtOut WitOut (PrvState (Fin.last n))
 
 /-- A verifier of an interactive protocol is a function that takes in the input statement and the
   transcript, and performs an oracle computation that outputs a new statement -/
@@ -463,7 +469,7 @@ protected def Prover.id : Prover oSpec Statement Witness Statement Witness ![] w
   input := _root_.id
   sendMessage := fun i => Fin.elim0 i
   receiveChallenge := fun i => Fin.elim0 i
-  output := _root_.id
+  output := pure
 
 /-- The trivial / identity verifier, which does not receive any messages from the prover, and
   returns its input statement as output. -/

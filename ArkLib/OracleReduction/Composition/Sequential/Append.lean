@@ -150,9 +150,10 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
       exact P₁.sendMessage ⟨⟨i, hi⟩, hDir⟩ state
     · by_cases hi' : i = m
       · simp [hi'] at hDir state ⊢
-        letI ctxIn₂ := P₁.output state
-        letI state₂ := P₂.input ctxIn₂
-        exact P₂.sendMessage ⟨⟨0, by omega⟩, hDir⟩ state₂
+        exact (do
+          let ctxIn₂ ← P₁.output state
+          letI state₂ := P₂.input ctxIn₂
+          P₂.sendMessage ⟨⟨0, by omega⟩, hDir⟩ state₂)
       · haveI hi1 : ¬ i < m + 1 := by omega
         haveI hi2 : i - (m + 1) + 1 = i - m := by omega
         simp [hi] at hDir ⊢
@@ -161,24 +162,25 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
 
   /- Receiving challenges is implemented essentially the same as sending messages, modulo the
   difference in direction. -/
-  receiveChallenge := fun ⟨i, hDir⟩ state chal => by
+  receiveChallenge := fun ⟨i, hDir⟩ state => by
     dsimp [ProtocolSpec.append, Fin.append, Fin.addCases, Fin.tail,
-      Fin.cast, Fin.castLT, Fin.succ, Fin.castSucc] at hDir state chal ⊢
+      Fin.cast, Fin.castLT, Fin.succ, Fin.castSucc] at hDir state ⊢
     by_cases hi : i < m
     · haveI : i < m + 1 := by omega
-      simp [hi] at hDir chal ⊢
+      simp [hi] at hDir ⊢
       simp [this] at state
-      exact P₁.receiveChallenge ⟨⟨i, hi⟩, hDir⟩ state chal
+      exact P₁.receiveChallenge ⟨⟨i, hi⟩, hDir⟩ state
     · by_cases hi' : i = m
-      · simp [hi'] at hDir state chal ⊢
-        letI ctxIn₂ := P₁.output state
-        letI state₂ := P₂.input ctxIn₂
-        exact P₂.receiveChallenge ⟨⟨0, by omega⟩, hDir⟩ state₂ chal
+      · simp [hi'] at hDir state ⊢
+        exact (do
+          let ctxIn₂ ← P₁.output state
+          letI state₂ := P₂.input ctxIn₂
+          P₂.receiveChallenge ⟨⟨0, by omega⟩, hDir⟩ state₂)
       · haveI hi1 : ¬ i < m + 1 := by omega
         haveI hi2 : i - (m + 1) + 1 = i - m := by omega
-        simp [hi] at hDir chal ⊢
+        simp [hi] at hDir ⊢
         simp [hi1] at state
-        exact P₂.receiveChallenge ⟨⟨i - m, by omega⟩, hDir⟩ (dcast (by simp [hi2]) state) chal
+        exact P₂.receiveChallenge ⟨⟨i - m, by omega⟩, hDir⟩ (dcast (by simp [hi2]) state)
 
   /- The combined prover's output function has two cases:
   - if the second protocol is empty, then it is the composition of the first prover's output
@@ -188,9 +190,10 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     dsimp [Fin.append, Fin.addCases, Fin.tail, Fin.cast, Fin.last, Fin.subNat] at state
     by_cases hn : n = 0
     · simp [hn] at state
-      letI ctxIn₂ := P₁.output state
-      letI state₂ := P₂.input ctxIn₂
-      exact P₂.output (dcast (by simp [hn]) state₂)
+      exact (do
+        let ctxIn₂ ← P₁.output state
+        letI state₂ := P₂.input ctxIn₂
+        P₂.output (dcast (by simp [hn]) state₂))
     · haveI : m + n - (m + 1) + 1 = n := by omega
       simp [hn] at state
       exact P₂.output (dcast (by simp [this, Fin.last]) state)
@@ -379,9 +382,9 @@ The overall output is `stmt₃`, `wit₃`, and the combined transcript `transcri
 -/
 theorem append_run (stmt : Stmt₁) (wit : Wit₁) :
       (P₁.append P₂).run stmt wit = (do
-        let ⟨⟨stmt₂, wit₂⟩, transcript₁⟩ ← liftM (P₁.run stmt wit)
-        let ⟨⟨stmt₃, wit₃⟩, transcript₂⟩ ← liftM (P₂.run stmt₂ wit₂)
-        return ⟨⟨stmt₃, wit₃⟩, transcript₁ ++ₜ transcript₂⟩) := by
+        let ⟨transcript₁, stmt₂, wit₂⟩ ← liftM (P₁.run stmt wit)
+        let ⟨transcript₂, stmt₃, wit₃⟩ ← liftM (P₂.run stmt₂ wit₂)
+        return ⟨transcript₁ ++ₜ transcript₂, stmt₃, wit₃⟩) := by
   unfold run runToRound
   sorry
 

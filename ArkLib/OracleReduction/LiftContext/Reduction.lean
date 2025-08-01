@@ -69,11 +69,12 @@ def Prover.liftContext
   sendMessage := fun i ⟨prvState, stmtIn, witIn⟩ => do
     let ⟨msg, prvState'⟩ ← P.sendMessage i prvState
     return ⟨msg, ⟨prvState', stmtIn, witIn⟩⟩
-  receiveChallenge := fun i ⟨prvState, stmtIn, witIn⟩ chal =>
-    ⟨P.receiveChallenge i prvState chal, stmtIn, witIn⟩
-  output := fun ⟨prvState, stmtIn, witIn⟩ =>
-    let ⟨innerStmtOut, innerWitOut⟩ := P.output prvState
-    lens.lift (stmtIn, witIn) (innerStmtOut, innerWitOut)
+  receiveChallenge := fun i ⟨prvState, stmtIn, witIn⟩ => do
+    let f ← P.receiveChallenge i prvState
+    return fun chal => ⟨f chal, stmtIn, witIn⟩
+  output := fun ⟨prvState, stmtIn, witIn⟩ => do
+    let ⟨innerStmtOut, innerWitOut⟩ ← P.output prvState
+    return lens.lift (stmtIn, witIn) (innerStmtOut, innerWitOut)
 
 /-- The outer verifier after lifting invokes the inner verifier on the projected input, and
   lifts the output -/
@@ -148,7 +149,8 @@ def Reduction.compatContext
       (OuterStmtIn × OuterWitIn) → (InnerStmtOut × InnerWitOut) → Prop :=
   fun outerCtxIn innerCtxOut =>
     innerCtxOut ∈
-      Prod.fst '' (R.run (lens.stmt.proj outerCtxIn.1) (lens.wit.proj outerCtxIn)).support
+      (Prod.snd ∘ Prod.fst) ''
+        (R.run (lens.stmt.proj outerCtxIn.1) (lens.wit.proj outerCtxIn)).support
 
 /-- Compatibility relation between the outer input witness and the inner output witness, relative to
   a straightline extractor.
@@ -255,13 +257,13 @@ theorem liftContext_runWithLogToRound
     (P : Prover oSpec InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut pSpec) :
       (P.liftContext lens).runWithLogToRound i outerStmtIn outerWitIn
       = do
-        let ⟨transcript, prvState, queryLog⟩ ←
+        let ⟨⟨transcript, prvState⟩, queryLog⟩ ←
           (P.runWithLogToRound i).uncurry (lens.proj (outerStmtIn, outerWitIn))
-        return ⟨transcript, ⟨prvState, outerStmtIn, outerWitIn⟩, queryLog⟩ := by
+        return ⟨⟨transcript, ⟨prvState, outerStmtIn, outerWitIn⟩⟩, queryLog⟩ := by
   unfold runWithLogToRound
   induction i using Fin.induction with
   | zero => simp [liftContext, Function.uncurry]
-  | succ i ih => simp [liftContext_runToRound, Function.uncurry]
+  | succ i ih => simp [liftContext_runToRound, Function.uncurry]; congr
 
 /-- Running the lifted outer prover is equivalent to running the inner prover on the projected
   input, and then integrating the output -/
@@ -272,14 +274,13 @@ theorem liftContext_run
     {P : Prover oSpec InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut pSpec} :
       (P.liftContext lens).run outerStmtIn outerWitIn
       = do
-        let ⟨innerCtxOut, fullTranscript⟩ ←
+        let ⟨fullTranscript, innerCtxOut⟩ ←
           P.run.uncurry (lens.proj (outerStmtIn, outerWitIn))
-        return ⟨lens.lift (outerStmtIn, outerWitIn) innerCtxOut,
-                fullTranscript⟩ := by
+        return ⟨fullTranscript, lens.lift (outerStmtIn, outerWitIn) innerCtxOut⟩ := by
   simp only [run, liftContext_runToRound]
   simp [liftContext, Function.uncurry]
 
-/- Lifting the prover intertwines with the runWithLog function -/
+/-- Lifting the prover intertwines with logging queries of the prover -/
 theorem liftContext_runWithLog
     {lens : Context.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                         OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
@@ -287,13 +288,12 @@ theorem liftContext_runWithLog
     {P : Prover oSpec InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut pSpec} :
       (P.liftContext lens).runWithLog outerStmtIn outerWitIn
       = do
-        let ⟨innerCtxOut, fullTranscript, queryLog⟩ ←
+        let ⟨⟨fullTranscript, innerCtxOut⟩, queryLog⟩ ←
           P.runWithLog.uncurry (lens.proj (outerStmtIn, outerWitIn))
-        return ⟨lens.lift (outerStmtIn, outerWitIn) innerCtxOut,
-                fullTranscript,
-                queryLog⟩ := by
-  simp only [runWithLog, liftContext_runWithLogToRound]
-  simp [liftContext, Function.uncurry]
+        return ⟨⟨fullTranscript, lens.lift (outerStmtIn, outerWitIn) innerCtxOut⟩, queryLog⟩ := by
+  rw [runWithLog, liftContext_run]
+  simp [Function.uncurry]
+  congr
 
 end Prover
 
@@ -305,11 +305,10 @@ theorem liftContext_run
     {outerStmtIn : OuterStmtIn} {outerWitIn : OuterWitIn}
     {R : Reduction oSpec InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut pSpec} :
       (R.liftContext lens).run outerStmtIn outerWitIn = do
-        let ⟨innerCtxOut, verInnerStmtOut, fullTranscript⟩ ←
+        let ⟨⟨fullTranscript, innerCtxOut⟩, verInnerStmtOut⟩ ←
           R.run.uncurry (lens.proj (outerStmtIn, outerWitIn))
-        return ⟨lens.lift (outerStmtIn, outerWitIn) innerCtxOut,
-                lens.stmt.lift outerStmtIn verInnerStmtOut,
-                fullTranscript⟩ := by
+        return ⟨⟨fullTranscript, lens.lift (outerStmtIn, outerWitIn) innerCtxOut⟩ ,
+                lens.stmt.lift outerStmtIn verInnerStmtOut⟩ := by
   unfold run
   simp [liftContext, Prover.liftContext_run, Verifier.liftContext, Verifier.run, Function.uncurry]
 
@@ -319,12 +318,10 @@ theorem liftContext_runWithLog
     {outerStmtIn : OuterStmtIn} {outerWitIn : OuterWitIn}
     {R : Reduction oSpec InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut pSpec} :
       (R.liftContext lens).runWithLog outerStmtIn outerWitIn = do
-        let ⟨innerCtxOut, verInnerStmtOut, fullTranscript, queryLog⟩ ←
+        let ⟨⟨⟨fullTranscript, innerCtxOut⟩, verInnerStmtOut⟩, queryLog⟩ ←
           R.runWithLog.uncurry (lens.proj (outerStmtIn, outerWitIn))
-        return ⟨lens.lift (outerStmtIn, outerWitIn) innerCtxOut,
-                lens.stmt.lift outerStmtIn verInnerStmtOut,
-                fullTranscript,
-                queryLog⟩ := by
+        return ⟨⟨⟨fullTranscript, lens.lift (outerStmtIn, outerWitIn) innerCtxOut⟩,
+                lens.stmt.lift outerStmtIn verInnerStmtOut⟩, queryLog⟩ := by
   unfold runWithLog
   simp [liftContext, Prover.liftContext_runWithLog, Verifier.liftContext, Verifier.run]
 
@@ -414,9 +411,9 @@ theorem liftContext_soundness [Inhabited InnerStmtOut]
     input := fun _ => outerP.input (outerStmtIn, outerWitIn)
     sendMessage := outerP.sendMessage
     receiveChallenge := outerP.receiveChallenge
-    output := fun state =>
-      let ⟨outerStmtOut, outerWitOut⟩ := outerP.output state
-      ⟨default, outerWitOut⟩
+    output := fun state => do
+      let ⟨outerStmtOut, outerWitOut⟩ ← outerP.output state
+      return ⟨default, outerWitOut⟩
   }
   have : lens.proj outerStmtIn ∉ innerLangIn := by
     apply lensSound.proj_sound
@@ -461,9 +458,9 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited Inner
       input := fun _ => outerP.input (outerStmtIn, outerWitIn)
       sendMessage := outerP.sendMessage
       receiveChallenge := outerP.receiveChallenge
-      output := fun state =>
-        let ⟨outerStmtOut, outerWitOut⟩ := outerP.output state
-        ⟨default, witLens.proj (outerStmtIn, outerWitOut)⟩
+      output := fun state => do
+        let ⟨outerStmtOut, outerWitOut⟩ ← outerP.output state
+        return ⟨default, witLens.proj (outerStmtIn, outerWitOut)⟩
     }
   have h_innerP_input {innerStmtIn} {innerWitIn} :
       innerP.input (innerStmtIn, innerWitIn) = outerP.input (outerStmtIn, outerWitIn) := rfl
@@ -474,8 +471,8 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited Inner
   have h_innerP_runWithLog {innerStmtIn} {innerWitIn} :
       innerP.runWithLog innerStmtIn innerWitIn
       = do
-        let ⟨⟨_, outerWitOut⟩, rest⟩ ← outerP.runWithLog outerStmtIn outerWitIn
-        return ⟨⟨default, witLens.proj (outerStmtIn, outerWitOut)⟩, rest⟩ := by
+        let ⟨⟨transcript, ⟨_, outerWitOut⟩⟩, rest⟩ ← outerP.runWithLog outerStmtIn outerWitIn
+        return ⟨⟨transcript, ⟨default, witLens.proj (outerStmtIn, outerWitOut)⟩⟩, rest⟩ := by
     sorry
   refine le_trans ?_ hR
   -- Massage the two `probEvent`s so that they have the same base computation `oa`?
@@ -508,9 +505,9 @@ theorem liftContext_rbr_soundness [Inhabited InnerStmtOut]
     input := fun _ => outerP.input (outerStmtIn, witIn)
     sendMessage := outerP.sendMessage
     receiveChallenge := outerP.receiveChallenge
-    output := fun state =>
-      let ⟨outerStmtOut, outerWitOut⟩ := outerP.output state
-      ⟨default, outerWitOut⟩
+    output := fun state => do
+      let ⟨outerStmtOut, outerWitOut⟩ ← outerP.output state
+      pure ⟨default, outerWitOut⟩
   }
   have h' := h (lens.proj outerStmtIn) (lensSound.proj_sound _ hOuterStmtIn)
     WitIn WitOut witIn innerP roundIdx hDir
