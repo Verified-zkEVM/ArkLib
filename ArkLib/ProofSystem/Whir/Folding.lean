@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Poulami Das (Least Authority)
+Authors: Poulami Das, Miguel Quaresma (Least Authority)
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon
@@ -25,6 +25,9 @@ introduced in the [Section 4 of the WHIR paper][todo: ArkLib bibliography].
 - Theorem 4.20 holds for `l = 2` as can be seen with `BStar(..,2)` and `errStar(..,2,..)`
   and so `Gen(l,alpha) = {1, alpha,...., alpha^{l-1}}` also corresponds to `l = 2`
   and not for a generic l.
+
+- Lemmas 4.21,4.22,4.23
+-- these lemmas refer to the specifc case when k set to 1, so it's safe to use the hypothesis 1 ≤ m
 
 ## References
 
@@ -85,19 +88,19 @@ noncomputable def fold_k_core {S : Finset ι} {φ : ι ↪ F} (f : (indexPowT S 
   fold_k takes a function `f : ι → F` and a vector `αs` of size k
   and returns a function `Fold : (ι^2ᵏ) → F` -/
 noncomputable def fold_k
-  {S : Finset ι} {φ : ι ↪ F} {k : ℕ}
+  {S : Finset ι} {φ : ι ↪ F} {k m : ℕ}
   [∀ j : ℕ, Neg (indexPowT S φ j)]
-  (f : (indexPowT S φ 0) → F) (αs : Fin k → F) : indexPowT S φ k → F :=
+  (f : (indexPowT S φ 0) → F) (αs : Fin k → F) (_hk : k ≤ m): indexPowT S φ k → F :=
   fold_k_core f k αs
 
 /-- Definition 4.14, part 2
   fold_k takes a set of functions `set : Set (ι → F)` and a vector `αs` of size k
   and returns a set of functions `Foldset : Set ((ι^2ᵏ) → F)` -/
 noncomputable def fold_k_set
-  {S : Finset ι} {φ : ι ↪ F} {k : ℕ}
+  {S : Finset ι} {φ : ι ↪ F} {k m : ℕ}
   [∀ j : ℕ, Neg (indexPowT S φ j)]
-  (set : Set ((indexPowT S φ 0) → F)) (αs : Fin k → F) : Set (indexPowT S φ k → F) :=
-    { g | ∃ f ∈ set, g = fold_k f αs }
+  (set : Set ((indexPowT S φ 0) → F)) (αs : Fin k → F) (hk : k ≤ m): Set (indexPowT S φ k → F) :=
+    { g | ∃ f ∈ set, g = fold_k f αs hk}
 
 section FoldingLemmas
 
@@ -120,7 +123,7 @@ lemma fold_f_g
   (αs : Fin k → F) (hk : k ≤ m)
   (f : smoothCode φ_0 m) :
   let f_fun := (f : (indexPowT S φ 0) → F)
-  let g := fold_k f_fun αs
+  let g := fold_k f_fun αs hk
   g ∈ smoothCode φ_k (m - k) := by sorry
 
 /-- Claim 4.5 part 2
@@ -224,13 +227,13 @@ theorem folding_listdecoding_if_genMutualCorrAgreement
     Pr_{let α ←$ᵖ F}[ -- for every function `f : ι → F` and
                       ∀ (f : (indexPowT S φ 0) → F),
                       -- `hδLe` : `δ ∈ (0, max_{j ∈ [0,k]} BStar(Cⱼ, parℓ = 2))`
-                       (δ ≤ 1 - Finset.univ.sup
+                       (0 < δ ∧ δ < 1 - Finset.univ.sup
                         (fun j => params.BStar j (params.Gen_α j).C (params.Gen_α j).parℓ)) →
 
                       let listBlock : Set ((indexPowT S φ 0) → F) := Λᵣ(0, k, f, S', C, hcode, δ)
                       let vec_α := GenFun α
-                      let fold := fold_k f vec_α
-                      let foldSet := fold_k_set listBlock vec_α
+                      let fold := fold_k f vec_α hLe
+                      let foldSet := fold_k_set listBlock vec_α hLe
                       let kFin : Fin (k + 1) := ⟨k, Nat.lt_succ_self k⟩
                       let Cₖ := (params.Gen_α kFin).C
                       let listHamming := relHammingBall Cₖ fold δ
@@ -251,7 +254,7 @@ theorem folding_listdecoding_if_genMutualCorrAgreement
     `Λᵣ(0,k,f,S_0,C)` denotes Λᵣ at f : ι → F for code C and
     `Λᵣ(1,k,foldf(f,α),S_1,C')` denotes Λᵣ at foldf : ι^2 → F for code C'. -/
 lemma folding_preserves_listdecoding_base
-  {S : Finset ι} {k m : ℕ} {φ : ι ↪ F} [Smooth φ] {δ : ℝ≥0}
+  {S : Finset ι} {k m : ℕ} (hm : 1 ≤ m) {φ : ι ↪ F} [Smooth φ] {δ : ℝ≥0}
   {S_0 : Finset (indexPowT S φ 0)} {S_1 : Finset (indexPowT S φ 1)}
   {φ_0 : (indexPowT S φ 0) ↪ F} {φ_1 : (indexPowT S φ 1) ↪ F}
   [∀ i : ℕ, Fintype (indexPowT S φ i)] [∀ i : ℕ, DecidableEq (indexPowT S φ i)]
@@ -263,14 +266,12 @@ lemma folding_preserves_listdecoding_base
   (C' : Set ((indexPowT S φ 1) → F)) (hcode' : C' = smoothCode φ_1 (m-1))
   {BStar : (Set (indexPowT S φ 1 → F)) → ℕ → ℝ≥0}
   {errStar : (Set (indexPowT S φ 1 → F)) → ℕ → ℝ≥0 → ℝ≥0} :
-    Pr_{let α ←$ᵖ F}[ ∀ { f : (indexPowT S φ 0) → F} (hδLe: δ ≤ 1 - (BStar C' 2)),
-
+    Pr_{let α ←$ᵖ F}[ ∀ { f : (indexPowT S φ 0) → F} (hδLe: 0 < δ ∧ δ < 1 - (BStar C' 2)),
                let listBlock : Set ((indexPowT S φ 0) → F) := Λᵣ(0, k, f, S_0, C, hcode, δ)
                let vec_α : Fin 1 → F := (fun _ : Fin 1 => α)
-               let foldSet := fold_k_set listBlock vec_α
-               let fold := fold_k f vec_α
+               let foldSet := fold_k_set listBlock vec_α hm
+               let fold := fold_k f vec_α hm
                let listBlock' : Set ((indexPowT S φ 1) → F) := Λᵣ(1, k, fold, S_1, C', hcode', δ)
-
                foldSet ≠ listBlock'
              ] < errStar C' 2 δ
   := by sorry
@@ -279,7 +280,7 @@ lemma folding_preserves_listdecoding_base
   Following same parameters as Lemma 4.21 above, and states
   `∀ α : F, Λᵣ(0,k,f,S_0,C,δ),α) ⊆ Λᵣ(1,k-1,foldf(f,α),S_1,C',δ)` -/
 lemma folding_preserves_listdecoding_bound
-  {S : Finset ι} {k m : ℕ} {φ : ι ↪ F} [Smooth φ] {δ : ℝ≥0} {f : (indexPowT S φ 0) → F}
+  {S : Finset ι} {k m : ℕ} (hm : 1 ≤ m) {φ : ι ↪ F} [Smooth φ] {δ : ℝ≥0} {f : (indexPowT S φ 0) → F}
   {S_0 : Finset (indexPowT S φ 0)} {S_1 : Finset (indexPowT S φ 1)}
   {φ_0 : (indexPowT S φ 0) ↪ F} {φ_1 : (indexPowT S φ 1) ↪ F}
   [∀ i : ℕ, Fintype (indexPowT S φ i)] [∀ i : ℕ, DecidableEq (indexPowT S φ i)]
@@ -291,15 +292,12 @@ lemma folding_preserves_listdecoding_bound
   (C' : Set ((indexPowT S φ 1) → F)) (hcode' : C' = smoothCode φ_1 (m-1))
   {BStar : (Set (indexPowT S φ 1 → F)) → ℕ → ℝ≥0}
   {errStar : (Set (indexPowT S φ 1 → F)) → ℕ → ℝ≥0 → ℝ≥0} :
-
       ∀ α : F,
-
         let listBlock : Set ((indexPowT S φ 0) → F) := Λᵣ(0, k, f, S_0, C, hcode, δ)
         let vec_α : Fin 1 → F := (fun _ : Fin 1 => α)
-        let foldSet := fold_k_set listBlock vec_α
-        let fold := fold_k f vec_α
+        let foldSet := fold_k_set listBlock vec_α hm
+        let fold := fold_k f vec_α hm
         let listBlock' : Set ((indexPowT S φ 1) → F) := Λᵣ(1, k, fold, S_1, C', hcode', δ)
-
         foldSet ⊆ listBlock'
   := by sorry
 
@@ -307,7 +305,7 @@ lemma folding_preserves_listdecoding_bound
   Following same parameters as Lemma 4.21 above, and states
   `Pr_{α ← F} [ Λᵣ(1,k-1,foldf(f,α),S_1,C',δ) ¬ ⊆ Λᵣ(0,k,f,S_0,C,δ),α) ] < errStar(C',2,δ)` -/
 lemma folding_preserves_listdecoding_base_ne_subset
-  {S : Finset ι} {k m : ℕ} {φ : ι ↪ F} [Smooth φ] {δ : ℝ≥0}
+  {S : Finset ι} {k m : ℕ} (hm : 1 ≤ m) {φ : ι ↪ F} [Smooth φ] {δ : ℝ≥0}
   {S_0 : Finset (indexPowT S φ 0)} {S_1 : Finset (indexPowT S φ 1)}
   {φ_0 : (indexPowT S φ 0) ↪ F} {φ_1 : (indexPowT S φ 1) ↪ F}
   [∀ i : ℕ, Fintype (indexPowT S φ i)] [∀ i : ℕ, DecidableEq (indexPowT S φ i)]
@@ -320,14 +318,12 @@ lemma folding_preserves_listdecoding_base_ne_subset
   {BStar : (Set (indexPowT S φ 1 → F)) → ℕ → ℝ≥0}
   {errStar : (Set (indexPowT S φ 1 → F)) → ℕ → ℝ≥0 → ℝ≥0} :
     Pr_{let α ←$ᵖ F}[ ∀ { f : (indexPowT S φ 0) → F} (hδLe: δ ≤ 1 - (BStar C' 2)),
-
                       let listBlock : Set ((indexPowT S φ 0) → F) := Λᵣ(0, k, f, S_0, C, hcode, δ)
                       let vec_α : Fin 1 → F := (fun _ : Fin 1 => α)
-                      let foldSet := fold_k_set listBlock vec_α
-                      let fold := fold_k f vec_α
+                      let foldSet := fold_k_set listBlock vec_α hm
+                      let fold := fold_k f vec_α hm
                       let listBlock' : Set ((indexPowT S φ 1) → F)
                         := Λᵣ(1, k, fold, S_1, C', hcode', δ)
-
                       ¬ (listBlock' ⊆ foldSet)
                     ] < errStar C' 2 δ
   := by sorry
