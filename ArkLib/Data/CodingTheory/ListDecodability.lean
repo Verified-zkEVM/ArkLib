@@ -21,14 +21,14 @@ open Classical in
 /--
 Hamming ball of radius `r` centred at a word `y`.
 -/
-def hammingBall (C : Code ι F) (y : ι → F) (r : ℕ) : Code ι F :=
+def hammingBall (C : Code ι F) (y : ι → F) (r : ℕ) : Set (ι → F) :=
   { c | c ∈ C ∧ hammingDist y c ≤ r }
 
 open Classical in
 /--
 Ball of radius `r` centred at a word `y` with respect to the relative Hamming distance.
 -/
-def relHammingBall (C : Code ι F) (y : ι → F) (r : ℝ)  : Code ι F :=
+def relHammingBall (C : Code ι F) (y : ι → F) (r : ℝ) : Set (ι → F) :=
   { c | c ∈ C ∧ Code.relHammingDist y c ≤ r }
 
 /--
