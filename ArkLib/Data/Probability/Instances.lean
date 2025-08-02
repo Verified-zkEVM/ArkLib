@@ -16,9 +16,6 @@ instance [IsEmpty α] : IsEmpty (PMF α) := by
   have one_eq_zero := HasSum.unique h h'
   simp_all only [one_ne_zero]
 
-instance {α : Type} {n : ℕ} [Nonempty α] : Nonempty (List.Vector α n) :=
-  ⟨List.Vector.ofFn (fun _ => Classical.ofNonempty)⟩
-
 -- @[simp]
 -- theorem PMF.eq_pure_iff_ge_one {α : Type*} {p : PMF α} {a : α} : p = pure a ↔ p a ≥ 1 := by
 --   constructor <;> intro h
