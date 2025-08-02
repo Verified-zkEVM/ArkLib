@@ -44,13 +44,12 @@ variable  {F : Type} [Field F] [Fintype F] [DecidableEq F]
       (i) `|S| ≥ (1-δ)*|ι|`
       (ii) `∃ u ∈ C, u(S) = ∑ j : parℓ, rⱼ * fⱼ(S)`
       (iii) `∃ i : parℓ, ∀ u' ∈ C, u'(S) ≠ fᵢ(S)` -/
-def proximityCondition (f : parℓ → ι → F) (δ : ℝ≥0) (GenFun : F → parℓ → F)
-  (C : LinearCode ι F): F → Prop
-    | r =>
-      ∃ S : Finset ι,
-      (S.card : ℝ≥0) ≥ (1-δ) * Fintype.card ι ∧
-      ∃ u ∈ C, ∀ s ∈ S, u s = ∑ j : parℓ, GenFun r j * f j s ∧
-      ∃ i : parℓ, ∀ u' ∈ C, ∃ s ∈ S, u' s ≠ f i s
+def proximityCondition (f : parℓ → ι → F) (δ : ℝ≥0) (r : parℓ → F)
+    (C : LinearCode ι F) : Prop :=
+  ∃ S : Finset ι,
+    (S.card : ℝ≥0) ≥ (1-δ) * Fintype.card ι ∧
+    ∃ u ∈ C, ∀ s ∈ S, u s = ∑ j : parℓ, r j * f j s ∧
+    ∃ i : parℓ, ∀ u' ∈ C, ∃ s ∈ S, u' s ≠ f i s
 
 /-- Definition 4.9
   Let `C` be a linear code, then Gen is a proximity generator with mutual correlated agreement,
@@ -64,8 +63,9 @@ def proximityCondition (f : parℓ → ι → F) (δ : ℝ≥0) (GenFun : F → 
 noncomputable def MutualCorrAgreement
   (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
   (BStar : ℝ) (errStar : ℝ → ENNReal) :=
+    haveI := Gen.Gen_nonempty
     ∀ (f : Gen.parℓ → ι → F) (δ : ℝ≥0) (_hδ : 0 < δ ∧ δ < 1 - BStar),
-    Pr_{let r ←$ᵖ F}[ (proximityCondition f δ Gen.Fun Gen.C) r ] ≤ errStar δ
+    Pr_{let r ←$ᵖ Gen.Gen}[ proximityCondition f δ r Gen.C ] ≤ errStar δ
 
 /-- Lemma 4.10
   Let `C` be a linear code with minimum distance `δ_C`, `Gen` be a proximity generator for C
@@ -149,10 +149,11 @@ theorem mca_capacity_bound_CONJECTURE
   (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type ↪ ℕ) :
   let Gen := RSGenerator.genRSC parℓ_type φ m exp
   let : Fintype Gen.parℓ := Gen.hℓ
+  haveI := Gen.Gen_nonempty
   ∃ (c₁ c₂ : ℕ),
     ∀ (f : Gen.parℓ → ι → F) (η : ℝ) (_hη : 0 < η) (δ : ℝ≥0)
       (_hδ : 0 < δ ∧ δ < 1 - Gen.rate - η),
-      Pr_{let r ←$ᵖ F}[ (proximityCondition f δ Gen.Fun Gen.C) r ] ≤
+      Pr_{let r ←$ᵖ Gen.Gen}[ proximityCondition f δ r Gen.C ] ≤
         ENNReal.ofReal (
           (((Fintype.card parℓ_type - 1) : ℝ)^c₂ * ((2^m) : ℝ)^c₂) /
           (η^c₁ * Gen.rate^(c₁+c₂) * (Fintype.card F))
@@ -169,15 +170,14 @@ open InterleavedCode ListDecodable
   `proximityListDecodingCondition(r)` is true if,
   `List(C, ∑ⱼ rⱼ * fⱼ, δ) ≠ `
   `{ ∑ⱼ rⱼ * uⱼ, where {u₀,..u_{parℓ-1}} ∈ Λᵢ({f₀,..,f_{parℓ-1}}, IC, δ) }` -/
-def proximityListDecodingCondition
+def proximityListDecodingCondition (C : LinearCode ι F)
   [Fintype ι] [Nonempty ι]
-  (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
-  (δ : ℝ) (fs : Matrix Gen.parℓ ι F)
-  (IC : InterleavedCode Gen.parℓ ι F) : F → Prop :=
-    fun r =>
-      let f_r := fun x => ∑ j, Gen.Fun r j * fs j x
-      let listHamming := relHammingBall Gen.C f_r δ
-      let listIC := { fun x => ∑ j, Gen.Fun r j * us j x | us ∈ Λᵢ(fs, IC.MF, δ)}
+  (r : parℓ → F) [Fintype parℓ]
+  (δ : ℝ) (fs : Matrix parℓ ι F)
+  (IC : InterleavedCode parℓ ι F) : Prop :=
+      let f_r := fun x => ∑ j, r j * fs j x
+      let listHamming := relHammingBall C f_r δ
+      let listIC := { fun x => ∑ j, r j * us j x | us ∈ Λᵢ(fs, IC.MF, δ)}
       listHamming ≠ listIC
 
 
@@ -195,9 +195,10 @@ lemma mca_list_decoding
   (haveIC : IC = codeOfLinearCode Gen.parℓ Gen.C)
   (hGen : MutualCorrAgreement Gen BStar errStar)
   (C : Set (ι → F)) (hC : C = Gen.C) :
+    haveI := Gen.Gen_nonempty
     ∀ {fs : Matrix Gen.parℓ ι F}
     (hδPos : δ > 0) (hδLt : δ < min (δᵣ C : ℝ) (1 - BStar)),
-      Pr_{let r ←$ᵖ F}[ proximityListDecodingCondition Gen δ fs IC r]
+      Pr_{let r ←$ᵖ Gen.Gen}[ proximityListDecodingCondition Gen.C r δ fs IC ]
         ≤ errStar δ
   := by sorry
 
