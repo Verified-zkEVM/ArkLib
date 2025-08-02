@@ -185,6 +185,23 @@ structure Prover {ι : Type} (oSpec : OracleSpec ι)
       ProverRound oSpec pSpec,
       ProverOut oSpec StmtOut WitOut (PrvState (Fin.last n))
 
+/-
+
+Problem with current prover definition: it's too "rigid" for (knowledge) soundness, to the point
+where it's difficult (impossible?) to prove that knowledge soundness implies soundness.
+
+The problem is that any prover (even adversarial) is assumed to have an input & output functions.
+This does not really need to be the case. For knowledge soundness, we do not need any input, and
+for soundness, we don't even need the output. All we care about that the prover participates in the
+interaction to produce a transcript.
+
+Potential new hierarchy of provers:
+- `Prover.InteractionOnly` : for soundness
+- `Prover.WithoutInput` : for knowledge soundness
+- `Prover` : for actual constructions, completeness, and zero-knowledge
+
+-/
+
 /-- A verifier of an interactive protocol is a function that takes in the input statement and the
   transcript, and performs an oracle computation that outputs a new statement -/
 @[ext]
