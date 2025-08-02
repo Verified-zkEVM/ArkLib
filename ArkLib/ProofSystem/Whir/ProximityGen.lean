@@ -42,8 +42,8 @@ variable {F : Type*} [Semiring F] [Fintype F] [DecidableEq F]
     code `C`.
 -/
 noncomputable def proximityCondition
-   (f : parℓ → ι → F) (δ : ℝ) (GenFun : F → parℓ → F) (C : LinearCode ι F): F → Prop
-   | r => δᵣ( (fun x => ∑ j : parℓ, (GenFun r j) * f j x) , C ) ≤ (δ : ℝ)
+   (f : parℓ → ι → F) (δ : ℝ) (r : parℓ → F) (C : LinearCode ι F) : Prop :=
+    δᵣ( (fun x => ∑ j : parℓ, (r j) * f j x) , C ) ≤ (δ : ℝ)
 
 
 /-- A proximity generator for a linear code `C`, Definition 4.7 -/
@@ -53,12 +53,13 @@ structure ProximityGenerator
   -- Underlying linear code
   C : LinearCode ι F
   -- Number of functions
-  parℓ      : Type
-  hℓ        : Fintype parℓ
+  parℓ         : Type
+  hℓ           : Fintype parℓ
   -- Generator function maps sampled randomness `r : 𝔽 ` to `parℓ`-tuples of field elements
-  Fun       : F → parℓ → F
+  Gen          : Finset (parℓ → F)
+  Gen_nonempty : Nonempty Gen
   -- Rate
-  rate      : ℝ
+  rate         : ℝ
   -- Distance threshold parameter
   B         : (LinearCode ι F) → Type → ℝ
   -- Error function bounding the probability of distance within `δ`
@@ -73,7 +74,7 @@ structure ProximityGenerator
     ∀ (f : parℓ → ι → F)
       (δ : ℝ≥0) -- temp added back ℝ≥0 to satisfy the type checker and allow the file to build,
       (_hδ : 0 < δ ∧ δ < 1 - (B C parℓ)) ,
-      Pr_{ let r ← $ᵖ F }[ (proximityCondition f δ Fun C r) ] > (err C parℓ δ) →
+      Pr_{ let r ← $ᵖ Gen }[ (proximityCondition f δ r C) ] > (err C parℓ δ) →
         ∃ S : Finset ι,
           S.card ≥ (1 - δ) * (Fintype.card ι) ∧
         ∀ i : parℓ, ∃ u ∈ C, ∀ x ∈ S, f i x = u x
@@ -96,14 +97,19 @@ variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
                      (parℓ-1)*2²ᵐ / (|F|(2 min{1-√ρ-δ, √ρ/20})⁷)
                       for δ in ((1-ρ)/ 2, 1 - B(C,parℓ)) -/
 noncomputable def genRSC
-  (parℓ : Type) [hℓ : Fintype parℓ] (φ : ι ↪ F) [Smooth φ]
+  [Nonempty F] (parℓ : Type) [hℓ : Fintype parℓ] (φ : ι ↪ F) [Smooth φ]
   (m : ℕ) (exp : parℓ ↪ ℕ) : ProximityGenerator ι F :=
     let r := LinearCode.rate (smoothCode φ m);
     { C      := smoothCode φ m,
       parℓ   := parℓ,
       hℓ     := hℓ,
       rate   := r,
-      Fun    := fun r j => r ^ (exp j),
+      Gen    := Finset.image (fun r => (fun j => r ^ (exp j))) (Finset.univ : Finset F),
+      Gen_nonempty := by
+        constructor
+        constructor
+        · simp only [Finset.mem_image, Finset.mem_univ, true_and]
+          exists (Classical.ofNonempty)
       B      := fun _ _ => (Real.sqrt r),
       err    := fun _ _ δ =>
         ENNReal.ofReal (
