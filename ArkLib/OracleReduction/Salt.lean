@@ -169,7 +169,7 @@ def Prover.addSalt (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
   PrvState := P.PrvState
   input := P.input
   sendMessage := fun i st => sorry
-  receiveChallenge := fun i st ch => sorry
+  receiveChallenge := fun i st => sorry
   output := P.output
 
 /-- Transform an oracle prover for a protocol specification `pSpec` into an oracle prover for the

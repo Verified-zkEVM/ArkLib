@@ -273,18 +273,31 @@ instance instOracleInterfaceMessagePSpec : OracleInterface ((pSpec R deg).Messag
 instance instSelectableTypeChallengePSpec [SelectableType R] :
     ∀ i, SelectableType ((pSpec R deg).Challenge i)
   | ⟨1, _⟩ => by simp [pSpec]; infer_instance
-  -- simp [pSpec, Challenge, default]
-  -- infer_instance
 
 def oracleReduction : OracleReduction oSpec (StmtIn R) (OStmtIn R deg) Unit
     (StmtOut R) (OStmtOut R deg) Unit (pSpec R deg) :=
   ((oracleReduction.sendClaim R deg oSpec)
   |>.append (oracleReduction.checkClaim R deg oSpec)
   |>.append (oracleReduction.randomQuery R deg oSpec)
-  |>.append (oracleReduction.reduceClaim R deg oSpec)).cast (by simp [pSpec_eq_pSpecCombined])
+  |>.append (oracleReduction.reduceClaim R deg oSpec)).cast rfl (by simp [pSpec_eq_pSpecCombined])
+
+open NNReal
+
+variable [SelectableType R]
+  {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+
+theorem oracleReduction_perfectCompleteness :
+    (oracleReduction R deg oSpec).perfectCompleteness init impl
+      (inputRelation R deg D) (outputRelation R deg) := by
+  sorry
+
+theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
+    (oracleReduction R deg oSpec).verifier.rbrKnowledgeSoundness init impl
+      (inputRelation R deg D) (outputRelation R deg)
+        (fun _ => (deg : ℝ≥0) / (Fintype.card R)) := by
+  sorry
 
 end Simpler
-
 
 namespace Simple
 

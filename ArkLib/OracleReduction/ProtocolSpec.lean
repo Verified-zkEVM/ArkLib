@@ -502,20 +502,27 @@ def OracleMessages (pSpec : ProtocolSpec n) [OracleInterfaces pSpec] : Type :=
 end OracleInterfaces
 
 /-- Turn each verifier's challenge into an oracle, where querying a unit type gives back the
-  challenge -/
-@[reducible, inline, specialize]
-instance instChallengeOracleInterface {pSpec : ProtocolSpec n} {i : pSpec.ChallengeIdx} :
-    OracleInterface (pSpec.Challenge i) where
-  Query := Unit
-  Response := pSpec.Challenge i
-  oracle := fun c _ => c
+    challenge.
 
-/-- Query a verifier's challenge for a given challenge round `i`, given the "trivial" challenge
-oracle interface -/
+  We keep this as a definition and not an instance, since it's not always the default (especially
+  for state-restoration and Fiat-Shamir). -/
 @[reducible, inline, specialize]
-def getChallenge (pSpec : ProtocolSpec n) (i : pSpec.ChallengeIdx) :
-    OracleComp [pSpec.Challenge]ₒ (pSpec.Challenge i) :=
-  (query i () : OracleQuery [pSpec.Challenge]ₒ (pSpec.Challenge i))
+def challengeOracleInterface {pSpec : ProtocolSpec n} :
+    ∀ i, OracleInterface (pSpec.Challenge i) := fun i =>
+  { Query := Unit
+    Response := pSpec.Challenge i
+    oracle := fun c _ => c }
+
+/-- Query a verifier's challenge for a given challenge round `i`, given the default challenge
+  oracle interface `challengeOracleInterface`.
+
+  This is the default version for getting challenges, where we query the default
+  `challengeOracleInterface`, which accepts trivial input. In contrast, `getChallenge{SR/FS}`
+  requires an input statement and prior messages up to that round. -/
+@[reducible, inline, specialize]
+def getChallengeUnit (pSpec : ProtocolSpec n) (i : pSpec.ChallengeIdx) :
+    OracleComp ([pSpec.Challenge]ₒ'challengeOracleInterface) (pSpec.Challenge i) :=
+  (query i () : OracleQuery ([pSpec.Challenge]ₒ'challengeOracleInterface) (pSpec.Challenge i))
 
 /-- Define the query implementation for the verifier's challenge in terms of `ProbComp`.
 
@@ -523,17 +530,24 @@ This is a randomness oracle: it simply calls the `selectElem` method inherited f
   `SelectableType` instance on the challenge types.
 -/
 def challengeQueryImpl {pSpec : ProtocolSpec n} [∀ i, SelectableType (pSpec.Challenge i)] :
-    QueryImpl [pSpec.Challenge]ₒ ProbComp where
+    QueryImpl ([pSpec.Challenge]ₒ'challengeOracleInterface) ProbComp where
   impl | query i () => uniformOfFintype (pSpec.Challenge i)
 
-/-- Turn each verifier's challenge into an oracle, where one needs to query
-  with an input statement and prior messages up to that round to get a challenge -/
+/-- The oracle interface for state-restoration and (basic) Fiat-Shamir.
+
+This is the version where we hash the input statement and the entire transcript up to
+the point of deriving a new challenge. To be precise:
+- The domain of the oracle is `Statement × pSpec.MessagesUpTo i.1.castSucc`
+- The range of the oracle is `pSpec.Challenge i`
+- The oracle just returns the challenge -/
 @[reducible, inline, specialize]
-def instChallengeOracleInterfaceFiatShamir {pSpec : ProtocolSpec n} {i : pSpec.ChallengeIdx}
-    {StmtIn : Type} : OracleInterface (pSpec.Challenge i) where
-  Query := StmtIn × pSpec.MessagesUpTo i.1.castSucc
-  Response := pSpec.Challenge i
-  oracle := fun c _ => c
+def challengeOracleInterfaceSR (StmtIn : Type) (pSpec : ProtocolSpec n) :
+    ∀ i, OracleInterface (pSpec.Challenge i) := fun i =>
+  { Query := StmtIn × pSpec.MessagesUpTo i.1.castSucc
+    Response := pSpec.Challenge i
+    oracle := fun c _ => c }
+
+alias challengeOracleInterfaceFS := challengeOracleInterfaceSR
 
 /-- The oracle interface for Fiat-Shamir.
 
@@ -548,7 +562,7 @@ random salt). -/
 @[inline, reducible]
 def srChallengeOracle (Statement : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
     OracleSpec pSpec.ChallengeIdx :=
-  fun i => (Statement × pSpec.MessagesUpTo i.1.castSucc, pSpec.Challenge i)
+  [pSpec.Challenge]ₒ'(challengeOracleInterfaceSR Statement pSpec)
 
 alias fsChallengeOracle := srChallengeOracle
 
@@ -559,7 +573,8 @@ instance {pSpec : ProtocolSpec n} {Statement : Type}
     [∀ i, DecidableEq (pSpec.Challenge i)] :
     OracleSpec.DecidableEq (srChallengeOracle Statement pSpec) where
   domain_decidableEq' := fun i => by
-    unfold OracleSpec.domain srChallengeOracle MessagesUpTo
+    dsimp only [OracleSpec.domain, srChallengeOracle, challengeOracleInterfaceSR,
+      OracleInterface.toOracleSpec]
     infer_instance
   range_decidableEq' := fun i => by
     unfold OracleSpec.range
