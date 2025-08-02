@@ -4,8 +4,18 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
--- import ArkLib.OracleReduction.Security.Basic
 import ArkLib.OracleReduction.Security.RoundByRound
+import ArkLib.OracleReduction.Security.StateRestoration
+import ArkLib.OracleReduction.Salt
+
+/-!
+# Implications between security notions
+
+This file collects the implications between the various security notions.
+
+For now, we only state the theorems. It's likely that we will split this file into multiple files in
+a single `Implication` folder in the future, each file for the proof of a single implication.
+-/
 
 noncomputable section
 
@@ -87,6 +97,14 @@ theorem rbrKnowledgeSoundness_implies_knowledgeSoundness
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) :
       rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError →
         knowledgeSoundness init impl relIn relOut verifier (∑ i, rbrKnowledgeError i) := by sorry
+
+-- TODO: state that round-by-round security implies state-restoration security for protocol with
+-- arbitrary added (non-empty?) salts
+
+-- TODO: state that state-restoration security for added salts imply state-restoration security for
+-- the original protocol (with some better parameters)
+
+-- TODO: state that state-restoration security implies basic security
 
 end Implications
 

@@ -109,6 +109,7 @@ import ArkLib.OracleReduction.VectorIOR
 import ArkLib.ProofSystem.Binius.Basic
 import ArkLib.ProofSystem.Component.CheckClaim
 import ArkLib.ProofSystem.Component.DoNothing
+import ArkLib.ProofSystem.Component.NoInteraction
 import ArkLib.ProofSystem.Component.RandomQuery
 import ArkLib.ProofSystem.Component.ReduceClaim
 import ArkLib.ProofSystem.Component.SendClaim

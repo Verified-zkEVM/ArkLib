@@ -48,7 +48,7 @@ def prover : Prover oSpec Statement Witness (Statement × Witness) Unit (pSpec W
   input := id
   sendMessage | ⟨0, _⟩ => fun ⟨stmt, wit⟩ => pure (wit, ⟨stmt, wit⟩)
   receiveChallenge | ⟨0, h⟩ => nomatch h
-  output := fun ⟨stmt, wit⟩ => (⟨stmt, wit⟩, ())
+  output := fun ⟨stmt, wit⟩ => pure (⟨stmt, wit⟩, ())
 
 @[inline, specialize]
 def verifier : Verifier oSpec Statement (Statement × Witness) (pSpec Witness) where
@@ -113,7 +113,7 @@ def oracleProver : OracleProver oSpec
   sendMessage | ⟨0, _⟩ => fun ⟨stmt, wit⟩ => pure (wit, ⟨stmt, wit⟩)
   -- No challenge is sent to the prover
   receiveChallenge | ⟨0, h⟩ => nomatch h
-  output := fun ⟨⟨stmt, oStmt⟩, wit⟩ => (⟨stmt, Sum.rec oStmt wit⟩, ())
+  output := fun ⟨⟨stmt, oStmt⟩, wit⟩ => pure (⟨stmt, Sum.rec oStmt wit⟩, ())
 
 -- /-- The oracle verifier for the `SendWitness` oracle reduction.
 
@@ -200,7 +200,7 @@ def oracleProver : OracleProver oSpec
   input := id
   sendMessage | ⟨0, _⟩ => fun ⟨stmt, wit⟩ => pure (wit, ⟨stmt, wit⟩)
   receiveChallenge | ⟨0, h⟩ => nomatch h
-  output := fun ⟨⟨stmt, oStmt⟩, wit⟩ => (⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, ())
+  output := fun ⟨⟨stmt, oStmt⟩, wit⟩ => pure (⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, ())
 
 /-- The oracle verifier for the `SendSingleWitness` oracle reduction.
 
@@ -230,7 +230,7 @@ variable {Statement} {OStatement} {Witness}
 omit [(i : ιₛ) → OracleInterface (OStatement i)] [OracleInterface Witness] in
 theorem oracleProver_run {stmt : Statement} {oStmt : ∀ i, OStatement i} {wit : Witness}:
     (oracleProver oSpec Statement OStatement Witness).run ⟨stmt, oStmt⟩ wit =
-      pure (⟨⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, ()⟩, fun i => by simpa using wit) := by
+      pure (fun i => by simpa using wit, ⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, ()) := by
   simp [Prover.run, Prover.runToRound, Prover.processRound, oracleProver, Transcript.concat]
   ext i; fin_cases i; simp [Fin.snoc]
 
