@@ -50,9 +50,10 @@ import ArkLib.Data.FieldTheory.NonBinaryField.Secp256k1
 import ArkLib.Data.Fin.Basic
 import ArkLib.Data.Fin.BigOperators
 import ArkLib.Data.Fin.Lift
-import ArkLib.Data.Fin.Vec.Defs
-import ArkLib.Data.Fin.Vec.Notation
-import ArkLib.Data.Fin.Vec.TakeDrop
+import ArkLib.Data.Fin.Tuple.Defs
+import ArkLib.Data.Fin.Tuple.Lemmas
+import ArkLib.Data.Fin.Tuple.Notation
+import ArkLib.Data.Fin.Tuple.TakeDrop
 import ArkLib.Data.GroupTheory.PrimeOrder
 import ArkLib.Data.Hash.DomainSep
 import ArkLib.Data.Hash.DuplexSponge
