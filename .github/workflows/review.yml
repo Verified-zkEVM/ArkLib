@@ -1,0 +1,77 @@
+# .github/workflows/ai-review.yml
+
+name: AI Code Review with External Context
+
+on:
+  issue_comment:
+    types: [created]
+
+# This job will only run on pull request comments that start with '/review'
+jobs:
+  review:
+    # UPDATED LINE: Added a check for author association
+    if: >-
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '/review') &&
+      (
+        github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'MEMBER'
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r ./scripts/requirements.txt
+
+      - name: Extract URL and Files from comment
+        id: get_args
+        run: |
+          BODY="${{ github.event.comment.body }}"
+          URL=$(echo "$BODY" | grep -o 'https://[^ ]*')
+          FILES=$(echo "$BODY" | sed -n 's/.*and-files \([^ ]*\).*/\1/p')
+          echo "url=$URL" >> $GITHUB_OUTPUT
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+
+      - name: Run AI Review Script
+        id: ai_review
+        env:
+          # The GitHub token is automatically available to the runner
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          # Run the script and capture its output to post as a comment later
+          # We use a special "end of file" marker to handle multiline output
+          EOF_MARKER=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 16)
+          echo "review_text<<$EOF_MARKER" >> $GITHUB_OUTPUT
+          python ./scripts/review.py \
+            --pr-number ${{ github.event.issue.number }} \
+            --context-url ${{ steps.get_args.outputs.url }} \
+            --context-files "${{ steps.get_args.outputs.files }}" >> $GITHUB_OUTPUT
+          echo "$EOF_MARKER" >> $GITHUB_OUTPUT
+
+      - name: Post Review Comment
+        uses: actions/github-script@v7
+        env:
+          REVIEW_TEXT: ${{ steps.ai_review.outputs.review_text }}
+        with:
+          script: |
+            const header = '### 🤖 AI Review (with external context)\\n\\n';
+            const reviewBody = process.env.REVIEW_TEXT;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: header + reviewBody
+            });

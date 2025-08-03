@@ -130,10 +130,13 @@ structure ProverState (n : ℕ) where
 
 /-- Initialization of prover's state via inputting the statement and witness. -/
 @[ext]
-structure ProverIn (StmtIn WitIn PrvState : Type) where
+structure ProverInput (StmtIn WitIn PrvState : Type) where
   input : StmtIn × WitIn → PrvState
   -- initState : PrvState
   -- if honest prover, then expect that PrvState 0 = WitIn
+
+structure ProverInit (PrvState : Type) where
+  init : PrvState
 
 /-- Represents the interaction of a prover for a given protocol specification.
 
@@ -154,13 +157,25 @@ structure ProverRound {ι : Type} (oSpec : OracleSpec ι) {n : ℕ} (pSpec : Pro
     PrvState i.1.castSucc → OracleComp oSpec (pSpec.Challenge i → PrvState i.1.succ)
 
 /-- The output function of the prover, which takes in the prover's final state and returns an oracle
-  computation that outputs the output statement and witness.
+    computation that outputs some specified output type `Output`
 
-  Note: this needs to be an oracle computation in order to match the type of the verifier
-  (especially when there is no interaction between the prover and verifier). -/
+  We note that an honest prover may output both the output statement and witness (for easier
+  composability), but an adversarial prover in the knowledge soundness game may only output the
+  witness.
+-/
 @[ext]
-structure ProverOut {ι : Type} (oSpec : OracleSpec ι) (StmtOut WitOut PrvState : Type) where
-  output : PrvState → OracleComp oSpec (StmtOut × WitOut)
+structure ProverOutput {ι : Type} (oSpec : OracleSpec ι) (Output PrvState : Type) where
+  output : PrvState → OracleComp oSpec Output
+
+structure Prover.Soundness {ι : Type} (oSpec : OracleSpec ι) {n : ℕ} (pSpec : ProtocolSpec n)
+    extends ProverState n, ProverInit (PrvState 0), ProverRound oSpec pSpec
+
+structure Prover.KnowledgeSoundness {ι : Type} (oSpec : OracleSpec ι) (WitOut : Type)
+    {n : ℕ} (pSpec : ProtocolSpec n) extends
+      ProverState n,
+      ProverInit (PrvState 0),
+      ProverRound oSpec pSpec,
+      ProverOutput oSpec WitOut (PrvState (Fin.last n))
 
 /-- A prover for an interactive protocol with `n` messages consists of a sequence of internal states
     and a tuple of four functions:
@@ -181,9 +196,9 @@ structure Prover {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn WitIn StmtOut WitOut : Type)
     {n : ℕ} (pSpec : ProtocolSpec n) extends
       ProverState n,
-      ProverIn StmtIn WitIn (PrvState 0),
+      ProverInput StmtIn WitIn (PrvState 0),
       ProverRound oSpec pSpec,
-      ProverOut oSpec StmtOut WitOut (PrvState (Fin.last n))
+      ProverOutput oSpec (StmtOut × WitOut) (PrvState (Fin.last n))
 
 /-
 

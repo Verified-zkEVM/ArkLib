@@ -548,47 +548,4 @@ theorem dfoldl_dcast {ι : Type v} {β : ι → Type u} [DCast ι β]
 
 end Fold
 
-/-
-It's very hard to get good definitional equality for `Fin` functions.
-
-This means we just need to cast `ProtocolSpec` all the time...
--/
-
--- `init` but with better definitional equality?
-def init' {α : Sort*} {n : ℕ} (u : Fin (n + 1) → α) : Fin n → α :=
-  match n with
-  | 0 => fun i => Fin.elim0 i
-  | _ + 1 => fun i => u (Fin.castAdd 1 i)
-
--- `snoc` but with better definitional equality?
-def snoc' {α : Sort*} {n : ℕ} (u : Fin n → α) (a : α) : Fin (n + 1) → α :=
-  match n with
-  | 0 => fun _ => a
-  | _ + 1 => Fin.cons (u 0) (snoc' (u ∘ Fin.succ) a)
-
-#check Matrix.vecCons
-
-example : Fin.init' (Fin.snoc' ![1, 2] 3) = ![1, 2] := by
-  ext i; fin_cases i <;> rfl
-
-example {v : Fin 2 → ℕ} : Fin.snoc' (Fin.init' v) (v 1) = v := by
-  ext i; fin_cases i <;> rfl
-
-example {v : Fin 2 → ℕ} : Fin.snoc (Fin.init v) (v 1) = v := by
-  ext i; fin_cases i <;> rfl
-
--- `append` but with better definitional equality?
-def append' {α : Sort*} {m n : ℕ} (u : Fin m → α) (v : Fin n → α) : Fin (m + n) → α :=
-  match n with
-  | 0 => u
-  | n + 1 => Fin.snoc' (@Fin.append' _ m n u (v ∘ Fin.castSucc)) (v (Fin.last n))
-
-example : Fin.append ![(1 : ℕ)] ![(2 : ℕ)] = ![1, 2] := by
-  ext i
-  fin_cases i <;> simp [append, addCases]
-
-example {v : Fin 2 → ℕ} : Fin.append (Fin.init v) (Fin.tail v) = v := by
-  ext i
-  fin_cases i <;> simp [append, addCases, init, tail]
-
 end Fin
