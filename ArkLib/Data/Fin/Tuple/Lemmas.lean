@@ -17,67 +17,81 @@ namespace FinVec
 variable {m n : ℕ} {α : Sort u}
 
 @[simp]
-theorem cons_zero (a : α) (v : Fin n → α) : cons a v 0 = a := by
+theorem cons_zero (a : α) (v : Fin n → α) : (a ::ᵛ v) 0 = a := by
   induction n with
   | zero => simp [cons]
   | succ n ih => simp [cons]; rfl
 
 @[simp]
-theorem cons_succ (a : α) (v : Fin n → α) (i : Fin n) :
-    cons a v i.succ = v i := by
+theorem cons_succ (a : α) (v : Fin n → α) (i : Fin n) : (a ::ᵛ v) i.succ = v i := by
   induction n with
   | zero => exact Fin.elim0 i
   | succ n ih => simp [cons, Fin.succ]
 
-theorem cons_eq_fin_cons (a : α) (v : Fin n → α) :
-    cons a v = Fin.cons (α := fun _ => α) a v := by
+theorem cons_eq_fin_cons (a : α) (v : Fin n → α) : a ::ᵛ v = Fin.cons a v := by
   ext i
   induction i using Fin.induction <;> simp
 
 -- Additional index access lemmas (cons_zero and cons_succ already defined above)
 @[simp]
-theorem cons_one (a : α) (v : FinVec α n.succ) : cons a v 1 = v 0 :=
-  sorry
+theorem cons_one (a : α) (v : FinVec α n.succ) : (a ::ᵛ v) 1 = v 0 := by
+  convert cons_succ a v 0
 
 -- Head/Tail Operations for cons (matching Fin.cons naming)
 @[simp]
-theorem tail_cons (a : α) (v : FinVec α n) : (fun i => (cons a v) (Fin.succ i)) = v :=
-  sorry
+theorem tail_cons (a : α) (v : FinVec α n) : (fun i => (a ::ᵛ v) (Fin.succ i)) = v := by
+  ext i
+  simp
 
 @[simp]
-theorem cons_self_tail (v : FinVec α n.succ) : cons (v 0) (fun i => v (Fin.succ i)) = v :=
-  sorry
+theorem cons_self_tail (v : FinVec α n.succ) : (v 0) ::ᵛ (fun i => v (Fin.succ i)) = v := by
+  ext i
+  induction i using Fin.induction <;> simp
 
 -- Injectivity Properties (matching Fin.cons naming)
-theorem cons_right_injective (a : α) : Function.Injective (cons a : FinVec α n → FinVec α n.succ) :=
-  sorry
+theorem cons_right_injective (a : α) :
+    Function.Injective (cons a : FinVec α n → FinVec α n.succ) := by
+  intro v w h
+  have : (fun i => (a ::ᵛ v) (Fin.succ i)) = (fun i => (a ::ᵛ w) (Fin.succ i)) := by
+    ext i; rw [h]
+  rwa [tail_cons, tail_cons] at this
 
-theorem cons_left_injective (v : FinVec α n) : Function.Injective (fun a => cons a v) :=
-  sorry
+theorem cons_left_injective (v : FinVec α n) : Function.Injective (fun a => a ::ᵛ v) := by
+  intro a b h
+  have := congr_fun h 0
+  simp at this
+  exact this
 
-theorem cons_injective2 : Function.Injective2 (@cons α n) :=
-  sorry
+theorem cons_injective2 : Function.Injective2 (@cons α n) := by
+  intro a₁ v₁ a₂ v₂ h
+  rw [cons_eq_fin_cons, cons_eq_fin_cons] at h
+  exact Fin.cons_injective2 h
 
-theorem cons_inj (a b : α) (v w : FinVec α n) : cons a v = cons b w ↔ a = b ∧ v = w :=
-  sorry
+theorem cons_inj (a b : α) (v w : FinVec α n) : a ::ᵛ v = b ::ᵛ w ↔ a = b ∧ v = w := by
+  constructor
+  · intro h
+    exact cons_injective2 h
+  · intro ⟨ha, hv⟩
+    rw [ha, hv]
 
 -- Empty Vector Properties
 @[simp]
-theorem cons_fin_zero (a : α) (v : FinVec α 0) : cons a v = fun _ => a :=
-  sorry
+theorem cons_fin_zero (a : α) (v : FinVec α 0) : a ::ᵛ v = fun _ => a := by
+  simp [cons]
 
-theorem cons_eq_const (a : α) : cons a (fun _ : Fin n => a) = fun _ => a :=
-  sorry
+theorem cons_eq_const (a : α) : a ::ᵛ (fun _ : Fin n => a) = fun _ => a := by
+  ext i
+  induction i using Fin.induction <;> simp
 
 -- Range Properties for cons (when α : Type*)
 theorem range_cons {α : Type*} (a : α) (v : FinVec α n) :
-    Set.range (cons a v) = insert a (Set.range v) :=
+    Set.range (a ::ᵛ v) = insert a (Set.range v) :=
   sorry
 
-theorem range_empty {α : Type*} : Set.range (empty : FinVec α 0) = ∅ :=
+theorem range_empty {α : Type*} : Set.range (!v[] : FinVec α 0) = ∅ :=
   sorry
 
-theorem range_cons_empty {α : Type*} (a : α) (v : FinVec α 0) : Set.range (cons a v) = {a} :=
+theorem range_cons_empty {α : Type*} (a : α) (v : FinVec α 0) : Set.range (a ::ᵛ v) = {a} :=
   sorry
 
 @[simp]
@@ -104,24 +118,35 @@ theorem concat_castSucc (v : Fin n → α) (a : α) (i : Fin n) :
     | succ i => simp [ih]
 
 -- Additional concat properties (matching Fin.snoc naming)
-theorem concat_eq_snoc (v : FinVec α n) (a : α) : concat v a = Fin.snoc v a :=
-  sorry
-
-theorem snoc_eq_concat (v : FinVec α n) (a : α) : Fin.snoc v a = concat v a :=
-  sorry
+theorem concat_eq_snoc (v : FinVec α n) (a : α) : concat v a = Fin.snoc v a := by
+  ext i
+  by_cases h : i.val < n
+  · have : i = Fin.castSucc ⟨i.val, h⟩ := by ext; simp
+    rw [this, concat_castSucc, Fin.snoc_castSucc]
+  · have : i = Fin.last n := by
+      ext; simp; omega
+    rw [this, concat_last, Fin.snoc_last]
 
 theorem concat_cons (a : α) (v : FinVec α n) (b : α) :
-    concat (cons a v) b = cons a (concat v b) :=
+    concat (a ::ᵛ v) b = a ::ᵛ (concat v b) :=
   sorry
 
 -- Init/snoc properties (matching Fin.snoc naming)
 theorem init_concat (v : FinVec α n) (a : α) :
-    (fun i => concat v a (Fin.castSucc i)) = v :=
-  sorry
+    (fun i => concat v a (Fin.castSucc i)) = v := by
+  ext i
+  simp [concat_castSucc]
 
 theorem concat_init_self (v : FinVec α n.succ) :
-    concat (fun i => v (Fin.castSucc i)) (v (Fin.last n)) = v :=
-  sorry
+    concat (fun i => v (Fin.castSucc i)) (v (Fin.last n)) = v := by
+  ext i
+  by_cases h : i.val < n
+  · have : i = Fin.castSucc ⟨i.val, h⟩ := by ext; simp
+    rw [this, concat_castSucc]
+  · have : i = Fin.last n := by
+      ext; simp; omega
+    rw [this]
+    simp [concat_last]
 
 -- Range properties for concat (when α : Type*)
 theorem range_concat {α : Type*} (v : FinVec α n) (a : α) :
@@ -152,24 +177,53 @@ theorem append_succ (u : Fin m → α) (v : Fin (n + 1) → α) :
     append u v = concat (append u (v ∘ Fin.castSucc)) (v (Fin.last n)) := by
   simp [append]
 
+theorem append_eq_fin_append (u : FinVec α m) (v : FinVec α n) :
+    append u v = Fin.append u v := by
+  induction n with
+  | zero => ext; simp [append, Fin.append]; unfold Fin.addCases; simp [Fin.castLT]
+  | succ n ih =>
+    ext i
+    simp [append, ih, concat_eq_snoc]
+    simp [Fin.snoc, Fin.append, Fin.addCases, Fin.castLT, Fin.last, Fin.subNat]
+    by_cases h : i.val < m
+    · by_cases h' : i.val < m + n
+      · simp [h', h]
+      · have : i.val = m + n := by omega
+        simp [this]
+    · simp [h]
+      by_cases hn : n = 0
+      · subst hn; simp_all
+        have : i.val = m := by omega
+        simp [this]
+      · simp at h hn
+        sorry
+        -- have : i.val < m + n := by omega
+        -- simp [this]
+
 -- Additional append properties (matching Fin.append naming)
-theorem empty_append (v : FinVec α n) : append !v[] v = v ∘ Fin.cast (Nat.zero_add n) :=
+theorem empty_append (v : FinVec α n) : append !v[] v = v ∘ Fin.cast (Nat.zero_add n) := by
   sorry
 
-theorem append_empty (v : FinVec α m) : append v !v[] = v :=
-  sorry
+theorem append_empty (v : FinVec α m) : append v !v[] = v := by
+  simp [append]
 
 theorem append_assoc {p : ℕ} (u : FinVec α m) (v : FinVec α n) (w : FinVec α p) :
-    append u (append v w) = (append (append u v) w) ∘ Fin.cast (add_assoc m n p).symm :=
-  sorry
+    (append (append u v) w) = (append u (append v w)) ∘ Fin.cast (add_assoc m n p) := by
+  simp [append_eq_fin_append, Fin.append_assoc]
 
 -- Index access for append
 theorem append_left (u : FinVec α m) (v : FinVec α n) (i : Fin m) :
-    append u v (Fin.castAdd n i) = u i :=
-  sorry
+    append u v (Fin.castAdd n i) = u i := by
+  induction n with
+  | zero => simp [append]
+  | succ n ih =>
+    simp [append]
+    have : Fin.castAdd (n + 1) i = Fin.castSucc (Fin.castAdd n i) := by
+      ext; simp [Fin.coe_castAdd]
+    rw [this, concat_castSucc, ih]
 
 theorem append_right (u : FinVec α m) (v : FinVec α n) (i : Fin n) :
-    append u v (Fin.natAdd m i) = v i :=
+    append u v (Fin.natAdd m i) = v i := by
   sorry
 
 -- Relationship with cons/concat (matching Fin.append naming)
@@ -197,7 +251,7 @@ theorem range_append {α : Type*} (u : FinVec α m) (v : FinVec α n) :
 
 -- Compatibility with standard library
 theorem append_eq_fin_append (u : FinVec α m) (v : FinVec α n) :
-    append u v = Fin.append u v :=
+    append u v = Fin.append u v := by
   sorry
 
 -- Length properties (these are definitional but useful to state)
@@ -212,14 +266,14 @@ theorem append_ext (u₁ u₂ : FinVec α m) (v₁ v₂ : FinVec α n) :
 
 -- Additional useful extensionality lemmas
 theorem ext_cons (a b : α) (v w : FinVec α n) : cons a v = cons b w ↔ a = b ∧ v = w :=
-  sorry
+  cons_inj a b v w
 
 theorem cons_eq_cons_iff (a b : α) (v w : FinVec α n) : cons a v = cons b w ↔ a = b ∧ v = w :=
-  sorry
+  cons_inj a b v w
 
 -- Two vectors are equal iff they are equal at every index
 theorem ext_iff {v w : FinVec α n} : v = w ↔ ∀ i, v i = w i :=
-  sorry
+  ⟨fun h i => by rw [h], fun h => funext h⟩
 
 -- Interaction between operations
 theorem cons_append_comm (a : α) (u : FinVec α m) (v : FinVec α n) :
@@ -235,10 +289,10 @@ theorem singleton_append (a : α) (v : FinVec α n) :
   sorry
 
 -- Empty cases
-theorem empty_unique (v : FinVec α 0) : v = empty :=
-  sorry
+theorem empty_unique (v : FinVec α 0) : v = !v[] :=
+  funext (fun i => Fin.elim0 i)
 
-theorem eq_empty_iff_zero (v : FinVec α n) : (∃ h : n = 0, v = h ▸ empty) ↔ n = 0 :=
+theorem eq_empty_iff_zero (v : FinVec α n) : (∃ h : n = 0, v = h ▸ !v[]) ↔ n = 0 :=
   sorry
 
 end FinVec
