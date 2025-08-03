@@ -8,6 +8,7 @@ import ArkLib.CommitmentScheme.Tensor
 import ArkLib.CommitmentScheme.Trivial
 import ArkLib.Data.Classes.DCast
 import ArkLib.Data.Classes.FunEquiv
+import ArkLib.Data.Classes.HDAppend
 import ArkLib.Data.Classes.HasSize
 import ArkLib.Data.Classes.Initialize
 import ArkLib.Data.Classes.Serde
@@ -49,9 +50,9 @@ import ArkLib.Data.FieldTheory.NonBinaryField.Secp256k1
 import ArkLib.Data.Fin.Basic
 import ArkLib.Data.Fin.BigOperators
 import ArkLib.Data.Fin.Lift
-import ArkLib.Data.Fin.Notation
 import ArkLib.Data.Fin.Vec.Defs
-import ArkLib.Data.Fin.TakeDrop
+import ArkLib.Data.Fin.Vec.Notation
+import ArkLib.Data.Fin.Vec.TakeDrop
 import ArkLib.Data.GroupTheory.PrimeOrder
 import ArkLib.Data.Hash.DomainSep
 import ArkLib.Data.Hash.DuplexSponge
