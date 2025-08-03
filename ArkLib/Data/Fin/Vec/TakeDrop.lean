@@ -4,18 +4,14 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.Fin.Basic
+import ArkLib.Data.Fin.Vec.Notation
 import Mathlib.Data.List.DropRight
 
 /-!
-# Take and Drop for `Fin` tuples
+# Lemmas for Take and Drop for `Fin` tuples
 
-Note that `Fin.take` is already in mathlib. In this file, we define:
-- `Fin.rtake m h v` for taking the last `m` elements of a `Fin n` tuple `v`, where `h : m ≤ n`
-- `Fin.drop m h v` for dropping the first `m` elements of a `Fin n` tuple `v`, where `h : m ≤ n`
-- `Fin.rdrop m h v` for dropping the last `m` elements of a `Fin n` tuple `v`, where `h : m ≤ n`
-
-We also prove some properties of these functions.
+This file contains some properties of `Fin.{r}take` and `Fin.{r}drop`, which are already defined in
+`ArkLib.Data.Fin.Vec.Defs` (except `Fin.take` which is already in mathlib).
 -/
 
 universe u v
@@ -60,11 +56,6 @@ theorem take_addCases'_left {n' : ℕ} {β : Fin n' → Sort u} (m : ℕ) (h : m
 --     simp only [append_right, cast_eq_self]
 --   · rw [take, this]
 --     simp [addCases_right]
-
-/-- Take the last `m` elements of a finite vector -/
-def rtake (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) :
-    (i : Fin m) → α (Fin.cast (Nat.sub_add_cancel h) (natAdd (n - m) i)) :=
-  fun i => v (Fin.cast (Nat.sub_add_cancel h) (natAdd (n - m) i))
 
 @[simp]
 theorem rtake_apply (v : (i : Fin n) → α i) (m : ℕ) (h : m ≤ n)
@@ -154,11 +145,6 @@ theorem get_rtake_ofFn_eq_rtake_comp_cast {α : Type*} {m : ℕ} (v : Fin n → 
   `(n - m)`-tuple `(v m, ..., v (n - 1))`.
 -/
 section Drop
-
-/-- Drop the first `m` elements of an `n`-tuple where `m ≤ n`, returning an `(n - m)`-tuple. -/
-def drop (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) :
-    (i : Fin (n - m)) → α (Fin.cast (Nat.sub_add_cancel h) (addNat i m)) :=
-  fun i ↦ v (Fin.cast (Nat.sub_add_cancel h) (addNat i m))
 
 @[simp]
 theorem drop_apply (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) (i : Fin (n - m)) :
@@ -371,14 +357,6 @@ theorem take_drop_eq_drop_take (m₁ m₂ : ℕ) (h₁ : m₁ ≤ m₂) (h₂ : 
       drop m₁ (by omega) (take m₂ h₂ v) := by
   ext i
   rfl
-
-/-- Drop the last `m` elements of an `n`-tuple where `m ≤ n`, returning an `(n - m)`-tuple.
-
-This is defined to be taking the first `n - m` elements of the tuple. Thus, one should not use this
-and use `Fin.take` instead. -/
-abbrev rdrop (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) :
-    (i : Fin (n - m)) → α (Fin.cast (Nat.sub_add_cancel h) (i.castAdd m)) :=
-  take (n - m) (by omega) v
 
 /-- Dropping the last `m` elements of a tuple is the same as taking the first `n - m` elements of
 the tuple. -/

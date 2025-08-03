@@ -50,7 +50,7 @@ import ArkLib.Data.Fin.Basic
 import ArkLib.Data.Fin.BigOperators
 import ArkLib.Data.Fin.Lift
 import ArkLib.Data.Fin.Notation
-import ArkLib.Data.Fin.Pad
+import ArkLib.Data.Fin.Vec.Defs
 import ArkLib.Data.Fin.TakeDrop
 import ArkLib.Data.GroupTheory.PrimeOrder
 import ArkLib.Data.Hash.DomainSep

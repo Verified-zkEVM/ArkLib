@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 
 import Mathlib.Data.Matrix.Hadamard
-import ArkLib.Data.Fin.Pad
+import ArkLib.Data.Fin.Vec.Defs
 import ArkLib.Data.MvPolynomial.Multilinear
 
 /-!
