@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.Fin.Vec.Notation
+import ArkLib.Data.Fin.Tuple.Notation
 
 /-!
   # Lemmas for `Fin`-indexed vectors
@@ -12,135 +12,103 @@ import ArkLib.Data.Fin.Vec.Notation
 
 universe u
 
-namespace Fin
+namespace FinVec
 
 variable {m n : ℕ} {α : Sort u}
 
-section vecCons
-
 @[simp]
-theorem vecCons_zero (a : α) (v : Fin n → α) : vecCons a v 0 = a := by
+theorem cons_zero (a : α) (v : Fin n → α) : cons a v 0 = a := by
   induction n with
-  | zero => simp [vecCons]
-  | succ n ih => simp [vecCons]; rfl
+  | zero => simp [cons]
+  | succ n ih => simp [cons]; rfl
 
 @[simp]
-theorem vecCons_succ (a : α) (v : Fin n → α) (i : Fin n) :
-    vecCons a v i.succ = v i := by
+theorem cons_succ (a : α) (v : Fin n → α) (i : Fin n) :
+    cons a v i.succ = v i := by
   induction n with
   | zero => exact Fin.elim0 i
-  | succ n ih => simp [vecCons]
+  | succ n ih => simp [cons, Fin.succ]
 
-theorem vecCons_eq_cons (a : α) (v : Fin n → α) :
-    vecCons a v = cons (α := fun _ => α) a v := by
+theorem cons_eq_fin_cons (a : α) (v : Fin n → α) :
+    cons a v = Fin.cons (α := fun _ => α) a v := by
   ext i
   induction i using Fin.induction <;> simp
 
-end vecCons
-
-section dvecCons
+@[simp]
+theorem concat_zero (a : α) : concat (Fin.elim0 : Fin 0 → α) a = fun _ => a := by
+  simp [concat]
 
 @[simp]
-theorem dvecCons_zero {β : Fin n → Sort u} (a : α) (v : (i : Fin n) → β i) :
-    dvecCons a v 0 = cast (vecCons_zero α β).symm a := by
+theorem concat_last (v : Fin n → α) (a : α) : concat v a (Fin.last n) = a := by
   induction n with
-  | zero => simp [dvecCons]
-  | succ n ih => simp [dvecCons]; rfl
-
-@[simp]
-theorem dvecCons_succ {β : Fin n → Sort u} (a : α) (v : (i : Fin n) → β i) (i : Fin n) :
-    dvecCons a v i.succ = cast (vecCons_succ α β i).symm (v i) := by
-  induction n with
-  | zero => exact Fin.elim0 i
-  | succ n ih => simp [dvecCons]; rfl
-
-theorem dvecCons_eq_cons {β : Fin n → Sort u} (a : α) (v : (i : Fin n) → β i) :
-    dvecCons a v = cons (α := vecCons α β) (dvecCons a v 0) (fun i => dvecCons a v i.succ) := by
-  ext i
-  induction i using Fin.induction <;> simp
-
-end dvecCons
-
-section vecConcat
-
-@[simp]
-theorem vecConcat_zero (a : α) : vecConcat (elim0 : Fin 0 → α) a = fun _ => a := by
-  simp [vecConcat]
-
-@[simp]
-theorem vecConcat_last (v : Fin n → α) (a : α) : vecConcat v a (last n) = a := by
-  induction n with
-  | zero => simp [vecConcat]
+  | zero => simp [concat]
   | succ n ih =>
-    dsimp [vecConcat]
-    rw [vecCons_succ]
-    exact ih
+    simp [concat, cons, Fin.last]
+    exact ih _
 
 @[simp]
-theorem vecConcat_castSucc (v : Fin n → α) (a : α) (i : Fin n) :
-    vecConcat v a (castSucc i) = v i := by
+theorem concat_castSucc (v : Fin n → α) (a : α) (i : Fin n) :
+    concat v a (Fin.castSucc i) = v i := by
   induction n with
   | zero => exact Fin.elim0 i
   | succ n ih =>
-    simp [vecConcat]
+    simp [concat]
     cases i using Fin.cases with
     | zero => simp
     | succ i => simp [ih]
 
-end vecConcat
+@[simp]
+theorem append_zero (u : Fin m → α) : append u (Fin.elim0 : Fin 0 → α) = u := by
+  simp [append]
 
-section dvecConcat
+-- Basic property about structure of append
+theorem append_succ (u : Fin m → α) (v : Fin (n + 1) → α) :
+    append u v = concat (append u (v ∘ Fin.castSucc)) (v (Fin.last n)) := by
+  simp [append]
+
+end FinVec
+
+namespace FinTuple
+
+variable {m n : ℕ} {α : Sort u}
 
 @[simp]
-theorem dvecConcat_zero {β : Sort u} (a : β) :
-    dvecConcat (elim0 : (i : Fin 0) → Empty) a = fun _ => a := by
+theorem cons_zero {β : Fin n → Sort u} (a : α) (b : (i : Fin n) → β i) :
+    cons a b 0 = cast (FinVec.cons_zero α β).symm a := by
+  induction n with
+  | zero => simp [cons]
+  | succ n ih => simp [cons]; rfl
+
+@[simp]
+theorem cons_succ {β : Fin n → Sort u} (a : α) (v : (i : Fin n) → β i) (i : Fin n) :
+    cons a v i.succ = cast (FinVec.cons_succ α β i).symm (v i) := by
+  induction n with
+  | zero => exact Fin.elim0 i
+  | succ n ih => simp [cons]; rfl
+
+theorem cons_eq_fin_cons {β : Fin n → Sort u} (a : α) (v : (i : Fin n) → β i) :
+    cons a v = Fin.cons (α := FinVec.cons α β) (cons a v 0) (fun i => cons a v i.succ) := by
   ext i
-  simp [dvecConcat]
-
-end dvecConcat
-
-section vecAppend
+  induction i using Fin.induction <;> simp
 
 @[simp]
-theorem vecAppend_zero (u : Fin m → α) : vecAppend u (elim0 : Fin 0 → α) = u := by
-  simp [vecAppend]
-
--- Basic property about structure of vecAppend
-theorem vecAppend_succ (u : Fin m → α) (v : Fin (n + 1) → α) :
-    vecAppend u v = vecConcat (vecAppend u (v ∘ castSucc)) (v (last n)) := by
-  simp [vecAppend]
-
-end vecAppend
-
-section dvecAppend
+theorem concat_zero {α : Fin 0 → Sort u} {β : Sort u} (a : β) :
+    concat (FinTuple.empty : FinTuple 0 α) a = fun _ => a := rfl
 
 @[simp]
-theorem dvecAppend_zero {β : Fin m → Sort u} (u : (i : Fin m) → β i) :
-    dvecAppend u (elim0 : (i : Fin 0) → Empty) = u := by
-  ext i
-  simp [dvecAppend]
+theorem append_zero {β : Fin m → Sort u} {α : Fin 0 → Sort u} (u : (i : Fin m) → β i) :
+    append u (FinTuple.empty : FinTuple 0 α) = u := rfl
 
-end dvecAppend
+end FinTuple
 
-section rtake
+namespace Fin
 
-@[simp]
-theorem rtake_zero {β : Fin n → Sort u} (h : 0 ≤ n) (v : (i : Fin n) → β i) :
-    rtake 0 h v = elim0 := by
-  ext i
-  exact Fin.elim0 i
+variable {m n : ℕ} {α : Sort u}
 
-end rtake
-
-section drop
-
-@[simp]
-theorem drop_zero {β : Fin n → Sort u} (h : 0 ≤ n) (v : (i : Fin n) → β i) :
-    drop 0 h v = v := by
-  ext i
-  simp [drop, addNat]
-
-end drop
+-- @[simp, grind =]
+-- theorem concat_eq_append {α : Sort u} {n : ℕ} (v : FinVec α n) (a : α) :
+--     concat v a = append v (FinVec.cons a FinVec.empty) := by
+--   ext i; fin_cases i <;> rfl
 
 section padding
 
@@ -153,14 +121,12 @@ theorem rightpad_apply_lt (n : ℕ) (a : α) (v : Fin m → α) (i : Fin n)
 theorem rightpad_apply_ge (n : ℕ) (a : α) (v : Fin m → α) (i : Fin n)
     (h : m ≤ i.val) : rightpad n a v i = a := by
   simp [rightpad]
-  rw [if_neg]
   omega
 
 @[simp]
 theorem leftpad_apply_lt (n : ℕ) (a : α) (v : Fin m → α) (i : Fin n)
     (h : i.val < n - m) : leftpad n a v i = a := by
   simp [leftpad]
-  rw [if_neg]
   omega
 
 @[simp]
