@@ -5,86 +5,67 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.Classes.HDAppend
+import ArkLib.Data.Classes.Slice
 import ArkLib.Data.Fin.Tuple.Defs
 import ArkLib.Data.Fin.Basic
 import Mathlib.Tactic.FinCases
 
 /-!
-# Python-like slice notation for Fin tuples
+# Slice notation instances for Fin tuples
 
-We define Python-like slice notation for range operations on Fin tuples:
-- `v⟦:m⟧` takes the first `m` elements (equivalent to `Fin.take m (by omega) v`)
-- `v⟦m:⟧` drops the first `m` elements (equivalent to `Fin.drop m (by omega) v`)
-- `v⟦m₁:m₂⟧` takes elements from index `m₁` to `m₂`
-(equivalent to `Fin.drop m₁ (by omega) (Fin.take m₂ (by omega) v)`)
+This file provides instances of the generic slice type classes (`SliceLT`, `SliceGE`, `Slice`)
+for Fin tuples, enabling Python-like slice notation:
+- `v⟦:m⟧` takes the first `m` elements
+- `v⟦m:⟧` drops the first `m` elements
+- `v⟦m₁:m₂⟧` takes elements from index `m₁` to `m₂ - 1`
+
+The instances work for both homogeneous (`Fin n → α`) and heterogeneous (`(i : Fin n) → α i`)
+Fin tuples, delegating to the existing `Fin.take` and `Fin.drop` operations.
 
 Each notation also supports manual proof syntax with `'h`:
-- `v⟦:m⟧'h` for `Fin.take m h v`
-- `v⟦m:⟧'h` for `Fin.drop m h v`
-- `v⟦m₁:m₂⟧'⟨h₁, h₂⟩` for `Fin.drop m₁ h₁ (Fin.take m₂ h₂ v)`
+- `v⟦:m⟧'h` for explicit proof in take operations
+- `v⟦m:⟧'h` for explicit proof in drop operations
+- `v⟦m₁:m₂⟧'⟨h₁, h₂⟩` for explicit proofs in range operations
 
-NOTE: this is somewhat duplicate work with `Init.Data.Slice`, though the slices there are not
-"dependent", i.e. they do not encode the proofs of the bounds.
+## Examples
 
-This is scoped to `Fin` namespace so one has to open it to use the notation.
+```lean
+variable (v : Fin 10 → ℕ)
+
+#check v⟦:5⟧   -- Takes first 5 elements: Fin 5 → ℕ
+#check v⟦3:⟧   -- Drops first 3 elements: Fin 7 → ℕ
+#check v⟦2:8⟧  -- Elements 2 through 7: Fin 6 → ℕ
+```
 -/
 
-universe u v w
+universe u v v' w
+
+/-! ## Instances for Fin tuples -/
 
 namespace Fin
 
-/-- Notation `v⟦:m⟧` for taking the first `m` elements (indexed from `0` to `m - 1`) of a Fin tuple
--/
-scoped syntax:max (name := finTakeSlice) term "⟦" ":" term "⟧" : term
-scoped macro_rules (kind := finTakeSlice)
-  | `($v⟦: $m⟧) => `(take $m (by omega) $v)
+instance {n : ℕ} {α : Fin n → Type*} : SliceLT ((i : Fin n) → α i) ℕ
+    (fun _ stop => stop ≤ n)
+    (fun _ stop h => (i : Fin stop) → α (i.castLE h))
+    where
+  sliceLT := fun v stop h => take stop h v
 
-/-- Notation `v⟦:m⟧'h` for taking the first `m` elements (indexed from `0` to `m - 1`) with explicit
-proof -/
-syntax (name := finTakeSliceWithProof) term "⟦" ":" term "⟧'" term:max : term
-scoped macro_rules (kind := finTakeSliceWithProof)
-  | `($v⟦: $m⟧' $h) => `(take $m $h $v)
+instance {n : ℕ} {α : Fin n → Type*} : SliceGE ((i : Fin n) → α i) ℕ
+    (fun _ start => start ≤ n)
+    (fun _ start h =>
+      (i : Fin (n - start)) → α (Fin.cast (Nat.sub_add_cancel h) (i.addNat start)))
+    where
+  sliceGE := fun v start h => drop start h v
 
-/-- Notation `v⟦m:⟧` for dropping the first `m` elements of a Fin tuple -/
-scoped syntax:max (name := finDropSlice) term "⟦" term ":" "⟧" : term
-scoped macro_rules (kind := finDropSlice)
-  | `($v⟦$m :⟧) => `(drop $m (by omega) $v)
-
-/-- Notation `v⟦m:⟧'h` for dropping the first `m` elements with explicit proof -/
-scoped syntax (name := finDropSliceWithProof) term "⟦" term ":" "⟧'" term:max : term
-scoped macro_rules (kind := finDropSliceWithProof)
-  | `($v⟦$m :⟧' $h) => `(drop $m $h $v)
-
-/-- Notation `v⟦m₁:m₂⟧` for taking elements from index `m₁` to `m₂ - 1`
-(e.g., `v⟦1:3⟧ = v[1] ++ v[2]`), with range proofs automatically synthesized -/
-scoped syntax:max (name := finSliceRange) term "⟦" term ":" term "⟧" : term
-scoped macro_rules (kind := finSliceRange)
-  | `($v⟦$m₁ : $m₂⟧) => `(drop $m₁ (by omega) (take $m₂ (by omega) $v))
-
-/-- Notation `v⟦m₁:m₂⟧'⟨h₁, h₂⟩` for taking elements from index `m₁` to `m₂ - 1`
-(e.g., `v⟦1:3⟧ = ![v 1, v 2]`), with explicit proofs -/
-scoped syntax (name := finSliceRangeWithProof)
-  term "⟦" term ":" term "⟧'⟨" term:max "," term:max "⟩" : term
-scoped macro_rules (kind := finSliceRangeWithProof)
-  | `($v⟦$m₁ : $m₂⟧'⟨$h₁, $h₂⟩) => `(drop $m₁ $h₁ (take $m₂ $h₂ $v))
-
-/-! ## Note on Delaborators
-
-For the best user experience, you may want to add delaborators to display
-`Fin.take m h v` as `v⟦:m⟧`, `Fin.drop m h v` as `v⟦m:⟧`, and
-`Fin.drop m₁ h₁ (Fin.take m₂ h₂ v)` as `v⟦m₁:m₂⟧` in goal states and error messages.
-
-This would require implementing proper delaborators with the correct SubExpr navigation,
-which depends on the specific Lean version and can be complex to get right.
-
-For now, the notation works perfectly for input - you can write `v⟦1:4⟧` and it will
-expand correctly. The only limitation is that in proof goals you'll see the expanded
-form rather than the slice notation.
--/
+instance {n : ℕ} {α : Fin n → Type*} : Slice ((i : Fin n) → α i) ℕ ℕ
+    (fun _ start stop => start ≤ stop ∧ stop ≤ n)
+    (fun _ start stop h =>
+      (i : Fin (stop - start)) →
+        α (castLE h.2 (Fin.cast (Nat.sub_add_cancel h.1) (i.addNat start))))
+    where
+  slice := fun v start stop h => Fin.drop start h.1 (Fin.take stop h.2 v)
 
 end Fin
-
--- Add examples of notation
 
 section Examples
 
@@ -107,13 +88,13 @@ example (h : 2 ≤ n) : v⟦2:⟧'h = Fin.drop 2 h v := rfl
 
 -- Concrete examples with vector notation
 example : (![0, 1, 2, 3, 4] : Fin 5 → ℕ)⟦:3⟧ = ![0, 1, 2] := by
-  ext i; fin_cases i <;> simp [Fin.take]
+  ext i; fin_cases i <;> simp [SliceLT.sliceLT]
 
 example : (![0, 1, 2, 3, 4] : Fin 5 → ℕ)⟦2:⟧ = ![2, 3, 4] := by
-  ext i; fin_cases i <;> simp [Fin.drop]
+  ext i; fin_cases i <;> simp [SliceGE.sliceGE, drop]
 
 example : (![0, 1, 2, 3, 4] : Fin 5 → ℕ)⟦1:4⟧ = ![1, 2, 3] := by
-  ext i; fin_cases i <;> simp [Fin.drop, Fin.take]
+  ext i; fin_cases i <;> simp [Fin.drop, Fin.take, Slice.slice]
 
 -- Heterogeneous type examples
 variable {α : Fin n → Type*} (hv : (i : Fin n) → α i)
@@ -124,7 +105,7 @@ example (h₂ : 4 ≤ n) : hv⟦1:4⟧ = Fin.drop 1 (by omega) (Fin.take 4 h₂ 
 
 -- Show that slicing composes correctly
 example : (![0, 1, 2, 3, 4, 5, 6, 7, 8, 9] : Fin 10 → ℕ)⟦2:8⟧⟦1:4⟧ = ![3, 4, 5] := by
-  ext i; fin_cases i <;> simp [Fin.drop, Fin.take]
+  ext i; fin_cases i <;> simp [Fin.drop, Fin.take, Slice.slice]
 
 -- Edge cases
 example : (![0, 1, 2] : Fin 3 → ℕ)⟦:0⟧ = ![] := by
@@ -140,7 +121,7 @@ example : w⟦:5⟧ = Fin.take 5 (by omega : 5 ≤ 20) w := rfl
 example : w⟦15:⟧ = Fin.drop 15 (by omega : 15 ≤ 20) w := rfl
 example : w⟦3:18⟧ = Fin.drop 3 (by omega) (Fin.take 18 (by omega) w) := rfl
 
-example : w⟦2:4⟧ = ![w 2, w 3] := by ext i; fin_cases i <;> simp [drop, take]
+example : w⟦2:4⟧ = ![w 2, w 3] := by ext i; fin_cases i <;> simp [drop, take, Slice.slice]
 
 end Examples
 
