@@ -68,6 +68,21 @@ abbrev rdrop {n : ℕ} {α : Fin n → Sort*} (m : ℕ) (h : m ≤ n) (v : (i : 
     (i : Fin (n - m)) → α (Fin.cast (Nat.sub_add_cancel h) (i.castAdd m)) :=
   take (n - m) (by omega) v
 
+/-- Extract a sub-tuple from a `Fin`-tuple, from index `start` to `stop - 1`. -/
+def extract {n : ℕ} {α : Fin n → Sort*} (start stop : ℕ) (h1 : start ≤ stop) (h2 : stop ≤ n)
+    (v : (i : Fin n) → α i) : (i : Fin (stop - start)) → α ⟨i + start, by omega⟩ :=
+  fun i ↦ v ⟨i + start, by omega⟩
+
+/-- Extracting with `start = 0` is the same as taking the first `stop` elements. -/
+lemma extract_start_zero_eq_take {n : ℕ} {α : Fin n → Sort*} (stop : ℕ) (h : stop ≤ n)
+    (v : (i : Fin n) → α i) : extract 0 stop (Nat.zero_le _) h v = take stop h v :=
+  rfl
+
+/-- Extracting with `stop = n` is the same as dropping the first `start` elements. -/
+lemma extract_stop_last_eq_drop {n : ℕ} {α : Fin n → Sort*} (start : ℕ) (h : start ≤ n)
+    (v : (i : Fin n) → α i) : extract start n h (Nat.le_refl _) v = drop start h v :=
+  rfl
+
 /-- Pad a `Fin`-indexed vector on the right with an element `a`.
 
 This becomes truncation if `n < m`. -/

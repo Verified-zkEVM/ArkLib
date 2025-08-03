@@ -34,6 +34,52 @@ theorem cons_eq_fin_cons (a : α) (v : Fin n → α) :
   ext i
   induction i using Fin.induction <;> simp
 
+-- Additional index access lemmas (cons_zero and cons_succ already defined above)
+@[simp]
+theorem cons_one (a : α) (v : FinVec α n.succ) : cons a v 1 = v 0 :=
+  sorry
+
+-- Head/Tail Operations for cons (matching Fin.cons naming)
+@[simp]
+theorem tail_cons (a : α) (v : FinVec α n) : (fun i => (cons a v) (Fin.succ i)) = v :=
+  sorry
+
+@[simp]
+theorem cons_self_tail (v : FinVec α n.succ) : cons (v 0) (fun i => v (Fin.succ i)) = v :=
+  sorry
+
+-- Injectivity Properties (matching Fin.cons naming)
+theorem cons_right_injective (a : α) : Function.Injective (cons a : FinVec α n → FinVec α n.succ) :=
+  sorry
+
+theorem cons_left_injective (v : FinVec α n) : Function.Injective (fun a => cons a v) :=
+  sorry
+
+theorem cons_injective2 : Function.Injective2 (@cons α n) :=
+  sorry
+
+theorem cons_inj (a b : α) (v w : FinVec α n) : cons a v = cons b w ↔ a = b ∧ v = w :=
+  sorry
+
+-- Empty Vector Properties
+@[simp]
+theorem cons_fin_zero (a : α) (v : FinVec α 0) : cons a v = fun _ => a :=
+  sorry
+
+theorem cons_eq_const (a : α) : cons a (fun _ : Fin n => a) = fun _ => a :=
+  sorry
+
+-- Range Properties for cons (when α : Type*)
+theorem range_cons {α : Type*} (a : α) (v : FinVec α n) :
+    Set.range (cons a v) = insert a (Set.range v) :=
+  sorry
+
+theorem range_empty {α : Type*} : Set.range (empty : FinVec α 0) = ∅ :=
+  sorry
+
+theorem range_cons_empty {α : Type*} (a : α) (v : FinVec α 0) : Set.range (cons a v) = {a} :=
+  sorry
+
 @[simp]
 theorem concat_zero (a : α) : concat (Fin.elim0 : Fin 0 → α) a = fun _ => a := by
   simp [concat]
@@ -57,6 +103,46 @@ theorem concat_castSucc (v : Fin n → α) (a : α) (i : Fin n) :
     | zero => simp
     | succ i => simp [ih]
 
+-- Additional concat properties (matching Fin.snoc naming)
+theorem concat_eq_snoc (v : FinVec α n) (a : α) : concat v a = Fin.snoc v a :=
+  sorry
+
+theorem snoc_eq_concat (v : FinVec α n) (a : α) : Fin.snoc v a = concat v a :=
+  sorry
+
+theorem concat_cons (a : α) (v : FinVec α n) (b : α) :
+    concat (cons a v) b = cons a (concat v b) :=
+  sorry
+
+-- Init/snoc properties (matching Fin.snoc naming)
+theorem init_concat (v : FinVec α n) (a : α) :
+    (fun i => concat v a (Fin.castSucc i)) = v :=
+  sorry
+
+theorem concat_init_self (v : FinVec α n.succ) :
+    concat (fun i => v (Fin.castSucc i)) (v (Fin.last n)) = v :=
+  sorry
+
+-- Range properties for concat (when α : Type*)
+theorem range_concat {α : Type*} (v : FinVec α n) (a : α) :
+    Set.range (concat v a) = insert a (Set.range v) :=
+  sorry
+
+-- Injectivity properties for concat (matching Fin.snoc naming)
+theorem concat_injective2 : Function.Injective2 (@concat α n) :=
+  sorry
+
+theorem concat_inj (v w : FinVec α n) (a b : α) :
+    concat v a = concat w b ↔ v = w ∧ a = b :=
+  sorry
+
+theorem concat_right_injective (v : FinVec α n) : Function.Injective (concat v) :=
+  sorry
+
+theorem concat_left_injective {n : ℕ} (a : α) :
+    Function.Injective (fun v : FinVec α n => concat v a) :=
+  sorry
+
 @[simp]
 theorem append_zero (u : Fin m → α) : append u (Fin.elim0 : Fin 0 → α) = u := by
   simp [append]
@@ -65,6 +151,95 @@ theorem append_zero (u : Fin m → α) : append u (Fin.elim0 : Fin 0 → α) = u
 theorem append_succ (u : Fin m → α) (v : Fin (n + 1) → α) :
     append u v = concat (append u (v ∘ Fin.castSucc)) (v (Fin.last n)) := by
   simp [append]
+
+-- Additional append properties (matching Fin.append naming)
+theorem empty_append (v : FinVec α n) : append !v[] v = v ∘ Fin.cast (Nat.zero_add n) :=
+  sorry
+
+theorem append_empty (v : FinVec α m) : append v !v[] = v :=
+  sorry
+
+theorem append_assoc {p : ℕ} (u : FinVec α m) (v : FinVec α n) (w : FinVec α p) :
+    append u (append v w) = (append (append u v) w) ∘ Fin.cast (add_assoc m n p).symm :=
+  sorry
+
+-- Index access for append
+theorem append_left (u : FinVec α m) (v : FinVec α n) (i : Fin m) :
+    append u v (Fin.castAdd n i) = u i :=
+  sorry
+
+theorem append_right (u : FinVec α m) (v : FinVec α n) (i : Fin n) :
+    append u v (Fin.natAdd m i) = v i :=
+  sorry
+
+-- Relationship with cons/concat (matching Fin.append naming)
+theorem append_cons (a : α) (u : FinVec α m) (v : FinVec α n) :
+    append (cons a u) v = (cons a (append u v)) ∘ Fin.cast (Nat.succ_add m n) :=
+  sorry
+
+theorem append_concat (u : FinVec α m) (v : FinVec α n) (a : α) :
+    append u (concat v a) = concat (append u v) a :=
+  sorry
+
+-- Compatibility with standard library (matching Fin.append naming)
+theorem append_left_eq_cons (a : FinVec α 1) (v : FinVec α n) :
+    append a v = (cons (a 0) v) ∘ Fin.cast (Nat.add_comm 1 n) :=
+  sorry
+
+theorem append_right_eq_snoc (u : FinVec α m) (a : FinVec α 1) :
+    append u a = concat u (a 0) :=
+  sorry
+
+-- Range properties for append (when α : Type*)
+theorem range_append {α : Type*} (u : FinVec α m) (v : FinVec α n) :
+    Set.range (append u v) = Set.range u ∪ Set.range v :=
+  sorry
+
+-- Compatibility with standard library
+theorem append_eq_fin_append (u : FinVec α m) (v : FinVec α n) :
+    append u v = Fin.append u v :=
+  sorry
+
+-- Length properties (these are definitional but useful to state)
+theorem length_append (u : FinVec α m) (v : FinVec α n) :
+    (append u v : FinVec α (m + n)) = append u v :=
+  sorry
+
+-- Extensionality for append
+theorem append_ext (u₁ u₂ : FinVec α m) (v₁ v₂ : FinVec α n) :
+    append u₁ v₁ = append u₂ v₂ ↔ u₁ = u₂ ∧ v₁ = v₂ :=
+  sorry
+
+-- Additional useful extensionality lemmas
+theorem ext_cons (a b : α) (v w : FinVec α n) : cons a v = cons b w ↔ a = b ∧ v = w :=
+  sorry
+
+theorem cons_eq_cons_iff (a b : α) (v w : FinVec α n) : cons a v = cons b w ↔ a = b ∧ v = w :=
+  sorry
+
+-- Two vectors are equal iff they are equal at every index
+theorem ext_iff {v w : FinVec α n} : v = w ↔ ∀ i, v i = w i :=
+  sorry
+
+-- Interaction between operations
+theorem cons_append_comm (a : α) (u : FinVec α m) (v : FinVec α n) :
+    cons a (append u v) = (append (cons a u) v) ∘ Fin.cast (Nat.succ_add m n).symm :=
+  sorry
+
+theorem append_singleton (u : FinVec α m) (a : α) :
+    append u (cons a !v[]) = concat u a :=
+  sorry
+
+theorem singleton_append (a : α) (v : FinVec α n) :
+    append (cons a !v[]) v = cons a v ∘ Fin.cast (Nat.add_comm _ n) :=
+  sorry
+
+-- Empty cases
+theorem empty_unique (v : FinVec α 0) : v = empty :=
+  sorry
+
+theorem eq_empty_iff_zero (v : FinVec α n) : (∃ h : n = 0, v = h ▸ empty) ↔ n = 0 :=
+  sorry
 
 end FinVec
 

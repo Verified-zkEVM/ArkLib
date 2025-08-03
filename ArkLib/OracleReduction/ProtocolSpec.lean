@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.Fin.Notation
+import ArkLib.Data.Fin.Tuple.Notation
 import ArkLib.OracleReduction.Prelude
 import ArkLib.OracleReduction.OracleInterface
 import ArkLib.ToVCVio.Oracle
@@ -22,7 +22,7 @@ open OracleComp OracleSpec
 
 /-- Type signature for an interactive protocol, with `n` messages exchanged. -/
 @[reducible]
-def ProtocolSpec (n : ℕ) := Fin n → Direction × Type
+def ProtocolSpec (n : ℕ) := FinVec (Direction × Type) n
 
 variable {n : ℕ}
 
@@ -73,7 +73,7 @@ def Challenges (pSpec : ProtocolSpec n) : Type := ∀ i, pSpec.Challenge i
 
 Note that this is definitionally equal to `Transcript (Fin.last n) pSpec`. -/
 @[reducible, inline, specialize]
-def FullTranscript (pSpec : ProtocolSpec n) := (i : Fin n) → (pSpec i).2
+def FullTranscript (pSpec : ProtocolSpec n) := FinTuple n (fun i => (pSpec i).2)
 
 section Restrict
 
