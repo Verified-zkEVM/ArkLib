@@ -25,24 +25,6 @@ universe u v w
 -- in order to consolidate a pattern that we find in this development
 -- i.e. `ProtocolSpec` is a `FinVec`, `(Full)Transcript` is a `FinTuple`, and so on
 
-/-- A `FinVec` is a `FinTuple` with a constant type family, i.e. `Fin n → α`. -/
-abbrev FinVec (α : Sort u) (n : ℕ) : Sort _ := Fin n → α
-
-def IndexedByFinVec (α : Sort u) (n : ℕ) := (β : FinVec α n) → Type v
-
-/-- A `FinTuple` of size `n` and type family `α` is a dependent function `(i : Fin n) → α i`. -/
-abbrev FinTuple (n : ℕ) (α : FinVec (Sort u) n) : Sort _ := (i : Fin n) → α i
-
-/-- Cast a `FinTuple` across an equality `n' = n` and a family of equalities
-  `∀ i, α (Fin.cast h i) = α' i`.
-
-  Since this is a pull-back, we state the equalities in the other direction (i.e. `n' = n` instead
-  of `n = n'`) -/
-def FinTuple.cast {n n' : ℕ} {α : Fin n → Sort u} {α' : Fin n' → Sort u}
-    (h : n' = n) (hα : ∀ i, α (Fin.cast h i) = α' i) (v : FinTuple n α) :
-      FinTuple n' α' :=
-  fun i => _root_.cast (hα i) (v (Fin.cast h i))
-
 /-- Version of `funext_iff` for dependent functions `f : (x : α) → β x` and
 `g : (x : α') → β' x`. -/
 theorem funext_heq_iff {α α' : Sort u} {β : α → Sort v} {β' : α' → Sort v}

@@ -156,3 +156,28 @@ def leftpad {m : ℕ} {α : Sort*} (n : ℕ) (a : α) (v : Fin m → α) : Fin n
   fun i => if h : n - m ≤ i then v ⟨i - (n - m), by omega⟩ else a
 
 end Fin
+
+/-- A `FinVec` is a `FinTuple` with a constant type family, i.e. `Fin n → α`. -/
+abbrev FinVec (α : Sort u) (n : ℕ) : Sort _ := Fin n → α
+
+namespace FinVec
+
+variable {α : Sort u} {n : ℕ}
+
+def cons (a : α) (v : Fin n → α) : Fin (n + 1) → α :=
+  Fin.vecCons a v
+
+end FinVec
+
+/-- A `FinTuple` of size `n` and type family `α` is a dependent function `(i : Fin n) → α i`. -/
+abbrev FinTuple (n : ℕ) (α : FinVec (Sort u) n) : Sort _ := (i : Fin n) → α i
+
+/-- Cast a `FinTuple` across an equality `n' = n` and a family of equalities
+  `∀ i, α (Fin.cast h i) = α' i`.
+
+  Since this is a pull-back, we state the equalities in the other direction (i.e. `n' = n` instead
+  of `n = n'`) -/
+def FinTuple.cast {n n' : ℕ} {α : Fin n → Sort u} {α' : Fin n' → Sort u}
+    (h : n' = n) (hα : ∀ i, α (Fin.cast h i) = α' i) (v : FinTuple n α) :
+      FinTuple n' α' :=
+  fun i => _root_.cast (hα i) (v (Fin.cast h i))
