@@ -8,6 +8,8 @@ import VCVio
 import ArkLib.Data.Math.Basic
 import ArkLib.CommitmentScheme.Basic
 import Mathlib.Data.Vector.Snoc
+import ArkLib.CommitmentScheme.QueryCacheToSet
+import ArkLib.CommitmentScheme.BinaryTree
 
 /-!
 # Inductive Merkle Trees
@@ -16,36 +18,6 @@ This file implements Merkle Trees. In contrast to the other Merkle tree implemen
 `ArkLib.CommitmentScheme.MerkleTree`, this one is defined inductively.
 
 ## Notes & TODOs
-
-### Binary Tree API
-
-- Split this BinaryTree API to a new file
-- More API about equivlances between
-  - `SkeletonNodeIndex` ≃ `SkeletonInternalIndex` ⊕ `SkeletonLeafIndex`
-  - analogously
-  - `FullDataTree α ≃ InternalDataTree α × LeafDataTree α`
-  - OR EVEN BETTER:
-    - Redefine `FullDataTree`, `InternalDataTree`, `LeafDataTree`
-      in terms of functions from `Skeleton`,
-      so that this equivalence follows immediately from the above by algebraic data types.
-- Replace `List`s with `FreeSubgroup` for ancestors?
-- Functions for navigating tree
-  - [ ] Go to parent if it exists
-  - [ ] Go to left child if it exists
-  - [ ] Go to right child if it exists
-  - [ ] Go to sibling if it exists
-  - [ ] Return Sym2 of left and right children
-  - Function for relationships between all these tree navigations
-    - [ ] How do these navigations affect depth?
-    - [ ] Which navigation sequences are equivalent to each other?
-- API for functorial mapping over data carried by the tree
-- API for getting the left and right subtrees of a tree.
-- API for flatttening a tree to a list
-- Define `Lattice` strutcure of trees
-  - a susbset relation on trees, mappings of indices to indices of supertrees
-- Define a datatype for indices of trees agnostic of the skeleton,
-  - This type has an equivalence to lists of bools,
-  - and maps from the the other indexing types.
 
 ### More Things needed for basic Merkle Trees
 
@@ -61,273 +33,8 @@ should (eventually) include all complexities such as the following:
 - Dealing with arbitrary trees (may have arity > 2, or is not complete)
 - Path pruning optimization for multi-leaf proofs
 
-
-
 -/
 
-namespace BinaryTree
-
-/-!
-# Binary Trees
-
-This section contains datatypes for working with binary trees.
-
-There
-
--/
-
-/--
-Inductive data type for a binary tree skeleton.
-A skeleton is a binary tree without values, used to represent the structure of the tree.
--/
-inductive Skeleton where
-  | leaf : Skeleton -- TODO rename to `nil`?
-  | internal : Skeleton → Skeleton → Skeleton
-
-/-- Type of indices of leaves of a skeleton -/
-inductive SkeletonLeafIndex : Skeleton → Type
-  | ofLeaf : SkeletonLeafIndex Skeleton.leaf
-  | ofLeft {left right : Skeleton} (idxLeft : SkeletonLeafIndex left) :
-      SkeletonLeafIndex (Skeleton.internal left right)
-  | ofRight {left right : Skeleton} (idxRight : SkeletonLeafIndex right) :
-      SkeletonLeafIndex (Skeleton.internal left right)
-
-/-- Type of indices of internal nodes of a skeleton -/
-inductive SkeletonInternalIndex : Skeleton → Type
-  | ofInternal {left right} : SkeletonInternalIndex (Skeleton.internal left right)
-  | ofLeft {left right : Skeleton} (idxLeft : SkeletonLeafIndex left) :
-      SkeletonInternalIndex (Skeleton.internal left right)
-  | ofRight {left right : Skeleton} (idxRight : SkeletonLeafIndex right) :
-      SkeletonInternalIndex (Skeleton.internal left right)
-
-/-- Type of indices of any node of a skeleton -/
-inductive SkeletonNodeIndex : Skeleton → Type
-  | ofLeaf : SkeletonNodeIndex Skeleton.leaf
-  | ofInternal {left right} :
-      SkeletonNodeIndex (Skeleton.internal left right)
-  | ofLeft {left right : Skeleton} (idxLeft : SkeletonNodeIndex left) :
-      SkeletonNodeIndex (Skeleton.internal left right)
-  | ofRight {left right : Skeleton} (idxRight : SkeletonNodeIndex right) :
-      SkeletonNodeIndex (Skeleton.internal left right)
-
-/-- Construct a `SkeletonLeafIndex` from a `SkeletonNodeIndex` -/
-def SkeletonLeafIndex.toNodeIndex {s : Skeleton} (idx : SkeletonLeafIndex s) :
-    SkeletonNodeIndex s :=
-  match idx with
-  | SkeletonLeafIndex.ofLeaf => SkeletonNodeIndex.ofLeaf
-  | SkeletonLeafIndex.ofLeft idxLeft =>
-    SkeletonNodeIndex.ofLeft (SkeletonLeafIndex.toNodeIndex idxLeft)
-  | SkeletonLeafIndex.ofRight idxRight =>
-    SkeletonNodeIndex.ofRight (SkeletonLeafIndex.toNodeIndex idxRight)
-
-/-- Depth of a SkeletonNodeIndex -/
-def SkeletonNodeIndex.depth {s : Skeleton} : SkeletonNodeIndex s → Nat
-  | SkeletonNodeIndex.ofLeaf => 0
-  | SkeletonNodeIndex.ofInternal => 0
-  | SkeletonNodeIndex.ofLeft idxLeft => idxLeft.depth + 1
-  | SkeletonNodeIndex.ofRight idxRight => idxRight.depth + 1
-
-def SkeletonNodeIndex.parent {s : Skeleton} (idx : SkeletonNodeIndex s) :
-    Option (SkeletonNodeIndex s) :=
-  match idx with
-  | SkeletonNodeIndex.ofLeaf => none
-  | SkeletonNodeIndex.ofInternal => none
-  | SkeletonNodeIndex.ofLeft (.ofLeaf) => some .ofInternal
-  | SkeletonNodeIndex.ofLeft (.ofInternal) => some .ofInternal
-  | SkeletonNodeIndex.ofLeft idxLeft =>
-    idxLeft.parent.map (SkeletonNodeIndex.ofLeft)
-  | SkeletonNodeIndex.ofRight (.ofLeaf) => some .ofInternal
-  | SkeletonNodeIndex.ofRight (.ofInternal) => some .ofInternal
-  | SkeletonNodeIndex.ofRight idxRight =>
-    idxRight.parent.map (SkeletonNodeIndex.ofRight)
-
-/-- Get the root value of a InternalDataTree. -/
-def getRootIndex (s : Skeleton) : SkeletonNodeIndex s := match s with
-  | Skeleton.leaf => SkeletonNodeIndex.ofLeaf
-  | Skeleton.internal _ _ =>
-    SkeletonNodeIndex.ofInternal
-
--- Analogous to `Cache`
-/--
-A binary tree with values stored in internal nodes.
--/
-inductive InternalDataTree (α : Type) : Skeleton → Type
-  | leaf : InternalDataTree α Skeleton.leaf
-  | internal {left right} (value : α)
-      (leftData : InternalDataTree α left)
-      (rightData : InternalDataTree α right) : InternalDataTree α (Skeleton.internal left right)
-  deriving Repr
-
-/--
-A binary tree with values stored at leaves.
--/
-inductive LeafDataTree (α : Type) : Skeleton → Type
-  | leaf (value : α) : LeafDataTree α Skeleton.leaf
-  | internal {left right} (leftData : LeafDataTree α left) (rightData : LeafDataTree α right) :
-      LeafDataTree α (Skeleton.internal left right)
-  deriving Repr
-
-/-- Get the root value of a InternalDataTree. -/
-def LeafDataTree.getValueAtIndex {s} {α : Type}
-    (tree : LeafDataTree α s) (idx : SkeletonLeafIndex s) : α :=
-  match tree, idx with
-  | LeafDataTree.leaf value, SkeletonLeafIndex.ofLeaf => value
-  | LeafDataTree.internal left _, SkeletonLeafIndex.ofLeft idxLeft =>
-    LeafDataTree.getValueAtIndex left idxLeft
-  | LeafDataTree.internal _ right, SkeletonLeafIndex.ofRight idxRight =>
-    LeafDataTree.getValueAtIndex right idxRight
-
-/--
-A binary tree with values stored at both leaves and internal nodes.
--/
-inductive FullDataTree (α : Type) : Skeleton → Type
-  | leaf (value : α) : FullDataTree α Skeleton.leaf
-  | internal {left right} (value : α)
-      (leftData : FullDataTree α left)
-      (rightData : FullDataTree α right) :
-      FullDataTree α (Skeleton.internal left right)
-
-def FullDataTree.getLeftSubtree {α : Type} {s_left s_right : Skeleton}
-    (tree : FullDataTree α (Skeleton.internal s_left s_right)) :
-    FullDataTree α s_left :=
-  match tree with
-  | FullDataTree.internal _ left right =>
-    left
-
-def FullDataTree.getRightSubtree {α : Type} {s_left s_right : Skeleton}
-    (tree : FullDataTree α (Skeleton.internal s_left s_right)) :
-    FullDataTree α s_right :=
-  match tree with
-  | FullDataTree.internal _ left right =>
-    right
-
-def FullDataTree.toLeafDataTree {α : Type} {s : Skeleton}
-    (tree : FullDataTree α s) : LeafDataTree α s :=
-  match tree with
-  | FullDataTree.leaf value => LeafDataTree.leaf value
-  | FullDataTree.internal _ left right =>
-    LeafDataTree.internal (left.toLeafDataTree) (right.toLeafDataTree)
-
-/-- Get the root value of a InternalDataTree. -/
-def FullDataTree.getValueAtIndex {s} {α : Type}
-    (tree : FullDataTree α s) (idx : SkeletonNodeIndex s) : α :=
-  match tree, idx with
-  | FullDataTree.leaf value, SkeletonNodeIndex.ofLeaf => value
-  | FullDataTree.internal value _ _, SkeletonNodeIndex.ofInternal => value
-  | FullDataTree.internal _ left _, SkeletonNodeIndex.ofLeft idxLeft =>
-    FullDataTree.getValueAtIndex left idxLeft
-  | FullDataTree.internal _ _ right, SkeletonNodeIndex.ofRight idxRight =>
-    FullDataTree.getValueAtIndex right idxRight
-
-lemma FullDataTree.toLeafDataTree_getValueAtIndex {s} {α : Type}
-    (tree : FullDataTree α s) (idx : SkeletonLeafIndex s) :
-    tree.toLeafDataTree.getValueAtIndex idx =
-      tree.getValueAtIndex idx.toNodeIndex := by
-  -- This is supposed to be the kind of thing `Canonical` is good at,
-  -- but I can't get it to work on my machine
-  sorry
-
-/-- Get the root value of a InternalDataTree. -/
-def FullDataTree.getRootValue {s} {α : Type} (tree : FullDataTree α s) :=
-  tree.getValueAtIndex (getRootIndex s)
-
-
-lemma SkeletonNodeIndex.parent_of_depth_zero {s : Skeleton}
-    (idx : SkeletonNodeIndex s) (h : idx.depth = 0) :
-    parent idx = none := by
-  cases idx with
-  | ofLeaf => rfl
-  | ofInternal => rfl
-  | ofLeft idxLeft =>
-    unfold depth at h
-    simp_all
-  | ofRight idxRight =>
-    unfold depth at h
-    simp_all
-
-
-/--
-Given a `Skeleton`, and a node index of the skeleton,
-return a list of node indices which are the ancestors of the node,
-starting with the root node,
-working down to the node itself.
--/
-def SkeletonNodeIndex.findAncestors {s : Skeleton} (idx : SkeletonNodeIndex s) :
-    List (SkeletonNodeIndex s) :=
-  match idx with
-  | SkeletonNodeIndex.ofLeaf => [SkeletonNodeIndex.ofLeaf]
-  | SkeletonNodeIndex.ofInternal => [SkeletonNodeIndex.ofInternal]
-  | SkeletonNodeIndex.ofLeft idxLeft =>
-    .ofInternal :: ((idxLeft.findAncestors)).map (SkeletonNodeIndex.ofLeft)
-  | SkeletonNodeIndex.ofRight idxRight =>
-    .ofInternal :: ((idxRight.findAncestors)).map (SkeletonNodeIndex.ofRight)
-
-/--
-Given a `Skeleton`,
-and a leaf index of the skeleton,
-return a list of node indices which are the ancestors of the leaf.
--/
-def findAncestors {s : Skeleton} (idx : SkeletonLeafIndex s) : List (SkeletonNodeIndex s) :=
-  SkeletonNodeIndex.findAncestors idx.toNodeIndex
-
-/--
-Return the sibling node index of a given `SkeletonNodeIndex`. Or `none` if the node is the root
--/
-def SkeletonNodeIndex.findSibling {s : Skeleton} (idx : SkeletonNodeIndex s) :
-    Option (SkeletonNodeIndex s) :=
-  match idx with
-  | SkeletonNodeIndex.ofLeaf => none
-  | SkeletonNodeIndex.ofInternal => none
-  | @SkeletonNodeIndex.ofLeft left right idxLeft =>
-    match idxLeft with
-    | SkeletonNodeIndex.ofLeaf => some (getRootIndex right).ofRight
-    | SkeletonNodeIndex.ofInternal => some (getRootIndex right).ofRight
-    | SkeletonNodeIndex.ofLeft idxLeftLeft =>
-      idxLeftLeft.ofLeft.findSibling.map (SkeletonNodeIndex.ofLeft)
-    | SkeletonNodeIndex.ofRight idxLeftRight =>
-      idxLeftRight.ofRight.findSibling.map (SkeletonNodeIndex.ofLeft)
-  | @SkeletonNodeIndex.ofRight left right idxRight =>
-    match idxRight with
-    | SkeletonNodeIndex.ofLeaf => some (getRootIndex left).ofLeft
-    | SkeletonNodeIndex.ofInternal => some (getRootIndex left).ofLeft
-    | SkeletonNodeIndex.ofLeft idxRightLeft =>
-      idxRightLeft.ofLeft.findSibling.map (SkeletonNodeIndex.ofRight)
-    | SkeletonNodeIndex.ofRight idxRightRight =>
-      idxRightRight.ofRight.findSibling.map (SkeletonNodeIndex.ofRight)
-
-/-- Find the siblings of the ancestors of a node -/
-def SkeletonNodeIndex.findUncles {s : Skeleton} (idx : SkeletonNodeIndex s) :
-    List (SkeletonNodeIndex s) := (idx.findAncestors.filterMap (fun idx => idx.findSibling))
-
-
-/--
-Returns, for a particular FullDataTree,
-the set of all query-responses that have been made to the oracle to construct the tree.
-Note that technically, this can have multiple responses for the same query,
-even though that cannot happen in a genuine tree construction.
--/
-def FullDataTree.toQueryCacheSet {s : BinaryTree.Skeleton} {α : Type} (tree : FullDataTree α s) :
-    Set ((α × α) × α) :=
-  match tree with
-  | FullDataTree.leaf a => ∅
-  | FullDataTree.internal value left right =>
-    let leftCache := left.toQueryCacheSet
-    let rightCache := right.toQueryCacheSet
-    leftCache ∪ rightCache ∪ Set.singleton ((left.getRootValue, right.getRootValue), value)
-
-@[simp]
-lemma FullDataTree.leaf_toQueryCacheSet {α} (a : α) :
-    (FullDataTree.leaf a).toQueryCacheSet = ∅ := by
-  rfl
-
-lemma FullDataTree.internal_toQueryCacheSet {α} {s1 s2 : BinaryTree.Skeleton}
-    (value : α) (left : FullDataTree α s1) (right : FullDataTree α s2) :
-    (FullDataTree.internal value left right).toQueryCacheSet =
-      left.toQueryCacheSet ∪ right.toQueryCacheSet ∪
-      {((left.getRootValue, right.getRootValue), value)} := by
-  rfl
-
-end BinaryTree
 
 namespace InductiveMerkleTree
 
@@ -408,7 +115,6 @@ def buildMerkleTree {s} (leaf_tree : LeafDataTree α s) : OracleComp (spec α) (
 
 /-- Generate a Merkle proof for a leaf at a given idx
     The proof consists of the sibling hashes needed to recompute the root.
-
 -/
 def generateProof {s} (cache_tree : FullDataTree α s) (idx : BinaryTree.SkeletonLeafIndex s) :
     List α :=
@@ -479,8 +185,7 @@ theorem singleHash_neverFails [DecidableEq α] [inst_1 : SelectableType α] (lef
     (preexisting_cache : (spec α).QueryCache) :
     ((simulateQ randomOracle (singleHash α left right)).run preexisting_cache).neverFails := by
   unfold singleHash
-  simp only [range_def, bind_pure, simulateQ_query,
-    unifOracle.apply_eq, StateT.run_bind, StateT.run_get, pure_bind]
+  simp only [range_def, bind_pure, simulateQ_query]
   simp
   cases preexisting_cache () (left, right) with
   | none =>
@@ -542,28 +247,7 @@ theorem getPutativeRoot_neverFails {α : Type} [inst : DecidableEq α] [inst_1 :
 
 
 -- To VCVio
-/--
-Returns, for a particular oracle's cache,
-the set of all (query, response) pairs that have been made to the oracle.
--/
-def QueryCache.toSet {ι : Type} {spec : OracleSpec ι} (i : ι) (cache : spec.QueryCache) :
-    Set (spec.domain i × spec.range i) :=
-  { (q, r) : spec.domain i × spec.range i | cache i q = some r }
 
-@[simp]
-lemma QueryCache.toSet_cacheQuery_eq_insert_of_none {ι : Type} {spec : OracleSpec ι}
-    [spec.DecidableEq] [DecidableEq ι]
-    (i : ι) (cache : spec.QueryCache) (q : spec.domain i) (r : spec.range i)
-    (h : cache i q = none) :
-    QueryCache.toSet i (cache.cacheQuery i q r) =
-      QueryCache.toSet i cache ∪ {(q, r)} := by
-  simp only [QueryCache.toSet, OracleSpec.QueryCache.cacheQuery]
-  simp
-  ext ⟨q', r'⟩
-  simp
-  rw [Function.update_apply]
-  split_ifs with h' <;> simp_all
-  exact eq_comm
 
 -- To Mathlib (the symmetric form of preexisting lemma)
 @[simp]
@@ -572,78 +256,391 @@ theorem Set.eq_insert_self {α : Type} {s : Set α} (a : α) :
   rw [← Set.insert_eq_self]
   exact eq_comm
 
-theorem of_mem_singleHash_support {α : Type} [DecidableEq α] [SelectableType α]
-    (left right out : α) (preexisting_cache resulting_cache : (spec α).QueryCache)
-    (h :
-      (out, resulting_cache) ∈
-        ((simulateQ randomOracle (singleHash α left right)).run
-            preexisting_cache).support
-    ) :
-    QueryCache.toSet () resulting_cache
-    = QueryCache.toSet () preexisting_cache ∪ {((left, right), out)} := by
-  unfold singleHash at h
-  simp at h
+@[ext]
+theorem QueryCache.ext {ι : Type} {spec : OracleSpec ι} --[spec.DecidableEq] [DecidableEq ι]
+    (cache1 cache2 : spec.QueryCache) (h : ∀ i, cache1 i = cache2 i) :
+    cache1 = cache2 := by
+  unfold QueryCache at *
+  ext x x_1 a
+  simp_all only
+
+-- to mathlib
+@[simp]
+lemma Option.eq_of_forall_eq {α : Type} {o1 o2 : Option α} :
+    (∀ a, o1 = some a ↔ o2 = some a) ↔ o1 = o2 := by
+  exact Iff.symm Option.ext_iff
+
+
+@[simp]
+theorem mem_singleHash_support_iff {α : Type} [DecidableEq α] [SelectableType α]
+    (left right out : α) (preexisting_cache resulting_cache : (spec α).QueryCache) :
+    ((out, resulting_cache)
+      ∈ ((simulateQ randomOracle (singleHash α left right)).run preexisting_cache).support)
+    ↔
+    resulting_cache () = Function.update (preexisting_cache ()) (left, right) out
+    ∧
+    (
+      preexisting_cache () (left, right) = none
+      ∨
+      preexisting_cache () (left, right) = some out
+    )
+     := by
+  unfold singleHash
+  simp
   set pre_out := preexisting_cache () (left, right) with h_mem_pre_out
   clear_value pre_out
-
   cases pre_out with
   | none =>
-    simp_all only []
-    simp at h
-    subst h
-    rw [QueryCache.toSet_cacheQuery_eq_insert_of_none _ _ _ _ h_mem_pre_out.symm]
-  | some u =>
-    simp_all only []
-    simp at h
-    rcases h with ⟨rfl, rfl⟩
-    simp only [domain_def, range_def, Set.union_singleton]
-    symm
     simp
-    simp [QueryCache.toSet, h_mem_pre_out]
+    constructor
+    · intro h
+      rw [<- h]
+      ext d r
+      simp [Function.update_apply]
+      revert r
+      simp only [Option.eq_of_forall_eq]
+      by_cases h_eq : d = (left, right)
+      · simp [h_eq]
+        unfold QueryCache.cacheQuery
+        simp
+      · simp [h_eq]
+        unfold QueryCache.cacheQuery
+        simp [h_eq]
+    · intro h
+      ext u d r
+      unfold QueryCache.cacheQuery
+      revert r
+      simp only [Option.eq_of_forall_eq]
+      simp
+      have : u = () := by exact rfl
+      subst this
+      rw [h]
+  | some u =>
+    simp
+    constructor
+    · intro h
+      rcases h with ⟨h_eq, h_mem⟩
+      subst h_eq
+      simp
+      ext d r
+      revert r
+      simp only [Option.eq_of_forall_eq]
+      subst h_mem
+      simp [Function.update_apply]
+      by_cases h_eq : d = (left, right)
+      · simp [h_eq]
+        rw [h_mem_pre_out]
+      simp [h_eq]
+    · intro h
+      rcases h with ⟨h_eq, h_mem⟩
+      subst h_mem
+      simp
+      ext u d r
+      revert r
+      simp only [Option.eq_of_forall_eq]
+      simp
+      have : u = () := by exact rfl
+      subst this
+      rw [h_eq]
+      simp [Function.update_apply]
+      by_cases h_eq : d = (left, right)
+      · simp [h_eq]
+        rw [h_mem_pre_out]
+      simp [h_eq]
 
 
-/--
-A theorem that characterizes the support of the `buildMerkleTree` computation.
-This is used to prove completeness of the Merkle tree construction.
+/-- Characterize membership in buildMerkleTree support
 
--- TODO backwards direction
-(requires also stating that the merkle_tree_cache is consistent with the
-  leaf_data_tree, i.e. that the corresponding leaf values are the same)
+A merkle_tree_cache, resulting_cache pair is in the support of the
+  buildMerkleTree on leaf_data_tree simulation starting from preexisting_cache
+  iff:
+
+1. Any entry is only in the resulting_cache iff it is either in the preexisting_cache
+   or in the merkle_tree_cache
+2. The leaves of the data tree are the same as the leaves of the merkle_tree_cache
+   (i.e. the merkle tree cache is a valid Merkle tree for the leaf data tree)
+3. The merkle_tree_cache is self consistent (i.e. any two nodes with children with the same values
+   have the value)
 -/
-theorem of_mem_buildMerkleTree_support {α : Type} [DecidableEq α] [SelectableType α] {s : Skeleton}
+theorem mem_buildMerkleTree_support_iff_v2 {α : Type} [DecidableEq α] [SelectableType α]
+    {s : Skeleton}
     (leaf_data_tree : LeafDataTree α s)
-    (merkle_tree_cache) (preexisting_cache resulting_cache : (spec α).QueryCache)
-    (h :
-     ((merkle_tree_cache, resulting_cache)
-        ∈ ((simulateQ randomOracle (buildMerkleTree leaf_data_tree)).run preexisting_cache).support)
-    )
-    :
+    (merkle_tree_cache : FullDataTree α s)
+    (preexisting_cache resulting_cache : (spec α).QueryCache) :
+    ((merkle_tree_cache, resulting_cache)
+      ∈ ((simulateQ randomOracle (buildMerkleTree leaf_data_tree)).run preexisting_cache).support)
+    ↔
     (
-      QueryCache.toSet () resulting_cache
-      = QueryCache.toSet () preexisting_cache ∪ merkle_tree_cache.toQueryCacheSet
+      ∀ d r,
+        resulting_cache () d = some r ↔ (preexisting_cache () d = some r ∨ (d, r) ∈
+          merkle_tree_cache.toQueryCacheSet)
+    )
+    ∧
+    leaf_data_tree = merkle_tree_cache.toLeafDataTree
+    ∧
+    (
+      merkle_tree_cache.isSelfConsistent
+    )
+
+     := by
+  induction s generalizing preexisting_cache resulting_cache with
+  | leaf =>
+    cases leaf_data_tree with
+    | leaf a =>
+      unfold buildMerkleTree
+      simp only [simulateQ_pure, StateT.run_pure, support_pure, Set.mem_singleton_iff,
+        Prod.mk.injEq, domain_def, range_def, FullDataTree.leaf_toQueryCacheSet',
+        Set.mem_empty_iff_false, or_false, Option.eq_of_forall_eq, Prod.forall]
+      constructor
+      · intro h
+        rcases h with ⟨rfl, rfl⟩
+        simp
+        sorry --confident
+      · intro h
+        rcases h with ⟨h1, h2, h3⟩
+        constructor
+        · apply FullDataTree.toLeafDataTree_eq_leaf
+          · exact h2
+        · ext u d r
+          revert r
+          simp only [Option.eq_of_forall_eq]
+          have : u = () := by exact rfl
+          subst this
+          rw [h1]
+  | internal left_skeleton right_skeleton left_ih right_ih =>
+    cases leaf_data_tree with
+    | internal leftData rightData =>
+      unfold buildMerkleTree
+      simp only [simulateQ_bind, StateT.run_bind]
+      simp
+      simp [left_ih, right_ih]
+      clear left_ih right_ih
+      constructor
+      · intro h
+        rcases h with
+          ⟨left_tree, left_cache, ⟨h_left_cache, h_leftData_eq, h_left_selfConsistent⟩,
+          right_tree, right_cache, ⟨h_right_cache, h_rightData_eq, h_right_selfConsistent⟩,
+          final, h_final, h_eq⟩
+        rcases h_final with ⟨h_final_update, h_final⟩
+        -- TODO should be straightforward to rewrite everything
+        constructor
+        · intro a b r
+          clear h_leftData_eq h_rightData_eq leftData rightData
+          rw [h_final_update, Function.update_apply]
+          by_cases h_eq_a_b : (a, b) = (left_tree.getRootValue, right_tree.getRootValue)
+          · rw [h_eq_a_b]
+            simp
+            rw [<- h_eq]
+            by_cases final_eq_r : final = r
+            · simp [final_eq_r]
+            simp [final_eq_r]
+
+            sorry
+          ·
+            sorry
+
+          -- rw [h_right_cache, h_left_cache]
+
+          -- congr
+          -- rw [<- h_eq]
+          -- -- extract_goal
+          -- rw [FullDataTree.internal_toQueryCacheSet]
+          -- congr
+        · sorry
+          -- rw [h_left, h_right, ← h_eq]
+          -- rw [FullDataTree.toLeafDataTree_internal]
+      · intro h
+        rcases h with ⟨h1, h2⟩
+        -- simp [h1]
+        -- -- TODO the trees and root value can be obtained from the merkle_tree_cache
+        -- -- the query caches can be obtained by union
+        -- use merkle_tree_cache.getLeftSubtree
+        -- classical
+        -- use fun _ input => if ∃ pair : ((α × α) × α), pair.1 = input
+        --   ∧ pair ∈  then
+        --   some merkle_tree_cache.getRootValue else none
+
+        sorry
+
+
+-- toVCV?
+/--
+If a final is an outcome of a run with some preexisting cache, then it is a supercache
+-/
+theorem subcache_of_mem_support {α β : Type} [DecidableEq α] [SelectableType α]
+    (computation : OracleComp (spec α) β)
+    (preexisting_cache resulting_cache : (spec α).QueryCache) (b : β)
+    (h_mem :
+      ((b, resulting_cache) ∈ ((simulateQ randomOracle computation).run preexisting_cache).support)
+    ) :
+    (∀ d r, preexisting_cache () d = some r → resulting_cache () d = some r) := by
+  induction computation generalizing preexisting_cache resulting_cache with
+  | pure x =>
+    intro d r h_eq
+    simp at h_eq
+    simp [StateT.run] at h_mem
+    sorry
+  | roll x r ih => sorry
+
+
+
+
+-- set_option maxHeartbeats 0 in
+/--
+Characterize membership in buildMerkleTree support
+
+A merkle_tree_cache, resulting_cache pair is in the support of the
+  buildMerkleTree on leaf_data_tree simulation starting from preexisting_cache
+  iff:
+
+1. The merkle_tree_cache is the result of building a Merkle tree from the leaf_data_tree
+using the map supplied by the resulting_cache (suitably lifted to Option types)
+2. The resulting_cache is a superset of the preexisting_cache
+3. The resulting_cache does not include any entries that are not in either the
+preexisting_cache or the merkle_tree_cache.
+  1. Equivalently, If an entry is not in the preexisting_cache or the merkle_tree_cache,
+  then it is not in the resulting_cache.
+  2. Contrapositively, if an entry is in the resulting_cache, then it is either in the
+  preexisting_cache or the merkle_tree_cache.
+-/
+theorem mem_buildMerkleTree_support_iff_v3 {α : Type} [DecidableEq α] [SelectableType α]
+    {s : Skeleton}
+    (leaf_data_tree : LeafDataTree α s)
+    (merkle_tree_cache : FullDataTree α s)
+    (preexisting_cache resulting_cache : (spec α).QueryCache) :
+    ((merkle_tree_cache, resulting_cache)
+      ∈ ((simulateQ randomOracle (buildMerkleTree leaf_data_tree)).run preexisting_cache).support)
+    ↔
+    (
+      (
+      -- The merkle_tree_cache is the result of building a Merkle tree from the leaf_data_tree
+      merkle_tree_cache.map (Option.some) = LeafDataTree.optionComposeBuild leaf_data_tree
+        (fun a b => resulting_cache () (a, b))
+      )
+      ∧
+      -- The resulting_cache is a superset of the preexisting_cache
+      -- Note, this is needed for the rverse direction, but in the forward actuallly just a property of support membership of anything, refactor
+      (∀ d r,
+        preexisting_cache () d = some r → resulting_cache () d = some r)
+      ∧
+      -- The resulting_cache does not include any entries that are not in either the
+      -- preexisting_cache or the merkle_tree_cache
+      (∀ d r,
+        resulting_cache () d = some r →
+        (preexisting_cache () d = some r ∨ (d, r) ∈
+          merkle_tree_cache.toQueryCacheSet))
     ) := by
   induction s generalizing preexisting_cache resulting_cache with
   | leaf =>
     cases leaf_data_tree with
     | leaf a =>
-      unfold buildMerkleTree at h
-      rcases h
-      simp [QueryCache.toSet]
+      unfold buildMerkleTree
+      simp only [simulateQ_pure, StateT.run_pure, support_pure, Set.mem_singleton_iff,
+        Prod.mk.injEq, domain_def, range_def, FullDataTree.leaf_toQueryCacheSet',
+        Set.mem_empty_iff_false, or_false, Prod.forall]
+      constructor
+      · intro h
+        rcases h with ⟨rfl, rfl⟩
+        simp only [imp_self, implies_true, and_self, and_true]
+        rfl
+      · intro h
+        rcases h with ⟨h1, h2, h3⟩
+        constructor
+        · apply FullDataTree.toLeafDataTree_eq_leaf
+          simp [LeafDataTree.optionComposeBuild, LeafDataTree.map_leaf, LeafDataTree.composeBuild_leaf] at h1
+          sorry -- confident
+        · have : ∀ d r,
+              resulting_cache () d = some r ↔
+              preexisting_cache () d = some r := by
+            intro d r
+            constructor
+            · exact fun a ↦ h3 d.1 d.2 r (h2 d.1 d.2 r (h3 d.1 d.2 r a))
+            · exact fun a ↦ h2 d.1 d.2 r (h3 d.1 d.2 r (h2 d.1 d.2 r a))
+          -- simp only [Option.eq_of_forall_eq] at this
+          ext u d r
+          revert r
+          simp only [Option.eq_of_forall_eq] at this
+          have : u = () := by exact rfl
+          subst this
+          rw [this]
+          exact fun r ↦ Eq.congr_right rfl
   | internal left_skeleton right_skeleton left_ih right_ih =>
     cases leaf_data_tree with
     | internal leftData rightData =>
-      unfold buildMerkleTree at h
-      simp at h
-      rcases h with ⟨merkle_tree_cache_left, query_cache_left, h_left,
-        merkle_tree_cache_right, query_cache_right, h_right,
-        merkle_tree_cache_final, h_final, h_eq⟩
-      rw [← h_eq]
-      rw [FullDataTree.internal_toQueryCacheSet]
-      specialize left_ih _ _ _ _ h_left
-      specialize right_ih _ _ _ _ h_right
-      have final_of_mem_singleHash_support := of_mem_singleHash_support _ _ _ _ _ h_final
-      simp_rw [←Set.union_assoc]
-      rw [<-left_ih, <-right_ih, <- final_of_mem_singleHash_support]
+      unfold buildMerkleTree
+      simp only [simulateQ_bind, StateT.run_bind]
+      simp
+      simp [left_ih, right_ih]
+      clear left_ih right_ih
+      constructor
+      · -- Forward direction
+        intro h
+        rcases h with
+          ⟨left_tree, left_cache,
+            ⟨h_left_tree_eq_build, h_preexisting_cache_subcache_of_left_cache, h_left_cache'⟩,
+          right_tree, right_cache,
+            ⟨h_right_tree_eq_build, h_left_cache_subcache_of_right_cache, h_right_cache'⟩,
+          final, ⟨h_final_cache, h_final_cache'⟩, h_eq⟩
+        subst h_eq
+        have h_right_cache_subcache_of_resulting_cache : ∀ a b r,
+            right_cache () (a, b) = some r → resulting_cache () (a, b) = some r := by
+          sorry
+
+
+        refine ⟨?_, ?_, ?_⟩
+        · simp only [LeafDataTree.optionComposeBuild] at *
+          simp [FullDataTree.map_internal, h_left_tree_eq_build, h_right_tree_eq_build,
+            LeafDataTree.composeBuild_internal, LeafDataTree.map_internal]
+          have right_composing_cache_change :
+              (LeafDataTree.map some rightData).composeBuild
+                (Option.doubleBind fun a b ↦ right_cache () (a, b)) =
+              (LeafDataTree.map some rightData).composeBuild
+                (Option.doubleBind fun a b ↦ resulting_cache () (a, b)) := by
+            -- use right_cache_subcache_of_resulting_cache
+            sorry
+          have left_composing_cache_change :
+              (LeafDataTree.map some leftData).composeBuild
+                (Option.doubleBind fun a b ↦ left_cache () (a, b)) =
+              (LeafDataTree.map some leftData).composeBuild
+                (Option.doubleBind fun a b ↦ resulting_cache () (a, b)) := by
+            sorry
+          refine ⟨?_, ?_, ?_⟩
+          · rw [Option.some_eq_doubleBind]
+            use left_tree.getRootValue
+            use right_tree.getRootValue
+            rw [<- right_composing_cache_change, <- left_composing_cache_change]
+            rw [<-h_left_tree_eq_build, <- h_right_tree_eq_build]
+            refine ⟨?_, ?_, ?_⟩
+            · rw [FullDataTree.map_getRootValue]
+            · rw [FullDataTree.map_getRootValue]
+            · rw [h_final_cache]
+              simp
+          · exact?
+          · exact?
+
+        · intro input_left input_right output h_mem_preexisting
+          apply h_right_cache_subcache_of_resulting_cache
+          apply h_left_cache_subcache_of_right_cache
+          apply h_preexisting_cache_subcache_of_left_cache
+          exact h_mem_preexisting
+        · intro input_left input_right output h_mem_resulting
+          simp only [FullDataTree.internal_toQueryCacheSet, Set.mem_insert_iff, Prod.mk.injEq,
+            Set.mem_union]
+          -- If we sufficiently specialize the hypotheses, we can grind or aesop it out
+          -- Technically, I think we don't need to specialize the hypotheses, but aesop times out
+          -- if we don't.
+          specialize h_left_cache' input_left input_right output
+          specialize h_right_cache' input_left input_right output
+          specialize h_preexisting_cache_subcache_of_left_cache input_left input_right output
+          specialize h_left_cache_subcache_of_right_cache input_left input_right output
+          specialize h_right_cache_subcache_of_resulting_cache input_left input_right output
+          replace h_final_cache := congrFun h_final_cache (input_left, input_right)
+          simp only [Function.update_apply] at h_final_cache
+          aesop -- Sick!
+      · -- Backward direction
+        intro h
+        sorry
+
 
 
 /--
@@ -652,25 +649,22 @@ the putative root obtained from the resulting proof is equal to the root value o
 -/
 theorem putative_root_eq_merkle_tree_cache_root_of_generate_proof {α : Type}
     [DecidableEq α] [SelectableType α]
-    {s : Skeleton} (leaf_data_tree : LeafDataTree α s) (idx : SkeletonLeafIndex s)
+    {s : Skeleton} (idx : SkeletonLeafIndex s)
     (merkle_tree_cache : FullDataTree α s)
     (preexisting_cache resulting_cache : (spec α).QueryCache)
     (putative_root : α)
     (cache_subset :
       merkle_tree_cache.toQueryCacheSet ⊆ QueryCache.toSet () preexisting_cache)
-    -- TODO refactor away this assumption
-    (leaf_data_tree_merkle_tree_cache_consistent : leaf_data_tree = merkle_tree_cache.toLeafDataTree
-      )
     (mem_support' :
       (putative_root, resulting_cache) ∈
       ((simulateQ randomOracle
         (getPutativeRoot idx
-          (leaf_data_tree.getValueAtIndex idx)
+          ((merkle_tree_cache.toLeafDataTree).getValueAtIndex idx)
           (generateProof merkle_tree_cache idx))).run
         preexisting_cache).support) :
-    putative_root = merkle_tree_cache.getRootValue := by
-  subst leaf_data_tree_merkle_tree_cache_consistent
-  induction s generalizing preexisting_cache resulting_cache with
+    putative_root = merkle_tree_cache.getRootValue
+   := by
+  induction s generalizing putative_root preexisting_cache resulting_cache with
   | leaf =>
     cases idx with
     | ofLeaf =>
@@ -678,20 +672,69 @@ theorem putative_root_eq_merkle_tree_cache_root_of_generate_proof {α : Type}
       rcases mem_support' with ⟨rfl, rfl⟩
       unfold FullDataTree.getRootValue getRootIndex
       rw [FullDataTree.toLeafDataTree_getValueAtIndex]
+      simp
       rfl
   | internal left_skeleton right_skeleton left_ih right_ih =>
+    -- Decompose the merkle tree cache into its left and right subtrees
+    have := merkle_tree_cache.internal_eq
+    rcases this with
+      ⟨merkle_tree_root, left_subtree, right_subtree, h_eq⟩
+    subst h_eq
     cases idx with
     | ofLeft idxLeft =>
       simp only [generateProof_ofLeft] at mem_support'
       unfold getPutativeRoot at mem_support'
+      simp only [simulateQ_bind, StateT.run_bind, Function.comp_apply, support_bind, Set.mem_iUnion,
+        exists_prop, Prod.exists] at mem_support'
       simp [] at mem_support'
-      rcases mem_support' with ⟨putative_root_left, cache_after_left, h_mem_left, h_mem_singleHash⟩
-
-      -- replace mem_support := of_mem_buildMerkleTree_support _ _ _ _ mem_support
-      replace h_mem_singleHash := of_mem_singleHash_support _ _ _ _ _ h_mem_singleHash
-
-      sorry
-    | ofRight idxRight => sorry
+      rcases mem_support' with
+        ⟨putative_root_left, cache_after_left, h_mem_left,
+        h_mem_getPutativeRoot, h_cache_after_left⟩
+      simp only [LeafDataTree.getValueAtIndex_ofLeft] at h_mem_left
+      simp at *
+      simp only [Set.insert_subset_iff, Set.union_subset_iff] at cache_subset
+      rcases cache_subset with
+        ⟨h_mem_root_compose, h_mem_left_cache_subset, h_mem_right_cache_subset⟩
+      specialize left_ih
+        idxLeft left_subtree _ cache_after_left
+        putative_root_left h_mem_left_cache_subset h_mem_left
+      have := subcache_of_mem_support (α := α) _ _ _ _ h_mem_left (left_subtree.getRootValue, right_subtree.getRootValue)
+      clear h_mem_left h_mem_left_cache_subset h_mem_right_cache_subset
+      subst left_ih
+      -- rcases left_ih with
+      --   ⟨putative_root_left_eq, h_preexisting_cache_subcache_of_left_cache⟩
+      -- subst putative_root_left_eq
+      simp [QueryCache.toSet] at h_mem_root_compose
+      have cache_after_left_root_compose : cache_after_left () (left_subtree.getRootValue, right_subtree.getRootValue) = some merkle_tree_root := by
+        aesop
+      aesop
+    | ofRight idxRight =>
+      simp only [generateProof_ofRight] at mem_support'
+      unfold getPutativeRoot at mem_support'
+      simp only [simulateQ_bind, StateT.run_bind, Function.comp_apply, support_bind, Set.mem_iUnion,
+        exists_prop, Prod.exists] at mem_support'
+      simp [] at mem_support'
+      rcases mem_support' with
+        ⟨putative_root_right, cache_after_right, h_mem_right,
+        h_mem_getPutativeRoot, h_cache_after_right⟩
+      simp only [LeafDataTree.getValueAtIndex_ofRight] at h_mem_right
+      simp at *
+      simp only [Set.insert_subset_iff, Set.union_subset_iff] at cache_subset
+      rcases cache_subset with
+        ⟨h_mem_root_compose, h_mem_left_cache_subset, h_mem_right_cache_subset⟩
+      specialize right_ih
+        idxRight right_subtree _ cache_after_right
+        putative_root_right h_mem_right_cache_subset h_mem_right
+      have := subcache_of_mem_support (α := α) _ _ _ _ h_mem_right (left_subtree.getRootValue, right_subtree.getRootValue)
+      clear h_mem_right h_mem_left_cache_subset h_mem_right_cache_subset
+      subst right_ih
+      -- rcases right_ih with
+      --   ⟨putative_root_right_eq, h_preexisting_cache_subcache_of_right_cache⟩
+      -- subst putative_root_right_eq
+      simp [QueryCache.toSet] at h_mem_root_compose
+      have cache_after_right_root_compose : cache_after_right () (left_subtree.getRootValue, right_subtree.getRootValue) = some merkle_tree_root := by
+        aesop
+      aesop
 
 theorem completeness [DecidableEq α] [SelectableType α] {s}
     (leaf_data_tree : LeafDataTree α s) (idx : BinaryTree.SkeletonLeafIndex s)
@@ -721,16 +764,20 @@ theorem completeness [DecidableEq α] [SelectableType α] {s}
       -- Otherwise, we must derive a contradiction
       simp only [StateT.run_failure, not_neverFails_failure]
       contrapose! h
-      have h_cache_subset := of_mem_buildMerkleTree_support leaf_data_tree
-        merkle_tree_cache preexisting_cache query_cache h_mem_support
-      have cache_subset : merkle_tree_cache.toQueryCacheSet ⊆ QueryCache.toSet () query_cache := by
-        rw [h_cache_subset]
-        exact Set.subset_union_right
-      have consistent_cache_leaves : leaf_data_tree = merkle_tree_cache.toLeafDataTree := by
-        -- follows from h_mem_support
-        -- factor as a lemma similar to of_mem_buildMerkleTree_support
+      rw [mem_buildMerkleTree_support_iff_v3] at h_mem_support
+      rcases h_mem_support with
+        ⟨h_mem_root_compose, h_preexisting_cache_subcache_of_left_cache,
+        h_resulting_cache_subset⟩
+      have : leaf_data_tree = merkle_tree_cache.toLeafDataTree := by
+        -- follows from h_mem_root_compose
         sorry
-      exact?
+      rw [this] at h_mem_support'
+      apply putative_root_eq_merkle_tree_cache_root_of_generate_proof
+        idx merkle_tree_cache query_cache query_cache' _ _ h_mem_support'
+      clear h_mem_support'
+
+      -- follows from h_mem_root_compose
+      sorry
 
 end
 
