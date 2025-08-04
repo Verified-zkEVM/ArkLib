@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
+
 import ArkLib.Data.CNat.LevelOne
 
 /-!
@@ -27,34 +33,34 @@ def toNat (c : CNat₂) : Nat := CNat.toNat (Cayley.toT c)
 @[inline] def add : CNat₂ → CNat₂ → CNat₂ := Cayley.add
 
 /-- Subtraction for `CNat₂`. -/
-@[inline] def sub : CNat₂ → CNat₂ → CNat₂ := Cayley.sub CNat.toNat
+@[inline] def sub : CNat₂ → CNat₂ → CNat₂ := Cayley.sub
 
 /-- Multiplication for `CNat₂`. -/
-@[inline] def mul : CNat₂ → CNat₂ → CNat₂ := Cayley.mul CNat.toNat
+@[inline] def mul : CNat₂ → CNat₂ → CNat₂ := Cayley.mul
 
 /-- Division for `CNat₂`. -/
-@[inline] def div : CNat₂ → CNat₂ → CNat₂ := Cayley.div CNat.toNat
+@[inline] def div : CNat₂ → CNat₂ → CNat₂ := Cayley.div
 
 /-- Exponentiation for `CNat₂`. -/
-@[inline] def pow : CNat₂ → CNat₂ → CNat₂ := Cayley.pow CNat.toNat
+@[inline] def pow : CNat₂ → CNat₂ → CNat₂ := Cayley.pow
 
 /-- Successor for `CNat₂`. -/
 @[inline] def succ : CNat₂ → CNat₂ := Cayley.succ
 
 /-- Predecessor for `CNat₂`. -/
-@[inline] def pred : CNat₂ → CNat₂ := Cayley.pred CNat.toNat
+@[inline] def pred : CNat₂ → CNat₂ := Cayley.pred
 
 /-- Less than for `CNat₂`. -/
-def lt : CNat₂ → CNat₂ → Prop := Cayley.lt CNat.toNat
+def lt : CNat₂ → CNat₂ → Prop := Cayley.lt
 
 /-- Less than or equal for `CNat₂`. -/
-def le : CNat₂ → CNat₂ → Prop := Cayley.le CNat.toNat
+def le : CNat₂ → CNat₂ → Prop := Cayley.le
 
 /-- Minimum for `CNat₂`. -/
-def min : CNat₂ → CNat₂ → CNat₂ := Cayley.min CNat.toNat
+def min : CNat₂ → CNat₂ → CNat₂ := Cayley.min
 
 /-- Maximum for `CNat₂`. -/
-def max : CNat₂ → CNat₂ → CNat₂ := Cayley.max CNat.toNat
+def max : CNat₂ → CNat₂ → CNat₂ := Cayley.max
 
 /-- Convert a `k : Nat` into a `CNat₂` via the hierarchy. -/
 @[inline] def ofNat (k : Nat) : CNat₂ :=
@@ -82,6 +88,9 @@ instance : LT CNat₂ where
 
 instance : LE CNat₂ where
   le := le
+
+instance : ToNat CNat₂ where
+  toNat := toNat
 
 instance : Min CNat₂ where
   min := min

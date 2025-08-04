@@ -1,7 +1,10 @@
-import Mathlib
-import ArkLib.Data.Classes.HasSucc
+/-
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
 
-universe u
+import ArkLib.Data.Classes.HasSucc
 
 /-!
 # HasPred Typeclass
@@ -25,10 +28,15 @@ The `LawfulHasPred` class only requires the "left inverse" property:
 `pred ∘ succ = id`, but NOT `succ ∘ pred = id`.
 -/
 
+universe u
+
 /-- Typeclass for types that have a predecessor operation. -/
 class HasPred (T : Type u) where
-  /-- The predecessor operation. -/
-  pred : T → T
+  /-- The predecessor operation for the `HasPred` typeclass.
+    We put this as prime to avoid potential conflict with future changes upstream. -/
+  pred' : T → T
+
+export HasPred (pred')
 
 /-- A lawful predecessor operation should be the left inverse of successor.
 
@@ -40,32 +48,20 @@ Note: This does NOT require `succ (pred x) = x`, as this is not true in general
 -/
 class LawfulHasPred (T : Type u) [HasSucc T] [HasPred T] : Prop where
   /-- Predecessor after successor gives back the original. -/
-  pred_succ : ∀ x : T, HasPred.pred (HasSucc.succ x) = x
+  pred'_succ : ∀ x : T, pred' (succ' x) = x
+
+export LawfulHasPred (pred'_succ)
+
+attribute [simp] pred'_succ
 
 namespace HasPred
 
 /-- Natural numbers have a predecessor operation (truncated). -/
 instance : HasPred Nat where
-  pred := Nat.pred
+  pred' := Nat.pred
 
 /-- Natural numbers have a lawful predecessor operation. -/
 instance : LawfulHasPred Nat where
-  pred_succ := Nat.pred_succ
-
--- Convenience lemmas
-
-/-- Predecessor of successor is identity (from LawfulHasPred). -/
-theorem pred_succ {T : Type u} [HasSucc T] [HasPred T] [LawfulHasPred T] (x : T) :
-    pred (HasSucc.succ x) = x :=
-  LawfulHasPred.pred_succ x
-
-/-- Predecessor of zero is zero for natural numbers. -/
-theorem pred_zero : pred (0 : Nat) = 0 :=
-  Nat.pred_zero
-
-/-- Successor of predecessor for positive natural numbers.
-Note: This is NOT a general law - it only holds for positive natural numbers. -/
-theorem succ_pred_eq_of_pos {n : Nat} (h : 0 < n) : HasSucc.succ (pred n) = n :=
-  Nat.succ_pred_eq_of_pos h
+  pred'_succ := Nat.pred_succ
 
 end HasPred

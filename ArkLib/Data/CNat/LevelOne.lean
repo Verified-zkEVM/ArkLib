@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
+
 import ArkLib.Data.CNat.Defs
 
 /-!
@@ -15,61 +21,53 @@ abbrev CNat := Cayley Nat
 
 namespace CNat
 
-/-- Evaluation function for `CNat`. -/
-def toNat (c : CNat) : Nat := Cayley.toT c
+-- ToNat instance for CNat. This unfolds to `fun a => a.toFun 0`.
+instance : ToNat CNat := inferInstance
 
 /-- `0` is the identity function on `Nat`. -/
-@[inline] def zero : CNat := Cayley.zero
+@[inline] abbrev zero : CNat := Cayley.zero
 
 /-- `1` is the successor function on `Nat`. -/
-@[inline] def one : CNat := Cayley.one
+@[inline] abbrev one : CNat := Cayley.one
 
 /-- Addition on `CNat` is function composition. -/
-@[inline] def add : CNat → CNat → CNat := Cayley.add
+@[inline] abbrev add : CNat → CNat → CNat := Cayley.add
 
 /-- Subtraction for `CNat`. -/
-@[inline] def sub : CNat → CNat → CNat := Cayley.sub id
+@[inline] abbrev sub : CNat → CNat → CNat := Cayley.sub
 
 /-- Multiplication for `CNat`. -/
-@[inline] def mul : CNat → CNat → CNat := Cayley.mul id
+@[inline] abbrev mul : CNat → CNat → CNat := Cayley.mul
 
 /-- Division for `CNat`. -/
-@[inline] def div : CNat → CNat → CNat := Cayley.div id
+@[inline] abbrev div : CNat → CNat → CNat := Cayley.div
 
 /-- Exponentiation for `CNat`. -/
-@[inline] def pow : CNat → CNat → CNat := Cayley.pow id
+@[inline] abbrev pow : CNat → CNat → CNat := Cayley.pow
 
 /-- Successor for `CNat`. -/
-@[inline] def succ : CNat → CNat := Cayley.succ
+@[inline] abbrev succ : CNat → CNat := Cayley.succ
 
 /-- Predecessor for `CNat`. -/
-@[inline] def pred : CNat → CNat := Cayley.pred id
+@[inline] abbrev pred : CNat → CNat := Cayley.pred
 
 /-- Less than for `CNat`. -/
-def lt : CNat → CNat → Prop := Cayley.lt id
+abbrev lt : CNat → CNat → Prop := Cayley.lt
 
 /-- Less than or equal for `CNat`. -/
-def le : CNat → CNat → Prop := Cayley.le id
+abbrev le : CNat → CNat → Prop := Cayley.le
 
 /-- Minimum for `CNat`. -/
-def min : CNat → CNat → CNat := Cayley.min id
+abbrev min : CNat → CNat → CNat := Cayley.min
 
 /-- Maximum for `CNat`. -/
-def max : CNat → CNat → CNat := Cayley.max id
+abbrev max : CNat → CNat → CNat := Cayley.max
 
 /-- Convert a `k : Nat` into a `CNat`, which represents the function `λ m, m + k`. -/
-@[inline] def ofNat (k : Nat) : CNat :=
+@[inline] abbrev ofNat (k : Nat) : CNat :=
   ⟨fun m => m + k, fun m => Nat.succ_add m k⟩
 
 -- Typeclass instances
-
-instance : Zero CNat := ⟨zero⟩
-instance : One CNat := ⟨one⟩
-instance : Add CNat := ⟨add⟩
-instance : Sub CNat := ⟨sub⟩
-instance : Mul CNat := ⟨mul⟩
-instance : Div CNat := ⟨div⟩
-instance : Pow CNat CNat := ⟨pow⟩
 
 instance : HasPred CNat where
   pred := pred
@@ -88,7 +86,7 @@ instance : Max CNat where
 
 instance : DecidableEq CNat := by
   intro a b
-  by_cases h : toNat a = toNat b
+  by_cases h : ToNat.toNat a = ToNat.toNat b
   · right
     ext t
     -- This needs more work to prove properly
@@ -172,14 +170,14 @@ theorem toFun_eq_const_plus (t : CNat) : ∀ m : Nat, t.toFun m = t.toFun 0 + m 
   simpa using this
 
 /-- `toNat` turns multiplication into multiplication. -/
-private theorem toNat_mulAux (a : CNat) (k : Nat) : toNat (Cayley.mulAux a k) = toNat a * k := by
+private theorem toNat_mulNat (a : CNat) (k : Nat) : toNat (Cayley.mulNat a k) = toNat a * k := by
   induction k with
-  | zero => simp [Cayley.mulAux, toNat, zero]
+  | zero => simp [Cayley.mulNat, toNat, zero]
   | succ k ih => sorry
 
 @[simp] theorem toNat_mul (a b : CNat) : toNat (mul a b) = toNat a * toNat b := by
   dsimp [mul]
-  exact toNat_mulAux a (toNat b)
+  exact toNat_mulNat a (toNat b)
 
 /-- `ofNat` respects addition. -/
 @[simp] theorem ofNat_add (n m : Nat) : ofNat (n + m) = add (ofNat n) (ofNat m) := by

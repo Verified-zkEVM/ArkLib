@@ -1,4 +1,5 @@
 import Mathlib
+import ArkLib.Data.Classes.ToNat
 
 /-!
 # Alternate representation of `Nat` with definitional associativity
@@ -64,32 +65,14 @@ namespace AssocNat
 @[inline] def ofNat' (k : Nat) : AssocNat :=
   ⟨fun m => k + m, fun m => Nat.add_assoc k m 1⟩
 
--- n.succ + m = (n + m).succ
-
--- example {m n : AssocNat} : add (n.succ) m = (add n m).succ := by
---   dsimp [succ, add, one]
---   unfold Function.comp
---   dsimp
-
 /-- Evaluate an `AssocNat` at `0` to recover a `Nat`. -/
 @[inline] def toNat (t : AssocNat) : Nat := t 0
 
-/-- Predecessor of `Nat` with result in `AssocNat`. -/
-@[inline] def predNat : Nat → AssocNat := ofNat ∘ Nat.pred
-
-example {n : ℕ} : succ (ofNat' n) = ofNat' (n + 1) := by
-  unfold succ ofNat' one add Function.comp
-  dsimp; sorry
-
-example {m n : ℕ} : add (ofNat m) (ofNat n) = ofNat (m + n) := by
-  unfold add ofNat Function.comp
-  dsimp
-  sorry
-
-example {m n : ℕ} : add (ofNat' m) (ofNat' n) = ofNat' (m + n) := by
-  unfold add ofNat' Function.comp
-  dsimp
-  sorry
+/-- Predecessor of `AssocNat`. -/
+@[inline] def pred : AssocNat → AssocNat :=
+  fun a => match a.toNat with
+  | 0 => zero
+  | Nat.succ k => ofNat k
 
 /-- Truncated subtraction on `AssocNat`, implemented by recursion on the **second** argument.
     This mirrors the definition of `Nat.sub`, so we get the same definitional equalities:
@@ -100,8 +83,8 @@ example {m n : ℕ} : add (ofNat' m) (ofNat' n) = ofNat' (m + n) := by
     Internally we recurse on `toNat b`, updating the running constant.  The resulting
     endomap is always of the form `λ m, (c - k) + m`, so it is successor‐preserving. -/
 def subNat (c : AssocNat) : Nat → AssocNat
-| 0            => c
-| Nat.succ k   => subNat c k
+| 0            => c -- c - 0 = c
+| Nat.succ k   => pred (subNat c k) -- c - (k + 1) = (c - k).pred?
 
 /-- Truncated subtraction on `AssocNat`, defined as `subAux` on the `toNat` of the arguments. -/
 def sub (a b : AssocNat) : AssocNat :=
@@ -136,6 +119,9 @@ instance : Sub AssocNat where
 
 instance : Mul AssocNat where
   mul := mul
+
+instance : ToNat AssocNat where
+  toNat := toNat
 
 /-- `a + 0 = a` holds definitionally. -/
 @[simp] theorem add_zero {a : AssocNat} : a + 0 = a := rfl
