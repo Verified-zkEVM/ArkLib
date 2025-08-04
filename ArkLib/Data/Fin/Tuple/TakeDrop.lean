@@ -11,7 +11,7 @@ import Mathlib.Data.List.DropRight
 # Lemmas for Take and Drop for `Fin` tuples
 
 This file contains some properties of `Fin.{r}take` and `Fin.{r}drop`, which are already defined in
-`ArkLib.Data.Fin.Vec.Defs` (except `Fin.take` which is already in mathlib).
+`ArkLib.Data.Fin.Tuple.Defs` (except `Fin.take` which is already in mathlib).
 -/
 
 universe u v
