@@ -10,7 +10,7 @@ import ArkLib.Data.Classes.HasPred
 import ArkLib.Data.Classes.ToNat
 
 /-!
-# General Cayley Transformation Framework
+# The Cayley Tower over the Natural Numbers
 
 This file implements a general framework for the Cayley transformation that generalizes
 the `AssocNat` construction. The transformation takes a type `T` with a successor operation
@@ -96,7 +96,7 @@ instance [Zero T] [ToNat T] : ToNat (Cayley T) where
 /-- Multiply a `Cayley T` element by a `Nat`, via recursion on the second argument. -/
 def mulNat [Zero T] (a : Cayley T) : Nat → Cayley T
   | 0        => zero
-  | .succ k  => add a (mulNat a k)
+  | .succ k  => add (mulNat a k) a
 
 /-- Multiplication on `Cayley T`, defined by iterating addition.
 Requires `T` to have zero and a `ToNat` instance. -/
@@ -272,13 +272,129 @@ end Cayley
 
 /-- The iterations of the Cayley construction, which inductively builds the `i`-th iterated Cayley
   encoding of `Nat` along with the successor operation for the `i`-th level. -/
-def CayleyCons (n : ℕ) : (T : Type) × (HasSucc T) := match n with
+@[reducible] def CayleyTower (n : ℕ) : (T : Type) × (HasSucc T) := match n with
 | 0 => ⟨Nat, HasSucc.instNat⟩
-| .succ n => ⟨@Cayley (CayleyCons n).1 (CayleyCons n).2,
-  @Cayley.instHasSucc (CayleyCons n).1 (CayleyCons n).2⟩
+| .succ n => ⟨@Cayley (CayleyTower n).1 (CayleyTower n).2,
+  @Cayley.instHasSucc (CayleyTower n).1 (CayleyTower n).2⟩
 
 /-- The `i`-th iterated Cayley encoding of `Nat`. -/
-def CayleyNat (n : ℕ) : Type := (CayleyCons n).1
+abbrev CNat (n : ℕ) : Type := (CayleyTower n).1
+
+namespace CNat
 
 /-- The `HasSucc` instance for the `i`-th iterated Cayley encoding of `Nat`. -/
-instance {n : ℕ} : HasSucc (CayleyNat n) := (CayleyCons n).2
+instance instHasSucc {n : ℕ} : HasSucc (CNat n) := (CayleyTower n).2
+
+instance instZero {n : ℕ} : Zero (CNat n) := match n with
+  | 0 => by unfold CNat CayleyTower; infer_instance
+  | .succ n => by unfold CNat CayleyTower; infer_instance
+
+instance instToNat {n : ℕ} : ToNat (CNat n) := match n with
+  | 0 => by unfold CNat CayleyTower; infer_instance
+  | .succ n => @Cayley.instToNatOfZero (CNat n) instHasSucc instZero instToNat
+
+instance instOfNat {n : ℕ} : OfNat (CNat n) n := match n with
+  | 0 => by unfold CNat CayleyTower; infer_instance
+  | .succ n => by unfold CNat CayleyTower; infer_instance
+
+instance instOne {n : ℕ} : One (CNat n) := match n with
+  | 0 => by unfold CNat CayleyTower; infer_instance
+  | .succ n => by unfold CNat CayleyTower; infer_instance
+
+instance instAdd {n : ℕ} : Add (CNat n) := match n with
+  | 0 => by unfold CNat CayleyTower; infer_instance
+  | .succ n => by unfold CNat CayleyTower; infer_instance
+
+instance instHasPred {n : ℕ} : HasPred (CNat n) := match n with
+  | 0 => by unfold CNat CayleyTower; infer_instance
+  | .succ n => by unfold CNat CayleyTower; infer_instance
+
+instance instSub {n : ℕ} : Sub (CNat n) := match n with
+  | 0 => by unfold CNat CayleyTower; infer_instance
+  | .succ n => by unfold CNat CayleyTower; infer_instance
+
+instance instMul {n : ℕ} : Mul (CNat n) := match n with
+  | 0 => by unfold CNat CayleyTower; infer_instance
+  | .succ n => by unfold CNat CayleyTower; infer_instance
+
+instance instNatPow {n : ℕ} : NatPow (CNat n) := match n with
+  | 0 => by unfold CNat CayleyTower; infer_instance
+  | .succ n => by unfold CNat CayleyTower; infer_instance
+
+instance instPow {n : ℕ} : Pow (CNat n) Nat := match n with
+  | 0 => by unfold CNat CayleyTower; infer_instance
+  | .succ n => by unfold CNat CayleyTower; infer_instance
+
+theorem add_zero {n : ℕ} (a : CNat (n + 1)) : a + 0 = a := rfl
+
+theorem zero_add {n : ℕ} (a : CNat (n + 1)) : 0 + a = a := rfl
+
+theorem add_assoc {n : ℕ} (a b c : CNat (n + 1)) : (a + b) + c = a + (b + c) := rfl
+
+theorem mul_zero {a : CNat 50} : a * 0 = 0 := rfl
+
+theorem mul_one {a : CNat 50} : a * 1 = a := rfl
+
+theorem mul_two_eq_add {a : CNat 50} : a * 2 = a + a := rfl
+
+theorem pow_zero {a : CNat 50} : a ^ 0 = 1 := rfl
+
+theorem pow_one {a : CNat 50} : a ^ 1 = a := rfl
+
+theorem pow_two_eq_mul {a : CNat 2} : a ^ 2 = a * a := rfl
+
+theorem pow_three_eq_mul_sq {a : CNat 1} : a ^ 3 = a * (a * a) := rfl
+
+theorem mul_distrib_add {a b : CNat 1} : a * (b + 1) = a * b + a := by
+  dsimp [CNat] at a b
+  change Cayley.mul a (Cayley.add b Cayley.one) =
+    Cayley.add (Cayley.mul a b) (Cayley.mul a Cayley.one)
+  dsimp [Cayley.mul, Cayley.add, Cayley.mulNat, ToNat.toNat, Cayley.one, succ']
+  unfold Function.comp Cayley.mulNat Cayley.toT Cayley.toFun
+  dsimp [Cayley.add, Cayley.mulNat, Cayley.zero]
+  sorry
+
+-- theorem mul_assoc_self {a : CNat 2} : (a * a) * a = a * (a * a) := by
+--   change Cayley.mul (Cayley.mul a a) a = Cayley.mul a (Cayley.mul a a)
+--   dsimp [Cayley.mul, Cayley.mulNat, ToNat.toNat, Cayley.toT]
+--   unfold Cayley.mulNat Cayley.toFun Cayley.instHasSucc Cayley.succ Cayley.add Cayley.one Cayley.toFun Cayley.instZero
+--   dsimp
+
+example {a : Nat} : a ^ 2 = 1 * a * a:= rfl
+
+-- theorem pow_add_self {a : CNat 2} : a ^ 2 * a = a ^ 3 := rfl
+-- theorem mulNat_distrib_add_one {a : CNat 1} {b _ : Nat} :
+--     a.mulNat (b ^ 2) = a.mulNat b + a.mulNat b := by
+--   have : b * 2 = (0 + b) + b := rfl
+
+-- theorem mul_distrib_add_one {a b : CNat 2} : a * (b + 1) = a * b + a := by
+--   dsimp [CNat] at a b
+--   change Cayley.mul a (Cayley.add b 1) = Cayley.add (Cayley.mul a b) (Cayley.mul a 1)
+--   dsimp [Cayley.mul, Cayley.add, Cayley.mulNat, ToNat.toNat]
+--   unfold Function.comp Cayley.mulNat Cayley.toT Cayley.toFun Cayley.instOfNat Cayley.ofNat
+--     succ' Cayley.instHasSucc Cayley.succ Cayley.add Cayley.one Cayley.toFun Cayley.instZero
+--   simp
+--   unfold succ' HasSucc.instNat Function.comp Cayley.zero
+--   conv =>
+--     enter [1]
+--     dsimp [Zero.toOfNat0, Cayley.instZero, OfNat.ofNat, Zero.zero]
+--   sorry
+
+-- theorem mul_distrib_add {a b c : CNat 2} : a * (b + c) = a * b + a * c := by
+--   dsimp [CNat] at a b c
+--   change Cayley.mul a (Cayley.add b c) = Cayley.add (Cayley.mul a b) (Cayley.mul a c)
+--   dsimp [Cayley.mul, Cayley.add, Cayley.mulNat, ToNat.toNat]
+--   unfold Function.comp Cayley.mulNat Cayley.toT
+--   dsimp
+
+-- theorem mul_assoc {a b c : CNat 2} : (a * b) * c = a * (b * c) := rfl
+
+-- theorem mul_zero {n : ℕ} (a : CNat (n + 1)) : a * 0 = 0 := by rfl
+
+-- instance instDiv {n : ℕ} : Div (CNat n) := match n with
+--   | 0 => by unfold CNat CayleyTower; infer_instance
+--   | .succ n => by unfold CNat CayleyTower; infer_instance
+
+end CNat
+
+-- Nat.join?

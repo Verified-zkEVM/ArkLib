@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import Mathlib.Logic.Function.Defs
+import ArkLib.Data.Classes.HasSucc
 
 universe u
 
@@ -31,32 +32,59 @@ instance {α : Type u} [ToNat α] : CoeHead α Nat where
 
 -- Lawful ToNat classes
 
-/-- A lawful `ToNat` instance where `toNat` is injective.
-This ensures that different values in the original type map to different natural numbers. -/
-class LawfulToNat (α : Type u) [ToNat α] : Prop where
-  /-- The `toNat` function is injective. -/
-  toNat_injective : Function.Injective (@ToNat.toNat α _)
+/-- A `ToNat` instance on a type `α` having zero and successor is **lawful** if `toNat` maps zero to
+  zero and commutes with successor. -/
+class LawfulToNat (α : Type u) [ToNat α] [Zero α] [HasSucc α] : Prop where
+  toNat_zero : ToNat.toNat (0 : α) = 0
+  toNat_succ (n : α) : ToNat.toNat (succ' n) = ToNat.toNat n + 1
 
 -- Export the injectivity property for easier access
-export LawfulToNat (toNat_injective)
+export LawfulToNat (toNat_zero toNat_succ)
 
 -- Basic lawful instances
 
 instance : LawfulToNat Nat where
-  toNat_injective := Function.injective_id
+  toNat_zero := rfl
+  toNat_succ := fun _ => rfl
 
 -- Useful lemmas
 
 namespace LawfulToNat
 
-variable {α : Type u} [ToNat α]
+variable {α : Type u} [ToNat α] [Zero α] [HasSucc α] [LawfulToNat α]
 
-/-- If two values have the same `toNat`, they are equal. -/
-theorem toNat_eq_iff [LawfulToNat α] (a b : α) : ToNat.toNat a = ToNat.toNat b ↔ a = b :=
-  ⟨@toNat_injective α _ _ a b, fun h => h ▸ rfl⟩
+-- toNat is injective
 
-/-- If `toNat` values are different, the original values are different. -/
-theorem ne_of_toNat_ne (a b : α) (h : ToNat.toNat a ≠ ToNat.toNat b) : a ≠ b :=
-  fun eq => h (eq ▸ rfl)
+-- theorem toNat_injective : Function.Injective (@ToNat.toNat α _ _) := fun a b h => by
+--   induction a using Nat.recOn with
+--   | zero =>
+--     simp [toNat_zero] at h
+--     simp [h]
+--   | succ n ih =>
+--     simp [toNat_succ] at h
+--     simp [h, ih]
+
+-- /-- If two values have the same `toNat`, they are equal. -/
+-- theorem toNat_eq_iff [LawfulToNat α] (a b : α) : ToNat.toNat a = ToNat.toNat b ↔ a = b :=
+--   ⟨fun h => by
+--     induction a using Nat.recOn with
+--     | zero =>
+--       simp [toNat_zero] at h
+--       simp [h]
+--     | succ n ih =>
+--       simp [toNat_succ] at h
+--       simp [h, ih]⟩
+--   fun h => by
+--     induction a using Nat.recOn with
+--     | zero =>
+--       simp [toNat_zero]
+--       simp [h]
+--     | succ n ih =>
+--       simp [toNat_succ] at h
+--       simp [h, ih]⟩
+
+-- /-- If `toNat` values are different, the original values are different. -/
+-- theorem ne_of_toNat_ne (a b : α) (h : ToNat.toNat a ≠ ToNat.toNat b) : a ≠ b :=
+--   fun eq => h (eq ▸ rfl)
 
 end LawfulToNat
