@@ -207,10 +207,10 @@ namespace ChurchBool
 variable {α : Type}
 
 /-- Church true: select first argument -/
-def churchTrue : ChurchBool α := fun x y => x
+def churchTrue : ChurchBool α := fun x _ => x
 
 /-- Church false: select second argument -/
-def churchFalse : ChurchBool α := fun x y => y
+def churchFalse : ChurchBool α := fun _ y => y
 
 /-- Church and: if p then q else false -/
 def churchAnd (p q : ChurchBool α) : ChurchBool α :=

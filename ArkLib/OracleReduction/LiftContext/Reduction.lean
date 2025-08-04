@@ -224,16 +224,6 @@ theorem liftContext_processRound
   congr 1; funext
   split <;> simp
 
-/-- Lemma needed for the proof of `liftContext_runToRound` -/
-private lemma bind_map_processRound_pure {i : Fin n}
-    (P : Prover oSpec InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut pSpec)
-    (comp : OracleComp (oSpec ++ₒ [pSpec.Challenge]ₒ)
-        (pSpec.Transcript i.castSucc × P.PrvState i.castSucc))
-    {α : Type} (f : pSpec.Transcript i.succ × P.PrvState i.succ → α) :
-      (do let result ← comp; f <$> P.processRound i (pure result))
-      = f <$> P.processRound i comp := by
-  simp [processRound]
-
 theorem liftContext_runToRound
     {lens : Context.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                         OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
@@ -245,9 +235,13 @@ theorem liftContext_runToRound
           (P.runToRound i).uncurry (lens.proj (outerStmtIn, outerWitIn))
         return ⟨transcript, ⟨prvState, outerStmtIn, outerWitIn⟩⟩ := by
   unfold runToRound Function.uncurry
+  dsimp
   induction i using Fin.induction with
   | zero => simp [liftContext]
-  | succ i ih => simp [liftContext_processRound, ih, bind_map_processRound_pure]
+  | succ i ih =>
+    simp only [Fin.val_succ, Fin.induction_succ, ih, Fin.coe_castSucc, bind_pure_comp,
+      liftContext_processRound, ChallengeIdx, Transcript.def_eq, bind_map_left, Prod.mk.eta]
+    simp [processRound]
 
 -- Requires more lemmas about `simulateQ` for logging oracles
 theorem liftContext_runWithLogToRound

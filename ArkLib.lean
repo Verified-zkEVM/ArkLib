@@ -6,6 +6,9 @@ import ArkLib.CommitmentScheme.MerkleTree
 import ArkLib.CommitmentScheme.SimpleRO
 import ArkLib.CommitmentScheme.Tensor
 import ArkLib.CommitmentScheme.Trivial
+import ArkLib.Data.CNat.AssocNat
+import ArkLib.Data.CNat.Church
+import ArkLib.Data.CNat.Defs
 import ArkLib.Data.Classes.DCast
 import ArkLib.Data.Classes.FunEquiv
 import ArkLib.Data.Classes.HDAppend
@@ -14,13 +17,9 @@ import ArkLib.Data.Classes.HasSize
 import ArkLib.Data.Classes.HasSucc
 import ArkLib.Data.Classes.Initialize
 import ArkLib.Data.Classes.Serde
+import ArkLib.Data.Classes.Slice
+import ArkLib.Data.Classes.ToNat
 import ArkLib.Data.Classes.Zeroize
-import ArkLib.Data.CNat.Defs
-import ArkLib.Data.CNat.LevelOne
-import ArkLib.Data.CNat.LevelTwo
-import ArkLib.Data.CFin.Defs
-import ArkLib.Data.CFin.LevelOne.Basic
-import ArkLib.Data.CFin.LevelTwo.Basic
 import ArkLib.Data.CodingTheory.Basic
 import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
 import ArkLib.Data.CodingTheory.BerlekampWelch.Condition

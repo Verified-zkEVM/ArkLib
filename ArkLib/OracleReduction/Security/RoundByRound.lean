@@ -557,7 +557,8 @@ lemma Verifier.id_rbrKnowledgeSoundness {rel : Set (Statement × Witness)} :
     (Verifier.id : Verifier oSpec Statement _ _).rbrKnowledgeSoundness
       init impl rel rel 0 := by
   refine ⟨_, _, Verifier.KnowledgeStateFunction.id init impl, ?_⟩
-  simp [Verifier.id]
+  simp only [Verifier.id, KnowledgeStateFunction.id, Extractor.RoundByRound.id]
+  simp
 
 /-- The identity / trivial oracle verifier is perfectly round-by-round knowledge sound. -/
 @[simp]

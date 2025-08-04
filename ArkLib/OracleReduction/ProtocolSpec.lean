@@ -496,10 +496,10 @@ end OracleInterfaces
 /-- Turn each verifier's challenge into an oracle, where querying a unit type gives back the
     challenge.
 
-  We keep this as a definition and not an instance, since it's not always the default (especially
-  for state-restoration and Fiat-Shamir). -/
+  This is the default instance for the challenge oracle interface. It may be overridden by
+  `challengeOracleInterface{SR/FS}` for state-restoration and/or Fiat-Shamir. -/
 @[reducible, inline, specialize]
-def challengeOracleInterface {pSpec : ProtocolSpec n} :
+instance challengeOracleInterface {pSpec : ProtocolSpec n} :
     ∀ i, OracleInterface (pSpec.Challenge i) := fun i =>
   { Query := Unit
     Response := pSpec.Challenge i
@@ -512,7 +512,7 @@ def challengeOracleInterface {pSpec : ProtocolSpec n} :
   `challengeOracleInterface`, which accepts trivial input. In contrast, `getChallenge{SR/FS}`
   requires an input statement and prior messages up to that round. -/
 @[reducible, inline, specialize]
-def getChallengeUnit (pSpec : ProtocolSpec n) (i : pSpec.ChallengeIdx) :
+def getChallenge (pSpec : ProtocolSpec n) (i : pSpec.ChallengeIdx) :
     OracleComp ([pSpec.Challenge]ₒ'challengeOracleInterface) (pSpec.Challenge i) :=
   (query i () : OracleQuery ([pSpec.Challenge]ₒ'challengeOracleInterface) (pSpec.Challenge i))
 

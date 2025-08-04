@@ -202,6 +202,17 @@ theorem cast_eq_dcast₂ {T : FullTranscript pSpec₁} :
 
 end FullTranscript
 
+section Instances
+
+theorem challengeOracleInterface_cast {h : n₁ = n₂} {hSpec : pSpec₁.cast h = pSpec₂}
+    {i : pSpec₁.ChallengeIdx} :
+    pSpec₁.challengeOracleInterface i =
+      dcast (by simp) (pSpec₂.challengeOracleInterface (i.cast hn hSpec)) := by
+  simp [challengeOracleInterface]
+  ext <;> sorry
+
+end Instances
+
 end ProtocolSpec
 
 variable {ι : Type} {oSpec : OracleSpec ι}
@@ -395,14 +406,11 @@ section Execution
 
 -- TODO: show that the execution of everything is the same, modulo casting of transcripts
 variable {pSpec₁ : ProtocolSpec n₁} {pSpec₂ : ProtocolSpec n₂} (hSpec : pSpec₁.cast hn = pSpec₂)
-  [OChal₁ : ∀ i, OracleInterface (pSpec₁.Challenge i)]
-  [OChal₂ : ∀ i, OracleInterface (pSpec₂.Challenge i)]
-  (hOChal : ∀ i, OChal₁ i = dcast (by simp) (OChal₂ (i.cast hn hSpec)))
 
 namespace Prover
 
--- TODO: need to cast [pSpec₁.Challenge]ₒ to [pSpec₂.Challenge]ₒ
--- Will not be automatic... require an extra hypothesis
+-- TODO: need to cast [pSpec₁.Challenge]ₒ to [pSpec₂.Challenge]ₒ, where they have the default
+-- instance `challengeOracleInterface`
 
 theorem cast_processRound (j : Fin n₁)
     (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec₁)

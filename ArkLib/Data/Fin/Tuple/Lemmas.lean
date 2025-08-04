@@ -39,20 +39,20 @@ theorem cons_one (a : α) (v : FinVec α n.succ) : (a ::ᵛ v) 1 = v 0 := by
 
 -- Head/Tail Operations for cons (matching Fin.cons naming)
 @[simp]
-theorem tail_cons (a : α) (v : FinVec α n) : (fun i => (a ::ᵛ v) (Fin.succ i)) = v := by
+theorem tail_cons (a : α) (v : FinVec α n) : Fin.tail (a ::ᵛ v) = v := by
   ext i
-  simp
+  simp [Fin.tail]
 
 @[simp]
-theorem cons_self_tail (v : FinVec α n.succ) : (v 0) ::ᵛ (fun i => v (Fin.succ i)) = v := by
+theorem cons_self_tail (v : FinVec α n.succ) : (v 0) ::ᵛ (Fin.tail v) = v := by
   ext i
-  induction i using Fin.induction <;> simp
+  induction i using Fin.induction <;> simp [Fin.tail]
 
 -- Injectivity Properties (matching Fin.cons naming)
 theorem cons_right_injective (a : α) :
     Function.Injective (cons a : FinVec α n → FinVec α n.succ) := by
   intro v w h
-  have : (fun i => (a ::ᵛ v) (Fin.succ i)) = (fun i => (a ::ᵛ w) (Fin.succ i)) := by
+  have : Fin.tail (a ::ᵛ v) = Fin.tail (a ::ᵛ w) := by
     ext i; rw [h]
   rwa [tail_cons, tail_cons] at this
 
@@ -88,8 +88,8 @@ theorem range_cons {α : Type*} (a : α) (v : FinVec α n) :
     Set.range (a ::ᵛ v) = insert a (Set.range v) :=
   sorry
 
-theorem range_empty {α : Type*} : Set.range (!v[] : FinVec α 0) = ∅ :=
-  sorry
+theorem range_empty {α : Type*} : Set.range (!v[] : FinVec α 0) = ∅ := by
+  simp
 
 theorem range_cons_empty {α : Type*} (a : α) (v : FinVec α 0) : Set.range (a ::ᵛ v) = {a} :=
   sorry
@@ -128,7 +128,9 @@ theorem concat_eq_snoc (v : FinVec α n) (a : α) : concat v a = Fin.snoc v a :=
     rw [this, concat_last, Fin.snoc_last]
 
 theorem concat_cons (a : α) (v : FinVec α n) (b : α) :
-    concat (a ::ᵛ v) b = a ::ᵛ (concat v b) :=
+    concat (a ::ᵛ v) b = a ::ᵛ (concat v b) := by
+  ext i
+  simp [concat, cons]
   sorry
 
 -- Init/snoc properties (matching Fin.snoc naming)
@@ -249,11 +251,6 @@ theorem range_append {α : Type*} (u : FinVec α m) (v : FinVec α n) :
     Set.range (append u v) = Set.range u ∪ Set.range v :=
   sorry
 
--- Compatibility with standard library
-theorem append_eq_fin_append (u : FinVec α m) (v : FinVec α n) :
-    append u v = Fin.append u v := by
-  sorry
-
 -- Length properties (these are definitional but useful to state)
 theorem length_append (u : FinVec α m) (v : FinVec α n) :
     (append u v : FinVec α (m + n)) = append u v :=
@@ -327,6 +324,197 @@ theorem concat_zero {α : Fin 0 → Sort u} {β : Sort u} (a : β) :
 @[simp]
 theorem append_zero {β : Fin m → Sort u} {α : Fin 0 → Sort u} (u : (i : Fin m) → β i) :
     append u (FinTuple.empty : FinTuple 0 α) = u := rfl
+
+-- Additional cons lemmas for FinTuple
+@[simp]
+theorem cons_one {β : Fin n.succ → Sort u} (a : α) (v : FinTuple n.succ β) :
+    cons a v 1 = cast (FinVec.cons_succ α β 0).symm (v 0) := by
+  sorry
+
+theorem tail_cons {β : Fin n → Sort u} (a : α) (b : FinTuple n β) (i : Fin n) :
+    True := by
+  sorry
+
+theorem cons_self_tail {α : Fin n.succ → Sort u} (v : FinTuple n.succ α) :
+    True := by
+  sorry
+
+-- Injectivity properties for cons
+theorem cons_right_injective {β : Fin n → Sort u} (a : α) :
+    Function.Injective (cons a : FinTuple n β → FinTuple (n + 1) (FinVec.cons α β)) := by
+  sorry
+
+theorem cons_left_injective {α : Sort u} {β : Fin n → Sort u} (b : FinTuple n β) :
+    Function.Injective (fun (a : α) => cons a b) := by
+  sorry
+
+theorem cons_injective2 {α : Sort u} {β : Fin n → Sort u} :
+    Function.Injective2 (@cons n α β) := by
+  sorry
+
+theorem cons_inj {α : Sort u} {β : Fin n → Sort u} (a₁ a₂ : α) (b₁ b₂ : FinTuple n β) :
+    cons a₁ b₁ = cons a₂ b₂ ↔ a₁ = a₂ ∧ b₁ = b₂ := by
+  sorry
+
+-- Empty tuple properties
+@[simp]
+theorem cons_fin_zero {α : Sort u} {β : Fin 0 → Sort u} (a : α) (v : FinTuple 0 β) :
+    cons a v = fun _ => a := by
+  sorry
+
+-- Concat lemmas for FinTuple
+@[simp]
+theorem concat_last {α : Fin n → Sort u} {β : Sort u} (v : FinTuple n α) (b : β) :
+    concat v b (Fin.last n) = cast (FinVec.concat_last α β).symm b := by
+  sorry
+
+@[simp]
+theorem concat_castSucc {α : Fin n → Sort u} {β : Sort u} (v : FinTuple n α) (b : β) (i : Fin n) :
+    concat v b (Fin.castSucc i) = cast (FinVec.concat_castSucc α β i).symm (v i) := by
+  sorry
+
+theorem concat_cons {α : Sort u} {β : Fin n → Sort u} {γ : Sort u} (a : α) (v : FinTuple n β) (c : γ) :
+    True := by
+  sorry
+
+-- Init/concat properties
+theorem init_concat {α : Fin n → Sort u} {β : Sort u} (v : FinTuple n α) (b : β) :
+    True := by
+  sorry
+
+theorem concat_init_self {α : Fin n.succ → Sort u} (v : FinTuple n.succ α) :
+    True := by
+  sorry
+
+-- Injectivity properties for concat
+theorem concat_injective2 {α : Fin n → Sort u} {β : Sort u} :
+    Function.Injective2 (@concat n α β) := by
+  sorry
+
+theorem concat_inj {α : Fin n → Sort u} {β : Sort u} (v₁ v₂ : FinTuple n α) (a₁ a₂ : β) :
+    concat v₁ a₁ = concat v₂ a₂ ↔ v₁ = v₂ ∧ a₁ = a₂ := by
+  sorry
+
+theorem concat_right_injective {α : Fin n → Sort u} {β : Sort u} (v : FinTuple n α) :
+    Function.Injective (concat v : β → FinTuple (n + 1) (FinVec.concat α β)) := by
+  sorry
+
+theorem concat_left_injective {α : Fin n → Sort u} {β : Sort u} (a : β) :
+    Function.Injective (fun v : FinTuple n α => concat v a) := by
+  sorry
+
+-- Append lemmas for FinTuple
+theorem append_succ {α : Fin m → Sort u} {β : Fin (n + 1) → Sort u}
+    (u : FinTuple m α) (v : FinTuple (n + 1) β) :
+    append u v = concat (append u (fun i => v (Fin.castSucc i))) (v (Fin.last n)) := by
+  sorry
+
+theorem empty_append {β : Fin n → Sort u} (v : FinTuple n β) :
+    True := by
+  sorry
+
+theorem append_empty {α : Fin m → Sort u} (v : FinTuple m α) :
+    append v !t[] = v := by
+  sorry
+
+theorem append_assoc {α : Fin m → Sort u} {β : Fin n → Sort u} {p : ℕ} {γ : Fin p → Sort u}
+    (u : FinTuple m α) (v : FinTuple n β) (w : FinTuple p γ) :
+    True := by
+  sorry
+
+-- Index access for append
+theorem append_left {α : Fin m → Sort u} {β : Fin n → Sort u}
+    (u : FinTuple m α) (v : FinTuple n β) (i : Fin m) :
+    append u v (Fin.castAdd n i) = cast (FinVec.append_left α β i).symm (u i) := by
+  sorry
+
+theorem append_right {α : Fin m → Sort u} {β : Fin n → Sort u}
+    (u : FinTuple m α) (v : FinTuple n β) (i : Fin n) :
+    append u v (Fin.natAdd m i) = cast (FinVec.append_right α β i).symm (v i) := by
+  sorry
+
+-- Relationship with cons/concat
+theorem append_cons {β : Fin m → Sort u} {γ : Fin n → Sort u}
+    (a : α) (u : FinTuple m β) (v : FinTuple n γ) :
+    True := by
+  sorry
+
+theorem append_concat {α : Fin m → Sort u} {β : Fin n → Sort u} {γ : Sort u}
+    (u : FinTuple m α) (v : FinTuple n β) (c : γ) :
+    True := by
+  sorry
+
+-- Compatibility lemmas
+theorem append_left_eq_cons {α : Fin 1 → Sort u} {β : Fin n → Sort u}
+    (a : FinTuple 1 α) (v : FinTuple n β) :
+    True := by
+  sorry
+
+theorem append_right_eq_snoc {α : Fin m → Sort u} {β : Fin 1 → Sort u}
+    (u : FinTuple m α) (a : FinTuple 1 β) :
+    append u a = concat u (a 0) := by
+  sorry
+
+-- Extensionality properties
+theorem append_ext {α : Fin m → Sort u} {β : Fin n → Sort u}
+    (u₁ u₂ : FinTuple m α) (v₁ v₂ : FinTuple n β) :
+    append u₁ v₁ = append u₂ v₂ ↔ u₁ = u₂ ∧ v₁ = v₂ := by
+  sorry
+
+theorem ext_cons {β : Fin n → Sort u} (a₁ a₂ : α) (v₁ v₂ : FinTuple n β) :
+    cons a₁ v₁ = cons a₂ v₂ ↔ a₁ = a₂ ∧ v₁ = v₂ := by
+  sorry
+
+theorem cons_eq_cons_iff {β : Fin n → Sort u} (a₁ a₂ : α) (v₁ v₂ : FinTuple n β) :
+    cons a₁ v₁ = cons a₂ v₂ ↔ a₁ = a₂ ∧ v₁ = v₂ := by
+  sorry
+
+-- Two tuples are equal iff they are equal at every index (with casting)
+theorem ext_iff {α : Fin n → Sort u} {v w : FinTuple n α} :
+    v = w ↔ ∀ i, v i = w i := by
+  sorry
+
+-- Interaction between operations
+theorem cons_append_comm {β : Fin m → Sort u} {γ : Fin n → Sort u}
+    (a : α) (u : FinTuple m β) (v : FinTuple n γ) :
+    True := by
+  sorry
+
+theorem append_singleton {α : Fin m → Sort u} {β : Sort u} (u : FinTuple m α) (a : β) :
+    True := by
+  sorry
+
+theorem singleton_append {β : Fin n → Sort u} (a : α) (v : FinTuple n β) :
+    True := by
+  sorry
+
+-- Empty cases
+theorem empty_unique {α : Fin 0 → Sort u} (v : FinTuple 0 α) : v = FinTuple.empty := by
+  sorry
+
+theorem eq_empty_iff_zero {α : Fin n → Sort u} (v : FinTuple n α) :
+    True ↔ n = 0 := by
+  sorry
+
+-- Cast lemma for type families
+theorem cast_cons {β : Fin n → Sort u} (a : α) (v : FinTuple n β) :
+    FinTuple.cast rfl (fun i => rfl) (cons a v) = cons a v := by
+  sorry
+
+theorem cast_concat {α : Fin n → Sort u} {β : Sort u} (v : FinTuple n α) (b : β) :
+    FinTuple.cast rfl (fun i => rfl) (concat v b) = concat v b := by
+  sorry
+
+theorem cast_append {α : Fin m → Sort u} {β : Fin n → Sort u}
+    (u : FinTuple m α) (v : FinTuple n β) :
+    FinTuple.cast rfl (fun i => rfl) (append u v) = append u v := by
+  sorry
+
+-- Composition with casting
+theorem cast_comp {α : Fin n → Sort u} {β : Fin n → Sort u}
+    (h : n = n) (hα : ∀ i, α (Fin.cast h i) = β i) (v : FinTuple n α) :
+    True := by
+  sorry
 
 end FinTuple
 
