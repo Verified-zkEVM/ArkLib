@@ -115,7 +115,7 @@ def cons {α : Sort u} {n : ℕ} (a : α) (v : FinVec α n) : FinVec α (n + 1) 
   match n with
   | 0 => fun _ => a
   | _ + 1 => fun i => match i with
-    | ⟨0, _⟩ => a
+    | 0 => a
     | ⟨k + 1, hk⟩ => v ⟨k, Nat.lt_of_succ_lt_succ hk⟩
 
 /-- `concat v a` concatenates an entry `a : α` to the _end_ of a vector `v : FinVec α n`
@@ -163,7 +163,7 @@ def cons {n : ℕ} {α : Sort u} {β : Fin n → Sort u} (a : α) (b : FinTuple 
   match n with
   | 0 => fun _ => a
   | _ + 1 => fun i => match i with
-    | ⟨0, _⟩ => a
+    | 0 => a
     | ⟨k + 1, hk⟩ => b ⟨k, Nat.succ_lt_succ_iff.mp hk⟩
 
 /-- `concat u a` concatenates an entry `a : β` to the _end_ of a dependent or heterogeneous

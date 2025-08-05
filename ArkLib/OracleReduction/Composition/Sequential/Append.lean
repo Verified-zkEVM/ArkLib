@@ -49,7 +49,8 @@ section Instances
 instance [h₁ : ∀ i, SelectableType (pSpec₁.Challenge i)]
     [h₂ : ∀ i, SelectableType (pSpec₂.Challenge i)] :
     ∀ i, SelectableType ((pSpec₁ ++ₚ pSpec₂).Challenge i) := fun ⟨⟨i, isLt⟩, h⟩ => by
-  dsimp [ProtocolSpec.append, Fin.append, Fin.addCases, Fin.castLT, Fin.subNat, Fin.cast] at h ⊢
+  dsimp [FinVec.append_eq_fin_append, Fin.append, Fin.addCases, Fin.castLT, Fin.subNat, Fin.cast]
+    at h ⊢
   by_cases h' : i < m <;> simp [h'] at h ⊢
   · exact h₁ ⟨⟨i, by omega⟩, h⟩
   · exact h₂ ⟨⟨i - m, by omega⟩, h⟩
@@ -59,8 +60,8 @@ instance [h₁ : ∀ i, SelectableType (pSpec₁.Challenge i)]
 instance [O₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
     [O₂ : ∀ i, OracleInterface (pSpec₂.Message i)] :
     ∀ i, OracleInterface ((pSpec₁ ++ₚ pSpec₂).Message i) := fun ⟨⟨i, isLt⟩, h⟩ => by
-  dsimp [ProtocolSpec.append, ProtocolSpec.dir, Fin.append, Fin.addCases,
-    Fin.castLT, Fin.subNat, Fin.cast] at h ⊢
+  dsimp [FinVec.append_eq_fin_append, Fin.append, Fin.addCases, Fin.castLT, Fin.subNat, Fin.cast]
+    at h ⊢
   by_cases h' : i < m <;> simp [h'] at h ⊢
   · exact O₁ ⟨⟨i, by omega⟩, h⟩
   · exact O₂ ⟨⟨i - m, by omega⟩, h⟩
@@ -72,11 +73,11 @@ instance instSubSpecOfProtocolSpecAppendChallenge :
   monadLift | query i t => match i with
     | Sum.inl j => by
       simpa [OracleSpec.append, OracleSpec.range, OracleInterface.toOracleSpec, ChallengeIdx.inl,
-        instChallengeOracleInterface] using
+        challengeOracleInterface] using
       query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) j.inl ()
     | Sum.inr j => by
       simpa [OracleSpec.append, OracleSpec.range, OracleInterface.toOracleSpec, ChallengeIdx.inr,
-        instChallengeOracleInterface] using
+        challengeOracleInterface] using
       query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) j.inr ()
   -- evalDist_toFun' := fun i q => by
   --   cases i with
@@ -84,9 +85,9 @@ instance instSubSpecOfProtocolSpecAppendChallenge :
   --     simp only [eq_mp_eq_cast, id_eq]
   --     have : [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.range j.inl =
   --       ([pSpec₁.Challenge]ₒ ++ₒ [pSpec₂.Challenge]ₒ).range (Sum.inl j) := by
-  --       simp [OracleSpec.append, ChallengeIdx.inl, instChallengeOracleInterface]
+  --       simp [OracleSpec.append, ChallengeIdx.inl, challengeOracleInterface]
   --     rw [evalDist_cast _ this, evalDist_query, evalDist_query]
-  --     simp [OracleSpec.append, ChallengeIdx.inl, instChallengeOracleInterface]
+  --     simp [OracleSpec.append, ChallengeIdx.inl, challengeOracleInterface]
   --     refine cast_eq_iff_heq.mpr ((PMF.heq_iff (by simp [this])).mpr ?_)
   --     intro x
   --     simp only [PMF.map_apply, PMF.uniformOfFintype_apply, Fin.append_left]
@@ -96,9 +97,9 @@ instance instSubSpecOfProtocolSpecAppendChallenge :
   --     simp only [eq_mp_eq_cast, id_eq]
   --     have : [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.range j.inr =
   --       ([pSpec₁.Challenge]ₒ ++ₒ [pSpec₂.Challenge]ₒ).range (Sum.inr j) := by
-  --       simp [OracleSpec.append, ChallengeIdx.inr, instChallengeOracleInterface]
+  --       simp [OracleSpec.append, ChallengeIdx.inr, challengeOracleInterface]
   --     rw [evalDist_cast _ this, evalDist_query, evalDist_query]
-  --     simp [OracleSpec.append, ChallengeIdx.inr, instChallengeOracleInterface]
+  --     simp [OracleSpec.append, ChallengeIdx.inr, challengeOracleInterface]
   --     refine cast_eq_iff_heq.mpr ((PMF.heq_iff (by simp [this])).mpr ?_)
   --     intro x
   --     simp only [PMF.map_apply, PMF.uniformOfFintype_apply, Fin.append_right]
@@ -141,7 +142,7 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     state of the second prover
   - if `i > m`, then it sends the message & updates the state as the second prover. -/
   sendMessage := fun ⟨i, hDir⟩ state => by
-    dsimp [ProtocolSpec.append, Fin.append, Fin.addCases, Fin.tail,
+    dsimp [FinVec.append_eq_fin_append, Fin.append, Fin.addCases, Fin.tail,
       Fin.cast, Fin.castLT, Fin.succ, Fin.castSucc] at hDir state ⊢
     by_cases hi : i < m
     · haveI : i < m + 1 := by omega
