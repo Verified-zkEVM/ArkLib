@@ -37,6 +37,12 @@ theorem cons_eq_fin_cons (a : α) (v : Fin n → α) : a ::ᵛ v = Fin.cons a v 
 theorem cons_one (a : α) (v : FinVec α n.succ) : (a ::ᵛ v) 1 = v 0 := by
   convert cons_succ a v 0
 
+@[simp]
+theorem cons_empty (a : α) : a ::ᵛ !v[] = !v[a] := rfl
+
+@[simp]
+theorem cons_of_one (a : α) {i : Fin 1} : !v[a] i = a := rfl
+
 -- Head/Tail Operations for cons (matching Fin.cons naming)
 @[simp]
 theorem tail_cons (a : α) (v : FinVec α n) : Fin.tail (a ::ᵛ v) = v := by

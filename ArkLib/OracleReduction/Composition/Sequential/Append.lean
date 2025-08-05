@@ -59,7 +59,7 @@ instance [h₁ : ∀ i, SelectableType (pSpec₁.Challenge i)]
 instance [O₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
     [O₂ : ∀ i, OracleInterface (pSpec₂.Message i)] :
     ∀ i, OracleInterface ((pSpec₁ ++ₚ pSpec₂).Message i) := fun ⟨⟨i, isLt⟩, h⟩ => by
-  dsimp [ProtocolSpec.append, ProtocolSpec.getDir, Fin.append, Fin.addCases,
+  dsimp [ProtocolSpec.append, ProtocolSpec.dir, Fin.append, Fin.addCases,
     Fin.castLT, Fin.subNat, Fin.cast] at h ⊢
   by_cases h' : i < m <;> simp [h'] at h ⊢
   · exact O₁ ⟨⟨i, by omega⟩, h⟩

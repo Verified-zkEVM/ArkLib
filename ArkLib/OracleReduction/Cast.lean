@@ -32,7 +32,7 @@ namespace ProtocolSpec
 
 One should use the type-class function `dcast` instead of this one. -/
 protected def cast (pSpec : ProtocolSpec n₁) : ProtocolSpec n₂ :=
-  pSpec ∘ (Fin.cast hn.symm)
+  ⟨pSpec.dir ∘ (Fin.cast hn.symm), pSpec.«Type» ∘ (Fin.cast hn.symm)⟩
 
 @[simp]
 theorem cast_id : ProtocolSpec.cast (Eq.refl n₁) = id := rfl
@@ -49,13 +49,22 @@ theorem cast_eq_dcast {h : n₁ = n₂} {pSpec : ProtocolSpec n₁} :
 variable {pSpec₁ : ProtocolSpec n₁} {pSpec₂ : ProtocolSpec n₂}
 
 @[simp]
-theorem cast_idx {hn} (hSpec : pSpec₁.cast hn = pSpec₂) {i : Fin n₁} :
-    pSpec₂ (Fin.cast hn i) = pSpec₁ i := by
+theorem cast_dir_idx {hn} (hSpec : pSpec₁.cast hn = pSpec₂) {i : Fin n₁} :
+    pSpec₂.dir (Fin.cast hn i) = pSpec₁.dir i := by
+  simp [← hSpec, ProtocolSpec.cast]
+
+theorem cast_Type_idx {hn} (hSpec : pSpec₁.cast hn = pSpec₂) {i : Fin n₁} :
+    pSpec₂.«Type» (Fin.cast hn i) = pSpec₁.«Type» i := by
   simp [← hSpec, ProtocolSpec.cast]
 
 @[simp]
-theorem cast_idx_symm {hn} (hSpec : pSpec₁.cast hn = pSpec₂) {i : Fin n₂} :
-    pSpec₁ (Fin.cast hn.symm i) = pSpec₂ i := funext_iff.mp hSpec i
+theorem cast_dir_idx_symm {hn} (hSpec : pSpec₁.cast hn = pSpec₂) {i : Fin n₂} :
+    pSpec₁.dir (Fin.cast hn.symm i) = pSpec₂.dir i := by
+  simp [← hSpec, ProtocolSpec.cast]
+
+theorem cast_Type_idx_symm {hn} (hSpec : pSpec₁.cast hn = pSpec₂) {i : Fin n₂} :
+    pSpec₁.«Type» (Fin.cast hn.symm i) = pSpec₂.«Type» i := by
+  simp [← hSpec, ProtocolSpec.cast]
 
 theorem cast_symm {hn} (hSpec : pSpec₁.cast hn = pSpec₂) : pSpec₂.cast hn.symm = pSpec₁ := by
   rw [cast_eq_dcast] at hSpec ⊢
@@ -93,14 +102,12 @@ variable {hn}
 
 @[simp]
 theorem cast_idx_symm {i : MessageIdx pSpec₂} :
-    pSpec₁.Message (i.cast hn.symm (cast_symm hSpec)) = pSpec₂.Message i := by
-  simp [MessageIdx.cast]
-  exact congrArg Prod.snd (ProtocolSpec.cast_idx_symm hSpec)
+    pSpec₁.Message (i.cast hn.symm (cast_symm hSpec)) = pSpec₂.Message i :=
+  cast_Type_idx_symm hSpec
 
 theorem cast_idx {i : MessageIdx pSpec₁} :
-    pSpec₂.Message (i.cast hn hSpec) = pSpec₁.Message i := by
-  simp [MessageIdx.cast]
-  exact congrArg Prod.snd <| (ProtocolSpec.cast_idx hSpec)
+    pSpec₂.Message (i.cast hn hSpec) = pSpec₁.Message i :=
+  cast_Type_idx hSpec
 
 instance [inst : ∀ i, OracleInterface (pSpec₁.Message i)] :
     ∀ i, OracleInterface ((pSpec₁.cast hn).Message i) :=
@@ -138,15 +145,13 @@ variable {hn}
 
 @[simp]
 theorem cast_idx {i : ChallengeIdx pSpec₁} :
-    pSpec₂.Challenge (i.cast hn hSpec) = pSpec₁.Challenge i := by
-  simp [ChallengeIdx.cast]
-  exact congrArg Prod.snd <| (ProtocolSpec.cast_idx hSpec)
+    pSpec₂.Challenge (i.cast hn hSpec) = pSpec₁.Challenge i :=
+  cast_Type_idx hSpec
 
 @[simp]
 theorem cast_idx_symm {i : ChallengeIdx pSpec₂} :
-    pSpec₁.Challenge (i.cast hn.symm (cast_symm hSpec)) = pSpec₂.Challenge i := by
-  simp [ChallengeIdx.cast]
-  exact congrArg Prod.snd (ProtocolSpec.cast_idx_symm hSpec)
+    pSpec₁.Challenge (i.cast hn.symm (cast_symm hSpec)) = pSpec₂.Challenge i :=
+  cast_Type_idx_symm hSpec
 
 end Challenge
 
@@ -308,7 +313,7 @@ open Function in
 TODO: need a cast of the oracle interfaces as well (i.e. the oracle interface instance is not
 necessarily unique for every type) -/
 protected def cast
-    (hOₘ : ∀ i, Oₘ₁ i = dcast (by simp; congr; exact cast_idx hSpec) (Oₘ₂ (i.cast hn hSpec)))
+    (hOₘ : ∀ i, Oₘ₁ i = dcast (Message.cast_idx hSpec) (Oₘ₂ (i.cast hn hSpec)))
     (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₁) :
     OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₂ where
   verify := fun stmt challenges =>
@@ -323,9 +328,9 @@ protected def cast
     rw [this]
     split
     next a b h' => simp [h']
-    next a b h' => simp [h', MessageIdx.cast]; congr; exact (cast_idx hSpec).symm
+    next a b h' => simp [h']; exact (Message.cast_idx hSpec).symm
 
-variable (hOₘ : ∀ i, Oₘ₁ i = dcast (by simp; congr; exact cast_idx hSpec) (Oₘ₂ (i.cast hn hSpec)))
+variable (hOₘ : ∀ i, Oₘ₁ i = dcast (Message.cast_idx hSpec) (Oₘ₂ (i.cast hn hSpec)))
 
 @[simp]
 theorem cast_id :
@@ -371,7 +376,7 @@ namespace OracleReduction
 
 variable [Oₘ₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
   [Oₘ₂ : ∀ i, OracleInterface (pSpec₂.Message i)]
-  (hOₘ : ∀ i, Oₘ₁ i = dcast (by simp; congr; exact cast_idx hSpec) (Oₘ₂ (i.cast hn hSpec)))
+  (hOₘ : ∀ i, Oₘ₁ i = dcast (Message.cast_idx hSpec) (Oₘ₂ (i.cast hn hSpec)))
 
 /-- Casting the oracle reduction across an equality of `ProtocolSpec`s, which casts the underlying
   prover and verifier. -/
@@ -508,7 +513,7 @@ section OracleProtocol
 
 variable [Oₘ₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
   [Oₘ₂ : ∀ i, OracleInterface (pSpec₂.Message i)]
-  (hOₘ : ∀ i, Oₘ₁ i = dcast (by simp; congr; exact cast_idx hSpec) (Oₘ₂ (i.cast hn hSpec)))
+  (hOₘ : ∀ i, Oₘ₁ i = dcast (Message.cast_idx hSpec) (Oₘ₂ (i.cast hn hSpec)))
   {relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)}
   {relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut)}
 

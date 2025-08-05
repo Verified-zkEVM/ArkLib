@@ -495,7 +495,7 @@ theorem Verifier.id_soundness {lang : Set StmtIn} :
 /-- The straightline extractor for the identity / trivial reduction, which just returns the input
   witness. -/
 @[reducible]
-def Extractor.Straightline.id : Extractor.Straightline oSpec StmtIn WitIn WitIn ![] :=
+def Extractor.Straightline.id : Extractor.Straightline oSpec StmtIn WitIn WitIn !p[] :=
   fun _ witOut _ _ _ => pure witOut
 
 /-- The identity / trivial verifier is perfectly knowledge sound. -/

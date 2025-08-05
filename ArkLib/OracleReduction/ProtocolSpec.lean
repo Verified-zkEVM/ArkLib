@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.Fin.Tuple.Notation
+import ArkLib.Data.Fin.Tuple.Lemmas
 import ArkLib.OracleReduction.Prelude
 import ArkLib.OracleReduction.OracleInterface
 import ArkLib.ToVCVio.Oracle
@@ -20,9 +20,18 @@ universe u v
 
 open OracleComp OracleSpec
 
-/-- Type signature for an interactive protocol, with `n` messages exchanged. -/
-@[reducible]
-def ProtocolSpec (n : ℕ) := FinVec (Direction × Type) n
+/-- A protocol specification for an interactive protocol with `n` steps consists of:
+- A vector of directions `dir` for each step, which is either `.P_to_V` (the prover sends a message
+  to the verifier) or `.V_to_P` (the verifier sends a challenge to the prover).
+- A vector of types `«Type»` for each step, which is the type of the message or challenge sent in
+  that step. -/
+@[ext]
+structure ProtocolSpec (n : ℕ) where
+  /-- The direction of each message in the protocol. -/
+  dir : FinVec Direction n
+  /-- The type of each message in the protocol. -/
+  «Type» : FinVec Type n
+deriving Inhabited
 
 variable {n : ℕ}
 
@@ -30,21 +39,21 @@ namespace ProtocolSpec
 
 section Defs
 
-@[simp]
-abbrev getDir (pSpec : ProtocolSpec n) (i : Fin n) := pSpec i |>.1
+/-- The empty protocol specification, with no messages or challenges, written as `!p[]`. -/
+@[reducible]
+def empty : ProtocolSpec 0 := ⟨!v[], !v[]⟩
 
-@[simp]
-abbrev getType (pSpec : ProtocolSpec n) (i : Fin n) := pSpec i |>.2
+@[inherit_doc] notation "!p[]" => empty
 
 /-- Subtype of `Fin n` for the indices corresponding to messages in a protocol specification -/
 @[reducible, simp]
 def MessageIdx (pSpec : ProtocolSpec n) :=
-  {i : Fin n // (pSpec i).1 = Direction.P_to_V}
+  {i : Fin n // pSpec.dir i = Direction.P_to_V}
 
 /-- Subtype of `Fin n` for the indices corresponding to challenges in a protocol specification -/
 @[reducible, simp]
 def ChallengeIdx (pSpec : ProtocolSpec n) :=
-  {i : Fin n // (pSpec i).1 = Direction.V_to_P}
+  {i : Fin n // pSpec.dir i = Direction.V_to_P}
 
 instance {pSpec : ProtocolSpec n} : CoeHead (MessageIdx pSpec) (Fin n) where
   coe := fun i => i.1
@@ -55,11 +64,11 @@ instance {pSpec : ProtocolSpec n} : CoeHead (ChallengeIdx pSpec) (Fin n) where
 
 This does not distinguish between messages received in full or as an oracle. -/
 @[reducible, inline, specialize, simp]
-def Message (pSpec : ProtocolSpec n) (i : MessageIdx pSpec) := (pSpec i.val).2
+def Message (pSpec : ProtocolSpec n) (i : MessageIdx pSpec) := pSpec.«Type» i.val
 
 /-- The type of the `i`-th challenge in a protocol specification -/
 @[reducible, inline, specialize, simp]
-def Challenge (pSpec : ProtocolSpec n) (i : ChallengeIdx pSpec) := (pSpec i.val).2
+def Challenge (pSpec : ProtocolSpec n) (i : ChallengeIdx pSpec) := pSpec.«Type» i.val
 
 /-- The type of all messages in a protocol specification. Uncurried version of `Message`. -/
 @[reducible, inline, specialize]
@@ -73,27 +82,29 @@ def Challenges (pSpec : ProtocolSpec n) : Type := ∀ i, pSpec.Challenge i
 
 Note that this is definitionally equal to `Transcript (Fin.last n) pSpec`. -/
 @[reducible, inline, specialize]
-def FullTranscript (pSpec : ProtocolSpec n) := FinTuple n (fun i => (pSpec i).2)
+def FullTranscript (pSpec : ProtocolSpec n) := FinTuple n (fun i => pSpec.«Type» i)
 
 section Restrict
 
 variable {n : ℕ}
 
 /-- Take the first `m ≤ n` rounds of a `ProtocolSpec n` -/
-abbrev take (m : Fin (n + 1)) (pSpec : ProtocolSpec n) : ProtocolSpec m := Fin.take m m.is_le pSpec
+abbrev take (m : ℕ) (h : m ≤ n) (pSpec : ProtocolSpec n) : ProtocolSpec m :=
+  {dir := Fin.take m h pSpec.dir, «Type» := Fin.take m h pSpec.«Type»}
 
 /-- Take the last `m ≤ n` rounds of a `ProtocolSpec n` -/
-abbrev rtake (m : Fin (n + 1)) (pSpec : ProtocolSpec n) := Fin.rtake m m.is_le pSpec
+abbrev rtake (m : ℕ) (h : m ≤ n) (pSpec : ProtocolSpec n) : ProtocolSpec m :=
+  {dir := Fin.rtake m h pSpec.dir, «Type» := Fin.rtake m h pSpec.«Type»}
 
 /-- Take the first `m ≤ n` rounds of a (full) transcript for a protocol specification `pSpec` -/
-abbrev FullTranscript.take {pSpec : ProtocolSpec n} (m : Fin (n + 1))
-    (transcript : FullTranscript pSpec) : FullTranscript (pSpec.take m) :=
-  Fin.take m m.is_le transcript
+abbrev FullTranscript.take {pSpec : ProtocolSpec n} (m : ℕ) (h : m ≤ n)
+    (transcript : FullTranscript pSpec) : FullTranscript (pSpec.take m h) :=
+  Fin.take m h transcript
 
 /-- Take the last `m ≤ n` rounds of a (full) transcript for a protocol specification `pSpec` -/
-abbrev FullTranscript.rtake {pSpec : ProtocolSpec n} (m : Fin (n + 1))
-    (transcript : FullTranscript pSpec) : FullTranscript (pSpec.rtake m) :=
-  Fin.rtake m m.is_le transcript
+abbrev FullTranscript.rtake {pSpec : ProtocolSpec n} (m : ℕ) (h : m ≤ n)
+    (transcript : FullTranscript pSpec) : FullTranscript (pSpec.rtake m h) :=
+  Fin.rtake m h transcript
 
 end Restrict
 
@@ -101,26 +112,26 @@ end Restrict
   round `k` -/
 @[reducible, simp]
 def MessageIdxUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) : Type :=
-  (pSpec.take k).MessageIdx
+  (pSpec.take k k.is_le).MessageIdx
 
 lemma MessageIdxUpTo.eq_MessageIdx {k : Fin (n + 1)} {pSpec : ProtocolSpec n} :
-    pSpec.MessageIdxUpTo k = {i : Fin k // (pSpec (i.castLE (by omega))).1 = .P_to_V} := rfl
+    pSpec.MessageIdxUpTo k = {i : Fin k // pSpec.dir (i.castLE (by omega)) = .P_to_V} := rfl
 
 /-- Subtype of `Fin k` for the indices corresponding to challenges in a protocol specification up to
   round `k` -/
 @[reducible, simp]
 def ChallengeIdxUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) : Type :=
-  (pSpec.take k).ChallengeIdx
+  (pSpec.take k k.is_le).ChallengeIdx
 
 /-- The indexed family of messages from the prover up to round `k`. -/
 @[reducible, inline, specialize]
 def MessageUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) (i : pSpec.MessageIdxUpTo k) :=
-  (pSpec.take k).Message i
+  (pSpec.take k k.is_le).Message i
 
 /-- The indexed family of challenges from the verifier up to round `k`. -/
 @[reducible, inline, specialize]
 def ChallengeUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) (i : pSpec.ChallengeIdxUpTo k) :=
-  (pSpec.take k).Challenge i
+  (pSpec.take k k.is_le).Challenge i
 
 /-- The type of all messages from the prover up to round `k`. -/
 @[reducible, inline, specialize]
@@ -130,7 +141,7 @@ def MessagesUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) : Type :=
 /-- The type of all challenges from the verifier up to round `k`. -/
 @[reducible, inline, specialize]
 def ChallengesUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) : Type :=
-  ∀ i, (pSpec.take k).Challenge i
+  ∀ i, (pSpec.take k k.is_le).Challenge i
 
 /-- A (partial) transcript of a protocol specification, indexed by some `k : Fin (n + 1)`, is a
 list of messages from the protocol for all indices `i` less than `k`.
@@ -138,24 +149,26 @@ list of messages from the protocol for all indices `i` less than `k`.
 This is defined as the full transcript of the protocol specification up to round `k`. -/
 @[reducible, inline, specialize]
 def Transcript (k : Fin (n + 1)) (pSpec : ProtocolSpec n) : Type :=
-  (pSpec.take k).FullTranscript
+  (pSpec.take k k.is_le).FullTranscript
 
 @[simp]
 lemma Transcript.def_eq {k : Fin (n + 1)} {pSpec : ProtocolSpec n} :
-    (pSpec.take k).FullTranscript = ((i : Fin k) → (pSpec (Fin.castLE (by omega) i)).2) := rfl
+    (pSpec.take k k.is_le).FullTranscript =
+      ((i : Fin k) → pSpec.«Type» (Fin.castLE (by omega) i)) :=
+  rfl
 
 end Defs
 
 section Instances
 
 /-- There is only one protocol specification with 0 messages (the empty one) -/
-instance : Unique (ProtocolSpec 0) := inferInstance
+instance : Unique (ProtocolSpec 0) where
+  default := empty
+  uniq := fun ⟨_, _⟩ => by simp; constructor <;> (funext i; exact Fin.elim0 i)
 
--- Two different ways to write the empty protocol specification: `![]` and `default`
-
-instance : ∀ i, VCVCompatible (Challenge ![] i) := fun ⟨i, _⟩ => Fin.elim0 i
-instance : ∀ i, SelectableType (Challenge ![] i) := fun ⟨i, _⟩ => Fin.elim0 i
-instance : ∀ i, OracleInterface (Message ![] i) := fun ⟨i, _⟩ => Fin.elim0 i
+instance : ∀ i, VCVCompatible (Challenge !p[] i) := fun ⟨i, _⟩ => Fin.elim0 i
+instance : ∀ i, SelectableType (Challenge !p[] i) := fun ⟨i, _⟩ => Fin.elim0 i
+instance : ∀ i, OracleInterface (Message !p[] i) := fun ⟨i, _⟩ => Fin.elim0 i
 
 instance : ∀ i, VCVCompatible ((default : ProtocolSpec 0).Challenge i) := fun ⟨i, _⟩ => Fin.elim0 i
 instance : ∀ i, SelectableType ((default : ProtocolSpec 0).Challenge i) := fun ⟨i, _⟩ => Fin.elim0 i
@@ -163,40 +176,40 @@ instance : ∀ i, OracleInterface ((default : ProtocolSpec 0).Message i) := fun 
 
 variable {Msg Chal : Type}
 
-instance : IsEmpty (ChallengeIdx ![(.P_to_V, Msg)]) := by
+instance : IsEmpty (ChallengeIdx ⟨!v[.P_to_V], !v[Msg]⟩) := by
   simp [ChallengeIdx]
   infer_instance
-instance : Unique (MessageIdx ![(.P_to_V, Msg)]) where
+instance : Unique (MessageIdx ⟨!v[.P_to_V], !v[Msg]⟩) where
   default := ⟨0, by simp⟩
   uniq := fun i => by ext; simp
-instance [inst : OracleInterface Msg] : ∀ i, OracleInterface (Message ![(.P_to_V, Msg)] i)
+instance [inst : OracleInterface Msg] : ∀ i, OracleInterface (Message ⟨!v[.P_to_V], !v[Msg]⟩ i)
   | ⟨0, _⟩ => inst
-instance : ∀ i, VCVCompatible (Challenge ![(.P_to_V, Msg)] i)
+instance : ∀ i, VCVCompatible (Challenge ⟨!v[.P_to_V], !v[Msg]⟩ i)
   | ⟨0, h⟩ => nomatch h
-instance : ∀ i, SelectableType (Challenge ![(.P_to_V, Msg)] i)
+instance : ∀ i, SelectableType (Challenge ⟨!v[.P_to_V], !v[Msg]⟩ i)
   | ⟨0, h⟩ => nomatch h
 
-instance : IsEmpty (MessageIdx ![(.V_to_P, Chal)]) := by
+instance : IsEmpty (MessageIdx ⟨!v[.V_to_P], !v[Chal]⟩) := by
   simp [MessageIdx]
   infer_instance
-instance : Unique (ChallengeIdx ![(.V_to_P, Chal)]) where
+instance : Unique (ChallengeIdx ⟨!v[.V_to_P], !v[Chal]⟩) where
   default := ⟨0, by simp⟩
   uniq := fun i => by ext; simp
-instance : ∀ i, OracleInterface (Message ![(.V_to_P, Chal)] i)
+instance : ∀ i, OracleInterface (Message ⟨!v[.V_to_P], !v[Chal]⟩ i)
   | ⟨0, h⟩ => nomatch h
-instance [inst : VCVCompatible Chal] : ∀ i, VCVCompatible (Challenge ![(.V_to_P, Chal)] i)
+instance [inst : VCVCompatible Chal] : ∀ i, VCVCompatible (Challenge ⟨!v[.V_to_P], !v[Chal]⟩ i)
   | ⟨0, _⟩ => inst
-instance [inst : SelectableType Chal] : ∀ i, SelectableType (Challenge ![(.V_to_P, Chal)] i)
+instance [inst : SelectableType Chal] : ∀ i, SelectableType (Challenge ⟨!v[.V_to_P], !v[Chal]⟩ i)
   | ⟨0, _⟩ => inst
 
 variable {pSpec : ProtocolSpec n}
 
-instance : Fintype (pSpec.MessageIdx) := Subtype.fintype (fun i => pSpec.getDir i = .P_to_V)
-instance : Fintype (pSpec.ChallengeIdx) := Subtype.fintype (fun i => pSpec.getDir i = .V_to_P)
+instance : Fintype (pSpec.MessageIdx) := Subtype.fintype (fun i => pSpec.dir i = .P_to_V)
+instance : Fintype (pSpec.ChallengeIdx) := Subtype.fintype (fun i => pSpec.dir i = .V_to_P)
 instance {k : Fin (n + 1)} : Fintype (pSpec.MessageIdxUpTo k) :=
-  inferInstanceAs (Fintype <| MessageIdx (fun i => pSpec (i.castLE (by omega)) : ProtocolSpec k))
+  inferInstanceAs (Fintype <| MessageIdx (pSpec.take k k.is_le))
 instance {k : Fin (n + 1)} : Fintype (pSpec.ChallengeIdxUpTo k) :=
-  inferInstanceAs (Fintype <| ChallengeIdx (fun i => pSpec (i.castLE (by omega)) : ProtocolSpec k))
+  inferInstanceAs (Fintype <| ChallengeIdx (pSpec.take k k.is_le))
 
 end Instances
 
@@ -249,7 +262,7 @@ instance {k : Fin 1} : Unique (MessagesUpTo k (default : ProtocolSpec 0)) where
   uniq := by solve_by_elim
 
 /-- There is only one transcript for the empty protocol, represented as `![]` -/
-instance {k : Fin 1} : Unique (MessagesUpTo k ![]) where
+instance {k : Fin 1} : Unique (MessagesUpTo k !p[]) where
   default := fun ⟨⟨i, h⟩, _⟩ => by
     have : k = 0 := Fin.fin_one_eq_zero k
     subst this; simp at h
@@ -266,14 +279,14 @@ instance : Unique (MessagesUpTo 0 pSpec) where
 /-- Concatenate the `k`-th message to the end of the tuple of messages up to round `k`, assuming
   round `k` is a message round. -/
 def concat {k : Fin n} (messages : MessagesUpTo k.castSucc pSpec)
-    (h : (pSpec k).1 = .P_to_V) (msg : pSpec.Message ⟨k, h⟩) : MessagesUpTo k.succ pSpec :=
+    (h : pSpec.dir k = .P_to_V) (msg : pSpec.Message ⟨k, h⟩) : MessagesUpTo k.succ pSpec :=
   fun i => if hi : i.1.1 < k then messages ⟨⟨i.1.1, hi⟩, i.property⟩ else
     (by simp [MessageUpTo, Fin.eq_last_of_not_lt hi]; exact msg)
 
 /-- Extend the tuple of messages up to round `k` to up to round `k + 1`, assuming round `k` is a
   challenge round (so no message from the prover is sent). -/
 def extend {k : Fin n} (messages : MessagesUpTo k.castSucc pSpec)
-    (h : (pSpec k).1 = .V_to_P) : MessagesUpTo k.succ pSpec :=
+    (h : pSpec.dir k = .V_to_P) : MessagesUpTo k.succ pSpec :=
   fun i => if hi : i.1.1 < k then messages ⟨⟨i.1.1, hi⟩, i.property⟩ else
     -- contradiction proof
     (by
@@ -296,7 +309,7 @@ instance {k : Fin 1} : Unique (ChallengesUpTo k (default : ProtocolSpec 0)) wher
   uniq := by solve_by_elim
 
 /-- There is only one transcript for the empty protocol, represented as `![]` -/
-instance {k : Fin 1} : Unique (ChallengesUpTo k ![]) where
+instance {k : Fin 1} : Unique (ChallengesUpTo k !p[]) where
   default := fun ⟨⟨i, h⟩, _⟩ => by
     have : k = 0 := Fin.fin_one_eq_zero k
     subst this; simp at h
@@ -313,14 +326,14 @@ instance : Unique (ChallengesUpTo 0 pSpec) where
 /-- Concatenate the `k`-th challenge to the end of the tuple of challenges up to round `k`, assuming
   round `k` is a challenge round. -/
 def concat {k : Fin n} (challenges : ChallengesUpTo k.castSucc pSpec)
-    (h : (pSpec k).1 = .V_to_P) (chal : pSpec.Challenge ⟨k, h⟩) : ChallengesUpTo k.succ pSpec :=
+    (h : pSpec.dir k = .V_to_P) (chal : pSpec.Challenge ⟨k, h⟩) : ChallengesUpTo k.succ pSpec :=
   fun i => if hi : i.1.1 < k then challenges ⟨⟨i.1.1, hi⟩, i.property⟩ else
     (by simp [Fin.eq_last_of_not_lt hi]; exact chal)
 
 /-- Extend the tuple of challenges up to round `k` to up to round `k + 1`, assuming round `k` is a
   message round (so no challenge from the verifier is sent). -/
 def extend {k : Fin n} (challenges : ChallengesUpTo k.castSucc pSpec)
-    (h : (pSpec k).1 = .P_to_V) : ChallengesUpTo k.succ pSpec :=
+    (h : pSpec.dir k = .P_to_V) : ChallengesUpTo k.succ pSpec :=
   fun i => if hi : i.1.1 < k then challenges ⟨⟨i.1.1, hi⟩, i.property⟩ else
     -- contradiction proof
     (by
@@ -338,7 +351,7 @@ instance {k : Fin 1} : Unique (Transcript k (default : ProtocolSpec 0)) where
   uniq := by solve_by_elim
 
 /-- There is only one transcript for the empty protocol, represented as `![]` -/
-instance {k : Fin 1} : Unique (Transcript k ![]) where
+instance {k : Fin 1} : Unique (Transcript k !p[]) where
   default := fun ⟨i, h⟩ => by
     have : k = 0 := Fin.fin_one_eq_zero k
     subst this; simp at h
@@ -356,14 +369,14 @@ instance : Unique (Transcript 0 pSpec) where
 -- Not needed for now, but could be useful.
 
 -- instance instFinEnumMessageIdx : FinEnum pSpec.MessageIdx :=
---   FinEnum.Subtype.finEnum fun x ↦ pSpec.getDir x = Direction.P_to_V
+--   FinEnum.Subtype.finEnum fun x ↦ pSpec.dir x = Direction.P_to_V
 -- instance instFinEnumChallengeIdx : FinEnum pSpec.ChallengeIdx :=
---   FinEnum.Subtype.finEnum fun x ↦ pSpec.getDir x = Direction.V_to_P
+--   FinEnum.Subtype.finEnum fun x ↦ pSpec.dir x = Direction.V_to_P
 
 /-- Concatenate a message to the end of a partial transcript. This is definitionally equivalent to
     `Fin.snoc`. -/
 @[inline]
-abbrev concat {m : Fin n} (msg : (pSpec m).2) (T : Transcript m.castSucc pSpec) :
+abbrev concat {m : Fin n} (msg : pSpec.«Type» m) (T : Transcript m.castSucc pSpec) :
     Transcript m.succ pSpec :=
   Fin.snoc T msg
 
@@ -385,7 +398,7 @@ def toMessagesChallenges (transcript : Transcript k pSpec) :
 
 def ofMessagesChallenges (messages : MessagesUpTo k pSpec)
     (challenges : ChallengesUpTo k pSpec) : Transcript k pSpec :=
-  fun i => match h : pSpec.getDir (i.castLE (by omega)) with
+  fun i => match h : pSpec.dir (i.castLE (by omega)) with
   | Direction.P_to_V => messages ⟨i.castLE (by omega), h⟩
   | Direction.V_to_P => challenges ⟨i.castLE (by omega), h⟩
 
@@ -402,10 +415,10 @@ def equivMessagesChallenges :
     split <;> simp
   right_inv := fun ⟨messages, challenges⟩ => by
     ext i
-    · have : (pSpec <| i.val.castLE (by omega)).1 = Direction.P_to_V := i.property
+    · have : pSpec.dir (i.val.castLE (by omega)) = Direction.P_to_V := i.property
       simp [ofMessagesChallenges, toMessagesChallenges, toMessagesUpTo]
       split <;> aesop
-    · have : (pSpec <| i.val.castLE (by omega)).1 = Direction.V_to_P := i.property
+    · have : pSpec.dir (i.val.castLE (by omega)) = Direction.V_to_P := i.property
       simp [ofMessagesChallenges, toMessagesChallenges, toChallengesUpTo]
       split <;> aesop
 
@@ -628,7 +641,7 @@ def deriveTranscriptSRAux {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
     (pure (fun i => i.elim0))
     (fun i ih => do
       let prevTranscript ← ih
-      match hDir : pSpec.getDir (i.castLE (by omega)) with
+      match hDir : pSpec.dir (i.castLE (by omega)) with
       | .V_to_P =>
         let challenge : pSpec.Challenge ⟨i.castLE (by omega), hDir⟩ ←
           query (spec := fsChallengeOracle _ _) ⟨i.castLE (by omega), hDir⟩
@@ -663,11 +676,11 @@ end Messages
 
 end ProtocolSpec
 
--- Notation for the type signature of an interactive protocol
-notation "𝒫——⟦" term "⟧⟶𝒱" => (Direction.P_to_V, term)
-notation "𝒫⟵⟦" term "⟧——𝒱" => (Direction.V_to_P, term)
+-- -- Notation for the type signature of an interactive protocol
+-- notation "𝒫——⟦" term "⟧⟶𝒱" => (Direction.P_to_V, term)
+-- notation "𝒫⟵⟦" term "⟧——𝒱" => (Direction.V_to_P, term)
 
--- Test notation
-def pSpecNotationTest : ProtocolSpec 2 :=
-  ![ 𝒫——⟦ Polynomial (ZMod 101) ⟧⟶𝒱,
-     𝒫⟵⟦ ZMod 101 ⟧——𝒱]
+-- -- Test notation
+-- def pSpecNotationTest : ProtocolSpec 2 :=
+--   ![ 𝒫——⟦ Polynomial (ZMod 101) ⟧⟶𝒱,
+--      𝒫⟵⟦ ZMod 101 ⟧——𝒱]

@@ -82,7 +82,7 @@ def Prover.processRoundFS [∀ i, VCVCompatible (pSpec.Challenge i)] (j : Fin n)
       OracleComp (oSpec ++ₒ fsChallengeOracle StmtIn pSpec)
         (pSpec.MessagesUpTo j.succ × StmtIn × prover.PrvState j.succ) := do
   let ⟨messages, stmtIn, state⟩ ← currentResult
-  match hDir : pSpec.getDir j with
+  match hDir : pSpec.dir j with
   | .V_to_P => do
     let f ← prover.receiveChallenge ⟨j, hDir⟩ state
     let challenge ← query (spec := fsChallengeOracle StmtIn pSpec) ⟨j, hDir⟩ ⟨stmtIn, messages⟩

@@ -494,19 +494,19 @@ def OracleReduction.toReduction {ι : Type} {oSpec : OracleSpec ι}
 /-- A **non-interactive prover** is a prover that only sends a single message to the verifier. -/
 @[reducible] def NonInteractiveProver (Message : Type) {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn WitIn StmtOut WitOut : Type) :=
-  Prover oSpec StmtIn WitIn StmtOut WitOut ![(.P_to_V, Message)]
+  Prover oSpec StmtIn WitIn StmtOut WitOut ⟨!v[.P_to_V], !v[Message]⟩
 
 /-- A **non-interactive verifier** is a verifier that only receives a single message from the
   prover. -/
 @[reducible] def NonInteractiveVerifier (Message : Type) {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn StmtOut : Type) :=
-  Verifier oSpec StmtIn StmtOut ![(.P_to_V, Message)]
+  Verifier oSpec StmtIn StmtOut ⟨!v[.P_to_V], !v[Message]⟩
 
 /-- A **non-interactive reduction** is an interactive reduction with only a single message from the
   prover to the verifier (and none in the other direction). -/
 @[reducible] def NonInteractiveReduction (Message : Type) {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn WitIn StmtOut WitOut : Type) :=
-  Reduction oSpec StmtIn WitIn StmtOut WitOut ![(.P_to_V, Message)]
+  Reduction oSpec StmtIn WitIn StmtOut WitOut ⟨!v[.P_to_V], !v[Message]⟩
 
 section Trivial
 
@@ -516,7 +516,7 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 
 /-- The trivial / identity prover, which does not send any messages to the verifier, and returns its
   input context (statement & witness) as output. -/
-protected def Prover.id : Prover oSpec Statement Witness Statement Witness ![] where
+protected def Prover.id : Prover oSpec Statement Witness Statement Witness !p[] where
   PrvState := fun _ => Statement × Witness
   input := _root_.id
   sendMessage := fun i => Fin.elim0 i
@@ -525,24 +525,24 @@ protected def Prover.id : Prover oSpec Statement Witness Statement Witness ![] w
 
 /-- The trivial / identity verifier, which does not receive any messages from the prover, and
   returns its input statement as output. -/
-protected def Verifier.id : Verifier oSpec Statement Statement ![] where
+protected def Verifier.id : Verifier oSpec Statement Statement !p[] where
   verify := fun stmt _ => pure stmt
 
 /-- The trivial / identity reduction, which consists of the trivial prover and verifier. -/
-protected def Reduction.id : Reduction oSpec Statement Witness Statement Witness ![] where
+protected def Reduction.id : Reduction oSpec Statement Witness Statement Witness !p[] where
   prover := Prover.id
   verifier := Verifier.id
 
 /-- The trivial / identity prover in an oracle reduction, which unfolds to the trivial prover for
   the associated non-oracle reduction. -/
 protected def OracleProver.id :
-    OracleProver oSpec Statement OStatement Witness Statement OStatement Witness ![] :=
+    OracleProver oSpec Statement OStatement Witness Statement OStatement Witness !p[] :=
   Prover.id
 
 /-- The trivial / identity verifier in an oracle reduction, which receives no messages from the
   prover, and returns its input statement as output. -/
 protected def OracleVerifier.id :
-    OracleVerifier oSpec Statement OStatement Statement OStatement ![] where
+    OracleVerifier oSpec Statement OStatement Statement OStatement !p[] where
   verify := fun stmt _ => pure stmt
   embed := Function.Embedding.inl
   hEq := fun _ => rfl
@@ -550,7 +550,7 @@ protected def OracleVerifier.id :
 /-- The trivial / identity oracle reduction, which consists of the trivial oracle prover and
   verifier. -/
 protected def OracleReduction.id :
-    OracleReduction oSpec Statement OStatement Witness Statement OStatement Witness ![] :=
+    OracleReduction oSpec Statement OStatement Witness Statement OStatement Witness !p[] :=
   ⟨OracleProver.id, OracleVerifier.id⟩
 
 alias Prover.trivial := Prover.id
@@ -582,17 +582,17 @@ variable {n : ℕ}
 
 /-- A protocol specification with the prover speaking first -/
 class ProverFirst (pSpec : ProtocolSpec n) [NeZero n] where
-  prover_first' : (pSpec 0).1 = .P_to_V
+  prover_first' : pSpec.dir 0 = .P_to_V
 
 class VerifierFirst (pSpec : ProtocolSpec n) [NeZero n] where
-  verifier_first' : (pSpec 0).1 = .V_to_P
+  verifier_first' : pSpec.dir 0 = .V_to_P
 
 class ProverLast (pSpec : ProtocolSpec n) [inst : NeZero n] where
-  prover_last' : (pSpec ⟨n - 1, by simp [Nat.pos_of_neZero]⟩).1 = .P_to_V
+  prover_last' : pSpec.dir ⟨n - 1, by simp [Nat.pos_of_neZero]⟩ = .P_to_V
 
 /-- A protocol specification with the verifier speaking last -/
 class VerifierLast (pSpec : ProtocolSpec n) [NeZero n] where
-  verifier_last' : (pSpec ⟨n - 1, by simp [Nat.pos_of_neZero]⟩).1 = .V_to_P
+  verifier_last' : pSpec.dir ⟨n - 1, by simp [Nat.pos_of_neZero]⟩ = .V_to_P
 
 class ProverOnly (pSpec : ProtocolSpec 1) extends ProverFirst pSpec
 
@@ -604,19 +604,19 @@ class VerifierOnly (pSpec : ProtocolSpec 1) extends VerifierFirst pSpec
 
 @[simp]
 theorem prover_first (pSpec : ProtocolSpec n) [NeZero n] [h : ProverFirst pSpec] :
-    (pSpec 0).1 = .P_to_V := h.prover_first'
+    pSpec.dir 0 = .P_to_V := h.prover_first'
 
 @[simp]
 theorem verifier_first (pSpec : ProtocolSpec n) [NeZero n] [h : VerifierFirst pSpec] :
-    (pSpec 0).1 = .V_to_P := h.verifier_first'
+    pSpec.dir 0 = .V_to_P := h.verifier_first'
 
 @[simp]
 theorem prover_last (pSpec : ProtocolSpec n) [NeZero n] [h : ProverLast pSpec] :
-    (pSpec ⟨n - 1, by simp [Nat.pos_of_neZero]⟩).1 = .P_to_V := h.prover_last'
+    pSpec.dir ⟨n - 1, by simp [Nat.pos_of_neZero]⟩ = .P_to_V := h.prover_last'
 
 @[simp]
 theorem verifier_last (pSpec : ProtocolSpec n) [NeZero n] [h : VerifierLast pSpec] :
-    (pSpec ⟨n - 1, by simp [Nat.pos_of_neZero]⟩).1 = .V_to_P := h.verifier_last'
+    pSpec.dir ⟨n - 1, by simp [Nat.pos_of_neZero]⟩ = .V_to_P := h.verifier_last'
 
 section SingleMessage
 
@@ -649,10 +649,10 @@ instance [h : VerifierFirst pSpec] : IsEmpty (pSpec.MessageIdx) where
 instance [ProverFirst pSpec] : ∀ i, VCVCompatible (pSpec.Challenge i) := isEmptyElim
 instance [VerifierFirst pSpec] : ∀ i, OracleInterface (pSpec.Message i) := isEmptyElim
 
-instance [ProverFirst pSpec] [h : OracleInterface (pSpec 0).2] :
+instance [ProverFirst pSpec] [h : OracleInterface (pSpec.«Type» 0)] :
     ∀ i, OracleInterface (pSpec.Message i)
   | ⟨0, _⟩ => inferInstance
-instance [VerifierFirst pSpec] [h : VCVCompatible (pSpec 0).2] :
+instance [VerifierFirst pSpec] [h : VCVCompatible (pSpec.«Type» 0)] :
     ∀ i, VCVCompatible (pSpec.Challenge i)
   | ⟨0, _⟩ => inferInstance
 
@@ -660,11 +660,11 @@ end SingleMessage
 
 @[simp]
 theorem prover_last_of_two (pSpec : ProtocolSpec 2) [ProverLast pSpec] :
-    pSpec.getDir 1 = .P_to_V := prover_last pSpec
+    pSpec.dir 1 = .P_to_V := prover_last pSpec
 
 @[simp]
 theorem verifier_last_of_two (pSpec : ProtocolSpec 2) [VerifierLast pSpec] :
-    pSpec.getDir 1 = .V_to_P := verifier_last pSpec
+    pSpec.dir 1 = .V_to_P := verifier_last pSpec
 
 /-- A protocol specification with a single round of interaction consisting of two messages, with the
   prover speaking first and the verifier speaking last
@@ -715,11 +715,11 @@ instance [IsSingleRound pSpec] [h : VCVCompatible (pSpec.Challenge default)] :
 end IsSingleRound
 
 @[inline, reducible]
-def FullTranscript.mk2 {pSpec : ProtocolSpec 2} (msg0 : pSpec.getType 0) (msg1 : pSpec.getType 1) :
+def FullTranscript.mk2 {pSpec : ProtocolSpec 2} (msg0 : pSpec.«Type» 0) (msg1 : pSpec.«Type» 1) :
     FullTranscript pSpec := fun | ⟨0, _⟩ => msg0 | ⟨1, _⟩ => msg1
 
-theorem FullTranscript.mk2_eq_snoc_snoc {pSpec : ProtocolSpec 2} (msg0 : pSpec.getType 0)
-    (msg1 : pSpec.getType 1) :
+theorem FullTranscript.mk2_eq_snoc_snoc {pSpec : ProtocolSpec 2} (msg0 : pSpec.«Type» 0)
+    (msg1 : pSpec.«Type» 1) :
       FullTranscript.mk2 msg0 msg1 = ((default : pSpec.Transcript 0).concat msg0).concat msg1 := by
   unfold FullTranscript.mk2 Transcript.concat
   simp only [default, Fin.isValue]

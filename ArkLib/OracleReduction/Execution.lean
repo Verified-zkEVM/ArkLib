@@ -85,7 +85,7 @@ def processRound (j : Fin n)
       OracleComp (oSpec ++ₒ [pSpec.Challenge]ₒ)
         (pSpec.Transcript j.succ × prover.PrvState j.succ) := do
   let ⟨transcript, state⟩ ← currentResult
-  match hDir : pSpec.getDir j with
+  match hDir : pSpec.dir j with
   | .V_to_P => do
     let challenge ← pSpec.getChallenge ⟨j, hDir⟩
     letI newState := (← prover.receiveChallenge ⟨j, hDir⟩ state) challenge
@@ -379,7 +379,7 @@ theorem Prover.runToRound_one_of_prover_first [ProverOnly pSpec] (stmt : StmtIn)
         let ⟨msg, state⟩ ← liftComp (prover.sendMessage ⟨0, by simp⟩ state) _
         return (fun i => match i with | ⟨0, _⟩ => msg, state)) := by
   simp [Prover.runToRound, Prover.processRound]
-  have : (pSpec 0).1 = .P_to_V := by simp
+  have : pSpec.dir 0 = .P_to_V := by simp
   split <;> rename_i hDir
   · have : Direction.P_to_V = .V_to_P := by rw [← this, hDir]
     contradiction
@@ -438,7 +438,7 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 --         let witOut := prover.output state
 --         return (transcript, queryLog, witOut)) := by
 --   simp [Prover.run, Prover.runToRound, Fin.reduceFinMk, Fin.val_two,
---     Fin.val_zero, Fin.coe_castSucc, Fin.val_succ, getDir_apply, bind_pure_comp, getType_apply,
+--     Fin.val_zero, Fin.coe_castSucc, Fin.val_succ, dir_apply, bind_pure_comp, getType_apply,
 --     Fin.induction_two, Fin.val_one, pure_bind, map_bind, liftComp]
 --   split <;> rename_i hDir0
 --   · exfalso; simp only [prover_first, reduceCtorEq] at hDir0
@@ -447,7 +447,7 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 --   · exfalso; simp only [verifier_last_of_two, reduceCtorEq] at hDir1
 --   simp only [Functor.map_map, bind_map_left, default]
 --   congr; funext x; congr; funext y;
---   simp only [Fin.isValue, map_bind, Functor.map_map, getDir_apply, Fin.succ_one_eq_two,
+--   simp only [Fin.isValue, map_bind, Functor.map_map, dir_apply, Fin.succ_one_eq_two,
 --     Fin.succ_zero_eq_one, queryBind_inj', true_and, exists_const]
 --   funext chal; simp [OracleSpec.append] at chal
 --   congr; funext state; congr
