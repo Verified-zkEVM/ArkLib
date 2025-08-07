@@ -1380,7 +1380,7 @@ lemma degree_Xⱼ
         exact h_res
       )
     simp only [h_sum]
-    have h_bit_repr_j := Nat.getBit_repr (ℓ := ℓ) (h_ℓ := by omega) (j := j) (by omega)
+    have h_bit_repr_j := Nat.getBit_repr (ℓ := ℓ) (j := j) (by omega)
     rw [←h_bit_repr_j]
 
 /-- The basis vectors `{Xⱼ(X), j ∈ Fin 2^ℓ}` forms a basis for `L⦃<2^ℓ⦄[X]` -/
