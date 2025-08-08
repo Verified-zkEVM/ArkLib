@@ -5,6 +5,7 @@ Authors: Mirco Richter, Poulami Das (Least Authority)
 -/
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.CodingTheory.ListDecodability
+import ArkLib.Data.MvPolynomial.Notation
 
 open Polynomial ReedSolomon ListDecodable
 
@@ -42,15 +43,14 @@ noncomputable def funcQuotient (f : ι → F) (S : Finset F) (Ans Fill : S → F
   V is the vanishing polynomial on S as before.
   Then, polyQuotient = (fPoly - Ans') / V, where
   polyQuotient.degree < (fPoly.degree - ι.card) -/
-noncomputable def polyQuotient {degree : ℕ} (S : Finset F) (fPoly : Polynomial F)
-  (hPoly : fPoly.degree < degree) : Polynomial F :=
+noncomputable def polyQuotient (S : Finset F) (fPoly : F[X]) : F[X] :=
     (fPoly - (ansPoly S (fun s => fPoly.eval s))) / (vanishingPoly S)
 
 /-- We define the set disagreementSet(f,ι,S,Ans) as the set of all points x ∈ ι that lie in S
 such that the Ans' disagrees with f, we have
 disagreementSet := { x ∈ ι ∩ S ∧ AnsPoly x ≠ f x }. -/
 noncomputable def disagreementSet (f : ι → F) (S : Finset F) (Ans : S → F) : Finset F :=
-  (ι.attach.filter (fun x ↦ (ansPoly S Ans).eval x.val ≠ f x)).image Subtype.val
+  Set.toFinset ({x : ι | x.val ∈ S ∧ (ansPoly S Ans).eval x.val ≠ f x}.image Subtype.val)
 
 /-- Quotienting Lemma 4.4
   Let `f : ι → F` be a function, `degree` a degree parameter, `δ ∈ (0,1)` be a distance parameter
