@@ -1941,7 +1941,7 @@ lemma NTTStage_correctness
         rw [Nat.getLowBits_succ]
         rw [h_bit1]
         have h_get_lsb_eq: Nat.getLowBits i.val (j.val + 2^i.val) = Nat.getLowBits i.val j.val := by
-          apply Nat.eq_iff_eq_all_getBits.mpr
+          apply Nat.eq_iff_eq_all_getBits.mpr; unfold Nat.getBit
           intro k
           change Nat.getBit k (Nat.getLowBits i.val (j.val + 2^i.val)) = Nat.getBit k (Nat.getLowBits i.val j.val)
           rw [Nat.getBit_of_lowBits, Nat.getBit_of_lowBits]
@@ -2087,7 +2087,7 @@ lemma NTTStage_correctness
         -- i.e. 0||v (i+1 bits) = v (i bits)
         rw [Nat.getLowBits_succ]
         rw [h_bit0, Nat.zero_shiftLeft, Nat.add_zero]
-        apply Nat.eq_iff_eq_all_getBits.mpr
+        apply Nat.eq_iff_eq_all_getBits.mpr; unfold Nat.getBit
         intro k
         change Nat.getBit k (Nat.getLowBits i.val (j.val ^^^ 2^i.val)) = Nat.getBit k (Nat.getLowBits i.val j.val)
         rw [Nat.getBit_of_lowBits, Nat.getBit_of_lowBits]
