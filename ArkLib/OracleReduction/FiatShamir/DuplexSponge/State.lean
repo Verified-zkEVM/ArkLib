@@ -86,8 +86,8 @@ pub fn new(domain_separator: &DomainSeparator<H, U>) -> Self
 ```
 -/
 def new (domainSeparator : DomainSeparator U H) : HashStateWithInstructions U H :=
-  let stack := domainSeparator.finalize
-  let tag := generateTag domainSeparator.asBytes
+  letI stack := domainSeparator.finalize
+  letI tag := generateTag domainSeparator.asBytes
   { ds := Initialize.new tag, stack := stack }
 
 /-- Perform secure absorption of elements into the sponge.
@@ -275,7 +275,7 @@ transcript while being seeded by a cryptographically secure source.
 structure ProverPrivateRng (R : Type*) where
   /-- The duplex sponge for generating random coins. -/
   ds : Unit -- TODO: Replace with actual Keccak type
-  /-- The cryptographic random number generator seed. -/
+  /-- The cryptographic random number generator -/
   csrng : R
 deriving Repr
 
@@ -299,16 +299,12 @@ where
 ```
 
 The Fiat-Shamir prover state maintains secret randomness, tracks the protocol state, and builds
-the proof transcript.
+the proof transcript. This extends the verifier state to include the randomness state.
 -/
 structure FSProverState (U : Type) [SpongeUnit U] (H : Type*) [DuplexSpongeInterface U H]
-    (R : Type*) where
+    (R : Type*) extends FSVerifierState U H where
   /-- The randomness state of the prover. -/
   rng : ProverPrivateRng R
-  /-- The public coins for the protocol. -/
-  hashState : HashStateWithInstructions U H
-  /-- The encoded proof transcript. -/
-  nargString : ByteArray
 deriving Repr
 
 namespace FSProverState
