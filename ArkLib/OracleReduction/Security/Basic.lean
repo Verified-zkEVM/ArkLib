@@ -55,7 +55,7 @@ TODO: the "right" factoring for the security definitions are the following:
 - Relations should be `Stmt → Wit → m Prop`, with `m` being the intermediate monad. When `m` is the
   result of `interpOStmt` above, for instance, we get `Stmt → Wit → OStmt → Prop`, which is what we
   want. Same for when we interpret `oSpec` into `Reader (oSpec.FunctionType)`; we then have
-  `m = Stmt → Wit → oSpec.FunctionType → Prop`, which allows us to define relations that rely
+  `Stmt → Wit → oSpec.FunctionType → Prop`, which allows us to define relations that rely
   on the (randomly sampled, at the beginning) values of the shared oracle.
 -/
 
@@ -86,7 +86,7 @@ def completeness (relIn : Set (StmtIn × WitIn))
   ∀ stmtIn : StmtIn,
   ∀ witIn : WitIn,
   (stmtIn, witIn) ∈ relIn →
-    [fun ⟨(prvStmtOut, witOut), stmtOut, _⟩ => (stmtOut, witOut) ∈ relOut ∧ prvStmtOut = stmtOut
+    [fun ⟨⟨_, (prvStmtOut, witOut)⟩, stmtOut⟩ => (stmtOut, witOut) ∈ relOut ∧ prvStmtOut = stmtOut
     | do (simulateQ (impl ++ₛₒ challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
           <| reduction.run stmtIn witIn).run' (← init)] ≥ 1 - completenessError
 
@@ -115,13 +115,52 @@ instance [reduction.IsPerfectComplete init impl relIn relOut] :
   completenessError := 0
   is_complete := IsPerfectComplete.is_perfect_complete
 
+/-- If a reduction satisfies completeness with error `ε₁`, then it satisfies completeness with error
+  `ε₂` for all `ε₂ ≥ ε₁`. -/
+theorem completeness_error_mono {ε₁ ε₂ : ℝ≥0} (hε : ε₁ ≤ ε₂) :
+      completeness init impl relIn relOut reduction ε₁ →
+        completeness init impl relIn relOut reduction ε₂ := by
+  intro h
+  dsimp [completeness] at h ⊢
+  intro stmtIn witIn hstmtIn
+  have := h stmtIn witIn hstmtIn
+  refine ge_trans this ?_
+  exact tsub_le_tsub_left (by simp [hε]) 1
+
+/-- If a reduction satisfies completeness with error `ε` for some relation `relIn`, then it
+  satisfies completeness with error `ε` for any relation `relIn'` that is a subset of `relIn`. -/
+theorem completeness_relIn_mono {ε : ℝ≥0} {relIn' : Set (StmtIn × WitIn)}
+    (hrelIn : relIn' ⊆ relIn) :
+      completeness init impl relIn relOut reduction ε →
+        completeness init impl relIn' relOut reduction ε := by
+  intro h
+  dsimp [completeness] at h ⊢
+  intro stmtIn witIn hStmtIn
+  exact h stmtIn witIn (hrelIn hStmtIn)
+
+/-- If a reduction satisfies completeness with error `ε` for some relation `relIn`, then it
+  satisfies completeness with error `ε` for any relation `relOut'` that is a superset of `relOut`.
+-/
+theorem completeness_relOut_mono {ε : ℝ≥0} {relOut' : Set (StmtOut × WitOut)}
+    (hrelOut : relOut ⊆ relOut') :
+      completeness init impl relIn relOut reduction ε →
+        completeness init impl relIn relOut' reduction ε := by
+  intro h
+  dsimp [completeness] at h ⊢
+  intro stmtIn witIn hstmtIn
+  refine ge_trans ?_ (h stmtIn witIn hstmtIn)
+  refine probEvent_mono ?_
+  rintro _ _ ⟨h1, h2⟩
+  exact ⟨hrelOut h1, h2⟩
+
 /-- Perfect completeness means that the probability of the reduction outputting a valid
   statement-witness pair is _exactly_ 1 (instead of at least `1 - 0`). -/
 @[simp]
 theorem perfectCompleteness_eq_prob_one :
     reduction.perfectCompleteness init impl relIn relOut ↔
       ∀ stmtIn witIn, (stmtIn, witIn) ∈ relIn →
-        [fun ⟨(prvStmtOut, witOut), stmtOut, _⟩ => (stmtOut, witOut) ∈ relOut ∧ prvStmtOut = stmtOut
+        [fun ⟨⟨_, (prvStmtOut, witOut)⟩, stmtOut⟩ =>
+          (stmtOut, witOut) ∈ relOut ∧ prvStmtOut = stmtOut
         | do (simulateQ (impl ++ₛₒ challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
             <| reduction.run stmtIn witIn).run' (← init)] = 1 := by
   refine forall_congr' fun stmtIn => forall_congr' fun stmtOut => forall_congr' fun _ => ?_
@@ -202,7 +241,7 @@ def soundness (langIn : Set StmtIn) (langOut : Set StmtOut)
   ∀ prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec,
   ∀ stmtIn ∉ langIn,
     letI reduction := Reduction.mk prover verifier
-    [fun ⟨_, stmtOut, _⟩ => stmtOut ∈ langOut
+    [fun ⟨_, stmtOut⟩ => stmtOut ∈ langOut
     | do (simulateQ (impl ++ₛₒ challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         <| reduction.run stmtIn witIn).run' (← init)] ≤ soundnessError
 
@@ -239,7 +278,7 @@ def knowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut ×
       let s ← init
       (simulateQ (impl ++ₛₒ challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         <| do
-      let ⟨(_, witOut), stmtOut, transcript, proveQueryLog, verifyQueryLog⟩ ←
+      let ⟨⟨⟨transcript, ⟨_, witOut⟩⟩, stmtOut⟩, proveQueryLog, verifyQueryLog⟩ ←
         reduction.runWithLog stmtIn witIn
       let extractedWitIn ←
         liftComp (extractor stmtIn witOut transcript proveQueryLog.fst verifyQueryLog) _
@@ -456,7 +495,7 @@ theorem Verifier.id_soundness {lang : Set StmtIn} :
 /-- The straightline extractor for the identity / trivial reduction, which just returns the input
   witness. -/
 @[reducible]
-def Extractor.Straightline.id : Extractor.Straightline oSpec StmtIn WitIn WitIn ![] :=
+def Extractor.Straightline.id : Extractor.Straightline oSpec StmtIn WitIn WitIn !p[] :=
   fun _ witOut _ _ _ => pure witOut
 
 /-- The identity / trivial verifier is perfectly knowledge sound. -/

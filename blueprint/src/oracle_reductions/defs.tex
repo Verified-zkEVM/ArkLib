@@ -116,7 +116,7 @@ We define some supporting definitions for a protocol specification.
         \item $\pSpec.\mathsf{Message}\ i := (i : \pSpec.\MessageIdx) \to \pSpec.\Type\ i.\mathsf{val}$ is an indexed family of message types in the protocol.
         \item $\pSpec.\mathsf{Challenge}\ i := (i : \pSpec.\ChallengeIdx) \to \pSpec.\Type\ i.\mathsf{val}$ is an indexed family of challenge types in the protocol.
     \end{itemize}
-    \lean{ProtocolSpec.getDir, ProtocolSpec.getType, ProtocolSpec.MessageIdx, ProtocolSpec.ChallengeIdx, ProtocolSpec.Message, ProtocolSpec.Challenge}
+    \lean{ProtocolSpec.dir, ProtocolSpec.Type, ProtocolSpec.MessageIdx, ProtocolSpec.ChallengeIdx, ProtocolSpec.Message, ProtocolSpec.Challenge}
     \uses{def:protocol_spec}
 \end{definition}
 
@@ -310,8 +310,8 @@ about the execution, such as the log of oracle queries for the shared oracles, f
 
     where $\mathsf{processRound}$ handles individual rounds by either:
     \begin{itemize}
-        \item \textbf{Verifier Challenge} ($\pSpec.\mathsf{getDir}(j) = \mathsf{V\_to\_P}$): Query for a challenge and update prover state
-        \item \textbf{Prover Message} ($\pSpec.\mathsf{getDir}(j) = \mathsf{P\_to\_V}$): Generate message via $\mathsf{sendMessage}$ and update state
+        \item \textbf{Verifier Challenge} ($\pSpec.\mathsf{dir}(j) = \mathsf{V\_to\_P}$): Query for a challenge and update prover state
+        \item \textbf{Prover Message} ($\pSpec.\mathsf{dir}(j) = \mathsf{P\_to\_V}$): Generate message via $\mathsf{sendMessage}$ and update state
     \end{itemize}
 
     Returns the transcript up to round $i$ and the prover's state after round $i$.

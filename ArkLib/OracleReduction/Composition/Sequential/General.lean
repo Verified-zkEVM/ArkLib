@@ -20,48 +20,56 @@ open ProtocolSpec OracleComp
 
 universe u v
 
-variable {ι : Type} {oSpec : OracleSpec ι} {m : ℕ}
+variable {ι : Type} {oSpec : OracleSpec ι}
 
 section Instances
 
-variable {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
-
 namespace ProtocolSpec
 
-/-- The equivalence between the challenge indices of the individual protocols and the challenge
-    indices of the sequential composition. -/
-def seqComposeChallengeEquiv :
-    (i : Fin m) × (pSpec i).ChallengeIdx ≃ (seqCompose pSpec).ChallengeIdx where
-  -- TODO: write lemmas about `finSigmaFinEquiv` in mathlib with the one defined via `Fin.dfoldl`
-  toFun := fun ⟨i, ⟨chalIdx, h⟩⟩ => ⟨finSigmaFinEquiv ⟨i, chalIdx⟩, by
-    unfold seqCompose; sorry⟩
-  invFun := fun ⟨seqComposedChalIdx, h⟩ =>
-    let ⟨i, chalIdx⟩ := finSigmaFinEquiv.symm seqComposedChalIdx
-    ⟨i, chalIdx, sorry⟩
-  left_inv := by intro ⟨_, _⟩; simp; rw! [finSigmaFinEquiv.left_inv']; simp
-  right_inv := by intro ⟨_, _⟩; simp
+-- /-- The equivalence between the challenge indices of the individual protocols and the challenge
+--     indices of the sequential composition. -/
+-- def seqComposeChallengeEquiv :
+--     (i : Fin m) × (pSpec i).ChallengeIdx ≃ (seqCompose pSpec).ChallengeIdx where
+--   -- TODO: write lemmas about `finSigmaFinEquiv` in mathlib with the one defined via `Fin.dfoldl`
+--   toFun := fun ⟨i, ⟨chalIdx, h⟩⟩ => ⟨finSigmaFinEquiv ⟨i, chalIdx⟩, by
+--     unfold seqCompose; sorry⟩
+--   invFun := fun ⟨seqComposedChalIdx, h⟩ =>
+--     let ⟨i, chalIdx⟩ := finSigmaFinEquiv.symm seqComposedChalIdx
+--     ⟨i, chalIdx, sorry⟩
+--   left_inv := by intro ⟨_, _⟩; simp; rw! [finSigmaFinEquiv.left_inv']; simp
+--   right_inv := by intro ⟨_, _⟩; simp
 
-/-- The equivalence between the message indices of the individual protocols and the message
-    indices of the sequential composition. -/
-def seqComposeMessageEquiv :
-    (i : Fin m) × (pSpec i).MessageIdx ≃ (seqCompose pSpec).MessageIdx where
-  toFun := fun ⟨i, ⟨msgIdx, h⟩⟩ => ⟨finSigmaFinEquiv ⟨i, msgIdx⟩, by
-    unfold seqCompose; sorry⟩
-  invFun := fun ⟨seqComposedMsgIdx, h⟩ =>
-    let ⟨i, msgIdx⟩ := finSigmaFinEquiv.symm seqComposedMsgIdx
-    ⟨i, msgIdx, sorry⟩
-  left_inv := by intro ⟨_, _⟩; simp; rw! [finSigmaFinEquiv.left_inv']; simp
-  right_inv := by intro ⟨_, _⟩; simp
+-- /-- The equivalence between the message indices of the individual protocols and the message
+--     indices of the sequential composition. -/
+-- def seqComposeMessageEquiv :
+--     (i : Fin m) × (pSpec i).MessageIdx ≃ (seqCompose pSpec).MessageIdx where
+--   toFun := fun ⟨i, ⟨msgIdx, h⟩⟩ => ⟨finSigmaFinEquiv ⟨i, msgIdx⟩, by
+--     unfold seqCompose; sorry⟩
+--   invFun := fun ⟨seqComposedMsgIdx, h⟩ =>
+--     let ⟨i, msgIdx⟩ := finSigmaFinEquiv.symm seqComposedMsgIdx
+--     ⟨i, msgIdx, sorry⟩
+--   left_inv := by intro ⟨_, _⟩; simp; rw! [finSigmaFinEquiv.left_inv']; simp
+--   right_inv := by intro ⟨_, _⟩; simp
 
 end ProtocolSpec
 
 /-- If all protocols have sampleable challenges, then the challenges of their sequential
   composition also have sampleable challenges. -/
-instance [inst : ∀ i, ∀ j, SelectableType ((pSpec i).Challenge j)] :
-    ∀ j, SelectableType ((seqCompose pSpec).Challenge j) := fun combinedIdx => by
-  let combinedIdx' := seqComposeChallengeEquiv.symm combinedIdx
-  let this := inst combinedIdx'.1 combinedIdx'.2
-  convert this using 1; sorry
+def seqComposeChallengeSelectableType {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (inst : ∀ i, ∀ j, SelectableType ((pSpec i).Challenge j)) :
+    ∀ j, SelectableType ((seqCompose pSpec).Challenge j) := match m with
+  | 0 => fun i => Fin.elim0 i.val
+  | 1 => inst 0
+  | _ + 1 => fun j => by dsimp [seqCompose]
+
+instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    [inst : ∀ i, ∀ j, SelectableType ((pSpec i).Challenge j)] :
+    ∀ j, SelectableType ((seqCompose pSpec).Challenge j) := seqComposeChallengeSelectableType inst
+
+  -- fun combinedIdx => by
+  -- let combinedIdx' := seqComposeChallengeEquiv.symm combinedIdx
+  -- let this := inst combinedIdx'.1 combinedIdx'.2
+  -- convert this using 1; sorry
 
 /-- If all protocols' messages have oracle interfaces, then the messages of their sequential
   composition also have oracle interfaces. -/
@@ -78,77 +86,128 @@ end Instances
 
 section Composition
 
-variable (Stmt : Fin (m + 1) → Type)
-  {ιₛ : Fin (m + 1) → Type} (OStmt : (i : Fin (m + 1)) → ιₛ i → Type)
-  [Oₛ : ∀ i, ∀ j, OracleInterface (OStmt i j)]
-  (Wit : Fin (m + 1) → Type)
-  {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
-  [Oₘ : ∀ i, ∀ j, OracleInterface ((pSpec i).Message j)]
+-- variable (Stmt : Fin (m + 1) → Type)
+--   {ιₛ : Fin (m + 1) → Type} (OStmt : (i : Fin (m + 1)) → ιₛ i → Type)
+--   [Oₛ : ∀ i, ∀ j, OracleInterface (OStmt i j)]
+--   (Wit : Fin (m + 1) → Type)
+--   {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+--   [Oₘ : ∀ i, ∀ j, OracleInterface ((pSpec i).Message j)]
 
-def Prover.seqCompose
+namespace Prover
+
+def seqCompose
+    {m : ℕ} (Stmt : Fin (m + 1) → Type) (Wit : Fin (m + 1) → Type)
+    {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     (P : (i : Fin m) →
       Prover oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ) (pSpec i)) :
-    Prover oSpec (Stmt 0) (Wit 0) (Stmt (Fin.last m)) (Wit (Fin.last m)) (seqCompose pSpec) :=
-  Fin.dfoldl m
-    (fun i => Prover
-        oSpec (Stmt 0) (Wit 0) (Stmt i) (Wit i)
-        (ProtocolSpec.seqCompose (Fin.take i (by omega) pSpec)))
-    (fun i Pacc => by
-      -- TODO: cast the prover with dependent cast
-      convert Prover.append Pacc (P i)
-      · simp [Fin.sum_univ_castSucc, Fin.last, Fin.succ]
-      · simp [ProtocolSpec.seqCompose_append, dcast_eq_root_cast])
-    (Prover.id)
+      Prover oSpec (Stmt 0) (Wit 0) (Stmt (Fin.last m)) (Wit (Fin.last m)) (seqCompose pSpec) :=
+  match m with
+  | 0 => Prover.id
+  | 1 => P 0
+  | _ + 2 => append
+    (seqCompose (Stmt ∘ Fin.castSucc) (Wit ∘ Fin.castSucc) (fun i => P (Fin.castSucc i)))
+    (P (Fin.last _))
+  -- Fin.dfoldl m
+  --   (fun i => Prover
+  --       oSpec (Stmt 0) (Wit 0) (Stmt i) (Wit i)
+  --       (ProtocolSpec.seqCompose (Fin.take i (by omega) pSpec)))
+  --   (fun i Pacc => by
+  --     -- TODO: cast the prover with dependent cast
+  --     convert Prover.append Pacc (P i)
+  --     · simp [Fin.sum_univ_castSucc, Fin.last, Fin.succ]
+  --     · simp [ProtocolSpec.seqCompose_append, dcast_eq_root_cast])
+  --   (Prover.id)
 
-def Verifier.seqCompose
+@[simp]
+lemma seqCompose_zero
+    (Stmt : Fin 1 → Type) (Wit : Fin 1 → Type) {n : Fin 0 → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (P : (i : Fin 0) →
+      Prover oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ) (pSpec i)) :
+    seqCompose Stmt Wit P = Prover.id := rfl
+
+@[simp]
+lemma seqCompose_one
+    (Stmt : Fin 2 → Type) (Wit : Fin 2 → Type) {n : Fin 1 → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (P : (i : Fin 1) →
+      Prover oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ) (pSpec i)) :
+    seqCompose Stmt Wit P = P 0 := rfl
+
+-- @[simp]
+-- lemma seqCompose_succ {m : ℕ}
+--     (Stmt : Fin (m + 2) → Type) (Wit : Fin (m + 2) → Type)
+--     {n : Fin (m + 1) → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+--     (P : (i : Fin (m + 1)) →
+--       Prover oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ) (pSpec i)) :
+--     seqCompose Stmt Wit P = append
+--       (seqCompose (Stmt ∘ Fin.castSucc) (Wit ∘ Fin.castSucc) (fun i => P (Fin.castSucc i)))
+--       (P (Fin.last _)) := rfl
+
+end Prover
+
+namespace Verifier
+
+def seqCompose {m : ℕ} (Stmt : Fin (m + 1) → Type)
+    {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     (V : (i : Fin m) →
       Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i)) :
-    Verifier oSpec (Stmt 0) (Stmt (Fin.last m)) (seqCompose pSpec) :=
-  Fin.dfoldl m
-    (fun i => Verifier oSpec (Stmt 0) (Stmt i)
-      (ProtocolSpec.seqCompose (Fin.take i (by omega) pSpec)))
-    (fun i Vacc => by
-      refine dcast₂ (self := instDCast₂Verifier) ?_ ?_ (Vacc.append (V i))
-      · simp [Fin.sum_univ_castSucc, Fin.last, Fin.succ]
-      · simp [seqCompose_append, dcast_eq_root_cast])
-    (Verifier.id)
+    Verifier oSpec (Stmt 0) (Stmt (Fin.last m)) (seqCompose pSpec) := match m with
+  | 0 => Verifier.id
+  | 1 => V 0
+  | _ + 2 =>
+    append (seqCompose (Stmt ∘ Fin.castSucc) (fun i => V (Fin.castSucc i))) (V (Fin.last _))
+  -- Fin.dfoldl m
+  --   (fun i => Verifier oSpec (Stmt 0) (Stmt i)
+  --     (ProtocolSpec.seqCompose (Fin.take i (by omega) pSpec)))
+  --   (fun i Vacc => by
+  --     refine dcast₂ (self := instDCast₂Verifier) ?_ ?_ (Vacc.append (V i))
+  --     · simp [Fin.sum_univ_castSucc, Fin.last, Fin.succ]
+  --     · simp [seqCompose_append, dcast_eq_root_cast])
+  --   (Verifier.id)
+
+end Verifier
+
+namespace Reduction
 
 /-- Sequential composition of reductions, defined via sequential composition of provers and
   verifiers (or equivalently, folding over the append of reductions). -/
-def Reduction.seqCompose
+def seqCompose {m : ℕ} (Stmt : Fin (m + 1) → Type) (Wit : Fin (m + 1) → Type)
+    {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     (R : (i : Fin m) →
       Reduction oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ) (pSpec i)) :
     Reduction oSpec (Stmt 0) (Wit 0) (Stmt (Fin.last m)) (Wit (Fin.last m)) (seqCompose pSpec) where
   prover := Prover.seqCompose Stmt Wit (fun i => (R i).prover)
   verifier := Verifier.seqCompose Stmt (fun i => (R i).verifier)
 
-/-- Alternative definition of sequential composition of reductions, defined via folding over the
-  append of reductions. -/
-lemma Reduction.seqCompose_eq_foldl
-    (R : (i : Fin m) →
-      Reduction oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ) (pSpec i)) :
-    Reduction.seqCompose Stmt Wit R = Fin.dfoldl m
-      (fun i => Reduction oSpec (Stmt 0) (Wit 0) (Stmt i) (Wit i)
-        (ProtocolSpec.seqCompose (Fin.take i (by omega) pSpec)))
-      (fun i Racc => by
-        convert Reduction.append Racc (R i)
-        · simp [Fin.sum_univ_castSucc, Fin.last, Fin.succ]
-        · simp [seqCompose_append, dcast_eq_root_cast])
-      (Reduction.id) := by
-  induction m with
-  | zero =>
-    simp [seqCompose, Reduction.append, Reduction.id, Prover.seqCompose, Verifier.seqCompose]
-  | succ m ih =>
-    simp [Fin.dfoldl_succ_last]
-    sorry
-    -- simp_rw [ih]
-    -- simp [seqCompose, Reduction.append, Reduction.id, Prover.seqCompose, Verifier.seqCompose]
+-- /-- Alternative definition of sequential composition of reductions, defined via folding over the
+--   append of reductions. -/
+-- lemma Reduction.seqCompose_eq_foldl
+--     (R : (i : Fin m) →
+--       Reduction oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ) (pSpec i)) :
+--     Reduction.seqCompose Stmt Wit R = Fin.dfoldl m
+--       (fun i => Reduction oSpec (Stmt 0) (Wit 0) (Stmt i) (Wit i)
+--         (ProtocolSpec.seqCompose (Fin.take i (by omega) pSpec)))
+--       (fun i Racc => by
+--         convert Reduction.append Racc (R i)
+--         · simp [Fin.sum_univ_castSucc, Fin.last, Fin.succ]
+--         · simp [seqCompose_append, dcast_eq_root_cast])
+--       (Reduction.id) := by
+--   induction m with
+--   | zero =>
+--     simp [seqCompose, Reduction.append, Reduction.id, Prover.seqCompose, Verifier.seqCompose]
+--   | succ m ih =>
+--     simp [Fin.dfoldl_succ_last]
+--     sorry
+--     -- simp_rw [ih]
+--     -- simp [seqCompose, Reduction.append, Reduction.id, Prover.seqCompose, Verifier.seqCompose]
 
--- TODO: define the same for `Oracle Prover/Verifier/Reduction`, and extractors and state functions
+end Reduction
+
 
 /-- Sequential composition of provers in oracle reductions, defined via sequential composition of
   provers in non-oracle reductions. -/
-def OracleProver.seqCompose
+def OracleProver.seqCompose {m : ℕ}
+    (Stmt : Fin (m + 1) → Type) {ιₛ : Fin (m + 1) → Type} (OStmt : (i : Fin (m + 1)) → ιₛ i → Type)
+    (Wit : Fin (m + 1) → Type) {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     (P : (i : Fin m) →
       OracleProver oSpec (Stmt i.castSucc) (OStmt i.castSucc) (Wit i.castSucc)
         (Stmt i.succ) (OStmt i.succ) (Wit i.succ) (pSpec i)) :
@@ -159,7 +218,10 @@ def OracleProver.seqCompose
 /-- Sequential composition of verifiers in oracle reductions.
 
 TODO: fix this, need to derive `OracleInterface` instances for messages -/
-def OracleVerifier.seqCompose
+def OracleVerifier.seqCompose {m : ℕ}
+    (Stmt : Fin (m + 1) → Type) {ιₛ : Fin (m + 1) → Type} (OStmt : (i : Fin (m + 1)) → ιₛ i → Type)
+    [Oₛ : ∀ i, ∀ j, OracleInterface (OStmt i j)]
+    {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     (V : (i : Fin m) →
       OracleVerifier oSpec (Stmt i.castSucc) (OStmt i.castSucc) (Stmt i.succ) (OStmt i.succ)
         (pSpec i)) :

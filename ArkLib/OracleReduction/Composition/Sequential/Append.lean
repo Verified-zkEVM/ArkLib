@@ -26,6 +26,20 @@ open OracleComp OracleSpec SubSpec
 
 section find_home
 
+universe u
+
+@[simp]
+lemma FinVec.append_left_of_lt {m n : ℕ} {α : Sort u}
+    (u : FinVec α m) (v : FinVec α n) (i : Fin (m + n)) (h : i.val < m) :
+      FinVec.append u v i = u ⟨i, h⟩ := by
+  simp [FinVec.append_eq_fin_append, Fin.append, Fin.addCases, Fin.castLT, h]
+
+@[simp]
+lemma FinVec.append_right_of_not_lt {m n : ℕ} {α : Sort u}
+    (u : FinVec α m) (v : FinVec α n) (i : Fin (m + n)) (h : ¬ i.val < m) :
+      FinVec.append u v i = v ⟨i - m, by omega⟩ := by
+  simp [FinVec.append_eq_fin_append, Fin.append, Fin.addCases, h, Fin.subNat]
+
 variable {ι ι' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'} {α β : Type}
     (oa : OracleComp spec α)
 
@@ -48,22 +62,68 @@ section Instances
   challenges. -/
 instance [h₁ : ∀ i, SelectableType (pSpec₁.Challenge i)]
     [h₂ : ∀ i, SelectableType (pSpec₂.Challenge i)] :
-    ∀ i, SelectableType ((pSpec₁ ++ₚ pSpec₂).Challenge i) := fun ⟨⟨i, isLt⟩, h⟩ => by
-  dsimp [ProtocolSpec.append, Fin.append, Fin.addCases, Fin.castLT, Fin.subNat, Fin.cast] at h ⊢
-  by_cases h' : i < m <;> simp [h'] at h ⊢
-  · exact h₁ ⟨⟨i, by omega⟩, h⟩
-  · exact h₂ ⟨⟨i - m, by omega⟩, h⟩
+    ∀ i, SelectableType ((pSpec₁ ++ₚ pSpec₂).Challenge i) := fun ⟨i, h⟩ => by
+  by_cases hi : i.val < m
+  · letI j : Fin m := ⟨i, hi⟩
+    haveI : i = Fin.castAdd n j := by ext; simp [j]
+    simp only [this, Challenge, FinVec.append_left] at h ⊢
+    exact h₁ ⟨j, h⟩
+  · letI j : Fin n := ⟨i.val - m, by omega⟩
+    haveI : i = Fin.natAdd m j := by ext; simp [j]; omega
+    simp only [this, Challenge, FinVec.append_right] at h ⊢
+    exact h₂ ⟨j, h⟩
 
 /-- If two protocols' messages have oracle representations, then their concatenation's messages also
     have oracle representations. -/
 instance [O₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
     [O₂ : ∀ i, OracleInterface (pSpec₂.Message i)] :
-    ∀ i, OracleInterface ((pSpec₁ ++ₚ pSpec₂).Message i) := fun ⟨⟨i, isLt⟩, h⟩ => by
-  dsimp [ProtocolSpec.append, ProtocolSpec.getDir, Fin.append, Fin.addCases,
-    Fin.castLT, Fin.subNat, Fin.cast] at h ⊢
-  by_cases h' : i < m <;> simp [h'] at h ⊢
-  · exact O₁ ⟨⟨i, by omega⟩, h⟩
-  · exact O₂ ⟨⟨i - m, by omega⟩, h⟩
+    ∀ i, OracleInterface ((pSpec₁ ++ₚ pSpec₂).Message i) := fun ⟨i, h⟩ => by
+  by_cases hi : i.val < m
+  · letI j : Fin m := ⟨i, hi⟩
+    haveI : i = Fin.castAdd n j := by ext; simp [j]
+    simp only [this, Message, FinVec.append_left] at h ⊢
+    exact O₁ ⟨j, h⟩
+  · letI j : Fin n := ⟨i.val - m, by omega⟩
+    haveI : i = Fin.natAdd m j := by ext; simp [j]; omega
+    simp only [this, Message, FinVec.append_right] at h ⊢
+    exact O₂ ⟨j, h⟩
+
+/-- Don't know why this doesn't automatically synthesize. -/
+instance : ∀ i, OracleInterface ((pSpec₁ ++ₚ pSpec₂).Challenge i) := challengeOracleInterface
+-- fun ⟨i, h⟩ => by
+--   by_cases hi : i.val < m
+--   · letI j : Fin m := ⟨i, hi⟩
+--     haveI : i = Fin.castAdd n j := by ext; simp [j]
+--     simp only [this, Challenge, FinVec.append_left] at h ⊢
+--     exact challengeOracleInterface ⟨j, h⟩
+--   · letI j : Fin n := ⟨i.val - m, by omega⟩
+--     haveI : i = Fin.natAdd m j := by ext; simp [j]; omega
+--     simp only [this, Challenge, FinVec.append_right] at h ⊢
+--     exact challengeOracleInterface ⟨j, h⟩
+
+@[simp]
+lemma challengeOracleInterface_append_domain_inl (j : pSpec₁.ChallengeIdx) :
+    (OracleInterface.toOracleSpec (pSpec₁ ++ₚ pSpec₂).Challenge).domain (.inl j) = Unit := by
+  simp [OracleSpec.domain, ChallengeIdx.inl, ProtocolSpec.append, OracleInterface.toOracleSpec,
+    instOracleInterfaceChallengeAppend, challengeOracleInterface]
+
+@[simp]
+lemma challengeOracleInterface_append_range_inl (j : pSpec₁.ChallengeIdx) :
+    [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.range (.inl j) = pSpec₁.Challenge j := by
+  simp [OracleSpec.range, ChallengeIdx.inl, ProtocolSpec.append, OracleInterface.toOracleSpec,
+    instOracleInterfaceChallengeAppend, challengeOracleInterface]
+
+@[simp]
+lemma challengeOracleInterface_append_domain_inr (j : pSpec₂.ChallengeIdx) :
+    [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.domain (.inr j) = Unit := by
+  simp [OracleSpec.domain, ChallengeIdx.inr, ProtocolSpec.append, OracleInterface.toOracleSpec,
+    instOracleInterfaceChallengeAppend, challengeOracleInterface]
+
+@[simp]
+lemma challengeOracleInterface_append_range_inr (j : pSpec₂.ChallengeIdx) :
+    [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.range (.inr j) = pSpec₂.Challenge j := by
+  simp [OracleSpec.range, ChallengeIdx.inr, ProtocolSpec.append, OracleInterface.toOracleSpec,
+    instOracleInterfaceChallengeAppend, challengeOracleInterface]
 
 variable [∀ i, SelectableType (pSpec₁.Challenge i)] [∀ i, SelectableType (pSpec₂.Challenge i)]
 
@@ -71,39 +131,9 @@ instance instSubSpecOfProtocolSpecAppendChallenge :
     SubSpec ([pSpec₁.Challenge]ₒ ++ₒ [pSpec₂.Challenge]ₒ) ([(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) where
   monadLift | query i t => match i with
     | Sum.inl j => by
-      simpa [OracleSpec.append, OracleSpec.range, OracleInterface.toOracleSpec, ChallengeIdx.inl,
-        instChallengeOracleInterface] using
-      query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) j.inl ()
+      simpa using query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) j.inl ()
     | Sum.inr j => by
-      simpa [OracleSpec.append, OracleSpec.range, OracleInterface.toOracleSpec, ChallengeIdx.inr,
-        instChallengeOracleInterface] using
-      query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) j.inr ()
-  -- evalDist_toFun' := fun i q => by
-  --   cases i with
-  --   | inl j =>
-  --     simp only [eq_mp_eq_cast, id_eq]
-  --     have : [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.range j.inl =
-  --       ([pSpec₁.Challenge]ₒ ++ₒ [pSpec₂.Challenge]ₒ).range (Sum.inl j) := by
-  --       simp [OracleSpec.append, ChallengeIdx.inl, instChallengeOracleInterface]
-  --     rw [evalDist_cast _ this, evalDist_query, evalDist_query]
-  --     simp [OracleSpec.append, ChallengeIdx.inl, instChallengeOracleInterface]
-  --     refine cast_eq_iff_heq.mpr ((PMF.heq_iff (by simp [this])).mpr ?_)
-  --     intro x
-  --     simp only [PMF.map_apply, PMF.uniformOfFintype_apply, Fin.append_left]
-  --     refine tsum_cast (by simp) (fun a => ?_)
-  --     congr <;> try { simp only [Fin.append_left] } <;> symm <;> simp only [cast_heq]
-  --   | inr j =>
-  --     simp only [eq_mp_eq_cast, id_eq]
-  --     have : [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.range j.inr =
-  --       ([pSpec₁.Challenge]ₒ ++ₒ [pSpec₂.Challenge]ₒ).range (Sum.inr j) := by
-  --       simp [OracleSpec.append, ChallengeIdx.inr, instChallengeOracleInterface]
-  --     rw [evalDist_cast _ this, evalDist_query, evalDist_query]
-  --     simp [OracleSpec.append, ChallengeIdx.inr, instChallengeOracleInterface]
-  --     refine cast_eq_iff_heq.mpr ((PMF.heq_iff (by simp [this])).mpr ?_)
-  --     intro x
-  --     simp only [PMF.map_apply, PMF.uniformOfFintype_apply, Fin.append_right]
-  --     refine tsum_cast (by simp) (fun a => ?_)
-  --     congr <;> try { simp only [Fin.append_right] } <;> symm <;> simp only [cast_heq]
+      simpa using query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) j.inr ()
 
 instance : SubSpec [pSpec₁.Challenge]ₒ ([(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) where
   monadLift | query i t => instSubSpecOfProtocolSpecAppendChallenge.monadLift (query (Sum.inl i) t)
@@ -141,7 +171,7 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     state of the second prover
   - if `i > m`, then it sends the message & updates the state as the second prover. -/
   sendMessage := fun ⟨i, hDir⟩ state => by
-    dsimp [ProtocolSpec.append, Fin.append, Fin.addCases, Fin.tail,
+    dsimp [FinVec.append_eq_fin_append, Fin.append, Fin.addCases, Fin.tail,
       Fin.cast, Fin.castLT, Fin.succ, Fin.castSucc] at hDir state ⊢
     by_cases hi : i < m
     · haveI : i < m + 1 := by omega
@@ -150,9 +180,10 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
       exact P₁.sendMessage ⟨⟨i, hi⟩, hDir⟩ state
     · by_cases hi' : i = m
       · simp [hi'] at hDir state ⊢
-        letI ctxIn₂ := P₁.output state
-        letI state₂ := P₂.input ctxIn₂
-        exact P₂.sendMessage ⟨⟨0, by omega⟩, hDir⟩ state₂
+        exact (do
+          let ctxIn₂ ← P₁.output state
+          letI state₂ := P₂.input ctxIn₂
+          P₂.sendMessage ⟨⟨0, by omega⟩, hDir⟩ state₂)
       · haveI hi1 : ¬ i < m + 1 := by omega
         haveI hi2 : i - (m + 1) + 1 = i - m := by omega
         simp [hi] at hDir ⊢
@@ -161,24 +192,25 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
 
   /- Receiving challenges is implemented essentially the same as sending messages, modulo the
   difference in direction. -/
-  receiveChallenge := fun ⟨i, hDir⟩ state chal => by
+  receiveChallenge := fun ⟨i, hDir⟩ state => by
     dsimp [ProtocolSpec.append, Fin.append, Fin.addCases, Fin.tail,
-      Fin.cast, Fin.castLT, Fin.succ, Fin.castSucc] at hDir state chal ⊢
+      Fin.cast, Fin.castLT, Fin.succ, Fin.castSucc] at hDir state ⊢
     by_cases hi : i < m
     · haveI : i < m + 1 := by omega
-      simp [hi] at hDir chal ⊢
+      simp [hi] at hDir ⊢
       simp [this] at state
-      exact P₁.receiveChallenge ⟨⟨i, hi⟩, hDir⟩ state chal
+      exact P₁.receiveChallenge ⟨⟨i, hi⟩, hDir⟩ state
     · by_cases hi' : i = m
-      · simp [hi'] at hDir state chal ⊢
-        letI ctxIn₂ := P₁.output state
-        letI state₂ := P₂.input ctxIn₂
-        exact P₂.receiveChallenge ⟨⟨0, by omega⟩, hDir⟩ state₂ chal
+      · simp [hi'] at hDir state ⊢
+        exact (do
+          let ctxIn₂ ← P₁.output state
+          letI state₂ := P₂.input ctxIn₂
+          P₂.receiveChallenge ⟨⟨0, by omega⟩, hDir⟩ state₂)
       · haveI hi1 : ¬ i < m + 1 := by omega
         haveI hi2 : i - (m + 1) + 1 = i - m := by omega
-        simp [hi] at hDir chal ⊢
+        simp [hi] at hDir ⊢
         simp [hi1] at state
-        exact P₂.receiveChallenge ⟨⟨i - m, by omega⟩, hDir⟩ (dcast (by simp [hi2]) state) chal
+        exact P₂.receiveChallenge ⟨⟨i - m, by omega⟩, hDir⟩ (dcast (by simp [hi2]) state)
 
   /- The combined prover's output function has two cases:
   - if the second protocol is empty, then it is the composition of the first prover's output
@@ -188,9 +220,10 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     dsimp [Fin.append, Fin.addCases, Fin.tail, Fin.cast, Fin.last, Fin.subNat] at state
     by_cases hn : n = 0
     · simp [hn] at state
-      letI ctxIn₂ := P₁.output state
-      letI state₂ := P₂.input ctxIn₂
-      exact P₂.output (dcast (by simp [hn]) state₂)
+      exact (do
+        let ctxIn₂ ← P₁.output state
+        letI state₂ := P₂.input ctxIn₂
+        P₂.output (dcast (by simp [hn]) state₂))
     · haveI : m + n - (m + 1) + 1 = n := by omega
       simp [hn] at state
       exact P₂.output (dcast (by simp [this, Fin.last]) state)
@@ -379,9 +412,9 @@ The overall output is `stmt₃`, `wit₃`, and the combined transcript `transcri
 -/
 theorem append_run (stmt : Stmt₁) (wit : Wit₁) :
       (P₁.append P₂).run stmt wit = (do
-        let ⟨⟨stmt₂, wit₂⟩, transcript₁⟩ ← liftM (P₁.run stmt wit)
-        let ⟨⟨stmt₃, wit₃⟩, transcript₂⟩ ← liftM (P₂.run stmt₂ wit₂)
-        return ⟨⟨stmt₃, wit₃⟩, transcript₁ ++ₜ transcript₂⟩) := by
+        let ⟨transcript₁, stmt₂, wit₂⟩ ← liftM (P₁.run stmt wit)
+        let ⟨transcript₂, stmt₃, wit₃⟩ ← liftM (P₂.run stmt₂ wit₂)
+        return ⟨transcript₁ ++ₜ transcript₂, stmt₃, wit₃⟩) := by
   unfold run runToRound
   sorry
 

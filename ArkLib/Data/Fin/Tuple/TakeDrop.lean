@@ -4,18 +4,14 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.Fin.Basic
+import ArkLib.Data.Fin.Tuple.Notation
 import Mathlib.Data.List.DropRight
 
 /-!
-# Take and Drop for `Fin` tuples
+# Lemmas for Take and Drop for `Fin` tuples
 
-Note that `Fin.take` is already in mathlib. In this file, we define:
-- `Fin.rtake m h v` for taking the last `m` elements of a `Fin n` tuple `v`, where `h : m ≤ n`
-- `Fin.drop m h v` for dropping the first `m` elements of a `Fin n` tuple `v`, where `h : m ≤ n`
-- `Fin.rdrop m h v` for dropping the last `m` elements of a `Fin n` tuple `v`, where `h : m ≤ n`
-
-We also prove some properties of these functions.
+This file contains some properties of `Fin.{r}take` and `Fin.{r}drop`, which are already defined in
+`ArkLib.Data.Fin.Tuple.Defs` (except `Fin.take` which is already in mathlib).
 -/
 
 universe u v
@@ -60,11 +56,6 @@ theorem take_addCases'_left {n' : ℕ} {β : Fin n' → Sort u} (m : ℕ) (h : m
 --     simp only [append_right, cast_eq_self]
 --   · rw [take, this]
 --     simp [addCases_right]
-
-/-- Take the last `m` elements of a finite vector -/
-def rtake (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) :
-    (i : Fin m) → α (Fin.cast (Nat.sub_add_cancel h) (natAdd (n - m) i)) :=
-  fun i => v (Fin.cast (Nat.sub_add_cancel h) (natAdd (n - m) i))
 
 @[simp]
 theorem rtake_apply (v : (i : Fin n) → α i) (m : ℕ) (h : m ≤ n)
@@ -154,11 +145,6 @@ theorem get_rtake_ofFn_eq_rtake_comp_cast {α : Type*} {m : ℕ} (v : Fin n → 
   `(n - m)`-tuple `(v m, ..., v (n - 1))`.
 -/
 section Drop
-
-/-- Drop the first `m` elements of an `n`-tuple where `m ≤ n`, returning an `(n - m)`-tuple. -/
-def drop (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) :
-    (i : Fin (n - m)) → α (Fin.cast (Nat.sub_add_cancel h) (addNat i m)) :=
-  fun i ↦ v (Fin.cast (Nat.sub_add_cancel h) (addNat i m))
 
 @[simp]
 theorem drop_apply (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) (i : Fin (n - m)) :
@@ -331,6 +317,13 @@ theorem drop_eq_rtake (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) :
   have : n - (n - m) + i.val = i.val + m := by omega
   rw! [this]
 
+/-- Version of `drop_eq_rtake` for uniform tuples `v : Fin n → α` -/
+theorem drop_eq_rtake' {α : Sort*} (m : ℕ) (h : m ≤ n) (v : Fin n → α) :
+    drop m h v = rtake (n - m) (by omega) v := by
+  ext i
+  have : i.val + m = n - (n - m) + i.val := by omega
+  simp [Fin.cast, this]
+
 /-- The concatenation of the first `m` elements and the last `n - m` elements of a tuple is the
 same as the original tuple. -/
 theorem take_drop_addCases' (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) :
@@ -357,170 +350,19 @@ theorem take_drop_append {α : Sort*} (m : ℕ) (h : m ≤ n) (v : Fin n → α)
   · have : i.val - m + m = i.val := by omega
     simp [this]
 
-/-- Drop the last `m` elements of an `n`-tuple where `m ≤ n`, returning an `(n - m)`-tuple. -/
-def rdrop (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) :
-    (i : Fin (n - m)) → α (Fin.cast (Nat.sub_add_cancel h) (i.castAdd m)) :=
-  fun i => v (Fin.cast (Nat.sub_add_cancel h) (i.castAdd m))
-
-@[simp]
-theorem rdrop_apply (v : (i : Fin n) → α i) (m : ℕ) (h : m ≤ n) (i : Fin (n - m)) :
-    rdrop m h v i = v (Fin.cast (Nat.sub_add_cancel h) (i.castAdd m)) := rfl
-
-@[simp]
-theorem rdrop_zero (v : (i : Fin n) → α i) : rdrop 0 n.zero_le v = v := by
+/-- Taking the first `m₂ - m₁` elements of the last `m₂` elements of a tuple is the same as taking
+the first `m₂ - m₁` elements of the original tuple. -/
+theorem take_drop_eq_drop_take (m₁ m₂ : ℕ) (h₁ : m₁ ≤ m₂) (h₂ : m₂ ≤ n) (v : (i : Fin n) → α i) :
+    take (m₂ - m₁) (by omega) (drop m₁ (by omega) v) =
+      drop m₁ (by omega) (take m₂ h₂ v) := by
   ext i
-  simp [Nat.sub_zero, Nat.add_zero, cast_eq_self, rdrop_apply]
-
-@[simp]
-theorem rdrop_all (v : (i : Fin n) → α i) :
-    rdrop n n.le_refl v = fun i => Fin.elim0 (i.cast (Nat.sub_self n)) := by
-  ext i
-  simp at i
-  exact Fin.elim0 i
-
-@[simp]
-theorem rdrop_one {α : Fin (n + 1) → Sort*} (v : (i : Fin (n + 1)) → α i) :
-    rdrop 1 (Nat.le_add_left 1 n) v = init v := by
-  ext i
-  simp only [rdrop, init]
-  congr
-
-@[simp]
-theorem rdrop_of_succ {α : Fin (n + 1) → Sort*} (v : (i : Fin (n + 1)) → α i) :
-    rdrop n n.le_succ v = fun i : Fin ((n + 1) - n) => v ((i.castAdd n).cast (by omega)) := by
-  ext i
-  simp only [rdrop]
+  rfl
 
 /-- Dropping the last `m` elements of a tuple is the same as taking the first `n - m` elements of
 the tuple. -/
+@[simp]
 theorem rdrop_eq_take (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) :
-    rdrop m h v = fun i => dcast (by simp [Fin.cast, castLE]) (take (n - m) (by omega) v i) := by
-  ext i
-  simp only [rdrop, take, castLE, Fin.cast, castAdd, dcast, cast]
-
-/-- Dropping the last `m` elements twice equals dropping the last `m + m'` elements, up to casting
--/
-@[simp]
-theorem rdrop_rdrop {m m' : ℕ} (h : m ≤ n - m') (h' : m' ≤ n) (v : (i : Fin n) → α i) :
-    rdrop m h (rdrop m' h' v) =
-      (fun i =>
-        letI := rdrop (m + m') (Nat.add_le_of_le_sub h' h) v (i.cast (by omega))
-        dcast (by simp [Fin.cast, castAdd]) this) := by
-  ext i
-  simp only [Fin.cast, rdrop_apply, castAdd, castLE, dcast, cast]
-
-/-- `rdrop` commutes with `update` for indices in the kept range. -/
-@[simp]
-theorem rdrop_update_of_lt (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) (i : Fin n)
-    (hi : i < n - m) (x : α i) : rdrop m h (update v i x) =
-      update (rdrop m h v) ⟨i, hi⟩
-        (dcast (by simp [Fin.cast, castAdd]) x) := by
-  ext j
-  simp [update, Fin.cast, castAdd]
-  split
-  next h_1 =>
-    subst h_1
-    simp_all only [Fin.eta, ↓reduceDIte]
-  next h_1 =>
-    simp_all only [right_eq_dite_iff]
-    intro h_2
-    subst h_2
-    simp_all only [Fin.eta, not_true_eq_false]
-
-/-- `rdrop` is unchanged after `update` for indices in the dropped range. -/
-@[simp]
-theorem rdrop_update_of_ge (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) (i : Fin n)
-    (hi : i ≥ n - m) (x : α i) : rdrop m h (update v i x) = rdrop m h v := by
-  ext j
-  simp only [rdrop_apply, update, Fin.cast, castAdd, castLE]
-  split
-  next hj =>
-    have : j.val = i.val := Fin.ext_iff.mp hj
-    rw [← this] at hi
-    absurd hi
-    simp only [ge_iff_le, not_le, j.is_lt]
-  next hj =>
-    simp
-
-/-- Dropping the last `m` elements of an `append u v`, where `m ≤ n'` and `v` is a `n'`-tuple,
-is the same as appending `u` with the result of dropping the last `m` elements of `v`. -/
-theorem rdrop_append_left {n' : ℕ} {α : Sort*} (m : ℕ) (h : m ≤ n') (u : (i : Fin n) → α)
-    (v : (i : Fin n') → α) :
-      rdrop m (Nat.le_add_left_of_le h) (append u v) =
-        append u (rdrop m h v) ∘ Fin.cast (by omega) := by
-  ext i
-  simp [append, addCases, Fin.cast, castAdd]
-
--- /-- Dropping the last `n + m` elements of an `append u v`, where `m ≤ n` and `u` is a `n`-tuple,
--- is the same as dropping the last `m` elements of `u`. -/
--- theorem rdrop_append_right {n' : ℕ} {α : Sort*} (m : ℕ) (h : m ≤ n) (u : (i : Fin n') → α)
---     (v : (i : Fin n) → α) :
---       rdrop (n' + m) (Nat.add_le_add_left h n') (append u v) =
---         fun i => rdrop m h u (i.cast (by omega)) := by
---   ext i
---   simp [Fin.cast, append, addCases, castAdd]
---   split <;> rename_i h'
---   · simp_all
---   · omega
-
-/-- `Fin.rdrop` intertwines with `List.rdrop` via `List.ofFn`. -/
-theorem ofFn_rdrop_eq_rdrop_ofFn {α : Type*} {m : ℕ} (h : m ≤ n) (v : Fin n → α) :
-    List.ofFn (rdrop m h v) = (List.ofFn v).rdrop m := by
-  ext i a
-  simp [List.rdrop, castAdd, Fin.cast, List.getElem?_eq_some_iff]
-
-/-- Alternative version of `ofFn_rdrop_eq_rdrop_ofFn` with `l : List α` instead of `v : Fin n → α`.
--/
-theorem ofFn_rdrop_get {α : Type*} {m : ℕ} (l : List α) (h : m ≤ l.length) :
-    List.ofFn (rdrop m h l.get) = l.rdrop m := by
-  ext i a
-  simp [List.rdrop, castAdd, Fin.cast, List.getElem?_eq_some_iff]
-
-/-- `Fin.rdrop` intertwines with `List.rdrop` via `List.get`. -/
-theorem get_rdrop_eq_rdrop_get_comp_cast {α : Type*} {m : ℕ} (l : List α) (h : m ≤ l.length) :
-    (l.rdrop m).get = rdrop m h l.get ∘ Fin.cast (by simp [List.rdrop]) := by
-  ext i
-  simp [List.rdrop, castAdd, Fin.cast]
-
-/-- Alternative version with `v : Fin n → α` instead of `l : List α`. -/
-theorem get_rdrop_ofFn_eq_rdrop_comp_cast {α : Type*} {m : ℕ} (v : Fin n → α) (h : m ≤ n) :
-    ((List.ofFn v).rdrop m).get =
-      rdrop m h v ∘ Fin.cast (by simp [List.rdrop]) := by
-  ext i
-  simp [List.rdrop, castAdd, Fin.cast]
-
-/-- Dropping the last `m` elements of a tuple is the same as reversing, dropping the first `m`
-elements, and reversing again. -/
-theorem rdrop_eq_rev_drop_rev {α : Sort*} (m : ℕ) (h : m ≤ n) (v : Fin n → α) :
-    rdrop m h v = (drop m h (v ∘ Fin.rev)) ∘ Fin.rev ∘ Fin.cast (by omega) := by
-  ext i
-  simp only [rdrop, drop, rev, castAdd, addNat, comp_apply, Fin.cast, castLE]
-  congr; omega
-
-/-- The concatenation of the first `n - m` elements and the last `m` elements of a tuple is the
-same as the original tuple. -/
-theorem rdrop_rtake_append {α : Sort*} (m : ℕ) (h : m ≤ n) (v : Fin n → α) :
-    Fin.append (rdrop m h v) (rtake m h v) = fun i => v (i.cast (by omega)) := by
-  ext i
-  simp [append, addCases, Fin.cast, castAdd, natAdd]
-  split
-  · simp
-  · have : (n - m) + (i.val - (n - m)) = i.val := by omega
-    simp [this]
-
-/-- Taking after dropping from the right is the same as dropping more from the right. -/
-theorem take_rdrop_eq_rdrop {α : Sort*} (m k : ℕ) (h_k : k ≤ n - m) (h_m : m ≤ n) (v : Fin n → α) :
-    take k h_k (rdrop m h_m v) = rdrop (m + (n - m - k)) (by omega) v ∘ Fin.cast (by omega) := by
-  ext i
-  simp [take, rdrop, castLE, castAdd, Fin.cast]
-
-/-- Dropping from the right after taking is the same as taking less. -/
-theorem rdrop_take_eq_take {α : Sort*} (m k : ℕ) (h_m : m ≤ n) (h_k : k ≤ m) (v : Fin n → α) :
-    rdrop k (by omega) (take m h_m v) = take (m - k) (by omega) v ∘ Fin.cast (by omega) := by
-  ext i
-  simp [take, rdrop, castLE, castAdd, Fin.cast]
-
-
+    rdrop m h v = take (n - m) (by omega) v := rfl
 
 end Drop
 
