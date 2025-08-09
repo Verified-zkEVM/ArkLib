@@ -8,7 +8,6 @@ import VCVio
 import ArkLib.Data.Math.Basic
 import ArkLib.CommitmentScheme.Basic
 import Mathlib.Data.Vector.Snoc
-import ArkLib.CommitmentScheme.QueryCacheToSet
 
 /-!
 # Inductive Indexed Binary Trees
@@ -79,9 +78,9 @@ inductive SkeletonLeafIndex : Skeleton → Type
 /-- Type of indices of internal nodes of a skeleton -/
 inductive SkeletonInternalIndex : Skeleton → Type
   | ofInternal {left right} : SkeletonInternalIndex (Skeleton.internal left right)
-  | ofLeft {left right : Skeleton} (idxLeft : SkeletonLeafIndex left) :
+  | ofLeft {left right : Skeleton} (idxLeft : SkeletonInternalIndex left) :
       SkeletonInternalIndex (Skeleton.internal left right)
-  | ofRight {left right : Skeleton} (idxRight : SkeletonLeafIndex right) :
+  | ofRight {left right : Skeleton} (idxRight : SkeletonInternalIndex right) :
       SkeletonInternalIndex (Skeleton.internal left right)
 
 /-- Type of indices of any node of a skeleton -/
@@ -359,12 +358,19 @@ Return the sibling node index of a given `SkeletonNodeIndex`. Or `none` if the n
 def SkeletonNodeIndex.findSibling {s : Skeleton} (idx : SkeletonNodeIndex s) :
     Option (SkeletonNodeIndex s) :=
   match idx with
+  -- s consists of s single leaf, idx is this leaf and is hence the root
   | SkeletonNodeIndex.ofLeaf => none
+  -- idx is the root node of a nontrivial tree
   | SkeletonNodeIndex.ofInternal => none
+  -- idx is in the left subtree of a nontrivial tree
   | @SkeletonNodeIndex.ofLeft left right idxLeft =>
     match idxLeft with
+    -- If idx is a leaf, then its sibling is the root of the right subtree
     | SkeletonNodeIndex.ofLeaf => some (getRootIndex right).ofRight
+    -- If idx is an internal node, then its sibling is the root of the left subtree
     | SkeletonNodeIndex.ofInternal => some (getRootIndex right).ofRight
+    -- If idx is in the left subtree of the left subtree,
+    -- we can find its sibling by considering only the left subtree
     | SkeletonNodeIndex.ofLeft idxLeftLeft =>
       idxLeftLeft.ofLeft.findSibling.map (SkeletonNodeIndex.ofLeft)
     | SkeletonNodeIndex.ofRight idxLeftRight =>
@@ -441,21 +447,21 @@ lemma FullDataTree.getRightSubtree_toQueryCacheSet_subset {α} {s_left s_right :
     tree.getRightSubtree.toQueryCacheSet ⊆ tree.toQueryCacheSet := by
   sorry
 
-lemma FullDataTree.getRootValue_mem_toQueryCacheSet {α} {s_left s_right : BinaryTree.Skeleton}
-    (left_tree : FullDataTree α s_left)
-    (right_tree : FullDataTree α s_right)
-    (a b)
-     :
-    ((left_tree.getRootValue, right_tree.getRootValue), a) ∈
-      (FullDataTree.internal b left_tree right_tree).toQueryCacheSet ↔ a = b := by
-  -- TODO needs self-consistency
-  constructor
-  · intro h_mem
+-- lemma FullDataTree.getRootValue_mem_toQueryCacheSet {α} {s_left s_right : BinaryTree.Skeleton}
+--     (left_tree : FullDataTree α s_left)
+--     (right_tree : FullDataTree α s_right)
+--     (a b)
+--      :
+--     ((left_tree.getRootValue, right_tree.getRootValue), a) ∈
+--       (FullDataTree.internal b left_tree right_tree).toQueryCacheSet ↔ a = b := by
+--   -- TODO needs self-consistency
+--   constructor
+--   · intro h_mem
 
-    sorry
-  · intro h_eq
-    rw [h_eq]
-    sorry
+--     sorry
+--   · intro h_eq
+--     rw [h_eq]
+--     sorry
 
 section Equivalences
 
@@ -620,6 +626,30 @@ def LeafDataTree.optionComposeBuild {α : Type} {s : Skeleton} (leaf_data_tree :
     (compose : α → α → Option α) :
     FullDataTree (Option α) s :=
   (leaf_data_tree.map (.some)).composeBuild (Option.doubleBind compose)
+
+-- TODO rename
+lemma LeafDataTree.eq_full_of_map_some_eq_optionComposeBuild {α : Type} {s : Skeleton}
+    (full_data_tree : FullDataTree α s)
+    (leaf_data_tree : LeafDataTree α s) (compose : α → α → Option α) :
+    full_data_tree.map (.some) =
+      leaf_data_tree.optionComposeBuild compose -> full_data_tree.toLeafDataTree =
+      leaf_data_tree := by
+  sorry
+
+lemma LeafDataTree.eq_full_of_map_some_eq_optionComposeBuild' {α : Type} {s : Skeleton}
+    (full_data_tree : FullDataTree α s)
+    (leaf_data_tree : LeafDataTree α s) (compose : α → α → Option α)
+    (h_is_some_map:
+      full_data_tree.map (.some) =
+        leaf_data_tree.optionComposeBuild compose
+    )
+    (a b c)
+    (h_in_query_cache_set: ((a, b), c) ∈ full_data_tree.toQueryCacheSet)
+    :
+     compose a b = some c
+      := by
+  sorry
+
 
 def Option.some_eq_doubleBind {α β γ : Type} (f : α → β → Option γ) (a) (b) (out : γ) :
     some out = Option.doubleBind f a b ↔

@@ -116,10 +116,15 @@ def buildMerkleTree {s} (leaf_tree : LeafDataTree α s) : OracleComp (spec α) (
 /-- Generate a Merkle proof for a leaf at a given idx
     The proof consists of the sibling hashes needed to recompute the root.
 -/
-def generateProof {s} (cache_tree : FullDataTree α s) (idx : BinaryTree.SkeletonLeafIndex s) :
-    List α :=
-  (idx.toNodeIndex.findUncles.map (fun siblingIdx =>
-    cache_tree.getValueAtIndex siblingIdx))
+def generateProof {s} (cache_tree : FullDataTree α s) :
+    BinaryTree.SkeletonLeafIndex s → List α
+  | .ofLeaf => []
+  | .ofLeft idxLeft =>
+    (cache_tree.getRightSubtree).getRootValue ::
+      (generateProof cache_tree.getLeftSubtree idxLeft)
+  | .ofRight idxRight =>
+    (cache_tree.getLeftSubtree).getRootValue ::
+      (generateProof cache_tree.getRightSubtree idxRight)
 
 @[simp]
 theorem generateProof_ofLeaf {α : Type} (cache_tree : FullDataTree α Skeleton.leaf) :
@@ -133,7 +138,7 @@ theorem generateProof_ofLeft {α : Type} {sleft sright : Skeleton}
     generateProof cache_tree (BinaryTree.SkeletonLeafIndex.ofLeft idxLeft) =
       (cache_tree.getRightSubtree).getRootValue ::
         (generateProof cache_tree.getLeftSubtree idxLeft) := by
-  sorry
+  rfl
 
 @[simp]
 theorem generateProof_ofRight {α : Type} {sleft sright : Skeleton}
@@ -142,7 +147,7 @@ theorem generateProof_ofRight {α : Type} {sleft sright : Skeleton}
     generateProof cache_tree (BinaryTree.SkeletonLeafIndex.ofRight idxRight) =
       (cache_tree.getLeftSubtree).getRootValue ::
         (generateProof cache_tree.getRightSubtree idxRight) := by
-  sorry
+  rfl
 
 /--
 Given a leaf index, a leaf value at that index, and putative proof,
@@ -514,6 +519,7 @@ theorem mem_buildMerkleTree_support_iff_v3 {α : Type} [DecidableEq α] [Selecta
     (
       (
       -- The merkle_tree_cache is the result of building a Merkle tree from the leaf_data_tree
+      -- with the map supplied by the resulting_cache
       merkle_tree_cache.map (Option.some) = LeafDataTree.optionComposeBuild leaf_data_tree
         (fun a b => resulting_cache () (a, b))
       )
@@ -566,7 +572,7 @@ theorem mem_buildMerkleTree_support_iff_v3 {α : Type} [DecidableEq α] [Selecta
           exact fun r ↦ Eq.congr_right rfl
   | internal left_skeleton right_skeleton left_ih right_ih =>
     cases leaf_data_tree with
-    | internal leftData rightData =>
+    | internal left_leaf_data right_leaf_data =>
       unfold buildMerkleTree
       simp only [simulateQ_bind, StateT.run_bind]
       simp
@@ -592,16 +598,16 @@ theorem mem_buildMerkleTree_support_iff_v3 {α : Type} [DecidableEq α] [Selecta
           simp [FullDataTree.map_internal, h_left_tree_eq_build, h_right_tree_eq_build,
             LeafDataTree.composeBuild_internal, LeafDataTree.map_internal]
           have right_composing_cache_change :
-              (LeafDataTree.map some rightData).composeBuild
+              (LeafDataTree.map some right_leaf_data).composeBuild
                 (Option.doubleBind fun a b ↦ right_cache () (a, b)) =
-              (LeafDataTree.map some rightData).composeBuild
+              (LeafDataTree.map some right_leaf_data).composeBuild
                 (Option.doubleBind fun a b ↦ resulting_cache () (a, b)) := by
             -- use right_cache_subcache_of_resulting_cache
             sorry
           have left_composing_cache_change :
-              (LeafDataTree.map some leftData).composeBuild
+              (LeafDataTree.map some left_leaf_data).composeBuild
                 (Option.doubleBind fun a b ↦ left_cache () (a, b)) =
-              (LeafDataTree.map some leftData).composeBuild
+              (LeafDataTree.map some left_leaf_data).composeBuild
                 (Option.doubleBind fun a b ↦ resulting_cache () (a, b)) := by
             sorry
           refine ⟨?_, ?_, ?_⟩
@@ -638,7 +644,38 @@ theorem mem_buildMerkleTree_support_iff_v3 {α : Type} [DecidableEq α] [Selecta
           simp only [Function.update_apply] at h_final_cache
           aesop -- Sick!
       · -- Backward direction
+        classical
         intro h
+        have := FullDataTree.internal_eq merkle_tree_cache
+        rcases this with
+          ⟨merkle_tree_root, left_subtree, right_subtree, h_eq⟩
+        subst h_eq
+        rcases h with ⟨h1, h2, h3⟩
+        -- Construct the function for what the cache will be
+        -- after the left side of the tree is computed
+        let left_cache : (spec α).QueryCache := fun () input =>
+          if ∃ pair ∈ left_subtree.toQueryCacheSet, pair.1 = input
+          then
+            resulting_cache () input
+          else
+            preexisting_cache () input
+        use left_subtree, left_cache
+        constructor
+        · --
+          sorry
+        -- Construct the function for what the cache will be
+        -- after the right side of the tree is computed
+        let right_cache : (spec α).QueryCache := fun () input =>
+          if ∃ pair ∈ right_subtree.toQueryCacheSet, pair.1 = input
+          then
+            resulting_cache () input
+          else
+            left_cache () input
+        use right_subtree, right_cache
+        constructor
+        · sorry
+        use merkle_tree_root
+
         sorry
 
 
@@ -654,7 +691,9 @@ theorem putative_root_eq_merkle_tree_cache_root_of_generate_proof {α : Type}
     (preexisting_cache resulting_cache : (spec α).QueryCache)
     (putative_root : α)
     (cache_subset :
-      merkle_tree_cache.toQueryCacheSet ⊆ QueryCache.toSet () preexisting_cache)
+      ∀ (a b c),
+        ((a, b), c) ∈ merkle_tree_cache.toQueryCacheSet →
+        preexisting_cache () (a, b) = some c)
     (mem_support' :
       (putative_root, resulting_cache) ∈
       ((simulateQ randomOracle
@@ -664,6 +703,14 @@ theorem putative_root_eq_merkle_tree_cache_root_of_generate_proof {α : Type}
         preexisting_cache).support) :
     putative_root = merkle_tree_cache.getRootValue
    := by
+  -- TODO refactor to avoid `QueryCache.toSet`
+  replace cache_subset :
+      merkle_tree_cache.toQueryCacheSet ⊆ QueryCache.toSet () preexisting_cache := by
+    clear mem_support'
+    simp only [Set.subset_def, QueryCache.toSet, Set.mem_setOf_eq]
+    intro x x_mem
+    apply cache_subset
+    exact x_mem
   induction s generalizing putative_root preexisting_cache resulting_cache with
   | leaf =>
     cases idx with
@@ -692,20 +739,24 @@ theorem putative_root_eq_merkle_tree_cache_root_of_generate_proof {α : Type}
         h_mem_getPutativeRoot, h_cache_after_left⟩
       simp only [LeafDataTree.getValueAtIndex_ofLeft] at h_mem_left
       simp at *
+
       simp only [Set.insert_subset_iff, Set.union_subset_iff] at cache_subset
       rcases cache_subset with
         ⟨h_mem_root_compose, h_mem_left_cache_subset, h_mem_right_cache_subset⟩
       specialize left_ih
         idxLeft left_subtree _ cache_after_left
-        putative_root_left h_mem_left_cache_subset h_mem_left
-      have := subcache_of_mem_support (α := α) _ _ _ _ h_mem_left (left_subtree.getRootValue, right_subtree.getRootValue)
+        putative_root_left h_mem_left h_mem_left_cache_subset
+      have := subcache_of_mem_support (α := α) _ _ _ _
+        h_mem_left (left_subtree.getRootValue, right_subtree.getRootValue)
       clear h_mem_left h_mem_left_cache_subset h_mem_right_cache_subset
       subst left_ih
       -- rcases left_ih with
       --   ⟨putative_root_left_eq, h_preexisting_cache_subcache_of_left_cache⟩
       -- subst putative_root_left_eq
       simp [QueryCache.toSet] at h_mem_root_compose
-      have cache_after_left_root_compose : cache_after_left () (left_subtree.getRootValue, right_subtree.getRootValue) = some merkle_tree_root := by
+      have cache_after_left_root_compose :
+          cache_after_left () (left_subtree.getRootValue, right_subtree.getRootValue)
+          = some merkle_tree_root := by
         aesop
       aesop
     | ofRight idxRight =>
@@ -724,15 +775,18 @@ theorem putative_root_eq_merkle_tree_cache_root_of_generate_proof {α : Type}
         ⟨h_mem_root_compose, h_mem_left_cache_subset, h_mem_right_cache_subset⟩
       specialize right_ih
         idxRight right_subtree _ cache_after_right
-        putative_root_right h_mem_right_cache_subset h_mem_right
-      have := subcache_of_mem_support (α := α) _ _ _ _ h_mem_right (left_subtree.getRootValue, right_subtree.getRootValue)
+        putative_root_right h_mem_right h_mem_right_cache_subset
+      have := subcache_of_mem_support (α := α) _ _ _ _
+        h_mem_right (left_subtree.getRootValue, right_subtree.getRootValue)
       clear h_mem_right h_mem_left_cache_subset h_mem_right_cache_subset
       subst right_ih
       -- rcases right_ih with
       --   ⟨putative_root_right_eq, h_preexisting_cache_subcache_of_right_cache⟩
       -- subst putative_root_right_eq
       simp [QueryCache.toSet] at h_mem_root_compose
-      have cache_after_right_root_compose : cache_after_right () (left_subtree.getRootValue, right_subtree.getRootValue) = some merkle_tree_root := by
+      have cache_after_right_root_compose :
+          cache_after_right () (left_subtree.getRootValue, right_subtree.getRootValue)
+          = some merkle_tree_root := by
         aesop
       aesop
 
@@ -770,14 +824,23 @@ theorem completeness [DecidableEq α] [SelectableType α] {s}
         h_resulting_cache_subset⟩
       have : leaf_data_tree = merkle_tree_cache.toLeafDataTree := by
         -- follows from h_mem_root_compose
-        sorry
+        symm
+        exact
+          LeafDataTree.eq_full_of_map_some_eq_optionComposeBuild merkle_tree_cache leaf_data_tree
+            (fun a b ↦ query_cache () (a, b)) h_mem_root_compose
       rw [this] at h_mem_support'
       apply putative_root_eq_merkle_tree_cache_root_of_generate_proof
         idx merkle_tree_cache query_cache query_cache' _ _ h_mem_support'
       clear h_mem_support'
 
       -- follows from h_mem_root_compose
-      sorry
+      intro input_left input_right output h_mem
+      have := LeafDataTree.eq_full_of_map_some_eq_optionComposeBuild'
+                merkle_tree_cache leaf_data_tree
+                (fun a b ↦ query_cache () (a, b)) h_mem_root_compose
+                input_left input_right output h_mem
+      simp at this
+      exact this
 
 end
 

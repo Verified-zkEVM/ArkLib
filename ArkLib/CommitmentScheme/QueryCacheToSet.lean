@@ -35,6 +35,7 @@ theorem QueryCache.toSet_eq_iff {ι : Type} [Subsingleton ι] {spec : OracleSpec
     QueryCache.toSet i cache1 = QueryCache.toSet i cache2 ↔ cache1 = cache2 := by
   constructor
   · intro h
+    
     sorry
     -- ext i' d r
     -- unfold QueryCache.toSet at *
