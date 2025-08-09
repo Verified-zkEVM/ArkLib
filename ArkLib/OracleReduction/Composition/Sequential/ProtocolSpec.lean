@@ -8,6 +8,8 @@ import ArkLib.ToMathlib.BigOperators.Fin
 import ArkLib.OracleReduction.ProtocolSpec
 import ArkLib.OracleReduction.Cast
 import ArkLib.Data.Fin.Tuple.Lemmas
+import ArkLib.Data.Fin.Fold
+import ArkLib.Data.Fin.Sigma
 
 /-! # Sequential Composition of Protocol Specifications
 
@@ -169,7 +171,9 @@ theorem take_append_left (T : FullTranscript pSpec₁) (T' : FullTranscript pSpe
       T.cast rfl (by simp [ProtocolSpec.append]) := by
   ext i
   simp [take, append, ProtocolSpec.append, Fin.castLE,
-    FullTranscript.cast, Transcript.cast]; sorry
+    FullTranscript.cast, Transcript.cast]
+  have : ⟨i.val, by omega⟩ = Fin.castAdd n i := by ext; simp
+  rw! [this, FinTuple.append_left]
 
 @[simp]
 theorem rtake_append_right (T : FullTranscript pSpec₁) (T' : FullTranscript pSpec₂) :
@@ -177,10 +181,8 @@ theorem rtake_append_right (T : FullTranscript pSpec₁) (T' : FullTranscript pS
       T'.cast rfl (by simp [ProtocolSpec.append]) := by
   ext i
   simp [rtake, Fin.rtake, append, Fin.cast, FullTranscript.cast, Transcript.cast]
-  sorry
-  -- have : m + n - n + i.val - m = i.val := by omega
-  -- rw! (castMode := .all) [this]
-  -- simp [eqRec_eq_cast]
+  have : ⟨m + n - n + i.val, by omega⟩ = Fin.natAdd m i := by ext; simp
+  rw! [this, FinTuple.append_right]
 
 /-- The first half of a transcript for a concatenated protocol -/
 def fst (T : FullTranscript (pSpec₁ ++ₚ pSpec₂)) : FullTranscript pSpec₁ :=
@@ -198,13 +200,13 @@ def snd (T : FullTranscript (pSpec₁ ++ₚ pSpec₂)) : FullTranscript pSpec₂
 theorem append_fst (T₁ : FullTranscript pSpec₁) (T₂ : FullTranscript pSpec₂) :
     (T₁ ++ₜ T₂).fst = T₁ := by
   funext i
-  simp [fst, append]; sorry
+  simp [fst, append]
 
 @[simp]
 theorem append_snd (T₁ : FullTranscript pSpec₁) (T₂ : FullTranscript pSpec₂) :
     (T₁ ++ₜ T₂).snd = T₂ := by
   funext i
-  simp [snd, append]; sorry
+  simp [snd, append]
 
 end FullTranscript
 
@@ -256,62 +258,107 @@ def ChallengeIdx.sumEquiv :
     simp [ChallengeIdx.inl, ChallengeIdx.inr, hi]
     congr; omega
 
+-- def seqCompose {m : ℕ} {n : Fin m → ℕ} (pSpec : ∀ i, ProtocolSpec (n i)) :
+--     ProtocolSpec (∑ i, n i) :=
+--   Fin.dfoldl' m (fun i => ProtocolSpec (∑ j : Fin i, n (j.castLE (by omega))))
+--     (fun i acc => dcast (by simp [Fin.sum_univ_castSucc, Fin.castLE]) (acc ++ₚ pSpec i))
+--       !p[]
+
 /-- Sequential composition of a family of `ProtocolSpec`s, indexed by `i : Fin m`.
 
-Defined by (dependent) folding over `Fin`, starting from the empty protocol specification `![]`.
+Defined for definitional equality, so that:
+- `seqCompose !v[] = !p[]`
+- `seqCompose !v[pSpec₁] = pSpec₁`
+- `seqCompose !v[pSpec₁, pSpec₂] = pSpec₁ ++ₚ pSpec₂`
+- `seqCompose !v[pSpec₁, pSpec₂, pSpec₃] = pSpec₁ ++ₚ pSpec₂ ++ₚ pSpec₃`
+- and so on.
 
 TODO: add notation `∑ i, pSpec i` for `seqCompose` -/
 def seqCompose {m : ℕ} {n : Fin m → ℕ} (pSpec : ∀ i, ProtocolSpec (n i)) :
-    ProtocolSpec (∑ i, n i) :=
-  Fin.dfoldl m (fun i => ProtocolSpec (∑ j : Fin i, n (j.castLE (by omega))))
-    (fun i acc => dcast (by simp [Fin.sum_univ_castSucc, Fin.castLE]) (acc ++ₚ pSpec i))
-      !p[]
+    ProtocolSpec (Fin.sum' n) := match m with
+  | 0 => !p[]
+  | 1 => pSpec 0
+  | _ + 2 => seqCompose (fun i => pSpec (Fin.castSucc i)) ++ₚ pSpec (Fin.last _)
 
 @[simp]
-theorem seqCompose_zero {n : ℕ} {pSpec : ProtocolSpec n} :
-    seqCompose (fun _ : Fin 0=> pSpec) = !p[] := by
-  simp [seqCompose]
+theorem seqCompose_zero {n : Fin 0 → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} :
+    seqCompose pSpec = !p[] := by
+  rfl
 
-/-- Sequential composition of `i + 1` protocol specifications equals the sequential composition of
-  `i` first protocol specifications appended with the `i + 1`-th protocol specification.
--/
-theorem seqCompose_append {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} (i : Fin m) :
-    seqCompose (Fin.take (i + 1) (by omega) pSpec)
-    = dcast (by simp [Fin.sum_univ_castSucc, Fin.castLE])
-        (seqCompose (Fin.take i (by omega) pSpec) ++ₚ pSpec i) := by
-  simp only [seqCompose, Fin.coe_castSucc, Fin.val_succ, Fin.take_apply, Fin.dfoldl_succ_last,
-    Fin.val_last, Fin.castLE_refl, Function.comp_apply, Fin.castLE_castSucc]
-  unfold Function.comp Fin.castSucc Fin.castAdd Fin.castLE Fin.last
-  simp
+@[simp]
+theorem seqCompose_one {n : Fin 1 → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} :
+    seqCompose pSpec = pSpec 0 := by
+  rfl
+
+@[simp]
+theorem seqCompose_succ {m : ℕ} {n : Fin (m + 2) → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} :
+    seqCompose pSpec = seqCompose (fun i => pSpec (Fin.castSucc i)) ++ₚ pSpec (Fin.last _) := by
+  rfl
+
+-- /-- Sequential composition of `i + 1` protocol specifications equals the sequential composition
+-- of `i` first protocol specifications appended with the `i + 1`-th protocol specification.
+-- -/
+-- theorem seqCompose_append {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} (i : Fin m) :
+--     seqCompose (Fin.take (i + 1) (by omega) pSpec)
+--     = dcast (by simp [Fin.sum_univ_castSucc, Fin.castLE])
+--         (seqCompose (Fin.take i (by omega) pSpec) ++ₚ pSpec i) := by
+--   simp only [seqCompose, Fin.coe_castSucc, Fin.val_succ, Fin.take_apply, Fin.dfoldl'_succ_last,
+--     Fin.val_last, Fin.castLE_refl, Fin.castLE_castSucc]
+--   unfold Function.comp Fin.castSucc Fin.castAdd Fin.castLE Fin.last
+--   simp
 
 namespace FullTranscript
 
+-- def seqCompose {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+--     (T : ∀ i, FullTranscript (pSpec i)) : FullTranscript (seqCompose pSpec) :=
+--   Fin.dfoldl' m
+--     (fun i => FullTranscript (ProtocolSpec.seqCompose (Fin.take i (by omega) pSpec)))
+--     (fun i acc => by
+--       refine dcast₂ ?_ ?_ (acc ++ₜ (T i))
+--       · simp [Fin.sum_univ_castSucc, Fin.castLE]
+--       · simp [ProtocolSpec.seqCompose_append])
+--     (fun i => Fin.elim0 i)
+
 /-- Sequential composition of a family of `FullTranscript`s, indexed by `i : Fin m`.
+
+Defined for definitional equality, so that the following holds definitionally:
+- `seqCompose !t[] = !t[]`
+- `seqCompose !t[T₁] = T₁`
+- `seqCompose !t[T₁, T₂] = T₁ ++ₜ T₂`
+- `seqCompose !t[T₁, T₂, T₃] = T₁ ++ₜ T₂ ++ₜ T₃`
+- and so on.
 
 TODO: add notation `∑ i, T i` for `seqCompose` -/
 def seqCompose {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
-    (T : ∀ i, FullTranscript (pSpec i)) : FullTranscript (seqCompose pSpec) :=
-  Fin.dfoldl m
-    (fun i => FullTranscript (ProtocolSpec.seqCompose (Fin.take i (by omega) pSpec)))
-    (fun i acc => by
-      refine dcast₂ ?_ ?_ (acc ++ₜ (T i))
-      · simp [Fin.sum_univ_castSucc, Fin.castLE]
-      · simp [ProtocolSpec.seqCompose_append])
-    (fun i => Fin.elim0 i)
+    (T : ∀ i, FullTranscript (pSpec i)) : FullTranscript (seqCompose pSpec) := match m with
+  | 0 => !t[]
+  | 1 => T 0
+  | _ + 2 => seqCompose (fun i => T (Fin.castSucc i)) ++ₜ T (Fin.last _)
 
 @[simp]
-theorem seqCompose_zero {n : ℕ} {pSpec : ProtocolSpec n} {transcript : pSpec.FullTranscript} :
-    seqCompose (fun _ : Fin 0 => transcript) = (fun i => Fin.elim0 i) := rfl
+theorem seqCompose_zero {n : Fin 0 → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    {T : ∀ i, FullTranscript (pSpec i)} :
+    seqCompose T = !t[] := rfl
 
-/-- Sequential composition of `i + 1` transcripts equals the sequential composition of `i` first
-  transcripts appended with the `i + 1`-th transcript. -/
-theorem seqCompose_append {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
-    {T : ∀ i, FullTranscript (pSpec i)} (i : Fin m) :
-    seqCompose (Fin.take (i + 1) (by omega) T)
-    = dcast₂ (by simp [Fin.sum_univ_castSucc, Fin.castLE]) (by sorry)
-        (seqCompose (Fin.take i (by omega) T) ++ₜ T i) := by
-  simp [seqCompose]
-  sorry
+@[simp]
+theorem seqCompose_one {n : Fin 1 → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    {T : ∀ i, FullTranscript (pSpec i)} :
+    seqCompose T = T 0 := rfl
+
+@[simp]
+theorem seqCompose_succ {m : ℕ} {n : Fin (m + 2) → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    {T : ∀ i, FullTranscript (pSpec i)} :
+    seqCompose T = seqCompose (fun i => T (Fin.castSucc i)) ++ₜ T (Fin.last _) := rfl
+
+-- /-- Sequential composition of `i + 1` transcripts equals the sequential composition of `i` first
+--   transcripts appended with the `i + 1`-th transcript. -/
+-- theorem seqCompose_append {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+--     {T : ∀ i, FullTranscript (pSpec i)} (i : Fin m) :
+--     seqCompose (Fin.take (i + 1) (by omega) T)
+--     = dcast₂ (by simp [Fin.sum_univ_castSucc, Fin.castLE]) (by sorry)
+--         (seqCompose (Fin.take i (by omega) T) ++ₜ T i) := by
+--   simp [seqCompose]
+--   sorry
 
 end FullTranscript
 

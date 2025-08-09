@@ -26,6 +26,20 @@ open OracleComp OracleSpec SubSpec
 
 section find_home
 
+universe u
+
+@[simp]
+lemma FinVec.append_left_of_lt {m n : ℕ} {α : Sort u}
+    (u : FinVec α m) (v : FinVec α n) (i : Fin (m + n)) (h : i.val < m) :
+      FinVec.append u v i = u ⟨i, h⟩ := by
+  simp [FinVec.append_eq_fin_append, Fin.append, Fin.addCases, Fin.castLT, h]
+
+@[simp]
+lemma FinVec.append_right_of_not_lt {m n : ℕ} {α : Sort u}
+    (u : FinVec α m) (v : FinVec α n) (i : Fin (m + n)) (h : ¬ i.val < m) :
+      FinVec.append u v i = v ⟨i - m, by omega⟩ := by
+  simp [FinVec.append_eq_fin_append, Fin.append, Fin.addCases, h, Fin.subNat]
+
 variable {ι ι' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'} {α β : Type}
     (oa : OracleComp spec α)
 
@@ -48,23 +62,68 @@ section Instances
   challenges. -/
 instance [h₁ : ∀ i, SelectableType (pSpec₁.Challenge i)]
     [h₂ : ∀ i, SelectableType (pSpec₂.Challenge i)] :
-    ∀ i, SelectableType ((pSpec₁ ++ₚ pSpec₂).Challenge i) := fun ⟨⟨i, isLt⟩, h⟩ => by
-  dsimp [FinVec.append_eq_fin_append, Fin.append, Fin.addCases, Fin.castLT, Fin.subNat, Fin.cast]
-    at h ⊢
-  by_cases h' : i < m <;> simp [h'] at h ⊢
-  · exact h₁ ⟨⟨i, by omega⟩, h⟩
-  · exact h₂ ⟨⟨i - m, by omega⟩, h⟩
+    ∀ i, SelectableType ((pSpec₁ ++ₚ pSpec₂).Challenge i) := fun ⟨i, h⟩ => by
+  by_cases hi : i.val < m
+  · letI j : Fin m := ⟨i, hi⟩
+    haveI : i = Fin.castAdd n j := by ext; simp [j]
+    simp only [this, Challenge, FinVec.append_left] at h ⊢
+    exact h₁ ⟨j, h⟩
+  · letI j : Fin n := ⟨i.val - m, by omega⟩
+    haveI : i = Fin.natAdd m j := by ext; simp [j]; omega
+    simp only [this, Challenge, FinVec.append_right] at h ⊢
+    exact h₂ ⟨j, h⟩
 
 /-- If two protocols' messages have oracle representations, then their concatenation's messages also
     have oracle representations. -/
 instance [O₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
     [O₂ : ∀ i, OracleInterface (pSpec₂.Message i)] :
-    ∀ i, OracleInterface ((pSpec₁ ++ₚ pSpec₂).Message i) := fun ⟨⟨i, isLt⟩, h⟩ => by
-  dsimp [FinVec.append_eq_fin_append, Fin.append, Fin.addCases, Fin.castLT, Fin.subNat, Fin.cast]
-    at h ⊢
-  by_cases h' : i < m <;> simp [h'] at h ⊢
-  · exact O₁ ⟨⟨i, by omega⟩, h⟩
-  · exact O₂ ⟨⟨i - m, by omega⟩, h⟩
+    ∀ i, OracleInterface ((pSpec₁ ++ₚ pSpec₂).Message i) := fun ⟨i, h⟩ => by
+  by_cases hi : i.val < m
+  · letI j : Fin m := ⟨i, hi⟩
+    haveI : i = Fin.castAdd n j := by ext; simp [j]
+    simp only [this, Message, FinVec.append_left] at h ⊢
+    exact O₁ ⟨j, h⟩
+  · letI j : Fin n := ⟨i.val - m, by omega⟩
+    haveI : i = Fin.natAdd m j := by ext; simp [j]; omega
+    simp only [this, Message, FinVec.append_right] at h ⊢
+    exact O₂ ⟨j, h⟩
+
+/-- Don't know why this doesn't automatically synthesize. -/
+instance : ∀ i, OracleInterface ((pSpec₁ ++ₚ pSpec₂).Challenge i) := challengeOracleInterface
+-- fun ⟨i, h⟩ => by
+--   by_cases hi : i.val < m
+--   · letI j : Fin m := ⟨i, hi⟩
+--     haveI : i = Fin.castAdd n j := by ext; simp [j]
+--     simp only [this, Challenge, FinVec.append_left] at h ⊢
+--     exact challengeOracleInterface ⟨j, h⟩
+--   · letI j : Fin n := ⟨i.val - m, by omega⟩
+--     haveI : i = Fin.natAdd m j := by ext; simp [j]; omega
+--     simp only [this, Challenge, FinVec.append_right] at h ⊢
+--     exact challengeOracleInterface ⟨j, h⟩
+
+@[simp]
+lemma challengeOracleInterface_append_domain_inl (j : pSpec₁.ChallengeIdx) :
+    (OracleInterface.toOracleSpec (pSpec₁ ++ₚ pSpec₂).Challenge).domain (.inl j) = Unit := by
+  simp [OracleSpec.domain, ChallengeIdx.inl, ProtocolSpec.append, OracleInterface.toOracleSpec,
+    instOracleInterfaceChallengeAppend, challengeOracleInterface]
+
+@[simp]
+lemma challengeOracleInterface_append_range_inl (j : pSpec₁.ChallengeIdx) :
+    [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.range (.inl j) = pSpec₁.Challenge j := by
+  simp [OracleSpec.range, ChallengeIdx.inl, ProtocolSpec.append, OracleInterface.toOracleSpec,
+    instOracleInterfaceChallengeAppend, challengeOracleInterface]
+
+@[simp]
+lemma challengeOracleInterface_append_domain_inr (j : pSpec₂.ChallengeIdx) :
+    [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.domain (.inr j) = Unit := by
+  simp [OracleSpec.domain, ChallengeIdx.inr, ProtocolSpec.append, OracleInterface.toOracleSpec,
+    instOracleInterfaceChallengeAppend, challengeOracleInterface]
+
+@[simp]
+lemma challengeOracleInterface_append_range_inr (j : pSpec₂.ChallengeIdx) :
+    [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.range (.inr j) = pSpec₂.Challenge j := by
+  simp [OracleSpec.range, ChallengeIdx.inr, ProtocolSpec.append, OracleInterface.toOracleSpec,
+    instOracleInterfaceChallengeAppend, challengeOracleInterface]
 
 variable [∀ i, SelectableType (pSpec₁.Challenge i)] [∀ i, SelectableType (pSpec₂.Challenge i)]
 
@@ -72,39 +131,9 @@ instance instSubSpecOfProtocolSpecAppendChallenge :
     SubSpec ([pSpec₁.Challenge]ₒ ++ₒ [pSpec₂.Challenge]ₒ) ([(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) where
   monadLift | query i t => match i with
     | Sum.inl j => by
-      simpa [OracleSpec.append, OracleSpec.range, OracleInterface.toOracleSpec, ChallengeIdx.inl,
-        challengeOracleInterface] using
-      query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) j.inl ()
+      simpa using query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) j.inl ()
     | Sum.inr j => by
-      simpa [OracleSpec.append, OracleSpec.range, OracleInterface.toOracleSpec, ChallengeIdx.inr,
-        challengeOracleInterface] using
-      query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) j.inr ()
-  -- evalDist_toFun' := fun i q => by
-  --   cases i with
-  --   | inl j =>
-  --     simp only [eq_mp_eq_cast, id_eq]
-  --     have : [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.range j.inl =
-  --       ([pSpec₁.Challenge]ₒ ++ₒ [pSpec₂.Challenge]ₒ).range (Sum.inl j) := by
-  --       simp [OracleSpec.append, ChallengeIdx.inl, challengeOracleInterface]
-  --     rw [evalDist_cast _ this, evalDist_query, evalDist_query]
-  --     simp [OracleSpec.append, ChallengeIdx.inl, challengeOracleInterface]
-  --     refine cast_eq_iff_heq.mpr ((PMF.heq_iff (by simp [this])).mpr ?_)
-  --     intro x
-  --     simp only [PMF.map_apply, PMF.uniformOfFintype_apply, Fin.append_left]
-  --     refine tsum_cast (by simp) (fun a => ?_)
-  --     congr <;> try { simp only [Fin.append_left] } <;> symm <;> simp only [cast_heq]
-  --   | inr j =>
-  --     simp only [eq_mp_eq_cast, id_eq]
-  --     have : [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.range j.inr =
-  --       ([pSpec₁.Challenge]ₒ ++ₒ [pSpec₂.Challenge]ₒ).range (Sum.inr j) := by
-  --       simp [OracleSpec.append, ChallengeIdx.inr, challengeOracleInterface]
-  --     rw [evalDist_cast _ this, evalDist_query, evalDist_query]
-  --     simp [OracleSpec.append, ChallengeIdx.inr, challengeOracleInterface]
-  --     refine cast_eq_iff_heq.mpr ((PMF.heq_iff (by simp [this])).mpr ?_)
-  --     intro x
-  --     simp only [PMF.map_apply, PMF.uniformOfFintype_apply, Fin.append_right]
-  --     refine tsum_cast (by simp) (fun a => ?_)
-  --     congr <;> try { simp only [Fin.append_right] } <;> symm <;> simp only [cast_heq]
+      simpa using query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) j.inr ()
 
 instance : SubSpec [pSpec₁.Challenge]ₒ ([(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) where
   monadLift | query i t => instSubSpecOfProtocolSpecAppendChallenge.monadLift (query (Sum.inl i) t)

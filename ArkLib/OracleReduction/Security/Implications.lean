@@ -63,7 +63,7 @@ theorem knowledgeSoundness_implies_soundness (relIn : Set (StmtIn × WitIn))
   -- · simp only [Set.language, Set.mem_setOf_eq, not_exists] at hStmtIn
   --   simp only [Functor.map, Seq.seq, PMF.bind_bind, Function.comp_apply, PMF.pure_bind, hStmtIn,
   --     PMF.bind_const, PMF.pure_apply, eq_iff_iff, iff_false, not_true_eq_false, ↓reduceIte,
-  --     zero_add, ENNReal.coe_lt_one_iff, hLt]
+  --     zero_add, ℝ≥0.coe_lt_one_iff, hLt]
 
 /-- Round-by-round soundness with error `rbrSoundnessError` implies soundness with error
 `∑ i, rbrSoundnessError i`, where the sum is over all rounds `i`. -/
@@ -98,83 +98,62 @@ theorem rbrKnowledgeSoundness_implies_knowledgeSoundness
       rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError →
         knowledgeSoundness init impl relIn relOut verifier (∑ i, rbrKnowledgeError i) := by sorry
 
-/-- Round-by-round soundness for a protocol implies state-restoration soundness for the same
-protocol with arbitrary added non-empty salts.
+-- /-- Round-by-round soundness for a protocol implies state-restoration soundness for the same
+-- protocol with arbitrary added non-empty salts. -/
+-- theorem rbrSoundness_implies_srSoundness_addSalt
+--     {init : ProbComp (srChallengeOracle StmtIn pSpec).FunctionType}
+--     {impl : QueryImpl oSpec (StateT (srChallengeOracle StmtIn pSpec).FunctionType ProbComp)}
+--     (langIn : Set StmtIn) (langOut : Set StmtOut)
+--     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+--     (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0)
+--     (Salt : pSpec.MessageIdx → Type) [∀ i, Nonempty (Salt i)] [∀ i, Fintype (Salt i)] :
+--       rbrSoundness init impl langIn langOut verifier rbrSoundnessError →
+--         Verifier.StateRestoration.soundness init impl langIn langOut (verifier.addSalt Salt)
+--           (∑ i, (rbrSoundnessError i)) := by sorry
 
-This theorem shows that the addition of salts does not weaken the security guarantee when moving
-from round-by-round to state-restoration security. -/
-theorem rbrSoundness_implies_srSoundness_addSalt
-    (langIn : Set StmtIn) (langOut : Set StmtOut)
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0)
-    (Salt : pSpec.MessageIdx → Type) [∀ i, Inhabited (Salt i)] [∀ i, Fintype (Salt i)]
-    [∀ i, Nonempty (Salt i)] :
-      rbrSoundness init impl langIn langOut verifier rbrSoundnessError →
-        let saltedPSpec := pSpec.addSalt Salt
-        ∃ (saltedVerifier : Verifier oSpec StmtIn StmtOut saltedPSpec)
-          (srInit : ProbComp (srChallengeOracle StmtIn saltedPSpec).FunctionType)
-          (srImpl : QueryImpl oSpec (StateT (srChallengeOracle StmtIn saltedPSpec).FunctionType ProbComp))
-          (srSoundnessError : ENNReal),
-        Verifier.StateRestoration.soundness srInit srImpl langIn langOut saltedVerifier srSoundnessError ∧
-        srSoundnessError ≤ ∑ i, (rbrSoundnessError i : ENNReal) := by sorry
+-- /-- Round-by-round knowledge soundness for a protocol implies state-restoration
+-- knowledge soundness for the same protocol with arbitrary added non-empty salts. -/
+-- theorem rbrKnowledgeSoundness_implies_srKnowledgeSoundness_addSalt
+--     {init : ProbComp (srChallengeOracle StmtIn pSpec).FunctionType}
+--     {impl : QueryImpl oSpec (StateT (srChallengeOracle StmtIn pSpec).FunctionType ProbComp)}
+--     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+--     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+--     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0)
+--     (Salt : pSpec.MessageIdx → Type) [∀ i, Nonempty (Salt i)] [∀ i, Fintype (Salt i)] :
+--       rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError →
+--         Verifier.StateRestoration.knowledgeSoundness init impl relIn relOut
+--           (verifier.addSalt Salt) (∑ i, rbrKnowledgeError i) := by sorry
 
-/-- Round-by-round knowledge soundness for a protocol implies state-restoration knowledge soundness
-for the same protocol with arbitrary added non-empty salts. -/
-theorem rbrKnowledgeSoundness_implies_srKnowledgeSoundness_addSalt
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0)
-    (Salt : pSpec.MessageIdx → Type) [∀ i, Inhabited (Salt i)] [∀ i, Fintype (Salt i)]
-    [∀ i, Nonempty (Salt i)] :
-      rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError →
-        let saltedPSpec := pSpec.addSalt Salt
-        ∃ (saltedVerifier : Verifier oSpec StmtIn StmtOut saltedPSpec)
-          (srInit : ProbComp (srChallengeOracle StmtIn saltedPSpec).FunctionType)
-          (srImpl : QueryImpl oSpec (StateT (srChallengeOracle StmtIn saltedPSpec).FunctionType ProbComp))
-          (srKnowledgeError : ENNReal),
-        Verifier.StateRestoration.knowledgeSoundness srInit srImpl relIn relOut saltedVerifier srKnowledgeError ∧
-        srKnowledgeError ≤ ∑ i, (rbrKnowledgeError i : ENNReal) := by sorry
-
-/-- State-restoration soundness for a protocol with added salts implies state-restoration soundness
-for the original protocol with improved parameters.
-
-This shows that adding salts is a sound transformation - the security of the original protocol
-is preserved (and potentially improved) when salts are removed. -/
+/-- State-restoration soundness for a protocol with added salts implies state-restoration
+soundness for the original protocol (with improved parameters?)
+-/
 theorem srSoundness_addSalt_implies_srSoundness_original
     (langIn : Set StmtIn) (langOut : Set StmtOut)
-    (Salt : pSpec.MessageIdx → Type) [∀ i, Inhabited (Salt i)] [∀ i, Fintype (Salt i)]
-    [∀ i, Nonempty (Salt i)]
-    (saltedPSpec := pSpec.addSalt Salt)
-    (saltedVerifier : Verifier oSpec StmtIn StmtOut saltedPSpec)
-    (srInit : ProbComp (srChallengeOracle StmtIn saltedPSpec).FunctionType)
-    (srImpl : QueryImpl oSpec (StateT (srChallengeOracle StmtIn saltedPSpec).FunctionType ProbComp))
-    (srSoundnessError : ENNReal) :
-      Verifier.StateRestoration.soundness srInit srImpl langIn langOut saltedVerifier srSoundnessError →
-        ∃ (originalVerifier : Verifier oSpec StmtIn StmtOut pSpec)
-          (originalSrInit : ProbComp (srChallengeOracle StmtIn pSpec).FunctionType)
-          (originalSrImpl : QueryImpl oSpec (StateT (srChallengeOracle StmtIn pSpec).FunctionType ProbComp))
-          (originalSrSoundnessError : ENNReal),
-        Verifier.StateRestoration.soundness originalSrInit originalSrImpl langIn langOut originalVerifier originalSrSoundnessError ∧
-        originalSrSoundnessError ≤ srSoundnessError / (∏ i, Fintype.card (Salt i) : ENNReal) := by sorry
+    (Salt : pSpec.MessageIdx → Type) [∀ i, Nonempty (Salt i)] [∀ i, Fintype (Salt i)]
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (srInit : ProbComp (srChallengeOracle StmtIn (pSpec.addSalt Salt)).FunctionType)
+    (srImpl : QueryImpl oSpec
+      (StateT (srChallengeOracle StmtIn (pSpec.addSalt Salt)).FunctionType ProbComp))
+    (srSoundnessError : ℝ≥0) :
+      Verifier.StateRestoration.soundness srInit srImpl langIn langOut
+        (verifier.addSalt Salt) srSoundnessError →
+        Verifier.StateRestoration.soundness sorry sorry langIn langOut
+          verifier srSoundnessError := by sorry
 
 /-- State-restoration knowledge soundness for a protocol with added salts implies state-restoration
 knowledge soundness for the original protocol with improved parameters. -/
 theorem srKnowledgeSoundness_addSalt_implies_srKnowledgeSoundness_original
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (Salt : pSpec.MessageIdx → Type) [∀ i, Inhabited (Salt i)] [∀ i, Fintype (Salt i)]
-    [∀ i, Nonempty (Salt i)]
-    (saltedPSpec := pSpec.addSalt Salt)
-    (saltedVerifier : Verifier oSpec StmtIn StmtOut saltedPSpec)
-    (srInit : ProbComp (srChallengeOracle StmtIn saltedPSpec).FunctionType)
-    (srImpl : QueryImpl oSpec (StateT (srChallengeOracle StmtIn saltedPSpec).FunctionType ProbComp))
-    (srKnowledgeError : ENNReal) :
-      Verifier.StateRestoration.knowledgeSoundness srInit srImpl relIn relOut saltedVerifier srKnowledgeError →
-        ∃ (originalVerifier : Verifier oSpec StmtIn StmtOut pSpec)
-          (originalSrInit : ProbComp (srChallengeOracle StmtIn pSpec).FunctionType)
-          (originalSrImpl : QueryImpl oSpec (StateT (srChallengeOracle StmtIn pSpec).FunctionType ProbComp))
-          (originalSrKnowledgeError : ENNReal),
-        Verifier.StateRestoration.knowledgeSoundness originalSrInit originalSrImpl relIn relOut originalVerifier originalSrKnowledgeError ∧
-        originalSrKnowledgeError ≤ srKnowledgeError / (∏ i, Fintype.card (Salt i) : ENNReal) := by sorry
+    (Salt : pSpec.MessageIdx → Type) [∀ i, Nonempty (Salt i)] [∀ i, Fintype (Salt i)]
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (srInit : ProbComp (srChallengeOracle StmtIn (pSpec.addSalt Salt)).FunctionType)
+    (srImpl : QueryImpl oSpec
+      (StateT (srChallengeOracle StmtIn (pSpec.addSalt Salt)).FunctionType ProbComp))
+    (srKnowledgeError : ℝ≥0) :
+      Verifier.StateRestoration.knowledgeSoundness srInit srImpl relIn relOut
+        (verifier.addSalt Salt) srKnowledgeError →
+        Verifier.StateRestoration.knowledgeSoundness sorry sorry relIn relOut
+          verifier srKnowledgeError := by sorry
 
 /-- State-restoration soundness implies basic (straightline) soundness.
 
@@ -185,10 +164,10 @@ theorem srSoundness_implies_soundness
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (srInit : ProbComp (srChallengeOracle StmtIn pSpec).FunctionType)
     (srImpl : QueryImpl oSpec (StateT (srChallengeOracle StmtIn pSpec).FunctionType ProbComp))
-    (srSoundnessError : ENNReal) :
+    (srSoundnessError : ℝ≥0) :
       Verifier.StateRestoration.soundness srInit srImpl langIn langOut verifier srSoundnessError →
-        ∃ (basicInit : ProbComp σ) (basicImpl : QueryImpl oSpec (StateT σ ProbComp)),
-        soundness basicInit basicImpl langIn langOut verifier (srSoundnessError.toNNReal) := by sorry
+        soundness init impl langIn langOut verifier srSoundnessError := by
+  sorry
 
 /-- State-restoration knowledge soundness implies basic (straightline) knowledge soundness.
 
@@ -199,10 +178,10 @@ theorem srKnowledgeSoundness_implies_knowledgeSoundness
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (srInit : ProbComp (srChallengeOracle StmtIn pSpec).FunctionType)
     (srImpl : QueryImpl oSpec (StateT (srChallengeOracle StmtIn pSpec).FunctionType ProbComp))
-    (srKnowledgeError : ENNReal) :
-      Verifier.StateRestoration.knowledgeSoundness srInit srImpl relIn relOut verifier srKnowledgeError →
-        ∃ (basicInit : ProbComp σ) (basicImpl : QueryImpl oSpec (StateT σ ProbComp)),
-        knowledgeSoundness basicInit basicImpl relIn relOut verifier (srKnowledgeError.toNNReal) := by sorry
+    (srKnowledgeError : ℝ≥0) :
+      Verifier.StateRestoration.knowledgeSoundness srInit srImpl relIn relOut
+        verifier srKnowledgeError →
+      knowledgeSoundness init impl relIn relOut verifier srKnowledgeError := by sorry
 
 -- TODO: state that round-by-round security implies state-restoration security for protocol with
 -- arbitrary added (non-empty?) salts
