@@ -246,3 +246,117 @@
 --      := by
 --   rw [toQueryCacheSet_internal]
 --   sorry
+
+
+/-- Characterize membership in buildMerkleTree support
+
+A merkle_tree_cache, resulting_cache pair is in the support of the
+  buildMerkleTree on leaf_data_tree simulation starting from preexisting_cache
+  iff:
+
+1. Any entry is only in the resulting_cache iff it is either in the preexisting_cache
+   or in the merkle_tree_cache
+2. The leaves of the data tree are the same as the leaves of the merkle_tree_cache
+   (i.e. the merkle tree cache is a valid Merkle tree for the leaf data tree)
+3. The merkle_tree_cache is self consistent (i.e. any two nodes with children with the same values
+   have the value)
+-/
+theorem mem_buildMerkleTree_support_iff_v2 {α : Type} [DecidableEq α] [SelectableType α]
+    {s : Skeleton}
+    (leaf_data_tree : LeafDataTree α s)
+    (merkle_tree_cache : FullDataTree α s)
+    (preexisting_cache resulting_cache : (spec α).QueryCache) :
+    ((merkle_tree_cache, resulting_cache)
+      ∈ ((simulateQ randomOracle (buildMerkleTree leaf_data_tree)).run preexisting_cache).support)
+    ↔
+    (
+      ∀ d r,
+        resulting_cache () d = some r ↔ (preexisting_cache () d = some r ∨ (d, r) ∈
+          merkle_tree_cache.toQueryCacheSet)
+    )
+    ∧
+    leaf_data_tree = merkle_tree_cache.toLeafDataTree
+    ∧
+    (
+      merkle_tree_cache.isSelfConsistent
+    )
+
+     := by
+  induction s generalizing preexisting_cache resulting_cache with
+  | leaf =>
+    cases leaf_data_tree with
+    | leaf a =>
+      unfold buildMerkleTree
+      simp only [simulateQ_pure, StateT.run_pure, support_pure, Set.mem_singleton_iff,
+        Prod.mk.injEq, domain_def, range_def, FullDataTree.leaf_toQueryCacheSet',
+        Set.mem_empty_iff_false, or_false, Option.eq_of_forall_eq, Prod.forall]
+      constructor
+      · intro h
+        rcases h with ⟨rfl, rfl⟩
+        simp
+        sorry --confident
+      · intro h
+        rcases h with ⟨h1, h2, h3⟩
+        constructor
+        · apply FullDataTree.toLeafDataTree_eq_leaf
+          · exact h2
+        · ext u d r
+          revert r
+          simp only [Option.eq_of_forall_eq]
+          have : u = () := by exact rfl
+          subst this
+          rw [h1]
+  | internal left_skeleton right_skeleton left_ih right_ih =>
+    cases leaf_data_tree with
+    | internal leftData rightData =>
+      unfold buildMerkleTree
+      simp only [simulateQ_bind, StateT.run_bind]
+      simp
+      simp [left_ih, right_ih]
+      clear left_ih right_ih
+      constructor
+      · intro h
+        rcases h with
+          ⟨left_tree, left_cache, ⟨h_left_cache, h_leftData_eq, h_left_selfConsistent⟩,
+          right_tree, right_cache, ⟨h_right_cache, h_rightData_eq, h_right_selfConsistent⟩,
+          final, h_final, h_eq⟩
+        rcases h_final with ⟨h_final_update, h_final⟩
+        -- TODO should be straightforward to rewrite everything
+        constructor
+        · intro a b r
+          clear h_leftData_eq h_rightData_eq leftData rightData
+          rw [h_final_update, Function.update_apply]
+          by_cases h_eq_a_b : (a, b) = (left_tree.getRootValue, right_tree.getRootValue)
+          · rw [h_eq_a_b]
+            simp
+            rw [<- h_eq]
+            by_cases final_eq_r : final = r
+            · simp [final_eq_r]
+            simp [final_eq_r]
+
+            sorry
+          ·
+            sorry
+
+          -- rw [h_right_cache, h_left_cache]
+
+          -- congr
+          -- rw [<- h_eq]
+          -- -- extract_goal
+          -- rw [FullDataTree.internal_toQueryCacheSet]
+          -- congr
+        · sorry
+          -- rw [h_left, h_right, ← h_eq]
+          -- rw [FullDataTree.toLeafDataTree_internal]
+      · intro h
+        rcases h with ⟨h1, h2⟩
+        -- simp [h1]
+        -- -- TODO the trees and root value can be obtained from the merkle_tree_cache
+        -- -- the query caches can be obtained by union
+        -- use merkle_tree_cache.getLeftSubtree
+        -- classical
+        -- use fun _ input => if ∃ pair : ((α × α) × α), pair.1 = input
+        --   ∧ pair ∈  then
+        --   some merkle_tree_cache.getRootValue else none
+
+        sorry

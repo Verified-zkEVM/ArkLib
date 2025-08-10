@@ -20,7 +20,7 @@ variable {ι : Type} {α β γ : Type}
 def Oracle (spec : OracleSpec ι) := (i : ι) → spec.domain i → spec.range i
 
 
-variable [DecidableEq α] [DecidableEq β] [Inhabited β] [Fintype β] [Inhabited γ] [Fintype γ]
+-- variable [DecidableEq α]
 
 namespace OracleSpec
 
@@ -58,7 +58,7 @@ theorem runWithOracle_pure (f : Oracle spec) (a : α) :
 
 @[simp]
 theorem runWithOracle_freeMonad_pure_some (f : Oracle spec) (a : α) :
-    runWithOracle f (FreeMonad.pure (a : Option α)) = a := by
+    runWithOracle f (FreeMonad.pure (a : Option α)) = some a := by
   exact rfl
 
 @[simp]
@@ -72,6 +72,20 @@ theorem runWithOracle_freeMonad_pure (f : Oracle spec) (a : Option α) :
   cases a with
   | none => simp only [runWithOracle_freeMonad_pure_none]
   | some val => simp only [runWithOracle_freeMonad_pure_some]
+
+@[simp]
+theorem runWithOracle_bind (f : Oracle spec) (oa : OracleComp spec α) (ob : α → OracleComp spec β) :
+    runWithOracle f (oa >>= ob) =
+    (do
+      let a ← runWithOracle f oa
+      runWithOracle f (ob a)) := by
+  sorry
+
+@[simp]
+theorem runWithOracle_failure (f : Oracle spec) :
+    runWithOracle f (failure : OracleComp spec α) = none := by
+  unfold runWithOracle OracleComp.construct'
+  simp only [construct_failure]
 
 -- Oracle with bounded use; returns `default` if the oracle is used more than `bound` times.
 -- We could then have the range be an `Option` type, so that `default` is `none`.
@@ -134,5 +148,32 @@ theorem OracleSpec.append_range_right {ι₁ ι₂ : Type} {spec₁ : OracleSpec
 --       have h' := fun a => Classical.choose_spec (hBind' a)
 --       exact ⟨ queryBind' i q _ (fun a =>Classical.choose (hBind' a)), by simp [map_bind, h'] ⟩
 --     | failure' _ => by sorry
+
+/-- True if every non-`none` element of the cache has that same value in the oracle -/
+def Oracle.containsCache {ι : Type} {spec : OracleSpec ι}
+    (f : Oracle spec) (cache : spec.QueryCache) :
+    Prop :=
+  ∀ i q r, cache i q = some r → f i q = r
+
+theorem randomOracle_cache_neverFails_iff_runWithOracle_neverFails {β} [DecidableEq ι] [spec.DecidableEq]
+    [(i : ι) → SelectableType (OracleSpec.range spec i)]
+    (oa : OracleComp (spec) β) (preexisting_cache : spec.QueryCache )
+    :
+    ((oa.simulateQ randomOracle).run preexisting_cache).neverFails
+    ↔
+    (∀ (f : Oracle spec),
+      f.containsCache preexisting_cache →
+      (runWithOracle f oa).isSome) := by
+  sorry
+
+theorem randomOracle_neverFails_iff_runWithOracle_neverFails {β} [DecidableEq ι] [spec.DecidableEq]
+    [(i : ι) → SelectableType (OracleSpec.range spec i)]
+    (oa : OracleComp (spec) β)
+    :
+    (∀ (preexisting_cache : spec.QueryCache), ((oa.simulateQ randomOracle).run preexisting_cache).neverFails)
+    ↔
+    (∀ (f : Oracle spec),
+      (runWithOracle f oa).isSome) := by
+  sorry
 
 end OracleComp

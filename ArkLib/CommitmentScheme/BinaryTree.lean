@@ -12,6 +12,16 @@ import Mathlib.Data.Vector.Snoc
 /-!
 # Inductive Indexed Binary Trees
 
+## A Note about Process/API when working with this
+
+I am trying to follow a process of making simp lemmas and procedures
+that decompose the trees as much as possible.
+
+1. Use `FullDataTree.internal_eq` or `FullDataTree.leaf_eq` or equivalent to take a tree of a known structure and specify the parts of that structure
+2. When I have FullDataTree.internal value left right, I want to push maps or other function on this down to the bottom,
+3. Hopefully this reaches a point where I can have `FullDataTree.internal value1 left1 right1 = FullDataTree.internal value2 left2 right2`
+4. and then I can split this into a conjunction of equality of subterms.
+
 ## Notes & TODOs
 
 ### Binary Tree API
@@ -192,6 +202,33 @@ lemma LeafDataTree.getValueAtIndex_ofRight {s_left s_right : Skeleton} {α : Typ
   | LeafDataTree.internal _ right =>
     rfl
 
+@[simp]
+lemma LeafDataTree.getValueAtIndex_leaf {α} (a : α) :
+    (LeafDataTree.leaf a).getValueAtIndex SkeletonLeafIndex.ofLeaf = a := by
+  rfl
+
+@[simp]
+lemma LeafDataTree.getValueAtIndex_idx {α} (a : α) (idx) :
+    (LeafDataTree.leaf a).getValueAtIndex idx = a := by
+  cases idx with
+  | ofLeaf => simp
+
+@[simp]
+lemma LeafDataTree.getValueAtIndex_internal_ofLeft {α} {s_left s_right : Skeleton}
+    (left : LeafDataTree α s_left) (right : LeafDataTree α s_right)
+    (idxLeft : SkeletonLeafIndex s_left) :
+    (LeafDataTree.internal left right).getValueAtIndex (SkeletonLeafIndex.ofLeft idxLeft) =
+      left.getValueAtIndex idxLeft := by
+  rfl
+
+@[simp]
+lemma LeafDataTree.getValueAtIndex_internal_ofRight {α} {s_left s_right : Skeleton}
+    (left : LeafDataTree α s_left) (right : LeafDataTree α s_right)
+    (idxRight : SkeletonLeafIndex s_right) :
+    (LeafDataTree.internal left right).getValueAtIndex (SkeletonLeafIndex.ofRight idxRight) =
+      right.getValueAtIndex idxRight := by
+  rfl
+
 /--
 A binary tree with values stored at both leaves and internal nodes.
 -/
@@ -285,17 +322,21 @@ def FullDataTree.getValueAtIndex {s} {α : Type}
   | FullDataTree.internal _ _ right, SkeletonNodeIndex.ofRight idxRight =>
     FullDataTree.getValueAtIndex right idxRight
 
-lemma FullDataTree.toLeafDataTree_getValueAtIndex {s} {α : Type}
-    (tree : FullDataTree α s) (idx : SkeletonLeafIndex s) :
-    tree.toLeafDataTree.getValueAtIndex idx =
-      tree.getValueAtIndex idx.toNodeIndex := by
-  -- This is supposed to be the kind of thing `Canonical` is good at,
-  -- but I can't get it to work on my machine
-  sorry
+
 
 /-- Get the root value of a InternalDataTree. -/
 def FullDataTree.getRootValue {s} {α : Type} (tree : FullDataTree α s) :=
   tree.getValueAtIndex (getRootIndex s)
+
+@[simp]
+lemma FullDataTree.getRootValue_leaf {α} (a : α) :
+    (FullDataTree.leaf a).getRootValue = a := by
+  rfl
+
+@[simp]
+lemma FullDataTree.getValueAtIndex_leaf {α} (a : α) :
+    (FullDataTree.leaf a).getValueAtIndex SkeletonNodeIndex.ofLeaf = a := by
+  rfl
 
 @[simp]
 lemma FullDataTree.internal_getRootValue {s_left s_right : Skeleton} {α : Type}
@@ -313,6 +354,31 @@ lemma FullDataTree.internal_getRootValue {s_left s_right : Skeleton} {α : Type}
     (value : α) (left : FullDataTree α s_left) (right : FullDataTree α s_right) :
     (FullDataTree.internal value left right).getRightSubtree = right := by
   rfl
+
+-- lemma leaf_Index_toNodeIndex {s : Skeleton} (idx : SkeletonLeafIndex s) :
+--     idx.toNodeIndex = match idx with
+--       | SkeletonLeafIndex.ofLeaf => SkeletonNodeIndex.ofLeaf
+--       | SkeletonLeafIndex.ofLeft idxLeft => SkeletonNodeIndex.ofLeft idxLeft.toNodeIndex
+--       | SkeletonLeafIndex.ofRight idxRight => SkeletonNodeIndex.ofRight idxRight.toNodeIndex := by
+--   cases idx with
+--   | ofLeaf => rfl
+--   | ofLeft idxLeft =>
+--     simp only [SkeletonLeafIndex.toNodeIndex, SkeletonNodeIndex.ofLeft]
+--     rfl
+--   | ofRight idxRight =>
+--     simp only [SkeletonLeafIndex.toNodeIndex, SkeletonNodeIndex.ofRight]
+--     rfl
+
+-- lemma FullDataTree.toLeafDataTree_getValueAtIndex {s} {α : Type}
+--     (tree : FullDataTree α s) (idx : SkeletonLeafIndex s) :
+--     tree.toLeafDataTree.getValueAtIndex idx =
+--       tree.getValueAtIndex idx.toNodeIndex := by
+--   induction s with
+--   | leaf =>
+--     cases tree with
+--     | leaf value =>
+--       simp
+--   | internal _ _ _ _ => sorry
 
 lemma SkeletonNodeIndex.parent_of_depth_zero {s : Skeleton}
     (idx : SkeletonNodeIndex s) (h : idx.depth = 0) :
@@ -437,15 +503,15 @@ lemma FullDataTree.internal_toQueryCacheSet {α} {s1 s2 : BinaryTree.Skeleton}
         (left.toQueryCacheSet ∪ right.toQueryCacheSet) := by
   rfl
 
-lemma FullDataTree.getLeftSubtree_toQueryCacheSet_subset {α} {s_left s_right : BinaryTree.Skeleton}
-    (tree : FullDataTree α (BinaryTree.Skeleton.internal s_left s_right)) :
-    tree.getLeftSubtree.toQueryCacheSet ⊆ tree.toQueryCacheSet := by
-  sorry
+-- lemma FullDataTree.getLeftSubtree_toQueryCacheSet_subset {α} {s_left s_right : BinaryTree.Skeleton}
+--     (tree : FullDataTree α (BinaryTree.Skeleton.internal s_left s_right)) :
+--     tree.getLeftSubtree.toQueryCacheSet ⊆ tree.toQueryCacheSet := by
+--   sorry
 
-lemma FullDataTree.getRightSubtree_toQueryCacheSet_subset {α} {s_left s_right : BinaryTree.Skeleton}
-    (tree : FullDataTree α (BinaryTree.Skeleton.internal s_left s_right)) :
-    tree.getRightSubtree.toQueryCacheSet ⊆ tree.toQueryCacheSet := by
-  sorry
+-- lemma FullDataTree.getRightSubtree_toQueryCacheSet_subset {α} {s_left s_right : BinaryTree.Skeleton}
+--     (tree : FullDataTree α (BinaryTree.Skeleton.internal s_left s_right)) :
+--     tree.getRightSubtree.toQueryCacheSet ⊆ tree.toQueryCacheSet := by
+--   sorry
 
 -- lemma FullDataTree.getRootValue_mem_toQueryCacheSet {α} {s_left s_right : BinaryTree.Skeleton}
 --     (left_tree : FullDataTree α s_left)
@@ -463,58 +529,59 @@ lemma FullDataTree.getRightSubtree_toQueryCacheSet_subset {α} {s_left s_right :
 --     rw [h_eq]
 --     sorry
 
-section Equivalences
+-- section Equivalences
 
-/-!
-## Equivalences
+-- /-!
+-- ## Equivalences
 
-This section contains theorems about equivalences between different indexing types
-and data structures, as mentioned in the TODOs.
--/
+-- This section contains theorems about equivalences between different indexing types
+-- and data structures, as mentioned in the TODOs.
+-- -/
 
-/-- Equivalence between node indices and the sum of internal and leaf indices -/
-def skeletonNodeIndex_equiv_sum (s : Skeleton) :
-    SkeletonNodeIndex s ≃ SkeletonInternalIndex s ⊕ SkeletonLeafIndex s := by
-  sorry
+-- /-- Equivalence between node indices and the sum of internal and leaf indices -/
+-- def skeletonNodeIndex_equiv_sum (s : Skeleton) :
+--     SkeletonNodeIndex s ≃ SkeletonInternalIndex s ⊕ SkeletonLeafIndex s := by
+--   sorry
 
-/-- Equivalence between full data trees and the product of internal and leaf data trees -/
-def fullDataTree_equiv_product {α : Type} (s : Skeleton) :
-    FullDataTree α s ≃ InternalDataTree α s × LeafDataTree α s := by
-  sorry
+-- /-- Equivalence between full data trees and the product of internal and leaf data trees -/
+-- def fullDataTree_equiv_product {α : Type} (s : Skeleton) :
+--     FullDataTree α s ≃ InternalDataTree α s × LeafDataTree α s := by
+--   sorry
 
-/-- Alternative formulation: FullDataTree as a function from the skeleton -/
-def FullDataTreeAsFunction (α : Type) (s : Skeleton) : Type :=
-  SkeletonNodeIndex s → α
+-- /-- Alternative formulation: FullDataTree as a function from the skeleton -/
+-- def FullDataTreeAsFunction (α : Type) (s : Skeleton) : Type :=
+--   SkeletonNodeIndex s → α
 
-/-- Equivalence between FullDataTree and function representation -/
-def fullDataTree_equiv_function {α : Type} (s : Skeleton) :
-    FullDataTree α s ≃ FullDataTreeAsFunction α s := by
-  sorry
+-- /-- Equivalence between FullDataTree and function representation -/
+-- def fullDataTree_equiv_function {α : Type} (s : Skeleton) :
+--     FullDataTree α s ≃ FullDataTreeAsFunction α s := by
+--   sorry
 
-/-- InternalDataTree as a function from internal indices -/
-def InternalDataTreeAsFunction (α : Type) (s : Skeleton) : Type :=
-  SkeletonInternalIndex s → α
+-- /-- InternalDataTree as a function from internal indices -/
+-- def InternalDataTreeAsFunction (α : Type) (s : Skeleton) : Type :=
+--   SkeletonInternalIndex s → α
 
-/-- Equivalence between InternalDataTree and function representation -/
-def internalDataTree_equiv_function {α : Type} (s : Skeleton) :
-    InternalDataTree α s ≃ InternalDataTreeAsFunction α s := by
-  sorry
+-- /-- Equivalence between InternalDataTree and function representation -/
+-- def internalDataTree_equiv_function {α : Type} (s : Skeleton) :
+--     InternalDataTree α s ≃ InternalDataTreeAsFunction α s := by
+--   sorry
 
-/-- LeafDataTree as a function from leaf indices -/
-def LeafDataTreeAsFunction (α : Type) (s : Skeleton) : Type :=
-  SkeletonLeafIndex s → α
+-- /-- LeafDataTree as a function from leaf indices -/
+-- def LeafDataTreeAsFunction (α : Type) (s : Skeleton) : Type :=
+--   SkeletonLeafIndex s → α
 
-/-- Equivalence between LeafDataTree and function representation -/
-def leafDataTree_equiv_function {α : Type} (s : Skeleton) :
-    LeafDataTree α s ≃ LeafDataTreeAsFunction α s := by
-  sorry
+-- /-- Equivalence between LeafDataTree and function representation -/
+-- def leafDataTree_equiv_function {α : Type} (s : Skeleton) :
+--     LeafDataTree α s ≃ LeafDataTreeAsFunction α s := by
+--   sorry
 
-/-- Using the function representations, the product equivalence follows algebraically -/
-def fullDataTree_equiv_product_via_functions {α : Type} (s : Skeleton) :
-    FullDataTreeAsFunction α s ≃ InternalDataTreeAsFunction α s × LeafDataTreeAsFunction α s := by
-  sorry
+-- /-- Using the function representations, the product equivalence follows algebraically -/
+-- def fullDataTree_equiv_product_via_functions {α : Type} (s : Skeleton) :
+--     FullDataTreeAsFunction α s ≃ InternalDataTreeAsFunction α s × LeafDataTreeAsFunction α s :=
+-- by
+--   sorry
 
-end Equivalences
+-- end Equivalences
 
 section map
 
@@ -525,10 +592,12 @@ def FullDataTree.map {α β : Type} (f : α → β) {s : Skeleton}
   | FullDataTree.internal value left right =>
     FullDataTree.internal (f value) (left.map f) (right.map f)
 
+@[simp]
 lemma FullDataTree.map_leaf {α β} (f : α → β) (a : α) :
     (FullDataTree.leaf a).map f = FullDataTree.leaf (f a) := by
   rfl
 
+@[simp]
 lemma FullDataTree.map_internal {α β} {s_left s_right : Skeleton}
     (f : α → β) (value : α) (left : FullDataTree α s_left) (right : FullDataTree α s_right) :
     (FullDataTree.internal value left right).map f =
@@ -542,17 +611,20 @@ def LeafDataTree.map {α β : Type} (f : α → β) {s : Skeleton}
   | LeafDataTree.internal left right =>
     LeafDataTree.internal (left.map f) (right.map f)
 
+@[simp]
 lemma LeafDataTree.map_leaf {α β} (f : α → β) (a : α) :
     (LeafDataTree.leaf a).map f = LeafDataTree.leaf (f a) := by
   rfl
 
+@[simp]
 lemma LeafDataTree.map_internal {α β} {s_left s_right : Skeleton}
     (f : α → β) (left : LeafDataTree α s_left) (right : LeafDataTree α s_right) :
     (LeafDataTree.internal left right).map f =
       LeafDataTree.internal (left.map f) (right.map f) := by
   rfl
 
-def FullDataTree.map_getRootValue {α β : Type} {s : Skeleton}
+
+lemma FullDataTree.map_getRootValue {α β : Type} {s : Skeleton}
     (f : α → β) (tree : FullDataTree α s) :
     (tree.map f).getRootValue = f (tree.getRootValue) := by
   match tree with
@@ -627,34 +699,53 @@ def LeafDataTree.optionComposeBuild {α : Type} {s : Skeleton} (leaf_data_tree :
     FullDataTree (Option α) s :=
   (leaf_data_tree.map (.some)).composeBuild (Option.doubleBind compose)
 
--- TODO rename
-lemma LeafDataTree.eq_full_of_map_some_eq_optionComposeBuild {α : Type} {s : Skeleton}
-    (full_data_tree : FullDataTree α s)
-    (leaf_data_tree : LeafDataTree α s) (compose : α → α → Option α) :
-    full_data_tree.map (.some) =
-      leaf_data_tree.optionComposeBuild compose -> full_data_tree.toLeafDataTree =
-      leaf_data_tree := by
-  sorry
+@[simp]
+lemma LeafDataTree.optionComposeBuild_leaf {α} (a : α)
+    (compose : α → α → Option α) :
+    (LeafDataTree.leaf a).optionComposeBuild compose = FullDataTree.leaf (.some a) := by
+  rfl
 
-lemma LeafDataTree.eq_full_of_map_some_eq_optionComposeBuild' {α : Type} {s : Skeleton}
-    (full_data_tree : FullDataTree α s)
-    (leaf_data_tree : LeafDataTree α s) (compose : α → α → Option α)
-    (h_is_some_map:
-      full_data_tree.map (.some) =
-        leaf_data_tree.optionComposeBuild compose
-    )
-    (a b c)
-    (h_in_query_cache_set: ((a, b), c) ∈ full_data_tree.toQueryCacheSet)
-    :
-     compose a b = some c
-      := by
-  sorry
+@[simp]
+lemma LeafDataTree.optionComposeBuild_internal {α} {s_left s_right : Skeleton}
+    (left : LeafDataTree α s_left) (right : LeafDataTree α s_right)
+    (compose : α → α → Option α) :
+    (LeafDataTree.internal left right).optionComposeBuild compose =
+      FullDataTree.internal
+        (Option.doubleBind compose
+          (left.optionComposeBuild compose).getRootValue
+          (right.optionComposeBuild compose).getRootValue)
+        (left.optionComposeBuild compose)
+        (right.optionComposeBuild compose) := by
+  rfl
+
+-- -- TODO rename
+-- lemma LeafDataTree.eq_full_of_map_some_eq_optionComposeBuild {α : Type} {s : Skeleton}
+--     (full_data_tree : FullDataTree α s)
+--     (leaf_data_tree : LeafDataTree α s) (compose : α → α → Option α) :
+--     full_data_tree.map (.some) =
+--       leaf_data_tree.optionComposeBuild compose -> full_data_tree.toLeafDataTree =
+--       leaf_data_tree := by
+--   sorry
+
+-- lemma LeafDataTree.eq_full_of_map_some_eq_optionComposeBuild' {α : Type} {s : Skeleton}
+--     (full_data_tree : FullDataTree α s)
+--     (leaf_data_tree : LeafDataTree α s) (compose : α → α → Option α)
+--     (h_is_some_map:
+--       full_data_tree.map (.some) =
+--         leaf_data_tree.optionComposeBuild compose
+--     )
+--     (a b c)
+--     (h_in_query_cache_set: ((a, b), c) ∈ full_data_tree.toQueryCacheSet)
+--     :
+--      compose a b = some c
+--       := by
+--   sorry
 
 
-def Option.some_eq_doubleBind {α β γ : Type} (f : α → β → Option γ) (a) (b) (out : γ) :
-    some out = Option.doubleBind f a b ↔
-    ∃ a' b', a = some a' ∧ b = some b' ∧ f a' b' = some out := by
-  sorry
+-- def Option.some_eq_doubleBind {α β γ : Type} (f : α → β → Option γ) (a) (b) (out : γ) :
+--     some out = Option.doubleBind f a b ↔
+--     ∃ a' b', a = some a' ∧ b = some b' ∧ f a' b' = some out := by
+--   sorry
 
 
 end ComposeBuild
