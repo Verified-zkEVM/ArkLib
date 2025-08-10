@@ -28,9 +28,9 @@ open OracleComp OracleSpec
 @[ext]
 structure ProtocolSpec (n : ℕ) where
   /-- The direction of each message in the protocol. -/
-  dir : FinVec Direction n
+  dir : Fin n → Direction
   /-- The type of each message in the protocol. -/
-  «Type» : FinVec Type n
+  «Type» : Fin n → Type
 deriving Inhabited
 
 variable {n : ℕ}
@@ -82,7 +82,7 @@ def Challenges (pSpec : ProtocolSpec n) : Type := ∀ i, pSpec.Challenge i
 
 Note that this is definitionally equal to `Transcript (Fin.last n) pSpec`. -/
 @[reducible, inline, specialize]
-def FullTranscript (pSpec : ProtocolSpec n) := FinTuple n (fun i => pSpec.«Type» i)
+def FullTranscript (pSpec : ProtocolSpec n) := (i : Fin n) → pSpec.«Type» i
 
 section Restrict
 

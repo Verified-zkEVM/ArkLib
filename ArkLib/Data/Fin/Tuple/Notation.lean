@@ -134,41 +134,37 @@ used in `![]` notation, but uses our custom `vecCons` which provides better defi
 equality through pattern matching instead of `cases`.
 -/
 
-namespace FinVec
+namespace Fin
 
 -- Infix notation for cons operations, similar to Vector.cons
 @[inherit_doc]
-infixr:67 " ::ᵛ " => FinVec.cons
+infixr:67 " ::ᵛ " => Fin.vcons
 
 /-- `!v[...]` notation constructs a vector using our custom functions.
 Uses `!v[...]` to distinguish from standard `![]`. -/
 syntax (name := finVecNotation) "!v[" term,* "]" : term
 
 macro_rules
-  | `(!v[$term:term, $terms:term,*]) => `(FinVec.cons $term !v[$terms,*])
-  | `(!v[$term:term]) => `(FinVec.cons $term !v[])
-  | `(!v[]) => `(FinVec.empty)
+  | `(!v[$term:term, $terms:term,*]) => `(Fin.vcons $term !v[$terms,*])
+  | `(!v[$term:term]) => `(Fin.vcons $term !v[])
+  | `(!v[]) => `(Fin.vempty)
 
 /-- Unexpander for the `!v[x, y, ...]` notation. -/
-@[app_unexpander FinVec.cons]
-def consUnexpander' : Lean.PrettyPrinter.Unexpander
+@[app_unexpander Fin.vcons]
+def vconsUnexpander : Lean.PrettyPrinter.Unexpander
   | `($_ $term !v[$term2, $terms,*]) => `(!v[$term, $term2, $terms,*])
   | `($_ $term !v[$term2]) => `(!v[$term, $term2])
   | `($_ $term !v[]) => `(!v[$term])
   | _ => throw ()
 
 /-- Unexpander for the `!v[]` notation. -/
-@[app_unexpander FinVec.empty]
-def emptyUnexpander' : Lean.PrettyPrinter.Unexpander
+@[app_unexpander Fin.vempty]
+def vemptyUnexpander : Lean.PrettyPrinter.Unexpander
   | `($_:ident) => `(!v[])
   | _ => throw ()
 
-end FinVec
-
-namespace FinTuple
-
 @[inherit_doc]
-infixr:67 " ::ᵗ " => FinTuple.cons
+infixr:67 " ::ᵗ " => Fin.dcons
 
 /-- `!t[...]` notation constructs a tuple (heterogeneous vector) using our custom functions.
 Uses `!t[...]` to distinguish from standard `![]`. -/
@@ -179,62 +175,63 @@ Uses angle brackets to specify the type vector, then square brackets for values.
 syntax (name := finTupleNotationWithTypes) "!t⟨" term "⟩[" term,* "]" : term
 
 macro_rules
-  | `(!t[$term:term, $terms:term,*]) => `(FinTuple.cons $term !t[$terms,*])
-  | `(!t[$term:term]) => `(FinTuple.cons $term !t[])
-  | `(!t[]) => `(@FinTuple.empty (FinVec.empty))
+  | `(!t[$term:term, $terms:term,*]) => `(Fin.dcons $term !t[$terms,*])
+  | `(!t[$term:term]) => `(Fin.dcons $term !t[])
+  | `(!t[]) => `(@Fin.dempty (Fin.vempty))
 
 macro_rules
-  | `(!t⟨$typeVec⟩[$term:term, $terms:term,*]) => `((!t[$term, $terms,*] : FinTuple _ $typeVec))
-  | `(!t⟨$typeVec⟩[$term:term]) => `((!t[$term] : FinTuple _ $typeVec))
-  | `(!t⟨$typeVec⟩[]) => `((FinTuple.empty : FinTuple 0 $typeVec))
+  | `(!t⟨$typeVec⟩[$term:term, $terms:term,*]) =>
+      `((!t[$term, $terms,*] : (i : Fin _) → $typeVec i))
+  | `(!t⟨$typeVec⟩[$term:term]) => `((!t[$term] : (i : Fin _) → $typeVec i))
+  | `(!t⟨$typeVec⟩[]) => `((Fin.dempty : (i : Fin 0) → $typeVec i))
 
 /-- Unexpander for the `!t[x, y, ...]` notation. -/
-@[app_unexpander FinTuple.cons]
-def consUnexpander' : Lean.PrettyPrinter.Unexpander
+@[app_unexpander Fin.dcons]
+def dconsUnexpander : Lean.PrettyPrinter.Unexpander
   | `($_ $term !t[$term2, $terms,*]) => `(!t[$term, $term2, $terms,*])
   | `($_ $term !t[$term2]) => `(!t[$term, $term2])
   | `($_ $term !t[]) => `(!t[$term])
   | _ => throw ()
 
 /-- Unexpander for the `!t[]` notation. -/
-@[app_unexpander FinTuple.empty]
-def emptyUnexpander' : Lean.PrettyPrinter.Unexpander
+@[app_unexpander Fin.dempty]
+def demptyUnexpander : Lean.PrettyPrinter.Unexpander
   | `($_:ident) => `(!t[])
   | _ => throw ()
 
-end FinTuple
+end Fin
 
-/-- `++` instance for FinVec -/
-instance {α : Type*} {m n : ℕ} : HAppend (FinVec α m) (FinVec α n) (FinVec α (m + n)) where
-  hAppend := FinVec.append
+/-- `++` instance for Fin homogeneous vectors -/
+instance {α : Type*} {m n : ℕ} : HAppend (Fin m → α) (Fin n → α) (Fin (m + n) → α) where
+  hAppend := Fin.vappend
 
-/-- `++ᵈ` instance for FinTuple -/
+/-- `++ᵈ` instance for Fin heterogeneous vectors -/
 instance {m n : ℕ} {α : Fin m → Sort u} {β : Fin n → Sort u} :
-    HDAppend (FinTuple m α) (FinTuple n β) (FinTuple (m + n) (FinVec.append α β)) where
-  hDAppend := FinTuple.append
+    HDAppend ((i : Fin m) → α i) ((i : Fin n) → β i) ((i : Fin (m + n)) → Fin.vappend α β i) where
+  hDAppend := Fin.dappend
 
 -- Test examples for the new tuple notations
 section TupleNotationTests
 
 -- Basic heterogeneous tuple without type specification
 example : !t[(1 : ℕ), (true : Bool), ("hello" : String)] =
-  FinTuple.cons 1 (FinTuple.cons true (FinTuple.cons "hello" FinTuple.empty)) := rfl
+  Fin.dcons 1 (Fin.dcons true (Fin.dcons "hello" Fin.dempty)) := rfl
 
 -- With explicit type vector using predefined type
-def MyTypeVec : FinVec Type 3 := !v[ℕ, Bool, String]
+def MyTypeVec : Fin 3 → Type := !v[ℕ, Bool, String]
 
 example : !t⟨MyTypeVec⟩[1, true, "hello"] =
-  (!t[1, true, "hello"] : FinTuple 3 MyTypeVec) := rfl
+  (!t[1, true, "hello"] : (i : Fin 3) → MyTypeVec i) := rfl
 
 -- With explicit type vector using !v[] notation
 example : !t⟨ !v[ℕ, Bool, String] ⟩[1, true, "hello"] =
-  (!t[1, true, "hello"] : FinTuple 3 !v[ℕ, Bool, String]) := rfl
+  (!t[1, true, "hello"] : (i : Fin 3) → !v[ℕ, Bool, String] i) := rfl
 
 example : !t⟨ !v[ℕ, Bool, String] ⟩[1, true, "hello"] =
   !t[(1 : ℕ), (true : Bool), ("hello" : String)] := rfl
 
 -- Empty tuple with type specification
-example : !t⟨!v[]⟩[] = (FinTuple.empty : FinTuple 0 !v[]) := rfl
+example : !t⟨!v[]⟩[] = (Fin.dempty : (i : Fin 0) → !v[] i) := rfl
 
 end TupleNotationTests
 
@@ -248,17 +245,17 @@ section FinVecConsTests
 example : 1 ::ᵛ !v[2, 3] = !v[1, 2, 3] := rfl
 
 -- Chaining cons operations (right associative)
-example : 1 ::ᵛ 2 ::ᵛ 3 ::ᵛ FinVec.empty = !v[1, 2, 3] := rfl
+example : 1 ::ᵛ 2 ::ᵛ 3 ::ᵛ Fin.vempty = !v[1, 2, 3] := rfl
 
 -- Mixing cons and bracket notation
 example : 0 ::ᵛ !v[1, 2] = !v[0, 1, 2] := rfl
 
 -- Type inference works
-example : let v : FinVec ℕ 2 := !v[1, 2]
+example : let v : Fin 2 → ℕ := !v[1, 2]
           0 ::ᵛ v = !v[0, 1, 2] := rfl
 
 -- Empty vector
-example : 42 ::ᵛ FinVec.empty = !v[42] := rfl
+example : 42 ::ᵛ Fin.vempty = !v[42] := rfl
 
 end FinVecConsTests
 
@@ -266,11 +263,11 @@ end FinVecConsTests
 section FinTupleConsTests
 
 -- Basic heterogeneous cons
-example : (1 : ℕ) ::ᵗ ((true : Bool) ::ᵗ FinTuple.empty) =
+example : (1 : ℕ) ::ᵗ ((true : Bool) ::ᵗ Fin.dempty) =
           !t[(1 : ℕ), (true : Bool)] := rfl
 
 -- Chaining different types (right associative)
-example : (1 : ℕ) ::ᵗ (true : Bool) ::ᵗ ("hello" : String) ::ᵗ FinTuple.empty =
+example : (1 : ℕ) ::ᵗ (true : Bool) ::ᵗ ("hello" : String) ::ᵗ Fin.dempty =
           !t[(1 : ℕ), (true : Bool), ("hello" : String)] := rfl
 
 -- Mixing cons and bracket notation
@@ -278,11 +275,11 @@ example : (0 : ℕ) ::ᵗ !t[(1 : ℕ), (true : Bool)] =
           !t[(0 : ℕ), (1 : ℕ), (true : Bool)] := rfl
 
 -- With explicit type annotation
-example : (42 : ℕ) ::ᵗ (FinTuple.empty : FinTuple 0 FinVec.empty) =
+example : (42 : ℕ) ::ᵗ (Fin.dempty : (i : Fin 0) → Fin.vempty i) =
           !t[(42 : ℕ)] := rfl
 
 -- Complex nested example
-example : let t1 : FinTuple 2 !v[Bool, String] := !t[(true : Bool), ("test" : String)]
+example : let t1 : (i : Fin 2) → !v[Bool, String] i := !t[(true : Bool), ("test" : String)]
           let result := (1 : ℕ) ::ᵗ t1
           result = !t[(1 : ℕ), (true : Bool), ("test" : String)] := rfl
 
@@ -292,13 +289,13 @@ end FinTupleConsTests
 section MixedTests
 
 -- FinVec used as type vector for FinTuple
-example : let typeVec := ℕ ::ᵛ Bool ::ᵛ FinVec.empty
+example : let typeVec := ℕ ::ᵛ Bool ::ᵛ !v[]
           !t⟨typeVec⟩[1, true] = !t[(1 : ℕ), (true : Bool)] := rfl
 
 -- Building complex structures step by step
-example : let types := ℕ ::ᵛ Bool ::ᵛ FinVec.empty
-          let values := 1 ::ᵗ true ::ᵗ FinTuple.empty
-          values = (!t⟨types⟩[1, true] : FinTuple 2 types) := rfl
+example : let types := ℕ ::ᵛ Bool ::ᵛ !v[]
+          let values := 1 ::ᵗ true ::ᵗ !t[]
+          values = (!t⟨types⟩[1, true] : (i : Fin 2) → types i) := rfl
 
 end MixedTests
 
@@ -314,8 +311,8 @@ section FinVecAppendTests
 example : !v[1, 2] ++ !v[3, 4] = !v[1, 2, 3, 4] := rfl
 
 -- Append with empty vectors
-example : !v[1, 2] ++ (!v[] : FinVec ℕ _) = !v[1, 2] := rfl
-example : (FinVec.empty : FinVec ℕ 0) ++ !v[1, 2] = !v[1, 2] := rfl
+example : !v[1, 2] ++ (!v[] : Fin 0 → ℕ) = !v[1, 2] := rfl
+example : (!v[] : Fin 0 → ℕ) ++ !v[1, 2] = !v[1, 2] := rfl
 
 -- Chaining appends (left associative)
 example : !v[1] ++ !v[2] ++ !v[3] = !v[1, 2, 3] := rfl
@@ -361,7 +358,7 @@ example : !t[(1 : ℕ), (2 : ℕ)] ++ᵈ !t[(true : Bool), ("hello" : String)] =
 
 -- Complex nested example with multiple operations
 example : let base := !t[(0 : ℕ)]
-          let middle := (true : Bool) ::ᵗ (FinTuple.empty : FinTuple 0 FinVec.empty)
+          let middle := (true : Bool) ::ᵗ !t[]
           let final := !t[("final" : String)]
           (base ++ᵈ middle) ++ᵈ final = !t[(0 : ℕ), (true : Bool), ("final" : String)] := rfl
 
@@ -378,7 +375,7 @@ example : let types1 := !v[ℕ, Bool]
           let t2 := !t⟨types2⟩["hello", 3.14]
           let result := t1 ++ᵈ t2
           result = (!t[(1 : ℕ), (true : Bool), ("hello" : String), (3.14 : Float)] :
-                   FinTuple 4 combined_types) := rfl
+                   (i : Fin 4) → combined_types i) := rfl
 
 -- Append with different constructions
 example : (!v[1, 2] ++ !v[3]) = !v[1, 2, 3] ∧
@@ -393,42 +390,41 @@ end AppendTests
 section NewNotationTests
 
 -- These should work with rfl!
-example : FinVec.cons 1 !v[2] = !v[1, 2] := rfl
+example : 1 ::ᵛ !v[2] = !v[1, 2] := rfl
 
 example : Fin.tail !v[1, 2, 3] = !v[2, 3] := rfl
 
-example : FinVec.concat !v[1, 2] 3 = !v[1, 2, 3] := rfl
+example : Fin.vconcat !v[1, 2] 3 = !v[1, 2, 3] := rfl
 
-example : FinVec.append !v[1, 2] !v[3, 4] = !v[1, 2, 3, 4] := rfl
+example : !v[1, 2] ++ !v[3, 4] = !v[1, 2, 3, 4] := rfl
 
-example : FinVec.append !v[(true, Nat)]
-    (FinVec.append !v[] (FinVec.append !v[(false, Int)] !v[])) =
+example : !v[(true, Nat)] ++
+  ((!v[] : Fin 0 → Bool × Type) ++
+    (!v[(false, Int)] ++ (!v[] : Fin 0 → Bool × Type))) =
       !v[(true, Nat), (false, Int)] := rfl
 
-example : FinVec.append (!v[(true, Nat)] ++ !v[(false, Int)])
-    (FinVec.append !v[(false, Int)] !v[]) = !v[(true, Nat), (false, Int), (false, Int)] := rfl
+example : !v[(true, Nat)] ++ !v[(false, Int)] ++ !v[(false, Int)] =
+  !v[(true, Nat), (false, Int), (false, Int)] := rfl
 
 -- Test that roundtrip works with pure rfl
-example : FinVec.append (Fin.take 2 (by omega) !v[1, 2, 3, 4])
-    (Fin.drop 2 (by omega) !v[1, 2, 3, 4]) = !v[1, 2, 3, 4] := rfl
+example : Fin.take 2 (by omega) !v[1, 2, 3, 4] ++
+  Fin.drop 2 (by omega) !v[1, 2, 3, 4] = !v[1, 2, 3, 4] := rfl
 
 -- Complex expression that should compute cleanly
-example : Fin.tail (FinVec.append
-    (FinVec.cons 1 (FinVec.cons 2 (FinVec.cons 3 (Fin.elim0))))
-    (FinVec.cons 4 (Fin.elim0))) = !v[2, 3, 4] := rfl
+example : Fin.tail (1 ::ᵛ 2 ::ᵛ 3 ::ᵛ !v[] ++ 4 ::ᵛ !v[]) = !v[2, 3, 4] := rfl
 
 -- Even more complex combinations work with rfl
-example : Fin.init (FinVec.concat !v[Nat, Int] Bool) = !v[Nat, Int] := by
-  dsimp [Fin.init, FinVec.concat, FinVec.cons, FinVec.cons]
+example : Fin.init (Fin.vconcat !v[Nat, Int] Bool) = !v[Nat, Int] := by
+  dsimp [Fin.init, Fin.vconcat, Fin.vcons, Fin.vcons]
   ext i; fin_cases i <;> rfl
 
-example : FinVec.concat (Fin.init !v[Nat, Int, Unit]) Bool = !v[Nat, Int, Bool] := by rfl
+example : Fin.vconcat (Fin.init !v[Nat, Int, Unit]) Bool = !v[Nat, Int, Bool] := by rfl
 
-example {v : Fin 3 → ℕ} : FinVec.concat (Fin.init v) (v (Fin.last 2)) = v := by
+example {v : Fin 3 → ℕ} : Fin.vconcat (Fin.init v) (v (Fin.last 2)) = v := by
   ext i; fin_cases i <;> rfl
 
 -- Multiple operations compose cleanly
-example : Fin.tail (FinVec.cons 0 (FinVec.append !v[1, 2] !v[3, 4])) =
+example : Fin.tail (0 ::ᵛ !v[1, 2] ++ !v[3, 4]) =
     !v[1, 2, 3, 4] := rfl
 
 /-- Test that our new notation gives the same result as the old one (extensionally) -/
@@ -438,39 +434,36 @@ example : !v[1, 2, 3] = ![1, 2, 3] := by ext i; fin_cases i <;> rfl
 section DependentVectorTests
 
 -- Test that the ++ᵈ notation is properly defined
-example : (fun _ : Fin 1 => (42 : ℕ)) ++ᵈ (fun _ : Fin 1 => (true : Bool)) =
-          FinTuple.append (fun _ : Fin 1 => (42 : ℕ)) (fun _ : Fin 1 => (true : Bool)) := rfl
+example : !t[(42 : ℕ)] ++ᵈ !t[(true : Bool)] = !t[(42 : ℕ), (true : Bool)] := rfl
 
 -- Test that the notation can be chained and is associative
-example : ((fun _ : Fin 1 => (1 : ℕ)) ++ᵈ (fun _ : Fin 1 => (true : Bool))) ++ᵈ
-          (fun _ : Fin 1 => ("test" : String)) =
-          (fun _ : Fin 1 => (1 : ℕ)) ++ᵈ
-          ((fun _ : Fin 1 => (true : Bool)) ++ᵈ (fun _ : Fin 1 => ("test" : String))) := rfl
+example : !t[(1 : ℕ)] ++ᵈ !t[(true : Bool)] ++ᵈ !t[("test" : String)] =
+          !t[(1 : ℕ), (true : Bool), ("test" : String)] := rfl
 
 -- Test that type vectors compute correctly
-example : FinVec.cons ℕ (fun _ : Fin 1 => Bool) 0 = ℕ := rfl
+example : (ℕ ::ᵛ !v[Bool]) 0 = ℕ := rfl
 
-example : FinVec.cons ℕ (fun _ : Fin 1 => Bool) 1 = Bool := rfl
+example : (ℕ ::ᵛ !v[Bool]) 1 = Bool := rfl
 
 -- Test FinVec.append on types
-example : FinVec.append (fun _ : Fin 1 => ℕ) (fun _ : Fin 1 => Bool) 0 = ℕ := rfl
+example : (!v[ℕ] ++ !v[Bool]) 0 = ℕ := rfl
 
-example : FinVec.append (fun _ : Fin 1 => ℕ) (fun _ : Fin 1 => Bool) 1 = Bool := rfl
+example : (!v[ℕ] ++ !v[Bool]) 1 = Bool := rfl
 
 -- Test FinVec.concat on types
-example : FinVec.concat (fun _ : Fin 1 => ℕ) Bool 0 = ℕ := rfl
+example : Fin.vconcat !v[ℕ] Bool 0 = ℕ := rfl
 
-example : FinVec.concat (fun _ : Fin 1 => ℕ) Bool 1 = Bool := rfl
+example : Fin.vconcat !v[ℕ] Bool 1 = Bool := rfl
 
 -- Test that regular vector functions work with the !v[] notation
-example : FinVec.cons 1 !v[2, 3] = !v[1, 2, 3] := rfl
+example : 1 ::ᵛ !v[2, 3] = !v[1, 2, 3] := rfl
 
-example : FinVec.concat !v[1, 2] 3 = !v[1, 2, 3] := rfl
+example : Fin.vconcat !v[1, 2] 3 = !v[1, 2, 3] := rfl
 
-example : FinVec.append !v[1, 2] !v[3, 4] = !v[1, 2, 3, 4] := rfl
+example : !v[1, 2] ++ !v[3, 4] = !v[1, 2, 3, 4] := rfl
 
 -- Test that the dependent versions provide good definitional equality
-example : FinVec.cons ℕ (FinVec.cons Bool (fun _ : Fin 0 => Empty)) =
+example : ℕ ::ᵛ (Bool ::ᵛ (fun _ : Fin 0 => Empty)) =
     fun i : Fin 2 => if i = 0 then ℕ else Bool := by
   ext i; fin_cases i <;> rfl
 

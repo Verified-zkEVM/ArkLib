@@ -4,16 +4,15 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
+import Mathlib.Algebra.BigOperators.Fin
 import ArkLib.Data.Fin.Basic
 import ArkLib.Data.Fin.Fold
-import Mathlib.Algebra.BigOperators.Fin
+import ArkLib.Data.Fin.Tuple.Lemmas
 
 /-!
 # Fin Sigma Equivalences
 
-This file contains functions and lemmas related to equivalences between
-`(i : Fin m) × Fin (n i)` and `Fin (∑ i, n i)`, including a new implementation
-using `dfoldl'` from the Fold module.
+We re-define big-operators sum and product over `Fin` to have good definitional equalities.
 -/
 
 universe u v
@@ -29,73 +28,73 @@ variable {α : Type*} [CommMonoid α]
 /-- Version of multiplying over `Fin` vectors with good definitional equalities, using `dfoldl'`.
 
 The definitional equality we want is that:
-`prod' a = a ⟨n,⬝⟩ * a ⟨n-1,⬝⟩ * ... * a ⟨0,⬝⟩ * 1`
+`vprod a = a ⟨n,⬝⟩ * a ⟨n-1,⬝⟩ * ... * a ⟨0,⬝⟩ * 1`
 -/
 -- @[to_additive
 -- "Version of summing over `Fin` vectors with good definitional equalities, using `dfoldl'`.
 
--- The definitional equality we want is that: `sum' a = a 0 + a 1 + ... + a (n-1) + 0`.
+-- The definitional equality we want is that: `vsum a = a 0 + a 1 + ... + a (n-1) + 0`.
 
 -- When `x + 0 = x` definitionally in `α`, we have the following definitional equalities:
--- - `sum' !v[] = 0`
--- - `sum' !v[a] = a`
--- - `sum' !v[a, b] = a + b`
--- - `sum' !v[a, b, c] = (a + b) + c`
+-- - `vsum !v[] = 0`
+-- - `vsum !v[a] = a`
+-- - `vsum !v[a, b] = a + b`
+-- - `vsum !v[a, b, c] = (a + b) + c`
 -- - and so on
 -- "]
-def prod' {n : ℕ} (a : Fin n → α) : α :=
+def vprod {n : ℕ} (a : Fin n → α) : α :=
   match n with
     | 0 => 1
     | 1 => a 0
-    | n + 1 => prod' (a ∘ Fin.castSucc) * a (Fin.last n)
+    | n + 1 => vprod (a ∘ Fin.castSucc) * a (Fin.last n)
 
 -- Can't use `to_additive` attribute for some reason
-def sum' {n : ℕ} (a : Fin n → ℕ) : ℕ := match n with
+def vsum {n : ℕ} (a : Fin n → ℕ) : ℕ := match n with
   | 0 => 0
   | 1 => a 0
-  | n + 1 => sum' (a ∘ Fin.castSucc) + a (Fin.last n)
+  | n + 1 => vsum (a ∘ Fin.castSucc) + a (Fin.last n)
 
 variable {n : ℕ}
 
 @[simp]
-lemma prod'_zero {a : Fin 0 → α} : prod' a = 1 := rfl
+lemma vprod_zero {a : Fin 0 → α} : vprod a = 1 := rfl
 
 @[simp]
-lemma prod'_one {a : Fin 1 → α} : prod' a = a 0 := rfl
+lemma vprod_one {a : Fin 1 → α} : vprod a = a 0 := rfl
 
 @[simp]
-lemma prod'_succ {a : Fin (n + 2) → α} : prod' a = prod' (a ∘ Fin.castSucc) * a (Fin.last _) := rfl
+lemma vprod_succ {a : Fin (n + 2) → α} : vprod a = vprod (a ∘ Fin.castSucc) * a (Fin.last _) := rfl
 
 @[simp]
-lemma prod'_two {a : Fin 2 → α} : prod' a = a 0 * a 1 := rfl
+lemma vprod_two {a : Fin 2 → α} : vprod a = a 0 * a 1 := rfl
 
 @[simp]
-lemma prod'_three {a : Fin 3 → α} : prod' a = a 0 * a 1 * a 2 := rfl
+lemma vprod_three {a : Fin 3 → α} : vprod a = a 0 * a 1 * a 2 := rfl
 
-/-- `prod' a` is equivalent to the standard `Finset`-based definition, `∏ i, a i`. -/
-lemma prod'_eq_univ_prod {a : Fin n → α} : prod' a = ∏ i, a i := by
+/-- `vprod a` is equivalent to the standard `Finset`-based definition, `∏ i, a i`. -/
+lemma vprod_eq_univ_prod {a : Fin n → α} : vprod a = ∏ i, a i := by
   induction n using Nat.twoStepInduction with
   | zero => simp
   | one => simp
   | more n ih1 ih2 => simp [ih2, Fin.prod_univ_castSucc]
 
 @[simp]
-lemma sum'_zero {a : Fin 0 → ℕ} : sum' a = 0 := rfl
+lemma vsum_zero {a : Fin 0 → ℕ} : vsum a = 0 := rfl
 
 @[simp]
-lemma sum'_one {a : Fin 1 → ℕ} : sum' a = a 0 := rfl
+lemma vsum_one {a : Fin 1 → ℕ} : vsum a = a 0 := rfl
 
 @[simp]
-lemma sum'_succ {a : Fin (n + 2) → ℕ} : sum' a = sum' (a ∘ Fin.castSucc) + a (Fin.last _) := rfl
+lemma vsum_succ {a : Fin (n + 2) → ℕ} : vsum a = vsum (a ∘ Fin.castSucc) + a (Fin.last _) := rfl
 
 @[simp]
-lemma sum'_two {a : Fin 2 → ℕ} : sum' a = a 0 + a 1 := rfl
+lemma vsum_two {a : Fin 2 → ℕ} : vsum a = a 0 + a 1 := rfl
 
 @[simp]
-lemma sum'_three {a : Fin 3 → ℕ} : sum' a = a 0 + a 1 + a 2 := rfl
+lemma vsum_three {a : Fin 3 → ℕ} : vsum a = a 0 + a 1 + a 2 := rfl
 
-/-- `sum' a` is equivalent to the standard `Finset`-based definition, `∑ i, a i`. -/
-lemma sum'_eq_univ_sum {a : Fin n → ℕ} : sum' a = ∑ i, a i := by
+/-- `vsum a` is equivalent to the standard `Finset`-based definition, `∑ i, a i`. -/
+lemma vsum_eq_univ_sum {a : Fin n → ℕ} : vsum a = ∑ i, a i := by
   induction n using Nat.twoStepInduction with
   | zero => simp
   | one => simp
@@ -121,7 +120,7 @@ section Sigma
 
 variable {m : ℕ} {n : Fin m → ℕ}
 
-def injSum' {m : ℕ} {n : Fin m → ℕ} (i : Fin m) (j : Fin (n i)) : Fin (sum' n) := match m with
+def injSum' {m : ℕ} {n : Fin m → ℕ} (i : Fin m) (j : Fin (n i)) : Fin (vsum n) := match m with
   | 0 => Fin.elim0 i
   | 1 => match i with | 0 => j
   | m + 2 => by
@@ -144,7 +143,7 @@ theorem injSum'_one {n : Fin 1 → ℕ} {i : Fin 1} (j : Fin (n i)) :
 --     injSum' i j =
 -- if i = Fin.last (m + 1) then j else Fin.castAdd (n i) (injSum' i.castPred j) := rfl
 
-def splitSum' {m : ℕ} {n : Fin m → ℕ} (k : Fin (sum' n)) : (i : Fin m) × Fin (n i) := match m with
+def splitSum' {m : ℕ} {n : Fin m → ℕ} (k : Fin (vsum n)) : (i : Fin m) × Fin (n i) := match m with
   | 0 => Fin.elim0 k
   | 1 => ⟨0, k⟩
   | _ + 2 =>
@@ -157,17 +156,17 @@ def splitSum' {m : ℕ} {n : Fin m → ℕ} (k : Fin (sum' n)) : (i : Fin m) × 
   --   | Sum.inr k => ⟨Fin.last _, k⟩
 
 @[simp]
-theorem splitSum'_zero {n : Fin 0 → ℕ} {k : Fin (sum' n)} : splitSum' k = Fin.elim0 k := rfl
+theorem splitSum'_zero {n : Fin 0 → ℕ} {k : Fin (vsum n)} : splitSum' k = Fin.elim0 k := rfl
 
 @[simp]
-theorem splitSum'_one {n : Fin 1 → ℕ} {k : Fin (sum' n)} : splitSum' k = ⟨0, k⟩ := rfl
+theorem splitSum'_one {n : Fin 1 → ℕ} {k : Fin (vsum n)} : splitSum' k = ⟨0, k⟩ := rfl
 
 @[simp]
-theorem splitSum'_succ {n : Fin (m + 2) → ℕ} {k : Fin (sum' n)} :
+theorem splitSum'_succ {n : Fin (m + 2) → ℕ} {k : Fin (vsum n)} :
     splitSum' k = Fin.addCases (fun k => let ⟨i, j⟩ := splitSum' k; ⟨i.castSucc, j⟩)
       (fun k => ⟨Fin.last _, k⟩) k := rfl
 
-def finSum'FinEquiv' {m : ℕ} {n : Fin m → ℕ} : (i : Fin m) × Fin (n i) ≃ Fin (sum' n) where
+def finSum'FinEquiv' {m : ℕ} {n : Fin m → ℕ} : (i : Fin m) × Fin (n i) ≃ Fin (vsum n) where
   toFun := fun ⟨i, j⟩ => injSum' i j
   invFun := splitSum'
   left_inv := fun k => by
@@ -199,6 +198,47 @@ def finSum'FinEquiv' {m : ℕ} {n : Fin m → ℕ} : (i : Fin m) × Fin (n i) �
       -- simp_all
 
 end Sigma
+
+end Fin
+
+namespace Fin
+
+variable {α : Sort*}
+
+def vjoin {m : ℕ} {n : Fin m → ℕ} (v : (i : Fin m) → Fin (n i) → α) :
+    Fin (vsum n) → α := match m with
+  | 0 => !v[]
+  | 1 => v 0
+  | _ + 2 => vappend (vjoin (fun i => v (castSucc i))) (v (last _))
+
+@[simp]
+theorem vjoin_zero {n : Fin 0 → ℕ} {v : (i : Fin 0) → Fin (n i) → α} : vjoin v = !v[] := rfl
+
+@[simp]
+theorem vjoin_one {n : Fin 1 → ℕ} {v : (i : Fin 1) → Fin (n i) → α} : vjoin v = v 0 := rfl
+
+@[simp]
+theorem vjoin_succ {m : ℕ} {n : Fin (m + 2) → ℕ} {v : (i : Fin (m + 2)) → Fin (n i) → α} :
+    vjoin v = vappend (vjoin (fun i => v (castSucc i))) (v (last _)) := rfl
+
+def djoin {m : ℕ} {n : Fin m → ℕ} {α : (i : Fin m) → (j : Fin (n i)) → Sort*}
+    (v : (i : Fin m) → (j : Fin (n i)) → α i j) : (k : Fin (vsum n)) → Fin.vjoin α k := match m with
+  | 0 => !t[]
+  | 1 => v 0
+  | _ + 2 => dappend (djoin (fun i => v (castSucc i))) (v (last _))
+
+@[simp]
+theorem djoin_zero {n : Fin 0 → ℕ} {α : (i : Fin 0) → (j : Fin (n i)) → Sort*}
+    {v : (i : Fin 0) → (j : Fin (n i)) → α i j} : djoin v = !t[] := rfl
+
+@[simp]
+theorem djoin_one {n : Fin 1 → ℕ} {α : (i : Fin 1) → (j : Fin (n i)) → Sort*}
+    {v : (i : Fin 1) → (j : Fin (n i)) → α i j} : djoin v = v 0 := rfl
+
+@[simp]
+theorem djoin_succ {m : ℕ} {n : Fin (m + 2) → ℕ} {α : (i : Fin (m + 2)) → (j : Fin (n i)) → Sort*}
+    {v : (i : Fin (m + 2)) → (j : Fin (n i)) → α i j} :
+    djoin v = dappend (djoin (fun i => v (castSucc i))) (v (last _)) := rfl
 
 section FinSigmaFinEquiv
 

@@ -28,18 +28,6 @@ section find_home
 
 universe u
 
-@[simp]
-lemma FinVec.append_left_of_lt {m n : ℕ} {α : Sort u}
-    (u : FinVec α m) (v : FinVec α n) (i : Fin (m + n)) (h : i.val < m) :
-      FinVec.append u v i = u ⟨i, h⟩ := by
-  simp [FinVec.append_eq_fin_append, Fin.append, Fin.addCases, Fin.castLT, h]
-
-@[simp]
-lemma FinVec.append_right_of_not_lt {m n : ℕ} {α : Sort u}
-    (u : FinVec α m) (v : FinVec α n) (i : Fin (m + n)) (h : ¬ i.val < m) :
-      FinVec.append u v i = v ⟨i - m, by omega⟩ := by
-  simp [FinVec.append_eq_fin_append, Fin.append, Fin.addCases, h, Fin.subNat]
-
 variable {ι ι' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'} {α β : Type}
     (oa : OracleComp spec α)
 
@@ -66,11 +54,11 @@ instance [h₁ : ∀ i, SelectableType (pSpec₁.Challenge i)]
   by_cases hi : i.val < m
   · letI j : Fin m := ⟨i, hi⟩
     haveI : i = Fin.castAdd n j := by ext; simp [j]
-    simp only [this, Challenge, FinVec.append_left] at h ⊢
+    simp only [this, Challenge, Fin.vappend_left] at h ⊢
     exact h₁ ⟨j, h⟩
   · letI j : Fin n := ⟨i.val - m, by omega⟩
     haveI : i = Fin.natAdd m j := by ext; simp [j]; omega
-    simp only [this, Challenge, FinVec.append_right] at h ⊢
+    simp only [this, Challenge, Fin.vappend_right] at h ⊢
     exact h₂ ⟨j, h⟩
 
 /-- If two protocols' messages have oracle representations, then their concatenation's messages also
@@ -81,11 +69,11 @@ instance [O₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
   by_cases hi : i.val < m
   · letI j : Fin m := ⟨i, hi⟩
     haveI : i = Fin.castAdd n j := by ext; simp [j]
-    simp only [this, Message, FinVec.append_left] at h ⊢
+    simp only [this, Message, Fin.vappend_left] at h ⊢
     exact O₁ ⟨j, h⟩
   · letI j : Fin n := ⟨i.val - m, by omega⟩
     haveI : i = Fin.natAdd m j := by ext; simp [j]; omega
-    simp only [this, Message, FinVec.append_right] at h ⊢
+    simp only [this, Message, Fin.vappend_right] at h ⊢
     exact O₂ ⟨j, h⟩
 
 /-- Don't know why this doesn't automatically synthesize. -/
@@ -171,22 +159,22 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     state of the second prover
   - if `i > m`, then it sends the message & updates the state as the second prover. -/
   sendMessage := fun ⟨i, hDir⟩ state => by
-    dsimp [FinVec.append_eq_fin_append, Fin.append, Fin.addCases, Fin.tail,
+    dsimp [Fin.vappend_eq_append, Fin.append, Fin.addCases, Fin.tail,
       Fin.cast, Fin.castLT, Fin.succ, Fin.castSucc] at hDir state ⊢
     by_cases hi : i < m
     · haveI : i < m + 1 := by omega
-      simp [hi] at hDir ⊢
+      simp [hi, Fin.vappend_left_of_lt] at hDir ⊢
       simp [this] at state
       exact P₁.sendMessage ⟨⟨i, hi⟩, hDir⟩ state
     · by_cases hi' : i = m
-      · simp [hi'] at hDir state ⊢
+      · simp [hi', Fin.vappend_right_of_not_lt] at hDir state ⊢
         exact (do
           let ctxIn₂ ← P₁.output state
           letI state₂ := P₂.input ctxIn₂
           P₂.sendMessage ⟨⟨0, by omega⟩, hDir⟩ state₂)
       · haveI hi1 : ¬ i < m + 1 := by omega
         haveI hi2 : i - (m + 1) + 1 = i - m := by omega
-        simp [hi] at hDir ⊢
+        simp [hi, Fin.vappend_right_of_not_lt] at hDir ⊢
         simp [hi1] at state
         exact P₂.sendMessage ⟨⟨i - m, by omega⟩, hDir⟩ (dcast (by simp [hi2]) state)
 
@@ -197,18 +185,18 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
       Fin.cast, Fin.castLT, Fin.succ, Fin.castSucc] at hDir state ⊢
     by_cases hi : i < m
     · haveI : i < m + 1 := by omega
-      simp [hi] at hDir ⊢
+      simp [hi, Fin.vappend_left_of_lt] at hDir ⊢
       simp [this] at state
       exact P₁.receiveChallenge ⟨⟨i, hi⟩, hDir⟩ state
     · by_cases hi' : i = m
-      · simp [hi'] at hDir state ⊢
+      · simp [hi', Fin.vappend_right_of_not_lt] at hDir state ⊢
         exact (do
           let ctxIn₂ ← P₁.output state
           letI state₂ := P₂.input ctxIn₂
           P₂.receiveChallenge ⟨⟨0, by omega⟩, hDir⟩ state₂)
       · haveI hi1 : ¬ i < m + 1 := by omega
         haveI hi2 : i - (m + 1) + 1 = i - m := by omega
-        simp [hi] at hDir ⊢
+        simp [hi, Fin.vappend_right_of_not_lt] at hDir ⊢
         simp [hi1] at state
         exact P₂.receiveChallenge ⟨⟨i - m, by omega⟩, hDir⟩ (dcast (by simp [hi2]) state)
 
@@ -504,7 +492,7 @@ namespace Reduction
 
   The completeness error of the appended reduction is the sum of the individual errors
   (`completenessError₁ + completenessError₂`). -/
-theorem completeness_append (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
+theorem append_completeness (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     (R₂ : Reduction oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂)
     {completenessError₁ completenessError₂ : ℝ≥0}
     (h₁ : R₁.completeness init impl rel₁ rel₂ completenessError₁)
@@ -527,7 +515,7 @@ theorem perfectCompleteness_append (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt�
     (h₂ : R₂.perfectCompleteness init impl rel₂ rel₃) :
       (R₁.append R₂).perfectCompleteness init impl rel₁ rel₃ := by
   dsimp [perfectCompleteness] at h₁ h₂ ⊢
-  convert Reduction.completeness_append R₁ R₂ h₁ h₂
+  convert Reduction.append_completeness R₁ R₂ h₁ h₂
   simp only [add_zero]
 
 variable {R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁}

@@ -16,21 +16,21 @@ about definitional equality difficult.
 
 ## Definitions:
 
-- `FinVec.empty`: Empty (dependent) vector
+- `Fin.vempty`: Empty (dependent) vector
 
-- `FinVec.cons`: Improved homogeneous version of `cons` using pattern matching
+- `Fin.vcons`: Improved homogeneous version of `cons` using pattern matching
 
-- `FinVec.concat`: Improved homogeneous version of `snoc` using pattern matching
+- `Fin.vconcat`: Improved homogeneous version of `snoc` using pattern matching
 
-- `FinVec.append`: Improved homogeneous version of `append` using pattern matching
+- `Fin.vappend`: Improved homogeneous version of `append` using pattern matching
 
-- `FinTuple.empty`: Empty (dependent) tuple
+- `Fin.dempty`: Empty (dependent) tuple
 
-- `FinTuple.cons`: Improved dependent version of `cons` using pattern matching
+- `Fin.dcons`: Improved dependent version of `cons` using pattern matching
 
-- `FinTuple.concat`: Improved dependent version of `snoc` using pattern matching
+- `Fin.dconcat`: Improved dependent version of `snoc` using pattern matching
 
-- `FinTuple.append`: Improved dependent version of `append` using pattern matching
+- `Fin.dappend`: Improved dependent version of `append` using pattern matching
 
 - `Fin.rtake`: Taking from the right (i.e. the end) of a (dependent) vector
 
@@ -95,113 +95,99 @@ This becomes truncation if `n < m`. -/
 def leftpad {m : ℕ} {α : Sort*} (n : ℕ) (a : α) (v : Fin m → α) : Fin n → α :=
   fun i => if h : n - m ≤ i then v ⟨i - (n - m), by omega⟩ else a
 
-end Fin
+section Vec
 
-/-- A `FinVec` is a `FinTuple` with a constant type family, i.e. `Fin n → α`. -/
-abbrev FinVec (α : Sort u) (n : ℕ) : Sort _ := Fin n → α
+variable {α : Sort*}
 
-namespace FinVec
+/-- `vempty` is the empty vector, and a wrapper around `Fin.elim0`. Write this as `!v[]`. -/
+abbrev vempty {α : Sort*} : Fin 0 → α := Fin.elim0
 
-/-- `empty` is the empty vector, and a wrapper around `Fin.elim0`. Write this as `!v[]`. -/
-def empty {α : Sort u} : FinVec α 0 := Fin.elim0
+/-- `vcons a v` prepends an entry `a : α` to a vector `v : Fin n → α` via pattern matching.
 
-/-- `cons a v` prepends an entry `a : α` to a vector `v : FinVec α n` via pattern matching.
-
-This is meant to replace `Matrix.vecCons` for our use cases, as this definition offers better
-definitional equality.
+This is meant to replace `Matrix.vecCons` and `Fin.cons` for our use cases, as this definition
+offers better definitional equality.
 -/
-@[inline]
-def cons {α : Sort u} {n : ℕ} (a : α) (v : FinVec α n) : FinVec α (n + 1) :=
+def vcons {n : ℕ} (a : α) (v : Fin n → α) : Fin (n + 1) → α :=
   match n with
   | 0 => fun _ => a
   | _ + 1 => fun i => match i with
     | 0 => a
     | ⟨k + 1, hk⟩ => v ⟨k, Nat.lt_of_succ_lt_succ hk⟩
 
-/-- `concat v a` concatenates an entry `a : α` to the _end_ of a vector `v : FinVec α n`
+/-- `vconcat v a` concatenates an entry `a : α` to the _end_ of a vector `v : Fin n → α`
 via pattern matching.
 
 This is meant to replace `Fin.snoc` for our use cases, as this definition offers better
 definitional equality.
 -/
-@[inline]
-def concat {α : Sort u} {n : ℕ} (v : FinVec α n) (a : α) : FinVec α (n + 1) :=
+def vconcat {α : Sort u} {n : ℕ} (v : Fin n → α) (a : α) : Fin (n + 1) → α :=
   match n with
   | 0 => fun _ => a
-  | _ + 1 => cons (v 0) (concat (v ∘ Fin.succ) a)
+  | _ + 1 => vcons (v 0) (vconcat (v ∘ Fin.succ) a)
 
-/-- `append u v` appends two vectors `u : FinVec α m` and `v : FinVec α n`, written as `u ++ v`.
+/-- `vappend u v` appends two vectors `u : Fin m → α` and `v : Fin n → α`, written as `u ++ v`.
 
 This is meant to replace `Fin.append` for our use cases, as this definition offers better
 definitional equality. -/
-@[inline]
-def append {α : Sort u} {m n : ℕ} (u : FinVec α m) (v : FinVec α n) : FinVec α (m + n) :=
+def vappend {α : Sort u} {m n : ℕ} (u : Fin m → α) (v : Fin n → α) : Fin (m + n) → α :=
   match n with
   | 0 => u
-  | _ + 1 => concat (append u (v ∘ Fin.castSucc)) (v (Fin.last _))
+  | _ + 1 => vconcat (vappend u (v ∘ Fin.castSucc)) (v (Fin.last _))
 
-end FinVec
+end Vec
 
-/-- A `FinTuple` of size `n` and type family `α` is a dependent function `(i : Fin n) → α i`. -/
-abbrev FinTuple (n : ℕ) (α : FinVec (Sort u) n) : Sort _ := (i : Fin n) → α i
+/-- `dempty` is the dependent empty tuple. Write this as `!t[]`. -/
+def dempty {α : Fin 0 → Sort u} : (i : Fin 0) → α i := fun i => Fin.elim0 i
 
-namespace FinTuple
-
-/-- `empty` is the empty tuple, and a wrapper around `Fin.elim0`. Write this as `!t[]`. -/
-def empty {α : Fin 0 → Sort u} : FinTuple 0 α := fun i => Fin.elim0 i
-
-/-- `cons a b` prepends an entry `a : α` to a dependent or heterogeneous vector
-`b : FinTuple n β`, where `α : Sort u` and `β : Fin n → Sort u` is a vector of sorts,
-via pattern matching.
+/-- `dcons a b` prepends an entry `a : α` to a dependent or heterogeneous vector
+`b : (i : Fin n) → β i`,
+where `α : Sort u` and `β : Fin n → Sort u` is a vector of sorts, via pattern matching.
 
 This is meant to replace `Fin.cons` for our use cases, as this definition offers better
 definitional equality.
 -/
-@[inline]
-def cons {n : ℕ} {α : Sort u} {β : Fin n → Sort u} (a : α) (b : FinTuple n β) :
-    FinTuple (n + 1) (FinVec.cons α β) :=
+def dcons {n : ℕ} {α : Sort u} {β : Fin n → Sort u} (a : α) (b : (i : Fin n) → β i) :
+    (i : Fin (n + 1)) → Fin.vcons α β i :=
   match n with
   | 0 => fun _ => a
   | _ + 1 => fun i => match i with
     | 0 => a
     | ⟨k + 1, hk⟩ => b ⟨k, Nat.succ_lt_succ_iff.mp hk⟩
 
-/-- `concat u a` concatenates an entry `a : β` to the _end_ of a dependent or heterogeneous
-vector `u : FinTuple n α` via pattern matching, where `α : Fin n → Sort u` is a vector of
+/-- `dconcat u a` concatenates an entry `a : β` to the _end_ of a dependent or heterogeneous
+vector `u : (i : Fin n) → α i` via pattern matching, where `α : Fin n → Sort u` is a vector of
 sorts and `β : Sort u` is a sort.
 
 This is meant to replace `Fin.snoc` for our use cases, as this definition offers better
 definitional equality.
 -/
-@[inline]
-def concat {n : ℕ} {α : Fin n → Sort u} {β : Sort u} (u : FinTuple n α) (a : β) :
-    FinTuple (n + 1) (FinVec.concat α β) :=
+def dconcat {n : ℕ} {α : Fin n → Sort u} {β : Sort u} (u : (i : Fin n) → α i) (a : β) :
+    (i : Fin (n + 1)) → Fin.vconcat α β i :=
   match n with
   | 0 => fun _ => a
-  | _ + 1 => cons (u 0) (concat (fun i => u (Fin.succ i)) a)
+  | _ + 1 => dcons (u 0) (dconcat (fun i => u (Fin.succ i)) a)
 
-/-- `append u v` appends two dependent or heterogeneous vectors `u : FinTuple m α` and
-`v : FinTuple n β`, on `α : Fin m → Sort u` and `β : Fin n → Sort u` respectively, via
+/-- `dappend u v` appends two dependent or heterogeneous vectors `u : (i : Fin m) → α i` and
+`v : (i : Fin n) → β i`, on `α : Fin m → Sort u` and `β : Fin n → Sort u` respectively, via
 pattern matching.
 
 This is meant to replace `Fin.addCases` for our use cases, as this definition offers better
 definitional equality.
 -/
-@[inline]
-def append {m n : ℕ} {α : Fin m → Sort u} {β : Fin n → Sort u}
-    (u : FinTuple m α) (v : FinTuple n β) : FinTuple (m + n) (FinVec.append α β) :=
+def dappend {m n : ℕ} {α : Fin m → Sort u} {β : Fin n → Sort u}
+    (u : (i : Fin m) → α i) (v : (i : Fin n) → β i) : (i : Fin (m + n)) → Fin.vappend α β i :=
   match n with
   | 0 => u
-  | k + 1 => concat (append u (fun i => v (Fin.castSucc i))) (v (Fin.last k))
+  | k + 1 => dconcat (dappend u (fun i => v (Fin.castSucc i))) (v (Fin.last k))
 
-/-- Cast a `FinTuple` across an equality `n' = n` and a family of equalities
+/-- Cast a dependent or heterogeneous vector across an equality `n' = n` and a family of equalities
   `∀ i, α (Fin.cast h i) = α' i`.
 
-  Since this is a pull-back, we state the equalities in the other direction (i.e. `n' = n` instead
-  of `n = n'`) -/
-protected def cast {n n' : ℕ} {α : Fin n → Sort u} {α' : Fin n' → Sort u}
-    (h : n' = n) (hα : ∀ i, α (Fin.cast h i) = α' i) (v : FinTuple n α) :
-      FinTuple n' α' :=
+This is meant to replace `Fin.cast` for our use cases, as this definition offers better
+definitional equality. -/
+def dcast {n n' : ℕ} {α : Fin n → Sort u} {α' : Fin n' → Sort u}
+    (h : n' = n) (hα : ∀ i, α (Fin.cast h i) = α' i) (v : (i : Fin n) → α i) :
+      (i : Fin n') → α' i :=
   fun i => _root_.cast (hα i) (v (Fin.cast h i))
 
-end FinTuple
+end Fin
