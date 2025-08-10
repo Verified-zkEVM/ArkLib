@@ -4,7 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 
-import ArkLib.Data.FieldTheory.AdditiveNTT.Prelude
+import ArkLib.Data.Nat.Bitwise
+import ArkLib.Data.Polynomial.Frobenius
+import ArkLib.Data.Polynomial.MonomialBasis
 
 /-!
 # Novel Polynomial Basis
@@ -38,7 +40,8 @@ algebra over its prime-characteristic subfield `𝔽q`, and an `𝔽q`-basis `β
 
 set_option linter.style.longFile 1600
 
-open AdditiveNTT Polynomial FiniteDimensional Finset
+open Polynomial FiniteDimensional Finset
+
 namespace AdditiveNTT
 
 universe u
@@ -269,7 +272,7 @@ theorem root_U_lift_up (i : Fin r) (h_i_add_1 : i + 1 < r) (a : L) (x : 𝔽q):
     apply Submodule.subset_span
     apply Set.mem_image_of_mem
     simp only [Set.mem_Ico, Fin.zero_le, true_and]
-    exact Fin.lt_succ (a := i) (h_a_add_1 := h_i_add_1)
+    exact Fin.lt_succ' (a := i) (h_a_add_1 := h_i_add_1)
 
 /--
 The subspace vanishing polynomial `Wᵢ(X) := ∏_{u ∈ Uᵢ} (X - u), ∀ i ∈ {0, ..., r-1}`.
@@ -864,7 +867,7 @@ lemma inductive_rec_form_W_comp (h_Fq_card_gt_1: Fintype.card 𝔽q > 1)
     _ = (∏ c: 𝔽q, (W_i).comp (X - C (c • β i))).comp p := by
       have h_res := W_prod_comp_decomposition 𝔽q β hβ_lin_indep (i+1) (by
         apply Fin.mk_lt_of_lt_val
-        rw [Fin.val_add_one (a := i) (h_a_add_1 := h_i_add_1), Nat.zero_mod]
+        rw [Fin.val_add_one' (a := i) (h_a_add_1 := h_i_add_1), Nat.zero_mod]
         omega
       )
       rw [h_res]
@@ -887,7 +890,7 @@ lemma inductive_rec_form_W_comp (h_Fq_card_gt_1: Fintype.card 𝔽q > 1)
       congr
       -- ⊢ eval (c • β i) W_i = c • v
       -- Use the linearity of the evaluation map, not the composition map
-      have h_eval_linear := AdditiveNTT.linear_map_of_comp_to_linear_map_of_eval (f := (W 𝔽q β i))
+      have h_eval_linear := Polynomial.linear_map_of_comp_to_linear_map_of_eval (f := (W 𝔽q β i))
         (h_f_linear := h_prev_linear_map)
       exact h_eval_linear.map_smul c (β i)
     -- Step 4: Perform the final algebraic transformation.
@@ -932,7 +935,7 @@ lemma inductive_rec_form_W_comp (h_Fq_card_gt_1: Fintype.card 𝔽q > 1)
     _ = (C (v^q) * ((C v⁻¹ * W_i)^q - (C v⁻¹ * W_i))).comp p := by
       congr
       -- ⊢ ∏ c, (C v⁻¹ * W_i - C ((algebraMap 𝔽q L) c)) = (C v⁻¹ * W_i) ^ q - C v⁻¹ * W_i
-      rw [AdditiveNTT.prod_poly_sub_C_eq_poly_pow_card_sub_poly_in_L
+      rw [Polynomial.prod_poly_sub_C_eq_poly_pow_card_sub_poly_in_L
         h_Fq_card_gt_1 (p := C v⁻¹ * W_i)]
     _ = (C (v^q) * C (v⁻¹^q) * W_i^q - C (v^q) * C v⁻¹ * W_i).comp p := by
       congr
@@ -989,7 +992,7 @@ lemma inductive_linear_map_W (h_Fq_card_gt_1: Fintype.card 𝔽q > 1)
       _ = ((W 𝔽q β i).comp f)^q + ((W 𝔽q β i).comp g)^q
         - C v ^ (q - 1) * ((W 𝔽q β i).comp f) - C v ^ (q - 1) * ((W 𝔽q β i).comp g) := by
         rw [h_prev_linear_map.map_add]
-        rw [AdditiveNTT.frobenius_identity_in_algebra (h_Fq_char_prime := h_Fq_char_prime)]
+        rw [Polynomial.frobenius_identity_in_algebra (h_Fq_char_prime := h_Fq_char_prime)]
         rw [left_distrib]
         unfold q
         abel_nf
@@ -1120,7 +1123,7 @@ lemma W_is_additive
   (hβ_lin_indep : LinearIndependent 𝔽q β)
   (i : Fin r):
   IsLinearMap (R := 𝔽q) (M := L) (M₂ := L) (f := fun x ↦ (W 𝔽q β i).eval x) := by
-  exact AdditiveNTT.linear_map_of_comp_to_linear_map_of_eval (f := (W 𝔽q β i))
+  exact Polynomial.linear_map_of_comp_to_linear_map_of_eval (f := (W 𝔽q β i))
     (h_f_linear := W_linearity 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep (i :=i))
 
 theorem kernel_W_eq_U
@@ -1181,7 +1184,7 @@ lemma eval_normalizedW_succ_at_beta_prev (i : Fin r) (h_i_add_1 : i + 1 < r):
     rw [eval_W_eq_zero_iff_in_U]
     unfold U
     have h_β_i_in_U: β i ∈ β '' Set.Ico 0 (i + 1) := by
-      exact Set.mem_image_of_mem β (Set.mem_Ico.mpr ⟨Nat.zero_le i, Fin.lt_succ (a:=i) h_i_add_1⟩)
+      exact Set.mem_image_of_mem β (Set.mem_Ico.mpr ⟨Nat.zero_le i, Fin.lt_succ' (a:=i) h_i_add_1⟩)
     exact Submodule.subset_span h_β_i_in_U
   unfold normalizedW
   rw [eval_mul]
@@ -1279,7 +1282,7 @@ theorem normalizedW_is_additive
   (hβ_lin_indep : LinearIndependent 𝔽q β)
   (i : Fin r):
   IsLinearMap 𝔽q (f := fun x ↦ (normalizedW 𝔽q β i).eval x) := by
-  exact AdditiveNTT.linear_map_of_comp_to_linear_map_of_eval (f := (normalizedW 𝔽q β i))
+  exact Polynomial.linear_map_of_comp_to_linear_map_of_eval (f := (normalizedW 𝔽q β i))
     (h_f_linear := normalizedW_is_linear_map 𝔽q β h_Fq_card_gt_1
       h_Fq_char_prime hβ_lin_indep (i :=i))
 
@@ -1309,7 +1312,7 @@ section NovelPolynomialBasisProof
 -- Definition of Novel Polynomial Basis: `Xⱼ(X) := Π_{i=0}^{ℓ-1} (Ŵᵢ(X))^{jᵢ}`
 noncomputable def Xⱼ (ℓ : ℕ) (h_ℓ : ℓ ≤ r) (j : Fin (2 ^ ℓ)) : L[X] :=
   (Finset.univ : Finset (Fin ℓ)).prod
-    (fun i => (normalizedW 𝔽q β (Fin.castLE h_ℓ i))^(bit (k := i) (n := j)))
+    (fun i => (normalizedW 𝔽q β (Fin.castLE h_ℓ i))^(Nat.getBit i j))
 
 /-- The degree of `Xⱼ(X)` is `j`:
   `deg(Xⱼ(X)) = Σ_{i=0}^{ℓ-1} jᵢ * deg(Ŵᵢ(X)) = Σ_{i=0}^{ℓ-1} jᵢ * 2ⁱ = j` -/
@@ -1331,13 +1334,13 @@ lemma degree_Xⱼ
     exact h_j
   · push_neg at h_ℓ_0
     have deg_each: ∀ i ∈ (Finset.univ : Finset (Fin ℓ)),
-      ((normalizedW 𝔽q β (Fin.castLE h_ℓ i))^(bit (k := i) (n := j))).degree
-      = if bit (k := i) (n := j) = 1 then (2:ℕ)^i.val else 0 := by
+      ((normalizedW 𝔽q β (Fin.castLE h_ℓ i))^(Nat.getBit i j)).degree
+      = if Nat.getBit i j = 1 then (2:ℕ)^i.val else 0 := by
       intro i _
       rw [degree_pow]
       rw [degree_normalizedW 𝔽q β (i :=Fin.castLE h_ℓ i) (hβ_lin_indep := hβ_lin_indep)]
-      simp only [bit, Nat.and_one_is_mod, Fin.coe_castLE, nsmul_eq_mul, Nat.cast_ite, Nat.cast_pow,
-        Nat.cast_ofNat, CharP.cast_eq_zero, hF₂]
+      simp only [Nat.getBit, Nat.and_one_is_mod, Fin.coe_castLE, nsmul_eq_mul, Nat.cast_ite,
+        Nat.cast_pow, Nat.cast_ofNat, CharP.cast_eq_zero, hF₂]
       -- simp? [Nat.and_one_is_mod, nsmul_eq_mul]
       -- ⊢ ↑(↑j >>> ↑i % 2) * 2 ^ ↑i = if ↑j >>> ↑i % 2 = 1 then 2 ^ ↑i else 0
       by_cases h: (j.val >>> i.val) % 2 = 1
@@ -1350,7 +1353,7 @@ lemma degree_Xⱼ
     -- We use the `Nat.digits` API for this.
     rw [Finset.sum_congr rfl deg_each] -- .degree introduces (WithBot ℕ)
     -- ⊢ ⊢ ∑ x, ↑(if bit ↑x ↑j = 1 then 2 ^ ↑x else 0) = ↑↑j
-    set f:= fun x: ℕ => if bit x j = 1 then (2: ℕ) ^ (x: ℕ) else 0
+    set f:= fun x: ℕ => if Nat.getBit x j = 1 then (2: ℕ) ^ (x: ℕ) else 0
     norm_cast -- from WithBot ℕ to ℕ
     change (∑ x : Fin ℓ, f x) = (j.val: WithBot ℕ)
     norm_cast
@@ -1363,21 +1366,21 @@ lemma degree_Xⱼ
       omega
     rw [h_range]
     have h_sum: (∑ x ∈ Icc 0 (ℓ - 1), f x)
-      = (∑ x ∈ Icc 0 (ℓ - 1), (bit x j) * 2^x) := by
+      = (∑ x ∈ Icc 0 (ℓ - 1), (Nat.getBit x j) * 2^x) := by
       apply sum_congr rfl (fun x hx => by
-        have h_res: (if bit x j = 1 then 2 ^ x else 0) = (bit x j) * 2^x := by
-          by_cases h: bit x j = 1
+        have h_res: (if Nat.getBit x j = 1 then 2 ^ x else 0) = (Nat.getBit x j) * 2^x := by
+          by_cases h: Nat.getBit x j = 1
           · simp only [h, if_true]; norm_num
           · simp only [h, if_false]; push_neg at h;
-            have h_bit_x_j_eq_0: bit x j = 0 := by
-              have h_either_eq := bit_eq_zero_or_one (k := x) (n := j)
+            have h_bit_x_j_eq_0: Nat.getBit x j = 0 := by
+              have h_either_eq := Nat.getBit_eq_zero_or_one (k := x) (n := j)
               simp only [h, or_false] at h_either_eq
               exact h_either_eq
             rw [h_bit_x_j_eq_0, zero_mul]
         exact h_res
       )
     simp only [h_sum]
-    have h_bit_repr_j := bit_repr (ℓ := ℓ) (h_ℓ := by omega) (j := j) (by omega)
+    have h_bit_repr_j := Nat.getBit_repr (ℓ := ℓ) (h_ℓ := by omega) (j := j) (by omega)
     rw [←h_bit_repr_j]
 
 /-- The basis vectors `{Xⱼ(X), j ∈ Fin 2^ℓ}` forms a basis for `L⦃<2^ℓ⦄[X]` -/

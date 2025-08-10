@@ -223,7 +223,7 @@ theorem qMap_is_linear_map
       _ = (C constMultiplier) * (f^q + g^q - (X.comp f + X.comp g)) := by
         rw [pow_comp, X_comp]
         unfold q
-        rw [AdditiveNTT.frobenius_identity_in_algebra
+        rw [Polynomial.frobenius_identity_in_algebra
           (h_Fq_char_prime:=h_Fq_char_prime) (f:=f) (g:=g)]
       _ = (C constMultiplier) * (((X^q).comp f - X.comp f) + ((X^q).comp g - X.comp g)) := by
         rw [pow_comp, X_comp, X_comp, pow_comp, X_comp]
@@ -274,7 +274,7 @@ theorem qMap_maps_sDomain
 (ℓ R_rate : ℕ) (h_ℓ_add_R_rate : ℓ + R_rate < r)
 (i : Fin r) (h_i_add_1 : i + 1 < r) :
   have q_comp_linear_map := qMap_is_linear_map 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime i
-  have q_eval_linear_map := AdditiveNTT.linear_map_of_comp_to_linear_map_of_eval
+  have q_eval_linear_map := linear_map_of_comp_to_linear_map_of_eval
     (f:=qMap 𝔽q β i) q_comp_linear_map
   let q_i_map := polyEvalLinearMap (qMap 𝔽q β i) q_eval_linear_map
   let S_i: Subspace 𝔽q L := sDomain 𝔽q h_Fq_char_prime h_Fq_card_gt_1 β hβ_lin_indep
@@ -284,7 +284,7 @@ theorem qMap_maps_sDomain
   Submodule.map q_i_map S_i = S_i_plus_1 :=
 by
   set q_comp_linear_map := qMap_is_linear_map 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime i
-  set q_eval_linear_map := AdditiveNTT.linear_map_of_comp_to_linear_map_of_eval
+  set q_eval_linear_map := linear_map_of_comp_to_linear_map_of_eval
     (f:=qMap 𝔽q β i) q_comp_linear_map
   -- Unfold definitions and apply submodule and polynomial composition properties
   simp_rw [sDomain]
@@ -343,7 +343,7 @@ lemma qCompositionChain_eq_foldl
     rw [qCompositionChain.eq_def]
     have h_eq: ⟨k.val.succ, k_h⟩ = k + 1 := by
       rw [Fin.mk_eq_mk]
-      rw [Fin.val_add_one]
+      rw [Fin.val_add_one']
       exact k_h
     simp only [h_eq.symm, Nat.succ_eq_add_one, Fin.eta]
     simp only [Fin.coe_cast, Fin.foldl_succ_last, Fin.val_last, Fin.eta, Fin.coe_castSucc]
@@ -383,7 +383,7 @@ by
     -- How to choose the rhs?
     have h_eq: ⟨k.val.succ, k_h⟩ = k + 1 := by
       rw [Fin.mk_eq_mk]
-      rw [Fin.val_add_one]
+      rw [Fin.val_add_one']
       exact k_h
     simp only [h_eq.symm, Nat.succ_eq_add_one, Fin.eta]
     have h_res := qMap_comp_normalizedW 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep k k_h
@@ -791,7 +791,7 @@ theorem intermediateNormVpoly_comp_qmap_helper (i : Fin (ℓ))
 `Xⱼ⁽ⁱ⁾ := Π_{k=0}^{ℓ-i-1} (Ŵₖ⁽ⁱ⁾)^{jₖ}`, ∀ j ∈ {0, ..., 2^(ℓ-i)-1} -/
 noncomputable def intermediateNovelBasisX (i : Fin (ℓ + 1)) (j : Fin (2 ^ (ℓ - i))): L[X] :=
   (Finset.univ: Finset (Fin (ℓ - i)) ).prod (fun k =>
-    (intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate i k) ^ (bit k j))
+    (intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate i k) ^ (Nat.getBit k j))
 -- NOTE: possibly we state some Basis for `(Xⱼ⁽ⁱ⁾)  `
 
 -- Xⱼ⁽⁰⁾ = Xⱼ
@@ -834,11 +834,11 @@ lemma even_index_intermediate_novel_basis_decomposition (i : Fin ℓ) (j : Fin (
     enter [2, x]
     rw [intermediateNormVpoly_comp_qmap_helper 𝔽q]
 
-  -- ⊢ ∏ x, intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, ⋯⟩ x ^ bit (↑x) (↑j * 2) =
-  -- ∏ x, intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, ⋯⟩ ⟨↑x + 1, ⋯⟩ ^ bit ↑x ↑j
+  -- ⊢ ∏ x, intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, ⋯⟩ x ^ Nat.getBit (↑x) (↑j * 2) =
+  -- ∏ x, intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, ⋯⟩ ⟨↑x + 1, ⋯⟩ ^ Nat.getBit ↑x ↑j
 
   set fleft := fun x : Fin (ℓ - ↑i) =>
-    intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ x ^ bit (↑x) (↑j * 2)
+    intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ x ^ Nat.getBit (↑x) (↑j * 2)
   have h_n_shift: ℓ - (↑i + 1) + 1 = ℓ - ↑i := by omega
   have h_fin_n_shift: Fin (ℓ - (↑i + 1) + 1) = Fin (ℓ - ↑i) := by
     rw [h_n_shift]
@@ -855,9 +855,9 @@ lemma even_index_intermediate_novel_basis_decomposition (i : Fin ℓ) (j : Fin (
   have fleft_0_eq_0: fleft ⟨(0: Fin (ℓ - (↑i + 1) + 1)), by omega⟩ = 1 := by
     unfold fleft
     simp only
-    have h_exp: bit (0: Fin (ℓ - (↑i + 1) + 1)) (↑j * 2) = 0 := by
+    have h_exp: Nat.getBit (0: Fin (ℓ - (↑i + 1) + 1)) (↑j * 2) = 0 := by
       simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod]
-      have res := lsb_of_multiple_of_two (n:=j.val)
+      have res := Nat.getBit_zero_of_two_mul (n:=j.val)
       rw [mul_comm] at res
       exact res
     rw [h_exp]
@@ -869,10 +869,10 @@ lemma even_index_intermediate_novel_basis_decomposition (i : Fin ℓ) (j : Fin (
   simp only [Fin.val_succ]
   unfold fleft
   simp only
-  have h_exp_eq: bit (↑x + 1) (↑j * 2) = bit ↑x ↑j := by
+  have h_exp_eq: Nat.getBit (↑x + 1) (↑j * 2) = Nat.getBit ↑x ↑j := by
     have h_num_eq: j.val * 2 = 2 * j.val := by omega
     rw [h_num_eq]
-    apply bit_eq_succ_bit_of_mul_two (k:=↑x) (n:=↑j)
+    apply Nat.getBit_eq_succ_getBit_of_mul_two (k:=↑x) (n:=↑j)
   rw [h_exp_eq]
 
 omit [DecidableEq L] in
@@ -896,11 +896,11 @@ lemma odd_index_intermediate_novel_basis_decomposition
     rw [intermediateNormVpoly_comp_qmap_helper 𝔽q β ℓ R_rate h_ℓ_add_R_rate
       ⟨i, by omega⟩ ⟨x, by simp only; omega⟩]
 
-  -- ⊢ ∏ x, intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, ⋯⟩ x ^ bit (↑x) (↑j * 2 + 1) =
-  -- X * ∏ x, intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, ⋯⟩ ⟨↑x + 1, ⋯⟩ ^ bit ↑x ↑j
+  -- ⊢ ∏ x, intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, ⋯⟩ x ^ Nat.getBit (↑x) (↑j * 2 + 1) =
+  -- X * ∏ x, intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, ⋯⟩ ⟨↑x + 1, ⋯⟩ ^ Nat.getBit ↑x ↑j
 
   set fleft := fun x : Fin (ℓ - ↑i) =>
-    intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ x ^ bit (↑x) (↑j * 2 + 1)
+    intermediateNormVpoly 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨↑i, by omega⟩ x ^ Nat.getBit (↑x) (↑j * 2 + 1)
   have h_n_shift: ℓ - (↑i + 1) + 1 = ℓ - ↑i := by omega
   have h_fin_n_shift: Fin (ℓ - (↑i + 1) + 1) = Fin (ℓ - ↑i) := by
     rw [h_n_shift]
@@ -917,9 +917,9 @@ lemma odd_index_intermediate_novel_basis_decomposition
   have fleft_0_eq_X: fleft ⟨(0: Fin (ℓ - (↑i + 1) + 1)), by omega⟩ = X := by
     unfold fleft
     simp only
-    have h_exp: bit (0: Fin (ℓ - (↑i + 1) + 1)) (↑j * 2 + 1) = 1 := by
+    have h_exp: Nat.getBit (0: Fin (ℓ - (↑i + 1) + 1)) (↑j * 2 + 1) = 1 := by
       simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod]
-      unfold bit
+      unfold Nat.getBit
       simp only [Nat.shiftRight_zero, Nat.and_one_is_mod, Nat.mul_add_mod_self_right, Nat.mod_succ]
     rw [h_exp]
     simp only [pow_one, Fin.coe_ofNat_eq_mod, Nat.zero_mod]
@@ -932,10 +932,10 @@ lemma odd_index_intermediate_novel_basis_decomposition
   simp only [Fin.val_succ]
   unfold fleft
   simp only
-  have h_exp_eq: bit (↑x + 1) (↑j * 2 + 1) = bit ↑x ↑j := by
+  have h_exp_eq: Nat.getBit (↑x + 1) (↑j * 2 + 1) = Nat.getBit ↑x ↑j := by
     have h_num_eq: j.val * 2 = 2 * j.val := by omega
     rw [h_num_eq]
-    apply bit_eq_succ_bit_of_mul_two_add_one (k:=↑x) (n:=↑j)
+    apply Nat.getBit_eq_succ_getBit_of_mul_two_add_one (k:=↑x) (n:=↑j)
 
   rw [h_exp_eq]
 
@@ -1168,10 +1168,10 @@ the tiling of coefficients, the main loop invariant, and the final
 correctness theorem for the Additive NTT algorithm.
 -/
 
-/-- Constructs an evaluation point `ω` in the domain `S⁽ⁱ⁾` from a bit representation.
+/-- Constructs an evaluation point `ω` in the domain `S⁽ⁱ⁾` from a Nat.getBit representation.
 This uses the `𝔽q`-basis of `S⁽ⁱ⁾` from `sDomain_basis`.
 `ω_{u,b,i} = b⋅Ŵᵢ(βᵢ) + ∑_{k=0}^{|u|-1} uₖ ⋅ Ŵᵢ(β_{i+1+k})`
-where `(u,b)` is a bit string of length `ℓ + R - i`.
+where `(u,b)` is a Nat.getBit string of length `ℓ + R - i`.
 Computes the twiddle factor `t` for a given stage `i` and high-order bits `u`.
 `t := Σ_{k=0}^{ℓ+R-i-1} u_k ⋅ Ŵᵢ(β_{i+k})`.
 This corresponds to the `x₀` term in the recursive butterfly identity.
@@ -1180,7 +1180,7 @@ noncomputable def evaluationPointω (i : Fin (ℓ + 1))
     (x : Fin (2 ^ (ℓ + R_rate - i))) : L := -- x = u || b
     -- Add the linear combination of the remaining basis vectors
   ∑ (⟨k, hk⟩: Fin (ℓ + R_rate - i)),
-    if bit k x.val = 1 then
+    if Nat.getBit k x.val = 1 then
       (normalizedW 𝔽q β ⟨i, by omega⟩).eval (β ⟨i + k, by omega⟩)
     else
       0
@@ -1188,12 +1188,12 @@ noncomputable def evaluationPointω (i : Fin (ℓ + 1))
 /-- The twiddle factor -/
 noncomputable def twiddleFactor (i : Fin ℓ) (u : Fin (2 ^ (ℓ + R_rate - i - 1))) : L :=
   ∑ (⟨k, hk⟩: Fin (ℓ + R_rate - i - 1)),
-    if bit k u.val = 1 then
-      -- this branch maps to the above bit = 1 branch
+    if Nat.getBit k u.val = 1 then
+      -- this branch maps to the above Nat.getBit = 1 branch
         -- (of evaluationPointω (i+1)) under (qMap i)(X)
       (normalizedW 𝔽q β ⟨i, by omega⟩).eval (β ⟨i + 1 + k, by omega⟩)
     else 0
-      -- 0 maps to the below bit = 0 branch
+      -- 0 maps to the below Nat.getBit = 0 branch
         -- (of evaluationPointω (i+1)) under (qMap i)(X)
 
 omit [DecidableEq L] in
@@ -1209,7 +1209,7 @@ lemma evaluationPointω_eq_twiddleFactor_of_div_2 (i : Fin ℓ) (x : Fin (2 ^ (�
   unfold evaluationPointω twiddleFactor
   simp only
   --
-  set f_left := fun x_1: Fin (ℓ + R_rate - i) => if bit x_1 x = 1
+  set f_left := fun x_1: Fin (ℓ + R_rate - i) => if Nat.getBit x_1 x = 1
     then eval (β ⟨i + x_1, by omega⟩) (normalizedW 𝔽q β ⟨i, by omega⟩) else 0
   conv_lhs =>
   -- ℓ + R_rate - ↑i
@@ -1217,10 +1217,10 @@ lemma evaluationPointω_eq_twiddleFactor_of_div_2 (i : Fin ℓ) (x : Fin (2 ^ (�
     rw [Fin.sum_univ_succ (n:=ℓ + R_rate - (i + 1))]
   unfold f_left
   simp only [Fin.coe_cast, Fin.coe_ofNat_eq_mod, Nat.zero_mod, add_zero, Fin.val_succ]
-  have h_bit_shift: ∀ x_1: Fin (ℓ + R_rate - (↑i + 1)), bit (↑x_1 + 1) ↑x = bit ↑x_1 (↑x / 2) := by
-    intro x_1 -- ⊢ bit (↑x_1 + 1) ↑x = bit (↑x_1) (↑x / 2)
+  have h_bit_shift: ∀ x_1: Fin (ℓ + R_rate - (↑i + 1)), Nat.getBit (↑x_1 + 1) ↑x = Nat.getBit ↑x_1 (↑x / 2) := by
+    intro x_1 -- ⊢ Nat.getBit (↑x_1 + 1) ↑x = Nat.getBit (↑x_1) (↑x / 2)
     rw [←Nat.shiftRight_eq_div_pow (m:=x) (n:=1)]
-    exact bit_of_shiftRight (n:=x) (p:=1) (k:=x_1).symm
+    exact Nat.getBit_of_shiftRight (n:=x) (p:=1) (k:=x_1).symm
 
   have h_sum_eq: ∀ x_1: Fin (ℓ + R_rate - (↑i + 1)),
     i.val + (x_1.val + 1) = i.val + 1 + x_1.val := by omega
@@ -1229,7 +1229,7 @@ lemma evaluationPointω_eq_twiddleFactor_of_div_2 (i : Fin ℓ) (x : Fin (2 ^ (�
     rw [h_bit_shift]
     simp only [h_sum_eq x_1]
 
-  set f_right := fun x_1: Fin (ℓ + R_rate - (↑i + 1)) => if bit (↑x_1) (↑x / 2) = 1
+  set f_right := fun x_1: Fin (ℓ + R_rate - (↑i + 1)) => if Nat.getBit (↑x_1) (↑x / 2) = 1
     then eval (β ⟨↑i + 1 + ↑x_1, by omega⟩) (normalizedW 𝔽q β ⟨↑i, by omega⟩) else 0
   rw [←Fin.sum_congr' (b:=ℓ + R_rate - (↑i + 1)) (a:=ℓ + R_rate - i - 1) (f:=f_right) (h:=by omega)]
   unfold f_right
@@ -1243,7 +1243,7 @@ lemma evaluationPointω_eq_twiddleFactor_of_div_2 (i : Fin ℓ) (x : Fin (2 ^ (�
     conv_lhs => rw [h_2_eq]
     apply Nat.pow_le_pow_right (by omega) (by omega)
 
-  simp only [bit, Nat.shiftRight_zero, Nat.and_one_is_mod]
+  simp only [Nat.getBit, Nat.shiftRight_zero, Nat.and_one_is_mod]
 
   by_cases h_lsb_of_x_eq_0: x.val % 2 = 0
   · simp only [h_lsb_of_x_eq_0, zero_ne_one, ↓reduceIte, Nat.cast_zero, zero_mul]
@@ -1266,10 +1266,10 @@ lemma eval_point_ω_eq_next_twiddleFactor_comp_qmap
   have h_qmap_linear_map :=
     qMap_is_linear_map 𝔽q β h_Fq_card_gt_1 h_Fq_char_prime (i:=⟨i, by omega⟩)
   have h_qmap_additive: IsLinearMap 𝔽q fun x ↦ eval x (qMap 𝔽q β ⟨↑i, by omega⟩) :=
-    AdditiveNTT.linear_map_of_comp_to_linear_map_of_eval (f := (qMap 𝔽q β ⟨i, by omega⟩))
+    linear_map_of_comp_to_linear_map_of_eval (f := (qMap 𝔽q β ⟨i, by omega⟩))
     (h_f_linear := h_qmap_linear_map)
 
-  set right_inner_func := fun x_1: Fin (ℓ + R_rate - i - 1) => if bit ↑x_1 ↑x = 1
+  set right_inner_func := fun x_1: Fin (ℓ + R_rate - i - 1) => if Nat.getBit ↑x_1 ↑x = 1
     then eval (β ⟨↑i + 1 + ↑x_1, by omega⟩) (normalizedW 𝔽q β ⟨↑i, by omega⟩) else 0
 
   let eval_qmap_linear : L →ₗ[𝔽q] L := {
@@ -1287,7 +1287,7 @@ lemma eval_point_ω_eq_next_twiddleFactor_comp_qmap
 
   rw [h_rhs]
 
-  set left_inner_func := fun x_1: Fin (ℓ + R_rate - (i.val + 1)) => if bit ↑x_1 ↑x = 1
+  set left_inner_func := fun x_1: Fin (ℓ + R_rate - (i.val + 1)) => if Nat.getBit ↑x_1 ↑x = 1
     then eval (β ⟨↑i + 1 + ↑x_1, by omega⟩) (normalizedW 𝔽q β ⟨↑i + 1, by omega⟩) else 0
 
   conv_lhs =>
@@ -1310,7 +1310,7 @@ lemma eval_point_ω_eq_next_twiddleFactor_comp_qmap
     omega
 
   simp only [left_inner_func, right_inner_func]
-  by_cases h_bit_of_x_eq_0: bit x1 x = 0
+  by_cases h_bit_of_x_eq_0: Nat.getBit x1 x = 0
   · simp only [h_bit_of_x_eq_0, zero_ne_one, ↓reduceIte]
     have h_0_is_algebra_map: (0: L) = (algebraMap 𝔽q L) 0 := by
       simp only [map_zero]
@@ -1318,9 +1318,9 @@ lemma eval_point_ω_eq_next_twiddleFactor_comp_qmap
     have h_res := qMap_eval_𝔽q_eq_0 𝔽q β (i:=⟨i, by omega⟩) (c:=0)
     rw [h_res]
   · push_neg at h_bit_of_x_eq_0
-    have h_bit_lt_2 := bit_lt_2 (k:=x1) (n:=x)
-    have bit_eq_1: bit x1 x = 1 := by
-      interval_cases bit x1 x
+    have h_bit_lt_2 := Nat.getBit_lt_2 (k:=x1) (n:=x)
+    have bit_eq_1: Nat.getBit x1 x = 1 := by
+      interval_cases Nat.getBit x1 x
       · contradiction
       · rfl
     simp only [bit_eq_1, ↓reduceIte]
@@ -1351,8 +1351,8 @@ noncomputable def NTTStage (i : Fin ℓ) (b : Fin (2 ^ (ℓ + R_rate)) → L) :
   fun (j : Fin (2^(ℓ + R_rate))) =>
     let u_b_v := j.val
     have h_u_b_v : u_b_v = j.val := by rfl
-    let v: Fin (2^i.val) := ⟨get_lsb u_b_v i.val, by
-      have res := get_lsb_lt_two_pow (n:=u_b_v) (num_lsb_bits:=i.val)
+    let v: Fin (2^i.val) := ⟨Nat.getLowBits i.val u_b_v, by
+      have res := Nat.getLowBits_lt_two_pow (numLowBits:=i.val) (n:=u_b_v)
       simp only [res]
     ⟩ -- the i LSBs
     let u_b := u_b_v / (2^i.val) -- the high (ℓ + R_rate - i) bits
@@ -1367,7 +1367,7 @@ noncomputable def NTTStage (i : Fin ℓ) (b : Fin (2 ^ (ℓ + R_rate)) → L) :
       rw [h_u_b]
       exact res
     let u: ℕ := u_b / 2 -- the remaining high bits
-    let b_bit := u_b % 2 -- the LSB of the high bits, i.e. the `i`-th bit
+    let b_bit := u_b % 2 -- the LSB of the high bits, i.e. the `i`-th Nat.getBit
     have h_u : u = u_b / 2 := by rfl
     have h_u_lt_2_pow: u < 2 ^ (ℓ + R_rate - (i + 1)) := by
       have h_u_eq: u = j.val / (2 ^ (i.val + 1)) := by
@@ -1383,11 +1383,11 @@ noncomputable def NTTStage (i : Fin ℓ) (b : Fin (2 ^ (ℓ + R_rate)) → L) :
     let twiddleFactor: L := twiddleFactor 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨i, by omega⟩ ⟨u, by
       simp only; exact h_u_lt_2_pow
     ⟩
-    let x0 := twiddleFactor -- since the last bit of u||0 is 0
-    let x1: L := x0 + 1 -- since the last bit of u||1 is 1 and 1 * Ŵᵢ(βᵢ) = 1
+    let x0 := twiddleFactor -- since the last Nat.getBit of u||0 is 0
+    let x1: L := x0 + 1 -- since the last Nat.getBit of u||1 is 1 and 1 * Ŵᵢ(βᵢ) = 1
 
-    have h_b_bit : b_bit = bit i.val j.val := by
-      simp only [bit, Nat.and_one_is_mod, b_bit, u_b, u_b_v]
+    have h_b_bit : b_bit = Nat.getBit i.val j.val := by
+      simp only [Nat.getBit, Nat.and_one_is_mod, b_bit, u_b, u_b_v]
       rw [←Nat.shiftRight_eq_div_pow (m:=j.val) (n:=i.val)]
     -- b remains unchanged through this whole function cuz we create new buffer
     if h_b_bit_zero: b_bit = 0 then -- This is the `b(u||0||v)` case
@@ -1396,8 +1396,8 @@ noncomputable def NTTStage (i : Fin ℓ) (b : Fin (2 ^ (ℓ + R_rate)) → L) :
         have h_exp_eq: (↑i + (ℓ + R_rate - i)) = ℓ + R_rate := by omega
         simp only [gt_iff_lt, odd_split_index, u_b_v]
         -- ⊢ ↑j + 2 ^ ↑i < 2 ^ (ℓ + R_rate)
-        exact add_two_pow_of_bit_eq_zero_lt_two_pow (n:=j.val) (m:=ℓ + R_rate)
-          (i:=i.val) (h_n:=by omega) (h_i:=by omega) (h_bit_at_i_eq_zero:=by
+        exact Nat.add_two_pow_of_getBit_eq_zero_lt_two_pow (n:=j.val) (m:=ℓ + R_rate)
+          (i:=i.val) (h_n:=by omega) (h_i:=by omega) (h_getBit_at_i_eq_zero:=by
           rw [h_b_bit_zero] at h_b_bit
           exact h_b_bit.symm
         )
@@ -1574,7 +1574,7 @@ theorem oddRefinement_eq_novel_poly_of_1_leading_suffix (i : Fin ℓ) (v : Fin (
       congr
       -- ⊢ (1 + ↑x <<< 1) <<< ↑i = ↑x <<< (↑i + 1) ||| 1 <<< ↑i
       have h_left: 1 + (x.val <<< 1) = 1 ||| (x.val <<< 1) := by
-        apply sum_of_and_eq_zero_is_or
+        apply Nat.sum_of_and_eq_zero_is_or
         simp only [Nat.one_and_eq_mod_two, Nat.shiftLeft_eq]
         simp only [pow_one, Nat.mul_mod_left]
       rw [h_left, Nat.shiftLeft_add, Nat.shiftLeft_or_distrib, Nat.or_comm]
@@ -1587,21 +1587,21 @@ theorem oddRefinement_eq_novel_poly_of_1_leading_suffix (i : Fin ℓ) (v : Fin (
 /--
 The main loop invariant for the `additiveNTT` algorithm: the evaluation buffer `b`
 at the end of stage `i` (`i ∈ {0, ..., ℓ}`, `i=ℓ` means the initial tiled buffer)
-holds the value `P⁽ⁱ⁾(ω_{u, b, v})` for all bit mask index `(u||b||v) ∈ {0, ..., 2^(ℓ+R_rate)-1}`,
+holds the value `P⁽ⁱ⁾(ω_{u, b, v})` for all Nat.getBit mask index `(u||b||v) ∈ {0, ..., 2^(ℓ+R_rate)-1}`,
 where the points `ω_{u, b, v}` are in the domain `S⁽ⁱ⁾`.
 
 **Main statement:**
 After round `i ∈ {ℓ-1, ℓ-2, ..., 0}`: the buffer `b` at index `j` (which can be
 decomposed as `j = (u || b || v)` in little-endian order, where
 - `u` is a bitstring of length `ℓ + R_rate - i - 1`,
-- `b` is a single bit (the LSB of the high bits),
+- `b` is a single Nat.getBit (the LSB of the high bits),
 - `v` is a bitstring of length `i` (the LSBs),
 holds the value `P⁽ⁱ⁾(ω_{u, b, i})`,
 where:
   - `P⁽ⁱ⁾` is the intermediate polynomial at round `i` (in the novel basis),
   - `ω_{u, b, i}` is the evaluation point in the subspace `S⁽ⁱ⁾` constructed
   as a linear combination of the basis elements of `S⁽ⁱ⁾`:
-    - the bit `b` is the coefficient for `Ŵᵢ(βᵢ)` (the LSB),
+    - the Nat.getBit `b` is the coefficient for `Ŵᵢ(βᵢ)` (the LSB),
     - the LSB of `u` is the coefficient for `Ŵᵢ(β_{i+1})`, ..., the MSB of `u` is
     the coefficient for `Ŵᵢ(β_{ℓ+R_rate-1})`.
   - The value is replicated `2^i` times for each `v`
@@ -1620,8 +1620,8 @@ def additiveNTTInvariant (evaluation_buffer : Fin (2 ^ (ℓ + R_rate)) → L)
     (original_coeffs : Fin (2 ^ ℓ) → L) (i : Fin (ℓ + 1)): Prop :=
   ∀ (j : Fin (2^(ℓ + R_rate))),
     let u_b_v := j.val
-    let v: Fin (2^i.val) := ⟨get_lsb u_b_v i.val, by
-      have res := get_lsb_lt_two_pow (n:=u_b_v) (num_lsb_bits:=i.val)
+    let v: Fin (2^i.val) := ⟨Nat.getLowBits i.val u_b_v, by
+      have res := Nat.getLowBits_lt_two_pow (numLowBits:=i.val) (n:=u_b_v)
       simp only [res]
     ⟩ -- the i LSBs
     let u_b := u_b_v / (2^i.val) -- the high (ℓ + R_rate - i) bits
@@ -1635,7 +1635,7 @@ def additiveNTTInvariant (evaluation_buffer : Fin (2 ^ (ℓ + R_rate)) → L)
       )
       rw [h_u_b]
       exact res
-    let b_bit := get_lsb u_b_v 1 -- the LSB of the high bits, i.e. the `i`-th bit
+    let b_bit := Nat.getLowBits 1 u_b_v -- the LSB of the high bits, i.e. the `i`-th Nat.getBit
     let u := u_b / 2 -- the remaining high bits
     let coeffs_at_j: Fin (2 ^ (ℓ - i)) → L :=
       coeffsBySuffix (r:=r) 𝔽q ℓ R_rate original_coeffs i v
@@ -1658,14 +1658,14 @@ lemma initial_tiled_coeffs_correctness
     have h_ℓ_sub_ℓ: 2^(ℓ - ℓ) = 1 := by norm_num
 
     set f_right: Fin (2^(ℓ - ℓ)) → L[X] :=
-      fun ⟨x, hx⟩ => C (a ⟨↑x <<< ℓ ||| get_lsb (↑j) ℓ, by
+      fun ⟨x, hx⟩ => C (a ⟨↑x <<< ℓ ||| Nat.getLowBits ℓ (↑j), by
         simp only [tsub_self, pow_zero, Nat.lt_one_iff] at hx
         simp only [hx, Nat.zero_shiftLeft, Nat.zero_or]
-        exact get_lsb_lt_two_pow (n:=j.val) (num_lsb_bits:=ℓ)
+        exact Nat.getLowBits_lt_two_pow (numLowBits:=ℓ) (n:=j.val)
       ⟩) * intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨ℓ, by omega⟩ ⟨x, by omega⟩
 
     have h_sum_right : ∑ (x: Fin (2^(ℓ - ℓ))), f_right x =
-      C (a ⟨get_lsb (↑j) ℓ, by exact get_lsb_lt_two_pow ℓ⟩) *
+      C (a ⟨Nat.getLowBits ℓ (↑j), by exact Nat.getLowBits_lt_two_pow ℓ⟩) *
     intermediateNovelBasisX 𝔽q β ℓ R_rate h_ℓ_add_R_rate ⟨ℓ, by omega⟩ 0 := by
       have h_sum_eq := Fin.sum_congr' (b:=2^(ℓ - ℓ)) (a:=1) (f:=f_right) (by omega)
       rw [←h_sum_eq]
@@ -1678,7 +1678,7 @@ lemma initial_tiled_coeffs_correctness
     rw [h_sum_right]
 
     set f_left: Fin (ℓ + R_rate - ℓ) → L := fun x =>
-      if bit (x.val) (j.val / 2 ^ ℓ) = 1 then
+      if Nat.getBit (x.val) (j.val / 2 ^ ℓ) = 1 then
         eval (β ⟨ℓ + x.val, by omega⟩) (normalizedW 𝔽q β ⟨ℓ, by omega⟩)
       else 0
 
@@ -1693,14 +1693,14 @@ lemma initial_tiled_coeffs_correctness
         Nat.zero_mod]
 
       set f_inner : Fin (ℓ - ℓ) → L[X] := fun x => intermediateNormVpoly 𝔽q β ℓ R_rate
-        h_ℓ_add_R_rate ⟨ℓ, by omega⟩ x ^ bit (x.val) 0
+        h_ℓ_add_R_rate ⟨ℓ, by omega⟩ x ^ Nat.getBit (x.val) 0
 
       have h_sum_eq := Fin.prod_congr' (b:=ℓ - ℓ) (a:=0) (f:=f_inner) (by omega)
       simp_rw [←h_sum_eq, Fin.prod_univ_zero]
       simp only [eval_one]
 
     rw [h_eval, mul_one]
-    simp only [get_lsb_eq_mod_two_pow]
+    simp only [Nat.getLowBits_eq_mod_two_pow]
 
 -- /-- **Key Polynomial Identity (Equation 39)**. This identity is the foundation for the
 -- butterfly operation in the Additive NTT. It relates a polynomial in the `i`-th basis to
@@ -1739,7 +1739,7 @@ lemma NTTStage_correctness
   set cur_evaluation_point := evaluationPointω 𝔽q β ℓ R_rate h_ℓ_add_R_rate
     ⟨↑i, by omega⟩ ⟨↑j / 2 ^ i.val, by simp only; exact h_j_div_2_pow_i_lt⟩ -- ω_{u, b, i}
   set cur_coeffs := coeffsBySuffix 𝔽q ℓ R_rate original_coeffs ⟨↑i, by omega⟩
-    ⟨get_lsb ↑j ↑i, by exact get_lsb_lt_two_pow (num_lsb_bits:=i.val)⟩ -- coeffs of P⁽ⁱ⁾ at j
+    ⟨Nat.getLowBits i.val (↑j), by exact Nat.getLowBits_lt_two_pow (numLowBits:=i.val)⟩ -- coeffs of P⁽ⁱ⁾ at j
 
   -- identity (39): `P⁽ⁱ⁾(X) = P₀⁽ⁱ⁺¹⁾(q⁽ⁱ⁾(X)) + X ⋅ P₁⁽ⁱ⁺¹⁾(q⁽ⁱ⁾(X))`
   have h_P_i_split_even_odd := evaluation_poly_split_identity 𝔽q β ℓ R_rate
@@ -1755,14 +1755,14 @@ lemma NTTStage_correctness
     unfold output_buffer NTTStage
     simp only [beq_iff_eq, Fin.eta]
 
-  have h_bit: bit i.val j.val = (j.val / (2 ^ i.val)) % 2 := by
-    simp only [bit, Nat.and_one_is_mod, Nat.shiftRight_eq_div_pow]
+  have h_bit: Nat.getBit i.val j.val = (j.val / (2 ^ i.val)) % 2 := by
+    simp only [Nat.getBit, Nat.and_one_is_mod, Nat.shiftRight_eq_div_pow]
 
   have h_qmap_linear_map := qMap_is_linear_map 𝔽q β h_Fq_card_gt_1
     h_Fq_char_prime (i:=⟨i, by omega⟩)
 
   have h_qmap_additive: IsLinearMap 𝔽q fun x ↦ eval x (qMap 𝔽q β ⟨↑i, by omega⟩)
-    := AdditiveNTT.linear_map_of_comp_to_linear_map_of_eval
+    := linear_map_of_comp_to_linear_map_of_eval
       (f := (qMap 𝔽q β ⟨i, by omega⟩)) (h_f_linear := h_qmap_linear_map)
 
   let eval_qmap_linear : L →ₗ[𝔽q] L := {
@@ -1771,10 +1771,10 @@ lemma NTTStage_correctness
     map_smul' := h_qmap_additive.map_smul
   }
 
-  have h_lsb_and_two_pow_eq_zero : (get_lsb j.val i.val) &&& (1 <<< i.val) = 0 := by
+  have h_lsb_and_two_pow_eq_zero : (Nat.getLowBits i.val j.val) &&& (1 <<< i.val) = 0 := by
     rw [Nat.shiftLeft_eq, one_mul]
-    apply and_two_pow_eq_zero_of_bit_0
-    rw [bit_of_lsb];
+    apply Nat.and_two_pow_eq_zero_of_getBit_0
+    rw [Nat.getBit_of_lowBits];
     simp only [lt_self_iff_false, ↓reduceIte]
 
   have h_j_div_2_pow_i_add_1_lt := div_two_pow_lt_two_pow (x:=j.val)
@@ -1795,33 +1795,33 @@ lemma NTTStage_correctness
     apply qMap_eval_𝔽q_eq_0 𝔽q β (i:=⟨i, by omega⟩) (c:=1)
 
   have h_msb_eq_j_xor_lsb: (j.val) / (2 ^ (i.val + 1)) * (2 ^ (i.val + 1))
-      = j.val ^^^ get_lsb j.val (i.val + 1) := by
-    have h_xor: j.val = get_msb j.val (i.val + 1) ^^^ get_lsb j.val (i.val + 1)
-      := num_eq_msb_xor_lsb (n:=j.val) (num_lsb_bits:=i.val + 1)
+      = j.val ^^^ Nat.getLowBits (i.val + 1) j.val := by
+    have h_xor: j.val = Nat.getHighBits (i.val + 1) j.val ^^^ Nat.getLowBits (i.val + 1) j.val
+      := Nat.num_eq_highBits_xor_lowBits (n:=j.val) (i.val + 1)
     conv_lhs => rw [←Nat.shiftLeft_eq]; rw [←Nat.shiftRight_eq_div_pow]
-    change get_msb j.val (i.val + 1) = _
+    change Nat.getHighBits (i.val + 1) j.val = _
     conv_rhs => enter [1]; rw [h_xor]
     rw [Nat.xor_assoc, Nat.xor_self, Nat.xor_zero]
 
   have h_msb_eq_j_sub_lsb: (j.val) / (2 ^ (i.val + 1)) * (2 ^ (i.val + 1))
-      = j.val - get_lsb j.val (i.val + 1) := by
-    have h_msb := num_eq_msb_add_lsb (n:=j.val) (num_lsb_bits:=i.val + 1)
+      = j.val - Nat.getLowBits (i.val + 1) j.val := by
+    have h_msb := Nat.num_eq_highBits_add_lowBits (n:=j.val) (numLowBits:=i.val + 1)
     conv_rhs => enter [1]; rw [h_msb]
-    norm_num; rw [get_msb, Nat.shiftLeft_eq, Nat.shiftRight_eq_div_pow]
+    norm_num; rw [Nat.getHighBits, Nat.getHighBits_no_shl, Nat.shiftLeft_eq, Nat.shiftRight_eq_div_pow]
 
   by_cases h_b_bit_eq_0: (j.val / (2 ^ i.val)) % 2 = 0
   · simp only [h_b_bit_eq_0, ↓reduceDIte]
     simp only at h_b_bit_eq_0
-    have bit_i_j_eq_0: bit i.val j.val = 0 := by omega
+    have bit_i_j_eq_0: Nat.getBit i.val j.val = 0 := by omega
     set x0 := twiddleFactor 𝔽q β ℓ R_rate h_ℓ_add_R_rate i ⟨j.val / 2 ^ i.val / 2, by
       rw [h_j_div_2_pow_left.symm]; exact h_j_div_2_pow_i_add_1_lt⟩
 
     have h_j_add_2_pow_i: j.val + 2 ^ i.val < 2 ^ (ℓ + R_rate):= by
-      exact add_two_pow_of_bit_eq_zero_lt_two_pow
+      exact Nat.add_two_pow_of_getBit_eq_zero_lt_two_pow
         (n:=j.val) (m:=ℓ + R_rate) (i:=i.val) (h_n:=by omega)
-        (h_i:=by omega) (h_bit_at_i_eq_zero:=by
+        (h_i:=by omega) (h_getBit_at_i_eq_zero:=by
         rw [←h_b_bit_eq_0]
-        simp only [bit, Nat.and_one_is_mod, Nat.shiftRight_eq_div_pow])
+        simp only [Nat.getBit, Nat.and_one_is_mod, Nat.shiftRight_eq_div_pow])
 
     -- EVEN REFINEMENT coeffs correspondence at index j of level i--
     have h_even_split: input_buffer j =
@@ -1852,14 +1852,14 @@ lemma NTTStage_correctness
 
       simp only [even_coeffs_poly, cur_coeffs]
       have h_res := evenRefinement_eq_novel_poly_of_0_leading_suffix 𝔽q β ℓ R_rate h_ℓ_add_R_rate
-        ⟨i, by omega⟩ ⟨get_lsb ↑j ↑i, by
-          exact get_lsb_lt_two_pow (n:=j.val)  (num_lsb_bits:=i.val)⟩ original_coeffs
+        ⟨i, by omega⟩ ⟨Nat.getLowBits i.val j.val, by
+          exact Nat.getLowBits_lt_two_pow (numLowBits:=i.val)⟩ original_coeffs
       simp only [Fin.eta] at h_res
       rw [h_res]
 
-      have h_v_eq: get_lsb j.val i.val = get_lsb j.val (i.val + 1) := by
+      have h_v_eq: Nat.getLowBits i.val j.val = Nat.getLowBits (i.val + 1) j.val := by
         -- i.e. v (i bits) = 0||v (i+1 bits)
-        rw [get_lsb_succ]
+        rw [Nat.getLowBits_succ]
         rw [h_bit, h_b_bit_eq_0, Nat.zero_shiftLeft, Nat.add_zero]
 
       simp_rw [h_v_eq]
@@ -1888,17 +1888,17 @@ lemma NTTStage_correctness
           rw [←Nat.add_assoc];
           apply Nat.add_lt_add_right;
           -- ⊢ ↑j < ↑j / 2 ^ (↑i + 1) * 2 ^ (↑i + 1) + 2 ^ ↑i
-          have h_j: j = j / 2^(i.val + 1) * 2^(i.val + 1) + get_lsb j.val i.val := by
-            conv_lhs => rw [num_eq_msb_add_lsb (n:=j.val) (num_lsb_bits:=i.val + 1)]
-            rw [get_msb, Nat.shiftLeft_eq, Nat.shiftRight_eq_div_pow]
+          have h_j: j = j / 2^(i.val + 1) * 2^(i.val + 1) + Nat.getLowBits i.val j.val := by
+            conv_lhs => rw [Nat.num_eq_highBits_add_lowBits (n:=j.val) (numLowBits:=i.val + 1)]
+            rw [Nat.getHighBits, Nat.getHighBits_no_shl, Nat.shiftLeft_eq, Nat.shiftRight_eq_div_pow]
             apply Nat.add_left_cancel_iff.mpr
-            rw [get_lsb_succ]
-            conv_rhs => rw [←Nat.add_zero (n:=get_lsb j.val i.val)]
+            rw [Nat.getLowBits_succ]
+            conv_rhs => rw [←Nat.add_zero (n:=Nat.getLowBits i.val j.val)]
             apply Nat.add_left_cancel_iff.mpr
             rw [bit_i_j_eq_0, Nat.zero_shiftLeft]
           conv_lhs => rw [h_j];
           apply Nat.add_lt_add_left;
-          exact get_lsb_lt_two_pow (n:=j.val) (num_lsb_bits:=i.val)
+          exact Nat.getLowBits_lt_two_pow (numLowBits:=i.val) (n:=j.val)
 
       have h_twiddle_comp_qmap_eq_right := eval_point_ω_eq_next_twiddleFactor_comp_qmap
         𝔽q β ℓ R_rate h_ℓ_add_R_rate h_Fq_card_gt_1 h_Fq_char_prime hβ_lin_indep
@@ -1919,42 +1919,42 @@ lemma NTTStage_correctness
 
       simp only [odd_coeffs_poly, cur_coeffs]
       have h_res := oddRefinement_eq_novel_poly_of_1_leading_suffix 𝔽q β ℓ R_rate h_ℓ_add_R_rate
-        ⟨i, by omega⟩ ⟨get_lsb (↑j) ↑i, by
-          exact get_lsb_lt_two_pow (n:=j.val)  (num_lsb_bits:=i.val)⟩ original_coeffs
+        ⟨i, by omega⟩ ⟨Nat.getLowBits i.val j.val, by
+          exact Nat.getLowBits_lt_two_pow (numLowBits:=i.val)⟩ original_coeffs
       simp only [Fin.eta] at h_res
       rw [h_res]
 
       have h_j_and_2_pow_i_eq_0 : j.val &&& 2 ^ i.val = 0 := by
-        apply and_two_pow_eq_zero_of_bit_0
+        apply Nat.and_two_pow_eq_zero_of_getBit_0
         omega
 
-      have h_bit1: bit (i.val) (j.val + 2 ^ i.val) = 1 := by
-        rw [sum_of_and_eq_zero_is_or h_j_and_2_pow_i_eq_0]
-        rw [bit_of_or]
-        rw [bit_two_pow]
+      have h_bit1: Nat.getBit (i.val) (j.val + 2 ^ i.val) = 1 := by
+        rw [Nat.sum_of_and_eq_zero_is_or h_j_and_2_pow_i_eq_0]
+        rw [Nat.getBit_of_or]
+        rw [Nat.getBit_two_pow]
         rw [bit_i_j_eq_0]
         simp only [BEq.rfl, ↓reduceIte, Nat.zero_or]
 
-      have h_v_eq: get_lsb (j.val + 2^i.val) (i.val + 1)
-        = (get_lsb j.val (i.val)) ||| 1 <<< i.val := by
+      have h_v_eq: Nat.getLowBits (i.val + 1) (j.val + 2^i.val)
+        = (Nat.getLowBits i.val j.val) ||| 1 <<< i.val := by
         -- i.e. v (i bits) = 0||v (i+1 bits)
-        rw [get_lsb_succ]
+        rw [Nat.getLowBits_succ]
         rw [h_bit1]
-        have h_get_lsb_eq: get_lsb (j.val + 2^i.val) (i.val) = get_lsb (j.val) (i.val) := by
-          apply eq_iff_eq_all_bits.mpr
+        have h_get_lsb_eq: Nat.getLowBits i.val (j.val + 2^i.val) = Nat.getLowBits i.val j.val := by
+          apply Nat.eq_iff_eq_all_getBits.mpr
           intro k
-          change bit k (get_lsb (j.val + 2^i.val) (i.val)) = bit k (get_lsb (j.val) (i.val))
-          rw [bit_of_lsb, bit_of_lsb]
+          change Nat.getBit k (Nat.getLowBits i.val (j.val + 2^i.val)) = Nat.getBit k (Nat.getLowBits i.val j.val)
+          rw [Nat.getBit_of_lowBits, Nat.getBit_of_lowBits]
           if h_k: k < i.val then
             simp only [h_k, ↓reduceIte]
-            rw [bit_of_add_distrib h_j_and_2_pow_i_eq_0]
-            rw [bit_two_pow]
+            rw [Nat.getBit_of_add_distrib h_j_and_2_pow_i_eq_0]
+            rw [Nat.getBit_two_pow]
             simp only [beq_iff_eq, Nat.add_eq_left, ite_eq_right_iff, one_ne_zero, imp_false]
             omega
           else
             simp only [h_k, ↓reduceIte]
         rw [h_get_lsb_eq]
-        apply sum_of_and_eq_zero_is_or h_lsb_and_two_pow_eq_zero
+        apply Nat.sum_of_and_eq_zero_is_or h_lsb_and_two_pow_eq_zero
 
       congr
       simp_rw [h_v_eq]
@@ -1971,7 +1971,7 @@ lemma NTTStage_correctness
     simp only [eval_comp, eval_add, eval_mul, eval_X]
   · simp only [h_b_bit_eq_0, ↓reduceDIte]
     push_neg at h_b_bit_eq_0
-    have bit_i_j_eq_1: bit i.val j.val = 1 := by omega
+    have bit_i_j_eq_1: Nat.getBit i.val j.val = 1 := by omega
     simp only [ne_eq, Nat.mod_two_not_eq_zero] at h_b_bit_eq_0
     set x1 := twiddleFactor 𝔽q β ℓ R_rate h_ℓ_add_R_rate i
       ⟨j.val / 2 ^ i.val / 2, by exact h_j_div_2_pow_div_2_left_lt⟩ + 1
@@ -1981,23 +1981,23 @@ lemma NTTStage_correctness
         apply Nat.pow_lt_pow_right (by omega) (by omega)
       )
 
-    have h_2_pow_i_le_lsb_succ: 2 ^ i.val ≤ get_lsb j.val (i.val + 1) := by
-      rw [get_lsb_succ]; rw [bit_i_j_eq_1, Nat.shiftLeft_eq, one_mul]; omega
+    have h_2_pow_i_le_lsb_succ: 2 ^ i.val ≤ Nat.getLowBits (i.val + 1) j.val := by
+      rw [Nat.getLowBits_succ]; rw [bit_i_j_eq_1, Nat.shiftLeft_eq, one_mul]; omega
 
     have h_2_pow_i_le_j: 2 ^ i.val ≤ j.val := by
-      rw [num_eq_msb_add_lsb (n:=j.val) (num_lsb_bits:=i.val + 1), add_comm]
+      rw [Nat.num_eq_highBits_add_lowBits (n:=j.val) (numLowBits:=i.val + 1), add_comm]
       apply Nat.le_add_right_of_le -- ⊢ 2 ^ ↑i ≤ get_lsb (↑j) (↑i + 1)
       exact h_2_pow_i_le_lsb_succ
 
     have h_j_and_2_pow_i_eq_2_pow_i : j.val &&& 2 ^ i.val = 2 ^ i.val := by
-      rw [and_two_pow_eq_two_pow_of_bit_1 (n:=j.val) (i:=i.val) (by omega)]
+      rw [Nat.and_two_pow_eq_two_pow_of_getBit_1 (n:=j.val) (i:=i.val) (by omega)]
 
     have h_j_xor_2_pow_i_eq_sub: j.val ^^^ 2 ^ i.val = j.val - 2 ^ i.val := by
-      exact xor_eq_sub_iff_submask (n:=j.val) (m:=2^i.val)
+      exact Nat.xor_eq_sub_iff_submask (n:=j.val) (m:=2^i.val)
         (h:=h_2_pow_i_le_j).mpr h_j_and_2_pow_i_eq_2_pow_i
 
-    have h_2_pow_i_le_lsb_succ_2: get_lsb j.val (i.val) < 2 ^ i.val := by
-      exact get_lsb_lt_two_pow (n:=j.val) (num_lsb_bits:=i.val)
+    have h_2_pow_i_le_lsb_succ_2: Nat.getLowBits i.val j.val < 2 ^ i.val := by
+      exact Nat.getLowBits_lt_two_pow (numLowBits:=i.val) (n:=j.val)
 
     have h_even_split: input_buffer ⟨↑j ^^^ 2 ^ i.val, h_j_xor_2_pow_i⟩
       = eval x1 (even_coeffs_poly.comp (qMap 𝔽q β ⟨↑i, by omega⟩)) := by
@@ -2016,7 +2016,7 @@ lemma NTTStage_correctness
           -- the lhs is basically erasing (i+1) msb bits from j
           calc
             (j.val) / (2 ^ (i.val + 1)) * (2 ^ (i.val + 1))
-              = j.val - get_lsb (j.val) (i.val + 1) := by
+              = j.val - Nat.getLowBits (i.val + 1) j.val := by
               rw [h_msb_eq_j_sub_lsb]
             _ ≤ j.val ^^^ 2 ^ i.val := by
               rw [h_j_xor_2_pow_i_eq_sub]
@@ -2025,13 +2025,13 @@ lemma NTTStage_correctness
           rw [add_mul]; rw [one_mul];
           conv_rhs =>
             rw [h_msb_eq_j_sub_lsb] -- | ↑j - get_lsb (↑j) (↑i + 1) + 2 ^ (↑i + 1)
-            rw [←Nat.sub_add_comm (h:=get_lsb_le_self (n:=j.val)
-              (num_lsb_bits:=i.val + 1)), Nat.pow_succ, mul_two]
+            rw [←Nat.sub_add_comm (h:=Nat.getLowBits_le_self (n:=j.val)
+              (numLowBits:=i.val + 1)), Nat.pow_succ, mul_two]
             rw [←Nat.add_assoc]
-            rw [get_lsb_succ, bit_i_j_eq_1, Nat.shiftLeft_eq, one_mul]
-            rw [Nat.add_comm (get_lsb j.val i.val) (2 ^ i.val), ←Nat.sub_sub]
+            rw [Nat.getLowBits_succ, bit_i_j_eq_1, Nat.shiftLeft_eq, one_mul]
+            rw [Nat.add_comm (Nat.getLowBits i.val j.val) (2 ^ i.val), ←Nat.sub_sub]
             rw [Nat.add_sub_cancel (m:=2^i.val)]
-          rw [Nat.add_sub_assoc (n:=j.val) (m:=2^i.val) (k:=get_lsb j.val i.val) (h:=by omega)]
+          rw [Nat.add_sub_assoc (n:=j.val) (m:=2^i.val) (k:=Nat.getLowBits i.val j.val) (h:=by omega)]
           -- ⊢ ↑j ^^^ 2 ^ ↑i < ↑j + (2 ^ ↑i - get_lsb ↑j ↑i)
           omega
 
@@ -2070,31 +2070,31 @@ lemma NTTStage_correctness
 
       simp only [even_coeffs_poly, cur_coeffs]
       have h_res := evenRefinement_eq_novel_poly_of_0_leading_suffix 𝔽q β ℓ R_rate h_ℓ_add_R_rate
-        ⟨i, by omega⟩ ⟨get_lsb ↑j ↑i, by
-          exact get_lsb_lt_two_pow (n:=j.val)  (num_lsb_bits:=i.val)⟩ original_coeffs
+        ⟨i, by omega⟩ ⟨Nat.getLowBits i.val j.val, by
+          exact Nat.getLowBits_lt_two_pow (numLowBits:=i.val)⟩ original_coeffs
       simp only [Fin.eta] at h_res
       rw [h_res]
 
       congr
       rw [h_eval_qmap_at_1, add_zero]
 
-      have h_bit0: bit (i.val) (j.val ^^^ 2 ^ i.val) = 0 := by
-        rw [bit_of_xor (n:=j.val) (m:=2^i.val) (k:=i.val)]
-        rw [bit_i_j_eq_1, bit_two_pow]
+      have h_bit0: Nat.getBit (i.val) (j.val ^^^ 2 ^ i.val) = 0 := by
+        rw [Nat.getBit_of_xor (n:=j.val) (m:=2^i.val) (k:=i.val)]
+        rw [bit_i_j_eq_1, Nat.getBit_two_pow]
         simp only [BEq.rfl, ↓reduceIte, Nat.xor_self]
 
-      have h_v_eq: get_lsb (j.val ^^^ 2^i.val) (i.val + 1) = get_lsb (j.val) (i.val) := by
+      have h_v_eq: Nat.getLowBits (i.val + 1) (j.val ^^^ 2^i.val) = Nat.getLowBits i.val j.val := by
         -- i.e. 0||v (i+1 bits) = v (i bits)
-        rw [get_lsb_succ]
+        rw [Nat.getLowBits_succ]
         rw [h_bit0, Nat.zero_shiftLeft, Nat.add_zero]
-        apply eq_iff_eq_all_bits.mpr
+        apply Nat.eq_iff_eq_all_getBits.mpr
         intro k
-        change bit k (get_lsb (j.val ^^^ 2^i.val) (i.val)) = bit k (get_lsb (j.val) (i.val))
-        rw [bit_of_lsb, bit_of_lsb]
+        change Nat.getBit k (Nat.getLowBits i.val (j.val ^^^ 2^i.val)) = Nat.getBit k (Nat.getLowBits i.val j.val)
+        rw [Nat.getBit_of_lowBits, Nat.getBit_of_lowBits]
         if h_k: k < i.val then
           simp only [h_k, ↓reduceIte]
-          -- ⊢ bit k (↑j ^^^ 2 ^ ↑i) = bit k ↑j (precondition that bit i j = 1)
-          rw [bit_of_xor, bit_two_pow]
+          -- ⊢ Nat.getBit k (↑j ^^^ 2 ^ ↑i) = Nat.getBit k ↑j (precondition that Nat.getBit i j = 1)
+          rw [Nat.getBit_of_xor, Nat.getBit_two_pow]
           have h_ne_i_eq_k: ¬(i.val = k) := by omega
           simp only [beq_iff_eq, h_ne_i_eq_k, ↓reduceIte, Nat.xor_zero]
         else
@@ -2145,8 +2145,8 @@ lemma NTTStage_correctness
 
       simp only [odd_coeffs_poly, cur_coeffs]
       have h_res := oddRefinement_eq_novel_poly_of_1_leading_suffix 𝔽q β ℓ R_rate h_ℓ_add_R_rate
-        ⟨i, by omega⟩ ⟨get_lsb ↑j ↑i, by
-          exact get_lsb_lt_two_pow (n:=j.val)  (num_lsb_bits:=i.val)⟩ original_coeffs
+        ⟨i, by omega⟩ ⟨Nat.getLowBits i.val j.val, by
+          exact Nat.getLowBits_lt_two_pow (numLowBits:=i.val)⟩ original_coeffs
       simp only [Fin.eta] at h_res
       rw [h_res]
 
@@ -2154,11 +2154,11 @@ lemma NTTStage_correctness
 
       rw [h_eval_qmap_at_1, add_zero]
 
-      have h_v_eq: get_lsb j.val (i.val + 1) = get_lsb j.val (i.val) ||| 1 <<< i.val := by
+      have h_v_eq: Nat.getLowBits (i.val + 1) j.val = Nat.getLowBits i.val j.val ||| 1 <<< i.val := by
         -- i.e. v (i bits) = 0||v (i+1 bits)
-        rw [get_lsb_succ]
+        rw [Nat.getLowBits_succ]
         rw [h_bit, h_b_bit_eq_0]
-        apply sum_of_and_eq_zero_is_or h_lsb_and_two_pow_eq_zero
+        apply Nat.sum_of_and_eq_zero_is_or h_lsb_and_two_pow_eq_zero
 
       simp_rw [h_v_eq]
 
@@ -2193,7 +2193,7 @@ lemma foldl_NTTStage_inductive_aux
   | zero =>
     exact invariant_init
   | succ k k_h i_h =>
-    have h_k_add_one := Fin.val_add_one (a:=k) (by omega)
+    have h_k_add_one := Fin.val_add_one' (a:=k) (by omega)
     simp only [h_k_add_one, Fin.coe_cast]
     simp only [Fin.foldl_succ_last, Fin.val_last, Fin.coe_castSucc]
     set ntt_round := ℓ - (k + 1)
@@ -2248,7 +2248,7 @@ theorem additiveNTT_correctness
   have res := output_foldl_correctness j
   unfold output_foldl at res
   simp only [Fin.zero_eta, Nat.sub_zero, pow_zero, Nat.div_one, Fin.eta,
-    Nat.pow_zero, get_zero_lsb_eq_zero (n := j.val), Fin.isValue, base_coeffsBySuffix] at res
+    Nat.pow_zero, Nat.getLowBits_zero_eq_zero (n := j.val), Fin.isValue, base_coeffsBySuffix] at res
   simp only [←
     intermediate_poly_P_base 𝔽q β ℓ R_rate h_ℓ_add_R_rate h_W₀_eq_X h_β₀_eq_1 h_Fq_card_gt_1
       h_Fq_char_prime hβ_lin_indep h_ℓ original_coeffs,

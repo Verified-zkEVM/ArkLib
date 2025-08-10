@@ -185,7 +185,7 @@ abbrev Statement.AfterFirstMessage : Type := Statement R pp
 /-- Unfolds to `A, B, C : Matrix (Fin 2 ^ ℓ_m) (Fin 2 ^ ℓ_n) R` and `𝕨 : Fin 2 ^ ℓ_w → R` -/
 @[simp]
 abbrev OracleStatement.AfterFirstMessage : R1CS.MatrixIdx ⊕ Fin 1 → Type :=
-  (OracleStatement R pp) ⊕ᵥ (fun _ => Witness R pp)
+  Sum.rec (OracleStatement R pp) (fun _ => Witness R pp)
 
 /-- Unfolds to `() : Unit` -/
 @[simp]
@@ -231,6 +231,8 @@ abbrev OracleStatement.AfterFirstChallenge : R1CS.MatrixIdx ⊕ Fin 1 → Type :
 
 @[simp]
 abbrev Witness.AfterFirstChallenge : Type := Unit
+
+#check RandomQuery.oracleReduction
 
 def oracleReduction.firstChallenge :
     OracleReduction oSpec
@@ -302,7 +304,7 @@ abbrev Statement.AfterSendEvalClaim : Type := Statement.AfterFirstSumcheck R pp
 
 @[simp]
 abbrev OracleStatement.AfterSendEvalClaim : R1CS.MatrixIdx ⊕ R1CS.MatrixIdx ⊕ Fin 1 → Type :=
-  EvalClaim R ⊕ᵥ OracleStatement.AfterFirstSumcheck R pp
+  Sum.elim (EvalClaim R) (OracleStatement.AfterFirstSumcheck R pp)
 
 @[simp]
 abbrev Witness.AfterSendEvalClaim : Type := Unit
@@ -333,7 +335,7 @@ abbrev Statement.AfterLinearCombination : Type :=
 
 @[simp]
 abbrev OracleStatement.AfterLinearCombination : R1CS.MatrixIdx ⊕ R1CS.MatrixIdx ⊕ Fin 1 → Type :=
-  EvalClaim R ⊕ᵥ OracleStatement.AfterFirstSumcheck R pp
+  Sum.elim (EvalClaim R) (OracleStatement.AfterFirstSumcheck R pp)
 
 @[simp]
 abbrev Witness.AfterLinearCombination : Type := Unit
@@ -372,7 +374,7 @@ abbrev Statement.AfterSecondSumcheck : Type :=
 
 @[simp]
 abbrev OracleStatement.AfterSecondSumcheck : R1CS.MatrixIdx ⊕ R1CS.MatrixIdx ⊕ Fin 1 → Type :=
-  EvalClaim R ⊕ᵥ OracleStatement.AfterFirstSumcheck R pp
+  Sum.elim (EvalClaim R) (OracleStatement.AfterFirstSumcheck R pp)
 
 @[simp]
 abbrev Witness.AfterSecondSumcheck : Type := Unit
