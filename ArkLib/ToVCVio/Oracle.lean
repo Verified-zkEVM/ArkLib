@@ -76,8 +76,7 @@ theorem runWithOracle_freeMonad_pure (f : Oracle spec) (a : Option α) :
 @[simp]
 theorem runWithOracle_bind (f : Oracle spec) (oa : OracleComp spec α) (ob : α → OracleComp spec β) :
     runWithOracle f (oa >>= ob) =
-    (do
-      let a ← runWithOracle f oa
+    (runWithOracle f oa) >>= (fun a =>
       runWithOracle f (ob a)) := by
   sorry
 

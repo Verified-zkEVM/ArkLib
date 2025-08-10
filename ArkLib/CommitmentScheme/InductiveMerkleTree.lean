@@ -8,7 +8,6 @@ import VCVio
 import ArkLib.Data.Math.Basic
 import ArkLib.CommitmentScheme.Basic
 import Mathlib.Data.Vector.Snoc
-import ArkLib.CommitmentScheme.QueryCacheToSet
 import ArkLib.CommitmentScheme.BinaryTree
 import ArkLib.ToVCVio.Oracle
 
