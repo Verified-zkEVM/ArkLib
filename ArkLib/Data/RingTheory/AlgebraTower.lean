@@ -15,66 +15,38 @@ import Mathlib
   ## Main definitions
 
   * `AlgebraTower` : a tower of algebras
-  * `CoherentAlgebraTower` : a tower of algebras with coherence condition
   * `AlgebraTowerEquiv` : an equivalence of towers of algebras
-  * `CoherentAlgebraTowerEquiv` : an equivalence of towers of coherent algebras
-
-Some considerations:
-
-1. Can we reuse existing `Algebra` and `AlgEquiv` definitions? For instance, `AlgebraTower` can just
-   contain an algebra instance `Algebra (TA i) (TA j)` for every `i, j : ι` with `i ≤ j`. This
-   allows for using the root namespace definition `algebraMap`, instead of the custom notation
-   `towerAlgebraMap`. Since `algebraMap` is natively supported in mathlib with lots of theorems,
-   this may lead to better simplification behavior. Same for `AlgEquiv`.
-
-2. Name change: the condition in `Associative` is exactly in associativity format (i.e. `(a * b) * c
-   = a * (b * c)`). One may consider renaming this to `Coherent`.
-
-3. Can we merge the coherence / associativity condition into `AlgebraTower`? If we never encounter
-   algebra towers that are not coherent, then there is no need for a separate type class.
-
-4. After everything, run `#min_imports` to minimize imports instead of importing the whole of
-   mathlib.
 -/
 
-/-- A tower of algebras is a sequence of algebras `TA i` indexed over a preorder `ι` with the
+/-- A tower of algebras is a sequence of algebras `AT i` indexed over a preorder `ι` with the
     following data:
-    - `towerAlgebraMap : TA i →+* TA j` is a ring homomorphism from `TA i` to `TA j` for all `i ≤ j`
+    - `algebraMap : AT i →+* AT j` is a ring homomorphism from `AT i` to `AT j` for all `i ≤ j`
     - `commutes'` is a proof that the ring homomorphism commutes with the multiplication
-    - `smul_def'` is a proof that the scalar multiplication is defined by the ring homomorphism.
+    - `coherence'`: A tower of algebras is coherent if the algebra maps satisfy the
+      coherence condition: the direct map from i to k equals the composition of maps i → j → k.
 -/
-class AlgebraTower {ι : Type*} [Preorder ι] (TA : ι → Type*)
-  [∀ i, CommSemiring (TA i)] where
-  /-- Ring homomorphisms from `TA i` to `TA j` for all `i ≤ j`. -/
-  protected towerAlgebraMap : ∀ i j, (h : i ≤ j) → (TA i →+* TA j)
-  /-- Scalar multiplication from `TA i` to `TA j` for all `i ≤ j`. -/
-  protected smul: ∀ i j, (h: i ≤ j) → (SMul (TA i) (TA j))
+class AlgebraTower {ι : Type*} [Preorder ι] (AT : ι → Type*)
+  [∀ i, CommSemiring (AT i)] where
+  /-- Ring homomorphisms from `AT i` to `AT j` for all `i ≤ j`. -/
+  protected algebraMap : ∀ i j, (h : i ≤ j) → (AT i →+* AT j)
   /-- Commutativity of multiplication with respect to the ring homomorphism. -/
-  commutes' : ∀ (i j : ι) (h : i ≤ j) (r : TA i) (x : TA j),
-    (towerAlgebraMap i j h r) * x = x * (towerAlgebraMap i j h r)
-  /-- Scalar multiplication is determined by the ring homomorphism. -/
-  smul_def' : ∀ (i j : ι) (h : i ≤ j) (r : TA i) (x : TA j),
-    (towerAlgebraMap i j h r) * x = (towerAlgebraMap i j h r) * x
-
-/-- A tower of algebras is coherent if the algebra maps satisfy the coherence condition:
-    the direct map from i to k equals the composition of maps i → j → k. -/
-class CoherentAlgebraTower {ι : Type*} [Preorder ι] (TA : ι → Type*)
-  [∀ i, CommSemiring (TA i)] extends AlgebraTower TA where
+  commutes' : ∀ (i j : ι) (h : i ≤ j) (r : AT i) (x : AT j),
+    (algebraMap i j h r) * x = x * (algebraMap i j h r)
   coherence': ∀ (i j k : ι) (h1 : i ≤ j) (h2 : j ≤ k),
-    towerAlgebraMap i k (h1.trans h2) =
-      (towerAlgebraMap j k h2).comp (towerAlgebraMap i j h1)
+    algebraMap i k (h1.trans h2) =
+      (algebraMap j k h2).comp (algebraMap i j h1)
 
 variable {ι : Type*} [Preorder ι]
   {A : ι → Type*} [∀ i, CommSemiring (A i)] [AlgebraTower A]
   {B : ι → Type*} [∀ i, CommSemiring (B i)] [AlgebraTower B]
-  {C : ι → Type*} [∀ i, CommSemiring (C i)] [CoherentAlgebraTower C]
+  {C : ι → Type*} [∀ i, CommSemiring (C i)] [AlgebraTower C]
 
 @[simp]
 def AlgebraTower.toAlgebra {i j : ι} (h : i ≤ j) : Algebra (A i) (A j) :=
-  (AlgebraTower.towerAlgebraMap (i:=i) (j:=j) (h:=h)).toAlgebra
+  (AlgebraTower.algebraMap (i:=i) (j:=j) (h:=h)).toAlgebra
 
 @[simp]
-instance CoherentAlgebraTower.toIsScalarTower (a : CoherentAlgebraTower C) {i j k : ι}
+instance AlgebraTower.toIsScalarTower (a : AlgebraTower C) {i j k : ι}
     (h1 : i ≤ j) (h2 : j ≤ k) :
     letI : Algebra (C i) (C j) := by exact a.toAlgebra h1
     letI : Algebra (C j) (C k) := by exact a.toAlgebra h2
@@ -96,17 +68,17 @@ instance CoherentAlgebraTower.toIsScalarTower (a : CoherentAlgebraTower C) {i j 
   }
 
 structure AlgebraTowerEquiv (A : ι → Type*) [∀ i, CommSemiring (A i)] [a : AlgebraTower A]
-  (B : ι → Type*) [∀ i, CommSemiring (B i)] [AlgebraTower B]
+  (B : ι → Type*) [∀ i, CommSemiring (B i)] [b : AlgebraTower B]
   where
     toRingEquiv: ∀ i, (A i ≃+* B i)
     commutesLeft' : ∀ (i j : ι) (h : i ≤ j) (r : A i),
-      AlgebraTower.towerAlgebraMap (TA:=B) (i:=i) (j:=j) (h:=h) ((toRingEquiv i) r) =
-      (toRingEquiv j) (AlgebraTower.towerAlgebraMap (TA:=A) (i:=i) (j:=j) (h:=h) r)
+      (b.algebraMap (i:=i) (j:=j) (h:=h)) ((toRingEquiv i) r) =
+      (toRingEquiv j) (a.algebraMap (i:=i) (j:=j) (h:=h) r)
 
 lemma AlgebraTowerEquiv.commutesRight' (e : AlgebraTowerEquiv A B)
     {i j : ι} (h : i ≤ j) (r : B i) :
-  AlgebraTower.towerAlgebraMap (TA:=A) (i:=i) (j:=j) (h:=h) ((e.toRingEquiv i).symm r) =
-  (e.toRingEquiv j).symm (AlgebraTower.towerAlgebraMap (TA:=B) (i:=i) (j:=j) (h:=h) r):= by
+  AlgebraTower.algebraMap (AT:=A) (i:=i) (j:=j) (h:=h) ((e.toRingEquiv i).symm r) =
+  (e.toRingEquiv j).symm (AlgebraTower.algebraMap (AT:=B) (i:=i) (j:=j) (h:=h) r):= by
   apply (e.toRingEquiv j).injective
   set r2: A i := (e.toRingEquiv i).symm r
   rw [←e.commutesLeft' (i:=i) (j:=j) (h:=h) (r:=r2)]
@@ -120,13 +92,13 @@ def AlgebraTowerEquiv.symm (e : AlgebraTowerEquiv A B) : AlgebraTowerEquiv B A w
 
 def AlgebraTowerEquiv.algebraMapRightUp (e : AlgebraTowerEquiv A B) (i j : ι)
     (h : i ≤ j): (A i) →+* (B j) := by
-  have hBij: B i →+* B j := AlgebraTower.towerAlgebraMap (TA:=B) (i:=i) (j:=j) (h:=h)
+  have hBij: B i →+* B j := AlgebraTower.algebraMap (AT:=B) (i:=i) (j:=j) (h:=h)
   have hiRingEquiv: RingEquiv (A i) (B i) := e.toRingEquiv i
   exact hBij.comp hiRingEquiv.toRingHom
 
 def AlgebraTowerEquiv.algebraMapLeftUp (e : AlgebraTowerEquiv A B) (i j : ι)
     (h : i ≤ j): (B i) →+* (A j) := by
-  have hAij: A i →+* A j := AlgebraTower.towerAlgebraMap (TA:=A) (i:=i) (j:=j) (h:=h)
+  have hAij: A i →+* A j := AlgebraTower.algebraMap (AT:=A) (i:=i) (j:=j) (h:=h)
   have hjRingEquiv: RingEquiv (B i) (A i) := (e.toRingEquiv i).symm
   exact hAij.comp hjRingEquiv.toRingHom
 
@@ -166,6 +138,3 @@ def AlgebraTowerEquiv.toAlgEquivOverRight (e : AlgebraTowerEquiv A B) (i j : ι)
   letI : Algebra (B i) (B j) := by exact AlgebraTower.toAlgebra h
   letI : Algebra (B i) (A j) := by exact e.toAlgebraOverRight i j h
   AlgEquiv (B i) (B j) (A j) := (e.symm.toAlgEquivOverLeft i j h)
-
-structure CoherentAlgebraTowerEquiv (A : ι → Type*) [∀ i, CommSemiring (A i)] [CoherentAlgebraTower A]
-  (B : ι → Type*) [∀ i, CommSemiring (B i)] [CoherentAlgebraTower B] extends AlgebraTowerEquiv A B
