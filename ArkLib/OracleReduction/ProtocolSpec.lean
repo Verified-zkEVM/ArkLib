@@ -107,22 +107,112 @@ section Restrict
 variable {n : ℕ}
 
 /-- Take the first `m ≤ n` rounds of a `ProtocolSpec n` -/
-abbrev take (m : ℕ) (h : m ≤ n) (pSpec : ProtocolSpec n) : ProtocolSpec m :=
+def take (m : ℕ) (h : m ≤ n) (pSpec : ProtocolSpec n) : ProtocolSpec m :=
   {dir := Fin.take m h pSpec.dir, «Type» := Fin.take m h pSpec.«Type»}
 
 /-- Take the last `m ≤ n` rounds of a `ProtocolSpec n` -/
-abbrev rtake (m : ℕ) (h : m ≤ n) (pSpec : ProtocolSpec n) : ProtocolSpec m :=
+def rtake (m : ℕ) (h : m ≤ n) (pSpec : ProtocolSpec n) : ProtocolSpec m :=
   {dir := Fin.rtake m h pSpec.dir, «Type» := Fin.rtake m h pSpec.«Type»}
 
+/-- Drop the first `m ≤ n` rounds of a `ProtocolSpec n` -/
+def drop (m : ℕ) (h : m ≤ n) (pSpec : ProtocolSpec n) : ProtocolSpec (n - m) :=
+  {dir := Fin.drop m h pSpec.dir, «Type» := Fin.drop m h pSpec.«Type»}
+
+/-- Drop the last `m ≤ n` rounds of a `ProtocolSpec n` -/
+def rdrop (m : ℕ) (h : m ≤ n) (pSpec : ProtocolSpec n) : ProtocolSpec (n - m) :=
+  {dir := Fin.rdrop m h pSpec.dir, «Type» := Fin.rdrop m h pSpec.«Type»}
+
+/-- Extract the slice of the rounds of a `ProtocolSpec n` from `start` to `stop - 1`. -/
+def extract (start stop : ℕ) (h1 : start ≤ stop) (h2 : stop ≤ n) (pSpec : ProtocolSpec n) :
+    ProtocolSpec (stop - start) where
+  dir := Fin.extract start stop h1 h2 pSpec.dir
+  «Type» := Fin.extract start stop h1 h2 pSpec.«Type»
+
+/- Instances for accessing slice notation -/
+
+instance : SliceLT (ProtocolSpec n) ℕ
+    (fun _ stop => stop ≤ n)
+    (fun _ stop _ => ProtocolSpec stop)
+    where
+  sliceLT := fun v stop h => take stop h v
+
+instance : SliceGE (ProtocolSpec n) ℕ
+    (fun _ start => start ≤ n)
+    (fun _ start _ => ProtocolSpec (n - start))
+    where
+  sliceGE := fun v start h => drop start h v
+
+instance : Slice (ProtocolSpec n) ℕ ℕ
+    (fun _ start stop => start ≤ stop ∧ stop ≤ n)
+    (fun _ start stop _ => ProtocolSpec (stop - start))
+    where
+  slice := fun v start stop h => extract start stop h.1 h.2 v
+
+variable {m start stop : ℕ} {h : m ≤ n} {h1 : start ≤ stop} {h2 : stop ≤ n}
+  {pSpec : ProtocolSpec n}
+
+@[simp] lemma take_dir : pSpec⟦:m⟧.dir = pSpec.dir⟦:m⟧ := rfl
+@[simp] lemma take_Type : pSpec⟦:m⟧.«Type» = pSpec.«Type»⟦:m⟧ := rfl
+@[simp] lemma drop_dir : pSpec⟦m:⟧.dir = pSpec.dir⟦m:⟧ := rfl
+@[simp] lemma drop_Type : pSpec⟦m:⟧.«Type» = pSpec.«Type»⟦m:⟧ := rfl
+@[simp] lemma extract_dir : pSpec⟦start:stop⟧.dir = pSpec.dir⟦start:stop⟧ := rfl
+@[simp] lemma extract_Type : pSpec⟦start:stop⟧.«Type» = pSpec.«Type»⟦start:stop⟧ := rfl
+
+namespace FullTranscript
+
+variable {pSpec : ProtocolSpec n}
+
 /-- Take the first `m ≤ n` rounds of a (full) transcript for a protocol specification `pSpec` -/
-abbrev FullTranscript.take {pSpec : ProtocolSpec n} (m : ℕ) (h : m ≤ n)
+abbrev take (m : ℕ) (h : m ≤ n)
     (transcript : FullTranscript pSpec) : FullTranscript (pSpec.take m h) :=
   Fin.take m h transcript
 
 /-- Take the last `m ≤ n` rounds of a (full) transcript for a protocol specification `pSpec` -/
-abbrev FullTranscript.rtake {pSpec : ProtocolSpec n} (m : ℕ) (h : m ≤ n)
+abbrev rtake (m : ℕ) (h : m ≤ n)
     (transcript : FullTranscript pSpec) : FullTranscript (pSpec.rtake m h) :=
   Fin.rtake m h transcript
+
+abbrev drop (m : ℕ) (h : m ≤ n)
+    (transcript : FullTranscript pSpec) : FullTranscript (pSpec.drop m h) :=
+  Fin.drop m h transcript
+
+abbrev rdrop (m : ℕ) (h : m ≤ n)
+    (transcript : FullTranscript pSpec) : FullTranscript (pSpec.rdrop m h) :=
+  Fin.rdrop m h transcript
+
+abbrev extract (start stop : ℕ) (h1 : start ≤ stop) (h2 : stop ≤ n)
+    (transcript : FullTranscript pSpec) : FullTranscript (pSpec.extract start stop h1 h2) :=
+  Fin.extract start stop h1 h2 transcript
+
+/- Instances for accessing slice notation -/
+
+instance : SliceLT (FullTranscript pSpec) ℕ
+    (fun _ stop => stop ≤ n)
+    (fun _ stop _ => FullTranscript (pSpec⟦:stop⟧))
+    where
+  sliceLT := fun v stop h => take stop h v
+
+instance : SliceGE (FullTranscript pSpec) ℕ
+    (fun _ start => start ≤ n)
+    (fun _ start _ => FullTranscript (pSpec⟦start:⟧))
+    where
+  sliceGE := fun v start h => drop start h v
+
+instance : Slice (FullTranscript pSpec) ℕ ℕ
+    (fun _ start stop => start ≤ stop ∧ stop ≤ n)
+    (fun _ start stop _ => FullTranscript (pSpec⟦start:stop⟧))
+    where
+  slice := fun v start stop h => extract start stop h.1 h.2 v
+
+variable {m start stop : ℕ} {h : m ≤ n} {h1 : start ≤ stop} {h2 : stop ≤ n}
+  {pSpec : ProtocolSpec n} {transcript : FullTranscript pSpec}
+
+lemma take_eq_take : transcript⟦:m⟧ = transcript.take m h := rfl
+lemma rtake_eq_rtake : transcript⟦m:⟧ = transcript.drop m h := rfl
+lemma extract_eq_extract : transcript⟦start:stop⟧ = transcript.extract start stop h1 h2 :=
+  rfl
+
+end FullTranscript
 
 end Restrict
 
@@ -130,7 +220,7 @@ end Restrict
   round `k` -/
 @[reducible, simp]
 def MessageIdxUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) : Type :=
-  (pSpec.take k k.is_le).MessageIdx
+  (pSpec⟦:k.val⟧).MessageIdx
 
 lemma MessageIdxUpTo.eq_MessageIdx {k : Fin (n + 1)} {pSpec : ProtocolSpec n} :
     pSpec.MessageIdxUpTo k = {i : Fin k // pSpec.dir (i.castLE (by omega)) = .P_to_V} := rfl
@@ -139,17 +229,17 @@ lemma MessageIdxUpTo.eq_MessageIdx {k : Fin (n + 1)} {pSpec : ProtocolSpec n} :
   round `k` -/
 @[reducible, simp]
 def ChallengeIdxUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) : Type :=
-  (pSpec.take k k.is_le).ChallengeIdx
+  (pSpec⟦:k.val⟧).ChallengeIdx
 
 /-- The indexed family of messages from the prover up to round `k`. -/
 @[reducible, inline, specialize]
 def MessageUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) (i : pSpec.MessageIdxUpTo k) :=
-  (pSpec.take k k.is_le).Message i
+  (pSpec⟦:k.val⟧).Message i
 
 /-- The indexed family of challenges from the verifier up to round `k`. -/
 @[reducible, inline, specialize]
 def ChallengeUpTo (k : Fin (n + 1)) (pSpec : ProtocolSpec n) (i : pSpec.ChallengeIdxUpTo k) :=
-  (pSpec.take k k.is_le).Challenge i
+  (pSpec⟦:k.val⟧).Challenge i
 
 /-- The type of all messages from the prover up to round `k`. -/
 @[reducible, inline, specialize]
@@ -167,7 +257,7 @@ list of messages from the protocol for all indices `i` less than `k`.
 This is defined as the full transcript of the protocol specification up to round `k`. -/
 @[reducible, inline, specialize]
 def Transcript (k : Fin (n + 1)) (pSpec : ProtocolSpec n) : Type :=
-  (pSpec.take k k.is_le).FullTranscript
+  (pSpec⟦:k.val⟧).FullTranscript
 
 @[simp]
 lemma Transcript.def_eq {k : Fin (n + 1)} {pSpec : ProtocolSpec n} :
@@ -194,9 +284,8 @@ instance : ∀ i, OracleInterface ((default : ProtocolSpec 0).Message i) := fun 
 
 variable {Msg Chal : Type}
 
-instance : IsEmpty (ChallengeIdx ⟨!v[.P_to_V], !v[Msg]⟩) := by
-  simp [ChallengeIdx]
-  infer_instance
+instance : IsEmpty (ChallengeIdx ⟨!v[.P_to_V], !v[Msg]⟩) :=
+  ⟨fun ⟨i, h⟩ => by aesop⟩
 instance : Unique (MessageIdx ⟨!v[.P_to_V], !v[Msg]⟩) where
   default := ⟨0, by simp⟩
   uniq := fun i => by ext; simp
@@ -207,9 +296,8 @@ instance : ∀ i, VCVCompatible (Challenge ⟨!v[.P_to_V], !v[Msg]⟩ i)
 instance : ∀ i, SelectableType (Challenge ⟨!v[.P_to_V], !v[Msg]⟩ i)
   | ⟨0, h⟩ => nomatch h
 
-instance : IsEmpty (MessageIdx ⟨!v[.V_to_P], !v[Chal]⟩) := by
-  simp [MessageIdx]
-  infer_instance
+instance : IsEmpty (MessageIdx ⟨!v[.V_to_P], !v[Chal]⟩) :=
+  ⟨fun ⟨i, h⟩ => by aesop⟩
 instance : Unique (ChallengeIdx ⟨!v[.V_to_P], !v[Chal]⟩) where
   default := ⟨0, by simp⟩
   uniq := fun i => by ext; simp
@@ -294,23 +382,35 @@ instance : Unique (MessagesUpTo 0 pSpec) where
   default := fun ⟨i, _⟩ => Fin.elim0 i
   uniq := fun T => by ext ⟨i, _⟩; exact Fin.elim0 i
 
+def concat' {k : Fin n}
+    (messages : (i : Fin k) → (pSpec.dir (i.castLE (by omega)) = .P_to_V
+      → pSpec.«Type» (i.castLE (by omega))))
+    (msg : (h : pSpec.dir k = .P_to_V) → pSpec.Message ⟨k, h⟩) :
+    (i : Fin (k + 1)) → (pSpec.dir (i.castLE (by omega)) = .P_to_V) →
+      pSpec.«Type» (i.castLE (by omega)) :=
+  Fin.dconcat messages msg
+
 /-- Concatenate the `k`-th message to the end of the tuple of messages up to round `k`, assuming
   round `k` is a message round. -/
 def concat {k : Fin n} (messages : MessagesUpTo k.castSucc pSpec)
     (h : pSpec.dir k = .P_to_V) (msg : pSpec.Message ⟨k, h⟩) : MessagesUpTo k.succ pSpec :=
-  fun i => if hi : i.1.1 < k then messages ⟨⟨i.1.1, hi⟩, i.property⟩ else
-    (by simp [MessageUpTo, Fin.eq_last_of_not_lt hi]; exact msg)
+  fun ⟨i, h⟩ => (concat' (pSpec := pSpec) (fun i hi => messages ⟨i, hi⟩) (fun _ => msg)) i h
+  -- fun i => if hi : i.1.1 < k then messages ⟨⟨i.1.1, hi⟩, i.property⟩ else
+  --   (by simp [MessageUpTo, Fin.eq_last_of_not_lt hi]; exact msg)
 
 /-- Extend the tuple of messages up to round `k` to up to round `k + 1`, assuming round `k` is a
   challenge round (so no message from the prover is sent). -/
 def extend {k : Fin n} (messages : MessagesUpTo k.castSucc pSpec)
     (h : pSpec.dir k = .V_to_P) : MessagesUpTo k.succ pSpec :=
-  fun i => if hi : i.1.1 < k then messages ⟨⟨i.1.1, hi⟩, i.property⟩ else
-    -- contradiction proof
-    (by
-      haveI := Fin.eq_last_of_not_lt hi
-      haveI := i.property
-      simp_all [Fin.castLE])
+  fun ⟨i, h⟩ => (concat' (pSpec := pSpec) (fun i hi => messages ⟨i, hi⟩) (fun h' => by aesop)) i h
+  -- fun i => if hi : i.1.1 < k then messages ⟨⟨i.1.1, hi⟩, i.property⟩ else
+  --   -- contradiction proof
+  --   (by
+  --     haveI hik : i.1 = Fin.last k := Fin.eq_last_of_not_lt hi
+  --     haveI := i.property
+  --     simp [hik] at this
+  --     have : pSpec.dir k = .P_to_V := this
+  --     aesop)
 
 instance [inst : ∀ i, DecidableEq (pSpec.Message i)] {k : Fin (n + 1)} :
     DecidableEq (MessagesUpTo k pSpec) :=
@@ -341,23 +441,33 @@ instance : Unique (ChallengesUpTo 0 pSpec) where
   default := fun ⟨i, _⟩ => Fin.elim0 i
   uniq := fun T => by ext ⟨i, _⟩; exact Fin.elim0 i
 
+def concat' {k : Fin n}
+    (challenges : (i : Fin k) → (pSpec.dir (i.castLE (by omega)) = .V_to_P
+      → pSpec.«Type» (i.castLE (by omega))))
+    (chal : (h : pSpec.dir k = .V_to_P) → pSpec.Challenge ⟨k, h⟩) :
+    (i : Fin (k + 1)) → (pSpec.dir (i.castLE (by omega)) = .V_to_P) →
+      pSpec.«Type» (i.castLE (by omega)) :=
+  Fin.dconcat challenges chal
+
 /-- Concatenate the `k`-th challenge to the end of the tuple of challenges up to round `k`, assuming
   round `k` is a challenge round. -/
 def concat {k : Fin n} (challenges : ChallengesUpTo k.castSucc pSpec)
     (h : pSpec.dir k = .V_to_P) (chal : pSpec.Challenge ⟨k, h⟩) : ChallengesUpTo k.succ pSpec :=
-  fun i => if hi : i.1.1 < k then challenges ⟨⟨i.1.1, hi⟩, i.property⟩ else
-    (by simp [Fin.eq_last_of_not_lt hi]; exact chal)
+  fun ⟨i, h⟩ => (concat' (pSpec := pSpec) (fun i hi => challenges ⟨i, hi⟩) (fun _ => chal)) i h
+  -- fun i => if hi : i.1.1 < k then challenges ⟨⟨i.1.1, hi⟩, i.property⟩ else
+  --   (by simp [Fin.eq_last_of_not_lt hi]; exact chal)
 
 /-- Extend the tuple of challenges up to round `k` to up to round `k + 1`, assuming round `k` is a
   message round (so no challenge from the verifier is sent). -/
 def extend {k : Fin n} (challenges : ChallengesUpTo k.castSucc pSpec)
     (h : pSpec.dir k = .P_to_V) : ChallengesUpTo k.succ pSpec :=
-  fun i => if hi : i.1.1 < k then challenges ⟨⟨i.1.1, hi⟩, i.property⟩ else
-    -- contradiction proof
-    (by
-      haveI := Fin.eq_last_of_not_lt hi
-      haveI := i.property
-      simp_all [Fin.castLE])
+  fun ⟨i, h⟩ => (concat' (pSpec := pSpec) (fun i hi => challenges ⟨i, hi⟩) (fun h' => by aesop)) i h
+  -- fun i => if hi : i.1.1 < k then challenges ⟨⟨i.1.1, hi⟩, i.property⟩ else
+  --   -- contradiction proof
+  --   (by
+  --     haveI := Fin.eq_last_of_not_lt hi
+  --     haveI := i.property
+  --     simp_all [Fin.castLE])
 
 end ChallengesUpTo
 

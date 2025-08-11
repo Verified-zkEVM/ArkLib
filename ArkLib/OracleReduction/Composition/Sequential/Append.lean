@@ -46,63 +46,31 @@ variable {ι : Type} {oSpec : OracleSpec ι} {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt
 
 section Instances
 
-@[simp]
-def ProtocolSpec.Challenge' (pSpec : ProtocolSpec n)
-  (i : Fin n) (_ : pSpec.dir i = .V_to_P) : Type := pSpec.«Type» i
-
-def appendChallengeSelectableType
-    [h1 : ∀ i, (hi : pSpec₁.dir i = .V_to_P) → SelectableType (pSpec₁.Challenge' i hi)]
-    [h2 : ∀ i, (hi : pSpec₂.dir i = .V_to_P) → SelectableType (pSpec₂.Challenge' i hi)] :
-    ∀ i, (hi : (pSpec₁ ++ₚ pSpec₂).dir i = .V_to_P) →
-      SelectableType ((pSpec₁ ++ₚ pSpec₂).Challenge' i hi) :=
-  Fin.addCases (fun i => by simpa using h1 i) (fun i => by simpa using h2 i)
-
 /-- If two protocols have sampleable challenges, then their concatenation also has sampleable
   challenges. -/
+@[inline]
 instance [h₁ : ∀ i, SelectableType (pSpec₁.Challenge i)]
     [h₂ : ∀ i, SelectableType (pSpec₂.Challenge i)] :
-    ∀ i, SelectableType ((pSpec₁ ++ₚ pSpec₂).Challenge i) := fun ⟨i, h⟩ => by
-  by_cases hi : i.val < m
-  · letI j : Fin m := ⟨i, hi⟩
-    haveI : i = Fin.castAdd n j := by ext; simp [j]
-    simp only [this, Challenge, Fin.vappend_left] at h ⊢
-    exact h₁ ⟨j, h⟩
-  · letI j : Fin n := ⟨i.val - m, by omega⟩
-    haveI : i = Fin.natAdd m j := by ext; simp [j]; omega
-    simp only [this, Challenge, Fin.vappend_right] at h ⊢
-    exact h₂ ⟨j, h⟩
+    ∀ i, SelectableType ((pSpec₁ ++ₚ pSpec₂).Challenge i) :=
+  fun ⟨i, h⟩ => Fin.dappend
+    (fun i hi => by simpa using h₁ ⟨i, by simpa using hi⟩)
+    (fun i hi => by simpa using h₂ ⟨i, by simpa using hi⟩)
+    i h
 
 /-- If two protocols' messages have oracle representations, then their concatenation's messages also
     have oracle representations. -/
 instance [O₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
     [O₂ : ∀ i, OracleInterface (pSpec₂.Message i)] :
-    ∀ i, OracleInterface ((pSpec₁ ++ₚ pSpec₂).Message i) := fun ⟨i, h⟩ => by
-  by_cases hi : i.val < m
-  · letI j : Fin m := ⟨i, hi⟩
-    haveI : i = Fin.castAdd n j := by ext; simp [j]
-    simp only [this, Message, Fin.vappend_left] at h ⊢
-    exact O₁ ⟨j, h⟩
-  · letI j : Fin n := ⟨i.val - m, by omega⟩
-    haveI : i = Fin.natAdd m j := by ext; simp [j]; omega
-    simp only [this, Message, Fin.vappend_right] at h ⊢
-    exact O₂ ⟨j, h⟩
+    ∀ i, OracleInterface ((pSpec₁ ++ₚ pSpec₂).Message i) :=
+  fun ⟨i, h⟩ => Fin.dappend
+    (fun i hi => by simpa using O₁ ⟨i, by simpa using hi⟩)
+    (fun i hi => by simpa using O₂ ⟨i, by simpa using hi⟩) i h
 
-/-- Don't know why this doesn't automatically synthesize. -/
 instance : ∀ i, OracleInterface ((pSpec₁ ++ₚ pSpec₂).Challenge i) := challengeOracleInterface
--- fun ⟨i, h⟩ => by
---   by_cases hi : i.val < m
---   · letI j : Fin m := ⟨i, hi⟩
---     haveI : i = Fin.castAdd n j := by ext; simp [j]
---     simp only [this, Challenge, FinVec.append_left] at h ⊢
---     exact challengeOracleInterface ⟨j, h⟩
---   · letI j : Fin n := ⟨i.val - m, by omega⟩
---     haveI : i = Fin.natAdd m j := by ext; simp [j]; omega
---     simp only [this, Challenge, FinVec.append_right] at h ⊢
---     exact challengeOracleInterface ⟨j, h⟩
 
 @[simp]
 lemma challengeOracleInterface_append_domain_inl (j : pSpec₁.ChallengeIdx) :
-    (OracleInterface.toOracleSpec (pSpec₁ ++ₚ pSpec₂).Challenge).domain (.inl j) = Unit := by
+    [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.domain (.inl j) = Unit := by
   simp [OracleSpec.domain, ChallengeIdx.inl, ProtocolSpec.append, OracleInterface.toOracleSpec,
     instOracleInterfaceChallengeAppend, challengeOracleInterface]
 

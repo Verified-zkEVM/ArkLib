@@ -62,6 +62,17 @@ lemma vprod_eq_univ_prod [CommMonoid α] {a : Fin n → α} : vprod a = ∏ i, a
   | zero => simp
   | succ n ih => simp [ih, Fin.prod_univ_succ]
 
+@[to_additive vsum_castSucc]
+lemma vprod_castSucc [CommMonoid α] {a : Fin (n + 1) → α} :
+    vprod a = vprod (a ∘ Fin.castSucc) * a (last n) := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [vprod_succ, ih, vprod_succ]
+    simp only [Function.comp_apply, succ_last, Nat.succ_eq_add_one, castSucc_zero]
+    have : (a ∘ succ) ∘ castSucc = (a ∘ castSucc) ∘ succ := by ext i; simp
+    rw [this, mul_assoc (a 0)]
+
 end BigOperators
 
 end Fin
@@ -82,6 +93,11 @@ def embedSum {m : ℕ} {n : Fin m → ℕ} (i : Fin m) (j : Fin (n i)) : Fin (vs
 
 @[simp]
 theorem embedSum_zero {n : Fin 0 → ℕ} {i : Fin 0} (j : Fin (n i)) : embedSum i j = i := rfl
+
+theorem embedSum_succ {m : ℕ} {n : Fin (m + 1) → ℕ} {i : Fin (m + 1)} (j : Fin (n i)) :
+    embedSum i j = (match i with
+    | 0 => Fin.castAdd _ j
+    | ⟨i + 1, h⟩ => Fin.natAdd _ (embedSum ⟨i, Nat.succ_lt_succ_iff.mp h⟩ j)) := rfl
 
 @[simp]
 theorem embedSum_succ_zero {n : Fin (m + 1) → ℕ} {j : Fin (n 0)} :
@@ -110,42 +126,33 @@ theorem splitSum_succ {n : Fin (m + 1) → ℕ} {k : Fin (vsum n)} :
       (fun k => ⟨(splitSum k).1.succ, (splitSum k).2⟩)
       k := rfl
 
+@[simp]
+theorem embedSum_splitSum {m : ℕ} {n : Fin m → ℕ} (k : Fin (vsum n)) :
+    embedSum (splitSum k).1 (splitSum k).2 = k := by
+  induction m with
+  | zero => exact Fin.elim0 k
+  | succ m ih =>
+    simp [embedSum]
+    split
+    next i j j' h1 h2 => sorry
+    next i j j' h' j'' h1 h2 => sorry
+
+@[simp]
+theorem splitSum_embedSum {m : ℕ} {n : Fin m → ℕ} (i : Fin m) (j : Fin (n i)) :
+    splitSum (embedSum i j) = ⟨i, j⟩ := by
+  induction m with
+  | zero => exact Fin.elim0 i
+  | succ m ih =>
+    simp [embedSum, splitSum]
+    split
+    next j => simp
+    next j => sorry
+
 def finSum'FinEquiv' {m : ℕ} {n : Fin m → ℕ} : (i : Fin m) × Fin (n i) ≃ Fin (vsum n) where
   toFun := fun ij => embedSum ij.1 ij.2
   invFun := splitSum
-  left_inv := fun k => by
-    induction m with
-    | zero => exact Fin.elim0 k.1
-    | succ m ih =>
-      simp [embedSum, splitSum]
-      obtain ⟨i, j⟩ := k
-      simp
-      split
-      next i j k => simp
-      next i j k => simp; sorry
-      -- by_cases hi : k.1 = Fin.last (m + 1)
-      -- · obtain ⟨i, j⟩ := k; simp_all only [↓reduceDIte, addCases_right, Sigma.mk.injEq,
-      --   cast_heq, and_self]
-      -- · obtain ⟨i, j⟩ := k
-      --   simp_all only [↓reduceDIte, addCases_left]
-      --   rename_i ih'
-      --   haveI : i = (i.castPred hi).castSucc := by simp
-      --   have := ih' (n := n ∘ Fin.castSucc) ⟨i.castPred hi, j⟩
-      --   simp at this
-      --   rw [this]; simp
-  right_inv := fun k => by
-    induction m with
-    | zero => exact Fin.elim0 k
-    | succ m ih =>
-      simp [embedSum]
-      split
-      <;> sorry
-      -- dsimp at k
-      -- refine Fin.addCases ?_ ?_ k
-      -- · intro i; simp
-             -- simp [embedSum, splitSum]
-      -- by_cases hi : k = Fin.last (m + 1)
-      -- simp_all
+  left_inv := fun ij => splitSum_embedSum ij.1 ij.2
+  right_inv := embedSum_splitSum
 
 end Sigma
 
@@ -160,6 +167,7 @@ variable {α : Sort*}
 `(k : Fin (vsum n)) → motive k`, preserving element order.
 
 This is meant to replace nested iteration for dependent families with a unified motive. -/
+@[elab_as_elim]
 def dflatten {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum n)) → Sort*}
     (v : (i : Fin m) → (j : Fin (n i)) → motive (embedSum i j)) (k : Fin (vsum n)) : motive k :=
   match m with
@@ -170,14 +178,53 @@ def dflatten {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum n)) → Sort
       (fun j => dflatten (motive := fun j => motive (natAdd _ j)) (fun i => v i.succ) j)
       k
 
+@[simp]
+theorem dflatten_zero {n : Fin 0 → ℕ} {motive : (k : Fin (vsum n)) → Sort*}
+    {v : (i : Fin 0) → (j : Fin (n i)) → motive (embedSum i j)} :
+    dflatten (motive := motive) v = fun k => Fin.elim0 k := rfl
+
+@[simp]
+theorem dflatten_succ {m : ℕ} {n : Fin (m + 1) → ℕ} {motive : (k : Fin (vsum n)) → Sort*}
+    {v : (i : Fin (m + 1)) → (j : Fin (n i)) → motive (embedSum i j)} :
+    dflatten (motive := motive) v = dappend (v 0) (dflatten (fun i => v i.succ)) := rfl
+
+-- theorem dflatten_eq_append_last {m : ℕ} {n : Fin (m + 1) → ℕ}
+--     {motive : (k : Fin (vsum n)) → Sort*}
+--     {v : (i : Fin (m + 1)) → (j : Fin (n i)) → motive (embedSum i j)} (k : Fin (vsum n)) :
+--     dflatten (motive := motive) v k =
+--       dappend (dflatten (motive := sorry) (fun i => v i.castSucc)) (v (last _)) := by
+--   induction m with
+--   | zero => exact Fin.elim0 k
+--   | succ m ih => sorry
+
+@[simp]
+theorem dflatten_splitSum {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum n)) → Sort*}
+    (v : (k : Fin (vsum n)) → motive k) (k : Fin (vsum n)) :
+    dflatten (motive := motive) (fun i j => v (embedSum i j)) k = v k := by
+  induction m with
+  | zero => exact Fin.elim0 k
+  | succ m ih =>
+    simp; sorry
+
+@[simp]
+theorem dflatten_embedSum {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum n)) → Sort*}
+    (v : (i : Fin m) → (j : Fin (n i)) → motive (embedSum i j)) (i : Fin m) (j : Fin (n i)) :
+    dflatten (motive := motive) v (embedSum i j) = v i j := by
+  induction m with
+  | zero => exact Fin.elim0 i
+  | succ m ih =>
+    induction i using induction with
+    | zero => simp
+    | succ i ih' =>
+      simp
+      exact ih (motive := fun i => motive (natAdd (n 0) i)) (fun i => v i.succ) i j
+
 /-- Homogeneous flatten: flattens a nested homogeneous vector
 `(i : Fin m) → (j : Fin (n i)) → α` into a single homogeneous vector `Fin (vsum n) → α`
 by specializing `dflatten` to the constant-type motive `fun _ => α`. -/
 def vflatten {m : ℕ} {n : Fin m → ℕ} (v : (i : Fin m) → Fin (n i) → α) :
     Fin (vsum n) → α :=
-  match m with
-  | 0 => !v[]
-  | _ + 1 => vappend (v 0) (vflatten (fun i => v i.succ))
+  dflatten v
 
 @[simp]
 theorem vflatten_zero {n : Fin 0 → ℕ} {v : (i : Fin 0) → Fin (n i) → α} : vflatten v = !v[] := rfl
@@ -185,6 +232,28 @@ theorem vflatten_zero {n : Fin 0 → ℕ} {v : (i : Fin 0) → Fin (n i) → α}
 @[simp]
 theorem vflatten_succ {m : ℕ} {n : Fin (m + 1) → ℕ} {v : (i : Fin (m + 1)) → Fin (n i) → α} :
     vflatten v = vappend (v 0) (vflatten (fun i => v i.succ)) := rfl
+
+theorem vflatten_eq_vappend_last {m : ℕ} {n : Fin (m + 1) → ℕ}
+    {v : (i : Fin (m + 1)) → Fin (n i) → α} :
+    vflatten v =
+      vappend (vflatten (fun i => v i.castSucc)) (v (last _)) ∘ Fin.cast vsum_castSucc := by
+  induction m with
+  | zero => ext i; simp
+  | succ m ih =>
+    ext i
+    rw [vflatten_succ, ih, vflatten_succ, vappend_assoc]
+    simp
+    sorry
+
+@[simp]
+theorem vflatten_splitSum {m : ℕ} {n : Fin m → ℕ} (v : (k : Fin (vsum n)) → α) (k : Fin (vsum n)) :
+    vflatten (fun i j => v (embedSum i j)) k = v k :=
+  dflatten_splitSum v k
+
+@[simp]
+theorem vflatten_embedSum {m : ℕ} {n : Fin m → ℕ} (v : (i : Fin m) → Fin (n i) → α) (i : Fin m)
+    (j : Fin (n i)) : vflatten v (embedSum i j) = v i j :=
+  dflatten_embedSum (motive := fun _ => α) v i j
 
 /-- Heterogeneous flatten: flattens a nested heterogeneous tuple
 `(i : Fin m) → (j : Fin (n i)) → α i j` into a single heterogeneous tuple with type
@@ -208,6 +277,37 @@ theorem tflatten_succ {m : ℕ} {n : Fin (m + 1) → ℕ}
     {v : (i : Fin (m + 1)) → (j : Fin (n i)) → α i j} :
     tflatten v = tappend (v 0) (tflatten (fun i => v i.succ)) := rfl
 
+@[simp]
+theorem tflatten_splitSum {m : ℕ} {n : Fin m → ℕ} {α : (k : Fin (vsum n)) → Sort*}
+    (v : (k : Fin (vsum n)) → α k) (k : Fin (vsum n)) :
+    tflatten (fun i j => v (embedSum i j)) k = (vflatten_splitSum α k) ▸ (v k) := by
+  induction m with
+  | zero => exact Fin.elim0 k
+  | succ m ih =>
+    simp; sorry
+
+@[simp]
+theorem tflatten_embedSum {m : ℕ} {n : Fin m → ℕ} {α : (i : Fin m) → (j : Fin (n i)) → Sort*}
+    (v : (i : Fin m) → (j : Fin (n i)) → α i j) (i : Fin m) (j : Fin (n i)) :
+    tflatten v (embedSum i j) = (vflatten_embedSum α i j) ▸ (v i j) := by
+  induction m with
+  | zero => exact Fin.elim0 i
+  | succ m ih =>
+    induction i using induction with
+    | zero =>
+      simp
+      have : (dfoldrM' (m := Id) m ((fun x ↦ ℕ) ∘ succ) (fun i (acc : ℕ) ↦ n i.succ + acc) (0 : ℕ))
+        = vsum (n ∘ succ) := rfl
+      -- rw! (castMode := .all) [this]
+      sorry
+      -- rw [tappend_left (v 0) (tflatten (fun i => v i.succ)) j]
+    | succ i ih' =>
+      simp
+      sorry
+      -- exact ih (motive := fun i => α (natAdd (n 0) i) j) (fun i => v i.succ) i j
+
+/- The rest are old stuff... -/
+
 section FinSigmaFinEquiv
 
 variable {n : ℕ}
@@ -226,11 +326,6 @@ def ranges {n : ℕ} (a : Fin n → ℕ) : (i : Fin n) → Fin (a i) → ℕ :=
     · letI rest := ranges (tail a) (i.pred h)
       simp only [tail, pred, subNat_one_succ] at rest
       exact fun j => rest j + a 0
-
-theorem ranges_eq_ranges_list {a : Fin n → ℕ} :
-    List.ofFn (fun i => List.ofFn (ranges a i)) = List.ranges (List.ofFn a) := by
-  induction n using Nat.strongRec with
-  | ind n IH => sorry
 
 /-- Find the first index `i` such that `k` is smaller than `∑ j < i, a j`, and return `none`
   otherwise.
@@ -317,36 +412,5 @@ theorem finSigmaFinEquiv'_pair {m : ℕ} {n : Fin m → ℕ} (i : Fin m) (k : Fi
   simp only [finSigmaFinEquiv', Equiv.ofRightInverseOfCardLE_apply]
 
 end FinSigmaFinEquiv
-
--- section Join
-
--- variable {n : ℕ} {a : Fin n → ℕ} {α : Fin (∑ i, a i) → Sort*}
-
--- /-- Join a function over a `Fin n`-indexed family of `Fin (a i)`-indexed families.
-
--- This is the analogue of `List.join` but for `Fin`-indexed families. -/
--- def join (v : (i : Fin n) → (j : Fin (a i)) → α (finSigmaFinEquiv ⟨i, j⟩))
---     (k : Fin (∑ i, a i)) : α k := by
---   let ij := finSigmaFinEquiv.symm k
---   convert v ij.1 ij.2
---   simp [ij]
-
--- variable {v : (i : Fin n) → (j : Fin (a i)) → α (finSigmaFinEquiv ⟨i, j⟩)}
-
--- @[simp]
--- theorem join_zero {a : Fin 0 → ℕ} {α : Fin (∑ i, a i) → Sort*}
---     {v : (i : Fin 0) → (j : Fin (a i)) → α (finSigmaFinEquiv ⟨i, j⟩)} :
---     join v = fun k => Fin.elim0 k := by
---   funext k; exact Fin.elim0 k
-
--- -- theorem join_succ
-
--- theorem join_eq_addCases_first : True := sorry
-
--- theorem join_eq_addCases_last : True := sorry
-
--- theorem join_eq_join_list : True := sorry
-
--- end Join
 
 end Fin

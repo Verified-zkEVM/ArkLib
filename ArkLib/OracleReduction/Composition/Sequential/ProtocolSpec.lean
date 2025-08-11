@@ -100,6 +100,10 @@ theorem take_append_left :
   ext <;> simp [Fin.take_apply]
 
 @[simp]
+theorem take_append_left' : (pSpec₁ ++ₚ pSpec₂)⟦:m⟧ = pSpec₁ :=
+  take_append_left
+
+@[simp]
 theorem rtake_append_right :
     (pSpec₁ ++ₚ pSpec₂).rtake n (Nat.le_add_left n m) = pSpec₂ := by
   simp only [rtake, Fin.vappend_eq_append]
@@ -136,7 +140,7 @@ namespace FullTranscript
 /-- Appending two transcripts for two `ProtocolSpec`s -/
 def append (T₁ : FullTranscript pSpec₁) (T₂ : FullTranscript pSpec₂) :
     FullTranscript (pSpec₁ ++ₚ pSpec₂) :=
-  Fin.dappend T₁ T₂
+  Fin.tappend T₁ T₂
 
 @[inherit_doc]
 infixl : 65 " ++ₜ " => append
@@ -145,7 +149,7 @@ infixl : 65 " ++ₜ " => append
 def concat {pSpec : ProtocolSpec n} {NextMessage : Type}
     (T : FullTranscript pSpec) (dir : Direction) (msg : NextMessage) :
         FullTranscript (pSpec ++ₚ ⟨!v[dir], !v[NextMessage]⟩) :=
-  append T (fun _ => msg)
+  Fin.tconcat T msg
 
 -- TODO: fill
 
@@ -171,7 +175,7 @@ theorem take_append_left (T : FullTranscript pSpec₁) (T' : FullTranscript pSpe
   simp [take, append, ProtocolSpec.append, Fin.castLE,
     FullTranscript.cast, Transcript.cast]
   have : ⟨i.val, by omega⟩ = Fin.castAdd n i := by ext; simp
-  rw! [this, Fin.dappend_left]
+  rw! (castMode := .all) [this, Fin.tappend_left]
 
 @[simp]
 theorem rtake_append_right (T : FullTranscript pSpec₁) (T' : FullTranscript pSpec₂) :
@@ -180,7 +184,8 @@ theorem rtake_append_right (T : FullTranscript pSpec₁) (T' : FullTranscript pS
   ext i
   simp [rtake, Fin.rtake, append, Fin.cast, FullTranscript.cast, Transcript.cast]
   have : ⟨m + n - n + i.val, by omega⟩ = Fin.natAdd m i := by ext; simp
-  rw! [this, Fin.dappend_right]
+  rw! (castMode := .all) [this, Fin.tappend_right]
+  sorry
 
 /-- The first half of a transcript for a concatenated protocol -/
 def fst (T : FullTranscript (pSpec₁ ++ₚ pSpec₂)) : FullTranscript pSpec₁ :=
@@ -256,27 +261,31 @@ def ChallengeIdx.sumEquiv :
     simp [ChallengeIdx.inl, ChallengeIdx.inr, hi]
     congr; omega
 
--- def seqCompose {m : ℕ} {n : Fin m → ℕ} (pSpec : ∀ i, ProtocolSpec (n i)) :
---     ProtocolSpec (∑ i, n i) :=
---   Fin.dfoldl' m (fun i => ProtocolSpec (∑ j : Fin i, n (j.castLE (by omega))))
---     (fun i acc => dcast (by simp [Fin.sum_univ_castSucc, Fin.castLE]) (acc ++ₚ pSpec i))
---       !p[]
-
 /-- Sequential composition of a family of `ProtocolSpec`s, indexed by `i : Fin m`.
 
 Defined for definitional equality, so that:
 - `seqCompose !v[] = !p[]`
 - `seqCompose !v[pSpec₁] = pSpec₁`
 - `seqCompose !v[pSpec₁, pSpec₂] = pSpec₁ ++ₚ pSpec₂`
-- `seqCompose !v[pSpec₁, pSpec₂, pSpec₃] = pSpec₁ ++ₚ pSpec₂ ++ₚ pSpec₃`
+- `seqCompose !v[pSpec₁, pSpec₂, pSpec₃] = pSpec₁ ++ₚ (pSpec₂ ++ₚ pSpec₃)`
 - and so on.
 
 TODO: add notation `∑ i, pSpec i` for `seqCompose` -/
+@[inline]
 def seqCompose {m : ℕ} {n : Fin m → ℕ} (pSpec : ∀ i, ProtocolSpec (n i)) :
-    ProtocolSpec (Fin.vsum n) := match m with
-  | 0 => !p[]
-  | 1 => pSpec 0
-  | _ + 2 => seqCompose (fun i => pSpec (Fin.castSucc i)) ++ₚ pSpec (Fin.last _)
+    ProtocolSpec (Fin.vsum n) where
+  dir := Fin.vflatten (fun i => (pSpec i).dir)
+  «Type» := Fin.vflatten (fun i => (pSpec i).Type)
+
+@[simp]
+lemma seqCompose_dir {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} :
+    (seqCompose pSpec).dir = Fin.vflatten (fun i => (pSpec i).dir) := by
+  rfl
+
+@[simp]
+lemma seqCompose_type {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} :
+    (seqCompose pSpec).Type = Fin.vflatten (fun i => (pSpec i).Type) := by
+  rfl
 
 @[simp]
 theorem seqCompose_zero {n : Fin 0 → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} :
@@ -284,38 +293,21 @@ theorem seqCompose_zero {n : Fin 0 → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} 
   rfl
 
 @[simp]
-theorem seqCompose_one {n : Fin 1 → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} :
-    seqCompose pSpec = pSpec 0 := by
+theorem seqCompose_succ_eq_append {m : ℕ} {n : Fin (m + 1) → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} :
+    seqCompose pSpec = append (pSpec 0) (seqCompose (fun i => pSpec (Fin.succ i))) := by
   rfl
 
 @[simp]
-theorem seqCompose_succ {m : ℕ} {n : Fin (m + 2) → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} :
-    seqCompose pSpec = seqCompose (fun i => pSpec (Fin.castSucc i)) ++ₚ pSpec (Fin.last _) := by
+theorem seqCompose_succ_dir {m : ℕ} {n : Fin (m + 1) → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} :
+    (seqCompose pSpec).dir = Fin.vflatten (fun i => (pSpec i).dir) := by
   rfl
 
--- /-- Sequential composition of `i + 1` protocol specifications equals the sequential composition
--- of `i` first protocol specifications appended with the `i + 1`-th protocol specification.
--- -/
--- theorem seqCompose_append {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} (i : Fin m) :
---     seqCompose (Fin.take (i + 1) (by omega) pSpec)
---     = dcast (by simp [Fin.sum_univ_castSucc, Fin.castLE])
---         (seqCompose (Fin.take i (by omega) pSpec) ++ₚ pSpec i) := by
---   simp only [seqCompose, Fin.coe_castSucc, Fin.val_succ, Fin.take_apply, Fin.dfoldl'_succ_last,
---     Fin.val_last, Fin.castLE_refl, Fin.castLE_castSucc]
---   unfold Function.comp Fin.castSucc Fin.castAdd Fin.castLE Fin.last
---   simp
+@[simp]
+theorem seqCompose_succ_type {m : ℕ} {n : Fin (m + 1) → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} :
+    (seqCompose pSpec).Type = Fin.vflatten (fun i => (pSpec i).Type) := by
+  rfl
 
 namespace FullTranscript
-
--- def seqCompose {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
---     (T : ∀ i, FullTranscript (pSpec i)) : FullTranscript (seqCompose pSpec) :=
---   Fin.dfoldl' m
---     (fun i => FullTranscript (ProtocolSpec.seqCompose (Fin.take i (by omega) pSpec)))
---     (fun i acc => by
---       refine dcast₂ ?_ ?_ (acc ++ₜ (T i))
---       · simp [Fin.sum_univ_castSucc, Fin.castLE]
---       · simp [ProtocolSpec.seqCompose_append])
---     (fun i => Fin.elim0 i)
 
 /-- Sequential composition of a family of `FullTranscript`s, indexed by `i : Fin m`.
 
@@ -323,15 +315,14 @@ Defined for definitional equality, so that the following holds definitionally:
 - `seqCompose !t[] = !t[]`
 - `seqCompose !t[T₁] = T₁`
 - `seqCompose !t[T₁, T₂] = T₁ ++ₜ T₂`
-- `seqCompose !t[T₁, T₂, T₃] = T₁ ++ₜ T₂ ++ₜ T₃`
+- `seqCompose !t[T₁, T₂, T₃] = T₁ ++ₜ (T₂ ++ₜ T₃)`
 - and so on.
 
 TODO: add notation `∑ i, T i` for `seqCompose` -/
+@[inline]
 def seqCompose {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
-    (T : ∀ i, FullTranscript (pSpec i)) : FullTranscript (seqCompose pSpec) := match m with
-  | 0 => !t[]
-  | 1 => T 0
-  | _ + 2 => seqCompose (fun i => T (Fin.castSucc i)) ++ₜ T (Fin.last _)
+    (T : ∀ i, FullTranscript (pSpec i)) : FullTranscript (seqCompose pSpec) :=
+  Fin.tflatten T
 
 @[simp]
 theorem seqCompose_zero {n : Fin 0 → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
@@ -339,24 +330,16 @@ theorem seqCompose_zero {n : Fin 0 → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     seqCompose T = !t[] := rfl
 
 @[simp]
-theorem seqCompose_one {n : Fin 1 → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+theorem seqCompose_succ_eq_append {m : ℕ} {n : Fin (m + 1) → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     {T : ∀ i, FullTranscript (pSpec i)} :
-    seqCompose T = T 0 := rfl
+    seqCompose T = append (T 0) (seqCompose (fun i => T (Fin.succ i))) := by
+  rfl
 
 @[simp]
-theorem seqCompose_succ {m : ℕ} {n : Fin (m + 2) → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
-    {T : ∀ i, FullTranscript (pSpec i)} :
-    seqCompose T = seqCompose (fun i => T (Fin.castSucc i)) ++ₜ T (Fin.last _) := rfl
-
--- /-- Sequential composition of `i + 1` transcripts equals the sequential composition of `i` first
---   transcripts appended with the `i + 1`-th transcript. -/
--- theorem seqCompose_append {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
---     {T : ∀ i, FullTranscript (pSpec i)} (i : Fin m) :
---     seqCompose (Fin.take (i + 1) (by omega) T)
---     = dcast₂ (by simp [Fin.sum_univ_castSucc, Fin.castLE]) (by sorry)
---         (seqCompose (Fin.take i (by omega) T) ++ₜ T i) := by
---   simp [seqCompose]
---   sorry
+theorem seqCompose_embedSum {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    {T : ∀ i, FullTranscript (pSpec i)} (i : Fin m) (j : Fin (n i)) :
+    seqCompose T (Fin.embedSum i j) = cast (by simp) (T i j) := by
+  simp [seqCompose, cast]
 
 end FullTranscript
 

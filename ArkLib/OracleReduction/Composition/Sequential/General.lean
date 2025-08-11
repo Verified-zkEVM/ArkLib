@@ -28,25 +28,14 @@ namespace ProtocolSpec
 
 def sigmaChallengeIdxToSeqCompose {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     (i : Fin m) (j : (pSpec i).ChallengeIdx) : (seqCompose pSpec).ChallengeIdx :=
-  ⟨Fin.injSum' i j.1, by unfold seqCompose; sorry⟩
-  -- match m with
-  -- | 0 => Fin.elim0 i
-  -- | 1 => match i with | 0 => j
-  -- | m + 2 => by
-  --   by_cases hi : i = Fin.last (m + 1)
-  --   · rw [hi] at j
-  --     exact ⟨Fin.natAdd _ j.1, by dsimp only [seqCompose]; simp; exact j.2⟩
-  --   · letI i' := i.castPred hi
-  --     haveI : i = i'.castSucc := by simp [i']
-  --     rw [this] at j
-  --     let k := sigmaChallengeIdxToSeqCompose (n := n ∘ Fin.castSucc)
-  --       (pSpec := fun i => pSpec (Fin.castSucc i)) i' j
-  --     exact ⟨Fin.castAdd _ k.1, by simp; exact k.2⟩
+  ⟨Fin.embedSum i j.1, by simp [j.property]⟩
 
 def seqComposeChallengeIdxToSigma {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     (k : (seqCompose pSpec).ChallengeIdx) : (i : Fin m) × (pSpec i).ChallengeIdx :=
-  let ⟨i, j⟩ := Fin.splitSum' k.1
-  ⟨i, ⟨j, sorry⟩⟩
+  let ij := Fin.splitSum k.1
+  ⟨ij.1, ⟨ij.2, by
+    simp [ij]; have := k.property; simp at this
+    have : k.1 = Fin.embedSum ij.1 ij.2 := Fin.splitSum_embedSum _ _⟩⟩
 
 /-- The equivalence between the challenge indices of the individual protocols and the challenge
     indices of the sequential composition. -/
@@ -58,49 +47,37 @@ def seqComposeChallengeEquiv {m : ℕ} {n : Fin m → ℕ} (pSpec : ∀ i, Proto
   left_inv := by intro ⟨_, _⟩; simp; sorry
   right_inv := by intro; simp; sorry
 
--- /-- The equivalence between the message indices of the individual protocols and the message
---     indices of the sequential composition. -/
--- def seqComposeMessageEquiv :
---     (i : Fin m) × (pSpec i).MessageIdx ≃ (seqCompose pSpec).MessageIdx where
---   toFun := fun ⟨i, ⟨msgIdx, h⟩⟩ => ⟨finSigmaFinEquiv ⟨i, msgIdx⟩, by
---     unfold seqCompose; sorry⟩
---   invFun := fun ⟨seqComposedMsgIdx, h⟩ =>
---     let ⟨i, msgIdx⟩ := finSigmaFinEquiv.symm seqComposedMsgIdx
---     ⟨i, msgIdx, sorry⟩
---   left_inv := by intro ⟨_, _⟩; simp; rw! [finSigmaFinEquiv.left_inv']; simp
---   right_inv := by intro ⟨_, _⟩; simp
+def sigmaMessageIdxToSeqCompose {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (i : Fin m) (j : (pSpec i).MessageIdx) : (seqCompose pSpec).MessageIdx :=
+  ⟨Fin.embedSum i j.1, by unfold seqCompose; sorry⟩
+
+def seqComposeMessageIdxToSigma {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (k : (seqCompose pSpec).MessageIdx) : (i : Fin m) × (pSpec i).MessageIdx :=
+  let ⟨i, j⟩ := Fin.splitSum k.1
+  ⟨i, ⟨j, sorry⟩⟩
+
+/-- The equivalence between the message indices of the individual protocols and the message
+    indices of the sequential composition. -/
+def seqComposeMessageEquiv {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} :
+    (i : Fin m) × (pSpec i).MessageIdx ≃ (seqCompose pSpec).MessageIdx where
+  toFun := fun ⟨i, msgIdx⟩ => sigmaMessageIdxToSeqCompose i msgIdx
+  invFun := seqComposeMessageIdxToSigma
+  left_inv := by intro ⟨_, _⟩; simp; sorry
+  right_inv := by intro; simp; sorry
 
 end ProtocolSpec
 
-/-- If all protocols have sampleable challenges, then the challenges of their sequential
-  composition also have sampleable challenges. -/
-def seqComposeChallengeSelectableType {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
-    (inst : ∀ i, ∀ j, SelectableType ((pSpec i).Challenge j)) :
-    ∀ j, SelectableType ((seqCompose pSpec).Challenge j) := match m with
-  | 0 => fun i => Fin.elim0 i.val
-  | 1 => inst 0
-  | _ + 2 => fun j => by sorry
-  -- dsimp [seqCompose]; refine @instSelectableTypeChallengeAppend
-
 instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     [inst : ∀ i, ∀ j, SelectableType ((pSpec i).Challenge j)] :
-    ∀ j, SelectableType ((seqCompose pSpec).Challenge j) :=
-  seqComposeChallengeSelectableType inst
-
-def seqComposeMessageOracleInterface {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
-    (inst : ∀ i, ∀ j, OracleInterface ((pSpec i).Message j)) :
-    ∀ i, OracleInterface ((seqCompose pSpec).Message i) := match m with
-  | 0 => fun i => Fin.elim0 i.val
-  | 1 => inst 0
-  | _ + 2 => fun j => by sorry
-  -- dsimp [seqCompose]; refine @instOracleInterfaceMessageAppend
+    ∀ k, SelectableType ((seqCompose pSpec).Challenge k) :=
+  fun ⟨k, h⟩ => Fin.dflatten (fun i' j' h' => by simpa using inst i' ⟨j', by simpa using h'⟩) k h
 
 /-- If all protocols' messages have oracle interfaces, then the messages of their sequential
   composition also have oracle interfaces. -/
 instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     [Oₘ : ∀ i, ∀ j, OracleInterface.{0, u, v} ((pSpec i).Message j)] :
-    ∀ i, OracleInterface.{0, u, v} ((seqCompose pSpec).Message i) :=
-  seqComposeMessageOracleInterface Oₘ
+    ∀ k, OracleInterface.{0, u, v} ((seqCompose pSpec).Message k) :=
+  fun ⟨k, h⟩ => Fin.dflatten (fun i' j' h' => by simpa using Oₘ i' ⟨j', by simpa using h'⟩) k h
 
 end Instances
 
