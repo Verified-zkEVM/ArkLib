@@ -7,43 +7,39 @@ Authors: Quang Dao
 import Mathlib.Data.Fin.Tuple.Take
 
 /-!
-# Custom Fin functions with better definitional equality
+# Custom Fin tuple operations with better definitional equality
 
-This file provides improved versions of some `Fin` functions that use pattern matching
-for better definitional equality. The standard library versions rely on complex constructions
-like `cases`, `addCases`, and conditional statements with casts, which can make reasoning
-about definitional equality difficult.
+This file provides custom tuple operations that use pattern matching for better definitional
+equality, replacing standard library functions that rely on complex constructions like `cases`,
+`addCases`, and conditional statements with casts.
 
-## Definitions:
+## Utility operations:
 
-- `Fin.vempty`: Empty (dependent) vector
+- `Fin.rtake`: Taking from the right (i.e. the end) of a tuple
+- `Fin.drop`: Dropping from the left (i.e. the beginning) of a tuple
+- `Fin.rdrop`: Dropping from the right (i.e. the end) of a tuple
+- `Fin.extract`: Extract a sub-tuple from a given range
+- `Fin.rightpad`: Padding (or truncation) on the right of a tuple
+- `Fin.leftpad`: Padding (or truncation) on the left of a tuple
 
-- `Fin.vcons`: Improved homogeneous version of `cons` using pattern matching
+## Three-Tier Construction System:
 
-- `Fin.vconcat`: Improved homogeneous version of `snoc` using pattern matching
+**Dependent operations (`d*`)**: Work with a unified motive `Fin n → Sort*` that determines
+the type at each position. These are the foundational operations.
+- `Fin.dcons`, `Fin.dconcat`, `Fin.dappend`
 
-- `Fin.vappend`: Improved homogeneous version of `append` using pattern matching
+**Homogeneous operations (`v*`)**: Specialize the dependent operations to constant-type
+motives `fun _ => α`, creating vectors where all elements have the same type.
+- `Fin.vcons`, `Fin.vconcat`, `Fin.vappend`
 
-- `Fin.dempty`: Empty (dependent) tuple
+**Heterogeneous operations (`t*`)**: Construct return types by using the `v*` operations
+at the type level to build the motive from input types, allowing different types at each
+position without requiring an explicit motive.
+- `Fin.tcons`, `Fin.tconcat`, `Fin.tappend`
 
-- `Fin.dcons`: Improved dependent version of `cons` using pattern matching
+## Empty tuples:
 
-- `Fin.dconcat`: Improved dependent version of `snoc` using pattern matching
-
-- `Fin.dappend`: Improved dependent version of `append` using pattern matching
-
-- `Fin.rtake`: Taking from the right (i.e. the end) of a (dependent) vector
-
-- `Fin.drop`: Dropping from the left (i.e. the beginning) of a (dependent) vector
-
-- `Fin.rdrop`: Dropping from the right (i.e. the end) of a (dependent) vector
-
-- `Fin.rightpad`: Padding (or truncation) on the right of a (dependent) vector
-
-- `Fin.leftpad`: Padding (or truncation) on the left of a (dependent) vector
-
-The prime versions use pattern matching on the size parameter for better definitional behavior,
-which minimizes casting needed in `OracleReduction.Cast`.
+- `Fin.dempty`/`Fin.vempty`: Empty tuples for dependent and homogeneous cases
 -/
 
 universe u v w
@@ -97,95 +93,125 @@ def leftpad {m : ℕ} {α : Sort*} (n : ℕ) (a : α) (v : Fin m → α) : Fin n
 
 section Vec
 
+/-- Dependent cons with unified motive: prepends `a : motive 0` to a dependent tuple
+`(i : Fin n) → motive i.succ` using pattern matching for better definitional equality.
+
+This is meant to replace `Fin.cons` for dependent tuples with a unified motive. -/
+@[elab_as_elim]
+def dcons {n : ℕ} {motive : Fin (n + 1) → Sort u} (a : motive 0)
+    (b : (i : Fin n) → motive i.succ) (i : Fin (n + 1)) : motive i :=
+  match n with
+  | 0 => match i with | 0 => a
+  | _ + 1 => match i with
+    | 0 => a
+    | ⟨k + 1, hk⟩ => b ⟨k, Nat.succ_lt_succ_iff.mp hk⟩
+
+/-- Dependent snoc with unified motive: appends `a : motive (last n)` to the end of a
+dependent tuple `(i : Fin n) → motive i.castSucc` using pattern matching for better
+definitional equality.
+
+This is meant to replace `Fin.snoc` for dependent tuples with a unified motive. -/
+@[elab_as_elim]
+def dconcat {n : ℕ} {motive : Fin (n + 1) → Sort u}
+    (u : (i : Fin n) → motive i.castSucc) (a : motive (last n)) (i : Fin (n + 1)) : motive i :=
+  match n with
+  | 0 => match i with | 0 => a
+  | _ + 1 => dcons (u 0) (dconcat (fun i => u (Fin.succ i)) a) i
+
+/-- Dependent append with unified motive: concatenates two dependent tuples under a shared motive
+using pattern matching for better definitional equality.
+
+This is meant to replace `Fin.addCases` for dependent tuples with a unified motive. -/
+@[elab_as_elim]
+def dappend {m n : ℕ} {motive : Fin (m + n) → Sort u}
+    (u : (i : Fin m) → motive (Fin.castAdd n i))
+    (v : (i : Fin n) → motive (Fin.natAdd m i))
+    (i : Fin (m + n)) : motive i :=
+  match n with
+  | 0 => u i
+  | k + 1 => dconcat (dappend u (fun i => v (Fin.castSucc i))) (v (Fin.last k)) i
+
 variable {α : Sort*}
 
 /-- `vempty` is the empty vector, and a wrapper around `Fin.elim0`. Write this as `!v[]`. -/
 abbrev vempty {α : Sort*} : Fin 0 → α := Fin.elim0
 
-/-- `vcons a v` prepends an entry `a : α` to a vector `v : Fin n → α` via pattern matching.
-
-This is meant to replace `Matrix.vecCons` and `Fin.cons` for our use cases, as this definition
-offers better definitional equality.
--/
+/-- Homogeneous cons: prepends `a : α` to a vector by specializing `dcons` to the
+constant-type motive `fun _ => α`. -/
 def vcons {n : ℕ} (a : α) (v : Fin n → α) : Fin (n + 1) → α :=
-  match n with
-  | 0 => fun _ => a
-  | _ + 1 => fun i => match i with
-    | 0 => a
-    | ⟨k + 1, hk⟩ => v ⟨k, Nat.lt_of_succ_lt_succ hk⟩
+  dcons a v
+  -- match n with
+  -- | 0 => match i with | 0 => a
+  -- | _ + 1 => match i with
+  --   | 0 => a
+  --   | ⟨k + 1, hk⟩ => v ⟨k, Nat.lt_of_succ_lt_succ hk⟩
 
-/-- `vconcat v a` concatenates an entry `a : α` to the _end_ of a vector `v : Fin n → α`
-via pattern matching.
+/-- Homogeneous snoc: appends `a : α` to the end of a vector by specializing `dconcat` to the
+constant-type motive `fun _ => α`. -/
+def vconcat {n : ℕ} (v : Fin n → α) (a : α) : Fin (n + 1) → α :=
+  dconcat v a
+  -- match n with
+  -- | 0 => fun i => match i with | 0 => a
+  -- | _ + 1 => vcons (v 0) (vconcat (v ∘ Fin.succ) a)
 
-This is meant to replace `Fin.snoc` for our use cases, as this definition offers better
-definitional equality.
--/
-def vconcat {α : Sort u} {n : ℕ} (v : Fin n → α) (a : α) : Fin (n + 1) → α :=
-  match n with
-  | 0 => fun _ => a
-  | _ + 1 => vcons (v 0) (vconcat (v ∘ Fin.succ) a)
-
-/-- `vappend u v` appends two vectors `u : Fin m → α` and `v : Fin n → α`, written as `u ++ v`.
-
-This is meant to replace `Fin.append` for our use cases, as this definition offers better
-definitional equality. -/
-def vappend {α : Sort u} {m n : ℕ} (u : Fin m → α) (v : Fin n → α) : Fin (m + n) → α :=
-  match n with
-  | 0 => u
-  | _ + 1 => vconcat (vappend u (v ∘ Fin.castSucc)) (v (Fin.last _))
+/-- Homogeneous append: concatenates two vectors by specializing `dappend` to the
+constant-type motive `fun _ => α`. -/
+def vappend {m n : ℕ} {α : Sort*} (u : Fin m → α) (v : Fin n → α) : Fin (m + n) → α :=
+  dappend u v
+  -- match n with
+  -- | 0 => u
+  -- | _ + 1 => vconcat (vappend u (v ∘ Fin.castSucc)) (v (Fin.last _))
 
 end Vec
 
 /-- `dempty` is the dependent empty tuple. Write this as `!t[]`. -/
 def dempty {α : Fin 0 → Sort u} : (i : Fin 0) → α i := fun i => Fin.elim0 i
 
-/-- `dcons a b` prepends an entry `a : α` to a dependent or heterogeneous vector
-`b : (i : Fin n) → β i`,
-where `α : Sort u` and `β : Fin n → Sort u` is a vector of sorts, via pattern matching.
+alias tempty := dempty
 
-This is meant to replace `Fin.cons` for our use cases, as this definition offers better
-definitional equality.
--/
-def dcons {n : ℕ} {α : Sort u} {β : Fin n → Sort u} (a : α) (b : (i : Fin n) → β i) :
+/-- Heterogeneous cons: prepends `a : α` to a tuple `(i : Fin n) → β i`, with the return type
+constructed as `(i : Fin (n + 1)) → vcons α β i` where `vcons` builds the motive at the type level.
+
+Unlike `dcons` which requires an explicit unified motive, `tcons` uses `vcons` to automatically
+construct the motive from the input types. -/
+def tcons {n : ℕ} {α : Sort u} {β : Fin n → Sort u} (a : α) (b : (i : Fin n) → β i) :
     (i : Fin (n + 1)) → Fin.vcons α β i :=
   match n with
-  | 0 => fun _ => a
+  | 0 => fun i => match i with | 0 => a
   | _ + 1 => fun i => match i with
     | 0 => a
     | ⟨k + 1, hk⟩ => b ⟨k, Nat.succ_lt_succ_iff.mp hk⟩
 
-/-- `dconcat u a` concatenates an entry `a : β` to the _end_ of a dependent or heterogeneous
-vector `u : (i : Fin n) → α i` via pattern matching, where `α : Fin n → Sort u` is a vector of
-sorts and `β : Sort u` is a sort.
+/-- Heterogeneous snoc: appends `a : β` to the end of a tuple `(i : Fin n) → α i`, with the
+return type constructed as `(i : Fin (n + 1)) → vconcat α β i` where `vconcat` builds the motive
+at the type level.
 
-This is meant to replace `Fin.snoc` for our use cases, as this definition offers better
-definitional equality.
--/
-def dconcat {n : ℕ} {α : Fin n → Sort u} {β : Sort u} (u : (i : Fin n) → α i) (a : β) :
+Unlike `dconcat` which requires an explicit unified motive, `tconcat` uses `vconcat` to
+automatically construct the motive from the input types. -/
+def tconcat {n : ℕ} {α : Fin n → Sort u} {β : Sort u} (u : (i : Fin n) → α i) (a : β) :
     (i : Fin (n + 1)) → Fin.vconcat α β i :=
   match n with
-  | 0 => fun _ => a
-  | _ + 1 => dcons (u 0) (dconcat (fun i => u (Fin.succ i)) a)
+  | 0 => fun i => match i with | 0 => a
+  | _ + 1 => tcons (u 0) (tconcat (fun i => u (Fin.succ i)) a)
 
-/-- `dappend u v` appends two dependent or heterogeneous vectors `u : (i : Fin m) → α i` and
-`v : (i : Fin n) → β i`, on `α : Fin m → Sort u` and `β : Fin n → Sort u` respectively, via
-pattern matching.
+/-- Heterogeneous append: concatenates tuples `(i : Fin m) → α i` and `(i : Fin n) → β i`,
+with the return type constructed as `(i : Fin (m + n)) → vappend α β i` where `vappend` builds
+the motive at the type level.
 
-This is meant to replace `Fin.addCases` for our use cases, as this definition offers better
-definitional equality.
--/
-def dappend {m n : ℕ} {α : Fin m → Sort u} {β : Fin n → Sort u}
+Unlike `dappend` which requires an explicit unified motive, `tappend` uses `vappend` to
+automatically construct the motive from the input types. -/
+def tappend {m n : ℕ} {α : Fin m → Sort u} {β : Fin n → Sort u}
     (u : (i : Fin m) → α i) (v : (i : Fin n) → β i) : (i : Fin (m + n)) → Fin.vappend α β i :=
   match n with
   | 0 => u
-  | k + 1 => dconcat (dappend u (fun i => v (Fin.castSucc i))) (v (Fin.last k))
+  | k + 1 => tconcat (tappend u (fun i => v (Fin.castSucc i))) (v (Fin.last k))
 
 /-- Cast a dependent or heterogeneous vector across an equality `n' = n` and a family of equalities
   `∀ i, α (Fin.cast h i) = α' i`.
 
 This is meant to replace `Fin.cast` for our use cases, as this definition offers better
 definitional equality. -/
-def dcast {n n' : ℕ} {α : Fin n → Sort u} {α' : Fin n' → Sort u}
+protected def dcast {n n' : ℕ} {α : Fin n → Sort u} {α' : Fin n' → Sort u}
     (h : n' = n) (hα : ∀ i, α (Fin.cast h i) = α' i) (v : (i : Fin n) → α i) :
       (i : Fin n') → α' i :=
   fun i => _root_.cast (hα i) (v (Fin.cast h i))

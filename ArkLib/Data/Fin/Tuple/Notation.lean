@@ -140,6 +140,10 @@ namespace Fin
 @[inherit_doc]
 infixr:67 " ::ᵛ " => Fin.vcons
 
+-- Infix notation for concat operations, following Scala convention
+@[inherit_doc]
+infixl:65 " :+ᵛ " => Fin.vconcat
+
 /-- `!v[...]` notation constructs a vector using our custom functions.
 Uses `!v[...]` to distinguish from standard `![]`. -/
 syntax (name := finVecNotation) "!v[" term,* "]" : term
@@ -164,7 +168,22 @@ def vemptyUnexpander : Lean.PrettyPrinter.Unexpander
   | _ => throw ()
 
 @[inherit_doc]
-infixr:67 " ::ᵗ " => Fin.dcons
+infixr:67 " ::ᵗ " => Fin.tcons
+
+@[inherit_doc]
+infixl:65 " :+ᵗ " => Fin.tconcat
+
+@[inherit_doc]
+infixr:67 " ::ᵈ " => Fin.dcons
+
+@[inherit_doc]
+infixl:65 " :+ᵈ " => Fin.dconcat
+
+/-- `::ᵈ⟨Motive⟩` notation for dcons with explicit motive specification -/
+syntax:67 term:68 " ::ᵈ⟨" term "⟩ " term:67 : term
+
+/-- `:+ᵈ⟨Motive⟩` notation for dconcat with explicit motive specification -/
+syntax:65 term:66 " :+ᵈ⟨" term "⟩ " term:65 : term
 
 /-- `!t[...]` notation constructs a tuple (heterogeneous vector) using our custom functions.
 Uses `!t[...]` to distinguish from standard `![]`. -/
@@ -174,40 +193,79 @@ syntax (name := finTupleNotation) "!t[" term,* "]" : term
 Uses angle brackets to specify the type vector, then square brackets for values. -/
 syntax (name := finTupleNotationWithTypes) "!t⟨" term "⟩[" term,* "]" : term
 
+/-- `!d[...]` notation constructs a dependent tuple using our custom dependent functions.
+Uses `!d[...]` to distinguish from `!t[]` notation. -/
+syntax (name := finDependentNotation) "!d[" term,* "]" : term
+
+/-- `!d⟨Motive⟩[...]` notation constructs a dependent tuple with explicit motive specification.
+Uses angle brackets to specify the motive, then square brackets for values. -/
+syntax (name := finDependentNotationWithMotive) "!d⟨" term "⟩[" term,* "]" : term
+
 macro_rules
-  | `(!t[$term:term, $terms:term,*]) => `(Fin.dcons $term !t[$terms,*])
-  | `(!t[$term:term]) => `(Fin.dcons $term !t[])
-  | `(!t[]) => `(@Fin.dempty (Fin.vempty))
+  | `(!t[$term:term, $terms:term,*]) => `(Fin.tcons $term !t[$terms,*])
+  | `(!t[$term:term]) => `(Fin.tcons $term !t[])
+  | `(!t[]) => `(@Fin.tempty (Fin.vempty))
 
 macro_rules
   | `(!t⟨$typeVec⟩[$term:term, $terms:term,*]) =>
       `((!t[$term, $terms,*] : (i : Fin _) → $typeVec i))
   | `(!t⟨$typeVec⟩[$term:term]) => `((!t[$term] : (i : Fin _) → $typeVec i))
-  | `(!t⟨$typeVec⟩[]) => `((Fin.dempty : (i : Fin 0) → $typeVec i))
+  | `(!t⟨$typeVec⟩[]) => `((Fin.tempty : (i : Fin 0) → $typeVec i))
+
+macro_rules
+  | `(!d[$term:term, $terms:term,*]) => `(Fin.dcons $term !d[$terms,*])
+  | `(!d[$term:term]) => `(Fin.dcons $term !d[])
+  | `(!d[]) => `(Fin.dempty)
+
+macro_rules
+  | `(!d⟨$motive⟩[$term:term, $terms:term,*]) =>
+      `((Fin.dcons (motive := $motive) $term !d[$terms,*]))
+  | `(!d⟨$motive⟩[$term:term]) => `((Fin.dcons (motive := $motive) $term !d[]))
+  | `(!d⟨$motive⟩[]) => `((Fin.dempty : (i : Fin 0) → $motive i))
+
+macro_rules
+  | `($a:term ::ᵈ⟨$motive:term⟩ $b:term) => `(Fin.dcons (motive := $motive) $a $b)
+
+macro_rules
+  | `($a:term :+ᵈ⟨$motive:term⟩ $b:term) => `(Fin.dconcat (motive := $motive) $a $b)
 
 /-- Unexpander for the `!t[x, y, ...]` notation. -/
-@[app_unexpander Fin.dcons]
-def dconsUnexpander : Lean.PrettyPrinter.Unexpander
+@[app_unexpander Fin.tcons]
+def tconsUnexpander : Lean.PrettyPrinter.Unexpander
   | `($_ $term !t[$term2, $terms,*]) => `(!t[$term, $term2, $terms,*])
   | `($_ $term !t[$term2]) => `(!t[$term, $term2])
   | `($_ $term !t[]) => `(!t[$term])
   | _ => throw ()
 
 /-- Unexpander for the `!t[]` notation. -/
-@[app_unexpander Fin.dempty]
-def demptyUnexpander : Lean.PrettyPrinter.Unexpander
+@[app_unexpander Fin.tempty]
+def temptyUnexpander : Lean.PrettyPrinter.Unexpander
   | `($_:ident) => `(!t[])
+  | _ => throw ()
+
+/-- Unexpander for the `!d[x, y, ...]` notation. -/
+@[app_unexpander Fin.dcons]
+def dconsUnexpander : Lean.PrettyPrinter.Unexpander
+  | `($_ $term !d[$term2, $terms,*]) => `(!d[$term, $term2, $terms,*])
+  | `($_ $term !d[$term2]) => `(!d[$term, $term2])
+  | `($_ $term !d[]) => `(!d[$term])
   | _ => throw ()
 
 end Fin
 
-/-- `++` instance for Fin homogeneous vectors -/
+/-- `++` instance for Fin homogeneous vectors `vappend` -/
 instance {α : Type*} {m n : ℕ} : HAppend (Fin m → α) (Fin n → α) (Fin (m + n) → α) where
   hAppend := Fin.vappend
 
-/-- `++ᵈ` instance for Fin heterogeneous vectors -/
+/-- `++ᵈ` instance for Fin heterogeneous vectors `tappend` -/
 instance {m n : ℕ} {α : Fin m → Sort u} {β : Fin n → Sort u} :
     HDAppend ((i : Fin m) → α i) ((i : Fin n) → β i) ((i : Fin (m + n)) → Fin.vappend α β i) where
+  hDAppend := Fin.tappend
+
+/-- `++ᵈ` instance for dependent tuples with unified motive using `dappend` -/
+instance {m n : ℕ} {motive : Fin (m + n) → Sort u} :
+    HDAppend ((i : Fin m) → motive (Fin.castAdd n i)) ((i : Fin n) → motive (Fin.natAdd m i))
+             ((i : Fin (m + n)) → motive i) where
   hDAppend := Fin.dappend
 
 -- Test examples for the new tuple notations
@@ -215,7 +273,7 @@ section TupleNotationTests
 
 -- Basic heterogeneous tuple without type specification
 example : !t[(1 : ℕ), (true : Bool), ("hello" : String)] =
-  Fin.dcons 1 (Fin.dcons true (Fin.dcons "hello" Fin.dempty)) := rfl
+  Fin.tcons 1 (Fin.tcons true (Fin.tcons "hello" Fin.tempty)) := rfl
 
 -- With explicit type vector using predefined type
 def MyTypeVec : Fin 3 → Type := !v[ℕ, Bool, String]
@@ -231,9 +289,36 @@ example : !t⟨ !v[ℕ, Bool, String] ⟩[1, true, "hello"] =
   !t[(1 : ℕ), (true : Bool), ("hello" : String)] := rfl
 
 -- Empty tuple with type specification
-example : !t⟨!v[]⟩[] = (Fin.dempty : (i : Fin 0) → !v[] i) := rfl
+example : !t⟨!v[]⟩[] = (Fin.tempty : (i : Fin 0) → !v[] i) := rfl
 
 end TupleNotationTests
+
+-- Test examples for the new dependent notation
+section DependentNotationTests
+
+/- Note: The dependent notation !d[] requires explicit typing in most cases
+   because Lean cannot automatically infer the motive. The examples below
+   show the intended usage, but many require explicit type annotations. -/
+
+-- Basic dependent tuple construction (commented due to type inference issues)
+example : !d⟨ !v[ℕ, Bool, String] ⟩[(1 : ℕ), (true : Bool), ("hello" : String)] =
+  Fin.dcons (1 : ℕ) (Fin.dcons true (Fin.dcons "hello" Fin.dempty)) := rfl
+
+-- With explicit motive using predefined motive
+def MyMotive : Fin 3 → Type := !v[ℕ, Bool, String]
+
+example : !d⟨MyMotive⟩[(1 : ℕ), true, "hello"] =
+  (!d[(1 : ℕ), true, "hello"] : (i : Fin 3) → MyMotive i) := rfl
+
+-- Empty dependent tuple with motive specification
+example : !d⟨!v[]⟩[] = (Fin.tempty : (i : Fin 0) → !v[] i) := rfl
+
+-- The dependent notation is most useful with explicit motive specification
+example : let motive : Fin 2 → Type := fun i => if i = 0 then ℕ else Bool
+          !d⟨motive⟩[(1 : ℕ), (true : Bool)] =
+          (Fin.dcons (1 : ℕ) (Fin.dcons (true : Bool) Fin.tempty) : (i : Fin 2) → motive i) := rfl
+
+end DependentNotationTests
 
 -- Test infix notation for cons operations
 section InfixNotationTests
@@ -259,15 +344,39 @@ example : 42 ::ᵛ Fin.vempty = !v[42] := rfl
 
 end FinVecConsTests
 
+-- Test FinVec.concat (:+ᵛ) notation
+section FinVecConcatTests
+
+-- Basic concat operation
+example : !v[1, 2] :+ᵛ 3 = !v[1, 2, 3] := rfl
+
+-- Chaining concat operations (left associative)
+example : !v[1] :+ᵛ 2 :+ᵛ 3 = !v[1, 2, 3] := rfl
+
+-- Mixing concat and bracket notation
+example : !v[1, 2] :+ᵛ 3 = !v[1, 2, 3] := rfl
+
+-- Type inference works
+example : let v : Fin 2 → ℕ := !v[1, 2]
+          v :+ᵛ 3 = !v[1, 2, 3] := rfl
+
+-- Empty vector
+example : Fin.vempty :+ᵛ 42 = !v[42] := rfl
+
+-- Symmetric operations: cons vs concat
+example : 0 ::ᵛ !v[1, 2] = !v[0, 1, 2] ∧ !v[1, 2] :+ᵛ 3 = !v[1, 2, 3] := ⟨rfl, rfl⟩
+
+end FinVecConcatTests
+
 -- Test FinTuple.cons (::ᵗ) notation
 section FinTupleConsTests
 
 -- Basic heterogeneous cons
-example : (1 : ℕ) ::ᵗ ((true : Bool) ::ᵗ Fin.dempty) =
+example : (1 : ℕ) ::ᵗ ((true : Bool) ::ᵗ Fin.tempty) =
           !t[(1 : ℕ), (true : Bool)] := rfl
 
 -- Chaining different types (right associative)
-example : (1 : ℕ) ::ᵗ (true : Bool) ::ᵗ ("hello" : String) ::ᵗ Fin.dempty =
+example : (1 : ℕ) ::ᵗ (true : Bool) ::ᵗ ("hello" : String) ::ᵗ Fin.tempty =
           !t[(1 : ℕ), (true : Bool), ("hello" : String)] := rfl
 
 -- Mixing cons and bracket notation
@@ -275,7 +384,7 @@ example : (0 : ℕ) ::ᵗ !t[(1 : ℕ), (true : Bool)] =
           !t[(0 : ℕ), (1 : ℕ), (true : Bool)] := rfl
 
 -- With explicit type annotation
-example : (42 : ℕ) ::ᵗ (Fin.dempty : (i : Fin 0) → Fin.vempty i) =
+example : (42 : ℕ) ::ᵗ (Fin.tempty : (i : Fin 0) → Fin.vempty i) =
           !t[(42 : ℕ)] := rfl
 
 -- Complex nested example
@@ -285,7 +394,76 @@ example : let t1 : (i : Fin 2) → !v[Bool, String] i := !t[(true : Bool), ("tes
 
 end FinTupleConsTests
 
--- Test interaction between both notations
+-- Test FinTuple.concat (:+ᵗ) notation
+section FinTupleConcatTests
+
+-- Basic heterogeneous concat
+example : !t[(1 : ℕ), (true : Bool)] :+ᵗ ("hello" : String) =
+          !t[(1 : ℕ), (true : Bool), ("hello" : String)] := rfl
+
+-- Chaining different types (left associative)
+example : !t[(1 : ℕ)] :+ᵗ (true : Bool) :+ᵗ ("hello" : String) =
+          !t[(1 : ℕ), (true : Bool), ("hello" : String)] := rfl
+
+-- Mixing concat and bracket notation
+example : !t[(1 : ℕ), (true : Bool)] :+ᵗ ("test" : String) =
+          !t[(1 : ℕ), (true : Bool), ("test" : String)] := rfl
+
+-- With explicit type annotation
+example : (Fin.tempty : (i : Fin 0) → Fin.vempty i) :+ᵗ (42 : ℕ) =
+          !t[(42 : ℕ)] := rfl
+
+-- Symmetric operations: cons vs concat
+example : (0 : ℕ) ::ᵗ !t[(1 : ℕ), (true : Bool)] =
+          !t[(0 : ℕ), (1 : ℕ), (true : Bool)] ∧
+          !t[(1 : ℕ), (true : Bool)] :+ᵗ ("end" : String) =
+          !t[(1 : ℕ), (true : Bool), ("end" : String)] := ⟨rfl, rfl⟩
+
+end FinTupleConcatTests
+
+-- Test dependent cons (::ᵈ) notation
+section FinDependentConsTests
+
+/- Note: The dependent cons notation ::ᵈ requires explicit typing in most cases.
+   These examples show the intended usage but are commented due to type inference issues. -/
+
+-- Working example with explicit motive annotation
+example : let motive : Fin 1 → Type := fun _ => ℕ
+          (42 : ℕ) ::ᵈ Fin.dempty = !d⟨motive⟩[(42 : ℕ)] := rfl
+
+-- Test explicit motive cons notation (::ᵈ⟨⟩)
+example : let motive := !v[ℕ, Bool]
+          (1 : ℕ) ::ᵈ⟨motive⟩ ((true : Bool) ::ᵈ Fin.tempty) =
+          !d⟨motive⟩[(1 : ℕ), (true : Bool)] := rfl
+
+-- Simple case with explicit motive annotation
+example : let motive : Fin 1 → Type := fun _ => ℕ
+          (42 : ℕ) ::ᵈ⟨motive⟩ Fin.tempty = !d⟨motive⟩[(42 : ℕ)] := rfl
+
+end FinDependentConsTests
+
+-- Test dependent concat (:+ᵈ) notation
+section FinDependentConcatTests
+
+/- Note: The dependent concat notation :+ᵈ requires explicit typing in most cases.
+   These examples show the intended usage with explicit motive annotation. -/
+
+-- Simple case with explicit type annotation
+example : (Fin.dempty : (i : Fin 0) → ℕ) :+ᵈ (42 : ℕ) =
+          (!d[(42 : ℕ)] : (i : Fin 1) → ℕ) := rfl
+
+-- Working example with compatible types
+example : (!d[(1 : ℕ)] : (i : Fin 1) → ℕ) :+ᵈ (2 : ℕ) =
+          (!d[(1 : ℕ), (2 : ℕ)] : (i : Fin 2) → ℕ) := rfl
+
+-- Test explicit motive concat notation works with rfl
+example : let motive := !v[ℕ, Bool]
+          !d⟨motive ∘ Fin.castSucc⟩[(1 : ℕ)] :+ᵈ⟨motive⟩ (true : Bool) =
+          !d⟨motive⟩[(1 : ℕ), (true : Bool)] := rfl
+
+end FinDependentConcatTests
+
+-- Test interaction between all notations
 section MixedTests
 
 -- FinVec used as type vector for FinTuple
@@ -296,6 +474,15 @@ example : let typeVec := ℕ ::ᵛ Bool ::ᵛ !v[]
 example : let types := ℕ ::ᵛ Bool ::ᵛ !v[]
           let values := 1 ::ᵗ true ::ᵗ !t[]
           values = (!t⟨types⟩[1, true] : (i : Fin 2) → types i) := rfl
+
+-- FinVec used as motive for dependent tuples (commented due to type inference)
+-- example : let motive := ℕ ::ᵛ Bool ::ᵛ !v[]
+--           !d⟨motive⟩[1, true] = !d[(1 : ℕ), (true : Bool)] := rfl
+
+-- Comparing different notations for the same structure
+example : let motive := !v[ℕ, Bool, String]
+          (!t⟨motive⟩[1, true, "hello"] : (i : Fin 3) → motive i) =
+          (!t[(1 : ℕ), (true : Bool), ("hello" : String)] : (i : Fin 3) → motive i) := rfl
 
 end MixedTests
 
@@ -364,7 +551,33 @@ example : let base := !t[(0 : ℕ)]
 
 end FinTupleAppendTests
 
--- Test interaction between both append types
+-- Test dependent append (using dappend with ++ᵈᵈ)
+section FinDependentAppendTests
+
+-- Note: These tests would use the ++ᵈᵈ instance, but since it requires
+-- a specific motive structure, we'll show the underlying dappend usage
+
+-- Basic dependent append using explicit dappend
+example : let d1 : (i : Fin 1) → (!v[ℕ] ++ !v[Bool]) (Fin.castAdd 1 i) := !d[(1 : ℕ)]
+          let d2 : (i : Fin 1) → (!v[ℕ] ++ !v[Bool]) (Fin.natAdd 1 i) := !d[(true : Bool)]
+          Fin.dappend d1 d2 = !d⟨!v[ℕ, Bool]⟩[(1 : ℕ), (true : Bool)] := rfl
+
+-- More complex dependent append
+example : let motive := !v[ℕ, Bool, String, Float]
+          let d1 : (i : Fin 2) → motive (Fin.castAdd 2 i) := !d[(1 : ℕ), (true : Bool)]
+          let d2 : (i : Fin 2) → motive (Fin.natAdd 2 i) := !d[("hello" : String), (3.14 : Float)]
+          Fin.dappend (n := 2) d1 d2 =
+            !d⟨motive⟩[(1 : ℕ), (true : Bool), ("hello" : String), (3.14 : Float)] := rfl
+
+-- Append with empty dependent tuple
+example : let motive := !v[ℕ, Bool]
+          let d1 : (i : Fin 2) → motive (Fin.castAdd 0 i) := !d[(1 : ℕ), (true : Bool)]
+          let d2 : (i : Fin 0) → motive (Fin.natAdd 2 i) := !d[]
+          Fin.dappend (n := 0) d1 d2 = !d⟨motive⟩[(1 : ℕ), (true : Bool)] := rfl
+
+end FinDependentAppendTests
+
+-- Test interaction between all append types
 section MixedAppendTests
 
 -- Using FinVec append to build type vectors for FinTuple
@@ -377,10 +590,25 @@ example : let types1 := !v[ℕ, Bool]
           result = (!t[(1 : ℕ), (true : Bool), ("hello" : String), (3.14 : Float)] :
                    (i : Fin 4) → combined_types i) := rfl
 
+-- Using FinVec append to build motives for dependent tuples
+example : let motive1 := !v[ℕ, Bool]
+          let motive2 := !v[String, Float]
+          let combined_motive := motive1 ++ motive2
+          let d1 : (i : Fin 2) → combined_motive (Fin.castAdd 2 i) := !d[(1 : ℕ), (true : Bool)]
+          let d2 : (i : Fin 2) → combined_motive (Fin.natAdd 2 i) :=
+            !d[("hello" : String), (3.14 : Float)]
+          Fin.dappend (n := 2) d1 d2 =
+            (!d[(1 : ℕ), (true : Bool), ("hello" : String), (3.14 : Float)] :
+                               (i : Fin 4) → combined_motive i) := rfl
+
 -- Append with different constructions
 example : (!v[1, 2] ++ !v[3]) = !v[1, 2, 3] ∧
-          (!t[(1 : ℕ)] ++ᵈ !t[(true : Bool)] = !t[(1 : ℕ), (true : Bool)]) :=
-          ⟨rfl, rfl⟩
+          (!t[(1 : ℕ)] ++ᵈ !t[(true : Bool)] = !t[(1 : ℕ), (true : Bool)]) ∧
+          (let motive := !v[ℕ, Bool]
+           let d1 : (i : Fin 1) → motive (Fin.castAdd 1 i) := !d[(1 : ℕ)]
+           let d2 : (i : Fin 1) → motive (Fin.natAdd 1 i) := !d[(true : Bool)]
+           Fin.dappend (n := 1) d1 d2 = !d⟨motive⟩[(1 : ℕ), (true : Bool)]) :=
+          ⟨rfl, rfl, rfl⟩
 
 end MixedAppendTests
 
@@ -397,6 +625,23 @@ example : Fin.tail !v[1, 2, 3] = !v[2, 3] := rfl
 example : Fin.vconcat !v[1, 2] 3 = !v[1, 2, 3] := rfl
 
 example : !v[1, 2] ++ !v[3, 4] = !v[1, 2, 3, 4] := rfl
+
+-- Test dependent notation with rfl
+example : 1 ::ᵈ !d[2] = !d⟨fun _ => ℕ⟩[1, 2] := rfl
+
+example : (1 : ℕ) ::ᵈ (true : Bool) ::ᵈ !d[] = !d⟨ !v[ℕ, Bool] ⟩[(1 : ℕ), (true : Bool)] := rfl
+
+-- Test that dependent and tuple notations can be equivalent
+example : !d[(1 : ℕ), (true : Bool)] = !t[(1 : ℕ), (true : Bool)] := rfl
+
+-- Test new explicit motive notation works with rfl
+example : let motive := !v[ℕ]
+          (1 : ℕ) ::ᵈ⟨motive⟩ Fin.tempty = !d⟨motive⟩[(1 : ℕ)] := rfl
+
+-- Test explicit motive concat notation
+example : let motive := !v[ℕ, Bool]
+          !d⟨motive ∘ Fin.castSucc⟩[(1 : ℕ)] :+ᵈ⟨motive⟩ (true : Bool) =
+          !d⟨motive⟩[(1 : ℕ), (true : Bool)] := rfl
 
 example : !v[(true, Nat)] ++
   ((!v[] : Fin 0 → Bool × Type) ++
@@ -429,6 +674,23 @@ example : Fin.tail (0 ::ᵛ !v[1, 2] ++ !v[3, 4]) =
 
 /-- Test that our new notation gives the same result as the old one (extensionally) -/
 example : !v[1, 2, 3] = ![1, 2, 3] := by ext i; fin_cases i <;> rfl
+
+-- Test that concat notation works with rfl
+example : !v[1, 2] :+ᵛ 3 = !v[1, 2, 3] := rfl
+
+-- Test interaction between cons, concat, and append
+example : (0 ::ᵛ !v[1]) :+ᵛ 2 ++ !v[3, 4] = !v[0, 1, 2, 3, 4] := rfl
+
+-- Test tuple concat notation works with rfl
+example : !t[(1 : ℕ), (true : Bool)] :+ᵗ ("hello" : String) =
+          !t[(1 : ℕ), (true : Bool), ("hello" : String)] := rfl
+
+-- Comprehensive test of all concat operations
+example : (!v[1, 2] :+ᵛ 3 = !v[1, 2, 3]) ∧
+          (!t[(1 : ℕ)] :+ᵗ (true : Bool) = !t[(1 : ℕ), (true : Bool)]) ∧
+          ((!d[(1 : ℕ)] : (i : Fin 1) → ℕ) :+ᵈ (2 : ℕ) =
+           (!d[(1 : ℕ), (2 : ℕ)] : (i : Fin 2) → ℕ)) :=
+          ⟨rfl, rfl, rfl⟩
 
 -- Test dependent vector functions for definitional equality
 section DependentVectorTests

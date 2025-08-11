@@ -46,6 +46,17 @@ variable {ι : Type} {oSpec : OracleSpec ι} {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt
 
 section Instances
 
+@[simp]
+def ProtocolSpec.Challenge' (pSpec : ProtocolSpec n)
+  (i : Fin n) (_ : pSpec.dir i = .V_to_P) : Type := pSpec.«Type» i
+
+def appendChallengeSelectableType
+    [h1 : ∀ i, (hi : pSpec₁.dir i = .V_to_P) → SelectableType (pSpec₁.Challenge' i hi)]
+    [h2 : ∀ i, (hi : pSpec₂.dir i = .V_to_P) → SelectableType (pSpec₂.Challenge' i hi)] :
+    ∀ i, (hi : (pSpec₁ ++ₚ pSpec₂).dir i = .V_to_P) →
+      SelectableType ((pSpec₁ ++ₚ pSpec₂).Challenge' i hi) :=
+  Fin.addCases (fun i => by simpa using h1 i) (fun i => by simpa using h2 i)
+
 /-- If two protocols have sampleable challenges, then their concatenation also has sampleable
   challenges. -/
 instance [h₁ : ∀ i, SelectableType (pSpec₁.Challenge i)]

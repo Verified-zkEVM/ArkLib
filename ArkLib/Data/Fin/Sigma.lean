@@ -21,84 +21,46 @@ open Finset
 
 namespace Fin
 
+def addCast {n : ℕ} (m : ℕ) (i : Fin n) : Fin (m + n) := ⟨i, Nat.lt_add_left m i.2⟩
+
 section BigOperators
 
-variable {α : Type*} [CommMonoid α]
+variable {α : Type*}
 
 /-- Version of multiplying over `Fin` vectors with good definitional equalities, using `dfoldl'`.
 
 The definitional equality we want is that:
-`vprod a = a ⟨n,⬝⟩ * a ⟨n-1,⬝⟩ * ... * a ⟨0,⬝⟩ * 1`
+`vprod a = a 0 * (a 1 * (... * (a (n-1) * 1)))`
 -/
--- @[to_additive
--- "Version of summing over `Fin` vectors with good definitional equalities, using `dfoldl'`.
+@[to_additive vsum
+"Version of summing over `Fin` vectors with good definitional equalities, using `dfoldl'`.
 
--- The definitional equality we want is that: `vsum a = a 0 + a 1 + ... + a (n-1) + 0`.
+The definitional equality we want is that: `vsum a = a 0 + (a 1 + (... + (a (n-1) + 0)))`.
 
--- When `x + 0 = x` definitionally in `α`, we have the following definitional equalities:
--- - `vsum !v[] = 0`
--- - `vsum !v[a] = a`
--- - `vsum !v[a, b] = a + b`
--- - `vsum !v[a, b, c] = (a + b) + c`
--- - and so on
--- "]
-def vprod {n : ℕ} (a : Fin n → α) : α :=
-  match n with
-    | 0 => 1
-    | 1 => a 0
-    | n + 1 => vprod (a ∘ Fin.castSucc) * a (Fin.last n)
-
--- Can't use `to_additive` attribute for some reason
-def vsum {n : ℕ} (a : Fin n → ℕ) : ℕ := match n with
-  | 0 => 0
-  | 1 => a 0
-  | n + 1 => vsum (a ∘ Fin.castSucc) + a (Fin.last n)
+When `x + 0 = x` definitionally in `α`, we have the following definitional equalities:
+- `vsum !v[] = 0`
+- `vsum !v[a] = a`
+- `vsum !v[a, b] = a + b`
+- `vsum !v[a, b, c] = a + (b + c)`
+- and so on
+"]
+def vprod [CommMonoid α] {n : ℕ} (a : Fin n → α) : α :=
+  Fin.dfoldr' n (fun _ => α) (fun i acc => a i * acc) 1
 
 variable {n : ℕ}
 
-@[simp]
-lemma vprod_zero {a : Fin 0 → α} : vprod a = 1 := rfl
+@[to_additive (attr := simp) vsum_zero]
+lemma vprod_zero [CommMonoid α] {a : Fin 0 → α} : vprod a = 1 := rfl
 
-@[simp]
-lemma vprod_one {a : Fin 1 → α} : vprod a = a 0 := rfl
-
-@[simp]
-lemma vprod_succ {a : Fin (n + 2) → α} : vprod a = vprod (a ∘ Fin.castSucc) * a (Fin.last _) := rfl
-
-@[simp]
-lemma vprod_two {a : Fin 2 → α} : vprod a = a 0 * a 1 := rfl
-
-@[simp]
-lemma vprod_three {a : Fin 3 → α} : vprod a = a 0 * a 1 * a 2 := rfl
+@[to_additive (attr := simp) vsum_succ]
+lemma vprod_succ [CommMonoid α] {a : Fin (n + 1) → α} : vprod a = a 0 * vprod (a ∘ Fin.succ) := rfl
 
 /-- `vprod a` is equivalent to the standard `Finset`-based definition, `∏ i, a i`. -/
-lemma vprod_eq_univ_prod {a : Fin n → α} : vprod a = ∏ i, a i := by
-  induction n using Nat.twoStepInduction with
+@[to_additive vsum_eq_univ_sum]
+lemma vprod_eq_univ_prod [CommMonoid α] {a : Fin n → α} : vprod a = ∏ i, a i := by
+  induction n with
   | zero => simp
-  | one => simp
-  | more n ih1 ih2 => simp [ih2, Fin.prod_univ_castSucc]
-
-@[simp]
-lemma vsum_zero {a : Fin 0 → ℕ} : vsum a = 0 := rfl
-
-@[simp]
-lemma vsum_one {a : Fin 1 → ℕ} : vsum a = a 0 := rfl
-
-@[simp]
-lemma vsum_succ {a : Fin (n + 2) → ℕ} : vsum a = vsum (a ∘ Fin.castSucc) + a (Fin.last _) := rfl
-
-@[simp]
-lemma vsum_two {a : Fin 2 → ℕ} : vsum a = a 0 + a 1 := rfl
-
-@[simp]
-lemma vsum_three {a : Fin 3 → ℕ} : vsum a = a 0 + a 1 + a 2 := rfl
-
-/-- `vsum a` is equivalent to the standard `Finset`-based definition, `∑ i, a i`. -/
-lemma vsum_eq_univ_sum {a : Fin n → ℕ} : vsum a = ∑ i, a i := by
-  induction n using Nat.twoStepInduction with
-  | zero => simp
-  | one => simp
-  | more n ih1 ih2 => simp [ih2, Fin.sum_univ_castSucc]
+  | succ n ih => simp [ih, Fin.prod_univ_succ]
 
 end BigOperators
 
@@ -106,94 +68,82 @@ end Fin
 
 namespace Fin
 
-section Sum
-
--- #check finSumFinEquiv
-
--- def finSumFinEquiv' {m n : ℕ} : Fin m ⊕ Fin n ≃ Fin (m + n) := match n with
---   | 0 => Equiv.sumEmpty _ _
---   | n + 1 => by dsimp
-
-end Sum
-
 section Sigma
 
 variable {m : ℕ} {n : Fin m → ℕ}
 
-def injSum' {m : ℕ} {n : Fin m → ℕ} (i : Fin m) (j : Fin (n i)) : Fin (vsum n) := match m with
-  | 0 => Fin.elim0 i
-  | 1 => match i with | 0 => j
-  | m + 2 => by
-    by_cases hi : i = Fin.last (m + 1)
-    · rw [hi] at j; exact Fin.natAdd _ j
-    · letI i' := i.castPred hi
-      haveI : i = i'.castSucc := by simp [i']
-      rw [this] at j
-      exact Fin.castAdd _ (injSum' i' j)
+/-- Embed nested indices `(i : Fin m, j : Fin (n i))` into a single index `Fin (vsum n)`. This
+  converts from nested indexing to indexing into the vector sum, preserving lexicographic order. -/
+def embedSum {m : ℕ} {n : Fin m → ℕ} (i : Fin m) (j : Fin (n i)) : Fin (vsum n) := match m with
+  | 0 => i
+  | _ + 1 => match i with
+    | 0 => Fin.castAdd _ j
+    | ⟨i + 1, h⟩ => Fin.natAdd _ (embedSum ⟨i, Nat.succ_lt_succ_iff.mp h⟩ j)
 
 @[simp]
-theorem injSum'_zero {n : Fin 0 → ℕ} {i : Fin 0} (j : Fin (n i)) : injSum' i j = Fin.elim0 i := rfl
+theorem embedSum_zero {n : Fin 0 → ℕ} {i : Fin 0} (j : Fin (n i)) : embedSum i j = i := rfl
 
 @[simp]
-theorem injSum'_one {n : Fin 1 → ℕ} {i : Fin 1} (j : Fin (n i)) :
-    injSum' i j = match i with | 0 => j := rfl
+theorem embedSum_succ_zero {n : Fin (m + 1) → ℕ} {j : Fin (n 0)} :
+    embedSum 0 j = Fin.castAdd _ j := rfl
 
--- @[simp]
--- theorem injSum'_succ {i : Fin (m + 1)} (j : Fin (n i)) :
---     injSum' i j =
--- if i = Fin.last (m + 1) then j else Fin.castAdd (n i) (injSum' i.castPred j) := rfl
+@[simp]
+theorem embedSum_succ_succ {n : Fin (m + 1) → ℕ} {i : Fin m} (j : Fin (n i.succ)) :
+    embedSum (i.succ) j = Fin.natAdd _ (embedSum i j) := rfl
 
-def splitSum' {m : ℕ} {n : Fin m → ℕ} (k : Fin (vsum n)) : (i : Fin m) × Fin (n i) := match m with
+/-- Split a vector sum index `k : Fin (vsum n)` into nested indices `(i : Fin m) × Fin (n i)`.
+This converts from indexing into the vector sum back to nested indexing, inverse of `embedSum`. -/
+def splitSum {m : ℕ} {n : Fin m → ℕ} (k : Fin (vsum n)) : (i : Fin m) × Fin (n i) := match m with
   | 0 => Fin.elim0 k
-  | 1 => ⟨0, k⟩
-  | _ + 2 =>
-    Fin.addCases
-      (fun k => let ⟨i, j⟩ := splitSum' k; ⟨i.castSucc, j⟩)
-      (fun k => ⟨Fin.last _, k⟩)
-      k
-  -- match finSumFinEquiv.symm k with
-  --   | Sum.inl k => let ⟨i, j⟩ := splitSum' k; ⟨i.castSucc, j⟩
-  --   | Sum.inr k => ⟨Fin.last _, k⟩
+  | _ + 1 => Fin.dappend
+    (fun k => ⟨0, k⟩)
+    (fun k => ⟨(splitSum k).1.succ, (splitSum k).2⟩)
+    k
 
 @[simp]
-theorem splitSum'_zero {n : Fin 0 → ℕ} {k : Fin (vsum n)} : splitSum' k = Fin.elim0 k := rfl
+theorem splitSum_zero {n : Fin 0 → ℕ} {k : Fin (vsum n)} : splitSum k = Fin.elim0 k := rfl
 
 @[simp]
-theorem splitSum'_one {n : Fin 1 → ℕ} {k : Fin (vsum n)} : splitSum' k = ⟨0, k⟩ := rfl
-
-@[simp]
-theorem splitSum'_succ {n : Fin (m + 2) → ℕ} {k : Fin (vsum n)} :
-    splitSum' k = Fin.addCases (fun k => let ⟨i, j⟩ := splitSum' k; ⟨i.castSucc, j⟩)
-      (fun k => ⟨Fin.last _, k⟩) k := rfl
+theorem splitSum_succ {n : Fin (m + 1) → ℕ} {k : Fin (vsum n)} :
+    splitSum k = Fin.dappend
+      (fun k => ⟨0, k⟩)
+      (fun k => ⟨(splitSum k).1.succ, (splitSum k).2⟩)
+      k := rfl
 
 def finSum'FinEquiv' {m : ℕ} {n : Fin m → ℕ} : (i : Fin m) × Fin (n i) ≃ Fin (vsum n) where
-  toFun := fun ⟨i, j⟩ => injSum' i j
-  invFun := splitSum'
+  toFun := fun ij => embedSum ij.1 ij.2
+  invFun := splitSum
   left_inv := fun k => by
-    induction m using Nat.twoStepInduction with
+    induction m with
     | zero => exact Fin.elim0 k.1
-    | one => dsimp; aesop
-    | more m ih =>
-      simp [injSum', splitSum']
-      by_cases hi : k.1 = Fin.last (m + 1)
-      · obtain ⟨i, j⟩ := k; simp_all only [↓reduceDIte, addCases_right, Sigma.mk.injEq,
-        cast_heq, and_self]
-      · obtain ⟨i, j⟩ := k
-        simp_all only [↓reduceDIte, addCases_left]
-        rename_i ih'
-        haveI : i = (i.castPred hi).castSucc := by simp
-        have := ih' (n := n ∘ Fin.castSucc) ⟨i.castPred hi, j⟩
-        simp at this
-        rw [this]; simp
+    | succ m ih =>
+      simp [embedSum, splitSum]
+      obtain ⟨i, j⟩ := k
+      simp
+      split
+      next i j k => simp
+      next i j k => simp; sorry
+      -- by_cases hi : k.1 = Fin.last (m + 1)
+      -- · obtain ⟨i, j⟩ := k; simp_all only [↓reduceDIte, addCases_right, Sigma.mk.injEq,
+      --   cast_heq, and_self]
+      -- · obtain ⟨i, j⟩ := k
+      --   simp_all only [↓reduceDIte, addCases_left]
+      --   rename_i ih'
+      --   haveI : i = (i.castPred hi).castSucc := by simp
+      --   have := ih' (n := n ∘ Fin.castSucc) ⟨i.castPred hi, j⟩
+      --   simp at this
+      --   rw [this]; simp
   right_inv := fun k => by
-    induction m using Nat.twoStepInduction with
+    induction m with
     | zero => exact Fin.elim0 k
-    | one => simp
-    | more m ih => sorry
+    | succ m ih =>
+      simp [embedSum]
+      split
+      <;> sorry
       -- dsimp at k
       -- refine Fin.addCases ?_ ?_ k
       -- · intro i; simp
-      -- simp [injSum', splitSum']
+             -- simp [embedSum, splitSum]
       -- by_cases hi : k = Fin.last (m + 1)
       -- simp_all
 
@@ -205,40 +155,58 @@ namespace Fin
 
 variable {α : Sort*}
 
-def vjoin {m : ℕ} {n : Fin m → ℕ} (v : (i : Fin m) → Fin (n i) → α) :
-    Fin (vsum n) → α := match m with
+/-- Dependent flatten with unified motive: flattens a nested dependent vector
+`(i : Fin m) → (j : Fin (n i)) → motive (embedSum i j)` into a single dependent vector
+`(k : Fin (vsum n)) → motive k`, preserving element order.
+
+This is meant to replace nested iteration for dependent families with a unified motive. -/
+def dflatten {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum n)) → Sort*}
+    (v : (i : Fin m) → (j : Fin (n i)) → motive (embedSum i j)) (k : Fin (vsum n)) : motive k :=
+  match m with
+  | 0 => Fin.elim0 k
+  | _ + 1 =>
+    dappend
+      (fun j => v 0 j)
+      (fun j => dflatten (motive := fun j => motive (natAdd _ j)) (fun i => v i.succ) j)
+      k
+
+/-- Homogeneous flatten: flattens a nested homogeneous vector
+`(i : Fin m) → (j : Fin (n i)) → α` into a single homogeneous vector `Fin (vsum n) → α`
+by specializing `dflatten` to the constant-type motive `fun _ => α`. -/
+def vflatten {m : ℕ} {n : Fin m → ℕ} (v : (i : Fin m) → Fin (n i) → α) :
+    Fin (vsum n) → α :=
+  match m with
   | 0 => !v[]
-  | 1 => v 0
-  | _ + 2 => vappend (vjoin (fun i => v (castSucc i))) (v (last _))
+  | _ + 1 => vappend (v 0) (vflatten (fun i => v i.succ))
 
 @[simp]
-theorem vjoin_zero {n : Fin 0 → ℕ} {v : (i : Fin 0) → Fin (n i) → α} : vjoin v = !v[] := rfl
+theorem vflatten_zero {n : Fin 0 → ℕ} {v : (i : Fin 0) → Fin (n i) → α} : vflatten v = !v[] := rfl
 
 @[simp]
-theorem vjoin_one {n : Fin 1 → ℕ} {v : (i : Fin 1) → Fin (n i) → α} : vjoin v = v 0 := rfl
+theorem vflatten_succ {m : ℕ} {n : Fin (m + 1) → ℕ} {v : (i : Fin (m + 1)) → Fin (n i) → α} :
+    vflatten v = vappend (v 0) (vflatten (fun i => v i.succ)) := rfl
 
-@[simp]
-theorem vjoin_succ {m : ℕ} {n : Fin (m + 2) → ℕ} {v : (i : Fin (m + 2)) → Fin (n i) → α} :
-    vjoin v = vappend (vjoin (fun i => v (castSucc i))) (v (last _)) := rfl
+/-- Heterogeneous flatten: flattens a nested heterogeneous tuple
+`(i : Fin m) → (j : Fin (n i)) → α i j` into a single heterogeneous tuple with type
+`(k : Fin (vsum n)) → vflatten α k` where `vflatten` operates on the vector of types `α`.
 
-def djoin {m : ℕ} {n : Fin m → ℕ} {α : (i : Fin m) → (j : Fin (n i)) → Sort*}
-    (v : (i : Fin m) → (j : Fin (n i)) → α i j) : (k : Fin (vsum n)) → Fin.vjoin α k := match m with
+Unlike `dflatten` which requires an explicit unified motive, `tflatten` uses `vflatten` to
+automatically construct the motive from the input type family. -/
+def tflatten {m : ℕ} {n : Fin m → ℕ} {α : (i : Fin m) → (j : Fin (n i)) → Sort*}
+    (v : (i : Fin m) → (j : Fin (n i)) → α i j) : (k : Fin (vsum n)) → Fin.vflatten α k :=
+  match m with
   | 0 => !t[]
-  | 1 => v 0
-  | _ + 2 => dappend (djoin (fun i => v (castSucc i))) (v (last _))
+  | _ + 1 => tappend (v 0) (tflatten (fun i => v i.succ))
 
 @[simp]
-theorem djoin_zero {n : Fin 0 → ℕ} {α : (i : Fin 0) → (j : Fin (n i)) → Sort*}
-    {v : (i : Fin 0) → (j : Fin (n i)) → α i j} : djoin v = !t[] := rfl
+theorem tflatten_zero {n : Fin 0 → ℕ} {α : (i : Fin 0) → (j : Fin (n i)) → Sort*}
+    {v : (i : Fin 0) → (j : Fin (n i)) → α i j} : tflatten v = !t[] := rfl
 
 @[simp]
-theorem djoin_one {n : Fin 1 → ℕ} {α : (i : Fin 1) → (j : Fin (n i)) → Sort*}
-    {v : (i : Fin 1) → (j : Fin (n i)) → α i j} : djoin v = v 0 := rfl
-
-@[simp]
-theorem djoin_succ {m : ℕ} {n : Fin (m + 2) → ℕ} {α : (i : Fin (m + 2)) → (j : Fin (n i)) → Sort*}
-    {v : (i : Fin (m + 2)) → (j : Fin (n i)) → α i j} :
-    djoin v = dappend (djoin (fun i => v (castSucc i))) (v (last _)) := rfl
+theorem tflatten_succ {m : ℕ} {n : Fin (m + 1) → ℕ}
+    {α : (i : Fin (m + 1)) → (j : Fin (n i)) → Sort*}
+    {v : (i : Fin (m + 1)) → (j : Fin (n i)) → α i j} :
+    tflatten v = tappend (v 0) (tflatten (fun i => v i.succ)) := rfl
 
 section FinSigmaFinEquiv
 
@@ -350,29 +318,35 @@ theorem finSigmaFinEquiv'_pair {m : ℕ} {n : Fin m → ℕ} (i : Fin m) (k : Fi
 
 end FinSigmaFinEquiv
 
-#check finSigmaFinEquiv
+-- section Join
 
-section Join
+-- variable {n : ℕ} {a : Fin n → ℕ} {α : Fin (∑ i, a i) → Sort*}
 
-variable {n : ℕ} {a : Fin n → ℕ} {α : (i : Fin n) → (j : Fin (a i)) → Sort*}
+-- /-- Join a function over a `Fin n`-indexed family of `Fin (a i)`-indexed families.
 
-def join (v : (i : Fin n) → (j : Fin (a i)) → α i j) (k : Fin (∑ i, a i)) : α k.divSum k.modSum :=
-  v k.divSum k.modSum
+-- This is the analogue of `List.join` but for `Fin`-indexed families. -/
+-- def join (v : (i : Fin n) → (j : Fin (a i)) → α (finSigmaFinEquiv ⟨i, j⟩))
+--     (k : Fin (∑ i, a i)) : α k := by
+--   let ij := finSigmaFinEquiv.symm k
+--   convert v ij.1 ij.2
+--   simp [ij]
 
-variable {v : (i : Fin n) → (j : Fin (a i)) → α i j}
+-- variable {v : (i : Fin n) → (j : Fin (a i)) → α (finSigmaFinEquiv ⟨i, j⟩)}
 
-@[simp]
-theorem join_zero {a : Fin 0 → ℕ} {α : (i : Fin 0) → (j : Fin (a i)) → Sort*}
-    {v : (i : Fin 0) → (j : Fin (a i)) → α i j} :
-    join v = fun i => Fin.elim0 i := by
-  funext i; exact Fin.elim0 i
+-- @[simp]
+-- theorem join_zero {a : Fin 0 → ℕ} {α : Fin (∑ i, a i) → Sort*}
+--     {v : (i : Fin 0) → (j : Fin (a i)) → α (finSigmaFinEquiv ⟨i, j⟩)} :
+--     join v = fun k => Fin.elim0 k := by
+--   funext k; exact Fin.elim0 k
 
-theorem join_addCases : True := sorry
+-- -- theorem join_succ
 
-theorem join_eq_addCases : True := sorry
+-- theorem join_eq_addCases_first : True := sorry
 
-theorem join_eq_join_list : True := sorry
+-- theorem join_eq_addCases_last : True := sorry
 
-end Join
+-- theorem join_eq_join_list : True := sorry
+
+-- end Join
 
 end Fin

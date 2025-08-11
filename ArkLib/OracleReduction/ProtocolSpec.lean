@@ -66,17 +66,35 @@ This does not distinguish between messages received in full or as an oracle. -/
 @[reducible, inline, specialize, simp]
 def Message (pSpec : ProtocolSpec n) (i : MessageIdx pSpec) := pSpec.«Type» i.val
 
+/-- Unbundled version of `Message`, which supplies the proof separately from the index. -/
+@[reducible, inline, specialize, simp]
+def Message' (pSpec : ProtocolSpec n) (i : Fin n) (_ : pSpec.dir i = .P_to_V) := pSpec.«Type» i
+
 /-- The type of the `i`-th challenge in a protocol specification -/
 @[reducible, inline, specialize, simp]
 def Challenge (pSpec : ProtocolSpec n) (i : ChallengeIdx pSpec) := pSpec.«Type» i.val
+
+/-- Unbundled version of `Challenge`, which supplies the proof separately from the index. -/
+@[reducible, inline, specialize, simp]
+def Challenge' (pSpec : ProtocolSpec n) (i : Fin n) (_ : pSpec.dir i = .V_to_P) := pSpec.«Type» i
 
 /-- The type of all messages in a protocol specification. Uncurried version of `Message`. -/
 @[reducible, inline, specialize]
 def Messages (pSpec : ProtocolSpec n) : Type := ∀ i, pSpec.Message i
 
+/-- Unbundled version of `Messages`, which supplies the proof separately from the index. -/
+@[reducible, inline, specialize]
+def Messages' (pSpec : ProtocolSpec n) : Type :=
+  ∀ i, (hi : pSpec.dir i = .P_to_V) → pSpec.«Type» i
+
 /-- The type of all challenges in a protocol specification -/
 @[reducible, inline, specialize]
 def Challenges (pSpec : ProtocolSpec n) : Type := ∀ i, pSpec.Challenge i
+
+/-- Unbundled version of `Challenges`, which supplies the proof separately from the index. -/
+@[reducible, inline, specialize]
+def Challenges' (pSpec : ProtocolSpec n) : Type :=
+  ∀ i, (hi : pSpec.dir i = .V_to_P) → pSpec.«Type» i
 
 /-- The (full)) transcript of an interactive protocol, which is a list of messages and challenges.
 

@@ -406,6 +406,7 @@ theorem seqCompose_completeness (hInit : init.neverFails)
       · sorry
       · exact Fin.sum_univ_castSucc completenessError
 
+omit Oₘ in
 theorem seqCompose_perfectCompleteness (hInit : init.neverFails)
     (rel : (i : Fin (m + 1)) → Set (Stmt i × Wit i))
     (R : ∀ i, Reduction oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ)
@@ -453,9 +454,7 @@ theorem seqCompose_rbrSoundness
     (rbrSoundnessError : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0)
     (h : ∀ i, (V i).rbrSoundness init impl (lang i.castSucc) (lang i.succ) (rbrSoundnessError i)) :
       (Verifier.seqCompose Stmt V).rbrSoundness init impl (lang 0) (lang (Fin.last m))
-        (fun combinedIdx =>
-          let ⟨i, idx⟩ := seqComposeChallengeEquiv.symm combinedIdx
-          rbrSoundnessError i idx) := by
+        (Fin.djoin (fun i => rbrSoundnessError i)) := by
   sorry
 
 /-- If all verifiers in a sequence satisfy round-by-round knowledge soundness with respective RBR
