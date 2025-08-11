@@ -188,6 +188,16 @@ theorem dflatten_succ {m : ℕ} {n : Fin (m + 1) → ℕ} {motive : (k : Fin (vs
     {v : (i : Fin (m + 1)) → (j : Fin (n i)) → motive (embedSum i j)} :
     dflatten (motive := motive) v = dappend (v 0) (dflatten (fun i => v i.succ)) := rfl
 
+@[simp]
+theorem dflatten_one {n : Fin 1 → ℕ} {motive : (k : Fin (vsum n)) → Sort*}
+    {v : (i : Fin 1) → (j : Fin (n i)) → motive (embedSum i j)} :
+    dflatten (motive := motive) v = v 0 := rfl
+
+@[simp]
+theorem dflatten_two_eq_append {n : Fin 2 → ℕ} {motive : (k : Fin (vsum n)) → Sort*}
+    {v : (i : Fin 2) → (j : Fin (n i)) → motive (embedSum i j)} :
+    dflatten (motive := motive) v = dappend (v 0) (v 1) := rfl
+
 -- theorem dflatten_eq_append_last {m : ℕ} {n : Fin (m + 1) → ℕ}
 --     {motive : (k : Fin (vsum n)) → Sort*}
 --     {v : (i : Fin (m + 1)) → (j : Fin (n i)) → motive (embedSum i j)} (k : Fin (vsum n)) :
@@ -233,6 +243,14 @@ theorem vflatten_zero {n : Fin 0 → ℕ} {v : (i : Fin 0) → Fin (n i) → α}
 theorem vflatten_succ {m : ℕ} {n : Fin (m + 1) → ℕ} {v : (i : Fin (m + 1)) → Fin (n i) → α} :
     vflatten v = vappend (v 0) (vflatten (fun i => v i.succ)) := rfl
 
+@[simp]
+theorem vflatten_one {n : Fin 1 → ℕ} {v : (i : Fin 1) → Fin (n i) → α} :
+    vflatten v = v 0 := rfl
+
+@[simp]
+theorem vflatten_two_eq_append {n : Fin 2 → ℕ} {v : (i : Fin 2) → Fin (n i) → α} :
+    vflatten v = vappend (v 0) (v 1) := rfl
+
 theorem vflatten_eq_vappend_last {m : ℕ} {n : Fin (m + 1) → ℕ}
     {v : (i : Fin (m + 1)) → Fin (n i) → α} :
     vflatten v =
@@ -276,6 +294,14 @@ theorem tflatten_succ {m : ℕ} {n : Fin (m + 1) → ℕ}
     {α : (i : Fin (m + 1)) → (j : Fin (n i)) → Sort*}
     {v : (i : Fin (m + 1)) → (j : Fin (n i)) → α i j} :
     tflatten v = tappend (v 0) (tflatten (fun i => v i.succ)) := rfl
+
+@[simp]
+theorem tflatten_one {n : Fin 1 → ℕ} {α : (i : Fin 1) → (j : Fin (n i)) → Sort*}
+    {v : (i : Fin 1) → (j : Fin (n i)) → α i j} : tflatten v = v 0 := rfl
+
+@[simp]
+theorem tflatten_two_eq_append {n : Fin 2 → ℕ} {α : (i : Fin 2) → (j : Fin (n i)) → Sort*}
+    {v : (i : Fin 2) → (j : Fin (n i)) → α i j} : tflatten v = tappend (v 0) (v 1) := rfl
 
 @[simp]
 theorem tflatten_splitSum {m : ℕ} {n : Fin m → ℕ} {α : (k : Fin (vsum n)) → Sort*}

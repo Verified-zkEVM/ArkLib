@@ -40,7 +40,7 @@ def combineMap : StmtIn × WitIn → OracleComp oSpec (StmtOut × WitOut) :=
   depending on the input statement
 -/
 @[reducible]
-def prover : Prover oSpec StmtIn WitIn StmtOut WitOut ![] where
+def prover : Prover oSpec StmtIn WitIn StmtOut WitOut !p[] where
   PrvState | 0 => StmtIn × WitIn
   input := id
   sendMessage := fun i => nomatch i
@@ -50,7 +50,7 @@ def prover : Prover oSpec StmtIn WitIn StmtOut WitOut ![] where
 /-- The verifier in a no-interaction reduction takes an empty transcript, and hence reduce to a
   function `mapStmt : StmtIn → OracleComp oSpec StmtOut` -/
 @[reducible]
-def verifier : Verifier oSpec StmtIn StmtOut ![] where
+def verifier : Verifier oSpec StmtIn StmtOut !p[] where
   verify := fun stmt _ => mapStmt stmt
 
 /-- The no-interaction reduction can be specified by a tuple of functions:
@@ -59,11 +59,9 @@ def verifier : Verifier oSpec StmtIn StmtOut ![] where
   depending on the input statement
 -/
 @[reducible]
-def reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut ![] where
+def reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut !p[] where
   prover := prover mapStmt mapWit
   verifier := verifier mapStmt
-
-instance : ∀ i, SelectableType (![] i) := fun i => Fin.elim0 i
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}

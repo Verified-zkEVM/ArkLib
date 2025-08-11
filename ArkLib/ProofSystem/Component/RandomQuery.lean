@@ -50,7 +50,7 @@ def relOut : Set ((StmtOut OStatement × ∀ i, OStmtOut OStatement i) × WitOut
   { ⟨⟨q, oStmt⟩, ()⟩ | oracle (oStmt 0) q = oracle (oStmt 1) q }
 
 @[reducible]
-def pSpec : ProtocolSpec 1 := ![(.V_to_P, Query OStatement)]
+def pSpec : ProtocolSpec 1 := ⟨!v[.V_to_P], !v[Query OStatement]⟩
 
 /--
 The prover is trivial: it has no messages to send.  It only receives the verifier's challenge `q`,
@@ -140,7 +140,7 @@ def stateFunction [Inhabited OStatement] : (oracleVerifier oSpec OStatement).Sta
     let q : Query OStatement := by simpa [pSpec] using chal ⟨0, by aesop⟩
     OracleInterface.oracle (oracles 0) q = OracleInterface.oracle (oracles 1) q
   toFun_empty := fun stmt => by simp
-  toFun_next := fun i hDir ⟨stmt, oStmt⟩ tr h => by simp_all
+  toFun_next | 0 => fun hDir ⟨stmt, oStmt⟩ tr h => by simp_all
   toFun_full := fun ⟨stmt, oStmt⟩ tr h => by
     simp_all only [Fin.reduceLast, Fin.isValue, OStmtIn, Nat.reduceAdd, Fin.coe_ofNat_eq_mod,
       Nat.reduceMod, Fin.zero_eta, Fin.castLE_refl, Matrix.cons_val_zero, eq_mp_eq_cast, cast_eq,
@@ -169,7 +169,7 @@ def knowledgeStateFunction :
     let q : Query OStatement := by simpa [pSpec] using chal ⟨0, by aesop⟩
     OracleInterface.oracle (oracles 0) q = OracleInterface.oracle (oracles 1) q
   toFun_empty := fun stmt => by simp
-  toFun_next := fun i hDir ⟨stmt, oStmt⟩ tr h => by simp_all
+  toFun_next | 0 => fun hDir ⟨stmt, oStmt⟩ tr h => by simp_all
   toFun_full := fun ⟨stmt, oStmt⟩ tr _ h => by
     simp_all [oracleVerifier, OracleVerifier.toVerifier, Verifier.run]
 

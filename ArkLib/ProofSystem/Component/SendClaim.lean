@@ -28,7 +28,7 @@ variable {ι : Type} (oSpec : OracleSpec ι) (Statement : Type)
   {ιₛᵢ : Type} [Unique ιₛᵢ] (OStatement : ιₛᵢ → Type) [inst : ∀ i, OracleInterface (OStatement i)]
 
 @[reducible]
-def pSpec : ProtocolSpec 1 := ![(.P_to_V, OStatement default)]
+def pSpec : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[OStatement default]⟩
 
 /--
 The prover takes in the old oracle statement as input, and sends it as the protocol message.

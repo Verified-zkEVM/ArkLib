@@ -4,17 +4,17 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.ToMathlib.BigOperators.Fin
-import ArkLib.OracleReduction.ProtocolSpec
-import ArkLib.OracleReduction.Cast
-import ArkLib.Data.Fin.Tuple.Lemmas
-import ArkLib.Data.Fin.Fold
 import ArkLib.Data.Fin.Sigma
+import ArkLib.OracleReduction.ProtocolSpec.Cast
 
 /-! # Sequential Composition of Protocol Specifications
 
 This file collects all definitions and theorems about sequentially composing `ProtocolSpec`s and
 their associated data. -/
+
+universe u v
+
+open OracleComp OracleSpec
 
 namespace ProtocolSpec
 
@@ -342,5 +342,139 @@ theorem seqCompose_embedSum {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, Protoc
   simp [seqCompose, cast]
 
 end FullTranscript
+
+section Append
+
+variable {ι : Type} {oSpec : OracleSpec ι} {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt₃ Wit₃ : Type}
+  {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
+
+/-- If two protocols have sampleable challenges, then their concatenation also has sampleable
+  challenges. -/
+@[inline]
+instance [h₁ : ∀ i, SelectableType (pSpec₁.Challenge i)]
+    [h₂ : ∀ i, SelectableType (pSpec₂.Challenge i)] :
+    ∀ i, SelectableType ((pSpec₁ ++ₚ pSpec₂).Challenge i) :=
+  fun ⟨i, h⟩ => Fin.dappend
+    (fun i hi => cast (by simp) <| h₁ ⟨i, by simpa using hi⟩)
+    (fun i hi => cast (by simp) <| h₂ ⟨i, by simpa using hi⟩)
+    i h
+
+/-- If two protocols' messages have oracle representations, then their concatenation's messages also
+    have oracle representations. -/
+instance [O₁ : ∀ i, OracleInterface.{0, u, v} (pSpec₁.Message i)]
+    [O₂ : ∀ i, OracleInterface.{0, u, v} (pSpec₂.Message i)] :
+    ∀ i, OracleInterface.{0, u, v} ((pSpec₁ ++ₚ pSpec₂).Message i) :=
+  fun ⟨i, h⟩ => Fin.dappend
+    (fun i hi => cast (by simp) <| O₁ ⟨i, by simpa using hi⟩)
+    (fun i hi => cast (by simp) <| O₂ ⟨i, by simpa using hi⟩) i h
+
+instance : ∀ i, OracleInterface ((pSpec₁ ++ₚ pSpec₂).Challenge i) := challengeOracleInterface
+
+@[simp]
+lemma challengeOracleInterface_append_domain_inl (j : pSpec₁.ChallengeIdx) :
+    [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.domain (.inl j) = Unit := by
+  simp [OracleSpec.domain, ChallengeIdx.inl, ProtocolSpec.append, OracleInterface.toOracleSpec,
+    instOracleInterfaceChallengeAppend, challengeOracleInterface]
+
+@[simp]
+lemma challengeOracleInterface_append_range_inl (j : pSpec₁.ChallengeIdx) :
+    [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.range (.inl j) = pSpec₁.Challenge j := by
+  simp [OracleSpec.range, ChallengeIdx.inl, ProtocolSpec.append, OracleInterface.toOracleSpec,
+    instOracleInterfaceChallengeAppend, challengeOracleInterface]
+
+@[simp]
+lemma challengeOracleInterface_append_domain_inr (j : pSpec₂.ChallengeIdx) :
+    [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.domain (.inr j) = Unit := by
+  simp [OracleSpec.domain, ChallengeIdx.inr, ProtocolSpec.append, OracleInterface.toOracleSpec,
+    instOracleInterfaceChallengeAppend, challengeOracleInterface]
+
+@[simp]
+lemma challengeOracleInterface_append_range_inr (j : pSpec₂.ChallengeIdx) :
+    [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.range (.inr j) = pSpec₂.Challenge j := by
+  simp [OracleSpec.range, ChallengeIdx.inr, ProtocolSpec.append, OracleInterface.toOracleSpec,
+    instOracleInterfaceChallengeAppend, challengeOracleInterface]
+
+variable [∀ i, SelectableType (pSpec₁.Challenge i)] [∀ i, SelectableType (pSpec₂.Challenge i)]
+
+instance instSubSpecOfProtocolSpecAppendChallenge :
+    SubSpec ([pSpec₁.Challenge]ₒ ++ₒ [pSpec₂.Challenge]ₒ) ([(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) where
+  monadLift | query i t => match i with
+    | Sum.inl j => by
+      simpa using query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) j.inl ()
+    | Sum.inr j => by
+      simpa using query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) j.inr ()
+
+instance : SubSpec [pSpec₁.Challenge]ₒ ([(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) where
+  monadLift | query i t => instSubSpecOfProtocolSpecAppendChallenge.monadLift (query (Sum.inl i) t)
+
+instance : SubSpec [pSpec₂.Challenge]ₒ ([(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) where
+  monadLift | query i t => instSubSpecOfProtocolSpecAppendChallenge.monadLift (query (Sum.inr i) t)
+
+end Append
+
+section SeqCompose
+
+def sigmaChallengeIdxToSeqCompose {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (i : Fin m) (j : (pSpec i).ChallengeIdx) : (seqCompose pSpec).ChallengeIdx :=
+  ⟨Fin.embedSum i j.1, by simp [j.property]⟩
+
+def seqComposeChallengeIdxToSigma {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (k : (seqCompose pSpec).ChallengeIdx) : (i : Fin m) × (pSpec i).ChallengeIdx :=
+  let ij := Fin.splitSum k.1
+  ⟨ij.1, ⟨ij.2, by
+    simp [ij]; have := k.property; simp at this
+    have hk : k.1 = Fin.embedSum ij.1 ij.2 := by simp [ij]
+    simp [hk] at this
+    exact this⟩⟩
+
+/-- The equivalence between the challenge indices of the individual protocols and the challenge
+    indices of the sequential composition. -/
+def seqComposeChallengeEquiv {m : ℕ} {n : Fin m → ℕ} (pSpec : ∀ i, ProtocolSpec (n i)) :
+    (i : Fin m) × (pSpec i).ChallengeIdx ≃ (seqCompose pSpec).ChallengeIdx where
+  -- TODO: write lemmas about `finSigmaFinEquiv` in mathlib with the one defined via `Fin.dfoldl`
+  toFun := fun ⟨i, j⟩ => sigmaChallengeIdxToSeqCompose i j
+  invFun := seqComposeChallengeIdxToSigma
+  left_inv := by
+    intro ⟨_, _⟩; simp [seqComposeChallengeIdxToSigma, sigmaChallengeIdxToSeqCompose]
+    sorry
+  right_inv := by intro; simp [seqComposeChallengeIdxToSigma, sigmaChallengeIdxToSeqCompose]
+
+def sigmaMessageIdxToSeqCompose {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (i : Fin m) (j : (pSpec i).MessageIdx) : (seqCompose pSpec).MessageIdx :=
+  ⟨Fin.embedSum i j.1, by simp [j.property]⟩
+
+def seqComposeMessageIdxToSigma {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (k : (seqCompose pSpec).MessageIdx) : (i : Fin m) × (pSpec i).MessageIdx :=
+  let ij := Fin.splitSum k.1
+  ⟨ij.1, ⟨ij.2, by
+    simp [ij]; have := k.property; simp at this
+    have hk : k.1 = Fin.embedSum ij.1 ij.2 := by simp [ij]
+    simp [hk] at this
+    exact this⟩⟩
+
+/-- The equivalence between the message indices of the individual protocols and the message
+    indices of the sequential composition. -/
+def seqComposeMessageEquiv {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} :
+    (i : Fin m) × (pSpec i).MessageIdx ≃ (seqCompose pSpec).MessageIdx where
+  toFun := fun ⟨i, msgIdx⟩ => sigmaMessageIdxToSeqCompose i msgIdx
+  invFun := seqComposeMessageIdxToSigma
+  left_inv := by
+    intro ⟨i, ⟨j, h⟩⟩ ; simp [seqComposeMessageIdxToSigma, sigmaMessageIdxToSeqCompose]
+    sorry
+  right_inv := by intro; simp [seqComposeMessageIdxToSigma, sigmaMessageIdxToSeqCompose]
+
+instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    [inst : ∀ i, ∀ j, SelectableType ((pSpec i).Challenge j)] :
+    ∀ k, SelectableType ((seqCompose pSpec).Challenge k) :=
+  fun ⟨k, h⟩ => Fin.dflatten (fun i' j' h' => cast (by simp) <| inst i' ⟨j', by simpa using h'⟩) k h
+
+/-- If all protocols' messages have oracle interfaces, then the messages of their sequential
+  composition also have oracle interfaces. -/
+instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    [Oₘ : ∀ i, ∀ j, OracleInterface.{0, u, v} ((pSpec i).Message j)] :
+    ∀ k, OracleInterface.{0, u, v} ((seqCompose pSpec).Message k) :=
+  fun ⟨k, h⟩ => Fin.dflatten (fun i' j' h' => cast (by simp) <| Oₘ i' ⟨j', by simpa using h'⟩) k h
+
+end SeqCompose
 
 end ProtocolSpec

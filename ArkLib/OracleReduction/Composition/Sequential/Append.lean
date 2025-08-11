@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.OracleReduction.Composition.Sequential.ProtocolSpec
+import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
 import ArkLib.OracleReduction.Security.RoundByRound
 
 /-!
@@ -24,9 +24,9 @@ import ArkLib.OracleReduction.Security.RoundByRound
 
 open OracleComp OracleSpec SubSpec
 
-section find_home
+universe u v
 
-universe u
+section find_home
 
 variable {ι ι' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'} {α β : Type}
     (oa : OracleComp spec α)
@@ -43,72 +43,6 @@ open ProtocolSpec
 
 variable {ι : Type} {oSpec : OracleSpec ι} {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt₃ Wit₃ : Type}
   {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
-
-section Instances
-
-/-- If two protocols have sampleable challenges, then their concatenation also has sampleable
-  challenges. -/
-@[inline]
-instance [h₁ : ∀ i, SelectableType (pSpec₁.Challenge i)]
-    [h₂ : ∀ i, SelectableType (pSpec₂.Challenge i)] :
-    ∀ i, SelectableType ((pSpec₁ ++ₚ pSpec₂).Challenge i) :=
-  fun ⟨i, h⟩ => Fin.dappend
-    (fun i hi => by simpa using h₁ ⟨i, by simpa using hi⟩)
-    (fun i hi => by simpa using h₂ ⟨i, by simpa using hi⟩)
-    i h
-
-/-- If two protocols' messages have oracle representations, then their concatenation's messages also
-    have oracle representations. -/
-instance [O₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
-    [O₂ : ∀ i, OracleInterface (pSpec₂.Message i)] :
-    ∀ i, OracleInterface ((pSpec₁ ++ₚ pSpec₂).Message i) :=
-  fun ⟨i, h⟩ => Fin.dappend
-    (fun i hi => by simpa using O₁ ⟨i, by simpa using hi⟩)
-    (fun i hi => by simpa using O₂ ⟨i, by simpa using hi⟩) i h
-
-instance : ∀ i, OracleInterface ((pSpec₁ ++ₚ pSpec₂).Challenge i) := challengeOracleInterface
-
-@[simp]
-lemma challengeOracleInterface_append_domain_inl (j : pSpec₁.ChallengeIdx) :
-    [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.domain (.inl j) = Unit := by
-  simp [OracleSpec.domain, ChallengeIdx.inl, ProtocolSpec.append, OracleInterface.toOracleSpec,
-    instOracleInterfaceChallengeAppend, challengeOracleInterface]
-
-@[simp]
-lemma challengeOracleInterface_append_range_inl (j : pSpec₁.ChallengeIdx) :
-    [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.range (.inl j) = pSpec₁.Challenge j := by
-  simp [OracleSpec.range, ChallengeIdx.inl, ProtocolSpec.append, OracleInterface.toOracleSpec,
-    instOracleInterfaceChallengeAppend, challengeOracleInterface]
-
-@[simp]
-lemma challengeOracleInterface_append_domain_inr (j : pSpec₂.ChallengeIdx) :
-    [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.domain (.inr j) = Unit := by
-  simp [OracleSpec.domain, ChallengeIdx.inr, ProtocolSpec.append, OracleInterface.toOracleSpec,
-    instOracleInterfaceChallengeAppend, challengeOracleInterface]
-
-@[simp]
-lemma challengeOracleInterface_append_range_inr (j : pSpec₂.ChallengeIdx) :
-    [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.range (.inr j) = pSpec₂.Challenge j := by
-  simp [OracleSpec.range, ChallengeIdx.inr, ProtocolSpec.append, OracleInterface.toOracleSpec,
-    instOracleInterfaceChallengeAppend, challengeOracleInterface]
-
-variable [∀ i, SelectableType (pSpec₁.Challenge i)] [∀ i, SelectableType (pSpec₂.Challenge i)]
-
-instance instSubSpecOfProtocolSpecAppendChallenge :
-    SubSpec ([pSpec₁.Challenge]ₒ ++ₒ [pSpec₂.Challenge]ₒ) ([(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) where
-  monadLift | query i t => match i with
-    | Sum.inl j => by
-      simpa using query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) j.inl ()
-    | Sum.inr j => by
-      simpa using query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) j.inr ()
-
-instance : SubSpec [pSpec₁.Challenge]ₒ ([(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) where
-  monadLift | query i t => instSubSpecOfProtocolSpecAppendChallenge.monadLift (query (Sum.inl i) t)
-
-instance : SubSpec [pSpec₂.Challenge]ₒ ([(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) where
-  monadLift | query i t => instSubSpecOfProtocolSpecAppendChallenge.monadLift (query (Sum.inr i) t)
-
-end Instances
 
 /--
 Appending two provers corresponding to two reductions, where the output statement & witness type for

@@ -41,7 +41,7 @@ variable {ι : Type} (oSpec : OracleSpec ι)
 section Reduction
 
 /-- The prover for the `ReduceClaim` reduction. -/
-def prover : Prover oSpec StmtIn WitIn StmtOut WitOut ![] where
+def prover : Prover oSpec StmtIn WitIn StmtOut WitOut !p[] where
   PrvState | 0 => StmtIn × WitIn
   input := id
   sendMessage := fun i => nomatch i
@@ -49,11 +49,11 @@ def prover : Prover oSpec StmtIn WitIn StmtOut WitOut ![] where
   output := fun ⟨stmt, wit⟩ => pure (mapStmt stmt, mapWit stmt wit)
 
 /-- The verifier for the `ReduceClaim` reduction. -/
-def verifier : Verifier oSpec StmtIn StmtOut ![] where
+def verifier : Verifier oSpec StmtIn StmtOut !p[] where
   verify := fun stmt _ => pure (mapStmt stmt)
 
 /-- The reduction for the `ReduceClaim` reduction. -/
-def reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut ![] where
+def reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut !p[] where
   prover := prover oSpec mapStmt mapWit
   verifier := verifier oSpec mapStmt
 
@@ -74,7 +74,7 @@ theorem reduction_completeness (h : init.neverFails)
 /-- The round-by-round extractor for the `ReduceClaim` (oracle) reduction. Requires a mapping
   `mapWitInv` from the output witness to the input witness. -/
 def extractor (mapWitInv : StmtIn → WitOut → WitIn) :
-    Extractor.RoundByRound oSpec StmtIn WitIn WitOut ![] (fun _ => WitIn) where
+    Extractor.RoundByRound oSpec StmtIn WitIn WitOut !p[] (fun _ => WitIn) where
   eqIn := rfl
   extractMid := fun i => Fin.elim0 i
   extractOut := fun stmtIn _ witOut => mapWitInv stmtIn witOut
@@ -116,7 +116,7 @@ def mapOStmt (oStmtIn : ∀ i, OStmtIn i) : ∀ i, OStmtOut i := fun i => (hEq i
 
 /-- The oracle prover for the `ReduceClaim` oracle reduction. -/
 def oracleProver : OracleProver oSpec
-    StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut ![] where
+    StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut !p[] where
   PrvState := fun _ => (StmtIn × (∀ i, OStmtIn i)) × WitIn
   input := id
   sendMessage := fun i => nomatch i
@@ -125,14 +125,14 @@ def oracleProver : OracleProver oSpec
     pure ((mapStmt stmt, mapOStmt embedIdx hEq oStmt), mapWit stmt wit)
 
 /-- The oracle verifier for the `ReduceClaim` oracle reduction. -/
-def oracleVerifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut ![] where
+def oracleVerifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut !p[] where
   verify := fun stmt _ => pure (mapStmt stmt)
   embed := .trans embedIdx .inl
   hEq := by intro i; simp [hEq]
 
 /-- The oracle reduction for the `ReduceClaim` oracle reduction. -/
 def oracleReduction : OracleReduction oSpec
-    StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut ![] where
+    StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut !p[] where
   prover := oracleProver oSpec mapStmt mapWit embedIdx hEq
   verifier := oracleVerifier oSpec mapStmt embedIdx hEq
 

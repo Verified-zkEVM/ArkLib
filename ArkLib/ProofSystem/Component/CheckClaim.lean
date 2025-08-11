@@ -36,7 +36,7 @@ section Reduction
 
 /-- The prover for the `CheckClaim` reduction. -/
 @[inline, specialize]
-def prover : Prover oSpec Statement Unit Statement Unit ![] where
+def prover : Prover oSpec Statement Unit Statement Unit !p[] where
   PrvState := fun _ => Statement
   input := Prod.fst
   sendMessage := fun i => nomatch i
@@ -47,12 +47,12 @@ variable (pred : Statement → Prop) [DecidablePred pred]
 
 /-- The verifier for the `CheckClaim` reduction. -/
 @[inline, specialize]
-def verifier : Verifier oSpec Statement Statement ![] where
+def verifier : Verifier oSpec Statement Statement !p[] where
   verify := fun stmt _ => do guard (pred stmt); return stmt
 
 /-- The reduction for the `CheckClaim` reduction. -/
 @[inline, specialize]
-def reduction : Reduction oSpec Statement Unit Statement Unit ![] where
+def reduction : Reduction oSpec Statement Unit Statement Unit !p[] where
   prover := prover oSpec Statement
   verifier := verifier oSpec Statement pred
 
@@ -97,7 +97,7 @@ variable {ιₛ : Type} (OStatement : ιₛ → Type) [∀ i, OracleInterface (O
 /-- The oracle prover for the `CheckClaim` oracle reduction. -/
 @[inline, specialize]
 def oracleProver : OracleProver oSpec
-    Statement OStatement Unit Statement OStatement Unit ![] where
+    Statement OStatement Unit Statement OStatement Unit !p[] where
   PrvState := fun _ => Statement × (∀ i, OStatement i)
   input := Prod.fst
   sendMessage := fun i => nomatch i
@@ -110,7 +110,7 @@ variable (pred : ReaderT Statement (OracleComp [OStatement]ₒ) Prop)
 /-- The oracle verifier for the `CheckClaim` oracle reduction. -/
 @[inline, specialize]
 def oracleVerifier : OracleVerifier oSpec
-    Statement OStatement Statement OStatement ![] where
+    Statement OStatement Statement OStatement !p[] where
   verify := fun stmt _ => do let _ ← pred stmt; return stmt
   embed := Embedding.inl
   hEq := by intro i; simp
@@ -118,7 +118,7 @@ def oracleVerifier : OracleVerifier oSpec
 /-- The oracle reduction for the `CheckClaim` oracle reduction. -/
 @[inline, specialize]
 def oracleReduction : OracleReduction oSpec
-    Statement OStatement Unit Statement OStatement Unit ![] where
+    Statement OStatement Unit Statement OStatement Unit !p[] where
   prover := oracleProver oSpec Statement OStatement
   verifier := oracleVerifier oSpec Statement OStatement pred
 
