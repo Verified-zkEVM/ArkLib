@@ -56,7 +56,9 @@ import ArkLib.Data.FieldTheory.NonBinaryField.Mersenne
 import ArkLib.Data.FieldTheory.NonBinaryField.Secp256k1
 import ArkLib.Data.Fin.Basic
 import ArkLib.Data.Fin.BigOperators
+import ArkLib.Data.Fin.Fold
 import ArkLib.Data.Fin.Lift
+import ArkLib.Data.Fin.Sigma
 import ArkLib.Data.Fin.Tuple.Defs
 import ArkLib.Data.Fin.Tuple.Lemmas
 import ArkLib.Data.Fin.Tuple.Notation
@@ -98,7 +100,6 @@ import ArkLib.OracleReduction.Cast
 import ArkLib.OracleReduction.Composition.Parallel.Basic
 import ArkLib.OracleReduction.Composition.Sequential.Append
 import ArkLib.OracleReduction.Composition.Sequential.General
-import ArkLib.OracleReduction.Composition.Sequential.ProtocolSpec
 import ArkLib.OracleReduction.Equiv
 import ArkLib.OracleReduction.Execution
 import ArkLib.OracleReduction.FiatShamir.Basic
@@ -108,7 +109,9 @@ import ArkLib.OracleReduction.LiftContext.OracleReduction
 import ArkLib.OracleReduction.LiftContext.Reduction
 import ArkLib.OracleReduction.OracleInterface
 import ArkLib.OracleReduction.Prelude
-import ArkLib.OracleReduction.ProtocolSpec
+import ArkLib.OracleReduction.ProtocolSpec.Basic
+import ArkLib.OracleReduction.ProtocolSpec.Cast
+import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
 import ArkLib.OracleReduction.Salt
 import ArkLib.OracleReduction.Security.Basic
 import ArkLib.OracleReduction.Security.Implications
