@@ -512,14 +512,12 @@ namespace Verifier
 /-- If two verifiers satisfy soundness with compatible languages and respective soundness errors,
     then their sequential composition also satisfies soundness.
     The soundness error of the appended verifier is the sum of the individual errors. -/
-theorem append_soundness (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
-    (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
-    (langIn₁ : Set Stmt₁) (langOut₁ : Set Stmt₂)
-    (langIn₂ : Set Stmt₂) (langOut₂ : Set Stmt₃)
+theorem append_soundness {lang₁ : Set Stmt₁} {lang₂ : Set Stmt₂} {lang₃ : Set Stmt₃}
+    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁) (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
     {soundnessError₁ soundnessError₂ : ℝ≥0}
-    (h₁ : V₁.soundness init impl langIn₁ langOut₁ soundnessError₁)
-    (h₂ : V₂.soundness init impl langIn₂ langOut₂ soundnessError₂) :
-      (V₁.append V₂).soundness init impl langIn₁ langOut₂ (soundnessError₁ + soundnessError₂) := by
+    (h₁ : V₁.soundness init impl lang₁ lang₂ soundnessError₁)
+    (h₂ : V₂.soundness init impl lang₂ lang₃ soundnessError₂) :
+      (V₁.append V₂).soundness init impl lang₁ lang₃ (soundnessError₁ + soundnessError₂) := by
   sorry
 
 /-- If two verifiers satisfy knowledge soundness with compatible relations and respective knowledge
@@ -527,30 +525,27 @@ theorem append_soundness (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     The knowledge error of the appended verifier is the sum of the individual errors. -/
 theorem append_knowledgeSoundness (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
-    (relIn₁ : Set (Stmt₁ × Wit₁)) (relOut₁ : Set (Stmt₂ × Wit₂))
-    (relIn₂ : Set (Stmt₂ × Wit₂)) (relOut₂ : Set (Stmt₃ × Wit₃))
     {knowledgeError₁ knowledgeError₂ : ℝ≥0}
-    (h₁ : V₁.knowledgeSoundness init impl relIn₁ relOut₁ knowledgeError₁)
-    (h₂ : V₂.knowledgeSoundness init impl relIn₂ relOut₂ knowledgeError₂) :
+    (h₁ : V₁.knowledgeSoundness init impl rel₁ rel₂ knowledgeError₁)
+    (h₂ : V₂.knowledgeSoundness init impl rel₂ rel₃ knowledgeError₂) :
       (V₁.append V₂).knowledgeSoundness init impl
-        relIn₁ relOut₂ (knowledgeError₁ + knowledgeError₂) := by
+        rel₁ rel₃ (knowledgeError₁ + knowledgeError₂) := by
   sorry
 
 /-- If two verifiers satisfy round-by-round soundness with compatible languages and respective RBR
     soundness errors, then their sequential composition also satisfies round-by-round soundness.
     The RBR soundness error of the appended verifier extends the individual errors appropriately. -/
-theorem append_rbrSoundness (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
+theorem append_rbrSoundness {lang₁ : Set Stmt₁} {lang₂ : Set Stmt₂} {lang₃ : Set Stmt₃}
+    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
-    (langIn₁ : Set Stmt₁) (langOut₁ : Set Stmt₂)
-    (langIn₂ : Set Stmt₂) (langOut₂ : Set Stmt₃)
     {rbrSoundnessError₁ : pSpec₁.ChallengeIdx → ℝ≥0}
     {rbrSoundnessError₂ : pSpec₂.ChallengeIdx → ℝ≥0}
-    (h₁ : V₁.rbrSoundness init impl langIn₁ langOut₁ rbrSoundnessError₁)
-    (h₂ : V₂.rbrSoundness init impl langIn₂ langOut₂ rbrSoundnessError₂)
+    (h₁ : V₁.rbrSoundness init impl lang₁ lang₂ rbrSoundnessError₁)
+    (h₂ : V₂.rbrSoundness init impl lang₂ lang₃ rbrSoundnessError₂)
     -- Deterministic verifier condition for state function composition (placeholder for now)
     (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
     (hVerify₁ : V₁ = ⟨fun stmt tr => pure (verify₁ stmt tr)⟩) :
-      (V₁.append V₂).rbrSoundness init impl langIn₁ langOut₂
+      (V₁.append V₂).rbrSoundness init impl lang₁ lang₃
         (Sum.elim rbrSoundnessError₁ rbrSoundnessError₂ ∘ ChallengeIdx.sumEquiv.symm) := by
   sorry
 
@@ -558,18 +553,17 @@ theorem append_rbrSoundness (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     respective RBR knowledge errors, then their sequential composition also satisfies
     round-by-round knowledge soundness.
     The RBR knowledge error of the appended verifier extends the individual errors appropriately. -/
-theorem append_rbrKnowledgeSoundness (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
+theorem append_rbrKnowledgeSoundness
+    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
-    (relIn₁ : Set (Stmt₁ × Wit₁)) (relOut₁ : Set (Stmt₂ × Wit₂))
-    (relIn₂ : Set (Stmt₂ × Wit₂)) (relOut₂ : Set (Stmt₃ × Wit₃))
     {rbrKnowledgeError₁ : pSpec₁.ChallengeIdx → ℝ≥0}
     {rbrKnowledgeError₂ : pSpec₂.ChallengeIdx → ℝ≥0}
-    (h₁ : V₁.rbrKnowledgeSoundness init impl relIn₁ relOut₁ rbrKnowledgeError₁)
-    (h₂ : V₂.rbrKnowledgeSoundness init impl relIn₂ relOut₂ rbrKnowledgeError₂)
+    (h₁ : V₁.rbrKnowledgeSoundness init impl rel₁ rel₂ rbrKnowledgeError₁)
+    (h₂ : V₂.rbrKnowledgeSoundness init impl rel₂ rel₃ rbrKnowledgeError₂)
     -- Deterministic verifier condition for state function composition (placeholder for now)
     (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
     (hVerify₁ : V₁ = ⟨fun stmt tr => pure (verify₁ stmt tr)⟩) :
-      (V₁.append V₂).rbrKnowledgeSoundness init impl relIn₁ relOut₂
+      (V₁.append V₂).rbrKnowledgeSoundness init impl rel₁ rel₃
         (Sum.elim rbrKnowledgeError₁ rbrKnowledgeError₂ ∘ ChallengeIdx.sumEquiv.symm) := by
   sorry
 
