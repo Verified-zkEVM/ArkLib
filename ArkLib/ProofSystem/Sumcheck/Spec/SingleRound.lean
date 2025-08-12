@@ -301,6 +301,8 @@ def oracleReduction : OracleReduction oSpec (StmtIn R) (OStmtIn R deg) Unit
   |>.append (oracleReduction.randomQuery R deg oSpec)
   |>.append (oracleReduction.reduceClaim R deg oSpec))
 
+#print oracleReduction
+
 open NNReal
 
 variable [SelectableType R]
