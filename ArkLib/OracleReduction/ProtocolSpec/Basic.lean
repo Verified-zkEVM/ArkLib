@@ -274,16 +274,18 @@ instance : Unique (ProtocolSpec 0) where
   default := empty
   uniq := fun ⟨_, _⟩ => by simp; constructor <;> (funext i; exact Fin.elim0 i)
 
-/-
-instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
-    [inst : ∀ i, ∀ j, SelectableType ((pSpec i).Challenge j)] :
-    ∀ k, SelectableType ((seqCompose pSpec).Challenge k) :=
-  fun ⟨k, h⟩ => Fin.dflatten (fun i' j' h' => cast (by simp) <| inst i' ⟨j', by simpa using h'⟩) k h
--/
+-- Note these strange instance syntheses. This is necessary to avoid diamonds later on when
+-- going to sequential composition.
 
-instance : ∀ i, VCVCompatible (Challenge !p[] i) := fun ⟨i, _⟩ => Fin.elim0 i
-instance : ∀ i, SelectableType (Challenge !p[] i) := fun ⟨i, _⟩ => Fin.elim0 i
-instance : ∀ i, OracleInterface (Message !p[] i) := fun ⟨i, _⟩ => Fin.elim0 i
+instance : ∀ i, VCVCompatible (Challenge !p[] i) :=
+  fun ⟨i, h⟩ =>
+    (Fin.elim0 i : (h' : !p[].dir i = .V_to_P) → VCVCompatible (!p[].Challenge ⟨i, h'⟩)) h
+instance : ∀ i, SelectableType (Challenge !p[] i) :=
+  fun ⟨i, h⟩ =>
+    (Fin.elim0 i : (h' : !p[].dir i = .V_to_P) → SelectableType (!p[].Challenge ⟨i, h'⟩)) h
+instance : ∀ i, OracleInterface (Message !p[] i) :=
+  fun ⟨i, h⟩ =>
+    (Fin.elim0 i : (h' : !p[].dir i = .P_to_V) → OracleInterface (!p[].Message ⟨i, h'⟩)) h
 
 instance : ∀ i, VCVCompatible ((default : ProtocolSpec 0).Challenge i) := fun ⟨i, _⟩ => Fin.elim0 i
 instance : ∀ i, SelectableType ((default : ProtocolSpec 0).Challenge i) := fun ⟨i, _⟩ => Fin.elim0 i

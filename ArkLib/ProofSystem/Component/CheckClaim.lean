@@ -67,11 +67,15 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ Pro
 /-- The `CheckClaim` reduction satisfies perfect completeness with respect to the predicate as the
   input relation, and the output relation being always true. -/
 @[simp]
-theorem reduction_completeness (h : init.neverFails) :
+theorem reduction_completeness (h : init.neverFails) [Nonempty σ] :
     (reduction oSpec Statement pred).perfectCompleteness init impl
     (relIn Statement pred) (relOut Statement) := by
-  simp [reduction, Reduction.run, Prover.run, Prover.runToRound, Verifier.run,
+  -- Don't know why we need `Nonempty σ` here. TODO: figure out why
+  simp only [reduction, Reduction.perfectCompleteness_eq_prob_one,
+    Reduction.run, Prover.run, Prover.runToRound, Verifier.run,
     prover, verifier]
+  intro stmt wit valid
+  simp
   aesop
 
 /-- The `CheckClaim` reduction satisfies perfect round-by-round knowledge soundness. -/

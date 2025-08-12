@@ -293,6 +293,16 @@ theorem seqCompose_zero {n : Fin 0 → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} 
   rfl
 
 @[simp]
+theorem seqCompose_one {n : Fin 1 → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} :
+    seqCompose pSpec = pSpec 0 := by
+  rfl
+
+@[simp]
+theorem seqCompose_two_eq_append {n : Fin 2 → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} :
+    seqCompose pSpec = append (pSpec 0) (pSpec 1) := by
+  rfl
+
+@[simp]
 theorem seqCompose_succ_eq_append {m : ℕ} {n : Fin (m + 1) → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)} :
     seqCompose pSpec = append (pSpec 0) (seqCompose (fun i => pSpec (Fin.succ i))) := by
   rfl
@@ -474,6 +484,41 @@ instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     [Oₘ : ∀ i, ∀ j, OracleInterface.{0, u, v} ((pSpec i).Message j)] :
     ∀ k, OracleInterface.{0, u, v} ((seqCompose pSpec).Message k) :=
   fun ⟨k, h⟩ => Fin.dflatten (fun i' j' h' => cast (by simp) <| Oₘ i' ⟨j', by simpa using h'⟩) k h
+
+def instSelectableTypeChallengeEmpty' : ∀ i, SelectableType (!p[].Challenge i) :=
+  @instSelectableTypeChallengeSeqCompose 0 !v[] (fun i => Fin.elim0 i)
+    (fun i => Fin.elim0 i)
+
+def instSelectableTypeChallengeOfSelf [inst : ∀ i, SelectableType (pSpec₁.Challenge i)] :
+    ∀ i, SelectableType (pSpec₁.Challenge i) :=
+  @instSelectableTypeChallengeSeqCompose 1 !v[m] (fun i => match i with | 0 => pSpec₁)
+    (fun i => match i with | 0 => inst)
+
+example [inst : ∀ i, SelectableType (pSpec₁.Challenge i)] :
+    instSelectableTypeChallengeOfSelf = inst := by
+  rfl
+
+/-- If two protocols have sampleable challenges, then their concatenation also has sampleable
+  challenges. -/
+def instSelectableTypeChallengeAppend' [h₁ : ∀ i, SelectableType (pSpec₁.Challenge i)]
+    [h₂ : ∀ i, SelectableType (pSpec₂.Challenge i)] :
+    ∀ i, SelectableType ((pSpec₁ ++ₚ pSpec₂).Challenge i) := by
+  refine @instSelectableTypeChallengeSeqCompose 2 !v[m, n]
+    (!d⟨fun i => ProtocolSpec (!v[m, n] i)⟩[pSpec₁, pSpec₂]) ?_
+  refine Fin.dappend (m := 1) (n := 1)
+    (fun i => match i with | 0 => h₁) (fun i => match i with | 0 => h₂)
+
+-- example : instSelectableTypeChallengeEmpty = instSelectableTypeChallengeEmpty' := by
+--   unfold instSelectableTypeChallengeEmpty instSelectableTypeChallengeEmpty'
+--   unfold instSelectableTypeChallengeSeqCompose
+--   dsimp
+--   rfl
+
+example [h₁ : ∀ i, SelectableType (pSpec₁.Challenge i)]
+    [h₂ : ∀ i, SelectableType (pSpec₂.Challenge i)] :
+    instSelectableTypeChallengeAppend' =
+    instSelectableTypeChallengeAppend (h₁ := h₁) (h₂ := h₂) := by
+  rfl
 
 end SeqCompose
 

@@ -181,11 +181,7 @@ def seqCompose' {m : ℕ}
         (pSpec i)) :
     OracleVerifier oSpec (Stmt 0) (OStmt 0) (Stmt (Fin.last m)) (OStmt (Fin.last m))
       (seqCompose pSpec) := match m with
-  | 0 => by
-    convert @OracleVerifier.id ι oSpec (Stmt 0) (ιₛ 0) (OStmt 0) (Oₛ := Oₛ 0)
-    unfold instOracleInterfaceMessageSeqCompose instOracleInterfaceMessageEmpty
-    -- dsimp; sorry
-    ext i <;> exact Fin.elim0 i.1
+  | 0 => @OracleVerifier.id ι oSpec (Stmt 0) (ιₛ 0) (OStmt 0) (Oₛ := Oₛ 0)
   | _ + 1 => by
     letI V' := seqCompose' (Stmt ∘ Fin.succ) (fun i => OStmt (Fin.succ i))
       (Oₛ := fun i => Oₛ (Fin.succ i)) (Oₘ := fun i => Oₘ (Fin.succ i)) (fun i => V (Fin.succ i))
@@ -262,9 +258,8 @@ lemma seqCompose_zero
     (R : (i : Fin 0) →
       OracleReduction oSpec (Stmt i.castSucc) (OStmt i.castSucc) (Wit i.castSucc)
         (Stmt i.succ) (OStmt i.succ) (Wit i.succ) (pSpec i)) :
-    seqCompose Stmt OStmt Wit R = (by
-      convert @OracleReduction.id ι oSpec (Stmt 0) (ιₛ 0) (OStmt 0) (Wit 0) (Oₛ 0)
-      ext i <;> exact Fin.elim0 i.1) := sorry
+    seqCompose Stmt OStmt Wit R =
+      @OracleReduction.id ι oSpec (Stmt 0) (ιₛ 0) (OStmt 0) (Wit 0) (Oₛ 0) := rfl
 
 end OracleReduction
 
@@ -349,7 +344,7 @@ theorem seqCompose_soundness
       (Verifier.seqCompose Stmt V).soundness init impl (lang 0) (lang (Fin.last m))
         (∑ i, soundnessError i) := by
   induction m with
-  | zero => simp; convert id_soundness init impl; sorry
+  | zero => simp
   | succ m ih =>
     simp
     have := ih (fun i => lang i.succ) (fun i => V i.succ)
