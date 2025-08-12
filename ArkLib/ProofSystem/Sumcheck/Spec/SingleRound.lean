@@ -127,6 +127,8 @@ structure StatementRound (i : Fin (n + 1)) where
   -- The challenges sent from the verifier to the prover from previous rounds
   challenges : Fin i → R
 
+abbrev OutputStatement := StatementRound R _ (.last n)
+
 /-- Oracle statement for sum-check, which is a multivariate polynomial over `n` variables of
   individual degree at most `deg`, equipped with the poly evaluation oracle interface. -/
 @[reducible]
@@ -139,6 +141,41 @@ def relationRound (i : Fin (n + 1)) :
     ∑ x ∈ (univ.map D) ^ᶠ (n - i), (polyOracle ()).val ⸨challenges, x⸩ = target }
 
 namespace SingleRound
+
+/-- The protocol specification for a single round of sum-check.
+Has the form `⟨!v[.P_to_V, .V_to_P], !v[R⦃≤ deg⦄[X], R]⟩` -/
+@[reducible]
+def pSpec : ProtocolSpec 2 :=
+  ⟨!v[.P_to_V], !v[R⦃≤ deg⦄[X]]⟩ ++ₚ !p[] ++ₚ ⟨!v[.V_to_P], !v[R]⟩ ++ₚ !p[]
+
+instance : IsSingleRound (pSpec R deg) where
+  prover_first' := by aesop
+  verifier_last' := by aesop
+
+-- Don't know why instance synthesis requires restating these instances
+-- Doesn't seem like instance synthesis can infer the instances for the appends
+-- TODO: may need to tweak synthesis?
+
+instance instOI₁ : ∀ i, OracleInterface ((⟨!v[.P_to_V], !v[R⦃≤ deg⦄[X]]⟩ ++ₚ !p[]).Message i) :=
+  instOracleInterfaceMessageAppend
+
+instance instOI₂ : ∀ i, OracleInterface
+    ((⟨!v[.P_to_V], !v[R⦃≤ deg⦄[X]]⟩ ++ₚ !p[] ++ₚ ⟨!v[.V_to_P], !v[R]⟩).Message i) :=
+  instOracleInterfaceMessageAppend
+
+instance instOracleInterfaceMessagePSpec : ∀ i, OracleInterface ((pSpec R deg).Message i) :=
+  instOracleInterfaceMessageAppend
+
+instance instST₁ : ∀ i, SelectableType ((⟨!v[.P_to_V], !v[R⦃≤ deg⦄[X]]⟩ ++ₚ !p[]).Challenge i) :=
+  instSelectableTypeChallengeAppend
+
+instance instST₂ [SelectableType R] : ∀ i, SelectableType
+    ((⟨!v[.P_to_V], !v[R⦃≤ deg⦄[X]]⟩ ++ₚ !p[] ++ₚ ⟨!v[.V_to_P], !v[R]⟩).Challenge i) :=
+  instSelectableTypeChallengeAppend
+
+instance instSelectableTypeChallengePSpec [SelectableType R] :
+    ∀ i, SelectableType ((pSpec R deg).Challenge i) :=
+  instSelectableTypeChallengeAppend
 
 namespace Simpler
 
@@ -257,40 +294,12 @@ def oracleReduction.reduceClaim : OracleReduction oSpec
     (StmtOut R) (OStmtOut R deg) Unit !p[] :=
   sorry
 
-@[reducible]
-def pSpec : ProtocolSpec 2 :=
-  ⟨!v[.P_to_V], !v[R⦃≤ deg⦄[X]]⟩ ++ₚ !p[] ++ₚ ⟨!v[.V_to_P], !v[R]⟩ ++ₚ !p[]
-
--- ⟨!v[.P_to_V, .V_to_P], !v[R⦃≤ deg⦄[X], R]⟩
-
-instance : IsSingleRound (pSpec R deg) where
-  prover_first' := by aesop
-  verifier_last' := by aesop
-
-set_option diagnostics true
-set_option diagnostics.threshold 10
-set_option trace.Meta.synthInstance true
-instance instOracleInterfaceMessagePSpec :
-    ∀ i, OracleInterface ((pSpec R deg).Message i) := inferInstance
-
--- -- Don't know why instance synthesis requires restating these instances
--- instance : ∀ i, OracleInterface ((⟨!v[.P_to_V], !v[R⦃≤ deg⦄[X]]⟩ ++ₚ !p[]).Message i) :=
---   instOracleInterfaceMessageAppend
-
--- instance :
---     ∀ i, OracleInterface ((⟨!v[.P_to_V], !v[R⦃≤ deg⦄[X]]⟩ ++ₚ !p[] ++ₚ ⟨!v[.V_to_P], !v[R]⟩).Message i) :=
---   instOracleInterfaceMessageAppend
-
--- instance instSelectableTypeChallengePSpec [SelectableType R] :
---     ∀ i, SelectableType ((pSpec R deg).Challenge i)
---   | ⟨1, _⟩ => by aesop
-
 def oracleReduction : OracleReduction oSpec (StmtIn R) (OStmtIn R deg) Unit
-    (StmtOut R) (OStmtOut R deg) Unit (pSpec R deg) := sorry
-  -- ((oracleReduction.sendClaim R deg oSpec)
-  -- |>.append (oracleReduction.checkClaim R deg oSpec)
-  -- |>.append (oracleReduction.randomQuery R deg oSpec)
-  -- |>.append (oracleReduction.reduceClaim R deg oSpec))
+    (StmtOut R) (OStmtOut R deg) Unit (pSpec R deg) :=
+  ((oracleReduction.sendClaim R deg oSpec)
+  |>.append (oracleReduction.checkClaim R deg oSpec)
+  |>.append (oracleReduction.randomQuery R deg oSpec)
+  |>.append (oracleReduction.reduceClaim R deg oSpec))
 
 open NNReal
 
@@ -300,7 +309,14 @@ variable [SelectableType R]
 theorem oracleReduction_perfectCompleteness :
     (oracleReduction R deg oSpec).perfectCompleteness init impl
       (inputRelation R deg D) (outputRelation R deg) := by
+  simp [oracleReduction]
   sorry
+  -- refine OracleReduction.append_perfectCompleteness (Oₘ₁ := instOI₁)
+  --   -- (rel₂ := relationAfterRandomQuery R deg)
+  --   ((((oracleReduction.sendClaim R deg oSpec).append
+  --       (oracleReduction.checkClaim R deg oSpec)).append
+  --       (oracleReduction.randomQuery R deg oSpec)))
+  --   (oracleReduction.reduceClaim R deg oSpec) ?_ ?_
 
 theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
     (oracleReduction R deg oSpec).verifier.rbrKnowledgeSoundness init impl
@@ -336,21 +352,6 @@ def inputRelation : Set ((StmtIn R × (∀ i, OStmtIn R deg i)) × Unit) :=
 
 def outputRelation : Set ((StmtOut R × (∀ i, OStmtOut R deg i)) × Unit) :=
   { ⟨⟨⟨newTarget, chal⟩, oStmt⟩, _⟩ | (oStmt ()).1.eval chal = newTarget }
-
-@[reducible]
-def pSpec : ProtocolSpec 2 := ⟨!v[.P_to_V, .V_to_P], !v[R⦃≤ deg⦄[X], R]⟩
-
-instance : IsSingleRound (pSpec R deg) where
-  prover_first' := by simp
-  verifier_last' := by simp
-
-instance instOracleInterfaceMessagePSpec : OracleInterface ((pSpec R deg).Message default) := by
-  simp [pSpec, default]
-  exact instOracleInterfacePolynomialDegreeLE
-
-instance instSelectableTypeChallengePSpec [SelectableType R] :
-    ∀ i, SelectableType ((pSpec R deg).Challenge i)
-  | ⟨1, _⟩ => by simp; infer_instance
 
 variable {ι : Type} (oSpec : OracleSpec ι)
 
@@ -417,8 +418,8 @@ def oracleReduction : OracleReduction oSpec (StmtIn R) (OStmtIn R deg) Unit
 open Reduction
 open scoped NNReal
 
-instance : ∀ i, SelectableType (OracleInterface.Response (Challenge (pSpec R deg) i))
-  | ⟨1, _⟩ => by dsimp [pSpec, OracleInterface.Response]; infer_instance
+-- instance : ∀ i, SelectableType (OracleInterface.Response (Challenge (pSpec R deg) i))
+--   | ⟨1, _⟩ => by dsimp [pSpec, OracleInterface.Response]; infer_instance
 
 -- instance : Nonempty []ₒ.QueryLog := by simp [QueryLog]; infer_instance
 -- instance : Nonempty ((pSpec R deg).FullTranscript) := by
@@ -508,30 +509,6 @@ theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
 -- TODO: break down the oracle reduction into a series of oracle reductions as stated above
 
 end Simple
-
-/-- Protocol specification for the `i`-th round of the sum-check protocol
-
-Consists of a message from prover to verifier of degree at most `deg`, and a message
-from verifier to prover of a field element in `R`. -/
-@[reducible]
-def pSpec : ProtocolSpec 2 := ⟨!v[.P_to_V, .V_to_P], !v[R⦃≤ deg⦄[X], R]⟩
-
-instance : IsSingleRound (pSpec R deg) where
-  prover_first' := by simp
-  verifier_last' := by simp
-
-/-- Recognize that the (only) message from the prover to the verifier has type `R⦃≤ deg⦄[X]`, and
-  hence can be turned into an oracle for evaluating the polynomial -/
-instance instOracleInterfaceMessagePSpec : OracleInterface ((pSpec R deg).Message default) := by
-  simp only [pSpec, default]
-  exact instOracleInterfacePolynomialDegreeLE
-
-/-- Recognize that the challenge from the verifier to the prover has type `R`, and hence can be
-  sampled uniformly at random -/
-instance instSelectableTypeChallengePSpec [SelectableType R] :
-    SelectableType ((pSpec R deg).Challenge default) := by
-  simp [pSpec, Challenge, default]
-  infer_instance
 
 /-- Auxiliary lemma for proving that the polynomial sent by the honest prover is of degree at most
   `deg` -/

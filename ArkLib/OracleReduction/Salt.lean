@@ -66,7 +66,7 @@ def Transcript.removeSalt {k : Fin (n + 1)} (transcript : (pSpec.addSalt Salt).T
 -- TODO: would be nice not to need `by` block
   fun i => by
   letI data := transcript i
-  dsimp [addSalt] at data ⊢
+  dsimp [addSalt, SliceLT.sliceLT, take] at data ⊢
   split at data
   · exact data.1
   · exact data
@@ -76,10 +76,12 @@ def Transcript.extractSalt {k : Fin (n + 1)} (transcript : (pSpec.addSalt Salt).
     (i : pSpec.MessageIdxUpTo k) → Salt ⟨i.val.castLE (by omega), by simpa using i.property⟩ :=
   fun i => by
     letI data := transcript i
-    dsimp [addSalt] at data ⊢
+    dsimp [addSalt, SliceLT.sliceLT, take, Fin.castLE] at data ⊢
     split at data
     · exact data.2
-    · haveI := i.property; simp_all
+    · haveI := i.property;
+      simp [SliceLT.sliceLT, take, Fin.castLE] at this
+      simp_all
 
 /-- Remove the salt from a full transcript of a salted protocol -/
 def FullTranscript.removeSalt (transcript : (pSpec.addSalt Salt).FullTranscript) :

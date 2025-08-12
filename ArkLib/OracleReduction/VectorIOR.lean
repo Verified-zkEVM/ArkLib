@@ -29,8 +29,8 @@ namespace ProtocolSpec
 (assumed to be working over a fixed alphabet) -/
 @[ext]
 structure VectorSpec (n : ℕ) where
-  dir : FinVec Direction n
-  length : FinVec Nat n
+  dir : Fin n → Direction
+  length : Fin n → Nat
 
 namespace VectorSpec
 
