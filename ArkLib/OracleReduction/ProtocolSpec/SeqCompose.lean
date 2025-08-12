@@ -140,7 +140,7 @@ namespace FullTranscript
 /-- Appending two transcripts for two `ProtocolSpec`s -/
 def append (T₁ : FullTranscript pSpec₁) (T₂ : FullTranscript pSpec₂) :
     FullTranscript (pSpec₁ ++ₚ pSpec₂) :=
-  Fin.tappend T₁ T₂
+  Fin.happend T₁ T₂
 
 @[inherit_doc]
 infixl : 65 " ++ₜ " => append
@@ -149,7 +149,7 @@ infixl : 65 " ++ₜ " => append
 def concat {pSpec : ProtocolSpec n} {NextMessage : Type}
     (T : FullTranscript pSpec) (dir : Direction) (msg : NextMessage) :
         FullTranscript (pSpec ++ₚ ⟨!v[dir], !v[NextMessage]⟩) :=
-  Fin.tconcat T msg
+  Fin.hconcat T msg
 
 -- TODO: fill
 
@@ -175,7 +175,7 @@ theorem take_append_left (T : FullTranscript pSpec₁) (T' : FullTranscript pSpe
   simp [take, append, ProtocolSpec.append, Fin.castLE,
     FullTranscript.cast, Transcript.cast]
   have : ⟨i.val, by omega⟩ = Fin.castAdd n i := by ext; simp
-  rw! (castMode := .all) [this, Fin.tappend_left]
+  rw! (castMode := .all) [this, Fin.happend_left]
 
 @[simp]
 theorem rtake_append_right (T : FullTranscript pSpec₁) (T' : FullTranscript pSpec₂) :
@@ -184,7 +184,7 @@ theorem rtake_append_right (T : FullTranscript pSpec₁) (T' : FullTranscript pS
   ext i
   simp [rtake, Fin.rtake, append, Fin.cast, FullTranscript.cast, Transcript.cast]
   have : ⟨m + n - n + i.val, by omega⟩ = Fin.natAdd m i := by ext; simp
-  rw! (castMode := .all) [this, Fin.tappend_right]
+  rw! (castMode := .all) [this, Fin.happend_right]
   sorry
 
 /-- The first half of a transcript for a concatenated protocol -/
@@ -322,22 +322,22 @@ namespace FullTranscript
 /-- Sequential composition of a family of `FullTranscript`s, indexed by `i : Fin m`.
 
 Defined for definitional equality, so that the following holds definitionally:
-- `seqCompose !t[] = !t[]`
-- `seqCompose !t[T₁] = T₁`
-- `seqCompose !t[T₁, T₂] = T₁ ++ₜ T₂`
-- `seqCompose !t[T₁, T₂, T₃] = T₁ ++ₜ (T₂ ++ₜ T₃)`
+- `seqCompose !h[] = !h[]`
+- `seqCompose !h[T₁] = T₁`
+- `seqCompose !h[T₁, T₂] = T₁ ++ₜ T₂`
+- `seqCompose !h[T₁, T₂, T₃] = T₁ ++ₜ (T₂ ++ₜ T₃)`
 - and so on.
 
 TODO: add notation `∑ i, T i` for `seqCompose` -/
 @[inline]
 def seqCompose {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     (T : ∀ i, FullTranscript (pSpec i)) : FullTranscript (seqCompose pSpec) :=
-  Fin.tflatten T
+  Fin.hflatten T
 
 @[simp]
 theorem seqCompose_zero {n : Fin 0 → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     {T : ∀ i, FullTranscript (pSpec i)} :
-    seqCompose T = !t[] := rfl
+    seqCompose T = !h[] := rfl
 
 @[simp]
 theorem seqCompose_succ_eq_append {m : ℕ} {n : Fin (m + 1) → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
@@ -364,19 +364,20 @@ variable {ι : Type} {oSpec : OracleSpec ι} {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt
 instance [h₁ : ∀ i, SelectableType (pSpec₁.Challenge i)]
     [h₂ : ∀ i, SelectableType (pSpec₂.Challenge i)] :
     ∀ i, SelectableType ((pSpec₁ ++ₚ pSpec₂).Challenge i) :=
-  fun ⟨i, h⟩ => Fin.dappend
-    (fun i hi => cast (by simp) <| h₁ ⟨i, by simpa using hi⟩)
-    (fun i hi => cast (by simp) <| h₂ ⟨i, by simpa using hi⟩)
-    i h
+  fun ⟨i, h⟩ => Fin.fappend₂ (A := Direction) (B := Type)
+    (F := fun dir type => (h : dir = .V_to_P) → SelectableType type)
+    (α₁ := pSpec₁.dir) (β₁ := pSpec₂.dir)
+    (α₂ := pSpec₁.Type) (β₂ := pSpec₂.Type) (fun i h => h₁ ⟨i, h⟩) (fun i h => h₂ ⟨i, h⟩) i h
 
 /-- If two protocols' messages have oracle representations, then their concatenation's messages also
     have oracle representations. -/
 instance [O₁ : ∀ i, OracleInterface.{0, u, v} (pSpec₁.Message i)]
     [O₂ : ∀ i, OracleInterface.{0, u, v} (pSpec₂.Message i)] :
     ∀ i, OracleInterface.{0, u, v} ((pSpec₁ ++ₚ pSpec₂).Message i) :=
-  fun ⟨i, h⟩ => Fin.dappend
-    (fun i hi => cast (by simp) <| O₁ ⟨i, by simpa using hi⟩)
-    (fun i hi => cast (by simp) <| O₂ ⟨i, by simpa using hi⟩) i h
+  fun ⟨i, h⟩ => Fin.fappend₂ (A := Direction) (B := Type)
+    (F := fun dir type => (h : dir = .P_to_V) → OracleInterface type)
+    (α₁ := pSpec₁.dir) (β₁ := pSpec₂.dir)
+    (α₂ := pSpec₁.Type) (β₂ := pSpec₂.Type) (fun i h => O₁ ⟨i, h⟩) (fun i h => O₂ ⟨i, h⟩) i h
 
 instance : ∀ i, OracleInterface ((pSpec₁ ++ₚ pSpec₂).Challenge i) := challengeOracleInterface
 
@@ -476,49 +477,18 @@ def seqComposeMessageEquiv {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, Protoco
 instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     [inst : ∀ i, ∀ j, SelectableType ((pSpec i).Challenge j)] :
     ∀ k, SelectableType ((seqCompose pSpec).Challenge k) :=
-  fun ⟨k, h⟩ => Fin.dflatten (fun i' j' h' => cast (by simp) <| inst i' ⟨j', by simpa using h'⟩) k h
+  fun ⟨k, h⟩ => Fin.fflatten₂
+    (A := Direction) (B := Type) (F := fun dir type => (h : dir = .V_to_P) → SelectableType type)
+    (fun i' j' h' => inst i' ⟨j', h'⟩) k h
 
 /-- If all protocols' messages have oracle interfaces, then the messages of their sequential
   composition also have oracle interfaces. -/
 instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     [Oₘ : ∀ i, ∀ j, OracleInterface.{0, u, v} ((pSpec i).Message j)] :
     ∀ k, OracleInterface.{0, u, v} ((seqCompose pSpec).Message k) :=
-  fun ⟨k, h⟩ => Fin.dflatten (fun i' j' h' => cast (by simp) <| Oₘ i' ⟨j', by simpa using h'⟩) k h
-
-def instSelectableTypeChallengeEmpty' : ∀ i, SelectableType (!p[].Challenge i) :=
-  @instSelectableTypeChallengeSeqCompose 0 !v[] (fun i => Fin.elim0 i)
-    (fun i => Fin.elim0 i)
-
-def instSelectableTypeChallengeOfSelf [inst : ∀ i, SelectableType (pSpec₁.Challenge i)] :
-    ∀ i, SelectableType (pSpec₁.Challenge i) :=
-  @instSelectableTypeChallengeSeqCompose 1 !v[m] (fun i => match i with | 0 => pSpec₁)
-    (fun i => match i with | 0 => inst)
-
-example [inst : ∀ i, SelectableType (pSpec₁.Challenge i)] :
-    instSelectableTypeChallengeOfSelf = inst := by
-  rfl
-
-/-- If two protocols have sampleable challenges, then their concatenation also has sampleable
-  challenges. -/
-def instSelectableTypeChallengeAppend' [h₁ : ∀ i, SelectableType (pSpec₁.Challenge i)]
-    [h₂ : ∀ i, SelectableType (pSpec₂.Challenge i)] :
-    ∀ i, SelectableType ((pSpec₁ ++ₚ pSpec₂).Challenge i) := by
-  refine @instSelectableTypeChallengeSeqCompose 2 !v[m, n]
-    (!d⟨fun i => ProtocolSpec (!v[m, n] i)⟩[pSpec₁, pSpec₂]) ?_
-  refine Fin.dappend (m := 1) (n := 1)
-    (fun i => match i with | 0 => h₁) (fun i => match i with | 0 => h₂)
-
--- example : instSelectableTypeChallengeEmpty = instSelectableTypeChallengeEmpty' := by
---   unfold instSelectableTypeChallengeEmpty instSelectableTypeChallengeEmpty'
---   unfold instSelectableTypeChallengeSeqCompose
---   dsimp
---   rfl
-
-example [h₁ : ∀ i, SelectableType (pSpec₁.Challenge i)]
-    [h₂ : ∀ i, SelectableType (pSpec₂.Challenge i)] :
-    instSelectableTypeChallengeAppend' =
-    instSelectableTypeChallengeAppend (h₁ := h₁) (h₂ := h₂) := by
-  rfl
+  fun ⟨k, h⟩ => Fin.fflatten₂
+    (A := Direction) (B := Type) (F := fun dir type => (h : dir = .P_to_V) → OracleInterface type)
+    (fun i' j' h' => Oₘ i' ⟨j', h'⟩) k h
 
 end SeqCompose
 

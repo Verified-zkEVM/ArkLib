@@ -125,14 +125,6 @@ lemma seqCompose_succ {m : ℕ}
     seqCompose Stmt Wit R =
       append (R 0) (seqCompose (Stmt ∘ Fin.succ) (Wit ∘ Fin.succ) (fun i => R (Fin.succ i))) := rfl
 
-lemma seqCompose_succ_eq_append {m : ℕ}
-    (Stmt : Fin (m + 2) → Type) (Wit : Fin (m + 2) → Type)
-    {n : Fin (m + 1) → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
-    (R : (i : Fin (m + 1)) →
-      Reduction oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ) (pSpec i)) :
-    seqCompose Stmt Wit R =
-      append (R 0) (seqCompose (Stmt ∘ Fin.succ) (Wit ∘ Fin.succ) (fun i => R (Fin.succ i))) := rfl
-
 end Reduction
 
 namespace OracleProver
@@ -182,23 +174,11 @@ def seqCompose' {m : ℕ}
     OracleVerifier oSpec (Stmt 0) (OStmt 0) (Stmt (Fin.last m)) (OStmt (Fin.last m))
       (seqCompose pSpec) := match m with
   | 0 => @OracleVerifier.id ι oSpec (Stmt 0) (ιₛ 0) (OStmt 0) (Oₛ := Oₛ 0)
-  | _ + 1 => by
-    letI V' := seqCompose' (Stmt ∘ Fin.succ) (fun i => OStmt (Fin.succ i))
-      (Oₛ := fun i => Oₛ (Fin.succ i)) (Oₘ := fun i => Oₘ (Fin.succ i)) (fun i => V (Fin.succ i))
-    convert append (V 0) V'
-    sorry
-    -- ext i <;> simp [instOracleInterfaceMessageSeqCompose, instOracleInterfaceMessageAppend]
+  | _ + 1 => append (V 0) (seqCompose' (Stmt ∘ Fin.succ) (fun i => OStmt (Fin.succ i))
+      (Oₛ := fun i => Oₛ (Fin.succ i)) (Oₘ := fun i => Oₘ (Fin.succ i)) (fun i => V (Fin.succ i)))
 
-  -- Fin.dfoldl m
-  --   (fun i => OracleVerifier oSpec (Stmt 0) (OStmt 0) (Stmt i) (OStmt i)
-  --     (ProtocolSpec.seqCompose (Fin.take i (by omega) pSpec)))
-  --   (fun i Vacc => by
-  --     convert OracleVerifier.append Vacc (V i)
-  --     · simp [Fin.sum_univ_castSucc, Fin.last, Fin.succ]
-  --     · simp [seqCompose_append, dcast_eq_root_cast])
-  --   (OracleVerifier.id)
-
-/-- Sequential composition of verifiers in oracle reductions. -/
+/-- Sequential composition of oracle verifiers (in oracle reductions), defined via iteration of the
+  composition (append) of two oracle verifiers. -/
 def seqCompose {m : ℕ}
     (Stmt : Fin (m + 1) → Type)
     {ιₛ : Fin (m + 1) → Type} (OStmt : (i : Fin (m + 1)) → ιₛ i → Type)
@@ -213,6 +193,31 @@ def seqCompose {m : ℕ}
   seqCompose' Stmt OStmt Oₛ Oₘ V
 
 @[simp]
+lemma seqCompose_zero
+    (Stmt : Fin 1 → Type)
+    {ιₛ : Fin 1 → Type} (OStmt : (i : Fin 1) → ιₛ i → Type)
+    [Oₛ : ∀ i, ∀ j, OracleInterface (OStmt i j)]
+    {n : Fin 0 → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    [Oₘ : ∀ i, ∀ j, OracleInterface ((pSpec i).Message j)]
+    (V : (i : Fin 0) → OracleVerifier oSpec
+      (Stmt i.castSucc) (OStmt i.castSucc) (Stmt i.succ) (OStmt i.succ) (pSpec i)) :
+    seqCompose Stmt OStmt V = OracleVerifier.id := rfl
+
+@[simp]
+lemma seqCompose_succ {m : ℕ}
+    (Stmt : Fin (m + 2) → Type)
+    {ιₛ : Fin (m + 2) → Type} (OStmt : (i : Fin (m + 2)) → ιₛ i → Type)
+    [Oₛ : ∀ i, ∀ j, OracleInterface (OStmt i j)]
+    {n : Fin (m + 1) → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    [Oₘ : ∀ i, ∀ j, OracleInterface ((pSpec i).Message j)]
+    (V : (i : Fin (m + 1)) → OracleVerifier oSpec
+      (Stmt i.castSucc) (OStmt i.castSucc) (Stmt i.succ) (OStmt i.succ) (pSpec i)) :
+    seqCompose Stmt OStmt V =
+      append (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => OStmt (Fin.succ i))
+        (Oₛ := fun i => Oₛ (Fin.succ i)) (Oₘ := fun i => Oₘ (Fin.succ i))
+          (fun i => V (Fin.succ i))) := rfl
+
+@[simp]
 lemma seqCompose_toVerifier {m : ℕ}
     (Stmt : Fin (m + 1) → Type)
     {ιₛ : Fin (m + 1) → Type} (OStmt : (i : Fin (m + 1)) → ιₛ i → Type)
@@ -224,7 +229,9 @@ lemma seqCompose_toVerifier {m : ℕ}
         (pSpec i)) :
     (seqCompose Stmt OStmt V).toVerifier =
       Verifier.seqCompose (fun i => Stmt i × (∀ j, OStmt i j)) (fun i => (V i).toVerifier) := by
-  sorry
+  induction m with
+  | zero => simp
+  | succ m ih => simp [ih]; rfl
 
 end OracleVerifier
 
@@ -260,6 +267,40 @@ lemma seqCompose_zero
         (Stmt i.succ) (OStmt i.succ) (Wit i.succ) (pSpec i)) :
     seqCompose Stmt OStmt Wit R =
       @OracleReduction.id ι oSpec (Stmt 0) (ιₛ 0) (OStmt 0) (Wit 0) (Oₛ 0) := rfl
+
+@[simp]
+lemma seqCompose_succ {m : ℕ}
+    (Stmt : Fin (m + 2) → Type)
+    {ιₛ : Fin (m + 2) → Type} (OStmt : (i : Fin (m + 2)) → ιₛ i → Type)
+    [Oₛ : ∀ i, ∀ j, OracleInterface (OStmt i j)]
+    (Wit : Fin (m + 2) → Type)
+    {n : Fin (m + 1) → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    [Oₘ : ∀ i, ∀ j, OracleInterface ((pSpec i).Message j)]
+    (R : (i : Fin (m + 1)) →
+      OracleReduction oSpec (Stmt i.castSucc) (OStmt i.castSucc) (Wit i.castSucc)
+        (Stmt i.succ) (OStmt i.succ) (Wit i.succ) (pSpec i)) :
+    seqCompose Stmt OStmt Wit R =
+      append (R 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => OStmt (Fin.succ i)) (Wit ∘ Fin.succ)
+        (Oₛ := fun i => Oₛ (Fin.succ i)) (Oₘ := fun i => Oₘ (Fin.succ i))
+          (fun i => R (Fin.succ i))) := rfl
+
+@[simp]
+lemma seqCompose_toReduction {m : ℕ}
+    (Stmt : Fin (m + 1) → Type)
+    {ιₛ : Fin (m + 1) → Type} (OStmt : (i : Fin (m + 1)) → ιₛ i → Type)
+    [Oₛ : ∀ i, ∀ j, OracleInterface (OStmt i j)]
+    (Wit : Fin (m + 1) → Type)
+    {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    [Oₘ : ∀ i, ∀ j, OracleInterface ((pSpec i).Message j)]
+    (R : (i : Fin m) →
+      OracleReduction oSpec (Stmt i.castSucc) (OStmt i.castSucc) (Wit i.castSucc)
+        (Stmt i.succ) (OStmt i.succ) (Wit i.succ) (pSpec i)) :
+    (seqCompose Stmt OStmt Wit R).toReduction =
+      Reduction.seqCompose (fun i => Stmt i × (∀ j, OStmt i j)) Wit
+        (fun i => (R i).toReduction) := by
+  induction m with
+  | zero => simp
+  | succ m ih => simp [ih]; rfl
 
 end OracleReduction
 
@@ -313,9 +354,7 @@ theorem seqCompose_completeness (hInit : init.neverFails)
       (R 0)
       (seqCompose (Stmt ∘ Fin.succ) (Wit ∘ Fin.succ) (fun i => R (Fin.succ i)))
       (h 0) this
-    · unfold instSelectableTypeChallengeSeqCompose instSelectableTypeChallengeAppend
-      dsimp; sorry
-    · exact Fin.sum_univ_succ completenessError
+    exact Fin.sum_univ_succ completenessError
 
 omit Oₘ in
 theorem seqCompose_perfectCompleteness (hInit : init.neverFails)
@@ -352,9 +391,7 @@ theorem seqCompose_soundness
     simp at this
     convert append_soundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
       (h 0) this
-    · unfold instSelectableTypeChallengeSeqCompose instSelectableTypeChallengeAppend
-      dsimp; sorry
-    · exact Fin.sum_univ_succ soundnessError
+    exact Fin.sum_univ_succ soundnessError
 
 /-- If all verifiers in a sequence satisfy knowledge soundness with respective knowledge errors,
     then their sequential composition also satisfies knowledge soundness.
@@ -366,7 +403,16 @@ theorem seqCompose_knowledgeSoundness
     (h : ∀ i, (V i).knowledgeSoundness init impl (rel i.castSucc) (rel i.succ) (knowledgeError i)) :
       (Verifier.seqCompose Stmt V).knowledgeSoundness init impl (rel 0) (rel (Fin.last m))
         (∑ i, knowledgeError i) := by
-  sorry
+  induction m with
+  | zero => simp
+  | succ m ih =>
+    simp
+    have := ih (fun i => rel i.succ) (fun i => V i.succ)
+      (fun i => knowledgeError i.succ) (fun i => h i.succ)
+    simp at this
+    convert append_knowledgeSoundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
+      (h 0) this
+    exact Fin.sum_univ_succ knowledgeError
 
 /-- If all verifiers in a sequence satisfy round-by-round soundness with respective RBR soundness
     errors, then their sequential composition also satisfies round-by-round soundness. -/
@@ -379,7 +425,20 @@ theorem seqCompose_rbrSoundness
         (fun combinedIdx =>
           letI ij := seqComposeChallengeIdxToSigma combinedIdx
           rbrSoundnessError ij.1 ij.2) := by
-  sorry
+  induction m with
+  | zero =>
+    simp
+    convert Verifier.id_rbrSoundness init impl
+    rename_i i
+    exact Fin.elim0 i.1
+  | succ m ih =>
+    simp
+    have := ih (fun i => lang i.succ) (fun i => V i.succ)
+      (fun i => rbrSoundnessError i.succ) (fun i => h i.succ)
+    simp at this
+    convert append_rbrSoundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
+      (h 0) this
+    sorry
 
 /-- If all verifiers in a sequence satisfy round-by-round knowledge soundness with respective RBR
     knowledge errors, then their sequential composition also satisfies round-by-round knowledge
@@ -394,7 +453,21 @@ theorem seqCompose_rbrKnowledgeSoundness
         (fun combinedIdx =>
           letI ij := seqComposeChallengeIdxToSigma combinedIdx
           rbrKnowledgeError ij.1 ij.2) := by
-  sorry
+  induction m with
+  | zero =>
+    simp
+    convert Verifier.id_rbrKnowledgeSoundness init impl
+    rename_i i
+    exact Fin.elim0 i.1
+  | succ m ih =>
+    simp
+    have := ih (fun i => rel i.succ) (fun i => V i.succ)
+      (fun i => rbrKnowledgeError i.succ) (fun i => h i.succ)
+    simp at this
+    convert append_rbrKnowledgeSoundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
+      (h 0) this
+    simp [seqComposeChallengeIdxToSigma]
+    sorry
 
 end Verifier
 
@@ -411,7 +484,7 @@ theorem seqCompose_completeness (hInit : init.neverFails)
   unfold completeness at h ⊢
   convert Reduction.seqCompose_completeness hInit rel (fun i => (R i).toReduction)
     completenessError h
-  sorry
+  simp only [seqCompose_toReduction]
 
 theorem seqCompose_perfectCompleteness (hInit : init.neverFails)
     (rel : (i : Fin (m + 1)) → Set ((Stmt i × ∀ j, OStmt i j) × Wit i))
@@ -443,7 +516,7 @@ theorem seqCompose_soundness
         (∑ i, soundnessError i) := by
   unfold OracleVerifier.soundness
   convert Verifier.seqCompose_soundness lang (fun i => (V i).toVerifier) soundnessError h
-  sorry
+  simp only [seqCompose_toVerifier]
 
 /-- If all verifiers in a sequence satisfy knowledge soundness with respective knowledge errors,
     then their sequential composition also satisfies knowledge soundness.
@@ -460,7 +533,7 @@ theorem seqCompose_knowledgeSoundness
         init impl (rel 0) (rel (Fin.last m)) (∑ i, knowledgeError i) := by
   unfold OracleVerifier.knowledgeSoundness
   convert Verifier.seqCompose_knowledgeSoundness rel (fun i => (V i).toVerifier) knowledgeError h
-  sorry
+  simp only [seqCompose_toVerifier]
 
 /-- If all verifiers in a sequence satisfy round-by-round soundness with respective RBR soundness
     errors, then their sequential composition also satisfies round-by-round soundness. -/
@@ -479,7 +552,7 @@ theorem seqCompose_rbrSoundness
   unfold OracleVerifier.rbrSoundness
   convert Verifier.seqCompose_rbrSoundness lang (fun i => (V i).toVerifier)
     rbrSoundnessError h
-  sorry
+  simp only [seqCompose_toVerifier]
 
 /-- If all verifiers in a sequence satisfy round-by-round knowledge soundness with respective RBR
     knowledge errors, then their sequential composition also satisfies round-by-round knowledge
@@ -499,7 +572,7 @@ theorem seqCompose_rbrKnowledgeSoundness
   unfold OracleVerifier.rbrKnowledgeSoundness
   convert Verifier.seqCompose_rbrKnowledgeSoundness rel (fun i => (V i).toVerifier)
     rbrKnowledgeError h
-  sorry
+  simp only [seqCompose_toVerifier]
 
 end OracleVerifier
 

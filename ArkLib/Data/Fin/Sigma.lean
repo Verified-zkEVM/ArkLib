@@ -15,7 +15,7 @@ import ArkLib.Data.Fin.Tuple.Lemmas
 We re-define big-operators sum and product over `Fin` to have good definitional equalities.
 -/
 
-universe u v
+universe u v w
 
 open Finset
 
@@ -273,64 +273,159 @@ theorem vflatten_embedSum {m : ℕ} {n : Fin m → ℕ} (v : (i : Fin m) → Fin
     (j : Fin (n i)) : vflatten v (embedSum i j) = v i j :=
   dflatten_embedSum (motive := fun _ => α) v i j
 
+/-- Functorial flatten: flattens a nested heterogeneous tuple
+`(i : Fin m) → (j : Fin (n i)) → F (α i j)` into a single heterogeneous tuple with type
+`(k : Fin (vsum n)) → F (vflatten α k)` where `vflatten` operates on the vector of types `α`.
+
+Unlike `dflatten` which requires an explicit unified motive, `fflatten` uses `vflatten` to
+automatically construct the motive from the input type family. -/
+def fflatten {A : Sort u} {F : A → Sort v} {m : ℕ} {n : Fin m → ℕ}
+    {α : (i : Fin m) → (j : Fin (n i)) → A}
+    (v : (i : Fin m) → (j : Fin (n i)) → F (α i j)) : (k : Fin (vsum n)) → F (Fin.vflatten α k) :=
+  match m with
+  | 0 => !h[]
+  | _ + 1 => fappend (v 0) (fflatten (fun i => v i.succ))
+
+@[simp]
+theorem fflatten_zero {A : Sort u} {F : A → Sort v} {n : Fin 0 → ℕ}
+    {α : (i : Fin 0) → (j : Fin (n i)) → A}
+    {v : (i : Fin 0) → (j : Fin (n i)) → F (α i j)} : fflatten v = !h[] := rfl
+
+@[simp]
+theorem fflatten_succ {A : Sort u} {F : A → Sort v} {m : ℕ} {n : Fin (m + 1) → ℕ}
+    {α : (i : Fin (m + 1)) → (j : Fin (n i)) → A}
+    {v : (i : Fin (m + 1)) → (j : Fin (n i)) → F (α i j)} :
+    fflatten v = fappend (v 0) (fflatten (fun i => v i.succ)) := rfl
+
+@[simp]
+theorem fflatten_one {A : Sort u} {F : A → Sort v} {n : Fin 1 → ℕ}
+    {α : (i : Fin 1) → (j : Fin (n i)) → A}
+    {v : (i : Fin 1) → (j : Fin (n i)) → F (α i j)} :
+    fflatten v = v 0 := rfl
+
+@[simp]
+theorem fflatten_two_eq_append {A : Sort u} {F : A → Sort v} {n : Fin 2 → ℕ}
+    {α : (i : Fin 2) → (j : Fin (n i)) → A}
+    {v : (i : Fin 2) → (j : Fin (n i)) → F (α i j)} :
+    fflatten v = fappend (F := F) (v 0) (v 1) := rfl
+
+@[simp]
+theorem fflatten_splitSum {A : Sort u} {F : A → Sort v} {m : ℕ} {n : Fin m → ℕ}
+    {α : (i : Fin (vsum n)) → A}
+    (v : (k : Fin (vsum n)) → F (α k)) (k : Fin (vsum n)) :
+    fflatten (fun i j => v (embedSum i j)) k = cast (by simp) (v k) := by
+  sorry
+
+@[simp]
+theorem fflatten_embedSum {A : Sort u} {F : A → Sort v} {m : ℕ} {n : Fin m → ℕ}
+    {α : (i : Fin m) → (j : Fin (n i)) → A}
+    (v : (i : Fin m) → (j : Fin (n i)) → F (α i j)) (i : Fin m) (j : Fin (n i)) :
+    fflatten v (embedSum i j) = cast (by simp) (v i j) := by
+  sorry
+
+/-- Functorial flatten with two arguments: flattens two nested heterogeneous tuple
+`(i : Fin m) → (j : Fin (n i)) → F (α i j)` into a single heterogeneous tuple with type
+`(k : Fin (vsum n)) → F (vflatten α k)` where `vflatten` operates on the vector of types `α`.
+
+Unlike `dflatten` which requires an explicit unified motive, `fflatten` uses `vflatten` to
+automatically construct the motive from the input type family. -/
+def fflatten₂ {A : Sort u} {B : Sort v} {F : A → B → Sort w} {m : ℕ} {n : Fin m → ℕ}
+    {α : (i : Fin m) → (j : Fin (n i)) → A} {β : (i : Fin m) → (j : Fin (n i)) → B}
+    (v : (i : Fin m) → (j : Fin (n i)) → F (α i j) (β i j)) :
+    (k : Fin (vsum n)) → F (Fin.vflatten α k) (Fin.vflatten β k) :=
+  match m with
+  | 0 => !h[]
+  | _ + 1 => fappend₂ (v 0) (fflatten₂ (fun i => v i.succ))
+
+@[simp]
+theorem fflatten₂_zero {A : Sort u} {B : Sort v} {F : A → B → Sort w} {n : Fin 0 → ℕ}
+    {α : (i : Fin 0) → (j : Fin (n i)) → A}
+    {β : (i : Fin 0) → (j : Fin (n i)) → B}
+    {v : (i : Fin 0) → (j : Fin (n i)) → F (α i j) (β i j)} : fflatten₂ v = !h[] := rfl
+
+@[simp]
+theorem fflatten₂_succ {A : Sort u} {B : Sort v} {F : A → B → Sort w} {m : ℕ} {n : Fin (m + 1) → ℕ}
+    {α : (i : Fin (m + 1)) → (j : Fin (n i)) → A}
+    {β : (i : Fin (m + 1)) → (j : Fin (n i)) → B}
+    {v : (i : Fin (m + 1)) → (j : Fin (n i)) → F (α i j) (β i j)} :
+    fflatten₂ v = fappend₂ (v 0) (fflatten₂ (fun i => v i.succ)) := rfl
+
+@[simp]
+theorem fflatten₂_one {A : Sort u} {B : Sort v} {F : A → B → Sort w} {n : Fin 1 → ℕ}
+    {α : (i : Fin 1) → (j : Fin (n i)) → A}
+    {β : (i : Fin 1) → (j : Fin (n i)) → B}
+    {v : (i : Fin 1) → (j : Fin (n i)) → F (α i j) (β i j)} :
+    fflatten₂ v = v 0 := rfl
+
+@[simp]
+theorem fflatten₂_two_eq_append {A : Sort u} {B : Sort v} {F : A → B → Sort w} {n : Fin 2 → ℕ}
+    {α : (i : Fin 2) → (j : Fin (n i)) → A}
+    {β : (i : Fin 2) → (j : Fin (n i)) → B}
+    {v : (i : Fin 2) → (j : Fin (n i)) → F (α i j) (β i j)} :
+    fflatten₂ v = fappend₂ (F := F) (v 0) (v 1) := rfl
+
+@[simp]
+theorem fflatten₂_splitSum {A : Sort u} {B : Sort v} {F : A → B → Sort w} {m : ℕ} {n : Fin m → ℕ}
+    {α : (i : Fin m) → (j : Fin (n i)) → A}
+    {β : (i : Fin m) → (j : Fin (n i)) → B}
+    (v : (k : Fin (vsum n)) → F (vflatten α k) (vflatten β k)) (k : Fin (vsum n)) :
+    fflatten₂ (fun i j => v (embedSum i j)) k = cast (by simp) (v k) := by
+  sorry
+
+@[simp]
+theorem fflatten₂_embedSum {A : Sort u} {B : Sort v} {F : A → B → Sort w} {m : ℕ} {n : Fin m → ℕ}
+    {α : (i : Fin m) → (j : Fin (n i)) → A}
+    {β : (i : Fin m) → (j : Fin (n i)) → B}
+    (v : (i : Fin m) → (j : Fin (n i)) → F (α i j) (β i j)) (i : Fin m) (j : Fin (n i)) :
+    fflatten₂ v (embedSum i j) = cast (by simp) (v i j) := by
+  sorry
+
 /-- Heterogeneous flatten: flattens a nested heterogeneous tuple
 `(i : Fin m) → (j : Fin (n i)) → α i j` into a single heterogeneous tuple with type
 `(k : Fin (vsum n)) → vflatten α k` where `vflatten` operates on the vector of types `α`.
 
-Unlike `dflatten` which requires an explicit unified motive, `tflatten` uses `vflatten` to
+Unlike `dflatten` which requires an explicit unified motive, `hflatten` uses `vflatten` to
 automatically construct the motive from the input type family. -/
-def tflatten {m : ℕ} {n : Fin m → ℕ} {α : (i : Fin m) → (j : Fin (n i)) → Sort*}
+def hflatten {m : ℕ} {n : Fin m → ℕ} {α : (i : Fin m) → (j : Fin (n i)) → Sort*}
     (v : (i : Fin m) → (j : Fin (n i)) → α i j) : (k : Fin (vsum n)) → Fin.vflatten α k :=
-  match m with
-  | 0 => !t[]
-  | _ + 1 => tappend (v 0) (tflatten (fun i => v i.succ))
+  fflatten (F := id) v
+  -- match m with
+  -- | 0 => !h[]
+  -- | _ + 1 => happend (v 0) (hflatten (fun i => v i.succ))
 
 @[simp]
-theorem tflatten_zero {n : Fin 0 → ℕ} {α : (i : Fin 0) → (j : Fin (n i)) → Sort*}
-    {v : (i : Fin 0) → (j : Fin (n i)) → α i j} : tflatten v = !t[] := rfl
+theorem hflatten_zero {n : Fin 0 → ℕ} {α : (i : Fin 0) → (j : Fin (n i)) → Sort*}
+    {v : (i : Fin 0) → (j : Fin (n i)) → α i j} : hflatten v = !h[] :=
+  fflatten_zero (F := id)
 
 @[simp]
-theorem tflatten_succ {m : ℕ} {n : Fin (m + 1) → ℕ}
+theorem hflatten_succ {m : ℕ} {n : Fin (m + 1) → ℕ}
     {α : (i : Fin (m + 1)) → (j : Fin (n i)) → Sort*}
     {v : (i : Fin (m + 1)) → (j : Fin (n i)) → α i j} :
-    tflatten v = tappend (v 0) (tflatten (fun i => v i.succ)) := rfl
+    hflatten v = happend (v 0) (hflatten (fun i => v i.succ)) :=
+  fflatten_succ (F := id)
 
 @[simp]
-theorem tflatten_one {n : Fin 1 → ℕ} {α : (i : Fin 1) → (j : Fin (n i)) → Sort*}
-    {v : (i : Fin 1) → (j : Fin (n i)) → α i j} : tflatten v = v 0 := rfl
+theorem hflatten_one {n : Fin 1 → ℕ} {α : (i : Fin 1) → (j : Fin (n i)) → Sort*}
+    {v : (i : Fin 1) → (j : Fin (n i)) → α i j} : hflatten v = v 0 :=
+  fflatten_one (F := id)
 
 @[simp]
-theorem tflatten_two_eq_append {n : Fin 2 → ℕ} {α : (i : Fin 2) → (j : Fin (n i)) → Sort*}
-    {v : (i : Fin 2) → (j : Fin (n i)) → α i j} : tflatten v = tappend (v 0) (v 1) := rfl
+theorem hflatten_two_eq_append {n : Fin 2 → ℕ} {α : (i : Fin 2) → (j : Fin (n i)) → Sort*}
+    {v : (i : Fin 2) → (j : Fin (n i)) → α i j} : hflatten v = happend (v 0) (v 1) :=
+  fflatten_two_eq_append (F := id)
 
 @[simp]
-theorem tflatten_splitSum {m : ℕ} {n : Fin m → ℕ} {α : (k : Fin (vsum n)) → Sort*}
+theorem hflatten_splitSum {m : ℕ} {n : Fin m → ℕ} {α : (k : Fin (vsum n)) → Sort*}
     (v : (k : Fin (vsum n)) → α k) (k : Fin (vsum n)) :
-    tflatten (fun i j => v (embedSum i j)) k = (vflatten_splitSum α k) ▸ (v k) := by
-  induction m with
-  | zero => exact Fin.elim0 k
-  | succ m ih =>
-    simp; sorry
+    hflatten (fun i j => v (embedSum i j)) k = cast (vflatten_splitSum α k).symm (v k) :=
+  fflatten_splitSum (F := id) v k
 
 @[simp]
-theorem tflatten_embedSum {m : ℕ} {n : Fin m → ℕ} {α : (i : Fin m) → (j : Fin (n i)) → Sort*}
+theorem hflatten_embedSum {m : ℕ} {n : Fin m → ℕ} {α : (i : Fin m) → (j : Fin (n i)) → Sort*}
     (v : (i : Fin m) → (j : Fin (n i)) → α i j) (i : Fin m) (j : Fin (n i)) :
-    tflatten v (embedSum i j) = (vflatten_embedSum α i j) ▸ (v i j) := by
-  induction m with
-  | zero => exact Fin.elim0 i
-  | succ m ih =>
-    induction i using induction with
-    | zero =>
-      simp
-      have : (dfoldrM' (m := Id) m ((fun x ↦ ℕ) ∘ succ) (fun i (acc : ℕ) ↦ n i.succ + acc) (0 : ℕ))
-        = vsum (n ∘ succ) := rfl
-      -- rw! (castMode := .all) [this]
-      sorry
-      -- rw [tappend_left (v 0) (tflatten (fun i => v i.succ)) j]
-    | succ i ih' =>
-      simp
-      sorry
-      -- exact ih (motive := fun i => α (natAdd (n 0) i) j) (fun i => v i.succ) i j
+    hflatten v (embedSum i j) = cast (vflatten_embedSum α i j).symm (v i j) :=
+  fflatten_embedSum (F := id) v i j
 
 /- The rest are old stuff... -/
 

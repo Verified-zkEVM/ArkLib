@@ -74,6 +74,20 @@ lemma dfoldl'_succ_last {n : ℕ} {α : Fin (n + 2) → Type u}
     rw [dfoldl_succ_last, dfoldl'_succ_last]
     rw [ih]
 
+/-- Left fold over `Fin n`, prime version with better defeq.
+  Automatically unfolds for `0` and `n.succ`. -/
+def foldl' {α : Type u} (n : ℕ) (f : (i : Fin n) → α → α) (init : α) : α :=
+  dfoldl' n (fun _ => α) f init
+
+-- Zero and succ lemmas for foldl' (should be rfl due to good defeq)
+@[simp]
+lemma foldl'_zero {α : Type u} (f : (i : Fin 0) → α → α) (x : α) :
+    foldl' 0 f x = x := rfl
+
+@[simp]
+lemma foldl'_succ {n : ℕ} {α : Type u} (f : (i : Fin (n + 1)) → α → α) (x : α) :
+    foldl' (n + 1) f x = f (last n) (foldl' n (fun i => f i.castSucc) x) := rfl
+
 /-- Heterogeneous right fold over `Fin n` in a monad, prime version with better defeq.
   Automatically unfolds for `0` and `n.succ`. -/
 def dfoldrM' {m : Type u → Type v} [Monad m]
@@ -126,6 +140,19 @@ lemma dfoldr'_succ {n : ℕ} {α : Fin (n + 1 + 1) → Type u}
   | succ n ih =>
     rw [dfoldr_succ, dfoldr'_succ]
     rw [ih]
+
+/-- Right fold over `Fin n`, prime version with better defeq.
+  Automatically unfolds for `0` and `n.succ`. -/
+def foldr' {α : Type u} (n : ℕ) (f : (i : Fin n) → α → α) (init : α) : α :=
+  dfoldr' n (fun _ => α) f init
+
+@[simp]
+lemma foldr'_zero {α : Type u} (f : (i : Fin 0) → α → α) (x : α) :
+    foldr' 0 f x = x := rfl
+
+@[simp]
+lemma foldr'_succ {n : ℕ} {α : Type u} (f : (i : Fin (n + 1)) → α → α) (x : α) :
+    foldr' (n + 1) f x = f 0 (foldr' n (f ∘ succ) x) := rfl
 
 -- Generic examples demonstrating the rfl behavior for arbitrary n
 section Examples

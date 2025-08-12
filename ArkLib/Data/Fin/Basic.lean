@@ -315,5 +315,4 @@ def finSuccEquivNth' (i : Fin n) : Fin n ≃ Option (Fin (n - 1)) := by
 
 end OptionEquivPrime
 
-
 end Fin
