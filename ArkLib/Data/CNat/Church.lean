@@ -28,14 +28,14 @@ This file provides a working subset that demonstrates the key ideas.
 - Alonzo Church's lambda calculus
 -/
 
-def CNat : Type := { f : Nat → Nat // ∀ x, f x.succ = (f x).succ }
+-- def CNat : Type := { f : Nat → Nat // ∀ x, f x.succ = (f x).succ }
 
--- def CNat.mul (m n : CNat) : CNat := ⟨fun x => n.1 (m.1 x), by simp⟩
+-- -- def CNat.mul (m n : CNat) : CNat := ⟨fun x => n.1 (m.1 x), by simp⟩
 
-def CNat₂ : Type := { f : CNat → CNat // ∀ g x, (f g).1 (x.succ) = ((f g).1 x).succ }
+-- def CNat₂ : Type := { f : CNat → CNat // ∀ g x, (f g).1 (x.succ) = ((f g).1 x).succ }
 
-def CNat₂.add (m n : CNat₂) : CNat₂ :=
-  ⟨fun f => ⟨fun x => (m.1 f).1 ((n.1 f).1 x), fun x => by sorry⟩, by sorry⟩
+-- def CNat₂.add (m n : CNat₂) : CNat₂ :=
+--   ⟨fun f => ⟨fun x => (m.1 f).1 ((n.1 f).1 x), fun x => by sorry⟩, by sorry⟩
 
 -- namespace CNat₂
 
