@@ -11,7 +11,6 @@ import ArkLib.Data.CNat.Church
 import ArkLib.Data.CNat.Defs
 import ArkLib.Data.Classes.DCast
 import ArkLib.Data.Classes.FunEquiv
-import ArkLib.Data.Classes.HDAppend
 import ArkLib.Data.Classes.HasPred
 import ArkLib.Data.Classes.HasSize
 import ArkLib.Data.Classes.HasSucc
