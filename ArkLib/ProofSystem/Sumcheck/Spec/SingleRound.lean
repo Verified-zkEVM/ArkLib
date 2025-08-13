@@ -301,8 +301,6 @@ def oracleReduction : OracleReduction oSpec (StmtIn R) (OStmtIn R deg) Unit
   |>.append (oracleReduction.randomQuery R deg oSpec)
   |>.append (oracleReduction.reduceClaim R deg oSpec))
 
-#print oracleReduction
-
 open NNReal
 
 variable [SelectableType R]
@@ -312,13 +310,26 @@ theorem oracleReduction_perfectCompleteness :
     (oracleReduction R deg oSpec).perfectCompleteness init impl
       (inputRelation R deg D) (outputRelation R deg) := by
   simp [oracleReduction]
-  sorry
-  -- refine OracleReduction.append_perfectCompleteness (Oₘ₁ := instOI₁)
-  --   -- (rel₂ := relationAfterRandomQuery R deg)
-  --   ((((oracleReduction.sendClaim R deg oSpec).append
-  --       (oracleReduction.checkClaim R deg oSpec)).append
-  --       (oracleReduction.randomQuery R deg oSpec)))
-  --   (oracleReduction.reduceClaim R deg oSpec) ?_ ?_
+  -- sorry
+  refine OracleReduction.append_perfectCompleteness
+    (rel₂ := relationAfterRandomQuery R deg)
+    ((((oracleReduction.sendClaim R deg oSpec).append
+        (oracleReduction.checkClaim R deg oSpec)).append
+        (oracleReduction.randomQuery R deg oSpec)))
+    (oracleReduction.reduceClaim R deg oSpec) ?_ ?_
+  · refine OracleReduction.append_perfectCompleteness
+      (rel₂ := relationAfterCheckClaim R deg)
+      ((oracleReduction.sendClaim R deg oSpec).append
+        (oracleReduction.checkClaim R deg oSpec))
+      (oracleReduction.randomQuery R deg oSpec) ?_ ?_
+    · refine OracleReduction.append_perfectCompleteness
+        (rel₂ := relationAfterSendClaim R deg D)
+        (oracleReduction.sendClaim R deg oSpec)
+        (oracleReduction.checkClaim R deg oSpec) ?_ ?_
+      · sorry
+      · sorry
+    · sorry
+  · sorry
 
 theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
     (oracleReduction R deg oSpec).verifier.rbrKnowledgeSoundness init impl
