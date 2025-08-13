@@ -6,6 +6,7 @@ import ArkLib.CommitmentScheme.MerkleTree
 import ArkLib.CommitmentScheme.SimpleRO
 import ArkLib.CommitmentScheme.Tensor
 import ArkLib.CommitmentScheme.Trivial
+import ArkLib.Data.Array.Lemmas
 import ArkLib.Data.CNat.AssocNat
 import ArkLib.Data.CNat.Church
 import ArkLib.Data.CNat.Defs
@@ -65,10 +66,13 @@ import ArkLib.Data.Fin.Tuple.TakeDrop
 import ArkLib.Data.GroupTheory.PrimeOrder
 import ArkLib.Data.Hash.DomainSep
 import ArkLib.Data.Hash.DuplexSponge
-import ArkLib.Data.Math.Basic
-import ArkLib.Data.Math.HList
+import ArkLib.Data.List.BigOperators
+import ArkLib.Data.List.HList
+import ArkLib.Data.List.Lemmas
+import ArkLib.Data.List.Vector
 import ArkLib.Data.Matrix.Basic
 import ArkLib.Data.Matrix.Sparse
+import ArkLib.Data.Misc.Basic
 import ArkLib.Data.MlPoly.Basic
 import ArkLib.Data.MlPoly.Equiv
 import ArkLib.Data.MvPolynomial.Degrees
@@ -93,6 +97,7 @@ import ArkLib.Data.Tree.General
 import ArkLib.Data.UniPoly.Basic
 import ArkLib.Data.UniPoly.BasicOld
 import ArkLib.Data.UniPoly.PolynomialReflection
+import ArkLib.Data.Vector.Basic
 import ArkLib.OracleReduction.BCS.Basic
 import ArkLib.OracleReduction.Basic
 import ArkLib.OracleReduction.Cast
