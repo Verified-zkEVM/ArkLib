@@ -143,11 +143,10 @@ def stateFunction [Inhabited OStatement] : (oracleVerifier oSpec OStatement).Sta
   toFun_next | 0 => fun hDir ⟨stmt, oStmt⟩ tr h => by simp_all
   toFun_full := fun ⟨stmt, oStmt⟩ tr h => by
     simp_all only [Fin.reduceLast, Fin.isValue, OStmtIn, Nat.reduceAdd, Fin.coe_ofNat_eq_mod,
-      Nat.reduceMod, Fin.zero_eta, Fin.castLE_refl, Matrix.cons_val_zero, eq_mp_eq_cast, cast_eq,
-      StmtOut, OStmtOut, StmtIn, StateT.run'_eq, Set.language, WitOut, relOut, Set.mem_image,
-      Set.mem_setOf_eq, Prod.exists, exists_const, exists_eq_right, probEvent_eq_zero_iff,
-      support_bind, support_map, Set.mem_iUnion, exists_and_right, exists_prop, forall_exists_index,
-      and_imp, Prod.forall]
+      Nat.reduceMod, Fin.zero_eta, StmtOut, OStmtOut, StmtIn, StateT.run'_eq, Set.language, WitOut,
+      relOut, Set.mem_image, Set.mem_setOf_eq, Prod.exists, exists_const, exists_eq_right,
+      probEvent_eq_zero_iff, support_bind, support_map, Set.mem_iUnion, exists_and_right,
+      exists_prop, forall_exists_index, and_imp, Prod.forall]
     intro a b s hs s' hSupp
     simp [OracleVerifier.toVerifier, Verifier.run, oracleVerifier] at hSupp
     simp [hSupp.1, h]
