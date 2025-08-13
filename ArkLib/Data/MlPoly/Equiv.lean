@@ -291,19 +291,16 @@ def equivMvPolynomialDeg1 : MlPoly R n ≃ R⦃≤ 1⦄[X Fin n] where
         linarith
       simp only [h_mono_ne, ↓reduceIte]
 
--- /-- Linear equivalence between `MlPoly` and `MvPolynomial.restrictDegree` -/
-noncomputable def linearEquivMvPolynomial : MlPoly R n ≃ₗ[R] R⦃≤ 1⦄[X Fin n] :=
-  { toFun := toMvPolynomialDeg1
-    invFun := ofMvPolynomialDeg1
-    left_inv := equivMvPolynomialDeg1.left_inv
-    right_inv := equivMvPolynomialDeg1.right_inv
+/-- Linear equivalence between `MlPoly` and `MvPolynomial.restrictDegree` -/
+noncomputable def linearEquivMvPolynomialDeg1 : MlPoly R n ≃ₗ[R] R⦃≤ 1⦄[X Fin n] :=
+  { toEquiv := equivMvPolynomialDeg1
     map_add' := by
       intro p q
       -- ⊢ (p + q).toMvPolynomialDeg1 = p.toMvPolynomialDeg1 + q.toMvPolynomialDeg1
       ext i
       -- ⊢ coeff i ↑(p + q).toMvPolynomialDeg1 =
       -- coeff i ↑(p.toMvPolynomialDeg1 + q.toMvPolynomialDeg1)
-      unfold toMvPolynomialDeg1
+      unfold equivMvPolynomialDeg1 toMvPolynomialDeg1
       simp only [AddMemClass.mk_add_mk, coeff_add]
       simp only [coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p := p)]
       simp only [coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p := p + q)]
@@ -317,7 +314,7 @@ noncomputable def linearEquivMvPolynomial : MlPoly R n ≃ₗ[R] R⦃≤ 1⦄[X 
     map_smul' := by
       intro r p
       ext i
-      unfold toMvPolynomialDeg1
+      unfold equivMvPolynomialDeg1 toMvPolynomialDeg1
       simp only [RingHom.id_apply, SetLike.mk_smul_mk, coeff_smul, smul_eq_mul]
       simp only [coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p := p)]
       simp only [coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p := r • p)]
