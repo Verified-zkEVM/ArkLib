@@ -197,14 +197,14 @@ The key insight is that security properties are preserved under sequential compo
 \begin{theorem}[Completeness Preservation under Append]
     \label{thm:completeness_append}
     If reductions $R_1$ and $R_2$ satisfy completeness with compatible relations and respective errors $\epsilon_1$ and $\epsilon_2$, then their sequential composition $R_1.\append\ R_2$ satisfies completeness with error $\epsilon_1 + \epsilon_2$.
-    \lean{Reduction.completeness_append}
+    \lean{Reduction.append_completeness}
     \uses{def:completeness, def:reduction_append}
 \end{theorem}
 
 \begin{theorem}[Perfect Completeness Preservation under Append]
     \label{thm:perfect_completeness_append}
     If reductions $R_1$ and $R_2$ satisfy perfect completeness with compatible relations, then their sequential composition also satisfies perfect completeness.
-    \lean{Reduction.perfectCompleteness_append}
+    \lean{Reduction.append_perfectCompleteness}
     \uses{def:perfect_completeness, def:reduction_append}
 \end{theorem}
 

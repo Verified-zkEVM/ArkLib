@@ -175,7 +175,7 @@ We define some supporting definitions for a protocol specification.
         \[ \mathsf{output} : \mathsf{PrvState}(\Fin.\mathsf{last}(n)) \to \StmtOut \times \WitOut \]
         that produces the final output statement and witness from the prover's final state.
     \end{itemize}
-    \lean{Prover, ProverState, ProverIn, ProverRound, ProverOut}
+    \lean{Prover, ProverState, ProverInput, ProverRound, ProverOutput}
 \end{definition}
 
 \begin{definition}[Type Signature of an Oracle Prover]
@@ -653,7 +653,7 @@ To define round-by-round (knowledge) soundness, we need to define the notion of 
 %     \label{def:monotone_rbr_extractor}
 %     A round-by-round extractor is \textbf{monotone} if its success probability on a given query log
 %     is the same as the success probability on any extension of that query log.
-%     \lean{Extractor.RoundByRound.IsMonotone}
+%     \lean{Extractor.RoundByRoundOneShot.IsMonotone}
 %     \uses{def:rbr_extractor}
 % \end{definition}
 
