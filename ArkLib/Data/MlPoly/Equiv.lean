@@ -6,7 +6,6 @@ Authors: Quang Dao, Chung Thai Nguyen
 
 import ArkLib.Data.MlPoly.Basic
 import ArkLib.Data.MvPolynomial.Notation
--- import Mathlib.RingTheory.MvPolynomial.Basic
 
 /-!
   # Equivalence between `MlPoly` and multilinear polynomials in `MvPolynomial`
@@ -14,17 +13,13 @@ import ArkLib.Data.MvPolynomial.Notation
   This file establishes the mathematical foundations for `MlPoly` by proving:
   1. Basis properties for the coefficient representation
   2. Change-of-basis matrices between different representations
-  3. Equivalences with mathlib's `MvPolynomial.restrictDegree`
+  3. Equivalences with mathlib's `MvPolynomial.restrictDegree`: `equivMvPolynomialDeg1`
   4. Arithmetic operation compatibilities
 -/
 
 open MvPolynomial
 
--- #check MvPolynomial.restrictDegree
-
 variable {R : Type*} [CommRing R] {n : ℕ}
-
--- def MlPolynomial R n := MvPolynomial.restrictDegree (Fin n) R 1
 
 noncomputable section
 
@@ -35,6 +30,11 @@ namespace MlPoly
   so we can differentiate them?
 -/
 
+/--
+Converts a natural number to a monomial with 0/1 exponents.
+Uses little‑endian bit encoding: bit 0 is the least significant bit.
+The exponent at variable j is `Nat.getBit j i ∈ {0,1}`.
+-/
 noncomputable def monomialOfNat (i : ℕ) : (Fin n) →₀ ℕ :=
   Finsupp.onFinset (s:=Finset.univ (α:=Fin n)) (fun j => Nat.getBit j.val i) (by
     simp only [ne_eq, Finset.mem_univ, implies_true]) -- the support set is exactly Finset.univ
@@ -75,14 +75,19 @@ theorem eq_monomialOfNat_iff_eq_bitRepr (m : Fin n →₀ ℕ)
     rw [h_i_eq_i_of_m] -- convert lhs to access bit of `binaryFinMapToNat`
     simp only [Nat.getBit_of_binaryFinMapToNat (⇑m) h_binary a, Fin.is_lt, ↓reduceDIte, Fin.eta]
 
-def toSpecMvPoly (p : MlPoly R n) : R[X Fin n] :=
+/--
+Converts an `MlPoly` to a mathlib multivariate polynomial.
+Sums over all indices `i : Fin (2^n)` with monomial exponents from `monomialOfNat i`
+and coefficients `p[i]`.
+-/
+def toMvPolynomial (p : MlPoly R n) : R[X Fin n] :=
   ∑ i : Fin (2 ^ n), MvPolynomial.monomial (monomialOfNat i) (a:=p[i])
 
--- #check (toSpecMvPoly (MlPoly.mk 2 #v[(1: ℤ), 2, 3, 4]))
+-- #check (toMvPolynomial (MlPoly.mk 2 #v[(1: ℤ), 2, 3, 4]))
 
-theorem toSpecMvPoly_is_multilinear (p : MlPoly R n) :
-  (toSpecMvPoly p) ∈ R⦃≤ 1⦄[X Fin n] := by
-  rw [toSpecMvPoly]
+theorem toMvPolynomial_is_multilinear (p : MlPoly R n) :
+  (toMvPolynomial p) ∈ R⦃≤ 1⦄[X Fin n] := by
+  rw [toMvPolynomial]
     -- ⊢ (∑ i, C p[i] * ∏ j, if { toFin := i }.getLsb j = true then X j else 1) ∈ R⦃≤ 1⦄[X Fin n]
   simp only [MvPolynomial.mem_restrictDegree]
   intro s hs k -- s is a point X where the sum evaluates to non-zero
@@ -110,8 +115,8 @@ theorem toSpecMvPoly_is_multilinear (p : MlPoly R n) :
     exact Fintype.sum_eq_zero (fun a ↦ 0) (congrFun rfl)
   exact hs h_sum_zero
 
-theorem coeff_of_toSpecMvPoly_eq_coeff_of_MlPoly (p : MlPoly R n) (m : Fin n →₀ ℕ):
-  coeff m (toSpecMvPoly p) =
+theorem coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p : MlPoly R n) (m : Fin n →₀ ℕ):
+  coeff m (toMvPolynomial p) =
     if h_binary: (∀ j: Fin n, m j ≤ 1) then
       let i_of_m: ℕ := Nat.binaryFinMapToNat (m:=m) (h_binary:=h_binary)
       p[i_of_m]
@@ -119,7 +124,7 @@ theorem coeff_of_toSpecMvPoly_eq_coeff_of_MlPoly (p : MlPoly R n) (m : Fin n →
       0
   := by
   if h_binary: (∀ j: Fin n, m j ≤ 1) then
-    unfold toSpecMvPoly
+    unfold toMvPolynomial
     simp only [h_binary, implies_true, ↓reduceDIte]
     let i_of_m := Nat.binaryFinMapToNat m h_binary
     have h_mono_eq : monomialOfNat i_of_m = m := by
@@ -149,11 +154,11 @@ theorem coeff_of_toSpecMvPoly_eq_coeff_of_MlPoly (p : MlPoly R n) (m : Fin n →
       simp only [h_mono_ne, ↓reduceIte]
     -- Goal 3: Prove `i` is in the summation set.
     · simp [Finset.mem_univ]
-  else -- this case is similar to the proof of `right_inv` in `equivSpecMonomial`
+  else -- this case is similar to the proof of `right_inv` in `equivMvPolynomialDeg1`
     simp only [h_binary, ↓reduceDIte]
-    -- ⊢ coeff m p.toSpecMvPoly = 0
-    have hv := toSpecMvPoly_is_multilinear p
-    let vMlPoly: R⦃≤ 1⦄[X Fin n] := ⟨p.toSpecMvPoly, hv⟩
+    -- ⊢ coeff m p.toMvPolynomial = 0
+    have hv := toMvPolynomial_is_multilinear p
+    let vMlPoly: R⦃≤ 1⦄[X Fin n] := ⟨p.toMvPolynomial, hv⟩
     have h_v_coeff_zero : vMlPoly.val.coeff m = 0 := by
       refine notMem_support_iff.mp ?_
       by_contra h_mem_support
@@ -167,23 +172,35 @@ theorem coeff_of_toSpecMvPoly_eq_coeff_of_MlPoly (p : MlPoly R n) (m : Fin n →
       exact h_not_1_lt_m_j hj
     exact h_v_coeff_zero
 
-def toSpecMonomial (p : MlPoly R n) : R⦃≤ 1⦄[X Fin n] :=
-  ⟨toSpecMvPoly p, by exact toSpecMvPoly_is_multilinear p⟩
+/--
+Converts an `MlPoly` to a mathlib restricted-degree multivariate polynomial.
+Wraps `toMvPolynomial` with a proof that the result is multilinear (i.e. individual degrees ≤ 1).
+-/
+def toMvPolynomialDeg1 (p : MlPoly R n) : R⦃≤ 1⦄[X Fin n] :=
+  ⟨toMvPolynomial p, by exact toMvPolynomial_is_multilinear p⟩
 
-def ofSpecMonomial (p : R⦃≤ 1⦄[X Fin n]) : MlPoly R n :=
+/--
+Converts a mathlib restricted-degree multivariate polynomial to an `MlPoly`.
+Extracts coefficients using `monomialOfNat` to map indices to monomials.
+-/
+def ofMvPolynomialDeg1 (p : R⦃≤ 1⦄[X Fin n]) : MlPoly R n :=
   Vector.ofFn (fun i : Fin (2 ^ n) => p.val.coeff (monomialOfNat i))
 
 -- #eval finFunctionFinEquiv.invFun (⟨3, by omega⟩: Fin (2^2)) 4
 -- #eval Nat.getBit (k:=4) (n:=3)
 
-def equivSpecMonomial : MlPoly R n ≃ R⦃≤ 1⦄[X Fin n] where
-  toFun := toSpecMonomial
-  invFun := ofSpecMonomial
+/--
+Equivalence between `MlPoly` and mathlib's restricted-degree multivariate polynomials.
+Establishes that both representations are isomorphic via coefficient extraction/insertion.
+-/
+def equivMvPolynomialDeg1 : MlPoly R n ≃ R⦃≤ 1⦄[X Fin n] where
+  toFun := toMvPolynomialDeg1
+  invFun := ofMvPolynomialDeg1
   left_inv v := by
-    unfold ofSpecMonomial toSpecMonomial
+    unfold ofMvPolynomialDeg1 toMvPolynomialDeg1
     apply Vector.ext; intro j x
     simp only [Vector.getElem_ofFn]
-    simp only [toSpecMvPoly, Fin.getElem_fin]
+    simp only [toMvPolynomial, Fin.getElem_fin]
     -- ⊢ coeff (monomialOfNat j) (∑ x, (monomial (monomialOfNat ↑x)) v[↑x]) = v[j]
     rw [MvPolynomial.coeff_sum]
     -- ⊢ ∑ x, coeff (monomialOfNat j) ((monomial (monomialOfNat ↑x)) v[↑x]) = v[j]
@@ -216,7 +233,7 @@ def equivSpecMonomial : MlPoly R n ≃ R⦃≤ 1⦄[X Fin n] where
         exact Finset.mem_univ (⟨j, x⟩: Fin (2^n))
       contradiction
   right_inv v := by
-    unfold toSpecMonomial ofSpecMonomial toSpecMvPoly
+    unfold toMvPolynomialDeg1 ofMvPolynomialDeg1 toMvPolynomial
     simp only [Fin.getElem_fin, Vector.getElem_ofFn]
     -- ⊢ ⟨∑ x, (monomial (monomialOfNat ↑x)) (coeff (monomialOfNat ↑x) ↑v), ⋯⟩ = v
     ext m
@@ -276,20 +293,21 @@ def equivSpecMonomial : MlPoly R n ≃ R⦃≤ 1⦄[X Fin n] where
 
 -- /-- Linear equivalence between `MlPoly` and `MvPolynomial.restrictDegree` -/
 noncomputable def linearEquivMvPolynomial : MlPoly R n ≃ₗ[R] R⦃≤ 1⦄[X Fin n] :=
-  { toFun := toSpecMonomial
-    invFun := ofSpecMonomial
-    left_inv := equivSpecMonomial.left_inv
-    right_inv := equivSpecMonomial.right_inv
+  { toFun := toMvPolynomialDeg1
+    invFun := ofMvPolynomialDeg1
+    left_inv := equivMvPolynomialDeg1.left_inv
+    right_inv := equivMvPolynomialDeg1.right_inv
     map_add' := by
       intro p q
-      -- ⊢ (p + q).toSpecMonomial = p.toSpecMonomial + q.toSpecMonomial
+      -- ⊢ (p + q).toMvPolynomialDeg1 = p.toMvPolynomialDeg1 + q.toMvPolynomialDeg1
       ext i
-      -- ⊢ coeff i ↑(p + q).toSpecMonomial = coeff i ↑(p.toSpecMonomial + q.toSpecMonomial)
-      unfold toSpecMonomial
+      -- ⊢ coeff i ↑(p + q).toMvPolynomialDeg1 =
+      -- coeff i ↑(p.toMvPolynomialDeg1 + q.toMvPolynomialDeg1)
+      unfold toMvPolynomialDeg1
       simp only [AddMemClass.mk_add_mk, coeff_add]
-      simp only [coeff_of_toSpecMvPoly_eq_coeff_of_MlPoly (p := p)]
-      simp only [coeff_of_toSpecMvPoly_eq_coeff_of_MlPoly (p := p + q)]
-      simp only [coeff_of_toSpecMvPoly_eq_coeff_of_MlPoly (p := q)]
+      simp only [coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p := p)]
+      simp only [coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p := p + q)]
+      simp only [coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p := q)]
       if h_binary: (∀ j: Fin n, i j ≤ 1) then
         simp only [h_binary, implies_true, ↓reduceDIte]
         conv_lhs => enter [1]; change MlPoly.add p q
@@ -299,10 +317,10 @@ noncomputable def linearEquivMvPolynomial : MlPoly R n ≃ₗ[R] R⦃≤ 1⦄[X 
     map_smul' := by
       intro r p
       ext i
-      unfold toSpecMonomial
+      unfold toMvPolynomialDeg1
       simp only [RingHom.id_apply, SetLike.mk_smul_mk, coeff_smul, smul_eq_mul]
-      simp only [coeff_of_toSpecMvPoly_eq_coeff_of_MlPoly (p := p)]
-      simp only [coeff_of_toSpecMvPoly_eq_coeff_of_MlPoly (p := r • p)]
+      simp only [coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p := p)]
+      simp only [coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p := r • p)]
       if h_binary: (∀ j: Fin n, i j ≤ 1) then
         simp only [h_binary, implies_true, ↓reduceDIte]
         conv_lhs => enter [1]; change MlPoly.smul r p

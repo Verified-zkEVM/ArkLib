@@ -24,6 +24,7 @@ def nil {α} : Vector α 0 := ⟨#[], rfl⟩ -- Vector.emptyWithCapacity 0
 def cons {α} {n : ℕ} (hd : α) (tl : Vector α n) : Vector α (n + 1) :=
   tl.insertIdx 0 hd
 
+@[simp]
 theorem head_cons {α} {n : ℕ} (hd : α) (tl : Vector α n) : (cons hd tl).head = hd := by
   simp only [head, cons, insertIdx_zero, getElem_cast, zero_lt_one, getElem_append_left, getElem_mk,
     List.getElem_toArray, List.getElem_cons_zero]
@@ -54,6 +55,7 @@ lemma cons_get_eq {α} {n : ℕ} (hd : α) (tl : Vector α n) (i : Fin (n+1)) :
     simp only [List.size_toArray, List.length_cons, List.length_nil, zero_add]
     omega
 
+@[simp]
 lemma cons_empty_tail_eq_nil {α} (hd : α) (tl : Vector α 0) :
     cons hd tl = ⟨#[hd], rfl⟩ := by
   apply Vector.toArray_inj.mp
@@ -65,6 +67,7 @@ lemma cons_empty_tail_eq_nil {α} (hd : α) (tl : Vector α 0) :
   rw [hl_toArray]
   simp only [Array.push_empty]
 
+@[simp]
 theorem tail_cons {α} {n : ℕ} (hd : α) (tl : Vector α n) : (cons hd tl).tail = tl := by
   rw [cons, Vector.insertIdx]
   simp only [Nat.add_one_sub_one, Array.insertIdx_zero, tail_eq_cast_extract, extract_mk,
@@ -73,6 +76,7 @@ theorem tail_cons {α} {n : ℕ} (hd : α) (tl : Vector α n) : (cons hd tl).tai
     List.length_nil, zero_add, tsub_self, Array.take_eq_extract, Array.empty_append, cast_mk, mk_eq,
     Array.extract_eq_self_iff, size_toArray, le_refl, and_self, or_true]
 
+@[simp]
 theorem cons_toList_eq_List_cons {α} {n : ℕ} (hd : α) (tl : Vector α n) :
     (cons hd tl).toList = hd :: tl.toList := by
   simp only [toList, cons, insertIdx]
@@ -154,7 +158,7 @@ theorem zipWith_cons {α β γ} {n : ℕ} (f : α → β → γ)
 @[inherit_doc]
 scoped notation:80 a " *ᵥ " b => dotProduct a b
 
-def dotProduct_cons (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
+lemma dotProduct_cons (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
   dotProduct (cons a b) (cons c d) = a * c + dotProduct b d := by
   unfold dotProduct
   rw [zipWith_cons]
@@ -163,7 +167,7 @@ def dotProduct_cons (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
   rw [List.foldl_eq_of_comm' (hf:=by exact fun a b c ↦ add_right_comm a b c)]
   rw [add_comm]
 
-def dotProduct_root_cons (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
+lemma dotProduct_root_cons (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
     _root_.dotProduct (cons a b).get (cons c d).get = a * c + _root_.dotProduct b.get d.get := by
   unfold _root_.dotProduct
   if h_n: n = 0 then
