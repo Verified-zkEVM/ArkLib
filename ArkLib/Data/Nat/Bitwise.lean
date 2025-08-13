@@ -20,6 +20,12 @@ import Mathlib.Algebra.BigOperators.Fin
 
 namespace Nat
 
+-- Note: this is already done with `Nat.sub_add_eq_max`
+theorem max_eq_add_sub {m n : Nat} : Nat.max m n = m + (n - m) := by
+  by_cases h : n ≤ m
+  · simp [Nat.sub_eq_zero_of_le, h]
+  · simp only [Nat.max_eq_right (Nat.le_of_not_le h), Nat.add_sub_of_le (Nat.le_of_not_le h)]
+
 /--
 Returns the `k`-th least significant bit of a natural number `n` as a natural number (in `{0, 1}`).
 
@@ -40,7 +46,8 @@ lemma testBit_false_eq_getBit_eq_0 (k n : Nat) :
     and_one_is_mod]
 
 def popCount (n : Nat) := (Nat.digits 2 n).sum
-#eval Nat.popCount 13
+
+-- #eval Nat.popCount 13
 
 lemma getBit_lt_2 {k n : Nat} : getBit k n < 2 := by
   unfold getBit

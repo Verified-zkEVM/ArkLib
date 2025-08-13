@@ -4,11 +4,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen
 -/
 
--- import Mathlib.Data.Matrix.Mul
 import ArkLib.Data.Nat.Bitwise
 import Mathlib.RingTheory.MvPolynomial.Basic
 import ToMathlib.General
 import ArkLib.Data.Fin.BigOperators
+import ArkLib.Data.List.Lemmas
+import ArkLib.Data.Vector.Basic
 
 /-!
   # Multilinear Polynomials
@@ -16,8 +17,8 @@ import ArkLib.Data.Fin.BigOperators
   This file defines computable representations of **multilinear polynomials**.
 
   The first representation is by their coefficients, and the second representation is by their
-  evaluations over the Boolean hypercube `{0,1}^n`. Both representations are defined as `Array`s of
-  size `2^n`, where `n` is the number of variables. We will define operations on these
+  evaluations over the Boolean hypercube `{0,1}^n`. Both representations are defined as `Vector`s of
+  length `2^n`, where `n` is the number of variables. We will define operations on these
   representations, and prove equivalence between them, and with the standard Mathlib definition of
   multilinear polynomials, which is the type `R⦃≤ 1⦄[X Fin n]` (notation for
   `MvPolynomial.restrictDegree (Fin n) R 1`).
@@ -26,182 +27,9 @@ import ArkLib.Data.Fin.BigOperators
   - The abstract formula for `monoToLagrange` (zeta formula) and `lagrangeToMono` (mobius formula)
 -/
 
-namespace Vector
-
--- TODO: deprecate `nil` and `cons`, and use existing `Vector` definitions (like `insertIdx`)
-
-def nil {α} : Vector α 0 := ⟨#[], rfl⟩ -- Vector.emptyWithCapacity 0
-
-def cons {α} {n : ℕ} (hd : α) (tl : Vector α n) : Vector α (n + 1) :=
-  tl.insertIdx 0 hd
-
-theorem head_cons {α} {n : ℕ} (hd : α) (tl : Vector α n) : (cons hd tl).head = hd := by
-  simp only [head, cons, insertIdx_zero, getElem_cast, zero_lt_one, getElem_append_left, getElem_mk,
-    List.getElem_toArray, List.getElem_cons_zero]
-
-lemma cons_get_eq {α} {n : ℕ} (hd : α) (tl : Vector α n) (i : Fin (n+1)) :
-    (cons hd tl).get i =
-      if hi: i.val == 0 then hd else tl.get (⟨i.val - 1, by
-        simp only [beq_iff_eq, Fin.val_eq_zero_iff] at hi
-        apply Nat.sub_lt_left_of_lt_add
-        · by_contra hi_ne_gt_1
-          simp only [not_le, Nat.lt_one_iff, Fin.val_eq_zero_iff] at hi_ne_gt_1
-          contradiction
-        · have hi_lt:= i.isLt; omega
-      ⟩) := by
-  if h_i_val: i.val = 0 then
-    have h_i: i = 0 := by exact Eq.symm (Fin.eq_of_val_eq (id (Eq.symm h_i_val)))
-    subst h_i
-    simp only [h_i_val, beq_iff_eq, ↓reduceDIte]
-    simp only [cons, get, insertIdx] -- unfold everything
-    simp only [Array.insertIdx_zero, Fin.coe_cast, Fin.coe_ofNat_eq_mod, Nat.zero_mod,
-      List.size_toArray, List.length_cons, List.length_nil, zero_add, zero_lt_one,
-      Array.getElem_append_left, List.getElem_toArray, List.getElem_cons_zero]
-  else
-    simp only [h_i_val, beq_iff_eq, ↓reduceDIte]
-    simp only [cons, get, insertIdx] -- unfold everything
-    simp only [Array.insertIdx_zero, Fin.coe_cast, Fin.cast_mk, getElem_toArray]
-    apply Array.getElem_append_right -- key counterpart for cons_get_eq in `Array` realm
-    simp only [List.size_toArray, List.length_cons, List.length_nil, zero_add]
-    omega
-
-lemma cons_empty_tail_eq_nil {α} (hd : α) (tl : Vector α 0) :
-    cons hd tl = ⟨#[hd], rfl⟩ := by
-  apply Vector.toArray_inj.mp
-  simp only [Nat.reduceAdd]
-  rw [cons]
-  simp only [insertIdx_size_self, toArray_push]
-  have hl_toArray: tl.toArray = #[] := by
-    simp only [toArray_eq_empty_iff]
-  rw [hl_toArray]
-  simp only [Array.push_empty]
-
-theorem tail_cons {α} {n : ℕ} (hd : α) (tl : Vector α n) : (cons hd tl).tail = tl := by
-  rw [cons, Vector.insertIdx]
-  simp only [Nat.add_one_sub_one, Array.insertIdx_zero, tail_eq_cast_extract, extract_mk,
-    Array.extract_append, List.extract_toArray, List.extract_eq_drop_take, add_tsub_cancel_right,
-    List.drop_succ_cons, List.drop_nil, List.take_nil, List.size_toArray, List.length_cons,
-    List.length_nil, zero_add, tsub_self, Array.take_eq_extract, Array.empty_append, cast_mk, mk_eq,
-    Array.extract_eq_self_iff, size_toArray, le_refl, and_self, or_true]
-
-theorem cons_toList_eq_List_cons {α} {n : ℕ} (hd : α) (tl : Vector α n) :
-    (cons hd tl).toList = hd :: tl.toList := by
-  simp only [toList, cons, insertIdx]
-  rw [Array.toList_insertIdx]
-  simp only [List.insertIdx_zero]
-
-theorem foldl_succ
- {α β} {n : ℕ} [NeZero n] (f : β → α → β) (init : β) (v : Vector α n) :
-  v.foldl (f:=f) (b:=init) = v.tail.foldl (f:=f) (b:=f init v.head) := by
-  simp_rw [Vector.foldl] -- get
-  simp only [size_toArray]
-  have hl_foldl_eq_toList_foldl := Array.foldl_toList (f:=f) (init:=init) (xs:=v.toArray)
-  have hl_foldl_eq: Array.foldl f init v.toArray 0 n = Array.foldl f init v.toArray := by
-    simp only [size_toArray]
-  conv_lhs =>
-    rw [hl_foldl_eq, hl_foldl_eq_toList_foldl.symm]
-  have hr_foldl_eq_toList_foldl_tail := Array.foldl_toList (f:=f) (init:=f init v.head)
-    (xs:=(v.tail.toArray))
-  have hr_foldl_eq: Array.foldl f (f init v.head) v.tail.toArray 0 (n - 1)
-    = Array.foldl f (f init v.head) v.tail.toArray := by
-    simp only [size_toArray] -- Array.foldl_congr
-  conv_rhs =>
-    rw [hr_foldl_eq, hr_foldl_eq_toList_foldl_tail.symm]
-  rw [Vector.head]
-  have h_v_toList_length: 0 < v.toList.length := by
-    simp only [length_toList]
-    exact Nat.pos_of_neZero n
-  rw [←Vector.getElem_toList (h:=h_v_toList_length)]
-  have h_toList_eq: v.toArray.toList = v.toList := rfl
-  rw [Vector.tail]
-  simp only [toArray_cast, toArray_extract, Array.toList_extract, List.extract_eq_drop_take,
-    List.drop_one]
-  simp_rw [h_toList_eq]
-  -- ⊢ List.foldl f init v.toList
-  -- = List.foldl f (f init v.toList[0]) (List.take (n - 1) v.toList.tail)
-  have hTakeTail: List.take (n - 1) v.toList.tail = v.toList.tail := by
-    simp only [List.take_eq_self_iff, List.length_tail, length_toList, le_refl]
-  rw [hTakeTail]
-  have h_v_eq_cons: v.toList = v.head :: (v.toList.tail) := by
-    cases h_list : v.toList with
-    | nil =>
-      have h_len : v.toList.length = 0 := by rw [h_list, List.length_nil]
-      omega
-    | cons hd tl =>
-      have h_v_head: v.head = v.toList[0] := rfl
-      simp_rw [h_v_head]
-      have h_hd: hd = v.toList[0] := by simp only [h_list, List.getElem_cons_zero]
-      simp only [List.tail_cons, List.cons.injEq, and_true]
-      simp_rw [h_hd]
-  conv_lhs => rw [h_v_eq_cons]
-  rw [List.foldl_cons]
-  rfl
-
-theorem foldl_eq_toList_foldl {α β} {n : ℕ} (f : β → α → β) (init : β) (v : Vector α n) :
-  v.foldl (f:=f) (b:=init) = v.toList.foldl (f:=f) (init:=init) := by
-  rw [Vector.foldl]
-  rw [←Array.foldl_toList]
-  rfl
-
-#eval cons (hd:=6) (tl:=⟨#[2, 3], rfl⟩)
-
-variable {R : Type*} [Mul R] [AddCommMonoid R] {n : ℕ}
-
-/-- Inner product between two vectors of the same size. Should be faster than `_root_.dotProduct`
-    due to efficient operations on `Array`s. -/
-def dotProduct (a b : Vector R n) : R :=
-  a.zipWith (· * ·) b |>.foldl (· + ·) 0
-
-theorem zipWith_cons {α β γ} {n : ℕ} (f : α → β → γ)
-    (a : α) (b : Vector α n) (c : β) (d : Vector β n) :
-    zipWith f (cons a b) (cons c d) = cons (f a c) (zipWith f b d) := by
-  apply Vector.toList_inj.mp
-  conv_lhs => simp only [toList_zipWith]
-  simp_rw [cons_toList_eq_List_cons]
-  rw [List.zipWith_cons_cons]
-  conv_rhs => rw [toList_zipWith]
-
-scoped notation:80 a " *ᵥ " b => dotProduct a b
-
-def dotProduct_cons (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
-  dotProduct (cons a b) (cons c d) = a * c + dotProduct b d := by
-  unfold dotProduct
-  rw [zipWith_cons]
-  simp_rw [foldl_eq_toList_foldl]
-  rw [cons_toList_eq_List_cons]
-  rw [List.foldl_eq_of_comm' (hf:=by exact fun a b c ↦ add_right_comm a b c)]
-  rw [add_comm]
-
-def dotProduct_root_cons (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
-    _root_.dotProduct (cons a b).get (cons c d).get = a * c + _root_.dotProduct b.get d.get := by
-  unfold _root_.dotProduct
-  if h_n: n = 0 then
-    subst h_n
-    simp only [cons_empty_tail_eq_nil]
-    simp only [Nat.reduceAdd, Finset.univ_unique, Fin.default_eq_zero, Fin.isValue,
-      Finset.sum_singleton, Finset.univ_eq_empty, Finset.sum_empty, add_zero]
-    rfl
-  else
-    -- ⊢ ∑ i, (cons a b).get i * (cons c d).get i = a * c + ∑ i, b.get i * d.get i
-    rw [Fin.sum_univ_succ]
-    rw [cons_get_eq, cons_get_eq]
-    simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, BEq.rfl, ↓reduceDIte]
-    congr
-    funext i
-    simp_rw [cons_get_eq]
-    simp only [Fin.val_succ, Nat.reduceBeqDiff, Bool.false_eq_true, ↓reduceDIte,
-      add_tsub_cancel_right, Fin.eta]
-
--- theorem dotProduct_eq_matrix_dotProduct (a b : Vector R n) :
---     dotProduct a b = _root_.dotProduct a.get b.get := by
---   refine Vector.induction₂ ?_ (fun hd tl hd' tl' ih => ?_) a b
---   · simp [nil, dotProduct, _root_.dotProduct]
---   · rw [dotProduct_cons, dotProduct_root_cons, ih]
-
-end Vector
 
 /-- `MlPoly n R` is the type of multilinear polynomials in `n` variables over a ring `R`. It is
-  represented by its monomial coefficients as an `Array` of size `2^n`.
+  represented by its monomial coefficients as a `Vector` of length `2^n`.
   The indexing is **little-endian** (i.e. the least significant bit is the first bit). -/
 @[reducible]
 def MlPoly (R : Type*) (n : ℕ) := Vector R (2 ^ n) -- coefficient of monomial basis
@@ -217,11 +45,11 @@ def MlPolyEval.mk {R : Type*} (n : ℕ) (v : Vector R (2 ^ n)) : MlPolyEval R n 
 
 variable {R : Type*} {n : ℕ}
 
--- Note: `finFunctionFinEquiv` gives a big-endian mapping from `Fin (2 ^ n)` to `Fin n → Fin 2`
--- i.e. `6 : Fin 8` is mapped to `[0, 1, 1]`
-#check finFunctionFinEquiv
+-- Note: `finFunctionFinEquiv` maps `i : Fin (2 ^ n)` to its bit-vector in little‑endian order,
+-- with bit 0 the least significant bit. For example, `6 : Fin 8` maps to `[0, 1, 1]`.
+-- #check finFunctionFinEquiv
 
-#check Pi.single
+-- #check Pi.single
 
 namespace MlPoly
 
@@ -315,14 +143,21 @@ section MlPolyMonomialBasisAndEvaluations
 variable [CommRing R]
 variable {S : Type*} [CommRing S]
 
+/-
+Monomial-basis evaluations at point `w`.
+
+Returns the length-`2^n` vector whose index `i : Fin (2^n)` encodes a Boolean vector in
+little‑endian order (bit 0 is the least significant bit). The entry at `i` is
+`∏_{j < n} (if the j-th bit of i is 1 then w[j] else 1)`.
+-/
 def monomialBasis (w : Vector R n) : Vector R (2 ^ n) :=
   Vector.ofFn (fun i => ∏ j : Fin n, if (BitVec.ofFin i).getLsb j then w[j] else 1)
 
 @[simp]
 theorem monomialBasis_zero {w : Vector R 0} : monomialBasis w = #v[1] := by rfl
 
-#eval monomialBasis #v[(1 : ℤ), 2, 3] (n := 3)
-#eval Nat.digits 2 8
+-- #eval monomialBasis #v[(1 : ℤ), 2, 3] (n := 3)
+-- #eval Nat.digits 2 8
 
 /-- The `i`-th element of `monomialBasis w` is the product of `w[j]` if the `j`-th bit of `i` is 1,
     and `1` if the `j`-th bit of `i` is 0. -/
@@ -439,26 +274,22 @@ section MlPolyLagrangeBasisAndEvaluations
 variable [CommRing R]
 variable {S : Type*} [CommRing S]
 
--- /--
--- Computes the Lagrange basis polynomials for multilinear extension.
+/-- Lagrange (hypercube) basis at point `w`.
 
--- Given a point `w ∈ R^n`, this function returns a vector `v` of size `2^n` such that:
--- `v[nat(x)] = eq(w, x)` for all `x ∈ {0,1}^n`
-
--- where:
--- - `nat(x)` converts the binary vector `x = [x₀, x₁, ..., xₙ₋₁]` to its ℕ representation
---   `nat(x) = x₀ · 2^0 + x₁ · 2^1 + ... + xₙ₋₁ · 2^(n-1)` (x₀ is the least significant bit)
--- - `eq(w, x) = ∏ᵢ (wᵢ · xᵢ + (1 - wᵢ) · (1 - xᵢ))` is the multilinear extension
---   of the equality function
-
+Returns the length-`2^n` vector `v` such that for any `x ∈ {0,1}^n`, letting
+`i = ∑_{j=0}^{n-1} x_j · 2^j` (little‑endian indexing), we have
+`v[i] = ∏_{j < n} (x_j · w[j] + (1 - x_j) · (1 - w[j]))`.
+Equivalently, for `i : Fin (2^n)`,
+`v[i] = ∏_{j < n}, (if the j-th bit of i is 1 then w[j] else 1 - w[j])`.
+-/
 def lagrangeBasis (w : Vector R n) : Vector R (2 ^ n) :=
   Vector.ofFn (fun i => ∏ j : Fin n, if (BitVec.ofFin i).getLsb j then w[j] else 1 - w[j])
 
 @[simp]
 theorem lagrangeBasis_zero {w : Vector R 0} : lagrangeBasis w = #v[1] := by rfl
 
-#eval lagrangeBasis #v[(1 : ℤ), 2, 3] (n := 3)
-#eval Nat.digits 2 8
+-- #eval lagrangeBasis #v[(1 : ℤ), 2, 3] (n := 3)
+-- #eval Nat.digits 2 8
 
 /-- The `i`-th element of `lagrangeBasis w` is the product of `w[j]` if the `j`-th bit of `i` is 1,
     and `1 - w[j]` if the `j`-th bit of `i` is 0. -/
@@ -469,6 +300,7 @@ theorem lagrangeBasis_getElem {w : Vector R n} (i : Fin (2 ^ n)) :
 
 variable {S : Type*} [CommRing S]
 
+/-- Map a ring homomorphism over a `MlPolyEval` -/
 def map (f : R →+* S) (p : MlPolyEval R n) : MlPolyEval S n :=
   Vector.map (fun a => f a) p
 
@@ -476,65 +308,14 @@ def map (f : R →+* S) (p : MlPolyEval R n) : MlPolyEval S n :=
 def eval (p : MlPolyEval R n) (x : Vector R n) : R :=
   Vector.dotProduct p (lagrangeBasis x)
 
+/-- Evaluate a `MlPolyEval` at a point using a ring homomorphism -/
 def eval₂ (p : MlPolyEval R n) (f : R →+* S) (x : Vector S n) : S := eval (map f p) x
 
 -- Theorems about evaluations
 
--- Evaluation at a point in the Boolean hypercube is equal to the corresponding evaluation in the
--- array
--- theorem eval_eq_eval_array (p : MlPoly R) (x : Array Bool) (h : x.size = p.nVars): eval p
--- x.map (fun b => b) = p.evals.get! (x.foldl (fun i elt => i * 2 + elt) 0) := by unfold eval unfold
--- dotProduct simp [↓reduceIte, h] sorry
 end MlPolyLagrangeBasisAndEvaluations
+
 end MlPolyEval
-
-section ListFoldLemmas
-universe u v
-
-theorem List.append_getLast_dropLast {α : Type u} (l : List α) (h : l ≠ []) :
-  l.dropLast ++ [l.getLast h] = l := by
-  induction l with
-  | nil =>
-    contradiction
-  | cons hd tl ih =>
-    cases tl with
-    | nil =>
-      simp [List.dropLast, List.getLast]
-    | cons hd' tl' =>
-      simp only [List.dropLast_cons₂, List.getLast]
-      simp only [List.cons_append, List.cons.injEq, true_and]
-      apply ih
-
-theorem List.foldl_split_outer {α : Type u} {β : Type v} (f : α → β → α) (init : α)
-    (l : List β) (h : l ≠ []): List.foldl (f:=f) (init:=init) (l)
-    = f (List.foldl (f:=f) (init:=init) (l.dropLast)) (l.getLast (by omega)) := by
-  conv_lhs => rw [← List.append_getLast_dropLast l h]
-  rw [List.foldl_append]
-  rfl
-
-theorem List.foldl_split_inner {α : Type u} {β : Type v} (f : α → β → α) (init : α)
-    (l : List β) (h : l ≠ []): List.foldl (f:=f) (init:=init) (l)
-    = List.foldl (f:=f) (init:=f (init) (l.head (by omega))) (l.tail) := by
-  have h_l_eq: l = List.cons (l.head (by omega)) (l.tail) := by
-    exact Eq.symm (List.head_cons_tail l h)
-  conv_lhs => enter [3]; rw [h_l_eq]
-  rw [List.foldl_cons]
-
-theorem List.foldr_split_outer {α : Type u} {β : Type v} (f : α → β → β) (init : β)
-    (l : List α) (h : l ≠ []): List.foldr (f:=f) (init:=init) (l)
-    = f (l.head (by omega)) (List.foldr (f:=f) (init:=init) (l.tail)) := by
-  have h_l_eq: l = List.cons (l.head (by omega)) (l.tail) := by
-    exact Eq.symm (List.head_cons_tail l h)
-  conv_lhs => enter [3]; rw [h_l_eq]
-  rw [List.foldr_cons]
-
-theorem List.foldr_split_inner {α : Type u} {β : Type v} (f : α → β → β) (init : β)
-    (l : List α) (h : l ≠ []): List.foldr (f:=f) (init:=init) (l)
-    = List.foldr (f:=f) (init:=f (l.getLast (by omega)) (init)) (l.dropLast) := by
-  conv_lhs => rw [← List.append_getLast_dropLast l h]
-  rw [List.foldr_append]
-  rfl
-end ListFoldLemmas
 
 namespace MlPoly
 
@@ -549,7 +330,7 @@ If the `j`‑th least significant bit of the index `i` is `1`, we replace `v[i]`
 `v[i] + v[i with bit j cleared]`; otherwise we leave it unchanged. -/
 @[inline] def monoToLagrangeLevel {n : ℕ} (j : Fin n) : Vector R (2 ^ n) → Vector R (2 ^ n) :=
   fun v =>
-    letI stride : ℕ := 2 ^ j.val    -- distance to the "partner" index
+    let stride : ℕ := 2 ^ j.val    -- distance to the "partner" index
     Vector.ofFn (fun i : Fin (2 ^ n) =>
       if (BitVec.ofFin i).getLsb j then
         v[i] + v[i - stride]'(Nat.sub_lt_of_lt i.isLt)
@@ -566,7 +347,7 @@ If the `j`‑th least significant bit of the index `i` is `1`, we replace `v[i]`
 `v[i] - v[i with bit j cleared]`; otherwise we leave it unchanged. -/
 @[inline] def lagrangeToMonoLevel {n : ℕ} (j : Fin n) : Vector R (2 ^ n) → Vector R (2 ^ n) :=
   fun v =>
-    letI stride : ℕ := 2 ^ j.val  -- distance to the "partner" index
+    let stride : ℕ := 2 ^ j.val  -- distance to the "partner" index
     Vector.ofFn (fun i : Fin (2 ^ n) =>
       if (BitVec.ofFin i).getLsb j then
         v[i] - v[i - stride]'(Nat.sub_lt_of_lt i.isLt)
@@ -579,8 +360,10 @@ def lagrangeToMono (n : ℕ) :
     Vector R (2 ^ n) → Vector R (2 ^ n) :=
   (List.finRange n).foldr (fun h acc => lagrangeToMonoLevel h acc)
 
-/-- The O(n^3) computable version of the Mobius Transform -/
-def lagrangeToMono_computable (p : MlPolyEval R n) : MlPolyEval R n :=
+/-- The O(n^3) computable version of the Mobius Transform, serving as the spec.
+
+TODO: prove equivalence between `lagrangeToMono` and `lagrangeToMonoSpec` -/
+def lagrangeToMonoSpec (p : MlPolyEval R n) : MlPolyEval R n :=
   -- We define the output vector by specifying the value for each entry `i`.
   Vector.ofFn (fun i =>
     -- For each output entry `i`, we compute a sum over all possible input indices `j`.
@@ -598,8 +381,8 @@ def lagrangeToMono_computable (p : MlPolyEval R n) : MlPolyEval R n :=
     )
   )
 
-#eval lagrangeToMono 2 #v[(78 : ℤ), 3, 4, 100]
-#eval lagrangeToMono_computable (n:=2) #v[(78 : ℤ), 3, 4, 100]
+-- #eval lagrangeToMono 2 #v[(78 : ℤ), 3, 4, 100]
+-- #eval lagrangeToMonoSpec (n:=2) #v[(78 : ℤ), 3, 4, 100]
 
 def forwardRange (n : ℕ) (r : Fin (n)) (l : Fin (r.val + 1)) : List (Fin n) :=
   let len := r.val - l.val + 1
@@ -744,14 +527,16 @@ theorem lagrangeToMonoLevel_monoToLagrangeLevel_id (v : Vector R (2 ^ n)) (i : F
   lagrangeToMonoLevel i (monoToLagrangeLevel i v) = v := by
   unfold lagrangeToMonoLevel monoToLagrangeLevel
   simp only [Vector.getElem_ofFn]
-  ext i1
+  ext i1 i1_isLt
   simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin, Vector.getElem_ofFn]
   if h_i1_testBit: i1.testBit i.val = true then
     simp only [h_i1_testBit, ↓reduceIte]
     have h_testBit_sub_two_pow := testBit_of_sub_two_pow_of_bit_1 h_i1_testBit
     simp only [h_testBit_sub_two_pow, Bool.false_eq_true, ↓reduceIte]
+    have hi1_lt : i1 < 2 ^ n := by
+      simpa using i1_isLt
     have h_id_lt: i1 - 2 ^ i.val < 2 ^ n := by
-      (expose_names; exact Nat.sub_lt_of_lt h)
+      exact Nat.sub_lt_of_lt hi1_lt
     have h_as_assoc := add_sub_assoc (a:=v[i1]'(by omega))
       (b:=v[i1 - 2 ^ i.val]'(h_id_lt)) (c:=v[i1 - 2 ^ i.val]'(h_id_lt))
     rw [h_as_assoc, sub_self, add_zero]
@@ -762,14 +547,16 @@ theorem monoToLagrangeLevel_lagrangeToMonoLevel_id (v : Vector R (2 ^ n)) (i : F
   monoToLagrangeLevel i (lagrangeToMonoLevel i v) = v := by
   unfold lagrangeToMonoLevel monoToLagrangeLevel
   simp only [Vector.getElem_ofFn]
-  ext i1
+  ext i1 i1_isLt
   simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin, Vector.getElem_ofFn]
   if h_i1_testBit: i1.testBit i.val = true then
     simp only [h_i1_testBit, ↓reduceIte]
     have h_testBit_sub_two_pow := testBit_of_sub_two_pow_of_bit_1 h_i1_testBit
     simp only [h_testBit_sub_two_pow, Bool.false_eq_true, ↓reduceIte]
+    have hi1_lt : i1 < 2 ^ n := by
+      simpa using i1_isLt
     have h_id_lt: i1 - 2 ^ i.val < 2 ^ n := by
-      (expose_names; exact Nat.sub_lt_of_lt h)
+      exact Nat.sub_lt_of_lt hi1_lt
     rw [sub_add_cancel]
   else
     simp only [h_i1_testBit, Bool.false_eq_true, ↓reduceIte]
@@ -896,21 +683,21 @@ This section contains tests to verify the functionality of multilinear polynomia
 
 section Tests
 
-#eval MlPoly.zero (n := 2) (R := ℤ)
-#eval MlPoly.add #v[1, 2, 3, 4] #v[5, 6, 7, 8] (n := 2) (R := ℤ)
-#eval MlPoly.smul 2 #v[1, 2, 3, 4] (n := 2) (R := ℤ)
-#eval MlPolyEval.lagrangeBasis #v[(1 : ℤ), 2, 3] (n := 3)
-#eval MlPolyEval.lagrangeBasis #v[(1 : ℤ), 2] (n := 2)
-#eval MlPolyEval.eval #v[1, 2, 3, 4] #v[(1 : ℤ), 2] (n := 2)
-#eval MlPoly.monoToLagrange 2 #v[(1 : ℤ), 2, 3, 4]
-#eval MlPoly.lagrangeToMono 2 #v[(1 : ℤ), 3, 4, 10]
-#eval MlPoly.lagrangeToMono 2 (MlPoly.monoToLagrange 2 #v[(1 : ℤ), 2, 3, 4])
-#eval MlPoly.monoToLagrange 2 (MlPoly.lagrangeToMono 2 #v[(1 : ℤ), 3, 4, 10])
-#eval MlPoly.monoToLagrange 1 #v[(1 : ℤ), 2]
-#eval MlPoly.monoToLagrange 3 #v[(1 : ℤ), 2, 3, 4, 5, 6, 7, 8]
-#eval MlPolyEval.lagrangeBasis #v[(1 : ℤ)] (n := 1)
-#eval MlPolyEval.lagrangeBasis #v[(1 : ℤ), 2, 3, 4] (n := 4)
-#eval (MlPoly.mk 2 #v[1, 2, 3, 4]) + (MlPoly.mk 2 #v[5, 6, 7, 8])
-#eval ((4: ℤ) • (MlPoly.mk 2 #v[(1: ℤ), 2, 3, 4]))
+-- #eval MlPoly.zero (n := 2) (R := ℤ)
+-- #eval MlPoly.add #v[1, 2, 3, 4] #v[5, 6, 7, 8] (n := 2) (R := ℤ)
+-- #eval MlPoly.smul 2 #v[1, 2, 3, 4] (n := 2) (R := ℤ)
+-- #eval MlPolyEval.lagrangeBasis #v[(1 : ℤ), 2, 3] (n := 3)
+-- #eval MlPolyEval.lagrangeBasis #v[(1 : ℤ), 2] (n := 2)
+-- #eval MlPolyEval.eval #v[1, 2, 3, 4] #v[(1 : ℤ), 2] (n := 2)
+-- #eval MlPoly.monoToLagrange 2 #v[(1 : ℤ), 2, 3, 4]
+-- #eval MlPoly.lagrangeToMono 2 #v[(1 : ℤ), 3, 4, 10]
+-- #eval MlPoly.lagrangeToMono 2 (MlPoly.monoToLagrange 2 #v[(1 : ℤ), 2, 3, 4])
+-- #eval MlPoly.monoToLagrange 2 (MlPoly.lagrangeToMono 2 #v[(1 : ℤ), 3, 4, 10])
+-- #eval MlPoly.monoToLagrange 1 #v[(1 : ℤ), 2]
+-- #eval MlPoly.monoToLagrange 3 #v[(1 : ℤ), 2, 3, 4, 5, 6, 7, 8]
+-- #eval MlPolyEval.lagrangeBasis #v[(1 : ℤ)] (n := 1)
+-- #eval MlPolyEval.lagrangeBasis #v[(1 : ℤ), 2, 3, 4] (n := 4)
+-- #eval (MlPoly.mk 2 #v[1, 2, 3, 4]) + (MlPoly.mk 2 #v[5, 6, 7, 8])
+-- #eval ((4: ℤ) • (MlPoly.mk 2 #v[(1: ℤ), 2, 3, 4]))
 
 end Tests

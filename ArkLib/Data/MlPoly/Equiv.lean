@@ -20,7 +20,7 @@ import ArkLib.Data.MvPolynomial.Notation
 
 open MvPolynomial
 
-#check MvPolynomial.restrictDegree
+-- #check MvPolynomial.restrictDegree
 
 variable {R : Type*} [CommRing R] {n : ℕ}
 
@@ -78,7 +78,7 @@ theorem eq_monomialOfNat_iff_eq_bitRepr (m : Fin n →₀ ℕ)
 def toSpecMvPoly (p : MlPoly R n) : R[X Fin n] :=
   ∑ i : Fin (2 ^ n), MvPolynomial.monomial (monomialOfNat i) (a:=p[i])
 
-#check (toSpecMvPoly (MlPoly.mk 2 #v[(1: ℤ), 2, 3, 4]))
+-- #check (toSpecMvPoly (MlPoly.mk 2 #v[(1: ℤ), 2, 3, 4]))
 
 theorem toSpecMvPoly_is_multilinear (p : MlPoly R n) :
   (toSpecMvPoly p) ∈ R⦃≤ 1⦄[X Fin n] := by
@@ -173,8 +173,8 @@ def toSpecMonomial (p : MlPoly R n) : R⦃≤ 1⦄[X Fin n] :=
 def ofSpecMonomial (p : R⦃≤ 1⦄[X Fin n]) : MlPoly R n :=
   Vector.ofFn (fun i : Fin (2 ^ n) => p.val.coeff (monomialOfNat i))
 
-#eval finFunctionFinEquiv.invFun (⟨3, by omega⟩: Fin (2^2)) 4
-#eval Nat.getBit (k:=4) (n:=3)
+-- #eval finFunctionFinEquiv.invFun (⟨3, by omega⟩: Fin (2^2)) 4
+-- #eval Nat.getBit (k:=4) (n:=3)
 
 def equivSpecMonomial : MlPoly R n ≃ R⦃≤ 1⦄[X Fin n] where
   toFun := toSpecMonomial
