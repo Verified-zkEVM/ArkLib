@@ -435,7 +435,7 @@ theorem append_completeness (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit�
 
 /-- If two reductions satisfy perfect completeness with compatible relations, then their
   concatenation also satisfies perfect completeness. -/
-theorem perfectCompleteness_append (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
+theorem append_perfectCompleteness (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     (R₂ : Reduction oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂)
     (h₁ : R₁.perfectCompleteness init impl rel₁ rel₂)
     (h₂ : R₂.perfectCompleteness init impl rel₂ rel₃) :
