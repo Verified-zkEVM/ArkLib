@@ -27,8 +27,10 @@ namespace ProtocolSpec
   length.
 
 (assumed to be working over a fixed alphabet) -/
-@[reducible, simp]
-def VectorSpec (n : ℕ) := Fin n → Direction × Nat
+@[ext]
+structure VectorSpec (n : ℕ) where
+  dir : Fin n → Direction
+  length : Fin n → Nat
 
 namespace VectorSpec
 
@@ -41,23 +43,23 @@ Note that we give the `Vector A n` type for this, instead of `Fin n → A`, for 
 (future) implementations. We may revisit this choice in the future. -/
 @[reducible, simp]
 def toProtocolSpec (A : Type) (vPSpec : VectorSpec n) : ProtocolSpec n :=
-  fun i => ((vPSpec i).1, Vector A (vPSpec i).2)
+  ⟨vPSpec.dir, fun i => Vector A (vPSpec.length i)⟩
 
 /-- The type of indices for messages in a `VectorSpec`. -/
 @[reducible, inline, specialize, simp]
-def MessageIdx (vPSpec : VectorSpec n) := {i : Fin n // (vPSpec i).1 = .P_to_V}
+def MessageIdx (vPSpec : VectorSpec n) := {i : Fin n // vPSpec.dir i = .P_to_V}
 
 /-- The type of indices for challenges in a `VectorSpec`. -/
 @[reducible, inline, specialize, simp]
-def ChallengeIdx (vPSpec : VectorSpec n) := {i : Fin n // (vPSpec i).1 = .V_to_P}
+def ChallengeIdx (vPSpec : VectorSpec n) := {i : Fin n // vPSpec.dir i = .V_to_P}
 
 /-- The length of the `i`-th prover's message in a `VectorSpec`. -/
 @[reducible]
-def messageLength (vPSpec : VectorSpec n) (i : MessageIdx vPSpec) : Nat := (vPSpec i).2
+def messageLength (vPSpec : VectorSpec n) (i : MessageIdx vPSpec) : Nat := vPSpec.length i
 
 /-- The length of the `i`-th challenge in a `VectorSpec`. -/
 @[reducible]
-def challengeLength (vPSpec : VectorSpec n) (i : ChallengeIdx vPSpec) : Nat := (vPSpec i).2
+def challengeLength (vPSpec : VectorSpec n) (i : ChallengeIdx vPSpec) : Nat := vPSpec.length i
 
 /-- The total length of all messages in a `VectorSpec`. -/
 @[reducible]

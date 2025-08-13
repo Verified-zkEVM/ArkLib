@@ -113,11 +113,15 @@ variable (R : Type) [CommSemiring R] (deg : ℕ) {m : ℕ} (D : Fin m ↪ R) (n 
 
 variable {ι : Type} (oSpec : OracleSpec ι)
 
+/-
+  Recall that the types for the statements, oracle statements, witnesses, and the relations, have
+  all been defined in `SingleRound.lean`.
+-/
+
 /-- The protocol specification for the general sum-check protocol, which is the composition of the
   single-round protocol specifications -/
 @[reducible]
-def pSpec : ProtocolSpec (∑ _ : Fin n, 2) :=
-  -- (∑ _ : Fin n, 2)
+def pSpec : ProtocolSpec (Fin.vsum (fun _ : Fin n => 2)) :=
   ProtocolSpec.seqCompose (fun _ => SingleRound.pSpec R deg)
   -- n * 2
   -- fun i => if i % 2 = 0 then (.P_to_V, R⦃≤ d⦄[X]) else (.V_to_P, R)
@@ -126,28 +130,10 @@ def pSpec : ProtocolSpec (∑ _ : Fin n, 2) :=
 -- initial challenge vector is empty). We can compose with a `ReduceClaim` (oracle) reduction to get
 -- the correct input statement type
 
--- instance : ∀ i, OracleInterface ((pSpec R d n).Message i) := fun ⟨i, hDir⟩ => by
---   by_cases h : i % 2 = 0
---   · simp [pSpec, h]; infer_instance
---   · simp [pSpec, h]; simp [MessageIdx, pSpec, h] at hDir
-
--- instance [SelectableType R] : ∀ i, SelectableType ((pSpec R deg n).Challenge i) := sorry
--- fun ⟨i, hDir⟩ => by
---   by_cases h : i % 2 = 0
---   · simp [pSpec, h]; simp [pSpec, h] at hDir
---   · simp [pSpec, h]; infer_instance
-
--- Recall that the relations for the rounds have been defined in `SingleRound.lean`
-
 /-- The input statement for the (full) sum-check protocol, which contains only the target sum value
 -/
 @[reducible, simp]
 def StmtIn := R
-
-/-- The input oracle statement for the (full) sum-check protocol, which contains only the oracle
-  statement for the polynomial. -/
-@[reducible, simp]
-def OStmtIn := OracleStatement R n deg
 
 -- def relIn : (StmtIn R) × (∀ i, OStmtIn R d n i) → WitIn → Prop :=
 --   fun ⟨target, polyOracle⟩ _ => ∑ x ∈ (univ.map D) ^ᶠ (n + 1), (polyOracle ()).val ⸨x⸩ = target
@@ -159,19 +145,19 @@ variable [DecidableEq R] [SelectableType R]
 
 /-- The verifier for the (full) sum-check protocol -/
 @[reducible]
-def verifier : Verifier oSpec (Statement R n 0 × (∀ i, OracleStatement R n deg i))
-    (Statement R n (.last n) × (∀ i, OracleStatement R n deg i)) (pSpec R deg n) :=
+def verifier : Verifier oSpec (StatementRound R n 0 × (∀ i, OracleStatement R n deg i))
+    (StatementRound R n (.last n) × (∀ i, OracleStatement R n deg i)) (pSpec R deg n) :=
   Verifier.seqCompose (oSpec := oSpec)
-    (Stmt := fun i => Statement R n i × (∀ j, OracleStatement R n deg j))
+    (Stmt := fun i => StatementRound R n i × (∀ j, OracleStatement R n deg j))
     (pSpec := fun _ => SingleRound.pSpec R deg)
     (SingleRound.verifier R n deg D oSpec)
 
 /-- The oracle verifier for the (full) sum-check protocol -/
 @[reducible]
-def oracleVerifier : OracleVerifier oSpec (Statement R n 0) (OracleStatement R n deg)
-    (Statement R n (.last n)) (OracleStatement R n deg) (pSpec R deg n) :=
+def oracleVerifier : OracleVerifier oSpec (StatementRound R n 0) (OracleStatement R n deg)
+    (StatementRound R n (.last n)) (OracleStatement R n deg) (pSpec R deg n) :=
   OracleVerifier.seqCompose (oSpec := oSpec)
-    (Stmt := Statement R n)
+    (Stmt := StatementRound R n)
     (OStmt := fun _ => OracleStatement R n deg)
     (pSpec := fun _ => SingleRound.pSpec R deg)
     (SingleRound.oracleVerifier R n deg D oSpec)
@@ -179,11 +165,11 @@ def oracleVerifier : OracleVerifier oSpec (Statement R n 0) (OracleStatement R n
 /-- The sum-check protocol as a reduction -/
 @[reducible]
 def reduction : Reduction oSpec
-    (Statement R n 0 × ∀ i, OracleStatement R n deg i) Unit
-    (Statement R n (.last n) × ∀ i, OracleStatement R n deg i) Unit
+    (StatementRound R n 0 × ∀ i, OracleStatement R n deg i) Unit
+    (StatementRound R n (.last n) × ∀ i, OracleStatement R n deg i) Unit
     (pSpec R deg n) :=
   Reduction.seqCompose (oSpec := oSpec)
-    (Stmt := fun i => Statement R n i × (∀ j, OracleStatement R n deg j))
+    (Stmt := fun i => StatementRound R n i × (∀ j, OracleStatement R n deg j))
     (Wit := fun _ => Unit)
     (pSpec := fun _ => SingleRound.pSpec R deg)
     (SingleRound.reduction R n deg D oSpec)
@@ -191,11 +177,11 @@ def reduction : Reduction oSpec
 /-- The sum-check protocol as an oracle reduction -/
 @[reducible]
 def oracleReduction : OracleReduction oSpec
-    (Statement R n 0) (OracleStatement R n deg) Unit
-    (Statement R n (.last n)) (OracleStatement R n deg) Unit
+    (StatementRound R n 0) (OracleStatement R n deg) Unit
+    (StatementRound R n (.last n)) (OracleStatement R n deg) Unit
     (pSpec R deg n) :=
   OracleReduction.seqCompose (oSpec := oSpec)
-    (Stmt := Statement R n)
+    (Stmt := StatementRound R n)
     (OStmt := fun _ => OracleStatement R n deg)
     (Wit := fun _ => Unit)
     (pSpec := fun _ => SingleRound.pSpec R deg)

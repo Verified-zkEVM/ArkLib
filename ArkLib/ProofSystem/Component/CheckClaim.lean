@@ -21,6 +21,9 @@ import ArkLib.OracleReduction.Security.RoundByRound
 
   In both cases, the output relation is trivial (since the input relation has been checked by the
   verifier).
+
+  Note: after the refactor (to disallow failure in `OracleComp`), this may become a special case
+  of `ReduceClaim`.
 -/
 
 open OracleComp OracleInterface ProtocolSpec Function
@@ -33,23 +36,23 @@ section Reduction
 
 /-- The prover for the `CheckClaim` reduction. -/
 @[inline, specialize]
-def prover : Prover oSpec Statement Unit Statement Unit ![] where
+def prover : Prover oSpec Statement Unit Statement Unit !p[] where
   PrvState := fun _ => Statement
   input := Prod.fst
   sendMessage := fun i => nomatch i
   receiveChallenge := fun i => nomatch i
-  output := fun stmt => (stmt, ())
+  output := fun stmt => pure (stmt, ())
 
 variable (pred : Statement → Prop) [DecidablePred pred]
 
 /-- The verifier for the `CheckClaim` reduction. -/
 @[inline, specialize]
-def verifier : Verifier oSpec Statement Statement ![] where
+def verifier : Verifier oSpec Statement Statement !p[] where
   verify := fun stmt _ => do guard (pred stmt); return stmt
 
 /-- The reduction for the `CheckClaim` reduction. -/
 @[inline, specialize]
-def reduction : Reduction oSpec Statement Unit Statement Unit ![] where
+def reduction : Reduction oSpec Statement Unit Statement Unit !p[] where
   prover := prover oSpec Statement
   verifier := verifier oSpec Statement pred
 
@@ -64,11 +67,15 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ Pro
 /-- The `CheckClaim` reduction satisfies perfect completeness with respect to the predicate as the
   input relation, and the output relation being always true. -/
 @[simp]
-theorem reduction_completeness (h : init.neverFails) :
+theorem reduction_completeness (h : init.neverFails) [Nonempty σ] :
     (reduction oSpec Statement pred).perfectCompleteness init impl
     (relIn Statement pred) (relOut Statement) := by
-  simp [reduction, Reduction.run, Prover.run, Prover.runToRound, Verifier.run,
+  -- Don't know why we need `Nonempty σ` here. TODO: figure out why
+  simp only [reduction, Reduction.perfectCompleteness_eq_prob_one,
+    Reduction.run, Prover.run, Prover.runToRound, Verifier.run,
     prover, verifier]
+  intro stmt wit valid
+  simp
   aesop
 
 /-- The `CheckClaim` reduction satisfies perfect round-by-round knowledge soundness. -/
@@ -94,12 +101,12 @@ variable {ιₛ : Type} (OStatement : ιₛ → Type) [∀ i, OracleInterface (O
 /-- The oracle prover for the `CheckClaim` oracle reduction. -/
 @[inline, specialize]
 def oracleProver : OracleProver oSpec
-    Statement OStatement Unit Statement OStatement Unit ![] where
+    Statement OStatement Unit Statement OStatement Unit !p[] where
   PrvState := fun _ => Statement × (∀ i, OStatement i)
   input := Prod.fst
   sendMessage := fun i => nomatch i
   receiveChallenge := fun i => nomatch i
-  output := fun stmt => (stmt, ())
+  output := fun stmt => pure (stmt, ())
 
 variable (pred : ReaderT Statement (OracleComp [OStatement]ₒ) Prop)
   (hPred : ∀ stmt, (pred stmt).neverFails)
@@ -107,7 +114,7 @@ variable (pred : ReaderT Statement (OracleComp [OStatement]ₒ) Prop)
 /-- The oracle verifier for the `CheckClaim` oracle reduction. -/
 @[inline, specialize]
 def oracleVerifier : OracleVerifier oSpec
-    Statement OStatement Statement OStatement ![] where
+    Statement OStatement Statement OStatement !p[] where
   verify := fun stmt _ => do let _ ← pred stmt; return stmt
   embed := Embedding.inl
   hEq := by intro i; simp
@@ -115,7 +122,7 @@ def oracleVerifier : OracleVerifier oSpec
 /-- The oracle reduction for the `CheckClaim` oracle reduction. -/
 @[inline, specialize]
 def oracleReduction : OracleReduction oSpec
-    Statement OStatement Unit Statement OStatement Unit ![] where
+    Statement OStatement Unit Statement OStatement Unit !p[] where
   prover := oracleProver oSpec Statement OStatement
   verifier := oracleVerifier oSpec Statement OStatement pred
 
@@ -145,11 +152,8 @@ theorem oracleReduction_completeness (h : init.neverFails) :
     exists_and_right, exists_eq_right, exists_prop, forall_exists_index, and_imp, Prod.forall,
     Fin.forall_fin_zero_pi, Prod.mk.injEq]
   simp only [Reduction.run, Prover.run, Verifier.run, toOracleImpl, simulateQ']
-  simp only[ChallengeIdx, Fin.reduceLast, Prover.runToRound_zero_of_prover_first, Fin.isValue,
-    bind_pure_comp, map_pure, liftM_eq_liftComp, liftComp_map, Functor.map_map, pure_bind,
-    simulateQ_map, StateT.run_map, neverFails_map_iff, support_map, Set.mem_image, Prod.mk.injEq,
-    and_true, Prod.exists, exists_eq_right_right, exists_and_right, and_imp, forall_exists_index,
-    forall_const]
+  simp only [ChallengeIdx, Fin.reduceLast, Prover.runToRound_zero_of_prover_first, Fin.isValue,
+    bind_pure_comp, liftM_eq_liftComp, liftComp_map, Functor.map_map, pure_bind]
   intro stmt oStmt _
   sorry
   -- simp [Reduction.run, Prover.run, Verifier.run, simOracle2]

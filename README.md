@@ -1,40 +1,43 @@
-# Formally Verified Cryptographic Arguments
+# Formally Verified Arguments of Knowledge
 
-This library aims to provide a modular and composable framework for formally verifying (succinct) cryptographic arguments (e.g. SNARKs) based on Interactive (Oracle) Proofs. This is done as part of the [verified-zkevm effort](https://verified-zkevm.org/).
+This library aims to provide a modular and composable framework for formally verifying **succinct non-interactive arguments of knowledge** (SNARKs). This is done as part of the [verified-zkevm effort](https://verified-zkevm.org/).
 
-In the first stage of this library's development, we plan to formalize interactive (oracle) reductions (a modular way of stating IOPs) and prove information-theoretic completeness and soundness for a select list of protocols (see the list of active formalizations below).
+In the first stage of this library's development, we plan to formalize interactive (oracle) reductions (the information-theoretic core of almost all SNARKs today), and prove completeness and soundness for a select list of protocols (see the list of active formalizations below).
 
 For each protocol, we aim to provide:
 
-- A specification based on `Mathlib` polynomials,
-- An implementation of the prover and verifier using computable representations of polynomials,
-- Proofs of completeness and round-by-round knowledge soundness for the specification, and proofs that the implementations refine the specifications.
+- An executable specification of the protocol, constructed modularly using our composition and lifting interfaces,
+- Proofs of completeness & round-by-round knowledge soundness via generic theorems about composition and lifting.
+
+In the future, we plan to verify functional equivalence of the executable spec (or modifications thereof) for certain protocols (e.g., sum-check, FRI, or WHIR), with the extracted code from Rust implementations of the same protocols.
 
 ## Library Structure
 
-The core of our library is a mechanized theory of **$$\mathcal{F}$$-Interactive Oracle Reductions** (see [OracleReduction](ArkLib/OracleReduction)):
-1. An **$$\mathcal{F}$$-IOR** is an interactive protocol between a prover and a verifier to reduce a relation $$R_1$$ on some public statement & private witness to another relation $$R_2$$.
+The core of our library is a mechanized theory of **Interactive Oracle Reductions** (see [OracleReduction](ArkLib/OracleReduction)):
+1. An **IOR** (called `OracleReduction` in our formalization) is an interactive protocol between a prover and a verifier to reduce a relation $$R_1$$ on some public statement & private witness to another relation $$R_2$$.
 2. The verifier may _not_ see the messages sent by the prover in the clear, but can make oracle queries to these messages using a specified oracle interface;
   - For example, one can view the message as a vector, and query entries of that vector. Alternatively, one can view the message as a polynomial, and query for its evaluation at some given points.
-3. We can **compose** multiple $$\mathcal{F}$$-IORs with _compatible_ relations together (e.g. $$R_1 \implies R_2$$ and $$R_2 \implies R_3$$), allowing us to build existing protocols (e.g. Plonk) from common sub-routines (e.g. zero check, permutation check, quotienting).
-4. We can also carry out the **BCS transform**, which takes an $$\mathcal{F}$$-IOR and compose it with **$$\mathcal{F}$$-commitment schemes** to result in an interactive argument.
-  - Roughly speaking, an $$\mathcal{F}$$-commitment scheme is a commitment scheme with an associated opening argument for the correctness of the specified oracle interface.
-  - The BCS transform then replaces every oracle message from the prover with a commitment to that message, and runs an opening argument for each oracle query the verifier makes to the prover's messages.
-5. $$\mathcal{F}$$-IOR is a natural notion and related versions have appeared in various places in the literature (see [BACKGROUND](./BACKGROUND.md) for a detailed comparison). Our library takes these existing threads and formalizes them into a cohesive theory.
+3. We can **(sequentially) compose** multiple IORs with _compatible_ relations together (e.g. $$R_1 \implies R_2$$ and $$R_2 \implies R_3$$), preserving the security properties in most cases. We can also **lift** an IOR from a simple context (i.e., the input & output pairs of statement & witness) into a larger, more complex context, creating a **virtual** oracle reduction.
+  - These two operations, sequential composition and lifting, allow us to build existing protocols (e.g. Plonk) from common sub-routines (e.g. zero check, permutation check, quotienting), and derive security of the constructed protocol from that of the components.
+4. Once we have specified the desired IOR, the next step is to turn it into a **non-interactive** arguments of knowledge. This is often achieved in two steps:
+  - We first apply the **(interactive) BCS transform**, which materializes the message oracles in an IOR using appropriate **(functional) commitment schemes**. Roughly speaking, a functional commitment scheme consists of a commitment algorithm, along with an associated opening argument for the correctness of the specified oracle interface.
+  - The interactive BCS transform then replaces every oracle message from the prover with a commitment to that message, and runs an opening argument for each oracle query the verifier makes to the prover's messages. These opening arguments may be batched.
+  - We then apply the **Fiat-Shamir transform**, which collapses interaction via letting the prover derive the verifier's random challenges through querying a hash function (modeled as a random oracle). We will formalize the **duplex-sponge** version of Fiat-Shamir, which utilizes cryptographic sponges for efficiency in practice.
+5. Our formalization follows the emerging view of IORs as the central information-theoretic object underlying modern SNARKs. We also follow the latest understanding & abstraction for the interactive BCS and Fiat-Shamir transformation. See [BACKGROUND](./BACKGROUND.md) for an (in-progress) summary of the relevant history.
 
-Using the theory of $$\mathcal{F}$$-IOR, we then formalize various proof systems in [ProofSystem](ArkLib/ProofSystem).
+Using the theory of interactive oracle reductions, we then formalize various proof systems in [ProofSystem](ArkLib/ProofSystem).
 
-## Active Formalizations (last updated: 1 June 2025)
+## Active Formalizations (last updated: 7 August 2025)
 
 The library is currently in development. Alongside general development of the library's underlying theory, the following cryptographic components are actively being worked on:
-- The sumcheck protocol
+- The Sum-Check Protocol
 - Spartan
 - Merkle Trees
-- A blueprint for FRI and coding theory pre-requisites
-- A blueprint for STIR and WHIR
+- FRI and coding theory pre-requisites
+- STIR and WHIR
 - Binius
 
-[VCV-io](https://github.com/dtumad/VCV-io), ArkLib's main dependency alongside [mathlib](https://github.com/leanprover-community/mathlib4) is also being developed in parallel.
+[VCV-io](https://github.com/dtumad/VCV-io), ArkLib's main dependency alongside [mathlib](https://github.com/leanprover-community/mathlib4) is also being developed in parallel. We are also starting work on the [Bluebell](https://arxiv.org/pdf/2402.18708) probabilistic program logic in (our fork of) [iris-lean](https://github.com/Verified-zkEVM/iris-lean).
 
 ## Roadmap & Contributing
 
@@ -43,4 +46,4 @@ We welcome outside contributions to the library! Please see [CONTRIBUTING](./CON
 If you're interested in working on any of the items mentioned in the list of issues or the roadmap, please see [verified-zkevm.org](https://verified-zkevm.org/), contact [the authors](mailto:qvd@andrew.cmu.edu), or open a new issue.
 
 ## Release Schedule
-New releases are planned every first of the month, accompanied by an update to the latest versions of Lean and Mathlib.
+New releases are planned every 15th of the month, accompanied by an update to the latest versions of Lean and Mathlib.

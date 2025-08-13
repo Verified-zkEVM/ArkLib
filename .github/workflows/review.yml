@@ -1,0 +1,110 @@
+# .github/workflows/ai-review.yml
+
+name: AI Code Review with External Context
+
+on:
+  issue_comment:
+    types: [created]
+
+# This job will only run on pull request comments that start with '/review'
+jobs:
+  review:
+    # UPDATED LINE: Added a check for author association
+    if: >-
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '/review') &&
+      (
+        github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'MEMBER' ||
+        github.event.comment.author_association == 'COLLABORATOR'
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r ./scripts/requirements.txt
+
+      - name: Extract arguments from comment
+        id: get_args
+        run: |
+          # Use a stateful awk script to parse the structured comment.
+          # This is more robust than complex sed/grep pipelines.
+          PARSED_ARGS=$(awk '
+            # Switch section based on header
+            /^External:/ { section="ext"; next }
+            /^Internal:/ { section="int"; next }
+            /^Comments:/ { section="com"; next }
+
+            # Process line based on current section
+            {
+              # Trim leading/trailing whitespace from the line
+              gsub(/^[ \t]+|[ \t]+$/, "", $0);
+
+              # Skip empty lines or the initial /review command
+              if ($0 == "" || $0 == "/review") { next }
+
+              if (section == "ext") {
+                sub(/^- +/, ""); # Remove optional leading dash
+                if (ext) { ext = ext "," $0 } else { ext = $0 }
+              }
+              else if (section == "int") {
+                sub(/^- +/, ""); # Remove optional leading dash
+                if (ark) { ark = ark "," $0 } else { ark = $0 }
+              }
+              else if (section == "com") {
+                if (com) { com = com " " $0 } else { com = $0 }
+              }
+            }
+            END {
+              print "external_refs=" ext
+              print "arklib_refs=" ark
+              print "additional_comments=" com
+            }
+          ' <<< "${{ github.event.comment.body }}")
+
+          echo "$PARSED_ARGS" >> $GITHUB_OUTPUT
+
+      - name: Run AI Review Script
+        id: ai_review
+        env:
+          # The GitHub token is automatically available to the runner
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          # Run the script and capture its output to post as a comment later
+          # We use a special "end of file" marker to handle multiline output
+          EOF_MARKER=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 16)
+          echo "review_text<<$EOF_MARKER" >> $GITHUB_OUTPUT
+          python ./scripts/review.py \
+            --pr-number ${{ github.event.issue.number }} \
+            --external-refs "${{ steps.get_args.outputs.external_refs }}" \
+            --arklib-refs "${{ steps.get_args.outputs.arklib_refs }}" \
+            --additional-comments "${{ steps.get_args.outputs.additional_comments }}" >> $GITHUB_OUTPUT
+          echo "$EOF_MARKER" >> $GITHUB_OUTPUT
+
+      - name: Post Review Comment
+        uses: actions/github-script@v7
+        env:
+          REVIEW_TEXT: ${{ steps.ai_review.outputs.review_text }}
+        with:
+          script: |
+            const header = '### 🤖 AI Review (with external context)\\n\\n';
+            const reviewBody = process.env.REVIEW_TEXT;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: header + reviewBody
+            });

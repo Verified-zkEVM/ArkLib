@@ -28,7 +28,7 @@ variable {ι : Type} (oSpec : OracleSpec ι) (Statement : Type)
   {ιₛᵢ : Type} [Unique ιₛᵢ] (OStatement : ιₛᵢ → Type) [inst : ∀ i, OracleInterface (OStatement i)]
 
 @[reducible]
-def pSpec : ProtocolSpec 1 := ![(.P_to_V, OStatement default)]
+def pSpec : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[OStatement default]⟩
 
 /--
 The prover takes in the old oracle statement as input, and sends it as the protocol message.
@@ -45,7 +45,7 @@ def oracleProver : OracleProver oSpec
 
   receiveChallenge | ⟨0, h⟩ => nomatch h
 
-  output := fun st =>
+  output := fun st => pure
     (⟨(), fun x => match x with
       | .inl _ => by simpa [Unique.uniq] using st
       | .inr default => by simpa [Unique.uniq] using st⟩,

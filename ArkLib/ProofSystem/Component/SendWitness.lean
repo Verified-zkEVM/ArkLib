@@ -36,7 +36,7 @@ section Reduction
 variable (Witness : Type)
 
 @[reducible, simp]
-def pSpec : ProtocolSpec 1 := ![(.P_to_V, Witness)]
+def pSpec : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[Witness]⟩
 
 instance : ∀ i, VCVCompatible ((pSpec Witness).Challenge i) | ⟨0, h⟩ => nomatch h
 
@@ -48,7 +48,7 @@ def prover : Prover oSpec Statement Witness (Statement × Witness) Unit (pSpec W
   input := id
   sendMessage | ⟨0, _⟩ => fun ⟨stmt, wit⟩ => pure (wit, ⟨stmt, wit⟩)
   receiveChallenge | ⟨0, h⟩ => nomatch h
-  output := fun ⟨stmt, wit⟩ => (⟨stmt, wit⟩, ())
+  output := fun ⟨stmt, wit⟩ => pure (⟨stmt, wit⟩, ())
 
 @[inline, specialize]
 def verifier : Verifier oSpec Statement (Statement × Witness) (pSpec Witness) where
@@ -89,7 +89,7 @@ variable {ιₛ : Type} (OStatement : ιₛ → Type) [∀ i, OracleInterface (O
   {ιw : Type} [FinEnum ιw] (Witness : ιw → Type) [∀ i, OracleInterface (Witness i)]
 
 @[reducible, simp]
-def oraclePSpec : ProtocolSpec 1 := ![(.P_to_V, ∀ i, Witness i)]
+def oraclePSpec : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[∀ i, Witness i]⟩
 
 -- instance : IsEmpty (oraclePSpec Witness).ChallengeIdx where
 --   false := by aesop
@@ -113,7 +113,7 @@ def oracleProver : OracleProver oSpec
   sendMessage | ⟨0, _⟩ => fun ⟨stmt, wit⟩ => pure (wit, ⟨stmt, wit⟩)
   -- No challenge is sent to the prover
   receiveChallenge | ⟨0, h⟩ => nomatch h
-  output := fun ⟨⟨stmt, oStmt⟩, wit⟩ => (⟨stmt, Sum.rec oStmt wit⟩, ())
+  output := fun ⟨⟨stmt, oStmt⟩, wit⟩ => pure (⟨stmt, Sum.rec oStmt wit⟩, ())
 
 -- /-- The oracle verifier for the `SendWitness` oracle reduction.
 
@@ -185,7 +185,7 @@ variable {ιₛ : Type} (OStatement : ιₛ → Type) [∀ i, OracleInterface (O
   (Witness : Type) [OracleInterface Witness]
 
 @[reducible, simp]
-def oraclePSpec : ProtocolSpec 1 := ![(.P_to_V, Witness)]
+def oraclePSpec : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[Witness]⟩
 
 /-- The oracle prover for the `SendSingleWitness` oracle reduction.
 
@@ -200,7 +200,7 @@ def oracleProver : OracleProver oSpec
   input := id
   sendMessage | ⟨0, _⟩ => fun ⟨stmt, wit⟩ => pure (wit, ⟨stmt, wit⟩)
   receiveChallenge | ⟨0, h⟩ => nomatch h
-  output := fun ⟨⟨stmt, oStmt⟩, wit⟩ => (⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, ())
+  output := fun ⟨⟨stmt, oStmt⟩, wit⟩ => pure (⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, ())
 
 /-- The oracle verifier for the `SendSingleWitness` oracle reduction.
 
@@ -214,8 +214,8 @@ def oracleVerifier : OracleVerifier oSpec
   verify := fun stmt _ => pure stmt
   embed := .sumMap (.refl _)
     <| Equiv.toEmbedding
-    <|.symm (subtypeUnivEquiv (by simp))
-  hEq := by intro i; rcases i <;> simp
+    <|.symm (subtypeUnivEquiv (by aesop))
+  hEq := by intro i; rcases i <;> aesop
 
 @[inline, specialize]
 def oracleReduction : OracleReduction oSpec
@@ -230,16 +230,17 @@ variable {Statement} {OStatement} {Witness}
 omit [(i : ιₛ) → OracleInterface (OStatement i)] [OracleInterface Witness] in
 theorem oracleProver_run {stmt : Statement} {oStmt : ∀ i, OStatement i} {wit : Witness}:
     (oracleProver oSpec Statement OStatement Witness).run ⟨stmt, oStmt⟩ wit =
-      pure (⟨⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, ()⟩, fun i => by simpa using wit) := by
+      pure (fun i => by aesop, ⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, ()) := by
   simp [Prover.run, Prover.runToRound, Prover.processRound, oracleProver, Transcript.concat]
-  ext i; fin_cases i; simp [Fin.snoc]
+  ext i; fin_cases i; aesop
 
 theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatement i}
     {tr : (oraclePSpec Witness).FullTranscript}:
     (oracleVerifier oSpec Statement OStatement Witness).toVerifier.run ⟨stmt, oStmt⟩ tr =
-      pure ⟨stmt, Sum.rec oStmt (fun i => by simpa using tr i)⟩ := by
+      pure ⟨stmt, Sum.rec oStmt (fun i => match i with | 0 => tr 0)⟩ := by
   simp [Verifier.run, OracleVerifier.toVerifier, oracleVerifier]
   ext i; rcases i <;> simp
+  split; simp
 
 variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
   (oRelIn : Set ((Statement × (∀ i, OStatement i)) × Witness))
@@ -263,8 +264,8 @@ theorem oracleReduction_completeness (h : init.neverFails) :
     Set.mem_image, Prod.exists, exists_and_right, exists_eq_right, exists_prop, forall_exists_index,
     and_imp, Prod.forall, Prod.mk.injEq]
   simp_rw [h, Reduction.run, oracleReduction, oracleVerifier_toVerifier_run, oracleProver_run]
-  simp only [ChallengeIdx, oraclePSpec, eq_mpr_eq_cast, eq_mp_eq_cast, id_eq, liftM_eq_liftComp,
-    liftComp_pure, bind_pure_comp, map_pure, cast_cast, cast_eq, simulateQ_pure, StateT.run_pure,
+  simp only [ChallengeIdx, oraclePSpec, id_eq, liftM_eq_liftComp,
+    liftComp_pure, bind_pure_comp, map_pure, simulateQ_pure, StateT.run_pure,
     neverFails_pure, implies_true, and_self, support_pure, Set.mem_singleton_iff, Prod.mk.injEq,
     and_true, Fin.isValue, and_imp, forall_const, true_and]
   aesop
