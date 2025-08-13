@@ -275,8 +275,9 @@ def outputRelation :
 variable {ι : Type} (oSpec : OracleSpec ι)
 
 def oracleReduction.sendClaim : OracleReduction oSpec (StmtIn R) (OStmtIn R deg) Unit
-    (StmtAfterSendClaim R) (OStmtAfterSendClaim R deg) Unit ⟨!v[.P_to_V], !v[R⦃≤ deg⦄[X]]⟩ :=
-  sorry
+    (StmtAfterSendClaim R) (OStmtAfterSendClaim R deg) Unit ⟨!v[.P_to_V], !v[R⦃≤ deg⦄[X]]⟩ := sorry
+  -- by
+  -- refine SendClaim.oracleReduction oSpec (StmtIn R) (OStmtIn R deg) ?_
   -- (SendClaim.oracleReduction oSpec (StmtIn R) (OStmtIn R deg) Unit)
 
 def oracleReduction.checkClaim : OracleReduction oSpec
@@ -291,8 +292,10 @@ def oracleReduction.randomQuery : OracleReduction oSpec
 
 def oracleReduction.reduceClaim : OracleReduction oSpec
     (StmtAfterRandomQuery R) (OStmtAfterRandomQuery R deg) Unit
-    (StmtOut R) (OStmtOut R deg) Unit !p[] :=
-  sorry
+    (StmtOut R) (OStmtOut R deg) Unit !p[] := by
+  refine ReduceClaim.oracleReduction oSpec
+    ?_ (fun _ _ => ()) (Function.Embedding.inl) (by simp)
+  · simp; sorry
 
 def oracleReduction : OracleReduction oSpec (StmtIn R) (OStmtIn R deg) Unit
     (StmtOut R) (OStmtOut R deg) Unit (pSpec R deg) :=
@@ -306,11 +309,10 @@ open NNReal
 variable [SelectableType R]
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
-theorem oracleReduction_perfectCompleteness :
+theorem oracleReduction_perfectCompleteness (hInit : init.neverFails) :
     (oracleReduction R deg oSpec).perfectCompleteness init impl
       (inputRelation R deg D) (outputRelation R deg) := by
   simp [oracleReduction]
-  -- sorry
   refine OracleReduction.append_perfectCompleteness
     (rel₂ := relationAfterRandomQuery R deg)
     ((((oracleReduction.sendClaim R deg oSpec).append
@@ -329,7 +331,9 @@ theorem oracleReduction_perfectCompleteness :
       · sorry
       · sorry
     · sorry
-  · sorry
+  · simp [oracleReduction.reduceClaim]
+    refine ReduceClaim.oracleReduction_completeness _ _ hInit ?_
+    sorry
 
 theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
     (oracleReduction R deg oSpec).verifier.rbrKnowledgeSoundness init impl
