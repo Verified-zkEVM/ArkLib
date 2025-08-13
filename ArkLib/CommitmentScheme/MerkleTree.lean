@@ -4,12 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import VCVio
-import ArkLib.Data.Math.Basic
-import ArkLib.CommitmentScheme.Basic
 import ArkLib.Data.Tree.Binary
-import ArkLib.Data.Tree.General
 import Mathlib.Data.Vector.Snoc
+import VCVio.OracleComp.QueryTracking.CachingOracle
 
 /-!
   # Merkle Trees as a vector commitment
