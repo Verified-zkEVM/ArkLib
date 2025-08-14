@@ -1,7 +1,7 @@
 OracleInterface
 ProtocolSpec
-ProtocolSpec.getDir
-ProtocolSpec.getType
+ProtocolSpec.dir
+ProtocolSpec.Type
 ProtocolSpec.MessageIdx
 ProtocolSpec.ChallengeIdx
 ProtocolSpec.Message
@@ -11,9 +11,9 @@ ProtocolSpec.Message
 ProtocolSpec.Challenge
 Prover
 ProverState
-ProverIn
+ProverInput
 ProverRound
-ProverOut
+ProverOutput
 OracleProver
 Verifier
 OracleVerifier
@@ -32,7 +32,9 @@ Reduction.perfectCompleteness
 Extractor.Straightline
 Extractor.RoundByRound
 Extractor.Rewinding
-Prover.StateRestoration
+Extractor.StateRestoration
+Prover.StateRestoration.Soundness
+Prover.StateRestoration.KnowledgeSoundness
 Verifier.soundness
 Verifier.knowledgeSoundness
 Verifier.StateFunction
@@ -40,7 +42,8 @@ Verifier.KnowledgeStateFunction
 Verifier.rbrSoundness
 Verifier.rbrKnowledgeSoundness
 Verifier.Extractor.Straightline.IsMonotone
-Extractor.RoundByRound.IsMonotone
+Extractor.Straightline.IsMonotone
+Extractor.RoundByRoundOneShot.IsMonotone
 Verifier.knowledgeSoundness_implies_soundness
 Verifier.rbrSoundness_implies_soundness
 Verifier.rbrKnowledgeSoundness_implies_rbrSoundness
@@ -61,8 +64,9 @@ ProtocolSpec.seqCompose
 Prover.seqCompose
 Verifier.seqCompose
 Reduction.seqCompose
-Reduction.completeness_append
-Reduction.perfectCompleteness_append
+Reduction.append_completeness
+Reduction.append_perfectCompleteness
+OracleReduction.append_perfectCompleteness
 Verifier.append_soundness
 Verifier.append_knowledgeSoundness
 Verifier.append_rbrSoundness

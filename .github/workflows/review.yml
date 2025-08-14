@@ -15,7 +15,8 @@ jobs:
       startsWith(github.event.comment.body, '/review') &&
       (
         github.event.comment.author_association == 'OWNER' ||
-        github.event.comment.author_association == 'MEMBER'
+        github.event.comment.author_association == 'MEMBER' ||
+        github.event.comment.author_association == 'COLLABORATOR'
       )
     runs-on: ubuntu-latest
     permissions:
@@ -34,14 +35,45 @@ jobs:
       - name: Install dependencies
         run: pip install -r ./scripts/requirements.txt
 
-      - name: Extract URL and Files from comment
+      - name: Extract arguments from comment
         id: get_args
         run: |
-          BODY="${{ github.event.comment.body }}"
-          URL=$(echo "$BODY" | grep -o 'https://[^ ]*')
-          FILES=$(echo "$BODY" | sed -n 's/.*and-files \([^ ]*\).*/\1/p')
-          echo "url=$URL" >> $GITHUB_OUTPUT
-          echo "files=$FILES" >> $GITHUB_OUTPUT
+          # Use a stateful awk script to parse the structured comment.
+          # This is more robust than complex sed/grep pipelines.
+          PARSED_ARGS=$(awk '
+            # Switch section based on header
+            /^External:/ { section="ext"; next }
+            /^Internal:/ { section="int"; next }
+            /^Comments:/ { section="com"; next }
+
+            # Process line based on current section
+            {
+              # Trim leading/trailing whitespace from the line
+              gsub(/^[ \t]+|[ \t]+$/, "", $0);
+
+              # Skip empty lines or the initial /review command
+              if ($0 == "" || $0 == "/review") { next }
+
+              if (section == "ext") {
+                sub(/^- +/, ""); # Remove optional leading dash
+                if (ext) { ext = ext "," $0 } else { ext = $0 }
+              }
+              else if (section == "int") {
+                sub(/^- +/, ""); # Remove optional leading dash
+                if (ark) { ark = ark "," $0 } else { ark = $0 }
+              }
+              else if (section == "com") {
+                if (com) { com = com " " $0 } else { com = $0 }
+              }
+            }
+            END {
+              print "external_refs=" ext
+              print "arklib_refs=" ark
+              print "additional_comments=" com
+            }
+          ' <<< "${{ github.event.comment.body }}")
+
+          echo "$PARSED_ARGS" >> $GITHUB_OUTPUT
 
       - name: Run AI Review Script
         id: ai_review
@@ -56,8 +88,9 @@ jobs:
           echo "review_text<<$EOF_MARKER" >> $GITHUB_OUTPUT
           python ./scripts/review.py \
             --pr-number ${{ github.event.issue.number }} \
-            --context-url ${{ steps.get_args.outputs.url }} \
-            --context-files "${{ steps.get_args.outputs.files }}" >> $GITHUB_OUTPUT
+            --external-refs "${{ steps.get_args.outputs.external_refs }}" \
+            --arklib-refs "${{ steps.get_args.outputs.arklib_refs }}" \
+            --additional-comments "${{ steps.get_args.outputs.additional_comments }}" >> $GITHUB_OUTPUT
           echo "$EOF_MARKER" >> $GITHUB_OUTPUT
 
       - name: Post Review Comment

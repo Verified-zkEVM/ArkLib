@@ -46,39 +46,39 @@ import ArkLib.OracleReduction.LiftContext.OracleReduction
 
 -/
 
-section Relation
+-- section Relation
 
-variable {Stmt Wit Stmt' Wit' : Type}
+-- variable {Stmt Wit Stmt' Wit' : Type}
 
-def Relation.equiv (f : Stmt ≃ Stmt') (g : Wit ≃ Wit')
-    (R : Stmt → Wit → Prop) (R' : Stmt' → Wit' → Prop) : Prop :=
-  ∀ stmt : Stmt, ∀ wit : Wit, R stmt wit ↔ R' (f stmt) (g wit)
+-- def Relation.equiv (f : Stmt ≃ Stmt') (g : Wit ≃ Wit')
+--     (R : Stmt → Wit → Prop) (R' : Stmt' → Wit' → Prop) : Prop :=
+--   ∀ stmt : Stmt, ∀ wit : Wit, R stmt wit ↔ R' (f stmt) (g wit)
 
-theorem Relation.equiv_symm (f : Stmt ≃ Stmt') (g : Wit ≃ Wit')
-    (R : Stmt → Wit → Prop) (R' : Stmt' → Wit' → Prop) :
-  Relation.equiv f g R R' ↔ Relation.equiv f.symm g.symm R' R := by
-  simp [Relation.equiv]
-  constructor
-  · intro h
-    intro stmt' wit'
-    simpa using (h (f.symm stmt') (g.symm wit')).symm
-  · intro h
-    intro stmt wit
-    simpa using (h (f stmt) (g wit)).symm
+-- theorem Relation.equiv_symm (f : Stmt ≃ Stmt') (g : Wit ≃ Wit')
+--     (R : Stmt → Wit → Prop) (R' : Stmt' → Wit' → Prop) :
+--   Relation.equiv f g R R' ↔ Relation.equiv f.symm g.symm R' R := by
+--   simp [Relation.equiv]
+--   constructor
+--   · intro h
+--     intro stmt' wit'
+--     simpa using (h (f.symm stmt') (g.symm wit')).symm
+--   · intro h
+--     intro stmt wit
+--     simpa using (h (f stmt) (g wit)).symm
 
-end Relation
+-- end Relation
 
 namespace ProtocolSpec
 
-#check Equiv.instEquivLike
+-- #check Equiv.instEquivLike
 
 /-- Two protocol specifications are equivalent if they have the same number of rounds, same
   direction for each round, and an equivalence of types for each round. -/
 @[ext]
 structure Equiv {m n : ℕ} (pSpec : ProtocolSpec m) (pSpec' : ProtocolSpec n) where
   round_eq : m = n
-  dir_eq : ∀ i, (pSpec i).1 = (pSpec' (Fin.cast round_eq i)).1
-  typeEquiv : ∀ i, (pSpec i).2 ≃ (pSpec' (Fin.cast round_eq i)).2
+  dir_eq : ∀ i, pSpec.dir i = pSpec'.dir (Fin.cast round_eq i)
+  typeEquiv : ∀ i, pSpec.«Type» i ≃ pSpec'.«Type» (Fin.cast round_eq i)
 
 namespace Equiv
 

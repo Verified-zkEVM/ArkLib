@@ -72,6 +72,33 @@ theorem runWithOracle_freeMonad_pure (f : spec.FunctionType) (a : Option α) :
   | none => simp only [runWithOracle_freeMonad_pure_none]
   | some val => simp only [runWithOracle_freeMonad_pure_some]
 
+@[simp]
+theorem runWithOracle_freeMonad_query_roll (f : spec.FunctionType)
+    (i : ι) (t : spec.domain i)
+    (r : (spec.range i) → FreeMonad (spec.OracleQuery) (Option α)) :
+    runWithOracle f (FreeMonad.roll (query i t) r) = runWithOracle f (r (f i t)) := by
+  rfl
+
+@[simp]
+theorem runWithOracle_bind (f : spec.FunctionType)
+    (oa : OracleComp spec α) (ob : α → OracleComp spec β) :
+    runWithOracle f (oa >>= ob) =
+    (runWithOracle f oa) >>=
+    (fun x => runWithOracle f (ob x)) := by
+  induction oa generalizing β f ob with
+  | pure x =>
+    cases x with
+    | some a => rfl
+    | none => rfl
+  | roll x r ih =>
+    cases x with
+    | query i t =>
+      simp only [runWithOracle_freeMonad_query_roll, Option.bind_eq_bind]
+      simp only [Option.bind_eq_bind] at ih
+      specialize ih (f i t) f ob
+      rw [<-ih]
+      rfl
+
 -- Oracle with bounded use; returns `default` if the oracle is used more than `bound` times.
 -- We could then have the range be an `Option` type, so that `default` is `none`.
 -- def boundedUseOracle {ι : Type} [DecidableEq ι] {spec : OracleSpec ι} (bound : ι → ℕ) :

@@ -57,6 +57,14 @@ The code `C` is `(r,ℓ)`-list decodable.
 def listDecodable (C : Code ι F) (r : ℝ) (ℓ : ℝ) : Prop :=
   ∀ y : ι → F, listOfCloseCodewordsRel C y r ≤ ℓ
 
+/--
+A code `C` is uniquely decodable up to a relative distance `r` if for any word `y : ι → F`,
+there is at most one codeword in `C` within a relative Hamming distance of `r`.
+This is a special case of list decodability where the list size `ℓ` is 1.
+-/
+def uniqueDecodable (C : Code ι F) (r : ℝ) : Prop :=
+  listDecodable C r 1
+
 section Lemmas
 
 variable {C : Code ι F} {y : ι → F} {n : ℕ} {r : ℝ} {ℓ : ℝ}

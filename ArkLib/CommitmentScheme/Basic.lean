@@ -68,7 +68,7 @@ def correctness (scheme : Scheme oSpec Data Randomness Commitment pSpec)
   ∀ data : Data,
   ∀ randomness : Randomness,
   ∀ query : O.Query,
-    [ fun x => x.1 | do
+    [ fun x => x.2.1 | do
         let cm ← liftComp (scheme.commit data randomness) _
         let ⟨result, _⟩ ← scheme.opening.run ⟨cm, query, O.oracle data query⟩ ⟨data, randomness⟩
         return result] ≥ 1 - correctnessError

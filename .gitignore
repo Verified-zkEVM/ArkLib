@@ -21,3 +21,8 @@
 .nvim.lua
 # Web files for local viewing
 /blueprint/web/
+
+/.claude/
+/.cursor/
+/.venv/
+/.vscode/

@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.OracleReduction.ProtocolSpec
+import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
 
 /-!
 # Interactive (Oracle) Reductions
@@ -130,10 +130,13 @@ structure ProverState (n : ℕ) where
 
 /-- Initialization of prover's state via inputting the statement and witness. -/
 @[ext]
-structure ProverIn (StmtIn WitIn PrvState : Type) where
+structure ProverInput (StmtIn WitIn PrvState : Type) where
   input : StmtIn × WitIn → PrvState
   -- initState : PrvState
   -- if honest prover, then expect that PrvState 0 = WitIn
+
+structure ProverInit (PrvState : Type) where
+  init : PrvState
 
 /-- Represents the interaction of a prover for a given protocol specification.
 
@@ -151,33 +154,88 @@ structure ProverRound {ι : Type} (oSpec : OracleSpec ι) {n : ℕ} (pSpec : Pro
     PrvState i.1.castSucc → OracleComp oSpec (pSpec.Message i × PrvState i.1.succ)
   /-- Receive a challenge and update the prover's state -/
   receiveChallenge (i : ChallengeIdx pSpec) :
-    PrvState i.1.castSucc → (pSpec.Challenge i) → PrvState i.1.succ
+    PrvState i.1.castSucc → OracleComp oSpec (pSpec.Challenge i → PrvState i.1.succ)
 
-/-- The output of the prover, which is a function from the prover's state to the output witness -/
+/-- The output function of the prover, which takes in the prover's final state and returns an oracle
+    computation that outputs some specified output type `Output`
+
+  We note that an honest prover may output both the output statement and witness (for easier
+  composability), but an adversarial prover in the knowledge soundness game may only output the
+  witness.
+-/
 @[ext]
-structure ProverOut (StmtOut WitOut PrvState : Type) where
-  output : PrvState → StmtOut × WitOut
+structure ProverOutput {ι : Type} (oSpec : OracleSpec ι) (Output PrvState : Type) where
+  output : PrvState → OracleComp oSpec Output
 
-/-- A prover for an interactive protocol with `n` messages consists of a sequence of internal states
-    and a tuple of four functions:
+/-- The type of algorithms that participates in an (interactive) reduction in the role of the
+  prover. This consists of:
+
+- `PrvState 0, ..., PrvState n`: the types for the private state, from before the first message to
+  after the last message
+- `init : PrvState 0` is the initial state
+- `sendMessage` and `receiveChallenge` are the functions for sending and receiving messages for each
+  round, depending on the direction of the round.
+
+This is useful when modeling soundness, since we do not want to mandate that adversarial provers in
+the soundness game need to input or output anything. -/
+structure ProverInteraction {ι : Type} (oSpec : OracleSpec ι) {n : ℕ} (pSpec : ProtocolSpec n)
+    extends ProverState n, ProverInit (PrvState 0), ProverRound oSpec pSpec
+
+/-- The type of algorithms that participates in an (interactive) reduction in the role of the
+  prover, and returns some specified output type `Output`. This consists of:
+
+- A `ProverInteraction` type for the interaction with the verifier
+- An `output` function that takes in the algorithm's final state and returns an oracle computation
+  that outputs the output type `Output`
+
+This is useful when modeling knowledge soundness, since we do not want to mandate that adversarial
+provers in the knowledge soundness game need to input the input statement or witness. We also do not
+need the adversarial prover to output any output statement, as such values are sourced from the
+verifier.
+-/
+structure ProverInteractionWithOutput {ι : Type} (oSpec : OracleSpec ι) (Output : Type)
+    {n : ℕ} (pSpec : ProtocolSpec n) extends
+      ProverState n,
+      ProverInit (PrvState 0),
+      ProverRound oSpec pSpec,
+      ProverOutput oSpec Output (PrvState (Fin.last n))
+
+/-- The type of honest provers for an interactive reduction with `n` messages. This consists of:
+
   - `PrvState 0`, ..., `PrvState n` are the types for the prover's state at each round
   - `input` initializes the prover's state by taking in the input statement and witness
-  - `receiveChallenge` updates the prover's state given a challenge
-  - `sendMessage` sends a message and updates the prover's state
+  - `sendMessage` takes in the prover's state, then returns an oracle computation that outputs a
+    message and the next prover's state
+  - `receiveChallenge` takes in the prover's state, then returns an oracle computation that outputs
+    a function that takes in a challenge and returns the next prover's state
   - `output` returns the output statement and witness from the prover's state
 
-Note that the output statement by the prover is present only to facilitate composing two provers
+Note that the output statement by the prover is present only to facilitate composing honest provers
 together. For completeness, we will require that the prover's output statement is always equal to
-the verifier's output statement. For soundness, we will only use the output statement generated by
-the verifier. -/
+the verifier's output statement. For soundness and knowledge soundness, we will use more restricted
+types of provers (see `ProverInteraction` and `ProverInteractionWithOutput`). -/
 @[ext]
 structure Prover {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn WitIn StmtOut WitOut : Type)
     {n : ℕ} (pSpec : ProtocolSpec n) extends
       ProverState n,
-      ProverIn StmtIn WitIn (PrvState 0),
+      ProverInput StmtIn WitIn (PrvState 0),
       ProverRound oSpec pSpec,
-      ProverOut StmtOut WitOut (PrvState (Fin.last n))
+      ProverOutput oSpec (StmtOut × WitOut) (PrvState (Fin.last n))
+
+/-
+
+Problem with current prover definition: it's too "rigid" for (knowledge) soundness, to the point
+where it's difficult (impossible?) to prove that knowledge soundness implies soundness.
+
+The problem is that any prover (even adversarial) is assumed to have an input & output functions.
+This does not really need to be the case. For knowledge soundness, we do not need any input, and
+for soundness, we don't even need the output. All we care about that the prover participates in the
+interaction to produce a transcript.
+
+TODO: see if the new `ProverInteraction` and `ProverInteractionWithOutput` types can be used to
+prove knowledge soundness implies soundness.
+-/
 
 /-- A verifier of an interactive protocol is a function that takes in the input statement and the
   transcript, and performs an oracle computation that outputs a new statement -/
@@ -436,19 +494,19 @@ def OracleReduction.toReduction {ι : Type} {oSpec : OracleSpec ι}
 /-- A **non-interactive prover** is a prover that only sends a single message to the verifier. -/
 @[reducible] def NonInteractiveProver (Message : Type) {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn WitIn StmtOut WitOut : Type) :=
-  Prover oSpec StmtIn WitIn StmtOut WitOut ![(.P_to_V, Message)]
+  Prover oSpec StmtIn WitIn StmtOut WitOut ⟨!v[.P_to_V], !v[Message]⟩
 
 /-- A **non-interactive verifier** is a verifier that only receives a single message from the
   prover. -/
 @[reducible] def NonInteractiveVerifier (Message : Type) {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn StmtOut : Type) :=
-  Verifier oSpec StmtIn StmtOut ![(.P_to_V, Message)]
+  Verifier oSpec StmtIn StmtOut ⟨!v[.P_to_V], !v[Message]⟩
 
 /-- A **non-interactive reduction** is an interactive reduction with only a single message from the
   prover to the verifier (and none in the other direction). -/
 @[reducible] def NonInteractiveReduction (Message : Type) {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn WitIn StmtOut WitOut : Type) :=
-  Reduction oSpec StmtIn WitIn StmtOut WitOut ![(.P_to_V, Message)]
+  Reduction oSpec StmtIn WitIn StmtOut WitOut ⟨!v[.P_to_V], !v[Message]⟩
 
 section Trivial
 
@@ -458,33 +516,33 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 
 /-- The trivial / identity prover, which does not send any messages to the verifier, and returns its
   input context (statement & witness) as output. -/
-protected def Prover.id : Prover oSpec Statement Witness Statement Witness ![] where
+protected def Prover.id : Prover oSpec Statement Witness Statement Witness !p[] where
   PrvState := fun _ => Statement × Witness
   input := _root_.id
   sendMessage := fun i => Fin.elim0 i
   receiveChallenge := fun i => Fin.elim0 i
-  output := _root_.id
+  output := pure
 
 /-- The trivial / identity verifier, which does not receive any messages from the prover, and
   returns its input statement as output. -/
-protected def Verifier.id : Verifier oSpec Statement Statement ![] where
+protected def Verifier.id : Verifier oSpec Statement Statement !p[] where
   verify := fun stmt _ => pure stmt
 
 /-- The trivial / identity reduction, which consists of the trivial prover and verifier. -/
-protected def Reduction.id : Reduction oSpec Statement Witness Statement Witness ![] where
+protected def Reduction.id : Reduction oSpec Statement Witness Statement Witness !p[] where
   prover := Prover.id
   verifier := Verifier.id
 
 /-- The trivial / identity prover in an oracle reduction, which unfolds to the trivial prover for
   the associated non-oracle reduction. -/
 protected def OracleProver.id :
-    OracleProver oSpec Statement OStatement Witness Statement OStatement Witness ![] :=
+    OracleProver oSpec Statement OStatement Witness Statement OStatement Witness !p[] :=
   Prover.id
 
 /-- The trivial / identity verifier in an oracle reduction, which receives no messages from the
   prover, and returns its input statement as output. -/
 protected def OracleVerifier.id :
-    OracleVerifier oSpec Statement OStatement Statement OStatement ![] where
+    OracleVerifier oSpec Statement OStatement Statement OStatement !p[] where
   verify := fun stmt _ => pure stmt
   embed := Function.Embedding.inl
   hEq := fun _ => rfl
@@ -492,7 +550,7 @@ protected def OracleVerifier.id :
 /-- The trivial / identity oracle reduction, which consists of the trivial oracle prover and
   verifier. -/
 protected def OracleReduction.id :
-    OracleReduction oSpec Statement OStatement Witness Statement OStatement Witness ![] :=
+    OracleReduction oSpec Statement OStatement Witness Statement OStatement Witness !p[] :=
   ⟨OracleProver.id, OracleVerifier.id⟩
 
 alias Prover.trivial := Prover.id
@@ -524,17 +582,17 @@ variable {n : ℕ}
 
 /-- A protocol specification with the prover speaking first -/
 class ProverFirst (pSpec : ProtocolSpec n) [NeZero n] where
-  prover_first' : (pSpec 0).1 = .P_to_V
+  prover_first' : pSpec.dir 0 = .P_to_V
 
 class VerifierFirst (pSpec : ProtocolSpec n) [NeZero n] where
-  verifier_first' : (pSpec 0).1 = .V_to_P
+  verifier_first' : pSpec.dir 0 = .V_to_P
 
 class ProverLast (pSpec : ProtocolSpec n) [inst : NeZero n] where
-  prover_last' : (pSpec ⟨n - 1, by simp [Nat.pos_of_neZero]⟩).1 = .P_to_V
+  prover_last' : pSpec.dir ⟨n - 1, by simp [Nat.pos_of_neZero]⟩ = .P_to_V
 
 /-- A protocol specification with the verifier speaking last -/
 class VerifierLast (pSpec : ProtocolSpec n) [NeZero n] where
-  verifier_last' : (pSpec ⟨n - 1, by simp [Nat.pos_of_neZero]⟩).1 = .V_to_P
+  verifier_last' : pSpec.dir ⟨n - 1, by simp [Nat.pos_of_neZero]⟩ = .V_to_P
 
 class ProverOnly (pSpec : ProtocolSpec 1) extends ProverFirst pSpec
 
@@ -546,19 +604,19 @@ class VerifierOnly (pSpec : ProtocolSpec 1) extends VerifierFirst pSpec
 
 @[simp]
 theorem prover_first (pSpec : ProtocolSpec n) [NeZero n] [h : ProverFirst pSpec] :
-    (pSpec 0).1 = .P_to_V := h.prover_first'
+    pSpec.dir 0 = .P_to_V := h.prover_first'
 
 @[simp]
 theorem verifier_first (pSpec : ProtocolSpec n) [NeZero n] [h : VerifierFirst pSpec] :
-    (pSpec 0).1 = .V_to_P := h.verifier_first'
+    pSpec.dir 0 = .V_to_P := h.verifier_first'
 
 @[simp]
 theorem prover_last (pSpec : ProtocolSpec n) [NeZero n] [h : ProverLast pSpec] :
-    (pSpec ⟨n - 1, by simp [Nat.pos_of_neZero]⟩).1 = .P_to_V := h.prover_last'
+    pSpec.dir ⟨n - 1, by simp [Nat.pos_of_neZero]⟩ = .P_to_V := h.prover_last'
 
 @[simp]
 theorem verifier_last (pSpec : ProtocolSpec n) [NeZero n] [h : VerifierLast pSpec] :
-    (pSpec ⟨n - 1, by simp [Nat.pos_of_neZero]⟩).1 = .V_to_P := h.verifier_last'
+    pSpec.dir ⟨n - 1, by simp [Nat.pos_of_neZero]⟩ = .V_to_P := h.verifier_last'
 
 section SingleMessage
 
@@ -591,10 +649,10 @@ instance [h : VerifierFirst pSpec] : IsEmpty (pSpec.MessageIdx) where
 instance [ProverFirst pSpec] : ∀ i, VCVCompatible (pSpec.Challenge i) := isEmptyElim
 instance [VerifierFirst pSpec] : ∀ i, OracleInterface (pSpec.Message i) := isEmptyElim
 
-instance [ProverFirst pSpec] [h : OracleInterface (pSpec 0).2] :
+instance [ProverFirst pSpec] [h : OracleInterface (pSpec.«Type» 0)] :
     ∀ i, OracleInterface (pSpec.Message i)
   | ⟨0, _⟩ => inferInstance
-instance [VerifierFirst pSpec] [h : VCVCompatible (pSpec 0).2] :
+instance [VerifierFirst pSpec] [h : VCVCompatible (pSpec.«Type» 0)] :
     ∀ i, VCVCompatible (pSpec.Challenge i)
   | ⟨0, _⟩ => inferInstance
 
@@ -602,11 +660,11 @@ end SingleMessage
 
 @[simp]
 theorem prover_last_of_two (pSpec : ProtocolSpec 2) [ProverLast pSpec] :
-    pSpec.getDir 1 = .P_to_V := prover_last pSpec
+    pSpec.dir 1 = .P_to_V := prover_last pSpec
 
 @[simp]
 theorem verifier_last_of_two (pSpec : ProtocolSpec 2) [VerifierLast pSpec] :
-    pSpec.getDir 1 = .V_to_P := verifier_last pSpec
+    pSpec.dir 1 = .V_to_P := verifier_last pSpec
 
 /-- A protocol specification with a single round of interaction consisting of two messages, with the
   prover speaking first and the verifier speaking last
@@ -657,11 +715,11 @@ instance [IsSingleRound pSpec] [h : VCVCompatible (pSpec.Challenge default)] :
 end IsSingleRound
 
 @[inline, reducible]
-def FullTranscript.mk2 {pSpec : ProtocolSpec 2} (msg0 : pSpec.getType 0) (msg1 : pSpec.getType 1) :
+def FullTranscript.mk2 {pSpec : ProtocolSpec 2} (msg0 : pSpec.«Type» 0) (msg1 : pSpec.«Type» 1) :
     FullTranscript pSpec := fun | ⟨0, _⟩ => msg0 | ⟨1, _⟩ => msg1
 
-theorem FullTranscript.mk2_eq_snoc_snoc {pSpec : ProtocolSpec 2} (msg0 : pSpec.getType 0)
-    (msg1 : pSpec.getType 1) :
+theorem FullTranscript.mk2_eq_snoc_snoc {pSpec : ProtocolSpec 2} (msg0 : pSpec.«Type» 0)
+    (msg1 : pSpec.«Type» 1) :
       FullTranscript.mk2 msg0 msg1 = ((default : pSpec.Transcript 0).concat msg0).concat msg1 := by
   unfold FullTranscript.mk2 Transcript.concat
   simp only [default, Fin.isValue]

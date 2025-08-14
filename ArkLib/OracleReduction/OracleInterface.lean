@@ -63,11 +63,15 @@ instance {Message : Type u} : Inhabited (OracleInterface Message) :=
 
 open SimOracle
 
-/-- Converts an indexed type family of oracle interfaces into an oracle specification. -/
+/-- Converts an indexed type family of oracle interfaces into an oracle specification.
+
+Notation: `[v]ₒ` for when the oracle interfaces can be inferred, and `[v]ₒ'O` for when the oracle
+interfaces need to be specified. -/
 def toOracleSpec {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterface (v i)] :
     OracleSpec ι := fun i => ((O i).Query, (O i).Response)
 
-@[inherit_doc] notation "[" term "]ₒ" => toOracleSpec term
+@[inherit_doc] notation "[" v "]ₒ" => toOracleSpec v
+@[inherit_doc] notation "[" v "]ₒ'" oI:max => toOracleSpec v (O := oI)
 
 /-- Given an underlying data for an indexed type family of oracle interfaces `v`,
     we can give an implementation of all queries to the interface defined by `v` -/

@@ -11,16 +11,17 @@ import ArkLib.OracleReduction.Security.RoundByRound
 
   This is a zero-round (oracle) reduction.
 
-  1. Reduction version: there are mappings between `StmtIn → StmtOut` and `WitIn → WitOut`. The
-     prover and verifier applies these mappings to the input statement and witness, and returns the
-     output statement and witness.
+  1. Reduction version: there are mappings between `StmtIn → StmtOut` and `StmtIn → WitIn → WitOut`.
+     Note the second mapping between witnesses may depend on the input statement as well. The prover
+     and verifier applies these mappings to the input statement and witness, and returns the output
+     statement and witness.
 
   This reduction is secure via pull-backs on relations. What this means is as follows:
   - Completeness holds if for the outputs of the reduction satisfies some relation `relOut` whenever
     the inputs satisfy the relation `relIn := relOut (mapStmt ·) (mapWit ·)`
-  - (Round-by-round) knowledge soundness holds if there exists an inverse mapping `WitOut → WitIn`
-    on witnesses (for extraction) such that `(mapStmt stmtIn, witOut) ∈ relOut` implies `(stmtIn,
-    mapWitInv witOut) ∈ relIn`.
+  - (Round-by-round) knowledge soundness holds if there exists an inverse mapping
+    `StmtIn → WitOut → WitIn` on witnesses (for extraction) such that
+    `(mapStmt stmtIn, witOut) ∈ relOut → (stmtIn, mapWitInv stmtIn witOut) ∈ relIn`.
 
   2. Oracle reduction version: same as above, but with the extra mapping `OStmtIn → OStmtOut`,
      defined as an oracle simulation / embedding.
@@ -35,24 +36,24 @@ variable {ι : Type} (oSpec : OracleSpec ι)
   {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} {WitIn : Type}
   {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} {WitOut : Type}
   [∀ i, OracleInterface (OStmtIn i)]
-  (mapStmt : StmtIn → StmtOut) (mapWit : WitIn → WitOut)
+  (mapStmt : StmtIn → StmtOut) (mapWit : StmtIn → WitIn → WitOut)
 
 section Reduction
 
 /-- The prover for the `ReduceClaim` reduction. -/
-def prover : Prover oSpec StmtIn WitIn StmtOut WitOut ![] where
+def prover : Prover oSpec StmtIn WitIn StmtOut WitOut !p[] where
   PrvState | 0 => StmtIn × WitIn
   input := id
   sendMessage := fun i => nomatch i
   receiveChallenge := fun i => nomatch i
-  output := fun ⟨stmt, wit⟩ => (mapStmt stmt, mapWit wit)
+  output := fun ⟨stmt, wit⟩ => pure (mapStmt stmt, mapWit stmt wit)
 
 /-- The verifier for the `ReduceClaim` reduction. -/
-def verifier : Verifier oSpec StmtIn StmtOut ![] where
+def verifier : Verifier oSpec StmtIn StmtOut !p[] where
   verify := fun stmt _ => pure (mapStmt stmt)
 
 /-- The reduction for the `ReduceClaim` reduction. -/
-def reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut ![] where
+def reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut !p[] where
   prover := prover oSpec mapStmt mapWit
   verifier := verifier oSpec mapStmt
 
@@ -64,7 +65,7 @@ variable {oSpec} {mapStmt} {mapWit}
 @[simp]
 theorem reduction_completeness (h : init.neverFails)
     (hRel : ∀ stmtIn witIn, (stmtIn, witIn) ∈ relIn ↔
-      (mapStmt stmtIn, mapWit witIn) ∈ relOut) :
+      (mapStmt stmtIn, mapWit stmtIn witIn) ∈ relOut) :
     (reduction oSpec mapStmt mapWit).perfectCompleteness init impl relIn relOut := by
   simp [reduction, Reduction.run, Prover.run, Prover.runToRound, Verifier.run,
     prover, verifier, hRel, h]
@@ -72,17 +73,17 @@ theorem reduction_completeness (h : init.neverFails)
 
 /-- The round-by-round extractor for the `ReduceClaim` (oracle) reduction. Requires a mapping
   `mapWitInv` from the output witness to the input witness. -/
-def extractor (mapWitInv : WitOut → WitIn) :
-    Extractor.RoundByRound oSpec StmtIn WitIn WitOut ![] (fun _ => WitIn) where
+def extractor (mapWitInv : StmtIn → WitOut → WitIn) :
+    Extractor.RoundByRound oSpec StmtIn WitIn WitOut !p[] (fun _ => WitIn) where
   eqIn := rfl
   extractMid := fun i => Fin.elim0 i
-  extractOut := fun _ _ witOut => mapWitInv witOut
+  extractOut := fun stmtIn _ witOut => mapWitInv stmtIn witOut
 
-variable {mapWitInv : WitOut → WitIn}
+variable {mapWitInv : StmtIn → WitOut → WitIn}
 
 /-- The knowledge state function for the `ReduceClaim` reduction. -/
 def knowledgeStateFunction (hRel : ∀ stmtIn witOut,
-      (mapStmt stmtIn, witOut) ∈ relOut → (stmtIn, mapWitInv witOut) ∈ relIn) :
+      (mapStmt stmtIn, witOut) ∈ relOut → (stmtIn, mapWitInv stmtIn witOut) ∈ relIn) :
     (verifier oSpec mapStmt).KnowledgeStateFunction
       init impl relIn relOut (extractor mapWitInv) where
   toFun | ⟨0, _⟩ => fun stmtIn _ witIn => ⟨stmtIn, witIn⟩ ∈ relIn
@@ -96,7 +97,7 @@ Note that since there is no challenge round, all the work is done in the definit
 knowledge state function. -/
 @[simp]
 theorem verifier_rbrKnowledgeSoundness (hRel : ∀ stmtIn witOut,
-      (mapStmt stmtIn, witOut) ∈ relOut → (stmtIn, mapWitInv witOut) ∈ relIn) :
+      (mapStmt stmtIn, witOut) ∈ relOut → (stmtIn, mapWitInv stmtIn witOut) ∈ relIn) :
     (verifier oSpec mapStmt).rbrKnowledgeSoundness init impl relIn relOut 0 := by
   refine ⟨_, _, knowledgeStateFunction relIn relOut hRel, ?_⟩
   simp only [ProtocolSpec.ChallengeIdx, Matrix.vecEmpty]
@@ -115,23 +116,23 @@ def mapOStmt (oStmtIn : ∀ i, OStmtIn i) : ∀ i, OStmtOut i := fun i => (hEq i
 
 /-- The oracle prover for the `ReduceClaim` oracle reduction. -/
 def oracleProver : OracleProver oSpec
-    StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut ![] where
+    StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut !p[] where
   PrvState := fun _ => (StmtIn × (∀ i, OStmtIn i)) × WitIn
   input := id
   sendMessage := fun i => nomatch i
   receiveChallenge := fun i => nomatch i
   output := fun ⟨⟨stmt, oStmt⟩, wit⟩ =>
-    ((mapStmt stmt, mapOStmt embedIdx hEq oStmt), mapWit wit)
+    pure ((mapStmt stmt, mapOStmt embedIdx hEq oStmt), mapWit stmt wit)
 
 /-- The oracle verifier for the `ReduceClaim` oracle reduction. -/
-def oracleVerifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut ![] where
+def oracleVerifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut !p[] where
   verify := fun stmt _ => pure (mapStmt stmt)
   embed := .trans embedIdx .inl
   hEq := by intro i; simp [hEq]
 
 /-- The oracle reduction for the `ReduceClaim` oracle reduction. -/
 def oracleReduction : OracleReduction oSpec
-    StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut ![] where
+    StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut !p[] where
   prover := oracleProver oSpec mapStmt mapWit embedIdx hEq
   verifier := oracleVerifier oSpec mapStmt embedIdx hEq
 
@@ -145,7 +146,7 @@ variable {oSpec} {mapStmt} {mapWit} {embedIdx} {hEq}
 theorem oracleReduction_completeness (h : init.neverFails)
     (hRel : ∀ stmtIn oStmtIn witIn,
       ((stmtIn, oStmtIn), witIn) ∈ relIn →
-      ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), mapWit witIn) ∈ relOut) :
+      ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), mapWit stmtIn witIn) ∈ relOut) :
     (oracleReduction oSpec mapStmt mapWit embedIdx hEq).perfectCompleteness init impl
       relIn relOut := by
   -- TODO: clean up this proof
@@ -167,12 +168,12 @@ theorem oracleReduction_completeness (h : init.neverFails)
     Prod.mk.injEq, and_imp, true_and]
   aesop
 
-variable {mapWitInv : WitOut → WitIn}
+variable {mapWitInv : (StmtIn × (∀ i, OStmtIn i)) → WitOut → WitIn}
 
 /-- The knowledge state function for the `ReduceClaim` oracle reduction. -/
 def oracleKnowledgeStateFunction (hRel : ∀ stmtIn oStmtIn witOut,
       ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), witOut) ∈ relOut →
-      ((stmtIn, oStmtIn), mapWitInv witOut) ∈ relIn) :
+      ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
     (oracleVerifier oSpec mapStmt embedIdx hEq).KnowledgeStateFunction
       init impl relIn relOut (extractor mapWitInv) where
   toFun | ⟨0, _⟩ => fun ⟨stmtIn, oStmtIn⟩ _ witIn => ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ ∈ relIn
@@ -189,7 +190,7 @@ knowledge state function. -/
 @[simp]
 theorem oracleVerifier_rbrKnowledgeSoundness (hRel : ∀ stmtIn oStmtIn witOut,
       ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), witOut) ∈ relOut →
-      ((stmtIn, oStmtIn), mapWitInv witOut) ∈ relIn) :
+      ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
     (oracleVerifier oSpec mapStmt embedIdx hEq).rbrKnowledgeSoundness init impl relIn relOut 0 := by
   refine ⟨_, _, oracleKnowledgeStateFunction relIn relOut hRel, ?_⟩
   simp only [ProtocolSpec.ChallengeIdx, Matrix.vecEmpty]

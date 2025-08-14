@@ -27,11 +27,11 @@ section Reduction
 
 /-- The prover for the `DoNothing` reduction. -/
 @[inline, specialize, simp]
-def prover : Prover oSpec Statement Witness Statement Witness ![] := Prover.id
+def prover : Prover oSpec Statement Witness Statement Witness !p[] := Prover.id
 
 /-- The verifier for the `DoNothing` reduction. -/
 @[inline, specialize, simp]
-def verifier : Verifier oSpec Statement Statement ![] := Verifier.id
+def verifier : Verifier oSpec Statement Statement !p[] := Verifier.id
 
 /-- The reduction for the `DoNothing` reduction.
   - Prover simply returns the statement and witness.
@@ -40,7 +40,7 @@ def verifier : Verifier oSpec Statement Statement ![] := Verifier.id
   NOTE: this is just a wrapper around `Reduction.id`
 -/
 @[inline, specialize, simp]
-def reduction : Reduction oSpec Statement Witness Statement Witness ![] := Reduction.id
+def reduction : Reduction oSpec Statement Witness Statement Witness !p[] := Reduction.id
 
 variable {oSpec} {Statement} {Witness}
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
@@ -65,11 +65,11 @@ section OracleReduction
 /-- The oracle prover for the `DoNothing` oracle reduction. -/
 @[inline, specialize, simp]
 def oracleProver : OracleProver oSpec
-    Statement OStatement Witness Statement OStatement Witness ![] := OracleProver.id
+    Statement OStatement Witness Statement OStatement Witness !p[] := OracleProver.id
 
 /-- The oracle verifier for the `DoNothing` oracle reduction. -/
 @[inline, specialize, simp]
-def oracleVerifier : OracleVerifier oSpec Statement OStatement Statement OStatement ![] :=
+def oracleVerifier : OracleVerifier oSpec Statement OStatement Statement OStatement !p[] :=
   OracleVerifier.id
 
 /-- The oracle reduction for the `DoNothing` oracle reduction.
@@ -80,7 +80,7 @@ def oracleVerifier : OracleVerifier oSpec Statement OStatement Statement OStatem
 -/
 @[inline, specialize, simp]
 def oracleReduction : OracleReduction oSpec
-    Statement OStatement Witness Statement OStatement Witness ![] := OracleReduction.id
+    Statement OStatement Witness Statement OStatement Witness !p[] := OracleReduction.id
 
 variable {oSpec} {Statement} {OStatement} {Witness}
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}

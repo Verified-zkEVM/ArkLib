@@ -33,6 +33,8 @@ This file provides executable implementations for binary tower fields
   two". In : Proceedings of IEEE International Symposium on Information Theory. 1997.
 -/
 
+set_option linter.style.longFile 3000
+
 namespace ConcreteBinaryTower
 open Polynomial
 
@@ -1895,8 +1897,8 @@ end BaseDefinitions
 
 section Tests
 
-#check instFieldConcrete (k:=5)
-#check instFieldConcrete (k:=2)
+-- #check instFieldConcrete (k:=5)
+-- #check instFieldConcrete (k:=2)
 
 #eval bitVecToString 5 (BitVec.ofNat 5 1)  -- 5 in 4 bits is 0101
 #eval split (k:=5) (by omega) (fromNat (k:=5) 1) -- 1 => (0, 1)
