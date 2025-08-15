@@ -56,21 +56,21 @@ lemma oodSampling_crs_eq_rs
     {f : ι → F} {m s : ℕ} {φ : ι ↪ F} [Smooth φ]
     (l δ : ℝ≥0) (hδLe : δ ≤ 1)
     {C : Set (ι → F)} (hcode : C = smoothCode φ m ∧ listDecodable C δ l) :
-    Pr_{ let r_s ←$ᵖ (Fin s → F) }[ (∃ σ : Fin s → F,
+    Pr_{ let rs ←$ᵖ (Fin s → F) }[ (∃ σ : Fin s → F,
                         let w : Fin s → MvPolynomial (Fin (m + 1)) F :=
                           fun i =>
-                            let ri := r_s i
+                            let ri := rs i
                             let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
                             MvPolynomial.X (Fin.last m) * rename Fin.castSucc (eqPolynomial rVec)
                         let multiCRSCode := multiConstrainedCode φ m s w σ
                         ∃ u u' : ι → F, u ≠ u' ∧ u ∈ relHammingBall multiCRSCode f δ ∧ u' ∈ relHammingBall multiCRSCode f δ)]
     =
-    Pr_{ let r_s ←$ᵖ (Fin s → F) }[ (∃ u u' : smoothCode φ m,
+    Pr_{ let rs ←$ᵖ (Fin s → F) }[ (∃ u u' : smoothCode φ m,
                         u.val ≠ u'.val ∧
                         u.val ∈ relHammingBall C f δ ∧
                         u'.val ∈ relHammingBall C f δ ∧
                         ∀ i : Fin s,
-                          let ri := r_s i
+                          let ri := rs i
                           let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
                           (mVdecode u).eval (rVec) = (mVdecode u').eval (rVec))]
   := by sorry
@@ -84,12 +84,12 @@ lemma oodSampling_rs_le_bound
     {f : ι → F} {m s : ℕ} {φ : ι ↪ F} [Smooth φ]
     (δ l : ℝ≥0) (hδLe : δ ≤ 1)
     (C : Set (ι → F)) (hcode : C = smoothCode φ m ∧ listDecodable C δ l) :
-    Pr_{ let r_s ←$ᵖ (Fin s → F) }[ ∃ u u' : smoothCode φ m,
+    Pr_{ let rs ←$ᵖ (Fin s → F) }[ ∃ u u' : smoothCode φ m,
                         u.val ≠ u'.val ∧
                         u.val ∈ relHammingBall C f δ ∧
                         u'.val ∈ relHammingBall C f δ ∧
                         ∀ i : Fin s,
-                          let ri := r_s i
+                          let ri := rs i
                           let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
                           (mVdecode u).eval (rVec) = (mVdecode u').eval (rVec)
                       ] ≤ ENNReal.ofReal (((l : ℝ)^2 / 2) * (((2^m : ℝ) / Fintype.card F)^s))

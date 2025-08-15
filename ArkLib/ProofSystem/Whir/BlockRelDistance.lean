@@ -174,7 +174,7 @@ lemma relHammingDist_le_blockRelDistance
   [h_fintype : ∀ i : ℕ, Fintype (indexPowT S φ i)]
   [DecidableEq (indexPowT S φ i)] [Smooth φ']
   [h_dec : DecidableBlockDisagreement i k f S' φ'] :
-  δᵣ(f, g)  ≤ Δᵣ(i, k, f, S', φ', g) := by sorry
+  δᵣ(f, g) ≤ Δᵣ(i, k, f, S', φ', g) := by sorry
 
 /-- Claim 4.19, Part 2
   As a consequence of `relHammingDist_le_blockRelDistance`, the list of codewords

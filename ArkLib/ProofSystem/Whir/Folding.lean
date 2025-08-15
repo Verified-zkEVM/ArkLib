@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Poulami Das, Miguel Quaresma (Least Authority)
+Authors: Poulami Das, Miguel Quaresma (Least Authority), Alexander Hicks
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon
@@ -27,7 +27,7 @@ introduced in the [Section 4 of the WHIR paper][todo: ArkLib bibliography].
   and not for a generic l.
 
 - Lemmas 4.21,4.22,4.23
--- these lemmas refer to the specifc case when k set to 1, so it's safe to use the hypothesis 1 ≤ m
+-- these lemmas refer to the specific case when k set to 1, so it's safe to use the hypothesis 1 ≤ m
 
 ## References
 
@@ -216,7 +216,7 @@ theorem folding_listdecoding_if_genMutualCorrAgreement
   [h : ∀ {f : (indexPowT S φ 0) → F}, DecidableBlockDisagreement 0 k f S' φ']
   [∀ i : ℕ, Neg (indexPowT S φ i)]
   {C : Set ((indexPowT S φ 0) → F)} (hcode : C = smoothCode φ' m) (hLe : k ≤ m)
-  {GenFun : F → Fin k → F} {δ : ℝ≥0}
+  {δ : ℝ≥0}
   {params : GenMutualCorrParams S φ k} :
 
   -- necessary typeclasses of underlying domain (ιᵢ)^2ʲ regarding finiteness,
@@ -224,16 +224,15 @@ theorem folding_listdecoding_if_genMutualCorrAgreement
     let _ : ∀ j : Fin (k + 1), Fintype (indexPowT S φ j) := params.inst1
     let _ : ∀ j : Fin (k + 1), Nonempty (indexPowT S φ j) := params.inst2
 
-    Pr_{let α ←$ᵖ F}[ -- for every function `f : ι → F` and
+    Pr_{let αs ←$ᵖ (Fin k → F)}[ -- for every function `f : ι → F` and
                       ∀ (f : (indexPowT S φ 0) → F),
                       -- `hδLe` : `δ ∈ (0, max_{j ∈ [0,k]} BStar(Cⱼ, parℓ = 2))`
                        (0 < δ ∧ δ < 1 - Finset.univ.sup
                         (fun j => params.BStar j (params.Gen_α j).C (params.Gen_α j).parℓ)) →
 
                       let listBlock : Set ((indexPowT S φ 0) → F) := Λᵣ(0, k, f, S', C, hcode, δ)
-                      let vec_α := GenFun α
-                      let fold := fold_k f vec_α hLe
-                      let foldSet := fold_k_set listBlock vec_α hLe
+                      let fold := fold_k f αs hLe
+                      let foldSet := fold_k_set listBlock αs hLe
                       let kFin : Fin (k + 1) := ⟨k, Nat.lt_succ_self k⟩
                       let Cₖ := (params.Gen_α kFin).C
                       let listHamming := relHammingBall Cₖ fold δ
