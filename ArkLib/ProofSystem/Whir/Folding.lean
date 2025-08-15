@@ -209,6 +209,8 @@ class GenMutualCorrParams (S : Finset ι) (φ : ι ↪ F) (k : ℕ) where
   conditions of proxmity generator with mutual correlated agreement for codes
   C⁰,...,C^{k}.
 -/
+
+-- NOTE: need to align this better with the inductive way this is shown via the other lemmas below.
 theorem folding_listdecoding_if_genMutualCorrAgreement
   {S : Finset ι} {φ : ι ↪ F} [Smooth φ] {k m : ℕ}
   {S' : Finset (indexPowT S φ 0)} {φ' : (indexPowT S φ 0) ↪ F}
