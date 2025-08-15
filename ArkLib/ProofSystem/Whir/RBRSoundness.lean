@@ -82,6 +82,8 @@ structure ParamConditions (P : Params ι F) where
     C_ij is `(δᵢ, dist_ij)`-list decodeable,
   where `δᵢ = 1 - max_{j : foldingParamᵢ + 1} BStar(C_ij,2)`
 -/
+
+-- NOTE: fix this after fixing folding
 class GenMutualCorrParams (P : Params ι F) (S : ∀ i : Fin (M + 1), Finset (ι i)) where
 
   δ : Fin (M + 1) → ℝ≥0
