@@ -892,15 +892,14 @@ def equiv (p q : UniPoly R) : Prop :=
 
 open List in
 /-- Transitivity of the equivalence relation. -/
-@[simp] theorem equiv_trans {p q r : UniPoly Q} : equiv p q → equiv q r → equiv p r :=
-  fun hpq hqr => by
-    simp_all [equiv]
-    sorry
-    -- have hpq' := (List.matchSize_eq_iff_forall_eq p.toList q.toList 0).mp hpq
-    -- have hqr' := (List.matchSize_eq_iff_forall_eq q.toList r.toList 0).mp hqr
-    -- have hpr' : ∀ (i : Nat), p.toList.getD i 0 = r.toList.getD i 0 :=
-    --   fun i => Eq.trans (hpq' i) (hqr' i)
-    -- exact (List.matchSize_eq_iff_forall_eq p.toList r.toList 0).mpr hpr'
+@[simp] theorem equiv_trans {p q r : UniPoly Q} : equiv p q → equiv q r → equiv p r := by
+  intros hpq hqr
+  simp_all [equiv]
+  have hpq' := (Array.matchSize_eq_iff_forall_eq p q 0).mp hpq
+  have hqr' := (Array.matchSize_eq_iff_forall_eq q r 0).mp hqr
+  have hpr' : ∀ (i : Nat), p.getD i 0 = r.getD i 0 :=
+    fun i => Eq.trans (hpq' i) (hqr' i)
+  exact (Array.matchSize_eq_iff_forall_eq p r 0).mpr hpr'
 
 /-- The `UniPoly.equiv` is indeed an equivalence relation. -/
 instance instEquivalenceEquiv : Equivalence (equiv (R := R)) where
