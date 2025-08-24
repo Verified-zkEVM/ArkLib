@@ -53,7 +53,7 @@ this proves that if the previous round satisfies the invariant, then the current
 
 set_option linter.style.longFile 2400
 
-open Polynomial AdditiveNTT
+open Polynomial AdditiveNTT Module
 namespace AdditiveNTT
 
 universe u
