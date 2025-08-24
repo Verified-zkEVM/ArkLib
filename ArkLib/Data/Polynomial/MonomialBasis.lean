@@ -11,6 +11,7 @@ import Mathlib.LinearAlgebra.FiniteDimensional.Defs
 import Mathlib.LinearAlgebra.FreeModule.StrongRankCondition
 import Mathlib.Order.CompletePartialOrder
 import Mathlib.RingTheory.Henselian
+import Mathlib.LinearAlgebra.StdBasis
 
 /-!
 # Monomial basis for algebra extensions
@@ -19,6 +20,7 @@ import Mathlib.RingTheory.Henselian
 namespace Polynomial
 
 section MonomialBasis
+open Module
 
 -- Fix a binary field `L` of degree `r` over its prime subfield `K`
 variable {K : Type*} {L : Type*} [CommSemiring K] [Field L]
