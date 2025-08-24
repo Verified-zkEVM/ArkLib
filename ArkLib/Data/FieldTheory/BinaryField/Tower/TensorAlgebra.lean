@@ -8,6 +8,7 @@ import Mathlib.Algebra.MvPolynomial.Basic
 import Mathlib.GroupTheory.MonoidLocalization.Basic
 import Mathlib.LinearAlgebra.TensorProduct.Basis
 import Mathlib.RingTheory.TensorProduct.Basic
+import Mathlib.LinearAlgebra.StdBasis
 
 /-!
 # Generalized Tensor Algebra and Dual View
@@ -36,6 +37,7 @@ for arbitrary field extensions `R/K` and `C/K`, upon the existing `TensorProduct
   Cryptology ePrint Archive (2023).
 -/
 open TensorProduct
+open Module
 
 section DualView
 -- This section formalizes the dual view for any finite field extensions.
@@ -70,7 +72,7 @@ lemma comm_map_smul_tmul (s s' : Right) (m : Left) :
   rw [show algebraMap Right (Left ⊗[K] Right) =
     (Algebra.TensorProduct.includeRight).toRingHom.comp (algebraMap Right Right) by rfl]
   -- Now, simplify all the compositions and applications.
-  simp only [Algebra.id.map_eq_id, RingHomCompTriple.comp_eq,
+  simp only [Algebra.algebraMap_self, RingHomCompTriple.comp_eq,
     Algebra.TensorProduct.includeLeftRingHom_apply, Algebra.TensorProduct.tmul_mul_tmul, one_mul,
     Algebra.TensorProduct.comm_tmul, AlgHom.toRingHom_eq_coe, RingHom.coe_coe,
     Algebra.TensorProduct.includeRight_apply]
