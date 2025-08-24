@@ -37,7 +37,6 @@ for arbitrary field extensions `R/K` and `C/K`, upon the existing `TensorProduct
   Cryptology ePrint Archive (2023).
 -/
 open TensorProduct
-open Module
 
 section DualView
 -- This section formalizes the dual view for any finite field extensions.
@@ -108,6 +107,7 @@ noncomputable def commSEquiv : Right ⊗[K] Left ≃ₗ[Right] Left ⊗[K] Right
         exact comm_map_smul_add (Right:=Right) (Left:=Left) s x y hx hy
    }
 
+open Module
 /--
 The lift of an `K`-basis of `Left` to an `Right`-basis of the base change `Left ⊗[K] Right`.
 This is the right-sided counterpart to `Basis.baseChange`.
