@@ -2277,6 +2277,7 @@ lemma algebraMap_adjacent_tower_def (l : ℕ) :
 end ConcreteBTFieldAlgebra
 
 noncomputable section ConcreteMultilinearBasis
+open Module
 
 @[simp]
 theorem Basis_cast_index_eq (i j k n : ℕ) (h_le : k ≤ n) (h_eq : i = j) :
