@@ -914,11 +914,43 @@ instance instSetoidUniPoly: Setoid (UniPoly R) where
 
 /-- The quotient of `UniPoly R` by `UniPoly.equiv`. This will be changen to be equivalent to
   `Polynomial R`. -/
-def QuotientUniPoly := Quotient (@instSetoidUniPoly R _)
+def QuotientUniPoly (R : Type*) [Ring R] [BEq R] := Quotient (@instSetoidUniPoly R _)
 
--- TODO: change that operations on `UniPoly` descend to `QuotientUniPoly`
+-- operations on `UniPoly` descend to `QuotientUniPoly`
+namespace QuotientOperations
 
+-- Addition: add descends to `QuotientUniPoly`
+def add_lifting (p q : UniPoly R) : QuotientUniPoly R := sorry
 
+def add_lemma : ∀ (a₁ b₁ a₂ b₂ : UniPoly R),
+  a₁ ≈ a₂ → b₁ ≈ b₂ → add_lifting a₁ b₁ = add_lifting a₂ b₂ := by sorry
+
+@[inline, specialize]
+def add {R : Type*} [Ring R] [BEq R] (p q : QuotientUniPoly R) : QuotientUniPoly R :=
+  Quotient.lift₂ add_lifting add_lemma p q
+
+-- Subtraction: sub descends to `QuotientUniPoly`
+def sub_lifting (p q : UniPoly R) : QuotientUniPoly R := sorry
+
+def sub_lemma : ∀ (a₁ b₁ a₂ b₂ : UniPoly R),
+  a₁ ≈ a₂ → b₁ ≈ b₂ → sub_lifting a₁ b₁ = sub_lifting a₂ b₂ := by sorry
+
+@[inline, specialize]
+def sub {R : Type*} [Ring R] [BEq R] (p q : QuotientUniPoly R) : QuotientUniPoly R :=
+  Quotient.lift₂ sub_lifting sub_lemma p q
+
+-- Negation: neg descends to `QuotientUniPoly`
+def neg_lifting (p : UniPoly R) : QuotientUniPoly R := sorry
+
+def neg_lemma : (∀ (a b : UniPoly R), a ≈ b → neg_lifting a = neg_lifting b) := by sorry
+
+@[inline, specialize]
+def neg {R : Type*} [Ring R] [BEq R] (p : QuotientUniPoly R) : QuotientUniPoly R :=
+  Quotient.lift neg_lifting neg_lemma p
+
+-- TODO the other operations ...
+
+end QuotientOperations
 
 end Equiv
 
