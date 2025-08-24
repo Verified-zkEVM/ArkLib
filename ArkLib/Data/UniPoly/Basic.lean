@@ -588,6 +588,20 @@ lemma trim_add_trim [LawfulBEq R] (p q : UniPoly R) : p.trim + q = p + q := by
   intro i
   rw [add_coeff?, add_coeff?, Trim.coeff_eq_coeff]
 
+lemma add_pointwise_lemma (a₁ b₁ a₂ b₂ : UniPoly R) : ∀
+  (heq_a : ∀ (i : ℕ), Array.getD a₁ i 0 = Array.getD a₂ i 0)
+  (heq_b : ∀ (i : ℕ), Array.getD b₁ i 0 = Array.getD b₂ i 0),
+  a₁.add b₁ = a₂.add b₂ := by sorry
+
+theorem sub_pointwise_lemma (a₁ b₁ a₂ b₂ : UniPoly R) : ∀
+  (heq_a : ∀ (i : ℕ), Array.getD a₁ i 0 = Array.getD a₂ i 0)
+  (heq_b : ∀ (i : ℕ), Array.getD b₁ i 0 = Array.getD b₂ i 0),
+  a₁.sub b₁ = a₂.sub b₂ := by sorry
+
+theorem neg_pointwise_lemma (a b : UniPoly R) : ∀
+  (heq : ∀ (i : ℕ), Array.getD a i 0 = Array.getD b i 0),
+  a.neg = b.neg := by sorry
+
 -- algebra theorems about addition
 
 omit [Ring Q] in
@@ -920,12 +934,19 @@ def QuotientUniPoly (R : Type*) [Ring R] [BEq R] := Quotient (@instSetoidUniPoly
 namespace QuotientUniPoly
 
 -- Addition: add descends to `QuotientUniPoly`
-#check Quotient.mk
 def add_lifting (p q : UniPoly R) : QuotientUniPoly R :=
   Quotient.mk _ (add p q)
 
-def add_lemma : ∀ (a₁ b₁ a₂ b₂ : UniPoly R),
-  a₁ ≈ a₂ → b₁ ≈ b₂ → add_lifting a₁ b₁ = add_lifting a₂ b₂ := by sorry
+lemma add_lemma (a₁ b₁ a₂ b₂ : UniPoly R):
+  equiv a₁ a₂ → equiv b₁ b₂ → add_lifting a₁ b₁ = add_lifting a₂ b₂ := by
+  intros heq_a heq_b
+  simp_all [equiv]
+  apply (Array.matchSize_eq_iff_forall_eq a₁ a₂ 0).mp at heq_a
+  apply (Array.matchSize_eq_iff_forall_eq b₁ b₂ 0).mp at heq_b
+  unfold add_lifting
+  unfold Quotient.mk
+  apply congr_arg (Quotient.mk _)
+  apply add_pointwise_lemma a₁ b₁ a₂ b₂ heq_a heq_b
 
 @[inline, specialize]
 def add {R : Type*} [Ring R] [BEq R] (p q : QuotientUniPoly R) : QuotientUniPoly R :=
@@ -935,8 +956,16 @@ def add {R : Type*} [Ring R] [BEq R] (p q : QuotientUniPoly R) : QuotientUniPoly
 def sub_lifting (p q : UniPoly R) : QuotientUniPoly R :=
   Quotient.mk _ (sub p q)
 
-def sub_lemma : ∀ (a₁ b₁ a₂ b₂ : UniPoly R),
-  a₁ ≈ a₂ → b₁ ≈ b₂ → sub_lifting a₁ b₁ = sub_lifting a₂ b₂ := by sorry
+lemma sub_lemma (a₁ b₁ a₂ b₂ : UniPoly R):
+  equiv a₁ a₂ → equiv b₁ b₂ → sub_lifting a₁ b₁ = sub_lifting a₂ b₂ := by
+  unfold equiv sub_lifting
+  intros heq_a heq_b
+  simp_all
+  apply (Array.matchSize_eq_iff_forall_eq a₁ a₂ 0).mp at heq_a
+  apply (Array.matchSize_eq_iff_forall_eq b₁ b₂ 0).mp at heq_b
+  unfold Quotient.mk
+  apply congr_arg (Quotient.mk _)
+  apply sub_pointwise_lemma a₁ b₁ a₂ b₂ heq_a heq_b
 
 @[inline, specialize]
 def sub {R : Type*} [Ring R] [BEq R] (p q : QuotientUniPoly R) : QuotientUniPoly R :=
@@ -946,7 +975,13 @@ def sub {R : Type*} [Ring R] [BEq R] (p q : QuotientUniPoly R) : QuotientUniPoly
 def neg_lifting (p : UniPoly R) : QuotientUniPoly R :=
   Quotient.mk _ (neg p)
 
-def neg_lemma : (∀ (a b : UniPoly R), a ≈ b → neg_lifting a = neg_lifting b) := by sorry
+lemma neg_lemma (a b : UniPoly R) : equiv a b → neg_lifting a = neg_lifting b := by
+  unfold equiv neg_lifting
+  intros heq
+  apply (Array.matchSize_eq_iff_forall_eq a b 0).mp at heq
+  unfold Quotient.mk
+  apply congr_arg (Quotient.mk _)
+  apply neg_pointwise_lemma a b heq
 
 @[inline, specialize]
 def neg {R : Type*} [Ring R] [BEq R] (p : QuotientUniPoly R) : QuotientUniPoly R :=
