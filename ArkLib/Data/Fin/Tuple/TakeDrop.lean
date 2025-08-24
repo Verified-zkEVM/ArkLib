@@ -181,7 +181,7 @@ theorem drop_tail {α : Fin (n + 1) → Sort*} (m : ℕ) (h : m ≤ n) (v : (i :
         (drop m.succ (Nat.succ_le_succ h) v (i.cast (by omega))) := by
   ext i
   simp [tail, Fin.cast]
-  rw! [add_assoc]
+  rfl
 
 theorem drop_repeat {α : Type*} {n' : ℕ} (m : ℕ) (h : m ≤ n) (a : Fin n' → α) :
     drop (m * n') (Nat.mul_le_mul_right n' h) (Fin.repeat n a) =
