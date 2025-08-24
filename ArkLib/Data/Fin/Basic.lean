@@ -142,7 +142,8 @@ theorem induction_append_left {m n : ℕ} {motive : Fin (m + n + 1) → Sort*} {
   | succ i ih =>
     simp at ih ⊢
     have : (⟨i.1 + 1, by omega⟩ : Fin (m + n + 1)) = (⟨i, by omega⟩ : Fin (m + n)).succ := rfl
-    rw! (castMode := .all) [this, induction_succ, ih]
+    rw! (castMode := .all) [this, induction_succ]
+    simp_all only [succ_mk, castSucc_mk]
 
 /-- `Fin.induction` on `m + n` for `m + i` steps is equivalent to `Fin.induction` on `n` on `i`
   steps on the result of `Fin.induction` on `m`. -/
