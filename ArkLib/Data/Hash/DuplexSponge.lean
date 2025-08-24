@@ -56,7 +56,7 @@ class SpongeUnit (α : Type) extends Zeroize α, Serde α ByteArray, HasSize α 
   -/
   read (stream : IO.FS.Stream) : Array α → IO (Array α) :=
     fun arr => do
-      let bytes ← Array.mapM (fun _ => IO.FS.Stream.read stream (HasSize.size α UInt8)) arr
+      let bytes ← Array.mapM (fun _ => IO.FS.Stream.read stream (USize.ofNat (HasSize.size α UInt8))) arr
       let units := Array.mapM deserialize bytes
       if h : units.isSome
         then return units.get h
