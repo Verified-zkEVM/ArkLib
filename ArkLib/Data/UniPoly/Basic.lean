@@ -917,10 +917,12 @@ instance instSetoidUniPoly: Setoid (UniPoly R) where
 def QuotientUniPoly (R : Type*) [Ring R] [BEq R] := Quotient (@instSetoidUniPoly R _)
 
 -- operations on `UniPoly` descend to `QuotientUniPoly`
-namespace QuotientOperations
+namespace QuotientUniPoly
 
 -- Addition: add descends to `QuotientUniPoly`
-def add_lifting (p q : UniPoly R) : QuotientUniPoly R := sorry
+#check Quotient.mk
+def add_lifting (p q : UniPoly R) : QuotientUniPoly R :=
+  Quotient.mk _ (add p q)
 
 def add_lemma : ∀ (a₁ b₁ a₂ b₂ : UniPoly R),
   a₁ ≈ a₂ → b₁ ≈ b₂ → add_lifting a₁ b₁ = add_lifting a₂ b₂ := by sorry
@@ -930,7 +932,8 @@ def add {R : Type*} [Ring R] [BEq R] (p q : QuotientUniPoly R) : QuotientUniPoly
   Quotient.lift₂ add_lifting add_lemma p q
 
 -- Subtraction: sub descends to `QuotientUniPoly`
-def sub_lifting (p q : UniPoly R) : QuotientUniPoly R := sorry
+def sub_lifting (p q : UniPoly R) : QuotientUniPoly R :=
+  Quotient.mk _ (sub p q)
 
 def sub_lemma : ∀ (a₁ b₁ a₂ b₂ : UniPoly R),
   a₁ ≈ a₂ → b₁ ≈ b₂ → sub_lifting a₁ b₁ = sub_lifting a₂ b₂ := by sorry
@@ -940,7 +943,8 @@ def sub {R : Type*} [Ring R] [BEq R] (p q : QuotientUniPoly R) : QuotientUniPoly
   Quotient.lift₂ sub_lifting sub_lemma p q
 
 -- Negation: neg descends to `QuotientUniPoly`
-def neg_lifting (p : UniPoly R) : QuotientUniPoly R := sorry
+def neg_lifting (p : UniPoly R) : QuotientUniPoly R :=
+  Quotient.mk _ (neg p)
 
 def neg_lemma : (∀ (a b : UniPoly R), a ≈ b → neg_lifting a = neg_lifting b) := by sorry
 
@@ -950,7 +954,7 @@ def neg {R : Type*} [Ring R] [BEq R] (p : QuotientUniPoly R) : QuotientUniPoly R
 
 -- TODO the other operations ...
 
-end QuotientOperations
+end QuotientUniPoly
 
 end Equiv
 
