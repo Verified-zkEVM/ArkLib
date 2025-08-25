@@ -177,4 +177,7 @@ def getLast (a : Array α) (h : a.size > 0) : α := a[a.size - 1]
 /-- Get the last element of an array, or `v₀` if the array is empty. -/
 def getLastD (a : Array α) (v₀ : α) : α := a.getD (a.size - 1) v₀
 
+@[simp] theorem popWhile_nil_or_last_false (p : α → Bool) (as : Array α)
+    (h : (as.popWhile p).size > 0) : ¬ (p <| (as.popWhile p).getLast h) := sorry
+
 end Array
