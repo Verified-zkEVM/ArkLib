@@ -583,6 +583,17 @@ theorem add_coeff? (p q : UniPoly Q) (i : ℕ) :
   have h_q : i ≥ q.size := by omega
   simp [h_ge, h_p, h_q]
 
+lemma add_equiv_raw [LawfulBEq R] (p q : UniPoly R) : Trim.equiv (p.add q) (p.add_raw q) := by
+  unfold Trim.equiv add
+  exact Trim.coeff_eq_coeff (p.add_raw q)
+
+lemma neg_coeff : ∀ (p : UniPoly R) (i : ℕ), p.neg.coeff i = - p.coeff i := by
+  intro p i
+  unfold neg coeff
+  simp
+  -- TODO find a lemma that shows map and getD commute (under some circumstances)
+  sorry
+
 lemma trim_add_trim [LawfulBEq R] (p q : UniPoly R) : p.trim + q = p + q := by
   apply Trim.eq_of_equiv
   intro i
@@ -875,31 +886,22 @@ lemma eval_trim_eq_eval [LawfulBEq R] (x : R) (p : UniPoly R) : p.trim.eval x = 
 end ToPoly
 
 section Equiv
-
-/-- An equivalence relation `equiv` on `UniPoly`s where `p ~ q` iff one is a
-zero-padding of the other. -/
-def equiv (p q : UniPoly R) : Prop :=
-  match p.matchSize q 0 with
-  | (p', q') => p' = q'
+open Trim
 
 /-- Reflexivity of the equivalence relation. -/
 @[simp] theorem equiv_refl (p : UniPoly Q) : equiv p p :=
   by simp [equiv]
 
 /-- Symmetry of the equivalence relation. -/
-@[simp] theorem equiv_symm {p q : UniPoly Q} : equiv p q → equiv q p :=
-  fun h => by simp [equiv] at *; exact Eq.symm h
+@[simp] theorem equiv_symm {p q : UniPoly Q} : equiv p q → equiv q p := by
+  simp [equiv]
+  intro h i
+  exact Eq.symm (h i)
 
 open List in
 /-- Transitivity of the equivalence relation. -/
-@[simp] theorem equiv_trans {p q r : UniPoly Q} : equiv p q → equiv q r → equiv p r := by
-  intros hpq hqr
-  simp_all [equiv]
-  have hpq' := (Array.matchSize_eq_iff_forall_eq p q 0).mp hpq
-  have hqr' := (Array.matchSize_eq_iff_forall_eq q r 0).mp hqr
-  have hpr' : ∀ (i : Nat), p.getD i 0 = r.getD i 0 :=
-    fun i => Eq.trans (hpq' i) (hqr' i)
-  exact (Array.matchSize_eq_iff_forall_eq p r 0).mpr hpr'
+@[simp] theorem equiv_trans {p q r : UniPoly Q} : Trim.equiv p q → equiv q r → equiv p r := by
+  simp_all [Trim.equiv]
 
 /-- The `UniPoly.equiv` is indeed an equivalence relation. -/
 instance instEquivalenceEquiv : Equivalence (equiv (R := R)) where
@@ -919,45 +921,25 @@ def QuotientUniPoly (R : Type*) [Ring R] [BEq R] := Quotient (@instSetoidUniPoly
 -- operations on `UniPoly` descend to `QuotientUniPoly`
 namespace QuotientUniPoly
 
--- some lemmas (TODO)
-lemma matchsize_trim (p : UniPoly R) : p.trim.matchSize p 0 = (p, p) := by sorry
-
-lemma add_equiv_raw (p q : UniPoly R) : equiv (p.add q) (p.add_raw q) := by
-  unfold equiv add
-  rw [matchsize_trim (p.add_raw q)]
-
-lemma add_raw_getD (p q : UniPoly R) : ∀ i,
-  Array.getD (p.add_raw q) i 0 = Array.getD p i 0 + Array.getD q i 0 := by
-  apply add_coeff?
-
-lemma neg_getD (p : UniPoly R) : ∀ i, Array.getD (neg p) i 0 = - Array.getD p i 0 := by
-  unfold neg
-  -- TODO find/prove a lemma that shows that getD and maps commute
-  sorry
-
 -- Addition: add descends to `QuotientUniPoly`
 def add_descending (p q : UniPoly R) : QuotientUniPoly R :=
   Quotient.mk _ (add p q)
 
-lemma add_descends (a₁ b₁ a₂ b₂ : UniPoly R):
+lemma add_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : UniPoly R) :
   equiv a₁ a₂ → equiv b₁ b₂ → add_descending a₁ b₁ = add_descending a₂ b₂ := by
   intros heq_a heq_b
-  simp_all [equiv]
-  apply (Array.matchSize_eq_iff_forall_eq a₁ a₂ 0).mp at heq_a
-  apply (Array.matchSize_eq_iff_forall_eq b₁ b₂ 0).mp at heq_b
   unfold add_descending
   rw [Quotient.eq]
   simp [instSetoidUniPoly]
   apply equiv_trans (add_equiv_raw a₁ b₁)
   apply equiv_symm
   apply equiv_trans (add_equiv_raw a₂ b₂)
-  unfold equiv
-  apply (Array.matchSize_eq_iff_forall_eq (a₂.add_raw b₂) (a₁.add_raw b₁) 0).mpr
+  unfold equiv at *
   intro i
-  rw [add_raw_getD a₁ b₁ i, add_raw_getD a₂ b₂ i, heq_a i, heq_b i]
+  rw [add_coeff? a₁ b₁ i, add_coeff? a₂ b₂ i, heq_a i, heq_b i]
 
 @[inline, specialize]
-def add {R : Type*} [Ring R] [BEq R] (p q : QuotientUniPoly R) : QuotientUniPoly R :=
+def add {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientUniPoly R) : QuotientUniPoly R :=
   Quotient.lift₂ add_descending add_descends p q
 
 -- Negation: neg descends to `QuotientUniPoly`
@@ -967,13 +949,11 @@ def neg_descending (p : UniPoly R) : QuotientUniPoly R :=
 lemma neg_descends (a b : UniPoly R) : equiv a b → neg_descending a = neg_descending b := by
   unfold equiv neg_descending
   intros heq
-  apply (Array.matchSize_eq_iff_forall_eq a b 0).mp at heq
   rw [Quotient.eq]
   simp [instSetoidUniPoly]
   unfold equiv
-  apply (Array.matchSize_eq_iff_forall_eq a.neg b.neg 0).mpr
   intro i
-  rw [neg_getD a, neg_getD b, heq i]
+  rw [neg_coeff a i, neg_coeff b i, heq i]
 
 @[inline, specialize]
 def neg {R : Type*} [Ring R] [BEq R] (p : QuotientUniPoly R) : QuotientUniPoly R :=
@@ -983,26 +963,22 @@ def neg {R : Type*} [Ring R] [BEq R] (p : QuotientUniPoly R) : QuotientUniPoly R
 def sub_descending (p q : UniPoly R) : QuotientUniPoly R :=
   Quotient.mk _ (sub p q)
 
-lemma sub_descends (a₁ b₁ a₂ b₂ : UniPoly R):
+lemma sub_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : UniPoly R) :
   equiv a₁ a₂ → equiv b₁ b₂ → sub_descending a₁ b₁ = sub_descending a₂ b₂ := by
   unfold equiv sub_descending
   intros heq_a heq_b
-  simp_all
-  apply (Array.matchSize_eq_iff_forall_eq a₁ a₂ 0).mp at heq_a
-  apply (Array.matchSize_eq_iff_forall_eq b₁ b₂ 0).mp at heq_b
   rw [Quotient.eq]
   simp [instSetoidUniPoly]
-  unfold sub
+  unfold equiv sub
   apply equiv_trans (add_equiv_raw a₁ b₁.neg)
   apply equiv_symm
   apply equiv_trans (add_equiv_raw a₂ b₂.neg)
-  apply (Array.matchSize_eq_iff_forall_eq (a₂.add_raw b₂.neg) (a₁.add_raw b₁.neg) 0).mpr
   intro i
-  rw [add_raw_getD a₁ b₁.neg i, add_raw_getD a₂ b₂.neg i, neg_getD b₁ i, neg_getD b₂ i]
+  rw [add_coeff? a₁ b₁.neg i, add_coeff? a₂ b₂.neg i, neg_coeff b₁ i, neg_coeff b₂ i]
   rw [heq_a i, heq_b i]
 
 @[inline, specialize]
-def sub {R : Type*} [Ring R] [BEq R] (p q : QuotientUniPoly R) : QuotientUniPoly R :=
+def sub {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientUniPoly R) : QuotientUniPoly R :=
   Quotient.lift₂ sub_descending sub_descends p q
 
 -- TODO the other operations ...

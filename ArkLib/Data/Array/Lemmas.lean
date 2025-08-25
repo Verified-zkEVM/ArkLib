@@ -177,15 +177,4 @@ def getLast (a : Array α) (h : a.size > 0) : α := a[a.size - 1]
 /-- Get the last element of an array, or `v₀` if the array is empty. -/
 def getLastD (a : Array α) (v₀ : α) : α := a.getD (a.size - 1) v₀
 
-@[simp] theorem popWhile_nil_or_last_false (p : α → Bool) (as : Array α)
-    (h : (as.popWhile p).size > 0) : ¬ (p <| (as.popWhile p).getLast h) := sorry
-
-/-- `Array.matchSize` returns two equal arrays iff the two arrays agree at every index `i : Nat`
-  (extended by `unit` if necessary). -/
-theorem matchSize_eq_iff_forall_eq (a₁ a₂ : Array α) (unit : α) :
-    (fun (x, y) => x = y) (matchSize a₁ a₂ unit) ↔ ∀ i : Nat, a₁.getD i unit = a₂.getD i unit :=
-  by sorry
-    -- TODO: finish this lemma, possibly using matchSize_eq_iff_forall_eq
-    -- (note matchSize_eq_iff_forall_eq also has a TODO)
-
 end Array
