@@ -50,7 +50,7 @@ def rootMultiplicity₀ [DecidableEq F] : Option ℕ :=
   let deg := weightedDegree f 1 1
   match deg with
   | none => none 
-  | some deg => List.max? 
+  | some deg => List.min? 
     (List.map 
       (fun x => if coeff f x.1 x.2 ≠ 0 then x.1 + x.2 else 0) 
       (List.product (List.range deg.succ) (List.range deg.succ)))
@@ -67,7 +67,7 @@ lemma rootMultiplicity_some_implies_root {F : Type} [CommSemiring F]
   {x y : F} (f : F[X][Y])
   (h : some 0 < (rootMultiplicity (f := f) x y))
   :
-  (f.eval 0).eval 0 = 0
+  (f.eval (Polynomial.C y)).eval x = 0
   := by
   sorry
  

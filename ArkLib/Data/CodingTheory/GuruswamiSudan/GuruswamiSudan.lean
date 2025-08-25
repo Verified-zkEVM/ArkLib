@@ -30,8 +30,8 @@ structure GuruswamiSudanCondition (k r D : ℕ) (ωs f : Fin n → F) (Q : Polyn
   Q_deg : Bivariate.weightedDegree Q 1 (k-1) ≤ D 
   /-- (ωs i, f i) must be root of the polynomial Q. -/
   Q_roots : ∀ i, (Q.eval (C <| f i)).eval (ωs i) = 0
-  /-- Multiplicity of the roots is equal to r. -/
-  Q_multiplicity : ∀ i, r = Bivariate.rootMultiplicity Q (ωs i) (f i)
+  /-- Multiplicity of the roots is at least r. -/
+  Q_multiplicity : ∀ i, r ≤ Bivariate.rootMultiplicity Q (ωs i) (f i)
 
 /-- Guruswami-Sudan decoder. -/
 opaque decoder (k r D e : ℕ) (ωs f : Fin n → F) : List F[X] := sorry
