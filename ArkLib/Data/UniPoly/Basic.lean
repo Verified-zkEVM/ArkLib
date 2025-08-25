@@ -588,20 +588,6 @@ lemma trim_add_trim [LawfulBEq R] (p q : UniPoly R) : p.trim + q = p + q := by
   intro i
   rw [add_coeff?, add_coeff?, Trim.coeff_eq_coeff]
 
-lemma add_pointwise_lemma (a₁ b₁ a₂ b₂ : UniPoly R) : ∀
-  (heq_a : ∀ (i : ℕ), Array.getD a₁ i 0 = Array.getD a₂ i 0)
-  (heq_b : ∀ (i : ℕ), Array.getD b₁ i 0 = Array.getD b₂ i 0),
-  a₁.add b₁ = a₂.add b₂ := by sorry
-
-theorem sub_pointwise_lemma (a₁ b₁ a₂ b₂ : UniPoly R) : ∀
-  (heq_a : ∀ (i : ℕ), Array.getD a₁ i 0 = Array.getD a₂ i 0)
-  (heq_b : ∀ (i : ℕ), Array.getD b₁ i 0 = Array.getD b₂ i 0),
-  a₁.sub b₁ = a₂.sub b₂ := by sorry
-
-theorem neg_pointwise_lemma (a b : UniPoly R) : ∀
-  (heq : ∀ (i : ℕ), Array.getD a i 0 = Array.getD b i 0),
-  a.neg = b.neg := by sorry
-
 -- algebra theorems about addition
 
 omit [Ring Q] in
@@ -666,6 +652,24 @@ theorem neg_add_cancel [LawfulBEq R] (p : UniPoly R) : -p + p = 0 := by
   apply Trim.eq_of_equiv; unfold Trim.equiv; intro i
   rw [add_coeff?]
   rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi, Neg.neg, neg]
+
+-- lemmas about pointwise comparison post operations
+-- Some lemmas
+
+-- Array.getD (a₁.add b₁) i 0 = Array.getD (a₂.add b₂) i 0
+lemma add_getD (p q : UniPoly R) : ∀ i,
+  Array.getD (p.add q) i 0 = Array.getD p i 0 + Array.getD q i 0 := by sorry
+
+lemma sub_getD (p q : UniPoly R) : ∀ i,
+  Array.getD (p.sub q) i 0 = Array.getD p i 0 - Array.getD q i 0 := by sorry
+
+lemma neg_getD (p : UniPoly R) : ∀ i,
+  Array.getD (neg p) i 0 = - Array.getD p i 0 := by
+  unfold neg
+  simp
+  sorry
+
+-- TODO the rest of the operations ...
 
 end Operations
 
@@ -944,9 +948,12 @@ lemma add_lemma (a₁ b₁ a₂ b₂ : UniPoly R):
   apply (Array.matchSize_eq_iff_forall_eq a₁ a₂ 0).mp at heq_a
   apply (Array.matchSize_eq_iff_forall_eq b₁ b₂ 0).mp at heq_b
   unfold add_lifting
-  unfold Quotient.mk
-  apply congr_arg (Quotient.mk _)
-  apply add_pointwise_lemma a₁ b₁ a₂ b₂ heq_a heq_b
+  rw [Quotient.eq]
+  simp [instSetoidUniPoly]
+  unfold equiv
+  apply (Array.matchSize_eq_iff_forall_eq (a₁.add b₁) (a₂.add b₂) 0).mpr
+  intro i
+  rw [add_getD a₁ b₁ i, add_getD a₂ b₂ i, heq_a i, heq_b i]
 
 @[inline, specialize]
 def add {R : Type*} [Ring R] [BEq R] (p q : QuotientUniPoly R) : QuotientUniPoly R :=
@@ -963,9 +970,12 @@ lemma sub_lemma (a₁ b₁ a₂ b₂ : UniPoly R):
   simp_all
   apply (Array.matchSize_eq_iff_forall_eq a₁ a₂ 0).mp at heq_a
   apply (Array.matchSize_eq_iff_forall_eq b₁ b₂ 0).mp at heq_b
-  unfold Quotient.mk
-  apply congr_arg (Quotient.mk _)
-  apply sub_pointwise_lemma a₁ b₁ a₂ b₂ heq_a heq_b
+  rw [Quotient.eq]
+  simp [instSetoidUniPoly]
+  unfold equiv
+  apply (Array.matchSize_eq_iff_forall_eq (a₁.sub b₁) (a₂.sub b₂) 0).mpr
+  intro i
+  rw [sub_getD a₁ b₁ i, sub_getD a₂ b₂ i, heq_a i, heq_b i]
 
 @[inline, specialize]
 def sub {R : Type*} [Ring R] [BEq R] (p q : QuotientUniPoly R) : QuotientUniPoly R :=
@@ -979,9 +989,12 @@ lemma neg_lemma (a b : UniPoly R) : equiv a b → neg_lifting a = neg_lifting b 
   unfold equiv neg_lifting
   intros heq
   apply (Array.matchSize_eq_iff_forall_eq a b 0).mp at heq
-  unfold Quotient.mk
-  apply congr_arg (Quotient.mk _)
-  apply neg_pointwise_lemma a b heq
+  rw [Quotient.eq]
+  simp [instSetoidUniPoly]
+  unfold equiv
+  apply (Array.matchSize_eq_iff_forall_eq a.neg b.neg 0).mpr
+  intro i
+  rw [neg_getD a, neg_getD b, heq i]
 
 @[inline, specialize]
 def neg {R : Type*} [Ring R] [BEq R] (p : QuotientUniPoly R) : QuotientUniPoly R :=
