@@ -587,12 +587,11 @@ lemma add_equiv_raw [LawfulBEq R] (p q : UniPoly R) : Trim.equiv (p.add q) (p.ad
   unfold Trim.equiv add
   exact Trim.coeff_eq_coeff (p.add_raw q)
 
+omit [BEq R] in
 lemma neg_coeff : ∀ (p : UniPoly R) (i : ℕ), p.neg.coeff i = - p.coeff i := by
   intro p i
   unfold neg coeff
-  simp
-  -- TODO find a lemma that shows map and getD commute (under some circumstances)
-  sorry
+  rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
 
 lemma trim_add_trim [LawfulBEq R] (p q : UniPoly R) : p.trim + q = p + q := by
   apply Trim.eq_of_equiv
