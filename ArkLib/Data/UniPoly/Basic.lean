@@ -653,24 +653,6 @@ theorem neg_add_cancel [LawfulBEq R] (p : UniPoly R) : -p + p = 0 := by
   rw [add_coeff?]
   rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi, Neg.neg, neg]
 
--- lemmas about pointwise comparison post operations
--- Some lemmas
-
--- Array.getD (a₁.add b₁) i 0 = Array.getD (a₂.add b₂) i 0
-lemma add_getD (p q : UniPoly R) : ∀ i,
-  Array.getD (p.add q) i 0 = Array.getD p i 0 + Array.getD q i 0 := by sorry
-
-lemma sub_getD (p q : UniPoly R) : ∀ i,
-  Array.getD (p.sub q) i 0 = Array.getD p i 0 - Array.getD q i 0 := by sorry
-
-lemma neg_getD (p : UniPoly R) : ∀ i,
-  Array.getD (neg p) i 0 = - Array.getD p i 0 := by
-  unfold neg
-  simp
-  sorry
-
--- TODO the rest of the operations ...
-
 end Operations
 
 namespace OperationsC
@@ -937,56 +919,53 @@ def QuotientUniPoly (R : Type*) [Ring R] [BEq R] := Quotient (@instSetoidUniPoly
 -- operations on `UniPoly` descend to `QuotientUniPoly`
 namespace QuotientUniPoly
 
+-- some lemmas (TODO)
+lemma matchsize_trim (p : UniPoly R) : p.trim.matchSize p 0 = (p, p) := by sorry
+
+lemma add_equiv_raw (p q : UniPoly R) : equiv (p.add q) (p.add_raw q) := by
+  unfold equiv add
+  rw [matchsize_trim (p.add_raw q)]
+
+lemma add_raw_getD (p q : UniPoly R) : ∀ i,
+  Array.getD (p.add_raw q) i 0 = Array.getD p i 0 + Array.getD q i 0 := by
+  apply add_coeff?
+
+lemma neg_getD (p : UniPoly R) : ∀ i, Array.getD (neg p) i 0 = - Array.getD p i 0 := by
+  unfold neg
+  -- TODO find/prove a lemma that shows that getD and maps commute
+  sorry
+
 -- Addition: add descends to `QuotientUniPoly`
-def add_lifting (p q : UniPoly R) : QuotientUniPoly R :=
+def add_descending (p q : UniPoly R) : QuotientUniPoly R :=
   Quotient.mk _ (add p q)
 
-lemma add_lemma (a₁ b₁ a₂ b₂ : UniPoly R):
-  equiv a₁ a₂ → equiv b₁ b₂ → add_lifting a₁ b₁ = add_lifting a₂ b₂ := by
+lemma add_descends (a₁ b₁ a₂ b₂ : UniPoly R):
+  equiv a₁ a₂ → equiv b₁ b₂ → add_descending a₁ b₁ = add_descending a₂ b₂ := by
   intros heq_a heq_b
   simp_all [equiv]
   apply (Array.matchSize_eq_iff_forall_eq a₁ a₂ 0).mp at heq_a
   apply (Array.matchSize_eq_iff_forall_eq b₁ b₂ 0).mp at heq_b
-  unfold add_lifting
+  unfold add_descending
   rw [Quotient.eq]
   simp [instSetoidUniPoly]
+  apply equiv_trans (add_equiv_raw a₁ b₁)
+  apply equiv_symm
+  apply equiv_trans (add_equiv_raw a₂ b₂)
   unfold equiv
-  apply (Array.matchSize_eq_iff_forall_eq (a₁.add b₁) (a₂.add b₂) 0).mpr
+  apply (Array.matchSize_eq_iff_forall_eq (a₂.add_raw b₂) (a₁.add_raw b₁) 0).mpr
   intro i
-  rw [add_getD a₁ b₁ i, add_getD a₂ b₂ i, heq_a i, heq_b i]
+  rw [add_raw_getD a₁ b₁ i, add_raw_getD a₂ b₂ i, heq_a i, heq_b i]
 
 @[inline, specialize]
 def add {R : Type*} [Ring R] [BEq R] (p q : QuotientUniPoly R) : QuotientUniPoly R :=
-  Quotient.lift₂ add_lifting add_lemma p q
-
--- Subtraction: sub descends to `QuotientUniPoly`
-def sub_lifting (p q : UniPoly R) : QuotientUniPoly R :=
-  Quotient.mk _ (sub p q)
-
-lemma sub_lemma (a₁ b₁ a₂ b₂ : UniPoly R):
-  equiv a₁ a₂ → equiv b₁ b₂ → sub_lifting a₁ b₁ = sub_lifting a₂ b₂ := by
-  unfold equiv sub_lifting
-  intros heq_a heq_b
-  simp_all
-  apply (Array.matchSize_eq_iff_forall_eq a₁ a₂ 0).mp at heq_a
-  apply (Array.matchSize_eq_iff_forall_eq b₁ b₂ 0).mp at heq_b
-  rw [Quotient.eq]
-  simp [instSetoidUniPoly]
-  unfold equiv
-  apply (Array.matchSize_eq_iff_forall_eq (a₁.sub b₁) (a₂.sub b₂) 0).mpr
-  intro i
-  rw [sub_getD a₁ b₁ i, sub_getD a₂ b₂ i, heq_a i, heq_b i]
-
-@[inline, specialize]
-def sub {R : Type*} [Ring R] [BEq R] (p q : QuotientUniPoly R) : QuotientUniPoly R :=
-  Quotient.lift₂ sub_lifting sub_lemma p q
+  Quotient.lift₂ add_descending add_descends p q
 
 -- Negation: neg descends to `QuotientUniPoly`
-def neg_lifting (p : UniPoly R) : QuotientUniPoly R :=
+def neg_descending (p : UniPoly R) : QuotientUniPoly R :=
   Quotient.mk _ (neg p)
 
-lemma neg_lemma (a b : UniPoly R) : equiv a b → neg_lifting a = neg_lifting b := by
-  unfold equiv neg_lifting
+lemma neg_descends (a b : UniPoly R) : equiv a b → neg_descending a = neg_descending b := by
+  unfold equiv neg_descending
   intros heq
   apply (Array.matchSize_eq_iff_forall_eq a b 0).mp at heq
   rw [Quotient.eq]
@@ -998,7 +977,33 @@ lemma neg_lemma (a b : UniPoly R) : equiv a b → neg_lifting a = neg_lifting b 
 
 @[inline, specialize]
 def neg {R : Type*} [Ring R] [BEq R] (p : QuotientUniPoly R) : QuotientUniPoly R :=
-  Quotient.lift neg_lifting neg_lemma p
+  Quotient.lift neg_descending neg_descends p
+
+-- Subtraction: sub descends to `QuotientUniPoly`
+def sub_descending (p q : UniPoly R) : QuotientUniPoly R :=
+  Quotient.mk _ (sub p q)
+
+lemma sub_descends (a₁ b₁ a₂ b₂ : UniPoly R):
+  equiv a₁ a₂ → equiv b₁ b₂ → sub_descending a₁ b₁ = sub_descending a₂ b₂ := by
+  unfold equiv sub_descending
+  intros heq_a heq_b
+  simp_all
+  apply (Array.matchSize_eq_iff_forall_eq a₁ a₂ 0).mp at heq_a
+  apply (Array.matchSize_eq_iff_forall_eq b₁ b₂ 0).mp at heq_b
+  rw [Quotient.eq]
+  simp [instSetoidUniPoly]
+  unfold sub
+  apply equiv_trans (add_equiv_raw a₁ b₁.neg)
+  apply equiv_symm
+  apply equiv_trans (add_equiv_raw a₂ b₂.neg)
+  apply (Array.matchSize_eq_iff_forall_eq (a₂.add_raw b₂.neg) (a₁.add_raw b₁.neg) 0).mpr
+  intro i
+  rw [add_raw_getD a₁ b₁.neg i, add_raw_getD a₂ b₂.neg i, neg_getD b₁ i, neg_getD b₂ i]
+  rw [heq_a i, heq_b i]
+
+@[inline, specialize]
+def sub {R : Type*} [Ring R] [BEq R] (p q : QuotientUniPoly R) : QuotientUniPoly R :=
+  Quotient.lift₂ sub_descending sub_descends p q
 
 -- TODO the other operations ...
 
