@@ -930,12 +930,12 @@ lemma add_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : UniPoly R) :
   unfold add_descending
   rw [Quotient.eq]
   simp [instSetoidUniPoly]
-  apply equiv_trans (add_equiv_raw a₁ b₁)
-  apply equiv_symm
-  apply equiv_trans (add_equiv_raw a₂ b₂)
-  unfold equiv at *
-  intro i
-  rw [add_coeff? a₁ b₁ i, add_coeff? a₂ b₂ i, heq_a i, heq_b i]
+  calc
+    add a₁ b₁ ≈ add_raw a₁ b₁ := add_equiv_raw a₁ b₁
+    _ ≈ add_raw a₂ b₂ := by
+      intro i
+      rw [add_coeff? a₁ b₁ i, add_coeff? a₂ b₂ i, heq_a i, heq_b i]
+    _ ≈ add a₂ b₂ := equiv_symm (add_equiv_raw a₂ b₂)
 
 @[inline, specialize]
 def add {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientUniPoly R) : QuotientUniPoly R :=
@@ -968,13 +968,14 @@ lemma sub_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : UniPoly R) :
   intros heq_a heq_b
   rw [Quotient.eq]
   simp [instSetoidUniPoly]
-  unfold equiv sub
-  apply equiv_trans (add_equiv_raw a₁ b₁.neg)
-  apply equiv_symm
-  apply equiv_trans (add_equiv_raw a₂ b₂.neg)
-  intro i
-  rw [add_coeff? a₁ b₁.neg i, add_coeff? a₂ b₂.neg i, neg_coeff b₁ i, neg_coeff b₂ i]
-  rw [heq_a i, heq_b i]
+  unfold sub equiv
+  calc
+    a₁.add b₁.neg ≈ a₁.add_raw b₁.neg := add_equiv_raw a₁ b₁.neg
+    _ ≈ a₂.add_raw b₂.neg := by
+      intro i
+      rw [add_coeff? a₁ b₁.neg i, add_coeff? a₂ b₂.neg i]
+      rw [neg_coeff b₁ i, neg_coeff b₂ i, heq_a i, heq_b i]
+    _ ≈ a₂.add b₂.neg := equiv_symm (add_equiv_raw a₂ b₂.neg)
 
 @[inline, specialize]
 def sub {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientUniPoly R) : QuotientUniPoly R :=
