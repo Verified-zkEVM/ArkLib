@@ -897,7 +897,6 @@ open Trim
   intro h i
   exact Eq.symm (h i)
 
-open List in
 /-- Transitivity of the equivalence relation. -/
 @[simp] theorem equiv_trans {p q r : UniPoly Q} : Trim.equiv p q → equiv q r → equiv p r := by
   simp_all [Trim.equiv]
