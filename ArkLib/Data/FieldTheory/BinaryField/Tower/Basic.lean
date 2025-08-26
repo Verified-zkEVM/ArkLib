@@ -46,8 +46,7 @@ Define the binary tower field GF(2^{2^k}) as an iterated quadratic extension of 
 namespace BinaryTower
 noncomputable section
 
-open Polynomial
-open AdjoinRoot
+open Polynomial AdjoinRoot Module
 
 section BTFieldDefs
 
@@ -72,7 +71,7 @@ structure BinaryTowerResult (F : Type _) (k : ℕ) where
 structure BinaryTowerInductiveStepResult (k : ℕ) (prevBTField : Type _)
   (prevBTResult : BinaryTowerResult prevBTField k) [instPrevBTFieldIsField : Field prevBTField]
   (prevPoly : Polynomial prevBTField) (F : Type _) where
-  binaryTowerResult: BinaryTowerResult F (k+1)
+  binaryTowerResult : BinaryTowerResult F (k+1)
   eq_adjoin: F = AdjoinRoot prevPoly
   u_is_root: Eq.mp (eq_adjoin) binaryTowerResult.specialElement = AdjoinRoot.root prevPoly
   eval_defining_poly_at_root: Eq.mp (eq_adjoin) binaryTowerResult.specialElement^2 +
@@ -132,7 +131,7 @@ def binary_tower_inductive_step
   let curBTField := AdjoinRoot prevPoly
   let instFieldAdjoinRootOfPoly : Field curBTField := by
     exact AdjoinRoot.instField (f := prevPoly)
-  let instNoZeroDiv : NoZeroDivisors curBTField := inferInstance
+  let instNoZeroDiv : NoZeroDivisors curBTField := by exact CancelMonoidWithZero.to_noZeroDivisors
   -- Lift to new BTField level
   let u: curBTField := AdjoinRoot.root prevPoly -- adjoined root and generator of curBTField
   let adjoinRootOfPoly : AdjoinRoot prevPoly = curBTField := by

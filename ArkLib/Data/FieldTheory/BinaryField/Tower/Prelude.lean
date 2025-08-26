@@ -7,6 +7,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 import Mathlib.FieldTheory.Finite.GaloisField
 import ArkLib.Data.Fin.BigOperators
 import ArkLib.Data.Nat.Bitwise
+import Mathlib.LinearAlgebra.StdBasis
 
 /-!
   # Prelude for Binary Tower Fields
@@ -18,6 +19,7 @@ noncomputable section
 
 open Polynomial
 open AdjoinRoot
+open Module
 
 notation:10 "GF(" term:10 ")" => GaloisField term 1
 
