@@ -99,8 +99,8 @@ lemma guruswami_sudan_for_proximity_gap_property {k m : ℕ} {ωs : Fin n ↪ F}
   {f : Fin n → F}
   {Q : F[X][X]} 
   {p : ReedSolomon.code ωs n}
-  (h : Δ₀(f, (ReedSolomon.codeWordToPoly p).eval ∘ f) ≤ proximity_gap_johnson (n := n) k m)
+  (h : Δ₀(f, (ReedSolomon.codewordToPoly p).eval ∘ f) ≤ proximity_gap_johnson (n := n) k m)
   :
-  ((X : F[X][X]) - C (ReedSolomon.codeWordToPoly p)) ∣ Q := by sorry
+  ((X : F[X][X]) - C (ReedSolomon.codewordToPoly p)) ∣ Q := by sorry
 
 end GuruswamiSudan
