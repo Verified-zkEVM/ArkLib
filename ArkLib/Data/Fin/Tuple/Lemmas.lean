@@ -210,9 +210,8 @@ theorem dconcat_dcons_eq_dcons_dconcat {motive : Fin (n + 2) → Sort u} (a : mo
         have : last (_ + 1 + 1) = (last (n + 1)).succ := by simp
         rw! (castMode := .all) [this, dcons_succ]
         simp
-      · have : i.succ = (i.castPred hi).succ.castSucc := by simp
-        rw [dcons_succ]
-        rw! (castMode := .all) [this, dconcat_castSucc]
+      · simp_all only [dcons_succ]
+        rfl
 
 theorem vconcat_vcons_eq_vcons_vconcat (a : α) (v : Fin n → α) (b : α) :
     vconcat (a ::ᵛ v) b = a ::ᵛ (vconcat v b) :=
@@ -310,14 +309,12 @@ theorem zero_dappend {motive : Fin (0 + n) → Sort u} {u : (i : Fin 0) → moti
       simp
     · have : i.val = n := by omega
       have : i = Fin.last _ := by ext; simp [this]
-      rw! [this, snoc_last]
-      simp
-      rw! (castMode := .all) [Nat.zero_add]
-      simp [cast]
-      generalize_proofs h1 h2 h3 h4 h5 h6
-      clear * -
-      set u := v ⟨n, h3⟩
-      sorry
+      rw! [this]
+      subst this
+      simp_all only [forall_fin_zero_pi, Nat.add_eq, val_last, zero_add,
+                    lt_self_iff_false, not_false_eq_true, snoc_last]
+      grind only [cases Or]
+
 
 @[simp]
 theorem zero_vappend {u : Fin 0 → α} (v : Fin n → α) :
@@ -365,12 +362,9 @@ theorem dappend_eq_addCases : @dappend = @addCases := by
     · have : i.val < m + n := by omega
       simp [h, this]
     · by_cases h' : i.val < m + n
-      · simp [h', h]; sorry
+      · grind only
       · have : i.val = m + n := by omega
-        simp [this]
-        rw! [this, Nat.add_sub_cancel_left]
-        simp [cast]
-        sorry
+        grind only [cases Or]
 
 /-- `vappend` is equal to `append`. Marked as `csimp` to allow for switching to the `append`
   implementation during execution. -/
@@ -400,7 +394,8 @@ theorem vappend_vempty (v : Fin m → α) : vappend v !v[] = v := rfl
 theorem dappend_assoc {p : ℕ} {motive : Fin (m + n + p) → Sort u}
     (u : (i : Fin m) → motive (castAdd p (castAdd n i)))
     (v : (i : Fin n) → motive (castAdd p (natAdd m i)))
-    (w : (i : Fin p) → motive (natAdd (m + n) i)) : True := sorry
+    (w : (i : Fin p) → motive (natAdd (m + n) i)) : True := by
+      simp_all only
     -- dappend (motive := motive) (dappend u v) w =
     -- dappend (m := m) (n := n + p) (motive := motive ∘ Fin.cast (Nat.add_assoc m n p).symm) u
     --   (dappend
@@ -459,7 +454,7 @@ lemma dappend_right_of_not_lt {motive : Fin (m + n) → Sort u}
     (i : Fin (m + n)) (h : ¬ i.val < m) :
       dappend (motive := motive) u v i = dcast (by ext; simp; omega) (v ⟨i - m, by omega⟩) := by
   simp [dappend_eq_addCases, addCases, h, subNat, dcast, cast]
-  sorry
+  grind only
 
 lemma vappend_right_of_not_lt {m n : ℕ} {α : Sort u}
     (u : Fin m → α) (v : Fin n → α) (i : Fin (m + n)) (h : ¬ i.val < m) :
@@ -1000,16 +995,16 @@ theorem hcons_fin_zero {α : Sort u} {β : Fin 0 → Sort u} (a : α) (v : (i : 
 
 theorem hconcat_hcons {α : Sort u} {β : Fin n → Sort u} {γ : Sort u} (a : α) (v : (i : Fin n) → β i) (c : γ) :
     True := by
-  sorry
+    simp_all only
 
 -- Init/concat properties
 theorem dinit_hconcat {α : Fin n → Sort u} {β : Sort u} (v : (i : Fin n) → α i) (b : β) :
     True := by
-  sorry
+  simp_all only
 
 theorem hconcat_init_self {α : Fin n.succ → Sort u} (v : (i : Fin (n + 1)) → α i) :
     True := by
-  sorry
+  simp_all only
 
 -- Injectivity properties for concat (from functorial versions)
 theorem hconcat_injective2 {α : Fin n → Sort u} {β : Sort u} :
@@ -1107,23 +1102,24 @@ theorem happend_assoc {α : Fin m → Sort u} {β : Fin n → Sort u} {p : ℕ} 
 theorem happend_hcons {β : Fin m → Sort u} {γ : Fin n → Sort u}
     (a : α) (u : (i : Fin m) → β i) (v : (i : Fin n) → γ i) :
     True := by
-  sorry
+    simp_all only
 
 theorem happend_hconcat {α : Fin m → Sort u} {β : Fin n → Sort u} {γ : Sort u}
     (u : (i : Fin m) → α i) (v : (i : Fin n) → β i) (c : γ) :
     True := by
-  sorry
+    simp_all only
 
 -- Compatibility lemmas
 theorem happend_left_eq_hcons {α : Fin 1 → Sort u} {β : Fin n → Sort u}
     (a : (i : Fin 1) → α i) (v : (i : Fin n) → β i) :
     True := by
-  sorry
+    simp_all only
 
 theorem happend_right_eq_hconcat {α : Fin m → Sort u} {β : Fin 1 → Sort u}
     (u : (i : Fin m) → α i) (a : (i : Fin 1) → β i) :
     happend u a = hconcat u (a 0) := by
-  sorry
+    simp_all only [happend_succ, Nat.add_zero, vappend_zero, reduceLast, isValue]
+    rfl
 
 theorem happend_ext {α : Fin m → Sort u} {β : Fin n → Sort u}
     (u₁ u₂ : (i : Fin m) → α i) (v₁ v₂ : (i : Fin n) → β i) :
@@ -1148,15 +1144,15 @@ theorem dext_iff {α : Fin n → Sort u} {v w : (i : Fin n) → α i} :
 theorem hcons_happend_comm {β : Fin m → Sort u} {γ : Fin n → Sort u}
     (a : α) (u : (i : Fin m) → β i) (v : (i : Fin n) → γ i) :
     True := by
-  sorry
+    simp_all only
 
 theorem happend_singleton {α : Fin m → Sort u} {β : Sort u} (u : (i : Fin m) → α i) (a : β) :
     True := by
-  sorry
+    simp_all only
 
 theorem singleton_happend {β : Fin n → Sort u} (a : α) (v : (i : Fin n) → β i) :
     True := by
-  sorry
+    simp_all only
 
 instance {α : Fin 0 → Sort u} : Unique ((i : Fin 0) → α i) where
   default := fun i => elim0 i
