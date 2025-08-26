@@ -39,6 +39,11 @@ def evalOnPoints : F[X] →ₗ[F] (ι → F) where
 def code (deg : ℕ) : Submodule F (ι → F) :=
   (Polynomial.degreeLT F deg).map (evalOnPoints domain)
 
+def codeWordToPoly 
+  [Fintype ι] [Field F] [DecidableEq ι] 
+  {deg : ℕ} {domain : ι ↪ F} (f : code domain deg) : F[X] :=
+  sorry
+
 /-- The generator matrix of the Reed-Solomon code of degree `deg` and evaluation points `domain`. -/
 def genMatrix (deg : ℕ) : Matrix (Fin deg) ι F :=
   .of fun i j => domain j ^ (i : ℕ)
