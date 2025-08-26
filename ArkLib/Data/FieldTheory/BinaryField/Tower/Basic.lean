@@ -46,8 +46,7 @@ Define the binary tower field GF(2^{2^k}) as an iterated quadratic extension of 
 namespace BinaryTower
 noncomputable section
 
-open Polynomial
-open AdjoinRoot
+open Polynomial AdjoinRoot Module
 
 section BTFieldDefs
 

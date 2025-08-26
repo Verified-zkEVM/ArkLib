@@ -14,9 +14,6 @@ require «doc-gen4» from git "https://github.com/leanprover/doc-gen4" @ "v4.22.
 
 require checkdecls from git "https://github.com/PatrickMassot/checkdecls.git" @ "lean4.18.0"
 
--- Dependent rewrite tactic
-require seq from git "https://github.com/Vtec234/lean4-seq.git"
-
 -- meta if get_config? env = some "dev" then
 
 /-- These options are used
