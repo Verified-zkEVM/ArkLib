@@ -99,6 +99,12 @@ theorem runWithOracle_bind (f : spec.FunctionType)
       rw [<-ih]
       rfl
 
+@[simp]
+theorem runWithOracle_failure (f : spec.FunctionType) :
+    runWithOracle f (failure : OracleComp spec α) = none := by
+  unfold runWithOracle OracleComp.construct'
+  simp only [construct_failure]
+
 -- Oracle with bounded use; returns `default` if the oracle is used more than `bound` times.
 -- We could then have the range be an `Option` type, so that `default` is `none`.
 -- def boundedUseOracle {ι : Type} [DecidableEq ι] {spec : OracleSpec ι} (bound : ι → ℕ) :
@@ -160,6 +166,98 @@ theorem OracleSpec.append_range_right {ι₁ ι₂ : Type} {spec₁ : OracleSpec
 --       have h' := fun a => Classical.choose_spec (hBind' a)
 --       exact ⟨ queryBind' i q _ (fun a =>Classical.choose (hBind' a)), by simp [map_bind, h'] ⟩
 --     | failure' _ => by sorry
+
+/-- True if every non-`none` element of the cache has that same value in the oracle -/
+def Oracle.containsCache {ι : Type} {spec : OracleSpec ι}
+    (f : spec.FunctionType) (cache : spec.QueryCache) :
+    Prop :=
+  ∀ i q r, cache i q = some r → f i q = r
+
+/-- For any cache, there is a function to contain it -/
+lemma Oracle.containsCache_of_cache {ι : Type} {spec : OracleSpec ι}
+    [(i : ι) → Inhabited (OracleSpec.range spec i)]
+    (cache : spec.QueryCache) :
+    ∃ (f : spec.FunctionType), Oracle.containsCache f cache := by
+  use fun i q =>
+    match cache i q with
+    | none => default
+    | some r => r
+  unfold Oracle.containsCache
+  intro i q r h
+  cases cache i q with
+  | none => simp_all
+  | some val => simp_all
+
+/--
+For a particular cache, the oracle never fails on that cache
+iff it never fails when run with any oracle function that is compatible with the cache.
+-/
+theorem randomOracle_cache_neverFails_iff_runWithOracle_neverFails {β}
+    [DecidableEq ι] [spec.DecidableEq] [(i : ι) → SelectableType (OracleSpec.range spec i)]
+    (oa : OracleComp (spec) β) (preexisting_cache : spec.QueryCache)
+    :
+    ((oa.simulateQ randomOracle).run preexisting_cache).neverFails
+    ↔
+    (∀ (f : spec.FunctionType),
+      Oracle.containsCache f preexisting_cache →
+      (runWithOracle f oa).isSome) := by
+  haveI : (i : ι) → Inhabited (OracleSpec.range spec i) := by
+    sorry
+  -- todo
+  -- ((oa.simulateQ randomOracle).run preexisting_cache).neverFails ↔ never fails for any supercache
+  induction oa using OracleComp.inductionOn with
+  | pure x =>
+    simp_all
+  | query_bind i t oa ih =>
+    simp_all
+    set pre := preexisting_cache i t with pre_eq
+    clear_value pre
+    cases pre with
+    | none =>
+      simp_all only [StateT.run_bind, StateT.run_monadLift, monadLift_self, bind_pure_comp,
+        StateT.run_modifyGet, Functor.map_map, neverFails_map_iff, neverFails_uniformOfFintype,
+        support_map, support_uniformOfFintype, Set.image_univ, Set.mem_range, Prod.mk.injEq,
+        exists_eq_left, forall_eq', true_and]
+      constructor
+      · intro h f hf
+        sorry
+      · sorry
+    | some val => sorry
+  | failure =>
+    simp_all
+    exact Oracle.containsCache_of_cache preexisting_cache
+
+/--
+For a particular oracle function, the computation succeeds with that oracle function
+iff it succeeds when initialized with a cache that contains all of data from that oracle function.
+-/
+theorem runWithOracle_succeeds_iff_simulateQ_randomOracle_neverFails
+     {β}
+    [DecidableEq ι] [spec.DecidableEq] [(i : ι) → SelectableType (OracleSpec.range spec i)]
+    (oa : OracleComp (spec) β) (f : spec.FunctionType) :
+    (runWithOracle f oa).isSome ↔
+    ((oa.simulateQ randomOracle).run (fun i q => some (f i q))).neverFails := by
+  sorry
+
+/--
+The oracle never fails on any cache
+iff it never fails when run with any oracle function.
+-/
+theorem randomOracle_neverFails_iff_runWithOracle_neverFails {β}
+    [DecidableEq ι] [spec.DecidableEq] [(i : ι) → SelectableType (OracleSpec.range spec i)]
+    (oa : OracleComp (spec) β)
+    :
+    (∀ (preexisting_cache : spec.QueryCache),
+      ((oa.simulateQ randomOracle).run preexisting_cache).neverFails)
+    ↔
+    (∀ (f : spec.FunctionType),
+      (runWithOracle f oa).isSome) := by
+  constructor
+  · intro h f
+    rw [runWithOracle_succeeds_iff_simulateQ_randomOracle_neverFails]
+    exact h fun i q ↦ some (f i q)
+  · intro h preexisting_cache
+    sorry
 
 end OracleComp
 

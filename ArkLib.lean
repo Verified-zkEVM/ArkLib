@@ -1,6 +1,7 @@
 import ArkLib.AGM.Basic
 import ArkLib.CommitmentScheme.Basic
 import ArkLib.CommitmentScheme.Fold
+import ArkLib.CommitmentScheme.InductiveMerkleTree
 import ArkLib.CommitmentScheme.KZG
 import ArkLib.CommitmentScheme.MerkleTree
 import ArkLib.CommitmentScheme.SimpleRO
@@ -159,6 +160,9 @@ import ArkLib.ProofSystem.Whir.OutofDomainSmpl
 import ArkLib.ProofSystem.Whir.ProximityGap
 import ArkLib.ProofSystem.Whir.ProximityGen
 import ArkLib.ToMathlib.BigOperators.Fin
+import ArkLib.ToMathlib.Data.IndexedBinaryTree.Basic
+import ArkLib.ToMathlib.Data.IndexedBinaryTree.Equiv
+import ArkLib.ToMathlib.Data.IndexedBinaryTree.Lemmas
 import ArkLib.ToMathlib.Finset.Basic
 import ArkLib.ToMathlib.Finsupp.Fin
 import ArkLib.ToMathlib.MvPolynomial.Equiv
