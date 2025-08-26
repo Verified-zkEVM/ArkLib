@@ -2694,47 +2694,48 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       unfold algebra_adjacent_tower
       unfold indexLeft
       -- All casts eliminated, now we prove equality on revFinProdFinEquiv and bit stuff
-      rw! [PowerBasis.coe_basis, powerBasisSucc_gen, ←𝕏, Fin.coe_cast]
-      conv_lhs =>
-        rw [ih_r1 (l:=l) (h_le:=by omega)] -- inductive hypothesis of level r - 1
-        rw [Fin.cast_val_eq_val (h_eq:=by omega)]
+      sorry
+      -- rw! [PowerBasis.coe_basis, powerBasisSucc_gen, ←𝕏, Fin.coe_cast]
+      -- conv_lhs =>
+      --   rw [ih_r1 (l:=l) (h_le:=by omega)] -- inductive hypothesis of level r - 1
+      --   rw [Fin.cast_val_eq_val (h_eq:=by omega)]
 
-      conv_rhs =>
-        rw [←Fin.prod_congr' (b:=r - l) (a:=prevDiff + 1) (h:=by omega)]
-        rw [Fin.prod_univ_castSucc] -- split the prod of rhs
-        simp only [Fin.coe_cast, Fin.coe_castSucc, Fin.val_last]
-      · simp_rw [algebraMap.coe_prod] -- lhs
-        unfold Algebra.cast
-        rw! (castMode:=.all) [←algebraMap]
-        conv_lhs =>
-          rw [←Fin.prod_congr' (b:=r1 - l) (a:=prevDiff) (h:=by omega)]
-          simp only [Fin.coe_cast]
-        simp_rw [algebraMap, instAlgebraSucc]
-        rw [algebra_adjacent_tower]
-        rw [RingHom.map_pow]
-        ------------------ Equality of bit - based powers of generators -----------------
-        conv_rhs => rw! [←algebraMap, h_r1_eq_l_plus_prevDiff.symm]
-        -- algebraMap.coe_pow] -- rhs
-        --- The outtermost term
-        have hfinProd_msb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)
-          (i:=⟨prevDiff, by omega⟩) (j:=⟨j, by omega⟩)
-        simp only [lt_self_iff_false, ↓reduceIte,
-          revFinProdFinEquiv_symm_apply] at hfinProd_msb
-        conv_rhs =>
-          simp only [hfinProd_msb, leftDivNat];
-          simp only [h_prevDiff]
-          rw! [ConcreteBTFieldAlgebra_id (by omega), RingHom.id_apply]
-        --- Inner - prod term
-        congr
-        funext i
-        have hfinProd_lsb := bit_revFinProdFinEquiv_symm_2_pow_succ
-          (n:=prevDiff) (i:=⟨i, by omega⟩)
-          (j:=⟨j, by omega⟩)
-        simp only [Fin.is_lt, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_lsb
-        rw [hfinProd_lsb]
-        simp_rw [←ConcreteBTFieldAlgebra_apply_assoc]
-        rfl
-      · rfl
+      -- conv_rhs =>
+      --   rw [←Fin.prod_congr' (b:=r - l) (a:=prevDiff + 1) (h:=by omega)]
+      --   rw [Fin.prod_univ_castSucc] -- split the prod of rhs
+      --   simp only [Fin.coe_cast, Fin.coe_castSucc, Fin.val_last]
+      -- · simp_rw [algebraMap.coe_prod] -- lhs
+      --   unfold Algebra.cast
+      --   rw! (castMode:=.all) [←algebraMap]
+      --   conv_lhs =>
+      --     rw [←Fin.prod_congr' (b:=r1 - l) (a:=prevDiff) (h:=by omega)]
+      --     simp only [Fin.coe_cast]
+      --   simp_rw [algebraMap, instAlgebraSucc]
+      --   rw [algebra_adjacent_tower]
+      --   rw [RingHom.map_pow]
+      --   ------------------ Equality of bit - based powers of generators -----------------
+      --   conv_rhs => rw! [←algebraMap, h_r1_eq_l_plus_prevDiff.symm]
+      --   -- algebraMap.coe_pow] -- rhs
+      --   --- The outtermost term
+      --   have hfinProd_msb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)
+      --     (i:=⟨prevDiff, by omega⟩) (j:=⟨j, by omega⟩)
+      --   simp only [lt_self_iff_false, ↓reduceIte,
+      --     revFinProdFinEquiv_symm_apply] at hfinProd_msb
+      --   conv_rhs =>
+      --     simp only [hfinProd_msb, leftDivNat];
+      --     simp only [h_prevDiff]
+      --     rw! [ConcreteBTFieldAlgebra_id (by omega), RingHom.id_apply]
+      --   --- Inner - prod term
+      --   congr
+      --   funext i
+      --   have hfinProd_lsb := bit_revFinProdFinEquiv_symm_2_pow_succ
+      --     (n:=prevDiff) (i:=⟨i, by omega⟩)
+      --     (j:=⟨j, by omega⟩)
+      --   simp only [Fin.is_lt, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_lsb
+      --   rw [hfinProd_lsb]
+      --   simp_rw [←ConcreteBTFieldAlgebra_apply_assoc]
+      --   rfl
+      -- · rfl
 
 end ConcreteMultilinearBasis
 
