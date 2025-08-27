@@ -45,6 +45,7 @@ package «Arklib» {
   leanOptions := arklibLeanOptions
   -- ArkLib also enforces these linter options, which are not active by default.
   moreServerOptions := arklibOnlyLinters
+  lintDriver := "batteries/runLinter"
 }
 
 @[default_target]
