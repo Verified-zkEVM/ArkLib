@@ -22,6 +22,9 @@
 # Web files for local viewing
 /blueprint/web/
 
+# Print file in blueprint src
+/blueprint/src/print.pdf
+
 /.claude/
 /.cursor/
 /.venv/
