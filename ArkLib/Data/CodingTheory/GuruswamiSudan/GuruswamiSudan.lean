@@ -20,9 +20,24 @@ variable {n : ℕ}
 open Polynomial
 
 /--
-Guruswami-Sudan conditions for the polynomial searched by the decoder.
-As in the Berlekamp-Welch case, this can be shown to be equivalent to a
-a system of linear equations.
+Guruswami–Sudan conditions for the polynomial searched by the decoder.
+
+These conditions characterize the existence of a nonzero bivariate
+polynomial `Q(X,Y)` that vanishes with sufficiently high multiplicity
+at all interpolation points `(ωs i, f i)`. As in the Berlekamp–Welch
+case, this can be shown to be equivalent to solving a system of linear
+equations.
+
+Parameters:
+* `k : ℕ` — Message length parameter of the code.
+* `r : ℕ` — Multiplicity parameter; controls how many derivatives of `Q`
+  must vanish at each interpolation point.
+* `D : ℕ` — Degree bound for `Q` under the weighted degree measure.
+* `ωs : Fin n ↪ F` — The domain of evaluation.
+* `f : Fin n → F` — Received word (evaluation of the encoded polynomial,
+  possibly corrupted).
+* `Q : Polynomial (Polynomial F)` — The candidate bivariate polynomial
+  in variables `X` and `Y`.
 -/
 structure Condition
   (k r D : ℕ)
