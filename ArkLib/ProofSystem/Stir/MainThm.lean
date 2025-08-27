@@ -80,10 +80,7 @@ def OracleStatement (ι F : Type) : Unit → Type :=
   the oracle statement defined above. The oracle simply applies
   the function `f : ι → F` to the query input `i : ι`,
   producing the response. -/
-instance {ι : Type} : OracleInterface (OracleStatement ι F ()) where
-  Query := ι
-  Response := F
-  oracle := fun f i => f i
+instance {ι : Type} : OracleInterface (OracleStatement ι F ()) := instOracleInterfaceFunction
 
 /-- STIR relation: the oracle's output is δᵣ-close to a Reed-Solomon codeword
   of degree at most `degree` over domain `φ`, within error `err`.

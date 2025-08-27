@@ -160,7 +160,7 @@ instance : ∀ i, OracleInterface (OracleStatement R pp i) :=
   fun i => {
     Query := (Fin pp.ℓ_m → R) × (Fin pp.ℓ_n → R)
     Response := R
-    oracle := fun matrix ⟨x, y⟩ => matrix.toMLE ⸨C ∘ x⸩ ⸨y⸩
+    answer := fun matrix ⟨x, y⟩ => matrix.toMLE ⸨C ∘ x⸩ ⸨y⸩
   }
 
 -- For the input witness, we define its oracle interface to be the polynomial evaluation oracle of
@@ -171,7 +171,7 @@ instance : ∀ i, OracleInterface (OracleStatement R pp i) :=
 instance : OracleInterface (Witness R pp) where
   Query := Fin pp.ℓ_w → R
   Response := R
-  oracle := fun 𝕨 evalPoint => (MLE (𝕨 ∘ finFunctionFinEquiv)) ⸨evalPoint⸩
+  answer := fun 𝕨 evalPoint => (MLE (𝕨 ∘ finFunctionFinEquiv)) ⸨evalPoint⸩
 
 /-!
   ## First message

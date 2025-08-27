@@ -2162,7 +2162,7 @@ theorem concreteTowerAlgebraMap_assoc :
 **Formalization of Cross - Level Algebra**  : For any `k ≤ τ`, `ConcreteBTField τ` is an
 algebra over `ConcreteBTField k`.
 -/
-instance instAssocTowerOfAlgebraConcreteBTF: AssocTowerOfAlgebra (ConcreteBTField) where
+instance instAssocTowerOfAlgebraConcreteBTF : AssocTowerOfAlgebra (ConcreteBTField) where
   towerAlgebraMap := concreteTowerAlgebraMap
   smul := fun i j h => by
     exact (concreteTowerAlgebraMap i j h).toAlgebra.toSMul -- derive same smul from algebra
@@ -2585,7 +2585,7 @@ theorem PowerBasis.cast_basis_succ_of_eq_rec_apply
   -- The proof of the theorem itself remains simple.
   subst h_r
   simp only [ConcreteBTFieldAlgebra_id,
-    Algebra.id.map_eq_id, PowerBasis.coe_basis, Fin.coe_cast, RingHom.id_apply]
+    Algebra.algebraMap_self, PowerBasis.coe_basis, Fin.coe_cast, RingHom.id_apply]
   rw [Basis_cast_index_apply (h_eq:=by
     exact powerBasisSucc_dim r1) (h_le:=by omega)]
   simp only [PowerBasis.coe_basis, Fin.coe_cast]
@@ -2771,12 +2771,12 @@ noncomputable def towerEquiv_zero : RingEquiv (R:=GF(2)) (S:=ConcreteBTField 0) 
       · simp only [y_zero, or_true, ↓reduceIte]
       · simp only [y_one, one_ne_zero, or_false, ↓reduceIte]
 }
-noncomputable def towerRingEquiv0: BTField 0 ≃+* ConcreteBTField 0 := by
+noncomputable def towerRingEquiv0 : BTField 0 ≃+* ConcreteBTField 0 := by
   apply RingEquiv.trans (R:=BTField 0) (S:=GF(2)) (S':=ConcreteBTField 0)
   · exact RingEquiv.refl (BTField 0)
   · exact towerEquiv_zero
 
-noncomputable def towerRingEquivFromConcrete0: ConcreteBTField 0 ≃+* BTField 0 := by
+noncomputable def towerRingEquivFromConcrete0 : ConcreteBTField 0 ≃+* BTField 0 := by
   exact towerRingEquiv0.symm
 
 noncomputable def towerRingHomForwardMap (k : ℕ) : ConcreteBTField k → BTField k := by
@@ -2818,10 +2818,10 @@ lemma towerRingHomForwardMap0_eq :
   simp only [RingEquiv.toEquiv_eq_coe, Equiv.toFun_as_coe, EquivLike.coe_coe, ↓reduceDIte]
 
 structure TowerEquivResult (k : ℕ) where
-  ringEquiv: ConcreteBTField k ≃+* BTField k
-  ringEquivForwardMapEq: ringEquiv = towerRingHomForwardMap k
-  mapGenerator: (towerRingHomForwardMap k) (Z k) = BinaryTower.Z k
-  mapSplit: (h_pos: k > 0) → ∀ x : ConcreteBTField k, ringEquiv.toFun (x) =
+  ringEquiv : ConcreteBTField k ≃+* BTField k
+  ringEquivForwardMapEq : ringEquiv = towerRingHomForwardMap k
+  mapGenerator : (towerRingHomForwardMap k) (Z k) = BinaryTower.Z k
+  mapSplit : (h_pos: k > 0) → ∀ x : ConcreteBTField k, ringEquiv.toFun x =
     BinaryTower.join_via_add_smul (k:=k) (h_pos:=h_pos) (hi_btf := by
       have hi_btf := (split (k:=k) (h:=h_pos) x).fst
       exact towerRingHomForwardMap (k:=k-1) hi_btf
@@ -2876,7 +2876,7 @@ noncomputable def towerEquiv (n : ℕ) : TowerEquivResult n := by
       mapSplit := fun h_pos x => by sorry
     }
 
-noncomputable instance instAssocTowerOfAlgebraEquiv: AssocTowerOfAlgebraEquiv
+noncomputable instance instAssocTowerOfAlgebraEquiv : AssocTowerOfAlgebraEquiv
   (ConcreteBTField) (BTField) where
   toRingEquiv := fun i => (towerEquiv i).ringEquiv
   commutesLeft' := fun i j h r => by

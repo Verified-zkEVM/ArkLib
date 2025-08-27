@@ -99,7 +99,7 @@ instance [Oₘ : ∀ i, OracleInterface (pSpec.Message i)] :
   fun i => {
     Query := (Oₘ i).Query
     Response := (Oₘ i).Response
-    oracle := fun msg => (Oₘ i).oracle (by
+    answer := fun msg => (Oₘ i).answer (by
       dsimp [addSalt] at msg ⊢
       split at msg
       · exact msg.1

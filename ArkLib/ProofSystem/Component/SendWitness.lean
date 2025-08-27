@@ -228,14 +228,14 @@ def oracleReduction : OracleReduction oSpec
 variable {Statement} {OStatement} {Witness}
 
 omit [(i : ιₛ) → OracleInterface (OStatement i)] [OracleInterface Witness] in
-theorem oracleProver_run {stmt : Statement} {oStmt : ∀ i, OStatement i} {wit : Witness}:
+theorem oracleProver_run {stmt : Statement} {oStmt : ∀ i, OStatement i} {wit : Witness} :
     (oracleProver oSpec Statement OStatement Witness).run ⟨stmt, oStmt⟩ wit =
       pure (fun i => by aesop, ⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, ()) := by
   simp [Prover.run, Prover.runToRound, Prover.processRound, oracleProver, Transcript.concat]
   ext i; fin_cases i; aesop
 
 theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatement i}
-    {tr : (oraclePSpec Witness).FullTranscript}:
+    {tr : (oraclePSpec Witness).FullTranscript} :
     (oracleVerifier oSpec Statement OStatement Witness).toVerifier.run ⟨stmt, oStmt⟩ tr =
       pure ⟨stmt, Sum.rec oStmt (fun i => match i with | 0 => tr 0)⟩ := by
   simp [Verifier.run, OracleVerifier.toVerifier, oracleVerifier]

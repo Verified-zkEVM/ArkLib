@@ -832,14 +832,14 @@ lemma toPoly_trim [LawfulBEq R] {p : UniPoly R} : p.trim.toPoly = p.toPoly := by
   rw [coeff_toPoly, coeff_toPoly, Trim.coeff_eq_coeff]
 
 /-- helper lemma to be able to state the next lemma -/
-lemma toImpl_nonzero {p : Q[X]} (hp: p ≠ 0) : p.toImpl.size > 0 := by
+lemma toImpl_nonzero {p : Q[X]} (hp : p ≠ 0) : p.toImpl.size > 0 := by
   rcases toImpl_elim p with ⟨rfl, _⟩ | ⟨_, h⟩
   · contradiction
   suffices h : p.toImpl ≠ #[] from Array.size_pos_iff.mpr h
   simp [h]
 
 /-- helper lemma: the last entry of the `UniPoly` obtained by `toImpl` is just the `leadingCoeff` -/
-lemma getLast_toImpl {p : Q[X]} (hp: p ≠ 0) : let h : p.toImpl.size > 0 := toImpl_nonzero hp;
+lemma getLast_toImpl {p : Q[X]} (hp : p ≠ 0) : let h : p.toImpl.size > 0 := toImpl_nonzero hp;
     p.toImpl[p.toImpl.size - 1] = p.leadingCoeff := by
   rcases toImpl_elim p with ⟨rfl, _⟩ | ⟨_, h⟩
   · contradiction
@@ -857,7 +857,7 @@ theorem trim_toImpl [LawfulBEq R] (p : R[X]) : p.toImpl.trim = p.toImpl := by
 
 /-- on canonical `UniPoly`s, `toImpl` is also a left-inverse of `toPoly`.
   in particular, `toPoly` is a bijection from `UniPolyC` to `Polynomial`. -/
-lemma toImpl_toPoly_of_canonical [LawfulBEq R] (p: UniPolyC R) : p.toPoly.toImpl = p := by
+lemma toImpl_toPoly_of_canonical [LawfulBEq R] (p : UniPolyC R) : p.toPoly.toImpl = p := by
   -- we will change something slightly more general: `toPoly` is injective on canonical polynomials
   suffices h_inj : ∀ q : UniPolyC R, p.toPoly = q.toPoly → p = q by
     have : p.toPoly = p.toPoly.toImpl.toPoly := by rw [toPoly_toImpl]
@@ -908,7 +908,7 @@ instance instEquivalenceEquiv : Equivalence (equiv (R := R)) where
   trans := equiv_trans
 
 /-- The `Setoid` instance for `UniPoly R` induced by `UniPoly.equiv`. -/
-instance instSetoidUniPoly: Setoid (UniPoly R) where
+instance instSetoidUniPoly : Setoid (UniPoly R) where
   r := equiv
   iseqv := instEquivalenceEquiv
 

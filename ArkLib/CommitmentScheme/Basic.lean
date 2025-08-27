@@ -25,6 +25,9 @@ import ArkLib.OracleReduction.Security.Basic
   security definitions for commitment schemes have to be stated differently than those for IOPs.
 -/
 
+-- Note: remove this once we properly define the security definitions for commitment schemes
+set_option linter.unusedVariables false
+
 namespace Commitment
 
 open OracleSpec OracleComp SubSpec
@@ -70,7 +73,7 @@ def correctness (scheme : Scheme oSpec Data Randomness Commitment pSpec)
   ∀ query : O.Query,
     [ fun x => x.2.1 | do
         let cm ← liftComp (scheme.commit data randomness) _
-        let ⟨result, _⟩ ← scheme.opening.run ⟨cm, query, O.oracle data query⟩ ⟨data, randomness⟩
+        let ⟨result, _⟩ ← scheme.opening.run ⟨cm, query, O.answer data query⟩ ⟨data, randomness⟩
         return result] ≥ 1 - correctnessError
 
 /-- A commitment scheme satisfies **perfect correctness** if it satisfies correctness with no error.
@@ -98,7 +101,7 @@ def BindingAdversary (oSpec : OracleSpec ι) (Data Commitment AuxState : Type)
   Informally, evaluation binding says that it's computationally infeasible to open a commitment to
   two different responses for the same query. -/
 def binding (scheme : Scheme oSpec Data Randomness Commitment pSpec)
-    (bindingError : ℝ≥0): Prop :=
+    (bindingError : ℝ≥0) : Prop :=
   ∀ AuxState : Type,
   ∀ adversary : BindingAdversary oSpec Data Commitment AuxState,
   ∀ prover : Prover oSpec (Commitment × O.Query × O.Response) AuxState Bool Unit pSpec,
@@ -129,7 +132,7 @@ def ExtractabilityAdversary (oSpec : OracleSpec ι) (Data Commitment AuxState : 
     opening procedure that takes in `st`, the probability that:
 
   1. The verifier accepts in the opening procedure given `cm, q, r`
-  2. The extracted data `d` is inconsistent with the claimed response (i.e., `O.oracle d q ≠ r`)
+  2. The extracted data `d` is inconsistent with the claimed response (i.e., `O.answer d q ≠ r`)
 
   is at most `extractabilityError`.
 
@@ -143,7 +146,7 @@ def extractability (scheme : Scheme oSpec Data Randomness Commitment pSpec)
   ∀ adversary : ExtractabilityAdversary oSpec Data Commitment AuxState,
   ∀ prover : Prover oSpec (Commitment × O.Query × O.Response) AuxState Bool Unit pSpec,
     False
-    -- [ fun ⟨b, d, q, r⟩ => b ∧ O.oracle d q = r | do
+    -- [ fun ⟨b, d, q, r⟩ => b ∧ O.answer d q = r | do
     --     let result ← liftM (simulate loggingOracle ∅ adversary)
     --     let ⟨⟨cm, query, response, st⟩, queryLog⟩ := result
     --     let proof : Proof pSpec oSpec (Commitment × O.Query × O.Response) AuxState :=

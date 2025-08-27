@@ -16,7 +16,7 @@ import ArkLib.Data.Polynomial.EvenAndOdd
   (perfectly) complete.
 -/
 
-variable {F: Type} [NonBinaryField F] [DecidableEq F]
+variable {F : Type*} [NonBinaryField F] [DecidableEq F]
 
 open Polynomial
 
@@ -75,7 +75,7 @@ private lemma line_passing_through_a_poly
   check. I.e., `(s₀, f(s₀))`, `(-s₀, f(-s₀))`, and
   `(s₀², (folda f)(x₀))` lie on the same line for nonzero `s₀`.
 -/
-lemma consistency_check_comp { f : Polynomial F }
+lemma consistency_check_comp {f : Polynomial F}
   {x₀ : F}
   {s₀ : F}
   (h₁ : s₀ ≠ 0)

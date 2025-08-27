@@ -43,11 +43,11 @@ def relIn : Set ((StmtIn × ∀ i, OStmtIn OStatement i) × WitIn) :=
 
 /--
 The output relation states that if the verifier's single query was `q`, then
-`a` and `b` agree on that `q`, i.e. `oracle a q = oracle b q`.
+`a` and `b` agree on that `q`, i.e. `answer a q = answer b q`.
 -/
 @[reducible, simp]
 def relOut : Set ((StmtOut OStatement × ∀ i, OStmtOut OStatement i) × WitOut) :=
-  { ⟨⟨q, oStmt⟩, ()⟩ | oracle (oStmt 0) q = oracle (oStmt 1) q }
+  { ⟨⟨q, oStmt⟩, ()⟩ | answer (oStmt 0) q = answer (oStmt 1) q }
 
 @[reducible]
 def pSpec : ProtocolSpec 1 := ⟨!v[.V_to_P], !v[Query OStatement]⟩
@@ -130,7 +130,7 @@ theorem oracleReduction_completeness (hInit : init.neverFails) :
 --   oracles 0 = oracles 1
 
 -- def langOut : Set ((Query OStatement) × (∀ _ : Fin 2, OStatement)) := setOf fun ⟨q, oracles⟩ =>
---   OracleInterface.oracle (oracles 0) q = OracleInterface.oracle (oracles 1) q
+--   answer (oracles 0) q = answer (oracles 1) q
 
 def stateFunction [Inhabited OStatement] : (oracleVerifier oSpec OStatement).StateFunction init impl
     (relIn OStatement).language (relOut OStatement).language where
@@ -138,7 +138,7 @@ def stateFunction [Inhabited OStatement] : (oracleVerifier oSpec OStatement).Sta
   | 0 => fun ⟨_, oracles⟩ _ => oracles 0 = oracles 1
   | 1 => fun ⟨_, oracles⟩ chal =>
     let q : Query OStatement := by simpa [pSpec] using chal ⟨0, by aesop⟩
-    OracleInterface.oracle (oracles 0) q = OracleInterface.oracle (oracles 1) q
+    answer (oracles 0) q = answer (oracles 1) q
   toFun_empty := fun stmt => by simp
   toFun_next | 0 => fun hDir ⟨stmt, oStmt⟩ tr h => by simp_all
   toFun_full := fun ⟨stmt, oStmt⟩ tr h => by
@@ -166,7 +166,7 @@ def knowledgeStateFunction :
   | 0 => fun ⟨_, oracles⟩ _ _ => oracles 0 = oracles 1
   | 1 => fun ⟨_, oracles⟩ chal _ =>
     let q : Query OStatement := by simpa [pSpec] using chal ⟨0, by aesop⟩
-    OracleInterface.oracle (oracles 0) q = OracleInterface.oracle (oracles 1) q
+    answer (oracles 0) q = answer (oracles 1) q
   toFun_empty := fun stmt => by simp
   toFun_next | 0 => fun hDir ⟨stmt, oStmt⟩ tr h => by simp_all
   toFun_full := fun ⟨stmt, oStmt⟩ tr _ h => by
@@ -182,12 +182,12 @@ open NNReal
 /-- The `RandomQuery` oracle reduction is round-by-round knowledge sound.
 
   The key fact governing the soundness of this reduction is a property of the form
-  `∀ a b : OStatement, a ≠ b → #{q | OracleInterface.oracle a q = OracleInterface.oracle b q} ≤ d`.
+  `∀ a b : OStatement, a ≠ b → #{q | oracle a q = oracle b q} ≤ d`.
   In other words, the oracle instance has distance at most `d`.
 -/
 @[simp]
 theorem oracleVerifier_rbrKnowledgeSoundness [Nonempty (Query OStatement)]
-    {d : ℕ} (hDist : OracleInterface.distanceLE OStatement d) :
+    {d : ℕ} (hDist : distanceLE OStatement d) :
     (oracleVerifier oSpec OStatement).rbrKnowledgeSoundness init impl
       (relIn OStatement)
       (relOut OStatement)
@@ -209,7 +209,7 @@ theorem oracleVerifier_rbrKnowledgeSoundness [Nonempty (Query OStatement)]
   dsimp
   calc
   _ ≤ ((Finset.card
-    {x | ¬oracles 0 = oracles 1 ∧ oracle (oracles 0) x = oracle (oracles 1) x} : ENNReal) /
+    {x | ¬oracles 0 = oracles 1 ∧ answer (oracles 0) x = answer (oracles 1) x} : ENNReal) /
         (Fintype.card (Query OStatement))) := by
     rw [ENNReal.tsum_mul_right]
     grw [OracleComp.tsum_probOutput_le_one]
@@ -261,7 +261,7 @@ The final relation states that the first oracle `oStmt ()` agrees with the respo
 -/
 @[reducible, simp]
 def relOut : (StmtOut OStatement × ∀ i, OStmtOut OStatement i) → WitOut → Prop :=
-  fun ⟨⟨q, r⟩, oStmt⟩ () => oracle (oStmt 0) q = r
+  fun ⟨⟨q, r⟩, oStmt⟩ () => answer (oStmt 0) q = r
 
 -- @[reducible]
 -- def pSpec : ProtocolSpec 1 := ![(.V_to_P, Query OStatement)]

@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.Tree.Binary
 import Mathlib.Data.Vector.Snoc
 import VCVio.OracleComp.QueryTracking.CachingOracle
 
@@ -313,49 +312,3 @@ section Test
 end Test
 
 end MerkleTree
-
--- Alternative definition of Merkle tree using inductive type
-
-variable {α : Type}
-
-/-- Helper function to get the proof for a value at a given path. -/
-def getProofHelper [DecidableEq α] : List Bool → BinaryTree α → List α
-  | _, BinaryTree.nil => []
-  | _, BinaryTree.leaf _ => []
-  | [], BinaryTree.node _ _ _ => []
-  | false :: rest, BinaryTree.node _ l r =>
-    match BinaryTree.getRoot r with
-    | none => getProofHelper rest l
-    | some v => v :: getProofHelper rest l
-  | true :: rest, BinaryTree.node _ l r =>
-    match BinaryTree.getRoot l with
-    | none => getProofHelper rest r
-    | some v => v :: getProofHelper rest r
-
-/-- Generate a Merkle proof for a leaf with value 'a'.
-    The proof consists of the sibling hashes needed to recompute the root. -/
-def generateProof [DecidableEq α] (a : α) (tree : BinaryTree α) : Option (List α) :=
-  match BinaryTree.findPath a tree with
-  | none => none
-  | some path => some (getProofHelper path tree)
-
-/-- Verify a Merkle proof that a value 'a' is in the tree with root 'root'.
-    The 'proof' contains sibling hashes, and 'path' is the position (left/right) at each level. -/
-def verifyProof [DecidableEq α] (hashFn : α → α → α) (a : α) (root : α)
-    (proof : List α) (path : List Bool) : Bool :=
-  let rec verify (current : α) (p : List α) (dirs : List Bool) : Bool :=
-    match p, dirs with
-    | [], [] => current = root
-    | sibling :: restProof, dir :: restPath =>
-      let nextHash := if dir then hashFn sibling current else hashFn current sibling
-      verify nextHash restProof restPath
-    | _, _ => false -- Proof and path lengths don't match
-  verify a proof path
-
--- /-- Build a Merkle tree from a list of leaves using a hash function. -/
--- def buildMerkleTree [DecidableEq α] [Inhabited α]
---     (hashFn : α → α → α) (leaves : List α) : BinaryTree α :=
---   -- Find the smallest power of 2 that fits all leaves
---   -- We can estimate 2^n >= leaves.length by using n = ceiling(log2(leaves.length))
---   let n := Nat.ceil (Nat.log 2 (leaves.length + 1)) -- Ceiling of log base 2
---   LeafTree.toMerkleTree hashFn (LeafTree.fromList n leaves)

@@ -24,7 +24,7 @@ which should be understood as being the minimum relative hamming distance, which
 
 ## References
 
-* G Arnon, A Chies, G Fenzi, and E Yogev,
+* G Arnon, A Chiesa, G Fenzi, and E Yogev,
 [*WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification*][todo: ArkLib bibliography]
 Freely available at https://eprint.iacr.org/2024/1586
 
