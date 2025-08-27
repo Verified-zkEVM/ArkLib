@@ -40,7 +40,7 @@ jobs:
             pip install --upgrade pip requests wheel
             pip install pygraphviz --global-option=build_ext --global-option="-L/usr/lib/graphviz/" --global-option="-R/usr/lib/graphviz/"
             pip install leanblueprint
-            leanblueprint all
+            leanblueprint pdf
 
       - name: Check blueprint declarations
         run: |
