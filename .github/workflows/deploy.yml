@@ -1,0 +1,215 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Sets permissions for GitHub Pages deployment
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  # Check that all files are properly imported
+  check_imported:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update ArkLib.lean
+        run: |
+          git ls-files 'ArkLib/*.lean' | LC_ALL=C sort | sed 's/\.lean//;s,/,.,g;s/^/import /' > ArkLib.lean
+
+      - name: Check that all files are imported
+        run: git diff --exit-code
+
+  # First, ensure we have a successful build
+  build:
+    needs: check_imported
+    runs-on: ubuntu-latest
+    outputs:
+      cache-hit: ${{ steps.cache-build.outputs.cache-hit }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore build cache
+        id: cache-build
+        uses: actions/cache@v4
+        with:
+          path: |
+            .lake/build
+            ~/.elan
+          key: lake-build-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lake-manifest.json', 'lakefile.lean') }}
+          restore-keys: |
+            lake-build-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}
+            lake-build-${{ runner.os }}-
+
+      - name: Build project
+        uses: leanprover/lean-action@v1.3.0
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lake-build-${{ github.sha }}
+          path: .lake/build
+          retention-days: 1
+
+  # Build documentation in parallel
+  docs:
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-name: api-docs-${{ github.sha }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: lake-build-${{ github.sha }}
+          path: .lake/build
+
+      - name: Install elan
+        run: curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+
+      - name: Build API documentation
+        run: |
+          ~/.elan/bin/lake -R -Kenv=dev build ArkLib:docs
+
+      - name: Clean up documentation
+        run: |
+          find .lake/build/doc -name "*.trace" -delete
+          find .lake/build/doc -name "*.hash" -delete
+
+      - name: Upload API documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-docs-${{ github.sha }}
+          path: .lake/build/doc
+          retention-days: 1
+
+  # Build blueprint in parallel
+  blueprint:
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-name: blueprint-${{ github.sha }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: lake-build-${{ github.sha }}
+          path: .lake/build
+
+      - name: Install elan
+        run: curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+
+      - name: Check declarations mentioned in blueprint
+        run: |
+          ~/.elan/bin/lake exe checkdecls blueprint/lean_decls
+
+      - name: Build blueprint
+        uses: xu-cheng/texlive-action@v3
+        with:
+          docker_image: ghcr.io/xu-cheng/texlive-full:20231201
+          run: |
+            # Install necessary dependencies and build the blueprint
+            apk update
+            apk add --update make py3-pip git pkgconfig graphviz graphviz-dev gcc musl-dev
+            git config --global --add safe.directory $GITHUB_WORKSPACE
+            git config --global --add safe.directory `pwd`
+            python3 -m venv env
+            source env/bin/activate
+            pip install --upgrade pip requests wheel
+            pip install pygraphviz --global-option=build_ext --global-option="-L/usr/lib/graphviz/" --global-option="-R/usr/lib/graphviz/"
+            pip install leanblueprint
+            leanblueprint pdf
+            leanblueprint web
+
+      - name: Upload blueprint artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: blueprint-${{ github.sha }}
+          path: |
+            blueprint/print/print.pdf
+            blueprint/web/
+          retention-days: 1
+
+  # Deploy everything together
+  deploy:
+    needs: [build, docs, blueprint]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download API documentation
+        uses: actions/download-artifact@v4
+        with:
+          name: api-docs-${{ github.sha }}
+          path: temp-docs
+
+      - name: Download blueprint
+        uses: actions/download-artifact@v4
+        with:
+          name: blueprint-${{ github.sha }}
+          path: temp-blueprint
+
+      - name: Prepare home_page directory
+        run: |
+          mkdir -p home_page
+
+          # Copy API docs
+          cp -r temp-docs home_page/docs
+
+          # Copy blueprint files
+          cp temp-blueprint/blueprint/print/print.pdf home_page/blueprint.pdf
+          cp -r temp-blueprint/blueprint/web home_page/blueprint
+
+      - name: Check for Jekyll home_page
+        id: check_home_page
+        run: |
+          if [ -d home_page ] && [ -f home_page/_config.yml ]; then
+            echo "HOME_PAGE_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "HOME_PAGE_EXISTS=false" >> $GITHUB_ENV
+          fi
+
+      - name: Setup Ruby for Jekyll
+        if: env.HOME_PAGE_EXISTS == 'true'
+        uses: ruby/setup-ruby@v1
+        with:
+          working-directory: home_page
+          ruby-version: "3.4.3"
+          bundler-cache: true
+
+      - name: Build Jekyll site
+        if: env.HOME_PAGE_EXISTS == 'true'
+        working-directory: home_page
+        run: JEKYLL_ENV=production bundle exec jekyll build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ env.HOME_PAGE_EXISTS == 'true' && 'home_page/_site' || 'home_page/' }}
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

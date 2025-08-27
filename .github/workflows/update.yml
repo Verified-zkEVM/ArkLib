@@ -1,0 +1,26 @@
+name: Update Lean Project
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # every day at midnight UTC
+  workflow_dispatch: # allows manual triggering
+
+jobs:
+  update_lean:
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update Lean project
+        uses: leanprover-community/lean-update@main
+        with:
+          update_if_modified: lean-toolchain
+          update_lean_toolchain: auto
+          on_update_succeeds: pr
+          on_update_fails: issue
