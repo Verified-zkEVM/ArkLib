@@ -137,8 +137,7 @@ lemma degreeCor_eq {F : Type u_1} [Field F] [DecidableEq F] {ι : Type u_2} (φ 
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
          {ι : Type} [Fintype ι] [Nonempty ι]
 
-open LinearCode ProbabilityTheory ReedSolomon
-
+open LinearCode ProbabilityTheory ReedSolomon STIR in
 /-- Lemma 4.13
   Let `dstar` be the target degree, `f₁,...,f_{m-1} : ι → F`,
   `0 < degs₁,...,degs_{m-1} < dstar` be degrees and
@@ -152,7 +151,7 @@ lemma combine_theorem
   (hδLt : δ < (min (1 - Bstar (rate (code φ degree)))
                    (1 - (rate (code φ degree)) - 1 / Fintype.card ι)))
   (hProb : Pr_{ let r ← $ᵖ F}[δᵣ((combine φ dstar r fs degs), (code φ dstar)) ≤ δ] >
-    ENNReal.ofReal (err' F dstar (rate (code φ degree)) δ (m * (dstar + 1) - ∑ i, degs i))) :
+    ENNReal.ofReal (proximityError F dstar (rate (code φ degree)) δ (m * (dstar + 1) - ∑ i, degs i))) :
       correlatedAgreement (code φ degree) ⟨δ, by linarith⟩ fs
       := by sorry
 

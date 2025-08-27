@@ -17,7 +17,7 @@ import Mathlib.RingTheory.MvPolynomial.Groebner
 
 /-! Section 4.4, [ACFY24] -/
 
-open Polynomial ReedSolomon LinearMap Finset ListDecodable
+open Polynomial ReedSolomon LinearMap Finset ListDecodable STIR
 
 namespace Domain
 
@@ -188,7 +188,7 @@ lemma folding
   (hδLt : δ < foldingDistRange degree φ f) :
   let C : Set ((indexPow S φ k) → F) := code (pow S φ k) (degree / k)
   Pr_{ let r ← $ᵖ F }[ δᵣ((fold φ f k r), C) ≤ δ]
-    ≤ ENNReal.ofReal (err' F (degree / k) (LinearCode.rate (code φ degree)) δ k) :=
+    ≤ ENNReal.ofReal (proximityError F (degree / k) (LinearCode.rate (code φ degree)) δ k) :=
 by sorry
 
 end Folding

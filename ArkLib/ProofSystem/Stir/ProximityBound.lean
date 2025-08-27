@@ -12,8 +12,8 @@ open NNReal
 
 namespace STIR
 
-/-- Proximity bound function (`Bstar` in STIR) -/
-noncomputable def proximityBound (x : ℝ) : ℝ := x.sqrt
+/-- Proximity bound function (`Bstar` in STIR), which is just a square root. -/
+noncomputable def Bstar (x : ℝ) : ℝ := x.sqrt
 
 /-- Proximity error function -/
 noncomputable def proximityError (F : Type*) [Fintype F] (d : ℕ) (ρ : ℝ) (δ : ℝ) (m : ℕ) : ℝ :=

@@ -185,7 +185,7 @@ class GenMutualCorrParams (S : Finset ι) (φ : ι ↪ F) (k : ℕ) where
   BStar : ∀ i : Fin (k + 1), (Set (indexPowT S φ i → F)) → Type → ℝ≥0
   errStar : ∀ i : Fin (k + 1), (Set (indexPowT S φ i → F)) → Type → ℝ → ENNReal
 
-  h : ∀ i : Fin (k + 1), MutualCorrAgreement (Gen_α i)
+  h : ∀ i : Fin (k + 1), hasMutualCorrAgreement (Gen_α i)
                                              (BStar i (Gen_α i).C (Gen_α i).parℓ)
                                              (errStar i (Gen_α i).C (Gen_α i).parℓ)
 
