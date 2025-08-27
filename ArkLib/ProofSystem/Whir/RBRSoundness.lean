@@ -32,7 +32,7 @@ introduced in the [Section 5 of the WHIR paper][todo: ArkLib bibliography].
 
 ## References
 
-* G Arnon, A Chies, G Fenzi, and E Yogev,
+* G Arnon, A Chiesa, G Fenzi, and E Yogev,
 [*WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification*][todo: ArkLib bibliography]
 Freely available at https://eprint.iacr.org/2024/1586
 
@@ -153,10 +153,7 @@ def OracleStatement (ι F : Type) : Unit → Type :=
   the oracle statement defined above. The oracle simply applies
   the function `f : ι → F` to the query input `i : ι`,
   producing the response. -/
-instance {ι : Type} : OracleInterface (OracleStatement ι F ()) where
-  Query := ι
-  Response := F
-  oracle := fun f i => f i
+instance {ι : Type} : OracleInterface (OracleStatement ι F ()) := instOracleInterfaceFunction
 
 /-- WHIR relation: the oracle's output is δᵣ-close to a codeword of a smooth ReedSolomon code
 with number of variables at most `varCount` over domain `φ`, within error `err`.

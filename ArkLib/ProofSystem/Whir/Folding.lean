@@ -31,7 +31,7 @@ introduced in the [Section 4 of the WHIR paper][todo: ArkLib bibliography].
 
 ## References
 
-* G Arnon, A Chies, G Fenzi, and E Yogev,
+* G Arnon, A Chiesa, G Fenzi, and E Yogev,
 [*WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification*][todo: ArkLib bibliography]
 Freely available at https://eprint.iacr.org/2024/1586
 

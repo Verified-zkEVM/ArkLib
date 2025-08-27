@@ -100,7 +100,7 @@ theorem verifier_rbrKnowledgeSoundness (hRel : ∀ stmtIn witOut,
       (mapStmt stmtIn, witOut) ∈ relOut → (stmtIn, mapWitInv stmtIn witOut) ∈ relIn) :
     (verifier oSpec mapStmt).rbrKnowledgeSoundness init impl relIn relOut 0 := by
   refine ⟨_, _, knowledgeStateFunction relIn relOut hRel, ?_⟩
-  simp only [ProtocolSpec.ChallengeIdx, Matrix.vecEmpty]
+  simp only [ProtocolSpec.ChallengeIdx]
   exact fun _ _ _ i => Fin.elim0 i.1
 
 end Reduction
@@ -193,7 +193,7 @@ theorem oracleVerifier_rbrKnowledgeSoundness (hRel : ∀ stmtIn oStmtIn witOut,
       ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
     (oracleVerifier oSpec mapStmt embedIdx hEq).rbrKnowledgeSoundness init impl relIn relOut 0 := by
   refine ⟨_, _, oracleKnowledgeStateFunction relIn relOut hRel, ?_⟩
-  simp only [ProtocolSpec.ChallengeIdx, Matrix.vecEmpty]
+  simp only [ProtocolSpec.ChallengeIdx]
   exact fun _ _ _ i => Fin.elim0 i.1
 
 end OracleReduction

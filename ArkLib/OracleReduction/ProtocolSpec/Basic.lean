@@ -653,7 +653,7 @@ instance challengeOracleInterface {pSpec : ProtocolSpec n} :
     ∀ i, OracleInterface (pSpec.Challenge i) := fun i =>
   { Query := Unit
     Response := pSpec.Challenge i
-    oracle := fun c _ => c }
+    answer := fun c _ => c }
 
 /-- Query a verifier's challenge for a given challenge round `i`, given the default challenge
   oracle interface `challengeOracleInterface`.
@@ -687,7 +687,7 @@ def challengeOracleInterfaceSR (StmtIn : Type) (pSpec : ProtocolSpec n) :
     ∀ i, OracleInterface (pSpec.Challenge i) := fun i =>
   { Query := StmtIn × pSpec.MessagesUpTo i.1.castSucc
     Response := pSpec.Challenge i
-    oracle := fun c _ => c }
+    answer := fun c _ => c }
 
 alias challengeOracleInterfaceFS := challengeOracleInterfaceSR
 
