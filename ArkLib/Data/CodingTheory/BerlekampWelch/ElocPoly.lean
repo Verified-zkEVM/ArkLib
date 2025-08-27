@@ -160,7 +160,7 @@ open Fin
 lemma elocPolyF_deg {ωs f : Fin n → F} : (ElocPolyF ωs f p).natDegree = Δ₀(f, p.eval ∘ ωs) := by
   rw [elocPolyF_eq_elocPoly']
   induction' n with n ih
-  · simp only [elocPoly_zero, map_one, natDegree_one, hamming_zero_eq_dist]
+  · simp only [elocPoly_zero, natDegree_one, hamming_zero_eq_dist]
     exact funext_iff.2 (Fin.elim0 ·)
   · rw [
       elocPoly_succ,

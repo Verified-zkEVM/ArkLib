@@ -24,7 +24,7 @@ def e (B : Finset (Fin n → F)) (v : Fin n → F) : ℚ :=
   (1 : ℚ)/B.card * ∑ x ∈ B, Δ₀(v, x)
 
 def d (B : Finset (Fin n → F)) : ℚ :=
-  (1 : ℚ)/(2 * choose_2 B.card) * ∑ x ∈ (Finset.product B B) with x.1 ≠ x.2, Δ₀(x.1, x.2) 
+  (1 : ℚ)/(2 * choose_2 B.card) * ∑ x ∈ (Finset.product B B) with x.1 ≠ x.2, Δ₀(x.1, x.2)
 
 lemma lin_shift_card [Field F] [Fintype F]
   :
@@ -53,19 +53,17 @@ lemma lin_shift_d [Field F] [Fintype F]
   simp [d]
   rw [←lin_shift_card]
   have h : choose_2 B.card ≠ 0 := by aesop (add simp [choose_2, sub_eq_zero])
-  field_simp 
+  field_simp
   apply Finset.sum_bij (fun x _ => (x.1 - v, x.2 -v)) <;> try aesop
 
 lemma e_ball_le_radius [Field F] [Fintype F] {B : Finset (Fin n → F)} (v : Fin n → F) (r : ℚ)
   :
-  e (B ∩ ({ x | Δ₀(x, v) ≤ r} : Finset _)) v ≤ r := by 
-  sorry 
+  e (B ∩ ({ x | Δ₀(x, v) ≤ r} : Finset _)) v ≤ r := by
+  sorry
 
 lemma min_dist_le_d [Field F] {B : Finset (Fin n → F)} (v : Fin n → F)
   :
   sInf { d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ hammingDist u v = d } ≤ d B := by
   sorry
-
-  
 
 end JohnsonBound

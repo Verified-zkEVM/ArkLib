@@ -385,7 +385,7 @@ variable {F : Type*} [Field F] [DecidableEq F]
   their decoded univariate polynomials are of degree < 2ᵐ for some m ∈ ℕ. -/
 def smoothCode
   (domain : ι ↪ F) [Smooth domain]
-  (m : ℕ): Submodule F (ι → F) := ReedSolomon.code domain (2^m)
+  (m : ℕ) : Submodule F (ι → F) := ReedSolomon.code domain (2^m)
 
 /-- The linear map that maps Smooth Reed Solomon Code words
     to their decoded degree wise linear `m`-variate polynomial -/

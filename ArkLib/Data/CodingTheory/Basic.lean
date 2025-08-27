@@ -199,9 +199,9 @@ theorem dist'_eq_dist : ‖C‖₀'.toNat = ‖C‖₀ := by
 section
 
 /-
-  - TODO: We currently do not use `(E)Dist` as it forces the distance(s) into `ℝ`.
-          Instead, we take some explicit notion of distance `δf`.
-          Let us give this some thought.
+- TODO: We currently do not use `(E)Dist` as it forces the distance(s) into `ℝ`.
+        Instead, we take some explicit notion of distance `δf`.
+        Let us give this some thought.
 -/
 
 variable {α : Type*}
@@ -426,7 +426,7 @@ end
 
 noncomputable section
 
-variable {F : Type*}[DecidableEq F]
+variable {F : Type*} [DecidableEq F]
          {ι : Type*} [Fintype ι]
 
 
@@ -456,7 +456,7 @@ def projection (S : Finset n) (w : n → R) : S → R :=
 
 omit [Finite R] in theorem projection_injective
     (C : Set (n → R))
-    (nontriv: ‖C‖₀ ≥ 1)
+    (nontriv : ‖C‖₀ ≥ 1)
     (S : Finset n)
     (hS : card S = card n - (‖C‖₀ - 1))
     (u v : n → R)
@@ -585,10 +585,10 @@ section
 
 variable {F : Type*}
          {ι : Type*} [Fintype ι]
-         {κ  : Type*} [Fintype κ]
+         {κ : Type*} [Fintype κ]
 
 /--
-  Linear code defined by left multiplication by its generator matrix.
+Linear code defined by left multiplication by its generator matrix.
 -/
 noncomputable def fromRowGenMat [Semiring F] (G : Matrix κ ι F) : LinearCode ι F :=
   LinearMap.range G.vecMulLinear
@@ -653,7 +653,7 @@ end
 
 section
 
-variable {F : Type*}[DecidableEq F]
+variable {F : Type*} [DecidableEq F]
          {ι : Type*} [Fintype ι]
 
 /-- The minimum taken over the weight of codewords in a linear code.
@@ -666,9 +666,9 @@ The Hamming distance between codewords equals to the weight of their difference.
 -/
 lemma hammingDist_eq_wt_sub [CommRing F] {u v : ι → F} : hammingDist u v = Code.wt (u - v) := by
   aesop (add simp [hammingDist, Code.wt, sub_eq_zero])
-  
+
 /--
-  The min distance of a linear code equals the minimum of the weights of non-zero codewords.
+The min distance of a linear code equals the minimum of the weights of non-zero codewords.
 -/
 lemma dist_eq_minWtCodewords [CommRing F] {LC : LinearCode ι F} :
   Code.minDist (LC : Set (ι → F)) = minWtCodewords LC := by
@@ -727,7 +727,7 @@ lemma poly_eq_zero_of_dist_lt {n k : ℕ} {F : Type*} [DecidableEq F] [CommRing 
   {p : Polynomial F} {ωs : Fin n → F}
   (h_deg : p.natDegree < k)
   (hn : k ≤ n)
-  (h_inj: Function.Injective ωs)
+  (h_inj : Function.Injective ωs)
   (h_dist : Δ₀(p.eval ∘ ωs, 0) < n - k + 1)
   : p = 0 := by
   by_cases hk : k = 0

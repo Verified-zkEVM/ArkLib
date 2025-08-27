@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Ilia Vlasov
 -/
 import Mathlib.Algebra.Field.Basic
-import Mathlib.Data.Matrix.Mul 
+import Mathlib.Data.Matrix.Mul
 
 /-!
   # All the sorries Berlekamp-Welch decoder relies upon.
@@ -35,7 +35,7 @@ Returning either:
 
 ### Behavior:
 1. For consistent systems (solutions exist):
-   - Returns any valid solution 
+   - Returns any valid solution
 2. For inconsistent systems (no solution):
    - Returns `none`
 
@@ -45,7 +45,7 @@ Returning either:
 - Used internally by the Berlekamp-Welch decoder
 -/
 opaque linsolve (A : Matrix (Fin n) (Fin m) F) (b : Fin n → F) : Option (Fin m → F)
-  := sorry 
+  := sorry
 
 /--
 **Solution correctness theorem** for the linear system solver.
@@ -61,7 +61,7 @@ If `linsolve` returns `some x`, then `x` is indeed a solution to the linear syst
 -/
 theorem linsolve_some {A : Matrix (Fin n) (Fin m) F} {b : Fin n → F} {x : Fin m → F}
   (h : linsolve A b = some x)
-  : A.mulVec x = b := sorry 
+  : A.mulVec x = b := sorry
 
 /--
 **Inconsistency theorem** for the linear system solver.
@@ -71,10 +71,9 @@ If `linsolve` returns `none`, the linear system has no solution.
 
 ### Parameters:
 - `A : Matrix (Fin n) (Fin m) F` - Coefficient matrix
-- `b : Fin n → F` - Right-hand side vector 
+- `b : Fin n → F` - Right-hand side vector
 - `h : linsolve A b = none` - Proof that the solver failed to find a solution
 -/
-theorem linsolve_none {A : Matrix (Fin n) (Fin m) F} {b : Fin n → F} 
+theorem linsolve_none {A : Matrix (Fin n) (Fin m) F} {b : Fin n → F}
   (h : linsolve A b = none)
   : ¬∃ x, A.mulVec x = b := by sorry
-
