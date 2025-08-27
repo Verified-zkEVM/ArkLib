@@ -14,11 +14,11 @@
 *.bbl
 *.blg
 
-# LaTeX PDF files for blueprint
-# *print.pdf
-/blueprint/src/web.pdf
-
 .nvim.lua
+
+# Print files for local viewing
+/blueprint/print/
+
 # Web files for local viewing
 /blueprint/web/
 
