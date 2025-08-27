@@ -26,3 +26,6 @@
 /.cursor/
 /.venv/
 /.vscode/
+
+# Generated dependency analysis files
+/dependency_graphs/
