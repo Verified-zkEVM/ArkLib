@@ -1,0 +1,35 @@
+name: Build Documentation
+
+on:
+  push:
+    branches: [main]  # Only on main branch
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read # Read access to repository contents
+  id-token: write # Required to upload the site to GitHub Pages
+  pages: write # Write access to GitHub Pages
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for all branches and tags
+
+      - name: Build the project
+        id: build-lean
+        uses: leanprover/lean-action@v1.3.0
+        with:
+          # Do not run linter for now, too many errors
+          lint: false
+
+      - name: Build project documentation
+        id: build-docgen
+        uses: leanprover-community/docgen-action@main
+        with:
+          # Build a blueprint alongside the repository
+          blueprint: true

@@ -25,19 +25,6 @@ jobs:
           all_but_latest: true
           access_token: ${{ github.token }}
 
-  check_imported:
-    name: Check Library File Imports
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: update ArkLib.lean
-        run: |
-          git ls-files 'ArkLib/*.lean' | LC_ALL=C sort | sed 's/\.lean//;s,/,.,g;s/^/import /' > ArkLib.lean
-
-      - name: check that all files are imported
-        run: git diff --exit-code
-
   build_project:
     runs-on: ubuntu-latest
     name: Build project
