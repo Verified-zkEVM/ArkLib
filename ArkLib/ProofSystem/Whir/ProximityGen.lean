@@ -19,9 +19,8 @@ Todo?
 
 ## References
 
-* [G Arnon, A Chies, G Fenzi, and E Yogev,
-*WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification*]
-[todo: ArkLib bibliography]
+* G Arnon, A Chies, G Fenzi, and E Yogev,
+  [*WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification*][todo: ArkLib bibliography]
 Freely available at https://eprint.iacr.org/2024/1586
 
 ## Tags
@@ -43,7 +42,7 @@ variable {F : Type*} [Semiring F] [Fintype F] [DecidableEq F]
 -/
 noncomputable def proximityCondition
    (f : parℓ → ι → F) (δ : ℝ) (r : parℓ → F) (C : LinearCode ι F) : Prop :=
-    δᵣ( (fun x => ∑ j : parℓ, (r j) * f j x) , C ) ≤ (δ : ℝ)
+  δᵣ( (fun x => ∑ j : parℓ, (r j) * f j x) , C ) ≤ (δ : ℝ)
 
 
 /-- A proximity generator for a linear code `C`, Definition 4.7 -/
@@ -53,17 +52,17 @@ structure ProximityGenerator
   -- Underlying linear code
   C : LinearCode ι F
   -- Number of functions
-  parℓ         : Type
-  hℓ           : Fintype parℓ
-  -- Generator function maps sampled randomness `r : 𝔽 ` to `parℓ`-tuples of field elements
-  Gen          : Finset (parℓ → F)
+  parℓ : Type
+  hℓ : Fintype parℓ
+  -- Generator function maps sampled randomness `r : 𝔽` to `parℓ`-tuples of field elements
+  Gen : Finset (parℓ → F)
   Gen_nonempty : Nonempty Gen
   -- Rate
-  rate         : ℝ
+  rate : ℝ
   -- Distance threshold parameter
-  B         : (LinearCode ι F) → Type → ℝ
+  B : (LinearCode ι F) → Type → ℝ
   -- Error function bounding the probability of distance within `δ`
-  err       : (LinearCode ι F) → Type → ℝ → ENNReal
+  err : (LinearCode ι F) → Type → ℝ → ENNReal
   /- Proximity:
       For all `parℓ`-tuples of functions `fᵢ : ι → 𝔽`
         and distance parameter `δ ∈ (0, 1-B(C,parℓ))` :
@@ -100,21 +99,21 @@ noncomputable def genRSC
   [Nonempty F] (parℓ : Type) [hℓ : Fintype parℓ] (φ : ι ↪ F) [Smooth φ]
   (m : ℕ) (exp : parℓ ↪ ℕ) : ProximityGenerator ι F :=
     let r := LinearCode.rate (smoothCode φ m);
-    { C      := smoothCode φ m,
-      parℓ   := parℓ,
-      hℓ     := hℓ,
-      rate   := r,
-      Gen    := Finset.image (fun r => (fun j => r ^ (exp j))) (Finset.univ : Finset F),
+    { C := smoothCode φ m,
+      parℓ := parℓ,
+      hℓ := hℓ,
+      rate := r,
+      Gen := Finset.image (fun r => (fun j => r ^ (exp j))) (Finset.univ : Finset F),
       Gen_nonempty := by
         constructor
         constructor
         · simp only [Finset.mem_image, Finset.mem_univ, true_and]
           exists (Classical.ofNonempty)
-      B      := fun _ _ => (Real.sqrt r),
-      err    := fun _ _ δ =>
+      B := fun _ _ => (Real.sqrt r),
+      err := fun _ _ δ =>
         ENNReal.ofReal (
           if 0 < δ ∧ δ ≤ (1 - r) / 2 then
-          ((Fintype.card parℓ - 1) * 2^m) / (r  * Fintype.card F)
+            ((Fintype.card parℓ - 1) * 2^m) / (r * Fintype.card F)
           else
             let min_val := min (1 - (Real.sqrt r) - δ)
                                ((Real.sqrt r) / 20)

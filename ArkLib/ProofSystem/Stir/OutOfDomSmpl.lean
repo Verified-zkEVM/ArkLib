@@ -19,7 +19,7 @@ variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
 /-! Section 4.3 [ACFY24] -/
 
-/--returns the domain complement `F \ φ(ι)`-/
+/-- Returns the domain complement `F \ φ(ι)` of an injective map `φ : ι ↪ F` -/
 def domainComplement (φ : ι ↪ F) : Finset F :=
   Finset.univ \ Finset.image φ.toFun Finset.univ
 
@@ -42,7 +42,7 @@ noncomputable def listDecodingCollisionProbability
                                       = (uPoly' : F[X]).eval (r i).1
                                     ]
 
-/--Lemma 4.5.1-/
+/-- Lemma 4.5.1 -/
 lemma out_of_dom_smpl_1
   {δ l : ℝ≥0} {s : ℕ} {f : ι → F} {degree : ℕ} {φ : ι ↪ F}
   (C : Set (ι → F)) (hC : C = code φ degree)
@@ -52,7 +52,7 @@ lemma out_of_dom_smpl_1
     ((l * (l-1) / 2)) * ((degree - 1) / (Fintype.card F - Fintype.card ι))^s
   := by sorry
 
-/--Lemma 4.5.2-/
+/-- Lemma 4.5.2 -/
 lemma out_of_dom_smpl_2
   {δ l : ℝ≥0} {s : ℕ} {f : ι → F} {degree : ℕ} {φ : ι ↪ F}
   (C : Set (ι → F)) (hC : C = code φ degree)

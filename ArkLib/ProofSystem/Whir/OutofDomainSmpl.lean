@@ -16,7 +16,7 @@ open ListDecodable MvPolynomial NNReal ProbabilityTheory ReedSolomon
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
          {ι : Type} [Fintype ι] [DecidableEq ι]
 
-/--Lemma 4.24
+/-- Lemma 4.24
   Let `f : ι → F`, `m` be the number of variables, `s` be a repetition parameter
   and `δ ∈ [0,1]` be a distance parameter, then for every `r₁,...,rₛ ∈ Fᵐ`
   the following statements are equivalent:
@@ -39,10 +39,12 @@ lemma crs_equiv_rs_random_point_agreement
       let w : Fin s → MvPolynomial (Fin (m + 1)) F :=
         fun i => MvPolynomial.X (Fin.last m) * rename Fin.castSucc (eqPolynomial (r i))
       let multiCRSCode := multiConstrainedCode φ m s w σ
-      ∃ u u' : ι → F, u ≠ u' ∧ u ∈ relHammingBall multiCRSCode f δ ∧ u' ∈ relHammingBall multiCRSCode f δ)
+      ∃ u u' : ι → F, u ≠ u' ∧
+        u ∈ relHammingBall multiCRSCode f δ ∧
+        u' ∈ relHammingBall multiCRSCode f δ)
   := by sorry
 
-/--Lemma 4.25 part 1
+/-- Lemma 4.25 part 1
   Let `f : ι → F`, `m` be the number of variables, `s` be a repetition parameter
   and `δ ∈ [0,1]` be a distance parameter,
   if `C = RS [F, ι, m]` is `(δ,l)`-list decodable then
@@ -50,8 +52,7 @@ lemma crs_equiv_rs_random_point_agreement
   `Pr_{r ← F} [ ∃ distinct u, u' ∈ RS[F, ι, φ, m] s.t. uPoly(pow(r)) = uPoly'(pow(r))]`
     where, pow(x,m) = {x^2⁰,x^2¹,....,x^2^{m-1}}
            C' = CRS [F, ι, φ, m, s, w, σ]
-           σ = {σ₁,..,σₛ}, w = {w₁,..,wₛ}, wᵢ = Z * eqPolynomial(pow(r,m))
-  -/
+           σ = {σ₁,..,σₛ}, w = {w₁,..,wₛ}, wᵢ = Z * eqPolynomial(pow(r,m)) -/
 lemma oodSampling_crs_eq_rs
     {f : ι → F} {m s : ℕ} {φ : ι ↪ F} [Smooth φ]
     (l δ : ℝ≥0) (hδLe : δ ≤ 1)
@@ -63,7 +64,9 @@ lemma oodSampling_crs_eq_rs
                             let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
                             MvPolynomial.X (Fin.last m) * rename Fin.castSucc (eqPolynomial rVec)
                         let multiCRSCode := multiConstrainedCode φ m s w σ
-                        ∃ u u' : ι → F, u ≠ u' ∧ u ∈ relHammingBall multiCRSCode f δ ∧ u' ∈ relHammingBall multiCRSCode f δ)]
+                        ∃ u u' : ι → F, u ≠ u' ∧
+                          u ∈ relHammingBall multiCRSCode f δ ∧
+                          u' ∈ relHammingBall multiCRSCode f δ)]
     =
     Pr_{ let rs ←$ᵖ (Fin s → F) }[ (∃ u u' : smoothCode φ m,
                         u.val ≠ u'.val ∧
@@ -75,7 +78,7 @@ lemma oodSampling_crs_eq_rs
                           (mVdecode u).eval (rVec) = (mVdecode u').eval (rVec))]
   := by sorry
 
-/--Lemma 4.25 part 2
+/-- Lemma 4.25 part 2
   Let `f : ι → F`, `m` be the number of variables, `s` be a repetition parameter
   and `δ ∈ [0,1]` be a distance parameter,
   if `C = RS [F, ι, m]` is `(δ,l)`-list decodable then

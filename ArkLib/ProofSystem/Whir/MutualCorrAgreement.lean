@@ -24,7 +24,8 @@ which should be understood as being the minimum relative hamming distance, which
 
 ## References
 
-* [G Arnon, A Chies, G Fenzi, and E Yogev, *WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification*][todo: ArkLib bibliography]
+* G Arnon, A Chies, G Fenzi, and E Yogev,
+[*WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification*][todo: ArkLib bibliography]
 Freely available at https://eprint.iacr.org/2024/1586
 
 ## Tags
@@ -35,7 +36,7 @@ namespace MutualCorrAgreement
 
 open NNReal Generator ProbabilityTheory ReedSolomon
 
-variable  {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
           {ι parℓ : Type} [Fintype ι] [Nonempty ι] [Fintype parℓ] [Nonempty parℓ]
 
 /-- For `parℓ` functions `fᵢ : ι → 𝔽`, distance `δ`, generator function `GenFun: 𝔽 → parℓ → 𝔽`
@@ -60,7 +61,7 @@ def proximityCondition (f : parℓ → ι → F) (δ : ℝ≥0) (r : parℓ → 
   it should `δ < 1 - BStar(C,parℓ)` in place of `δ < 1 - B(C,parℓ)`
 -/
 
-noncomputable def MutualCorrAgreement
+noncomputable def hasMutualCorrAgreement
   (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
   (BStar : ℝ) (errStar : ℝ → ENNReal) :=
     haveI := Gen.Gen_nonempty
@@ -75,7 +76,7 @@ noncomputable def MutualCorrAgreement
 lemma mca_linearCode
   (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ] [Nonempty Gen.parℓ]
   (C : LinearCode ι F) (hC : C = Gen.C) :
-    MutualCorrAgreement
+    hasMutualCorrAgreement
      -- Gen
       Gen
     -- BStar (using δᵣ produced )
@@ -99,7 +100,7 @@ lemma mca_rsc
   (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type ↪ ℕ) :
   let Gen := RSGenerator.genRSC parℓ_type φ m exp
   let : Fintype Gen.parℓ := Gen.hℓ
-  MutualCorrAgreement
+  hasMutualCorrAgreement
     -- Generator
     Gen
     -- BStar
@@ -122,7 +123,7 @@ theorem mca_johnson_bound_CONJECTURE
   (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type ↪ ℕ) :
   let Gen := RSGenerator.genRSC parℓ_type φ m exp
   let : Fintype Gen.parℓ := Gen.hℓ
-  MutualCorrAgreement Gen
+  hasMutualCorrAgreement Gen
     -- Conjectured BStar = √ρ
     (Real.sqrt Gen.rate)
     -- Conjectured errStar
@@ -193,7 +194,7 @@ lemma mca_list_decoding
   (fs us : Matrix Gen.parℓ ι F)
   (IC : InterleavedCode Gen.parℓ ι F)
   (haveIC : IC = codeOfLinearCode Gen.parℓ Gen.C)
-  (hGen : MutualCorrAgreement Gen BStar errStar)
+      (hGen : hasMutualCorrAgreement Gen BStar errStar)
   (C : Set (ι → F)) (hC : C = Gen.C) :
     haveI := Gen.Gen_nonempty
     ∀ {fs : Matrix Gen.parℓ ι F}

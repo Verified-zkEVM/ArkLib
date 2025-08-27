@@ -56,7 +56,7 @@ def combine
     Combine(d*, r, (f_0, d_0), …, (f_{m-1}, d_{m-1}))(x) :=
       if (r * φ(x)) = 1 then sum_{i < m} r_i * f_i(x) * (dstar - degree + 1)
       else sum_{i < m} r_i * f_i(x) * (1 - r * φ(x)^(dstar - degree + 1)) / (1 - r * φ(x))
---/
+-/
 lemma combine_eq_cases {F ι : Type*} [Field F] [DecidableEq F]
   (φ : ι ↪ F) (dstar : ℕ) (r : F) (fs : Fin m → ι → F) (degs : Fin m → ℕ)
     (hdegs : ∀ i, degs i ≤ dstar) (φ_neq_0 : ∀ i, φ i ≠ 0) :
@@ -139,20 +139,19 @@ variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
 open LinearCode ProbabilityTheory ReedSolomon
 
-/--Lemma 4.13
+/-- Lemma 4.13
   Let `dstar` be the target degree, `f₁,...,f_{m-1} : ι → F`,
   `0 < degs₁,...,degs_{m-1} < dstar` be degrees and
   `δ ∈ (0, min{(1-BStar(ρ)), (1-ρ-1/|ι|)})` be a distance parameter, then
       Pr_{r ← F} [δᵣ(Combine(dstar,r,(f₁,degs₁),...,(fₘ,degsₘ)))]
-                   > err' (dstar, ρ, δ, m * (dstar + 1) - ∑ i degsᵢ)
-  -/
+                   > err' (dstar, ρ, δ, m * (dstar + 1) - ∑ i degsᵢ) -/
 lemma combine_theorem
   {φ : ι ↪ F} {dstar m degree : ℕ}
   (fs : Fin m → ι → F) (degs : Fin m → ℕ) (hdegs : ∀ i, degs i ≤ dstar)
   (δ : ℝ) (hδPos : δ > 0)
   (hδLt : δ < (min (1 - Bstar (rate (code φ degree)))
-                   (1- (rate (code φ degree)) - 1/ Fintype.card ι)))
-  (hProb : Pr_{ let r ←$ᵖ F }[ δᵣ((combine φ dstar r fs degs), (code φ dstar)) ≤ δ ]  >
+                   (1 - (rate (code φ degree)) - 1 / Fintype.card ι)))
+  (hProb : Pr_{ let r ← $ᵖ F}[δᵣ((combine φ dstar r fs degs), (code φ dstar)) ≤ δ] >
     ENNReal.ofReal (err' F dstar (rate (code φ degree)) δ (m * (dstar + 1) - ∑ i, degs i))) :
       correlatedAgreement (code φ degree) ⟨δ, by linarith⟩ fs
       := by sorry

@@ -32,7 +32,8 @@ introduced in the [Section 5 of the WHIR paper][todo: ArkLib bibliography].
 
 ## References
 
-* [G Arnon, A Chies, G Fenzi, and E Yogev, *WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification*][todo: ArkLib bibliography]
+* G Arnon, A Chies, G Fenzi, and E Yogev,
+[*WHIR: Reed–Solomon Proximity Testing with Super-Fast Verification*][todo: ArkLib bibliography]
 Freely available at https://eprint.iacr.org/2024/1586
 
 ## Tags
@@ -99,7 +100,7 @@ class GenMutualCorrParams (P : Params ι F) (S : ∀ i : Fin (M + 1), Finset (ι
     DecidableEq (indexPowT (S i) (P.φ i) j)
   inst4 : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1), Smooth (φ i j)
 
-  parℓ_type : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1), Type
+  parℓ_type : ∀ i : Fin (M + 1), ∀ _ : Fin ((P.foldingParam i) + 1), Type
   inst5 : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1), Fintype (parℓ_type i j)
 
   exp : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1), (parℓ_type i j) ↪ ℕ
@@ -121,9 +122,9 @@ class GenMutualCorrParams (P : Params ι F) (S : ∀ i : Fin (M + 1), Finset (ι
   hcode : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1), (C i j) = (Gen_α i j).C
 
   h : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1),
-    MutualCorrAgreement  (Gen_α i j)
-                         (BStar i j (C i j) (Gen_α i j).parℓ)
-                         (errStar i j (C i j) (Gen_α i j).parℓ)
+    hasMutualCorrAgreement (Gen_α i j)
+      (BStar i j (C i j) (Gen_α i j).parℓ)
+      (errStar i j (C i j) (Gen_α i j).parℓ)
 
   hℓ_bound : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1),
     Fintype.card (Gen_α i j).parℓ = 2
@@ -210,9 +211,11 @@ theorem whir_rbr_soundness
         let dstar := 1 + (wPoly₀.degreeOf 0) + maxDeg
         let d := max dstar 3
 
-        --necessary typeclasses for Gen_0j stating finiteness and non-emptiness of underlying ι₀^2ʲ
-        let _ : ∀ j : Fin ((P.foldingParam 0)+1), Fintype (indexPowT (S 0) (P.φ 0) j) := h.inst1 0
-        let _ : ∀ j : Fin ((P.foldingParam 0)+1), Nonempty (indexPowT (S 0) (P.φ 0) j) := h.inst2 0
+        -- necessary typeclasses for Gen_0j stating finiteness and non-emptiness of underlying ι₀^2ʲ
+        let _ : ∀ j : Fin ((P.foldingParam 0) + 1),
+          Fintype (indexPowT (S 0) (P.φ 0) j) := h.inst1 0
+        let _ : ∀ j : Fin ((P.foldingParam 0) + 1),
+          Nonempty (indexPowT (S 0) (P.φ 0) j) := h.inst2 0
 
         -- ε_fold(0,j+1) ≤ dstar * dist(0,j) / |F| + errStar(C_0{j+1}, 2, δ₀),
         -- Note here that `j : Fin (P.foldingParam 0)`,
@@ -234,15 +237,17 @@ theorem whir_rbr_soundness
         -- `h.δ`, `h.dist` and `P.repeatParam`.
         -- To get `i`, we use `.castSucc`, whereas to get `i + 1`, we use `.succ`.
         ∀ i : Fin M,
-        ε_shift i ≤ (1 - (h.δ i.castSucc))^(P.repeatParam i.castSucc)
+          ε_shift i ≤ (1 - (h.δ i.castSucc))^(P.repeatParam i.castSucc)
             + ((h.dist i.succ 0) * (P.repeatParam i.castSucc) + 1) / Fintype.card F
         ∧
 
         -- necessary typeclasses for Gen_ij stating finiteness and non-emptiness of underlying ιᵢ^2ʲ
         let _ : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1),
-          Fintype (indexPowT (S i) (P.φ i) j) := h.inst1
+          Fintype (indexPowT (S i) (P.φ i) j) :=
+            h.inst1
         let _ : ∀ i : Fin (M + 1), ∀ j : Fin ((P.foldingParam i) + 1),
-          Nonempty (indexPowT (S i) (P.φ i) j) := h.inst2
+          Nonempty (indexPowT (S i) (P.φ i) j) :=
+            h.inst2
 
         -- ε_fold(i,j+1) ≤ d * dist(i,j) / |F| + errStar(C_i{j+1},2,δᵢ)
         -- Note here that `j : Fin (P.foldingParam 0)`,

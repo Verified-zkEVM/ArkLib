@@ -20,7 +20,7 @@ import ToMathlib.PFunctor.Lens.Basic
   witnesses are trivial.
 -/
 
-open OracleSpec OracleComp
+open OracleSpec OracleComp PFunctor
 
 /-- A lens for transporting input and output statements for the verifier of a (non-oracle)
     reduction.
@@ -36,8 +36,8 @@ open OracleSpec OracleComp
 -/
 @[inline, reducible]
 def Statement.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
-  := PFunctor.Lens (PFunctor.monomial OuterStmtIn OuterStmtOut)
-                   (PFunctor.monomial InnerStmtIn InnerStmtOut)
+  := PFunctor.Lens (OuterStmtIn X^ OuterStmtOut)
+                   (InnerStmtIn X^ InnerStmtOut)
 
 namespace Statement.Lens
 
@@ -139,8 +139,8 @@ end OracleStatement.Lens
   practice as well, oftentimes a lens between only witnesses are not enough. -/
 @[inline, reducible]
 def Witness.Lens (OuterStmtIn InnerStmtOut OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type)
-    := PFunctor.Lens (PFunctor.monomial (OuterStmtIn × OuterWitIn) OuterWitOut)
-                     (PFunctor.monomial InnerWitIn (InnerStmtOut × InnerWitOut))
+    := PFunctor.Lens ((OuterStmtIn × OuterWitIn) X^ OuterWitOut)
+                     (InnerWitIn X^ (InnerStmtOut × InnerWitOut))
 
 namespace Witness.Lens
 
@@ -242,8 +242,8 @@ and requires in addition the outer input statement.
 -/
 @[inline, reducible]
 def Witness.InvLens (OuterStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type)
-    := PFunctor.Lens (PFunctor.monomial (OuterStmtIn × OuterWitOut) OuterWitIn)
-                     (PFunctor.monomial InnerWitOut InnerWitIn)
+    := PFunctor.Lens ((OuterStmtIn × OuterWitOut) X^ OuterWitIn)
+                     (InnerWitOut X^ InnerWitIn)
 
 namespace Witness.InvLens
 
