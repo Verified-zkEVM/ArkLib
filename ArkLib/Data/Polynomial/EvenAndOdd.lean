@@ -16,7 +16,7 @@ import ArkLib.Data.FieldTheory.NonBinaryField.Basic
 
 namespace Polynomial
 
-variable {F: Type} [NonBinaryField F]
+variable {F : Type*} [NonBinaryField F]
 
 /-- The even part of a polynomial `f = a_0 + a_1 X + a_2 X² + ...`, which is the polynomial
 
@@ -109,7 +109,7 @@ noncomputable def oddPart_x (f : Polynomial F) : Polynomial F := deevenize (oddP
 -- Merged the `Lemmas` files into here
 section Lemmas
 
-variable {F: Type} [NonBinaryField F]
+variable {F : Type*} [NonBinaryField F]
 
 private noncomputable def evenPart' (f : Polynomial F) : Polynomial F :=
   match f with
@@ -119,7 +119,7 @@ private noncomputable def evenPart' (f : Polynomial F) : Polynomial F :=
   }⟩⟩
 
 @[simp]
-private lemma evenPart'_coeffs {f : Polynomial F} {n : ℕ}:
+private lemma evenPart'_coeffs {f : Polynomial F} {n : ℕ} :
     (evenPart' f).coeff n = if Even n then f.coeff n else 0 := by
   rcases f with ⟨⟨supp, g, h⟩⟩
   simp [evenPart']
@@ -132,7 +132,7 @@ private noncomputable def x_times_oddPart' (f : Polynomial F) : Polynomial F :=
     }⟩⟩
 
 @[simp]
-private lemma x_times_oddPart'_coeff {f : Polynomial F} {n : ℕ}:
+private lemma x_times_oddPart'_coeff {f : Polynomial F} {n : ℕ} :
     (x_times_oddPart' f).coeff n = if Odd n then f.coeff n else 0 := by
   rcases f with ⟨⟨supp, g, h⟩⟩
   simp [x_times_oddPart']
@@ -242,7 +242,7 @@ lemma evenize_eq_comp_x_squared {f : Polynomial F} :
   intro n
   simp [comp_x_square_coeff]
 
-lemma deevenize_comp_x_squared {f : Polynomial F} (hEven : EvenPoly f):
+lemma deevenize_comp_x_squared {f : Polynomial F} (hEven : EvenPoly f) :
     (deevenize f).comp (Polynomial.X * Polynomial.X) = f := by
   apply Polynomial.ext
   intro n
@@ -265,7 +265,7 @@ lemma evenize_is_even {f : Polynomial F} :
   rw [←Nat.not_odd_iff_even] at hEven
   tauto
 
-lemma eq_evenize_deevenize {f : Polynomial F} (hEven : EvenPoly f):
+lemma eq_evenize_deevenize {f : Polynomial F} (hEven : EvenPoly f) :
     evenize (deevenize f) = f := by
   apply Polynomial.ext
   intro n
@@ -288,7 +288,7 @@ lemma deevenize_evenize {f : Polynomial F} :
   apply Polynomial.ext
   simp
 
-lemma evenize_eval {f : Polynomial F} {s : F}:
+lemma evenize_eval {f : Polynomial F} {s : F} :
     (evenize f).eval s = f.eval (s * s) := by
   rw [evenize_eq_comp_x_squared]
   simp [Polynomial.eval_comp, Polynomial.eval_mul]

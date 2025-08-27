@@ -60,7 +60,7 @@ instance inhabited [Inhabited R] : Inhabited (MlPoly R n) := by simp [MlPoly]; i
 /-- Conform a list of coefficients to a `MlPoly` with a given number of variables.
     May either pad with zeros or truncate. -/
 @[inline]
-def ofArray [Zero R] (coeffs : Array R) (n : ℕ): MlPoly R n :=
+def ofArray [Zero R] (coeffs : Array R) (n : ℕ) : MlPoly R n :=
   .ofFn (fun i => if h : i.1 < coeffs.size then coeffs[i] else 0)
   -- ⟨((coeffs.take (2 ^ n)).rightpad (2 ^ n) 0 : Array R), by simp⟩
   -- Not sure which is better performance wise?
@@ -190,7 +190,7 @@ instance inhabited [Inhabited R] : Inhabited (MlPolyEval R n) := by
 /-- Conform a list of coefficients to a `MlPolyEval` with a given number of variables.
     May either pad with zeros or truncate. -/
 @[inline]
-def ofArray [Zero R] (coeffs : Array R) (n : ℕ): MlPolyEval R n :=
+def ofArray [Zero R] (coeffs : Array R) (n : ℕ) : MlPolyEval R n :=
   .ofFn (fun i => if h : i.1 < coeffs.size then coeffs[i] else 0)
   -- ⟨((coeffs.take (2 ^ n)).rightpad (2 ^ n) 0 : Array R), by simp⟩
   -- Not sure which is better performance wise?
@@ -409,7 +409,7 @@ lemma forwardRange_getElem (n : ℕ) (r : Fin n) (l : Fin (r.val + 1)) (k : Fin 
   simp only [List.get_eq_getElem]
   simp only [List.getElem_ofFn]
 
-lemma forwardRange_succ_right_ne_empty (n : ℕ) (r : Fin (n-1)) (l : Fin (r.val + 1)) :
+lemma forwardRange_succ_right_ne_empty (n : ℕ) (r : Fin (n - 1)) (l : Fin (r.val + 1)) :
   forwardRange n ⟨r + 1, by omega⟩ ⟨l, by simp only; omega⟩ ≠ [] := by
   rw [forwardRange]
   simp only [List.ofFn_succ, Fin.coe_ofNat_eq_mod, Nat.zero_mod, add_zero, Fin.val_succ, ne_eq,
@@ -421,7 +421,7 @@ lemma forwardRange_pred_le_ne_empty (n : ℕ) (r : Fin n) (l : Fin (r.val + 1))
   simp only [List.ofFn_succ, Fin.coe_ofNat_eq_mod, Nat.zero_mod, add_zero, Fin.val_succ, ne_eq,
     reduceCtorEq, not_false_eq_true]
 
-lemma forwardRange_dropLast (n : ℕ) (r : Fin (n-1)) (l : Fin (r.val + 1)) :
+lemma forwardRange_dropLast (n : ℕ) (r : Fin (n - 1)) (l : Fin (r.val + 1)) :
     (forwardRange n ⟨r + 1, by omega⟩ ⟨l, by simp only; omega⟩).dropLast
     = forwardRange n ⟨r, by omega⟩ ⟨l, by simp only [Fin.is_lt]⟩ := by
   apply List.ext_getElem
@@ -494,7 +494,7 @@ def lagrangeToMono_segment (n : ℕ) (r : Fin n) (l : Fin (r.val + 1)) :
   let range := forwardRange n r l
   (range.foldr (fun h acc => lagrangeToMonoLevel h acc))
 
-lemma monoToLagrange_eq_monoToLagrange_segment (n: ℕ) [NeZero n] (v: Vector R (2 ^ n)) :
+lemma monoToLagrange_eq_monoToLagrange_segment (n : ℕ) [NeZero n] (v : Vector R (2 ^ n)) :
   have h_n_ne_zero: n ≠ 0 := by exact NeZero.ne n
   monoToLagrange n v = monoToLagrange_segment n (r:=⟨n - 1, by omega⟩) (l:=⟨0, by omega⟩) v := by
   have h_n_ne_zero: n ≠ 0 := by exact NeZero.ne n
@@ -503,7 +503,7 @@ lemma monoToLagrange_eq_monoToLagrange_segment (n: ℕ) [NeZero n] (v: Vector R 
   congr
   exact Eq.symm (forwardRange_0_eq_finRange n)
 
-lemma lagrangeToMono_eq_lagrangeToMono_segment (n: ℕ) [NeZero n] (v: Vector R (2 ^ n)) :
+lemma lagrangeToMono_eq_lagrangeToMono_segment (n : ℕ) [NeZero n] (v : Vector R (2 ^ n)) :
   have h_n_ne_zero: n ≠ 0 := by exact NeZero.ne n
   lagrangeToMono n v = lagrangeToMono_segment n (r:=⟨n - 1, by omega⟩) (l:=⟨0, by omega⟩) v := by
   have h_n_ne_zero: n ≠ 0 := by exact NeZero.ne n
@@ -512,7 +512,7 @@ lemma lagrangeToMono_eq_lagrangeToMono_segment (n: ℕ) [NeZero n] (v: Vector R 
   congr
   exact Eq.symm (forwardRange_0_eq_finRange n)
 
-lemma testBit_of_sub_two_pow_of_bit_1 {n i: ℕ} (h_testBit_eq_1: (n).testBit i = true) :
+lemma testBit_of_sub_two_pow_of_bit_1 {n i : ℕ} (h_testBit_eq_1 : (n).testBit i = true) :
   (n - 2^i).testBit i = false := by
   have h := Nat.testBit_false_eq_getBit_eq_0 (n:=n - 2^i) (k:=i)
   rw [h]

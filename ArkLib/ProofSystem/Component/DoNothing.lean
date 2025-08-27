@@ -48,7 +48,7 @@ variable {oSpec} {Statement} {Witness}
 
 /-- The `DoNothing` reduction satisfies perfect completeness for any relation. -/
 @[simp]
-theorem reduction_perfectCompleteness (hInit : init.neverFails):
+theorem reduction_perfectCompleteness (hInit : init.neverFails) :
     (reduction oSpec Statement Witness).perfectCompleteness init impl rel rel :=
   Reduction.id_perfectCompleteness init impl hInit
 

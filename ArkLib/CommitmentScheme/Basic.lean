@@ -25,6 +25,9 @@ import ArkLib.OracleReduction.Security.Basic
   security definitions for commitment schemes have to be stated differently than those for IOPs.
 -/
 
+-- Note: remove this once we properly define the security definitions for commitment schemes
+set_option linter.unusedVariables false
+
 namespace Commitment
 
 open OracleSpec OracleComp SubSpec
@@ -98,7 +101,7 @@ def BindingAdversary (oSpec : OracleSpec ι) (Data Commitment AuxState : Type)
   Informally, evaluation binding says that it's computationally infeasible to open a commitment to
   two different responses for the same query. -/
 def binding (scheme : Scheme oSpec Data Randomness Commitment pSpec)
-    (bindingError : ℝ≥0): Prop :=
+    (bindingError : ℝ≥0) : Prop :=
   ∀ AuxState : Type,
   ∀ adversary : BindingAdversary oSpec Data Commitment AuxState,
   ∀ prover : Prover oSpec (Commitment × O.Query × O.Response) AuxState Bool Unit pSpec,

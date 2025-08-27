@@ -62,3 +62,7 @@ instance {s} : Functor (fun α => FullData α s) where
 instance {s} : LawfulFunctor (fun α => LeafData α s) := by sorry
 instance {s} : LawfulFunctor (fun α => InternalData α s) := by sorry
 instance {s} : LawfulFunctor (fun α => FullData α s) := by sorry
+
+end Navigation
+
+end BinaryTree

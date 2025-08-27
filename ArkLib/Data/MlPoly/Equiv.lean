@@ -40,7 +40,7 @@ noncomputable def monomialOfNat (i : ℕ) : (Fin n) →₀ ℕ :=
     simp only [ne_eq, Finset.mem_univ, implies_true]) -- the support set is exactly Finset.univ
 
 theorem eq_monomialOfNat_iff_eq_bitRepr (m : Fin n →₀ ℕ)
-  (h_binary : ∀ j: Fin n, m j ≤ 1) (i: Fin (2^n)) :
+  (h_binary : ∀ j : Fin n, m j ≤ 1) (i: Fin (2^n)) :
   monomialOfNat i = m ↔ i = Nat.binaryFinMapToNat m h_binary := by
   constructor
   · intro h_mono_eq
@@ -115,7 +115,7 @@ theorem toMvPolynomial_is_multilinear (p : MlPoly R n) :
     exact Fintype.sum_eq_zero (fun a ↦ 0) (congrFun rfl)
   exact hs h_sum_zero
 
-theorem coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p : MlPoly R n) (m : Fin n →₀ ℕ):
+theorem coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p : MlPoly R n) (m : Fin n →₀ ℕ) :
   coeff m (toMvPolynomial p) =
     if h_binary: (∀ j: Fin n, m j ≤ 1) then
       let i_of_m: ℕ := Nat.binaryFinMapToNat (m:=m) (h_binary:=h_binary)

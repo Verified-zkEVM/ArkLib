@@ -239,8 +239,8 @@ theorem liftContext_runToRound
   induction i using Fin.induction with
   | zero => simp [liftContext]
   | succ i ih =>
-    simp only [Fin.val_succ, Fin.induction_succ, ih, Fin.coe_castSucc, bind_pure_comp,
-      liftContext_processRound, ChallengeIdx, Transcript.def_eq, bind_map_left, Prod.mk.eta]
+    simp only [Fin.induction_succ, ih, bind_pure_comp,
+      liftContext_processRound, ChallengeIdx, bind_map_left, Prod.mk.eta]
     simp [processRound]
 
 -- Requires more lemmas about `simulateQ` for logging oracles
