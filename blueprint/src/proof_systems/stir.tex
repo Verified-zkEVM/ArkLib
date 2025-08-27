@@ -176,7 +176,7 @@ We show a new method for combining functions of varying degrees with minimal pro
 \end{lemma}
 
 \begin{definition}\label{def:combine}
-\lean{Combine.combineInterm,Combine.combineFinal}
+\lean{Combine.combine}
     Given target degree $\degree^*\in\N$, shifting parameter $r\in\field$, functions $f_0,\ldots,f_{m-1}:\evaldomain\rightarrow\field$, and degrees $0\leq \degree_0,\ldots,\degree_{m-1}\leq {\degree}^*$, we define $\combine(\degree^*,r,(f_0,\degree_0),\ldots,(f_{m-1},\degree_{m-1})):\evaldomain\rightarrow\field$ as follows:
         \[
         \begin{array}{rcl}
@@ -197,7 +197,7 @@ Above, $r_i:=r^{i-1+\sum_{j<i}(\degree^*-\degree_j)}$.
 \end{definition}
 
 \begin{definition}\label{def:deg_corr}
-\lean{Combine.degreeCorrInterm,Combine.degreeCorrFinal}
+\lean{Combine.degCor}
 \uses{def:combine,def:reed_solomon_code,def:distance_from_code}
     Given target degree $\degree^*\in\N$, shifting parameter $r\in\field$, function $f:\evaldomain\rightarrow\field$, and degree $0\leq\degree\leq\degree^*$, we define $\degcorr(\degree^*,r,f,\degree)$ as follows.
     \[

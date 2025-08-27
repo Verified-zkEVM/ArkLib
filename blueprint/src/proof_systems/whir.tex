@@ -20,7 +20,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \end{definition}
 
 \begin{theorem}\label{thm:proximity_gap_whir}
-\lean{RSGenerator.proximityGapTheorem}
+\lean{RSGenerator.genRSC}
 \uses{def:proximity_generator,def:reed_solomon_code}
     Let $\code = \rscode[\field,\evaldomain,m]$ be a Reed Solomon code with rate $\rate = 2^m/|\evaldomain|$. $\gen(\alpha,\parl)=\{1,\alpha,\ldots,\alpha^{\parl-1}\}$ is a proximity generator for $\code$ with proximity bounds ${\bound}(\rate,\parl)=\sqrt{\rate}$ and $\err(C,\parl,\delta)$ defined below.
     \begin{itemize}
@@ -36,7 +36,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \end{theorem}
 
 \begin{definition}\label{def:gen_mutual_corr_agreement}
-    \lean{CorrelatedAgreement.genMutualCorrAgreement}
+    \lean{MutualCorrAgreement.hasMutualCorrAgreement}
     \uses{def:proximity_generator}
     Let $\code$ be a linear code. We say that $\gen$ be a proximity generator with mutual correlated agreement with proximity bounds ${\bound}^\star$ and $\err^\star$, if for $f_0,\ldots,f_{\parl-1}:\evaldomain\rightarrow\field$ and $\delta\in(0,1-{\bound}^\star(\code,\parl))$ the following holds.
     \[
@@ -52,19 +52,19 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \end{definition}
 
 \begin{lemma}\label{lemma:gen_mutual_corr_agreement}
-\lean{CorrelatedAgreement.genMutualCorrAgreement_le_bound}
+\lean{MutualCorrAgreement.mca_linearCode}
 \uses{def:proximity_generator, def:gen_mutual_corr_agreement}
     Let $\code$ be a linear code with minimum distance $\delta_{\code}$ and let $\gen$ be a proximity generator for $\code$ with proximity bound ${\bound}$ and error $\err$. Then $\gen$ has mutual correlated agreement with proximity bound ${\bound}^\star(\code, \parl) = \min\{1 - \delta_{\code}/2, \bound(\code, \parl)\}$ and error $\err^\star(\code, \parl, \delta) := \err(\code, \parl, \delta)$.
 \end{lemma}
 
 \begin{lemma}
-\lean{CorrelatedAgreement.genMutualCorrAgreement_rsc_le_bound}
+\lean{MutualCorrAgreement.mca_rsc}
 \uses{lemma:gen_mutual_corr_agreement, def:reed_solomon_code}
     Let $\code := \rscode[\field, \evaldomain, m]$ be a Reed Solomon code with rate $\rate$. The function $\gen(\parl; \alpha) = (1, \alpha, \ldots, \alpha^{\parl - 1})$ is a proximity generator for $\code$ with mutual correlated agreement with proximity bound ${\bound}^\star(\code, \parl) := \frac{1 + \rate}{2}$ and error $\err^\star(\code, \parl, \delta) = \frac{(\parl - 1) \cdot 2^m}{\rate \cdot |\field|}$.
 \end{lemma}
 
 \begin{theorem}\label{conjecture:whir}
-\lean{CorrelatedAgreement.genMutualCorrAgreement_le_johnsonBound,CorrelatedAgreement.genMutualCorrAgreement_le_capacity}
+\lean{MutualCorrAgreement.mca_johnson_bound_CONJECTURE,MutualCorrAgreement.mca_capacity_bound_CONJECTURE}
 \uses{def:reed_solomon_code,lemma:gen_mutual_corr_agreement}
     The function $\gen(\parl; \alpha) := (1, \alpha, \ldots, \alpha^{\parl - 1})$ is a proximity generator with mutual correlated agreement for every smooth Reed Solomon code $\code := \rscode[\field, \evaldomain, m]$ (with rate $\rate := 2^m / |\evaldomain|$). We give two conjectures, for the parameters of the proximity bound ${\bound}^\star$ and the error $\err^\star$:
     \begin{enumerate}
@@ -83,7 +83,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \subsubsection{Mutual correlated agreement preserves list decoding}
 
 \begin{lemma}\label{lemma: mutual_corrAgr_listdecoding}
-\lean{CorrelatedAgreement.mutualCorrAgreement_list_decoding}
+\lean{MutualCorrAgreement.mca_list_decoding}
 \uses{def:reed_solomon_code,def:interleaved_code,def:list_close_codewords,lemma:gen_mutual_corr_agreement}
     Let $\code \subseteq \field^{\evaldomain}$ be a linear code with minimum distance $\delta_{\code}$, and let $\gen$ be a proximity generator for $\code$ with mutual correlated agreement with proximity bound ${\bound}^\star$ and error $\err^\star$. Then, for every $f_0, \ldots, f_{\parl-1} : \evaldomain \to \field$ and $\delta \in (0, \min\{\delta_{\code}, 1 - {\bound}^\star(\code, \parl)\})$:
     \[
@@ -165,7 +165,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \end{definition}
 
 \begin{lemma}\label{lemma:block_rel_distance}
-\lean{BlockRelDistance.blockRelDistance_le_hammingDistance}
+\lean{BlockRelDistance.relHammingDist_le_blockRelDistance}
 \uses{def:block_rel_distance,def:distance_from_code,def:list_close_codewords_block,def:list_close_codewords}
     For any $\code := \rscode[\field, \evaldomain, m]$, $k \in \mathbb{N}$, and $f, g : \evaldomain^{2^i} \to \field$, we have that $\Delta(f, g) \leq \Delta_{r}(\code, i, k, f, g)$. Consequently, $\Lambda_{r}(\code, i, k, f, \delta) \subseteq \Lambda(\code, f, \delta)$ for $\delta\in[0,1]$.
 \end{lemma}
@@ -214,7 +214,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \end{lemma}
 
 \begin{lemma}\label{lemma:crs_equiv_rs_randpompt_agreement}
-\lean{OutOfDomSmpl.crs_equiv_rs_randpompt_agreement}
+\lean{OutOfDomSmpl.out_of_dom_smpl_1}
 \uses{def:smooth_rs_code,def:constrained_code,def:list_close_codewords}
     Let $f : \evaldomain \rightarrow \field$ be a function, $m \in \mathbb{N}$ be a number of variables, $s \in \mathbb{N}$ be a repetition parameter, and let $\delta \in [0,1]$ be a distance parameter. For every $\vec{r_0}, \dots, \vec{r_{s-1}} \in \field^m$, the following are equivalent statements.
 \begin{itemize}
@@ -224,7 +224,7 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \end{lemma}
 
 \begin{lemma}\label{lemma:out_of_domain_sampling_crs_eq_rs}
-\lean{OutOfDomSmpl.out_of_domain_sampling_crs_eq_rs}
+\lean{OutOfDomSmpl.out_of_dom_smpl_2}
 \uses{def:smooth_rs_code,def:constrained_code,def:list_close_codewords,def:list_decodable}
     Let $f : \evaldomain \rightarrow \field$ be a function, $m \in \mathbb{N}$ be a number of variables, $s \in \mathbb{N}$ be a repetition parameter, and $\delta \in [0,1]$ be a distance parameter. If $\rscode[\field, \evaldomain, m]$ is $(\delta, \ell)$-list decodable then
     \[
