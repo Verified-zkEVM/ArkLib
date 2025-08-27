@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main"] # replace "main" with the default branch
   pull_request:
     branches: ["main"]
   workflow_dispatch:
@@ -10,34 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    outputs:
-      cache-hit: ${{ steps.cache-build.outputs.cache-hit }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Needed for blueprint generation
-
-      - name: Restore build cache
-        id: cache-build
-        uses: actions/cache@v4
-        with:
-          path: |
-            .lake/build
-            ~/.elan
-          key: lake-build-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lake-manifest.json', 'lakefile.lean') }}
-          restore-keys: |
-            lake-build-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}
-            lake-build-${{ runner.os }}-
-
-      - name: Build project
-        uses: leanprover/lean-action@v1.3.0
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: lake-build-${{ github.sha }}
-          path: .lake/build
-          retention-days: 1
-
+      - uses: actions/checkout@v4
+      # uses lean standard action with all default input values
+      - uses: leanprover/lean-action@v1.3.0
