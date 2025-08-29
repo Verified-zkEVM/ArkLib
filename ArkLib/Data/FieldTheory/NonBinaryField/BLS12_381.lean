@@ -23,12 +23,14 @@ import ArkLib.ToMathlib.NumberTheory.PrattCertificate
 
 namespace BLS12_381
 
-notation "SCALAR_FIELD_CARD" =>
+@[reducible]
+def SCALAR_FIELD_CARD : Nat :=
   52435875175126190479447740508185965837690552500527637822603658699938581184513
 
 abbrev ScalarField := ZMod SCALAR_FIELD_CARD
 
 theorem ScalarField_is_prime : Nat.Prime SCALAR_FIELD_CARD := by
+  unfold SCALAR_FIELD_CARD
   refine PrattCertificate'.out (p := SCALAR_FIELD_CARD) ⟨7, (by reduce_mod_char), ?_⟩
   refine .split [2 ^ 32, 3, 11, 19, 10177, 125527, 859267, 906349 ^ 2, 2508409, 2529403, 52437899,
     254760293 ^ 2] (fun r hr => ?_) (by norm_num)

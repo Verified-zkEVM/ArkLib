@@ -15,10 +15,13 @@ import ArkLib.ToMathlib.NumberTheory.PrattCertificate
 namespace BabyBear
 
 -- 2^{31} - 2^{27} + 1
-notation "FIELD_SIZE" => 2013265921
+@[reducible]
+def FIELD_CARD : Nat := 2013265921
 
-abbrev Field := ZMod FIELD_SIZE
+abbrev Field := ZMod FIELD_CARD
 
-theorem is_prime : Nat.Prime FIELD_SIZE := by pratt
+theorem is_prime : Nat.Prime FIELD_CARD := by
+  unfold FIELD_CARD
+  pratt
 
 end BabyBear

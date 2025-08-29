@@ -15,10 +15,13 @@ import ArkLib.ToMathlib.NumberTheory.PrattCertificate
 namespace Mersenne31
 
 -- 2^{31} - 1
-notation "FIELD_SIZE" => 2147483647
+@[reducible]
+def FIELD_CARD : Nat := 2147483647
 
-abbrev Field := ZMod FIELD_SIZE
+abbrev Field := ZMod FIELD_CARD
 
-theorem is_prime : Nat.Prime FIELD_SIZE := by pratt
+theorem is_prime : Nat.Prime FIELD_CARD := by
+  unfold FIELD_CARD
+  pratt
 
 end Mersenne31
