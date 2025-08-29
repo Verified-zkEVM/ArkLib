@@ -55,13 +55,13 @@ def natWeightedDegree (p : F[X][Y]) (u v : ℕ) : ℕ :=
 -/
 def support [DecidableEq F] (p : F[X][Y]) : Finset (ℕ × ℕ) :=
   let deg := natWeightedDegree p 1 1
-  Finset.image 
-    (fun x => (x.1.val, x.2.val)) 
+  Finset.image
+    (fun x => (x.1.val, x.2.val))
     ({x : Fin deg.succ × Fin deg.succ | coeff p x.1 x.2 ≠ 0})
 
 
 /-- Root multiplicity of (0,0).
-    It is the minimal sum `i + j` over all `(i, j)` such that 
+    It is the minimal sum `i + j` over all `(i, j)` such that
     the (i,j)-coefficient of `f` is not zero.
 -/
 def rootMultiplicity₀ [DecidableEq F] : Option ℕ :=
@@ -167,7 +167,7 @@ def evalX : Polynomial F :=
 Evaluating a bivariate polynomial in the first variable `X` on a set of points. This results in
 a set of univariate polynomials in `Y`.
 -/
-def evalSetX (P : Finset F) [Nonempty P]: Set (Polynomial F) :=
+def evalSetX (P : Finset F) [Nonempty P] : Set (Polynomial F) :=
   {h : Polynomial F | ∃ a ∈ P, evalX a f = h}
 
 /--
@@ -220,7 +220,7 @@ lemma quotient_nezero_iff_coeffs_nezero (q : F[X][Y]) (hg : g ≠ 0)
 The `X` degree of the bivarate quotient is bounded above by the difference of the `X`-degrees of
 the divisor and divident.
 -/
-lemma quotient_degX [IsDomain F](q : F[X][Y]) (h_quot_XY : g = q * f) (hf : f ≠ 0) (hg : g ≠ 0) :
+lemma quotient_degX [IsDomain F] (q : F[X][Y]) (h_quot_XY : g = q * f) (hf : f ≠ 0) (hg : g ≠ 0) :
   degreeX q ≤ degreeX g - degreeX f := by
   rw [h_quot_XY, degreeX_mul q f]
   · aesop

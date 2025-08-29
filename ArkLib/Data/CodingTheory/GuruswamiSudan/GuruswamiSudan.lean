@@ -80,7 +80,7 @@ theorem decoder_dist_impl_mem
   :
   p ∈ decoder k r D e ωs f := by sorry
 
-/-- The degree bound (a.k.a. `D_X`) for instantiation of Guruswami-Sudan 
+/-- The degree bound (a.k.a. `D_X`) for instantiation of Guruswami-Sudan
     in lemma 5.3 of the Proximity Gap paper.
     D_X(m) = (m + 1/2)√ρn.
 -/
@@ -91,28 +91,28 @@ noncomputable def proximity_gap_degree_bound (k m : ℕ) : ℕ :=
 /-- The ball radius from lemma 5.3 of the Proximity Gap paper,
     which follows from the Johnson bound.
     δ₀(ρ, m) = 1 - √ρ - √ρ/2m.
--/ 
+-/
 noncomputable def proximity_gap_johnson (k m : ℕ) : ℕ :=
   let rho := (k + 1 : ℚ) / n
   Nat.floor ((1 : ℝ) - Real.sqrt rho - Real.sqrt rho / (2 * m))
 
-/-- The first part of lemma 5.3 from the Proximity gap paper. 
+/-- The first part of lemma 5.3 from the Proximity gap paper.
     Given the D_X (`proximity_gap_degree_bound`) and δ₀ (`proximity_gap_johnson`),
     a solution to Guruswami-Sudan system exists.
 -/
-lemma guruswami_sudan_for_proximity_gap_existence {k m : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F}:
+lemma guruswami_sudan_for_proximity_gap_existence {k m : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F} :
   ∃ Q, Condition k m (proximity_gap_degree_bound (n := n) k m) ωs f Q := by
   sorry
 
 /-- The second part of lemma 5.3 from the Proximity gap paper.
     For any solution Q of the Guruswami-Sudan system, and for any
-    polynomial P ∈ RS[n, k, ρ] such that Δ(w, P) ≤ δ₀(ρ, m), 
+    polynomial P ∈ RS[n, k, ρ] such that Δ(w, P) ≤ δ₀(ρ, m),
     we have that Y - P(X) divides Q(X, Y) in the polynomial ring
     F[X][Y].
 -/
 lemma guruswami_sudan_for_proximity_gap_property {k m : ℕ} {ωs : Fin n ↪ F}
   {f : Fin n → F}
-  {Q : F[X][X]} 
+  {Q : F[X][X]}
   {p : ReedSolomon.code ωs n}
   (h : Δ₀(f, (ReedSolomon.codewordToPoly p).eval ∘ f) ≤ proximity_gap_johnson (n := n) k m)
   :
