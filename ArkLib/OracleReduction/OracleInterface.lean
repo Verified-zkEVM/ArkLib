@@ -82,6 +82,14 @@ def toOracleImpl {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterface (
     (data : ∀ i, v i) : QueryImpl [v]ₒ Id where
   impl | query i t => (O i).answer (data i) t
 
+/-- Any function type has a canonical `OracleInterface` instance, whose `answer` is the function
+  itself. -/
+@[reducible, inline]
+instance instFunction {α β : Type*} : OracleInterface (α → β) where
+  Query := α
+  Response := β
+  answer := id
+
 instance {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterface (v i)]
     [h : ∀ i, DecidableEq (Query (v i))]
     [h' : ∀ i, DecidableEq (Response (v i))] :
@@ -210,18 +218,6 @@ def distanceLE (Message : Type*) [O : OracleInterface Message]
     [Fintype (O.Query)] [DecidableEq (O.Response)] (d : ℕ) : Prop :=
   ∀ a b : Message, a ≠ b → #{q | OracleInterface.answer a q = OracleInterface.answer b q} ≤ d
 
-end OracleInterface
-
-/-! ## `OracleInterface` Instances -/
-
-/-- Any function type has a canonical `OracleInterface` instance, whose `answer` is the function
-  itself. -/
-@[reducible, inline]
-instance instOracleInterfaceFunction {α β : Type*} : OracleInterface (α → β) where
-  Query := α
-  Response := β
-  answer := id
-
 section Polynomial
 
 open Polynomial MvPolynomial
@@ -230,28 +226,28 @@ variable {R : Type*} [CommSemiring R] {d : ℕ} {σ : Type*}
 
 /-- Univariate polynomials can be accessed via evaluation queries. -/
 @[reducible, inline]
-instance instOracleInterfacePolynomial : OracleInterface R[X] where
+instance instPolynomial : OracleInterface R[X] where
   Query := R
   Response := R
   answer := fun poly point => poly.eval point
 
 /-- Univariate polynomials with degree at most `d` can be accessed via evaluation queries. -/
 @[reducible, inline]
-instance instOracleInterfacePolynomialDegreeLE : OracleInterface (R⦃≤ d⦄[X]) where
+instance instPolynomialDegreeLE : OracleInterface (R⦃≤ d⦄[X]) where
   Query := R
   Response := R
   answer := fun ⟨poly, _⟩ point => poly.eval point
 
 /-- Univariate polynomials with degree less than `d` can be accessed via evaluation queries. -/
 @[reducible, inline]
-instance instOracleInterfacePolynomialDegreeLT : OracleInterface (R⦃< d⦄[X]) where
+instance instPolynomialDegreeLT : OracleInterface (R⦃< d⦄[X]) where
   Query := R
   Response := R
   answer := fun ⟨poly, _⟩ point => poly.eval point
 
 /-- Multivariate polynomials can be accessed via evaluation queries. -/
 @[reducible, inline]
-instance instOracleInterfaceMvPolynomial : OracleInterface (R[X σ]) where
+instance instMvPolynomial : OracleInterface (R[X σ]) where
   Query := σ → R
   Response := R
   answer := fun poly point => eval point poly
@@ -259,7 +255,7 @@ instance instOracleInterfaceMvPolynomial : OracleInterface (R[X σ]) where
 /-- Multivariate polynomials with individual degree at most `d` can be accessed via evaluation
 queries. -/
 @[reducible, inline]
-instance instOracleInterfaceMvPolynomialDegreeLE : OracleInterface (R⦃≤ d⦄[X σ]) where
+instance instMvPolynomialDegreeLE : OracleInterface (R⦃≤ d⦄[X σ]) where
   Query := σ → R
   Response := R
   answer := fun ⟨poly, _⟩ point => eval point poly
@@ -269,16 +265,43 @@ instance [Fintype σ] [DecidableEq σ] [Fintype R] : Fintype (OracleInterface.Qu
 
 end Polynomial
 
+section Vector
+
+variable {n : ℕ} {α : Type*}
+
+/- Vectors of the form `Fin n → α` can be accessed via queries on their indices. We no longer have
+   this instance separately since it can be inferred from the instance for `Function`. -/
+-- instance instOracleInterfaceForallFin :
+--     OracleInterface (Fin n → α) := OracleInterface.instFunction
+
+/-- Vectors of the form `List.Vector α n` can be accessed via queries on their indices. -/
+instance instListVector : OracleInterface (List.Vector α n) where
+  Query := Fin n
+  Response := α
+  answer := fun vec i => vec[i]
+
+/-- Vectors of the form `Vector α n` can be accessed via queries on their indices. -/
+instance instVector : OracleInterface (Vector α n) where
+  Query := Fin n
+  Response := α
+  answer := fun vec i => vec[i]
+
+end Vector
+
+end OracleInterface
+
 section PolynomialDistance
 
-open Polynomial MvPolynomial
+-- TODO: refactor these theorems and move them into the appropriate `(Mv)Polynomial` files
+
+open Polynomial MvPolynomial OracleInterface
 
 variable {R : Type*} [CommRing R] {d : ℕ} [Fintype R] [DecidableEq R] [IsDomain R]
 
 -- TODO: golf this theorem
 @[simp]
-theorem distanceLE_polynomial_degreeLT : OracleInterface.distanceLE (R⦃< d⦄[X]) (d - 1) := by
-  simp [OracleInterface.distanceLE, instOracleInterfacePolynomialDegreeLT, mem_degreeLT]
+theorem distanceLE_polynomial_degreeLT : distanceLE (R⦃< d⦄[X]) (d - 1) := by
+  simp [distanceLE, instPolynomialDegreeLT, mem_degreeLT]
   intro p hp p' hp' hNe
   have : ∀ q ∈ Finset.univ, p.eval q = p'.eval q ↔ q ∈ (p - p').roots := by
     intro q _
@@ -306,8 +329,8 @@ theorem distanceLE_polynomial_degreeLT : OracleInterface.distanceLE (R⦃< d⦄[
     intro a; simp [Multiset.count_filter, Multiset.count_univ]
     aesop
 
-theorem distanceLE_polynomial_degreeLE : OracleInterface.distanceLE (R⦃≤ d⦄[X]) d := by
-  simp [OracleInterface.distanceLE, instOracleInterfacePolynomialDegreeLE, mem_degreeLE]
+theorem distanceLE_polynomial_degreeLE : distanceLE (R⦃≤ d⦄[X]) d := by
+  simp [distanceLE, instPolynomialDegreeLE, mem_degreeLE]
   intro a ha b hb hNe
   simp [Finset.card_filter_le_iff]
   intro s hs
@@ -326,48 +349,10 @@ theorem distanceLE_polynomial_degreeLE : OracleInterface.distanceLE (R⦃≤ d�
   exact ⟨x, hMem, fun h => by simp_all⟩
 
 theorem distanceLE_mvPolynomial_degreeLE {σ : Type*} [Fintype σ] [DecidableEq σ] :
-    OracleInterface.distanceLE (R⦃≤ d⦄[X σ]) (Fintype.card σ * d) := by
-  simp [OracleInterface.distanceLE, instOracleInterfaceMvPolynomialDegreeLE,
+    distanceLE (R⦃≤ d⦄[X σ]) (Fintype.card σ * d) := by
+  simp [distanceLE, instMvPolynomialDegreeLE,
     MvPolynomial.mem_restrictDegree]
   intro a ha b hb hNe
   sorry
 
 end PolynomialDistance
-
-section Vector
-
-variable {n : ℕ} {α : Type*}
-
-/-- Vectors of the form `Fin n → α` can be accessed via queries on their indices. -/
-instance instOracleInterfaceForallFin : OracleInterface (Fin n → α) where
-  Query := Fin n
-  Response := α
-  answer := fun vec i => vec i
-
-/-- Vectors of the form `List.Vector α n` can be accessed via queries on their indices. -/
-instance instOracleInterfaceListVector : OracleInterface (List.Vector α n) where
-  Query := Fin n
-  Response := α
-  answer := fun vec i => vec[i]
-
-/-- Vectors of the form `Vector α n` can be accessed via queries on their indices. -/
-instance instOracleInterfaceVector : OracleInterface (Vector α n) where
-  Query := Fin n
-  Response := α
-  answer := fun vec i => vec[i]
-
-end Vector
-
-section Test
-
-variable {ι : Type u} {spec : OracleSpec ι} {R : Type*} [CommSemiring R]
-
-open Polynomial OracleInterface SimOracle OracleSpec in
-theorem poly_query_list_mapM {m : ℕ} (D : Fin m ↪ R) (p : R[X]) :
-    simulateQ (simOracle spec (fun _ : Unit => p))
-      (List.finRange m |>.mapM (fun i => query (spec := [fun _ : Unit => R[X]]ₒ) () (D i)))
-    = (pure (List.finRange m |>.map (fun i => p.eval (D i))) : OracleComp spec (List R)) := by
-  simp [simOracle, OracleSpec.SubSpec.liftM_query_eq_liftM_liftM, simulateQ]
-  sorry
-
-end Test
