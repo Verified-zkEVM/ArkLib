@@ -153,7 +153,7 @@ def OracleStatement (ι F : Type) : Unit → Type :=
   the oracle statement defined above. The oracle simply applies
   the function `f : ι → F` to the query input `i : ι`,
   producing the response. -/
-instance {ι : Type} : OracleInterface (OracleStatement ι F ()) := instOracleInterfaceFunction
+instance {ι : Type} : OracleInterface (OracleStatement ι F ()) := OracleInterface.instFunction
 
 /-- WHIR relation: the oracle's output is δᵣ-close to a codeword of a smooth ReedSolomon code
 with number of variables at most `varCount` over domain `φ`, within error `err`.
