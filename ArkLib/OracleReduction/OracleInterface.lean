@@ -146,11 +146,12 @@ instance instProd {α β : Type*} [Oα : OracleInterface α] [Oβ : OracleInterf
     indexed by `ι`, each having an oracle interface, is defined as:
   - The query & response types are the dependent product of the query & response types of the type
     family.
-  - The oracle, on a given query specifying the index `i` of the type family, will run the oracle
-    of `v i` and return the response.
+  - The oracle, on a given query specifying the index `i` of the type family, will run the oracle of
+    `v i` and return the response.
 
-This is a low priority instance since we do not expect to have this behavior often. See `instForall`
-for the product behavior on the interface (with dependent sums for the query and response types). -/
+This is a low priority instance since we do not expect to have this behavior often. See
+`instProdForall` for the product behavior on the interface (with dependent sums for the query and
+response types). -/
 @[reducible, inline]
 instance (priority := low) instTensorForall {ι : Type u} (v : ι → Type v)
     [O : ∀ i, OracleInterface (v i)] : OracleInterface (∀ i, v i) where
@@ -168,7 +169,7 @@ instance (priority := low) instTensorForall {ι : Type u} (v : ι → Type v)
 This is the behavior usually assumed, i.e. when we send multiple oracle messages in a round.
 See `instTensorForall` for the tensor product behavior on the interface. -/
 @[reducible, inline]
-instance instForall {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterface (v i)] :
+instance instProdForall {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterface (v i)] :
     OracleInterface (∀ i, v i) where
   Query := (i : ι) × (O i).Query
   Response := (i : ι) × (O i).Response
