@@ -1,4 +1,4 @@
-import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
+import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point@
 import ArkLib.Data.FieldTheory.NonBinaryField.BN254
 import ArkLib.ToMathlib.NumberTheory.PrattCertificate
 
@@ -59,11 +59,7 @@ def curve : WeierstrassCurve BaseField := {
 }
 
 /-- The BN254 curve is in short normal form -/
-instance : curve.IsShortNF := by
-  constructor
-  · rfl  -- a₁ = 0
-  · rfl  -- a₂ = 0
-  · rfl  -- a₃ = 0
+instance : curve.IsShortNF := by constructor <;> rfl
 
 /-- The BN254 curve is elliptic (has non-zero discriminant) -/
 instance : curve.IsElliptic := by
@@ -71,8 +67,6 @@ instance : curve.IsElliptic := by
   -- Here a = 0, b = 3, so discriminant is -16(27 * 9) = -16 * 243 = -3888
   -- Since the base field prime is much larger than 3888, this is non-zero
   constructor
-  -- Show that discriminant is a unit by showing it's non-zero
-  --rw [WeierstrassCurve.isUnit_iff]
   rw [WeierstrassCurve.Δ_of_isShortNF]
   simp [curve]
   grind
