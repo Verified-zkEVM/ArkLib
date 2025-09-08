@@ -68,10 +68,12 @@ end Matrix
 
 end
 
-/-- Affine line between two vectors with coefficients in a semiring.
+/-- Affine line through `u` in direction `v`: the set `{u + a • v | a : F}`.
+Note: we intentionally return a `Set` (not a submodule), since an affine line is generally
+not closed under addition unless `u = 0`. This matches the intended usage “x ∈ Affine.line u v”.
 -/
-def Affine.line {F : Type*} {ι : Type*} [Ring F] (u v : ι → F) : Submodule F (ι → F) :=
-  vectorSpan _ {u, v}
+def Affine.line {F : Type*} {ι : Type*} [Semiring F] (u v : ι → F) : Set (ι → F) :=
+  {x | ∃ a : F, x = u + a • v}
 
 namespace sInf
 

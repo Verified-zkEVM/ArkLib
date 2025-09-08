@@ -38,6 +38,10 @@ import ArkLib.Data.Fin.Basic
 
 variable {n : Type*} [Fintype n] {R : Type*} [DecidableEq R]
 
+/-- A linear code over alphabet `F` and index set `ι` is a submodule of functions `ι → F`. -/
+abbrev LinearCode.{u, v} (ι : Type u) [Fintype ι] (F : Type v) [Semiring F] : Type (max u v) :=
+  Submodule F (ι → F)
+
 namespace Code
 
 -- Notation for Hamming distance
@@ -73,6 +77,72 @@ noncomputable def distFromCode (u : n → R) (C : Set (n → R)) : ℕ∞ :=
   sInf {d | ∃ v ∈ C, hammingDist u v ≤ d}
 
 notation "Δ₀(" u ", " C ")" => distFromCode u C
+
+-- A convenient algebraic rewrite for Hamming distance: translate second argument by `-c`.
+lemma hammingDist_add_right_eq_sub
+  {F : Type*} [AddGroup F] [DecidableEq F]
+  {ι : Type*} [Fintype ι]
+  (u v c : ι → F) :
+  hammingDist (u + c) v = hammingDist u (v - c) := by
+  classical
+  have hiff : ∀ i, ((u i + c i) = v i) ↔ (u i = v i - c i) := by
+    intro i; constructor
+    · intro h; have := congrArg (fun x => x - c i) h; simpa [add_sub_cancel] using this
+    · intro h; have := congrArg (fun x => x + c i) h; simpa [sub_add_cancel] using this
+  have hneq : ∀ i, ((u i + c i) ≠ v i) ↔ (u i ≠ v i - c i) := fun i => not_congr (hiff i)
+  have hset :
+    (Finset.univ.filter fun i : ι => (u i + c i) ≠ v i)
+      = (Finset.univ.filter fun i : ι => u i ≠ v i - c i) := by
+    ext i; simp [hneq i]
+  simp [hammingDist, hset]
+
+/-! Translation invariance of distance to a linear code: adding a codeword does not
+    change the distance. -/
+lemma distFromCode_add_codeword_eq
+  {F : Type*} [Ring F] [DecidableEq F]
+  {ι : Type*} [Fintype ι]
+  (LC : Submodule F (ι → F)) {w c : ι → F} (hc : c ∈ (LC : Set (ι → F))) :
+  Δ₀(w + c, (LC : Set (ι → F))) = Δ₀(w, (LC : Set (ι → F))) := by
+  classical
+  -- Closure properties in the submodule
+  have h_subtract_mem : ∀ z ∈ (LC : Set (ι → F)), z - c ∈ (LC : Set (ι → F)) := by
+    intro z hz; simpa using (Submodule.sub_mem LC (by simpa using hz) (by simpa using hc))
+  have h_add_mem : ∀ z ∈ (LC : Set (ι → F)), z + c ∈ (LC : Set (ι → F)) := by
+    intro z hz; simpa using (Submodule.add_mem LC (by simpa using hz) (by simpa using hc))
+  -- Witness set rewrite 1
+  have hset₁ :
+    {d : ℕ∞ | ∃ z ∈ (LC : Set (ι → F)), hammingDist (w + c) z ≤ d}
+      = {d : ℕ∞ | ∃ z ∈ (LC : Set (ι → F)), hammingDist w (z - c) ≤ d} := by
+    ext d; constructor
+    · intro hd; rcases hd with ⟨z, hzC, hzle⟩
+      -- keep witness z; rewrite distance (w + c) to (w) vs (z - c)
+      refine ⟨z, hzC, ?_⟩
+      simpa [hammingDist_add_right_eq_sub (u := w) (v := z) (c := c)] using hzle
+    · intro hd; rcases hd with ⟨z, hzC, hzle⟩
+      refine ⟨z, hzC, ?_⟩
+      -- directly rewrite hammingDist (w + c) z = hammingDist w (z - c)
+      simpa [hammingDist_add_right_eq_sub (u := w) (v := z) (c := c)] using hzle
+  -- Witness set rewrite 2
+  have hset₂ :
+    {d : ℕ∞ | ∃ z ∈ (LC : Set (ι → F)), hammingDist w (z - c) ≤ d}
+      = {d : ℕ∞ | ∃ z ∈ (LC : Set (ι → F)), hammingDist w z ≤ d} := by
+    ext d; constructor <;> intro hd
+    · rcases hd with ⟨z, hzC, hzle⟩
+      -- choose z' = z - c ∈ LC
+      exact ⟨z - c, h_subtract_mem z hzC, by simpa using hzle⟩
+    · rcases hd with ⟨z, hzC, hzle⟩
+      -- choose z' = z + c ∈ LC so that (z' - c) = z
+      exact ⟨z + c, h_add_mem z hzC, by simpa using hzle⟩
+  -- Conclude by unfolding distFromCode using the combined set equality
+  have hsets :
+      {d : ℕ∞ | ∃ z ∈ (LC : Set (ι → F)), hammingDist (w + c) z ≤ d}
+        = {d : ℕ∞ | ∃ z ∈ (LC : Set (ι → F)), hammingDist w z ≤ d} :=
+    hset₁.trans hset₂
+  -- Apply congrArg on sInf to transport equality of sets to equality of infimums
+  have hsInf : sInf ({d : ℕ∞ | ∃ z ∈ (LC : Set (ι → F)), hammingDist (w + c) z ≤ d})
+              = sInf ({d : ℕ∞ | ∃ z ∈ (LC : Set (ι → F)), hammingDist w z ≤ d}) := by
+    simpa using congrArg sInf hsets
+  simpa [Code.distFromCode] using hsInf
 
 noncomputable def minDist (C : Set (n → R)) : ℕ :=
   sInf {d | ∃ u ∈ C, ∃ v ∈ C, u ≠ v ∧ hammingDist u v = d}
@@ -684,9 +754,6 @@ theorem singleton_bound (C : Set (n → R)) :
     exact huniv
 
 
-abbrev LinearCode.{u, v} (ι : Type u) [Fintype ι] (F : Type v) [Semiring F] : Type (max u v) :=
-  Submodule F (ι → F)
-
 namespace LinearCode
 
 section
@@ -804,11 +871,32 @@ lemma dist_eq_minWtCodewords [CommRing F] {LC : LinearCode ι F} :
 
 open Finset in
 
+lemma hammingDist_add_right_eq_sub [AddGroup F] [DecidableEq F]
+  (u v c : ι → F) :
+  hammingDist (u + c) v = hammingDist u (v - c) := by
+  classical
+  -- Compare pointwise predicates and rewrite filter sets.
+  have hiff : ∀ i, ((u i + c i) = v i) ↔ (u i = v i - c i) := by
+    intro i; constructor
+    · intro h
+      have := congrArg (fun x => x - c i) h
+      simpa [add_sub_cancel] using this
+    · intro h
+      have := congrArg (fun x => x + c i) h
+      simpa [sub_add_cancel] using this
+  have hneq : ∀ i, ((u i + c i) ≠ v i) ↔ (u i ≠ v i - c i) := fun i => not_congr (hiff i)
+  have hset :
+    (Finset.univ.filter fun i : ι => (u i + c i) ≠ v i)
+      = (Finset.univ.filter fun i : ι => u i ≠ v i - c i) := by
+    ext i; simp [hneq i]
+  simp [hammingDist, hset]
+
+
 lemma dist_UB [CommRing F] {LC : LinearCode ι F} :
     Code.minDist (LC : Set (ι → F)) ≤ length LC := by
   rw [dist_eq_minWtCodewords, minWtCodewords]
   exact sInf.sInf_UB_of_le_UB fun s ⟨_, _, _, s_def⟩ ↦
-          s_def ▸ le_trans (card_le_card (subset_univ _)) (le_refl _)
+          s_def ▸ le_trans (Finset.card_le_card (Finset.subset_univ _)) (le_refl _)
 
 -- Restriction to a finite set of coordinates as a linear map
 noncomputable def restrictLinear [Semiring F] (S : Finset ι) :
