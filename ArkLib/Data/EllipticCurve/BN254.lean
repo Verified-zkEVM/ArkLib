@@ -1,6 +1,13 @@
-import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point@
+/-
+Copyright (c) 2024 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
+
+import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 import ArkLib.Data.FieldTheory.NonBinaryField.BN254
 import ArkLib.ToMathlib.NumberTheory.PrattCertificate
+import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
 
 /-!
 # BN254 Elliptic Curve
@@ -79,134 +86,5 @@ theorem generator_on_curve : let (x, y) := generator
   y^2 = x^3 + 3 := by
   simp [generator]
   norm_num
-
-/-! ## Point Arithmetic -/
-
-/-- Points on the BN254 elliptic curve -/
-inductive Point where
-  /-- The point at infinity (identity element) -/
-  | infinity : Point
-  /-- A finite point with coordinates (x, y) -/
-  | finite : BaseField → BaseField → Point
-
-namespace Point
-
-/-- Check if a point is the point at infinity -/
-def isInfinity : Point → Bool
-  | infinity => true
-  | finite _ _ => false
-
-/-- Check if coordinates are on the curve: y² = x³ + 3 -/
-def onCurve (x y : BaseField) : Prop := y^2 = x^3 + 3
-
-/-- Check if a point is valid (either infinity or on the curve) -/
-def isValid : Point → Prop
-  | infinity => True
-  | finite x y => onCurve x y
-
-/-- Convert the generator to a Point -/
-def generatorPoint : Point := finite generator.1 generator.2
-
-/-- The generator point is valid -/
-theorem generatorPoint_valid : isValid generatorPoint := by
-  simp [generatorPoint, isValid, onCurve, generator]
-  norm_num
-
-/-- Point negation -/
-def neg : Point → Point
-  | infinity => infinity
-  | finite x y => finite x (-y)
-
-/-- Point addition on the BN254 curve. TODO: verify for correctness and performance. -/
-def add : Point → Point → Point
-  | infinity, P => P
-  | P, infinity => P
-  | finite x₁ y₁, finite x₂ y₂ =>
-    if x₁ = x₂ then
-      if y₁ = y₂ then
-        -- Point doubling: P + P
-        if y₁ = 0 then infinity
-        else
-          let s := (3 * x₁^2) / (2 * y₁)  -- slope for tangent
-          let x₃ := s^2 - 2 * x₁
-          let y₃ := s * (x₁ - x₃) - y₁
-          finite x₃ y₃
-      else
-        -- Points are inverses: P + (-P) = O
-        infinity
-    else
-      -- General addition: P + Q where P ≠ Q
-      let s := (y₂ - y₁) / (x₂ - x₁)  -- slope of line through P and Q
-      let x₃ := s^2 - x₁ - x₂
-      let y₃ := s * (x₁ - x₃) - y₁
-      finite x₃ y₃
-
-/-- Point equality is decidable -/
-instance (P Q : Point) : Decidable (P = Q) := by
-  cases P <;> cases Q <;> simp [Point.finite.injEq] <;> infer_instance
-
-/-- Scalar multiplication using double-and-add algorithm.
-TODO: verify for correctness and performance. -/
-def nsmul : Nat → Point → Point
-  | 0, _ => infinity
-  | 1, P => P
-  | n + 2, P =>
-    if (n + 2) % 2 = 0 then
-      nsmul ((n + 2) / 2) (add P P)  -- double the point, halve the scalar
-    else
-      add P (nsmul (n + 1) P)  -- subtract 1 from scalar, add point
-
-/-- Scalar multiplication for integers -/
-def zsmul : Int → Point → Point
-  | Int.ofNat n, P => nsmul n P
-  | Int.negSucc n, P => neg (nsmul (n + 1) P)
-
-end Point
-
-/-! ## Group Structure -/
-
-/-- Addition operation for the group structure -/
-instance : Add Point := ⟨Point.add⟩
-
-/-- Zero element (point at infinity) -/
-instance : Zero Point := ⟨Point.infinity⟩
-
-/-- Negation operation -/
-instance : Neg Point := ⟨Point.neg⟩
-
-/-- Scalar multiplication by natural numbers -/
-instance : SMul Nat Point := ⟨Point.nsmul⟩
-
-/-- Scalar multiplication by integers -/
-instance : SMul Int Point := ⟨Point.zsmul⟩
-
-/-- The BN254 points form an additive commutive group -/
-instance : AddCommGroup Point where
-  add := (· + ·)
-  add_assoc := by sorry  -- Elliptic curve addition is associative
-  zero := 0
-  zero_add := by sorry  -- 0 + P = P (point at infinity is identity)
-  add_zero := by sorry  -- P + 0 = P
-  neg := (- ·)
-  neg_add_cancel := by sorry  -- (-P) + P = 0
-  add_comm := by sorry  -- P + Q = Q + P
-  nsmul := BN254.Point.nsmul
-  zsmul := BN254.Point.zsmul
-  nsmul_zero := by sorry
-  nsmul_succ := by sorry
-  zsmul_zero' := by sorry
-  zsmul_succ' := by sorry
-
-/-! ## Examples -/
-
-example : Point.generatorPoint + Point.generatorPoint =
-  Point.add Point.generatorPoint Point.generatorPoint := rfl
-
--- example : (2 : Nat) • Point.generatorPoint =
---   Point.generatorPoint + Point.generatorPoint := by
---   simp [HSMul.hSMul, Point.nsmul]
-
-example : Point.isValid Point.generatorPoint = true := by
-  simp [Point.generatorPoint_valid]
 
 end BN254
