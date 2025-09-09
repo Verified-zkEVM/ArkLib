@@ -12,6 +12,8 @@ import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
 /-!
 # BN254 Elliptic Curve
 
+WARNING: this is experimental. Use with caution!
+
 This file defines the BN254 elliptic curve, a pairing-friendly curve used in
 cryptographic applications.
 
@@ -23,15 +25,12 @@ The BN254 curve is defined over a prime field with the equation Y² = X³ + 3.
 * `BN254.BaseField`: The base field F_p where the curve is defined
 * `BN254.curve`: The BN254 elliptic curve as a Weierstrass curve
 * `BN254.generator`: A generator point on the curve
-* `BN254.Point`: Points on the elliptic curve (finite points and point at infinity)
-* `BN254.Point.add`: Point addition operation
-* `BN254.Point.smul`: Scalar multiplication
-* `BN254.Point.isValid`: Point validation function
 
 ## References
 
 The BN254 curve parameters follow the specification used in Ethereum's alt_bn128
 precompiles and various zero-knowledge proof systems.
+
 
 -/
 
@@ -78,7 +77,9 @@ instance : curve.IsElliptic := by
   simp [curve]
   grind
 
-/-- A generator point on the BN254 curve -/
+/-- A generator point `(1, 2)` on the BN254 curve.
+
+NOTE: some places assume generator is `(-1, 2)` instead. -/
 def generator : BaseField × BaseField := (1, 2)
 
 /-- The generator point is on the curve -/
