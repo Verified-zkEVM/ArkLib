@@ -83,6 +83,14 @@ lemma sInf_UB_of_le_UB {S : Set ℕ} {i : ℕ} : (∀ s ∈ S, s ≤ i) → sInf
     aesop
   · aesop (add simp (show S = ∅ by aesop (add simp Set.Nonempty)))
 
+lemma le_sInf_of_LB {S : Set ℕ} (hne : S.Nonempty) {i : ℕ}
+    (hLB : ∀ s ∈ S, i ≤ s) : i ≤ sInf S := by
+  rw [Nat.sInf_def hne]
+  contrapose hLB
+  simp at hLB ⊢
+  rcases hLB with ⟨s, hsS, hsle⟩
+  exact ⟨s, hsle, hsS⟩
+
 end sInf
 
 @[simp]

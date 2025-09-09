@@ -74,10 +74,10 @@ variable {A : Type} {vPSpec : VectorSpec n}
 
 /-- All messages in an V-IOR have the same vector oracle interface. -/
 instance : OracleInterfaces (vPSpec.toProtocolSpec A) where
-  oracleInterfaces := fun _ => some instOracleInterfaceVector
+  oracleInterfaces := fun _ => some OracleInterface.instVector
 
 instance : ∀ i, OracleInterface ((vPSpec.toProtocolSpec A).Message i) :=
-  fun _ => instOracleInterfaceVector
+  fun _ => OracleInterface.instVector
 
 instance [VCVCompatible A] : ∀ i, VCVCompatible ((vPSpec.toProtocolSpec A).Challenge i) :=
   fun _ => by dsimp; infer_instance
