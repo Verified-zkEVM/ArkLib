@@ -55,6 +55,7 @@ import ArkLib.Data.FieldTheory.NonBinaryField.BN254
 import ArkLib.Data.FieldTheory.NonBinaryField.BabyBear
 import ArkLib.Data.FieldTheory.NonBinaryField.Basic
 import ArkLib.Data.FieldTheory.NonBinaryField.Goldilocks
+import ArkLib.Data.FieldTheory.NonBinaryField.KoalaBear
 import ArkLib.Data.FieldTheory.NonBinaryField.Mersenne
 import ArkLib.Data.FieldTheory.NonBinaryField.Secp256k1
 import ArkLib.Data.Fin.Basic
@@ -69,6 +70,7 @@ import ArkLib.Data.Fin.Tuple.TakeDrop
 import ArkLib.Data.GroupTheory.PrimeOrder
 import ArkLib.Data.Hash.DomainSep
 import ArkLib.Data.Hash.DuplexSponge
+import ArkLib.Data.Hash.Poseidon2
 import ArkLib.Data.List.BigOperators
 import ArkLib.Data.List.HList
 import ArkLib.Data.List.Lemmas
@@ -122,6 +124,7 @@ import ArkLib.OracleReduction.Security.Basic
 import ArkLib.OracleReduction.Security.Implications
 import ArkLib.OracleReduction.Security.Rewinding
 import ArkLib.OracleReduction.Security.RoundByRound
+import ArkLib.OracleReduction.Security.SpecialSoundness
 import ArkLib.OracleReduction.Security.StateRestoration
 import ArkLib.OracleReduction.VectorIOR
 import ArkLib.ProofSystem.Binius.Basic

@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.FieldTheory.NonBinaryField.KoalaBear
+import ArkLib.Data.Vector.Basic
 
 /-!
   # Poseidon2 Reference Implementation
@@ -24,7 +25,9 @@ import ArkLib.Data.FieldTheory.NonBinaryField.KoalaBear
 -/
 
 set_option linter.style.nativeDecide false
-set_option maxRecDepth 300
+-- set_option maxRecDepth 300
+
+open Vector
 
 namespace Poseidon2
 
@@ -408,17 +411,51 @@ def RAW_CONSTANTS_24 : List KoalaBear.Field := [
 
 @[simp] theorem rawConstants24_length : RAW_CONSTANTS_24.length = 215 := by native_decide
 
+/-- The degree of the S-Box for Poseidon2 over the KoalaBear field -/
 def sBoxDegree : Nat := 3
 
+/-- The parameters determining a Poseidon2 permutation (over the KoalaBear field) -/
 structure Params where
+  -- First, the parameters
   width : Nat
   numFullRounds : Nat
   numPartialRounds : Nat
   internalDiagVectors : List KoalaBear.Field
   roundConstants : List KoalaBear.Field
+
+  -- Conditions on the parameters
+
+  /-- The width must be a multiple of 4 -/
+  width_dvd_by_4 : 4 ∣ width
+  /-- The number of full rounds must be even -/
+  numFullRounds_even : Even numFullRounds
+  /-- The internal diagonal vectors must have the same length as the width -/
   internalDiagVectors_length : internalDiagVectors.length = width
+  /-- The round constants must have the same length as the number of full rounds times the width
+    plus the number of partial rounds -/
   roundConstants_length :
     roundConstants.length = numFullRounds * width + numPartialRounds
+
+namespace Params
+
+def widthDiv4 (params : Params) : Nat := params.width / 4
+
+@[simp]
+lemma widthDiv4_mul_4_eq_width (params : Params) : params.widthDiv4 * 4 = params.width :=
+  Nat.div_mul_cancel params.width_dvd_by_4
+
+def halfNumFullRounds (params : Params) : Nat := params.numFullRounds / 2
+
+@[simp]
+lemma numFullRounds_dvd_by_2 (params : Params) : 2 ∣ params.numFullRounds :=
+  even_iff_two_dvd.mp params.numFullRounds_even
+
+@[simp]
+lemma halfNumFullRounds_mul_2_eq_numFullRounds (params : Params) :
+    params.halfNumFullRounds * 2 = params.numFullRounds :=
+  Nat.div_mul_cancel params.numFullRounds_dvd_by_2
+
+end Params
 
 def params16 : Params where
   width := 16
@@ -443,7 +480,142 @@ def params16 : Params where
         -1 / (2 ^ 24),
     ]
   roundConstants := rawConstants16
+  width_dvd_by_4 := by decide
+  numFullRounds_even := by decide
   internalDiagVectors_length := by decide
   roundConstants_length := rawConstants16_length
+
+/-! ## Parameter set for width 24 -/
+
+/-- Parameters for width = 24, following the Python spec. -/
+def params24 : Params where
+  width := 24
+  numFullRounds := 8
+  numPartialRounds := 23
+  internalDiagVectors := [
+        -2,
+        1,
+        2,
+        1 / 2,
+        3,
+        4,
+        -1 / 2,
+        -3,
+        -4,
+        1 / (2 ^ 8),
+        1 / 4,
+        1 / 8,
+        1 / 16,
+        1 / 32,
+        1 / 64,
+        1 / (2 ^ 24),
+        -1 / (2 ^ 8),
+        -1 / 8,
+        -1 / 16,
+        -1 / 32,
+        -1 / 64,
+        -1 / (2 ^ 7),
+        -1 / (2 ^ 9),
+        -1 / (2 ^ 24)
+    ]
+  roundConstants := RAW_CONSTANTS_24
+  width_dvd_by_4 := by decide
+  numFullRounds_even := by decide
+  internalDiagVectors_length := by decide
+  roundConstants_length := rawConstants24_length
+
+/-! ## M4 matrix and linear layers -/
+
+/-- The M4 matrix -/
+def m4Matrix : Vector (Vector KoalaBear.Field 4) 4 :=
+  #v[
+    #v[2, 3, 1, 1],
+    #v[1, 2, 3, 1],
+    #v[1, 1, 2, 3],
+    #v[3, 1, 1, 2]
+  ]
+
+/-- Multiply the m4 block with an input vector of length 4
+TODO: define matrix-vector multiplication with `Vector` representation generally -/
+def applyM4 (chunk : Vector KoalaBear.Field 4) : Vector KoalaBear.Field 4 :=
+  Vector.Matrix.mulVec m4Matrix chunk
+
+/-- External linear layer (M_E) per the spec, operating on lists. -/
+def externalLinearLayer (widthDiv4 : Nat) (state : Vector KoalaBear.Field (widthDiv4 * 4)) : Vector KoalaBear.Field (widthDiv4 * 4) :=
+  let matrixState := Vector.Matrix.ofFlatten state
+  let afterM4 := sorry
+  -- accumulate sums at offsets 0..3
+  let rec sumOffsets : List KoalaBear.Field → Nat → KoalaBear.Field → KoalaBear.Field → KoalaBear.Field → KoalaBear.Field →
+      (KoalaBear.Field × KoalaBear.Field × KoalaBear.Field × KoalaBear.Field)
+  | [], _, s0, s1, s2, s3 => (s0, s1, s2, s3)
+  | x::xs, 0, s0, s1, s2, s3 => sumOffsets xs 1 (s0 + x) s1 s2 s3
+  | x::xs, 1, s0, s1, s2, s3 => sumOffsets xs 2 s0 (s1 + x) s2 s3
+  | x::xs, 2, s0, s1, s2, s3 => sumOffsets xs 3 s0 s1 (s2 + x) s3
+  | x::xs, _ , s0, s1, s2, s3 => sumOffsets xs 0 s0 s1 s2 (s3 + x)
+  let (s0, s1, s2, s3) := sumOffsets afterM4 0 0 0 0 0
+  sorry
+  -- add sums[i % 4] to each element
+  -- let rec addSums : Vector KoalaBear.Field (widthDiv4 * 4) → Nat → Vector KoalaBear.Field (widthDiv4 * 4)
+  -- | [], _ => []
+  -- | x::xs, 0 => (x + s0) :: addSums xs 1
+  -- | x::xs, 1 => (x + s1) :: addSums xs 2
+  -- | x::xs, 2 => (x + s2) :: addSums xs 3
+  -- | x::xs, _ => (x + s3) :: addSums xs 0
+  -- addSums afterM4 0
+
+/-- Internal linear layer (M_I = J + D) per the spec, operating on lists. -/
+def internalLinearLayer (state : List KoalaBear.Field) (params : Params) : List KoalaBear.Field :=
+  let sumAll := state.foldl (fun acc x => acc + x) 0
+  let pairs := List.zip state params.internalDiagVectors
+  pairs.map (fun p => match p with | (x,d) => sumAll + d * x)
+
+/-- Full Poseidon2 permutation on a state list. If the state length does not
+match `params.width`, the input is returned unchanged. -/
+def permute (state : List KoalaBear.Field) (params : Params) : List KoalaBear.Field :=
+  let width := params.width
+  if state.length = width then
+    let rc := params.roundConstants
+    let halfF := params.numFullRounds / 2
+    -- add a block of round constants to entire state
+    let addBlock (st : List KoalaBear.Field) (constIdx : Nat) : List KoalaBear.Field :=
+      let cs := (rc.drop constIdx).take width
+      List.zipWith (fun a b => a + b) st cs
+    -- S-box on full state
+    let sboxFull (st : List KoalaBear.Field) : List KoalaBear.Field := st.map (fun x => x ^ sBoxDegree)
+    -- S-box on first element only
+    let sboxFirst (st : List KoalaBear.Field) : List KoalaBear.Field :=
+      match st with
+      | [] => []
+      | x::xs => (x ^ sBoxDegree) :: xs
+    -- iterate full rounds
+    let rec doFull (n : Nat) (st : List KoalaBear.Field) (idx : Nat) : (List KoalaBear.Field × Nat) :=
+      match n with
+      | 0 => (st, idx)
+      | n+1 =>
+        let st1 := addBlock st idx
+        let idx1 := idx + width
+        let st2 := sboxFull st1
+        let st3 := externalLinearLayer (params.width / 4) ⟨st2.toArray, by sorry⟩
+        doFull n st3.toList idx1
+    -- iterate partial rounds
+    let rec doPartial (n : Nat) (st : List KoalaBear.Field) (idx : Nat) : (List KoalaBear.Field × Nat) :=
+      match n with
+      | 0 => (st, idx)
+      | n+1 =>
+        let c := match rc.drop idx with | c::_ => c | [] => 0
+        let st1 := match st with
+          | [] => []
+          | x::xs => (x + c) :: xs
+        let st2 := sboxFirst st1
+        let st3 := internalLinearLayer st2 params
+        doPartial n st3 (idx + 1)
+    -- pipeline
+    let st0 := externalLinearLayer (params.width / 4) ⟨state.toArray, by sorry⟩
+    let (st1, idx1) := doFull halfF st0.toList 0
+    let (st2, idx2) := doPartial params.numPartialRounds st1 idx1
+    let (st3, _idx3) := doFull halfF st2 idx2
+    st3
+  else
+    state
 
 end Poseidon2

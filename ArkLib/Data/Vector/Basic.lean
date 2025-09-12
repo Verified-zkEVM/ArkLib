@@ -8,6 +8,7 @@ import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.Order.Star.Basic
 import Mathlib.Algebra.Order.Sub.Basic
 import Mathlib.Data.Matrix.Mul
+import ToMathlib.General
 
 /-!
 # Definitions and lemmas for `Vector`
@@ -29,7 +30,7 @@ theorem head_cons {α} {n : ℕ} (hd : α) (tl : Vector α n) : (cons hd tl).hea
   simp only [head, cons, insertIdx_zero, getElem_cast, zero_lt_one, getElem_append_left, getElem_mk,
     List.getElem_toArray, List.getElem_cons_zero]
 
-lemma cons_get_eq {α} {n : ℕ} (hd : α) (tl : Vector α n) (i : Fin (n+1)) :
+lemma cons_get_eq {α} {n : ℕ} (hd : α) (tl : Vector α n) (i : Fin (n + 1)) :
     (cons hd tl).get i =
       if hi: i.val == 0 then hd else tl.get (⟨i.val - 1, by
         simp only [beq_iff_eq, Fin.val_eq_zero_iff] at hi
@@ -139,13 +140,6 @@ theorem foldl_eq_toList_foldl {α β} {n : ℕ} (f : β → α → β) (init : �
 
 -- #eval cons (hd:=6) (tl:=⟨#[2, 3], rfl⟩)
 
-variable {R : Type*} [Mul R] [AddCommMonoid R] {n : ℕ}
-
-/-- Inner product between two vectors of the same size. Should be faster than `_root_.dotProduct`
-    due to efficient operations on `Vector`s. -/
-def dotProduct (a b : Vector R n) : R :=
-  a.zipWith (· * ·) b |>.foldl (· + ·) 0
-
 theorem zipWith_cons {α β γ} {n : ℕ} (f : α → β → γ)
     (a : α) (b : Vector α n) (c : β) (d : Vector β n) :
     zipWith f (cons a b) (cons c d) = cons (f a c) (zipWith f b d) := by
@@ -155,10 +149,18 @@ theorem zipWith_cons {α β γ} {n : ℕ} (f : α → β → γ)
   rw [List.zipWith_cons_cons]
   conv_rhs => rw [toList_zipWith]
 
+variable {R : Type*} {n : ℕ}
+
+/-- Inner product between two vectors of the same size. Should be faster than `_root_.dotProduct`
+    due to efficient operations on `Vector`s. -/
+def dotProduct [Zero R] [Add R] [Mul R] (a b : Vector R n) : R :=
+  a.zipWith (· * ·) b |>.foldl (· + ·) 0
+
 @[inherit_doc]
 scoped notation:80 a " *ᵥ " b => dotProduct a b
 
-lemma dotProduct_cons (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
+@[simp]
+lemma dotProduct_cons [AddCommMonoid R] [Mul R] (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
   dotProduct (cons a b) (cons c d) = a * c + dotProduct b d := by
   unfold dotProduct
   rw [zipWith_cons]
@@ -167,7 +169,56 @@ lemma dotProduct_cons (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
   rw [List.foldl_eq_of_comm' (hf:=by exact fun a b c ↦ add_right_comm a b c)]
   rw [add_comm]
 
-lemma dotProduct_root_cons (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
+/-- A matrix represented as iterated vectors in row-major order.
+`m` is the number of rows, and `n` is the number of columns -/
+def Matrix (α : Type*) (m n : ℕ) := Vector (Vector α n) m
+
+namespace Matrix
+
+variable {α : Type*}
+
+/- Note `Vector.flatten` converts a `Vector (m * n)` into a `Matrix α m n` -/
+
+/-- Matrix-vector multiplication over `α`.
+`M` is given as a vector of row-vectors. -/
+def mulVec [Zero α] [Add α] [Mul α] {numRows numCols : Nat}
+    (M : Vector (Vector α numCols) numRows)
+    (x : Vector α numCols) : Vector α numRows :=
+  M.map (fun row => row *ᵥ x)
+
+/-- Convert a flat row-major vector of length `m*n` into an `m × n` row-major matrix
+represented as `Vector (Vector α n) m`. -/
+def ofFlatten {m n : ℕ} (v : Vector α (m * n)) : Matrix α m n :=
+  (Vector.finRange m).map (fun i => (v.extract (i.val * n) (i.val * n + n)).cast
+    (by
+    -- Why can't `omega`, `aesop`, `grind`, etc. solve this?
+      rcases i with ⟨i, h⟩
+      have : i * n + n ≤ m * n := by
+        calc
+        _ = (i + 1) * n := by ring
+        _ ≤ m * n := by gcongr; exact h
+      simp [this]))
+
+/-- Convert to a `Fin`-indexed matrix (the definition in Mathlib): `Fin m → Fin n → α` -/
+def toFinMatrix {m n : ℕ} (matrix : Matrix α m n) : _root_.Matrix (Fin m) (Fin n) α :=
+  fun i j => (matrix.get i).get j
+
+/-- Convert from a `Fin`-indexed matrix (the definition in Mathlib): `Fin m → Fin n → α` -/
+def ofFinMatrix {m n : ℕ} (matrix : _root_.Matrix (Fin m) (Fin n) α) : Matrix α m n :=
+  Vector.ofFn (fun i => Vector.ofFn (fun j => matrix i j))
+
+end Matrix
+
+end Vector
+
+section RootDotProduct
+
+open Vector
+
+variable {R : Type*} [AddCommMonoid R] [Mul R] {n : ℕ}
+
+@[simp]
+lemma dotProduct_cons (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
     _root_.dotProduct (cons a b).get (cons c d).get = a * c + _root_.dotProduct b.get d.get := by
   unfold _root_.dotProduct
   if h_n: n = 0 then
@@ -187,10 +238,22 @@ lemma dotProduct_root_cons (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
     simp only [Fin.val_succ, Nat.reduceBeqDiff, Bool.false_eq_true, ↓reduceDIte,
       add_tsub_cancel_right, Fin.eta]
 
--- theorem dotProduct_eq_matrix_dotProduct (a b : Vector R n) :
---     dotProduct a b = _root_.dotProduct a.get b.get := by
---   refine Vector.induction₂ ?_ (fun hd tl hd' tl' ih => ?_) a b
---   · simp [nil, dotProduct, _root_.dotProduct]
---   · rw [dotProduct_cons, dotProduct_root_cons, ih]
+end RootDotProduct
+
+namespace Vector
+
+variable {R : Type*} [AddCommMonoid R] [Mul R] {n : ℕ}
+
+theorem dotProduct_eq_root_dotProduct (a b : Vector R n) :
+    dotProduct a b = _root_.dotProduct a.get b.get := by
+  refine induction₂ ?_ (fun hd tl hd' tl' ih => ?_) a b
+  · simp [dotProduct, _root_.dotProduct]
+  · simp [Vector.cast]
+    sorry
+    -- suffices h : ((#v[hd] ++ tl) *ᵥ (#v[hd'] ++ tl')) =
+    --   (_root_.dotProduct (#v[hd] ++ tl).get (#v[hd'] ++ tl').get) by
+    --   simp at h
+    --   sorry
+    -- rw [dotProduct_cons]
 
 end Vector
