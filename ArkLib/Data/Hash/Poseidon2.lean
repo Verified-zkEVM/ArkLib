@@ -549,7 +549,20 @@ def applyM4 (chunk : Vector KoalaBear.Field 4) : Vector KoalaBear.Field 4 :=
 
 variable (params : Params)
 
-/-- External linear layer (M_E) per the spec, operating on vectors of length divisible by 4. -/
+/--
+Applies the external linear layer (M_E), which is structured for efficiency.
+
+The matrix `M_E` is applied in two steps:
+1.  **Block-Diagonal Matrix Multiplication**: The `width`-element state vector is treated as a
+    `width/4 × 4` matrix. Each 4-element row is multiplied by the `m4Matrix`.
+    This is equivalent to multiplying the state vector by a block-diagonal matrix where each
+    block is `m4Matrix`.
+
+2.  **Diffusion Layer**: A diffusion effect is achieved by adding the sum of all elements in each
+    column to every element in that same column. This mixes the state across the 4-element chunks.
+    If `s'` is the state after the M4 multiplication, the output is `s''` where
+    `s''_{i,j} = s'_{i,j} + ∑_k s'_{k,j}`.
+-/
 def externalLinearLayer (state : Vector KoalaBear.Field params.width) :
     Vector KoalaBear.Field params.width :=
   -- First step: convert `state` into chunks of length 4, then apply M4 to each chunk
