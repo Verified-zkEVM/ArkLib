@@ -35,7 +35,7 @@ namespace Poseidon2
 
 /-- The constants for Poseidon2 with 16 rounds
 (total of 8 * 16 + 20 = 148 constants) -/
-def rawConstants16 : List KoalaBear.Field := [
+def rawConstants16 : Vector KoalaBear.Field 148 := #v[
     2128964168,
     288780357,
     316938561,
@@ -186,12 +186,9 @@ def rawConstants16 : List KoalaBear.Field := [
     879151050,
 ]
 
--- Decide takes too long here...
-@[simp] theorem rawConstants16_length : rawConstants16.length = 148 := by native_decide
-
 /-- The constants for Poseidon2 with width 24
 (total of 8 * 24 + 23 = 215 constants) -/
-def RAW_CONSTANTS_24 : List KoalaBear.Field := [
+def RAW_CONSTANTS_24 : Vector KoalaBear.Field 215 := #v[
     487143900,
     1829048205,
     1652578477,
@@ -409,8 +406,6 @@ def RAW_CONSTANTS_24 : List KoalaBear.Field := [
     681266718,
 ]
 
-@[simp] theorem rawConstants24_length : RAW_CONSTANTS_24.length = 215 := by native_decide
-
 /-- The degree of the S-Box for Poseidon2 over the KoalaBear field -/
 def sBoxDegree : Nat := 3
 
@@ -420,38 +415,54 @@ structure Params where
   width : Nat
   numFullRounds : Nat
   numPartialRounds : Nat
-  internalDiagVectors : List KoalaBear.Field
-  roundConstants : List KoalaBear.Field
+  internalDiagVectors : Vector KoalaBear.Field width
+  roundConstants : Vector KoalaBear.Field (numFullRounds * width + numPartialRounds)
 
   -- Conditions on the parameters
+
+  /-- The width must be non-zero (i.e. positive) -/
+  [width_ne_zero : NeZero width]
+
+  /-- The number of full rounds must be non-zero (i.e. positive) -/
+  [numFullRounds_ne_zero : NeZero numFullRounds]
+
+  /-- The number of partial rounds must be non-zero (i.e. positive) -/
+  [numPartialRounds_ne_zero : NeZero numPartialRounds]
 
   /-- The width must be a multiple of 4 -/
   width_dvd_by_4 : 4 ∣ width
   /-- The number of full rounds must be even -/
   numFullRounds_even : Even numFullRounds
-  /-- The internal diagonal vectors must have the same length as the width -/
-  internalDiagVectors_length : internalDiagVectors.length = width
-  /-- The round constants must have the same length as the number of full rounds times the width
-    plus the number of partial rounds -/
-  roundConstants_length :
-    roundConstants.length = numFullRounds * width + numPartialRounds
 
 namespace Params
 
-def widthDiv4 (params : Params) : Nat := params.width / 4
+variable (params : Params)
 
 @[simp]
-lemma widthDiv4_mul_4_eq_width (params : Params) : params.widthDiv4 * 4 = params.width :=
+lemma width_pos : 0 < params.width := Nat.zero_lt_of_ne_zero params.width_ne_zero.out
+
+@[simp]
+lemma numFullRounds_pos : 0 < params.numFullRounds :=
+  Nat.zero_lt_of_ne_zero params.numFullRounds_ne_zero.out
+
+@[simp]
+lemma numPartialRounds_pos : 0 < params.numPartialRounds :=
+  Nat.zero_lt_of_ne_zero params.numPartialRounds_ne_zero.out
+
+def widthDiv4 : Nat := params.width / 4
+
+@[simp]
+lemma widthDiv4_mul_4_eq_width : params.widthDiv4 * 4 = params.width :=
   Nat.div_mul_cancel params.width_dvd_by_4
 
-def halfNumFullRounds (params : Params) : Nat := params.numFullRounds / 2
+def halfNumFullRounds : Nat := params.numFullRounds / 2
 
 @[simp]
-lemma numFullRounds_dvd_by_2 (params : Params) : 2 ∣ params.numFullRounds :=
+lemma numFullRounds_dvd_by_2 : 2 ∣ params.numFullRounds :=
   even_iff_two_dvd.mp params.numFullRounds_even
 
 @[simp]
-lemma halfNumFullRounds_mul_2_eq_numFullRounds (params : Params) :
+lemma halfNumFullRounds_mul_2_eq_numFullRounds :
     params.halfNumFullRounds * 2 = params.numFullRounds :=
   Nat.div_mul_cancel params.numFullRounds_dvd_by_2
 
@@ -461,7 +472,7 @@ def params16 : Params where
   width := 16
   numFullRounds := 8
   numPartialRounds := 20
-  internalDiagVectors := [
+  internalDiagVectors := #v[
        -2,
         1,
         2,
@@ -482,8 +493,6 @@ def params16 : Params where
   roundConstants := rawConstants16
   width_dvd_by_4 := by decide
   numFullRounds_even := by decide
-  internalDiagVectors_length := by decide
-  roundConstants_length := rawConstants16_length
 
 /-! ## Parameter set for width 24 -/
 
@@ -492,7 +501,7 @@ def params24 : Params where
   width := 24
   numFullRounds := 8
   numPartialRounds := 23
-  internalDiagVectors := [
+  internalDiagVectors := #v[
         -2,
         1,
         2,
@@ -521,8 +530,6 @@ def params24 : Params where
   roundConstants := RAW_CONSTANTS_24
   width_dvd_by_4 := by decide
   numFullRounds_even := by decide
-  internalDiagVectors_length := by decide
-  roundConstants_length := rawConstants24_length
 
 /-! ## M4 matrix and linear layers -/
 
@@ -540,82 +547,108 @@ TODO: define matrix-vector multiplication with `Vector` representation generally
 def applyM4 (chunk : Vector KoalaBear.Field 4) : Vector KoalaBear.Field 4 :=
   Vector.Matrix.mulVec m4Matrix chunk
 
-/-- External linear layer (M_E) per the spec, operating on lists. -/
-def externalLinearLayer (widthDiv4 : Nat) (state : Vector KoalaBear.Field (widthDiv4 * 4)) : Vector KoalaBear.Field (widthDiv4 * 4) :=
-  let matrixState := Vector.Matrix.ofFlatten state
-  let afterM4 := sorry
-  -- accumulate sums at offsets 0..3
-  let rec sumOffsets : List KoalaBear.Field → Nat → KoalaBear.Field → KoalaBear.Field → KoalaBear.Field → KoalaBear.Field →
-      (KoalaBear.Field × KoalaBear.Field × KoalaBear.Field × KoalaBear.Field)
-  | [], _, s0, s1, s2, s3 => (s0, s1, s2, s3)
-  | x::xs, 0, s0, s1, s2, s3 => sumOffsets xs 1 (s0 + x) s1 s2 s3
-  | x::xs, 1, s0, s1, s2, s3 => sumOffsets xs 2 s0 (s1 + x) s2 s3
-  | x::xs, 2, s0, s1, s2, s3 => sumOffsets xs 3 s0 s1 (s2 + x) s3
-  | x::xs, _ , s0, s1, s2, s3 => sumOffsets xs 0 s0 s1 s2 (s3 + x)
-  let (s0, s1, s2, s3) := sumOffsets afterM4 0 0 0 0 0
-  sorry
-  -- add sums[i % 4] to each element
-  -- let rec addSums : Vector KoalaBear.Field (widthDiv4 * 4) → Nat → Vector KoalaBear.Field (widthDiv4 * 4)
-  -- | [], _ => []
-  -- | x::xs, 0 => (x + s0) :: addSums xs 1
-  -- | x::xs, 1 => (x + s1) :: addSums xs 2
-  -- | x::xs, 2 => (x + s2) :: addSums xs 3
-  -- | x::xs, _ => (x + s3) :: addSums xs 0
-  -- addSums afterM4 0
+variable (params : Params)
 
-/-- Internal linear layer (M_I = J + D) per the spec, operating on lists. -/
-def internalLinearLayer (state : List KoalaBear.Field) (params : Params) : List KoalaBear.Field :=
+/-- External linear layer (M_E) per the spec, operating on vectors of length divisible by 4. -/
+def externalLinearLayer (state : Vector KoalaBear.Field params.width) :
+    Vector KoalaBear.Field params.width :=
+  -- First step: convert `state` into chunks of length 4, then apply M4 to each chunk
+  let chunks := Vector.Matrix.ofFlatten (state.cast (params.widthDiv4_mul_4_eq_width).symm)
+  let chunksAfterM4 := chunks.map (fun chunk => applyM4 chunk)
+
+  -- Diffusion step: add column sums to each row
+  -- This is equivalent to multiplication by circ(2*I, I, ..., I)
+
+  -- Transpose the matrix
+  let transposedMatrix := Vector.Matrix.transpose chunksAfterM4
+
+  -- Compute the sum of each column
+  let columnSums := transposedMatrix.map (fun col => col.foldl (· + ·) 0)
+
+  -- Add the column sums to each row
+  let chunksAfterDiffusion := chunksAfterM4.map (fun row => row.zipWith (· + ·) columnSums)
+
+  -- Convert back to flat vector
+  (Vector.flatten chunksAfterDiffusion).cast (params.widthDiv4_mul_4_eq_width)
+
+/--
+Applies the internal linear layer (M_I), optimized for partial rounds.
+
+This layer's matrix is `M_I = J + D`, where `J` is the all-ones matrix and `D` is a
+diagonal matrix defined by `internalDiagVectors`. This structure allows the matrix-vector
+product `M_I * s` to be computed in `O(width)` time instead of `O(width^2)`.
+
+The computation is performed as `M_I * s = J*s + D*s`:
+- `J*s` is a vector where each element is the sum of all elements in `s`.
+- `D*s` is the element-wise product of the state `s` and the diagonal vector `d`.
+-/
+def internalLinearLayer (state : Vector KoalaBear.Field params.width) :
+    Vector KoalaBear.Field params.width :=
+  -- 1. Calculate the sum of all elements in the state vector.
+  -- This single sum will be used for every element of the `J*s` product.
   let sumAll := state.foldl (fun acc x => acc + x) 0
-  let pairs := List.zip state params.internalDiagVectors
-  pairs.map (fun p => match p with | (x,d) => sumAll + d * x)
 
-/-- Full Poseidon2 permutation on a state list. If the state length does not
-match `params.width`, the input is returned unchanged. -/
-def permute (state : List KoalaBear.Field) (params : Params) : List KoalaBear.Field :=
-  let width := params.width
-  if state.length = width then
-    let rc := params.roundConstants
-    let halfF := params.numFullRounds / 2
-    -- add a block of round constants to entire state
-    let addBlock (st : List KoalaBear.Field) (constIdx : Nat) : List KoalaBear.Field :=
-      let cs := (rc.drop constIdx).take width
-      List.zipWith (fun a b => a + b) st cs
-    -- S-box on full state
-    let sboxFull (st : List KoalaBear.Field) : List KoalaBear.Field := st.map (fun x => x ^ sBoxDegree)
-    -- S-box on first element only
-    let sboxFirst (st : List KoalaBear.Field) : List KoalaBear.Field :=
-      match st with
-      | [] => []
-      | x::xs => (x ^ sBoxDegree) :: xs
-    -- iterate full rounds
-    let rec doFull (n : Nat) (st : List KoalaBear.Field) (idx : Nat) : (List KoalaBear.Field × Nat) :=
-      match n with
-      | 0 => (st, idx)
-      | n+1 =>
-        let st1 := addBlock st idx
-        let idx1 := idx + width
-        let st2 := sboxFull st1
-        let st3 := externalLinearLayer (params.width / 4) ⟨st2.toArray, by sorry⟩
-        doFull n st3.toList idx1
-    -- iterate partial rounds
-    let rec doPartial (n : Nat) (st : List KoalaBear.Field) (idx : Nat) : (List KoalaBear.Field × Nat) :=
-      match n with
-      | 0 => (st, idx)
-      | n+1 =>
-        let c := match rc.drop idx with | c::_ => c | [] => 0
-        let st1 := match st with
-          | [] => []
-          | x::xs => (x + c) :: xs
-        let st2 := sboxFirst st1
-        let st3 := internalLinearLayer st2 params
-        doPartial n st3 (idx + 1)
-    -- pipeline
-    let st0 := externalLinearLayer (params.width / 4) ⟨state.toArray, by sorry⟩
-    let (st1, idx1) := doFull halfF st0.toList 0
-    let (st2, idx2) := doPartial params.numPartialRounds st1 idx1
-    let (st3, _idx3) := doFull halfF st2 idx2
-    st3
-  else
-    state
+  -- 2. Compute `(J*s)_i + (D*s)_i` for each element `i`.
+  -- This is `sumAll + d_i * s_i`.
+  state.zipWith (fun s d => sumAll + d * s) params.internalDiagVectors
+
+/-- A single full round of the Poseidon2 permutation. -/
+def fullRound (params : Params) (state : Vector KoalaBear.Field params.width)
+    (roundConstants : Vector KoalaBear.Field params.width) : Vector KoalaBear.Field params.width :=
+  -- 1. Add round constants
+  let stateWithConstants := state.zipWith (·+·) roundConstants
+  -- 2. Apply S-box to full state
+  let stateAfterSbox := stateWithConstants.map (fun x => x ^ sBoxDegree)
+  -- 3. Apply external linear layer
+  externalLinearLayer params stateAfterSbox
+
+/-- A single partial round of the Poseidon2 permutation. -/
+def partialRound (state : Vector KoalaBear.Field params.width) (roundConstant : KoalaBear.Field) :
+    Vector KoalaBear.Field params.width :=
+  -- 1. Add round constant to the first element
+  let stateWithConstant := state.set 0 (state[0] + roundConstant)
+  -- 2. Apply S-box to the first element
+  let stateAfterSbox := stateWithConstant.set 0 (stateWithConstant[0] ^ sBoxDegree)
+  -- 3. Apply internal linear layer
+  internalLinearLayer params stateAfterSbox
+
+/-- Full Poseidon2 permutation on a state vector. -/
+@[inline]
+def permute (params : Params) (state : Vector KoalaBear.Field params.width) :
+    Vector KoalaBear.Field params.width :=
+  letI width := params.width
+  letI halfF := params.halfNumFullRounds
+  letI numPartialRounds := params.numPartialRounds
+  letI rcs := params.roundConstants
+
+  -- Initial external linear layer
+  let st0 := externalLinearLayer params state
+
+  -- First half of full rounds
+  let st1 : Vector KoalaBear.Field params.width :=
+    Fin.foldl halfF (fun st_acc rc_idx =>
+      let rc_chunk := (rcs.extract rc_idx (rc_idx + width)).cast (by sorry)
+      let st_new := fullRound params st_acc rc_chunk
+      st_new) st0
+
+  -- Drop the round constants used in the first half of full rounds
+  let rcs := rcs.drop (halfF * width)
+
+  -- Partial rounds
+  let st2 := Fin.foldl numPartialRounds (fun st_acc rc_idx =>
+    let rc_val := rcs[rc_idx]'(sorry)
+    let st_new := partialRound params st_acc rc_val
+    st_new) st1
+
+  -- Drop the round constants used in the partial rounds
+  let rcs := rcs.drop numPartialRounds
+
+  -- Second half of full rounds
+  let st3 := Fin.foldl halfF (fun st_acc rc_idx =>
+    let rc_chunk := (rcs.extract rc_idx (rc_idx + width)).cast (by sorry)
+    let st_new := fullRound params st_acc rc_chunk
+    st_new) st2
+
+  st3
 
 end Poseidon2

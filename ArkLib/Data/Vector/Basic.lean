@@ -207,6 +207,11 @@ def toFinMatrix {m n : ℕ} (matrix : Matrix α m n) : _root_.Matrix (Fin m) (Fi
 def ofFinMatrix {m n : ℕ} (matrix : _root_.Matrix (Fin m) (Fin n) α) : Matrix α m n :=
   Vector.ofFn (fun i => Vector.ofFn (fun j => matrix i j))
 
+/-- Transpose a matrix by swapping rows and columns. -/
+@[simp]
+def transpose {m n : ℕ} (matrix : Matrix α m n) : Matrix α n m :=
+  ofFn (fun j => ofFn (fun i => (matrix.get i).get j))
+
 end Matrix
 
 end Vector
