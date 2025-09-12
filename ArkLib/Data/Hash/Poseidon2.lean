@@ -616,9 +616,6 @@ def partialRound (state : Vector KoalaBear.Field params.width) (roundConstant : 
 @[inline]
 def permute (params : Params) (state : Vector KoalaBear.Field params.width) :
     Vector KoalaBear.Field params.width :=
-  letI width := params.width
-  letI halfF := params.halfNumFullRounds
-  letI numPartialRounds := params.numPartialRounds
   letI rcs := params.roundConstants
 
   -- Initial external linear layer
@@ -626,26 +623,26 @@ def permute (params : Params) (state : Vector KoalaBear.Field params.width) :
 
   -- First half of full rounds
   let st1 : Vector KoalaBear.Field params.width :=
-    Fin.foldl halfF (fun st_acc rc_idx =>
-      let rc_chunk := (rcs.extract rc_idx (rc_idx + width)).cast (by sorry)
+    Fin.foldl params.halfNumFullRounds (fun st_acc rc_idx =>
+      let rc_chunk := (rcs.extract rc_idx (rc_idx + params.width)).cast (by sorry)
       let st_new := fullRound params st_acc rc_chunk
       st_new) st0
 
   -- Drop the round constants used in the first half of full rounds
-  let rcs := rcs.drop (halfF * width)
+  let rcs := rcs.drop (params.halfNumFullRounds * params.width)
 
   -- Partial rounds
-  let st2 := Fin.foldl numPartialRounds (fun st_acc rc_idx =>
+  let st2 := Fin.foldl params.numPartialRounds (fun st_acc rc_idx =>
     let rc_val := rcs[rc_idx]'(sorry)
     let st_new := partialRound params st_acc rc_val
     st_new) st1
 
   -- Drop the round constants used in the partial rounds
-  let rcs := rcs.drop numPartialRounds
+  let rcs := rcs.drop params.numPartialRounds
 
   -- Second half of full rounds
-  let st3 := Fin.foldl halfF (fun st_acc rc_idx =>
-    let rc_chunk := (rcs.extract rc_idx (rc_idx + width)).cast (by sorry)
+  let st3 := Fin.foldl params.halfNumFullRounds (fun st_acc rc_idx =>
+    let rc_chunk := (rcs.extract rc_idx (rc_idx + params.width)).cast (by sorry)
     let st_new := fullRound params st_acc rc_chunk
     st_new) st2
 
