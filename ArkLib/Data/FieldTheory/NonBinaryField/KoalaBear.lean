@@ -4,11 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.ToMathlib.NumberTheory.PrattCertificate
 import ArkLib.Data.FieldTheory.NonBinaryField.Basic
-import Mathlib.FieldTheory.Finite.Basic
-import Mathlib.GroupTheory.OrderOfElement
-import Mathlib.NumberTheory.RootsOfUnity
+import ArkLib.ToMathlib.NumberTheory.PrattCertificate
+import Mathlib.Algebra.Order.Ring.Star
+import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
 
 /-!
   # KoalaBear Field `2^{31} - 2^{24} + 1`
@@ -21,6 +20,9 @@ namespace KoalaBear
 @[reducible]
 def fieldSize : Nat := 2 ^ 31 - 2 ^ 24 + 1
 
+-- 2130706433
+-- #eval fieldSize
+
 abbrev Field := ZMod fieldSize
 
 theorem is_prime : Nat.Prime fieldSize := by
@@ -28,7 +30,7 @@ theorem is_prime : Nat.Prime fieldSize := by
   pratt
 
 /-!
-  ## Constants mirroring the Python API
+  ## Constants
 
   These are convenience constants to match the Python module:
   - `pBits = 31`
@@ -104,19 +106,15 @@ def twoAdicGenerators : List Field :=
 
 @[simp] lemma twoAdicGenerators_length : twoAdicGenerators.length = twoAdicity + 1 := by decide
 
-/-- Accessor for the `2^bits`-th root-of-unity generator. -/
-def twoAdicGenerator (bits : Fin (twoAdicity + 1)) : Field :=
-  -- Cast the index to match the `List` length of the precomputed table
-  twoAdicGenerators.get (Fin.cast twoAdicGenerators_length.symm bits)
+@[simp] lemma twoAdicGenerators_succ_square_eq' (idx : Fin twoAdicity) :
+    twoAdicGenerators[idx.val + 1] ^ 2 = twoAdicGenerators[idx] := by
+  fin_cases idx
+  <;> simp [twoAdicGenerators] <;> decide
 
-/-- Convenience accessor from a `Nat` with proof that `bits ≤ twoAdicity`. -/
-def twoAdicGeneratorNat (bits : Nat) (h : bits ≤ twoAdicity) : Field :=
-  twoAdicGenerator ⟨bits, Nat.lt_succ_of_le h⟩
-
-@[simp] lemma twoAdicGenerator_zero : twoAdicGenerator ⟨0, by decide⟩ = (1 : Field) := by
-  classical
-  simp [twoAdicGenerator, twoAdicGenerators_length]
-  sorry
+@[simp] lemma twoAdicGenerators_succ_square_eq (idx : Nat) (h : idx < twoAdicity) :
+    haveI : idx + 1 < twoAdicGenerators.length := by simp [twoAdicGenerators_length, h]
+    twoAdicGenerators[idx + 1] ^ 2 = twoAdicGenerators[idx] :=
+  twoAdicGenerators_succ_square_eq' ⟨idx, h⟩
 
 /-! Statements requested by the Python spec translation. We leave them with `sorry` proofs
     to be filled later. -/
@@ -143,33 +141,40 @@ lemma coprime_three_fieldSize_sub_one : Nat.Coprime 3 (fieldSize - 1) := by
 
 /-- `twoAdicity` is maximal: `2^(twoAdicity+1)` does not divide `fieldSize - 1`. -/
 lemma twoAdicity_maximal : ¬ (2 ^ (twoAdicity + 1)) ∣ (fieldSize - 1) := by
-  sorry
+  decide
 
 /-- The precomputed element at index `bits` is a primitive `2^bits`-th root of unity. -/
 lemma isPrimitiveRoot_twoAdicGenerator (bits : Fin (twoAdicity + 1)) :
-    IsPrimitiveRoot (twoAdicGenerator bits) (2 ^ (bits : Nat)) := by
+    IsPrimitiveRoot (twoAdicGenerators[bits]) (2 ^ (bits : Nat)) := by
   sorry
 
 /-- As a unit, the precomputed element is a member of `rootsOfUnity (2^bits)`. -/
 lemma twoAdicGenerator_unit_mem_rootsOfUnity
-    (bits : Fin (twoAdicity + 1)) (h : twoAdicGenerator bits ≠ 0) :
-    Units.mk0 (twoAdicGenerator bits) h ∈ rootsOfUnity (2 ^ (bits : Nat)) (Field) := by
+    (bits : Fin (twoAdicity + 1)) (h : twoAdicGenerators[bits] ≠ 0) :
+    Units.mk0 (twoAdicGenerators[bits]) h ∈ rootsOfUnity (2 ^ (bits : Nat)) (Field) := by
   sorry
 
-/-- The order of `twoAdicGenerator bits` equals `2^bits`. -/
-lemma twoAdicGenerator_order (bits : Fin (twoAdicity + 1)) :
-    orderOf (twoAdicGenerator bits) = 2 ^ (bits : Nat) := by
+/-- The power `(twoAdicGenerators[bits])^(2^bits) = 1`. -/
+lemma twoAdicGenerators_pow_twoPow_eq_one (bits : Fin (twoAdicity + 1)) :
+    (twoAdicGenerators[bits]) ^ (2 ^ (bits : Nat)) = (1 : Field) := by
   sorry
 
-/-- The power `(twoAdicGenerator bits)^(2^bits) = 1`. -/
-lemma twoAdicGenerator_pow_twoPow_eq_one (bits : Fin (twoAdicity + 1)) :
-    (twoAdicGenerator bits) ^ (2 ^ (bits : Nat)) = (1 : Field) := by
+/-- If `m < bits`, then `(twoAdicGenerators[bits])^(2^m) ≠ 1`. -/
+lemma twoAdicGenerators_pow_twoPow_ne_one_of_lt
+    {bits : Fin (twoAdicity + 1)} {m : Nat} (hm : m < bits) :
+    (twoAdicGenerators[bits]) ^ (2 ^ m) ≠ (1 : Field) := by
   sorry
 
-/-- If `m < bits`, then `(twoAdicGenerator bits)^(2^m) ≠ 1`. -/
-lemma twoAdicGenerator_pow_twoPow_ne_one_of_lt
-    {bits : Fin (twoAdicity + 1)} {m : Nat} (hm : m < (bits : Nat)) :
-    (twoAdicGenerator bits) ^ (2 ^ m) ≠ (1 : Field) := by
-  sorry
+/-- The order of `twoAdicGenerators[bits]` equals `2^bits`. -/
+lemma twoAdicGenerators_order (bits : Fin (twoAdicity + 1)) :
+    orderOf (twoAdicGenerators[bits]) = 2 ^ (bits : Nat) := by
+  rw [orderOf_eq_of_pow_and_pow_div_prime]
+  · simp
+  · exact twoAdicGenerators_pow_twoPow_eq_one bits
+  · intro m hm hm'
+    have : m = 2 := sorry
+    rw [this]
+    sorry
+    -- exact twoAdicGenerators_pow_twoPow_ne_one_of_lt (by sorry)
 
 end KoalaBear
