@@ -77,9 +77,13 @@ deriving Repr
 
 namespace DomainSeparator
 
+/-- The null character separator between operations in the domain separator (unicode/ASCII value 0)
+  and as such is the only forbidden character in labels. -/
+abbrev SEP_CHAR : Char := Char.ofNat 0
+
 /-- The null byte separator between operations in the domain separator (unicode/ASCII value 0)
   and as such is the only forbidden character in labels. -/
-abbrev SEP_BYTE : String := ⟨[Char.ofNat 0]⟩
+abbrev SEP_BYTE : String := ⟨[SEP_CHAR]⟩
 
 /-- Sponge operations.
 
@@ -127,6 +131,22 @@ inductive Op where
   | Ratchet
 deriving DecidableEq, Repr
 
+namespace Op
+
+/-- Construct a new `Op` from a character `id` and a count number `count : Option Nat`.
+Returns error if the combination of `(id, count)` is not correct. -/
+def new (id : Char) (count : Option Nat) : Except DomainSeparatorMismatch Op :=
+  match (id, count) with
+  | ('A', some c) => if c > 0 then pure (Absorb c) else .error ⟨"Invalid tag"⟩
+  | ('H', none) => pure Hint
+  | ('H', some 0) => pure Hint
+  | ('R', none) => pure Ratchet
+  | ('R', some 0) => pure Ratchet
+  | ('S', some c) => if c > 0 then pure (Squeeze c) else .error ⟨"Invalid tag"⟩
+  | _ => .error ⟨"Invalid tag"⟩
+
+end Op
+
 variable {H : Type*} {U : Type} [SpongeUnit U] [DuplexSpongeInterface U H]
 
 /-- Create a new DomainSeparator with the domain separator.
@@ -136,9 +156,11 @@ Rust interface:
 pub fn new(session_identifier: &str) -> Self
 ```
 -/
-def new (sessionIdentifier : String) : DomainSeparator U H :=
-  -- TODO: Add assertion that sessionIdentifier doesn't contain SEP_BYTE
-  { io := sessionIdentifier }
+def new (sessionIdentifier : String) : Except DomainSeparatorMismatch (DomainSeparator U H) :=
+  if sessionIdentifier.contains SEP_CHAR then
+    .error ⟨"Domain separator cannot contain the separator BYTE."⟩
+  else
+    pure { io := sessionIdentifier }
 
 /-- Create a DomainSeparator from a string directly.
 
@@ -160,7 +182,7 @@ pub fn absorb(self, count: usize, label: &str) -> Self
 def absorb (ds : DomainSeparator U H) (count : Nat) (label : String) : DomainSeparator U H :=
   -- TODO: Add assertions:
   -- - count > 0
-  -- - label doesn't contain SEP_BYTE
+  -- - label doesn't contain SEP_CHAR
   -- - label doesn't start with a digit
   { io := ds.io ++ SEP_BYTE ++ s!"A{count}" ++ label }
 
@@ -172,7 +194,7 @@ pub fn hint(self, label: &str) -> Self
 ```
 -/
 def hint (ds : DomainSeparator U H) (label : String) : DomainSeparator U H :=
-  -- TODO: Add assertion that label doesn't contain SEP_BYTE
+  -- TODO: Add assertion that label doesn't contain SEP_CHAR
   { io := ds.io ++ SEP_BYTE ++ "H" ++ label }
 
 /-- Squeeze `count` native elements.
@@ -185,7 +207,7 @@ pub fn squeeze(self, count: usize, label: &str) -> Self
 def squeeze (ds : DomainSeparator U H) (count : Nat) (label : String) : DomainSeparator U H :=
   -- TODO: Add assertions:
   -- - count > 0
-  -- - label doesn't contain SEP_BYTE
+  -- - label doesn't contain SEP_CHAR
   -- - label doesn't start with a digit
   { io := ds.io ++ SEP_BYTE ++ s!"S{count}" ++ label }
 
