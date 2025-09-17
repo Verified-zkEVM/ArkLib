@@ -54,7 +54,7 @@ lemma schwartz_zippel_of_fintype {p : MvPolynomial σ R} (hp : p ≠ 0) (S : σ 
           simpa [this]
         · simp [eval_rename, Function.comp_assoc] at h2
           exact h2
-  · exact prod_equiv equiv (by simp [Function.comp_assoc]) (by simp)
+  · exact prod_equiv equiv (by simp) (by simp)
   · refine sum_equiv equiv (by simp) ?_
     simp; intro i; congr; symm
     exact degreeOf_rename_of_injective (Equiv.injective equiv) i
@@ -78,7 +78,7 @@ variable {σ : Type*}
 -- Need more theorems about `MvPolynomial.vars`
 
 -- Equivalence between `{p : R[X σ] | p.vars ⊆ s}` and `R[X {x : σ | x ∈ s}]`?
-#check MvPolynomial.exists_fin_rename
+-- #check MvPolynomial.exists_fin_rename
 
 instance (s : Finset σ) : Fintype { x : σ | x ∈ s } := by exact Set.fintypeMemFinset s
 

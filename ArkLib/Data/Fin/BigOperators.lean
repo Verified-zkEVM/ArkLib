@@ -128,6 +128,36 @@ lemma Fin.le_succ (a : Fin r) (h_a_add_1 : a + 1 < r) : a ≤ a + 1 := by
       simp only at h_i_add_1
       contradiction
 
+@[elab_as_elim] def Fin.predRecOnSameFinType {motive : Fin r → Sort _}
+    (last : motive (⟨r - 1, by
+      have h_r_ne_0: r ≠ 0 := by exact NeZero.ne r
+      omega
+    ⟩ : Fin r))
+    (succ : ∀ i : Fin r, i.val > 0 → motive i → motive (⟨i.val - 1, by omega⟩ : Fin r))
+    (i : Fin r): motive i := by
+  have h_r_ne_0: r ≠ 0 := by exact NeZero.ne r
+  if h_i_eq_last: i = ⟨r - 1, by omega⟩ then
+    subst h_i_eq_last
+    exact last
+  else
+    have h_i_ne_last: i < ⟨r - 1, by omega⟩ := by
+      have h := Fin.lt_last_iff_ne_last (n:=r - 1) (a:=⟨i, by omega⟩)
+      simp only [Fin.last, mk_lt_mk, ne_eq, mk.injEq] at h
+      have h_i_val_ne_eq: (i.val ≠ r - 1) := by
+        push_neg at h_i_eq_last
+        exact Fin.val_ne_of_ne h_i_eq_last
+      apply Fin.mk_lt_of_lt_val
+      apply h.mpr
+      exact h_i_val_ne_eq
+    -- succ : (i : Fin r) → ↑i - 1 ≥ 0 → motive i → motive ⟨↑i - 1, ⋯⟩
+    let i_next := i.val + 1
+    have h_i_next_gt_0 : i_next > 0 := by omega
+    have h_i_next_sub_one: i_next - 1 = i.val := by omega
+    have motive_next := Fin.predRecOnSameFinType last succ ⟨i_next, by omega⟩
+    have motive_next_ind := succ (i := ⟨i_next, by omega⟩) (by omega) (motive_next)
+    convert motive_next_ind
+termination_by (r - 1 - i.val)
+
 -- The theorem statement and its proof.
 -- TODO: state a more generalized and reusable version of this, where f is from Fin r → M
 theorem Fin.sum_univ_odd_even {n : ℕ} {M : Type*} [AddCommMonoid M] (f : ℕ → M) :

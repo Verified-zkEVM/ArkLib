@@ -1,0 +1,31 @@
+name = "Arklib"
+lintDriver = "batteries/runLinter"
+defaultTargets = ["ArkLib"]
+
+[leanOptions]
+pp.unicode.fun = true
+autoImplicit = false
+weak.linter.mathlibStandardSet = true
+weak.linter.style.longFile = 1500
+
+[moreServerOptions]
+linter.mathlibStandardSet = true
+linter.style.longFile = 1500
+
+[[require]]
+name = "VCVio"
+git = "https://github.com/Verified-zkEVM/VCV-io"
+rev = "v4.22.0"
+
+[[require]]
+name = "«doc-gen4»"
+git = "https://github.com/leanprover/doc-gen4"
+rev = "v4.22.0"
+
+[[require]]
+name = "checkdecls"
+git = "https://github.com/PatrickMassot/checkdecls.git"
+rev = "lean4.18.0"
+
+[[lean_lib]]
+name = "ArkLib"

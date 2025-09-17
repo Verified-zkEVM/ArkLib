@@ -21,14 +21,14 @@ open Classical in
 /--
 Hamming ball of radius `r` centred at a word `y`.
 -/
-def hammingBall (C : Code ι F) (y : ι → F) (r : ℕ) : Code ι F :=
+def hammingBall (C : Code ι F) (y : ι → F) (r : ℕ) : Set (ι → F) :=
   { c | c ∈ C ∧ hammingDist y c ≤ r }
 
 open Classical in
 /--
 Ball of radius `r` centred at a word `y` with respect to the relative Hamming distance.
 -/
-def relHammingBall (C : Code ι F) (y : ι → F) (r : ℝ)  : Code ι F :=
+def relHammingBall (C : Code ι F) (y : ι → F) (r : ℝ) : Set (ι → F) :=
   { c | c ∈ C ∧ Code.relHammingDist y c ≤ r }
 
 /--
@@ -57,18 +57,29 @@ The code `C` is `(r,ℓ)`-list decodable.
 def listDecodable (C : Code ι F) (r : ℝ) (ℓ : ℝ) : Prop :=
   ∀ y : ι → F, listOfCloseCodewordsRel C y r ≤ ℓ
 
+/--
+A code `C` is uniquely decodable up to a relative distance `r` if for any word `y : ι → F`,
+there is at most one codeword in `C` within a relative Hamming distance of `r`.
+This is a special case of list decodability where the list size `ℓ` is 1.
+-/
+def uniqueDecodable (C : Code ι F) (r : ℝ) : Prop :=
+  listDecodable C r 1
+
 section Lemmas
 
 variable {C : Code ι F} {y : ι → F} {n : ℕ} {r : ℝ} {ℓ : ℝ}
 
 lemma listOfCloseCodewords_eq_zero :
   listOfCloseCodewords C y n = 0 ↔ IsEmpty (hammingBall C y n) ∨ Infinite (hammingBall C y n) := by
-  simp [listOfCloseCodewords, Nat.card_eq_zero]
+  simp [listOfCloseCodewords, Nat.card_eq_zero] -- this was previously a valid proof?
+  sorry
+
 
 lemma listOfCloseCodewordsRel_eq_zero :
   listOfCloseCodewordsRel C y r = 0 ↔
   IsEmpty (relHammingBall C y r) ∨ Infinite (relHammingBall C y r) := by
-  simp [listOfCloseCodewordsRel, Nat.card_eq_zero]
+  simp [listOfCloseCodewordsRel, Nat.card_eq_zero] -- this was previously a valid proof?
+  sorry
 
 end Lemmas
 

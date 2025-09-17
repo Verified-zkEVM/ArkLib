@@ -7,6 +7,8 @@ Authors: Chung Thai Nguyen, Quang Dao
 import ArkLib.Data.Nat.Bitwise
 import ArkLib.Data.Polynomial.Frobenius
 import ArkLib.Data.Polynomial.MonomialBasis
+import Mathlib.LinearAlgebra.StdBasis
+
 
 /-!
 # Novel Polynomial Basis
@@ -40,7 +42,7 @@ algebra over its prime-characteristic subfield `𝔽q`, and an `𝔽q`-basis `β
 
 set_option linter.style.longFile 1600
 
-open Polynomial FiniteDimensional Finset
+open Polynomial FiniteDimensional Finset Module
 
 namespace AdditiveNTT
 
@@ -647,7 +649,7 @@ lemma rootMultiplicity_prod_W_comp_X_sub_C
   have h_a: ∀ x: 𝔽q, a = shift_up x (a - x • β i) := by
     intro x
     rw [hshift_up]
-    exact Lean.Grind.IntModule.sub_eq_iff.mp rfl
+    simp_all only [ne_eq, implies_true, sub_add_cancel, f, roots_f, shift_up]
   conv_lhs =>
     enter [2, x] -- focus on the inner Multiset.count
     rw [h_a x]
@@ -1380,7 +1382,7 @@ lemma degree_Xⱼ
         exact h_res
       )
     simp only [h_sum]
-    have h_bit_repr_j := Nat.getBit_repr (ℓ := ℓ) (h_ℓ := by omega) (j := j) (by omega)
+    have h_bit_repr_j := Nat.getBit_repr (ℓ := ℓ) (j := j) (by omega)
     rw [←h_bit_repr_j]
 
 /-- The basis vectors `{Xⱼ(X), j ∈ Fin 2^ℓ}` forms a basis for `L⦃<2^ℓ⦄[X]` -/

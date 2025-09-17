@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 
 import Mathlib.Data.Fin.Basic
-import SEq.Tactic.DepRewrite
+import Mathlib.Tactic.DepRewrite
 
 /-! # Dependent casts
 

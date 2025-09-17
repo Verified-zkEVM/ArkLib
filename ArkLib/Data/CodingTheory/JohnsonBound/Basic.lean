@@ -20,53 +20,53 @@ variable {n : ℕ}
          {B : Finset (Fin n → F)} {v : Fin n → F}
 
 /--
-The denominator of the bound from theorem 3.1. 
+The denominator of the bound from theorem 3.1.
 -/
 def JohnsonDenominator (B : Finset (Fin n → F)) (v : Fin n → F) : ℚ :=
-  let e := e B v 
+  let e := e B v
   let d := d B
   let q : ℚ := Fintype.card F
   let frac := q / (q - 1)
   (1- frac * e/n) ^ 2 - (1 - frac * d/n)
 
 lemma johnson_denominator_def :
-  JohnsonDenominator B v = ((1 - ((Fintype.card F) / (Fintype.card F - 1)) * (e B v / n)) ^ 2 
+  JohnsonDenominator B v = ((1 - ((Fintype.card F) / (Fintype.card F - 1)) * (e B v / n)) ^ 2
       - (1 - ((Fintype.card F) / (Fintype.card F - 1)) * (d B/n))) := by
   simp [JohnsonDenominator]
   field_simp
 
-/-- 
+/--
 The bound from theorem 3.1 makes sense only if the denominator is positive.
 This condition ensures that holds.
 -/
 def JohnsonConditionStrong (B : Finset (Fin n → F)) (v : Fin n → F) : Prop :=
-  let e := e B v 
+  let e := e B v
   let d := d B
   let q : ℚ := Fintype.card F
   let frac := q / (q - 1)
-  (1 - frac * d/n) < (1- frac * e/n) ^ 2 
+  (1 - frac * d/n) < (1- frac * e/n) ^ 2
 
 /--
 The function used for q-ary Johnson Bound.
 -/
-noncomputable def J (q δ : ℚ) : ℝ := 
+noncomputable def J (q δ : ℚ) : ℝ :=
   let frac := q / (q - 1)
-  (1 / frac) * (1 - Real.sqrt (1 - frac * δ)) 
+  (1 / frac) * (1 - Real.sqrt (1 - frac * δ))
 
 lemma sqrt_le_J {q x : ℚ} :
   1 - ((1-x) : ℝ).sqrt ≤ J q x := by sorry
 
-/-- 
+/--
 The q-ary Johnson bound.
 -/
 def JohnsonConditionWeak (B : Finset (Fin n → F)) (e : ℕ) : Prop :=
   let d := sInf { d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ hammingDist u v = d }
   let q : ℚ := Fintype.card F
-  (e : ℚ) / n < J q (d / n) 
+  (e : ℚ) / n < J q (d / n)
 
-lemma johnson_condition_weak_implies_strong {B : Finset (Fin n → F)} {v : Fin n → F} {e : ℕ} 
-  (h : JohnsonConditionWeak B e)
-  : 
+lemma johnson_condition_weak_implies_strong
+  {B : Finset (Fin n → F)} {v : Fin n → F} {e : ℕ}
+  (h : JohnsonConditionWeak B e) :
   JohnsonConditionStrong (B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)) v := by
   sorry
 
@@ -101,7 +101,7 @@ private lemma johnson_condition_strong_implies_2_le_B_card
   have h' := JohnsonBound.abs_one_sub_div_le_one (v := v) (a := a) (by omega)
   exact absurd (lt_of_lt_of_le (h ▸ h_johnson) h') (lt_irrefl _)
 
-/-- 
+/--
 `JohnsonConditionStrong` is equvalent to `JohnsonDenominator` being positive.
 -/
 lemma johnson_condition_strong_iff_johnson_denom_pos {B : Finset (Fin n → F)} {v : Fin n → F} :
@@ -110,14 +110,14 @@ lemma johnson_condition_strong_iff_johnson_denom_pos {B : Finset (Fin n → F)} 
 
 /--
 Theorem 3.1.
---/
+-/
 theorem johnson_bound [Field F]
   (h_condition : JohnsonConditionStrong B v)
   :
   let d := d B
   let q : ℚ := Fintype.card F
   let frac := q / (q - 1)
-  B.card ≤ (frac * d/n) / JohnsonDenominator B v 
+  B.card ≤ (frac * d/n) / JohnsonDenominator B v
   := by
   suffices B.card * JohnsonDenominator B v ≤
            Fintype.card F / (Fintype.card F - 1) * d B / n by
@@ -126,19 +126,19 @@ theorem johnson_bound [Field F]
     convert this using 1
     field_simp; rw [mul_div_mul_right]; linarith
   rw [johnson_denominator_def]
-  exact JohnsonBound.johnson_bound_lemma 
-    (johnson_condition_strong_implies_n_pos h_condition) 
-    (johnson_condition_strong_implies_2_le_B_card h_condition) 
+  exact JohnsonBound.johnson_bound_lemma
+    (johnson_condition_strong_implies_n_pos h_condition)
+    (johnson_condition_strong_implies_2_le_B_card h_condition)
     (johnson_condition_strong_implies_2_le_F_card h_condition)
 
 /--
-Alphabet-free Johnson bound from [codingtheory]. 
+Alphabet-free Johnson bound from [codingtheory].
 ## References
 
 * [Venkatesan Guruswami, Atri Rudra, Madhu Sudan, *Essential Coding Theory*][codingtheory]
 -/
-theorem johnson_bound_alphabet_free [Field F] [DecidableEq F] 
-  {B : Finset (Fin n → F)} 
+theorem johnson_bound_alphabet_free [Field F]
+  {B : Finset (Fin n → F)}
   {v : Fin n → F}
   {e : ℕ}
   :

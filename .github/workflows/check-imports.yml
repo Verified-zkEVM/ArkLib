@@ -1,0 +1,20 @@
+name: Check Imports
+
+on:
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  check-imports:
+    name: Check Library File Imports
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update ArkLib.lean
+        run: ./scripts/update-lib.sh
+
+      - name: Check that all files are imported
+        run: git diff --exit-code ArkLib.lean

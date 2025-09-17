@@ -46,12 +46,12 @@ variable {n : ℕ}
 
 namespace ProtocolSpec
 
-/-- Switch the type of prover's messages in a protocol specification. -/
+/-- Switch the type of prover's messages in a protocol specification. The directions are preserved.
+-/
 def renameMessage (pSpec : ProtocolSpec n) (NewMessage : pSpec.MessageIdx → Type) :
-    ProtocolSpec n := fun i =>
-  if h : (pSpec i).1 = Direction.P_to_V then
-    ⟨(pSpec i).1, NewMessage ⟨i, h⟩⟩
-  else pSpec i
+    ProtocolSpec n :=
+  ⟨ pSpec.dir,
+    fun i => if h : pSpec.dir i = Direction.P_to_V then NewMessage ⟨i, h⟩ else pSpec.«Type» i⟩
 
 -- def BCSTransform (pSpec : ProtocolSpec n)
 --     {queries : List ((i : pSpec.MessageIdx) × (pSpec.Message i))}

@@ -116,7 +116,7 @@ We define some supporting definitions for a protocol specification.
         \item $\pSpec.\mathsf{Message}\ i := (i : \pSpec.\MessageIdx) \to \pSpec.\Type\ i.\mathsf{val}$ is an indexed family of message types in the protocol.
         \item $\pSpec.\mathsf{Challenge}\ i := (i : \pSpec.\ChallengeIdx) \to \pSpec.\Type\ i.\mathsf{val}$ is an indexed family of challenge types in the protocol.
     \end{itemize}
-    \lean{ProtocolSpec.getDir, ProtocolSpec.getType, ProtocolSpec.MessageIdx, ProtocolSpec.ChallengeIdx, ProtocolSpec.Message, ProtocolSpec.Challenge}
+    \lean{ProtocolSpec.dir, ProtocolSpec.Type, ProtocolSpec.MessageIdx, ProtocolSpec.ChallengeIdx, ProtocolSpec.Message, ProtocolSpec.Challenge}
     \uses{def:protocol_spec}
 \end{definition}
 
@@ -175,7 +175,7 @@ We define some supporting definitions for a protocol specification.
         \[ \mathsf{output} : \mathsf{PrvState}(\Fin.\mathsf{last}(n)) \to \StmtOut \times \WitOut \]
         that produces the final output statement and witness from the prover's final state.
     \end{itemize}
-    \lean{Prover, ProverState, ProverIn, ProverRound, ProverOut}
+    \lean{Prover, ProverState, ProverInput, ProverRound, ProverOutput}
 \end{definition}
 
 \begin{definition}[Type Signature of an Oracle Prover]
@@ -310,8 +310,8 @@ about the execution, such as the log of oracle queries for the shared oracles, f
 
     where $\mathsf{processRound}$ handles individual rounds by either:
     \begin{itemize}
-        \item \textbf{Verifier Challenge} ($\pSpec.\mathsf{getDir}(j) = \mathsf{V\_to\_P}$): Query for a challenge and update prover state
-        \item \textbf{Prover Message} ($\pSpec.\mathsf{getDir}(j) = \mathsf{P\_to\_V}$): Generate message via $\mathsf{sendMessage}$ and update state
+        \item \textbf{Verifier Challenge} ($\pSpec.\mathsf{dir}(j) = \mathsf{V\_to\_P}$): Query for a challenge and update prover state
+        \item \textbf{Prover Message} ($\pSpec.\mathsf{dir}(j) = \mathsf{P\_to\_V}$): Generate message via $\mathsf{sendMessage}$ and update state
     \end{itemize}
 
     Returns the transcript up to round $i$ and the prover's state after round $i$.
@@ -501,7 +501,7 @@ For knowledge soundness, we need to consider different types of extractors that 
     along with the output statement and witness.
 
     This models adversaries in the state-restoration setting where challenges can be queried programmably.
-    \lean{Prover.StateRestoration}
+    \lean{Prover.StateRestoration.KnowledgeSoundness}
     \uses{def:transcript}
 \end{definition}
 
@@ -653,7 +653,7 @@ To define round-by-round (knowledge) soundness, we need to define the notion of 
 %     \label{def:monotone_rbr_extractor}
 %     A round-by-round extractor is \textbf{monotone} if its success probability on a given query log
 %     is the same as the success probability on any extension of that query log.
-%     \lean{Extractor.RoundByRound.IsMonotone}
+%     \lean{Extractor.RoundByRoundOneShot.IsMonotone}
 %     \uses{def:rbr_extractor}
 % \end{definition}
 

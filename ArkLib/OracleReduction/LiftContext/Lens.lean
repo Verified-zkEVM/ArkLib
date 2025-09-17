@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.OracleReduction.Security.Basic
-import ToMathlib.PFunctor.Basic
+import ToMathlib.PFunctor.Lens.Basic
 
 /-!
   ## Lens between Input and Output Contexts of (Oracle) Reductions
@@ -20,7 +20,7 @@ import ToMathlib.PFunctor.Basic
   witnesses are trivial.
 -/
 
-open OracleSpec OracleComp
+open OracleSpec OracleComp PFunctor
 
 /-- A lens for transporting input and output statements for the verifier of a (non-oracle)
     reduction.
@@ -36,7 +36,8 @@ open OracleSpec OracleComp
 -/
 @[inline, reducible]
 def Statement.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
-  := PFunctor.Lens (OuterStmtIn y^ OuterStmtOut) (InnerStmtIn y^ InnerStmtOut)
+  := PFunctor.Lens (OuterStmtIn X^ OuterStmtOut)
+                   (InnerStmtIn X^ InnerStmtOut)
 
 namespace Statement.Lens
 
@@ -138,8 +139,8 @@ end OracleStatement.Lens
   practice as well, oftentimes a lens between only witnesses are not enough. -/
 @[inline, reducible]
 def Witness.Lens (OuterStmtIn InnerStmtOut OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type)
-    := PFunctor.Lens ((OuterStmtIn × OuterWitIn) y^ OuterWitOut)
-                     (InnerWitIn y^ (InnerStmtOut × InnerWitOut))
+    := PFunctor.Lens ((OuterStmtIn × OuterWitIn) X^ OuterWitOut)
+                     (InnerWitIn X^ (InnerStmtOut × InnerWitOut))
 
 namespace Witness.Lens
 
@@ -176,13 +177,13 @@ variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
 /-- Projection of the context. -/
 @[inline, reducible]
 def proj : OuterStmtIn × OuterWitIn → InnerStmtIn × InnerWitIn :=
-  fun ctxIn => ⟨lens.stmt.proj ctxIn.1, lens.wit.proj ctxIn⟩
+  fun ctxIn => ⟨lens.stmt.toFunA ctxIn.1, lens.wit.toFunA ctxIn⟩
 
 /-- Lifting of the context. -/
 @[inline, reducible]
 def lift : OuterStmtIn × OuterWitIn → InnerStmtOut × InnerWitOut → OuterStmtOut × OuterWitOut :=
   fun ctxIn ctxOut =>
-    ⟨lens.stmt.lift ctxIn.1 ctxOut.1, lens.wit.lift ctxIn ctxOut⟩
+    ⟨lens.stmt.toFunB ctxIn.1 ctxOut.1, lens.wit.toFunB ctxIn ctxOut⟩
 
 end Context.Lens
 
@@ -241,8 +242,8 @@ and requires in addition the outer input statement.
 -/
 @[inline, reducible]
 def Witness.InvLens (OuterStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type)
-    := PFunctor.Lens ((OuterStmtIn × OuterWitOut) y^ OuterWitIn)
-                     (InnerWitOut y^ InnerWitIn)
+    := PFunctor.Lens ((OuterStmtIn × OuterWitOut) X^ OuterWitIn)
+                     (InnerWitOut X^ InnerWitIn)
 
 namespace Witness.InvLens
 

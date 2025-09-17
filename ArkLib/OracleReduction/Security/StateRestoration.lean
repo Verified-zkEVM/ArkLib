@@ -21,28 +21,55 @@ variable {ι : Type}
 
 namespace Prover
 
-/-- A **state-restoration** prover in a reduction is a modified prover that has query access to
-  challenge oracles that can return the `i`-th challenge, for all `i : pSpec.ChallengeIdx`, given
-  the input statement and the transcript up to that point.
+/-- The type for the **state-restoration** prover in the soundness game.
 
-  It further takes in the input statement and witness, and outputs a full transcript of interaction,
-  along with the output statement and witness. -/
-def StateRestoration (oSpec : OracleSpec ι)
-    (StmtIn StmtOut WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) :=
-  OracleComp (oSpec ++ₒ (srChallengeOracle StmtIn pSpec))
-      (StmtIn × (StmtOut × WitOut) × pSpec.Messages)
+Such a prover has query access to challenge oracles that can return the `i`-th challenge, for all
+`i : pSpec.ChallengeIdx`, given the input statement and the transcript up to that point.
+It returns an input statement, and a full transcript of interaction.
+
+This is different from the state-restoration prover type in the knowledge soundness game, which
+additionally needs to output an output witness. -/
+def StateRestoration.Soundness (oSpec : OracleSpec ι) (StmtIn : Type)
+    {n : ℕ} (pSpec : ProtocolSpec n) :=
+  OracleComp (oSpec ++ₒ (srChallengeOracle StmtIn pSpec)) (StmtIn × pSpec.Messages)
+
+/-- The type for the **state-restoration** prover in the knowledge soundness game.
+
+Such a prover has query access to challenge oracles that can return the `i`-th challenge, for all
+`i : pSpec.ChallengeIdx`, given the input statement and the transcript up to that point.
+It returns an input statement, a full transcript of interaction, and an output witness.
+
+Note that the output witness is an addition compared to the state-restoration soundness prover
+type. -/
+def StateRestoration.KnowledgeSoundness (oSpec : OracleSpec ι) (StmtIn WitOut : Type)
+    {n : ℕ} (pSpec : ProtocolSpec n) :=
+  OracleComp (oSpec ++ₒ (srChallengeOracle StmtIn pSpec)) (StmtIn × pSpec.Messages × WitOut)
 
 end Prover
 
 namespace OracleProver
 
+/-- The type for the **state-restoration** oracle prover (in an oracle reduction) in the soundness
+  game.
+
+This is a wrapper around the state-restoration prover type in the soundness game for the associated
+reduction. -/
 @[reducible]
-def StateRestoration (oSpec : OracleSpec ι)
+def StateRestoration.Soundness (oSpec : OracleSpec ι)
     (StmtIn : Type) {ιₛᵢ : Type} (OStmtIn : ιₛᵢ → Type)
-    (StmtOut : Type) {ιₛₒ : Type} (OStmtOut : ιₛₒ → Type) (WitOut : Type)
     {n : ℕ} {pSpec : ProtocolSpec n} :=
-  Prover.StateRestoration oSpec
-    (StmtIn × (∀ i, OStmtIn i)) (StmtOut × (∀ i, OStmtOut i)) WitOut pSpec
+  Prover.StateRestoration.Soundness oSpec (StmtIn × (∀ i, OStmtIn i)) pSpec
+
+/-- The type for the **state-restoration** oracle prover (in an oracle reduction) in the knowledge
+  soundness game.
+
+This is a wrapper around the state-restoration prover type in the knowledge soundness game for the
+associated reduction. -/
+@[reducible]
+def StateRestoration.KnowledgeSoundness (oSpec : OracleSpec ι)
+    (StmtIn : Type) {ιₛᵢ : Type} (OStmtIn : ιₛᵢ → Type) (WitOut : Type)
+    {n : ℕ} {pSpec : ProtocolSpec n} :=
+  Prover.StateRestoration.KnowledgeSoundness oSpec (StmtIn × (∀ i, OStmtIn i)) WitOut pSpec
 
 end OracleProver
 
@@ -70,19 +97,27 @@ variable {oSpec : OracleSpec ι}
   (init : ProbComp (srChallengeOracle StmtIn pSpec).FunctionType)
   (impl : QueryImpl oSpec (StateT (srChallengeOracle StmtIn pSpec).FunctionType ProbComp))
 
-namespace Prover.StateRestoration
-
-/-- The state-restoration game. Basically a wrapper around the state-restoration prover to
-derive the full transcript from the messages output by the prover, with the challenges computed
-from the state-restoration oracle. -/
-def srGame (P : Prover.StateRestoration oSpec StmtIn StmtOut WitOut pSpec) :
+/-- The state-restoration game for soundness. Basically a wrapper around the state-restoration
+  prover to derive the full transcript from the messages output by the prover, with the challenges
+  computed from the state-restoration oracle. -/
+def srSoundnessGame (P : Prover.StateRestoration.Soundness oSpec StmtIn pSpec) :
     OracleComp (oSpec ++ₒ (srChallengeOracle StmtIn pSpec))
-      (StmtIn × WitOut × pSpec.FullTranscript) := do
-  let ⟨stmtIn, (_, witOut), messages⟩ ← P
+      (pSpec.FullTranscript × StmtIn) := do
+  let ⟨stmtIn, messages⟩ ← P
   let transcript ← messages.deriveTranscriptSR stmtIn
-  return ⟨stmtIn, witOut, transcript⟩
+  return ⟨transcript, stmtIn⟩
 
-end Prover.StateRestoration
+/-- The state-restoration game for knowledge soundness. Basically a wrapper around the
+    state-restoration prover (for knowledge soundness) to derive the full transcript from the
+    messages output by the prover, with the challenges computed from the state-restoration oracle.
+-/
+def srKnowledgeSoundnessGame
+    (P : Prover.StateRestoration.KnowledgeSoundness oSpec StmtIn WitOut pSpec) :
+    OracleComp (oSpec ++ₒ (srChallengeOracle StmtIn pSpec))
+      (pSpec.FullTranscript × StmtIn × WitOut) := do
+  let ⟨stmtIn, messages, witOut⟩ ← P
+  let transcript ← messages.deriveTranscriptSR stmtIn
+  return ⟨transcript, stmtIn, witOut⟩
 
 namespace Verifier
 
@@ -93,29 +128,29 @@ def soundness
     (langIn : Set StmtIn) (langOut : Set StmtOut)
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (srSoundnessError : ENNReal) : Prop :=
-  ∀ srProver : Prover.StateRestoration oSpec StmtIn StmtOut WitOut pSpec,
+  ∀ srProver : Prover.StateRestoration.Soundness oSpec StmtIn pSpec,
   [ fun ⟨stmtIn, stmtOut⟩ => stmtOut ∈ langOut ∧ stmtIn ∉ langIn |
     do
     (simulateQ (impl ++ₛₒ srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
         <| (do
-    let ⟨stmtIn, _, transcript⟩ ← srProver.srGame
+    let ⟨transcript, stmtIn⟩ ← srSoundnessGame srProver
     let stmtOut ← liftComp (verifier.run stmtIn transcript) _
     return (stmtIn, stmtOut))).run' (← init)
   ] ≤ srSoundnessError
 
--- State-restoration knowledge soundness (w/ straightline extractor)
+/-- State-restoration knowledge soundness (w/ straightline extractor). -/
 def knowledgeSoundness
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (srKnowledgeSoundnessError : ENNReal) : Prop :=
   ∃ srExtractor : Extractor.StateRestoration oSpec StmtIn WitIn WitOut pSpec,
-  ∀ srProver : Prover.StateRestoration oSpec StmtIn StmtOut WitOut pSpec,
+  ∀ srProver : Prover.StateRestoration.KnowledgeSoundness oSpec StmtIn WitOut pSpec,
     [ fun ⟨stmtIn, witIn, stmtOut, witOut⟩ =>
         (stmtOut, witOut) ∈ relOut ∧ (stmtIn, witIn) ∉ relIn |
       do
       (simulateQ (impl ++ₛₒ srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
           <| (do
-            let ⟨stmtIn, witOut, transcript⟩ ← srProver.srGame
+            let ⟨transcript, stmtIn, witOut⟩ ← srKnowledgeSoundnessGame srProver
             let stmtOut ← liftComp (verifier.run stmtIn transcript) _
             let witIn ← srExtractor stmtIn witOut transcript default default
             return (stmtIn, witIn, stmtOut, witOut))).run' (← init)

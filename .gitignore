@@ -14,10 +14,21 @@
 *.bbl
 *.blg
 
-# LaTeX PDF files for blueprint
-# *print.pdf
-/blueprint/src/web.pdf
-
 .nvim.lua
+
+# Print files for local viewing
+/blueprint/print/
+
 # Web files for local viewing
 /blueprint/web/
+
+# Print file in blueprint src
+/blueprint/src/print.pdf
+
+/.claude/
+/.cursor/
+/.venv/
+/.vscode/
+
+# Generated dependency analysis files
+/dependency_graphs/

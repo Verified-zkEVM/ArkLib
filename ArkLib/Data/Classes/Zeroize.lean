@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import Mathlib.Algebra.Notation.Pi
+-- Note: Zero.Zero seems to come from Init.Prelude so we could maybe do without the Mathlib import here?
+import Mathlib.Algebra.Notation.Pi.Basic
 
 /-!
   # `Zeroize` class

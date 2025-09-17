@@ -82,11 +82,11 @@ def Prover.processRoundFS [∀ i, VCVCompatible (pSpec.Challenge i)] (j : Fin n)
       OracleComp (oSpec ++ₒ fsChallengeOracle StmtIn pSpec)
         (pSpec.MessagesUpTo j.succ × StmtIn × prover.PrvState j.succ) := do
   let ⟨messages, stmtIn, state⟩ ← currentResult
-  match hDir : pSpec.getDir j with
+  match hDir : pSpec.dir j with
   | .V_to_P => do
+    let f ← prover.receiveChallenge ⟨j, hDir⟩ state
     let challenge ← query (spec := fsChallengeOracle StmtIn pSpec) ⟨j, hDir⟩ ⟨stmtIn, messages⟩
-    letI newState := prover.receiveChallenge ⟨j, hDir⟩ state challenge
-    return ⟨messages.extend hDir, stmtIn, newState⟩
+    return ⟨messages.extend hDir, stmtIn, f challenge⟩
   | .P_to_V => do
     let ⟨msg, newState⟩ ← prover.sendMessage ⟨j, hDir⟩ state
     return ⟨messages.concat hDir msg, stmtIn, newState⟩
@@ -121,7 +121,7 @@ def Prover.fiatShamir (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
     return ⟨messages, state⟩
   -- This function is never invoked so we apply the elimination principle
   receiveChallenge | ⟨0, h⟩ => nomatch h
-  output := P.output
+  output := fun st => (P.output st).liftComp _
 
 /-- The (slow) Fiat-Shamir transformation for the verifier. -/
 def Verifier.fiatShamir (V : Verifier oSpec StmtIn StmtOut pSpec) :
@@ -139,6 +139,14 @@ def Reduction.fiatShamir (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
       StmtIn WitIn StmtOut WitOut where
   prover := R.prover.fiatShamir
   verifier := R.verifier.fiatShamir
+
+section Execution
+
+-- Show that the Fiat-Shamir prover's run gives the same output as the original prover's run
+
+
+
+end Execution
 
 section Security
 

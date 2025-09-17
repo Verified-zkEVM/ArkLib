@@ -58,7 +58,9 @@ class Sampleable (α : Type) extends VCVCompatible α, SelectableType α
 
 instance {α : Type} [Sampleable α] : DecidableEq α := inferInstance
 
-/-- Enum type for the direction of a round in a protocol specification -/
+/-- Enum type for the direction of a round in a protocol specification. It is either `.P_to_V`
+(the prover sends a message to the verifier) or `.V_to_P` (the verifier sends a challenge to the
+prover). -/
 inductive Direction where
   | P_to_V  -- Message
   | V_to_P -- Challenge

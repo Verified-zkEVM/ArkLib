@@ -11,7 +11,7 @@ import ArkLib.ProofSystem.Stir.ProximityBound
 
 /-!Section 5 STIR[ACFY24], Theorem 5.1 and Lemma 5.4 -/
 
-open BigOperators Finset ListDecodable NNReal ReedSolomon VectorIOP OracleComp LinearCode
+open BigOperators Finset ListDecodable NNReal ReedSolomon VectorIOP OracleComp LinearCode STIR
 
 namespace StirIOP
 
@@ -80,10 +80,7 @@ def OracleStatement (ι F : Type) : Unit → Type :=
   the oracle statement defined above. The oracle simply applies
   the function `f : ι → F` to the query input `i : ι`,
   producing the response. -/
-instance {ι : Type} : OracleInterface (OracleStatement ι F ()) where
-  Query := ι
-  Response := F
-  oracle := fun f i => f i
+instance {ι : Type} : OracleInterface (OracleStatement ι F ()) := OracleInterface.instFunction
 
 /-- STIR relation: the oracle's output is δᵣ-close to a Reed-Solomon codeword
   of degree at most `degree` over domain `φ`, within error `err`.
@@ -190,7 +187,7 @@ theorem stir_rbr_soundness
                     (stirRelation (degree ι P 0) (P.φ 0) (Dist.δ 0))
                     ε_rbr π) ∧
     -- `ε_fold ≤ errStar(degree₀/foldingParam₀, ρ₀, δ₀, repeatParam₀)`
-      ε_fold ≤ err' F (P.deg / P.foldingParam 0) (rate (code (P.φ 0) P.deg))
+      ε_fold ≤ proximityError F (P.deg / P.foldingParam 0) (rate (code (P.φ 0) P.deg))
                  (Dist.δ 0) (P.repeatParam 0)
       ∧
       -- Note here that `j : Fin M`, so we need to cast into `Fin (M + 1)` for indexing of
@@ -208,11 +205,11 @@ theorem stir_rbr_soundness
         -- `+ errStar(degree_{j+1}/foldingParam_{j+1}, ρ_{j+1}, δ_{j+1}, repeatParam_{j+1})`
         ε_shift j ≤
           (1 - Dist.δ j.castSucc) ^ (P.repeatParam j.castSucc)  +
-          -- err'(degreeⱼ, ρ(codeⱼ), δⱼ, repeatParam_j + s), where codeⱼ = code φⱼ degreeⱼ
-           err' F (degree ι P j.succ) (rate (code (P.φ j.succ) (degree ι P j.succ)))
+          -- proximityError(degreeⱼ, ρ(codeⱼ), δⱼ, repeatParam_j + s), where codeⱼ = code φⱼ degreeⱼ
+           proximityError F (degree ι P j.succ) (rate (code (P.φ j.succ) (degree ι P j.succ)))
             (Dist.δ j.succ) (P.repeatParam j.castSucc) + s +
-          -- err'(degreeⱼ / foldingParamⱼ, ρ(codeⱼ), δⱼ, repeatParamⱼ)
-           err' F ((degree ι P j.succ) / P.foldingParam j.succ)
+          -- proximityError(degreeⱼ / foldingParamⱼ, ρ(codeⱼ), δⱼ, repeatParamⱼ)
+           proximityError F ((degree ι P j.succ) / P.foldingParam j.succ)
             (rate (code (P.φ j.succ) (degree ι P j.succ)))
             (Dist.δ j.succ) (P.repeatParam j.succ)
         ∧

@@ -18,14 +18,14 @@ def erase_even (s : Finset ℕ) : Finset ℕ := s.filter Odd
 lemma erase_odd_empty :
     erase_odd ∅ = ∅ := rfl
 
-lemma erase_odd_def {s : Finset ℕ}:
+lemma erase_odd_def {s : Finset ℕ} :
     erase_odd s = s.filter Even := rfl
 
 @[simp]
 lemma erase_even_empty :
     erase_even ∅ = ∅ := rfl
 
-lemma erase_even_def {s : Finset ℕ}:
+lemma erase_even_def {s : Finset ℕ} :
     erase_even s = s.filter Odd := rfl
 
 def shift_left (s : Finset ℕ) : Finset ℕ :=
@@ -40,7 +40,7 @@ def shift_left (s : Finset ℕ) : Finset ℕ :=
 lemma shift_left_empty :
     shift_left ∅ = ∅ := rfl
 
-lemma shift_left_def {s : Finset ℕ}:
+lemma shift_left_def {s : Finset ℕ} :
     shift_left s = s.filterMap
     (fun n => match n with
       | 0 => .none
@@ -59,7 +59,7 @@ def mul_by_2 (s : Finset ℕ) : Finset ℕ :=
 lemma mul_by_empty :
     mul_by_2 ∅ = ∅ := rfl
 
-lemma mul_by_2_def {s : Finset ℕ}:
+lemma mul_by_2_def {s : Finset ℕ} :
     mul_by_2 s = s.map ⟨fun n => 2 * n, by {
       intro a b
       simp

@@ -14,7 +14,7 @@ import ArkLib.Data.CodingTheory.BerlekampWelch.Sorries
 /-!
   # Berlekamp-Welch decoder algorithm for Reed-Solomon codes.
 
-  Given a codeword `f : F [X], deg f ≤ n`, Berlekamp-Welch decoder 
+  Given a codeword `f : F [X], deg f ≤ n`, Berlekamp-Welch decoder
   allows to correct up to `(n - k - 1) / 2` errors and obtain a unique source message.
 -/
 
@@ -30,10 +30,9 @@ section
 
 variable [DecidableEq F]
 
-/--
-  Berlekamp-Welch decoder for Reed-Solomon codes.
+/-- Berlekamp-Welch decoder for Reed-Solomon codes.
 
-  Given received codeword evaluations with potential errors, attempts to recover the original 
+  Given received codeword evaluations with potential errors, attempts to recover the original
   polynomial message or returns `none` if decoding fails.
 
   ### Parameters:
@@ -49,19 +48,19 @@ variable [DecidableEq F]
 -/
 noncomputable def decoder (e k : ℕ) [NeZero n] (ωs f : Fin n → F) : Option (Polynomial F) :=
   if ‖f‖₀ ≤ e
-  then some 0 
-  else 
+  then some 0
+  else
     let x := linsolve (BerlekampWelchMatrix e k ωs f) (Rhs e ωs f)
-    match x with 
-    | none => none 
-    | some x => 
+    match x with
+    | none => none
+    | some x =>
       let E := solutionToE e k x
-      let Q := solutionToQ e k x 
-      if Q % E = 0 then 
+      let Q := solutionToQ e k x
+      if Q % E = 0 then
         let p := Q / E
-        if Δ₀(f, p.eval ∘ ωs) ≤ e then 
+        if Δ₀(f, p.eval ∘ ωs) ≤ e then
           some p
-        else 
+        else
           none
       else
         none
@@ -75,12 +74,12 @@ If the Berlekamp-Welch decoder succeeds, the decoded polynomial is within the er
 - `f : Fin n → F` - Received (possibly corrupted) codeword
 - `h` - Hypothesis that decoder succeeded (returns `some p`)
 -/
-theorem hammingDist_le_of_decoder_eq_some [NeZero n] {ωs f : Fin n → F} 
+theorem hammingDist_le_of_decoder_eq_some [NeZero n] {ωs f : Fin n → F}
   (h : decoder e k ωs f = some p) : Δ₀(f, p.eval ∘ ωs) ≤ e :=
   by aesop (add simp decoder)
 
 /--
-**Correctness theorem for Berlekamp-Welch decoder**: 
+**Correctness theorem for Berlekamp-Welch decoder**:
 If a codeword is close to a polynomial `p` of degree `< k`
 then the decoder succeeds and returns `some p`.
 
@@ -96,8 +95,8 @@ theorem decoder_eq_some {e k : ℕ} [NeZero n] {ωs f : Fin n → F} {p : Polyno
   (hn : k ≤ n)
   (h_inj : Function.Injective ωs)
   (h_deg : p.natDegree < k)
-  (h_dist : Δ₀(f, p.eval ∘ ωs) ≤ e) 
-  : decoder e k ωs f = some p := by 
+  (h_dist : Δ₀(f, p.eval ∘ ωs) ≤ e)
+  : decoder e k ωs f = some p := by
   simp only [decoder]
   split_ifs with hif
   · suffices p = 0 from Option.some_inj.2 this.symm
@@ -107,7 +106,7 @@ theorem decoder_eq_some {e k : ℕ} [NeZero n] {ωs f : Fin n → F} {p : Polyno
     · omega
   · rcases hlinsolve : linsolve (BerlekampWelchMatrix e k ωs f) (Rhs e ωs f)
     · simp only [reduceCtorEq]; exact linsolve_always_some_berlekamp_welch h_deg h_dist hlinsolve
-    · by_cases hp : p = 0 
+    · by_cases hp : p = 0
       · have : ‖f‖₀ ≤ e := by aesop
         omega
       · have h_cond := linsolve_to_BerlekampWelch_condition hlinsolve
@@ -123,8 +122,8 @@ theorem decoder_eq_some {e k : ℕ} [NeZero n] {ωs f : Fin n → F} {p : Polyno
 When the decoder returns `none`, no valid polynomial exists within the error bound.
 
 ### Theorem Statement:
-Given the decoder fails (`decoder e k ωs f = none`), 
-there cannot exist any polynomial `p` of degree < `k` that is 
+Given the decoder fails (`decoder e k ωs f = none`),
+there cannot exist any polynomial `p` of degree < `k` that is
 within `e` Hamming errors of the received word `f`.
 
 ### Parameters:
@@ -138,7 +137,7 @@ theorem not_exists_of_decoder_eq_none {e k : ℕ} [NeZero n] {ωs f : Fin n → 
   (hn : k ≤ n)
   (h_inj : Function.Injective ωs)
   (h_none : decoder e k ωs f = none)
-  : ¬∃p : F[X], Δ₀(f, p.eval ∘ ωs) ≤ e ∧ p.natDegree < k := by 
+  : ¬∃p : F[X], Δ₀(f, p.eval ∘ ωs) ≤ e ∧ p.natDegree < k := by
   intro contr
   aesop (add safe forward (decoder_eq_some))
 

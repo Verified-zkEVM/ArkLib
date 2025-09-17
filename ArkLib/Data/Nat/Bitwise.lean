@@ -8,6 +8,10 @@ import ArkLib.Data.Fin.BigOperators
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Algebra.Order.Ring.Star
 import Mathlib.Data.Nat.Bitwise
+import Mathlib.Data.Nat.Digits.Defs
+import Mathlib.Data.Finsupp.Basic
+import Mathlib.Algebra.Order.BigOperators.Group.Finset
+import Mathlib.Algebra.BigOperators.Fin
 
 /-!
 # Bit operations on natural numbers
@@ -16,6 +20,12 @@ import Mathlib.Data.Nat.Bitwise
 
 namespace Nat
 
+-- Note: this is already done with `Nat.sub_add_eq_max`
+theorem max_eq_add_sub {m n : Nat} : Nat.max m n = m + (n - m) := by
+  by_cases h : n ≤ m
+  · simp [Nat.sub_eq_zero_of_le, h]
+  · simp only [Nat.max_eq_right (Nat.le_of_not_le h), Nat.add_sub_of_le (Nat.le_of_not_le h)]
+
 /--
 Returns the `k`-th least significant bit of a natural number `n` as a natural number (in `{0, 1}`).
 
@@ -23,10 +33,38 @@ We decompose each number `j < 2^ℓ` into its binary representation : `j = Σ k 
 -/
 def getBit (k n : Nat) : Nat := (n >>> k) &&& 1
 
+lemma testBit_true_eq_getBit_eq_1 (k n : Nat) : n.testBit k = ((Nat.getBit k n) = 1) := by
+  unfold getBit
+  rw [Nat.testBit]
+  simp only [one_and_eq_mod_two, mod_two_bne_zero, beq_iff_eq, and_one_is_mod]
+
+lemma testBit_false_eq_getBit_eq_0 (k n : Nat) :
+  (n.testBit k = false) = ((Nat.getBit k n) = 0) := by
+  unfold getBit
+  rw [Nat.testBit]
+  simp only [one_and_eq_mod_two, mod_two_bne_zero, beq_eq_false_iff_ne, ne_eq, mod_two_not_eq_one,
+    and_one_is_mod]
+
+def popCount (n : Nat) := (Nat.digits 2 n).sum
+
+-- #eval Nat.popCount 13
+
 lemma getBit_lt_2 {k n : Nat} : getBit k n < 2 := by
   unfold getBit
   rw [Nat.and_one_is_mod]
   simp only [gt_iff_lt, Nat.ofNat_pos, Nat.mod_lt]
+
+lemma getBit_eq_testBit (k n : Nat) : getBit k n = if n.testBit k then 1 else 0 := by
+  unfold getBit
+  rw [Nat.testBit]
+  simp only [and_one_is_mod, one_and_eq_mod_two, mod_two_bne_zero, beq_iff_eq]
+  if h: (n >>> k) % 2 = 1 then
+    simp only [h, ↓reduceIte]
+  else
+    simp only [h, ↓reduceIte]
+    have h_getBit_lt_2: getBit k n < 2 := by exact Nat.getBit_lt_2 (k:=k) (n:=n)
+    simp only [getBit, and_one_is_mod] at h_getBit_lt_2
+    omega
 
 lemma getBit_zero_eq_zero {k : Nat} : getBit k 0 = 0 := by
   unfold getBit
@@ -83,7 +121,8 @@ lemma and_eq_zero_iff {n m : ℕ} : n &&& m = 0 ↔ ∀ k, (n >>> k) &&& (m >>> 
     simp only [Nat.shiftRight_zero] at h_k_is_zero -- utilize n = (n >>> 0), m = (m >>> 0)
     exact h_k_is_zero
 
-lemma eq_iff_eq_all_getBits {n m : ℕ} : n = m ↔ ∀ k, (n >>> k) &&& 1 = (m >>> k) &&& 1 := by
+lemma eq_iff_eq_all_getBits {n m : ℕ} : n = m ↔ ∀ k, getBit k n = getBit k m := by
+  unfold getBit
   constructor
   · intro h_eq -- h_eq : n = m
     intro k
@@ -115,6 +154,7 @@ lemma and_eq_zero_iff_and_each_getBit_eq_zero {n m : ℕ} :
     rw [h_and_zero, Nat.zero_shiftRight, Nat.zero_and]
   · intro h_forall_k -- h_forall_k : ∀ (k : ℕ), n >>> k &&& 1 &&& (m >>> k &&& 1) = 0
     apply eq_iff_eq_all_getBits.mpr
+    unfold getBit
     intro k
     -- ⊢ (n &&& m) >>> k &&& 1 = 0 >>> k &&& 1
     have h_forall_k_eq : ∀ k, ((n &&& m) >>> k) &&& 1 = 0 := by
@@ -201,7 +241,7 @@ lemma and_two_pow_eq_two_pow_of_getBit_1 {n i : ℕ} (h_getBit: getBit i n = 1) 
 
 lemma and_two_pow_eq_two_pow_of_getBit_eq_one {n i : ℕ} (h_getBit: getBit i n = 1)
     : n &&& (2 ^ i) = 2 ^ i := by
-  apply eq_iff_eq_all_getBits.mpr
+  apply eq_iff_eq_all_getBits.mpr; unfold getBit
   intro k
   have h_getBit_two_pow := getBit_two_pow (i := i) (k := k)
   if h_k: k = i then
@@ -477,7 +517,7 @@ lemma sum_of_and_eq_zero_is_xor {n m : ℕ} (h_n_AND_m : n &&& m = 0) : n + m = 
   omega
 
 lemma xor_of_and_eq_zero_is_or {n m : ℕ} (h_n_AND_m : n &&& m = 0) : n ^^^ m = n ||| m := by
-  apply eq_iff_eq_all_getBits.mpr
+  apply eq_iff_eq_all_getBits.mpr; unfold getBit
   intro k
   rw [Nat.shiftRight_xor_distrib, Nat.shiftRight_or_distrib]
   rw [Nat.and_xor_distrib_right] -- lhs
@@ -641,6 +681,28 @@ lemma getBit_of_two_pow_sub_one {i k: ℕ} : getBit k (2^i - 1) =
     simp only [getBit, Nat.and_one_is_mod]
     simp only [h_test]
 
+lemma getBit_of_sub_two_pow_of_bit_1 {n i j: ℕ} (h_getBit_eq_1: getBit i n = 1) :
+  getBit j (n - 2^i) = (if j = i then 0 else getBit j n) := by
+  have h_2_pow_i_lt_n: 2^i ≤ n := by
+    apply Nat.ge_two_pow_of_testBit
+    rw [Nat.testBit_true_eq_getBit_eq_1]
+    exact h_getBit_eq_1
+  have h_xor_eq_sub := (Nat.xor_eq_sub_iff_submask (n:=n) (m:=2^i) (h_2_pow_i_lt_n)).mpr (by
+    exact and_two_pow_eq_two_pow_of_getBit_1 h_getBit_eq_1)
+  rw [h_xor_eq_sub.symm]
+  rw [Nat.getBit_of_xor]
+  if h_j_eq_i: j = i then
+    rw [h_j_eq_i]
+    rw [h_getBit_eq_1]
+    rw [Nat.getBit_two_pow]
+    simp only [BEq.rfl, ↓reduceIte, Nat.xor_self]
+  else
+    rw [Nat.getBit_two_pow]
+    simp only [beq_iff_eq]
+    simp only [h_j_eq_i, ↓reduceIte]
+    push_neg at h_j_eq_i
+    simp only [if_neg h_j_eq_i.symm, xor_zero]
+
 lemma getBit_of_lowBits {n: ℕ} (numLowBits : ℕ) : ∀ k, getBit k (getLowBits numLowBits n) =
     if k < numLowBits then getBit k n else 0 := by
   intro k
@@ -687,7 +749,8 @@ lemma getBit_eq_pred_getBit_of_div_two {n k : ℕ} (h_k: k > 0) :
   conv_lhs => rw [←Nat.sub_add_cancel (n:=k) (m:=1) (h:=by omega)]
   exact Eq.symm (getBit_of_shiftRight (k - 1))
 
-theorem getBit_repr {ℓ : Nat} (h_ℓ : ℓ > 0) : ∀ j, j < 2^ℓ →
+-- TODO: uniqueness of this representation?
+theorem getBit_repr {ℓ : Nat} : ∀ j, j < 2^ℓ →
   j = ∑ k ∈ Finset.Icc 0 (ℓ-1), (getBit k j) * 2^k := by
   induction ℓ with
   | zero =>
@@ -740,7 +803,7 @@ theorem getBit_repr {ℓ : Nat} (h_ℓ : ℓ > 0) : ∀ j, j < 2^ℓ →
             _ = 2^ℓ + b := by rw [h_ℓ_eq]; omega;
             _ ≥ 2^ℓ := by omega;
         exact Nat.not_lt_of_ge h_j_ge h_j -- contradiction
-      have h_m_repr := ih (j := m) (by omega) h_m
+      have h_m_repr := ih (j := m) h_m
       have getBit_shift : ∀ k, getBit (k + 1) j = getBit k m := by
         intro k
         rw [h_m_eq]
@@ -812,10 +875,36 @@ theorem getBit_repr {ℓ : Nat} (h_ℓ : ℓ > 0) : ∀ j, j < 2^ℓ →
         rhs
         rw [←h_j_eq]
 
+theorem getBit_repr_univ {ℓ : Nat} : ∀ j, j < 2^ℓ →
+  j = ∑ k ∈ Finset.univ (α:=Fin ℓ), (getBit k j) * 2^k.val := by
+  intro j h_j
+  have h_repr_Icc := getBit_repr (ℓ:=ℓ) (j:=j) (by omega)
+  rw [h_repr_Icc]
+  if h_ℓ_eq_0: ℓ = 0 then
+    subst h_ℓ_eq_0
+    have h_j_eq_0: j = 0 := by omega
+    subst h_j_eq_0
+    rfl
+  else
+    apply Finset.sum_bij' (s:=Finset.Icc 0 (ℓ-1)) (t:=Finset.univ (α:=Fin ℓ))
+      (i:=fun a ha => by exact ⟨a, by
+        simp only [Finset.mem_Icc, _root_.zero_le, true_and] at ha; omega
+      ⟩) (j := fun a ha => by exact a.val)
+    · intro a ha; rfl
+    · intro a ha; rfl
+    · intro a ha
+      rw [←h_repr_Icc]
+    · intro a ha
+      simp only [Finset.mem_univ]
+    · intro a ha
+      simp only [Finset.mem_Icc, _root_.zero_le, true_and]
+      have h_a_lt_ℓ: a < ℓ := by exact a.isLt
+      omega
+
 lemma getLowBits_succ {n: ℕ} (numLowBits: ℕ) :
     getLowBits (numLowBits + 1) n = getLowBits numLowBits n
     + (getBit numLowBits n) <<< numLowBits := by
-  apply eq_iff_eq_all_getBits.mpr
+  apply eq_iff_eq_all_getBits.mpr;
   intro k
   have h_getBit_lt_numLowBits: getBit numLowBits n < 2 := by exact getBit_lt_2
   interval_cases h_getBit: getBit numLowBits n
@@ -911,7 +1000,7 @@ theorem and_highBits_lowBits_eq_zero {n : ℕ} (numLowBits : ℕ) :
 
 lemma num_eq_highBits_add_lowBits {n: ℕ} (numLowBits: ℕ) :
   n = getHighBits numLowBits n + getLowBits numLowBits n := by
-  apply eq_iff_eq_all_getBits.mpr
+  apply eq_iff_eq_all_getBits.mpr; unfold getBit
   intro k
   --- use 2 getBit extractions to get the condition for getLowBits of ((n >>> numLowBits) <<<
   --  numLowBits)
@@ -960,5 +1049,158 @@ lemma getBit_of_highBits_no_shl {n: ℕ} (numLowBits : ℕ) :
   intro k
   simp only [getHighBits_no_shl]
   exact getBit_of_shiftRight k
+
+lemma getBit_of_lt_two_pow {n: ℕ} (a: Fin (2^n)) (k: ℕ) :
+  getBit k a = if k < n then getBit k a else 0 := by
+  if h_k: k < n then
+    simp only [h_k, ↓reduceIte]
+  else
+    simp only [h_k, ↓reduceIte]
+    rw [getBit_eq_testBit]
+    simp only [ite_eq_right_iff, one_ne_zero, imp_false, Bool.not_eq_true]
+    rw [Nat.testBit_eq_false_of_lt]
+    simp only [not_lt] at h_k
+    calc a.val < 2^n := a.isLt
+      _ ≤ 2^k := Nat.pow_le_pow_right (by omega) h_k
+
+-- Note: maybe we can generalize this into a non-empty set of diff bits
+lemma exist_bit_diff_if_diff {n: ℕ} (a: Fin (2^n)) (b: Fin (2^n)) (h_a_ne_b: a ≠ b):
+  ∃ k: Fin n, getBit k a ≠ getBit k b := by
+  by_contra h_no_diff
+  push_neg at h_no_diff
+  have h_a_eq_b: a = b := by
+    apply Fin.eq_of_val_eq
+    apply eq_iff_eq_all_getBits.mpr
+    intro k
+    change getBit k a = getBit k b
+    rw [getBit_of_lt_two_pow, getBit_of_lt_two_pow]
+    if h_k: k < n then
+      simp only [h_k, ↓reduceIte]
+      exact h_no_diff ⟨k, by omega⟩
+    else
+      simp only [h_k, ↓reduceIte]
+      rw [getBit_eq_testBit]
+      simp only [right_eq_ite_iff, zero_ne_one, imp_false, Bool.not_eq_true]
+      rw [Nat.testBit_eq_false_of_lt]
+      simp only [not_lt] at h_k
+      calc b.val < 2^n := b.isLt
+        _ ≤ 2^k := Nat.pow_le_pow_right (by omega) h_k
+  contradiction
+
+def binaryFinMapToNat {n : ℕ} (m : Fin n → ℕ) (h_binary : ∀ j: Fin n, m j ≤ 1) : Fin (2^n) := by
+  let i_of_m := ∑ j ∈ Finset.univ, (2^j.val) * (m j)
+  have h_lt: 2^n - 1 < 2^n := by
+    refine sub_one_lt ?_
+    exact Ne.symm (NeZero.ne' (2 ^ n))
+  have h_i_lt : i_of_m < 2^n := by
+    -- Use a calc block for a clear chain of inequalities
+    calc
+      i_of_m = ∑ j, 2^j.val * m j         := rfl
+      _      ≤ ∑ j: Fin n, (2^j.val) * 1 := by
+        -- ⊢ ∑ j, 2 ^ ↑j * m j ≤ ∑ j, 2 ^ ↑j * 1
+        have h_le: ∀ j: Fin n, (2^j.val) * (m j) ≤ (2^j.val) * 1 := by
+          intro j
+          simp only [mul_one, ofNat_pos, pow_pos, mul_le_iff_le_one_right]
+          exact h_binary j
+        apply Finset.sum_le_sum
+        intro i hi
+        exact h_le i
+      _      = ∑ j : Fin n, 2^j.val        := by simp
+      _      = 2^n - 1                     := by
+        rw [getBit_repr_univ (ℓ:=n) (j:=2^n-1) (by omega)]
+        conv_rhs =>
+          enter [2, k]; rw [getBit_of_two_pow_sub_one (i:=n)]; simp only [Fin.is_lt, ↓reduceIte,
+            one_mul]
+      _      < 2^n                         := by exact h_lt
+  exact ⟨i_of_m, h_i_lt⟩
+
+lemma getBit_of_binaryFinMapToNat {n : ℕ} (m : Fin n → ℕ) (h_binary: ∀ j: Fin n, m j ≤ 1) :
+    ∀ k: ℕ, Nat.getBit k (binaryFinMapToNat m h_binary).val
+      = if h_k: k < n then m ⟨k, by omega⟩ else 0 := by
+  -- We prove this by induction on `n`.
+  induction n with
+  | zero =>
+    intro k;
+    simp only [Nat.pow_zero, Fin.val_eq_zero, not_lt_zero', ↓reduceDIte]
+    exact getBit_zero_eq_zero
+  | succ n ih =>
+    -- Inductive step: Assume the property holds for `n`, prove it for `n+1`.
+    have h_lt: 2^n - 1 < 2^n := by
+      refine sub_one_lt ?_
+      exact Ne.symm (NeZero.ne' (2 ^ n))
+    intro k
+    dsimp [binaryFinMapToNat]
+    -- ⊢ (↑k).getBit (∑ j, 2 ^ ↑j * m j) = m k
+    rw [Fin.sum_univ_castSucc] -- split the msb
+    set prevSum := ∑ i: Fin n, (2 ^ i.castSucc.val) * (m i.castSucc)
+    let mPrev := fun i: Fin n => m i.castSucc
+    have h_getBit_prevSum := ih (m:=mPrev) (h_binary:=by exact fun j ↦ h_binary j.castSucc)
+    have h_prevSum_eq: prevSum = binaryFinMapToNat mPrev
+      (by exact fun j ↦ h_binary j.castSucc) := by rfl
+    set msbTerm := 2 ^ ((Fin.last n).val) * m (Fin.last n)
+    -- ⊢ (↑k).getBit (prevSum + msbTerm) = m k
+    have h_m_at_last: m ⟨n, by omega⟩ ≤ 1 := by exact h_binary (Fin.last n)
+    have h_sum_eq_xor: prevSum + msbTerm = prevSum ^^^ msbTerm := by
+      rw [sum_of_and_eq_zero_is_xor]
+      unfold msbTerm
+      interval_cases h_m_last_val: m ⟨n, by omega⟩
+      · simp only [Fin.last, h_m_last_val, mul_zero, Nat.and_zero]
+      · simp only [Fin.last, h_m_last_val, mul_one]
+        apply and_two_pow_eq_zero_of_getBit_0
+        have h_getBit_prevSum_at_n := getBit_of_lt_two_pow (k:=n) (n:=n) (a:=⟨prevSum, by omega⟩)
+        simp only [lt_self_iff_false, ↓reduceIte] at h_getBit_prevSum_at_n
+        rw [h_getBit_prevSum_at_n]
+    rw [h_sum_eq_xor, getBit_of_xor]
+    if h_k_eq: k = n then
+      rw [h_k_eq]
+      simp only [lt_add_iff_pos_right, zero_lt_one, ↓reduceDIte]
+      rw [h_prevSum_eq]
+      rw [getBit_of_lt_two_pow]
+      simp only [lt_self_iff_false, ↓reduceIte, zero_xor]
+      unfold msbTerm
+      -- ⊢ n.getBit (2 ^ ↑(Fin.last n) * m (Fin.last n)) = m ⟨n, ⋯⟩
+      interval_cases h_m_last_val: m ⟨n, by omega⟩
+      · -- ⊢ n.getBit (2 ^ ↑(Fin.last n) * m (Fin.last n)) = 0
+        rw [Fin.val_last, Fin.last]
+        rw [h_m_last_val, mul_zero]
+        exact getBit_zero_eq_zero
+      · -- ⊢ n.getBit (2 ^ ↑(Fin.last n) * m (Fin.last n)) = 1
+        simp only [Fin.last]
+        rw [h_m_last_val, mul_one]
+        rw [Nat.getBit_two_pow]
+        simp only [BEq.rfl, ↓reduceIte]
+    else
+      have hBitLhs := h_getBit_prevSum (k:=k)
+      simp only at hBitLhs
+      rw [h_prevSum_eq.symm] at hBitLhs
+      rw [hBitLhs]
+      if h_k_lt_n: k < n then
+        have h_k_lt_n_add_1: k < n + 1 := by omega
+        simp only [h_k_lt_n_add_1, ↓reduceDIte]
+        push_neg at h_k_eq
+        simp only [h_k_lt_n, ↓reduceDIte]
+        unfold msbTerm
+        interval_cases h_m_last_val: m ⟨n, by omega⟩
+        · simp only [Fin.last, h_m_last_val, mul_zero]
+          rw [Nat.getBit_zero_eq_zero, Nat.xor_zero]
+          rfl
+        · simp only [Fin.last, h_m_last_val, mul_one]
+          rw [Nat.getBit_two_pow]
+          simp only [beq_iff_eq]
+          simp only [h_k_eq.symm, ↓reduceIte, xor_zero]
+          rfl
+      else
+        have h_k_not_lt_n_add_1: ¬(k < n + 1) := by omega
+        have h_k_not_lt_n: ¬(k < n) := by omega
+        simp only [h_k_not_lt_n_add_1, h_k_not_lt_n, ↓reduceDIte, Nat.zero_xor]
+        unfold msbTerm
+        interval_cases h_m_last_val: m ⟨n, by omega⟩
+        · simp only [Fin.last, h_m_last_val, mul_zero]
+          exact getBit_zero_eq_zero
+        · simp only [Fin.last, h_m_last_val, mul_one]
+          rw [Nat.getBit_two_pow]
+          simp only [beq_iff_eq]
+          simp only [ite_eq_right_iff, one_ne_zero, imp_false, ne_eq]
+          omega
 
 end Nat

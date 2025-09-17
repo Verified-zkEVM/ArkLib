@@ -53,9 +53,9 @@ def verify [BEq γ] (cm : γ) (v : α) (r : β) : OracleComp (ROspec α β γ) U
 local instance : OracleInterface α where
   Query := Unit
   Response := α
-  oracle := fun x _ => x
+  answer := fun x _ => x
 
-def commitmentScheme : Commitment.Scheme (oSpec α β γ) α β γ ![] where
+def commitmentScheme : Commitment.Scheme (oSpec α β γ) α β γ !p[] where
   commit := fun v r => commit v
   opening := .mk (sorry) (.mk (sorry))
 

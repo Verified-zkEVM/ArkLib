@@ -17,7 +17,7 @@ import Mathlib.RingTheory.MvPolynomial.Groebner
 
 /-! Section 4.4, [ACFY24] -/
 
-open Polynomial ReedSolomon LinearMap Finset ListDecodable
+open Polynomial ReedSolomon LinearMap Finset ListDecodable STIR
 
 namespace Domain
 
@@ -35,16 +35,11 @@ def pow (S : Finset ι) (φ : ι ↪ F) (k : ℕ) : indexPow S φ k ↪ F :=
 def powFiber (S : Finset ι) (φ : ι ↪ F) (k : ℕ) (y : indexPow S φ k) : Finset ι :=
   S.filter (fun x => (φ x) ^ k = y)
 
-/-- The fiber domain `f⁻¹(y) ↪ F` for the surjection `f : ι → ιᵏ, x → xᵏ` and `y ∈ ιᵏ`. -/
-def fiber (S : Finset ι) (φ : ι ↪ F) (k : ℕ)
-  (y : indexPow S φ k) : powFiber S φ k y ↪ F :=
-      Function.Embedding.mk (fun z => φ z) (φ.injective.comp Subtype.val_injective)
-
 end Domain
 
 namespace Folding
 
-variable {F : Type* } [Field F] [Fintype F]
+variable {F : Type*} [Field F] [Fintype F]
 
 /- 𝔽[X,Y] is not an Euclidean Domain, but fixing an order on monomials still allows
    to show existance of bivariate polynomials Q', Q ∈ 𝔽[X,Y] such that
@@ -57,7 +52,8 @@ variable {F : Type* } [Field F] [Fintype F]
    https://people.csail.mit.edu/madhu/papers/2005/rspcpp-full.pdf under the
    substitution z = x₀ and y = x₁, hence the following definition constructs
    Q ∈ 𝔽[Z,Y] with P(z,y) = Q'(z,y) * R(z,y) + Q(z,y)
--/
+
+   Below we present Fact 4.6.1 from STIR -/
 
 /-- Given `P, P' ∈ 𝔽[Z,Y]`, `P' ≠ 0`, computes `Q ∈ 𝔽[Z,Y]`,
 with `P(z,y) = Q'(z,y) * P'(z,y) + Q(z,y)` for some `Q' ∈ 𝔽[Z,Y]` -/
@@ -122,7 +118,7 @@ lemma exists_unique_bivariate
   from MonomialOrder.div from Mathlib.RingTheory.MvPolynomial.Groebner -/
   by sorry
 
-/-- Fact 4.6.2 in STIR-/
+/-- Fact 4.6.2 in STIR -/
 lemma degree_bound_bivariate
   (qPoly : Polynomial F)
   (hdeg_q_min : qPoly.natDegree > 0)
@@ -134,13 +130,13 @@ lemma degree_bound_bivariate
       (fun i : Fin 2 => if i = 0 then qPoly else Polynomial.X) Q).natDegree < t * qPoly.natDegree :=
     by sorry
 
-/--Definition 4.7
-  `polyFold(f, k, r)` “folds” the polynomial `f`
-  producing a new polynomial of deree  `< degree(f)/k`.-/
+/-- Definition 4.7
+  `polyFold(f, k, r)` "folds" the polynomial `f`
+  producing a new polynomial of deree  `< degree(f)/k`. -/
 noncomputable def polyFold
   [DecidableEq F] (fPoly : Polynomial F)
   (k : ℕ) (hk0 : 0 < k) (hkfin : k < Fintype.card F)
-  (r : F): Polynomial F :=
+  (r : F) : Polynomial F :=
     let qPoly : Polynomial F := Polynomial.X ^ k
     let hdeg_q_min : qPoly.natDegree > 0 := sorry
     let hdeg_q_max : qPoly.natDegree < Fintype.card F := sorry
@@ -154,17 +150,17 @@ open Domain
 
 variable {ι F : Type*} [Field F] [Fintype F] [DecidableEq F] [DecidableEq ι]
 
-/--Definition 4.8
+/-- Definition 4.8
   For x ∈ ιᵏ, p_x ∈ 𝔽[X] is the degree < k polynomial
-  where p_x(y) = f(y) for every y ∈ ι such that yᵏ = x.-/
+  where p_x(y) = f(y) for every y ∈ ι such that yᵏ = x. -/
 noncomputable def xPoly
   {S : Finset ι} (f : ι → F) (φ : ι ↪ F) (k : ℕ) (x : indexPow S φ k) : Polynomial F :=
   let dom := powFiber S φ k x
-  let emb : { y // y ∈ dom } ↪ F := fiber S φ k x
-  let g : { y // y ∈ dom } → F := fun y => f y.val
+  let emb : { y // y ∈ dom } → F := φ ∘ Subtype.val
+  let g : { y // y ∈ dom } → F := f ∘ Subtype.val
   Lagrange.interpolate univ emb g
 
-/--Definition 4.8
+/-- Definition 4.8
   Fold(f,k,α) : ιᵏ → 𝔽 such that  Fold(f, k, α)(x) := p_x(α) -/
 noncomputable def fold
   {S : Finset ι} (φ : ι ↪ F) (f : ι → F) (k : ℕ) (α : F) : indexPow S φ k → F :=
@@ -172,7 +168,7 @@ noncomputable def fold
 
 /-- min{δᵣ(f, RSC[F, ι, degree]), 1 − B^⋆(ρ)} -/
 noncomputable def foldingDistRange
-   (degree : ℕ) [Fintype ι] [Nonempty ι] (φ : ι ↪ F) (f : ι → F)  : ℝ :=
+   (degree : ℕ) [Fintype ι] [Nonempty ι] (φ : ι ↪ F) (f : ι → F) : ℝ :=
     let C : Set (ι → F) := code φ degree
     min δᵣ(f, C) (1 - Bstar (LinearCode.rate (code φ degree)))
 
@@ -180,20 +176,19 @@ open ProbabilityTheory
 
 variable {ι F : Type} [Field F] [Fintype F] [DecidableEq F] [DecidableEq ι]
 
-/--Lemma 4.9
+/-- Lemma 4.9
   For every function `f : ι → F`, `degree`, folding parameter `k`, and
   `δ ∈ (0, foldingDistRange)`
-  `Pr_{r ← F} [ δᵣ(fold(f, k, α), RS[F, ιᵏ, degree/k)] < δ] ≤ err'(degree/k, ρ, δ, k)`
-  -/
+  `Pr_{r ← F} [ δᵣ(fold(f, k, α), RS[F, ιᵏ, degree/k)] < δ] ≤ err'(degree/k, ρ, δ, k)` -/
 lemma folding
-  [Nonempty ι]  {S : Finset ι} [Fintype ι]
-  (φ : ι ↪ F) (f : ι → F) (k : ℕ) (x : indexPow S φ k)
+  [Nonempty ι] {S : Finset ι} [Fintype ι]
+  (φ : ι ↪ F) (f : ι → F) (k : ℕ)
   [Nonempty (indexPow S φ k)]
   {degree : ℕ} (δ : ℚ) (hδPos : δ > 0)
   (hδLt : δ < foldingDistRange degree φ f) :
   let C : Set ((indexPow S φ k) → F) := code (pow S φ k) (degree / k)
-  Pr_{ let r ←$ᵖ F }[ δᵣ((fold φ f k r), C) ≤ δ]
-    ≤ ENNReal.ofReal (err' F (degree / k) (LinearCode.rate (code φ degree)) δ k) :=
+  Pr_{ let r ← $ᵖ F }[ δᵣ((fold φ f k r), C) ≤ δ]
+    ≤ ENNReal.ofReal (proximityError F (degree / k) (LinearCode.rate (code φ degree)) δ k) :=
 by sorry
 
 end Folding

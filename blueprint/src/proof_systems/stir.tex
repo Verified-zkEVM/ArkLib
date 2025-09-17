@@ -8,7 +8,7 @@
 \subsubsection{Random linear combination as a proximity generator}\label{sec:proximity_gap}
 
 \begin{theorem}\label{thm:proximity_gap}
-\lean{proximity_gap}
+\lean{STIR.proximity_gap}
 \uses{def:distance_from_code,def:reed_solomon_code,def:list_close_codewords}
     Let $\code := \rscode[\field,\evaldomain,\degree]$ be a Reed Solomon code with rate $\rate:=\frac{\degree}{|\evaldomain|}$ and let $B^*(\rate):=\sqrt{\rate}$. For every $\distance \in (0,1 - B^*(\rate))$ and functions $f_0,\ldots,f_{m-1} : \evaldomain \to \field$, if
     \[
@@ -19,9 +19,9 @@
     \]
     then there exists a subset $S \subseteq \evaldomain$ with $|S| \ge (1 - \delta)\cdot|L|$,
     and for every $i \in [m]$, there exists $u \in \rscode[\field,\evaldomain,\degree]$ such that $f_i(S) = u(S)$.
-    
+
     \medskip
-    
+
     \noindent
     Above, $\err^*(\degree,\rate,\distance,m)$ is defined as follows:
     \begin{itemize}
@@ -78,7 +78,7 @@ The following lemma, implicit in prior works, shows that if the function is ``qu
 \lean{Quotienting.quotienting}
 \uses{def:quotient,def:reed_solomon_code,def:distance_from_code,def:list_close_codewords}
     Let $f:\evaldomain\rightarrow\field$ be a function, $\degree\in\N$ be the degree parameter, $\distance\in(0,1)$
-    be a distance parameter, $S\subseteq\field$ be a set with $|S|<\degree$, and $\mathsf{Ans},\mathsf{Fill}:S\rightarrow\field$ are functions. Suppose that for every $u\in\listcode(f,\degree,\distance)$ there exists $x\in S$ with $\hat{u}(x)\neq\mathsf{Ans}(x)$. Then 
+    be a distance parameter, $S\subseteq\field$ be a set with $|S|<\degree$, and $\mathsf{Ans},\mathsf{Fill}:S\rightarrow\field$ are functions. Suppose that for every $u\in\listcode(f,\degree,\distance)$ there exists $x\in S$ with $\hat{u}(x)\neq\mathsf{Ans}(x)$. Then
 
     \[
             \Delta(\mathsf{Quotient}(f,S,\mathsf{Ans},\mathsf{Fill}),\rscode[\field,\evaldomain,\degree-|S|])+\frac{|T|}{|\evaldomain|}>\distance,
@@ -93,7 +93,7 @@ The following lemma, implicit in prior works, shows that if the function is ``qu
     Let $f:\evaldomain\rightarrow\field$ be a function, $\degree\in\N$ be a degree parameter, $s\in\N$ be a repetition parameter, and $\distance\in[0,1]$ be a distance parameter. If $\rscode[\field,\evaldomain,\degree]$ be $(\degree,l)$-list decodable then
         \[
         \begin{array}{rcl}
-        \Pr_{\substack{r_0, \ldots, r_{s-1} \gets \field \setminus \evaldomain}} 
+        \Pr_{\substack{r_0, \ldots, r_{s-1} \gets \field \setminus \evaldomain}}
         \left[
         \begin{array}{c}
             \exists \text{ distinct } u, u' \in \listcode(f, \degree, \distance): \\
@@ -105,14 +105,14 @@ The following lemma, implicit in prior works, shows that if the function is ``qu
         \end{array}
         \]
 
-        
-        
+
+
 \end{lemma}
 
 \subsubsection{Folding univariate functions}\label{sec:folding_uf}
 STIR relies on $k$-wise folding of functions and polynomials - this is similar to prior works, although presented in a slightly different form. As shown below, folding a function preserves proximity from the Reed-Solomon code with high probability. The folding operator is based on the following fact, decomposing univariate polynomials into bivariate ones.
 
-\begin{lemma}\label{fact:poly_folding} 
+\begin{lemma}\label{fact:poly_folding}
 \lean{Folding.exists_unique_bivariate,Folding.degree_bound_bivariate}
 Given a polynomial $\hat{q}\in\field[X]$:
 \begin{itemize}
@@ -122,7 +122,7 @@ Given a polynomial $\hat{q}\in\field[X]$:
         \]
         such that $\hat{f}(Z)=\hat{Q}(\hat{q}(Z),Z)$. Moreover, $\hat{Q}$ can be computed efficiently given $\hat{f}$ and $\hat{q}$. Observe that if $\polydeg(\hat{f})<t\cdot\polydeg(\hat{q})$ then
         $\polydeg(\hat{Q})<t$.
-        
+
         \item For every $\hat{Q}[X,Y]$ with $\polydeg_X(\hat{Q})<t$ and $\polydeg_Y(\hat{Q})<\polydeg(\hat{q})$, the polynomial $\hat{f}(Z)=\hat{Q}(\hat{q}(Z),Z)$ has degree $\polydeg(\hat{f})<t\cdot\polydeg(\hat{q})$.
 \end{itemize}
 \end{lemma}
@@ -176,7 +176,7 @@ We show a new method for combining functions of varying degrees with minimal pro
 \end{lemma}
 
 \begin{definition}\label{def:combine}
-\lean{Combine.combineInterm,Combine.combineFinal}
+\lean{Combine.combine}
     Given target degree $\degree^*\in\N$, shifting parameter $r\in\field$, functions $f_0,\ldots,f_{m-1}:\evaldomain\rightarrow\field$, and degrees $0\leq \degree_0,\ldots,\degree_{m-1}\leq {\degree}^*$, we define $\combine(\degree^*,r,(f_0,\degree_0),\ldots,(f_{m-1},\degree_{m-1})):\evaldomain\rightarrow\field$ as follows:
         \[
         \begin{array}{rcl}
@@ -197,12 +197,12 @@ Above, $r_i:=r^{i-1+\sum_{j<i}(\degree^*-\degree_j)}$.
 \end{definition}
 
 \begin{definition}\label{def:deg_corr}
-\lean{Combine.degreeCorrInterm,Combine.degreeCorrFinal}
+\lean{Combine.degCor}
 \uses{def:combine,def:reed_solomon_code,def:distance_from_code}
     Given target degree $\degree^*\in\N$, shifting parameter $r\in\field$, function $f:\evaldomain\rightarrow\field$, and degree $0\leq\degree\leq\degree^*$, we define $\degcorr(\degree^*,r,f,\degree)$ as follows.
     \[
     \begin{array}{rcl}
-    \degcorr(\degree^*, r, f, \degree)(x) 
+    \degcorr(\degree^*, r, f, \degree)(x)
     & := & \displaystyle f(x) \cdot \left( \sum_{l=0}^{\degree^* - \degree} (r \cdot x)^l \right) \\[10pt]
     & = & \left\{
     \begin{array}{ll}
@@ -227,7 +227,7 @@ Below it is shown that combining multiple polynomials of varying degrees can be 
     Let $\degree^*$ be a target degree, $f_0,\ldots,f_{m-1}:\evaldomain\rightarrow\field$ be functions, $0\leq \degree_0,\ldots,\degree_{m-1}\leq \degree^*$ be degrees, $\distance\in\min{\{1-{\mathsf{B}}^*(\rate),1-\rate-1/|\evaldomain|\}}$ be a distance parameter, where $\rate=\degree^*/|\evaldomain|$. If
     \[
         \Pr_{r\gets\field}[\Delta(\combine(\degree^*,r,(f_0,\degree_0),\ldots,(f_{m-1},\degree_{m-1})),\rscode[\field,\evaldomain,\degree^*])]>\err^*(\degree^*,\rate,\distance,m\cdot(\degree^*+1)-\sum_{i=0}^{m-1}\degree_i),
-    \] 
+    \]
     then there exists $S\subseteq \evaldomain$ with $|S|\geq(1-\distance)\cdot|\evaldomain|$, and
     \[
         \forall i\in[m-1],\exists u\in\rscode[\field,\evaldomain,\degree_i], f_i(S)=u(S).
@@ -275,4 +275,3 @@ If $|\field|=\Omega(\frac{\lambda\cdot2^\lambda\cdot\degree^2\cdot{|\evaldomain|
     \end{itemize}
     Above, ${\mathsf{B}}^*$ and ${\err}^*$ are the proximity bound and error (respectively) described in Section~\ref{sec:proximity_gap}.
 \end{lemma}
-

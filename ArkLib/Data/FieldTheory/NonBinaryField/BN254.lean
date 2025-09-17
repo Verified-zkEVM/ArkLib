@@ -13,13 +13,15 @@ import ArkLib.ToMathlib.NumberTheory.PrattCertificate
 
 namespace BN254
 
-notation "SCALAR_FIELD_CARD" =>
+@[reducible]
+def scalarFieldSize : Nat :=
   21888242871839275222246405745257275088548364400416034343698204186575808495617
 
-abbrev ScalarField := ZMod SCALAR_FIELD_CARD
+abbrev ScalarField := ZMod scalarFieldSize
 
-theorem ScalarField_is_prime : Nat.Prime SCALAR_FIELD_CARD := by
-  refine PrattCertificate'.out (p := SCALAR_FIELD_CARD) ⟨5, (by reduce_mod_char), ?_⟩
+theorem ScalarField_is_prime : Nat.Prime scalarFieldSize := by
+  unfold scalarFieldSize
+  refine PrattCertificate'.out (p := scalarFieldSize) ⟨5, (by reduce_mod_char), ?_⟩
   refine .split [2 ^ 28, 3 ^ 2, 13, 29, 983, 11003, 237073, 405928799, 1670836401704629,
     13818364434197438864469338081] (fun r hr => ?_) (by norm_num)
   simp at hr
@@ -61,8 +63,8 @@ theorem ScalarField_is_prime : Nat.Prime SCALAR_FIELD_CARD := by
           · exact .prime 1637 1 _ (by pratt) (by reduce_mod_char; decide) (by norm_num)
           · exact .prime 639533339 1 _ (by pratt) (by reduce_mod_char; decide) (by norm_num)
 
-instance : Fact (Nat.Prime SCALAR_FIELD_CARD) := ⟨ScalarField_is_prime⟩
+instance : Fact (Nat.Prime scalarFieldSize) := ⟨ScalarField_is_prime⟩
 
-instance : Field ScalarField := ZMod.instField SCALAR_FIELD_CARD
+instance : Field ScalarField := ZMod.instField scalarFieldSize
 
 end BN254
