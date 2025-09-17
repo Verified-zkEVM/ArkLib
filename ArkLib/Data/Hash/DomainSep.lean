@@ -217,8 +217,46 @@ pub(crate) fn finalize(&self) -> VecDeque<Op>
 ```
 -/
 def finalize (ds : DomainSeparator U H) : Array Op :=
-  -- TODO: Implement parsing logic
-  sorry
+  let parts := ds.io.splitOn SEP_BYTE
+  -- skip session identifier (head), parse remaining parts into ops, dropping malformed ones
+  let parseDigits (cs : List Char) : Nat × List Char :=
+    let rec go : Nat → List Char → Nat × List Char
+    | acc, [] => (acc, [])
+    | acc, c :: rest =>
+      if c.isDigit then
+        let d := (c.toNat - '0'.toNat)
+        go (acc * 10 + d) rest
+      else
+        (acc, c :: rest)
+    go 0 cs
+  let parsePart (s : String) : Option Op :=
+    match s.data with
+    | [] => none
+    | id :: rest =>
+      let (n, _rest) := parseDigits rest
+      match id with
+      | 'A' => if n = 0 then none else some (Op.Absorb n)
+      | 'S' => if n = 0 then none else some (Op.Squeeze n)
+      | 'R' => some Op.Ratchet
+      | 'H' => some Op.Hint
+      | _ => none
+  let opsList := (parts.drop 1).foldl (fun acc p =>
+      match parsePart p with
+      | some op => acc.push op
+      | none => acc) (#[] : Array Op)
+  -- simplify by merging consecutive Absorb/Squeeze
+  let simplify (acc : Array Op) (op : Op) : Array Op :=
+    match acc.back? with
+    | some (Op.Absorb a) =>
+        match op with
+        | Op.Absorb b => acc.pop.push (Op.Absorb (a + b))
+        | _ => acc.push op
+    | some (Op.Squeeze a) =>
+        match op with
+        | Op.Squeeze b => acc.pop.push (Op.Squeeze (a + b))
+        | _ => acc.push op
+    | _ => acc.push op
+  opsList.foldl simplify (#[] : Array Op)
 
 end DomainSeparator
 
