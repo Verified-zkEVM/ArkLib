@@ -7,7 +7,8 @@ Authors: Quang Dao
 import ArkLib.Data.Classes.HasSize
 import ArkLib.Data.Classes.Initialize
 import ArkLib.Data.Classes.Serde
-import ArkLib.Data.Classes.Zeroize
+import VCVio
+import ArkLib.ToVCVio.SimOracle
 
 /-!
   # Duplex Sponge API
@@ -22,19 +23,97 @@ import ArkLib.Data.Classes.Zeroize
   The API is subject to change as spongefish changes.
 -/
 
+open OracleSpec OracleComp
+
+section move_elsewhere
+
+/-- A class for types with a permutation on it, which is just a function `permute : α → α`. See
+  `LawfulPermute` for the requirement that this is actually a permutation. -/
+class Permute (α : Type*) where
+  permute : α → α
+
+/-- A class with a `Permute` instance is lawful if `permute` is actually a permutation /
+  equivalence (i.e. there is a function `permuteInv` such that `permuteInv` is a left and right
+  inverse of `permute`) -/
+class LawfulPermute (α : Type*) [Permute α] where
+  permuteInv : α → α
+  left_inv : Function.LeftInverse permuteInv Permute.permute
+  right_inv : Function.RightInverse permuteInv Permute.permute
+
+/-- Constructing a `Permute` instance from an `Equiv` -/
+def Permute.ofEquiv (α : Type*) (e : Equiv α α) : Permute α where
+  permute := e.toFun
+
+/-- Constructing an `Equiv` from a `Permute` and `LawfulPermute` instances -/
+def Equiv.ofLawfulPermute (α : Type*) [Permute α] [LawfulPermute α] : Equiv α α where
+  toFun := Permute.permute
+  invFun := LawfulPermute.permuteInv
+  left_inv := LawfulPermute.left_inv
+  right_inv := LawfulPermute.right_inv
+
+/-- Direction of permutation, defined as a wrapper around `Unit ⊕ Unit` -/
+abbrev PermuteDir := Unit ⊕ Unit
+
+namespace PermuteDir
+
+/-- Forward direction of the permutation oracle -/
+abbrev Fwd : PermuteDir := Sum.inl ()
+/-- Backward direction of the permutation oracle -/
+abbrev Bwd : PermuteDir := Sum.inr ()
+
+end PermuteDir
+
+namespace OracleSpec
+
+/-- The oracle specification for the forward permutation of a type `α`. Just a wrapper around
+`α →ₒ α` -/
+@[reducible]
+def forwardPermutationOracle (α : Type*) : OracleSpec Unit := α →ₒ α
+
+/-- The oracle specification for the backward permutation of a type `α`. Just a wrapper around
+`α →ₒ α` -/
+def backwardPermutationOracle (α : Type*) : OracleSpec Unit := α →ₒ α
+
+/-- Oracle specification for an ideal permutation, which is the concatenation of the specifications
+  for the forward and backward directions. -/
+@[reducible]
+def permutationOracle (α : Type*) : OracleSpec PermuteDir :=
+  forwardPermutationOracle α ++ₒ backwardPermutationOracle α
+
+end OracleSpec
+
+/-- Canonical implementation of the forward permutation oracle spec with an actual permutation. -/
+def forwardPermutationOracleImpl {α : Type*} [Permute α] :
+    QueryImpl (forwardPermutationOracle α) Id where
+  impl | query () q => Permute.permute (α := α) q
+
+/-- Canonical implementation of the backward permutation oracle spec with an actual (lawful)
+  permutation. -/
+def backwardPermutationOracleImpl {α : Type*} [Permute α] [LawfulPermute α] :
+    QueryImpl (backwardPermutationOracle α) Id where
+  impl | query () q => LawfulPermute.permuteInv (α := α) q
+
+/-- Canonical implementation of the permutation oracle spec with an actual permutation.
+(of course, during proofs, we would idealize the permutation as being random) -/
+def permutationOracleImpl {α : Type*} [Permute α] [LawfulPermute α] :
+    QueryImpl (permutationOracle α) Id :=
+  SimOracle.append forwardPermutationOracleImpl backwardPermutationOracleImpl
+
+end move_elsewhere
+
 /-- Type class for types that can be used as units in a cryptographic sponge.
 
 Following the [spongefish](https://github.com/arkworks-rs/spongefish) Rust library, we require the
 following:
 
-- The type has zero (i.e. `zeroize` in Rust)
+- The type has a zero (i.e. `Zero` in Lean, simpler than a `zeroize` method)
 - The type can be serialized and deserialized to/from `ByteArray`
 - The type has a fixed size in bytes
 - The type implements `write` and `read` methods, which are used to write and read the unit to/from
   an IO stream. They are implemented by default using the `serialize` and `deserialize` methods, and
   the `IO.FS.Stream.{read/write}` functions.
 -/
-class SpongeUnit (α : Type) extends Zeroize α, Serde α ByteArray, HasSize α UInt8 where
+class SpongeUnit (α : Type) extends Zero α, Serde α ByteArray, HasSize α UInt8 where
   /--
   Rust interface:
   ```rust
@@ -76,7 +155,7 @@ following:
   - `ratchetUnchecked` to ratchet the state of the sponge
 -/
 class DuplexSpongeInterface (U : Type) [SpongeUnit U] (α : Type*)
-    extends Inhabited α, Zeroize α, Initialize α (Vector UInt8 32) where
+    extends Inhabited α, Zero α, Initialize α (Vector UInt8 32) where
   /-- Absorb new elements in the sponge.
   ```rust
     fn absorb_unchecked(&mut self, input: &[U]) -> &mut Self;
@@ -110,7 +189,7 @@ class DuplexSpongeInterface (U : Type) [SpongeUnit U] (α : Type*)
 
 
 /-- Type class for storing the length & rate of a sponge permutation. -/
-class SpongePermutationSize where
+class SpongeSize where
   /-- The width of the sponge, equal to rate R plus capacity. -/
   N : Nat
   /-- The rate of the sponge. -/
@@ -120,21 +199,33 @@ class SpongePermutationSize where
   /-- The rate is non-zero (i.e. positive). -/
   [neZero_R : NeZero R]
 
-attribute [instance] SpongePermutationSize.neZero_R
+attribute [instance] SpongeSize.neZero_R
 
-namespace SpongePermutationSize
+attribute [simp, grind] SpongeSize.R_lt_N
 
-variable [sz : SpongePermutationSize]
+namespace SpongeSize
+
+variable [sz : SpongeSize]
 
 /-- The capacity of the sponge, defined as `N - R`, the width minus the rate. -/
 def C : Nat := sz.N - sz.R
 
-instance [sz : SpongePermutationSize] : NeZero sz.C where
+instance [sz : SpongeSize] : NeZero sz.C where
   out := by
     have := sz.R_lt_N
     simp [C]; omega
 
-end SpongePermutationSize
+@[simp, grind] lemma R_pos : 0 < sz.R := Nat.pos_of_neZero R
+
+@[simp, grind] lemma C_pos : 0 < sz.C := by simp [C]
+
+@[simp, grind] lemma N_pos : 0 < sz.N := by have := sz.R_lt_N; simp; omega
+
+@[simp, grind =] lemma R_plus_C_eq_N : sz.R + sz.C = sz.N := by
+  simp [C]
+  exact Nat.add_sub_of_le (Nat.le_of_lt sz.R_lt_N)
+
+end SpongeSize
 
 /-- Type class for the state of a cryptographic permutation used in the duplex sponge construction.
 
@@ -149,29 +240,47 @@ pub trait Permutation: Zeroize + Default + Clone + AsRef<[Self::U]> + AsMut<[Sel
 }
 ```
 Note that we do not quite know how to handle `AsRef` and `AsMut`. My interpretation is that they
-basically provide a way to get to the underlying state of the sponge, which is `Vector U N`.
-Because of this, I give a tentative API for `AsRef` and `AsMut` basically as a lens between `α` and
-`Vector U N` (i.e. `view` and `update`).
+basically provide a way to get to the underlying state of the sponge, which is `Vector U N`. Because
+of this, I give a tentative API for `AsRef` and `AsMut` basically as a lens between `α` and `Vector
+U N` (i.e. `view` and `update`).
 
-TODO: figure out the needed properties here
+UPDATE: we also move the `permute` function out of the sponge state class, as our functions
+`absorb/squeeze/ratchet` will be defined as oracle computations (having access to oracle API of a
+permutation, i.e. two oracles of type `C → C` for forward and backward directions).
+
+UPDATE: we also modularize this type class by not requiring extra properties like Inhabited. So
+really, we just have a lens between `α` and `Vector U N`, along with Zeroize and Initialize.
 -/
-class SpongePermutationState (U : Type) [SpongeUnit U] (α : Type*) extends
-    Inhabited α,
-    Zeroize α,
-    SpongePermutationSize,
-    Initialize α (Vector UInt8 32) where
-  -- TENTATIVE: an equivalence between `α` and `Vector U N`
-  -- equiv : α ≃ Vector U N
-  get : α → Vector U N
-  update : α → Vector U N → α
+class SpongeState (U : Type) [SpongeUnit U] [SpongeSize] (α : Type*) extends
+    Zero α,
+    Initialize α (Vector UInt8 32)
+    where
+  get : α → Vector U SpongeSize.N
+  update : α → Vector U SpongeSize.N → α
 
-  /-- Permute the **state** of the sponge. Note that this does _not_ imply a permutation (i.e.
-    bijection) for the entire type.
+instance {U : Type} [SpongeUnit U] [SpongeSize] :
+    SpongeState U (Vector U SpongeSize.N) where
+  -- PROBLEM: no canonical implementation of this. We temporarily set it to the all-zero vector
+  new := fun _ => 0
+  get := id
+  update := fun _ v => v
 
-    TODO: figure out the needed properties here (that it is a permutation on the state?) -/
-  permute : α → α
+namespace SpongeState
 
-/-- A cryptographic duplex sponge.
+-- TODO: this should really be part of a lens package / library
+
+variable {U : Type} [SpongeUnit U] [SpongeSize] {C : Type} [SpongeState U C]
+
+def modify (state : C) (f : Vector U SpongeSize.N → Vector U SpongeSize.N) : C :=
+  SpongeState.update state (f (SpongeState.get state))
+
+end SpongeState
+
+/-- A generalized duplex sponge (Rust version), where we may designate the permutation type `C` to
+  be any type that satisfies the `SpongeState` type class.
+
+  In our formalization, we just instantiate `C = Vector U SpongeSize.N`, which is the "canonical"
+  duplex sponge representation.
 
 Rust interface:
 ```rust
@@ -183,37 +292,113 @@ pub struct DuplexSponge<C: Permutation> {
 }
 ```
 -/
-structure DuplexSponge (U : Type) [SpongeUnit U] (C : Type*) [SpongePermutationState U C] where
-  permutation : C
+structure DuplexSponge (U : Type) [SpongeUnit U] [SpongeSize] (C : Type*)
+    [SpongeState U C] where
+  /-- The state of the permutation used in the duplex sponge -/
+  state : C
   /-- Current position in the rate portion for absorbing data (0 ≤ absorbPos ≤ R) -/
-  absorbPos : Fin (SpongePermutationSize.R + 1)
+  absorbPos : Fin (SpongeSize.R + 1)
   /-- Current position in the rate portion for squeezing data (0 ≤ squeezePos ≤ R) -/
-  squeezePos : Fin (SpongePermutationSize.R + 1)
+  squeezePos : Fin (SpongeSize.R + 1)
 deriving Inhabited
+
+/-- The "canonical" duplex sponge (as in the paper) over a sponge unit type U, which consists of the
+  following:
+1. A state `Vector U SpongeSize.N`
+2. An absorb position `Fin (SpongeSize.R + 1)`
+3. A squeeze position `Fin (SpongeSize.R + 1)`
+-/
+def CanonicalDuplexSponge (U : Type) [SpongeUnit U] [SpongeSize] :=
+  DuplexSponge U (Vector U SpongeSize.N)
 
 namespace DuplexSponge
 
-variable {U : Type} {C : Type*} [SpongeUnit U] [SpongePermutationState U C]
+variable {U : Type} [SpongeUnit U] [SpongeSize] {C : Type} [SpongeState U C]
 
 -- Make DuplexSponge zeroizable
-instance : Zeroize (DuplexSponge U C) where
-  zeroize sponge := {
-    permutation := Zeroize.zeroize sponge.permutation,
+instance : Zero (DuplexSponge U C) where
+  zero := {
+    state := 0,
     absorbPos := 0,
     squeezePos := 0
   }
 
--- Make DuplexSponge initializable from 32-byte vector
+@[simp, grind] lemma squeezePos_lt_N (sponge : DuplexSponge U C) :
+    sponge.squeezePos < SpongeSize.N :=
+  lt_of_le_of_lt (Fin.is_le _) (SpongeSize.R_lt_N)
+
+@[simp, grind] lemma absorbPos_lt_N (sponge : DuplexSponge U C) :
+    sponge.absorbPos < SpongeSize.N :=
+  lt_of_le_of_lt (Fin.is_le _) (SpongeSize.R_lt_N)
+
+/-- Initialize the duplex sponge, assuming access to an oracle from some other type `α` and an
+  element `a : α`.
+
+We query the oracle to get the capacity segment of the sponge (the last `C` elements), then set the
+rate segment to be all-zero. We also set `absorbPos` to 0 and `squeezePos` to `R`.
+-/
+def start {α : Type} (a : α) : OracleComp (α →ₒ Vector U SpongeSize.C) (DuplexSponge U C) := do
+  let capacitySegment : Vector U SpongeSize.C ← query (spec := α →ₒ Vector U SpongeSize.C) () a
+  let vecSponge := (Vector.replicate SpongeSize.R (0 : U)) ++ capacitySegment
+  return {
+    state := SpongeState.update (α := C) (0 : C) (vecSponge.cast (by simp)),
+    absorbPos := 0,
+    squeezePos := Fin.last SpongeSize.R
+  }
+
+/-- Make DuplexSponge initializable from 32-byte vector.
+
+NOTE: ideally this should be defined in terms of `start` as in the paper, but it is not currently
+the case with the Rust code. -/
 instance : Initialize (DuplexSponge U C) (Vector UInt8 32) where
   new iv := {
-    permutation := Initialize.new iv,
+    state := Initialize.new iv,
     absorbPos := 0,
-    squeezePos := 0
+    squeezePos := Fin.last SpongeSize.R
   }
 
 /--
-### Absorb an array of units into the sponge
-Algorithm (from Rust implementation):
+### Absorb a list of units into the sponge (paper version)
+
+Paper algorithm (process one element at a time):
+1. Set `i_s' := R` (forces a permutation on the next squeeze).
+2. If the input is empty, return immediately.
+3. Otherwise:
+   - If `absorb_pos < R` then permute the state and set `absorb_pos := 0`.
+   - Let `x` be the first input element and `x'` the remaining elements.
+   - Overwrite `state[absorb_pos]` with `x` (using `Vector.set`).
+   - Set `absorb_pos := absorb_pos + 1` and recursively call on `x'`.
+
+The differences from the Rust version:
+1. We use `List` instead of `Array`.
+2. We absorb one element at a time, not chunks.
+
+Difference from the paper: we fold the permute into an if-else branch, instead of invoking recursion
+on that branch (thus complicating the termination argument). Note also that we have structural
+recursion here, which is better behaved definitionally than well-founded recursion.
+-/
+def absorb (sponge : DuplexSponge U C) (ls : List U) :
+    OracleComp (forwardPermutationOracle C) (DuplexSponge U C) :=
+  -- Set squeeze position to the end of the rate segment
+  let sponge1 := { sponge with squeezePos := Fin.last SpongeSize.R }
+  match ls with
+  | [] => pure sponge1
+  | x :: xs => do
+    let permutedState ← query (spec := forwardPermutationOracle _) () (sponge1.state)
+    let sponge2 : DuplexSponge U C := if sponge1.absorbPos = SpongeSize.R then
+      { sponge1 with state := permutedState, absorbPos := 0 }
+    else
+      sponge1
+    let sponge3 := { sponge2 with
+      state := SpongeState.modify sponge2.state (Vector.set · (sponge2.absorbPos : Nat) x)
+      absorbPos := sponge1.absorbPos + 1 }
+    absorb sponge3 xs
+
+/--
+### Absorb an array of units into the sponge (Rust version)
+
+Note: this version absorbs chunks at a time, not a single element at a time
+
 1. Process input array in chunks that fit within the remaining rate space
 2. While there's still input data:
    - If absorb_pos == R (rate is full): permute the state, reset absorb_pos to 0
@@ -223,32 +408,32 @@ Algorithm (from Rust implementation):
      * Update absorb_pos += chunk_size
      * Continue with remaining input
 3. After processing all input, set squeeze_pos = R (force permutation on next squeeze)
+
+For our purpose, we will need to idealize access to the permutation oracle.
 -/
-def absorbUnchecked (sponge : DuplexSponge U C) (arr : Array U) : DuplexSponge U C :=
-  -- Always set `squeezePos` to the end of the rate segment
-  let sponge1 := { sponge with squeezePos := Fin.last SpongePermutationSize.R }
+def absorbFast (sponge : DuplexSponge U C) (arr : Array U) :
+    OracleComp (forwardPermutationOracle C) (DuplexSponge U C) := do
+  let sponge1 := { sponge with squeezePos := Fin.last SpongeSize.R }
   if arr.isEmpty then
-    sponge1
+    return sponge1
   else
-    let sponge2 := if sponge1.absorbPos = SpongePermutationSize.R then
-      let permutedState := SpongePermutationState.permute U (sponge1.permutation)
-      { sponge1 with permutation := permutedState, absorbPos := 0 }
+    let permutedState ← query (spec := forwardPermutationOracle _) () (sponge1.state)
+    let sponge2 : DuplexSponge U C := if sponge1.absorbPos = SpongeSize.R then
+      { sponge1 with state := permutedState, absorbPos := 0 }
     else
       sponge1
-    let chunkSize := min arr.size (SpongePermutationSize.R - sponge2.absorbPos)
-    haveI chunkSize_lt : chunkSize < SpongePermutationSize.R + 1 := by omega
-    let vecState : Vector U _ := SpongePermutationState.get sponge2.permutation
+    let chunkSize := min arr.size (SpongeSize.R - sponge2.absorbPos)
+    let vecState : Vector U _ := SpongeState.get sponge2.state
     -- Set the positions from `sponge2.absorbPos` to `sponge2.absorbPos + chunkSize` of the
-    -- underlying permutation vector to the elements of `arr`
+    -- underlying state vector to the elements of `arr`
     let vecState1 := Fin.foldl chunkSize
       (fun vec i => vec.set (sponge2.absorbPos + i) arr[i]
-        (lt_of_le_of_lt (by omega) SpongePermutationSize.R_lt_N))
+        (lt_of_le_of_lt (by omega) SpongeSize.R_lt_N))
       vecState
     let sponge3 := { sponge2 with
-      permutation := SpongePermutationState.update sponge2.permutation vecState1,
-      absorbPos := sponge2.absorbPos + (⟨chunkSize, chunkSize_lt⟩ : Fin _) }
-    let remainingArr := arr.drop chunkSize
-    absorbUnchecked sponge3 remainingArr
+      state := SpongeState.update sponge2.state vecState1,
+      absorbPos := sponge2.absorbPos + (⟨chunkSize, by omega⟩ : Fin _) }
+    absorbFast sponge3 (arr.drop chunkSize)
 termination_by arr.size
 decreasing_by
   rename_i h
@@ -256,12 +441,54 @@ decreasing_by
     lt_inf_iff, and_self_left]
   refine ⟨Array.size_pos_iff.mpr (by simpa using h), ?_⟩
   split
-  next h => simp; exact Nat.pos_of_neZero SpongePermutationSize.R
+  next h => simp
   next h => simp; omega
 
+/-- This is the Rust version once we fix an implementation of the permutation. -/
+def absorbUnchecked [Permute C] (sponge : DuplexSponge U C) (arr : Array U) : DuplexSponge U C :=
+  simulateQ' forwardPermutationOracleImpl (absorbFast sponge arr) (by sorry)
+
 /--
-### Squeeze out an array of units from the sponge
-Algorithm (from Rust implementation):
+### Squeeze out a vector of units from the sponge (paper version)
+
+We differ from the paper version in that we fold in the permute step into the loop, instead of
+having a recursive call with length unchanged (which would not fall under structural recursion).
+
+Compared to the Rust version:
+1. We squeeze out a precise number of `len` units, not into an array of undetermined size
+2. Our squeezing is done one element at a time, not chunks
+-/
+def squeeze (sponge : DuplexSponge U C) (len : Nat) :
+    OracleComp (forwardPermutationOracle C) (Vector U len × DuplexSponge U C) :=
+  match len with
+  -- If the length is 0, return an empty vector and the same sponge
+  | 0 => pure (#v[], sponge)
+  -- Otherwise, recursively squeeze out the first element and the rest
+  | n + 1 => do
+    -- Set absorbing index to zero
+    let sponge1 : DuplexSponge U C := { sponge with absorbPos := 0 }
+    let permutedState ← query (spec := forwardPermutationOracle _) () (sponge1.state)
+    -- If squeezing index is at the end of the rate segment, permute the state and reset the
+    -- squeezing index
+    let sponge2 := if sponge1.squeezePos = SpongeSize.R then
+      { sponge1 with state := permutedState, squeezePos := 0 }
+    else
+      sponge1
+    let squeezedVal := (SpongeState.get sponge2.state)[sponge2.squeezePos]
+    -- Increment the squeezing index
+    let sponge3 := { sponge2 with squeezePos := sponge2.squeezePos + 1 }
+    -- Recursively squeeze the rest
+    let (restVec, sponge4) ← squeeze sponge3 n
+    -- Return the concatenation of the squeezed value, the recursive squeezed vector, and the
+    -- updated sponge
+    return (restVec.insertIdx 0 squeezedVal, sponge4)
+
+/--
+### Squeeze out an array of units from the sponge (Rust version)
+
+Unlike the paper version which specifies the length of the output, this version squeezes out
+the rate segment "into" the given array.
+
 1. If output array is empty, return immediately
 2. Process output in chunks:
    - If squeeze_pos == R:
@@ -275,33 +502,37 @@ Algorithm (from Rust implementation):
 
 Note: Unlike absorb which processes input sequentially, squeeze may need to permute
 multiple times if the requested output is larger than what's available in the rate.
+
+We define this operation as an oracle computation having access to a permutation oracle.
 -/
-def squeezeUnchecked (sponge : DuplexSponge U C) (arr : Array U) : DuplexSponge U C × Array U :=
+def squeezeInto (sponge : DuplexSponge U C) (arr : Array U) :
+    OracleComp (forwardPermutationOracle C) (DuplexSponge U C × Array U) := do
   if arr.isEmpty then
-    (sponge, arr)
+    return (sponge, #[])
   else
-    -- First, permute if `squeezePos` is at the end of the rate segment
-    let sponge1 := if sponge.squeezePos = SpongePermutationSize.R then
-        let permutedState := SpongePermutationState.permute U (sponge.permutation)
-        ⟨permutedState, 0, 0⟩
+    -- Set absorbing index to zero
+    let sponge1 : DuplexSponge U C := { sponge with absorbPos := 0 }
+    -- Permute and reset squeezing index if `squeezePos` is at the end of the rate segment
+    let permutedState ← query (spec := forwardPermutationOracle _) () sponge1.state
+    let sponge2 := if sponge1.squeezePos = SpongeSize.R then
+        { sponge1 with state := permutedState, squeezePos := 0 }
       else
-        sponge
-    -- Then, extract the chunk from the state
-    let chunkSize := min arr.size (SpongePermutationSize.R - sponge1.squeezePos)
-    haveI chunkSize_lt : chunkSize < SpongePermutationSize.R + 1 := by omega
+        sponge1
+    -- Extract the chunk from the state
+    let chunkSize := min arr.size (SpongeSize.R - sponge2.squeezePos)
     -- First part of the output array is copied from the vector state from `sponge.squeezePos`
     -- to `sponge.squeezePos + chunkSize`
-    let extractedChunk := (SpongePermutationState.get (U := U) sponge1.permutation).extract
-      sponge1.squeezePos (sponge1.squeezePos + chunkSize)
+    let extractedChunk := (SpongeState.get (U := U) sponge2.state).extract
+      sponge2.squeezePos (sponge2.squeezePos + chunkSize)
     -- Then, update the squeeze position
-    let sponge2 := { sponge1 with
-      squeezePos := sponge1.squeezePos + (⟨chunkSize, chunkSize_lt⟩ : Fin _) }
+    let sponge3 := { sponge2 with
+      squeezePos := sponge2.squeezePos + (⟨chunkSize, by omega⟩ : Fin _) }
     -- Remaining array, throwing away the first `chunkSize` elements
     let remainingArr := arr.drop chunkSize
-    -- Second part of the output array is obtained via recursively calling `squeezeUnchecked`
+    -- Second part of the output array is obtained via recursively calling `squeeze`
     -- with the remaining array
-    let (sponge3, newArray) := squeezeUnchecked sponge2 remainingArr
-    (sponge3, extractedChunk.toArray ++ newArray)
+    let ⟨sponge4, newArray⟩ ← squeezeInto sponge3 remainingArr
+    return (sponge4, extractedChunk.toArray ++ newArray)
 termination_by arr.size
 decreasing_by
   rename_i h
@@ -309,8 +540,12 @@ decreasing_by
     lt_inf_iff, and_self_left]
   refine ⟨Array.size_pos_iff.mpr (by simpa using h), ?_⟩
   split
-  next h => simp; exact Nat.pos_of_neZero SpongePermutationSize.R
-  next h => omega
+  next h => simp
+  next h => simp; omega
+
+def squeezeUnchecked [Permute C] (sponge : DuplexSponge U C) (arr : Array U) :
+    DuplexSponge U C × Array U :=
+  simulateQ' (m := Id) forwardPermutationOracleImpl (squeezeInto sponge arr) (by sorry)
 
 /--
 ### Ratchet the sponge state for domain separation
@@ -320,24 +555,26 @@ Algorithm (from Rust implementation):
    (This erases any information about previously absorbed elements)
 3. Set squeeze_pos = R (forces permutation on next squeeze operation)
 -/
-def ratchetUnchecked (sponge : DuplexSponge U C) : DuplexSponge U C :=
-  let permutedState := SpongePermutationState.permute U (sponge.permutation)
+def ratchet (sponge : DuplexSponge U C) :
+    OracleComp (forwardPermutationOracle C) (DuplexSponge U C) := do
+  let permutedState : C ← query (spec := forwardPermutationOracle C) () sponge.state
   -- Use the lens to get the state
-  let vecState : Vector U SpongePermutationSize.N :=
-    SpongePermutationState.get permutedState
-  -- Zero out the rate portion using `Zeroize.zeroize`
-  let zeroed : Vector U SpongePermutationSize.N :=
-    Vector.ofFn
-      (fun i => if i < SpongePermutationSize.R
-        then Zeroize.zeroize vecState[i] else vecState[i])
+  let vecState : Vector U SpongeSize.N := SpongeState.get permutedState
+  -- Zero out the rate portion
+  let zeroed : Vector U SpongeSize.N :=
+    Vector.ofFn (fun i => if i < SpongeSize.R then 0 else vecState[i])
   -- Use the lens to update the state
-  let newVecState := SpongePermutationState.update permutedState zeroed
-  { sponge with
-    permutation := permutedState,
-    squeezePos := Fin.last SpongePermutationSize.R }
+  let newVecState := SpongeState.update permutedState zeroed
+  return { sponge with
+    state := permutedState,
+    squeezePos := Fin.last SpongeSize.R }
+
+/-- This is the Rust version once we fix an implementation of the permutation. -/
+def ratchetUnchecked [Permute C] (sponge : DuplexSponge U C) : DuplexSponge U C :=
+  simulateQ' forwardPermutationOracleImpl (ratchet sponge) (by sorry)
 
 /-- Implement DuplexSpongeInterface for DuplexSponge. -/
-instance : DuplexSpongeInterface U (DuplexSponge U C) where
+instance [Inhabited C] [Permute C] : DuplexSpongeInterface U (DuplexSponge U C) where
   absorbUnchecked := fun (sponge, arr) => absorbUnchecked sponge arr
   squeezeUnchecked := fun (sponge, arr) => squeezeUnchecked sponge arr
   ratchetUnchecked := ratchetUnchecked
@@ -347,9 +584,6 @@ end DuplexSponge
 namespace UInt8
 
 -- Implement SpongeUnit for UInt8
-
-instance : Zeroize UInt8 where
-  zeroize _ := 0
 
 instance : Serialize UInt8 ByteArray where
   serialize byte := ByteArray.mk #[byte]

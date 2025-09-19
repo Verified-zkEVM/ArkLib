@@ -9,9 +9,14 @@ import ArkLib.Data.Hash.DomainSep
 /-!
   # State of the Prover and Verifier in Duplex Sponge Fiat-Shamir
 
-  This file contains the implementation of prover and verifier states for interactive proofs
-  using duplex sponge functions, based on the [spongefish](https://github.com/arkworks-rs/spongefish)
-  Rust library.
+  This file contains the implementation of prover and verifier states for interactive proofs using
+  duplex sponge functions, based on the [spongefish](https://github.com/arkworks-rs/spongefish) Rust
+  library.
+
+  ## Note
+
+  We do _not_ use this file to define the duplex sponge Fiat-Shamir transformation in
+  `./Basic.lean`. This is because the translated Rust code is too "untyped" for our purpose.
 
   ## Core Components
 
