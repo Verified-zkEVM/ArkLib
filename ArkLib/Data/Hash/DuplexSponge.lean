@@ -11,7 +11,7 @@ import VCVio
 import ArkLib.ToVCVio.SimOracle
 
 /-!
-  # Duplex Sponge API
+  # Duplex Sponge API (Overwrite Mode)
 
   This file contains the API for the duplex sponge, which is a sponge that can be used to hash
   data.
@@ -356,6 +356,17 @@ instance : Zero (DuplexSponge U C) where
     sponge.absorbPos < SpongeSize.N :=
   lt_of_le_of_lt (Fin.is_le _) (SpongeSize.R_lt_N)
 
+@[simp, grind] lemma fin_chunkSize_lt_N (arrSize : Nat) (i : Fin (min arrSize SpongeSize.R)) :
+    i < SpongeSize.N := by
+  refine lt_of_le_of_lt ?_ SpongeSize.R_lt_N
+  omega
+
+@[simp, grind] lemma fin_chunkSize_plus_absorbPos_lt_N (absorbPos arrSize : Nat)
+    (i : Fin (min arrSize (SpongeSize.R - absorbPos))) :
+    absorbPos + i < SpongeSize.N := by
+  refine lt_of_le_of_lt ?_ SpongeSize.R_lt_N
+  omega
+
 /-- Initialize the duplex sponge, assuming access to an oracle from some other type `α` and an
   element `a : α`.
 
@@ -404,70 +415,84 @@ recursion here, which is better behaved definitionally than well-founded recursi
 -/
 def absorb (sponge : DuplexSponge U C) (ls : List U) :
     OracleComp (forwardPermutationOracle C) (DuplexSponge U C) :=
-  -- Set squeeze position to the end of the rate segment
-  let sponge1 := { sponge with squeezePos := Fin.last SpongeSize.R }
   match ls with
-  | [] => pure sponge1
-  | x :: xs => do
-    let permutedState ← query (spec := forwardPermutationOracle _) () (sponge1.state)
-    let sponge2 : DuplexSponge U C := if sponge1.absorbPos = SpongeSize.R then
-      { sponge1 with state := permutedState, absorbPos := 0 }
-    else
-      sponge1
-    let sponge3 := { sponge2 with
-      state := SpongeState.modify sponge2.state (Vector.set · (sponge2.absorbPos : Nat) x)
-      absorbPos := sponge1.absorbPos + 1 }
-    absorb sponge3 xs
+  -- If the list is empty, return the sponge with the squeezing index set to the end of the rate
+  -- segment
+  | [] => pure { sponge with squeezePos := Fin.last SpongeSize.R }
+  -- Otherwise, process the list one element at a time
+  | x :: xs =>
+    -- If the absorbing index is at the end of the rate segment, permute the state, overwrite the
+    -- first unit of the state vector with the first element of the list, reset the absorbing index
+    -- to one, and set the squeezing index to the end of the rate segment
+    if sponge.absorbPos = SpongeSize.R then do
+      let permutedState ← query (spec := forwardPermutationOracle _) () (sponge.state)
+      let newSponge : DuplexSponge U C := {
+        state := SpongeState.modify permutedState (Vector.set · 0 x),
+        absorbPos := 1
+        squeezePos := Fin.last SpongeSize.R }
+      -- Then recursively run absorb on the remaining list
+      absorb newSponge xs
+    else do
+      -- Otherwise, overwrite the absorbing index with the first element of the list, increment the
+      -- absorbing index, set the squeezing index to the end of the rate segment, and recursively
+      -- run absorb on the remaining list
+      let newSponge : DuplexSponge U C := {
+        state := SpongeState.modify sponge.state (Vector.set · (sponge.absorbPos : Nat) x),
+        absorbPos := sponge.absorbPos + 1,
+        squeezePos := Fin.last SpongeSize.R }
+      absorb newSponge xs
 
 /--
 ### Absorb an array of units into the sponge (Rust version)
 
-Note: this version absorbs chunks at a time, not a single element at a time
+Difference from the paper version: we absorb chunks at a time, not a single element at a time.
 
-1. Process input array in chunks that fit within the remaining rate space
-2. While there's still input data:
-   - If absorb_pos == R (rate is full): permute the state, reset absorb_pos to 0
-   - Otherwise:
-     * Calculate chunk_size = min(remaining_input.length, R - absorb_pos)
-     * Copy chunk into state[absorb_pos..absorb_pos + chunk_size]
-     * Update absorb_pos += chunk_size
-     * Continue with remaining input
-3. After processing all input, set squeeze_pos = R (force permutation on next squeeze)
+1. Set `squeeze_pos := R` at entry.
+2. While `input` is nonempty:
+   - If `absorb_pos == R` (rate full):
+     • Permute the state and reset `absorb_pos := 0`.
+     • Continue with the same `input` (no input consumed in this step).
+   - Else:
+     • `chunk_len := min(input.len, R - absorb_pos)`.
+     • Copy `chunk_len` items from `input` into `state[absorb_pos .. absorb_pos + chunk_len)`.
+     • Update `absorb_pos += chunk_len` and drop `chunk_len` from `input`.
 
-For our purpose, we will need to idealize access to the permutation oracle.
+To guide Lean's termination proof, we use the pair `(arr.size, absorbPos)` (with lex order)
+as the termination measure.
 -/
 def absorbFast (sponge : DuplexSponge U C) (arr : Array U) :
     OracleComp (forwardPermutationOracle C) (DuplexSponge U C) := do
+  -- Set `squeeze_pos = R` before entering the loop.
   let sponge1 := { sponge with squeezePos := Fin.last SpongeSize.R }
-  if arr.isEmpty then
+  -- If the array is empty, return the sponge with the squeezing index set to the end of the rate
+  -- segment
+  if hEmpty : arr.isEmpty then
     return sponge1
   else
-    let permutedState ← query (spec := forwardPermutationOracle _) () (sponge1.state)
-    let sponge2 : DuplexSponge U C := if sponge1.absorbPos = SpongeSize.R then
-      { sponge1 with state := permutedState, absorbPos := 0 }
-    else
-      sponge1
-    let chunkSize := min arr.size (SpongeSize.R - sponge2.absorbPos)
-    let vecState : Vector U _ := SpongeState.get sponge2.state
-    -- Set the positions from `sponge2.absorbPos` to `sponge2.absorbPos + chunkSize` of the
-    -- underlying state vector to the elements of `arr`
-    let vecState1 := Fin.foldl chunkSize
-      (fun vec i => vec.set (sponge2.absorbPos + i) arr[i]
-        (lt_of_le_of_lt (by omega) SpongeSize.R_lt_N))
-      vecState
-    let sponge3 := { sponge2 with
-      state := SpongeState.update sponge2.state vecState1,
-      absorbPos := sponge2.absorbPos + (⟨chunkSize, by omega⟩ : Fin _) }
-    absorbFast sponge3 (arr.drop chunkSize)
-termination_by arr.size
-decreasing_by
-  rename_i h
-  simp only [Array.drop_eq_extract, Array.size_extract, min_self, tsub_lt_self_iff,
-    lt_inf_iff, and_self_left]
-  refine ⟨Array.size_pos_iff.mpr (by simpa using h), ?_⟩
-  split
-  next h => simp
-  next h => simp; omega
+    -- If the absorbing index is exactly at the end of the rate segment, we must permute
+    -- and reset the absorbing index to 0, then recurse on the same input array.
+    if hFull : sponge.absorbPos = SpongeSize.R then do
+      -- For termination proof
+      have : 0 < sponge.absorbPos := by apply Fin.lt_def.mpr; rw [hFull]; simp
+      let permutedState ← query (spec := forwardPermutationOracle _) () (sponge.state)
+      let newSponge : DuplexSponge U C := { sponge1 with state := permutedState, absorbPos := 0 }
+      absorbFast newSponge arr
+    else do
+      -- Otherwise we have available rate space. Compute the maximal chunk that fits.
+      let chunkSize := min arr.size (SpongeSize.R - sponge.absorbPos)
+      -- Copy that chunk from the input array into the rate slice of the state.
+      let vecState : Vector U _ := SpongeState.get sponge1.state
+      let newVecState := Fin.foldl chunkSize
+        (fun vec i => vec.set (sponge.absorbPos + i) arr[i]) vecState
+      -- Update the state, and advance the absorbing index by `chunkSize`
+      let newSponge := { sponge1 with
+        state := SpongeState.update sponge1.state newVecState,
+        absorbPos := sponge.absorbPos + ⟨chunkSize, by omega⟩ }
+      -- For termination proof
+      have : arr.size - min arr.size (SpongeSize.R - ↑sponge.absorbPos) < arr.size := by
+        simp; exact ⟨Array.size_pos_iff.mpr (by simpa using hEmpty), by omega⟩
+      absorbFast newSponge (arr.drop chunkSize)
+termination_by (arr.size, sponge.absorbPos)
 
 /-- This is the Rust version once we fix an implementation of the permutation. -/
 def absorbUnchecked [Permute C] (sponge : DuplexSponge U C) (arr : Array U) : DuplexSponge U C :=
@@ -492,15 +517,13 @@ def squeeze (sponge : DuplexSponge U C) (len : Nat) :
   | n + 1 => do
     -- Set absorbing index to zero
     let sponge1 : DuplexSponge U C := { sponge with absorbPos := 0 }
-    let permutedState ← query (spec := forwardPermutationOracle _) () (sponge1.state)
-    -- If squeezing index is at the end of the rate segment, permute the state and reset the
-    -- squeezing index
-    let sponge2 := if sponge1.squeezePos = SpongeSize.R then
-      { sponge1 with state := permutedState, squeezePos := 0 }
+    let sponge2 ← if sponge1.squeezePos = SpongeSize.R then
+      let permutedState ← query (spec := forwardPermutationOracle _) () (sponge1.state)
+      let sponge2 : DuplexSponge U C := { sponge1 with state := permutedState, squeezePos := 0 }
+      pure sponge2
     else
-      sponge1
+      pure sponge1
     let squeezedVal := (SpongeState.get sponge2.state)[sponge2.squeezePos]
-    -- Increment the squeezing index
     let sponge3 := { sponge2 with squeezePos := sponge2.squeezePos + 1 }
     -- Recursively squeeze the rest
     let (restVec, sponge4) ← squeeze sponge3 n
@@ -532,17 +555,26 @@ We define this operation as an oracle computation having access to a permutation
 -/
 def squeezeInto (sponge : DuplexSponge U C) (arr : Array U) :
     OracleComp (forwardPermutationOracle C) (DuplexSponge U C × Array U) := do
-  if arr.isEmpty then
+  if hEmpty : arr.isEmpty then
     return (sponge, #[])
   else
     -- Set absorbing index to zero
     let sponge1 : DuplexSponge U C := { sponge with absorbPos := 0 }
     -- Permute and reset squeezing index if `squeezePos` is at the end of the rate segment
-    let permutedState ← query (spec := forwardPermutationOracle _) () sponge1.state
-    let sponge2 := if sponge1.squeezePos = SpongeSize.R then
-        { sponge1 with state := permutedState, squeezePos := 0 }
+    -- Note: we need to return an attached proof that `squeezePos` is less than the rate
+    -- in order to prove termination
+    let ⟨sponge2, h⟩ ←
+      if hFull : sponge1.squeezePos = SpongeSize.R then do
+        let permutedState ← query (spec := forwardPermutationOracle _) () sponge1.state
+        let sponge2 : DuplexSponge U C := { sponge1 with state := permutedState, squeezePos := 0 }
+        have : sponge2.squeezePos < SpongeSize.R := by simp [sponge2]
+        let sponge2WithProof : { s : DuplexSponge U C | s.squeezePos < SpongeSize.R } :=
+          ⟨sponge2, this⟩
+        pure sponge2WithProof
       else
-        sponge1
+        let sponge2WithProof : { s : DuplexSponge U C | s.squeezePos < SpongeSize.R } :=
+          ⟨sponge1, by simp; omega⟩
+        pure sponge2WithProof
     -- Extract the chunk from the state
     let chunkSize := min arr.size (SpongeSize.R - sponge2.squeezePos)
     -- First part of the output array is copied from the vector state from `sponge.squeezePos`
@@ -560,13 +592,8 @@ def squeezeInto (sponge : DuplexSponge U C) (arr : Array U) :
     return (sponge4, extractedChunk.toArray ++ newArray)
 termination_by arr.size
 decreasing_by
-  rename_i h
-  simp only [Array.drop_eq_extract, Array.size_extract, min_self, tsub_lt_self_iff,
-    lt_inf_iff, and_self_left]
-  refine ⟨Array.size_pos_iff.mpr (by simpa using h), ?_⟩
-  split
-  next h => simp
-  next h => simp; omega
+  simp at h ⊢
+  exact ⟨Array.size_pos_iff.mpr (by simpa using hEmpty), h⟩
 
 def squeezeUnchecked [Permute C] (sponge : DuplexSponge U C) (arr : Array U) :
     DuplexSponge U C × Array U :=

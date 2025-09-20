@@ -74,7 +74,7 @@ structure LookaheadSequenceFamily
     - the input states are not a strict subset of each other, or
     - the output states are not a strict subset of each other -/
   maximality : ∀ s ∈ seqFamily, ∀ s' ∈ seqFamily,
-    ¬ (s.inputState ⊆ s'.inputState) ∨ ¬ (s'.outputState ⊆ s.inputState)
+    ¬ (s.inputState ⊆ s'.inputState) ∨ ¬ (s'.outputState ⊆ s.outputState)
   /-- The length of any sequence is at most the challenge size of the given challenge round `i` -/
   length_le_challengeSize : ∀ s ∈ seqFamily, s.inputState.length ≤ challengeSize i
 
