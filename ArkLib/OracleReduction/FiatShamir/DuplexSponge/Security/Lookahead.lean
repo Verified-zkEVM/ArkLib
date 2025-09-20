@@ -98,8 +98,8 @@ one of the following:
 - `err`
 - An encoded verifier's challenge (vector of `chalSize i` units)
 
-TODO: figure out the best way to encode the two errors (currently we encode `none` as the failure of
-OracleComp, and `err` as `Option.none` inside)
+TODO: figure out the best way to encode the two errors (currently we encode `err` as the failure of
+OracleComp, and `none` as `Option.none` inside)
 -/
 def lookAhead (fwdPermTrace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
@@ -116,20 +116,17 @@ def lookAhead (fwdPermTrace : QueryLog (forwardPermutationOracle (CanonicalSpong
   `challengeSize i` elements (since we might be over-sampling)
   -/
   let ⟨seqFamily, _, _⟩ := computeLookaheadSequenceFamily fwdPermTrace state i
-  if hEmpty : seqFamily.card = 0 then
-    failure
-  else if hGtOne : seqFamily.card > 1 then
+  if hGtOne : seqFamily.card > 1 then
     return Option.none
+  else if hEmpty : seqFamily.card = 0 then
+    failure
   else
     have : seqFamily.card = 1 := by omega
     have : seqFamily.val.toList.length = 1 := by aesop
     -- Get the only element of the finset (TODO: find better way)
     let seq := seqFamily.val.toList[0]
+    let seqRateSegment := seq.inputState.map (fun s => s.rateSegment)
+    -- Sample units to fill the encoded challenge length, then return
     sorry
-  --   let vec_s :=
-  --     (seq.inputState.map (fun s => s.rateSegment) ++
-  --      (Fin (pSpec.Lᵥi i - seq.inputState.length).toFinset.map (fun _ => Vector.rep U 0 SpongeSize.R)))
-  --       .take (challengeSize i)
-  --   return vec_s
 
 end DuplexSpongeFS

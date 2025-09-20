@@ -73,52 +73,185 @@ def removeRedundantEntryDS (log : QueryLog (duplexSpongeChallengeOracle StmtIn U
 
 namespace BadEventDS
 
-/-! Fist, we define the main bad event, which consists of four sub-cases -/
+variable (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) (state : CanonicalSpongeState U)
 
--- def hash
+/-! Fist, we define the main bad event, which consists of two main conditions:
+1. No duplicate in the capacity segment (for the base trace that removed redundant entries)
+2. The same query to `p` leads to different answers, or there are inconsistent queries across `p`
+and `p⁻¹` -/
 
--- def perm
+/- NOTE: the paper write `∃ j > 0`, which can be confusing since we don't know whether the intended
+indexing is from 0 or from 1. We assume they mean from 1, and since indexing here is from 0, we just
+write `∃ j`. -/
 
--- def permInv
+def capacitySegmentDupHash : Prop :=
+  let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
+  ∃ j : Fin baseTrace.length, ∃ capSeg : Vector U SpongeSize.C,
+    ∃ stmt : StmtIn, baseTrace[j] = ⟨.inl (), stmt, capSeg⟩ ∧
+      ∃ j' < j,
+        ∃ stmt', baseTrace[j'] = ⟨.inl (), stmt', capSeg⟩ ∨
+        (∃ stateIn1 stateOut1, baseTrace[j'] = ⟨.inr .Fwd, stateIn1, stateOut1⟩
+          ∧ stateOut1.capacitySegment = capSeg) ∨
+        (∃ stateOut2 stateIn2, baseTrace[j'] = ⟨.inr .Bwd, stateOut2, stateIn2⟩
+          ∧ stateIn2.capacitySegment = capSeg) ∨
+        (∃ stateIn3 stateOut3, baseTrace[j'] = ⟨.inr .Fwd, stateIn3, stateOut3⟩
+          ∧ stateIn3.capacitySegment = capSeg) ∨
+        (∃ stateOut4 stateIn4, baseTrace[j'] = ⟨.inr .Bwd, stateOut4, stateIn4⟩
+          ∧ stateOut4.capacitySegment = capSeg)
 
--- def func
+alias E_h := capacitySegmentDupHash
 
--- def combined = hash + perm + permInv + func
+def capacitySegmentDupPerm : Prop :=
+  let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
+  ∃ j : Fin baseTrace.length, ∃ capSeg : Vector U SpongeSize.C,
+    (∃ stateIn stateOut, baseTrace[j] = ⟨.inr .Fwd, stateIn, stateOut⟩ ∧
+      stateOut.capacitySegment = capSeg) ∧
+      (
+        (∃ j' < j, ∃ stmt', baseTrace[j'] = ⟨.inl (), stmt', capSeg⟩) ∨
+        (∃ j' < j, ∃ stateIn1 stateOut1, baseTrace[j'] = ⟨.inr .Fwd, stateIn1, stateOut1⟩ ∧
+          stateOut1.capacitySegment = capSeg) ∨
+        (∃ j' ≤ j, ∃ stateOut2 stateIn2, baseTrace[j'] = ⟨.inr .Bwd, stateOut2, stateIn2⟩ ∧
+          stateIn2.capacitySegment = capSeg) ∨
+        (∃ j' ≤ j, ∃ stateIn3 stateOut3, baseTrace[j'] = ⟨.inr .Fwd, stateIn3, stateOut3⟩ ∧
+          stateIn3.capacitySegment = capSeg) ∨
+        (∃ j' ≤ j, ∃ stateOut4 stateIn4, baseTrace[j'] = ⟨.inr .Bwd, stateOut4, stateIn4⟩ ∧
+          stateOut4.capacitySegment = capSeg)
+      )
 
-/-! Then we define other bad events that would be false (`= 0`) if the main event is false (`= 0`)
+alias E_p := capacitySegmentDupPerm
+
+def capacitySegmentDupPermInv : Prop :=
+  let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
+  ∃ j : Fin baseTrace.length, ∃ capSeg : Vector U SpongeSize.C,
+    (∃ stateOut stateIn, baseTrace[j] = ⟨.inr .Bwd, stateOut, stateIn⟩ ∧
+      stateIn.capacitySegment = capSeg) ∧
+      (
+        (∃ j' < j, ∃ stmt', baseTrace[j'] = ⟨.inl (), stmt', capSeg⟩) ∨
+        (∃ j' < j, ∃ stateIn1 stateOut1, baseTrace[j'] = ⟨.inr .Fwd, stateIn1, stateOut1⟩ ∧
+          stateOut1.capacitySegment = capSeg) ∨
+        (∃ j' < j, ∃ stateIn2 stateOut2, baseTrace[j'] = ⟨.inr .Bwd, stateOut2, stateIn2⟩ ∧
+          stateIn2.capacitySegment = capSeg) ∨
+        (∃ j' ≤ j, ∃ stateIn3 stateOut3, baseTrace[j'] = ⟨.inr .Fwd, stateIn3, stateOut3⟩ ∧
+          stateIn3.capacitySegment = capSeg) ∨
+        (∃ j' ≤ j, ∃ stateIn4 stateOut4, baseTrace[j'] = ⟨.inr .Bwd, stateOut4, stateIn4⟩ ∧
+          stateOut4.capacitySegment = capSeg)
+      )
+
+alias E_pinv := capacitySegmentDupPermInv
+
+/-- There exists an output capacity segment in the base trace tr¯ that appears as a prior
+input/output capacity segment. This breaks down into one of the predicates above -/
+def capacitySegmentDup : Prop :=
+  capacitySegmentDupHash trace ∨ capacitySegmentDupPerm trace ∨ capacitySegmentDupPermInv trace
+
+alias E_dup := capacitySegmentDup
+
+/- The same query to `p` leads to different answers, or there are inconsistent queries across `p`
+and `p⁻¹` -/
+def notFunction : Prop :=
+  let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
+  ∃ j : Fin baseTrace.length, ∃ stateIn _stateOut : CanonicalSpongeState U,
+    baseTrace[j] = ⟨.inr .Fwd, stateIn, _stateOut⟩ ∧
+      ∃ j' < j,
+        ∃ stateOut1 : CanonicalSpongeState U, baseTrace[j'] = ⟨.inr .Fwd, stateIn, stateOut1⟩ ∨
+        ∃ stateOut2 : CanonicalSpongeState U, baseTrace[j'] = ⟨.inr .Bwd, stateOut2, stateIn⟩
+
+alias E_func := notFunction
+
+def combined : Prop :=
+  capacitySegmentDup trace ∨ notFunction trace
+
+alias E := combined
+
+/-! Then we define other bad events that don't hold (`= 0`)
+if the combined event doesn't hold (`= 0`)
 -/
 
--- def collisionFwdFwd
+def collisionFwdFwd : Prop :=
+  let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
+  ∃ stateIn stateIn' stateOut,
+    (stateIn, stateOut) ∈ baseTrace.getQ (.inr .Fwd) ∧
+    (stateIn', stateOut) ∈ baseTrace.getQ (.inr .Fwd) ∧
+    stateIn ≠ stateIn'
 
--- def collisionFwdBwd
+alias E_col_p := collisionFwdFwd
 
--- def collisionBwdFwd
+def collisionBwdBwd : Prop :=
+  let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
+  ∃ stateOut stateOut' stateIn,
+    (stateOut, stateIn) ∈ baseTrace.getQ (.inr .Bwd) ∧
+    (stateOut', stateIn) ∈ baseTrace.getQ (.inr .Bwd) ∧
+    stateOut ≠ stateOut'
 
--- def collisionBwdBwd
+alias E_col_pinv := collisionBwdBwd
 
--- def collisionPerm
+def collisionFwdBwd : Prop :=
+  let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
+  ∃ stateIn stateOut stateOut',
+    (stateIn, stateOut) ∈ baseTrace.getQ (.inr .Fwd) ∧
+    (stateOut', stateIn) ∈ baseTrace.getQ (.inr .Bwd) ∧
+    stateOut ≠ stateOut'
 
--- alias prp := collisionPerm
+alias E_col_p_pinv := collisionFwdBwd
 
--- lemma not_collisionPerm_of_not_combined
+def collisionBwdFwd : Prop :=
+  let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
+  ∃ stateIn stateOut stateOut',
+    (stateIn, stateOut) ∈ baseTrace.getQ (.inr .Bwd) ∧
+    (stateOut', stateIn) ∈ baseTrace.getQ (.inr .Fwd) ∧
+    stateOut ≠ stateOut'
 
--- def inv
+alias E_col_pinv_p := collisionBwdFwd
 
--- lemma not_inv_of_not_combined
+def collisionPerm : Prop :=
+  collisionFwdFwd trace ∨ collisionBwdBwd trace ∨ collisionFwdBwd trace ∨ collisionBwdFwd trace
 
--- def fork
+alias E_prp := collisionPerm
 
--- lemma not_fork_of_not_combined
+lemma not_collisionPerm_of_not_combined (h : ¬ E trace) : ¬ E_prp trace :=
+  sorry
 
--- def outOfOrderHash
+/- TODO: these events / predicates depend on the definition of backtracking sequence family and
+indices -/
 
--- def outOfOrderPerm
+def inv : Prop :=
+  -- NOTE: placeholder for now
+  trace = [] ∧ state = 0
 
--- def outOfOrder
+alias E_inv := inv
 
--- alias time := outOfOrder
+lemma not_inv_of_not_combined (h : ¬ E trace) : ¬ E_inv trace state :=
+  sorry
 
--- lemma not_outOfOrder_of_not_combined
+def fork : Prop :=
+  -- NOTE: placeholder for now
+  trace = [] ∧ state = 0
+
+alias E_fork := fork
+
+lemma not_fork_of_not_combined (h : ¬ E trace) : ¬ E_fork trace state :=
+  sorry
+
+
+def outOfOrderHash : Prop :=
+  -- NOTE: placeholder for now
+  trace = [] ∧ state = 0
+
+alias E_time_h := outOfOrderHash
+
+def outOfOrderPerm : Prop :=
+  -- NOTE: placeholder for now
+  trace = [] ∧ state = 0
+
+alias E_time_p := outOfOrderPerm
+
+def outOfOrder : Prop :=
+  outOfOrderHash trace state ∨ outOfOrderPerm trace state
+
+alias E_time := outOfOrder
+
+lemma not_outOfOrder_of_not_combined (h : ¬ E trace) : ¬ E_time trace state :=
+  sorry
 
 end BadEventDS
 
