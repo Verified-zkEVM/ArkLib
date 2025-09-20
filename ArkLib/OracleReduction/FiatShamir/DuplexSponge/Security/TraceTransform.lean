@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.KeyLemma
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Backtrack
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Lookahead
 
 /-!
 # Trace Transformations

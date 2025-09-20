@@ -110,7 +110,13 @@ import ArkLib.OracleReduction.Equiv
 import ArkLib.OracleReduction.Execution
 import ArkLib.OracleReduction.FiatShamir.Basic
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
-import ArkLib.OracleReduction.FiatShamir.DuplexSponge.SecurityAnalysis.KeyLemma
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.AbortAnalysis
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Backtrack
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEvents
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.KeyLemma
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Lookahead
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.ProverTransform
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.State
 import ArkLib.OracleReduction.LiftContext.Lens
 import ArkLib.OracleReduction.LiftContext.OracleReduction
