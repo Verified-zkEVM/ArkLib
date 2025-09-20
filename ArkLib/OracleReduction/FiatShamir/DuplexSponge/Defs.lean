@@ -5,6 +5,9 @@ import ArkLib.OracleReduction.FiatShamir.Basic
 # Duplex Sponge Fiat-Shamir
 
 We define the (multi-round) Fiat-Shamir transformation using duplex sponges.
+
+NOTE: we currently do _not_ define the salt explicitly. The salted version of the transform can be
+obtained via applying the transform to the protocol with the added salt as the first message.
 -/
 
 namespace OracleSpec
@@ -25,9 +28,25 @@ def duplexSpongeChallengeOracle (StartType : Type) (U : Type)
 
 end OracleSpec
 
-open ProtocolSpec OracleComp OracleSpec
+namespace ProtocolSpec
 
-open scoped BigOperators
+/-- Type class for protocol specifications to specify the size of each message as a natural number
+  (to be interpreted as a vector of units `U` of the given size for some sponge unit `U`) -/
+class HasMessageSize {n : ℕ} (pSpec : ProtocolSpec n) where
+  messageSize : pSpec.MessageIdx → Nat
+
+export HasMessageSize (messageSize)
+
+/-- Type class for protocol specifications to specify the size of each challenge as a natural number
+  (to be interpreted as a vector of units `U` of the given size for some sponge unit `U`) -/
+class HasChallengeSize {n : ℕ} (pSpec : ProtocolSpec n) where
+  challengeSize : pSpec.ChallengeIdx → Nat
+
+export HasChallengeSize (challengeSize)
+
+end ProtocolSpec
+
+open ProtocolSpec OracleComp OracleSpec
 
 variable {n : ℕ}
 
@@ -36,10 +55,9 @@ variable {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
   [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
   {U : Type} [SpongeUnit U] [SpongeSize]
   -- All messages are serializable to an array of units
-  [∀ i, Serialize (pSpec.Message i) (Array U)]
-  {chalSize : pSpec.ChallengeIdx → Nat}
+  [HasMessageSize pSpec] [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
   -- All challenges are deserializable from an array of units
-  [∀ i, Deserialize (pSpec.Challenge i) (Vector U (chalSize i))]
+  [HasChallengeSize pSpec] [∀ i, Deserialize (pSpec.Challenge i) (Vector U (challengeSize i))]
 
 namespace ProtocolSpec.Messages
 
@@ -58,12 +76,13 @@ def deriveTranscriptDSFSAux {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
       let ⟨curSponge, prevTranscript⟩ ← ih
       match hDir : pSpec.dir i with
       | .V_to_P =>
-        let ⟨challenge, newSponge⟩ ← liftM (curSponge.squeeze (chalSize ⟨i, hDir⟩))
+        let ⟨challenge, newSponge⟩ ← liftM (curSponge.squeeze (challengeSize ⟨i, hDir⟩))
         let deserializedChallenge : pSpec.Challenge ⟨i, hDir⟩ :=
           Deserialize.deserialize challenge
         return (newSponge, prevTranscript.concat deserializedChallenge)
       | .P_to_V =>
-        let serializedMessage : Array U := Serialize.serialize (messages ⟨i, hDir⟩)
+        let serializedMessage : Vector U (messageSize ⟨i, hDir⟩) :=
+          Serialize.serialize (messages ⟨i, hDir⟩)
         let newSponge ← liftM (DuplexSponge.absorb curSponge serializedMessage.toList)
         return (newSponge, prevTranscript.concat (messages ⟨i, hDir⟩)))
     i
@@ -77,7 +96,7 @@ def deriveTranscriptDSFS {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
     OracleComp (oSpec ++ₒ duplexSpongeChallengeOracle StmtIn U)
       (DuplexSponge U (Vector U SpongeSize.N) × pSpec.FullTranscript) := do
   let sponge ← liftM (DuplexSponge.start stmtIn)
-  deriveTranscriptDSFSAux (chalSize := chalSize) sponge messages (Fin.last n)
+  deriveTranscriptDSFSAux sponge messages (Fin.last n)
 
 end ProtocolSpec.Messages
 
@@ -103,13 +122,13 @@ def Prover.processRoundDSFS [∀ i, VCVCompatible (pSpec.Challenge i)] (j : Fin 
   | .V_to_P => do
     let f ← prover.receiveChallenge ⟨j, hDir⟩ state
     let (challenge, newSponge) ←
-      liftM (DuplexSponge.squeeze sponge (chalSize ⟨j, hDir⟩))
+      liftM (DuplexSponge.squeeze sponge (challengeSize ⟨j, hDir⟩))
     -- Deserialize the challenge
     let deserializedChallenge : pSpec.Challenge ⟨j, hDir⟩ := Deserialize.deserialize challenge
     return ⟨messages.extend hDir, newSponge, f deserializedChallenge⟩
   | .P_to_V => do
     let ⟨msg, newState⟩ ← prover.sendMessage ⟨j, hDir⟩ state
-    let serializedMessage : Array U := Serialize.serialize msg
+    let serializedMessage : Vector U (messageSize ⟨j, hDir⟩) := Serialize.serialize msg
     let newSponge ← liftM (DuplexSponge.absorb sponge serializedMessage.toList)
     return ⟨messages.concat hDir msg, newSponge, newState⟩
 
@@ -131,7 +150,7 @@ def Prover.runToRoundDSFS [∀ i, VCVCompatible (pSpec.Challenge i)] (i : Fin (n
       let sponge ← liftM (DuplexSponge.start stmt)
       return ⟨default, sponge, state⟩
     )
-    (prover.processRoundDSFS (chalSize := chalSize))
+    (prover.processRoundDSFS)
     i
 
 /-- The duplex sponge Fiat-Shamir transformation for the prover. -/
@@ -144,7 +163,7 @@ def Prover.duplexSpongeFiatShamir (P : Prover oSpec StmtIn WitIn StmtOut WitOut 
   input := fun ctx => ⟨ctx.1, P.input ctx⟩
   -- Compute the messages to send via the modified `runToRoundFS`
   sendMessage | ⟨0, _⟩ => fun ⟨stmtIn, state⟩ => do
-    let ⟨messages, _, state⟩ ← P.runToRoundDSFS (chalSize := chalSize) (Fin.last n) stmtIn state
+    let ⟨messages, _, state⟩ ← P.runToRoundDSFS (Fin.last n) stmtIn state
     return ⟨messages, state⟩
   -- This function is never invoked so we apply the elimination principle
   receiveChallenge | ⟨0, h⟩ => nomatch h
@@ -158,7 +177,7 @@ def Verifier.duplexSpongeFiatShamir (V : Verifier oSpec StmtIn StmtOut pSpec) :
     -- Get the messages from the non-interactive proof
     let messages : pSpec.Messages := proof 0
     -- Derive the full transcript based on the messages and the sponge
-    let ⟨_, transcript⟩ ← messages.deriveTranscriptDSFS (chalSize := chalSize) stmtIn
+    let ⟨_, transcript⟩ ← messages.deriveTranscriptDSFS stmtIn
     V.verify stmtIn transcript
 
 /-- The Fiat-Shamir transformation for an (interactive) reduction, which consists of applying the
@@ -166,5 +185,5 @@ def Verifier.duplexSpongeFiatShamir (V : Verifier oSpec StmtIn StmtOut pSpec) :
 def Reduction.duplexSpongeFiatShamir (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
     NonInteractiveReduction (∀ i, pSpec.Message i) (oSpec ++ₒ duplexSpongeChallengeOracle StmtIn U)
       StmtIn WitIn StmtOut WitOut where
-  prover := R.prover.duplexSpongeFiatShamir (chalSize := chalSize)
-  verifier := R.verifier.duplexSpongeFiatShamir (chalSize := chalSize)
+  prover := R.prover.duplexSpongeFiatShamir
+  verifier := R.verifier.duplexSpongeFiatShamir
