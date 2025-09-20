@@ -13,3 +13,29 @@ import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Lookahead
 This file contains the trace transformations for duplex sponge Fiat-Shamir, following Section 5.5 in
 the paper.
 -/
+
+open OracleComp OracleSpec ProtocolSpec
+
+namespace DuplexSpongeFS
+
+variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
+  {n : ℕ} {pSpec : ProtocolSpec n}
+  {U : Type} [SpongeUnit U] [SpongeSize]
+  [HasChallengeSize pSpec]
+
+-- def stdTrace
+
+/-- The transformation of basic Fiat-Shamir query-answer traces (from both prover and verifier)
+to duplex-sponge Fiat-Shamir query-answer traces (from both prover and verifier)
+
+Note: this goes the opposite direction as the prover transformation -/
+def basicToDuplexSpongeFSTrace
+    (proveQueryLog : QueryLog (oSpec ++ₒ fsChallengeOracle StmtIn pSpec))
+    (verifyQueryLog : QueryLog (oSpec ++ₒ fsChallengeOracle StmtIn pSpec)) :
+      QueryLog (oSpec ++ₒ duplexSpongeChallengeOracle StmtIn U) ×
+      QueryLog (oSpec ++ₒ duplexSpongeChallengeOracle StmtIn U) :=
+  sorry
+
+alias d2STrace := basicToDuplexSpongeFSTrace
+
+end DuplexSpongeFS
