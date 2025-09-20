@@ -71,6 +71,7 @@ import ArkLib.Data.Hash.DomainSep
 import ArkLib.Data.Hash.DuplexSponge
 import ArkLib.Data.Hash.Poseidon2
 import ArkLib.Data.List.BigOperators
+import ArkLib.Data.List.Find
 import ArkLib.Data.List.HList
 import ArkLib.Data.List.Lemmas
 import ArkLib.Data.List.Vector

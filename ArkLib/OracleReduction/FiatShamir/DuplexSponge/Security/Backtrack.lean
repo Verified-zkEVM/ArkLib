@@ -93,16 +93,19 @@ structure BacktrackSequenceFamily (trace : QueryLog (duplexSpongeChallengeOracle
 - the query-answer trace for the oracle `(h, p, p⁻¹)`
 - a state (vector of `N` units)
 
-And returns (with potential failure):
-- an input statement
-- a round index `i ≤ n`
-- the protocol messages up to round `i`
+And returns one of the following:
+- `none`
+- `err`
+- A result consisting of: an input statement, a round index `i ≤ n`, and the protocol messages up to
+  round `i`
 
 NOTE: we do _not_ define the extra data structure `tr▵` as in the paper, as that is entirely derived
-from the actual trace and is only present for efficiency (which we do not plan to reason about) -/
+from the actual trace and is only present for efficiency (which we do not plan to reason about)
+
+TODO: figure out the best way to encode the two errors -/
 def backTrack (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (state : CanonicalSpongeState U) :
-    Option (StmtIn × (i : Fin (n + 1)) × (pSpec.MessagesUpTo i)) :=
+    OptionT Option ((StmtIn × (i : Fin (n + 1)) × (pSpec.MessagesUpTo i))) :=
   sorry
 
 end DuplexSpongeFS

@@ -13,44 +13,6 @@ Using this key lemma, we can easily conclude preservation of (knowledge) soundne
 
 open OracleComp OracleSpec ProtocolSpec
 
-namespace ProtocolSpec
-
-variable {n : ℕ} (pSpec : ProtocolSpec n)
-    {U : Type} [SpongeUnit U] [SpongeSize]
-    [HasMessageSize pSpec] [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
-    [HasChallengeSize pSpec] [∀ i, Deserialize (pSpec.Challenge i) (Vector U (challengeSize i))]
-
-/-- Number of queries to the permutation oracle needed to absorb the `i`-th message of the
-  protocol specification. This is `Lₚ(i)` in the paper (Equation 7). -/
-def numPermQueriesMessage (i : pSpec.MessageIdx) : Nat :=
-  Nat.ceil ((messageSize i : ℚ) / SpongeSize.R)
-
-alias Lₚᵢ := numPermQueriesMessage
-
-/-- Total number of queries to the permutation oracle needed to absorb all messages of the
-  protocol specification. This is `Lₚ` in the paper (Equation 8). -/
-def totalNumPermQueriesMessage : Nat :=
-  ∑ i, pSpec.Lₚᵢ i
-
-/-- Number of queries to the permutation oracle needed to absorb the `i`-th challenge of the
-  protocol specification. This is `Lᵥ(i)` in the paper (Equation 7). -/
-def numPermQueriesChallenge (i : pSpec.ChallengeIdx) : Nat :=
-  Nat.ceil ((challengeSize i : ℚ) / SpongeSize.R)
-
-alias Lᵥᵢ := numPermQueriesChallenge
-
-/-- Total number of queries to the permutation oracle needed to absorb all challenges of the
-  protocol specification. This is `Lᵥ` in the paper (Equation 8). -/
-def totalNumPermQueriesChallenge : Nat :=
-  ∑ i, pSpec.Lᵥᵢ i
-
-/-- Total number of queries to the permutation oracle needed to absorb all messages and challenges
-  of the protocol specification. This is `L` in the paper (Equation 8). -/
-def totalNumPermQueries : Nat :=
-  pSpec.totalNumPermQueriesMessage + pSpec.totalNumPermQueriesChallenge
-
-end ProtocolSpec
-
 namespace DuplexSpongeFS
 
 variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}

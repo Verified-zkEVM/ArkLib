@@ -78,17 +78,58 @@ structure LookaheadSequenceFamily
   /-- The length of any sequence is at most the challenge size of the given challenge round `i` -/
   length_le_challengeSize : ∀ s ∈ seqFamily, s.inputState.length ≤ challengeSize i
 
+/-- Procedure to compute the lookahead sequence family (Equation 14)
+
+TODO: nail down exactly what this is; can it fail? -/
+def computeLookaheadSequenceFamily
+    (trace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
+    (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
+    LookaheadSequenceFamily trace state i :=
+  sorry
+
 /-- The lookahead procedure in Section 5.2, which takes in:
-- A query-answer trace for the oracle `h`
+- A query-answer trace for the oracle `p`
 - A permutation state (vector of `N` units)
 - A round index `i` for a challenge round
 
-And returns (with potential failure):
+Then performs a probabilistic computation (allowing to sample units uniformly at random) returning
+one of the following:
+- `none`
+- `err`
 - An encoded verifier's challenge (vector of `chalSize i` units)
+
+TODO: figure out the best way to encode the two errors (currently we encode `none` as the failure of
+OracleComp, and `err` as `Option.none` inside)
 -/
-def lookAhead (hashTrace : QueryLog (StmtIn →ₒ Vector U SpongeSize.C))
+def lookAhead (fwdPermTrace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
-    Option (Vector U (challengeSize i)) :=
-  sorry
+    OracleComp (Unit →ₒ U) (Option (Vector U (challengeSize i))) := do
+  /- Actual algorithm:
+  1. Compute the lookahead sequence family `𝒮_LA` from the forward permutation trace `tr.p`
+  2. If `𝒮_LA` is empty, return `none`
+  3. If `𝒮_LA` has more than one element, return `err`
+  4. Let `S_LA` be the unique element of `𝒮_LA`.
+  Sample random rate segments
+  `vec_s : Fin (pSpec.Lᵥi i - S_LA.inputState.length) → Vector U SpongeSize.R`, and return
+  `ρᵢ = (S_LA.inputState.map (fun s => s.rateSegment) ++ vec_s).take (challengeSize i)`
+  i.e. concatenate the rate segment of the input states of `S_LA` with `vec_s`, and take the first
+  `challengeSize i` elements (since we might be over-sampling)
+  -/
+  let ⟨seqFamily, _, _⟩ := computeLookaheadSequenceFamily fwdPermTrace state i
+  if hEmpty : seqFamily.card = 0 then
+    failure
+  else if hGtOne : seqFamily.card > 1 then
+    return Option.none
+  else
+    have : seqFamily.card = 1 := by omega
+    have : seqFamily.val.toList.length = 1 := by aesop
+    -- Get the only element of the finset (TODO: find better way)
+    let seq := seqFamily.val.toList[0]
+    sorry
+  --   let vec_s :=
+  --     (seq.inputState.map (fun s => s.rateSegment) ++
+  --      (Fin (pSpec.Lᵥi i - seq.inputState.length).toFinset.map (fun _ => Vector.rep U 0 SpongeSize.R)))
+  --       .take (challengeSize i)
+  --   return vec_s
 
 end DuplexSpongeFS

@@ -16,24 +16,6 @@ NOTE: we currently do _not_ define the salt explicitly. The salted version of th
 obtained via applying the transform to the protocol with the added salt as the first message.
 -/
 
-namespace OracleSpec
-
-/-- The oracle specification for duplex sponge Fiat-Shamir, consisting of `(h, p, p⁻¹)` where:
-- `h : ByteArray → Vector U SpongeSize.C`
-is the hash function (assumed to be random oracle)
-(Note: input could be different from `ByteArray`)
-- `p : Vector U SpongeSize.N → Vector U SpongeSize.N`
-is the forward direction of the random permutation
-- `p⁻¹ : Vector U SpongeSize.N → Vector U SpongeSize.N`
-is the backward direction of the random permutation
--/
-@[reducible]
-def duplexSpongeChallengeOracle (StartType : Type) (U : Type) [SpongeUnit U] [SpongeSize] :
-    OracleSpec (Unit ⊕ PermuteDir) :=
-  (StartType →ₒ Vector U SpongeSize.C) ++ₒ permutationOracle (CanonicalSpongeState U)
-
-end OracleSpec
-
 namespace ProtocolSpec
 
 /-- Type class for protocol specifications to specify the size of each message as a natural number
@@ -50,13 +32,80 @@ class HasChallengeSize {n : ℕ} (pSpec : ProtocolSpec n) where
 
 export HasChallengeSize (challengeSize)
 
+variable (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    [HasMessageSize pSpec] [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
+    [HasChallengeSize pSpec] [∀ i, Deserialize (pSpec.Challenge i) (Vector U (challengeSize i))]
+
+/-- Number of queries to the permutation oracle needed to absorb the `i`-th message of the
+  protocol specification. This is `Lₚ(i)` in the paper (Equation 7). -/
+def numPermQueriesMessage (i : pSpec.MessageIdx) : Nat :=
+  Nat.ceil ((messageSize i : ℚ) / SpongeSize.R)
+
+alias Lₚᵢ := numPermQueriesMessage
+
+/-- Total number of queries to the permutation oracle needed to absorb all messages of the
+  protocol specification. This is `Lₚ` in the paper (Equation 8). -/
+def totalNumPermQueriesMessage : Nat :=
+  ∑ i, pSpec.Lₚᵢ i
+
+/-- Number of queries to the permutation oracle needed to absorb the `i`-th challenge of the
+  protocol specification. This is `Lᵥ(i)` in the paper (Equation 7). -/
+def numPermQueriesChallenge (i : pSpec.ChallengeIdx) : Nat :=
+  Nat.ceil ((challengeSize i : ℚ) / SpongeSize.R)
+
+alias Lᵥᵢ := numPermQueriesChallenge
+
+/-- Total number of queries to the permutation oracle needed to absorb all challenges of the
+  protocol specification. This is `Lᵥ` in the paper (Equation 8). -/
+def totalNumPermQueriesChallenge : Nat :=
+  ∑ i, pSpec.Lᵥᵢ i
+
+/-- Total number of queries to the permutation oracle needed to absorb all messages and challenges
+  of the protocol specification. This is `L` in the paper (Equation 8). -/
+def totalNumPermQueries : Nat :=
+  pSpec.totalNumPermQueriesMessage + pSpec.totalNumPermQueriesChallenge
+
+/-- The oracle specification for duplex sponge Fiat-Shamir (Equation 16, written as `𝒟_Σ`).
+It is indexed over the challenge rounds of the protocol specification, and for each such round `i`:
+- The input is the input statement `stmtIn` and, for each `j < i` that is a message round,
+  a vector of units of size `Lₚ(j)` (the number of queries to the permutation oracle needed to
+  absorb the `j`-th message)
+- The output is a vector of units of size `Lᵥ(i)` (the number of queries to the permutation oracle
+  needed to absorb the `i`-th challenge) -/
+def duplexSpongeHybridOracle : OracleSpec pSpec.ChallengeIdx :=
+  fun i =>
+    ⟨StmtIn × ((j : pSpec.MessageIdx) → (j.1 < i.1) → Vector U (pSpec.Lₚᵢ j)),
+    Vector U (pSpec.Lᵥᵢ i)⟩
+
+alias «𝒟_Σ» := duplexSpongeHybridOracle
+
 end ProtocolSpec
 
-open ProtocolSpec OracleComp OracleSpec
+namespace OracleSpec
 
-variable {n : ℕ}
+/-- The oracle specification for duplex sponge Fiat-Shamir (Definition 4.2, written as `𝒟_𝔖`).
+The index consists of `(h, p, p⁻¹)`, where:
+- `h : ByteArray → Vector U SpongeSize.C`
+is the hash function (assumed to be random oracle)
+(Note: input could be different from `ByteArray`)
+- `p : Vector U SpongeSize.N → Vector U SpongeSize.N`
+is the forward direction of the random permutation
+- `p⁻¹ : Vector U SpongeSize.N → Vector U SpongeSize.N`
+is the backward direction of the random permutation
+-/
+@[reducible]
+def duplexSpongeChallengeOracle (StartType : Type) (U : Type) [SpongeUnit U] [SpongeSize] :
+    OracleSpec (Unit ⊕ PermuteDir) :=
+  (StartType →ₒ Vector U SpongeSize.C) ++ₒ permutationOracle (CanonicalSpongeState U)
 
-variable {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
+alias 𝒟_𝔖 := duplexSpongeChallengeOracle
+
+end OracleSpec
+
+open OracleComp OracleSpec ProtocolSpec
+
+variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn WitIn StmtOut WitOut : Type}
   [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
   {U : Type} [SpongeUnit U] [SpongeSize]
@@ -104,7 +153,11 @@ def deriveTranscriptDSFS {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
   let sponge ← liftM (DuplexSponge.start stmtIn)
   deriveTranscriptDSFSAux sponge messages (Fin.last n)
 
-end ProtocolSpec.Messages
+end Messages
+
+end ProtocolSpec
+
+open ProtocolSpec
 
 /--
 Prover's function for processing the next round, given the current result of the previous round.
