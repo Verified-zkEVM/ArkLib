@@ -20,7 +20,6 @@ import ArkLib.Data.Classes.Initialize
 import ArkLib.Data.Classes.Serde
 import ArkLib.Data.Classes.Slice
 import ArkLib.Data.Classes.ToNat
-import ArkLib.Data.Classes.Zeroize
 import ArkLib.Data.CodingTheory.Basic
 import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
 import ArkLib.Data.CodingTheory.BerlekampWelch.Condition
@@ -110,6 +109,8 @@ import ArkLib.OracleReduction.Composition.Sequential.General
 import ArkLib.OracleReduction.Equiv
 import ArkLib.OracleReduction.Execution
 import ArkLib.OracleReduction.FiatShamir.Basic
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.SecurityAnalysis.KeyLemma
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.State
 import ArkLib.OracleReduction.LiftContext.Lens
 import ArkLib.OracleReduction.LiftContext.OracleReduction
