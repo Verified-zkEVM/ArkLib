@@ -72,6 +72,7 @@ def forwardPermutationOracle (α : Type*) : OracleSpec Unit := α →ₒ α
 
 /-- The oracle specification for the backward permutation of a type `α`. Just a wrapper around
 `α →ₒ α` -/
+@[reducible]
 def backwardPermutationOracle (α : Type*) : OracleSpec Unit := α →ₒ α
 
 /-- Oracle specification for an ideal permutation, which is the concatenation of the specifications
@@ -215,15 +216,15 @@ instance [sz : SpongeSize] : NeZero sz.C where
     have := sz.R_lt_N
     simp [C]; omega
 
+@[simp, grind] lemma R_le_N : sz.R ≤ sz.N := Nat.le_of_lt sz.R_lt_N
+
 @[simp, grind] lemma R_pos : 0 < sz.R := Nat.pos_of_neZero R
 
 @[simp, grind] lemma C_pos : 0 < sz.C := by simp [C]
 
 @[simp, grind] lemma N_pos : 0 < sz.N := by have := sz.R_lt_N; simp; omega
 
-@[simp, grind =] lemma R_plus_C_eq_N : sz.R + sz.C = sz.N := by
-  simp [C]
-  exact Nat.add_sub_of_le (Nat.le_of_lt sz.R_lt_N)
+@[simp, grind =] lemma R_plus_C_eq_N : sz.R + sz.C = sz.N := by simp [C]
 
 end SpongeSize
 
@@ -258,13 +259,6 @@ class SpongeState (U : Type) [SpongeUnit U] [SpongeSize] (α : Type*) extends
   get : α → Vector U SpongeSize.N
   update : α → Vector U SpongeSize.N → α
 
-instance {U : Type} [SpongeUnit U] [SpongeSize] :
-    SpongeState U (Vector U SpongeSize.N) where
-  -- PROBLEM: no canonical implementation of this. We temporarily set it to the all-zero vector
-  new := fun _ => 0
-  get := id
-  update := fun _ v => v
-
 namespace SpongeState
 
 -- TODO: this should really be part of a lens package / library
@@ -275,6 +269,36 @@ def modify (state : C) (f : Vector U SpongeSize.N → Vector U SpongeSize.N) : C
   SpongeState.update state (f (SpongeState.get state))
 
 end SpongeState
+
+/-- The canonical sponge state, which is a vector of units of size `N` -/
+@[reducible]
+def CanonicalSpongeState (U : Type) [SpongeUnit U] [SpongeSize] : Type :=
+  Vector U SpongeSize.N
+
+namespace CanonicalSpongeState
+
+variable {U : Type} [SpongeUnit U] [SpongeSize]
+
+/-- The rate segment of a canonical sponge state, which is the first `R` elements of the state -/
+@[reducible]
+def rateSegment (state : CanonicalSpongeState U) : Vector U SpongeSize.R :=
+  -- TODO: define an alternate `take` version that directly returns `k` instead of `min k n`
+  (Vector.take state SpongeSize.R).cast (by simp)
+
+/-- The capacity segment of a canonical sponge state, which is the last `C` elements of the state -/
+@[reducible]
+def capacitySegment (state : CanonicalSpongeState U) : Vector U SpongeSize.C :=
+  Vector.drop state SpongeSize.R
+
+/-- The canonical sponge state satisfies the `SpongeState` type class -/
+instance {U : Type} [SpongeUnit U] [SpongeSize] :
+    SpongeState U (Vector U SpongeSize.N) where
+  -- PROBLEM: no canonical implementation of this. We temporarily set it to the all-zero vector
+  new := fun _ => 0
+  get := id
+  update := fun _ v => v
+
+end CanonicalSpongeState
 
 /-- A generalized duplex sponge (Rust version), where we may designate the permutation type `C` to
   be any type that satisfies the `SpongeState` type class.
@@ -308,8 +332,9 @@ deriving Inhabited
 2. An absorb position `Fin (SpongeSize.R + 1)`
 3. A squeeze position `Fin (SpongeSize.R + 1)`
 -/
+@[reducible]
 def CanonicalDuplexSponge (U : Type) [SpongeUnit U] [SpongeSize] :=
-  DuplexSponge U (Vector U SpongeSize.N)
+  DuplexSponge U (CanonicalSpongeState U)
 
 namespace DuplexSponge
 

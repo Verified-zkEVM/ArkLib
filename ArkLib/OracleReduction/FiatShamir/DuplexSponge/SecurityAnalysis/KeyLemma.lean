@@ -15,7 +15,7 @@ open OracleComp OracleSpec ProtocolSpec
 
 namespace ProtocolSpec
 
-variable {n : ℕ} {pSpec : ProtocolSpec n}
+variable {n : ℕ} (pSpec : ProtocolSpec n)
     {U : Type} [SpongeUnit U] [SpongeSize]
     [HasMessageSize pSpec] [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
     [HasChallengeSize pSpec] [∀ i, Deserialize (pSpec.Challenge i) (Vector U (challengeSize i))]
@@ -30,24 +30,24 @@ alias Lₚᵢ := numPermQueriesMessage
 /-- Total number of queries to the permutation oracle needed to absorb all messages of the
   protocol specification. This is `Lₚ` in the paper (Equation 8). -/
 def totalNumPermQueriesMessage : Nat :=
-  ∑ i, Lₚᵢ (pSpec := pSpec) i
+  ∑ i, pSpec.Lₚᵢ i
 
 /-- Number of queries to the permutation oracle needed to absorb the `i`-th challenge of the
-  protocol specification -/
+  protocol specification. This is `Lᵥ(i)` in the paper (Equation 7). -/
 def numPermQueriesChallenge (i : pSpec.ChallengeIdx) : Nat :=
   Nat.ceil ((challengeSize i : ℚ) / SpongeSize.R)
 
 alias Lᵥᵢ := numPermQueriesChallenge
 
 /-- Total number of queries to the permutation oracle needed to absorb all challenges of the
-  protocol specification. This is `Lᵥ` in the paper (Equation 9). -/
+  protocol specification. This is `Lᵥ` in the paper (Equation 8). -/
 def totalNumPermQueriesChallenge : Nat :=
-  ∑ i, Lᵥᵢ (pSpec := pSpec) i
+  ∑ i, pSpec.Lᵥᵢ i
 
 /-- Total number of queries to the permutation oracle needed to absorb all messages and challenges
-  of the protocol specification. This is `L` in the paper (Equation 10). -/
+  of the protocol specification. This is `L` in the paper (Equation 8). -/
 def totalNumPermQueries : Nat :=
-  totalNumPermQueriesMessage (pSpec := pSpec) + totalNumPermQueriesChallenge (pSpec := pSpec)
+  pSpec.totalNumPermQueriesMessage + pSpec.totalNumPermQueriesChallenge
 
 end ProtocolSpec
 
@@ -108,6 +108,76 @@ end SecurityGames
 
 section AuxiliaryProcedures
 
+section Backtrack
+
+/-- A backtracking sequence (Definition 5.3) for a given hash-duplex-sponge oracle trace `tr` and
+  final duplex-sponge state `s` consists of the following data:
+- An input statement `𝕩`
+- A list `inputState = [sᵢₙ, ...]` of input states
+- A list `outputState = [sₒᵤₜ, ...]` of output states
+
+subject to the following conditions:
+- The last of the input states is the given final state
+- There is one more input state than output state
+- The statement is queried with the hash, and returns the capacity of the first input state
+  `(hash, 𝕩, inputState[0].capacitySegment) ∈ tr` -/
+structure BacktrackSequence (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (state : CanonicalSpongeState U) where
+  /-- The input statement in a backtracking sequence -/
+  stmt : StmtIn
+  /-- The list of input states in a backtracking sequence -/
+  inputState : List (CanonicalSpongeState U)
+  /-- The list of output states in a backtracking sequence -/
+  outputState : List (CanonicalSpongeState U)
+
+  /-- The input state list is one longer than the output state list -/
+  inputState_length_eq_outputState_length_succ : inputState.length = outputState.length + 1
+
+  /-- The last input state is the given final state -/
+  last_inputState_eq_state : inputState[inputState.length - 1] = state
+
+  /-- The query-answer pair `("hash", stmt, inputState[0].capacitySegment)` is in the trace -/
+  hash_in_trace : (stmt, (Vector.drop inputState[0] SpongeSize.R)) ∈ trace.getQ (.inl ())
+
+  /-- For all `i < outputState.length`, either
+    - `inputState[i]` is permuted to `outputState[i]` in the trace, or
+    - `outputState[i]` is inverted to `inputState[i]` in the trace -/
+  permute_or_inv_in_trace : ∀ i : Fin outputState.length,
+    (inputState[i], outputState[i]) ∈ trace.getQ (.inr .Fwd)
+    ∨ (outputState[i], inputState[i]) ∈ trace.getQ (.inr .Bwd)
+
+  /-- For all `i < outputState.length`, the capacity segment of `inputState[i]` is the same as
+    the capacity segment of `outputState[i]` -/
+  capacitySegment_output_eq_input : ∀ i : Fin outputState.length,
+    outputState[i].capacitySegment = inputState[i.val + 1].capacitySegment
+
+  /-- For all `i < outputState.length`, the capacity segment of `inputState[i]` is not the same as
+    the capacity segment of `outputState[i]` -/
+  capacitySegment_input_ne_output : ∀ i : Fin outputState.length,
+    inputState[i].capacitySegment ≠ outputState[i].capacitySegment
+
+/-- The associated indices (first occurrences in the trace) for a backtracking sequence -/
+def BacktrackSequence.Index (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (state : CanonicalSpongeState U) (seq : BacktrackSequence trace state) :
+    Fin trace.length × (Fin seq.inputState.length → Fin trace.length) :=
+  -- TODO: define `List.findFinIdx` that returns `Fin (l.length + 1)` and `List.findFinIdxIfTrue`
+  -- that returns `Fin l.length` given the fact that the predicate is true for at least one element
+  -- of the list
+  (⟨trace.findIdx sorry, sorry⟩, sorry)
+
+/-- A family of backtrack sequences, defined as a finite set of backtrack sequences such that
+no two sequences are strict subsets of each other -/
+structure BacktrackSequenceFamily (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (state : CanonicalSpongeState U) where
+  /-- The family of backtrack sequences, defined as a finite set -/
+  seqFamily : Finset (BacktrackSequence trace state)
+  /-- Maximality condition: no strict containment between two sequences, defined in terms of
+    - the statements are different, or
+    - the input states are not a strict subset of each other, or
+    - the output states are not a strict subset of each other -/
+  maximality : ∀ s ∈ seqFamily, ∀ s' ∈ seqFamily,
+    (s.stmt ≠ s'.stmt) ∨ ¬ (s.inputState ⊆ s'.inputState) ∨ ¬ (s'.outputState ⊆ s.outputState)
+
 /-- The backtracking procedure in Section 5.2, which takes in:
 - the query-answer trace for the oracle `(h, p, p⁻¹)`
 - a state (vector of `N` units)
@@ -120,9 +190,13 @@ And returns (with potential failure):
 NOTE: we do _not_ define the extra data structure `tr▵` as in the paper, as that is entirely derived
 from the actual trace and is only present for efficiency (which we do not plan to reason about) -/
 def backTrack (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (state : Vector U SpongeSize.N) :
+    (state : CanonicalSpongeState U) :
     Option (StmtIn × (i : Fin (n + 1)) × (pSpec.MessagesUpTo i)) :=
   sorry
+
+end Backtrack
+
+section Lookahead
 
 /-- The lookahead procedure in Section 5.2, which takes in:
 - A query-answer trace for the oracle `h`
@@ -132,32 +206,47 @@ def backTrack (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
 And returns (with potential failure):
 - An encoded verifier's challenge (vector of `chalSize i` units)
 -/
-def lookAhead (hashTrace : QueryLog (StmtIn →ₒ Vector U SpongeSize.C)) (state : Vector U SpongeSize.N)
+def lookAhead (hashTrace : QueryLog (StmtIn →ₒ Vector U SpongeSize.C)) (state : CanonicalSpongeState U)
     (i : pSpec.ChallengeIdx) :
     Option (Vector U (challengeSize i)) :=
   sorry
 
--- #check IsQueryBound tₚ tₕ
+end Lookahead
+
+section D2SAlgo
+
+/-- The query simulation between duplex sponge oracles and basic Fiat-Shamir oracles. This is then
+  composed with the duplex-sponge malicious prover to obtain a basic F-S malicious prover -/
+def duplexSpongeToBasicFSQueryImpl :
+    QueryImpl (duplexSpongeChallengeOracle StmtIn U)
+      (OracleComp (fsChallengeOracle StmtIn pSpec)) :=
+  sorry
 
 /-- The transformation of a duplex-sponge Fiat-Shamir malicious prover to a basic Fiat-Shamir one.
 
 Note: this transformation needs to be an oracle computation itself -/
-def duplexSpongeToBasicFSProver
+def duplexSpongeToBasicFSAlgo
     (P : OracleComp (oSpec ++ₒ duplexSpongeChallengeOracle StmtIn U)
     (StmtIn × pSpec.Messages)) :
     OracleComp (oSpec ++ₒ fsChallengeOracle StmtIn pSpec) (StmtIn × pSpec.Messages) :=
   sorry
 
+end D2SAlgo
+
+section D2STrace
+
 /-- The transformation of basic Fiat-Shamir query-answer traces (from both prover and verifier)
 to duplex-sponge Fiat-Shamir query-answer traces (from both prover and verifier)
 
 Note: this goes the opposite direction as the prover transformation -/
-def basicToDuplexSpongeFSQueryLog
+def basicToDuplexSpongeFSTrace
     (proveQueryLog : QueryLog (oSpec ++ₒ fsChallengeOracle StmtIn pSpec))
     (verifyQueryLog : QueryLog (oSpec ++ₒ fsChallengeOracle StmtIn pSpec)) :
       QueryLog (oSpec ++ₒ duplexSpongeChallengeOracle StmtIn U) ×
       QueryLog (oSpec ++ₒ duplexSpongeChallengeOracle StmtIn U) :=
   sorry
+
+end D2STrace
 
 end AuxiliaryProcedures
 
@@ -172,11 +261,7 @@ variable [DecidableEq ι]
 def θStar (_tₕ tₚ _tₚᵢ : ℕ) : ℕ := tₚ
 
 /-!
-`ηStar th tp tpm1 L permBound epsCdcMax epsCdcSum` encodes the bound η⋆ from the paper
-with the following stubs supplied as parameters:
-- `permBound` stands for 1 / (2 · |Σ|^c)
-- `epsCdcMax` stands for maxᵢ ε_cdc,i(λ, n)
-- `epsCdcSum` stands for ∑ᵢ ε_cdc,i(λ, n)
+`ηStar` in the paper, is the bound on the statistical distance between two experiments in Lemma 5.1
 -/
 noncomputable def ηStar (U : Type) [SpongeUnit U] [Fintype U]
     (tₕ tₚ tₚᵢ : ℕ) (L : ℕ) (εcodec : pSpec.ChallengeIdx → ℝ≥0) : ℝ≥0 :=
@@ -184,7 +269,7 @@ noncomputable def ηStar (U : Type) [SpongeUnit U] [Fintype U]
   -- First term in Equation (5)
   -- Numerator: `7 * t ^ 2 + (28 * L + 25) * t + (14 * L + 1) * (L + 1)`
   -- Note: we rewrote the numerator to make it clear that the term is nonnegative (no subtraction)
-  -- Original: `7 * t ^ 2 + 28 * (L + 1) * t + 14 * (L + 1)^2 - 3 * t - 13 * (L + 1)`
+  -- Original: `7 * t ^ 2 + 28 * (L + 1) * t + 14 * (L + 1) ^ 2 - 3 * t - 13 * (L + 1)`
   let firstTermNumerator : ℝ≥0 :=
     7 * tTotal ^2 + (28 * L + 25) * tTotal + (14 * L + 1) * (L + 1)
   let firstTermDenominator : ℝ≥0 := 2 * ((Fintype.card U) ^ (SpongeSize.C + 1))
@@ -204,6 +289,7 @@ lemma duplexSpongeToFSGameStatDist
     (maliciousProver : OracleComp (oSpec ++ₒ duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × pSpec.Messages))
     (tₒ : ι → ℕ) (tₕ tₚ tₚᵢ : ℕ)
+    -- TODO: state query bound only for subset of the oracles
     (hQuery : IsQueryBound maliciousProver (tₒ ⊕ᵥ (tₕ ⊕ᵥ (tₚ ⊕ᵥ tₚᵢ)))) : True :=
   sorry
 
