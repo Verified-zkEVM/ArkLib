@@ -590,8 +590,9 @@ def ratchet (sponge : DuplexSponge U C) :
     Vector.ofFn (fun i => if i < SpongeSize.R then 0 else vecState[i])
   -- Use the lens to update the state
   let newVecState := SpongeState.update permutedState zeroed
+  -- Return the updated state with the squeezing index set to the end of the rate segment
   return { sponge with
-    state := permutedState,
+    state := newVecState,
     squeezePos := Fin.last SpongeSize.R }
 
 /-- This is the Rust version once we fix an implementation of the permutation. -/
