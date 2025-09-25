@@ -98,8 +98,6 @@ import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.Notation
 import ArkLib.Data.RingTheory.TowerOfAlgebra
 import ArkLib.Data.UniPoly.Basic
-import ArkLib.Data.UniPoly.BasicOld
-import ArkLib.Data.UniPoly.PolynomialReflection
 import ArkLib.Data.Vector.Basic
 import ArkLib.OracleReduction.BCS.Basic
 import ArkLib.OracleReduction.Basic
