@@ -1,4 +1,3 @@
-
 name: PR Summary
 
 on:
@@ -34,14 +33,14 @@ jobs:
           echo "$HOME/.elan/bin" >> $GITHUB_PATH
 
       - name: Build base branch
-        run: lake build > ../base-build.log 2>&1
+        run: lake build
         working-directory: ./base-branch
-        continue-on-error: true
+        continue-on-error: true > ../base-build.log 2>&1
 
       - name: Build PR branch
-        run: lake build > ../pr-build.log 2>&1
+        run: lake build
         working-directory: ./pr-branch
-        continue-on-error: true
+        continue-on-error: true > ../pr-build.log 2>&1
 
       - name: Install Python dependencies
         run: pip install -r ./base-branch/scripts/requirements.txt
@@ -57,6 +56,4 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          export BASE_BUILD_LOG=$(cat base-build.log || echo "")
-          export PR_BUILD_LOG=$(cat pr-build.log || echo "")
           python ./base-branch/scripts/pr-summary.py

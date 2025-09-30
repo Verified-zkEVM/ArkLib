@@ -103,8 +103,18 @@ if __name__ == "__main__":
     sorries = count_sorries(diff)
     summary += f"\n\n**New 'sorry's:** {sorries}\n"
 
-    base_build_log = os.environ.get("BASE_BUILD_LOG", "")
-    pr_build_log = os.environ.get("PR_BUILD_LOG", "")
+    try:
+        with open("base-build.log", "r") as f:
+            base_build_log = f.read()
+    except FileNotFoundError:
+        base_build_log = ""
+
+    try:
+        with open("pr-build.log", "r") as f:
+            pr_build_log = f.read()
+    except FileNotFoundError:
+        pr_build_log = ""
+
     summary += generate_build_summary(base_build_log, pr_build_log)
 
     # Ensure GitHub token and other variables are available for posting the comment
