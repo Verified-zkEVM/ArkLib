@@ -28,25 +28,24 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Set up Lean
+      - name: Set up and build base branch
         uses: leanprover/lean-action@v1.3.0
         with:
           lint: false
           working-directory: ./base-branch
+          build-args: >-
+            > ../base-build.log 2>&1
 
-      - name: Build base branch
-        run: |
-          cd base-branch
-          lake build > ../base-build.log 2>&1 || true
-          cd ..
 
-      - name: Build PR branch
-        run: |
-          cd pr-branch
-          lake build > ../pr-build.log 2>&1 || true
-          cd ..
+      - name: Set up and build PR branch
+        uses: leanprover/lean-action@v1.3.0
+        with:
+          lint: false
+          working-directory: ./pr-branch
+          build-args: >-
+            > ../pr-build.log 2>&1
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: pip install -r ./base-branch/scripts/requirements.txt
 
       - name: Get PR diff
