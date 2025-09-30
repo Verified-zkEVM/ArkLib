@@ -28,10 +28,10 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Set up Lean
-        uses: leanprover/lean-action@v1.3.0
-        with:
-          lint: false
+      - name: Install elan
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --no-modify-path
+          echo "$HOME/.elan/bin" >> $GITHUB_PATH
 
       - name: Build base branch
         run: lake build > ../base-build.log 2>&1
