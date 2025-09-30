@@ -32,6 +32,14 @@ jobs:
           curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --no-modify-path
           echo "$HOME/.elan/bin" >> $GITHUB_PATH
 
+      - name: Cache Lean dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            base-branch/.lake
+            pr-branch/.lake
+          key: lake-${{ runner.os }}-v4.22.0-${{ hashFiles('**/lake-manifest.json') }}
+
       - name: Build base branch
         run: lake build
         working-directory: ./base-branch
