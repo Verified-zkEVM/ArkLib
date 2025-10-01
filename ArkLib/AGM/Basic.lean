@@ -168,3 +168,4 @@ end Adversary
 -- TODO: talk about AGM in the pairing setting
 
 end AGM
+\n-- Test sorry\ntheorem temporary_sorry : sorry
