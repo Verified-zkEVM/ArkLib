@@ -10,17 +10,11 @@ jobs:
   summarize:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout base repository
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.base.sha }}
-          fetch-depth: 0 # Needed for git diff
-
-      - name: Checkout PR branch
+      - name: Checkout PR Code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          path: pr-branch
+          fetch-depth: 0 # Fetch all history to enable diffing
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -28,14 +22,10 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install -r ./pr-branch/scripts/requirements.txt
+        run: pip install -r ./scripts/requirements.txt
 
       - name: Generate diff
-        id: diff
-        run: |
-          cd pr-branch
-          git diff ${{ github.event.pull_request.base.sha }} > ../pr.diff
-          cd ..
+        run: git diff ${{ github.event.pull_request.base.sha }} HEAD > pr.diff
 
       - name: Generate summary
         env:
@@ -43,4 +33,4 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: python ./pr-branch/scripts/pr-summary.py
+        run: python ./scripts/pr-summary.py
