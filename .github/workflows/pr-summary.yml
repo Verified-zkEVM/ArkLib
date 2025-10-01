@@ -33,6 +33,7 @@ jobs:
           echo "$HOME/.elan/bin" >> $GITHUB_PATH
 
       - name: Cache Lean dependencies
+        id: cache-lean
         uses: actions/cache@v4
         with:
           path: |
@@ -40,15 +41,24 @@ jobs:
             pr-branch/.lake
           key: lake-${{ runner.os }}-v4.22.0-${{ hashFiles('**/lake-manifest.json') }}
 
+      - name: Check cache status
+        run: echo "Cache hit: ${{ steps.cache-lean.outputs.cache-hit }}"
+
       - name: Build base branch
         run: lake build
         working-directory: ./base-branch
         continue-on-error: true > ../base-build.log 2>&1
 
       - name: Build PR branch
-        run: lake build
+        run: lake build > ../pr-build.log 2>&1
         working-directory: ./pr-branch
-        continue-on-error: true > ../pr-build.log 2>&1
+        continue-on-error: true
+
+      - name: Check build directory size
+        run: |
+          echo "Checking build directory sizes:"
+          du -sh base-branch/.lake
+          du -sh pr-branch/.lake
 
       - name: Install Python dependencies
         run: pip install -r ./base-branch/scripts/requirements.txt
