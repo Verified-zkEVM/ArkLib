@@ -55,7 +55,7 @@ jobs:
 
       - name: Get PR diff
         run: |
-          diff -uprN base-branch pr-branch > pr.diff || true
+          diff -uprN --exclude=".lake" base-branch pr-branch > pr.diff || true
 
       - name: Generate summary
         env:
