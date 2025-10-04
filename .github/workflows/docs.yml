@@ -44,12 +44,19 @@ jobs:
         env:
           DISABLE_EQUATIONS: 1
 
+      - name: Copy Docs
+        run: mkdir -p ./home_page/docs && mv ./.lake/build/doc/* ./home_page/docs/
 
+
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./.lake/build/doc
+          path: ./home_page
+
 
   # Deployment job
   deploy:
