@@ -111,24 +111,25 @@ variable [IsDomain F]
 -/
 lemma rank_nonsquare_eq_deg_of_deg_le (inj : Function.Injective α) (h : n ≤ m) :
   (Vandermonde.nonsquare (ι' := n) α).rank = n := by
-  rw [
-    Matrix.rank_eq_iff_subUpFull_eq h,
+  suffices ((Vandermonde.nonsquare (ι' := n) α).subUpFull (Fin.castLE h)).rank = n by
+    exact Matrix.rank_eq_if_subUpFull_eq h this
+  rw[
     ←subUpFull_of_vandermonde_is_vandermonde,
-    Matrix.rank_eq_iff_det_ne_zero,
-    Matrix.det_vandermonde_ne_zero_iff
+    Matrix.rank_eq_if_det_ne_zero
   ]
+  rw [@Matrix.det_vandermonde_ne_zero_iff F _ n _ (α ∘ Fin.castLE h)]
   apply Function.Injective.comp <;> aesop (add simp Fin.castLE_injective)
 
 /-- The rank of a non-square Vandermonde matrix with more columns than rows is the number of rows.
 -/
 lemma rank_nonsquare_eq_deg_of_ι_le (inj : Function.Injective α) (h : m ≤ n) :
   (Vandermonde.nonsquare (ι' := n) α).rank = m := by
-  rw [
-    Matrix.full_row_rank_via_rank_subLeftFull h,
-    ← subLeftFull_of_vandermonde_is_vandermonde,
-    Matrix.rank_eq_iff_det_ne_zero,
-    Matrix.det_vandermonde_ne_zero_iff
-  ]
+  suffices ((Vandermonde.nonsquare (ι' := n) α).subLeftFull (Fin.castLE h)).rank = m by
+    exact Matrix.full_row_rank_via_rank_subLeftFull h this
+  rw[
+    ←subLeftFull_of_vandermonde_is_vandermonde,
+    Matrix.rank_eq_if_det_ne_zero]
+  rw[Matrix.det_vandermonde_ne_zero_iff]
   exact inj
 
 @[simp]

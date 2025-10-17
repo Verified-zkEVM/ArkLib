@@ -1,15 +1,14 @@
-name: Build Documentation
+name: Build and Deploy Website to GitHub Pages
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
-  contents: read # Read access to repository contents
-  id-token: write # Required to upload the site to GitHub Pages
-  pages: write # Write access to GitHub Pages
+  contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,9 +20,8 @@ jobs:
     steps:
       - name: Checkout project
         uses: actions/checkout@v5
-        with:
-          fetch-depth: 0 # Fetch all history for all branches and tags
 
+      # --- Lean and Blueprint Build ---
       - name: Cache Lean dependencies
         uses: actions/cache@v4
         with:
@@ -33,10 +31,8 @@ jobs:
             ${{ runner.os }}-lean-
 
       - name: Build the project
-        id: build-lean
         uses: leanprover/lean-action@v1.3.0
         with:
-          # Do not run linter for now, too many errors 
           lint: false
 
       - name: Build project documentation
@@ -44,14 +40,42 @@ jobs:
         env:
           DISABLE_EQUATIONS: 1
 
+      - name: Build blueprint
+        uses: xu-cheng/texlive-action@v3
+        with:
+          docker_image: ghcr.io/xu-cheng/texlive-full:20231201
+          run: |
+            apk update
+            apk add --update make py3-pip git pkgconfig graphviz graphviz-dev gcc musl-dev
+            git config --global --add safe.directory $GITHUB_WORKSPACE
+            python3 -m venv env
+            source env/bin/activate
+            pip install --upgrade pip requests wheel
+            pip install pygraphviz --global-option=build_ext --global-option="-L/usr/lib/graphviz/" --global-option="-R/usr/lib/graphviz/"
+            pip install leanblueprint
+            leanblueprint pdf
+            leanblueprint web
 
+      # --- Combine and Deploy ---
+      - name: Prepare deployment directory
+        run: |
+          mkdir _deploy
+          # Copy landing page
+          cp home_page/index.html _deploy/
+          # Create docs directory and copy Lean docs
+          mkdir -p _deploy/docs
+          cp -r ./.lake/build/doc/* _deploy/docs/
+          # Copy blueprint
+          cp blueprint/print/print.pdf _deploy/blueprint.pdf
+          # Copy blueprint HTML
+          mkdir -p _deploy/blueprint
+          cp -r blueprint/web/* _deploy/blueprint/
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
-          path: ./.lake/build/doc
+          path: ./_deploy
 
-  # Deployment job
   deploy:
     environment:
       name: github-pages

@@ -8,6 +8,7 @@ import Mathlib.Algebra.Lie.OfAssociative
 import Mathlib.Data.Matrix.Rank
 import Mathlib.LinearAlgebra.AffineSpace.Pointwise
 
+
 noncomputable section
 
 variable {F : Type*}
@@ -41,6 +42,7 @@ def colSpan : Submodule F (ι → F) :=
 def colRank : ℕ :=
   Module.finrank F (colSpan U)
 
+
 end
 
 section
@@ -53,7 +55,7 @@ def subUpFull (U : Matrix (Fin m) (Fin n) F) (r_reindex : Fin n → Fin m) :
 def subLeftFull (U : Matrix (Fin m) (Fin n) F) (c_reindex : Fin m → Fin n) :
   Matrix (Fin m) (Fin m) F := Matrix.submatrix U id c_reindex
 
-variable [CommRing F]
+variable [CommRing F] [Nontrivial F]
          {U : Matrix (Fin m) (Fin n) F}
 
 /-- The rank of a matrix equals the minimum of its row rank and column rank. -/
@@ -68,8 +70,98 @@ lemma rank_eq_iff_subUpFull_eq (h : n ≤ m) :
   U.rank = n ↔ (subUpFull U (Fin.castLE h)).rank = n := sorry
 
 /-- An m×n matrix has full row rank if and only if some m×m column submatrix has rank m. -/
+
+
+
+/-- An m×n matrix has full rank if the submatrix consisting of rows 1 through n has rank n. -/
+lemma rank_eq_if_subUpFull_eq (h : n ≤ m) :
+   (subUpFull U (Fin.castLE h)).rank = n  → U.rank = n  := by
+   intro h_sub_mat_rank
+   apply le_antisymm
+   ·  exact Matrix.rank_le_width U
+   ·  calc n = (subUpFull U (Fin.castLE h)).rank := by rw[h_sub_mat_rank]
+           _ ≤ U.rank := by exact Matrix.rank_submatrix_le (Fin.castLE h) (Equiv.refl (Fin n)) U
+
+/-- cRank and Rank agree for a finite matirx -/
+lemma cRank_rank_conversion :
+  ↑(U.rank) = U.cRank := by
+  rw[
+    Matrix.rank_eq_finrank_span_cols,
+    ← Matrix.cRank_toNat_eq_finrank,
+    Cardinal.cast_toNat_of_lt_aleph0
+  ]
+  calc U.cRank ≤ ↑(Fintype.card (Fin n)) := by exact Matrix.cRank_le_card_width U
+         _ = ↑n := by rw[Fintype.card_fin]
+  exact Cardinal.nat_lt_aleph0 n
+
+/-- An m×n matrix has full rank if the submatrix consisting of columns 1 through m has rank m. -/
 lemma full_row_rank_via_rank_subLeftFull (h : m ≤ n) :
-  U.rank = m ↔ (subLeftFull U (Fin.castLE h)).rank = m := by sorry
+   (subLeftFull U (Fin.castLE h)).rank = m → U.rank = m := by
+   intro h_sub_mat_rank
+   rw[
+    Matrix.rank_eq_finrank_span_cols,
+    ← Matrix.cRank_toNat_eq_finrank
+   ]
+   have h_cRank : U.cRank = ↑m := by
+    apply le_antisymm
+    · calc U.cRank ≤ ↑(Fintype.card (Fin m)) := Matrix.cRank_le_card_height U
+           _ = ↑m := by rw[Fintype.card_fin]
+    · calc ↑m = ↑((subLeftFull U (Fin.castLE h)).rank) := by rw[h_sub_mat_rank]
+           _ = (subLeftFull U (Fin.castLE h)).cRank := by exact cRank_rank_conversion
+           _ ≤ U.cRank := by exact Matrix.cRank_submatrix_le U id (Fin.castLE h)
+   simp [h_cRank]
+
+/-- A square matrix over an integral domain has full rank if its determinant is nonzero. -/
+lemma rank_eq_if_det_ne_zero {U : Matrix (Fin n) (Fin n) F} [IsDomain F] :
+  Matrix.det U ≠ 0 → U.rank = n  := by
+    intro h_det
+    have h_ind : (LinearIndependent F U.col) := Matrix.linearIndependent_cols_of_det_ne_zero h_det
+    rw[
+      Matrix.rank_eq_finrank_span_cols,
+      finrank_span_eq_card h_ind,
+      Fintype.card_fin
+    ]
+
+
+end
+
+section
+
+variable [Field F]
+         {U : Matrix (Fin m) (Fin n) F}
+
+
+
+/-- A square matrix has full rank iff the determinant is nonzero. -/
+lemma rank_eq_iff_det_ne_zero {U : Matrix (Fin n) (Fin n) F} :
+U.rank = n ↔ U.det ≠ 0 := by
+  rw[
+    ← isUnit_iff_ne_zero,
+    ← Matrix.isUnit_iff_isUnit_det,
+    ←  Matrix.linearIndependent_cols_iff_isUnit,
+    Matrix.rank_eq_finrank_span_cols,
+    linearIndependent_iff_card_eq_finrank_span,
+    Set.finrank
+    ]
+  simp[eq_comm]
+
+/-- The rank of a matrix equals the column rank. -/
+lemma rank_eq_colRank : U.rank = colRank U :=
+  Matrix.rank_eq_finrank_span_cols U
+
+/-- The row rank of a matrix equals the column rank. -/
+lemma rowRank_eq_colRank : rowRank U = colRank U := by
+  rw [← rank_eq_colRank, ← rank_transpose, rank_eq_colRank]
+  rfl
+
+/-- The rank of a matrix equals the row rank. -/
+lemma rank_eq_rowRank : U.rank = rowRank U := by
+  rw [rank_eq_colRank, rowRank_eq_colRank]
+
+/-- The rank of a matrix equals the minimum of its row rank and column rank. -/
+lemma rank_eq_min_row_col_rank : U.rank = min (rowRank U) (colRank U) := by
+  rw [rowRank_eq_colRank, rank_eq_colRank]
+  simp_all only [min_self]
 
 end
 
@@ -84,8 +176,98 @@ variable {ι : Type*} [Fintype ι]
          {k : ℕ}
 
 /-- Affine line between two vectors with coefficients in a semiring. -/
-def line [Ring F] (u v : ι → F) : Submodule F (ι → F) :=
-  vectorSpan _ {u, v}
+def line [Ring F] (u v : ι → F) : AffineSubspace F (ι → F) :=
+  affineSpan _ {u, v}
+
+variable [DecidableEq F]
+
+variable [Field F] [Fintype F]
+
+/-- Vector addition action on affine subspaces. -/
+instance : VAdd (ι → F) (AffineSubspace F (ι → F)) := AffineSubspace.pointwiseVAdd
+
+/-- A translate of a finite affine subspace is finite. -/
+noncomputable instance {v : ι → F} {s : AffineSubspace F (ι → F)} [Fintype s] :
+    Fintype (v +ᵥ s) := Fintype.ofFinite ↥(v +ᵥ s)
+
+/-- The affine span of a set is finite over a finite field. -/
+noncomputable instance {s : Set (ι → F)} : Fintype (affineSpan F s) :=
+  Fintype.ofFinite ↥(affineSpan F s)
+
+/-- The image of a function `Fin k → α` over `Finset.univ` is nonempty when `k ≠ 0`. -/
+instance [NeZero k] {f : Fin k → ι → F} : Nonempty (Finset.univ.image f) := by
+  simp only [Finset.mem_image, Finset.mem_univ, true_and, nonempty_subtype]
+  exact ⟨f 0, 0, by simp⟩
+
+/-- A translate of a nonempty affine subspace is nonempty. -/
+noncomputable instance {v : ι → F} {s : AffineSubspace F (ι → F)} [inst : Nonempty s] :
+    Nonempty (v +ᵥ s) := by
+  apply nonempty_subtype.mpr
+  rcases inst with ⟨p, h⟩
+  exists (v +ᵥ p)
+  rw [AffineSubspace.vadd_mem_pointwise_vadd_iff]
+  exact h
+
+/-- The carrier set of the affine span of the image of a function `U : Fin k → ι → F`.
+  This is the set of all affine combinations of `U 0, U 1, ..., U (k-1)`. -/
+abbrev AffSpanSet [NeZero k] (U : Fin k → ι → F) : Set (ι → F) :=
+  (affineSpan F (Finset.univ.image U : Set (ι → F))).carrier
+
+/-- The affine span of a finite set of vectors is finite over a finite field. -/
+instance AffSpanSet.instFinite [NeZero k] (u : Fin k → ι → F) : (AffSpanSet u).Finite := by
+  unfold AffSpanSet
+  exact Set.toFinite _
+
+/-- The affine span as a `Finset`, using `AffSpanFinite` to convert from the set. -/
+noncomputable def AffSpanFinset [NeZero k] (U : Fin k → ι → F) : Finset (ι → F) :=
+  (AffSpanSet.instFinite U).toFinset
+
+/-- A collection of affine subspaces in `F^ι`. -/
+noncomputable def AffSpanFinsetCol {t : ℕ} [NeZero k] [NeZero t]
+  (C : Fin t → (Fin k → (ι → F))) : Set (Finset (ι → F)) :=
+  Set.range (fun i => AffSpanFinset (C i))
+
+/-- The carrier set of a nonempty finset is nonempty. -/
+instance {α : Type*} {s : Finset α} [inst : Nonempty s] : Nonempty (s.toSet) := by
+    rcases inst with ⟨w, h⟩
+    refine nonempty_subtype.mpr ?_
+    exists w
+
+end
+end Affine
+
+namespace Curve
+
+section
+
+open Finset
+
+variable {ι : Type*} [Fintype ι] [Nonempty ι]
+         {F : Type*}
+
+/-- Let `u := {u_1, ..., u_l}` be a collection of vectors with coefficients in a semiring.
+  The parameterised curve of degree `l` generated by `u` is the set of linear combinations of the
+  form `{∑ i ∈ l r ^ i • u_i | r ∈ F}`. -/
+def parametrisedCurve {l : ℕ} [Semiring F] (u : Fin l → ι → F) : Set (ι → F)
+  := {v | ∃ r : F, v = ∑ i : Fin l, (r ^ (i : ℕ)) • u i}
+
+/-- A parametrised curve over a finite field, as a `Finset`. Requires `DecidableEq ι` and
+  `DecidableEq F` to be able to construct the `Finset`. -/
+def parametrisedCurveFinite [DecidableEq ι] [Fintype F] [DecidableEq F] [Semiring F]
+  {l : ℕ} (u : Fin l → ι → F) : Finset (ι → F) :=
+  {v | ∃ r : F, v = ∑ i : Fin l, (r ^ (i : ℕ)) • u i}
+
+/-- A parametrised curve over a nonempty finite field contains at least one point. -/
+instance [Fintype F] [Nonempty F] [Semiring F] [DecidableEq ι] [DecidableEq F] {l : ℕ} :
+  ∀ u : Fin l → ι → F, Nonempty {x // x ∈ parametrisedCurveFinite u } := by
+  intro u
+  unfold parametrisedCurveFinite
+  simp only [mem_filter, mem_univ, true_and, nonempty_subtype]
+  have ⟨r⟩ := ‹Nonempty F›
+  use ∑ i : Fin l, r ^ (i : ℕ) • u i, r
+
+end
+end Curve
 
 variable [DecidableEq F]
 
