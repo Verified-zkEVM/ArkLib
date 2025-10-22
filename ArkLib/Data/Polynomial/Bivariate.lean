@@ -227,12 +227,6 @@ lemma sup_eq_of_le_of_reach {α β : Type} [SemilatticeSup β] [OrderBot β] {s 
     s.sup f = y := by
   grind
 
-attribute [local grind] Finsupp.support_nonempty_iff
-attribute [local grind ←] Polynomial.toFinsupp_eq_zero
-attribute [local grind _=_] Finsupp.mem_support_iff Polynomial.toFinsupp_apply
-@[local grind _=_]
-lemma support_eq_support_toFinsupp {f : F[X][Y]} : f.support = f.toFinsupp.support := rfl
-
 /-- The `X`-degree of the product of two non-zero bivariate polynomials is
 equal to the sum of their degrees. -/
 @[simp, grind _=_]

@@ -232,7 +232,7 @@ def α (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [φ : Fact (Irreducible H)] (t 
   let W : 𝕃 H := liftToFunctionField (H.leadingCoeff)
   embeddingOf𝒪Into𝕃 _ (β R t) / (W ^ (t + 1) * (embeddingOf𝒪Into𝕃 _ (ξ x₀ R H)) ^ (2*t - 1))
 
-def α' (x₀ : F) (H_irreducible : Irreducible H) (t : ℕ) : 𝕃 H :=
+def α' (x₀ : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H) (t : ℕ) : 𝕃 H :=
   α x₀ R _ (φ := ⟨H_irreducible⟩) t
 
 /-- The power series `γ = ∑ α^t (X - x₀)^t ∈ 𝕃 [[X - x₀]]` as defined in Appendix A.4
@@ -245,7 +245,7 @@ def γ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [φ : Fact (Irreducible H)] : P
     | _ => 0
   PowerSeries.subst (PowerSeries.mk subst) (PowerSeries.mk (α x₀ R H))
 
-def γ' (x₀ : F) (H_irreducible : Irreducible H) : PowerSeries (𝕃 H) :=
+def γ' (x₀ : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H) : PowerSeries (𝕃 H) :=
   γ x₀ R H (φ := ⟨H_irreducible⟩)
 
 end ClaimA2

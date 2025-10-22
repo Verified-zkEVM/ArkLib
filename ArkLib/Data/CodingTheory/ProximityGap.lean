@@ -470,8 +470,8 @@ lemma Claim_5_8
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   : ∀ t ≥ k,
   α' 
-    (R k δ x₀ h_gs) 
     x₀ 
+    (R k δ x₀ h_gs) 
     (irreducible_H k h_gs) 
     t 
   = 
@@ -487,14 +487,14 @@ open AppendixA.ClaimA2 in
 lemma Claim_5_8'
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   :
-    γ' (R k δ x₀ h_gs) x₀ (irreducible_H k h_gs) =
+    γ' x₀ (R k δ x₀ h_gs) (irreducible_H k h_gs) =
         PowerSeries.mk (fun t =>
           if t ≥ k
           then (0 : AppendixA.𝕃 (H k δ x₀ h_gs))
           else PowerSeries.coeff _ t
             (γ' 
-              (R k (x₀ := x₀) (δ := δ) h_gs)
               x₀
+              (R k (x₀ := x₀) (δ := δ) h_gs)
               (irreducible_H k h_gs))) := by
    sorry
 
@@ -507,7 +507,7 @@ lemma Claim_5_9
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   :
   ∃ (v₀ v₁ : F[X]),
-    γ' (R k δ x₀ h_gs) x₀ (irreducible_H k (x₀ := x₀) (δ := δ) h_gs) =
+    γ' x₀ (R k δ x₀ h_gs) (irreducible_H k (x₀ := x₀) (δ := δ) h_gs) =
         AppendixA.polyToPowerSeries𝕃 _
           (
             (Polynomial.map Polynomial.C v₀) +
@@ -535,7 +535,7 @@ open AppendixA.ClaimA2 in
 lemma gamma_eq_P
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   :
-  γ' (R k δ x₀ h_gs) x₀ (irreducible_H k (x₀ := x₀) (δ := δ) h_gs) =
+  γ' x₀ (R k δ x₀ h_gs) (irreducible_H k (x₀ := x₀) (δ := δ) h_gs) =
   AppendixA.polyToPowerSeries𝕃 _ 
     (P k δ x₀ h_gs) := by sorry
 
