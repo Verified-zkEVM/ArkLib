@@ -79,7 +79,18 @@ noncomputable instance {H : F[X][Y]} [inst : Fact (Irreducible H)] : Field (𝕃
   IsField.toField (isField_of_irreducible inst.out)
 
 /-- The monisized polynomial `H_tilde` is in fact an element of `F[X][Y]`. -/
-def H_tilde' (H : F[X][Y]) : F[X][Y] := sorry
+noncomputable def H_tilde' (H : F[X][Y]) : F[X][Y] :=
+  let hᵢ (i : ℕ) := H.coeff i
+  let d := H.natDegree
+  let W := hᵢ d
+  Polynomial.X ^ d +
+    ∑ i ∈ (List.range d).toFinset,
+      Polynomial.X^(d - 1 - i) *
+      Polynomial.C (hᵢ (i + 1) * W ^ i)
+
+lemma H_tilde_equiv_H_tilde' (H : F[X][Y]) : (H_tilde' H).map univPolyHom = H_tilde H := by
+  sorry
+
 
 /-- The ring of regular elements `𝒪` from Appendix A.1 of [BCIKS20]. -/
 abbrev 𝒪 (H : F[X][Y]) : Type :=
@@ -163,7 +174,7 @@ noncomputable def liftToFunctionField {H : F[X][Y]} : F[X] →+* 𝕃 H :=
   RingHom.comp (Ideal.Quotient.mk (Ideal.span {H_tilde H})) coeffAsRatFunc
 
 noncomputable def liftBivariate {H : F[X][Y]} : F[X][Y] →+* 𝕃 H :=
-  RingHom.comp (Ideal.Quotient.mk (Ideal.span {H_tilde H})) bivPolyHom 
+  RingHom.comp (Ideal.Quotient.mk (Ideal.span {H_tilde H})) bivPolyHom
 
 /-- The embeddining of the scalars into the function field `𝕃`. -/
 noncomputable def fieldTo𝕃 {H : F[X][Y]} : F →+* 𝕃 H :=
