@@ -311,7 +311,7 @@ structure ModifiedGuruswami
     It essentially claims that there exists 
     a soultion to the Guruswami-Sudan constraints above.
 -/
-lemma proximity_gap_claim_5_4
+lemma modified_guruswami_has_a_solution
   {m n k : ℕ}
   {ωs : Fin n ↪ F} {u₀ u₁ : Fin n → F}
   :
@@ -326,7 +326,7 @@ variable {m : ℕ} (k : ℕ) {δ : ℚ} {x₀ : F} {u₀ u₁ : Fin n → F} {Q 
 noncomputable instance {α : Type} (s : Set α) [inst : Finite s] : Fintype s := Fintype.ofFinite _
 
 /-- The set `S` (equation 5.2 of the proximity gap paper). -/
-noncomputable def the_S (ωs : Fin n ↪ F) (δ : ℚ) (u₀ u₁ : Fin n → F)
+noncomputable def coeffs_of_close_proximity (ωs : Fin n ↪ F) (δ : ℚ) (u₀ u₁ : Fin n → F)
   : Finset F := Set.toFinset { z | ∃ v : ReedSolomon.code ωs (k + 1), δᵣ(u₀ + z • u₁, v) ≤ δ}
 
 open Polynomial
@@ -335,13 +335,13 @@ omit [DecidableEq (RatFunc F)] in
 /-- There exists a `δ`-close polynomial `P_z` for each `z` 
     from the set `S`.
 -/
-lemma exists_Pz_of_the_S
+lemma exists_Pz_of_coeffs_of_close_proximity
   {k : ℕ}
   {z : F}
-  (hS : z ∈ the_S (k := k) ωs δ u₀ u₁)
+  (hS : z ∈ coeffs_of_close_proximity (k := k) ωs δ u₀ u₁)
   :
   ∃ Pz : F[X], Pz.natDegree ≤ k ∧ δᵣ(u₀ + z • u₁, Pz.eval ∘ ωs) ≤ δ := by
-    unfold the_S at hS
+    unfold coeffs_of_close_proximity at hS
     obtain ⟨w, hS, dist⟩ : ∃ a ∈ ReedSolomon.code ωs (k + 1), ↑δᵣ(u₀ + z • u₁, a) ≤ δ := by
       simpa using hS
     obtain ⟨p, hS⟩ : ∃ y ∈ degreeLT F (k + 1), (ReedSolomon.evalOnPoints ωs) y = w := by
@@ -354,46 +354,46 @@ lemma exists_Pz_of_the_S
     ⟩⟩
 
 /-- The `δ`-close polynomial `Pz` for each `z` 
-    from the set `S`.
+    from the set `S` (`coeffs_of_close_proximity`).
 -/
 noncomputable def Pz
   {k : ℕ}
   {z : F}
-  (hS : z ∈ the_S k ωs δ u₀ u₁)
+  (hS : z ∈ coeffs_of_close_proximity k ωs δ u₀ u₁)
   :
   F[X]
-  := (exists_Pz_of_the_S (n := n) (k := k) hS).choose
+  := (exists_Pz_of_coeffs_of_close_proximity (n := n) (k := k) hS).choose
 
 /-- Proposition 5.5 from the proximity gap paper.
     There exists a subset `S'` of the set `S` and
     a bivariate polynomial `P(X, Z)` that matches
     `Pz` on that set. 
 -/
-lemma lemma_5_5
+lemma exists_a_set_and_a_matching_polynomial
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   :
-  ∃ S', ∃ (h_sub : S' ⊆ the_S k ωs δ u₀ u₁), ∃ P : F[Z][X],
-    #S' > #(the_S k ωs δ u₀ u₁) / (2 * D_Y Q) ∧
+  ∃ S', ∃ (h_sub : S' ⊆ coeffs_of_close_proximity k ωs δ u₀ u₁), ∃ P : F[Z][X],
+    #S' > #(coeffs_of_close_proximity k ωs δ u₀ u₁) / (2 * D_Y Q) ∧
     ∀ z : S', Pz (h_sub z.2) = P.map (Polynomial.evalRingHom z.1) ∧
     P.natDegree ≤ k ∧
     Bivariate.degreeX P ≤ 1 := by sorry
 
 /-- The subset `S'` extracted from the proprosition 5.5.
 -/
-noncomputable def the_S'
+noncomputable def matching_set
   (ωs : Fin n ↪ F)
   (δ : ℚ)
   (u₀ u₁ : Fin n → F)
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  : Finset F := (lemma_5_5 k h_gs (δ := δ)).choose
+  : Finset F := (exists_a_set_and_a_matching_polynomial k h_gs (δ := δ)).choose
 
 /-- `S'` is indeed a subset of `S` -/
-lemma the_S'_subset_the_S
+lemma matching_set_is_a_sub_of_coeffs_of_close_proximity
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  : the_S' k ωs δ u₀ u₁ h_gs ⊆ the_S k ωs δ u₀ u₁ := by sorry
+  : matching_set k ωs δ u₀ u₁ h_gs ⊆ coeffs_of_close_proximity k ωs δ u₀ u₁ := by sorry
 
 /-- The equation 5.12 from the proximity gap paper. -/
-lemma eq_5_12
+lemma irreducible_factorization_of_gs_solution
   {k : ℕ}
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
   ∃ (C : F[Z][X]) (R : List F[Z][X][Y]) (f : List ℕ) (e : List ℕ),
@@ -408,27 +408,27 @@ lemma eq_5_12
   := sorry
 
 /-- Claim 5.6 of the proximity gap paper. -/
-lemma lemma_5_6
+lemma discr_of_irred_components_nonzero
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   : ∃ x₀,
-      ∀ R ∈ (eq_5_12 h_gs).choose_spec.choose,
+      ∀ R ∈ (irreducible_factorization_of_gs_solution h_gs).choose_spec.choose,
       Bivariate.evalX x₀ (Bivariate.discr_y R) ≠ 0 := by sorry
 
 open Trivariate in
 open Bivariate in
 /-- Claim 5.7 of the proximity gap paper. -/
-lemma lemma_5_7
+lemma exists_factors_with_large_common_root_set
   (δ : ℚ) (x₀ : F)
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   :
-  ∃ R H, R ∈ (eq_5_12 h_gs).choose_spec.choose ∧
+  ∃ R H, R ∈ (irreducible_factorization_of_gs_solution h_gs).choose_spec.choose ∧
     Irreducible H ∧ H ∣ (Bivariate.evalX (Polynomial.C x₀) R) ∧
-    #(@Set.toFinset _ { z : the_S (F := F) k ωs δ u₀ u₁ |
+    #(@Set.toFinset _ { z : coeffs_of_close_proximity (F := F) k ωs δ u₀ u₁ |
         letI Pz := Pz z.2
         (Trivariate.eval_on_Z R z.1).eval Pz = 0 ∧
         (Bivariate.evalX z.1 H).eval (Pz.eval x₀) = 0} sorry)
-    ≥ #(the_S k ωs δ u₀ u₁) / (Bivariate.natDegreeY Q)
-    ∧ #(the_S k ωs δ u₀ u₁) / (Bivariate.natDegreeY Q) >
+    ≥ #(coeffs_of_close_proximity k ωs δ u₀ u₁) / (Bivariate.natDegreeY Q)
+    ∧ #(coeffs_of_close_proximity k ωs δ u₀ u₁) / (Bivariate.natDegreeY Q) >
       2 * D_Y Q ^ 2 * (D_X ((k + 1 : ℚ) / n) n m) * D_YZ Q := by sorry
 
 /-- Claim 5.7 establishes existens of a polynomial `R`.
@@ -437,7 +437,7 @@ lemma lemma_5_7
 noncomputable def R
   (δ : ℚ) (x₀ : F)
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  : F[Z][X][Y] := (lemma_5_7 k δ x₀ h_gs).choose
+  : F[Z][X][Y] := (exists_factors_with_large_common_root_set k δ x₀ h_gs).choose
 
 /-- Claim 5.7 establishes existens of a polynomial `H`.
     This is the extraction of this polynomial.
@@ -445,7 +445,7 @@ noncomputable def R
 noncomputable def H
   (δ : ℚ) (x₀ : F)
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  : F[Z][X] := (lemma_5_7 k δ x₀ h_gs).choose_spec.choose
+  : F[Z][X] := (exists_factors_with_large_common_root_set k δ x₀ h_gs).choose_spec.choose
 
 /-- An important property of the polynomial
     `H` extracted from claim 5.7 is that it is 
@@ -455,7 +455,8 @@ lemma irreducible_H
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   :
   Irreducible (H k δ x₀ h_gs) := by
-  have h := Classical.choose_spec <| Classical.choose_spec (lemma_5_7 (δ := δ) (x₀ := x₀) k h_gs)
+  have h := Classical.choose_spec <| Classical.choose_spec 
+    (exists_factors_with_large_common_root_set (δ := δ) (x₀ := x₀) k h_gs)
   simp [H]
   rcases h with ⟨_, h, _⟩
   sorry
@@ -467,7 +468,7 @@ open AppendixA.ClaimA2 in
     This version of the claim is stated in terms
     of coefficients.
 -/
-lemma Claim_5_8
+lemma approximate_solution_is_exact_solution_coeffs
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   : ∀ t ≥ k,
   α' 
@@ -485,7 +486,7 @@ open AppendixA.ClaimA2 in
     actually a solution.
     This version is in terms of polynomials.
 -/
-lemma Claim_5_8'
+lemma approximate_solution_is_exact_solution_coeffs'
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   :
     γ' (R k δ x₀ h_gs) x₀ (irreducible_H k h_gs) =
@@ -504,7 +505,7 @@ open AppendixA.ClaimA2 in
     States that the solution `γ` is linear in 
     the variable `Z`.
 -/
-lemma Claim_5_9
+lemma solution_gamma_is_linear_in_Z
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   :
   ∃ (v₀ v₁ : F[X]),
@@ -523,8 +524,9 @@ noncomputable def P
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   :
   F[Z][X] :=
-  let v₀ := Classical.choose (Claim_5_9 k (δ := δ) (x₀ := x₀) h_gs)
-  let v₁ := Classical.choose (Classical.choose_spec <| Claim_5_9 k (δ := δ) (x₀ := x₀) h_gs)
+  let v₀ := Classical.choose (solution_gamma_is_linear_in_Z k (δ := δ) (x₀ := x₀) h_gs)
+  let v₁ := Classical.choose 
+    (Classical.choose_spec <| solution_gamma_is_linear_in_Z k (δ := δ) (x₀ := x₀) h_gs)
   (
     (Polynomial.map Polynomial.C v₀) +
     (Polynomial.C Polynomial.X) * (Polynomial.map Polynomial.C v₁)
@@ -543,25 +545,26 @@ lemma gamma_eq_P
 /-- The set `S'_x` from the proximity gap paper (just before claim 5.10).
     The set of all `z∈S'` such that `w(x,z)` matches `P_z(x)`.
 -/
-noncomputable def the_S'x
+noncomputable def matching_set_at_x
   (δ : ℚ)
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   (x : Fin n)
-  : Finset F := @Set.toFinset _ {z : F | ∃ h : z ∈ the_S' k ωs δ u₀ u₁ h_gs,
-    u₀ x + z * u₁ x = (Pz (the_S'_subset_the_S k h_gs h)).eval (ωs x)} sorry
+  : Finset F := @Set.toFinset _ {z : F | ∃ h : z ∈ matching_set k ωs δ u₀ u₁ h_gs,
+    u₀ x + z * u₁ x = 
+      (Pz (matching_set_is_a_sub_of_coeffs_of_close_proximity k h_gs h)).eval (ωs x)} sorry
 
 /-- Claim 5.10 of the proximity gap paper.
     Needed to prove the claim 5.9.
     This claim states that `γ(x)=w(x,Z)` if
     the cardinality |S'_x| is big enough.
 -/
-lemma claim_5_10
+lemma solution_gamma_matches_word_if_subset_large
   {ωs : Fin n ↪ F}
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   {x : Fin n}
   {D : ℕ}
   (hD : D ≥ Bivariate.totalDegree (H k δ x₀ h_gs))
-  (hx : (the_S'x k δ h_gs x).card >
+  (hx : (matching_set_at_x k δ h_gs x).card >
     (2 * k + 1)
       * (Bivariate.natDegreeY <| H k δ x₀ h_gs)
       * (Bivariate.natDegreeY <| R k δ x₀ h_gs)
@@ -575,7 +578,7 @@ lemma claim_5_10
     such that the sets S_{x_j} satisfy the condition
     in the claim 5.10.
 -/
-lemma claim_5_11
+lemma exists_points_with_large_matching_subset
   {ωs : Fin n ↪ F}
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   {x : Fin n}
@@ -585,7 +588,7 @@ lemma claim_5_11
   ∃ Dtop : Finset (Fin n),
     Dtop.card = k + 1 ∧
     ∀ x ∈ Dtop,
-      (the_S'x k δ h_gs x).card >
+      (matching_set_at_x k δ h_gs x).card >
         (2 * k + 1)
         * (Bivariate.natDegreeY <| H k δ x₀ h_gs)
         * (Bivariate.natDegreeY <| R k δ x₀ h_gs)
