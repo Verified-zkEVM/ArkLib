@@ -156,6 +156,7 @@ open Univariate in
    divisible by the leading coefficient of the polynomial.
 -/
 def discr_y {F : Type} [CommRing F] (f : F[X][Y]) : F[X] :=
+  /- TODO: use `Polynomial.discr` once Mathlib is bumped. -/
   Classical.choose (resultant_is_divisible_by_leadingCoeff f)
 
 /-- Over an intergal domain, the product of two non-zero bivariate polynomials is non-zero. -/
