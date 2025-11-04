@@ -75,24 +75,33 @@ lemma isField_of_irreducible {H : F[X][Y]} : Irreducible H → IsField (𝕃 H) 
   exact irreducibleHTildeOfIrreducible h
 
 /-- The function field `𝕃` as defined above is a field. -/
-noncomputable instance {H : F[X][Y]} [inst : Fact (Irreducible H)] : Field (𝕃 H) := by
-  unfold 𝕃
-  apply IsField.toField
-  exact isField_of_irreducible inst.out
+noncomputable instance {H : F[X][Y]} [inst : Fact (Irreducible H)] : Field (𝕃 H) :=
+  IsField.toField (isField_of_irreducible inst.out)
 
 /-- The monisized polynomial `H_tilde` is in fact an element of `F[X][Y]`. -/
-def H_tilde' (H : F[X][Y]) : F[X][Y] := sorry
+noncomputable def H_tilde' (H : F[X][Y]) : F[X][Y] :=
+  let hᵢ (i : ℕ) := H.coeff i
+  let d := H.natDegree
+  let W := hᵢ d
+  Polynomial.X ^ d +
+    ∑ i ∈ (List.range d).toFinset,
+      Polynomial.X^(d - 1 - i) *
+      Polynomial.C (hᵢ (i + 1) * W ^ i)
+
+lemma H_tilde_equiv_H_tilde' (H : F[X][Y]) : (H_tilde' H).map univPolyHom = H_tilde H := by
+  sorry
+
 
 /-- The ring of regular elements `𝒪` from Appendix A.1 of [BCIKS20]. -/
 abbrev 𝒪 (H : F[X][Y]) : Type :=
   (Polynomial (Polynomial F)) ⧸ (Ideal.span {H_tilde' H})
 
 /-- The ring of regular elements field `𝒪` is a indeed a ring. -/
-noncomputable instance {H : F[X][Y]} : Ring (𝒪 H) := by
-  exact Ideal.Quotient.ring (Ideal.span {H_tilde' H})
+noncomputable instance {H : F[X][Y]} : Ring (𝒪 H) :=
+  Ideal.Quotient.ring (Ideal.span {H_tilde' H})
 
 /-- The ring homomorphism defining the embedding of `𝒪` into `𝕃`. -/
-noncomputable def embeddingOf𝒪Into𝕃 {H : F[X][Y]} : 𝒪 H →+* 𝕃 H :=
+noncomputable def embeddingOf𝒪Into𝕃 (H : F[X][Y]) : 𝒪 H →+* 𝕃 H :=
   Ideal.quotientMap
         (I := Ideal.span {H_tilde' H}) (Ideal.span {H_tilde H})
         bivPolyHom sorry
@@ -100,12 +109,12 @@ noncomputable def embeddingOf𝒪Into𝕃 {H : F[X][Y]} : 𝒪 H →+* 𝕃 H :=
 /-- The set of regular elements inside `𝕃 H`, i.e. the set of elements of `𝕃 H`
 that in fact lie in `𝒪 H`. -/
 def regularElms_set (H : F[X][Y]) : Set (𝕃 H) :=
-  {a : 𝕃 H | ∃ b : 𝒪 H, a = embeddingOf𝒪Into𝕃 b}
+  {a : 𝕃 H | ∃ b : 𝒪 H, a = embeddingOf𝒪Into𝕃 _ b}
 
 /-- The regular elements inside `𝕃 H`, i.e. the elements of `𝕃 H` that in fact lie in `𝒪 H`
 as Type. -/
 def regularElms (H : F[X][Y]) : Type :=
-  {a : 𝕃 H // ∃ b : 𝒪 H, a = embeddingOf𝒪Into𝕃 b}
+  {a : 𝕃 H // ∃ b : 𝒪 H, a = embeddingOf𝒪Into𝕃 _ b}
 
 /-- Given an element `z ∈ F`, `t_z ∈ F` is a rational root of a bivariate polynomial if the pair
 `(z, t_z)` is a root of the bivariate polynomial.
@@ -116,8 +125,7 @@ def rationalRoot (H : F[X][Y]) (z : F) : Type :=
 /-- The rational substitution `π_z` from Appendix A.3 defined on the whole ring of
 bivariate polynomials. -/
 noncomputable def π_z_lift {H : F[X][Y]} (z : F) (root : rationalRoot (H_tilde' H) z) :
-    F[X][Y] →+* F :=
-  Polynomial.evalEvalRingHom z root.1
+  F[X][Y] →+* F := Polynomial.evalEvalRingHom z root.1
 
 /-- The rational substitution `π_z` from Appendix A.3 of [BCIKS20] is a well-defined map on the
 quotient ring `𝒪`. -/
@@ -154,7 +162,7 @@ noncomputable def S_β {H : F[X][Y]} (β : 𝒪 H) : Set F :=
 /-- The statement of Lemma A.1 in Appendix A.3 of [BCIKS20]. -/
 lemma Lemma_A_1 {H : F[X][Y]} (β : 𝒪 H) (D : ℕ) (hD : D ≥ Bivariate.totalDegree H)
     (S_β_card : Set.ncard (S_β β) > (weight_Λ_over_𝒪 β D) * H.natDegree) :
-  embeddingOf𝒪Into𝕃 β = 0 := by sorry
+  embeddingOf𝒪Into𝕃 _ β = 0 := by sorry
 
 /-- The embeddining of the coefficients of a bivarite polynomial into the bivariate polynomial ring
 with rational coefficients. -/
@@ -166,7 +174,7 @@ noncomputable def liftToFunctionField {H : F[X][Y]} : F[X] →+* 𝕃 H :=
   RingHom.comp (Ideal.Quotient.mk (Ideal.span {H_tilde H})) coeffAsRatFunc
 
 noncomputable def liftBivariate {H : F[X][Y]} : F[X][Y] →+* 𝕃 H :=
-  RingHom.comp (Ideal.Quotient.mk (Ideal.span {H_tilde H})) bivPolyHom 
+  RingHom.comp (Ideal.Quotient.mk (Ideal.span {H_tilde H})) bivPolyHom
 
 /-- The embeddining of the scalars into the function field `𝕃`. -/
 noncomputable def fieldTo𝕃 {H : F[X][Y]} : F →+* 𝕃 H :=
@@ -186,13 +194,11 @@ noncomputable section
 namespace ClaimA2
 
 variable {F : Type} [CommRing F] [IsDomain F]
-          (R : F[X][X][X]) (R_irreducible : Irreducible R)
-          (x₀ : F)
-          {H : F[X][Y]} [H_irreducible : Fact (Irreducible H)]
-          (H_fac : H ∣ Bivariate.evalX (Polynomial.C x₀) R)
+         {R : F[X][X][X]}
+         {H : F[X][Y]} [H_irreducible : Fact (Irreducible H)]
 
 /-- The definition of `ζ` given in Appendix A.4 of [BCIKS20]. -/
-def ζ : 𝕃 H :=
+def ζ (R : F[X][X][Y]) (x₀ : F) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)] : 𝕃 H :=
   let W  : 𝕃 H := liftToFunctionField (H.leadingCoeff);
   let T : 𝕃 H := liftToFunctionField (Polynomial.X);
     Polynomial.eval₂ liftToFunctionField (T / W)
@@ -200,59 +206,58 @@ def ζ : 𝕃 H :=
 
 /-- There exist regular elements `ξ = W(Z)^(d-2) * ζ` as defined in Claim A.2 of Appendix A.4
 of [BCIKS20]. -/
-lemma ξ_regular :
-    ∃ pre : 𝒪 H,
-      let d := R.natDegree
-      let W : 𝕃 H := liftToFunctionField (H.leadingCoeff);
-      embeddingOf𝒪Into𝕃 pre = W ^ (d - 2) * ζ R x₀ := by
-    sorry
+lemma ξ_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)] :
+  ∃ pre : 𝒪 H,
+    let d := R.natDegree
+    let W : 𝕃 H := liftToFunctionField (H.leadingCoeff);
+    embeddingOf𝒪Into𝕃 _ pre = W ^ (d - 2) * ζ R x₀ H := by
+  sorry
 
 /-- The elements `ξ = W(Z)^(d-2) * ζ` as defined in Claim A.2 of Appendix A.4 of [BCIKS20]. -/
-def ξ : 𝒪 H :=
-  Classical.choose (ξ_regular R x₀)
+def ξ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [φ : Fact (Irreducible H)] : 𝒪 H :=
+  (ξ_regular x₀ R H).choose
 
 /-- The bound of the weight `Λ` of the elements `ζ` as stated in Claim A.2 of Appendix A.4
 of [BCIKS20]. -/
-lemma weight_ξ_bound (D : ℕ) (hD : D ≥ Bivariate.totalDegree H) :
-  weight_Λ_over_𝒪 (ξ (H := H) R x₀) D ≤
+lemma weight_ξ_bound (x₀ : F) {D : ℕ} (hD : D ≥ Bivariate.totalDegree H) :
+  weight_Λ_over_𝒪 (ξ x₀ R H) D ≤
     WithBot.some ((Bivariate.natDegreeY R - 1) * (D - Bivariate.natDegreeY H + 1)) := by
   sorry
 
 /-- There exist regular elements `β` with a weight bound as given in Claim A.2
 of Appendix A.4 of [BCIKS20]. -/
-lemma β_regular (D : ℕ) (hD : D ≥ Bivariate.totalDegree H) :
+lemma β_regular (R : F[X][X][Y])
+                (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
+                {D : ℕ} (hD : D ≥ Bivariate.totalDegree H) :
     ∀ t : ℕ, ∃ β : 𝒪 H, weight_Λ_over_𝒪 β ≤ (2 * t + 1) * Bivariate.natDegreeY R * D :=
   sorry
 
 /-- The definition of the regular elements `β` giving the numerators of the Hensel lift coefficients
 as defined in Claim A.2 of Appendix A.4 of [BCIKS20]. -/
-def β (t : ℕ) : 𝒪 H :=
-  Classical.choose (β_regular (H := H) R (Bivariate.totalDegree H) (Nat.le_refl _) t)
+def β (R : F[X][X][Y]) (t : ℕ) : 𝒪 H :=
+  (β_regular R H (Nat.le_refl _) t).choose
 
 /-- The Hensel lift coefficients `α` are of the form as given in Claim A.2 of Appendix A.4
 of [BCIKS20]. -/
-def α (H : F[X][Y]) [Fact (Irreducible H)] (t : ℕ) : 𝕃 H :=
-  let W  : 𝕃 H := liftToFunctionField (H.leadingCoeff)
-  embeddingOf𝒪Into𝕃 (β R t) / (W ^ (t + 1) * (embeddingOf𝒪Into𝕃 (ξ R x₀)) ^ (2*t - 1))
+def α (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [φ : Fact (Irreducible H)] (t : ℕ) : 𝕃 H :=
+  let W : 𝕃 H := liftToFunctionField (H.leadingCoeff)
+  embeddingOf𝒪Into𝕃 _ (β R t) / (W ^ (t + 1) * (embeddingOf𝒪Into𝕃 _ (ξ x₀ R H)) ^ (2*t - 1))
 
-def α' {H : F[X][Y]} (H_irreducible : Irreducible H) (t : ℕ) : 𝕃 H :=
-  @α _ _ _ R x₀ H ⟨H_irreducible⟩ t
+def α' (x₀ : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H) (t : ℕ) : 𝕃 H :=
+  α x₀ R _ (φ := ⟨H_irreducible⟩) t
 
 /-- The power series `γ = ∑ α^t (X - x₀)^t ∈ 𝕃 [[X - x₀]]` as defined in Appendix A.4
 of [BCIKS20]. -/
-def γ (H : F[X][Y])
-  [H_irreducible : Fact (Irreducible H)] : PowerSeries (𝕃 H) :=
+def γ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [φ : Fact (Irreducible H)] : PowerSeries (𝕃 H) :=
   let subst (t : ℕ) : 𝕃 H :=
     match t with
-    | 0 => fieldTo𝕃 (- x₀)
+    | 0 => fieldTo𝕃 (-x₀)
     | 1 => 1
     | _ => 0
-  PowerSeries.subst (PowerSeries.mk subst) (PowerSeries.mk (α R x₀ H))
+  PowerSeries.subst (PowerSeries.mk subst) (PowerSeries.mk (α x₀ R H))
 
-def γ' {H : F[X][Y]}
-  (H_irreducible : Irreducible H) : PowerSeries (𝕃 H) :=
-  @γ _ _ _ R x₀ H ⟨H_irreducible⟩
-
+def γ' (x₀ : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H) : PowerSeries (𝕃 H) :=
+  γ x₀ R H (φ := ⟨H_irreducible⟩)
 
 end ClaimA2
 end
