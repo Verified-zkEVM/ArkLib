@@ -84,6 +84,8 @@ def toOracleImpl {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterface (
 
 /-- Any function type has a canonical `OracleInterface` instance, whose `answer` is the function
   itself. -/
+instance (i : Fin 0) : OracleInterface i.elim0 := Fin.elim0 i
+
 @[reducible, inline]
 instance instFunction {α β : Type*} : OracleInterface (α → β) where
   Query := α

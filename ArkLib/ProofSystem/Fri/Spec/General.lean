@@ -1,3 +1,10 @@
+/-
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao, František Silváši, Julian Sutherland, Ilia Vlasov
+-/
+
+
 import ArkLib.OracleReduction.Composition.Sequential.General
 import ArkLib.ProofSystem.Fri.Spec.SingleRound
 
@@ -12,7 +19,8 @@ namespace Spec
    - `D` the cyclic subgroup of order `2 ^ n` we will to construct the evaluation domains.
    - `x` the element of `Fˣ` we will use to construct our evaluation domain.
    - `k` the number of, non final, folding rounds the protocol will run.
-   - `s` the "folding degree", for `s = 1` this corresponds to the standard "even-odd" folding.
+   - `s` the "folding degree" of each round,
+         a folding degree of `1` this corresponds to the standard "even-odd" folding.
    - `d` the degree bound on the final polynomial returned in the final folding round.
    - `domain_size_cond`, a proof that the initial evaluation domain is large enough to test
       for proximity of a polynomial of appropriate degree.
@@ -21,8 +29,8 @@ namespace Spec
 variable {F : Type} [NonBinaryField F] [Finite F]
 variable (D : Subgroup Fˣ) {n : ℕ} [DIsCyclicC : IsCyclicWithGen D] [DSmooth : SmoothPowerOfTwo n D]
 variable (x : Fˣ)
-variable (k s d : ℕ) (dom_size_cond : 2 ^ ((k + 1) * s) * d ≤ 2 ^ n)
-variable [NeZero s] [NeZero d]
+variable (k : ℕ) (s : Fin (k + 1) → ℕ+) (d : ℕ+)
+variable (dom_size_cond : (2 ^ (∑ i, (s i).1)) * d ≤ 2 ^ n)
 variable (l : ℕ)
 
 /- Input/Output relations for the FRI protocol. -/
@@ -39,7 +47,7 @@ def inputRelation [DecidableEq F] (δ : ℝ≥0) :
 def outputRelation [DecidableEq F] (δ : ℝ≥0) :
     Set
       (
-        (FinalStatement F k × ∀ j, FinalOracleStatement D x s k j) ×
+        (FinalStatement F k × ∀ j, FinalOracleStatement D x s j) ×
         Witness F s d (Fin.last (k + 1))
       )
   := QueryRound.outputRelation D x s d (round_bound dom_size_cond) δ
@@ -68,7 +76,7 @@ noncomputable def reductionFold :
   OracleReduction []ₒ
     (Statement F (0 : Fin (k + 1))) (OracleStatement D x s (0 : Fin (k + 1)))
       (Witness F s d (0 : Fin (k + 2)))
-    (FinalStatement F k) (FinalOracleStatement D x s k)
+    (FinalStatement F k) (FinalOracleStatement D x s)
       (Witness F s d (Fin.last (k + 1)))
     (pSpecFold D x k s ++ₚ FinalFoldPhase.pSpec F)
  := OracleReduction.append
@@ -82,8 +90,7 @@ noncomputable def reduction [DecidableEq F] :
   OracleReduction []ₒ
     (Statement F (0 : Fin (k + 1))) (OracleStatement D x s (0 : Fin (k + 1)))
       (Witness F s d (0 : Fin (k + 2)))
-    (FinalStatement F k) (FinalOracleStatement D x s k)
-      (Witness F s d (Fin.last (k + 1)))
+    (FinalStatement F k) (FinalOracleStatement D x s) (Witness F s d (Fin.last (k + 1)))
     (pSpecFold D x k s ++ₚ FinalFoldPhase.pSpec F ++ₚ QueryRound.pSpec D x l) :=
   OracleReduction.append (reductionFold D x k s d)
     (QueryRound.queryOracleReduction (k := k) D x s d dom_size_cond l)
