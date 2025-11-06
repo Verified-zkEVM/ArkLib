@@ -97,8 +97,9 @@ We call `δ` the proximity parameter and `ε` the error parameter. -/
 noncomputable def δ_ε_proximityGap {α : Type} [DecidableEq α] [Nonempty α]
   (P : Finset (ι → α)) (C : Set (Finset (ι → α))) (δ ε : ℝ≥0) : Prop :=
   ∀ S ∈ C, ∀ [Nonempty S],
-    Pr_{let s ← $ᵖ S}[Code.relHammingDistToCode s.1 P ≤ δ] = 1 ∨
-    Pr_{let s ← $ᵖ S}[Code.relHammingDistToCode s.1 P ≤ δ] ≤ ε
+  Xor'
+  ( Pr_{let x ← $ᵖ S}[Code.relHammingDistToCode x.1 P ≤ δ] = 1 )
+  ( Pr_{let x ← $ᵖ S}[Code.relHammingDistToCode x.1 P ≤ δ] ≤ ε )
 end
 
 section
