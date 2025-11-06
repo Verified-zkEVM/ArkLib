@@ -58,17 +58,6 @@ def subLeftFull (U : Matrix (Fin m) (Fin n) F) (c_reindex : Fin m → Fin n) :
 variable [CommRing F] [Nontrivial F]
          {U : Matrix (Fin m) (Fin n) F}
 
-/-- The rank of a matrix equals the minimum of its row rank and column rank. -/
-lemma rank_eq_min_row_col_rank : U.rank = min (rowRank U) (colRank U) := by sorry
-
-/-- A square matrix has full rank if and only if its determinant is nonzero. -/
-lemma rank_eq_iff_det_ne_zero {U : Matrix (Fin n) (Fin n) F} :
-  U.rank = n ↔ Matrix.det U ≠ 0 := by sorry
-
-/-- An m×n matrix has rank n if and only if some n×n row submatrix has rank n. -/
-lemma rank_eq_iff_subUpFull_eq (h : n ≤ m) :
-  U.rank = n ↔ (subUpFull U (Fin.castLE h)).rank = n := sorry
-
 /-- An m×n matrix has full rank if the submatrix consisting of rows 1 through n has rank n. -/
 lemma rank_eq_if_subUpFull_eq (h : n ≤ m) :
    (subUpFull U (Fin.castLE h)).rank = n  → U.rank = n  := by
@@ -126,6 +115,19 @@ section
 variable [Field F]
          {U : Matrix (Fin m) (Fin n) F}
 
+/-- A square matrix has full rank iff the determinant is nonzero. -/
+lemma rank_eq_iff_det_ne_zero {U : Matrix (Fin n) (Fin n) F} :
+U.rank = n ↔ U.det ≠ 0 := by
+  rw[
+    ← isUnit_iff_ne_zero,
+    ← Matrix.isUnit_iff_isUnit_det,
+    ←  Matrix.linearIndependent_cols_iff_isUnit,
+    Matrix.rank_eq_finrank_span_cols,
+    linearIndependent_iff_card_eq_finrank_span,
+    Set.finrank
+    ]
+  simp[eq_comm]
+
 /-- The rank of a matrix equals the column rank. -/
 lemma rank_eq_colRank : U.rank = colRank U :=
   Matrix.rank_eq_finrank_span_cols U
@@ -138,6 +140,11 @@ lemma rowRank_eq_colRank : rowRank U = colRank U := by
 /-- The rank of a matrix equals the row rank. -/
 lemma rank_eq_rowRank : U.rank = rowRank U := by
   rw [rank_eq_colRank, rowRank_eq_colRank]
+
+/-- The rank of a matrix equals the minimum of its row rank and column rank. -/
+lemma rank_eq_min_row_col_rank : U.rank = min (rowRank U) (colRank U) := by
+  rw [rowRank_eq_colRank, rank_eq_colRank]
+  simp_all only [min_self]
 
 end
 
