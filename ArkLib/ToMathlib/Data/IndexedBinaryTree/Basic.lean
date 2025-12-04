@@ -551,7 +551,14 @@ TODO: Should this include the node itself or not? if yes, should we use FreeSubg
 TODO: Should we define this for values?
 -/
 def SkeletonNodeIndex.path {s : Skeleton} (idx : SkeletonNodeIndex s) :
-    List (SkeletonNodeIndex s) := sorry
+    List (SkeletonNodeIndex s) :=
+  match idx with
+  | SkeletonNodeIndex.ofLeaf => []
+  | SkeletonNodeIndex.ofInternal => []
+  | SkeletonNodeIndex.ofLeft idxLeft =>
+    SkeletonNodeIndex.ofInternal :: idxLeft.path.map SkeletonNodeIndex.ofLeft
+  | SkeletonNodeIndex.ofRight idxRight =>
+    SkeletonNodeIndex.ofInternal :: idxRight.path.map SkeletonNodeIndex.ofRight
 
 /-- Find the siblings of a node and its ancestors, starting with the child of the root -/
 def FullData.copath {α} {s} (cache_tree : FullData α s) :
