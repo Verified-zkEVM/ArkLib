@@ -44,6 +44,7 @@ import ArkLib.Data.CodingTheory.ReedMuller
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.EllipticCurve.BN254
 import ArkLib.Data.FieldTheory.AdditiveNTT.AdditiveNTT
+import ArkLib.Data.FieldTheory.AdditiveNTT.Impl
 import ArkLib.Data.FieldTheory.AdditiveNTT.NovelPolynomialBasis
 import ArkLib.Data.FieldTheory.BinaryField.Tower.Basic
 import ArkLib.Data.FieldTheory.BinaryField.Tower.Impl
@@ -101,7 +102,7 @@ import ArkLib.Data.Polynomial.RationalFunctions
 import ArkLib.Data.Polynomial.SplitFold
 import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.Notation
-import ArkLib.Data.RingTheory.TowerOfAlgebra
+import ArkLib.Data.RingTheory.AlgebraTower
 import ArkLib.Data.UniPoly.Basic
 import ArkLib.Data.Vector.Basic
 import ArkLib.OracleReduction.BCS.Basic
