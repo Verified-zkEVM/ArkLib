@@ -36,6 +36,7 @@ open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial
   MvPolynomial TensorProduct Module Binius.BinaryBasefold Binius.RingSwitching
 open scoped NNReal
 
+-- TODO: how to make params cleaner while can explicitly reuse across sections?
 variable (κ : ℕ) [NeZero κ]
 variable (L : Type) [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
   [SelectableType L]

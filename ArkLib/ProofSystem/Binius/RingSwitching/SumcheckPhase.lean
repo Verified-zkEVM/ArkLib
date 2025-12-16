@@ -11,10 +11,8 @@ import ArkLib.OracleReduction.Composition.Sequential.Append
 import ArkLib.OracleReduction.Security.RoundByRound
 
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
-  Module Binius.BinaryBasefold TensorProduct
+  Module Binius.BinaryBasefold TensorProduct Nat Matrix
 open scoped NNReal
-open ReedSolomon Code BerlekampWelch
-open Finset AdditiveNTT Polynomial MvPolynomial Nat Matrix
 
 /-!
 # Ring-Switching Core Interaction Phase

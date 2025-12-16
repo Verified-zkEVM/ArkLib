@@ -36,18 +36,13 @@ open Binius.BinaryBasefold
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial TensorProduct
 open scoped NNReal
 
-/- This section defines generic preliminaries for the ring-switching protocol.
-The basis of L over K has rank `κ` instead of `2^κ` as in the Relations section.
--/
+/- This section defines generic preliminaries for the ring-switching protocol. -/
 section Preliminaries
 
 variable (κ : ℕ) [NeZero κ]
 variable (L : Type) [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
-  [SelectableType L]
 variable (K : Type) [Field K] [Fintype K] [DecidableEq K]
 variable [Algebra K L]
-variable (β : Fin κ → L) [hβ_lin_indep : Fact (LinearIndependent K β)]
-variable (h_dim : Module.finrank K L = κ)
 variable (ℓ ℓ' : ℕ) [NeZero ℓ] [NeZero ℓ']
 variable (h_l : ℓ = ℓ' + κ)
 
@@ -334,7 +329,7 @@ def performCheckOriginalEvaluation (s : L) (r : Fin ℓ → L) (s_hat : TensorAl
     let v_as_L : Fin κ → L := fun i => if (v i == 1) then 1 else 0
     (eqTilde v_as_L r_prefix) * (decompose_tensor_algebra_columns (L:=L)
       (K:=K) (β:=β) s_hat v)
-  s = check_sum
+  decide (s = check_sum)
 
 /-- Step 4a: For each `w ∈ {0,1}^{ℓ'}`, P decompose `eq̃(r_κ, ..., r_{ℓ-1}, w_0, ..., w_{ℓ'-1})`
 `=: Σ_{u ∈ {0,1}^κ} A_{w, u} ⋅ β_u`.

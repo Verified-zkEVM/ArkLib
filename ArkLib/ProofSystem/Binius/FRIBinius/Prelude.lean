@@ -57,10 +57,4 @@ def BinaryBasefoldAbstractOStmtIn : (RingSwitching.AbstractOStmtIn L ℓ') where
     Binius.BinaryBasefold.firstOracleWitnessConsistencyProp K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       t (f₀ := Binius.BinaryBasefold.getFirstOracle K β oStmt)
 
-/-- Statement for the final sumcheck step - includes the final constant c -/
-structure FinalSumcheckStatementOut extends
-  BinaryBasefold.Statement (L := L) (Context :=
-    RingSwitching.RingSwitchingBaseContext κ L K ℓ) (Fin.last ℓ') where
-  final_constant : L               -- c = f^(ℓ)(0, ..., 0)
-
 end Binius.FRIBinius

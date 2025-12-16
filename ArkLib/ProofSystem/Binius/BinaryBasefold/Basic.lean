@@ -512,7 +512,9 @@ Basic structures and definitions used throughout the Binary Basefold protocol.
 -/
 
 /-- Input context for the sumcheck protocol, used mainly in BinaryBasefold.
-For other protocols, there might be other context data. -/
+For other protocols, there might be other context data.
+NOTE: might add a flag `rejected` to indicate if prover has been rejected before. But that seems
+like a fundamental feature of OracleReduction instead, so no action taken for now. -/
 structure SumcheckBaseContext (L : Type) (ℓ : ℕ) where
   t_eval_point : Fin ℓ → L         -- r = (r_0, ..., r_{ℓ-1}) => shared input
   original_claim : L               -- s = t(r) => the original claim to verify

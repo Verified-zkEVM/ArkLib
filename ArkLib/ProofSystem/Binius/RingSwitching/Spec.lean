@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 import ArkLib.ProofSystem.Binius.RingSwitching.Prelude
+import ArkLib.ToVCVio.Oracle
 
 namespace Binius.RingSwitching
 
@@ -86,12 +87,13 @@ instance : ∀ j, SelectableType ((pSpecBatching κ L K).Challenge j)
   | ⟨0, h0⟩ => by nomatch h0
   | ⟨1, _⟩ => by
     simp only [Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_fin_one]
-    -- ⊢ SelectableType (Fin κ → L)
-    sorry
+    exact instSelectableTypeFinFunc (α := L)
 
 instance : ∀ j, SelectableType ((pSpecSumcheckRound (L:=L)).Challenge j)
   | ⟨0, h0⟩ => by nomatch h0
-  | ⟨1, _⟩ => by (expose_names; exact inst_5)
+  | ⟨1, _⟩ => by
+    simp only [Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_fin_one]
+    infer_instance
 
 instance : ∀ j, SelectableType ((pSpecSumcheckLoop (L:=L) ℓ').Challenge j)
   := instSelectableTypeChallengeSeqCompose

@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
+import ArkLib.ToVCVio.Oracle
 
 namespace Binius.BinaryBasefold
 
@@ -386,7 +387,14 @@ instance : ∀ i, SelectableType ((pSpecFinalSumcheckStep (L:=L)).Challenge i)
 instance : ∀ i, SelectableType ((pSpecCoreInteraction 𝔽q β (ϑ:=ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := instSelectableTypeChallengeAppend
 
-instance : ∀ i, SelectableType (↑(sDomain 𝔽q β h_ℓ_add_R_rate i)) := fun i => sorry
+/-- SelectableType instance for sDomain, constructed via its equivalence with a Fin type. -/
+instance instSDomain {i : Fin r} (h_i : i < ℓ + 𝓡) :
+    SelectableType (sDomain 𝔽q β h_ℓ_add_R_rate i) :=
+  let T := sDomain 𝔽q β h_ℓ_add_R_rate i
+  haveI : Fintype T := fintype_sDomain 𝔽q β h_ℓ_add_R_rate i
+  haveI : Nonempty T := ⟨0⟩
+  haveI : DecidableEq T := Classical.decEq T
+  SelectableType.ofEquiv (e := (sDomainFinEquiv 𝔽q β h_ℓ_add_R_rate i (by omega)).symm)
 
 instance : ∀ i, SelectableType ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i)
@@ -394,10 +402,13 @@ instance : ∀ i, SelectableType ((pSpecQuery 𝔽q β γ_repetitions
     unfold ProtocolSpec.Challenge
     simp only [pSpecQuery]
     have h_i: i = 0 := by omega
-    -- simp only [Matrix.cons_val_fin_one]
     rw [h_i]
     simp only [Fin.isValue, Matrix.cons_val_fin_one]
-    sorry
+    letI : SelectableType (sDomain 𝔽q β h_ℓ_add_R_rate 0) := by
+      apply instSDomain;
+      have h_ℓ_gt_0 : ℓ > 0 := by exact Nat.pos_of_neZero ℓ
+      exact Nat.lt_add_right 𝓡 h_ℓ_gt_0
+    exact instSelectableTypeFinFunc
 
 instance : ∀ j, SelectableType ((fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge j) := instSelectableTypeChallengeAppend

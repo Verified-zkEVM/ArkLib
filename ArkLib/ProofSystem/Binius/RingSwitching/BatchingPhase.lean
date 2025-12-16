@@ -10,10 +10,8 @@ import ArkLib.OracleReduction.Basic
 import ArkLib.Data.FieldTheory.BinaryField.Tower.TensorAlgebra
 
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
-  Module Binius.BinaryBasefold TensorProduct
+  Module Binius.BinaryBasefold TensorProduct Nat Matrix
 open scoped NNReal
-open ReedSolomon Code BerlekampWelch
-open Finset AdditiveNTT Polynomial MvPolynomial Nat Matrix
 
 /-!
 # Ring-Switching IOP Batching Phase
