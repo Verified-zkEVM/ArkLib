@@ -565,19 +565,16 @@ theorem add_size {p q : UniPoly Q} : (add_raw p q).size = max p.size q.size := b
   rw [zipWith_size matchSize_size_eq, matchSize_size]
 
 theorem add_coeff {p q : UniPoly Q} {i : ℕ} (hi : i < (add_raw p q).size) :
-  (add_raw p q)[i] = p.coeff i + q.coeff i
-:= by
-  simp [add_raw]
-  sorry
-  -- unfold List.matchSize
-  -- repeat rw [List.rightpad_getElem_eq_getD]
-  -- simp only [List.getD_eq_getElem?_getD, Array.getElem?_eq_toList]
+  (add_raw p q)[i] = p.coeff i + q.coeff i := by
+  rcases Nat.lt_or_ge i p.size with h1 | h1 <;>
+    rcases Nat.lt_or_ge i q.size with h2 | h2 <;>
+      simp [add_raw, h1, h2]
 
 theorem add_coeff? (p q : UniPoly Q) (i : ℕ) :
-  (add_raw p q).coeff i = p.coeff i + q.coeff i
-:= by
-  rcases (Nat.lt_or_ge i (add_raw p q).size) with h_lt | h_ge
-  · rw [← add_coeff h_lt]; simp [h_lt]
+  (add_raw p q).coeff i = p.coeff i + q.coeff i := by
+  rcases Nat.lt_or_ge i (add_raw p q).size with h_lt | h_ge
+  · rw [← add_coeff h_lt]
+    simp [h_lt]
   have h_lt' : i ≥ max p.size q.size := by rwa [← add_size]
   have h_p : i ≥ p.size := by omega
   have h_q : i ≥ q.size := by omega

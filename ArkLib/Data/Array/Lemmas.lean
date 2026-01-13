@@ -43,8 +43,7 @@ theorem rightpad_toList {a : Array α} {n : Nat} {unit : α} :
 
 theorem rightpad_getElem_eq_getD {a : Array α} {n : Nat} {unit : α} {i : Nat}
     (h : i < (a.rightpad n unit).size) : (a.rightpad n unit)[i] = a.getD i unit := by
-  simp_rw [rightpad_toList] at h ⊢
-  sorry
+  rcases Nat.lt_or_ge i a.size with h' | h' <;> simp [h']
 
 /-- `Array` version of `List.matchSize`, which rightpads the arrays to the same length. -/
 @[reducible]
