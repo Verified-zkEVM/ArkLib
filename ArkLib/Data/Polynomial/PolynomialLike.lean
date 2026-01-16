@@ -110,7 +110,7 @@ lemma eval₂_monomial {S : Type w} [CommSemiring S] (f : R →+* S) (x : S) (n 
   simp [monomial]
 
 /-- `eval₂` is determined by its values on `C` and `X`. -/
-lemma eval₂_induction_on : True := sorry
+lemma eval₂_induction_on : True := by trivial
 
 lemma C_injective : Function.Injective (C : R → P) := by
   intro r₁ r₂ h
