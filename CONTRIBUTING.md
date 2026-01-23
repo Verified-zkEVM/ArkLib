@@ -62,7 +62,6 @@ Our [linting script](`./scripts/lint-style.sh`) helps enforce some aspects of th
 
 ### Naming Conventions
 
-**Casing and spelling:**
 * **Files**: `UpperCamelCase.lean` (e.g., `BinarySearch.lean`).
 * **Types and Structures**: `UpperCamelCase` (e.g., `MonoidHom`, `Visualizer`).
 * **Functions and Terms**: `lowerCamelCase` (e.g., `binarySearch`, `isPrime`).
@@ -77,6 +76,7 @@ Our [linting script](`./scripts/lint-style.sh`) helps enforce some aspects of th
     * Use descriptive names for arithmetic/algebraic properties (e.g., `mul_comm`, `add_assoc`).
 
 ### Theorem Naming Logic
+
 * **Hypotheses**: Use `_of_` to separate hypotheses, listed in the order they appear (e.g., `lt_of_succ_le` means "less than *follows from* successor less equal").
 * **Variants**: Use `left` or `right` to describe which argument changes or is relevant (e.g., `add_le_add_left`).
 * **Structural Lemmas**:
@@ -90,6 +90,7 @@ Our [linting script](`./scripts/lint-style.sh`) helps enforce some aspects of th
 * **Predicates**: Generally use prefixes (e.g., `isClosed_Icc` not `Icc_isClosed`). Exceptions include property suffixes like `_inj`, `_mono`, `_injective`, `_surjective`.
 
 ### Variable Conventions
+
 * `u`, `v`, `w`, ... : Universes
 * `α`, `β`, `γ`, ... : Generic types
 * `a`, `b`, `c`, ... : Propositions
