@@ -253,12 +253,7 @@ theorem dotProduct_eq_root_dotProduct (a b : Vector R n) :
     dotProduct a b = _root_.dotProduct a.get b.get := by
   refine induction₂ ?_ (fun hd tl hd' tl' ih => ?_) a b
   · simp [dotProduct, _root_.dotProduct]
-  · simp [Vector.cast]
-    sorry
-    -- suffices h : ((#v[hd] ++ tl) *ᵥ (#v[hd'] ++ tl')) =
-    --   (_root_.dotProduct (#v[hd] ++ tl).get (#v[hd'] ++ tl').get) by
-    --   simp at h
-    --   sorry
-    -- rw [dotProduct_cons]
+  · change (cons hd tl *ᵥ cons hd' tl') = _root_.dotProduct (cons hd tl).get (cons hd' tl').get
+    rw [Vector.dotProduct_cons, _root_.dotProduct_cons, ih]
 
 end Vector

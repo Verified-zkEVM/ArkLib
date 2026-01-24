@@ -177,6 +177,26 @@ def getLast (a : Array α) (h : a.size > 0) : α := a[a.size - 1]
 def getLastD (a : Array α) (v₀ : α) : α := a.getD (a.size - 1) v₀
 
 @[simp] theorem popWhile_nil_or_last_false (p : α → Bool) (as : Array α)
-    (h : (as.popWhile p).size > 0) : ¬ (p <| (as.popWhile p).getLast h) := sorry
+    (h : (as.popWhile p).size > 0) : ¬ (p <| (as.popWhile p).getLast h) := by
+  unfold getLast
+  simp only [Bool.not_eq_true]
+  induction as using Array.popWhile.induct p with
+  | case1 as hPos hCond ih =>
+    -- as.size > 0 and p as[last] = true, so popWhile recurses
+    unfold Array.popWhile at h ⊢
+    simp only [hPos, ↓reduceDIte, hCond, ↓reduceIte] at h ⊢
+    exact ih h
+  | case2 as hPos hCond =>
+    -- as.size > 0 and p as[last] = false, so popWhile returns as
+    have hCondFalse : p as[as.size - 1] = false := Bool.eq_false_iff.mpr hCond
+    have hpw : as.popWhile p = as := by
+      unfold Array.popWhile
+      simp only [hPos, ↓reduceDIte, hCondFalse, Bool.false_eq_true, ↓reduceIte]
+    simp only [hpw]
+    exact hCondFalse
+  | case3 as hEmpty =>
+    -- as.size = 0, so popWhile returns empty array
+    unfold Array.popWhile at h
+    simp only [hEmpty, ↓reduceDIte] at h
 
 end Array
