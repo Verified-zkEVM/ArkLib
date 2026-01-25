@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao
+Authors: Quang Dao, Chung Thai Nguyen
 -/
 
 import Mathlib.Logic.Equiv.Defs
@@ -25,3 +25,12 @@ def subtypeSumComplEquiv {α : Type*} {p : α → Prop} [DecidablePred p] :
     | Sum.inl a => by simp [a.2]
     | Sum.inr a => by simp [a.2]
   right_inv := fun x => by simp; split_ifs <;> simp
+
+lemma fun_eta_expansion {α β : Type*} (f : α → β) : f = (fun x => f x) := rfl
+
+/-- Casting a function equals the function that casts its argument. -/
+lemma cast_fun_eq_fun_cast_arg.{u, v} {A B : Type u} {C : Type v} (h : A = B) (f : A → C) :
+    cast (congrArg (· → C) h) f = fun x => f (cast h.symm x) := by
+  funext x
+  subst h
+  rfl
