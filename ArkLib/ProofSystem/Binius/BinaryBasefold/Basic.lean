@@ -711,6 +711,37 @@ lemma fixFirstVariablesOfMQP_full_eval_eq_eval {deg : ℕ} {challenges : Fin (Fi
       = poly.eval challenges := by
   sorry
 
+/-- At `Fin.last ℓ`, the projected sumcheck polynomial evaluates to `multiplier * t(challenges)`.
+When evaluated at the "zero" point (empty domain), the product structure emerges. -/
+lemma projectToMidSumcheckPoly_at_last_eval
+    (t : MultilinearPoly L ℓ)
+    (m : MultilinearPoly L ℓ)
+    (challenges : Fin ℓ → L) :
+    ∀ x, (projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := t) (m := m)
+      (i := Fin.last ℓ) (challenges := challenges)).val.eval x =
+    m.val.eval challenges * t.val.eval challenges := by
+  intro x
+  -- At Fin.last ℓ, the projection has ℓ - ℓ = 0 remaining variables
+  -- So we're evaluating a constant polynomial
+  -- Use projectToMidSumcheckPoly_eq_prod to decompose into product
+  have h_eq_prod := projectToMidSumcheckPoly_eq_prod (L := L) (ℓ := ℓ) t m (Fin.last ℓ) challenges
+  -- Extract the .val equality
+  have h_val_eq : (projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := t) (m := m)
+      (i := Fin.last ℓ) (challenges := challenges)).val =
+    ((fixFirstVariablesOfMQP ℓ (v := Fin.last ℓ) (H := m) (challenges := challenges)) *
+     (fixFirstVariablesOfMQP ℓ (v := Fin.last ℓ) (H := t) (challenges := challenges))) := by
+    rw [h_eq_prod]
+  rw [h_val_eq, map_mul]
+
+  -- Both factors become full evaluations at challenges
+  have h_m := fixFirstVariablesOfMQP_full_eval_eq_eval (ℓ := ℓ)
+    (poly := m.val) (challenges := challenges) (hp := m.property)
+    (x := x)
+  have h_t := fixFirstVariablesOfMQP_full_eval_eq_eval (ℓ := ℓ)
+    (poly := t.val) (challenges := challenges) (hp := t.property)
+    (x := x)
+  congr 1 -- this auto rw using h_m and h_t
+
 end SumcheckOperations
 
 variable {r : ℕ} [NeZero r]
@@ -1519,9 +1550,6 @@ end SingleStepRelationPreservationLemmas
 /-- Before V's challenge of the `i-th` foldStep, we ignore the bad-folding-event
 of the `i-th` oracle if any and enable it after the next V's challenge, i.e. one
 round later. This is for the purpose of reasoning its RBR KS properly.
-
-When `includeBadEvents = true` (RBR KS): `localChecks ∧ (badEvent ∨ oracleConsistency)`
-When `includeBadEvents = false` (Completeness): `localChecks ∧ oracleConsistency`
 -/
 def masterKStateProp (stmtIdx : Fin (ℓ + 1))
     (oracleIdx : OracleFrontierIndex stmtIdx)
@@ -1529,34 +1557,33 @@ def masterKStateProp (stmtIdx : Fin (ℓ + 1))
     (wit : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtIdx)
     (oStmt : ∀ j, (OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ
       (i := oracleIdx.val) j))
-    (localChecks : Prop := True) (includeBadEvents : Bool) : Prop :=
+    (localChecks : Prop := True) : Prop :=
   let oracleWitnessConsistency: Prop := oracleWitnessConsistency 𝔽q β (mp := mp)
     stmtIdx oracleIdx stmt wit oStmt
   let badEventExists := badEventExistsProp 𝔽q β stmtIdx oracleIdx
     (challenges := stmt.challenges) (oStmt := oStmt)
-  let core := if includeBadEvents then badEventExists ∨ oracleWitnessConsistency
-              else oracleWitnessConsistency
+  let core := badEventExists ∨ oracleWitnessConsistency
   localChecks ∧ core
 
 def roundRelationProp (i : Fin (ℓ + 1))
     (input : (Statement (L := L) Context i ×
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i j)) ×
       Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
-    (includeBadEvents : Bool) : Prop :=
+   : Prop :=
   let stmt := input.1.1
   let oStmt := input.1.2
   let wit := input.2
   let sumCheckConsistency: Prop := sumcheckConsistencyProp (𝓑 := 𝓑) stmt.sumcheck_target wit.H
   masterKStateProp (mp := mp) 𝔽q β
     (stmtIdx := i) (oracleIdx := OracleFrontierIndex.mkFromStmtIdx i) stmt wit oStmt
-    (localChecks := sumCheckConsistency) (includeBadEvents := includeBadEvents)
+    (localChecks := sumCheckConsistency)
 
 /-- A modified version of roundRelationProp (i+1) -/
 def foldStepRelOutProp (i : Fin ℓ)
     (input : (Statement (L := L) Context i.succ ×
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)) ×
       Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
-    (includeBadEvents : Bool) : Prop :=
+   : Prop :=
   let stmt := input.1.1
   let oStmt := input.1.2
   let wit := input.2
@@ -1564,19 +1591,16 @@ def foldStepRelOutProp (i : Fin ℓ)
   masterKStateProp (mp := mp) 𝔽q β
     (stmtIdx := i.succ) (oracleIdx := OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i)
     stmt wit oStmt
-      (localChecks := sumCheckConsistency) (includeBadEvents := includeBadEvents)
+      (localChecks := sumCheckConsistency)
 
 /-- This is a special case of nonDoomedFoldingProp for `i = ℓ`, where we support
 the consistency between the last oracle `ℓ - ϑ` and the final constant `c`.
 This definition has form similar to masterKState where there is no localChecks.
-
-When `includeBadEvents = true` (RBR KS): `oracleFoldingConsistency ∨ badEventExists`
-When `includeBadEvents = false` (Completeness): `oracleFoldingConsistency`
 -/
 def finalFoldingStateProp {h_le : ϑ ≤ ℓ}
     (input : (FinalSumcheckStatementOut (L := L) (ℓ := ℓ) ×
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j)))
-    (includeBadEvents : Bool) :
+   :
     Prop :=
   let stmt := input.1
   let oStmt := input.2
@@ -1618,8 +1642,7 @@ def finalFoldingStateProp {h_le : ϑ ≤ ℓ}
     (oracleIdx := OracleFrontierIndex.mkFromStmtIdx (Fin.last ℓ))
     (oStmt := oStmt) (challenges := stmt.challenges)) ∨ finalFoldingBadEvent
 
-  if includeBadEvents then oracleFoldingConsistency ∨ foldingBadEventExists
-  else oracleFoldingConsistency
+  oracleFoldingConsistency ∨ foldingBadEventExists
 
 /-- **Relaxed fold step output relation for RBR Knowledge Soundness**.
 
@@ -1627,11 +1650,11 @@ This is a proximity-based relation used for RBR KS. For completeness proofs, use
 `strictFoldStepRelOut` (defined below) instead.
 
 Input relation for round i: R_i must hold at the beginning of round i -/
-def foldStepRelOut (i : Fin ℓ) (includeBadEvents : Bool) :
+def foldStepRelOut (i : Fin ℓ) :
     Set ((Statement (L := L) Context i.succ ×
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)) ×
       Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ) :=
-  { input | foldStepRelOutProp (mp := mp) (𝓑 := 𝓑) 𝔽q β i input includeBadEvents}
+  { input | foldStepRelOutProp (mp := mp) (𝓑 := 𝓑) 𝔽q β i input}
 
 /-- **Relaxed round relation for RBR Knowledge Soundness**.
 
@@ -1644,39 +1667,34 @@ For Perfect Completeness proofs, use `strictRoundRelation` (defined below) inste
 Relation at step `i` of the CoreInteraction. `∀ i < ℓ, R_i` must hold at the
 beginning of ITERATION `i`. `R_ℓ` must hold after the last iteration and before sending
 the final constant.
-
-Parameters:
-- `includeBadEvents = true`: Track bad folding events (for soundness analysis)
-- `includeBadEvents = false`: Ignore bad events (for completeness with relaxed checks)
-  **Note**: Even with `false`, this is still a proximity-based relation, not strict equality!
 -/
-def roundRelation (i : Fin (ℓ + 1)) (includeBadEvents : Bool) :
+def roundRelation (i : Fin (ℓ + 1)) :
     Set ((Statement (L := L) Context i ×
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i j)) ×
       Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
-  { input | roundRelationProp (mp := mp) (𝓑 := 𝓑) 𝔽q β i input includeBadEvents}
+  { input | roundRelationProp (mp := mp) (𝓑 := 𝓑) 𝔽q β i input}
 
 /-- Relation for final sumcheck step -/
 def finalSumcheckRelOutProp
     (input : ((FinalSumcheckStatementOut (L := L) (ℓ := ℓ) ×
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j)) ×
       (Unit)))
-    (includeBadEvents : Bool) : Prop :=
+   : Prop :=
   -- Final oracle consistency and bad events
   finalFoldingStateProp 𝔽q β
     (h_le := by apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ) (hdiv.out))
     (input := input.1)
-    (includeBadEvents := includeBadEvents)
+
 
 /-- **Relaxed final sumcheck relation for RBR Knowledge Soundness**.
 
 This is a proximity-based relation used for RBR KS. For completeness proofs, use
 `strictFinalSumcheckRelOut` (defined below) instead. -/
-def finalSumcheckRelOut (includeBadEvents : Bool) :
+def finalSumcheckRelOut :
     Set ((FinalSumcheckStatementOut (L := L) (ℓ := ℓ) ×
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j)) ×
       (Unit)) :=
-  { input | finalSumcheckRelOutProp 𝔽q β input includeBadEvents }
+  { input | finalSumcheckRelOutProp 𝔽q β input }
 
 /-!
 ## Strict Completeness Relations (Dual-Relations Framework - Left Column)

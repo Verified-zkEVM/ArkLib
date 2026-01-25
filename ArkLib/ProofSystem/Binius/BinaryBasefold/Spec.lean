@@ -356,26 +356,9 @@ instance {i : Fin ℓ} : ∀ j, SampleableType ((pSpecCommit 𝔽q β
   | ⟨0, hj⟩ => by nomatch hj
 
 instance : ∀ j, SampleableType ((pSpecFold (L:=L)).Challenge j)
-  | ⟨j, hj⟩ => by
-    dsimp [pSpecFold, Challenge]
-    -- Only message 1 (index 1) has challenges, which are of type L
-    -- From pSpec definition: dir = ![Direction.P_to_V, Direction.V_to_P, Direction.P_to_V]
-    -- So only index 1 has Direction.V_to_P, which means i = 1
-    have h_i_eq_1 : j = 1 := by
-      -- Since i is in ChallengeIdx, we know pSpec.dir i = Direction.V_to_P
-      -- From the pSpec definition, only index 1 has Direction.V_to_P
-      have h_dir := hj
-      dsimp [pSpecFold] at h_dir
-      -- h_dir : ![Direction.P_to_V, Direction.V_to_P, Direction.P_to_V] i = Direction.V_to_P
-      -- This forces i = 1 since only index 1 has V_to_P direction
-      cases j using Fin.cases
-      case zero => simp at h_dir
-      case succ j1 =>
-        cases j1 using Fin.cases
-        case zero => rfl
-        case succ k => exact k.elim0 (α := k.succ.succ = 1)
-    rw [h_i_eq_1]
-    simp only [Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_zero]
+  | ⟨0, h0⟩ => by nomatch h0
+  | ⟨1, _⟩ => by
+    simp only [Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_fin_one]
     infer_instance
 
 instance : ∀ j, SampleableType ((pSpecRelay).Challenge j)

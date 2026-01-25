@@ -42,23 +42,25 @@ variable (mlIOPCS : MLIOPCS L ℓ')
 
 def batchingCoreVerifier :=
   OracleVerifier.append (oSpec:=[]ₒ)
-    (V₁:= BatchingPhase.oracleVerifier κ L K β ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
+    (V₁:= BatchingPhase.oracleVerifier κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) mlIOPCS.toAbstractOStmtIn)
     (pSpec₁:=pSpecBatching κ L K)
-    (V₂:=SumcheckPhase.coreInteractionOracleVerifier κ L K β ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
+    (V₂:=SumcheckPhase.coreInteractionOracleVerifier κ L K β ℓ ℓ' h_l (𝓑 := 𝓑)
+      mlIOPCS.toAbstractOStmtIn)
     (pSpec₂:=pSpecCoreInteraction L ℓ')
 
 /-- The oracle verifier for the full Binary Basefold protocol -/
 @[reducible]
 def fullOracleVerifier :=
   OracleVerifier.append (oSpec:=[]ₒ)
-    (V₁:=batchingCoreVerifier κ L K β ℓ ℓ' h_l mlIOPCS)
+    (V₁:=batchingCoreVerifier κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) mlIOPCS)
     (pSpec₁:=pSpecLargeFieldReduction κ L K ℓ')
     (V₂:=mlIOPCS.oracleReduction.verifier)
     (pSpec₂:=mlIOPCS.pSpec)
 
 def batchingCoreReduction :=
   OracleReduction.append
-    (R₁ := BatchingPhase.batchingOracleReduction κ L K β ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
+    (R₁ := BatchingPhase.batchingOracleReduction κ L K β ℓ ℓ' h_l (𝓑 := 𝓑)
+      mlIOPCS.toAbstractOStmtIn)
     (pSpec₁:=pSpecBatching κ L K)
     (R₂ := SumcheckPhase.coreInteractionOracleReduction κ L K β ℓ ℓ' h_l
       (𝓑 := 𝓑) mlIOPCS.toAbstractOStmtIn)
@@ -144,7 +146,7 @@ variable [SampleableType L]
 /-- Round-by-round knowledge soundness for the full ring-switching oracle verifier -/
 theorem fullOracleVerifier_rbrKnowledgeSoundness {𝓑 : Fin 2 ↪ L} :
   OracleVerifier.rbrKnowledgeSoundness
-    (verifier := fullOracleVerifier κ L K β ℓ ℓ' h_l mlIOPCS)
+    (verifier := fullOracleVerifier κ L K β ℓ ℓ' (𝓑 := 𝓑) h_l mlIOPCS)
     (init := init)
     (impl := impl)
     (relIn := fullInputRelation κ L K β ℓ ℓ' h_l mlIOPCS)

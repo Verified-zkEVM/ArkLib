@@ -1740,7 +1740,7 @@ def queryKStateProp {m : Fin (1 + 1)}
 if h0 : m.val = 0 then
   -- Same as last Kstate of finalSumcheck reduction
   Binius.BinaryBasefold.finalSumcheckRelOutProp 𝔽q β
-    (input:=⟨⟨stmt, oStmt⟩, witMid⟩) (includeBadEvents := true)
+    (input:=⟨⟨stmt, oStmt⟩, witMid⟩)
 else
     let r := stmt.ctx.t_eval_point
     let s := stmt.ctx.original_claim
@@ -1764,7 +1764,7 @@ else
 noncomputable def queryKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
   (queryOracleVerifier 𝔽q β (ϑ:=ϑ) γ_repetitions).KnowledgeStateFunction init impl
-  (relIn := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (includeBadEvents := true))
+  (relIn := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) )
   (relOut := acceptRejectOracleRel)
   (extractor := queryRbrExtractor 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
   toFun := fun m ⟨stmt, oStmt⟩ tr witMid =>
@@ -1781,7 +1781,7 @@ noncomputable def queryKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
 theorem queryOracleVerifier_rbrKnowledgeSoundness [Fintype L] {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (queryOracleVerifier 𝔽q β (ϑ:=ϑ) γ_repetitions).rbrKnowledgeSoundness init impl
-    (relIn := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (includeBadEvents := true))
+    (relIn := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) )
     (relOut := acceptRejectOracleRel)
     (rbrKnowledgeError := queryRbrKnowledgeError 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) := by

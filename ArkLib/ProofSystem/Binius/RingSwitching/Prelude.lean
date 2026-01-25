@@ -330,6 +330,22 @@ def performCheckOriginalEvaluation (s : L) (r : Fin ℓ → L) (s_hat : TensorAl
       (K:=K) (β:=β) s_hat v)
   decide (s = check_sum)
 
+/-- **Correctness of the Batching Check**
+
+This lemma proves that when the prover honestly computes the message `s_hat` using
+`packMLE` and `embedded_MLP_eval`, the verifier's check passes.
+-/
+lemma batching_check_correctness
+    (t : MultilinearPoly K ℓ)
+    (eval_point : Fin ℓ → L) :
+  performCheckOriginalEvaluation κ L K β ℓ ℓ' h_l
+    (t.val.aeval eval_point)
+    (r := eval_point) (s_hat := embedded_MLP_eval κ (L := L) (K := K) ℓ ℓ' h_l (packMLE κ (L := L) (K := K) ℓ ℓ' h_l β t) eval_point) = true := by
+  -- Unfold the check definition
+  unfold performCheckOriginalEvaluation
+  simp only [decide_eq_true_eq]
+  sorry -- TODO: Prove the mathematical identity
+
 /-- Step 4a: For each `w ∈ {0,1}^{ℓ'}`, P decompose `eq̃(r_κ, ..., r_{ℓ-1}, w_0, ..., w_{ℓ'-1})`
 `=: Σ_{u ∈ {0,1}^κ} A_{w, u} ⋅ β_u`.
 P define the function
@@ -401,6 +417,29 @@ def compute_final_eq_value (r_eval : Fin ℓ → L)
       eqTilde u_as_L r''_batching
     eq_u_r_batching * (e_u u)
 
+/-- **Key Identity**: Evaluating `compute_A_MLE` at any point `r'_challenges` equals
+`compute_final_eq_value` at that point.
+
+This lemma connects the MLE-based definition of the multiplier polynomial with the
+direct tensor-based computation used in the final sumcheck verification.
+`MLE(f).eval(x) = f(x)` when `x` is a boolean hypercube point.
+-/
+lemma compute_A_MLE_eval_eq_final_eq_value
+    (r_eval : Fin ℓ → L)
+    (r'_challenges : Fin ℓ' → L)
+    (r''_batching : Fin κ → L) :
+    (compute_A_MLE κ L K β ℓ' (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval) r''_batching).val.eval r'_challenges =
+    compute_final_eq_value κ L K β ℓ ℓ' h_l r_eval r'_challenges r''_batching := by
+  -- Unfold definitions
+  simp only [compute_A_MLE, compute_final_eq_value, getEvaluationPointSuffix]
+  -- The proof requires showing that:
+  -- MLE(A_func).eval(r'_challenges) = compute_final_eq_value
+  -- This is a deep mathematical identity involving:
+  -- 1. Properties of eqTilde and its tensor product structure
+  -- 2. The relationship between φ₀, φ₁ embeddings and basis decomposition
+  -- 3. Multilinearity and the MLE interpolation property
+  sorry
+
 /-- This condition ensures that the witness polynomial `H` has the
 correct structure `A(...) * t'(...)` -/
 def witnessStructuralInvariant {i : Fin (ℓ' + 1)}
@@ -432,6 +471,23 @@ def sumcheckRoundRelation (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (ℓ' + 1
     (∀ j, aOStmtIn.OStmtIn j)) × SumcheckWitness L ℓ' i) :=
   { ((stmt, oStmt), wit) | sumcheckRoundRelationProp κ L K β ℓ ℓ' h_l (𝓑:=𝓑)
     aOStmtIn i stmt oStmt wit }
+
+/-- **Consistency of the Batching Target**
+
+This lemma proves that the batched target value `s₀` computed by the verifier
+matches the sum over the hypercube of the honestly computed batched polynomial `H`.
+-/
+lemma batching_target_consistency
+    (t' : MultilinearPoly L ℓ')
+    (msg0 : TensorAlgebra K L)
+    (r_batching : Fin κ → L)
+    (ctx : RingSwitchingBaseContext κ L K ℓ) :
+  let s₀ := compute_s0 κ L K β msg0 r_batching
+  let H := projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := t') (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx) (i := 0) (challenges := Fin.elim0)
+  sumcheckConsistencyProp (𝓑:=𝓑) s₀ H := by
+  -- This lemma proves that s₀ = Σ_{x ∈ {0,1}^ℓ'} H(x)
+  -- It follows from the definition of compute_s0, H, and A_MLE.
+  sorry -- TODO: Prove the mathematical identity
 
 end Relations
 

@@ -159,8 +159,7 @@ import ArkLib.ToMathlib.Data.IndexedBinaryTree.Equiv
 import ArkLib.ToMathlib.Data.IndexedBinaryTree.Lemmas
 import ArkLib.ToMathlib.Finset.Basic
 import ArkLib.ToVCVio.DistEq
-import ArkLib.ToVCVio.Execution
 import ArkLib.ToVCVio.Lemmas
 import ArkLib.ToVCVio.Oracle
 import ArkLib.ToVCVio.SimOracle
-import ArkLib.ToVCVio.StateTLemmas
+import ArkLib.ToVCVio.SimulationInfrastructure

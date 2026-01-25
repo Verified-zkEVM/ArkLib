@@ -7,7 +7,8 @@ Authors: Chung Thai Nguyen, Quang Dao
 import ArkLib.ProofSystem.Binius.RingSwitching.Prelude
 import ArkLib.ProofSystem.Binius.RingSwitching.Spec
 import ArkLib.OracleReduction.Basic
-import CompPoly.Fields.Binary.Tower.TensorAlgebra
+import ArkLib.ProofSystem.Binius.BinaryBasefold.ReductionLogic
+import ArkLib.Data.FieldTheory.BinaryField.Tower.TensorAlgebra
 
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
   Module Binius.BinaryBasefold TensorProduct Nat Matrix
@@ -77,6 +78,217 @@ def failureState (stmt : BatchingStmtIn L ℓ) (s_hat : TensorAlgebra K L) :
     challenges := Fin.elim0
   }
 
+/-! ## Relations -/
+
+def batchingInputRelationProp (stmt : BatchingStmtIn L ℓ)
+    (oStmt : ∀ j, aOStmtIn.OStmtIn j) (wit : BatchingWitIn L K ℓ ℓ') : Prop :=
+  wit.t' = packMLE κ L K ℓ ℓ' h_l β wit.t ∧ stmt.original_claim = wit.t.val.aeval stmt.t_eval_point
+  ∧ aOStmtIn.initialCompatibility ⟨wit.t', oStmt⟩
+
+/-- Input relation: the witness `t` and `t'` are consistent,
+and `t` satisfies the original claim. -/
+def batchingInputRelation :
+  Set ((BatchingStmtIn L ℓ × (∀ j, aOStmtIn.OStmtIn j)) × BatchingWitIn L K ℓ ℓ') :=
+  {⟨⟨stmt, oStmt⟩, wit⟩ | batchingInputRelationProp κ L K β ℓ ℓ' h_l aOStmtIn stmt oStmt wit }
+
+/-! ## Pure Logic Functions (ReductionLogicStep Infrastructure) -/
+
+/-- Pure verifier check: validates that the prover's ŝ satisfies Check 1.
+This is extracted from the monadic verifier for use in ReductionLogicStep. -/
+@[reducible]
+def batchingVerifierCheck (stmtIn : BatchingStmtIn L ℓ) (msg0 : TensorAlgebra K L) : Prop :=
+  performCheckOriginalEvaluation κ L K β ℓ ℓ' h_l
+    stmtIn.original_claim stmtIn.t_eval_point msg0 = true
+
+/-- Pure verifier output: computes the output statement given the transcript.
+This is extracted from the monadic verifier for use in ReductionLogicStep. -/
+@[reducible]
+def batchingVerifierStmtOut (stmtIn : BatchingStmtIn L ℓ)
+    (msg0 : TensorAlgebra K L) (r_batching : Fin κ → L) :
+    Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) 0 :=
+  let s₀ := compute_s0 κ L K β msg0 r_batching
+  let ctx : RingSwitchingBaseContext κ L K ℓ := {
+    t_eval_point := stmtIn.t_eval_point,
+    original_claim := stmtIn.original_claim,
+    s_hat := msg0,
+    r_batching := r_batching
+  }
+  {
+    ctx := ctx,
+    sumcheck_target := s₀,
+    challenges := Fin.elim0
+  }
+
+/-- Pure prover message computation: computes ŝ from the witness.
+This is extracted from the monadic prover for use in ReductionLogicStep. -/
+@[reducible]
+def batchingProverComputeMsg (stmtIn : BatchingStmtIn L ℓ) (witIn : BatchingWitIn L K ℓ ℓ') :
+    TensorAlgebra K L :=
+  embedded_MLP_eval κ L K ℓ ℓ' h_l witIn.t' stmtIn.t_eval_point
+
+/-- Pure prover output: computes the output witness given the transcript.
+This is extracted from the monadic prover for use in ReductionLogicStep. -/
+@[reducible]
+def batchingProverWitOut (stmtIn : BatchingStmtIn L ℓ) (witIn : BatchingWitIn L K ℓ ℓ')
+    (msg0 : TensorAlgebra K L) (r_batching : Fin κ → L) :
+    SumcheckWitness L ℓ' 0 :=
+  let ctx : RingSwitchingBaseContext κ L K ℓ := {
+    t_eval_point := stmtIn.t_eval_point,
+    original_claim := stmtIn.original_claim,
+    s_hat := msg0,
+    r_batching := r_batching
+  }
+  let h_poly : ↥L⦃≤ 2⦄[X Fin ℓ'] :=
+    projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := witIn.t')
+      (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly (ctx := ctx))
+      (i := 0) (challenges := Fin.elim0)
+  {
+    t' := witIn.t',
+    H := h_poly
+  }
+
+/-! ## ReductionLogicStep Instance -/
+
+/-- The Logic Instance for the Batching Phase.
+This encapsulates the pure logic of the batching phase, separating it from
+the monadic oracle operations. -/
+def batchingStepLogic :
+    Binius.BinaryBasefold.CoreInteraction.ReductionLogicStep
+      -- In/Out Types
+      (BatchingStmtIn L ℓ)
+      (BatchingWitIn L K ℓ ℓ')
+      (aOStmtIn.OStmtIn)
+      (aOStmtIn.OStmtIn)
+      (Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) 0)
+      (SumcheckWitness L ℓ' 0)
+      -- Protocol Spec
+      (pSpecBatching (κ:=κ) (L:=L) (K:=K))
+      where
+
+  -- 1. Relations (using strict relations for completeness)
+  completeness_relIn := fun ((s, o), w) =>
+    ((s, o), w) ∈ batchingInputRelation κ L K β ℓ ℓ' h_l aOStmtIn
+  completeness_relOut := fun ((s, o), w) =>
+    ((s, o), w) ∈ sumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) aOStmtIn 0
+
+  -- 2. Verifier Logic (Using extracted kernels)
+  verifierCheck := fun stmtIn transcript =>
+    batchingVerifierCheck (κ:=κ) (L:=L) (K:=K) (β:=β) (ℓ:=ℓ) (ℓ':=ℓ') (h_l:=h_l) (stmtIn := stmtIn) (transcript.messages ⟨0, rfl⟩)
+
+  verifierOut := fun stmtIn transcript =>
+    batchingVerifierStmtOut (κ:=κ) (L:=L) (K:=K) (β:=β) (ℓ:=ℓ) (ℓ':=ℓ') (stmtIn := stmtIn) (msg0 := transcript.messages ⟨0, rfl⟩) (r_batching := transcript.challenges ⟨1, rfl⟩)
+
+  -- 2b. Oracle Embedding (must match oracleVerifier)
+  embed := ⟨fun j => Sum.inl j, fun a b h => by cases h; rfl⟩
+  hEq := fun i => rfl
+
+  -- 3. Honest Prover Logic (Constructing the transcript)
+  honestProverTranscript := fun stmtIn witIn _oStmtIn chal =>
+    let msg : TensorAlgebra K L := batchingProverComputeMsg (κ := κ) (L := L) (K := K) (ℓ := ℓ)
+      (ℓ' := ℓ') (h_l := h_l) stmtIn witIn
+    FullTranscript.mk2 msg (chal ⟨1, rfl⟩)
+
+  -- 4. Prover Output (State Update)
+  proverOut := fun stmtIn witIn oStmtIn transcript =>
+    let msg0 : TensorAlgebra K L := transcript.messages ⟨0, rfl⟩
+    let r_batching : Fin κ → L := transcript.challenges ⟨1, rfl⟩
+    let stmtOut := batchingVerifierStmtOut (κ:=κ) (L:=L) (K:=K) (β:=β) (ℓ:=ℓ) (ℓ':=ℓ')
+      (stmtIn := stmtIn) (msg0 := msg0) (r_batching := r_batching)
+    let witOut := batchingProverWitOut (κ:=κ) (L:=L) (K:=K) (β:=β) (ℓ:=ℓ) (ℓ':=ℓ') (h_l:=h_l)
+      (stmtIn := stmtIn) (witIn := witIn) (msg0 := msg0) (r_batching := r_batching)
+    ((stmtOut, oStmtIn), witOut)
+
+/-! ## Strong Completeness Theorem -/
+
+/-- The Main Lemma: Batching Phase satisfies Strong Completeness.
+
+This proves that for any valid input satisfying `batchingInputRelation`, the honest
+prover-verifier interaction correctly computes ŝ, performs Check 1, and produces
+a valid output satisfying `sumcheckRoundRelation 0`.
+
+**Proof Structure:**
+- Verifier check: Uses the definition of `performCheckOriginalEvaluation` and properties
+  of `embedded_MLP_eval` and `packMLE`.
+- Output relation: Uses properties of `compute_s0`, `projectToMidSumcheckPoly`, and the
+  witness structural invariant.
+- Agreement: Prover and verifier agree on output statements and oracles by construction.
+-/
+lemma batchingStep_is_logic_complete :
+    (batchingStepLogic (κ := κ) (L := L) (K := K) (β := β) (𝓑 := 𝓑) (ℓ := ℓ) (ℓ' := ℓ')
+      (h_l := h_l) (aOStmtIn := aOStmtIn)).IsStronglyComplete := by
+  intro stmtIn witIn oStmtIn challenges h_relIn
+  let step := (batchingStepLogic (κ := κ) (L := L) (K := K) (β := β) (𝓑 := 𝓑) (ℓ := ℓ) (ℓ' := ℓ')
+    (h_l := h_l) (aOStmtIn := aOStmtIn))
+  let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
+  let verifierStmtOut := step.verifierOut stmtIn transcript
+  let verifierOStmtOut := OracleVerifier.mkVerifierOStmtOut step.embed step.hEq
+    oStmtIn transcript
+  let proverOutput := step.proverOut stmtIn witIn oStmtIn transcript
+  let proverStmtOut := proverOutput.1.1
+  let proverOStmtOut := proverOutput.1.2
+  let proverWitOut := proverOutput.2
+
+  -- Extract properties from h_relIn (batchingInputRelation)
+  simp only [batchingStepLogic, batchingInputRelation, batchingInputRelationProp,
+    Set.mem_setOf_eq] at h_relIn
+  obtain ⟨h_t'_eq_t_packed, h_original_evaluation_claim, h_compat⟩ := h_relIn
+
+  -- The message computed by the honest prover
+  let msg0 := batchingProverComputeMsg κ L K ℓ ℓ' h_l stmtIn witIn
+  let r_batching := challenges ⟨1, rfl⟩
+
+  have h_s_hat_eq : transcript.messages ⟨0, rfl⟩ = embedded_MLP_eval κ L K ℓ ℓ' h_l
+    (packMLE κ L K ℓ ℓ' h_l β witIn.t) stmtIn.t_eval_point := by
+    dsimp only [transcript, step, batchingStepLogic]
+    unfold FullTranscript.mk2
+    dsimp only [batchingProverComputeMsg]
+    rw [h_t'_eq_t_packed]
+
+  -- Fact 1: Verifier check passes
+  let hVCheck_passed : step.verifierCheck stmtIn transcript := by
+    simp only [step, batchingStepLogic, batchingVerifierCheck]
+    let res := batching_check_correctness (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ)
+      (ℓ' := ℓ') (h_l := h_l) (t := witIn.t) (eval_point := stmtIn.t_eval_point)
+    rw [←h_s_hat_eq] at res
+    rw [h_original_evaluation_claim]
+    exact res
+
+  -- Fact 2: Output relation holds (sumcheckRoundRelation 0)
+  let hRelOut : step.completeness_relOut ((verifierStmtOut, verifierOStmtOut), proverWitOut) := by
+    simp only [step, batchingStepLogic, sumcheckRoundRelation, sumcheckRoundRelationProp,
+      Set.mem_setOf_eq]
+    -- batching_target_consistency
+    dsimp only [masterKStateProp, Fin.coe_ofNat_eq_mod]; rw [true_and]
+    constructor
+    · -- ⊢ witnessStructuralInvariant κ L K β ℓ ℓ' h_l verifierStmtOut proverWitOut
+      rfl
+    · constructor
+      · -- ⊢ sumcheckConsistencyProp verifierStmtOut.sumcheck_target proverWitOut.H
+        exact batching_target_consistency κ L K β ℓ ℓ' h_l (𝓑:=𝓑) witIn.t'
+          (transcript.messages ⟨0, rfl⟩) r_batching verifierStmtOut.ctx
+      · -- ⊢ aOStmtIn.initialCompatibility (proverWitOut.t', verifierOStmtOut)
+        exact h_compat
+
+  -- Fact 3: Prover and verifier statements agree
+  have hStmtOut_eq : proverStmtOut = verifierStmtOut := by
+    simp only [step, batchingStepLogic, proverStmtOut, verifierStmtOut]
+    rfl
+
+  -- Fact 4: Prover and verifier oracle statements agree
+  have hOStmtOut_eq : proverOStmtOut = verifierOStmtOut := by
+    simp only [step, batchingStepLogic, proverOStmtOut, verifierOStmtOut]
+    funext j
+    simp only [OracleVerifier.mkVerifierOStmtOut]
+    -- Oracle statements are unchanged (all map via Sum.inl)
+    rfl
+
+  -- Combine all facts
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact hVCheck_passed
+  · exact hRelOut
+  · exact hStmtOut_eq
+  · exact hOStmtOut_eq
+
 /-! ## Prover and Verifier Implementation -/
 
 /-- The state maintained by the prover throughout the batching phase. -/
@@ -100,8 +312,8 @@ noncomputable def oracleProver :
 
   sendMessage
     | ⟨0, _⟩ => fun (stmt, oStmt, wit) => do
-      -- Step 1: P computes ŝ and sends it.
-      let s_hat := embedded_MLP_eval κ L K ℓ ℓ' h_l wit.t' stmt.t_eval_point
+      -- USE THE SHARED KERNEL (Guarantees match with batchingStepLogic)
+      let s_hat := batchingProverComputeMsg (κ:=κ) (L:=L) (K:=K) (ℓ:=ℓ) (ℓ':=ℓ') (h_l:=h_l) stmt wit
       return ⟨s_hat, (stmt, oStmt, wit, s_hat)⟩
     | ⟨1, h⟩ => fun _ => do nomatch h -- V to P round
 
@@ -110,69 +322,49 @@ noncomputable def oracleProver :
     | ⟨1, _⟩ => fun ⟨stmt, oStmt, wit, s_hat⟩ => do
       return fun r_batching => (stmt, oStmt, wit, s_hat, r_batching)
 
-  output := fun ⟨stmt, oStmt, wit, s_hat, r_batching⟩ => do
-    -- Step 4: P computes the batched polynomial h.
-    let ctx: RingSwitchingBaseContext κ L K ℓ := {
-      t_eval_point := stmt.t_eval_point,
-      original_claim := stmt.original_claim,
-      s_hat := s_hat,
-      r_batching := r_batching
-    }
-    let h_poly: ↥L⦃≤ 2⦄[X Fin ℓ'] :=
-      projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := wit.t')
-        (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly (ctx := ctx))
-        (i := 0) (challenges := Fin.elim0)
-    -- Prover computes s₀ locally for its output witness.
-    let s₀ := compute_s0 κ L K β s_hat r_batching
-    let stmtOut : Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) 0 := {
-      ctx := ctx,
-      sumcheck_target := s₀,
-      challenges := Fin.elim0
-    }
-    let witOut : SumcheckWitness L ℓ' 0 := {
-      t' := wit.t',
-      H := h_poly
-    }
-    return (⟨stmtOut, oStmt⟩, witOut)
+  output := fun ⟨stmt, oStmt, wit, (s_hat : TensorAlgebra K L), (r_batching : Fin κ → L)⟩ => do
+    -- Construct the transcript that the honest prover produces
+    -- This matches logic.honestProverTranscript exactly
+    let logic := (batchingStepLogic (κ := κ) (L := L) (K := K) (β := β) (𝓑 := 𝓑) (ℓ := ℓ) (ℓ' := ℓ')
+      (h_l := h_l) (aOStmtIn := aOStmtIn))
+    let challenges : (pSpecBatching (κ:=κ) (L:=L) (K:=K)).Challenges :=
+      fun ⟨j, hj⟩ => by
+        match j with
+        | 0 => exact False.elim (by simp only [ne_eq, reduceCtorEq, not_false_eq_true, Fin.isValue,
+          cons_val_zero, Direction.not_P_to_V_eq_V_to_P] at hj)  -- No challenge at index 0
+        | 1 => exact r_batching
+    let t := logic.honestProverTranscript stmt wit oStmt challenges
+    -- Delegate to Logic Instance (ensures consistency with batchingStepLogic)
+    pure (logic.proverOut stmt wit oStmt t)
 
+open Classical in
 noncomputable def oracleVerifier :
   OracleVerifier (oSpec:=[]ₒ)
     (StmtIn := BatchingStmtIn L ℓ) (OStmtIn := aOStmtIn.OStmtIn)
     (StmtOut := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) 0)
     (OStmtOut := aOStmtIn.OStmtIn)
     (pSpec := pSpecBatching (κ:=κ) (L:=L) (K:=K)) where
-  verify | stmt, pSpec_batching_challenges => do
-     -- Step 1: Query prover for ŝ (Message 0).
+  verify | stmtIn, pSpec_batching_challenges => do
+     -- Query ŝ from Message 0.
     let s_hat : TensorAlgebra K L ← query (spec := [pSpecBatching (κ:=κ)
-      (L:=L) (K:=K).Message]ₒ) ⟨⟨0, rfl⟩, ()⟩
-
-    -- Step 2: Perform Check 1.
-    unless performCheckOriginalEvaluation κ L K β ℓ ℓ' h_l
-      stmt.original_claim stmt.t_eval_point s_hat do
-      return (failureState κ L K ℓ ℓ' stmt s_hat) -- Abort if check fails
-
-    -- Step 3: Sample batching scalars r'' (Challenge 1).
+      (L:=L) (K:=K).Message]ₒ) ⟨0, by simp⟩ ()
     let r_batching : Fin κ → L := pSpec_batching_challenges ⟨1, by rfl⟩
 
-    -- Step 5: Compute s₀.
-    let s₀ := compute_s0 κ L K β s_hat r_batching
+    -- Reconstruct the transcript (matches what honestProverTranscript produces)
+    let logic := (batchingStepLogic (κ := κ) (L := L) (K := K) (β := β) (𝓑 := 𝓑) (ℓ := ℓ) (ℓ' := ℓ')
+      (h_l := h_l) (aOStmtIn := aOStmtIn))
+    -- Note: We can't call honestProverTranscript directly because we don't have the witness
+    -- But we know the transcript structure must match it
+    let t := FullTranscript.mk2 s_hat r_batching
 
-    -- Construct the output statement for the next phase.
-    let ctx : RingSwitchingBaseContext κ L K ℓ := {
-      t_eval_point := stmt.t_eval_point,
-      original_claim := stmt.original_claim,
-      s_hat := s_hat,
-      r_batching := r_batching
-    }
-    let stmtOut : Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) 0 := {
-      ctx := ctx,
-      sumcheck_target := s₀,
-      challenges := Fin.elim0
-    }
-    return stmtOut
-  -- Standard embedding for empty oSpec.
-  embed := ⟨fun j => Sum.inl j, fun a b h => by cases h; rfl⟩
-  hEq := fun i => rfl
+    guard (logic.verifierCheck stmtIn t)
+    pure (logic.verifierOut stmtIn t)
+
+  -- Reuse embed and hEq from batchingStepLogic to ensure consistency
+  embed := (batchingStepLogic (κ := κ) (L := L) (K := K) (β := β) (𝓑 := 𝓑) (ℓ := ℓ) (ℓ' := ℓ')
+    (h_l := h_l) (aOStmtIn := aOStmtIn)).embed
+  hEq := (batchingStepLogic (κ := κ) (L := L) (K := K) (β := β) (𝓑 := 𝓑) (ℓ := ℓ) (ℓ' := ℓ')
+    (h_l := h_l) (aOStmtIn := aOStmtIn)).hEq
 
 /-- The Oracle Reduction for the Batching Phase. -/
 noncomputable def batchingOracleReduction : OracleReduction (oSpec:=[]ₒ)
@@ -181,23 +373,12 @@ noncomputable def batchingOracleReduction : OracleReduction (oSpec:=[]ₒ)
     (OStmtOut := aOStmtIn.OStmtIn)
     (WitOut := SumcheckWitness L ℓ' 0)
     (pSpec := pSpecBatching (κ:=κ) (L:=L) (K:=K)) where
-  prover := oracleProver κ L K β ℓ ℓ' h_l (aOStmtIn:=aOStmtIn)
-  verifier := oracleVerifier κ L K β ℓ ℓ' h_l (aOStmtIn:=aOStmtIn)
+  prover := oracleProver κ L K β ℓ ℓ' h_l (𝓑:=𝓑) (aOStmtIn:=aOStmtIn)
+  verifier := oracleVerifier κ L K β ℓ ℓ' h_l (𝓑:=𝓑) (aOStmtIn:=aOStmtIn)
 
 /-! ## RBR Knowledge Soundness Components -/
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
-
-def batchingInputRelationProp (stmt : BatchingStmtIn L ℓ)
-    (oStmt : ∀ j, aOStmtIn.OStmtIn j) (wit : BatchingWitIn L K ℓ ℓ') : Prop :=
-  wit.t' = packMLE κ L K ℓ ℓ' h_l β wit.t ∧ stmt.original_claim = wit.t.val.aeval stmt.t_eval_point
-  ∧ aOStmtIn.initialCompatibility ⟨wit.t', oStmt⟩
-
-/-- Input relation: the witness `t` and `t'` are consistent,
-and `t` satisfies the original claim. -/
-def batchingInputRelation :
-  Set ((BatchingStmtIn L ℓ × (∀ j, aOStmtIn.OStmtIn j)) × BatchingWitIn L K ℓ ℓ') :=
-  {⟨⟨stmt, oStmt⟩, wit⟩ | batchingInputRelationProp κ L K β ℓ ℓ' h_l aOStmtIn stmt oStmt wit }
 
 /-- Intermediate witness types for RBR knowledge soundness. -/
 def batchingWitMid : Fin (2 + 1) → Type
@@ -285,7 +466,7 @@ def batchingKStateProp {m : Fin (2 + 1)}
 
 /-- Knowledge state function for the batching phase. -/
 noncomputable def batchingKnowledgeStateFunction :
-  (oracleVerifier κ L K β ℓ ℓ' h_l (aOStmtIn:=aOStmtIn)).KnowledgeStateFunction init impl
+  (oracleVerifier κ L K β ℓ ℓ' h_l (𝓑:=𝓑) (aOStmtIn:=aOStmtIn)).KnowledgeStateFunction init impl
     (relIn := batchingInputRelation κ L K β ℓ ℓ' h_l aOStmtIn)
     (relOut := sumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑:=𝓑) aOStmtIn 0)
     (batchingRbrExtractor κ L K β ℓ ℓ' h_l (aOStmtIn:=aOStmtIn)) where
@@ -310,22 +491,194 @@ noncomputable def batchingKnowledgeStateFunction :
 
 /-! ## Security Properties -/
 
-/-- Perfect completeness for the batching phase oracle reduction. -/
-theorem batchingReduction_perfectCompleteness :
+/-- Perfect completeness for the batching phase oracle reduction.
+
+This theorem proves that the honest prover-verifier interaction for the batching phase
+always succeeds (with probability 1) and produces valid outputs.
+
+**Proof Strategy:**
+1. Unroll the 2-message reduction to convert probabilistic statement to logical statement
+2. Split into safety (no failures) and correctness (valid outputs)
+3. For safety: prove the verifier never crashes on honest prover messages
+4. For correctness: apply the logic completeness lemma (batchingStep_is_logic_complete)
+
+**Key Technique:**
+- Use `batchingStep_is_logic_complete` to get the pure logic properties
+- Convert the challenge function by proving the only valid challenge index is 1
+- Rewrite all intermediate variables to their concrete values
+- Apply the logic properties to complete the proof
+-/
+theorem batchingReduction_perfectCompleteness (hInit : init.neverFails) :
   OracleReduction.perfectCompleteness
-    (oracleReduction := batchingOracleReduction κ L K β ℓ ℓ' h_l (aOStmtIn:=aOStmtIn))
+    (oracleReduction := batchingOracleReduction κ L K β ℓ ℓ' h_l (𝓑:=𝓑) (aOStmtIn:=aOStmtIn))
     (relIn := batchingInputRelation κ L K β ℓ ℓ' h_l aOStmtIn)
     (relOut := sumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑:=𝓑) aOStmtIn 0)
     (init := init) (impl := impl) := by
-  -- The honest prover's computations are deterministic. If the input relation holds,
-  -- the prover correctly computes ŝ, h, and s₀, so the output relation will also hold.
-  unfold OracleReduction.perfectCompleteness
-  sorry
+  -- Step 1: Unroll the 2-message reduction to convert from probability to logic
+  rw [OracleReduction.unroll_2_message_reduction_perfectCompleteness (hInit := hInit)
+    (hDir0 := by rfl) (hDir1 := by rfl)
+    (hImplSafe := by simp only [probFailure_eq_zero_iff, IsEmpty.forall_iff, implies_true])
+    (hImplSupp := by simp only [Set.fmap_eq_image, IsEmpty.forall_iff, implies_true])]
+  intro stmtIn oStmtIn witIn h_relIn
+
+  -- Step 2: Convert probability 1 to universal quantification over support
+  simp_rw [probEvent_eq_one_iff]
+
+  -- Step 3: Unfold protocol definitions
+  dsimp only [batchingOracleReduction, oracleProver, oracleVerifier, OracleVerifier.toVerifier,
+    FullTranscript.mk2]
+
+  let step := (batchingStepLogic (κ := κ) (L := L) (K := K) (β := β) (𝓑 := 𝓑) (ℓ := ℓ) (ℓ' := ℓ')
+    (h_l := h_l) (aOStmtIn := aOStmtIn))
+  -- Apply the logic completeness lemma
+  let strongly_complete : step.IsStronglyComplete := batchingStep_is_logic_complete (L := L)
+    κ K β ℓ ℓ' h_l (𝓑 := 𝓑) aOStmtIn
+
+  -- Step 4: Split into safety and correctness goals
+  refine ⟨?_, ?_⟩
+  -- GOAL 1: SAFETY - Prove the verifier never crashes ([⊥|...] = 0)
+  · -- Peel off monadic layers to reach the core verifier logic
+    simp only [probFailure_bind_eq_zero_iff, probFailure_liftComp_eq]
+    rw [probFailure_eq_zero_iff]
+    simp only [neverFails_pure, true_and]
+
+    intro inputState hInputState_mem_support
+    simp only [Fin.isValue, Message, Matrix.cons_val_zero, Fin.succ_zero_eq_one, ChallengeIdx,
+      liftComp_pure, support_pure, Set.mem_singleton_iff] at hInputState_mem_support
+    conv => enter [1]; simp only [ChallengeIdx, Fin.isValue,
+      Challenge, cons_val_one, cons_val_zero, liftComp_query, SubSpec.liftM_query_eq_liftM_liftM,
+      liftM_append_right_eq, probFailure_liftM]
+    rw [true_and]
+
+    intro r_batching h_r_batching_mem_support
+    conv =>
+      enter [1];
+      simp only [probFailure_eq_zero_iff]
+      tactic => split; simp only [neverFails_pure]
+    rw [true_and]
+
+    intro h_receive_challenge_fn h_receive_challenge_fn_mem_support
+    conv =>
+      enter [1];
+      simp only [probFailure_eq_zero_iff]
+      tactic => split; simp only [neverFails_pure]
+    rw [true_and]
+
+    intro h_prover_final_output h_prover_final_output_support
+    conv =>
+      simp only [probFailure_liftComp]
+      simp only
+
+    simp only [probFailure_pure, implies_true, and_true]
+    simp only [MessageIdx, Fin.isValue, Message, Matrix.cons_val_zero, Fin.succ_zero_eq_one,
+      SubSpec.liftM_query_eq_liftM_liftM, guard_eq, bind_pure_comp, simulateQ_bind, simulateQ_query,
+      probFailure_eq_zero_iff, neverFails_bind_iff, Function.comp_apply, simulateQ_map,
+      simulateQ_ite, simulateQ_pure, simulateQ_failure, neverFails_map_iff, neverFails_pure,
+      neverFails_guard]
+    simp only [←probFailure_eq_zero_iff]
+    constructor
+    · simp only [Fin.isValue, probFailure_simOracle2]
+    · intro s_hat h_s_hat_mem_oracle_query_support
+      simp only [liftM, monadLift, MonadLift.monadLift] at h_s_hat_mem_oracle_query_support
+      conv at h_s_hat_mem_oracle_query_support => rw [simOracle2_impl_inr_inr]
+      simp only [Fin.isValue, Matrix.cons_val_zero, support_pure,
+        Set.mem_singleton_iff] at h_s_hat_mem_oracle_query_support
+      rw [h_s_hat_mem_oracle_query_support]
+      unfold OracleInterface.answer
+      dsimp only [instOracleInterfaceMessagePSpecBatching]
+
+      obtain ⟨h_V_check, h_rel, h_agree⟩ := strongly_complete (stmtIn := stmtIn)
+        (witIn := witIn) (oStmtIn := oStmtIn) (h_relIn := h_relIn) (challenges :=
+        fun ⟨j, hj⟩ => by
+          match j with
+          | 0 =>
+            have hj_ne : (pSpecBatching (κ := κ) (L := L) (K := K)).dir 0 ≠ Direction.V_to_P := by
+              simp only [ne_eq, reduceCtorEq, not_false_eq_true, Fin.isValue, Matrix.cons_val_zero,
+                Direction.not_P_to_V_eq_V_to_P, pSpecBatching]
+            exfalso
+            exact hj_ne hj
+          | 1 => exact r_batching
+        )
+      rw [hInputState_mem_support]
+      exact h_V_check
+
+  -- GOAL 2: CORRECTNESS - Prove all outputs in support satisfy the relation
+  · intro x hx_mem_support
+    rcases x with ⟨⟨prvStmtOut, prvOStmtOut⟩, ⟨verStmtOut, verOStmtOut⟩, witOut⟩
+    simp only
+
+    simp only [
+      support_bind, support_pure, _root_.support_liftComp,
+      Set.mem_iUnion, Set.mem_singleton_iff,
+      exists_eq_left, exists_prop, Prod.exists
+    ] at hx_mem_support
+
+    obtain ⟨r_batching, ⟨h_r_batching_mem_challenge_support, h_trace_support⟩⟩ := hx_mem_support
+    rcases h_trace_support with ⟨prvStmtOut_support, prvOStmtOut_support, prvWitOut_support,
+      h_prv_def_support, vStmtOut_support, vOracleOut_support,
+      h_ver_def_support, h_total_eq_support⟩
+
+    conv at h_ver_def_support =>
+      rw [simulateQ_bind]
+      erw [simulateQ_simOracle2_liftM (oSpec := []ₒ) (t₁ := oStmtIn)]
+      erw [simOracle2_impl_inr_inr]
+      rw [bind_pure_simulateQ_comp]
+      simp only [Matrix.cons_val_zero, guard_eq, bind_pure_comp,
+        simulateQ_map, simulateQ_ite, simulateQ_pure, simulateQ_failure, support_map, support_ite,
+        support_pure, support_failure, Set.mem_image, Set.mem_ite_empty_right,
+        Set.mem_singleton_iff, and_true, exists_const, Prod.mk.injEq, existsAndEq]
+
+    simp only [Prod.mk_inj] at h_total_eq_support
+    rcases h_total_eq_support with ⟨⟨h_prv_stmtOut_eq_support, h_prv_oracle_eq_support⟩,
+      ⟨h_ver_stmtOut_eq_support, h_ver_oracle_eq_support⟩, h_wit_eq_support⟩
+
+    dsimp only [batchingStepLogic] at h_prv_def_support
+    simp only [Prod.mk_inj] at h_prv_def_support
+    rcases h_prv_def_support with ⟨⟨h_logic_stmt, h_logic_oracle⟩, h_logic_wit⟩
+
+    rcases h_ver_def_support with ⟨h_V_check_passed, h_ver_stmtOut_eq, h_ver_OstmtOut_eq⟩
+
+    obtain ⟨_h_V_check_but_not_used, h_rel, h_agree⟩ := strongly_complete (stmtIn := stmtIn)
+      (witIn := witIn) (oStmtIn := oStmtIn) (h_relIn := h_relIn) (challenges := fun ⟨j, hj⟩ => by
+        have h_j_eq_1 : j = 1 := by
+          dsimp [pSpecBatching] at hj
+          cases j using Fin.cases
+          case zero => simp at hj
+          case succ j1 =>
+            cases j1 using Fin.cases
+            case zero => rfl
+            case succ k => exact k.elim0 (α := k.succ.succ = 1)
+        subst h_j_eq_1
+        exact r_batching)
+
+    dsimp only [batchingStepLogic, batchingProverComputeMsg, step] at h_V_check_passed
+    unfold FullTranscript.mk2 at h_V_check_passed
+    simp only [Fin.isValue, Transcript_get_message] at h_V_check_passed
+
+    dsimp only [Fin.isValue, batchingProverComputeMsg, batchingStepLogic, Challenge,
+      Matrix.cons_val_one, Matrix.cons_val_zero, Lean.Elab.WF.paramLet] at h_ver_stmtOut_eq
+    unfold FullTranscript.mk2 at h_ver_stmtOut_eq
+    unfold OracleInterface.answer at h_ver_stmtOut_eq
+    simp only [Fin.isValue, Transcript_get_message, Transcript_get_challenge] at h_ver_stmtOut_eq
+
+    rw [
+      h_ver_stmtOut_eq_support, h_ver_stmtOut_eq,
+      h_ver_oracle_eq_support,  h_ver_OstmtOut_eq,
+      h_wit_eq_support,         h_logic_wit,
+      h_prv_stmtOut_eq_support, h_logic_stmt,
+      h_prv_oracle_eq_support,  h_logic_oracle
+    ]
+
+    constructor
+    · exact h_rel
+    · constructor
+      · rfl
+      · exact h_agree.2
 
 /-- RBR knowledge soundness for the batching phase oracle verifier. -/
 theorem batchingOracleVerifier_rbrKnowledgeSoundness :
   OracleVerifier.rbrKnowledgeSoundness
-    (verifier := oracleVerifier κ L K β ℓ ℓ' h_l (aOStmtIn:=aOStmtIn))
+    (verifier := oracleVerifier κ L K β ℓ ℓ' h_l (𝓑:=𝓑) (aOStmtIn:=aOStmtIn))
     (init := init) (impl := impl)
     (relIn := batchingInputRelation κ L K β ℓ ℓ' h_l aOStmtIn)
     (relOut := sumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑:=𝓑) aOStmtIn 0)

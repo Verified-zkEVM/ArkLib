@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 import ArkLib.OracleReduction.Security.Basic
-import ArkLib.ToVCVio.Execution
+import ArkLib.ToVCVio.SimulationInfrastructure
 import ArkLib.ToVCVio.Lemmas
 
 /-!
@@ -53,311 +53,15 @@ section SafetyLemmas
 
 variable {ι : Type} {oSpec : OracleSpec ι} [oSpec.FiniteRange]
 
-/-- `liftComp` preserves the never-fails property in both directions. -/
-@[simp]
-lemma probFailure_liftComp_iff
-    {ι' : Type} {superSpec : OracleSpec ι'}
-    [superSpec.FiniteRange]
-    [MonadLift (OracleQuery oSpec) (OracleQuery superSpec)]
-    {α : Type} (oa : OracleComp oSpec α) :
-    [⊥|liftComp oa superSpec] = 0 ↔ [⊥|oa] = 0 := by
-  simp only [probFailure_liftComp_eq]
-
-/-- Safety of a bind can be decomposed into safety of each component. -/
-@[simp]
-lemma probFailure_bind_decompose
-    {α β : Type} (oa : OracleComp oSpec α) (f : α → OracleComp oSpec β) :
-    [⊥|oa >>= f] = 0 ↔ [⊥|oa] = 0 ∧ ∀ x ∈ oa.support, [⊥|f x] = 0 := by
-  exact probFailure_bind_eq_zero_iff oa f
-
-/-- Conjunction of safety conditions can be split. -/
-lemma safety_and_split {P Q : Prop} :
-    (P ∧ Q) ↔ P ∧ Q := by
-  rfl
-
-/-- Universal quantification over support with safety can be decomposed. -/
-lemma forall_support_safety_decompose
-    {α β : Type} (oa : OracleComp oSpec α) (f : α → OracleComp oSpec β) :
-    (∀ x ∈ oa.support, [⊥|f x] = 0) ↔ (∀ x ∈ oa.support, [⊥|f x] = 0) := by
-  rfl
-
 end SafetyLemmas
-
-/-! ## Generalized Bind Chain Safety Lemmas
-
-This section provides reusable lemmas for proving safety of arbitrary nested do-blocks
-by decomposing them into linear chains of dependent computations.
-
-The core insight is that any do-block (regardless of nesting depth) can be unfolded
-into a sequence of binds, each of which must be safe in the context of previously
-computed values. These lemmas capture that pattern generically.
--/
 
 section BindChainSafety
 
 variable {ι : Type} {oSpec : OracleSpec ι} [oSpec.FiniteRange]
 
-/-- **Two-step bind chain safety**
-Decomposes safety of `oa₁ >>= λ x₁ => oa₂ x₁` into safety of both steps,
-accounting for the dependency where oa₂ x₁ may depend on the value x₁ from oa₁.
--/
-theorem probFailure_bind_chain_two_eq_zero
-    {α₁ α₂ : Type}
-    (oa₁ : OracleComp oSpec α₁)
-    (oa₂ : α₁ → OracleComp oSpec α₂) :
-    [⊥|oa₁ >>= oa₂] = 0 ↔
-    [⊥|oa₁] = 0 ∧ ∀ x₁ ∈ oa₁.support, [⊥|oa₂ x₁] = 0 := by
-  exact probFailure_bind_eq_zero_iff oa₁ oa₂
-
-/-! **Generic composition principle: Decompose by peeling off two steps at a time**
-
-This is the fundamental insight: to decompose an N-step chain, repeatedly apply the
-2-step lemma. Each application reveals:
-  [⊥|oa₁ >>= (λ x₁ => rest x₁)] = 0 ↔ [⊥|oa₁] = 0 ∧ (∀ x₁ ∈ oa₁.support, [⊥|rest x₁] = 0)
-
-By recursively applying this, we can handle arbitrary depths without creating lemmas for each one.
-
-**Example: 3-step decomposition**
-  [⊥|oa₁ >>= oa₂ >>= oa₃] = 0
-  ↔ [⊥|oa₁] = 0 ∧ (∀ x₁, [⊥|oa₂ x₁ >>= oa₃] = 0)     [apply 2-step lemma]
-  ↔ [⊥|oa₁] = 0 ∧ (∀ x₁, [⊥|oa₂ x₁] = 0 ∧ (∀ x₂, [⊥|oa₃ x₂] = 0))  [apply 2-step again]
-
-This compositionality means `probFailure_bind_chain_two_eq_zero` is sufficient for all depths!
--/
-
-/-- **Three-step bind chain safety (derived from 2-step via composition)**
-Provided as a convenience for direct use, but can always be reconstructed by
-applying `probFailure_bind_chain_two_eq_zero` twice.
--/
-theorem probFailure_bind_chain_three_eq_zero
-    {α₁ α₂ α₃ : Type}
-    (oa₁ : OracleComp oSpec α₁)
-    (oa₂ : α₁ → OracleComp oSpec α₂)
-    (oa₃ : α₂ → OracleComp oSpec α₃) :
-    [⊥|oa₁ >>= fun x₁ => oa₂ x₁ >>= fun x₂ => oa₃ x₂] = 0 ↔
-    [⊥|oa₁] = 0 ∧
-    (∀ x₁ ∈ oa₁.support, [⊥|oa₂ x₁] = 0) ∧
-    (∀ x₁ ∈ oa₁.support, ∀ x₂ ∈ (oa₂ x₁).support, [⊥|oa₃ x₂] = 0) := by
-  simp only [probFailure_bind_eq_zero_iff]
-  constructor
-  · intro ⟨h₁, h₂₃⟩
-    refine ⟨h₁, ?_, ?_⟩
-    · intro x₁ h_x₁
-      have := h₂₃ x₁ h_x₁
-      exact this.1
-    · intro x₁ h_x₁ x₂ h_x₂
-      have := h₂₃ x₁ h_x₁
-      exact this.2 x₂ h_x₂
-  · intro ⟨h₁, h₂, h₃⟩
-    refine ⟨h₁, fun x₁ h_x₁ => ?_⟩
-    refine ⟨h₂ x₁ h_x₁, fun x₂ h_x₂ => ?_⟩
-    exact h₃ x₁ h_x₁ x₂ h_x₂
-
-/-- **Five-step bind chain safety (composing two-step lemma repeatedly)**
-Rather than proving this directly, we compose the 2-step lemma three times.
-This demonstrates the key principle: any N-step chain can be decomposed by
-repeatedly applying the 2-step lemma.
-
-Pattern for N steps:
-  1. Apply 2-step to separate first step
-  2. Recursively apply 2-step to remaining (N-1)-step chain
-  3. Repeat until reaching base case
-
-For this 5-step chain, we apply the pattern:
-  [⊥|oa₁ >>= rest] = 0 ↔ [⊥|oa₁] = 0 ∧ (∀ x₁, [⊥|rest x₁] = 0)
-
-where `rest = λ x₁ => oa₂ x₁ >>= oa₃ x₁ >>= oa₄ x₁ >>= oa₅ x₁`
-
-This is the practical workhorse for protocols with 5 computational steps.
--/
-theorem probFailure_bind_chain_five_eq_zero
-    {α₁ α₂ α₃ α₄ α₅ : Type}
-    (oa₁ : OracleComp oSpec α₁)
-    (oa₂ : α₁ → OracleComp oSpec α₂)
-    (oa₃ : α₂ → OracleComp oSpec α₃)
-    (oa₄ : α₃ → OracleComp oSpec α₄)
-    (oa₅ : α₄ → OracleComp oSpec α₅) :
-    [⊥|oa₁ >>= fun x₁ => oa₂ x₁ >>= fun x₂ => oa₃ x₂ >>=
-      fun x₃ => oa₄ x₃ >>= fun x₄ => oa₅ x₄] = 0 ↔
-    [⊥|oa₁] = 0 ∧
-    (∀ x₁ ∈ oa₁.support, [⊥|oa₂ x₁] = 0) ∧
-    (∀ x₁ ∈ oa₁.support, ∀ x₂ ∈ (oa₂ x₁).support, [⊥|oa₃ x₂] = 0) ∧
-    (∀ x₁ ∈ oa₁.support, ∀ x₂ ∈ (oa₂ x₁).support, ∀ x₃ ∈ (oa₃ x₂).support, [⊥|oa₄ x₃] = 0) ∧
-    (∀ x₁ ∈ oa₁.support, ∀ x₂ ∈ (oa₂ x₁).support, ∀ x₃ ∈ (oa₃ x₂).support, ∀ x₄ ∈ (oa₄ x₃).support,
-      [⊥|oa₅ x₄] = 0) := by
-  simp only [probFailure_bind_eq_zero_iff]
-  constructor
-  · intro ⟨h₁, h₂₃₄₅⟩
-    refine ⟨h₁, fun x₁ h_x₁ => ?_, fun x₁ h_x₁ x₂ h_x₂ => ?_,
-      fun x₁ h_x₁ x₂ h_x₂ x₃ h_x₃ => ?_, fun x₁ h_x₁ x₂ h_x₂ x₃ h_x₃ x₄ h_x₄ => ?_⟩
-    · exact (h₂₃₄₅ x₁ h_x₁).1
-    · exact ((h₂₃₄₅ x₁ h_x₁).2 x₂ h_x₂).1
-    · exact (((h₂₃₄₅ x₁ h_x₁).2 x₂ h_x₂).2 x₃ h_x₃).1
-    · exact ((((h₂₃₄₅ x₁ h_x₁).2 x₂ h_x₂).2 x₃ h_x₃).2 x₄ h_x₄)
-  · intro ⟨h₁, h₂, h₃, h₄, h₅⟩
-    refine ⟨h₁, fun x₁ h_x₁ => ?_⟩
-    refine ⟨h₂ x₁ h_x₁, fun x₂ h_x₂ => ?_⟩
-    refine ⟨h₃ x₁ h_x₁ x₂ h_x₂, fun x₃ h_x₃ => ?_⟩
-    refine ⟨h₄ x₁ h_x₁ x₂ h_x₂ x₃ h_x₃, fun x₄ h_x₄ => ?_⟩
-    exact h₅ x₁ h_x₁ x₂ h_x₂ x₃ h_x₃ x₄ h_x₄
-
 end BindChainSafety
 
-/-! ## Support Simplification for Do-Blocks
 
-This section provides simp lemmas to simplify support expressions for common do-block patterns.
-The key insight is that `support (do let x ← pure a; ...)` can be simplified by substituting `a`
-directly into the continuation.
--/
-
-section SupportSimplification
-
-variable {ι : Type} {oSpec : OracleSpec ι}
-  -- [oSpec.FiniteRange]
-
-/-- Simplify support of: do let x ← pure a; let y ← f; pure (g x y) -/
-@[simp]
-lemma support_do_pure_bind_pure {α β γ : Type} (a : α) (f : OracleComp oSpec β) (g : α → β → γ) :
-    (do
-      let x ← pure a
-      let y ← f
-      pure (g x y)).support = (fun y => g a y) <$> f.support := by
-  simp only [support_bind, support_pure]
-  ext z
-  simp [Set.mem_iUnion, Set.mem_image, eq_comm]
-
-/-- Simplify support of: do let x ← pure a; let y ← f x; pure (g x y) -/
-@[simp]
-lemma support_do_pure_bind_dep_pure {α β γ : Type} (a : α)
-  (f : α → OracleComp oSpec β) (g : α → β → γ) :
-    (do
-      let x ← pure a
-      let y ← f x
-      pure (g x y)).support = (fun y => g a y) <$> (f a).support := by
-  simp only [support_bind, support_pure]
-  ext z
-  simp [Set.mem_iUnion, Set.mem_image, eq_comm]
-
-/-- Simplify support of nested do-block: do let x ← (do let y ← pure a; f y); pure (g x) -/
-@[simp]
-lemma support_do_nested_pure {α β γ : Type} (a : α) (f : α → OracleComp oSpec β) (g : β → γ) :
-    (do
-      let x ← do
-        let y ← pure a
-        f y
-      pure (g x)).support = g <$> (f a).support := by
-  simp only [support_bind, support_pure]
-  ext z
-  simp [Set.mem_iUnion, Set.mem_image, eq_comm]
-
-
-/-- Simplify support of triple-nested do-block -/
-@[simp]
-lemma support_do_triple_nested_pure {α β γ δ : Type}
-    (a : α) (f : α → OracleComp oSpec β) (g : β → OracleComp oSpec γ) (h : γ → δ) :
-    (do
-      let x ← do
-        let y ← do
-          let z ← pure a
-          f z
-        g y
-      pure (h x)).support = h <$> (do let y ← f a; g y).support := by
-  simp only [support_bind, support_pure]
-  ext w
-  simp only [Set.mem_iUnion, Set.mem_singleton_iff]
-  aesop
-
-/-- Simplify support when the final pure wraps a pair -/
-@[simp]
-lemma support_do_pure_pair {α β γ : Type} (a : α)
-  (f : α → OracleComp oSpec β) (g : α → β → γ) :
-    (do
-      let x ← pure a
-      let y ← f x
-      pure (g x, y)).support = (fun y => (g a, y)) <$> (f a).support := by
-  simp only [support_bind, support_pure]
-  ext z
-  simp [Set.mem_iUnion, Set.mem_image, eq_comm]
-
-end SupportSimplification
-
-/-! ## StateT-Specific Bind Chain Safety
-
-This section lifts the bind chain lemmas to StateT computations, which are
-fundamental for protocols that maintain mutable oracle state.
--/
-
-/-! ## Protocol Chain Unfolding Tactics
-
-This section provides tactical support for systematically unfolding arbitrary do-blocks
-into their bind-chain equivalents, making nested protocol proofs more tractable.
--/
-
-section DoBlockUnfolding
-
-variable {ι : Type} {oSpec : OracleSpec ι} [oSpec.FiniteRange]
-
-/-! **Systematic do-block unfolder**
-
-This unfolds goals of the form `[⊥|do ... >>= ...] = 0` into a
-conjunction of individual safety conditions by applying the appropriate bind chain lemma.
-
-Usage:
-  - Use `rw [probFailure_bind_chain_three_eq_zero]` to unfold 3-step chains
-  - Use `rw [probFailure_bind_chain_five_eq_zero]` to unfold 5-step chains
-
-For convenient systematic application, you can use `simp only [probFailure_bind_eq_zero_iff]`
-which recursively decomposes nested binds into conjunctions.
--/
-
-/-- **Systematic step-by-step unfolding: 3-step version**
-
-For proofs that need to carefully reason about each step, this lemma provides
-an explicit decomposition where each step can be proved independently.
--/
-theorem unfold_do_block_three_steps
-    {α₁ α₂ α₃ : Type}
-    (step₁ : OracleComp oSpec α₁)
-    (step₂ : α₁ → OracleComp oSpec α₂)
-    (step₃ : α₂ → OracleComp oSpec α₃)
-    (h₁ : [⊥|step₁] = 0)
-    (h₂ : ∀ x₁ ∈ step₁.support, [⊥|step₂ x₁] = 0)
-    (h₃ : ∀ x₁ ∈ step₁.support, ∀ x₂ ∈ (step₂ x₁).support, [⊥|step₃ x₂] = 0) :
-    [⊥|step₁ >>= fun x₁ => step₂ x₁ >>= fun x₂ => step₃ x₂] = 0 := by
-  rw [probFailure_bind_chain_three_eq_zero]
-  exact ⟨h₁, h₂, h₃⟩
-
-/-- **Systematic step-by-step unfolding: 5-step version**
-
-Explicit decomposition for protocols with 5 computational steps:
-  1. Prover sends message 0
-  2. Verifier samples challenge 1
-  3. Prover receives and responds to challenge 1
-  4. Prover outputs final statement
-  5. Verifier verifies the transcript
-
-Each step's proof can be done independently.
--/
-theorem unfold_do_block_five_steps
-    {α₁ α₂ α₃ α₄ α₅ : Type}
-    (step₁ : OracleComp oSpec α₁)
-    (step₂ : α₁ → OracleComp oSpec α₂)
-    (step₃ : α₂ → OracleComp oSpec α₃)
-    (step₄ : α₃ → OracleComp oSpec α₄)
-    (step₅ : α₄ → OracleComp oSpec α₅)
-    (h₁ : [⊥|step₁] = 0)
-    (h₂ : ∀ x₁ ∈ step₁.support, [⊥|step₂ x₁] = 0)
-    (h₃ : ∀ x₁ ∈ step₁.support, ∀ x₂ ∈ (step₂ x₁).support, [⊥|step₃ x₂] = 0)
-    (h₄ : ∀ x₁ ∈ step₁.support, ∀ x₂ ∈ (step₂ x₁).support, ∀ x₃ ∈ (step₃ x₂).support,
-      [⊥|step₄ x₃] = 0)
-    (h₅ : ∀ x₁ ∈ step₁.support, ∀ x₂ ∈ (step₂ x₁).support, ∀ x₃ ∈ (step₃ x₂).support,
-      ∀ x₄ ∈ (step₄ x₃).support, [⊥|step₅ x₄] = 0) :
-    [⊥|step₁ >>= fun x₁ => step₂ x₁ >>= fun x₂ => step₃ x₂ >>= fun x₃ =>
-      step₄ x₃ >>= fun x₄ => step₅ x₄] = 0 := by
-  rw [probFailure_bind_chain_five_eq_zero]
-  exact ⟨h₁, h₂, h₃, h₄, h₅⟩
-
-end DoBlockUnfolding
 
 /-! ## Generic n-Message Protocol Completeness
 
@@ -390,19 +94,7 @@ theorem forall_eq_bind_pure_iff {α β γ}
     rw [hx]
     exact h a ha b hb
 
--- 1. Basic version: ∀ y x, y = f x → P y x
-theorem forall_eq_lift {α β} (f : α → β) (p : β → α → Prop) :
-    (∀ (b : β) (a : α), b = f a → p b a) ↔ (∀ a : α, p (f a) a) := by
-  constructor
-  · intro h a; exact h (f a) a rfl
-  · intro h b a heq; rw [heq]; exact h a
 
--- 2. Set membership version: ∀ y, ∀ x ∈ S, y = f x → P y x
-theorem forall_eq_lift_mem {α β} {S : Set α} (f : α → β) (p : β → α → Prop) :
-    (∀ (b : β), ∀ a ∈ S, b = f a → p b a) ↔ (∀ a ∈ S, p (f a) a) := by
-  constructor
-  · intro h a ha; exact h (f a) a ha rfl
-  · intro h b a ha heq; rw [heq]; exact h a ha
 
 -- 3. Nested Set version (Crucial for your goal): ∀ z, ∀ x ∈ S, ∀ y ∈ T, z = f x y → P z x y
 theorem forall_eq_lift_mem_2 {α β γ} {S : Set α} {T : α → Set β}
@@ -413,23 +105,7 @@ theorem forall_eq_lift_mem_2 {α β γ} {S : Set α} {T : α → Set β}
   · intro h a ha b hb; exact h (f a b) a ha b hb rfl
   · intro h c a ha b hb heq; rw [heq]; exact h a ha b hb
 
--- Allows swapping "∀ x" with "∀ a ∈ S"
-theorem forall_mem_comm {α β} {S : Set α} {P : α → β → Prop} :
-    (∀ (b : β), ∀ a ∈ S, P a b) ↔ (∀ a ∈ S, ∀ (b : β), P a b) := by
-  constructor
-  · intro h a ha b; exact h b a ha
-  · intro h b a ha; exact h a ha b
 
--- Allows swapping "∀ x" with "∀ y" (Standard, but explicit helps simp)
-theorem forall_comm_2 {α β} {P : α → β → Prop} :
-    (∀ (a : α) (b : β), P a b) ↔ (∀ (b : β) (a : α), P a b) := forall_swap
-
--- A generic lemma: "If x equals a value 'a' found later, eliminate x"
-theorem forall_eq_ghost {α : Sort*} {P : α → Prop} :
-    (∀ (x : α) (a : α), x = a → P a) ↔ (∀ (a : α), P a) := by
-  constructor
-  · intro h a; exact h a a rfl
-  · intro h x a heq; subst heq; exact h x
 
 variable {oSpec : OracleSpec ι} [oSpec.FiniteRange] {StmtIn WitIn StmtOut WitOut : Type}
   {ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
@@ -653,7 +329,7 @@ theorem unroll_1_message_reduction_perfectCompleteness_P_to_V
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hInit : init.neverFails)
     (hDir0 : pSpec.dir 0 = .P_to_V)
-    (hImplSafe : ∀ {β} (q : OracleQuery oSpec β) s, [⊥ | (impl.impl q).run s] = 0)
+    (hImplSafe : ∀ {β} (q : OracleQuery oSpec β) s, [⊥|(impl.impl q).run s] = 0)
     (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
       Prod.fst <$> ((impl.impl q).run s).support = (liftQuery q).support) :
     OracleReduction.perfectCompleteness init impl relIn relOut reduction ↔
@@ -717,7 +393,7 @@ theorem unroll_1_message_reduction_perfectCompleteness_V_to_P
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hInit : init.neverFails)
     (hDir0 : pSpec.dir 0 = .V_to_P)
-    (hImplSafe : ∀ {β} (q : OracleQuery oSpec β) s, [⊥ | (impl.impl q).run s] = 0)
+    (hImplSafe : ∀ {β} (q : OracleQuery oSpec β) s, [⊥|(impl.impl q).run s] = 0)
     (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
       Prod.fst <$> ((impl.impl q).run s).support = (liftQuery q).support) :
     OracleReduction.perfectCompleteness init impl relIn relOut reduction ↔
@@ -795,7 +471,7 @@ theorem unroll_2_message_reduction_perfectCompleteness
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hInit : init.neverFails)
     (hDir0 : pSpec.dir 0 = .P_to_V) (hDir1 : pSpec.dir 1 = .V_to_P)
-    (hImplSafe : ∀ {β} (q : OracleQuery oSpec β) s, [⊥ | (impl.impl q).run s] = 0)
+    (hImplSafe : ∀ {β} (q : OracleQuery oSpec β) s, [⊥|(impl.impl q).run s] = 0)
     (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
       Prod.fst <$> ((impl.impl q).run s).support = (liftQuery q).support) :
     OracleReduction.perfectCompleteness init impl relIn relOut reduction ↔

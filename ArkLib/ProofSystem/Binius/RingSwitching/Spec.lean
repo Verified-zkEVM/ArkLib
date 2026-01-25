@@ -27,7 +27,6 @@ variable (h_dim : Module.finrank K L = κ)
 variable (ℓ ℓ' : ℕ) [NeZero ℓ] [NeZero ℓ']
 variable (h_l : ℓ = ℓ' + κ)
 variable (mlIOPCS : MLIOPCS L ℓ')
-
 section Pspec
 
 @[reducible]
@@ -36,6 +35,7 @@ def pSpecBatching : ProtocolSpec 2 :=
    ![TensorAlgebra K L, Fin κ → L]⟩
 
 @[reducible]
+-- Note, this one is same as pSpecFold in BinaryBasefold
 def pSpecSumcheckRound : ProtocolSpec 2 := ⟨![Direction.P_to_V, Direction.V_to_P], ![L⦃≤ 2⦄[X], L]⟩
 
 def pSpecSumcheckLoop := ProtocolSpec.seqCompose (fun (_: Fin ℓ') => pSpecSumcheckRound L)
@@ -60,9 +60,15 @@ instance : ∀ j, OracleInterface ((pSpecBatching κ L K).Message j)
   | ⟨0, _⟩ => OracleInterface.instDefault -- ŝ ∈ A
   | ⟨1, _⟩ => OracleInterface.instDefault -- r'' ∈ L^κ
 
+instance : ∀ j, OracleInterface ((pSpecBatching κ L K).Challenge j)
+  | ⟨0, h0⟩ => nomatch h0
+  | ⟨1, _⟩ => OracleInterface.instDefault
+
 instance : ∀ j, OracleInterface ((pSpecSumcheckRound (L:=L)).Message j)
   | ⟨0, _⟩ => OracleInterface.instDefault -- h_i(X) polynomial
   | ⟨1, _⟩ => OracleInterface.instDefault -- challenge r'_i
+
+instance : ∀ j, OracleInterface ((pSpecSumcheckRound (L:=L)).Challenge j) := fun j => sorry
 
 instance : ∀ j, OracleInterface ((pSpecSumcheckLoop (L:=L) ℓ').Message j)
   := instOracleInterfaceMessageSeqCompose
@@ -111,6 +117,40 @@ instance : ∀ i, SampleableType (mlIOPCS.pSpec.Challenge i) := mlIOPCS.O_challe
 
 instance : ∀ i, SampleableType ((fullPspec κ (L:=L) (K:=K) (ℓ':=ℓ') mlIOPCS).Challenge i) :=
   instSampleableTypeChallengeAppend
+
+/-! ## FiniteRange instances for oracle specifications -/
+
+instance : ([(pSpecSumcheckRound (L:=L)).Challenge]ₒ).FiniteRange := by
+  sorry
+
+instance : ([(pSpecBatching κ (L:=L) (K:=K)).Challenge]ₒ).FiniteRange := by
+  sorry
+
+instance : ([]ₒ ++ₒ [(pSpecSumcheckRound (L:=L)).Challenge]ₒ).FiniteRange
+  := []ₒ.instFiniteRangeSumAppend [(pSpecSumcheckRound (L:=L)).Challenge]ₒ
+
+instance : ([]ₒ ++ₒ [(pSpecBatching κ L K).Challenge]ₒ).FiniteRange :=
+  []ₒ.instFiniteRangeSumAppend [(pSpecBatching κ L K).Challenge]ₒ
+
+instance : ∀ i, Fintype ((pSpecFinalSumcheck (L:=L)).Challenge i)
+  | ⟨0, h0⟩ => nomatch h0
+
+instance : ∀ i, Inhabited ((pSpecFinalSumcheck (L:=L)).Challenge i)
+  | ⟨0, h0⟩ => nomatch h0
+
+-- TODO: instances for TensorAlgebra K L
+
+instance : ∀ i, Fintype ((pSpecBatching (κ := κ) (L := L) (K := K)).Challenge i)
+  | ⟨0, h0⟩ => nomatch h0
+  | ⟨1, _⟩ => by
+    simp only [Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_fin_one]
+    sorry
+
+instance : ∀ i, Inhabited ((pSpecBatching (κ := κ) (L := L) (K := K)).Challenge i)
+  | ⟨0, h0⟩ => nomatch h0
+  | ⟨1, _⟩ => by
+    simp only [Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_fin_one]
+    sorry
 
 end Pspec
 

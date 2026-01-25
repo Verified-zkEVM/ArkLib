@@ -2294,7 +2294,7 @@ lemma iterated_fold_to_level_ℓ_is_constant
   simp only at h_f_ℓ_eq_poly;
   rw [h_f_ℓ_eq_poly]
   -- f_ℓ x = polyToOracleFunc P_ℓ x = P_ℓ.eval x.val
-  -- Since P_ℓ is constant, P_ℓ.eval x.val = P_ℓ.eval 0 for all x
+  -- Since P_ℓ is constant, P_ℓ.eval x.val = P_ℓ.eval (𝓑 0) for all x
   -- We need to show that intermediateEvaluationPoly with Fin 1 coefficients is constant
   dsimp only [polyToOracleFunc]
   rw [constantIntermediateEvaluationPoly_eval_eq_const]
