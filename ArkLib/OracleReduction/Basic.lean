@@ -322,16 +322,68 @@ variable {ι : Type} {oSpec : OracleSpec ι}
     [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
 
+/-- Construct output oracle statements from input oracle statements and transcript messages
+  by routing according to an embedding function. -/
+def mkVerifierOStmtOut
+    (embed : ιₛₒ ↪ ιₛᵢ ⊕ pSpec.MessageIdx)
+    (hEq : ∀ i, OStmtOut i = match embed i with
+      | Sum.inl j => OStmtIn j
+      | Sum.inr j => pSpec.Message j)
+    (oStmt : ∀ i, OStmtIn i) (transcript : FullTranscript pSpec) :
+    ∀ i, OStmtOut i :=
+  fun i => match h : embed i with
+    | Sum.inl j => by simpa only [hEq, h] using (oStmt j)
+    | Sum.inr j => by simpa only [hEq, h] using (transcript j)
+
+omit Oₛᵢ Oₘ in
+@[simp]
+lemma mkVerifierOStmtOut_inl
+    (embed : ιₛₒ ↪ ιₛᵢ ⊕ pSpec.MessageIdx)
+    (hEq : ∀ i, OStmtOut i = match embed i with
+      | Sum.inl j => OStmtIn j
+      | Sum.inr j => pSpec.Message j)
+    (oStmt : ∀ i, OStmtIn i) (transcript : FullTranscript pSpec)
+    (i : ιₛₒ) (j : ιₛᵢ) (h : embed i = Sum.inl j) :
+    mkVerifierOStmtOut embed hEq oStmt transcript i = cast (by simp [hEq, h]) (oStmt j) := by
+  simp only [mkVerifierOStmtOut, MessageIdx, eq_mpr_eq_cast, Message]
+  split
+  · rename_i heq
+    rw [h] at heq
+    simp only [MessageIdx, Sum.inl.injEq] at heq
+    subst heq
+    rfl
+  · rename_i heq
+    rw [h] at heq
+    simp only [MessageIdx, reduceCtorEq] at heq
+
+omit Oₛᵢ Oₘ in
+@[simp]
+lemma mkVerifierOStmtOut_inr
+    (embed : ιₛₒ ↪ ιₛᵢ ⊕ pSpec.MessageIdx)
+    (hEq : ∀ i, OStmtOut i = match embed i with
+      | Sum.inl j => OStmtIn j
+      | Sum.inr j => pSpec.Message j)
+    (oStmt : ∀ i, OStmtIn i) (transcript : FullTranscript pSpec)
+    (i : ιₛₒ) (j : pSpec.MessageIdx) (h : embed i = Sum.inr j) :
+    mkVerifierOStmtOut embed hEq oStmt transcript i = cast (by simp [hEq, h]) (transcript j) := by
+  simp only [mkVerifierOStmtOut, MessageIdx, eq_mpr_eq_cast, Message]
+  split
+  · rename_i heq
+    rw [h] at heq
+    simp only [MessageIdx, reduceCtorEq] at heq
+  · rename_i heq
+    rw [h] at heq
+    simp only [MessageIdx, Sum.inr.injEq] at heq
+    subst heq
+    rfl
+
 /-- An oracle verifier can be seen as a (non-oracle) verifier by providing the oracle interface
   using its knowledge of the oracle statements and the transcript messages in the clear -/
 def toVerifier : Verifier oSpec (StmtIn × ∀ i, OStmtIn i) (StmtOut × (∀ i, OStmtOut i)) pSpec where
   verify := fun ⟨stmt, oStmt⟩ transcript => do
     let stmtOut ← simulateQ (OracleInterface.simOracle2 oSpec oStmt transcript.messages)
       (verifier.verify stmt transcript.challenges)
-    letI oStmtOut := fun i => match h : verifier.embed i with
-      | Sum.inl j => (verifier.hEq i ▸ h ▸ oStmt j : OStmtOut i)
-      | Sum.inr j => (verifier.hEq i ▸ h ▸ transcript.messages j : OStmtOut i)
-    return (stmtOut, oStmtOut)
+    return (stmtOut, mkVerifierOStmtOut verifier.embed verifier.hEq oStmt transcript)
 
 /-- The number of queries made to the oracle statements and the prover's messages, for a given input
     statement and challenges.
@@ -715,6 +767,10 @@ instance [IsSingleRound pSpec] [h : VCVCompatible (pSpec.Challenge default)] :
   exact h
 
 end IsSingleRound
+
+@[inline, reducible]
+def FullTranscript.mk1 {pSpec : ProtocolSpec 1} (msg0 : pSpec.«Type» 0) :
+    FullTranscript pSpec := fun | ⟨0, _⟩ => msg0
 
 @[inline, reducible]
 def FullTranscript.mk2 {pSpec : ProtocolSpec 2} (msg0 : pSpec.«Type» 0) (msg1 : pSpec.«Type» 1) :

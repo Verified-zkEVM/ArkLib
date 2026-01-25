@@ -357,6 +357,19 @@ lemma constantCode_eq_ofNat_zero_iff [Nonempty ι] :
 lemma wt_constantCode [DecidableEq F] [NeZero x] :
   wt (constantCode x ι) = Fintype.card ι := by unfold constantCode wt; aesop
 
+instance instNontrivial {F ι : Type*} {n : ℕ} [Field F] [Fintype ι] {α : ι ↪ F}
+  [NeZero n] [Nonempty ι] : Nontrivial (ReedSolomon.code α n) := by
+  let c1 := constantCode (1 : F) ι
+  have h_c1_mem : c1 ∈ ReedSolomon.code α n := constantCode_mem_code
+  have h_c1_ne_zero : c1 ≠ 0 := by
+    by_contra h_c1_eq_zero
+    rw [constantCode_eq_ofNat_zero_iff] at h_c1_eq_zero
+    have h_1_ne_0 : (1 : F) ≠ (0 : F) := by exact one_ne_zero (α := F)
+    exact h_1_ne_0 h_c1_eq_zero
+  refine ⟨⟨0, Submodule.zero_mem _⟩, ⟨c1, h_c1_mem⟩, ?_⟩
+  simp only [ne_eq, Subtype.mk_eq_mk]
+  exact h_c1_ne_zero.symm
+
 end
 
 open Finset in

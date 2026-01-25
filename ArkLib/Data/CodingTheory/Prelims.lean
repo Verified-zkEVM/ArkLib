@@ -7,6 +7,7 @@ Authors: Katerina Hristova, František Silváši, Julian Sutherland, Chung Thai 
 import Mathlib.Algebra.Lie.OfAssociative
 import Mathlib.LinearAlgebra.Matrix.Rank
 import Mathlib.LinearAlgebra.AffineSpace.Pointwise
+import ArkLib.Data.Nat.Bitwise
 
 section TensorCombination
 variable {F : Type*} [CommRing F] [Fintype F] [DecidableEq F]
@@ -18,6 +19,72 @@ Corresponds to `eq(i, r)` in multilinear polynomial literature.
 def multilinearWeight {ϑ : ℕ} (r : Fin ϑ → F) (i : Fin (2 ^ ϑ)) : F :=
   ∏ j : Fin ϑ,
     if i.val.testBit j.val then (r j) else (1 - r j)
+
+omit [Fintype F] [DecidableEq F] in
+lemma multilinearWeight_succ {ϑ : ℕ} (r : Fin (ϑ + 1) → F) (i : Fin (2 ^ (ϑ + 1))) :
+  (multilinearWeight r i) = (multilinearWeight (r := Fin.init r) (i :=
+    ⟨Nat.getLowBits (numLowBits := ϑ) (n := i), by simp [Nat.getLowBits_lt_two_pow]⟩)
+  ) *
+    (if i.val.testBit (ϑ) then (r (Fin.last ϑ)) else (1 - r (Fin.last ϑ))) := by
+  simp only [multilinearWeight, Fin.prod_univ_castSucc]
+  simp_rw [Nat.testBit_eq_getBit, Nat.getBit_of_lowBits]
+  simp only [Fin.coe_castSucc, Fin.val_last, mul_ite, Fin.is_lt, ↓reduceIte]
+  rfl
+
+omit [Fintype F] [DecidableEq F] in
+/-- **Lower Half Weight**:
+If `i < 2^n`, the tensor weight splits into the weight of the lower bits (using the prefix of r)
+multiplied by `(1 - r_n)` (since the n-th bit is 0). -/
+lemma multilinearWeight_succ_lower_half {n : ℕ}
+    (r : Fin (n + 1) → F) (i : Fin (2 ^ (n + 1)))
+    (h_lt : i.val < 2 ^ n) :
+    multilinearWeight r i =
+    multilinearWeight (Fin.init r) ⟨i.val, by exact h_lt⟩ * (1 - r (Fin.last n)) := by
+  -- 1. Apply the generic successor splitting lemma
+  rw [multilinearWeight_succ]
+  -- 2. Simplify the High Bit Term
+  -- Since i < 2^n, the n-th bit is 0
+  have h_bit_zero : i.val.testBit n = false := by
+    rw [Nat.testBit_eq_false_of_lt]
+    exact h_lt
+  simp only [h_bit_zero, Bool.false_eq_true, ↓reduceIte]
+  -- 3. Simplify the Low Bits Term
+  -- Since i < 2^n, getting the low n bits just returns i itself
+  congr 2
+  apply Fin.eq_of_val_eq
+  simp_rw [Nat.getLowBits_eq_mod_two_pow]
+  let i_mod_2_pow_n : i.val % (2 ^ n) = i.val := by
+    rw [Nat.mod_eq_of_lt (h := h_lt)]
+  simp only [i_mod_2_pow_n]
+
+omit [Fintype F] [DecidableEq F] in
+/-- **Upper Half Weight**:
+If `i = j + 2^n` (where `j < 2^n`), the tensor weight splits into the weight of `j`
+(using the prefix of r) multiplied by `r_n` (since the n-th bit is 1).
+-/
+lemma multilinearWeight_succ_upper_half {n : ℕ}
+    (r : Fin (n + 1) → F) (i : Fin (2 ^ (n + 1)))
+    (j : Fin (2 ^ n)) (h_eq : i.val = j.val + 2 ^ n) :
+    multilinearWeight r i =
+    multilinearWeight (Fin.init r) j * (r (Fin.last n)) := by
+  rw [multilinearWeight_succ]
+  -- 2. Simplify the High Bit Term
+  -- i = j + 2^n, so the n-th bit is 1 (since j < 2^n)
+  have h_bit_one : i.val.testBit n = true := by
+    rw [h_eq]; simp_rw [Nat.testBit_eq_getBit]
+    rw [Nat.getBit_1_of_ge_two_pow_and_lt_two_pow_succ (h_ge_two_pow := by omega)
+      (h_lt_two_pow_succ := by omega)]
+  simp only [h_bit_one, if_true]
+  -- 3. Simplify the Low Bits Term
+  -- Low n bits of (j + 2^n) is just j
+  congr 2
+  apply Fin.eq_of_val_eq
+  simp only [h_eq]
+  rw [Nat.getLowBits_eq_mod_two_pow]
+  let j_mod_2_pow_n : j.val % (2 ^ n) = j.val := by
+    rw [Nat.mod_eq_of_lt (h := j.isLt)]
+  simp only [Nat.add_mod_right]
+  simp only [j_mod_2_pow_n]
 
 /-- Linear combination of the rows of `u` according to the tensor product of `r`:
 `[tensor_product r i] ·|u₀|`

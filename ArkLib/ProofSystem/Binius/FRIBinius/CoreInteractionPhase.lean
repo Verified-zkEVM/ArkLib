@@ -94,7 +94,7 @@ def sumcheckFoldCtxLens : OracleContext.Lens
       let t : L⦃≤ 1⦄[X Fin ℓ'] := outerWitIn.t'
       let H : L⦃≤ 2⦄[X Fin (ℓ' - 0)] := outerWitIn.H
 
-      let P₀ : L⦃< 2^ℓ'⦄[X] := polynomialFromNovelCoeffsF₂ K β ℓ' (by omega) (fun ω => t.val.eval ω)
+      let P₀ : L⦃< 2^ℓ'⦄[X] := polynomialFromNovelCoeffsF₂ K β ℓ' (by omega) (fun ω => t.val.eval (bitsOfIndex ω))
       let f₀ : (sDomain K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
         ⟨0, by omega⟩ → L := fun x => P₀.val.eval x.val
 

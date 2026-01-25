@@ -230,6 +230,42 @@ def simOracle2 {ι : Type u} (oSpec : OracleSpec ι)
   QueryImpl.addLift (QueryImpl.id oSpec)
     (QueryImpl.add (simOracle0 T₁ t₁) (simOracle0 T₂ t₂))
 
+/-- simOracle never fails because it is a deterministic transcript lookup. -/
+@[simp]
+theorem neverFails_simOracle {ι : Type u} (oSpec : OracleSpec ι)
+    {ι' : Type v} {T : ι' → Type w} [∀ i, OracleInterface (T i)]
+    (t : ∀ i, T i) :
+    ∀ {β} (q : (oSpec ++ₒ [T]ₒ).OracleQuery β),
+    ((simOracle oSpec t).impl q).neverFails := by
+  intro β q
+  unfold simOracle
+  dsimp [SimOracle.append, fnOracle, idOracle]
+  cases q with
+  | query i t' =>
+    cases i with
+    | inl i => exact OracleComp.neverFails_query _
+    | inr i => exact OracleComp.neverFails_pure _
+
+/-- simOracle2 never fails because it is a deterministic transcript lookup. -/
+@[simp]
+theorem neverFails_simOracle2 {ι : Type u} (oSpec : OracleSpec ι)
+    {ι₁ : Type v} {T₁ : ι₁ → Type w} [∀ i, OracleInterface (T₁ i)]
+    {ι₂ : Type v} {T₂ : ι₂ → Type w} [∀ i, OracleInterface (T₂ i)]
+    (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i) :
+    ∀ {β} (q : (oSpec ++ₒ ([T₁]ₒ ++ₒ [T₂]ₒ)).OracleQuery β),
+    ((simOracle2 oSpec t₁ t₂).impl q).neverFails := by
+  intro β q
+  unfold simOracle2
+  dsimp [SimOracle.append, fnOracle, idOracle]
+  cases q with
+  | query i t =>
+    cases i with
+    | inl i => exact OracleComp.neverFails_query _
+    | inr i =>
+      cases i with
+      | inl i => exact OracleComp.neverFails_pure _
+      | inr i => exact OracleComp.neverFails_pure _
+
 open Finset in
 /-- A message type together with a `OracleInterface` instance is said to have **oracle distance**
   (at most) `d` if for any two distinct messages, there is at most `d` queries that distinguish
