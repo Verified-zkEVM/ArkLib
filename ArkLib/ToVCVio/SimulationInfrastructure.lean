@@ -13,7 +13,6 @@ import VCVio.OracleComp.SimSemantics.SimulateQ
 import Mathlib.Data.ENNReal.Basic
 import VCVio.OracleComp.DistSemantics.EvalDist
 import ArkLib.OracleReduction.OracleInterface
-import ArkLib.ToVCVio.StateTLemmas
 
 /-!
 ## Monad-to-Logic Bridge Lemmas
@@ -65,8 +64,33 @@ open OracleSpec OracleComp ProtocolSpec Sum
 
 universe u v w
 
-lemma OracleComp.liftM_de {ι : Type u} {spec : OracleSpec ι} {α : Type v} (q : spec.OracleQuery α) :
-  liftM q = OptionT.lift (FreeMonad.lift q) := by rfl
+section NestedMonadLiftLemmas
+-- The ground spec is T₁, we lift it to a superSpec
+
+-- lift to left then lift to right
+instance instMonadLift_left_right {ι₁ ι₂ ι₃ : Type}
+    {T₁ : OracleSpec ι₁} {T₂ : OracleSpec ι₂} {T₃ : OracleSpec ι₃} :
+    MonadLift T₁.OracleQuery (T₃ ++ₒ (T₁ ++ₒ T₂)).OracleQuery where
+  monadLift q := liftM (liftM q : (T₁ ++ₒ T₂).OracleQuery _)
+
+-- lift to right then lift to right
+instance instMonadLift_right_right {ι₁ ι₂ ι₃ : Type}
+    {T₁ : OracleSpec ι₁} {T₂ : OracleSpec ι₂} {T₃ : OracleSpec ι₃} :
+    MonadLift T₁.OracleQuery (T₃ ++ₒ (T₂ ++ₒ T₁)).OracleQuery where
+  monadLift q := liftM (liftM q : (T₂ ++ₒ T₁).OracleQuery _)
+
+-- lift to left then lift to left
+instance instMonadLift_left_left {ι₁ ι₂ ι₃ : Type}
+    {T₁ : OracleSpec ι₁} {T₂ : OracleSpec ι₂} {T₃ : OracleSpec ι₃} :
+    MonadLift T₁.OracleQuery ((T₁ ++ₒ T₂) ++ₒ T₃).OracleQuery where
+  monadLift q := liftM (liftM q : (T₁ ++ₒ T₂).OracleQuery _)
+
+instance instMonadLift_right_left {ι₁ ι₂ ι₃ : Type}
+    {T₁ : OracleSpec ι₁} {T₂ : OracleSpec ι₂} {T₃ : OracleSpec ι₃} :
+    MonadLift T₁.OracleQuery ((T₂ ++ₒ T₁) ++ₒ T₃).OracleQuery where
+  monadLift q := liftM (liftM q : (T₂ ++ₒ T₁).OracleQuery _)
+
+end NestedMonadLiftLemmas
 
 section SimulationLemmas
 
@@ -94,60 +118,24 @@ by
   | query_bind i t oa ih => simp [ih, Function.comp_def, QueryImpl.lift]
   | failure => simp [QueryImpl.lift]
 
-omit [LawfulAlternative m] in
-/-- Distribution of simulation over query implementation appends for left queries. -/
+/--
+**Step 2 Helper: Collapse Monadic Bind and Composition**
+This lemma resolves the pattern `pure x >>= (simulateQ ∘ f)` that often appears
+when simulating sequential code. It forces the function `f` to be applied to `x`
+inside the simulation immediately.
+-/
 @[simp]
-lemma simulateQ_append_inl (so₁ : QueryImpl spec₁ m) (so₂ : QueryImpl spec₂ m)
-    (i : ι) (t : spec₁.domain i) :
-    simulateQ (so₁ ++ₛₒ so₂) (liftM (query (spec := spec₁ ++ₒ spec₂) (Sum.inl i) t)) = so₁.impl (query i t) :=
-by simp only [simulateQ_query]; rfl
-
-omit [LawfulAlternative m] in
-/-- Distribution of simulation over query implementation appends for right queries. -/
-@[simp]
-lemma simulateQ_append_inr (so₁ : QueryImpl spec₁ m) (so₂ : QueryImpl spec₂ m)
-    (i : ι) (t : spec₂.domain i) :
-    simulateQ (so₁ ++ₛₒ so₂) (liftM (query (spec := spec₁ ++ₒ spec₂) (Sum.inr i) t)) = so₂.impl (query i t) :=
-by simp only [simulateQ_query]; rfl
-
-omit [LawfulMonad m] [LawfulAlternative m] in
-/-- Removing pure values from simulation binds. -/
-@[simp]
-lemma simulateQ_pure_bind (so : QueryImpl spec m) (x : α) (f : α → OracleComp spec β) :
-    simulateQ so (pure x >>= f) = simulateQ so (f x) :=
-by simp only [pure_bind]
-
-omit [LawfulAlternative m] in
-/-- Simulating a lifted query resolves to the implementation of the query.
-This is an alias for `simulateQ_query` but explicitly for the `liftM` form. -/
-@[simp]
-lemma simulateQ_liftM (so : QueryImpl spec m) (q : OracleQuery spec α) :
-    simulateQ so (liftM q) = so.impl q :=
-simulateQ_query so q
+lemma bind_pure_simulateQ_comp
+    {ι ι' : Type*} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+    (so : SimOracle.Stateless spec spec')
+    {α β : Type v} (x : α) (f : α → OracleComp spec β) :
+    (pure x >>= (simulateQ so ∘ f)) = simulateQ so (f x) := by rfl
 
 end SimulationLemmas
 
-section SafetyPreservation
+section SimulationSafety
 
 variable {ι : Type} {spec : OracleSpec ι} [spec.FiniteRange] {α β : Type}
-
-/-- TODO: might not use this
-**Step 3 Helper: Convert 'if' Support to Equality**
-If a computation is purely an `if/then/else` structure returning `pure` values,
-then `x ∈ support` is equivalent to `x = if ... then ... else ...`.
-
-This allows you to switch from "Set Membership" to "Functional Equality"
-without manually doing `split_ifs`.
--/
-lemma mem_support_if_pure_eq
-    {spec : OracleSpec ι} {α : Type u}
-    (p : Prop) [Decidable p] (a b x : α) :
-    x ∈ (if p then pure a else pure b : OracleComp spec α).support ↔
-    x = if p then a else b := by
-  -- Split the if and show equality in both branches
-  split_ifs with h
-  · simp only [h, OracleComp.support_pure, Set.mem_singleton_iff, if_true]
-  · simp only [h, OracleComp.support_pure, Set.mem_singleton_iff, if_false]
 
 /-- **Reverse Safety Preservation (Stateless)**
 
@@ -282,6 +270,7 @@ simulated and specification safety.
 **Note**: Unlike `simulateQ_preserves_safety_stateful` which only requires support subset (⊆),
 this biconditional requires support **equality** (=) to enable the reverse direction.
 -/
+@[simp]
 theorem probFailure_simulateQ_iff_stateful
     {oSpec : OracleSpec ι} [oSpec.FiniteRange] {σ : Type}
     (impl : QueryImpl oSpec (StateT σ ProbComp))
@@ -306,6 +295,7 @@ rather than `StateT.run` which returns the full `(result, state)` pair.
 This lemma is useful when the goal involves `(simulateQ impl oa).run' s` instead of
 `(simulateQ impl oa).run s`.
 -/
+@[simp]
 theorem probFailure_simulateQ_iff_stateful_run'
     {oSpec : OracleSpec ι} [oSpec.FiniteRange] {σ : Type}
     (impl : QueryImpl oSpec (StateT σ ProbComp))
@@ -363,26 +353,6 @@ lemma probFailure_simulateQ_iff (so : QueryImpl spec ProbComp) (oa : OracleComp 
   · intro h_oa
     apply simulateQ_preserves_safety so h_so (h_supp := fun q ↦ (h_supp q).subset) oa h_oa
 
-@[simp]
-lemma probFailure_simulateQ_of_probFailure (so : QueryImpl spec ProbComp) (oa : OracleComp spec α)
-    (h_so : ∀ {β} (q : OracleQuery spec β), [⊥|so.impl q] = 0)
-    (h_supp : ∀ {β} (q : OracleQuery spec β),
-      (so.impl q).support ⊆ (liftM q : OracleComp spec β).support) (h_oa : [⊥|oa] = 0) :
-    [⊥|simulateQ so oa] = 0 := by
-  apply simulateQ_preserves_safety so
-  · exact h_so
-  · exact h_supp
-  · exact h_oa
-
-omit [spec.FiniteRange] in
-/-- Spec-lifting preserves the failure probability. -/
-@[simp]
-lemma probFailure_liftComp_eq {ι' : Type} {superSpec : OracleSpec ι'}
-    [spec.FiniteRange] [superSpec.FiniteRange]
-    [MonadLift (OracleQuery spec) (OracleQuery superSpec)]
-    (oa : OracleComp spec α) : [⊥ | liftComp oa superSpec] = [⊥ | oa] := by
-  simp only [OracleComp.probFailure_def, OracleComp.evalDist_liftComp]
-
 /-- Challenge query implementations have the same support as the specification.
     This is trivially true for uniform distributions. -/
 @[simp]
@@ -430,44 +400,7 @@ lemma support_challengeQueryImpl_run_eq {n : ℕ} {pSpec : ProtocolSpec n} {σ :
     Set.iUnion_true, Set.iUnion_singleton_eq_range, Set.fmap_eq_image, Set.mem_image, Set.mem_range,
     exists_exists_eq_and, exists_eq]
 
-variable {oSpec : OracleSpec ι}
-/--
-If the stateful implementation `impl` is support-faithful, then any value
-returned during a stateful run is within the support of the original specification.
--/
-lemma support_run_subset_support_spec {σ α : Type} (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (q : OracleQuery oSpec α) (s : σ)
-    (h_faithful : ∀ (s : σ), (Prod.fst <$> (impl.impl q).run s).support ⊆
-      (liftM q : OracleComp oSpec α).support) :
-    ∀ x' ∈ (Prod.fst <$> (impl.impl q).run s).support,
-      x' ∈ (liftM q : OracleComp oSpec α).support :=
-by
-  intro x' hx'
-  exact h_faithful s hx'
-
-end SafetyPreservation
-
-section StateExecutionLemmas
-
-variable {σ α β : Type u} {m : Type u → Type v} [Monad m] [LawfulMonad m]
-
-/-- Simplify a bind following a pure initialization of state. -/
-@[simp]
-theorem run'_bind_pure {s : σ} (x : α) (f : α → StateT σ m β) :
-    (StateT.run' (pure x >>= f) s) = (StateT.run' (f x) s) :=
-by simp [StateT.run']
-
-alias run'_pure_bind := run'_bind_pure
-
-/-- Bridge between monadic support and deterministic results for pure ProbComp. -/
-@[simp]
-lemma support_pure_bind_pure {α β : Type} (x : α) (f : α → ProbComp β) :
-    (pure x >>= f).support = (f x).support :=
-by simp
-
-alias support_pure_bind := support_pure_bind_pure
-
-end StateExecutionLemmas
+end SimulationSafety
 
 section ProtocolUnrolling
 
@@ -475,6 +408,7 @@ variable {ι : Type} {n : ℕ} {pSpec : ProtocolSpec n} {oSpec : OracleSpec ι}
   {StmtIn WitIn StmtOut WitOut : Type}
 
 /-- Simplification lemma for `processRound` when the direction is `P_to_V`. -/
+@[simp]
 lemma Prover.processRound_P_to_V (j : Fin n)
     (h : pSpec.dir j = .P_to_V)
     (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
@@ -492,6 +426,7 @@ lemma Prover.processRound_P_to_V (j : Fin n)
   · simp
 
 /-- Simplification lemma for `processRound` when the direction is `V_to_P`. -/
+@[simp]
 lemma Prover.processRound_V_to_P (j : Fin n)
     (h : pSpec.dir j = .V_to_P)
     (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
@@ -509,16 +444,6 @@ lemma Prover.processRound_V_to_P (j : Fin n)
     rw [h] at hDir
     contradiction
 
-/-- Simplifies the probability event of a deterministic pure result. -/
-@[simp]
-lemma probEvent_pure_iff {α : Type} [DecidableEq α] (p : α → Prop) [DecidablePred p] (x : α) :
-    [p | (pure x : ProbComp α)] = 1 ↔ p x :=
-by
-  simp only [probEvent_pure, ite_eq_left_iff]
-  exact ⟨fun h => by simpa using h, fun h => by simp [h]⟩
-
-alias probEvent_eq_one_pure_iff := probEvent_pure_iff
-
 end ProtocolUnrolling
 
 section ReductionUnrolling
@@ -526,15 +451,6 @@ section ReductionUnrolling
 variable {ι : Type} {n : ℕ} {pSpec : ProtocolSpec n} {oSpec : OracleSpec ι}
   {StmtIn WitIn StmtOut WitOut : Type}
   [∀ i, SelectableType (pSpec.Challenge i)]
-
-omit [(i : pSpec.ChallengeIdx) → SelectableType (pSpec.Challenge i)] in
-/-- Unrolls the initial step of the Prover's induction. -/
-@[simp]
-lemma Prover_run_induction_zero (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (input : StmtIn × WitIn) :
-    prover.runToRound 0 input.1 input.2 =
-      Pure.pure (default, prover.input input) :=
-by simp [Prover.runToRound]
 
 omit [(i : pSpec.ChallengeIdx) → SelectableType (pSpec.Challenge i)] in
 /-- Specifically handles the `Fin.induction` inside the `Prover.run` code. -/
@@ -547,6 +463,7 @@ by simp [Prover.runToRound, Fin.induction_succ]
 
 omit [(i : pSpec.ChallengeIdx) → SelectableType (pSpec.Challenge i)] in
 /-- Simplifies `Reduction.run` by unfolding it into the prover's run and verifier's check. -/
+@[simp]
 lemma Reduction_run_def (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (stmtIn : StmtIn) (witIn : WitIn) :
     reduction.run stmtIn witIn = (do
@@ -556,19 +473,6 @@ lemma Reduction_run_def (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut
 by rfl
 
 alias Reduction.run_step := Reduction_run_def
-
-/-- Core Lemma: If the prover and verifier are simulated, the challenge query
-    maps directly to the challenge index in the transcript. -/
-@[simp]
-lemma simulateQ_getChallenge (j : Fin n) (h : pSpec.dir j = .V_to_P)
-    (so : QueryImpl oSpec ProbComp) :
-    simulateQ (so ++ₛₒ challengeQueryImpl)
-      (liftComp (pSpec.getChallenge ⟨j, h⟩) (oSpec ++ₒ [pSpec.Challenge]ₒ)) =
-      uniformOfFintype (pSpec.Challenge ⟨j, h⟩) :=
-by
-  unfold getChallenge
-  simp only [simulateQ_liftComp, simulateQ_query]
-  rfl
 
 end ReductionUnrolling
 
@@ -589,13 +493,14 @@ lemma Transcript_get_challenge (tr : pSpec.FullTranscript) (j : Fin n) (h : pSpe
 by rfl
 
 /-- Simplifies the conversion between transcripts and individual message/challenge pairs. -/
+@[simp]
 lemma Transcript.equiv_eval (tr : pSpec.FullTranscript) :
     FullTranscript.equivMessagesChallenges tr = (tr.messages, tr.challenges) :=
 by rfl
 
 end TranscriptLemmas
 
-section SafetyLemmas
+section SupportPreservation
 
 variable {ι : Type} {spec : OracleSpec ι} [spec.FiniteRange] {α β : Type}
   {m : Type → Type} [AlternativeMonad m] [LawfulAlternative m]
@@ -623,50 +528,6 @@ lemma support_simulateQ_eq (so : QueryImpl spec ProbComp) (oa : OracleComp spec 
     simp [simulateQ_bind, ih, h_supp]
   | failure => simp
 
-omit [spec.FiniteRange] in
-/-- **Support Preservation Lemma for Stateless Implementations**
-
-If each query implementation's support is a subset of the spec's support,
-then the support of the simulated computation is a subset of the original.
-
-**Meaning**:
-This lemma establishes that simulation does not introduce new possible outcomes
-beyond what the original specification allowed, provided the query-level
-implementation is faithful to the specification's possible results.
-
-**Application**:
-- **Safety Proofs / Perfect Completeness**: This is the primary tool for reasoning
-  about `perfectCompleteness`. To show `[⊥|simulateQ so oa] = 0`, we only need
-  to know that the implementation's support is a subset of the spec's support
-  (and that the implementation itself never fails). It is **not** an `iff`
-  because an implementation can be safer or more restrictive than its
-  specification (e.g., a deterministic implementation of a random oracle).
-- **Deterministic Implementations**: Crucial for cases where an oracle is
-  implemented deterministically (singleton support), which is naturally a subset
-  of a more general specification (e.g., `Set.univ`).
-- **Refining Results**: Allows lifting properties proven about the high-level
-  `oa.support` to the concrete simulated implementation.
-
-**Note on Equality (`=`) vs Subset (`⊆`)**:
-While we also have `support_simulateQ_eq` for cases where support is exactly
-preserved, security reasoning for completeness rarely requires equality. Subset
-is more flexible as it allows "fixing" oracle randomness to a single value
-(common in transcript-based reductions) without breaking the proof.
--/
-lemma support_simulateQ_subset (so : QueryImpl spec ProbComp) (oa : OracleComp spec α)
-    (h_supp : ∀ {β} (q : OracleQuery spec β),
-      (so.impl q).support ⊆ (liftM q : OracleComp spec β).support) :
-    (simulateQ so oa).support ⊆ oa.support := by
-  induction oa using OracleComp.induction with
-  | pure a => simp
-  | query_bind i t ou ih =>
-    simp only [simulateQ_query_bind, support_bind]
-    intro x hx
-    simp only [Set.mem_iUnion, exists_prop] at hx ⊢
-    obtain ⟨y, hy_so, hx_sim⟩ := hx
-    exact ⟨y, h_supp (query i t) hy_so, ih y hx_sim⟩
-  | failure => simp
-
 /-- **Helper: Support of run' for stateful simulateQ**
 
 If a stateful oracle implementation is support-faithful, then for any state `s`,
@@ -681,6 +542,7 @@ and `hImplSupp` ensures that the first component of the stateful implementation'
 support matches the spec's support. The proof proceeds by induction on `oa`,
 using the support-faithfulness at each query step.
 -/
+@[simp]
 lemma support_simulateQ_run'_eq
     {oSpec : OracleSpec ι} [oSpec.FiniteRange] {σ α : Type}
     (impl : QueryImpl oSpec (StateT σ ProbComp))
@@ -786,6 +648,7 @@ bridges that gap for stateful implementations.
 **Note**: The RHS is just `oa.support` (not bound with `init`) because `oa` is
 a pure specification computation that doesn't depend on the oracle state.
 -/
+@[simp]
 lemma support_bind_simulateQ_run'_eq
     {oSpec : OracleSpec ι} [oSpec.FiniteRange] {σ α : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
@@ -807,7 +670,8 @@ lemma support_bind_simulateQ_run'_eq
     exact hx_sim
   · -- Backward direction: spec support ⊆ simulated support
     intro hx_spec
-    -- We need to show there exists s ∈ init.support such that x ∈ (simulateQ impl oa).run' s).support
+    -- We need to show there exists s ∈ init.support such that
+    -- x ∈ (simulateQ impl oa).run' s).support
     -- Since init.neverFails (or we can use init.support.Nonempty), we can pick any s
     -- Use the helper lemma
     have h_init_nonempty : init.support.Nonempty :=
@@ -820,9 +684,9 @@ lemma support_bind_simulateQ_run'_eq
     rw [← h_supp_eq] at hx_spec
     exact ⟨s, hs_init, hx_spec⟩
 
-end SafetyLemmas
+end SupportPreservation
 
-section SimOracleSafety
+section SimOracle2Lemmas
 open OracleInterface OracleComp OracleSpec OracleQuery SimOracle
 
 variable {ι : Type} {oSpec : OracleSpec ι} [oSpec.FiniteRange]
@@ -838,15 +702,9 @@ lemma probFailure_simOracle2 (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i) :
   rw [probFailure_eq_zero_iff]
   exact neverFails_simOracle2 oSpec t₁ t₂ q
 
-/-- **Generic Safety Preservation for simOracle2**
-**Warning**: this is a weak lemma, mostly works when `oa` is pure computation (no oracle queries)
-
-If the underlying computation `oa` is safe (never fails), then simulating it
-using `simOracle2` (which uses deterministic transcripts) is also safe.
-
-This lemma handles the administrative proof obligations (implementation safety
-and support subset), allowing you to reduce the goal directly to `[⊥|oa] = 0`.
--/
+/-- **Weak Safety Preservation for simOracle2** when `oa` is pure computation
+  (no oracle queries). -/
+@[simp]
 lemma probFailure_simulateQ_simOracle2_eq_zero
     [OracleSpec.FiniteRange [T₁]ₒ] [OracleSpec.FiniteRange [T₂]ₒ]
     (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i)
@@ -896,83 +754,6 @@ lemma probFailure_simulateQ_simOracle2_eq_zero
             -- answer (t₂ i_t2) t is in the range of the oracle for (.inr (.inr i_t2))
             simp only [OracleComp.support_query, Set.mem_univ]
       exact ih result (h_oa.2 result h_result_in_spec)
-
-/--
-**SimOracle2 Bind Distribution**
-
-Distributes `simulateQ (simOracle2 ...)` over bind operations, allowing the simplifier
-to push simulation through `do` blocks and simplify each component separately.
--/
-@[simp]
-lemma simulateQ_simOracle2_bind (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i)
-    {α β : Type} (oa : OracleComp (oSpec ++ₒ ([T₁]ₒ ++ₒ [T₂]ₒ)) α)
-    (f : α → OracleComp (oSpec ++ₒ ([T₁]ₒ ++ₒ [T₂]ₒ)) β) :
-    simulateQ (OracleInterface.simOracle2 oSpec t₁ t₂) (oa >>= f) =
-    (simulateQ (OracleInterface.simOracle2 oSpec t₁ t₂) oa >>=
-     (fun x => simulateQ (OracleInterface.simOracle2 oSpec t₁ t₂) (f x))) :=
-by simp only [simulateQ_bind, Function.comp_def]
-
-/--
-**SimOracle2 Pure Simplification**
-
-Simulating a pure value results in the pure value itself.
--/
-@[simp]
-lemma simulateQ_simOracle2_pure (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i) {α : Type} (x : α) :
-    simulateQ (OracleInterface.simOracle2 oSpec t₁ t₂) (pure x) = pure x :=
-by simp [simulateQ_pure]
-
-/--
-**SimOracle2 Base Lift Lemma**
-
-Simulating a computation that only uses the base oracles (lifted to the larger spec)
-results in the original computation.
--/
-@[simp]
-lemma simulateQ_simOracle2_liftComp (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i)
-    {α : Type} (oa : OracleComp oSpec α) :
-    simulateQ (OracleInterface.simOracle2 oSpec t₁ t₂) (liftComp oa _) = oa :=
-by
-  rw [simulateQ_liftComp]
-  have : QueryImpl.lift (OracleInterface.simOracle2 oSpec t₁ t₂) = idOracle :=
-    by ext β q; cases q; rfl
-  rw [this, idOracle.simulateQ_eq]
-
-/-- Simulating a query to the first transcript in simOracle2 resolves to its pure answer. -/
-@[simp]
-lemma simulateQ_simOracle2_query_inr_inl (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i)
-    (i : ι₁) (t : [T₁]ₒ.domain i) :
-    simulateQ (OracleInterface.simOracle2 oSpec t₁ t₂)
-      (liftM (query (spec := oSpec ++ₒ ([T₁]ₒ ++ₒ [T₂]ₒ)) (.inr (.inl i)) t)) =
-    pure (OracleInterface.answer (t₁ i) t) :=
-by
-  simp only [simulateQ_query, OracleInterface.simOracle2]
-  unfold SimOracle.append fnOracle
-  rfl
-
-/-- Simulating a query to the second transcript in simOracle2 resolves to its pure answer. -/
-@[simp]
-lemma simulateQ_simOracle2_query_inr_inr (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i)
-    (i : ι₂) (t : [T₂]ₒ.domain i) :
-    simulateQ (OracleInterface.simOracle2 oSpec t₁ t₂)
-      (liftM (query (spec := oSpec ++ₒ ([T₁]ₒ ++ₒ [T₂]ₒ)) (.inr (.inr i)) t)) =
-    pure (OracleInterface.answer (t₂ i) t) :=
-by
-  simp only [simulateQ_query, OracleInterface.simOracle2]
-  unfold SimOracle.append fnOracle
-  rfl
-
-/-- Simulating a query to the base oracles in simOracle2 passes through to the underlying oracle. -/
-@[simp]
-lemma simulateQ_simOracle2_query_inl (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i)
-    (i : ι) (t : oSpec.domain i) :
-    simulateQ (OracleInterface.simOracle2 oSpec t₁ t₂)
-      (liftM (query (spec := oSpec ++ₒ ([T₁]ₒ ++ₒ [T₂]ₒ)) (.inl i) t)) =
-    query i t :=
-by
-  simp only [simulateQ_query, OracleInterface.simOracle2]
-  unfold SimOracle.append idOracle
-  rfl
 
 /--
 **Generic Simulation Reduction**
@@ -1031,73 +812,35 @@ lemma simOracle2_impl_inl
     query i t :=
 by rfl
 
-/--
-**Step 2 Helper: Collapse Monadic Bind and Composition**
-This lemma resolves the pattern `pure x >>= (simulateQ ∘ f)` that often appears
-when simulating sequential code. It forces the function `f` to be applied to `x`
-inside the simulation immediately.
--/
+/-- **Oracle query unfolding**: This is the main lemma that converts the OracleComp
+lifted from oracle queries into an almost deterministic form -/
 @[simp]
-lemma bind_pure_simulateQ_comp
-    {ι ι' : Type*} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
-    (so : SimOracle.Stateless spec spec')
-    {α β : Type v} (x : α) (f : α → OracleComp spec β) :
-    (pure x >>= (simulateQ so ∘ f)) = simulateQ so (f x) := by rfl
-
-/--
-**SimOracle2 Implementation Reduction**
-
-Reduces the raw implementation of `simOracle2` on a transcript query
-directly to `pure value`.
--/
-@[simp]
-lemma simOracle2_impl_liftM_query_eq_pure
-    {ι : Type u} {oSpec : OracleSpec ι} [oSpec.FiniteRange]
-    {ι₁ : Type v} {T₁ : ι₁ → Type w} [∀ i, OracleInterface (T₁ i)]
-    {ι₂ : Type v} {T₂ : ι₂ → Type w} [∀ i, OracleInterface (T₂ i)]
+lemma simulateQ_simOracle2_lift_liftComp_query_T1
+    {ι : Type} {oSpec : OracleSpec ι}
+    {ι₁ : Type} {T₁ : ι₁ → Type} [∀ i, OracleInterface (T₁ i)]
+    {ι₂ : Type} {T₂ : ι₂ → Type} [∀ i, OracleInterface (T₂ i)]
     (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i)
-    (i : ι₂) (t : ([T₂]ₒ).domain i) :
-    (OracleInterface.simOracle2 oSpec t₁ t₂).impl (liftM (query (spec := [T₂]ₒ) i t)) =
-    pure (OracleInterface.answer (t₂ i) t) := by
-  simp only [liftM]
+    (j : ι₁) (pt : [T₁]ₒ.domain j) :
+    simulateQ (OracleInterface.simOracle2 oSpec t₁ t₂)
+      ((OracleComp.lift (query j pt)).liftComp (oSpec ++ₒ ([T₁]ₒ ++ₒ [T₂]ₒ))) =
+    pure (OracleInterface.answer (t₁ j) pt) := by
   rfl
 
-/--
-**SimOracle2 Implementation Reduction (T1)**
-
-Reduces the raw implementation of `simOracle2` on a transcript 1 query
-directly to `pure value`.
--/
+/-- **Oracle query unfolding (T2)**: Unfolds a query to the second transcript (T₂)
+lifted into the full specification, resolving it to the deterministic honest answer. -/
 @[simp]
-lemma simOracle2_impl_liftM_query_eq_pure_inl
-    {ι : Type u} {oSpec : OracleSpec ι} [oSpec.FiniteRange]
-    {ι₁ : Type v} {T₁ : ι₁ → Type w} [∀ i, OracleInterface (T₁ i)]
-    {ι₂ : Type v} {T₂ : ι₂ → Type w} [∀ i, OracleInterface (T₂ i)]
+lemma simulateQ_simOracle2_lift_liftComp_query_T2
+    {ι : Type} {oSpec : OracleSpec ι}
+    {ι₁ : Type} {T₁ : ι₁ → Type} [∀ i, OracleInterface (T₁ i)]
+    {ι₂ : Type} {T₂ : ι₂ → Type} [∀ i, OracleInterface (T₂ i)]
     (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i)
-    (i : ι₁) (t : ([T₁]ₒ).domain i) :
-    (OracleInterface.simOracle2 oSpec t₁ t₂).impl (liftM (query (spec := [T₁]ₒ) i t)) =
-    pure (OracleInterface.answer (t₁ i) t) := by
-  simp only [liftM]
+    (j : ι₂) (pt : [T₂]ₒ.domain j) :
+    simulateQ (OracleInterface.simOracle2 oSpec t₁ t₂)
+      ((OracleComp.lift (query j pt)).liftComp (oSpec ++ₒ ([T₁]ₒ ++ₒ [T₂]ₒ))) =
+    pure (OracleInterface.answer (t₂ j) pt) := by
   rfl
 
--- lemma probFailure_guard {ι : Type u} {oSpec : OracleSpec ι} [oSpec.FiniteRange]
---   {α : Type} (p : Prop) [Decidable p] (oa : OracleComp oSpec α) :
---   [⊥ | do guard p; oa] = 0 ↔ p ∧ [⊥ | oa] = 0 := by
---   unfold guard
---   split_ifs with h
---   · -- Case: p is true.
---     simp only [pure_bind, probFailure_eq_zero_iff, iff_and_self]
---     intro _
---     exact h
---   · -- Case: p is false.
---     -- 'guard p' becomes 'failure'. 'failure >>= f' is 'failure'.
---     -- LHS: [⊥|failure] = 1 ≠ 0. RHS: False ∧ ... = False.
---     simp only [failure_bind, probFailure_failure, one_ne_zero, probFailure_eq_zero_iff, false_iff,
---       not_and]
---     intro h_p
---     exact fun a ↦ h h_p
-
-end SimOracleSafety
+end SimOracle2Lemmas
 
 section ForInLemmas
 
@@ -1399,7 +1142,8 @@ lemma support_forIn_subset_rel {spec : OracleSpec ι} [spec.FiniteRange]
           exact h_len
 
         -- Apply IH
-        -- ih type: ∀ (k : ℕ) (s : σ), l.drop k = ys → k + ys.length = l.length → rel ... → ∀ x ∈ ..., ...
+        -- ih type: ∀ (k : ℕ) (s : σ), l.drop k = ys → k + ys.length = l.length →
+        -- rel ... → ∀ x ∈ ..., ...
         exact ih (k + 1) next
           (by rw [←List.drop_drop, h_suffix]; rfl)
           h_len'
@@ -1442,36 +1186,9 @@ lemma support_forIn_subset_rel_yield_only {spec : OracleSpec ι} [spec.FiniteRan
   rw [h_is_yield]
   exact h_next_rel
 
-section NestedMonadLiftLemmas
--- The ground spec is T₁, we lift it to a superSpec
-
--- lift to left then lift to right
-instance instMonadLift_left_right {ι₁ ι₂ ι₃ : Type}
-    {T₁ : OracleSpec ι₁} {T₂ : OracleSpec ι₂} {T₃ : OracleSpec ι₃} :
-    MonadLift T₁.OracleQuery (T₃ ++ₒ (T₁ ++ₒ T₂)).OracleQuery where
-  monadLift q := liftM (liftM q : (T₁ ++ₒ T₂).OracleQuery _)
-
--- lift to right then lift to right
-instance instMonadLift_right_right {ι₁ ι₂ ι₃ : Type}
-    {T₁ : OracleSpec ι₁} {T₂ : OracleSpec ι₂} {T₃ : OracleSpec ι₃} :
-    MonadLift T₁.OracleQuery (T₃ ++ₒ (T₂ ++ₒ T₁)).OracleQuery where
-  monadLift q := liftM (liftM q : (T₂ ++ₒ T₁).OracleQuery _)
-
--- lift to left then lift to left
-instance instMonadLift_left_left {ι₁ ι₂ ι₃ : Type}
-    {T₁ : OracleSpec ι₁} {T₂ : OracleSpec ι₂} {T₃ : OracleSpec ι₃} :
-    MonadLift T₁.OracleQuery ((T₁ ++ₒ T₂) ++ₒ T₃).OracleQuery where
-  monadLift q := liftM (liftM q : (T₁ ++ₒ T₂).OracleQuery _)
-
-instance instMonadLift_right_left {ι₁ ι₂ ι₃ : Type}
-    {T₁ : OracleSpec ι₁} {T₂ : OracleSpec ι₂} {T₃ : OracleSpec ι₃} :
-    MonadLift T₁.OracleQuery ((T₂ ++ₒ T₁) ++ₒ T₃).OracleQuery where
-  monadLift q := liftM (liftM q : (T₂ ++ₒ T₁).OracleQuery _)
-
-end NestedMonadLiftLemmas
-
 /-- Distributes `liftComp` over a `forIn` loop.
     Corrected to allow specs with DIFFERENT index types (ι and ι'). -/
+@[simp]
 lemma liftComp_forIn {ι ι' : Type} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
     [spec.FiniteRange] [superSpec.FiniteRange]
     [MonadLift (OracleQuery spec) (OracleQuery superSpec)]
@@ -1490,6 +1207,7 @@ lemma liftComp_forIn {ι ι' : Type} {spec : OracleSpec ι} {superSpec : OracleS
 /-- Distributes `simulateQ` over a `forIn` loop.
 This allows us to verify the body of the loop under simulation.
 -/
+@[simp]
 lemma simulateQ_forIn {ι ι' : Type} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
     (so : SimOracle.Stateless spec superSpec)
     {α β : Type} (l : List α) (init : β)
@@ -1519,6 +1237,7 @@ TODO: This proof is non-trivial because `Vector.mapM` is implemented via an auxi
 - toArray representation doesn't work since we're proving equality of `OracleComp` values
 - Need either: (1) a lemma relating `simulateQ` to Array.mapM, or
   (2) a custom induction principle, or (3) direct reasoning about `mapM.go`. -/
+@[simp]
 lemma simulateQ_vector_mapM {ι ι' : Type} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
     (so : SimOracle.Stateless spec superSpec)
     {α β : Type} {n : ℕ} (f : α → OracleComp spec β) (v : Vector α n) :
@@ -1531,6 +1250,7 @@ equality to `Vector.map f v`.
 
 Note: This relies on `mem_support_vector_mapM` from VCVio which has a sorry.
 -/
+@[simp]
 lemma mem_support_vector_mapM_pure {α β : Type} {n : ℕ} {ι : Type} {spec : OracleSpec ι}
     (f : α → β) (v : Vector α n) (x : Vector β n) :
     x ∈ (Vector.mapM (fun a ↦ pure (f a) : α → OracleComp spec β) v).support ↔
@@ -1548,81 +1268,4 @@ lemma mem_support_vector_mapM_pure {α β : Type} {n : ℕ} {ι : Type} {spec : 
     intro i
     simp only [Fin.getElem_fin, support_pure, Vector.getElem_map, Set.mem_singleton_iff]
 
-/--
-Support of Vector.mapM with pure is singleton.
--/
-lemma support_vector_mapM_pure_eq_singleton {α β : Type} {n : ℕ} {ι : Type} {spec : OracleSpec ι}
-    (f : α → β) (v : Vector α n) :
-    (Vector.mapM (fun a ↦ pure (f a) : α → OracleComp spec β) v).support = {Vector.map f v} := by
-  ext x
-  rw [Set.mem_singleton_iff, mem_support_vector_mapM_pure]
-
 end ForInLemmas
-
-#check liftM_eq_liftComp
-lemma OracleComp.lift_eq_liftM {ι : Type u} {τ : Type v} {spec : OracleSpec ι} {superSpec : OracleSpec τ}
-  {α : Type w} [MonadLift spec.OracleQuery superSpec.OracleQuery] (q : OracleQuery spec α) :
-  OracleComp.lift q = (liftM q) := by rfl
-
-/--
-Collapsing nested lifts:
-Lifting from spec₁ → spec₂ and then spec₂ → spec₃ is the same as
-lifting directly from spec₁ → spec₃.
--/
-@[simp]
-lemma OracleComp.liftM_liftM {ι₁ ι₂ ι₃ : Type}
-    {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂} {spec₃ : OracleSpec ι₃}
-    -- We need lift instances for the steps: 1->2, 2->3, and 1->3
-    [h12 : MonadLift spec₁.OracleQuery spec₂.OracleQuery]
-    [h23 : MonadLift spec₂.OracleQuery spec₃.OracleQuery]
-    [h13 : MonadLift spec₁.OracleQuery spec₃.OracleQuery]
-    -- Requirement: The composition of lifts must match the direct lift
-    (h_comp : ∀ {α} (q : spec₁.OracleQuery α),
-      (liftM (liftM q : spec₂.OracleQuery α) : spec₃.OracleQuery α) = liftM q)
-    {α : Type} (oa : OracleComp spec₁ α) :
-    (liftM (liftM oa : OracleComp spec₂ α) : OracleComp spec₃ α) = liftM oa := by
-  induction oa using OracleComp.inductionOn with
-  | pure x =>
-    -- pure lifts to pure
-    simp only [liftM_eq_liftComp, liftComp_pure]
-  | query_bind i t oa ih =>
-    -- liftM (liftM (query ...))
-    -- = liftM (query_in_2 ...) >>= ...
-    -- = query_in_3 ... >>= ...
-    simp only [liftM_eq_liftComp, liftComp_bind, liftComp_query, SubSpec.liftM_query_eq_liftM_liftM,
-      queryBind_inj]
-    -- The key step: apply the hypothesis that the query lifts match
-    rw [h_comp]
-    simp only [true_and]
-    funext x
-    exact ih x
-  | failure =>
-    simp only [liftM_eq_liftComp, liftComp_failure]
-
-/-- **Oracle query unfolding**: This is the main lemma that converts the OracleComp
-lifted from oracle queries into an almost deterministic form -/
-@[simp]
-lemma simulateQ_simOracle2_lift_liftComp_query_T1
-    {ι : Type} {oSpec : OracleSpec ι}
-    {ι₁ : Type} {T₁ : ι₁ → Type} [∀ i, OracleInterface (T₁ i)]
-    {ι₂ : Type} {T₂ : ι₂ → Type} [∀ i, OracleInterface (T₂ i)]
-    (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i)
-    (j : ι₁) (pt : [T₁]ₒ.domain j) :
-    simulateQ (OracleInterface.simOracle2 oSpec t₁ t₂)
-      ((OracleComp.lift (query j pt)).liftComp (oSpec ++ₒ ([T₁]ₒ ++ₒ [T₂]ₒ))) =
-    pure (OracleInterface.answer (t₁ j) pt) := by
-  rfl
-
-/-- **Oracle query unfolding (T2)**: Unfolds a query to the second transcript (T₂)
-lifted into the full specification, resolving it to the deterministic honest answer. -/
-@[simp]
-lemma simulateQ_simOracle2_lift_liftComp_query_T2
-    {ι : Type} {oSpec : OracleSpec ι}
-    {ι₁ : Type} {T₁ : ι₁ → Type} [∀ i, OracleInterface (T₁ i)]
-    {ι₂ : Type} {T₂ : ι₂ → Type} [∀ i, OracleInterface (T₂ i)]
-    (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i)
-    (j : ι₂) (pt : [T₂]ₒ.domain j) :
-    simulateQ (OracleInterface.simOracle2 oSpec t₁ t₂)
-      ((OracleComp.lift (query j pt)).liftComp (oSpec ++ₒ ([T₁]ₒ ++ₒ [T₂]ₒ))) =
-    pure (OracleInterface.answer (t₂ j) pt) := by
-  rfl

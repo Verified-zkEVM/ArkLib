@@ -5,7 +5,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 import ArkLib.ToVCVio.Oracle
-import ArkLib.ToVCVio.Execution
+import ArkLib.ToVCVio.SimulationInfrastructure
 import ArkLib.OracleReduction.Completeness
 import ArkLib.Data.Misc.Basic
 
@@ -969,6 +969,7 @@ def finalSumcheckStepLogic :
   ⟩
   hEq := fun oracleIdx => by simp only [Fin.eta]
 
+omit [SelectableType L] in
 /-- **Strict version**: When folding the last oracle to level `ℓ` (final sumcheck),
 the iterated fold of the last oracle equals the constant function.
 
@@ -1030,7 +1031,8 @@ lemma iterated_fold_to_const_strict
   have h_ϑ_le_ℓ : ϑ ≤ ℓ := by apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ) (hdiv.out)
   intro step transcript verifierStmtOut verifierOStmtOut
   intro lastDomainIdx k h_k curDomainIdx h_destIdx_eq f_k finalChallenges destDomainIdx folded
-  let P₀: L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) (fun ω => witIn.t.val.eval (bitsOfIndex ω))
+  let P₀: L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
+    (fun ω => witIn.t.val.eval (bitsOfIndex ω))
   let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
   -- From strictOracleWitnessConsistency, we can construct strictFinalFoldingStateProp
   -- which contains strictFinalConstantConsistency, giving us the desired equality
@@ -1094,10 +1096,8 @@ lemma iterated_fold_to_const_strict
       dsimp only [k_steps, k_pos_idx, k, lastDomainIdx]
     -- The inner iterated_fold is already a function from domain k to L
     -- We can remove the cast wrapper since the domains match
-    have h_cast_elim := iterated_fold_congr_dest_index 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0)
-      (steps := k_steps)
-      (destIdx := curDomainIdx)
-      (destIdx' := ⟨k_steps, by omega⟩)
+    have h_cast_elim := iterated_fold_congr_dest_index 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := 0) (steps := k_steps) (destIdx := curDomainIdx) (destIdx' := ⟨k_steps, by omega⟩)
       (h_destIdx := by simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; omega)
       (h_destIdx_le := by
         dsimp only [curDomainIdx]; simp only [h_k, tsub_le_iff_right, le_add_iff_nonneg_right,
@@ -1175,8 +1175,6 @@ lemma iterated_fold_to_const_strict
     rw [h_challenges_eq.symm] at h_concat_challenges_eq
     simp only [h_concat_challenges_eq]
     funext y
-    -- dsimp only [f₀, P₀]
-    -- unfold polyToOracleFunc
     have h_cast_elim3 := iterated_fold_congr_dest_index 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0)
       (steps := k_steps + ϑ)
       (destIdx := destDomainIdx)
@@ -1186,7 +1184,6 @@ lemma iterated_fold_to_const_strict
       (h_destIdx_eq_destIdx' := by
         dsimp only [destDomainIdx]; simp only [Fin.val_last, Fin.mk.injEq]; omega)
       (f := f₀) (r_challenges := fun (cIdx : Fin (k_steps + ϑ)) => stmtIn.challenges ⟨cIdx, by simp only [Fin.val_last]; omega⟩)
-    -- dsimp only [k_steps, k_pos_idx, f₀, P₀] at h_cast_elim3
     rw [h_cast_elim3]
     have h_cast_elim4 := iterated_fold_congr_steps_index 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0)
       (steps := ℓ) (steps' := k_steps + ϑ)
@@ -1286,7 +1283,6 @@ lemma finalSumcheckStep_verifierCheck_passed
     rw [intermediate_poly_P_base 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (h_ℓ := by omega) (coeffs := coeffs)] at res
     dsimp only [polynomialFromNovelCoeffsF₂]
-    -- dsimp only [coeffs]
     change iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0 ↑(Fin.last ℓ)
       (destIdx := ⟨↑(Fin.last ℓ), by omega⟩) (by simp only [Fin.val_last, Fin.coe_ofNat_eq_mod,
         Nat.zero_mod, zero_add]) (by simp only; omega)
@@ -1337,26 +1333,10 @@ lemma finalSumcheckStep_verifierCheck_passed
   have h_H_eval_at_zero_eq_mul : witIn.H.val.eval (fun _ => (0 : L)) =
       eqTilde stmtIn.ctx.t_eval_point stmtIn.challenges *
       (witIn.f ⟨0, by simp only [zero_mem]⟩) := by
-    rw [h_witIn_f_0_eq_c]
-    have h_H_eq_projectToMidSumcheckPoly := h_wit_structural_invariant.1
-    rw [←Subtype.val_inj] at h_H_eq_projectToMidSumcheckPoly
-    rw [projectToMidSumcheckPoly_eq_prod] at h_H_eq_projectToMidSumcheckPoly
-    rw [h_H_eq_projectToMidSumcheckPoly, map_mul]
-    let h_eval1 := fixFirstVariablesOfMQP_full_eval_eq_eval (ℓ := ℓ)
-        (poly := (BBF_SumcheckMultiplierParam.multpoly stmtIn.ctx).val)
-        (challenges := stmtIn.challenges)
-        (hp := (BBF_SumcheckMultiplierParam.multpoly stmtIn.ctx).property)
-        (x := fun (_ : Fin (ℓ - (Fin.last ℓ).val)) => (0 : L))
-    let h_eval2 := fixFirstVariablesOfMQP_full_eval_eq_eval (ℓ := ℓ)
-        (poly := witIn.t.val)
-        (challenges := stmtIn.challenges)
-        (hp := witIn.t.property)
-        (x := fun (_ : Fin (ℓ - (Fin.last ℓ).val)) => (0 : L))
-    simp only [Fin.val_last, eval_zero']
-    simp only [Fin.val_last, eval_zero'] at h_eval1 h_eval2
-    rw [h_eval1, h_eval2]
-    conv_rhs => rw [h_c_eq]
-    dsimp only [BBF_SumcheckMultiplierParam, BBF_eq_multiplier, Fin.val_last, eqTilde]
+    rw [h_wit_structural_invariant.1]
+    rw [projectToMidSumcheckPoly_at_last_eval]
+    -- ↑witIn.t = witIn.f ⟨0, ⋯⟩
+    rw [h_witIn_f_0_eq_c, h_c_eq]; rfl
 
   -- Combine to finish the proof
   change stmtIn.sumcheck_target = eqTilde stmtIn.ctx.t_eval_point stmtIn.challenges *
