@@ -44,8 +44,14 @@ Returning either:
   - There is no means currently to provide the definition using Mathlib (`sorry` under the hood).
 - Used internally by the Berlekamp-Welch decoder
 -/
-opaque linsolve (A : Matrix (Fin n) (Fin m) F) (b : Fin n → F) : Option (Fin m → F)
-  := sorry
+noncomputable def linsolve (A : Matrix (Fin n) (Fin m) F) (b : Fin n → F) : Option (Fin m → F) :=
+  by
+    classical
+    exact
+      if h : ∃ x, A.mulVec x = b then
+        some (Classical.choose h)
+      else
+        none
 
 /--
 **Solution correctness theorem** for the linear system solver.
@@ -61,7 +67,18 @@ If `linsolve` returns `some x`, then `x` is indeed a solution to the linear syst
 -/
 theorem linsolve_some {A : Matrix (Fin n) (Fin m) F} {b : Fin n → F} {x : Fin m → F}
   (h : linsolve A b = some x)
-  : A.mulVec x = b := sorry
+  : A.mulVec x = b := by
+  classical
+  by_cases hsol : ∃ x, A.mulVec x = b
+  · have hx' : (some (Classical.choose hsol) : Option (Fin m → F)) = some x := by
+      simpa [linsolve, hsol] using h
+    have hx : Classical.choose hsol = x := by
+      injection hx' with hx
+    simpa [hx] using Classical.choose_spec hsol
+  · -- Contradiction: `linsolve` cannot return `some _` in the inconsistent case.
+    have : (none : Option (Fin m → F)) = some x := by
+      simpa [linsolve, hsol] using h
+    cases this
 
 /--
 **Inconsistency theorem** for the linear system solver.
@@ -76,4 +93,9 @@ If `linsolve` returns `none`, the linear system has no solution.
 -/
 theorem linsolve_none {A : Matrix (Fin n) (Fin m) F} {b : Fin n → F}
   (h : linsolve A b = none)
-  : ¬∃ x, A.mulVec x = b := by sorry
+  : ¬∃ x, A.mulVec x = b := by
+  classical
+  intro hsol
+  have : (some (Classical.choose hsol) : Option (Fin m → F)) = none := by
+    simpa [linsolve, hsol] using h
+  cases this

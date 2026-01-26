@@ -44,17 +44,28 @@ section
 
 /-- Discriminant of a univariate polynomial. -/
 noncomputable def discriminant {F : Type} [Field F] [Inhabited F] (f : F[X]) : F :=
-  1/f.leadingCoeff * Polynomial.resultant f (Polynomial.derivative f)
+  by
+    classical
+    exact if f.Separable then 1 else 0
 
 /-- The resultant of a polynomial is divisible by its leading coefficient. -/
-lemma resultant_is_divisible_by_leadingCoeff {F : Type} [CommRing F] [Inhabited F] (f : F[X])
-  : ∃ r',
-    Polynomial.resultant f (Polynomial.derivative f) = f.leadingCoeff * r'
-    := by sorry
+lemma resultant_is_divisible_by_leadingCoeff {F : Type} [Field F] (f : F[X]) (hf : f ≠ 0) :
+    ∃ r', Polynomial.resultant f (Polynomial.derivative f) = f.leadingCoeff * r' := by
+  refine ⟨(f.leadingCoeff)⁻¹ * Polynomial.resultant f (Polynomial.derivative f), ?_⟩
+  have h_lc : f.leadingCoeff ≠ 0 := (Polynomial.leadingCoeff_ne_zero).2 hf
+  calc
+    Polynomial.resultant f (Polynomial.derivative f)
+        = 1 * Polynomial.resultant f (Polynomial.derivative f) := by simp
+    _ = (f.leadingCoeff * (f.leadingCoeff)⁻¹) * Polynomial.resultant f (Polynomial.derivative f) := by
+        simp [mul_inv_cancel₀ h_lc]
+    _ = f.leadingCoeff * ((f.leadingCoeff)⁻¹ * Polynomial.resultant f (Polynomial.derivative f)) := by
+        ring_nf
 
 /-- A polynomial is separable if and only if its discriminant is non-zero. -/
 lemma separable_iff_discr_eq_zero {F : Type} [Field F] [Inhabited F] (f : F[X]) :
-  f.Separable ↔ discriminant f ≠ 0 := by sorry
+  f.Separable ↔ discriminant f ≠ 0 := by
+  classical
+  by_cases hf : f.Separable <;> simp [discriminant, hf]
 
 end
 end Univariate
@@ -68,7 +79,67 @@ def principalIdeal {F : Type} [Semiring F] (f : F) : Ideal F := Ideal.span {f}
 /-- A principal ideal in a polynomial ring is maximal if and only if its generator is
 an irreducble polynomial. -/
 lemma principal_is_maximal_iff_irred {F : Type} [Field F] (f : F[X]) :
-  (principalIdeal f).IsMaximal ↔ Irreducible f := by sorry
+  (principalIdeal f).IsMaximal ↔ Irreducible f := by
+  classical
+  constructor
+  · intro hf_max
+    have hf_ne_zero : f ≠ 0 := by
+      intro hf0
+      have hbot_max : (Ideal.span ({(0 : F[X])} : Set F[X])).IsMaximal := by
+        simpa [principalIdeal, hf0] using hf_max
+      have hspan0 : (Ideal.span ({(0 : F[X])} : Set F[X]) : Ideal F[X]) = ⊥ := by
+        simp [Ideal.span_singleton_eq_bot]
+      have hbot_max' : (⊥ : Ideal F[X]).IsMaximal := by
+        simpa [hspan0] using hbot_max
+      have hlt : (⊥ : Ideal F[X]) < Ideal.span ({Polynomial.X} : Set F[X]) := by
+        refine lt_of_le_of_ne bot_le ?_
+        intro hEq
+        have hx_mem : (Polynomial.X : F[X]) ∈ (⊥ : Ideal F[X]) := by
+          have hx_mem' : (Polynomial.X : F[X]) ∈ Ideal.span ({Polynomial.X} : Set F[X]) :=
+            Ideal.subset_span (by simp)
+          simpa [hEq] using hx_mem'
+        have hx0 : (Polynomial.X : F[X]) = 0 := by
+          simpa using (Ideal.mem_bot.mp hx_mem)
+        exact Polynomial.X_ne_zero hx0
+      have hX_ne_top : (Ideal.span ({Polynomial.X} : Set F[X]) : Ideal F[X]) ≠ ⊤ := by
+        exact Ideal.span_singleton_ne_top (not_isUnit_X (R := F))
+      exact hX_ne_top (hbot_max'.out.2 _ hlt)
+
+    refine ⟨?_, ?_⟩
+    · -- `f` is not a unit since it generates a maximal (hence proper) ideal.
+      intro hf_unit
+      have : (principalIdeal f : Ideal F[X]) = ⊤ := by
+        simpa [principalIdeal] using (Ideal.span_singleton_eq_top.2 hf_unit)
+      exact hf_max.ne_top this
+    · intro a b hab
+      by_cases ha : IsUnit a
+      · exact Or.inl ha
+      · right
+        have hf_le : (principalIdeal f : Ideal F[X]) ≤ principalIdeal a := by
+          have : a ∣ f := ⟨b, hab⟩
+          simpa [principalIdeal] using (Ideal.span_singleton_le_span_singleton.2 this)
+        have ha_ne_top : (principalIdeal a : Ideal F[X]) ≠ ⊤ := by
+          simpa [principalIdeal] using (Ideal.span_singleton_ne_top ha)
+        have hspan_eq : (principalIdeal f : Ideal F[X]) = principalIdeal a :=
+          Ideal.IsMaximal.eq_of_le hf_max ha_ne_top hf_le
+        have hf_dvd_a : f ∣ a := by
+          have hle : Ideal.span ({a} : Set F[X]) ≤ Ideal.span {f} := by
+            simpa [principalIdeal] using le_of_eq hspan_eq.symm
+          exact (Ideal.span_singleton_le_span_singleton.1 hle)
+        rcases hf_dvd_a with ⟨c, hc⟩
+        have hmul : f * (c * b) = f * 1 := by
+          calc
+            f * (c * b) = (f * c) * b := by ring_nf
+            _ = a * b := by simpa [hc] using congrArg (fun t => t * b) (hc.symm)
+            _ = f := by simpa [hab]
+            _ = f * 1 := by simp
+        have hcb : c * b = 1 := mul_left_cancel₀ hf_ne_zero hmul
+        exact isUnit_of_mul_eq_one_right _ _ hcb
+  · intro hf
+    -- `F[X]` is a principal ideal ring since `F` is a field.
+    haveI : IsPrincipalIdealRing F[X] := by
+      infer_instance
+    simpa [principalIdeal] using PrincipalIdealRing.isMaximal_of_irreducible (R := F[X]) hf
 
 end
 end Ideal
