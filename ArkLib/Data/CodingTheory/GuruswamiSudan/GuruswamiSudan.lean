@@ -89,7 +89,7 @@ private lemma multiplicityPairs_eq_disjiUnion (m : ℕ) :
     multiplicityPairs m =
       (Finset.range m).disjiUnion (multiplicityPairsRow m) (by
         classical
-        intro a₁ ha₁ a₂ ha₂ hne
+        intro a₁ _ a₂ _ hne
         refine Finset.disjoint_left.2 ?_
         intro x hx₁ hx₂
         rcases x with ⟨a, b⟩
@@ -176,13 +176,15 @@ private lemma sum_range_sub (m : ℕ) : (∑ a ∈ Finset.range m, (m - a)) = m 
             (m + 1) * m / 2 + (m + 1) = ((m + 1) * m + (m + 1) * 2) / 2 := by
           simpa using h.symm
         have hn : (m + 1) * m + (m + 1) * 2 = (m + 1) * (m + 2) := by
-          simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using (Nat.mul_add (m + 1) m 2).symm
-        simpa [hrewrite, hn, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+          simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using
+            (Nat.mul_add (m + 1) m 2).symm
+        simp [hrewrite, hn, Nat.add_left_comm, Nat.add_comm]
       -- Finish.
       have : (∑ a ∈ Finset.range m.succ, (m.succ - a)) = m.succ * (m.succ + 1) / 2 := by
         rw [hsum_eq, hsum_succ, Finset.sum_range_id]
         -- `m.succ * (m.succ - 1) / 2 + m.succ = m.succ * (m.succ + 1) / 2`.
-        simpa [Nat.succ_eq_add_one, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hdiv
+        simpa [Nat.succ_eq_add_one, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using
+          hdiv
       simpa [Nat.succ_eq_add_one] using this
 
 lemma card_multiplicityPairs (m : ℕ) : (multiplicityPairs m).card = m * (m + 1) / 2 := by
@@ -190,7 +192,7 @@ lemma card_multiplicityPairs (m : ℕ) : (multiplicityPairs m).card = m * (m + 1
   rw [multiplicityPairs_eq_disjiUnion (m := m)]
   rw [Finset.card_disjiUnion]
   -- Each row has size `m - a`.
-  simpa [multiplicityPairsRow, multiplicityPairsRowEmbedding, sum_range_sub (m := m)]
+  simp [multiplicityPairsRow, multiplicityPairsRowEmbedding, sum_range_sub (m := m)]
 
 lemma card_multiplicityPairs_cast (m : ℕ) :
     ((multiplicityPairs m).card : ℝ) = (m : ℝ) * (m + 1) / 2 := by
@@ -202,9 +204,9 @@ lemma card_multiplicityPairs_cast (m : ℕ) :
     ((multiplicityPairs m).card : ℝ) = (m * (m + 1) / 2 : ℝ) := by
       exact_mod_cast hcard
     _ = (m * (m + 1) : ℝ) / 2 := by
-      simpa using (Nat.cast_div_charZero (K := ℝ) (m := m * (m + 1)) (n := 2) hdiv)
+      simp
     _ = (m : ℝ) * (m + 1) / 2 := by
-      simp [Nat.cast_mul, Nat.cast_add]
+      simp
 
 /-- The ring hom shifting a bivariate polynomial by `(x,y)`: `Q(X+x, Y+y)`. -/
 noncomputable def shiftAtRingHom (x y : F) : F[X][Y] →+* F[X][Y] :=
@@ -250,12 +252,14 @@ section Sudan
 
 open Polynomial.Bivariate
 
+omit [DecidableEq F] in
 private lemma eval_eval_eq_eval₂_evalRingHom (Q : Polynomial (Polynomial F)) (p : F[X]) (x : F) :
     (Q.eval p).eval x = Q.eval₂ (Polynomial.evalRingHom x) (p.eval x) := by
   simpa [Polynomial.eval, Polynomial.eval₂] using
     (Polynomial.hom_eval₂ (p := Q) (f := RingHom.id (Polynomial F))
       (g := Polynomial.evalRingHom x) (x := p))
 
+omit [DecidableEq F] in
 private lemma eval_eval_C_eq_eval₂_evalRingHom (Q : Polynomial (Polynomial F)) (a x : F) :
     (Q.eval (Polynomial.C a)).eval x = Q.eval₂ (Polynomial.evalRingHom x) a := by
   simpa [Polynomial.eval, Polynomial.eval₂] using
@@ -298,6 +302,7 @@ private lemma natDegree_eval_le_natWeightedDegree (Q : Polynomial (Polynomial F)
               (Finset.le_sup (s := Q.support)
                 (f := fun m => 1 * (Q.coeff m).natDegree + (k - 1) * m) he))
 
+omit [DecidableEq F] in
 private lemma shiftAt_eval_eq_comp_eval (Q : Polynomial (Polynomial F)) (p : F[X]) (x y : F) :
     (shiftAt Q x y).eval (p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y) =
       (Q.eval p).comp (Polynomial.X + Polynomial.C x) := by
@@ -317,24 +322,30 @@ private lemma shiftAt_eval_eq_comp_eval (Q : Polynomial (Polynomial F)) (p : F[X
   have hcomp :
       (Q.comp (Y + Polynomial.C (Polynomial.C y))).eval₂ φ
             (p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y) =
-          Q.eval₂ φ ((p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y) + Polynomial.C y) := by
+          Q.eval₂ φ
+            ((p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y) + Polynomial.C y) := by
     -- `eval₂` of a composition is evaluation at the evaluated inner polynomial.
-    rw [Polynomial.eval₂_comp (f := φ) (p := Q) (q := (Y + Polynomial.C (Polynomial.C y)))
-      (x := (p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y))]
+    rw [
+      Polynomial.eval₂_comp (f := φ) (p := Q) (q := (Y + Polynomial.C (Polynomial.C y)))
+        (x := (p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y)),
+    ]
     -- Evaluate `Y + y` at `p(X+x) - y`.
-    simp [φ, sub_eq_add_neg, add_assoc, add_left_comm, add_comm]
+    simp [φ, sub_eq_add_neg, add_comm]
   -- Simplify the shifted evaluation point and apply `eval₂_hom` for the `X`-shift.
   calc
     (shiftAt Q x y).eval (p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y)
         = (Q.comp (Y + Polynomial.C (Polynomial.C y))).eval₂ φ
             (p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y) := hmap
-    _ = Q.eval₂ φ ((p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y) + Polynomial.C y) := hcomp
+    _ =
+        Q.eval₂ φ
+          ((p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y) + Polynomial.C y) := hcomp
     _ = Q.eval₂ φ (p.comp (Polynomial.X + Polynomial.C x)) := by simp [sub_eq_add_neg, add_assoc]
     _ = φ (Q.eval p) := by
       -- `p.comp (X + C x)` is exactly `φ p`.
       simpa [Polynomial.eval, φ] using (Polynomial.eval₂_hom (f := φ) (p := Q) (x := p))
     _ = (Q.eval p).comp (Polynomial.X + Polynomial.C x) := by rfl
 
+omit [DecidableEq F] in
 private lemma pow_X_sub_C_dvd_eval_of_vanish {m : ℕ} {Q : F[X][Y]} {x y : F}
     (hvanish :
       ∀ a b, a + b < m → Polynomial.Bivariate.coeff (shiftAt Q x y) a b = 0)
@@ -365,13 +376,15 @@ private lemma pow_X_sub_C_dvd_eval_of_vanish {m : ℕ} {Q : F[X][Y]} {x y : F}
     have hmul : (Polynomial.X ^ (m - b) * Polynomial.X ^ b : F[X]) ∣ g.coeff b * r ^ b :=
       mul_dvd_mul hcoeff hrpow
     have hmul' : (Polynomial.X ^ (m - b + b) : F[X]) ∣ g.coeff b * r ^ b := by
-      simpa [pow_add, mul_assoc, mul_left_comm, mul_comm] using hmul
+      convert hmul using 1
+      · simp [pow_add, mul_comm]
     have hm_le : m ≤ m - b + b := by
       by_cases hb' : b ≤ m
-      · simpa [Nat.sub_add_cancel hb'] using le_rfl
+      · simp [Nat.sub_add_cancel hb']
       · have hm_le_b : m ≤ b := Nat.le_of_not_ge hb'
         have hsub : m - b = 0 := Nat.sub_eq_zero_of_le hm_le_b
-        simpa [hsub] using hm_le_b
+        simp [hsub]
+        exact hm_le_b
     have : (Polynomial.X ^ m : F[X]) ∣ Polynomial.X ^ (m - b + b) := pow_dvd_pow _ hm_le
     exact this.trans hmul'
 
@@ -407,20 +420,21 @@ theorem divides_of_close_of_roots {k D e : ℕ} [NeZero k] {ωs : Fin n ↪ F} {
       -- `A` and the disagreement set partition `univ`.
       have hpartition :
           A.card + (Finset.filter (fun i => ¬ f i = p.eval (ωs i)) Finset.univ).card = n := by
-        simpa [A, hcard_univ] using
+        have h :=
           (Finset.filter_card_add_filter_neg_card_eq_card (s := (Finset.univ : Finset (Fin n)))
             (p := fun i => f i = p.eval (ωs i)))
+        simp [hcard_univ] at h
+        exact h
       -- `Δ₀` is the disagreement count.
       have hdist_def :
           (Finset.filter (fun i => ¬ f i = p.eval (ωs i)) Finset.univ).card =
             Δ₀(f, p.eval ∘ ωs) := by
         -- `hammingDist` uses the predicate `≠`.
-        simpa [hammingDist, ne_comm] using (rfl :
-          (Finset.filter (fun i => ¬ f i = p.eval (ωs i)) Finset.univ).card =
-            (Finset.filter (fun i => f i ≠ (p.eval ∘ ωs) i) Finset.univ).card)
+        simp [hammingDist]
       -- Solve for `A.card`.
-      have := Nat.eq_sub_of_add_eq hpartition
-      simpa [hdist_def, Nat.sub_sub] using this
+      have h' := Nat.eq_sub_of_add_eq hpartition
+      simp [hdist_def] at h'
+      exact h'
     have hA_ge : n - e ≤ A.card := by
       -- Since `Δ₀ ≤ e`, the agreement count is at least `n - e`.
       have : n - e ≤ n - Δ₀(f, p.eval ∘ ωs) := Nat.sub_le_sub_left hdist n
@@ -453,8 +467,7 @@ theorem divides_of_close_of_roots {k D e : ℕ} [NeZero k] {ωs : Fin n ↪ F} {
   · -- Factor theorem: `Q.eval p = 0` implies `(Y - p(X)) ∣ Q`.
     have : Polynomial.IsRoot Q p := by simpa [Polynomial.IsRoot, R] using hR0
     exact (Polynomial.dvd_iff_isRoot).2 this
-  ·
-    have hsubset : (A.image ωs) ⊆ R.roots.toFinset := by
+  · have hsubset : (A.image ωs) ⊆ R.roots.toFinset := by
       intro x hx
       rcases Finset.mem_image.1 hx with ⟨i, hiA, rfl⟩
       have hx0 : R.eval (ωs i) = 0 := hvanish i hiA
@@ -484,8 +497,10 @@ theorem divides_of_close_of_vanish {k m D e : ℕ} [NeZero k] {ωs : Fin n ↪ F
   cases m with
   | zero =>
       -- `D < 0` is impossible.
-      exfalso
-      simpa using (Nat.not_lt_zero D (by simpa using hD))
+      have hD0 : False := by
+        have hD0' := hD
+        simp at hD0'
+      exact hD0.elim
   | succ m =>
       -- Let `A` be the set of agreement positions between `f` and `p.eval ∘ ωs`.
       let A : Finset (Fin n) := Finset.filter (fun i => f i = p.eval (ωs i)) Finset.univ
@@ -495,17 +510,18 @@ theorem divides_of_close_of_vanish {k m D e : ℕ} [NeZero k] {ωs : Fin n ↪ F
             A.card = n - Δ₀(f, p.eval ∘ ωs) := by
           have hpartition :
               A.card + (Finset.filter (fun i => ¬ f i = p.eval (ωs i)) Finset.univ).card = n := by
-            simpa [A, hcard_univ] using
+            have h :=
               (Finset.filter_card_add_filter_neg_card_eq_card (s := (Finset.univ : Finset (Fin n)))
                 (p := fun i => f i = p.eval (ωs i)))
+            simp [hcard_univ] at h
+            exact h
           have hdist_def :
               (Finset.filter (fun i => ¬ f i = p.eval (ωs i)) Finset.univ).card =
                 Δ₀(f, p.eval ∘ ωs) := by
-            simpa [hammingDist, ne_comm] using (rfl :
-              (Finset.filter (fun i => ¬ f i = p.eval (ωs i)) Finset.univ).card =
-                (Finset.filter (fun i => f i ≠ (p.eval ∘ ωs) i) Finset.univ).card)
-          have := Nat.eq_sub_of_add_eq hpartition
-          simpa [hdist_def, Nat.sub_sub] using this
+            simp [hammingDist]
+          have h' := Nat.eq_sub_of_add_eq hpartition
+          simp [hdist_def] at h'
+          exact h'
         have : n - e ≤ n - Δ₀(f, p.eval ∘ ωs) := Nat.sub_le_sub_left hdist n
         simpa [hA] using this
 
@@ -524,8 +540,7 @@ theorem divides_of_close_of_vanish {k m D e : ℕ} [NeZero k] {ωs : Fin n ↪ F
       by_cases hR0 : R = 0
       · have : Polynomial.IsRoot Q p := by simpa [Polynomial.IsRoot, R] using hR0
         exact (Polynomial.dvd_iff_isRoot).2 this
-      ·
-        -- Each agreement point contributes a root of multiplicity ≥ `m+1` to `R`.
+      · -- Each agreement point contributes a root of multiplicity ≥ `m+1` to `R`.
         have hrootMult :
             ∀ x ∈ A.image ωs, Nat.succ m ≤ Polynomial.rootMultiplicity x R := by
           intro x hx
@@ -555,7 +570,7 @@ theorem divides_of_close_of_vanish {k m D e : ℕ} [NeZero k] {ωs : Fin n ↪ F
             (∑ x ∈ R.roots.toFinset, Polynomial.rootMultiplicity x R) = R.roots.card := by
           classical
           have : (∑ x ∈ R.roots.toFinset, R.roots.count x) = R.roots.card := by
-            simpa using Multiset.toFinset_sum_count_eq R.roots
+            exact Multiset.toFinset_sum_count_eq R.roots
           simpa [Polynomial.count_roots] using this
 
         have hconst_le :
@@ -568,12 +583,10 @@ theorem divides_of_close_of_vanish {k m D e : ℕ} [NeZero k] {ωs : Fin n ↪ F
             exact hrootMult x hx
           have hconst :
               (∑ x ∈ A.image ωs, Nat.succ m) = (A.image ωs).card * Nat.succ m := by
-            simpa using
-              (Finset.sum_const_nat (s := A.image ωs) (f := fun _ => Nat.succ m) (m := Nat.succ m)
-                (by simp))
+            simp [Finset.sum_const, mul_comm]
           calc
             Nat.succ m * (A.image ωs).card = (A.image ωs).card * Nat.succ m := by ac_rfl
-            _ = ∑ x ∈ A.image ωs, Nat.succ m := by simpa [hconst]
+            _ = ∑ x ∈ A.image ωs, Nat.succ m := by simp [hconst]
             _ ≤ ∑ x ∈ A.image ωs, Polynomial.rootMultiplicity x R := hpoint
 
         have hsum_le :
@@ -625,7 +638,7 @@ private lemma monomials_eq_disjiUnion (k D : ℕ) :
     monomials k D =
       (Finset.range (D / (k - 1) + 1)).disjiUnion (monomialRow k D) (by
         classical
-        intro j₁ hj₁ j₂ hj₂ hne
+        intro j₁ _ j₂ _ hne
         refine Finset.disjoint_left.2 ?_
         intro x hx₁ hx₂
         rcases x with ⟨i, j⟩
@@ -768,20 +781,19 @@ lemma monomialCount_ge_sq {k D : ℕ} (hk : 2 ≤ k) :
   have hsumj' :
       (∑ j ∈ Finset.range (q + 1), (j : ℝ)) = ((q + 1 : ℕ) : ℝ) * (q : ℝ) / 2 := by
     have hnat : (∑ j ∈ Finset.range (q + 1), j) = (q + 1) * q / 2 := by
-      simpa using (Finset.sum_range_id (n := q + 1))
+      exact (Finset.sum_range_id (n := q + 1))
     have hcast := congrArg (fun t : ℕ => (Nat.castRingHom ℝ) t) hnat
     have hL :
         (Nat.castRingHom ℝ) (∑ j ∈ Finset.range (q + 1), j) =
           ∑ j ∈ Finset.range (q + 1), (j : ℝ) := by
-      simpa using
-        (map_sum (Nat.castRingHom ℝ) (f := fun j : ℕ => j) (s := Finset.range (q + 1)))
+      simp
     have hdiv : 2 ∣ (q + 1) * q := by
       rcases Nat.even_mul_succ_self q with ⟨t, ht⟩
       refine ⟨t, ?_⟩
       calc
-        (q + 1) * q = q * (q + 1) := by simp [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
-        _ = t + t := by simpa using ht
-        _ = 2 * t := by simpa [Nat.two_mul]
+        (q + 1) * q = q * (q + 1) := by simp [Nat.mul_comm]
+        _ = t + t := ht
+        _ = 2 * t := by simp [Nat.two_mul]
     have hR : (Nat.castRingHom ℝ) ((q + 1) * q / 2) = ((q + 1 : ℕ) : ℝ) * (q : ℝ) / 2 := by
       have :
           ((Nat.castRingHom ℝ) ((q + 1) * q / 2) : ℝ) =
@@ -822,7 +834,7 @@ lemma monomialCount_ge_sq {k D : ℕ} (hk : 2 ≤ k) :
           ((q + 1 : ℕ) : ℝ) * ((D + 1 : ℕ) : ℝ) - ((q + 1 : ℕ) : ℝ) * ((D : ℕ) : ℝ) / 2 =
             ((q + 1 : ℕ) : ℝ) * ((D + 2 : ℕ) : ℝ) / 2 := by
         simp [Nat.cast_add, Nat.cast_one, Nat.cast_ofNat, sub_eq_add_neg, div_eq_mul_inv, mul_assoc,
-          mul_comm, mul_left_comm]
+          mul_comm]
         ring
       have hDle : ((D + 1 : ℕ) : ℝ) / 2 ≤ ((D + 2 : ℕ) : ℝ) / 2 := by
         have : ((D + 1 : ℕ) : ℝ) ≤ ((D + 2 : ℕ) : ℝ) := by
@@ -852,7 +864,7 @@ lemma monomialCount_ge_sq {k D : ℕ} (hk : 2 ≤ k) :
       simpa [q] using (Nat.div_add_mod D (k - 1))
     have hrewrite : D + 1 = (k - 1) * q + (D % (k - 1) + 1) := by
       calc
-        D + 1 = ((k - 1) * q + D % (k - 1)) + 1 := by simpa [hdecomp] using rfl
+        D + 1 = ((k - 1) * q + D % (k - 1)) + 1 := by simp [hdecomp]
         _ = (k - 1) * q + (D % (k - 1) + 1) := by omega
     have : (k - 1) * q + (D % (k - 1) + 1) ≤ (k - 1) * q + (k - 1) :=
       Nat.add_le_add_left hmod1 _
@@ -860,14 +872,15 @@ lemma monomialCount_ge_sq {k D : ℕ} (hk : 2 ≤ k) :
       calc
         (k - 1) * q + (k - 1) = (k - 1) * q + 1 * (k - 1) := by simp
         _ = (q + 1) * (k - 1) := by
-              simpa [Nat.mul_add, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
-    simpa [hrewrite, hrhs] using this
+              simp [Nat.mul_add, Nat.mul_comm]
+    convert this using 1
+    · simp [hrhs]
 
   have hq1_ge :
       ((D + 1 : ℕ) : ℝ) / ((k - 1 : ℕ) : ℝ) ≤ ((q + 1 : ℕ) : ℝ) := by
     have hD1R : ((D + 1 : ℕ) : ℝ) ≤ ((q + 1) * (k - 1) : ℕ) := by exact_mod_cast hD1
     have hD1R' : ((D + 1 : ℕ) : ℝ) ≤ ((q + 1 : ℕ) : ℝ) * ((k - 1 : ℕ) : ℝ) := by
-      simpa [Nat.cast_mul] using hD1R
+      exact_mod_cast hD1R
     exact (div_le_iff₀ hkposR).2 (by
       simpa [mul_assoc, mul_left_comm, mul_comm] using hD1R')
 
@@ -940,6 +953,7 @@ private noncomputable def polyOfCoeffsLinear (k D : ℕ) :
     classical
     simp [polyOfCoeffs, Finset.smul_sum, Polynomial.smul_monomial]
 
+omit [DecidableEq F] in
 private lemma polyOfCoeffs_eval_at (k D : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
     (c : monomials (k := k) D → F) (i : Fin n) :
     ((polyOfCoeffs (F := F) k D c).eval (Polynomial.C (f i))).eval (ωs i) =
@@ -947,8 +961,8 @@ private lemma polyOfCoeffs_eval_at (k D : ℕ) (ωs : Fin n ↪ F) (f : Fin n �
         c ij * (f i) ^ ij.1.2 * (ωs i) ^ ij.1.1 := by
   classical
   -- Expand `polyOfCoeffs` and evaluate term-by-term.
-  simp [polyOfCoeffs, Polynomial.eval_finset_sum, Polynomial.eval_monomial, mul_assoc, mul_left_comm,
-    mul_comm]
+  simp [polyOfCoeffs, Polynomial.eval_finset_sum, Polynomial.eval_monomial,
+    mul_assoc, mul_left_comm, mul_comm]
 
 private noncomputable def constraintMap (k D : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
     (monomials (k := k) D → F) →ₗ[F] (Fin n → F) where
@@ -957,11 +971,11 @@ private noncomputable def constraintMap (k D : ℕ) (ωs : Fin n ↪ F) (f : Fin
   map_add' c₁ c₂ := by
     classical
     funext i
-    simp [mul_add, add_mul, Finset.sum_add_distrib]
+    simp [add_mul, Finset.sum_add_distrib]
   map_smul' a c := by
     classical
     funext i
-    simp [mul_assoc, Finset.mul_sum, Finset.sum_mul]
+    simp [mul_assoc, Finset.mul_sum]
 
 private noncomputable def bCoeffLinear (a b : ℕ) : Polynomial (Polynomial F) →ₗ[F] F where
   toFun Q := Polynomial.Bivariate.coeff Q a b
@@ -982,6 +996,7 @@ private noncomputable def constraintMapMul (k D m : ℕ) (ωs : Fin n ↪ F) (f 
       (((shiftAtAlgHom (F := F) (ωs i) (f i)).toLinearMap).comp
         (polyOfCoeffsLinear (F := F) (k := k) (D := D)))
 
+omit [DecidableEq F] in
 private lemma polyOfCoeffs_ne_zero_of_coeff_ne_zero {k D : ℕ} {c : monomials (k := k) D → F}
     (h : ∃ ij, c ij ≠ 0) :
     polyOfCoeffs (F := F) k D c ≠ 0 := by
@@ -1009,7 +1024,7 @@ private lemma polyOfCoeffs_ne_zero_of_coeff_ne_zero {k D : ℕ} {c : monomials (
         have hb₁' : ij.1.1 ≠ b.1.1 := by
           intro hb₁'
           exact hb₁ hb₁'.symm
-        simp [hb₂, Polynomial.coeff_monomial, hb₁, hb₁']
+        simp [hb₂, Polynomial.coeff_monomial, hb₁]
       · simp [hb₂]
     simpa using hsum
   intro h0
@@ -1021,6 +1036,7 @@ private lemma natWeightedDegree_polyOfCoeffs_le {k D : ℕ} [NeZero k]
     (hk : 2 ≤ k) (c : monomials (k := k) D → F) :
     natWeightedDegree (polyOfCoeffs (F := F) k D c) 1 (k - 1) ≤ D := by
   classical
+  have _ := hk
   -- Expand the definition: show every support element respects the bound.
   unfold natWeightedDegree
   refine (Finset.sup_le_iff).2 ?_
@@ -1038,7 +1054,7 @@ private lemma natWeightedDegree_polyOfCoeffs_le {k D : ℕ} [NeZero k]
             ∑ ij ∈ (Finset.univ : Finset (monomials (k := k) D)),
               (if ij.1.2 = j then Polynomial.monomial ij.1.1 (c ij) else 0) := by
         ext i
-        simp [polyOfCoeffs, Polynomial.coeff_sum, Polynomial.coeff_monomial]
+        simp [polyOfCoeffs, Polynomial.coeff_monomial]
       rw [hcoeff]
       refine Finset.sum_eq_zero ?_
       intro ij hij
@@ -1063,7 +1079,7 @@ private lemma natWeightedDegree_polyOfCoeffs_le {k D : ℕ} [NeZero k]
           ∑ ij ∈ (Finset.univ : Finset (monomials (k := k) D)),
             (if ij.1.2 = j then Polynomial.monomial ij.1.1 (c ij) else 0) := by
       ext i
-      simp [polyOfCoeffs, Polynomial.coeff_sum, Polynomial.coeff_monomial]
+      simp [polyOfCoeffs, Polynomial.coeff_monomial]
     -- Use `natDegree` bound for a finite sum.
     have hsum :
         ((polyOfCoeffs (F := F) k D c).coeff j).natDegree ≤
@@ -1125,10 +1141,10 @@ theorem exists_nonzero_interpolant {k D : ℕ} [NeZero k] (hk : 2 ≤ k) {ωs : 
   have hfinrank : Module.finrank F (Fin n → F) < Module.finrank F (S → F) := by
     -- `finrank F (Fin n → F) = n` and `finrank F (S → F) = S.card`.
     have h₁ : Module.finrank F (Fin n → F) = n := by
-      simpa using (Module.finrank_pi F (ι := Fin n))
+      simp
     have h₂ : Module.finrank F (S → F) = S.card := by
       -- `S` is a fintype via the `Finset` coercion.
-      simpa using (Module.finrank_pi F (ι := S))
+      simp
     -- Convert `n < S.card` to the finrank inequality.
     have : n < S.card := by simpa [S, monomialCount] using hcount
     simpa [h₁, h₂] using this
@@ -1149,7 +1165,7 @@ theorem exists_nonzero_interpolant {k D : ℕ} [NeZero k] (hk : 2 ≤ k) {ωs : 
   · intro i
     -- `c ∈ ker Φ` gives all interpolation constraints.
     have hΦ0 : Φ c = 0 := by simpa [LinearMap.mem_ker] using hcKer
-    have : (Φ c) i = 0 := by simpa [hΦ0]
+    have : (Φ c) i = 0 := by simp [hΦ0]
     -- Unfold and identify with the polynomial evaluation.
     -- Rewrite the LHS via `polyOfCoeffs_eval_at`, then use the kernel condition.
     have hEval :
@@ -1174,11 +1190,9 @@ theorem exists_nonzero_interpolant_mul {k D m : ℕ} [NeZero k] (hk : 2 ≤ k) {
     (m := m) ωs f
   have hfinrank : Module.finrank F (Fin n × T → F) < Module.finrank F (S → F) := by
     have h₁ : Module.finrank F (Fin n × T → F) = n * T.card := by
-      simpa using
-        (Module.finrank_pi F (ι := Fin n × T)).trans
-          (by simp [Fintype.card_prod, T])
+      simp [Fintype.card_prod, T]
     have h₂ : Module.finrank F (S → F) = S.card := by
-      simpa using (Module.finrank_pi F (ι := S))
+      simp
     have : n * T.card < S.card := by simpa [S, T, monomialCount] using hcount
     simpa [h₁, h₂] using this
   have hker : LinearMap.ker Φ ≠ ⊥ := LinearMap.ker_ne_bot_of_finrank_lt (f := Φ) hfinrank
@@ -1198,12 +1212,14 @@ theorem exists_nonzero_interpolant_mul {k D m : ℕ} [NeZero k] (hk : 2 ≤ k) {
   · intro i a b hab
     -- Extract the constraint indexed by `(i,(a,b))`.
     have hab_mem : (a, b) ∈ T := by
-      simpa [T] using mem_multiplicityPairs_of_add_lt (m := m) hab
+      change (a, b) ∈ multiplicityPairs m
+      exact mem_multiplicityPairs_of_add_lt (m := m) hab
     let ab : T := ⟨(a, b), hab_mem⟩
     have hΦ0 : Φ c = 0 := by simpa [LinearMap.mem_ker] using hcKer
-    have : (Φ c) (i, ab) = 0 := by simpa [hΦ0]
+    have : (Φ c) (i, ab) = 0 := by simp [hΦ0]
     -- Unfold `Φ` and identify the constraint with the shifted coefficient.
-    simpa [Φ, constraintMapMul, bCoeffLinear, shiftAt, polyOfCoeffsLinear] using this
+    simp [Φ, constraintMapMul, bCoeffLinear, polyOfCoeffsLinear] at this
+    exact this
 
 end Sudan
 
@@ -1252,17 +1268,23 @@ theorem decoder_dist_impl_mem
   have hp_repr : polynomialOfCoeffs (Fin.liftF' (n := k) p.coeff) = p := by
     ext i
     by_cases hi : i < k
-    · simpa [Fin.liftF, hi] using (Fin.liftF_liftF'_of_lt (f := p.coeff) (m := i) (n := k) hi)
+    · have h := Fin.liftF_liftF'_of_lt (f := p.coeff) (m := i) (n := k) hi
+      simp [coeff_polynomialOfCoeffs_eq_coeffs''] at *
+      exact h
     · have hpi : p.coeff i = 0 := by
         apply coeff_eq_zero_of_natDegree_lt
         exact lt_of_lt_of_le h_deg (Nat.le_of_not_gt hi)
-      simp [Fin.liftF, hi, hpi]
+      have hcoeff0 :
+          (polynomialOfCoeffs (Fin.liftF' (n := k) p.coeff)).coeff i = 0 := by
+        simp [coeff_polynomialOfCoeffs_eq_coeffs'', Fin.liftF, hi]
+      simpa [hpi] using hcoeff0
   -- Now `p` is in the (multi)set of candidates and passes the distance filter.
   have hp_mem_candidates : p ∈ messagePolynomials (F := F) k := by
     refine Finset.mem_image.2 ?_
     refine ⟨Fin.liftF' (n := k) p.coeff, Finset.mem_univ _, hp_repr⟩
-  have hp_mem_decoded : p ∈ (messagePolynomials (F := F) k).filter fun p => Δ₀(f, p.eval ∘ ωs) ≤ e :=
-    Finset.mem_filter.2 ⟨hp_mem_candidates, h_dist⟩
+  have hp_mem_decoded :
+      p ∈ (messagePolynomials (F := F) k).filter fun p => Δ₀(f, p.eval ∘ ωs) ≤ e := by
+    exact Finset.mem_filter.2 ⟨hp_mem_candidates, h_dist⟩
   -- Convert to `List` membership.
   simpa [decoder] using (Finset.mem_toList.2 hp_mem_decoded)
 
@@ -1270,7 +1292,7 @@ lemma natDegree_lt_of_mem_messagePolynomials {k : ℕ} [NeZero k] {p : F[X]}
     (hp : p ∈ messagePolynomials (F := F) k) :
     p.natDegree < k := by
   rcases Finset.mem_image.1 hp with ⟨msg, _, rfl⟩
-  simpa using (natDegree_polynomialOfCoeffs_deg_lt_deg (F := F) (deg := k) (coeffs := msg))
+  exact natDegree_polynomialOfCoeffs_deg_lt_deg (F := F) (deg := k) (coeffs := msg)
 
 lemma eval_mem_reedSolomon_code_of_mem_messagePolynomials {k : ℕ} [NeZero k] {ωs : Fin n ↪ F}
     {p : F[X]} (hp : p ∈ messagePolynomials (F := F) k) :
@@ -1279,6 +1301,7 @@ lemma eval_mem_reedSolomon_code_of_mem_messagePolynomials {k : ℕ} [NeZero k] {
   simpa [ReedSolomonCode.encode] using
     (ReedSolomonCode.encode_mem_ReedSolomon_code (F := F) (deg := k) (domain := ωs) (msg := msg))
 
+omit [Fintype F] in
 private lemma eval_injective_of_natDegree_lt {k : ℕ} [NeZero k] (hk : k ≤ n) {ωs : Fin n ↪ F}
     {p q : F[X]} (hp : p.natDegree < k) (hq : q.natDegree < k)
     (h_eval : (p.eval ∘ ωs) = (q.eval ∘ ωs)) :
@@ -1334,7 +1357,7 @@ theorem decoder_length_le_reedSolomon_ball {k r D e : ℕ} [NeZero k] (hk : k �
       Finset F[X] :=
     (messagePolynomials (F := F) k).filter fun p => Δ₀(f, p.eval ∘ ωs) ≤ e
   have hlen : (decoder (F := F) (n := n) k r D e ωs f).length = decoded.card := by
-    simpa [decoder, decoded] using (Finset.length_toList decoded)
+    simp [decoder, decoded]
   let B : Finset (Fin n → F) := ReedSolomonCode.finCarrier (ι := Fin n) (F := F) ωs k
   let ball : Finset (Fin n → F) := B ∩ ({x | Δ₀(x, f) ≤ e} : Finset (Fin n → F))
   have hcard : decoded.card ≤ ball.card := by
@@ -1406,10 +1429,7 @@ theorem decoder_length_le_johnson_bound {k r D e : ℕ} [NeZero k] (hk : k ≤ n
     refine (Finset.one_lt_card).2 ?_
     refine ⟨0, ?_, ReedSolomonCode.constantCode (x := (1 : F)) (ι' := Fin n), ?_, ?_⟩
     · simp [B, ReedSolomonCode.finCarrier]
-    · have : ReedSolomonCode.constantCode (x := (1 : F)) (ι' := Fin n) ∈ ReedSolomon.code ωs k := by
-        simpa using (ReedSolomonCode.constantCode_mem_code (ι := Fin n) (F := F) (α := ωs)
-          (n := k) (x := (1 : F)))
-      simpa [B, ReedSolomonCode.finCarrier] using this
+    · simp [B, ReedSolomonCode.finCarrier]
     · -- Distinctness uses `Nonempty (Fin n)` from `[NeZero n]`.
       have hne : ReedSolomonCode.constantCode (x := (1 : F)) (ι' := Fin n) ≠ (0 : Fin n → F) := by
         intro h0
@@ -1498,15 +1518,24 @@ private lemma proximity_gap_b_le_degree_bound_add_one (k m : ℕ) :
       _ =
           ((m : ℝ) + (1 : ℝ) / 2) *
             (Real.sqrt ((k + 1 : ℕ) : ℝ) / Real.sqrt (n : ℝ)) * (n : ℝ) := by
-        simp [Real.sqrt_div hk]
+        have hn : 0 ≤ (n : ℝ) := by exact_mod_cast (Nat.zero_le n)
+        have hsqrt :
+            Real.sqrt (((k + 1 : ℕ) : ℝ) / (n : ℝ)) =
+              Real.sqrt ((k + 1 : ℕ) : ℝ) / Real.sqrt (n : ℝ) := by
+          exact
+            Real.sqrt_div (x := ((k + 1 : ℕ) : ℝ)) (hx := hk) (y := (n : ℝ))
+        rw [hsqrt]
       _ = b' := rfl
   have hD' :
       proximity_gap_degree_bound (n := n) k m =
         (if h0 : ∃ t : ℕ, b' = t then h0.choose - 1 else Nat.floor b') := by
-    simp [proximity_gap_degree_bound, b', rho]
+    simp [proximity_gap_degree_bound, b']
   by_cases h : ∃ t : ℕ, b = t
   · have h' : ∃ t : ℕ, b' = t := by
-      simpa [hb'] using h
+      rcases h with ⟨t, ht⟩
+      have ht' := ht
+      simp [hb'] at ht'
+      exact ⟨t, ht'⟩
     have hb : b = h'.choose := by
       simpa [hb'] using h'.choose_spec
     have hleNat : h'.choose ≤ h'.choose - 1 + 1 := by
@@ -1563,8 +1592,7 @@ private lemma proximity_gap_count_bound {k m : ℕ} (hk : 2 ≤ k) :
     have hposNat : 0 < monomialCount (k := k) D := by
       exact_mod_cast hpos'
     simpa [hD] using hposNat
-  ·
-    have hkpos : 0 < k - 1 := by omega
+  · have hkpos : 0 < k - 1 := by omega
     have hkposR : (0 : ℝ) < ((k - 1 : ℕ) : ℝ) := by exact_mod_cast hkpos
     have hnpos : 0 < n := Nat.pos_of_ne_zero hn
     have hnposR : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hnpos
@@ -1597,13 +1625,13 @@ private lemma proximity_gap_count_bound {k m : ℕ} (hk : 2 ≤ k) :
       calc
         b ^ 2 =
             (((m : ℝ) + (1 : ℝ) / 2) * Real.sqrt (rho : ℝ) * (n : ℝ)) ^ 2 := by
-          simpa [this]
+          simp [this]
         _ =
             ((m : ℝ) + (1 : ℝ) / 2) ^ 2 * (Real.sqrt (rho : ℝ)) ^ 2 * (n : ℝ) ^ 2 := by
           ring
         _ =
             ((m : ℝ) + (1 : ℝ) / 2) ^ 2 * (rho : ℝ) * (n : ℝ) ^ 2 := by
-          simp [Real.sq_sqrt hrho, mul_assoc, mul_left_comm, mul_comm]
+          simp [Real.sq_sqrt hrho]
     have hb_sq' :
         b ^ 2 =
           ((m : ℝ) + (1 : ℝ) / 2) ^ 2 * ((k + 1 : ℕ) : ℝ) * (n : ℝ) := by
@@ -1622,12 +1650,14 @@ private lemma proximity_gap_count_bound {k m : ℕ} (hk : 2 ≤ k) :
         _ =
             ((m : ℝ) + (1 : ℝ) / 2) ^ 2 * ((rho : ℝ) * (n : ℝ) ^ 2) := by
           ring
+        _ = ((m : ℝ) + (1 : ℝ) / 2) ^ 2 * (((k + 1 : ℕ) : ℝ) * (n : ℝ)) := by
+          simp [hrho_n]
         _ = ((m : ℝ) + (1 : ℝ) / 2) ^ 2 * ((k + 1 : ℕ) : ℝ) * (n : ℝ) := by
-          simp [hrho_n, mul_assoc, mul_left_comm, mul_comm]
+          ring
     have hbase :
         (m : ℝ) * (m + 1) * ((k - 1 : ℕ) : ℝ) <
           ((m : ℝ) + (1 : ℝ) / 2) ^ 2 * ((k + 1 : ℕ) : ℝ) := by
-      simpa using m_mul_m_add_one_mul_lt m k
+      exact m_mul_m_add_one_mul_lt m k
     have hdenpos : (0 : ℝ) < 2 * ((k - 1 : ℕ) : ℝ) := by nlinarith [hkposR]
     have hkposR' : ((k - 1 : ℕ) : ℝ) ≠ 0 := by exact ne_of_gt hkposR
     have hbase_div :
@@ -1641,10 +1671,12 @@ private lemma proximity_gap_count_bound {k m : ℕ} (hk : 2 ≤ k) :
         calc
           (m : ℝ) * (m + 1) * ((k - 1 : ℕ) : ℝ) / (2 * ((k - 1 : ℕ) : ℝ)) =
               ((k - 1 : ℕ) : ℝ) * ((m : ℝ) * (m + 1)) / (((k - 1 : ℕ) : ℝ) * 2) := by
-            simp [mul_comm, mul_left_comm, mul_assoc]
+            simp [mul_comm, mul_left_comm]
           _ = (m : ℝ) * (m + 1) / 2 := by
-            simpa [mul_div_mul_left, hkposR']
-      simpa [hL] using h
+            simp [mul_div_mul_left, hkposR']
+      -- Rewrite the left-hand side using `hL`.
+      rw [hL] at h
+      exact h
     have hbase_mul :
         (n : ℝ) * ((m : ℝ) * (m + 1) / 2) <
           (n : ℝ) *
@@ -1652,17 +1684,18 @@ private lemma proximity_gap_count_bound {k m : ℕ} (hk : 2 ≤ k) :
               (2 * ((k - 1 : ℕ) : ℝ))) := by
       exact mul_lt_mul_of_pos_left hbase_div hnposR
     have hineq :
-        (n : ℝ) * (m : ℝ) * (m + 1) / 2 <
+        (n : ℝ) * ((m : ℝ) * (m + 1) / 2) <
           ((m : ℝ) + (1 : ℝ) / 2) ^ 2 * ((k + 1 : ℕ) : ℝ) * (n : ℝ) /
             (2 * ((k - 1 : ℕ) : ℝ)) := by
-      simpa [mul_assoc, mul_left_comm, mul_comm, div_eq_mul_inv] using hbase_mul
+      -- Fold the quotient into the numerator using `div_eq_mul_inv`.
+      simpa [div_eq_mul_inv, mul_assoc, mul_left_comm, mul_comm] using hbase_mul
     have hineq' :
-        (n : ℝ) * (m : ℝ) * (m + 1) / 2 < b ^ 2 / (2 * ((k - 1 : ℕ) : ℝ)) := by
-      simpa [hb_sq', mul_assoc, mul_left_comm, mul_comm, div_eq_mul_inv] using hineq
+        (n : ℝ) * ((m : ℝ) * (m + 1) / 2) < b ^ 2 / (2 * ((k - 1 : ℕ) : ℝ)) := by
+      simpa [hb_sq', mul_assoc, mul_left_comm, mul_comm] using hineq
     have hcard :
         (n * (multiplicityPairs m).card : ℝ) =
-          (n : ℝ) * (m : ℝ) * (m + 1) / 2 := by
-      simp [Nat.cast_mul, card_multiplicityPairs_cast, mul_assoc, mul_left_comm, mul_comm, div_eq_mul_inv]
+          (n : ℝ) * ((m : ℝ) * (m + 1) / 2) := by
+      simp [card_multiplicityPairs_cast]
     have hineq0 :
         (n * (multiplicityPairs m).card : ℝ) <
           b ^ 2 / (2 * ((k - 1 : ℕ) : ℝ)) := by
@@ -1810,12 +1843,18 @@ private lemma proximity_gap_degree_bound_lt_mul {k m : ℕ} [NeZero n] [NeZero m
       _ =
           ((m : ℝ) + (1 : ℝ) / 2) *
             (Real.sqrt ((k + 1 : ℕ) : ℝ) / Real.sqrt (n : ℝ)) * (n : ℝ) := by
-        simp [Real.sqrt_div hk]
+        have hn : 0 ≤ (n : ℝ) := by exact_mod_cast (Nat.zero_le n)
+        have hsqrt :
+            Real.sqrt (((k + 1 : ℕ) : ℝ) / (n : ℝ)) =
+              Real.sqrt ((k + 1 : ℕ) : ℝ) / Real.sqrt (n : ℝ) := by
+          exact
+            Real.sqrt_div (x := ((k + 1 : ℕ) : ℝ)) (hx := hk) (y := (n : ℝ))
+        rw [hsqrt]
       _ = b' := rfl
   have hD_b' :
       D =
         (if h0 : ∃ t : ℕ, b' = t then h0.choose - 1 else Nat.floor b') := by
-    simp [hD, proximity_gap_degree_bound, b', rho]
+    simp [hD, proximity_gap_degree_bound, b']
   have hD_lt_b : (D : ℝ) < b := by
     by_cases h : ∃ t : ℕ, b = t
     · have h' : ∃ t : ℕ, b' = t := by
@@ -1896,12 +1935,11 @@ lemma guruswami_sudan_for_proximity_gap_existence {k m : ℕ}
         intro n hn
         by_cases h1 : n = 1
         · subst h1
-          simp [Polynomial.coeff_X, Polynomial.coeff_C]
+          simp [Polynomial.coeff_X]
         · by_cases h0 : n = 0
           · subst h0
-            simp [Polynomial.coeff_X, Polynomial.coeff_C, h1]
-          ·
-            have h1' : (1 : ℕ) ≠ n := by simpa [eq_comm] using h1
+            simp [Polynomial.coeff_X]
+          · have h1' : (1 : ℕ) ≠ n := by simpa [eq_comm] using h1
             simp [Polynomial.coeff_X, Polynomial.coeff_C, h1', h0]
       have hdegX_one : Polynomial.Bivariate.degreeX (1 : F[X][Y]) = 0 := by
         classical
@@ -1953,9 +1991,11 @@ lemma guruswami_sudan_for_proximity_gap_existence {k m : ℕ}
         have hk' : k - 1 = 0 := Nat.sub_eq_zero_of_le hk
         have hdeg0 :
             Polynomial.Bivariate.natWeightedDegree Q 1 0 = 0 := by
-          simpa [Q, Polynomial.Bivariate.degreeX_as_weighted_deg] using hdegX_Q
-        simpa [hk'] using hdeg0
-      simpa [hdeg] using (Nat.zero_le (proximity_gap_degree_bound (n := n) k m))
+          have h := hdegX_Q
+          simp [Polynomial.Bivariate.degreeX_as_weighted_deg] at h
+          exact h
+        simp [hk', hdeg0]
+      simp [hdeg]
     · -- Multiplicity constraints: `X^m` divides the shifted polynomial.
       intro i a b hab
       have hXpow :
@@ -2055,8 +2095,7 @@ lemma natDegreeY_le_natWeightedDegree {k : ℕ} (hk : 2 ≤ k) {Q : F[X][Y]} :
   classical
   by_cases hQ : Q = 0
   · simp [Polynomial.Bivariate.natDegreeY, hQ]
-  ·
-    -- Use the coefficient characterization of `natDegree`.
+  · -- Use the coefficient characterization of `natDegree`.
     refine (Polynomial.natDegree_le_iff_coeff_eq_zero).2 ?_
     intro N hN
     by_contra hcoeff
@@ -2104,7 +2143,8 @@ lemma card_linear_factors_le_degreeY {P : Finset F[X]} {Q : F[X][Y]}
     intro p hp
     have h := hdiv p hp
     have h' := Polynomial.map_dvd φ h
-    simpa [Q', Polynomial.map_sub, Polynomial.map_C, Polynomial.map_X] using h'
+    simp [Polynomial.map_sub, Polynomial.map_C, Polynomial.map_X] at h'
+    exact h'
 
   let s : F[X] → Polynomial (RatFunc F) := fun p => Polynomial.X - Polynomial.C (φ p)
 
@@ -2113,12 +2153,14 @@ lemma card_linear_factors_le_degreeY {P : Finset F[X]} {Q : F[X][Y]}
     intro p hp q hq hpq
     have hne : (φ p - φ q) ≠ 0 := by
       have hne' : p ≠ q := by
-        intro hEq; exact hpq (by simpa [hEq])
+        intro hEq; exact hpq (by simp [hEq])
       exact sub_ne_zero.mpr (hφ_inj.ne hne')
     have hunit : IsUnit (φ p - φ q) := by
       simpa [isUnit_iff_ne_zero] using hne
-    simpa [Function.onFun, s, sub_eq_add_neg, add_comm, add_left_comm, add_assoc] using
+    have hcop :=
       (Polynomial.isCoprime_X_sub_C_of_isUnit_sub (a := φ p) (b := φ q) hunit)
+    simp [sub_eq_add_neg] at hcop
+    exact hcop
 
   -- The product of all factors divides `Q'`.
   have hprod_div : Finset.prod P (fun p => s p) ∣ Q' := by
@@ -2146,9 +2188,9 @@ lemma card_linear_factors_le_degreeY {P : Finset F[X]} {Q : F[X][Y]}
             (s a).natDegree + (Finset.prod t (fun p => s p)).natDegree := by
         exact (hmonic.natDegree_mul' (by simpa using hmonic_prod.ne_zero))
       have hdeg_linear : (s a).natDegree = 1 := by
-        simpa [s] using (Polynomial.natDegree_X_sub_C (φ a))
+        simp [s]
       simp [Finset.prod_insert ha, s, hdeg_mul, hdeg_linear, ht,
-        Finset.card_insert_of_notMem ha, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+        Finset.card_insert_of_notMem ha, Nat.add_comm]
 
   -- Combine: product degree ≤ degree of `Q'`.
   have hdeg_le : P.card ≤ Q'.natDegree := by
@@ -2239,17 +2281,17 @@ example :
   intro ωs f
   have hcount : 1 * (multiplicityPairs (m := 1)).card < monomialCount (k := 2) 1 := by
     decide
-  simpa using
+  exact
     (exists_nonzero_interpolant_mul (F := ℚ) (n := 1) (k := 2) (D := 1) (m := 1)
       (by decide : (2 : ℕ) ≤ 2) (ωs := ωs) f hcount)
 
 /-- A small regression test: `divides_of_close_of_vanish` proves a simple divisibility fact. -/
 example :
-    let ωs : Fin 2 ↪ ℚ := ⟨fun i => (i.1 : ℚ), by
+    let _ωs : Fin 2 ↪ ℚ := ⟨fun i => (i.1 : ℚ), by
       intro i j h
       apply Fin.ext
       exact Nat.cast_injective (R := ℚ) (by simpa using h)⟩
-    let f : Fin 2 → ℚ := fun _ => 0
+    let _f : Fin 2 → ℚ := fun _ => 0
     let Q : ℚ[X][Y] := (Polynomial.X : ℚ[X][Y])
     let p : ℚ[X] := 0
     (Polynomial.X - Polynomial.C p) ∣ Q := by
@@ -2269,7 +2311,7 @@ example :
     have : f = p.eval ∘ ωs := by
       funext i
       simp [f, p]
-    simpa [this]
+    simp [this]
   have hD : 1 < 1 * (2 - 0) := by decide
   simpa [p] using
     (divides_of_close_of_vanish (F := ℚ) (n := 2) (k := 2) (m := 1) (D := 1)
