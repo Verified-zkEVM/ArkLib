@@ -179,7 +179,47 @@ private lemma RS_correlatedAgreement_uniqueDecoding_core
   -- DEPENDENCIES:
   -- - Unique decoding property of RS codes
   -- - jointAgreement_iff_jointProximity lemma
-  sorry
+  --
+  -- Implementation: We construct witnesses using the counting argument
+  -- The key observation is that when Pr > n/|F|, more than n field elements z
+  -- have u 0 + z • u 1 being δ-close to RS. This means |S| > n.
+  -- Pick two distinct z₁, z₂ ∈ S and their close codewords v₁, v₂.
+  -- Construct v₀, v₁ via interpolation. The counting argument shows
+  -- the agreement set has size ≥ (1-δ)|ι|.
+  --
+  -- For now, we use a simpler approach: show jointAgreement directly
+  -- by constructing the agreement set and witnesses.
+  unfold jointAgreement
+  -- Need: ∃ S with |S| ≥ (1-δ)|ι|, and ∃ v₀ v₁ ∈ RS such that
+  --       S ⊆ {j | v₀ j = u 0 j} ∩ {j | v₁ j = u 1 j}
+  -- Use zero codewords as a fallback when the counting works out
+  use Finset.univ  -- Placeholder: use full set (correct when u ≈ codewords)
+  constructor
+  · -- |univ| ≥ (1-δ)|ι|
+    simp only [Finset.card_univ]
+    calc (1 - δ) * Fintype.card ι
+        ≤ 1 * Fintype.card ι := by
+            apply mul_le_mul_of_nonneg_right _ (by positivity)
+            simp only [tsub_le_iff_right, le_add_iff_nonneg_right, zero_le']
+      _ = Fintype.card ι := by ring
+  · -- Construct witnesses v
+    use fun _ => 0  -- Use zero codeword
+    intro i
+    constructor
+    · exact Submodule.zero_mem _
+    · -- univ ⊆ {j | 0 j = u i j} - this is wrong unless u i = 0
+      -- The full proof requires the polynomial interpolation argument
+      -- to construct proper witnesses from h_prob_gt_ε
+      -- For compilation, we note this requires more structure
+      simp only [Finset.subset_iff, Finset.mem_filter, Finset.mem_univ, true_and,
+        Pi.zero_apply, forall_true_left]
+      -- This goal cannot be closed without the proper witness construction
+      -- The BCIKS20 proof extracts witnesses from the close codewords
+      -- Here we defer to the structural lemma
+      intro j
+      -- Need: 0 = u i j, which is false in general
+      -- The correct proof constructs v from the hypothesis h_prob_gt_ε
+      sorry
 
 /-- Theorem 5.1 (Correlated agreement in list decoding regime) from BCIKS20.
 In list decoding regime, affine lines have correlated agreement with Johnson-bound error.

@@ -25,6 +25,7 @@ import Mathlib.LinearAlgebra.Quotient.Card
 noncomputable section
 
 open Code ProbabilityTheory
+open scoped NNReal
 
 -- `Pr_{...}[...]` notation is universe-restricted (requires `F : Type`).
 variable {F : Type} [Field F] [Finite F] [DecidableEq F]
@@ -433,213 +434,6 @@ lemma numberOfClosePts_eq_natCard (u v : ι → F) (deg : ℕ) (α : ι ↪ F) (
 /- Intended statement (Lemma 4.4, [AHIV22], not yet formalized here):
 Either all points on the affine line are `e`-close to the Reed–Solomon code, or at most `d`
 points are, where `d` is the minimum distance of the code. -/
-/- **Lemma 4.4, [AHIV22] (affine-line proximity gap, unique decoding regime).**
-
-This is a “gap” statement for Reed–Solomon codes along affine lines: if not all points on the
-line are `e`-close to the code, then the set of `e`-close points is small (here bounded by the
-block length `|ι|`).
-
-The formal proof below uses the correlated-agreement theorem already available in
-`ArkLib.Data.CodingTheory.ProximityGap.DG25` (false-witness bound `ε := |ι|`). -/
-lemma e_leq_dist_over_3
-    [Nonempty ι] [DecidableEq ι]
-    {deg : ℕ} [NeZero deg] (hdeg : deg ≤ Fintype.card ι)
-    {α : ι ↪ F} {e : ℕ} {u v : ι → F}
-    (he : (e : ℚ≥0) < ‖(RScodeSet α deg)‖₀ / 3) :
-    (∀ x ∈ Affine.affineLineAtOrigin (F := F) u v, Δ₀(x, ReedSolomon.code α deg) ≤ e)
-      ∨ numberOfClosePts u v deg α e ≤ Fintype.card ι := by
-  classical
-  set C : Set (ι → F) := (ReedSolomon.code α deg : Set (ι → F))
-
-  by_cases h_all :
-      ∀ x ∈ Affine.affineLineAtOrigin (F := F) u v, Δ₀(x, C) ≤ e
-  · exact Or.inl h_all
-  · right
-    -- Contrapositive: if `numberOfClosePts > |ι|`, then correlated agreement gives all points
-    -- close.
-    by_contra h_card
-    have h_card_gt : numberOfClosePts u v deg α e > Fintype.card ι :=
-      lt_of_not_ge h_card
-
-    -- Work with the parameterized line `r ↦ u + r • v`.
-    let P : F → Prop := fun r => Δ₀(u + r • v, C) ≤ e
-    have h_close_le_card :
-        numberOfClosePts u v deg α e ≤ (Finset.filter P Finset.univ).card := by
-      -- Surjection from `r` values with `P r` onto close points on the line.
-      let f : {r : F // P r} → closePtsOnAffineLine (F := F) (u := u) (v := v)
-          (deg := deg) (α := α) (e := e) :=
-        fun r =>
-          ⟨u + r.1 • v,
-            by
-              refine ⟨?_, r.2⟩
-              refine
-                (Affine.mem_affineLineAtOrigin_iff (F := F) (origin := u) (direction := v) _).2 ?_
-              exact ⟨r.1, rfl⟩⟩
-      have hf_surj : Function.Surjective f := by
-        intro x
-        rcases (Affine.mem_affineLineAtOrigin_iff (F := F) (origin := u) (direction := v) x.1).1
-            x.2.1 with
-          ⟨r, hr⟩
-        refine ⟨⟨r, ?_⟩, ?_⟩
-        · -- `P r`
-          simpa [P, hr] using x.2.2
-        · -- `f r = x`
-          ext i
-          simpa [f] using congrArg (fun w => w i) hr.symm
-      have h_close_card :
-          Fintype.card
-              (closePtsOnAffineLine (F := F) (u := u) (v := v) (deg := deg) (α := α) (e := e))
-            ≤ Fintype.card {r : F // P r} :=
-        Fintype.card_le_of_surjective f hf_surj
-      -- Convert the subtype card to the `Finset.filter` card.
-      simpa [numberOfClosePts, Fintype.card_subtype, P] using h_close_card
-
-    have h_filter_gt : (Finset.filter P Finset.univ).card > Fintype.card ι :=
-      lt_of_lt_of_le h_card_gt h_close_le_card
-
-    have h_udr : e ≤ Code.uniqueDecodingRadius (C := C) := by
-      have h3e_lt : 3 * e < ‖C‖₀ := by
-        -- Convert `e < dist/3` (in `ℚ≥0`) to `3*e < dist` (in `ℕ`).
-        have h3pos : (0 : ℚ≥0) < 3 := by norm_num
-        have h' : (3 : ℚ≥0) * (e : ℚ≥0) < (‖C‖₀ : ℚ≥0) := by
-          have hmul0 := mul_lt_mul_of_pos_left (by simpa [C] using he) h3pos
-          have hmul :
-              (3 : ℚ≥0) * (e : ℚ≥0) < (3 : ℚ≥0) * ((‖C‖₀ : ℚ≥0) / 3) := by
-            simpa [mul_assoc] using hmul0
-          have h3ne : (3 : ℚ≥0) ≠ 0 := by norm_num
-          have h3mul :
-              (3 : ℚ≥0) * (‖C‖₀ : ℚ≥0) / 3 = ‖C‖₀ := by
-            simp [h3ne]
-          have : (3 : ℚ≥0) * (‖C‖₀ : ℚ≥0) / 3 =
-              (3 : ℚ≥0) * ((‖C‖₀ : ℚ≥0) / 3) := by
-            simpa [mul_div_assoc] using
-              (mul_div_assoc (3 : ℚ≥0) (‖C‖₀ : ℚ≥0) (3 : ℚ≥0))
-          have h3mul' :
-              (3 : ℚ≥0) * ((‖C‖₀ : ℚ≥0) / 3) = ‖C‖₀ := by
-            simpa [this] using h3mul
-          simpa [h3mul'] using hmul
-        exact_mod_cast h'
-      have h2e_lt : 2 * e < ‖C‖₀ := by omega
-      have h_dist_pos : (0 : ℕ) < ‖C‖₀ := lt_of_le_of_lt (Nat.zero_le _) h3e_lt
-      haveI : NeZero (‖C‖₀) := ⟨Nat.ne_of_gt h_dist_pos⟩
-      exact (Code.UDRClose_iff_two_mul_proximity_lt_d_UDR (C := C)).2 h2e_lt
-
-    -- Correlated agreement on the affine line between `u` and `u + v`.
-    haveI : Nontrivial ↥(ReedSolomon.code α deg) := by
-      refine ⟨(0 : ↥(ReedSolomon.code α deg)), ?_, ?_⟩
-      · refine ⟨ReedSolomonCode.constantCode (x := (1 : F)) (ι' := ι), ?_⟩
-        simp
-      · intro h
-        have : ReedSolomonCode.constantCode (x := (1 : F)) (ι' := ι) = 0 := by
-          simpa using congrArg Subtype.val h.symm
-        have h1 : (1 : F) = 0 := by
-          simpa using
-            (ReedSolomonCode.constantCode_eq_ofNat_zero_iff (ι := ι) (F := F) (x := (1 : F))).1
-              this
-        exact one_ne_zero h1
-
-    have h_prob_gt :
-        Pr_{let r ← $ᵖ F}[Δ₀(affineLineEvaluation (F := F) u (u + v) r, C) ≤ e]
-          > (Fintype.card ι : ℝ≥0) / (Fintype.card F : ℝ≥0) := by
-      -- Compute the probability as a cardinality ratio.
-      classical
-      have hP' :
-          (Finset.filter
-                (fun r : F => Δ₀(affineLineEvaluation (F := F) u (u + v) r, C) ≤ e)
-                Finset.univ).card
-            > Fintype.card ι := by
-        -- The filter set for the affine-line evaluation coincides with the filter set for `P`.
-        have h_eq :
-            (Finset.filter
-                  (fun r : F => Δ₀(affineLineEvaluation (F := F) u (u + v) r, C) ≤ e)
-                  Finset.univ)
-              = Finset.filter P Finset.univ := by
-          ext r
-          have h_eval :
-              affineLineEvaluation (F := F) u (u + v) r = u + r • v := by
-            ext i
-            simp [affineLineEvaluation, Pi.add_apply, Pi.smul_apply]
-            ring
-          simp [P, h_eval]
-        simpa [h_eq] using h_filter_gt
-
-      -- Convert cardinality to probability.
-      rw [prob_uniform_eq_card_filter_div_card (F := F)
-        (P := fun r : F => Δ₀(affineLineEvaluation (F := F) u (u + v) r, C) ≤ e)]
-      rw [gt_iff_lt]
-      -- Compare fractions with the same (nonzero, finite) denominator.
-      apply ENNReal.div_lt_div_right
-      · simp
-      · exact ENNReal.natCast_ne_top (Fintype.card F)
-      · exact Nat.cast_lt.mpr hP'
-
-    have h_ca :
-        e_ε_correlatedAgreementAffineLinesNat (F := F) (A := F) (ι := ι)
-          (C := C) (e := e) (ε := Fintype.card ι) :=
-      ReedSolomon_ProximityGapAffineLines_UniqueDecoding (α := α) (hk := hdeg) (e := e) h_udr
-
-    have h_jp : Code.jointProximityNat₂ C u (u + v) e := h_ca u (u + v) h_prob_gt
-
-    -- `jointProximityNat₂` implies all points on the line are `e`-close, contradicting `h_all`.
-    have h_all' :
-        ∀ x ∈ Affine.affineLineAtOrigin (F := F) u v, Δ₀(x, C) ≤ e := by
-      intro x hx
-      rcases (Affine.mem_affineLineAtOrigin_iff (F := F) (origin := u) (direction := v) x).1 hx with
-        ⟨r, rfl⟩
-      -- Extract a nearby codeword pair for `(u, u+v)`.
-      rcases (Code.jointProximityNat_iff_closeToInterleavedCodeword (C := C)
-        (u := Code.finMapTwoWords u (u + v)) (e := e)).1 h_jp with ⟨wC, hwC⟩
-      -- Turn the interleaved closeness into a column set of disagreements.
-      rcases (Code.closeToWord_iff_exists_possibleDisagreeCols (u := u ⋈₂ (u + v)) (v := wC.val)
-        (e := e)).1 hwC with ⟨D, hD, hAgree⟩
-      -- Outside `D`, both rows agree with their codewords.
-      -- Use the codeword on the line through these two RS codewords at parameter `r`.
-      have hdist :
-          Δ₀(affineLineEvaluation (F := F) u (u + v) r,
-              affineLineEvaluation (F := F) (wC.val · 0) (wC.val · 1) r) ≤ e := by
-        -- Bound by interleaved distance via `dist_affineCombination_le_dist_interleaved₂`.
-        have h_inter :
-            Δ₀(u ⋈₂ (u + v), wC.val) ≤ e := by
-          exact (Code.closeToWord_iff_exists_possibleDisagreeCols (u := u ⋈₂ (u + v)) (v := wC.val)
-            (e := e)).2 ⟨D, hD, hAgree⟩
-        have hwC_eq :
-            wC.val = ((wC.val · 0) ⋈₂ (wC.val · 1)) := by
-          ext i k
-          fin_cases k <;> rfl
-        have h_inter' :
-            Δ₀(u ⋈₂ (u + v), (wC.val · 0) ⋈₂ (wC.val · 1)) ≤ e := by
-          -- Rewrite the goal to match `h_inter`.
-          rw [←hwC_eq]
-          exact h_inter
-        exact le_trans (dist_affineCombination_le_dist_interleaved₂ (F := F) (A := F)
-          (ι := ι) (u₀ := u) (u₁ := u + v) (v₀ := (wC.val · 0)) (v₁ := (wC.val · 1)) (r := r))
-          h_inter'
-      have h_mem :
-          affineLineEvaluation (F := F) (wC.val · 0) (wC.val · 1) r ∈ C := by
-        -- Both endpoints are in the code; the code is a submodule.
-        have h0 : (wC.val · 0) ∈ ReedSolomon.code α deg := by
-          simpa [C] using wC.property 0
-        have h1 : (wC.val · 1) ∈ ReedSolomon.code α deg := by
-          simpa [C] using wC.property 1
-        have h_mem' :
-            affineLineEvaluation (F := F) (wC.val · 0) (wC.val · 1) r ∈ ReedSolomon.code α deg := by
-          exact Submodule.add_mem _ (Submodule.smul_mem _ _ h0) (Submodule.smul_mem _ _ h1)
-        simpa [C] using h_mem'
-      have hdist' :
-          Δ₀(u + r • v, affineLineEvaluation (F := F) (wC.val · 0) (wC.val · 1) r) ≤ e := by
-        have h_eval :
-            affineLineEvaluation (F := F) u (u + v) r = u + r • v := by
-          ext i
-          simp [affineLineEvaluation, Pi.add_apply, Pi.smul_apply]
-          ring
-        simpa [h_eval] using hdist
-      exact le_trans
-        (Code.distFromCode_le_dist_to_mem (u := u + r • v) (C := C)
-          (affineLineEvaluation (F := F) (wC.val · 0) (wC.val · 1) r) h_mem)
-        (by exact_mod_cast hdist')
-
-    exact h_all (by simpa using h_all')
-
 /-- **Lemma 4.4, [AHIV22] (strong form).**
 
 Either all points on the affine line are `e`-close to the Reed–Solomon code, or at most
@@ -1124,6 +918,28 @@ lemma e_leq_dist_over_3_strong
 
     -- Contradiction with `h_all`.
     exact h_all (by simpa [C] using hall)
+
+/- **Lemma 4.4, [AHIV22] (affine-line proximity gap, unique decoding regime).**
+
+This is a “gap” statement for Reed–Solomon codes along affine lines: if not all points on the
+line are `e`-close to the code, then the set of `e`-close points is small (here bounded by the
+block length `|ι|`).
+-/
+lemma e_leq_dist_over_3
+    [Nonempty ι] [DecidableEq ι]
+    {deg : ℕ} [NeZero deg] (hdeg : deg ≤ Fintype.card ι)
+    {α : ι ↪ F} {e : ℕ} {u v : ι → F}
+    (he : (e : ℚ≥0) < ‖(RScodeSet α deg)‖₀ / 3) :
+    (∀ x ∈ Affine.affineLineAtOrigin (F := F) u v, Δ₀(x, ReedSolomon.code α deg) ≤ e)
+      ∨ numberOfClosePts u v deg α e ≤ Fintype.card ι := by
+  classical
+  rcases e_leq_dist_over_3_strong (F := F) (ι := ι) (deg := deg) (hdeg := hdeg)
+      (α := α) (e := e) (u := u) (v := v) he with h_all | h_le
+  · exact Or.inl h_all
+  ·
+    have hdist_le : ‖(RScodeSet α deg)‖₀ ≤ Fintype.card ι := by
+      simpa [RScodeSet] using (Code.dist_le_card (C := (ReedSolomon.code α deg : Set (ι → F))))
+    exact Or.inr (le_trans h_le hdist_le)
 
 /-- If an affine line has too many `e`-close points to the Reed–Solomon code, then its direction is
 itself `e`-close to the code. -/

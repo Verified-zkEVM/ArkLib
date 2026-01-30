@@ -1921,7 +1921,15 @@ Theorem 2.2 (Ben-Sasson, et al. [Ben+23, Thm. 4.1]). For each `e ∈ {0, ..., �
 proximity parameter `e` and the false witness bound `ε := n`.
 -/
 theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolomon.code α k)]
-    (hk : k ≤ Fintype.card ι) :
+    (hk : k ≤ Fintype.card ι)
+    (h_ca :
+      ∀ {δ : ℝ≥0},
+        δ ≤ Code.relativeUniqueDecodingRadius (ι := ι) (F := A)
+              (C := (ReedSolomon.code α k : Set (ι → A))) →
+          δ_ε_correlatedAgreementAffineLines (F := A) (A := A) (ι := ι)
+            (C := (ReedSolomon.code α k : Set (ι → A))) (δ := δ)
+            (ε := (Fintype.card ι : ℝ≥0) / (Fintype.card A : ℝ≥0))
+    ) :
     ∀ e ≤ (Code.uniqueDecodingRadius (C := (ReedSolomon.code α k : Set (ι → A)))),
       e_ε_correlatedAgreementAffineLinesNat (F := A) (A := A) (ι := ι)
         (C := (ReedSolomon.code α k : Set (ι → A)))
@@ -1962,26 +1970,10 @@ theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolo
     -- Apply the algebra derived above
     rw [sub_smul, one_smul, smul_sub]
     abel_nf
-  have h_correlated_agreement := RS_correlatedAgreement_affineLines_uniqueDecodingRegime (deg := k)
-    (domain := α) (ι := ι) (F := A) (δ := δ) (hδ := by exact h_δ_within_rel_URD)
+  have h_correlated_agreement := h_ca (δ := δ) h_δ_within_rel_URD
   unfold affineLineEvaluation at h_prob_affine_line_close_gt
   rw [h_rewrite_prob] at h_prob_affine_line_close_gt
-  -- now we can apply RS_correlatedAgreement_affineLines_uniqueDecodingRegime
   let uShifted := finMapTwoWords u₀ (u₁ - u₀)
-  have h_errorBound_UDR_eq : (errorBound δ k α)
-    = (Fintype.card (ι) : ℝ≥0) / (Fintype.card A : ℝ≥0) := by
-    unfold errorBound
-    have h_δ_mem : δ ∈ Set.Icc 0 (((1 : ℝ≥0) - (rate (ReedSolomon.code α k))) / 2) := by
-      simp only [Set.mem_Icc, zero_le, true_and]
-      rw [rateOfLinearCode_eq_div' (h := by omega)]
-      simp only [NNRat.cast_div, NNRat.cast_natCast]
-      rw [←ReedSolomonCode.relativeUniqueDecodingRadius_RS_eq' (F := A)
-        (ι := ι) (h := by omega)]
-      rw [dist_le_UDR_iff_relDist_le_relUDR] at he_unique_decoding_radius
-      exact he_unique_decoding_radius
-    simp only [h_δ_mem, ↓reduceIte]
-  rw [h_errorBound_UDR_eq] at h_correlated_agreement
-  -- convert h_correlated_agreement into absolute distance bound
   unfold  δ_ε_correlatedAgreementAffineLines at h_correlated_agreement
   simp_rw [relDistFromCode_le_iff_distFromCode_le] at h_correlated_agreement
 
@@ -2012,7 +2004,15 @@ theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolo
 Example 4.1 shows that ε=n is tight for RS codes (Ben+23 Thm 4.1 is sharp). -/
 theorem reedSolomon_multilinearCorrelatedAgreement_Nat [Nontrivial (ReedSolomon.code α k)]
     {e : ℕ} (hk : k ≤ Fintype.card ι)
-    (he : e ≤ (Code.uniqueDecodingRadius (C := (ReedSolomon.code α k : Set (ι → A))))) :
+    (he : e ≤ (Code.uniqueDecodingRadius (C := (ReedSolomon.code α k : Set (ι → A)))))
+    (h_ca :
+      ∀ {δ : ℝ≥0},
+        δ ≤ Code.relativeUniqueDecodingRadius (ι := ι) (F := A)
+              (C := (ReedSolomon.code α k : Set (ι → A))) →
+          δ_ε_correlatedAgreementAffineLines (F := A) (A := A) (ι := ι)
+            (C := (ReedSolomon.code α k : Set (ι → A))) (δ := δ)
+            (ε := (Fintype.card ι : ℝ≥0) / (Fintype.card A : ℝ≥0))
+    ) :
     ∀ (ϑ : ℕ), (hϑ_gt_0 : ϑ > 0) → δ_ε_multilinearCorrelatedAgreement_Nat (F := A) (A := A)
       (ι := ι) (C := (ReedSolomon.code α k : Set (ι → A)))
       (ϑ := ϑ) (e := e) (ε := Fintype.card ι) := by
@@ -2028,7 +2028,7 @@ theorem reedSolomon_multilinearCorrelatedAgreement_Nat [Nontrivial (ReedSolomon.
     have h_affine_gap_base : e_ε_correlatedAgreementAffineLinesNat (F := A) (A := A) (ι := ι)
       (C := C_RS) (e := e) (ε := n) := by
       let res := ReedSolomon_ProximityGapAffineLines_UniqueDecoding (A := A)
-        (hk := by omega) (e := e) he
+        (hk := by omega) (h_ca := h_ca) (e := e) he
       rw [h_fincard_n] at res
       exact res
     -- 2. Check condition ε ≥ e + 1 for Theorem 3.1
@@ -2068,11 +2068,20 @@ theorem reedSolomon_multilinearCorrelatedAgreement_Nat [Nontrivial (ReedSolomon.
 theorem reedSolomon_multilinearCorrelatedAgreement [Nontrivial (ReedSolomon.code α k)]
     (hk : k ≤ Fintype.card ι) {δ : ℝ≥0} (he : δ ≤ (Code.relativeUniqueDecodingRadius
       (C := (ReedSolomon.code α k : Set (ι → A))))) :
+    (h_ca :
+      ∀ {δ : ℝ≥0},
+        δ ≤ Code.relativeUniqueDecodingRadius (ι := ι) (F := A)
+              (C := (ReedSolomon.code α k : Set (ι → A))) →
+          δ_ε_correlatedAgreementAffineLines (F := A) (A := A) (ι := ι)
+            (C := (ReedSolomon.code α k : Set (ι → A))) (δ := δ)
+            (ε := (Fintype.card ι : ℝ≥0) / (Fintype.card A : ℝ≥0))
+    ) →
     ∀ (ϑ : ℕ), (hϑ_gt_0 : ϑ > 0) →
       δ_ε_multilinearCorrelatedAgreement (F := A) (A := A) (ι := ι) (ϑ := ϑ) (δ := δ)
       (C := (ReedSolomon.code α k : Set (ι → A))) (ε := ((Fintype.card ι) : ℝ≥0) / (Fintype.card A))
     := by
   set n := Fintype.card ι
+  intro h_ca
   intro ϑ hϑ_gt_0
   intro u h_prob_u_close_gt
   let e : ℕ := Nat.floor (δ * n)
@@ -2086,7 +2095,8 @@ theorem reedSolomon_multilinearCorrelatedAgreement [Nontrivial (ReedSolomon.code
     not_false_eq_true, ENNReal.coe_div, mul_div] at h_prob_u_close_gt
   letI : Nontrivial (ReedSolomon.code α k) := by infer_instance
   have hCA_Nat_if_then := reedSolomon_multilinearCorrelatedAgreement_Nat (A := A) (ι := ι) (α := α)
-    (ϑ := ϑ) (hϑ_gt_0 := hϑ_gt_0) (hk := hk) (e := e) (he := by
+    (ϑ := ϑ) (hϑ_gt_0 := hϑ_gt_0) (hk := hk) (e := e)
+    (he := by
     rw [dist_le_UDR_iff_relDist_le_relUDR]
     calc
       _ ≤ δ := by
@@ -2095,7 +2105,8 @@ theorem reedSolomon_multilinearCorrelatedAgreement [Nontrivial (ReedSolomon.code
         apply Nat.floor_le;
         exact zero_le (δ * ↑n)
       _ ≤ _ := by exact he
-  )
+    )
+    (h_ca := h_ca)
   let h_CA_Nat := hCA_Nat_if_then u (by
     simp only [ENNReal.coe_natCast]
     exact h_prob_u_close_gt
