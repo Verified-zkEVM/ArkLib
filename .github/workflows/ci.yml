@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       # uses lean standard action with all default input values
-      - uses: leanprover/lean-action@v1.3.0
+      - uses: leanprover/lean-action@v1.4.0
         with:
           # Do not run linter for now, too many errors
           lint: false
