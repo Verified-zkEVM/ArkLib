@@ -112,8 +112,7 @@ theorem rightpad_eq_if_rightpad_eq_of_ge (l l' : List α) (m n n' : Nat) (h : n 
     max n l.length = (rightpad n unit l).length := Eq.symm (rightpad_length n unit l)
     _ = (rightpad n' unit l').length := congrArg length hEq
     _ = max n' l'.length := rightpad_length n' unit l'
-  simp [hLen]
-  sorry
+  simp only [hLen, hEq]
 
 @[simp] theorem rightpad_twice_eq_rightpad_max (m n : Nat) (unit : α) (l : List α) :
     rightpad n unit (rightpad m unit l) = rightpad (max m n) unit l := by
@@ -166,9 +165,23 @@ theorem matchSize_comm (l₁ : List α) (l₂ : List α) (unit : α) :
 /-- `List.matchSize` returns two equal lists iff the two lists agree at every index `i : Nat`
   (extended by `unit` if necessary). -/
 theorem matchSize_eq_iff_forall_eq (l₁ l₂ : List α) (unit : α) :
-    (fun (x, y) => x = y) (matchSize l₁ l₂ unit) ↔ ∀ i : Nat, l₁.getD i unit = l₂.getD i unit :=
-  by sorry
-    -- TODO: finish this lemma based on `rightpad_getD_eq_getD`
+    (fun (x, y) => x = y) (matchSize l₁ l₂ unit) ↔ ∀ i : Nat, l₁.getD i unit = l₂.getD i unit := by
+  simp only [matchSize]
+  constructor
+  · intro hEq i
+    have h1 := rightpad_getD_eq_getD l₁ l₂.length unit i
+    have h2 := rightpad_getD_eq_getD l₂ l₁.length unit i
+    rw [← h1, ← h2, hEq]
+  · intro hGetD
+    have hLen : (l₁.rightpad l₂.length unit).length = (l₂.rightpad l₁.length unit).length := by
+      simp only [rightpad_length]; omega
+    apply List.ext_getElem hLen
+    intro i h1 h2
+    have := hGetD i
+    rw [← rightpad_getD_eq_getD l₁ l₂.length unit i] at this
+    rw [← rightpad_getD_eq_getD l₂ l₁.length unit i] at this
+    simp only [getD_eq_getElem _ _ h1, getD_eq_getElem _ _ h2] at this
+    exact this
 
 /-- `List.dropWhile` but starting from the last element. Performed by `dropWhile` on the reversed
   list, followed by a reversal. -/

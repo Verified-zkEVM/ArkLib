@@ -42,18 +42,25 @@ def findSum (l : List α) (j : α) : Option α := l.partialSum.find? (j < ·)
 
 -- TODO: extend theorems to more general types than just `ℕ`
 
+theorem sum_mem_partialSum (l : List ℕ) : l.sum ∈ l.partialSum := by
+  induction l with
+  | nil => simp [partialSum]
+  | cons a l' ih =>
+    simp only [partialSum_succ, sum_cons, singleton_append, mem_cons, mem_map]
+    right
+    exact ⟨l'.sum, ih, rfl⟩
+
+theorem partialSum_length (l : List ℕ) : l.partialSum.length = l.length + 1 := by
+  induction l with
+  | nil => simp [partialSum]
+  | cons a l' ih =>
+    simp only [partialSum_succ, singleton_append, length_cons, length_map, ih]
+
 theorem findSum_of_le_sum {l : List ℕ} {j : ℕ} (h : j < l.sum) : ∃ n, findSum l j = some n := by
-  match l with
-  | [] => simp only [sum_nil, not_lt_zero'] at h ⊢
-  | a :: l' =>
-    simp at h
-    sorry
-    -- by_cases h' : j < a
-    -- · use a
-    --   simp [findSum, h', findSome?_cons]
-    -- · simp [findSum, h'] at h
-    --   specialize @findSum_of_le_sum l' (j - a)
-    --   simp at h
+  unfold findSum
+  rw [← Option.isSome_iff_exists]
+  rw [List.find?_isSome]
+  exact ⟨l.sum, sum_mem_partialSum l, by simp [h]⟩
 
 -- Pinpoint the first index in the list whose partial sum is more than `j`
 def findSumIdx (l : List α) (j : α) : ℕ := l.partialSum.findIdx (j < ·)
