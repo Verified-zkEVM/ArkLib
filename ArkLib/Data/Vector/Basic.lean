@@ -46,8 +46,9 @@ lemma cons_get_eq {α} {n : ℕ} (hd : α) (tl : Vector α n) (i : Fin (n + 1)) 
     simp only [h_i_val, beq_iff_eq, ↓reduceDIte]
     simp only [cons, get, insertIdx] -- unfold everything
     simp only [Array.insertIdx_zero, Fin.coe_cast, Fin.coe_ofNat_eq_mod, Nat.zero_mod,
-      List.size_toArray, List.length_cons, List.length_nil, zero_add, zero_lt_one,
-      Array.getElem_append_left, List.getElem_toArray, List.getElem_cons_zero]
+      List.size_toArray, List.length_cons, List.length_nil, _root_.zero_add, zero_lt_one,
+      Array.getElem_append_left, List.getElem_toArray]
+    rfl
   else
     simp only [h_i_val, beq_iff_eq, ↓reduceDIte]
     simp only [cons, get, insertIdx] -- unfold everything
@@ -167,7 +168,7 @@ lemma dotProduct_cons [AddCommMonoid R] [Mul R] (a : R) (b : Vector R n) (c : R)
   simp_rw [foldl_eq_toList_foldl]
   rw [cons_toList_eq_List_cons]
   rw [List.foldl_eq_of_comm' (hf:=by exact fun a b c ↦ add_right_comm a b c)]
-  rw [add_comm]
+  rw [_root_.add_comm]
 
 /-- A matrix represented as iterated vectors in row-major order.
 `m` is the number of rows, and `n` is the number of columns -/
@@ -230,7 +231,7 @@ lemma dotProduct_cons (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
     subst h_n
     simp only [cons_empty_tail_eq_nil]
     simp only [Nat.reduceAdd, Finset.univ_unique, Fin.default_eq_zero, Fin.isValue,
-      Finset.sum_singleton, Finset.univ_eq_empty, Finset.sum_empty, add_zero]
+      Finset.sum_singleton, Finset.univ_eq_empty, Finset.sum_empty, _root_.add_zero]
     rfl
   else
     -- ⊢ ∑ i, (cons a b).get i * (cons c d).get i = a * c + ∑ i, b.get i * d.get i

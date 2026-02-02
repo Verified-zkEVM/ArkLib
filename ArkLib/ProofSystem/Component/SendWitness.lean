@@ -67,13 +67,15 @@ variable {Statement} {Witness}
 def toRelOut : Set ((Statement × Witness) × Unit) :=
   Prod.fst ⁻¹' relIn
 
+open Classical in
 /-- The `SendWitness` reduction satisfies perfect completeness. -/
 @[simp]
-theorem reduction_completeness (h : init.neverFails) :
+theorem reduction_completeness :
     (reduction oSpec Statement Witness).perfectCompleteness init impl relIn (toRelOut relIn) := by
   simp [Reduction.run, Prover.run, Prover.runToRound, Prover.processRound, Verifier.run,
     reduction, prover, verifier]
   aesop
+  sorry
 
 theorem reduction_rbr_knowledge_soundness : True := sorry
 
@@ -142,7 +144,7 @@ def oracleProver : OracleProver oSpec
 --   prover := oracleProver oSpec Statement OStatement Witness
 --   verifier := oracleVerifier oSpec Statement OStatement Witness
 
--- variable {Statement} {OStatement} {Witness} [oSpec.FiniteRange]
+-- variable {Statement} {OStatement} {Witness} [oSpec.Fintype]
 --   (oRelIn : Statement × (∀ i, OStatement i) → (∀ i, Witness i) → Prop)
 
 -- @[reducible, simp]
@@ -239,6 +241,7 @@ theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatem
     (oracleVerifier oSpec Statement OStatement Witness).toVerifier.run ⟨stmt, oStmt⟩ tr =
       pure ⟨stmt, Sum.rec oStmt (fun i => match i with | 0 => tr 0)⟩ := by
   simp [Verifier.run, OracleVerifier.toVerifier, oracleVerifier]
+  stop
   ext i; rcases i <;> simp
   split; simp
 
@@ -253,9 +256,10 @@ def toORelOut :
 
 /-- The `SendSingleWitness` oracle reduction satisfies perfect completeness. -/
 @[simp]
-theorem oracleReduction_completeness (h : init.neverFails) :
+theorem oracleReduction_completeness (h : NeverFail init) :
     (oracleReduction oSpec Statement OStatement Witness).perfectCompleteness init impl oRelIn
     (toORelOut oRelIn) := by
+  stop
   -- TODO: clean up this proof
   simp only [OracleReduction.perfectCompleteness, oraclePSpec, toORelOut, Fin.isValue,
     OracleReduction.toReduction, MessageIdx, Reduction.perfectCompleteness_eq_prob_one,

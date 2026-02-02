@@ -23,7 +23,7 @@ of the same type. The relation is `a = b`.
 open OracleSpec OracleComp OracleQuery OracleInterface ProtocolSpec
 
 variable {ι : Type} (oSpec : OracleSpec ι) (OStatement : Type) [OracleInterface OStatement]
-  [inst : SelectableType (Query OStatement)]
+  [inst : SampleableType (Query OStatement)]
 
 namespace RandomQuery
 
@@ -122,7 +122,7 @@ theorem oracleReduction_completeness (hInit : init.neverFails) :
     simp [StateT.run]
     unfold SimOracle.append
     simp [challengeQueryImpl, liftM, monadLift, MonadLift.monadLift, StateT.lift]
-    have := SelectableType.probFailure_selectElem (β := Query OStatement)
+    have := SampleableType.probFailure_selectElem (β := Query OStatement)
     aesop
   · aesop
 
@@ -267,7 +267,7 @@ def relOut : (StmtOut OStatement × ∀ i, OStmtOut OStatement i) → WitOut →
 -- def pSpec : ProtocolSpec 1 := ![(.V_to_P, Query OStatement)]
 
 -- instance : ∀ i, OracleInterface ((pSpec OStatement).Message i) | ⟨0, h⟩ => nomatch h
--- @[reducible, simp] instance : ∀ i, SelectableType ((pSpec OStatement).Challenge i)
+-- @[reducible, simp] instance : ∀ i, SampleableType ((pSpec OStatement).Challenge i)
 --   | ⟨0, _⟩ => by dsimp [pSpec, ProtocolSpec.Challenge]; exact inst
 
 -- instance : OracleContext.Lens

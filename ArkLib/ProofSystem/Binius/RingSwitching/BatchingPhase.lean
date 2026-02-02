@@ -50,7 +50,7 @@ namespace Binius.RingSwitching.BatchingPhase
 
 variable (κ : ℕ) [NeZero κ]
 variable (L : Type) [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
-  [SelectableType L]
+  [SampleableType L]
 variable (K : Type) [Field K] [Fintype K] [DecidableEq K]
 variable [Algebra K L]
 variable (β : Basis (Fin κ → Fin 2) K L)

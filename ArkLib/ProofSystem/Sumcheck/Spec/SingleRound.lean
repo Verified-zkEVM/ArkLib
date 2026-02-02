@@ -166,16 +166,16 @@ instance instOI₂ : ∀ i, OracleInterface
 instance instOracleInterfaceMessagePSpec : ∀ i, OracleInterface ((pSpec R deg).Message i) :=
   instOracleInterfaceMessageAppend
 
-instance instST₁ : ∀ i, SelectableType ((⟨!v[.P_to_V], !v[R⦃≤ deg⦄[X]]⟩ ++ₚ !p[]).Challenge i) :=
-  instSelectableTypeChallengeAppend
+instance instST₁ : ∀ i, SampleableType ((⟨!v[.P_to_V], !v[R⦃≤ deg⦄[X]]⟩ ++ₚ !p[]).Challenge i) :=
+  instSampleableTypeChallengeAppend
 
-instance instST₂ [SelectableType R] : ∀ i, SelectableType
+instance instST₂ [SampleableType R] : ∀ i, SampleableType
     ((⟨!v[.P_to_V], !v[R⦃≤ deg⦄[X]]⟩ ++ₚ !p[] ++ₚ ⟨!v[.V_to_P], !v[R]⟩).Challenge i) :=
-  instSelectableTypeChallengeAppend
+  instSampleableTypeChallengeAppend
 
-instance instSelectableTypeChallengePSpec [SelectableType R] :
-    ∀ i, SelectableType ((pSpec R deg).Challenge i) :=
-  instSelectableTypeChallengeAppend
+instance instSampleableTypeChallengePSpec [SampleableType R] :
+    ∀ i, SampleableType ((pSpec R deg).Challenge i) :=
+  instSampleableTypeChallengeAppend
 
 namespace Simpler
 
@@ -306,7 +306,7 @@ def oracleReduction : OracleReduction oSpec (StmtIn R) (OStmtIn R deg) Unit
 
 open NNReal
 
-variable [SelectableType R]
+variable [SampleableType R]
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 theorem oracleReduction_perfectCompleteness (hInit : init.neverFails) :
@@ -398,7 +398,7 @@ def prover : OracleProver oSpec (StmtIn R) (OStmtIn R deg) Unit (StmtOut R) (OSt
 
   output := fun ⟨polyLE, chal⟩ => pure (((polyLE.val.eval chal, chal), fun _ => polyLE), ())
 
-variable [DecidableEq R] [SelectableType R]
+variable [DecidableEq R] [SampleableType R]
 
 /-- The verifier for the simple description of a single round of sum-check -/
 def verifier : Verifier oSpec (StmtIn R × (∀ i, OStmtIn R deg i))
@@ -435,7 +435,7 @@ def oracleReduction : OracleReduction oSpec (StmtIn R) (OStmtIn R deg) Unit
 open Reduction
 open scoped NNReal
 
--- instance : ∀ i, SelectableType (OracleInterface.Response (Challenge (pSpec R deg) i))
+-- instance : ∀ i, SampleableType (OracleInterface.Response (Challenge (pSpec R deg) i))
 --   | ⟨1, _⟩ => by dsimp [pSpec, OracleInterface.Response]; infer_instance
 
 -- instance : Nonempty []ₒ.QueryLog := by simp [QueryLog]; infer_instance
@@ -581,7 +581,7 @@ def extractorLens (i : Fin n) : Extractor.Lens
   stmt := oStmtLens R n deg D i
   wit := Witness.InvLens.trivial
 
-variable {ι : Type} (oSpec : OracleSpec ι) [DecidableEq R] [SelectableType R]
+variable {ι : Type} (oSpec : OracleSpec ι) [DecidableEq R] [SampleableType R]
 
 /-- The verifier for the `i`-th round of the sum-check protocol -/
 def verifier (i : Fin n) : Verifier oSpec
@@ -606,13 +606,13 @@ def oracleReduction (i : Fin n) : OracleReduction oSpec
     (StatementRound R n i.succ) (OracleStatement R n deg) Unit (pSpec R deg) :=
   (Simple.oracleReduction R deg D oSpec).liftContext (oCtxLens R n deg D i)
 
-omit [SelectableType R] in
+omit [SampleableType R] in
 @[simp]
 lemma reduction_verifier_eq_verifier {i : Fin n} :
     (reduction R n deg D oSpec i).verifier = verifier R n deg D oSpec i := by
   rfl
 
-omit [SelectableType R] in
+omit [SampleableType R] in
 @[simp]
 lemma oracleReduction_verifier_eq_verifier {i : Fin n} :
     (oracleReduction R n deg D oSpec i).verifier = oracleVerifier R n deg D oSpec i := by
@@ -623,7 +623,7 @@ section Security
 open Reduction
 open scoped NNReal
 
-variable {R : Type} [CommSemiring R] [DecidableEq R] [SelectableType R]
+variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
   {n : ℕ} {deg : ℕ} {m : ℕ} {D : Fin m ↪ R}
   {ι : Type} {oSpec : OracleSpec ι} (i : Fin n)
 
@@ -847,11 +847,11 @@ def oracleVerifier (i : Fin n) : OracleVerifier oSpec
     let evals : List R ← (List.finRange m).mapM
       (fun i => do
         return ← query
-          (spec := (oSpec ++ₒ ([OracleStatement R n deg]ₒ ++ₒ [(pSpec R deg).Message]ₒ)))
+          (spec := (oSpec + ([OracleStatement R n deg]ₒ + [(pSpec R deg).Message]ₒ)))
             (Sum.inr <| Sum.inr default) (D i))
     guard (evals.sum = target)
     let newTarget ← query
-      (spec := (oSpec ++ₒ ([OracleStatement R n deg]ₒ ++ₒ [(pSpec R deg).Message]ₒ)))
+      (spec := (oSpec + ([OracleStatement R n deg]ₒ + [(pSpec R deg).Message]ₒ)))
         (Sum.inr <| Sum.inr default) (by simpa only using chal default)
     letI newTarget : R := by simpa only
     pure ⟨newTarget, Fin.snoc challenges (chal default)⟩

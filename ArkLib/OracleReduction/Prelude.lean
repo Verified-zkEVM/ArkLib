@@ -53,8 +53,8 @@ instance {α : Type*} {n : ℕ} [VCVCompatible α] : VCVCompatible (Fin n → α
 
 instance {α : Type*} {n : ℕ} [VCVCompatible α] : VCVCompatible (Vector α n) where
 
-/-- `Sampleable` extends `VCVCompabible` with `SelectableType` -/
-class Sampleable (α : Type) extends VCVCompatible α, SelectableType α
+/-- `Sampleable` extends `VCVCompabible` with `SampleableType` -/
+class Sampleable (α : Type) extends VCVCompatible α, SampleableType α
 
 instance {α : Type} [Sampleable α] : DecidableEq α := inferInstance
 

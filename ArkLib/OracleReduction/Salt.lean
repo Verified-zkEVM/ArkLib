@@ -98,18 +98,19 @@ instance [Oₘ : ∀ i, OracleInterface (pSpec.Message i)] :
     ∀ i, OracleInterface ((pSpec.addSalt Salt).Message i) :=
   fun i => {
     Query := (Oₘ i).Query
-    Response := (Oₘ i).Response
-    answer := fun msg => (Oₘ i).answer (by
-      dsimp [addSalt] at msg ⊢
+    toOC.spec := (Oₘ i).Response
+    toOC.impl q := by
+      refine ReaderT.mk fun msg => ((Oₘ i).toOC.impl q).run ?_
+      simp only [Message, addSalt, addSalt_dir, Subtype.coe_eta] at msg
       split at msg
-      · exact msg.1
-      · haveI := i.property; simp_all)
+      · refine msg.1
+      · refine msg
   }
 
---  (i : ChallengeIdx saltedPSpec) → SelectableType (Challenge saltedPSpec i)
+--  (i : ChallengeIdx saltedPSpec) → SampleableType (Challenge saltedPSpec i)
 
-instance [inst : ∀ i, SelectableType (pSpec.Challenge i)] :
-    ∀ i, SelectableType ((pSpec.addSalt Salt).Challenge i) :=
+instance [inst : ∀ i, SampleableType (pSpec.Challenge i)] :
+    ∀ i, SampleableType ((pSpec.addSalt Salt).Challenge i) :=
   fun i => by
     dsimp at i ⊢; split
     · haveI := i.property; simp_all

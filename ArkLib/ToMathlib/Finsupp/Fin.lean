@@ -22,21 +22,6 @@ In this context, we prove some usual properties of these operations, analogous t
 `Data.Fin.Tuple.Basic`.
 -/
 
-namespace Fin
-
-section BigOperators
-
-variable {α : Type*} {β : Type*}
-
-@[to_additive (attr := simp)]
-theorem prod_insertNth [CommMonoid β] {n : ℕ} (x : β) (f : Fin n → β) (p : Fin (n + 1)) :
-    ∏ i, insertNth p x f i = x * ∏ i, f i := by
-  simp [prod_univ_succAbove (insertNth p x f) p]
-
-end BigOperators
-
-end Fin
-
 open Function
 
 noncomputable section
@@ -276,7 +261,7 @@ variable {M N : Type*}
 lemma sum_insertNth [AddCommMonoid M] {n : ℕ} (σ : Fin n →₀ M) (i : M) (p : Fin (n + 1)) :
     (insertNth p i σ).sum (fun _ e ↦ e) = i + σ.sum (fun _ e ↦ e) := by
   rw [sum_fintype _ _ (fun _ => rfl), sum_fintype _ _ (fun _ => rfl)]
-  exact Fin.sum_insertNth i σ p
+  apply Fin.sum_insertNth
 
 lemma sum_insertNth' [AddCommMonoid M] [AddCommMonoid N] {n : ℕ} (σ : Fin n →₀ M) (i : M)
     (p : Fin (n + 1)) (f : Fin (n+1) → M → N) (h : ∀ x, f x 0 = 0) :

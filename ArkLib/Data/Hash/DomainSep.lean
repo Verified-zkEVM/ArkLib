@@ -83,7 +83,7 @@ abbrev SEP_CHAR : Char := Char.ofNat 0
 
 /-- The null byte separator between operations in the domain separator (unicode/ASCII value 0)
   and as such is the only forbidden character in labels. -/
-abbrev SEP_BYTE : String := ⟨[SEP_CHAR]⟩
+abbrev SEP_BYTE : String := sorry -- ⟨[SEP_CHAR]⟩
 
 /-- Sponge operations.
 

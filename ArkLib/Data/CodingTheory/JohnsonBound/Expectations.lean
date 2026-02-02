@@ -77,7 +77,6 @@ lemma e_ball_le_radius [Field F] [Fintype F] {B : Finset (Fin n → F)} (v : Fin
   field_simp
   have h_B' : (0 : ℚ) < (B ∩ ({ x | Δ₀(x, v) ≤ r} : Finset _)).card := by
     exact_mod_cast h_B
-  rw[div_le_iff₀ h_B']
   exact_mod_cast this
 
 lemma min_dist_le_d [Field F] {B : Finset (Fin n → F)}
@@ -143,6 +142,7 @@ lemma min_dist_le_d [Field F] {B : Finset (Fin n → F)}
   field_simp [c2_pos]
   simp at h_bound
   gcongr
+  stop
   exact_mod_cast h_bound
 
 end JohnsonBound

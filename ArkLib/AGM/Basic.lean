@@ -49,7 +49,7 @@ variable (ι : Type) (p : ℕ)
 /-- The group operation oracle allows an adversary to perform the group operation on group elements
   stored at the indices `i` and `j` (if they are both defined), storing the result at index `k`. -/
 @[reducible]
-def GroupOpOracle : OracleSpec Unit := fun _ => (ι × ι × ι, Unit)
+def GroupOpOracle : OracleSpec (ι × ι × ι) := fun _ => Unit
 
 /-- The group exponent oracle allows an adversary to compute the group element at the index `i`
   raised to the power `a`, storing the result at index `j`.
@@ -57,23 +57,23 @@ def GroupOpOracle : OracleSpec Unit := fun _ => (ι × ι × ι, Unit)
   Technically, this oracle can be implemented with just the group operation oracle, but we allow
   this for faster implementation. -/
 @[reducible]
-def GroupExpOracle : OracleSpec Unit := fun _ => (ι × ZMod p × ι, Unit)
+def GroupExpOracle : OracleSpec (ι × ZMod p × ι) := fun _ => Unit
 
 /-- The group equality oracle allows an adversary to check if the group elements stored at the
   indices `i` and `j` are equal. -/
 @[reducible]
-def GroupEqOracle : OracleSpec Unit := fun _ => (ι × ι, Bool)
+def GroupEqOracle : OracleSpec (ι × ι) := fun _ => Bool
 
 variable (bitLength : ℕ)
 
 /-- The group encoding oracle allows an adversary to get the bit encoding of a group element. -/
 @[reducible]
-def GroupEncodeOracle : OracleSpec Unit := fun _ => (ι, BitVec bitLength)
+def GroupEncodeOracle : OracleSpec ι := fun _ => BitVec bitLength
 
 /-- The group decoding oracle allows an adversary to insert a group element corresponding to a
   bit encoding into the table, if the bit encoding is valid. -/
 @[reducible]
-def GroupDecodeOracle : OracleSpec Unit := fun _ => (BitVec bitLength × ι, Unit)
+def GroupDecodeOracle : OracleSpec (BitVec bitLength × ι) := fun _ => Unit
 
 end OracleSpec
 
@@ -84,8 +84,8 @@ variable {ι : Type} [DecidableEq ι] {G : Type} [Group G] {p : ℕ}
 /-- Implementation of the group operation oracle, which changes some underlying table of group
   elements, using the group operation `op`. If the indices `i` and `j` does not contain group
   elements yet, the oracle will fail. -/
-def implGroupOpOracle : QueryImpl (GroupOpOracle ι) (StateT (GroupValTable ι G) Option) where
-  impl | query _ ⟨i, j, k⟩ => fun table =>
+def implGroupOpOracle : QueryImpl (GroupOpOracle ι) (StateT (GroupValTable ι G) Option) :=
+  fun | ⟨i, j, k⟩ => fun table =>
     match table i, table j with
     | some g₁, some g₂ => some ((), table.update k (some (g₁ * g₂)))
     | _, _ => none
@@ -93,8 +93,8 @@ def implGroupOpOracle : QueryImpl (GroupOpOracle ι) (StateT (GroupValTable ι G
 /-- Implementation of the group exponent oracle, which computes the group element at the index `i`
   raised to the power `a`, storing the result at index `j`. This will fail if the index `i` does
   not contain a group element yet. -/
-def implGroupExpOracle : QueryImpl (GroupExpOracle ι p) (StateT (GroupValTable ι G) Option) where
-  impl | query _ ⟨i, a, j⟩ => fun table =>
+def implGroupExpOracle : QueryImpl (GroupExpOracle ι p) (StateT (GroupValTable ι G) Option) :=
+  fun | ⟨i, a, j⟩ => fun table =>
     match table i with
     | some g => some ((), table.update j (some (g ^ a.val)))
     | none => none
@@ -102,8 +102,8 @@ def implGroupExpOracle : QueryImpl (GroupExpOracle ι p) (StateT (GroupValTable 
 /-- Implementation of the group equality oracle, which checks if the group elements at the indices
   `i` and `j` are equal, and leave the table unchanged. -/
 def implGroupEqOracle [BEq G] :
-    QueryImpl (GroupEqOracle ι) (StateT (GroupValTable ι G) Option) where
-  impl | query _ ⟨i, j⟩ => fun table =>
+    QueryImpl (GroupEqOracle ι) (StateT (GroupValTable ι G) Option) :=
+  fun | ⟨i, j⟩ => fun table =>
     match table i, table j with
     | some g₁, some g₂ => some (g₁ == g₂, table)
     | _, _ => none
@@ -114,8 +114,8 @@ variable {bitLength : ℕ}
   at the index `i`, leaving the table unchanged. This will fail if the index `i` does not contain
   a group element yet. -/
 def implGroupEncodeOracle [Serialize G (BitVec bitLength)] :
-    QueryImpl (GroupEncodeOracle ι bitLength) (StateT (GroupValTable ι G) Option) where
-  impl | query _ i => fun table =>
+    QueryImpl (GroupEncodeOracle ι bitLength) (StateT (GroupValTable ι G) Option) :=
+  fun | i => fun table =>
     match table i with
     | some g => some (serialize g, table)
     | none => none
@@ -124,8 +124,8 @@ def implGroupEncodeOracle [Serialize G (BitVec bitLength)] :
   bit encoding into the table, if the bit encoding is valid. This will fail if the bit encoding
   is invalid. -/
 def implGroupDecodeOracle [DeserializeOption G (BitVec bitLength)] :
-    QueryImpl (GroupDecodeOracle ι bitLength) (StateT (GroupValTable ι G) Option) where
-  impl | query _ (b, i) => fun table =>
+    QueryImpl (GroupDecodeOracle ι bitLength) (StateT (GroupValTable ι G) Option) :=
+  fun | (b, i) => fun table =>
     match DeserializeOption.deserialize b with
     | some g => some ((), table.update i (some g))
     | none => none
@@ -148,8 +148,8 @@ TODO: need to be sure this definition is correct.
 -/
 def Adversary (ι : Type) (G : Type) (p : ℕ) (bitLength : ℕ) (α : Type) : Type _ :=
   ReaderT (GroupValTable ι G)
-    (OracleComp (GroupOpOracle ι ++ₒ GroupExpOracle ι p ++ₒ
-      GroupEqOracle ι ++ₒ GroupEncodeOracle ι bitLength))
+    (OracleComp (GroupOpOracle ι + GroupExpOracle ι p +
+      GroupEqOracle ι + GroupEncodeOracle ι bitLength))
     (List ι × α)
 
 namespace Adversary

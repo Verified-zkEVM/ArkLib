@@ -252,7 +252,7 @@ structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
   numRounds : ℕ
   pSpec : ProtocolSpec numRounds
   Oₘ: ∀ j, OracleInterface (pSpec.Message j)
-  O_challenges: ∀ (i : pSpec.ChallengeIdx), SelectableType (pSpec.Challenge i)
+  O_challenges: ∀ (i : pSpec.ChallengeIdx), SampleableType (pSpec.Challenge i)
   -- /-- The evaluation protocol Π' as an OracleReduction -/
   oracleReduction : OracleReduction (oSpec:=[]ₒ)
     (StmtIn := MLPEvalStatement L ℓ') (OStmtIn:= OStmtIn)
@@ -303,7 +303,7 @@ open Module Binius.BinaryBasefold
 
 variable (κ : ℕ) [NeZero κ]
 variable (L : Type) [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
-  [SelectableType L]
+  [SampleableType L]
 variable (K : Type) [Field K] [Fintype K] [DecidableEq K]
 variable [Algebra K L]
 variable (β : Basis (Fin κ → Fin 2) K L)

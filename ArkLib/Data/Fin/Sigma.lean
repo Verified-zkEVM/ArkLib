@@ -454,10 +454,11 @@ def ranges {n : ℕ} (a : Fin n → ℕ) : (i : Fin n) → Fin (a i) → ℕ :=
   This is the dependent version of `Fin.divNat`.
 -/
 def divSum? {m : ℕ} (n : Fin m → ℕ) (k : ℕ) : Option (Fin m) :=
-  find (fun i => k < ∑ j, n (castLE i.isLt j))
+  Fin.find? (fun i => k < ∑ j, n (castLE i.isLt j))
 
 theorem divSum?_is_some_iff_lt_sum {m : ℕ} {n : Fin m → ℕ} {k : ℕ} :
     (divSum? n k).isSome ↔ k < ∑ i, n i := by
+  stop
   constructor
   · intro h
     simp only [divSum?, Nat.succ_eq_add_one, castLE, isSome_find_iff] at h
@@ -479,6 +480,7 @@ def divSum {m : ℕ} {n : Fin m → ℕ} (k : Fin (∑ j, n j)) : Fin m :=
 
 theorem sum_le_of_divSum?_eq_some {m : ℕ} {n : Fin m → ℕ} {k : Fin (∑ j, n j)} {i : Fin m}
     (hi : divSum? n k = some i) : ∑ j : Fin i, n (castLE i.isLt.le j) ≤ k := by
+  stop
   by_cases hi' : 0 = i.val
   · rw [← Fin.sum_congr' _ hi']
     simp only [Finset.univ_eq_empty, Finset.sum_empty, _root_.zero_le]
@@ -490,6 +492,7 @@ theorem sum_le_of_divSum?_eq_some {m : ℕ} {n : Fin m → ℕ} {k : Fin (∑ j,
 
 def modSum {m : ℕ} {n : Fin m → ℕ} (k : Fin (∑ j, n j)) : Fin (n (divSum k)) :=
   ⟨k - ∑ j, n (Fin.castLE (divSum k).isLt.le j), by
+    stop
     have divSum_mem : divSum k ∈ divSum? n k := by
       simp only [divSum, divSum?, Option.mem_def, Option.some_get]
     have hk : k < ∑ j, n (Fin.castLE (divSum k).isLt j) := Fin.find_spec _ divSum_mem
@@ -517,10 +520,10 @@ def finSigmaFinEquiv' {m : ℕ} {n : Fin m → ℕ} : (i : Fin m) × Fin (n i) �
     (by
       intro a
       induction n using Fin.consInduction with
-      | h0 =>
+      | elim0 =>
         simp only [univ_eq_empty, sum_empty] at a
         exact Fin.elim0 a
-      | h =>
+      | cons =>
         ext
         exact Nat.add_sub_cancel' (Fin.sum_le_of_divSum?_eq_some (Option.some_get _).symm))
 

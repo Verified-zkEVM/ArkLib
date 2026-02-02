@@ -177,6 +177,8 @@ def dropLastWhile (p : α → Bool) (l : List α) : List α :=
 
 lemma zipWith_const {α β : Type _} {f : α → β → β} {l₁ : List α} {l₂ : List β}
   (h₁ : l₁.length = l₂.length) (h₂ : ∀ a b, f a b = b) : l₁.zipWith f l₂ = l₂ := by
-  induction' l₁ with hd tl ih generalizing l₂ <;> rcases l₂ <;> aesop
+  induction l₁ generalizing l₂ with
+  | nil => rcases l₂ <;> aesop
+  | cons _ _ _ => rcases l₂ <;> aesop
 
 end List

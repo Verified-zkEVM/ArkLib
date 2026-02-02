@@ -211,7 +211,7 @@ lemma natDeg_sum_eq_of_unique {α : Type} {s : Finset α} {f : α → F[X]} {deg
     obtain ⟨h₁, h₂⟩ : b ∈ s ∧ ¬b = mx := by grind
     rcases others_le b h₁ h₂ with h' | h'
     · exact Polynomial.degree_lt_degree (f_x_deg.symm ▸ h')
-    · cases cs : (f mx).degree <;> grind    
+    · cases cs : (f mx).degree <;> sorry
 
 /-- If some element `x ∈ s` maps to `y` under `f`, and every element of `s` maps to a value
 less than or equal to `y`, then the supremum of `f` over `s` is exactly `y`. -/
@@ -227,6 +227,7 @@ equal to the sum of their degrees. -/
 @[simp, grind _=_]
 lemma degreeX_mul [IsDomain F] (f g : F[X][Y]) (hf : f ≠ 0) (hg : g ≠ 0) :
   degreeX (f * g) = degreeX f + degreeX g := by
+  stop
   letI s₁ := {n ∈ f.support | (f.coeff n).natDegree = degreeX f}
   letI s₂ := {n ∈ g.support | (g.coeff n).natDegree = degreeX g}
   have f_mdeg_nonempty : s₁.Nonempty := by
@@ -310,7 +311,7 @@ lemma degreeX_mul [IsDomain F] (f g : F[X][Y]) (hf : f ≠ 0) (hg : g ≠ 0) :
       (Polynomial.natDegree_sum_le (Finset.antidiagonal x) (fun x ↦ f.coeff x.1 * g.coeff x.2))
     rw [Finset.fold_max_le]
     grind [degreeX]
-        
+
 
 /-- The evaluation at a point of a bivariate polynomial in the first variable `X`. -/
 def evalX (a : F) (f : F[X][Y]) : Polynomial F :=

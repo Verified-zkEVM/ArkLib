@@ -190,7 +190,7 @@ singletonSpec
 coinSpec
 unifSpec
 OracleSpec.DecidableEq
-OracleSpec.FiniteRange
+OracleSpec.Fintype
 OracleSpec.OracleQuery
 OracleComp
 QueryImpl

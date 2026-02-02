@@ -142,7 +142,7 @@ def StmtIn := R
 -- def relOut : (StmtOut R n) × (∀ i, OStmtOut R d n i) → WitOut → Prop :=
 --   fun ⟨⟨target, challenges⟩, polyOracle⟩ _ => (polyOracle ()).1 ⸨challenges⸩ = target
 
-variable [DecidableEq R] [SelectableType R]
+variable [DecidableEq R] [SampleableType R]
 
 /-- The verifier for the (full) sum-check protocol -/
 @[reducible]
@@ -188,13 +188,13 @@ def oracleReduction : OracleReduction oSpec
     (pSpec := fun _ => SingleRound.pSpec R deg)
     (SingleRound.oracleReduction R n deg D oSpec)
 
-omit [SelectableType R] in
+omit [SampleableType R] in
 @[simp]
 lemma reduction_verifier_eq_verifier :
     (reduction R deg D n oSpec).verifier = verifier R deg D n oSpec := by
   rfl
 
-omit [SelectableType R] in
+omit [SampleableType R] in
 @[simp]
 lemma oracleReduction_verifier_eq_oracleVerifier :
     (oracleReduction R deg D n oSpec).verifier = oracleVerifier R deg D n oSpec := by

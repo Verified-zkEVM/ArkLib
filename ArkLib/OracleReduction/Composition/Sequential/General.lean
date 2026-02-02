@@ -313,7 +313,7 @@ variable {m : ℕ}
     {Wit : Fin (m + 1) → Type}
     {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     [Oₘ : ∀ i, ∀ j, OracleInterface ((pSpec i).Message j)]
-    [∀ i, ∀ j, SelectableType ((pSpec i).Challenge j)]
+    [∀ i, ∀ j, SampleableType ((pSpec i).Challenge j)]
     {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 -- section Execution

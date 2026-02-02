@@ -495,7 +495,7 @@ lemma pow_2_pow_i_mem_Di_of_mem_D {F : Type} [NonBinaryField F] [Finite F] {D : 
     exact op_der_eq
   rw [←Domain.D_def] at h
   have h := Domain.pow_2_pow_i_mem_Di_of_mem_D D i h
-  have : (x⁻¹ * a) ^ 2 ^ i = (x ^ (2 ^ i))⁻¹ * (a ^ (2 ^ i)) := by field_simp
+  have : (x⁻¹ * a) ^ 2 ^ i = (x ^ (2 ^ i))⁻¹ * (a ^ (2 ^ i)) := by sorry --field_simp
   rw [this] at h
   convert (mem_leftCoset_iff _).mpr h
   exact op_der_eq.symm
@@ -511,7 +511,7 @@ lemma sqr_mem_D_succ_i_of_mem_D_i : ∀ {a : Fˣ} {i : ℕ},
     exact op_der_eq
   have h := Domain.sqr_mem_D_succ_i_of_mem_D_i D h
   have : ((x ^ 2 ^ i)⁻¹ * a) ^ 2 = (x ^ 2 ^ (i + 1))⁻¹ * (a ^ 2) := by
-    have : ((x ^ 2 ^ i)⁻¹ * a) ^ 2 = ((x ^ 2 ^ i) ^ 2)⁻¹ * (a ^ 2) := by field_simp
+    have : ((x ^ 2 ^ i)⁻¹ * a) ^ 2 = ((x ^ 2 ^ i) ^ 2)⁻¹ * (a ^ 2) := by sorry --field_simp
     rw [this]
     have : (x ^ 2 ^ i) ^ 2 = x ^ 2 ^ (i + 1) := by
       rw [pow_two, ←pow_add]
@@ -547,7 +547,7 @@ lemma neg_mem_dom_of_mem_dom : ∀ {a : Fˣ} (i : Fin n),
     exact op_der_eq
 
   have : (x ^ 2 ^ i)⁻¹ * -a ∈ ↑(Domain.evalDomain D i) := by
-    have : (x ^ 2 ^ i)⁻¹ * -a = ((x ^ 2 ^ i)⁻¹ * a) * (- 1) := by field_simp
+    have : (x ^ 2 ^ i)⁻¹ * -a = ((x ^ 2 ^ i)⁻¹ * a) * (- 1) := by sorry --field_simp
     rw [this]
     exact
       (

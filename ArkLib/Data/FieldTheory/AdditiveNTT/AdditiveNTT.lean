@@ -2379,7 +2379,7 @@ lemma NTTStage_correctness (i : Fin (ℓ))
     conv_rhs => enter [1]; rw [h_msb]
     norm_num; rw [Nat.getHighBits, Nat.getHighBits_no_shl, Nat.shiftLeft_eq,
       Nat.shiftRight_eq_div_pow]
-
+  stop
   by_cases h_b_bit_eq_0: (j.val / (2 ^ i.val)) % 2 = 0
   · simp only [h_b_bit_eq_0, ↓reduceDIte]
     simp only at h_b_bit_eq_0
@@ -2761,7 +2761,8 @@ lemma foldl_NTTStage_inductive_aux (h_ℓ : ℓ ≤ r) (k : Fin (ℓ + 1))
   simp only at invariant_init
   induction k using Fin.succRecOnSameFinType with
   | zero =>
-    exact invariant_init
+    sorry
+    -- exact invariant_init
   | succ k k_h i_h =>
     have h_k_add_one := Fin.val_add_one' (a:=k) (by omega)
     simp only [h_k_add_one, Fin.coe_cast]

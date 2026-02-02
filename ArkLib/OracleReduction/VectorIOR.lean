@@ -116,7 +116,7 @@ def VectorIOP
   OracleProof []ₒ Statement OStatement Witness (vPSpec.toProtocolSpec A)
 
 variable {n : ℕ} {vPSpec : ProtocolSpec.VectorSpec n} {A : Type}
-  [OracleComp.SelectableType A]
+  [SampleableType A]
 
 open scoped NNReal
 
@@ -135,12 +135,12 @@ class IsSecure
     (vectorIOR : VectorIOR StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut vPSpec A) where
 
   /-- The reduction is perfectly complete. -/
-  is_complete : vectorIOR.perfectCompleteness (pure ()) ⟨isEmptyElim⟩ relIn relOut
+  is_complete : vectorIOR.perfectCompleteness (pure ()) isEmptyElim relIn relOut
 
   /-- The reduction is round-by-round knowledge sound with respect to `relIn`, `relOut`,
     `ε_rbr`, and the state function. -/
   is_rbr_knowledge_sound :
-    vectorIOR.verifier.rbrKnowledgeSoundness (pure ()) ⟨isEmptyElim⟩ relIn relOut ε_rbr
+    vectorIOR.verifier.rbrKnowledgeSoundness (pure ()) isEmptyElim relIn relOut ε_rbr
 
 -- TODO: define V-IOR of proximity
 
@@ -160,12 +160,12 @@ class IsSecure
     (vectorIOP : VectorIOP Statement OStatement Witness vPSpec A) where
 
   /-- The reduction is perfectly complete. -/
-  is_complete : vectorIOP.perfectCompleteness (pure ()) ⟨isEmptyElim⟩ relation
+  is_complete : vectorIOP.perfectCompleteness (pure ()) isEmptyElim relation
 
   /-- The reduction is round-by-round knowledge sound with respect to `relIn`, `relOut`,
     `ε_rbr`, and the state function. -/
   is_rbr_knowledge_sound :
-    OracleProof.rbrKnowledgeSoundness (pure ()) ⟨isEmptyElim⟩ relation vectorIOP.verifier ε_rbr
+    OracleProof.rbrKnowledgeSoundness (pure ()) isEmptyElim relation vectorIOP.verifier ε_rbr
 
 /-- A vector IOP **of proximity** is **secure** with respect to completeness relation
   `completeRelation`, soundness relation `soundRelation`, and round-by-round knowledge error
@@ -179,11 +179,11 @@ class IsSecureWithGap
     (vectorIOP : VectorIOP Statement OStatement Witness vPSpec A) where
 
   /-- The reduction is perfectly complete. -/
-  is_complete : vectorIOP.perfectCompleteness (pure ()) ⟨isEmptyElim⟩ completeRelation
+  is_complete : vectorIOP.perfectCompleteness (pure ()) isEmptyElim completeRelation
 
   /-- The reduction is round-by-round knowledge sound with respect to `relIn`, `relOut`,
     `ε_rbr`, and the state function. -/
   is_rbr_knowledge_sound :
-    OracleProof.rbrKnowledgeSoundness (pure ()) ⟨isEmptyElim⟩ soundRelation vectorIOP.verifier ε_rbr
+    OracleProof.rbrKnowledgeSoundness (pure ()) isEmptyElim soundRelation vectorIOP.verifier ε_rbr
 
 end VectorIOP

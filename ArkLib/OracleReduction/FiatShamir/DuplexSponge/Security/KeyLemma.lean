@@ -35,10 +35,10 @@ We run the malicious prover, then the verifier, then returns:
 - the query log of the prover
 - the query log of the verifier -/
 def basicFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (P : OracleComp (oSpec ++ₒ fsChallengeOracle StmtIn pSpec) (StmtIn × pSpec.Messages)) :
-    OracleComp (oSpec ++ₒ fsChallengeOracle StmtIn pSpec)
-      (StmtIn × StmtOut × pSpec.Messages × QueryLog (oSpec ++ₒ fsChallengeOracle StmtIn pSpec)
-        × QueryLog (oSpec ++ₒ fsChallengeOracle StmtIn pSpec)) := do
+    (P : OracleComp (oSpec + fsChallengeOracle StmtIn pSpec) (StmtIn × pSpec.Messages)) :
+    OracleComp (oSpec + fsChallengeOracle StmtIn pSpec)
+      (StmtIn × StmtOut × pSpec.Messages × QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)
+        × QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) := do
   let ⟨⟨stmtIn, messages⟩, proveQueryLog⟩ ← (simulateQ loggingOracle P).run
   let ⟨stmtOut, verifyQueryLog⟩ ← (simulateQ loggingOracle
     (V.fiatShamir.run stmtIn (fun i => match i with | ⟨0, _⟩ => messages))).run
@@ -53,12 +53,12 @@ We run the malicious prover, then the verifier, then returns:
 - the query log of the prover
 - the query log of the verifier -/
 def duplexSpongeFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (P : OracleComp (oSpec ++ₒ duplexSpongeChallengeOracle StmtIn U)
+    (P : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × pSpec.Messages)) :
-    OracleComp (oSpec ++ₒ duplexSpongeChallengeOracle StmtIn U)
+    OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × StmtOut × pSpec.Messages
-        × QueryLog (oSpec ++ₒ duplexSpongeChallengeOracle StmtIn U)
-        × QueryLog (oSpec ++ₒ duplexSpongeChallengeOracle StmtIn U)) := do
+        × QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)
+        × QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) := do
   let ⟨⟨stmtIn, messages⟩, proveQueryLog⟩ ← (simulateQ loggingOracle P).run
   let ⟨stmtOut, verifyQueryLog⟩ ←
     (simulateQ loggingOracle
@@ -104,7 +104,7 @@ noncomputable def ηStar (U : Type) [SpongeUnit U] [Fintype U]
 
 TODO: fully fill in this lemma -/
 lemma duplexSpongeToFSGameStatDist
-    (maliciousProver : OracleComp (oSpec ++ₒ duplexSpongeChallengeOracle StmtIn U)
+    (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × pSpec.Messages))
     (tₒ : ι → ℕ) (tₕ tₚ tₚᵢ : ℕ)
     -- TODO: state query bound only for subset of the oracles

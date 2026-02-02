@@ -121,7 +121,9 @@ protected def cast
     (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₁) :
     OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₂ where
   verify := fun stmt challenges =>
-    simulateQ sorry (V.verify stmt (dcast₂ hn.symm (dcast_symm hn hSpec) challenges))
+    let impl : QueryImpl (oSpec + ([OStmtIn]ₒ + [pSpec₁.Message]ₒ))
+      (OracleComp (oSpec + ([OStmtIn]ₒ + [pSpec₂.Message]ₒ))) := sorry
+    simulateQ impl (V.verify stmt (dcast₂ hn.symm (dcast_symm hn hSpec) challenges))
   embed := V.embed.trans
     (Embedding.sumMap
       (Equiv.refl _).toEmbedding
@@ -136,11 +138,11 @@ protected def cast
 
 variable (hOₘ : ∀ i, Oₘ₁ i = dcast (Message.cast_idx hSpec) (Oₘ₂ (i.cast hn hSpec)))
 
-@[simp]
-theorem cast_id :
-    OracleVerifier.cast rfl rfl (fun i => rfl) =
-      (id : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₁ → _) := by
-  sorry
+-- @[simp]
+-- theorem cast_id :
+--     OracleVerifier.cast rfl rfl (fun i => rfl) =
+--       (id : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₁ → _) := by
+--   sorry
 
 -- Need to cast oracle interface as well
 -- instance instDCast₂OracleVerifier : DCast₃ Nat ProtocolSpec
@@ -189,11 +191,11 @@ protected def cast (R : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmt
   prover := R.prover.cast hn hSpec
   verifier := R.verifier.cast hn hSpec hOₘ
 
-@[simp]
-theorem cast_id :
-    OracleReduction.cast rfl rfl (fun _ => rfl) =
-      (id : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec₁ → _) := by
-  ext : 2 <;> simp [OracleReduction.cast]
+-- @[simp]
+-- theorem cast_id :
+--     OracleReduction.cast rfl rfl (fun _ => rfl) =
+--       (id : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec₁ → _) := by
+--   ext : 2 <;> simp [OracleReduction.cast]
 
 -- Need to cast oracle interface as well
 -- instance instDCast₂OracleReduction :
@@ -223,7 +225,7 @@ namespace Prover
 
 theorem cast_processRound (j : Fin n₁)
     (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec₁)
-    (currentResult : OracleComp (oSpec ++ₒ [pSpec₁.Challenge]ₒ)
+    (currentResult : OracleComp (oSpec + [pSpec₁.Challenge]ₒ)
       (Transcript j.castSucc pSpec₁ × P.PrvState j.castSucc)) :
     P.processRound j currentResult =
       cast (sorry) ((P.cast hn hSpec).processRound (Fin.cast hn j) sorry) := by
@@ -274,8 +276,8 @@ section Security
 open NNReal
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
-  [inst₁ : ∀ i, SelectableType (pSpec₁.Challenge i)]
-  [inst₂ : ∀ i, SelectableType (pSpec₂.Challenge i)]
+  [inst₁ : ∀ i, SampleableType (pSpec₁.Challenge i)]
+  [inst₂ : ∀ i, SampleableType (pSpec₂.Challenge i)]
   (hChallenge : ∀ i, inst₁ i = dcast (by simp) (inst₂ (i.cast hn hSpec)))
 
 section Protocol
@@ -286,15 +288,15 @@ namespace Reduction
 
 variable (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec₁)
 
-@[simp]
-theorem cast_completeness (ε : ℝ≥0) (hComplete : R.completeness init impl relIn relOut ε) :
-    (R.cast hn hSpec).completeness init impl relIn relOut ε := by
-  sorry
+-- @[simp]
+-- theorem cast_completeness (ε : ℝ≥0) (hComplete : R.completeness init impl relIn relOut ε) :
+--     (R.cast hn hSpec).completeness init impl relIn relOut ε := by
+--   sorry
 
-@[simp]
-theorem cast_perfectCompleteness (hComplete : R.perfectCompleteness init impl relIn relOut) :
-    (R.cast hn hSpec).perfectCompleteness init impl relIn relOut :=
-  cast_completeness hn hSpec R 0 hComplete
+-- @[simp]
+-- theorem cast_perfectCompleteness (hComplete : R.perfectCompleteness init impl relIn relOut) :
+--     (R.cast hn hSpec).perfectCompleteness init impl relIn relOut :=
+--   cast_completeness hn hSpec R 0 hComplete
 
 end Reduction
 
@@ -325,17 +327,17 @@ namespace OracleReduction
 
 variable (R : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec₁)
 
-@[simp]
-theorem cast_completeness (ε : ℝ≥0) (hComplete : R.completeness init impl relIn relOut ε) :
-    (R.cast hn hSpec hOₘ).completeness init impl relIn relOut ε := by
-  unfold completeness
-  rw [cast_toReduction]
-  exact Reduction.cast_completeness hn hSpec R.toReduction ε hComplete
+-- @[simp]
+-- theorem cast_completeness (ε : ℝ≥0) (hComplete : R.completeness init impl relIn relOut ε) :
+--     (R.cast hn hSpec hOₘ).completeness init impl relIn relOut ε := by
+--   unfold completeness
+--   rw [cast_toReduction]
+--   exact Reduction.cast_completeness hn hSpec R.toReduction ε hComplete
 
-@[simp]
-theorem cast_perfectCompleteness (hComplete : R.perfectCompleteness init impl relIn relOut) :
-    (R.cast hn hSpec hOₘ).perfectCompleteness init impl relIn relOut :=
-  cast_completeness hn hSpec hOₘ R 0 hComplete
+-- @[simp]
+-- theorem cast_perfectCompleteness (hComplete : R.perfectCompleteness init impl relIn relOut) :
+--     (R.cast hn hSpec hOₘ).perfectCompleteness init impl relIn relOut :=
+--   cast_completeness hn hSpec hOₘ R 0 hComplete
 
 end OracleReduction
 

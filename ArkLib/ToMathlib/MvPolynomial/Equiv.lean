@@ -65,8 +65,9 @@ theorem finSuccEquivNth_X_below {i : Fin n} (h : i.castSucc < p) :
     coefficient of `m.insertNth p i` in `f`. -/
 theorem finSuccEquivNth_coeff_coeff (m : Fin n →₀ ℕ) (f : MvPolynomial (Fin (n + 1)) R) (i : ℕ) :
     coeff m (Polynomial.coeff (finSuccEquivNth R p f) i) = coeff (m.insertNth p i) f := by
-  induction' f using MvPolynomial.induction_on' with u a p q hp hq generalizing i m
-  · simp only [finSuccEquivNth_apply, coe_eval₂Hom, eval₂_monomial, RingHom.coe_comp, comp_apply,
+  induction f using MvPolynomial.induction_on' generalizing i m with
+  | monomial u a =>
+    simp only [finSuccEquivNth_apply, coe_eval₂Hom, eval₂_monomial, RingHom.coe_comp, comp_apply,
       prod_pow, Fin.prod_univ_succAbove _ p, Fin.insertNth_apply_same,
       Fin.insertNth_apply_succAbove, Polynomial.coeff_C_mul, coeff_C_mul, coeff_monomial,
       ← map_prod, ← RingHom.map_pow]
@@ -77,14 +78,14 @@ theorem finSuccEquivNth_coeff_coeff (m : Fin n →₀ ℕ) (f : MvPolynomial (Fi
     · simp only [hjmi, if_false]
       obtain hij | rfl := ne_or_eq i (u p)
       · simp only [hij, if_false, coeff_zero]
-      simp only [eq_self_iff_true, if_true]
+      simp only [if_true]
       have hmj : m ≠ u.removeNth p := by
         rintro rfl
         rw [insertNth_self_removeNth] at hjmi
         contradiction
       simpa only [monomial_eq, C_1, one_mul, prod_pow, Finsupp.removeNth_apply, if_neg hmj.symm]
         using coeff_monomial m (u.removeNth p) (1 : R)
-  · simp only [map_add, Polynomial.coeff_add, coeff_add, hp, hq]
+  | add p q hp hq => simp only [map_add, Polynomial.coeff_add, coeff_add, hp, hq]
 
 /-- The evaluation of `f` at `Fin.insertNth p y s` equals the evaluation at `y` of the polynomial
 obtained by partially evaluating `finSuccEquivNth R p f` at `s`.
@@ -93,7 +94,7 @@ theorem eval_eq_eval_mv_eval_finSuccEquivNth (s : Fin n → R) (y : R)
     (f : MvPolynomial (Fin (n + 1)) R) :
       eval (Fin.insertNth p y s : Fin (n + 1) → R) f =
         Polynomial.eval y (Polynomial.map (eval s) (finSuccEquivNth R p f)) := by
-  show
+  change
     aeval (Fin.insertNth p y s : Fin (n + 1) → R) f = (Polynomial.aeval y).comp
       ((Polynomial.mapAlgHom (aeval s)).comp (finSuccEquivNth R p).toAlgHom) f
   congr 2

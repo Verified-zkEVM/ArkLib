@@ -34,7 +34,7 @@ open Binius.BinaryBasefold Binius.RingSwitching
 
 variable (κ : ℕ) [NeZero κ]
 variable (L : Type) [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
-  [SelectableType L]
+  [SampleableType L]
 variable (K : Type) [Field K] [Fintype K] [DecidableEq K]
 variable [h_Fq_char_prime : Fact (Nat.Prime (ringChar K))] [hF₂ : Fact (Fintype.card K = 2)]
 variable [Algebra K L]
@@ -58,8 +58,8 @@ instance : ∀ j, OracleInterface ((batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_�
   instOracleInterfaceMessageAppend (pSpec₁ := RingSwitching.pSpecBatching κ L K)
     (pSpec₂ := BinaryBasefold.pSpecCoreInteraction K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
-instance : ∀ j, SelectableType ((batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).Challenge j) :=
-  instSelectableTypeChallengeAppend (pSpec₁ := RingSwitching.pSpecBatching κ L K)
+instance : ∀ j, SampleableType ((batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).Challenge j) :=
+  instSampleableTypeChallengeAppend (pSpec₁ := RingSwitching.pSpecBatching κ L K)
     (pSpec₂ := BinaryBasefold.pSpecCoreInteraction K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
 instance : ∀ j, OracleInterface ((fullPspec κ L K β ℓ' 𝓡 ϑ γ_repetitions
@@ -67,9 +67,9 @@ instance : ∀ j, OracleInterface ((fullPspec κ L K β ℓ' 𝓡 ϑ γ_repetiti
   instOracleInterfaceMessageAppend (pSpec₁ := batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
     (pSpec₂ := BinaryBasefold.pSpecQuery K β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
-instance : ∀ j, SelectableType ((fullPspec κ L K β ℓ' 𝓡 ϑ γ_repetitions
+instance : ∀ j, SampleableType ((fullPspec κ L K β ℓ' 𝓡 ϑ γ_repetitions
     h_ℓ_add_R_rate).Challenge j) :=
-  instSelectableTypeChallengeAppend (pSpec₁ := batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
+  instSampleableTypeChallengeAppend (pSpec₁ := batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
     (pSpec₂ := BinaryBasefold.pSpecQuery K β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
 end Pspec

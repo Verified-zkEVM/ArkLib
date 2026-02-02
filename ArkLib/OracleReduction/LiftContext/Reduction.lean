@@ -54,6 +54,7 @@ open OracleSpec OracleComp ProtocolSpec
 open scoped NNReal
 
 variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
+  [oSpec.Inhabited] [oSpec.Fintype] --[[pSpec.].Inhabited] [oSpec.Fintype]]
   {OuterStmtIn OuterWitIn OuterStmtOut OuterWitOut : Type}
   {InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut : Type}
 
@@ -135,14 +136,14 @@ def Verifier.compatStatement
     (V : Verifier oSpec InnerStmtIn InnerStmtOut pSpec) :
       OuterStmtIn → InnerStmtOut → Prop :=
   fun outerStmtIn innerStmtOut =>
-    ∃ transcript, innerStmtOut ∈ (V.run (lens.proj outerStmtIn) transcript).support
+    ∃ transcript, innerStmtOut ∈ support (V.run (lens.proj outerStmtIn) transcript)
 
 /-- Compatibility relation between the outer input context and the inner output context, relative
 to a reduction.
 
 We require that the inner output context (statement + witness) is a possible output of the reduction
 on the outer input context (statement + witness). -/
-def Reduction.compatContext
+def Reduction.compatContext [[pSpec.Challenge]ₒ.Inhabited] [[pSpec.Challenge]ₒ.Fintype]
     (lens : Context.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                         OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
     (R : Reduction oSpec InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut pSpec) :
@@ -150,7 +151,7 @@ def Reduction.compatContext
   fun outerCtxIn innerCtxOut =>
     innerCtxOut ∈
       (Prod.snd ∘ Prod.fst) ''
-        (R.run (lens.stmt.proj outerCtxIn.1) (lens.wit.proj outerCtxIn)).support
+        support (R.run (lens.stmt.proj outerCtxIn.1) (lens.wit.proj outerCtxIn))
 
 /-- Compatibility relation between the outer input witness and the inner output witness, relative to
   a straightline extractor.
@@ -165,7 +166,7 @@ def Extractor.Straightline.compatWit
       OuterStmtIn × OuterWitOut → InnerWitIn → Prop :=
   fun ⟨outerStmtIn, outerWitOut⟩ innerWitIn =>
     ∃ stmt tr logP logV, innerWitIn ∈
-      (E stmt (lens.wit.proj (outerStmtIn, outerWitOut)) tr logP logV).support
+      support (E stmt (lens.wit.proj (outerStmtIn, outerWitOut)) tr logP logV)
 
 /-- The outer state function after lifting invokes the inner state function on the projected
   input, and lifts the output -/
@@ -191,6 +192,7 @@ where
   toFun_full := fun outerStmtIn transcript hStmt => by
     have h := stF.toFun_full (lens.proj outerStmtIn) transcript hStmt
     simp [Verifier.run, Verifier.liftContext] at h ⊢
+    stop
     intro outerStmtOut s hs innerStmtOut s' h' hLens
     have := lensSound.lift_sound outerStmtIn innerStmtOut
     sorry
@@ -212,7 +214,7 @@ theorem liftContext_processRound
                         OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
     {i : Fin n}
     {P : Prover oSpec InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut pSpec}
-    {resultRound : OracleComp (oSpec ++ₒ [pSpec.Challenge]ₒ)
+    {resultRound : OracleComp (oSpec + [pSpec.Challenge]ₒ)
       (pSpec.Transcript i.castSucc × (P.liftContext lens).PrvState i.castSucc)} :
       (P.liftContext lens).processRound i resultRound
       = do
@@ -221,8 +223,10 @@ theorem liftContext_processRound
         return ⟨newTranscript, ⟨newPrvState, outerStmtIn, outerWitIn⟩⟩ := by
   unfold processRound liftContext
   simp
+  stop
   congr 1; funext
   split <;> simp
+
 
 theorem liftContext_runToRound
     {lens : Context.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
@@ -321,7 +325,7 @@ theorem liftContext_runWithLog
 
 end Reduction
 
-variable [∀ i, SelectableType (pSpec.Challenge i)]
+variable [∀ i, SampleableType (pSpec.Challenge i)]
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   {outerRelIn : Set (OuterStmtIn × OuterWitIn)} {outerRelOut : Set (OuterStmtOut × OuterWitOut)}
   {innerRelIn : Set (InnerStmtIn × InnerWitIn)} {innerRelOut : Set (InnerStmtOut × InnerWitOut)}

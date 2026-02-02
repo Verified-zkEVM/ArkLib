@@ -4,14 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import Mathlib.Data.Matrix.Hadamard
+import Mathlib.LinearAlgebra.Matrix.Hadamard
 import ArkLib.Data.Fin.Tuple.Defs
 import ArkLib.Data.MvPolynomial.Multilinear
 
 /-!
   # Auxiliary definitions and lemmas for matrices
 -/
-
 
 namespace Matrix
 

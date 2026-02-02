@@ -343,7 +343,7 @@ private lemma solution_to_BerlekampWelch_condition {e k : ℕ}
   · simp [eq₁, eq₃]
     apply Finset.sum_bij' (i := fun ⟨a, ha₁⟩ _ ↦ ⟨a + e, by simp at ha₁; omega⟩)
                           (j := fun ⟨a, _⟩ ha₂ ↦ ⟨a - e, by simp at ha₂ ⊢; omega⟩) <;> try simp
-    case right_inv => aesop
+    case p₄.right_neg => aesop
     case h => intros; left; ring_nf
 
 theorem BerlekampWelchCondition_iff_Solution {e k : ℕ} [NeZero n]

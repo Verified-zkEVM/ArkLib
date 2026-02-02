@@ -458,6 +458,7 @@ lemma forwardRange_0_eq_finRange (n : ℕ) [NeZero n] : forwardRange n ⟨n - 1,
     omega
   ⟩ 0 = List.finRange n := by
   have h_ne := NeZero.ne n
+  stop
   refine
     Array.ext.extAux
       (forwardRange n

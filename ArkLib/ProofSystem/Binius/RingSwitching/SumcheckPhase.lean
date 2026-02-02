@@ -48,7 +48,7 @@ noncomputable section
 
 variable (κ : ℕ) [NeZero κ]
 variable (L : Type) [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
-  [SelectableType L]
+  [SampleableType L]
 variable (K : Type) [Field K] [Fintype K] [DecidableEq K]
 variable [Algebra K L]
 variable (β : Basis (Fin κ → Fin 2) K L)
@@ -190,7 +190,7 @@ noncomputable def iteratedSumcheckOracleReduction (i : Fin ℓ') :
   prover := iteratedSumcheckOracleProver κ L K ℓ ℓ' (𝓑 := 𝓑) aOStmtIn i
   verifier := iteratedSumcheckOracleVerifier κ L K ℓ ℓ' aOStmtIn i
 
-variable {R : Type} [CommSemiring R] [DecidableEq R] [SelectableType R]
+variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
   {n : ℕ} {deg : ℕ} {m : ℕ} {D : Fin m ↪ R}
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}

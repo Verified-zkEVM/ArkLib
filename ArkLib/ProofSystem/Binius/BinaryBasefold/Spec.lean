@@ -10,7 +10,7 @@ namespace Binius.BinaryBasefold
 
 /-! ## Protocol Specs for Binary Basefold
 This module contains the protocol specs, oracle index bounds,
-instances of OracleInterface and SelectableType for the Binary Basefold protocol.
+instances of OracleInterface and SampleableType for the Binary Basefold protocol.
 -/
 
 noncomputable section
@@ -19,7 +19,7 @@ open scoped NNReal
 
 variable {r : ℕ} [NeZero r]
 variable {L : Type} [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
-  [SelectableType L]
+  [SampleableType L]
 variable (𝔽q : Type) [Field 𝔽q] [Fintype 𝔽q] [DecidableEq 𝔽q]
   [h_Fq_char_prime : Fact (Nat.Prime (ringChar 𝔽q))] [hF₂ : Fact (Fintype.card 𝔽q = 2)]
 variable [Algebra 𝔽q L]
@@ -328,13 +328,13 @@ instance instOracleStatementBinaryBasefold {i : Fin (ℓ + 1)} :
     answer := fun oracleData queryPoint => oracleData queryPoint
   }
 
-/-! ## SelectableType instances -/
+/-! ## SampleableType instances -/
 
-instance {i : Fin ℓ} : ∀ j, SelectableType ((pSpecCommit 𝔽q β
+instance {i : Fin ℓ} : ∀ j, SampleableType ((pSpecCommit 𝔽q β
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j)
   | ⟨0, hj⟩ => by nomatch hj
 
-instance : ∀ j, SelectableType ((pSpecFold (L:=L)).Challenge j)
+instance : ∀ j, SampleableType ((pSpecFold (L:=L)).Challenge j)
   | ⟨j, hj⟩ => by
     dsimp [pSpecFold, Challenge]
     -- Only message 1 (index 1) has challenges, which are of type L
@@ -357,46 +357,46 @@ instance : ∀ j, SelectableType ((pSpecFold (L:=L)).Challenge j)
     simp only [Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_zero]
     infer_instance
 
-instance : ∀ j, SelectableType ((pSpecRelay).Challenge j)
+instance : ∀ j, SampleableType ((pSpecRelay).Challenge j)
   | ⟨x, hj⟩ => by exact x.elim0
 
-instance : ∀ j, SelectableType ((pSpecFoldRelay (L:=L)).Challenge j) :=
-  instSelectableTypeChallengeAppend
+instance : ∀ j, SampleableType ((pSpecFoldRelay (L:=L)).Challenge j) :=
+  instSampleableTypeChallengeAppend
 
-instance {i : Fin ℓ} : ∀ j, SelectableType ((pSpecFoldCommit 𝔽q β
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j) := instSelectableTypeChallengeAppend
+instance {i : Fin ℓ} : ∀ j, SampleableType ((pSpecFoldCommit 𝔽q β
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j) := instSampleableTypeChallengeAppend
 
-instance {n : ℕ} : ∀ j, SelectableType ((pSpecFoldRelaySequence (L:=L) n).Challenge j) :=
-  instSelectableTypeChallengeSeqCompose
+instance {n : ℕ} : ∀ j, SampleableType ((pSpecFoldRelaySequence (L:=L) n).Challenge j) :=
+  instSampleableTypeChallengeSeqCompose
 
-instance {i : Fin (ℓ / ϑ - 1)} : ∀ j, SelectableType ((pSpecFullNonLastBlock 𝔽q β
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j) := instSelectableTypeChallengeAppend
+instance {i : Fin (ℓ / ϑ - 1)} : ∀ j, SampleableType ((pSpecFullNonLastBlock 𝔽q β
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j) := instSampleableTypeChallengeAppend
 
-instance : ∀ i, SelectableType ((pSpecNonLastBlocks 𝔽q β (ϑ:=ϑ)
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := instSelectableTypeChallengeSeqCompose
+instance : ∀ i, SampleableType ((pSpecNonLastBlocks 𝔽q β (ϑ:=ϑ)
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := instSampleableTypeChallengeSeqCompose
 
-instance : ∀ i, SelectableType ((pSpecLastBlock (L:=L) (ϑ:=ϑ)).Challenge i) :=
-  instSelectableTypeChallengeSeqCompose
+instance : ∀ i, SampleableType ((pSpecLastBlock (L:=L) (ϑ:=ϑ)).Challenge i) :=
+  instSampleableTypeChallengeSeqCompose
 
-instance : ∀ i, SelectableType ((pSpecSumcheckFold 𝔽q β (ϑ:=ϑ)
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := instSelectableTypeChallengeAppend
+instance : ∀ i, SampleableType ((pSpecSumcheckFold 𝔽q β (ϑ:=ϑ)
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := instSampleableTypeChallengeAppend
 
-instance : ∀ i, SelectableType ((pSpecFinalSumcheckStep (L:=L)).Challenge i)
+instance : ∀ i, SampleableType ((pSpecFinalSumcheckStep (L:=L)).Challenge i)
   | ⟨0, _⟩ => by (expose_names; exact inst_5)
 
-instance : ∀ i, SelectableType ((pSpecCoreInteraction 𝔽q β (ϑ:=ϑ)
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := instSelectableTypeChallengeAppend
+instance : ∀ i, SampleableType ((pSpecCoreInteraction 𝔽q β (ϑ:=ϑ)
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := instSampleableTypeChallengeAppend
 
-/-- SelectableType instance for sDomain, constructed via its equivalence with a Fin type. -/
+/-- SampleableType instance for sDomain, constructed via its equivalence with a Fin type. -/
 instance instSDomain {i : Fin r} (h_i : i < ℓ + 𝓡) :
-    SelectableType (sDomain 𝔽q β h_ℓ_add_R_rate i) :=
+    SampleableType (sDomain 𝔽q β h_ℓ_add_R_rate i) :=
   let T := sDomain 𝔽q β h_ℓ_add_R_rate i
   haveI : Fintype T := fintype_sDomain 𝔽q β h_ℓ_add_R_rate i
   haveI : Nonempty T := ⟨0⟩
   haveI : DecidableEq T := Classical.decEq T
-  SelectableType.ofEquiv (e := (sDomainFinEquiv 𝔽q β h_ℓ_add_R_rate i (by omega)).symm)
+  SampleableType.ofEquiv (e := (sDomainFinEquiv 𝔽q β h_ℓ_add_R_rate i (by omega)).symm)
 
-instance : ∀ i, SelectableType ((pSpecQuery 𝔽q β γ_repetitions
+instance : ∀ i, SampleableType ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i)
   | ⟨i, hi⟩ => by
     unfold ProtocolSpec.Challenge
@@ -404,14 +404,14 @@ instance : ∀ i, SelectableType ((pSpecQuery 𝔽q β γ_repetitions
     have h_i: i = 0 := by omega
     rw [h_i]
     simp only [Fin.isValue, Matrix.cons_val_fin_one]
-    letI : SelectableType (sDomain 𝔽q β h_ℓ_add_R_rate 0) := by
+    letI : SampleableType (sDomain 𝔽q β h_ℓ_add_R_rate 0) := by
       apply instSDomain;
       have h_ℓ_gt_0 : ℓ > 0 := by exact Nat.pos_of_neZero ℓ
       exact Nat.lt_add_right 𝓡 h_ℓ_gt_0
-    exact instSelectableTypeFinFunc
+    exact instSampleableTypeFinFunc
 
-instance : ∀ j, SelectableType ((fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ)
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge j) := instSelectableTypeChallengeAppend
+instance : ∀ j, SampleableType ((fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ)
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge j) := instSampleableTypeChallengeAppend
 
 end Pspec
 
