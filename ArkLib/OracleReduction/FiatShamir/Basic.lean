@@ -158,7 +158,6 @@ variable [∀ i, SampleableType (pSpec.Challenge i)]
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
 theorem fiatShamir_completeness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    [DecidablePred (· ∈ relOut)] [DecidableEq StmtOut]
     (completenessError : ℝ≥0) (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
   R.completeness init impl relIn relOut completenessError →
     R.fiatShamir.completeness (do return (← init, by unfold FunctionType; sorry))

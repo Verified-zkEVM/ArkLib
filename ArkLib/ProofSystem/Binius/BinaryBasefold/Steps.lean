@@ -158,7 +158,7 @@ noncomputable def foldOracleVerifier (i : Fin ℓ) :
   verify := fun stmtIn pSpecChallenges => do
     -- Message 0 : Receive h_i(X) from prover
     let h_i : L⦃≤ 2⦄[X] ← query (spec := [(pSpecFold (L := L)).Message]ₒ)
-      ⟨0, rfl⟩ ()
+      ⟨⟨0, rfl⟩, ()⟩
 
     -- Check sumcheck : s_i ?= h_i(0) + h_i(1)
     let sumcheck_check := h_i.val.eval 0 + h_i.val.eval 1 = stmtIn.sumcheck_target
@@ -214,7 +214,7 @@ variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
-theorem foldOracleReduction_perfectCompleteness (hInit : init.neverFails) (i : Fin ℓ) :
+theorem foldOracleReduction_perfectCompleteness (i : Fin ℓ) :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecFold (L := L))
       (relIn := roundRelation 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -509,7 +509,7 @@ variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
-theorem commitOracleReduction_perfectCompleteness (hInit : init.neverFails) (i : Fin ℓ)
+theorem commitOracleReduction_perfectCompleteness (i : Fin ℓ)
     (hCR : isCommitmentRound ℓ ϑ i) :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
@@ -686,7 +686,7 @@ variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
-theorem relayOracleReduction_perfectCompleteness (hInit : init.neverFails) (i : Fin ℓ)
+theorem relayOracleReduction_perfectCompleteness (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecRelay)
@@ -856,7 +856,7 @@ noncomputable def finalSumcheckVerifier :
     (pSpec := pSpecFinalSumcheckStep (L := L)) where
   verify := fun stmtIn _ => do
     -- Get the final constant `c` from the prover's message
-    let c : L ← query (spec := [(pSpecFinalSumcheckStep (L := L)).Message]ₒ) ⟨0, rfl⟩ ()
+    let c : L ← query (spec := [(pSpecFinalSumcheckStep (L := L)).Message]ₒ) ⟨⟨0, rfl⟩, ()⟩
 
     -- Check final sumcheck consistency
     let eq_tilde_eval : L := eqTilde (r := stmtIn.ctx.t_eval_point) (r' := stmtIn.challenges)
@@ -906,8 +906,7 @@ noncomputable def finalSumcheckOracleReduction :
 /-- Perfect completeness for the final sumcheck step -/
 theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
   (init : ProbComp σ)
-  (impl : QueryImpl []ₒ (StateT σ ProbComp))
-  (hInit : init.neverFails) :
+  (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
   OracleReduction.perfectCompleteness
     (pSpec := pSpecFinalSumcheckStep (L := L))
     (relIn := roundRelation 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)

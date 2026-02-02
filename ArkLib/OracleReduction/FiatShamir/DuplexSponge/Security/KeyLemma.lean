@@ -36,13 +36,13 @@ We run the malicious prover, then the verifier, then returns:
 - the query log of the verifier -/
 def basicFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
     (P : OracleComp (oSpec + fsChallengeOracle StmtIn pSpec) (StmtIn × pSpec.Messages)) :
-    OracleComp (oSpec + fsChallengeOracle StmtIn pSpec)
+    OptionT (OracleComp (oSpec + fsChallengeOracle StmtIn pSpec))
       (StmtIn × StmtOut × pSpec.Messages × QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)
         × QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) := do
   let ⟨⟨stmtIn, messages⟩, proveQueryLog⟩ ← (simulateQ loggingOracle P).run
   let ⟨stmtOut, verifyQueryLog⟩ ← (simulateQ loggingOracle
     (V.fiatShamir.run stmtIn (fun i => match i with | ⟨0, _⟩ => messages))).run
-  return ⟨stmtIn, stmtOut, messages, proveQueryLog, verifyQueryLog⟩
+  return ⟨stmtIn, ← stmtOut.getM, messages, proveQueryLog, verifyQueryLog⟩
 
 /-- Second game for the key lemma: the duplex sponge Fiat-Shamir transform.
 
@@ -55,16 +55,16 @@ We run the malicious prover, then the verifier, then returns:
 def duplexSpongeFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
     (P : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × pSpec.Messages)) :
-    OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
+    OptionT (OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U))
       (StmtIn × StmtOut × pSpec.Messages
         × QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)
         × QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) := do
   let ⟨⟨stmtIn, messages⟩, proveQueryLog⟩ ← (simulateQ loggingOracle P).run
   let ⟨stmtOut, verifyQueryLog⟩ ←
-    (simulateQ loggingOracle
+    liftM (simulateQ loggingOracle
       (V.duplexSpongeFiatShamir.run
         stmtIn (fun i => match i with | ⟨0, _⟩ => messages))).run
-  return ⟨stmtIn, stmtOut, messages, proveQueryLog, verifyQueryLog⟩
+  return ⟨stmtIn, ← stmtOut.getM, messages, proveQueryLog, verifyQueryLog⟩
 
 end SecurityGames
 
@@ -108,7 +108,8 @@ lemma duplexSpongeToFSGameStatDist
       (StmtIn × pSpec.Messages))
     (tₒ : ι → ℕ) (tₕ tₚ tₚᵢ : ℕ)
     -- TODO: state query bound only for subset of the oracles
-    (hQuery : IsQueryBound maliciousProver (tₒ ⊕ᵥ (tₕ ⊕ᵥ (tₚ ⊕ᵥ tₚᵢ)))) : True :=
+    -- (hQuery : IsQueryBound maliciousProver (tₒ ⊕ᵥ (tₕ ⊕ᵥ (tₚ ⊕ᵥ tₚᵢ))))
+    : True :=
   sorry
 
 end KeyLemma

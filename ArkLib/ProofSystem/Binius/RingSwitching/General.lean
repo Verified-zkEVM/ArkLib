@@ -103,7 +103,7 @@ section SecurityProperties
 variable {σ : Type} (init : ProbComp σ) {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
 omit [(i : mlIOPCS.pSpec.ChallengeIdx) → SampleableType (mlIOPCS.pSpec.Challenge i)] in
-lemma batchingCore_perfectCompleteness (hInit : init.neverFails) :
+lemma batchingCore_perfectCompleteness :
   (batchingCoreReduction κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) mlIOPCS).perfectCompleteness
   (pSpec := pSpecLargeFieldReduction κ L K ℓ')
   (relIn := BatchingPhase.batchingInputRelation κ L K β ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
@@ -111,12 +111,12 @@ lemma batchingCore_perfectCompleteness (hInit : init.neverFails) :
   (init:=init) (impl:=impl) := by
   apply OracleReduction.append_perfectCompleteness
   · exact BatchingPhase.batchingReduction_perfectCompleteness κ L K β ℓ ℓ' h_l
-      (𝓑 := 𝓑) mlIOPCS.toAbstractOStmtIn hInit
+      (𝓑 := 𝓑) mlIOPCS.toAbstractOStmtIn
   · exact SumcheckPhase.coreInteraction_perfectCompleteness
-      κ L K β ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn hInit (impl:=impl)
+      κ L K β ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn (impl:=impl)
 
 omit [(i : mlIOPCS.pSpec.ChallengeIdx) → SampleableType (mlIOPCS.pSpec.Challenge i)] in
-theorem fullOracleReduction_perfectCompleteness (hInit : init.neverFails) :
+theorem fullOracleReduction_perfectCompleteness :
   (fullOracleReduction κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) mlIOPCS).perfectCompleteness
     (relIn := BatchingPhase.batchingInputRelation κ L K β ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
     (relOut := acceptRejectOracleRel)
@@ -125,8 +125,8 @@ theorem fullOracleReduction_perfectCompleteness (hInit : init.neverFails) :
      := by
   apply OracleReduction.append_perfectCompleteness (Oₛ₃:=by
     exact fun _ ↦ OracleInterface.instDefault)
-  · exact batchingCore_perfectCompleteness κ L K β ℓ ℓ' h_l mlIOPCS init hInit
-  · exact mlIOPCS.perfectCompleteness hInit
+  · exact batchingCore_perfectCompleteness κ L K β ℓ ℓ' h_l mlIOPCS init
+  · exact mlIOPCS.perfectCompleteness
 
 def batchingCoreRbrKnowledgeError
     (i : (pSpecBatching κ L K ++ₚ pSpecCoreInteraction L ℓ').ChallengeIdx) : ℝ≥0 :=

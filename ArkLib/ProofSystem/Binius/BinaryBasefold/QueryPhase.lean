@@ -163,10 +163,9 @@ def queryCodeword (j : Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)))
   Fin.last ℓ)]ₒ) L :=
       OracleComp.lift <| by
         simpa using
-          OracleSpec.query
+          OracleQuery.query
             (spec := [OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ)
-            ⟨j, by omega⟩
-            (by exact point)
+            ⟨⟨j, by omega⟩, point⟩
 
 section FinalQueryRoundIOR
 
@@ -341,8 +340,7 @@ noncomputable def queryOracleProof : OracleProof
 /-- Perfect completeness for the final query round (using the oracle queryProof). -/
 theorem queryOracleProof_perfectCompleteness {σ : Type}
   (init : ProbComp σ)
-  (impl : QueryImpl []ₒ (StateT σ ProbComp))
-  (hInit : init.neverFails) :
+  (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
   OracleProof.perfectCompleteness
     (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (relation := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))

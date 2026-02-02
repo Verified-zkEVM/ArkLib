@@ -172,7 +172,7 @@ noncomputable def fullOracleProof :
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
 /-- Perfect completeness for the full Binary Basefold protocol (reduction) -/
-theorem fullOracleReduction_perfectCompleteness (hInit : init.neverFails) :
+theorem fullOracleReduction_perfectCompleteness :
   OracleReduction.perfectCompleteness
     (oracleReduction := fullOracleReduction κ L K β ℓ ℓ' 𝓡 ϑ γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l (𝓑:=𝓑))
@@ -209,12 +209,12 @@ theorem fullOracleReduction_perfectCompleteness (hInit : init.neverFails) :
         (rel₃ := BinaryBasefold.finalSumcheckRelOut K β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       · apply BatchingPhase.batchingReduction_perfectCompleteness κ L K
           (β:=booleanHypercubeBasis κ L K β) ℓ ℓ' h_l (𝓑 := 𝓑)
-          (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate) hInit
+          (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
       · apply CoreInteractionPhase.coreInteractionOracleReduction_perfectCompleteness
-          κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l (𝓑 := 𝓑) hInit
+          κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l (𝓑 := 𝓑)
     )
     (h₂ := QueryPhase.queryOracleProof_perfectCompleteness K β γ_repetitions
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) init impl hInit)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) init impl)
 
 -- TODO: state RBR KS
 

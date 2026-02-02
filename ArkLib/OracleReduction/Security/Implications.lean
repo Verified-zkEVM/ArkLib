@@ -43,7 +43,8 @@ two strengthenings of soundness.
 
 /-- Knowledge soundness with knowledge error `knowledgeError < 1` implies soundness with the same
 soundness error `knowledgeError`, and for the corresponding input and output languages. -/
-theorem knowledgeSoundness_implies_soundness (relIn : Set (StmtIn × WitIn))
+theorem knowledgeSoundness_implies_soundness
+    (relIn : Set (StmtIn × WitIn))
     (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (knowledgeError : ℝ≥0) (hLt : knowledgeError < 1) :

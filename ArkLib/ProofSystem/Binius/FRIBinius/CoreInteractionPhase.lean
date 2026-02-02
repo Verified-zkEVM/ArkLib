@@ -198,7 +198,7 @@ instance sumcheckFoldCtxLens_complete :
 
 omit [NeZero κ] [NeZero ℓ] in
 -- Perfect completeness for the lifted oracle reduction
-theorem sumcheckFoldOracleReduction_perfectCompleteness (hInit : init.neverFails) :
+theorem sumcheckFoldOracleReduction_perfectCompleteness :
   OracleReduction.perfectCompleteness
     (oSpec := []ₒ)
     (StmtIn := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) 0)
@@ -259,7 +259,7 @@ theorem sumcheckFoldOracleReduction_perfectCompleteness (hInit : init.neverFails
     (init := init)
     (impl := impl)
     (h := BinaryBasefold.CoreInteraction.sumcheckFoldOracleReduction_perfectCompleteness
-      K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) hInit)
+      K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
 
 -- Knowledge soundness instance for the extractor lens
 instance sumcheckFoldExtractorLens_rbr_knowledge_soundness :
@@ -402,7 +402,7 @@ noncomputable def finalSumcheckVerifier :
   verify := fun stmtIn _ => do
     -- Get the final constant `s'` from the prover's message
     let s' : L ← query (spec := [(BinaryBasefold.pSpecFinalSumcheckStep
-      (L:=L)).Message]ₒ) ⟨0, rfl⟩ ()
+      (L:=L)).Message]ₒ) ⟨⟨0, rfl⟩, ()⟩
 
     -- 8. `V` sets `e := eq̃(φ₀(r_κ), ..., φ₀(r_{ℓ-1}), φ₁(r'_0), ..., φ₁(r'_{ℓ'-1}))` and
     --     decomposes `e =: Σ_{u ∈ {0,1}^κ} β_u ⊗ e_u`.
@@ -460,8 +460,7 @@ noncomputable def finalSumcheckOracleReduction :
 /-- Perfect completeness for the final sumcheck step -/
 theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
   (init : ProbComp σ)
-  (impl : QueryImpl []ₒ (StateT σ ProbComp))
-  (hInit : init.neverFails) :
+  (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
   OracleReduction.perfectCompleteness
     (pSpec := BinaryBasefold.pSpecFinalSumcheckStep (L:=L))
     (relIn := BinaryBasefold.roundRelation (mp := RingSwitching_SumcheckMultParam κ L K
@@ -643,7 +642,7 @@ def coreInteractionOracleReduction :=
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
 /-- Perfect completeness for the core interaction oracle reduction -/
-theorem coreInteractionOracleReduction_perfectCompleteness (hInit : init.neverFails) :
+theorem coreInteractionOracleReduction_perfectCompleteness :
     OracleReduction.perfectCompleteness
       (oSpec := []ₒ)
       (pSpec := BinaryBasefold.pSpecCoreInteraction K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
@@ -662,10 +661,10 @@ theorem coreInteractionOracleReduction_perfectCompleteness (hInit : init.neverFa
   apply OracleReduction.append_perfectCompleteness
   · -- Perfect completeness of sumcheckFoldOracleReduction
     exact sumcheckFoldOracleReduction_perfectCompleteness κ L K β ℓ ℓ' 𝓡 ϑ
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l (𝓑 := 𝓑) (init := init) (impl := impl) hInit
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l (𝓑 := 𝓑) (init := init) (impl := impl)
   · -- Perfect completeness of finalSumcheckOracleReduction
     exact finalSumcheckOracleReduction_perfectCompleteness κ L K β ℓ ℓ' 𝓡 ϑ
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l (𝓑 := 𝓑) init impl hInit
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l (𝓑 := 𝓑) init impl
 
 def coreInteractionOracleRbrKnowledgeError (j : (BinaryBasefold.pSpecCoreInteraction K β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).ChallengeIdx) : ℝ≥0 :=

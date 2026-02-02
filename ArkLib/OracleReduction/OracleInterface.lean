@@ -77,7 +77,8 @@ def answer {Message : Type*} [O : OracleInterface Message]
 -/
 def instDefault {Message : Type u} : OracleInterface Message where
   Query := Unit
-  toOC := default
+  toOC.spec := fun _ => Message
+  toOC.impl _ := read
 
 instance {Message : Type*} : Inhabited (OracleInterface Message) :=
   ⟨instDefault⟩

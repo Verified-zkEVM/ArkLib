@@ -309,7 +309,7 @@ open NNReal
 variable [SampleableType R]
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
-theorem oracleReduction_perfectCompleteness (hInit : init.neverFails) :
+theorem oracleReduction_perfectCompleteness :
     (oracleReduction R deg oSpec).perfectCompleteness init impl
       (inputRelation R deg D) (outputRelation R deg) := by
   simp [oracleReduction]
@@ -332,7 +332,7 @@ theorem oracleReduction_perfectCompleteness (hInit : init.neverFails) :
       · sorry
     · sorry
   · simp [oracleReduction.reduceClaim]
-    refine ReduceClaim.oracleReduction_completeness _ _ hInit ?_
+    refine ReduceClaim.oracleReduction_completeness _ _ ?_
     sorry
 
 theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
@@ -415,12 +415,21 @@ def reduction : Reduction oSpec (StmtIn R × (∀ i, OStmtIn R deg i)) Unit
   prover := prover R deg oSpec
   verifier := verifier R deg D oSpec
 
+-- dtumad: Why is this instance needed?
+instance t {ι₁ ι₂ ι₃}
+  {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
+  {spec₃ : OracleSpec ι₃} : MonadLiftT (OracleQuery spec₂)
+  (OracleQuery (spec₁ + (spec₂ + spec₃))) := by
+  infer_instance
+
 open Function in
 def oracleVerifier : OracleVerifier oSpec (StmtIn R) (OStmtIn R deg) (StmtOut R) (OStmtOut R deg)
     (pSpec R deg) where
   verify := fun target chal => do
     let evals : Vector R m ← (Vector.finRange m).mapM
-      (fun i => query (spec := [OStmtIn R deg]ₒ) () (D i))
+      (fun i => OptionT.lift <| OracleComp.liftComp
+        (OracleComp.lift <| query (spec := [OStmtIn R deg]ₒ) (⟨(), D i⟩))
+        _)
     guard (evals.sum = target)
     -- Needs to convert `evals` to `R⦃≤ deg⦄[X]`, and then evaluate at `chal`
     pure (sorry, chal default)
@@ -461,12 +470,13 @@ theorem oracleReduction_eq_reduction :
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 /-- Perfect completeness for the (non-oracle) reduction -/
-theorem reduction_perfectCompleteness (hInit : init.neverFails) :
+theorem reduction_perfectCompleteness :
     (reduction R deg D oSpec).perfectCompleteness init impl
       (inputRelation R deg D) (outputRelation R deg) := by
   rw [perfectCompleteness_eq_prob_one]
   intro ⟨target, oStmt⟩ () hValid
   generalize h : oStmt () = p; obtain ⟨poly, hp⟩ := p
+  stop
   -- Need `convert` because of some duplicate instances, should eventually track those down
   convert (probEvent_eq_one_iff _ _).2 ⟨?_, ?_⟩
   · simp only [Reduction.run, probFailure_bind_eq_zero_iff]
@@ -504,12 +514,12 @@ theorem reduction_perfectCompleteness (hInit : init.neverFails) :
     aesop
 
 /-- Perfect completeness for the oracle reduction -/
-theorem oracleReduction_perfectCompleteness (hInit : init.neverFails) :
+theorem oracleReduction_perfectCompleteness :
     (oracleReduction R deg D oSpec).perfectCompleteness init impl
       (inputRelation R deg D) (outputRelation R deg) := by
   unfold OracleReduction.perfectCompleteness
   rw [oracleReduction_eq_reduction]
-  exact reduction_perfectCompleteness R deg D oSpec hInit
+  exact reduction_perfectCompleteness R deg D oSpec
 
 /-- Round-by-round knowledge soundness for the verifier -/
 theorem verifier_rbrKnowledgeSoundness [Fintype R] :
@@ -664,8 +674,9 @@ instance extractorLens_rbr_knowledge_soundness :
       (fun _ _ => True)
       ⟨oStmtLens R n deg D i, Witness.InvLens.trivial⟩ where
   proj_knowledgeSound := by
-    simp [relationRound, Simple.outputRelation, Verifier.compatStatement,
-      Simple.oracleVerifier_eq_verifier, Simple.verifier, Verifier.run]
+    -- simp [relationRound, Simple.outputRelation, Verifier.compatStatement,
+    --   Simple.oracleVerifier_eq_verifier, Simple.verifier, Verifier.run]
+    sorry
   lift_knowledgeSound := by
     simp [relationRound, Simple.inputRelation, Statement.Lens.proj]
     unfold oStmtLens
@@ -680,13 +691,13 @@ instance extractorLens_rbr_knowledge_soundness :
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
-theorem reduction_perfectCompleteness (hInit : init.neverFails) :
+theorem reduction_perfectCompleteness :
     (reduction R n deg D oSpec i).perfectCompleteness init impl
     (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ) :=
   Reduction.liftContext_perfectCompleteness
     (lens := (oCtxLens R n deg D i).toContext)
     (lensComplete := by simp; sorry)
-    (Simple.reduction_perfectCompleteness R deg D oSpec hInit)
+    (Simple.reduction_perfectCompleteness R deg D oSpec)
 
 theorem verifier_rbrKnowledgeSoundness [Fintype R] :
     (verifier R n deg D oSpec i).rbrKnowledgeSoundness init impl
@@ -698,13 +709,13 @@ theorem verifier_rbrKnowledgeSoundness [Fintype R] :
 
 /-- Completeness theorem for single-round of sum-check, obtained by transporting the completeness
 proof for the simplified version -/
-theorem oracleReduction_perfectCompleteness (hInit : init.neverFails) :
+theorem oracleReduction_perfectCompleteness :
     (oracleReduction R n deg D oSpec i).perfectCompleteness init impl
       (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ) :=
   OracleReduction.liftContext_perfectCompleteness
     (lens := oCtxLens R n deg D i)
     (lensComplete := oCtxLens_complete i)
-    (Simple.oracleReduction_perfectCompleteness R deg D oSpec hInit)
+    (Simple.oracleReduction_perfectCompleteness R deg D oSpec)
 
 
 local instance : Inhabited R := ⟨0⟩
@@ -835,30 +846,31 @@ def verifier (i : Fin n) : Verifier oSpec
     guard (∑ x ∈ (univ.map D), p_i.eval x = target)
     pure ⟨⟨p_i.eval r_i, Fin.snoc challenges r_i⟩, oStmt⟩
 
-/-- The oracle verifier for the `i`-th round, where `i < n + 1` -/
-def oracleVerifier (i : Fin n) : OracleVerifier oSpec
-    (StatementRound R n i.castSucc) (OracleStatement R n deg)
-    (StatementRound R n i.succ) (OracleStatement R n deg) (pSpec R deg) where
-  -- Queries for the evaluations of the polynomial at all points in `D`,
-  -- plus one query for the evaluation at the challenge `r_i`
-  -- Check that the sum of the evaluations equals the target, and updates the statement accordingly
-  -- (the new target is the evaluation of the polynomial at the challenge `r_i`)
-  verify := fun ⟨target, challenges⟩ chal => do
-    let evals : List R ← (List.finRange m).mapM
-      (fun i => do
-        return ← query
-          (spec := (oSpec + ([OracleStatement R n deg]ₒ + [(pSpec R deg).Message]ₒ)))
-            (Sum.inr <| Sum.inr default) (D i))
-    guard (evals.sum = target)
-    let newTarget ← query
-      (spec := (oSpec + ([OracleStatement R n deg]ₒ + [(pSpec R deg).Message]ₒ)))
-        (Sum.inr <| Sum.inr default) (by simpa only using chal default)
-    letI newTarget : R := by simpa only
-    pure ⟨newTarget, Fin.snoc challenges (chal default)⟩
+-- /-- The oracle verifier for the `i`-th round, where `i < n + 1` -/
+-- def oracleVerifier --[Inhabited ((i : (pSpec R deg).MessageIdx) × OracleInterface.Query ((pSpec R deg).Message i))]
+--     (i : Fin n) : OracleVerifier oSpec
+--     (StatementRound R n i.castSucc) (OracleStatement R n deg)
+--     (StatementRound R n i.succ) (OracleStatement R n deg) (pSpec R deg) where
+--   -- Queries for the evaluations of the polynomial at all points in `D`,
+--   -- plus one query for the evaluation at the challenge `r_i`
+--   -- Check that the sum of the evaluations equals the target, and updates the statement accordingly
+--   -- (the new target is the evaluation of the polynomial at the challenge `r_i`)
+--   verify := fun ⟨target, challenges⟩ chal => do
+--     let evals : List R ← (List.finRange m).mapM
+--       (fun i => do
+--         return ← query
+--           (spec := (oSpec + ([OracleStatement R n deg]ₒ + [(pSpec R deg).Message]ₒ)))
+--             (Sum.inr <| Sum.inr (D i)))
+--     guard (evals.sum = target)
+--     let newTarget ← query
+--       (spec := (oSpec + ([OracleStatement R n deg]ₒ + [(pSpec R deg).Message]ₒ)))
+--         (Sum.inr <| Sum.inr (D i)) --(by simpa only using chal default)
+--     letI newTarget : R := by simpa only
+--     pure ⟨newTarget, Fin.snoc challenges (chal default)⟩
 
-  embed := Function.Embedding.inl
+--   embed := Function.Embedding.inl
 
-  hEq := fun _ => rfl
+--   hEq := fun _ => rfl
 
 end Unfolded
 

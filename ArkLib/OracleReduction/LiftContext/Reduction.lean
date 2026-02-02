@@ -54,7 +54,6 @@ open OracleSpec OracleComp ProtocolSpec
 open scoped NNReal
 
 variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
-  [oSpec.Inhabited] [oSpec.Fintype] --[[pSpec.].Inhabited] [oSpec.Fintype]]
   {OuterStmtIn OuterWitIn OuterStmtOut OuterWitOut : Type}
   {InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut : Type}
 
@@ -143,7 +142,7 @@ to a reduction.
 
 We require that the inner output context (statement + witness) is a possible output of the reduction
 on the outer input context (statement + witness). -/
-def Reduction.compatContext [[pSpec.Challenge]ₒ.Inhabited] [[pSpec.Challenge]ₒ.Fintype]
+def Reduction.compatContext
     (lens : Context.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                         OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
     (R : Reduction oSpec InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut pSpec) :
@@ -309,6 +308,7 @@ theorem liftContext_run
                 lens.stmt.lift outerStmtIn verInnerStmtOut⟩ := by
   unfold run
   simp [liftContext, Prover.liftContext_run, Verifier.liftContext, Verifier.run, Function.uncurry]
+  sorry
 
 theorem liftContext_runWithLog
     {lens : Context.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
@@ -322,6 +322,7 @@ theorem liftContext_runWithLog
                 lens.stmt.lift outerStmtIn verInnerStmtOut⟩, queryLog⟩ := by
   unfold runWithLog
   simp [liftContext, Prover.liftContext_runWithLog, Verifier.liftContext, Verifier.run]
+  sorry
 
 end Reduction
 

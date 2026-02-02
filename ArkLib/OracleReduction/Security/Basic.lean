@@ -239,7 +239,6 @@ namespace Verifier
   `stmtOut ∉ langOut` with probability at least `1 - soundnessError`)
 -/
 def soundness (langIn : Set StmtIn) (langOut : Set StmtOut)
-    [DecidablePred (· ∈ langOut)]
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (soundnessError : ℝ≥0) : Prop :=
   ∀ WitIn WitOut : Type,
@@ -249,12 +248,11 @@ def soundness (langIn : Set StmtIn) (langOut : Set StmtOut)
     let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
       impl.addLift challengeQueryImpl
     letI reduction := Reduction.mk prover verifier
-    Pr[fun z => z.all fun ⟨_, stmtOut⟩ => stmtOut ∈ langOut
-      | do (simulateQ pImpl <| reduction.run stmtIn witIn).run' (← init)] ≤ soundnessError
+    Pr[fun ⟨_, stmtOut⟩ => stmtOut ∈ langOut | OptionT.mk do
+      (simulateQ pImpl (reduction.run stmtIn witIn).run).run' (← init)] ≤ soundnessError
 
 /-- Type class for soundness for a verifier -/
 class IsSound (langIn : Set StmtIn) (langOut : Set StmtOut)
-    [DecidablePred (· ∈ langOut)]
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) where
   soundnessError : ℝ≥0
   is_sound : soundness init impl langIn langOut verifier soundnessError
@@ -274,7 +272,6 @@ class IsSound (langIn : Set StmtIn) (langOut : Set StmtOut)
   is at most `knowledgeError`.
 -/
 def knowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    [DecidablePred (· ∈ relIn)] [DecidablePred (· ∈ relOut)]
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) (knowledgeError : ℝ≥0) : Prop :=
   ∃ extractor : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec,
   ∀ stmtIn : StmtIn,
@@ -287,13 +284,12 @@ def knowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut ×
         ← (Reduction.mk prover verifier).runWithLog stmtIn witIn
       let extractedWitIn ← extractor stmtIn witOut transcript proveQueryLog.fst verifyQueryLog
       return (stmtIn, extractedWitIn, stmtOut, witOut)
-    Pr[fun j => j.all fun ⟨stmtIn, witIn, stmtOut, witOut⟩ =>
+    Pr[fun ⟨stmtIn, witIn, stmtOut, witOut⟩ =>
         (stmtIn, witIn) ∉ relIn ∧ (stmtOut, witOut) ∈ relOut
-      | do (simulateQ pImpl exec).run' (← init)] ≤ knowledgeError
+      | OptionT.mk do (simulateQ pImpl exec.run).run' (← init)] ≤ knowledgeError
 
 /-- Type class for knowledge soundness for a verifier -/
 class IsKnowledgeSound (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    [DecidablePred (· ∈ relIn)] [DecidablePred (· ∈ relOut)]
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) where
   knowledgeError : ℝ≥0
   is_knowledge_sound : knowledgeSoundness init impl relIn relOut verifier knowledgeError
@@ -370,7 +366,7 @@ open Classical in
 /-- Completeness of an oracle reduction is the same as for non-oracle reductions. -/
 def completeness
     (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
-    (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut)) [DecidablePred (· ∈ relOut)]
+    (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (oracleReduction : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec)
     (completenessError : ℝ≥0) : Prop :=
   Reduction.completeness init impl relIn relOut oracleReduction.toReduction completenessError
@@ -391,15 +387,15 @@ namespace OracleVerifier
 /-- Soundness of an oracle reduction is the same as for non-oracle reductions. -/
 def soundness
     (langIn : Set (StmtIn × ∀ i, OStmtIn i))
-    (langOut : Set (StmtOut × ∀ i, OStmtOut i)) [DecidablePred (· ∈ langOut)]
+    (langOut : Set (StmtOut × ∀ i, OStmtOut i))
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
     (soundnessError : ℝ≥0) : Prop :=
   verifier.toVerifier.soundness init impl langIn langOut soundnessError
 
 /-- Knowledge soundness of an oracle reduction is the same as for non-oracle reductions. -/
 def knowledgeSoundness
-    (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)) [DecidablePred (· ∈ relIn)]
-    (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut)) [DecidablePred (· ∈ relOut)]
+    (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
+    (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
     (knowledgeError : ℝ≥0) : Prop :=
   verifier.toVerifier.knowledgeSoundness init impl relIn relOut knowledgeError
@@ -490,8 +486,7 @@ section Trivial
 
 /-- The identity / trivial reduction is perfectly complete. -/
 @[simp]
-theorem Reduction.id_perfectCompleteness --[DecidableEq StmtIn]
-    {rel : Set (StmtIn × WitIn)} : --[DecidablePred (· ∈ rel)] :
+theorem Reduction.id_perfectCompleteness {rel : Set (StmtIn × WitIn)} :
     (Reduction.id : Reduction oSpec _ _ _ _ _).perfectCompleteness init impl rel rel := by
   simp
   aesop
@@ -499,7 +494,7 @@ theorem Reduction.id_perfectCompleteness --[DecidableEq StmtIn]
 
 /-- The identity / trivial verifier is perfectly sound. -/
 @[simp]
-theorem Verifier.id_soundness {lang : Set StmtIn} [DecidablePred (· ∈ lang)] :
+theorem Verifier.id_soundness {lang : Set StmtIn} :
     (Verifier.id : Verifier oSpec _ _ _).soundness init impl lang lang 0 := by
   simp [Verifier.soundness, Verifier.id, Reduction.run, Verifier.run]
   sorry
@@ -512,7 +507,7 @@ def Extractor.Straightline.id : Extractor.Straightline oSpec StmtIn WitIn WitIn 
 
 /-- The identity / trivial verifier is perfectly knowledge sound. -/
 @[simp]
-theorem Verifier.id_knowledgeSoundness {rel : Set (StmtIn × WitIn)} [DecidablePred (· ∈ rel)] :
+theorem Verifier.id_knowledgeSoundness {rel : Set (StmtIn × WitIn)} :
     (Verifier.id : Verifier oSpec _ _ _).knowledgeSoundness init impl rel rel 0 := by
   refine ⟨Extractor.Straightline.id, ?_⟩
   simp only [Extractor.Straightline.id, Verifier.id, Reduction.runWithLog, Verifier.run]
@@ -536,16 +531,14 @@ theorem OracleReduction.id_perfectCompleteness
 
 /-- The identity / trivial verifier is perfectly sound. -/
 @[simp]
-theorem OracleVerifier.id_soundness {lang : Set (StmtIn × ∀ i, OStmtIn i)}
-    [DecidablePred (· ∈ lang)]:
+theorem OracleVerifier.id_soundness {lang : Set (StmtIn × ∀ i, OStmtIn i)} :
     (OracleVerifier.id : OracleVerifier oSpec _ _ _ _ _).soundness
       init impl lang lang 0 := by
   simp [OracleVerifier.soundness]
 
 /-- The identity / trivial verifier is perfectly knowledge sound. -/
 @[simp]
-theorem OracleVerifier.id_knowledgeSoundness {rel : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)}
-    [DecidablePred (· ∈ rel)] :
+theorem OracleVerifier.id_knowledgeSoundness {rel : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)} :
     (OracleVerifier.id : OracleVerifier oSpec _ _ _ _ _).knowledgeSoundness
       init impl rel rel 0 := by
   simp [OracleVerifier.knowledgeSoundness]

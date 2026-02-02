@@ -159,8 +159,8 @@ abbrev relation := R1CS.relation R pp.toSizeR1CS
 instance : ∀ i, OracleInterface (OracleStatement R pp i) :=
   fun i => {
     Query := (Fin pp.ℓ_m → R) × (Fin pp.ℓ_n → R)
-    Response := R
-    answer := fun matrix ⟨x, y⟩ => matrix.toMLE ⸨C ∘ x⸩ ⸨y⸩
+    toOC.spec := fun _ => R
+    toOC.impl := fun ⟨x, y⟩ => do return (← read).toMLE ⸨C ∘ x⸩ ⸨y⸩
   }
 
 -- For the input witness, we define its oracle interface to be the polynomial evaluation oracle of
@@ -170,8 +170,9 @@ instance : ∀ i, OracleInterface (OracleStatement R pp i) :=
 -- an equivalence of types.
 instance : OracleInterface (Witness R pp) where
   Query := Fin pp.ℓ_w → R
-  Response := R
-  answer := fun 𝕨 evalPoint => (MLE (𝕨 ∘ finFunctionFinEquiv)) ⸨evalPoint⸩
+  toOC.spec := fun _ => R
+  toOC.impl := fun evalPoint => do
+    return (MLE ((← read) ∘ finFunctionFinEquiv)) ⸨evalPoint⸩
 
 /-!
   ## First message

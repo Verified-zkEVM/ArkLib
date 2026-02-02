@@ -97,7 +97,7 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
 /-- Perfect completeness of the non-commitment round reduction follows by append composition
     of the fold-round and the transfer-round reductions. -/
 theorem foldRelayOracleReduction_perfectCompleteness
-    (hInit : init.neverFails) (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
+     (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
   OracleReduction.perfectCompleteness
     (pSpec := pSpecFoldRelay (L:=L))
     (relIn := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
@@ -167,7 +167,7 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
 
 /-- Perfect completeness for Fold+Commitment block by append composition. -/
 theorem foldCommitOracleReduction_perfectCompleteness
-    (hInit : init.neverFails) (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
+    (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecFoldCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
       (relIn := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
@@ -253,8 +253,6 @@ def nonLastBlockOracleVerifier (bIdx : Fin (ℓ / ϑ - 1)) :=
       (pSpec₂:=pSpecFoldCommit 𝔽q β ⟨bIdx * ϑ + (ϑ - 1), h1⟩)
       (V₁:=by
         simp [stmt, oStmt, Nat.zero_mod] at firstFoldRelayRoundsOracleVerifier
-        rw! (castMode:=.all) [Nat.zero_mod] at firstFoldRelayRoundsOracleVerifier
-        simp only [Nat.add_zero] at firstFoldRelayRoundsOracleVerifier
         exact firstFoldRelayRoundsOracleVerifier
       )
       (V₂:=by
@@ -292,8 +290,6 @@ def lastBlockOracleVerifier :=
           ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩ nHCR
       )
     simp [stmt, oStmt, Nat.zero_mod] at cur
-    rw! (castMode:=.all) [Nat.zero_mod] at cur
-    simp only [Nat.add_zero] at cur
     have h: (⟨bIdx * ϑ + ϑ, by apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (hx:=by omega)⟩)
       = Fin.last ℓ := by
       apply Fin.eq_of_val_eq
@@ -334,9 +330,8 @@ def sumcheckFoldOracleVerifier :=
         exact lastOracleVerifier
       )
     simp [stmt, oStmt, Nat.zero_mod] at res
-    rw! (castMode:=.all) [Nat.zero_mod, Nat.zero_mul] at res
-    simp only [Fin.zero_eta] at res
-    exact res
+    convert res
+    all_goals simp
 
   sumcheckFoldOV
 
@@ -411,8 +406,6 @@ def nonLastBlockOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) :=
       (pSpec₂:=pSpecFoldCommit 𝔽q β ⟨bIdx * ϑ + (ϑ - 1), h1⟩)
       (R₁:=by
         simp [stmt, oStmt, Nat.zero_mod] at firstFoldRelayRoundsOracleReduction
-        rw! (castMode:=.all) [Nat.zero_mod] at firstFoldRelayRoundsOracleReduction
-        simp only [Nat.add_zero] at firstFoldRelayRoundsOracleReduction
         exact firstFoldRelayRoundsOracleReduction
       )
       (R₂:=by
@@ -456,8 +449,6 @@ def lastBlockOracleReduction :=
             (𝓑:=𝓑) (i:=⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩) nHCR
         )
       simp [stmt, oStmt, wit, Nat.zero_mod] at cur
-      rw! (castMode:=.all) [Nat.zero_mod] at cur
-      simp only [Nat.add_zero] at cur
       have h: (⟨bIdx * ϑ + ϑ, by apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (hx:=by omega)⟩)
         = Fin.last ℓ := by
         apply Fin.eq_of_val_eq
@@ -504,9 +495,8 @@ def sumcheckFoldOracleReduction :=
         exact lastOracleReduction
       )
     simp [stmt, oStmt, wit, Nat.zero_mod] at res
-    rw! (castMode:=.all) [Nat.zero_mod, Nat.zero_mul] at res
-    simp only [Fin.zero_eta] at res
-    exact res
+    convert res
+    all_goals simp
 
   coreInteractionOracleReduction
 
@@ -517,7 +507,7 @@ section SecurityProps
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
 /-- Perfect completeness for the core interaction oracle reduction -/
-theorem sumcheckFoldOracleReduction_perfectCompleteness (hInit : init.neverFails) :
+theorem sumcheckFoldOracleReduction_perfectCompleteness :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecSumcheckFold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (relIn := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
@@ -595,7 +585,7 @@ def coreInteractionOracleReduction :=
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
 /-- Perfect completeness for the core interaction oracle reduction -/
-theorem coreInteractionOracleReduction_perfectCompleteness (hInit : init.neverFails) :
+theorem coreInteractionOracleReduction_perfectCompleteness :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecCoreInteraction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (relIn := roundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
@@ -609,9 +599,9 @@ theorem coreInteractionOracleReduction_perfectCompleteness (hInit : init.neverFa
   · -- Perfect completeness of sumcheckFoldOracleReduction
     exact sumcheckFoldOracleReduction_perfectCompleteness 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (mp := BBF_SumcheckMultiplierParam)
-      (init := init) (impl := impl) hInit
+      (init := init) (impl := impl)
   · -- Perfect completeness of finalSumcheckOracleReduction
-    exact finalSumcheckOracleReduction_perfectCompleteness 𝔽q β (ϑ:=ϑ) (𝓑:=𝓑) init impl hInit
+    exact finalSumcheckOracleReduction_perfectCompleteness 𝔽q β (ϑ:=ϑ) (𝓑:=𝓑) init impl
 
 def coreInteractionOracleRbrKnowledgeError (j : (pSpecCoreInteraction 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).ChallengeIdx) : ℝ≥0 :=

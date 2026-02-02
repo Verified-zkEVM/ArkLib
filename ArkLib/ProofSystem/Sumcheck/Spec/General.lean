@@ -205,13 +205,13 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ Pro
 open NNReal
 
 /-- Perfect completeness for the (full) sum-check protocol -/
-theorem reduction_perfectCompleteness (hInit : init.neverFails) :
+theorem reduction_perfectCompleteness :
     (reduction R deg D n oSpec).perfectCompleteness init impl
       (relationRound R n deg D 0) (relationRound R n deg D (.last n)) :=
-  Reduction.seqCompose_perfectCompleteness hInit
+  Reduction.seqCompose_perfectCompleteness
     (rel := relationRound R n deg D)
     (R := SingleRound.reduction R n deg D oSpec)
-    (h := fun i => SingleRound.reduction_perfectCompleteness i hInit)
+    (h := fun i => SingleRound.reduction_perfectCompleteness i)
 
 /-- Round-by-round knowledge soundness with error `deg / |R|` per challenge for the (full)
   sum-check protocol -/

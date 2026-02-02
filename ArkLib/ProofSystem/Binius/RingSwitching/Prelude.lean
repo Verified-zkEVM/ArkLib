@@ -261,7 +261,6 @@ structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
     (pSpec := pSpec)
   -- Security properties
   perfectCompleteness : ∀ {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)},
-    init.neverFails →
     OracleReduction.perfectCompleteness (oSpec:=[]ₒ)
       (StmtIn:=MLPEvalStatement L ℓ') (OStmtIn:=OStmtIn)
       (StmtOut:=Bool) (OStmtOut:=fun _: Empty => Unit)

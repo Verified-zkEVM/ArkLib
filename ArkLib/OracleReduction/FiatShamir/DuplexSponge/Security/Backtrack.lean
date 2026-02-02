@@ -48,14 +48,14 @@ structure BacktrackSequence (trace : QueryLog (duplexSpongeChallengeOracle StmtI
   last_inputState_eq_state : inputState[inputState.length - 1] = state
 
   /-- The query-answer pair `("hash", stmt, inputState[0].capacitySegment)` is in the trace -/
-  hash_in_trace : (stmt, (Vector.drop inputState[0] SpongeSize.R)) ∈ trace.getQ (.inl ())
+  hash_in_trace : ⟨.inl stmt, (Vector.drop inputState[0] SpongeSize.R)⟩ ∈ trace
 
   /-- For all `i < outputState.length`, either
     - `inputState[i]` is permuted to `outputState[i]` in the trace, or
     - `outputState[i]` is inverted to `inputState[i]` in the trace -/
   permute_or_inv_in_trace : ∀ i : Fin outputState.length,
-    (inputState[i], outputState[i]) ∈ trace.getQ (.inr .Fwd)
-    ∨ (outputState[i], inputState[i]) ∈ trace.getQ (.inr .Bwd)
+    ⟨.inr (.inl inputState[i]), outputState[i]⟩ ∈ trace
+    ∨ ⟨.inr (.inr outputState[i]), inputState[i]⟩ ∈ trace
 
   /-- For all `i < outputState.length`, the capacity segment of `inputState[i]` is the same as
     the capacity segment of `outputState[i]` -/

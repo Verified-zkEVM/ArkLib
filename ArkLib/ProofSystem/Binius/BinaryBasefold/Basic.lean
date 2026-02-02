@@ -1014,7 +1014,7 @@ def foldStepRelOutProp (i : Fin ℓ)
   let wit := input.2
   masterKStateProp (mp := mp) (𝓑 := 𝓑) 𝔽q β
     (stmtIdx := i.succ) (oracleIdx := i.castSucc)
-    (h_le := Nat.le_of_lt (Fin.castSucc_lt_succ i)) stmt wit oStmt (localChecks := True)
+    (h_le := Nat.le_of_lt (Fin.castSucc_lt_succ)) stmt wit oStmt (localChecks := True)
 
 /-- This is a special case of nonDoomedFoldingProp for `i = ℓ`, where we support
 the consistency between the last oracle `ℓ - ϑ` and the final constant `c` -/
