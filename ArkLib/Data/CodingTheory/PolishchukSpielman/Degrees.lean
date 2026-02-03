@@ -344,10 +344,7 @@ lemma ps_eval_y_eq_eval_x_swap {F : Type} [CommRing F]
     simp [Polynomial.Bivariate.evalX, Polynomial.coeff_map, Polynomial.toFinsupp_apply]
   -- Convert `aeval (C y)` (using the `Polynomial.algebra` instance above) into `eval (C y)`.
   have eval_eq_aeval : Polynomial.eval (Polynomial.C y) f = aeval (Polynomial.C y) f := by
-    -- show the relevant `algebraMap F[X] F[X]` is the identity
-    have halg : (algebraMap F[X] F[X]) = RingHom.id (F[X]) := by
-      simp only [algebraMap_def, Algebra.algebraMap_self, mapRingHom_id]
-    simp [Polynomial.eval, Polynomial.aeval_def, halg]
+    simp [Polynomial.aeval_def]
   -- Rewrite the RHS of `aveal_eq_map_swap` into a `map` by `evalRingHom`.
   have mapAlgHom_eq_map :
       Polynomial.mapAlgHom (aeval y : F[X] →ₐ[F] F) (Polynomial.Bivariate.swap f)
