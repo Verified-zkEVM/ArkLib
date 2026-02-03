@@ -13,6 +13,7 @@ import Mathlib.Data.ENNReal.Basic
 import VCVio.OracleComp.EvalDist
 import ArkLib.OracleReduction.OracleInterface
 import VCVio.EvalDist.Instances.OptionT
+import ArkLib.Data.Probability.Instances
 
 /-!
 ## Monad-to-Logic Bridge Lemmas
@@ -1535,6 +1536,106 @@ lemma OptionT.simulateQ_forIn
       simp only [forIn, List.forIn'_cons]
       sorry
 
+/-- Stateful version of simulateQ_forIn.
+    Distributes simulation over a loop where the oracle implementation itself has state. -/
+@[simp]
+lemma simulateQ_forIn_stateful_run_eq {ι : Type} {spec : OracleSpec ι}
+    {σ α β : Type} (impl : QueryImpl spec (StateT σ ProbComp))
+    (l : List α) (init : β) (f : α → β → OracleComp spec (ForInStep β)) (s : σ) :
+    (simulateQ impl (forIn l init f)).run s =
+    (forIn l init (fun a b => simulateQ impl (f a b))).run s := by
+  induction l generalizing init s with
+  | nil =>
+      -- Base case: both sides reduce to pure init
+      simp only [forIn, List.forIn'_nil, simulateQ_pure, StateT.run_pure]
+  | cons x xs ih =>
+      -- Inductive case: x :: xs
+      simp only [forIn, List.forIn'_cons, simulateQ_bind, StateT.run_bind]
+      congr
+      funext pair
+      rcases pair with ⟨step, s'⟩
+      cases step with
+      | done res => simp only [forIn'_eq_forIn, Function.comp_apply, simulateQ_pure,
+        StateT.run_pure]
+      | yield res => exact ih res s'
+
+/-- Distributes stateful simulation over forIn at the StateT level. -/
+@[simp]
+lemma simulateQ_forIn_stateful_comp {ι : Type} {spec : OracleSpec ι}
+    {σ α β : Type} (impl : QueryImpl spec (StateT σ ProbComp))
+    (l : List α) (init : β) (f : α → β → OracleComp spec (ForInStep β)) :
+    simulateQ impl (forIn l init f) =
+    forIn l init (fun a b => simulateQ impl (f a b)) := by
+  -- Proof is by induction on l, matching the structure of forIn unrolling
+  induction l generalizing init with
+  | nil => simp [forIn, simulateQ_pure]
+  | cons x xs ih =>
+      simp only [forIn, List.forIn'_cons, simulateQ_bind]
+      congr; funext step
+      cases step with
+      | done res => simp [simulateQ_pure]
+      | yield res => exact ih res
+
+
+/-- **Guard Support Lemma**:
+    If a stateful guard succeeds in the support, the condition is true
+    and the state is unchanged. -/
+lemma mem_support_stateful_guard_iff {σ : Type} {p : Prop} [Decidable p]
+    {s s' : σ} {u : Unit} :
+    (u, s') ∈ ((if p then pure () else failure : StateT σ ProbComp Unit).run s).support ↔
+    p ∧ s' = s := by
+  split_ifs with h
+  · simp only [StateT.run_pure, support_pure, Set.mem_singleton_iff, Prod.mk.injEq, true_and, h]
+  · simp only [StateT.run_failure, support_failure, Set.mem_empty_iff_false, h, false_and]
+
+/-- **Loop Path Extraction**:
+    If a stateful forIn loop over PUnit reaches a final state, then for every element
+    in the list, there must exist a local start state and end state such that the
+    body of that iteration succeeded. -/
+lemma exists_path_of_mem_support_forIn_unit {σ α : Type} [spec.FiniteRange]
+    (l : List α) (f : α → PUnit → StateT σ ProbComp (ForInStep PUnit))
+    (s_init s_final : σ) (u : PUnit)
+    (h_mem : (u, s_final) ∈ ((forIn l PUnit.unit f).run s_init).support) :
+    ∀ x ∈ l, ∃ s_pre s_post,
+      (ForInStep.yield PUnit.unit, s_post) ∈ ((f x PUnit.unit).run s_pre).support := by
+    sorry
+
+/-- **Stateful forIn: path + relation from support** (combines path extraction and relation induction).
+
+Given a stateful forIn loop, a relation `rel : Fin (l.length + 1) → β → σ → Prop`, base case and
+step preservation, and a result `res` in the loop support, this lemma provides:
+1. The final relation holds: `rel ⟨l.length, _⟩ res.1 res.2`
+2. A constructive path: sequences `bs` and `ss` such that `(bs 0, ss 0) = (init, s)`,
+   `(bs ⟨l.length, _⟩, ss ⟨l.length, _⟩) = (res.1, res.2)`, each step
+   `(.yield (bs k.succ), ss k.succ)` is in the support of the body run from `(bs k.castSucc, ss k.castSucc)`,
+   and `rel k (bs k) (ss k)` for all `k`.
+
+So you get both "exists_path_of_mem_support_forIn_unit"-style per-step membership and
+"support_forIn_stateful_of_relations"-style relation at every index (including the final one).
+
+**Note:** The loop's `.run` support is `Set (β × σ)` (the accumulated value and state);
+each body step's support is `Set (ForInStep β × σ)`, hence `h_step` uses `ForInStep.state res_step.1`. -/
+@[simp]
+lemma exists_rel_path_of_mem_support_forIn_stateful {ι : Type} {spec : OracleSpec ι} [spec.FiniteRange]
+    {α σ β : Type} (l : List α) (init : β) (f : α → β → StateT σ ProbComp (ForInStep β))
+    (s : σ)
+    (rel : Fin (l.length + 1) → β → σ → Prop)
+    (h_start : rel 0 init s)
+    (h_step : ∀ (k : Fin l.length) (b : β) (s_curr : σ),
+      rel k.castSucc b s_curr →
+      ∀ res_step ∈ ((f (l.get k) b).run s_curr).support,
+        rel k.succ (ForInStep.state res_step.1) res_step.2)
+    (res : β × σ)
+    (h_mem : res ∈ ((forIn l init f).run s).support) :
+    rel ⟨l.length, by omega⟩ res.1 res.2 ∧
+    ∃ (bs : Fin (l.length + 1) → β) (ss : Fin (l.length + 1) → σ),
+      bs 0 = init ∧ ss 0 = s ∧
+      bs ⟨l.length, by omega⟩ = res.1 ∧ ss ⟨l.length, by omega⟩ = res.2 ∧
+      (∀ k : Fin l.length,
+        (ForInStep.yield (bs k.succ), ss k.succ) ∈ ((f (l.get k) (bs k.castSucc)).run (ss k.castSucc)).support) ∧
+      (∀ k : Fin (l.length + 1), rel k (bs k) (ss k)) := by
+  sorry
+
 /-- Distributes `simulateQ` over `Vector.mapM`.
 
 TODO: This proof is non-trivial because `Vector.mapM` is implemented via an auxiliary
@@ -1658,3 +1759,108 @@ lemma mem_support_vector_mapM_pure {α β : Type} {n : ℕ}
     simp only [Fin.getElem_fin, support_pure, Vector.getElem_map, Set.mem_singleton_iff]
 
 end ForInLemmas
+
+
+/-!
+## Probability Notation Bridge Lemmas
+
+This section contains lemmas to bridge between VCVio's `probEvent` notation `[p | oa]`
+and ArkLib's `Pr_{...}[...]` PMF-based notation, enabling the use of probability
+tools from `Instances.lean` (like Schwartz-Zippel) in security proofs.
+
+### Key Strategy
+
+Use `OracleComp.probEvent_bind_eq_tsum` to factor complex probability statements:
+```lean
+[q | oa >>= ob] = ∑' x : α, [= x | oa] * [q | ob x]
+```
+-/
+
+section ProbabilityNotationBridge
+
+variable {ι : Type*} {spec : OracleSpec ι} {α β σ : Type} [spec.FiniteRange]
+
+/-- **Key factorization lemma**: breaks down `probEvent` on bind into a tsum.
+This is the main tool for analyzing complex security bounds. -/
+lemma probEvent_bind_factor {α β : Type}
+    (oa : OracleComp spec α) (ob : α → OracleComp spec β)
+    (q : β → Prop) [DecidablePred q] :
+    [q | oa >>= ob] = ∑' x : α, [= x | oa] * [q | ob x] :=
+  OracleComp.probEvent_bind_eq_tsum oa ob q
+
+/-- Factor `probEvent` on a `StateT` computation after `.run'`.
+Useful pattern in security definitions with stateful simulations. -/
+lemma probEvent_StateT_run'_factor {σ α : Type} (init : ProbComp σ)
+    (comp : StateT σ ProbComp α) (p : α → Prop) [DecidablePred p] :
+    [p | do let s ← init; Prod.fst <$> comp.run s] =
+    ∑' s : σ, [= s | init] * [p | Prod.fst <$> comp.run s] := by
+  rw [OracleComp.probEvent_bind_eq_tsum]
+
+/-- Simplification when initial state is deterministic. -/
+lemma probEvent_StateT_run'_pure {σ α : Type}
+    (s : σ) (comp : StateT σ ProbComp α) (p : α → Prop) [DecidablePred p] :
+    [p | comp.run' s] = [p | Prod.fst <$> comp.run s] := by
+  simp only [StateT.run'_eq, OracleComp.probEvent_pure,
+    ite_mul, one_mul, zero_mul, tsum_ite_eq]
+
+end ProbabilityNotationBridge
+
+section NestedSimulateQSupport
+open OracleComp OracleSpec OracleQuery SimOracle
+
+variable {ι : Type} {oSpec oSpec' : OracleSpec ι}
+  [oSpec.FiniteRange] [oSpec'.FiniteRange]
+
+omit [oSpec.FiniteRange] in
+/-- **Support of simulateQ through bind with StateT**
+
+For stateful oracle implementations, the support of `(simulateQ impl oa >>= f).run s` can be
+related to the spec support by unfolding through the monadic structure.
+
+This handles the case where we have a bind after simulateQ, which is common in verifier
+executions that continue with additional stateful computations. -/
+lemma support_simulateQ_bind_run_eq
+    {σ α β : Type}
+    (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (oa : OracleComp oSpec α) (f : α → StateT σ ProbComp β) (s : σ) :
+    ((simulateQ impl oa >>= f).run s).support =
+    (do let ⟨x, s'⟩ ← (simulateQ impl oa).run s; (f x).run s').support := by
+  simp only [StateT.run]; rfl
+
+/-- **Support of StateT bind (run form)**
+Membership in `support ((m >>= g).run s)` is equivalent to: there exists `out_forIn ∈ support (m.run s)`
+such that `x` is in the support of continuing with `g` from that result (i.e. `(g out_forIn.1).run out_forIn.2`).
+Useful to "peel" the outer bind and get an existential over the forIn (or first part) outcome. -/
+lemma mem_support_StateT_bind_run {σ α β : Type}
+    (ma : StateT σ ProbComp α) (f : α → StateT σ ProbComp β) (s : σ) (x : β × σ) :
+    x ∈ ((ma >>= f).run s).support ↔
+    ∃ (y : α) (s' : σ), (y, s') ∈ (ma.run s).support ∧ x ∈ ((f y).run s').support := by
+  simp only [StateT.run_bind, support_bind, Set.mem_iUnion, exists_prop, Prod.exists]
+
+/-- Handle the guard pattern inside support reasoning. -/
+@[simp]
+lemma support_guard_bind {ι : Type} {spec : OracleSpec ι} [spec.FiniteRange]
+    {α : Type} (p : Prop) [Decidable p]
+    (f : PUnit → OracleComp spec α) :
+    (guard p >>= f).support = if p then (f ()).support else ∅ :=
+by split_ifs with h <;> simp [h, guard]
+
+end NestedSimulateQSupport
+
+section MapLemmas
+
+variable {ι : Type} {spec : OracleSpec ι} {α β : Type}
+
+/-- Map over pure reduces to pure of the mapped value. -/
+@[simp]
+lemma map_pure (f : α → β) (a : α) :
+    (f <$> pure a : OracleComp spec β) = pure (f a) := rfl
+
+/-- Map over failure is failure. -/
+@[simp]
+lemma map_failure (f : α → β) :
+    (f <$> (failure : OracleComp spec α) : OracleComp spec β) = failure := by
+  rw [map_eq_pure_bind]
+  rfl
+
+end MapLemmas

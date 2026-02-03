@@ -4,9 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 import ArkLib.ProofSystem.Binius.RingSwitching.Prelude
+import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 import ArkLib.ToVCVio.Oracle
 
 namespace Binius.RingSwitching
+open Binius.BinaryBasefold
 
 /-! ## Protocol Specs for Ring-Switching
 
@@ -58,7 +60,8 @@ def pSpecSumcheckRound : ProtocolSpec 2 := ⟨![Direction.P_to_V, Direction.V_to
 
 def pSpecSumcheckLoop := ProtocolSpec.seqCompose (fun (_: Fin ℓ') => pSpecSumcheckRound L)
 
-def pSpecFinalSumcheck : ProtocolSpec 1 := ⟨![Direction.P_to_V], ![L]⟩
+@[reducible]
+def pSpecFinalSumcheck := pSpecFinalSumcheckStep (L := L)
 
 @[reducible]
 def pSpecCoreInteraction := (pSpecSumcheckLoop L ℓ') ++ₚ (pSpecFinalSumcheck L)
@@ -79,23 +82,18 @@ instance : ∀ j, OracleInterface ((pSpecBatching κ L K).Message j)
   | ⟨1, _⟩ => OracleInterface.instDefault -- r'' ∈ L^κ
 
 instance : ∀ j, OracleInterface ((pSpecBatching κ L K).Challenge j) :=
-  ProtocolSpec.challengeOracleInterface
+  fun _ => OracleInterface.instDefault
+  -- NOTE: this is same as ProtocolSpec.challengeOracleInterface (pSpec := pSpecBatching κ L K)
 
-instance : ∀ j, OracleInterface ((pSpecSumcheckRound (L:=L)).Message j)
-  | ⟨0, _⟩ => OracleInterface.instDefault -- h_i(X) polynomial
-  | ⟨1, _⟩ => OracleInterface.instDefault -- challenge r'_i
+instance instOracleInterfaceMessagePSpecSumcheckRound :
+  ∀ j, OracleInterface ((pSpecSumcheckRound (L:=L)).Message j) :=
+  fun _ => OracleInterface.instDefault
 
 instance : ∀ j, OracleInterface ((pSpecSumcheckRound (L:=L)).Challenge j) :=
   ProtocolSpec.challengeOracleInterface
 
 instance : ∀ j, OracleInterface ((pSpecSumcheckLoop (L:=L) ℓ').Message j)
   := instOracleInterfaceMessageSeqCompose
-
-instance : ∀ i, OracleInterface ((pSpecFinalSumcheck (L:=L)).Message i)
-  | ⟨0, _⟩ => OracleInterface.instDefault -- final constant c
-
-instance : ∀ i, OracleInterface ((pSpecFinalSumcheck (L:=L)).Challenge i)
-  := ProtocolSpec.challengeOracleInterface
 
 instance : ∀ i, OracleInterface ((pSpecCoreInteraction (L:=L) (ℓ':=ℓ')).Message i) :=
   instOracleInterfaceMessageAppend
@@ -124,9 +122,6 @@ instance : ∀ j, SampleableType ((pSpecSumcheckRound (L:=L)).Challenge j)
 
 instance : ∀ j, SampleableType ((pSpecSumcheckLoop (L:=L) ℓ').Challenge j)
   := instSampleableTypeChallengeSeqCompose
-
-instance : ∀ i, SampleableType ((pSpecFinalSumcheck (L:=L)).Challenge i)
-  | ⟨0, h0⟩ => by nomatch h0 -- P->V message has no challenge
 
 instance : ∀ i, SampleableType ((pSpecCoreInteraction (L:=L) (ℓ':=ℓ')).Challenge i) :=
   instSampleableTypeChallengeAppend

@@ -9,10 +9,12 @@ import ArkLib.Data.Probability.Notation
 import CompPoly.Data.Fin.BigOperators
 import CompPoly.Data.Nat.Bitwise
 import Mathlib.Algebra.MvPolynomial.SchwartzZippel
-
+import ArkLib.Data.MvPolynomial.Notation
+import ArkLib.ToMathlib.MvPolynomial.Equiv
+import VCVio.EvalDist.Basic
 open ProbabilityTheory Filter
 open NNReal Finset Function
-open scoped BigOperators ProbabilityTheory
+open scoped BigOperators ProbabilityTheory Polynomial
 open Real
 
 -- TODO(dtumad): Move most of the stuff in this file to VCV and generalize as possible
@@ -374,6 +376,26 @@ theorem Pr_le_Pr_of_implies {α : Type} (D : PMF α)
   -- 5. Prove the factor `D r` is non-negative
   · exact zero_le (D r) -- Probabilities are always non-negative
 
+alias prob_mono := Pr_le_Pr_of_implies
+
+/-- **Union bound**: Pr[A ∨ B] ≤ Pr[A] + Pr[B]. -/
+theorem Pr_or_le {α : Type} (D : PMF α)
+    (f g : α → Prop) [DecidablePred f] [DecidablePred g] [DecidablePred (fun r => f r ∨ g r)] :
+    Pr_{ let r ← D }[ f r ∨ g r ] ≤ Pr_{ let r ← D }[ f r ] + Pr_{ let r ← D }[ g r ] := by
+  rw [prob_tsum_form_singleton D (fun r => f r ∨ g r),
+    prob_tsum_form_singleton D f, prob_tsum_form_singleton D g]
+  trans ∑' r, (D r * (if f r then 1 else 0) + D r * (if g r then 1 else 0))
+  · apply ENNReal.tsum_le_tsum
+    intro r
+    by_cases hf : f r
+    · by_cases hg : g r
+      · simp only [hf, hg, or_true, ↓reduceIte, mul_one]; exact le_add_of_nonneg_right (zero_le (D r))
+      · simp only [hf, hg, or_true, true_or, ↓reduceIte, mul_one, mul_zero, add_zero]; exact le_refl (D r)
+    · by_cases hg : g r
+      · simp only [hf, hg, true_or, or_true, ↓reduceIte, mul_one, mul_zero, zero_add]; exact le_refl (D r)
+      · simp only [hf, hg, false_or, ↓reduceIte, mul_zero, zero_add]; exact le_refl 0
+  · rw [ENNReal.tsum_add];
+
 theorem Pr_multi_let_equiv_single_let {α β : Type}
     (D₁ : PMF α) (D₂ : PMF β) -- Assuming D₂ is independent for simplicity
     (P : α → β → Prop) [∀ x, DecidablePred (P x)] :
@@ -455,6 +477,98 @@ lemma Pr_congr {α : Type} {D : PMF α} {P Q : α → Prop}
   congr 2; funext x;
   congr 1; exact propext (h x)
 
+section ProbabilitySplitting
+variable {A : Type} [Fintype A] [Nonempty A]
+
+/-- Helper: Probability over functions can be split into iterated product.
+For uniform sampling over `Fin n → A`, if the predicate factors as a conjunction
+over each index, the probability equals the product of individual probabilities.
+
+This is the key lemma for showing that independent repetitions multiply their error rates. -/
+theorem prob_pow_of_forall_finFun
+    (n : ℕ) (P : A → Prop) [DecidablePred P]
+    [DecidablePred (fun (f : Fin n → A) => ∀ i, P (f i))] :
+    Pr_{ let f ← $ᵖ (Fin n → A) }[ ∀ i, P (f i) ] =
+    (Pr_{ let a ← $ᵖ A }[ P a ])^n := by
+  induction n with
+  | zero =>
+    simp only [IsEmpty.forall_iff, PMF.monad_pure_eq_pure, PMF.monad_bind_eq_bind, PMF.bind_const,
+      PMF.pure_apply, ↓reduceIte, PMF.bind_apply, PMF.uniformOfFintype_apply, eq_iff_iff, true_iff,
+      mul_ite, mul_one, mul_zero, pow_zero]
+  | succ n ih =>
+    -- Shorter equivalence proof
+    have h_eqv (f : Fin (n + 1) → A) : (∀ i, P (f i)) ↔ P (f (Fin.last n)) ∧ ∀ (i : Fin n), P (f i.castSucc) := by
+      constructor
+      · intro h; exact ⟨h _, fun i => h _⟩
+      · rintro ⟨h_last, h_init⟩ ⟨i, hi⟩
+        by_cases h : i < n
+        · exact h_init ⟨i, h⟩
+        · have : i = n := by omega
+          simp only [this]
+          exact h_last
+    rw [Pr_congr (h := h_eqv)]
+    -- Chain the splitting and independence results
+    calc Pr_{ let f ← $ᵖ (Fin (n + 1) → A) }[ P (f (Fin.last n)) ∧ ∀ (i : Fin n), P (f i.castSucc) ]
+      _ = Pr_{ let a ← $ᵖ A; let f_init ← $ᵖ (Fin n → A) }[ P a ∧ ∀ (i : Fin n), P (f_init i) ] := by
+        have h := prob_split_last_uniform_sampling_of_finFun (ϑ := n)
+          (P := fun a (f_init : Fin n → A) => P a ∧ ∀ (i : Fin n), P (f_init i))
+        simpa using h
+      _ = Pr_{ let a ← $ᵖ A }[ P a ] * Pr_{ let f_init ← $ᵖ (Fin n → A) }[ ∀ (i : Fin n), P (f_init i) ] := by
+        -- Convert sequential bind to single uniform over product
+        have h_prod : Pr_{ let a ← $ᵖ A; let f_init ← $ᵖ (Fin n → A) }[ P a ∧ ∀ (i : Fin n), P (f_init i) ] =
+            Pr_{ let p ← $ᵖ (A × (Fin n → A)) }[ P p.1 ∧ ∀ (i : Fin n), P (p.2 i) ] := by
+          rw [prob_split_uniform_sampling_of_prod]
+        rw [h_prod]
+        -- Use counting formula for product and components
+        rw [prob_uniform_eq_card_filter_div_card, prob_uniform_eq_card_filter_div_card,
+            prob_uniform_eq_card_filter_div_card]
+        simp only [Fintype.card_prod, ENNReal.div_eq_inv_mul]
+        -- Filter cardinality multiplies
+        have h_filter :
+          (Finset.filter (fun (p : A × (Fin n → A)) => P p.1 ∧ ∀ (i : Fin n), P (p.2 i)) Finset.univ).card =
+          (Finset.filter (fun (a : A) => P a) Finset.univ).card *
+          (Finset.filter (fun (f : Fin n → A) => ∀ (i : Fin n), P (f i)) Finset.univ).card := by
+          have : Finset.filter (fun (p : A × (Fin n → A)) => P p.1 ∧ ∀ (i : Fin n), P (p.2 i)) Finset.univ =
+              (Finset.filter (fun (a : A) => P a) Finset.univ) ×ˢ
+              (Finset.filter (fun (f : Fin n → A) => ∀ (i : Fin n), P (f i)) Finset.univ) := by
+            ext ⟨a, f⟩; simp
+          rw [this, Finset.card_product]
+        rw [h_filter]
+        simp only [Fintype.card_pi, Finset.prod_const, Finset.card_univ, Fintype.card_fin,
+          Nat.cast_mul, Nat.cast_pow, ENNReal.coe_mul, ENNReal.coe_natCast, ENNReal.coe_pow]
+        -- (↑(card A))^n = ↑((card A)^n) so lemma pattern (↑a * ↑b)⁻¹ matches
+        rw [← Nat.cast_pow]
+        rw [← ENNReal.mul_inv_rev_ENNReal (ha := Fintype.card_ne_zero)
+            (hb := ne_of_gt (Nat.pow_pos Fintype.card_pos))]
+        have h_eq : (Finset.filter (fun a => P a) Finset.univ) = Finset.filter P Finset.univ :=
+          Finset.filter_congr (fun a _ => by rfl)
+        rw [← h_eq]
+        conv_lhs =>
+          rw [←mul_assoc];
+          rw [mul_assoc (c := ((Finset.filter (fun a => P a) Finset.univ).card : ENNReal))]
+          rw [mul_comm (b := ((Finset.filter (fun a => P a) Finset.univ).card : ENNReal))]
+          rw [←mul_assoc]
+          rw [mul_assoc (a := ((Fintype.card A):ENNReal)⁻¹ * (Finset.filter (fun a => P a) Finset.univ).card)]
+      _ = (Pr_{ let a ← $ᵖ A }[ P a ]) ^ (n + 1) := by
+        rw [ih, pow_succ', mul_comm]
+
+/-- Specialization: Probability bound for failing all proximity checks.
+When each repetition independently bounds bad events by ε, running n repetitions
+has cumulative bound ε^n (product rule for independent events). -/
+theorem prob_pow_bound_of_forall
+    (n : ℕ) (P : A → Prop) [DecidablePred P]
+    [DecidablePred (fun (f : Fin n → A) => ∀ i, P (f i))]
+    (ε : ENNReal) (h_bound : Pr_{ let a ← $ᵖ A}[P a] ≤ ε) :
+    Pr_{ let f ← $ᵖ (Fin n → A) }[ ∀ i, P (f i) ] ≤ ε^n := by
+  calc Pr_{ let f ← $ᵖ (Fin n → A) }[ ∀ i, P (f i) ]
+      = (Pr_{ let a ← $ᵖ A }[ P a ])^n := prob_pow_of_forall_finFun n P
+    _ ≤ ε^n := by
+      -- Use the fact that x ≤ y implies x^n ≤ y^n for ENNReal
+      apply pow_le_pow_left'
+      · exact h_bound
+
+end ProbabilitySplitting
+
 /-- **Schwartz-Zippel Lemma** (Probability Form):
 For a non-zero multivariate polynomial `P` of total degree at most `d` over a finite field `L`,
 the probability that `P(r)` evaluates to 0 for a uniformly random `r` is at most `d / |L|`. -/
@@ -493,5 +607,126 @@ lemma prob_schwartz_zippel_mv_polynomial {R : Type} [CommRing R] [IsDomain R] [F
   simp only [Fintype.card_pi, prod_const, card_univ, Fintype.card_fin, Nat.cast_pow, ge_iff_le]
   rw [Nat.cast_pow] at sz_bound_ENNReal
   exact sz_bound_ENNReal
+
+/-- **Schwartz-Zippel for univariate (Fin 1) polynomials with arbitrary degree bound**.
+For a non-zero `P : MvPolynomial (Fin 1) R` with `P.totalDegree ≤ d`, the probability that
+`P(r)` is 0 for uniform `r : Fin 1 → R` is at most `d / |R|`. -/
+lemma prob_schwartz_zippel_univariate_deg {R : Type} [CommRing R] [IsDomain R] [Fintype R]
+    [DecidableEq R] (d : ℕ) (P : MvPolynomial (Fin 1) R) (h_nonzero : P ≠ 0)
+    (h_deg : P.totalDegree ≤ d) :
+    Pr_{ let r ←$ᵖ (Fin 1 → R) }[ MvPolynomial.eval r P = 0 ] ≤
+      (d : ℝ≥0) / (Fintype.card R : ℝ≥0) := by
+  rw [prob_uniform_eq_card_filter_div_card]
+  push_cast
+  have sz_bound := MvPolynomial.schwartz_zippel_totalDegree (R := R) (n := 1)
+    (p := P) (hp := h_nonzero) (S := Finset.univ)
+  simp only [Fintype.piFinset_univ, card_univ] at sz_bound
+  have sz_bound_le_d_div_card_R : ((#{f | (MvPolynomial.eval f) P = 0}) : ℚ≥0)
+    / ((Fintype.card R ^ 1)) ≤ (d : ℚ≥0) / ((#(Finset.univ : Finset R)) : ℚ≥0) := by
+    calc
+      _ ≤ (P.totalDegree : ℚ≥0) / ((#(Finset.univ : Finset R)) : ℚ≥0) := sz_bound
+      _ ≤ (d : ℚ≥0) / ((#(Finset.univ : Finset R)) : ℚ≥0) := by
+        simp only [card_univ]
+        apply div_le_of_le_mul₀ (hb := by simp only [zero_le]) (hc := by simp only [zero_le])
+        rw [div_mul_cancel₀ (h := by simp only [ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero,
+          not_false_eq_true])]
+        exact Nat.cast_le.mpr h_deg
+  have sz_bound_le_d_div_card_R' : ((#{f | (MvPolynomial.eval f) P = 0}) : ℚ≥0)
+    / (Fintype.card R : ℚ≥0) ≤ (d : ℚ≥0) / (Fintype.card R : ℚ≥0) := by
+    rw [pow_one, card_univ] at sz_bound_le_d_div_card_R
+    exact sz_bound_le_d_div_card_R
+  have sz_bound_ENNReal : ((#{f | (MvPolynomial.eval f) P = 0}) : ENNReal)
+    / (Fintype.card R : ENNReal) ≤ (d : ENNReal) / (Fintype.card R : ENNReal) := by
+    simp_rw [ENNReal.coe_Nat_coe_NNRat]
+    conv_lhs => rw [ENNReal.coe_div_of_NNRat (hb := by
+      simp only [pow_one, ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero, not_false_eq_true])]
+    conv_rhs => rw [ENNReal.coe_div_of_NNRat (hb := by simp only [ne_eq, Nat.cast_eq_zero,
+      Fintype.card_ne_zero, not_false_eq_true])]
+    rw [ENNReal.coe_le_of_NNRat]
+    exact sz_bound_le_d_div_card_R'
+  simp only [Fintype.card_pi, prod_const, card_univ, Fintype.card_fin, pow_one, ge_iff_le]
+  exact sz_bound_ENNReal
+
+/-- **Schwartz-Zippel for degree-1 univariate polynomials**.
+For two distinct degree-1 univariate polynomials over a commutative ring, the probability
+that they agree at a random point is at most `1 / |R|`. -/
+lemma prob_poly_agreement_degree_one {R : Type} [CommRing R] [IsDomain R] [Fintype R]
+    [DecidableEq R]
+    (p q : R⦃≤ 1⦄[X])
+    (h_ne : p ≠ q) :
+    Pr_{ let r ←$ᵖ R }[ p.val.eval r = q.val.eval r ] ≤
+      (1 : ℝ≥0) / (Fintype.card R : ℝ≥0) := by
+  -- 1. Setup the multivariate polynomial P = p - q
+  let P := (p.val - q.val).toMvPolynomial (σ := Fin 1) 0
+  -- 2. Prove P is non-zero (immediate from p ≠ q)
+  have h_nz : P ≠ 0 := by
+    rw [Polynomial.toMvPolynomial_ne_zero_iff, sub_ne_zero]
+    exact fun h => h_ne (Subtype.eq h)
+  have h_p_deg : p.val.degree ≤ 1 :=
+    Polynomial.mem_degreeLE (f := p.val) (n := 1).mp (by simp only [SetLike.coe_mem])
+  have h_q_deg : q.val.degree ≤ 1 :=
+    Polynomial.mem_degreeLE (f := q.val) (n := 1).mp (by simp only [SetLike.coe_mem])
+  -- 3. Prove totalDegree P ≤ 1
+  have h_deg : P.totalDegree ≤ 1 := by
+    apply (Polynomial.toMvPolynomial_totalDegree_le _ _).trans
+    apply (Polynomial.natDegree_sub_le _ _).trans
+    -- Use the fact that p, q are in R{≤1}[X] directly
+    simp only [max_le_iff]
+    constructor <;> apply Polynomial.natDegree_le_of_degree_le <;>
+      first | exact h_p_deg | exact h_q_deg
+  -- 4. Apply Schwartz-Zippel
+  calc Pr_{ let r ←$ᵖ R }[ p.val.eval r = q.val.eval r ]
+    _ = Pr_{ let r ←$ᵖ R }[ (p.val - q.val).eval r = 0 ] := by
+      apply Pr_congr; simp [sub_eq_zero]
+    _ = Pr_{ let r ←$ᵖ R }[ MvPolynomial.eval (fun _ ↦ r) P = 0 ] := by
+      apply Pr_congr; intro; simp [P, MvPolynomial.eval_toMvPolynomial]
+    _ = Pr_{ let f ←$ᵖ (Fin 1 → R) }[ MvPolynomial.eval f P = 0 ] := by
+      -- Move to function space (Fin 1 → R)
+      rw [← prob_uniform_singleton_finFun_eq]
+      congr; funext f
+      -- Collapse: eval f (toMv p) = eval (f 0) p
+      simp [P, MvPolynomial.eval_toMvPolynomial]
+    _ ≤ _ := by
+      have h := prob_schwartz_zippel_mv_polynomial P h_nz h_deg
+      simp only [Nat.cast_one] at h
+      exact h
+
+alias prob_schwartz_zippel_univariate_poly := prob_poly_agreement_degree_one
+
+/-- **Schwartz-Zippel for degree-2 univariate polynomials**.
+For two distinct degree-2 univariate polynomials over a commutative ring, the probability
+that they agree at a random point is at most `2 / |R|`. -/
+lemma prob_poly_agreement_degree_two {R : Type} [CommRing R] [IsDomain R] [Fintype R]
+    [DecidableEq R]
+    (p q : R⦃≤ 2⦄[X])
+    (h_ne : p ≠ q) :
+    Pr_{ let r ←$ᵖ R }[ p.val.eval r = q.val.eval r ] ≤
+      (2 : ℝ≥0) / (Fintype.card R : ℝ≥0) := by
+  let P := (p.val - q.val).toMvPolynomial (σ := Fin 1) 0
+  have h_nz : P ≠ 0 := by
+    rw [Polynomial.toMvPolynomial_ne_zero_iff, sub_ne_zero]
+    exact fun h => h_ne (Subtype.eq h)
+  have h_p_deg : p.val.degree ≤ 2 :=
+    Polynomial.mem_degreeLE (f := p.val) (n := 2).mp (by simp only [SetLike.coe_mem])
+  have h_q_deg : q.val.degree ≤ 2 :=
+    Polynomial.mem_degreeLE (f := q.val) (n := 2).mp (by simp only [SetLike.coe_mem])
+  have h_deg : P.totalDegree ≤ 2 := by
+    apply (Polynomial.toMvPolynomial_totalDegree_le _ _).trans
+    apply (Polynomial.natDegree_sub_le _ _).trans
+    simp only [max_le_iff]
+    constructor <;> apply Polynomial.natDegree_le_of_degree_le <;>
+      first | exact h_p_deg | exact h_q_deg
+  calc Pr_{ let r ←$ᵖ R }[ p.val.eval r = q.val.eval r ]
+    _ = Pr_{ let r ←$ᵖ R }[ (p.val - q.val).eval r = 0 ] := by apply Pr_congr; simp [sub_eq_zero]
+    _ = Pr_{ let r ←$ᵖ R }[ MvPolynomial.eval (fun _ ↦ r) P = 0 ] := by
+      apply Pr_congr; intro; simp [P, MvPolynomial.eval_toMvPolynomial]
+    _ = Pr_{ let f ←$ᵖ (Fin 1 → R) }[ MvPolynomial.eval f P = 0 ] := by
+      rw [← prob_uniform_singleton_finFun_eq]
+      congr; funext f
+      simp [P, MvPolynomial.eval_toMvPolynomial]
+    _ ≤ _ := by
+      -- The lemma returns (P.totalDegree / card R), which is ≤ (2 / card R)
+      have h := prob_schwartz_zippel_univariate_deg 2 P h_nz h_deg
+      exact h
 
 end ProbabilityTools

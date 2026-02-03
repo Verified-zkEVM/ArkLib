@@ -417,6 +417,22 @@ theorem rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness
   -- TODO: Complete this proof
   sorry
 
+/-- If a verifier is RBR knowledge sound with error ε₁, and ε₂ is pointwise equal to ε₁,
+    then it is RBR knowledge sound with error ε₂. Use this to state soundness with a
+    "flat" or Fin-like error definition that you prove equal to the composed error. -/
+theorem rbrKnowledgeSoundness_of_eq_error
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    {ε₁ ε₂ : pSpec.ChallengeIdx → ℝ≥0}
+    (h_ε : ∀ i, ε₂ i = ε₁ i)
+    (h : verifier.rbrKnowledgeSoundness init impl relIn relOut ε₁) :
+    verifier.rbrKnowledgeSoundness init impl relIn relOut ε₂ := by
+  unfold rbrKnowledgeSoundness at h ⊢
+  obtain ⟨WitMid, extractor, kSF, h_bound⟩ := h
+  refine ⟨WitMid, extractor, kSF, fun stmtIn witIn prover i => ?_⟩
+  rw [h_ε i]
+  exact h_bound stmtIn witIn prover i
+
 end RoundByRound
 
 end Verifier
@@ -466,6 +482,19 @@ def rbrKnowledgeSoundness
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
   verifier.toVerifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError
+
+/-- If an oracle verifier is RBR knowledge sound with error ε₁ and ε₂ is pointwise equal to ε₁,
+    then it is RBR knowledge sound with error ε₂. Use this to state soundness with a
+    "flat" or Fin-like error definition that you prove equal to the composed error. -/
+theorem rbrKnowledgeSoundness_of_eq_error
+    {relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)}
+    {relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut)}
+    {verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec}
+    {ε₁ ε₂ : pSpec.ChallengeIdx → ℝ≥0}
+    (h_ε : ∀ i, ε₂ i = ε₁ i)
+    (h : verifier.rbrKnowledgeSoundness init impl relIn relOut ε₁) :
+    verifier.rbrKnowledgeSoundness init impl relIn relOut ε₂ :=
+  Verifier.rbrKnowledgeSoundness_of_eq_error (init := init) (impl := impl) (h_ε := h_ε) (h := h)
 
 end OracleVerifier
 

@@ -230,7 +230,7 @@ structure MLIOPCSStmt where
 def MLPEvalRelation (ιₛᵢ : Type) (OStmtIn : ιₛᵢ → Type)
     (input : ((MLPEvalStatement L ℓ') × (∀ j, OStmtIn j)) × (WitMLP L ℓ')) : Prop :=
   let ⟨⟨stmt, _⟩, wit⟩ := input
-  stmt.original_claim = wit.t.val.eval stmt.t_eval_point
+  wit.t.val.eval stmt.t_eval_point = stmt.original_claim
 
 structure AbstractOStmtIn where
   ιₛᵢ : Type
@@ -239,12 +239,42 @@ structure AbstractOStmtIn where
   -- The abstract initial compatibility relation, which along with
   -- MLPEvalRelation, forms the initial input relation for the MLIOPCS.
   initialCompatibility : (MultilinearPoly L ℓ') × (∀ j, OStmtIn j) → Prop
+  -- Strict compatibility relation used by perfect-completeness statements.
+  strictInitialCompatibility : (MultilinearPoly L ℓ') × (∀ j, OStmtIn j) → Prop
+  -- Strict compatibility is stronger and should imply the relaxed one.
+  strictInitialCompatibility_implies_initialCompatibility :
+    ∀ (oStmt : ∀ j, OStmtIn j) (t : MultilinearPoly L ℓ'),
+      strictInitialCompatibility ⟨t, oStmt⟩ → initialCompatibility ⟨t, oStmt⟩
+  -- The ideal oracle **(Functionality 2.4, 2.5, 2.6)** stores the exact vector, so the
+  -- oracle commitment uniquely determines the polynomial t'.
+  -- **NOTE**: This captures `|Λ| = 1` (i.e. set of compatible witnesses
+    -- compatible with oracles) in the WARP paper's terminology.
+  initialCompatibility_unique : ∀ (oStmt : ∀ j, OStmtIn j) (t₁ t₂ : MultilinearPoly L ℓ'),
+    initialCompatibility ⟨t₁, oStmt⟩ → initialCompatibility ⟨t₂, oStmt⟩ → t₁ = t₂
 
+/-- Relaxed relation used for RBR knowledge-soundness statements. -/
 def AbstractOStmtIn.toRelInput (aOStmtIn : AbstractOStmtIn L ℓ') :
   Set (((MLPEvalStatement L ℓ') × (∀ j, aOStmtIn.OStmtIn j)) × (WitMLP L ℓ')) :=
   {input |
     MLPEvalRelation L ℓ' aOStmtIn.ιₛᵢ aOStmtIn.OStmtIn input
     ∧ aOStmtIn.initialCompatibility ⟨input.2.t, input.1.2⟩}
+
+/-- Strict relation used for perfect-completeness statements. -/
+def AbstractOStmtIn.toStrictRelInput (aOStmtIn : AbstractOStmtIn L ℓ') :
+  Set (((MLPEvalStatement L ℓ') × (∀ j, aOStmtIn.OStmtIn j)) × (WitMLP L ℓ')) :=
+  {input |
+    MLPEvalRelation L ℓ' aOStmtIn.ιₛᵢ aOStmtIn.OStmtIn input
+    ∧ aOStmtIn.strictInitialCompatibility ⟨input.2.t, input.1.2⟩}
+
+omit [Fintype L] [DecidableEq L] [CharP L 2] [NeZero ℓ'] in
+lemma AbstractOStmtIn.toStrictRelInput_subset_toRelInput (aOStmtIn : AbstractOStmtIn L ℓ') :
+    aOStmtIn.toStrictRelInput ⊆ aOStmtIn.toRelInput := by
+  intro input h_input
+  rcases input with ⟨⟨stmt, oStmt⟩, wit⟩
+  rcases h_input with ⟨h_eval, h_compat_strict⟩
+  exact ⟨h_eval,
+    aOStmtIn.strictInitialCompatibility_implies_initialCompatibility oStmt wit.t
+      h_compat_strict⟩
 
 structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
   /-- Protocol specification -/
@@ -264,7 +294,17 @@ structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
       (StmtIn:=MLPEvalStatement L ℓ') (OStmtIn:=OStmtIn)
       (StmtOut:=Bool) (OStmtOut:=fun _: Empty => Unit)
       (WitIn:=WitMLP L ℓ') (WitOut:=Unit) (pSpec:=pSpec) (init:=init) (impl:=impl)
-      (relIn := toAbstractOStmtIn.toRelInput)
+      (relIn := toAbstractOStmtIn.toStrictRelInput)
+      (relOut := acceptRejectOracleRel)
+      (oracleReduction := oracleReduction)
+  strictPerfectCompleteness : ∀ {σ : Type} {init : ProbComp σ}
+      {impl : QueryImpl []ₒ (StateT σ ProbComp)},
+    init.neverFails →
+    OracleReduction.perfectCompleteness (oSpec:=[]ₒ)
+      (StmtIn:=MLPEvalStatement L ℓ') (OStmtIn:=OStmtIn)
+      (StmtOut:=Bool) (OStmtOut:=fun _: Empty => Unit)
+      (WitIn:=WitMLP L ℓ') (WitOut:=Unit) (pSpec:=pSpec) (init:=init) (impl:=impl)
+      (relIn := toAbstractOStmtIn.toStrictRelInput)
       (relOut := acceptRejectOracleRel)
       (oracleReduction := oracleReduction)
   -- RBR knowledge error function for the MLIOPCS
@@ -452,17 +492,27 @@ def masterKStateProp (aOStmtIn : AbstractOStmtIn L ℓ') (stmtIdx : Fin (ℓ' + 
     (stmt : Statement (L := L) (RingSwitchingBaseContext κ L K ℓ) stmtIdx)
     (oStmt : ∀ j, aOStmtIn.OStmtIn j)
     (wit : SumcheckWitness L ℓ' stmtIdx)
-    (localChecks : Prop := True) : Prop :=
+    (localChecks : Prop) : Prop :=
+  localChecks
+  -- Should witnessStructuralInvariant be part of localChecks?
+  ∧ witnessStructuralInvariant κ L K β ℓ ℓ' h_l stmt wit
+  ∧ aOStmtIn.initialCompatibility ⟨wit.t', oStmt⟩
+
+def masterStrictKStateProp (aOStmtIn : AbstractOStmtIn L ℓ') (stmtIdx : Fin (ℓ' + 1))
+    (stmt : Statement (L := L) (RingSwitchingBaseContext κ L K ℓ) stmtIdx)
+    (oStmt : ∀ j, aOStmtIn.OStmtIn j)
+    (wit : SumcheckWitness L ℓ' stmtIdx)
+    (localChecks : Prop) : Prop :=
   localChecks
   ∧ witnessStructuralInvariant κ L K β ℓ ℓ' h_l stmt wit
-  ∧ sumcheckConsistencyProp (𝓑:=𝓑) stmt.sumcheck_target wit.H
-  ∧ aOStmtIn.initialCompatibility ⟨wit.t', oStmt⟩
+  ∧ aOStmtIn.strictInitialCompatibility ⟨wit.t', oStmt⟩
 
 def sumcheckRoundRelationProp (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (ℓ' + 1))
     (stmt : Statement (L := L) (RingSwitchingBaseContext κ L K ℓ) i)
     (oStmt : ∀ j, aOStmtIn.OStmtIn j)
     (wit : SumcheckWitness L ℓ' i) : Prop :=
-  masterKStateProp κ L K β ℓ ℓ' h_l (𝓑:=𝓑) aOStmtIn i stmt oStmt wit
+  masterKStateProp κ L K β ℓ ℓ' h_l aOStmtIn i stmt oStmt wit
+    (localChecks := sumcheckConsistencyProp (𝓑:=𝓑) stmt.sumcheck_target wit.H)
 
 /-- Input relation for single round: proper sumcheck statement -/
 def sumcheckRoundRelation (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (ℓ' + 1)) :
@@ -470,6 +520,33 @@ def sumcheckRoundRelation (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (ℓ' + 1
     (∀ j, aOStmtIn.OStmtIn j)) × SumcheckWitness L ℓ' i) :=
   { ((stmt, oStmt), wit) | sumcheckRoundRelationProp κ L K β ℓ ℓ' h_l (𝓑:=𝓑)
     aOStmtIn i stmt oStmt wit }
+
+def strictSumcheckRoundRelationProp (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (ℓ' + 1))
+    (stmt : Statement (L := L) (RingSwitchingBaseContext κ L K ℓ) i)
+    (oStmt : ∀ j, aOStmtIn.OStmtIn j)
+    (wit : SumcheckWitness L ℓ' i) : Prop :=
+  masterStrictKStateProp κ L K β ℓ ℓ' h_l aOStmtIn i stmt oStmt wit
+    (localChecks := sumcheckConsistencyProp (𝓑:=𝓑) stmt.sumcheck_target wit.H)
+
+/-- Strict round relation for completeness proofs. -/
+def strictSumcheckRoundRelation (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (ℓ' + 1)) :
+  Set (((Statement (L := L) (RingSwitchingBaseContext κ L K ℓ) i) ×
+    (∀ j, aOStmtIn.OStmtIn j)) × SumcheckWitness L ℓ' i) :=
+  { ((stmt, oStmt), wit) | strictSumcheckRoundRelationProp κ L K β ℓ ℓ' h_l (𝓑:=𝓑)
+    aOStmtIn i stmt oStmt wit }
+
+omit [Fintype L] [DecidableEq L] [CharP L 2] [SelectableType L] [Fintype K] [DecidableEq K]
+  [NeZero ℓ] [NeZero ℓ'] in
+lemma strictSumcheckRoundRelation_subset_sumcheckRoundRelation (aOStmtIn : AbstractOStmtIn L ℓ')
+    (i : Fin (ℓ' + 1)) :
+    strictSumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑:=𝓑) aOStmtIn i ⊆
+      sumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑:=𝓑) aOStmtIn i := by
+  intro input h_input
+  rcases input with ⟨⟨stmt, oStmt⟩, wit⟩
+  rcases h_input with ⟨h_local, h_struct, h_strict_compat⟩
+  exact ⟨h_local, h_struct,
+    aOStmtIn.strictInitialCompatibility_implies_initialCompatibility oStmt wit.t'
+      h_strict_compat⟩
 
 /-- **Consistency of the Batching Target**
 
