@@ -292,9 +292,12 @@ def fullPSpec := (pSpecCoreInteraction 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_
 
 /-! ## Oracle Interface instances for Messages-/
 
-instance : ∀ j, OracleInterface ((pSpecFold (L:=L)).Message j) -- this cover .Message only
-  | ⟨0, h⟩ => by exact OracleInterface.instDefault -- h_i(X) polynomial
-  | ⟨1, _⟩ => by exact OracleInterface.instDefault -- challenge r'_i
+instance instOracleInterfaceMessagePSpecFold :
+  ∀ j, OracleInterface ((pSpecFold (L:=L)).Message j) :=
+  fun _ => OracleInterface.instDefault
+
+instance : ∀ j, OracleInterface ((pSpecFold (L:=L)).Challenge j) :=
+  fun _ => OracleInterface.instDefault
 
 instance : ∀ j, OracleInterface ((pSpecFold (L := L)).Challenge j) :=
   ProtocolSpec.challengeOracleInterface
@@ -452,6 +455,11 @@ instance : ∀ i, SampleableType ((pSpecQuery 𝔽q β γ_repetitions
 instance : ∀ j, SampleableType ((fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge j) := instSampleableTypeChallengeAppend
 
+instance : SelectableType (Fin γ_repetitions → ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0)) := by
+  let res := instSDomain 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (h_i := by
+    apply Nat.lt_add_of_pos_right_of_le; simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_le])
+  exact instSelectableTypeFinFunc
+
 /-! ## Additional OracleInterface and Fintype instances -/
 
 /-- OracleInterface instance for the matrix-indexed message type family using instDefault. -/
@@ -518,6 +526,8 @@ instance instFintypePSpecFinalSumcheck_AllChallenges: ∀ i, Fintype ((pSpecFina
 
 instance instFintypePSpecFinalSumcheckStepChallenge :
   [pSpecFinalSumcheckStep (L := L).Challenge]ₒ.Fintype := by sorry
+instance : Fintype (Fin γ_repetitions → ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0)) := by
+  infer_instance
 
 instance instInhabitedPSpecFinalSumcheckStepChallenge :
   [(pSpecFinalSumcheckStep (L:=L)).Challenge]ₒ.Inhabited := by sorry

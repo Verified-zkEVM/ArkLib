@@ -28,6 +28,8 @@ def subtypeSumComplEquiv {α : Type*} {p : α → Prop} [DecidablePred p] :
 
 lemma fun_eta_expansion {α β : Type*} (f : α → β) : f = (fun x => f x) := rfl
 
+lemma fun_eta_expansion_apply {α β : Type*} (f : α → β) (x : α) : (f x) = (fun x => f x) x := rfl
+
 /-- Casting a function equals the function that casts its argument. -/
 lemma cast_fun_eq_fun_cast_arg.{u, v} {A B : Type u} {C : Type v} (h : A = B) (f : A → C) :
     cast (congrArg (· → C) h) f = fun x => f (cast h.symm x) := by
