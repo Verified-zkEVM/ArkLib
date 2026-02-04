@@ -6,6 +6,7 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGap.Basic
+import ArkLib.Data.CodingTheory.ProximityGap.ListRecovery
 import ArkLib.Data.Probability.Instances
 
 
@@ -57,7 +58,7 @@ open scoped Polynomial.Bivariate
     in lemma 5.3 of [BCIKS20].
     D_X(m) = (m + 1/2)√rhon.
 -/
-noncomputable def D_X (rho : ℚ) (n m : ℕ) : ℝ := (m + 1/2) * (Real.sqrt rho) * n
+noncomputable def D_X (rho : ℚ) (m n : ℕ) : ℝ := (m + 1/2) * (Real.sqrt rho) * n
 
 open Classical in
 noncomputable def proximity_gap_degree_bound (rho : ℚ) (m n : ℕ) : ℕ :=
@@ -73,6 +74,82 @@ noncomputable def proximity_gap_degree_bound (rho : ℚ) (m n : ℕ) : ℕ :=
 noncomputable def proximity_gap_johnson (rho : ℚ) (m : ℕ) : ℝ :=
   (1 : ℝ) - Real.sqrt rho - Real.sqrt rho / (2 * m)
 
+open Polynomial in
+omit [DecidableEq F] [DecidableEq (RatFunc F)] in
+lemma shiftAt_eval_eq_comp_eval (Q : Polynomial (Polynomial F)) (p : F[X]) (x y : F) :
+    (shiftAt Q x y).eval (p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y) =
+      (Q.eval p).comp (Polynomial.X + Polynomial.C x) := by
+  classical
+  let φ : F[X] →+* F[X] := Polynomial.compRingHom (Polynomial.X + Polynomial.C x)
+  have hmap :
+      (shiftAt Q x y).eval (p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y) =
+        (Q.comp (Polynomial.X + Polynomial.C (Polynomial.C y))).eval₂ φ
+          (p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y) := by
+    simpa [shiftAt, shiftAtRingHom, φ, Polynomial.eval] using
+      (Polynomial.eval₂_map (p := Q.comp (Polynomial.X + Polynomial.C (Polynomial.C y)))
+        (f := φ) (g := RingHom.id (F[X]))
+        (x := (p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y)))
+  have hcomp :
+      (Q.comp (Polynomial.X + Polynomial.C (Polynomial.C y))).eval₂ φ
+            (p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y) =
+          Q.eval₂ φ
+            ((p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y) + Polynomial.C y) := by
+    rw [
+      Polynomial.eval₂_comp (f := φ) (p := Q)
+        (q := (Polynomial.X + Polynomial.C (Polynomial.C y)))
+        (x := (p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y))]
+    simp [Polynomial.eval₂_add, Polynomial.eval₂_X, Polynomial.eval₂_C, φ]
+  calc
+    (shiftAt Q x y).eval (p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y)
+        = (Q.comp (Polynomial.X + Polynomial.C (Polynomial.C y))).eval₂ φ
+            (p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y) := hmap
+    _ = Q.eval₂ φ
+          ((p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y) + Polynomial.C y) := hcomp
+    _ = Q.eval₂ φ (p.comp (Polynomial.X + Polynomial.C x)) := by
+          simp [sub_eq_add_neg, add_assoc]
+    _ = φ (Q.eval p) := by
+          simpa [Polynomial.eval, φ] using
+            (Polynomial.eval₂_hom (f := φ) (p := Q) (x := p))
+    _ = (Q.eval p).comp (Polynomial.X + Polynomial.C x) := by rfl
+
+open Polynomial in
+omit [DecidableEq F] [DecidableEq (RatFunc F)] in
+lemma shiftAt_coeff_zero_eq_eval (Q : F[X][Y]) (x y : F) :
+    Polynomial.Bivariate.coeff (shiftAt Q x y) 0 0 = (Q.eval (Polynomial.C y)).eval x := by
+  classical
+  have hcoeff :
+      Polynomial.Bivariate.coeff (shiftAt Q x y) 0 0 =
+        ((shiftAt Q x y).eval 0).eval 0 := by
+    -- constant term equals evaluation at 0 (twice)
+    simp [Polynomial.Bivariate.coeff, Polynomial.coeff_zero_eq_eval_zero]
+  have hshift :
+      (shiftAt Q x y).eval 0 =
+        (Q.eval (Polynomial.C y)).comp (Polynomial.X + Polynomial.C x) := by
+    simpa using
+      (shiftAt_eval_eq_comp_eval (Q := Q) (p := Polynomial.C y) (x := x) (y := y))
+  have hcomp :
+      ((Q.eval (Polynomial.C y)).comp (Polynomial.X + Polynomial.C x)).eval 0 =
+        (Q.eval (Polynomial.C y)).eval x := by
+    -- eval of a composition
+    simp [Polynomial.eval_comp]
+  calc
+    Polynomial.Bivariate.coeff (shiftAt Q x y) 0 0
+        = ((shiftAt Q x y).eval 0).eval 0 := hcoeff
+    _ = ((Q.eval (Polynomial.C y)).comp (Polynomial.X + Polynomial.C x)).eval 0 := by
+        simp [hshift]
+    _ = (Q.eval (Polynomial.C y)).eval x := hcomp
+
+lemma proximity_gap_degree_bound_eq (k m : ℕ) :
+    proximity_gap_degree_bound ((k + 1 : ℚ) / n) m n =
+      GuruswamiSudan.proximity_gap_degree_bound (n := n) k m := by
+  classical
+  simp [proximity_gap_degree_bound, GuruswamiSudan.proximity_gap_degree_bound, D_X]
+
+lemma proximity_gap_johnson_nat_eq (k m : ℕ) :
+    Nat.floor ((proximity_gap_johnson ((k + 1 : ℚ) / n) m) * (n : ℝ)) =
+      GuruswamiSudan.proximity_gap_johnson (n := n) k m := by
+  simp [proximity_gap_johnson, GuruswamiSudan.proximity_gap_johnson]
+
 
 omit [DecidableEq (RatFunc F)] in
 /-- The first part of lemma 5.3 from [BCIKS20].
@@ -83,8 +160,8 @@ lemma guruswami_sudan_for_proximity_gap_existence {k m : ℕ}
     {ωs : Fin n ↪ F} {f : Fin n → F} :
   ∃ Q,
     GuruswamiSudan.GSCondition (n := n) (F := F) k m
-      (GuruswamiSudan.proximity_gap_degree_bound (n := n) k m) ωs f Q := by
-  simpa using
+      (proximity_gap_degree_bound ((k + 1 : ℚ) / n) m n) ωs f Q := by
+  simpa [proximity_gap_degree_bound_eq (n := n) (k := k) (m := m)] using
     (GuruswamiSudan.guruswami_sudan_for_proximity_gap_existence (F := F) (n := n)
       (k := k) (m := m) (ωs := ωs) f)
 
@@ -103,13 +180,17 @@ lemma guruswami_sudan_for_proximity_gap_property {k m : ℕ} [NeZero n] [NeZero 
       (1 : ℝ) - Real.sqrt ((k + 1 : ℚ) / n) - Real.sqrt ((k + 1 : ℚ) / n) / (2 * m))
   {ωs : Fin n ↪ F} {f : Fin n → F} {Q : F[X][Y]}
   (hQ : GuruswamiSudan.GSCondition (n := n) (F := F) k m
-    (GuruswamiSudan.proximity_gap_degree_bound (n := n) k m) ωs f Q)
+    (proximity_gap_degree_bound ((k + 1 : ℚ) / n) m n) ωs f Q)
   {p : F[X]} (hpdeg : p.natDegree < k)
   (hdist : Δ₀(f, p.eval ∘ ωs) ≤ GuruswamiSudan.proximity_gap_johnson (n := n) k m) :
   ((Polynomial.X : F[X][Y]) - Polynomial.C p) ∣ Q := by
+  have hQ' :
+      GuruswamiSudan.GSCondition (n := n) (F := F) k m
+        (GuruswamiSudan.proximity_gap_degree_bound (n := n) k m) ωs f Q := by
+    simpa [proximity_gap_degree_bound_eq (n := n) (k := k) (m := m)] using hQ
   simpa using
     (GuruswamiSudan.guruswami_sudan_for_proximity_gap_property (F := F) (n := n)
-      (k := k) (m := m) hδ (ωs := ωs) (f := f) hQ hpdeg hdist)
+      (k := k) (m := m) hδ (ωs := ωs) (f := f) hQ' hpdeg hdist)
 
 omit [DecidableEq (RatFunc F)] in
 lemma proximity_gap_list_size_bound {k m : ℕ} [Fintype F] [NeZero n] [NeZero m] [NeZero k]
@@ -124,9 +205,13 @@ lemma proximity_gap_list_size_bound {k m : ℕ} [Fintype F] [NeZero n] [NeZero m
   classical
   rcases (guruswami_sudan_for_proximity_gap_existence (F := F) (n := n) (k := k) (m := m)
     (ωs := ωs) (f := f)) with ⟨Q, hQ⟩
+  have hQ' :
+      GuruswamiSudan.GSCondition (n := n) (F := F) k m
+        (GuruswamiSudan.proximity_gap_degree_bound (n := n) k m) ωs f Q := by
+    simpa [proximity_gap_degree_bound_eq (n := n) (k := k) (m := m)] using hQ
   exact
     GuruswamiSudan.list_size_le_degree_bound_of_GSCondition (F := F) (n := n) (k := k) (m := m)
-      hk hδ hQ
+      hk hδ hQ'
 
 end
 
@@ -282,6 +367,151 @@ instance {domain : ι ↪ F} {deg : ℕ} : Nonempty (finCarrier domain deg) := b
   apply Nonempty.to_subtype
   simp [ReedSolomon.code]
   exact Submodule.nonempty (Polynomial.degreeLT F deg)
+
+/-- Affine-space evaluation at coefficients `t`. -/
+def affineEval {k : ℕ} (u : Fin (k + 1) → ι → F) (t : Fin k → F) (x : ι) : F :=
+  u 0 x + ∑ i : Fin k, t i * u (Fin.succ i) x
+
+omit [Fintype ι] [Nonempty ι] [Fintype F] [DecidableEq F] in
+lemma affineEval_sub_eq {k : ℕ} {u v : Fin (k + 1) → ι → F} (t : Fin k → F) (x : ι) :
+    affineEval (u := u) t x - affineEval (u := v) t x =
+      (u 0 x - v 0 x) + ∑ i : Fin k, t i * (u (Fin.succ i) x - v (Fin.succ i) x) := by
+  classical
+  calc
+    affineEval (u := u) t x - affineEval (u := v) t x
+        = (u 0 x + ∑ i : Fin k, t i * u (Fin.succ i) x)
+            - (v 0 x + ∑ i : Fin k, t i * v (Fin.succ i) x) := by rfl
+    _ = (u 0 x - v 0 x) +
+          ((∑ i : Fin k, t i * u (Fin.succ i) x) -
+            (∑ i : Fin k, t i * v (Fin.succ i) x)) := by
+          ring
+    _ = (u 0 x - v 0 x) +
+          ∑ i : Fin k, (t i * u (Fin.succ i) x - t i * v (Fin.succ i) x) := by
+          simp [Finset.sum_sub_distrib]
+    _ = (u 0 x - v 0 x) + ∑ i : Fin k, t i * (u (Fin.succ i) x - v (Fin.succ i) x) := by
+          refine congrArg (fun s => (u 0 x - v 0 x) + s) ?_
+          refine Finset.sum_congr rfl ?_
+          intro i _hi
+          simp [mul_sub]
+
+omit [Fintype ι] [Nonempty ι] [Fintype F] [DecidableEq F] in
+lemma affineEval_eq_iff {k : ℕ} {u v : Fin (k + 1) → ι → F} (t : Fin k → F) (x : ι) :
+    affineEval (u := u) t x = affineEval (u := v) t x ↔
+      (u 0 x - v 0 x) + ∑ i : Fin k, t i * (u (Fin.succ i) x - v (Fin.succ i) x) = 0 := by
+  constructor
+  · intro h
+    have h' : affineEval (u := u) t x - affineEval (u := v) t x = 0 := by
+      exact sub_eq_zero.mpr h
+    simpa [affineEval_sub_eq] using h'
+  · intro h
+    have h' : affineEval (u := u) t x - affineEval (u := v) t x = 0 := by
+      simpa [affineEval_sub_eq] using h
+    exact sub_eq_zero.mp h'
+
+omit [Fintype ι] [Nonempty ι] in
+lemma affine_solution_card_le {k : ℕ} {u v : Fin (k + 1) → ι → F} {x : ι} {i0 : Fin k}
+    (hi0 : u (Fin.succ i0) x ≠ v (Fin.succ i0) x) :
+    Fintype.card {t : Fin k → F // affineEval (u := u) t x = affineEval (u := v) t x}
+      ≤ (Fintype.card F) ^ (k - 1) := by
+  classical
+  let a : Fin k → F := fun i => u (Fin.succ i) x - v (Fin.succ i) x
+  let c : F := u 0 x - v 0 x
+  let res :
+      {t : Fin k → F // affineEval (u := u) t x = affineEval (u := v) t x} →
+        ({j : Fin k // j ≠ i0} → F) :=
+    fun t j => t.1 j
+  have hres_inj : Function.Injective res := by
+    intro t₁ t₂ hres
+    apply Subtype.ext
+    funext j
+    by_cases hj : j = i0
+    · subst j
+      have ht₁ :
+          c + ∑ i : Fin k, t₁.1 i * a i = 0 := by
+        have ht₁' := (affineEval_eq_iff (u := u) (v := v) (t := t₁.1) (x := x)).1 t₁.2
+        simpa [a, c] using ht₁'
+      have ht₂ :
+          c + ∑ i : Fin k, t₂.1 i * a i = 0 := by
+        have ht₂' := (affineEval_eq_iff (u := u) (v := v) (t := t₂.1) (x := x)).1 t₂.2
+        simpa [a, c] using ht₂'
+      have hsum_eq :
+          ∑ i : Fin k, t₁.1 i * a i = ∑ i : Fin k, t₂.1 i * a i := by
+        have h :
+            c + ∑ i : Fin k, t₁.1 i * a i = c + ∑ i : Fin k, t₂.1 i * a i := by
+          calc
+            c + ∑ i : Fin k, t₁.1 i * a i = 0 := ht₁
+            _ = c + ∑ i : Fin k, t₂.1 i * a i := by
+                  symm
+                  exact ht₂
+        exact add_left_cancel h
+      have hsum_diff :
+          ∑ i : Fin k, (t₁.1 i - t₂.1 i) * a i = 0 := by
+        calc
+          ∑ i : Fin k, (t₁.1 i - t₂.1 i) * a i =
+              ∑ i : Fin k, (t₁.1 i * a i - t₂.1 i * a i) := by
+                refine Finset.sum_congr rfl ?_
+                intro i _hi
+                simp [sub_mul]
+          _ = (∑ i : Fin k, t₁.1 i * a i) - (∑ i : Fin k, t₂.1 i * a i) := by
+                simp [Finset.sum_sub_distrib]
+          _ = 0 := by simp [hsum_eq]
+      have hsplit :
+          (t₁.1 i0 - t₂.1 i0) * a i0 +
+              Finset.sum (Finset.univ.erase i0) (fun i => (t₁.1 i - t₂.1 i) * a i)
+            = ∑ i : Fin k, (t₁.1 i - t₂.1 i) * a i := by
+        simp
+      have hsum_eq0 :
+          (t₁.1 i0 - t₂.1 i0) * a i0 +
+              Finset.sum (Finset.univ.erase i0) (fun i => (t₁.1 i - t₂.1 i) * a i) = 0 := by
+        rw [hsplit]
+        exact hsum_diff
+      have hsum_erase_zero :
+          Finset.sum (Finset.univ.erase i0) (fun i => (t₁.1 i - t₂.1 i) * a i) = 0 := by
+        refine Finset.sum_eq_zero ?_
+        intro i hi
+        have hi_ne : i ≠ i0 := (Finset.mem_erase.mp hi).1
+        have hrest :
+            t₁.1 i = t₂.1 i := by
+          have := congrArg (fun f => f ⟨i, hi_ne⟩) hres
+          simpa using this
+        simp [hrest]
+      have hterm : (t₁.1 i0 - t₂.1 i0) * a i0 = 0 := by
+        simpa [hsum_erase_zero] using hsum_eq0
+      have hai₀ : a i0 ≠ 0 := by
+        have : u (Fin.succ i0) x - v (Fin.succ i0) x ≠ 0 := by
+          exact sub_ne_zero.mpr hi0
+        simpa [a] using this
+      have hterm' : t₁.1 i0 - t₂.1 i0 = 0 := by
+        exact (mul_eq_zero.mp hterm).resolve_right hai₀
+      exact sub_eq_zero.mp hterm'
+    · have hrest :
+          t₁.1 j = t₂.1 j := by
+        have := congrArg (fun f => f ⟨j, hj⟩) hres
+        simpa using this
+      exact hrest
+  have hcard_le :
+      Fintype.card {t : Fin k → F // affineEval (u := u) t x = affineEval (u := v) t x} ≤
+        Fintype.card ({j : Fin k // j ≠ i0} → F) :=
+    Fintype.card_le_of_injective res hres_inj
+  have hcard_ne :
+      Fintype.card {j : Fin k // j ≠ i0} = k - 1 := by
+    classical
+    have hcard_eq : Fintype.card {j : Fin k // j = i0} = 1 := by
+      simp
+    have hcard_compl :
+        Fintype.card {j : Fin k // j ≠ i0} =
+          Fintype.card (Fin k) - Fintype.card {j : Fin k // j = i0} := by
+      simp
+    calc
+      Fintype.card {j : Fin k // j ≠ i0} =
+          Fintype.card (Fin k) - Fintype.card {j : Fin k // j = i0} := hcard_compl
+      _ = k - 1 := by simp
+  have hcard_fun :
+      Fintype.card ({j : Fin k // j ≠ i0} → F) =
+        (Fintype.card F) ^ (k - 1) := by
+    classical
+    simp [hcard_ne]
+  simpa [hcard_fun] using hcard_le
 
 omit [Fintype ι] [Fintype F] [DecidableEq F] in
 /--
@@ -652,7 +882,7 @@ lemma list_agreement_on_curve_implies_correlated_agreement_bound
         (1 / (Fintype.card ι : ℝ)) *
               ((S'.card : ℝ) * (∑ x ∈ B, μw x) + (l + 1 : ℝ) * (∑ x ∈ Bᶜ, μw x))
           = (S'.card : ℝ) * mu_set μ B + (l + 1 : ℝ) * mu_set μ Bᶜ := by
-      simp [mu_set_eq, mul_add, add_mul]
+      simp [mu_set_eq, mul_add]
       ring
     rw [hLHS]
     have := le_trans hmul (le_of_eq hR)
@@ -757,6 +987,436 @@ lemma list_agreement_on_curve_implies_correlated_agreement_bound
         simpa [hdiff] using hpos
       exact sub_pos.1 this
     exact lt_of_lt_of_le hfrac hB_lower
+
+omit [Fintype ι] [Fintype F] [DecidableEq F] in
+/--
+List agreement on an affine space implies correlated agreement (bound version).
+
+We are given two lists of functions `u, v : Fin (k + 1) → ι → F`.  For each coefficient
+vector `t : Fin k → F`, we form the affine evaluations
+
+* `w x t     = u₀ x + ∑ i, t i * uᵢ x`,
+* `wtilde x t = v₀ x + ∑ i, t i * vᵢ x`,
+
+where `u₀ = u 0` and `uᵢ = u (i.succ)`.  Fix a finite set `S' ⊆ (Fin k → F)` with
+`S'.card > |F|^(k-1)`.  If for every `t ∈ S'` the µ-weighted agreement between `w · t`
+and `wtilde · t` is at least `α`, then the set of coordinates `x` on which *all* words
+agree has µ-measure strictly larger than
+
+`α - |F|^(k-1) / (S'.card - |F|^(k-1))`.
+-/
+lemma list_agreement_on_affine_space_implies_correlated_agreement_bound
+  [DecidableEq ι] [Fintype ι] [DecidableEq F] [Fintype F]
+  {k : ℕ} {u v : Fin (k + 1) → ι → F}
+  {deg : ℕ} {domain : ι ↪ F}
+  {μ : ι → Set.Icc (0 : ℚ) 1}
+  {α : ℝ≥0}
+  (hv : ∀ i, v i ∈ (ReedSolomon.code domain deg))
+  {S' : Finset (Fin k → F)}
+  (hS'_card : S'.card > (Fintype.card F) ^ (k - 1)) :
+  letI w (x : ι) (t : Fin k → F) : F := affineEval (u := u) t x
+  letI wtilde (x : ι) (t : Fin k → F) : F := affineEval (u := v) t x
+  (hS'_agree : ∀ t ∈ S', agree μ (w · t) (wtilde · t) ≥ α) →
+  mu_set μ {x : ι | ∀ i, u i x = v i x} >
+    α - ((Fintype.card F) ^ (k - 1) : ℝ) / (S'.card - (Fintype.card F) ^ (k - 1)) := by
+  classical
+  have _ := hv
+  intro hS'_agree
+  let w (x : ι) (t : Fin k → F) : F := affineEval (u := u) t x
+  let wtilde (x : ι) (t : Fin k → F) : F := affineEval (u := v) t x
+  have hS'_agree' : ∀ t ∈ S', agree μ (w · t) (wtilde · t) ≥ α := by
+    intro t ht
+    simpa [w, wtilde] using hS'_agree t ht
+  let μw : ι → ℝ := fun x => (μ x).1
+  have hμw_nonneg : ∀ x, 0 ≤ μw x := by
+    intro x
+    have hx : (0 : ℚ) ≤ (μ x).1 := (μ x).2.1
+    exact (Rat.cast_nonneg (K := ℝ)).2 hx
+  have hμw_le_one : ∀ x, μw x ≤ 1 := by
+    intro x
+    have hx : (μ x).1 ≤ 1 := (μ x).2.2
+    have : μw x ≤ ((1 : ℚ) : ℝ) := (Rat.cast_le (K := ℝ)).2 hx
+    simpa using this
+
+  have mu_set_eq (T : Finset ι) :
+      mu_set μ T = 1 / (Fintype.card ι : ℝ) * ∑ x ∈ T, μw x := by
+    unfold mu_set
+    simp [μw, Rat.cast_sum]
+  have mu_set_nonneg (T : Finset ι) : 0 ≤ mu_set μ T := by
+    rw [mu_set_eq (T := T)]
+    refine mul_nonneg (by positivity) (Finset.sum_nonneg (fun x hx => hμw_nonneg x))
+  have mu_set_univ_le_one : mu_set μ (Finset.univ : Finset ι) ≤ 1 := by
+    rw [mu_set_eq (T := (Finset.univ : Finset ι))]
+    have hsum_le :
+        (∑ x ∈ (Finset.univ : Finset ι), μw x) ≤
+          ∑ x ∈ (Finset.univ : Finset ι), (1 : ℝ) := by
+      refine Finset.sum_le_sum ?_
+      intro x hx
+      exact hμw_le_one x
+    have hsum_one :
+        (∑ x ∈ (Finset.univ : Finset ι), (1 : ℝ)) = (Fintype.card ι : ℝ) := by
+      simp [Finset.sum_const, nsmul_eq_mul]
+    have hsum_le_card :
+        (∑ x ∈ (Finset.univ : Finset ι), μw x) ≤ (Fintype.card ι : ℝ) := by
+      simpa [hsum_one] using hsum_le
+    have := mul_le_mul_of_nonneg_left hsum_le_card (by positivity : 0 ≤ (1 / (Fintype.card ι : ℝ)))
+    have hcard_ne : (Fintype.card ι : ℝ) ≠ 0 := by
+      exact_mod_cast (Fintype.card_ne_zero : Fintype.card ι ≠ 0)
+    simpa [div_eq_mul_inv, hcard_ne] using this
+
+  let d : ℕ := (Fintype.card F) ^ (k - 1)
+  let B : Finset ι := {x : ι | ∀ i, u i x = v i x}
+  let Zx : ι → Finset (Fin k → F) := fun x =>
+    S'.filter (fun t => w x t = wtilde x t)
+
+  have Zx_card_le (x : ι) (hxB : x ∉ B) : (Zx x).card ≤ d := by
+    by_cases hdir : ∃ i, u (Fin.succ i) x ≠ v (Fin.succ i) x
+    · rcases hdir with ⟨i₀, hi₀⟩
+      have hcard_subtype :
+          Fintype.card {t : Fin k → F // w x t = wtilde x t} ≤ d := by
+        have hcard' :
+            Fintype.card {t : Fin k → F // affineEval (u := u) t x = affineEval (u := v) t x} ≤ d :=
+        affine_solution_card_le (u := u) (v := v) (x := x) (i0 := i₀) hi₀
+        simpa [w, wtilde] using hcard'
+      have hcard_filter :
+          Fintype.card {t : Fin k → F // w x t = wtilde x t} =
+            (Finset.univ.filter (fun t => w x t = wtilde x t)).card := by
+        classical
+        simpa using
+          (Fintype.card_subtype (p := fun t : Fin k → F => w x t = wtilde x t))
+      have hcard_univ_le :
+          (Finset.univ.filter (fun t => w x t = wtilde x t)).card ≤ d := by
+        simpa [hcard_filter] using hcard_subtype
+      have hsubset :
+          Zx x ⊆ (Finset.univ.filter (fun t => w x t = wtilde x t)) := by
+        intro t ht
+        rcases Finset.mem_filter.mp ht with ⟨htS, htEq⟩
+        exact Finset.mem_filter.mpr ⟨Finset.mem_univ t, htEq⟩
+      exact le_trans (Finset.card_le_card hsubset) hcard_univ_le
+    · have hdir_all : ∀ i, u (Fin.succ i) x = v (Fin.succ i) x := by
+        intro i
+        by_contra h
+        exact hdir ⟨i, h⟩
+      have hx0 : u 0 x ≠ v 0 x := by
+        by_contra hx0
+        have hx' : ∀ i, u i x = v i x := by
+          intro i
+          refine Fin.cases ?_ (fun j => ?_) i
+          · simp [hx0]
+          · simp [hdir_all j]
+        have : x ∈ B := by
+          simp [B, hx']
+        exact hxB this
+      have hZx_empty : Zx x = ∅ := by
+        ext t
+        constructor
+        · intro ht
+          have htEq : w x t = wtilde x t := (Finset.mem_filter.mp ht).2
+          have h0 : u 0 x = v 0 x := by
+            have h0' :
+                u 0 x + ∑ i : Fin k, t i * v (Fin.succ i) x =
+                  v 0 x + ∑ i : Fin k, t i * v (Fin.succ i) x := by
+              simpa [w, wtilde, affineEval, hdir_all] using htEq
+            exact add_right_cancel h0'
+          exact (hx0 h0).elim
+        · intro ht
+          simp at ht
+      have : (Zx x).card = 0 := by
+        simp [hZx_empty]
+      have : (Zx x).card ≤ d := by
+        simp [this]
+      exact this
+
+  have Zx_eq_S' (x : ι) (hxB : x ∈ B) : Zx x = S' := by
+    have hx' : ∀ i, u i x = v i x := by
+      simpa [B] using hxB
+    have hw' : ∀ t, w x t = wtilde x t := by
+      intro t
+      simp [w, wtilde, affineEval, hx']
+    ext t
+    constructor
+    · intro ht
+      exact (Finset.mem_filter.1 ht).1
+    · intro htS
+      exact Finset.mem_filter.2 ⟨htS, hw' t⟩
+
+  let A : (Fin k → F) → Finset ι := fun t => {x : ι | w x t = wtilde x t}
+  have hterm : ∀ t ∈ S', (α : ℝ) ≤ mu_set μ (A t) := by
+    intro t htS
+    simpa [A, agree, mu_set] using (hS'_agree' t htS)
+  have hsum_lower :
+      (S'.card : ℝ) * (α : ℝ) ≤ ∑ t ∈ S', mu_set μ (A t) := by
+    have h :=
+      Finset.sum_le_sum (s := S') (f := fun _ => (α : ℝ)) (g := fun t => mu_set μ (A t)) hterm
+    simpa [Finset.sum_const, nsmul_eq_mul] using h
+
+  have hsum_upper :
+      (∑ t ∈ S', mu_set μ (A t))
+        ≤ (S'.card : ℝ) * mu_set μ B + (d : ℝ) * mu_set μ Bᶜ := by
+    have hLHS :
+        (∑ t ∈ S', mu_set μ (A t))
+          = (1 / (Fintype.card ι : ℝ)) * (∑ t ∈ S', ∑ x ∈ A t, μw x) := by
+      calc
+        (∑ t ∈ S', mu_set μ (A t))
+            = ∑ t ∈ S', (1 / (Fintype.card ι : ℝ)) * ∑ x ∈ A t, μw x := by
+                simp [mu_set_eq, A]
+        _ = (1 / (Fintype.card ι : ℝ)) * (∑ t ∈ S', ∑ x ∈ A t, μw x) := by
+                simpa using
+                  (Finset.mul_sum (s := S') (f := fun t => ∑ x ∈ A t, μw x)
+                    (a := (1 / (Fintype.card ι : ℝ)))).symm
+    have htotal :
+        (∑ t ∈ S', ∑ x ∈ A t, μw x)
+          ≤ (S'.card : ℝ) * (∑ x ∈ B, μw x) + (d : ℝ) * (∑ x ∈ Bᶜ, μw x) := by
+      have hswap :
+          (∑ t ∈ S', ∑ x ∈ A t, μw x)
+            = ∑ x ∈ (Finset.univ : Finset ι), ∑ t ∈ S', if w x t = wtilde x t then μw x else 0 := by
+        calc
+          (∑ t ∈ S', ∑ x ∈ A t, μw x)
+              = ∑ t ∈ S', ∑ x ∈ (Finset.univ : Finset ι),
+                  if w x t = wtilde x t then μw x else 0 := by
+                    refine Finset.sum_congr rfl ?_
+                    intro t ht
+                    simpa [A] using
+                      (Finset.sum_filter (s := (Finset.univ : Finset ι))
+                        (p := fun x => w x t = wtilde x t) (f := μw))
+          _ = ∑ x ∈ (Finset.univ : Finset ι), ∑ t ∈ S', if w x t = wtilde x t then μw x else 0 := by
+                simpa using
+                  (Finset.sum_comm (s := S') (t := (Finset.univ : Finset ι))
+                    (f := fun t x => if w x t = wtilde x t then μw x else 0))
+      have hsplit :
+          (∑ x : ι, ∑ t ∈ S', if w x t = wtilde x t then μw x else 0)
+            = (∑ x ∈ B, ∑ t ∈ S', if w x t = wtilde x t then μw x else 0)
+              + (∑ x ∈ Bᶜ, ∑ t ∈ S', if w x t = wtilde x t then μw x else 0) := by
+        have :=
+          (Finset.sum_add_sum_compl (s := B)
+            (f := fun x : ι => ∑ t ∈ S', if w x t = wtilde x t then μw x else 0))
+        simpa [add_comm, add_left_comm, add_assoc] using this.symm
+      have hB :
+          (∑ x ∈ B, ∑ t ∈ S', if w x t = wtilde x t then μw x else 0)
+            = (S'.card : ℝ) * (∑ x ∈ B, μw x) := by
+        have :
+            (∑ x ∈ B, ∑ t ∈ S', if w x t = wtilde x t then μw x else 0)
+              = ∑ x ∈ B, (S'.card : ℝ) * μw x := by
+            refine Finset.sum_congr rfl ?_
+            intro x hx
+            have hZ : Zx x = S' := Zx_eq_S' x hx
+            have :
+                (∑ t ∈ S', if w x t = wtilde x t then μw x else 0)
+                  = (S'.card : ℝ) * μw x := by
+                have :
+                    (∑ t ∈ S', if w x t = wtilde x t then μw x else 0)
+                      = ((S'.filter (fun t => w x t = wtilde x t)).card : ℝ) * μw x := by
+                    have :
+                        (∑ t ∈ S', if w x t = wtilde x t then μw x else 0)
+                          = (S'.filter (fun t => w x t = wtilde x t)).card • (μw x) := by
+                        calc
+                          (∑ t ∈ S', if w x t = wtilde x t then μw x else 0)
+                              = ∑ t ∈ S' with w x t = wtilde x t, μw x := by
+                                  exact
+                                    (Finset.sum_filter (s := S')
+                                      (p := fun t => w x t = wtilde x t)
+                                      (f := fun _ => μw x)).symm
+                          _ = (S'.filter (fun t => w x t = wtilde x t)).card • (μw x) := by
+                                  exact
+                                    (Finset.sum_const
+                                      (s := S'.filter (fun t => w x t = wtilde x t))
+                                      (μw x))
+                    have this' := this
+                    simp [nsmul_eq_mul] at this'
+                    exact this'
+                have this' := this
+                simp [Zx, hZ] at this'
+                exact this'
+            have this' := this
+            simp [this']
+        have hfactor :
+            (∑ x ∈ B, (S'.card : ℝ) * μw x) = (S'.card : ℝ) * (∑ x ∈ B, μw x) := by
+          exact (Finset.mul_sum (s := B) (f := fun x => μw x) (a := (S'.card : ℝ))).symm
+        exact this.trans hfactor
+      have hBc :
+          (∑ x ∈ Bᶜ, ∑ t ∈ S', if w x t = wtilde x t then μw x else 0)
+            ≤ (d : ℝ) * (∑ x ∈ Bᶜ, μw x) := by
+        have hpoint :
+            ∀ x ∈ Bᶜ,
+              (∑ t ∈ S', if w x t = wtilde x t then μw x else 0)
+                ≤ (d : ℝ) * μw x := by
+          intro x hx
+          have hsum :
+              (∑ t ∈ S', if w x t = wtilde x t then μw x else 0)
+                = ((Zx x).card : ℝ) * μw x := by
+            have :
+                (∑ t ∈ S', if w x t = wtilde x t then μw x else 0)
+                  = ((S'.filter (fun t => w x t = wtilde x t)).card : ℝ) * μw x := by
+              have :
+                  (∑ t ∈ S', if w x t = wtilde x t then μw x else 0)
+                    = (S'.filter (fun t => w x t = wtilde x t)).card • (μw x) := by
+                calc
+                  (∑ t ∈ S', if w x t = wtilde x t then μw x else 0)
+                      = ∑ t ∈ S' with w x t = wtilde x t, μw x := by
+                          exact
+                            (Finset.sum_filter (s := S')
+                              (p := fun t => w x t = wtilde x t)
+                              (f := fun _ => μw x)).symm
+                  _ = (S'.filter (fun t => w x t = wtilde x t)).card • (μw x) := by
+                          exact
+                            (Finset.sum_const
+                              (s := S'.filter (fun t => w x t = wtilde x t))
+                              (μw x))
+              have this' := this
+              simp [nsmul_eq_mul] at this'
+              exact this'
+            have this' := this
+            simp at this'
+            exact this'
+          have hcard : (Zx x).card ≤ d := Zx_card_le x (by simpa using hx)
+          have hcardR : ((Zx x).card : ℝ) ≤ (d : ℝ) := by exact_mod_cast hcard
+          have := mul_le_mul_of_nonneg_right hcardR (hμw_nonneg x)
+          simpa [hsum, mul_assoc] using this
+        have hsum' :
+            (∑ x ∈ Bᶜ, ∑ t ∈ S', if w x t = wtilde x t then μw x else 0)
+              ≤ ∑ x ∈ Bᶜ, (d : ℝ) * μw x := by
+          refine Finset.sum_le_sum ?_
+          intro x hx
+          exact hpoint x hx
+        have : ∑ x ∈ Bᶜ, (d : ℝ) * μw x = (d : ℝ) * (∑ x ∈ Bᶜ, μw x) := by
+          exact (Finset.mul_sum (s := Bᶜ) (f := fun x => μw x) (a := (d : ℝ))).symm
+        have hsum'' : ∑ x ∈ Bᶜ, (d : ℝ) * μw x = (d : ℝ) * (∑ x ∈ Bᶜ, μw x) := by
+          exact this
+        exact le_trans hsum' (le_of_eq hsum'')
+      have h_univ :
+          (∑ x ∈ (Finset.univ : Finset ι), ∑ t ∈ S', if w x t = wtilde x t then μw x else 0)
+            ≤ (S'.card : ℝ) * (∑ x ∈ B, μw x) + (d : ℝ) * (∑ x ∈ Bᶜ, μw x) := by
+        calc
+          (∑ x ∈ (Finset.univ : Finset ι), ∑ t ∈ S', if w x t = wtilde x t then μw x else 0)
+              = (∑ x ∈ B, ∑ t ∈ S', if w x t = wtilde x t then μw x else 0)
+                + (∑ x ∈ Bᶜ, ∑ t ∈ S', if w x t = wtilde x t then μw x else 0) := by
+                    exact hsplit
+          _ ≤ (S'.card : ℝ) * (∑ x ∈ B, μw x) + (d : ℝ) * (∑ x ∈ Bᶜ, μw x) := by
+                exact add_le_add (le_of_eq hB) hBc
+      have h_univ' := h_univ
+      simpa [hswap] using h_univ'
+    have hmul :
+        (1 / (Fintype.card ι : ℝ)) * (∑ t ∈ S', ∑ x ∈ A t, μw x)
+          ≤ (1 / (Fintype.card ι : ℝ)) *
+              ((S'.card : ℝ) * (∑ x ∈ B, μw x) + (d : ℝ) * (∑ x ∈ Bᶜ, μw x)) := by
+      exact mul_le_mul_of_nonneg_left htotal (by positivity : 0 ≤ (1 / (Fintype.card ι : ℝ)))
+    have hR :
+        (1 / (Fintype.card ι : ℝ)) *
+              ((S'.card : ℝ) * (∑ x ∈ B, μw x) + (d : ℝ) * (∑ x ∈ Bᶜ, μw x))
+          = (S'.card : ℝ) * mu_set μ B + (d : ℝ) * mu_set μ Bᶜ := by
+      simp [mu_set_eq]
+      ring
+    rw [hLHS]
+    have := le_trans hmul (le_of_eq hR)
+    simpa using this
+
+  -- isolate `mu_set μ B`
+  have hDpos : (0 : ℝ) < (S'.card : ℝ) - (d : ℝ) := by
+    have hlt : (d : ℝ) < (S'.card : ℝ) := by exact_mod_cast hS'_card
+    exact sub_pos.2 hlt
+  have hDne : (S'.card : ℝ) - (d : ℝ) ≠ 0 := ne_of_gt hDpos
+  have hmulU : (d : ℝ) * mu_set μ (Finset.univ : Finset ι) ≤ (d : ℝ) := by
+    have := mul_le_mul_of_nonneg_left mu_set_univ_le_one (by positivity : 0 ≤ (d : ℝ))
+    simpa using this
+  have hsum_main :
+      (S'.card : ℝ) * (α : ℝ)
+        ≤ ((S'.card : ℝ) - (d : ℝ)) * mu_set μ B
+          + (d : ℝ) * mu_set μ (Finset.univ : Finset ι) := by
+    -- rewrite `Bᶜ` as `univ - B`
+    have hBcompl :
+        mu_set μ Bᶜ = mu_set μ (Finset.univ : Finset ι) - mu_set μ B := by
+      -- from `mu_set B + mu_set Bᶜ = mu_set univ`
+      have hsum :
+          mu_set μ B + mu_set μ Bᶜ = mu_set μ (Finset.univ : Finset ι) := by
+        rw [mu_set_eq (T := B), mu_set_eq (T := Bᶜ), mu_set_eq (T := (Finset.univ : Finset ι))]
+        have hsum' : (∑ x ∈ B, μw x) + (∑ x ∈ Bᶜ, μw x) = ∑ x : ι, μw x := by
+          simpa using (Finset.sum_add_sum_compl (s := B) (f := μw))
+        -- factor out the common scalar and use `Finset.sum_add_sum_compl`
+        calc
+          (1 / (Fintype.card ι : ℝ)) * (∑ x ∈ B, μw x)
+              + (1 / (Fintype.card ι : ℝ)) * (∑ x ∈ Bᶜ, μw x)
+              = (1 / (Fintype.card ι : ℝ)) * ((∑ x ∈ B, μw x) + (∑ x ∈ Bᶜ, μw x)) := by
+                ring
+          _ = (1 / (Fintype.card ι : ℝ)) * ∑ x : ι, μw x := by simp [hsum']
+      apply (eq_sub_iff_add_eq).2
+      simpa [add_comm, add_left_comm, add_assoc] using hsum
+    have hupper' :
+        ∑ t ∈ S', mu_set μ (A t)
+          ≤ ((S'.card : ℝ) - (d : ℝ)) * mu_set μ B
+            + (d : ℝ) * mu_set μ (Finset.univ : Finset ι) := by
+      have h := hsum_upper
+      have :
+          (S'.card : ℝ) * mu_set μ B + (d : ℝ) * mu_set μ Bᶜ
+            = ((S'.card : ℝ) - (d : ℝ)) * mu_set μ B
+                + (d : ℝ) * mu_set μ (Finset.univ : Finset ι) := by
+        -- rewrite `μ(Bᶜ)` as `μ(univ) - μ(B)` and rearrange
+        simp [hBcompl]
+        ring
+      simpa [this] using h
+    have := le_trans hsum_lower hupper'
+    simpa using this
+
+  have hnum_le :
+      (S'.card : ℝ) * (α : ℝ) - (d : ℝ)
+        ≤ ((S'.card : ℝ) - (d : ℝ)) * mu_set μ B := by
+    have hsub := sub_le_sub_right hsum_main ((d : ℝ) * mu_set μ (Finset.univ : Finset ι))
+    have hsub' :
+        (S'.card : ℝ) * (α : ℝ) - (d : ℝ) * mu_set μ (Finset.univ : Finset ι)
+          ≤ ((S'.card : ℝ) - (d : ℝ)) * mu_set μ B := by
+      simpa [sub_eq_add_neg, add_assoc, add_comm, add_left_comm] using hsub
+    have hdrop :
+        (S'.card : ℝ) * (α : ℝ) - (d : ℝ)
+          ≤ (S'.card : ℝ) * (α : ℝ) - (d : ℝ) * mu_set μ (Finset.univ : Finset ι) := by
+      simpa using (sub_le_sub_left hmulU ((S'.card : ℝ) * (α : ℝ)))
+    exact le_trans hdrop hsub'
+  have hB_lower :
+      ((S'.card : ℝ) * (α : ℝ) - (d : ℝ)) / ((S'.card : ℝ) - (d : ℝ))
+        ≤ mu_set μ B := by
+    have hmul :=
+      mul_le_mul_of_nonneg_left hnum_le (by positivity : 0 ≤ (1 / ((S'.card : ℝ) - (d : ℝ))))
+    simpa [div_eq_mul_inv, hDne, mul_assoc, mul_left_comm, mul_comm] using hmul
+
+  -- final strictness
+  by_cases hα : α = 0
+  · have hRHS_neg :
+        (α : ℝ) - (d : ℝ) / ((S'.card : ℝ) - (d : ℝ)) < 0 := by
+        subst hα
+        have hdpos_nat : 0 < d := by
+          have hFpos : 0 < Fintype.card F := Fintype.card_pos
+          dsimp [d]
+          exact Nat.pow_pos hFpos
+        have hdpos : (0 : ℝ) < (d : ℝ) := by exact_mod_cast hdpos_nat
+        have hfracpos : 0 < (d : ℝ) / ((S'.card : ℝ) - (d : ℝ)) := div_pos hdpos hDpos
+        simpa [sub_eq_add_neg] using (neg_neg_of_pos hfracpos)
+    have hB_nonneg : 0 ≤ mu_set μ B := mu_set_nonneg B
+    exact lt_of_lt_of_le (by simpa [d] using hRHS_neg) hB_nonneg
+  · have hαpos : (0 : ℝ) < (α : ℝ) := by
+        have : 0 < α :=
+          lt_of_le_of_ne (show (0 : ℝ≥0) ≤ α from bot_le) (by simpa [eq_comm] using hα)
+        exact (NNReal.coe_pos).2 this
+    have hfrac :
+        (α : ℝ) - (d : ℝ) / ((S'.card : ℝ) - (d : ℝ))
+          < ((S'.card : ℝ) * (α : ℝ) - (d : ℝ)) / ((S'.card : ℝ) - (d : ℝ)) := by
+      have hdiff :
+          ((S'.card : ℝ) * (α : ℝ) - (d : ℝ)) / ((S'.card : ℝ) - (d : ℝ))
+            - ((α : ℝ) - (d : ℝ) / ((S'.card : ℝ) - (d : ℝ)))
+            = (α : ℝ) * (d : ℝ) / ((S'.card : ℝ) - (d : ℝ)) := by
+        field_simp [hDne]
+        ring
+      have hpos :
+          0 < (α : ℝ) * (d : ℝ) / ((S'.card : ℝ) - (d : ℝ)) := by
+        have hdpos_nat : 0 < d := by
+          have hFpos : 0 < Fintype.card F := Fintype.card_pos
+          dsimp [d]
+          exact Nat.pow_pos hFpos
+        have hdpos : (0 : ℝ) < (d : ℝ) := by exact_mod_cast hdpos_nat
+        exact div_pos (mul_pos hαpos hdpos) hDpos
+      have : 0 <
+          ((S'.card : ℝ) * (α : ℝ) - (d : ℝ)) / ((S'.card : ℝ) - (d : ℝ))
+            - ((α : ℝ) - (d : ℝ) / ((S'.card : ℝ) - (d : ℝ))) := by
+        simpa [hdiff] using hpos
+      exact sub_pos.1 this
+    exact lt_of_lt_of_le (by simpa [d] using hfrac) (by simpa [d] using hB_lower)
 
 /-
 Lemma 7.6 in [BCIKS20].
@@ -1028,6 +1688,274 @@ lemma sufficiently_large_list_agreement_on_curve_implies_correlated_agreement
   simpa [B] using this
 end
 
+section
+variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+
+omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
+/--
+List agreement on an affine space implies correlated agreement (integral-weight version).
+
+This is the affine-space analogue of Lemma 7.6 in [BCIKS20].  The set of coefficients
+`S'` is a finite subset of `Fin k → F`, and the agreement bound depends on
+`|F|^(k-1)`, the maximum number of solutions to a nontrivial affine constraint in `F^k`.
+-/
+lemma sufficiently_large_list_agreement_on_affine_space_implies_correlated_agreement
+  [DecidableEq ι] [Fintype ι] [Nonempty ι] [DecidableEq F] [Fintype F]
+  {k : ℕ} {u : Fin (k + 1) → ι → F}
+  {deg : ℕ} {domain : ι ↪ F}
+  {μ : ι → Set.Icc (0 : ℚ) 1}
+  {α : ℝ≥0}
+  {M : ℕ}
+  (hμ : ∀ i, ∃ n : ℤ, (μ i).1 = (n : ℚ) / (M : ℚ))
+  {v : Fin (k + 1) → ι → F}
+  (hv : ∀ i, v i ∈ ReedSolomon.code domain deg)
+  {S' : Finset (Fin k → F)}
+  (hS'_card : S'.card > (Fintype.card F) ^ (k - 1))
+  (hS'_card₁ : S'.card ≥ (M * Fintype.card ι + 1) * (Fintype.card F) ^ (k - 1)) :
+  letI w (x : ι) (t : Fin k → F) : F := affineEval (u := u) t x
+  letI wtilde (x : ι) (t : Fin k → F) : F := affineEval (u := v) t x
+  (hS'_agree : ∀ t ∈ S', agree μ (w · t) (wtilde · t) ≥ α) →
+  mu_set μ {x : ι | ∀ i, u i x = v i x} ≥ α := by
+  classical
+  intro hS'_agree
+  let d : ℕ := (Fintype.card F) ^ (k - 1)
+  let w (x : ι) (t : Fin k → F) : F := affineEval (u := u) t x
+  let wtilde (x : ι) (t : Fin k → F) : F := affineEval (u := v) t x
+  have hS'_agree' : ∀ t ∈ S', agree μ (w · t) (wtilde · t) ≥ α := by
+    simpa [w, wtilde] using hS'_agree
+
+  by_cases hM0 : M = 0
+  · subst hM0
+    have hμ0 : ∀ i, (μ i).1 = 0 := by
+      intro i
+      rcases hμ i with ⟨n, hn⟩
+      simpa using hn
+    have hd_pos : 0 < d := by
+      have hFpos : 0 < Fintype.card F := Fintype.card_pos
+      dsimp [d]
+      exact Nat.pow_pos hFpos
+    have hcard_pos : 0 < S'.card := lt_trans hd_pos (by simpa [d] using hS'_card)
+    have hS'nonempty : S'.Nonempty := Finset.card_pos.mp hcard_pos
+    rcases hS'nonempty with ⟨t, ht⟩
+
+    have hagree0 : agree μ (w · t) (wtilde · t) = 0 := by
+      unfold agree
+      simp [hμ0]
+
+    have hα0 : α = 0 := by
+      have hα_le0_real : (α : ℝ) ≤ 0 := by
+        have := hS'_agree' t ht
+        simpa [hagree0] using this
+      have hα_le0 : α ≤ 0 := by
+        exact_mod_cast hα_le0_real
+      exact le_antisymm hα_le0 (by simp)
+
+    have hmuB0 : mu_set μ {x : ι | ∀ i, u i x = v i x} = 0 := by
+      unfold mu_set
+      simp [hμ0]
+
+    simp [hα0, hmuB0]
+
+  have hM : M ≠ 0 := hM0
+  have hMn : M * Fintype.card ι ≠ 0 := by
+    have hMpos : 0 < M := Nat.pos_of_ne_zero hM
+    have hcardpos : 0 < Fintype.card ι := Fintype.card_pos
+    exact Nat.ne_of_gt (Nat.mul_pos hMpos hcardpos)
+
+  choose nfun hnfun using hμ
+
+  let den : ℝ := (M : ℝ) * (Fintype.card ι : ℝ)
+  have hden_pos : 0 < den := by
+    have hMpos : 0 < (M : ℝ) := by exact_mod_cast Nat.pos_of_ne_zero hM
+    have hcardpos : 0 < (Fintype.card ι : ℝ) := by
+      exact_mod_cast (Fintype.card_pos : 0 < Fintype.card ι)
+    simpa [den] using mul_pos hMpos hcardpos
+  have hden_ne : den ≠ 0 := ne_of_gt hden_pos
+
+  have hw : ∀ i, ((μ i).1 : ℝ) = (nfun i : ℝ) / (M : ℝ) := by
+    intro i
+    have hq := hnfun i
+    have : ((μ i).1 : ℝ) = ((nfun i : ℚ) / (M : ℚ) : ℝ) := by
+      exact_mod_cast hq
+    simpa using this
+
+  have agree_eq_int_div (a b : ι → F) :
+      agree μ a b = ((∑ i ∈ {i | a i = b i}, nfun i) : ℝ) / den := by
+    classical
+    have : agree μ a b = (1 / (Fintype.card ι : ℝ)) * ∑ i ∈ {i | a i = b i}, ((μ i).1 : ℝ) := by
+      unfold agree
+      simp [Rat.cast_sum]
+    calc
+      agree μ a b
+          = (1 / (Fintype.card ι : ℝ)) * ∑ i ∈ {i | a i = b i}, ((μ i).1 : ℝ) := this
+      _ = (1 / (Fintype.card ι : ℝ)) * ∑ i ∈ {i | a i = b i}, (nfun i : ℝ) / (M : ℝ) := by
+            refine congrArg (fun s => (1 / (Fintype.card ι : ℝ)) * s) ?_
+            refine Finset.sum_congr rfl ?_
+            intro i hi
+            simp [hw]
+      _ = (1 / (Fintype.card ι : ℝ)) * ((∑ i ∈ {i | a i = b i}, (nfun i : ℝ)) / (M : ℝ)) := by
+            simp [div_eq_mul_inv]
+            simpa using
+              (Finset.sum_mul (s := {i | a i = b i}) (f := fun i => (nfun i : ℝ))
+                (a := (M : ℝ)⁻¹)).symm
+      _ = ((∑ i ∈ {i | a i = b i}, nfun i) : ℝ) / den := by
+            simp [den, div_eq_mul_inv]
+            ring
+
+  have mu_set_eq_int_div (T : Finset ι) :
+      mu_set μ T = ((∑ i ∈ T, nfun i) : ℝ) / den := by
+    classical
+    have : mu_set μ T = (1 / (Fintype.card ι : ℝ)) * ∑ i ∈ T, ((μ i).1 : ℝ) := by
+      unfold mu_set
+      simp [Rat.cast_sum]
+    calc
+      mu_set μ T
+          = (1 / (Fintype.card ι : ℝ)) * ∑ i ∈ T, ((μ i).1 : ℝ) := this
+      _ = (1 / (Fintype.card ι : ℝ)) * ∑ i ∈ T, (nfun i : ℝ) / (M : ℝ) := by
+            refine congrArg (fun s => (1 / (Fintype.card ι : ℝ)) * s) ?_
+            refine Finset.sum_congr rfl ?_
+            intro i hi
+            simp [hw]
+      _ = (1 / (Fintype.card ι : ℝ)) * ((∑ i ∈ T, (nfun i : ℝ)) / (M : ℝ)) := by
+            simp [div_eq_mul_inv]
+            simpa using
+              (Finset.sum_mul (s := T) (f := fun i => (nfun i : ℝ)) (a := (M : ℝ)⁻¹)).symm
+      _ = ((∑ i ∈ T, nfun i) : ℝ) / den := by
+            simp [den, div_eq_mul_inv]
+            ring
+
+  let α0_num : ℤ := Int.ceil ((α : ℝ) * den)
+  let α0_real : ℝ := (α0_num : ℝ) / den
+  have hα_le_α0 : (α : ℝ) ≤ α0_real := by
+    have h1 : (α : ℝ) * den ≤ (α0_num : ℝ) := by
+      simpa [α0_num] using (Int.le_ceil ((α : ℝ) * den))
+    have hdiv := div_le_div_of_nonneg_right h1 (le_of_lt hden_pos)
+    simpa [α0_real, den, hden_ne, mul_assoc] using hdiv
+  have hα0_nonneg : 0 ≤ α0_real := by
+    have hα_nonneg : (0 : ℝ) ≤ (α : ℝ) := by
+      exact_mod_cast (show (0 : ℝ≥0) ≤ α from bot_le)
+    exact le_trans hα_nonneg hα_le_α0
+  let α0 : ℝ≥0 := ⟨α0_real, hα0_nonneg⟩
+
+  have hS'_agree0 : ∀ t ∈ S', agree μ (w · t) (wtilde · t) ≥ α0 := by
+    intro t ht
+    have hagree_eq := agree_eq_int_div (a := (w · t)) (b := (wtilde · t))
+    let numT : ℤ := ∑ i ∈ {i | (w · t) i = (wtilde · t) i}, nfun i
+    have hagree_eq' : agree μ (w · t) (wtilde · t) = (numT : ℝ) / den := by
+      simpa [numT] using hagree_eq
+    have hα_le_agree : (α : ℝ) ≤ agree μ (w · t) (wtilde · t) := by
+      simpa using hS'_agree' t ht
+    have hαden_le : (α : ℝ) * den ≤ (numT : ℝ) := by
+      have hmul := mul_le_mul_of_nonneg_right hα_le_agree (le_of_lt hden_pos)
+      simpa [hagree_eq', div_eq_mul_inv, hden_ne, mul_assoc] using hmul
+    have hceil_le : α0_num ≤ numT := by
+      have : Int.ceil ((α : ℝ) * den) ≤ numT := (Int.ceil_le).2 hαden_le
+      simpa [α0_num] using this
+    have hceil_le_real : (α0_num : ℝ) ≤ (numT : ℝ) := by exact_mod_cast hceil_le
+    have hdiv := div_le_div_of_nonneg_right hceil_le_real (le_of_lt hden_pos)
+    have : (α0_real : ℝ) ≤ agree μ (w · t) (wtilde · t) := by
+      simpa [α0_real, hagree_eq', hden_ne] using hdiv
+    simpa [α0, α0_real] using this
+
+  have hBound :=
+    list_agreement_on_affine_space_implies_correlated_agreement_bound (u := u) (v := v)
+      (μ := μ) (α := α0) (deg := deg) (domain := domain) hv (S' := S')
+      (by simpa [d] using hS'_card) (by simpa [w, wtilde] using hS'_agree0)
+
+  have herr : (d : ℝ) / (S'.card - d) ≤ (1 : ℝ) / den := by
+    have hMn_pos : (0 : ℝ) < (M * Fintype.card ι : ℝ) := by
+      exact_mod_cast (Nat.pos_of_ne_zero hMn)
+    have hs_ge : d ≤ S'.card := le_of_lt (by simpa [d] using hS'_card)
+    have hcast_sub : ((S'.card - d : ℕ) : ℝ) = (S'.card : ℝ) - (d : ℝ) := by
+      simpa using (Nat.cast_sub hs_ge)
+
+    have hD_lower : (M * Fintype.card ι : ℝ) * (d : ℝ) ≤ (S'.card : ℝ) - (d : ℝ) := by
+      have h1 : (S'.card : ℝ) ≥ ((M * Fintype.card ι + 1) * d : ℝ) := by
+        exact_mod_cast (by simpa [d] using hS'_card₁)
+      calc
+        (S'.card : ℝ) - (d : ℝ)
+            ≥ ((M * Fintype.card ι + 1) * d : ℝ) - (d : ℝ) := by linarith
+        _ = (M * Fintype.card ι : ℝ) * (d : ℝ) := by ring
+
+    have hd_pos : (0 : ℝ) < (d : ℝ) := by
+      have hd_pos_nat : 0 < d := by
+        have hFpos : 0 < Fintype.card F := Fintype.card_pos
+        dsimp [d]
+        exact Nat.pow_pos hFpos
+      exact_mod_cast hd_pos_nat
+    have hdenom_pos : (0 : ℝ) < (M * Fintype.card ι : ℝ) * (d : ℝ) := mul_pos hMn_pos hd_pos
+
+    have : (d : ℝ) / ((S'.card : ℝ) - (d : ℝ)) ≤ (1 : ℝ) / (M * Fintype.card ι : ℝ) := by
+      calc
+        (d : ℝ) / ((S'.card : ℝ) - (d : ℝ))
+            ≤ (d : ℝ) / ((M * Fintype.card ι : ℝ) * (d : ℝ)) := by
+                  exact div_le_div_of_nonneg_left (le_of_lt hd_pos) hdenom_pos hD_lower
+        _ = (1 : ℝ) / (M * Fintype.card ι : ℝ) := by
+              field_simp [hMn]
+              ring
+
+    have : (d : ℝ) / (S'.card - d) ≤ (1 : ℝ) / (M * Fintype.card ι : ℝ) := by
+      simpa [hcast_sub] using this
+    simpa [den, Nat.cast_mul] using this
+
+  have hBound' : mu_set μ {x : ι | ∀ i, u i x = v i x} > (α0 : ℝ) - (1 : ℝ) / den := by
+    have hsub :
+        (α0 : ℝ) - (1 : ℝ) / den ≤ (α0 : ℝ) - (d : ℝ) / (S'.card - d) := by
+      have hneg : -((1 : ℝ) / den) ≤ -((d : ℝ) / (S'.card - d)) := by
+        exact neg_le_neg herr
+      have := add_le_add_left hneg (α0 : ℝ)
+      simpa [sub_eq_add_neg] using this
+    have hBound0 :
+        (α0 : ℝ) - (d : ℝ) / (S'.card - d)
+          < mu_set μ {x : ι | ∀ i, u i x = v i x} := by
+      simpa [d] using hBound
+    exact lt_of_le_of_lt hsub hBound0
+
+  let B : Finset ι := {x : ι | ∀ i, u i x = v i x}
+  have hmuB_eq : mu_set μ B = ((∑ i ∈ B, nfun i) : ℝ) / den := mu_set_eq_int_div (T := B)
+  let numB : ℤ := ∑ i ∈ B, nfun i
+  have hmuB_eq' : mu_set μ B = (numB : ℝ) / den := by
+    simpa [B, numB] using hmuB_eq
+
+  have hBound'' : (numB : ℝ) / den > (α0_num : ℝ) / den - (1 : ℝ) / den := by
+    have : mu_set μ B > (α0 : ℝ) - (1 : ℝ) / den := by
+      simpa [B] using hBound'
+    simpa [α0, α0_real, hmuB_eq'] using this
+
+  have hrhs : (α0_num : ℝ) / den - den⁻¹ = ((α0_num - 1 : ℤ) : ℝ) / den := by
+    have : (α0_num : ℝ) / den - (1 : ℝ) / den = ((α0_num - 1 : ℤ) : ℝ) / den := by
+      field_simp [hden_ne]
+    simpa [one_div] using this
+
+  have hBound''' : ((α0_num - 1 : ℤ) : ℝ) / den < (numB : ℝ) / den := by
+    have : (α0_num : ℝ) / den - den⁻¹ < (numB : ℝ) / den := by
+      simpa [one_div] using hBound''
+    simpa [hrhs] using this
+
+  have hmul : ((α0_num - 1 : ℤ) : ℝ) < (numB : ℝ) := by
+    have := mul_lt_mul_of_pos_right hBound''' hden_pos
+    simpa [div_eq_mul_inv, hden_ne, mul_assoc] using this
+
+  have hmul_int : α0_num - 1 < numB := by
+    exact_mod_cast hmul
+
+  have hα0_num_le : α0_num ≤ numB := by
+    have h' : α0_num < numB + 1 := by
+      have := add_lt_add_right hmul_int 1
+      simpa [sub_eq_add_neg, add_assoc, add_comm, add_left_comm] using this
+    exact (Int.lt_add_one_iff).1 h'
+
+  have hα0_le_muB : (α0_real : ℝ) ≤ mu_set μ B := by
+    have hcast : (α0_num : ℝ) ≤ (numB : ℝ) := by exact_mod_cast hα0_num_le
+    have hdiv := div_le_div_of_nonneg_right hcast (le_of_lt hden_pos)
+    simpa [hmuB_eq', α0_real, hden_ne] using hdiv
+
+  have : (α : ℝ) ≤ mu_set μ B := le_trans hα_le_α0 hα0_le_muB
+  simpa [B] using this
+
+end
+
 end WeightedAgreement
 
 end BCIKS20ProximityGapSection7
@@ -1040,6 +1968,23 @@ open WeightedAgreement
 
 noncomputable instance {domain : ι ↪ F} {deg : ℕ} : Fintype (ReedSolomon.code domain deg) :=
   Fintype.ofFinite _
+
+noncomputable def ε_uniqueDecoding (ι F : Type) [Fintype ι] [Fintype F] : ℝ≥0 :=
+  (Fintype.card ι : ℝ≥0) / (Fintype.card F : ℝ≥0)
+
+noncomputable def ε_affineLines {deg : ℕ} {domain : ι ↪ F} : ℝ≥0 :=
+  (((Fintype.card ι) * (Fintype.card (ReedSolomon.code domain deg)) ^ 2 : ℕ) : ℝ≥0) /
+    (Fintype.card F : ℝ≥0)
+
+noncomputable def ε_affineCurves {k deg : ℕ} {domain : ι ↪ F} : ℝ≥0 :=
+  (((((Fintype.card ι + 1) * (k - 1)) *
+        (Fintype.card (ReedSolomon.code domain deg)) ^ k : ℕ) : ℝ≥0) /
+    (Fintype.card F : ℝ≥0))
+
+noncomputable def ε_affineSpaces {k deg : ℕ} {domain : ι ↪ F} : ℝ≥0 :=
+  (((((Fintype.card ι + 1) * (Fintype.card F) ^ (k - 1)) *
+        (Fintype.card (ReedSolomon.code domain deg)) ^ (k + 1) : ℕ) : ℝ≥0) /
+    (Fintype.card (Fin k → F) : ℝ≥0))
 
 omit [Field F] [DecidableEq F] in
 lemma card_filter_gt_floor_of_prob_gt {P : F → Prop} [DecidablePred P] [Nonempty F] {ε : ℝ≥0} :
@@ -1176,6 +2121,39 @@ lemma exists_finset_of_prob_gt' {α : Type} [Fintype α] [DecidableEq α] [Nonem
   · intro x hx
     have hx' : x ∈ Finset.filter P Finset.univ := hx
     exact (Finset.mem_filter.1 hx').2
+
+omit [DecidableEq F] in
+lemma floor_div_mul_card_eq (N : ℕ) :
+    Nat.floor
+        ((((N : ℝ≥0) / (Fintype.card F : ℝ≥0)) : ℝ) * (Fintype.card F : ℝ)) = N := by
+  have hne : (Fintype.card F : ℝ) ≠ 0 := by
+    exact_mod_cast (ne_of_gt (Fintype.card_pos : 0 < Fintype.card F))
+  have hmul :
+      ((N : ℝ) / (Fintype.card F : ℝ)) * (Fintype.card F : ℝ) = (N : ℝ) := by
+    field_simp [hne]
+  calc
+    Nat.floor
+        ((((N : ℝ≥0) / (Fintype.card F : ℝ≥0)) : ℝ) * (Fintype.card F : ℝ))
+        = Nat.floor (((N : ℝ) / (Fintype.card F : ℝ)) * (Fintype.card F : ℝ)) := by
+          simp
+    _ = N := by
+          simp [hmul, Nat.floor_natCast]
+
+lemma floor_div_mul_card_eq' {α : Type*} [Fintype α] [Nonempty α] (N : ℕ) :
+    Nat.floor
+        ((((N : ℝ≥0) / (Fintype.card α : ℝ≥0)) : ℝ) * (Fintype.card α : ℝ)) = N := by
+  have hne : (Fintype.card α : ℝ) ≠ 0 := by
+    exact_mod_cast (ne_of_gt (Fintype.card_pos : 0 < Fintype.card α))
+  have hmul :
+      ((N : ℝ) / (Fintype.card α : ℝ)) * (Fintype.card α : ℝ) = (N : ℝ) := by
+    field_simp [hne]
+  calc
+    Nat.floor
+        ((((N : ℝ≥0) / (Fintype.card α : ℝ≥0)) : ℝ) * (Fintype.card α : ℝ))
+        = Nat.floor (((N : ℝ) / (Fintype.card α : ℝ)) * (Fintype.card α : ℝ)) := by
+          simp
+    _ = N := by
+          simp [hmul, Nat.floor_natCast]
 
 lemma exists_fiber_card_gt_of_card_gt_mul {α β : Type*} [Fintype α] [Fintype β] [DecidableEq β]
     (f : α → β) (m : ℕ) (h : Fintype.card α > m * Fintype.card β) :
@@ -1466,27 +2444,35 @@ theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime
   simpa [hset_eq] using hcard
 
 theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime_of_prob
-    {deg : ℕ} {domain : ι ↪ F} {δ ε : ℝ≥0} {u₀ u₁ v₀ v₁ : ι → F} [Nonempty F]
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} {u₀ u₁ v₀ v₁ : ι → F} [Nonempty F]
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg))
     (hv₀ : v₀ ∈ ReedSolomon.code domain deg)
     (hv₁ : v₁ ∈ ReedSolomon.code domain deg)
-    (hε_large : Nat.floor ((ε : ℝ) * (Fintype.card F : ℝ)) ≥ Fintype.card ι)
     (hprob :
       Pr_{ let z ← $ᵖ F}[Δ₀(fun i => u₀ i + z * u₁ i, fun i => v₀ i + z * v₁ i) ≤
-        Nat.floor (δ * Fintype.card ι)] > ε) :
+        Nat.floor (δ * Fintype.card ι)] >
+        ε_uniqueDecoding (ι := ι) (F := F)) :
     ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
       ((Finset.filter (fun i => u₀ i = v₀ i ∧ u₁ i = v₁ i) Finset.univ).card : ℝ) ≥
         (1 - δ) * (Fintype.card ι : ℝ) := by
   classical
+  let ε0 : ℝ≥0 := ε_uniqueDecoding (ι := ι) (F := F)
+  have hprob' :
+      Pr_{ let z ← $ᵖ F}[Δ₀(fun i => u₀ i + z * u₁ i, fun i => v₀ i + z * v₁ i) ≤
+        Nat.floor (δ * Fintype.card ι)] > ε0 := by
+    simpa [ε0, ε_uniqueDecoding] using hprob
   have hS :=
     exists_finset_of_prob_gt
       (P := fun z =>
         Δ₀(fun i => u₀ i + z * u₁ i, fun i => v₀ i + z * v₁ i) ≤
-          Nat.floor (δ * Fintype.card ι)) hprob
+          Nat.floor (δ * Fintype.card ι)) (ε := ε0) hprob'
   rcases hS with ⟨S, hS_card, hS_prop⟩
   have hS_large : S.card > Fintype.card ι := by
-    have hS_floor : S.card > Nat.floor ((ε : ℝ) * (Fintype.card F : ℝ)) := hS_card
-    exact lt_of_le_of_lt hε_large hS_floor
+    have hfloor :
+        Nat.floor ((ε0 : ℝ) * (Fintype.card F : ℝ)) = Fintype.card ι := by
+      dsimp [ε0, ε_uniqueDecoding]
+      exact floor_div_mul_card_eq (F := F) (N := Fintype.card ι)
+    simpa [hfloor] using hS_card
   have hS_large' :
       ∃ S : Finset F, S.card > Fintype.card ι ∧
         ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
@@ -1506,15 +2492,13 @@ pair `(δ, ε)` and two words `u₀` and `u₁`, such that the probability that 
 line passing through `u₀` and `u₁` is `δ`-close to Reed-Solomon code is at most `ε`.
 Then, the words `u₀` and `u₁` have correlated agreement. -/
 theorem RS_correlatedAgreement_affineLines {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    {u₀ u₁ : ι → F} {ε : ℝ≥0}
+    {u₀ u₁ : ι → F}
     (hδ : δ ≤ 1 - (ReedSolomonCode.sqrtRate deg domain))
-    (hε_large :
-      Nat.floor ((ε : ℝ) * (Fintype.card F : ℝ)) ≥
-        (Fintype.card ι) * (Fintype.card (ReedSolomon.code domain deg)) ^ 2)
     (hprob :
       Pr_{ let z ← $ᵖ F}[∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
         Δ₀(fun i => u₀ i + z * u₁ i, fun i => v₀ i + z * v₁ i) ≤
-        Nat.floor (δ * Fintype.card ι)] > ε) :
+        Nat.floor (δ * Fintype.card ι)] >
+        ε_affineLines (ι := ι) (F := F) (deg := deg) (domain := domain)) :
     ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
       ((Finset.filter (fun i => u₀ i = v₀ i ∧ u₁ i = v₁ i) Finset.univ).card : ℝ) ≥
         (1 - δ) * (Fintype.card ι : ℝ) := by
@@ -1524,18 +2508,18 @@ theorem RS_correlatedAgreement_affineLines {deg : ℕ} {domain : ι ↪ F} {δ :
     ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
       Δ₀(fun i => u₀ i + z * u₁ i, fun i => v₀ i + z * v₁ i) ≤
         Nat.floor (δ * Fintype.card ι)
-  have hS := exists_finset_of_prob_gt (P := P) hprob
+  let N : ℕ := (Fintype.card ι) * (Fintype.card (ReedSolomon.code domain deg)) ^ 2
+  let ε0 : ℝ≥0 := ε_affineLines (ι := ι) (F := F) (deg := deg) (domain := domain)
+  have hprob' : Pr_{ let z ← $ᵖ F}[P z] > ε0 := by
+    simpa [ε0, ε_affineLines, N, P] using hprob
+  have hS := exists_finset_of_prob_gt (P := P) (ε := ε0) hprob'
   rcases hS with ⟨S, hS_card, hS_prop⟩
   have hS_large :
       S.card > (Fintype.card ι) * (Fintype.card (ReedSolomon.code domain deg)) ^ 2 := by
-    have hε_le :
-        (Fintype.card ι) * (Fintype.card (ReedSolomon.code domain deg)) ^ 2 ≤
-          Nat.floor ((ε : ℝ) * (Fintype.card F : ℝ)) := by
-      simpa [ge_iff_le] using hε_large
-    have hS_floor :
-        Nat.floor ((ε : ℝ) * (Fintype.card F : ℝ)) < S.card := by
-      simpa [gt_iff_lt] using hS_card
-    exact lt_of_le_of_lt hε_le hS_floor
+    have hfloor :
+        Nat.floor ((ε0 : ℝ) * (Fintype.card F : ℝ)) = N := by
+      simpa [ε0, ε_affineLines, N] using (floor_div_mul_card_eq (F := F) (N := N))
+    simpa [N, hfloor] using hS_card
   rcases
       exists_pair_with_large_fiber_of_exists_close
         (S := S) (deg := deg) (domain := domain) (u₀ := u₀) (u₁ := u₁)
@@ -1668,16 +2652,14 @@ pair `(δ, ε)` and a curve passing through words `u₀, ..., uκ`, such that
 the  probability that a random point on the curve is `δ`-close to the Reed-Solomon code
 is at most `ε`. Then, the words `u₀, ..., uκ` have correlated agreement. -/
 theorem correlatedAgreement_affine_curves [DecidableEq ι] {k : ℕ} {u : Fin k → ι → F}
-    {deg : ℕ} {domain : ι ↪ F} {δ ε : ℝ≥0}
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hδ : δ ≤ 1 - ReedSolomonCode.sqrtRate deg domain)
-    (hε_large :
-      Nat.floor ((ε : ℝ) * (Fintype.card F : ℝ)) ≥
-        ((Fintype.card ι + 1) * (k - 1)) * (Fintype.card (ReedSolomon.code domain deg)) ^ k)
     (hprob :
       Pr_{ let z ← $ᵖ F}[∃ v : Fin k → ι → F,
         (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
         Δ₀(fun i => ∑ j : Fin k, z ^ j.val * u j i,
-            fun i => ∑ j : Fin k, z ^ j.val * v j i) ≤ Nat.floor (δ * Fintype.card ι)] > ε) :
+            fun i => ∑ j : Fin k, z ^ j.val * v j i) ≤ Nat.floor (δ * Fintype.card ι)] >
+        ε_affineCurves (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)) :
     ∃ v : Fin k → ι → F,
   (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
       ((Finset.filter (fun i => ∀ j, u j i = v j i) Finset.univ).card : ℝ) ≥
@@ -1690,7 +2672,12 @@ theorem correlatedAgreement_affine_curves [DecidableEq ι] {k : ℕ} {u : Fin k 
       (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
       Δ₀(fun i => ∑ j : Fin k, z ^ j.val * u j i,
         fun i => ∑ j : Fin k, z ^ j.val * v j i) ≤ Nat.floor (δ * Fintype.card ι)
-  have hS := exists_finset_of_prob_gt (P := P) hprob
+  let N : ℕ :=
+    ((Fintype.card ι + 1) * (k - 1)) * (Fintype.card (ReedSolomon.code domain deg)) ^ k
+  let ε0 : ℝ≥0 := ε_affineCurves (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)
+  have hprob' : Pr_{ let z ← $ᵖ F}[P z] > ε0 := by
+    simpa [ε0, ε_affineCurves, N, P] using hprob
+  have hS := exists_finset_of_prob_gt (P := P) (ε := ε0) hprob'
   rcases hS with ⟨S, hS_card, hS_prop⟩
   let α := {z : F // z ∈ S}
   let β := (Fin k → ReedSolomon.code domain deg)
@@ -1715,14 +2702,13 @@ theorem correlatedAgreement_affine_curves [DecidableEq ι] {k : ℕ} {u : Fin k 
                   (Fintype.card_fun (α := Fin k) (β := ReedSolomon.code domain deg))
         _ = (Fintype.card (ReedSolomon.code domain deg)) ^ k := by
                 simp
-    have hε_le :
-        ((Fintype.card ι + 1) * (k - 1)) * Fintype.card β ≤
-          Nat.floor ((ε : ℝ) * (Fintype.card F : ℝ)) := by
-      simpa [hcard_beta, ge_iff_le] using hε_large
-    have hS_floor :
-        Nat.floor ((ε : ℝ) * (Fintype.card F : ℝ)) < S.card := by
-      simpa [gt_iff_lt] using hS_card
-    exact lt_of_le_of_lt hε_le hS_floor
+    have hfloor :
+        Nat.floor ((ε0 : ℝ) * (Fintype.card F : ℝ)) = N := by
+      simpa [ε0, ε_affineCurves, N] using (floor_div_mul_card_eq (F := F) (N := N))
+    have hS_large' : S.card > N := by
+      simpa [hfloor] using hS_card
+    -- rewrite `N` using the cardinality of `β`
+    simpa [N, hcard_beta] using hS_large'
   have hS' :
       Fintype.card α > ((Fintype.card ι + 1) * (k - 1)) * Fintype.card β := by
     simpa [hcard_alpha] using hS_large
@@ -2100,37 +3086,180 @@ able to isolate the affine origin from the affine span and to form a generating 
 correct size. The reason for taking an extra vector is that after isolating the affine origin,
 the affine span is formed as the span of the difference of the rest of the vector set. -/
 theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k] {u : Fin (k + 1) → ι → F}
-    {deg : ℕ} {domain : ι ↪ F} {δ ε : ℝ≥0}
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hδ : δ ≤ 1 - (ReedSolomonCode.sqrtRate deg domain))
-    (hk : k = 1)
-    (hε_large :
-      Nat.floor ((ε : ℝ) * (Fintype.card F : ℝ)) ≥
-        (Fintype.card ι) * (Fintype.card (ReedSolomon.code domain deg)) ^ 2)
     (hprob :
-      Pr_{ let z ← $ᵖ F}[∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
-        Δ₀(fun i => u 0 i + z * u 1 i, fun i => v₀ i + z * v₁ i) ≤
-        Nat.floor (δ * Fintype.card ι)] > ε) :
+      Pr_{ let t ← $ᵖ (Fin k → F)}[∃ v : Fin (k + 1) → ι → F,
+        (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+        Δ₀(affineEval (u := u) t, affineEval (u := v) t) ≤
+          Nat.floor (δ * Fintype.card ι)] >
+        ε_affineSpaces (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)) :
     ∃ v : Fin (k + 1) → ι → F,
       (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
       ((Finset.filter (fun i => ∀ j, u j i = v j i) Finset.univ).card : ℝ) ≥
         (1 - δ) * (Fintype.card ι : ℝ) := by
   classical
-  -- Reduce to the affine-line case (`k = 1`).
-  subst hk
-  have hline :=
-    RS_correlatedAgreement_affineLines (deg := deg) (domain := domain) (δ := δ)
-      (u₀ := u 0) (u₁ := u 1) hδ hε_large hprob
-  -- Repackage the witness to match the `k = 1` statement.
-  rcases hline with ⟨v₀, hv₀, v₁, hv₁, hcard⟩
-  let v' : Fin 2 → ι → F := fun i => Fin.cases v₀ (fun _ => v₁) i
-  refine ⟨v', ?_, ?_⟩
-  · intro j
-    refine Fin.cases ?_ (fun j => ?_) j
-    · simpa [v'] using hv₀
-    · refine Fin.cases ?_ (fun j' => (Fin.elim0 j')) j
-      · simpa [v'] using hv₁
-  -- For `Fin 2`, the agreement condition matches `∀ j`.
-  simpa [v', Fin.forall_fin_two] using hcard
+  have _ := hδ
+  have _ := (inferInstance : DecidableEq ι)
+  let d : ℕ := (Fintype.card F) ^ (k - 1)
+  let P : (Fin k → F) → Prop := fun t =>
+    ∃ v : Fin (k + 1) → ι → F,
+      (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+      Δ₀(affineEval (u := u) t, affineEval (u := v) t) ≤
+        Nat.floor (δ * Fintype.card ι)
+  let N : ℕ :=
+    ((Fintype.card ι + 1) * d) * (Fintype.card (ReedSolomon.code domain deg)) ^ (k + 1)
+  let ε0 : ℝ≥0 := ε_affineSpaces (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)
+  have hprob' : Pr_{ let t ← $ᵖ (Fin k → F)}[P t] > ε0 := by
+    simpa [ε0, ε_affineSpaces, N, P, d] using hprob
+  have hS := exists_finset_of_prob_gt' (P := P) (ε := ε0) hprob'
+  rcases hS with ⟨S, hS_card, hS_prop⟩
+  let α := {t : Fin k → F // t ∈ S}
+  let β := (Fin (k + 1) → ReedSolomon.code domain deg)
+  letI : Fintype α := Fintype.ofFinite α
+  have hcard_alpha : Fintype.card α = S.card := by
+    classical
+    have h :
+        Fintype.card α = #{t | t ∈ S} := by
+      simp [α]
+    simpa [Finset.filter_univ_mem] using h
+  have hcard_beta :
+      Fintype.card β = (Fintype.card (ReedSolomon.code domain deg)) ^ (k + 1) := by
+    classical
+    calc
+      Fintype.card β
+          = Fintype.card (Fin (k + 1) → ReedSolomon.code domain deg) := by
+              simp [β]
+      _ = Fintype.card (ReedSolomon.code domain deg) ^ Fintype.card (Fin (k + 1)) := by
+              exact
+                (Fintype.card_fun (α := Fin (k + 1)) (β := ReedSolomon.code domain deg))
+      _ = (Fintype.card (ReedSolomon.code domain deg)) ^ (k + 1) := by
+              simp [Fintype.card_fin]
+  have hS_large :
+      S.card > ((Fintype.card ι + 1) * d) * Fintype.card β := by
+    have hfloor :
+        Nat.floor ((ε0 : ℝ) * (Fintype.card (Fin k → F) : ℝ)) = N := by
+      simpa [ε0, ε_affineSpaces, N, d] using
+        (floor_div_mul_card_eq' (α := Fin k → F) (N := N))
+    have hfloor' :
+        Nat.floor ((ε0 : ℝ) * ((Fintype.card F) ^ k : ℝ)) = N := by
+      simpa [Fintype.card_fun, Fintype.card_fin] using hfloor
+    have hS_large' : S.card > N := by
+      simpa [hfloor'] using hS_card
+    simpa [N, hcard_beta] using hS_large'
+  have hS' :
+      Fintype.card α > ((Fintype.card ι + 1) * d) * Fintype.card β := by
+    simpa [hcard_alpha] using hS_large
+  have hclose' :
+      ∀ t : α, ∃ v : β,
+        Δ₀(affineEval (u := u) t.1,
+          affineEval (u := fun j => (v j).1) t.1) ≤
+          Nat.floor (δ * Fintype.card ι) := by
+    intro t
+    rcases hS_prop t.1 t.2 with ⟨v, hv, hdist⟩
+    refine ⟨fun j => ⟨v j, hv j⟩, ?_⟩
+    simpa using hdist
+  let f : α → β := fun t => Classical.choose (hclose' t)
+  have hf_spec :
+      ∀ t : α,
+        Δ₀(affineEval (u := u) t.1,
+          affineEval (u := fun j => (f t j).1) t.1) ≤
+          Nat.floor (δ * Fintype.card ι) := by
+    intro t
+    simpa [f] using (Classical.choose_spec (hclose' t))
+  rcases exists_fiber_card_gt_of_card_gt_mul (f := f) (m := (Fintype.card ι + 1) * d) hS'
+    with ⟨v, hv_large⟩
+  let T : Finset α := Finset.univ.filter (fun t => f t = v)
+  have hT_card : T.card > (Fintype.card ι + 1) * d := by
+    have hcard_T :
+        Fintype.card {t : α // f t = v} = T.card := by
+      classical
+      simpa using
+        (Fintype.card_subtype (α := α) (p := fun t => f t = v))
+    simpa [hcard_T] using hv_large
+  let S' : Finset (Fin k → F) := T.image (fun t => t.1)
+  have hS'_card_m : S'.card > (Fintype.card ι + 1) * d := by
+    have h_inj : Function.Injective (fun t : α => t.1) := by
+      intro x y hxy
+      exact Subtype.ext (by simpa using hxy)
+    have hcard : S'.card = T.card := by
+      simpa [S'] using
+        (Finset.card_image_of_injective (s := T) (f := fun t : α => t.1) h_inj)
+    simpa [hcard] using hT_card
+  have hclose :
+      ∀ t ∈ S',
+        Δ₀(affineEval (u := u) t, affineEval (u := fun j => (v j).1) t) ≤
+          Nat.floor (δ * Fintype.card ι) := by
+    intro t ht
+    rcases Finset.mem_image.mp ht with ⟨t', ht', rfl⟩
+    have ht' : f t' = v := by
+      have ht'' : t' ∈ T := ht'
+      simpa [T] using (Finset.mem_filter.mp ht'').2
+    have hdist := hf_spec t'
+    simpa [ht'] using hdist
+  let vfun : Fin (k + 1) → ι → F := fun j => (v j).1
+  have hvfun : ∀ j, vfun j ∈ ReedSolomon.code domain deg := by
+    intro j
+    exact (v j).2
+  have hS'_agree :
+      ∀ t ∈ S',
+        agree (μ := uniformWeight (ι := ι)) (affineEval (u := u) t)
+          (affineEval (u := vfun) t) ≥ (1 - δ) := by
+    intro t ht
+    have hdist := hclose t ht
+    exact
+      agree_uniform_ge_one_sub_of_hamming_le
+        (u := affineEval (u := u) t)
+        (v := affineEval (u := vfun) t) (δ := δ) hdist
+  have hδ1 : δ ≤ 1 := by
+    have h1 :
+        (1 - ReedSolomonCode.sqrtRate deg domain) ≤ (1 : ℝ≥0) := by
+      exact tsub_le_self
+    exact le_trans hδ h1
+  have hμ : ∀ i, ∃ n : ℤ, (uniformWeight (ι := ι) i).1 = (n : ℚ) / (1 : ℚ) := by
+    intro i
+    refine ⟨1, by simp [uniformWeight]⟩
+  let A : Finset ι := {x : ι | ∀ j, u j x = vfun j x}
+  have hS'_card : S'.card > d := by
+    have hm : d ≤ (Fintype.card ι + 1) * d := by
+      have hmult : 1 ≤ Fintype.card ι + 1 := Nat.succ_le_succ (Nat.zero_le _)
+      have := Nat.mul_le_mul_left d hmult
+      simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+    have hS'_card' : (Fintype.card ι + 1) * d < S'.card := by
+      simpa [gt_iff_lt] using hS'_card_m
+    exact lt_of_le_of_lt hm hS'_card'
+  have hS'_card₁ :
+      S'.card ≥ (1 * Fintype.card ι + 1) * d := by
+    have h' : (1 * Fintype.card ι + 1) * d < S'.card := by
+      simpa [one_mul] using hS'_card_m
+    exact Nat.le_of_lt h'
+  have hmu_set0 :
+      mu_set (μ := uniformWeight (ι := ι)) A ≥ ((1 - δ : ℝ≥0) : ℝ) := by
+    dsimp [A]
+    refine
+      (sufficiently_large_list_agreement_on_affine_space_implies_correlated_agreement
+        (u := u) (v := vfun) (μ := uniformWeight (ι := ι)) (α := (1 - δ))
+        (M := 1) (deg := deg) (domain := domain) hμ hvfun
+        (S' := S') hS'_card hS'_card₁ ?_)
+    intro t ht
+    simpa [NNReal.coe_sub hδ1] using hS'_agree t ht
+  have hmu_set' :
+      ((A.card : ℝ) / (Fintype.card ι : ℝ)) ≥ ((1 - δ : ℝ≥0) : ℝ) := by
+    have hmu_set0' := hmu_set0
+    rw [mu_set_uniform_eq (ι := ι) (ι' := A)] at hmu_set0'
+    exact hmu_set0'
+  have hn_pos : (0 : ℝ) < (Fintype.card ι : ℝ) := by
+    exact_mod_cast (Fintype.card_pos : 0 < Fintype.card ι)
+  have hmu_set'' : (1 - (δ : ℝ)) ≤ (A.card : ℝ) / (Fintype.card ι : ℝ) := by
+    simpa [ge_iff_le, NNReal.coe_sub hδ1] using hmu_set'
+  have hcard :
+      (1 - (δ : ℝ)) * (Fintype.card ι : ℝ) ≤ (A.card : ℝ) := by
+    have hmul :=
+      mul_le_mul_of_nonneg_right hmu_set'' (le_of_lt hn_pos)
+    have hn_ne : (Fintype.card ι : ℝ) ≠ 0 := ne_of_gt hn_pos
+    simpa [div_eq_mul_inv, mul_comm, hn_ne] using hmul
+  refine ⟨vfun, hvfun, ?_⟩
+  simpa [A] using hcard
 
 end CoreResults
 

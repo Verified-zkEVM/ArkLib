@@ -35,36 +35,6 @@ open Polynomial
 open scoped BigOperators
 open scoped Polynomial.Bivariate
 
-/--
-Guruswami–Sudan conditions for the polynomial searched by the decoder.
-
-These conditions characterize the existence of a nonzero bivariate
-polynomial `Q(X,Y)` that vanishes with sufficiently high multiplicity
-at all interpolation points `(ωs i, f i)`. As in the Berlekamp–Welch
-case, this can be shown to be equivalent to solving a system of linear
-equations.
-
-Parameters:
-* `k : ℕ` — Message length parameter of the code.
-* `r : ℕ` — Multiplicity parameter; controls how many derivatives of `Q`
-  must vanish at each interpolation point.
-* `D : ℕ` — Degree bound for `Q` under the weighted degree measure.
-* `ωs : Fin n ↪ F` — The domain of evaluation.
-* `f : Fin n → F` — Received word (evaluation of the encoded polynomial,
-  possibly corrupted).
-* `Q : Polynomial (Polynomial F)` — The candidate bivariate polynomial
-  in variables `X` and `Y`.
--/
-structure Condition
-  (k r D : ℕ)
-  (ωs : Fin n ↪ F)
-  (f : Fin n → F)
-  (Q : Polynomial (Polynomial F)) : Prop where
-  /-- `Q ≠ 0`. -/
-  Q_ne_0 : Q ≠ 0
-  /-- (ωs i, f i) must be a root of the polynomial Q. -/
-  Q_roots : ∀ i, (Q.eval (C <| f i)).eval (ωs i) = 0
-
 /-- The set of derivative-index pairs `(a,b)` with `a + b < m` used in multiplicity-`m`
 interpolation constraints. -/
 def multiplicityPairs (m : ℕ) : Finset (ℕ × ℕ) :=
@@ -79,13 +49,13 @@ lemma mem_multiplicityPairs_of_add_lt {m a b : ℕ} (h : a + b < m) :
   refine ⟨?_, h⟩
   exact Finset.mem_product.2 ⟨Finset.mem_range.2 ha, Finset.mem_range.2 hb⟩
 
-private def multiplicityPairsRowEmbedding (a : ℕ) : ℕ ↪ ℕ × ℕ :=
+def multiplicityPairsRowEmbedding (a : ℕ) : ℕ ↪ ℕ × ℕ :=
   ⟨fun b => (a, b), by intro b₁ b₂ h; cases h; rfl⟩
 
-private def multiplicityPairsRow (m a : ℕ) : Finset (ℕ × ℕ) :=
+def multiplicityPairsRow (m a : ℕ) : Finset (ℕ × ℕ) :=
   (Finset.range (m - a)).map (multiplicityPairsRowEmbedding a)
 
-private lemma multiplicityPairs_eq_disjiUnion (m : ℕ) :
+lemma multiplicityPairs_eq_disjiUnion (m : ℕ) :
     multiplicityPairs m =
       (Finset.range m).disjiUnion (multiplicityPairsRow m) (by
         classical
@@ -138,7 +108,7 @@ private lemma multiplicityPairs_eq_disjiUnion (m : ℕ) :
     refine Finset.mem_filter.2 ?_
     refine ⟨Finset.mem_product.2 ⟨Finset.mem_range.2 ha, Finset.mem_range.2 hb'⟩, hab⟩
 
-private lemma sum_range_sub (m : ℕ) : (∑ a ∈ Finset.range m, (m - a)) = m * (m + 1) / 2 := by
+lemma sum_range_sub (m : ℕ) : (∑ a ∈ Finset.range m, (m - a)) = m * (m + 1) / 2 := by
   classical
   cases m with
   | zero => simp
@@ -225,15 +195,25 @@ noncomputable def shiftAtAlgHom (x y : F) : F[X][Y] →ₐ[F] F[X][Y] where
     simp [shiftAtRingHom]
 
 /--
-A multiplicity-aware Guruswami–Sudan interpolation condition.
+Guruswami–Sudan conditions for the polynomial searched by the decoder.
 
-We encode multiplicity `m` by requiring that after shifting the polynomial to each interpolation
-point `(ωs i, f i)`, all bivariate coefficients of total degree `< m` vanish. This is equivalent
-to vanishing of all Hasse derivatives of total order `< m`, but is more convenient for a linear
-algebra construction.
+These conditions characterize the existence of a nonzero bivariate polynomial `Q(X,Y)` that
+vanishes with sufficiently high multiplicity at all interpolation points `(ωs i, f i)`. As in the
+Berlekamp–Welch case, this can be shown to be equivalent to solving a system of linear equations.
+
+Parameters:
+* `k : ℕ` — Message length parameter of the code.
+* `r : ℕ` — Multiplicity parameter; controls how many derivatives of `Q`
+  must vanish at each interpolation point.
+* `D : ℕ` — Degree bound for `Q` under the weighted degree measure.
+* `ωs : Fin n ↪ F` — The domain of evaluation.
+* `f : Fin n → F` — Received word (evaluation of the encoded polynomial,
+  possibly corrupted).
+* `Q : Polynomial (Polynomial F)` — The candidate bivariate polynomial
+  in variables `X` and `Y`.
 -/
-structure GSCondition
-  (k m D : ℕ)
+structure Condition
+  (k r D : ℕ)
   (ωs : Fin n ↪ F)
   (f : Fin n → F)
   (Q : Polynomial (Polynomial F)) : Prop where
@@ -243,30 +223,37 @@ structure GSCondition
   Q_deg : Polynomial.Bivariate.natWeightedDegree Q 1 (k - 1) ≤ D
   /-- Multiplicity constraints at each interpolation point. -/
   Q_vanish :
-    ∀ i a b, a + b < m →
+    ∀ i a b, a + b < r →
       Polynomial.Bivariate.coeff
           (shiftAt Q (ωs i) (f i))
           a b = 0
+
+abbrev GSCondition
+  (k m D : ℕ)
+  (ωs : Fin n ↪ F)
+  (f : Fin n → F)
+  (Q : Polynomial (Polynomial F)) : Prop :=
+  Condition (n := n) (F := F) k m D ωs f Q
 
 section Sudan
 
 open Polynomial.Bivariate
 
 omit [DecidableEq F] in
-private lemma eval_eval_eq_eval₂_evalRingHom (Q : Polynomial (Polynomial F)) (p : F[X]) (x : F) :
+lemma eval_eval_eq_eval₂_evalRingHom (Q : Polynomial (Polynomial F)) (p : F[X]) (x : F) :
     (Q.eval p).eval x = Q.eval₂ (Polynomial.evalRingHom x) (p.eval x) := by
   simpa [Polynomial.eval, Polynomial.eval₂] using
     (Polynomial.hom_eval₂ (p := Q) (f := RingHom.id (Polynomial F))
       (g := Polynomial.evalRingHom x) (x := p))
 
 omit [DecidableEq F] in
-private lemma eval_eval_C_eq_eval₂_evalRingHom (Q : Polynomial (Polynomial F)) (a x : F) :
+lemma eval_eval_C_eq_eval₂_evalRingHom (Q : Polynomial (Polynomial F)) (a x : F) :
     (Q.eval (Polynomial.C a)).eval x = Q.eval₂ (Polynomial.evalRingHom x) a := by
   simpa [Polynomial.eval, Polynomial.eval₂] using
     (Polynomial.hom_eval₂ (p := Q) (f := RingHom.id (Polynomial F))
       (g := Polynomial.evalRingHom x) (x := Polynomial.C a))
 
-private lemma natDegree_eval_le_natWeightedDegree (Q : Polynomial (Polynomial F)) {k : ℕ}
+lemma natDegree_eval_le_natWeightedDegree (Q : Polynomial (Polynomial F)) {k : ℕ}
     {p : F[X]} (hp : p.natDegree < k) :
     (Q.eval p).natDegree ≤ natWeightedDegree Q 1 (k - 1) := by
   classical
@@ -303,7 +290,7 @@ private lemma natDegree_eval_le_natWeightedDegree (Q : Polynomial (Polynomial F)
                 (f := fun m => 1 * (Q.coeff m).natDegree + (k - 1) * m) he))
 
 omit [DecidableEq F] in
-private lemma shiftAt_eval_eq_comp_eval (Q : Polynomial (Polynomial F)) (p : F[X]) (x y : F) :
+lemma shiftAt_eval_eq_comp_eval (Q : Polynomial (Polynomial F)) (p : F[X]) (x y : F) :
     (shiftAt Q x y).eval (p.comp (Polynomial.X + Polynomial.C x) - Polynomial.C y) =
       (Q.eval p).comp (Polynomial.X + Polynomial.C x) := by
   classical
@@ -346,7 +333,7 @@ private lemma shiftAt_eval_eq_comp_eval (Q : Polynomial (Polynomial F)) (p : F[X
     _ = (Q.eval p).comp (Polynomial.X + Polynomial.C x) := by rfl
 
 omit [DecidableEq F] in
-private lemma pow_X_sub_C_dvd_eval_of_vanish {m : ℕ} {Q : F[X][Y]} {x y : F}
+lemma pow_X_sub_C_dvd_eval_of_vanish {m : ℕ} {Q : F[X][Y]} {x y : F}
     (hvanish :
       ∀ a b, a + b < m → Polynomial.Bivariate.coeff (shiftAt Q x y) a b = 0)
     {p : F[X]} (hagree : y = p.eval x) :
@@ -628,13 +615,13 @@ def monomials (k D : ℕ) : Finset (ℕ × ℕ) :=
 def monomialCount (k D : ℕ) : ℕ :=
   (monomials k D).card
 
-private def monomialRowEmbedding (j : ℕ) : ℕ ↪ ℕ × ℕ :=
+def monomialRowEmbedding (j : ℕ) : ℕ ↪ ℕ × ℕ :=
   ⟨fun i => (i, j), by intro i₁ i₂ h; cases h; rfl⟩
 
-private def monomialRow (k D j : ℕ) : Finset (ℕ × ℕ) :=
+def monomialRow (k D j : ℕ) : Finset (ℕ × ℕ) :=
   (Finset.range (D - (k - 1) * j + 1)).map (monomialRowEmbedding j)
 
-private lemma monomials_eq_disjiUnion (k D : ℕ) :
+lemma monomials_eq_disjiUnion (k D : ℕ) :
     monomials k D =
       (Finset.range (D / (k - 1) + 1)).disjiUnion (monomialRow k D) (by
         classical
@@ -910,7 +897,7 @@ lemma monomialCount_ge_sq {k D : ℕ} (hk : 2 ≤ k) :
     exact le_trans hquad hsum_lb
   simpa [hsum] using this
 
-private lemma m_mul_m_add_one_mul_lt (m k : ℕ) :
+lemma m_mul_m_add_one_mul_lt (m k : ℕ) :
     (m : ℝ) * (m + 1) * ((k - 1 : ℕ) : ℝ) <
       ((m : ℝ) + (1 : ℝ) / 2) ^ 2 * ((k + 1 : ℕ) : ℝ) := by
   have hk :
@@ -938,12 +925,12 @@ private lemma m_mul_m_add_one_mul_lt (m k : ℕ) :
     exact mul_lt_mul_of_pos_right hpos hkpos
   exact lt_of_le_of_lt hle hmul
 
-private noncomputable def polyOfCoeffs (k D : ℕ) (c : monomials (k := k) D → F) :
+noncomputable def polyOfCoeffs (k D : ℕ) (c : monomials (k := k) D → F) :
     Polynomial (Polynomial F) :=
   ∑ ij ∈ (Finset.univ : Finset (monomials (k := k) D)),
     Polynomial.monomial ij.1.2 (Polynomial.monomial ij.1.1 (c ij))
 
-private noncomputable def polyOfCoeffsLinear (k D : ℕ) :
+noncomputable def polyOfCoeffsLinear (k D : ℕ) :
     (monomials (k := k) D → F) →ₗ[F] Polynomial (Polynomial F) where
   toFun := polyOfCoeffs (F := F) k D
   map_add' c₁ c₂ := by
@@ -954,7 +941,7 @@ private noncomputable def polyOfCoeffsLinear (k D : ℕ) :
     simp [polyOfCoeffs, Finset.smul_sum, Polynomial.smul_monomial]
 
 omit [DecidableEq F] in
-private lemma polyOfCoeffs_eval_at (k D : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
+lemma polyOfCoeffs_eval_at (k D : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
     (c : monomials (k := k) D → F) (i : Fin n) :
     ((polyOfCoeffs (F := F) k D c).eval (Polynomial.C (f i))).eval (ωs i) =
       ∑ ij ∈ (Finset.univ : Finset (monomials (k := k) D)),
@@ -964,7 +951,7 @@ private lemma polyOfCoeffs_eval_at (k D : ℕ) (ωs : Fin n ↪ F) (f : Fin n �
   simp [polyOfCoeffs, Polynomial.eval_finset_sum, Polynomial.eval_monomial,
     mul_assoc, mul_left_comm, mul_comm]
 
-private noncomputable def constraintMap (k D : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+noncomputable def constraintMap (k D : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
     (monomials (k := k) D → F) →ₗ[F] (Fin n → F) where
   toFun c i := ∑ ij ∈ (Finset.univ : Finset (monomials (k := k) D)),
     c ij * (f i) ^ ij.1.2 * (ωs i) ^ ij.1.1
@@ -977,7 +964,7 @@ private noncomputable def constraintMap (k D : ℕ) (ωs : Fin n ↪ F) (f : Fin
     funext i
     simp [mul_assoc, Finset.mul_sum]
 
-private noncomputable def bCoeffLinear (a b : ℕ) : Polynomial (Polynomial F) →ₗ[F] F where
+noncomputable def bCoeffLinear (a b : ℕ) : Polynomial (Polynomial F) →ₗ[F] F where
   toFun Q := Polynomial.Bivariate.coeff Q a b
   map_add' Q₁ Q₂ := by
     classical
@@ -986,7 +973,7 @@ private noncomputable def bCoeffLinear (a b : ℕ) : Polynomial (Polynomial F) �
     classical
     simp [Polynomial.Bivariate.coeff]
 
-private noncomputable def constraintMapMul (k D m : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+noncomputable def constraintMapMul (k D m : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
     (monomials (k := k) D → F) →ₗ[F] (Fin n × (multiplicityPairs m) → F) :=
   LinearMap.pi fun idx =>
     let i : Fin n := idx.1
@@ -997,7 +984,7 @@ private noncomputable def constraintMapMul (k D m : ℕ) (ωs : Fin n ↪ F) (f 
         (polyOfCoeffsLinear (F := F) (k := k) (D := D)))
 
 omit [DecidableEq F] in
-private lemma polyOfCoeffs_ne_zero_of_coeff_ne_zero {k D : ℕ} {c : monomials (k := k) D → F}
+lemma polyOfCoeffs_ne_zero_of_coeff_ne_zero {k D : ℕ} {c : monomials (k := k) D → F}
     (h : ∃ ij, c ij ≠ 0) :
     polyOfCoeffs (F := F) k D c ≠ 0 := by
   classical
@@ -1032,7 +1019,7 @@ private lemma polyOfCoeffs_ne_zero_of_coeff_ne_zero {k D : ℕ} {c : monomials (
     simpa [h0] using hcoeff.symm
   exact hij this
 
-private lemma natWeightedDegree_polyOfCoeffs_le {k D : ℕ} [NeZero k]
+lemma natWeightedDegree_polyOfCoeffs_le {k D : ℕ} [NeZero k]
     (hk : 2 ≤ k) (c : monomials (k := k) D → F) :
     natWeightedDegree (polyOfCoeffs (F := F) k D c) 1 (k - 1) ≤ D := by
   classical
@@ -1302,7 +1289,7 @@ lemma eval_mem_reedSolomon_code_of_mem_messagePolynomials {k : ℕ} [NeZero k] {
     (ReedSolomonCode.encode_mem_ReedSolomon_code (F := F) (deg := k) (domain := ωs) (msg := msg))
 
 omit [Fintype F] in
-private lemma eval_injective_of_natDegree_lt {k : ℕ} [NeZero k] (hk : k ≤ n) {ωs : Fin n ↪ F}
+lemma eval_injective_of_natDegree_lt {k : ℕ} [NeZero k] (hk : k ≤ n) {ωs : Fin n ↪ F}
     {p q : F[X]} (hp : p.natDegree < k) (hq : q.natDegree < k)
     (h_eval : (p.eval ∘ ωs) = (q.eval ∘ ωs)) :
     p = q := by
@@ -1398,7 +1385,7 @@ theorem decoder_length_le_reedSolomon_ball {k r D e : ℕ} [NeZero k] (hk : k �
   -- Rewrite the goal in terms of `decoded.card`.
   simpa [hlen, B, ball] using hcard
 
-private lemma nat_cast_sub_eq_cast_pred {k : ℕ} [NeZero k] (hk : k ≤ n) :
+lemma nat_cast_sub_eq_cast_pred {k : ℕ} [NeZero k] (hk : k ≤ n) :
     (n : ℝ) - ((n - k + 1 : ℕ) : ℝ) = ((k - 1 : ℕ) : ℝ) := by
   have hk_pos : 0 < k := NeZero.pos k
   have h_le : n - k + 1 ≤ n := by omega
@@ -1498,7 +1485,7 @@ noncomputable def proximity_gap_johnson (k m : ℕ) : ℕ :=
   let rho := (k + 1 : ℚ) / n
   Nat.floor (((1 : ℝ) - Real.sqrt rho - Real.sqrt rho / (2 * m)) * (n : ℝ))
 
-private lemma proximity_gap_b_le_degree_bound_add_one (k m : ℕ) :
+lemma proximity_gap_b_le_degree_bound_add_one (k m : ℕ) :
     let rho := (k + 1 : ℚ) / n
     let b : ℝ := (((m : ℚ) + (1 : ℚ) / 2) * (Real.sqrt rho)) * n
     b ≤ (proximity_gap_degree_bound (n := n) k m + 1 : ℝ) := by
@@ -1565,7 +1552,7 @@ private lemma proximity_gap_b_le_degree_bound_add_one (k m : ℕ) :
       _ = (proximity_gap_degree_bound (n := n) k m + 1 : ℝ) := by
         simp [hD]
 
-private lemma proximity_gap_count_bound {k m : ℕ} (hk : 2 ≤ k) :
+lemma proximity_gap_count_bound {k m : ℕ} (hk : 2 ≤ k) :
     n * (multiplicityPairs m).card <
       monomialCount (k := k) (proximity_gap_degree_bound (n := n) k m) := by
   classical
@@ -1721,7 +1708,7 @@ private lemma proximity_gap_count_bound {k m : ℕ} (hk : 2 ≤ k) :
       exact_mod_cast hfinal
     simpa [hD] using hfinalNat
 
-private lemma proximity_gap_degree_bound_lt_mul {k m : ℕ} [NeZero n] [NeZero m]
+lemma proximity_gap_degree_bound_lt_mul {k m : ℕ} [NeZero n] [NeZero m]
     (hδ :
       (0 : ℝ) ≤
         (1 : ℝ) - Real.sqrt ((k + 1 : ℚ) / n) - Real.sqrt ((k + 1 : ℚ) / n) / (2 * m)) :
