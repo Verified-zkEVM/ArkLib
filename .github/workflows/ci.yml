@@ -10,7 +10,7 @@ jobs:
     name: "Cancel Previous Runs"
     runs-on: ubuntu-latest
     steps:
-      - uses: styfle/cancel-workflow-action@0.12.1
+      - uses: styfle/cancel-workflow-action@0.13.0
         with:
           all_but_latest: true
           access_token: ${{ github.token }}
@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       # uses lean standard action with all default input values
-      - uses: leanprover/lean-action@v1.3.0
+      - uses: leanprover/lean-action@v1.4.0
         with:
           # Do not run linter for now, too many errors
           lint: false
