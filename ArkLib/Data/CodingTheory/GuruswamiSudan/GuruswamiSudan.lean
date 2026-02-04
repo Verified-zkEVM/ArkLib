@@ -25,6 +25,9 @@ import ArkLib.Data.CodingTheory.JohnsonBound.Basic
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.Polynomial.Bivariate
 
+-- This file contains the full Guruswami–Sudan development, which is long by design.
+set_option linter.style.longFile 2400
+
 namespace GuruswamiSudan
 
 variable {F : Type} [Field F]
@@ -1214,14 +1217,37 @@ section Decoder
 
 variable [Fintype F]
 
+/-- Noncomputably choose a Guruswami–Sudan interpolant if one exists. -/
+noncomputable def interpolant (k r D : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) : Option F[X][Y] := by
+  classical
+  exact
+    if h : ∃ Q : F[X][Y], GSCondition (n := n) (F := F) k r D ωs f Q then
+      some (Classical.choose h)
+    else
+      none
+
 /-- Enumerate all message polynomials of degree `< k` (via coefficient vectors). -/
 noncomputable def messagePolynomials (k : ℕ) : Finset F[X] :=
   (Finset.univ : Finset (Fin k → F)).image polynomialOfCoeffs
 
-/-- A specification-level list decoder for Reed–Solomon messages: enumerate all polynomials of
-degree `< k` (via coefficient vectors of length `k`) and filter by Hamming distance. -/
-noncomputable def decoder (k _r _D e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) : List F[X] :=
-  ((messagePolynomials (F := F) k).filter fun p => Δ₀(f, p.eval ∘ ωs) ≤ e).toList
+/-- Guruswami–Sudan list decoder.
+
+Algorithm:
+1. **Interpolation:** If there exists a nonzero bivariate polynomial `Q(X,Y)` satisfying the
+   Guruswami–Sudan constraints (`GSCondition k r D ωs f Q`), choose one such `Q`.
+2. **Root-finding:** Treat `Q` as a polynomial in `Y` over `F[X]` and extract all linear factors
+   `Y - p(X)` with `p.natDegree < k`. We implement this by filtering all degree-`< k` message
+   polynomials by divisibility `(Y - p(X)) ∣ Q`.
+3. **Verification:** Optionally filter by Hamming distance `≤ e`.
+-/
+noncomputable def decoder (k r D e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) : List F[X] := by
+  classical
+  refine (interpolant (n := n) (F := F) k r D ωs f).casesOn ?none ?some
+  · exact []
+  · intro Q
+    exact
+      ((messagePolynomials (F := F) k).filter fun p =>
+          (Polynomial.X - Polynomial.C p) ∣ Q ∧ Δ₀(f, p.eval ∘ ωs) ≤ e).toList
 
 /-- Each decoded codeword has to be e-far from the received message. -/
 theorem decoder_mem_impl_dist
@@ -1233,14 +1259,24 @@ theorem decoder_mem_impl_dist
   (h_in : p ∈ decoder k r D e ωs f)
   :
   Δ₀(f, p.eval ∘ ωs) ≤ e := by
-  have hp_mem :
-      p ∈ (messagePolynomials (F := F) k).filter fun p => Δ₀(f, p.eval ∘ ωs) ≤ e := by
-    simpa [decoder] using (Finset.mem_toList.1 h_in)
-  exact (Finset.mem_filter.1 hp_mem).2
+  classical
+  cases hQ : interpolant (n := n) (F := F) k r D ωs f with
+  | none =>
+      simp [decoder, hQ] at h_in
+  | some Q =>
+      have hp_mem :
+          p ∈ (messagePolynomials (F := F) k).filter fun p =>
+            (Polynomial.X - Polynomial.C p) ∣ Q ∧ Δ₀(f, p.eval ∘ ωs) ≤ e := by
+        have h_in' :
+            p ∈
+              ((messagePolynomials (F := F) k).filter fun p =>
+                (Polynomial.X - Polynomial.C p) ∣ Q ∧ Δ₀(f, p.eval ∘ ωs) ≤ e).toList := by
+          simpa [decoder, hQ] using h_in
+        exact Finset.mem_toList.1 h_in'
+      exact (Finset.mem_filter.1 hp_mem).2.2
 
-/-- If a codeword is e-far from the received message it appears in the output of
-the decoder.
--/
+/-- If a message polynomial is within distance `e` and its linear factor divides the chosen
+interpolant, then it appears in the decoder output. -/
 theorem decoder_dist_impl_mem
   {k r D e : ℕ}
   (_h_e : e ≤ n - Real.sqrt (k * n))
@@ -1248,7 +1284,9 @@ theorem decoder_dist_impl_mem
   {f : Fin n → F}
   {p : F[X]}
   (h_deg : p.natDegree < k)
-  (h_dist : Δ₀(f, p.eval ∘ ωs) ≤ e) :
+  (h_dist : Δ₀(f, p.eval ∘ ωs) ≤ e)
+  (h : ∃ Q : F[X][Y], GSCondition (n := n) (F := F) k r D ωs f Q)
+  (h_div : (Polynomial.X - Polynomial.C p) ∣ Classical.choose h) :
   p ∈ decoder k r D e ωs f := by
   classical
   -- Show `p` appears in the enumeration via its coefficient vector.
@@ -1270,10 +1308,11 @@ theorem decoder_dist_impl_mem
     refine Finset.mem_image.2 ?_
     refine ⟨Fin.liftF' (n := k) p.coeff, Finset.mem_univ _, hp_repr⟩
   have hp_mem_decoded :
-      p ∈ (messagePolynomials (F := F) k).filter fun p => Δ₀(f, p.eval ∘ ωs) ≤ e := by
-    exact Finset.mem_filter.2 ⟨hp_mem_candidates, h_dist⟩
+      p ∈ (messagePolynomials (F := F) k).filter fun p =>
+        (Polynomial.X - Polynomial.C p) ∣ Classical.choose h ∧ Δ₀(f, p.eval ∘ ωs) ≤ e := by
+    exact Finset.mem_filter.2 ⟨hp_mem_candidates, h_div, h_dist⟩
   -- Convert to `List` membership.
-  simpa [decoder] using (Finset.mem_toList.2 hp_mem_decoded)
+  simpa [decoder, interpolant, h] using (Finset.mem_toList.2 hp_mem_decoded)
 
 lemma natDegree_lt_of_mem_messagePolynomials {k : ℕ} [NeZero k] {p : F[X]}
     (hp : p ∈ messagePolynomials (F := F) k) :
@@ -1340,50 +1379,63 @@ theorem decoder_length_le_reedSolomon_ball {k r D e : ℕ} [NeZero k] (hk : k �
       ((ReedSolomonCode.finCarrier (ι := Fin n) (F := F) ωs k) ∩
           ({x | Δ₀(x, f) ≤ e} : Finset (Fin n → F))).card := by
   classical
-  set decoded :
-      Finset F[X] :=
-    (messagePolynomials (F := F) k).filter fun p => Δ₀(f, p.eval ∘ ωs) ≤ e
-  have hlen : (decoder (F := F) (n := n) k r D e ωs f).length = decoded.card := by
-    simp [decoder, decoded]
-  let B : Finset (Fin n → F) := ReedSolomonCode.finCarrier (ι := Fin n) (F := F) ωs k
-  let ball : Finset (Fin n → F) := B ∩ ({x | Δ₀(x, f) ≤ e} : Finset (Fin n → F))
-  have hcard : decoded.card ≤ ball.card := by
-    -- Build an injective map from decoded polynomials to close Reed–Solomon codewords.
-    let g : decoded → ball := fun p =>
-      ⟨p.1.eval ∘ ωs, by
-        have hp_mem : p.1 ∈ decoded := p.2
-        have hp' : p.1 ∈ messagePolynomials (F := F) k ∧ Δ₀(f, p.1.eval ∘ ωs) ≤ e := by
-          simpa [decoded] using (Finset.mem_filter.1 hp_mem)
-        have hp_code : p.1.eval ∘ ωs ∈ ReedSolomon.code ωs k :=
-          eval_mem_reedSolomon_code_of_mem_messagePolynomials (F := F) (n := n) hp'.1
-        have hdist : Δ₀(p.1.eval ∘ ωs, f) ≤ e := by
-          simpa [hammingDist, ne_comm] using hp'.2
-        -- Membership in the finite carrier.
-        have hpB : p.1.eval ∘ ωs ∈ B := by
-          simpa [B, ReedSolomonCode.finCarrier] using hp_code
-        -- Conclude membership in `ball`.
-        simp [ball, hpB, hdist]⟩
-    have hg_inj : Function.Injective g := by
-      intro p q hpq
-      have hvals : p.1.eval ∘ ωs = q.1.eval ∘ ωs := by
-        simpa [g] using congrArg Subtype.val hpq
-      have hp_deg : p.1.natDegree < k := by
-        have hp_mem : p.1 ∈ decoded := p.2
-        have hp' : p.1 ∈ messagePolynomials (F := F) k ∧ Δ₀(f, p.1.eval ∘ ωs) ≤ e := by
-          simpa [decoded] using (Finset.mem_filter.1 hp_mem)
-        exact natDegree_lt_of_mem_messagePolynomials (F := F) (k := k) hp'.1
-      have hq_deg : q.1.natDegree < k := by
-        have hq_mem : q.1 ∈ decoded := q.2
-        have hq' : q.1 ∈ messagePolynomials (F := F) k ∧ Δ₀(f, q.1.eval ∘ ωs) ≤ e := by
-          simpa [decoded] using (Finset.mem_filter.1 hq_mem)
-        exact natDegree_lt_of_mem_messagePolynomials (F := F) (k := k) hq'.1
-      have : p.1 = q.1 := eval_injective_of_natDegree_lt (F := F) (n := n) (k := k) hk
-        (ωs := ωs) hp_deg hq_deg hvals
-      exact Subtype.ext this
-    -- Convert injectivity into a cardinality bound.
-    simpa [Fintype.card_coe] using (Fintype.card_le_of_injective g hg_inj)
-  -- Rewrite the goal in terms of `decoded.card`.
-  simpa [hlen, B, ball] using hcard
+  by_cases h : ∃ Q : F[X][Y], GSCondition (n := n) (F := F) k r D ωs f Q
+  · let Q : F[X][Y] := Classical.choose h
+    set decoded :
+        Finset F[X] :=
+      (messagePolynomials (F := F) k).filter fun p =>
+        (Polynomial.X - Polynomial.C p) ∣ Q ∧ Δ₀(f, p.eval ∘ ωs) ≤ e
+    have hlen : (decoder (F := F) (n := n) k r D e ωs f).length = decoded.card := by
+      simp [decoder, interpolant, h, decoded, Q]
+    let B : Finset (Fin n → F) := ReedSolomonCode.finCarrier (ι := Fin n) (F := F) ωs k
+    let ball : Finset (Fin n → F) := B ∩ ({x | Δ₀(x, f) ≤ e} : Finset (Fin n → F))
+    have hcard : decoded.card ≤ ball.card := by
+      -- Build an injective map from decoded polynomials to close Reed–Solomon codewords.
+      let g : decoded → ball := fun p =>
+        ⟨p.1.eval ∘ ωs, by
+          have hp_mem : p.1 ∈ decoded := p.2
+          have hp' :
+              p.1 ∈ messagePolynomials (F := F) k ∧
+                (Polynomial.X - Polynomial.C p.1) ∣ Q ∧ Δ₀(f, p.1.eval ∘ ωs) ≤ e := by
+            simpa [decoded] using (Finset.mem_filter.1 hp_mem)
+          have hp_mem0 : p.1 ∈ messagePolynomials (F := F) k := hp'.1
+          have hp_code : p.1.eval ∘ ωs ∈ ReedSolomon.code ωs k :=
+            eval_mem_reedSolomon_code_of_mem_messagePolynomials (F := F) (n := n) hp_mem0
+          have hdist : Δ₀(p.1.eval ∘ ωs, f) ≤ e := by
+            simpa [hammingDist, ne_comm] using hp'.2.2
+          -- Membership in the finite carrier.
+          have hpB : p.1.eval ∘ ωs ∈ B := by
+            simpa [B, ReedSolomonCode.finCarrier] using hp_code
+          -- Conclude membership in `ball`.
+          simp [ball, hpB, hdist]⟩
+      have hg_inj : Function.Injective g := by
+        intro p q hpq
+        have hvals : p.1.eval ∘ ωs = q.1.eval ∘ ωs := by
+          simpa [g] using congrArg Subtype.val hpq
+        have hp_deg : p.1.natDegree < k := by
+          have hp_mem : p.1 ∈ decoded := p.2
+          have hp' :
+              p.1 ∈ messagePolynomials (F := F) k ∧
+                (Polynomial.X - Polynomial.C p.1) ∣ Q ∧ Δ₀(f, p.1.eval ∘ ωs) ≤ e := by
+            simpa [decoded] using (Finset.mem_filter.1 hp_mem)
+          have hp_mem0 : p.1 ∈ messagePolynomials (F := F) k := hp'.1
+          exact natDegree_lt_of_mem_messagePolynomials (F := F) (k := k) hp_mem0
+        have hq_deg : q.1.natDegree < k := by
+          have hq_mem : q.1 ∈ decoded := q.2
+          have hq' :
+              q.1 ∈ messagePolynomials (F := F) k ∧
+                (Polynomial.X - Polynomial.C q.1) ∣ Q ∧ Δ₀(f, q.1.eval ∘ ωs) ≤ e := by
+            simpa [decoded] using (Finset.mem_filter.1 hq_mem)
+          have hq_mem0 : q.1 ∈ messagePolynomials (F := F) k := hq'.1
+          exact natDegree_lt_of_mem_messagePolynomials (F := F) (k := k) hq_mem0
+        have : p.1 = q.1 := eval_injective_of_natDegree_lt (F := F) (n := n) (k := k) hk
+          (ωs := ωs) hp_deg hq_deg hvals
+        exact Subtype.ext this
+      -- Convert injectivity into a cardinality bound.
+      simpa [Fintype.card_coe] using (Fintype.card_le_of_injective g hg_inj)
+    -- Rewrite the goal in terms of `decoded.card`.
+    simpa [hlen, B, ball] using hcard
+  · simp [decoder, interpolant, h]
 
 lemma nat_cast_sub_eq_cast_pred {k : ℕ} [NeZero k] (hk : k ≤ n) :
     (n : ℝ) - ((n - k + 1 : ℕ) : ℝ) = ((k - 1 : ℕ) : ℝ) := by
