@@ -174,7 +174,7 @@ noncomputable def proximity_gap_johnson (rho : ℚ) (m : ℕ) : ℝ :=
     a solution to Guruswami-Sudan system exists.
 -/
 lemma guruswami_sudan_for_proximity_gap_existence {k m : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F} :
-  ∃ Q, Condition (k + 1) m ((proximity_gap_degree_bound ((k + 1 : ℚ) / n) m n)) ωs f Q := by
+  ∃ Q, Conditions (k + 1) m ((proximity_gap_degree_bound ((k + 1 : ℚ) / n) m n)) ωs f Q := by
   sorry
 
 open Polynomial in
@@ -188,7 +188,7 @@ open Polynomial in
 lemma guruswami_sudan_for_proximity_gap_property {k m : ℕ} {ωs : Fin n ↪ F}
   {w : Fin n → F}
   {Q : F[X][Y]}
-  (cond : Condition (k + 1) m (proximity_gap_degree_bound ((k + 1 : ℚ) / n) m n) ωs w Q)
+  (cond : Conditions (k + 1) m (proximity_gap_degree_bound ((k + 1 : ℚ) / n) m n) ωs w Q)
   {p : ReedSolomon.code ωs n}
   (h : δᵣ(w, p) ≤ proximity_gap_johnson ((k + 1 : ℚ) / n) m)
   :
