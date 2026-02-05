@@ -47,6 +47,7 @@ import ArkLib.Data.CodingTheory.ProximityGap.AHIV22
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20
 import ArkLib.Data.CodingTheory.ProximityGap.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.DG25
+import ArkLib.Data.CodingTheory.ProximityGap.ListRecovery
 import ArkLib.Data.CodingTheory.ReedMuller
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.EllipticCurve.BN254
@@ -113,6 +114,7 @@ import ArkLib.Data.Polynomial.PolynomialLike
 import ArkLib.Data.Polynomial.Prelims
 import ArkLib.Data.Polynomial.RationalFunctions
 import ArkLib.Data.Polynomial.SplitFold
+import ArkLib.Data.Polynomial.RationalFunctionsInfrastructure
 import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.Notation
 import ArkLib.Data.RingTheory.AlgebraTower
