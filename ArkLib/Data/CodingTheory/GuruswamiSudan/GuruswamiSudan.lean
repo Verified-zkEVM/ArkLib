@@ -20,7 +20,10 @@ variable {k : ℕ}
 variable {n : ℕ}
 --Let `m` be a natural number, serving as the **multiplicity parameter**.
 variable {m : ℕ}
-
+--Let `ωs` be the **domain of evaluation**, i.e. the interpolation points.
+variable {ωs : Fin n ↪ F}
+--Let `f` be the **received word**, possibly corrupted.
+variable {f : Fin n → F}
 
 namespace GuruswamiSudan
 
@@ -79,23 +82,24 @@ theorem decoder_dist_impl_mem
 
 /-- Existence of a solution to the Guruswami-Sudan decoder.
     It is the first part of Lemma 5.3 from [BCIKS20]. -/
-theorem guruswami_sudan_for_proximity_gap_existence (k n : ℕ)
-    (ωs : Fin n ↪ F) (f : Fin n → F) {m : ℕ} (hm : 1 ≤ m) :
+theorem proximity_gap_existence (k n : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) (hm : 1 ≤ m) :
     ∃ Q, Conditions k m (proximity_gap_degree_bound k n m) ωs f Q := by
   use polySol k n m ωs f
   exact ⟨polySol_ne_zero, polySol_weightedDegree_le, polySol_roots hm, polySol_multiplicity⟩
 
-/-- The second part of lemma 5.3 from [BCIKS20].
-    For any solution Q of the Guruswami-Sudan system, and for any
-    polynomial P ∈ RS[n, k, ρ] such that Δ(w, P) ≤ δ₀(ρ, m),
-    we have that Y - P(X) divides Q(X, Y) in the polynomial ring
-    F[X][Y]. -/
-lemma guruswami_sudan_for_proximity_gap_property {k m : ℕ} {ωs : Fin n ↪ F}
-  {f : Fin n → F}
-  {Q : F[X][X]}
-  {p : code ωs n}
-  (h : Δ₀(f, (codewordToPoly p).eval ∘ f) ≤ proximity_gap_johnson (n := n) k m)
-  :
-  ((X : F[X][X]) - C (codewordToPoly p)) ∣ Q := by sorry
+/-- Given any Reed-Solomon code `p`, any solution of the Guruswami-Sudan decoder is
+    divisible by `Y - P(X)`, where `P(X)` is the polynomial corresponding to the codeword `p`.
+    It is the first part of Lemma 5.3 from [BCIKS20]. -/
+theorem proximity_gap_divisibility (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k)
+    {Q : F[X][Y]} (hQ : Conditions k m (proximity_gap_degree_bound k n m) ωs f Q)
+    (h_dist : (hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) : ℝ) / n <
+      proximity_gap_johnson k n m) :
+    X - C (codewordToPoly p) ∣ Q := by
+  refine dvd_property (f := f) hk hm p ?_ ?_ ?_ ?_
+  · exact hQ.Q_ne_0
+  · exact hQ.Q_deg
+  · intro i s t hst
+    sorry
+  · exact h_dist
 
 end GuruswamiSudan

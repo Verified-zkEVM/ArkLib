@@ -35,12 +35,11 @@ noncomputable def proximity_gap_degree_bound : ℕ :=
   ⌊(m + 1 / 2) * √ rho * n⌋₊
 
 variable (k n m) in
-/-- The integer decoding radius (where `δ₀(ρ, m) = 1 - √ρ - √ρ/2m` in
-    Lemma 5.3 of [BCIKS20] is the relative decoding radius).
-    It follows from the Johnson bound. -/
-noncomputable def proximity_gap_johnson : ℕ :=
+/-- The relative decoding radius (i.e. `δ₀(ρ, m) = 1 - √ρ - √ρ/2m` in
+    Lemma 5.3 of [BCIKS20]). It follows from the Johnson bound. -/
+noncomputable def proximity_gap_johnson : ℝ :=
   let rho := (k + 1 : ℚ) / n
-  ⌊1 - √ rho - √ rho / (2 * m)⌋₊
+  1 - √ rho - √ rho / (2 * m)
 
 
 namespace GuruswamiSudan
@@ -625,5 +624,211 @@ lemma polySol_multiplicity (i : Fin n) :
     ⟨mem_range.mpr (by linarith), mem_range.mpr (by linarith)⟩, hst⟩
 
 end multiplicity
+
+section divisibility
+
+/- In this section, we study divisibility properties of bivariate polynomials in the
+  context of the Guruswami-Sudan algorithm. -/
+open ReedSolomon
+variable [DecidableEq F]
+
+
+/-- The degree of Q(X, P(X)) is bounded by the (1, k-1)-weighted degree of Q,
+    provided deg(P) ≤ k - 1. -/
+lemma degree_eval_le_weightedDegree (Q : F[X][Y]) (P : F[X]) (k : ℕ) (hP : P.natDegree ≤ k - 1) :
+    (Q.eval P).natDegree ≤ natWeightedDegree Q 1 (k - 1) := by
+  have h_deg_Q : (Q.eval P).natDegree ≤
+      ((Q.toFinsupp.support).image (fun m => (Q.coeff m).natDegree + (k - 1) * m)).sup id := by
+    rw [Polynomial.eval_eq_sum_range]
+    refine le_trans (Polynomial.natDegree_sum_le _ _) (Finset.sup_le ?_)
+    intro i hi; by_cases hi' : Q.coeff i = 0 <;> simp_all
+    refine le_trans ?_ (Finset.le_sup
+      (f := fun m ↦ (Q.coeff m).natDegree + (k - 1) * m) (show i ∈ Q.toFinsupp.support from ?_))
+    · exact le_trans (Polynomial.natDegree_mul_le ..) (by norm_num; nlinarith)
+    · aesop
+  unfold natWeightedDegree
+  aesop
+
+/-- If Q has high multiplicity at (0,0) (meaning all coefficients c_{i,j} with i+j < m
+    are zero) and P(0)=0, then Q(X, P(X)) is divisible by X^m. -/
+lemma dvd_eval_of_rootMultiplicity_zero (Q : F[X][Y]) (P : F[X]) (m : ℕ)
+    (hQ : ∀ i j, i + j < m → Bivariate.coeff Q i j = 0) (hP : P.coeff 0 = 0) :
+    X ^ m ∣ Q.eval P := by
+  have h_div_Pj : ∀ j : ℕ, X ^ j ∣ P ^ j := fun j ↦ pow_dvd_pow_of_dvd (X_dvd_iff.mpr hP) j
+  have h_div_term_all : ∀ i j : ℕ, (Q.coeff j).coeff i ≠ 0 →
+      X ^ m ∣ Polynomial.monomial i ((Q.coeff j).coeff i) * P ^ j := by
+    intros i j hij
+    have h_div_term : X ^ (i + j) ∣ Polynomial.monomial i ((Q.coeff j).coeff i) * P ^ j := by
+      simp_all [pow_add]
+      exact mul_dvd_mul (by simp [← C_mul_X_pow_eq_monomial]) (h_div_Pj j)
+    exact dvd_trans (pow_dvd_pow _ (Nat.le_of_not_lt fun h ↦ hij <| by solve_by_elim)) h_div_term
+  simp_all [eval_eq_sum, sum_def]
+  refine Finset.dvd_sum fun n hn ↦ ?_
+  rw [(Q.coeff n).as_sum_range_C_mul_X_pow]
+  simp_all [Finset.sum_mul, C_mul_X_pow_eq_monomial]
+  exact Finset.dvd_sum fun i hi ↦
+    if hi0 : (Q.coeff n).coeff i = 0 then by simp [hi0]
+    else h_div_term_all i n hi0
+
+omit [DecidableEq F]
+/-- Evaluating the shifted bivariate polynomial at the shifted univariate polynomial
+    is equivalent to shifting the result of the evaluation. -/
+lemma eval_shifted_eq_shifted_eval (Q : F[X][Y]) (P : F[X]) (x y : F) :
+  let Q_sh := (Q.comp (Y + C (C y))).map (Polynomial.compRingHom (X + C x))
+  let P_sh := P.comp (X + C x) - C y
+  Q_sh.eval P_sh = (Q.eval P).comp (X + C x) := by
+    induction Q using Polynomial.induction_on <;> aesop
+
+/-- If Q vanishes to order m at (x, P(x)), then Q(X, P(X)) vanishes to order m at x. -/
+def HasOrderAt (Q : F[X][Y]) (x y : F) (m : ℕ) : Prop :=
+  ∀ i j, i + j < m → Bivariate.coeff (shift Q x y) i j = 0
+
+lemma orderAt_eval_ge [DecidableEq F] (Q : F[X][Y]) (P : F[X]) (x : F) (m : ℕ)
+    (h : HasOrderAt Q x (P.eval x) m) :
+    (Q.eval P) = 0 ∨ m ≤ (Q.eval P).rootMultiplicity x := by
+  set Q_sh := (Q.comp (Y + C (C (P.eval x)))).map ((X + C x).compRingHom) with hQ_sh;
+  set P_sh := P.comp (X + C x) - C (P.eval x) with hP_sh;
+  have hXm_div_Q_sh_eval_P_sh : X ^ m ∣ Q_sh.eval P_sh := by
+    apply dvd_eval_of_rootMultiplicity_zero
+    · assumption
+    · simp +zetaDelta at *
+      simp [coeff_zero_eq_eval_zero]
+  have h_eval_shifted_eq_shifted_eval : Q_sh.eval P_sh = (Q.eval P).comp (X + C x) := by
+    convert eval_shifted_eq_shifted_eval Q P x (P.eval x) using 1
+  have hXm_div_Q_eval_P_comp_X_plus_C_x : X ^ m ∣ (Q.eval P).comp (X + C x) := by
+    exact h_eval_shifted_eq_shifted_eval ▸ hXm_div_Q_sh_eval_P_sh
+  have hX_minus_x_m_div_Q_eval_P : (X - C x) ^ m ∣ Q.eval P := by
+    exact X_sub_C_pow_dvd_iff.mpr hXm_div_Q_eval_P_comp_X_plus_C_x
+  by_cases h : eval P Q = 0 <;> simp_all
+  rw [le_rootMultiplicity_iff] <;> tauto
+
+
+variable {F : Type} [Field F] [DecidableEq F]
+variable {k n m : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F}
+/-- If a polynomial R has roots at points indexed by A with multiplicity at least m,
+    and its degree is strictly less than m * |A|, then R must be the zero polynomial. -/
+lemma roots_le_degree_of_deg_lt_roots (R : F[X]) (m : ℕ) (A : Finset (Fin n))
+  (h_roots : ∀ i ∈ A, m ≤ R.rootMultiplicity (ωs i)) (h_deg : R.natDegree < m * A.card) :
+  R = 0 := by
+    have h_sum_multiplicities :
+        ∑ x ∈ A.image (fun i ↦ ωs i), (R.rootMultiplicity x) ≤ R.natDegree := by
+      have h_factor : ∏ x ∈ A.image (fun i ↦ ωs i), (X - C x) ^ (R.rootMultiplicity x) ∣ R := by
+        refine Finset.prod_dvd_of_coprime ?_ ?_
+        · intros x hx y hy hxy
+          exact IsCoprime.pow (irreducible_X_sub_C _ |>
+            fun h ↦ h.coprime_iff_not_dvd.mpr
+              fun h' ↦ hxy <| by simpa [sub_eq_iff_eq_add] using dvd_iff_isRoot.mp h')
+        · exact fun x hx ↦ R.pow_rootMultiplicity_dvd x
+      have := natDegree_le_of_dvd h_factor
+      by_cases h : R = 0 <;> simp_all [natDegree_prod']
+    rw [Finset.sum_image <| by
+      intro i hi j hj h; simpa using ωs.injective <| by aesop] at h_sum_multiplicities
+    exact False.elim <| h_deg.not_ge <| h_sum_multiplicities.trans' <| by
+      simpa [mul_comm] using Finset.sum_le_sum h_roots
+
+/-- If a polynomial `q` has degree less than `n`, then interpolating its values at `n`
+    points recovers `q`. -/
+lemma interpolate_eq_of_degree_lt (q : F[X]) (hq : q.natDegree < n) :
+  Lagrange.interpolate Finset.univ ωs (fun i ↦ q.eval (ωs i)) = q := by
+    refine Polynomial.eq_of_degree_sub_lt_of_eval_finset_eq ?_ ?_ ?_
+    · exact Finset.univ.image ωs
+    · refine lt_of_le_of_lt (degree_sub_le _ _) (max_lt ?_ ?_)
+      · rw [Finset.card_image_of_injective _ ωs.injective]
+        convert Lagrange.degree_interpolate_lt _ _
+        exact ωs.injective.injOn
+      · exact lt_of_le_of_lt (degree_le_natDegree) (WithBot.coe_lt_coe.mpr (by
+          simpa [Finset.card_image_of_injective _ ωs.injective] using hq))
+    · simp +contextual
+      intro i
+      rw [eval_finset_sum, Finset.sum_eq_single i] <;> aesop
+
+/-- The polynomial corresponding to a codeword has degree at most k-1. -/
+lemma codewordToPoly_degree_le (hk : k + 1 ≤ n) (p : code ωs k) :
+  (codewordToPoly p).natDegree ≤ k - 1 := by
+    rw [codewordToPoly]
+    obtain ⟨q, hq, hp⟩ := p.2
+    have h_interpolate : (Lagrange.interpolate Finset.univ ωs.toFun) (evalOnPoints ωs q) = q := by
+      convert interpolate_eq_of_degree_lt q _
+      exact lt_of_le_of_lt (natDegree_le_of_degree_le <| mem_degreeLT.mp hq |> le_of_lt) hk
+    rcases k <;> simp_all [degreeLT]
+    · rw [show q = 0 from Polynomial.ext hq]; norm_num
+    · exact natDegree_le_iff_coeff_eq_zero.mpr hq
+
+/-- The degree bound is strictly less than `m` times the number of agreement points,
+    provided the distance is within the Johnson radius. -/
+lemma sufficient_multiplicity_bound {dist : ℕ}
+  (hk : k + 1 ≤ n) (hm : 1 ≤ m) (h_dist : (dist : ℝ) / n < proximity_gap_johnson k n m) :
+  (proximity_gap_degree_bound k n m : ℝ) < m * (n - dist) := by
+    have h_mul : (m * (n - dist) : ℝ) > (m * n * (1 - proximity_gap_johnson k n m)) := by
+      rw [div_lt_iff₀] at h_dist <;> norm_num at * <;>
+        nlinarith [(by norm_cast : (k : ℝ) + 1 ≤ n), (by norm_cast : (1 : ℝ) ≤ m)]
+    refine lt_of_le_of_lt ?_ h_mul
+    refine le_trans (Nat.floor_le ?_) ?_
+    · positivity
+    · unfold proximity_gap_johnson; ring_nf; norm_num
+      norm_num [mul_assoc, mul_comm, mul_left_comm, ne_of_gt (zero_lt_one.trans_le hm)]
+
+/-- If $Q$ satisfies the weighted degree bound and vanishes to order $m$ at each point
+    $(\omega_i, f_i)$, and if $P$ is a codeword close enough to $f$, then $Y - P(X)$
+    divides $Q(X,Y)$. -/
+theorem dvd_property (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k) {Q : F[X][Y]}
+  (hQ_ne_0 : Q ≠ 0)
+  (hQ_deg : weightedDegree Q 1 (k - 1) ≤ proximity_gap_degree_bound k n m)
+  (hQ_mult : ∀ i, HasOrderAt Q (ωs i) (f i) m)
+  (h_dist : (hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) : ℝ) / n <
+    proximity_gap_johnson k n m) :
+  X - C (codewordToPoly p) ∣ Q := by
+    contrapose! h_dist with h_distots
+    have hR_nonzero : (Q.eval (codewordToPoly p)) ≠ 0 := by
+      contrapose! h_distots
+      exact dvd_iff_isRoot.mpr h_distots
+    have hR_roots : (Q.eval (codewordToPoly p)).natDegree ≥
+        m * (n - hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i))) := by
+      have hR_roots : ∀ i ∈ Finset.univ.filter (fun i ↦ f i = (codewordToPoly p).eval (ωs i)), m ≤
+          (Q.eval (codewordToPoly p)).rootMultiplicity (ωs i) := by
+        intro i hi
+        have h_root : m ≤ (Q.eval (codewordToPoly p)).rootMultiplicity (ωs i) := by
+          have := hQ_mult i;
+          have := orderAt_eval_ge Q (codewordToPoly p) ( ωs i ) m ( by aesop ) ; aesop;
+        exact h_root;
+      have hR_roots_card : (Finset.univ.filter (fun i ↦
+          f i = (codewordToPoly p).eval (ωs i))).card * m ≤
+            (Q.eval (codewordToPoly p)).natDegree := by
+        have hR_roots_card : (∏ i ∈ Finset.univ.filter (fun i ↦
+            f i = (codewordToPoly p).eval (ωs i)), (X - C (ωs i)) ^ m) ∣
+              (Q.eval (codewordToPoly p)) := by
+          refine Finset.prod_dvd_of_coprime ?_ ?_
+          · intros i hi j hj hij
+            exact IsCoprime.pow (irreducible_X_sub_C (ωs i) |> fun hi ↦
+              hi.coprime_iff_not_dvd.mpr fun h => hij <| by
+                have := dvd_iff_isRoot.mp h; simp_all [sub_eq_iff_eq_add])
+          · exact fun i hi ↦
+              dvd_trans (pow_dvd_pow _ (hR_roots i hi)) (pow_rootMultiplicity_dvd _ _)
+        have := natDegree_le_of_dvd hR_roots_card
+        convert this hR_nonzero using 1
+        rw [natDegree_prod _ _ fun i hi ↦ pow_ne_zero _ <| Polynomial.X_sub_C_ne_zero _]
+        simp [natDegree_sub_eq_left_of_natDegree_lt]
+      convert hR_roots_card.ge using 1
+      simp [mul_comm, hammingDist]
+      rw [Finset.filter_not, Finset.card_sdiff (Finset.subset_univ _)]
+      norm_num
+      exact Or.inl (Nat.sub_sub_self (le_trans (Finset.card_le_univ _) (by norm_num)))
+    have hR_deg : (Q.eval (codewordToPoly p)).natDegree ≤ proximity_gap_degree_bound k n m := by
+      have hR_deg : (Q.eval (codewordToPoly p)).natDegree ≤ natWeightedDegree Q 1 (k - 1) := by
+        apply degree_eval_le_weightedDegree
+        exact codewordToPoly_degree_le hk p
+      refine le_trans hR_deg ?_
+      convert hQ_deg using 1
+      rw [weightedDegree_eq_natWeightedDegree]
+      aesop
+      assumption
+    contrapose! hR_roots
+    refine lt_of_le_of_lt hR_deg ?_
+    convert sufficient_multiplicity_bound hk hm hR_roots using 1
+    rw [← @Nat.cast_lt ℝ]
+    norm_num [Nat.cast_sub (show hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) ≤ n
+      from le_trans (Finset.card_le_univ _) (by norm_num))]
+
+end divisibility
 
 end GuruswamiSudan
