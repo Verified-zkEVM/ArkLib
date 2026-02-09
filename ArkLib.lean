@@ -72,7 +72,6 @@ import ArkLib.Data.FieldTheory.NonBinaryField.KoalaBear
 import ArkLib.Data.FieldTheory.NonBinaryField.Mersenne
 import ArkLib.Data.FieldTheory.NonBinaryField.Secp256k1
 import ArkLib.Data.Fin.Basic
-import ArkLib.Data.Fin.BigOperators
 import ArkLib.Data.Fin.Fold
 import ArkLib.Data.Fin.Lift
 import ArkLib.Data.Fin.Sigma

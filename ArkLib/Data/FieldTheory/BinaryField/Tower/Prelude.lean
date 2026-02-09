@@ -5,7 +5,7 @@ Authors : Quang Dao, Chung Thai Nguyen
 -/
 
 import Mathlib.FieldTheory.Finite.GaloisField
-import ArkLib.Data.Fin.BigOperators
+import CompPoly.Data.Fin.BigOperators
 import ArkLib.Data.Nat.Bitwise
 import Mathlib.LinearAlgebra.StdBasis
 

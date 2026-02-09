@@ -7,7 +7,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 import ArkLib.Data.Nat.Bitwise
 import Mathlib.RingTheory.MvPolynomial.Basic
 import ToMathlib.General
-import ArkLib.Data.Fin.BigOperators
+import CompPoly.Data.Fin.BigOperators
 import CompPoly.Data.List.Lemmas
 import ArkLib.Data.Vector.Basic
 
