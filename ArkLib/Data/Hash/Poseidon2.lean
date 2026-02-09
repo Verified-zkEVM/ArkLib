@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.FieldTheory.NonBinaryField.KoalaBear
-import ArkLib.Data.Vector.Basic
+import CompPoly.Data.Vector.Basic
 
 /-!
   # Poseidon2 Reference Implementation

@@ -9,7 +9,7 @@ import Mathlib.RingTheory.MvPolynomial.Basic
 import ToMathlib.General
 import CompPoly.Data.Fin.BigOperators
 import CompPoly.Data.List.Lemmas
-import ArkLib.Data.Vector.Basic
+import CompPoly.Data.Vector.Basic
 
 /-!
   # Multilinear Polynomials

@@ -113,7 +113,6 @@ import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.Notation
 import ArkLib.Data.RingTheory.AlgebraTower
 import ArkLib.Data.RingTheory.CanonicalEuclideanDomain
-import ArkLib.Data.Vector.Basic
 import ArkLib.OracleReduction.BCS.Basic
 import ArkLib.OracleReduction.Basic
 import ArkLib.OracleReduction.Cast
