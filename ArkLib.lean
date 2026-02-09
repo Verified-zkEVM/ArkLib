@@ -89,7 +89,6 @@ import ArkLib.Data.Hash.Poseidon2
 import ArkLib.Data.List.BigOperators
 import ArkLib.Data.List.Find
 import ArkLib.Data.List.HList
-import ArkLib.Data.List.Lemmas
 import ArkLib.Data.List.Vector
 import ArkLib.Data.Matrix.Basic
 import ArkLib.Data.Matrix.Sparse

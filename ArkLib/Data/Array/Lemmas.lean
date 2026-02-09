@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gregor Mitscha-Baude
 -/
 
-import ArkLib.Data.List.Lemmas
+import CompPoly.Data.List.Lemmas
 import Mathlib.Algebra.Order.Ring.Nat
 import Mathlib.Algebra.Order.Star.Basic
 import Mathlib.Data.Nat.Log

@@ -8,7 +8,7 @@ import ArkLib.Data.Nat.Bitwise
 import Mathlib.RingTheory.MvPolynomial.Basic
 import ToMathlib.General
 import ArkLib.Data.Fin.BigOperators
-import ArkLib.Data.List.Lemmas
+import CompPoly.Data.List.Lemmas
 import ArkLib.Data.Vector.Basic
 
 /-!
