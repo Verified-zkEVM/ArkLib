@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.ProofSystem.Sumcheck.Spec.General
-import ArkLib.Data.MlPoly.Equiv
+import CompPoly.Multilinear.Equiv
 
 /-!
   # Executable Spec of the Sum-check Protocol

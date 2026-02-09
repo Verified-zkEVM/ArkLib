@@ -91,8 +91,6 @@ import ArkLib.Data.List.Vector
 import ArkLib.Data.Matrix.Basic
 import ArkLib.Data.Matrix.Sparse
 import ArkLib.Data.Misc.Basic
-import ArkLib.Data.MlPoly.Basic
-import ArkLib.Data.MlPoly.Equiv
 import ArkLib.Data.MvPolynomial.Degrees
 import ArkLib.Data.MvPolynomial.Interpolation
 import ArkLib.Data.MvPolynomial.LinearMvExtension
