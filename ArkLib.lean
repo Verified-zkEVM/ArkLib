@@ -7,7 +7,6 @@ import ArkLib.CommitmentScheme.MerkleTree
 import ArkLib.CommitmentScheme.SimpleRO
 import ArkLib.CommitmentScheme.Tensor
 import ArkLib.CommitmentScheme.Trivial
-import ArkLib.Data.Array.Lemmas
 import ArkLib.Data.CNat.AssocNat
 import ArkLib.Data.CNat.Church
 import ArkLib.Data.CNat.Defs
