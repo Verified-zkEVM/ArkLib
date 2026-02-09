@@ -7,7 +7,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 import Mathlib.Probability.ProbabilityMassFunction.Monad
 import ArkLib.Data.Probability.Notation
 import CompPoly.Data.Fin.BigOperators
-import ArkLib.Data.Nat.Bitwise
+import CompPoly.Data.Nat.Bitwise
 import Mathlib.Algebra.MvPolynomial.SchwartzZippel
 
 open ProbabilityTheory Filter

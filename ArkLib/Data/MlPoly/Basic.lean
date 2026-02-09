@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen
 -/
 
-import ArkLib.Data.Nat.Bitwise
+import CompPoly.Data.Nat.Bitwise
 import Mathlib.RingTheory.MvPolynomial.Basic
 import ToMathlib.General
 import CompPoly.Data.Fin.BigOperators

@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 
-import ArkLib.Data.Nat.Bitwise
+import CompPoly.Data.Nat.Bitwise
 import ArkLib.Data.Polynomial.Frobenius
 import ArkLib.Data.Polynomial.MonomialBasis
 import Mathlib.LinearAlgebra.StdBasis

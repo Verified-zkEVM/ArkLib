@@ -14,7 +14,7 @@ import Mathlib.InformationTheory.Hamming
 import Mathlib.Tactic.Qify
 import Mathlib.Topology.MetricSpace.Infsep
 import Mathlib.Data.Real.ENatENNReal
-import ArkLib.Data.Nat.Bitwise
+import CompPoly.Data.Nat.Bitwise
 
 /-!
   # Basics of Coding Theory

@@ -6,7 +6,7 @@ Authors : Quang Dao, Chung Thai Nguyen
 
 import Mathlib.FieldTheory.Finite.GaloisField
 import CompPoly.Data.Fin.BigOperators
-import ArkLib.Data.Nat.Bitwise
+import CompPoly.Data.Nat.Bitwise
 import Mathlib.LinearAlgebra.StdBasis
 
 /-!
