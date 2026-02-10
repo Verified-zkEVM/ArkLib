@@ -35,7 +35,7 @@ private lemma choose_2_eq_half_f :
   simp [choose_2, f]
   ring
 
-@[simp]
+@[simp, grind]
 theorem choose_2_convex : ConvexOn ℚ Set.univ choose_2 := by
   rw [choose_2_eq_half_f]
   refine ⟨convex_univ, fun x₁ _ x₂ _ α₁ α₂ hα₁ hα₂ h ↦ ?p₁⟩

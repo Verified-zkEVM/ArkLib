@@ -69,7 +69,8 @@ private lemma solutionToQ_from_Q
   (h_dist : (Δ₀(f, p.eval ∘ ωs) : ℕ) ≤ e)
   : solutionToQ e k (E_and_Q_to_a_solution e (E ωs f p e) (Q ωs f p e)) = Q ωs f p e := by
   refine Polynomial.ext fun i ↦ ?p₁
-  simp [Fin.liftF]
+  simp only [solutionToQ_coeff, Fin.liftF, E_and_Q_to_a_solution_coeff, add_lt_iff_neg_left,
+    not_lt_zero, ↓reduceIte, add_tsub_cancel_left, dite_eq_ite]
   split_ifs <;>
   · by_cases hne : p = 0
     · simp [Q, hne]
@@ -86,7 +87,7 @@ private lemma solutionToE_from_E
   : solutionToE e k (E_and_Q_to_a_solution e (E ωs f p e) (Q ωs f p e)) = E ωs f p e := by
   apply Polynomial.ext
   intro i
-  simp
+  simp only [coeff_solutionToE]
   split_ifs <;>
     try aesop (config := {warnOnNonterminal := false})
               (add simp [Fin.liftF, leadingCoeff_E'])
@@ -141,7 +142,7 @@ lemma Q'_div_E'_eq_p
     (E_and_Q_BerlekampWelch_condition hp_deg h_ham)
     h_cond
   have : Q' = E' * p := by
-    simp [Q] at h_eq
+    simp only [Q] at h_eq
     rw [←mul_assoc, mul_comm (E' * _)] at h_eq; simp_all
   simp_all
 

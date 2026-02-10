@@ -119,6 +119,7 @@ instance [reduction.IsPerfectComplete init impl relIn relOut] :
 
 /-- If a reduction satisfies completeness with error `ε₁`, then it satisfies completeness with error
   `ε₂` for all `ε₂ ≥ ε₁`. -/
+@[grind]
 theorem completeness_error_mono {ε₁ ε₂ : ℝ≥0} (hε : ε₁ ≤ ε₂) :
       completeness init impl relIn relOut reduction ε₁ →
         completeness init impl relIn relOut reduction ε₂ := by
@@ -131,6 +132,7 @@ theorem completeness_error_mono {ε₁ ε₂ : ℝ≥0} (hε : ε₁ ≤ ε₂) 
 
 /-- If a reduction satisfies completeness with error `ε` for some relation `relIn`, then it
   satisfies completeness with error `ε` for any relation `relIn'` that is a subset of `relIn`. -/
+@[simp, grind]
 theorem completeness_relIn_mono {ε : ℝ≥0} {relIn' : Set (StmtIn × WitIn)}
     (hrelIn : relIn' ⊆ relIn) :
       completeness init impl relIn relOut reduction ε →
@@ -143,18 +145,20 @@ theorem completeness_relIn_mono {ε : ℝ≥0} {relIn' : Set (StmtIn × WitIn)}
 /-- If a reduction satisfies completeness with error `ε` for some relation `relIn`, then it
   satisfies completeness with error `ε` for any relation `relOut'` that is a superset of `relOut`.
 -/
+
 theorem completeness_relOut_mono {ε : ℝ≥0} {relOut' : Set (StmtOut × WitOut)}
     (hrelOut : relOut ⊆ relOut') :
       completeness init impl relIn relOut reduction ε →
         completeness init impl relIn relOut' reduction ε := by
-  intro h
-  dsimp [completeness] at h ⊢
-  intro stmtIn witIn hstmtIn
-  refine ge_trans ?_ (h stmtIn witIn hstmtIn)
-  stop
-  refine probEvent_mono ?_
-  rintro _ _ ⟨h1, h2⟩
-  exact ⟨hrelOut h1, h2⟩
+  sorry
+  -- intro h
+  -- dsimp [completeness] at h ⊢
+  -- intro stmtIn witIn hstmtIn
+  -- refine ge_trans ?_ (h stmtIn witIn hstmtIn)
+  -- stop
+  -- refine probEvent_mono ?_
+  -- rintro _ _ ⟨h1, h2⟩
+  -- exact ⟨hrelOut h1, h2⟩
 
 /-- Perfect completeness means that the probability of the reduction outputting a valid
   statement-witness pair is _exactly_ 1 (instead of at least `1 - 0`). -/
@@ -167,10 +171,11 @@ theorem perfectCompleteness_eq_prob_one :
       Pr[fun ⟨⟨_, (prvStmtOut, witOut)⟩, stmtOut⟩ =>
           ((stmtOut, witOut) ∈ relOut ∧ prvStmtOut = stmtOut)
         | OptionT.mk do (simulateQ pImpl (reduction.run stmtIn witIn)).run' (← init)] = 1 := by
-  stop
-  refine forall_congr' fun stmtIn => forall_congr' fun stmtOut => forall_congr' fun _ => ?_
-  rw [ENNReal.coe_zero, tsub_zero, ge_iff_le, OracleComp.one_le_probEvent_iff,
-    probEvent_eq_one_iff, Prod.forall]
+  sorry
+  -- stop
+  -- refine forall_congr' fun stmtIn => forall_congr' fun stmtOut => forall_congr' fun _ => ?_
+  -- rw [ENNReal.coe_zero, tsub_zero, ge_iff_le, OracleComp.one_le_probEvent_iff,
+  --   probEvent_eq_one_iff, Prod.forall]
 
 -- /-- For a reduction without shared oracles (i.e. `oSpec = []ₒ`), perfect completeness occurs
 --   when the reduction produces satisfying statement-witness pairs for all possible challenges. -/
@@ -488,16 +493,16 @@ section Trivial
 @[simp]
 theorem Reduction.id_perfectCompleteness {rel : Set (StmtIn × WitIn)} :
     (Reduction.id : Reduction oSpec _ _ _ _ _).perfectCompleteness init impl rel rel := by
-  simp
-  aesop
   sorry
+  -- simp
+  -- aesop
 
 /-- The identity / trivial verifier is perfectly sound. -/
 @[simp]
 theorem Verifier.id_soundness {lang : Set StmtIn} :
     (Verifier.id : Verifier oSpec _ _ _).soundness init impl lang lang 0 := by
-  simp [Verifier.soundness, Verifier.id, Reduction.run, Verifier.run]
   sorry
+  -- simp [Verifier.soundness, Verifier.id, Reduction.run, Verifier.run]
 
 /-- The straightline extractor for the identity / trivial reduction, which just returns the input
   witness. -/
@@ -509,16 +514,17 @@ def Extractor.Straightline.id : Extractor.Straightline oSpec StmtIn WitIn WitIn 
 @[simp]
 theorem Verifier.id_knowledgeSoundness {rel : Set (StmtIn × WitIn)} :
     (Verifier.id : Verifier oSpec _ _ _).knowledgeSoundness init impl rel rel 0 := by
-  refine ⟨Extractor.Straightline.id, ?_⟩
-  simp only [Extractor.Straightline.id, Verifier.id, Reduction.runWithLog, Verifier.run]
-  simp only [liftM, monadLift, MonadLift.monadLift, liftComp]
-  simp only [simulateQ_pure, WriterT.run, StateT.run']
-  simp
-  stop
-  intro stmtIn witIn prover stmtIn' witIn' stmtIn'' witIn'' s hs s' hSupport hRel'
-  -- simp only [support_bind]
-  -- aesop
   sorry
+  -- refine ⟨Extractor.Straightline.id, ?_⟩
+  -- simp only [Extractor.Straightline.id, Verifier.id, Reduction.runWithLog, Verifier.run]
+  -- simp only [liftM, monadLift, MonadLift.monadLift, liftComp]
+  -- simp only [WriterT.run, StateT.run']
+  -- simp
+  -- stop
+  -- intro stmtIn witIn prover stmtIn' witIn' stmtIn'' witIn'' s hs s' hSupport hRel'
+  -- -- simp only [support_bind]
+  -- -- aesop
+  -- sorry
 
 /-- The identity / trivial reduction is perfectly complete. -/
 @[simp]
@@ -526,18 +532,18 @@ theorem OracleReduction.id_perfectCompleteness
     {rel : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)} :
     (OracleReduction.id : OracleReduction oSpec _ _ _ _ _ _ _).perfectCompleteness
       init impl rel rel := by
-  simp [perfectCompleteness]
   sorry
+  -- simp [perfectCompleteness]
 
 /-- The identity / trivial verifier is perfectly sound. -/
-@[simp]
+@[simp, grind .]
 theorem OracleVerifier.id_soundness {lang : Set (StmtIn × ∀ i, OStmtIn i)} :
     (OracleVerifier.id : OracleVerifier oSpec _ _ _ _ _).soundness
       init impl lang lang 0 := by
   simp [OracleVerifier.soundness]
 
 /-- The identity / trivial verifier is perfectly knowledge sound. -/
-@[simp]
+@[simp, grind .]
 theorem OracleVerifier.id_knowledgeSoundness {rel : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)} :
     (OracleVerifier.id : OracleVerifier oSpec _ _ _ _ _).knowledgeSoundness
       init impl rel rel 0 := by
