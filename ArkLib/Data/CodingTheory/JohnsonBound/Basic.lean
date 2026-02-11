@@ -714,7 +714,7 @@ theorem johnson_bound_alphabet_free [Field F] [DecidableEq F]
 
           -- 4. Bound dB' by d.
           have d_ineq : (d : ℚ) ≤ JohnsonBound.d B' := by
-            simp[hd_le_dB']
+            exact hd_le_dB'
 
           -- 5. Compare worst-case values (monotone).
           have worst_case_bound : (JohnsonBound.d B' / n) /
