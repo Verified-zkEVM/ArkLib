@@ -69,8 +69,7 @@ theorem reduction_completeness --(h : init.neverFails)
     (reduction oSpec mapStmt mapWit).perfectCompleteness init impl relIn relOut := by
   simp [reduction, Reduction.run, Prover.run, Prover.runToRound, Verifier.run,
     prover, verifier, hRel]
-  stop
-  aesop
+  sorry
 
 /-- The round-by-round extractor for the `ReduceClaim` (oracle) reduction. Requires a mapping
   `mapWitInv` from the output witness to the input witness. -/
@@ -164,25 +163,25 @@ theorem oracleReduction_completeness --(h : init.neverFails)
       ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), mapWit stmtIn witIn) ∈ relOut) :
     (oracleReduction oSpec mapStmt mapWit embedIdx hEq).perfectCompleteness init impl
       relIn relOut := by
-  stop
-  -- TODO: clean up this proof
-  simp only [OracleReduction.perfectCompleteness, oracleReduction, OracleReduction.toReduction,
-    OracleVerifier.toVerifier,
-    Reduction.perfectCompleteness_eq_prob_one, ProtocolSpec.ChallengeIdx, StateT.run'_eq,
-    OracleComp.probEvent_eq_one_iff, OracleComp.probFailure_eq_zero_iff,
-    OracleComp.neverFails_bind_iff, h, OracleComp.neverFails_map_iff, true_and,
-    OracleComp.support_bind, OracleComp.support_map, Set.mem_iUnion, Set.mem_image, Prod.exists,
-    exists_and_right, exists_eq_right, exists_prop, forall_exists_index, and_imp, Prod.forall,
-    Fin.forall_fin_zero_pi, Prod.mk.injEq]
-  simp only [Reduction.run, Prover.run, Verifier.run, oracleProver, oracleVerifier]
-  simp only [ProtocolSpec.ChallengeIdx, Fin.reduceLast, Nat.reduceAdd, ProtocolSpec.MessageIdx,
-    ProtocolSpec.Message, ProtocolSpec.Challenge, Prover.runToRound_zero_of_prover_first,
-    Fin.isValue, id_eq, bind_pure_comp, map_pure, OracleComp.simulateQ_pure,
-    Function.Embedding.trans_apply, Function.Embedding.inl_apply, eq_mpr_eq_cast,
-    OracleComp.liftM_eq_liftComp, OracleComp.liftComp_pure, StateT.run_pure,
-    OracleComp.neverFails_pure, implies_true, OracleComp.support_pure, Set.mem_singleton_iff,
-    Prod.mk.injEq, and_imp, true_and]
-  aesop
+  sorry
+  -- -- TODO: clean up this proof
+  -- simp only [OracleReduction.perfectCompleteness, oracleReduction, OracleReduction.toReduction,
+  --   OracleVerifier.toVerifier,
+  --   Reduction.perfectCompleteness_eq_prob_one, ProtocolSpec.ChallengeIdx, StateT.run'_eq,
+  --   OracleComp.probEvent_eq_one_iff, OracleComp.probFailure_eq_zero_iff,
+  --   OracleComp.neverFails_bind_iff, h, OracleComp.neverFails_map_iff, true_and,
+  --   OracleComp.support_bind, OracleComp.support_map, Set.mem_iUnion, Set.mem_image, Prod.exists,
+  --   exists_and_right, exists_eq_right, exists_prop, forall_exists_index, and_imp, Prod.forall,
+  --   Fin.forall_fin_zero_pi, Prod.mk.injEq]
+  -- simp only [Reduction.run, Prover.run, Verifier.run, oracleProver, oracleVerifier]
+  -- simp only [ProtocolSpec.ChallengeIdx, Fin.reduceLast, Nat.reduceAdd, ProtocolSpec.MessageIdx,
+  --   ProtocolSpec.Message, ProtocolSpec.Challenge, Prover.runToRound_zero_of_prover_first,
+  --   Fin.isValue, id_eq, bind_pure_comp, map_pure, OracleComp.simulateQ_pure,
+  --   Function.Embedding.trans_apply, Function.Embedding.inl_apply, eq_mpr_eq_cast,
+  --   OracleComp.liftM_eq_liftComp, OracleComp.liftComp_pure, StateT.run_pure,
+  --   OracleComp.neverFails_pure, implies_true, OracleComp.support_pure, Set.mem_singleton_iff,
+  --   Prod.mk.injEq, and_imp, true_and]
+  -- aesop
 
 variable {mapWitInv : (StmtIn × (∀ i, OStmtIn i)) → WitOut → WitIn}
 
@@ -197,8 +196,7 @@ def oracleKnowledgeStateFunction (hRel : ∀ stmtIn oStmtIn witOut,
   toFun_next := fun m => Fin.elim0 m
   toFun_full := fun ⟨stmtIn, oStmtIn⟩ _ witOut h => by
     simp_all [Verifier.run, oracleVerifier, OracleVerifier.toVerifier]
-    stop
-    aesop
+    sorry
 
 /-- The `ReduceClaim` oracle reduction satisfies perfect round-by-round knowledge soundness.
 
@@ -209,10 +207,10 @@ theorem oracleVerifier_rbrKnowledgeSoundness (hRel : ∀ stmtIn oStmtIn witOut,
       ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), witOut) ∈ relOut →
       ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
     (oracleVerifier oSpec mapStmt embedIdx hEq).rbrKnowledgeSoundness init impl relIn relOut 0 := by
-  stop
-  refine ⟨_, _, oracleKnowledgeStateFunction relIn relOut hRel, ?_⟩
-  simp only [ProtocolSpec.ChallengeIdx]
-  exact fun _ _ _ i => Fin.elim0 i.1
+  sorry
+  -- refine ⟨_, _, oracleKnowledgeStateFunction relIn relOut hRel, ?_⟩
+  -- simp only [ProtocolSpec.ChallengeIdx]
+  -- exact fun _ _ _ i => Fin.elim0 i.1
 
 end OracleReduction
 

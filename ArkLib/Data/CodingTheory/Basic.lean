@@ -7,6 +7,7 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland, 
 import ArkLib.Data.Fin.Basic
 import ArkLib.Data.CodingTheory.Prelims
 import Mathlib.Algebra.Polynomial.Roots
+import Mathlib.Algebra.Order.Floor.Semifield
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Data.ENat.Lattice
 import Mathlib.InformationTheory.Hamming
@@ -1606,7 +1607,6 @@ lemma uniqueDecodingRadius_eq_floor_div_2 {ι : Type*} [Fintype ι] {F : Type*} 
       rw [h_d_eq_0]
       simp only [zero_tsub, CharP.cast_eq_zero]
   rw [←h_eq]; dsimp [x_nat];
-  stop
   let res := Nat.floor_div_eq_div  (K := ℝ≥0) (m := (‖C‖₀ - 1)) (n := 2)
   rw [Nat.cast_ofNat] at res
   exact res

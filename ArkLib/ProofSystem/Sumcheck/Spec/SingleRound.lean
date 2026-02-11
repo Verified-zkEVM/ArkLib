@@ -476,42 +476,40 @@ theorem reduction_perfectCompleteness :
   rw [perfectCompleteness_eq_prob_one]
   intro ⟨target, oStmt⟩ () hValid
   generalize h : oStmt () = p; obtain ⟨poly, hp⟩ := p
-  stop
-  -- Need `convert` because of some duplicate instances, should eventually track those down
-  convert (probEvent_eq_one_iff _ _).2 ⟨?_, ?_⟩
-  · simp only [Reduction.run, probFailure_bind_eq_zero_iff]
-    refine ⟨by simp [hInit], ?_⟩
-    -- constructor
-    -- · simp
-    --   unfold Prover.run Prover.runToRound Prover.processRound
-    --   simp [Fin.induction, Fin.induction.go, reduction, prover]
-    · intro s hs
-      stop
-      intro ⟨⟨stmt, oStmtOut⟩, _, transcript⟩
-      simp -- Also some pathing issues, need to simp once before reducing `reduction`
-      simp [reduction, verifier, Verifier.run]
-      intro hSupport
-      simp [Prover.run, Prover.runToRound, Prover.processRound, reduction, prover] at hSupport
-      obtain ⟨h1, h2⟩ := hSupport
-      simp [← h2, Transcript.concat, Fin.snoc, h]
-      simp [inputRelation, h] at hValid
-      exact hValid
-  · stop
-    intro ⟨⟨⟨prvStmtOut, prvOStmtOut⟩, _⟩, verStmtOut, transcript⟩ hSupport
-    simp only [run, support_bind, liftM_eq_liftComp, Set.mem_iUnion, support_pure,
-      Set.mem_singleton_iff, Prod.eq_iff_fst_eq_snd_eq] at hSupport
-    obtain ⟨x1, hx1, x2_1, hx2, ⟨⟨⟨h2_1, h2_2⟩, _⟩, ⟨⟨h3_1, h3_2⟩, h3_3⟩⟩⟩ := hSupport
-    simp only [reduction, prover, Prover.run, Prover.runToRound] at hx1
-    simp [Prover.processRound] at hx1
-    obtain ⟨a, b, hab, hx1'⟩ := hx1
-    simp only [Verifier.run, reduction, verifier] at hx2
-    simp [Transcript.concat, Fin.snoc] at hx2
-    obtain ⟨h1, h2, h3⟩ := hx2
-    split; rename_i stuff prvStmtOut' _ verStmtOut' trans hEq
-    simp at hEq
-    obtain ⟨hPrvStmtOut, hVerStmtOut, hTranscript⟩ := hEq
-    simp only [outputRelation, ← hVerStmtOut, StmtOut, OStmtOut, ← hPrvStmtOut, h2_2]
-    aesop
+  sorry
+  -- -- Need `convert` because of some duplicate instances, should eventually track those down
+  -- convert (probEvent_eq_one_iff _ _).2 ⟨?_, ?_⟩
+  -- · simp only [Reduction.run, probFailure_bind_eq_zero_iff]
+  --   refine ⟨by simp [hInit], ?_⟩
+  --   -- constructor
+  --   -- · simp
+  --   --   unfold Prover.run Prover.runToRound Prover.processRound
+  --   --   simp [Fin.induction, Fin.induction.go, reduction, prover]
+  --   · intro s hs
+  --     intro ⟨⟨stmt, oStmtOut⟩, _, transcript⟩
+  --     simp -- Also some pathing issues, need to simp once before reducing `reduction`
+  --     simp [reduction, verifier, Verifier.run]
+  --     intro hSupport
+  --     simp [Prover.run, Prover.runToRound, Prover.processRound, reduction, prover] at hSupport
+  --     obtain ⟨h1, h2⟩ := hSupport
+  --     simp [← h2, Transcript.concat, Fin.snoc, h]
+  --     simp [inputRelation, h] at hValid
+  --     exact hValid
+  -- · intro ⟨⟨⟨prvStmtOut, prvOStmtOut⟩, _⟩, verStmtOut, transcript⟩ hSupport
+  --   simp only [run, support_bind, liftM_eq_liftComp, Set.mem_iUnion, support_pure,
+  --     Set.mem_singleton_iff, Prod.eq_iff_fst_eq_snd_eq] at hSupport
+  --   obtain ⟨x1, hx1, x2_1, hx2, ⟨⟨⟨h2_1, h2_2⟩, _⟩, ⟨⟨h3_1, h3_2⟩, h3_3⟩⟩⟩ := hSupport
+  --   simp only [reduction, prover, Prover.run, Prover.runToRound] at hx1
+  --   simp [Prover.processRound] at hx1
+  --   obtain ⟨a, b, hab, hx1'⟩ := hx1
+  --   simp only [Verifier.run, reduction, verifier] at hx2
+  --   simp [Transcript.concat, Fin.snoc] at hx2
+  --   obtain ⟨h1, h2, h3⟩ := hx2
+  --   split; rename_i stuff prvStmtOut' _ verStmtOut' trans hEq
+  --   simp at hEq
+  --   obtain ⟨hPrvStmtOut, hVerStmtOut, hTranscript⟩ := hEq
+  --   simp only [outputRelation, ← hVerStmtOut, StmtOut, OStmtOut, ← hPrvStmtOut, h2_2]
+  --   aesop
 
 /-- Perfect completeness for the oracle reduction -/
 theorem oracleReduction_perfectCompleteness :

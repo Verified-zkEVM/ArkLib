@@ -116,16 +116,16 @@ theorem oracleReduction_completeness :
   simp [Reduction.run, Prover.run, Verifier.run, Prover.runToRound, Prover.processRound,
     OracleReduction.toReduction, OracleVerifier.toVerifier, oracleVerifier, oracleProver,
     Transcript.concat, FullTranscript.challenges]
-  stop
-  constructor
-  -- Soon we won't have to reason about failure of `init` here.
-  · intro s hs
-    simp [StateT.run]
-    unfold SimOracle.append
-    simp [challengeQueryImpl, liftM, monadLift, MonadLift.monadLift, StateT.lift]
-    have := SampleableType.probFailure_selectElem (β := Query OStatement)
-    aesop
-  · aesop
+  sorry
+  -- constructor
+  -- -- Soon we won't have to reason about failure of `init` here.
+  -- · intro s hs
+  --   simp [StateT.run]
+  --   unfold SimOracle.append
+  --   simp [challengeQueryImpl, liftM, monadLift, MonadLift.monadLift, StateT.lift]
+  --   have := SampleableType.probFailure_selectElem (β := Query OStatement)
+  --   aesop
+  -- · aesop
 
 -- def langIn : Set (Unit × (∀ _ : Fin 2, OStatement)) := setOf fun ⟨(), oracles⟩ =>
 --   oracles 0 = oracles 1
@@ -143,15 +143,15 @@ def stateFunction [Inhabited OStatement] : (oracleVerifier oSpec OStatement).Sta
   toFun_empty := fun stmt => by simp
   toFun_next | 0 => fun hDir ⟨stmt, oStmt⟩ tr h => by simp_all
   toFun_full := fun ⟨stmt, oStmt⟩ tr h => by
-    stop
-    simp_all only [Fin.reduceLast, Fin.isValue, OStmtIn, Nat.reduceAdd, Fin.coe_ofNat_eq_mod,
-      Nat.reduceMod, Fin.zero_eta, StmtOut, OStmtOut, StmtIn, StateT.run'_eq, Set.language, WitOut,
-      relOut, Set.mem_image, Set.mem_setOf_eq, Prod.exists, exists_const, exists_eq_right,
-      probEvent_eq_zero_iff, support_bind, support_map, Set.mem_iUnion, exists_and_right,
-      exists_prop, forall_exists_index, and_imp, Prod.forall]
-    intro a b s hs s' hSupp
-    simp [OracleVerifier.toVerifier, Verifier.run, oracleVerifier] at hSupp
-    simp [hSupp.1, h]
+    sorry
+    -- simp_all only [Fin.reduceLast, Fin.isValue, OStmtIn, Nat.reduceAdd, Fin.coe_ofNat_eq_mod,
+    --   Nat.reduceMod, Fin.zero_eta, StmtOut, OStmtOut, StmtIn, StateT.run'_eq, Set.language, WitOut,
+    --   relOut, Set.mem_image, Set.mem_setOf_eq, Prod.exists, exists_const, exists_eq_right,
+    --   probEvent_eq_zero_iff, support_bind, support_map, Set.mem_iUnion, exists_and_right,
+    --   exists_prop, forall_exists_index, and_imp, Prod.forall]
+    -- intro a b s hs s' hSupp
+    -- simp [OracleVerifier.toVerifier, Verifier.run, oracleVerifier] at hSupp
+    -- simp [hSupp.1, h]
 
 /-- The round-by-round extractor is trivial since the output witness is `Unit`. -/
 def rbrExtractor : Extractor.RoundByRound oSpec
@@ -172,8 +172,8 @@ def knowledgeStateFunction :
   toFun_empty := fun stmt => by simp
   toFun_next | 0 => fun hDir ⟨stmt, oStmt⟩ tr h => by simp_all
   toFun_full := fun ⟨stmt, oStmt⟩ tr _ h => by
-    stop
-    simp_all [oracleVerifier, OracleVerifier.toVerifier, Verifier.run]
+    sorry
+    -- simp_all [oracleVerifier, OracleVerifier.toVerifier, Verifier.run]
 
 variable [Fintype (Query OStatement)] [∀ q, DecidableEq (O.Response q)]
 
@@ -203,33 +203,33 @@ theorem oracleVerifier_rbrKnowledgeSoundness [Nonempty (Query OStatement)]
   subst i
   dsimp at oracles
   simp [Prover.runWithLogToRound, Prover.runToRound, rbrExtractor, knowledgeStateFunction]
-  stop
-  unfold SimOracle.append
-  simp [challengeQueryImpl]
-  classical
-  simp only [probEvent_bind_eq_tsum]
-  simp [ProtocolSpec.Transcript.concat, Fin.snoc, default]
-  unfold Function.comp
-  dsimp
-  calc
-  _ ≤ ((Finset.card
-    {x | ¬oracles 0 = oracles 1 ∧ answer (oracles 0) x = answer (oracles 1) x} : ENNReal) /
-        (Fintype.card (Query OStatement))) := by
-    rw [ENNReal.tsum_mul_right]
-    grw [OracleComp.tsum_probOutput_le_one]
-    simp
-  _ ≤ (((d : ℝ≥0) / (Fintype.card (Query OStatement)))) := by
-    gcongr
-    simp
-    by_cases hOracles : oracles 0 = oracles 1
-    · simp [hOracles]
-    · simp [hOracles]
-      exact hDist (oracles 0) (oracles 1) hOracles
-  _ = _ := by
-    refine (ENNReal.toNNReal_eq_toNNReal_iff' ?_ ?_).mp ?_
-    · simp; intro h'; apply ENNReal.div_eq_top.mp at h'; simp at h'
-    · simp; intro h'; apply ENNReal.div_eq_top.mp at h'; simp at h'
-    · simp
+  sorry
+  -- unfold SimOracle.append
+  -- simp [challengeQueryImpl]
+  -- classical
+  -- simp only [probEvent_bind_eq_tsum]
+  -- simp [ProtocolSpec.Transcript.concat, Fin.snoc, default]
+  -- unfold Function.comp
+  -- dsimp
+  -- calc
+  -- _ ≤ ((Finset.card
+  --   {x | ¬oracles 0 = oracles 1 ∧ answer (oracles 0) x = answer (oracles 1) x} : ENNReal) /
+  --       (Fintype.card (Query OStatement))) := by
+  --   rw [ENNReal.tsum_mul_right]
+  --   grw [OracleComp.tsum_probOutput_le_one]
+  --   simp
+  -- _ ≤ (((d : ℝ≥0) / (Fintype.card (Query OStatement)))) := by
+  --   gcongr
+  --   simp
+  --   by_cases hOracles : oracles 0 = oracles 1
+  --   · simp [hOracles]
+  --   · simp [hOracles]
+  --     exact hDist (oracles 0) (oracles 1) hOracles
+  -- _ = _ := by
+  --   refine (ENNReal.toNNReal_eq_toNNReal_iff' ?_ ?_).mp ?_
+  --   · simp; intro h'; apply ENNReal.div_eq_top.mp at h'; simp at h'
+  --   · simp; intro h'; apply ENNReal.div_eq_top.mp at h'; simp at h'
+  --   · simp
 
 end RandomQuery
 

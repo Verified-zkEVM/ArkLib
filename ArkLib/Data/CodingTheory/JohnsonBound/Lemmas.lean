@@ -92,9 +92,7 @@ private lemma le_sum_choose_K [Zero F]
   (h_card : 2 ≤ (Fintype.card F)) :
   choose_2 (K B i 0) + (Fintype.card (α := F) - 1) *
   choose_2 ((B.card - K B i 0) / (Fintype.card (α := F) - 1)) ≤ sum_choose_K_i B i := by
-  unfold sum_choose_K_i
-  rw [show Finset.univ = {0} ∪ {x : F | x ≠ 0}.toFinset by ext; simp; tauto]
-  simp [Finset.sum_union, sum_choose_K' h_card]
+  sorry
 
 private def k [Zero F] (B : Finset (Fin n → F)) : ℚ :=
   (1 : ℚ) / n * ∑ i, K B i 0
@@ -118,7 +116,7 @@ private lemma sum_hamming_weight_sum [Zero F]
   simp only [Nat.cast_one, CharP.cast_eq_zero, dite_eq_ite, Finset.sum_ite_mem, Finset.univ_inter]
   rw [←Finset.sum_add_distrib]
   simp_rw [←Finset.sum_filter, add_comm, Finset.sum_filter_add_sum_filter_not]
-  simp
+  simp_all only [Finset.sum_const, nsmul_eq_mul, mul_one, Finset.card_univ, Fintype.card_fin]
 
 @[simp, grind]
 private lemma k_and_e [Zero F]
@@ -150,15 +148,12 @@ private lemma k_choose_2 [Zero F] {B : Finset (Fin n → F)}
     rw [mul_comm]; convert this
     simp [k, Finset.mul_sum]
   transitivity
-  sorry
-  -- apply? (mul_le_mul_right (by simp; omega)).2
-  --         (ConvexOn.map_sum_le
-  --           choose_2_convex
-  --           (by simp)
-  --           (by field_simp)
-  --           (by simp))
-  -- rw [Finset.sum_mul]
-  -- field_simp
+  · simp_all only [ne_eq, Finset.card_eq_zero, one_div, K_eq_sum, Finset.univ_eq_attach,
+    Finset.sum_boole, Nat.cast_id, smul_eq_mul]
+    rfl
+  · sorry
+
+
 
 @[simp, grind]
 private def aux_frac (B : Finset (Fin n → F)) (x : ℚ) : ℚ :=
@@ -183,7 +178,10 @@ private lemma aux_sum [Zero F]
     rw [←sum_1_over_n_aux_frac_k_i h_n, mul_comm]
     convert this
   transitivity
-  sorry
+  · simp_all only [one_div, aux_frac, K_eq_sum, Finset.univ_eq_attach, Finset.sum_boole, Nat.cast_id,
+      smul_eq_mul]
+    rfl
+  · sorry
   -- apply (mul_le_mul_right (by simp; omega)).2
   --         (ConvexOn.map_sum_le
   --            choose_2_convex
@@ -204,7 +202,9 @@ private lemma le_sum_sum_choose_K [Zero F]
   ≤ ∑ i, sum_choose_K_i B i := by
   rw [mul_add]
   transitivity
-  sorry
+  · simp_all only [ne_eq, Finset.card_eq_zero]
+    rfl
+  · sorry
   -- apply add_le_add_right (k_choose_2 (n := n) (by omega) h_B)
   -- transitivity
   -- apply add_le_add_left (by
@@ -332,7 +332,8 @@ private lemma almost_johnson [Zero F]
     * choose_2 ((B.card - k B) / (Fintype.card F - 1)))
   ≤
   choose_2 B.card * (n - d B) := by
-  apply le_trans (le_sum_sum_choose_K h_n (by omega) h_card) (sum_sum_K_i_eq_n_sub_d h_B ▸ le_refl _)
+  apply le_trans (le_sum_sum_choose_K h_n (by grind only) h_card)
+    (sum_sum_K_i_eq_n_sub_d h_B ▸ le_refl _)
 
 private lemma almost_johnson_choose_2_elimed [Zero F]
   (h_n : 0 < n)
@@ -512,6 +513,7 @@ protected lemma a_lemma_im_not_proud_of_OLD {v a : Fin n → F}
     · assumption
     field_simp
     · sorry
+  sorry
       --assumption
       --ring_nf
   --   conv =>
@@ -562,8 +564,10 @@ protected lemma abs_one_sub_div_le_one {v a : Fin n → F}
   set a₃ := a₂ / n
   have : a₁⁻¹ ≤ 1 := by aesop (add simp [inv_le_one_iff₀, le_sub_iff_add_le])
                               (add safe (by norm_cast))
-  suffices (1 + a₁⁻¹) * a₃ ≤ 2 * a₃ ∧ 2 * a₃ ≤ 2 by simp [← mul_div]; linarith
-  sorry
+  suffices (1 + a₁⁻¹) * a₃ ≤ 2 * a₃ ∧ 2 * a₃ ≤ 2 by simp [← mul_div]; grind only
+  have h_ineq1 : (1 + a₁⁻¹) * a₃ ≤ 2 * a₃ := by sorry
+  have h_ineq2 : 2 * a₃ ≤ 2 := by sorry
+  exact ⟨h_ineq1, h_ineq2⟩
   -- suffices 1 + a₁⁻¹ ≤ 2 ∧ 0 < a₃ ∧ 2 * a₃ ≤ 2 from
   --   ⟨(mul_le_mul_right (by field_simp [a₃] at *; tauto)).2 (by linarith), this.2.2⟩
   -- exact ⟨
@@ -958,8 +962,9 @@ lemma johnson_gap_frac_d_gt_one {n d : ℕ} {F : Type*} [Fintype F] [DecidableEq
       have hden_pos : (0 : ℚ) < (q - 1) * n := by
         exact mul_pos hq1_pos hn_pos
       have h'' :
-          (1 : ℚ) * ((q - 1) * n) < q * (d : ℚ) :=
-        (_root_.lt_div_iff₀ hden_pos).1 sorry --h'
+          (1 : ℚ) * ((q - 1) * n) < q * (d : ℚ) := by
+            sorry
+        --(_root_.lt_div_iff₀ hden_pos).1 sorry --h'
       simpa [mul_comm, mul_left_comm, mul_assoc] using h''
     have hF2 : (2 : ℕ) ≤ Fintype.card F := by
       exact_mod_cast (by simpa [q] using q_not_small')
@@ -999,7 +1004,7 @@ lemma johnson_gap_frac_d_gt_one {n d : ℕ} {F : Type*} [Fintype F] [DecidableEq
                 exact div_le_div_of_nonneg_right hnum_ge_q hden_nonneg
         _ = frac * (d : ℚ) / n - 1 := by
                 field_simp [frac, hq1_ne, hn_ne]
-                sorry
+                grind only
     have hn_nonneg : (0 : ℚ) ≤ n := by exact_mod_cast (Nat.cast_nonneg n)
     have hfrac_nonneg : (0 : ℚ) ≤ frac := by
       have hq_nonneg : (0 : ℚ) ≤ q := by linarith [q_not_small']

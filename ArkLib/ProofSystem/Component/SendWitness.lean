@@ -241,9 +241,10 @@ theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatem
     (oracleVerifier oSpec Statement OStatement Witness).toVerifier.run ⟨stmt, oStmt⟩ tr =
       pure ⟨stmt, Sum.rec oStmt (fun i => match i with | 0 => tr 0)⟩ := by
   simp [Verifier.run, OracleVerifier.toVerifier, oracleVerifier]
-  stop
-  ext i; rcases i <;> simp
-  split; simp
+  sorry
+  -- stop
+  -- ext i; rcases i <;> simp
+  -- split; simp
 
 variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
   (oRelIn : Set ((Statement × (∀ i, OStatement i)) × Witness))
@@ -259,20 +260,20 @@ def toORelOut :
 theorem oracleReduction_completeness (h : NeverFail init) :
     (oracleReduction oSpec Statement OStatement Witness).perfectCompleteness init impl oRelIn
     (toORelOut oRelIn) := by
-  stop
+  sorry
   -- TODO: clean up this proof
-  simp only [OracleReduction.perfectCompleteness, oraclePSpec, toORelOut, Fin.isValue,
-    OracleReduction.toReduction, MessageIdx, Reduction.perfectCompleteness_eq_prob_one,
-    ChallengeIdx, StateT.run'_eq, Set.mem_setOf_eq, probEvent_eq_one_iff, probFailure_eq_zero_iff,
-    neverFails_bind_iff, neverFails_map_iff, support_bind, support_map, Set.mem_iUnion,
-    Set.mem_image, Prod.exists, exists_and_right, exists_eq_right, exists_prop, forall_exists_index,
-    and_imp, Prod.forall, Prod.mk.injEq]
-  simp_rw [h, Reduction.run, oracleReduction, oracleVerifier_toVerifier_run, oracleProver_run]
-  simp only [ChallengeIdx, oraclePSpec, id_eq, liftM_eq_liftComp,
-    liftComp_pure, bind_pure_comp, map_pure, simulateQ_pure, StateT.run_pure,
-    neverFails_pure, implies_true, and_self, support_pure, Set.mem_singleton_iff, Prod.mk.injEq,
-    and_true, Fin.isValue, and_imp, forall_const, true_and]
-  aesop
+  -- simp only [OracleReduction.perfectCompleteness, oraclePSpec, toORelOut, Fin.isValue,
+  --   OracleReduction.toReduction, MessageIdx, Reduction.perfectCompleteness_eq_prob_one,
+  --   ChallengeIdx, StateT.run'_eq, Set.mem_setOf_eq, probEvent_eq_one_iff, probFailure_eq_zero_iff,
+  --   neverFails_bind_iff, neverFails_map_iff, support_bind, support_map, Set.mem_iUnion,
+  --   Set.mem_image, Prod.exists, exists_and_right, exists_eq_right, exists_prop, forall_exists_index,
+  --   and_imp, Prod.forall, Prod.mk.injEq]
+  -- simp_rw [h, Reduction.run, oracleReduction, oracleVerifier_toVerifier_run, oracleProver_run]
+  -- simp only [ChallengeIdx, oraclePSpec, id_eq, liftM_eq_liftComp,
+  --   liftComp_pure, bind_pure_comp, map_pure, simulateQ_pure, StateT.run_pure,
+  --   neverFails_pure, implies_true, and_self, support_pure, Set.mem_singleton_iff, Prod.mk.injEq,
+  --   and_true, Fin.isValue, and_imp, forall_const, true_and]
+  -- aesop
 
 theorem oracleReduction_rbr_knowledge_soundness : True := sorry
 

@@ -84,16 +84,15 @@ theorem reduction_completeness [Nonempty σ] [DecidableEq Statement] :
 theorem verifier_rbr_knowledge_soundness :
     (verifier oSpec Statement pred).rbrKnowledgeSoundness init impl
       (relIn Statement pred) (relOut Statement) 0 := by
-  stop
-  simp only [Verifier.rbrKnowledgeSoundness, Nat.reduceAdd, relIn, relOut, verifier, guard_eq,
-    ChallengeIdx, Challenge, liftComp_query, OracleSpec.SubSpec.liftM_query_eq_liftM_liftM,
-    OracleSpec.liftM_append_right_eq, bind_pure_comp, simulateQ_bind, StateT.run'_eq,
-    StateT.run_bind, comp_apply, simulateQ_map, simulateQ_query, StateT.run_map, map_bind,
-    Functor.map_map, Pi.zero_apply, ENNReal.coe_zero, nonpos_iff_eq_zero, probEvent_eq_zero_iff,
-    support_bind, support_map, Set.mem_iUnion, Set.mem_image, Prod.exists, exists_and_right,
-    exists_prop, not_exists, not_and, forall_exists_index, and_imp, Prod.forall, Prod.mk.injEq,
-    IsEmpty.forall_iff, implies_true, exists_const_iff, and_true]
   sorry
+  -- simp only [Verifier.rbrKnowledgeSoundness, Nat.reduceAdd, relIn, relOut, verifier, guard_eq,
+  --   ChallengeIdx, Challenge, liftComp_query, OracleSpec.SubSpec.liftM_query_eq_liftM_liftM,
+  --   OracleSpec.liftM_append_right_eq, bind_pure_comp, simulateQ_bind, StateT.run'_eq,
+  --   StateT.run_bind, comp_apply, simulateQ_map, simulateQ_query, StateT.run_map, map_bind,
+  --   Functor.map_map, Pi.zero_apply, ENNReal.coe_zero, nonpos_iff_eq_zero, probEvent_eq_zero_iff,
+  --   support_bind, support_map, Set.mem_iUnion, Set.mem_image, Prod.exists, exists_and_right,
+  --   exists_prop, not_exists, not_and, forall_exists_index, and_imp, Prod.forall, Prod.mk.injEq,
+  --   IsEmpty.forall_iff, implies_true, exists_const_iff, and_true]
 
 end Reduction
 

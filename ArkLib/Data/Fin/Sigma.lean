@@ -458,44 +458,45 @@ def divSum? {m : ℕ} (n : Fin m → ℕ) (k : ℕ) : Option (Fin m) :=
 
 theorem divSum?_is_some_iff_lt_sum {m : ℕ} {n : Fin m → ℕ} {k : ℕ} :
     (divSum? n k).isSome ↔ k < ∑ i, n i := by
-  stop
-  constructor
-  · intro h
-    simp only [divSum?, Nat.succ_eq_add_one, castLE, isSome_find_iff] at h
-    obtain ⟨i, hi⟩ := h
-    have : i.val + 1 + (m - i.val - 1) = m := by omega
-    rw [← Fin.sum_congr' _ this, Fin.sum_univ_add]
-    simp only [gt_iff_lt]
-    exact Nat.lt_add_right _ hi
-  · intro isLt
-    have : m ≠ 0 := fun h => by subst h; simp at isLt
-    refine Fin.isSome_find_iff.mpr ?_
-    have hm : (m - 1) + 1 = m := by omega
-    refine ⟨Fin.cast hm (Fin.last (m - 1)), ?_⟩
-    simp only [coe_cast, val_last, Nat.succ_eq_add_one, Fin.castLE_of_eq hm,
-        Fin.sum_congr' n hm, isLt]
+  sorry
+  -- constructor
+  -- · intro h
+  --   simp only [divSum?, Nat.succ_eq_add_one, castLE, isSome_find_iff] at h
+  --   obtain ⟨i, hi⟩ := h
+  --   have : i.val + 1 + (m - i.val - 1) = m := by omega
+  --   rw [← Fin.sum_congr' _ this, Fin.sum_univ_add]
+  --   simp only [gt_iff_lt]
+  --   exact Nat.lt_add_right _ hi
+  -- · intro isLt
+  --   have : m ≠ 0 := fun h => by subst h; simp at isLt
+  --   refine Fin.isSome_find_iff.mpr ?_
+  --   have hm : (m - 1) + 1 = m := by omega
+  --   refine ⟨Fin.cast hm (Fin.last (m - 1)), ?_⟩
+  --   simp only [coe_cast, val_last, Nat.succ_eq_add_one, Fin.castLE_of_eq hm,
+  --       Fin.sum_congr' n hm, isLt]
 
 def divSum {m : ℕ} {n : Fin m → ℕ} (k : Fin (∑ j, n j)) : Fin m :=
   (divSum? n k).get (divSum?_is_some_iff_lt_sum.mpr k.isLt)
 
 theorem sum_le_of_divSum?_eq_some {m : ℕ} {n : Fin m → ℕ} {k : Fin (∑ j, n j)} {i : Fin m}
     (hi : divSum? n k = some i) : ∑ j : Fin i, n (castLE i.isLt.le j) ≤ k := by
-  stop
   by_cases hi' : 0 = i.val
   · rw [← Fin.sum_congr' _ hi']
     simp only [Finset.univ_eq_empty, Finset.sum_empty, _root_.zero_le]
   · have : (i.val - 1) + 1 = i.val := by omega
     rw [← Fin.sum_congr' _ this]
-    have := Fin.find_min (Option.mem_def.mp hi) (j := ⟨i.val - 1, by omega⟩) <| Fin.lt_def.mpr
-      (by simp only; omega)
-    exact not_lt.mp this
+    sorry
+    -- have := Fin.find_min (Option.mem_def.mp hi) (j := ⟨i.val - 1, by omega⟩) <| Fin.lt_def.mpr
+    --   (by simp only; omega)
+    -- exact not_lt.mp this
 
 def modSum {m : ℕ} {n : Fin m → ℕ} (k : Fin (∑ j, n j)) : Fin (n (divSum k)) :=
   ⟨k - ∑ j, n (Fin.castLE (divSum k).isLt.le j), by
-    stop
+    -- sorry
     have divSum_mem : divSum k ∈ divSum? n k := by
       simp only [divSum, divSum?, Option.mem_def, Option.some_get]
-    have hk : k < ∑ j, n (Fin.castLE (divSum k).isLt j) := Fin.find_spec _ divSum_mem
+    have hk : k < ∑ j, n (Fin.castLE (divSum k).isLt j) := by
+      sorry --Fin.find_spec _ divSum_mem
     simp only [Fin.sum_univ_succAbove _ (Fin.last (divSum k)), succAbove_last] at hk
     rw [Nat.sub_lt_iff_lt_add' (sum_le_of_divSum?_eq_some divSum_mem)]
     rw [add_comm]
