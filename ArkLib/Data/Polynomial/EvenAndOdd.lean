@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Julian Sutherland, Ilia Vlasov
 -/
 import ArkLib.ToMathlib.Finset.Basic
-import ArkLib.Data.FieldTheory.NonBinaryField.Basic
+import CompPoly.Fields.Basic
 
 /-!
 # Even and odd parts of polynomial

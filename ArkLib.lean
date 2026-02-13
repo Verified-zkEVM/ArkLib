@@ -62,15 +62,6 @@ import ArkLib.Data.FieldTheory.BinaryField.Tower.Basic
 import ArkLib.Data.FieldTheory.BinaryField.Tower.Impl
 import ArkLib.Data.FieldTheory.BinaryField.Tower.Prelude
 import ArkLib.Data.FieldTheory.BinaryField.Tower.TensorAlgebra
-import ArkLib.Data.FieldTheory.NonBinaryField.BLS12_377
-import ArkLib.Data.FieldTheory.NonBinaryField.BLS12_381
-import ArkLib.Data.FieldTheory.NonBinaryField.BN254
-import ArkLib.Data.FieldTheory.NonBinaryField.BabyBear
-import ArkLib.Data.FieldTheory.NonBinaryField.Basic
-import ArkLib.Data.FieldTheory.NonBinaryField.Goldilocks
-import ArkLib.Data.FieldTheory.NonBinaryField.KoalaBear
-import ArkLib.Data.FieldTheory.NonBinaryField.Mersenne
-import ArkLib.Data.FieldTheory.NonBinaryField.Secp256k1
 import ArkLib.Data.Fin.Basic
 import ArkLib.Data.Fin.Fold
 import ArkLib.Data.Fin.Lift
@@ -207,7 +198,6 @@ import ArkLib.ToMathlib.Data.IndexedBinaryTree.Lemmas
 import ArkLib.ToMathlib.Finset.Basic
 import ArkLib.ToMathlib.Finsupp.Fin
 import ArkLib.ToMathlib.MvPolynomial.Equiv
-import ArkLib.ToMathlib.NumberTheory.PrattCertificate
 import ArkLib.ToMathlib.UInt.Equiv
 import ArkLib.ToVCVio.DistEq
 import ArkLib.ToVCVio.Lemmas

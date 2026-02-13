@@ -2,7 +2,7 @@ import Mathlib.GroupTheory.Coset.Basic
 import Mathlib.GroupTheory.GroupAction.Basic
 import Mathlib.GroupTheory.SpecificGroups.Cyclic
 
-import ArkLib.Data.FieldTheory.NonBinaryField.Basic
+import CompPoly.Fields.Basic
 import ArkLib.Data.GroupTheory.Smooth
 
 variable {F : Type} [NonBinaryField F] [Finite F]
