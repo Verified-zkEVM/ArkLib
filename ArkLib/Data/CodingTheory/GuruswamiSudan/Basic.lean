@@ -560,21 +560,155 @@ section multiplicity
     has multiplicity of roots at least m at the interpolation points. -/
 
 
-/-- The solved polynomial has root multiplicity at least m at each point (ωs i, f i). -/
-lemma polySol_multiplicity [DecidableEq F] (i : Fin n) :
-    m ≤ Polynomial.Bivariate.rootMultiplicity (polySol k n m ωs f) (ωs i) (f i) := by
-  let Q := polySol k n m ωs f
-  have h_shift : shift Q (ωs i) (f i) ≠ 0 := by
-    intro h
-    have h_shift_nonzero : ∀ x y : F, shift Q x y = 0 → Q = 0 := by
-      intro x y hxy
-      have h_shift_nonzero : Q.comp (X + C (C y)) = 0 := by
-        have h_shift_nonzero : Q.comp (X + C (C y)) = (shift Q x y).map (X - C x).compRingHom := by
-          unfold shift; ext; simp; ring_nf; simp [comp_assoc]
+/-- If `m` is the minimum of a list `l`, then `m ≤ a` for any `a ∈ l`. -/
+lemma list_min_le_of_mem {l : List ℕ} {a m : ℕ} (h_min : l.min? = some m) (h_mem : a ∈ l) :
+    m ≤ a := by
+  have h_min_mem : ∀ l : List ℕ, ∀ a ∈ l, a ≥ l.min?.getD 0 := by
+    exact fun l a a_2 ↦ List.min?_getD_le_of_mem a_2
+  grind
+
+/-- If the `(s, t)`-coefficient of `shift Q x y` is non-zero, then the root multiplicity
+    of `Q` at `(x, y)` is at most `s + t`. -/
+lemma rootMultiplicity_le_of_coeff_ne_zero [DecidableEq F] {Q : F[X][Y]} {x y : F} {s t : ℕ}
+    (h : Bivariate.coeff (shift Q x y) s t ≠ 0) :
+    rootMultiplicity Q x y ≤ (s + t : WithTop ℕ) := by
+      set g : F[X][Y] := shift Q x y;
+      have h_rootMultiplicity : Polynomial.Bivariate.rootMultiplicity Q x y =
+          List.min? (List.filterMap (fun p ↦
+            if Bivariate.coeff g p.1 p.2 = 0 then none
+            else some (p.1 + p.2)) (List.product (List.range
+              (natWeightedDegree g 1 1 + 1)) (List.range (natWeightedDegree g 1 1 + 1)))) := by
+        rw [Bivariate.rootMultiplicity, Bivariate.rootMultiplicity₀]
+        rw [Bivariate.weightedDegree_eq_natWeightedDegree]
+        · rfl
+        · contrapose! h
+          convert congr_arg (fun p ↦ (Polynomial.coeff p t).coeff |> fun f ↦ f s) h using 1
+      obtain ⟨p, hp⟩ : ∃ p ∈ List.product (List.range (natWeightedDegree g 1 1 + 1))
+          (List.range (natWeightedDegree g 1 1 + 1)), p.1 + p.2 = s + t ∧
+            Bivariate.coeff g p.1 p.2 ≠ 0 := by
+        use (s, t);
+        have h_deg : s + t ≤ Bivariate.natWeightedDegree g 1 1 := by
+          refine Finset.le_sup (f := fun m ↦ 1 * ((g.coeff m).natDegree ) + 1 * m)
+              (Finset.mem_coe.mpr <| Polynomial.mem_support_iff.mpr <|
+                show g.coeff t ≠ 0 from ?_) |> le_trans ?_
+          · simp +zetaDelta only [ne_eq, one_mul, add_le_add_iff_right] at *
+            exact le_natDegree_of_ne_zero h
+          · exact fun h' => h <| by rw [Polynomial.Bivariate.coeff]; aesop
+        exact ⟨List.mem_product.mpr ⟨List.mem_range.mpr (by linarith),
+          List.mem_range.mpr (by linarith)⟩, rfl, h⟩
+      have h_min_le : ∀ {l : List ℕ} {m : ℕ}, m ∈ l → (List.min? l).getD 0 ≤ m := by
+        exact fun {l} {m} a ↦ List.min?_getD_le_of_mem a
+      convert h_min_le _
+      any_goals exact List.filterMap (fun p ↦ if Bivariate.coeff g p.1 p.2 = 0
+        then Option.none else Option.some (p.1 + p.2)) (List.product (List.range
+          (natWeightedDegree g 1 1 + 1)) (List.range (natWeightedDegree g 1 1 + 1 )))
+      rotate_left
+      · exact p.1 + p.2
+      · rw [List.mem_filterMap]; aesop
+      · cases h : List.min? (List.filterMap (fun p ↦ if Bivariate.coeff g p.1 p.2 = 0
+          then Option.none else Option.some (p.1 + p.2)) (List.product (List.range
+            (natWeightedDegree g 1 1 + 1)) (List.range (natWeightedDegree g 1 1 + 1)))) <;> aesop
+
+/-- Shifting a polynomial by (x, y) results in the zero polynomial if and only if the
+    original polynomial was zero. -/
+lemma shift_eq_zero_iff {F : Type} [Field F] (f : F[X][Y]) (x y : F) : shift f x y = 0 ↔ f = 0 := by
+  constructor <;> intro h <;> simp_all only [shift, zero_comp, Polynomial.map_zero]
+  have h_comp : f.comp (Y + C (C y)) = 0 := by
+    rw [Polynomial.ext_iff] at *
+    intro n
+    specialize h n
+    simp_all [Polynomial.coeff_map]
+    rw [Polynomial.comp_eq_zero_iff ] at h
+    aesop
+  rw [Polynomial.comp_eq_zero_iff] at h_comp
+  aesop
+
+/-- If the shifted polynomial has no non-zero coefficients of total degree less than m,
+    then the root multiplicity is at least m. -/
+lemma rootMultiplicity_ge_of_shift_zero [DecidableEq F] {f : F[X][Y]} {x y : F}
+    {m : ℕ} (hf : f ≠ 0) (h : ∀ s t, s + t < m → ((shift f x y).coeff t).coeff s = 0) :
+    m ≤ rootMultiplicity f x y := by
+  by_contra h_contra
+  cases h : rootMultiplicity f x y
+  · simp_all only [ne_eq, Bivariate.rootMultiplicity, Option.le_none, reduceCtorEq,
+      not_false_eq_true, rootMultiplicity₀]
+    cases h' : weightedDegree (map (X + (C : F → F[X]) x).compRingHom
+      (f.comp (Y + (C : F[X] → F[X][Y] ) (C y)))) 1 1
+    · exact absurd h' (weightedDegree_ne_none _ _ _)
+    · simp_all +decide only [Nat.succ_eq_add_one, List.min?_eq_none_iff, List.filterMap_eq_nil_iff,
+        ite_eq_left_iff, reduceCtorEq, imp_false, Decidable.not_not, Prod.forall,
+        List.pair_mem_product, List.mem_range, and_imp]
+      have h_zero_poly : Polynomial.map (X + (C : F → F[X]) x).compRingHom
+          (f.comp (Y + (C : F[X] → F[X][Y]) ((C : F → F[X]) y))) = 0 := by
+        have h_zero_poly : ∀ p : F[X][Y], (∀ s t, s ≤ natWeightedDegree p 1 1 →
+            t ≤ natWeightedDegree p 1 1 → Polynomial.Bivariate.coeff p s t = 0) → p = 0 := by
+          intros p hp_zero
+          by_contra hp_nonzero
+          obtain ⟨s, t, hs⟩ : ∃ s t, Polynomial.Bivariate.coeff p s t ≠ 0 ∧
+              s ≤ natWeightedDegree p 1 1 ∧ t ≤ natWeightedDegree p 1 1 := by
+            obtain ⟨s, t, hs⟩ : ∃ s t, Polynomial.Bivariate.coeff p s t ≠ 0 := by
+              contrapose! hp_nonzero
+              ext s
+              aesop
+            refine ⟨s, t, hs, ?_, ?_⟩
+            · refine le_trans ?_ ( Finset.le_sup <| show (t : ℕ) ∈ p.support from ?_)
+              · exact le_trans (le_natDegree_of_ne_zero hs) (by linarith)
+              · simp_all only [Bivariate.coeff, ne_eq, Polynomial.mem_support_iff]
+                exact fun h ↦ hs <| by rw [h]; norm_num
+            · refine le_trans ?_ (Finset.le_sup <| Finsupp.mem_support_iff.mpr <|
+                show p.coeff t ≠ 0 from ?_)
+              · norm_num
+              · exact fun h ↦ hs <| by rw [Bivariate.coeff]; aesop
+          exact hs.1 (hp_zero s t hs.2.1 hs.2.2)
+        apply h_zero_poly
+        intros s t hs ht
+        convert h s t _ _ using 1
+        all_goals
+          rw [weightedDegree_eq_natWeightedDegree] at h'
+          · grind
+          · intro H
+            simp [H] at h'
+            exact hf (by simpa [H] using shift_eq_zero_iff f x y |>.1 H)
+      simp_all only [weightedDegree, coeff_zero, natDegree_zero, mul_zero, one_mul, zero_add,
+        Nat.succ_eq_add_one, List.range_one, List.map_cons, List.map_nil, List.max?_cons,
+        List.max?_nil, Option.elim_none, Option.some.injEq]
+      rw [Polynomial.map_eq_zero_iff] at h_zero_poly
+      · simp_all only [comp_eq_zero_iff, coeff_add, map_add, false_or]
+        replace h_zero_poly := congr_arg (fun p ↦ Polynomial.coeff p 1) h_zero_poly.2
         aesop
-      exact comp_X_add_C_eq_zero_iff.mp h_shift_nonzero
-    exact polySol_ne_zero <| h_shift_nonzero _ _ h
-  sorry
+      · intro p q h_eq
+        replace h_eq := congr_arg (Polynomial.comp · (X - C x)) h_eq
+        simp_all [Polynomial.comp_assoc]
+  · obtain ⟨deg, hdeg⟩ := Option.ne_none_iff_exists'.mp
+      (weightedDegree_ne_none (Polynomial.map (X + C x).compRingHom (f.comp (Y + C (C y)))) 1 1)
+    simp_all only [ne_eq, Option.some_le_some, not_le, weightedDegree, coeff_map, coe_compRingHom,
+      one_mul, Nat.succ_eq_add_one]
+    have h_min_ge_m : ∀ p ∈ List.filterMap (fun p ↦ if Bivariate.coeff
+        (Polynomial.map (X + C x).compRingHom (f.comp (Y + C (C y)))) p.1 p.2 = 0
+          then Option.none else Option.some (p.1 + p.2))
+            (List.product (List.range (deg + 1)) (List.range (deg + 1))), m ≤ p := by
+      simp +zetaDelta only [List.mem_filterMap, Option.ite_none_left_eq_some, Option.some.injEq,
+        Prod.exists, List.pair_mem_product, List.mem_range, forall_exists_index, and_imp] at *
+      intro p s t hs ht hne hp
+      subst hp
+      contrapose! hne
+      aesop
+    exact absurd (h_min_ge_m _
+      (List.min?_mem (by simpa [Bivariate.rootMultiplicity, rootMultiplicity₀,
+        weightedDegree, hdeg] using h)))
+      (by push_neg; exact h_contra)
+
+lemma polySol_multiplicity [DecidableEq F] (i : Fin n) :
+    m ≤ rootMultiplicity (polySol k n m ωs f) (ωs i) (f i) := by
+  have := Classical.choose_spec (exists_nonzero_solution k n m ωs f)
+  apply rootMultiplicity_ge_of_shift_zero
+  · exact polySol_ne_zero
+  · simp_all only [ne_eq, constraintMap, LinearMap.coe_mk, AddHom.coe_mk, polySol]
+    intro s t hst
+    have := congr_fun (congr_fun this.2 i) ⟨(s, t), by
+      exact Finset.mem_filter.mpr ⟨mem_product.mpr ⟨Finset.mem_range.mpr (by linarith),
+        Finset.mem_range.mpr (by linarith)⟩, by linarith ⟩⟩
+    aesop
 
 end multiplicity
 
@@ -695,8 +829,10 @@ lemma interpolate_eq_of_degree_lt (q : F[X]) (hq : q.natDegree < n) :
     · simp +contextual only [mem_image, mem_univ, true_and, Lagrange.interpolate_apply,
         forall_exists_index, forall_apply_eq_imp_iff]
       intro i
-      rw [eval_finset_sum, Finset.sum_eq_single i] <;> aesop
-      sorry
+      rw [eval_finset_sum, Finset.sum_eq_single i]
+      · rw [eval_mul, Lagrange.eval_basis_self (by simp [ωs.injective]) (mem_univ i)]
+        norm_num
+      all_goals aesop
 
 /-- The polynomial corresponding to a codeword has degree at most k-1. -/
 lemma codewordToPoly_degree_le (hk : k + 1 ≤ n) (p : code ωs k) :
@@ -730,8 +866,9 @@ lemma sufficient_multiplicity_bound {dist : ℕ}
     $(\omega_i, f_i)$, and if $P$ is a codeword close enough to $f$, then $Y - P(X)$
     divides $Q(X,Y)$. -/
 theorem dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k)
-  {Q : F[X][Y]} (hQ_ne_0 : Q ≠ 0) (hQ_mult : ∀ i, HasOrderAt Q (ωs i) (f i) m)
+  {Q : F[X][Y]} (hQ_ne_0 : Q ≠ 0)
   (hQ_deg : weightedDegree Q 1 (k - 1) ≤ proximity_gap_degree_bound k n m)
+  (hQ_mult : ∀ i, m ≤ rootMultiplicity Q (ωs i) (f i))
   (h_dist : (hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) : ℝ) / n <
     proximity_gap_johnson k n m) :
   X - C (codewordToPoly p) ∣ Q := by
@@ -745,8 +882,19 @@ theorem dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code
           (Q.eval (codewordToPoly p)).rootMultiplicity (ωs i) := by
         intro i hi
         have h_root : m ≤ (Q.eval (codewordToPoly p)).rootMultiplicity (ωs i) := by
+          have hQ_mult : ∀ i, HasOrderAt Q (ωs i) (f i) m := by
+            intro i s t hst
+            contrapose! hQ_mult
+            use i
+            refine fun h ↦ hst.not_ge <| le_of_not_gt fun h_lt ↦ ?_
+            exact (by
+              convert rootMultiplicity_le_of_coeff_ne_zero hQ_mult using 1
+              cases h' : rootMultiplicity Q (ωs i) (f i)
+              · aesop
+              · simp_all only [ne_eq, WithTop.some_eq_coe, ENat.some_eq_coe, false_iff]
+                exact_mod_cast not_le_of_gt (lt_of_lt_of_le h_lt (mod_cast h)))
           have := hQ_mult i;
-          have := orderAt_eval_ge Q (codewordToPoly p) ( ωs i ) m ( by aesop ) ; aesop;
+          have := orderAt_eval_ge Q (codewordToPoly p) (ωs i) m (by aesop); aesop;
         exact h_root;
       have hR_roots_card : (Finset.univ.filter (fun i ↦
           f i = (codewordToPoly p).eval (ωs i))).card * m ≤
@@ -785,68 +933,6 @@ theorem dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code
     rw [← @Nat.cast_lt ℝ]
     norm_num [Nat.cast_sub (show hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) ≤ n
       from le_trans (Finset.card_le_univ _) (by norm_num))]
-
-/-- If `m` is the minimum of a list `l`, then `m ≤ a` for any `a ∈ l`. -/
-lemma list_min_le_of_mem {l : List ℕ} {a m : ℕ} (h_min : l.min? = some m) (h_mem : a ∈ l) :
-    m ≤ a := by
-  have h_min_mem : ∀ l : List ℕ, ∀ a ∈ l, a ≥ l.min?.getD 0 := by
-    exact fun l a a_2 ↦ List.min?_getD_le_of_mem a_2
-  grind
-
-/-- If the `(s, t)`-coefficient of `shift Q x y` is non-zero, then the root multiplicity
-    of `Q` at `(x, y)` is at most `s + t`. -/
-lemma rootMultiplicity_le_of_coeff_ne_zero [DecidableEq F] {Q : F[X][Y]} {x y : F} {s t : ℕ}
-    (h : Bivariate.coeff (shift Q x y) s t ≠ 0) :
-    rootMultiplicity Q x y ≤ (s + t : WithTop ℕ) := by
-      set g : F[X][Y] := shift Q x y;
-      have h_rootMultiplicity : Polynomial.Bivariate.rootMultiplicity Q x y =
-          List.min? (List.filterMap (fun p ↦
-            if Bivariate.coeff g p.1 p.2 = 0 then none
-            else some (p.1 + p.2)) (List.product (List.range
-              (natWeightedDegree g 1 1 + 1)) (List.range (natWeightedDegree g 1 1 + 1)))) := by
-        rw [Bivariate.rootMultiplicity, Bivariate.rootMultiplicity₀]
-        rw [Bivariate.weightedDegree_eq_natWeightedDegree]
-        · rfl
-        · contrapose! h
-          convert congr_arg (fun p ↦ (Polynomial.coeff p t).coeff |> fun f ↦ f s) h using 1
-      obtain ⟨p, hp⟩ : ∃ p ∈ List.product (List.range (natWeightedDegree g 1 1 + 1))
-          (List.range (natWeightedDegree g 1 1 + 1)), p.1 + p.2 = s + t ∧
-            Bivariate.coeff g p.1 p.2 ≠ 0 := by
-        use (s, t);
-        have h_deg : s + t ≤ Bivariate.natWeightedDegree g 1 1 := by
-          refine Finset.le_sup (f := fun m ↦ 1 * ((g.coeff m).natDegree ) + 1 * m)
-              (Finset.mem_coe.mpr <| Polynomial.mem_support_iff.mpr <|
-                show g.coeff t ≠ 0 from ?_) |> le_trans ?_
-          · simp +zetaDelta only [ne_eq, one_mul, add_le_add_iff_right] at *
-            exact le_natDegree_of_ne_zero h
-          · exact fun h' => h <| by rw [Polynomial.Bivariate.coeff]; aesop
-        exact ⟨List.mem_product.mpr ⟨List.mem_range.mpr (by linarith),
-          List.mem_range.mpr (by linarith)⟩, rfl, h⟩
-      have h_min_le : ∀ {l : List ℕ} {m : ℕ}, m ∈ l → (List.min? l).getD 0 ≤ m := by
-        exact fun {l} {m} a ↦ List.min?_getD_le_of_mem a
-      convert h_min_le _
-      any_goals exact List.filterMap (fun p ↦ if Bivariate.coeff g p.1 p.2 = 0
-        then Option.none else Option.some (p.1 + p.2)) (List.product (List.range
-          (natWeightedDegree g 1 1 + 1)) (List.range (natWeightedDegree g 1 1 + 1 )))
-      rotate_left
-      · exact p.1 + p.2
-      · rw [List.mem_filterMap]; aesop
-      · cases h : List.min? (List.filterMap (fun p ↦ if Bivariate.coeff g p.1 p.2 = 0
-          then Option.none else Option.some (p.1 + p.2)) (List.product (List.range
-            (natWeightedDegree g 1 1 + 1)) (List.range (natWeightedDegree g 1 1 + 1)))) <;> aesop
-
-lemma one [DecidableEq F] {Q : F[X][Y]} (i : Fin n) (s t : ℕ) (hst : s + t < m)
-  (hQ₂ : ∀ i, m ≤ rootMultiplicity Q (ωs i) (f i)) :
-  Bivariate.coeff (shift Q (ωs i) (f i)) s t = 0 := by
-    contrapose! hQ₂
-    use i
-    refine fun h ↦ hst.not_ge <| le_of_not_gt fun h_lt ↦ ?_
-    exact (by
-      convert rootMultiplicity_le_of_coeff_ne_zero hQ₂ using 1
-      cases h' : rootMultiplicity Q (ωs i) (f i)
-      · aesop
-      · simp_all only [ne_eq, WithTop.some_eq_coe, ENat.some_eq_coe, false_iff]
-        exact_mod_cast not_le_of_gt (lt_of_lt_of_le h_lt (mod_cast h)))
 
 end divisibility
 

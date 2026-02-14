@@ -94,12 +94,7 @@ theorem proximity_gap_divisibility (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code �
     {Q : F[X][Y]} (hQ : Conditions k m (proximity_gap_degree_bound k n m) ωs f Q)
     (h_dist : (hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) : ℝ) / n <
       proximity_gap_johnson k n m) :
-    X - C (codewordToPoly p) ∣ Q := by
-  refine dvd_property (f := f) hk hm p ?_ ?_ ?_ ?_
-  · exact hQ.Q_ne_0
-  · intro i s t hst
-    exact one i s t hst hQ.Q_multiplicity
-  · exact hQ.Q_deg
-  · exact h_dist
+    X - C (codewordToPoly p) ∣ Q :=
+  dvd_property (f := f) hk hm p hQ.Q_ne_0 hQ.Q_deg hQ.Q_multiplicity h_dist
 
 end GuruswamiSudan

@@ -194,4 +194,10 @@ lemma zipWith_const {α β : Type _} {f : α → β → β} {l₁ : List α} {l�
   | nil => rcases l₂ <;> aesop
   | cons _ _ _ => rcases l₂ <;> aesop
 
+/-- If every element produced by filterMap is at least m, then the minimum of the result
+    is at least m. -/
+lemma min?_filterMap_ge {α : Type} {l : List α} {f : α → Option ℕ} {m : ℕ}
+    (h : ∀ x ∈ l, ∀ k, f x = some k → m ≤ k) : ∀ k, (l.filterMap f).min? = some k → m ≤ k :=
+  fun k hk ↦ by rw [List.min?_eq_some_iff] at hk; aesop
+
 end List

@@ -100,6 +100,11 @@ def natWeightedDegree.{u} {F : Type u} [Semiring F] (f : F[X][Y]) (u v : ℕ) : 
 
 variable {f : F[X][Y]}
 
+/-- The weighted degree is always defined (never none). -/
+lemma weightedDegree_ne_none {F : Type} [Semiring F] (f : F[X][Y]) (u v : ℕ) :
+    weightedDegree f u v ≠ none := by
+  unfold weightedDegree; aesop
+
 @[grind _=_]
 lemma weightedDegree_eq_natWeightedDegree {u v : ℕ} :
   f ≠ 0 → weightedDegree f u v = natWeightedDegree f u v := by
