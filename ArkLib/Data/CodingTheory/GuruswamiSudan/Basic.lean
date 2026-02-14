@@ -541,65 +541,6 @@ section multiplicity
 variable [DecidableEq F]
 
 
-/-- rootMultiplicity₀ computes the total degree. -/
-lemma rootMultiplicity₀_eq_totalDegree {f : F[X][Y]} (hf : f ≠ 0) :
-    rootMultiplicity₀ f = some (totalDegree f) := by
-  have h_max_eq : ∀ (f : F[X][Y]), f ≠ 0 → ∃ (deg : ℕ), (weightedDegree f 1 1) =
-      some deg ∧ (List.max? (List.map (fun x ↦ if coeff f x.1 x.2 ≠ 0 then x.1 + x.2 else 0)
-        (List.product (List.range (deg + 1)) (List.range (deg + 1))))) =
-          some (totalDegree f) := by
-    intros f hf_nonzero
-    obtain ⟨deg, hdeg⟩ : ∃ (deg : ℕ),
-        (weightedDegree f 1 1) = some deg ∧ deg = totalDegree f := by
-      convert weightedDegree_eq_natWeightedDegree hf_nonzero using 1
-      rw [total_deg_as_weighted_deg]
-      exact ⟨fun ⟨deg, hdeg₁, hdeg₂⟩ ↦ hdeg₁.trans (hdeg₂.symm ▸ rfl), fun hdeg ↦ ⟨_, hdeg, rfl⟩⟩
-    have h_max : ∃ x ∈ List.product (List.range (deg + 1)) (List.range (deg + 1)),
-        (if coeff f x.1 x.2 ≠ 0 then x.1 + x.2 else 0) = totalDegree f := by
-      obtain ⟨i, j, hij⟩ : ∃ i j, coeff f i j ≠ 0 ∧ i + j = totalDegree f := by
-        obtain ⟨i, j, hij⟩ : ∃ i j, (f.coeff j).coeff i ≠ 0 ∧ i + j = totalDegree f := by
-          have h_support : ∃ p ∈ f.support, (f.coeff p).natDegree + p = totalDegree f := by
-            have h_support : ∃ p ∈ f.support, ∀ q ∈ f.support, (f.coeff q).natDegree + q ≤
-                (f.coeff p).natDegree + p := by
-              apply_rules [exists_max_image]
-              exact nonempty_of_ne_empty (by aesop)
-            exact ⟨h_support.choose, h_support.choose_spec.1,
-                le_antisymm (Finset.le_sup
-                  (f := fun p ↦ (f.coeff p).natDegree + p) h_support.choose_spec.1)
-                    (Finset.sup_le fun q hq ↦ h_support.choose_spec.2 q hq)⟩
-          obtain ⟨p, hp₁, hp₂⟩ := h_support
-          use (f.coeff p).natDegree, p
-          aesop
-        exact ⟨i, j, hij⟩
-      exact ⟨⟨i, j⟩, by
-        erw [List.mem_product]
-        exact ⟨List.mem_range.mpr (by linarith), List.mem_range.mpr (by linarith)⟩, by aesop⟩
-    refine ⟨ deg, hdeg.1, (List.max?_eq_some_iff
-      (fun a ↦ le_rfl) (fun a b ↦ max_choice a b) (fun a b c ↦ Nat.max_le)).mpr ?_ ⟩
-    simp +zetaDelta at *
-    refine ⟨h_max, fun b x y hx hy hb ↦ ?_⟩
-    subst hb
-    split_ifs <;> simp_all [Bivariate.coeff]
-    exact le_sup (f := fun m ↦ (f.coeff m).natDegree + m)
-      (show y ∈ f.support from by aesop) |>
-        le_trans (by linarith [le_natDegree_of_ne_zero ‹_›])
-  unfold rootMultiplicity₀
-  specialize h_max_eq f hf
-  aesop
-
-/-- If all coefficients of degree less than m are zero, the total degree is at least m. -/
-lemma totalDegree_ge_m_of_forall_coeff_zero_lt_m {f : F[X][Y]} (hf : f ≠ 0) (m : ℕ)
-    (h : ∀ s t, s + t < m → Bivariate.coeff f s t = 0) : m ≤ totalDegree f := by
-  have h_totalDegree_ge_m : ∃ p ∈ f.support, (f.coeff p).natDegree + p ≥ m := by
-    by_contra h_contra
-    push_neg at h_contra
-    have h_zero : ∀ p ∈ f.support, (f.coeff p).natDegree + p < m := by assumption
-    refine hf (ext fun p ↦ ?_)
-    by_cases hp : p ∈ f.support <;> simp_all [Bivariate.coeff]
-    exact absurd (h ((f.coeff p).natDegree) p (h_zero p hp)) (by simp [coeff_natDegree, hp])
-  exact h_totalDegree_ge_m.choose_spec.2.trans (Finset.le_sup
-    (f := fun x ↦ (f.coeff x).natDegree + x) h_totalDegree_ge_m.choose_spec.1)
-
 /-- The solved polynomial has root multiplicity at least m at each point (ωs i, f i). -/
 lemma polySol_multiplicity (i : Fin n) :
     m ≤ rootMultiplicity (polySol k n m ωs f) (ωs i) (f i) := by
@@ -614,14 +555,8 @@ lemma polySol_multiplicity (i : Fin n) :
         aesop
       exact comp_X_add_C_eq_zero_iff.mp h_shift_nonzero
     exact polySol_ne_zero <| h_shift_nonzero _ _ h
-  rw [Bivariate.rootMultiplicity]
-  change m ≤ rootMultiplicity₀ (shift Q (ωs i) (f i))
-  rw [rootMultiplicity₀_eq_totalDegree h_shift]
-  have := Classical.choose_spec (exists_nonzero_solution k n m ωs f)
-  refine totalDegree_ge_m_of_forall_coeff_zero_lt_m (F := F) h_shift _ (fun s t hst ↦ ?_)
-  refine congr_fun (congr_fun this.2 i) ⟨(s, t), ?_⟩
-  exact mem_filter.mpr ⟨mem_product.mpr
-    ⟨mem_range.mpr (by linarith), mem_range.mpr (by linarith)⟩, hst⟩
+
+  sorry
 
 end multiplicity
 
@@ -828,6 +763,68 @@ theorem dvd_property (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k) {Q : F[X
     rw [← @Nat.cast_lt ℝ]
     norm_num [Nat.cast_sub (show hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) ≤ n
       from le_trans (Finset.card_le_univ _) (by norm_num))]
+
+/-- If `m` is the minimum of a list `l`, then `m ≤ a` for any `a ∈ l`. -/
+lemma list_min_le_of_mem {l : List ℕ} {a m : ℕ} (h_min : l.min? = some m) (h_mem : a ∈ l) :
+    m ≤ a := by
+  have h_min_mem : ∀ l : List ℕ, ∀ a ∈ l, a ≥ l.min?.getD 0 := by
+    exact fun l a a_2 ↦ List.min?_getD_le_of_mem a_2
+  grind
+
+/-- If the `(s, t)`-coefficient of `shift Q x y` is non-zero, then the root multiplicity
+    of `Q` at `(x, y)` is at most `s + t`. -/
+lemma rootMultiplicity_le_of_coeff_ne_zero {Q : F[X][Y]} {x y : F} {s t : ℕ}
+    (h : Bivariate.coeff (shift Q x y) s t ≠ 0) :
+    rootMultiplicity Q x y ≤ (s + t : WithTop ℕ) := by
+      set g : F[X][Y] := shift Q x y;
+      have h_rootMultiplicity : Polynomial.Bivariate.rootMultiplicity Q x y =
+          List.min? (List.filterMap (fun p ↦
+            if Bivariate.coeff g p.1 p.2 = 0 then none
+            else some (p.1 + p.2)) (List.product (List.range
+              (natWeightedDegree g 1 1 + 1)) (List.range (natWeightedDegree g 1 1 + 1)))) := by
+        rw [Bivariate.rootMultiplicity, Bivariate.rootMultiplicity₀]
+        rw [Bivariate.weightedDegree_eq_natWeightedDegree]
+        · rfl
+        · contrapose! h
+          convert congr_arg (fun p ↦ (Polynomial.coeff p t).coeff |> fun f ↦ f s) h using 1
+      obtain ⟨p, hp⟩ : ∃ p ∈ List.product (List.range (natWeightedDegree g 1 1 + 1))
+          (List.range (natWeightedDegree g 1 1 + 1)), p.1 + p.2 = s + t ∧
+            Bivariate.coeff g p.1 p.2 ≠ 0 := by
+        use (s, t);
+        have h_deg : s + t ≤ Bivariate.natWeightedDegree g 1 1 := by
+          refine Finset.le_sup (f := fun m ↦ 1 * ((g.coeff m).natDegree ) + 1 * m)
+              (Finset.mem_coe.mpr <| Polynomial.mem_support_iff.mpr <|
+                show g.coeff t ≠ 0 from ?_) |> le_trans ?_
+          · simp +zetaDelta at *
+            exact le_natDegree_of_ne_zero h
+          · exact fun h' => h <| by rw [Polynomial.Bivariate.coeff]; aesop
+        exact ⟨List.mem_product.mpr ⟨List.mem_range.mpr (by linarith),
+          List.mem_range.mpr (by linarith)⟩, rfl, h⟩
+      have h_min_le : ∀ {l : List ℕ} {m : ℕ}, m ∈ l → (List.min? l).getD 0 ≤ m := by
+        exact fun {l} {m} a ↦ List.min?_getD_le_of_mem a
+      convert h_min_le _
+      any_goals exact List.filterMap (fun p ↦ if Bivariate.coeff g p.1 p.2 = 0
+        then Option.none else Option.some (p.1 + p.2)) (List.product (List.range
+          (natWeightedDegree g 1 1 + 1)) (List.range (natWeightedDegree g 1 1 + 1 )))
+      rotate_left
+      · exact p.1 + p.2
+      · rw [List.mem_filterMap]; aesop
+      · cases h : List.min? (List.filterMap (fun p ↦ if Bivariate.coeff g p.1 p.2 = 0
+          then Option.none else Option.some (p.1 + p.2)) (List.product (List.range
+            (natWeightedDegree g 1 1 + 1)) (List.range (natWeightedDegree g 1 1 + 1)))) <;> aesop
+
+lemma one {Q : F[X][Y]} (i : Fin n) (s t : ℕ) (hst : s + t < m)
+  (hQ₂ : ∀ i, m ≤ rootMultiplicity Q (ωs i) (f i)) :
+  Bivariate.coeff (shift Q (ωs i) (f i)) s t = 0 := by
+    contrapose! hQ₂
+    use i
+    refine fun h ↦ hst.not_ge <| le_of_not_gt fun h_lt ↦ ?_
+    exact (by
+      convert rootMultiplicity_le_of_coeff_ne_zero hQ₂ using 1
+      cases h' : rootMultiplicity Q (ωs i) (f i)
+      · aesop
+      · simp_all [WithTop.some_eq_coe]
+        exact_mod_cast not_le_of_gt (lt_of_lt_of_le h_lt (mod_cast h)))
 
 end divisibility
 

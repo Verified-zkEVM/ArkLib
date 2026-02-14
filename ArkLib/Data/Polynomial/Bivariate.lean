@@ -133,16 +133,17 @@ def rootMultiplicity₀.{u} {F : Type u} [Semiring F] [DecidableEq F] (f : F[X][
   let deg := weightedDegree f 1 1
   match deg with
   | none => none
-  | some deg => List.max?
-    (List.map
-      (fun x => if coeff f x.1 x.2 ≠ 0 then x.1 + x.2 else 0)
-      (List.product (List.range deg.succ) (List.range deg.succ)))
+  | some deg => List.min?
+    (List.filterMap
+      (fun p ↦ if coeff f p.1 p.2 = 0 then none else some (p.1 + p.2))
+        (List.product (List.range deg.succ) (List.range deg.succ)))
 
-/-- The multiplicity of a pair `(x,y)` of a bivariate polynomial `f`. -/
+/-- Root multiplicity (order of vanishing) of a bivariate polynomial at `(x,y)`.
+It is the smallest total degree `s+t` of a nonzero coefficient after shifting
+the root to `(0,0)`. The zero polynomial has multiplicity `none`. -/
 def rootMultiplicity.{u} {F : Type u} [CommSemiring F] [DecidableEq F]
-  (f : F[X][Y]) (x y : F) : Option ℕ :=
-  let X := (Polynomial.X : Polynomial F)
-  rootMultiplicity₀ (F := F) ((f.comp (Y + (C (C y)))).map (Polynomial.compRingHom (X + C x)))
+    (f : F[X][Y]) (x y : F) : Option ℕ :=
+  rootMultiplicity₀ <| (f.comp (Y + C (C y))).map (Polynomial.compRingHom (X + C x))
 
 /-- If the multiplicity of a pair `(x,y)` is non-negative, then the pair is a root of `f`. -/
 lemma rootMultiplicity_some_implies_root {F : Type} [CommSemiring F] [DecidableEq F]

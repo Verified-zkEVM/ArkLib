@@ -99,7 +99,7 @@ theorem proximity_gap_divisibility (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code �
   · exact hQ.Q_ne_0
   · exact hQ.Q_deg
   · intro i s t hst
-    sorry
+    exact one i s t hst hQ.Q_multiplicity
   · exact h_dist
 
 end GuruswamiSudan
