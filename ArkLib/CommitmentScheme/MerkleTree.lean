@@ -32,53 +32,59 @@ variable (α : Type)
   We may instantiate `α` with `BitVec n` or `Fin (2 ^ n)` to construct a Merkle tree for boolean
   vectors of length `n`. -/
 @[reducible]
-def spec : OracleSpec Unit := fun _ => (α × α, α)
+def spec : OracleSpec (α × α) := (α × α) →ₒ α
+
+@[simp, grind]
+lemma domain_def : (spec α).Domain = (α × α) := rfl
 
 @[simp]
-lemma domain_def : (spec α).domain () = (α × α) := rfl
-
-@[simp]
-lemma range_def : (spec α).range () = α := rfl
+lemma range_def {x} : (spec α).Range x = α := rfl
 
 section
 
 variable [DecidableEq α] [Inhabited α] [Fintype α]
 
 /-- Example: a single hash computation -/
+@[simp, grind]
 def singleHash (left : α) (right : α) : OracleComp (spec α) α := do
-  let out ← query (spec := spec α) () ⟨left, right⟩
+  let out ← query (spec := spec α) ⟨left, right⟩
   return out
 
 /-- Cache for Merkle tree. Indexed by `j : Fin (n + 1)`, i.e. `j = 0, 1, ..., n`. -/
+@[simp, grind]
 def Cache (n : ℕ) := (layer : Fin (n + 1)) → List.Vector α (2 ^ layer.val)
 
 /-- Add a base layer to the cache -/
+@[simp, grind]
 def Cache.cons (n : ℕ) (leaves : List.Vector α (2 ^ (n + 1))) (cache : Cache α n) :
     Cache α (n + 1) :=
   Fin.snoc cache leaves
 
 /-- Removes the leaves layer to the cache, returning only the layers of the tree above this -/
+@[simp, grind]
 def Cache.upper (n : ℕ) (cache : Cache α (n + 1)) :
     Cache α n :=
   Fin.init cache
 
 /-- Returns the leaves of the cache -/
+@[simp, grind]
 def Cache.leaves (n : ℕ) (cache : Cache α (n + 1)) :
     List.Vector α (2 ^ (n + 1)) := cache (Fin.last _)
 
 omit [DecidableEq α] [Inhabited α] [Fintype α] in
-@[simp]
+@[simp, grind]
 lemma Cache.upper_cons (n : ℕ) (leaves : List.Vector α (2 ^ (n + 1))) (cache : Cache α n) :
     Cache.upper α n (Cache.cons α n leaves cache) = cache := by
   simp [Cache.upper, Cache.cons]
 
 omit [DecidableEq α] [Inhabited α] [Fintype α] in
-@[simp]
+@[simp, grind]
 lemma Cache.leaves_cons (n : ℕ) (leaves : List.Vector α (2 ^ (n + 1))) (cache : Cache α n) :
     Cache.leaves α n (Cache.cons α n leaves cache) = leaves := by
   simp [Cache.leaves, Cache.cons]
 
 /-- Compute the next layer of the Merkle tree -/
+@[simp, grind]
 def buildLayer (n : ℕ) (leaves : List.Vector α (2 ^ (n + 1))) :
     OracleComp (spec α) (List.Vector α (2 ^ n)) := do
   let leaves : List.Vector α (2 ^ n * 2) := by rwa [pow_succ] at leaves
@@ -88,10 +94,11 @@ def buildLayer (n : ℕ) (leaves : List.Vector α (2 ^ (n + 1))) :
       (leaves.get ⟨2 * i, by omega⟩, leaves.get ⟨2 * i + 1, by omega⟩))
   -- Hash each pair to get the next layer
   let hashes : List.Vector α (2 ^ n) ←
-    List.Vector.mmap (fun ⟨left, right⟩ => query (spec := spec α) () ⟨left, right⟩) pairs
+    List.Vector.mmap (fun ⟨left, right⟩ => query (spec := spec α) ⟨left, right⟩) pairs
   return hashes
 
 /-- Build the full Merkle tree, returning the cache -/
+@[simp, grind]
 def buildMerkleTree (α) (n : ℕ) (leaves : List.Vector α (2 ^ n)) :
     OracleComp (spec α) (Cache α n) := do
   match n with
@@ -105,11 +112,13 @@ def buildMerkleTree (α) (n : ℕ) (leaves : List.Vector α (2 ^ n)) :
     return Cache.cons α n leaves cache
 
 /-- Get the root of the Merkle tree -/
+@[simp, grind]
 def getRoot {n : ℕ} (cache : Cache α n) : α :=
   (cache 0).get ⟨0, by simp⟩
 
 /-- Figure out the indices of the Merkle tree nodes that are needed to
 recompute the root from the given leaf -/
+@[simp, grind]
 def findNeighbors {n : ℕ} (i : Fin (2 ^ n)) (layer : Fin n) :
     Fin (2 ^ (layer.val + 1)) :=
   -- `finFunctionFinEquiv.invFun` gives the little-endian order, e.g. `6 = 011 little`
@@ -123,16 +132,14 @@ def findNeighbors {n : ℕ} (i : Fin (2 ^ n)) (layer : Fin n) :
 
 end
 
-@[simp]
+@[simp, grind]
 theorem getRoot_trivial (a : α) : getRoot α <$> (buildMerkleTree α 0 ⟨[a], rfl⟩) = pure a := by
   simp [getRoot, buildMerkleTree, List.Vector.head]
 
-@[simp]
+@[simp, grind]
 theorem getRoot_single (a b : α) :
-    getRoot α <$> buildMerkleTree α 1 ⟨[a, b], rfl⟩ = (query (spec := spec α) () (a, b)) := by
+    getRoot α <$> buildMerkleTree α 1 ⟨[a, b], rfl⟩ = (query (spec := spec α) (a, b)) := by
   simp [buildMerkleTree, buildLayer, List.Vector.ofFn, List.Vector.get]
-  unfold Cache.cons getRoot
-  simp [Fin.snoc]
 
 section
 
@@ -140,6 +147,7 @@ variable [DecidableEq α] [Inhabited α] [Fintype α]
 
 /-- Generate a Merkle proof that a given leaf at index `i` is in the Merkle tree. The proof consists
   of the Merkle tree nodes that are needed to recompute the root from the given leaf. -/
+@[simp, grind]
 def generateProof {n : ℕ} (i : Fin (2 ^ n)) (cache : Cache α n) :
     List.Vector α n :=
   match n with
@@ -153,6 +161,7 @@ returns the hash that would be the root of the tree if the proof was valid.
 i.e. the hash obtained by combining the leaf in sequence with each member of the proof,
 according to its index.
 -/
+@[simp, grind]
 def getPutativeRoot {n : ℕ} (i : Fin (2 ^ n)) (leaf : α) (proof : List.Vector α n) :
     OracleComp (spec α) α := do
   match h : n with
@@ -166,131 +175,59 @@ def getPutativeRoot {n : ℕ} (i : Fin (2 ^ n)) (leaf : α) (proof : List.Vector
     let i' : Fin (2 ^ n) := ⟨i.val / 2, by omega⟩
     if signBit = 0 then
       -- `i` is a left child
-      let newLeaf ← query (spec := spec α) () ⟨leaf, proof.get (Fin.last n)⟩
+      let newLeaf ← query (spec := spec α) ⟨leaf, proof.get (Fin.last n)⟩
       getPutativeRoot i' newLeaf (proof.drop 1)
     else
       -- `i` is a right child
-      let newLeaf ← query (spec := spec α) () ⟨proof.get (Fin.last n), leaf⟩
+      let newLeaf ← query (spec := spec α) ⟨proof.get (Fin.last n), leaf⟩
       getPutativeRoot i' newLeaf (proof.drop 1)
 
 /-- Verify a Merkle proof `proof` that a given `leaf` at index `i` is in the Merkle tree with given
   `root`.
   Works by computing the putative root based on the branch, and comparing that to the actual root.
   Outputs `failure` if the proof is invalid. -/
+@[simp, grind]
 def verifyProof {n : ℕ} (i : Fin (2 ^ n)) (leaf : α) (root : α) (proof : List.Vector α n) :
-    OracleComp (spec α) Unit := do
+    OptionT (OracleComp (spec α)) Unit := do
   let putative_root ← getPutativeRoot α i leaf proof
   guard (putative_root = root)
 
-
-theorem buildLayer_neverFails (α : Type) [inst : DecidableEq α] [inst_1 : SelectableType α]
+@[simp, grind]
+theorem buildLayer_neverFails (α : Type) [inst : DecidableEq α]
+    [inst_1 : SampleableType α] [(spec α).DecidableEq]
     (preexisting_cache : (spec α).QueryCache) (n : ℕ)
-    (leaves : List.Vector α (2 ^ (n + 1))) :
-    ((simulateQ randomOracle (buildLayer α n leaves)).run preexisting_cache).neverFails := by
-  simp_rw [buildLayer]
-  simp only [range_def, Prod.mk.eta, eq_mp_eq_cast, cast_eq, bind_pure]
-  -- I now require a "neverFails_mmap_iff" lemma, but I don't see one in VCVio.
-  -- Feels like evidence for avoiding Vector-based merkle trees in favor of inductive-based ones.
-  sorry
+    (leaves : List.Vector α (2 ^ (n + 1))) : NeverFail
+      ((simulateQ (randomOracle (spec := spec α))
+        (buildLayer α n leaves)).run preexisting_cache) := by
+  grind
 
 /--
 Building a Merkle tree never results in failure
 (no matter what queries have already been made to the oracle before it runs).
 -/
-theorem buildMerkleTree_neverFails (α : Type) [DecidableEq α] [SelectableType α] {n : ℕ}
+@[simp, grind]
+theorem buildMerkleTree_neverFails (α : Type) [DecidableEq α]
+    [SampleableType α] {n : ℕ} [(spec α).DecidableEq]
     (leaves : List.Vector α (2 ^ n)) (preexisting_cache : (spec α).QueryCache) :
-    ((simulateQ randomOracle (buildMerkleTree α n leaves)).run preexisting_cache).neverFails := by
-  -- It feels like there should be some kind of tactic that inspects the structure of the
-  -- `buildMerkleTree` definition to see that it never even mentions failure,
-  -- and therefore can't fail.
-  induction n generalizing preexisting_cache with
-  | zero =>
-    simp [buildMerkleTree]
-  | succ n ih =>
-    simp [buildMerkleTree, neverFails_bind_iff]
-    constructor
-    · exact buildLayer_neverFails α preexisting_cache n leaves
-    · intro next_leaves next_cache h_mem_support
-      apply ih
+    NeverFail
+      ((simulateQ (randomOracle (spec := spec α))
+        (buildMerkleTree α n leaves)).run preexisting_cache) := by
+  grind
 
 /-- Completeness theorem for Merkle trees: for any full binary tree with `2 ^ n` leaves, and for any
   index `i`, the verifier accepts the opening proof at index `i` generated by the prover.
 -/
-theorem completeness [SelectableType α] {n : ℕ}
+@[simp]
+theorem completeness [SampleableType α] {n : ℕ} [(spec α).DecidableEq]
     (leaves : List.Vector α (2 ^ n)) (i : Fin (2 ^ n)) (hash : α × α -> α)
     (preexisting_cache : (spec α).QueryCache) :
-    (((do
-      let cache ← buildMerkleTree α n leaves
-      let proof := generateProof α i cache
-      let verif ← verifyProof α i leaves[i] (getRoot α cache) proof).simulateQ
-      (randomOracle)).run preexisting_cache).neverFails := by
-  simp [neverFails_bind_iff]
-  constructor
-  · -- buildMerkleTree never fails
-    exact buildMerkleTree_neverFails α leaves preexisting_cache
-  · -- verifyProof never fails on the output of generateProof after buildMerkleTree
-    intros merkle_tree_cache query_cache h_mem_support
-    -- Need a theorem to characterize
-    -- `((simulateQ randomOracle (buildMerkleTree α n leaves)).run preexisting_cache).support`
-    -- i.e.
-    --  - All merkle_tree_cache parent-child relationships are in the query_cache
-    --  - Everything in the preexisting_cache is in the query_cache
-    --  - Nothing else is in the query_cache
-    sorry
-
-
-
-
-
-
---   induction n with
---   | zero =>
---     simp [buildMerkleTree, getRoot, generateProof, verifyProof, getPutativeRoot]
---     have : i = 0 := by aesop
---     subst i
---     simp [Fin.instGetElemFinVal]
---   | succ n ih =>
---     -- simp_all [Fin.getElem_fin, Vector.getElem_eq_get, Fin.eta, getRoot, Fin.val_zero,
---     --   Nat.pow_zero, Fin.zero_eta, Vector.get_zero, bind_pure_comp,
--- id_map', probFailure_eq_zero_iff,
---     --   neverFails_bind_iff, buildMerkleTree, generateProof,
--- LawfulMonad.bind_assoc, bind_map_left,
---     --   Cache.upper_cons, Cache.leaves_cons]
---     -- refine ⟨?_, ?_⟩
---     -- ·
---     simp [buildLayer, simulateQ, simulateQ, implement_with_function]
---     sorry
-
---     -- · intro newLeaves h_newLeaves
---     --   let i' : Fin (2 ^ n) := i.val / 2
---     --   specialize ih newLeaves i'
---     --   rcases ih with ⟨ih', ih⟩
---     --   sorry
---       -- refine ⟨?_, ?_⟩
---       -- · exact ih'
---       -- · intro cache h_cache
---       --   specialize ih cache h_cache
---       --   unfold verifyProof
---       --   simp only [guard_eq, neverFails_bind_iff]
---       --   unfold verifyProof at ih
---       --   simp only [guard_eq, neverFails_bind_iff] at ih
---       --   rcases ih with ⟨ih_getroot, ih_cmp⟩
---       --   refine ⟨?_, ?_⟩
---       --   · -- I think this just needs a simple lemma about `getPutativeRoot`
---       --     sorry
---       --   · intro root h_root
---       --     specialize ih_cmp root
---       --     have : root ∈ (getPutativeRoot α i'
---       --                     (newLeaves.get i') (generateProof α i' cache)).support := by
-
---       --       sorry
---       --     specialize ih_cmp this
---       --     simp [apply_ite] at ih_cmp
---       --     rw [ih_cmp]
---       --     simp [apply_ite]
---       --     simp [Cache.cons]
---       --     sorry
-
+    NeverFail ((
+      simulateQ (randomOracle (spec := spec α)) (do
+        let cache ← buildMerkleTree α n leaves
+        let proof := generateProof α i cache
+        let verif ← verifyProof α i leaves[i] (getRoot α cache) proof)).run preexisting_cache :
+      ProbComp (Unit × (spec α).QueryCache)) := by
+  grind
 
 -- theorem soundness (i : Fin (2 ^ n)) (leaf : α) (proof : Vector α n) :
 --     verifyMerkleProof i leaf proof = pure true →
@@ -304,9 +241,9 @@ section Test
 -- Third neighbor (`j = 0`): 0 = 0 big
 -- Second neighbor (`j = 1`): 2 = 10 big
 -- First neighbor (`j = 2`): 7 = 111 big
-#eval findNeighbors (6 : Fin (2 ^ 3)) 0
-#eval findNeighbors (6 : Fin (2 ^ 3)) 1
-#eval findNeighbors (6 : Fin (2 ^ 3)) 2
+-- #eval findNeighbors (6 : Fin (2 ^ 3)) 0
+-- #eval findNeighbors (6 : Fin (2 ^ 3)) 1
+-- #eval findNeighbors (6 : Fin (2 ^ 3)) 2
 
 
 end Test

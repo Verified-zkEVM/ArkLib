@@ -5,7 +5,7 @@ Authors: Katerina Hristova, František Silváši, Julian Sutherland, Chung Thai 
 -/
 
 import Mathlib.Algebra.Lie.OfAssociative
-import Mathlib.Data.Matrix.Rank
+import Mathlib.LinearAlgebra.Matrix.Rank
 import Mathlib.LinearAlgebra.AffineSpace.Pointwise
 
 section TensorCombination
@@ -311,7 +311,6 @@ instance [Nonempty F] {k : ℕ} :
 open Finset
 instance {k : ℕ} {u : Fin k → ι → A} : Nonempty {x // x ∈ polynomialCurveFinite (F := F) u} := by
   simp [polynomialCurveFinite]
-  use ∑ i : Fin k, Classical.arbitrary F ^ (i : ℕ) • u i, Classical.arbitrary F
 
 end
 end Curve

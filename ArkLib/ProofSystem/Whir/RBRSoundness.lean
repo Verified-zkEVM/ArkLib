@@ -166,7 +166,7 @@ def whirRelation
 
 /-- Theorem 5.2: **Round-by-round soundness of the WHIR Vector IOPP** -/
 theorem whir_rbr_soundness
-    [SelectableType F] {d dstar : ℕ}
+    [SampleableType F] {d dstar : ℕ}
   -- P : set of M + 1 parameters including foldingParamᵢ, varCountᵢ, φᵢ, repeatParamᵢ,
   -- where foldingParamᵢ > 0
     {P : Params ι F} {S : ∀ i : Fin (M + 1), Finset (ι i)}

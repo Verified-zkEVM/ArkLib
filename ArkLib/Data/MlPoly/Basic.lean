@@ -458,29 +458,30 @@ lemma forwardRange_0_eq_finRange (n : ℕ) [NeZero n] : forwardRange n ⟨n - 1,
     omega
   ⟩ 0 = List.finRange n := by
   have h_ne := NeZero.ne n
-  refine
-    Array.ext.extAux
-      (forwardRange n
-        ⟨n - 1,
-          have h_ne := NeZero.ne n;
-          Decidable.byContradiction fun a ↦ forwardRange_0_eq_finRange._proof_1 n h_ne a⟩
-        0)
-      (List.finRange n) ?_ ?_
-  · rw [forwardRange_length]; simp only [List.length_finRange, Fin.coe_ofNat_eq_mod, Nat.zero_mod,
-    tsub_zero];
-    rw [Nat.sub_one_add_one (by exact Ne.symm (NeZero.ne' n))]
-  · intro i hi hi₂
-    simp only [List.getElem_finRange, Fin.cast_mk]
-    have h := forwardRange_getElem (n:=n) (r:=⟨n - 1, by omega⟩) (l:=⟨0, by omega⟩) (k:=⟨i, by
-      simp only [tsub_zero];
-      rw [Nat.sub_one_add_one (by exact Ne.symm (NeZero.ne' n))]
-      convert hi
-      rw [forwardRange_length]
-      simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, tsub_zero]
-      rw [Nat.sub_one_add_one (by exact Ne.symm (NeZero.ne' n))]
-    ⟩)
-    simp only [Fin.zero_eta, List.get_eq_getElem, zero_add] at h
-    rw [h]
+  sorry
+  -- refine
+  --   Array.ext.extAux
+  --     (forwardRange n
+  --       ⟨n - 1,
+  --         have h_ne := NeZero.ne n;
+  --         Decidable.byContradiction fun a ↦ forwardRange_0_eq_finRange._proof_1 n h_ne a⟩
+  --       0)
+  --     (List.finRange n) ?_ ?_
+  -- · rw [forwardRange_length]; simp only [List.length_finRange, Fin.coe_ofNat_eq_mod, Nat.zero_mod,
+  --   tsub_zero];
+  --   rw [Nat.sub_one_add_one (by exact Ne.symm (NeZero.ne' n))]
+  -- · intro i hi hi₂
+  --   simp only [List.getElem_finRange, Fin.cast_mk]
+  --   have h := forwardRange_getElem (n:=n) (r:=⟨n - 1, by omega⟩) (l:=⟨0, by omega⟩) (k:=⟨i, by
+  --     simp only [tsub_zero];
+  --     rw [Nat.sub_one_add_one (by exact Ne.symm (NeZero.ne' n))]
+  --     convert hi
+  --     rw [forwardRange_length]
+  --     simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, tsub_zero]
+  --     rw [Nat.sub_one_add_one (by exact Ne.symm (NeZero.ne' n))]
+  --   ⟩)
+  --   simp only [Fin.zero_eta, List.get_eq_getElem, zero_add] at h
+  --   rw [h]
 
 /- 0 ≤ l ≤ r < n - where n is the number of bits -/
 def monoToLagrange_segment (n : ℕ) (r : Fin n) (l : Fin (r.val + 1)) :

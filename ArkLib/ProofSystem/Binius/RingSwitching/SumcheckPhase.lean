@@ -48,7 +48,7 @@ noncomputable section
 
 variable (κ : ℕ) [NeZero κ]
 variable (L : Type) [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
-  [SelectableType L]
+  [SampleableType L]
 variable (K : Type) [Field K] [Fintype K] [DecidableEq K]
 variable [Algebra K L]
 variable (β : Basis (Fin κ → Fin 2) K L)
@@ -150,7 +150,7 @@ noncomputable def iteratedSumcheckOracleVerifier (i : Fin ℓ') :
   verify := fun stmtIn pSpecChallenges => do
     -- Message 0 : Receive h_i(X) from prover
     let h_i : L⦃≤ 2⦄[X] ← query (spec := [(pSpecSumcheckRound L).Message]ₒ)
-      ⟨0, rfl⟩ ()
+      ⟨⟨0, rfl⟩, ()⟩
 
     -- Check sumcheck : s_i ?= h_i(0) + h_i(1)
     let sumcheck_check := h_i.val.eval 0 + h_i.val.eval 1 = stmtIn.sumcheck_target
@@ -190,12 +190,12 @@ noncomputable def iteratedSumcheckOracleReduction (i : Fin ℓ') :
   prover := iteratedSumcheckOracleProver κ L K ℓ ℓ' (𝓑 := 𝓑) aOStmtIn i
   verifier := iteratedSumcheckOracleVerifier κ L K ℓ ℓ' aOStmtIn i
 
-variable {R : Type} [CommSemiring R] [DecidableEq R] [SelectableType R]
+variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
   {n : ℕ} {deg : ℕ} {m : ℕ} {D : Fin m ↪ R}
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
-theorem iteratedSumcheckOracleReduction_perfectCompleteness (hInit : init.neverFails) (i : Fin ℓ') :
+theorem iteratedSumcheckOracleReduction_perfectCompleteness (i : Fin ℓ') :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecSumcheckRound L)
       (relIn := sumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) aOStmtIn i.castSucc)
@@ -383,7 +383,7 @@ noncomputable def finalSumcheckVerifier :
     (pSpec := pSpecFinalSumcheck L) where
   verify := fun stmtIn _ => do
     -- Get the final constant `c` from the prover's message
-    let s' : L ← query (spec := [(pSpecFinalSumcheck L).Message]ₒ) ⟨0, rfl⟩ ()
+    let s' : L ← query (spec := [(pSpecFinalSumcheck L).Message]ₒ) ⟨⟨0, rfl⟩, ()⟩
 
     -- 8. `V` sets `e := eq̃(φ₀(r_κ), ..., φ₀(r_{ℓ-1}), φ₁(r'_0), ..., φ₁(r'_{ℓ'-1}))` and
     --     decomposes `e =: Σ_{u ∈ {0,1}^κ} β_u ⊗ e_u`.
@@ -428,8 +428,7 @@ noncomputable def finalSumcheckOracleReduction :
 /-- Perfect completeness for the final sumcheck step -/
 theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
   (init : ProbComp σ)
-  (impl : QueryImpl []ₒ (StateT σ ProbComp))
-  (hInit : init.neverFails) :
+  (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
   OracleReduction.perfectCompleteness
     (pSpec := pSpecFinalSumcheck L)
     (relIn := sumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑:=𝓑) aOStmtIn (Fin.last ℓ'))
@@ -581,7 +580,7 @@ def coreInteractionOracleReduction :=
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
 /-- Perfect completeness for large-field reduction (Sumcheck ++ FinalSum) -/
-theorem coreInteraction_perfectCompleteness (hInit : init.neverFails) :
+theorem coreInteraction_perfectCompleteness :
   OracleReduction.perfectCompleteness
     (oracleReduction := coreInteractionOracleReduction κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) aOStmtIn)
     (StmtIn := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) 0)
@@ -596,16 +595,16 @@ theorem coreInteraction_perfectCompleteness (hInit : init.neverFails) :
     (impl := impl) := by
   -- Follows from append_perfectCompleteness of interactionPhase and finalSumcheck
   apply OracleReduction.append_perfectCompleteness
-  · apply OracleReduction.seqCompose_perfectCompleteness (hInit:=hInit)
+  · apply OracleReduction.seqCompose_perfectCompleteness
       (rel := fun i => sumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑:=𝓑) aOStmtIn i)
       (R := fun i => iteratedSumcheckOracleReduction κ L K ℓ ℓ' (𝓑 := 𝓑) aOStmtIn i)
       (h := fun i =>
         iteratedSumcheckOracleReduction_perfectCompleteness (κ:=κ) (L:=L) (K:=K)
           (β:=β) (ℓ:=ℓ) (ℓ':=ℓ') (h_l:=h_l) (𝓑:=𝓑) (aOStmtIn:=aOStmtIn)
-          (init:=init) (impl:=impl) (hInit:=hInit) i
+          (init:=init) (impl:=impl) i
       )
   · exact finalSumcheckOracleReduction_perfectCompleteness (κ:=κ) (L:=L) (K:=K)
-      (β:=β) (ℓ:=ℓ) (ℓ':=ℓ') (h_l:=h_l) (aOStmtIn:=aOStmtIn) (init:=init) (impl:=impl) hInit
+      (β:=β) (ℓ:=ℓ) (ℓ':=ℓ') (h_l:=h_l) (aOStmtIn:=aOStmtIn) (init:=init) (impl:=impl)
 
 /-- standard sumcheck error -/
 def coreInteractionRbrKnowledgeError (_ : (pSpecCoreInteraction L ℓ').ChallengeIdx) : ℝ≥0 :=

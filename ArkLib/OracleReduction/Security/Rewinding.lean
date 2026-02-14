@@ -19,7 +19,7 @@ open scoped NNReal
 
 variable {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
-  [∀ i, SelectableType (pSpec.Challenge i)]
+  [∀ i, SampleableType (pSpec.Challenge i)]
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
 namespace Extractor
@@ -30,8 +30,8 @@ section Rewinding
 
 /-- The oracle interface to call the prover as a black box -/
 def OracleSpec.proverOracle (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
-    OracleSpec pSpec.MessageIdx :=
-  fun i => (StmtIn × pSpec.Transcript i.val.castSucc, pSpec.Message i)
+    OracleSpec ((i : pSpec.MessageIdx) × StmtIn × pSpec.Transcript i.val.castSucc) :=
+  fun q => pSpec.Message q.1
 
 -- def SimOracle.proverImpl (P : Prover pSpec oSpec StmtIn WitIn StmtOut WitOut) :
 --     SimOracle.Stateless (OracleSpec.proverOracle pSpec StmtIn) oSpec := sorry
@@ -41,9 +41,9 @@ structure Rewinding (oSpec : OracleSpec ι)
   /-- The state of the extractor -/
   ExtState : Type
   /-- Simulate challenge queries for the prover -/
-  simChallenge : SimOracle.Stateful [pSpec.Challenge]ₒ [pSpec.Challenge]ₒ ExtState
+  simChallenge : QueryImpl [pSpec.Challenge]ₒ (StateT ExtState (OracleComp [pSpec.Challenge]ₒ))
   /-- Simulate oracle queries for the prover -/
-  simOracle : SimOracle.Stateful oSpec oSpec ExtState
+  simOracle : QueryImpl oSpec (StateT ExtState (OracleComp oSpec))
   /-- Run the extractor with the prover's oracle interface, allowing for calling the prover multiple
     times -/
   runExt : StmtOut → WitOut → StmtIn →

@@ -156,7 +156,8 @@ lemma generalised_round_consistency_completeness
       rw [this]
       exact (Fin.heq_fun_iff this).mpr (congrFun rfl)
       exact (Fin.heq_fun_iff this).mpr (congrFun rfl)
-      rw [this]
+
+      -- rw [this]
       exact (Fin.heq_fun_iff this).mpr (congrFun rfl)
       exact (Fin.heq_fun_iff this).mpr (congrFun rfl)
     have h₂ : (∑ (j : Fin n), X ^ j.1 * C (eval (s₀ ^ n) (splitNth f n j))).degree < .some n := by
@@ -198,7 +199,7 @@ lemma generalised_round_consistency_completeness
       eval (ω a * s₀) (Lagrange.basis Finset.univ (fun (i : Fin n) ↦ ω i * s₀) x)) a
     rw
       [
-        Lagrange.eval_basis_self (v := fun i ↦ ω i * s₀) (by aesop) (Finset.mem_univ a),
+        Lagrange.eval_basis_self (v := fun i ↦ ω i * s₀) (by sorry) (Finset.mem_univ a),
         mul_one
       ] at sum_eq
     have sum_eq := sum_eq

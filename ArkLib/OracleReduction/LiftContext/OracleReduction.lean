@@ -96,7 +96,7 @@ end Execution
 
 section Security
 
-variable [∀ i, SelectableType (pSpec.Challenge i)]
+variable [∀ i, SampleableType (pSpec.Challenge i)]
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   {outerRelIn : Set ((OuterStmtIn × (∀ i, OuterOStmtIn i)) × OuterWitIn)}
   {outerRelOut : Set ((OuterStmtOut × (∀ i, OuterOStmtOut i)) × OuterWitOut)}

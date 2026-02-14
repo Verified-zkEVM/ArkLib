@@ -107,9 +107,10 @@ theorem cast_idx {i : MessageIdx pSpec₁} :
     pSpec₂.Message (i.cast hn hSpec) = pSpec₁.Message i :=
   cast_Type_idx hSpec
 
-instance [inst : ∀ i, OracleInterface (pSpec₁.Message i)] :
-    ∀ i, OracleInterface ((pSpec₁.cast hn).Message i) :=
-  fun i => inst (dcast₂ hn.symm (by rw [dcast_symm hn]; rfl) i)
+-- instance {Q : pSpec₁.MessageIdx → Type _}
+--     [inst : ∀ i : pSpec₁.MessageIdx, OracleInterface (Q i) (pSpec₁.Message i)] :
+--     ∀ i : (pSpec₁.cast hn).MessageIdx, OracleInterface (Q sorry) ((pSpec₁.cast hn).Message i) :=
+--   fun i => inst (dcast₂ hn.symm (by rw [dcast_symm hn]; rfl) i)
 
 end Message
 

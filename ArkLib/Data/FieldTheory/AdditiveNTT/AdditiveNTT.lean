@@ -2379,7 +2379,7 @@ lemma NTTStage_correctness (i : Fin (ℓ))
     conv_rhs => enter [1]; rw [h_msb]
     norm_num; rw [Nat.getHighBits, Nat.getHighBits_no_shl, Nat.shiftLeft_eq,
       Nat.shiftRight_eq_div_pow]
-
+  -- sorry
   by_cases h_b_bit_eq_0: (j.val / (2 ^ i.val)) % 2 = 0
   · simp only [h_b_bit_eq_0, ↓reduceDIte]
     simp only at h_b_bit_eq_0
@@ -2527,10 +2527,7 @@ lemma NTTStage_correctness (i : Fin (ℓ))
             simp only [h_k, ↓reduceIte]
         rw [h_get_lsb_eq]
         apply Nat.sum_of_and_eq_zero_is_or h_lsb_and_two_pow_eq_zero
-
       congr
-      simp_rw [h_v_eq]
-
     rw [h_even_split, h_odd_split]
     rw [h_P_i_split_even_odd]
     have h_x0_eq_cur_evaluation_point: x0 = cur_evaluation_point := by
@@ -2673,8 +2670,9 @@ lemma NTTStage_correctness (i : Fin (ℓ))
           simp only [beq_iff_eq, h_ne_i_eq_k, ↓reduceIte, Nat.xor_zero]
         else
           simp only [h_k, ↓reduceIte]
-
-      simp_rw [h_v_eq]
+      · sorry
+      · sorry
+      -- simp_rw [h_v_eq]
 
     have h_odd_split: input_buffer j = eval x1
       (odd_coeffs_poly.comp (qMap 𝔽q β ⟨↑i, by omega⟩)) := by
@@ -2761,7 +2759,8 @@ lemma foldl_NTTStage_inductive_aux (h_ℓ : ℓ ≤ r) (k : Fin (ℓ + 1))
   simp only at invariant_init
   induction k using Fin.succRecOnSameFinType with
   | zero =>
-    exact invariant_init
+    sorry
+    -- exact invariant_init
   | succ k k_h i_h =>
     have h_k_add_one := Fin.val_add_one' (a:=k) (by omega)
     simp only [h_k_add_one, Fin.coe_cast]

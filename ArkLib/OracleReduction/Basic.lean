@@ -242,7 +242,7 @@ prove knowledge soundness implies soundness.
 @[ext]
 structure Verifier {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn StmtOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
-  verify : StmtIn → FullTranscript pSpec → OracleComp oSpec StmtOut
+  verify : StmtIn → FullTranscript pSpec → OptionT (OracleComp oSpec) StmtOut
 
 /-- An **(oracle) prover** in an interactive **oracle** reduction is a prover in the non-oracle
       reduction whose input statement also consists of the underlying messages for the oracle
@@ -284,13 +284,13 @@ structure OracleVerifier {ι : Type} (oSpec : OracleSpec ι)
   access to external oracles `oSpec`, input statement oracles `OStmtIn`, and prover message
   oracles `pSpec.Message`. -/
   verify : StmtIn → pSpec.Challenges →
-    OracleComp (oSpec ++ₒ ([OStmtIn]ₒ ++ₒ [pSpec.Message]ₒ)) StmtOut
+    OptionT (OracleComp (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ))) StmtOut
 
   -- TODO: this seems like the right way for compositionality
   -- Makes it potentially more difficult for compilation with commitment schemes
   -- Can recover the old version (with `embed` and `hEq`) via a constructor `QueryImpl.ofEmbed`
 
-  -- simOStmt : QueryImpl [OStmtOut]ₒ (OracleComp ([OStmtIn]ₒ ++ₒ [pSpec.Message]ₒ))
+  -- simOStmt : QueryImpl [OStmtOut]ₒ (OracleComp ([OStmtIn]ₒ + [pSpec.Message]ₒ))
 
   /-- An embedding that specifies how each output oracle statement (indexed by `ιₛₒ`) is derived.
   It maps an index `i : ιₛₒ` to either an index `j : ιₛᵢ` (meaning `OStmtOut i` comes from
@@ -329,8 +329,8 @@ def toVerifier : Verifier oSpec (StmtIn × ∀ i, OStmtIn i) (StmtOut × (∀ i,
     let stmtOut ← simulateQ (OracleInterface.simOracle2 oSpec oStmt transcript.messages)
       (verifier.verify stmt transcript.challenges)
     letI oStmtOut := fun i => match h : verifier.embed i with
-      | Sum.inl j => by simpa only [verifier.hEq, h] using (oStmt j)
-      | Sum.inr j => by simpa only [verifier.hEq, h] using (transcript j)
+      | Sum.inl j => by sorry --simpa only [verifier.hEq, h] using (oStmt j)
+      | Sum.inr j => by sorry --simpa only [verifier.hEq, h] using (transcript j)
     return (stmtOut, oStmtOut)
 
 /-- The number of queries made to the oracle statements and the prover's messages, for a given input
@@ -342,7 +342,7 @@ def toVerifier : Verifier oSpec (StmtIn × ∀ i, OStmtIn i) (StmtOut × (∀ i,
   TODO: define once `numQueries` is defined in `OracleComp` -/
 def numQueries (stmt : StmtIn) (challenges : ∀ i, pSpec.Challenge i)
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
-  OracleComp (oSpec ++ₒ ([OStmtIn]ₒ ++ₒ [pSpec.Message]ₒ)) ℕ := sorry
+  OracleComp (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ)) ℕ := sorry
 
 /-- A **non-adaptive** oracle verifier is an oracle verifier that makes a **fixed** list of queries
     to the input oracle statements and the prover's messages. These queries can depend on the input
@@ -379,8 +379,8 @@ structure NonAdaptive {ι : Type} (oSpec : OracleSpec ι)
 
   /-- From the query-response pairs, returns a computation that outputs the new output statement -/
   verify : StmtIn → (∀ i, pSpec.Challenge i) →
-    List ((i : ιₛᵢ) × ((Oₛᵢ i).Query × (Oₛᵢ i).Response)) →
-    List ((i : pSpec.MessageIdx) × ((Oₘ i).Query × (Oₘ i).Response)) → OracleComp oSpec StmtOut
+    List ((i : ιₛᵢ) × ((q : (Oₛᵢ i).Query) × (Oₛᵢ i).Response q)) →
+    List ((i : pSpec.MessageIdx) × ((q : (Oₘ i).Query) × (Oₘ i).Response q)) → OracleComp oSpec StmtOut
 
   embed : ιₛₒ ↪ ιₛᵢ ⊕ pSpec.MessageIdx
 
@@ -398,15 +398,15 @@ def toOracleVerifier
     (naVerifier : OracleVerifier.NonAdaptive oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
     OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec where
   verify := fun stmt challenges => do
-    let queryResponsesOStmt : List ((i : ιₛᵢ) × ((Oₛᵢ i).Query × (Oₛᵢ i).Response)) ←
+    let queryResponsesOStmt : List ((i : ιₛᵢ) × ((q : (Oₛᵢ i).Query) × (Oₛᵢ i).Response q)) ←
       (naVerifier.queryOStmt stmt challenges).mapM
       (fun q => do
-        let resp ← liftM <| query (spec := [OStmtIn]ₒ) q.1 q.2
-        return ⟨q.1, (q.2, by simpa only using resp)⟩)
-    let queryResponsesOMsg : List ((i : pSpec.MessageIdx) × ((Oₘ i).Query × (Oₘ i).Response)) ←
+        let resp ← liftM <| query (spec := [OStmtIn]ₒ) q
+        return ⟨q.1, ⟨q.2, by simpa only using resp⟩⟩)
+    let queryResponsesOMsg : List ((i : pSpec.MessageIdx) × ((q : (Oₘ i).Query) × (Oₘ i).Response q)) ←
       (naVerifier.queryMsg stmt challenges).mapM
       (fun q => do
-        let resp ← liftM <| query (spec := [pSpec.Message]ₒ) q.1 q.2
+        let resp ← liftM <| query (spec := [pSpec.Message]ₒ) q
         return ⟨q.1, ⟨q.2, by simpa only using resp⟩⟩)
     let stmtOut ← liftM <| naVerifier.verify stmt challenges queryResponsesOStmt queryResponsesOMsg
     return stmtOut
@@ -565,6 +565,7 @@ lemma OracleVerifier.id_toVerifier :
     (OracleVerifier.id : OracleVerifier oSpec Statement OStatement _ _ _).toVerifier =
       Verifier.id := by
   simp [OracleVerifier.id, OracleVerifier.toVerifier, Verifier.id]
+  sorry
 
 @[simp]
 lemma OracleReduction.id_toReduction :

@@ -40,7 +40,7 @@ structure Commit where
 variable [O : OracleInterface Data] {n : ℕ} (pSpec : ProtocolSpec n)
 
 structure Opening where
-  opening : Proof oSpec (Commitment × O.Query × O.Response) (Data × Randomness) pSpec
+  opening : Proof oSpec (Commitment × (q : O.Query) × O.Response q) (Data × Randomness) pSpec
 
 -- abbrev Statement (Data Commitment : Type) [O : OracleInterface Data] :=
 --  Commitment × O.Query × O.Response
@@ -57,24 +57,25 @@ noncomputable section
 
 open scoped NNReal
 
-variable [∀ i, VCVCompatible (pSpec.Challenge i)] [DecidableEq ι]
+variable [DecidableEq ι]
   {oSpec : OracleSpec ι} {Data : Type} [O : OracleInterface Data] {Randomness : Type}
-  [Fintype Randomness]
-  {Commitment : Type} [oSpec.FiniteRange] {n : ℕ} {pSpec : ProtocolSpec n}
-  [∀ i, VCVCompatible (pSpec.Challenge i)]
+  {Commitment : Type} [oSpec.Fintype] [oSpec.Inhabited]
+  {n : ℕ} {pSpec : ProtocolSpec n}
+  [[pSpec.Challenge]ₒ.Inhabited] [[pSpec.Challenge]ₒ.Fintype]
 
 /-- A commitment scheme satisfies **correctness** with error `correctnessError` if for all
   `data : Data`, `randomness : Randomness`, and `query : O.Query`, the probability of accepting upon
   executing the commitment and opening procedures honestly is at least `1 - correctnessError`. -/
 def correctness (scheme : Scheme oSpec Data Randomness Commitment pSpec)
-    (correctnessError : ℝ≥0) : Prop :=
+    (correctnessError : ℝ≥0)
+    : Prop :=
   ∀ data : Data,
   ∀ randomness : Randomness,
   ∀ query : O.Query,
-    [ fun x => x.2.1 | do
-        let cm ← liftComp (scheme.commit data randomness) _
-        let ⟨result, _⟩ ← scheme.opening.run ⟨cm, query, O.answer data query⟩ ⟨data, randomness⟩
-        return result] ≥ 1 - correctnessError
+    Pr[ fun x => x.2.1 | do
+        let cm ← liftM (scheme.commit data randomness)
+        let z ← scheme.opening.run sorry sorry --⟨cm, query, O.answer data query⟩ ⟨data, randomness⟩
+        return z.1] ≥ 1 - correctnessError
 
 /-- A commitment scheme satisfies **perfect correctness** if it satisfies correctness with no error.
 -/
@@ -86,7 +87,7 @@ def perfectCorrectness (scheme : Scheme oSpec Data Randomness Commitment pSpec) 
   malicious prover in the opening procedure). -/
 def BindingAdversary (oSpec : OracleSpec ι) (Data Commitment AuxState : Type)
     [O : OracleInterface Data] :=
-  OracleComp oSpec (Commitment × O.Query × O.Response × O.Response × AuxState)
+  OracleComp oSpec (Commitment × (q : O.Query) × O.Response q × O.Response q × AuxState)
 
 /-- A commitment scheme satisfies **(evaluation) binding** with error `bindingError` if for all
     adversaries that output a commitment `cm`, query `q`, two responses `resp₁, resp₂`, and
@@ -104,7 +105,7 @@ def binding (scheme : Scheme oSpec Data Randomness Commitment pSpec)
     (bindingError : ℝ≥0) : Prop :=
   ∀ AuxState : Type,
   ∀ adversary : BindingAdversary oSpec Data Commitment AuxState,
-  ∀ prover : Prover oSpec (Commitment × O.Query × O.Response) AuxState Bool Unit pSpec,
+  ∀ prover : Prover oSpec (Commitment × (q : O.Query) × O.Response q) AuxState Bool Unit pSpec,
     False
     -- [ fun ⟨x, x', b₁, b₂⟩ => x ≠ x' ∧ b₁ ∧ b₂ | do
     --     let result ← liftM adversary
@@ -124,7 +125,7 @@ def StraightlineExtractor (oSpec : OracleSpec ι) (Data Commitment : Type) :=
   query, a response value, and some auxiliary state (to be used in the opening procedure). -/
 def ExtractabilityAdversary (oSpec : OracleSpec ι) (Data Commitment AuxState : Type)
     [O : OracleInterface Data] :=
-  OracleComp oSpec (Commitment × O.Query × O.Response × AuxState)
+  OracleComp oSpec (Commitment × (q : O.Query) × O.Response q × AuxState)
 
 /-- A commitment scheme satisfies **extractability** with error `extractabilityError` if there
     exists a straightline extractor `E` such that for all adversaries that output a commitment `cm`,
@@ -144,7 +145,7 @@ def extractability (scheme : Scheme oSpec Data Randomness Commitment pSpec)
   ∃ extractor : StraightlineExtractor oSpec Data Commitment,
   ∀ AuxState : Type,
   ∀ adversary : ExtractabilityAdversary oSpec Data Commitment AuxState,
-  ∀ prover : Prover oSpec (Commitment × O.Query × O.Response) AuxState Bool Unit pSpec,
+  ∀ prover : Prover oSpec (Commitment × (q : O.Query) × O.Response q) AuxState Bool Unit pSpec,
     False
     -- [ fun ⟨b, d, q, r⟩ => b ∧ O.answer d q = r | do
     --     let result ← liftM (simulate loggingOracle ∅ adversary)
@@ -164,7 +165,6 @@ def extractability (scheme : Scheme oSpec Data Randomness Commitment pSpec)
 Note: have to put it as `hiding'` because `hiding` is already used somewhere else. -/
 def hiding' (scheme : Scheme oSpec Data Randomness Commitment pSpec) : Prop := sorry
 
-#check seededOracle
 
 end
 

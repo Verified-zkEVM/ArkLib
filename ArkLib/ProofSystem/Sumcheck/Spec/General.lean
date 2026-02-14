@@ -142,7 +142,7 @@ def StmtIn := R
 -- def relOut : (StmtOut R n) × (∀ i, OStmtOut R d n i) → WitOut → Prop :=
 --   fun ⟨⟨target, challenges⟩, polyOracle⟩ _ => (polyOracle ()).1 ⸨challenges⸩ = target
 
-variable [DecidableEq R] [SelectableType R]
+variable [DecidableEq R] [SampleableType R]
 
 /-- The verifier for the (full) sum-check protocol -/
 @[reducible]
@@ -188,13 +188,13 @@ def oracleReduction : OracleReduction oSpec
     (pSpec := fun _ => SingleRound.pSpec R deg)
     (SingleRound.oracleReduction R n deg D oSpec)
 
-omit [SelectableType R] in
+omit [SampleableType R] in
 @[simp]
 lemma reduction_verifier_eq_verifier :
     (reduction R deg D n oSpec).verifier = verifier R deg D n oSpec := by
   rfl
 
-omit [SelectableType R] in
+omit [SampleableType R] in
 @[simp]
 lemma oracleReduction_verifier_eq_oracleVerifier :
     (oracleReduction R deg D n oSpec).verifier = oracleVerifier R deg D n oSpec := by
@@ -205,13 +205,13 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ Pro
 open NNReal
 
 /-- Perfect completeness for the (full) sum-check protocol -/
-theorem reduction_perfectCompleteness (hInit : init.neverFails) :
+theorem reduction_perfectCompleteness :
     (reduction R deg D n oSpec).perfectCompleteness init impl
       (relationRound R n deg D 0) (relationRound R n deg D (.last n)) :=
-  Reduction.seqCompose_perfectCompleteness hInit
+  Reduction.seqCompose_perfectCompleteness
     (rel := relationRound R n deg D)
     (R := SingleRound.reduction R n deg D oSpec)
-    (h := fun i => SingleRound.reduction_perfectCompleteness i hInit)
+    (h := fun i => SingleRound.reduction_perfectCompleteness i)
 
 /-- Round-by-round knowledge soundness with error `deg / |R|` per challenge for the (full)
   sum-check protocol -/

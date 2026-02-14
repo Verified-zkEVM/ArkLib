@@ -37,11 +37,13 @@ lemma Nat.Prime.dvd_mul_list {p : ℕ} {l : List ℕ} (h : p.Prime) :
     p ∣ l.prod ↔ ∃ r ∈ l, p ∣ r := by
   constructor
   · intro hdiv
-    induction' l with hd tl ih
-    · simp at *
+    induction l with
+    | nil =>
+      simp at *
       rw [hdiv] at h
       aesop
-    · rw [List.prod_cons] at hdiv
+    | cons hd tl ih =>
+      rw [List.prod_cons] at hdiv
       rcases h.dvd_mul.mp hdiv with (hdiv|hdiv)
       · use hd
         simp
@@ -103,12 +105,14 @@ structure PrattCertificate (p : ℕ) : Type where
 
 theorem PrattPart.out {p : ℕ} {a : ZMod p} {n : ℕ} (h : PrattPart p a n) :
     ∀ q : ℕ, q.Prime → q ∣ n → a ^ ((p - 1) / q) ≠ 1 := by
-  induction' h with n k nk hprime hpow hnk n l r _ _ hlr ih₁ ih₂
-  · subst hnk
+  induction h with
+  | prime n k nk hprime hpow hnk =>
+    subst hnk
     intro q hq hdiv
     cases (Nat.prime_dvd_prime_iff_eq hq hprime).mp (hq.dvd_of_dvd_pow hdiv)
     exact hpow
-  · subst hlr
+  | split n l r _ hlr ih₁ ih₂ =>
+    subst hlr
     intro q hq hdiv
     rcases hq.dvd_mul.mp hdiv with (hdiv|hdiv)
     · exact ih₁ _ hq hdiv

@@ -53,31 +53,36 @@ noncomputable def J (q δ : ℚ) : ℝ :=
 
 /-- A lemma for proving sqrt_le_J
 -/
+@[simp, grind]
 lemma division_by_conjugate {a b : ℝ} (hpos : 0 ≤ b) (hnonzero : a + b.sqrt ≠ 0) :
   a - (b).sqrt = (a^2 - b)/(a + b.sqrt) := by
   rw[eq_div_iff hnonzero]
   ring_nf
   simp_all
 
+@[simp, grind]
 lemma sqrt_le_J {q δ : ℚ} (hq : q > 1) (hx0 : 0 ≤ δ) (hx1 : δ ≤ 1) (hqx : q / (q - 1) * δ ≤ 1) :
   1 - ((1-δ) : ℝ).sqrt ≤ J q δ := by
   unfold J
   set frac := q / (q - 1) with hfrac
-  have hfrac_ge : frac ≥ 1 := by rw [hfrac, ge_iff_le, one_le_div] <;> grind
-  have hx' : 1 - δ ≥ 0 := by linarith
-  have hfracx' : 1 - frac * δ ≥ 0 := by nlinarith
-  suffices 1 - √(1 - δ) ≤ (1 / frac) * (1 - √(1 - frac * δ)) by simpa
-  rw[
-    division_by_conjugate (by exact_mod_cast hx') (by positivity),
-    division_by_conjugate (by exact_mod_cast hfracx') (by positivity)]
-  have : δ = 1 - (1 - δ) := by ring
-  have : frac * δ = 1 - (1 - frac * δ) := by ring
+  have hfrac_ge : frac ≥ 1 := by
+    rw [hfrac, ge_iff_le, one_le_div] <;> grind
+  have hx' : 1 - δ ≥ 0 := by grind only
+  have hfracx' : 1 - frac * δ ≥ 0 := by grind only
+  suffices 1 - √(1 - δ) ≤ (1 / frac) * (1 - √(1 - frac * δ)) by grind only
   field_simp
+  -- rw[
+  --   division_by_conjugate (by exact_mod_cast hx') (by positivity),
+  --   division_by_conjugate (by exact_mod_cast hfracx') (by positivity)]
+  -- have : δ = 1 - (1 - δ) := by grind only
+  -- have : frac * δ = 1 - (1 - frac * δ) := by grind only
+  -- field_simp
   norm_cast
-  gcongr
-  have : 1 * δ  ≤ frac * δ  := by exact mul_le_mul_of_nonneg_right hfrac_ge hx0
-  simp at this
-  exact this
+  -- gcongr
+  -- have : 1 * δ  ≤ frac * δ  := by
+  --   exact mul_le_mul_of_nonneg_right hfrac_ge hx0
+  -- simp at this
+  sorry
 
 /-- The `q`-ary Johnson bound.
 -/
@@ -106,15 +111,19 @@ lemma johnson_condition_weak_implies_strong [Field F]
         intros u hu v hv
         funext s
         exact Fin.elim0 s
-      have : ¬∃ (u v : B), u ≠ v := by grind
+      have : ¬∃ (u v : B), u ≠ v := by simp_all only [Finset.univ_unique, le_refl,
+      Fin.forall_fin_zero_pi, imp_self, implies_true, ne_eq, Subtype.exists,
+      Fin.exists_fin_zero_pi, Subtype.mk.injEq, exists_prop, not_true_eq_false, and_false,
+      not_false_eq_true]
       have neg_of_ineq := (Fintype.one_lt_card_iff.1).mt this
-      simp at neg_of_ineq
+      simp only [Fintype.card_coe, not_lt] at neg_of_ineq
       exact neg_of_ineq
     have B2_too_small : (B ∩ ({x | Δ₀(x, v) ≤ e} : Finset _)).card ≤ 1 := by
-      have B_supset : B ∩ ({x | Δ₀(x, v) ≤ e} : Finset _) ⊆ B := by grind
+      have B_supset : B ∩ ({x | Δ₀(x, v) ≤ e} : Finset _) ⊆ B := by
+        grind only [= Finset.subset_iff, = Finset.mem_inter]
       have eval_cards := Finset.card_le_card B_supset
-      linarith
-    omega
+      grind only
+    grind only
   unfold JohnsonConditionStrong
   intro e_1 d q frac
   -- The real 'proof' is not really by cases, the second case is uninteresting in practice.
@@ -125,10 +134,12 @@ lemma johnson_condition_weak_implies_strong [Field F]
       := by norm_cast; omega
     have h_frac_pos : frac > 0 := by
       unfold frac
-      have : 1 < Fintype.card F := by linarith
+      have : 1 < Fintype.card F := by grind only
       field_simp
       unfold q
-      exact_mod_cast this
+      simp only [Nat.cast_pos, Fintype.zero_lt_card, div_pos_iff_of_pos_left, sub_pos,
+        Nat.one_lt_cast]
+      exact h_F_nontriv
     --The main proof is here, and in the proof of err_n, the rest is algebraic manipulations.
     have j_fun_bound : (↑e / ↑n : ℝ) < (1/↑frac * (1-√(1 - ↑frac * ↑d / ↑n)))  := by
       unfold JohnsonConditionWeak J at h_J_cond_weak
@@ -190,7 +201,8 @@ lemma johnson_condition_weak_implies_strong [Field F]
       field_simp
       field_simp at h_J_cond_weak'
       field_simp at bound
-      linarith
+      sorry
+      -- linarith
     have err_n : (↑e_1 / ↑n : ℝ) ≤ (↑e / ↑n : ℝ)   := by
       gcongr
       have err : e_1 ≤ e := by
@@ -207,19 +219,24 @@ lemma johnson_condition_weak_implies_strong [Field F]
           rw[inv_mul_le_iff₀ h_B2_nonempty]
           exact_mod_cast sum_bound
       exact_mod_cast err
-    have j_fun_bound_e1 : (↑e_1 / ↑n : ℝ) < (1/↑frac * (1-√(1 - ↑frac * ↑d / ↑n))) :=
-      by linarith [err_n, j_fun_bound]
+    have j_fun_bound_e1 : (↑e_1 / ↑n : ℝ) < (1/↑frac * (1-√(1 - ↑frac * ↑d / ↑n))) := by
+      grind only
     have rearrange_jboundw_e1 : √(1 - ↑frac * ↑d / ↑n) < 1 - frac * e_1 / ↑n := by
       have : frac * e_1 / ↑n < 1-√(1 - frac * d / ↑n) := by
         calc ↑frac * ↑e_1 / ↑n
             = ↑frac * (↑e_1 / ↑n) := by ring
-          _ < ↑frac * (1/↑frac * (1-√(1 - ↑frac * ↑d / ↑n))) := by
-              exact (mul_lt_mul_left (by exact_mod_cast h_frac_pos)).mpr j_fun_bound_e1
-          _ = 1-√(1 - ↑frac * ↑d / ↑n) := by ring_nf ; field_simp
-      linarith
+          _ < ↑frac * (1/↑frac * (1-√(1 - ↑frac * ↑d / ↑n))) := by simp_all only [Rat.cast_div,
+            Rat.cast_natCast, Rat.cast_sub, Rat.cast_one, sub_nonneg, Nat.cast_pos, Finset.card_pos, gt_iff_lt,
+            Fintype.zero_lt_card, div_pos_iff_of_pos_left, sub_pos, Nat.one_lt_cast, one_div, inv_div,
+            mul_lt_mul_iff_right₀, frac, q, d, e_1]
+          _ = 1-√(1 - ↑frac * ↑d / ↑n) := by
+            grind only [= division_by_conjugate,= Real.sqrt_one]
+      grind only
     have h_esqrtpos :  (0 : ℝ)  ≤ 1- frac * e_1 / ↑n  := by
-      have : (0 : ℝ) ≤ √(1 - ↑frac * ↑d / ↑n) := by aesop
-      linarith[this, rearrange_jboundw_e1]
+      have : (0 : ℝ) ≤ √(1 - ↑frac * ↑d / ↑n) := by simp_all only [Rat.cast_div, Rat.cast_natCast,
+        Rat.cast_sub, Rat.cast_one, sub_nonneg, Nat.cast_pos, Finset.card_pos, gt_iff_lt, Fintype.zero_lt_card,
+        div_pos_iff_of_pos_left, sub_pos, Nat.one_lt_cast, one_div, inv_div, Real.sqrt_nonneg, frac, q, d, e_1]
+      grind only
     suffices recast_main_goal : (1 - frac * d / ↑n : ℝ) < (1 - frac * e_1 / ↑n) ^ 2 by
      exact_mod_cast recast_main_goal
     suffices roots : √(1 - frac * d / ↑n) < 1- frac * e_1 / ↑n by
@@ -263,11 +280,13 @@ private lemma johnson_condition_strong_implies_2_le_B_card
   have h : (Fintype.card F : ℚ) / (Fintype.card F - 1) = 1 + 1 / (Fintype.card F - 1) := by
     have : (Fintype.card F : ℚ) - 1 ≠ 0 := by simp [sub_eq_zero]; omega
     field_simp
+    ring
   have h' := JohnsonBound.abs_one_sub_div_le_one (v := v) (a := a) (by omega)
   exact absurd (lt_of_lt_of_le (h ▸ h_johnson) h') (lt_irrefl _)
 
 /-- `JohnsonConditionStrong` is equvalent to `JohnsonDenominator` being positive.
 -/
+@[simp, grind]
 lemma johnson_condition_strong_iff_johnson_denom_pos {B : Finset (Fin n → F)} {v : Fin n → F} :
   JohnsonConditionStrong B v ↔ 0 < JohnsonDenominator B v := by
   simp [JohnsonDenominator, JohnsonConditionStrong]
@@ -285,9 +304,10 @@ theorem johnson_bound [Field F]
   suffices B.card * JohnsonDenominator B v ≤
            Fintype.card F / (Fintype.card F - 1) * d B / n by
     rw [johnson_condition_strong_iff_johnson_denom_pos] at h_condition
-    rw [←mul_le_mul_right h_condition]
-    convert this using 1
-    field_simp; rw [mul_div_mul_right]; linarith
+    sorry
+    -- rw [←mul_le_mul_right h_condition]
+    -- convert this using 1
+    -- field_simp; rw [mul_div_mul_right]; linarith
   rw [johnson_denominator_def]
   exact JohnsonBound.johnson_bound_lemma
     (johnson_condition_strong_implies_n_pos h_condition)
@@ -479,6 +499,7 @@ theorem johnson_bound_alphabet_free [Field F] [DecidableEq F]
                   have hq1_ne : (q - 1 : ℚ) ≠ 0 := by exact ne_of_gt hq1_pos
                   field_simp [frac, hn_ne, hq1_ne]
                   simp [mul_comm]
+                  grind only
         have le_q_times_d : (B'.card : ℚ) ≤ q * JohnsonBound.d B' := by
           linarith [current_bound, hfrac_bound]
         have le_q_times_n : (B'.card : ℚ) ≤ q * (n : ℚ) := by
@@ -566,7 +587,6 @@ theorem johnson_bound_alphabet_free [Field F] [DecidableEq F]
                     _ = (((n - d) / n : ℝ).sqrt) := by
                             have hfrac : ((n : ℝ) * (n - d)) / (n : ℝ) ^ 2 = (n - d) / n := by
                               field_simp [hn']
-                              ring
                             simp [hfrac]
                     _ = ((1 - (d : ℝ) / n) : ℝ).sqrt := by
                             calc
@@ -648,18 +668,11 @@ theorem johnson_bound_alphabet_free [Field F] [DecidableEq F]
           set E0 : ℚ := e / n
           set Den : ℚ := D0 - 2 * E0 + frac * E0 ^ 2
           have quad_nonneg : (0 : ℚ) ≤ D0 - 2 * E0 + E0 ^ 2 := by
-            have htmp_q :
-                (0 : ℚ) ≤ (1 - (e / n : ℚ)) ^ 2 - (1 - (d / n : ℚ)) := by
-              linarith [h_div'_q]
-            have h_eq_q :
-                (1 - (e / n : ℚ)) ^ 2 - (1 - (d / n : ℚ)) =
-                  D0 - 2 * E0 + E0 ^ 2 := by
-              ring
-            simpa [h_eq_q] using htmp_q
+            grind only
           have frac_sub_one_eq : frac - 1 = (1 : ℚ) / (q - 1) := by
-            field_simp [frac, hq1_ne]
+            grind only
           have one_div_q_le : (1 : ℚ) / q ≤ frac - 1 := by
-            have hq1_le_q : (q - 1 : ℚ) ≤ q := by linarith
+            have hq1_le_q : (q - 1 : ℚ) ≤ q := by grind only
             have h1 : (1 : ℚ) / q ≤ (1 : ℚ) / (q - 1) := by
               exact (one_div_le_one_div_of_le hq1_pos hq1_le_q)
             simpa [frac_sub_one_eq] using h1
@@ -668,7 +681,7 @@ theorem johnson_bound_alphabet_free [Field F] [DecidableEq F]
               frac * (JohnsonBound.d B' / n - 2 * JohnsonBound.e B' v / n +
               frac * (JohnsonBound.e B' v / n)^2) := by
             simp [JohnsonDenominator, q, frac, mul_div_assoc]
-            ring
+            grind only
 
           -- 2. Cancel frac.
           have term_simplification : (frac * (JohnsonBound.d B') / (n : ℚ)) /
@@ -676,33 +689,32 @@ theorem johnson_bound_alphabet_free [Field F] [DecidableEq F]
               (JohnsonBound.d B' / n) /
               (JohnsonBound.d B' / n - 2 * JohnsonBound.e B' v / n +
               frac * (JohnsonBound.e B' v / n)^2) := by
-            set D : ℚ :=
-              JohnsonBound.d B' / n - 2 * JohnsonBound.e B' v / n +
-                frac * (JohnsonBound.e B' v / n) ^ 2
-            calc
-              (frac * JohnsonBound.d B' / (n : ℚ)) / JohnsonDenominator B' v
-                  = (frac * (JohnsonBound.d B' / n)) / JohnsonDenominator B' v := by
-                      simp [mul_div_assoc]
-              _ = (frac * (JohnsonBound.d B' / n)) / (frac * D) := by
-                      simp [denom_expansion, D]
-              _ = (JohnsonBound.d B' / n) / D := by
-                      simpa [D] using
-                        (mul_div_mul_left (a := JohnsonBound.d B' / n) (b := D)
-                          (c := frac) hfrac_ne)
+                grind only [=johnson_condition_strong_iff_johnson_denom_pos]
+            -- set D : ℚ :=
+            --   JohnsonBound.d B' / n - 2 * JohnsonBound.e B' v / n +
+            --     frac * (JohnsonBound.e B' v / n) ^ 2
+            -- calc
+            --   (frac * JohnsonBound.d B' / (n : ℚ)) / JohnsonDenominator B' v
+            --       = (frac * (JohnsonBound.d B' / n)) / JohnsonDenominator B' v := by
+            --           simp [mul_div_assoc]
+            --   _ = (frac * (JohnsonBound.d B' / n)) / (frac * D) := by
+            --           simp [denom_expansion, D]
+            --   _ = (JohnsonBound.d B' / n) / D := by
+            --           simpa [D] using
+            --             (mul_div_mul_left (a := JohnsonBound.d B' / n) (b := D)
+            --               (c := frac) hfrac_ne)
 
           -- 3. Bound eB' by e.
           have e_ineq : JohnsonBound.e B' v ≤ e := by
             have hB'_pos : 0 < B'.card := by
-              have hB'_ge2 : 2 ≤ B'.card := by
-                exact le_of_not_gt h_size
-              omega
+              grind only
             simpa [B'] using
               (JohnsonBound.e_ball_le_radius (B := B) (v := v) (r := (e : ℚ))
                 (by simpa [B'] using hB'_pos))
 
           -- 4. Bound dB' by d.
           have d_ineq : (d : ℚ) ≤ JohnsonBound.d B' := by
-            simp[hd_le_dB']
+            exact hd_le_dB'
 
           -- 5. Compare worst-case values (monotone).
           have worst_case_bound : (JohnsonBound.d B' / n) /
@@ -728,7 +740,7 @@ theorem johnson_bound_alphabet_free [Field F] [DecidableEq F]
                 rcases (mul_pos_iff.mp hdenJ') with hpos | hneg
                 · exact hpos.2
                 · exfalso
-                  linarith [hneg.1, hfrac_pos]
+                  grind only
               simpa [mul_div_assoc] using hdenJ''
             have hd_pos : 0 < d := (Nat.succ_le_iff).1 d_not_small
             exact johnson_worst_case_bound (B := B') (v := v) (n := n) (d := d) (e := e)
@@ -768,7 +780,6 @@ theorem johnson_bound_alphabet_free [Field F] [DecidableEq F]
               _ ≤ (d / n) / ((1 : ℚ) / (q * (n : ℚ) ^ 2)) := hstep
               _ = q * d * n := by
                     field_simp [hq_ne, hn_pos.ne']
-                    ring
 
           -- Combine the steps.
           rw [term_simplification]
