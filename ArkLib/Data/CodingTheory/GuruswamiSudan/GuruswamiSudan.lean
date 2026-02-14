@@ -97,9 +97,9 @@ theorem proximity_gap_divisibility (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code �
     X - C (codewordToPoly p) ∣ Q := by
   refine dvd_property (f := f) hk hm p ?_ ?_ ?_ ?_
   · exact hQ.Q_ne_0
-  · exact hQ.Q_deg
   · intro i s t hst
     exact one i s t hst hQ.Q_multiplicity
+  · exact hQ.Q_deg
   · exact h_dist
 
 end GuruswamiSudan

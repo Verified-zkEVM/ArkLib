@@ -74,7 +74,8 @@ lemma card_weigthBoundIndices_eq_sum (D : ℕ) (hk : 1 < k) :
         ((range (D + 1)).product (range (D / (k - 1) + 1))) from ?_, card_filter]
       · erw [sum_product, Finset.sum_comm]
       · ext ⟨i, j⟩
-        simp [weigthBoundIndices]
+        simp only [weigthBoundIndices, product_eq_sprod, mem_filter, mem_product, mem_range,
+          and_congr_left_iff, and_congr_right_iff]
         exact fun _ _ ↦ iff_of_true (by
           nlinarith [Nat.sub_pos_of_lt hk, D.div_add_mod (k - 1),
             D.mod_lt (Nat.sub_pos_of_lt hk)])
@@ -86,7 +87,7 @@ lemma card_weigthBoundIndices_eq_sum (D : ℕ) (hk : 1 < k) :
       have h_filter : filter (fun i ↦ i + (k - 1) * j ≤ D) (range (D + 1)) =
           Icc 0 (D - (k - 1) * j) := by
         ext i
-        simp [mem_Icc]
+        simp only [mem_filter, mem_range, mem_Icc, zero_le, true_and]
         refine ⟨fun h ↦ Nat.le_sub_of_add_le <| by linarith, fun h ↦ ⟨by
             nlinarith [Nat.sub_add_cancel <| show (k - 1) * j ≤ D from by
               nlinarith [Nat.sub_add_cancel <| show j ≤ D / (k - 1) from by
@@ -110,12 +111,12 @@ lemma numVars_eq_of_gt_one {D : ℕ} (hk : 1 < k) :
             rw [← sum_add_distrib]
             exact sum_congr rfl fun x hx ↦ tsub_add_cancel_of_le <| by
               nlinarith [mem_range.mp hx, Nat.div_mul_le_self D (k - 1)]
-        simp_all [mul_comm]
+        simp_all only [mul_comm, sum_const, card_range, smul_eq_mul]
         exact congrArg _ (Eq.symm <| Nat.div_eq_of_eq_mul_left zero_lt_two <| by
           rw [← sum_mul _ _ _]
           exact (D / (k - 1)).recOn (by norm_num) fun n ih ↦ by
-            norm_num [range_succ] at *; linarith)
-      simp_all [sum_add_distrib]
+            norm_num [range_add_one] at *; linarith)
+      simp_all only [sum_add_distrib, sum_const, card_range, smul_eq_mul, mul_one]
       rw [Nat.div_eq_of_eq_mul_left zero_lt_two]
       rw [tsub_eq_of_eq_add (c := k - 1)]
       · rw [tsub_add_eq_add_tsub]
@@ -135,8 +136,10 @@ lemma numVars_eq_of_gt_one {D : ℕ} (hk : 1 < k) :
 
 /-- The number of variables is (D+1)^2 when k ≤ 1. -/
 lemma numVars_eq_sq {k D : ℕ} (hk : k ≤ 1) : numVars k D = (D + 1) ^ 2 := by
-  interval_cases k <;> simp [numVars, weigthBoundIndices]
+  interval_cases k
   all_goals
+  simp only [numVars, weigthBoundIndices, tsub_self, zero_mul, add_zero, product_eq_sprod]
+  norm_num
   rw [filter_true_of_mem fun x hx ↦ by linarith [mem_range.mp (mem_product.mp hx |>.1)]]
   norm_num [sq, card_product]
 
@@ -147,7 +150,10 @@ lemma numVars_lower_bound_tight {D : ℕ} (hk : 1 < k) :
       have h_numVars_def : numVars k D =
           ((D / (k - 1)) + 1) * (2 * D + 2 - (k - 1) * (D / (k - 1))) / 2 :=
         numVars_eq_of_gt_one hk
-      rcases k with (_|_|k) <;> simp_all [Nat.mul_succ]
+      rcases k with (_|_|k) <;> simp_all only [lt_add_iff_pos_left, add_pos_iff, zero_lt_one,
+        or_true, add_tsub_cancel_right, Nat.mul_succ, ge_iff_le]
+      · exfalso; omega
+      · exfalso; omega
       rw [← Nat.mul_div_assoc]
       · rw [Nat.le_div_iff_mul_le] <;> ring_nf
         · zify
@@ -214,13 +220,15 @@ lemma proximity_gap_degree_bound_sq_gt (hn : n ≠ 0) :
       set D := proximity_gap_degree_bound k n m
       have h_bound : (D + 1 : ℝ) > (m + 1 / 2) * √((k + 1 : ℝ) * n) := by
         have hD_ge_floor : (D : ℝ) ≥ Nat.floor ((m + 1 / 2 : ℝ) * √((k + 1 : ℝ) * n)) := by
-          simp +zetaDelta at *
+          simp +zetaDelta only
+            [ne_eq, one_div, Nat.cast_nonneg, Real.sqrt_mul', ge_iff_le, Nat.cast_le] at *
           unfold proximity_gap_degree_bound
           norm_num [mul_assoc, mul_div_assoc, hn]
           rw [mul_comm_div]
           gcongr
           field_simp
-        exact lt_of_lt_of_le (Nat.lt_floor_add_one _) (add_le_add_right hD_ge_floor _)
+          rw [Real.sq_sqrt (by norm_cast; omega)]
+        exact lt_of_lt_of_le (Nat.lt_floor_add_one _) (add_le_add_left hD_ge_floor _)
       nlinarith [show 0 < (m + 1 / 2 : ℝ) * √((k + 1) * n) by
         positivity, Real.mul_self_sqrt (show 0 ≤ (k + 1 : ℝ) * n by positivity)]
 
@@ -232,16 +240,16 @@ lemma numVars_gt_numConstraints_of_gt_one (hn : n ≠ 0) (hk : 1 < k) (hm : 1 �
       have h_ineq : 2 * (k - 1) * numVars k D > (k - 1) * n * m * (m + 1) := by
         have h_ineq : 2 * (k - 1) * numVars k D ≥ (D : ℝ) * (D + 2) := by
           convert numVars_lower_bound_tight hk using 1
-          norm_cast
-          rw [Int.subNatNat_of_le] <;> norm_cast
-          linarith
+          · norm_cast
+            rw [Int.subNatNat_of_le] <;> norm_cast
+            linarith
         have h_ineq : (D : ℝ) * (D + 2) > (k - 1) * n * m * (m + 1) := by
           nlinarith [show (k : ℝ) ≥ 2 by norm_cast, show (m : ℝ) ≥ 1 by
             exact Nat.one_le_cast.mpr hm, show (n : ℝ) ≥ 1 by
               exact Nat.one_le_cast.mpr (Nat.pos_of_ne_zero hn), mul_le_mul_of_nonneg_left
                 (show (m : ℝ) ≥ 1 by exact Nat.one_le_cast.mpr hm)
                   (show (n : ℝ) ≥ 0 by positivity)]
-        norm_cast at *;
+        norm_cast at *
         rw [Int.subNatNat_of_le] at * <;> (norm_cast at *; linarith)
       have h_div : numVars k D > n * m * (m + 1) / 2 := by
         exact Nat.div_lt_of_lt_mul <| by nlinarith [Nat.sub_pos_of_lt hk]
@@ -279,6 +287,7 @@ lemma numVars_gt_numConstraints :
         · rw [mul_assoc]
           congr
           field_simp
+          rw [Real.sq_sqrt (by norm_cast; omega)]
     · by_cases hn : n = 0
       · aesop
       · by_cases hm : m = 0
@@ -296,13 +305,14 @@ lemma numVars_gt_numConstraints :
           rw [div_lt_iff₀] at h_ineq <;> norm_cast at *
           rw [card_constraintIndices]
           nlinarith [Nat.div_mul_le_self (m * (m + 1)) 2]
-  · by_cases hn : n = 0 <;> by_cases hm : m = 0 <;> simp_all [numConstraints]
+  · by_cases hn : n = 0 <;> by_cases hm : m = 0 <;>
+      simp_all only [not_le, gt_iff_lt, numConstraints]
     · exact card_pos.mpr ⟨⟨0, 0⟩,
         mem_filter.mpr ⟨mem_product.mpr ⟨mem_range.mpr
           <| Nat.succ_pos _, mem_range.mpr <| Nat.succ_pos _⟩, by norm_num⟩⟩
-    · exact card_pos.mpr ⟨⟨0, 0⟩, mem_filter.mpr ⟨mem_product.mpr
-        ⟨mem_range.mpr <| Nat.succ_pos _, mem_range.mpr <| Nat.succ_pos _⟩, by
-          norm_num⟩⟩
+    · norm_num
+      exact card_pos.mpr ⟨⟨0, 0⟩, mem_filter.mpr ⟨mem_product.mpr
+        ⟨mem_range.mpr <| Nat.succ_pos _, mem_range.mpr <| Nat.succ_pos _⟩, by norm_num⟩⟩
     · exact lt_of_lt_of_le (by simp [constraintIndices])
         (Nat.pos_of_ne_zero (ne_of_gt (card_pos.mpr ⟨(0, 0),
           mem_filter.mpr ⟨mem_product.mpr ⟨mem_range.mpr (Nat.succ_pos _),
@@ -375,12 +385,14 @@ section neZero
     of the combination. -/
 lemma coeff_linearCombination_monomial (c : ℕ × ℕ →₀ F) (i j : ℕ) :
   ((linearCombination F (fun p ↦ monomial (F := F) p.1 p.2) c).coeff j).coeff i = c (i, j) := by
-    simp [linearCombination_apply, Finsupp.sum]
-    rw [Finset.sum_eq_single (i, j)] <;> simp +contextual
+    simp only [linearCombination_apply, Finsupp.sum, finset_sum_coeff, coeff_smul, smul_eq_mul]
+    rw [Finset.sum_eq_single (i, j)] <;> simp +contextual only [Finsupp.mem_support_iff, ne_eq,
+      mul_eq_zero, false_or, Prod.forall, Prod.mk.injEq, not_and]
     · erw [coeff_monomial, if_pos rfl]; aesop
     · intro a b
       rw [monomial]
       by_cases ha : a = i <;> by_cases hb : b = j <;> simp_all [coeff_monomial]
+    · exact fun h ↦ by left; exact Function.notMem_support.mp h
 
 /-- The monomials are linearly independent. -/
 lemma linearIndependent_monomials :
@@ -388,7 +400,7 @@ lemma linearIndependent_monomials :
     apply _root_.linearIndependent_iff.mpr
     intro l hl
     ext ⟨i, j⟩
-    simp_all
+    simp only [Finsupp.coe_zero, Pi.zero_apply]
     convert congr_arg (fun f ↦ (f.coeff j).coeff i) hl using 1
     convert (coeff_linearCombination_monomial l i j).symm using 1
 
@@ -411,13 +423,13 @@ end neZero
 section weightedDegree
 
 /- In this section are collected properties of the weighted degree of bivariate polynomials. -/
-variable [DecidableEq F]
 
 
 /-- The weighted degree of a monomial X^i Y^j is u*i + v*j. -/
 lemma natWeightedDegree_monomial (i j u v : ℕ) :
   natWeightedDegree (monomial (F := F) i j) u v = u * i + v * j := by
-    simp [natWeightedDegree, monomial]
+    classical
+    simp only [natWeightedDegree, monomial]
     refine le_antisymm ?_ ?_ <;> norm_num
     · intros b hb
       simp [coeff_monomial] at hb
@@ -431,35 +443,41 @@ lemma natWeightedDegree_monomial (i j u v : ℕ) :
 lemma natWeightedDegree_monomial_eq (i j u v : ℕ) :
   natWeightedDegree (monomial (F := F) i j) u v = u * i + v * j := by
     convert natWeightedDegree_monomial i j u v using 1
-    infer_instance
 
 /-- The weighted degree of a sum is at most the maximum of the weighted degrees. -/
 lemma natWeightedDegree_add_le (p q : F[X][Y]) (u v : ℕ) :
     natWeightedDegree (p + q) u v ≤ max (natWeightedDegree p u v) (natWeightedDegree q u v) := by
   refine Finset.sup_le fun m hm ↦ ?_
   by_cases h : m ∈ p.support <;>
-  by_cases h' : m ∈ q.support <;> simp_all [coeff_add]
+  by_cases h' : m ∈ q.support <;>
+    simp_all only [Polynomial.mem_support_iff, coeff_add, ne_eq, le_sup_iff]
   · have h_deg : (p.coeff m + q.coeff m).natDegree ≤
         max ((p.coeff m).natDegree) ((q.coeff m).natDegree) := by
       exact natDegree_add_le (p.coeff m) (q.coeff m)
     cases max_cases (natDegree (p.coeff m))
-      (natDegree (q.coeff m)) <;> simp_all [natWeightedDegree]
+      (natDegree (q.coeff m)) <;> simp_all only [sup_of_le_left, sup_eq_left, and_self,
+        natWeightedDegree]
     · exact Or.inl (le_trans (add_le_add (mul_le_mul_of_nonneg_left h_deg <|
         Nat.zero_le _) le_rfl) <| Finset.le_sup (f := fun m ↦ u * natDegree
           (p.coeff m) + v * m) <| by aesop)
     · exact Or.inr (le_trans (add_le_add (mul_le_mul_of_nonneg_left h_deg <|
         Nat.zero_le _) le_rfl) <| Finset.le_sup
         (f := fun m ↦ u * natDegree (q.coeff m) + v * m) <| by aesop)
+  all_goals simp_all only [not_not, add_zero, zero_add, not_false_eq_true]
   · exact Or.inl <| Finset.le_sup (f := fun m ↦ u * natDegree (p.coeff m) + v * m) <| by aesop
   · exact Or.inr <| Finset.le_sup (f := fun m ↦ u * natDegree (q.coeff m) + v * m) <| by aesop
+  · simp at hm
 
 /-- The weighted degree of a sum is bounded by the supremum of the weighted degrees. -/
-lemma natWeightedDegree_sum_le {ι : Type*} [DecidableEq ι]
-    (s : Finset ι) (f : ι → F[X][Y]) (u v : ℕ) :
+lemma natWeightedDegree_sum_le {ι : Type*} (s : Finset ι) (f : ι → F[X][Y]) (u v : ℕ) :
     natWeightedDegree (∑ i ∈ s, f i) u v ≤ s.sup (fun i ↦ natWeightedDegree (f i) u v) := by
-  induction s using Finset.induction <;> simp_all
-  · simp [natWeightedDegree]
-  · have h_sum : natWeightedDegree (f ‹_› + ∑ i ∈ ‹Finset ι›, f i) u v ≤
+  classical
+  induction s using Finset.induction
+  · simp only [sum_empty, sup_empty, Nat.bot_eq_zero, nonpos_iff_eq_zero, natWeightedDegree,
+      Polynomial.support_zero, coeff_zero, natDegree_zero, mul_zero, zero_add, sup_empty,
+      Nat.bot_eq_zero]
+  · simp_all only [not_false_eq_true, sum_insert, sup_insert, le_sup_iff]
+    have h_sum : natWeightedDegree (f ‹_› + ∑ i ∈ ‹Finset ι›, f i) u v ≤
       max (natWeightedDegree (f ‹_›) u v) (natWeightedDegree (∑ i ∈ ‹Finset ι›, f i) u v) := by
       (expose_names; exact natWeightedDegree_add_le (f a) (∑ i ∈ s, f i) u v)
     cases max_cases (natWeightedDegree (f ‹_›) u v)
@@ -469,7 +487,7 @@ lemma natWeightedDegree_sum_le {ι : Type*} [DecidableEq ι]
     of the polynomial. -/
 lemma natWeightedDegree_smul_le {F : Type} [Semiring F] (a : F) (p : F[X][Y]) (u v : ℕ) :
   natWeightedDegree (a • p) u v ≤ natWeightedDegree p u v := by
-    simp [natWeightedDegree]
+    simp only [natWeightedDegree, coeff_smul, Finset.sup_le_iff, Polynomial.mem_support_iff, ne_eq]
     intro b _
     exact le_trans (add_le_add
       (mul_le_mul_of_nonneg_left (natDegree_smul_le a (p.coeff b)) u.zero_le)
@@ -489,7 +507,9 @@ lemma natWeightedDegree_coeffsToPoly_le (k D : ℕ) (c : (weigthBoundIndices k D
           (fun p : { x // x ∈ weigthBoundIndices k D } ↦ (p.val.1, p.val.2))
         then c ⟨p, by aesop⟩ else 0
       unfold coeffsToPoly
-      simp [Finsupp.linearCombination_apply, sum_fintype]
+      simp only [LinearMap.coe_comp, LinearEquiv.coe_coe, Function.comp_apply,
+        linearCombination_apply, zero_smul, implies_true, sum_fintype, univ_eq_attach, Prod.mk.eta,
+        attach_image_val, dite_smul]
       refine sum_bij (fun x hx ↦ x) ?_ ?_ ?_ ?_ <;> aesop
     · unfold weigthBoundIndices at *; aesop
   obtain ⟨s, f, h₁, h₂⟩ := h_comb
@@ -538,12 +558,11 @@ section multiplicity
 
 /- In this section, we prove that the solution to the Guruswami-Sudan system
     has multiplicity of roots at least m at the interpolation points. -/
-variable [DecidableEq F]
 
 
 /-- The solved polynomial has root multiplicity at least m at each point (ωs i, f i). -/
-lemma polySol_multiplicity (i : Fin n) :
-    m ≤ rootMultiplicity (polySol k n m ωs f) (ωs i) (f i) := by
+lemma polySol_multiplicity [DecidableEq F] (i : Fin n) :
+    m ≤ Polynomial.Bivariate.rootMultiplicity (polySol k n m ωs f) (ωs i) (f i) := by
   let Q := polySol k n m ωs f
   have h_shift : shift Q (ωs i) (f i) ≠ 0 := by
     intro h
@@ -555,7 +574,6 @@ lemma polySol_multiplicity (i : Fin n) :
         aesop
       exact comp_X_add_C_eq_zero_iff.mp h_shift_nonzero
     exact polySol_ne_zero <| h_shift_nonzero _ _ h
-
   sorry
 
 end multiplicity
@@ -565,7 +583,6 @@ section divisibility
 /- In this section, we study divisibility properties of bivariate polynomials in the
   context of the Guruswami-Sudan algorithm. -/
 open ReedSolomon
-variable [DecidableEq F]
 
 
 /-- The degree of Q(X, P(X)) is bounded by the (1, k-1)-weighted degree of Q,
@@ -576,7 +593,8 @@ lemma degree_eval_le_weightedDegree (Q : F[X][Y]) (P : F[X]) (k : ℕ) (hP : P.n
       ((Q.toFinsupp.support).image (fun m => (Q.coeff m).natDegree + (k - 1) * m)).sup id := by
     rw [Polynomial.eval_eq_sum_range]
     refine le_trans (Polynomial.natDegree_sum_le _ _) (Finset.sup_le ?_)
-    intro i hi; by_cases hi' : Q.coeff i = 0 <;> simp_all
+    intro i hi; by_cases hi' : Q.coeff i = 0 <;> simp_all only [mem_range, Function.comp_apply,
+      zero_mul, natDegree_zero, sup_image, CompTriple.comp_eq, zero_le]
     refine le_trans ?_ (Finset.le_sup
       (f := fun m ↦ (Q.coeff m).natDegree + (k - 1) * m) (show i ∈ Q.toFinsupp.support from ?_))
     · exact le_trans (Polynomial.natDegree_mul_le ..) (by norm_num; nlinarith)
@@ -594,18 +612,18 @@ lemma dvd_eval_of_rootMultiplicity_zero (Q : F[X][Y]) (P : F[X]) (m : ℕ)
       X ^ m ∣ Polynomial.monomial i ((Q.coeff j).coeff i) * P ^ j := by
     intros i j hij
     have h_div_term : X ^ (i + j) ∣ Polynomial.monomial i ((Q.coeff j).coeff i) * P ^ j := by
-      simp_all [pow_add]
+      simp only [pow_add]
       exact mul_dvd_mul (by simp [← C_mul_X_pow_eq_monomial]) (h_div_Pj j)
     exact dvd_trans (pow_dvd_pow _ (Nat.le_of_not_lt fun h ↦ hij <| by solve_by_elim)) h_div_term
-  simp_all [eval_eq_sum, sum_def]
+  simp only [eval_eq_sum, sum_def]
   refine Finset.dvd_sum fun n hn ↦ ?_
   rw [(Q.coeff n).as_sum_range_C_mul_X_pow]
-  simp_all [Finset.sum_mul, C_mul_X_pow_eq_monomial]
+  simp only [Finset.sum_mul, C_mul_X_pow_eq_monomial]
+  classical
   exact Finset.dvd_sum fun i hi ↦
     if hi0 : (Q.coeff n).coeff i = 0 then by simp [hi0]
     else h_div_term_all i n hi0
 
-omit [DecidableEq F]
 /-- Evaluating the shifted bivariate polynomial at the shifted univariate polynomial
     is equivalent to shifting the result of the evaluation. -/
 lemma eval_shifted_eq_shifted_eval (Q : F[X][Y]) (P : F[X]) (x y : F) :
@@ -618,12 +636,13 @@ lemma eval_shifted_eq_shifted_eval (Q : F[X][Y]) (P : F[X]) (x y : F) :
 def HasOrderAt (Q : F[X][Y]) (x y : F) (m : ℕ) : Prop :=
   ∀ i j, i + j < m → Bivariate.coeff (shift Q x y) i j = 0
 
-lemma orderAt_eval_ge [DecidableEq F] (Q : F[X][Y]) (P : F[X]) (x : F) (m : ℕ)
+lemma orderAt_eval_ge (Q : F[X][Y]) (P : F[X]) (x : F) (m : ℕ)
     (h : HasOrderAt Q x (P.eval x) m) :
     (Q.eval P) = 0 ∨ m ≤ (Q.eval P).rootMultiplicity x := by
   set Q_sh := (Q.comp (Y + C (C (P.eval x)))).map ((X + C x).compRingHom) with hQ_sh;
   set P_sh := P.comp (X + C x) - C (P.eval x) with hP_sh;
   have hXm_div_Q_sh_eval_P_sh : X ^ m ∣ Q_sh.eval P_sh := by
+    classical
     apply dvd_eval_of_rootMultiplicity_zero
     · assumption
     · simp +zetaDelta at *
@@ -634,17 +653,16 @@ lemma orderAt_eval_ge [DecidableEq F] (Q : F[X][Y]) (P : F[X]) (x : F) (m : ℕ)
     exact h_eval_shifted_eq_shifted_eval ▸ hXm_div_Q_sh_eval_P_sh
   have hX_minus_x_m_div_Q_eval_P : (X - C x) ^ m ∣ Q.eval P := by
     exact X_sub_C_pow_dvd_iff.mpr hXm_div_Q_eval_P_comp_X_plus_C_x
-  by_cases h : eval P Q = 0 <;> simp_all
-  rw [le_rootMultiplicity_iff] <;> tauto
+  by_cases h : eval P Q = 0
+  · left; exact h
+  · rw [le_rootMultiplicity_iff h]; tauto
 
-
-variable {F : Type} [Field F] [DecidableEq F]
-variable {k n m : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F}
 /-- If a polynomial R has roots at points indexed by A with multiplicity at least m,
     and its degree is strictly less than m * |A|, then R must be the zero polynomial. -/
 lemma roots_le_degree_of_deg_lt_roots (R : F[X]) (m : ℕ) (A : Finset (Fin n))
   (h_roots : ∀ i ∈ A, m ≤ R.rootMultiplicity (ωs i)) (h_deg : R.natDegree < m * A.card) :
   R = 0 := by
+    classical
     have h_sum_multiplicities :
         ∑ x ∈ A.image (fun i ↦ ωs i), (R.rootMultiplicity x) ≤ R.natDegree := by
       have h_factor : ∏ x ∈ A.image (fun i ↦ ωs i), (X - C x) ^ (R.rootMultiplicity x) ∣ R := by
@@ -665,6 +683,7 @@ lemma roots_le_degree_of_deg_lt_roots (R : F[X]) (m : ℕ) (A : Finset (Fin n))
     points recovers `q`. -/
 lemma interpolate_eq_of_degree_lt (q : F[X]) (hq : q.natDegree < n) :
   Lagrange.interpolate Finset.univ ωs (fun i ↦ q.eval (ωs i)) = q := by
+    classical
     refine Polynomial.eq_of_degree_sub_lt_of_eval_finset_eq ?_ ?_ ?_
     · exact Finset.univ.image ωs
     · refine lt_of_le_of_lt (degree_sub_le _ _) (max_lt ?_ ?_)
@@ -673,9 +692,11 @@ lemma interpolate_eq_of_degree_lt (q : F[X]) (hq : q.natDegree < n) :
         exact ωs.injective.injOn
       · exact lt_of_le_of_lt (degree_le_natDegree) (WithBot.coe_lt_coe.mpr (by
           simpa [Finset.card_image_of_injective _ ωs.injective] using hq))
-    · simp +contextual
+    · simp +contextual only [mem_image, mem_univ, true_and, Lagrange.interpolate_apply,
+        forall_exists_index, forall_apply_eq_imp_iff]
       intro i
       rw [eval_finset_sum, Finset.sum_eq_single i] <;> aesop
+      sorry
 
 /-- The polynomial corresponding to a codeword has degree at most k-1. -/
 lemma codewordToPoly_degree_le (hk : k + 1 ≤ n) (p : code ωs k) :
@@ -685,7 +706,9 @@ lemma codewordToPoly_degree_le (hk : k + 1 ≤ n) (p : code ωs k) :
     have h_interpolate : (Lagrange.interpolate Finset.univ ωs.toFun) (evalOnPoints ωs q) = q := by
       convert interpolate_eq_of_degree_lt q _
       exact lt_of_le_of_lt (natDegree_le_of_degree_le <| mem_degreeLT.mp hq |> le_of_lt) hk
-    rcases k <;> simp_all [degreeLT]
+    rcases k <;> simp_all only [Function.Embedding.toFun_eq_coe, Lagrange.interpolate_apply,
+      zero_add, degreeLT, ge_iff_le, zero_le, iInf_pos, Submodule.coe_iInf, Set.mem_iInter,
+      SetLike.mem_coe, LinearMap.mem_ker, lcoeff_apply, zero_tsub, nonpos_iff_eq_zero]
     · rw [show q = 0 from Polynomial.ext hq]; norm_num
     · exact natDegree_le_iff_coeff_eq_zero.mpr hq
 
@@ -706,10 +729,9 @@ lemma sufficient_multiplicity_bound {dist : ℕ}
 /-- If $Q$ satisfies the weighted degree bound and vanishes to order $m$ at each point
     $(\omega_i, f_i)$, and if $P$ is a codeword close enough to $f$, then $Y - P(X)$
     divides $Q(X,Y)$. -/
-theorem dvd_property (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k) {Q : F[X][Y]}
-  (hQ_ne_0 : Q ≠ 0)
+theorem dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k)
+  {Q : F[X][Y]} (hQ_ne_0 : Q ≠ 0) (hQ_mult : ∀ i, HasOrderAt Q (ωs i) (f i) m)
   (hQ_deg : weightedDegree Q 1 (k - 1) ≤ proximity_gap_degree_bound k n m)
-  (hQ_mult : ∀ i, HasOrderAt Q (ωs i) (f i) m)
   (h_dist : (hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) : ℝ) / n <
     proximity_gap_johnson k n m) :
   X - C (codewordToPoly p) ∣ Q := by
@@ -744,8 +766,8 @@ theorem dvd_property (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k) {Q : F[X
         rw [natDegree_prod _ _ fun i hi ↦ pow_ne_zero _ <| Polynomial.X_sub_C_ne_zero _]
         simp [natDegree_sub_eq_left_of_natDegree_lt]
       convert hR_roots_card.ge using 1
-      simp [mul_comm, hammingDist]
-      rw [Finset.filter_not, Finset.card_sdiff (Finset.subset_univ _)]
+      simp only [hammingDist, ne_eq, mul_comm, mul_eq_mul_left_iff]
+      rw [Finset.filter_not, Finset.card_sdiff]
       norm_num
       exact Or.inl (Nat.sub_sub_self (le_trans (Finset.card_le_univ _) (by norm_num)))
     have hR_deg : (Q.eval (codewordToPoly p)).natDegree ≤ proximity_gap_degree_bound k n m := by
@@ -755,8 +777,8 @@ theorem dvd_property (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k) {Q : F[X
       refine le_trans hR_deg ?_
       convert hQ_deg using 1
       rw [weightedDegree_eq_natWeightedDegree]
-      aesop
-      assumption
+      · aesop
+      · assumption
     contrapose! hR_roots
     refine lt_of_le_of_lt hR_deg ?_
     convert sufficient_multiplicity_bound hk hm hR_roots using 1
@@ -773,7 +795,7 @@ lemma list_min_le_of_mem {l : List ℕ} {a m : ℕ} (h_min : l.min? = some m) (h
 
 /-- If the `(s, t)`-coefficient of `shift Q x y` is non-zero, then the root multiplicity
     of `Q` at `(x, y)` is at most `s + t`. -/
-lemma rootMultiplicity_le_of_coeff_ne_zero {Q : F[X][Y]} {x y : F} {s t : ℕ}
+lemma rootMultiplicity_le_of_coeff_ne_zero [DecidableEq F] {Q : F[X][Y]} {x y : F} {s t : ℕ}
     (h : Bivariate.coeff (shift Q x y) s t ≠ 0) :
     rootMultiplicity Q x y ≤ (s + t : WithTop ℕ) := by
       set g : F[X][Y] := shift Q x y;
@@ -795,7 +817,7 @@ lemma rootMultiplicity_le_of_coeff_ne_zero {Q : F[X][Y]} {x y : F} {s t : ℕ}
           refine Finset.le_sup (f := fun m ↦ 1 * ((g.coeff m).natDegree ) + 1 * m)
               (Finset.mem_coe.mpr <| Polynomial.mem_support_iff.mpr <|
                 show g.coeff t ≠ 0 from ?_) |> le_trans ?_
-          · simp +zetaDelta at *
+          · simp +zetaDelta only [ne_eq, one_mul, add_le_add_iff_right] at *
             exact le_natDegree_of_ne_zero h
           · exact fun h' => h <| by rw [Polynomial.Bivariate.coeff]; aesop
         exact ⟨List.mem_product.mpr ⟨List.mem_range.mpr (by linarith),
@@ -813,7 +835,7 @@ lemma rootMultiplicity_le_of_coeff_ne_zero {Q : F[X][Y]} {x y : F} {s t : ℕ}
           then Option.none else Option.some (p.1 + p.2)) (List.product (List.range
             (natWeightedDegree g 1 1 + 1)) (List.range (natWeightedDegree g 1 1 + 1)))) <;> aesop
 
-lemma one {Q : F[X][Y]} (i : Fin n) (s t : ℕ) (hst : s + t < m)
+lemma one [DecidableEq F] {Q : F[X][Y]} (i : Fin n) (s t : ℕ) (hst : s + t < m)
   (hQ₂ : ∀ i, m ≤ rootMultiplicity Q (ωs i) (f i)) :
   Bivariate.coeff (shift Q (ωs i) (f i)) s t = 0 := by
     contrapose! hQ₂
@@ -823,7 +845,7 @@ lemma one {Q : F[X][Y]} (i : Fin n) (s t : ℕ) (hst : s + t < m)
       convert rootMultiplicity_le_of_coeff_ne_zero hQ₂ using 1
       cases h' : rootMultiplicity Q (ωs i) (f i)
       · aesop
-      · simp_all [WithTop.some_eq_coe]
+      · simp_all only [ne_eq, WithTop.some_eq_coe, ENat.some_eq_coe, false_iff]
         exact_mod_cast not_le_of_gt (lt_of_lt_of_le h_lt (mod_cast h)))
 
 end divisibility

@@ -79,7 +79,7 @@ def natDegreeY (f : F[X][Y]) : ℕ := Polynomial.natDegree f
 /-- The set of `Y`-degrees is non-empty. -/
 lemma degreesY_nonempty {f : F[X][Y]} (hf : f ≠ 0) : (f.toFinsupp.support).Nonempty :=
   Finsupp.support_nonempty_iff.mpr
-    fun h ↦ hf (Polynomial.ext (fun n => by rw [←Polynomial.toFinsupp_apply, h]; rfl))
+    fun h ↦ hf (Polynomial.ext (fun n => by rw [← Polynomial.toFinsupp_apply, h]; rfl))
 
 /-- The `X`-degree of a bivariate polynomial. -/
 def degreeX (f : F[X][Y]) : ℕ := f.support.sup (fun n => (f.coeff n).natDegree)
@@ -372,16 +372,19 @@ polynomial in `Y`. -/
 def monomialY (n : ℕ) : F[X] →ₗ[F[X]] F[X][Y] where
   toFun t := ⟨Finsupp.single n t⟩
   map_add' x y := by rw [Finsupp.single_add]; aesop
-  map_smul' r x := by simp; rw[smul_monomial]; aesop
+  map_smul' r x := by
+    simp only [smul_eq_mul, ofFinsupp_single, RingHom.id_apply]
+    rw [smul_monomial]
+    aesop
 
 /-- Definition of the bivariate monomial `X^n * Y^m` -/
 def monomialXY (n m : ℕ) : F →ₗ[F] F[X][Y] where
   toFun t := ⟨Finsupp.single m ⟨(Finsupp.single n t)⟩⟩
   map_add' x y := by
-    simp only [ofFinsupp_single, Polynomial.monomial_add, Polynomial.monomial_add]
+    simp only [ofFinsupp_single, map_add, map_add]
   map_smul' x y := by
     simp only [smul_eq_mul, ofFinsupp_single, RingHom.id_apply]
-    rw[smul_monomial, smul_monomial]
+    rw [smul_monomial, smul_monomial]
     simp
 
 /-- The bivariate monomial is well-defined. -/
