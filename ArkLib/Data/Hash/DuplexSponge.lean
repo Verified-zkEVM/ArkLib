@@ -68,37 +68,37 @@ namespace OracleSpec
 /-- The oracle specification for the forward permutation of a type `α`. Just a wrapper around
 `α →ₒ α` -/
 @[reducible]
-def forwardPermutationOracle (α : Type*) : OracleSpec Unit := α →ₒ α
+def forwardPermutationOracle (α : Type*) : OracleSpec α := α →ₒ α
 
 /-- The oracle specification for the backward permutation of a type `α`. Just a wrapper around
 `α →ₒ α` -/
 @[reducible]
-def backwardPermutationOracle (α : Type*) : OracleSpec Unit := α →ₒ α
+def backwardPermutationOracle (α : Type*) : OracleSpec α := α →ₒ α
 
 /-- Oracle specification for an ideal permutation, which is the concatenation of the specifications
   for the forward and backward directions. -/
 @[reducible]
-def permutationOracle (α : Type*) : OracleSpec PermuteDir :=
-  forwardPermutationOracle α ++ₒ backwardPermutationOracle α
+def permutationOracle (α : Type*) : OracleSpec (α ⊕ α) :=
+  forwardPermutationOracle α + backwardPermutationOracle α
 
 end OracleSpec
 
 /-- Canonical implementation of the forward permutation oracle spec with an actual permutation. -/
-def forwardPermutationOracleImpl {α : Type*} [Permute α] :
-    QueryImpl (forwardPermutationOracle α) Id where
-  impl | query () q => Permute.permute (α := α) q
+def forwardPermutationOracleImpl (α : Type*) [Permute α] :
+    QueryImpl (forwardPermutationOracle α) Id :=
+  Permute.permute (α := α)
 
 /-- Canonical implementation of the backward permutation oracle spec with an actual (lawful)
   permutation. -/
-def backwardPermutationOracleImpl {α : Type*} [Permute α] [LawfulPermute α] :
-    QueryImpl (backwardPermutationOracle α) Id where
-  impl | query () q => LawfulPermute.permuteInv (α := α) q
+def backwardPermutationOracleImpl (α : Type*) [Permute α] [LawfulPermute α] :
+    QueryImpl (backwardPermutationOracle α) Id :=
+  LawfulPermute.permuteInv (α := α)
 
 /-- Canonical implementation of the permutation oracle spec with an actual permutation.
 (of course, during proofs, we would idealize the permutation as being random) -/
-def permutationOracleImpl {α : Type*} [Permute α] [LawfulPermute α] :
+def permutationOracleImpl (α : Type*) [Permute α] [LawfulPermute α] :
     QueryImpl (permutationOracle α) Id :=
-  SimOracle.append forwardPermutationOracleImpl backwardPermutationOracleImpl
+  forwardPermutationOracleImpl α + backwardPermutationOracleImpl α
 
 end move_elsewhere
 
@@ -374,7 +374,7 @@ We query the oracle to get the capacity segment of the sponge (the last `C` elem
 rate segment to be all-zero. We also set `absorbPos` to 0 and `squeezePos` to `R`.
 -/
 def start {α : Type} (a : α) : OracleComp (α →ₒ Vector U SpongeSize.C) (DuplexSponge U C) := do
-  let capacitySegment : Vector U SpongeSize.C ← query (spec := α →ₒ Vector U SpongeSize.C) () a
+  let capacitySegment : Vector U SpongeSize.C ← query (spec := α →ₒ Vector U SpongeSize.C) a
   let vecSponge := (Vector.replicate SpongeSize.R (0 : U)) ++ capacitySegment
   return {
     state := SpongeState.update (α := C) (0 : C) (vecSponge.cast (by simp)),
@@ -425,7 +425,7 @@ def absorb (sponge : DuplexSponge U C) (ls : List U) :
     -- first unit of the state vector with the first element of the list, reset the absorbing index
     -- to one, and set the squeezing index to the end of the rate segment
     if sponge.absorbPos = SpongeSize.R then do
-      let permutedState ← query (spec := forwardPermutationOracle _) () (sponge.state)
+      let permutedState ← query (spec := forwardPermutationOracle _) (sponge.state)
       let newSponge : DuplexSponge U C := {
         state := SpongeState.modify permutedState (Vector.set · 0 x),
         absorbPos := 1
@@ -474,7 +474,7 @@ def absorbFast (sponge : DuplexSponge U C) (arr : Array U) :
     if hFull : sponge.absorbPos = SpongeSize.R then do
       -- For termination proof
       have : 0 < sponge.absorbPos := by apply Fin.lt_def.mpr; rw [hFull]; simp
-      let permutedState ← query (spec := forwardPermutationOracle _) () (sponge.state)
+      let permutedState ← query (spec := forwardPermutationOracle _) (sponge.state)
       let newSponge : DuplexSponge U C := { sponge1 with state := permutedState, absorbPos := 0 }
       absorbFast newSponge arr
     else do
@@ -496,7 +496,7 @@ termination_by (arr.size, sponge.absorbPos)
 
 /-- This is the Rust version once we fix an implementation of the permutation. -/
 def absorbUnchecked [Permute C] (sponge : DuplexSponge U C) (arr : Array U) : DuplexSponge U C :=
-  simulateQ' forwardPermutationOracleImpl (absorbFast sponge arr) (by sorry)
+  simulateQ (forwardPermutationOracleImpl C) (absorbFast sponge arr)
 
 /--
 ### Squeeze out a vector of units from the sponge (paper version)
@@ -518,7 +518,7 @@ def squeeze (sponge : DuplexSponge U C) (len : Nat) :
     -- Set absorbing index to zero
     let sponge1 : DuplexSponge U C := { sponge with absorbPos := 0 }
     let sponge2 ← if sponge1.squeezePos = SpongeSize.R then
-      let permutedState ← query (spec := forwardPermutationOracle _) () (sponge1.state)
+      let permutedState ← query (spec := forwardPermutationOracle _) (sponge1.state)
       let sponge2 : DuplexSponge U C := { sponge1 with state := permutedState, squeezePos := 0 }
       pure sponge2
     else
@@ -565,7 +565,7 @@ def squeezeInto (sponge : DuplexSponge U C) (arr : Array U) :
     -- in order to prove termination
     let ⟨sponge2, h⟩ ←
       if hFull : sponge1.squeezePos = SpongeSize.R then do
-        let permutedState ← query (spec := forwardPermutationOracle _) () sponge1.state
+        let permutedState ← query (spec := forwardPermutationOracle _) sponge1.state
         let sponge2 : DuplexSponge U C := { sponge1 with state := permutedState, squeezePos := 0 }
         have : sponge2.squeezePos < SpongeSize.R := by simp [sponge2]
         let sponge2WithProof : { s : DuplexSponge U C | s.squeezePos < SpongeSize.R } :=
@@ -597,7 +597,7 @@ decreasing_by
 
 def squeezeUnchecked [Permute C] (sponge : DuplexSponge U C) (arr : Array U) :
     DuplexSponge U C × Array U :=
-  simulateQ' (m := Id) forwardPermutationOracleImpl (squeezeInto sponge arr) (by sorry)
+  Id.run <| simulateQ (forwardPermutationOracleImpl C) (squeezeInto sponge arr)
 
 /--
 ### Ratchet the sponge state for domain separation
@@ -609,7 +609,7 @@ Algorithm (from Rust implementation):
 -/
 def ratchet (sponge : DuplexSponge U C) :
     OracleComp (forwardPermutationOracle C) (DuplexSponge U C) := do
-  let permutedState : C ← query (spec := forwardPermutationOracle C) () sponge.state
+  let permutedState : C ← query (spec := forwardPermutationOracle C) sponge.state
   -- Use the lens to get the state
   let vecState : Vector U SpongeSize.N := SpongeState.get permutedState
   -- Zero out the rate portion
@@ -624,7 +624,7 @@ def ratchet (sponge : DuplexSponge U C) :
 
 /-- This is the Rust version once we fix an implementation of the permutation. -/
 def ratchetUnchecked [Permute C] (sponge : DuplexSponge U C) : DuplexSponge U C :=
-  simulateQ' forwardPermutationOracleImpl (ratchet sponge) (by sorry)
+  simulateQ (forwardPermutationOracleImpl C) (ratchet sponge)
 
 /-- Implement DuplexSpongeInterface for DuplexSponge. -/
 instance [Inhabited C] [Permute C] : DuplexSpongeInterface U (DuplexSponge U C) where

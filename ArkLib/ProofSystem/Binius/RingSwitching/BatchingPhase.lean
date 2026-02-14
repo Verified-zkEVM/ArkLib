@@ -50,7 +50,7 @@ namespace Binius.RingSwitching.BatchingPhase
 
 variable (κ : ℕ) [NeZero κ]
 variable (L : Type) [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
-  [SelectableType L]
+  [SampleableType L]
 variable (K : Type) [Field K] [Fintype K] [DecidableEq K]
 variable [Algebra K L]
 variable (β : Basis (Fin κ → Fin 2) K L)
@@ -144,7 +144,7 @@ noncomputable def oracleVerifier :
   verify | stmt, pSpec_batching_challenges => do
      -- Step 1: Query prover for ŝ (Message 0).
     let s_hat : TensorAlgebra K L ← query (spec := [pSpecBatching (κ:=κ)
-      (L:=L) (K:=K).Message]ₒ) ⟨0, by simp⟩ ()
+      (L:=L) (K:=K).Message]ₒ) ⟨⟨0, rfl⟩, ()⟩
 
     -- Step 2: Perform Check 1.
     unless performCheckOriginalEvaluation κ L K β ℓ ℓ' h_l
@@ -300,7 +300,8 @@ noncomputable def batchingKnowledgeStateFunction :
         Equiv.toFun_as_coe, Transcript.equivMessagesChallenges_apply, Fin.castSucc_zero,
         batchingRbrExtractor, Fin.mk_one, Fin.succ_one_eq_two,
         batchingInputRelationProp] at ⊢ hSuccTrue
-      simp only [hSuccTrue.1, true_and]
+      rw [hSuccTrue.1]
+      simp only [true_and]
       set s_hat := (Transcript.concat msg tr).toMessagesChallenges.1 ⟨(0 : Fin (0 + 1)), by rfl⟩
       -- ⊢ stmtIn.1.original_claim = (MvPolynomial.aeval stmtIn.1.t_eval_point) ↑witMid.t
       sorry
@@ -310,7 +311,7 @@ noncomputable def batchingKnowledgeStateFunction :
 /-! ## Security Properties -/
 
 /-- Perfect completeness for the batching phase oracle reduction. -/
-theorem batchingReduction_perfectCompleteness (hInit : init.neverFails) :
+theorem batchingReduction_perfectCompleteness :
   OracleReduction.perfectCompleteness
     (oracleReduction := batchingOracleReduction κ L K β ℓ ℓ' h_l (aOStmtIn:=aOStmtIn))
     (relIn := batchingInputRelation κ L K β ℓ ℓ' h_l aOStmtIn)

@@ -30,10 +30,10 @@ to duplex-sponge Fiat-Shamir query-answer traces (from both prover and verifier)
 
 Note: this goes the opposite direction as the prover transformation -/
 def basicToDuplexSpongeFSTrace
-    (proveQueryLog : QueryLog (oSpec ++ₒ fsChallengeOracle StmtIn pSpec))
-    (verifyQueryLog : QueryLog (oSpec ++ₒ fsChallengeOracle StmtIn pSpec)) :
-      QueryLog (oSpec ++ₒ duplexSpongeChallengeOracle StmtIn U) ×
-      QueryLog (oSpec ++ₒ duplexSpongeChallengeOracle StmtIn U) :=
+    (proveQueryLog : QueryLog (oSpec + fsChallengeOracle StmtIn pSpec))
+    (verifyQueryLog : QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :
+      QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U) ×
+      QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U) :=
   sorry
 
 alias d2STrace := basicToDuplexSpongeFSTrace

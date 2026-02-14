@@ -216,11 +216,12 @@ lemma ps_coprime_case_constant {F : Type} [Field F] [DecidableEq F]
   set mY : ℕ := Polynomial.Bivariate.natDegreeY A with hmY
   set mX : ℕ := Polynomial.Bivariate.degreeX A with hmX
   -- resultant in the Y-direction
-  set RY : F[X] := Polynomial.resultant A B mY b_y with hRY
+  set RY : F[X] := Polynomial.resultant B A b_y mY with hRY
   -- for the X-direction we use the swapped polynomials
   set RX : F[X] :=
-      Polynomial.resultant (Polynomial.Bivariate.swap A)
-        (Polynomial.Bivariate.swap B) mX b_x with hRX
+      Polynomial.resultant (Polynomial.Bivariate.swap B)
+        (Polynomial.Bivariate.swap A)
+        b_x mX with hRX
 
   -- convenient bounds coming from the new hypotheses
   have hmY_le_ay : mY ≤ a_y := by
@@ -338,8 +339,8 @@ lemma ps_coprime_case_constant {F : Type} [Field F] [DecidableEq F]
             exact le_trans h1 h2)
           (hQ := hQ)
       have h' : (X - C y) ^ mX ∣
-          Polynomial.resultant (Polynomial.Bivariate.swap A)
-            (Polynomial.Bivariate.swap B) mX b_x := by
+          Polynomial.resultant (Polynomial.Bivariate.swap B) (Polynomial.Bivariate.swap A)
+             b_x mX := by
         simpa [mX, hmX] using h
       simpa [RX, hRX] using h'
     exact
@@ -493,7 +494,6 @@ lemma ps_coprime_case_constant {F : Type} [Field F] [DecidableEq F]
       have hb' := mul_le_mul_of_nonneg_right hb hnonneg
       have : (mY : ℚ) * (n_x : ℚ) * ((b_x : ℚ) / (n_x : ℚ)) = (mY : ℚ) * (b_x : ℚ) := by
         field_simp [hn_x0']
-        ring
       simpa [mul_assoc, this] using hb'
     have h2 : (mX : ℚ) * (b_y : ℚ) ≤ D * ((b_y : ℚ) / (n_y : ℚ)) := by
       have hb : (mX : ℚ) * (n_y : ℚ) ≤ D := by
@@ -503,7 +503,6 @@ lemma ps_coprime_case_constant {F : Type} [Field F] [DecidableEq F]
       have hb' := mul_le_mul_of_nonneg_right hb hnonneg
       have : (mX : ℚ) * (n_y : ℕ) * ((b_y : ℚ) / (n_y : ℚ)) = (mX : ℚ) * (b_y : ℚ) := by
         field_simp [hn_y0']
-        ring
       simpa [mul_assoc, this] using hb'
     have hDexpr : D = (mX : ℚ) * (b_y : ℚ) + (mY : ℚ) * (b_x : ℚ) := by
       simp [D, Nat.cast_add, Nat.cast_mul]

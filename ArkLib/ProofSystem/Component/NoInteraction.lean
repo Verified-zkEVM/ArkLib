@@ -66,9 +66,10 @@ def reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut !p[] where
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
 
-theorem reduction_completeness {ε : ℝ≥0}
+theorem reduction_completeness {ε : ℝ≥0} [DecidablePred (· ∈ relOut)]
+    [DecidableEq StmtOut]
     (hRel : ∀ stmtIn witIn, (stmtIn, witIn) ∈ relIn →
-      [fun ⟨stmtOut, witOut⟩ => (stmtOut, witOut) ∈ relOut|do
+      Pr[fun ⟨stmtOut, witOut⟩ => (stmtOut, witOut) ∈ relOut | do
         (simulateQ impl <| combineMap mapStmt mapWit ⟨stmtIn, witIn⟩).run' (← init)] ≥ 1 - ε) :
     Reduction.completeness init impl relIn relOut (reduction mapStmt mapWit) ε := by
   simp [Reduction.completeness, Reduction.run, Verifier.run, prover, Prover.run,

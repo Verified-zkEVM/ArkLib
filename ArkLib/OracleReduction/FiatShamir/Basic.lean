@@ -77,15 +77,15 @@ Prover's function for processing the next round, given the current result of the
 @[inline, specialize]
 def Prover.processRoundFS [∀ i, VCVCompatible (pSpec.Challenge i)] (j : Fin n)
     (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (currentResult : OracleComp (oSpec ++ₒ fsChallengeOracle StmtIn pSpec)
+    (currentResult : OracleComp (oSpec + fsChallengeOracle StmtIn pSpec)
       (pSpec.MessagesUpTo j.castSucc × StmtIn × prover.PrvState j.castSucc)) :
-      OracleComp (oSpec ++ₒ fsChallengeOracle StmtIn pSpec)
+      OracleComp (oSpec + fsChallengeOracle StmtIn pSpec)
         (pSpec.MessagesUpTo j.succ × StmtIn × prover.PrvState j.succ) := do
   let ⟨messages, stmtIn, state⟩ ← currentResult
   match hDir : pSpec.dir j with
   | .V_to_P => do
     let f ← prover.receiveChallenge ⟨j, hDir⟩ state
-    let challenge ← query (spec := fsChallengeOracle StmtIn pSpec) ⟨j, hDir⟩ ⟨stmtIn, messages⟩
+    let challenge ← query (spec := fsChallengeOracle StmtIn pSpec) ⟨⟨j, hDir⟩, ⟨stmtIn, messages⟩⟩
     return ⟨messages.extend hDir, stmtIn, f challenge⟩
   | .P_to_V => do
     let ⟨msg, newState⟩ ← prover.sendMessage ⟨j, hDir⟩ state
@@ -100,7 +100,7 @@ Run the prover in an interactive reduction up to round index `i`, via first inpu
 def Prover.runToRoundFS [∀ i, VCVCompatible (pSpec.Challenge i)] (i : Fin (n + 1))
     (stmt : StmtIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (state : prover.PrvState 0) :
-        OracleComp (oSpec ++ₒ fsChallengeOracle StmtIn pSpec)
+        OracleComp (oSpec + fsChallengeOracle StmtIn pSpec)
           (pSpec.MessagesUpTo i × StmtIn × prover.PrvState i) :=
   Fin.induction
     (pure ⟨default, stmt, state⟩)
@@ -109,7 +109,7 @@ def Prover.runToRoundFS [∀ i, VCVCompatible (pSpec.Challenge i)] (i : Fin (n +
 
 /-- The (slow) Fiat-Shamir transformation for the prover. -/
 def Prover.fiatShamir (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
-    NonInteractiveProver (∀ i, pSpec.Message i) (oSpec ++ₒ fsChallengeOracle StmtIn pSpec)
+    NonInteractiveProver (∀ i, pSpec.Message i) (oSpec + fsChallengeOracle StmtIn pSpec)
       StmtIn WitIn StmtOut WitOut where
   PrvState := fun i => match i with
     | 0 => StmtIn × P.PrvState 0
@@ -125,17 +125,17 @@ def Prover.fiatShamir (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
 
 /-- The (slow) Fiat-Shamir transformation for the verifier. -/
 def Verifier.fiatShamir (V : Verifier oSpec StmtIn StmtOut pSpec) :
-    NonInteractiveVerifier (∀ i, pSpec.Message i) (oSpec ++ₒ fsChallengeOracle StmtIn pSpec)
+    NonInteractiveVerifier (∀ i, pSpec.Message i) (oSpec + fsChallengeOracle StmtIn pSpec)
       StmtIn StmtOut where
   verify := fun stmtIn proof => do
     let messages : pSpec.Messages := proof 0
-    let transcript ← messages.deriveTranscriptFS stmtIn
-    V.verify stmtIn transcript
+    let transcript ← (messages.deriveTranscriptFS (oSpec := oSpec) stmtIn)
+    Option.getM (← (V.verify stmtIn transcript).run)
 
 /-- The Fiat-Shamir transformation for an (interactive) reduction, which consists of applying the
   Fiat-Shamir transformation to both the prover and the verifier. -/
 def Reduction.fiatShamir (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
-    NonInteractiveReduction (∀ i, pSpec.Message i) (oSpec ++ₒ fsChallengeOracle StmtIn pSpec)
+    NonInteractiveReduction (∀ i, pSpec.Message i) (oSpec + fsChallengeOracle StmtIn pSpec)
       StmtIn WitIn StmtOut WitOut where
   prover := R.prover.fiatShamir
   verifier := R.verifier.fiatShamir
@@ -154,15 +154,15 @@ noncomputable section
 
 open scoped NNReal
 
-variable [∀ i, SelectableType (pSpec.Challenge i)]
+variable [∀ i, SampleableType (pSpec.Challenge i)]
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
 theorem fiatShamir_completeness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (completenessError : ℝ≥0) (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
   R.completeness init impl relIn relOut completenessError →
     R.fiatShamir.completeness (do return (← init, by unfold FunctionType; sorry))
-      (impl ++ₛₒ fsChallengeQueryImpl' :
-        QueryImpl (oSpec ++ₒ srChallengeOracle StmtIn pSpec)
+      (impl.addLift fsChallengeQueryImpl' :
+        QueryImpl (oSpec + srChallengeOracle StmtIn pSpec)
           (StateT (σ × (srChallengeOracle StmtIn pSpec).FunctionType) ProbComp))
         relIn relOut completenessError := sorry
 

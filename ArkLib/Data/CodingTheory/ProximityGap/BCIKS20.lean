@@ -438,7 +438,7 @@ lemma approximate_solution_is_exact_solution_coeffs'
         PowerSeries.mk (fun t =>
           if t ≥ k
           then (0 : BCIKS20AppendixA.𝕃 (H k δ x₀ h_gs))
-          else PowerSeries.coeff _ t
+          else PowerSeries.coeff t
             (γ'
               x₀
               (R k (x₀ := x₀) (δ := δ) h_gs)

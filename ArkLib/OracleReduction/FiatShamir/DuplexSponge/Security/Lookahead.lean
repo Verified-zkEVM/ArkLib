@@ -49,7 +49,7 @@ structure LookaheadSequence (trace : QueryLog (forwardPermutationOracle (Canonic
   /-- For all `i < inputState.length`, the query-answer pair `(inputState[i], outputState[i])` is in
     the trace -/
   inputOutput_in_trace : ∀ i : Fin inputState.length,
-    (inputState[i], outputState[i]) ∈ trace.getQ ()
+    ⟨inputState[i], outputState[i]⟩ ∈ trace
 
   /-- For all `i < outputState.length`, the output state is the next input state -/
   outputState_eq_next_inputState : ∀ i : Fin (outputState.length - 1),
@@ -103,7 +103,7 @@ OracleComp, and `none` as `Option.none` inside)
 -/
 def lookAhead (fwdPermTrace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
-    OracleComp (Unit →ₒ U) (Option (Vector U (challengeSize i))) := do
+    OptionT (OracleComp (Unit →ₒ U)) (Option (Vector U (challengeSize i))) := do
   /- Actual algorithm:
   1. Compute the lookahead sequence family `𝒮_LA` from the forward permutation trace `tr.p`
   2. If `𝒮_LA` is empty, return `none`

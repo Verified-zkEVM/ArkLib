@@ -30,8 +30,8 @@ section
 variable {ι : Type*} [DecidableEq ι] {spec : OracleSpec ι} [spec.DecidableEq]
 
 /-- A query tuple `(i, q, r)` is redundant in a query log if it appears more than once -/
-def redundantQuery (log : QueryLog spec) (i : ι) (q : spec.domain i) (r : spec.range i) : Prop :=
-  (log.getQ i).count (q, r) > 1
+def redundantQuery (log : QueryLog spec) (q : spec.Domain) (r : spec.Range q) : Prop :=
+  (log.count ⟨q, r⟩) > 1
 
 def existPriorSameQuery (log : QueryLog spec) (idx : Fin log.length) : Prop :=
   ∃ j' < idx, log[j'] = log[idx]
@@ -52,15 +52,17 @@ def redundantEntryDS (log : QueryLog (duplexSpongeChallengeOracle StmtIn U))
   match log[idx] with
   /- If it's a hash query, it's redundant if there is a prior hash query with the same query-answer
      pair -/
-  | ⟨.inl _, ⟨stmt, state⟩⟩ => ∃ j' < idx, log[j'] = ⟨.inl _, ⟨stmt, state⟩⟩
+  | ⟨.inl u, ⟨stmt, state⟩⟩ => ∃ j' < idx, log[j'] = ⟨.inl u, stmt, state⟩
   /- If it's a permutation query (`dir ∈ {Fwd, Bwd}`), it's redundant if there is a prior
     permutation query with either:
     - the same direction and input-output pair, or
     - the opposite direction and output-input pair -/
-  | ⟨.inr .Fwd, stateIn, stateOut⟩ =>
-    ∃ j' < idx, log[j'] = ⟨.inr .Fwd, stateIn, stateOut⟩ ∨ log[j'] = ⟨.inr .Bwd, stateOut, stateIn⟩
-  | ⟨.inr .Bwd, stateOut, stateIn⟩ =>
-    ∃ j' < idx, log[j'] = ⟨.inr .Bwd, stateOut, stateIn⟩ ∨ log[j'] = ⟨.inr .Fwd, stateIn, stateOut⟩
+  | ⟨.inr (.inl stateIn), stateOut⟩ =>
+    ∃ j' < idx, log[j'] = ⟨.inr (.inl stateIn), stateOut⟩ ∨
+      log[j'] = ⟨.inr <|.inl stateOut, stateIn⟩
+  | ⟨.inr (.inr stateOut), stateIn⟩ =>
+    ∃ j' < idx, log[j'] = ⟨.inr (.inr stateOut), stateIn⟩ ∨
+      log[j'] = ⟨.inr <|.inr stateIn, stateOut⟩
 
 /-- A duplex sponge challenge oracle trace has no redundant entries if no entry is redundant -/
 def NoRedundantEntryDS (log : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
@@ -87,16 +89,16 @@ write `∃ j`. -/
 def capacitySegmentDupHash : Prop :=
   let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
   ∃ j : Fin baseTrace.length, ∃ capSeg : Vector U SpongeSize.C,
-    ∃ stmt : StmtIn, baseTrace[j] = ⟨.inl (), stmt, capSeg⟩ ∧
+    ∃ stmt : StmtIn, baseTrace[j] = ⟨.inl stmt, capSeg⟩ ∧
       ∃ j' < j,
-        ∃ stmt', baseTrace[j'] = ⟨.inl (), stmt', capSeg⟩ ∨
-        (∃ stateIn1 stateOut1, baseTrace[j'] = ⟨.inr .Fwd, stateIn1, stateOut1⟩
+        ∃ stmt', baseTrace[j'] = ⟨.inl stmt', capSeg⟩ ∨
+        (∃ stateIn1 stateOut1, baseTrace[j'] = ⟨.inr <|.inl stateIn1, stateOut1⟩
           ∧ stateOut1.capacitySegment = capSeg) ∨
-        (∃ stateOut2 stateIn2, baseTrace[j'] = ⟨.inr .Bwd, stateOut2, stateIn2⟩
+        (∃ stateOut2 stateIn2, baseTrace[j'] = ⟨.inr <|.inr stateOut2, stateIn2⟩
           ∧ stateIn2.capacitySegment = capSeg) ∨
-        (∃ stateIn3 stateOut3, baseTrace[j'] = ⟨.inr .Fwd, stateIn3, stateOut3⟩
+        (∃ stateIn3 stateOut3, baseTrace[j'] = ⟨.inr <|.inl stateIn3, stateOut3⟩
           ∧ stateIn3.capacitySegment = capSeg) ∨
-        (∃ stateOut4 stateIn4, baseTrace[j'] = ⟨.inr .Bwd, stateOut4, stateIn4⟩
+        (∃ stateOut4 stateIn4, baseTrace[j'] = ⟨.inr <|.inr stateOut4, stateIn4⟩
           ∧ stateOut4.capacitySegment = capSeg)
 
 alias E_h := capacitySegmentDupHash
@@ -104,17 +106,17 @@ alias E_h := capacitySegmentDupHash
 def capacitySegmentDupPerm : Prop :=
   let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
   ∃ j : Fin baseTrace.length, ∃ capSeg : Vector U SpongeSize.C,
-    (∃ stateIn stateOut, baseTrace[j] = ⟨.inr .Fwd, stateIn, stateOut⟩ ∧
+    (∃ stateIn stateOut, baseTrace[j] = ⟨.inr <|.inl stateIn, stateOut⟩ ∧
       stateOut.capacitySegment = capSeg) ∧
       (
-        (∃ j' < j, ∃ stmt', baseTrace[j'] = ⟨.inl (), stmt', capSeg⟩) ∨
-        (∃ j' < j, ∃ stateIn1 stateOut1, baseTrace[j'] = ⟨.inr .Fwd, stateIn1, stateOut1⟩ ∧
+        (∃ j' < j, ∃ stmt', baseTrace[j'] = ⟨.inl stmt', capSeg⟩) ∨
+        (∃ j' < j, ∃ stateIn1 stateOut1, baseTrace[j'] = ⟨.inr <|.inl stateIn1, stateOut1⟩ ∧
           stateOut1.capacitySegment = capSeg) ∨
-        (∃ j' ≤ j, ∃ stateOut2 stateIn2, baseTrace[j'] = ⟨.inr .Bwd, stateOut2, stateIn2⟩ ∧
+        (∃ j' ≤ j, ∃ stateOut2 stateIn2, baseTrace[j'] = ⟨.inr <|.inr stateOut2, stateIn2⟩ ∧
           stateIn2.capacitySegment = capSeg) ∨
-        (∃ j' ≤ j, ∃ stateIn3 stateOut3, baseTrace[j'] = ⟨.inr .Fwd, stateIn3, stateOut3⟩ ∧
+        (∃ j' ≤ j, ∃ stateIn3 stateOut3, baseTrace[j'] = ⟨.inr <|.inl stateIn3, stateOut3⟩ ∧
           stateIn3.capacitySegment = capSeg) ∨
-        (∃ j' ≤ j, ∃ stateOut4 stateIn4, baseTrace[j'] = ⟨.inr .Bwd, stateOut4, stateIn4⟩ ∧
+        (∃ j' ≤ j, ∃ stateOut4 stateIn4, baseTrace[j'] = ⟨.inr <|.inr stateOut4, stateIn4⟩ ∧
           stateOut4.capacitySegment = capSeg)
       )
 
@@ -123,17 +125,17 @@ alias E_p := capacitySegmentDupPerm
 def capacitySegmentDupPermInv : Prop :=
   let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
   ∃ j : Fin baseTrace.length, ∃ capSeg : Vector U SpongeSize.C,
-    (∃ stateOut stateIn, baseTrace[j] = ⟨.inr .Bwd, stateOut, stateIn⟩ ∧
+    (∃ stateOut stateIn, baseTrace[j] = ⟨.inr <|.inr stateOut, stateIn⟩ ∧
       stateIn.capacitySegment = capSeg) ∧
       (
-        (∃ j' < j, ∃ stmt', baseTrace[j'] = ⟨.inl (), stmt', capSeg⟩) ∨
-        (∃ j' < j, ∃ stateIn1 stateOut1, baseTrace[j'] = ⟨.inr .Fwd, stateIn1, stateOut1⟩ ∧
+        (∃ j' < j, ∃ stmt', baseTrace[j'] = ⟨.inl stmt', capSeg⟩) ∨
+        (∃ j' < j, ∃ stateIn1 stateOut1, baseTrace[j'] = ⟨.inr <|.inl stateIn1, stateOut1⟩ ∧
           stateOut1.capacitySegment = capSeg) ∨
-        (∃ j' < j, ∃ stateIn2 stateOut2, baseTrace[j'] = ⟨.inr .Bwd, stateOut2, stateIn2⟩ ∧
-          stateIn2.capacitySegment = capSeg) ∨
-        (∃ j' ≤ j, ∃ stateIn3 stateOut3, baseTrace[j'] = ⟨.inr .Fwd, stateIn3, stateOut3⟩ ∧
+        (∃ j' < j, ∃ stateIn2 stateOut2, baseTrace[j'] = ⟨.inr <|.inr stateOut2, stateIn2⟩ ∧
+          CanonicalSpongeState.capacitySegment stateIn2 = capSeg) ∨
+        (∃ j' ≤ j, ∃ stateIn3 stateOut3, baseTrace[j'] = ⟨.inr <|.inl stateIn3, stateOut3⟩ ∧
           stateIn3.capacitySegment = capSeg) ∨
-        (∃ j' ≤ j, ∃ stateIn4 stateOut4, baseTrace[j'] = ⟨.inr .Bwd, stateOut4, stateIn4⟩ ∧
+        (∃ j' ≤ j, ∃ stateIn4 stateOut4, baseTrace[j'] = ⟨.inr <|.inr stateOut4, stateIn4⟩ ∧
           stateOut4.capacitySegment = capSeg)
       )
 
@@ -151,10 +153,10 @@ and `p⁻¹` -/
 def notFunction : Prop :=
   let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
   ∃ j : Fin baseTrace.length, ∃ stateIn _stateOut : CanonicalSpongeState U,
-    baseTrace[j] = ⟨.inr .Fwd, stateIn, _stateOut⟩ ∧
+    baseTrace[j] = ⟨.inr <|.inl stateIn, _stateOut⟩ ∧
       ∃ j' < j,
-        ∃ stateOut1 : CanonicalSpongeState U, baseTrace[j'] = ⟨.inr .Fwd, stateIn, stateOut1⟩ ∨
-        ∃ stateOut2 : CanonicalSpongeState U, baseTrace[j'] = ⟨.inr .Bwd, stateOut2, stateIn⟩
+        ∃ stateOut1 : CanonicalSpongeState U, baseTrace[j'] = ⟨.inr <|.inl stateIn, stateOut1⟩ ∨
+        ∃ stateOut2 : CanonicalSpongeState U, baseTrace[j'] = ⟨.inr <|.inr stateOut2, stateIn⟩
 
 alias E_func := notFunction
 
@@ -170,8 +172,8 @@ if the combined event doesn't hold (`= 0`)
 def collisionFwdFwd : Prop :=
   let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
   ∃ stateIn stateIn' stateOut,
-    (stateIn, stateOut) ∈ baseTrace.getQ (.inr .Fwd) ∧
-    (stateIn', stateOut) ∈ baseTrace.getQ (.inr .Fwd) ∧
+    ⟨.inr <|.inl stateIn, stateOut⟩ ∈ baseTrace ∧
+    ⟨.inr <|.inl stateIn', stateOut⟩ ∈ baseTrace ∧
     stateIn ≠ stateIn'
 
 alias E_col_p := collisionFwdFwd
@@ -179,8 +181,8 @@ alias E_col_p := collisionFwdFwd
 def collisionBwdBwd : Prop :=
   let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
   ∃ stateOut stateOut' stateIn,
-    (stateOut, stateIn) ∈ baseTrace.getQ (.inr .Bwd) ∧
-    (stateOut', stateIn) ∈ baseTrace.getQ (.inr .Bwd) ∧
+    ⟨.inr <| .inr stateOut, stateIn⟩ ∈ baseTrace ∧
+    ⟨.inr <| .inr stateOut', stateIn⟩ ∈ baseTrace ∧
     stateOut ≠ stateOut'
 
 alias E_col_pinv := collisionBwdBwd
@@ -188,8 +190,8 @@ alias E_col_pinv := collisionBwdBwd
 def collisionFwdBwd : Prop :=
   let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
   ∃ stateIn stateOut stateOut',
-    (stateIn, stateOut) ∈ baseTrace.getQ (.inr .Fwd) ∧
-    (stateOut', stateIn) ∈ baseTrace.getQ (.inr .Bwd) ∧
+    ⟨.inr <| .inl stateOut, stateIn⟩ ∈ baseTrace ∧
+    ⟨.inr <| .inr stateOut', stateIn⟩ ∈ baseTrace ∧
     stateOut ≠ stateOut'
 
 alias E_col_p_pinv := collisionFwdBwd
@@ -197,8 +199,8 @@ alias E_col_p_pinv := collisionFwdBwd
 def collisionBwdFwd : Prop :=
   let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
   ∃ stateIn stateOut stateOut',
-    (stateIn, stateOut) ∈ baseTrace.getQ (.inr .Bwd) ∧
-    (stateOut', stateIn) ∈ baseTrace.getQ (.inr .Fwd) ∧
+    ⟨.inr <| .inr stateOut, stateIn⟩ ∈ baseTrace ∧
+    ⟨.inr <| .inl stateOut', stateIn⟩ ∈ baseTrace ∧
     stateOut ≠ stateOut'
 
 alias E_col_pinv_p := collisionBwdFwd

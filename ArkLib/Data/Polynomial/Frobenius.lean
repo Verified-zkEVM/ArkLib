@@ -98,10 +98,10 @@ theorem prod_X_sub_C_eq_X_pow_card_sub_X :
   have h_roots_eq : P.roots = Q.roots := by
     rw [h_roots_P, h_roots_Q]
 
-  have hP_splits : P.Splits (RingHom.id Fq) := by
-    apply Polynomial.splits_prod
+  have hP_splits : P.Splits := by
+    apply Polynomial.Splits.prod
     intro c _
-    apply Polynomial.splits_X_sub_C
+    apply Polynomial.Splits.X_sub_C
 
   have hQ_card_roots : Q.roots.card = Fintype.card Fq := by
     rw [h_roots_Q]
@@ -116,7 +116,7 @@ theorem prod_X_sub_C_eq_X_pow_card_sub_X :
     rw [Polynomial.natDegree_sub_eq_left_of_natDegree_lt degLt]
     rw [Polynomial.natDegree_X_pow]
 
-  have hQ_splits : Q.Splits (RingHom.id Fq) := by
+  have hQ_splits : Q.Splits := by
     unfold Q
     apply Polynomial.splits_iff_card_roots.mpr
     rw [hQ_card_roots]
@@ -124,9 +124,9 @@ theorem prod_X_sub_C_eq_X_pow_card_sub_X :
 
   -- Since P and Q are monic, split, and have the same roots, they are equal.
   have hP_eq_prod : P = (Multiset.map (fun a ↦ Polynomial.X - Polynomial.C a) P.roots).prod := by
-    apply Polynomial.eq_prod_roots_of_monic_of_splits_id hP_monic hP_splits
+    apply Polynomial.Splits.eq_prod_roots_of_monic hP_splits hP_monic
   have hQ_eq_prod : Q = (Multiset.map (fun a ↦ Polynomial.X - Polynomial.C a) Q.roots).prod := by
-    apply Polynomial.eq_prod_roots_of_monic_of_splits_id hQ_monic hQ_splits
+    apply Polynomial.Splits.eq_prod_roots_of_monic hQ_splits hQ_monic
   rw [hP_eq_prod, hQ_eq_prod, h_roots_eq]
 
 variable {L : Type*} [CommRing L] [Algebra Fq L]
@@ -147,11 +147,9 @@ theorem prod_X_sub_C_eq_X_pow_card_sub_X_in_L :
     rw [Polynomial.map_prod]
     congr! with c
     rw [Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C]
-
   have h_rhs_map : (Polynomial.X^(Fintype.card Fq) - Polynomial.X) =
       Polynomial.map f (Polynomial.X^(Fintype.card Fq) - Polynomial.X) := by
     rw [Polynomial.map_sub, Polynomial.map_pow, Polynomial.map_X]
-
   rw [h_lhs_map, h_rhs_map]
   -- The goal is now `map f (LHS_base) = map f (RHS_base)`.
   -- This is true if `LHS_base = RHS_base`, which is exactly our previous theorem.
@@ -339,7 +337,8 @@ theorem X_pow_card_pow_dvd_X_pow_card_pow_of_dvd (d n : ℕ) (h_dvd : d ∣ n) :
   have h_q_gt_1 : 1 < q := Fintype.one_lt_card
   have h_exp_dvd : q ^ d - 1 ∣ q ^ n - 1 := by
     obtain ⟨k, rfl⟩ := h_dvd
-    exact nat_pow_one_sub_dvd_pow_mul_sub_one q d k
+    rw [pow_mul]
+    exact Nat.sub_one_dvd_pow_sub_one _ _
 
   have h_poly_div : (X ^ (q ^ d - 1) - 1) ∣ (X ^ (q ^ n - 1) - 1 : Fq[X]) :=
     X_pow_sub_one_dvd_X_pow_sub_one_of_dvd (q ^ d - 1) (q ^ n - 1) h_exp_dvd
@@ -398,10 +397,8 @@ theorem irreducible_dvd_X_pow_card_pow_sub_X (p : Fq[X]) (hp_irr : Irreducible p
     let pb := AdjoinRoot.powerBasis hp_ne_zero
     rw [PowerBasis.finrank pb]
     rfl
-
   -- 3. Let α be the root of p in K
   let α := AdjoinRoot.root p
-
   -- 4. Show α is a root of (X^(q^d) - X)
   have h_alpha_is_root : eval₂ (algebraMap Fq K) α (X ^ (q ^ d) - X) = 0 := by
     rw [eval₂_sub, eval₂_X_pow, eval₂_X]
@@ -409,7 +406,6 @@ theorem irreducible_dvd_X_pow_card_pow_sub_X (p : Fq[X]) (hp_irr : Irreducible p
       FiniteField.pow_card x
     rw [h_card_K] at h_pow_card_eq_self
     rw [h_pow_card_eq_self α, sub_self]
-
   -- 5. Conclusion: p is the minimal polynomial of α, so it divides any poly having α as root.
   have hp_ne_zero : p ≠ 0 := Irreducible.ne_zero hp_irr
   have h_minpoly_dvd : minpoly Fq α ∣ X ^ (q ^ d) - X :=

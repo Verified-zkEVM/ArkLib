@@ -36,9 +36,9 @@ alias d2SQueryImpl := duplexSpongeToBasicFSQueryImpl
 
 Note: this transformation needs to be an oracle computation itself -/
 def duplexSpongeToBasicFSAlgo
-    (P : OracleComp (oSpec ++ₒ duplexSpongeChallengeOracle StmtIn U)
+    (P : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
     (StmtIn × pSpec.Messages)) :
-    OracleComp (oSpec ++ₒ fsChallengeOracle StmtIn pSpec) (StmtIn × pSpec.Messages) :=
+    OracleComp (oSpec + fsChallengeOracle StmtIn pSpec) (StmtIn × pSpec.Messages) :=
   sorry
 
 alias d2SAlgo := duplexSpongeToBasicFSAlgo

@@ -171,7 +171,7 @@ instance Int.instCanonicalEuclideanDomainInt : CanonicalEuclideanDomain ℤ wher
             |b| * |k| ≥ 1 * |b| := by
               rw [mul_comm];
               simp only [ge_iff_le]
-              rw [mul_le_mul_right (b := 1) (c := |k|) (a := |b|)]; exact h_abs_k_ge_one
+              rw [Int.mul_le_mul_right (b := 1) (c := |k|) (a := |b|)]; exact h_abs_k_ge_one
               exact abs_pos.mpr hb
             _ = |b| := one_mul |b|
         -- This contradicts h_bound: |r₂ - r₁| < |b|

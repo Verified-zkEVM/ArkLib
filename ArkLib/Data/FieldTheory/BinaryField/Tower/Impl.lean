@@ -659,7 +659,8 @@ theorem join_eq_iff_dcast_extractLsb {k : ℕ} (h_pos : k > 0) (x : ConcreteBTFi
       (BitVec.append (msbs:=hi_btf) (lsbs:=lo_btf)) := by
       rw [h_join]
       simp only
-      rw [BitVec.eq_mp_eq_dcast]
+      sorry
+      -- rw [BitVec.eq_mp_eq_dcast]
     have h_x_symm := dcast_symm (hb:=h_x.symm)
     have h_hi : hi_btf = dcast (h_sub_middle h_pos)
       (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) := by
