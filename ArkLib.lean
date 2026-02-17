@@ -10,7 +10,6 @@ import ArkLib.CommitmentScheme.Trivial
 import ArkLib.Data.CNat.AssocNat
 import ArkLib.Data.CNat.Church
 import ArkLib.Data.CNat.Defs
-import ArkLib.Data.Classes.DCast
 import ArkLib.Data.Classes.FunEquiv
 import ArkLib.Data.Classes.HasPred
 import ArkLib.Data.Classes.HasSize
@@ -52,16 +51,6 @@ import ArkLib.Data.EllipticCurve.BN254
 import ArkLib.Data.FieldTheory.AdditiveNTT.AdditiveNTT
 import ArkLib.Data.FieldTheory.AdditiveNTT.Impl
 import ArkLib.Data.FieldTheory.AdditiveNTT.NovelPolynomialBasis
-import ArkLib.Data.FieldTheory.BinaryField.BF128Ghash.Basic
-import ArkLib.Data.FieldTheory.BinaryField.BF128Ghash.Impl
-import ArkLib.Data.FieldTheory.BinaryField.BF128Ghash.Prelude
-import ArkLib.Data.FieldTheory.BinaryField.BF128Ghash.XPowTwoPowGcdCertificate
-import ArkLib.Data.FieldTheory.BinaryField.BF128Ghash.XPowTwoPowModCertificate
-import ArkLib.Data.FieldTheory.BinaryField.Common
-import ArkLib.Data.FieldTheory.BinaryField.Tower.Basic
-import ArkLib.Data.FieldTheory.BinaryField.Tower.Impl
-import ArkLib.Data.FieldTheory.BinaryField.Tower.Prelude
-import ArkLib.Data.FieldTheory.BinaryField.Tower.TensorAlgebra
 import ArkLib.Data.Fin.Basic
 import ArkLib.Data.Fin.Fold
 import ArkLib.Data.Fin.Lift
@@ -91,7 +80,6 @@ import ArkLib.Data.MvPolynomial.Notation
 import ArkLib.Data.MvPolynomial.Sumcheck
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.EvenAndOdd
-import ArkLib.Data.Polynomial.Frobenius
 import ArkLib.Data.Polynomial.Interface
 import ArkLib.Data.Polynomial.MonomialBasis
 import ArkLib.Data.Polynomial.PolynomialLike
@@ -100,8 +88,6 @@ import ArkLib.Data.Polynomial.RationalFunctions
 import ArkLib.Data.Polynomial.SplitFold
 import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.Notation
-import ArkLib.Data.RingTheory.AlgebraTower
-import ArkLib.Data.RingTheory.CanonicalEuclideanDomain
 import ArkLib.OracleReduction.BCS.Basic
 import ArkLib.OracleReduction.Basic
 import ArkLib.OracleReduction.Cast

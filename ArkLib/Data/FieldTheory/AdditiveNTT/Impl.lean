@@ -5,7 +5,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 
 import ArkLib.Data.FieldTheory.AdditiveNTT.AdditiveNTT
-import ArkLib.Data.FieldTheory.BinaryField.Tower.Impl
+import CompPoly.Fields.Binary.Tower.Impl
 
 namespace AdditiveNTT
 open ConcreteBinaryTower

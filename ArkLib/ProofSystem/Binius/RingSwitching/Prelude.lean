@@ -8,7 +8,7 @@ import ArkLib.Data.FieldTheory.AdditiveNTT.AdditiveNTT
 import ArkLib.Data.MvPolynomial.Multilinear
 import ArkLib.OracleReduction.Basic
 import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.Data.FieldTheory.BinaryField.Tower.TensorAlgebra
+import CompPoly.Fields.Binary.Tower.TensorAlgebra
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Matrix.Basic

@@ -30,7 +30,7 @@ rev = "lean4.18.0"
 [[require]]
 name = "CompPoly"
 git = "https://github.com/Verified-zkEVM/CompPoly"
-rev = "v4.26.0-patch1"
+rev = "dhsorens/fields-import"
 
 [[lean_lib]]
 name = "ArkLib"
