@@ -5,7 +5,7 @@
    "type": "git",
    "subDir": null,
    "scope": "",
-   "rev": "88fe0326c448d035b5adff53b76cdb596b961ee8",
+   "rev": "897a95912305eea4a1f07b39eb39466b44769e6f",
    "name": "CompPoly",
    "manifestFile": "lake-manifest.json",
    "inputRev": "dhsorens/fields-import",

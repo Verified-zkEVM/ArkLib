@@ -48,9 +48,6 @@ import ArkLib.Data.CodingTheory.ProximityGap.DG25
 import ArkLib.Data.CodingTheory.ReedMuller
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.EllipticCurve.BN254
-import ArkLib.Data.FieldTheory.AdditiveNTT.AdditiveNTT
-import ArkLib.Data.FieldTheory.AdditiveNTT.Impl
-import ArkLib.Data.FieldTheory.AdditiveNTT.NovelPolynomialBasis
 import ArkLib.Data.Fin.Basic
 import ArkLib.Data.Fin.Fold
 import ArkLib.Data.Fin.Lift
@@ -76,12 +73,10 @@ import ArkLib.Data.MvPolynomial.Interpolation
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLib.Data.MvPolynomial.Multilinear
 import ArkLib.Data.MvPolynomial.MvPolynomialLike
-import ArkLib.Data.MvPolynomial.Notation
 import ArkLib.Data.MvPolynomial.Sumcheck
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.EvenAndOdd
 import ArkLib.Data.Polynomial.Interface
-import ArkLib.Data.Polynomial.MonomialBasis
 import ArkLib.Data.Polynomial.PolynomialLike
 import ArkLib.Data.Polynomial.Prelims
 import ArkLib.Data.Polynomial.RationalFunctions
@@ -182,8 +177,6 @@ import ArkLib.ToMathlib.Data.IndexedBinaryTree.Basic
 import ArkLib.ToMathlib.Data.IndexedBinaryTree.Equiv
 import ArkLib.ToMathlib.Data.IndexedBinaryTree.Lemmas
 import ArkLib.ToMathlib.Finset.Basic
-import ArkLib.ToMathlib.Finsupp.Fin
-import ArkLib.ToMathlib.MvPolynomial.Equiv
 import ArkLib.ToMathlib.UInt.Equiv
 import ArkLib.ToVCVio.DistEq
 import ArkLib.ToVCVio.Lemmas

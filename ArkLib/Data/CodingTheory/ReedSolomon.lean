@@ -7,7 +7,7 @@ Mirco Richter, Chung Thai Nguyen
 
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLib.Data.Polynomial.Interface
-import ArkLib.Data.Polynomial.MonomialBasis
+import CompPoly.Data.Polynomial.MonomialBasis
 import Mathlib.LinearAlgebra.Lagrange
 import Mathlib.RingTheory.Henselian
 import Mathlib.Data.NNReal.Defs
