@@ -6,6 +6,7 @@ Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
 
 import Mathlib.Algebra.Polynomial.Bivariate
 import Mathlib.Data.Finset.Max
+import Mathlib.RingTheory.Polynomial.Resultant.Basic
 
 /-!
   # Definitions and Theorems about Bivariate Polynomials with coefficients in a semiring
@@ -213,11 +214,9 @@ lemma rootMultiplicity_some_implies_root {F : Type} [CommSemiring F] [DecidableE
     simp [g, hg_def, X]
   simpa [hshift] using hg00
 
-/-- In the case of a bivariate polynomial we cannot easily use `discriminant`.
-   This is currently a lightweight placeholder definition.
--/
+/-- Discriminant in `Y`, computed as `resultant_Y(f, ∂f/∂Y)`. -/
 def discr_y {F : Type} [CommRing F] (f : F[X][Y]) : F[X] :=
-  1
+  Polynomial.resultant f (Polynomial.derivative f)
 
 /-- Over an intergal domain, the product of two non-zero bivariate polynomials is non-zero. -/
 @[grind ←]

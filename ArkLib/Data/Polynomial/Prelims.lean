@@ -42,11 +42,10 @@ namespace Univariate
 
 section
 
-/-- Discriminant of a univariate polynomial. -/
-noncomputable def discriminant {F : Type} [Field F] [Inhabited F] (f : F[X]) : F :=
-  by
-    classical
-    exact if f.Separable then 1 else 0
+/-- Discriminant of a univariate polynomial via the classical resultant formula. -/
+noncomputable def discriminant {F : Type} [Field F] (f : F[X]) : F :=
+  (-1) ^ (f.natDegree * (f.natDegree - 1) / 2) *
+    f.leadingCoeff⁻¹ * Polynomial.resultant f (Polynomial.derivative f)
 
 /-- The resultant of a polynomial is divisible by its leading coefficient. -/
 lemma resultant_is_divisible_by_leadingCoeff {F : Type} [Field F] (f : F[X]) (hf : f ≠ 0) :
@@ -61,11 +60,10 @@ lemma resultant_is_divisible_by_leadingCoeff {F : Type} [Field F] (f : F[X]) (hf
     _ = f.leadingCoeff * ((f.leadingCoeff)⁻¹ * Polynomial.resultant f (Polynomial.derivative f)) := by
         ring_nf
 
-/-- A polynomial is separable if and only if its discriminant is non-zero. -/
-lemma separable_iff_discr_eq_zero {F : Type} [Field F] [Inhabited F] (f : F[X]) :
-  f.Separable ↔ discriminant f ≠ 0 := by
-  classical
-  by_cases hf : f.Separable <;> simp [discriminant, hf]
+/-- A polynomial is separable iff it is coprime with its derivative. -/
+lemma separable_iff_coprime_derivative {F : Type} [Field F] (f : F[X]) :
+    f.Separable ↔ IsCoprime f (Polynomial.derivative f) := by
+  simpa [Polynomial.separable_def]
 
 end
 end Univariate

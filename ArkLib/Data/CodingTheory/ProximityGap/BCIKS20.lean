@@ -193,8 +193,40 @@ lemma guruswami_sudan_for_proximity_gap_property {k m : ℕ} [NeZero n] [NeZero 
       (k := k) (m := m) hδ (ωs := ωs) (f := f) hQ' hpdeg hdist)
 
 omit [DecidableEq (RatFunc F)] in
-lemma proximity_gap_list_size_bound {k m : ℕ} [Fintype F] [NeZero n] [NeZero m] [NeZero k]
-    (hk : 2 ≤ k)
+private lemma messagePolynomials_mem_const_zero [Fintype F] {p : Polynomial F}
+    (hp : p ∈ messagePolynomials (F := F) 0) :
+    p = Polynomial.C (p.coeff 0) := by
+  rcases Finset.mem_image.1 hp with ⟨msg, _hmsg, rfl⟩
+  have hzero : polynomialOfCoeffs msg = (0 : Polynomial F) := by
+    ext i
+    simp [polynomialOfCoeffs]
+  calc
+    polynomialOfCoeffs msg = (0 : Polynomial F) := hzero
+    _ = Polynomial.C (0 : F) := by simp
+    _ = Polynomial.C ((polynomialOfCoeffs msg).coeff 0) := by simp [hzero]
+
+omit [DecidableEq (RatFunc F)] in
+private lemma messagePolynomials_mem_const_one [Fintype F] {p : Polynomial F}
+    (hp : p ∈ messagePolynomials (F := F) 1) :
+    p = Polynomial.C (p.coeff 0) := by
+  rcases Finset.mem_image.1 hp with ⟨msg, _hmsg, rfl⟩
+  have hconst : polynomialOfCoeffs msg = Polynomial.C (msg 0) := by
+    ext i
+    by_cases hi : i = 0
+    · subst hi
+      simp [coeff_polynomialOfCoeffs_eq_coeffs'']
+    · have hi' : ¬ i < 1 := by omega
+      have hcoeff : (polynomialOfCoeffs msg).coeff i = 0 := by
+        simp [coeff_polynomialOfCoeffs_eq_coeffs'', hi', Fin.liftF]
+      simpa [Polynomial.coeff_C, hi] using hcoeff
+  calc
+    polynomialOfCoeffs msg = Polynomial.C (msg 0) := hconst
+    _ = Polynomial.C ((polynomialOfCoeffs msg).coeff 0) := by simp [hconst]
+
+set_option maxHeartbeats 800000 in
+-- This proof combines large finite sums with nonlinear real arithmetic.
+omit [DecidableEq (RatFunc F)] in
+lemma proximity_gap_list_size_bound {k m : ℕ} [Fintype F] [NeZero n] [NeZero m]
     (hδ :
       (0 : ℝ) ≤
         (1 : ℝ) - Real.sqrt ((k + 1 : ℚ) / n) - Real.sqrt ((k + 1 : ℚ) / n) / (2 * m))
@@ -203,15 +235,280 @@ lemma proximity_gap_list_size_bound {k m : ℕ} [Fintype F] [NeZero n] [NeZero m
       Δ₀(f, p.eval ∘ ωs) ≤ GuruswamiSudan.proximity_gap_johnson (n := n) k m).card
       ≤ GuruswamiSudan.proximity_gap_degree_bound (n := n) k m := by
   classical
-  rcases (guruswami_sudan_for_proximity_gap_existence (F := F) (n := n) (k := k) (m := m)
-    (ωs := ωs) (f := f)) with ⟨Q, hQ⟩
-  have hQ' :
-      GuruswamiSudan.GSCondition (n := n) (F := F) k m
-        (GuruswamiSudan.proximity_gap_degree_bound (n := n) k m) ωs f Q := by
-    simpa [proximity_gap_degree_bound_eq (n := n) (k := k) (m := m)] using hQ
-  exact
-    GuruswamiSudan.list_size_le_degree_bound_of_GSCondition (F := F) (n := n) (k := k) (m := m)
-      hk hδ hQ'
+  have hsmall :
+      ∀ {k0 : ℕ}, k0 ≤ 1 →
+        (hδ0 :
+          (0 : ℝ) ≤
+            (1 : ℝ) - Real.sqrt ((k0 + 1 : ℚ) / n) - Real.sqrt ((k0 + 1 : ℚ) / n) / (2 * m)) →
+        ((messagePolynomials (F := F) k0).filter fun p =>
+          Δ₀(f, p.eval ∘ ωs) ≤ GuruswamiSudan.proximity_gap_johnson (n := n) k0 m).card
+          ≤ GuruswamiSudan.proximity_gap_degree_bound (n := n) k0 m := by
+    intro k0 hk0 hδ0
+    let e : ℕ := GuruswamiSudan.proximity_gap_johnson (n := n) k0 m
+    let D : ℕ := GuruswamiSudan.proximity_gap_degree_bound (n := n) k0 m
+    let S : Finset (Polynomial F) := (messagePolynomials (F := F) k0).filter fun p =>
+      Δ₀(f, p.eval ∘ ωs) ≤ e
+    let A : Finset F := (Finset.univ : Finset F).filter fun a =>
+      Δ₀(f, fun _ : Fin n => a) ≤ e
+    have hk0_cases : k0 = 0 ∨ k0 = 1 := by omega
+    have hS_maps : Set.MapsTo (fun p : Polynomial F => p.coeff 0) S A := by
+      intro p hp
+      have hp' : p ∈ messagePolynomials (F := F) k0 ∧ Δ₀(f, p.eval ∘ ωs) ≤ e :=
+        Finset.mem_filter.1 hp
+      have hpconst : p = Polynomial.C (p.coeff 0) := by
+        rcases hk0_cases with rfl | rfl
+        · exact messagePolynomials_mem_const_zero (F := F) hp'.1
+        · exact messagePolynomials_mem_const_one (F := F) hp'.1
+      have hdist0 : Δ₀(f, fun _ : Fin n => p.coeff 0) ≤ e := by
+        have hpdist : Δ₀(f, p.eval ∘ ωs) ≤ e := hp'.2
+        rw [hpconst] at hpdist
+        have hdistC : Δ₀(f, (Polynomial.C (p.coeff 0)).eval ∘ ωs) ≤ e := hpdist
+        simpa [Function.comp] using hdistC
+      simpa [A] using hdist0
+    have hS_inj : Set.InjOn (fun p : Polynomial F => p.coeff 0) S := by
+      intro p hp q hq hpq
+      have hp' : p ∈ messagePolynomials (F := F) k0 :=
+        (Finset.mem_filter.1 hp).1
+      have hq' : q ∈ messagePolynomials (F := F) k0 :=
+        (Finset.mem_filter.1 hq).1
+      have hpconst : p = Polynomial.C (p.coeff 0) := by
+        rcases hk0_cases with rfl | rfl
+        · exact messagePolynomials_mem_const_zero (F := F) hp'
+        · exact messagePolynomials_mem_const_one (F := F) hp'
+      have hqconst : q = Polynomial.C (q.coeff 0) := by
+        rcases hk0_cases with rfl | rfl
+        · exact messagePolynomials_mem_const_zero (F := F) hq'
+        · exact messagePolynomials_mem_const_one (F := F) hq'
+      calc
+        p = Polynomial.C (p.coeff 0) := hpconst
+        _ = Polynomial.C (q.coeff 0) := by simp [hpq]
+        _ = q := hqconst.symm
+    have hS_le_A : S.card ≤ A.card := Finset.card_le_card_of_injOn _ hS_maps hS_inj
+    let fiberCard : F → ℕ := fun a =>
+      (Finset.filter (fun i : Fin n => f i = a) Finset.univ).card
+    have hfiber_lb : ∀ a ∈ A, n - e ≤ fiberCard a := by
+      intro a ha
+      have hdist : Δ₀(f, fun _ : Fin n => a) ≤ e := (Finset.mem_filter.1 ha).2
+      rcases
+          (closeToWord_iff_exists_agreementCols (u := f) (v := fun _ : Fin n => a) (e := e)).1 hdist
+        with ⟨T, hT_card, hT_spec⟩
+      have hT_card' : n - e ≤ T.card := by simp [Fintype.card_fin] at hT_card ⊢; exact hT_card
+      have hT_subset : T ⊆ Finset.filter (fun i : Fin n => f i = a) Finset.univ := by
+        intro i hi
+        have hEq : f i = a := (hT_spec i).1 hi
+        simp [hEq]
+      exact le_trans hT_card' (Finset.card_le_card hT_subset)
+    have hsum_lb : A.card * (n - e) ≤ ∑ a ∈ A, fiberCard a := by
+      calc
+        A.card * (n - e) = ∑ _a ∈ A, (n - e) := by
+          simp [Nat.mul_comm]
+        _ ≤ ∑ a ∈ A, fiberCard a := by
+          refine Finset.sum_le_sum ?_
+          intro a ha
+          exact hfiber_lb a ha
+    have hsum_univ :
+        ∑ a ∈ (Finset.univ : Finset F), fiberCard a = n := by
+      have hcard :
+          (Finset.univ : Finset (Fin n)).card =
+            ∑ a ∈ (Finset.univ : Finset F),
+              (Finset.filter (fun i : Fin n => f i = a) (Finset.univ : Finset (Fin n))).card := by
+        apply Finset.card_eq_sum_card_fiberwise (f := f) (t := (Finset.univ : Finset F))
+        intro i hi
+        simp
+      simpa [fiberCard, Fintype.card_fin] using hcard.symm
+    have hsum_A_le :
+        ∑ a ∈ A, fiberCard a ≤ ∑ a ∈ (Finset.univ : Finset F), fiberCard a := by
+      refine Finset.sum_le_sum_of_subset_of_nonneg ?_ ?_
+      · intro a ha
+        simp
+      · intro a ha hnot
+        exact Nat.zero_le (fiberCard a)
+    have hA_mul : A.card * (n - e) ≤ n := by
+      calc
+        A.card * (n - e) ≤ ∑ a ∈ A, fiberCard a := hsum_lb
+        _ ≤ ∑ a ∈ (Finset.univ : Finset F), fiberCard a := hsum_A_le
+        _ = n := hsum_univ
+    let rho : ℚ := (k0 + 1 : ℚ) / n
+    let b : ℝ := (((m : ℚ) + (1 : ℚ) / 2) * (Real.sqrt rho)) * n
+    let E : ℝ := ((1 : ℝ) - Real.sqrt (rho : ℝ) - Real.sqrt (rho : ℝ) / (2 * m)) * (n : ℝ)
+    let s : ℝ := Real.sqrt (rho : ℝ)
+    have hn_nonneg : (0 : ℝ) ≤ n := by positivity
+    have hm_nonneg : (0 : ℝ) ≤ m := by positivity
+    have hb_le : b ≤ (D + 1 : ℝ) := by
+      simpa [D, rho, b] using
+        (GuruswamiSudan.proximity_gap_b_le_degree_bound_add_one (n := n) (k := k0) (m := m))
+    have hδ0' :
+        (0 : ℝ) ≤
+          (1 : ℝ) - Real.sqrt (rho : ℝ) - Real.sqrt (rho : ℝ) / (2 * (m : ℝ)) := by
+      simpa [rho] using hδ0
+    have hE_nonneg : 0 ≤ E := by
+      simpa [E] using mul_nonneg hδ0' hn_nonneg
+    have he_le : (e : ℝ) ≤ E := by
+      have hfloor : ((Nat.floor E : ℝ)) ≤ E := Nat.floor_le hE_nonneg
+      simpa [e, GuruswamiSudan.proximity_gap_johnson, rho, E] using hfloor
+    have hcoef_le :
+        (1 : ℝ) - Real.sqrt (rho : ℝ) - Real.sqrt (rho : ℝ) / (2 * (m : ℝ)) ≤ 1 := by
+      have hsqrt : (0 : ℝ) ≤ Real.sqrt (rho : ℝ) := Real.sqrt_nonneg _
+      have hden : (0 : ℝ) ≤ 2 * (m : ℝ) := by positivity
+      have hdiv : (0 : ℝ) ≤ Real.sqrt (rho : ℝ) / (2 * (m : ℝ)) := div_nonneg hsqrt hden
+      linarith
+    have hE_le : E ≤ (n : ℝ) := by
+      simpa [E] using mul_le_mul_of_nonneg_right hcoef_le hn_nonneg
+    have he_le_nat : e ≤ n := by
+      have : Nat.floor E ≤ n := Nat.floor_le_of_le hE_le
+      simpa [e, GuruswamiSudan.proximity_gap_johnson, rho, E] using this
+    have hsub_cast : ((n - e : ℕ) : ℝ) = (n : ℝ) - (e : ℝ) := by
+      simpa using (Nat.cast_sub (R := ℝ) (m := e) (n := n) he_le_nat)
+    have hsub_ge : (n : ℝ) - E ≤ ((n - e : ℕ) : ℝ) := by
+      have : (n : ℝ) - E ≤ (n : ℝ) - (e : ℝ) := by linarith [he_le]
+      simpa [hsub_cast] using this
+    have hb_nonneg : (0 : ℝ) ≤ b := by
+      have hsqrt : (0 : ℝ) ≤ Real.sqrt (rho : ℝ) := Real.sqrt_nonneg _
+      have hm' : (0 : ℝ) ≤ (m : ℝ) + (1 : ℝ) / 2 := by positivity
+      have hmul : (0 : ℝ) ≤ ((m : ℝ) + (1 : ℝ) / 2) * Real.sqrt (rho : ℝ) :=
+        mul_nonneg hm' hsqrt
+      simpa [b, rho, mul_assoc] using mul_nonneg hmul hn_nonneg
+    have hsubE_eq : (n : ℝ) - E = (s + s / (2 * (m : ℝ))) * (n : ℝ) := by
+      have : (n : ℝ) -
+            ((1 : ℝ) - Real.sqrt (rho : ℝ) - Real.sqrt (rho : ℝ) / (2 * (m : ℝ))) * (n : ℝ) =
+          (Real.sqrt (rho : ℝ) + Real.sqrt (rho : ℝ) / (2 * (m : ℝ))) * (n : ℝ) := by
+        ring
+      simpa [E, s] using this
+    have hsubE_lower : s * (n : ℝ) ≤ (n : ℝ) - E := by
+      have hs_nonneg : (0 : ℝ) ≤ s := by simp [s]
+      have hden : (0 : ℝ) ≤ 2 * (m : ℝ) := by positivity
+      have hdiv_nonneg : (0 : ℝ) ≤ s / (2 * (m : ℝ)) := div_nonneg hs_nonneg hden
+      have hs_le : s ≤ s + s / (2 * (m : ℝ)) := by linarith
+      have hmul := mul_le_mul_of_nonneg_right hs_le hn_nonneg
+      simpa [hsubE_eq] using hmul
+    have hb_eq : b = ((m : ℝ) + (1 : ℝ) / 2) * (s * (n : ℝ)) := by
+      calc
+        b = ((m : ℝ) + (1 : ℝ) / 2) * Real.sqrt (rho : ℝ) * (n : ℝ) := by
+          simp [b, rho]
+        _ = ((m : ℝ) + (1 : ℝ) / 2) * (s * (n : ℝ)) := by
+          simp [s, mul_left_comm, mul_comm]
+    have hprod_lower :
+        b * ((n : ℝ) - E) ≤ (D + 1 : ℝ) * ((n - e : ℕ) : ℝ) := by
+      have h1 :
+          b * ((n : ℝ) - E) ≤ (D + 1 : ℝ) * ((n : ℝ) - E) :=
+        mul_le_mul_of_nonneg_right hb_le (by
+          have hs_nonneg : (0 : ℝ) ≤ s := by simp [s]
+          have hden : (0 : ℝ) ≤ 2 * (m : ℝ) := by positivity
+          have hdiv_nonneg : (0 : ℝ) ≤ s / (2 * (m : ℝ)) := div_nonneg hs_nonneg hden
+          have hcoef_nonneg : (0 : ℝ) ≤ s + s / (2 * (m : ℝ)) := by linarith
+          simpa [hsubE_eq] using mul_nonneg hcoef_nonneg hn_nonneg)
+      have h2 :
+          (D + 1 : ℝ) * ((n : ℝ) - E) ≤ (D + 1 : ℝ) * ((n - e : ℕ) : ℝ) :=
+        mul_le_mul_of_nonneg_left hsub_ge (by positivity)
+      exact le_trans h1 h2
+    have hn_ne : (n : ℝ) ≠ 0 := by exact_mod_cast (NeZero.ne n)
+    have hs_sq : s ^ 2 = (rho : ℝ) := by
+      have hrho_nonneg : (0 : ℝ) ≤ (rho : ℝ) := by
+        have : (0 : ℝ) ≤ ((k0 + 1 : ℕ) : ℝ) / (n : ℝ) := by
+          exact div_nonneg (by positivity) hn_nonneg
+        simpa [rho] using this
+      simpa [s] using (Real.sq_sqrt hrho_nonneg)
+    have hsn_sq : (s * (n : ℝ)) ^ 2 = ((k0 + 1 : ℕ) : ℝ) * (n : ℝ) := by
+      calc
+        (s * (n : ℝ)) ^ 2 = s ^ 2 * (n : ℝ) ^ 2 := by ring
+        _ = (rho : ℝ) * (n : ℝ) ^ 2 := by simp [hs_sq]
+        _ = (((k0 + 1 : ℕ) : ℝ) / (n : ℝ)) * (n : ℝ) ^ 2 := by simp [rho]
+        _ = ((k0 + 1 : ℕ) : ℝ) * (n : ℝ) := by
+          field_simp [hn_ne]
+          ring
+    have hcoef_gt_one : (1 : ℝ) < ((m : ℝ) + (1 : ℝ) / 2) * ((k0 + 1 : ℕ) : ℝ) := by
+      have hm_one : (1 : ℝ) ≤ (m : ℝ) := by
+        exact_mod_cast (Nat.succ_le_of_lt (NeZero.pos m))
+      have hk_one : (1 : ℝ) ≤ ((k0 + 1 : ℕ) : ℝ) := by
+        exact_mod_cast (Nat.succ_le_succ (Nat.zero_le k0))
+      have hm_nonneg : (0 : ℝ) ≤ (m : ℝ) + (1 : ℝ) / 2 := by positivity
+      have hm_mul : (m : ℝ) + (1 : ℝ) / 2 ≤
+          ((m : ℝ) + (1 : ℝ) / 2) * ((k0 + 1 : ℕ) : ℝ) := by
+        simpa [one_mul] using (mul_le_mul_of_nonneg_left hk_one hm_nonneg)
+      have hm_three_halves : (3 / 2 : ℝ) ≤ (m : ℝ) + (1 : ℝ) / 2 := by
+        nlinarith
+      have hthree_halves_le :
+          (3 / 2 : ℝ) ≤ ((m : ℝ) + (1 : ℝ) / 2) * ((k0 + 1 : ℕ) : ℝ) :=
+        le_trans hm_three_halves hm_mul
+      exact lt_of_lt_of_le (by norm_num : (1 : ℝ) < (3 / 2 : ℝ)) hthree_halves_le
+    have hbase_le :
+        (((m : ℝ) + (1 : ℝ) / 2) * ((k0 + 1 : ℕ) : ℝ)) * (n : ℝ) ≤ b * ((n : ℝ) - E) := by
+      have hs_n_nonneg : (0 : ℝ) ≤ s * (n : ℝ) := by
+        have hs_nonneg : (0 : ℝ) ≤ s := by simp [s]
+        exact mul_nonneg hs_nonneg hn_nonneg
+      have h1 :
+          (((m : ℝ) + (1 : ℝ) / 2) * (s * (n : ℝ))) * (s * (n : ℝ)) ≤
+            b * (s * (n : ℝ)) := by
+        simp [hb_eq]
+      have h2 : b * (s * (n : ℝ)) ≤ b * ((n : ℝ) - E) :=
+        mul_le_mul_of_nonneg_left hsubE_lower hb_nonneg
+      have h12 : (((m : ℝ) + (1 : ℝ) / 2) * (s * (n : ℝ))) * (s * (n : ℝ)) ≤
+          b * ((n : ℝ) - E) := le_trans h1 h2
+      have hrewrite :
+          (((m : ℝ) + (1 : ℝ) / 2) * ((k0 + 1 : ℕ) : ℝ)) * (n : ℝ) =
+            (((m : ℝ) + (1 : ℝ) / 2) * (s * (n : ℝ))) * (s * (n : ℝ)) := by
+        calc
+          (((m : ℝ) + (1 : ℝ) / 2) * ((k0 + 1 : ℕ) : ℝ)) * (n : ℝ)
+              = ((m : ℝ) + (1 : ℝ) / 2) * (((k0 + 1 : ℕ) : ℝ) * (n : ℝ)) := by ring
+          _ = ((m : ℝ) + (1 : ℝ) / 2) * ((s * (n : ℝ)) ^ 2) := by simp [hsn_sq]
+          _ = (((m : ℝ) + (1 : ℝ) / 2) * (s * (n : ℝ))) * (s * (n : ℝ)) := by ring
+      calc
+        (((m : ℝ) + (1 : ℝ) / 2) * ((k0 + 1 : ℕ) : ℝ)) * (n : ℝ) =
+            (((m : ℝ) + (1 : ℝ) / 2) * (s * (n : ℝ))) * (s * (n : ℝ)) := hrewrite
+        _ ≤ b * ((n : ℝ) - E) := h12
+    have hbase_gt : (n : ℝ) < b * ((n : ℝ) - E) := by
+      have hn_pos : (0 : ℝ) < (n : ℝ) := by exact_mod_cast (NeZero.pos n)
+      have hmul_gt :
+          (n : ℝ) <
+            (((m : ℝ) + (1 : ℝ) / 2) * ((k0 + 1 : ℕ) : ℝ)) * (n : ℝ) := by
+        have h := mul_lt_mul_of_pos_right hcoef_gt_one hn_pos
+        simpa [one_mul] using h
+      exact lt_of_lt_of_le hmul_gt hbase_le
+    have hprod_gt_real : (n : ℝ) < (D + 1 : ℝ) * ((n - e : ℕ) : ℝ) := by
+      exact lt_of_lt_of_le hbase_gt hprod_lower
+    have hprod_gt_nat : n < (D + 1) * (n - e) := by
+      exact_mod_cast hprod_gt_real
+    have hden_pos : 0 < n - e := by
+      by_contra hden_not
+      have hden_zero : n - e = 0 := Nat.eq_zero_of_not_pos hden_not
+      have hbad := hprod_gt_nat
+      rw [hden_zero, mul_zero] at hbad
+      exact (Nat.not_lt_zero _ hbad).elim
+    have hA_div : A.card ≤ n / (n - e) := by
+      exact (Nat.le_div_iff_mul_le hden_pos).2 (by simpa [Nat.mul_comm] using hA_mul)
+    have hdiv_lt : n / (n - e) < D + 1 := by
+      exact (Nat.div_lt_iff_lt_mul hden_pos).2 (by simpa [Nat.mul_comm] using hprod_gt_nat)
+    have hA_le_D : A.card ≤ D := le_trans hA_div (Nat.lt_succ_iff.mp hdiv_lt)
+    exact (le_trans hS_le_A hA_le_D)
+  cases k with
+  | zero =>
+      simpa using hsmall (k0 := 0) (by decide) (by simpa using hδ)
+  | succ k' =>
+      cases k' with
+      | zero =>
+          simpa using hsmall (k0 := 1) (by decide) (by simpa using hδ)
+      | succ k'' =>
+          let kLarge : ℕ := Nat.succ (Nat.succ k'')
+          have hk : 2 ≤ kLarge := by
+            dsimp [kLarge]
+            omega
+          rcases (guruswami_sudan_for_proximity_gap_existence (F := F) (n := n)
+            (k := kLarge) (m := m) (ωs := ωs) (f := f)) with ⟨Q, hQ⟩
+          have hQ' :
+              GuruswamiSudan.GSCondition (n := n) (F := F) kLarge m
+                (GuruswamiSudan.proximity_gap_degree_bound (n := n) kLarge m)
+                ωs f Q := by
+            simpa [proximity_gap_degree_bound_eq (n := n) (k := kLarge) (m := m)]
+              using hQ
+          have hδ_large :
+              (0 : ℝ) ≤
+                (1 : ℝ) - Real.sqrt ((kLarge + 1 : ℚ) / n) -
+                  Real.sqrt ((kLarge + 1 : ℚ) / n) / (2 * m) := by
+            simpa [kLarge] using hδ
+          exact
+            GuruswamiSudan.list_size_le_degree_bound_of_GSCondition
+              (F := F) (n := n) (k := kLarge) (m := m) hk
+              hδ_large hQ'
 
 end
 
@@ -2285,7 +2582,7 @@ omit [Nonempty ι] in
 Let `C` be a collection of affine spaces. Then `C` displays a `(δ, ε)`-proximity gap with respect to
 a Reed-Solomon code, where `(δ,ε)` are the proximity and error parameters defined up to the
 Johnson bound. -/
-theorem proximity_gap_RSCodes_split {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {domain : ι ↪ F}
+theorem proximity_gap_RSCodes_split {k t : ℕ} [NeZero t] {deg : ℕ} {domain : ι ↪ F}
     (C : Fin t → (Fin k → (ι → F))) {δ : ℝ≥0}
     (hδ : δ ≤ 1 - (ReedSolomonCode.sqrtRate deg domain)) :
     ∀ i : Fin t,
@@ -2444,18 +2741,18 @@ theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime
   simpa [hset_eq] using hcard
 
 theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime_of_prob
-    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} {u₀ u₁ v₀ v₁ : ι → F} [Nonempty F]
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} {u₀ u₁ : ι → F} [Nonempty F]
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg))
-    (hv₀ : v₀ ∈ ReedSolomon.code domain deg)
-    (hv₁ : v₁ ∈ ReedSolomon.code domain deg)
     (hprob :
-      Pr_{ let z ← $ᵖ F}[Δ₀(fun i => u₀ i + z * u₁ i, fun i => v₀ i + z * v₁ i) ≤
-        Nat.floor (δ * Fintype.card ι)] >
-        ε_uniqueDecoding (ι := ι) (F := F)) :
+      ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
+        Pr_{ let z ← $ᵖ F}[Δ₀(fun i => u₀ i + z * u₁ i, fun i => v₀ i + z * v₁ i) ≤
+          Nat.floor (δ * Fintype.card ι)] >
+          ε_uniqueDecoding (ι := ι) (F := F)) :
     ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
       ((Finset.filter (fun i => u₀ i = v₀ i ∧ u₁ i = v₁ i) Finset.univ).card : ℝ) ≥
         (1 - δ) * (Fintype.card ι : ℝ) := by
   classical
+  rcases hprob with ⟨v₀, hv₀, v₁, hv₁, hprob⟩
   let ε0 : ℝ≥0 := ε_uniqueDecoding (ι := ι) (F := F)
   have hprob' :
       Pr_{ let z ← $ᵖ F}[Δ₀(fun i => u₀ i + z * u₁ i, fun i => v₀ i + z * v₁ i) ≤
@@ -2489,7 +2786,7 @@ theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime_of_prob
 
 Take a Reed-Solomon code of length `ι` and degree `deg`, a proximity-error parameter
 pair `(δ, ε)` and two words `u₀` and `u₁`, such that the probability that a random affine
-line passing through `u₀` and `u₁` is `δ`-close to Reed-Solomon code is at most `ε`.
+line passing through `u₀` and `u₁` is `δ`-close to Reed-Solomon code exceeds `ε`.
 Then, the words `u₀` and `u₁` have correlated agreement. -/
 theorem RS_correlatedAgreement_affineLines {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     {u₀ u₁ : ι → F}
@@ -2650,7 +2947,7 @@ omit [DecidableEq ι] in
 Take a Reed-Solomon code of length `ι` and degree `deg`, a proximity-error parameter
 pair `(δ, ε)` and a curve passing through words `u₀, ..., uκ`, such that
 the  probability that a random point on the curve is `δ`-close to the Reed-Solomon code
-is at most `ε`. Then, the words `u₀, ..., uκ` have correlated agreement. -/
+exceeds `ε`. Then, the words `u₀, ..., uκ` have correlated agreement. -/
 theorem correlatedAgreement_affine_curves [DecidableEq ι] {k : ℕ} {u : Fin k → ι → F}
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hδ : δ ≤ 1 - ReedSolomonCode.sqrtRate deg domain)
@@ -3079,13 +3376,13 @@ lemma mem_affineSpan_range_iff_mem_affineSubspaceAtOrigin
 Take a Reed-Solomon code of length `ι` and degree `deg`, a proximity-error parameter
 pair `(δ, ε)` and an affine space with origin `u₀` and affine generting set `u₁, ..., uκ`
 such that the probability a random point in the affine space is `δ`-close to the Reed-Solomon
-code is at most `ε`. Then the words `u₀, ..., uκ` have correlated agreement.
+code exceeds `ε`. Then the words `u₀, ..., uκ` have correlated agreement.
 
 Note that we have `k+2` vectors to form the affine space. This an intricacy needed us to be
 able to isolate the affine origin from the affine span and to form a generating set of the
 correct size. The reason for taking an extra vector is that after isolating the affine origin,
 the affine span is formed as the span of the difference of the rest of the vector set. -/
-theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k] {u : Fin (k + 1) → ι → F}
+theorem correlatedAgreement_affine_spaces {k : ℕ} {u : Fin (k + 1) → ι → F}
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hδ : δ ≤ 1 - (ReedSolomonCode.sqrtRate deg domain))
     (hprob :

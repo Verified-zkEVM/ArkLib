@@ -2280,7 +2280,7 @@ lemma list_size_le_degreeY_of_GSCondition
   exact hQ.1
 
 lemma list_size_le_degree_bound_of_GSCondition
-    [Fintype F] {n k m : ℕ} [NeZero n] [NeZero m] [NeZero k] (hk : 2 ≤ k)
+    [Fintype F] {n k m : ℕ} [NeZero n] [NeZero m] (hk : 2 ≤ k)
     {ωs : Fin n ↪ F} {f : Fin n → F} {Q : F[X][Y]}
     (hδ :
       (0 : ℝ) ≤
@@ -2290,6 +2290,8 @@ lemma list_size_le_degree_bound_of_GSCondition
     ((messagePolynomials (F := F) k).filter fun p =>
       Δ₀(f, p.eval ∘ ωs) ≤ proximity_gap_johnson (n := n) k m).card
       ≤ proximity_gap_degree_bound (n := n) k m := by
+  have hk_pos : 0 < k := by omega
+  letI : NeZero k := ⟨Nat.ne_of_gt hk_pos⟩
   have hlist :=
     list_size_le_degreeY_of_GSCondition (F := F) (n := n) (k := k) (m := m)
       (ωs := ωs) (f := f) (Q := Q) hδ hQ
