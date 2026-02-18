@@ -176,7 +176,7 @@ instance : Algebra (ZMod 2) BF128Ghash := AdjoinRoot.instAlgebra ghashPoly
 /-- BF128Ghash has characteristic 2. -/
 instance : CharP BF128Ghash 2 := by
   haveI : CharP (ZMod 2) 2 := inferInstance
-  apply charP_of_injective_algebraMap' (ZMod 2) BF128Ghash 2
+  apply charP_of_injective_algebraMap' (ZMod 2) 2
 
 /-- The canonical embedding of GF(2) into BF128Ghash. -/
 def ofGF2 : ZMod 2 →+* BF128Ghash := algebraMap (ZMod 2) BF128Ghash

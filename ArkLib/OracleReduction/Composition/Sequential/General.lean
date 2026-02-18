@@ -313,7 +313,7 @@ variable {m : ℕ}
     {Wit : Fin (m + 1) → Type}
     {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     [Oₘ : ∀ i, ∀ j, OracleInterface ((pSpec i).Message j)]
-    [∀ i, ∀ j, SelectableType ((pSpec i).Challenge j)]
+    [∀ i, ∀ j, SampleableType ((pSpec i).Challenge j)]
     {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 -- section Execution
@@ -335,7 +335,7 @@ open scoped NNReal
 namespace Reduction
 
 omit Oₘ in
-theorem seqCompose_completeness (hInit : init.neverFails)
+theorem seqCompose_completeness
     (rel : (i : Fin (m + 1)) → Set (Stmt i × Wit i))
     (R : ∀ i, Reduction oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ)
       (pSpec i))
@@ -344,7 +344,7 @@ theorem seqCompose_completeness (hInit : init.neverFails)
       (Reduction.seqCompose Stmt Wit R).completeness init impl (rel 0) (rel (Fin.last m))
         (∑ i, completenessError i) := by
   induction m with
-  | zero => simp only [seqCompose_zero]; exact id_perfectCompleteness init impl hInit
+  | zero => simp only [seqCompose_zero]; exact id_perfectCompleteness init impl
   | succ m ih =>
     simp
     have := ih (fun i => rel i.succ) (fun i => R i.succ)
@@ -357,7 +357,7 @@ theorem seqCompose_completeness (hInit : init.neverFails)
     exact Fin.sum_univ_succ completenessError
 
 omit Oₘ in
-theorem seqCompose_perfectCompleteness (hInit : init.neverFails)
+theorem seqCompose_perfectCompleteness
     (rel : (i : Fin (m + 1)) → Set (Stmt i × Wit i))
     (R : ∀ i, Reduction oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ)
       (pSpec i))
@@ -365,7 +365,7 @@ theorem seqCompose_perfectCompleteness (hInit : init.neverFails)
       (Reduction.seqCompose Stmt Wit R).perfectCompleteness
         init impl (rel 0) (rel (Fin.last m)) := by
   unfold perfectCompleteness
-  convert seqCompose_completeness hInit rel R 0 h
+  convert seqCompose_completeness rel R 0 h
   simp
 
 end Reduction
@@ -473,7 +473,7 @@ end Verifier
 
 namespace OracleReduction
 
-theorem seqCompose_completeness (hInit : init.neverFails)
+theorem seqCompose_completeness
     (rel : (i : Fin (m + 1)) → Set ((Stmt i × ∀ j, OStmt i j) × Wit i))
     (R : ∀ i, OracleReduction oSpec (Stmt i.castSucc) (OStmt i.castSucc) (Wit i.castSucc)
       (Stmt i.succ) (OStmt i.succ) (Wit i.succ) (pSpec i))
@@ -482,11 +482,11 @@ theorem seqCompose_completeness (hInit : init.neverFails)
       (OracleReduction.seqCompose Stmt OStmt Wit R).completeness
         init impl (rel 0) (rel (Fin.last m)) (∑ i, completenessError i) := by
   unfold completeness at h ⊢
-  convert Reduction.seqCompose_completeness hInit rel (fun i => (R i).toReduction)
+  convert Reduction.seqCompose_completeness rel (fun i => (R i).toReduction)
     completenessError h
   simp only [seqCompose_toReduction]
 
-theorem seqCompose_perfectCompleteness (hInit : init.neverFails)
+theorem seqCompose_perfectCompleteness
     (rel : (i : Fin (m + 1)) → Set ((Stmt i × ∀ j, OStmt i j) × Wit i))
     (R : ∀ i, OracleReduction oSpec (Stmt i.castSucc) (OStmt i.castSucc) (Wit i.castSucc)
       (Stmt i.succ) (OStmt i.succ) (Wit i.succ) (pSpec i))
@@ -494,7 +494,7 @@ theorem seqCompose_perfectCompleteness (hInit : init.neverFails)
       (OracleReduction.seqCompose Stmt OStmt Wit R).perfectCompleteness
         init impl (rel 0) (rel (Fin.last m)) := by
   unfold perfectCompleteness Reduction.perfectCompleteness
-  convert seqCompose_completeness hInit rel R 0 h
+  convert seqCompose_completeness rel R 0 h
   simp
 
 end OracleReduction

@@ -593,8 +593,8 @@ lemma toPoly_shiftLeft_no_overflow {w} {d} (a : BitVec w) (ha : a.toNat < 2 ^ d)
     simp only [BitVec.getLsb, BitVec.toNat_shiftLeft, Fin.coe_natAdd]
     rw [Nat.testBit_mod_two_pow]
     have h_idx_lt : shift + (d + ↑i) < shift + (d + (w - (shift + d))) := by
-      apply add_lt_add_left
-      apply add_lt_add_left
+      apply add_lt_add_right
+      apply add_lt_add_right
       exact i.isLt
     simp only [h_idx_lt, decide_true, Bool.true_and]
     rw [Nat.testBit_shiftLeft]

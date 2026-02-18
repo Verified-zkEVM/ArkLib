@@ -43,12 +43,12 @@ open ENNReal
 variable {a b c d : ℝ≥0∞} {r p q : ℝ≥0}
 -- Reference: `FormulaRabbit81`'s PR: https://github.com/leanprover-community/mathlib4/commit/2452ad7288de553bc1201969ed13782affaf3459
 
-lemma ENNReal.div_lt_div_iff_left (hc₀ : c ≠ 0) (hc : c ≠ ∞) : a / c < b / c ↔ a < b :=
-  ENNReal.mul_lt_mul_right (by simpa) (by simpa)
+-- lemma ENNReal.div_lt_div_iff_left (hc₀ : c ≠ 0) (hc : c ≠ ∞) : a / c < b / c ↔ a < b :=
+--   ENNReal.mul_lt_mul_right (by simpa) (by simpa)
 
-@[gcongr]
-lemma ENNReal.div_lt_div_right (hc₀ : c ≠ 0) (hc : c ≠ ∞) (hab : a < b) : a / c < b / c :=
-  (ENNReal.div_lt_div_iff_left hc₀ hc).2 hab
+-- @[gcongr]
+-- lemma ENNReal.div_lt_div_right (hc₀ : c ≠ 0) (hc : c ≠ ∞) (hab : a < b) : a / c < b / c :=
+--   (ENNReal.div_lt_div_iff_left hc₀ hc).2 hab
 
 theorem ENNReal.mul_inv_rev_ENNReal {a b : ℕ} (ha : a ≠ 0) (hb : b ≠ 0) :
     ((a : ENNReal)⁻¹ * (b : ENNReal)⁻¹) = ((a : ENNReal) * (b : ENNReal))⁻¹ := by
@@ -567,10 +567,10 @@ lemma or_by_split_lowBits {n m n1 m1 bn bm : ℕ} (h_bn : bn < 2) (h_bm : bm < 2
 
 lemma sum_eq_xor_plus_twice_and (n : Nat) : ∀ m : ℕ, n + m = (n ^^^ m) + 2 * (n &&& m) := by
   induction n using Nat.binaryRec with
-  | z =>
+  | zero =>
     intro m
     rw [zero_add, Nat.zero_and, mul_zero, add_zero, Nat.zero_xor]
-  | f bn n2 ih =>
+  | bit bn n2 ih =>
     intro m
     let resDiv2M := Nat.boddDiv2 m
     let bm := resDiv2M.fst

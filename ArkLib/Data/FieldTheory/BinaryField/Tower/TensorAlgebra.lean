@@ -7,7 +7,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 import Mathlib.Algebra.MvPolynomial.Basic
 import Mathlib.GroupTheory.MonoidLocalization.Basic
 import Mathlib.LinearAlgebra.TensorProduct.Basis
-import Mathlib.RingTheory.TensorProduct.Basic
+import Mathlib.RingTheory.TensorProduct.Maps
 import Mathlib.LinearAlgebra.StdBasis
 
 /-!

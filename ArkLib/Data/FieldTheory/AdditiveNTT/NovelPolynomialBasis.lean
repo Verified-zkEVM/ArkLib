@@ -400,15 +400,15 @@ The proofs are done by simultaneous induction on `i`.
 
 omit [DecidableEq L] [Fintype 𝔽q] h_Fq_char_prime hβ_lin_indep in
 /-- The subspace vanishing polynomial `Wᵢ(X)` splits into linear factors over `L`. -/
-lemma W_splits (i : Fin r) : (W 𝔽q β i).Splits (RingHom.id L) := by
+lemma W_splits (i : Fin r) : (W 𝔽q β i).Splits := by
   unfold W
   -- The `W` polynomial is a product of factors. A product splits if every factor splits.
-  apply Polynomial.splits_prod
+  apply Polynomial.Splits.prod
   -- Now we must show that each factor `(X - C j.val)` splits.
   intros j hj
   -- A polynomial of the form `X - a` is linear and therefore always splits.
   -- The lemma for this is `Polynomial.splits_X_sub_C`.
-  apply Polynomial.splits_X_sub_C
+  apply Polynomial.Splits.X_sub_C
 
 omit [Fintype 𝔽q] h_Fq_char_prime hβ_lin_indep in
 /-- The roots of `Wᵢ(X)` are precisely the elements of the subspace `Uᵢ`. -/
@@ -780,16 +780,16 @@ lemma W_prod_comp_decomposition
     · conv_lhs => rw [natDegree_sub_C, natDegree_X]
       norm_num
   -- 2. Show P and Q SPLIT over L.
-  have hP_splits : P.Splits (RingHom.id L) := W_splits 𝔽q β i
-  have hQ_splits : Q.Splits (RingHom.id L) := by
-    apply Polynomial.splits_prod
+  have hP_splits : P.Splits := W_splits 𝔽q β i
+  have hQ_splits : Q.Splits := by
+    apply Polynomial.Splits.prod
     intro c _
     -- Composition of a splitting polynomial with a linear polynomial also splits.
     -- ⊢ Splits (RingHom.id L) ((W 𝔽q β (i - 1)).comp (X - C (c • β (i - 1))))
     apply Splits.comp_of_degree_le_one
-    · exact degree_X_sub_C_le (c • β (i - 1))
     · -- ⊢ Splits (RingHom.id L) (W 𝔽q β (i - 1))
       exact W_splits 𝔽q β (i-1)
+    · exact degree_X_sub_C_le (c • β (i - 1))
 
   -- 3. Show P and Q have the same ROOTS.
   have h_roots_eq : P.roots = Q.roots := by
@@ -808,8 +808,8 @@ lemma W_prod_comp_decomposition
     rw [h_i]
 
   -- 4. CONCLUSION: Since P and Q are monic, split, and have the same roots, they are equal.
-  have hP_eq_prod := Polynomial.eq_prod_roots_of_monic_of_splits_id hP_monic hP_splits
-  have hQ_eq_prod := Polynomial.eq_prod_roots_of_monic_of_splits_id hQ_monic hQ_splits
+  have hP_eq_prod := Polynomial.Splits.eq_prod_roots_of_monic hP_splits hP_monic
+  have hQ_eq_prod := Polynomial.Splits.eq_prod_roots_of_monic hQ_splits hQ_monic
   rw [hP_eq_prod, hQ_eq_prod, h_roots_eq]
 
 omit [Fintype L] [DecidableEq L] [Fintype 𝔽q] h_Fq_char_prime hβ_lin_indep in

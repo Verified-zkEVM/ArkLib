@@ -293,7 +293,6 @@ instance instDCast : DCast Nat Fin where
   dcast_id := by simp only [Fin.cast_refl, implies_true]
 
 theorem cast_eq_dcast {m n : ℕ} (h : m = n) (a : Fin m) :
-    Fin.cast h a = dcast h a := by
-  simp only [cast_eq_cast, dcast]
+    Fin.cast h a = dcast h a := rfl
 
 end Fin

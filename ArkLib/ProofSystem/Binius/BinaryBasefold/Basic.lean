@@ -420,7 +420,7 @@ end SumcheckOperations
 
 variable {r : ℕ} [NeZero r]
 variable {L : Type} [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
-  -- [SelectableType L] => not used
+  -- [SampleableType L] => not used
 variable (𝔽q : Type) [Field 𝔽q] [Fintype 𝔽q] [DecidableEq 𝔽q]
   [h_Fq_char_prime : Fact (Nat.Prime (ringChar 𝔽q))] [hF₂ : Fact (Fintype.card 𝔽q = 2)]
 variable [Algebra 𝔽q L]
@@ -1014,7 +1014,7 @@ def foldStepRelOutProp (i : Fin ℓ)
   let wit := input.2
   masterKStateProp (mp := mp) (𝓑 := 𝓑) 𝔽q β
     (stmtIdx := i.succ) (oracleIdx := i.castSucc)
-    (h_le := Nat.le_of_lt (Fin.castSucc_lt_succ i)) stmt wit oStmt (localChecks := True)
+    (h_le := Nat.le_of_lt (Fin.castSucc_lt_succ)) stmt wit oStmt (localChecks := True)
 
 /-- This is a special case of nonDoomedFoldingProp for `i = ℓ`, where we support
 the consistency between the last oracle `ℓ - ϑ` and the final constant `c` -/

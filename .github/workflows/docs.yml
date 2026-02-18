@@ -31,7 +31,7 @@ jobs:
             ${{ runner.os }}-lean-
 
       - name: Build the project
-        uses: leanprover/lean-action@v1.3.0
+        uses: leanprover/lean-action@v1.4.0
         with:
           lint: false
 

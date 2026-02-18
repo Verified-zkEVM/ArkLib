@@ -199,61 +199,53 @@ private lemma witness_lift {F : Type} [NonBinaryField F]
 instance {i : Fin (k + 1)} : ∀ j, OracleInterface (OracleStatement D x s i j) :=
   fun _ => inferInstance
 
-instance : ∀ j, OracleInterface (FinalOracleStatement D x s j) :=
-  fun j =>
-    if h : j = k + 1
-    then {
-           Query := Unit
-           Response := F[X]
-           answer := cast (by simp [h, FinalOracleStatement])
-                          (id (α := Unit → F[X]))
-         }
-    else {
-           Query :=
-            ↑(
-              evalDomain D x
-              (∑ j' ∈ finRangeTo j.1, s j')
-            )
-           Response := F
-           answer := cast (by simp [h, FinalOracleStatement])
-                          (id (α := ↑(evalDomain D x (∑ j' ∈ finRangeTo j.1, s j')) → F))
-         }
+instance finalOracleStatementInterface :
+  ∀ j, OracleInterface (FinalOracleStatement D x s j) := fun j =>
+  { Query := if j = k + 1 then Unit else evalDomain D x (∑ j' ∈ finRangeTo j.1, s j')
+    toOC.spec := fun _ => if j = k + 1 then F[X] else F
+    toOC.impl := fun q => do
+      if h : j = k + 1 then
+        let st : Unit → F[X] := cast (by simp [FinalOracleStatement, h]) (← read)
+        return cast (by simp [FinalOracleStatement, h]) (st ())
+      else
+        let st : evalDomain D x (∑ j' ∈ finRangeTo j.1, s j') → F :=
+          cast (by simp [FinalOracleStatement, h]) (← read)
+        let pt : evalDomain D x (∑ j' ∈ finRangeTo j.1, s j') :=
+          cast (by simp [FinalOracleStatement, h]) q
+        return cast (by simp [FinalOracleStatement, h]) (st pt) }
 
 omit [Finite F] in
 @[simp]
-lemma range_lem₁ {i : Fin (k + 1)} :
-    [FinalOracleStatement D x s]ₒ.range ⟨i.1, Nat.lt_succ_of_lt i.2⟩ = F := by
-  unfold OracleSpec.range FinalOracleStatement OracleInterface.toOracleSpec
-  unfold OracleInterface.Query
-  unfold instOracleInterfaceFinalOracleStatement
+lemma range_lem₁ {i : Fin (k + 1)} (q) :
+    [FinalOracleStatement D x s]ₒ.Range ⟨⟨i.1, Nat.lt_succ_of_lt i.2⟩, q⟩ = F := by
+  unfold OracleSpec.Range FinalOracleStatement OracleInterface.toOracleSpec
+  unfold OracleInterface.Query OracleInterface.Response
+  unfold finalOracleStatementInterface
   simp [Nat.ne_of_lt i.2]
 
 omit [Finite F] in
 @[simp]
-lemma domain_lem₁ {i : Fin (k + 1)} :
-    [FinalOracleStatement D x s]ₒ.domain ⟨i.1, Nat.lt_succ_of_lt i.2⟩ =
-      evalDomain D x (∑ j' ∈ finRangeTo i.1, s j') := by
-  unfold OracleSpec.domain FinalOracleStatement OracleInterface.toOracleSpec
-  unfold OracleInterface.Query
-  unfold instOracleInterfaceFinalOracleStatement
-  simp [Nat.ne_of_lt i.2]
-
-omit [Finite F] in
-@[simp]
-lemma range_lem₂ : [FinalOracleStatement D x s]ₒ.range (Fin.last (k + 1)) = F[X] := by
-  unfold OracleSpec.range FinalOracleStatement OracleInterface.toOracleSpec
-  unfold OracleInterface.Query
-  unfold instOracleInterfaceFinalOracleStatement
+lemma range_lem₂ (q) : [FinalOracleStatement D x s]ₒ.Range ⟨(Fin.last (k + 1)), q⟩ = F[X] := by
+  unfold OracleSpec.Range FinalOracleStatement OracleInterface.toOracleSpec
+  unfold OracleInterface.Query OracleInterface.Response
+  unfold finalOracleStatementInterface
   simp
 
 omit [Finite F] in
 @[simp]
-lemma domain_lem₂ :
-  [FinalOracleStatement D x s]ₒ.domain (Fin.last (k + 1)) = Unit := by
-  unfold OracleSpec.domain FinalOracleStatement OracleInterface.toOracleSpec
-  unfold OracleInterface.Query
-  unfold instOracleInterfaceFinalOracleStatement
-  simp
+lemma query_lem (j) :
+    (finalOracleStatementInterface D x s j).Query =
+      if j = k + 1 then Unit else evalDomain D x (∑ j' ∈ finRangeTo j.1, s j') := by
+  rfl
+
+-- omit [Finite F] in
+-- @[simp]
+-- lemma domain_lem₂ :
+--   [FinalOracleStatement D x s]ₒ.domain (Fin.last (k + 1)) = Unit := by
+--   unfold OracleSpec.domain FinalOracleStatement OracleInterface.toOracleSpec
+--   unfold OracleInterface.Query
+--   unfold instOracleInterfaceFinalOracleStatement
+--   simp
 
 namespace FoldPhase
 
@@ -558,13 +550,9 @@ noncomputable def finalFoldProver :
 
 /- Used to fetch the polynomial sent by the prover. -/
 def getConst (F : Type) [NonBinaryField F] : OracleComp [(pSpec F).Message]ₒ F[X] :=
-  OracleComp.lift
-    (by exact
-          OracleSpec.query
-            (spec := [(pSpec F).Message]ₒ)
-            ⟨1, by rfl⟩
-            (by simpa using ())
-    )
+  liftM <| OracleQuery.query (spec := [(pSpec F).Message]ₒ)
+    ⟨⟨1, by rfl⟩, (by simpa using ())⟩
+
 
 /-- The oracle verifier for the final folding round of the FRI protocol.
     Checks if the returned polynomial has degree less than `d`. -/
@@ -682,23 +670,17 @@ noncomputable def queryProver :
 def queryCodeword (k : ℕ) (s : Fin (k + 1) → ℕ+) {i : Fin (k + 1)}
       (w : evalDomain D x (∑ j' ∈ (List.take i.1 (List.finRange (k + 1))).toFinset, (s j').1)) :
     OracleComp [FinalOracleStatement D x s]ₒ F :=
-      OracleComp.lift <| by
-        simpa using
-          OracleSpec.query
-            (spec := [FinalOracleStatement D x s]ₒ)
-            ⟨i.1, Nat.lt_succ_of_lt i.2⟩
-            (by simpa using w)
+  liftM (cast (β := OracleQuery [FinalOracleStatement D x s]ₒ F)
+    (by simp [FinalOracleStatement])
+    (query (spec := [FinalOracleStatement D x s]ₒ) ⟨⟨i.1, sorry⟩,
+      (by simpa [Nat.ne_of_lt i.2] using w)⟩))
 
 /- Used by the verifier to fetch the polynomial sent in final folding round. -/
 def getConst (k : ℕ) (s : Fin (k + 1) → ℕ+) : OracleComp [FinalOracleStatement D x s]ₒ F[X] :=
-  OracleComp.lift
-    (by
-        simpa using
-          OracleSpec.query
-            (spec := [FinalOracleStatement D x s]ₒ)
-            (Fin.last (k + 1))
-            (by simpa using ())
-    )
+  liftM (cast (β := OracleQuery [FinalOracleStatement D x s]ₒ F[X])
+    (by simp [FinalOracleStatement])
+    (query (spec := [FinalOracleStatement D x s]ₒ) ⟨(Fin.last (k + 1)), (by
+      simpa using ())⟩))
 
 private lemma roots_of_unity_lem {s : Fin (k + 1) → ℕ+} {i : Fin (k + 1)}
     (k_le_n : (∑ j', (s j').1) ≤ n) :
