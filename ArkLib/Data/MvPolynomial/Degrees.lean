@@ -7,7 +7,7 @@ Authors: Quang Dao
 import Mathlib.Algebra.MvPolynomial.Degrees
 import Mathlib.Algebra.MvPolynomial.Equiv
 import Mathlib.Algebra.Group.Action.Pointwise.Finset
-import ArkLib.Data.MvPolynomial.Notation
+import CompPoly.Data.MvPolynomial.Notation
 
 /-!
   # Lemmas about degrees of multivariate polynomials

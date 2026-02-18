@@ -11,7 +11,7 @@ import Mathlib.Algebra.Polynomial.Eval.Defs
 import Mathlib.Data.Fin.Tuple.Take
 import Mathlib.Tactic.FinCases
 import Batteries.Data.Fin.Fold
-import ArkLib.Data.Classes.DCast
+import CompPoly.Data.Classes.DCast
 
 /-!
   # Lemmas on `Fin` and `Fin`-indexed tuples

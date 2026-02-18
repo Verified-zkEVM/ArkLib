@@ -5,7 +5,7 @@ Authors: Mirco Richter, Poulami Das (Least Authority)
 -/
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.MvPolynomial.Notation
+import CompPoly.Data.MvPolynomial.Notation
 
 open Polynomial NNReal ReedSolomon ListDecodable
 
