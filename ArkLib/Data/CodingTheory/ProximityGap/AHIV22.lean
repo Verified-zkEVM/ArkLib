@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Katerina Hristova, František Silváši, Chung Thai Nguyen
+Authors: Katerina Hristova, František Silváši, Chung Thai Nguyen, Fawad Haider, GPT-5.2-Codex
 -/
 
 import ArkLib.Data.CodingTheory.InterleavedCode
@@ -22,6 +22,8 @@ import Mathlib.LinearAlgebra.Quotient.Card
       * NB we use version 20221118:030830
 -/
 
+set_option linter.style.longFile 2200
+
 noncomputable section
 
 open Code ProbabilityTheory
@@ -36,13 +38,16 @@ local instance : Fintype F := Fintype.ofFinite F
 private def vecSupport (u : ι → F) : Finset ι :=
   Finset.filter (fun j => u j ≠ 0) Finset.univ
 
+omit [Finite F] in
 private lemma mem_vecSupport {u : ι → F} {j : ι} : j ∈ vecSupport (F := F) u ↔ u j ≠ 0 := by
   simp [vecSupport]
 
+omit [Finite F] in
 private lemma not_mem_vecSupport {u : ι → F} {j : ι} :
     j ∉ vecSupport (F := F) u ↔ u j = 0 := by
   simp [vecSupport]
 
+omit [Finite F] in
 private lemma vecSupport_sub (u v : ι → F) :
     vecSupport (F := F) (u - v) = Finset.filter (fun j => u j ≠ v j) Finset.univ := by
   ext j
@@ -213,11 +218,11 @@ The additional field-size assumption `|F| > e` is needed: for small fields one c
 subspace of `F^ι` consisting entirely of `e`-sparse vectors whose supports are not aligned, making
 `⋈|U⋆` column-wise far while every row-span vector stays `e`-close. -/
 lemma distInterleavedCodeToCodeLB
-  {L : LinearCode ι F} {U_star : WordStack (A := F) κ ι}
-  {e : ℕ} -- Might change e to ℕ+ if really needed
-  (hF : Fintype.card F > e)
-  (he : (e : ℚ≥0) < ‖(L : Set (ι → F))‖₀ / 3) -- `e < d/3`
-  (hU : e < Δ₀(⋈|U_star, L^⋈κ)) : -- `d(U⋆, L^⋈ m) > e`, here we interleave U
+    {L : LinearCode ι F} {U_star : WordStack (A := F) κ ι}
+    {e : ℕ} -- Might change e to ℕ+ if really needed
+    (hF : Fintype.card F > e)
+    (he : (e : ℚ≥0) < ‖(L : Set (ι → F))‖₀ / 3) -- `e < d/3`
+    (hU : e < Δ₀(⋈|U_star, L^⋈κ)) : -- `d(U⋆, L^⋈ m) > e`, here we interleave U
     -- before using `Δ₀` for correct symbol specification
   ∃ v ∈ Matrix.rowSpan U_star , e < Δ₀(v, L) := by
   classical
@@ -401,23 +406,22 @@ open ReedSolomonCode NNReal
 /-- The set of points on an affine line, which are within distance `e` from a Reed-Solomon code.
 -/
 def closePtsOnAffineLine {ι : Type*} [Fintype ι]
-                         (u v : ι → F) (deg : ℕ) (α : ι ↪ F) (e : ℕ) : Set (ι → F) :=
+    (u v : ι → F) (deg : ℕ) (α : ι ↪ F) (e : ℕ) : Set (ι → F) :=
   {x : ι → F | x ∈ Affine.affineLineAtOrigin (F := F) (origin := u) (direction := v)
     ∧ Δ₀(x, ReedSolomon.code α deg) ≤ e}
 
 /-- The number of points on an affine line between, which are within distance `e` from a
 Reed-Solomon code.
 -/
-def numberOfClosePts (u v : ι → F) (deg : ℕ) (α : ι ↪ F) (e : ℕ) : ℕ :=
-  by
-    classical
-    letI :
-        Fintype
-          (closePtsOnAffineLine (F := F) (u := u) (v := v) (deg := deg) (α := α) (e := e)) :=
-      Fintype.ofFinite _
-    exact
-      Fintype.card
-        (closePtsOnAffineLine (F := F) (u := u) (v := v) (deg := deg) (α := α) (e := e))
+def numberOfClosePts (u v : ι → F) (deg : ℕ) (α : ι ↪ F) (e : ℕ) : ℕ := by
+  classical
+  letI :
+      Fintype
+        (closePtsOnAffineLine (F := F) (u := u) (v := v) (deg := deg) (α := α) (e := e)) :=
+    Fintype.ofFinite _
+  exact
+    Fintype.card
+      (closePtsOnAffineLine (F := F) (u := u) (v := v) (deg := deg) (α := α) (e := e))
 
 lemma numberOfClosePts_eq_natCard (u v : ι → F) (deg : ℕ) (α : ι ↪ F) (e : ℕ) :
     numberOfClosePts (F := F) (ι := ι) u v deg α e =
@@ -425,7 +429,7 @@ lemma numberOfClosePts_eq_natCard (u v : ι → F) (deg : ℕ) (α : ι ↪ F) (
         (closePtsOnAffineLine (F := F) (u := u) (v := v) (deg := deg) (α := α) (e := e)) := by
   classical
   unfold numberOfClosePts
-  simpa using
+  exact
     (Fintype.card_eq_nat_card
       (α :=
         closePtsOnAffineLine (F := F) (u := u) (v := v) (deg := deg) (α := α) (e := e)))
@@ -724,7 +728,7 @@ lemma e_leq_dist_over_3_strong
     let RS : Type := {r : F // r ∈ R}
     have hRS_card : Fintype.card RS = R.card := by
       classical
-      simpa [RS, Fintype.card_subtype] using (Fintype.card_subtype (p := fun r : F => r ∈ R))
+      simp [RS]
     have hRS_gt : Fintype.card RS > ‖C‖₀ := by
       simpa [hRS_card] using hR_gt
 
@@ -735,8 +739,8 @@ lemma e_leq_dist_over_3_strong
         simpa [C, CRS] using
           (ReedSolomonCode.dist_eq' (F := F) (α := α) (ι := ι) (n := deg) (h := hdeg))
       have : 0 < Fintype.card ι - deg + 1 := by
-        simpa [Nat.succ_eq_add_one] using Nat.succ_pos (Fintype.card ι - deg)
-      simpa [hdist_CRS] using this
+        exact Nat.succ_pos (Fintype.card ι - deg)
+      exact hdist_CRS ▸ this
     have hRS_one_lt : 1 < Fintype.card RS := by
       -- `card RS > dist ≥ 1`
       have : 1 ≤ ‖C‖₀ := Nat.succ_le_of_lt hdist_pos
@@ -784,14 +788,14 @@ lemma e_leq_dist_over_3_strong
       have hdiff :
           (r1.1 - r0.1) * v j = c r1 j - c r0 j := by
         have : (u + r1.1 • v) j - (u + r0.1 • v) j = c r1 j - c r0 j := by
-          simpa [h1, h0]
+          simp [h1, h0]
         have hdiff' : r1.1 * v j - r0.1 * v j = c r1 j - c r0 j := by
           simpa [Pi.add_apply, Pi.smul_apply] using (by
             simpa [Pi.add_apply, Pi.smul_apply] using this)
         simpa [sub_mul] using hdiff'
       calc
         v j = (r1.1 - r0.1)⁻¹ * ((r1.1 - r0.1) * v j) := by
-          simp [hr10, mul_assoc]
+          simp [hr10]
         _ = (r1.1 - r0.1)⁻¹ * (c r1 j - c r0 j) := by simp [hdiff]
         _ = w j := by simp [w, Pi.smul_apply, Pi.sub_apply]
 
@@ -805,7 +809,7 @@ lemma e_leq_dist_over_3_strong
     have h_codeword_eq (r : RS) : c r = cBase + r.1 • w := by
       by_cases hr0 : r = r0
       · subst hr0
-        simp [cBase, Pi.add_apply, Pi.smul_apply]
+        simp [cBase]
       · -- Compare the direction computed from `(r,r0)` with `w`.
         have hneq : (r.1 - r0.1) ≠ 0 := sub_ne_zero.mpr (by
           intro h
@@ -821,8 +825,7 @@ lemma e_leq_dist_over_3_strong
           apply Code.eq_of_lt_dist (C := C)
           · exact hw0r_mem
           · exact hw_mem
-          ·
-            have hdist :
+          · have hdist :
                 Δ₀(w0r, w) ≤ (E r0 ∪ E r1 ∪ E r).card := by
               refine hammingDist_le_of_subset_disagree (ι := ι) (u := w0r) (v := w)
                 (D := E r0 ∪ E r1 ∪ E r) ?_
@@ -847,14 +850,14 @@ lemma e_leq_dist_over_3_strong
                 have hdiff :
                     (r.1 - r0.1) * v i = c r i - c r0 i := by
                   have : (u + r.1 • v) i - (u + r0.1 • v) i = c r i - c r0 i := by
-                    simpa [hr_eq, h0_eq]
+                    simp [hr_eq, h0_eq]
                   have hdiff' : r.1 * v i - r0.1 * v i = c r i - c r0 i := by
                     simpa [Pi.add_apply, Pi.smul_apply] using (by
                       simpa [Pi.add_apply, Pi.smul_apply] using this)
                   simpa [sub_mul] using hdiff'
                 calc
                   v i = (r.1 - r0.1)⁻¹ * ((r.1 - r0.1) * v i) := by
-                    simp [hneq, mul_assoc]
+                    simp [hneq]
                   _ = (r.1 - r0.1)⁻¹ * (c r i - c r0 i) := by simp [hdiff]
                   _ = w0r i := by simp [w0r, Pi.smul_apply, Pi.sub_apply]
               exact hi (hv0r.symm.trans hvw)
@@ -882,7 +885,7 @@ lemma e_leq_dist_over_3_strong
         -- Now compute `c r = cBase + r•w`.
         have hdiff : c r - c r0 = (r.1 - r0.1) • w := by
           have hsmul : (r.1 - r0.1) • w0r = (r.1 - r0.1) • w := by
-            simpa [hw0r_eq]
+            simp [hw0r_eq]
           -- simplify the left-hand side using the definition of `w0r`
           simpa [w0r, smul_smul, hneq] using hsmul
         ext i
@@ -898,7 +901,7 @@ lemma e_leq_dist_over_3_strong
         (u + r.1 • v) j = (cBase + r.1 • w) j := by
       have hu : (u + r.1 • v) j = c r j := hE_agree r j hj
       have hc : c r j = (cBase + r.1 • w) j := by
-        simpa [h_codeword_eq (r := r), Pi.add_apply, Pi.smul_apply]
+        simp [h_codeword_eq (r := r), Pi.add_apply, Pi.smul_apply]
       simpa [hc] using hu
 
     -- The global disagreement set where `u` or `v` fail to match `cBase`/`w`.
@@ -974,7 +977,7 @@ lemma e_leq_dist_over_3_strong
       -- Double-count pairs `(r,j)` with `j ∈ E r`.
       let pairs : Finset (Sigma fun _ : RS => ι) := (Finset.univ : Finset RS).sigma (fun r => E r)
       have h_pairs_card : pairs.card = ∑ r : RS, (E r).card := by
-        simpa [pairs] using (Finset.card_sigma (Finset.univ : Finset RS) (fun r => E r))
+        simp [pairs]
       have h_pairs_le : pairs.card ≤ Fintype.card RS * e := by
         have :
             (∑ r : RS, (E r).card) ≤ ∑ r : RS, e := by
@@ -982,7 +985,8 @@ lemma e_leq_dist_over_3_strong
           intro r _
           exact hE_card r
         -- `∑ r, e = card RS * e`
-        simpa [h_pairs_card, Finset.sum_const, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+        simpa [h_pairs_card, Finset.sum_const, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+          using this
       -- Lower bound: each `j ∈ D` contributes at least `card RS - 1` pairs.
       have h_pairs_ge : D.card * (Fintype.card RS - 1) ≤ pairs.card := by
         -- First, sum the per-coordinate lower bound.
@@ -998,9 +1002,13 @@ lemma e_leq_dist_over_3_strong
             exact h_err_ge j hj
           simpa [Finset.sum_const, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
         -- Next, this sum is bounded by all pairs.
-        have hsum_le : (∑ j ∈ D, (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card) ≤ pairs.card := by
+        have hsum_le :
+            (∑ j ∈ D, (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card) ≤ pairs.card := by
           -- Express `pairs.card` as a sum over second-coordinate fibers.
-          have hmap : pairs.toSet.MapsTo (fun p : Sigma fun _ : RS => ι => p.2) (Finset.univ : Finset ι) := by
+          have hmap :
+              pairs.toSet.MapsTo
+                (fun p : Sigma fun _ : RS => ι => p.2)
+                (Finset.univ : Finset ι) := by
             intro p hp
             simp
           have hcard_fiber :=
@@ -1027,7 +1035,7 @@ lemma e_leq_dist_over_3_strong
                   refine ⟨?_, h.2.symm⟩
                   simpa [h.2] using h.1
               simp [pairs, emb, Finset.mem_sigma, h]
-            simpa [this] using (Finset.card_map emb _)
+            simp [this]
           have hpairs_sum :
               pairs.card = ∑ j ∈ (Finset.univ : Finset ι),
                 (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card := by
@@ -1064,8 +1072,10 @@ lemma e_leq_dist_over_3_strong
           have h :
               (Fintype.card RS) = Fintype.card RS - 1 + 1 := (Nat.sub_add_cancel hRS_one_le).symm
           rw [h]
-          simp [Nat.mul_add, Nat.mul_one]
-        have hmulS : (e + 1) * (Fintype.card RS - 1) = e * (Fintype.card RS - 1) + (Fintype.card RS - 1) := by
+          simp [Nat.mul_add]
+        have hmulS :
+            (e + 1) * (Fintype.card RS - 1) =
+              e * (Fintype.card RS - 1) + (Fintype.card RS - 1) := by
           rw [Nat.add_one]
           simpa using Nat.succ_mul e (Fintype.card RS - 1)
         have hlt :
@@ -1089,7 +1099,8 @@ lemma e_leq_dist_over_3_strong
     -- Using `D`, show every point on the line is `e`-close to the code.
     have hall : ∀ x ∈ Affine.affineLineAtOrigin (F := F) u v, Δ₀(x, CRS) ≤ e := by
       intro x hx
-      rcases (Affine.mem_affineLineAtOrigin_iff (F := F) (origin := u) (direction := v) x).1 hx with ⟨r, rfl⟩
+      rcases (Affine.mem_affineLineAtOrigin_iff (F := F) (origin := u) (direction := v) x).1 hx with
+        ⟨r, rfl⟩
       have hmem : (cBase + r • w) ∈ CRS :=
         Submodule.add_mem CRS hcBase_mem (Submodule.smul_mem CRS _ hw_mem)
       have hdist :
@@ -1195,7 +1206,7 @@ lemma dirClose_of_manyClosePts
   let RS : Type := {r : F // r ∈ R}
   have hRS_card : Fintype.card RS = R.card := by
     classical
-    simpa [RS, Fintype.card_subtype] using (Fintype.card_subtype (p := fun r : F => r ∈ R))
+    simp [RS]
   have hRS_gt : Fintype.card RS > ‖C‖₀ := by simpa [hRS_card] using hR_gt
 
   -- Pick two distinct good scalars.
@@ -1204,8 +1215,8 @@ lemma dirClose_of_manyClosePts
       simpa [C, CRS] using
         (ReedSolomonCode.dist_eq' (F := F) (α := α) (ι := ι) (n := deg) (h := hdeg))
     have : 0 < Fintype.card ι - deg + 1 := by
-      simpa [Nat.succ_eq_add_one] using Nat.succ_pos (Fintype.card ι - deg)
-    simpa [hdist_CRS] using this
+      exact Nat.succ_pos (Fintype.card ι - deg)
+    exact hdist_CRS ▸ this
   have hRS_one_lt : 1 < Fintype.card RS := by
     have : 1 ≤ ‖C‖₀ := Nat.succ_le_of_lt hdist_pos
     exact lt_of_le_of_lt this hRS_gt
@@ -1249,12 +1260,13 @@ lemma dirClose_of_manyClosePts
     have h1 : (u + r1.1 • v) j = c r1 j := hE_agree r1 j hj1
     have h0 : (u + r0.1 • v) j = c r0 j := hE_agree r0 j hj0
     have hdiff : (r1.1 - r0.1) * v j = c r1 j - c r0 j := by
-      have : (u + r1.1 • v) j - (u + r0.1 • v) j = c r1 j - c r0 j := by simpa [h1, h0]
+      have hsub : (u + r1.1 • v) j - (u + r0.1 • v) j = c r1 j - c r0 j := by
+        simp [h1, h0]
       have hdiff' : r1.1 * v j - r0.1 * v j = c r1 j - c r0 j := by
-        simpa [Pi.add_apply, Pi.smul_apply] using (by simpa [Pi.add_apply, Pi.smul_apply] using this)
+        simpa [Pi.add_apply, Pi.smul_apply] using hsub
       simpa [sub_mul] using hdiff'
     calc
-      v j = (r1.1 - r0.1)⁻¹ * ((r1.1 - r0.1) * v j) := by simp [hr10, mul_assoc]
+      v j = (r1.1 - r0.1)⁻¹ * ((r1.1 - r0.1) * v j) := by simp [hr10]
       _ = (r1.1 - r0.1)⁻¹ * (c r1 j - c r0 j) := by simp [hdiff]
       _ = w j := by simp [w, Pi.smul_apply, Pi.sub_apply]
 
@@ -1268,9 +1280,8 @@ lemma dirClose_of_manyClosePts
   have h_codeword_eq (r : RS) : c r = cBase + r.1 • w := by
     by_cases hr0 : r = r0
     · subst hr0
-      simp [cBase, Pi.add_apply, Pi.smul_apply]
-    ·
-      have hneq : (r.1 - r0.1) ≠ 0 := sub_ne_zero.mpr (by
+      simp [cBase]
+    · have hneq : (r.1 - r0.1) ≠ 0 := sub_ne_zero.mpr (by
         intro h
         apply hr0
         ext
@@ -1284,8 +1295,7 @@ lemma dirClose_of_manyClosePts
         apply Code.eq_of_lt_dist (C := C)
         · exact hw0r_mem
         · exact hw_mem
-        ·
-          have hdist : Δ₀(w0r, w) ≤ (E r0 ∪ E r1 ∪ E r).card := by
+        · have hdist : Δ₀(w0r, w) ≤ (E r0 ∪ E r1 ∪ E r).card := by
             refine hammingDist_le_of_subset_disagree (ι := ι) (u := w0r) (v := w)
               (D := E r0 ∪ E r1 ∪ E r) ?_
             intro i hi
@@ -1309,13 +1319,13 @@ lemma dirClose_of_manyClosePts
               have hdiff :
                   (r.1 - r0.1) * v i = c r i - c r0 i := by
                 have : (u + r.1 • v) i - (u + r0.1 • v) i = c r i - c r0 i := by
-                  simpa [hr_eq, hr0_eq]
+                  simp [hr_eq, hr0_eq]
                 have hdiff' : r.1 * v i - r0.1 * v i = c r i - c r0 i := by
                   simpa [Pi.add_apply, Pi.smul_apply] using
                     (by simpa [Pi.add_apply, Pi.smul_apply] using this)
                 simpa [sub_mul] using hdiff'
               calc
-                v i = (r.1 - r0.1)⁻¹ * ((r.1 - r0.1) * v i) := by simp [hneq, mul_assoc]
+                v i = (r.1 - r0.1)⁻¹ * ((r.1 - r0.1) * v i) := by simp [hneq]
                 _ = (r.1 - r0.1)⁻¹ * (c r i - c r0 i) := by simp [hdiff]
                 _ = w0r i := by simp [w0r, Pi.smul_apply, Pi.sub_apply]
             exact hi (hv0r.symm.trans hvw)
@@ -1339,7 +1349,7 @@ lemma dirClose_of_manyClosePts
           have : Δ₀(w0r, w) ≤ 3 * e := le_trans hdist hcard_le
           exact lt_of_le_of_lt this h3e_lt
       have hdiff : c r - c r0 = (r.1 - r0.1) • w := by
-        have hsmul : (r.1 - r0.1) • w0r = (r.1 - r0.1) • w := by simpa [hw0r_eq]
+        have hsmul : (r.1 - r0.1) • w0r = (r.1 - r0.1) • w := by simp [hw0r_eq]
         simpa [w0r, smul_smul, hneq] using hsmul
       ext i
       have hdiff_i : c r i - c r0 i = (r.1 - r0.1) * w i := by
@@ -1353,7 +1363,7 @@ lemma dirClose_of_manyClosePts
       (u + r.1 • v) j = (cBase + r.1 • w) j := by
     have hu : (u + r.1 • v) j = c r j := hE_agree r j hj
     have hc : c r j = (cBase + r.1 • w) j := by
-      simpa [h_codeword_eq (r := r), Pi.add_apply, Pi.smul_apply]
+      simp [h_codeword_eq (r := r), Pi.add_apply, Pi.smul_apply]
     simpa [hc] using hu
 
   -- The global disagreement set where `u` or `v` fail to match `cBase`/`w`.
@@ -1447,7 +1457,8 @@ lemma dirClose_of_manyClosePts
       exact h_err
 
     have h_pairs_le :
-        (∑ j ∈ D, (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card) ≤ Fintype.card RS * e := by
+        (∑ j ∈ D, (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card) ≤
+          Fintype.card RS * e := by
       -- Each `E r` has size `≤ e`, so sum over `r` bounds the total incidence count.
       have h_pairs_le' :
           (∑ j ∈ (Finset.univ : Finset ι),
@@ -1490,19 +1501,19 @@ lemma dirClose_of_manyClosePts
                 · intro h
                   refine ⟨?_, h.2.symm⟩
                   simpa [h.2] using h.1
-              simp [pairs, emb, Finset.mem_sigma, h]
+              simp [pairs, emb, h]
             have hmap :
                 {p ∈ pairs | f p = j} =
                   Finset.filter (fun p : Sigma fun _ : RS => ι => p.2 = j) pairs := by
               ext p
               simp [f]
-            simpa [hmap, this] using (Finset.card_map emb _)
+            simp [hmap, this]
           have hpairs_sum :
               pairs.card = ∑ j ∈ (Finset.univ : Finset ι),
                 (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card := by
             classical
             simpa [hfiber] using hcard_fiber
-          simpa [hpairs_sum] using rfl
+          simp [hpairs_sum]
 
         -- Bound `pairs.card` by summing `|E r|`.
         have h_pairs_card :
@@ -1529,8 +1540,7 @@ lemma dirClose_of_manyClosePts
               by_cases hrr : r' = r
               · subst hrr
                 simp [pairs, emb]
-              ·
-                constructor
+              · constructor
                 · intro hp
                   exfalso
                   exact hrr (Finset.mem_filter.mp hp).2
@@ -1544,23 +1554,23 @@ lemma dirClose_of_manyClosePts
                   Finset.filter (fun p : Sigma fun _ : RS => ι => p.1 = r) pairs := by
               ext p
               simp [g]
-            simpa [hmap, this] using (Finset.card_map emb _)
+            simp [hmap, this]
           -- Replace the sum of fiber cards by `∑ r, |E r|`.
           have hpairs_sum :
               pairs.card = ∑ r ∈ (Finset.univ : Finset RS), (E r).card := by
             classical
             simpa [hfiber] using hcard_fiber
           -- Drop the membership binder.
-          simpa [hpairs_sum] using le_of_eq (by simp)
+          simp [hpairs_sum]
 
         have hsumE : (∑ r : RS, (E r).card) ≤ Fintype.card RS * e := by
           classical
           have : ∀ r : RS, (E r).card ≤ e := fun r => hE_card r
           calc
-            (∑ r : RS, (E r).card) ≤ ∑ r : RS, e := by exact Finset.sum_le_sum (by intro r _; exact this r)
+            (∑ r : RS, (E r).card) ≤ ∑ r : RS, e := by
+              exact Finset.sum_le_sum (by intro r _; exact this r)
             _ = Fintype.card RS * e := by
-              simpa [Finset.card_univ] using (Finset.sum_const_nat (s := (Finset.univ : Finset RS))
-                (f := fun _ : RS => e) (m := e) (by intro _ _; rfl))
+              simp [Finset.card_univ]
         have hpairs_le : pairs.card ≤ Fintype.card RS * e := le_trans h_pairs_card hsumE
         -- Rewrite the LHS using the alternate counting of `pairs`.
         simpa [h_pairs_ge] using hpairs_le
@@ -1604,7 +1614,7 @@ lemma dirClose_of_manyClosePts
         have h :
             (Fintype.card RS) = Fintype.card RS - 1 + 1 := (Nat.sub_add_cancel hRS_one_le).symm
         rw [h]
-        simp [Nat.mul_add, Nat.mul_one]
+        simp [Nat.mul_add]
       have hmulS :
           (e + 1) * (Fintype.card RS - 1) =
             e * (Fintype.card RS - 1) + (Fintype.card RS - 1) := by
@@ -1623,7 +1633,8 @@ lemma dirClose_of_manyClosePts
     have hle : (e + 1) * (Fintype.card RS - 1) ≤ Fintype.card RS * e := by
       have h1 : (e + 1) * (Fintype.card RS - 1) ≤ D.card * (Fintype.card RS - 1) :=
         Nat.mul_le_mul_right _ hD_ge
-      have h2 : D.card * (Fintype.card RS - 1) ≤ Fintype.card RS * e := le_trans h_pairs_ge h_pairs_le
+      have h2 : D.card * (Fintype.card RS - 1) ≤ Fintype.card RS * e := by
+        exact le_trans h_pairs_ge h_pairs_le
       exact le_trans h1 h2
     exact (not_lt_of_ge hle) hmul_lt
 
@@ -1631,8 +1642,7 @@ lemma dirClose_of_manyClosePts
   have hdist_vw : Δ₀(v, w) ≤ D.card := by
     refine hammingDist_le_of_subset_disagree (ι := ι) (u := v) (v := w) (D := D) ?_
     intro j hj
-    have : u j ≠ cBase j ∨ v j ≠ w j := Or.inr hj
-    simpa [D, this] using (Finset.mem_filter.mpr ⟨by simp, this⟩)
+    exact Finset.mem_filter.mpr ⟨Finset.mem_univ j, Or.inr hj⟩
   have hmem : w ∈ CRS := hw_mem
   have : Δ₀(v, CRS) ≤ e := by
     exact le_trans
@@ -1662,8 +1672,7 @@ lemma probOfBadPts [Nonempty ι] [DecidableEq ι]
 
   -- If `d = |F|`, the RHS is `1`, so the bound is trivial.
   by_cases hd : d = Fintype.card F
-  ·
-    have h_le_univ :
+  · have h_le_univ :
         (PMF.uniformOfFintype (Matrix.rowSpan U_star)).toOuterMeasure
             {w_star | Δ₀(w_star, RS) ≤ e} ≤
           (PMF.uniformOfFintype (Matrix.rowSpan U_star)).toOuterMeasure Set.univ := by
@@ -1711,8 +1720,9 @@ lemma probOfBadPts [Nonempty ι] [DecidableEq ι]
     have hdist0 : Δ₀(v_star, (ReedSolomon.code α deg : Set (ι → F))) = 0 := by
       rw [hv0]
       exact (Code.distFromCode_eq_zero_iff_mem _ _).2 h0_in
-    have : ((e : ℕ∞) < 0) := by simpa [hdist0] using hv_far
-    exact (ENat.not_lt_zero (e : ℕ∞)) this
+    have hv_far' : ((e : ℕ∞) < 0) := by
+      rwa [hdist0] at hv_far
+    exact (ENat.not_lt_zero (e : ℕ∞)) hv_far'
 
   let S : Submodule F (ι → F) := Matrix.rowSpan U_star
   let vDir : S := ⟨v_star, hv_mem⟩
@@ -1785,7 +1795,8 @@ lemma probOfBadPts [Nonempty ι] [DecidableEq ι]
   let bad : Finset S := Finset.filter Pbad Finset.univ
 
   have hbad_sum :
-      bad.card = ∑ q ∈ (Finset.univ : Finset Q), (Finset.filter (fun w : S => π w = q) bad).card := by
+      bad.card =
+        ∑ q ∈ (Finset.univ : Finset Q), (Finset.filter (fun w : S => π w = q) bad).card := by
     classical
     have hmaps : bad.toSet.MapsTo π (Finset.univ : Finset Q) := by
       intro _ _
@@ -1885,7 +1896,7 @@ lemma probOfBadPts [Nonempty ι] [DecidableEq ι]
                   (e := e)) := by
           simpa using numberOfClosePts_eq_natCard (F := F) (ι := ι) u0 v_star deg α e
         have hcard_fiber : Fintype.card fiber = Nat.card fiber := by
-          simpa using (Fintype.card_eq_nat_card (α := fiber))
+          exact (Fintype.card_eq_nat_card (α := fiber))
         -- Convert back to `Fintype.card` / `numberOfClosePts`.
         calc
           Fintype.card fiber = Nat.card fiber := hcard_fiber
@@ -1904,7 +1915,8 @@ lemma probOfBadPts [Nonempty ι] [DecidableEq ι]
           (e := e) (u := u0) (v := v_star) (by simpa [d, RS, RScodeSet] using he)
       rcases hline with h_all | h_few
       · exfalso
-        -- All points close implies `numberOfClosePts > d`, hence `v_star` is close, contradicting `hv_far`.
+        -- All points close implies `numberOfClosePts > d`, hence `v_star` is close,
+        -- contradicting `hv_far`.
         have hnum_ge : Fintype.card F ≤ numberOfClosePts (F := F) (ι := ι) u0 v_star deg α e := by
           -- Inject `F` into close points on the line (direction is nonzero).
           have hex : ∃ j, v_star j ≠ 0 := by
@@ -1920,17 +1932,14 @@ lemma probOfBadPts [Nonempty ι] [DecidableEq ι]
               ⟨u0 + r • v_star,
                 by
                   refine ⟨?_, ?_⟩
-                  ·
-                    refine
+                  · refine
                       (Affine.mem_affineLineAtOrigin_iff (F := F) (origin := u0)
-                          (direction := v_star) _).2 ?_
+                        (direction := v_star) _).2 ?_
                     exact ⟨r, rfl⟩
-                  ·
-                    apply h_all
-                    ·
-                      refine
+                  · apply h_all
+                    · refine
                         (Affine.mem_affineLineAtOrigin_iff (F := F) (origin := u0)
-                            (direction := v_star) _).2 ?_
+                          (direction := v_star) _).2 ?_
                       exact ⟨r, rfl⟩⟩
           have hg_inj : Function.Injective g := by
             intro r₁ r₂ hr
@@ -1950,7 +1959,7 @@ lemma probOfBadPts [Nonempty ι] [DecidableEq ι]
                     (e := e)) := by
             simpa using numberOfClosePts_eq_natCard (F := F) (ι := ι) u0 v_star deg α e
           have hcardF : Fintype.card F = Nat.card F := by
-            simpa using (Fintype.card_eq_nat_card (α := F))
+            exact (Fintype.card_eq_nat_card (α := F))
           calc
             Fintype.card F = Nat.card F := hcardF
             _ ≤ Nat.card
@@ -1963,7 +1972,8 @@ lemma probOfBadPts [Nonempty ι] [DecidableEq ι]
         have hv_close :
             Δ₀(v_star, ReedSolomon.code α deg) ≤ e :=
           dirClose_of_manyClosePts (F := F) (ι := ι) (deg := deg) (hdeg := hdeg) (α := α)
-            (e := e) (u := u0) (v := v_star) (by simpa [d, RS, RScodeSet] using he) (by simpa [d] using hnum_gt)
+            (e := e) (u := u0) (v := v_star) (by simpa [d, RS, RScodeSet] using he)
+            (by simpa [d] using hnum_gt)
         exact (not_lt_of_ge hv_close) hv_far
       · simpa [d, RS, RScodeSet] using h_few
     exact le_trans hclose_le hclose_bd
@@ -1974,15 +1984,15 @@ lemma probOfBadPts [Nonempty ι] [DecidableEq ι]
       -- Sum of fiber sizes.
       have :=
         calc
-          bad.card = ∑ q ∈ (Finset.univ : Finset Q), (Finset.filter (fun w : S => π w = q) bad).card :=
-            hbad_sum
+          bad.card =
+              ∑ q ∈ (Finset.univ : Finset Q), (Finset.filter (fun w : S => π w = q) bad).card := by
+            exact hbad_sum
           _ ≤ ∑ q ∈ (Finset.univ : Finset Q), d := by
             refine Finset.sum_le_sum ?_
             intro q hq
             exact hfiber_le q
           _ = (Finset.univ : Finset Q).card * d := by
-            simpa using (Finset.sum_const_nat (s := (Finset.univ : Finset Q)) (f := fun _ : Q => d) (m := d)
-              (by intro _ _; rfl))
+            simp
       simpa [Finset.card_univ, Nat.mul_comm] using this
     exact_mod_cast hbad_nat
 
@@ -2000,7 +2010,7 @@ lemma probOfBadPts [Nonempty ι] [DecidableEq ι]
   -- Combine the counting bound with the cardinality decomposition `|S| = |V| * |Q|`.
   have hQ_pos : 0 < Fintype.card Q := by
     have : Nonempty Q := ⟨0⟩
-    simpa using (Fintype.card_pos_iff.mpr this)
+    exact (Fintype.card_pos_iff.mpr this)
   have hQ_ne_zero : (Fintype.card Q : ENNReal) ≠ 0 := by
     exact ne_of_gt (by exact_mod_cast hQ_pos)
   have hQ_ne_top : (Fintype.card Q : ENNReal) ≠ ⊤ := ENNReal.natCast_ne_top (Fintype.card Q)
@@ -2009,7 +2019,7 @@ lemma probOfBadPts [Nonempty ι] [DecidableEq ι]
   calc
     (PMF.uniformOfFintype S).toOuterMeasure badSet =
         (Fintype.card badSet : ENNReal) / Fintype.card S := hprob
-    _ = (bad.card : ENNReal) / Fintype.card S := by simpa [hcard_badSet]
+    _ = (bad.card : ENNReal) / Fintype.card S := by rw [hcard_badSet]
     _ ≤ (d * Fintype.card Q : ENNReal) / Fintype.card S := by
       exact ENNReal.div_le_div_right hbad_card (Fintype.card S)
     _ = (d * Fintype.card Q : ENNReal) / (Fintype.card V * Fintype.card Q : ℕ) := by
@@ -2020,58 +2030,9 @@ lemma probOfBadPts [Nonempty ι] [DecidableEq ι]
       simpa [mul_assoc, mul_comm, mul_left_comm] using
         (ENNReal.mul_div_mul_right (a := (d : ENNReal)) (b := (Fintype.card V : ENNReal))
           (c := (Fintype.card Q : ENNReal)) hQ_ne_zero hQ_ne_top)
-    _ = (d : ENNReal) / Fintype.card F := by simpa [hcardV]
+    _ = (d : ENNReal) / Fintype.card F := by rw [hcardV]
     _ = (‖RS‖₀ : ENNReal) / Fintype.card F := by rfl
 
 end ProximityToRS
-
-section Tests
-
--- Basic “smoke tests”: check the main lemmas can be instantiated.
-open ReedSolomonCode
-
-example {L : LinearCode ι F} {U_star : WordStack (A := F) κ ι} {e : ℕ}
-    (hF : Fintype.card F > e)
-    (he : (e : ℚ≥0) < ‖(L : Set (ι → F))‖₀ / 3)
-    (hU : e < Δ₀(⋈|U_star, L^⋈κ)) :
-    ∃ v ∈ Matrix.rowSpan U_star, e < Δ₀(v, L) :=
-  distInterleavedCodeToCodeLB (F := F) (ι := ι) (κ := κ) (L := L) (U_star := U_star) hF he hU
-
-example [Nonempty ι] [DecidableEq ι] {deg : ℕ} [NeZero deg] (hdeg : deg ≤ Fintype.card ι)
-    {α : ι ↪ F} {e : ℕ} {u v : ι → F}
-    (he : (e : ℚ≥0) < ‖(RScodeSet α deg)‖₀ / 3) :
-    (∀ x ∈ Affine.affineLineAtOrigin (F := F) u v, Δ₀(x, ReedSolomon.code α deg) ≤ e)
-      ∨ ProximityToRS.numberOfClosePts (F := F) (ι := ι) u v deg α e ≤ Fintype.card ι :=
-  ProximityToRS.e_leq_dist_over_3 (F := F) (ι := ι) (deg := deg) (hdeg := hdeg) (α := α)
-    (e := e) (u := u) (v := v) he
-
-example {deg : ℕ} {α : ι ↪ F} {e : ℕ} (u v : ι → F) :
-    ProximityToRS.numberOfClosePts (F := F) (ι := ι) u v deg α e =
-      Nat.card (ProximityToRS.closePtsOnAffineLine (F := F) (ι := ι) u v deg α e) :=
-  ProximityToRS.numberOfClosePts_eq_natCard (F := F) (ι := ι) u v deg α e
-
-example [Nonempty ι] [DecidableEq ι] {deg : ℕ} [NeZero deg] (hdeg : deg ≤ Fintype.card ι)
-    {α : ι ↪ F} {e : ℕ} {U_star : WordStack (A := F) κ ι}
-    (hF : Fintype.card F > e)
-    (he : (e : ℚ≥0) < ‖(RScodeSet α deg)‖₀ / 3)
-    (hU : e < Δ₀(⋈|U_star, (ReedSolomon.code α deg)^⋈κ)) :
-    (PMF.uniformOfFintype (Matrix.rowSpan U_star)).toOuterMeasure
-        {w_star | Δ₀(w_star, RScodeSet α deg) ≤ e} ≤ (‖(RScodeSet α deg)‖₀ : ENNReal) / Fintype.card F :=
-  ProximityToRS.probOfBadPts (F := F) (ι := ι) (κ := κ) (deg := deg) (hdeg := hdeg) (α := α)
-    (e := e) (U_star := U_star) hF he hU
-
-example [Nonempty ι] [DecidableEq ι] {deg : ℕ} [NeZero deg] (hdeg : deg ≤ Fintype.card ι)
-    {α : ι ↪ F} {e : ℕ} {u v : ι → F}
-    (he : (e : ℚ≥0) < ‖(RScodeSet α deg)‖₀ / 3)
-    (h_many : ProximityToRS.numberOfClosePts (F := F) (ι := ι) u v deg α e > ‖(RScodeSet α deg)‖₀) :
-    Δ₀(v, ReedSolomon.code α deg) ≤ e :=
-  ProximityToRS.dirClose_of_manyClosePts (F := F) (ι := ι) (deg := deg) (hdeg := hdeg) (α := α)
-    (e := e) (u := u) (v := v) he h_many
-
-example (u v : ι → F) :
-    vecSupport (F := F) (u - v) = Finset.filter (fun j => u j ≠ v j) Finset.univ :=
-  vecSupport_sub (F := F) u v
-
-end Tests
 
 end
