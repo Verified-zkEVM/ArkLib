@@ -489,17 +489,6 @@ lemma proximity_gap_list_size_bound {k m : ℕ} [Fintype F] [NeZero n] [NeZero m
           simpa using hsmall (k0 := 1) (by decide) (by simpa using hδ)
       | succ k'' =>
           let kLarge : ℕ := Nat.succ (Nat.succ k'')
-          have hk : 2 ≤ kLarge := by
-            dsimp [kLarge]
-            omega
-          rcases (guruswami_sudan_for_proximity_gap_existence (F := F) (n := n)
-            (k := kLarge) (m := m) (ωs := ωs) (f := f)) with ⟨Q, hQ⟩
-          have hQ' :
-              GuruswamiSudan.GSCondition (n := n) (F := F) kLarge m
-                (GuruswamiSudan.proximity_gap_degree_bound (n := n) kLarge m)
-                ωs f Q := by
-            simpa [proximity_gap_degree_bound_eq (n := n) (k := kLarge) (m := m)]
-              using hQ
           have hδ_large :
               (0 : ℝ) ≤
                 (1 : ℝ) - Real.sqrt ((kLarge + 1 : ℚ) / n) -
@@ -507,8 +496,8 @@ lemma proximity_gap_list_size_bound {k m : ℕ} [Fintype F] [NeZero n] [NeZero m
             simpa [kLarge] using hδ
           exact
             GuruswamiSudan.list_size_le_degree_bound_of_GSCondition
-              (F := F) (n := n) (k := kLarge) (m := m) hk
-              hδ_large hQ'
+              (F := F) (n := n) (k := kLarge) (m := m)
+              (ωs := ωs) (f := f) hδ_large
 
 end
 
@@ -2269,19 +2258,109 @@ noncomputable instance {domain : ι ↪ F} {deg : ℕ} : Fintype (ReedSolomon.co
 noncomputable def ε_uniqueDecoding (ι F : Type) [Fintype ι] [Fintype F] : ℝ≥0 :=
   (Fintype.card ι : ℝ≥0) / (Fintype.card F : ℝ≥0)
 
+/-- Factor-free affine-line threshold (`|ι|/|F|`) used in the unique-decoding branch. -/
+noncomputable def ε_affineLines_factorFree : ℝ≥0 :=
+  ε_uniqueDecoding ι F
+
 noncomputable def ε_affineLines {deg : ℕ} {domain : ι ↪ F} : ℝ≥0 :=
-  (((Fintype.card ι) * (Fintype.card (ReedSolomon.code domain deg)) ^ 2 : ℕ) : ℝ≥0) /
+  (((Fintype.card ι) * (Fintype.card (ReedSolomon.code domain deg)) : ℕ) : ℝ≥0) /
     (Fintype.card F : ℝ≥0)
 
-noncomputable def ε_affineCurves {k deg : ℕ} {domain : ι ↪ F} : ℝ≥0 :=
+noncomputable def ε_affineLines_uniqueDecoding {deg : ℕ} {domain : ι ↪ F} : ℝ≥0 :=
+  (((Fintype.card ι) * (Fintype.card (ReedSolomon.code domain deg)) : ℕ) : ℝ≥0) /
+    (Fintype.card F : ℝ≥0)
+
+noncomputable def ε_affineCurves {k : ℕ} : ℝ≥0 :=
+  ((((Fintype.card ι + 1) * (k - 1) : ℕ) : ℝ≥0) /
+    (Fintype.card F : ℝ≥0))
+
+noncomputable def ε_affineSpaces {k : ℕ} : ℝ≥0 :=
+  ((((Fintype.card ι + 1) * (Fintype.card F) ^ (k - 1) : ℕ) : ℝ≥0) /
+    (Fintype.card (Fin k → F) : ℝ≥0))
+
+/-- Counting-based curve threshold (legacy proof shape): this keeps the explicit
+`|RS|^k` fiber factor. -/
+noncomputable def ε_affineCurves_counting {k deg : ℕ} {domain : ι ↪ F} : ℝ≥0 :=
   (((((Fintype.card ι + 1) * (k - 1)) *
         (Fintype.card (ReedSolomon.code domain deg)) ^ k : ℕ) : ℝ≥0) /
     (Fintype.card F : ℝ≥0))
 
-noncomputable def ε_affineSpaces {k deg : ℕ} {domain : ι ↪ F} : ℝ≥0 :=
+/-- Counting-based affine-space threshold (legacy proof shape): this keeps the explicit
+`|RS|^(k+1)` fiber factor. -/
+noncomputable def ε_affineSpaces_counting {k deg : ℕ} {domain : ι ↪ F} : ℝ≥0 :=
   (((((Fintype.card ι + 1) * (Fintype.card F) ^ (k - 1)) *
         (Fintype.card (ReedSolomon.code domain deg)) ^ (k + 1) : ℕ) : ℝ≥0) /
     (Fintype.card (Fin k → F) : ℝ≥0))
+
+/-- Global list-recovery/consistency principle for polynomial curves.
+
+Given many parameter points `z` where the evaluated curve is close to the Reed-Solomon code,
+one can extract a single global codeword-curve witness that remains close on many `z`.
+-/
+def CurveGlobalConsistency
+    {k deg : ℕ} {domain : ι ↪ F} (u : Fin k → ι → F) (e : ℕ) : Prop :=
+  ∀ {S : Finset F},
+    S.card > (Fintype.card ι + 1) * (k - 1) →
+    (∀ z ∈ S,
+      ∃ v : Fin k → ι → F,
+        (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+          Δ₀(fun i => ∑ j : Fin k, z ^ j.val * u j i,
+            fun i => ∑ j : Fin k, z ^ j.val * v j i) ≤ e) →
+    ∃ v : Fin k → ι → F,
+      (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+      ∃ S' ⊆ S, S'.card > (Fintype.card ι + 1) * (k - 1) ∧
+        ∀ z ∈ S', Δ₀(fun i => ∑ j : Fin k, z ^ j.val * u j i,
+          fun i => ∑ j : Fin k, z ^ j.val * v j i) ≤ e
+
+/-- Global list-recovery/consistency principle for affine spaces.
+
+Given many affine parameters `t` where the evaluated affine combination is close to the
+Reed-Solomon code, one can extract a single global affine-code witness that remains close on
+many `t`.
+-/
+def AffineSpaceGlobalConsistency
+    {k deg : ℕ} {domain : ι ↪ F} (u : Fin (k + 1) → ι → F) (e : ℕ) : Prop :=
+  let d : ℕ := (Fintype.card F) ^ (k - 1)
+  ∀ {S : Finset (Fin k → F)},
+    S.card > (Fintype.card ι + 1) * d →
+    (∀ t ∈ S,
+      ∃ v : Fin (k + 1) → ι → F,
+        (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+          Δ₀(affineEval (u := u) t, affineEval (u := v) t) ≤ e) →
+    ∃ v : Fin (k + 1) → ι → F,
+      (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+      ∃ S' ⊆ S, S'.card > (Fintype.card ι + 1) * d ∧
+        ∀ t ∈ S', Δ₀(affineEval (u := u) t, affineEval (u := v) t) ≤ e
+
+/-- A list-recovery interface for polynomial curves: from local close witnesses on a set `S`,
+produce a bounded candidate list of global curve witnesses that covers all points of `S`. -/
+def CurveListRecoveryBound
+    {k deg : ℕ} {domain : ι ↪ F} (u : Fin k → ι → F) (e Lmax : ℕ) : Prop :=
+  ∀ {S : Finset F},
+    (∀ z ∈ S,
+      ∃ v : Fin k → ι → F,
+        (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+          Δ₀(fun i => ∑ j : Fin k, z ^ j.val * u j i,
+            fun i => ∑ j : Fin k, z ^ j.val * v j i) ≤ e) →
+    ∃ L : Finset (Fin k → ι → F),
+      L.card ≤ Lmax ∧
+      (∀ v ∈ L, ∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+      ∀ z ∈ S, ∃ v ∈ L, Δ₀(fun i => ∑ j : Fin k, z ^ j.val * u j i,
+        fun i => ∑ j : Fin k, z ^ j.val * v j i) ≤ e
+
+/-- A list-recovery interface for affine spaces: from local close witnesses on a set `S`,
+produce a bounded candidate list of global affine-space witnesses that covers all points of `S`. -/
+def AffineSpaceListRecoveryBound
+    {k deg : ℕ} {domain : ι ↪ F} (u : Fin (k + 1) → ι → F) (e Lmax : ℕ) : Prop :=
+  ∀ {S : Finset (Fin k → F)},
+    (∀ t ∈ S,
+      ∃ v : Fin (k + 1) → ι → F,
+        (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+          Δ₀(affineEval (u := u) t, affineEval (u := v) t) ≤ e) →
+    ∃ L : Finset (Fin (k + 1) → ι → F),
+      L.card ≤ Lmax ∧
+      (∀ v ∈ L, ∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+      ∀ t ∈ S, ∃ v ∈ L, Δ₀(affineEval (u := u) t, affineEval (u := v) t) ≤ e
 
 omit [Field F] [DecidableEq F] in
 lemma card_filter_gt_floor_of_prob_gt {P : F → Prop} [DecidablePred P] [Nonempty F] {ε : ℝ≥0} :
@@ -2560,6 +2639,327 @@ lemma exists_pair_with_large_fiber_of_exists_close
   have hdist := hf_spec z'
   simpa [hz'] using hdist
 
+omit [Nonempty ι] [DecidableEq ι] in
+lemma exists_codeword_with_large_fiber_of_closeToCode
+    {S : Finset F} {deg : ℕ} {domain : ι ↪ F} {u₀ u₁ : ι → F} {e m : ℕ}
+    (hS : S.card > m * (Fintype.card (ReedSolomon.code domain deg)))
+    (hclose :
+      ∀ z ∈ S,
+        Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤ e) :
+    ∃ v₀ ∈ ReedSolomon.code domain deg,
+      ∃ S' ⊆ S, S'.card > m ∧
+        ∀ z ∈ S', Δ₀(fun i => u₀ i + z * u₁ i, v₀) ≤ e := by
+  classical
+  let α := {z : F // z ∈ S}
+  let β := ReedSolomon.code domain deg
+  letI : Fintype α := Fintype.ofFinite α
+  letI : Fintype β := Fintype.ofFinite β
+  have hclose' :
+      ∀ z : α, ∃ p : β, Δ₀(fun i => u₀ i + z.1 * u₁ i, p.1) ≤ e := by
+    intro z
+    rcases
+        (Code.closeToCode_iff_closeToCodeword_of_minDist
+          (u := fun i => u₀ i + z.1 * u₁ i)
+          (C := ReedSolomon.code domain deg)
+          (e := e)).1
+          (hclose z.1 z.2) with
+      ⟨v₀, hv₀, hdist⟩
+    exact ⟨⟨v₀, hv₀⟩, by simpa using hdist⟩
+  let f : α → β := fun z => Classical.choose (hclose' z)
+  have hf_spec :
+      ∀ z : α,
+        Δ₀(fun i => u₀ i + z.1 * u₁ i, (f z).1) ≤ e := by
+    intro z
+    simpa [f] using (Classical.choose_spec (hclose' z))
+  have hcard_alpha : Fintype.card α = S.card := by
+    classical
+    have h :
+        Fintype.card α = #{z | z ∈ S} := by
+      simp [α]
+    simpa [Finset.filter_univ_mem] using h
+  have hS' :
+      Fintype.card α > m * Fintype.card β := by
+    simpa [hcard_alpha, mul_comm, mul_left_comm, mul_assoc] using hS
+  rcases exists_fiber_card_gt_of_card_gt_mul (f := f) (m := m) hS' with ⟨p, hp⟩
+  let T : Finset α := Finset.univ.filter (fun z => f z = p)
+  have hT_card : T.card > m := by
+    have hcard_T :
+        Fintype.card {z : α // f z = p} = T.card := by
+      classical
+      simpa [T] using
+        (Fintype.card_subtype (α := α) (p := fun z => f z = p))
+    simpa [hcard_T] using hp
+  let S' : Finset F := T.image (fun z => z.1)
+  have hS'_card : S'.card > m := by
+    have h_inj : Function.Injective (fun z : α => z.1) := by
+      intro x y hxy
+      exact Subtype.ext (by simpa using hxy)
+    have hcard : S'.card = T.card := by
+      simpa [S'] using
+        (Finset.card_image_of_injective (s := T) (f := fun z : α => z.1) h_inj)
+    simpa [hcard] using hT_card
+  have hS'_subset : S' ⊆ S := by
+    intro z hz
+    rcases Finset.mem_image.mp hz with ⟨z', hz', rfl⟩
+    exact z'.2
+  refine ⟨p.1, p.2, S', hS'_subset, hS'_card, ?_⟩
+  intro z hz
+  rcases Finset.mem_image.mp hz with ⟨z', hz', rfl⟩
+  have hz' : f z' = p := by
+    have hz'' : z' ∈ T := hz'
+    simpa [T] using (Finset.mem_filter.mp hz'').2
+  have hdist := hf_spec z'
+  simpa [hz'] using hdist
+
+omit [Nonempty ι] [DecidableEq ι] in
+lemma exists_curve_with_large_fiber_of_candidateSet
+    {k deg : ℕ} {domain : ι ↪ F} {u : Fin k → ι → F} {e m : ℕ}
+    {S : Finset F} {L : Finset (Fin k → ι → F)}
+    (hS : S.card > m * L.card)
+    (hL_code : ∀ v ∈ L, ∀ j, v j ∈ ReedSolomon.code domain deg)
+    (hcover :
+      ∀ z ∈ S, ∃ v ∈ L,
+        Δ₀(fun i => ∑ j : Fin k, z ^ j.val * u j i,
+          fun i => ∑ j : Fin k, z ^ j.val * v j i) ≤ e) :
+    ∃ v : Fin k → ι → F,
+      (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+      ∃ S' ⊆ S, S'.card > m ∧
+        ∀ z ∈ S', Δ₀(fun i => ∑ j : Fin k, z ^ j.val * u j i,
+          fun i => ∑ j : Fin k, z ^ j.val * v j i) ≤ e := by
+  classical
+  let α := {z : F // z ∈ S}
+  let β := {v : Fin k → ι → F // v ∈ L}
+  letI : Fintype α := Fintype.ofFinite α
+  letI : Fintype β := Fintype.ofFinite β
+  have hcover' :
+      ∀ z : α, ∃ v : β,
+        Δ₀(fun i => ∑ j : Fin k, z.1 ^ j.val * u j i,
+          fun i => ∑ j : Fin k, z.1 ^ j.val * v.1 j i) ≤ e := by
+    intro z
+    rcases hcover z.1 z.2 with ⟨v, hvL, hdist⟩
+    exact ⟨⟨v, hvL⟩, by simpa using hdist⟩
+  let f : α → β := fun z => Classical.choose (hcover' z)
+  have hf_spec :
+      ∀ z : α,
+        Δ₀(fun i => ∑ j : Fin k, z.1 ^ j.val * u j i,
+          fun i => ∑ j : Fin k, z.1 ^ j.val * (f z).1 j i) ≤ e := by
+    intro z
+    simpa [f] using (Classical.choose_spec (hcover' z))
+  have hcard_alpha : Fintype.card α = S.card := by
+    classical
+    have h :
+        Fintype.card α = #{z | z ∈ S} := by
+      simp [α]
+    simpa [Finset.filter_univ_mem] using h
+  have hcard_beta : Fintype.card β = L.card := by
+    classical
+    have h :
+        Fintype.card β = #{v | v ∈ L} := by
+      simp [β]
+    simpa [Finset.filter_univ_mem] using h
+  have hS' : Fintype.card α > m * Fintype.card β := by
+    simpa [hcard_alpha, hcard_beta] using hS
+  rcases exists_fiber_card_gt_of_card_gt_mul (f := f) (m := m) hS' with ⟨p, hp⟩
+  let T : Finset α := Finset.univ.filter (fun z => f z = p)
+  have hT_card : T.card > m := by
+    have hcard_T :
+        Fintype.card {z : α // f z = p} = T.card := by
+      classical
+      simpa [T] using
+        (Fintype.card_subtype (α := α) (p := fun z => f z = p))
+    simpa [hcard_T] using hp
+  let S' : Finset F := T.image (fun z => z.1)
+  have hS'_card : S'.card > m := by
+    have h_inj : Function.Injective (fun z : α => z.1) := by
+      intro x y hxy
+      exact Subtype.ext (by simpa using hxy)
+    have hcard : S'.card = T.card := by
+      simpa [S'] using
+        (Finset.card_image_of_injective (s := T) (f := fun z : α => z.1) h_inj)
+    simpa [hcard] using hT_card
+  have hS'_subset : S' ⊆ S := by
+    intro z hz
+    rcases Finset.mem_image.mp hz with ⟨z', _hz', rfl⟩
+    exact z'.2
+  refine ⟨p.1, ?_, S', hS'_subset, hS'_card, ?_⟩
+  · intro j
+    exact hL_code p.1 p.2 j
+  · intro z hz
+    rcases Finset.mem_image.mp hz with ⟨z', hz', rfl⟩
+    have hz' : f z' = p := by
+      have hz'' : z' ∈ T := hz'
+      simpa [T] using (Finset.mem_filter.mp hz'').2
+    have hdist := hf_spec z'
+    simpa [hz'] using hdist
+
+omit [Nonempty ι] [DecidableEq ι] in
+lemma curveGlobalConsistency_of_listRecoveryBound
+    {k deg : ℕ} {domain : ι ↪ F} {u : Fin k → ι → F} {e Lmax : ℕ}
+    (hLR :
+      CurveListRecoveryBound (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)
+        u e Lmax)
+    {S : Finset F}
+    (hS : S.card > ((Fintype.card ι + 1) * (k - 1)) * Lmax)
+    (hS_prop :
+      ∀ z ∈ S,
+        ∃ v : Fin k → ι → F,
+          (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+            Δ₀(fun i => ∑ j : Fin k, z ^ j.val * u j i,
+              fun i => ∑ j : Fin k, z ^ j.val * v j i) ≤ e) :
+    ∃ v : Fin k → ι → F,
+      (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+      ∃ S' ⊆ S, S'.card > (Fintype.card ι + 1) * (k - 1) ∧
+        ∀ z ∈ S', Δ₀(fun i => ∑ j : Fin k, z ^ j.val * u j i,
+          fun i => ∑ j : Fin k, z ^ j.val * v j i) ≤ e := by
+  classical
+  rcases hLR (S := S) hS_prop with ⟨L, hL_card, hL_code, hcover⟩
+  let N : ℕ := (Fintype.card ι + 1) * (k - 1)
+  have hS' : S.card > N * L.card := by
+    have hmul : N * L.card ≤ N * Lmax := Nat.mul_le_mul_left N hL_card
+    have hS_big : N * Lmax < S.card := by
+      simpa [N, gt_iff_lt] using hS
+    exact lt_of_le_of_lt hmul hS_big
+  simpa [N] using
+    (exists_curve_with_large_fiber_of_candidateSet
+      (domain := domain) (u := u) (e := e) (m := N) (S := S) (L := L)
+      hS' hL_code hcover)
+
+omit [Nonempty ι] [DecidableEq ι] in
+lemma curveGlobalConsistency_of_listRecoveryBound_one
+    {k deg : ℕ} {domain : ι ↪ F} {u : Fin k → ι → F} {e : ℕ}
+    (hLR :
+      CurveListRecoveryBound (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)
+        u e 1) :
+    CurveGlobalConsistency (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain) u e := by
+  intro S hS hS_prop
+  have hS' : S.card > ((Fintype.card ι + 1) * (k - 1)) * 1 := by
+    simpa [Nat.mul_one] using hS
+  simpa [Nat.mul_one] using
+    (curveGlobalConsistency_of_listRecoveryBound
+      (domain := domain) (u := u) (e := e) (Lmax := 1) hLR
+      (S := S) hS' hS_prop)
+
+omit [Nonempty ι] [DecidableEq ι] in
+lemma exists_affine_space_with_large_fiber_of_candidateSet
+    {k deg : ℕ} {domain : ι ↪ F} {u : Fin (k + 1) → ι → F} {e m : ℕ}
+    {S : Finset (Fin k → F)} {L : Finset (Fin (k + 1) → ι → F)}
+    (hS : S.card > m * L.card)
+    (hL_code : ∀ v ∈ L, ∀ j, v j ∈ ReedSolomon.code domain deg)
+    (hcover :
+      ∀ t ∈ S, ∃ v ∈ L, Δ₀(affineEval (u := u) t, affineEval (u := v) t) ≤ e) :
+    ∃ v : Fin (k + 1) → ι → F,
+      (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+      ∃ S' ⊆ S, S'.card > m ∧
+        ∀ t ∈ S', Δ₀(affineEval (u := u) t, affineEval (u := v) t) ≤ e := by
+  classical
+  let α := {t : Fin k → F // t ∈ S}
+  let β := {v : Fin (k + 1) → ι → F // v ∈ L}
+  letI : Fintype α := Fintype.ofFinite α
+  letI : Fintype β := Fintype.ofFinite β
+  have hcover' :
+      ∀ t : α, ∃ v : β, Δ₀(affineEval (u := u) t.1, affineEval (u := v.1) t.1) ≤ e := by
+    intro t
+    rcases hcover t.1 t.2 with ⟨v, hvL, hdist⟩
+    exact ⟨⟨v, hvL⟩, by simpa using hdist⟩
+  let f : α → β := fun t => Classical.choose (hcover' t)
+  have hf_spec :
+      ∀ t : α, Δ₀(affineEval (u := u) t.1, affineEval (u := (f t).1) t.1) ≤ e := by
+    intro t
+    simpa [f] using (Classical.choose_spec (hcover' t))
+  have hcard_alpha : Fintype.card α = S.card := by
+    classical
+    have h :
+        Fintype.card α = #{t | t ∈ S} := by
+      simp [α]
+    simpa [Finset.filter_univ_mem] using h
+  have hcard_beta : Fintype.card β = L.card := by
+    classical
+    have h :
+        Fintype.card β = #{v | v ∈ L} := by
+      simp [β]
+    simpa [Finset.filter_univ_mem] using h
+  have hS' : Fintype.card α > m * Fintype.card β := by
+    simpa [hcard_alpha, hcard_beta] using hS
+  rcases exists_fiber_card_gt_of_card_gt_mul (f := f) (m := m) hS' with ⟨p, hp⟩
+  let T : Finset α := Finset.univ.filter (fun t => f t = p)
+  have hT_card : T.card > m := by
+    have hcard_T :
+        Fintype.card {t : α // f t = p} = T.card := by
+      classical
+      simpa [T] using
+        (Fintype.card_subtype (α := α) (p := fun t => f t = p))
+    simpa [hcard_T] using hp
+  let S' : Finset (Fin k → F) := T.image (fun t => t.1)
+  have hS'_card : S'.card > m := by
+    have h_inj : Function.Injective (fun t : α => t.1) := by
+      intro x y hxy
+      exact Subtype.ext (by simpa using hxy)
+    have hcard : S'.card = T.card := by
+      simpa [S'] using
+        (Finset.card_image_of_injective (s := T) (f := fun t : α => t.1) h_inj)
+    simpa [hcard] using hT_card
+  have hS'_subset : S' ⊆ S := by
+    intro t ht
+    rcases Finset.mem_image.mp ht with ⟨t', _ht', rfl⟩
+    exact t'.2
+  refine ⟨p.1, ?_, S', hS'_subset, hS'_card, ?_⟩
+  · intro j
+    exact hL_code p.1 p.2 j
+  · intro t ht
+    rcases Finset.mem_image.mp ht with ⟨t', ht', rfl⟩
+    have ht' : f t' = p := by
+      have ht'' : t' ∈ T := ht'
+      simpa [T] using (Finset.mem_filter.mp ht'').2
+    have hdist := hf_spec t'
+    simpa [ht'] using hdist
+
+omit [Nonempty ι] [DecidableEq ι] in
+lemma affineSpaceGlobalConsistency_of_listRecoveryBound
+    {k deg : ℕ} {domain : ι ↪ F} {u : Fin (k + 1) → ι → F} {e Lmax : ℕ}
+    (hLR :
+      AffineSpaceListRecoveryBound (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)
+        u e Lmax)
+    {S : Finset (Fin k → F)}
+    (hS : S.card > ((Fintype.card ι + 1) * ((Fintype.card F) ^ (k - 1))) * Lmax)
+    (hS_prop :
+      ∀ t ∈ S,
+        ∃ v : Fin (k + 1) → ι → F,
+          (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+            Δ₀(affineEval (u := u) t, affineEval (u := v) t) ≤ e) :
+    ∃ v : Fin (k + 1) → ι → F,
+      (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+      ∃ S' ⊆ S, S'.card > (Fintype.card ι + 1) * ((Fintype.card F) ^ (k - 1)) ∧
+        ∀ t ∈ S', Δ₀(affineEval (u := u) t, affineEval (u := v) t) ≤ e := by
+  classical
+  rcases hLR (S := S) hS_prop with ⟨L, hL_card, hL_code, hcover⟩
+  let N : ℕ := (Fintype.card ι + 1) * ((Fintype.card F) ^ (k - 1))
+  have hS' : S.card > N * L.card := by
+    have hmul : N * L.card ≤ N * Lmax := Nat.mul_le_mul_left N hL_card
+    have hS_big : N * Lmax < S.card := by
+      simpa [N, gt_iff_lt] using hS
+    exact lt_of_le_of_lt hmul hS_big
+  simpa [N] using
+    (exists_affine_space_with_large_fiber_of_candidateSet
+      (domain := domain) (u := u) (e := e) (m := N) (S := S) (L := L)
+      hS' hL_code hcover)
+
+omit [Nonempty ι] [DecidableEq ι] in
+  lemma affineSpaceGlobalConsistency_of_listRecoveryBound_one
+    {k deg : ℕ} {domain : ι ↪ F} {u : Fin (k + 1) → ι → F} {e : ℕ}
+    (hLR :
+      AffineSpaceListRecoveryBound (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)
+        u e 1) :
+    AffineSpaceGlobalConsistency
+      (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain) u e := by
+  intro S hS hS_prop
+  have hS' :
+      S.card > ((Fintype.card ι + 1) * ((Fintype.card F) ^ (k - 1))) * 1 := by
+    simpa [Nat.mul_one] using hS
+  simpa [Nat.mul_one] using
+    (affineSpaceGlobalConsistency_of_listRecoveryBound
+      (domain := domain) (u := u) (e := e) (Lmax := 1) hLR
+      (S := S) hS' hS_prop)
+
 /-- The error bound `ε` in the pair of proximity and error parameters `(δ,ε)` for Reed-Solomon codes
   defined up to the Johnson bound. More precisely, let `ρ` be the rate of the Reed-Solomon code.
   Then for `δ ∈ (0, 1 - √ρ)`, we define the relevant error parameter `ε` for the unique decoding
@@ -2575,6 +2975,16 @@ noncomputable def errorBound (δ : ℝ≥0) (deg : ℕ) (domain : ι ↪ F) : �
             ⟨(deg ^ 2 : ℝ≥0) / ((2 * m) ^ 7 * (Fintype.card F : ℝ)), by positivity⟩
        else 0
 
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] in
+/-- In the unique-decoding branch, `errorBound` is exactly the factor-free threshold `|ι|/|F|`. -/
+lemma errorBound_eq_ε_affineLines_factorFree_of_mem_uniqueDecoding
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
+    (hδ :
+      δ ∈ Set.Icc 0 (((1 : ℝ≥0) - ρ (ReedSolomon.code domain deg)) / 2)) :
+    errorBound (ι := ι) (F := F) δ deg domain =
+      ε_affineLines_factorFree (ι := ι) (F := F) := by
+  simp [errorBound, ε_affineLines_factorFree, ε_uniqueDecoding, hδ]
+
 
 omit [Nonempty ι] in
 /-- Theorem 1.2 (Proximity Gaps for Reed-Solomon codes) in [BCIKS20].
@@ -2582,7 +2992,7 @@ omit [Nonempty ι] in
 Let `C` be a collection of affine spaces. Then `C` displays a `(δ, ε)`-proximity gap with respect to
 a Reed-Solomon code, where `(δ,ε)` are the proximity and error parameters defined up to the
 Johnson bound. -/
-theorem proximity_gap_RSCodes_split {k t : ℕ} [NeZero t] {deg : ℕ} {domain : ι ↪ F}
+theorem proximity_gap_RSCodes_split {k t : ℕ} {deg : ℕ} {domain : ι ↪ F}
     (C : Fin t → (Fin k → (ι → F))) {δ : ℝ≥0}
     (hδ : δ ≤ 1 - (ReedSolomonCode.sqrtRate deg domain)) :
     ∀ i : Fin t,
@@ -2603,14 +3013,12 @@ theorem proximity_gap_RSCodes_split {k t : ℕ} [NeZero t] {deg : ℕ} {domain :
       exact hall)
 
 /-
-Theorem 4.1. Suppose `δ ≤ (1-ρ) / 2`. Let `u_0, u_1: 𝒟 → 𝔽_q` be functions. Let
-`S = {z ∈ 𝔽_q : Δ(u_0 + z u_1, V) ≤ δ}`
-and suppose `|S| > n`. Then `S = 𝔽_q`. Furthermore there are `v_0, v_1 ∈ V` such that
-for all `z ∈ 𝔽_q`, `Δ(u_0 + z u_1, v_0 + z v_1) ≤ δ`
-and in fact `|{x ∈ 𝒟 : (u_0(x), u_1(x)) ≠ (v_0(x), v_1(x))}| ≤ δ|𝒟|.`
+Fixed-pair unique-decoding-regime bridge used in the affine-line correlated-agreement build:
+if one already has a single pair `(v₀,v₁)` explaining enough points on the line, then
+Lemma 7.6 machinery gives correlated agreement.
 -/
 omit [Fintype F] in
-theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime
+private theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime_fixedPair
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} {u₀ u₁ : ι → F}
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg))
     (hS_large : ∃ S : Finset F, S.card > Fintype.card ι ∧
@@ -2740,7 +3148,326 @@ theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime
       simpa [A] using hforall
   simpa [hset_eq] using hcard
 
-theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime_of_prob
+omit [Nonempty ι] [DecidableEq ι] in
+private lemma hammingDist_le_of_subset_disagree
+    {α : Type*} [DecidableEq α] {u v : ι → α} (D : Finset ι)
+    (hD : ∀ j, u j ≠ v j → j ∈ D) :
+    Δ₀(u, v) ≤ D.card := by
+  classical
+  unfold hammingDist
+  refine Finset.card_le_card ?_
+  intro j hj
+  have : u j ≠ v j := by
+    simpa [Finset.mem_filter] using hj
+  exact hD j this
+
+/-
+Global affine-consistency bridge in the unique-decoding map regime.
+Given many line points that are `e`-close to the code, if `2e` is still within the
+unique-decoding radius, then all these close points are explained by one global affine pair.
+-/
+omit [Fintype F] in
+private theorem RS_uniqueDecoderMap_induces_globalAffinePair
+    {deg : ℕ} {domain : ι ↪ F} {e : ℕ} {u₀ u₁ : ι → F} {S : Finset F}
+    (hS_card : S.card > Fintype.card ι)
+    (he_half :
+      2 * e ≤ Code.uniqueDecodingRadius
+        (C := (ReedSolomon.code domain deg : Set (ι → F))))
+    (hclose :
+      ∀ z ∈ S, Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤ e) :
+    ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
+      ∀ z ∈ S, Δ₀(fun i => u₀ i + z * u₁ i, fun i => v₀ i + z * v₁ i) ≤ e := by
+  classical
+  let line : F → ι → F := fun z i => u₀ i + z * u₁ i
+
+  have hι_pos : 0 < Fintype.card ι := Fintype.card_pos
+  have hS_pos : 0 < S.card := lt_trans hι_pos hS_card
+  have hS_nonempty : S.Nonempty := Finset.card_pos.mp hS_pos
+  rcases hS_nonempty with ⟨z₀, hz₀⟩
+  have hS_one_lt : 1 < S.card := by
+    have hι_one_le : 1 ≤ Fintype.card ι := Nat.succ_le_of_lt hι_pos
+    exact lt_of_le_of_lt hι_one_le hS_card
+  rcases Finset.exists_ne_of_one_lt_card hS_one_lt z₀ with ⟨z₁, hz₁, hz₁₀⟩
+
+  rcases
+      (Code.closeToCode_iff_closeToCodeword_of_minDist
+        (u := line z₀) (C := ReedSolomon.code domain deg) (e := e)).1
+        (hclose z₀ hz₀) with
+    ⟨c₀, hc₀_mem, hc₀_dist⟩
+  rcases
+      (Code.closeToCode_iff_closeToCodeword_of_minDist
+        (u := line z₁) (C := ReedSolomon.code domain deg) (e := e)).1
+        (hclose z₁ hz₁) with
+    ⟨c₁, hc₁_mem, hc₁_dist⟩
+
+  rcases
+      (Code.closeToWord_iff_exists_possibleDisagreeCols
+        (u := line z₀) (v := c₀) (e := e)).1 hc₀_dist with
+    ⟨E₀, hE₀_card, hE₀_agree⟩
+  rcases
+      (Code.closeToWord_iff_exists_possibleDisagreeCols
+        (u := line z₁) (v := c₁) (e := e)).1 hc₁_dist with
+    ⟨E₁, hE₁_card, hE₁_agree⟩
+
+  have hz₁₀_ne : (z₁ - z₀) ≠ 0 := sub_ne_zero.mpr hz₁₀
+  let v₁ : ι → F := (z₁ - z₀)⁻¹ • (c₁ - c₀)
+  have hv₁_mem : v₁ ∈ ReedSolomon.code domain deg := by
+    exact Submodule.smul_mem (ReedSolomon.code domain deg) _
+      (Submodule.sub_mem (ReedSolomon.code domain deg) hc₁_mem hc₀_mem)
+  let v₀ : ι → F := c₀ - z₀ • v₁
+  have hv₀_mem : v₀ ∈ ReedSolomon.code domain deg := by
+    exact Submodule.sub_mem (ReedSolomon.code domain deg) hc₀_mem
+      (Submodule.smul_mem (ReedSolomon.code domain deg) _ hv₁_mem)
+
+  have hu₁_eq_v₁_of_notin (j : ι) (hj₀ : j ∉ E₀) (hj₁ : j ∉ E₁) :
+      u₁ j = v₁ j := by
+    have h₀ : line z₀ j = c₀ j := hE₀_agree j hj₀
+    have h₁ : line z₁ j = c₁ j := hE₁_agree j hj₁
+    have hdiff :
+        (z₁ - z₀) * u₁ j = c₁ j - c₀ j := by
+      have hsub : (line z₁ j) - (line z₀ j) = c₁ j - c₀ j := by
+        simp [h₁, h₀]
+      have hline_sub : (line z₁ j) - (line z₀ j) = (z₁ - z₀) * u₁ j := by
+        unfold line
+        ring
+      calc
+        (z₁ - z₀) * u₁ j = (line z₁ j) - (line z₀ j) := hline_sub.symm
+        _ = c₁ j - c₀ j := hsub
+    calc
+      u₁ j = (z₁ - z₀)⁻¹ * ((z₁ - z₀) * u₁ j) := by simp [hz₁₀_ne]
+      _ = (z₁ - z₀)⁻¹ * (c₁ j - c₀ j) := by simp [hdiff]
+      _ = v₁ j := by simp [v₁, Pi.smul_apply, Pi.sub_apply]
+
+  have hu₀_eq_v₀_of_notin (j : ι) (hj₀ : j ∉ E₀) (hj₁ : j ∉ E₁) :
+      u₀ j = v₀ j := by
+    have h₀ : line z₀ j = c₀ j := hE₀_agree j hj₀
+    have hu₁ : u₁ j = v₁ j := hu₁_eq_v₁_of_notin j hj₀ hj₁
+    have h₀' : u₀ j + z₀ * v₁ j = c₀ j := by simpa [line, hu₁] using h₀
+    have hsub : u₀ j = c₀ j - z₀ * v₁ j := by
+      have := congrArg (fun t => t - z₀ * v₁ j) h₀'
+      simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using this
+    simpa [v₀, Pi.sub_apply, Pi.smul_apply] using hsub
+
+  have hline_eq_of_notin (z : F) (j : ι) (hj₀ : j ∉ E₀) (hj₁ : j ∉ E₁) :
+      line z j = (v₀ + z • v₁) j := by
+    have hu₀ : u₀ j = v₀ j := hu₀_eq_v₀_of_notin j hj₀ hj₁
+    have hu₁ : u₁ j = v₁ j := hu₁_eq_v₁_of_notin j hj₀ hj₁
+    simp [line, hu₀, hu₁, Pi.add_apply, Pi.smul_apply]
+
+  have hdist_twoe (z : F) : Δ₀(line z, v₀ + z • v₁) ≤ 2 * e := by
+    refine
+      le_trans
+        (hammingDist_le_of_subset_disagree
+          (u := line z) (v := v₀ + z • v₁) (D := E₀ ∪ E₁) ?_)
+        ?_
+    · intro j hj
+      by_contra hjU
+      have hj₀ : j ∉ E₀ := by
+        intro hj₀
+        exact hjU (Finset.mem_union.mpr (Or.inl hj₀))
+      have hj₁ : j ∉ E₁ := by
+        intro hj₁
+        exact hjU (Finset.mem_union.mpr (Or.inr hj₁))
+      exact hj (hline_eq_of_notin z j hj₀ hj₁)
+    · have hcard_union : (E₀ ∪ E₁).card ≤ 2 * e := by
+        calc
+          (E₀ ∪ E₁).card ≤ E₀.card + E₁.card := Finset.card_union_le E₀ E₁
+          _ ≤ e + e := Nat.add_le_add hE₀_card hE₁_card
+          _ = 2 * e := by ring
+      exact hcard_union
+
+  have he_le_udr :
+      e ≤ Code.uniqueDecodingRadius
+        (C := (ReedSolomon.code domain deg : Set (ι → F))) := by
+    omega
+
+  refine ⟨v₀, hv₀_mem, v₁, hv₁_mem, ?_⟩
+  intro z hz
+  rcases
+      (Code.closeToCode_iff_closeToCodeword_of_minDist
+        (u := line z) (C := ReedSolomon.code domain deg) (e := e)).1
+        (hclose z hz) with
+    ⟨c, hc_mem, hc_dist⟩
+  have hc_udr :
+      Δ₀(line z, c) ≤ Code.uniqueDecodingRadius
+        (C := (ReedSolomon.code domain deg : Set (ι → F))) := by
+    exact le_trans hc_dist he_le_udr
+  have hv_udr :
+      Δ₀(line z, v₀ + z • v₁) ≤ Code.uniqueDecodingRadius
+        (C := (ReedSolomon.code domain deg : Set (ι → F))) := by
+    exact le_trans (hdist_twoe z) he_half
+  have hEq :
+      c = v₀ + z • v₁ := by
+    exact
+      Code.eq_of_le_uniqueDecodingRadius
+        (C := (ReedSolomon.code domain deg : Set (ι → F)))
+        (u := line z) (v := c) (w := v₀ + z • v₁)
+        hc_mem
+        (Submodule.add_mem (ReedSolomon.code domain deg) hv₀_mem
+          (Submodule.smul_mem (ReedSolomon.code domain deg) _ hv₁_mem))
+        hc_udr hv_udr
+  simpa [line, hEq, Pi.add_apply, Pi.smul_apply] using hc_dist
+
+omit [Fintype F] in
+/-- Unique-decoding-regime correlated agreement over lines from close-to-code witnesses.
+
+Compared to the fiber-counting reduction, this uses a genuine global affine pair for all
+`z ∈ S`, so the set-size threshold is `|S| > |ι|` (no extra `|RS|` factor). -/
+theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime_closeToCode_heHalf
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} {u₀ u₁ : ι → F}
+    (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg))
+    (he_half :
+      2 * Nat.floor (δ * Fintype.card ι) ≤
+        Code.uniqueDecodingRadius
+          (C := (ReedSolomon.code domain deg : Set (ι → F))))
+    (hS_large : ∃ S : Finset F,
+      S.card > Fintype.card ι ∧
+      ∀ z ∈ S, Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤
+          Nat.floor (δ * Fintype.card ι)) :
+    ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
+      ((Finset.filter (fun i => u₀ i = v₀ i ∧ u₁ i = v₁ i) Finset.univ).card : ℝ) ≥
+        (1 - δ) * (Fintype.card ι : ℝ) := by
+  classical
+  rcases hS_large with ⟨S, hS_card, hS_prop⟩
+  rcases
+      RS_uniqueDecoderMap_induces_globalAffinePair
+        (deg := deg) (domain := domain)
+        (e := Nat.floor (δ * Fintype.card ι))
+        (u₀ := u₀) (u₁ := u₁)
+        (S := S) hS_card he_half hS_prop with
+    ⟨v₀, hv₀, v₁, hv₁, hS_prop_pair⟩
+  have hS_fixed :
+      ∃ S : Finset F, S.card > Fintype.card ι ∧
+        ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
+          ∀ z ∈ S,
+            Δ₀(fun i => u₀ i + z * u₁ i, fun i => v₀ i + z * v₁ i) ≤
+              Nat.floor (δ * Fintype.card ι) := by
+    exact ⟨S, hS_card, v₀, hv₀, v₁, hv₁, hS_prop_pair⟩
+  exact
+    RS_correlatedAgreement_affineLines_uniqueDecodingRegime_fixedPair
+      (deg := deg) (domain := domain) (δ := δ) (u₀ := u₀) (u₁ := u₁) hδ hS_fixed
+
+omit [Nonempty ι] [DecidableEq ι] in
+private theorem RS_closeToCode_largeFiber_induces_fixedPair
+    {deg : ℕ} {domain : ι ↪ F} {e : ℕ} {u₀ u₁ : ι → F}
+    (hS_large :
+      ∃ S : Finset F,
+        S.card > (Fintype.card ι) * (Fintype.card (ReedSolomon.code domain deg)) ∧
+        ∀ z ∈ S, Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤ e) :
+    ∃ S : Finset F, S.card > Fintype.card ι ∧
+      ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
+        ∀ z ∈ S, Δ₀(fun i => u₀ i + z * u₁ i, fun i => v₀ i + z * v₁ i) ≤ e := by
+  classical
+  rcases hS_large with ⟨S, hS_card, hS_prop⟩
+  let α := {z : F // z ∈ S}
+  let β := ReedSolomon.code domain deg
+  let line : F → ι → F := fun z i => u₀ i + z * u₁ i
+  letI : Fintype α := Fintype.ofFinite α
+  have hcard_alpha : Fintype.card α = S.card := by
+    classical
+    have h :
+        Fintype.card α = #{z | z ∈ S} := by
+      simp [α]
+    simpa [Finset.filter_univ_mem] using h
+  have hS' :
+      Fintype.card α > Fintype.card ι * Fintype.card β := by
+    simpa [hcard_alpha, β] using hS_card
+  have hclose' : ∀ z : α, ∃ c : β, Δ₀(line z.1, c.1) ≤ e := by
+    intro z
+    rcases
+        (Code.closeToCode_iff_closeToCodeword_of_minDist
+          (u := line z.1) (C := ReedSolomon.code domain deg) (e := e)).1
+          (hS_prop z.1 z.2)
+      with ⟨c, hc_mem, hc_dist⟩
+    exact ⟨⟨c, hc_mem⟩, by simpa [line] using hc_dist⟩
+  let f : α → β := fun z => Classical.choose (hclose' z)
+  have hf_spec :
+      ∀ z : α, Δ₀(line z.1, (f z).1) ≤ e := by
+    intro z
+    simpa [f] using (Classical.choose_spec (hclose' z))
+  rcases exists_fiber_card_gt_of_card_gt_mul (f := f) (m := Fintype.card ι) hS'
+    with ⟨c, hc_large⟩
+  let T : Finset α := Finset.univ.filter (fun z => f z = c)
+  have hT_card : T.card > Fintype.card ι := by
+    have hcard_T :
+        Fintype.card {z : α // f z = c} = T.card := by
+      classical
+      simpa [T] using
+        (Fintype.card_subtype (α := α) (p := fun z => f z = c))
+    simpa [hcard_T] using hc_large
+  let S' : Finset F := T.image (fun z => z.1)
+  have hS'_card : S'.card > Fintype.card ι := by
+    have h_inj : Function.Injective (fun z : α => z.1) := by
+      intro x y hxy
+      exact Subtype.ext (by simpa using hxy)
+    have hcard : S'.card = T.card := by
+      simpa [S'] using
+        (Finset.card_image_of_injective (s := T) (f := fun z : α => z.1) h_inj)
+    simpa [hcard] using hT_card
+  have hS'_close :
+      ∀ z ∈ S', Δ₀(line z, c.1) ≤ e := by
+    intro z hz
+    rcases Finset.mem_image.mp hz with ⟨z', hz', rfl⟩
+    have hz'' : f z' = c := by
+      exact (Finset.mem_filter.mp hz').2
+    have hdist := hf_spec z'
+    simpa [hz'', line] using hdist
+  refine ⟨S', hS'_card, c.1, c.2, 0, by simp, ?_⟩
+  intro z hz
+  simpa [line, Pi.add_apply, Pi.smul_apply] using hS'_close z hz
+
+/-- Unique-decoding-regime correlated agreement over lines from close-to-code witnesses.
+
+This version avoids the `2e ≤ UDR` side condition by requiring enough close points to
+force a repeated nearby codeword via a fiber argument. -/
+theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime_closeToCode
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} {u₀ u₁ : ι → F}
+    (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg))
+    (hS_large :
+      ∃ S : Finset F,
+        S.card > (Fintype.card ι) * (Fintype.card (ReedSolomon.code domain deg)) ∧
+        ∀ z ∈ S, Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤
+          Nat.floor (δ * Fintype.card ι)) :
+    ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
+      ((Finset.filter (fun i => u₀ i = v₀ i ∧ u₁ i = v₁ i) Finset.univ).card : ℝ) ≥
+        (1 - δ) * (Fintype.card ι : ℝ) := by
+  classical
+  rcases
+      RS_closeToCode_largeFiber_induces_fixedPair
+        (deg := deg) (domain := domain) (e := Nat.floor (δ * Fintype.card ι))
+        (u₀ := u₀) (u₁ := u₁) hS_large
+    with ⟨S, hS_card, v₀, hv₀, v₁, hv₁, hclose⟩
+  have hS_fixed :
+      ∃ S : Finset F, S.card > Fintype.card ι ∧
+        ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
+          ∀ z ∈ S,
+            Δ₀(fun i => u₀ i + z * u₁ i, fun i => v₀ i + z * v₁ i) ≤
+              Nat.floor (δ * Fintype.card ι) := by
+    exact ⟨S, hS_card, v₀, hv₀, v₁, hv₁, hclose⟩
+  exact
+    RS_correlatedAgreement_affineLines_uniqueDecodingRegime_fixedPair
+      (deg := deg) (domain := domain) (δ := δ) (u₀ := u₀) (u₁ := u₁) hδ hS_fixed
+
+omit [Fintype F] in
+/-- Unique-decoding-regime correlated agreement over lines from a fixed affine-code pair witness.
+
+This is the direct Lemma-7.6 reduction used before introducing the stronger close-to-code
+global-consistency bridge. -/
+theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} {u₀ u₁ : ι → F}
+    (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg))
+    (hS_large : ∃ S : Finset F, S.card > Fintype.card ι ∧
+      ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
+        ∀ z ∈ S, Δ₀(fun i => u₀ i + z * u₁ i, fun i => v₀ i + z * v₁ i) ≤
+          Nat.floor (δ * Fintype.card ι)) :
+    ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
+      ((Finset.filter (fun i => u₀ i = v₀ i ∧ u₁ i = v₁ i) Finset.univ).card : ℝ) ≥
+        (1 - δ) * (Fintype.card ι : ℝ) := by
+  exact
+    RS_correlatedAgreement_affineLines_uniqueDecodingRegime_fixedPair
+      (deg := deg) (domain := domain) (δ := δ) (u₀ := u₀) (u₁ := u₁) hδ hS_large
+
+private theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime_of_prob_fixedPair
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} {u₀ u₁ : ι → F} [Nonempty F]
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg))
     (hprob :
@@ -2779,8 +3506,132 @@ theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime_of_prob
     refine ⟨S, hS_large, v₀, hv₀, v₁, hv₁, ?_⟩
     exact hS_prop
   exact
-    RS_correlatedAgreement_affineLines_uniqueDecodingRegime
+    RS_correlatedAgreement_affineLines_uniqueDecodingRegime_fixedPair
       (deg := deg) (domain := domain) (δ := δ) (u₀ := u₀) (u₁ := u₁) hδ hS_large'
+
+theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime_closeToCode_of_prob_heHalf
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} {u₀ u₁ : ι → F} [Nonempty F]
+    (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg))
+    (he_half :
+      2 * Nat.floor (δ * Fintype.card ι) ≤
+        Code.uniqueDecodingRadius
+          (C := (ReedSolomon.code domain deg : Set (ι → F))))
+    (hprob :
+      Pr_{ let z ← $ᵖ F}[Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤
+          Nat.floor (δ * Fintype.card ι)] >
+        ε_uniqueDecoding (ι := ι) (F := F)) :
+    ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
+      ((Finset.filter (fun i => u₀ i = v₀ i ∧ u₁ i = v₁ i) Finset.univ).card : ℝ) ≥
+        (1 - δ) * (Fintype.card ι : ℝ) := by
+  classical
+  let P : F → Prop := fun z =>
+    Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤
+      Nat.floor (δ * Fintype.card ι)
+  let N : ℕ := Fintype.card ι
+  let ε0 : ℝ≥0 := ε_uniqueDecoding (ι := ι) (F := F)
+  have hprob' : Pr_{ let z ← $ᵖ F}[P z] > ε0 := by
+    simpa [ε0, ε_uniqueDecoding, N, P] using hprob
+  have hS := exists_finset_of_prob_gt (P := P) (ε := ε0) hprob'
+  rcases hS with ⟨S, hS_card, hS_prop⟩
+  have hS_large : S.card > Fintype.card ι := by
+    have hfloor :
+        Nat.floor ((ε0 : ℝ) * (Fintype.card F : ℝ)) = N := by
+      unfold ε0 ε_uniqueDecoding N
+      exact floor_div_mul_card_eq (F := F) (N := Fintype.card ι)
+    simpa [N, hfloor] using hS_card
+  have hS_large' :
+      ∃ S : Finset F, S.card > Fintype.card ι ∧
+        ∀ z ∈ S, Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤
+          Nat.floor (δ * Fintype.card ι) := by
+    exact ⟨S, hS_large, hS_prop⟩
+  exact
+    RS_correlatedAgreement_affineLines_uniqueDecodingRegime_closeToCode_heHalf
+      (deg := deg) (domain := domain) (δ := δ) (u₀ := u₀) (u₁ := u₁) hδ he_half hS_large'
+
+theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime_closeToCode_of_prob
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} {u₀ u₁ : ι → F} [Nonempty F]
+    (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg))
+    (hprob :
+      Pr_{ let z ← $ᵖ F}[Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤
+          Nat.floor (δ * Fintype.card ι)] >
+        ε_affineLines_uniqueDecoding (ι := ι) (F := F) (deg := deg) (domain := domain)) :
+    ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
+      ((Finset.filter (fun i => u₀ i = v₀ i ∧ u₁ i = v₁ i) Finset.univ).card : ℝ) ≥
+        (1 - δ) * (Fintype.card ι : ℝ) := by
+  classical
+  let P : F → Prop := fun z =>
+    Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤
+      Nat.floor (δ * Fintype.card ι)
+  let N : ℕ := (Fintype.card ι) * (Fintype.card (ReedSolomon.code domain deg))
+  let ε0 : ℝ≥0 := ε_affineLines_uniqueDecoding (ι := ι) (F := F) (deg := deg) (domain := domain)
+  have hprob' : Pr_{ let z ← $ᵖ F}[P z] > ε0 := by
+    simpa [ε0, ε_affineLines_uniqueDecoding, N, P] using hprob
+  have hS := exists_finset_of_prob_gt (P := P) (ε := ε0) hprob'
+  rcases hS with ⟨S, hS_card, hS_prop⟩
+  have hS_large : S.card > N := by
+    have hfloor :
+        Nat.floor ((ε0 : ℝ) * (Fintype.card F : ℝ)) = N := by
+      simpa [ε0, ε_affineLines_uniqueDecoding, N] using (floor_div_mul_card_eq (F := F) (N := N))
+    simpa [N, hfloor] using hS_card
+  have hS_large' :
+      ∃ S : Finset F,
+        S.card > (Fintype.card ι) * (Fintype.card (ReedSolomon.code domain deg)) ∧
+        ∀ z ∈ S, Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤
+          Nat.floor (δ * Fintype.card ι) := by
+    exact ⟨S, by simpa [N] using hS_large, hS_prop⟩
+  exact
+    RS_correlatedAgreement_affineLines_uniqueDecodingRegime_closeToCode
+      hδ hS_large'
+
+/-- Unique-decoding-regime line correlated agreement from the `errorBound` threshold.
+
+This is the non-vacuous (factor-free) branch used in Theorem 1.2: in this regime,
+`errorBound = |ι|/|F|`. -/
+theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime_closeToCode_of_prob_errorBound
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} {u₀ u₁ : ι → F} [Nonempty F]
+    (hδ :
+      δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg))
+    (hδ_branch :
+      δ ∈ Set.Icc 0 (((1 : ℝ≥0) - ρ (ReedSolomon.code domain deg)) / 2))
+    (he_half :
+      2 * Nat.floor (δ * Fintype.card ι) ≤
+        Code.uniqueDecodingRadius
+          (C := (ReedSolomon.code domain deg : Set (ι → F))))
+    (hprob :
+      Pr_{ let z ← $ᵖ F}[Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤
+          Nat.floor (δ * Fintype.card ι)] >
+        errorBound (ι := ι) (F := F) δ deg domain) :
+    ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
+      ((Finset.filter (fun i => u₀ i = v₀ i ∧ u₁ i = v₁ i) Finset.univ).card : ℝ) ≥
+        (1 - δ) * (Fintype.card ι : ℝ) := by
+  have hprob' :
+      Pr_{ let z ← $ᵖ F}[Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤
+          Nat.floor (δ * Fintype.card ι)] >
+        ε_uniqueDecoding (ι := ι) (F := F) := by
+    simpa [errorBound_eq_ε_affineLines_factorFree_of_mem_uniqueDecoding
+      (ι := ι) (F := F) (deg := deg) (domain := domain) hδ_branch,
+      ε_affineLines_factorFree, ε_uniqueDecoding] using hprob
+  exact
+    RS_correlatedAgreement_affineLines_uniqueDecodingRegime_closeToCode_of_prob_heHalf
+      (deg := deg) (domain := domain) (δ := δ) (u₀ := u₀) (u₁ := u₁)
+      hδ he_half hprob'
+
+/-- Unique-decoding-regime correlated agreement over lines from a fixed affine-code pair
+probabilistic witness. -/
+theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime_of_prob
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} {u₀ u₁ : ι → F} [Nonempty F]
+    (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg))
+    (hprob :
+      ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
+        Pr_{ let z ← $ᵖ F}[Δ₀(fun i => u₀ i + z * u₁ i, fun i => v₀ i + z * v₁ i) ≤
+          Nat.floor (δ * Fintype.card ι)] >
+          ε_uniqueDecoding (ι := ι) (F := F)) :
+    ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
+      ((Finset.filter (fun i => u₀ i = v₀ i ∧ u₁ i = v₁ i) Finset.univ).card : ℝ) ≥
+        (1 - δ) * (Fintype.card ι : ℝ) := by
+  exact
+    RS_correlatedAgreement_affineLines_uniqueDecodingRegime_of_prob_fixedPair
+      (deg := deg) (domain := domain) (δ := δ) (u₀ := u₀) (u₁ := u₁) hδ hprob
 
 /-- Theorem 1.4 (Main Theorem — Correlated agreement over lines) in [BCIKS20].
 
@@ -2792,8 +3643,7 @@ theorem RS_correlatedAgreement_affineLines {deg : ℕ} {domain : ι ↪ F} {δ :
     {u₀ u₁ : ι → F}
     (hδ : δ ≤ 1 - (ReedSolomonCode.sqrtRate deg domain))
     (hprob :
-      Pr_{ let z ← $ᵖ F}[∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
-        Δ₀(fun i => u₀ i + z * u₁ i, fun i => v₀ i + z * v₁ i) ≤
+      Pr_{ let z ← $ᵖ F}[Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤
         Nat.floor (δ * Fintype.card ι)] >
         ε_affineLines (ι := ι) (F := F) (deg := deg) (domain := domain)) :
     ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
@@ -2802,27 +3652,37 @@ theorem RS_correlatedAgreement_affineLines {deg : ℕ} {domain : ι ↪ F} {δ :
   classical
   have _ := hδ
   let P : F → Prop := fun z =>
-    ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
-      Δ₀(fun i => u₀ i + z * u₁ i, fun i => v₀ i + z * v₁ i) ≤
-        Nat.floor (δ * Fintype.card ι)
-  let N : ℕ := (Fintype.card ι) * (Fintype.card (ReedSolomon.code domain deg)) ^ 2
+    Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤
+      Nat.floor (δ * Fintype.card ι)
+  let N : ℕ := (Fintype.card ι) * (Fintype.card (ReedSolomon.code domain deg))
   let ε0 : ℝ≥0 := ε_affineLines (ι := ι) (F := F) (deg := deg) (domain := domain)
   have hprob' : Pr_{ let z ← $ᵖ F}[P z] > ε0 := by
     simpa [ε0, ε_affineLines, N, P] using hprob
   have hS := exists_finset_of_prob_gt (P := P) (ε := ε0) hprob'
   rcases hS with ⟨S, hS_card, hS_prop⟩
   have hS_large :
-      S.card > (Fintype.card ι) * (Fintype.card (ReedSolomon.code domain deg)) ^ 2 := by
+      S.card > (Fintype.card ι) * (Fintype.card (ReedSolomon.code domain deg)) := by
     have hfloor :
         Nat.floor ((ε0 : ℝ) * (Fintype.card F : ℝ)) = N := by
       simpa [ε0, ε_affineLines, N] using (floor_div_mul_card_eq (F := F) (N := N))
     simpa [N, hfloor] using hS_card
   rcases
-      exists_pair_with_large_fiber_of_exists_close
-        (S := S) (deg := deg) (domain := domain) (u₀ := u₀) (u₁ := u₁)
+      exists_codeword_with_large_fiber_of_closeToCode
+        (S := S) (deg := deg) (domain := domain)
+        (u₀ := u₀) (u₁ := u₁)
         (e := Nat.floor (δ * Fintype.card ι)) (m := Fintype.card ι)
-        hS_large hS_prop
-    with ⟨v₀, hv₀, v₁, hv₁, S', hS'_subset, hS'_card, hclose⟩
+        hS_large hS_prop with
+    ⟨v₀, hv₀, S', _hS'_subset, hS'_card, hclose_code⟩
+  let v₁ : ι → F := 0
+  have hv₁ : v₁ ∈ ReedSolomon.code domain deg := by
+    simp [v₁]
+  have hclose :
+      ∀ z ∈ S',
+        Δ₀(fun i => u₀ i + z * u₁ i, fun i => v₀ i + z * v₁ i) ≤
+          Nat.floor (δ * Fintype.card ι) := by
+    intro z hz
+    have hdist := hclose_code z hz
+    simpa [v₁, Pi.add_apply, Pi.smul_apply] using hdist
   have hS_large' : S'.card > Fintype.card ι := hS'_card
   refine ⟨v₀, hv₀, v₁, hv₁, ?_⟩
   -- Reuse the same argument as in the unique-decoding regime:
@@ -2940,23 +3800,180 @@ theorem RS_correlatedAgreement_affineLines {deg : ℕ} {domain : ι ↪ F} {δ :
       simpa [A] using hforall
   simpa [hset_eq] using hcard
 
+/-- Theorem 1.2 (affine-line unique-decoding branch), stated with `errorBound`.
+
+In the unique-decoding regime (`δ ≤ (1 - ρ)/2`), this gives a factor-free threshold
+(`|ι|/|F|`) instead of the counting threshold with an extra `|RS|` factor. -/
+theorem proximity_gap_RSCodes_affineLines_uniqueDecoding_branch
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} {u₀ u₁ : ι → F} [Nonempty F]
+    (hδ :
+      δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg))
+    (hδ_branch :
+      δ ∈ Set.Icc 0 (((1 : ℝ≥0) - ρ (ReedSolomon.code domain deg)) / 2))
+    (he_half :
+      2 * Nat.floor (δ * Fintype.card ι) ≤
+        Code.uniqueDecodingRadius
+          (C := (ReedSolomon.code domain deg : Set (ι → F))))
+    (hprob :
+      Pr_{ let z ← $ᵖ F}[Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤
+          Nat.floor (δ * Fintype.card ι)] >
+        errorBound (ι := ι) (F := F) δ deg domain) :
+    ∃ v₀ ∈ ReedSolomon.code domain deg, ∃ v₁ ∈ ReedSolomon.code domain deg,
+      ((Finset.filter (fun i => u₀ i = v₀ i ∧ u₁ i = v₁ i) Finset.univ).card : ℝ) ≥
+        (1 - δ) * (Fintype.card ι : ℝ) := by
+  exact
+    RS_correlatedAgreement_affineLines_uniqueDecodingRegime_closeToCode_of_prob_errorBound
+      (deg := deg) (domain := domain) (δ := δ) (u₀ := u₀) (u₁ := u₁)
+      hδ hδ_branch he_half hprob
+
+/-- A correlated-agreement witness over an affine line implies every line point is close to the
+code, hence the affine-line proximity probability is `1`. -/
+private theorem prob_eq_one_of_affineLine_correlatedAgreement
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
+    {u₀ u₁ v₀ v₁ : ι → F} [Nonempty F]
+    (hv₀ : v₀ ∈ ReedSolomon.code domain deg)
+    (hv₁ : v₁ ∈ ReedSolomon.code domain deg)
+    (hcard :
+      ((Finset.filter (fun i => u₀ i = v₀ i ∧ u₁ i = v₁ i) Finset.univ).card : ℝ) ≥
+        (1 - δ) * (Fintype.card ι : ℝ)) :
+    Pr_{ let z ← $ᵖ F}[Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤
+        Nat.floor (δ * Fintype.card ι)] = 1 := by
+  classical
+  let A : Finset ι := Finset.filter (fun i => u₀ i = v₀ i ∧ u₁ i = v₁ i) Finset.univ
+  have hA_card_real : (A.card : ℝ) ≥ (1 - δ) * (Fintype.card ι : ℝ) := by
+    simpa [A] using hcard
+  have hA_card_nat :
+      (Fintype.card ι) - Nat.floor (δ * Fintype.card ι) ≤ A.card := by
+    have hreal :
+        ((Fintype.card ι - A.card : ℕ) : ℝ) ≤ (δ : ℝ) * (Fintype.card ι : ℝ) := by
+      have hreal' :
+          (Fintype.card ι : ℝ) - (A.card : ℝ) ≤ (δ : ℝ) * (Fintype.card ι : ℝ) := by
+        nlinarith [hA_card_real]
+      have hA_le : A.card ≤ Fintype.card ι := Finset.card_le_univ (s := A)
+      have hcast :
+          ((Fintype.card ι - A.card : ℕ) : ℝ) =
+            (Fintype.card ι : ℝ) - (A.card : ℝ) := by
+        simp [Nat.cast_sub hA_le]
+      simpa [hcast] using hreal'
+    have hfloor :
+        (Fintype.card ι - A.card) ≤ Nat.floor (δ * Fintype.card ι) := by
+      have hnonneg : (0 : ℝ) ≤ (δ : ℝ) * (Fintype.card ι : ℝ) := by
+        positivity
+      exact (Nat.le_floor_iff hnonneg).2 hreal
+    have hfloor' : Fintype.card ι ≤ Nat.floor (δ * Fintype.card ι) + A.card :=
+      (Nat.sub_le_iff_le_add.mp hfloor)
+    exact
+      Nat.sub_le_iff_le_add.mpr
+        (by simpa [add_assoc, add_left_comm, add_comm] using hfloor')
+  let line : F → ι → F := fun z i => u₀ i + z * u₁ i
+  let lineV : F → ι → F := fun z i => v₀ i + z * v₁ i
+  have hline_close (z : F) : Δ₀(line z, lineV z) ≤ Nat.floor (δ * Fintype.card ι) := by
+    refine
+      (Code.closeToWord_iff_exists_agreementCols
+        (u := line z) (v := lineV z) (e := Nat.floor (δ * Fintype.card ι))).2 ?_
+    refine ⟨A, hA_card_nat, ?_⟩
+    intro i
+    constructor
+    · intro hi
+      have hi' : u₀ i = v₀ i ∧ u₁ i = v₁ i := by
+        simpa [A] using hi
+      simp [line, lineV, hi'.1, hi'.2]
+    · intro hne hi
+      have hi' : u₀ i = v₀ i ∧ u₁ i = v₁ i := by
+        simpa [A] using hi
+      exact hne (by simp [line, lineV, hi'.1, hi'.2])
+  have hlineV_mem (z : F) : lineV z ∈ ReedSolomon.code domain deg := by
+    exact
+      Submodule.add_mem (ReedSolomon.code domain deg) hv₀
+        (Submodule.smul_mem (ReedSolomon.code domain deg) _ hv₁)
+  have hP_all :
+      ∀ z : F,
+        Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤
+          Nat.floor (δ * Fintype.card ι) := by
+    intro z
+    have hline_close' :
+        (Δ₀(line z, lineV z) : ℕ∞) ≤ Nat.floor (δ * Fintype.card ι) := by
+      exact_mod_cast (hline_close z)
+    exact
+      (Code.distFromCode_le_dist_to_mem (u := line z) (C := ReedSolomon.code domain deg)
+        (v := lineV z) (hlineV_mem z)).trans hline_close'
+  have hprob_eq_true :
+      Pr_{ let z ← $ᵖ F}[Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤
+          Nat.floor (δ * Fintype.card ι)] =
+        Pr_{ let z ← $ᵖ F}[True] := by
+    refine Pr_congr ?_
+    intro z
+    constructor
+    · intro _; trivial
+    · intro _; exact hP_all z
+  have hprob_true : Pr_{ let z ← $ᵖ F}[True] = 1 := by
+    rw [prob_uniform_eq_card_filter_div_card (F := F) (P := fun _ : F => True)]
+    have hcard_ne0 : (Fintype.card F : ENNReal) ≠ 0 := by
+      exact_mod_cast (Fintype.card_ne_zero : Fintype.card F ≠ 0)
+    have hcard_ne_top : (Fintype.card F : ENNReal) ≠ ⊤ := by simp
+    simpa using (ENNReal.div_self hcard_ne0 hcard_ne_top)
+  exact hprob_eq_true.trans hprob_true
+
+/-- Theorem 1.2-style affine-line dichotomy in the unique-decoding branch.
+
+For every affine line `u₀ + z•u₁`, either all points are `δ`-close to Reed-Solomon (`prob = 1`),
+or the close-point probability is at most `errorBound`. -/
+theorem proximity_gap_RSCodes_affineLines_uniqueDecoding_dichotomy
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} [Nonempty F]
+    (hδ :
+      δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg))
+    (hδ_branch :
+      δ ∈ Set.Icc 0 (((1 : ℝ≥0) - ρ (ReedSolomon.code domain deg)) / 2))
+    (he_half :
+      2 * Nat.floor (δ * Fintype.card ι) ≤
+        Code.uniqueDecodingRadius
+          (C := (ReedSolomon.code domain deg : Set (ι → F))))
+    (u₀ u₁ : ι → F) :
+    (Pr_{ let z ← $ᵖ F}[Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤
+        Nat.floor (δ * Fintype.card ι)] = 1)
+      ∨
+    (Pr_{ let z ← $ᵖ F}[Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤
+        Nat.floor (δ * Fintype.card ι)] ≤
+      errorBound (ι := ι) (F := F) δ deg domain) := by
+  by_cases hprob :
+      Pr_{ let z ← $ᵖ F}[Δ₀(fun i => u₀ i + z * u₁ i, ReedSolomon.code domain deg) ≤
+          Nat.floor (δ * Fintype.card ι)] >
+        errorBound (ι := ι) (F := F) δ deg domain
+  · left
+    rcases
+        proximity_gap_RSCodes_affineLines_uniqueDecoding_branch
+          (deg := deg) (domain := domain) (δ := δ) (u₀ := u₀) (u₁ := u₁)
+          hδ hδ_branch he_half hprob with
+      ⟨v₀, hv₀, v₁, hv₁, hcard⟩
+    exact
+      prob_eq_one_of_affineLine_correlatedAgreement
+        (deg := deg) (domain := domain) (δ := δ)
+        (u₀ := u₀) (u₁ := u₁) (v₀ := v₀) (v₁ := v₁)
+        hv₀ hv₁ hcard
+  · right
+    exact le_of_not_gt hprob
+
 
 omit [DecidableEq ι] in
-/-- Theorem 1.5 (Correlated agreement for low-degree parameterised curves) in [BCIKS20].
+/-- Core affine-curve correlated-agreement theorem under a global-consistency hypothesis.
 
 Take a Reed-Solomon code of length `ι` and degree `deg`, a proximity-error parameter
 pair `(δ, ε)` and a curve passing through words `u₀, ..., uκ`, such that
 the  probability that a random point on the curve is `δ`-close to the Reed-Solomon code
 exceeds `ε`. Then, the words `u₀, ..., uκ` have correlated agreement. -/
-theorem correlatedAgreement_affine_curves [DecidableEq ι] {k : ℕ} {u : Fin k → ι → F}
+theorem correlatedAgreement_affine_curves_of_globalConsistency [DecidableEq ι]
+    {k : ℕ} {u : Fin k → ι → F}
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hδ : δ ≤ 1 - ReedSolomonCode.sqrtRate deg domain)
+    (hglobal :
+      CurveGlobalConsistency (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)
+        u (Nat.floor (δ * Fintype.card ι)))
     (hprob :
       Pr_{ let z ← $ᵖ F}[∃ v : Fin k → ι → F,
         (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
         Δ₀(fun i => ∑ j : Fin k, z ^ j.val * u j i,
             fun i => ∑ j : Fin k, z ^ j.val * v j i) ≤ Nat.floor (δ * Fintype.card ι)] >
-        ε_affineCurves (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)) :
+        ε_affineCurves (ι := ι) (F := F) (k := k)) :
     ∃ v : Fin k → ι → F,
   (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
       ((Finset.filter (fun i => ∀ j, u j i = v j i) Finset.univ).card : ℝ) ≥
@@ -2969,94 +3986,20 @@ theorem correlatedAgreement_affine_curves [DecidableEq ι] {k : ℕ} {u : Fin k 
       (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
       Δ₀(fun i => ∑ j : Fin k, z ^ j.val * u j i,
         fun i => ∑ j : Fin k, z ^ j.val * v j i) ≤ Nat.floor (δ * Fintype.card ι)
-  let N : ℕ :=
-    ((Fintype.card ι + 1) * (k - 1)) * (Fintype.card (ReedSolomon.code domain deg)) ^ k
-  let ε0 : ℝ≥0 := ε_affineCurves (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)
+  let N : ℕ := (Fintype.card ι + 1) * (k - 1)
+  let ε0 : ℝ≥0 := ε_affineCurves (ι := ι) (F := F) (k := k)
   have hprob' : Pr_{ let z ← $ᵖ F}[P z] > ε0 := by
     simpa [ε0, ε_affineCurves, N, P] using hprob
   have hS := exists_finset_of_prob_gt (P := P) (ε := ε0) hprob'
   rcases hS with ⟨S, hS_card, hS_prop⟩
-  let α := {z : F // z ∈ S}
-  let β := (Fin k → ReedSolomon.code domain deg)
-  letI : Fintype α := Fintype.ofFinite α
-  have hcard_alpha : Fintype.card α = S.card := by
-    classical
-    have h :
-        Fintype.card α = #{z | z ∈ S} := by
-      simp [α]
-    simpa [Finset.filter_univ_mem] using h
-  have hS_large :
-      S.card > ((Fintype.card ι + 1) * (k - 1)) * Fintype.card β := by
-    have hcard_beta :
-        Fintype.card β = (Fintype.card (ReedSolomon.code domain deg)) ^ k := by
-      classical
-      calc
-        Fintype.card β
-            = Fintype.card (Fin k → ReedSolomon.code domain deg) := by
-                simp [β]
-        _ = Fintype.card (ReedSolomon.code domain deg) ^ Fintype.card (Fin k) := by
-                exact
-                  (Fintype.card_fun (α := Fin k) (β := ReedSolomon.code domain deg))
-        _ = (Fintype.card (ReedSolomon.code domain deg)) ^ k := by
-                simp
+  have hS_large : S.card > N := by
     have hfloor :
         Nat.floor ((ε0 : ℝ) * (Fintype.card F : ℝ)) = N := by
       simpa [ε0, ε_affineCurves, N] using (floor_div_mul_card_eq (F := F) (N := N))
-    have hS_large' : S.card > N := by
-      simpa [hfloor] using hS_card
-    -- rewrite `N` using the cardinality of `β`
-    simpa [N, hcard_beta] using hS_large'
-  have hS' :
-      Fintype.card α > ((Fintype.card ι + 1) * (k - 1)) * Fintype.card β := by
-    simpa [hcard_alpha] using hS_large
-  have hclose' : ∀ z : α, ∃ v : β,
-      Δ₀(fun i => ∑ j : Fin k, z.1 ^ j.val * u j i,
-        fun i => ∑ j : Fin k, z.1 ^ j.val * (v j).1 i) ≤ Nat.floor (δ * Fintype.card ι) := by
-    intro z
-    rcases hS_prop z.1 z.2 with ⟨v, hv, hdist⟩
-    refine ⟨fun j => ⟨v j, hv j⟩, ?_⟩
-    simpa using hdist
-  let f : α → β := fun z => Classical.choose (hclose' z)
-  have hf_spec :
-      ∀ z : α,
-        Δ₀(fun i => ∑ j : Fin k, z.1 ^ j.val * u j i,
-          fun i => ∑ j : Fin k, z.1 ^ j.val * (f z j).1 i) ≤
-          Nat.floor (δ * Fintype.card ι) := by
-    intro z
-    simpa [f] using (Classical.choose_spec (hclose' z))
-  rcases exists_fiber_card_gt_of_card_gt_mul (f := f)
-      (m := (Fintype.card ι + 1) * (k - 1)) hS' with ⟨v, hv_large⟩
-  let T : Finset α := Finset.univ.filter (fun z => f z = v)
-  have hT_card : T.card > (Fintype.card ι + 1) * (k - 1) := by
-    have hcard_T :
-        Fintype.card {z : α // f z = v} = T.card := by
-      classical
-      simpa using
-        (Fintype.card_subtype (α := α) (p := fun z => f z = v))
-    simpa [hcard_T] using hv_large
-  let S' : Finset F := T.image (fun z => z.1)
-  have hS'_card : S'.card > (Fintype.card ι + 1) * (k - 1) := by
-    have h_inj : Function.Injective (fun z : α => z.1) := by
-      intro x y hxy
-      exact Subtype.ext (by simpa using hxy)
-    have hcard : S'.card = T.card := by
-      simpa [S'] using (Finset.card_image_of_injective (s := T) (f := fun z : α => z.1) h_inj)
-    simpa [hcard] using hT_card
-  have hclose :
-      ∀ z ∈ S',
-        Δ₀(fun i => ∑ j : Fin k, z ^ j.val * u j i,
-          fun i => ∑ j : Fin k, z ^ j.val * (v j).1 i) ≤
-            Nat.floor (δ * Fintype.card ι) := by
-    intro z hz
-    rcases Finset.mem_image.mp hz with ⟨z', hz', rfl⟩
-    have hz' : f z' = v := by
-      have hz'' : z' ∈ T := hz'
-      simpa [T] using (Finset.mem_filter.mp hz'').2
-    have hdist := hf_spec z'
-    simpa [hz'] using hdist
-  let vfun : Fin k → ι → F := fun j => (v j).1
-  have hvfun : ∀ j, vfun j ∈ ReedSolomon.code domain deg := by
-    intro j; exact (v j).2
+    simpa [hfloor] using hS_card
+  rcases
+      hglobal (S := S) (by simpa [N] using hS_large) hS_prop with
+    ⟨vfun, hvfun, S', _hS'_subset, hS'_card, hclose⟩
   -- Split on the length of the curve.
   cases k with
   | zero =>
@@ -3245,6 +4188,357 @@ theorem correlatedAgreement_affine_curves [DecidableEq ι] {k : ℕ} {u : Fin k 
             simpa [div_eq_mul_inv, mul_comm, hn_ne] using hmul
           simpa [A] using hcard
 
+omit [DecidableEq ι] in
+/-- Theorem 1.5 (Correlated agreement for low-degree parameterised curves) in [BCIKS20].
+
+This list-recovery version is the public theorem; it derives the needed global-consistency
+instance from a singleton-bounded list-recovery hypothesis. -/
+theorem correlatedAgreement_affine_curves [DecidableEq ι]
+    {k : ℕ} {u : Fin k → ι → F}
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
+    (hδ : δ ≤ 1 - ReedSolomonCode.sqrtRate deg domain)
+    (hLR :
+      CurveListRecoveryBound (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)
+        u (Nat.floor (δ * Fintype.card ι)) 1)
+    (hprob :
+      Pr_{ let z ← $ᵖ F}[∃ v : Fin k → ι → F,
+        (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+        Δ₀(fun i => ∑ j : Fin k, z ^ j.val * u j i,
+            fun i => ∑ j : Fin k, z ^ j.val * v j i) ≤ Nat.floor (δ * Fintype.card ι)] >
+        ε_affineCurves (ι := ι) (F := F) (k := k)) :
+    ∃ v : Fin k → ι → F,
+      (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+      ((Finset.filter (fun i => ∀ j, u j i = v j i) Finset.univ).card : ℝ) ≥
+        (1 - δ) * (Fintype.card ι : ℝ) := by
+  have hglobal :
+      CurveGlobalConsistency (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)
+        u (Nat.floor (δ * Fintype.card ι)) :=
+    curveGlobalConsistency_of_listRecoveryBound_one
+      (domain := domain) (u := u) (e := Nat.floor (δ * Fintype.card ι)) hLR
+  exact
+    correlatedAgreement_affine_curves_of_globalConsistency
+      (k := k) (u := u) (deg := deg) (domain := domain) (δ := δ) hδ hglobal hprob
+
+omit [DecidableEq ι] in
+/-- Backward-compatible name for the singleton list-recovery form. -/
+theorem correlatedAgreement_affine_curves_of_listRecoveryBound_one [DecidableEq ι]
+    {k : ℕ} {u : Fin k → ι → F}
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
+    (hδ : δ ≤ 1 - ReedSolomonCode.sqrtRate deg domain)
+    (hLR :
+      CurveListRecoveryBound (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)
+        u (Nat.floor (δ * Fintype.card ι)) 1)
+    (hprob :
+      Pr_{ let z ← $ᵖ F}[∃ v : Fin k → ι → F,
+        (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+        Δ₀(fun i => ∑ j : Fin k, z ^ j.val * u j i,
+            fun i => ∑ j : Fin k, z ^ j.val * v j i) ≤ Nat.floor (δ * Fintype.card ι)] >
+        ε_affineCurves (ι := ι) (F := F) (k := k)) :
+    ∃ v : Fin k → ι → F,
+      (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+      ((Finset.filter (fun i => ∀ j, u j i = v j i) Finset.univ).card : ℝ) ≥
+        (1 - δ) * (Fintype.card ι : ℝ) := by
+  exact correlatedAgreement_affine_curves
+    (k := k) (u := u) (deg := deg) (domain := domain) (δ := δ) hδ hLR hprob
+
+omit [DecidableEq ι] in
+/-- Counting-only version (no global-consistency axiom): this uses the explicit
+`|RS|^k` factor in the probability threshold. -/
+theorem correlatedAgreement_affine_curves_counting [DecidableEq ι] {k : ℕ} {u : Fin k → ι → F}
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
+    (hδ : δ ≤ 1 - ReedSolomonCode.sqrtRate deg domain)
+    (hprob :
+      Pr_{ let z ← $ᵖ F}[∃ v : Fin k → ι → F,
+        (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+        Δ₀(fun i => ∑ j : Fin k, z ^ j.val * u j i,
+            fun i => ∑ j : Fin k, z ^ j.val * v j i) ≤ Nat.floor (δ * Fintype.card ι)] >
+        ε_affineCurves_counting (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)) :
+    ∃ v : Fin k → ι → F,
+      (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+        ((Finset.filter (fun i => ∀ j, u j i = v j i) Finset.univ).card : ℝ) ≥
+          (1 - δ) * (Fintype.card ι : ℝ) := by
+  classical
+  have _ := hδ
+  have _ := (inferInstance : DecidableEq ι)
+  let P : F → Prop := fun z =>
+    ∃ v : Fin k → ι → F,
+      (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+      Δ₀(fun i => ∑ j : Fin k, z ^ j.val * u j i,
+        fun i => ∑ j : Fin k, z ^ j.val * v j i) ≤ Nat.floor (δ * Fintype.card ι)
+  let N : ℕ :=
+    ((Fintype.card ι + 1) * (k - 1)) * (Fintype.card (ReedSolomon.code domain deg)) ^ k
+  let ε0 : ℝ≥0 :=
+    ε_affineCurves_counting (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)
+  have hprob' : Pr_{ let z ← $ᵖ F}[P z] > ε0 := by
+    simpa [ε0, ε_affineCurves_counting, N, P] using hprob
+  have hS := exists_finset_of_prob_gt (P := P) (ε := ε0) hprob'
+  rcases hS with ⟨S, hS_card, hS_prop⟩
+  let α := {z : F // z ∈ S}
+  let β := (Fin k → ReedSolomon.code domain deg)
+  letI : Fintype α := Fintype.ofFinite α
+  have hcard_alpha : Fintype.card α = S.card := by
+    classical
+    have h :
+        Fintype.card α = #{z | z ∈ S} := by
+      simp [α]
+    simpa [Finset.filter_univ_mem] using h
+  have hS_large :
+      S.card > ((Fintype.card ι + 1) * (k - 1)) * Fintype.card β := by
+    have hcard_beta :
+        Fintype.card β = (Fintype.card (ReedSolomon.code domain deg)) ^ k := by
+      classical
+      calc
+        Fintype.card β
+            = Fintype.card (Fin k → ReedSolomon.code domain deg) := by
+                simp [β]
+        _ = Fintype.card (ReedSolomon.code domain deg) ^ Fintype.card (Fin k) := by
+                exact
+                  (Fintype.card_fun (α := Fin k) (β := ReedSolomon.code domain deg))
+        _ = (Fintype.card (ReedSolomon.code domain deg)) ^ k := by
+                simp
+    have hfloor :
+        Nat.floor ((ε0 : ℝ) * (Fintype.card F : ℝ)) = N := by
+      simpa [ε0, ε_affineCurves_counting, N] using
+        (floor_div_mul_card_eq (F := F) (N := N))
+    have hS_large' : S.card > N := by
+      simpa [hfloor] using hS_card
+    simpa [N, hcard_beta] using hS_large'
+  have hS' :
+      Fintype.card α > ((Fintype.card ι + 1) * (k - 1)) * Fintype.card β := by
+    simpa [hcard_alpha] using hS_large
+  have hclose' : ∀ z : α, ∃ v : β,
+      Δ₀(fun i => ∑ j : Fin k, z.1 ^ j.val * u j i,
+        fun i => ∑ j : Fin k, z.1 ^ j.val * (v j).1 i) ≤ Nat.floor (δ * Fintype.card ι) := by
+    intro z
+    rcases hS_prop z.1 z.2 with ⟨v, hv, hdist⟩
+    refine ⟨fun j => ⟨v j, hv j⟩, ?_⟩
+    simpa using hdist
+  let f : α → β := fun z => Classical.choose (hclose' z)
+  have hf_spec :
+      ∀ z : α,
+        Δ₀(fun i => ∑ j : Fin k, z.1 ^ j.val * u j i,
+          fun i => ∑ j : Fin k, z.1 ^ j.val * (f z j).1 i) ≤
+          Nat.floor (δ * Fintype.card ι) := by
+    intro z
+    simpa [f] using (Classical.choose_spec (hclose' z))
+  rcases exists_fiber_card_gt_of_card_gt_mul (f := f)
+      (m := (Fintype.card ι + 1) * (k - 1)) hS' with ⟨v, hv_large⟩
+  let T : Finset α := Finset.univ.filter (fun z => f z = v)
+  have hT_card : T.card > (Fintype.card ι + 1) * (k - 1) := by
+    have hcard_T :
+        Fintype.card {z : α // f z = v} = T.card := by
+      classical
+      simpa using
+        (Fintype.card_subtype (α := α) (p := fun z => f z = v))
+    simpa [hcard_T] using hv_large
+  let S' : Finset F := T.image (fun z => z.1)
+  have hS'_card : S'.card > (Fintype.card ι + 1) * (k - 1) := by
+    have h_inj : Function.Injective (fun z : α => z.1) := by
+      intro x y hxy
+      exact Subtype.ext (by simpa using hxy)
+    have hcard : S'.card = T.card := by
+      simpa [S'] using
+        (Finset.card_image_of_injective (s := T) (f := fun z : α => z.1) h_inj)
+    simpa [hcard] using hT_card
+  have hclose :
+      ∀ z ∈ S',
+        Δ₀(fun i => ∑ j : Fin k, z ^ j.val * u j i,
+          fun i => ∑ j : Fin k, z ^ j.val * (v j).1 i) ≤
+            Nat.floor (δ * Fintype.card ι) := by
+    intro z hz
+    rcases Finset.mem_image.mp hz with ⟨z', hz', rfl⟩
+    have hz' : f z' = v := by
+      have hz'' : z' ∈ T := hz'
+      simpa [T] using (Finset.mem_filter.mp hz'').2
+    have hdist := hf_spec z'
+    simpa [hz'] using hdist
+  let vfun : Fin k → ι → F := fun j => (v j).1
+  have hvfun : ∀ j, vfun j ∈ ReedSolomon.code domain deg := by
+    intro j
+    exact (v j).2
+  cases k with
+  | zero =>
+      refine ⟨(fun j => (Fin.elim0 j)), ?_, ?_⟩
+      · intro j
+        exact (Fin.elim0 j)
+      · have hn_pos : (0 : ℝ) ≤ (Fintype.card ι : ℝ) := by exact_mod_cast (Nat.zero_le _)
+        have hδ_le : (1 - (δ : ℝ)) ≤ 1 := by
+          have hδ_nonneg : (0 : ℝ) ≤ (δ : ℝ) := by
+            exact_mod_cast (show (0 : ℝ≥0) ≤ δ from bot_le)
+          linarith
+        have hcard_univ :
+            ((Finset.univ : Finset ι).card : ℝ) ≥ (1 - δ) * (Fintype.card ι : ℝ) := by
+          have hmul := mul_le_mul_of_nonneg_right hδ_le hn_pos
+          refine (ge_iff_le).2 ?_
+          calc
+            (1 - δ) * (Fintype.card ι : ℝ) ≤ (1 : ℝ) * (Fintype.card ι : ℝ) := hmul
+            _ = ((Finset.univ : Finset ι).card : ℝ) := by
+              simp [Finset.card_univ, one_mul]
+        have hfilter_eq :
+            Finset.filter (fun i => ∀ j, u j i = vfun j i) Finset.univ = Finset.univ := by
+          ext i
+          simp
+        have hcard :
+            ((Finset.filter (fun i => ∀ j, u j i = vfun j i) Finset.univ).card : ℝ) ≥
+              (1 - δ) * (Fintype.card ι : ℝ) := by
+          rw [hfilter_eq]
+          exact hcard_univ
+        exact hcard
+  | succ k' =>
+      cases k' with
+      | zero =>
+          refine ⟨vfun, hvfun, ?_⟩
+          have hS_nonempty : S'.Nonempty := by
+            have : 0 < S'.card := by simpa using hS'_card
+            exact Finset.card_pos.mp this
+          rcases hS_nonempty with ⟨z, hz⟩
+          have hdist := hclose z hz
+          have hagree := agree_uniform_ge_one_sub_of_hamming_le
+            (u := fun i => ∑ j : Fin 1, z ^ j.val * u j i)
+            (v := fun i => ∑ j : Fin 1, z ^ j.val * vfun j i) (δ := δ) hdist
+          let A : Finset ι := {x : ι | ∀ i, u i x = vfun i x}
+          have hagree' :
+              agree (μ := uniformWeight (ι := ι)) (fun i => u 0 i) (fun i => vfun 0 i) ≥
+                (1 - δ) := by
+            simpa [Fin.sum_univ_one, Fin.val_zero, pow_zero, one_mul] using hagree
+          have hagree_eq :
+              agree (μ := uniformWeight (ι := ι)) (fun i => u 0 i) (fun i => vfun 0 i) =
+                (A.card : ℝ) / (Fintype.card ι : ℝ) := by
+            classical
+            unfold agree uniformWeight
+            simp [A, Fin.forall_fin_one, Finset.sum_const, div_eq_mul_inv, mul_comm]
+          have hmu_set :
+              ((A.card : ℝ) / (Fintype.card ι : ℝ)) ≥ (1 - δ) := by
+            simpa [hagree_eq] using hagree'
+          have hn_pos : (0 : ℝ) < (Fintype.card ι : ℝ) := by
+            exact_mod_cast (Fintype.card_pos : 0 < Fintype.card ι)
+          have hmu_set'' : (1 - (δ : ℝ)) ≤ (A.card : ℝ) / (Fintype.card ι : ℝ) := by
+            simpa [ge_iff_le] using hmu_set
+          have hcard :
+              (1 - (δ : ℝ)) * (Fintype.card ι : ℝ) ≤
+                (A.card : ℝ) := by
+            have hmul :=
+              mul_le_mul_of_nonneg_right hmu_set'' (le_of_lt hn_pos)
+            have hn_ne : (Fintype.card ι : ℝ) ≠ 0 := ne_of_gt hn_pos
+            simpa [div_eq_mul_inv, mul_comm, hn_ne] using hmul
+          simpa [A, Fin.forall_fin_one] using hcard
+      | succ k'' =>
+          refine ⟨vfun, hvfun, ?_⟩
+          have hμ : ∀ i, ∃ n : ℤ, (uniformWeight (ι := ι) i).1 = (n : ℚ) / (1 : ℚ) := by
+            intro i
+            refine ⟨1, by simp [uniformWeight]⟩
+          have hS'_card' : S'.card > (k'' + 1) := by
+            have hk_pos : 0 < k'' + 1 := Nat.succ_pos _
+            have hfactor : 1 < Fintype.card ι + 1 := by
+              exact (Nat.succ_lt_succ_iff.mpr (Fintype.card_pos : 0 < Fintype.card ι))
+            have hmult :
+                (k'' + 1) < (Fintype.card ι + 1) * (k'' + 1) := by
+              have hmult' := Nat.mul_lt_mul_of_pos_right hfactor hk_pos
+              convert hmult' using 1
+              simp [one_mul]
+            have hS'_card_big :
+                (Fintype.card ι + 1) * (k'' + 1) < S'.card := by
+              simpa [gt_iff_lt, Nat.succ_eq_add_one, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+                using hS'_card
+            exact lt_trans hmult hS'_card_big
+          have hS'_card₁ :
+              S'.card ≥ (1 * Fintype.card ι + 1) * (k'' + 1) := by
+            have hS'_card_big :
+                (Fintype.card ι + 1) * (k'' + 1) < S'.card := by
+              simpa [gt_iff_lt, Nat.succ_eq_add_one, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+                using hS'_card
+            have hS'_card_big' :
+                (1 * Fintype.card ι + 1) * (k'' + 1) < S'.card := by
+              simpa using hS'_card_big
+            exact Nat.le_of_lt hS'_card_big'
+          have hS'_agree :
+              ∀ z ∈ S',
+                agree (μ := uniformWeight (ι := ι))
+                  (fun i => ∑ j : Fin (k'' + 2), z ^ j.val * u j i)
+                  (fun i => ∑ j : Fin (k'' + 2), z ^ j.val * vfun j i) ≥ (1 - δ) := by
+            intro z hz
+            have hdist := hclose z hz
+            exact
+              agree_uniform_ge_one_sub_of_hamming_le
+                (u := fun i => ∑ j : Fin (k'' + 2), z ^ j.val * u j i)
+                (v := fun i => ∑ j : Fin (k'' + 2), z ^ j.val * vfun j i)
+                (δ := δ) hdist
+          let A : Finset ι := {x : ι | ∀ i, u i x = vfun i x}
+          have hmu_set0 : mu_set (μ := uniformWeight (ι := ι)) A ≥ ((1 - δ : ℝ≥0) : ℝ) := by
+            dsimp [A]
+            refine
+              (sufficiently_large_list_agreement_on_curve_implies_correlated_agreement
+                (k := k'') (l := k'') (u := u) (v := vfun)
+                (μ := uniformWeight (ι := ι)) (α := (1 - δ))
+                (M := 1) (deg := deg) (domain := domain) hμ hvfun
+                (S' := S') hS'_card' hS'_card₁ ?_)
+            intro z hz
+            have hagree := hS'_agree z hz
+            by_cases hδ' : δ ≤ 1
+            · simp [NNReal.coe_sub hδ'] at *
+              exact hagree
+            · have hright : ((1 - δ : ℝ≥0) : ℝ) = 0 := by
+                have : (1 : ℝ≥0) ≤ δ := by exact_mod_cast (le_of_not_ge hδ')
+                simp [tsub_eq_zero_of_le this]
+              have hagree_nonneg :
+                  0 ≤
+                    agree (μ := uniformWeight (ι := ι))
+                      (fun i => ∑ j : Fin (k'' + 2), z ^ j.val * u j i)
+                      (fun i => ∑ j : Fin (k'' + 2), z ^ j.val * vfun j i) := by
+                classical
+                have hagree_eq :
+                    agree (μ := uniformWeight (ι := ι))
+                        (fun i => ∑ j : Fin (k'' + 2), z ^ j.val * u j i)
+                        (fun i => ∑ j : Fin (k'' + 2), z ^ j.val * vfun j i) =
+                      ((Finset.filter
+                  (fun i =>
+                    (∑ j : Fin (k'' + 2), z ^ j.val * u j i) =
+                      ∑ j : Fin (k'' + 2), z ^ j.val * vfun j i)
+                  Finset.univ).card : ℝ) / (Fintype.card ι : ℝ) := by
+                  unfold agree uniformWeight
+                  simp [Finset.sum_const, div_eq_mul_inv, mul_comm]
+                have hpos : (0 : ℝ) < (Fintype.card ι : ℝ) := by
+                  exact_mod_cast (Fintype.card_pos : 0 < Fintype.card ι)
+                have hnonneg :
+                    0 ≤
+                      ((Finset.filter
+                        (fun i =>
+                          (∑ j : Fin (k'' + 2), z ^ j.val * u j i) =
+                            ∑ j : Fin (k'' + 2), z ^ j.val * vfun j i)
+                        Finset.univ).card : ℝ) / (Fintype.card ι : ℝ) := by
+                  exact div_nonneg (by exact_mod_cast (Nat.zero_le _)) (le_of_lt hpos)
+                simp [hagree_eq] at *
+                exact hnonneg
+              simpa [hright] using hagree_nonneg
+          have h_one_sub_le :
+              (1 - (δ : ℝ)) ≤ ((1 - δ : ℝ≥0) : ℝ) := by
+            by_cases hδ' : δ ≤ 1
+            · simp [NNReal.coe_sub hδ']
+            · have hδ' : (1 : ℝ) ≤ (δ : ℝ) := by
+                exact_mod_cast (le_of_not_ge hδ')
+              have hleft : (1 - (δ : ℝ)) ≤ 0 := by linarith
+              have hright : ((1 - δ : ℝ≥0) : ℝ) = 0 := by
+                have : (1 : ℝ≥0) ≤ δ := by exact_mod_cast hδ'
+                simp [tsub_eq_zero_of_le this]
+              simpa [hright] using hleft
+          have hmu_set : mu_set (μ := uniformWeight (ι := ι)) A ≥ (1 - (δ : ℝ)) := by
+            exact le_trans h_one_sub_le hmu_set0
+          have hmu_set' :
+              ((A.card : ℝ) / (Fintype.card ι : ℝ)) ≥ (1 - δ) := by
+            simpa [A, mu_set_uniform_eq (ι := ι) (ι' := A)] using hmu_set
+          have hn_pos : (0 : ℝ) < (Fintype.card ι : ℝ) := by
+            exact_mod_cast (Fintype.card_pos : 0 < Fintype.card ι)
+          have hmu_set'' : (1 - (δ : ℝ)) ≤ (A.card : ℝ) / (Fintype.card ι : ℝ) := by
+            simpa [ge_iff_le] using hmu_set'
+          have hcard :
+              (1 - (δ : ℝ)) * (Fintype.card ι : ℝ) ≤
+                (A.card : ℝ) := by
+            have hmul :=
+              mul_le_mul_of_nonneg_right hmu_set'' (le_of_lt hn_pos)
+            have hn_ne : (Fintype.card ι : ℝ) ≠ 0 := ne_of_gt hn_pos
+            simpa [div_eq_mul_inv, mul_comm, hn_ne] using hmul
+          simpa [A] using hcard
+
 open Affine in
 /-- A point lies in the affine span of `u₀, …, uₖ` iff it lies in the affine subspace
 `u₀ + span{uᵢ - u₀}`. -/
@@ -3371,7 +4665,7 @@ lemma mem_affineSpan_range_iff_mem_affineSubspaceAtOrigin
       simpa [Finset.univ.affineCombination_eq_linear_combination _ _ hw_sum', hx_eq] using hx_aff
     exact hx_mem
 
-/-- Theorem 1.6 (Correlated agreement over affine spaces) in [BCIKS20].
+/-- Core affine-space correlated-agreement theorem under a global-consistency hypothesis.
 
 Take a Reed-Solomon code of length `ι` and degree `deg`, a proximity-error parameter
 pair `(δ, ε)` and an affine space with origin `u₀` and affine generting set `u₁, ..., uκ`
@@ -3382,7 +4676,165 @@ Note that we have `k+2` vectors to form the affine space. This an intricacy need
 able to isolate the affine origin from the affine span and to form a generating set of the
 correct size. The reason for taking an extra vector is that after isolating the affine origin,
 the affine span is formed as the span of the difference of the rest of the vector set. -/
-theorem correlatedAgreement_affine_spaces {k : ℕ} {u : Fin (k + 1) → ι → F}
+theorem correlatedAgreement_affine_spaces_of_globalConsistency
+    {k : ℕ} {u : Fin (k + 1) → ι → F}
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
+    (hδ : δ ≤ 1 - (ReedSolomonCode.sqrtRate deg domain))
+    (hglobal :
+      AffineSpaceGlobalConsistency (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)
+        u (Nat.floor (δ * Fintype.card ι)))
+    (hprob :
+      Pr_{ let t ← $ᵖ (Fin k → F)}[∃ v : Fin (k + 1) → ι → F,
+        (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+        Δ₀(affineEval (u := u) t, affineEval (u := v) t) ≤
+          Nat.floor (δ * Fintype.card ι)] >
+        ε_affineSpaces (ι := ι) (F := F) (k := k)) :
+    ∃ v : Fin (k + 1) → ι → F,
+      (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+      ((Finset.filter (fun i => ∀ j, u j i = v j i) Finset.univ).card : ℝ) ≥
+        (1 - δ) * (Fintype.card ι : ℝ) := by
+  classical
+  have _ := hδ
+  have _ := (inferInstance : DecidableEq ι)
+  let d : ℕ := (Fintype.card F) ^ (k - 1)
+  let P : (Fin k → F) → Prop := fun t =>
+    ∃ v : Fin (k + 1) → ι → F,
+      (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+      Δ₀(affineEval (u := u) t, affineEval (u := v) t) ≤
+        Nat.floor (δ * Fintype.card ι)
+  let N : ℕ := (Fintype.card ι + 1) * d
+  let ε0 : ℝ≥0 := ε_affineSpaces (ι := ι) (F := F) (k := k)
+  have hprob' : Pr_{ let t ← $ᵖ (Fin k → F)}[P t] > ε0 := by
+    simpa [ε0, ε_affineSpaces, N, P, d] using hprob
+  have hS := exists_finset_of_prob_gt' (P := P) (ε := ε0) hprob'
+  rcases hS with ⟨S, hS_card, hS_prop⟩
+  have hS_large : S.card > N := by
+    have hfloor :
+        Nat.floor ((ε0 : ℝ) * (Fintype.card (Fin k → F) : ℝ)) = N := by
+      simpa [ε0, ε_affineSpaces, N, d] using
+        (floor_div_mul_card_eq' (α := Fin k → F) (N := N))
+    have hfloor' :
+        Nat.floor ((ε0 : ℝ) * ((Fintype.card F) ^ k : ℝ)) = N := by
+      simpa [Fintype.card_fun, Fintype.card_fin] using hfloor
+    simpa [hfloor'] using hS_card
+  rcases
+      hglobal (S := S) (by simpa [N] using hS_large) hS_prop with
+    ⟨vfun, hvfun, S', _hS'_subset, hS'_card_m, hclose⟩
+  have hS'_agree :
+      ∀ t ∈ S',
+        agree (μ := uniformWeight (ι := ι)) (affineEval (u := u) t)
+          (affineEval (u := vfun) t) ≥ (1 - δ) := by
+    intro t ht
+    have hdist := hclose t ht
+    exact
+      agree_uniform_ge_one_sub_of_hamming_le
+        (u := affineEval (u := u) t)
+        (v := affineEval (u := vfun) t) (δ := δ) hdist
+  have hδ1 : δ ≤ 1 := by
+    have h1 :
+        (1 - ReedSolomonCode.sqrtRate deg domain) ≤ (1 : ℝ≥0) := by
+      exact tsub_le_self
+    exact le_trans hδ h1
+  have hμ : ∀ i, ∃ n : ℤ, (uniformWeight (ι := ι) i).1 = (n : ℚ) / (1 : ℚ) := by
+    intro i
+    refine ⟨1, by simp [uniformWeight]⟩
+  let A : Finset ι := {x : ι | ∀ j, u j x = vfun j x}
+  have hS'_card : S'.card > d := by
+    have hm : d ≤ (Fintype.card ι + 1) * d := by
+      have hmult : 1 ≤ Fintype.card ι + 1 := Nat.succ_le_succ (Nat.zero_le _)
+      have := Nat.mul_le_mul_left d hmult
+      simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
+    have hS'_card' : (Fintype.card ι + 1) * d < S'.card := by
+      simpa [gt_iff_lt] using hS'_card_m
+    exact lt_of_le_of_lt hm hS'_card'
+  have hS'_card₁ :
+      S'.card ≥ (1 * Fintype.card ι + 1) * d := by
+    have h' : (1 * Fintype.card ι + 1) * d < S'.card := by
+      simpa [one_mul] using hS'_card_m
+    exact Nat.le_of_lt h'
+  have hmu_set0 :
+      mu_set (μ := uniformWeight (ι := ι)) A ≥ ((1 - δ : ℝ≥0) : ℝ) := by
+    dsimp [A]
+    refine
+      (sufficiently_large_list_agreement_on_affine_space_implies_correlated_agreement
+        (u := u) (v := vfun) (μ := uniformWeight (ι := ι)) (α := (1 - δ))
+        (M := 1) (deg := deg) (domain := domain) hμ hvfun
+        (S' := S') hS'_card hS'_card₁ ?_)
+    intro t ht
+    simpa [NNReal.coe_sub hδ1] using hS'_agree t ht
+  have hmu_set' :
+      ((A.card : ℝ) / (Fintype.card ι : ℝ)) ≥ ((1 - δ : ℝ≥0) : ℝ) := by
+    have hmu_set0' := hmu_set0
+    rw [mu_set_uniform_eq (ι := ι) (ι' := A)] at hmu_set0'
+    exact hmu_set0'
+  have hn_pos : (0 : ℝ) < (Fintype.card ι : ℝ) := by
+    exact_mod_cast (Fintype.card_pos : 0 < Fintype.card ι)
+  have hmu_set'' : (1 - (δ : ℝ)) ≤ (A.card : ℝ) / (Fintype.card ι : ℝ) := by
+    simpa [ge_iff_le, NNReal.coe_sub hδ1] using hmu_set'
+  have hcard :
+      (1 - (δ : ℝ)) * (Fintype.card ι : ℝ) ≤ (A.card : ℝ) := by
+    have hmul :=
+      mul_le_mul_of_nonneg_right hmu_set'' (le_of_lt hn_pos)
+    have hn_ne : (Fintype.card ι : ℝ) ≠ 0 := ne_of_gt hn_pos
+    simpa [div_eq_mul_inv, mul_comm, hn_ne] using hmul
+  refine ⟨vfun, hvfun, ?_⟩
+  simpa [A] using hcard
+
+/-- Theorem 1.6 (Correlated agreement over affine spaces) in [BCIKS20].
+
+This list-recovery version is the public theorem; it derives the needed global-consistency
+instance from a singleton-bounded list-recovery hypothesis. -/
+theorem correlatedAgreement_affine_spaces {k : ℕ}
+    {u : Fin (k + 1) → ι → F}
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
+    (hδ : δ ≤ 1 - (ReedSolomonCode.sqrtRate deg domain))
+    (hLR :
+      AffineSpaceListRecoveryBound (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)
+        u (Nat.floor (δ * Fintype.card ι)) 1)
+    (hprob :
+      Pr_{ let t ← $ᵖ (Fin k → F)}[∃ v : Fin (k + 1) → ι → F,
+        (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+        Δ₀(affineEval (u := u) t, affineEval (u := v) t) ≤
+          Nat.floor (δ * Fintype.card ι)] >
+        ε_affineSpaces (ι := ι) (F := F) (k := k)) :
+    ∃ v : Fin (k + 1) → ι → F,
+      (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+      ((Finset.filter (fun i => ∀ j, u j i = v j i) Finset.univ).card : ℝ) ≥
+        (1 - δ) * (Fintype.card ι : ℝ) := by
+  have hglobal :
+      AffineSpaceGlobalConsistency
+        (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)
+        u (Nat.floor (δ * Fintype.card ι)) :=
+    affineSpaceGlobalConsistency_of_listRecoveryBound_one
+      (domain := domain) (u := u) (e := Nat.floor (δ * Fintype.card ι)) hLR
+  exact
+    correlatedAgreement_affine_spaces_of_globalConsistency
+      (k := k) (u := u) (deg := deg) (domain := domain) (δ := δ) hδ hglobal hprob
+
+/-- Backward-compatible name for the singleton list-recovery form. -/
+theorem correlatedAgreement_affine_spaces_of_listRecoveryBound_one {k : ℕ}
+    {u : Fin (k + 1) → ι → F}
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
+    (hδ : δ ≤ 1 - (ReedSolomonCode.sqrtRate deg domain))
+    (hLR :
+      AffineSpaceListRecoveryBound (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)
+        u (Nat.floor (δ * Fintype.card ι)) 1)
+    (hprob :
+      Pr_{ let t ← $ᵖ (Fin k → F)}[∃ v : Fin (k + 1) → ι → F,
+        (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+        Δ₀(affineEval (u := u) t, affineEval (u := v) t) ≤
+          Nat.floor (δ * Fintype.card ι)] >
+        ε_affineSpaces (ι := ι) (F := F) (k := k)) :
+    ∃ v : Fin (k + 1) → ι → F,
+      (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
+      ((Finset.filter (fun i => ∀ j, u j i = v j i) Finset.univ).card : ℝ) ≥
+        (1 - δ) * (Fintype.card ι : ℝ) := by
+  exact correlatedAgreement_affine_spaces
+    (k := k) (u := u) (deg := deg) (domain := domain) (δ := δ) hδ hLR hprob
+
+/-- Counting-only version (no global-consistency axiom): this uses the explicit
+`|RS|^(k+1)` factor in the probability threshold. -/
+theorem correlatedAgreement_affine_spaces_counting {k : ℕ} {u : Fin (k + 1) → ι → F}
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hδ : δ ≤ 1 - (ReedSolomonCode.sqrtRate deg domain))
     (hprob :
@@ -3390,7 +4842,7 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} {u : Fin (k + 1) → ι → 
         (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
         Δ₀(affineEval (u := u) t, affineEval (u := v) t) ≤
           Nat.floor (δ * Fintype.card ι)] >
-        ε_affineSpaces (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)) :
+        ε_affineSpaces_counting (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)) :
     ∃ v : Fin (k + 1) → ι → F,
       (∀ j, v j ∈ ReedSolomon.code domain deg) ∧
       ((Finset.filter (fun i => ∀ j, u j i = v j i) Finset.univ).card : ℝ) ≥
@@ -3405,14 +4857,16 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} {u : Fin (k + 1) → ι → 
       Δ₀(affineEval (u := u) t, affineEval (u := v) t) ≤
         Nat.floor (δ * Fintype.card ι)
   let N : ℕ :=
-    ((Fintype.card ι + 1) * d) * (Fintype.card (ReedSolomon.code domain deg)) ^ (k + 1)
-  let ε0 : ℝ≥0 := ε_affineSpaces (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)
+    ((Fintype.card ι + 1) * d) *
+      (Fintype.card (ReedSolomon.code domain deg)) ^ (k + 1)
+  let ε0 : ℝ≥0 :=
+    ε_affineSpaces_counting (ι := ι) (F := F) (k := k) (deg := deg) (domain := domain)
   have hprob' : Pr_{ let t ← $ᵖ (Fin k → F)}[P t] > ε0 := by
-    simpa [ε0, ε_affineSpaces, N, P, d] using hprob
+    simpa [ε0, ε_affineSpaces_counting, N, P, d] using hprob
   have hS := exists_finset_of_prob_gt' (P := P) (ε := ε0) hprob'
   rcases hS with ⟨S, hS_card, hS_prop⟩
-  let α := {t : Fin k → F // t ∈ S}
-  let β := (Fin (k + 1) → ReedSolomon.code domain deg)
+  let α := {t : (Fin k → F) // t ∈ S}
+  let β := Fin (k + 1) → ReedSolomon.code domain deg
   letI : Fintype α := Fintype.ofFinite α
   have hcard_alpha : Fintype.card α = S.card := by
     classical
@@ -3436,7 +4890,7 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} {u : Fin (k + 1) → ι → 
       S.card > ((Fintype.card ι + 1) * d) * Fintype.card β := by
     have hfloor :
         Nat.floor ((ε0 : ℝ) * (Fintype.card (Fin k → F) : ℝ)) = N := by
-      simpa [ε0, ε_affineSpaces, N, d] using
+      simpa [ε0, ε_affineSpaces_counting, N, d] using
         (floor_div_mul_card_eq' (α := Fin k → F) (N := N))
     have hfloor' :
         Nat.floor ((ε0 : ℝ) * ((Fintype.card F) ^ k : ℝ)) = N := by
@@ -3471,7 +4925,7 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} {u : Fin (k + 1) → ι → 
     have hcard_T :
         Fintype.card {t : α // f t = v} = T.card := by
       classical
-      simpa using
+      simpa [T] using
         (Fintype.card_subtype (α := α) (p := fun t => f t = v))
     simpa [hcard_T] using hv_large
   let S' : Finset (Fin k → F) := T.image (fun t => t.1)
