@@ -236,10 +236,30 @@ lemma folding_polynomial_deg_y_bound {q f : F[X]} (h: 0 < q.degree) :
             Polynomial.natDegree_pos_iff_degree_pos.mpr h ⟩;
       · exact Polynomial.monic_mul_leadingCoeff_inv ( by aesop )
 
+lemma folding_polynomial_deg_x_bound {q f : F[X]} (h : 0 < q.degree) :
+   (((foldingPolynomial q f).map (Polynomial.compRingHom q)).eval X).natDegree = (foldingPolynomial q f).natDegree 
+  + ((foldingPolynomial q f).support.sup fun n ↦ ((foldingPolynomial q f).coeff n).natDegree) * q.natDegree := by sorry 
+
 lemma folding_polynomial_deg_x {q f : F[X]} (h : 0 < q.degree) :
   Bivariate.degreeX (foldingPolynomial q f) = f.natDegree / q.natDegree 
   := by 
-  simp [degreeX]
+  have hf: f =
+    ((foldingPolynomial q f).map (Polynomial.compRingHom q)).eval X
+    := by symm; apply substitution_property_of_folding_polynomial
+  have hfdegree:
+    f.natDegree = Bivariate.natDegreeY (foldingPolynomial q f)
+      + (Bivariate.degreeX <| foldingPolynomial q f) * q.natDegree := by
+    conv =>
+      lhs
+      rw [hf]
+      rfl
+    rw [folding_polynomial_deg_x_bound h]
+    simp [natDegreeY, degreeX]
+  
+
+
+
+      
 
 
 
