@@ -164,7 +164,11 @@ lemma folding_polynomial_eq_zero {q f : F[X]}
         intro contra
         rw [contra] at hqdeg
         simp at hqdeg
-      ·  
+      · have h : (map C (f % q) + C X * foldingPolynomial q (f / q)).coeff (foldingPolynomial q (f / q)).natDegree = 0 := by
+          rw [h]
+          simp
+        simp at h
+
         
 
 
