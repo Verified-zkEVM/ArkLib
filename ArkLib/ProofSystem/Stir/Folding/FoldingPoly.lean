@@ -96,49 +96,49 @@ lemma foldingPolynomial_def₃ {q f : F[X]}
   :
   foldingPolynomial q f = (Polynomial.map Polynomial.C (f % q))
     + Polynomial.C Polynomial.X * foldingPolynomial q (f / q) := by
-  simp [foldingPolynomial]
-  conv =>
-    lhs
-    unfold foldingPolynomialAux
-    rfl
-  rw [ite_cond_eq_false] 
-  rw [ite_cond_eq_false]
-  generalize hdeg: f.natDegree = deg
-  rcases deg with _ | deg
-  · rw [Polynomial.natDegree_eq_zero] at hdeg
-    rcases hdeg with ⟨x, hdeg⟩
-    rw [←hdeg] at h₁ 
-    simp at h₁ 
-    have hqdeg : q.degree < q.degree := by
-      apply lt_of_le_of_lt h₁
-      apply lt_of_le_of_lt (b := 0)
-      apply Polynomial.degree_C_le
-      tauto
-    simp at hqdeg
-  · simp
-    rw [foldingPolynomialAux_deg_property]
-    apply Nat.le_of_lt_succ
-    apply lt_of_lt_of_le (b := f.natDegree)
-    apply Polynomial.natDegree_lt_natDegree
-    intro contra
-    rw [Polynomial.div_eq_zero_iff] at contra
-    have h : f.degree < f.degree := by
-      apply lt_of_lt_of_le contra
-      tauto
-    simp at h
-    intro contra
-    rw [contra] at h₂ 
-    simp at h₂ 
-    apply Polynomial.degree_div_lt
-    intro contra
-    rw [contra] at hdeg
-    simp at hdeg
-    tauto
-    rw [hdeg]
-  simp
-  tauto
-  simp
-  tauto
+      have h_fold : 
+        ∀ {deg : ℕ}, 
+          deg ≥ f.natDegree → 
+            foldingPolynomial q f = 
+              Polynomial.map Polynomial.C (f % q) + 
+                Polynomial.C Polynomial.X 
+                  * foldingPolynomial q (f / q) := by
+        intros deg hdeg
+        rw [foldingPolynomial];
+        have h_fold : 
+          ∀ {deg : ℕ}, 
+            deg ≥ f.natDegree → 
+              foldingPolynomialAux q f deg = 
+                Polynomial.map Polynomial.C (f % q) 
+                  + Polynomial.C Polynomial.X 
+                  * foldingPolynomialAux q (f / q) (deg - 1) := by
+          intros deg hdeg
+          induction' deg with deg ih generalizing f;
+          · obtain ⟨c, hc⟩ : ∃ c : F, f = Polynomial.C c := by
+              exact ⟨ f.coeff 0, Polynomial.eq_C_of_natDegree_le_zero hdeg ⟩;
+            simp_all +decide;
+            exact absurd h₁ ( not_le_of_gt ( lt_of_le_of_lt ( Polynomial.degree_C_le ) h₂ ) );
+          · rw [foldingPolynomialAux];
+            rw [ if_neg h₂.not_ge, if_neg ( not_lt_of_ge h₁ ) ];
+            rfl;
+        convert h_fold hdeg using 1;
+        · exact foldingPolynomialAux_deg_property hdeg;
+        · have h_fold_eq : 
+            foldingPolynomial q (f / q) 
+              = foldingPolynomialAux q (f / q) (deg - 1) := by
+            have h_deg : (f / q).natDegree ≤ deg - 1 := by
+              have h_deg : (f / q).natDegree ≤ f.natDegree - q.natDegree := by
+                rw [ Polynomial.div_def ];
+                rw [ Polynomial.natDegree_C_mul, Polynomial.natDegree_divByMonic ];
+                · rw [ Polynomial.natDegree_mul' ] <;> aesop;
+                · exact Polynomial.monic_mul_leadingCoeff_inv ( by aesop );
+                · aesop;
+              exact le_trans h_deg ( Nat.sub_le_sub_right hdeg _ ) 
+                |> le_trans 
+                <| Nat.sub_le_sub_left ( Polynomial.natDegree_pos_iff_degree_pos.mpr h₂ ) _
+            apply foldingPolynomialAux_deg_property; assumption;
+          rw [h_fold_eq];
+      exact h_fold le_rfl
 
 lemma substitution_property_of_folding_polynomial {q f : F[X]}  :
     ((foldingPolynomial q f).map (Polynomial.compRingHom q)).eval X
