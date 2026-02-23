@@ -195,40 +195,55 @@ lemma substitution_property_of_folding_polynomial {q f : F[X]}:
 
 
 lemma folding_polynomial_deg_y_bound {q f : F[X]} (h: 0 < q.degree) :
-  Bivariate.natDegreeY (foldingPolynomial q f) < q.degree := by
+   Bivariate.natDegreeY (foldingPolynomial q f) < q.degree := by 
   simp [natDegreeY]
-  by_cases 
+  induction' n : f.natDegree using Nat.strong_induction_on with n ih generalizing f q;
+  by_cases hq : f.degree < q.degree 
+  · have h_folding_eq_map : foldingPolynomial q f = Polynomial.map Polynomial.C f := by
+      exact foldingPolynomial_def₁ hq;
+    by_cases hf : f = 0 <;> simp_all +decide [ Polynomial.natDegree_map ];
+    · exact n.symm ▸ Polynomial.natDegree_pos_iff_degree_pos.mpr h;
+    · rw [ ← n, Polynomial.degree_eq_natDegree hf ] at * ; aesop;
+  · have h_fold : 
+      foldingPolynomial q f = 
+        (Polynomial.map Polynomial.C (f % q)) 
+          + Polynomial.C Polynomial.X 
+            * (foldingPolynomial q (f / q)) := by
+      rw [foldingPolynomial_def₃];
+      · simp at hq 
+        exact hq
+      · exact h;
+    refine' h_fold ▸ lt_of_le_of_lt ( Polynomial.natDegree_add_le _ _ ) ( max_lt _ _ );
+    · have h_deg_mod : (f % q).degree < q.degree := by
+        exact EuclideanDomain.mod_lt f ( Polynomial.ne_zero_of_degree_gt h );
+      by_cases h : f % q = 0 <;> simp_all +decide [ Polynomial.natDegree_map ];
+      · rw [ EuclideanDomain.mod_eq_zero.mpr h ] ; 
+          simp +decide [ Polynomial.natDegree_pos_iff_degree_pos.mpr ‹_› ];
+      · exact Polynomial.natDegree_lt_natDegree ( by aesop ) h_deg_mod;
+    · refine' lt_of_le_of_lt ( Polynomial.natDegree_C_mul_le _ _ ) _;
+      refine' ih _ _ h rfl;
+      rw [ ← n, Polynomial.div_def ];
+      rw [ 
+        Polynomial.natDegree_C_mul, 
+        Polynomial.natDegree_divByMonic ] 
+          <;> norm_num [ 
+            Polynomial.natDegree_mul', 
+            Polynomial.natDegree_C, show q ≠ 0 by aesop ];
+      · simp at hq 
+        exact 
+          ⟨ Polynomial.natDegree_pos_iff_degree_pos.mpr 
+            ( lt_of_lt_of_le h hq ),
+            Polynomial.natDegree_pos_iff_degree_pos.mpr h ⟩;
+      · exact Polynomial.monic_mul_leadingCoeff_inv ( by aesop )
 
-  rw [Finset.sup_lt_iff (by {
-    simp
-    by_contra contra
-    simp at contra
-    rw [Polynomial.natDegree_eq_zero] at contra
-    rcases contra with ⟨x, heq⟩ 
-    rw [←heq] at h
-    have hh: (0 : WithBot ℕ) < 0 := by
-      apply lt_of_lt_of_le h
-      apply Polynomial.degree_C_le
-    simp at hh
-  })]
-  intro b hb
+lemma folding_polynomial_deg_x {q f : F[X]} (h : 0 < q.degree) :
+  Bivariate.degreeX (foldingPolynomial q f) = f.natDegree / q.natDegree 
+  := by 
+  simp [degreeX]
 
 
 
 
 
-
-
-
-
-
-
-
-
-    
-
-
-
-  
-    
+   
 end
