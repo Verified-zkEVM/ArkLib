@@ -219,6 +219,21 @@ lemma substitution_property_of_folding_polynomial {q f : F[X]}  :
 lemma folding_polynomial_deg_x_bound {q f : F[X]} (h: 0 < q.degree) :
   Bivariate.degreeX (foldingPolynomial q f) < q.degree := by
   simp [degreeX]
+  rw [Finset.sup_lt_iff (by {
+    simp
+    by_contra contra
+    simp at contra
+    rw [Polynomial.natDegree_eq_zero] at contra
+    rcases contra with ⟨x, heq⟩ 
+    rw [←heq] at h
+    have hh: (0 : WithBot ℕ) < 0 := by
+      apply lt_of_lt_of_le h
+      apply Polynomial.degree_C_le
+    simp at hh
+  })]
+  intro b hb
+
+
 
 
 
