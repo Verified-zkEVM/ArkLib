@@ -224,55 +224,91 @@ lemma foldingPolynomial_def₃ {q f : F[X]}
   simp
   tauto
 
-lemma substitution_property_of_folding_polynomial {q f : F[X]} {n : ℕ} :
-    (f.natDegree.div q.natDegree) = n →
+lemma substitution_property_of_folding_polynomial {q f : F[X]}  :
     ((foldingPolynomial q f).map (Polynomial.compRingHom q)).eval X
       = f := by 
-    unfold foldingPolynomial
-    revert f
-    apply Nat.strong_induction_on
-      (p := fun n => ∀ f, (f.natDegree.div q.natDegree) = n → ((foldingPolynomial q f).map (Polynomial.compRingHom q)).eval X
-      = f ) 
-    intro n
-    rcases n with _ | n
-    · simp [foldingPolynomial, ]
-      unfold foldingPolynomialAux
-      intro f h
-      simp [h]
-      have hh: f.natDegree.div q.natDegree = f.natDegree / q.natDegree := by 
-        sorry
-      rw [hh] at h
-      rw [Nat.div_eq_zero_iff] at h
-      rcases h with h | h
-      · rw [Polynomial.natDegree_eq_zero] at h
-        rcases h with ⟨x, q_eq_c⟩ 
-        have hq: map (C x).compRingHom (map C f) = map C f := by
-          aesop
-        rw [←q_eq_c]
-        rw [hq]
-        rw [Polynomial.eval_map]
-        rw [Polynomial.eval₂_def]
+  generalize hdeg : f.natDegree = deg
+  revert hdeg
+  revert f
+  apply Nat.strong_induction_on 
+    (p := fun deg => ∀ {f}, f.natDegree = deg → eval X (map q.compRingHom (foldingPolynomial q f)) = f)
+  intro deg ih f hdeg
+  rcases deg with _ | deg
+  · rw [Polynomial.natDegree_eq_zero] at hdeg
+    rcases hdeg with ⟨x, hdeg⟩ 
+    rw [←hdeg]
+    rw [foldingPolynomial_def₂]
+    simp
+    right; left
+    apply Polynomial.degree_C_le
+  · by_cases hqdeg: q.degree ≤ 0
+    · rw [Polynomial.degree_le_zero_iff] at hqdeg
+      rw [hqdeg]
+      rw [foldingPolynomial_C]
+      rw [Polynomial.eval_eq_sum]
+      apply Polynomial.ext
+      intro n
+      rw [Polynomial.sum_def]
+      simp
+      tauto
+    · by_cases hqf_deg: q.degree ≤ f.degree 
+      · rw [foldingPolynomial_def₃ hqf_deg (by {
+          simp at hqdeg
+          tauto
+        })]
+        simp
+        rw [ih (f / q).natDegree (by {
+          rw [←hdeg]
+          apply Polynomial.natDegree_lt_natDegree
+          intro contra
+          rw [Polynomial.div_eq_zero_iff] at contra
+          have h: f.degree < f.degree := by
+            apply lt_of_lt_of_le contra hqf_deg
+          simp at h
+          intro contra
+          rw [contra] at hqdeg
+          simp at hqdeg
+          apply Polynomial.degree_div_lt
+          intro contra
+          rw [contra] at hdeg
+          simp at hdeg
+          simp at hqdeg
+          assumption
+        }) (by rfl)]
+        conv => 
+          rhs
+          rw [←EuclideanDomain.mod_add_div f q]
+          rfl
+        simp
+        rw [Polynomial.eval_eq_sum]
         rw [Polynomial.sum_def]
+        simp
         apply Polynomial.ext
-        aesop
-      · rw [Polynomial.eval_map]
-        rw [Polynomial.eval₂_def]
+        intro n
+        simp
+        tauto
+      · rw [foldingPolynomial_def₂ (by {
+          left
+          simp at hqf_deg
+          assumption
+        })]
+        rw [Polynomial.eval_eq_sum]
         rw [Polynomial.sum_def]
+        simp
         apply Polynomial.ext
-        aesop
-    · intro ih f h
-      simp [foldingPolynomial]
-      unfold foldingPolynomialAux
-      simp [h]
-      simp [foldingPolynomial] at ih
+        intro n
+        simp
+        tauto
 
 
 
-      
-      
+
+
 
     
 
 
 
+  
+    
 end
