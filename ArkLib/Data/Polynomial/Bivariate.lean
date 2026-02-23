@@ -33,14 +33,16 @@ namespace Polynomial.Bivariate
 
 noncomputable section
 
-variable {F : Type} [Semiring F]
+universe u
+
+variable {F : Type u} [Semiring F]
 
 /-- The set of coefficients of a bivariate polynomial. -/
 def coeffs [DecidableEq F] (f : F[X][Y]) : Finset F[X] := f.support.image f.coeff
 
 /-- `(i, j)`-coefficient of a polynomial, i.e. the coefficient of `X^i Y^j`.
 -/
-def coeff.{u} {F : Type u} [Semiring F] (f : F[X][Y]) (i j : ℕ) : F := (f.coeff j).coeff i
+def coeff {F : Type u} [Semiring F] (f : F[X][Y]) (i j : ℕ) : F := (f.coeff j).coeff i
 
 /-- The polynomial coefficient of the highest power of `Y`. This is the leading coefficient in the
 classical sense if the bivariate polynomial is interpreted as a univariate polynomial over `F[X]`.
@@ -91,11 +93,11 @@ def totalDegree (f : F[X][Y]) : ℕ :=
 /-- `(u,v)`-weighted degree of a polynomial.
 The maximal `u * i + v * j` such that the polynomial `p`
 contains a monomial `x^i * y^j`. -/
-def weightedDegree.{u} {F : Type u} [Semiring F] (p : F[X][Y]) (u v : ℕ) : Option ℕ :=
+def weightedDegree {F : Type u} [Semiring F] (p : F[X][Y]) (u v : ℕ) : Option ℕ :=
   List.max? <|
     List.map (fun n => u * (p.coeff n).natDegree + v * n) (List.range p.natDegree.succ)
 
-def natWeightedDegree.{u} {F : Type u} [Semiring F] (f : F[X][Y]) (u v : ℕ) : ℕ :=
+def natWeightedDegree {F : Type u} [Semiring F] (f : F[X][Y]) (u v : ℕ) : ℕ :=
   f.support.sup (fun m => u * (f.coeff m).natDegree + v * m)
 
 variable {f : F[X][Y]}
@@ -129,7 +131,7 @@ lemma degreeY_as_weighted_deg (hf : f ≠ 0) :
   simp [Finset.sup'_eq_sup]
 
 /-- Root multiplicity of a bivariate polynomial. -/
-def rootMultiplicity₀.{u} {F : Type u} [Semiring F] [DecidableEq F] (f : F[X][Y]) : Option ℕ :=
+def rootMultiplicity₀ {F : Type u} [Semiring F] [DecidableEq F] (f : F[X][Y]) : Option ℕ :=
   let deg := weightedDegree f 1 1
   match deg with
   | none => none
@@ -139,7 +141,7 @@ def rootMultiplicity₀.{u} {F : Type u} [Semiring F] [DecidableEq F] (f : F[X][
       (List.product (List.range deg.succ) (List.range deg.succ)))
 
 /-- The multiplicity of a pair `(x,y)` of a bivariate polynomial `f`. -/
-def rootMultiplicity.{u} {F : Type u} [CommSemiring F] [DecidableEq F]
+def rootMultiplicity {F : Type u} [CommSemiring F] [DecidableEq F]
   (f : F[X][Y]) (x y : F) : Option ℕ :=
   let X := (Polynomial.X : Polynomial F)
   rootMultiplicity₀ (F := F) ((f.comp (Y + (C (C y)))).map (Polynomial.compRingHom (X + C x)))
