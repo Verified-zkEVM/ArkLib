@@ -1759,6 +1759,119 @@ lemma prop_4_20_bad_event_probability (i : Fin ℓ) (steps : ℕ) [NeZero steps]
     apply prop_4_20_case_2_fiberwise_far 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (steps := steps)
       (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (h_far := h_close)
 
+open Classical in
+/-- **Proposition 4.20.2 (Case 1: FiberwiseClose)**.
+Incremental bad-event bound for a fixed block start and fixed consumed prefix, under the
+block-level close branch.
+
+The fresh event at step `k` is
+`¬ E(i, k) ∧ E(i, k+1)` where `E := incrementalFoldingBadEvent`.
+-/
+lemma prop_4_20_2_case_1_fiberwise_close_incremental
+    (block_start_idx : Fin r) {destIdx : Fin r} (k : ℕ) (h_k_lt : k < ϑ)
+    (h_destIdx : destIdx = block_start_idx + ϑ) (h_destIdx_le : destIdx ≤ ℓ)
+    (f_block_start : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) block_start_idx)
+    (r_prefix : Fin k → L)
+    (h_block_close : fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := block_start_idx) (steps := ϑ) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
+      (f := f_block_start)) :
+    let domain_size := Fintype.card (sDomain 𝔽q β h_ℓ_add_R_rate destIdx)
+    Pr_{ let r_new ← $ᵖ L }[
+      ¬ incrementalFoldingBadEvent 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (block_start_idx := block_start_idx) (destIdx := destIdx) (k := k)
+          (h_k_le := Nat.le_of_lt h_k_lt) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
+          (f_block_start := f_block_start) (r_challenges := r_prefix)
+      ∧
+      incrementalFoldingBadEvent 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (block_start_idx := block_start_idx) (destIdx := destIdx) (k := k + 1)
+        (h_k_le := Nat.succ_le_of_lt h_k_lt) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
+        (f_block_start := f_block_start)
+        (r_challenges := Fin.snoc r_prefix r_new)
+    ] ≤
+    (domain_size / Fintype.card L) := by
+  -- Proof plan:
+  -- 1) Expand `incrementalFoldingBadEvent` at `k` and `k+1`.
+  -- 2) Use `h_block_close` to fix the close branch in both expansions.
+  -- 3) Reduce the fresh event to one-step disagreement vanishing at fixed destination.
+  -- 4) Apply Schwartz-Zippel (degree-1 in `r_new`) and union bound over destination points.
+  sorry
+
+open Classical in
+/-- **Proposition 4.20.2 (Case 2: FiberwiseFar)**.
+Incremental bad-event bound for a fixed block start and fixed consumed prefix, under the
+block-level far branch.
+
+The fresh event at step `k` is
+`¬ E(i, k) ∧ E(i, k+1)` where `E := incrementalFoldingBadEvent`.
+-/
+lemma prop_4_20_2_case_2_fiberwise_far_incremental
+    (block_start_idx : Fin r) {destIdx : Fin r} (k : ℕ) (h_k_lt : k < ϑ)
+    (h_destIdx : destIdx = block_start_idx + ϑ) (h_destIdx_le : destIdx ≤ ℓ)
+    (f_block_start : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) block_start_idx)
+    (r_prefix : Fin k → L)
+    (h_block_far : ¬ fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := block_start_idx) (steps := ϑ) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
+      (f := f_block_start)) :
+    let domain_size := Fintype.card (sDomain 𝔽q β h_ℓ_add_R_rate destIdx)
+    Pr_{ let r_new ← $ᵖ L }[
+      ¬ incrementalFoldingBadEvent 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (block_start_idx := block_start_idx) (destIdx := destIdx) (k := k)
+          (h_k_le := Nat.le_of_lt h_k_lt) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
+          (f_block_start := f_block_start) (r_challenges := r_prefix)
+      ∧
+      incrementalFoldingBadEvent 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (block_start_idx := block_start_idx) (destIdx := destIdx) (k := k + 1)
+        (h_k_le := Nat.succ_le_of_lt h_k_lt) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
+        (f_block_start := f_block_start)
+        (r_challenges := Fin.snoc r_prefix r_new)
+    ] ≤
+    (domain_size / Fintype.card L) := by
+  -- Proof plan:
+  -- 1) Expand `incrementalFoldingBadEvent` at `k` and `k+1`.
+  -- 2) Use `h_block_far` to fix the far branch in both expansions.
+  -- 3) Rewrite the one-step update as an affine-line fold in interleaved space.
+  -- 4) Apply DG25 affine-line proximity gap (ε = |S^{i+ϑ}|), yielding `≤ ε / |L|`.
+  sorry
+
+open Classical in
+/-- **Proposition 4.20.2 (RBR incremental doom-preservation Probability Bound)**.
+For each block and each step `k < ϑ`, with fixed prior challenges in that block, the
+probability over the fresh challenge that the incremental bad event flips from false to true is
+at most `|S^(i+ϑ)| / |L|`.
+-/
+lemma prop_4_20_2_incremental_bad_event_probability
+    (block_start_idx : Fin r) {destIdx : Fin r} (k : ℕ) (h_k_lt : k < ϑ)
+    (h_destIdx : destIdx = block_start_idx + ϑ) (h_destIdx_le : destIdx ≤ ℓ)
+    (f_block_start : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) block_start_idx)
+    (r_prefix : Fin k → L) :
+    let domain_size := Fintype.card (sDomain 𝔽q β h_ℓ_add_R_rate destIdx)
+    Pr_{ let r_new ← $ᵖ L }[
+      ¬ incrementalFoldingBadEvent 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (block_start_idx := block_start_idx) (destIdx := destIdx) (k := k)
+          (h_k_le := Nat.le_of_lt h_k_lt) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
+          (f_block_start := f_block_start) (r_challenges := r_prefix)
+      ∧
+      incrementalFoldingBadEvent 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (block_start_idx := block_start_idx) (destIdx := destIdx) (k := k + 1)
+        (h_k_le := Nat.succ_le_of_lt h_k_lt) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
+        (f_block_start := f_block_start)
+        (r_challenges := Fin.snoc r_prefix r_new)
+    ] ≤
+    (domain_size / Fintype.card L) := by
+  by_cases h_block_close : fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (i := block_start_idx) (steps := ϑ) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
+    (f := f_block_start)
+  · exact prop_4_20_2_case_1_fiberwise_close_incremental 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (block_start_idx := block_start_idx)
+      (destIdx := destIdx) (k := k) (h_k_lt := h_k_lt) (h_destIdx := h_destIdx)
+      (h_destIdx_le := h_destIdx_le) (f_block_start := f_block_start)
+      (r_prefix := r_prefix) (h_block_close := h_block_close)
+  · exact prop_4_20_2_case_2_fiberwise_far_incremental 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (block_start_idx := block_start_idx)
+      (destIdx := destIdx) (k := k) (h_k_lt := h_k_lt) (h_destIdx := h_destIdx)
+      (h_destIdx_le := h_destIdx_le) (f_block_start := f_block_start)
+      (r_prefix := r_prefix) (h_block_far := h_block_close)
+
 /-!
 ### Remaining Soundness Statements (Spec.md)
 -/
@@ -2428,7 +2541,7 @@ theorem lemma_4_25_reject_if_suffix_in_disagreement
     (h_good_after : ∀ j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)), j_star < j →
       ¬ badBlockProp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtIn oStmtIn j)
     -- No bad events globally (for the inductive step at subsequent blocks)
-    (h_no_bad_global : ¬ badEventExistsProp 𝔽q β (stmtIdx := Fin.last ℓ)
+    (h_no_bad_global : ¬ blockBadEventExistsProp 𝔽q β (stmtIdx := Fin.last ℓ)
       (oracleIdx := OracleFrontierIndex.mkFromStmtIdx (Fin.last ℓ))
       (oStmt := oStmtIn) (challenges := stmtIn.challenges))
     (v : sDomain 𝔽q β h_ℓ_add_R_rate 0) :
@@ -2499,7 +2612,7 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
     (h_not_consistent : ¬ finalSumcheckStepOracleConsistencyProp 𝔽q β
       (h_le := h_le) (stmtOut := stmtIn) (oStmtOut := oStmtIn))
-    (h_no_bad : ¬ badEventExistsProp 𝔽q β (stmtIdx := Fin.last ℓ)
+    (h_no_bad : ¬ blockBadEventExistsProp 𝔽q β (stmtIdx := Fin.last ℓ)
       (oracleIdx := OracleFrontierIndex.mkFromStmtIdx (Fin.last ℓ))
       (oStmt := oStmtIn) (challenges := stmtIn.challenges)) :
     Pr_{ let v ←$ᵖ (sDomain 𝔽q β h_ℓ_add_R_rate 0) }[

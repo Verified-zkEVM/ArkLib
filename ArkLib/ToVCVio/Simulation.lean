@@ -1591,10 +1591,16 @@ lemma mem_support_stateful_guard_iff {σ : Type} {p : Prop} [Decidable p]
 /-- **Loop Path Extraction**:
     If a stateful forIn loop over PUnit reaches a final state, then for every element
     in the list, there must exist a local start state and end state such that the
-    body of that iteration succeeded. -/
+    body of that iteration succeeded.
+
+    **Important:** this requires the loop body to be yield-only on support
+    (i.e. no early `.done`). -/
 lemma exists_path_of_mem_support_forIn_unit {σ α : Type} [spec.FiniteRange]
     (l : List α) (f : α → PUnit → StateT σ ProbComp (ForInStep PUnit))
     (s_init s_final : σ) (u : PUnit)
+    (h_yield : ∀ (x : α) (s_pre : σ) (res_step : ForInStep PUnit × σ),
+      res_step ∈ ((f x PUnit.unit).run s_pre).support →
+      res_step.1 = ForInStep.yield PUnit.unit)
     (h_mem : (u, s_final) ∈ ((forIn l PUnit.unit f).run s_init).support) :
     ∀ x ∈ l, ∃ s_pre s_post,
       (ForInStep.yield PUnit.unit, s_post) ∈ ((f x PUnit.unit).run s_pre).support := by
@@ -1613,7 +1619,10 @@ step preservation, and a result `res` in the loop support, this lemma provides:
 So you get both "exists_path_of_mem_support_forIn_unit"-style per-step membership and
 "support_forIn_stateful_of_relations"-style relation at every index (including the final one).
 
-**Note:** The loop's `.run` support is `Set (β × σ)` (the accumulated value and state);
+**Note:** This also assumes the loop body is yield-only on support, so the loop does not stop
+early via `.done`.
+
+The loop's `.run` support is `Set (β × σ)` (the accumulated value and state);
 each body step's support is `Set (ForInStep β × σ)`, hence `h_step` uses `ForInStep.state res_step.1`. -/
 @[simp]
 lemma exists_rel_path_of_mem_support_forIn_stateful {ι : Type} {spec : OracleSpec ι} [spec.FiniteRange]
@@ -1625,6 +1634,9 @@ lemma exists_rel_path_of_mem_support_forIn_stateful {ι : Type} {spec : OracleSp
       rel k.castSucc b s_curr →
       ∀ res_step ∈ ((f (l.get k) b).run s_curr).support,
         rel k.succ (ForInStep.state res_step.1) res_step.2)
+    (h_yield : ∀ (x : α) (b : β) (s_curr : σ) (res_step : ForInStep β × σ),
+      res_step ∈ ((f x b).run s_curr).support →
+      ∃ b', res_step.1 = ForInStep.yield b')
     (res : β × σ)
     (h_mem : res ∈ ((forIn l init f).run s).support) :
     rel ⟨l.length, by omega⟩ res.1 res.2 ∧
