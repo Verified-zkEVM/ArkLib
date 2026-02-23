@@ -1588,6 +1588,24 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
         apply extractSuffixFromChallenge_congr_destIdx 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_idx_eq := by
           simp only [List.getElem_finRange, Fin.eta, Fin.coe_cast]) (h_le := by sorry) (h_le' := by sorry)
     )
+    (h_yield := by
+      intro k c_cur s_curr res_step h_res_step_mem
+      set oa : OracleComp []ₒ (ForInStep L) :=
+        simulateQ (QueryImpl.lift (OracleInterface.simOracle2 []ₒ oStmtIn tr.messages))
+          (ForInStep.yield <$> checkSingleFoldingStep 𝔽q β k c_cur v stmtIn)
+      have h_fst_mem : res_step.1 ∈ ((simulateQ impl oa).run' s_curr).support := by
+        simp only [StateT.run', support_map, Set.mem_image]
+        exact ⟨res_step, h_res_step_mem, rfl⟩
+      have h_run'_supp_eq := support_simulateQ_run'_eq (impl := impl)
+        (oa := oa)
+        (s := s_curr)
+        (hImplSupp := by simp only [Set.fmap_eq_image, IsEmpty.forall_iff, implies_true])
+      rw [h_run'_supp_eq] at h_fst_mem
+      dsimp only [oa] at h_fst_mem
+      simp only [simulateQ_map, support_map, Set.mem_image] at h_fst_mem
+      rcases h_fst_mem with ⟨next, _h_next_mem, h_eq⟩
+      exact ⟨next, h_eq.symm⟩
+    )
 
   -- extract the final guard relation from h_c_last_mem
   set v_challenge := (FullTranscript.mk1 (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) (tr.challenges ⟨0, rfl⟩)).challenges ⟨0, rfl⟩ with h_v_challenge
@@ -1718,7 +1736,33 @@ lemma logical_consistency_checks_passed_of_mem_support_V_run {σ : Type}
       pure (ForInStep.yield PUnit.unit))
 
   -- 1. Apply the extraction lemma
-  have h_independent_support_mem_exists := exists_path_of_mem_support_forIn_unit.{0} (spec := []ₒ) (l := List.finRange γ_repetitions) (f := forIn_body) (s_init := s) (s_final := s') (u := PUnit.unit) (h_mem := h_forIn_run_mem)
+  have h_independent_support_mem_exists := exists_path_of_mem_support_forIn_unit.{0}
+    (spec := []ₒ) (l := List.finRange γ_repetitions) (f := forIn_body) (s_init := s)
+    (s_final := s') (u := PUnit.unit)
+    (h_yield := by
+      intro rep s_pre res_step h_res_step_mem
+      dsimp only [forIn_body] at h_res_step_mem
+      set oa : OracleComp []ₒ (ForInStep PUnit) :=
+        simulateQ (OracleInterface.simOracle2 []ₒ oStmtIn tr.messages) do
+          liftM (checkSingleRepetition 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+            ((FullTranscript.mk1 (tr.challenges ⟨0, rfl⟩)).challenges ⟨0, rfl⟩ rep)
+            stmtIn stmtIn.final_constant)
+          pure (ForInStep.yield PUnit.unit)
+      have h_fst_mem : res_step.1 ∈ ((simulateQ impl oa).run' s_pre).support := by
+        simp only [StateT.run', support_map, Set.mem_image]
+        exact ⟨res_step, h_res_step_mem, rfl⟩
+      have h_run'_supp_eq := support_simulateQ_run'_eq (impl := impl)
+        (oa := oa)
+        (s := s_pre)
+        (hImplSupp := by simp only [Set.fmap_eq_image, IsEmpty.forall_iff, implies_true])
+      rw [h_run'_supp_eq] at h_fst_mem
+      dsimp only [oa] at h_fst_mem
+      simp only [simulateQ_bind, support_bind, Set.mem_iUnion, exists_prop,
+        simulateQ_pure, support_pure, Set.mem_singleton_iff] at h_fst_mem
+      rcases h_fst_mem with ⟨_x, _h_x_mem, h_eq⟩
+      simpa [h_eq]
+    )
+    (h_mem := h_forIn_run_mem)
 
   set γ_challenges : Fin γ_repetitions →
     sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩ := tr.challenges ⟨0, rfl⟩
@@ -2196,7 +2240,7 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
     (h_not_oracleFoldingConsistent : ¬ finalSumcheckStepOracleConsistencyProp 𝔽q β
       (h_le := by apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ) (hdiv.out))
       (stmtOut := stmtIn) (oStmtOut := oStmtIn))
-    (h_no_bad_event : ¬ badEventExistsProp 𝔽q β (stmtIdx := Fin.last ℓ)
+    (h_no_bad_event : ¬ blockBadEventExistsProp 𝔽q β (stmtIdx := Fin.last ℓ)
       (oracleIdx := OracleFrontierIndex.mkFromStmtIdx (Fin.last ℓ))
       (oStmt := oStmtIn) (challenges := stmtIn.challenges)) :
     Pr_{ let v ← $ᵖ ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
@@ -2223,7 +2267,7 @@ theorem singleRepetition_proximityCheck_bound
     (h_not_oracleFoldingConsistent : ¬ finalSumcheckStepOracleConsistencyProp 𝔽q β
       (h_le := by apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ) (hdiv.out))
       (stmtOut := stmtIn) (oStmtOut := oStmtIn))
-    (h_no_bad_event : ¬ badEventExistsProp 𝔽q β (stmtIdx := Fin.last ℓ)
+    (h_no_bad_event : ¬ blockBadEventExistsProp 𝔽q β (stmtIdx := Fin.last ℓ)
       (oracleIdx := OracleFrontierIndex.mkFromStmtIdx (Fin.last ℓ))
       (oStmt := oStmtIn) (challenges := stmtIn.challenges)) :
     Pr_{ let v ← $ᵖ ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
@@ -2363,7 +2407,7 @@ theorem queryOracleVerifier_rbrKnowledgeSoundness [Fintype L] {σ : Type} (init 
           (¬ finalSumcheckStepOracleConsistencyProp 𝔽q β
             (h_le := by apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ) (hdiv.out))
             (stmtOut := stmtIn) (oStmtOut := oStmtIn)) ∧
-          (¬ badEventExistsProp 𝔽q β (stmtIdx := Fin.last ℓ)
+          (¬ blockBadEventExistsProp 𝔽q β (stmtIdx := Fin.last ℓ)
             (oracleIdx := OracleFrontierIndex.mkFromStmtIdx (Fin.last ℓ))
             (oStmt := oStmtIn) (challenges := stmtIn.challenges)) := by
         -- Use h_P_y₀ to extract preconditions

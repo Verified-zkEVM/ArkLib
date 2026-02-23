@@ -392,21 +392,17 @@ open Classical in
 This combines the Sumcheck error (2/|L|) and the LDT Bad Event probability.
 For round i : rbrKnowledgeError(i) = err_SC + err_BE where
 - err_SC = 2/|L| (Schwartz-Zippel for degree 1)
-- err_BE = (if ϑ ∣ (i + 1) then ϑ * |S^(i+1)| / |L| else 0)
-  where k = i / ϑ and |S^(j)| is the size of the j-th domain
+- err_BE = |S^(last_oracle_domain_index_of_i + ϑ)| / |L|
 -/
 def foldKnowledgeError (i : Fin ℓ) (_ : (pSpecFold (L := L)).ChallengeIdx) : ℝ≥0 :=
   let err_SC := (2 : ℝ≥0) / (Fintype.card L)
-  -- bad event of `fⱼ` exists RIGHT AFTER the V's challenge of sumcheck round `j+ϑ-1`,
-  let err_BE := if hi : ϑ ∣ (i.val + 1) then
-    -- HERE: we view `i` as `j+ϑ-1`, error rate is `ϑ * |S^(j+ϑ)| / |L| = ϑ * |S^(i+1)| / |L|`
-    ϑ * (Fintype.card ((sDomain 𝔽q β h_ℓ_add_R_rate)
-      ⟨i.val + 1, by -- ⊢ ↑i + 1 < r
+  -- Distributed fold-error budget: one incremental bad-event charge per fold round.
+  let err_BE :=
+    let lastDomainIdx := getLastOracleDomainIndex ℓ ϑ i.castSucc
+    (Fintype.card ((sDomain 𝔽q β h_ℓ_add_R_rate)
+      ⟨lastDomainIdx.val + ϑ, by
+        have h_le := getLastOracleDomainIndex_add_ϑ_le ℓ ϑ i.castSucc
         omega⟩) : ℝ≥0) / (Fintype.card L)
-  else 0
-  -- err_BE accounts for knowledge error of oracle (i-ϑ+1),
-  -- i.e. looking backward over the last ϑ challenges.
-  -- TODO: review the definition of err_BE to match the semantic
   err_SC + err_BE
 
 /-- WitMid type for fold step: Witness i.succ at final round, Witness i.castSucc otherwise.
@@ -531,20 +527,24 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
       Fin.coe_ofNat_eq_mod, Nat.reduceMod] at h_kState_round1
     simp only [Fin.castSucc_zero]
 
-    -- At round 1: masterKStateProp with (explicitVCheck ∧ localizedRoundPolyCheck)
-    -- At round 0: masterKStateProp with sumcheckConsistencyProp
-    -- Extract the checks from round 1
-    obtain ⟨⟨h_explicit, h_localized⟩, h_core⟩ := h_kState_round1
-
-    -- Key: h_localized says h_i = h_star, and h_explicit says h_i(0) + h_i(1) = s
-    -- Therefore h_star(0) + h_star(1) = s, which is what Lemma 1.1 gives us
-    constructor
-    · -- Prove sumcheckConsistencyProp at round 0
-      simp_rw [h_localized] at h_explicit
-      rw [h_explicit.symm]
-      apply getSumcheckRoundPoly_sum_eq
-    · -- The core (badEventExists ∨ oracleWitnessConsistency) is preserved
-      exact h_core
+    -- At round 1: bad ∨ (localChecks ∧ structural ∧ initial ∧ oracleFoldingConsistency)
+    -- At round 0: bad ∨ (sumcheckConsistency ∧ structural ∧ initial ∧ oracleFoldingConsistency)
+    cases h_kState_round1 with
+    | inl h_bad =>
+      exact Or.inl h_bad
+    | inr h_good =>
+      have h_explicit := h_good.1.1
+      have h_localized := h_good.1.2
+      have h_struct : witnessStructuralInvariant 𝔽q β (mp := mp)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtMid witMid := h_good.2.1
+      have h_init : firstOracleWitnessConsistencyProp 𝔽q β witMid.t
+          (getFirstOracle 𝔽q β oStmtMid) := h_good.2.2.1
+      have h_fold := h_good.2.2.2
+      have h_sumcheck : sumcheckConsistencyProp (𝓑 := 𝓑) stmtMid.sumcheck_target witMid.H := by
+        simp_rw [h_localized] at h_explicit
+        rw [h_explicit.symm]
+        exact getSumcheckRoundPoly_sum_eq (L := L) (ℓ := ℓ) (𝓑 := 𝓑) (i := i) (h := witMid.H)
+      exact Or.inr ⟨h_sumcheck, h_struct, h_init, h_fold⟩
   toFun_full := fun ⟨stmtIn, oStmtIn⟩ tr witOut probEvent_relOut_gt_0 => by
     -- h_relOut: ∃ stmtOut oStmtOut, verifier outputs (stmtOut, oStmtOut) with prob > 0
     --   and ((stmtOut, oStmtOut), witOut) ∈ foldStepRelOut
@@ -618,20 +618,23 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
     have h_stmtOut_sumcheck_target_eq : stmtOut.sumcheck_target = (Polynomial.eval r_i' ↑h_i) := by
       rw [h_stmtOut_eq]; rfl
     dsimp only [masterKStateProp]
-    constructor
-    · constructor
-      · simpa [h_i_def] using h_V_check_passed
-      · rw [h_stmtOut_sumcheck_target_eq] at h_relOut
-        exact h_relOut.1
-    · cases h_relOut.2 with
-      | inl hBad =>
-        left
-        rw [h_stmtOut_challenges_eq]
-        exact hBad
-      | inr hConsist =>
-        right
-        rw [h_stmtOut_eq] at hConsist
-        exact hConsist
+    rw [h_stmtOut_sumcheck_target_eq] at h_relOut
+    have h_explicit : h_i.val.eval (𝓑 0) + h_i.val.eval (𝓑 1) = stmtIn.sumcheck_target := by
+      simpa [h_i_def] using h_V_check_passed
+    cases h_relOut with
+    | inl h_bad =>
+      have h_bad' : incrementalBadEventExistsProp 𝔽q β i.succ
+          (OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i) oStmtIn
+          (Fin.snoc stmtIn.challenges r_i') := by
+        simpa [h_stmtOut_challenges_eq] using h_bad
+      exact Or.inl h_bad'
+    | inr h_good =>
+      refine Or.inr ?_
+      refine ⟨?_, ?_, ?_, ?_⟩
+      · exact ⟨h_explicit, h_good.1⟩
+      · simpa [h_stmtOut_eq] using h_good.2.1
+      · simpa [h_stmtOut_eq] using h_good.2.2.1
+      · simpa [h_stmtOut_eq, h_stmtOut_challenges_eq] using h_good.2.2.2
 
 /-- This follows the KState of sum-check -/
 def foldKStateProps {i : Fin ℓ} (m : Fin (2 + 1))
@@ -683,20 +686,20 @@ def foldKStateProps {i : Fin ℓ} (m : Fin (2 + 1))
 /-
 The fold-step extraction failure event implies either:
 1. a sumcheck bad event at the sampled challenge, or
-2. the latest folding bad event at the current oracle frontier.
+2. an incremental folding bad event at the current oracle frontier.
 
 More precisely:
 - **Sumcheck bad**: `h_i ≠ h_star ∧ h_i.eval r_i' = h_star.eval r_i'`,
   where `h_star = getSumcheckRoundPoly ℓ 𝓑 i witIn.H`.
-- **Folding bad**: if `ϑ ∣ (i.val + 1)`, the latest block bad event holds at
-  frontier `i.castSucc` using challenges extended by `r_i'`.
+- **Folding bad**: an incremental bad-event witness exists at frontier `i.castSucc`
+  using challenges extended by `r_i'`.
 
 Proof plan for `foldStep_rbrExtractionFailureEvent_imply_sumcheck_or_badEvent`:
 
 Goal shape:
   Doom-escape at challenge round `⟨1, rfl⟩` gives an existential `witMid` with
   `¬kSF@castSucc` and `kSF@succ`; we must derive:
-  `badSumcheckEventProp r_i' h_i h_star(witIn) ∨ latestFoldingBadEvent`.
+  `badSumcheckEventProp r_i' h_i h_star(witIn) ∨ incrementalFoldingBadEvent`.
 
 Plan:
 1. Unfold the doom-escape witness:
@@ -705,15 +708,15 @@ Plan:
 
 2. Isolate the KState core:
    From `masterKStateProp`, separate local checks from the core disjunction
-   `badEventExistsProp ∨ oracleWitnessConsistency`.
+   `incrementalBadEventExistsProp ∨ oracleWitnessConsistency`.
 
-3. Split by the latest bad event:
-   Case A: `latestFoldingBadEvent` holds; finish by `Or.inr`.
-   Case B: `¬ latestFoldingBadEvent`; show this forces the KState-2 core to use
+3. Split by the incremental bad event:
+   Case A: `incrementalFoldingBadEvent` holds; finish by `Or.inr`.
+   Case B: `¬ incrementalFoldingBadEvent`; show this forces the KState-2 core to use
    `oracleWitnessConsistency` (good branch).
 
 4. Overlap-cancellation for bad events:
-   In Case B, any bad event witnessed at round 2 but not latest must be an "old" event.
+   In Case B, any bad event witnessed at round 2 must already be present at round 1.
    Old events are preserved backward to round 1 (same oracle frontier / challenge prefix),
    contradicting `¬kSF@round1`. Hence no bad-event branch remains.
 
@@ -727,7 +730,7 @@ Plan:
    Package Step 5 as `badSumcheckEventProp r_i' h_i h_star(witIn)` and finish by `Or.inl`.
 
 Expected helper lemmas:
-- backward preservation of non-latest bad events from round-2 to round-1 view;
+- backward preservation of incremental bad events from round-2 to round-1 view;
 - extraction of localized round-poly equalities from fold-step local checks.
 -/
 omit [SelectableType L] in
@@ -776,7 +779,7 @@ def foldStepHStarFromWitMid (i : Fin ℓ)
     (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i stmtOStmtIn h_i r_i' witMid
   getSumcheckRoundPoly ℓ 𝓑 (i := i) (h := witBefore.H)
 
-/-- At the same fold-step output state, `oracleWitnessConsistency` determines a unique witness.
+/-- At the same fold-step output state, `witnessStructuralInvariant` and `firstOracleWitnessConsistencyProp` determine a unique witness.
 Consequently, any witness-dependent extracted `h_star` is canonical. -/
 lemma foldStep_oracleWitnessConsistency_unique_witMid (i : Fin ℓ)
     (stmtOut : Statement (L := L) Context i.succ)
@@ -784,93 +787,160 @@ lemma foldStep_oracleWitnessConsistency_unique_witMid (i : Fin ℓ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j)
     {witMid₁ witMid₂ : Witness (L := L) 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ}
-    (h₁ : oracleWitnessConsistency 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (ϑ := ϑ) (stmtIdx := i.succ)
-      (oracleIdx := OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i)
-      stmtOut witMid₁ oStmt)
-    (h₂ : oracleWitnessConsistency 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (ϑ := ϑ) (stmtIdx := i.succ)
-      (oracleIdx := OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i)
-      stmtOut witMid₂ oStmt) :
+    (h_struct₁ : witnessStructuralInvariant 𝔽q β (mp := mp)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut witMid₁)
+    (h_struct₂ : witnessStructuralInvariant 𝔽q β (mp := mp)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut witMid₂)
+    (h_init₁ : firstOracleWitnessConsistencyProp 𝔽q β witMid₁.t
+      (getFirstOracle 𝔽q β oStmt))
+    (h_init₂ : firstOracleWitnessConsistencyProp 𝔽q β witMid₂.t
+      (getFirstOracle 𝔽q β oStmt)) :
     witMid₁ = witMid₂ := by
   have h_t : witMid₁.t = witMid₂.t := by
     exact firstOracleWitnessConsistency_unique 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (ϑ := ϑ) (i := i) (oStmt := oStmt) (h₁ := h₁.2.1) (h₂ := h₂.2.1)
+      (ϑ := ϑ) (i := i) (oStmt := oStmt) (h₁ := h_init₁) (h₂ := h_init₂)
   have h_H : witMid₁.H = witMid₂.H := by
     calc
       witMid₁.H = projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := witMid₁.t)
         (m := mp.multpoly stmtOut.ctx) (i := i.succ)
-        (challenges := stmtOut.challenges) := h₁.1.1
+        (challenges := stmtOut.challenges) := h_struct₁.1
       _ = projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := witMid₂.t)
         (m := mp.multpoly stmtOut.ctx) (i := i.succ)
-        (challenges := stmtOut.challenges) := by simpa [h_t]
-      _ = witMid₂.H := h₂.1.1.symm
+        (challenges := stmtOut.challenges) := by simp only [Fin.val_succ, h_t]
+      _ = witMid₂.H := h_struct₂.1.symm
   have h_f : witMid₁.f = witMid₂.f := by
     calc
       witMid₁.f = getMidCodewords 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (i := i.succ) (t := witMid₁.t) (challenges := stmtOut.challenges) := h₁.1.2
-      _ = getMidCodewords 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (i := i.succ) (t := witMid₂.t) (challenges := stmtOut.challenges) := by simpa [h_t]
-      _ = witMid₂.f := h₂.1.2.symm
+        (i := i.succ) (t := witMid₁.t) (challenges := stmtOut.challenges) := h_struct₁.2
+      _ = getMidCodewords 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i.succ) (t := witMid₂.t)
+        (challenges := stmtOut.challenges) := by simp only [Fin.val_succ, h_t]
+      _ = witMid₂.f := h_struct₂.2.symm
   cases witMid₁
   cases witMid₂
   simp at h_t h_H h_f ⊢
   exact ⟨h_t, h_H, h_f⟩
 
-/-- Under `oracleWitnessConsistency`, the extracted fold-step round polynomial `h_star`
-is independent of which consistent `witMid` we pick. -/
 lemma foldStepHStarFromWitMid_eq_of_oracleWitnessConsistency (i : Fin ℓ)
     (stmtOStmtIn : (Statement (L := L) Context i.castSucc) × (∀ j,
       OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
     (h_i : (pSpecFold (L := L)).Message ⟨0, rfl⟩) (r_i' : L)
     {witMid₁ witMid₂ : Witness (L := L) 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ}
-    (h₁ : oracleWitnessConsistency 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (ϑ := ϑ) (stmtIdx := i.succ)
-      (oracleIdx := OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i)
+    (h_struct₁ : witnessStructuralInvariant 𝔽q β (mp := mp)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       {
         sumcheck_target := h_i.val.eval r_i',
         challenges := Fin.snoc stmtOStmtIn.1.challenges r_i',
         ctx := stmtOStmtIn.1.ctx
-      } witMid₁ stmtOStmtIn.2)
-    (h₂ : oracleWitnessConsistency 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (ϑ := ϑ) (stmtIdx := i.succ)
-      (oracleIdx := OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i)
+      } witMid₁)
+    (h_struct₂ : witnessStructuralInvariant 𝔽q β (mp := mp)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       {
         sumcheck_target := h_i.val.eval r_i',
         challenges := Fin.snoc stmtOStmtIn.1.challenges r_i',
         ctx := stmtOStmtIn.1.ctx
-      } witMid₂ stmtOStmtIn.2) :
+      } witMid₂)
+    (h_init₁ : firstOracleWitnessConsistencyProp 𝔽q β witMid₁.t
+      (getFirstOracle 𝔽q β stmtOStmtIn.2))
+    (h_init₂ : firstOracleWitnessConsistencyProp 𝔽q β witMid₂.t
+      (getFirstOracle 𝔽q β stmtOStmtIn.2)) :
     foldStepHStarFromWitMid (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑) i stmtOStmtIn h_i r_i' witMid₁ =
     foldStepHStarFromWitMid (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑) i stmtOStmtIn h_i r_i' witMid₂ := by
   have h_wit_eq :
       witMid₁ = witMid₂ := foldStep_oracleWitnessConsistency_unique_witMid
-        (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
+        𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (mp := mp) (ϑ := ϑ)
         (i := i)
         (stmtOut := {
           sumcheck_target := h_i.val.eval r_i',
           challenges := Fin.snoc stmtOStmtIn.1.challenges r_i',
           ctx := stmtOStmtIn.1.ctx
         })
-        (oStmt := stmtOStmtIn.2) h₁ h₂
+        (oStmt := stmtOStmtIn.2) h_struct₁ h_struct₂ h_init₁ h_init₂
   subst h_wit_eq
   rfl
 
-/-- Latest folding bad event at the fold-step output frontier (`i.succ`) and
-extended challenges (`Fin.snoc ... r_i'`). -/
+/-- Fresh incremental bad-event for the **latest oracle block** at the fold-step:
+`¬ E_before ∧ E_after`, where `E_*` is `incrementalFoldingBadEvent` evaluated
+before/after appending `r_i'`. -/
 @[reducible]
-def foldStepLatestFoldingBadEvent (i : Fin ℓ)
+def foldStepFreshDoomPreservationEvent (i : Fin ℓ)
     (stmtOStmtIn : (Statement (L := L) Context i.castSucc) × (∀ j,
       OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
     (r_i' : L) : Prop :=
-  if _hi : ϑ ∣ (i.val + 1) then
-    (foldingBadEventAtBlock 𝔽q β (stmtIdx := i.succ)
-      (oracleIdx := OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i)
-      (oStmt := stmtOStmtIn.2) (challenges := Fin.snoc stmtOStmtIn.1.challenges r_i'))
-      (j := getLastOraclePositionIndex ℓ ϑ i.castSucc)
-  else False
+  let stmtIdxBefore : Fin (ℓ + 1) := i.castSucc
+  let challengesBefore : Fin stmtIdxBefore → L := stmtOStmtIn.1.challenges
+  let j := getLastOraclePositionIndex ℓ ϑ i.castSucc
+  let curOracleDomainIdx : Fin r := ⟨oraclePositionToDomainIndex (positionIdx := j), by omega⟩
+  let kBefore : ℕ := min ϑ (stmtIdxBefore.val - curOracleDomainIdx.val)
+  -- NOTE: actually `kBefore` is always less than `ϑ`, so `kBefore + 1 ≤ ϑ`
+  have h_j_val : j.val = i.val / ϑ := by
+    have h_i_lt_ℓ : i.val < ℓ := i.isLt
+    have h_i_cast_lt_ℓ : i.val < ℓ := by simp only [h_i_lt_ℓ]
+    dsimp only [j, getLastOraclePositionIndex]
+    unfold toOutCodewordsCount
+    simp only [Fin.coe_castSucc, h_i_lt_ℓ, ↓reduceIte, add_tsub_cancel_right]
+  have h_cur_eq : curOracleDomainIdx.val = (i.val / ϑ) * ϑ := by
+    dsimp only [curOracleDomainIdx, oraclePositionToDomainIndex]
+    simp only [h_j_val]
+  have h_diff_lt : stmtIdxBefore.val - curOracleDomainIdx.val < ϑ := by
+    have h_div_mod : (i.val / ϑ) * ϑ + i.val % ϑ = i.val := by
+      simpa [Nat.mul_comm] using (Nat.div_add_mod i.val ϑ)
+    have h_cur_le : curOracleDomainIdx.val ≤ stmtIdxBefore.val := by
+      dsimp only [stmtIdxBefore]
+      calc
+        curOracleDomainIdx.val = (i.val / ϑ) * ϑ := h_cur_eq
+        _ ≤ i.val := Nat.div_mul_le_self i.val ϑ
+    have h_sum : curOracleDomainIdx.val + i.val % ϑ = stmtIdxBefore.val := by
+      dsimp only [stmtIdxBefore]
+      calc
+        curOracleDomainIdx.val + i.val % ϑ = (i.val / ϑ) * ϑ + i.val % ϑ := by
+          simp only [h_cur_eq]
+        _ = i.val := h_div_mod
+    have h_diff_eq : stmtIdxBefore.val - curOracleDomainIdx.val = i.val % ϑ := by omega
+    rw [h_diff_eq]
+    exact Nat.mod_lt i.val (Nat.pos_of_neZero ϑ)
+  have h_kBefore_lt : kBefore < ϑ := by
+    exact lt_of_le_of_lt
+      (Nat.min_le_right ϑ (stmtIdxBefore.val - curOracleDomainIdx.val)) h_diff_lt
+  let destIdx : Fin r := ⟨curOracleDomainIdx.val + ϑ, by
+    have h1 := oracle_index_add_steps_le_ℓ ℓ ϑ (i := i.castSucc) (j := j)
+    have h2 : ℓ + 𝓡 < r := h_ℓ_add_R_rate
+    have _ : 𝓡 > 0 := Nat.pos_of_neZero 𝓡
+    dsimp only [oraclePositionToDomainIndex, curOracleDomainIdx]
+    omega
+  ⟩
+  let r_prefix : Fin kBefore → L := fun cId => challengesBefore
+    ⟨curOracleDomainIdx.val + cId.val, by
+      have h_k_le_stmt : kBefore ≤ stmtIdxBefore.val - curOracleDomainIdx.val :=
+        Nat.min_le_right ϑ (stmtIdxBefore.val - curOracleDomainIdx.val)
+      have h_cId_lt_k : cId.val < kBefore := cId.isLt
+      omega
+    ⟩
+  let E_before :=
+    Binius.BinaryBasefold.incrementalFoldingBadEvent 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (block_start_idx := curOracleDomainIdx) (destIdx := destIdx) (k := kBefore)
+      (h_k_le := Nat.min_le_left ϑ (stmtIdxBefore.val - curOracleDomainIdx.val))
+      (h_destIdx := rfl)
+      (h_destIdx_le := by
+        simp only [(oracle_index_add_steps_le_ℓ ℓ ϑ (i := i.castSucc) (j := j)), j, destIdx,
+          curOracleDomainIdx])
+      (f_block_start := stmtOStmtIn.2 j)
+      (r_challenges := r_prefix)
+  let E_after :=
+    Binius.BinaryBasefold.incrementalFoldingBadEvent 𝔽q β
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (block_start_idx := curOracleDomainIdx) (destIdx := destIdx) (k := kBefore + 1)
+    (h_k_le := Nat.succ_le_of_lt h_kBefore_lt)
+    (h_destIdx := rfl)
+    (h_destIdx_le := by
+      simp only [(oracle_index_add_steps_le_ℓ ℓ ϑ (i := i.castSucc) (j := j)), j, destIdx,
+        curOracleDomainIdx])
+    (f_block_start := stmtOStmtIn.2 j)
+    (r_challenges := Fin.snoc r_prefix r_i')
+  ¬ E_before ∧ E_after
 
 /-- Oracle-witness consistency for a candidate fold-step output witness. -/
 @[reducible]
@@ -879,14 +949,15 @@ def foldStepWitMidOracleConsistency (i : Fin ℓ)
       OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
     (h_i : (pSpecFold (L := L)).Message ⟨0, rfl⟩) (r_i' : L)
     (witMid : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ) : Prop :=
-  oracleWitnessConsistency 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-    (ϑ := ϑ) (stmtIdx := i.succ)
-    (oracleIdx := OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i)
-    {
+  let stmt : Statement (L := L) Context i.succ := {
       sumcheck_target := h_i.val.eval r_i',
       challenges := Fin.snoc stmtOStmtIn.1.challenges r_i',
       ctx := stmtOStmtIn.1.ctx
-    } witMid stmtOStmtIn.2
+  }
+  let structural := witnessStructuralInvariant 𝔽q β (mp := mp)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmt witMid
+  let initial := firstOracleWitnessConsistencyProp 𝔽q β witMid.t (getFirstOracle 𝔽q β stmtOStmtIn.2)
+  structural ∧ initial
 
 /-- Uniqueness of a fold-step output witness that satisfies oracle-witness consistency. -/
 lemma foldStepWitMidOracleConsistency_unique (i : Fin ℓ)
@@ -901,50 +972,83 @@ lemma foldStepWitMidOracleConsistency_unique (i : Fin ℓ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) i stmtOStmtIn h_i r_i' witMid₂) :
     witMid₁ = witMid₂ := by
   exact foldStep_oracleWitnessConsistency_unique_witMid
-    (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
-    (i := i)
+    (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (i := i)
     (stmtOut := {
       sumcheck_target := h_i.val.eval r_i',
       challenges := Fin.snoc stmtOStmtIn.1.challenges r_i',
       ctx := stmtOStmtIn.1.ctx
-    })
-    (oStmt := stmtOStmtIn.2) h₁ h₂
+    }) (oStmt := stmtOStmtIn.2) (h_struct₁ := h₁.1) (h_init₁ := h₁.2)
+    (h_struct₂ := h₂.1) (h_init₂ := h₂.2)
 
-/-- Canonical `witMid` extracted from a fold-step doom-escape when the latest folding bad
-event does not occur. Under `¬ latestFoldingBadEvent`, this witness is the unique one
-satisfying oracle-witness consistency (see `foldStepDoomEscapeWitMid_spec` and
-`foldStepDoomEscapeWitMid_unique`). -/
-noncomputable def foldStepDoomEscapeWitMid (i : Fin ℓ)
+/-- Proof sketch:
+let `j` be the **oracle position index** of the last oracle at oracle frontier `i`.
+Note that `k = i - j * ϑ < ϑ`, since if `k = ϑ`,
+  then `i` must be an oracle domain, therefore `k = 0`, contradiction.
+We have:
+  h_bad_after =  `|__|__|...|__|__|j*ϑ|====i===(i+1)| ↔ exists_bad_until_j OR incBad(j -> i+1)`
+  h_not_fresh = `¬(¬incBad(j -> i) ∧ incBad(j -> i+1)) ↔ incBad(j -> i) ∨ (¬incBad(j -> i+1))`
+Goal: h_bad_before = `|__|__|...|__|__|j*ϑ|====i| = exists_bad_until_j OR incBad(j -> i)`
+--------
+We rcases on h_not_fresh:
+  If `incBad(j -> i)` holds, then h_bad_before = true, Q.E.D.
+  else we have `¬incBad(j -> i+1)`,
+    which implies `exists_bad_until_j` to be true from `h_bad_after`
+    => `h_bad_before = true` by definition
+-/
+lemma incrementalBadEventExistsProp_fold_step_backward (i : Fin ℓ)
     (stmtOStmtIn : (Statement (L := L) Context i.castSucc) × (∀ j,
       OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
-    (h_i : (pSpecFold (L := L)).Message ⟨0, rfl⟩) (r_i' : L)
-    (doomEscape : rbrExtractionFailureEvent
-      (kSF := foldKnowledgeStateFunction (mp := mp) (𝓑 := 𝓑) (init := init)
-        (impl := impl) (σ := σ) 𝔽q β i)
-      (extractor := foldRbrExtractor (mp := mp) 𝔽q β i) (i := ⟨1, rfl⟩)
-      (stmtIn := stmtOStmtIn) (transcript := FullTranscript.mk1 h_i) (challenge := r_i'))
-    (h_no_bad : ¬ foldStepLatestFoldingBadEvent 𝔽q β (ϑ := ϑ)
+    (r_i' : L)
+    (h_bad_after : incrementalBadEventExistsProp 𝔽q β i.succ
+      (OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i) stmtOStmtIn.2
+      (Fin.snoc stmtOStmtIn.1.challenges r_i'))
+    (h_not_fresh : ¬ foldStepFreshDoomPreservationEvent 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i stmtOStmtIn r_i') :
-    Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ :=
-  Classical.choose doomEscape
+    incrementalBadEventExistsProp 𝔽q β i.castSucc
+      (OracleFrontierIndex.mkFromStmtIdx i.castSucc) stmtOStmtIn.2
+      stmtOStmtIn.1.challenges := by
 
-/-- Under `doomEscape` and `¬ latestFoldingBadEvent`, the canonical doom-escape witness
-satisfies oracle-witness consistency. -/
-lemma foldStepDoomEscapeWitMid_spec (i : Fin ℓ)
-    (stmtOStmtIn : (Statement (L := L) Context i.castSucc) × (∀ j,
-      OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
-    (h_i : (pSpecFold (L := L)).Message ⟨0, rfl⟩) (r_i' : L)
-    (doomEscape : rbrExtractionFailureEvent
-      (kSF := foldKnowledgeStateFunction (mp := mp) (𝓑 := 𝓑) (init := init)
-        (impl := impl) (σ := σ) 𝔽q β i)
-      (extractor := foldRbrExtractor (mp := mp) 𝔽q β i) (i := ⟨1, rfl⟩)
-      (stmtIn := stmtOStmtIn) (transcript := FullTranscript.mk1 h_i) (challenge := r_i'))
-    (h_no_bad : ¬ foldStepLatestFoldingBadEvent 𝔽q β (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i stmtOStmtIn r_i') :
-    foldStepWitMidOracleConsistency (mp := mp) 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) i stmtOStmtIn h_i r_i'
-      (foldStepDoomEscapeWitMid (mp := mp) (𝓑 := 𝓑) (init := init) (impl := impl)
-        𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i stmtOStmtIn h_i r_i' doomEscape h_no_bad) := by
+  let stmtIdxBefore : Fin (ℓ + 1) := i.castSucc
+  let challengesBefore : Fin stmtIdxBefore → L := stmtOStmtIn.1.challenges
+  let j := getLastOraclePositionIndex ℓ ϑ i.castSucc
+  let curOracleDomainIdx : Fin r := ⟨oraclePositionToDomainIndex (positionIdx := j), by omega⟩
+  let kBefore : ℕ := min ϑ (stmtIdxBefore.val - curOracleDomainIdx.val)
+  have h_j_val : j.val = i.val / ϑ := by
+    have h_i_lt_ℓ : i.val < ℓ := i.isLt
+    have h_i_cast_lt_ℓ : i.val < ℓ := by simp only [h_i_lt_ℓ]
+    dsimp only [j, getLastOraclePositionIndex]
+    unfold toOutCodewordsCount
+    simp only [Fin.coe_castSucc, h_i_lt_ℓ, ↓reduceIte, add_tsub_cancel_right]
+  have h_cur_eq : curOracleDomainIdx.val = (i.val / ϑ) * ϑ := by
+    dsimp only [curOracleDomainIdx, oraclePositionToDomainIndex]
+    simp only [h_j_val]
+  have h_diff_lt : stmtIdxBefore.val - curOracleDomainIdx.val < ϑ := by
+    have h_div_mod : (i.val / ϑ) * ϑ + i.val % ϑ = i.val := by
+      simpa [Nat.mul_comm] using (Nat.div_add_mod i.val ϑ)
+    have h_cur_le : curOracleDomainIdx.val ≤ stmtIdxBefore.val := by
+      dsimp only [stmtIdxBefore]
+      calc
+        curOracleDomainIdx.val = (i.val / ϑ) * ϑ := h_cur_eq
+        _ ≤ i.val := Nat.div_mul_le_self i.val ϑ
+    have h_sum : curOracleDomainIdx.val + i.val % ϑ = stmtIdxBefore.val := by
+      dsimp only [stmtIdxBefore]
+      calc
+        curOracleDomainIdx.val + i.val % ϑ = (i.val / ϑ) * ϑ + i.val % ϑ := by
+          simp only [h_cur_eq]
+        _ = i.val := h_div_mod
+    have h_diff_eq : stmtIdxBefore.val - curOracleDomainIdx.val = i.val % ϑ := by omega
+    rw [h_diff_eq]
+    exact Nat.mod_lt i.val (Nat.pos_of_neZero ϑ)
+  have h_kBefore_lt : kBefore < ϑ := by
+    exact lt_of_le_of_lt
+      (Nat.min_le_right ϑ (stmtIdxBefore.val - curOracleDomainIdx.val)) h_diff_lt
+  let r_prefix : Fin kBefore → L := fun cId => challengesBefore
+    ⟨curOracleDomainIdx.val + cId.val, by
+      have h_k_le_stmt : kBefore ≤ stmtIdxBefore.val - curOracleDomainIdx.val :=
+        Nat.min_le_right ϑ (stmtIdxBefore.val - curOracleDomainIdx.val)
+      have h_cId_lt_k : cId.val < kBefore := cId.isLt
+      omega
+    ⟩
   sorry
 
 lemma foldStep_rbrExtractionFailureEvent_imply_sumcheck_or_badEvent (i : Fin ℓ)
@@ -956,116 +1060,123 @@ lemma foldStep_rbrExtractionFailureEvent_imply_sumcheck_or_badEvent (i : Fin ℓ
         (impl := impl) (σ := σ) 𝔽q β i)
       (extractor := foldRbrExtractor (mp := mp) 𝔽q β i) (i := ⟨1, rfl⟩) (stmtIn := stmtOStmtIn)
     (transcript := FullTranscript.mk1 h_i) (challenge := r_i')) :
-    let latestFoldingBadEvent :=
-      foldStepLatestFoldingBadEvent 𝔽q β (ϑ := ϑ)
+    let incrementalFoldingBadEvent :=
+      foldStepFreshDoomPreservationEvent 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i stmtOStmtIn r_i'
-    latestFoldingBadEvent ∨ (
-      ¬latestFoldingBadEvent ∧
+    incrementalFoldingBadEvent ∨ (
+      ¬incrementalFoldingBadEvent ∧
       (∃ witMid : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ,
-        (oracleWitnessConsistency 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
-          (stmtIdx := i.succ)  (wit := witMid) (oStmt := stmtOStmtIn.2)
-          (oracleIdx := OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i) (stmt :=
-          {
-            sumcheck_target := h_i.val.eval r_i',
-            challenges := Fin.snoc stmtOStmtIn.1.challenges r_i',
-            ctx := stmtOStmtIn.1.ctx
-          }))
+        (foldStepWitMidOracleConsistency (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
+          (i := i) stmtOStmtIn h_i r_i' witMid)
         ∧ (badSumcheckEventProp r_i' h_i
             (foldStepHStarFromWitMid (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
               (𝓑 := 𝓑) i stmtOStmtIn h_i r_i' witMid))
       )
     ) := by
   classical
-  let latestFoldingBadEvent : Prop :=
-    foldStepLatestFoldingBadEvent 𝔽q β (ϑ := ϑ)
+  let incrementalFoldingBadEvent : Prop :=
+    foldStepFreshDoomPreservationEvent 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i stmtOStmtIn r_i'
-  let witMid : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ :=
-    Classical.choose doomEscape
-  have h_doom_spec := Classical.choose_spec doomEscape
-  have h_kState_before_false := by
-    simpa [witMid] using h_doom_spec.1
-  have h_kState_after_true := by
-    simpa [witMid] using h_doom_spec.2
+  unfold rbrExtractionFailureEvent at doomEscape
+  rcases doomEscape with ⟨witMid, h_kState_before_false, h_kState_after_true⟩
   simp only [foldKnowledgeStateFunction] at h_kState_before_false h_kState_after_true
   unfold foldKStateProp at h_kState_before_false h_kState_after_true
   simp only [Fin.isValue, Fin.castSucc_one, Fin.succ_one_eq_two, Nat.reduceAdd,
     Transcript.concat] at h_kState_before_false h_kState_after_true
-  have h_explicit_after :
-      h_i.val.eval (𝓑 0) + h_i.val.eval (𝓑 1) = stmtOStmtIn.1.sumcheck_target := by
-    simpa using h_kState_after_true.1.1
-  have h_sumcheck_after :
-      sumcheckConsistencyProp (𝓑 := 𝓑) (Polynomial.eval r_i' h_i.val) witMid.H := by
-    simpa using h_kState_after_true.1.2
-  have h_left_from_consistency
-      (h_consistency : foldStepWitMidOracleConsistency (mp := mp) 𝔽q β
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) i stmtOStmtIn h_i r_i' witMid) :
-      badSumcheckEventProp r_i' h_i
-        (foldStepHStarFromWitMid (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-          (𝓑 := 𝓑) i stmtOStmtIn h_i r_i' witMid) := by
-    have h_wit_struct_after :
-        witMid.H = projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := witMid.t)
-          (m := mp.multpoly stmtOStmtIn.1.ctx) (i := i.succ)
-          (challenges := Fin.snoc stmtOStmtIn.1.challenges r_i') := by
-      exact h_consistency.1.1
-    let H_before : L⦃≤ 2⦄[X Fin (ℓ - i.castSucc)] :=
-      projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := witMid.t)
-        (m := mp.multpoly stmtOStmtIn.1.ctx) (i := i.castSucc)
-        (challenges := stmtOStmtIn.1.challenges)
-    let h_star_extracted : L⦃≤ 2⦄[X] := getSumcheckRoundPoly ℓ 𝓑 (i := i) (h := H_before)
-    have h_eval_eq_extracted :
-        Polynomial.eval r_i' h_i.val = Polynomial.eval r_i' h_star_extracted.val := by
-      unfold sumcheckConsistencyProp at h_sumcheck_after
-      rw [h_wit_struct_after] at h_sumcheck_after
-      rw [projectToMidSumcheckPoly_succ (L := L) (ℓ := ℓ) (t := witMid.t)
-        (m := mp.multpoly stmtOStmtIn.1.ctx) (i := i)
-        (challenges := stmtOStmtIn.1.challenges) (r_i' := r_i')] at h_sumcheck_after
-      have h_sum_eq :=
-        projectToNextSumcheckPoly_sum_eq (L := L) (𝓑 := 𝓑) (ℓ := ℓ)
-          (i := i) (Hᵢ := H_before) (rᵢ := r_i')
-      have h_sum_eq' :
-          Polynomial.eval r_i' h_star_extracted.val =
-            ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - i.succ),
-              (projectToNextSumcheckPoly (L := L) (ℓ := ℓ) (i := i)
-                (Hᵢ := H_before) (rᵢ := r_i')).val.eval x := by
-        simpa [h_star_extracted] using h_sum_eq
-      calc
-        Polynomial.eval r_i' h_i.val
-            = ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - i.succ),
+  by_cases h_bad : incrementalFoldingBadEvent
+  · left
+    exact h_bad
+  · right
+    refine ⟨h_bad, ?_⟩
+
+    -- Under ¬ fresh bad-event, the m=2 KState cannot be on the bad branch.
+    have h_after_good_exists : ∃ h_after_good, h_kState_after_true = Or.inr h_after_good := by
+      cases h_kState_after_true with
+      | inl h_bad_after =>
+        exfalso
+        have h_bad_before : incrementalBadEventExistsProp 𝔽q β i.castSucc
+          (OracleFrontierIndex.mkFromStmtIdx i.castSucc) stmtOStmtIn.2
+          stmtOStmtIn.1.challenges :=
+          incrementalBadEventExistsProp_fold_step_backward 𝔽q β
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
+            i stmtOStmtIn r_i' h_bad_after h_bad
+        exact h_kState_before_false (Or.inl h_bad_before)
+      | inr h_after_good =>
+        exact ⟨h_after_good, rfl⟩
+    rcases h_after_good_exists with ⟨h_after_good, rfl⟩
+
+    have h_explicit_after :
+        h_i.val.eval (𝓑 0) + h_i.val.eval (𝓑 1) = stmtOStmtIn.1.sumcheck_target := by
+      simpa using h_after_good.1.1
+    have h_sumcheck_after :
+        sumcheckConsistencyProp (𝓑 := 𝓑) (Polynomial.eval r_i' h_i.val) witMid.H := by
+      simpa using h_after_good.1.2
+    have h_consistency : foldStepWitMidOracleConsistency 𝔽q β i stmtOStmtIn h_i r_i' witMid :=
+      ⟨h_after_good.2.1, h_after_good.2.2.1⟩
+
+    have h_left_from_consistency :
+        badSumcheckEventProp r_i' h_i
+          (foldStepHStarFromWitMid (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+            (𝓑 := 𝓑) i stmtOStmtIn h_i r_i' witMid) := by
+      have h_wit_struct_after :
+          witMid.H = projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := witMid.t)
+            (m := mp.multpoly stmtOStmtIn.1.ctx) (i := i.succ)
+            (challenges := Fin.snoc stmtOStmtIn.1.challenges r_i') := by
+        exact h_consistency.1.1
+      let H_before : L⦃≤ 2⦄[X Fin (ℓ - i.castSucc)] :=
+        projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := witMid.t)
+          (m := mp.multpoly stmtOStmtIn.1.ctx) (i := i.castSucc)
+          (challenges := stmtOStmtIn.1.challenges)
+      let h_star_extracted : L⦃≤ 2⦄[X] := getSumcheckRoundPoly ℓ 𝓑 (i := i) (h := H_before)
+      have h_eval_eq_extracted :
+          Polynomial.eval r_i' h_i.val = Polynomial.eval r_i' h_star_extracted.val := by
+        unfold sumcheckConsistencyProp at h_sumcheck_after
+        rw [h_wit_struct_after] at h_sumcheck_after
+        rw [projectToMidSumcheckPoly_succ (L := L) (ℓ := ℓ) (t := witMid.t)
+          (m := mp.multpoly stmtOStmtIn.1.ctx) (i := i)
+          (challenges := stmtOStmtIn.1.challenges) (r_i' := r_i')] at h_sumcheck_after
+        have h_sum_eq :=
+          projectToNextSumcheckPoly_sum_eq (L := L) (𝓑 := 𝓑) (ℓ := ℓ)
+            (i := i) (Hᵢ := H_before) (rᵢ := r_i')
+        have h_sum_eq' :
+            Polynomial.eval r_i' h_star_extracted.val =
+              ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - i.succ),
                 (projectToNextSumcheckPoly (L := L) (ℓ := ℓ) (i := i)
-                  (Hᵢ := H_before) (rᵢ := r_i')).val.eval x := h_sumcheck_after
-        _ = Polynomial.eval r_i' h_star_extracted.val := by
-          symm
-          exact h_sum_eq'
-    have h_hi_ne_extracted : h_i ≠ h_star_extracted := by
-      intro h_eq
-      have h_consistency_before : oracleWitnessConsistency 𝔽q β
-          (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
-          (stmtIdx := i.castSucc) (oracleIdx := OracleFrontierIndex.mkFromStmtIdx i.castSucc)
-          stmtOStmtIn.1
-          ((foldRbrExtractor.{0} (mp := mp) 𝔽q β i).extractMid
-            (m := 1) stmtOStmtIn (FullTranscript.mk2 h_i r_i') witMid)
-          stmtOStmtIn.2 := by
-        unfold oracleWitnessConsistency
-        refine ⟨?_, h_consistency.2.1, ?_⟩
+                  (Hᵢ := H_before) (rᵢ := r_i')).val.eval x := by
+          simpa [h_star_extracted] using h_sum_eq
+        calc
+          Polynomial.eval r_i' h_i.val
+              = ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - i.succ),
+                  (projectToNextSumcheckPoly (L := L) (ℓ := ℓ) (i := i)
+                    (Hᵢ := H_before) (rᵢ := r_i')).val.eval x := h_sumcheck_after
+          _ = Polynomial.eval r_i' h_star_extracted.val := by
+            symm
+            exact h_sum_eq'
+      have h_hi_ne_extracted : h_i ≠ h_star_extracted := by
+        intro h_eq
+        apply h_kState_before_false
+        right
+        refine ⟨?_, ?_, ?_, ?_⟩
+        · constructor
+          · exact h_explicit_after
+          · simpa [h_star_extracted, H_before, foldRbrExtractor, Fin.isValue] using h_eq
         · unfold witnessStructuralInvariant
           simp only [Fin.coe_castSucc, foldRbrExtractor, Fin.zero_eta, Fin.isValue,
             Fin.succ_zero_eq_one, Fin.mk_one, Fin.succ_one_eq_two, Nat.reduceAdd,
             Fin.coe_ofNat_eq_mod, Nat.reduceMod, and_self]
-        · simpa [OracleFrontierIndex.val_mkFromStmtIdx,
-            OracleFrontierIndex.val_mkFromStmtIdxCastSuccOfSucc] using h_consistency.2.2
-      apply h_kState_before_false
-      constructor
-      · constructor
-        · exact h_explicit_after
-        · simpa [h_star_extracted, H_before, foldRbrExtractor, Fin.isValue] using h_eq
-      · right
-        exact h_consistency_before
-    simpa [foldStepHStarFromWitMid, foldStepWitBeforeFromWitMid, h_star_extracted,
-      H_before, foldRbrExtractor, Fin.isValue] using
-      (show badSumcheckEventProp r_i' h_i h_star_extracted from
-        ⟨h_hi_ne_extracted, h_eval_eq_extracted⟩)
-  sorry
+        · exact h_consistency.2
+        · have h_folding_after := h_after_good.2.2.2
+          unfold oracleFoldingConsistencyProp at h_folding_after ⊢
+          simpa [OracleFrontierIndex.val_mkFromStmtIdx,
+            OracleFrontierIndex.val_mkFromStmtIdxCastSuccOfSucc] using h_folding_after
+      simpa [foldStepHStarFromWitMid, foldStepWitBeforeFromWitMid, h_star_extracted,
+        H_before, foldRbrExtractor, Fin.isValue] using
+        (show badSumcheckEventProp r_i' h_i h_star_extracted from
+          ⟨h_hi_ne_extracted, h_eval_eq_extracted⟩)
 
+    exact ⟨witMid, h_consistency, h_left_from_consistency⟩
+
+#check prop_4_20_2_incremental_bad_event_probability
 /-- Per-transcript bound: for the first prover message `msg0`, the probability (over the verifier
   challenge `y`) that extraction fails is at most `foldKnowledgeError`. Stated for
   `P (FullTranscript.mk1 msg0)` so it matches the goal after `tsum_uniform_Pr_eq_Pr` in the main
@@ -1074,13 +1185,13 @@ lemma foldStep_rbrExtractionFailureEvent_imply_sumcheck_or_badEvent (i : Fin ℓ
   **Proof strategy:**
   1. **Implication**: Show that extraction failure `P(tr, y)` implies either
     - a SINGLE sumcheck “bad” event
-    - or a SINGLE latest folding bad event (bad oracle / consistency failure)
+    - or an incremental folding bad event (bad oracle / consistency failure)
   2. **Monotonicity**: Conclude `Pr[P] ≤ Pr[SZ ∨ BE]` via `prob_mono`.
   3. **Union bound**: Apply `Pr_or_le` to get `Pr[SZ ∨ BE] ≤ Pr[SZ] + Pr[BE]`.
   4. **Schwartz–Zippel**: Bound `Pr[SZ]` by `1/|L|` using univariate degree-1
     agreement (lemmas from Instances.lean)
-  5. **Bad event**: Bound `Pr[BE]` using the folding bad-event probability
-    (`prop_4_20_bad_event_probability`).
+  5. **Bad event**: Bound `Pr[BE]` using the incremental folding bad-event probability
+    (`prop_4_20_2_incremental_bad_event_probability`).
   6. **Combine**: Add the two bounds and match the RHS to `foldKnowledgeError`. -/
 lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
     (stmtOStmtIn : (Statement (L := L) Context i.castSucc) × (∀ j,
@@ -1101,30 +1212,24 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
       (extractor := foldRbrExtractor (mp := mp) 𝔽q β i) ⟨1, rfl⟩
       stmtOStmtIn (FullTranscript.mk1 h_i) y
   let sumcheckBadEvent : L → Prop := fun y =>
-    let latestFoldingBadEvent :=
-      foldStepLatestFoldingBadEvent 𝔽q β (ϑ := ϑ)
+    let incrementalFoldingBadEvent :=
+      foldStepFreshDoomPreservationEvent 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i stmtOStmtIn y
-    (¬latestFoldingBadEvent ∧
+    (¬incrementalFoldingBadEvent ∧
         (∃ witMid : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ,
-        (oracleWitnessConsistency 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
-          (stmtIdx := i.succ)  (wit := witMid) (oStmt := stmtOStmtIn.2)
-          (oracleIdx := OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i) (stmt :=
-          {
-            sumcheck_target := h_i.val.eval y,
-            challenges := Fin.snoc stmtOStmtIn.1.challenges y,
-            ctx := stmtOStmtIn.1.ctx
-          }))
+        (foldStepWitMidOracleConsistency (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
+          (i := i) stmtOStmtIn h_i y witMid)
         ∧ (badSumcheckEventProp y h_i
             (foldStepHStarFromWitMid (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
               (𝓑 := 𝓑) i stmtOStmtIn h_i y witMid))
       ))
-  let latestBadFoldEvent := fun y : L =>
-    foldStepLatestFoldingBadEvent 𝔽q β (ϑ := ϑ)
+  let incrementalBadFoldEvent := fun y : L =>
+    foldStepFreshDoomPreservationEvent 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i stmtOStmtIn y
-  let latestBadFoldEvent_or_sumcheckBadEvent := fun y : L =>
-    (latestBadFoldEvent y) ∨ (sumcheckBadEvent y)
+  let incrementalBadFoldEvent_or_sumcheckBadEvent := fun y : L =>
+    (incrementalBadFoldEvent y) ∨ (sumcheckBadEvent y)
   have h_prob_mono := prob_mono (D := $ᵖ L)
-    (f := doomEvent) (g := latestBadFoldEvent_or_sumcheckBadEvent)
+    (f := doomEvent) (g := incrementalBadFoldEvent_or_sumcheckBadEvent)
     (h_imp := by
       intro y h_doomEscape
       have h_imp := (foldStep_rbrExtractionFailureEvent_imply_sumcheck_or_badEvent
@@ -1132,35 +1237,125 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
           (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (i := i) (stmtOStmtIn := stmtOStmtIn) (h_i := h_i)
           (r_i' := y) (doomEscape := h_doomEscape))
-      dsimp only [latestBadFoldEvent_or_sumcheckBadEvent, sumcheckBadEvent, latestBadFoldEvent]
-      by_cases h_latest : foldStepLatestFoldingBadEvent 𝔽q β (ϑ := ϑ)
+      dsimp only [incrementalBadFoldEvent_or_sumcheckBadEvent, sumcheckBadEvent,
+        incrementalBadFoldEvent]
+      by_cases h_bad : foldStepFreshDoomPreservationEvent 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i stmtOStmtIn y
-      · simp only [h_latest, not_true_eq_false, false_and, or_false]
-      · simp only [h_latest, not_false_eq_true, Fin.val_succ, true_and, false_or] at ⊢ h_imp
-        exact h_imp
+      · exact Or.inl h_bad
+      · simpa [h_bad] using h_imp
     )
   refine le_trans h_prob_mono ?_
-  dsimp only [latestBadFoldEvent_or_sumcheckBadEvent, foldKnowledgeError]
+  dsimp only [incrementalBadFoldEvent_or_sumcheckBadEvent, foldKnowledgeError]
   apply le_trans (
-      Pr_or_le ($ᵖ L) (f := latestBadFoldEvent) (g := sumcheckBadEvent)
+      Pr_or_le ($ᵖ L) (f := incrementalBadFoldEvent) (g := sumcheckBadEvent)
   )
   conv_rhs => simp only [ENNReal.coe_add]; rw [add_comm]
   apply add_le_add
-  · dsimp only [latestBadFoldEvent, foldStepLatestFoldingBadEvent]
-    by_cases hi : ϑ ∣ i.val + 1
-    · simp only [hi, ↓reduceDIte, Fin.val_succ, ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero, not_false_eq_true,
-      ENNReal.coe_div, ENNReal.coe_mul, ENNReal.coe_natCast]
-      unfold foldingBadEventAtBlock
-      -- TODO: apply `prop_4_20_bad_event_probability`
-      sorry
-    · simp only [hi, ↓reduceDIte, PMF.monad_pure_eq_pure, PMF.monad_bind_eq_bind, PMF.bind_const,
-      PMF.pure_apply, eq_iff_iff, iff_false, not_true_eq_false, ↓reduceIte, ENNReal.coe_zero,
-      le_refl]
+  · dsimp only [incrementalBadFoldEvent, foldStepFreshDoomPreservationEvent]
+    let stmtIdxBefore : Fin (ℓ + 1) := i.castSucc
+    let challengesBefore : Fin stmtIdxBefore → L := stmtOStmtIn.1.challenges
+    let j := getLastOraclePositionIndex ℓ ϑ i.castSucc
+    let curOracleDomainIdx : Fin r := ⟨oraclePositionToDomainIndex (positionIdx := j), by omega⟩
+    let kBefore : ℕ := min ϑ (stmtIdxBefore.val - curOracleDomainIdx.val)
+    have h_j_val : j.val = i.val / ϑ := by
+      have h_i_lt_ℓ : i.val < ℓ := i.isLt
+      have h_i_cast_lt_ℓ : i.val < ℓ := by
+        simp only [h_i_lt_ℓ]
+      dsimp only [j, getLastOraclePositionIndex]
+      unfold toOutCodewordsCount
+      simp only [Fin.coe_castSucc, h_i_lt_ℓ, ↓reduceIte, add_tsub_cancel_right]
+    have h_cur_eq : curOracleDomainIdx.val = (i.val / ϑ) * ϑ := by
+      dsimp only [curOracleDomainIdx, oraclePositionToDomainIndex]
+      simp only [h_j_val]
+    have h_diff_lt : stmtIdxBefore.val - curOracleDomainIdx.val < ϑ := by
+      have h_div_mod : (i.val / ϑ) * ϑ + i.val % ϑ = i.val := by
+        simpa [Nat.mul_comm] using (Nat.div_add_mod i.val ϑ)
+      have h_cur_le : curOracleDomainIdx.val ≤ stmtIdxBefore.val := by
+        dsimp only [stmtIdxBefore]
+        calc
+          curOracleDomainIdx.val = (i.val / ϑ) * ϑ := h_cur_eq
+          _ ≤ i.val := Nat.div_mul_le_self i.val ϑ
+      have h_sum : curOracleDomainIdx.val + i.val % ϑ = stmtIdxBefore.val := by
+        dsimp only [stmtIdxBefore]
+        calc
+          curOracleDomainIdx.val + i.val % ϑ = (i.val / ϑ) * ϑ + i.val % ϑ := by
+            simp only [h_cur_eq]
+          _ = i.val := h_div_mod
+      have h_diff_eq : stmtIdxBefore.val - curOracleDomainIdx.val = i.val % ϑ := by omega
+      rw [h_diff_eq]
+      exact Nat.mod_lt i.val (Nat.pos_of_neZero ϑ)
+    have h_kBefore_lt : kBefore < ϑ := by
+      exact lt_of_le_of_lt
+        (Nat.min_le_right ϑ (stmtIdxBefore.val - curOracleDomainIdx.val)) h_diff_lt
+    let destIdx : Fin r := ⟨curOracleDomainIdx.val + ϑ, by
+      have h1 := oracle_index_add_steps_le_ℓ ℓ ϑ (i := i.castSucc) (j := j)
+      have h2 : ℓ + 𝓡 < r := h_ℓ_add_R_rate
+      have _ : 𝓡 > 0 := Nat.pos_of_neZero 𝓡
+      dsimp only [oraclePositionToDomainIndex, curOracleDomainIdx]
+      omega
+    ⟩
+    let r_prefix : Fin kBefore → L := fun cId => challengesBefore
+      ⟨curOracleDomainIdx.val + cId.val, by
+        have h_k_le_stmt : kBefore ≤ stmtIdxBefore.val - curOracleDomainIdx.val :=
+          Nat.min_le_right ϑ (stmtIdxBefore.val - curOracleDomainIdx.val)
+        have h_cId_lt_k : cId.val < kBefore := cId.isLt
+        omega
+      ⟩
+
+    have h_res := prop_4_20_2_incremental_bad_event_probability 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (block_start_idx := curOracleDomainIdx) (destIdx := destIdx) (k := kBefore)
+        (h_k_lt := h_kBefore_lt)
+        (h_destIdx := rfl)
+      (h_destIdx_le := oracle_index_add_steps_le_ℓ ℓ ϑ (i := i.castSucc) (j := j))
+        (f_block_start := stmtOStmtIn.2 j)
+      (r_prefix := r_prefix)
+
+    dsimp only [destIdx, curOracleDomainIdx, j, kBefore, r_prefix, stmtIdxBefore, challengesBefore] at h_res
+
+    have h_cur_le_stmt : curOracleDomainIdx.val ≤ stmtIdxBefore.val := by
+      dsimp only [stmtIdxBefore]
+      calc
+        curOracleDomainIdx.val = (i.val / ϑ) * ϑ := h_cur_eq
+        _ ≤ i.val := Nat.div_mul_le_self i.val ϑ
+    have h_kBefore_eq : kBefore = stmtIdxBefore.val - curOracleDomainIdx.val := by
+      dsimp only [kBefore]
+      exact Nat.min_eq_right (Nat.le_of_lt h_diff_lt)
+    have h_kAfter_eq : min ϑ (i.succ.val - curOracleDomainIdx.val) = kBefore + 1 := by
+      have h_cur_le_i : curOracleDomainIdx.val ≤ i.val := by
+        simpa [stmtIdxBefore] using h_cur_le_stmt
+      have h_sub_succ : i.val + 1 - curOracleDomainIdx.val
+        = (i.val - curOracleDomainIdx.val) + 1 := by
+        simpa [Nat.succ_eq_add_one] using (Nat.succ_sub h_cur_le_i)
+      have h_kBefore_eq' : kBefore = i.val - curOracleDomainIdx.val := by
+        simpa [stmtIdxBefore] using h_kBefore_eq
+      simp only [Fin.val_succ]
+      rw [h_sub_succ, ← h_kBefore_eq']
+      exact Nat.min_eq_right (Nat.succ_le_of_lt h_kBefore_lt)
+    have h_snoc_eq :
+        ∀ r_new : L,
+          (fun cId : Fin (kBefore + 1) =>
+            if h : curOracleDomainIdx.val + cId.val < stmtIdxBefore.val then
+              challengesBefore ⟨curOracleDomainIdx.val + cId.val, h⟩
+            else
+              r_new) = Fin.snoc r_prefix r_new := by
+      intro r_new
+      funext cId
+      by_cases h_lt : cId.val < kBefore
+      · have h_guard : curOracleDomainIdx.val + cId.val < stmtIdxBefore.val := by
+          omega
+        simp [Fin.snoc, r_prefix, h_lt, h_guard]
+      · have h_guard_false : ¬ curOracleDomainIdx.val + cId.val < stmtIdxBefore.val := by
+          omega
+        simp [Fin.snoc, h_lt, h_guard_false]
+    conv_rhs => simp only [ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero, not_false_eq_true,
+      ENNReal.coe_div, ENNReal.coe_natCast]
+    exact h_res
   · dsimp only [sumcheckBadEvent]
-    --   ⊢ (do
+    -- ⊢ (do
     --     let r_1 ← $ᵖ L
     --     pure
-    --         (¬foldStepLatestFoldingBadEvent 𝔽q β i stmtOStmtIn r_1 ∧
+    --         (¬foldStepFreshDoomPreservationEvent 𝔽q β i stmtOStmtIn r_1 ∧
     --           ∃ witMid,
     --             oracleWitnessConsistency 𝔽q β i.succ (OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i)
     --                 { sumcheck_target := Polynomial.eval r_1 ↑h_i, challenges := Fin.snoc stmtOStmtIn.1.challenges r_1,
@@ -1169,8 +1364,46 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
     --               badSumcheckEventProp r_1 h_i (foldStepHStarFromWitMid 𝔽q β i stmtOStmtIn h_i r_1 witMid)))
     --   True ≤
     -- ↑(2 / ↑(Fintype.card L))
-    -- Strategy: ignore the `foldStepLatestFoldingBadEvent`, plus `oracleWitnessConsistency` guarantees uniqueness of witMid, then we can transform this to prove the bound via `probability_bound_badSumcheckEventProp`
-    sorry
+    -- Strategy: ignore the `foldStepFreshDoomPreservationEvent`, plus `oracleWitnessConsistency` guarantees uniqueness of witMid, then we can transform this to prove the bound via `probability_bound_badSumcheckEventProp`
+    let compatPred : MultilinearPoly L ℓ → Prop := fun t =>
+      firstOracleWitnessConsistencyProp 𝔽q β t (getFirstOracle 𝔽q β stmtOStmtIn.2)
+    by_cases hCompat : ∃ t : MultilinearPoly L ℓ, compatPred t
+    · rcases hCompat with ⟨t_fixed, h_t_fixed_compat⟩
+      let H_fixed : L⦃≤ 2⦄[X Fin (ℓ - i.castSucc)] :=
+        projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := t_fixed)
+          (m := mp.multpoly stmtOStmtIn.1.ctx)
+          (i := i.castSucc) (challenges := stmtOStmtIn.1.challenges)
+      let h_star_fixed : L⦃≤ 2⦄[X] := getSumcheckRoundPoly ℓ 𝓑 (i := i) (h := H_fixed)
+      have h_prob_mono_sum := prob_mono (D := $ᵖ L)
+        (f := fun y => sumcheckBadEvent y)
+        (g := fun y => badSumcheckEventProp y h_i h_star_fixed)
+        (h_imp := by
+          intro y h_sum
+          rcases h_sum with ⟨_h_not_fresh, witMid, h_cons, h_bad⟩
+          have h_t_eq : witMid.t = t_fixed :=
+            firstOracleWitnessConsistency_unique 𝔽q β
+              (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (i := i)
+              (oStmt := stmtOStmtIn.2) (h₁ := h_cons.2) (h₂ := h_t_fixed_compat)
+          simpa [h_star_fixed, H_fixed, foldStepHStarFromWitMid,
+            foldStepWitBeforeFromWitMid, foldRbrExtractor, Fin.isValue, h_t_eq]
+            using h_bad)
+      refine le_trans h_prob_mono_sum ?_
+      have h_sz := probability_bound_badSumcheckEventProp (h_i := h_i) (h_star := h_star_fixed)
+      conv_rhs =>
+        rw [ENNReal.coe_div (hr := by
+          simp only [ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero, not_false_eq_true])]
+        simp only [ENNReal.coe_ofNat, ENNReal.coe_natCast]
+      exact h_sz
+    · have h_prob_mono_false := prob_mono (D := $ᵖ L)
+        (f := fun y => sumcheckBadEvent y)
+        (g := fun _ => False)
+        (h_imp := by
+          intro y h_sum
+          rcases h_sum with ⟨_h_not_fresh, witMid, h_cons, _h_bad⟩
+          exact (hCompat ⟨witMid.t, h_cons.2⟩).elim)
+      refine le_trans h_prob_mono_false ?_
+      simp only [PMF.monad_pure_eq_pure, PMF.monad_bind_eq_bind, PMF.bind_const, PMF.pure_apply,
+        eq_iff_iff, iff_false, not_true_eq_false, ↓reduceIte, _root_.zero_le]
 
 open Classical in
 /-- RBR knowledge soundness for a single round oracle verifier -/
@@ -1630,28 +1863,41 @@ def commitKState (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
       Fin.coe_ofNat_eq_mod, Nat.reduceMod] at h_kState_round1
     simp only [Fin.castSucc_zero]
 
-    -- At round 1: masterKStateProp with (explicitVCheck ∧ localizedRoundPolyCheck)
-    -- At round 0: masterKStateProp with sumcheckConsistencyProp
-    -- Extract the checks from round 1
-    obtain ⟨h_sumcheck, h_core⟩ := h_kState_round1
-
-    -- Key: h_localized says h_i = h_star, and h_explicit says h_i(0) + h_i(1) = s
-    -- Therefore h_star(0) + h_star(1) = s, which is what Lemma 1.1 gives us
-    constructor
-    · -- Prove sumcheckConsistencyProp at round 0
-      exact h_sumcheck
-    · -- The core (badEventExists ∨ oracleWitnessConsistency) is preserved
-      cases h_core with
-      | inl hBad =>
-        left
-        -- Use backward preservation lemma for bad events
-        exact badEventExistsProp_commit_step_backward 𝔽q β
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR oStmtIn _ stmtIn.challenges hBad
-      | inr hConsistent =>
-        right
-        -- Use backward preservation lemma for oracle consistency
-        exact oracleWitnessConsistency_commit_step_backward 𝔽q β
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (mp := mp) i hCR stmtIn witMid oStmtIn _ hConsistent
+    -- Round-1 state is bad ∨ good under Option B.
+    cases h_kState_round1 with
+    | inl hBad =>
+      left
+      have hBad_cast :=
+        incrementalBadEventExistsProp_commit_step_backward 𝔽q β
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR oStmtIn
+          _ _ hBad
+      simpa using hBad_cast
+    | inr hGood =>
+      have h_sumcheck : sumcheckConsistencyProp (𝓑 := 𝓑) stmtIn.sumcheck_target witMid.H := hGood.1
+      have h_struct : witnessStructuralInvariant 𝔽q β (mp := mp)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtIn witMid := hGood.2.1
+      have h_init : firstOracleWitnessConsistencyProp 𝔽q β witMid.t
+          (getFirstOracle 𝔽q β
+            (snoc_oracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_destIdx := rfl)
+              oStmtIn
+              (msg : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+                (domainIdx := ⟨i.val + 1, by omega⟩)))) := hGood.2.2.1
+      have h_fold : oracleFoldingConsistencyProp 𝔽q β (i := i.succ) stmtIn.challenges
+          (snoc_oracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_destIdx := rfl)
+            oStmtIn
+            (msg : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+              (domainIdx := ⟨i.val + 1, by omega⟩))) := hGood.2.2.2
+      have h_init_cast : firstOracleWitnessConsistencyProp 𝔽q β witMid.t
+          (getFirstOracle 𝔽q β oStmtIn) := by
+        have h_pos : 0 < toOutCodewordsCount ℓ ϑ i.castSucc := by
+          exact Nat.pos_of_neZero (toOutCodewordsCount ℓ ϑ i.castSucc)
+        simpa [commitRbrExtractor, getFirstOracle, snoc_oracle, h_pos] using h_init
+      have h_fold_cast :
+          oracleFoldingConsistencyProp 𝔽q β (i := i.castSucc) (Fin.init stmtIn.challenges) oStmtIn := by
+        exact oracleFoldingConsistencyProp_commit_step_backward 𝔽q β
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR _ oStmtIn _ h_fold
+      right
+      exact ⟨h_sumcheck, h_struct, h_init_cast, h_fold_cast⟩
   toFun_full := fun ⟨stmtIn, oStmtIn⟩ tr witOut probEvent_relOut_gt_0 => by
     -- probEvent_relOut_gt_0: the relOut is satisified under oracle verifier's execution
     -- Now we simp the probEvent_relOut_gt_0 to extract equalities for stmtOut, oStmtOut as deterministic computations (oracle verifier execution) of stmtIn, oStmtIn
@@ -1988,38 +2234,44 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ �
     simp only [foldStepRelOut, foldStepRelOutProp, Set.mem_setOf_eq, relayKStateProp]
     unfold masterKStateProp
     simp only [Fin.val_succ]
-    -- After simplification: sumcheckConsistency ∧ core_L ↔ sumcheckConsistency ∧ core_R
-    -- where core_L uses castSuccOfSucc and core_R uses mkFromStmtIdx
-    -- Both sides have sumcheckConsistency, so we can focus on the core part
     constructor <;> intro h
-    · -- Forward: sumcheckConsistency ∧ core_L → sumcheckConsistency ∧ core_R
-      constructor
-      · exact h.1 -- sumcheckConsistency is preserved
-      · cases h.2 with
-        | inl hBad =>
-          left
-          rw [←badEventExistsProp_relay_preserved 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-            i hNCR oStmtIn stmtIn.challenges]
-          exact hBad
-        | inr hConsist =>
-          right
-          rw [←oracleWitnessConsistency_relay_preserved' 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-            (mp := mp) i hNCR stmtIn witIn oStmtIn]
-          exact hConsist
-    · -- Backward: sumcheckConsistency ∧ core_R → sumcheckConsistency ∧ core_L
-      constructor
-      · exact h.1 -- sumcheckConsistency is preserved
-      · cases h.2 with
-        | inl hBad =>
-          left
-          rw [badEventExistsProp_relay_preserved 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-            i hNCR oStmtIn stmtIn.challenges]
-          exact hBad
-        | inr hConsist =>
-          right
-          simp only [←oracleWitnessConsistency_relay_preserved' 𝔽q β
-            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (mp := mp) i hNCR stmtIn witIn oStmtIn] at hConsist
-          exact hConsist
+    · -- Forward: castSuccOfSucc/original oStmt -> mkFromStmtIdx/mapped oStmt
+      cases h with
+      | inl hBad =>
+        left
+        exact (incrementalBadEventExistsProp_relay_preserved 𝔽q β
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR oStmtIn stmtIn.challenges).1 hBad
+      | inr hGood =>
+        right
+        refine ⟨hGood.1, hGood.2.1, ?_, ?_⟩
+        · simpa [getFirstOracle, mapOStmtOutRelayStep] using hGood.2.2.1
+        · have hFold' :
+            oracleFoldingConsistencyProp 𝔽q β (i := i.castSucc)
+              (Fin.init stmtIn.challenges) oStmtIn := by
+            simpa using hGood.2.2.2
+          have hFold_map :=
+            (oracleFoldingConsistencyProp_relay_preserved 𝔽q β
+              (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR stmtIn.challenges oStmtIn).1 hFold'
+          simpa using hFold_map
+    · -- Backward: mkFromStmtIdx/mapped oStmt -> castSuccOfSucc/original oStmt
+      cases h with
+      | inl hBad =>
+        left
+        exact (incrementalBadEventExistsProp_relay_preserved 𝔽q β
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR oStmtIn stmtIn.challenges).2 hBad
+      | inr hGood =>
+        right
+        refine ⟨hGood.1, hGood.2.1, ?_, ?_⟩
+        · simpa [getFirstOracle, mapOStmtOutRelayStep] using hGood.2.2.1
+        · have hFold' :
+            oracleFoldingConsistencyProp 𝔽q β (i := i.succ)
+              stmtIn.challenges
+              (mapOStmtOutRelayStep 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR oStmtIn) := by
+            simpa using hGood.2.2.2
+          have hFold_cast :=
+            (oracleFoldingConsistencyProp_relay_preserved 𝔽q β
+              (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR stmtIn.challenges oStmtIn).2 hFold'
+          simpa using hFold_cast
   toFun_next := fun m hDir (stmtIn, oStmtIn) tr msg witMid => Fin.elim0 m
   toFun_full := fun ⟨stmtIn, oStmtIn⟩ tr witOut probEvent_relOut_gt_0 => by
     -- h_relOut: ∃ stmtOut oStmtOut, verifier outputs (stmtOut, oStmtOut) with prob > 0
@@ -2059,27 +2311,14 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ �
     simp only [relayRbrExtractor]
     simp only [Fin.val_succ] at h_relOut
     simp only [h_stmtOut_eq] at h_relOut ⊢
-    -- Split the conjunction: sumcheck consistency ∧ (bad event ∨ oracle witness consistency)
-    constructor
-    · -- First goal: sumcheck consistency
-      exact h_relOut.1
-    · -- Second goal: bad event ∨ oracle witness consistency
-      -- Use the lemma to show oStmtOut = mapOStmtOutRelayStep
-      have h_oStmt_eq_map : oStmtOut =
-        mapOStmtOutRelayStep 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR oStmtIn := by
-        rw [h_oStmtOut_eq]; symm;
-        exact mapOStmtOut_eq_mkVerifierOStmtOut_relayStep
-          (Context := Context) (i := i) (hNCR := hNCR) (oStmtIn := oStmtIn) (transcript := tr)
-      -- Same oracle size, now rw oracle content
-      cases h_relOut.2 with
-      | inl hBad =>
-        left
-        rw [h_oStmt_eq_map] at hBad
-        exact hBad
-      | inr hConsist =>
-        right
-        rw [h_oStmt_eq_map] at hConsist
-        exact hConsist
+    -- Rewrite verifier-produced oracle statement to the relay map and conclude directly.
+    have h_oStmt_eq_map : oStmtOut =
+      mapOStmtOutRelayStep 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR oStmtIn := by
+      rw [h_oStmtOut_eq]; symm
+      exact mapOStmtOut_eq_mkVerifierOStmtOut_relayStep
+        (Context := Context) (i := i) (hNCR := hNCR) (oStmtIn := oStmtIn) (transcript := tr)
+    rw [h_oStmt_eq_map] at h_relOut
+    exact h_relOut
 
 omit [SampleableType L] in
 /-- RBR knowledge soundness for a single round oracle verifier -/
@@ -2571,68 +2810,56 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
     simp only [Fin.isValue, Nat.reduceAdd, Fin.mk_one,
       Fin.coe_ofNat_eq_mod, Nat.reduceMod] at h_kState_round1
 
-    -- At round 1: masterKStateProp with (explicitVCheck ∧ localizedRoundPolyCheck)
-    -- At round 0: masterKStateProp with sumcheckConsistencyProp
-    -- Extract the checks from round 1
+    -- At m=1 we have local final-check and (oracle-consistency ∨ block-bad-event).
+    -- At m=0 the target is Option-B masterKState:
+    -- incremental-bad-event ∨ (local ∧ structural ∧ initial ∧ oracleFoldingConsistency).
     obtain ⟨h_V_check, h_core⟩ := h_kState_round1
 
-    constructor
-    · -- Prove sumcheckConsistencyProp at round 0
-      unfold finalSumcheckRbrExtractor sumcheckConsistencyProp
-      simp only [Fin.val_last, Fin.mk_zero', Fin.coe_ofNat_eq_mod]
-      split;
-      · simp only [MvPolynomial.eval_C, sum_const, Fintype.card_piFinset, card_map, card_univ,
-        Fintype.card_fin, prod_const, tsub_self, Fintype.card_eq_zero, pow_zero, one_smul]
-      · simp only [MvPolynomial.eval_C, sum_const, Fintype.card_piFinset, card_map, card_univ,
-        Fintype.card_fin, prod_const, tsub_self, Fintype.card_eq_zero, pow_zero, one_smul]
-    · -- Case split on h_core first to properly handle witness extraction
-      cases h_core with
-      | inl hConsistent =>
-        -- When we have oracleFoldingConsistency, extractMLP must succeed
-        have ⟨tpoly, h_extractMLP⟩ := extractMLP_some_of_oracleFoldingConsistency 𝔽q β
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtIn stmtIn.challenges hConsistent.1
-        right
-        dsimp only [oracleWitnessConsistency]
-        constructor
-        · -- witnessStructuralInvariant: show H_constant = projectToMidSumcheckPoly
-          unfold finalSumcheckRbrExtractor witnessStructuralInvariant
-          simp only [Fin.val_last, Fin.mk_zero', h_extractMLP, Fin.coe_ofNat_eq_mod, and_true]
-          -- ⊢ ⟨MvPolynomial.C stmtIn.sumcheck_target, ⋯⟩ = projectToMidSumcheckPoly
-            -- ℓ tpoly (BBF_SumcheckMultiplierParam.multpoly stmtIn.ctx) (Fin.last ℓ)
-            -- stmtIn.challenges
-          have h_H_last_eq := projectToMidSumcheckPoly_at_last_eval (ℓ := ℓ) (t := tpoly)
-            (m := BBF_SumcheckMultiplierParam.multpoly stmtIn.ctx) (challenges := stmtIn.challenges)
-          -- Step 1: Use polynomial extensionality
-          refine SetLike.coe_eq_coe.mp ?_
-          rw [projectToMidSumcheckPoly_at_last_eq]
-          have h_sumcheck_target_eq : stmtIn.sumcheck_target =
-            (MvPolynomial.eval stmtIn.challenges
-              (BBF_SumcheckMultiplierParam.multpoly stmtIn.ctx).val) *
-              (MvPolynomial.eval stmtIn.challenges tpoly.val) := by
-            -- h_V_check : stmtIn.sumcheck_target =
-            --   eqTilde stmtIn.ctx.t_eval_point stmtIn.challenges * c
-            rw [h_V_check]
-            congr 1
-            change c = tpoly.val.eval stmtIn.challenges
-            exact extracted_t_poly_eval_eq_final_constant 𝔽q β
-              (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (oStmtOut := oStmtIn) (stmtOut := stmtOut)
-              (tpoly := tpoly)
-              (h_extractMLP := h_extractMLP) (h_finalSumcheckStepOracleConsistency := hConsistent)
-          simp only [h_sumcheck_target_eq, Fin.val_last, Fin.coe_ofNat_eq_mod, MvPolynomial.C_mul]
-        · constructor
-          · -- ⊢ firstOracleWitnessConsistencyProp 𝔽q β
-              -- ((finalSumcheckRbrExtractor 𝔽q β).extractMid 0 (stmtIn, oStmtIn) (Transcript.concat msg tr) witMid).t (f⁽⁰⁾)
-            dsimp only [finalSumcheckRbrExtractor, firstOracleWitnessConsistencyProp]
-            simp only [Fin.mk_zero', h_extractMLP, Fin.coe_ofNat_eq_mod, Fin.val_last,
-              OracleFrontierIndex.val_mkFromStmtIdx]
-            have h_extractMLP_eq_some_iff_pair_UDRClose := extractMLP_eq_some_iff_pair_UDRClose 𝔽q β
-              (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (f := getFirstOracle 𝔽q β oStmtIn) (tpoly := tpoly).mp (h_extractMLP)
-            exact h_extractMLP_eq_some_iff_pair_UDRClose
-          · exact hConsistent.1
-      | inr hBad =>
-        -- When badEventExists, we only need to preserve it
-        left
-        exact hBad
+    -- Case split on the m=1 final-folding state: consistency or block bad-event.
+    cases h_core with
+    | inl hConsistent =>
+      -- When we have oracleFoldingConsistency, extractMLP must succeed.
+      have ⟨tpoly, h_extractMLP⟩ := extractMLP_some_of_oracleFoldingConsistency 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtIn stmtIn.challenges hConsistent.1
+      refine Or.inr ?_
+      refine ⟨?_, ?_, ?_, ?_⟩
+      · -- local check at m=0
+        unfold finalSumcheckRbrExtractor sumcheckConsistencyProp
+        simp only [Fin.val_last, Fin.mk_zero', h_extractMLP, Fin.coe_ofNat_eq_mod]
+        simp only [MvPolynomial.eval_C, sum_const, Fintype.card_piFinset, card_map, card_univ,
+          Fintype.card_fin, prod_const, tsub_self, Fintype.card_eq_zero, pow_zero, one_smul]
+      · -- witnessStructuralInvariant
+        unfold finalSumcheckRbrExtractor witnessStructuralInvariant
+        simp only [Fin.val_last, Fin.mk_zero', h_extractMLP, Fin.coe_ofNat_eq_mod, and_true]
+        refine SetLike.coe_eq_coe.mp ?_
+        rw [projectToMidSumcheckPoly_at_last_eq]
+        have h_sumcheck_target_eq : stmtIn.sumcheck_target =
+          (MvPolynomial.eval stmtIn.challenges
+            (BBF_SumcheckMultiplierParam.multpoly stmtIn.ctx).val) *
+            (MvPolynomial.eval stmtIn.challenges tpoly.val) := by
+          rw [h_V_check]
+          congr 1
+          change c = tpoly.val.eval stmtIn.challenges
+          exact extracted_t_poly_eval_eq_final_constant 𝔽q β
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (oStmtOut := oStmtIn) (stmtOut := stmtOut)
+            (tpoly := tpoly)
+            (h_extractMLP := h_extractMLP) (h_finalSumcheckStepOracleConsistency := hConsistent)
+        simp only [h_sumcheck_target_eq, Fin.val_last, Fin.coe_ofNat_eq_mod, MvPolynomial.C_mul]
+      · -- firstOracleWitnessConsistencyProp
+        dsimp only [finalSumcheckRbrExtractor, firstOracleWitnessConsistencyProp]
+        simp only [Fin.mk_zero', h_extractMLP, Fin.coe_ofNat_eq_mod, Fin.val_last,
+          OracleFrontierIndex.val_mkFromStmtIdx]
+        exact (extractMLP_eq_some_iff_pair_UDRClose 𝔽q β
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (f := getFirstOracle 𝔽q β oStmtIn) (tpoly := tpoly)).mp h_extractMLP
+      · exact hConsistent.1
+    | inr hBad =>
+      -- Hybrid plan: map terminal block bad-event to incremental bad-event at m=0.
+      exact Or.inl (
+        (badEventExistsProp_iff_incrementalBadEventExistsProp_last 𝔽q β
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
+          (oStmt := oStmtIn) (challenges := stmtIn.challenges)).1 hBad
+      )
 
   toFun_full := fun ⟨stmtIn, oStmtIn⟩ tr witOut probEvent_relOut_gt_0 => by
   -- Same pattern as relay: verifier output (stmtOut, oStmtOut) + h_relOut ⇒ commitKStateProp 1

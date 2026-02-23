@@ -152,16 +152,15 @@ def fiberwiseDistance (i : Fin r) {destIdx : Fin r} (steps : ℕ)
 
 /-- Fiberwise closeness : f^(i) is fiberwise close to C^(i) if
 2 * d^(i)(f^(i), C^(i)) < d_{i+steps} -/
-def fiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ) [NeZero steps]
-  (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
-  (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : Prop :=
-  2 * (fiberwiseDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps)
-    (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f)) <
+def fiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+    (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      i) : Prop :=
+  let left := fiberwiseDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f)
+  2 * (fiberwiseDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f)) <
       (BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := destIdx): ℕ∞)
 
-def pair_fiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ) [NeZero steps]
-  (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
-  (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : Prop :=
+def pair_fiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+    (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : Prop :=
     2 * pair_fiberwiseDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) steps
       h_destIdx h_destIdx_le (f := f) (g := g) <
       (BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := destIdx): ℕ∞)
@@ -1125,5 +1124,77 @@ def foldingBadEvent (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     -- The bad event is when folding makes this far function appear "close" to the code.
     UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := destIdx)
       (h_i := by omega) (f := folded_f_i)
+
+open Classical in
+/-- **Definition 4.19.2** (Incremental Bad Events).
+For block start index `block_start_idx`, block size `ϑ`, and **partial step count**
+`k ≤ ϑ`, with `destIdx = block_start_idx + ϑ` (the block destination), `E(block_start_idx, k)` is defined as follows:
+
+- If `k = 0`: Returns `False` (no challenges consumed yet).
+- Case 1 (fiberwise close at block level):
+  `Δ⁽ⁱ⁾(f, f̄) ⊄ Δ⁽ⁱ⁺ᵏ⁾(fold_k(f), fold_k(f̄))`
+  where both sides are projected to `S^{i+ϑ}` (the block destination).
+- Case 2 (fiberwise far at block level):
+  `d⁽ⁱ⁺ᵏ⁾(fold_k(f), C⁽ⁱ⁺ᵏ⁾) < d_{i+ϑ}/2`
+  where `d⁽ⁱ⁺ᵏ⁾` is the fiberwise distance projected to `S^{i+ϑ}`.
+
+When `k = ϑ`, this coincides with `foldingBadEvent`. -/
+def incrementalFoldingBadEvent
+    (block_start_idx : Fin r) {destIdx : Fin r} (k : ℕ)
+    (h_k_le : k ≤ ϑ) (h_destIdx : destIdx = block_start_idx + ϑ) (h_destIdx_le : destIdx ≤ ℓ)
+    (f_block_start : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) block_start_idx)
+    (r_challenges : Fin k → L) : Prop :=
+  if h_k : k = 0 then False -- no bad event
+  else
+    have h_ik_le : block_start_idx.val + k ≤ ℓ := by omega
+    let destIdx_k : Fin r := ⟨block_start_idx.val + k, by omega⟩
+
+    -- destIdx_k + (ϑ - k) = block_start_idx + ϑ = destIdx
+    have h_destIdx_k_to_block : destIdx = destIdx_k + (ϑ - k) := by
+      simp only [destIdx_k]; omega
+
+    let folded_f_block_start := iterated_fold 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := block_start_idx) (steps := k)
+      (h_destIdx := rfl) (h_destIdx_le := h_ik_le)
+      (f := f_block_start) (r_challenges := r_challenges)
+
+    if h_is_close : (fiberwiseClose 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := block_start_idx) (steps := ϑ)
+        h_destIdx h_destIdx_le (f := f_block_start)) then
+      -- Case 1 : fiberwise close (block-level classification)
+      let f_bar_block_start := UDRCodeword 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        block_start_idx (f := f_block_start)
+        (h_within_radius := UDRClose_of_fiberwiseClose 𝔽q β
+          block_start_idx ϑ h_destIdx h_destIdx_le
+          f_block_start h_is_close)
+
+      let folded_f_bar_block_start := iterated_fold 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := block_start_idx) (steps := k)
+        (h_destIdx := rfl) (h_destIdx_le := h_ik_le)
+        (f := f_bar_block_start) (r_challenges := r_challenges)
+
+      -- Bad: Δ⁽ⁱ⁾(f, f̄) ⊄ Δ⁽ⁱ⁺ᵏ⁾(fold_k(f), fold_k(f̄))
+      -- Both projected to S^{i+ϑ} = S^destIdx
+      ¬ (fiberwiseDisagreementSet 𝔽q β
+            block_start_idx ϑ h_destIdx h_destIdx_le
+            f_block_start f_bar_block_start
+          ⊆
+          fiberwiseDisagreementSet 𝔽q β
+            destIdx_k (ϑ - k) h_destIdx_k_to_block h_destIdx_le
+            folded_f_block_start folded_f_bar_block_start)
+    else
+      -- Case 2 : fiberwise far (block-level classification)
+      -- Bad: d⁽ⁱ⁺ᵏ⁾(fold_k(f), C⁽ⁱ⁺ᵏ⁾) < d_{i+ϑ}/2
+      -- projected to S^{i+ϑ}, threshold = d_{destIdx}
+      fiberwiseClose 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := destIdx_k) (steps := ϑ - k)
+        (h_destIdx := h_destIdx_k_to_block)
+        (h_destIdx_le := h_destIdx_le)
+        (f := folded_f_block_start)
 
 end SoundnessTools

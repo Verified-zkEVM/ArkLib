@@ -358,24 +358,34 @@ instance sumcheckFoldExtractorLens_rbr_knowledge_soundness
   lift_knowledgeSound := by
     intro outerStmtIn outerWitOut innerWitIn _ hInner
     rcases outerStmtIn with ⟨stmtIn, oStmtIn⟩
-    rcases hInner with ⟨h_local, h_core⟩
+    have hInner' :
+        BinaryBasefold.roundRelationProp
+          (mp := RingSwitching_SumcheckMultParam κ L K
+            (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l)
+          K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+          (0 : Fin (ℓ' + 1)) ((stmtIn, oStmtIn), innerWitIn) := by
+      simpa [BinaryBasefold.roundRelation, Set.mem_setOf_eq] using hInner
+    unfold BinaryBasefold.roundRelationProp BinaryBasefold.masterKStateProp at hInner'
     have h_no_bad :
-        ¬ badEventExistsProp K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-          (stmtIdx := (0 : Fin (ℓ' + 1)))
+        ¬ incrementalBadEventExistsProp K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (ϑ := ϑ) (stmtIdx := (0 : Fin (ℓ' + 1)))
           (oracleIdx := OracleFrontierIndex.mkFromStmtIdx (0 : Fin (ℓ' + 1)))
           (oStmt := oStmtIn) (challenges := stmtIn.challenges) := by
       intro h_bad
       rcases h_bad with ⟨j, hj⟩
-      unfold foldingBadEventAtBlock at hj
-      dsimp only at hj
-      split_ifs at hj with h_if
-      · have h_if' : j.val * ϑ + ϑ ≤ 0 := by
-          simpa [OracleFrontierIndex.mkFromStmtIdx] using h_if
-        have h_ϑ_pos : 0 < ϑ := Nat.pos_of_ne_zero (NeZero.ne ϑ)
-        omega
-    rcases h_core with h_bad | h_cons
+      have hj0 : j = 0 := by
+        apply Fin.eq_of_val_eq
+        have hjlt : j.val < 1 := by
+          simpa [BinaryBasefold.toOutCodewordsCountOf0] using j.isLt
+        exact Nat.lt_one_iff.mp hjlt
+      subst hj0
+      dsimp [BinaryBasefold.oraclePositionToDomainIndex] at hj
+      simpa [incrementalFoldingBadEvent] using hj
+    rcases hInner' with h_bad | h_good
     · exact (h_no_bad h_bad).elim
-    · rcases h_cons with ⟨h_struct, h_first, _h_fold⟩
+    · have h_local := h_good.1
+      have h_struct := h_good.2.1
+      have h_first := h_good.2.2.1
       refine ⟨h_local, ?_, ?_⟩
       · simpa [sumcheckFoldExtractorLens, RingSwitching.witnessStructuralInvariant,
           BinaryBasefold.witnessStructuralInvariant] using h_struct.1
@@ -1366,69 +1376,75 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
       Nat.reduceMod] at h_kState_round1
     obtain ⟨h_sumcheckFinalCheck, h_core⟩ := h_kState_round1
 
-    constructor
-    · unfold finalSumcheckRbrExtractor sumcheckConsistencyProp
-      simp only [Fin.val_last, Fin.mk_zero', Fin.coe_ofNat_eq_mod]
-      split
-      · simp only [MvPolynomial.eval_C, sum_const, Fintype.card_piFinset, card_map, card_univ,
-          Fintype.card_fin, prod_const, tsub_self, Fintype.card_eq_zero, pow_zero, one_smul]
-      · simp only [MvPolynomial.eval_C, sum_const, Fintype.card_piFinset, card_map, card_univ,
-          Fintype.card_fin, prod_const, tsub_self, Fintype.card_eq_zero, pow_zero, one_smul]
-    · cases h_core with
-      | inl hConsistent =>
-        have ⟨tpoly, h_extractMLP⟩ :=
-          BinaryBasefold.CoreInteraction.extractMLP_some_of_oracleFoldingConsistency K β
-            (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtIn stmtIn.challenges hConsistent.1
-        right
-        dsimp only [BinaryBasefold.oracleWitnessConsistency]
-        constructor
-        · unfold finalSumcheckRbrExtractor BinaryBasefold.witnessStructuralInvariant
-          simp only [Fin.val_last, Fin.mk_zero', h_extractMLP, Fin.coe_ofNat_eq_mod, and_true]
-          refine SetLike.coe_eq_coe.mp ?_
-          rw [projectToMidSumcheckPoly_at_last_eq]
-          have h_s'_eq : s' = tpoly.val.eval stmtIn.challenges := by
-            exact BinaryBasefold.CoreInteraction.extracted_t_poly_eval_eq_final_constant K β
-              (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (oStmtOut := oStmtIn) (stmtOut := stmtOut)
-              (tpoly := tpoly) (h_extractMLP := h_extractMLP)
-              (h_finalSumcheckStepOracleConsistency := hConsistent)
-          have h_mult_eq : (MvPolynomial.eval stmtIn.challenges
+    -- Option-B shape at m=0:
+    -- incremental bad-event ∨ (local ∧ structural ∧ initial ∧ oracleFoldingConsistency).
+    cases h_core with
+    | inl hConsistent =>
+      have ⟨tpoly, h_extractMLP⟩ :=
+        BinaryBasefold.CoreInteraction.extractMLP_some_of_oracleFoldingConsistency K β
+          (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtIn stmtIn.challenges hConsistent.1
+      refine Or.inr ?_
+      refine ⟨?_, ?_, ?_, ?_⟩
+      · -- local sumcheck consistency at m=0
+        unfold finalSumcheckRbrExtractor sumcheckConsistencyProp
+        simp only [Fin.val_last, Fin.mk_zero', Fin.coe_ofNat_eq_mod]
+        split
+        · simp only [MvPolynomial.eval_C, sum_const, Fintype.card_piFinset, card_map, card_univ,
+            Fintype.card_fin, prod_const, tsub_self, Fintype.card_eq_zero, pow_zero, one_smul]
+        · simp only [MvPolynomial.eval_C, sum_const, Fintype.card_piFinset, card_map, card_univ,
+            Fintype.card_fin, prod_const, tsub_self, Fintype.card_eq_zero, pow_zero, one_smul]
+      · -- witnessStructuralInvariant for extracted witness
+        unfold finalSumcheckRbrExtractor BinaryBasefold.witnessStructuralInvariant
+        simp only [Fin.val_last, Fin.mk_zero', h_extractMLP, Fin.coe_ofNat_eq_mod, and_true]
+        refine SetLike.coe_eq_coe.mp ?_
+        rw [projectToMidSumcheckPoly_at_last_eq]
+        have h_s'_eq : s' = tpoly.val.eval stmtIn.challenges := by
+          exact BinaryBasefold.CoreInteraction.extracted_t_poly_eval_eq_final_constant K β
+            (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (oStmtOut := oStmtIn) (stmtOut := stmtOut)
+            (tpoly := tpoly) (h_extractMLP := h_extractMLP)
+            (h_finalSumcheckStepOracleConsistency := hConsistent)
+        have h_mult_eq : (MvPolynomial.eval stmtIn.challenges
+          ((RingSwitching_SumcheckMultParam κ L K
+            (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l).multpoly stmtIn.ctx).val) =
+          compute_final_eq_value κ L K (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l
+            stmtIn.ctx.t_eval_point stmtIn.challenges stmtIn.ctx.r_batching :=
+          compute_A_MLE_eval_eq_final_eq_value κ L K (β := booleanHypercubeBasis κ L K β)
+            ℓ ℓ' h_l stmtIn.ctx.t_eval_point stmtIn.challenges stmtIn.ctx.r_batching
+        have h_sumcheck_target_eq : stmtIn.sumcheck_target =
+          (MvPolynomial.eval stmtIn.challenges
             ((RingSwitching_SumcheckMultParam κ L K
-              (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l).multpoly stmtIn.ctx).val) =
-            compute_final_eq_value κ L K (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l
-              stmtIn.ctx.t_eval_point stmtIn.challenges stmtIn.ctx.r_batching :=
-            compute_A_MLE_eval_eq_final_eq_value κ L K (β := booleanHypercubeBasis κ L K β)
-              ℓ ℓ' h_l stmtIn.ctx.t_eval_point stmtIn.challenges stmtIn.ctx.r_batching
-          have h_sumcheck_target_eq : stmtIn.sumcheck_target =
-            (MvPolynomial.eval stmtIn.challenges
-              ((RingSwitching_SumcheckMultParam κ L K
-                (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l).multpoly stmtIn.ctx).val) *
-              (MvPolynomial.eval stmtIn.challenges tpoly.val) := by
-            calc
-              stmtIn.sumcheck_target
-                  = compute_final_eq_value κ L K (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l
-                      stmtIn.ctx.t_eval_point stmtIn.challenges stmtIn.ctx.r_batching * s' :=
-                    h_sumcheckFinalCheck
-              _ = compute_final_eq_value κ L K (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l
-                    stmtIn.ctx.t_eval_point stmtIn.challenges stmtIn.ctx.r_batching *
-                    (MvPolynomial.eval stmtIn.challenges tpoly.val) := by
-                      rw [h_s'_eq]
-              _ = (MvPolynomial.eval stmtIn.challenges
-                    ((RingSwitching_SumcheckMultParam κ L K
-                      (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l).multpoly stmtIn.ctx).val) *
-                    (MvPolynomial.eval stmtIn.challenges tpoly.val) := by
-                      rw [h_mult_eq]
-          simp only [h_sumcheck_target_eq, Fin.val_last, Fin.coe_ofNat_eq_mod, MvPolynomial.C_mul]
-        · constructor
-          · dsimp only [finalSumcheckRbrExtractor, BinaryBasefold.firstOracleWitnessConsistencyProp]
-            simp only [Fin.mk_zero', h_extractMLP, Fin.coe_ofNat_eq_mod, Fin.val_last,
-              OracleFrontierIndex.val_mkFromStmtIdx]
-            exact (extractMLP_eq_some_iff_pair_UDRClose K β
-              (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-              (f := getFirstOracle K β oStmtIn) (tpoly := tpoly)).mp h_extractMLP
-          · exact hConsistent.1
-      | inr hBad =>
-        left
-        exact hBad
+              (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l).multpoly stmtIn.ctx).val) *
+            (MvPolynomial.eval stmtIn.challenges tpoly.val) := by
+          calc
+            stmtIn.sumcheck_target
+                = compute_final_eq_value κ L K (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l
+                    stmtIn.ctx.t_eval_point stmtIn.challenges stmtIn.ctx.r_batching * s' :=
+                  h_sumcheckFinalCheck
+            _ = compute_final_eq_value κ L K (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l
+                  stmtIn.ctx.t_eval_point stmtIn.challenges stmtIn.ctx.r_batching *
+                  (MvPolynomial.eval stmtIn.challenges tpoly.val) := by
+                    rw [h_s'_eq]
+            _ = (MvPolynomial.eval stmtIn.challenges
+                  ((RingSwitching_SumcheckMultParam κ L K
+                    (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l).multpoly stmtIn.ctx).val) *
+                  (MvPolynomial.eval stmtIn.challenges tpoly.val) := by
+                    rw [h_mult_eq]
+        simp only [h_sumcheck_target_eq, Fin.val_last, Fin.coe_ofNat_eq_mod, MvPolynomial.C_mul]
+      · -- initial compatibility via first-oracle consistency
+        dsimp only [finalSumcheckRbrExtractor, BinaryBasefold.firstOracleWitnessConsistencyProp]
+        simp only [Fin.mk_zero', h_extractMLP, Fin.coe_ofNat_eq_mod, Fin.val_last,
+          OracleFrontierIndex.val_mkFromStmtIdx]
+        exact (extractMLP_eq_some_iff_pair_UDRClose K β
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (f := getFirstOracle K β oStmtIn) (tpoly := tpoly)).mp h_extractMLP
+      · exact hConsistent.1
+    | inr hBad =>
+      -- Convert terminal block bad-event to incremental bad-event.
+      exact Or.inl (
+        (BinaryBasefold.badEventExistsProp_iff_incrementalBadEventExistsProp_last K β
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
+          (oStmt := oStmtIn) (challenges := stmtIn.challenges)).1 hBad
+      )
   toFun_full := fun ⟨stmtIn, oStmtIn⟩ tr witOut probEvent_relOut_gt_0 => by
     simp only [StateT.run'_eq, gt_iff_lt, probEvent_pos_iff, support_bind, support_map,
       Set.mem_iUnion, Set.mem_image, Prod.exists, exists_and_right, exists_eq_right,

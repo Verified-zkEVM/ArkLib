@@ -118,6 +118,7 @@ import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps
 import ArkLib.ProofSystem.Binius.FRIBinius.CoreInteractionPhase
 import ArkLib.ProofSystem.Binius.FRIBinius.General
 import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
+import ArkLib.ProofSystem.Binius.RingSwitching.BBFSmallFieldIOPCS
 import ArkLib.ProofSystem.Binius.RingSwitching.BatchingPhase
 import ArkLib.ProofSystem.Binius.RingSwitching.General
 import ArkLib.ProofSystem.Binius.RingSwitching.Prelude
