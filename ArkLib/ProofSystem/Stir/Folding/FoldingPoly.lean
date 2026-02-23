@@ -140,6 +140,24 @@ lemma foldingPolynomial_def₃ {q f : F[X]}
           rw [h_fold_eq];
       exact h_fold le_rfl
 
+lemma folding_polynomial_eq_zero {q f : F[X]} 
+  (h : foldingPolynomial q f = 0)
+  :
+  f = 0 := by
+  induction' hdeg: f.natDegree using Nat.strong_induction_on with n ih generalizing f
+  by_cases hqdeg: q.degree ≤ 0
+  · rw [foldingPolynomial_def₂] at h <;> aesop
+  · by_cases hfq: f.degree < q.degree
+    · rw [foldingPolynomial_def₂] at h
+      <;> aesop
+    · simp at *
+      rw [foldingPolynomial_def₃] at h
+      
+
+
+    aesop
+
+
 lemma substitution_property_of_folding_polynomial {q f : F[X]}:
     ((foldingPolynomial q f).map (Polynomial.compRingHom q)).eval X
       = f := by 
@@ -236,9 +254,96 @@ lemma folding_polynomial_deg_y_bound {q f : F[X]} (h: 0 < q.degree) :
             Polynomial.natDegree_pos_iff_degree_pos.mpr h ⟩;
       · exact Polynomial.monic_mul_leadingCoeff_inv ( by aesop )
 
+lemma folding_polynomial_deg_x_ind {q f : F[X]}
+  (h₁ : f.degree ≥ q.degree)
+  (h₂ : q.degree > 0)
+  :
+  Bivariate.degreeX (foldingPolynomial q f)
+    = 1 + Bivariate.degreeX (foldingPolynomial q (f / q)) := by
+  rw [foldingPolynomial_def₃ h₁ h₂]
+  simp [degreeX]
+  apply Nat.le_antisymm
+  · rw [Finset.sup_le_iff]
+    intro b hb
+    simp at hb
+    by_cases hfqcoeff_b: (f % q).coeff b = 0
+    · rw [hfqcoeff_b] at hb
+      simp at hb
+      rw [Polynomial.natDegree_mul (by simp) (by tauto)]
+      simp 
+      by_cases hlhs: 
+        ((foldingPolynomial q (f / q)).coeff b).natDegree = 0
+      · rw [hlhs]
+        simp
+      · rw [Finset.le_sup_iff (by {
+          simp 
+          by_contra contra
+          simp at contra
+          tauto
+        })]
+        exists b
+        simp
+        tauto
+    · by_cases h_fold: 
+        (foldingPolynomial q (f / q)).coeff b = 0
+      · rw [h_fold]
+        simp
+      · rw [Polynomial.natDegree_mul (by simp) (by tauto)]
+        simp
+        by_cases hlhs: 
+          ((foldingPolynomial q (f / q)).coeff b).natDegree = 0
+        · rw [hlhs]
+          simp
+        · rw [Finset.le_sup_iff (by {
+          simp 
+          by_contra contra
+          simp at contra
+          tauto
+          })]
+          exists b
+          simp
+          tauto
+  · conv =>
+      lhs
+      rw [add_comm]
+      rfl
+    rw [Nat.succ_le_iff]
+    by_cases hlhs: 
+      ((foldingPolynomial q (f / q)).support.sup fun n ↦ ((foldingPolynomial q (f / q)).coeff n).natDegree) = 0 
+    · rw [hlhs]
+      simp
+      have hh: 0 = (⊥ : ℕ) := by simp
+      rw [hh] at hlhs
+      rw [Finset.sup_eq_bot_iff] at hlhs
+      simp at hlhs
+      by_cases hfold: (foldingPolynomial q (f / q)) = 0
+
+
+
+
+    · 
+
+
+
+      
+
+      rw [Finset.le_sup_iff (by {
+        simp
+        by_contra contra
+        simp at contra
+        rw [Polynomial.natDegree_eq_zero] at contra
+
+  })]
+
+
+   
+  simp
+
+
 lemma folding_polynomial_deg_x_bound {q f : F[X]} (h : 0 < q.degree) :
-   (((foldingPolynomial q f).map (Polynomial.compRingHom q)).eval X).natDegree = (foldingPolynomial q f).natDegree 
-  + ((foldingPolynomial q f).support.sup fun n ↦ ((foldingPolynomial q f).coeff n).natDegree) * q.natDegree := by sorry 
+    (((foldingPolynomial q f).map (Polynomial.compRingHom q)).eval X).natDegree = (foldingPolynomial q f).natDegree 
+  + (Bivariate.degreeX <| foldingPolynomial q f) * q.natDegree := by 
+
 
 lemma folding_polynomial_deg_x {q f : F[X]} (h : 0 < q.degree) :
   Bivariate.degreeX (foldingPolynomial q f) = f.natDegree / q.natDegree 
