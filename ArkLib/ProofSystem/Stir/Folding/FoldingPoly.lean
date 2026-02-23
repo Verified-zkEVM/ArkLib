@@ -300,6 +300,10 @@ lemma substitution_property_of_folding_polynomial {q f : F[X]}  :
         simp
         tauto
 
+lemma folding_polynomial_deg_x_bound {q f : F[X]} :
+  Bivariate.degreeX (foldingPolynomial q f) < q.degree := by
+  sorry
+
 
 
 
