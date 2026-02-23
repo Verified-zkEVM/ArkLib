@@ -152,6 +152,22 @@ lemma folding_polynomial_eq_zero {q f : F[X]}
       <;> aesop
     · simp at *
       rw [foldingPolynomial_def₃] at h
+      by_cases hfold: foldingPolynomial q (f / q) = 0
+      · rw [hfold] at h
+        specialize (ih (f / q).natDegree (by {
+  rw [←hdeg]
+  sorry
+  })  hfold (by rfl))
+        rw [Polynomial.div_eq_zero_iff] at ih
+        have hh: f.degree < f.degree := by sorry
+        simp at hh
+        intro contra
+        rw [contra] at hqdeg
+        simp at hqdeg
+      ·  
+        
+
+
       
 
 
