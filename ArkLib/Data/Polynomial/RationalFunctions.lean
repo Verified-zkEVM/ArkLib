@@ -1761,9 +1761,9 @@ as defined in Claim A.2 of Appendix A.4 of [BCIKS20]. -/
 noncomputable def β (R : F[X][X][Y]) (t : ℕ) : 𝒪 H :=
   (β_regular R H (D := Bivariate.totalDegree H) t).choose
 
-/-- The Hensel lift coefficients `α` are of the form as given in Claim A.2 of Appendix A.4
+/-- Closed-form expression for the coefficient `α_t` from Claim A.2 of Appendix A.4
 of [BCIKS20]. -/
-noncomputable def α (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+noncomputable def αClosedForm (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (H.natDegree ≠ 0)]
     (t : ℕ)
     (hdeg : (Bivariate.evalX (Polynomial.C x₀) R.derivative).natDegree ≤ R.natDegree - 2) :
@@ -1772,24 +1772,84 @@ noncomputable def α (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   embeddingOf𝒪Into𝕃 _ (β R t) /
     (W ^ (t + 1) * (embeddingOf𝒪Into𝕃 _ (ξ x₀ R H hdeg)) ^ (2*t - 1))
 
+/-- Recursive presentation of the Hensel-lift coefficients `α_t`.  This keeps the construction
+coefficient-by-coefficient, while each step is identified with the closed form from Claim A.2. -/
+noncomputable def α (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (H.natDegree ≠ 0)]
+    (t : ℕ)
+    (hdeg : (Bivariate.evalX (Polynomial.C x₀) R.derivative).natDegree ≤ R.natDegree - 2) :
+    𝕃 H :=
+  Nat.recOn t
+    (αClosedForm x₀ R H 0 hdeg)
+    (fun n _ => αClosedForm x₀ R H (n + 1) hdeg)
+
+lemma α_eq_closedForm (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (H.natDegree ≠ 0)]
+    (t : ℕ)
+    (hdeg : (Bivariate.evalX (Polynomial.C x₀) R.derivative).natDegree ≤ R.natDegree - 2) :
+    α x₀ R H t hdeg = αClosedForm x₀ R H t hdeg := by
+  induction t with
+  | zero =>
+      simp [α, αClosedForm]
+  | succ n ih =>
+      simp [α, αClosedForm]
+
 /-- The Hensel lift coefficients `α'` with bundled irreducibility witness. -/
 noncomputable def α' (x₀ : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H) (t : ℕ)
     (hdeg : (Bivariate.evalX (Polynomial.C x₀) R.derivative).natDegree ≤ R.natDegree - 2) :
     𝕃 H :=
   α x₀ R _ (φ := ⟨H_irreducible⟩) t hdeg
 
-/-- The power series `γ = ∑ α^t (X - x₀)^t ∈ 𝕃 [[X - x₀]]` as defined in Appendix A.4
-of [BCIKS20]. -/
+/-- Truncated recursive Hensel-lift series in the local parameter (corresponding to `X - x₀`). -/
+noncomputable def γTrunc (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (H.natDegree ≠ 0)]
+    (hdeg : (Bivariate.evalX (Polynomial.C x₀) R.derivative).natDegree ≤ R.natDegree - 2) :
+    ℕ → PowerSeries (𝕃 H)
+  | 0 => 0
+  | n + 1 =>
+      γTrunc x₀ R H hdeg n + PowerSeries.monomial (𝕃 H) n (α x₀ R H n hdeg)
+
+lemma coeff_γTrunc_eq_zero_of_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (H.natDegree ≠ 0)]
+    (hdeg : (Bivariate.evalX (Polynomial.C x₀) R.derivative).natDegree ≤ R.natDegree - 2)
+    (n m : ℕ) (hmn : m ≤ n) :
+    PowerSeries.coeff (𝕃 H) n (γTrunc x₀ R H hdeg m) = 0 := by
+  induction m with
+  | zero =>
+      simp [γTrunc]
+  | succ m ih =>
+      have hmle : m ≤ n := Nat.le_trans (Nat.le_succ m) hmn
+      have hmne : n ≠ m := by
+        exact Nat.ne_of_gt (lt_of_lt_of_le (Nat.lt_succ_self m) hmn)
+      simp [γTrunc, ih hmle, PowerSeries.coeff_monomial, hmne]
+
+lemma coeff_γTrunc_succ_self (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (H.natDegree ≠ 0)]
+    (hdeg : (Bivariate.evalX (Polynomial.C x₀) R.derivative).natDegree ≤ R.natDegree - 2)
+    (n : ℕ) :
+    PowerSeries.coeff (𝕃 H) n (γTrunc x₀ R H hdeg (n + 1)) = α x₀ R H n hdeg := by
+  simp [γTrunc, coeff_γTrunc_eq_zero_of_le]
+
+/-- The (infinite) recursive Hensel-lift series obtained from the truncations `γTrunc`. -/
 noncomputable def γ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (H.natDegree ≠ 0)]
     (hdeg : (Bivariate.evalX (Polynomial.C x₀) R.derivative).natDegree ≤ R.natDegree - 2) :
     PowerSeries (𝕃 H) :=
-  let subst (t : ℕ) : 𝕃 H :=
-    match t with
-    | 0 => fieldTo𝕃 (-x₀)
-    | 1 => 1
-    | _ => 0
-  PowerSeries.subst (PowerSeries.mk subst) (PowerSeries.mk (fun t => α x₀ R H t hdeg))
+  PowerSeries.mk (fun n => PowerSeries.coeff (𝕃 H) n (γTrunc x₀ R H hdeg (n + 1)))
+
+lemma coeff_γ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (H.natDegree ≠ 0)]
+    (hdeg : (Bivariate.evalX (Polynomial.C x₀) R.derivative).natDegree ≤ R.natDegree - 2)
+    (n : ℕ) :
+    PowerSeries.coeff (𝕃 H) n (γ x₀ R H hdeg) = α x₀ R H n hdeg := by
+  simp [γ, coeff_γTrunc_succ_self]
+
+lemma γ_eq_mk_alpha (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (H.natDegree ≠ 0)]
+    (hdeg : (Bivariate.evalX (Polynomial.C x₀) R.derivative).natDegree ≤ R.natDegree - 2) :
+    γ x₀ R H hdeg = PowerSeries.mk (fun n => α x₀ R H n hdeg) := by
+  ext n
+  simp [coeff_γ (x₀ := x₀) (R := R) (H := H) (hdeg := hdeg) n]
 
 /-- The power series `γ'` with bundled irreducibility witness. -/
 noncomputable def γ' (x₀ : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H)
