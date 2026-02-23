@@ -3,6 +3,7 @@ import ArkLib.Data.Polynomial.Bivariate
 import Mathlib.Algebra.MvPolynomial.Basic
 import Mathlib.Algebra.MvPolynomial.Degrees
 import Mathlib.Algebra.Polynomial.Basic
+import Mathlib.Tactic.Cases
 
 section
 
@@ -58,121 +59,36 @@ lemma foldingPolynomialAux_deg_property {q f : F[X]} {deg : ℕ}
   (h : f.natDegree ≤ deg)
   :
   foldingPolynomialAux q f f.natDegree = foldingPolynomialAux q f deg := by
-  generalize hdeg: f.natDegree = natdeg
-  revert f deg
-  apply Nat.strong_induction_on
-    (p := fun natdeg =>
-∀ {f : F[X]} {deg : ℕ},
-  f.natDegree ≤ deg → f.natDegree = natdeg → foldingPolynomialAux q f natdeg = foldingPolynomialAux q f deg
-    ) natdeg
-  · intro natdeg ih f deg hdeg heq
-    unfold foldingPolynomialAux
-    by_cases hq: q.degree ≤ 0
-    · simp [hq]
-    · simp [hq]
-      by_cases hfdeg: f.degree < q.degree 
-      · simp [hfdeg]
-      · simp [hfdeg]
-        rcases natdeg with _ | natdeg
-        · rw [Polynomial.natDegree_eq_zero] at heq
-          rcases heq with ⟨f, hf⟩ 
-          rw [←hf]
-          simp
-          have hmod : (C f) % q = C f := by
-                rw [Polynomial.mod_eq_self_iff (by aesop)]
-                apply lt_of_le_of_lt (b := 0)
-                apply Polynomial.degree_C_le
-                by_contra contra
-                simp at contra
-                tauto
-          rw [hmod]
-          have hdiv : (C f / q) = 0 := by
-                rw [Polynomial.div_eq_zero_iff (by aesop)]
-                apply lt_of_le_of_lt (b := 0)
-                apply Polynomial.degree_C_le
-                by_contra contra
-                simp at contra
-                tauto
-          rw [hdiv]
-          simp
-          cases deg
-          · simp
-          · simp
-            rw [foldingPolynomialAux_zero]
-        · simp
-          rcases deg with _ | deg
-          · omega
-          · simp 
-            rw [←ih (f / q).natDegree (deg := natdeg)]
-            rw [←ih (f / q).natDegree (deg := deg)]
-            apply lt_of_lt_of_le (b := f.natDegree)
-            apply Polynomial.natDegree_lt_natDegree
-            intro contra
-            rw [Polynomial.div_eq_zero_iff] at contra
-            tauto
-            intro contra
-            rw [contra] at hq
-            simp at hq
-            apply Polynomial.degree_div_lt
-            intro contra
-            rw [contra] at heq
-            simp at heq
-            by_contra contra
-            simp at contra
-            tauto
-            rw [heq]
-            apply Nat.le_of_lt_succ
-            apply lt_of_lt_of_le (b := f.natDegree)
-            apply Polynomial.natDegree_lt_natDegree
-            intro contra
-            rw [Polynomial.div_eq_zero_iff] at contra
-            tauto
-            intro contra
-            rw [contra] at hq
-            simp at hq
-            apply Polynomial.degree_div_lt
-            intro contra
-            rw [contra] at heq
-            simp at heq
-            by_contra contra
-            simp at contra
-            tauto
-            omega
-            rfl
-            apply lt_of_lt_of_le (b := f.natDegree)
-            apply Polynomial.natDegree_lt_natDegree
-            intro contra
-            rw [Polynomial.div_eq_zero_iff] at contra
-            tauto
-            intro contra
-            rw [contra] at hq
-            simp at hq
-            apply Polynomial.degree_div_lt
-            intro contra
-            rw [contra] at heq
-            simp at heq
-            by_contra contra
-            simp at contra
-            tauto
-            rw [heq]
-            apply Nat.le_of_lt_succ
-            apply lt_of_lt_of_le (b := f.natDegree)
-            apply Polynomial.natDegree_lt_natDegree
-            intro contra
-            rw [Polynomial.div_eq_zero_iff] at contra
-            tauto
-            intro contra
-            rw [contra] at hq
-            simp at hq
-            apply Polynomial.degree_div_lt
-            intro contra
-            rw [contra] at heq
-            simp at heq
-            by_contra contra
-            simp at contra
-            tauto
-            rw [heq]
-            rfl
+  have h_foldingPolynomialAux : 
+    ∀ (deg₁ deg₂ : ℕ), 
+      deg₁ ≥ f.natDegree → 
+        deg₂ ≥ f.natDegree →
+          foldingPolynomialAux q f deg₁ = foldingPolynomialAux q f deg₂ := by
+      intro deg₁ deg₂ h₁ h₂
+      induction' deg₁ with deg₁ ih generalizing deg₂ f;
+      · simp_all +decide [ Polynomial.natDegree_eq_zero_iff_degree_le_zero ];
+        rw [ Polynomial.eq_C_of_degree_le_zero h₁ ] ; simp +decide [ foldingPolynomialAux ] ;
+        induction' deg₂ with deg₂ ih <;> simp_all +decide [ foldingPolynomialAux ];
+        exact fun h₃ h₄ => 
+          absurd h₄ 
+            ( not_le_of_gt ( lt_of_le_of_lt ( Polynomial.degree_C_le ) h₃ ) );
+      · rcases deg₂ with ( _ | deg₂ ) <;> simp_all +decide [ foldingPolynomialAux ];
+        · -- Since $f$ is a constant polynomial, we have $f = c$ for some $c \in F$.
+          obtain ⟨c, hc⟩ : ∃ c : F, f = Polynomial.C c := by
+            exact ⟨ f.coeff 0, Polynomial.eq_C_of_natDegree_eq_zero h₂ ⟩;
+          by_cases hc : c = 0 <;> simp_all +decide [ Polynomial.degree_C ];
+          aesop;
+        · split_ifs <;> simp_all +decide [ Polynomial.degree_eq_natDegree ];
+          have h_div_deg : (f / q).natDegree ≤ f.natDegree - q.natDegree := by
+            rw [ Polynomial.div_def ];
+            rw [ Polynomial.natDegree_C_mul, Polynomial.natDegree_divByMonic ];
+            · rw [ Polynomial.natDegree_mul' ] <;> aesop;
+            · exact Polynomial.monic_mul_leadingCoeff_inv ( by aesop );
+            · aesop;
+          by_cases hq : q.natDegree = 0;
+          · rw [ Polynomial.degree_eq_natDegree ] at * <;> aesop;
+          · exact ih ( by omega ) _ ( by omega ) ( by omega );
+  exact h_foldingPolynomialAux _ _ le_rfl h
 
 lemma foldingPolynomial_def₃ {q f : F[X]}
   (h₁ : f.degree ≥ q.degree)
@@ -300,9 +216,13 @@ lemma substitution_property_of_folding_polynomial {q f : F[X]}  :
         simp
         tauto
 
-lemma folding_polynomial_deg_x_bound {q f : F[X]} :
+lemma folding_polynomial_deg_x_bound {q f : F[X]} (h: 0 < q.degree) :
   Bivariate.degreeX (foldingPolynomial q f) < q.degree := by
-  sorry
+  simp [degreeX]
+
+
+
+
 
 
 
