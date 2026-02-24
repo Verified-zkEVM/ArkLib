@@ -5,8 +5,6 @@ import ArkLib.CommitmentScheme.InductiveMerkleTree
 import ArkLib.CommitmentScheme.KZG
 import ArkLib.CommitmentScheme.MerkleTree
 import ArkLib.CommitmentScheme.SimpleRO
-import ArkLib.CommitmentScheme.Tensor
-import ArkLib.CommitmentScheme.Trivial
 import ArkLib.Data.Classes.FunEquiv
 import ArkLib.Data.Classes.HasSize
 import ArkLib.Data.Classes.Initialize
@@ -39,7 +37,6 @@ import ArkLib.Data.CodingTheory.ProximityGap.AHIV22
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20
 import ArkLib.Data.CodingTheory.ProximityGap.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.DG25
-import ArkLib.Data.CodingTheory.ReedMuller
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.EllipticCurve.BN254
 import ArkLib.Data.Fin.Basic
@@ -136,14 +133,12 @@ import ArkLib.ProofSystem.ConstraintSystem.Lookup
 import ArkLib.ProofSystem.ConstraintSystem.MemoryChecking
 import ArkLib.ProofSystem.ConstraintSystem.Plonk
 import ArkLib.ProofSystem.ConstraintSystem.R1CS
-import ArkLib.ProofSystem.DSL
 import ArkLib.ProofSystem.Fri.Domain
 import ArkLib.ProofSystem.Fri.RoundConsistency
 import ArkLib.ProofSystem.Fri.Spec.General
 import ArkLib.ProofSystem.Fri.Spec.SingleRound
 import ArkLib.ProofSystem.Plonk.Basic
 import ArkLib.ProofSystem.Spartan.Basic
-import ArkLib.ProofSystem.Stir
 import ArkLib.ProofSystem.Stir.Combine
 import ArkLib.ProofSystem.Stir.Folding
 import ArkLib.ProofSystem.Stir.MainThm
@@ -154,7 +149,6 @@ import ArkLib.ProofSystem.Stir.Quotienting
 import ArkLib.ProofSystem.Sumcheck.Impl.Basic
 import ArkLib.ProofSystem.Sumcheck.Spec.General
 import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
-import ArkLib.ProofSystem.Whir
 import ArkLib.ProofSystem.Whir.BlockRelDistance
 import ArkLib.ProofSystem.Whir.Folding
 import ArkLib.ProofSystem.Whir.MutualCorrAgreement
@@ -166,7 +160,6 @@ import ArkLib.ToMathlib.Data.IndexedBinaryTree.Basic
 import ArkLib.ToMathlib.Data.IndexedBinaryTree.Equiv
 import ArkLib.ToMathlib.Data.IndexedBinaryTree.Lemmas
 import ArkLib.ToMathlib.Finset.Basic
-import ArkLib.ToMathlib.UInt.Equiv
 import ArkLib.ToVCVio.DistEq
 import ArkLib.ToVCVio.Lemmas
 import ArkLib.ToVCVio.Oracle
