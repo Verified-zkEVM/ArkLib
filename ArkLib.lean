@@ -61,10 +61,6 @@ import ArkLib.Data.GroupTheory.Smooth
 import ArkLib.Data.Hash.DomainSep
 import ArkLib.Data.Hash.DuplexSponge
 import ArkLib.Data.Hash.Poseidon2
-import ArkLib.Data.List.BigOperators
-import ArkLib.Data.List.Find
-import ArkLib.Data.List.HList
-import ArkLib.Data.List.Vector
 import ArkLib.Data.Matrix.Basic
 import ArkLib.Data.Matrix.Sparse
 import ArkLib.Data.Misc.Basic
