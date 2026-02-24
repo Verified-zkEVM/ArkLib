@@ -103,7 +103,24 @@ variable {f : F[X][Y]}
 @[grind _=_]
 lemma weightedDegree_eq_natWeightedDegree {u v : ℕ} :
   f ≠ 0 → weightedDegree f u v = natWeightedDegree f u v := by
-  sorry
+  unfold weightedDegree;
+  rw [ List.max?_eq_some_iff ];
+  -- If the polynomial is non-zero, then the weighted degree is equal to the maximum value of the weighted degrees of its coefficients.
+  intro hf_nonzero
+  simp [natWeightedDegree];
+  refine' ⟨ _, fun a ha => _ ⟩;
+  · -- Since the support of $f$ is finite, there exists some $a$ in the support such that $u * (f.coeff a).natDegree + v * a$ is the maximum.
+    obtain ⟨a, ha⟩ : ∃ a ∈ f.support, ∀ b ∈ f.support, u * (f.coeff a).natDegree + v * a ≥ u * (f.coeff b).natDegree + v * b := by
+      exact Finset.exists_max_image _ _ ⟨ _, Finset.mem_coe.mpr ( Classical.choose_spec <| Finset.nonempty_of_ne_empty <| by aesop ) ⟩;
+    refine' ⟨ a, _, _ ⟩;
+    · exact Nat.lt_succ_of_le ( Polynomial.le_natDegree_of_mem_supp _ ha.1 );
+    · exact le_antisymm ( Finset.le_sup ( f := fun n => u * ( f.coeff n |> Polynomial.natDegree ) + v * n ) ha.1 ) ( Finset.sup_le fun n hn => ha.2 n hn );
+  · by_cases ha' : f.coeff a = 0;
+    · simp +decide [ ha' ];
+      refine' le_trans _ ( Finset.le_sup <| Finsupp.mem_support_iff.mpr <| show f.coeff ( f.natDegree ) ≠ 0 from _ );
+      · exact le_add_of_nonneg_of_le ( Nat.zero_le _ ) ( Nat.mul_le_mul_left _ ( Nat.le_of_lt_succ ha ) );
+      · aesop;
+    · exact Finset.le_sup ( f := fun n => u * ( f.coeff n |> Polynomial.natDegree ) + v * n ) ( by aesop )
 
 /-- The total degree of a bivariate polynomial is equal to the `(1,1)`-weighted degree -/
 @[grind _=_]
@@ -211,7 +228,9 @@ lemma natDeg_sum_eq_of_unique {α : Type} {s : Finset α} {f : α → F[X]} {deg
     obtain ⟨h₁, h₂⟩ : b ∈ s ∧ ¬b = mx := by grind
     rcases others_le b h₁ h₂ with h' | h'
     · exact Polynomial.degree_lt_degree (f_x_deg.symm ▸ h')
-    · cases cs : (f mx).degree <;> sorry
+    · rw [h']; exact bot_lt_iff_ne_bot.mpr fun h0 => by
+        have : f mx ≠ 0 := fun heq => deg_zero (by rw [← f_x_deg, heq, natDegree_zero])
+        exact absurd h0 (ne_of_eq_of_ne (degree_eq_natDegree this) (WithBot.coe_ne_bot))
 
 /-- If some element `x ∈ s` maps to `y` under `f`, and every element of `s` maps to a value
 less than or equal to `y`, then the supremum of `f` over `s` is exactly `y`. -/
@@ -222,95 +241,141 @@ lemma sup_eq_of_le_of_reach {α β : Type} [SemilatticeSup β] [OrderBot β] {s 
     s.sup f = y := by
   grind
 
-/-- The `X`-degree of the product of two non-zero bivariate polynomials is
-equal to the sum of their degrees. -/
+/-
+Upper bound: each Y-coefficient of f*g has X-degree ≤ degreeX f + degreeX g
+-/
+lemma degreeX_coeff_mul_le [IsDomain F] (f g : F[X][Y]) (n : ℕ) :
+    ((f * g).coeff n).natDegree ≤ degreeX f + degreeX g := by
+  -- By definition of polynomial multiplication, we can expand the coefficient of $y^n$ in $f * g$.
+  have h_coeff_expansion : (f * g).coeff n = Finset.sum (Finset.antidiagonal n) (fun (i, j) => f.coeff i * g.coeff j) := by
+    exact?;
+  rw [ h_coeff_expansion, Polynomial.natDegree_le_iff_coeff_eq_zero ];
+  intro N hN
+  simp [Finset.sum_apply', Polynomial.coeff_mul];
+  refine Finset.sum_eq_zero fun x hx => Finset.sum_eq_zero fun y hy => ?_;
+  by_cases hfx : (f.coeff x.1).natDegree < y.1;
+  · rw [ Polynomial.coeff_eq_zero_of_natDegree_lt hfx, MulZeroClass.zero_mul ];
+  · by_cases hgx : (g.coeff x.2).natDegree < y.2;
+    · rw [ Polynomial.coeff_eq_zero_of_natDegree_lt hgx, MulZeroClass.mul_zero ];
+    · contrapose! hN;
+      refine' le_trans _ ( add_le_add ( Finset.le_sup ( f := fun m => ( f.coeff m |> Polynomial.natDegree ) ) ( show x.1 ∈ f.support from _ ) ) ( Finset.le_sup ( f := fun m => ( g.coeff m |> Polynomial.natDegree ) ) ( show x.2 ∈ g.support from _ ) ) );
+      · linarith [ Finset.mem_antidiagonal.mp hx, Finset.mem_antidiagonal.mp hy ];
+      · aesop;
+      · aesop
+
+/-
+The set of Y-indices achieving degreeX is nonempty for a nonzero polynomial
+-/
+lemma degreeX_achievers_nonempty [IsDomain F] (f : F[X][Y]) (hf : f ≠ 0) :
+    ({n ∈ f.support | (f.coeff n).natDegree = degreeX f}).Nonempty := by
+  -- By definition of supremum, there exists some $n$ in the support of $f$ such that the degree of $f.coeff n$ is equal to the supremum.
+  obtain ⟨n, hn⟩ : ∃ n ∈ f.support, (f.coeff n).natDegree = f.support.sup (fun n => (f.coeff n).natDegree) := by
+    obtain ⟨n, hn⟩ : ∃ n ∈ f.support, ∀ m ∈ f.support, (f.coeff m).natDegree ≤ (f.coeff n).natDegree := by
+      apply_rules [ Finset.exists_max_image ];
+      exact?;
+    exact ⟨ n, hn.1, le_antisymm ( Finset.le_sup ( f := fun n => ( f.coeff n |> Polynomial.natDegree ) ) hn.1 ) ( Finset.sup_le fun m hm => hn.2 m hm ) ⟩;
+  exact ⟨ n, by aesop ⟩
+
+/-
+For the max Y-index achieving degreeX, any larger Y-index has strictly less X-degree or
+    zero coefficient
+-/
+lemma degreeX_strict_above_max [IsDomain F] (f : F[X][Y]) (hf : f ≠ 0) :
+    let s := {n ∈ f.support | (f.coeff n).natDegree = degreeX f}
+    ∀ k, s.max' (degreeX_achievers_nonempty f hf) < k →
+      (f.coeff k).natDegree < degreeX f ∨ f.coeff k = 0 := by
+  field_simp;
+  intro k hk;
+  by_cases h : Polynomial.coeff f k = 0;
+  · exact Or.inr h;
+  · refine' Or.inl ( lt_of_le_of_ne _ _ );
+    · exact Finset.le_sup ( f := fun n => ( f.coeff n |> Polynomial.natDegree ) ) ( by aesop );
+    · intro H;
+      exact hk.not_le ( Finset.le_max' _ _ <| by aesop )
+
+/-
+PROBLEM
+Show that there exists a Y-index n in the support of f*g such that
+((f*g).coeff n).natDegree = degreeX f + degreeX g.
+
+There exists a Y-index where f*g achieves X-degree = degreeX f + degreeX g
+
+PROVIDED SOLUTION
+Let i₁ = max of {n ∈ f.support | (f.coeff n).natDegree = degreeX f} (the largest Y-index
+achieving the X-degree of f), and similarly i₂ for g. Use `degreeX_achievers_nonempty`.
+
+Consider n = i₁ + i₂. By `Polynomial.coeff_mul`, (f*g).coeff n = ∑_{(a,b) ∈ antidiagonal n}
+f.coeff a * g.coeff b.
+
+Apply `natDeg_sum_eq_of_unique` with mx = (i₁, i₂):
+- The term f.coeff i₁ * g.coeff i₂ has natDegree = degreeX f + degreeX g
+  (by `Polynomial.natDegree_mul` since both are nonzero, as they are in support).
+- For any other (a, b) with a + b = i₁ + i₂ and (a,b) ≠ (i₁,i₂): either a > i₁ (so b < i₂)
+  or a < i₁ (so b > i₂). In the first case, use `degreeX_strict_above_max` for f to get
+  natDegree(f.coeff a) < degreeX f or f.coeff a = 0. Similarly for the other case with g.
+  Either way, the product has natDegree < degreeX f + degreeX g, or is zero.
+
+This gives ((f*g).coeff n).natDegree = degreeX f + degreeX g. Then show n ∈ (f*g).support
+because the natDegree is degreeX f + degreeX g which is nonzero (since f,g are nonzero
+and have support, so degreeX f and degreeX g could be 0 — but even if the natDegree is 0,
+the coeff is nonzero since its natDegree is well-defined at 0 meaning it's a nonzero constant).
+Actually, just show (f*g).coeff n ≠ 0 by using that its natDegree = degreeX f + degreeX g ≥ 0
+which doesn't immediately help. Instead, note that a polynomial with natDegree d has nonzero
+coeff at d, so (f*g).coeff n ≠ 0 follows from having a nonzero leading coefficient.
+Or more directly: if (f*g).coeff n = 0, then natDegree would be 0, contradicting the equation
+unless degreeX f = degreeX g = 0. In that case, still (f*g).coeff n = ∑... and the dominant
+term is f.coeff i₁ * g.coeff i₂ which is nonzero (product of nonzero elements in domain), contradiction.
+-/
+lemma degreeX_mul_achieved [IsDomain F] (f g : F[X][Y]) (hf : f ≠ 0) (hg : g ≠ 0) :
+    ∃ n ∈ (f * g).support, ((f * g).coeff n).natDegree = degreeX f + degreeX g := by
+  by_contra h_contra;
+  obtain ⟨i₁, hi₁⟩ : ∃ i₁, i₁ ∈ f.support ∧ (f.coeff i₁).natDegree = degreeX f ∧ ∀ j ∈ f.support, j > i₁ → (f.coeff j).natDegree < degreeX f ∨ f.coeff j = 0 := by
+    have := degreeX_achievers_nonempty f hf;
+    obtain ⟨i₁, hi₁⟩ : ∃ i₁, i₁ ∈ {n ∈ f.support | (f.coeff n).natDegree = degreeX f} ∧ ∀ j ∈ {n ∈ f.support | (f.coeff n).natDegree = degreeX f}, j ≤ i₁ := by
+      exact ⟨ Finset.max' ( f.support.filter fun n => ( f.coeff n |> Polynomial.natDegree ) = degreeX f ) this, Finset.max'_mem _ _, fun j hj => Finset.le_max' _ _ hj ⟩;
+    exact ⟨ i₁, Finset.filter_subset _ _ hi₁.1, Finset.mem_filter.mp hi₁.1 |>.2, fun j hj hj' => Classical.or_iff_not_imp_right.2 fun hj'' => lt_of_le_of_ne ( show ( f.coeff j |> Polynomial.natDegree ) ≤ degreeX f from Finset.le_sup ( f := fun m => ( f.coeff m |> Polynomial.natDegree ) ) hj |> le_trans <| by simp +decide [ degreeX ] ) fun hj''' => hj'.not_le <| hi₁.2 j <| Finset.mem_filter.mpr ⟨ hj, hj''' ⟩ ⟩;
+  obtain ⟨i₂, hi₂⟩ : ∃ i₂, i₂ ∈ g.support ∧ (g.coeff i₂).natDegree = degreeX g ∧ ∀ j ∈ g.support, j > i₂ → (g.coeff j).natDegree < degreeX g ∨ g.coeff j = 0 := by
+    have := degreeX_achievers_nonempty g hg;
+    obtain ⟨ i₂, hi₂ ⟩ := Finset.exists_max_image _ ( fun x => x ) this;
+    exact ⟨ i₂, by aesop, by aesop, fun j hj₁ hj₂ => Classical.or_iff_not_imp_right.2 fun hj₃ => lt_of_le_of_ne ( Finset.le_sup ( f := fun x => Polynomial.natDegree ( g.coeff x ) ) hj₁ ) fun h => hj₂.not_le <| hi₂.2 j <| by aesop ⟩;
+  -- Consider the coefficient of $Y^{i₁ + i₂}$ in the product $f * g$.
+  have h_coeff : ((f * g).coeff (i₁ + i₂)).natDegree = degreeX f + degreeX g := by
+    rw [ Polynomial.coeff_mul ];
+    apply natDeg_sum_eq_of_unique ( i₁, i₂ ) ( Finset.mem_antidiagonal.mpr rfl ) _ _;
+    · rw [ Polynomial.natDegree_mul' ] <;> aesop;
+    · intro y hy hy_ne
+      by_cases hy₁ : y.1 > i₁;
+      · by_cases hy₃ : f.coeff y.1 = 0 <;> by_cases hy₄ : g.coeff y.2 = 0 <;> simp_all +decide [ Polynomial.natDegree_mul' ];
+        linarith [ hi₁.2.2 _ hy₃ hy₁, Polynomial.natDegree_le_of_degree_le ( Polynomial.degree_le_of_natDegree_le ( show Polynomial.natDegree ( g.coeff y.2 ) ≤ degreeX g from by linarith [ show Polynomial.natDegree ( g.coeff y.2 ) ≤ degreeX g from by exact Finset.le_sup ( f := fun m => Polynomial.natDegree ( g.coeff m ) ) ( by aesop ) ] ) ) ];
+      · by_cases hy₂ : y.2 > i₂ <;> simp_all +decide [ Finset.mem_antidiagonal ];
+        · by_cases hy₃ : f.coeff y.1 = 0 <;> by_cases hy₄ : g.coeff y.2 = 0 <;> simp_all +decide [ Polynomial.natDegree_mul' ];
+          linarith [ hi₂.2.2 _ hy₄ hy₂, Polynomial.natDegree_le_of_degree_le ( Polynomial.degree_le_of_natDegree_le ( show Polynomial.natDegree ( f.coeff y.1 ) ≤ degreeX f from by exact Finset.le_sup ( f := fun m => Polynomial.natDegree ( f.coeff m ) ) ( by aesop ) ) ) ];
+        · exact False.elim <| hy_ne <| Prod.ext ( by linarith ) ( by linarith );
+  refine h_contra ⟨ i₁ + i₂, ?_, h_coeff ⟩ ; simp_all +decide [ Polynomial.coeff_mul ] ;
+  intro H; simp_all +decide [ Polynomial.natDegree_mul' ] ;
+  rw [ Finset.sum_eq_single ( i₁, i₂ ) ] at H <;> simp_all +decide [ Finset.mem_antidiagonal ];
+  grind +ring
+
+/-
+PROBLEM
+Show that degreeX (f * g) = degreeX f + degreeX g, where degreeX is f.support.sup (fun n => (f.coeff n).natDegree).
+
+The `X`-degree of the product of two non-zero bivariate polynomials is
+equal to the sum of their degrees.
+
+PROVIDED SOLUTION
+Use `le_antisymm`. For ≤, use `Finset.sup_le` with `degreeX_coeff_mul_le`.
+For ≥, use `degreeX_mul_achieved` to get an index achieving the sum, then `Finset.le_sup`.
+-/
 @[simp, grind _=_]
 lemma degreeX_mul [IsDomain F] (f g : F[X][Y]) (hf : f ≠ 0) (hg : g ≠ 0) :
   degreeX (f * g) = degreeX f + degreeX g := by
-  sorry
-  -- letI s₁ := {n ∈ f.support | (f.coeff n).natDegree = degreeX f}
-  -- letI s₂ := {n ∈ g.support | (g.coeff n).natDegree = degreeX g}
-  -- have f_mdeg_nonempty : s₁.Nonempty := by
-  --   obtain ⟨mfx, _, _⟩ :=
-  --     Finset.exists_mem_eq_sup _ (show f.support.Nonempty by grind) fun n ↦ (f.coeff n).natDegree
-  --   use mfx
-  --   grind [degreeX]
-  -- have g_mdeg_nonempty : s₂.Nonempty := by
-  --   obtain ⟨mfx, _, _⟩ :=
-  --     Finset.exists_mem_eq_sup _ (show g.support.Nonempty by grind) fun n ↦ (g.coeff n).natDegree
-  --   use mfx
-  --   grind [degreeX]
-  -- set mmfx := s₁.max' f_mdeg_nonempty with hmmfx
-  -- set mmgx := s₂.max' g_mdeg_nonempty with hmmgx
-  -- have mmfx_def : (f.coeff mmfx).natDegree = degreeX f := by
-  --   have h := Finset.max'_mem _ f_mdeg_nonempty
-  --   grind
-  -- have mmgx_def : (g.coeff mmgx).natDegree = degreeX g := by
-  --   have h := Finset.max'_mem _ g_mdeg_nonempty
-  --   grind
-  -- have h₁ : mmfx ∈ s₁ := Finset.max'_mem _ f_mdeg_nonempty
-  -- have h₂ : mmgx ∈ s₂ := Finset.max'_mem _ g_mdeg_nonempty
-  -- have mmfx_neq_0 : f.coeff mmfx ≠ 0 := by grind
-  -- have mmgx_neq_0 : g.coeff mmgx ≠ 0 := by grind
-  -- have h₁ {n} : (f.coeff n).natDegree ≤ degreeX f := by
-  --   have : degreeX f = (f.coeff mmfx).natDegree := by grind
-  --   by_cases h : n ∈ f.toFinsupp.support
-  --   · convert Finset.sup_le_iff.mp (le_of_eq this) n h
-  --   · simp [Polynomial.notMem_support_iff.1 h]
-  -- have h₂ {n} : (g.coeff n).natDegree ≤ (g.coeff mmgx).natDegree := by
-  --   have : degreeX g = (g.coeff mmgx).natDegree := by grind
-  --   by_cases h : n ∈ g.toFinsupp.support
-  --   · convert Finset.sup_le_iff.mp (le_of_eq this) n h
-  --   · simp [Polynomial.notMem_support_iff.1 h]
-  -- have h₁' {n} (h : mmfx < n) :
-  --   (f.coeff n).natDegree < (f.coeff mmfx).natDegree ∨ f.coeff n = 0 := by
-  --   suffices f.coeff n ≠ 0 → (f.coeff mmfx).natDegree ≤ (f.coeff n).natDegree → False by grind
-  --   intros h' contra
-  --   have : (f.coeff mmfx).natDegree = (f.coeff n).natDegree := by grind
-  --   have : n ≤ mmfx := Finset.le_sup'_of_le (hb := show n ∈ s₁ by grind) (h := by simp)
-  --   grind
-  -- have h₂' {n} (h : mmgx < n) :
-  --   (g.coeff n).natDegree < (g.coeff mmgx).natDegree ∨ g.coeff n = 0 := by
-  --   suffices g.coeff n ≠ 0 → (g.coeff mmgx).natDegree ≤ (g.coeff n).natDegree → False by grind
-  --   intros h' contra
-  --   have : (g.coeff mmgx).natDegree = (g.coeff n).natDegree := by grind
-  --   have : n ≤ mmgx := Finset.le_sup'_of_le (hb := show n ∈ s₂ by grind) (h := by simp)
-  --   grind
-  -- unfold degreeX
-  -- have : (fun n ↦ ((f * g).coeff n).natDegree) =
-  --        fun n ↦ (∑ x ∈ Finset.antidiagonal n, f.coeff x.1 * g.coeff x.2).natDegree := by
-  --   funext n; rw [Polynomial.coeff_mul]
-  -- rw [this]
-  -- have : (∑ x ∈ Finset.antidiagonal (mmfx + mmgx), f.coeff x.1 * g.coeff x.2).natDegree =
-  --        degreeX f + degreeX g := by
-  --   apply natDeg_sum_eq_of_unique (mmfx, mmgx) (by simp) (by grind)
-  --   rintro ⟨y₁, y₂⟩ h h'
-  --   have : mmfx < y₁ ∨ mmgx < y₂ := by
-  --     have h_anti : y₁ + y₂ = mmfx + mmgx := by simpa using h
-  --     grind [mul_eq_zero]
-  --   grind [mul_eq_zero]
-  -- apply sup_eq_of_le_of_reach (mmfx + mmgx) _ this
-  -- swap
-  -- · rw [Polynomial.mem_support_iff, Polynomial.coeff_mul]
-  --   by_contra h
-  --   rw [h, natDegree_zero] at this
-  --   have : ∑ x ∈ Finset.antidiagonal (mmfx + mmgx), f.coeff x.1 * g.coeff x.2 =
-  --          f.coeff mmfx * g.coeff mmgx := by
-  --     apply Finset.sum_eq_single
-  --             (f := (fun x ↦ f.coeff x.1 * g.coeff x.2)) (mmfx, mmgx) (h₁ := by simp)
-  --     rintro ⟨b₁, b₂⟩ h h'
-  --     have : mmfx < b₁ ∨ mmgx < b₂ := by
-  --       have h_anti : b₁ + b₂ = mmfx + mmgx := by simpa using h
-  --       have fdegx_eq_0 : degreeX f = 0 := by grind
-  --       have gdegx_eq_0 : degreeX g = 0 := by grind
-  --       grind [mul_eq_zero]
-  --     grind [mul_eq_zero]
-  --   grind [zero_eq_mul]
-  -- · intros x h
-  --   apply le_trans
-  --     (Polynomial.natDegree_sum_le (Finset.antidiagonal x) (fun x ↦ f.coeff x.1 * g.coeff x.2))
-  --   rw [Finset.fold_max_le]
-  --   grind [degreeX]
+  refine' le_antisymm ( Finset.sup_le _ ) ( _ );
+  · intro n hn;
+    convert degreeX_coeff_mul_le f g n using 1;
+  · obtain ⟨ n, hn₁, hn₂ ⟩ := degreeX_mul_achieved f g hf hg;
+    exact hn₂ ▸ Finset.le_sup ( f := fun n => Polynomial.natDegree ( Polynomial.coeff ( f * g ) n ) ) hn₁
+
 
 
 /-- The evaluation at a point of a bivariate polynomial in the first variable `X`. -/
@@ -359,12 +424,154 @@ If `q * f ≠ 0`, then the `Y`-degree of `q` is bounded above by the difference 
 lemma degreeY_le_degreeY_sub_degreeY [IsDomain F] {f q : F[X][Y]} (hf : f ≠ 0) (hg : q * f ≠ 0) :
   natDegreeY q ≤ natDegreeY (q * f) - natDegreeY f := by grind
 
-/-- The total degree of the product of two bivariate polynomials is the sum of their total degrees.
--/
+/- The original statement is false for general semirings (counterexample: ZMod 4 with
+   f = g = monomial 0 (monomial 1 2), where f * g = 0 but totalDegree f + totalDegree g = 2).
+   An IsDomain hypothesis is required, analogous to degreeX_mul and degreeY_mul. -/
+-- @[simp, grind _=_]
+-- theorem totalDegree_mul {f g : F[X][Y]} (hf : f ≠ 0) (hg : g ≠ 0) :
+--     totalDegree (f * g) = totalDegree f + totalDegree g := by
+--     sorry
+
+private lemma totalDegree_mul_le [IsDomain F] (f g : F[X][Y]) :
+    totalDegree (f * g) ≤ totalDegree f + totalDegree g := by
+  unfold totalDegree
+  set tf := f.support.sup (fun m => (f.coeff m).natDegree + m)
+  set tg := g.support.sup (fun m => (g.coeff m).natDegree + m)
+  apply Finset.sup_le; intro n hn
+  have hn' : (f * g).coeff n ≠ 0 := Polynomial.mem_support_iff.mp hn
+  rw [Polynomial.coeff_mul] at hn' ⊢
+  obtain ⟨⟨a, b⟩, hab_mem, hab_ne⟩ := Finset.exists_ne_zero_of_sum_ne_zero hn'
+  have hab : a + b = n := Finset.mem_antidiagonal.mp hab_mem
+  have ha : f.coeff a ≠ 0 := left_ne_zero_of_mul hab_ne
+  have hb : g.coeff b ≠ 0 := right_ne_zero_of_mul hab_ne
+  have h1 : (f.coeff a).natDegree + a ≤ tf :=
+    Finset.le_sup (f := fun m => (f.coeff m).natDegree + m) (Polynomial.mem_support_iff.mpr ha)
+  have h2 : (g.coeff b).natDegree + b ≤ tg :=
+    Finset.le_sup (f := fun m => (g.coeff m).natDegree + m) (Polynomial.mem_support_iff.mpr hb)
+  have n_le : n ≤ tf + tg := by omega
+  have h_bound : ∀ x ∈ Finset.antidiagonal n,
+      (f.coeff x.1 * g.coeff x.2).natDegree ≤ tf + tg - n := by
+    intro ⟨i, j⟩ hij
+    have hij' : i + j = n := Finset.mem_antidiagonal.mp hij
+    by_cases hfi : f.coeff i = 0
+    · simp [hfi]
+    · by_cases hgj : g.coeff j = 0
+      · simp [hgj]
+      · rw [Polynomial.natDegree_mul hfi hgj]
+        have h3 : (f.coeff i).natDegree + i ≤ tf :=
+          Finset.le_sup (f := fun m => (f.coeff m).natDegree + m)
+            (Polynomial.mem_support_iff.mpr hfi)
+        have h4 : (g.coeff j).natDegree + j ≤ tg :=
+          Finset.le_sup (f := fun m => (g.coeff m).natDegree + m)
+            (Polynomial.mem_support_iff.mpr hgj)
+        omega
+  calc (∑ x ∈ Finset.antidiagonal n, f.coeff x.1 * g.coeff x.2).natDegree + n
+      ≤ (Finset.fold max 0 (Polynomial.natDegree ∘ fun x => f.coeff x.1 * g.coeff x.2)
+          (Finset.antidiagonal n)) + n :=
+        Nat.add_le_add_right (Polynomial.natDegree_sum_le _ _) n
+    _ ≤ (tf + tg - n) + n := by
+        apply Nat.add_le_add_right
+        rw [Finset.fold_max_le]
+        exact ⟨by omega, fun x hx => h_bound x hx⟩
+    _ = tf + tg := by omega
+
+private lemma totalDegree_achievers_nonempty' [IsDomain F] (f : F[X][Y]) (hf : f ≠ 0) :
+    ({n ∈ f.support | (f.coeff n).natDegree + n = totalDegree f}).Nonempty := by
+  obtain ⟨n, hn⟩ : ∃ n ∈ f.support, ∀ m ∈ f.support,
+      (f.coeff m).natDegree + m ≤ (f.coeff n).natDegree + n :=
+    Finset.exists_max_image _ _ (Finsupp.support_nonempty_iff.mpr
+      (fun h ↦ hf (Polynomial.ext (fun n => by rw [←Polynomial.toFinsupp_apply, h]; rfl))))
+  refine ⟨n, Finset.mem_filter.mpr ⟨hn.1, ?_⟩⟩
+  exact le_antisymm
+    (Finset.le_sup (f := fun m => (f.coeff m).natDegree + m) hn.1)
+    (Finset.sup_le fun m hm => hn.2 m hm)
+
+private lemma totalDegree_mul_ge [IsDomain F] (f g : F[X][Y]) (hf : f ≠ 0) (hg : g ≠ 0) :
+    totalDegree f + totalDegree g ≤ totalDegree (f * g) := by
+  have hf_ne := totalDegree_achievers_nonempty' f hf
+  have hg_ne := totalDegree_achievers_nonempty' g hg
+  set i₁ := ({n ∈ f.support | (f.coeff n).natDegree + n = totalDegree f}).max' hf_ne
+  set i₂ := ({n ∈ g.support | (g.coeff n).natDegree + n = totalDegree g}).max' hg_ne
+  have hi₁_deg : (f.coeff i₁).natDegree + i₁ = totalDegree f :=
+    (Finset.mem_filter.mp (Finset.max'_mem _ hf_ne)).2
+  have hi₂_deg : (g.coeff i₂).natDegree + i₂ = totalDegree g :=
+    (Finset.mem_filter.mp (Finset.max'_mem _ hg_ne)).2
+  have hi₁_ne : f.coeff i₁ ≠ 0 :=
+    Polynomial.mem_support_iff.mp (Finset.mem_filter.mp (Finset.max'_mem _ hf_ne)).1
+  have hi₂_ne : g.coeff i₂ ≠ 0 :=
+    Polynomial.mem_support_iff.mp (Finset.mem_filter.mp (Finset.max'_mem _ hg_ne)).1
+  -- Helper for other antidiagonal terms
+  have h_other : ∀ y ∈ Finset.antidiagonal (i₁ + i₂), y ≠ (i₁, i₂) →
+      (f.coeff y.1 * g.coeff y.2).natDegree <
+        (f.coeff i₁).natDegree + (g.coeff i₂).natDegree ∨
+      f.coeff y.1 * g.coeff y.2 = 0 := by
+    intro ⟨y₁, y₂⟩ hy hy_ne
+    have hy' : y₁ + y₂ = i₁ + i₂ := Finset.mem_antidiagonal.mp hy
+    have hd : y₁ > i₁ ∨ y₂ > i₂ := by
+      by_contra hc; push_neg at hc; exact hy_ne (Prod.ext (by omega) (by omega))
+    rcases hd with h | h
+    · by_cases hfy : f.coeff y₁ = 0
+      · exact Or.inr (by simp [hfy])
+      · by_cases hgy : g.coeff y₂ = 0
+        · exact Or.inr (by simp [hgy])
+        · left; rw [Polynomial.natDegree_mul hfy hgy]
+          have h1 : (f.coeff y₁).natDegree + y₁ < totalDegree f := by
+            have hle := Finset.le_sup (f := fun m => (f.coeff m).natDegree + m)
+              (Polynomial.mem_support_iff.mpr hfy)
+            exact lt_of_le_of_ne hle fun heq =>
+              Nat.lt_irrefl _ (lt_of_lt_of_le h (Finset.le_max' _ _
+                (Finset.mem_filter.mpr ⟨Polynomial.mem_support_iff.mpr hfy, heq⟩)))
+          have h2 : (g.coeff y₂).natDegree + y₂ ≤ totalDegree g :=
+            Finset.le_sup (f := fun m => (g.coeff m).natDegree + m)
+              (Polynomial.mem_support_iff.mpr hgy)
+          linarith
+    · by_cases hfy : f.coeff y₁ = 0
+      · exact Or.inr (by simp [hfy])
+      · by_cases hgy : g.coeff y₂ = 0
+        · exact Or.inr (by simp [hgy])
+        · left; rw [Polynomial.natDegree_mul hfy hgy]
+          have h1 : (g.coeff y₂).natDegree + y₂ < totalDegree g := by
+            have hle := Finset.le_sup (f := fun m => (g.coeff m).natDegree + m)
+              (Polynomial.mem_support_iff.mpr hgy)
+            exact lt_of_le_of_ne hle fun heq =>
+              Nat.lt_irrefl _ (lt_of_lt_of_le h (Finset.le_max' _ _
+                (Finset.mem_filter.mpr ⟨Polynomial.mem_support_iff.mpr hgy, heq⟩)))
+          have h2 : (f.coeff y₁).natDegree + y₁ ≤ totalDegree f :=
+            Finset.le_sup (f := fun m => (f.coeff m).natDegree + m)
+              (Polynomial.mem_support_iff.mpr hfy)
+          linarith
+  -- natDeg of sum = natDeg(f.coeff i₁) + natDeg(g.coeff i₂)
+  have h_sum_deg : ((f * g).coeff (i₁ + i₂)).natDegree =
+      (f.coeff i₁).natDegree + (g.coeff i₂).natDegree := by
+    rw [Polynomial.coeff_mul]
+    exact natDeg_sum_eq_of_unique (mx := (i₁, i₂)) (Finset.mem_antidiagonal.mpr rfl)
+      (Polynomial.natDegree_mul hi₁_ne hi₂_ne) h_other
+  -- (f*g).coeff (i₁+i₂) ≠ 0
+  have h_ne : (f * g).coeff (i₁ + i₂) ≠ 0 := by
+    intro h
+    have hdeg0 : (f.coeff i₁).natDegree + (g.coeff i₂).natDegree = 0 := by
+      rw [← h_sum_deg, h, Polynomial.natDegree_zero]
+    have h_single : (f * g).coeff (i₁ + i₂) = f.coeff i₁ * g.coeff i₂ := by
+      rw [Polynomial.coeff_mul]
+      exact Finset.sum_eq_single_of_mem (i₁, i₂) (Finset.mem_antidiagonal.mpr rfl)
+        fun b hb hb_ne => by
+          rcases h_other b hb hb_ne with h' | h'
+          · omega
+          · exact h'
+    exact _root_.mul_ne_zero hi₁_ne hi₂_ne (h_single ▸ h)
+  -- Conclude
+  have h_mem : i₁ + i₂ ∈ (f * g).support := Polynomial.mem_support_iff.mpr h_ne
+  have h_le : ((f * g).coeff (i₁ + i₂)).natDegree + (i₁ + i₂) ≤ totalDegree (f * g) :=
+    Finset.le_sup (f := fun m => ((f * g).coeff m).natDegree + m) h_mem
+  linarith
+
+/-- The total degree of the product of two bivariate polynomials over an integral domain
+is the sum of their total degrees. Corrected version of `totalDegree_mul` with the
+required `IsDomain` hypothesis. -/
 @[simp, grind _=_]
-theorem totalDegree_mul {f g : F[X][Y]} (hf : f ≠ 0) (hg : g ≠ 0) :
-    totalDegree (f * g) = totalDegree f + totalDegree g := by
-    sorry
+theorem totalDegree_mul [IsDomain F] {f g : F[X][Y]} (hf : f ≠ 0) (hg : g ≠ 0) :
+    totalDegree (f * g) = totalDegree f + totalDegree g :=
+  le_antisymm (totalDegree_mul_le f g) (totalDegree_mul_ge f g hf hg)
 
 /-- Definition of a monomial when the bivariate polynomial is considered as a univariate
 polynomial in `Y`. -/
