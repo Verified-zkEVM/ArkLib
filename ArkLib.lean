@@ -76,6 +76,7 @@ import ArkLib.Data.MvPolynomial.MvPolynomialLike
 import ArkLib.Data.MvPolynomial.Sumcheck
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.EvenAndOdd
+import ArkLib.Data.Polynomial.FoldingPolynomial
 import ArkLib.Data.Polynomial.Interface
 import ArkLib.Data.Polynomial.PolynomialLike
 import ArkLib.Data.Polynomial.Prelims
