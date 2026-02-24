@@ -140,43 +140,48 @@ lemma foldingPolynomial_def₃ {q f : F[X]}
           rw [h_fold_eq];
       exact h_fold le_rfl
 
-lemma folding_polynomial_eq_zero {q f : F[X]} 
+
+lemma folding_polynomial_eq_zero {q f : F[X]}
   (h : foldingPolynomial q f = 0)
   :
   f = 0 := by
-  induction' hdeg: f.natDegree using Nat.strong_induction_on with n ih generalizing f
-  by_cases hqdeg: q.degree ≤ 0
-  · rw [foldingPolynomial_def₂] at h <;> aesop
-  · by_cases hfq: f.degree < q.degree
-    · rw [foldingPolynomial_def₂] at h
-      <;> aesop
-    · simp at *
-      rw [foldingPolynomial_def₃] at h
-      by_cases hfold: foldingPolynomial q (f / q) = 0
-      · rw [hfold] at h
-        specialize (ih (f / q).natDegree (by {
-  rw [←hdeg]
-  sorry
-  })  hfold (by rfl))
-        rw [Polynomial.div_eq_zero_iff] at ih
-        have hh: f.degree < f.degree := by sorry
-        simp at hh
-        intro contra
-        rw [contra] at hqdeg
-        simp at hqdeg
-      · have h : (map C (f % q) + C X * foldingPolynomial q (f / q)).coeff (foldingPolynomial q (f / q)).natDegree = 0 := by
-          rw [h]
-          simp
-        simp at h
-
-        
-
-
-      
-
-
-    aesop
-
+    induction' n : f.natDegree using Nat.strong_induction_on with n ih generalizing f;
+    by_cases h₁ : 
+      f.degree < q.degree 
+        ∨ f.degree ≤ 0 
+        ∨ q.degree ≤ 0 <;> simp_all +decide [ Polynomial.ext_iff ];
+    · rw [ foldingPolynomial_def₂ h₁ ] at h;
+      intro n; specialize h n 0; aesop;
+    · have h_rem_zero : f % q = 0 := by
+        rw [ foldingPolynomial_def₃ h₁.1 h₁.2.2 ] at h;
+        ext n; specialize h n 0; simp_all +decide [ Polynomial.coeff_map ] ;
+      have h_quot_zero : f / q = 0 := by
+        have h_quot_zero : foldingPolynomial q (f / q) = 0 := by
+          have h_quot_zero : 
+            foldingPolynomial q f 
+              = (Polynomial.map Polynomial.C (f % q)) 
+                + Polynomial.C Polynomial.X 
+                    * foldingPolynomial q (f / q) := by
+            rw [ foldingPolynomial_def₃ ] <;> aesop;
+          simp_all +decide [ Polynomial.ext_iff ];
+          intro n n_1; specialize h n ( n_1 + 1 ) ; simp_all +decide [ Polynomial.coeff_X ] ;
+        contrapose! ih;
+        refine' 
+          ⟨ Polynomial.natDegree ( f / q ), 
+            _, 
+            f / q, 
+            _, 
+            rfl, 
+            Polynomial.natDegree ( f / q ), _ ⟩ 
+              <;> simp_all +decide [ Polynomial.natDegree_divByMonic ];
+        have h_deg_f : f.natDegree = q.natDegree + (f / q).natDegree := by
+          rw [ ← Polynomial.natDegree_mul' ];
+          · rw [ EuclideanDomain.mul_div_cancel' ] <;> aesop;
+          · aesop;
+        linarith [ 
+          Polynomial.natDegree_pos_iff_degree_pos.mpr h₁.2.1, 
+          Polynomial.natDegree_pos_iff_degree_pos.mpr h₁.2.2 ];
+      rw [ EuclideanDomain.mod_eq_sub_mul_div ] at h_rem_zero ; aesop
 
 lemma substitution_property_of_folding_polynomial {q f : F[X]}:
     ((foldingPolynomial q f).map (Polynomial.compRingHom q)).eval X
