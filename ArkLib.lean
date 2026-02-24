@@ -8,13 +8,10 @@ import ArkLib.CommitmentScheme.SimpleRO
 import ArkLib.CommitmentScheme.Tensor
 import ArkLib.CommitmentScheme.Trivial
 import ArkLib.Data.Classes.FunEquiv
-import ArkLib.Data.Classes.HasPred
 import ArkLib.Data.Classes.HasSize
-import ArkLib.Data.Classes.HasSucc
 import ArkLib.Data.Classes.Initialize
 import ArkLib.Data.Classes.Serde
 import ArkLib.Data.Classes.Slice
-import ArkLib.Data.Classes.ToNat
 import ArkLib.Data.CodingTheory
 import ArkLib.Data.CodingTheory.Basic
 import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
