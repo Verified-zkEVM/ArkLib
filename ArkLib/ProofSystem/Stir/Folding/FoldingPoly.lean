@@ -436,6 +436,12 @@ lemma folding_polynomial_deg_x_ind {q f : F[X]}
         })]
         simp
 
+lemma folding_polynomial_deg_x₀ {q : F} {f : F[X]} :
+  degreeX (foldingPolynomial (C q) f) = 0 := by
+  rw [folding_polynomial_deg_x_base]
+  right; right
+  exact Polynomial.degree_C_le
+
 lemma folding_polynomial_deg_x {q f : F[X]} (h : 0 < q.degree) :
   degreeX (foldingPolynomial q f) = f.natDegree / q.natDegree 
   := by
