@@ -432,5 +432,56 @@ lemma folding_polynomial_is_the_reminder {q f : F[X]} :
     Polynomial.map C f = Q' * (C X - Polynomial.map C q) + (foldingPolynomial q f) := by 
     apply satisfies_conditions_implies_is_the_reminder
     exact substitution_property_of_folding_polynomial
-      
+
+lemma folding_polynomial_is_unique {q f : F[X]} {Q : F[X][Y]} 
+  (h : (Q.map (Polynomial.compRingHom q)).eval X = f)
+  (h_x : degreeX Q = f.natDegree / q.natDegree)
+  (h_y : natDegreeY Q < q.degree)
+  :
+  Q = foldingPolynomial q f 
+  := by 
+    by_contra h_contra;
+    obtain ⟨Q', hQ'⟩ : 
+      ∃ Q' : F[X][Y], 
+        Q - foldingPolynomial q f 
+          = Q' * (C Polynomial.X - Polynomial.map (Polynomial.C) q) := by
+      obtain ⟨ Q', hQ' ⟩ 
+        := satisfies_conditions_implies_is_the_reminder 
+          ( show ( ( Q.map ( Polynomial.compRingHom q ) 
+            |> Polynomial.eval Polynomial.X ) ) = f from h );
+      obtain ⟨ Q'', hQ'' ⟩ 
+        := satisfies_conditions_implies_is_the_reminder 
+          ( show ( ( foldingPolynomial q f 
+            |> Polynomial.map ( Polynomial.compRingHom q ) 
+            |> Polynomial.eval Polynomial.X ) ) = f from by exact
+              substitution_property_of_folding_polynomial );
+      exact ⟨ Q'' - Q', by linear_combination' hQ'' - hQ' ⟩;
+    have hQ'_zero : Q' = 0 := by
+      have hQ'_deg : natDegreeY (Q - foldingPolynomial q f) < q.natDegree := by
+        have hQ'_deg : 
+          natDegreeY (Q - foldingPolynomial q f) 
+            ≤ max (natDegreeY Q) (natDegreeY (foldingPolynomial q f)) := by
+          convert Polynomial.natDegree_sub_le _ _ using 1;
+        have hQ'_deg : natDegreeY (foldingPolynomial q f) < q.natDegree := by
+          by_cases hq : q.degree ≤ 0 
+            <;> simp_all +decide [ Polynomial.degree_eq_natDegree ];
+          · rw [ Polynomial.eq_C_of_degree_le_zero hq ] at h_y h_contra hQ' ⊢ ; aesop;
+          · convert folding_polynomial_deg_y_bound hq using 1;
+            rw [ 
+              Polynomial.degree_eq_natDegree ( Polynomial.ne_zero_of_degree_gt hq ) ] ; 
+            norm_cast;
+        exact lt_of_le_of_lt ‹_› 
+          ( max_lt 
+            ( by rw [ Polynomial.degree_eq_natDegree ] at h_y <;> aesop ) hQ'_deg );
+      contrapose! hQ'_deg;
+      rw [ hQ', natDegreeY ];
+      rw [ Polynomial.natDegree_mul' ] 
+        <;> simp_all +decide [ 
+          Polynomial.natDegree_sub_eq_left_of_natDegree_lt ];
+      · rw [ Polynomial.natDegree_sub_eq_right_of_natDegree_lt ] 
+          <;> norm_num [ Polynomial.natDegree_C, Polynomial.natDegree_X ];
+        exact Nat.pos_of_ne_zero fun h => by simp_all +decide [ natDegreeY ] ;
+      · intro h; simp_all +decide [ sub_eq_iff_eq_add ] ;
+    simp_all +decide [ sub_eq_iff_eq_add ]
+
 end
