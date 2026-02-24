@@ -342,28 +342,89 @@ lemma folding_polynomial_deg_x_ind {q f : F[X]}
       rw [Finset.sup_eq_bot_iff] at hlhs
       simp at hlhs
       by_cases hfold: (foldingPolynomial q (f / q)) = 0
-
-
-
-
-    · 
-
-
-
-      
-
-      rw [Finset.le_sup_iff (by {
+      · rw [hfold] 
+        have hfold := folding_polynomial_eq_zero hfold
         simp
-        by_contra contra
+        rw [Polynomial.div_eq_zero_iff] at hfold
+        have contra: f.degree < f.degree := by
+          apply lt_of_lt_of_le hfold (by tauto)
         simp at contra
-        rw [Polynomial.natDegree_eq_zero] at contra
-
-  })]
-
-
-   
-  simp
-
+        intro contra
+        rw [contra] at h₂ 
+        simp at h₂ 
+      · exists (foldingPolynomial q (f / q)).natDegree
+        simp
+        apply And.intro
+        · intro contra
+          have hh: ∀ n, 
+            (C ((f % q).coeff (foldingPolynomial q (f / q)).natDegree) + X * (foldingPolynomial q (f / q)).leadingCoeff).coeff (n + 1)
+            =  (foldingPolynomial q (f / q)).leadingCoeff.coeff n := by
+            intro n
+            simp
+          rw [contra] at hh
+          simp at hh
+          have hh: (foldingPolynomial q (f / q)).leadingCoeff
+            = 0 := by
+            apply Polynomial.ext
+            simp
+            intro n
+            specialize hh n
+            rw [hh]
+          rw [Polynomial.leadingCoeff_eq_zero] at hh
+          tauto
+        · rw [Polynomial.natDegree_mul (by simp) (by {
+            intro contra
+            rw [Polynomial.leadingCoeff_eq_zero] at contra
+            tauto
+          })]
+          simp
+    · rw [Finset.sup_lt_iff (by {
+        simp
+        have hlhs := Nat.zero_lt_of_ne_zero hlhs
+        simp at hlhs
+        rcases hlhs with ⟨b, hlhs⟩ 
+        exists b
+        apply And.intro
+        · intro contra
+          have hh: ∀ n, (C ((f % q).coeff b) + X * (foldingPolynomial q (f / q)).coeff b).coeff (n + 1) = ((foldingPolynomial q (f / q)).coeff b).coeff n := by
+            intro n
+            simp
+          rw [contra] at hh
+          simp at hh
+          have hh: (foldingPolynomial q (f / q)).coeff b = 0 := by
+            apply Polynomial.ext
+            intro n
+            specialize hh n
+            rw [←hh]
+            simp
+          tauto
+        · rw [Polynomial.natDegree_mul (by simp) (by {
+            intro contra
+            tauto
+          })]
+          simp 
+      })]
+      simp
+      intro b hb 
+      exists b
+      apply And.intro
+      · intro contra
+        have hh: ∀ n, (C ((f % q).coeff b) + X * (foldingPolynomial q (f / q)).coeff b).coeff (n + 1) = ((foldingPolynomial q (f / q)).coeff b).coeff n := by
+          intro n
+          simp
+        rw [contra] at hh
+        simp at hh
+        have hh: (foldingPolynomial q (f / q)).coeff b = 0 := by
+          apply Polynomial.ext
+          intro n
+          specialize hh n
+          rw [←hh]
+          simp
+        tauto
+      · rw [Polynomial.natDegree_mul (by simp) (by {
+          tauto
+        })]
+        simp
 
 lemma folding_polynomial_deg_x_bound {q f : F[X]} (h : 0 < q.degree) :
     (((foldingPolynomial q f).map (Polynomial.compRingHom q)).eval X).natDegree = (foldingPolynomial q f).natDegree 
