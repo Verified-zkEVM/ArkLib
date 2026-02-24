@@ -145,7 +145,7 @@ def rootMultiplicity.{u} {F : Type u} [CommSemiring F] [DecidableEq F]
   rootMultiplicity₀ (F := F) ((f.comp (Y + (C (C y)))).map (Polynomial.compRingHom (X + C x)))
 
 /-- If the multiplicity of a pair `(x,y)` is non-negative, then the pair is a root of `f`. -/
-theorem rootMultiplicity_some_implies_root {F : Type} [CommRing F] [DecidableEq F]
+theorem rootMultiplicity_some_implies_root {F : Type} [CommRing F]
   {x y : F} {f : F[X][Y]} (h : 0 < ((f.eval (C y)).rootMultiplicity x))
   : (f.eval (C y)).eval x = 0 := by
   simp_all only [rootMultiplicity_pos', ne_eq, IsRoot.def]
@@ -355,7 +355,7 @@ lemma degreeX_le_degreeX_sub_degreeX [IsDomain F] {f q : F[X][Y]} (hf : f ≠ 0)
 If `q * f ≠ 0`, then the `Y`-degree of `q` is bounded above by the difference of the
 `Y`-degrees: `natDegreeY q ≤ natDegreeY (q * f) - natDegreeY f`.
 -/
-@[grind]
+@[grind .]
 lemma degreeY_le_degreeY_sub_degreeY [IsDomain F] {f q : F[X][Y]} (hf : f ≠ 0) (hg : q * f ≠ 0) :
   natDegreeY q ≤ natDegreeY (q * f) - natDegreeY f := by grind
 
@@ -371,7 +371,7 @@ polynomial in `Y`. -/
 def monomialY (n : ℕ) : F[X] →ₗ[F[X]] F[X][Y] where
   toFun t := ⟨Finsupp.single n t⟩
   map_add' x y := by rw [Finsupp.single_add]; aesop
-  map_smul' r x := by simp; rw[smul_monomial]; aesop
+  map_smul' r x := by simp; rw [smul_monomial]; aesop
 
 /-- Definition of the bivariate monomial `X^n * Y^m` -/
 def monomialXY (n m : ℕ) : F →ₗ[F] F[X][Y] where
