@@ -12,14 +12,12 @@ import ArkLib.Data.Classes.HasSize
 import ArkLib.Data.Classes.Initialize
 import ArkLib.Data.Classes.Serde
 import ArkLib.Data.Classes.Slice
-import ArkLib.Data.CodingTheory
 import ArkLib.Data.CodingTheory.Basic
 import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
 import ArkLib.Data.CodingTheory.BerlekampWelch.Condition
 import ArkLib.Data.CodingTheory.BerlekampWelch.ElocPoly
 import ArkLib.Data.CodingTheory.BerlekampWelch.Existence
 import ArkLib.Data.CodingTheory.BerlekampWelch.Sorries
-import ArkLib.Data.CodingTheory.BerlekampWelch.ToMathlib
 import ArkLib.Data.CodingTheory.DivergenceOfSets
 import ArkLib.Data.CodingTheory.GuruswamiSudan
 import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
@@ -39,7 +37,6 @@ import ArkLib.Data.CodingTheory.ProximityGap.AHIV22
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20
 import ArkLib.Data.CodingTheory.ProximityGap.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.DG25
-import ArkLib.Data.CodingTheory.ReedMuller
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.EllipticCurve.BN254
 import ArkLib.Data.Fin.Basic
