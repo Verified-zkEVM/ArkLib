@@ -135,36 +135,126 @@ theorem add_assoc (a b c : AssocNat) : (a + b) + c = a + (b + c) := rfl
 /-- `a * 0 = 0` holds definitionally. -/
 @[simp] theorem mul_zero {a : AssocNat} : a * 0 = 0 := rfl
 
-/-- `0 * a = 0` holds only propositionally. -/
+/-
+`0 * a = 0` holds only propositionally.
+-/
 theorem zero_mul {a : AssocNat} : 0 * a = 0 := by
   change mul zero a = zero
   ext n
   simp [mul, zero]
   induction h : a.toNat with
   | zero => simp [zero, mulNat, toNat]
-  | succ n ih => simp [mulNat, toNat, ih, h]; sorry
+  | succ n ih => simp [mulNat, toNat, ih, h]; (
+  -- By definition of `mulNat`, we know that `mulNat 0 n` is the identity function.
+  have h_mulNat_zero : ∀ n : Nat, (AssocNat.mulNat (AssocNat.ofNat 0) n).toFun = id := by
+    intro n; exact (by
+    induction n <;> aesop);
+  exact congr_fun ( h_mulNat_zero n ) _)
 
 /-- `a * 1 = a` holds definitionally. -/
 @[simp] theorem mul_one {a : AssocNat} : a * 1 = a := rfl
 
--- /-- `a * (succ b) = a + a * b` holds only propositionally. -/
--- theorem mul_succ {a b : AssocNat} : a * (succ b) = a + a * b := by
---   dsimp
+/-
+/ -- `a * (succ b) = a + a * b` holds only propositionally. - /
+theorem mul_succ {a b : AssocNat} : a * (succ b) = a + a * b := by
+dsimp
 
-/-- `(succ a) * b = a * b + b` holds only propositionally. -/
-theorem succ_mul {a b : AssocNat} : (succ a) * b = a * b + b := by sorry
+`(succ a) * b = a * b + b` holds only propositionally.
+-/
+theorem succ_mul {a b : AssocNat} : (succ a) * b = a * b + b := by
+  -- By definition of multiplication, we have `a * succ b = a * b + a`.
+  have h_mul_succ : ∀ a b : AssocNat, a.succ * b = (a + 1) * b := by
+    aesop;
+  -- By definition of multiplication, we have `a * b = mulNat a b.toNat`.
+  have h_mul : ∀ a b : AssocNat, a * b = mulNat a b.toNat := by
+    exact?;
+  induction' b.toNat with n ih <;> simp_all +decide [ add_mul, mul_add ];
+  -- By definition of `mulNat`, we know that `a.mulNat b.toNat` is the function that adds `a` to itself `b.toNat` times.
+  have h_mulNat : ∀ a b : AssocNat, a.mulNat b.toNat = fun m => a.toNat * b.toNat + m := by
+    intros a b; induction' b.toNat with k ih generalizing a <;> simp_all +decide [ add_mul, mul_add, Nat.succ_eq_add_one ] ;
+    · exact?;
+    · convert congr_arg ( fun f => a.toFun ∘ f ) ( ih a ) using 1 ; ext m ; simp +decide [ add_assoc ];
+      induction' a.toNat * k with k ih <;> simp_all +decide [ Nat.succ_add, Nat.add_assoc ];
+      · induction' m with m ih <;> simp_all +decide [ Nat.succ_eq_add_one, add_comm, add_left_comm, add_assoc ];
+        · rfl;
+        · linarith;
+      · convert congr_arg ( fun x => x + 1 ) ih using 1 ; ring;
+        convert a.presSucc ( k + m ) using 1 ; ring;
+        · ac_rfl;
+        · exact?;
+  ext m; simp [h_mulNat];
+  erw [ show ( a.mulNat b.toNat + b ).toFun = fun m => ( a.mulNat b.toNat ).toNat + b.toNat + m from ?_ ];
+  · simp +decide [ add_mul, mul_add, add_assoc, add_comm, add_left_comm, h_mulNat ];
+    erw [ show ( a + 1 ).toNat = a.toNat + 1 from ?_ ];
+    · erw [ show ( a.mulNat b.toNat ).toNat = a.toNat * b.toNat from ?_ ];
+      · ring;
+      · exact congr_fun ( h_mulNat a b ) 0;
+    · exact a.presSucc 0;
+  · erw [ show ( a.mulNat b.toNat + b ).toFun = fun m => ( a.mulNat b.toNat ).toFun ( b.toFun m ) from ?_ ];
+    · -- By definition of `toNat`, we know that `b.toFun m = b.toNat + m`.
+      have h_toFun : ∀ m : Nat, b.toFun m = b.toNat + m := by
+        intro m; exact (by
+        induction' m with m ih;
+        · exact?;
+        · rw [ ← Nat.succ_eq_add_one, b.presSucc, ih, Nat.add_succ ]);
+      ext m; simp [h_toFun];
+      rw [ h_mulNat ] ; ring;
+      rw [ show ( a.mulNat b.toNat ).toNat = a.toNat * b.toNat by exact congr_fun ( h_mulNat a b ) 0 ] ; ring;
+    · exact?
 
-/-- `a * (b + c) = a * b + a * c` holds only propositionally. -/
-theorem mul_add {a b c : AssocNat} : a * (b + c) = a * b + a * c := by sorry
+/-
+`a * (b + c) = a * b + a * c` holds only propositionally.
+-/
+theorem mul_add {a b c : AssocNat} : a * (b + c) = a * b + a * c := by
+  -- By definition of multiplication, we have `a * (b + c) = a * (b.toNat + c.toNat)`.
+  have h_mul : a * (b + c) = mulNat a (b.toNat + c.toNat) := by
+    -- By definition of `mul`, we have `a * (b + c) = mulNat a (b + c).toNat`.
+    rw [show a * (b + c) = mulNat a (b + c).toNat from rfl];
+    -- By definition of `toNat`, we have `(b + c).toNat = (b + c) 0`.
+    simp [toNat];
+    congr;
+    have h_add : ∀ n : Nat, (b + c).toFun n = b.toFun (c.toFun n) := by
+      exact?;
+    convert h_add 0 using 1;
+    have h_add : ∀ n : Nat, b.toFun n = b.toFun 0 + n := by
+      intro n; induction n <;> aesop;
+    grind;
+  -- By definition of multiplication, we have `a * b + a * c = a.mulNat b.toNat + a.mulNat c.toNat`.
+  have h_mul_add : a * b + a * c = mulNat a b.toNat + mulNat a c.toNat := by
+    rfl;
+  -- By definition of multiplication, we have `a.mulNat (b.toNat + c.toNat) = a.mulNat b.toNat + a.mulNat c.toNat`.
+  have h_mul_add : ∀ (a : AssocNat) (n m : Nat), a.mulNat (n + m) = a.mulNat n + a.mulNat m := by
+    intros a n m; induction' n with n ih generalizing m <;> simp_all +decide [ Nat.succ_add ] ;
+    · exact?;
+    · convert ih ( m + 1 ) using 1;
+  aesop
 
-/-- `1 * a = a` holds only propositionally. -/
+/-
+PROBLEM
+`1 * a = a` holds only propositionally.
+
+Show that 1 * a = a for AssocNat.
+
+PROVIDED SOLUTION
+Use ext' to reduce to showing equality at 0, then use toNat_mul to reduce to 1 * toNat a = toNat a in Nat.
+-/
 @[simp] theorem one_mul {a : AssocNat} : 1 * a = a := by
-  change mul one a = a
-  ext n
-  simp [mul, one]
-  induction h : a.toNat with
-  | zero => simp [zero, mulNat, toNat]; simp [toNat] at h; sorry
-  | succ n ih => simp [mulNat, toNat, ih, h]; sorry
+  -- By definition of multiplication, we have 1 * a = (1 * a).toNat.toNat.
+  have h_mul : (1 * a).toNat = a.toNat := by
+    convert Nat.one_mul a.toNat using 1;
+    -- By definition of `mulNat`, we have `mulNat 1 a.toNat = 1 * a.toNat` for any `a.toNat`.
+    have h_mulNat : ∀ n : Nat, mulNat 1 n = 1 * n := by
+      intro n
+      induction' n with n ih;
+      · rfl;
+      · convert congr_arg ( fun x : AssocNat => x.toNat ) ( show mulNat 1 ( n + 1 ) = 1 + mulNat 1 n from ?_ ) using 1;
+        · exact?;
+        · exact?;
+    exact h_mulNat _;
+  -- Since the equality of the endomaps is determined by their values at 0, we can conclude that 1 * a = a by showing they are equal at 0.
+  have h_eq_at_zero : ∀ (f g : AssocNat), f.toNat = g.toNat → f = g := by
+    intro f g h; ext n; induction' n with n ih <;> aesop;
+  exact h_eq_at_zero _ _ h_mul
 
 /-- `toNat` commutes with successor. -/
 @[simp] theorem toNat_succ (t : AssocNat) : toNat (succ t) = (toNat t).succ := by
@@ -197,21 +287,28 @@ theorem toFun_eq_const_plus (t : AssocNat) : ∀ m : Nat, t m = t 0 + m := by
   have := toFun_eq_const_plus a (b 0)
   simpa using this
 
--- /-- `toNat` turns subtraction into truncated subtraction. -/
--- private theorem toNat_subNat (c : AssocNat) (k : Nat) : toNat (subNat c k) = c - k := by
---   induction k with
---   | zero => simp [subNat, toNat]; sorry
---   | succ k ih => sorry
+/-
+/ -- `toNat` turns subtraction into truncated subtraction. - /
+private theorem toNat_subNat (c : AssocNat) (k : Nat) : toNat (subNat c k) = c - k := by
+induction k with
+| zero => simp [subNat, toNat]; sorry
+| succ k ih => sorry
 
--- @[simp] theorem toNat_sub (a b : AssocNat) : toNat (sub a b) = toNat a - toNat b := by
---   dsimp [sub]
---   exact toNat_subAux (toNat a) (toNat b)
+@[simp] theorem toNat_sub (a b : AssocNat) : toNat (sub a b) = toNat a - toNat b := by
+dsimp [sub]
+exact toNat_subAux (toNat a) (toNat b)
 
-/-- `toNat` turns multiplication into multiplication. -/
+`toNat` turns multiplication into multiplication.
+-/
 private theorem toNat_mulNat (a : AssocNat) (k : Nat) : toNat (mulNat a k) = toNat a * k := by
   induction k with
   | zero => simp [mulNat, toNat, zero]
-  | succ k ih => sorry
+  | succ k ih =>
+  -- By definition of `mulNat`, we have `a.mulNat (k + 1) = a + (a.mulNat k)`.
+  have h_mulNat_succ : a.mulNat (k + 1) = add a (a.mulNat k) := by
+    exact?;
+  convert congr_arg ( fun x : AssocNat => x.toNat ) h_mulNat_succ using 1 ; simp +decide [ ih, mul_add ];
+  ring
 
 @[simp] theorem toNat_mul (a b : AssocNat) : toNat (mul a b) = toNat a * toNat b := by
   dsimp [mul]
