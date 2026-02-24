@@ -4,6 +4,7 @@ import Mathlib.Algebra.MvPolynomial.Basic
 import Mathlib.Algebra.MvPolynomial.Degrees
 import Mathlib.Algebra.Polynomial.Basic
 import Mathlib.Tactic.Cases
+import Mathlib.Tactic.LinearCombination'
 
 section
 
@@ -382,4 +383,54 @@ lemma folding_polynomial_deg_x {q f : F[X]} :
                 ( lt_of_not_ge fun h => h₁
                   <| Or.inr <| Or.inl h ) ) 
             ( Polynomial.natDegree_pos_iff_degree_pos.mpr h )   
+
+lemma satisfies_conditions_implies_is_the_reminder
+  {q f : F[X]}
+  {Q : F[X][Y]}
+  (h : (Q.map (Polynomial.compRingHom q)).eval X = f)
+  :
+  ∃ Q': F[X][Y],
+    Polynomial.map C f = Q' * (C X - Polynomial.map C q) + Q := by
+      obtain ⟨Q', hQ'⟩ : 
+        ∃ Q' : F[X][Y], 
+          Q - Polynomial.map (Polynomial.C) f 
+            = (Polynomial.C Polynomial.X - Polynomial.map Polynomial.C q) * Q' := by
+        have h_div : 
+          (Polynomial.C Polynomial.X - Polynomial.map Polynomial.C q) 
+            ∣ Q - Polynomial.map (Polynomial.C) 
+                    (Polynomial.eval Polynomial.X 
+                        (Polynomial.map 
+                            (Polynomial.compRingHom q) Q)) := by
+          have h_div : 
+            ∀ p : F[X][Y], 
+              (Polynomial.C Polynomial.X - Polynomial.map Polynomial.C q) 
+                ∣ p - Polynomial.map Polynomial.C 
+                  (Polynomial.eval Polynomial.X 
+                    (Polynomial.map (Polynomial.compRingHom q) p)) := by
+            intro p;
+            induction' p using Polynomial.induction_on' with p q hp hq;
+            · convert dvd_add hp hq using 1 ; simp +decide [ sub_add_sub_comm ];
+            · induction' ‹ℕ› with n ih 
+                <;> simp_all +decide [ 
+                      pow_succ, 
+                      ← mul_assoc, 
+                      ← Polynomial.C_mul_X_pow_eq_monomial ];
+              · induction' ‹F[X]› using 
+                  Polynomial.induction_on' with p q hp hq 
+                    <;> simp_all +decide [ ← Polynomial.C_mul_X_pow_eq_monomial ];
+                · convert dvd_add hp hq using 1 ; ring;
+                · exact dvd_trans 
+                    ( sub_dvd_pow_sub_pow _ _ _ ) 
+                    ( by exact ⟨ Polynomial.C ( Polynomial.C ‹_› ), by ring ⟩ );
+              · simpa only [ sub_mul ] using ih.mul_right _;
+          exact h_div Q;
+        aesop;
+      exact ⟨ -Q', by linear_combination -hQ' ⟩
+
+lemma folding_polynomial_is_the_reminder {q f : F[X]} :
+  ∃ Q': F[X][Y],
+    Polynomial.map C f = Q' * (C X - Polynomial.map C q) + (foldingPolynomial q f) := by 
+    apply satisfies_conditions_implies_is_the_reminder
+    exact substitution_property_of_folding_polynomial
+      
 end
