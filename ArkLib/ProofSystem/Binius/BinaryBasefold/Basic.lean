@@ -963,6 +963,38 @@ lemma extractMLP_eq_some_iff_pair_UDRClose (f : (sDomain 𝔽q β h_ℓ_add_R_ra
           (fun ω => tpoly.val.eval (bitsOfIndex ω)))) := by
   sorry
 
+/-- If a block starting at index `0` is compliant in the sense of `isCompliant`, then the
+Berlekamp–Welch decoder `extractMLP` at index `0` succeeds on the source oracle.
+
+Mathematically: `isCompliant` gives fiberwise-closeness of the source oracle to the
+appropriate code, which implies UDR-closeness, and hence decoder success. -/
+lemma extractMLP_some_of_isCompliant_at_zero
+    {destIdx : Fin r} {steps : ℕ} [NeZero steps]
+    (zero_Idx : Fin r) (h_zero_Idx : zero_Idx.val = 0)
+    (h_destIdx : destIdx = 0 + steps)
+    (h_destIdx_le : destIdx ≤ ℓ)
+    (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) zero_Idx)
+    (f_next : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx)
+    (challenges : Fin steps → L)
+    (h_compl :
+      isCompliant 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := zero_Idx) (steps := steps)
+        (destIdx := destIdx) (h_destIdx := by omega) (h_destIdx_le := h_destIdx_le)
+        (f_i := f_i) (f_i_plus_steps := f_next) (challenges := challenges)) :
+    ∃ tpoly : MultilinearPoly L ℓ,
+      extractMLP 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0
+        (fun x => f_i (cast (by
+          simp only [Fin.coe_ofNat_eq_mod, zero_mod, Fin.mk_zero'];
+          have h_eq := sDomain_eq_of_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0)
+            (j := zero_Idx) (h := by apply Fin.eq_of_val_eq; simp only [Fin.coe_ofNat_eq_mod,
+              zero_mod, h_zero_Idx])
+          rw [h_eq]) x)) = some tpoly := by
+  classical
+  -- From compliance we get fiberwise-closeness of `f_i` to the appropriate codeword,
+  -- which implies UDR-closeness, and therefore decoder success via
+  -- `extractMLP_eq_some_iff_pair_UDRClose`.
+  sorry
+
 def dummyLastWitness :
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) := {
   t := ⟨0, by apply zero_mem⟩,
