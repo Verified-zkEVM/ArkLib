@@ -1,16 +1,16 @@
 import ArkLib.Data.Polynomial.Bivariate
 
-import Mathlib.Algebra.MvPolynomial.Basic
-import Mathlib.Algebra.MvPolynomial.Degrees
 import Mathlib.Algebra.Polynomial.Basic
 import Mathlib.Tactic.Cases
 import Mathlib.Tactic.LinearCombination'
+
+namespace Polynomial.FoldingPolynomial
 
 section
 
 open Polynomial Polynomial.Bivariate 
 
-variable {ι F : Type*} [Field F] [Fintype F] [DecidableEq F] [DecidableEq ι]
+variable {ι F : Type*} [Field F]   
 
 noncomputable def foldingPolynomialAux (q f : F[X]) (deg : ℕ) : F[X][Y] :=
   if q.degree ≤ 0 then Polynomial.map C f else
@@ -585,3 +585,5 @@ lemma folded_poly_degree_bound {Q : F[X][Y]} {q : F[X]} {t : ℕ}
         ( by rintro h; simp_all +singlePass ) ) |>.2 h_x
 
 end
+
+end Polynomial.FoldingPolynomial
