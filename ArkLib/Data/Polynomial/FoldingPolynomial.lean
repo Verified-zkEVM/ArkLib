@@ -632,8 +632,19 @@ lemma folded_poly_degree_bound {Q : F[X][Y]} {q : F[X]} {t : ℕ}
 noncomputable def polyFold (f : F[X]) (k : ℕ) (r : F) : F[X]
   := (foldingPolynomial (X ^ k) f).eval (C r)
 
-lemma polyFold_natDegree {f : F[X]} {k : ℕ} {r : F} :
-  (polyFold f k r).natDegree < f.natDegree / k := by sorry
+lemma polyFold_natDegree_le {f : F[X]} {k : ℕ} {r : F} :
+  (polyFold f k r).natDegree ≤ f.natDegree / k := by
+    have h_deg_le_degX : ∀ (g : F[X][Y]) (r : F), (g.eval (C r)).natDegree ≤ degreeX g := by
+      intro g r
+      simp only [degreeX];
+      rw [ Polynomial.eval_eq_sum ];
+      refine' le_trans ( Polynomial.natDegree_sum_le _ _ ) _;
+      refine' Finset.sup_mono_fun fun n _ => _;
+      by_cases hr : r = 0 <;> simp +decide [ hr ];
+      · by_cases hn : n = 0 <;> simp +decide [ hn ];
+      · rw [ Polynomial.natDegree_mul' ] <;> aesop;
+    refine' le_trans ( h_deg_le_degX _ r ) _;
+    rw [ folding_polynomial_deg_x ] ; aesop;
 
 end
 
