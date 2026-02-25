@@ -5,8 +5,6 @@ Authors: Julek, Elijah Vlasov
 -/
 import Mathlib.Algebra.Polynomial.BigOperators
 
-import ArkLib.Data.Polynomial.FoldingPolynomial
-
 /-!
 # Generalized polynomial splitting and folding
 
