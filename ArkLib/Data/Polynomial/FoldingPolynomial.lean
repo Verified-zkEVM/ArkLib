@@ -629,6 +629,12 @@ lemma folded_poly_degree_bound {Q : F[X][Y]} {q : F[X]} {t : ℕ}
     ( Nat.pos_of_ne_zero 
         ( by rintro h; simp_all +singlePass ) ) |>.2 h_x
 
+noncomputable def polyFold (f : F[X]) (k : ℕ) (r : F) : F[X]
+  := (foldingPolynomial (X ^ k) f).eval (C r)
+
+lemma polyFold_natDegree {f : F[X]} {k : ℕ} {r : F} :
+  (polyFold f k r).natDegree < f.natDegree / k := by sorry
+
 end
 
 end FoldingPolynomial

@@ -476,8 +476,15 @@ lemma even_y_odd_eq_folding_polynomial {f : Polynomial F} :
     apply Nat.lt_of_le_of_lt Polynomial.natDegree_mul_le
     simp
 
-
-  
+@[simp]
+lemma poly_fold_k_eq_2 {f : F[X]} {r : F} :
+  FoldingPolynomial.polyFold f 2 r 
+    = f.evenPart.deevenize + (C r) * f.oddPart.deevenize := by
+  simp [FoldingPolynomial.polyFold]
+  have h : (X : F[X]) ^ 2 = X * X := by sorry
+  rw [h]
+  simp 
+  rw [mul_comm]
   
 
 end Lemmas
