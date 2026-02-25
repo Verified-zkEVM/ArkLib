@@ -57,11 +57,8 @@ import ArkLib.Data.MvPolynomial.Degrees
 import ArkLib.Data.MvPolynomial.Interpolation
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLib.Data.MvPolynomial.Multilinear
-import ArkLib.Data.MvPolynomial.MvPolynomialLike
-import ArkLib.Data.MvPolynomial.Sumcheck
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.Interface
-import ArkLib.Data.Polynomial.PolynomialLike
 import ArkLib.Data.Polynomial.Prelims
 import ArkLib.Data.Polynomial.RationalFunctions
 import ArkLib.Data.Polynomial.SplitFold
