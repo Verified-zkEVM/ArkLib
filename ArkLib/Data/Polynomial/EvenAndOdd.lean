@@ -4,6 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Julian Sutherland, Ilia Vlasov
 -/
 import ArkLib.ToMathlib.Finset.Basic
+import ArkLib.Data.Polynomial.Bivariate
+import ArkLib.Data.Polynomial.FoldingPolynomial
+
 import CompPoly.Fields.Basic
 
 /-!
@@ -83,6 +86,19 @@ end
 -/
 def EvenPoly (f : Polynomial F) : Prop := ∀ n, Odd n → f.coeff n = 0
 
+lemma even_poly_has_even_degree {f : F[X]}
+  (h : f.EvenPoly)
+  :
+  Even f.natDegree
+  := by
+  simp only [EvenPoly] at h
+  by_contra contra
+  rw [Nat.not_even_iff_odd] at contra
+  specialize h _ contra
+  simp only [coeff_natDegree, leadingCoeff_eq_zero] at h
+  rw [h] at contra
+  simp at contra
+
 /-- Given a polynomial `f`, `deevenize` removes
   all the odd terms and substitutes `X² ↦ X`.
 -/
@@ -91,6 +107,10 @@ noncomputable def deevenize (f : Polynomial F) : Polynomial F :=
       | ⟨⟨supp, g, h⟩⟩ => ⟨⟨divide_by_2 supp, fun n => g (2 * n), by
         aesop
       ⟩⟩
+
+@[simp]
+lemma deevenize_zero :
+  deevenize 0 = (0 : F[X]) := by rfl
 
 @[simp]
 lemma deevenize_coeff {f : Polynomial F} {n : ℕ} :
@@ -318,6 +338,147 @@ lemma oddPart_x_eval_eq {f : Polynomial F} {s : F} :
       , evenize_eval
       , deevenize_evenize]
   exact oddPart_even
+
+private lemma x_mul_odd_part_oddpart_eq_odd_part {f : Polynomial F} :
+  (X * f.oddPart).oddPart = f.oddPart := by
+    apply Polynomial.ext
+    intro n
+    simp only [oddPart_coeff, coeff_X_mul, ite_eq_left_iff, Nat.not_even_iff_odd, right_eq_ite_iff]
+    intro ho he
+    rw [←Nat.not_odd_iff_even] at he
+    tauto
+
+private lemma deevenize_natDegree_le_natDegree_div_2 {f : Polynomial F} :
+  (deevenize f).natDegree ≤ f.natDegree / 2 := by
+    rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
+    intro N hN
+    simp only [deevenize_coeff]
+    rw [Nat.div_lt_iff_lt_mul (by simp)] at hN
+    rw [Polynomial.coeff_eq_zero_of_natDegree_lt]
+    omega
+
+private lemma natDegree_div_2_le_max_parts_natDegree {f : Polynomial F} :
+  f.natDegree / 2 ≤ max f.oddPart.deevenize.natDegree f.evenPart.deevenize.natDegree := by
+  conv =>
+    lhs
+    rw [f_eq_evenPart_plus_x_oddPart (f := f)]
+  trans
+  apply Nat.div_le_div_right (Polynomial.natDegree_add_le _ _)
+  by_cases hodd : f.oddPart = 0
+  · simp [hodd]
+    conv =>
+      lhs
+      rw [←deevenize_comp_x_squared (f := f.evenPart) evenPart_even]
+    rw [Polynomial.natDegree_comp]
+    simp
+  · by_cases hle: f.evenPart.natDegree ≤ f.oddPart.natDegree
+    · simp only [le_sup_iff]
+      rw [mul_comm, Polynomial.natDegree_mul_X (by assumption)]
+      rw [max_eq_right (by linarith)]
+      rw [Nat.succ_div]
+      have h : ¬ 2 ∣ f.oddPart.natDegree + 1 := by
+        simp only [Nat.two_dvd_ne_zero]
+        rw [←Nat.odd_iff, Nat.odd_add_one, Nat.not_odd_iff_even]
+        apply even_poly_has_even_degree
+        exact oddPart_even
+      simp only [h, ↓reduceIte, add_zero]
+      left
+      conv =>
+        lhs
+        rw [←deevenize_comp_x_squared (f := f.oddPart) oddPart_even]
+      rw [Polynomial.natDegree_comp]
+      simp
+    · simp at hle
+      rw [max_eq_left (by {
+        rw [mul_comm, Polynomial.natDegree_mul_X (by assumption)]
+        omega
+      })]
+      simp only [le_sup_iff]
+      right
+      conv =>
+        lhs
+        rw [←deevenize_comp_x_squared (f := f.evenPart) evenPart_even]
+      rw [Polynomial.natDegree_comp]
+      simp
+
+@[simp]
+lemma even_y_odd_eq_folding_polynomial {f : Polynomial F} :
+  FoldingPolynomial.foldingPolynomial (X * X) f 
+    = (C (deevenize <| evenPart f)) + X * (C (deevenize <| oddPart f)) 
+   := by
+  symm
+  apply FoldingPolynomial.folding_polynomial_is_unique
+  · simp only [X_mul_C, Polynomial.map_add, map_C, coe_compRingHom, Polynomial.map_mul, map_X,
+    eval_add, eval_C, eval_mul, eval_X]
+    conv =>
+      rhs
+      rw [f_eq_evenPart_plus_x_oddPart (f := f)]
+    rw [deevenize_comp_x_squared evenPart_even,
+        deevenize_comp_x_squared oddPart_even]
+    simp [mul_comm]
+  · simp only [Bivariate.degreeX, X_mul_C, coeff_add, coeff_C_mul, ne_eq, X_ne_zero,
+    not_false_eq_true, natDegree_mul_X, natDegree_X, Nat.reduceAdd]
+    apply Nat.le_antisymm
+    · simp only [Finset.sup_le_iff, mem_support_iff, coeff_add, coeff_C_mul, ne_eq]
+      intro b hb
+      rcases b with _ | b
+      · simp only [coeff_C_zero, coeff_X_zero, mul_zero, add_zero] at *
+        trans
+        exact deevenize_natDegree_le_natDegree_div_2
+        apply Nat.div_le_div_right
+        rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
+        simp only [evenPart_coeff, ite_eq_right_iff]
+        intro N hN hEven
+        rw [Polynomial.coeff_eq_zero_of_natDegree_lt hN]
+      · rcases b with _ | b <;> try simp [Polynomial.coeff_X]
+        simp at *
+        trans
+        exact deevenize_natDegree_le_natDegree_div_2
+        apply Nat.div_le_div_right
+        rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
+        simp
+        intro N hN hEven
+        rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)]
+    · trans
+      apply natDegree_div_2_le_max_parts_natDegree
+      simp only [sup_le_iff]
+      apply And.intro
+      · by_cases heq: f.oddPart.deevenize.natDegree = 0 <;> try simp [heq]
+        rw [Finset.le_sup_iff (by {
+          simp
+          omega
+        })]
+        exists 1
+        apply And.intro
+        · simp only [mem_support_iff, coeff_add, coeff_C_succ, coeff_mul_X, coeff_C_zero, zero_add,
+          ne_eq]
+          have h: (0 : F[X]) = deevenize 0 := by rfl
+          rw [h]
+          intro contra
+          have h : evenize (deevenize f.oddPart) = evenize (deevenize 0) := by
+            rw [contra]
+          rw [
+            eq_evenize_deevenize (oddPart_even),
+            eq_evenize_deevenize (by simp [EvenPoly])
+            ] at h
+          rw [h] at heq
+          simp at heq
+        · simp
+      · by_cases heq: f.evenPart.deevenize.natDegree = 0 <;> try simp [heq]
+        rw [Finset.le_sup_iff (by {
+          simp 
+          omega
+        })]
+        exists 0
+        aesop
+  · simp only [Bivariate.natDegreeY, X_mul_C, natDegree_C_add, ne_eq, X_ne_zero, not_false_eq_true,
+    natDegree_mul_X, natDegree_X, Nat.reduceAdd]
+    apply Nat.lt_of_le_of_lt Polynomial.natDegree_mul_le
+    simp
+
+
+  
+  
 
 end Lemmas
 

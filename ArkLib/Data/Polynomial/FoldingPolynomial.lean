@@ -492,7 +492,7 @@ lemma folding_polynomial_is_the_reminder {q f : F[X]} :
 theorem folding_polynomial_is_unique {q f : F[X]} {Q : F[X][Y]} 
   (h : (Q.map (Polynomial.compRingHom q)).eval X = f)
   (h_x : degreeX Q = f.natDegree / q.natDegree)
-  (h_y : natDegreeY Q < q.degree)
+  (h_y : natDegreeY Q < q.natDegree)
   :
   Q = foldingPolynomial q f 
   := by 
@@ -528,7 +528,7 @@ theorem folding_polynomial_is_unique {q f : F[X]} {Q : F[X][Y]}
             norm_cast;
         exact lt_of_le_of_lt ‹_› 
           ( max_lt 
-            ( by rw [ Polynomial.degree_eq_natDegree ] at h_y <;> aesop ) hQ'_deg );
+            ( by aesop ) hQ'_deg );
       contrapose! hQ'_deg;
       rw [ hQ', natDegreeY ];
       rw [ Polynomial.natDegree_mul' ] 
@@ -622,7 +622,7 @@ lemma folded_poly_degree_bound {Q : F[X][Y]} {q : F[X]} {t : ℕ}
                           from lt_of_le_of_lt 
                             ( Polynomial.le_natDegree_of_ne_zero 
                               ( by aesop ) ) h_y ] ] );
-    · rw [ Polynomial.degree_eq_natDegree ] <;> aesop
+    · aesop
   contrapose! h_x;
   rw [ h, folding_polynomial_deg_x ];
   exact Nat.le_div_iff_mul_le 
