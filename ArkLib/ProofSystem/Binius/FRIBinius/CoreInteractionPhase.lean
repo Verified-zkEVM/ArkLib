@@ -1382,7 +1382,7 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
     | inl hConsistent =>
       have ⟨tpoly, h_extractMLP⟩ :=
         BinaryBasefold.CoreInteraction.extractMLP_some_of_oracleFoldingConsistency K β
-          (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtIn stmtIn.challenges hConsistent.1
+          (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut oStmtIn hConsistent
       refine Or.inr ?_
       refine ⟨?_, ?_, ?_, ?_⟩
       · -- local sumcheck consistency at m=0
