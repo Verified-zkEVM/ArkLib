@@ -12,25 +12,26 @@ open Polynomial Polynomial.Bivariate
 
 variable {ι F : Type*} [Field F]   
 
-noncomputable def foldingPolynomialAux (q f : F[X]) (deg : ℕ) : F[X][Y] :=
+noncomputable def foldingPolynomialAux (q f : F[X]) (fuel : ℕ) : F[X][Y] :=
   if q.degree ≤ 0 then Polynomial.map C f else
   if f.degree < q.degree then Polynomial.map C f
   else
-  match deg with
+  match fuel with
   | .zero => Polynomial.map Polynomial.C f
-  | .succ deg => (Polynomial.map Polynomial.C (f % q))
-    + Polynomial.C Polynomial.X * (foldingPolynomialAux q (f / q) deg)
+  | .succ fuel => (Polynomial.map Polynomial.C (f % q))
+    + Polynomial.C Polynomial.X * (foldingPolynomialAux q (f / q) fuel)
 
 noncomputable def foldingPolynomial (q f : F[X]) : F[X][Y] := 
   foldingPolynomialAux q f f.natDegree
 
-lemma foldingPolynomial_def₁ {q f : F[X]}
+lemma folding_polynomial_eq_map_of_f_degree_lt_q_degree {q f : F[X]}
   (h : f.degree < q.degree) :
     foldingPolynomial q f = Polynomial.map C f := by
   unfold foldingPolynomial foldingPolynomialAux
   simp [h]
 
-lemma foldingPolynomial_C {q : F} {f : F[X]} :
+@[simp]
+lemma folding_polynomial_C_q {q : F} {f : F[X]} :
   foldingPolynomial (C q) f = Polynomial.map C f := by
   unfold foldingPolynomial foldingPolynomialAux
   simp only [ite_eq_left_iff, not_le, not_lt]
@@ -41,15 +42,24 @@ lemma foldingPolynomial_C {q : F} {f : F[X]} :
     simp [hh]
   tauto
 
-lemma foldingPolynomial_def₂ {q f : F[X]}
+@[simp]
+lemma foldingPolynomial_C_f {f : F} {q : F[X]} :
+  foldingPolynomial q (C f) = C (C f) := by
+  unfold foldingPolynomial foldingPolynomialAux
+  simp
+
+private lemma folding_polynomial_def_base_case {q f : F[X]}
   (h : f.degree < q.degree ∨ f.degree ≤ 0 ∨ q.degree ≤ 0)
   :
     foldingPolynomial q f = Polynomial.map C f := by
-  unfold foldingPolynomial foldingPolynomialAux
-  rcases h with h | h | h <;> try simp [h] 
-  have h := Polynomial.eq_C_of_degree_le_zero h
-  rw [h]
-  simp
+  rcases h with h | h | h 
+  · rw [folding_polynomial_eq_map_of_f_degree_lt_q_degree h]
+  · rw [Polynomial.degree_le_zero_iff] at h
+    rw [h]
+    simp 
+  · rw [Polynomial.degree_le_zero_iff] at h
+    rw [h]
+    simp
 
 lemma foldingPolynomialAux_zero {q : F[X]} {deg : ℕ} :
     foldingPolynomialAux q 0 deg = 0 := by
@@ -151,7 +161,7 @@ lemma folding_polynomial_eq_zero {q f : F[X]}
       f.degree < q.degree 
         ∨ f.degree ≤ 0 
         ∨ q.degree ≤ 0 <;> simp_all +decide [ Polynomial.ext_iff ];
-    · rw [ foldingPolynomial_def₂ h₁ ] at h;
+    · rw [ folding_polynomial_def_base_case h₁ ] at h;
       intro n; specialize h n 0; aesop;
     · have h_rem_zero : f % q = 0 := by
         rw [ foldingPolynomial_def₃ h₁.1 h₁.2.2 ] at h;
@@ -191,7 +201,7 @@ lemma substitution_property_of_folding_polynomial {q f : F[X]}:
   intro q f
   induction' n : f.natDegree using Nat.strong_induction_on with n ih generalizing q f
   by_cases h_deg : f.degree < q.degree ∨ f.degree ≤ 0 ∨ q.degree ≤ 0;
-  · rw [ foldingPolynomial_def₂ h_deg ] ; simp +decide [ Polynomial.eval_map ];
+  · rw [ folding_polynomial_def_base_case h_deg ] ; simp +decide [ Polynomial.eval_map ];
     simp +decide [ Polynomial.eval₂_map ];
     simp +decide [ Polynomial.eval₂_eq_sum_range ];
     conv_rhs => rw [ Polynomial.as_sum_range_C_mul_X_pow f ] ;
@@ -244,7 +254,7 @@ lemma folding_polynomial_deg_y_bound {q f : F[X]} (h: 0 < q.degree) :
   induction' n : f.natDegree using Nat.strong_induction_on with n ih generalizing f q;
   by_cases hq : f.degree < q.degree 
   · have h_folding_eq_map : foldingPolynomial q f = Polynomial.map Polynomial.C f := by
-      exact foldingPolynomial_def₁ hq;
+      exact folding_polynomial_eq_map_of_f_degree_lt_q_degree hq;
     by_cases hf : f = 0 <;> simp_all +decide [ Polynomial.natDegree_map ];
     · exact n.symm ▸ Polynomial.natDegree_pos_iff_degree_pos.mpr h;
     · rw [ ← n, Polynomial.degree_eq_natDegree hf ] at * ; aesop;
@@ -284,7 +294,7 @@ lemma folding_polynomial_deg_x_base {q f : F[X]}
   (h : f.degree < q.degree ∨ f.degree ≤ 0 ∨ q.degree ≤ 0)
   :
   degreeX (foldingPolynomial q f) = 0 := by
-  rw [foldingPolynomial_def₂ h]
+  rw [folding_polynomial_def_base_case h]
   simp [degreeX]
   have h: (⊥ : ℕ) = 0 := by rfl
   rw [←h, Finset.sup_eq_bot_iff]
