@@ -481,7 +481,7 @@ lemma poly_fold_k_eq_2 {f : F[X]} {r : F} :
   FoldingPolynomial.polyFold f 2 r 
     = f.evenPart.deevenize + (C r) * f.oddPart.deevenize := by
   simp [FoldingPolynomial.polyFold]
-  have h : (X : F[X]) ^ 2 = X * X := by sorry
+  have h : (X : F[X]) ^ 2 = X * X := by ring
   rw [h]
   simp 
   rw [mul_comm]
