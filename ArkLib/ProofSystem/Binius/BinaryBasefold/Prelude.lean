@@ -362,7 +362,7 @@ lemma qMap_total_fiber_repr_coeff (i : Fin ℓ) (steps : ℕ) (h_i_add_steps : i
     simp only [qMap_total_fiber, ↓reduceDIte, Nat.add_zero, eq_mp_eq_cast, cast_eq, not_lt_zero',
       tsub_zero, Fin.eta]
   · simp only [qMap_total_fiber, h_steps_eq_0, ↓reduceDIte, Module.Basis.repr_symm_apply,
-    Module.Basis.repr_linearCombination, Finsupp.equivFunOnFinite_symm_apply_toFun]
+    Module.Basis.repr_linearCombination, Finsupp.equivFunOnFinite_symm_apply_apply]
 
 def pointToIterateQuotientIndex (i : Fin (ℓ + 1)) (steps : ℕ) (h_i_add_steps : i.val + steps ≤ ℓ)
     (x : sDomain 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩)) : Fin (2 ^ steps) := by
@@ -541,7 +541,7 @@ lemma pointToIterateQuotientIndex_qMap_total_fiber_eq_self (i : Fin ℓ) (steps 
     · simp only [hsteps, ↓reduceDIte, eqRec_eq_cast, Nat.add_zero, Nat.pow_zero]
       omega
     · simp only [hsteps, ↓reduceDIte, Module.Basis.repr_linearCombination,
-      Finsupp.equivFunOnFinite_symm_apply_toFun, h_j, ite_eq_left_iff, one_ne_zero,
+      Finsupp.equivFunOnFinite_symm_apply_apply, h_j, ite_eq_left_iff, one_ne_zero,
       imp_false, Decidable.not_not]
       -- ⊢ (if j.getBit ↑k = 0 then 0 else 1) = j.getBit ↑k
       have h := Nat.getBit_eq_zero_or_one (k := j) (n := k)

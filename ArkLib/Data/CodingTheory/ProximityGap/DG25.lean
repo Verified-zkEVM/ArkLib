@@ -302,7 +302,8 @@ theorem CA_split_rowwise_implies_CA
           simp only [InterleavedSymbol, WordStack, InterleavedWord,
             instInterleavableWordStackInterleavedWord, interleaveWordStack, Fin.isValue,
             Matrix.transpose_apply]
-          rw! [Nat.sub_add_cancel (h := by omega)]
+        rw! [Nat.sub_add_cancel (h := by omega)]
+        rfl
 
 omit [Fintype ι] [DecidableEq ι] [Nonempty ι] [Fintype A] [DecidableEq A] [Fintype F] in
 /-- `[⊗_{i=0}^{ϑ-1}(1-r_i, r_i)] · [ - u₀ - ; ... ; - u_{2^ϑ-1} - ]`
@@ -412,10 +413,6 @@ variable {F : Type} [CommRing F] [Fintype F] [NoZeroDivisors F] [DecidableEq F]
   -- Semiring.toModule (R := A) => Module A A, plus Ring A for `RS code` theorems?
 variable (MC : ModuleCode ι F A) [Nontrivial MC]
   (C : Set (Word A ι)) [Nonempty C] -- todo: change to Nontrivial if needed
-
-instance : NoZeroSMulDivisors (R := F) (M := A) := Module.Free.noZeroSMulDivisors F A
-
-instance : NoZeroSMulDivisors (R := F) (M := Word A ι) := _root_.Function.noZeroSMulDivisors
 
 instance : Nonempty MC := by exact instNonemptyOfInhabited
 

@@ -491,6 +491,7 @@ noncomputable def commitOracleVerifier (i : Fin ℓ) (hCR : isCommitmentRound �
       simp_rw [hOracleIdx];
       have h := toOutCodewordsCount_mul_ϑ_eq_i_succ ℓ ϑ (i := i) (hCR := hCR)
       rw! [h]
+      rfl
 
 /-- The oracle reduction that is the `i`-th round of Binary commitmentfold. -/
 noncomputable def commitOracleReduction (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :

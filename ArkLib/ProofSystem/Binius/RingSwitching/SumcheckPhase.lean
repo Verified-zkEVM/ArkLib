@@ -312,7 +312,8 @@ def iteratedSumcheckKnowledgeStateFunction (i : Fin ℓ') :
       tauto
     · -- m = 1: dir 1 = V_to_P, contradicts hDir
       simp [pSpecSumcheckRound] at hDir
-  toFun_full := fun ⟨stmtLast, oStmtLast⟩ tr witOut h_relOut => by
+  toFun_full := fun ⟨stmtLast, oStmtLast⟩ tr witOut => by
+    intro h_relOut
     simp at h_relOut
     rcases h_relOut with ⟨stmtOut, ⟨oStmtOut, h_conj⟩⟩
     have h_simulateQ := h_conj.1

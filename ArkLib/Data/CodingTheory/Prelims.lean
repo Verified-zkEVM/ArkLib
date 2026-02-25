@@ -98,7 +98,7 @@ lemma cRank_rank_conversion :
   ]
   calc U.cRank ≤ ↑(Fintype.card (Fin n)) := by exact Matrix.cRank_le_card_width U
          _ = ↑n := by rw[Fintype.card_fin]
-  exact Cardinal.nat_lt_aleph0 n
+  exact Cardinal.natCast_lt_aleph0
 
 /-- An m×n matrix has full rank if the submatrix consisting of columns 1 through m has rank m. -/
 lemma full_row_rank_via_rank_subLeftFull (h : m ≤ n) :

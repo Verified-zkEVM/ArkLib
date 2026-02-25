@@ -306,7 +306,7 @@ noncomputable def batchingKnowledgeStateFunction :
       -- ⊢ stmtIn.1.original_claim = (MvPolynomial.aeval stmtIn.1.t_eval_point) ↑witMid.t
       sorry
     | ⟨1, h⟩ => nomatch h
-  toFun_full := fun ⟨stmtLast, oStmtLast⟩ tr witOut h_relOut => by sorry
+  toFun_full := fun ⟨stmtLast, oStmtLast⟩ tr witOut => by sorry
 
 /-! ## Security Properties -/
 

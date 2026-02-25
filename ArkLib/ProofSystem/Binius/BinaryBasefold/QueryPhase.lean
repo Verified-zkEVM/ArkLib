@@ -127,21 +127,10 @@ def proximityChecksSpec (γ_challenges :
           (v:=v) (i:=⟨i, by exact h_i_lt_ℓ⟩) (steps:=ϑ)
         let f_i_next_val :=
           if hk: k_val < ℓ / ϑ - 1 then
-            let x_next: sDomain 𝔽q β h_ℓ_add_R_rate ⟨i + ϑ, by
-              dsimp only [i]
-              let kfin: Fin (ℓ / ϑ - 1) := ⟨k_val, hk⟩
-              change kfin * ϑ + ϑ < r
-              calc _ ≤ ℓ - ϑ := bIdx_mul_ϑ_add_x_lt_ℓ_sub_ϑ (bIdx:=kfin) (x:=ϑ) (hx:=Nat.le_refl ϑ)
-                _ < ℓ := rounds_sub_steps_lt
-                _ < r := ℓ_lt_r (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-            ⟩ := next_suffix_of_v
-            oStmt ⟨k_val + 1, by rw [toOutCodewordsCount_last ℓ ϑ]; omega⟩ ⟨x_next, by
-              simp only
-              have h_index: (k_val + 1) * ϑ = i + ϑ := by
-                dsimp only [i]; rw [Nat.add_mul, Nat.one_mul]
-              rw! [h_index]
-              exact Submodule.coe_mem x_next
-            ⟩
+            let x_next : sDomain 𝔽q β h_ℓ_add_R_rate ⟨i + ϑ, by omega⟩ := next_suffix_of_v
+            let ⟨x_next', hx_next'⟩ := x_next
+            oStmt ⟨k_val + 1, by rw [toOutCodewordsCount_last ℓ ϑ]; omega⟩
+              (⟨x_next', by simpa [Nat.add_mul] using hx_next'⟩)
           else final_constant
         c_next = f_i_next_val
       consistency_check
@@ -408,7 +397,7 @@ noncomputable def queryKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
       (m:=m) (tr:=tr) (stmt:=stmt) (witMid:=witMid) (oStmt:=oStmt)
   toFun_empty := fun stmt witMid => by simp only; rfl
   toFun_next := fun m hDir stmt tr msg witMid h => by
-    sorry
+    fin_cases m; simp [pSpecQuery] at hDir
   toFun_full := fun stmt tr witOut h => by
     sorry
 

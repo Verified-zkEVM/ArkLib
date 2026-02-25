@@ -128,6 +128,7 @@ private lemma fst_map_simulateQ_loggingOracle_run {ι : Type} {spec : OracleSpec
     simp only [simulateQ_query_bind]
     show Prod.fst <$> (do let u ← liftM (loggingOracle t); simulateQ loggingOracle (oa u)).run =
       liftM (query t) >>= oa
+    stop -- This is broken for now until the refactor of `loggingOracle` and `WriterT`
     simp only [WriterT.run_bind, map_bind, Functor.map_map]
     have key : ∀ (w : QueryLog spec), (fun a_1 => (Prod.map id (w * ·) a_1).1) =
         (Prod.fst : α × QueryLog spec → α) :=

@@ -594,7 +594,5 @@ lemma OracleVerifier.id_rbrKnowledgeSoundness
     (OracleVerifier.id : OracleVerifier oSpec Statement OStatement _ _ _).rbrKnowledgeSoundness
       init impl rel rel 0 := by
   convert Verifier.id_rbrKnowledgeSoundness init impl (rel := rel)
-  unfold rbrKnowledgeSoundness
-  simp only [ChallengeIdx, id_toVerifier]
 
 end Trivial

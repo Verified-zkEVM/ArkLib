@@ -738,7 +738,7 @@ theorem fappend₂_right {α₁ : Fin m → A} {α₂ : Fin m → B} {β₁ : Fi
       rw! [this, ih]; simp
     · have hi : i = last n := by ext; simp; omega
       have : natAdd m i = last (m + n) := by ext; simp; omega
-      rw! [this, fconcat₂_last, hi]
+      rw! [this, fconcat₂_last, hi]; rfl
 
 theorem fappend₂_ext {α₁ : Fin m → A} {α₂ : Fin m → B} {β₁ : Fin n → A} {β₂ : Fin n → B}
     (u₁ u₂ : (i : Fin m) → F₂ (α₁ i) (α₂ i)) (v₁ v₂ : (i : Fin n) → F₂ (β₁ i) (β₂ i)) :
@@ -907,7 +907,7 @@ theorem fappend_right {α : Fin m → A} {β : Fin n → A}
       simp
     · have hi : i = last n := by ext; simp; omega
       have : natAdd m i = last (m + n) := by ext; simp; omega
-      rw! [this, fconcat_last, hi]
+      rw! [this, fconcat_last, hi]; rfl
 
 theorem fappend_ext {α : Fin m → A} {β : Fin n → A}
     (u₁ u₂ : (i : Fin m) → F (α i)) (v₁ v₂ : (i : Fin n) → F (β i)) :
