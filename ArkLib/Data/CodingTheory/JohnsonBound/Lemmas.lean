@@ -77,11 +77,17 @@ private lemma sum_choose_K' [Zero F]
     ring_nf
     rw [sum_mul]
     apply sum_congr (ext _) <;> grind only [= mem_filter, = mem_sdiff, ← mem_univ, = mem_singleton]
-  apply le_trans
-  · simp_all only [ne_eq, Function.comp_apply, K_eq_sum, univ_eq_attach, sum_boole, Nat.cast_id,
-      smul_eq_mul, X₁, X₂]
-    rfl
-  · sorry --[mul_sum]; field_simp
+  simp only [Function.comp_apply, smul_eq_mul]
+  have hX₁_nonneg : (0 : ℚ) ≤ X₁ := by simp [X₁, sub_nonneg]; omega
+  have jensen := ConvexOn.map_sum_le choose_2_convex
+    (t := Finset.univ.filter (· ≠ (0 : F)))
+    (w := fun _ => X₁⁻¹)
+    (p := fun α => (X₂ α : ℚ))
+    (by intro _ _; exact inv_nonneg.mpr hX₁_nonneg)
+    (by simp [X₁]; field_simp; exact div_self X₁h) (by simp)
+  simp only [smul_eq_mul] at jensen
+  exact le_trans (mul_le_mul_of_nonneg_left jensen hX₁_nonneg)
+    (le_of_eq (by rw [Finset.mul_sum]; congr 1; ext; rw [← mul_assoc, mul_inv_cancel₀ X₁h, one_mul]))
 
 @[simp, grind]
 private def sum_choose_K_i (B : Finset (Fin n → F)) (i : Fin n) : ℚ :=
@@ -92,7 +98,16 @@ private lemma le_sum_choose_K [Zero F]
   (h_card : 2 ≤ (Fintype.card F)) :
   choose_2 (K B i 0) + (Fintype.card (α := F) - 1) *
   choose_2 ((B.card - K B i 0) / (Fintype.card (α := F) - 1)) ≤ sum_choose_K_i B i := by
-  sorry
+  have h := sum_choose_K' h_card (B := B) (i := i)
+  simp only [sum_choose_K_i]
+  have : ∑ α, choose_2 ↑(K B i α) = choose_2 ↑(K B i 0) + ∑ α with α ≠ 0, choose_2 ↑(K B i α) := by
+    rw [Finset.sum_eq_sum_diff_singleton_add (i := (0 : F)) (by simp)]
+    rw [add_comm]
+    congr 1
+    apply Finset.sum_congr
+    · ext x; simp [Finset.mem_sdiff, Finset.mem_singleton, Finset.mem_filter]
+    · intros; rfl
+  linarith
 
 private def k [Zero F] (B : Finset (Fin n → F)) : ℚ :=
   (1 : ℚ) / n * ∑ i, K B i 0
@@ -147,11 +162,20 @@ private lemma k_choose_2 [Zero F] {B : Finset (Fin n → F)}
            ∑ i, choose_2 (K B i 0) by
     rw [mul_comm]; convert this
     simp [k, Finset.mul_sum]
-  transitivity
-  · simp_all only [ne_eq, Finset.card_eq_zero, one_div, K_eq_sum, Finset.univ_eq_attach,
-    Finset.sum_boole, Nat.cast_id, smul_eq_mul]
-    rfl
-  · sorry
+  simp only [one_div, smul_eq_mul]
+  have hn_pos : (0 : ℚ) < n := by exact_mod_cast Nat.pos_of_ne_zero h_n
+  have hn_nonneg : (0 : ℚ) ≤ n := le_of_lt hn_pos
+  have hn_ne : (n : ℚ) ≠ 0 := ne_of_gt hn_pos
+  have jensen := ConvexOn.map_sum_le choose_2_convex
+    (t := Finset.univ (α := Fin n))
+    (w := fun _ => (n : ℚ)⁻¹)
+    (p := fun i => (K B i 0 : ℚ))
+    (by intro _ _; exact inv_nonneg.mpr hn_nonneg)
+    (by simp; field_simp) (by simp)
+  simp only [smul_eq_mul] at jensen
+  exact le_trans (mul_le_mul_of_nonneg_right jensen hn_nonneg)
+    (le_of_eq (by rw [Finset.sum_mul]; congr 1; ext x
+                  field_simp))
 
 
 
@@ -162,7 +186,16 @@ private def aux_frac (B : Finset (Fin n → F)) (x : ℚ) : ℚ :=
 @[simp, grind]
 private lemma sum_1_over_n_aux_frac_k_i [Zero F]
   (h_n : 0 < n) : ∑ i, 1/n * aux_frac B (K B i 0) = aux_frac B (k B) := by
-  sorry
+  have hn_ne : (n : ℚ) ≠ 0 := by exact_mod_cast Nat.pos_iff_ne_zero.mp h_n
+  simp only [aux_frac, k]
+  rw [← Finset.mul_sum]
+  have key : (∑ x : Fin n, ((↑B.card : ℚ) - ↑(K B x 0)) / (↑(Fintype.card F) - 1))
+    = ((n : ℚ) * ↑B.card - ∑ x : Fin n, (↑(K B x 0) : ℚ)) / (↑(Fintype.card F) - 1) := by
+    rw [← Finset.sum_div, Finset.sum_sub_distrib, Finset.sum_const, Finset.card_univ,
+      Fintype.card_fin, nsmul_eq_mul]
+  rw [key]
+  field_simp [hn_ne]
+  rw [Nat.cast_sum]
   -- simp [aux_frac]
   -- suffices (n : ℚ)⁻¹ * (↑n * B.card - ∑ x, JohnsonBound.K B x 0) = B.card - k B by
   --   rw [←Finset.mul_sum, ←Finset.sum_div, ←this]
@@ -177,19 +210,19 @@ private lemma aux_sum [Zero F]
            ∑ i, choose_2 (JohnsonBound.aux_frac B (JohnsonBound.K B i 0)) by
     rw [←sum_1_over_n_aux_frac_k_i h_n, mul_comm]
     convert this
-  transitivity
-  · simp_all only [one_div, aux_frac, K_eq_sum, Finset.univ_eq_attach, Finset.sum_boole, Nat.cast_id,
-      smul_eq_mul]
-    rfl
-  · sorry
-  -- apply (mul_le_mul_right (by simp; omega)).2
-  --         (ConvexOn.map_sum_le
-  --            choose_2_convex
-  --            (by simp)
-  --            (by field_simp )
-  --            (by simp))
-  -- rw [Finset.sum_mul]
-  -- field_simp
+  simp only [one_div, smul_eq_mul]
+  have hn_pos : (0 : ℚ) < n := by exact_mod_cast h_n
+  have hn_nonneg : (0 : ℚ) ≤ n := le_of_lt hn_pos
+  have hn_ne : (n : ℚ) ≠ 0 := ne_of_gt hn_pos
+  have jensen := ConvexOn.map_sum_le choose_2_convex
+    (t := Finset.univ (α := Fin n))
+    (w := fun _ => (n : ℚ)⁻¹)
+    (p := fun i => aux_frac B (K B i 0 : ℚ))
+    (by intro _ _; exact inv_nonneg.mpr hn_nonneg)
+    (by simp; field_simp) (by simp)
+  simp only [smul_eq_mul] at jensen
+  exact le_trans (mul_le_mul_of_nonneg_right jensen hn_nonneg)
+    (le_of_eq (by rw [Finset.sum_mul]; congr 1; ext x; field_simp))
 
 @[simp, grind]
 private lemma le_sum_sum_choose_K [Zero F]
@@ -204,17 +237,15 @@ private lemma le_sum_sum_choose_K [Zero F]
   transitivity
   · simp_all only [ne_eq, Finset.card_eq_zero]
     rfl
-  · sorry
-  -- apply add_le_add_right (k_choose_2 (n := n) (by omega) h_B)
-  -- transitivity
-  -- apply add_le_add_left (by
-  --   rewrite [←mul_assoc, mul_comm (n : ℚ), mul_assoc]
-  --   transitivity
-  --   apply (mul_le_mul_left (by simp; omega)).2 (aux_sum h_n)
-  --   rfl
-  -- )
-  -- rw [Finset.mul_sum, ←Finset.sum_add_distrib]
-  -- exact Finset.sum_le_sum fun _ _ ↦ le_sum_choose_K h_card
+  · have h1 := k_choose_2 (by omega : n ≠ 0) h_B (B := B)
+    have h2 := aux_sum h_n (B := B)
+    have h3 : ↑n * ((Fintype.card F - 1 : ℚ) * choose_2 ((↑B.card - k B) / (Fintype.card F - 1)))
+            = (↑(Fintype.card F) - 1) * (↑n * choose_2 (aux_frac B (k B))) := by
+      simp [aux_frac]; ring
+    rw [h3]
+    apply le_trans (add_le_add h1 (mul_le_mul_of_nonneg_left h2 (by simp [sub_nonneg]; omega)))
+    rw [Finset.mul_sum, ← Finset.sum_add_distrib]
+    exact Finset.sum_le_sum fun _ _ ↦ le_sum_choose_K h_card
 
 private def F2i (B : Finset (Fin n → F)) (i : Fin n) (α : F) : Finset ((Fin n → F) × (Fin n → F)) :=
   { x | x ∈ B ×ˢ B ∧ x.1 i = α ∧ x.2 i = α ∧ x.1 ≠ x.2 }
@@ -233,7 +264,6 @@ private lemma F2i_disjoint :
     , Set.Pairwise
     , Disjoint
     , F2i
-    , Finset.Nonempty
     , Finset.subset_iff
     ]
   intro _ _ _ _ h1 h2 x₁ x₂ contr
@@ -307,9 +337,13 @@ private lemma d_eq_sum {B : Finset (Fin n → F)}
   ∑ i, ∑ x ∈ B ×ˢ B with x.1 ≠ x.2, (if x.1 i ≠ x.2 i then 1 else 0) := by
   field_simp [d, choose_2_card_ne_zero h_B]
   rw [Finset.sum_comm]
-  sorry
-  -- simp_rw [hamming_dist_eq_sum]
-  -- field_simp
+  have key : ∀ y : (Fin n → F) × (Fin n → F),
+    (∑ x : Fin n, if y.1 x ≠ y.2 x then (1 : ℚ) else 0) = ↑Δ₀(y.1, y.2) := by
+    intro y; rw [hamming_dist_eq_sum]; simp [Nat.cast_sum, Nat.cast_ite]
+  simp_rw [key]
+  simp only [d]
+  field_simp [choose_2_card_ne_zero h_B]
+  simp [Nat.cast_sum]
 
 private lemma sum_sum_K_i_eq_n_sub_d
   (h_B : 2 ≤ B.card)
@@ -318,10 +352,13 @@ private lemma sum_sum_K_i_eq_n_sub_d
   rw [show
     choose_2 B.card * (n - d B) = choose_2 B.card * n - (2 * choose_2 B.card * d B) / 2 by ring
   ]
-  sorry
-  -- simp_rw [d_eq_sum h_B, sum_of_not_equals]
-  -- field_simp [←Finset.mul_sum, sum_choose_K_i]
-  -- ring
+  simp_rw [d_eq_sum h_B, sum_of_not_equals]
+  simp only [sum_choose_K_i]
+  rw [Finset.sum_sub_distrib, Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+  have key : ∑ x : Fin n, ∑ α : F, 2 * choose_2 ↑(K B x α) = 2 * ∑ x : Fin n, ∑ α : F, choose_2 ↑(K B x α) := by
+    rw [Finset.mul_sum]; congr 1; ext x; rw [Finset.mul_sum]
+  simp_rw [← Finset.mul_sum]
+  linarith [key]
 
 private lemma almost_johnson [Zero F]
   (h_n : 0 < n)
@@ -377,7 +414,10 @@ private lemma almost_johnson_lhs_div_B_card [Zero F]
     rw [←this]
     field_simp
   rw [←eqrhs] --, show E = 1 - (e B 0) / n by field_simp [E]]
-  have : E = 1 - (e B 0) / n := by simp only [E]; field_simp
+  have : E = 1 - (e B 0) / n := by
+    simp only [E]
+    have hn_ne : (n : ℚ) ≠ 0 := by exact_mod_cast Nat.pos_iff_ne_zero.mp h_n
+    field_simp [hn_ne]
   grind only
 
 private lemma johnson_unrefined [Zero F]
@@ -968,8 +1008,10 @@ lemma johnson_gap_frac_d_gt_one {n d : ℕ} {F : Type*} [Fintype F] [DecidableEq
         exact mul_pos hq1_pos hn_pos
       have h'' :
           (1 : ℚ) * ((q - 1) * n) < q * (d : ℚ) := by
-            sorry
-        --(_root_.lt_div_iff₀ hden_pos).1 sorry --h'
+            rw [one_mul]
+            calc (q - 1) * ↑n < (q - 1) * (frac * ↑d) := by
+                  exact mul_lt_mul_of_pos_left h' hq1_pos
+              _ = q * ↑d := by simp [frac]; field_simp [hq1_ne]
       simpa [mul_comm, mul_left_comm, mul_assoc] using h''
     have hF2 : (2 : ℕ) ≤ Fintype.card F := by
       exact_mod_cast (by simpa [q] using q_not_small')
