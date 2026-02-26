@@ -31,12 +31,6 @@ section find_home
 variable {ι ι' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'} {α β : Type}
     (oa : OracleComp spec α)
 
-@[simp]
-lemma evalDist_cast (h : α = β) [spec.FiniteRange] :
-    evalDist (cast (congrArg (OracleComp spec) h) oa) =
-      cast (congrArg (PMF ∘ Option) h) (evalDist oa) := by
-  induction h; rfl
-
 end find_home
 
 open ProtocolSpec
@@ -294,7 +288,14 @@ def StateFunction.append
       S₂ ⟨roundIdx - m, by omega⟩ (verify stmt₁
         (by simp at h; simpa [min_eq_right_of_lt h] using transcript.fst))
         (by simpa [h] using transcript.snd)
-  toFun_empty := sorry
+  toFun_empty := by
+    intro stmt
+    split
+    · constructor <;> intro h
+      · have h' := (S₁.toFun_empty stmt).mp h
+        convert h' using 2; exact funext fun i => i.elim0
+      · exact (S₁.toFun_empty stmt).mpr (by convert h using 2; exact funext fun i => i.elim0)
+    · exact absurd (Nat.zero_le m) ‹_›
   toFun_next := sorry
   toFun_full := sorry
 
@@ -318,6 +319,9 @@ variable {P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁}
 --         (P₂.processRound roundIdx stmt wit transcript proveQueryLog verifyQueryLog) := sorry
 
 -- theorem append_runToRound
+
+instance : [(pSpec₁).Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ := sorry
+instance : [(pSpec₂).Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ := sorry
 
 /--
 States that running an appended prover `P₁.append P₂` with an initial statement `stmt₁` and
@@ -394,7 +398,7 @@ section Protocol
 
 variable {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt₃ Wit₃ : Type}
     {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
-    [∀ i, SelectableType (pSpec₁.Challenge i)] [∀ i, SelectableType (pSpec₂.Challenge i)]
+    [∀ i, SampleableType (pSpec₁.Challenge i)] [∀ i, SampleableType (pSpec₂.Challenge i)]
     {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
     {rel₁ : Set (Stmt₁ × Wit₁)} {rel₂ : Set (Stmt₂ × Wit₂)} {rel₃ : Set (Stmt₃ × Wit₃)}
 
@@ -418,7 +422,8 @@ namespace Reduction
 
   The completeness error of the appended reduction is the sum of the individual errors
   (`completenessError₁ + completenessError₂`). -/
-theorem append_completeness (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
+theorem append_completeness
+    (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     (R₂ : Reduction oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂)
     {completenessError₁ completenessError₂ : ℝ≥0}
     (h₁ : R₁.completeness init impl rel₁ rel₂ completenessError₁)
@@ -470,7 +475,8 @@ theorem append_soundness {lang₁ : Set Stmt₁} {lang₂ : Set Stmt₂} {lang�
 /-- If two verifiers satisfy knowledge soundness with compatible relations and respective knowledge
     errors, then their sequential composition also satisfies knowledge soundness.
     The knowledge error of the appended verifier is the sum of the individual errors. -/
-theorem append_knowledgeSoundness (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
+theorem append_knowledgeSoundness
+    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
     {knowledgeError₁ knowledgeError₂ : ℝ≥0}
     (h₁ : V₁.knowledgeSoundness init impl rel₁ rel₂ knowledgeError₁)
@@ -523,7 +529,7 @@ variable {Stmt₁ : Type} {ιₛ₁ : Type} {OStmt₁ : ιₛ₁ → Type} [Oₛ
     {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
     [Oₘ₁ : ∀ i, OracleInterface ((pSpec₁.Message i))]
     [Oₘ₂ : ∀ i, OracleInterface ((pSpec₂.Message i))]
-    [∀ i, SelectableType (pSpec₁.Challenge i)] [∀ i, SelectableType (pSpec₂.Challenge i)]
+    [∀ i, SampleableType (pSpec₁.Challenge i)] [∀ i, SampleableType (pSpec₂.Challenge i)]
     {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
     {rel₁ : Set ((Stmt₁ × ∀ i, OStmt₁ i) × Wit₁)}
     {rel₂ : Set ((Stmt₂ × ∀ i, OStmt₂ i) × Wit₂)}
@@ -540,7 +546,8 @@ namespace OracleReduction
 
   The completeness error of the appended reduction is the sum of the individual errors
   (`completenessError₁ + completenessError₂`). -/
-theorem append_completeness (R₁ : OracleReduction oSpec Stmt₁ OStmt₁ Wit₁ Stmt₂ OStmt₂ Wit₂ pSpec₁)
+theorem append_completeness
+    (R₁ : OracleReduction oSpec Stmt₁ OStmt₁ Wit₁ Stmt₂ OStmt₂ Wit₂ pSpec₁)
     (R₂ : OracleReduction oSpec Stmt₂ OStmt₂ Wit₂ Stmt₃ OStmt₃ Wit₃ pSpec₂)
     {completenessError₁ completenessError₂ : ℝ≥0}
     (h₁ : R₁.completeness init impl rel₁ rel₂ completenessError₁)
@@ -573,7 +580,8 @@ variable {lang₁ : Set (Stmt₁ × (∀ i, OStmt₁ i))} {lang₂ : Set (Stmt�
 /-- If two oracle verifiers satisfy soundness with compatible languages and respective soundness
     errors, then their sequential composition also satisfies soundness.
     The soundness error of the appended verifier is the sum of the individual errors. -/
-theorem append_soundness (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
+theorem append_soundness
+    (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
     {soundnessError₁ soundnessError₂ : ℝ≥0}
     (h₁ : V₁.soundness init impl lang₁ lang₂ soundnessError₁)
@@ -586,7 +594,8 @@ theorem append_soundness (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ O
 /-- If two oracle verifiers satisfy knowledge soundness with compatible relations and respective
     knowledge errors, then their sequential composition also satisfies knowledge soundness.
     The knowledge error of the appended verifier is the sum of the individual errors. -/
-theorem append_knowledgeSoundness (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
+theorem append_knowledgeSoundness
+    (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
     {knowledgeError₁ knowledgeError₂ : ℝ≥0}
     (h₁ : V₁.knowledgeSoundness init impl rel₁ rel₂ knowledgeError₁)

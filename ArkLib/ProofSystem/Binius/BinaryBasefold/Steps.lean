@@ -31,7 +31,7 @@ open scoped NNReal
 
 variable {r : ℕ} [NeZero r]
 variable {L : Type} [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
-  [SelectableType L]
+  [SampleableType L]
 variable (𝔽q : Type) [Field 𝔽q] [Fintype 𝔽q] [DecidableEq 𝔽q]
   [h_Fq_char_prime : Fact (Nat.Prime (ringChar 𝔽q))] [hF₂ : Fact (Fintype.card 𝔽q = 2)]
 variable [Algebra 𝔽q L]
@@ -158,7 +158,7 @@ noncomputable def foldOracleVerifier (i : Fin ℓ) :
   verify := fun stmtIn pSpecChallenges => do
     -- Message 0 : Receive h_i(X) from prover
     let h_i : L⦃≤ 2⦄[X] ← query (spec := [(pSpecFold (L := L)).Message]ₒ)
-      ⟨0, rfl⟩ ()
+      ⟨⟨0, rfl⟩, ()⟩
 
     -- Check sumcheck : s_i ?= h_i(0) + h_i(1)
     let sumcheck_check := h_i.val.eval 0 + h_i.val.eval 1 = stmtIn.sumcheck_target
@@ -209,12 +209,12 @@ noncomputable def foldOracleReduction (i : Fin ℓ) :
   prover := foldOracleProver 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i
   verifier := foldOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
 
-variable {R : Type} [CommSemiring R] [DecidableEq R] [SelectableType R]
+variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
   {n : ℕ} {deg : ℕ} {m : ℕ} {D : Fin m ↪ R}
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
-theorem foldOracleReduction_perfectCompleteness (hInit : init.neverFails) (i : Fin ℓ) :
+theorem foldOracleReduction_perfectCompleteness (i : Fin ℓ) :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecFold (L := L))
       (relIn := roundRelation 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -351,7 +351,10 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
       (i := i) (m := m) (tr := tr) (stmt := stmt) (witMid := witMid) (oStmt := oStmt)
   toFun_empty := fun _ _ => by rfl
   toFun_next := fun m hDir stmtIn tr msg witMid => by
-    sorry
+    obtain ⟨stmt, oStmt⟩ := stmtIn
+    fin_cases m
+    · exact fun ⟨_, h⟩ => ⟨trivial, h⟩
+    · simp at hDir
   toFun_full := fun ⟨stmtLast, oStmtLast⟩ tr witOut h_relOut => by
     simp at h_relOut
     rcases h_relOut with ⟨stmtOut, ⟨oStmtOut, h_conj⟩⟩
@@ -488,6 +491,7 @@ noncomputable def commitOracleVerifier (i : Fin ℓ) (hCR : isCommitmentRound �
       simp_rw [hOracleIdx];
       have h := toOutCodewordsCount_mul_ϑ_eq_i_succ ℓ ϑ (i := i) (hCR := hCR)
       rw! [h]
+      rfl
 
 /-- The oracle reduction that is the `i`-th round of Binary commitmentfold. -/
 noncomputable def commitOracleReduction (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
@@ -504,12 +508,12 @@ noncomputable def commitOracleReduction (i : Fin ℓ) (hCR : isCommitmentRound �
   prover := commitOracleProver 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
   verifier := commitOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR
 
-variable {R : Type} [CommSemiring R] [DecidableEq R] [SelectableType R]
+variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
   {n : ℕ} {deg : ℕ} {m : ℕ} {D : Fin m ↪ R}
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
-theorem commitOracleReduction_perfectCompleteness (hInit : init.neverFails) (i : Fin ℓ)
+theorem commitOracleReduction_perfectCompleteness (i : Fin ℓ)
     (hCR : isCommitmentRound ℓ ϑ i) :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
@@ -608,7 +612,7 @@ theorem commitOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
   use commitRbrExtractor 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
   use commitKState (mp:=mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR
   intro stmtIn witIn prover j
-  sorry
+  exact absurd j.2 (by simp [pSpecCommit])
 
 end CommitStep
 
@@ -681,12 +685,12 @@ noncomputable def relayOracleReduction (i : Fin ℓ) (hNCR : ¬ isCommitmentRoun
   prover := relayOracleProver 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR
   verifier := relayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR
 
-variable {R : Type} [CommSemiring R] [DecidableEq R] [SelectableType R]
+variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
   {n : ℕ} {deg : ℕ} {m : ℕ} {D : Fin m ↪ R}
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
-theorem relayOracleReduction_perfectCompleteness (hInit : init.neverFails) (i : Fin ℓ)
+theorem relayOracleReduction_perfectCompleteness (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecRelay)
@@ -772,7 +776,7 @@ theorem relayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
   use relayKnowledgeStateFunction (mp:=mp) 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hNCR
   intro stmtIn witIn prover j
-  sorry
+  exact j.val.elim0
 
 end RelayStep
 
@@ -856,7 +860,7 @@ noncomputable def finalSumcheckVerifier :
     (pSpec := pSpecFinalSumcheckStep (L := L)) where
   verify := fun stmtIn _ => do
     -- Get the final constant `c` from the prover's message
-    let c : L ← query (spec := [(pSpecFinalSumcheckStep (L := L)).Message]ₒ) ⟨0, rfl⟩ ()
+    let c : L ← query (spec := [(pSpecFinalSumcheckStep (L := L)).Message]ₒ) ⟨⟨0, rfl⟩, ()⟩
 
     -- Check final sumcheck consistency
     let eq_tilde_eval : L := eqTilde (r := stmtIn.ctx.t_eval_point) (r' := stmtIn.challenges)
@@ -906,8 +910,7 @@ noncomputable def finalSumcheckOracleReduction :
 /-- Perfect completeness for the final sumcheck step -/
 theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
   (init : ProbComp σ)
-  (impl : QueryImpl []ₒ (StateT σ ProbComp))
-  (hInit : init.neverFails) :
+  (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
   OracleReduction.perfectCompleteness
     (pSpec := pSpecFinalSumcheckStep (L := L))
     (relIn := roundRelation 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -1028,7 +1031,7 @@ theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness [Fintype L] {σ : Type
   use finalSumcheckKnowledgeStateFunction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (𝓑 := 𝓑) init impl
   intro stmtIn witIn prover j
-  sorry
+  exact absurd j.2 (by simp [pSpecFinalSumcheckStep])
 
 end FinalSumcheckStep
 end

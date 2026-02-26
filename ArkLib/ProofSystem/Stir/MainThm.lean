@@ -113,7 +113,7 @@ def stirRelation
   - `query complexity to proof strings = Oₖ(log degree + secpar * log(log degree / log(1/ρ)))`
 -/
 theorem stir_main
-  (secpar : ℕ) [SelectableType F]
+  (secpar : ℕ) [SampleableType F]
   {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
   {φ : ι ↪ F} {degree : ℕ} [hsmooth : Smooth φ]
   {k proofLen qNumtoInput qNumtoProofstr : ℕ}
@@ -166,7 +166,7 @@ open LinearCode
   `ε_fin ≤ (1 - δ_M)^repeatParam_M`
 -/
 theorem stir_rbr_soundness
-    [SelectableType F] {s : ℕ}
+    [SampleableType F] {s : ℕ}
     {P : Params ι F} {φ : (i : Fin (M + 1)) → (ι i ↪ F)}
     [h_nonempty : ∀ i : Fin (M + 1), Nonempty (ι i)]
     {hParams : ParamConditions ι P} {Dist : Distances M}

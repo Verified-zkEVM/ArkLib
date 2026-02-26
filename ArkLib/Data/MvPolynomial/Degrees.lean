@@ -7,7 +7,7 @@ Authors: Quang Dao
 import Mathlib.Algebra.MvPolynomial.Degrees
 import Mathlib.Algebra.MvPolynomial.Equiv
 import Mathlib.Algebra.Group.Action.Pointwise.Finset
-import ArkLib.Data.MvPolynomial.Notation
+import CompPoly.Data.MvPolynomial.Notation
 
 /-!
   # Lemmas about degrees of multivariate polynomials
@@ -38,10 +38,6 @@ variable [CommSemiring R] {p q : MvPolynomial σ R}
 def CEmbedding : R ↪ MvPolynomial σ R := ⟨C, C_injective σ R⟩
 
 section Support
-
-theorem support_C {r : R} [h : Decidable (r = 0)] :
-    (@C R σ _ r).support = if r = 0 then ∅ else { 0 } := by
-  rw [←monomial_zero', support_monomial]
 
 theorem support_C_subset {r : R} : (@C R σ _ r).support ⊆ { 0 } := by
   rw [←monomial_zero']

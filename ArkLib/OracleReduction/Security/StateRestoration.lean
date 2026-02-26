@@ -31,7 +31,7 @@ This is different from the state-restoration prover type in the knowledge soundn
 additionally needs to output an output witness. -/
 def StateRestoration.Soundness (oSpec : OracleSpec ι) (StmtIn : Type)
     {n : ℕ} (pSpec : ProtocolSpec n) :=
-  OracleComp (oSpec ++ₒ (srChallengeOracle StmtIn pSpec)) (StmtIn × pSpec.Messages)
+  OracleComp (oSpec + (srChallengeOracle StmtIn pSpec)) (StmtIn × pSpec.Messages)
 
 /-- The type for the **state-restoration** prover in the knowledge soundness game.
 
@@ -43,7 +43,7 @@ Note that the output witness is an addition compared to the state-restoration so
 type. -/
 def StateRestoration.KnowledgeSoundness (oSpec : OracleSpec ι) (StmtIn WitOut : Type)
     {n : ℕ} (pSpec : ProtocolSpec n) :=
-  OracleComp (oSpec ++ₒ (srChallengeOracle StmtIn pSpec)) (StmtIn × pSpec.Messages × WitOut)
+  OracleComp (oSpec + (srChallengeOracle StmtIn pSpec)) (StmtIn × pSpec.Messages × WitOut)
 
 end Prover
 
@@ -81,7 +81,7 @@ def StateRestoration (oSpec : OracleSpec ι)
   StmtIn → -- input statement
   WitOut → -- output witness
   pSpec.FullTranscript → -- transcript
-  QueryLog (oSpec ++ₒ (srChallengeOracle StmtIn pSpec)) → -- prover's query log
+  QueryLog (oSpec + (srChallengeOracle StmtIn pSpec)) → -- prover's query log
   QueryLog oSpec → -- verifier's query log
   OracleComp oSpec WitIn -- an oracle computation that outputs an input witness
 
@@ -92,7 +92,7 @@ variable {oSpec : OracleSpec ι}
   {WitIn : Type}
   {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)]
   {WitOut : Type}
-  {n : ℕ} {pSpec : ProtocolSpec n} [∀ i, SelectableType (pSpec.Challenge i)]
+  {n : ℕ} {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)]
   [DecidableEq StmtIn] [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
   (init : ProbComp (srChallengeOracle StmtIn pSpec).FunctionType)
   (impl : QueryImpl oSpec (StateT (srChallengeOracle StmtIn pSpec).FunctionType ProbComp))
@@ -101,7 +101,7 @@ variable {oSpec : OracleSpec ι}
   prover to derive the full transcript from the messages output by the prover, with the challenges
   computed from the state-restoration oracle. -/
 def srSoundnessGame (P : Prover.StateRestoration.Soundness oSpec StmtIn pSpec) :
-    OracleComp (oSpec ++ₒ (srChallengeOracle StmtIn pSpec))
+    OracleComp (oSpec + (srChallengeOracle StmtIn pSpec))
       (pSpec.FullTranscript × StmtIn) := do
   let ⟨stmtIn, messages⟩ ← P
   let transcript ← messages.deriveTranscriptSR stmtIn
@@ -113,7 +113,7 @@ def srSoundnessGame (P : Prover.StateRestoration.Soundness oSpec StmtIn pSpec) :
 -/
 def srKnowledgeSoundnessGame
     (P : Prover.StateRestoration.KnowledgeSoundness oSpec StmtIn WitOut pSpec) :
-    OracleComp (oSpec ++ₒ (srChallengeOracle StmtIn pSpec))
+    OracleComp (oSpec + (srChallengeOracle StmtIn pSpec))
       (pSpec.FullTranscript × StmtIn × WitOut) := do
   let ⟨stmtIn, messages, witOut⟩ ← P
   let transcript ← messages.deriveTranscriptSR stmtIn
@@ -129,9 +129,8 @@ def soundness
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (srSoundnessError : ENNReal) : Prop :=
   ∀ srProver : Prover.StateRestoration.Soundness oSpec StmtIn pSpec,
-  [ fun ⟨stmtIn, stmtOut⟩ => stmtOut ∈ langOut ∧ stmtIn ∉ langIn |
-    do
-    (simulateQ (impl ++ₛₒ srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
+  Pr[ fun | ⟨stmtIn, some stmtOut⟩ => stmtOut ∈ langOut ∧ stmtIn ∉ langIn | _ => False
+    | do (simulateQ (impl.addLift srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
         <| (do
     let ⟨transcript, stmtIn⟩ ← srSoundnessGame srProver
     let stmtOut ← liftComp (verifier.run stmtIn transcript) _
@@ -145,10 +144,9 @@ def knowledgeSoundness
     (srKnowledgeSoundnessError : ENNReal) : Prop :=
   ∃ srExtractor : Extractor.StateRestoration oSpec StmtIn WitIn WitOut pSpec,
   ∀ srProver : Prover.StateRestoration.KnowledgeSoundness oSpec StmtIn WitOut pSpec,
-    [ fun ⟨stmtIn, witIn, stmtOut, witOut⟩ =>
-        (stmtOut, witOut) ∈ relOut ∧ (stmtIn, witIn) ∉ relIn |
-      do
-      (simulateQ (impl ++ₛₒ srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
+    Pr[ fun | ⟨stmtIn, witIn, some stmtOut, witOut⟩ => (stmtOut, witOut) ∈ relOut ∧ (stmtIn, witIn) ∉ relIn | _ => False
+    | do
+      (simulateQ (impl.addLift srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
           <| (do
             let ⟨transcript, stmtIn, witOut⟩ ← srKnowledgeSoundnessGame srProver
             let stmtOut ← liftComp (verifier.run stmtIn transcript) _

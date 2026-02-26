@@ -10,7 +10,7 @@ jobs:
     name: "Cancel Previous Runs"
     runs-on: ubuntu-latest
     steps:
-      - uses: styfle/cancel-workflow-action@0.12.1
+      - uses: styfle/cancel-workflow-action@0.13.0
         with:
           all_but_latest: true
           access_token: ${{ github.token }}
@@ -21,8 +21,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      # uses lean standard action with all default input values
-      - uses: leanprover/lean-action@v1.3.0
+
+      - name: Restore Lean cache
+        uses: actions/cache/restore@v5
         with:
-          # Do not run linter for now, too many errors
+          path: ./.lake
+          key: ${{ runner.os }}-lean-ci-${{ hashFiles('lake-manifest.json') }}
+          restore-keys: |
+            ${{ runner.os }}-lean-ci-
+            ${{ runner.os }}-lean-docs-${{ hashFiles('lake-manifest.json') }}
+            ${{ runner.os }}-lean-docs-
+
+      - uses: leanprover/lean-action@v1.4.0
+        with:
           lint: false
+          use-github-cache: false

@@ -89,7 +89,7 @@ def OracleStatement.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Ty
   -- context, along with oracle access to the inner output oracle statements
 
   -- liftOStmt : QueryImpl [OuterOStmtOut]ₒ
-  --   (ReaderT (OuterStmtIn × InnerStmtOut) (OracleComp ([OuterOStmtIn]ₒ ++ₒ [InnerOStmtOut]ₒ)))
+  --   (ReaderT (OuterStmtIn × InnerStmtOut) (OracleComp ([OuterOStmtIn]ₒ + [InnerOStmtOut]ₒ)))
   -- liftOStmt_neverFails : ∀ i, ∀ t, ∀ outerStmtIn, ∀ innerStmtOut,
   --   ((liftOStmt.impl (query i t)).run (outerStmtIn, innerStmtOut)).neverFails
 

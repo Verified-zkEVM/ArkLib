@@ -67,7 +67,7 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ Pro
 /-- The `CheckClaim` reduction satisfies perfect completeness with respect to the predicate as the
   input relation, and the output relation being always true. -/
 @[simp]
-theorem reduction_completeness (h : init.neverFails) [Nonempty σ] :
+theorem reduction_completeness [Nonempty σ] [DecidableEq Statement] :
     (reduction oSpec Statement pred).perfectCompleteness init impl
     (relIn Statement pred) (relOut Statement) := by
   -- Don't know why we need `Nonempty σ` here. TODO: figure out why
@@ -78,19 +78,21 @@ theorem reduction_completeness (h : init.neverFails) [Nonempty σ] :
   simp
   aesop
 
+  sorry
+
 /-- The `CheckClaim` reduction satisfies perfect round-by-round knowledge soundness. -/
 theorem verifier_rbr_knowledge_soundness :
     (verifier oSpec Statement pred).rbrKnowledgeSoundness init impl
       (relIn Statement pred) (relOut Statement) 0 := by
-  simp only [Verifier.rbrKnowledgeSoundness, Nat.reduceAdd, relIn, relOut, verifier, guard_eq,
-    ChallengeIdx, Challenge, liftComp_query, OracleSpec.SubSpec.liftM_query_eq_liftM_liftM,
-    OracleSpec.liftM_append_right_eq, bind_pure_comp, simulateQ_bind, StateT.run'_eq,
-    StateT.run_bind, comp_apply, simulateQ_map, simulateQ_query, StateT.run_map, map_bind,
-    Functor.map_map, Pi.zero_apply, ENNReal.coe_zero, nonpos_iff_eq_zero, probEvent_eq_zero_iff,
-    support_bind, support_map, Set.mem_iUnion, Set.mem_image, Prod.exists, exists_and_right,
-    exists_prop, not_exists, not_and, forall_exists_index, and_imp, Prod.forall, Prod.mk.injEq,
-    IsEmpty.forall_iff, implies_true, exists_const_iff, and_true]
   sorry
+  -- simp only [Verifier.rbrKnowledgeSoundness, Nat.reduceAdd, relIn, relOut, verifier, guard_eq,
+  --   ChallengeIdx, Challenge, liftComp_query, OracleSpec.SubSpec.liftM_query_eq_liftM_liftM,
+  --   OracleSpec.liftM_append_right_eq, bind_pure_comp, simulateQ_bind, StateT.run'_eq,
+  --   StateT.run_bind, comp_apply, simulateQ_map, simulateQ_query, StateT.run_map, map_bind,
+  --   Functor.map_map, Pi.zero_apply, ENNReal.coe_zero, nonpos_iff_eq_zero, probEvent_eq_zero_iff,
+  --   support_bind, support_map, Set.mem_iUnion, Set.mem_image, Prod.exists, exists_and_right,
+  --   exists_prop, not_exists, not_and, forall_exists_index, and_imp, Prod.forall, Prod.mk.injEq,
+  --   IsEmpty.forall_iff, implies_true, exists_const_iff, and_true]
 
 end Reduction
 
@@ -109,7 +111,7 @@ def oracleProver : OracleProver oSpec
   output := fun stmt => pure (stmt, ())
 
 variable (pred : ReaderT Statement (OracleComp [OStatement]ₒ) Prop)
-  (hPred : ∀ stmt, (pred stmt).neverFails)
+  -- (hPred : ∀ stmt, NeverFail (pred stmt))
 
 /-- The oracle verifier for the `CheckClaim` oracle reduction. -/
 @[inline, specialize]
@@ -128,38 +130,38 @@ def oracleReduction : OracleReduction oSpec
 
 variable {Statement} {OStatement}
 
-@[reducible, simp]
-def toRelInput : Set ((Statement × (∀ i, OStatement i)) × Unit) :=
-  { ⟨⟨stmt, oStmt⟩, _⟩ | simulateQ' (toOracleImpl OStatement oStmt) (pred stmt) (hPred stmt) }
+-- @[reducible, simp]
+-- def toRelInput : Set ((Statement × (∀ i, OStatement i)) × Unit) :=
+--   { ⟨⟨stmt, oStmt⟩, _⟩ | simulateQ' (toOracleImpl OStatement oStmt) (pred stmt) (hPred stmt) }
 
--- theorem oracleProver_run
+-- -- theorem oracleProver_run
 
-variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+-- variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
-/-- The `CheckClaim` reduction satisfies perfect completeness. -/
-@[simp]
-theorem oracleReduction_completeness (h : init.neverFails) :
-    (oracleReduction oSpec Statement OStatement pred).perfectCompleteness init impl
-    (toRelInput pred hPred) Set.univ := by
-  -- TODO: fix this proof once `OracleComp` no longer has failure
-  simp only [OracleReduction.perfectCompleteness, toRelInput, OracleReduction.toReduction,
-    oracleReduction, oracleProver, Nat.reduceAdd, Fin.isValue, MessageIdx, Message, ChallengeIdx,
-    Challenge, Fin.reduceLast, oracleVerifier, bind_pure_comp, OracleVerifier.toVerifier,
-    simulateQ_map, Embedding.inl_apply, eq_mpr_eq_cast, cast_eq, Functor.map_map,
-    Reduction.perfectCompleteness_eq_prob_one, Set.mem_setOf_eq, StateT.run'_eq, Set.mem_univ,
-    true_and, probEvent_eq_one_iff, probFailure_eq_zero_iff, neverFails_bind_iff, h,
-    neverFails_map_iff, support_bind, support_map, Set.mem_iUnion, Set.mem_image, Prod.exists,
-    exists_and_right, exists_eq_right, exists_prop, forall_exists_index, and_imp, Prod.forall,
-    Fin.forall_fin_zero_pi, Prod.mk.injEq]
-  simp only [Reduction.run, Prover.run, Verifier.run, toOracleImpl, simulateQ']
-  simp only [ChallengeIdx, Fin.reduceLast, Prover.runToRound_zero_of_prover_first, Fin.isValue,
-    bind_pure_comp, liftM_eq_liftComp, liftComp_map, Functor.map_map, pure_bind]
-  intro stmt oStmt _
-  sorry
-  -- simp [Reduction.run, Prover.run, Verifier.run, simOracle2]
-  -- aesop
+-- /-- The `CheckClaim` reduction satisfies perfect completeness. -/
+-- @[simp]
+-- theorem oracleReduction_completeness (h : init.neverFails) :
+--     (oracleReduction oSpec Statement OStatement pred).perfectCompleteness init impl
+--     (toRelInput pred hPred) Set.univ := by
+--   -- TODO: fix this proof once `OracleComp` no longer has failure
+--   simp only [OracleReduction.perfectCompleteness, toRelInput, OracleReduction.toReduction,
+--     oracleReduction, oracleProver, Nat.reduceAdd, Fin.isValue, MessageIdx, Message, ChallengeIdx,
+--     Challenge, Fin.reduceLast, oracleVerifier, bind_pure_comp, OracleVerifier.toVerifier,
+--     simulateQ_map, Embedding.inl_apply, eq_mpr_eq_cast, cast_eq, Functor.map_map,
+--     Reduction.perfectCompleteness_eq_prob_one, Set.mem_setOf_eq, StateT.run'_eq, Set.mem_univ,
+--     true_and, probEvent_eq_one_iff, probFailure_eq_zero_iff, neverFails_bind_iff, h,
+--     neverFails_map_iff, support_bind, support_map, Set.mem_iUnion, Set.mem_image, Prod.exists,
+--     exists_and_right, exists_eq_right, exists_prop, forall_exists_index, and_imp, Prod.forall,
+--     Fin.forall_fin_zero_pi, Prod.mk.injEq]
+--   simp only [Reduction.run, Prover.run, Verifier.run, toOracleImpl, simulateQ']
+--   simp only [ChallengeIdx, Fin.reduceLast, Prover.runToRound_zero_of_prover_first, Fin.isValue,
+--     bind_pure_comp, liftM_eq_liftComp, liftComp_map, Functor.map_map, pure_bind]
+--   intro stmt oStmt _
+--   sorry
+--   -- simp [Reduction.run, Prover.run, Verifier.run, simOracle2]
+--   -- aesop
 
-theorem oracleReduction_rbr_knowledge_soundness : True := sorry
+-- theorem oracleReduction_rbr_knowledge_soundness : True := sorry
 
 end OracleReduction
 

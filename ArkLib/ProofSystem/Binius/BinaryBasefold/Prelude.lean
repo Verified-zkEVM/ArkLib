@@ -6,9 +6,9 @@ Authors: Chung Thai Nguyen, Quang Dao
 
 import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
 import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.FieldTheory.AdditiveNTT.AdditiveNTT
+import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
 import ArkLib.Data.MvPolynomial.Multilinear
-import ArkLib.Data.Vector.Basic
+import CompPoly.Data.Vector.Basic
 import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 
 namespace Binius.BinaryBasefold
@@ -89,6 +89,69 @@ noncomputable def fixFirstVariablesOfMQP (v : Fin (ℓ + 1))
   let eval_map : L[X Fin ↑v] →+* L := (eval challenges : MvPolynomial (Fin v) L →+* L)
   MvPolynomial.map (f := eval_map) (σ := Fin (ℓ - v)) H_forward
 
+private lemma sumToIter_monomial_aux {R : Type*} [CommSemiring R]
+    {S₁ S₂ : Type*}
+    (m : (S₁ ⊕ S₂) →₀ ℕ) (c : R) :
+    MvPolynomial.sumToIter R S₁ S₂ (MvPolynomial.monomial m c) =
+      MvPolynomial.monomial (m.comapDomain Sum.inl Sum.inl_injective.injOn)
+        (MvPolynomial.monomial (m.comapDomain Sum.inr Sum.inr_injective.injOn) c) := by
+  simp +decide only [MvPolynomial.sumToIter, MvPolynomial.eval₂Hom_monomial]
+  simp +decide [Finsupp.prod, Finsupp.comapDomain]
+  convert congr_arg₂ (· * ·) rfl ?_ using 1
+  rotate_left
+  exact ∏ x ∈ m.support,
+    Sum.rec (fun a => MvPolynomial.X a)
+      (fun b => MvPolynomial.C (MvPolynomial.X b)) x ^ m x
+  · rfl
+  · simp +decide [MvPolynomial.monomial_eq, Finset.prod_ite]
+    simp +decide [mul_assoc, Finsupp.prod]
+    rw [← Finset.prod_filter_mul_prod_filter_not m.support (fun x => x.isRight)]
+    congr! 2
+    · exact Finset.prod_bij (fun x hx => Sum.inr x) (by aesop) (by aesop)
+        (by aesop) (by aesop)
+    · exact Finset.prod_bij (fun x hx => Sum.inl x) (by aesop) (by aesop)
+        (by aesop) (by aesop)
+
+private lemma sumAlgEquiv_mem_restrictDegree {R : Type*} [CommSemiring R]
+    {S₁ S₂ : Type*}
+    (p : MvPolynomial (S₁ ⊕ S₂) R) (n : ℕ)
+    (hp : p ∈ MvPolynomial.restrictDegree (S₁ ⊕ S₂) R n) :
+    (MvPolynomial.sumAlgEquiv R S₁ S₂) p ∈
+      MvPolynomial.restrictDegree S₁ (MvPolynomial S₂ R) n := by
+  intro s hs
+  obtain ⟨m, hm⟩ : ∃ m : (S₁ ⊕ S₂) →₀ ℕ,
+      m ∈ p.support ∧ s = m.comapDomain Sum.inl Sum.inl_injective.injOn := by
+    have h_sum : (MvPolynomial.sumAlgEquiv R S₁ S₂) p =
+        ∑ m ∈ p.support,
+          (MvPolynomial.monomial (m.comapDomain Sum.inl Sum.inl_injective.injOn))
+            (MvPolynomial.monomial (m.comapDomain Sum.inr Sum.inr_injective.injOn)
+              (p.coeff m)) := by
+      conv_lhs => rw [p.as_sum]
+      rw [map_sum]
+      exact Finset.sum_congr rfl fun _ _ => sumToIter_monomial_aux _ _
+    contrapose! hs
+    simp +decide [h_sum]
+    rw [Finsupp.finset_sum_apply]
+    refine Finset.sum_eq_zero fun x hx => ?_
+    erw [AddMonoidAlgebra.lsingle_apply, AddMonoidAlgebra.lsingle_apply]; aesop
+  aesop
+
+private lemma rename_equiv_mem_restrictDegree {R : Type*} [CommSemiring R]
+    {σ τ : Type*}
+    (e : σ ≃ τ) (p : MvPolynomial σ R) (n : ℕ)
+    (hp : p ∈ MvPolynomial.restrictDegree σ R n) :
+    (MvPolynomial.rename e p) ∈ MvPolynomial.restrictDegree τ R n := by
+  intro m hm
+  obtain ⟨n', hn', hm_eq⟩ : ∃ n' ∈ p.support, m = n'.mapDomain e := by
+    simp +zetaDelta at *
+    rw [MvPolynomial.rename_eq] at hm
+    contrapose! hm
+    rw [Finsupp.mapDomain]
+    rw [Finsupp.sum, Finsupp.finset_sum_apply]
+    exact Finset.sum_eq_zero fun x hx =>
+      Finsupp.single_eq_of_ne (hm x (by aesop))
+  aesop
+
 omit [NeZero ℓ] in
 /-- Auxiliary lemma for proving that the polynomial sent by the honest prover is of degree at most
 `deg` -/
@@ -107,7 +170,9 @@ theorem fixFirstVariablesOfMQP_degreeLE {deg : ℕ} (v : Fin (ℓ + 1)) {challen
   set H_grouped : L[X Fin ↑v][X Fin (ℓ - ↑v)] := (sumAlgEquiv L (Fin (ℓ - v)) (Fin v)) H_sum
   set eval_map : L[X Fin ↑v] →+* L := (eval challenges : MvPolynomial (Fin v) L →+* L)
   have h_Hgrouped_degreeLE : H_grouped ∈ (L[X Fin ↑v])⦃≤ deg⦄[X Fin (ℓ - ↑v)] := by
-    sorry
+    exact Binius.BinaryBasefold.sumAlgEquiv_mem_restrictDegree H_sum deg
+      (Binius.BinaryBasefold.rename_equiv_mem_restrictDegree
+        ((finCongr h_l_eq).trans finEquiv) poly deg hp)
   have h_mem_support_max_deg_LE := MvPolynomial.mem_restrictDegree (R := L[X Fin ↑v]) (n := deg)
     (σ := Fin (ℓ - ↑v)) (p := H_grouped).mp (h_Hgrouped_degreeLE)
   have h_term_in_Hgrouped_support : term ∈ H_grouped.support := by
@@ -297,7 +362,7 @@ lemma qMap_total_fiber_repr_coeff (i : Fin ℓ) (steps : ℕ) (h_i_add_steps : i
     simp only [qMap_total_fiber, ↓reduceDIte, Nat.add_zero, eq_mp_eq_cast, cast_eq, not_lt_zero',
       tsub_zero, Fin.eta]
   · simp only [qMap_total_fiber, h_steps_eq_0, ↓reduceDIte, Module.Basis.repr_symm_apply,
-    Module.Basis.repr_linearCombination, Finsupp.equivFunOnFinite_symm_apply_toFun]
+    Module.Basis.repr_linearCombination, Finsupp.equivFunOnFinite_symm_apply_apply]
 
 def pointToIterateQuotientIndex (i : Fin (ℓ + 1)) (steps : ℕ) (h_i_add_steps : i.val + steps ≤ ℓ)
     (x : sDomain 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩)) : Fin (2 ^ steps) := by
@@ -476,7 +541,7 @@ lemma pointToIterateQuotientIndex_qMap_total_fiber_eq_self (i : Fin ℓ) (steps 
     · simp only [hsteps, ↓reduceDIte, eqRec_eq_cast, Nat.add_zero, Nat.pow_zero]
       omega
     · simp only [hsteps, ↓reduceDIte, Module.Basis.repr_linearCombination,
-      Finsupp.equivFunOnFinite_symm_apply_toFun, h_j, ite_eq_left_iff, one_ne_zero,
+      Finsupp.equivFunOnFinite_symm_apply_apply, h_j, ite_eq_left_iff, one_ne_zero,
       imp_false, Decidable.not_not]
       -- ⊢ (if j.getBit ↑k = 0 then 0 else 1) = j.getBit ↑k
       have h := Nat.getBit_eq_zero_or_one (k := j) (n := k)

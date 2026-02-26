@@ -420,7 +420,7 @@ end SumcheckOperations
 
 variable {r : ℕ} [NeZero r]
 variable {L : Type} [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
-  -- [SelectableType L] => not used
+  -- [SampleableType L] => not used
 variable (𝔽q : Type) [Field 𝔽q] [Fintype 𝔽q] [DecidableEq 𝔽q]
   [h_Fq_char_prime : Fact (Nat.Prime (ringChar 𝔽q))] [hF₂ : Fact (Fintype.card 𝔽q = 2)]
 variable [Algebra 𝔽q L]
@@ -763,12 +763,9 @@ lemma take_snoc_oracle_eq_oStmtIn (i : Fin ℓ)
       OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)
     (newOracleFn : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ) :
     (take_snoc_oracle 𝔽q β i oStmtIn newOracleFn) = oStmtIn := by
-  unfold take_snoc_oracle snoc_oracle
-  simp only [eq_mpr_eq_cast, id_eq]
-  if hi: isCommitmentRound ℓ ϑ i then
-    simp only [Fin.is_lt, ↓reduceDIte, Fin.eta]
-  else
-    simp only [Fin.is_lt, ↓reduceDIte, Fin.eta]
+  unfold take_snoc_oracle
+  unfold snoc_oracle
+  simp
 
 /-- Extract the first oracle f^(0) from oracle statements -/
 def getFirstOracle {i : Fin (ℓ + 1)}
@@ -1014,7 +1011,7 @@ def foldStepRelOutProp (i : Fin ℓ)
   let wit := input.2
   masterKStateProp (mp := mp) (𝓑 := 𝓑) 𝔽q β
     (stmtIdx := i.succ) (oracleIdx := i.castSucc)
-    (h_le := Nat.le_of_lt (Fin.castSucc_lt_succ i)) stmt wit oStmt (localChecks := True)
+    (h_le := Nat.le_of_lt (Fin.castSucc_lt_succ)) stmt wit oStmt (localChecks := True)
 
 /-- This is a special case of nonDoomedFoldingProp for `i = ℓ`, where we support
 the consistency between the last oracle `ℓ - ϑ` and the final constant `c` -/

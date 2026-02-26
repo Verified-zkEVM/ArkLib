@@ -19,7 +19,7 @@ open scoped NNReal
 
 variable {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
-  [∀ i, SelectableType (pSpec.Challenge i)]
+  [∀ i, SampleableType (pSpec.Challenge i)]
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
 namespace Extractor
@@ -122,7 +122,7 @@ structure StateFunction
   /-- If the state function is false for a full transcript, the verifier will not output a statement
     in the output language -/
   toFun_full : ∀ stmt tr, ¬ toFun (.last n) stmt tr →
-    [(· ∈ langOut) | do (simulateQ impl (verifier.run stmt tr)).run' (← init)] = 0
+    Pr[(· ∈ langOut) | OptionT.mk do (simulateQ impl (verifier.run stmt tr)).run' (← init)] = 0
 
 /-- A knowledge state function for a verifier, with respect to input relation `relIn`, output
   relation `relOut`, and intermediate witness types `WitMid`. This is used to define
@@ -150,8 +150,8 @@ structure KnowledgeStateFunction
     output witness `witOut`, then the state function is true for the full transcript and the
     extracted last middle witness. -/
   toFun_full : ∀ stmtIn tr witOut,
-    [fun stmtOut => (stmtOut, witOut) ∈ relOut
-    | do (simulateQ impl (verifier.run stmtIn tr)).run' (← init)] > 0 →
+    Pr[fun stmtOut => (stmtOut, witOut) ∈ relOut
+    | OptionT.mk do (simulateQ impl (verifier.run stmtIn tr)).run' (← init)] > 0 →
     toFun (.last n) stmtIn tr (extractor.extractOut stmtIn tr witOut)
 
 /-- A knowledge state function gives rise to a state function via quantifying over the witness -/
@@ -182,8 +182,8 @@ def KnowledgeStateFunction.toStateFunction
       probEvent_eq_zero_iff, not_exists]
     intro stmtOut hStmtOut witOut hRelOut
     have hProb :
-        [fun stmtOut ↦ (stmtOut, witOut) ∈ relOut
-        | do (simulateQ impl (verifier.run stmtIn tr)).run' (← init)] > 0 := by
+        Pr[fun stmtOut ↦ (stmtOut, witOut) ∈ relOut
+        | OptionT.mk do (simulateQ impl (verifier.run stmtIn tr)).run' (← init)] > 0 := by
       simp only [Fin.val_last, gt_iff_lt, probEvent_pos_iff]
       exact ⟨stmtOut, hStmtOut, hRelOut⟩
     have := kSF.toFun_full stmtIn tr witOut hProb
@@ -209,7 +209,7 @@ structure KnowledgeStateFunctionOneShot
   /-- If the state function is false for a full transcript, the verifier will not output a statement
     in the output language -/
   toFun_full : ∀ stmt tr, ¬ toFun (.last n) stmt tr →
-    [(· ∈ langOut) | do (simulateQ impl (verifier.run stmt tr)).run' (← init)] = 0
+    Pr[(· ∈ langOut) | OptionT.mk do (simulateQ impl (verifier.run stmt tr)).run' (← init)] = 0
 
 /-- A state function & a one-shot round-by-round extractor gives rise to a knowledge state function
   where the intermediate witness types are all equal to the input witness type -/
@@ -249,12 +249,8 @@ def KnowledgeStateFunctionOneShot.toKnowledgeStateFunction
       have hTr : tr = default := by ext i; exact Fin.elim0 i
       subst hTr
       have := stF.toFun_empty stmtIn
-      simp_all
-      obtain ⟨x, ⟨s, ⟨hs, h'⟩⟩, hRelOut⟩ := h
-      exact ⟨x, s, hs, h', witOut, hRelOut⟩
-    · simp_all
-      obtain ⟨x, ⟨s, ⟨hs, h'⟩⟩, hRelOut⟩ := h
-      exact ⟨x, s, hs, h', witOut, hRelOut⟩
+      grind
+    · grind
 
 /-- Coercion to the underlying function of a state function -/
 instance {langIn : Set StmtIn} {langOut : Set StmtOut}
@@ -300,11 +296,11 @@ def rbrSoundness (langIn : Set StmtIn) (langOut : Set StmtOut)
   ∀ witIn : WitIn,
   ∀ prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec,
   ∀ i : pSpec.ChallengeIdx,
-    [fun ⟨transcript, challenge⟩ =>
+    Pr[fun ⟨transcript, challenge⟩ =>
       ¬ stateFunction i.1.castSucc stmtIn transcript ∧
         stateFunction i.1.succ stmtIn (transcript.concat challenge)
     | do
-      (simulateQ (impl ++ₛₒ challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         (do
           let ⟨transcript, _⟩ ← prover.runToRound i.1.castSucc stmtIn witIn
           let challenge ← liftComp (pSpec.getChallenge i) _
@@ -346,13 +342,13 @@ def rbrKnowledgeSoundnessOneShot (relIn : Set (StmtIn × WitIn)) (relOut : Set (
   ∀ witIn : WitIn,
   ∀ prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec,
   ∀ i : pSpec.ChallengeIdx,
-    [fun ⟨transcript, challenge, proveQueryLog⟩ =>
+    Pr[fun ⟨transcript, challenge, proveQueryLog⟩ =>
       letI extractedWitIn := extractor i.1.castSucc stmtIn transcript proveQueryLog.fst
       (stmtIn, extractedWitIn) ∉ relIn ∧
         ¬ stateFunction i.1.castSucc stmtIn transcript ∧
           stateFunction i.1.succ stmtIn (transcript.concat challenge)
     | do
-      (simulateQ (impl ++ₛₒ challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         (do
           let ⟨⟨transcript, _⟩, proveQueryLog⟩ ← prover.runWithLogToRound i.1.castSucc stmtIn witIn
           let challenge ← liftComp (pSpec.getChallenge i) _
@@ -370,13 +366,13 @@ def rbrKnowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut
   ∀ witIn : WitIn,
   ∀ prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec,
   ∀ i : pSpec.ChallengeIdx,
-    [fun ⟨transcript, challenge, _proveQueryLog⟩ =>
+    Pr[fun ⟨transcript, challenge, _proveQueryLog⟩ =>
       ∃ witMid,
         ¬ kSF i.1.castSucc stmtIn transcript
           (extractor.extractMid i.1 stmtIn (transcript.concat challenge) witMid) ∧
           kSF i.1.succ stmtIn (transcript.concat challenge) witMid
     | do
-      (simulateQ (impl ++ₛₒ challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         (do
           let ⟨⟨transcript, _⟩, proveQueryLog⟩ ← prover.runWithLogToRound i.1.castSucc stmtIn witIn
           let challenge ← liftComp (pSpec.getChallenge i) _
@@ -399,7 +395,6 @@ theorem rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
-    (hInit : init.neverFails)
     (h : verifier.rbrKnowledgeSoundnessOneShot init impl relIn relOut rbrKnowledgeError) :
     verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError := by
   unfold rbrKnowledgeSoundness
@@ -412,6 +407,7 @@ theorem rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness
   clear h
   refine le_trans ?_ this
   simp
+  stop
   refine probEvent_mono ?_
   -- intro ⟨⟨tr, _, _⟩, chal⟩ hx
   -- simp [StateFunction.toKnowledgeStateFunction]
@@ -524,7 +520,22 @@ def Verifier.StateFunction.id {lang : Set Statement} :
   toFun | ⟨0, _⟩ => fun stmtIn _ => stmtIn ∈ lang
   toFun_empty := fun _ => by simp
   toFun_next := fun i => Fin.elim0 i
-  toFun_full := fun _ _ _ => by simp_all [Verifier.id, Verifier.run]
+  toFun_full := fun stmt tr h => by
+    simp only [Verifier.id, Verifier.run]
+    rw [probEvent_eq_zero_iff]
+    intro x hx
+    rw [OptionT.support_eq] at hx
+    simp only [Set.mem_preimage, OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
+    obtain ⟨s, _, hx⟩ := hx
+    have key : (simulateQ impl (pure stmt : OptionT (OracleComp oSpec) Statement)).run' s =
+        pure (some stmt) := by
+      change (simulateQ impl (pure (some stmt) : OracleComp oSpec (Option Statement))).run' s = _
+      rw [simulateQ_pure]
+      change Prod.fst <$> (pure (some stmt) : StateT σ ProbComp _).run s = _
+      rw [StateT.run_pure]; simp [map_pure]
+    rw [key] at hx
+    simp only [support_pure, Set.mem_singleton_iff] at hx
+    cases hx; exact h
 
 /-- The identity / trivial verifier is perfectly round-by-round sound. -/
 @[simp]
@@ -549,7 +560,23 @@ def Verifier.KnowledgeStateFunction.id {rel : Set (Statement × Witness)} :
   toFun | ⟨0, _⟩ => fun stmtIn _ witIn => (stmtIn, witIn) ∈ rel
   toFun_empty := fun _ => by simp
   toFun_next := fun i => Fin.elim0 i
-  toFun_full := fun _ _ _ _ => by simp_all [Verifier.id, Extractor.RoundByRound.id, Verifier.run]
+  toFun_full := fun stmtIn tr witOut h => by
+    simp only [Verifier.id, Verifier.run] at h
+    rw [gt_iff_lt, probEvent_pos_iff] at h
+    obtain ⟨x, hx, hrel⟩ := h
+    rw [OptionT.support_eq] at hx
+    simp only [Set.mem_preimage, OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
+    obtain ⟨s, _, hx⟩ := hx
+    have key : (simulateQ impl (pure stmtIn : OptionT (OracleComp oSpec) Statement)).run' s =
+        pure (some stmtIn) := by
+      change (simulateQ impl (pure (some stmtIn) : OracleComp oSpec (Option Statement))).run' s = _
+      rw [simulateQ_pure]
+      change Prod.fst <$> (pure (some stmtIn) : StateT σ ProbComp _).run s = _
+      rw [StateT.run_pure]; simp [map_pure]
+    rw [key] at hx
+    simp only [support_pure, Set.mem_singleton_iff] at hx
+    cases (Option.some.inj hx)
+    exact hrel
 
 /-- The identity / trivial verifier is perfectly round-by-round knowledge sound. -/
 @[simp]
@@ -557,22 +584,15 @@ lemma Verifier.id_rbrKnowledgeSoundness {rel : Set (Statement × Witness)} :
     (Verifier.id : Verifier oSpec Statement _ _).rbrKnowledgeSoundness
       init impl rel rel 0 := by
   refine ⟨_, _, Verifier.KnowledgeStateFunction.id init impl, ?_⟩
-  simp only [Verifier.id, KnowledgeStateFunction.id, Extractor.RoundByRound.id]
-  simp only [ChallengeIdx, Transcript.def_eq, Nat.reduceAdd, Fin.coe_castSucc, Challenge,
-    liftComp_query, SubSpec.liftM_query_eq_liftM_liftM, liftM_append_right_eq, bind_pure_comp,
-    simulateQ_bind, StateT.run'_eq, StateT.run_bind, Function.comp_apply, simulateQ_map,
-    simulateQ_query, StateT.run_map, map_bind, Functor.map_map, Fin.zero_eta, Fin.isValue,
-    Fin.coe_ofNat_eq_mod, Nat.reduceMod, Fin.castLE_refl, Fin.val_succ, Pi.zero_apply,
-    ENNReal.coe_zero, nonpos_iff_eq_zero, probEvent_eq_zero_iff, support_bind, support_map,
-    Set.mem_iUnion, Set.mem_image, Prod.exists, exists_and_right, exists_prop, not_exists, not_and,
-    forall_exists_index, and_imp, Prod.forall, Prod.mk.injEq, IsEmpty.forall_iff, implies_true]
+  intro stmtIn witIn prover i
+  exact Fin.elim0 i.1
 
 /-- The identity / trivial oracle verifier is perfectly round-by-round knowledge sound. -/
 @[simp]
 lemma OracleVerifier.id_rbrKnowledgeSoundness
     {rel : Set ((Statement × ∀ i, OStatement i) × Witness)} :
     (OracleVerifier.id : OracleVerifier oSpec Statement OStatement _ _ _).rbrKnowledgeSoundness
-      init impl rel rel 0 :=
-  Verifier.id_rbrKnowledgeSoundness init impl
+      init impl rel rel 0 := by
+  convert Verifier.id_rbrKnowledgeSoundness init impl (rel := rel)
 
 end Trivial

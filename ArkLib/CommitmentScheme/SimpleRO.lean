@@ -26,34 +26,30 @@ namespace SimpleRO
 open OracleSpec OracleComp
 
 @[reducible]
-def randSpec (β : Type) : OracleSpec Unit := fun _ => (Unit, β)
+def randSpec (β : Type) : OracleSpec Unit := Unit →ₒ β
 
 @[reducible]
-def ROspec (α β γ : Type) : OracleSpec Unit := fun _ => (α × β, γ)
+def ROspec (α β γ : Type) : OracleSpec (α × β) := (α × β) →ₒ γ
 
 @[reducible]
-def oSpec (α β γ : Type) : OracleSpec (Unit ⊕ Unit) := randSpec β ++ₒ ROspec α β γ
+def oSpec (α β γ : Type) : OracleSpec (Unit ⊕ (α × β)) := randSpec β + ROspec α β γ
 
 variable {α β γ : Type}
 
--- TODO: figure out why we need so much explicit annotation
-
 def commit (v : α) : OracleComp (oSpec α β γ) γ := do
-  let r : β ← liftComp
-    (query (spec := randSpec β) () () : OracleComp (randSpec β) β) _
-  let cm : γ ← liftComp
-    (query (spec := ROspec α β γ) () (v, r) : OracleComp (ROspec α β γ) γ) _
+  let r : β ← query (spec := oSpec α β γ) (Sum.inl ())
+  let cm : γ ← query (spec := oSpec α β γ) (Sum.inr (v, r))
   return cm
 
-def verify [BEq γ] (cm : γ) (v : α) (r : β) : OracleComp (ROspec α β γ) Unit := do
-  let cm' ← (query (spec := ROspec α β γ) () (v, r) : OracleComp (ROspec α β γ) γ)
+def verify [BEq γ] (cm : γ) (v : α) (r : β) : OptionT (OracleComp (ROspec α β γ)) Unit := do
+  let cm' ← (query (spec := ROspec α β γ) (v, r) : OracleComp (ROspec α β γ) γ)
   guard (cm' == cm)
 
 -- The trivial `OracleInterface` instance for `α`
 local instance : OracleInterface α where
   Query := Unit
-  Response := α
-  answer := fun x _ => x
+  toOC.spec := fun () => α
+  toOC.impl := fun () => read
 
 def commitmentScheme : Commitment.Scheme (oSpec α β γ) α β γ !p[] where
   commit := fun v r => commit v

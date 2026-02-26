@@ -11,7 +11,7 @@ import Mathlib.Algebra.Polynomial.Eval.Defs
 import Mathlib.Data.Fin.Tuple.Take
 import Mathlib.Tactic.FinCases
 import Batteries.Data.Fin.Fold
-import ArkLib.Data.Classes.DCast
+import CompPoly.Data.Classes.DCast
 
 /-!
   # Lemmas on `Fin` and `Fin`-indexed tuples
@@ -138,7 +138,7 @@ theorem induction_append_left {m n : ℕ} {motive : Fin (m + n + 1) → Sort*} {
       induction (motive := motive) zero succ ⟨i, by omega⟩ =
         @induction m (fun j => motive ⟨j, by omega⟩) zero (fun j x => succ ⟨j, by omega⟩ x) i := by
   induction i using Fin.induction with
-  | zero => simp [induction_zero]; rfl
+  | zero => simp [induction_zero]
   | succ i ih =>
     simp at ih ⊢
     have : (⟨i.1 + 1, by omega⟩ : Fin (m + n + 1)) = (⟨i, by omega⟩ : Fin (m + n)).succ := rfl

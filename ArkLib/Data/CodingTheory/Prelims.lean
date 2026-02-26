@@ -5,7 +5,7 @@ Authors: Katerina Hristova, František Silváši, Julian Sutherland, Chung Thai 
 -/
 
 import Mathlib.Algebra.Lie.OfAssociative
-import Mathlib.Data.Matrix.Rank
+import Mathlib.LinearAlgebra.Matrix.Rank
 import Mathlib.LinearAlgebra.AffineSpace.Pointwise
 
 section TensorCombination
@@ -98,7 +98,7 @@ lemma cRank_rank_conversion :
   ]
   calc U.cRank ≤ ↑(Fintype.card (Fin n)) := by exact Matrix.cRank_le_card_width U
          _ = ↑n := by rw[Fintype.card_fin]
-  exact Cardinal.nat_lt_aleph0 n
+  exact Cardinal.natCast_lt_aleph0
 
 /-- An m×n matrix has full rank if the submatrix consisting of columns 1 through m has rank m. -/
 lemma full_row_rank_via_rank_subLeftFull (h : m ≤ n) :
@@ -311,7 +311,6 @@ instance [Nonempty F] {k : ℕ} :
 open Finset
 instance {k : ℕ} {u : Fin k → ι → A} : Nonempty {x // x ∈ polynomialCurveFinite (F := F) u} := by
   simp [polynomialCurveFinite]
-  use ∑ i : Fin k, Classical.arbitrary F ^ (i : ℕ) • u i, Classical.arbitrary F
 
 end
 end Curve
