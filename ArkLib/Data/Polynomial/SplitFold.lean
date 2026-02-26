@@ -319,7 +319,7 @@ lemma foldNth_zero {s : ℕ} {α : 𝔽} : foldNth (2 ^ s) 0 α = 0 := by
   simp [this]
 
 @[simp]
-lemma sum_splitn_eq_folding_polynomial {𝔽 : Type} [Field 𝔽]
+lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽]
   {f : Polynomial 𝔽} {n : ℕ} 
   [inst : NeZero n]
   :
@@ -327,7 +327,7 @@ lemma sum_splitn_eq_folding_polynomial {𝔽 : Type} [Field 𝔽]
     = ∑ i, C (splitNth f n i) * (X ^ i.val)
   := by
   symm
-  apply FoldingPolynomial.folding_polynomial_is_unique
+  apply FoldingPolynomial.folding_polynomial_is_unique'
   · conv =>
       rhs
       rw [splitNth_def (f := f) (inst := inst)]
@@ -345,25 +345,15 @@ lemma sum_splitn_eq_folding_polynomial {𝔽 : Type} [Field 𝔽]
       rfl
   · simp only [Bivariate.degreeX, finset_sum_coeff, coeff_C_mul, coeff_X_pow, mul_ite, mul_one,
     mul_zero, natDegree_pow, natDegree_X]
-    apply Nat.le_antisymm
-    · simp only [Finset.sup_le_iff, mem_support_iff, finset_sum_coeff, coeff_C_mul, coeff_X_pow,
-      mul_ite, mul_one, mul_zero, ne_eq]
-      intro b hb
-      apply natDegree_sum_le_of_forall_le
-      rintro ⟨i, hi⟩ _
-      by_cases heq: b = i
-      · simp only [heq, ↓reduceIte]
-        exact splitNth_degree_le
-      · simp [heq]
-    · by_cases heq: f.natDegree / n = 0
-      · rw [heq]
-        simp
-      · rw [Finset.le_sup_iff (by {
-          simp
-          simp at heq
-          omega
-        })]
-        sorry
+    simp only [Finset.sup_le_iff, mem_support_iff, finset_sum_coeff, coeff_C_mul, coeff_X_pow,
+    mul_ite, mul_one, mul_zero, ne_eq]
+    intro b hb
+    apply natDegree_sum_le_of_forall_le
+    rintro ⟨i, hi⟩ _
+    by_cases heq: b = i
+    · simp only [heq, ↓reduceIte]
+      exact splitNth_degree_le
+    · simp [heq]
   · simp [Bivariate.natDegreeY]
     apply Nat.lt_of_le_pred (by {
       apply Nat.zero_lt_of_ne_zero
@@ -385,7 +375,7 @@ lemma polyFold_eq_sum_of_splitNth {𝔽 : Type} [Field 𝔽]
   :
   FoldingPolynomial.polyFold f n r 
     = ∑ i, C (r ^ i.val) * splitNth f n i := by
-  simp only [FoldingPolynomial.polyFold, sum_splitn_eq_folding_polynomial, map_pow]
+  simp only [FoldingPolynomial.polyFold, folding_polynomial_eq_sum_splitNth, map_pow]
   rw [Polynomial.eval_finset_sum]
   simp only [eval_mul, eval_C, eval_pow, eval_X] 
   conv =>

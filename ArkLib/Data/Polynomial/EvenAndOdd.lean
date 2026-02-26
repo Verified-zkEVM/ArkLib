@@ -407,7 +407,7 @@ lemma even_y_odd_eq_folding_polynomial {f : Polynomial F} :
     = (C (deevenize <| evenPart f)) + X * (C (deevenize <| oddPart f)) 
    := by
   symm
-  apply FoldingPolynomial.folding_polynomial_is_unique
+  apply FoldingPolynomial.folding_polynomial_is_unique'
   · simp only [X_mul_C, Polynomial.map_add, map_C, coe_compRingHom, Polynomial.map_mul, map_X,
     eval_add, eval_C, eval_mul, eval_X]
     conv =>
@@ -418,59 +418,26 @@ lemma even_y_odd_eq_folding_polynomial {f : Polynomial F} :
     simp [mul_comm]
   · simp only [Bivariate.degreeX, X_mul_C, coeff_add, coeff_C_mul, ne_eq, X_ne_zero,
     not_false_eq_true, natDegree_mul_X, natDegree_X, Nat.reduceAdd]
-    apply Nat.le_antisymm
-    · simp only [Finset.sup_le_iff, mem_support_iff, coeff_add, coeff_C_mul, ne_eq]
-      intro b hb
-      rcases b with _ | b
-      · simp only [coeff_C_zero, coeff_X_zero, mul_zero, add_zero] at *
-        trans
-        exact deevenize_natDegree_le_natDegree_div_2
-        apply Nat.div_le_div_right
-        rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
-        simp only [evenPart_coeff, ite_eq_right_iff]
-        intro N hN hEven
-        rw [Polynomial.coeff_eq_zero_of_natDegree_lt hN]
-      · rcases b with _ | b <;> try simp [Polynomial.coeff_X]
-        simp at *
-        trans
-        exact deevenize_natDegree_le_natDegree_div_2
-        apply Nat.div_le_div_right
-        rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
-        simp
-        intro N hN hEven
-        rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)]
-    · trans
-      apply natDegree_div_2_le_max_parts_natDegree
-      simp only [sup_le_iff]
-      apply And.intro
-      · by_cases heq: f.oddPart.deevenize.natDegree = 0 <;> try simp [heq]
-        rw [Finset.le_sup_iff (by {
-          simp
-          omega
-        })]
-        exists 1
-        apply And.intro
-        · simp only [mem_support_iff, coeff_add, coeff_C_succ, coeff_mul_X, coeff_C_zero, zero_add,
-          ne_eq]
-          have h: (0 : F[X]) = deevenize 0 := by rfl
-          rw [h]
-          intro contra
-          have h : evenize (deevenize f.oddPart) = evenize (deevenize 0) := by
-            rw [contra]
-          rw [
-            eq_evenize_deevenize (oddPart_even),
-            eq_evenize_deevenize (by simp [EvenPoly])
-            ] at h
-          rw [h] at heq
-          simp at heq
-        · simp
-      · by_cases heq: f.evenPart.deevenize.natDegree = 0 <;> try simp [heq]
-        rw [Finset.le_sup_iff (by {
-          simp 
-          omega
-        })]
-        exists 0
-        aesop
+    simp only [Finset.sup_le_iff, mem_support_iff, coeff_add, coeff_C_mul, ne_eq]
+    intro b hb
+    rcases b with _ | b
+    · simp only [coeff_C_zero, coeff_X_zero, mul_zero, add_zero] at *
+      trans
+      exact deevenize_natDegree_le_natDegree_div_2
+      apply Nat.div_le_div_right
+      rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
+      simp only [evenPart_coeff, ite_eq_right_iff]
+      intro N hN hEven
+      rw [Polynomial.coeff_eq_zero_of_natDegree_lt hN]
+    · rcases b with _ | b <;> try simp [Polynomial.coeff_X]
+      simp at *
+      trans
+      exact deevenize_natDegree_le_natDegree_div_2
+      apply Nat.div_le_div_right
+      rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
+      simp
+      intro N hN hEven
+      rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)]
   · simp only [Bivariate.natDegreeY, X_mul_C, natDegree_C_add, ne_eq, X_ne_zero, not_false_eq_true,
     natDegree_mul_X, natDegree_X, Nat.reduceAdd]
     apply Nat.lt_of_le_of_lt Polynomial.natDegree_mul_le
