@@ -148,53 +148,54 @@ omit [Finite F] in
 private lemma witness_lift {F : Type} [NonBinaryField F]
   {k : ℕ} {s : Fin (k + 1) → ℕ+} {d : ℕ+} {p : F[X]} {α : F} {i : Fin (k + 1)} :
     p ∈ Witness F s d i.castSucc →
-      p.foldNth (2 ^ (s i).1) α ∈ Witness F s d i.succ := by
-  intro deg_bound
-  unfold Witness at deg_bound ⊢
-  rw [Polynomial.mem_degreeLT] at deg_bound ⊢
-  simp only [Fin.coe_castSucc, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat,
-    Fin.val_succ] at deg_bound ⊢
-  by_cases h : p = 0
-  · rw [h, foldNth_zero, degree_zero]
-    exact WithBot.bot_lt_coe _
-  · by_cases h' : foldNth (2 ^ (s i).1) p α = 0
-    · rw [h', degree_zero]
-      exact WithBot.bot_lt_coe _
-    · erw [Polynomial.degree_eq_natDegree h, WithBot.coe_lt_coe] at deg_bound
-      erw [Polynomial.degree_eq_natDegree h', WithBot.coe_lt_coe]
-      norm_cast at deg_bound ⊢
-      have : 2 ^ (s i).1 > 0 := by
-        simp only [gt_iff_lt, Nat.ofNat_pos, pow_pos]
-      rw [Iff.symm (Nat.mul_lt_mul_left this)]
-      apply lt_of_le_of_lt foldNth_degree_le'
-      have arith {a b c : ℕ} (h : b ≥ c) (h' : a ≤ c) : a + (b - c) = b - (c - a) := by
-        rw [Nat.sub_sub_right b h', Nat.sub_add_comm h, Nat.add_comm]
-      rw [←mul_assoc, ←pow_add, arith]
-      · convert deg_bound
-        rw [sum_add_one]
-        simp
-      · simp only [ge_iff_le]
-        apply sum_le_univ_sum_of_nonneg
-        simp
-      · apply @CanonicallyOrderedAddCommMonoid.single_le_sum (Fin (k + 1)) ℕ _ _ _
-            (fun j => (s j).1)
-            (List.take (↑i + 1) (List.finRange (k + 1))).toFinset i
-        rw [List.mem_toFinset]
-        apply List.mem_take_iff_getElem.mpr
-        use i.1
-        use
-          (by
-            have := i.2
-            simp only [List.length_finRange, Nat.add_min_add_right, gt_iff_lt]
-            by_cases h : i.1 = 0
-            · rw [h]
-              simp
-            · have : 1 ≤ i.1 := by omega
-              refine (Nat.sub_lt_iff_lt_add this).mp ?_
-              rw [Nat.lt_min]
-              omega
-          )
-        simp
+      FoldingPolynomial.polyFold p (2 ^ (s i).1) α ∈ Witness F s d i.succ := by
+      sorry
+  -- intro deg_bound
+  -- unfold Witness at deg_bound ⊢
+  -- rw [Polynomial.mem_degreeLT] at deg_bound ⊢
+  -- simp only [Fin.coe_castSucc, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat,
+  --   Fin.val_succ] at deg_bound ⊢
+  -- by_cases h : p = 0
+  -- · rw [h, foldNth_zero, degree_zero]
+  --   exact WithBot.bot_lt_coe _
+  -- · by_cases h' : foldNth (2 ^ (s i).1) p α = 0
+  --   · rw [h', degree_zero]
+  --     exact WithBot.bot_lt_coe _
+  --   · erw [Polynomial.degree_eq_natDegree h, WithBot.coe_lt_coe] at deg_bound
+  --     erw [Polynomial.degree_eq_natDegree h', WithBot.coe_lt_coe]
+  --     norm_cast at deg_bound ⊢
+  --     have : 2 ^ (s i).1 > 0 := by
+  --       simp only [gt_iff_lt, Nat.ofNat_pos, pow_pos]
+  --     rw [Iff.symm (Nat.mul_lt_mul_left this)]
+  --     apply lt_of_le_of_lt foldNth_degree_le'
+  --     have arith {a b c : ℕ} (h : b ≥ c) (h' : a ≤ c) : a + (b - c) = b - (c - a) := by
+  --       rw [Nat.sub_sub_right b h', Nat.sub_add_comm h, Nat.add_comm]
+  --     rw [←mul_assoc, ←pow_add, arith]
+  --     · convert deg_bound
+  --       rw [sum_add_one]
+  --       simp
+  --     · simp only [ge_iff_le]
+  --       apply sum_le_univ_sum_of_nonneg
+  --       simp
+  --     · apply @CanonicallyOrderedAddCommMonoid.single_le_sum (Fin (k + 1)) ℕ _ _ _
+  --           (fun j => (s j).1)
+  --           (List.take (↑i + 1) (List.finRange (k + 1))).toFinset i
+  --       rw [List.mem_toFinset]
+  --       apply List.mem_take_iff_getElem.mpr
+  --       use i.1
+  --       use
+  --         (by
+  --           have := i.2
+  --           simp only [List.length_finRange, Nat.add_min_add_right, gt_iff_lt]
+  --           by_cases h : i.1 = 0
+  --           · rw [h]
+  --             simp
+  --           · have : 1 ≤ i.1 := by omega
+  --             refine (Nat.sub_lt_iff_lt_add this).mp ?_
+  --             rw [Nat.lt_min]
+  --             omega
+  --         )
+  --       simp
 
 instance {i : Fin (k + 1)} : ∀ j, OracleInterface (OracleStatement D x s i j) :=
   fun _ => inferInstance
@@ -331,6 +332,7 @@ instance {i : Fin k} : ∀ j, OracleInterface ((pSpec D x s i).Message j)
       simp only [Fin.vcons_fin_zero, Nat.reduceAdd, Fin.isValue, Fin.vcons_one]
       infer_instance
 
+
 /-- The prover for the `i`-th round of the FRI protocol. It first receives the challenge,
     then does an `s` degree split of this polynomial. Finally, it returns the evaluation of
     this polynomial on the next evaluation domain. -/
@@ -359,7 +361,7 @@ noncomputable def foldProver :
     fun (α : F) =>
       ⟨
         ⟨Fin.append chals (fun (_ : Fin 1) => α), o⟩,
-        ⟨p.1.foldNth (2 ^ (s i.castSucc).1) α, witness_lift p.2⟩
+        ⟨FoldingPolynomial.polyFold p.1 (2 ^ (s i.castSucc).1) α, witness_lift p.2⟩
       ⟩
   | ⟨1, h⟩ => nomatch h
 
@@ -524,7 +526,7 @@ noncomputable def finalFoldProver :
       ⟨
         ⟨Fin.vappend chals !v[α], o⟩,
         ⟨
-          p.1.foldNth (2 ^ (s (Fin.last k)).1) α,
+          FoldingPolynomial.polyFold p.1 (2 ^ (s (Fin.last k)).1) α,
           by
             simpa only [(rfl : (Fin.last k).succ = (Fin.last (k + 1)))] using
               witness_lift p.2
@@ -672,7 +674,7 @@ def queryCodeword (k : ℕ) (s : Fin (k + 1) → ℕ+) {i : Fin (k + 1)}
     OracleComp [FinalOracleStatement D x s]ₒ F :=
   liftM (cast (β := OracleQuery [FinalOracleStatement D x s]ₒ F)
     (by simp [FinalOracleStatement])
-    (query (spec := [FinalOracleStatement D x s]ₒ) ⟨⟨i.1, sorry⟩,
+    (query (spec := [FinalOracleStatement D x s]ₒ) ⟨⟨i.1, by omega⟩,
       (by simpa [Nat.ne_of_lt i.2] using w)⟩))
 
 /- Used by the verifier to fetch the polynomial sent in final folding round. -/
