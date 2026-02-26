@@ -13,7 +13,7 @@ namespace OutOfDomSmpl
 
 open ListDecodable MvPolynomial NNReal ProbabilityTheory ReedSolomon
 
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [DecidableEq F]
          {ι : Type} [Fintype ι] [DecidableEq ι]
 
 /-- Lemma 4.24
@@ -54,7 +54,7 @@ lemma crs_equiv_rs_random_point_agreement
            C' = CRS [F, ι, φ, m, s, w, σ]
            σ = {σ₁,..,σₛ}, w = {w₁,..,wₛ}, wᵢ = Z * eqPolynomial(pow(r,m)) -/
 lemma oodSampling_crs_eq_rs
-    {f : ι → F} {m s : ℕ} {φ : ι ↪ F} [Smooth φ]
+    [Fintype F] {f : ι → F} {m s : ℕ} {φ : ι ↪ F} [Smooth φ]
     (l δ : ℝ≥0) (hδLe : δ ≤ 1)
     {C : Set (ι → F)} (hcode : C = smoothCode φ m ∧ listDecodable C δ l) :
     Pr_{ let rs ←$ᵖ (Fin s → F) }[ (∃ σ : Fin s → F,
@@ -128,7 +128,7 @@ lemma oodSampling_crs_eq_rs
   if `C = RS [F, ι, m]` is `(δ,l)`-list decodable then
   the above equation is bounded as `≤ l²/2 * (2ᵐ/|F|)ˢ` -/
 lemma oodSampling_rs_le_bound
-    {f : ι → F} {m s : ℕ} {φ : ι ↪ F} [Smooth φ]
+    [Fintype F] {f : ι → F} {m s : ℕ} {φ : ι ↪ F} [Smooth φ]
     (δ l : ℝ≥0) (hδLe : δ ≤ 1)
     (C : Set (ι → F)) (hcode : C = smoothCode φ m ∧ listDecodable C δ l) :
     Pr_{ let rs ←$ᵖ (Fin s → F) }[ ∃ u u' : smoothCode φ m,

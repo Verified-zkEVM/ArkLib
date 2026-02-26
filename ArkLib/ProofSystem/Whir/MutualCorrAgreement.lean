@@ -59,7 +59,6 @@ def proximityCondition (f : parℓ → ι → F) (δ : ℝ≥0) (r : parℓ → 
   Note that there is a typo in the paper:
   it should `δ < 1 - BStar(C,parℓ)` in place of `δ < 1 - B(C,parℓ)`
 -/
-
 noncomputable def hasMutualCorrAgreement
   (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
   (BStar : ℝ) (errStar : ℝ → ENNReal) :=
@@ -94,7 +93,6 @@ lemma mca_linearCode
 -/
 
 lemma mca_rsc
-  [DecidableEq ι]
   (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ]
   (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type ↪ ℕ) :
   let Gen := RSGenerator.genRSC parℓ_type φ m exp
@@ -117,7 +115,6 @@ lemma mca_rsc
                          errStar = (parℓ-1) * 2^2m / |F| * (2 * min {1 - √ρ - δ, √ρ/20}) ^ 7.
 -/
 theorem mca_johnson_bound_CONJECTURE
-  [DecidableEq ι]
   (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ]
   (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type ↪ ℕ) :
   let Gen := RSGenerator.genRSC parℓ_type φ m exp
@@ -144,7 +141,6 @@ theorem mca_johnson_bound_CONJECTURE
   N.b: there is a typo in the paper, c₃ is not needed and carried over from STIR paper definition
 -/
 theorem mca_capacity_bound_CONJECTURE
-  [DecidableEq ι]
   (α : F) (φ : ι ↪ F) (m : ℕ) [Smooth φ]
   (parℓ_type : Type) [Fintype parℓ_type] (exp : parℓ_type ↪ ℕ) :
   let Gen := RSGenerator.genRSC parℓ_type φ m exp
@@ -186,7 +182,6 @@ def proximityListDecodingCondition (C : LinearCode ι F)
   Then for every `{f₀,..,f_{parℓ - 1}}` and `δ ∈ (0, min δ_c (1 - BStar))`,
   `Pr_{ r ← F} [ proximityListDecodingCondition(r) ] ≤ errStar(δ)`. -/
 lemma mca_list_decoding
-  [Fintype ι] [Nonempty ι]
   (Gen : ProximityGenerator ι F) [Fintype Gen.parℓ]
   (δ BStar : ℝ≥0) (errStar : ℝ → ENNReal)
   (fs us : Matrix Gen.parℓ ι F)

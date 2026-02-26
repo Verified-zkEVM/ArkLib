@@ -130,7 +130,7 @@ lemma blockRelDistance_eq_relHammingDist_of_k_eq_i -- Renamed for clarity
   (f g : (indexPowT S φ i) → F) (S' : Finset (indexPowT S φ i))
   (hS' : S' = Finset.univ) -- This now works.
   (φ' : (indexPowT S φ i) ↪ F)
-  [h_dec : DecidableBlockDisagreement i i f S' φ'] [DecidableEq (indexPowT S φ i)] :
+  [h_dec : DecidableBlockDisagreement i i f S' φ'] :
   Δᵣ(i, i, f, S', φ', g) = δᵣ(f, g) := by
   sorry
 
@@ -174,7 +174,7 @@ lemma relHammingDist_le_blockRelDistance
   [DecidableEq F] [DecidableEq ι] [Smooth φ]
   (f g : (indexPowT S φ i) → F) (S' : Finset (indexPowT S φ i))
   [h_fintype : ∀ i : ℕ, Fintype (indexPowT S φ i)]
-  [DecidableEq (indexPowT S φ i)] [Smooth φ']
+  [Smooth φ']
   [h_dec : DecidableBlockDisagreement i k f S' φ'] :
   δᵣ(f, g) ≤ Δᵣ(i, k, f, S', φ', g) := by
   sorry
@@ -191,7 +191,7 @@ lemma listBlock_subset_listHamming
   [h_fintype : ∀ i : ℕ, Fintype (indexPowT S φ i)] [DecidableEq (indexPowT S φ i)] [Smooth φ']
   (C : Set ((indexPowT S φ i) → F)) (hcode : C = smoothCode φ' m)
   [h_dec : DecidableBlockDisagreement i k f S' φ']
-  (δ : ℝ≥0) (hδLe : δ ≤ 1) :
+  (δ : ℝ≥0) :
   Λᵣ(i, k, f, S', C, hcode, δ) ⊆ relHammingBall C f δ := by
   intro u hu
   simp only [listBlockRelDistance, Set.mem_sep_iff] at hu

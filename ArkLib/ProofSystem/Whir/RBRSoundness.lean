@@ -45,7 +45,6 @@ open BigOperators BlockRelDistance MutualCorrAgreement Generator Finset
 
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
          {M : ℕ} (ι : Fin (M + 1) → Type) [∀ i : Fin (M + 1), Fintype (ι i)]
-         [∀ i : Fin (M + 1), DecidableEq (ι i)]
 
 /-- ** Per‑round protocol parameters. **
 For a fixed depth `M`, the reduction runs `M + 1` rounds.
@@ -82,7 +81,6 @@ structure ParamConditions (P : Params ι F) where
     C_ij is `(δᵢ, dist_ij)`-list decodeable,
   where `δᵢ = 1 - max_{j : foldingParamᵢ + 1} BStar(C_ij,2)`
 -/
-
 -- NOTE: fix this after fixing folding
 class GenMutualCorrParams (P : Params ι F) (S : ∀ i : Fin (M + 1), Finset (ι i)) where
 
@@ -177,12 +175,6 @@ theorem whir_rbr_soundness
     {m_0 : ℕ} (hm_0 : m_0 = P.varCount 0) {σ₀ : F}
     {wPoly₀ : MvPolynomial (Fin (m_0 + 1)) F} {δ : ℝ≥0}
     [Smooth (P.φ 0)] [Nonempty (ι 0)]
-  -- ∀ f₀ : ι₀ → F, f₀ ∉ CRS[F,ι₀,m₀,wPoly₀,σ₀]
-    (h_not_code : ∀ f_0 : (ι 0) → F, f_0 ∉ (constrainedCode (P.φ 0) m_0 wPoly₀ σ₀))
-  -- ∀ f₀ : ι₀ → F, δ₀ < δᵣ(f₀, CRS[F,ι₀,m₀,wPoly₀,σ₀]),
-  -- where δᵣ denotes the relative Hamming distance
-    (hδ₀Lt : ∀ f_0 : (ι 0) → F,
-      (h.δ 0) < δᵣ(f_0, (constrainedCode (P.φ 0) m_0 wPoly₀ σ₀)))
     (ε_fold : (i : Fin (M + 1)) → Fin (P.foldingParam i) → ℝ≥0) (ε_out : Fin (M + 1) → ℝ≥0)
     (ε_shift : Fin M → ℝ≥0) (ε_fin : ℝ≥0) :
     ∃ n : ℕ,

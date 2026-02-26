@@ -98,7 +98,7 @@ noncomputable def polyQ (P q : Polynomial F) : MvPolynomial (Fin 2) F :=
     intro h
     have h1 := sub_eq_zero.mp h
     have h2 := congr_arg (MvPolynomial.coeff (Finsupp.single 1 1)) h1
-    simp only [uni2bi, MvPolynomial.coeff_X, ite_true] at h2
+    simp only [uni2bi, MvPolynomial.coeff_X] at h2
     suffices ∀ r : Polynomial F, MvPolynomial.coeff (Finsupp.single 1 1)
         (Polynomial.eval₂ (MvPolynomial.C (σ := Fin 2)) (MvPolynomial.X 0) r) = 0 by
       rw [this q] at h2; exact one_ne_zero h2
@@ -141,7 +141,7 @@ lemma exists_unique_bivariate
   /- The proof can follow `def polyQ` using the properties guranteed
   from MonomialOrder.div from Mathlib.RingTheory.MvPolynomial.Groebner -/
   by sorry
-
+set_option linter.flexible false in
 /-- Fact 4.6.2 in STIR -/
 lemma degree_bound_bivariate
   (qPoly : Polynomial F)
@@ -150,9 +150,11 @@ lemma degree_bound_bivariate
   {t : ℕ} (Q : MvPolynomial (Fin 2) F)
   (hdegX : MvPolynomial.degreeOf 0 Q < t)
   (hdegY : MvPolynomial.degreeOf 1 Q < qPoly.natDegree) :
-  (MvPolynomial.eval₂Hom (Polynomial.C : F →+* Polynomial F)
-      (fun i : Fin 2 => if i = 0 then qPoly else Polynomial.X) Q).natDegree < t * qPoly.natDegree := by
-  simp_all +decide [MvPolynomial.degreeOf_lt_iff]
+  (MvPolynomial.eval₂Hom
+      (Polynomial.C : F →+* Polynomial F)
+      (fun i : Fin 2 => if i = 0 then qPoly else Polynomial.X) Q).natDegree <
+    t * qPoly.natDegree := by
+  simp_all +decide only [Fin.isValue, MvPolynomial.coe_eval₂Hom]
   have h_deg_term : ∀ m ∈ Q.support, (m 0) * qPoly.natDegree + (m 1) < t * qPoly.natDegree := by
     intro m hm
     have := hdegX
