@@ -663,6 +663,7 @@ lemma sumcheckConsistency_at_last_simplifies
       exact i.elim0)] at h_cons
   exact h_cons
 
+omit [NeZero κ] [CharP L 2] [SelectableType L] [NeZero ℓ] in
 /-- The final codeword value at `0` equals `t(challenges)`. -/
 lemma finalCodeword_zero_eq_t_eval
     (stmtIn : Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) (Fin.last ℓ'))
@@ -678,57 +679,13 @@ lemma finalCodeword_zero_eq_t_eval
         (i := Fin.last ℓ') witIn.t stmtIn.challenges := h_wit_struct.2
   dsimp only [BinaryBasefold.getMidCodewords, Fin.coe_ofNat_eq_mod] at h_f_eq_getMidCodewords_t
   rw [congr_fun h_f_eq_getMidCodewords_t ⟨0, by simp only [zero_mem]⟩]
-  let coeffs := fun (ω : Fin (2 ^ (ℓ' - 0))) => witIn.t.val.eval (bitsOfIndex ω)
-  let res := iterated_fold_advances_evaluation_poly K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-    (i := 0) (steps := Fin.last ℓ') (destIdx := ⟨↑(Fin.last ℓ'), by omega⟩) (h_destIdx := by
-      simp only [Fin.val_last, Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add])
-    (h_destIdx_le := by simp only; omega) (coeffs := coeffs) (r_challenges := stmtIn.challenges)
-  unfold polyToOracleFunc at res
-  simp only at res
-  rw [intermediate_poly_P_base K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-    (h_ℓ := by omega) (coeffs := coeffs)] at res
-  dsimp only [polynomialFromNovelCoeffsF₂]
-  change iterated_fold K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0 ↑(Fin.last ℓ')
-      (destIdx := ⟨↑(Fin.last ℓ'), by omega⟩) (by simp only [Fin.val_last, Fin.coe_ofNat_eq_mod,
-        Nat.zero_mod, zero_add]) (by simp only; omega)
-        (fun x ↦
-          Polynomial.eval (↑x) (polynomialFromNovelCoeffs K β ℓ' (h_ℓ := by omega) coeffs))
-        stmtIn.challenges ⟨0, by simp only [Fin.val_last, zero_mem]⟩ =
-    (MvPolynomial.eval stmtIn.challenges) (witIn.t.val)
-  rw [res]
-  dsimp only [intermediateEvaluationPoly]
-  haveI : IsEmpty (Fin (ℓ' - (Fin.last ℓ').val)) := by
-    simp only [Fin.val_last, Nat.sub_self]
-    infer_instance
-  conv_lhs =>
-    dsimp only [intermediateNovelBasisX]
-    simp only [Finset.univ_eq_empty, Finset.prod_empty]
-    simp only [map_mul, mul_one]
-    rw [←map_sum]
-  haveI : Unique (Fin (2 ^ (ℓ' - (Fin.last ℓ').val))) := by
-    simp only [Fin.val_last, Nat.sub_self, pow_zero]
-    exact Fin.instUnique
-  have h_default :
-      (@default (Fin (2 ^ (ℓ' - ↑(Fin.last ℓ')))) Unique.instInhabited).val = 0 := by
-    have hlt := (@default (Fin (2 ^ (ℓ' - ↑(Fin.last ℓ')))) Unique.instInhabited).isLt
-    simp only [Fin.val_last, Nat.sub_self, pow_zero] at hlt
-    exact Nat.lt_one_iff.mp hlt
-  simp only [Fintype.sum_unique, Fin.val_zero, h_default]
-  simp only [Fin.val_last, Nat.sub_zero, zero_mul, zero_add, Fin.eta, map_sum, map_mul]
-  dsimp only [Nat.sub_zero, Fin.isValue, coeffs]
-  simp only [←map_mul, ←map_sum]
-  letI : NeZero (Fin.last ℓ').val := {
-    out := by
-      have h_ℓ_pos : ℓ' > 0 := by exact Nat.pos_of_neZero ℓ'
-      rw [Fin.val_last]
-      omega
-  }
-  let res := multilinear_eval_eq_sum_bool_hypercube (challenges := stmtIn.challenges)
-    (t := witIn.t)
-  simp only [Fin.val_last] at res
-  rw [res, Polynomial.eval_C]
+  let h_eval := BinaryBasefold.iterated_fold_to_level_ℓ_eval K β
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (t := witIn.t)
+    (destIdx := ⟨Fin.last ℓ', by omega⟩)
+    (h_destIdx := by simp only [Fin.val_last]) (challenges := stmtIn.challenges)
+  exact congr_fun h_eval ⟨0, by simp only [Fin.val_last, zero_mem]⟩
 
-omit [SelectableType L] in
+omit [SelectableType L] [NeZero κ] [NeZero ℓ] in
 /-- Strict helper: folding the last oracle block in the final sumcheck step yields
 the constant function equal to the prover message `witIn.f(0)`. -/
 lemma iterated_fold_to_const_strict
@@ -843,12 +800,11 @@ lemma iterated_fold_to_const_strict
       (h_destIdx := by simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; omega)
       (h_destIdx_le := by
         dsimp only [curDomainIdx]
-        simp only [h_k_steps_eq, h_k, tsub_le_iff_right, le_add_iff_nonneg_right, zero_le]
+        simp only [tsub_le_iff_right, le_add_iff_nonneg_right, zero_le]
       )
       (h_destIdx_eq_destIdx' := by
         dsimp only [curDomainIdx]
-        simp only [Fin.val_last, Fin.mk.injEq]
-        omega
+        simp only [Fin.mk.injEq]; omega
       )
       (f := f₀)
       (r_challenges := getFoldingChallenges (𝓡 := 𝓡) (r := 2 ^ κ) (Fin.last ℓ')
@@ -974,6 +930,7 @@ lemma iterated_fold_to_const_strict
   intro y
   rfl
 
+omit [NeZero κ] [CharP L 2] [SelectableType L] [DecidableEq K] h_β₀_eq_1 [NeZero ℓ] in
 /-- Honest prover message in final sumcheck equals `witIn.f(0)`. -/
 lemma finalSumcheck_honest_message_eq_f_zero
     (stmtIn : Statement (L := L) (ℓ := ℓ')
@@ -1372,8 +1329,7 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
     intro h_kState_round1
     unfold finalSumcheckKStateProp BinaryBasefold.finalSumcheckStepFoldingStateProp
       BinaryBasefold.masterKStateProp at h_kState_round1 ⊢
-    simp only [Fin.isValue, Nat.reduceAdd, Fin.mk_one, Fin.coe_ofNat_eq_mod,
-      Nat.reduceMod] at h_kState_round1
+    simp only [Fin.isValue] at h_kState_round1
     obtain ⟨h_sumcheckFinalCheck, h_core⟩ := h_kState_round1
 
     -- Option-B shape at m=0:

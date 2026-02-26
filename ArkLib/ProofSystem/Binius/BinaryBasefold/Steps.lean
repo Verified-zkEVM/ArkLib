@@ -2771,6 +2771,55 @@ lemma extractMLP_some_of_oracleFoldingConsistency
     refine ⟨tpoly, ?_⟩
     simpa [getFirstOracle, j0] using h_extract
 
+/-- Step-2 helper for final extraction:
+under `oracleFoldingConsistencyProp`, the decoded oracle at block `j`
+matches the iterated fold of the decoded first oracle up to `j * ϑ` steps.
+
+This lemma isolates the induction-heavy decoded-chain argument so the
+main theorem can focus on the final constant bridge. -/
+lemma decoded_oracle_eq_iterated_fold_decoded_first
+    (stmtOut : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
+    (oStmtOut : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j)
+    (h_oracle_cons : oracleFoldingConsistencyProp 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := Fin.last ℓ)
+      (challenges := stmtOut.challenges) (oStmt := oStmtOut))
+    (h_close_first : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut))
+    (j : Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ))) :
+    let jDomain : Fin r := ⟨j.val * ϑ, by
+      apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := j.val * ϑ)
+      exact oracle_index_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ) (j := j)⟩
+    ∃ (h_close_j : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := jDomain) (h_i := by
+          dsimp [jDomain]
+          exact oracle_index_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ) (j := j))
+        (f := oStmtOut j)),
+      UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := jDomain)
+        (h_i := by
+          dsimp only [jDomain]
+          exact oracle_index_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ) (j := j))
+        (f := oStmtOut j) (h_within_radius := h_close_j)
+      =
+      iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := (0 : Fin r)) (steps := j.val * ϑ)
+        (destIdx := jDomain)
+        (h_destIdx := by
+          dsimp only [Fin.coe_ofNat_eq_mod, jDomain]
+          simp only [Nat.zero_mod, zero_add])
+        (h_destIdx_le := by
+          dsimp only [jDomain]
+          exact oracle_index_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ) (j := j))
+        (f := UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (i := (0 : Fin r)) (h_i := by simp)
+          (f := getFirstOracle 𝔽q β oStmtOut) (h_within_radius := h_close_first))
+        (r_challenges := fun cIdx : Fin (j.val * ϑ) =>
+          stmtOut.challenges ⟨cIdx, by
+            have h_j_le : j.val * ϑ ≤ Fin.last ℓ := by
+              exact oracle_index_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ) (j := j)
+            omega⟩) := by
+  sorry
+
 /-- When oracle folding consistency holds from first oracle through the final constant,
 the extracted polynomial's evaluation at challenges equals the final constant.
 
@@ -2788,21 +2837,25 @@ lemma extracted_t_poly_eval_eq_final_constant
       (h_le := by apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ) (hdiv.out))
       (stmtOut := stmtOut) (oStmtOut := oStmtOut)) :
     stmtOut.final_constant = tpoly.val.eval stmtOut.challenges := by
+  -- Proof strategy:
+    -- 1. We can see that tpoly satisifes firstOracleWitnessConsistencyProp
+    -- 2. From h_finalSumcheckStepOracleConsistency, we can inductively prove that
+      -- UDR-decoded(f_j) = iterated_fold (UDR-decoded(f_0), challenges_{0->j*ϑ})
+    -- 3. We have UDR-decoded(f_0) = encoded (tpoly's evaluations)
+    -- 4. We have UDR-decoded(f_{ℓ/ϑ}) = fun x => stmtOut.final_constant
+    -- 5. Therefore, tpoly.val.eval stmtOut.challenges = stmtOut.final_constant
+      -- Somehow similar to the strict version `iterated_fold_to_const_strict`
   classical
-  -- Unfold the final-step consistency into oracle folding + final compliance.
   rcases (by
     simpa [finalSumcheckStepOracleConsistencyProp] using h_finalSumcheckStepOracleConsistency
   ) with ⟨h_oracle_cons, h_final_cons⟩
 
-  -- Define the evaluation codeword f₀ for tpoly.
-  let i0 : Fin r := 0
   let P₀ : L⦃< 2^ℓ⦄[X] :=
     polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
       (fun ω => tpoly.val.eval (bitsOfIndex ω))
   let f₀ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := (0 : Fin r)) :=
     polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
 
-  -- From extraction, the first oracle is pair-UDR-close to f₀.
   have h_pair :
       pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := (0 : Fin r)) (h_i := by simp)
@@ -2810,9 +2863,202 @@ lemma extracted_t_poly_eval_eq_final_constant
     simpa [f₀] using
       (extractMLP_eq_some_iff_pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (f := getFirstOracle 𝔽q β oStmtOut) (tpoly := tpoly)).1 h_extractMLP
-  sorry
 
--- #exit
+  let C₀ : Set ((sDomain 𝔽q β h_ℓ_add_R_rate (0 : Fin r)) → L) :=
+    (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := (0 : Fin r)))
+  have h_f0_mem : f₀ ∈ C₀ := by
+    dsimp [C₀, f₀]
+    change polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (domainIdx := (0 : Fin r)) (P := P₀) ∈
+      BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := (0 : Fin r))
+    simpa [getBBF_Codeword_of_poly] using
+      (getBBF_Codeword_of_poly 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := (0 : Fin r)) (h_i := by simp) (P := P₀)).property
+
+  have h_close_first :
+      UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut) := by
+    unfold UDRClose
+    calc
+      2 * Δ₀(getFirstOracle 𝔽q β oStmtOut, C₀) ≤
+          2 * Δ₀(getFirstOracle 𝔽q β oStmtOut, f₀) := by
+        rw [ENat.mul_le_mul_left_iff (ha := by
+            simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true])
+          (h_top := by simp only [ne_eq, ENat.ofNat_ne_top, not_false_eq_true])]
+        exact Code.distFromCode_le_dist_to_mem (C := C₀)
+          (u := getFirstOracle 𝔽q β oStmtOut) (v := f₀) h_f0_mem
+      _ < BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := (0 : Fin r)) := by
+        norm_cast
+
+  have h_neZero_C₀ : NeZero ‖C₀‖₀ := by
+    have h_dist_ne_zero :
+        BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := (0 : Fin r)) ≠ 0 := by
+      rw [BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := (0 : Fin r)) (h_i := by simp)]
+      omega
+    dsimp [C₀]
+    exact ⟨by simpa [BBF_CodeDistance] using h_dist_ne_zero⟩
+  letI : NeZero ‖C₀‖₀ := h_neZero_C₀
+
+  have h_f0_close_to_first :
+      Δ₀(getFirstOracle 𝔽q β oStmtOut, f₀) ≤ Code.uniqueDecodingRadius C₀ := by
+    exact (Code.UDRClose_iff_two_mul_proximity_lt_d_UDR (C := C₀)).2
+      (by simpa [pair_UDRClose, C₀] using h_pair)
+
+  have h_dec0_eq_f0 :
+      UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut)
+        (h_within_radius := h_close_first) = f₀ := by
+    symm
+    exact Code.eq_of_le_uniqueDecodingRadius (C := C₀)
+      (u := getFirstOracle 𝔽q β oStmtOut)
+      (v := f₀)
+      (w := UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut)
+        (h_within_radius := h_close_first))
+      (hv := h_f0_mem)
+      (hw := by
+        simpa [C₀] using UDRCodeword_mem_BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut)
+          (h_within_radius := h_close_first))
+      (huv := h_f0_close_to_first)
+      (huw := by
+        simpa [C₀] using
+          dist_to_UDRCodeword_le_uniqueDecodingRadius 𝔽q β
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+            (i := (0 : Fin r)) (h_i := by simp)
+            (f := getFirstOracle 𝔽q β oStmtOut) (h_within_radius := h_close_first))
+
+  have h_oracle_cons' := h_oracle_cons
+  dsimp only [oracleFoldingConsistencyProp] at h_oracle_cons'
+  have h_final_cons_all := h_final_cons
+  rcases h_final_cons with ⟨h_fw_last, h_close_const, h_fold_last⟩
+  have h_last_const := congr_fun h_fold_last 0
+  simp at h_last_const
+
+  -- The last decoded oracle equals the constant oracle fun _ => stmtOut.final_constant.
+  -- We apply the same unique-decoding argument as for the first oracle, but now at the
+  -- last oracle index with code C_last and center u := oStmtOut jLast.
+  let jLast : Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)) :=
+    getLastOraclePositionIndex ℓ ϑ (Fin.last ℓ)
+  let lastDomainIdx : Fin r :=
+    ⟨jLast.val * ϑ, by
+      apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := jLast.val * ϑ)
+      exact oracle_index_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ) (j := jLast)⟩
+  let k := lastDomainIdx.val
+  have h_k: k = ℓ - ϑ := by
+    dsimp only [k, lastDomainIdx, jLast]
+    rw [getLastOraclePositionIndex_last, Nat.sub_mul, Nat.one_mul, Nat.div_mul_cancel (hdiv.out)]
+  have h_ϑ_le_ℓ : ϑ ≤ ℓ := by apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ) (hdiv.out)
+  let C_last : Set ((sDomain 𝔽q β h_ℓ_add_R_rate lastDomainIdx) → L) :=
+    BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := lastDomainIdx)
+  let finalDomainIdx : Fin r := ⟨ℓ, by exact Nat.lt_of_add_right_lt h_ℓ_add_R_rate⟩  -- final virtual oracle's evaluation domain
+  let C_final : Set ((sDomain 𝔽q β h_ℓ_add_R_rate finalDomainIdx) → L) :=
+    BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := finalDomainIdx)
+
+  -- Constant codeword is in C_final
+  have h_const_mem : (fun _ => stmtOut.final_constant) ∈ C_final := by
+    dsimp [C_final]
+    exact constFunc_mem_BBFCode 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := finalDomainIdx)
+      (h_i := by exact Nat.le_refl finalDomainIdx.val)
+      stmtOut.final_constant
+
+  let f_last : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) lastDomainIdx :=
+    getLastOracle (h_destIdx := by rfl) (oracleFrontierIdx := Fin.last ℓ) 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (oStmt := oStmtOut)
+  let f_final_virtual : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) finalDomainIdx :=
+    fun _ => stmtOut.final_constant
+
+  let preFinalChallenges : (Fin k) → L := fun cId => stmtOut.challenges ⟨cId, by
+    simp only [Fin.val_last]; omega⟩
+  let finalChallenges : Fin ϑ → L := fun cId => stmtOut.challenges ⟨k + cId, by
+      rw [h_k]
+      have h_le : ϑ ≤ ℓ := by apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ) (hdiv.out)
+      have h_cId : cId.val < ϑ := cId.isLt
+      have h_last : (Fin.last ℓ).val = ℓ := rfl
+      simp only [Fin.val_last, gt_iff_lt]
+      -- ⊢ ℓ - ϑ + ↑cId < ℓ
+      omega
+    ⟩
+
+  -- **f_last = iterated_fold (f_0, ...)**
+
+  let f_f₀_folded_to_last := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (i := 0) (steps := k) (destIdx := lastDomainIdx) (h_destIdx := by
+      dsimp only [k]; simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add])
+    (h_destIdx_le := by omega) (f := f₀) (r_challenges := preFinalChallenges)
+
+  have h_f_last_eq_iterated_fold_f₀ :
+    f_last = f_f₀_folded_to_last := by
+    -- From `isCompliant`, quite straightforward.
+    sorry
+
+  -- **f_final_virtual = iterated_fold (f_last, ...)**
+
+  let f_last_folded_to_final := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (i := lastDomainIdx) (steps := ϑ) (destIdx := finalDomainIdx) (h_destIdx := by
+      change finalDomainIdx.val = k + ϑ; rw [h_k]; dsimp only [finalDomainIdx]; omega
+    )
+    (h_destIdx_le := by
+      dsimp only [finalDomainIdx]; omega
+    ) (f := f_last)
+    (r_challenges := finalChallenges)
+
+  have h_f_final_virtual_eq :
+    f_final_virtual = f_last_folded_to_final := by
+    -- From `isCompliant`, quite straightforward.
+    sorry
+  -- **=> f_final_virtual = iterated_fold (f_0, ...)**
+  -- Now we construct the nested `iterated_fold` form
+
+  dsimp only [f_final_virtual, f_last_folded_to_final] at h_f_final_virtual_eq
+
+  rw [h_f_last_eq_iterated_fold_f₀] at h_f_final_virtual_eq
+  dsimp only [f_f₀_folded_to_last] at h_f_final_virtual_eq
+
+  -- h_f_final_virtual_eq : (fun x ↦ stmtOut.final_constant) =
+  --  iterated_fold 𝔽q β lastDomainIdx ϑ ⋯ ⋯
+    -- (iterated_fold 𝔽q β 0 k ⋯ ⋯ f₀ preFinalChallenges) finalChallenges
+  rw [iterated_fold_transitivity 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (h_destIdx := by
+      rw [h_k]; dsimp only [finalDomainIdx];
+      simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; omega
+    )
+  ] at h_f_final_virtual_eq
+  have h_congr_steps := iterated_fold_congr_steps_index 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (i := 0) (steps := k + ϑ) (destIdx := finalDomainIdx)
+    (h_destIdx := by
+      rw [h_k]; dsimp only [finalDomainIdx];
+      simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; omega)
+    (h_destIdx_le := by dsimp only [finalDomainIdx]; omega)
+    (h_steps_eq_steps' := by rw [h_k]; omega)
+    (f := f₀) (r_challenges := Fin.append preFinalChallenges finalChallenges) (steps' := ℓ)
+  have h_congr_steps_fn := funext (h := h_congr_steps)
+  rw [h_congr_steps_fn] at h_f_final_virtual_eq
+  -- Hint: study the proof strategy of `finalSumcheckStep_verifierCheck_passed`, `iterated_fold_to_const_strict`, `iterated_fold_to_level_ℓ_is_constant`
+
+  rw [iterated_fold_to_level_ℓ_eval 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (destIdx := finalDomainIdx) (h_destIdx := by dsimp only [finalDomainIdx]) (t := tpoly)] at h_f_final_virtual_eq
+  have h_res := congr_fun (h := h_f_final_virtual_eq) (a := 0)
+  rw [h_res]
+
+  have h_concat_challenges_eq : (fun (cId : Fin ℓ) => (Fin.append preFinalChallenges finalChallenges) ⟨cId, by rw [h_k]; rw [Nat.sub_add_cancel (n := ℓ) (m := ϑ) (h := by omega)]; simp only [cId.isLt]⟩) = (fun (cId : Fin ℓ) => (stmtOut.challenges cId)) := by
+    funext cId
+    dsimp only [preFinalChallenges, finalChallenges]
+    by_cases h : cId.val < k
+    · -- Case 1: cId < k_steps, so it's from the first part
+      simp only [Fin.val_last]
+      dsimp only [Fin.append, Fin.addCases]
+      -- dsimp only [preFinalChallenges]
+      simp only [h, ↓reduceDIte, Fin.castLT_mk, Fin.eta]
+    · -- Case 2: cId >= k_steps, so it's from the second part
+      simp only [Fin.val_last]
+      dsimp only [Fin.append, Fin.addCases]
+      simp only [h, ↓reduceDIte, Fin.cast_mk, Fin.subNat_mk, Fin.natAdd_mk, eq_rec_constant]
+      congr 1; apply Fin.eq_of_val_eq; simp only; rw [add_comm]; omega
+
+  rw [h_concat_challenges_eq]; rfl
+
 def FinalSumcheckWit := fun (m : Fin (1 + 1)) =>
  match m with
  | ⟨0, _⟩ => Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)

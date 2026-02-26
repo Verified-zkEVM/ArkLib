@@ -195,10 +195,6 @@ We define the Statement and Witness types at the boundaries of each phase
 following the enhanced specification.
 -/
 
--- Initial Input (Input to Batching Phase)
-abbrev MLPEvalStatement :=
-  Binius.BinaryBasefold.InitialStatement (L := L) (ℓ := ℓ)
-
 structure WitMLP where
   t : MultilinearPoly K ℓ
 
