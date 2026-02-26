@@ -394,8 +394,4 @@ lemma polyFold_eq_sum_of_splitNth {𝔽 : Type} [Field 𝔽]
     ext x
     rw [mul_comm]
 
-
-
-
-
 end Polynomial

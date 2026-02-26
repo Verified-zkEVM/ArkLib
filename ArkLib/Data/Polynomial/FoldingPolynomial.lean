@@ -635,6 +635,40 @@ lemma folded_poly_degree_bound {Q : F[X][Y]} {q : F[X]} {t : ℕ}
     ( Nat.pos_of_ne_zero 
         ( by rintro h; simp_all +singlePass ) ) |>.2 h_x
 
+theorem folding_polynomial_is_unique' {q f : Polynomial F} {Q : Polynomial (Polynomial F)}
+  (h : (Q.map (Polynomial.compRingHom q)).eval Polynomial.X = f)
+  (h_x : degreeX Q ≤ f.natDegree / q.natDegree)
+  (h_y : natDegreeY Q < q.natDegree)
+  :
+  Q = foldingPolynomial q f
+  := by
+    by_cases hq_const : q.degree ≤ 0;
+    · rw [ Polynomial.eq_C_of_degree_le_zero hq_const ] at h h_y ⊢ ; aesop;
+    · apply folding_polynomial_is_unique h (by
+      have h_deg : f.natDegree ≤ degreeX Q * q.natDegree + q.natDegree - 1 := by
+        have h_deg : 
+          Polynomial.natDegree 
+            (Polynomial.eval Polynomial.X (Polynomial.map q.compRingHom Q)) 
+              ≤ degreeX Q * q.natDegree + q.natDegree - 1 := by
+          have := folded_poly_degree_bound (by
+          exact Nat.lt_succ_self _ : degreeX Q < degreeX Q + 1) (by
+          exact h_y : natDegreeY Q < q.natDegree)
+          exact Nat.le_sub_one_of_lt ( by linarith )
+        generalize_proofs at *;
+        aesop;
+      refine' le_antisymm h_x _;
+      exact Nat.le_of_lt_succ 
+        ( Nat.div_lt_of_lt_mul 
+            <| by linarith 
+              [ Nat.sub_add_cancel ( 
+                  show 1 ≤ degreeX Q * q.natDegree 
+                    + q.natDegree from Nat.succ_le_iff.mpr 
+                    <| by nlinarith 
+                        [ show q.natDegree > 0 
+                          from Polynomial.natDegree_pos_iff_degree_pos.mpr 
+                          <| lt_of_not_ge hq_const ] ) ] ))
+                          (by exact h_y)
+
 noncomputable def polyFold (f : F[X]) (k : ℕ) (r : F) : F[X]
   := (foldingPolynomial (X ^ k) f).eval (C r)
 
