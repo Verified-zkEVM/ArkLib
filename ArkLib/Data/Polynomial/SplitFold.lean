@@ -226,7 +226,7 @@ lemma splitNth_def (n : ℕ) (f : 𝔽[X]) [inst : NeZero n] :
             have : n = 1 * n := by rw [one_mul]
             rw (occs := .pos [2]) [this] at h'
             have h' := Nat.lt_of_mul_lt_mul_right h'
-            linarith
+            omega
           simp [this]
         exfalso
         have h₂ := this ⟨h₂, by apply Nat.sub_lt_of_lt; apply Nat.mod_lt; linarith⟩
