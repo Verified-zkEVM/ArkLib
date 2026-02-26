@@ -319,7 +319,7 @@ lemma foldNth_zero {s : ℕ} {α : 𝔽} : foldNth (2 ^ s) 0 α = 0 := by
   simp [this]
 
 @[simp]
-lemma sum_splitn_eq_folding_polynomial [Field 𝔽] 
+lemma sum_splitn_eq_folding_polynomial {𝔽 : Type} [Field 𝔽]
   {f : Polynomial 𝔽} {n : ℕ} 
   [NeZero n]
   :
