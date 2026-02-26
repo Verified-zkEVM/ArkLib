@@ -321,11 +321,81 @@ lemma foldNth_zero {s : ℕ} {α : 𝔽} : foldNth (2 ^ s) 0 α = 0 := by
 @[simp]
 lemma sum_splitn_eq_folding_polynomial {𝔽 : Type} [Field 𝔽]
   {f : Polynomial 𝔽} {n : ℕ} 
-  [NeZero n]
+  [inst : NeZero n]
   :
   FoldingPolynomial.foldingPolynomial (X ^ n) f 
     = ∑ i, C (splitNth f n i) * (X ^ i.val)
   := by
-  sorry
+  symm
+  apply FoldingPolynomial.folding_polynomial_is_unique
+  · conv =>
+      rhs
+      rw [splitNth_def (f := f) (inst := inst)]
+    rw [
+      Polynomial.map_sum,
+      Polynomial.eval_finset_sum] 
+    simp only [Polynomial.map_mul, map_C, coe_compRingHom, Polynomial.map_pow, map_X, 
+    eval_mul, eval_C, eval_pow, eval_X]
+    simp only [comp]
+    conv =>
+      lhs
+      rhs
+      ext x
+      rw [mul_comm]
+      rfl
+  · simp only [Bivariate.degreeX, finset_sum_coeff, coeff_C_mul, coeff_X_pow, mul_ite, mul_one,
+    mul_zero, natDegree_pow, natDegree_X]
+    apply Nat.le_antisymm
+    · simp only [Finset.sup_le_iff, mem_support_iff, finset_sum_coeff, coeff_C_mul, coeff_X_pow,
+      mul_ite, mul_one, mul_zero, ne_eq]
+      intro b hb
+      apply natDegree_sum_le_of_forall_le
+      rintro ⟨i, hi⟩ _
+      by_cases heq: b = i
+      · simp only [heq, ↓reduceIte]
+        exact splitNth_degree_le
+      · simp [heq]
+    · by_cases heq: f.natDegree / n = 0
+      · rw [heq]
+        simp
+      · rw [Finset.le_sup_iff (by {
+          simp
+          simp at heq
+          omega
+        })]
+        sorry
+  · simp [Bivariate.natDegreeY]
+    apply Nat.lt_of_le_pred (by {
+      apply Nat.zero_lt_of_ne_zero
+      aesop
+    })
+    apply Polynomial.natDegree_sum_le_of_forall_le
+    intro i _
+    trans
+    exact Polynomial.natDegree_mul_le
+    simp
+    rcases i with ⟨i, hi⟩ 
+    simp
+    omega
+
+@[simp]
+lemma polyFold_eq_sum_of_splitNth {𝔽 : Type} [Field 𝔽]
+  {f : 𝔽[X]} {n : ℕ} {r : 𝔽}
+  [inst : NeZero n]
+  :
+  FoldingPolynomial.polyFold f n r 
+    = ∑ i, C (r ^ i.val) * splitNth f n i := by
+  simp only [FoldingPolynomial.polyFold, sum_splitn_eq_folding_polynomial, map_pow]
+  rw [Polynomial.eval_finset_sum]
+  simp only [eval_mul, eval_C, eval_pow, eval_X] 
+  conv =>
+    lhs
+    rhs
+    ext x
+    rw [mul_comm]
+
+
+
+
 
 end Polynomial
