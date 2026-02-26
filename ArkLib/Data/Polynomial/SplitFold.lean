@@ -5,6 +5,8 @@ Authors: Julek, Elijah Vlasov
 -/
 import Mathlib.Algebra.Polynomial.BigOperators
 
+import ArkLib.Data.Polynomial.FoldingPolynomial
+
 /-!
 # Generalized polynomial splitting and folding
 
@@ -316,14 +318,14 @@ lemma foldNth_zero {s : ℕ} {α : 𝔽} : foldNth (2 ^ s) 0 α = 0 := by
       (0 : 𝔽[X]) := by rfl
   simp [this]
 
-/- @[simp] -/
-/- lemma sum_splitn_eq_folding_polynomial {f : Polynomial 𝔽} {n : ℕ}  -/
-/-   [Field 𝔽] -/
-/-   [NeZero n] -/
-/-   : -/
-/-   FoldingPolynomial.foldingPolynomial (X ^ n) f  -/
-/-     = ∑ i, C (splitNth f n i) * (X ^ i.val) -/
-/-   := by -/
-/-   sorry -/
+@[simp]
+lemma sum_splitn_eq_folding_polynomial [Field 𝔽] 
+  {f : Polynomial 𝔽} {n : ℕ} 
+  [NeZero n]
+  :
+  FoldingPolynomial.foldingPolynomial (X ^ n) f 
+    = ∑ i, C (splitNth f n i) * (X ^ i.val)
+  := by
+  sorry
 
 end Polynomial
