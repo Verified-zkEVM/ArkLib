@@ -410,7 +410,12 @@ lemma coe_fin_pow_two_eq_bitsOfIndex {n : ℕ} (k : Fin (2 ^ n)) :
   · simp only [cast_one]
   · simp only [cast_zero]
 
-lemma multilinear_eval_eq_sum_bool_hypercube (challenges : Fin ℓ → L) (t : ↥L⦃≤ 1⦄[X Fin ℓ]) :
+/-- **Multilinear extension over the Boolean hypercube**:
+as the sum of its values on all Boolean vertices `bitsOfIndex x`, weighted by
+`multilinearWeight challenges x`, the standard multilinear “eq” polynomial.
+i.e., `t(challenges) = ∑ x ∈ {0, 1}, eq(challenges, x) * t(x)`.
+-/
+theorem multilinear_eval_eq_sum_bool_hypercube (challenges : Fin ℓ → L) (t : ↥L⦃≤ 1⦄[X Fin ℓ]) :
     t.val.eval challenges = ∑ (x : Fin (2^ℓ)),
       (multilinearWeight (r := challenges) (i := x)) * (t.val.eval (bitsOfIndex x) : L) := by
   sorry
@@ -2263,11 +2268,98 @@ lemma constantIntermediateEvaluationPoly_eval_eq_const
     simp only [Polynomial.eval_C, mul_one]
 
 omit [CharP L 2] in
+/-- When folding from level 0 all the way to level ℓ, the resulting function is constant
+with value `t(challenges)`. -/
+lemma iterated_fold_to_level_ℓ_eval
+    (t : MultilinearPoly L ℓ) (destIdx : Fin r) (h_destIdx : destIdx.val = ℓ)
+    (challenges : Fin ℓ → L) :
+    let P₀ : L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
+      (fun ω => t.val.eval (bitsOfIndex ω))
+    let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
+    let f_ℓ := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (steps := ℓ)
+      (destIdx := destIdx)
+      (h_destIdx := by simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; omega)
+      (h_destIdx_le := by omega)
+      f₀ challenges
+    f_ℓ = fun _ => t.val.eval challenges := by
+  intro P₀ f₀ f_ℓ
+  funext x
+  let coeffs := fun (ω : Fin (2 ^ ℓ)) => t.val.eval (bitsOfIndex ω)
+  have h_f_ℓ_eq_poly := iterated_fold_advances_evaluation_poly 𝔽q β
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (steps := ℓ) (destIdx := destIdx)
+    (h_destIdx := by simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; omega)
+    (h_destIdx_le := by omega) (coeffs := coeffs) (r_challenges := challenges)
+  -- h_f_ℓ_eq_poly says: f_ℓ = polyToOracleFunc P_ℓ where
+  -- P_ℓ = intermediateEvaluationPoly with new_coeffs
+  dsimp only [f_ℓ, f₀, P₀, polynomialFromNovelCoeffsF₂]
+  -- Rewrite f_ℓ in terms of the intermediate polynomial at level ℓ.
+  -- unfold polyToOracleFunc
+  rw [←intermediate_poly_P_base 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (h_ℓ := by omega) (coeffs := coeffs)]
+  -- Now f_ℓ x = (polyToOracleFunc P_ℓ) x = P_ℓ.eval x.val, and P_ℓ is constant.
+  -- Evaluate both sides at x:
+  have h_eq := congr_fun (h := h_f_ℓ_eq_poly) (a := x)
+  conv_lhs => rw [h_eq]
+
+  -- Use the lemma that the intermediate polynomial at level ℓ is the constant t(challenges).
+  dsimp only [polyToOracleFunc]
+  conv_rhs => rw [multilinear_eval_eq_sum_bool_hypercube]
+  let new_coeffs : Fin (2 ^ (ℓ - destIdx.val)) → L := fun j =>
+    ∑ m : Fin (2 ^ ℓ),
+      multilinearWeight (r := challenges) (i := m) * coeffs ⟨j.val * 2 ^ ℓ + m.val, by
+        have h_j : j.val = 0 := by
+          have hj_lt := j.isLt
+          simp only [h_destIdx, tsub_self, pow_zero, Nat.lt_one_iff] at hj_lt
+          exact hj_lt
+        rw [h_j, zero_mul, zero_add]
+        exact m.isLt⟩
+  change Polynomial.eval (↑x)
+      (intermediateEvaluationPoly 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := destIdx) (h_i := by omega) new_coeffs)
+      = ∑ x, multilinearWeight challenges x * (MvPolynomial.eval (bitsOfIndex x)) ↑t
+
+  have h_const_eval :
+      Polynomial.eval (↑x)
+        (intermediateEvaluationPoly 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (i := destIdx) (h_i := by omega) new_coeffs)
+      =
+      Polynomial.eval (0 : L)
+        (intermediateEvaluationPoly 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (i := destIdx) (h_i := by omega) new_coeffs) := by
+    exact constantIntermediateEvaluationPoly_eval_eq_const 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (destIdx := destIdx) (coeffs := new_coeffs)
+      (h_destIdx := h_destIdx) (x := ↑x) (y := 0)
+
+  rw [h_const_eval]
+  dsimp only [new_coeffs, intermediateEvaluationPoly]
+  rw [Finset.sum_eq_single (a := ⟨0, by
+    exact Nat.two_pow_pos (ℓ - destIdx.val)⟩) (h₀ := fun j _ hj_ne => by
+    have h_j_lt := j.isLt
+    simp only [h_destIdx, tsub_self, pow_zero, Nat.lt_one_iff, Fin.val_eq_zero_iff] at h_j_lt
+    simp only [Fin.mk_zero', ne_eq] at hj_ne
+    exfalso
+    exact hj_ne h_j_lt
+  ) (h₁ := fun h => by
+    simp only [Fin.mk_zero', Finset.mem_univ, not_true_eq_false] at h)]
+  rw [intermediateNovelBasisX_zero_eq_one 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (i := destIdx) (h_i := by omega)]
+  simp only [Polynomial.eval_C, mul_one]
+  apply Finset.sum_congr rfl
+  intro m hm
+  have h_idx_eq : (⟨0 * 2 ^ ℓ + m.val, by
+      have h_j : (0 : Fin (2 ^ (ℓ - destIdx.val))).val = 0 := by
+        simp only [Fin.val_zero]
+      rw [zero_mul, zero_add]; exact m.isLt⟩ : Fin (2 ^ ℓ)) = m := by
+    apply Fin.ext
+    simp only [zero_mul, zero_add]
+  rw [h_idx_eq]
+
+omit [CharP L 2] in
 /-- When folding from level 0 all the way to level ℓ, the resulting function is constant. -/
 lemma iterated_fold_to_level_ℓ_is_constant
     (t : MultilinearPoly L ℓ) (destIdx : Fin r) (h_destIdx : destIdx.val = ℓ)
     (challenges : Fin ℓ → L) :
-    let P₀: L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
+    let P₀ : L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
       (fun ω => t.val.eval (bitsOfIndex ω))
     let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
     let f_ℓ := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (steps := ℓ)
@@ -2277,26 +2369,8 @@ lemma iterated_fold_to_level_ℓ_is_constant
       f₀ challenges
     ∀ x y, f_ℓ x = f_ℓ y := by
   intro P₀ f₀ f_ℓ x y
-  let coeffs := fun (ω : Fin (2 ^ ℓ)) => t.val.eval (bitsOfIndex ω)
-  have h_f_ℓ_eq_poly := iterated_fold_advances_evaluation_poly 𝔽q β
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (steps := ℓ) (destIdx := destIdx)
-    (h_destIdx := by simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; omega)
-    (h_destIdx_le := by omega) (coeffs := coeffs) (r_challenges := challenges)
-  -- h_f_ℓ_eq_poly says: f_ℓ = polyToOracleFunc P_ℓ where
-    -- P_ℓ = intermediateEvaluationPoly with new_coeffs
-  -- Step 2: When destIdx = ℓ, we have ℓ - ℓ = 0, so new_coeffs : Fin (2^0) = Fin 1 → L
-  -- This means P_ℓ is a constant polynomial (only one coefficient)
-  dsimp only [f_ℓ, f₀, P₀, polynomialFromNovelCoeffsF₂]
-  -- unfold polyToOracleFunc
-  rw [←intermediate_poly_P_base 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_ℓ := by omega)]
-  simp only at h_f_ℓ_eq_poly;
-  rw [h_f_ℓ_eq_poly]
-  -- f_ℓ x = polyToOracleFunc P_ℓ x = P_ℓ.eval x.val
-  -- Since P_ℓ is constant, P_ℓ.eval x.val = P_ℓ.eval (𝓑 0) for all x
-  -- We need to show that intermediateEvaluationPoly with Fin 1 coefficients is constant
-  dsimp only [polyToOracleFunc]
-  rw [constantIntermediateEvaluationPoly_eval_eq_const]
-  omega
+  dsimp only [f_ℓ]
+  rw [iterated_fold_to_level_ℓ_eval 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_destIdx := by omega)]
 
 end FoldTheory
 

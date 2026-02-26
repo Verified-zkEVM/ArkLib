@@ -1225,70 +1225,13 @@ lemma finalSumcheckStep_verifierCheck_passed
   -- NOTE: this is important
   let h_c_eq : (transcript.messages ⟨0, rfl⟩) = witIn.t.val.eval stmtIn.challenges := by
     change witIn.f ⟨0, by simp only [zero_mem]⟩ = witIn.t.val.eval stmtIn.challenges
-    -- Since `f (f_ℓ)` is `getMidCodewords` of `t`, `f = fold(f₀, r') where f₀ = fun x => t.eval x`
     dsimp only [getMidCodewords, Fin.coe_ofNat_eq_mod] at h_f_eq_getMidCodewords_t
     rw [congr_fun h_f_eq_getMidCodewords_t ⟨0, by simp only [zero_mem]⟩]
-    --   ⊢ iterated_fold 𝔽q β 0 ℓ ⋯
-    --   (fun x ↦ Polynomial.eval ↑x ↑(polynomialFromNovelCoeffsF₂ 𝔽q β ℓ ⋯ fun ω ↦
-    --     (MvPolynomial.eval ↑↑ω) ↑witIn.t))
-    --   stmtIn.challenges ⟨↑⟨0, ⋯⟩, ⋯⟩ =
-    -- (MvPolynomial.eval stmtIn.challenges) ↑witIn.t
-    -- have h_eq : @Fin.mk r (0 % ℓ) (isLt := by exact Nat.pos_of_ne_zero (by omega)) = 0 := by
-      -- simp only [Nat.zero_mod, Fin.mk_zero']
-    let coeffs := fun (ω : Fin (2 ^ (ℓ - 0))) => witIn.t.val.eval (bitsOfIndex ω)
-    let res := iterated_fold_advances_evaluation_poly 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (i := 0) (steps := Fin.last ℓ) (destIdx := ⟨↑(Fin.last ℓ), by omega⟩) (h_destIdx := by
-        simp only [Fin.val_last, Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add])
-      (h_destIdx_le := by simp only; omega) (coeffs := coeffs) (r_challenges := stmtIn.challenges)
-    unfold polyToOracleFunc at res
-    simp only at res
-    rw [intermediate_poly_P_base 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (h_ℓ := by omega) (coeffs := coeffs)] at res
-    dsimp only [polynomialFromNovelCoeffsF₂]
-    change iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0 ↑(Fin.last ℓ)
-      (destIdx := ⟨↑(Fin.last ℓ), by omega⟩) (by simp only [Fin.val_last, Fin.coe_ofNat_eq_mod,
-        Nat.zero_mod, zero_add]) (by simp only; omega)
-        (fun x ↦
-          Polynomial.eval (↑x) (polynomialFromNovelCoeffs 𝔽q β ℓ (h_ℓ := by omega) coeffs))
-        stmtIn.challenges ⟨0, by simp only [Fin.val_last, zero_mem]⟩ =
-      (MvPolynomial.eval stmtIn.challenges) (witIn.t.val)
-    rw [res]
-    --   (intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate ⟨0 % ℓ + ℓ, ⋯⟩ fun j ↦
-    --     ∑ x, multilinearWeight stmtIn.challenges x * coeffs ⟨↑j * 2 ^ ℓ + ↑x, ⋯⟩) =
-    -- (MvPolynomial.eval stmtIn.challenges) ↑witIn.t
-    dsimp only [intermediateEvaluationPoly]
-    -- have h_empty_univ : Fin (ℓ - (Fin.last ℓ)) = Fin 0 := by
-      -- simp only [Fin.val_last, tsub_self]
-    haveI : IsEmpty (Fin (ℓ - (Fin.last ℓ).val)) := by
-      simp only [Fin.val_last, Nat.sub_self]
-      infer_instance
-    conv_lhs => -- Eliminate the intermediateNovelBasisX terms
-      dsimp only [intermediateNovelBasisX]
-      simp only [Finset.univ_eq_empty, Finset.prod_empty] -- eliminate the finsum over (Fin 0)
-      simp only [map_mul, mul_one]
-      rw [←map_sum] -- bring the `C` out of the sum
-    have h_Fin_eq : Fin (2 ^ (ℓ - ↑(Fin.last ℓ))) = Fin 1 := by
-      simp only [Fin.val_last, tsub_self, pow_zero]
-    haveI : Unique (Fin (2 ^ (ℓ - (Fin.last ℓ).val))) := by
-      simp only [Fin.val_last, Nat.sub_self, pow_zero]
-      exact Fin.instUnique
-    have h_default : (@default (Fin (2 ^ (ℓ - ↑(Fin.last ℓ)))) Unique.instInhabited).val = 0 := by
-      have hlt := (@default (Fin (2 ^ (ℓ - ↑(Fin.last ℓ)))) Unique.instInhabited).isLt
-      simp only [Fin.val_last, Nat.sub_self, pow_zero] at hlt
-      exact Nat.lt_one_iff.mp hlt
-    simp only [Fintype.sum_unique, Fin.val_zero, h_default]
-    simp only [Fin.val_last, Nat.sub_zero, zero_mul, zero_add, Fin.eta, map_sum, map_mul]
-    dsimp only [Nat.sub_zero, Fin.isValue, coeffs]
-    simp only [←map_mul, ←map_sum]
-    letI : NeZero (Fin.last ℓ).val := {
-      out := by
-        have h_ℓ_pos : ℓ > 0 := by exact Nat.pos_of_neZero ℓ
-        rw [Fin.val_last]; omega
-    }
-    let res := multilinear_eval_eq_sum_bool_hypercube (challenges := stmtIn.challenges)
-      (t := witIn.t)
-    simp only [Fin.val_last] at res
-    rw [res, Polynomial.eval_C];
+    let h_eval := iterated_fold_to_level_ℓ_eval 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (t := witIn.t) (destIdx := ⟨Fin.last ℓ, by omega⟩)
+      (h_destIdx := by simp only [Fin.val_last]) (challenges := stmtIn.challenges)
+    exact congr_fun (h := h_eval) ⟨0, by simp only [Fin.val_last, zero_mem]⟩
+
   -- Apply `projectToMidSumcheckPoly_at_last` to connect H.eval with eqTilde * f(0)
   have h_H_eval_at_zero_eq_mul : witIn.H.val.eval (fun _ => (0 : L)) =
       eqTilde stmtIn.ctx.t_eval_point stmtIn.challenges *

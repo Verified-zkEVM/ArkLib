@@ -1003,7 +1003,7 @@ def dummyLastWitness :
 }
 
 /-- The initial statement for the commitment phase contains the evaluation claim s = t(r) -/
-structure InitialStatement where
+structure MLPEvalStatement (L : Type) (ℓ : ℕ) where
   -- Original evaluation claim: s = t(r)
   t_eval_point : Fin ℓ → L         -- r = (r_0, ..., r_{ℓ-1}) => shared input
   original_claim : L               -- s = t(r) => the original claim to verify
