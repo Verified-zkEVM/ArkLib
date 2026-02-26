@@ -273,23 +273,27 @@ private lemma F2i_disjoint :
 
 private lemma F2i_card {α : F} :
   (F2i B i α).card = 2 * choose_2 (K B i α) := by
-  simp [F2i]
-  letI Tα := (Fin n → F) × (Fin n → F)
-  let S₁ : Finset Tα := {x | (x.1 ∈ B ∧ x.2 ∈ B) ∧ x.1 i = α ∧ x.2 i = α}
-  let S₂ : Finset _ := {x | x ∈ S₁ ∧ x.1 ≠ x.2}
-  set A := Fi B i α with eqA
-  sorry
-  -- suffices S₂.card = 2 * choose_2 (K B i α) by simp [S₂, S₁, ←this]; congr; ext; tauto
-  -- rw [
-  --   show S₂ = S₁ \ ({x | x ∈ S₁ ∧ x.1 = x.2} : Finset _) by aesop,
-  --   Finset.card_sdiff fun _ _ ↦ by aesop,
-  --   show S₁ = A ×ˢ A by ext; rw [Finset.mem_product]; simp [S₁, Fi, A]; tauto,
-  --   Finset.filter_and
-  -- ]
-  -- simp; rw [Finset.card_prod_self_eq (s := A), Finset.card_product]
-  -- simp [choose_2, K, eqA.symm]
-  -- have : A.card ≤ A.card * A.card := Nat.le_mul_self _
-  -- field_simp [this]; ring
+  set A := Fi B i α with hA
+  have h1 : F2i B i α = (A ×ˢ A).filter (fun x => x.1 ≠ x.2) := by
+    ext ⟨a, b⟩; simp [F2i, Fi, A, Finset.mem_filter, Finset.mem_product]; tauto
+  rw [h1, Finset.filter_not, Finset.card_sdiff]
+  rw [Finset.inter_eq_left.mpr (Finset.filter_subset _ _)]
+  simp only [Finset.card_product]
+  have h2 : ((A ×ˢ A).filter (fun x => x.1 = x.2)).card = A.card := by
+    rw [Finset.card_eq_of_equiv]
+    exact {
+      toFun := fun ⟨⟨a, _⟩, hx⟩ => ⟨a, by simp [Finset.mem_filter, Finset.mem_product] at hx; exact hx.1.1⟩
+      invFun := fun ⟨a, ha⟩ => ⟨⟨a, a⟩, by simp [Finset.mem_filter, Finset.mem_product, ha]⟩
+      left_inv := by intro ⟨⟨a, b⟩, hx⟩; simp [Finset.mem_filter] at hx; simp [hx.2]
+      right_inv := by intro ⟨a, ha⟩; simp
+    }
+  rw [h2]
+  have hK : K B i α = A.card := by simpa [K, hA]
+  rw [hK]
+  simp [choose_2]
+  have hle : A.card ≤ A.card * A.card := Nat.le_mul_self _
+  push_cast [hle]
+  ring
 
 open Finset in
 private lemma sum_of_not_equals :
@@ -297,27 +301,30 @@ private lemma sum_of_not_equals :
   =
   2 * choose_2 #B - 2 * ∑ α, choose_2 (K B i α)
   := by
-  sorry
-  -- generalize eq₁ : {x ∈ B ×ˢ B | x.1 ≠ x.2} = s₁
-  -- suffices #s₁ - #(Bi B i) = 2 * choose_2 #B - 2 * ∑ α, choose_2 (JohnsonBound.K B i α) by
-  --   rw [
-  --     show (∑ x ∈ s₁, if x.1 i ≠ x.2 i then 1 else 0)
-  --        = (∑ x ∈ s₁, ((1 : ℚ) - if x.1 i = x.2 i then 1 else 0)) by congr; aesop
-  --   ]
-  --   simp; convert this
-  --   ext; simp [←eq₁, Bi]; tauto
-  -- rw [
-  --   show #s₁ = 2 * choose_2 #B by
-  --     rw [
-  --       show s₁ = (B ×ˢ B) \ {x ∈ B ×ˢ B | x.1 = x.2} by ext; simp [eq₁.symm]; tauto,
-  --       card_sdiff (by simp)
-  --     ]
-  --     simp [choose_2]
-  --     zify [Nat.le_mul_self #B]
-  --     ring
-  -- ]
-  -- rw [Bi_biUnion_F2i, Finset.card_biUnion (by simp [F2i_disjoint])]
-  -- simp; simp_rw [F2i_card, mul_sum]
+  set s₁ := {x ∈ B ×ˢ B | x.1 ≠ x.2} with eq₁
+  have step1 : ∑ x ∈ s₁, (if x.1 i ≠ x.2 i then (1 : ℚ) else 0) =
+      s₁.card - (s₁.filter (fun x => x.1 i = x.2 i)).card := by
+    rw [Finset.sum_boole, Finset.filter_not, Finset.card_sdiff]
+    rw [Finset.inter_eq_left.mpr (Finset.filter_subset _ s₁)]
+    exact_mod_cast Nat.cast_sub (Finset.card_filter_le _ _)
+  rw [step1]
+  have step2 : s₁.filter (fun x => x.1 i = x.2 i) = Bi B i := by
+    ext x; simp [eq₁, Bi]; tauto
+  rw [step2]
+  have step3 : (s₁.card : ℚ) = 2 * choose_2 (B.card : ℚ) := by
+    have : s₁ = (B ×ˢ B) \ {x ∈ B ×ˢ B | x.1 = x.2} := by
+      ext; simp [eq₁]; tauto
+    rw [this, Finset.card_sdiff, Finset.inter_eq_left.mpr (by simp)]
+    simp [choose_2]
+    zify [Nat.le_mul_self #B]
+    ring
+  rw [step3]
+  have step4 : ((Bi B i).card : ℚ) = 2 * ∑ α, choose_2 (K B i α) := by
+    rw [Bi_biUnion_F2i, Finset.card_biUnion (by simp [F2i_disjoint])]
+    push_cast
+    simp_rw [F2i_card]
+    simp [Finset.mul_sum]
+  rw [step4]
 
 omit [Fintype F] in
 private lemma hamming_dist_eq_sum {x y : Fin n → F} :
@@ -381,20 +388,18 @@ private lemma almost_johnson_choose_2_elimed [Zero F]
     (B.card - k B) * ((B.card - k B)/(Fintype.card F-1) - 1))
   ≤
   B.card * (B.card - 1) * (n - d B)/n := by
-  have h := almost_johnson h_n h_B h_card; simp [choose_2] at h
+  have h0 := almost_johnson h_n h_B h_card
   set C := (Fintype.card F : ℚ) - 1
-  set δ := B.card - k B
-  sorry
-  -- exact le_of_mul_le_mul_left
-  --   (a0 := show 0 < (n : ℚ) * 2⁻¹ by simp [h_n])
-  --   (le_trans (b := ↑n * 2⁻¹ * (k B * (k B - 1) + C * (δ / C) * (δ / C - 1)))
-  --             (by rw [mul_div_cancel₀ _ (by simp [sub_eq_zero, C]; omega)])
-  --             (le_trans
-  --               (b := B.card * (B.card - 1) / 2 * (n - d B))
-  --               (by convert h using 1; field_simp; ring_nf; tauto)
-  --               (by rw [show n * 2⁻¹ * (B.card * (B.card - 1) * (n - d B) / n) =
-  --                            n * (↑n)⁻¹ * 2⁻¹ * (B.card * (B.card - 1) * (n - d B)) by ring]
-  --                   field_simp)))
+  set δ := (B.card : ℚ) - k B
+  have hC : C ≠ 0 := by simp [C, sub_eq_zero]; omega
+  have hn_pos : (0 : ℚ) < n := by exact_mod_cast h_n
+  rw [le_div_iff₀ hn_pos]
+  have key : choose_2 (k B) + C * choose_2 (δ / C) = (k B * (k B - 1) + δ * (δ / C - 1)) / 2 := by
+    simp only [choose_2]; field_simp
+  have key2 : choose_2 (↑B.card : ℚ) = ↑B.card * (↑B.card - 1) / 2 := by
+    simp only [choose_2]
+  rw [key, key2] at h0
+  nlinarith
 
 private lemma almost_johnson_lhs_div_B_card [Zero F]
   (h_n : 0 < n)
@@ -461,7 +466,13 @@ private lemma johnson_unrefined_by_M' [Zero F]
   ≤
   (Fintype.card F / (Fintype.card F - 1)) * d B/n := by
   rw [mul_comm (B.card : ℚ), mul_assoc, ←mul_div]
-  sorry
+  have h_card_ge_two : (2 : ℚ) ≤ (Fintype.card F : ℚ) := by exact_mod_cast h_card
+  have h_card_pos : (0 : ℚ) < (Fintype.card F : ℚ) := by
+    exact_mod_cast (lt_of_lt_of_le (by decide : 0 < 2) h_card)
+  have h_denom_pos : (0 : ℚ) < (Fintype.card F : ℚ) - 1 := by linarith
+  have h_nonneg : 0 ≤ (Fintype.card F : ℚ) / (Fintype.card F - 1) := by
+    exact le_of_lt (div_pos h_card_pos h_denom_pos)
+  exact mul_le_mul_of_nonneg_left (johnson_unrefined_by_M h_n h_B h_card) h_nonneg
   -- exact (mul_le_mul_left (by field_simp; omega)).2 (johnson_unrefined_by_M h_n h_B h_card)
 
 private lemma johnson_denom [Zero F]
@@ -552,8 +563,20 @@ protected lemma a_lemma_im_not_proud_of_OLD {v a : Fin n → F}
     simp
     · assumption
     field_simp
-    · sorry
-  sorry
+    · have hle : Δ₀(v, a) ≤ Fintype.card (Fin n) := hammingDist_le_card_fintype
+      simp [Fintype.card_fin] at hle
+      have : (Δ₀(v, a) : ℚ) ≤ (n : ℚ) := Nat.cast_le.mpr hle
+      linarith
+  · simp only [tsub_le_iff_right, le_add_iff_nonneg_right]
+    apply div_nonneg
+    · apply mul_nonneg
+      · have : (1 : ℚ) ≤ (Fintype.card F : ℚ) - 1 := by
+          have h2 : (2 : ℚ) ≤ (Fintype.card F : ℚ) := Nat.ofNat_le_cast.mpr h_card
+          linarith
+        have : (0 : ℚ) < (Fintype.card F : ℚ) - 1 := by linarith
+        linarith [inv_nonneg.mpr (le_of_lt this)]
+      · exact Nat.cast_nonneg _
+    · exact Nat.cast_nonneg _
       --assumption
       --ring_nf
   --   conv =>
@@ -605,13 +628,14 @@ protected lemma abs_one_sub_div_le_one {v a : Fin n → F}
   have : a₁⁻¹ ≤ 1 := by aesop (add simp [inv_le_one_iff₀, le_sub_iff_add_le])
                               (add safe (by norm_cast))
   suffices (1 + a₁⁻¹) * a₃ ≤ 2 * a₃ ∧ 2 * a₃ ≤ 2 by simp [← mul_div]; grind only
+  have ha₃_nonneg : 0 ≤ a₃ := by positivity
   have h_ineq1 : (1 + a₁⁻¹) * a₃ ≤ 2 * a₃ := by
-    have ha3_nn : 0 ≤ a₃ := div_nonneg (by positivity) (by positivity)
-    nlinarith
-  have h_ineq2 : 2 * a₃ ≤ 2 := by
-    have : a₃ ≤ 1 := by
-      rw [div_le_one (by positivity)]; exact ha₂
+    apply mul_le_mul_of_nonneg_right _ ha₃_nonneg
     linarith
+  have ha₃_le : a₃ ≤ 1 := by
+    rw [div_le_one (by exact_mod_cast Nat.pos_of_ne_zero eq)]
+    exact ha₂
+  have h_ineq2 : 2 * a₃ ≤ 2 := by linarith
   exact ⟨h_ineq1, h_ineq2⟩
   -- suffices 1 + a₁⁻¹ ≤ 2 ∧ 0 < a₃ ∧ 2 * a₃ ≤ 2 from
   --   ⟨(mul_le_mul_right (by field_simp [a₃] at *; tauto)).2 (by linarith), this.2.2⟩
