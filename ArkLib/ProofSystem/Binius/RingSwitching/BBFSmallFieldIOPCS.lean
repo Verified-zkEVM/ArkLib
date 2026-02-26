@@ -238,6 +238,8 @@ lemma witnessStructuralInvariant_MLPEvalWitness_to_BBF_Witness
       (MLPEvalWitness_to_BBF_Witness 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmt wit) := by
   simpa [Binius.BinaryBasefold.witnessStructuralInvariant, reducedMLPEvalStatement_to_BBF_Statement, MLPEvalWitness_to_BBF_Witness]
 
+/-- If `t(r) = s` for the outer MLP statement, then the mapped round-0 BBF witness
+satisfies the BBF round-0 sumcheck consistency identity. -/
 lemma sumcheckConsistency_MLPEvalWitness_to_BBF_Witness_of_eval
     (stmt : MLPEvalStatement (L := L) (ℓ := ℓ'))
     (wit : WitMLP (K := L) (ℓ := ℓ'))
@@ -279,11 +281,73 @@ lemma sumcheckConsistency_MLPEvalWitness_to_BBF_Witness_of_eval
     apply Subtype.ext
     simpa [projectToMidSumcheckPoly] using h_fix0
 
-  -- ⊢ (MvPolynomial.eval stmt.t_eval_point) ↑wit.t =
-  --   ∑ x ∈ Fintype.piFinset fun i ↦ Finset.map castEmb univ,
-  --     (MvPolynomial.eval x) ↑(projectToMidSumcheckPoly ℓ' wit.t ⟨eqPolynomial stmt.t_eval_point, ⋯⟩ 0 Fin.elim0)
-
-  sorry
+  let mEq : MultilinearPoly L ℓ' := BBF_eq_multiplier (L := L) stmt.t_eval_point
+  have h_H0' :
+      projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := wit.t)
+        (m := mEq) (i := (0 : Fin (ℓ' + 1))) (challenges := Fin.elim0) =
+      computeInitialSumcheckPoly (ℓ := ℓ') wit.t mEq := by
+    simpa [mEq, BBF_SumcheckMultiplierParam, BBF_eq_multiplier] using h_H0
+  change MvPolynomial.eval stmt.t_eval_point wit.t.val =
+    ∑ x ∈ Fintype.piFinset (fun _ : Fin ℓ' => Finset.map castEmb (Finset.univ : Finset (Fin 2))),
+      MvPolynomial.eval x
+        (projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := wit.t)
+          (m := mEq) (i := (0 : Fin (ℓ' + 1))) (challenges := Fin.elim0)).val
+  rw [h_H0']
+  change MvPolynomial.eval stmt.t_eval_point wit.t.val =
+    ∑ x ∈ Fintype.piFinset (fun _ : Fin ℓ' => Finset.map castEmb (Finset.univ : Finset (Fin 2))),
+      MvPolynomial.eval x (mEq.val * wit.t.val)
+  have h_pi :
+    Fintype.piFinset (fun _ : Fin ℓ' => Finset.map castEmb (Finset.univ : Finset (Fin 2))) =
+      (Finset.univ : Finset (Fin ℓ' → Fin 2)).image
+        (fun b : Fin ℓ' → Fin 2 => fun i => castEmb (b i)) := by
+    simpa [Finset.map_eq_image, Fintype.piFinset_univ] using
+      (Fintype.piFinset_image
+        (f := fun _ : Fin ℓ' => castEmb)
+        (s := fun _ : Fin ℓ' => (Finset.univ : Finset (Fin 2))))
+  rw [h_pi, Finset.sum_image]
+  · simp only [MvPolynomial.eval_mul]
+    have h_sum_symm :
+      (∑ x : Fin ℓ' → Fin 2,
+        MvPolynomial.eval (fun i => castEmb (x i)) mEq.val *
+          MvPolynomial.eval (fun i => castEmb (x i)) wit.t.val) =
+      (∑ x : Fin ℓ' → Fin 2,
+        MvPolynomial.eval stmt.t_eval_point (MvPolynomial.eqPolynomial (fun i => castEmb (x i))) *
+          MvPolynomial.eval (fun i => castEmb (x i)) wit.t.val) := by
+      apply Finset.sum_congr rfl
+      intro x hx
+      have h_mEq : MvPolynomial.eval (fun i => castEmb (x i)) mEq.val =
+        MvPolynomial.eval (fun i => castEmb (x i)) (MvPolynomial.eqPolynomial stmt.t_eval_point) := by
+        simp only [BBF_eq_multiplier, map_prod, map_add, map_mul, map_sub, map_one,
+          MvPolynomial.eval_C, MvPolynomial.eval_X, mEq]
+      rw [h_mEq]
+      congr 1
+      simpa using (MvPolynomial.eqPolynomial_symm
+        (x := fun i => castEmb (x i)) (y := stmt.t_eval_point)).symm
+    rw [h_sum_symm]
+    have h_multilinear : MvPolynomial.MLE
+        (fun x : Fin ℓ' → Fin 2 => MvPolynomial.eval (x : Fin ℓ' → L) wit.t.val) = wit.t.val := by
+      exact (MvPolynomial.is_multilinear_iff_eq_evals_zeroOne (p := wit.t.val)).mp wit.t.property
+    calc
+      MvPolynomial.eval stmt.t_eval_point wit.t.val =
+        MvPolynomial.eval stmt.t_eval_point
+          (MvPolynomial.MLE
+            (fun x : Fin ℓ' → Fin 2 => MvPolynomial.eval (x : Fin ℓ' → L) wit.t.val)) := by
+          rw [h_multilinear]
+      _ = ∑ x : Fin ℓ' → Fin 2,
+        MvPolynomial.eval stmt.t_eval_point (MvPolynomial.eqPolynomial (x : Fin ℓ' → L)) *
+          MvPolynomial.eval (x : Fin ℓ' → L) wit.t.val := by
+        unfold MvPolynomial.MLE
+        simp only [MvPolynomial.eval_sum, MvPolynomial.eval_mul, MvPolynomial.eval_C]
+      _ = ∑ x : Fin ℓ' → Fin 2,
+        MvPolynomial.eval stmt.t_eval_point (MvPolynomial.eqPolynomial (fun i => castEmb (x i))) *
+          MvPolynomial.eval (fun i => castEmb (x i)) wit.t.val := by
+        apply Finset.sum_congr rfl
+        intro x hx
+        rfl
+  · intro x hx y hy hxy
+    funext i
+    apply castEmb.injective
+    exact congrFun hxy i
 
 /-! ### AbstractOStmtIn
 
