@@ -66,11 +66,13 @@ private lemma sum_choose_K' [Zero F]
   (Fintype.card (α := F) - 1) * choose_2 ((B.card - K B i 0) / (Fintype.card (α := F) - 1)) ≤
   ∑ (α : F) with α ≠ 0, choose_2 (K B i α) := by
   rw [←sum_K_eq_card (i := i), Nat.cast_sum]
-  set X₁ : ℚ := Fintype.card F - 1
-  have X₁h : X₁ ≠ 0 := by simp [X₁, sub_eq_zero]; omega
-  set X₂ := K B i
-  suffices X₁ * choose_2 (∑ x with x ≠ 0, (fun _ ↦ X₁⁻¹) x • (Nat.cast (R := ℚ) ∘ X₂) x) ≤
-           ∑ α with α ≠ 0, choose_2 ↑(X₂ α) by
+  set x1 : ℚ := Fintype.card F - 1
+  have hx1 : x1 ≠ 0 := by
+    simp [x1, sub_eq_zero]
+    omega
+  set x2 := K B i
+  suffices x1 * choose_2 (∑ x with x ≠ 0, (fun _ ↦ x1⁻¹) x • (Nat.cast (R := ℚ) ∘ x2) x) ≤
+      ∑ α with α ≠ 0, choose_2 ↑(x2 α) by
     simp at this
     convert this
     rw [sum_eq_sum_diff_singleton_add (i := 0) (by simp)]
@@ -78,16 +80,28 @@ private lemma sum_choose_K' [Zero F]
     rw [sum_mul]
     apply sum_congr (ext _) <;> grind only [= mem_filter, = mem_sdiff, ← mem_univ, = mem_singleton]
   simp only [Function.comp_apply, smul_eq_mul]
-  have hX₁_nonneg : (0 : ℚ) ≤ X₁ := by simp [X₁, sub_nonneg]; omega
+  have hx1Nonneg : (0 : ℚ) ≤ x1 := by
+    simp [x1, sub_nonneg]
+    omega
   have jensen := ConvexOn.map_sum_le choose_2_convex
     (t := Finset.univ.filter (· ≠ (0 : F)))
-    (w := fun _ => X₁⁻¹)
-    (p := fun α => (X₂ α : ℚ))
-    (by intro _ _; exact inv_nonneg.mpr hX₁_nonneg)
-    (by simp [X₁]; field_simp; exact div_self X₁h) (by simp)
+    (w := fun _ => x1⁻¹)
+    (p := fun α => (x2 α : ℚ))
+    (by
+      intro _ _
+      exact inv_nonneg.mpr hx1Nonneg)
+    (by
+      simp [x1]
+      field_simp
+      exact div_self hx1)
+    (by simp)
   simp only [smul_eq_mul] at jensen
-  exact le_trans (mul_le_mul_of_nonneg_left jensen hX₁_nonneg)
-    (le_of_eq (by rw [Finset.mul_sum]; congr 1; ext; rw [← mul_assoc, mul_inv_cancel₀ X₁h, one_mul]))
+  exact le_trans (mul_le_mul_of_nonneg_left jensen hx1Nonneg) <|
+    le_of_eq <| by
+      rw [Finset.mul_sum]
+      congr 1
+      ext
+      rw [← mul_assoc, mul_inv_cancel₀ hx1, one_mul]
 
 @[simp, grind]
 private def sum_choose_K_i (B : Finset (Fin n → F)) (i : Fin n) : ℚ :=
@@ -274,16 +288,20 @@ private lemma F2i_disjoint :
 private lemma F2i_card {α : F} :
   (F2i B i α).card = 2 * choose_2 (K B i α) := by
   set A := Fi B i α with hA
-  have h1 : F2i B i α = (A ×ˢ A).filter (fun x => x.1 ≠ x.2) := by
+  have h1 : F2i B i α = (A ×ˢ A).filter (fun x ↦ x.1 ≠ x.2) := by
     ext ⟨a, b⟩; simp [F2i, Fi, A, Finset.mem_filter, Finset.mem_product]; tauto
   rw [h1, Finset.filter_not, Finset.card_sdiff]
   rw [Finset.inter_eq_left.mpr (Finset.filter_subset _ _)]
   simp only [Finset.card_product]
-  have h2 : ((A ×ˢ A).filter (fun x => x.1 = x.2)).card = A.card := by
+  have h2 : ((A ×ˢ A).filter (fun x ↦ x.1 = x.2)).card = A.card := by
     rw [Finset.card_eq_of_equiv]
     exact {
-      toFun := fun ⟨⟨a, _⟩, hx⟩ => ⟨a, by simp [Finset.mem_filter, Finset.mem_product] at hx; exact hx.1.1⟩
-      invFun := fun ⟨a, ha⟩ => ⟨⟨a, a⟩, by simp [Finset.mem_filter, Finset.mem_product, ha]⟩
+      toFun := fun ⟨⟨a, _⟩, hx⟩ ↦
+        ⟨a, by
+          simp [Finset.mem_filter, Finset.mem_product] at hx
+          exact hx.1.1⟩
+      invFun := fun ⟨a, ha⟩ ↦
+        ⟨⟨a, a⟩, by simp [Finset.mem_filter, Finset.mem_product, ha]⟩
       left_inv := by intro ⟨⟨a, b⟩, hx⟩; simp [Finset.mem_filter] at hx; simp [hx.2]
       right_inv := by intro ⟨a, ha⟩; simp
     }
@@ -303,12 +321,12 @@ private lemma sum_of_not_equals :
   := by
   set s₁ := {x ∈ B ×ˢ B | x.1 ≠ x.2} with eq₁
   have step1 : ∑ x ∈ s₁, (if x.1 i ≠ x.2 i then (1 : ℚ) else 0) =
-      s₁.card - (s₁.filter (fun x => x.1 i = x.2 i)).card := by
+      s₁.card - (s₁.filter (fun x ↦ x.1 i = x.2 i)).card := by
     rw [Finset.sum_boole, Finset.filter_not, Finset.card_sdiff]
     rw [Finset.inter_eq_left.mpr (Finset.filter_subset _ s₁)]
     exact_mod_cast Nat.cast_sub (Finset.card_filter_le _ _)
   rw [step1]
-  have step2 : s₁.filter (fun x => x.1 i = x.2 i) = Bi B i := by
+  have step2 : s₁.filter (fun x ↦ x.1 i = x.2 i) = Bi B i := by
     ext x; simp [eq₁, Bi]; tauto
   rw [step2]
   have step3 : (s₁.card : ℚ) = 2 * choose_2 (B.card : ℚ) := by
@@ -362,7 +380,9 @@ private lemma sum_sum_K_i_eq_n_sub_d
   simp_rw [d_eq_sum h_B, sum_of_not_equals]
   simp only [sum_choose_K_i]
   rw [Finset.sum_sub_distrib, Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
-  have key : ∑ x : Fin n, ∑ α : F, 2 * choose_2 ↑(K B x α) = 2 * ∑ x : Fin n, ∑ α : F, choose_2 ↑(K B x α) := by
+  have key :
+      ∑ x : Fin n, ∑ α : F, 2 * choose_2 ↑(K B x α) =
+        2 * ∑ x : Fin n, ∑ α : F, choose_2 ↑(K B x α) := by
     rw [Finset.mul_sum]; congr 1; ext x; rw [Finset.mul_sum]
   simp_rw [← Finset.mul_sum]
   linarith [key]
@@ -394,7 +414,9 @@ private lemma almost_johnson_choose_2_elimed [Zero F]
   have hC : C ≠ 0 := by simp [C, sub_eq_zero]; omega
   have hn_pos : (0 : ℚ) < n := by exact_mod_cast h_n
   rw [le_div_iff₀ hn_pos]
-  have key : choose_2 (k B) + C * choose_2 (δ / C) = (k B * (k B - 1) + δ * (δ / C - 1)) / 2 := by
+  have key :
+      choose_2 (k B) + C * choose_2 (δ / C) =
+        (k B * (k B - 1) + δ * (δ / C - 1)) / 2 := by
     simp only [choose_2]; field_simp
   have key2 : choose_2 (↑B.card : ℚ) = ↑B.card * (↑B.card - 1) / 2 := by
     simp only [choose_2]
@@ -1033,8 +1055,9 @@ lemma johnson_gap_frac_d_gt_one {n d : ℕ} {F : Type*} [Fintype F] [DecidableEq
       have h'' :
           (1 : ℚ) * ((q - 1) * n) < q * (d : ℚ) := by
             rw [one_mul]
-            calc (q - 1) * ↑n < (q - 1) * (frac * ↑d) := by
-                  exact mul_lt_mul_of_pos_left h' hq1_pos
+            calc
+              (q - 1) * ↑n < (q - 1) * (frac * ↑d) := by
+                exact mul_lt_mul_of_pos_left h' hq1_pos
               _ = q * ↑d := by simp [frac]; field_simp [hq1_ne]
       simpa [mul_comm, mul_left_comm, mul_assoc] using h''
     have hF2 : (2 : ℕ) ≤ Fintype.card F := by
