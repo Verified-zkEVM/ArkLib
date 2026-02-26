@@ -149,53 +149,62 @@ private lemma witness_lift {F : Type} [NonBinaryField F]
   {k : ℕ} {s : Fin (k + 1) → ℕ+} {d : ℕ+} {p : F[X]} {α : F} {i : Fin (k + 1)} :
     p ∈ Witness F s d i.castSucc →
       FoldingPolynomial.polyFold p (2 ^ (s i).1) α ∈ Witness F s d i.succ := by
+  intro deg_bound
+  unfold Witness at deg_bound ⊢
+  rw [Polynomial.mem_degreeLT] at deg_bound ⊢
+  simp only [Fin.coe_castSucc, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat,
+     Fin.val_succ] at deg_bound ⊢
+  apply lt_of_le_of_lt
+  apply Polynomial.degree_le_of_natDegree_le
+  exact FoldingPolynomial.polyFold_natDegree_le
+  simp only [finRangeTo]
+  rw [WithBot.lt_def]
+  simp only [WithBot.natCast_ne_bot, false_and, false_or]
+  exists (p.natDegree / (2 ^ (↑(s i) : ℕ)))
+  exists (2 ^ (∑ j', ↑(s j') - ∑ j' ∈ (List.take (↑i + 1) (List.finRange (k + 1))).toFinset, (↑(s j') : ℕ))) * (↑d : ℕ)
+  apply And.intro
+  · apply Nat.div_lt_of_lt_mul 
+    by_cases hp : p = 0
+    · rw [hp]
+      simp only [natDegree_zero, Nat.ofNat_pos, pow_pos, mul_pos_iff_of_pos_left, PNat.pos]
+    · have deg_bound : 
+        p.degree < ↑(2 ^ (∑ j', (↑(s j') : ℕ) - ∑ j' ∈ finRangeTo ↑i, ↑(s j')) * (↑d : ℕ)) := by
+        exact deg_bound 
+      rw [←Polynomial.natDegree_lt_iff_degree_lt hp] at deg_bound
+      apply Nat.lt_of_lt_of_le deg_bound
+      rw [←mul_assoc, ←Nat.pow_add]
+      simp only [finRangeTo, PNat.pos, mul_le_mul_iff_left₀]
+      apply Nat.pow_le_pow_of_le (by simp)
+      conv =>
+        rhs
+        rhs
+        rhs
+        lhs
+        rw [List.finRange_succ, List.take_succ_cons]
+      have arith {a b c : ℕ} (h : b ≥ c) (h' : a ≤ c) : a + (b - c) = b - (c - a) := by
+         rw [Nat.sub_sub_right b h', Nat.sub_add_comm h, Nat.add_comm]
+      rw [arith (by {
+        simp
+        apply Finset.sum_le_sum_of_subset
+        simp
+      }) (by {
+        apply @CanonicallyOrderedAddCommMonoid.single_le_sum (Fin (k + 1)) ℕ _ _ _ (fun j => (s j).1)
+        rw [List.mem_toFinset]
+        simp
+        rcases i with ⟨i, hi⟩ 
+        simp
+        rcases i with _ | i <;> try tauto
+        simp
+        rw [List.mem_take_iff_getElem]
+        exists i
+        simp
+        omega
+      })]
+      apply Nat.sub_le_sub_left
+      simp
+      rw [←List.map_take] 
       sorry
-  -- intro deg_bound
-  -- unfold Witness at deg_bound ⊢
-  -- rw [Polynomial.mem_degreeLT] at deg_bound ⊢
-  -- simp only [Fin.coe_castSucc, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat,
-  --   Fin.val_succ] at deg_bound ⊢
-  -- by_cases h : p = 0
-  -- · rw [h, foldNth_zero, degree_zero]
-  --   exact WithBot.bot_lt_coe _
-  -- · by_cases h' : foldNth (2 ^ (s i).1) p α = 0
-  --   · rw [h', degree_zero]
-  --     exact WithBot.bot_lt_coe _
-  --   · erw [Polynomial.degree_eq_natDegree h, WithBot.coe_lt_coe] at deg_bound
-  --     erw [Polynomial.degree_eq_natDegree h', WithBot.coe_lt_coe]
-  --     norm_cast at deg_bound ⊢
-  --     have : 2 ^ (s i).1 > 0 := by
-  --       simp only [gt_iff_lt, Nat.ofNat_pos, pow_pos]
-  --     rw [Iff.symm (Nat.mul_lt_mul_left this)]
-  --     apply lt_of_le_of_lt foldNth_degree_le'
-  --     have arith {a b c : ℕ} (h : b ≥ c) (h' : a ≤ c) : a + (b - c) = b - (c - a) := by
-  --       rw [Nat.sub_sub_right b h', Nat.sub_add_comm h, Nat.add_comm]
-  --     rw [←mul_assoc, ←pow_add, arith]
-  --     · convert deg_bound
-  --       rw [sum_add_one]
-  --       simp
-  --     · simp only [ge_iff_le]
-  --       apply sum_le_univ_sum_of_nonneg
-  --       simp
-  --     · apply @CanonicallyOrderedAddCommMonoid.single_le_sum (Fin (k + 1)) ℕ _ _ _
-  --           (fun j => (s j).1)
-  --           (List.take (↑i + 1) (List.finRange (k + 1))).toFinset i
-  --       rw [List.mem_toFinset]
-  --       apply List.mem_take_iff_getElem.mpr
-  --       use i.1
-  --       use
-  --         (by
-  --           have := i.2
-  --           simp only [List.length_finRange, Nat.add_min_add_right, gt_iff_lt]
-  --           by_cases h : i.1 = 0
-  --           · rw [h]
-  --             simp
-  --           · have : 1 ≤ i.1 := by omega
-  --             refine (Nat.sub_lt_iff_lt_add this).mp ?_
-  --             rw [Nat.lt_min]
-  --             omega
-  --         )
-  --       simp
+  · apply And.intro rfl rfl 
 
 instance {i : Fin (k + 1)} : ∀ j, OracleInterface (OracleStatement D x s i j) :=
   fun _ => inferInstance

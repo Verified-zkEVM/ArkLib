@@ -54,6 +54,12 @@ lemma foldingPolynomial_C_f {f : F} {q : F[X]} :
   unfold foldingPolynomial foldingPolynomialAux
   simp
 
+@[simp]
+lemma foldingPolynomial_zero {q : F[X]} :
+  foldingPolynomial q 0 = 0 := by
+  unfold foldingPolynomial foldingPolynomialAux
+  simp
+
 private lemma folding_polynomial_def_base_case {q f : F[X]}
   (h : f.degree < q.degree ∨ f.degree ≤ 0 ∨ q.degree ≤ 0)
   :
@@ -671,6 +677,10 @@ theorem folding_polynomial_is_unique' {q f : Polynomial F} {Q : Polynomial (Poly
 
 noncomputable def polyFold (f : F[X]) (k : ℕ) (r : F) : F[X]
   := (foldingPolynomial (X ^ k) f).eval (C r)
+
+@[simp]
+lemma polyFold_zero_eq_zero {k : ℕ} {r : F} :
+  polyFold 0 k r = 0 := by simp [polyFold]
 
 lemma polyFold_natDegree_le {f : F[X]} {k : ℕ} {r : F} :
   (polyFold f k r).natDegree ≤ f.natDegree / k := by
