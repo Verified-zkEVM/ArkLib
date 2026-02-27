@@ -252,6 +252,8 @@ lemma splitNth_degree_le {n : ℕ} {f : 𝔽[X]} [inst : NeZero n] :
     refine Nat.div_le_div ?_ (Nat.le_refl n) inst.out
     exact le_natDegree_of_ne_zero h
 
+/-- `foldingPolynomial` in terms of `splitNth`
+    when `q = X ^ n`. -/
 @[simp]
 lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽]
   {f : Polynomial 𝔽} {n : ℕ} 
@@ -302,6 +304,7 @@ lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽]
     simp
     omega
 
+/-- `polyFold` in terms of `splitNth`. -/
 @[simp]
 lemma polyFold_eq_sum_of_splitNth {𝔽 : Type} [Field 𝔽]
   {f : 𝔽[X]} {n : ℕ} {r : 𝔽}
