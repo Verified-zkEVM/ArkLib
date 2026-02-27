@@ -11,20 +11,11 @@ import ArkLib.Data.CodingTheory.Basic
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.Polynomial.Bivariate
 
-
 open Polynomial Polynomial.Bivariate Finsupp Finset
 
---Let `F` be a field (finite).
 variable {F : Type} [Field F]
---Let `k + 1` be the **dimension** of the code.
-variable {k : ℕ}
---Let `n` be the **blocklength** of the code.
-variable {n : ℕ}
---Let `m` be a natural number, serving as the **multiplicity parameter**.
-variable {m : ℕ}
---Let `ωs` be the **domain of evaluation**, i.e. the interpolation points.
+variable {k n m : ℕ}
 variable {ωs : Fin n ↪ F}
---Let `f` be the **received word**, possibly corrupted.
 variable {f : Fin n → F}
 
 variable (k n m) in
@@ -41,19 +32,13 @@ noncomputable def proximity_gap_johnson : ℝ :=
   let rho := (k + 1 : ℚ) / n
   1 - √ rho - √ rho / (2 * m)
 
-
 namespace GuruswamiSudan
 
---This definition likely already exists in `Arklib.Data.Polynomial.Bivariate`.
 /-- The monomial X^i Y^j as a bivariate polynomial. -/
 noncomputable def monomial (i j : ℕ) : F[X][Y] :=
   Polynomial.monomial j (Polynomial.monomial i 1)
 
-
 section numVars
-
-/- In this section are collected definitions and properties of the variables
-    of Guruswami-Sudan linear system. -/
 
 /-- Given a nonnegative integer `D`, it is the set of indices `(i,j)` such
     that `i + (k - 1) * j ≤ D`. -/
@@ -152,8 +137,8 @@ lemma numVars_lower_bound_tight {D : ℕ} (hk : 1 < k) :
         numVars_eq_of_gt_one hk
       rcases k with (_|_|k) <;> simp_all only [lt_add_iff_pos_left, add_pos_iff, zero_lt_one,
         or_true, add_tsub_cancel_right, Nat.mul_succ, ge_iff_le]
-      · exfalso; omega
-      · exfalso; omega
+      · omega
+      · omega
       rw [← Nat.mul_div_assoc]
       · rw [Nat.le_div_iff_mul_le] <;> ring_nf
         · zify
@@ -167,12 +152,7 @@ lemma numVars_lower_bound_tight {D : ℕ} (hk : 1 < k) :
 
 end numVars
 
-
 section numConstraints
-
-/- In this section are collected definitions and properties of the constraints
-    of Guruswami-Sudan linear system. -/
-
 
 /-- Given a positive integer `m`, the set of derivative indices `(s,t)`
     such that `s + t < m`. -/
@@ -202,16 +182,7 @@ lemma card_constraintIndices (m : ℕ) : (constraintIndices m).card = m * (m + 1
 
 end numConstraints
 
-
 section numVars_gt_numConstraints
-
-/- This section is devoted to the proof of the fact that under the hypotheses of
-  `proximity_gap_degree_bound` and `proximity_gap_johnson` in Lemma 5.3 of [BCIKS20],
-  the number of variables is greater than the number of constraints independently
-  of the chosen initial parameters. In particular, this is mathematically true
-  for all values of `k` and `n`, even the ones whose associated Guruswami-Sudan
-  algorithm is not meaningful. Remember that in general the constraints `k + 1 ≤ n` and
-  `n ≤ card F` must hold. -/
 
 /-- Lower bound for the square of (D+1). Specifically, (D+1)^2 > (m+1/2)^2 * (k+1) * n. -/
 lemma proximity_gap_degree_bound_sq_gt (hn : n ≠ 0) :
@@ -228,7 +199,7 @@ lemma proximity_gap_degree_bound_sq_gt (hn : n ≠ 0) :
           gcongr
           field_simp
           rw [Real.sq_sqrt (by norm_cast; omega)]
-        exact lt_of_lt_of_le (Nat.lt_floor_add_one _) (add_le_add_left hD_ge_floor _)
+        exact lt_of_lt_of_le (Nat.lt_floor_add_one _) (add_le_add_right hD_ge_floor _)
       nlinarith [show 0 < (m + 1 / 2 : ℝ) * √((k + 1) * n) by
         positivity, Real.mul_self_sqrt (show 0 ≤ (k + 1 : ℝ) * n by positivity)]
 
@@ -324,9 +295,6 @@ end numVars_gt_numConstraints
 
 section solution
 
-/- In this section, we construct the polynomial solution to the Guruswami-Sudan system. -/
-
-
 /-- The linear map from the space of coefficients to polynomials. -/
 noncomputable def coeffsToPoly (k D : ℕ) : ((weigthBoundIndices k D) → F) →ₗ[F] F[X][Y] :=
   linearCombination F (fun p : weigthBoundIndices k D ↦ monomial p.1.1 p.1.2) ∘ₗ
@@ -361,8 +329,8 @@ lemma exists_nonzero_solution :
       have h_inj : ¬ Function.Injective
           (constraintMap k n m ωs f (proximity_gap_degree_bound k n m)) := by
         intro h_inj
-        have := LinearMap.finrank_range_of_inj h_inj
-        exact h_kernel_nontrivial.not_ge (this ▸ Submodule.finrank_le _)
+        exact h_kernel_nontrivial.not_ge
+          (LinearMap.finrank_range_of_inj h_inj ▸ Submodule.finrank_le _)
       contrapose! h_inj
       exact LinearMap.ker_eq_bot.mp (eq_bot_iff.mpr fun x hx ↦
         by_contra fun hx' ↦ h_inj x hx' <| by simpa using hx)
@@ -375,11 +343,7 @@ noncomputable def polySol : F[X][Y] :=
 
 end solution
 
-
 section neZero
-
-/- In this section, we prove that the polynomial solution is non-zero. -/
-
 
 /-- The coefficient of X^i Y^j in a linear combination of monomials is the coefficient
     of the combination. -/
@@ -410,20 +374,16 @@ lemma polySol_ne_zero :
     have := Classical.choose_spec (exists_nonzero_solution k n m ωs f)
     have h_inj : Function.Injective (coeffsToPoly (F := F) k
     (proximity_gap_degree_bound k n m)) := by
-      have h_linear_combination_injective : Function.Injective (linearCombination F
+      have : Function.Injective (linearCombination F
         (fun p : weigthBoundIndices k (proximity_gap_degree_bound k n m) ↦
           monomial (F := F) p.1.1 p.1.2)) :=
         linearIndependent_monomials.comp _ (fun p q h ↦ by aesop)
-      exact h_linear_combination_injective.comp (LinearEquiv.injective _)
+      exact this.comp (LinearEquiv.injective _)
     exact fun h ↦ this.1 <| h_inj <| by simpa using h
 
 end neZero
 
-
 section weightedDegree
-
-/- In this section are collected properties of the weighted degree of bivariate polynomials. -/
-
 
 /-- The weighted degree of a monomial X^i Y^j is u*i + v*j. -/
 lemma natWeightedDegree_monomial (i j u v : ℕ) :
@@ -441,8 +401,8 @@ lemma natWeightedDegree_monomial (i j u v : ℕ) :
 
 /-- The weighted degree of a monomial X^i Y^j is u*i + v*j. -/
 lemma natWeightedDegree_monomial_eq (i j u v : ℕ) :
-  natWeightedDegree (monomial (F := F) i j) u v = u * i + v * j := by
-    convert natWeightedDegree_monomial i j u v using 1
+  natWeightedDegree (monomial (F := F) i j) u v = u * i + v * j :=
+    natWeightedDegree_monomial i j u v
 
 /-- The weighted degree of a sum is at most the maximum of the weighted degrees. -/
 lemma natWeightedDegree_add_le (p q : F[X][Y]) (u v : ℕ) :
@@ -452,8 +412,8 @@ lemma natWeightedDegree_add_le (p q : F[X][Y]) (u v : ℕ) :
   by_cases h' : m ∈ q.support <;>
     simp_all only [Polynomial.mem_support_iff, coeff_add, ne_eq, le_sup_iff]
   · have h_deg : (p.coeff m + q.coeff m).natDegree ≤
-        max ((p.coeff m).natDegree) ((q.coeff m).natDegree) := by
-      exact natDegree_add_le (p.coeff m) (q.coeff m)
+        max ((p.coeff m).natDegree) ((q.coeff m).natDegree) :=
+      natDegree_add_le (p.coeff m) (q.coeff m)
     cases max_cases (natDegree (p.coeff m))
       (natDegree (q.coeff m)) <;> simp_all only [sup_of_le_left, sup_eq_left, and_self,
         natWeightedDegree]
@@ -530,12 +490,7 @@ lemma polySol_weightedDegree_le :
 
 end weightedDegree
 
-
 section roots
-
-/- In this section, we prove that the solution to the Guruswami-Sudan system vanishes
-  at the interpolation domain points. -/
-
 
 /-- If constraints vanish up to order m ≥ 1, the polynomial vanishes at the point. -/
 lemma eval_eq_zero_of_constraint_zero {f : F[X][Y]} {x y : F} {m : ℕ} (hm : 1 ≤ m)
@@ -553,18 +508,13 @@ lemma polySol_roots {ωs : Fin n ↪ F} {f : Fin n → F} (hm : 1 ≤ m) (i : Fi
 
 end roots
 
-
 section multiplicity
-
-/- In this section, we prove that the solution to the Guruswami-Sudan system
-    has multiplicity of roots at least m at the interpolation points. -/
-
 
 /-- If `m` is the minimum of a list `l`, then `m ≤ a` for any `a ∈ l`. -/
 lemma list_min_le_of_mem {l : List ℕ} {a m : ℕ} (h_min : l.min? = some m) (h_mem : a ∈ l) :
     m ≤ a := by
-  have h_min_mem : ∀ l : List ℕ, ∀ a ∈ l, a ≥ l.min?.getD 0 := by
-    exact fun l a a_2 ↦ List.min?_getD_le_of_mem a_2
+  have h_min_mem : ∀ l : List ℕ, ∀ a ∈ l, a ≥ l.min?.getD 0 :=
+    fun l a a_2 ↦ List.min?_getD_le_of_mem a_2
   grind
 
 /-- If the `(s, t)`-coefficient of `shift Q x y` is non-zero, then the root multiplicity
@@ -714,10 +664,7 @@ end multiplicity
 
 section divisibility
 
-/- In this section, we study divisibility properties of bivariate polynomials in the
-  context of the Guruswami-Sudan algorithm. -/
 open ReedSolomon
-
 
 /-- The degree of Q(X, P(X)) is bounded by the (1, k-1)-weighted degree of Q,
     provided deg(P) ≤ k - 1. -/
@@ -830,8 +777,7 @@ lemma interpolate_eq_of_degree_lt (q : F[X]) (hq : q.natDegree < n) :
         forall_exists_index, forall_apply_eq_imp_iff]
       intro i
       rw [eval_finset_sum, Finset.sum_eq_single i]
-      · rw [eval_mul, Lagrange.eval_basis_self (by simp [ωs.injective]) (mem_univ i)]
-        norm_num
+      · rw [eval_mul, Lagrange.eval_basis_self (by simp) (mem_univ i)]; norm_num
       all_goals aesop
 
 /-- The polynomial corresponding to a codeword has degree at most k-1. -/
