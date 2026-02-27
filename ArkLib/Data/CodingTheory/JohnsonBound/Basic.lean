@@ -71,18 +71,24 @@ lemma sqrt_le_J {q δ : ℚ} (hq : q > 1) (hx0 : 0 ≤ δ) (hx1 : δ ≤ 1) (hqx
   have hfracx' : 1 - frac * δ ≥ 0 := by grind only
   suffices 1 - √(1 - δ) ≤ (1 / frac) * (1 - √(1 - frac * δ)) by grind only
   field_simp
-  -- rw[
-  --   division_by_conjugate (by exact_mod_cast hx') (by positivity),
-  --   division_by_conjugate (by exact_mod_cast hfracx') (by positivity)]
-  -- have : δ = 1 - (1 - δ) := by grind only
-  -- have : frac * δ = 1 - (1 - frac * δ) := by grind only
-  -- field_simp
   norm_cast
-  -- gcongr
-  -- have : 1 * δ  ≤ frac * δ  := by
-  --   exact mul_le_mul_of_nonneg_right hfrac_ge hx0
-  -- simp at this
-  sorry
+  by_cases hδ : δ = 0
+  · simp [hδ]
+  · have hδ_pos : (0 : ℚ) < δ := lt_of_le_of_ne hx0 (Ne.symm hδ)
+    have hfracx'2 : 1 - δ * frac ≥ 0 := by linarith [mul_comm frac δ]
+    rw [division_by_conjugate (b := ↑(1 - δ)) (by exact_mod_cast hx') (by positivity)]
+    rw [division_by_conjugate (b := ↑(1 - δ * frac)) (by exact_mod_cast hfracx'2) (by positivity)]
+    simp only [one_pow]
+    push_cast
+    have eq1 : (1 : ℝ) - (1 - (δ : ℝ)) = δ := by ring
+    have eq2 : (1 : ℝ) - (1 - (δ : ℝ) * (frac : ℝ)) = δ * frac := by ring
+    rw [eq1, eq2, div_mul_eq_mul_div]
+    have hsqrt_le : √(1 - ↑δ * ↑frac) ≤ √(1 - ↑δ) := by
+      apply Real.sqrt_le_sqrt
+      have : (1 : ℝ) ≤ ↑frac := by exact_mod_cast hfrac_ge
+      have : (0 : ℝ) ≤ ↑δ := by exact_mod_cast hx0
+      nlinarith
+    exact div_le_div_of_nonneg_left (by positivity) (by positivity) (by linarith)
 
 /-- The `q`-ary Johnson bound.
 -/
@@ -201,8 +207,8 @@ lemma johnson_condition_weak_implies_strong [Field F]
       field_simp
       field_simp at h_J_cond_weak'
       field_simp at bound
-      sorry
-      -- linarith
+      have hn_nonneg : (0 : ℝ) ≤ ↑n := Nat.cast_nonneg _
+      nlinarith [mul_le_mul_of_nonneg_left bound hn_nonneg]
     have err_n : (↑e_1 / ↑n : ℝ) ≤ (↑e / ↑n : ℝ)   := by
       gcongr
       have err : e_1 ≤ e := by
@@ -304,10 +310,7 @@ theorem johnson_bound [Field F]
   suffices B.card * JohnsonDenominator B v ≤
            Fintype.card F / (Fintype.card F - 1) * d B / n by
     rw [johnson_condition_strong_iff_johnson_denom_pos] at h_condition
-    sorry
-    -- rw [←mul_le_mul_right h_condition]
-    -- convert this using 1
-    -- field_simp; rw [mul_div_mul_right]; linarith
+    exact (le_div_iff₀ h_condition).mpr (by linarith)
   rw [johnson_denominator_def]
   exact JohnsonBound.johnson_bound_lemma
     (johnson_condition_strong_implies_n_pos h_condition)

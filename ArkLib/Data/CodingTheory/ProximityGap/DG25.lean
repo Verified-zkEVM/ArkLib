@@ -3,7 +3,7 @@ Copyright (c) 2024 - 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors : Chung Thai Nguyen, Quang Dao
 -/
-import ArkLib.Data.Nat.Bitwise
+import CompPoly.Data.Nat.Bitwise
 import ArkLib.Data.CodingTheory.Basic
 import ArkLib.Data.CodingTheory.InterleavedCode
 import ArkLib.Data.CodingTheory.ReedSolomon
@@ -302,7 +302,8 @@ theorem CA_split_rowwise_implies_CA
           simp only [InterleavedSymbol, WordStack, InterleavedWord,
             instInterleavableWordStackInterleavedWord, interleaveWordStack, Fin.isValue,
             Matrix.transpose_apply]
-          rw! [Nat.sub_add_cancel (h := by omega)]
+        rw! [Nat.sub_add_cancel (h := by omega)]
+        rfl
 
 omit [Fintype ι] [DecidableEq ι] [Nonempty ι] [Fintype A] [DecidableEq A] [Fintype F] in
 /-- `[⊗_{i=0}^{ϑ-1}(1-r_i, r_i)] · [ - u₀ - ; ... ; - u_{2^ϑ-1} - ]`
@@ -412,10 +413,6 @@ variable {F : Type} [CommRing F] [Fintype F] [NoZeroDivisors F] [DecidableEq F]
   -- Semiring.toModule (R := A) => Module A A, plus Ring A for `RS code` theorems?
 variable (MC : ModuleCode ι F A) [Nontrivial MC]
   (C : Set (Word A ι)) [Nonempty C] -- todo: change to Nontrivial if needed
-
-instance : NoZeroSMulDivisors (R := F) (M := A) := Module.Free.noZeroSMulDivisors F A
-
-instance : NoZeroSMulDivisors (R := F) (M := Word A ι) := _root_.Function.noZeroSMulDivisors
 
 instance : Nonempty MC := by exact instNonemptyOfInhabited
 
@@ -930,22 +927,18 @@ lemma card_agreeing_cells_notin_D {U₀ U₁ : InterleavedWord A (Fin m) ι} {V�
     simp only [R_star_star_filter_columns_not_in_D, R_star_star, mem_filter, mem_product, mem_univ,
       and_true, mem_sdiff, true_and, and_congr_left_iff, and_iff_left_iff_imp, R_ss_not_D, R_s,
       D_compl]
-    sorry
-    -- intro j_memD r_mem_Rstar
-    -- -- 1. Unfold the definition of `j ∉ D` to get the core equalities.
-    -- have h_agree_at_j : U₀ j = V₀.val j ∧ U₁ j = V₁.val j := by
-    --   -- Use the hypothesis `h_D_def` from the outer lemma
-    --   simp only [h_D_def, disagreementSet, Finset.mem_filter, Finset.mem_univ, true_and,
-    --             not_or, not_not] at j_memD
-    --   -- j_memD is now `U₀ j = V₀.val j ∧ U₁ j = V₁.val j`
-    --   exact j_memD
-    -- -- 2. Unfold the goal (the affineLineEvaluation)
-    -- unfold affineLineEvaluation
-    -- simp only [Pi.add_apply, Pi.smul_apply]
-    -- -- ⊢ (1 - r) • U₀ j + r • U₁ j = (1 - r) • ↑V₀ j + r • ↑V₁ j
-    -- -- 3. Rewrite the goal using the equalities from h_agree_at_j
-    -- rw [h_agree_at_j.1] -- Replaces U₀ j with V₀.val j
-    -- rw [h_agree_at_j.2] -- Replaces U₁ j with V₁.val j
+    constructor
+    · rintro ⟨⟨hr, _⟩, hj⟩
+      exact ⟨hr, mem_sdiff.mpr ⟨mem_univ _, hj⟩⟩
+    · rintro ⟨hr, hj⟩
+      have hj' := (mem_sdiff.mp hj).2
+      refine ⟨⟨hr, ?_⟩, hj'⟩
+      have h_agree : U₀ j = V₀.val j ∧ U₁ j = V₁.val j := by
+        simp only [h_D_def, disagreementSet, mem_filter, mem_univ, true_and,
+          not_or, not_not] at hj'
+        exact hj'
+      unfold affineLineEvaluation
+      simp only [Pi.add_apply, Pi.smul_apply, h_agree.1, h_agree.2]
   have h_set_card_eq : R_ss_not_D.card = R_s.card * D_compl.card := by
     rw [h_set_eq]
     simp only [card_product]
@@ -1596,9 +1589,9 @@ lemma prob_R_star_gt_threshold
       < Pr_{let r ← D}[f r] := h_P_f_gt
       _ = Pr_{let r ← D}[g r ∧ f r] + Pr_{let r ← D}[¬(g r) ∧ f r] := by rw [h_split]
       _ ≤ Pr_{let r ← D}[g r] + Pr_{let r ← D}[¬(g r) ∧ f r] := by
-        sorry --add_le_add_right h_Pr_f_and_g_le_Pr_g _
+        gcongr
       _ ≤ Pr_{let r ← D}[g r] + prev_false_witness_threshold := by
-        sorry --add_le_add_left h_bound_not_g _
+        gcongr
       _ ≤ _ := by simp only [bind_pure_comp, le_refl]
 
   -- 7. Prove Pr[g] is equal to the goal probability (marginalization)

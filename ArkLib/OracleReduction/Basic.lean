@@ -329,8 +329,8 @@ def toVerifier : Verifier oSpec (StmtIn × ∀ i, OStmtIn i) (StmtOut × (∀ i,
     let stmtOut ← simulateQ (OracleInterface.simOracle2 oSpec oStmt transcript.messages)
       (verifier.verify stmt transcript.challenges)
     letI oStmtOut := fun i => match h : verifier.embed i with
-      | Sum.inl j => by sorry --simpa only [verifier.hEq, h] using (oStmt j)
-      | Sum.inr j => by sorry --simpa only [verifier.hEq, h] using (transcript j)
+      | Sum.inl j => (verifier.hEq i ▸ h ▸ oStmt j : OStmtOut i)
+      | Sum.inr j => (verifier.hEq i ▸ h ▸ transcript.messages j : OStmtOut i)
     return (stmtOut, oStmtOut)
 
 /-- The number of queries made to the oracle statements and the prover's messages, for a given input
@@ -564,8 +564,9 @@ alias OracleReduction.trivial := OracleReduction.id
 lemma OracleVerifier.id_toVerifier :
     (OracleVerifier.id : OracleVerifier oSpec Statement OStatement _ _ _).toVerifier =
       Verifier.id := by
-  simp [OracleVerifier.id, OracleVerifier.toVerifier, Verifier.id]
-  sorry
+  ext ⟨s, o⟩ t
+  simp only [OracleVerifier.id, OracleVerifier.toVerifier, Verifier.id, OptionT.run]
+  rfl
 
 @[simp]
 lemma OracleReduction.id_toReduction :

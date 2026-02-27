@@ -76,7 +76,51 @@ lemma oodSampling_crs_eq_rs
                           let ri := rs i
                           let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
                           (mVdecode u).eval (rVec) = (mVdecode u').eval (rVec))]
-  := by sorry
+  := by
+  have h1 := hcode.1
+  subst h1
+  have hequiv : ∀ rs : Fin s → F,
+    (∃ σ : Fin s → F,
+      let w : Fin s → MvPolynomial (Fin (m + 1)) F :=
+        fun i =>
+          let ri := rs i
+          let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
+          MvPolynomial.X (Fin.last m) * rename Fin.castSucc (eqPolynomial rVec)
+      let multiCRSCode := multiConstrainedCode φ m s w σ
+      ∃ u u' : ι → F, u ≠ u' ∧
+        u ∈ relHammingBall multiCRSCode f ↑δ ∧
+        u' ∈ relHammingBall multiCRSCode f ↑δ)
+    ↔
+    (∃ u u' : smoothCode φ m,
+      u.val ≠ u'.val ∧
+      u.val ∈ relHammingBall (↑(smoothCode φ m)) f ↑δ ∧
+      u'.val ∈ relHammingBall (↑(smoothCode φ m)) f ↑δ ∧
+      ∀ i : Fin s,
+        let ri := rs i
+        let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
+        (mVdecode u).eval rVec = (mVdecode u').eval rVec) :=
+    fun rs => (crs_equiv_rs_random_point_agreement
+      (fun i j => (rs i) ^ (2 ^ (j : ℕ))) δ hδLe).symm
+  have hfun : (fun rs => PMF.pure (∃ σ : Fin s → F,
+      let w := fun i =>
+        let ri := rs i
+        let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
+        MvPolynomial.X (Fin.last m) * rename Fin.castSucc (eqPolynomial rVec)
+      let multiCRSCode := multiConstrainedCode φ m s w σ
+      ∃ u u' : ι → F, u ≠ u' ∧
+        u ∈ relHammingBall multiCRSCode f ↑δ ∧
+        u' ∈ relHammingBall multiCRSCode f ↑δ) : (Fin s → F) → PMF Prop) =
+    fun rs => PMF.pure (∃ u u' : smoothCode φ m,
+      u.val ≠ u'.val ∧
+      u.val ∈ relHammingBall (↑(smoothCode φ m)) f ↑δ ∧
+      u'.val ∈ relHammingBall (↑(smoothCode φ m)) f ↑δ ∧
+      ∀ i : Fin s,
+        let ri := rs i
+        let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
+        (mVdecode u).eval rVec = (mVdecode u').eval rVec) :=
+    funext fun rs => congr_arg PMF.pure (propext (hequiv rs))
+  simp only [Bind.bind, PMF.instMonad, PMF.bind_pure_comp] at hfun ⊢
+  rw [hfun]
 
 /-- Lemma 4.25 part 2
   Let `f : ι → F`, `m` be the number of variables, `s` be a repetition parameter

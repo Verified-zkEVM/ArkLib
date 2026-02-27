@@ -210,8 +210,87 @@ def collisionPerm : Prop :=
 
 alias E_prp := collisionPerm
 
-lemma not_collisionPerm_of_not_combined (h : ¬ E trace) : ¬ E_prp trace :=
-  sorry
+lemma not_collisionPerm_of_not_combined (h : ¬ E trace) : ¬ E_prp trace := by
+  intro hprp
+  apply h; clear h
+  rcases hprp with hff | hbb | hfb | hbf
+  · -- collisionFwdFwd → E
+    obtain ⟨sI, sI', sO, hm1, hm2, hne⟩ := hff
+    rw [List.mem_iff_get] at hm1 hm2
+    obtain ⟨⟨i, hi⟩, hgi⟩ := hm1
+    obtain ⟨⟨j, hj⟩, hgj⟩ := hm2
+    simp only [List.get_eq_getElem] at hgi hgj
+    have hij : i ≠ j := by
+      intro heq; subst heq; rw [hgi] at hgj
+      exact hne (congrArg (fun x => match x with | ⟨.inr (.inl s), _⟩ => s | _ => sI) hgj)
+    left; right; left
+    rcases Nat.lt_or_gt_of_ne hij with h_lt | h_lt
+    · exact ⟨⟨j, hj⟩, sO.capacitySegment, ⟨sI', sO, hgj, rfl⟩,
+        Or.inr (Or.inl ⟨⟨i, hi⟩, h_lt, sI, sO, hgi, rfl⟩)⟩
+    · exact ⟨⟨i, hi⟩, sO.capacitySegment, ⟨sI, sO, hgi, rfl⟩,
+        Or.inr (Or.inl ⟨⟨j, hj⟩, h_lt, sI', sO, hgj, rfl⟩)⟩
+  · -- collisionBwdBwd → E
+    obtain ⟨sO, sO', sI, hm1, hm2, hne⟩ := hbb
+    rw [List.mem_iff_get] at hm1 hm2
+    obtain ⟨⟨i, hi⟩, hgi⟩ := hm1
+    obtain ⟨⟨j, hj⟩, hgj⟩ := hm2
+    simp only [List.get_eq_getElem] at hgi hgj
+    have hij : i ≠ j := by
+      intro heq; subst heq; rw [hgi] at hgj
+      exact hne (congrArg (fun x => match x with | ⟨.inr (.inr s), _⟩ => s | _ => sO) hgj)
+    left; right; right
+    unfold capacitySegmentDupPermInv
+    rcases Nat.lt_or_gt_of_ne hij with h_lt | h_lt
+    · refine ⟨⟨j, hj⟩, sI.capacitySegment, ⟨sO', sI, hgj, rfl⟩, ?_⟩
+      right; right; left
+      exact ⟨⟨i, hi⟩, h_lt, sI, sO, hgi, rfl⟩
+    · refine ⟨⟨i, hi⟩, sI.capacitySegment, ⟨sO, sI, hgi, rfl⟩, ?_⟩
+      right; right; left
+      exact ⟨⟨j, hj⟩, h_lt, sI, sO', hgj, rfl⟩
+  · -- collisionFwdBwd → E
+    obtain ⟨sI, sO, sO', hm1, hm2, hne⟩ := hfb
+    rw [List.mem_iff_get] at hm1 hm2
+    obtain ⟨⟨i, hi⟩, hgi⟩ := hm1
+    obtain ⟨⟨j, hj⟩, hgj⟩ := hm2
+    simp only [List.get_eq_getElem] at hgi hgj
+    have hij : i ≠ j := by
+      intro heq; subst heq; rw [hgi] at hgj
+      exact absurd (congrArg Sigma.fst hgj) (by simp)
+    rcases Nat.lt_or_gt_of_ne hij with h_lt | h_lt
+    · -- forward at i, backward at j, i < j: use capacitySegmentDupPermInv at j
+      left; right; right
+      unfold capacitySegmentDupPermInv
+      refine ⟨⟨j, hj⟩, CanonicalSpongeState.capacitySegment sI, ⟨sO', sI, hgj, rfl⟩, ?_⟩
+      right; left
+      exact ⟨⟨i, hi⟩, h_lt, sO, sI, hgi, rfl⟩
+    · -- forward at i, backward at j, j < i: use capacitySegmentDupPerm at i
+      left; right; left
+      unfold capacitySegmentDupPerm
+      refine ⟨⟨i, hi⟩, CanonicalSpongeState.capacitySegment sI, ⟨sO, sI, hgi, rfl⟩, ?_⟩
+      right; right; left
+      exact ⟨⟨j, hj⟩, Nat.le_of_lt h_lt, sO', sI, hgj, rfl⟩
+  · -- collisionBwdFwd → E
+    obtain ⟨sI, sO, sO', hm1, hm2, hne⟩ := hbf
+    rw [List.mem_iff_get] at hm1 hm2
+    obtain ⟨⟨i, hi⟩, hgi⟩ := hm1
+    obtain ⟨⟨j, hj⟩, hgj⟩ := hm2
+    simp only [List.get_eq_getElem] at hgi hgj
+    have hij : i ≠ j := by
+      intro heq; subst heq; rw [hgi] at hgj
+      exact absurd (congrArg Sigma.fst hgj) (by simp)
+    rcases Nat.lt_or_gt_of_ne hij with h_lt | h_lt
+    · -- backward at i, forward at j, i < j: use capacitySegmentDupPerm at j
+      left; right; left
+      unfold capacitySegmentDupPerm
+      refine ⟨⟨j, hj⟩, CanonicalSpongeState.capacitySegment sI, ⟨sO', sI, hgj, rfl⟩, ?_⟩
+      right; right; left
+      exact ⟨⟨i, hi⟩, Nat.le_of_lt h_lt, sO, sI, hgi, rfl⟩
+    · -- backward at i, forward at j, j < i: use capacitySegmentDupPermInv at i
+      left; right; right
+      unfold capacitySegmentDupPermInv
+      refine ⟨⟨i, hi⟩, CanonicalSpongeState.capacitySegment sI, ⟨sO, sI, hgi, rfl⟩, ?_⟩
+      right; left
+      exact ⟨⟨j, hj⟩, h_lt, sO', sI, hgj, rfl⟩
 
 /- TODO: these events / predicates depend on the definition of backtracking sequence family and
 indices -/

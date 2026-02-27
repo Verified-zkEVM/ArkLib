@@ -128,7 +128,9 @@ private lemma sum_add_one {i : Fin (k + 1)} :
               use
                 (by
                   rw [Nat.lt_min]
-                  simp
+                  simp only [zero_lt_one, List.length_drop, List.length_finRange, tsub_pos_iff_lt,
+                    Order.lt_add_one_iff, true_and]
+                  fin_omega
                 )
               rw [List.getElem_drop]
               simp
@@ -672,7 +674,7 @@ def queryCodeword (k : ℕ) (s : Fin (k + 1) → ℕ+) {i : Fin (k + 1)}
     OracleComp [FinalOracleStatement D x s]ₒ F :=
   liftM (cast (β := OracleQuery [FinalOracleStatement D x s]ₒ F)
     (by simp [FinalOracleStatement])
-    (query (spec := [FinalOracleStatement D x s]ₒ) ⟨⟨i.1, sorry⟩,
+    (query (spec := [FinalOracleStatement D x s]ₒ) ⟨⟨i.1, by omega⟩,
       (by simpa [Nat.ne_of_lt i.2] using w)⟩))
 
 /- Used by the verifier to fetch the polynomial sent in final folding round. -/

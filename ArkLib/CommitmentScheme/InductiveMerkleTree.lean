@@ -124,10 +124,9 @@ lemma runWithOracle_buildMerkleTree {s} (leaf_data_tree : LeafData α s) (f) :
   | internal s_left s_right left_ih right_ih =>
     match leaf_data_tree with
     | LeafData.internal left right =>
-      sorry
-      -- simp [left_ih, right_ih, runWithOracle_bind]
-      -- stop
-      -- rfl
+      simp only [buildMerkleTree, buildMerkleTree_with_hash, singleHash,
+        runWithOracle, simulateQ_bind, simulateQ_pure, Id.run] at left_ih right_ih ⊢
+      rw [left_ih left, right_ih right]; rfl
 
 /--
 Generate a Merkle proof for a leaf at a given idx
@@ -246,12 +245,13 @@ lemma runWithOracle_getPutativeRoot {s} (idx : BinaryTree.SkeletonLeafIndex s)
     | internal s_left s_right =>
       cases idx with
       | ofLeft idxLeft =>
-        sorry
-        -- simp [runWithOracle_bind, ih]
+        simp only [singleHash, runWithOracle, simulateQ_bind, simulateQ_pure,
+          getPutativeRoot_with_hash, Id.run] at ih ⊢
+        rw [ih]; rfl
       | ofRight idxRight =>
-        sorry
-        -- simp only [runWithOracle_bind, ih]
-        -- rfl
+        simp only [singleHash, runWithOracle, simulateQ_bind, simulateQ_pure,
+          getPutativeRoot_with_hash, Id.run] at ih ⊢
+        rw [ih]; rfl
 
 /--
 Verify a Merkle proof `proof` that a given `leaf` at index `i` is in the Merkle tree with given
