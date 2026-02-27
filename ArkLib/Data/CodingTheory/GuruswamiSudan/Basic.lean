@@ -18,17 +18,15 @@ variable {k n m : ℕ}
 variable {ωs : Fin n ↪ F}
 variable {f : Fin n → F}
 
-variable (k n m) in
 /-- The degree bound (i.e. `D_X(m) = (m + 1/2) * √ρ * n`) for instantiation of
     Guruswami-Sudan in Lemma 5.3 of [BCIKS20]. -/
-noncomputable def proximity_gap_degree_bound : ℕ :=
+noncomputable def proximity_gap_degree_bound (k n m : ℕ) : ℕ :=
   let rho := (k + 1 : ℚ) / n
   ⌊(m + 1 / 2) * √ rho * n⌋₊
 
-variable (k n m) in
 /-- The relative decoding radius (i.e. `δ₀(ρ, m) = 1 - √ρ - √ρ/2m` in
     Lemma 5.3 of [BCIKS20]). It follows from the Johnson bound. -/
-noncomputable def proximity_gap_johnson : ℝ :=
+noncomputable def proximity_gap_johnson (k n m : ℕ) : ℝ :=
   let rho := (k + 1 : ℚ) / n
   1 - √ rho - √ rho / (2 * m)
 
@@ -170,11 +168,11 @@ lemma card_constraintIndices (m : ℕ) : (constraintIndices m).card = m * (m + 1
       rw [show constraintIndices m = (range m).biUnion fun s ↦
         (range (m - s)).image (fun t ↦ (s, t))  from ?_, card_biUnion]
       · exact sum_congr rfl fun _ _ ↦
-          card_image_of_injective _ fun _ _ h ↦ by injection h
+          card_image_of_injective _ fun _ _ h ↦ by exact Prod.ext_iff.mp h |>.2
       · exact fun i hi j hj hij ↦ disjoint_left.mpr fun x hx₁ hx₂ ↦ hij <| by aesop
       · ext ⟨s, t⟩
         simp [constraintIndices, mem_biUnion, mem_image]
-        grind
+        omega
     aesop
   exact h_eq.symm ▸ Nat.recOn m (by norm_num) fun n ih ↦ by
     cases n <;> simp [sum_range_succ', Nat.mul_succ] at *
@@ -199,7 +197,7 @@ lemma proximity_gap_degree_bound_sq_gt (hn : n ≠ 0) :
           gcongr
           field_simp
           rw [Real.sq_sqrt (by norm_cast; omega)]
-        exact lt_of_lt_of_le (Nat.lt_floor_add_one _) (add_le_add_right hD_ge_floor _)
+        linarith [Nat.lt_floor_add_one ((m + 1 / 2 : ℝ) * √((k + 1 : ℝ) * n))]
       nlinarith [show 0 < (m + 1 / 2 : ℝ) * √((k + 1) * n) by
         positivity, Real.mul_self_sqrt (show 0 ≤ (k + 1 : ℝ) * n by positivity)]
 
@@ -229,8 +227,7 @@ lemma numVars_gt_numConstraints_of_gt_one (hn : n ≠ 0) (hk : 1 < k) (hm : 1 �
       rw [← Nat.mul_div_assoc] <;> ring_nf
       exact even_iff_two_dvd.mp (by simp [parity_simps])
 
-variable (k n m) in
-lemma numVars_gt_numConstraints :
+lemma numVars_gt_numConstraints (k n m : ℕ) :
   numVars k (proximity_gap_degree_bound k n m) > numConstraints n m := by
   by_cases hk : k ≤ 1
   · interval_cases k <;> norm_num [numVars_eq_sq, numConstraints]
@@ -306,17 +303,15 @@ noncomputable def evalConstraint (x y : F) (s t : ℕ) : F[X][Y] →ₗ[F] F whe
   map_add' f g := by simp [shift]
   map_smul' a f := by simp [shift]
 
-variable (k n m ωs f) in
 /-- The linear map representing the system of linear equations. -/
-noncomputable def constraintMap (D : ℕ) :
+noncomputable def constraintMap (k n m : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) (D : ℕ) :
   ((weigthBoundIndices k D) → F) →ₗ[F] (Fin n → constraintIndices m → F) where
   toFun c i st := evalConstraint (ωs i) (f i) st.1.1 st.1.2 (coeffsToPoly k D c)
   map_add' c d := by simp +zetaDelta at *; rfl
   map_smul' a c := by unfold evalConstraint coeffsToPoly; aesop
 
-variable (k n m ωs f) in
 /-- There exists a non-zero polynomial satisfying the conditions. -/
-lemma exists_nonzero_solution :
+lemma exists_nonzero_solution (k n m : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
   ∃ c : (weigthBoundIndices k (proximity_gap_degree_bound k n m)) → F,
     c ≠ 0 ∧ constraintMap k n m ωs f (proximity_gap_degree_bound k n m) c = 0 := by
       have h_kernel_nontrivial : Module.finrank F ((weigthBoundIndices k
@@ -335,9 +330,8 @@ lemma exists_nonzero_solution :
       exact LinearMap.ker_eq_bot.mp (eq_bot_iff.mpr fun x hx ↦
         by_contra fun hx' ↦ h_inj x hx' <| by simpa using hx)
 
-variable (k n m ωs f) in
 /-- The polynomial solution constructed from the non-zero kernel element. -/
-noncomputable def polySol : F[X][Y] :=
+noncomputable def polySol (k n m : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) : F[X][Y] :=
   let c := Classical.choose (exists_nonzero_solution k n m ωs f)
   coeffsToPoly k (proximity_gap_degree_bound k n m) c
 
@@ -432,16 +426,14 @@ lemma natWeightedDegree_add_le (p q : F[X][Y]) (u v : ℕ) :
 lemma natWeightedDegree_sum_le {ι : Type*} (s : Finset ι) (f : ι → F[X][Y]) (u v : ℕ) :
     natWeightedDegree (∑ i ∈ s, f i) u v ≤ s.sup (fun i ↦ natWeightedDegree (f i) u v) := by
   classical
-  induction s using Finset.induction
-  · simp only [sum_empty, sup_empty, Nat.bot_eq_zero, nonpos_iff_eq_zero, natWeightedDegree,
+  induction s using Finset.induction with
+  | empty =>
+    simp only [sum_empty, sup_empty, Nat.bot_eq_zero, nonpos_iff_eq_zero, natWeightedDegree,
       Polynomial.support_zero, coeff_zero, natDegree_zero, mul_zero, zero_add, sup_empty,
       Nat.bot_eq_zero]
-  · simp_all only [not_false_eq_true, sum_insert, sup_insert, le_sup_iff]
-    have h_sum : natWeightedDegree (f ‹_› + ∑ i ∈ ‹Finset ι›, f i) u v ≤
-      max (natWeightedDegree (f ‹_›) u v) (natWeightedDegree (∑ i ∈ ‹Finset ι›, f i) u v) := by
-      (expose_names; exact natWeightedDegree_add_le (f a) (∑ i ∈ s, f i) u v)
-    cases max_cases (natWeightedDegree (f ‹_›) u v)
-      (natWeightedDegree (∑ i ∈ ‹Finset ι›, f i) u v) <;> [left; right] <;> linarith
+  | insert a s ha ih =>
+    rw [sum_insert ha, sup_insert]
+    exact le_trans (natWeightedDegree_add_le _ _ _ _) (max_le_max le_rfl ih)
 
 /-- The weighted degree of a scalar multiple is at most the weighted degree
     of the polynomial. -/
@@ -513,9 +505,7 @@ section multiplicity
 /-- If `m` is the minimum of a list `l`, then `m ≤ a` for any `a ∈ l`. -/
 lemma list_min_le_of_mem {l : List ℕ} {a m : ℕ} (h_min : l.min? = some m) (h_mem : a ∈ l) :
     m ≤ a := by
-  have h_min_mem : ∀ l : List ℕ, ∀ a ∈ l, a ≥ l.min?.getD 0 :=
-    fun l a a_2 ↦ List.min?_getD_le_of_mem a_2
-  grind
+  rw [List.min?_eq_some_iff] at h_min; exact h_min.2 a h_mem
 
 /-- If the `(s, t)`-coefficient of `shift Q x y` is non-zero, then the root multiplicity
     of `Q` at `(x, y)` is at most `s + t`. -/
@@ -777,7 +767,8 @@ lemma interpolate_eq_of_degree_lt (q : F[X]) (hq : q.natDegree < n) :
         forall_exists_index, forall_apply_eq_imp_iff]
       intro i
       rw [eval_finset_sum, Finset.sum_eq_single i]
-      · rw [eval_mul, Lagrange.eval_basis_self (by simp) (mem_univ i)]; norm_num
+      · rw [eval_mul, Lagrange.eval_basis_self (by exact ωs.injective.injOn) (mem_univ i)]
+        norm_num
       all_goals aesop
 
 /-- The polynomial corresponding to a codeword has degree at most k-1. -/
