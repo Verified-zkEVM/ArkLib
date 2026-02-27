@@ -155,21 +155,26 @@ private lemma witness_lift {F : Type} [NonBinaryField F]
   simp only [Fin.coe_castSucc, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat,
      Fin.val_succ] at deg_bound ⊢
   apply lt_of_le_of_lt
-  apply Polynomial.degree_le_of_natDegree_le
-  exact FoldingPolynomial.polyFold_natDegree_le
+    (Polynomial.degree_le_of_natDegree_le FoldingPolynomial.polyFold_natDegree_le)
   simp only [finRangeTo]
   rw [WithBot.lt_def]
   simp only [WithBot.natCast_ne_bot, false_and, false_or]
   exists (p.natDegree / (2 ^ (↑(s i) : ℕ)))
-  exists (2 ^ (∑ j', ↑(s j') - ∑ j' ∈ (List.take (↑i + 1) (List.finRange (k + 1))).toFinset, (↑(s j') : ℕ))) * (↑d : ℕ)
+  exists
+    (2 ^
+      (
+        ∑ j', ↑(s j') -
+        ∑ j' ∈ (List.take (↑i + 1) (List.finRange (k + 1))).toFinset, (↑(s j') : ℕ)
+      )
+    ) * (↑d : ℕ)
   apply And.intro
-  · apply Nat.div_lt_of_lt_mul 
+  · apply Nat.div_lt_of_lt_mul
     by_cases hp : p = 0
     · rw [hp]
       simp only [natDegree_zero, Nat.ofNat_pos, pow_pos, mul_pos_iff_of_pos_left, PNat.pos]
-    · have deg_bound : 
+    · have deg_bound :
         p.degree < ↑(2 ^ (∑ j', (↑(s j') : ℕ) - ∑ j' ∈ finRangeTo ↑i, ↑(s j')) * (↑d : ℕ)) := by
-        exact deg_bound 
+        exact deg_bound
       rw [←Polynomial.natDegree_lt_iff_degree_lt hp] at deg_bound
       apply Nat.lt_of_lt_of_le deg_bound
       rw [←mul_assoc, ←Nat.pow_add]
@@ -184,27 +189,117 @@ private lemma witness_lift {F : Type} [NonBinaryField F]
       have arith {a b c : ℕ} (h : b ≥ c) (h' : a ≤ c) : a + (b - c) = b - (c - a) := by
          rw [Nat.sub_sub_right b h', Nat.sub_add_comm h, Nat.add_comm]
       rw [arith (by {
-        simp
+        simp only [List.toFinset_cons, ge_iff_le]
         apply Finset.sum_le_sum_of_subset
         simp
       }) (by {
-        apply @CanonicallyOrderedAddCommMonoid.single_le_sum (Fin (k + 1)) ℕ _ _ _ (fun j => (s j).1)
+        apply @Finset.single_le_sum_of_canonicallyOrdered (Fin (k + 1)) ℕ _ _ _ (fun j => (s j).1)
         rw [List.mem_toFinset]
-        simp
-        rcases i with ⟨i, hi⟩ 
-        simp
+        simp only [List.mem_cons]
+        rcases i with ⟨i, hi⟩
+        simp only [Fin.mk_eq_zero]
         rcases i with _ | i <;> try tauto
-        simp
+        simp only [Nat.add_eq_zero_iff, one_ne_zero, and_false, false_or]
         rw [List.mem_take_iff_getElem]
         exists i
         simp
         omega
       })]
       apply Nat.sub_le_sub_left
+      simp only [List.toFinset_cons, tsub_le_iff_right]
+      rw [←List.map_take]
+      have :
+        insert 0 (List.map Fin.succ (List.take (↑i) (List.finRange k))).toFinset =
+          (List.take (↑i) (List.finRange (k + 1))).toFinset ∪ {i} := by
+            simp only [List.map_take, union_singleton]
+            ext e
+            simp only [mem_insert, List.mem_toFinset]
+            apply Iff.intro
+            · intros h
+              rcases h with h | h
+              · by_cases h' : i = 0
+                · rw [h']; left; exact h
+                · rw [h]; right
+                  refine List.mem_take_iff_getElem.mpr ?_
+                  use 0
+                  have : 0 < min (↑i) (List.finRange (k + 1)).length := by
+                    rcases i with ⟨i, _⟩
+                    simp only [List.length_finRange, lt_inf_iff, lt_add_iff_pos_left, add_pos_iff,
+                      zero_lt_one, or_true, and_true]
+                    match i with
+                    | .zero => simp at h'
+                    | .succ _ => simp
+                  use this
+                  simp
+              · rw [List.mem_take_iff_getElem] at h ⊢
+                rcases h with ⟨j, h, h'⟩
+                simp only [List.length_map, List.length_finRange, lt_inf_iff, List.getElem_map,
+                  List.getElem_finRange, Fin.cast_mk, Fin.succ_mk] at h h'
+                by_cases h'' : e = i
+                · left; exact h''
+                · right
+                  have h'' : j + 1 < min (↑i) (List.finRange (k + 1)).length := by
+                    simp only [List.length_finRange, Fin.is_le', inf_of_le_left]
+                    rcases Nat.eq_or_lt_of_le h.1 with h | h
+                    · rcases i with ⟨i, _⟩
+                      simp only [Nat.succ_eq_add_one] at h
+                      simp [←h', h] at h''
+                    · exact h
+                  use (j + 1)
+                  use h''
+                  simp [←h']
+            · intro h
+              rcases h with h | h
+              · rw [h]
+                by_cases h' : i = 0
+                · left; exact h'
+                · right
+                  rw [List.mem_take_iff_getElem]
+                  have : ∃ j, j + 1 = i.1 := by
+                    rcases i with ⟨i, _⟩;
+                    match i with
+                    | .zero => simp at h'
+                    | .succ i => use i
+                  rcases this with ⟨j, this⟩
+                  use j
+                  rw [←this]
+                  have hm : j < min (j + 1) (List.map Fin.succ (List.finRange k)).length := by
+                    simp
+                    omega
+                  use hm
+                  simp [this]
+              · by_cases h' : e = 0
+                · left; exact h'
+                · right
+                  rw [List.mem_take_iff_getElem] at h ⊢
+                  rcases h with ⟨j, pr, h⟩
+                  have : ∃ j', j' + 1 = j := by
+                    match j with
+                    | .zero =>
+                      simp only [Nat.zero_eq, List.getElem_finRange, Fin.cast_mk, Fin.zero_eta] at h
+                      simp [h] at h'
+                    | .succ j => use j
+                  rcases this with ⟨j', this⟩
+                  use j'
+                  have hm : j' < min (↑i) (List.map Fin.succ (List.finRange k)).length := by
+                    simp only [List.length_finRange, Fin.is_le', inf_of_le_left, List.length_map,
+                      lt_inf_iff] at pr ⊢
+                    omega
+                  use hm
+                  simpa [this] using h
+      have dis : Disjoint (List.take (↑i) (List.finRange (k + 1))).toFinset {i} := by
+        simp only [disjoint_singleton_right, List.mem_toFinset]
+        rw [List.mem_take_iff_getElem]
+        simp only [List.getElem_finRange, Fin.cast_mk, List.length_finRange, Fin.is_le',
+          inf_of_le_left, not_exists]
+        intros x h h'
+        rcases i with ⟨i, _⟩
+        simp only [Fin.mk.injEq] at h h'
+        rw [h'] at h
+        simp at h
+      rw [this, Finset.sum_union dis]
       simp
-      rw [←List.map_take] 
-      sorry
-  · apply And.intro rfl rfl 
+  · apply And.intro rfl rfl
 
 instance {i : Fin (k + 1)} : ∀ j, OracleInterface (OracleStatement D x s i j) :=
   fun _ => inferInstance
