@@ -10,6 +10,45 @@ import Mathlib.Algebra.Polynomial.Basic
 import Mathlib.Tactic.Cases
 import Mathlib.Tactic.LinearCombination'
 
+/-!
+  Proof of Proposition 6.3 from  
+    Eli Ben-Sasson and Madhu Sudan. 
+      “Short PCPs with Polylog Query Complexity”. In: SIAM Journal on Computing 38.2 (2008).
+
+  The statement is taken from the STIR paper. Namely,
+  ```latex
+  \textbf{Fact 4.6 (BS08).} \textit{Given a polynomial } $\hat{q} \in \mathbb{F}[X]$:
+
+  \begin{itemize}
+      \item For every $\hat{f} \in \mathbb{F}[X]$ there exists a unique bivariate polynomial 
+      $\hat{Q} \in \mathbb{F}[X,Y]$ with 
+      \[
+          \deg_X(\hat{Q}) = \left\lfloor \frac{\deg(\hat{f})}{\deg(\hat{q})} \right\rfloor
+          \quad \text{and} \quad
+          \deg_Y(\hat{Q}) < \deg(\hat{q})
+      \]
+      such that 
+      \[
+          \hat{f}(Z) = \hat{Q}(\hat{q}(Z), Z).
+      \]
+      Moreover, $\hat{Q}$ can be computed efficiently given $\hat{f}$ and $\hat{q}$. 
+      Observe that if $\deg(\hat{f}) < t \cdot \deg(\hat{q})$ then 
+      $\deg_X(\hat{Q}) < t$.
+
+      \item For every $\hat{Q} \in \mathbb{F}[X,Y]$ with 
+      $\deg_X(\hat{Q}) < t$ and $\deg_Y(\hat{Q}) < \deg(\hat{q})$, 
+      the polynomial 
+      \[
+          \hat{f}(Z) := \hat{Q}(\hat{q}(Z), Z)
+      \]
+      has degree 
+      \[
+          \deg(\hat{f}) < t \cdot \deg(\hat{q}).
+      \]
+  \end{itemize}
+  ```
+-/
+
 namespace Polynomial.FoldingPolynomial
 
 section
@@ -18,6 +57,10 @@ open Polynomial Polynomial.Bivariate
 
 variable {ι F : Type*} [Field F]   
 
+/-- The definition of the folding polynomial `Q` 
+    from the proposition that takes `fuel` value
+    as the upper bound of number of steps needed 
+    to produce the polynomial `Q`. -/
 noncomputable def foldingPolynomialAux (q f : F[X]) (fuel : ℕ) : F[X][Y] :=
   if q.degree ≤ 0 then Polynomial.map C f else
   if f.degree < q.degree then Polynomial.map C f
@@ -27,6 +70,9 @@ noncomputable def foldingPolynomialAux (q f : F[X]) (fuel : ℕ) : F[X][Y] :=
   | .succ fuel => (Polynomial.map Polynomial.C (f % q))
     + Polynomial.C Polynomial.X * (foldingPolynomialAux q (f / q) fuel)
 
+/-- The bivariate polynomial `Q` such that
+    `f = Q(q(X), X)`, `Q.degreeX = f.natDegree / q.natDegree`,
+    and `Q.natDegreeY < q.natDegree`, if `q` is not a constant polynomial. -/
 noncomputable def foldingPolynomial (q f : F[X]) : F[X][Y] := 
   foldingPolynomialAux q f f.natDegree
 
@@ -219,7 +265,7 @@ lemma eq_zero_of_folding_polynomial_eq_zero {q f : F[X]}
           Polynomial.natDegree_pos_iff_degree_pos.mpr h₁.2.2 ];
       rw [ EuclideanDomain.mod_eq_sub_mul_div ] at h_rem_zero ; aesop
 
-lemma substitution_property_of_folding_polynomial {q f : F[X]}:
+lemma substitution_property_of_folding_polynomial {q f : F[X]} :
     ((foldingPolynomial q f).map (Polynomial.compRingHom q)).eval X
       = f := by 
   revert q f;
@@ -294,6 +340,8 @@ lemma substitution_property_of_folding_polynomial {q f : F[X]}:
                   ( foldingPolynomial q ( f / q ) ) ) ›, 
       h_fold_def, EuclideanDomain.mod_eq_sub_mul_div ] ; ring
 
+/-- The degree of `foldingPolynomial` is less than `q.degree` in the second variable, when `q` is not a constant polynomial.
+-/
 theorem folding_polynomial_deg_y_bound {q f : F[X]} (h : 0 < q.degree) :
    natDegreeY (foldingPolynomial q f) < q.degree := by 
   simp only [natDegreeY, coe_lt_degree]
@@ -390,6 +438,8 @@ private lemma folding_polynomial_deg_x_C_q {q : F} {f : F[X]} :
   right; right
   exact Polynomial.degree_C_le
 
+/-- The degree of the `foldingPolynomial q f` is precisely 
+    `f.natDegree / q.natDegree` in the first variable. -/
 @[simp]
 theorem folding_polynomial_deg_x {q f : F[X]} :
   degreeX (foldingPolynomial q f) = f.natDegree / q.natDegree 
@@ -441,6 +491,7 @@ theorem folding_polynomial_deg_x {q f : F[X]} :
                   <| Or.inr <| Or.inl h ) ) 
             ( Polynomial.natDegree_pos_iff_degree_pos.mpr h )   
 
+/-- A degreeX bound for folding polynomial from the STIR paper. -/
 lemma folding_polynomial_deg_x_bound {q f : F[X]} {t : ℕ}
   (h : f.natDegree < t * q.natDegree)
   :
@@ -495,12 +546,16 @@ private lemma satisfies_composition_property_implies_is_the_reminder
         aesop;
       exact ⟨ -Q', by linear_combination -hQ' ⟩
 
+/-- An alternative description of the folding polynomial
+    as the reminder in bivariate polynomial division
+    of the form `f = Q' * (X - q(Y)) + Q`. -/
 lemma folding_polynomial_is_the_reminder {q f : F[X]} :
   ∃ Q': F[X][Y],
     Polynomial.map C f = Q' * (C X - Polynomial.map C q) + (foldingPolynomial q f) :=  
     satisfies_composition_property_implies_is_the_reminder 
       substitution_property_of_folding_polynomial
 
+/-- The uniqueness of the folding polynomial. -/
 theorem folding_polynomial_is_unique {q f : F[X]} {Q : F[X][Y]} 
   (h : (Q.map (Polynomial.compRingHom q)).eval X = f)
   (h_x : degreeX Q = f.natDegree / q.natDegree)
@@ -552,6 +607,10 @@ theorem folding_polynomial_is_unique {q f : F[X]} {Q : F[X][Y]}
       · intro h; simp_all +decide [ sub_eq_iff_eq_add ] ;
     simp_all +decide [ sub_eq_iff_eq_add ]
 
+/-- If we fold a polynomial using a folding polynomial `Q`
+    with appropriate degree bounds in each variable we get
+    a univariate polynomial with a degree bound.
+-/
 lemma folded_poly_degree_bound {Q : F[X][Y]} {q : F[X]} {t : ℕ}
   (h_x : degreeX Q < t)
   (h_y : natDegreeY Q < q.natDegree)
@@ -641,6 +700,11 @@ lemma folded_poly_degree_bound {Q : F[X][Y]} {q : F[X]} {t : ℕ}
     ( Nat.pos_of_ne_zero 
         ( by rintro h; simp_all +singlePass ) ) |>.2 h_x
 
+/-- Alternative uniqueness theorem for the folding polynomial.
+    The only difference is the `h_x` condition which in this theorem
+    is only and inequality. Handy in practice since `degreeX` is defined
+    as a supremum so inequality is much easier to prove for it.
+-/
 theorem folding_polynomial_is_unique' {q f : Polynomial F} {Q : Polynomial (Polynomial F)}
   (h : (Q.map (Polynomial.compRingHom q)).eval Polynomial.X = f)
   (h_x : degreeX Q ≤ f.natDegree / q.natDegree)
@@ -675,6 +739,11 @@ theorem folding_polynomial_is_unique' {q f : Polynomial F} {Q : Polynomial (Poly
                           <| lt_of_not_ge hq_const ] ) ] ))
                           (by exact h_y)
 
+/-- Polynomial folding function that turns
+    a polynomial of degree `≤n` into a polynomial
+    of degree `≤n/k` for given `k`. 
+    The key ingridient of FRI-related family of protocols.
+-/
 noncomputable def polyFold (f : F[X]) (k : ℕ) (r : F) : F[X]
   := (foldingPolynomial (X ^ k) f).eval (C r)
 
@@ -682,6 +751,8 @@ noncomputable def polyFold (f : F[X]) (k : ℕ) (r : F) : F[X]
 lemma polyFold_zero_eq_zero {k : ℕ} {r : F} :
   polyFold 0 k r = 0 := by simp [polyFold]
 
+/-- The degree bound of `polyFold` in terms of the degree of 
+    the original polynomial and `k`. -/
 lemma polyFold_natDegree_le {f : F[X]} {k : ℕ} {r : F} :
   (polyFold f k r).natDegree ≤ f.natDegree / k := by
     have h_deg_le_degX : ∀ (g : F[X][Y]) (r : F), (g.eval (C r)).natDegree ≤ degreeX g := by

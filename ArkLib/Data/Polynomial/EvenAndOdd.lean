@@ -401,6 +401,8 @@ private lemma natDegree_div_2_le_max_parts_natDegree {f : Polynomial F} :
       rw [Polynomial.natDegree_comp]
       simp
 
+/-- `foldingPolynomial` representation in terms of
+    `evenPart` and `oddPart` when `q = X * X`. -/
 @[simp]
 lemma even_y_odd_eq_folding_polynomial {f : Polynomial F} :
   FoldingPolynomial.foldingPolynomial (X * X) f 
@@ -443,6 +445,8 @@ lemma even_y_odd_eq_folding_polynomial {f : Polynomial F} :
     apply Nat.lt_of_le_of_lt Polynomial.natDegree_mul_le
     simp
 
+/-- A representation of FRI `polyFold` function in terms of `evenPart`
+    and `oddPart` for the case `k = 2`. -/
 @[simp]
 lemma poly_fold_k_eq_2 {f : F[X]} {r : F} :
   FoldingPolynomial.polyFold f 2 r 
