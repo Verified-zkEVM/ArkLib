@@ -597,7 +597,8 @@ instance largeFieldInvocationExtractorLens_rbr_knowledge_soundness
           (ϑ := ϑ) (stmtIdx := (0 : Fin (ℓ' + 1)))
           (oracleIdx := OracleFrontierIndex.mkFromStmtIdx (0 : Fin (ℓ' + 1)))
           (oStmt := oStmtIn)
-          (challenges := (reducedMLPEvalStatement_to_BBF_Statement (L := L) (ℓ' := ℓ') stmtIn).challenges) := by
+          (challenges := (reducedMLPEvalStatement_to_BBF_Statement (L := L)
+            (ℓ' := ℓ') stmtIn).challenges) := by
       intro h_bad
       rcases h_bad with ⟨j, hj⟩
       have hj0 : j = 0 := by
@@ -607,8 +608,13 @@ instance largeFieldInvocationExtractorLens_rbr_knowledge_soundness
         exact Nat.lt_one_iff.mp hjlt
       subst hj0
       dsimp [oraclePositionToDomainIndex] at hj
-      simp only [incrementalFoldingBadEvent, Nat.zero_mod, zero_mul, tsub_self, zero_le,
-        inf_of_le_right, ↓reduceDIte] at hj
+      exact absurd hj (by
+        apply BinaryBasefold.incrementalFoldingBadEvent_of_k_eq_0_is_false (𝔽q := 𝔽q) (β := β)
+          (h_k := by
+            simp only [Nat.zero_mod, zero_mul, tsub_self, zero_le, inf_of_le_right])
+          (h_midIdx := by simp only [Nat.zero_mod, zero_mul, tsub_self, zero_le,
+            inf_of_le_right, add_zero])
+      )
     rcases hInner' with h_bad | h_good
     · exact (h_no_bad h_bad).elim
     · have h_local := h_good.1
