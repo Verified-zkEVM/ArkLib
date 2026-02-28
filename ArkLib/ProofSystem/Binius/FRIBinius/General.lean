@@ -78,12 +78,12 @@ def batchingCoreVerifier :=
   OracleVerifier.append (oSpec:=[]ₒ)
     (V₁:= RingSwitching.BatchingPhase.batchingOracleVerifier κ (L := L) (K := K) (𝓑 := 𝓑)
       (β:=booleanHypercubeBasis κ L K β) ℓ ℓ' h_l
-      (aOStmtIn :=  (BinaryBasefoldAbstractOStmtIn (β := β)
-        (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))))
+      (aOStmtIn :=  (BinaryBasefoldAbstractOStmtIn (β := β) (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate))))
     (pSpec₁ := RingSwitching.pSpecBatching κ L K)
     (pSpec₂:=BinaryBasefold.pSpecCoreInteraction K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (OStmt₁ := (BinaryBasefoldAbstractOStmtIn (β := β)
-        (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).OStmtIn)
+        (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).OStmtIn)
     (OStmt₂ := BinaryBasefold.OracleStatement K β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
     (OStmt₃ := BinaryBasefold.OracleStatement K β
@@ -97,11 +97,11 @@ def batchingCoreReduction :=
     (R₁ := RingSwitching.BatchingPhase.batchingOracleReduction κ (L := L) (K := K) (𝓑 := 𝓑)
       (β:=booleanHypercubeBasis κ L K β) ℓ ℓ' h_l
       (aOStmtIn :=  (BinaryBasefoldAbstractOStmtIn (β := β)
-        (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))))
+        (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))))
     (pSpec₁ := RingSwitching.pSpecBatching κ L K)
     (pSpec₂:=BinaryBasefold.pSpecCoreInteraction K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (OStmt₁ := (BinaryBasefoldAbstractOStmtIn (β := β)
-        (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).OStmtIn)
+        (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).OStmtIn)
     (OStmt₂ := BinaryBasefold.OracleStatement K β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
     (OStmt₃ := BinaryBasefold.OracleStatement K β
@@ -115,7 +115,7 @@ noncomputable def fullOracleVerifier :
   OracleVerifier (oSpec:=[]ₒ)
     (StmtIn := BatchingStmtIn (L := L) (ℓ:=ℓ))
     (OStmtIn := (BinaryBasefoldAbstractOStmtIn (β := β)
-        (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).OStmtIn)
+        (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).OStmtIn)
     (StmtOut := Bool)
     (OStmtOut := fun _ : Empty => Unit)
     (pSpec := fullPspec κ L K β ℓ' 𝓡 ϑ γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
@@ -124,7 +124,7 @@ noncomputable def fullOracleVerifier :
     (Stmt₂ := BinaryBasefold.FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ'))
     (Stmt₃ := Bool)
     (OStmt₁ := (BinaryBasefoldAbstractOStmtIn (β := β)
-        (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).OStmtIn)
+        (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).OStmtIn)
     (OStmt₂ := BinaryBasefold.OracleStatement K β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ'))
     (OStmt₃ := fun _ : Empty => Unit)
@@ -141,7 +141,7 @@ noncomputable def fullOracleReduction :
   OracleReduction (oSpec:=[]ₒ)
     (StmtIn := BatchingStmtIn (L := L) (ℓ:=ℓ))
     (OStmtIn := (BinaryBasefoldAbstractOStmtIn (β := β)
-      (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).OStmtIn)
+      (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).OStmtIn)
     (StmtOut := Bool)
     (OStmtOut := fun _ : Empty => Unit)
     (WitIn := BatchingWitIn L K ℓ ℓ')
@@ -155,7 +155,7 @@ noncomputable def fullOracleReduction :
     (Wit₂ := Unit)
     (Wit₃ := Unit)
     (OStmt₁ := (BinaryBasefoldAbstractOStmtIn (β := β)
-      (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).OStmtIn)
+      (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).OStmtIn)
     (OStmt₂ := BinaryBasefold.OracleStatement K β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ'))
     (OStmt₃ := fun _ : Empty => Unit)
@@ -172,7 +172,7 @@ noncomputable def fullOracleProof :
   OracleProof []ₒ
     (Statement := BatchingStmtIn (L := L) (ℓ:=ℓ))
     (OStatement := (BinaryBasefoldAbstractOStmtIn (β := β)
-      (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).OStmtIn)
+      (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).OStmtIn)
     (Witness := BatchingWitIn L K ℓ ℓ')
     (pSpec:= fullPspec κ L K β ℓ' 𝓡 ϑ γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   fullOracleReduction κ L K β ℓ ℓ' 𝓡 ϑ γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l (𝓑:=𝓑)
@@ -190,7 +190,7 @@ theorem fullOracleReduction_perfectCompleteness (hInit : NeverFail init) :
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l (𝓑:=𝓑))
     (relIn := BatchingPhase.strictBatchingInputRelation κ L K (β:=booleanHypercubeBasis κ L K β)
       ℓ ℓ' h_l (BinaryBasefoldAbstractOStmtIn (β := β)
-        (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)))
+        (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)))
     (relOut := acceptRejectOracleRel)
     (init := init)
     (impl := impl) :=
@@ -199,12 +199,12 @@ theorem fullOracleReduction_perfectCompleteness (hInit : NeverFail init) :
     (R₂ := QueryPhase.queryOracleReduction K β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
     (OStmt₁ := (BinaryBasefoldAbstractOStmtIn (β := β)
-      (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).OStmtIn)
+      (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).OStmtIn)
     (OStmt₂ := BinaryBasefold.OracleStatement K β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ'))
     (OStmt₃ := fun _ : Empty => Unit)
     (Oₛ₁:= (BinaryBasefoldAbstractOStmtIn (β := β)
-      (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Oₛᵢ)
+      (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Oₛᵢ)
     (Oₛ₂:=Binius.BinaryBasefold.instOracleStatementBinaryBasefold K β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (i := Fin.last ℓ'))
     (Oₛ₃:=by exact fun i ↦ by exact OracleInterface.instDefault)
@@ -212,23 +212,23 @@ theorem fullOracleReduction_perfectCompleteness (hInit : NeverFail init) :
     (pSpec₂ := BinaryBasefold.pSpecQuery K β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (rel₁ := BatchingPhase.strictBatchingInputRelation κ L K (β:=booleanHypercubeBasis κ L K β)
       ℓ ℓ' h_l (BinaryBasefoldAbstractOStmtIn (β := β)
-        (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)))
+        (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)))
     (rel₂ := BinaryBasefold.strictFinalSumcheckRelOut K β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (rel₃ := acceptRejectOracleRel)
     (h₁ := by
       apply OracleReduction.append_perfectCompleteness
         (rel₁ := BatchingPhase.strictBatchingInputRelation κ L K (β:=booleanHypercubeBasis κ L K β)
           ℓ ℓ' h_l (BinaryBasefoldAbstractOStmtIn (β := β)
-            (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)))
+            (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)))
         (rel₂ := RingSwitching.strictSumcheckRoundRelation κ L K (booleanHypercubeBasis κ L K β)
         ℓ ℓ' h_l (𝓑 := 𝓑) (aOStmtIn := BinaryBasefoldAbstractOStmtIn (β := β)
-          (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) 0)
+          (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) 0)
         (rel₃ := BinaryBasefold.strictFinalSumcheckRelOut K β (ϑ:=ϑ)
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       · apply BatchingPhase.batchingReduction_perfectCompleteness (hInit:=hInit) κ L K
           (β:=booleanHypercubeBasis κ L K β) ℓ ℓ' h_l (𝓑 := 𝓑)
           (BinaryBasefoldAbstractOStmtIn (β := β)
-            (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) hInit
+            (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) hInit
       · apply CoreInteractionPhase.coreInteractionOracleReduction_perfectCompleteness
           κ (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (𝓡 := 𝓡) (ϑ := ϑ)
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (hInit:=hInit)
@@ -264,14 +264,14 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness :
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_l := h_l) (𝓑 := 𝓑)).rbrKnowledgeSoundness init impl
     (relIn := BatchingPhase.batchingInputRelation κ L K (β := booleanHypercubeBasis κ L K β)
       ℓ ℓ' h_l (BinaryBasefoldAbstractOStmtIn (β := β)
-        (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)))
+        (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)))
     (relOut := acceptRejectOracleRel)
     (rbrKnowledgeError := fullRbrKnowledgeError κ L K β ℓ' 𝓡 ϑ γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) := by
   let V₁_batchingCore : OracleVerifier (oSpec := []ₒ)
       (StmtIn := BatchingStmtIn (L := L) (ℓ := ℓ))
       (OStmtIn := (BinaryBasefoldAbstractOStmtIn (β := β)
-        (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).OStmtIn)
+        (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).OStmtIn)
       (StmtOut := BinaryBasefold.FinalSumcheckStatementOut (L := L) (ℓ := ℓ'))
       (OStmtOut := BinaryBasefold.OracleStatement K β
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ'))
@@ -283,7 +283,7 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness :
       (init := init) (impl := impl)
       (rel₁ := BatchingPhase.batchingInputRelation κ L K (β := booleanHypercubeBasis κ L K β)
         ℓ ℓ' h_l (BinaryBasefoldAbstractOStmtIn (β := β)
-        (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)))
+        (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)))
       (rel₂ := BinaryBasefold.finalSumcheckRelOut K β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (rel₃ := acceptRejectOracleRel)
@@ -302,17 +302,17 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness :
             (rel₁ := BatchingPhase.batchingInputRelation κ L K
               (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l
               (BinaryBasefoldAbstractOStmtIn (β := β)
-        (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)))
+        (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)))
             (rel₂ := RingSwitching.sumcheckRoundRelation κ L K (booleanHypercubeBasis κ L K β)
               ℓ ℓ' h_l (𝓑 := 𝓑) (aOStmtIn := BinaryBasefoldAbstractOStmtIn (β := β)
-                (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) 0)
+                (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) 0)
             (rel₃ := BinaryBasefold.finalSumcheckRelOut K β (ϑ := ϑ)
               (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
             (V₁ := RingSwitching.BatchingPhase.oracleVerifier κ (L := L) (K := K)
               (β := booleanHypercubeBasis κ L K β)
               (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (𝓑 := 𝓑)
               (aOStmtIn :=  (BinaryBasefoldAbstractOStmtIn (β := β)
-        (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))))
+        (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))))
             (V₂ := coreInteractionOracleVerifier κ (L := L) (K := K)
               (β := β) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (𝓡 := 𝓡) (ϑ := ϑ)
               (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
@@ -326,7 +326,7 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness :
               (κ := κ) (L := L) (K := K) (β := booleanHypercubeBasis κ L K β)
               (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (𝓑 := 𝓑)
               (aOStmtIn :=  (BinaryBasefoldAbstractOStmtIn (β := β)
-        (h_l := h_l) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))))
+        (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))))
             (h₂ := coreInteractionOracleVerifier_rbrKnowledgeSoundness
               (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
               (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))))

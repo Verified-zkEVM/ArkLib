@@ -826,6 +826,17 @@ def OracleStatement (ϑ : ℕ) [NeZero ϑ] (i : Fin (ℓ + 1)) :
     let sDomainIdx := oraclePositionToDomainIndex ℓ ϑ j
     exact (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨sDomainIdx, by omega⟩ → L
 
+/-- First oracle witness consistency: the witness polynomial t, when projected to level 0 and
+    evaluated on the initial domain S^(0), must be close within unique decoding radius to f^(0) -/
+def firstOracleWitnessConsistencyProp (t : MultilinearPoly L ℓ)
+    (f₀ : sDomain 𝔽q β h_ℓ_add_R_rate 0 → L) : Prop :=
+  let P₀: L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
+    (fun ω => t.val.eval (bitsOfIndex ω))
+  -- The constraint: P_0 evaluated on S^(0) is close within unique decoding radius to f^(0)
+  pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (h_i := by
+    simp only [Fin.coe_ofNat_eq_mod, zero_mod, _root_.zero_le]) (f := f₀)
+    (g := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀))
+
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] hdiv in
 /-- **Oracle Access Congruence**:
 Proves equality of oracle evaluations `oStmtIn j x = oStmtIn j' x'` -/
@@ -860,8 +871,9 @@ structure Witness (i : Fin (ℓ + 1)) where
   H : L⦃≤ 2⦄[X Fin (ℓ - i)] -- Hᵢ
   f: (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨i, by omega⟩ → L -- fᵢ
 
-/-- The extractor that recovers the multilinear polynomial t from f^(i) -/
-noncomputable def extractMLP (i : Fin ℓ) (f : (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨i, by omega⟩ → L) :
+/-- The extractor that recovers the multilinear polynomial t from f^(i).
+In the current protocol flow, call sites decode only the first oracle (`i = 0`). -/
+def extractMLP (i : Fin ℓ) (f : (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨i, by omega⟩ → L) :
     Option (L⦃≤ 1⦄[X Fin (ℓ - i)]) := by
   set domain_size := Fintype.card (sDomain 𝔽q β h_ℓ_add_R_rate ⟨i, by omega⟩)
   set d := Code.distFromCode (u := f)
@@ -895,8 +907,12 @@ noncomputable def extractMLP (i : Fin ℓ) (f : (sDomain 𝔽q β h_ℓ_add_R_ra
   match berlekamp_welch_result with
   | none => exact none  -- Decoder failed
   | some P =>
-    -- 5. Check if degree < 2^ℓ (unique decoding condition)
-    if hp_deg_lt: P.natDegree ≥ 2^(ℓ - i.val) then
+    -- 5. **post-decoding check** : Check if P's degree < 2^ℓ and `f` is UDR-Close to
+      -- the encoding of `P`
+    let isUDRClose := pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨i, by omega⟩)
+      (h_i := by dsimp only; omega) (f := f) (g := polyToOracleFunc 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := ⟨i, by omega⟩) (P := P))
+    if hP_valid: P.natDegree ≥ 2^(ℓ - i.val) ∨ (¬isUDRClose)  then
       exact none  -- Outside unique decoding radius
     else
       -- 6. Convert P(X) from monomial basis to novel polynomial basis
@@ -908,7 +924,8 @@ noncomputable def extractMLP (i : Fin ℓ) (f : (sDomain 𝔽q β h_ℓ_add_R_ra
         · simp only [hi, tsub_self, pow_zero, cast_one]
           by_cases hp_p_eq_0: P = 0
           · simp only [hp_p_eq_0, degree_zero]; omega
-          · simp only [hi, tsub_self, pow_zero, ge_iff_le, not_le, lt_one_iff] at hp_deg_lt
+          · simp only [hi, tsub_self, pow_zero, ge_iff_le, not_or, not_le, lt_one_iff,
+            not_not] at hP_valid
             have h_deg_p: P.degree = 0 := by omega
             simp only [h_deg_p]
             omega
@@ -918,35 +935,31 @@ noncomputable def extractMLP (i : Fin ℓ) (f : (sDomain 𝔽q β h_ℓ_add_R_ra
             simp only [degree_zero, cast_pow, cast_ofNat, gt_iff_lt]
             -- ⊢ ⊥ < 2 ^ (ℓ - ↑i)
             have h_deg_ne_bot : 2 ^ (ℓ - ↑i) ≠ ⊥ := by
-              exact not_isBot_iff_ne_bot.mp fun a ↦ hp_deg_lt (a P.natDegree)
+              exact not_isBot_iff_ne_bot.mp fun a ↦ hP_valid (Or.inl (a P.natDegree))
             exact compareOfLessAndEq_eq_lt.mp rfl
           · have h := Polynomial.natDegree_lt_iff_degree_lt (p:=P) (n:=2 ^ (ℓ - ↑i))
               (hp:=by exact hp_p_eq_0)
             rw [←h]; omega
-      let P_bounded : L⦃<2^(ℓ - i.val)⦄[X] := ⟨P, h_deg_bound⟩
       -- Get monomial coefficients of P(X)
       let monomial_coeffs : Fin (2^(ℓ - i.val)) → L := fun i => P.coeff i.val
       -- Convert to novel polynomial basis coefficients using change of basis
       -- The changeOfBasisMatrix A has A[j,i] = coeff of X^i in novel basis vector X_j
       -- So we need A⁻¹ to convert monomial coeffs → novel coeffs
-      let novel_coeffs : Option (Fin (2^(ℓ - i.val)) → L) :=
-        let h_ℓ_le_r : ℓ ≤ r := by
-          -- ℓ + 𝓡 < r implies ℓ < r, hence ℓ ≤ r
-          have : ℓ < r := by omega
-          exact Nat.le_of_lt this
-        some (AdditiveNTT.monomialToNovelCoeffs 𝔽q β (ℓ - i.val) (by omega) monomial_coeffs)
-      match novel_coeffs with
-      | none => exact none
-      | some t_coeffs =>
-        -- Interpret novel coeffs as Lagrange cosefficients on Boolean hypercube
-        -- and reconstruct the multilinear polynomial using MLE
-        let hypercube_evals : (Fin (ℓ - i.val) → Fin 2) → L := fun w =>
-          -- Map Boolean hypercube point w to its linear index
-          let w_index : Fin (2^(ℓ - i.val)) := Nat.binaryFinMapToNat
-            (n:=ℓ - i.val) (m:=w) (h_binary:=by intro j; simp only [Nat.cast_id]; omega)
-          t_coeffs w_index
-        let t_multilinear_mv := MvPolynomial.MLE hypercube_evals
-        exact some ⟨t_multilinear_mv, MLE_mem_restrictDegree hypercube_evals⟩
+      -- NOTE: We intentionally use the base-basis map `monomialToNovelCoeffs` here
+      -- (not `getINovelCoeffs`): downstream specs at `i = 0` are phrased with
+      -- `polynomialFromNovelCoeffsF₂` / `bitsOfIndex`, i.e. the base novel basis.
+      let t_coeffs : Fin (2^(ℓ - i.val)) → L :=
+        AdditiveNTT.monomialToNovelCoeffs 𝔽q β (ℓ - i.val) (by omega) monomial_coeffs
+      -- Interpret novel coeffs as Lagrange cosefficients on Boolean hypercube
+      -- and reconstruct the multilinear polynomial using MLE
+      let hypercube_evals : (Fin (ℓ - i.val) → Fin 2) → L := fun w =>
+        -- Map Boolean hypercube point w to its linear index
+        let w_index : Fin (2^(ℓ - i.val)) := Nat.binaryFinMapToNat
+          (n:=ℓ - i.val) (m:=w) (h_binary:=by intro j; simp only [Nat.cast_id]; omega)
+        t_coeffs w_index
+
+      let t_multilinear_mv := MvPolynomial.MLE hypercube_evals
+      exact some ⟨t_multilinear_mv, MLE_mem_restrictDegree hypercube_evals⟩
 
 /-- For index 0, `extractMLP 0 f = some tpoly` iff `f` is pair-UDR-close to the oracle function
 of the multilinear polynomial `tpoly` (i.e. the polynomial-as-oracle from novel coeffs of tpoly).
@@ -1336,18 +1349,6 @@ def witnessStructuralInvariant {i : Fin (ℓ + 1)} (stmt : Statement (L := L) Co
 def sumcheckConsistencyProp {k : ℕ} (sumcheckTarget : L) (H : L⦃≤ 2⦄[X Fin (k)]) : Prop :=
   sumcheckTarget = ∑ x ∈ (univ.map 𝓑) ^ᶠ (k), H.val.eval x
 
-/-- First oracle witness consistency: the witness polynomial t, when projected to level 0 and
-    evaluated on the initial domain S^(0), must be close within unique decoding radius to f^(0) -/
-def firstOracleWitnessConsistencyProp (t : MultilinearPoly L ℓ)
-    (f₀ : sDomain 𝔽q β h_ℓ_add_R_rate 0 → L) : Prop :=
-  let P₀: L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-    (fun ω => t.val.eval (bitsOfIndex ω))
-  -- The constraint: P_0 evaluated on S^(0) is close within unique decoding radius to f^(0)
-  pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (h_i := by
-    simp only [Fin.coe_ofNat_eq_mod, zero_mod, _root_.zero_le]) (f := f₀)
-    (g := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (domainIdx := 0) (P := P₀))
-
 lemma firstOracleWitnessConsistencyProp_unique (t₁ t₂ : MultilinearPoly L ℓ)
     (f₀ : sDomain 𝔽q β h_ℓ_add_R_rate 0 → L)
     (h₁ : firstOracleWitnessConsistencyProp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t₁ f₀)
@@ -1448,18 +1449,17 @@ def incrementalBadEventExistsProp
     -- Number of challenges available for block j
     let curOracleDomainIdx : Fin r := ⟨oraclePositionToDomainIndex (positionIdx := j), by omega⟩
     let k : ℕ := min ϑ (stmtIdx.val - curOracleDomainIdx.val)
+    have h1 := oracle_index_add_steps_le_ℓ ℓ ϑ (i := oracleIdx.val) (j := j)
+    have h2 : ℓ + 𝓡 < r := h_ℓ_add_R_rate
+    have _ : 𝓡 > 0 := pos_of_neZero 𝓡
+    let midIdx : Fin r := ⟨curOracleDomainIdx.val + k, by omega⟩
     let destIdx : Fin r := ⟨curOracleDomainIdx.val + ϑ, by
-      have h1 := oracle_index_add_steps_le_ℓ ℓ ϑ (i := oracleIdx.val) (j := j)
-      have h2 : ℓ + 𝓡 < r := h_ℓ_add_R_rate
-      have _ : 𝓡 > 0 := pos_of_neZero 𝓡
-      dsimp only [oraclePositionToDomainIndex, curOracleDomainIdx]
-      omega
-    ⟩
+      dsimp only [oraclePositionToDomainIndex, curOracleDomainIdx]; omega⟩
     Binius.BinaryBasefold.incrementalFoldingBadEvent 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (block_start_idx := curOracleDomainIdx) (destIdx := destIdx) (k := k)
+      (block_start_idx := curOracleDomainIdx) (k := k)
       (h_k_le := Nat.min_le_left ϑ (stmtIdx.val - curOracleDomainIdx.val))
-      (h_destIdx := rfl)
+      (midIdx := midIdx) (destIdx := destIdx) (h_midIdx := rfl) (h_destIdx := rfl)
       (h_destIdx_le := oracle_index_add_steps_le_ℓ ℓ ϑ (i := oracleIdx.val) (j := j))
       (f_block_start := oStmt j)
       (r_challenges := fun cId => challenges ⟨curOracleDomainIdx.val + cId.val, by

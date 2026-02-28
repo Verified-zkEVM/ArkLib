@@ -116,8 +116,12 @@ lemma BBF_CodeDistance_eq (i : Fin r) (h_i : i ≤ ℓ) :
 /-- Disagreement set Δ : The set of points where two functions disagree.
 For functions f^(i) and g^(i), this is {y ∈ S^(i) | f^(i)(y) ≠ g^(i)(y)}. -/
 def disagreementSet (i : Fin r)
+  {destIdx : Fin r} (h_destIdx : destIdx = i.val)
   (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :
-  Finset ((sDomain 𝔽q β h_ℓ_add_R_rate) i) := {y | f y ≠ g y}
+  Finset ((sDomain 𝔽q β h_ℓ_add_R_rate) destIdx) :=
+  have h_destIdx_eq_i : destIdx = i := Fin.ext h_destIdx
+  {(y : (sDomain 𝔽q β h_ℓ_add_R_rate) destIdx) |
+    f (cast (by subst h_destIdx_eq_i; rfl) y) ≠ g (cast (by subst h_destIdx_eq_i; rfl) y)}
 
 /-- Fiber-wise disagreement set Δ^(i) : The set of points y ∈ S^(i+ϑ) for which
 functions f^(i) and g^(i) are not identical when restricted to the entire fiber
@@ -131,6 +135,46 @@ def fiberwiseDisagreementSet (i : Fin r) {destIdx : Fin r} (steps : ℕ)
   {y | ∃ x, (iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := i)
     (k := steps) h_destIdx h_destIdx_le x) = y ∧ f x ≠ g x}
 
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ [NeZero 𝓡] in
+lemma fiberwiseDisagreementSet_congr_sourceDomain_index (sourceIdx₁ sourceIdx₂ : Fin r) {destIdx : Fin r} (steps : ℕ)
+  (h_sourceIdx_eq : sourceIdx₁ = sourceIdx₂)
+  (h_destIdx : destIdx = sourceIdx₁.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+  (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) sourceIdx₁) :
+  -- have h_sourceIdx_eq : sourceIdx₁ = sourceIdx₂ := Fin.ext h_sourceIdx_eq_sourceIdx₂
+  let Δ_fiber₁ := fiberwiseDisagreementSet 𝔽q β sourceIdx₁ steps h_destIdx h_destIdx_le f g
+  let Δ_fiber₂ := fiberwiseDisagreementSet 𝔽q β sourceIdx₂ steps (by omega) h_destIdx_le (fun x => f (cast (by subst h_sourceIdx_eq; rfl) x)) (fun x => g (cast (by subst h_sourceIdx_eq; rfl) x))
+  Δ_fiber₁ = Δ_fiber₂ := by
+  subst h_sourceIdx_eq
+  rfl
+
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ [NeZero 𝓡] in
+/-- When `steps = 0`, the fiberwise disagreement set (projecting to `S^{i+0} = S^i`)
+equals the ordinary pointwise disagreement set.
+Both sides are stated with `destIdx := i` so they share the same `Finset` type. -/
+@[simp]
+lemma fiberwiseDisagreementSet_steps_zero_eq_disagreementSet
+    (i destIdx : Fin r) (h_destIdx : destIdx = i.val + 0) (h_destIdx_le : destIdx ≤ ℓ)
+    (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :
+    fiberwiseDisagreementSet 𝔽q β i (steps := 0) (destIdx := destIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) f g =
+    disagreementSet 𝔽q β (i := i) (destIdx := destIdx) (h_destIdx := h_destIdx) f g := by
+  -- iteratedQuotientMap at k = 0 evaluates intermediateNormVpoly (k=0) = X, i.e. the identity
+  -- have iqm_id : ∀ x : (sDomain 𝔽q β h_ℓ_add_R_rate) i,
+  --     iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate i (k := 0) (destIdx := destIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) x = x := by
+  --   intro x
+  --   apply Subtype.ext
+  --   simp only [iteratedQuotientMap, intermediateNormVpoly, Fin.foldl_zero, Polynomial.eval_X,
+  --     Subtype.coe_eta]
+  -- ext y
+  -- simp only [fiberwiseDisagreementSet, disagreementSet, Finset.mem_filter, Finset.mem_univ,
+  --   true_and, ne_eq]
+  -- constructor
+  -- · rintro ⟨x, hxy, hfg⟩
+  --   rw [iqm_id x] at hxy
+  --   exact hxy ▸ hfg
+  -- · intro hfg
+  --   exact ⟨y, iqm_id y, hfg⟩
+  sorry
+
 def pair_fiberwiseDistance (i : Fin r) {destIdx : Fin r} (steps : ℕ)
   (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
   (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : ℕ :=
@@ -139,7 +183,7 @@ def pair_fiberwiseDistance (i : Fin r) {destIdx : Fin r} (steps : ℕ)
 /-- Fiber-wise distance d^(i) : The minimum size of the fiber-wise disagreement set
 between f^(i) and any codeword in C^(i). -/
 def fiberwiseDistance (i : Fin r) {destIdx : Fin r} (steps : ℕ)
-  (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ)
+  (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
   (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : ℕ :=
   -- The minimum size of the fiber-wise disagreement set between f^(i) and any codeword in C^(i)
   -- d^(i)(f^(i), C^(i)) := min_{g^(i) ∈ C^(i)} |Δ^(i)(f^(i), g^(i))|
@@ -152,14 +196,15 @@ def fiberwiseDistance (i : Fin r) {destIdx : Fin r} (steps : ℕ)
 
 /-- Fiberwise closeness : f^(i) is fiberwise close to C^(i) if
 2 * d^(i)(f^(i), C^(i)) < d_{i+steps} -/
-def fiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
-    (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      i) : Prop :=
-  let left := fiberwiseDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f)
-  2 * (fiberwiseDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f)) <
+def fiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+    (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+    (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : Prop :=
+  2 * (fiberwiseDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps)
+    (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f)) <
       (BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := destIdx): ℕ∞)
 
-def pair_fiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+def pair_fiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+    (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : Prop :=
     2 * pair_fiberwiseDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) steps
       h_destIdx h_destIdx_le (f := f) (g := g) <
@@ -167,13 +212,46 @@ def pair_fiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx :
 
 /-- Hamming UDR-closeness : f is close to C in Hamming distance if `2 * d(f, C) < d_i` -/
 def UDRClose (i : Fin r) (h_i : i ≤ ℓ)
-  (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : Prop :=
+    (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : Prop :=
     2 * Δ₀(f, (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)) <
       BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
 
 def pair_UDRClose (i : Fin r) (h_i : i ≤ ℓ)
     (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : Prop :=
   2 * Δ₀(f, g) < BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
+
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ [NeZero 𝓡] in
+/-- When `steps = 0`, `pair_fiberwiseDistance` equals the Hamming distance. -/
+@[simp]
+lemma pair_fiberwiseDistance_steps_zero_eq_hammingDist
+    (i : Fin r) (h_i_le : i ≤ ℓ)
+    (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :
+    pair_fiberwiseDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (destIdx := i) (steps := 0) (h_destIdx := by omega) (h_destIdx_le := by omega) (f := f) (g := g) = hammingDist f g := by
+  rw [pair_fiberwiseDistance, fiberwiseDisagreementSet_steps_zero_eq_disagreementSet 𝔽q β
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (destIdx := i) (h_destIdx := by omega) (h_destIdx_le := by omega) f g]
+  simp only [disagreementSet, cast_eq, ne_eq, card_filter, ite_not, hammingDist]
+
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ [NeZero 𝓡] in
+/-- When `steps = 0`, fiberwise closeness coincides with UDR closeness. -/
+@[simp]
+lemma fiberwiseClose_steps_zero_iff_UDRClose
+    (i destIdx : Fin r) (h_destIdx : destIdx = i.val + 0) (h_destIdx_le : destIdx ≤ ℓ)
+    (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :
+    fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i (steps := 0) (destIdx := destIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) f ↔
+    UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i (h_i := by omega) f := by
+  sorry
+
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ [NeZero 𝓡] in
+lemma fiberwiseClose_congr_sourceDomain_index (sourceIdx₁ sourceIdx₂ : Fin r) {destIdx : Fin r} (steps : ℕ)
+  (h_sourceIdx_eq : sourceIdx₁ = sourceIdx₂)
+  (h_destIdx : destIdx = sourceIdx₁.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+  (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) sourceIdx₁) :
+  -- have h_sourceIdx_eq : sourceIdx₁ = sourceIdx₂ := Fin.ext h_sourceIdx_eq_sourceIdx₂
+  let Δ_fiber₁ := fiberwiseClose 𝔽q β sourceIdx₁ steps h_destIdx h_destIdx_le f
+  let Δ_fiber₂ := fiberwiseClose 𝔽q β sourceIdx₂ steps (by omega) h_destIdx_le (fun x => f (cast (by subst h_sourceIdx_eq; rfl) x))
+  Δ_fiber₁ = Δ_fiber₂ := by
+  subst h_sourceIdx_eq
+  rfl
 
 section ConstantFunctions
 
@@ -251,7 +329,6 @@ lemma UDRClose_iff_within_UDR_radius (i : Fin r) (h_i : i ≤ ℓ)
     omega
 
 /-- Unique closest codeword in the unique decoding radius of a function f -/
-@[reducible, simp]
 def UDRCodeword (i : Fin r) (h_i : i ≤ ℓ)
   (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
   (h_within_radius : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i h_i f) :
@@ -991,10 +1068,9 @@ def fold_error_containment (i : Fin r) {destIdx : Fin r} (steps : ℕ)
       (i := i) (steps := steps) h_destIdx h_destIdx_le (f := f) (g := f_bar)
     let folded_f := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (steps := steps) (i := i)
       h_destIdx h_destIdx_le (f := f) (r_challenges := r_challenges)
-    let folded_f_bar := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (steps := steps)
-      (i := i) h_destIdx h_destIdx_le (f := f_bar) (r_challenges := r_challenges)
-    let folded_Δ_set := disagreementSet 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (i := destIdx) (f := folded_f) (g := folded_f_bar)
+    let folded_f_bar := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (steps := steps) (i := i)
+      h_destIdx h_destIdx_le (f := f_bar) (r_challenges := r_challenges)
+    let folded_Δ_set := disagreementSet 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := destIdx) (destIdx := destIdx) (h_destIdx := rfl) (f := folded_f) (g := folded_f_bar)
     folded_Δ_set ⊆ fiberwise_Δ_set
 
 /-! **Lemma 4.18.** For each `i ∈ {0, steps, ..., ℓ-steps}`, if `f⁽ⁱ⁾` is `UDR-close`, then, for
@@ -1117,7 +1193,8 @@ def foldingBadEvent (i : Fin r) {destIdx : Fin r} (steps : ℕ)
       (f := f_bar_i) (r_challenges := r_challenges)
     -- The Bad Condition: FiberDisagreements ⊈ FoldedDisagreements
     ¬ (fiberwiseDisagreementSet 𝔽q β i steps h_destIdx h_destIdx_le (f := f_i) (g := f_bar_i) ⊆
-      disagreementSet 𝔽q β (i := destIdx) (f := folded_f_i) (g := folded_f_bar_i))
+       disagreementSet 𝔽q β (i := destIdx) (destIdx := destIdx) (h_destIdx := rfl) (f := folded_f_i) (g := folded_f_bar_i))
+
   else
     -- Case 2 : The oracle `f_i` is fiber-wise "far" from the code.
     -- Folding a "far" function should result in another "far" function.
@@ -1140,61 +1217,117 @@ For block start index `block_start_idx`, block size `ϑ`, and **partial step cou
 
 When `k = ϑ`, this coincides with `foldingBadEvent`. -/
 def incrementalFoldingBadEvent
-    (block_start_idx : Fin r) {destIdx : Fin r} (k : ℕ)
-    (h_k_le : k ≤ ϑ) (h_destIdx : destIdx = block_start_idx + ϑ) (h_destIdx_le : destIdx ≤ ℓ)
+    (block_start_idx : Fin r) {midIdx destIdx : Fin r} (k : ℕ)
+    (h_k_le : k ≤ ϑ) (h_midIdx : midIdx = block_start_idx + k)
+    (h_destIdx : destIdx = block_start_idx + ϑ) (h_destIdx_le : destIdx ≤ ℓ)
     (f_block_start : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) block_start_idx)
     (r_challenges : Fin k → L) : Prop :=
-  if h_k : k = 0 then False -- no bad event
-  else
-    have h_ik_le : block_start_idx.val + k ≤ ℓ := by omega
-    let destIdx_k : Fin r := ⟨block_start_idx.val + k, by omega⟩
+  have h_ik_le : block_start_idx.val + k ≤ ℓ := by omega
 
-    -- destIdx_k + (ϑ - k) = block_start_idx + ϑ = destIdx
-    have h_destIdx_k_to_block : destIdx = destIdx_k + (ϑ - k) := by
-      simp only [destIdx_k]; omega
+  -- midIdx + (ϑ - k) = block_start_idx + ϑ = destIdx
+  have h_midIdx_to_block : destIdx = midIdx + (ϑ - k) := by omega
 
-    let folded_f_block_start := iterated_fold 𝔽q β
+  let folded_f_block_start := iterated_fold 𝔽q β
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (i := block_start_idx) (steps := k) (destIdx := midIdx)
+    (h_destIdx := h_midIdx) (h_destIdx_le := by omega)
+    (f := f_block_start) (r_challenges := r_challenges)
+
+  if h_is_close : (fiberwiseClose 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := block_start_idx) (steps := ϑ)
+      h_destIdx h_destIdx_le (f := f_block_start)) then
+    -- Case 1 : fiberwise close (block-level classification)
+    let f_bar_block_start := UDRCodeword 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      block_start_idx (f := f_block_start)
+      (h_within_radius := UDRClose_of_fiberwiseClose 𝔽q β
+        block_start_idx ϑ h_destIdx h_destIdx_le
+        f_block_start h_is_close)
+
+    let folded_f_bar_block_start := iterated_fold 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := block_start_idx) (steps := k)
-      (h_destIdx := rfl) (h_destIdx_le := h_ik_le)
-      (f := f_block_start) (r_challenges := r_challenges)
+      (h_destIdx := h_midIdx) (h_destIdx_le := by omega)
+      (f := f_bar_block_start) (r_challenges := r_challenges)
 
-    if h_is_close : (fiberwiseClose 𝔽q β
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (i := block_start_idx) (steps := ϑ)
-        h_destIdx h_destIdx_le (f := f_block_start)) then
-      -- Case 1 : fiberwise close (block-level classification)
-      let f_bar_block_start := UDRCodeword 𝔽q β
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        block_start_idx (f := f_block_start)
-        (h_within_radius := UDRClose_of_fiberwiseClose 𝔽q β
+    -- Bad: Δ⁽ⁱ⁾(f, f̄) ⊄ Δ⁽ⁱ⁺ᵏ⁾(fold_k(f), fold_k(f̄))
+    -- Both projected to S^{i+ϑ} = S^destIdx
+    ¬ (fiberwiseDisagreementSet 𝔽q β
           block_start_idx ϑ h_destIdx h_destIdx_le
-          f_block_start h_is_close)
+          f_block_start f_bar_block_start
+        ⊆
+        fiberwiseDisagreementSet 𝔽q β
+          midIdx (ϑ - k) h_midIdx_to_block h_destIdx_le
+          folded_f_block_start folded_f_bar_block_start)
+  else
+    -- Case 2 : fiberwise far (block-level classification)
+    -- Bad: d⁽ⁱ⁺ᵏ⁾(fold_k(f), C⁽ⁱ⁺ᵏ⁾) < d_{i+ϑ}/2
+    -- projected to S^{i+ϑ}, threshold = d_{destIdx}
+    fiberwiseClose 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := midIdx) (steps := ϑ - k)
+      (h_destIdx := h_midIdx_to_block)
+      (h_destIdx_le := h_destIdx_le)
+      (f := folded_f_block_start)
 
-      let folded_f_bar_block_start := iterated_fold 𝔽q β
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (i := block_start_idx) (steps := k)
-        (h_destIdx := rfl) (h_destIdx_le := h_ik_le)
-        (f := f_bar_block_start) (r_challenges := r_challenges)
+omit [CharP L 2] in
+/-- When all folding steps have been applied (`k = ϑ`), the incremental bad event
+coincides with the full `foldingBadEvent`. -/
+@[simp]
+lemma incrementalFoldingBadEvent_of_k_eq_0_is_false
+    (block_start_idx : Fin r) (k : ℕ) (h_k : k = 0) {midIdx destIdx : Fin r}
+    (h_midIdx : midIdx.val = block_start_idx.val) (h_destIdx : destIdx = block_start_idx + ϑ)
+    (h_destIdx_le : destIdx ≤ ℓ)
+    (f_block_start : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) block_start_idx)
+    (r_challenges : Fin k → L) :
+    ¬(incrementalFoldingBadEvent 𝔽q β (block_start_idx := block_start_idx) (ϑ := ϑ) (k := k) (h_k_le := by omega)
+      (midIdx := midIdx) (destIdx := destIdx)
+      (h_midIdx := by omega) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
+        f_block_start r_challenges):= by
+  subst h_k
+  unfold incrementalFoldingBadEvent
+  simp only [tsub_zero]
+  by_cases h_close : fiberwiseClose 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := block_start_idx) (steps := ϑ)
+      h_destIdx h_destIdx_le (f := f_block_start)
+  · simp only [h_close, ↓reduceDIte]
+    rw [iterated_fold_zero_steps 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (destIdx := midIdx) (h_destIdx := by omega) (h_destIdx_le := by omega)]
+    rw [iterated_fold_zero_steps 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (destIdx := midIdx) (h_destIdx := by omega) (h_destIdx_le := by omega)]
+    rw [fiberwiseDisagreementSet_congr_sourceDomain_index 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (sourceIdx₁ := block_start_idx) (sourceIdx₂ := midIdx) (h_sourceIdx_eq := by omega)]
+    simp only [subset_refl, not_true_eq_false, not_false_eq_true]
+  · simp only [h_close, ↓reduceDIte]
+    rw [fiberwiseClose_congr_sourceDomain_index 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (sourceIdx₁ := block_start_idx) (sourceIdx₂ := midIdx) (h_sourceIdx_eq := by omega)] at h_close
+    rw [iterated_fold_zero_steps 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (destIdx := midIdx) (h_destIdx := by omega) (h_destIdx_le := by omega) (f := f_block_start) (r_challenges := r_challenges)]
+    exact h_close
 
-      -- Bad: Δ⁽ⁱ⁾(f, f̄) ⊄ Δ⁽ⁱ⁺ᵏ⁾(fold_k(f), fold_k(f̄))
-      -- Both projected to S^{i+ϑ} = S^destIdx
-      ¬ (fiberwiseDisagreementSet 𝔽q β
-            block_start_idx ϑ h_destIdx h_destIdx_le
-            f_block_start f_bar_block_start
-          ⊆
-          fiberwiseDisagreementSet 𝔽q β
-            destIdx_k (ϑ - k) h_destIdx_k_to_block h_destIdx_le
-            folded_f_block_start folded_f_bar_block_start)
-    else
-      -- Case 2 : fiberwise far (block-level classification)
-      -- Bad: d⁽ⁱ⁺ᵏ⁾(fold_k(f), C⁽ⁱ⁺ᵏ⁾) < d_{i+ϑ}/2
-      -- projected to S^{i+ϑ}, threshold = d_{destIdx}
-      fiberwiseClose 𝔽q β
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (i := destIdx_k) (steps := ϑ - k)
-        (h_destIdx := h_destIdx_k_to_block)
-        (h_destIdx_le := h_destIdx_le)
-        (f := folded_f_block_start)
+omit [CharP L 2] in
+/-- When all folding steps have been applied (`k = ϑ`), the incremental bad event
+coincides with the full `foldingBadEvent`. -/
+lemma incrementalFoldingBadEvent_eq_foldingBadEvent_of_k_eq_ϑ
+    (block_start_idx : Fin r) {midIdx destIdx : Fin r}
+    (h_midIdx : midIdx.val = destIdx.val) (h_destIdx : destIdx = block_start_idx + ϑ)
+    (h_destIdx_le : destIdx ≤ ℓ)
+    (f_block_start : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) block_start_idx)
+    (r_challenges : Fin ϑ → L) :
+    incrementalFoldingBadEvent 𝔽q β block_start_idx ϑ (h_k_le := le_refl ϑ)
+      (midIdx := midIdx) (destIdx := destIdx)
+      (h_midIdx := by omega) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
+        f_block_start r_challenges ↔
+    foldingBadEvent 𝔽q β block_start_idx ϑ h_destIdx h_destIdx_le
+        f_block_start r_challenges := by
+  unfold incrementalFoldingBadEvent foldingBadEvent
+  simp only [show ϑ ≠ 0 from NeZero.ne ϑ, ↓reduceDIte, Nat.sub_self]
+  have h_midIdx_eq_destIdx : midIdx = destIdx := by omega
+  subst h_midIdx_eq_destIdx
+  by_cases h_close : fiberwiseClose 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := block_start_idx) (steps := ϑ)
+      h_destIdx h_destIdx_le (f := f_block_start)
+  · simp only [h_close, ↓reduceDIte]
+    rw [fiberwiseDisagreementSet_steps_zero_eq_disagreementSet]
+  · simp only [h_close, ↓reduceDIte]
+    rw [fiberwiseClose_steps_zero_iff_UDRClose]
 
 end SoundnessTools

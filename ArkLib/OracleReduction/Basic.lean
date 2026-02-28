@@ -772,6 +772,15 @@ end IsSingleRound
 def FullTranscript.mk1 {pSpec : ProtocolSpec 1} (msg0 : pSpec.«Type» 0) :
     FullTranscript pSpec := fun | ⟨0, _⟩ => msg0
 
+@[simp]
+theorem FullTranscript.mk1_eq_snoc {pSpec : ProtocolSpec 1} (msg0 : pSpec.«Type» 0) :
+      FullTranscript.mk1 msg0 = (default : pSpec.Transcript 0).concat msg0 := by
+  unfold FullTranscript.mk1 Transcript.concat
+  simp only [default, Fin.isValue]
+  funext i
+  have hi : i = 0 := by omega
+  subst hi; simp [Fin.snoc]
+
 @[inline, reducible]
 def FullTranscript.mk2 {pSpec : ProtocolSpec 2} (msg0 : pSpec.«Type» 0) (msg1 : pSpec.«Type» 1) :
     FullTranscript pSpec := fun | ⟨0, _⟩ => msg0 | ⟨1, _⟩ => msg1

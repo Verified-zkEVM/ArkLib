@@ -594,6 +594,45 @@ lemma qMap_total_fiber_congr_steps
         ⟨x.val, by subst h_steps_eq; exact x.is_lt⟩ := by
   subst h_steps_eq; rfl
 
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
+lemma qMap_total_fiber_congr_source
+    {sourceIdx₁ sourceIdx₂ : Fin r} (steps : ℕ) {destIdx : Fin r}
+    (h_sourceIdx_eq : sourceIdx₁ = sourceIdx₂)
+    (h_destIdx : destIdx = sourceIdx₁.val + steps)
+    (h_destIdx_le : destIdx ≤ ℓ)
+    (y : sDomain 𝔽q β h_ℓ_add_R_rate (i := destIdx)) :
+    qMap_total_fiber 𝔽q β (i := sourceIdx₁) (steps := steps) (h_destIdx := h_destIdx)
+      (h_destIdx_le := h_destIdx_le) (y := y) =
+    cast (by subst h_sourceIdx_eq; rfl) (qMap_total_fiber 𝔽q β (i := sourceIdx₂)
+      (steps := steps) (h_destIdx := by omega) (h_destIdx_le := h_destIdx_le) (y := y)) := by
+  subst h_sourceIdx_eq; rfl
+
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
+lemma qMap_total_fiber_congr_source_apply
+    {sourceIdx₁ sourceIdx₂ : Fin r} (steps : ℕ) {destIdx : Fin r}
+    (h_sourceIdx_eq : sourceIdx₁ = sourceIdx₂)
+    (h_destIdx : destIdx = sourceIdx₁.val + steps)
+    (h_destIdx_le : destIdx ≤ ℓ)
+    (y : sDomain 𝔽q β h_ℓ_add_R_rate (i := destIdx)) (x : Fin (2 ^ steps)) :
+    qMap_total_fiber 𝔽q β (i := sourceIdx₁) (steps := steps) (h_destIdx := h_destIdx)
+      (h_destIdx_le := h_destIdx_le) (y := y) x =
+    cast (by subst h_sourceIdx_eq; rfl) (qMap_total_fiber 𝔽q β (i := sourceIdx₂)
+      (steps := steps) (h_destIdx := by omega) (h_destIdx_le := h_destIdx_le) (y := y) x) := by
+  subst h_sourceIdx_eq; rfl
+
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
+lemma qMap_total_fiber_congr_dest
+    {sourceIdx : Fin r} (steps : ℕ) {destIdx₁ destIdx₂ : Fin r}
+    (h_destIdx_congr : destIdx₁ = destIdx₂)
+    (h_destIdx : destIdx₁ = sourceIdx.val + steps)
+    (h_destIdx_le : destIdx₁ ≤ ℓ)
+    (y : sDomain 𝔽q β h_ℓ_add_R_rate (i := destIdx₁)) :
+    qMap_total_fiber 𝔽q β (i := sourceIdx) (steps := steps) (destIdx := destIdx₁)
+      (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (y := y) =
+    qMap_total_fiber 𝔽q β (i := sourceIdx)
+      (steps := steps) (destIdx := destIdx₂) (h_destIdx := by omega) (h_destIdx_le := by omega) (y := cast (by subst h_destIdx_congr; rfl) y) := by
+  subst h_destIdx_congr; rfl
+
 /- TODO : state that the fiber of y is the set of all 2 ^ steps points in the
 larger domain S⁽ⁱ⁾ that get mapped to y by the series of quotient maps q⁽ⁱ⁾, ..., q⁽ⁱ⁺steps⁻¹⁾. -/
 
@@ -857,68 +896,63 @@ lemma qMap_total_fiber_basis_sum_repr (i : Fin r) {destIdx : Fin r} (steps : ℕ
     rw [hx_val_sum]
 
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
+theorem qMap_total_fiber_injective (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+    (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+    (y : sDomain 𝔽q β h_ℓ_add_R_rate (i := destIdx)) :
+    Function.Injective (qMap_total_fiber 𝔽q β (i := i) (steps := steps)
+      h_destIdx h_destIdx_le (y := y)) := by
+  intro k₁ k₂ h_eq
+  let basis_x := sDomain_basis 𝔽q β h_ℓ_add_R_rate i (Sdomain_bound (by omega))
+  set fiberMap := qMap_total_fiber 𝔽q β (i := i) (steps := steps)
+    h_destIdx h_destIdx_le (y := y)
+  have h_coeffs_eq : basis_x.repr (fiberMap k₁) = basis_x.repr (fiberMap k₂) := by
+    rw [h_eq]
+  have h_bits_eq : ∀ j : Fin steps,
+      Nat.getBit (k := j) (n := k₁.val) = Nat.getBit (k := j) (n := k₂.val) := by
+    intro j
+    have h_coeff_j_eq : basis_x.repr (fiberMap k₁) ⟨j, by omega⟩
+      = basis_x.repr (fiberMap k₂) ⟨j, by omega⟩ := by rw [h_coeffs_eq]
+    rw [qMap_total_fiber_repr_coeff 𝔽q β (i := i) (steps := steps)
+      h_destIdx h_destIdx_le (y := y) (j := ⟨j, by omega⟩)]
+      at h_coeff_j_eq
+    rw [qMap_total_fiber_repr_coeff 𝔽q β (i := i) (steps := steps)
+      h_destIdx h_destIdx_le (y := y) (k := k₂) (j := ⟨j, by omega⟩)]
+      at h_coeff_j_eq
+    simp only [fiber_coeff, Fin.is_lt, ↓reduceDIte] at h_coeff_j_eq
+    by_cases hbitj_k₁ : Nat.getBit (k := j) (n := k₁.val) = 0
+    · simp only [hbitj_k₁, ↓reduceIte, left_eq_ite_iff, zero_ne_one, imp_false,
+      Decidable.not_not] at ⊢ h_coeff_j_eq
+      simp only [h_coeff_j_eq]
+    · simp only [hbitj_k₁, ↓reduceIte, right_eq_ite_iff, one_ne_zero,
+      imp_false] at ⊢ h_coeff_j_eq
+      have b1 : Nat.getBit (k := j) (n := k₁.val) = 1 := by
+        have h := Nat.getBit_eq_zero_or_one (k := j) (n := k₁.val)
+        simp only [hbitj_k₁, false_or] at h
+        exact h
+      have b2 : Nat.getBit (k := j) (n := k₂.val) = 1 := by
+        have h := Nat.getBit_eq_zero_or_one (k := j) (n := k₂.val)
+        simp only [h_coeff_j_eq, false_or] at h
+        exact h
+      simp only [b1, b2]
+  apply Fin.eq_of_val_eq
+  apply eq_iff_eq_all_getBits.mpr
+  intro k
+  by_cases h_k : k < steps
+  · simp only [h_bits_eq ⟨k, by omega⟩]
+  · conv_lhs => rw [Nat.getBit_of_lt_two_pow]
+    conv_rhs => rw [Nat.getBit_of_lt_two_pow]
+    simp only [h_k, ↓reduceIte]
+
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
 theorem card_qMap_total_fiber (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (y : sDomain 𝔽q β h_ℓ_add_R_rate (i := destIdx)) :
     Fintype.card (Set.image (qMap_total_fiber 𝔽q β (i := i) (steps := steps)
       h_destIdx h_destIdx_le
       (y := y)) Set.univ) = 2 ^ steps := by
-  -- The cardinality of the image of a function equals the cardinality of its domain
-  -- if it is injective.
   rw [Set.card_image_of_injective Set.univ]
-  -- The domain is `Fin (2 ^ steps)`, which has cardinality `2 ^ steps`.
-  · -- ⊢ Fintype.card ↑Set.univ = 2 ^ steps
-    simp only [Fintype.card_setUniv, Fintype.card_fin]
-  · -- prove that `qMap_total_fiber` is an injective function.
-    intro k₁ k₂ h_eq
-    -- Assume two indices `k₁` and `k₂` produce the same point `x`.
-    let basis_x := sDomain_basis 𝔽q β h_ℓ_add_R_rate i (Sdomain_bound (by omega))
-    -- If the points are equal, their basis representations must be equal.
-    set fiberMap := qMap_total_fiber 𝔽q β (i := i) (steps := steps)
-      h_destIdx h_destIdx_le (y := y)
-    have h_coeffs_eq : basis_x.repr (fiberMap k₁) = basis_x.repr (fiberMap k₂) := by
-      rw [h_eq]
-    -- The first `steps` coefficients are determined by the bits of `k₁` and `k₂`.
-    -- If the coefficients are equal, the bits must be equal.
-    have h_bits_eq : ∀ j : Fin steps,
-        Nat.getBit (k := j) (n := k₁.val) = Nat.getBit (k := j) (n := k₂.val) := by
-      intro j
-      have h_coeff_j_eq : basis_x.repr (fiberMap k₁) ⟨j, by omega⟩
-        = basis_x.repr (fiberMap k₂) ⟨j, by omega⟩ := by rw [h_coeffs_eq]
-      rw [qMap_total_fiber_repr_coeff 𝔽q β (i := i) (steps := steps)
-        h_destIdx h_destIdx_le (y := y) (j := ⟨j, by omega⟩)]
-        at h_coeff_j_eq
-      rw [qMap_total_fiber_repr_coeff 𝔽q β (i := i) (steps := steps)
-        h_destIdx h_destIdx_le (y := y) (k := k₂) (j := ⟨j, by omega⟩)]
-        at h_coeff_j_eq
-      simp only [fiber_coeff, Fin.is_lt, ↓reduceDIte] at h_coeff_j_eq
-      by_cases hbitj_k₁ : Nat.getBit (k := j) (n := k₁.val) = 0
-      · simp only [hbitj_k₁, ↓reduceIte, left_eq_ite_iff, zero_ne_one, imp_false,
-        Decidable.not_not] at ⊢ h_coeff_j_eq
-        simp only [h_coeff_j_eq]
-      · simp only [hbitj_k₁, ↓reduceIte, right_eq_ite_iff, one_ne_zero,
-        imp_false] at ⊢ h_coeff_j_eq
-        have b1 : Nat.getBit (k := j) (n := k₁.val) = 1 := by
-          have h := Nat.getBit_eq_zero_or_one (k := j) (n := k₁.val)
-          simp only [hbitj_k₁, false_or] at h
-          exact h
-        have b2 : Nat.getBit (k := j) (n := k₂.val) = 1 := by
-          have h := Nat.getBit_eq_zero_or_one (k := j) (n := k₂.val)
-          simp only [h_coeff_j_eq, false_or] at h
-          exact h
-        simp only [b1, b2]
-      -- Extract the j-th coefficient from h_coeffs_eq and show it implies the bits are equal.
-    -- If all the bits of two numbers are equal, the numbers themselves are equal.
-    apply Fin.eq_of_val_eq
-    -- ⊢ ∀ {n : ℕ} {i j : Fin n}, ↑i = ↑j → i = j
-    apply eq_iff_eq_all_getBits.mpr
-    intro k
-    by_cases h_k : k < steps
-    · simp only [h_bits_eq ⟨k, by omega⟩]
-    · -- The bits at positions ≥ steps must be deterministic
-      conv_lhs => rw [Nat.getBit_of_lt_two_pow]
-      conv_rhs => rw [Nat.getBit_of_lt_two_pow]
-      simp only [h_k, ↓reduceIte]
+  · simp only [Fintype.card_setUniv, Fintype.card_fin]
+  · exact qMap_total_fiber_injective 𝔽q β i steps h_destIdx h_destIdx_le y
 
 omit [CharP L 2] in
 /-- The images of `qMap_total_fiber` over distinct quotient points `y₁ ≠ y₂` are
@@ -1531,6 +1565,27 @@ lemma iterated_fold_transitivity
       (f := f) (r_challenges := Fin.append r_challenges₁ r_challenges₂)
     lhs = rhs := by
   sorry -- admitted for brevity, relies on a lemma like `Fin.dfoldl_add`
+
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
+/-- **First-step decomposition**: `iterated_fold(i, steps+1, f, r₀ :: r_rest)` equals
+`iterated_fold(i+1, steps, fold(f, r₀), r_rest)`.
+Dual to `iterated_fold_last` which decomposes from the last step. -/
+lemma iterated_fold_first (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ)
+    (h_midIdx : midIdx.val = i.val + 1) (h_destIdx : destIdx.val = i.val + (steps + 1))
+    (h_destIdx_le : destIdx ≤ ℓ)
+    (f : sDomain 𝔽q β h_ℓ_add_R_rate (i := i) → L)
+    (r_challenges : Fin (steps + 1) → L) :
+    iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := i) (steps := steps + 1) (h_destIdx := h_destIdx)
+      (h_destIdx_le := h_destIdx_le) (f := f) (r_challenges := r_challenges) =
+    iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := midIdx) (steps := steps) (h_destIdx := by omega)
+      (h_destIdx_le := h_destIdx_le)
+      (f := fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
+        (destIdx := midIdx) (h_destIdx := h_midIdx)
+        (h_destIdx_le := by omega) f (r_challenges 0))
+      (r_challenges := fun j => r_challenges j.succ) := by
+  sorry
 
 /-- **Definition 4.6** : the single-step vector-matrix-vector multiplication form of `fold` -/
 def fold_single_matrix_mul_form (i : Fin r) {destIdx : Fin r}

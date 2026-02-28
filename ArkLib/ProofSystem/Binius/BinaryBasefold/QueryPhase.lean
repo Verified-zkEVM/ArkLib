@@ -393,8 +393,8 @@ lemma query_phase_consistency_guard_safe
     -- This requires showing that finToSDomain (joinBits u suffix_fin) = iteratedQuotientMap v
     -- where u = extractMiddleFinMask and suffix_fin comes from the suffix at i+ϑ
 
-    -- For now, we leave this as sorry since it requires deep reasoning about
-    -- the relationship between joinBits, sDomainToFin, finToSDomain, and iteratedQuotientMap
+    -- This requires deep reasoning about the relationship between
+      -- joinBits, sDomainToFin, finToSDomain, and iteratedQuotientMap
     sorry
 
   rw [h_point_eq]
@@ -616,7 +616,7 @@ lemma query_phase_step_preserves_fold
       -- ⊢ finToSDomain 𝔽q β h_ℓ_add_R_rate ⟨↑k * ϑ, ⋯⟩ ⋯
       --     ⟨↑(Nat.joinBits x (challengeSuffixToFin 𝔽q β k (extractSuffixFromChallenge 𝔽q β v ⟨↑k * ϑ + ϑ, ⋯⟩ ⋯))), ⋯⟩ =
       --   cast ⋯ (cast ⋯ (qMap_total_fiber 𝔽q β midIdx ϑ h_destIdx_eq h₁ y x))
-      sorry
+      convert rfl using 1 <;> simp [midIdx, y_left]
     rw [h_fiber_vec_get]; dsimp only [fiber_vec_actual_def]
 
     --   single_point_localized_fold_matrix_form 𝔽q β ⟨↑k * ϑ, ⋯⟩ ϑ ⋯ ⋯ (fun j ↦ stmtIn.challenges ⟨↑k * ϑ + ↑j, ⋯⟩)
@@ -802,12 +802,27 @@ lemma query_phase_step_preserves_fold
       conv_rhs =>
         dsimp only [getFirstOracle]
       simp only [Fin.mk_zero']
+      -- symm
       apply OracleStatement.oracle_eval_congr 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (oStmtIn := oStmtIn) (j := ⟨k, by
-          simp only [toOutCodewordsCount_last, Fin.is_lt]⟩) (j' := 0) (h_j := by
-          simp only [h_k_eq_0, Fin.mk_zero'];)
-      sorry
-
+        (oStmtIn := oStmtIn) (j' := 0) (j := ⟨k, by
+          simp only [toOutCodewordsCount_last, Fin.is_lt]⟩) (h_j := by
+          apply Fin.eq_of_val_eq
+          simpa using h_k_eq_0)
+      have h_destIdx_eq : (⟨k.val * ϑ + ϑ, by omega⟩ : Fin r) = ⟨(k.val + 1) * ϑ, by omega⟩ := by
+        apply Fin.eq_of_val_eq
+        simp only [Nat.add_mul, one_mul, Nat.add_left_cancel_iff]
+      simp only [id_eq, Fin.coe_ofNat_eq_mod, cast_cast]
+      have h_i_eq : (⟨k.val * ϑ, by omega⟩ : Fin r) = 0 := by
+        apply Fin.eq_of_val_eq
+        simpa [h_mul_eq_0]
+      have hsrc_fun := qMap_total_fiber_congr_source_apply 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (steps := ϑ) (destIdx := destIdx) (sourceIdx₁ := (⟨k.val * ϑ, by omega⟩ : Fin r)) (sourceIdx₂ := 0) (h_sourceIdx_eq := h_i_eq) (h_destIdx := by dsimp only [destIdx]; rw [Nat.add_mul, Nat.one_mul]) (h_destIdx_le := by omega) (y := y) (x := x)
+      rw [←hsrc_fun]
+      have hdest_congr := qMap_total_fiber_congr_dest 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (sourceIdx := ⟨k * ϑ, by omega⟩) (steps := ϑ) (destIdx₁ := ⟨k.val * ϑ + ϑ, by omega⟩) (destIdx₂ := destIdx) (h_destIdx_congr := by omega) (h_destIdx := by dsimp only) (h_destIdx_le := by omega)
+      rw [hdest_congr]
+      congr 1
+      rw [←extractSuffixFromChallenge_congr_destIdx 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (v := v) (destIdx := destIdx) (destIdx' := ⟨k.val * ϑ + ϑ, by omega⟩)
+        (h_idx_eq := by omega) (h_le := by omega) (h_le' := by omega)]
     rw [h_fiber_vec_get]
     -- Step 4: Apply the congruence lemma of single_point_localized_fold_matrix_form
 
@@ -1434,9 +1449,20 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
         let fiber_vec : Fin (2 ^ ϑ) → L := logical_queryFiberPoints 𝔽q β oStmtIn k v
 
         let output_of_iteration_k : L :=
-          (single_point_localized_fold_matrix_form 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨k.val * ϑ, by sorry⟩) (steps := ϑ) (destIdx := ⟨k.val * ϑ + ϑ, by sorry⟩) (h_destIdx := by sorry)
-          (h_destIdx_le := by sorry)
-          (r_challenges := fun j ↦ stmtIn.challenges ⟨↑k * ϑ + ↑j, by simp only [Fin.val_last]; sorry⟩)
+          (single_point_localized_fold_matrix_form 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (i := ⟨k.val * ϑ, by
+            exact lt_r_of_lt_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h := k_mul_ϑ_lt_ℓ (k := k))
+          ⟩) (steps := ϑ) (destIdx := ⟨k.val * ϑ + ϑ, by
+            apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+            exact k_succ_mul_ϑ_le_ℓ_₂ (k := k)
+          ⟩) (h_destIdx := by
+            simp only [Nat.add_right_cancel_iff])
+          (h_destIdx_le := k_succ_mul_ϑ_le_ℓ_₂ (k := k))
+          (r_challenges := fun j ↦ stmtIn.challenges ⟨↑k * ϑ + ↑j, by
+            simp only [Fin.val_last]
+            have h_le : k.val * ϑ + ϑ ≤ ℓ := k_succ_mul_ϑ_le_ℓ_₂ (k := k)
+            omega
+          ⟩)
           (y := point) (fiber_eval_mapping := fiber_vec))
         output_of_iteration_k = c_next
       else True)
@@ -1458,7 +1484,8 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
       simp only [List.length_finRange] at h_k
       have h_k_succ_sub_1_lt : k.succ.val - 1 < ℓ / ϑ := by
         simp only [Fin.val_succ, add_tsub_cancel_right]; omega
-      have h_k_sub_1_lt : k.val - 1 < ℓ / ϑ := by sorry
+      have h_k_sub_1_lt : k.val - 1 < ℓ / ϑ := by
+        omega
       have h_k_succ_gt_0 : k.succ > 0 := by simp only [gt_iff_lt, Fin.succ_pos]
       dsimp only [Rel', logical_stepCondition] at h_rel_k
       simp only [Fin.coe_castSucc, h_k_sub_1_lt, ↓reduceDIte] at h_rel_k
@@ -1502,9 +1529,11 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
         (h_fiber_mem := by
           dsimp only [queryPhaseLogicStep]
           have h_transcript : (FullTranscript.mk1 (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) (tr.challenges ⟨0, rfl⟩)).messages = tr.messages := by
-            funext j
-            -- TODO : prove this
-            sorry
+            -- funext j
+            simp only [MessageIdx, Fin.isValue, FullTranscript.mk1_eq_snoc]
+            unfold FullTranscript.messages Transcript.concat
+            funext x
+            obtain ⟨i, hi⟩ := x; fin_cases i; simp at hi
           rw [h_transcript]
           exact h_fiber_vec_mem_support
         )
@@ -1517,11 +1546,14 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
       -- ⊢ logical_checkSingleFoldingStep 𝔽q β oStmtIn ⟨↑k.succ - 1, ⋯⟩ v stmtIn
       dsimp only [logical_checkSingleFoldingStep]
       by_cases h_k_gt_0 : k.val > 0
-      · have h_gt : (k.succ.val - 1) * ϑ > 0 := by sorry
+      · have h_gt : (k.succ.val - 1) * ϑ > 0 := by
+          have hk' : k.succ.val - 1 > 0 := by
+            simpa [Fin.val_succ, add_tsub_cancel_right] using h_k_gt_0
+          exact Nat.mul_pos hk' h_ϑ_pos
         simp only [h_k_gt_0, ↓reduceIte, Set.mem_image, Set.mem_ite_empty_right,
           Set.mem_singleton_iff, and_true, exists_const, existsAndEq] at h_c_k_mem_output
         have h_k_cast_gt_0 : 0 < k.castSucc := by
-          sorry
+          simpa [gt_iff_lt, Fin.coe_castSucc] using h_k_gt_0
         simp only [gt_iff_lt, h_k_cast_gt_0, ↓reduceDIte, Fin.val_last] at h_rel_k
         simp only [h_gt, ↓reduceDIte]
         simp only [Fin.val_succ, add_tsub_cancel_right]
@@ -1546,7 +1578,13 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
           have h_k_fin_eq : (List.finRange (ℓ / ϑ)).get k = ⟨k, by omega⟩ := by
             apply Fin.eq_of_val_eq;
             simp only [List.get_eq_getElem, List.getElem_finRange, Fin.eta, Fin.coe_cast]
-          let destIdx : Fin r := ⟨k.val * ϑ + ϑ, by sorry⟩
+          let destIdx : Fin r := ⟨k.val * ϑ + ϑ, by
+            apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+            have h_le : k.val * ϑ + ϑ ≤ ℓ := by
+              exact oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ)
+                (j := ⟨k.val, by simpa [toOutCodewordsCount_last] using h_k⟩)
+            exact h_le
+          ⟩
           conv_lhs => rw [single_point_localized_fold_matrix_form_congr_dest_index 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (destIdx' := destIdx) (h_destIdx_eq_destIdx' := by
             simp only [add_tsub_cancel_right]; dsimp only [destIdx])]
           conv_rhs => rw [single_point_localized_fold_matrix_form_congr_dest_index 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (destIdx' := destIdx) (h_destIdx_eq_destIdx' := by
@@ -1556,8 +1594,24 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
           simp only [Nat.add_one_sub_one, cast_eq]
           dsimp only [getChallengeSuffix]
           apply extractSuffixFromChallenge_congr_destIdx 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_idx_eq := by
-            simp only [List.getElem_finRange, Fin.eta, Fin.coe_cast]) (h_le := by sorry) (h_le' := by sorry)
-      · have h_ne_gt : ¬ ((k.succ.val - 1) * ϑ > 0) := by sorry
+            simp only [List.getElem_finRange, Fin.eta, Fin.coe_cast]) (h_le := by
+            have h_main : k.val * ϑ + ϑ ≤ ℓ := by
+              exact oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ)
+                (j := ⟨k.val, by simpa [toOutCodewordsCount_last] using h_k⟩)
+            simpa [Fin.val_succ, add_tsub_cancel_right] using h_main
+          ) (h_le' := by
+            have h_main : k.val * ϑ + ϑ ≤ ℓ := by
+              exact oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ)
+                (j := ⟨k.val, by simpa [toOutCodewordsCount_last] using h_k⟩)
+            simpa [List.getElem_finRange, Fin.eta, Fin.coe_cast] using h_main
+          )
+      · have h_ne_gt : ¬ ((k.succ.val - 1) * ϑ > 0) := by
+          intro h_gt
+          have h_mul_pos : k.val * ϑ > 0 := by
+            simpa [Fin.val_succ, add_tsub_cancel_right] using h_gt
+          have hk_pos : k.val > 0 := by
+            exact Nat.pos_of_mul_pos_right h_mul_pos
+          exact h_k_gt_0 hk_pos
         simp only [h_ne_gt, ↓reduceDIte, true_and]
         -- ⊢ single_point_localized_fold_matrix_form 𝔽q β ⟨(↑k.succ - 1) * ϑ, ⋯⟩ ϑ ⋯ ⋯
         --     (fun j ↦ stmtIn.challenges ⟨(↑k.succ - 1) * ϑ + ↑j, ⋯⟩) (getChallengeSuffix 𝔽q β ⟨↑k.succ - 1, ⋯⟩ v)
@@ -1576,7 +1630,13 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
         have h_k_fin_eq : (List.finRange (ℓ / ϑ)).get k = ⟨k, by omega⟩ := by
           apply Fin.eq_of_val_eq;
           simp only [List.get_eq_getElem, List.getElem_finRange, Fin.eta, Fin.coe_cast]
-        let destIdx : Fin r := ⟨k.val * ϑ + ϑ, by sorry⟩
+        let destIdx : Fin r := ⟨k.val * ϑ + ϑ, by
+          apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          have h_le : k.val * ϑ + ϑ ≤ ℓ := by
+            exact oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ)
+              (j := ⟨k.val, by simpa [toOutCodewordsCount_last] using h_k⟩)
+          exact h_le
+        ⟩
         conv_lhs => rw [single_point_localized_fold_matrix_form_congr_dest_index 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (destIdx' := destIdx) (h_destIdx_eq_destIdx' := by
           simp only [add_tsub_cancel_right]; dsimp only [destIdx])]
         conv_rhs => rw [single_point_localized_fold_matrix_form_congr_dest_index 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (destIdx' := destIdx) (h_destIdx_eq_destIdx' := by
@@ -1586,7 +1646,17 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
         simp only [Nat.add_one_sub_one, cast_eq]
         dsimp only [getChallengeSuffix]
         apply extractSuffixFromChallenge_congr_destIdx 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_idx_eq := by
-          simp only [List.getElem_finRange, Fin.eta, Fin.coe_cast]) (h_le := by sorry) (h_le' := by sorry)
+          simp only [List.getElem_finRange, Fin.eta, Fin.coe_cast]) (h_le := by
+          have h_main : k.val * ϑ + ϑ ≤ ℓ := by
+            exact oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ)
+              (j := ⟨k.val, by simpa [toOutCodewordsCount_last] using h_k⟩)
+          simpa [Fin.val_succ, add_tsub_cancel_right] using h_main
+        ) (h_le' := by
+          have h_main : k.val * ϑ + ϑ ≤ ℓ := by
+            exact oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ)
+              (j := ⟨k.val, by simpa [toOutCodewordsCount_last] using h_k⟩)
+          simpa [List.getElem_finRange, Fin.eta, Fin.coe_cast] using h_main
+        )
     )
     (h_yield := by
       intro k c_cur s_curr res_step h_res_step_mem
@@ -1641,7 +1711,8 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
       dite_else_true] at h_last_guard_relation
     have h_lt : 0 < (⟨ℓ/ϑ, by simp only [List.length_finRange, lt_add_iff_pos_right,
       zero_lt_one]⟩ : Fin ((List.finRange (ℓ / ϑ)).length + 1)) := by
-      sorry
+      change (0 : ℕ) < (ℓ / ϑ)
+      exact h_0_lt
     dsimp only [logical_computeFoldedValue]
     simp only [h_lt, forall_true_left] at h_last_guard_relation
     -- mem_support_guard_c_last : c_last = stmtIn.final_constant ∧ state_post_single_outer_repetition = state_post_inner_repetition
@@ -1649,7 +1720,19 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
     rw [h_last_guard_relation.symm]
 
     simp only [Fin.val_last]
-    let destIdx : Fin r := ⟨(ℓ / ϑ - 1) * ϑ + ϑ, by sorry⟩
+    have h_dest_le_final : (ℓ / ϑ - 1) * ϑ + ϑ ≤ ℓ := by
+      have h_dest_eq_final : (ℓ / ϑ - 1) * ϑ + ϑ = ℓ := by
+        calc
+          (ℓ / ϑ - 1) * ϑ + ϑ = ((ℓ / ϑ - 1) + 1) * ϑ := by
+            rw [Nat.add_mul, Nat.one_mul]
+          _ = (ℓ / ϑ) * ϑ := by
+            rw [Nat.sub_add_cancel (Nat.succ_le_of_lt h_0_lt)]
+          _ = ℓ := h_ℓ_div_mul_eq_ℓ
+      exact le_of_eq h_dest_eq_final
+    let destIdx : Fin r := ⟨(ℓ / ϑ - 1) * ϑ + ϑ, by
+      apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      exact h_dest_le_final
+    ⟩
     set fiber_vec := logical_queryFiberPoints 𝔽q β oStmtIn ⟨ℓ / ϑ - 1, by omega⟩ v with h_fiber_vec_def
     conv_lhs =>
       rw [single_point_localized_fold_matrix_form_congr_dest_index 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (destIdx' := destIdx) (h_destIdx_eq_destIdx' := by dsimp only [destIdx]) (fiber_eval_mapping := fiber_vec)]
@@ -1660,7 +1743,9 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
     simp only [cast_eq]
     dsimp only [getChallengeSuffix]
     apply extractSuffixFromChallenge_congr_destIdx 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_idx_eq := by
-      simp only [List.length_finRange]) (h_le := by sorry) (h_le' := by sorry)
+      simp only [List.length_finRange]) (h_le := by
+      exact h_dest_le_final) (h_le' := by
+      simpa [List.length_finRange] using h_dest_le_final)
 
 /-- Main lemma connecting verifier support to logical proximity checks.
     This is the key lemma used in toFun_full of queryKnowledgeStateFunction.

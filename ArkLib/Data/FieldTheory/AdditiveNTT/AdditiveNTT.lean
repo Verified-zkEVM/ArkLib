@@ -1159,6 +1159,21 @@ noncomputable def iteratedQuotientMap [NeZero ℓ] (i : Fin r) {destIdx : Fin r}
         _ = (normalizedW 𝔽q β destIdx).eval u := by rw [h_comp_eq]
   exact ⟨y, h_mem⟩
 
+omit [DecidableEq 𝔽q] hF₂ in
+lemma iteratedQuotientMap_congr_k
+    (i : Fin r) {destIdx : Fin r} {k₁ k₂ : ℕ}
+    (hk : k₁ = k₂)
+    (h_destIdx₁ : destIdx.val = i.val + k₁)
+    (h_destIdx₂ : destIdx.val = i.val + k₂)
+    (h_destIdx_le : destIdx.val ≤ ℓ)
+    (x : sDomain 𝔽q β h_ℓ_add_R_rate i) :
+    iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+      (i := i) (k := k₁) (h_destIdx := h_destIdx₁) (h_destIdx_le := h_destIdx_le) x
+    =
+    iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+      (i := i) (k := k₂) (h_destIdx := h_destIdx₂) (h_destIdx_le := h_destIdx_le) x := by
+  subst hk; rfl
+
 omit [DecidableEq 𝔽q] [NeZero ℓ] hF₂ h_β₀_eq_1 in
 /-- The evaluation of qMap on an element from sDomain i belongs to sDomain (i+1).
 This is a key property that qMap maps between successive domains. -/
