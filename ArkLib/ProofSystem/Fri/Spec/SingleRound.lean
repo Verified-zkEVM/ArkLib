@@ -843,7 +843,8 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
                         ⟨_, by rw [←sum_add_one] at this; exact this⟩
                     else
                       pure (p.eval (s₀.1.1 ^ (2 ^ (s (Fin.last k)).1)))
-                  guard (RoundConsistency.roundConsistencyCheck x₀ pts β)
+                  guard (RoundConsistency.roundConsistencyCheck x₀ 
+                          (List.get pts) β)
               )
     pure prevChallenges
   embed :=
