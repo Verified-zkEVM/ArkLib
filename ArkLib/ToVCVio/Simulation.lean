@@ -71,6 +71,60 @@ postfix:102 ".neverFails" => NeverFail
 postfix:102 ".impl" => QueryImpl.mapQuery
 postfix:102 ".OracleQuery" => OracleQuery
 
+section ProbOutputNone
+
+variable {m : Type u → Type v} [Monad m] [HasEvalSPMF m] {α β : Type u}
+
+/--
+`probOutput (mx >>= my) none = 0` iff every branch reachable from `mx`
+has zero probability of returning `none`.
+-/
+@[simp]
+lemma probOutput_none_bind_eq_zero_iff
+    (mx : m α) (my : α → m (Option β)) :
+    probOutput (m := m) (α := Option β) (mx := mx >>= my) (none : Option β) = 0 ↔
+      ∀ x ∈ support mx, probOutput (m := m) (α := Option β) (mx := my x) (none : Option β) = 0 := by
+  constructor
+  · intro h x hx
+    apply (probOutput_eq_zero_iff (my x) (none : Option β)).2
+    intro hnone
+    have hnone_bind : (none : Option β) ∉ support (mx >>= my) :=
+      (probOutput_eq_zero_iff (mx >>= my) (none : Option β)).1 h
+    exact hnone_bind <|
+      (mem_support_bind_iff (mx := mx) (my := my)
+        (y := (none : Option β))).2 ⟨x, hx, hnone⟩
+  · intro h
+    apply (probOutput_eq_zero_iff (mx >>= my) (none : Option β)).2
+    intro hnone_bind
+    rcases (mem_support_bind_iff (mx := mx) (my := my)
+      (y := (none : Option β))).1 hnone_bind with ⟨x, hx, hnone⟩
+    have hnone_x : (none : Option β) ∉ support (my x) :=
+      (probOutput_eq_zero_iff (my x) (none : Option β)).1 (h x hx)
+    exact hnone_x hnone
+
+/--
+Explicit `OptionT` version of `probOutput_none_bind_eq_zero_iff`.
+This avoids relying on reducibility of `OptionT` during inference.
+-/
+@[simp]
+lemma OptionT.probOutput_none_bind_eq_zero_iff
+    (mx : OptionT m α) (my : α → OptionT m β) :
+    probOutput (m := m) (α := Option β)
+      (mx := OptionT.run (OptionT.bind mx my)) (none : Option β) = 0 ↔
+      ∀ x ∈ support (m := m) (α := Option α) (mx := OptionT.run mx),
+        probOutput (m := m) (α := Option β)
+          (mx := match x with
+            | some a => OptionT.run (my a)
+            | none => (pure none : m (Option β))) (none : Option β) = 0 := by
+  simpa only [OptionT.bind, OptionT.run, OptionT.mk] using
+    (_root_.probOutput_none_bind_eq_zero_iff
+      (mx := OptionT.run mx)
+      (my := fun x : Option α => match x with
+        | some a => OptionT.run (my a)
+        | none => (pure none : m (Option β))))
+
+end ProbOutputNone
+
 -- lemma probFailure_eq_zero_iff {m : Type u → Type v} [Monad m] [HasEvalSPMF m]
 --     {α : Type u} (mx : m α) : Pr[⊥ | mx] = 0 ↔ NeverFail mx := by
 --   exact (HasEvalSPMF.neverFail_iff mx).symm
@@ -124,21 +178,6 @@ def QueryImpl.lift {ι₁ ι₂ : Type u} {spec₁ : OracleSpec ι₁} {spec₂ 
     QueryImpl spec₁ m :=
     fun (q : spec₁.Domain) => so.mapQuery (liftM (query q) : OracleQuery spec₂ _)
 
-/-- If a computation is lifted from a sub-specification, we can commute the
-  lifting and the simulation. -/
-@[simp]
-lemma simulateQ_liftComp {ι₁ ι₂ : Type u} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
-    [h : MonadLift (OracleQuery spec₁) (OracleQuery spec₂)] (so : QueryImpl spec₂ m)
-    (oa : OracleComp spec₁ α) :
-    simulateQ so (liftComp oa spec₂) = simulateQ (QueryImpl.lift so) oa :=
-by
-  induction oa using OracleComp.inductionOn with
-  | pure x => simp only [liftComp_eq_liftM, liftM_pure, simulateQ_pure]
-  | query_bind t oa ih =>
-    simp [liftComp_eq_liftM, liftM_bind, simulateQ_bind, simulateQ_query,
-      OracleQuery.input_query, OracleQuery.cont_query, QueryImpl.lift, id_map]
-    sorry
-
 /--
 **Step 2 Helper: Collapse Monadic Bind and Composition**
 This lemma resolves the pattern `pure x >>= (simulateQ ∘ f)` that often appears
@@ -152,6 +191,98 @@ lemma bind_pure_simulateQ_comp
     {α β : Type v} (x : α) (f : α → OracleComp spec β) :
     (pure x >>= (simulateQ so ∘ f)) = simulateQ so (f x) := by rfl
 
+@[simp]
+lemma OptionT.bind_pure_simulateQ_comp
+    {ι ι' : Type*} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+    (so : QueryImpl spec (OracleComp spec'))
+    {α β : Type v} (x : α) (f : α → OptionT (OracleComp spec) β) :
+    OptionT.bind (m := OracleComp spec') (OptionT.pure x) (simulateQ so ∘ f) =
+      simulateQ so (f x) := by
+  rfl
+
+@[simp]
+lemma OptionT.simulateQ_bind
+    {ι ι' : Type*} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+    (so : QueryImpl spec (OracleComp spec'))
+    (mx : OptionT (OracleComp spec) α) (my : α → OptionT (OracleComp spec) β) :
+    simulateQ so (OptionT.bind mx my) =
+      OptionT.bind (simulateQ so mx) (fun x => simulateQ so (my x)) := by
+  change
+    simulateQ so (mx >>= fun z => match z with | some a => my a | none => pure none) =
+      OptionT.bind (simulateQ so mx) (fun x => simulateQ so (my x))
+  rw [_root_.simulateQ_bind]
+  simp only [OptionT.bind, OptionT.mk]
+  apply bind_congr
+  intro z
+  cases z <;> simp only [simulateQ_pure]
+
+@[simp]
+lemma OptionT.simulateQ_pure
+    {ι ι' : Type*} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+    (so : QueryImpl spec (OracleComp spec')) (x : α) :
+    simulateQ so (OptionT.pure x : OptionT (OracleComp spec) α) =
+      (OptionT.pure x : OptionT (OracleComp spec') α) := by
+  rfl
+
+@[simp]
+lemma OptionT.simulateQ_failure
+    {ι ι' : Type*} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+    (so : QueryImpl spec (OracleComp spec')) :
+    simulateQ so (failure : OptionT (OracleComp spec) α) =
+      (failure : OptionT (OracleComp spec') α) := by
+  rfl
+
+@[simp]
+lemma OptionT.simulateQ_ite
+    {ι ι' : Type*} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+    (so : QueryImpl spec (OracleComp spec'))
+    (p : Prop) [Decidable p]
+    (mx mx' : OptionT (OracleComp spec) α) :
+    simulateQ so (ite p mx mx') = ite p (simulateQ so mx) (simulateQ so mx') := by
+  split_ifs <;> rfl
+
+@[simp]
+lemma OptionT.simulateQ_map
+    {ι ι' : Type*} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+    (so : QueryImpl spec (OracleComp spec')) (f : α → β)
+    (mx : OptionT (OracleComp spec) α) :
+    simulateQ so ((f <$> mx : OptionT (OracleComp spec) β)) =
+      (f <$> (simulateQ so (OptionT.run mx) : OptionT (OracleComp spec') α) :
+        OptionT (OracleComp spec') β) := by
+  change simulateQ so ((f <$> mx).run) =
+    (f <$> (simulateQ so (OptionT.run mx) : OptionT (OracleComp spec') α) :
+      OptionT (OracleComp spec') β)
+  rw [OptionT.run_map]
+  change simulateQ so (Option.map f <$> OptionT.run mx) =
+    ((f <$> (simulateQ so (OptionT.run mx) : OptionT (OracleComp spec') α) :
+      OptionT (OracleComp spec') β)).run
+  rw [OptionT.run_map]
+  exact (_root_.simulateQ_map (impl := so) (mx := OptionT.run mx) (f := Option.map f))
+
+@[simp]
+lemma OptionT.support_map_run
+    {ι : Type*} {spec : OracleSpec ι} (f : Option α → Option β)
+    (mx : OptionT (OracleComp spec) α) :
+    support (m := OracleComp spec) (α := Option β) (f <$> mx) =
+      f '' (support (m := OracleComp spec) (α := Option α) mx) := by
+  exact (_root_.support_map (m := OracleComp spec) (f := f) (mx := mx))
+
+@[simp]
+lemma OptionT.support_ite_run
+    {ι : Type*} {spec : OracleSpec ι}
+    (p : Prop) [Decidable p] (mx mx' : OptionT (OracleComp spec) α) :
+    support (m := OracleComp spec) (α := Option α) (ite p mx mx') =
+      ite p (support (m := OracleComp spec) (α := Option α) mx)
+        (support (m := OracleComp spec) (α := Option α) mx') := by
+  split_ifs <;> rfl
+
+@[simp]
+lemma OptionT.support_failure_run
+    {ι : Type*} {spec : OracleSpec ι} :
+    support (m := OracleComp spec) (α := Option α)
+      ((failure : OptionT (OracleComp spec) α)) = {(none : Option α)} := by
+  rfl
+
 end SimulationLemmas
 
 section SimulationSafety
@@ -163,28 +294,11 @@ lemma probFailure_challengeQueryImpl_run {n : ℕ} {pSpec : ProtocolSpec n} {σ 
     [∀ i, SampleableType (pSpec.Challenge i)]
     (q : OracleQuery ([pSpec.Challenge]ₒ'challengeOracleInterface) β) (s : σ) :
     Pr[⊥ | (liftM (QueryImpl.mapQuery challengeQueryImpl q) : StateT σ ProbComp β).run s] = 0 := by
-  rcases q with ⟨⟨i, u⟩, _⟩
-  cases u
-  -- rw [StateT.run_liftM_lib]
-  unfold challengeQueryImpl
-  sorry
-
-/-- Challenge query implementations have full support (stateful version).
-    The first component of the result has the same support as the spec. -/
-@[simp]
-lemma support_challengeQueryImpl_run_eq {n : ℕ} {pSpec : ProtocolSpec n} {σ : Type}
-    [∀ i, SampleableType (pSpec.Challenge i)]
-    (q : OracleQuery ([pSpec.Challenge]ₒ'challengeOracleInterface) β) (s : σ) :
-    Prod.fst <$> support
-      ((liftM (QueryImpl.mapQuery challengeQueryImpl q) : StateT σ ProbComp β).run s) =
-    support (liftM q : OracleComp ([pSpec.Challenge]ₒ'challengeOracleInterface) β) := by
   rcases q with ⟨⟨i, u⟩, cont⟩
   cases u
-  -- rw [StateT.run_liftM_lib]
   unfold challengeQueryImpl
-  sorry
-
-
+  simp only [StateT.run, liftM, ChallengeIdx, Challenge, ofPFunctor_toPFunctor,
+    HasEvalPMF.probFailure_eq_zero]
 
 /-- **Generic Safety Preservation Lemma for Stateful Implementations**
 
@@ -488,21 +602,9 @@ end TranscriptLemmas
 section SupportPreservation
 
 variable {ι : Type} {spec : OracleSpec ι} [spec.Fintype] {α β : Type}
-  {m : Type → Type} [AlternativeMonad m] [LawfulAlternative m]
+  {m : Type → Type} -- [AlternativeMonad m] [LawfulAlternative m]
 
-omit [spec.Fintype] in
-/-- The support of a lifted computation is the same as the original. -/
-@[simp]
-lemma support_liftComp {ι' : Type} {superSpec : OracleSpec ι'}
-    [MonadLift (OracleQuery spec) (OracleQuery superSpec)]
-    (oa : OracleComp spec α) : support ((liftComp oa superSpec)) = support oa := by
-  induction oa using OracleComp.induction with
-  | pure a => simp
-  | query_bind t oa ih =>
-    simp only [liftComp_bind, support_bind, ih]
-    congr 1
-    rw [liftComp_eq_liftM]
-    sorry
+#check support_liftM
 
 omit [spec.Fintype] in
 @[simp]
@@ -517,6 +619,88 @@ lemma support_simulateQ_eq (so : QueryImpl spec ProbComp) (oa : OracleComp spec 
     congr 1
     simp only [simulateQ_query, OracleQuery.input_query, OracleQuery.cont_query, id_map,
       (QueryImpl.mapQuery_query so t).symm, h_supp (query t)]
+
+/-! Same as `support_simulateQ_eq` but for implementation in `OracleComp spec` (e.g. liftComp). -/
+omit [spec.Fintype] in
+@[simp]
+lemma support_simulateQ_eq_OracleComp_of_superSpec {ι' : Type} {superSpec : OracleSpec ι'}
+    (so : QueryImpl superSpec (OracleComp spec)) (oa : OracleComp superSpec α)
+    (h_supp : ∀ {β} (q : OracleQuery superSpec β),
+      support ((QueryImpl.mapQuery so q)) = support ((liftM q : OracleComp superSpec β))) :
+    support (simulateQ so oa) = support oa := by
+  induction oa using OracleComp.induction with
+  | pure a => simp
+  | query_bind t oa ih =>
+    simp only [simulateQ_bind, support_bind, ih]
+    congr 1
+    simp only [simulateQ_query, OracleQuery.input_query, OracleQuery.cont_query, id_map,
+      (QueryImpl.mapQuery_query so t).symm, h_supp (query t)]
+
+/-! Support of `OptionT.run oa` equals the support of the underlying `oa`. -/
+omit [spec.Fintype] in
+@[simp]
+lemma OptionT.support_run_eq
+    (oa : OracleComp spec (Option α)) :
+    support (m := OracleComp spec) (α := Option α) (OptionT.run oa) =
+    support (m := OracleComp spec) (α := Option α) oa := by rfl
+
+/-
+  `spec.Fintype` is not needed for this support-level bridge.
+-/
+omit [spec.Fintype] in
+/-- OptionT run-level wrapper of `support_simulateQ_eq`. -/
+@[simp]
+lemma OptionT.support_run_simulateQ_eq_of_superSpec {ι' : Type}
+    {superSpec : OracleSpec ι'}
+    (so : QueryImpl superSpec (OracleComp spec)) (oa : OptionT (OracleComp superSpec) α)
+    (h_supp : ∀ {β} (q : OracleQuery superSpec β),
+      support ((QueryImpl.mapQuery so q)) = support ((liftM q : OracleComp superSpec β))) :
+    support (m := OracleComp spec) (α := Option α)
+      (OptionT.run (m := OracleComp spec) (simulateQ so oa)) =
+    support (m := OracleComp superSpec) (α := Option α) (OptionT.run oa) := by
+  have h_res :=
+    (support_simulateQ_eq_OracleComp_of_superSpec (spec := spec) (superSpec := superSpec) (so := so)
+      (oa := oa) (h_supp := h_supp))
+  rw [OptionT.support_run_eq, OptionT.support_run_eq]
+  rw [h_res]
+
+-- omit [spec.Fintype] in
+-- /-- Membership form of `OptionT.support_run_simulateQ_eq`. -/
+-- @[simp]
+-- lemma OptionT.mem_support_run_simulateQ_iff
+--     (so : QueryImpl spec ProbComp) (oa : OptionT (OracleComp spec) α)
+--     (h_supp : ∀ {β} (q : OracleQuery spec β),
+--       support ((QueryImpl.mapQuery so q)) = support ((liftM q : OracleComp spec β)))
+--     (x : Option α) :
+--     x ∈ support (m := ProbComp) (α := Option α)
+--       (OptionT.run (simulateQ so oa : OptionT ProbComp α)) ↔
+--       x ∈ support (m := OracleComp spec) (α := Option α) (OptionT.run oa) := by
+--   simp [support_simulateQ_eq (spec := spec) (so := so) (oa := OptionT.run oa) (h_supp := h_supp)]
+
+
+/-- Challenge query implementations have full support (stateful version).
+    The first component of the result has the same support as the spec. -/
+@[simp]
+lemma support_challengeQueryImpl_run_eq {n : ℕ} {pSpec : ProtocolSpec n} {σ : Type}
+    [∀ i, SampleableType (pSpec.Challenge i)]
+    (q : OracleQuery ([pSpec.Challenge]ₒ'challengeOracleInterface) β) (s : σ) :
+    Prod.fst <$> support
+      ((liftM (QueryImpl.mapQuery challengeQueryImpl q) : StateT σ ProbComp β).run s) =
+    support (liftM q : OracleComp ([pSpec.Challenge]ₒ'challengeOracleInterface) β) := by
+  rcases q with ⟨⟨i, u⟩, cont⟩
+  cases u
+  simp only [challengeQueryImpl, QueryImpl.mapQuery, OracleQuery.input,
+    ChallengeIdx, Challenge, ofPFunctor_toPFunctor, support_liftM, Set.fmap_eq_image]
+  change Prod.fst '' ((fun a => (a, s)) <$> _).support = _
+  rw [support_map, Set.image_image]
+  simp only [Set.image_id']
+  -- monadLift : ProbComp → ProbComp is id by instMonadLiftSelf
+  simp only [OracleQuery.cont_apply, liftM_map, support_map]
+  dsimp only [liftM, instMonadLiftTOfOracleQuery, liftComp]
+  rw [support_simulateQ_eq _ _ (fun q => ?_)]
+  · simp only [support_uniformSample (α := pSpec.Challenge i), Challenge, Set.image_univ]
+  · simp only [QueryImpl.mapQuery, support_map, support_liftM, OracleQuery.input_query,
+    OracleQuery.cont_query, Set.range_id, Set.image_univ]
 
 /-- **Helper: Support of run' for stateful simulateQ**
 
@@ -893,6 +1077,65 @@ lemma simulateQ_simOracle2_lift_liftComp_query_T2
     simulateQ (OracleInterface.simOracle2 oSpec t₁ t₂)
       ((OracleComp.lift (query ⟨j, pt⟩ : OracleQuery [T₂]ₒ _)).liftComp (oSpec + ([T₁]ₒ + [T₂]ₒ))) =
     pure (OracleInterface.answer (t₂ j) pt) := by
+  rfl
+
+/-- `liftM` variant of `simulateQ_simOracle2_lift_liftComp_query_T1`. -/
+@[simp]
+lemma simulateQ_simOracle2_liftM_query_T1
+    {ι : Type} {oSpec : OracleSpec ι}
+    {ι₁ : Type} {T₁ : ι₁ → Type} [∀ i, OracleInterface (T₁ i)]
+    {ι₂ : Type} {T₂ : ι₂ → Type} [∀ i, OracleInterface (T₂ i)]
+    (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i)
+    (j : ι₁) (pt : OracleInterface.Query (T₁ j)) :
+    simulateQ (OracleInterface.simOracle2 oSpec t₁ t₂)
+      (liftM (query ⟨j, pt⟩ : OracleQuery [T₁]ₒ _) :
+        OracleComp (oSpec + ([T₁]ₒ + [T₂]ₒ)) _) =
+    pure (OracleInterface.answer (t₁ j) pt) := by
+  rfl
+
+/-- `liftM` variant of `simulateQ_simOracle2_lift_liftComp_query_T2`.
+This is the form that matches terms like `simulateQ ... (liftM (query ⟨j, pt⟩))`. -/
+@[simp]
+lemma simulateQ_simOracle2_liftM_query_T2
+    {ι : Type} {oSpec : OracleSpec ι}
+    {ι₁ : Type} {T₁ : ι₁ → Type} [∀ i, OracleInterface (T₁ i)]
+    {ι₂ : Type} {T₂ : ι₂ → Type} [∀ i, OracleInterface (T₂ i)]
+    (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i)
+    (j : ι₂) (pt : OracleInterface.Query (T₂ j)) :
+    simulateQ (OracleInterface.simOracle2 oSpec t₁ t₂)
+      (liftM (query ⟨j, pt⟩ : OracleQuery [T₂]ₒ _) :
+        OracleComp (oSpec + ([T₁]ₒ + [T₂]ₒ)) _) =
+    pure (OracleInterface.answer (t₂ j) pt) := by
+  rfl
+
+/-- OptionT `liftM` variant of `simulateQ_simOracle2_liftM_query_T1`.
+This matches goals where the lifted query lives in `OptionT (OracleComp ...)`. -/
+@[simp]
+lemma OptionT.simulateQ_simOracle2_liftM_query_T1
+    {ι : Type} {oSpec : OracleSpec ι}
+    {ι₁ : Type} {T₁ : ι₁ → Type} [∀ i, OracleInterface (T₁ i)]
+    {ι₂ : Type} {T₂ : ι₂ → Type} [∀ i, OracleInterface (T₂ i)]
+    (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i)
+    (j : ι₁) (pt : OracleInterface.Query (T₁ j)) :
+    simulateQ (OracleInterface.simOracle2 oSpec t₁ t₂)
+      (liftM (query ⟨j, pt⟩ : OracleQuery [T₁]ₒ _) :
+        OptionT (OracleComp (oSpec + ([T₁]ₒ + [T₂]ₒ))) _) =
+    pure (some (OracleInterface.answer (t₁ j) pt)) := by
+  rfl
+
+/-- OptionT `liftM` variant of `simulateQ_simOracle2_liftM_query_T2`.
+This matches goals where the lifted query lives in `OptionT (OracleComp ...)`. -/
+@[simp]
+lemma OptionT.simulateQ_simOracle2_liftM_query_T2
+    {ι : Type} {oSpec : OracleSpec ι}
+    {ι₁ : Type} {T₁ : ι₁ → Type} [∀ i, OracleInterface (T₁ i)]
+    {ι₂ : Type} {T₂ : ι₂ → Type} [∀ i, OracleInterface (T₂ i)]
+    (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i)
+    (j : ι₂) (pt : OracleInterface.Query (T₂ j)) :
+    simulateQ (OracleInterface.simOracle2 oSpec t₁ t₂)
+      (liftM (query ⟨j, pt⟩ : OracleQuery [T₂]ₒ _) :
+        OptionT (OracleComp (oSpec + ([T₁]ₒ + [T₂]ₒ))) _) =
+    pure (some (OracleInterface.answer (t₂ j) pt)) := by
   rfl
 
 end SimOracle2Lemmas

@@ -11,6 +11,9 @@ namespace Binius.BinaryBasefold
 /-! ## Protocol Specs for Binary Basefold
 This module contains the protocol specs, oracle index bounds,
 instances of OracleInterface and SampleableType for the Binary Basefold protocol.
+
+**NOTE**: for `∀ i, OracleInterface ((pSpec ...).Challenge i)`, we must use
+  `ProtocolSpec.challengeOracleInterface` to avoid conflict
 -/
 
 noncomputable section
@@ -178,7 +181,6 @@ lemma isCommitmentRoundOfNonLastBlock (bIdx : Fin (ℓ / ϑ - 1)) :
     rw [Nat.add_assoc, Nat.sub_add_cancel (by exact NeZero.one_le)];
     conv_lhs => enter [2]; rw [←Nat.one_mul (n:=ϑ)]
     rw [←Nat.add_mul];
-
   have hdivLe: ϑ ∣ ↑bIdx * ϑ + (ϑ - 1) + 1 := by
     rw [h_eq]
     exact Nat.dvd_mul_left ϑ (↑bIdx + 1)
@@ -270,9 +272,12 @@ def fullPSpec := (pSpecCoreInteraction 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_
 
 /-! ## Oracle Interface instances for Messages-/
 
-instance : ∀ j, OracleInterface ((pSpecFold (L:=L)).Message j) -- this cover .Message and .Challenge
+instance : ∀ j, OracleInterface ((pSpecFold (L:=L)).Message j) -- this cover .Message only
   | ⟨0, h⟩ => by exact OracleInterface.instDefault -- h_i(X) polynomial
   | ⟨1, _⟩ => by exact OracleInterface.instDefault -- challenge r'_i
+
+instance : ∀ j, OracleInterface ((pSpecFold (L := L)).Challenge j) :=
+  ProtocolSpec.challengeOracleInterface
 
 instance : ∀ j, OracleInterface ((pSpecRelay).Message j)
   | ⟨x, h⟩ => by exact x.elim0
@@ -322,11 +327,14 @@ instance : ∀ i, OracleInterface ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message i) := fun _ => OracleInterface.instDefault
 
 instance : ∀ i, OracleInterface ((pSpecQuery 𝔽q β γ_repetitions
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := fun _ => OracleInterface.instDefault
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) :=
+  ProtocolSpec.challengeOracleInterface
 
-instance : ∀ i, Fintype ((pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := by sorry
+instance : ∀ i, Fintype ((pSpecQuery 𝔽q β γ_repetitions
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := by sorry
 
-instance : ∀ i, Inhabited ((pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := by sorry
+instance : ∀ i, Inhabited ((pSpecQuery 𝔽q β γ_repetitions
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := by sorry
 
 instance : ∀ j, OracleInterface ((fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message j) := instOracleInterfaceMessageAppend
@@ -342,14 +350,14 @@ instance instOracleStatementBinaryBasefold {i : Fin (ℓ + 1)} :
     toOC.impl := fun queryPoint => do return (← read) queryPoint
   }
 
-omit [CharP L 2] [SelectableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] hdiv in
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] hdiv in
 @[simp]
 lemma instOracleStatementBinaryBasefold_heq_of_fin_eq {i₁ i₂ : Fin (ℓ + 1)} (h : i₁ = i₂) :
     HEq (instOracleStatementBinaryBasefold 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i₁))
       (instOracleStatementBinaryBasefold 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := i₂)) := by subst h; rfl
 
-/-! ## SelectableType instances -/
+/-! ## SampleableType instances -/
 
 instance {i : Fin ℓ} : ∀ j, SampleableType ((pSpecCommit 𝔽q β
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j)
@@ -404,7 +412,7 @@ instance : ∀ i, SampleableType ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i)
   | ⟨i, hi⟩ => by
     unfold ProtocolSpec.Challenge
-    simp only [pSpecQuery]
+    simp only
     have h_i: i = 0 := by omega
     rw [h_i]
     simp only [Fin.isValue, Matrix.cons_val_fin_one]
@@ -414,10 +422,10 @@ instance : ∀ i, SampleableType ((pSpecQuery 𝔽q β γ_repetitions
       exact Nat.lt_add_right 𝓡 h_ℓ_gt_0
     exact instSampleableTypeFinFunc
 
-instance : ∀ j, SelectableType ((fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ)
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge j) := instSelectableTypeChallengeAppend
+instance : ∀ j, SampleableType ((fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ)
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge j) := instSampleableTypeChallengeAppend
 
-/-! ## Additional OracleInterface and FiniteRange instances -/
+/-! ## Additional OracleInterface and Fintype instances -/
 
 /-- OracleInterface instance for the matrix-indexed message type family using instDefault. -/
 instance : ∀ i, OracleInterface (![↥L⦃≤ 2⦄[X], L] i)
@@ -425,37 +433,57 @@ instance : ∀ i, OracleInterface (![↥L⦃≤ 2⦄[X], L] i)
   | ⟨1, h⟩ => by exact OracleInterface.instDefault  -- Field element message
   | ⟨n+2, h⟩ => by omega  -- Only 2 elements in the matrix
 
-/-! ## FiniteRange instances for oracle specifications -/
+/-! ## Fintype & Inhabited instances for oracle specifications -/
+
+instance instInhabitedOracleSpecEmpty : (([]ₒ : OracleSpec PEmpty).Inhabited) where
+  inhabited_B i := nomatch i
+
+instance instFintypeOracleSpecEmpty : (([]ₒ : OracleSpec PEmpty).Fintype) where
+  fintype_B i := nomatch i
 
 instance : ∀ i, Fintype ((pSpecFold (L := L)).Challenge i) := by sorry
 instance : ∀ i, Inhabited ((pSpecFold (L := L)).Challenge i) := by sorry
-instance : ∀ i, ∀ j, Fintype ((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j) := by sorry
-instance : ∀ i, ∀ j, Inhabited ((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j) := by sorry
 
-/-- FiniteRange instance for pSpecFold message oracle specification.
-    The messages are polynomials `L⦃≤ 2⦄[X]` and field elements `L`,
-    both of which use `OracleInterface.instDefault` (Query = Unit, Response = Message type).
-    The response types are the polynomial and field element themselves, both finite and inhabited. -/
-instance : ([(pSpecFold (L:=L)).Message]ₒ).FiniteRange := by sorry
+/-- Fintype/Inhabited for the challenge oracle spec so unroll_*_reduction_perfectCompleteness can use Pr[...]. -/
+instance instFintypePSpecFoldChallenge : [(pSpecFold (L := L)).Challenge]ₒ.Fintype := by sorry
+instance instInhabitedPSpecFoldChallenge : [(pSpecFold (L := L)).Challenge]ₒ.Inhabited := by sorry
+
+instance : ∀ i, ∀ j, Fintype
+  ((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j) := by sorry
+instance : ∀ i, ∀ j, Inhabited
+  ((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j) := by sorry
+
+/-- Fintype instance for pSpecFold message oracle specification.
+The messages are polynomials `L⦃≤ 2⦄[X]` and field elements `L`,
+both of which use `OracleInterface.instDefault` (Query = Unit, Response = Message type).
+The response types are the polynomial and field element themselves,
+  both finite and inhabited. -/
+instance : ([(pSpecFold (L:=L)).Message]ₒ).Fintype := by sorry
 
 instance instOracleStatementFiniteRange {i : Fin (ℓ + 1)} :
-  [OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i]ₒ.FiniteRange := by sorry
+  [OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i]ₒ.Fintype := by sorry
 
 instance : ∀ i, Fintype ((pSpecFinalSumcheckStep (L:=L)).Challenge i) := by sorry
   -- (i : pSpecFinalSumcheckStep.ChallengeIdx) → Fintype (pSpecFinalSumcheckStep.Challenge i)
 
-instance instFiniteRangePSpecFinalSumcheckStepChallenge : [pSpecFinalSumcheckStep (L := L).Challenge]ₒ.FiniteRange := by sorry
+instance instFintypePSpecFinalSumcheckStepChallenge :
+  [pSpecFinalSumcheckStep (L := L).Challenge]ₒ.Fintype := by sorry
 
-instance instFiniteRangePSpecQueryChallenge : [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge]ₒ.FiniteRange := by sorry
+instance instFintypePSpecQueryChallenge : [(pSpecQuery 𝔽q β γ_repetitions
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge]ₒ.Fintype := by sorry
 
-instance instFiniteRangeOracleStatementFinLast : [fun j => OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (Fin.last ℓ) j]ₒ.FiniteRange := by sorry
+instance instFintypeOracleStatementFinLast :
+  [fun j => OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (Fin.last ℓ) j]ₒ.Fintype := by sorry
 
-instance instFiniteRangePSpecQueryMessage : [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ.FiniteRange := by sorry
+instance instFintypePSpecQueryMessage :
+  [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ.Fintype := by sorry
 
-instance instFiniteRangePSpecFinalSumcheckStepMessage : [(pSpecFinalSumcheckStep (L := L)).Message]ₒ.FiniteRange := by sorry
+instance instFintypePSpecFinalSumcheckStepMessage :
+  [(pSpecFinalSumcheckStep (L := L)).Message]ₒ.Fintype := by sorry
 
-instance instInhabitedPSpecFinalSumcheckStepChallenge : ∀ i, Inhabited ((pSpecFinalSumcheckStep (L:=L)).Challenge i) := by sorry
+instance instInhabitedPSpecFinalSumcheckStepChallenge : ∀ i, Inhabited
+  ((pSpecFinalSumcheckStep (L:=L)).Challenge i) := by sorry
 
 end Pspec
 

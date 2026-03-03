@@ -101,7 +101,7 @@ def extractSuffixFromChallenge (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by o
   iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := ⟨0, by omega⟩) (k := destIdx.val)
     (h_destIdx := by simp only [zero_add]) (h_destIdx_le := h_destIdx_le) (x := v)
 
-omit [CharP L 2] [SelectableType L] [DecidableEq 𝔽q] hF₂ [NeZero 𝓡] in
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ [NeZero 𝓡] in
 /-- **Congruence Lemma for Challenge Suffixes**:
 Allows proving equality between two suffix extractions when the destination indices
 are proven equal (`destIdx = destIdx'`), handling the necessary type casting. -/
@@ -115,7 +115,7 @@ lemma extractSuffixFromChallenge_congr_destIdx
     cast (by rw [h_idx_eq]) (extractSuffixFromChallenge 𝔽q β v destIdx' h_le') := by
   subst h_idx_eq; rfl
 
-omit [CharP L 2] [SelectableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
 /-- **First Oracle Equals Polynomial Oracle Function**:
 When `strictOracleFoldingConsistencyProp` holds, the first oracle (`getFirstOracle`) equals
 the polynomial oracle function `f₀` derived from the multilinear polynomial `t`.
@@ -436,7 +436,7 @@ This encapsulates the pure logic of the query phase:
 noncomputable def queryPhaseLogicStep :
     CoreInteraction.OracleAwareReductionLogicStep
       -- oSpec is the base/shared oracle (empty for query phase - no random oracles)
-      -- The structure internally uses oSpec ++ₒ ([OracleIn]ₒ ++ₒ [pSpec.Message]ₒ)
+      -- The structure internally uses oSpec + ([OracleIn]ₒ + [pSpec.Message]ₒ)
       (oSpec := []ₒ)
       (StmtIn := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
       (WitIn := Unit)
@@ -538,7 +538,7 @@ noncomputable def queryOracleVerifier :
     (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
 
   verify := fun stmtIn challenges => do
-    -- ⊢ OracleComp ([]ₒ ++ₒ ([OracleStatement 𝔽q β ϑ (Fin.last ℓ)]ₒ ++ₒ [(pSpecQuery 𝔽q β γ_repetitions).Message]ₒ)) Bool
+    -- ⊢ OracleComp ([]ₒ + ([OracleStatement 𝔽q β ϑ (Fin.last ℓ)]ₒ + [(pSpecQuery 𝔽q β γ_repetitions).Message]ₒ)) Bool
     let transcript := FullTranscript.mk1 (pSpec := pSpecQuery 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) (challenges ⟨0, by rfl⟩)
     let logic := queryPhaseLogicStep 𝔽q β (ϑ:=ϑ) γ_repetitions
@@ -577,7 +577,7 @@ noncomputable def queryOracleProof : OracleProof
     (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   queryOracleReduction 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
 
-omit [CharP L 2] [SelectableType L] in
+omit [CharP L 2] [SampleableType L] in
 lemma mem_support_queryFiberPoints
     -- The number of oracles in query phase is toCodewordsCount(ℓ) = ℓ/ϑ
     {oraclePositionIdx : Fin (ℓ / ϑ)} (v : sDomain 𝔽q β h_ℓ_add_R_rate 0)
@@ -593,7 +593,7 @@ lemma mem_support_queryFiberPoints
       let so := OracleInterface.simOracle2 []ₒ oStmtIn transcript.messages
       f_i_on_fiber ∈
       (simulateQ so ((queryFiberPoints 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oraclePositionIdx v).liftComp
-        ([]ₒ ++ₒ ([OracleStatement 𝔽q β ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ ++ₒ
+        ([]ₒ + ([OracleStatement 𝔽q β ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ +
           [fun (i : (pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).MessageIdx) ↦ (pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Type ↑i]ₒ)))).support):
     let k_th_oracleIdx: Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)) :=
       ⟨oraclePositionIdx, by simp only [toOutCodewordsCount, Fin.val_last,
@@ -663,7 +663,7 @@ lemma query_phase_consistency_guard_safe
       let so := OracleInterface.simOracle2 []ₒ oStmtIn transcript.messages
       f_i_on_fiber ∈
       (simulateQ so ((queryFiberPoints 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k v).liftComp
-        ([]ₒ ++ₒ ([OracleStatement 𝔽q β ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ ++ₒ
+        ([]ₒ + ([OracleStatement 𝔽q β ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ +
           [fun (i : (pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).MessageIdx) ↦ (pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Type ↑i]ₒ)))).support) :
   let := k_mul_ϑ_lt_ℓ (k := k)
   c_k = f_i_on_fiber.get (extractMiddleFinMask 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (v := v) (i := ⟨k.val * ϑ, by omega⟩) (steps := ϑ)) := by
@@ -734,7 +734,7 @@ lemma query_phase_step_preserves_fold
       let so := OracleInterface.simOracle2 []ₒ oStmtIn transcript.messages
       s' ∈
       (simulateQ so ((checkSingleFoldingStep 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k c_k v stmtIn).liftComp
-        ([]ₒ ++ₒ ([OracleStatement 𝔽q β ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ ++ₒ
+        ([]ₒ + ([OracleStatement 𝔽q β ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ +
           [fun (i : (pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).MessageIdx) ↦ (pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Type ↑i]ₒ)))).support) :
     let := k_succ_mul_ϑ_le_ℓ (k := k)
     s' = iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (steps := (k.val + 1) * ϑ)
@@ -1276,8 +1276,8 @@ lemma checkSingleRepetition_probFailure_eq_zero
         -- where the forInStep.yield has spec `OracleComp [OracleStatement 𝔽q β ϑ (Fin.last ℓ)]ₒ (ForInStep L)`
         -- [⊥|simulateQ so
         --     ((ForInStep.yield <$> checkSingleFoldingStep 𝔽q β ((List.finRange (ℓ / ϑ)).get k) c_k v stmtIn).liftComp
-        --       ([]ₒ ++ₒ
-        --         ([OracleStatement 𝔽q β ϑ (Fin.last ℓ)]ₒ ++ₒ
+        --       ([]ₒ +
+        --         ([OracleStatement 𝔽q β ϑ (Fin.last ℓ)]ₒ +
         --           [fun i ↦ ![Fin γ_repetitions → ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0)] ↑i]ₒ)))] =
         -- 0
         rw [simulateQ_liftComp]
@@ -1503,7 +1503,7 @@ theorem queryPhaseLogicStep_isStronglyComplete :
   let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
 
   -- 2. Define the honest oracle simulator
-  -- simOracle2 oSpec t₁ t₂ : SimOracle.Stateless (oSpec ++ₒ ([T₁]ₒ ++ₒ [T₂]ₒ)) oSpec
+  -- simOracle2 oSpec t₁ t₂ : SimOracle.Stateless (oSpec + ([T₁]ₒ + [T₂]ₒ)) oSpec
   -- This answers queries to OracleIn using oStmtIn and queries to Messages using transcript
   let so := OracleInterface.simOracle2 []ₒ oStmtIn transcript.messages
   -- We need to prove:
@@ -1614,7 +1614,7 @@ theorem queryOracleProof_perfectCompleteness {σ : Type}
     intro h_receiveChallengeFn h_receiveChallengeFn_support
 
     -- 1.C Handle the `let __discr ← proverOut ...`
-    -- Note: Use simp instead of rw to avoid typeclass diamond issues with FiniteRange instances
+    -- Note: Use simp instead of rw to avoid typeclass diamond issues with Fintype instances
     simp only [probFailure_liftComp]
     split;
     simp only [probFailure_pure, ChallengeIdx, liftComp_pure, support_pure,

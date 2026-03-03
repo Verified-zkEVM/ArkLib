@@ -4,28 +4,17 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 
-import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
-import ArkLib.Data.CodingTheory.ReedSolomon
+import ArkLib.Data.CodingTheory.Prelims
 import ArkLib.Data.FieldTheory.AdditiveNTT.AdditiveNTT
-import ArkLib.Data.MvPolynomial.Multilinear
-import CompPoly.Data.Vector.Basic
-import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
-import ArkLib.Data.Probability.Notation
-import ArkLib.Data.CodingTheory.InterleavedCode
-import ArkLib.Data.CodingTheory.ProximityGap.DG25
 import ArkLib.Data.Fin.BigOperators
+import ArkLib.Data.MvPolynomial.Multilinear
+import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 
-set_option maxHeartbeats 400000  -- Increase if needed
-set_option profiler true
-set_option profiler.threshold 50  -- Show anything taking over 10ms
 namespace Binius.BinaryBasefold
 
-open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
-  Binius.BinaryBasefold
+open OracleSpec ProtocolSpec Polynomial MvPolynomial Binius.BinaryBasefold
 open scoped NNReal
-open ReedSolomon Code BerlekampWelch Function
-open Finset AdditiveNTT Polynomial MvPolynomial Nat Matrix
-open ProbabilityTheory
+open Finset AdditiveNTT Nat Matrix
 
 /-
 ## Main definitions
@@ -139,12 +128,12 @@ lemma challengeTensorExpansionMatrix_mulVec_F₂_eq_Fin_merge_PO2 [CommRing L] (
   unfold Matrix.from4Blocks Fin.reindex Matrix.mulVec dotProduct
   -- Now unfold everything
   simp only [zero_apply, finCongr_symm, Function.comp_apply, finCongr_apply, dite_mul, zero_mul,
-    sum_dite_irrel, Fin.coe_cast]
+    sum_dite_irrel, Fin.val_cast]
   simp_rw [Fin.sum_univ_add]
   simp_rw [←Finset.sum_add_distrib]
   simp only [reduceAdd, reducePow, pow_zero, lt_one_iff, Fin.val_eq_zero_iff, Fin.isValue,
-    Nat.pow_zero, of_apply, dite_eq_ite, Fin.coe_castAdd, Fin.is_lt, ↓reduceDIte, Fin.eta,
-    Fin.natAdd_eq_addNat, Fin.coe_addNat, add_lt_iff_neg_right, not_lt_zero', add_zero,
+    Nat.pow_zero, of_apply, dite_eq_ite, Fin.val_castAdd, Fin.is_lt, ↓reduceDIte, Fin.eta,
+    Fin.natAdd_eq_addNat, Fin.val_addNat, add_lt_iff_neg_right, not_lt_zero', add_zero,
     add_tsub_cancel_right, zero_add]
 
 /-- **Challenge Tensor Expansion Decomposition Lemma (Vector-Matrix multiplication form)**
@@ -161,13 +150,13 @@ lemma challengeTensorExpansion_decompose_succ [CommRing L] (n : ℕ) (r : Fin (n
   unfold Matrix.from4Blocks
   by_cases h_colIdx_lt_2_pow_n : colIdx.val < 2 ^ n
   · simp only [reduceAdd, Fin.isValue, Fin.coe_ofNat_eq_mod, zero_mod, zero_lt_one, ↓reduceDIte,
-    Fin.coe_cast, h_colIdx_lt_2_pow_n, Fin.zero_eta, of_apply, mod_succ, lt_self_iff_false,
+    Fin.val_cast, h_colIdx_lt_2_pow_n, Fin.zero_eta, of_apply, mod_succ, lt_self_iff_false,
     zero_apply, mul_zero, add_zero]
     rw [multilinearWeight_succ_lower_half (r := r) (i := colIdx)
       (h_lt := h_colIdx_lt_2_pow_n), mul_comm]
   · have h_ne_lt_2_pow_n : ¬(colIdx.val < 2 ^ n) := by exact h_colIdx_lt_2_pow_n
     simp only [reduceAdd, Fin.isValue, Fin.coe_ofNat_eq_mod, zero_mod, zero_lt_one, ↓reduceDIte,
-      Fin.coe_cast, h_ne_lt_2_pow_n, zero_apply, mul_zero, mod_succ, lt_self_iff_false, tsub_self,
+      Fin.val_cast, h_ne_lt_2_pow_n, zero_apply, mul_zero, mod_succ, lt_self_iff_false, tsub_self,
       Fin.zero_eta, of_apply, zero_add]
     let u : Fin (2 ^ n) := ⟨colIdx.val - (2 ^ n), by omega⟩
     have h_eq: colIdx.val = u.val + (2 ^ n) := by dsimp only [u]; omega
@@ -202,16 +191,17 @@ private lemma sumToIter_monomial_aux {R : Type*} [CommSemiring R]
     MvPolynomial.sumToIter R S₁ S₂ (MvPolynomial.monomial m c) =
       MvPolynomial.monomial (m.comapDomain Sum.inl Sum.inl_injective.injOn)
         (MvPolynomial.monomial (m.comapDomain Sum.inr Sum.inr_injective.injOn) c) := by
-  simp +decide only [MvPolynomial.sumToIter, MvPolynomial.eval₂Hom_monomial]
-  simp +decide [Finsupp.prod, Finsupp.comapDomain]
+  simp only [sumToIter, eval₂Hom_monomial]
+  simp only [RingHom.coe_comp, Function.comp_apply, Finsupp.prod, Finsupp.comapDomain, preimage_inl,
+    preimage_inr]
   convert congr_arg₂ (· * ·) rfl ?_ using 1
   rotate_left
   exact ∏ x ∈ m.support,
     Sum.rec (fun a => MvPolynomial.X a)
       (fun b => MvPolynomial.C (MvPolynomial.X b)) x ^ m x
   · rfl
-  · simp +decide [MvPolynomial.monomial_eq, Finset.prod_ite]
-    simp +decide [mul_assoc, Finsupp.prod]
+  · simp only [monomial_eq, MvPolynomial.C_mul]
+    simp only [Finsupp.prod, Finsupp.coe_mk, map_prod, MvPolynomial.C_pow, mul_assoc]
     rw [← Finset.prod_filter_mul_prod_filter_not m.support (fun x => x.isRight)]
     congr! 2
     · exact Finset.prod_bij (fun x hx => Sum.inr x) (by aesop) (by aesop)
@@ -237,7 +227,7 @@ private lemma sumAlgEquiv_mem_restrictDegree {R : Type*} [CommSemiring R]
       rw [map_sum]
       exact Finset.sum_congr rfl fun _ _ => sumToIter_monomial_aux _ _
     contrapose! hs
-    simp +decide [h_sum]
+    simp only [h_sum, SetLike.mem_coe, Finsupp.mem_support_iff, ne_eq, not_not]
     rw [Finsupp.finset_sum_apply]
     refine Finset.sum_eq_zero fun x hx => ?_
     erw [AddMonoidAlgebra.lsingle_apply, AddMonoidAlgebra.lsingle_apply]; aesop
@@ -310,7 +300,7 @@ noncomputable def getSumcheckRoundPoly (i : Fin ℓ) (h : ↥L⦃≤ 2⦄[X Fin 
         (challenges := fun j => j.elim0) (poly := curH_cast)
       have h_in_degLE : curH_cast ∈ L⦃≤ 2⦄[X Fin (ℓ - ↑i.castSucc - 1 + 1)] := by
         rw! (castMode := .all) [h_count_eq]
-        dsimp only [Fin.coe_castSucc, eq_mpr_eq_cast, curH_cast]
+        dsimp only [Fin.val_castSucc, eq_mpr_eq_cast, curH_cast]
         rw [eqRec_eq_cast, cast_cast, cast_eq]
         exact h.property
       let res := hDegIn h_in_degLE
@@ -325,14 +315,14 @@ lemma getSumcheckRoundPoly_eval_eq (i : Fin ℓ) (h_poly : ↥L⦃≤ 2⦄[X Fin
       MvPolynomial.eval (Fin.cons r x ∘ Fin.cast (by
         exact (Nat.sub_add_cancel (Nat.one_le_of_lt (Nat.sub_pos_of_lt i.isLt))).symm
       )) h_poly.val := by
-  set n := ℓ - ↑i.castSucc
-  have h_pos : 0 < n := Nat.sub_pos_of_lt i.isLt
-  have h_eq_nat : n = (n - 1) + 1 := (Nat.sub_add_cancel (Nat.one_le_of_lt h_pos)).symm
+  have h_pos : 0 < (ℓ - ↑i.castSucc) := Nat.sub_pos_of_lt i.isLt
+  have h_eq_nat : (ℓ - ↑i.castSucc) = ((ℓ - ↑i.castSucc) - 1) + 1 :=
+    (Nat.sub_add_cancel (Nat.one_le_of_lt h_pos)).symm
   unfold getSumcheckRoundPoly
   simp only [Polynomial.eval_finset_sum, Polynomial.eval_map]
   apply Finset.sum_congr rfl
   intro x hx
-  let ψ : Fin n ≃ Fin ((n - 1) + 1) :=
+  let ψ : Fin (ℓ - ↑i.castSucc) ≃ Fin (((ℓ - ↑i.castSucc) - 1) + 1) :=
     { toFun := Fin.cast h_eq_nat
       invFun := Fin.cast h_eq_nat.symm
       left_inv := fun _ => Fin.ext (by simp)
@@ -348,24 +338,24 @@ lemma getSumcheckRoundPoly_eval_eq (i : Fin ℓ) (h_poly : ↥L⦃≤ 2⦄[X Fin
   rw [h_cast_op]
   trans MvPolynomial.eval (Fin.insertNth 0 r x) h_val'
   swap
-  stop
   · conv_lhs => rw [Fin.insertNth_zero]
     exact h_eval_eq.symm
-  rw [MvPolynomial.eval_eq_eval_mv_eval_finSuccEquivNth (p := 0)]
-  simp only [Polynomial.eval_map]
-  congr
-  ext j
-  simp [Fin.append, Fin.addCases]
-  split <;> simp
+  · rw [MvPolynomial.eval_eq_eval_mv_eval_finSuccEquivNth (p := 0)]
+    simp only [Polynomial.eval_map]
+    stop
+    congr
+    ext j
+    simp [Fin.append, Fin.addCases]
+    split <;> simp
 
 lemma getSumcheckRoundPoly_sum_eq (i : Fin ℓ) (h : ↥L⦃≤ 2⦄[X Fin (ℓ - ↑i.castSucc)]) :
     (getSumcheckRoundPoly ℓ 𝓑 i h).val.eval (𝓑 0) + (getSumcheckRoundPoly ℓ 𝓑 i h).val.eval (𝓑 1) =
     ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc), MvPolynomial.eval x h.val := by
   rw [getSumcheckRoundPoly_eval_eq, getSumcheckRoundPoly_eval_eq, ← Finset.sum_add_distrib]
-  set m := ℓ - ↑i.castSucc
-  have h_pos : 0 < m := Nat.sub_pos_of_lt i.isLt
-  have hm : ℓ - ↑i.castSucc = (m - 1) + 1 := (Nat.sub_add_cancel (Nat.one_le_of_lt h_pos)).symm
-  let ψ : Fin (ℓ - ↑i.castSucc) ≃ Fin ((m - 1) + 1) :=
+  have h_pos : 0 < (ℓ - ↑i.castSucc) := Nat.sub_pos_of_lt i.isLt
+  have hm : (ℓ - ↑i.castSucc) = ((ℓ - ↑i.castSucc) - 1) + 1 :=
+    (Nat.sub_add_cancel (Nat.one_le_of_lt h_pos)).symm
+  let ψ : Fin (ℓ - ↑i.castSucc) ≃ Fin (((ℓ - ↑i.castSucc) - 1) + 1) :=
     { toFun := Fin.cast hm
       invFun := Fin.cast hm.symm
       left_inv := fun _ => Fin.ext (by simp)
@@ -385,7 +375,6 @@ lemma getSumcheckRoundPoly_sum_eq (i : Fin ℓ) (h : ↥L⦃≤ 2⦄[X Fin (ℓ 
       congr
       ext a
       simp [e_pi]
-
   change _ = ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc), MvPolynomial.eval x h.val
   erw [h_sum]
   rw [Fintype.piFinset_succ]
@@ -575,7 +564,6 @@ noncomputable def qMap_total_fiber
     let basis_y := sDomain_basis 𝔽q β h_ℓ_add_R_rate (i := destIdx)
       (h_i := Sdomain_bound (by omega))
     let y_coeffs : Fin (ℓ + 𝓡 - destIdx) →₀ 𝔽q := basis_y.repr y
-
     let basis_x := sDomain_basis 𝔽q β h_ℓ_add_R_rate i (h_i := by omega)
     exact fun elementIdx => by
       let x_coeffs : Fin (ℓ + 𝓡 - i) → 𝔽q := fun j =>
@@ -618,7 +606,8 @@ lemma qMap_total_fiber_repr_coeff (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     (k : Fin (2 ^ steps)) :
     let x := qMap_total_fiber 𝔽q β (i := i) (steps := steps) (h_destIdx := h_destIdx)
       (h_destIdx_le := h_destIdx_le) (y := y) k
-    let basis_y := sDomain_basis 𝔽q β h_ℓ_add_R_rate (i := destIdx) (h_i := Sdomain_bound (by omega))
+    let basis_y := sDomain_basis 𝔽q β h_ℓ_add_R_rate (i := destIdx)
+      (h_i := Sdomain_bound (by omega))
     let y_coeffs := basis_y.repr y
     ∀ j, -- j refers to bit index of the fiber point x
       ((sDomain_basis 𝔽q β h_ℓ_add_R_rate (i := i) (h_i := Sdomain_bound (by omega))).repr x) j
@@ -677,7 +666,6 @@ lemma qMap_total_fiber_one_level_eq (i : Fin r) {destIdx : Fin r}
   simp only [h_repr_x, Finsupp.coe_add, Pi.add_apply]
   simp only [fiber_coeff, lt_one_iff, reducePow, Fin2ToF2, Fin.isValue]
   have h_i_lt_destIdx : i < destIdx := by omega
-
   by_cases hj : j = ⟨0, by omega⟩
   · simp only [hj, ↓reduceDIte, Fin.isValue, Finsupp.single_eq_same]
     by_cases hk : k = 0
@@ -709,12 +697,14 @@ omit [CharP L 2] [DecidableEq 𝔽q] hF₂ in
 quotient of `x`. That is, for binary field, the fiber of `y` is exactly the set of
 all `x` that map to `y` under the iterated quotient map. -/
 theorem generates_quotient_point_if_is_fiber_of_y
-    (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+    (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+    (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (x : sDomain 𝔽q β h_ℓ_add_R_rate (i := i))
     (y : sDomain 𝔽q β h_ℓ_add_R_rate (i := destIdx))
     (hx_is_fiber : ∃ (k : Fin (2 ^ steps)), x = qMap_total_fiber 𝔽q β (i := i)
       (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (y := y) k) :
-    y = iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate i (k := steps) (h_destIdx) (h_destIdx_le)  (x := x) := by
+    y = iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate i (k := steps)
+      (h_destIdx) (h_destIdx_le)  (x := x) := by
  -- Get the fiber index `k` and the equality from the hypothesis.
   rcases hx_is_fiber with ⟨k, hx_eq⟩
   let basis_y := sDomain_basis 𝔽q β h_ℓ_add_R_rate
@@ -723,7 +713,8 @@ theorem generates_quotient_point_if_is_fiber_of_y
   ext j
   conv_rhs =>
     rw [getSDomainBasisCoeff_of_iteratedQuotientMap]
-  have h_repr_x := qMap_total_fiber_repr_coeff 𝔽q β i (steps := steps) h_destIdx h_destIdx_le (y := y) (k := k) (j := ⟨j + steps, by omega⟩)
+  have h_repr_x := qMap_total_fiber_repr_coeff 𝔽q β i (steps := steps)
+    h_destIdx h_destIdx_le (y := y) (k := k) (j := ⟨j + steps, by omega⟩)
   simp only at h_repr_x
   rw [←hx_eq] at h_repr_x
   simp only [fiber_coeff, add_lt_iff_neg_right, not_lt_zero', ↓reduceDIte, add_tsub_cancel_right,
@@ -822,7 +813,8 @@ lemma pointToIterateQuotientIndex_qMap_total_fiber_eq_self (i : Fin r) {destIdx 
 
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
 /-- **qMap_fiber coefficient extraction** -/
-lemma qMap_total_fiber_basis_sum_repr (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+lemma qMap_total_fiber_basis_sum_repr (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+    (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (y : (sDomain 𝔽q β h_ℓ_add_R_rate) (i := destIdx))
     (k : Fin (2 ^ steps)) :
     let x : sDomain 𝔽q β h_ℓ_add_R_rate (i := i) := qMap_total_fiber 𝔽q β
@@ -932,8 +924,10 @@ theorem qMap_total_fiber_disjoint
   {y₁ y₂ : sDomain 𝔽q β h_ℓ_add_R_rate destIdx}
   (hy_ne : y₁ ≠ y₂) :
   Disjoint
-    ((qMap_total_fiber 𝔽q β (i := i) (steps := steps) h_destIdx h_destIdx_le y₁ '' Set.univ).toFinset)
-    ((qMap_total_fiber 𝔽q β (i := i) (steps := steps) h_destIdx h_destIdx_le y₂ '' Set.univ).toFinset)
+    ((qMap_total_fiber 𝔽q β (i := i) (steps := steps)
+      h_destIdx h_destIdx_le y₁ '' Set.univ).toFinset)
+    ((qMap_total_fiber 𝔽q β (i := i) (steps := steps)
+      h_destIdx h_destIdx_le y₂ '' Set.univ).toFinset)
     := by
  -- Proof by contradiction. Assume the intersection is non-empty.
   rw [Finset.disjoint_iff_inter_eq_empty]
@@ -951,8 +945,8 @@ theorem qMap_total_fiber_disjoint
       h_destIdx h_destIdx_le
       (qMap_total_fiber 𝔽q β (i := i) (steps := steps)
         h_destIdx h_destIdx_le (y := y) k) = y := by
-      have h := generates_quotient_point_if_is_fiber_of_y 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps)
-        h_destIdx h_destIdx_le (x:=
+      have h := generates_quotient_point_if_is_fiber_of_y 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps) h_destIdx h_destIdx_le (x:=
         ((qMap_total_fiber 𝔽q β (i := i) (steps := steps)
           h_destIdx h_destIdx_le (y := y) k) :
           sDomain 𝔽q β h_ℓ_add_R_rate (i := i))
@@ -967,49 +961,43 @@ theorem qMap_total_fiber_disjoint
     -- ⊢ `∃ (k : Fin (2 ^ steps)), k ∈ Set.univ ∧ qMap_total_fiber ... y₁ k = x`.
     rcases hx₁ with ⟨k, _, h_eq⟩
     use k; exact h_eq.symm
-
   have h_exists_k₂ : ∃ k, x = qMap_total_fiber 𝔽q β (i := i) (steps := steps)
       h_destIdx h_destIdx_le y₂ k := by
     rw [Set.mem_toFinset] at hx₂
     rw [Set.mem_image] at hx₂ -- Set.mem_image gives us t an index that maps to x
     rcases hx₂ with ⟨k, _, h_eq⟩
     use k; exact h_eq.symm
-
   have h_y₁_eq_quotient_x : y₁ =
       iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := i) (k := steps) h_destIdx h_destIdx_le x := by
     apply generates_quotient_point_if_is_fiber_of_y (hx_is_fiber := by exact h_exists_k₁)
-
   have h_y₂_eq_quotient_x : y₂ =
       iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := i) (k := steps) h_destIdx h_destIdx_le x := by
     apply generates_quotient_point_if_is_fiber_of_y (hx_is_fiber := by exact h_exists_k₂)
-
-  let kQuotientIndex := pointToIterateQuotientIndex 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps)
+  let kQuotientIndex := pointToIterateQuotientIndex 𝔽q β
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps)
     (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (x := x)
-
   -- Since `x` is in the fiber of `y₁`, applying the forward map to `x` yields `y₁`.
   have h_map_x_eq_y₁ : iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := i)
       (k := steps) h_destIdx h_destIdx_le x = y₁ := by
     have h := iteratedQuotientMap_of_qMap_total_fiber_eq_self (y := y₁) (k := kQuotientIndex)
     have hx₁ : x = qMap_total_fiber 𝔽q β (i := i) (steps := steps)
         h_destIdx h_destIdx_le y₁ kQuotientIndex := by
-      have h_res := is_fiber_iff_generates_quotient_point 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps) h_destIdx h_destIdx_le
-        (x := x) (y := y₁).mp (h_y₁_eq_quotient_x)
+      have h_res := is_fiber_iff_generates_quotient_point 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := i) (steps := steps) h_destIdx h_destIdx_le (x := x) (y := y₁).mp (h_y₁_eq_quotient_x)
       exact h_res.symm
     rw [hx₁]
     exact iteratedQuotientMap_of_qMap_total_fiber_eq_self y₁ kQuotientIndex
-
   -- Similarly, since `x` is in the fiber of `y₂`, applying the forward map yields `y₂`.
   have h_map_x_eq_y₂ : iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := i)
       (k := steps) h_destIdx h_destIdx_le x = y₂ := by
     -- have h := iteratedQuotientMap_of_qMap_total_fiber_eq_self (y := y₂) (k := kQuotientIndex)
     have hx₂ : x = qMap_total_fiber 𝔽q β (i := i) (steps := steps)
         h_destIdx h_destIdx_le y₂ kQuotientIndex := by
-      have h_res := is_fiber_iff_generates_quotient_point 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps) h_destIdx h_destIdx_le
-        (x := x) (y := y₂).mp (h_y₂_eq_quotient_x)
+      have h_res := is_fiber_iff_generates_quotient_point 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := i) (steps := steps) h_destIdx h_destIdx_le (x := x) (y := y₂).mp (h_y₂_eq_quotient_x)
       exact h_res.symm
     rw [hx₂]
     exact iteratedQuotientMap_of_qMap_total_fiber_eq_self y₂ kQuotientIndex
-
   exact hy_ne (h_map_x_eq_y₁.symm.trans h_map_x_eq_y₂)
 
 /-- Evaluation vector `[f^(i)(x_0) ... f^(i)(x_{2 ^ steps-1})]^T`. This is the rhs
@@ -1022,25 +1010,27 @@ def fiberEvaluations (i : Fin r) {destIdx : Fin r} (steps : ℕ)
   -- Get the fiber points
   let fiberMap := qMap_total_fiber 𝔽q β (i := i) (steps := steps) (h_destIdx := h_destIdx)
     (h_destIdx_le := h_destIdx_le) (y := y)
-
   -- Evaluate f at each fiber point
   fun idx => f (fiberMap idx)
 
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
-lemma fiberEvaluations_eq_merge_fiberEvaluations_of_one_step_fiber (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ) (h_midIdx : midIdx = i + steps)
-    (h_destIdx : destIdx = i + steps + 1) (h_destIdx_le : destIdx ≤ ℓ)
+lemma fiberEvaluations_eq_merge_fiberEvaluations_of_one_step_fiber
+    (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ) (h_midIdx : midIdx = i + steps)
+    (h_destIdx : destIdx = i + steps + 1)
+    (h_destIdx_le : destIdx ≤ ℓ)
     (f : (sDomain 𝔽q β h_ℓ_add_R_rate) i → L)
     (y : (sDomain 𝔽q β h_ℓ_add_R_rate) destIdx) :
     let fiberMap := qMap_total_fiber 𝔽q β (i := midIdx) (steps := 1)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_destIdx := by omega) h_destIdx_le (y := y)
     let z₀ := fiberMap 0
     let z₁ := fiberMap 1
-
     let fiber_eval_z₀ :=
-      fiberEvaluations 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (steps := steps) (i := i) (destIdx := midIdx)
+      fiberEvaluations 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (steps := steps) (i := i) (destIdx := midIdx)
         (h_destIdx := h_midIdx) (h_destIdx_le := by omega) (f := f) z₀
-    let fiber_eval_z₁ : Fin (2 ^ steps) → L := fiberEvaluations 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (steps := steps) (i := i) (destIdx := midIdx)
-        (h_destIdx := h_midIdx) (h_destIdx_le := by omega) (f := f) z₁
+    let fiber_eval_z₁ : Fin (2 ^ steps) → L :=
+      fiberEvaluations 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (steps := steps)
+        (i := i) (destIdx := midIdx) (h_destIdx := h_midIdx) (h_destIdx_le := by omega) (f := f) z₁
     (fiberEvaluations 𝔽q β (steps := steps + 1) (i := i)
       h_destIdx h_destIdx_le f y) =
     mergeFinMap_PO2_left_right (left := fiber_eval_z₀) (right := fiber_eval_z₁) := by
@@ -1067,11 +1057,9 @@ lemma fiberEvaluations_eq_merge_fiberEvaluations_of_one_step_fiber (i : Fin r) {
   let fiber_zᵢ_idx : Fin (2 ^ steps) :=
     if h : fiber_y_idx.val < 2 ^ steps then ⟨fiber_y_idx, by omega⟩
     else ⟨fiber_y_idx.val - 2 ^ steps, by omega⟩
-
   set right_point := qMap_total_fiber (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := i) (steps := steps) h_midIdx (h_destIdx_le := by omega)
     (y := zᵢ) fiber_zᵢ_idx
-
   have h_left_point_eq_right_point : left_point = right_point := by
     let basis := sDomain_basis 𝔽q β h_ℓ_add_R_rate i (Sdomain_bound (by omega))
     apply basis.repr.injective
@@ -1092,7 +1080,6 @@ lemma fiberEvaluations_eq_merge_fiberEvaluations_of_one_step_fiber (i : Fin r) {
     have h_repr_z₁ := qMap_total_fiber_repr_coeff 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := midIdx) (steps := 1) (h_destIdx := by omega) (h_destIdx_le := by omega)
       (y := y) (k := 1)
-
     by_cases h_fiber_y_idx_lt_2_pow_steps : fiber_y_idx.val < 2 ^ steps
     · -- right-point is qMap_total_fiber(z₀, fiber_y_idx)
       simp only [h_fiber_y_idx_lt_2_pow_steps, ↓reduceDIte]
@@ -1108,7 +1095,6 @@ lemma fiberEvaluations_eq_merge_fiberEvaluations_of_one_step_fiber (i : Fin r) {
           simp only [lt_one_iff, reducePow, Fin.isValue, Fin.coe_ofNat_eq_mod, zero_mod]
           have h_coeffIdx_eq_steps : coeffIdx.val = steps := by omega
           simp only [h_coeffIdx_eq_steps, tsub_self, ↓reduceDIte]
-
           have h_steps_getBit_idx : Nat.getBit (n := fiber_y_idx) (k := steps) = 0 := by
             let res := Nat.getBit_of_lt_two_pow (k := steps) (n := steps)
               (a := ⟨fiber_y_idx, by omega⟩)
@@ -1286,10 +1272,10 @@ lemma blockDiagMatrix_mulVec_F₂_eq_Fin_merge_PO2 (n : ℕ)
   unfold Matrix.from4Blocks Fin.reindex Matrix.mulVec dotProduct
   -- Now unfold everything
   simp only [zero_apply, finCongr_symm, Function.comp_apply, finCongr_apply, dite_mul, zero_mul,
-    sum_dite_irrel, Fin.coe_cast]
+    sum_dite_irrel, Fin.val_cast]
   simp_rw [Fin.sum_univ_add]
   simp_rw [←Finset.sum_add_distrib]
-  simp only [Fin.coe_castAdd, Fin.is_lt, ↓reduceDIte, Fin.eta, Fin.natAdd_eq_addNat, Fin.coe_addNat,
+  simp only [Fin.val_castAdd, Fin.is_lt, ↓reduceDIte, Fin.eta, Fin.natAdd_eq_addNat, Fin.val_addNat,
     add_lt_iff_neg_right, not_lt_zero', add_zero, add_tsub_cancel_right, zero_add]
 
 /-- The recursive definition of the `k-step` fold matrix of point `y`: `M_{k, y}`.
@@ -1312,32 +1298,29 @@ def foldMatrix (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     have h_midIdx_val : midIdx.val = i + n := by dsimp only [midIdx]
     let fiberMap := qMap_total_fiber 𝔽q β (i := midIdx) (steps := 1)
        h_destIdx h_destIdx_le (y := y)
-
     let z₀ : sDomain 𝔽q β h_ℓ_add_R_rate midIdx := fiberMap 0
     let z₁ : sDomain 𝔽q β h_ℓ_add_R_rate midIdx := fiberMap 1
-
     -- 2. Recursively compute M for z₀ and z₁
     --    These matrices have size 2^n x 2^n
     let M_z₀ := foldMatrix i n (destIdx := midIdx) (by omega) (by omega) z₀
     let M_z₁ := foldMatrix i n (destIdx := midIdx) (by omega) (by omega) z₁
-
     -- 3. Construct the Block Diagonal Matrix: [ M_z₀  0  ]
     --                                         [  0   M_z₁]
     let blk_diag : Matrix (Fin (2 ^ (n + 1))) (Fin (2 ^ (n + 1))) L :=
       blockDiagMatrix (r := r) (ℓ := ℓ) (𝓡 := 𝓡) (n := n) (Mz₀ := M_z₀) (Mz₁ := M_z₁)
-
     -- 4. Construct the Butterfly Matrix using Scalar Identities
     --    [ z₁*I_{2^n}   -z₀*I_{2^n} ]
     --    [ -1*I_{2^n}     1*I_{2^n} ]
     let butterfly : Matrix (Fin (2 ^ (n + 1))) (Fin (2 ^ (n + 1))) L :=
       butterflyMatrix (r := r) (ℓ := ℓ) (𝓡 := 𝓡) (n := n) (z₀ := z₀) (z₁ := z₁)
-
     exact butterfly * blk_diag
 
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
 lemma foldMatrix_det_ne_zero (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (y : sDomain 𝔽q β h_ℓ_add_R_rate (destIdx)) :
-    (foldMatrix 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps) h_destIdx h_destIdx_le (y := y)).det ≠ 0 := by
+    (foldMatrix 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps)
+      h_destIdx h_destIdx_le (y := y)).det ≠ 0 := by
   revert destIdx h_destIdx h_destIdx_le y
   induction steps with
   | zero =>
@@ -1366,7 +1349,9 @@ lemma foldMatrix_det_ne_zero (i : Fin r) {destIdx : Fin r} (steps : ℕ)
       apply butterflyMatrix_det_ne_zero (L := L) (z₀ := z₀) (z₁ := z₁) (n := n)
       -- ⊢ ↑z₀ ≠ ↑z₁
       unfold z₀ z₁ fiberMap
-      let z₀_eq := qMap_total_fiber_one_level_eq (i := ⟨midIdx, by dsimp [midIdx]; omega⟩) (destIdx := destIdx) (h_destIdx := by dsimp only [midIdx]; omega) (h_destIdx_le := by omega) (y := y) (k := 0)
+      let z₀_eq := qMap_total_fiber_one_level_eq (i := ⟨midIdx, by dsimp [midIdx]; omega⟩)
+        (destIdx := destIdx) (h_destIdx := by dsimp only [midIdx]; omega)
+        (h_destIdx_le := by omega) (y := y) (k := 0)
       let z₁_eq := qMap_total_fiber_one_level_eq (i := ⟨midIdx, by dsimp [midIdx]; omega⟩)
         (destIdx := destIdx) (h_destIdx := by dsimp only [midIdx]; omega) (h_destIdx_le := by omega)
         (y := y) (k := 1)
@@ -1438,7 +1423,10 @@ lemma iterated_fold_zero_steps (i : Fin r) {destIdx : Fin r}
       (h_destIdx := by omega) (h_destIdx_le := h_destIdx_le) (f := f)
       (r_challenges := r_challenges) = fun y ↦ f (cast (by rw [sDomain_eq_of_eq]; omega) y) := by
   have h_eq : destIdx = i := by omega
-  subst h_eq; rfl
+  subst h_eq;
+  dsimp only [iterated_fold]
+  simp only [reduceAdd, Fin.val_castSucc, Fin.val_succ, id_eq, Fin.reduceLast, Fin.coe_ofNat_eq_mod,
+    Subtype.coe_eta, Fin.dfoldl_zero, cast_eq]
 
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
 lemma iterated_fold_last (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ)
@@ -1462,7 +1450,7 @@ lemma iterated_fold_last (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ)
   conv_lhs => unfold iterated_fold
   simp only
   rw [Fin.dfoldl_succ_last]
-  simp only [Fin.succ_last, succ_eq_add_one, Fin.val_last, Function.comp_apply, Fin.coe_castSucc,
+  simp only [Fin.succ_last, succ_eq_add_one, Fin.val_last, Function.comp_apply, Fin.val_castSucc,
     Fin.val_succ, id_eq]
   rfl
 
@@ -1513,8 +1501,7 @@ lemma iterated_fold_congr_steps_index
     (f) (fun (cIdx : Fin steps') => r_challenges ⟨cIdx, by omega⟩) (y := y) := by
   subst h_steps_eq_steps'; rfl
 
-/--
-Transitivity of iterated_fold : folding for `steps₁` and then for `steps₂`
+/-- Transitivity of iterated_fold : folding for `steps₁` and then for `steps₂`
 equals folding for `steps₁ + steps₂` with concatenated challenges.
 -/
 lemma iterated_fold_transitivity
@@ -1550,13 +1537,10 @@ def fold_single_matrix_mul_form (i : Fin r) {destIdx : Fin r}
       h_destIdx h_destIdx_le (y := y)
     let fiber_eval_mapping : (Fin 2) → L := fiberEvaluations 𝔽q β (steps := 1)
       (i := i) h_destIdx h_destIdx_le f y
-
     let z₀ : sDomain 𝔽q β h_ℓ_add_R_rate i := fiberMap 0
     let z₁ : sDomain 𝔽q β h_ℓ_add_R_rate i := fiberMap 1
-
     let challenge_vec : Fin (2 ^ 1) → L :=
       challengeTensorExpansion (n := 1) (r := fun _ => r_challenge)
-
     let fold_mat : Matrix (Fin (2 ^ 1)) (Fin (2 ^ 1)) L :=
       butterflyMatrix (𝓡 := 𝓡) (ℓ := ℓ) (r := r) (n := 0) (z₀ := z₀) (z₁ := z₁)
     -- Matrix-vector multiplication : challenge_vec^T • (fold_mat • fiber_eval_mapping)
@@ -1599,7 +1583,7 @@ lemma fold_eval_single_matrix_mul_form (i : Fin r) {destIdx : Fin r}
   conv_rhs => rw [butterflyMat0];
   conv_rhs =>
     unfold fiberEvaluations
-    rw! [Matrix.mulVec, Matrix.mulVec, dotProduct, dotProduct]
+    rw [Matrix.mulVec, Matrix.mulVec]; dsimp only [dotProduct]
     simp only [Fin.isValue, Fin.sum_univ_two]
     rw [h_chal_tensor_vec_eq]
     simp only [succ_eq_add_one, reduceAdd, Fin.isValue, cons_val_zero, reindexSquareMatrix,
@@ -1684,7 +1668,8 @@ where
 - `M_{steps, y}` is the `steps`-step **foldMatrix** of point `y`.
 - the right-hand vector's values `(x_0, ..., x_{2 ^ steps-1})` represent the fiber
 `(q^(i+steps-1) ∘ ... ∘ q^(i))⁻¹({y}) ⊂ S^(i)`. -/
-def localized_fold_matrix_form (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+def localized_fold_matrix_form (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+    (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
   (f : (sDomain 𝔽q β h_ℓ_add_R_rate) i → L)
   (r_challenges : Fin steps → L) : (y : (sDomain 𝔽q β h_ℓ_add_R_rate) destIdx) → L :=
   fun y =>
@@ -1699,7 +1684,8 @@ def localized_fold_matrix_form (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_de
 This is the right-most vector when decomposing the outer single-step fold of **Lemma 4.9**.
 NOTE: `h_F₂_y_eq` in lemma `iterated_fold_eq_matrix_form` below shows it OG form in Lemma 4.9. -/
 def fold_eval_fiber₂_vec (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ)
-    (h_midIdx : midIdx = i + steps) (h_destIdx : destIdx = i + steps + 1) (h_destIdx_le : destIdx ≤ ℓ)
+    (h_midIdx : midIdx = i + steps) (h_destIdx : destIdx = i + steps + 1)
+    (h_destIdx_le : destIdx ≤ ℓ)
     (f : (sDomain 𝔽q β h_ℓ_add_R_rate) i → L) (r_challenges : Fin steps → L) :
     (sDomain 𝔽q β h_ℓ_add_R_rate) (i := destIdx) → (Fin 2) → L := fun y => by
     -- Can also use fiberEvaluations instead
@@ -1716,22 +1702,27 @@ omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
 /-- **Helper #1 for Lemma 4.9**: The vector `F₂(steps, r, y) = `
 `MatrixCTensor(steps, r) * blockDiagMatrix(steps, M_z₀, M_z₁) * fiberEvaluations(steps+1, r, y)`.
 where `z₀, z₁` are the fiber of `y`, `y` is in `S^(i+steps+1)`). -/
-lemma fold_eval_fiber₂_eq_mat_mat_vec_mul (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ) (h_midIdx : midIdx = i + steps) (h_destIdx : destIdx = i + steps + 1) (h_destIdx_le : destIdx ≤ ℓ)
+lemma fold_eval_fiber₂_eq_mat_mat_vec_mul (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ)
+    (h_midIdx : midIdx = i + steps) (h_destIdx : destIdx = i + steps + 1)
+    (h_destIdx_le : destIdx ≤ ℓ)
     (f : (sDomain 𝔽q β h_ℓ_add_R_rate) i → L) (r_challenges : Fin steps → L)
     (y : (sDomain 𝔽q β h_ℓ_add_R_rate) destIdx)
     (lemma_4_9_inductive_hypothesis :
       iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (steps := steps) (i := i)
         h_midIdx (h_destIdx_le := by omega) (f := f) (r_challenges := r_challenges)
-      = (localized_fold_matrix_form 𝔽q β (i := i) (steps := steps) h_midIdx (h_destIdx_le := by omega)
-        (f := f) (r_challenges := r_challenges))) :
+      = (localized_fold_matrix_form 𝔽q β (i := i) (steps := steps) h_midIdx
+        (h_destIdx_le := by omega) (f := f) (r_challenges := r_challenges))) :
     let F₂_y : Fin 2 → L := (fold_eval_fiber₂_vec 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i steps
       h_midIdx h_destIdx h_destIdx_le f r_challenges) (y)
     let fiberMap := qMap_total_fiber 𝔽q β (i := midIdx) (steps := 1)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (destIdx := destIdx) (h_destIdx := by omega) (h_destIdx_le := h_destIdx_le) (y := y)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (destIdx := destIdx) (h_destIdx := by omega)
+      (h_destIdx_le := h_destIdx_le) (y := y)
     let z₀ := fiberMap 0
     let z₁ := fiberMap 1
-    let M_z₀ := foldMatrix 𝔽q β (i := i) (steps := steps) h_midIdx (h_destIdx_le := by omega) (y := z₀)
-    let M_z₁ := foldMatrix 𝔽q β (i := i) (steps := steps) h_midIdx (h_destIdx_le := by omega) (y := z₁)
+    let M_z₀ := foldMatrix 𝔽q β (i := i) (steps := steps) h_midIdx (h_destIdx_le := by omega)
+      (y := z₀)
+    let M_z₁ := foldMatrix 𝔽q β (i := i) (steps := steps) h_midIdx (h_destIdx_le := by omega)
+      (y := z₁)
     let fiber_eval_mapping := fiberEvaluations 𝔽q β (steps := steps + 1)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := i) h_destIdx h_destIdx_le f y
@@ -1841,7 +1832,9 @@ theorem iterated_fold_eq_matrix_form (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     --    iterated_fold (n+1) is `fold` applied to `iterated_fold n`.
     let midIdx : Fin r := ⟨i + n, by omega⟩
     have h_midIdx : midIdx.val = i + n := by dsimp only [midIdx]
-    rw [iterated_fold_last 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := n) (midIdx := midIdx) (destIdx := destIdx) (h_midIdx := h_midIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f) (r_challenges := r_challenges)]
+    rw [iterated_fold_last 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := n)
+      (midIdx := midIdx) (destIdx := destIdx) (h_midIdx := h_midIdx) (h_destIdx := h_destIdx)
+      (h_destIdx_le := h_destIdx_le) (f := f) (r_challenges := r_challenges)]
     -- simp only
     -- Let `prev_fold` be the result of folding n times.
     set prev_fold_fn := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -1850,13 +1843,12 @@ theorem iterated_fold_eq_matrix_form (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     funext (y : (sDomain 𝔽q β h_ℓ_add_R_rate) destIdx)
     -- ⊢ fold 𝔽q β ⟨↑i + n, ⋯⟩ ⋯ prev_fold_fn (r_challenges (Fin.last n)) y =
     -- localized_fold_matrix_form 𝔽q β i (n + 1) h_i_add_steps f r_challenges y
-    set F₂_y := fold_eval_fiber₂_vec 𝔽q β i (steps := n) (midIdx := midIdx) (destIdx := destIdx) (h_midIdx := h_midIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f)
+    set F₂_y := fold_eval_fiber₂_vec 𝔽q β i (steps := n) (midIdx := midIdx) (destIdx := destIdx)
+      (h_midIdx := h_midIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f)
       (r_challenges := Fin.init r_challenges)
-
     have h_F₂_y_eq : ∀ yPoint, fiberEvaluations 𝔽q β (i := midIdx) (steps := 1)
       h_destIdx h_destIdx_le
       (f := prev_fold_fn) yPoint = F₂_y yPoint := fun yPoint => by rfl
-
     conv_lhs => -- use vec-matrix-vec form for the outer (single-step) fold()
       rw [fold_eval_single_matrix_mul_form 𝔽q β (i := midIdx)
         h_destIdx h_destIdx_le]; unfold fold_single_matrix_mul_form; simp only
@@ -1910,8 +1902,9 @@ omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
 /-- **Corollary of Lemma 4.9**: Direct connection between single-point
 matrix form and iterated fold. This is a point-wise version of
 `iterated_fold_eq_matrix_form` that directly connects
-`single_point_localized_fold_matrix_form` with `fiberEvaluations` to `iterated_fold`. This is useful when working with concrete fiber evaluation
-mappings rather than the abstract `localized_fold_matrix_form` function. -/
+`single_point_localized_fold_matrix_form` with `fiberEvaluations` to `iterated_fold`.
+This is useful when working with concrete fiber evaluation mappings rather than the
+abstract `localized_fold_matrix_form` function. -/
 lemma single_point_localized_fold_matrix_form_eq_iterated_fold
     (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
@@ -1943,7 +1936,8 @@ theorem fold_advances_evaluation_poly
   let P_i : L[X] := intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate (i := i) (h_i := by omega) coeffs
   let f_i := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (domainIdx := i) (P := P_i)
-  let f_i_plus_1 := fold (i := i) (destIdx := destIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f_i) (r_chal := r_chal)
+  let f_i_plus_1 := fold (i := i) (destIdx := destIdx) (h_destIdx := h_destIdx)
+    (h_destIdx_le := h_destIdx_le) (f := f_i) (r_chal := r_chal)
   let new_coeffs := fun j : Fin (2^(ℓ - destIdx.val)) =>
     (1 - r_chal) * (coeffs ⟨j.val * 2, by
       rw [←Nat.add_zero (j.val * 2)]
@@ -2001,7 +1995,6 @@ theorem fold_advances_evaluation_poly
   have hx₁ := qMap_total_fiber_basis_sum_repr 𝔽q β i (steps := 1)
     h_destIdx h_destIdx_le y 1
   simp only [Fin.isValue] at hx₀ hx₁
-
   have h_fiber_diff : x₁.val - x₀.val = 1 := by
     simp only [Fin.isValue, x₁, x₀, fiberMap]
     rw [hx₁, hx₀]
@@ -2029,9 +2022,10 @@ theorem fold_advances_evaluation_poly
     rw [cast_eq]
     simp only [get_sDomain_basis, Fin.coe_ofNat_eq_mod, zero_mod, add_zero, cast_eq]
     rw [normalizedWᵢ_eval_βᵢ_eq_1 𝔽q β]
-    ring_nf
+    -- ring
+    conv_lhs => rw [←add_sub]
     conv_rhs => rw [←add_zero (a := 1)]
-    congr 1
+    rw [add_right_inj (a := 1)]
     rw [sub_eq_zero]
     apply Finset.sum_congr (h := by rfl)
     simp only [mem_univ, congr_eqRec, Fin.val_succ, Nat.add_eq_zero, one_ne_zero, and_false,
@@ -2060,7 +2054,8 @@ theorem fold_advances_evaluation_poly
     simp only [h_P_i_eval, Polynomial.eval_add, eval_comp,
       h_eval_qMap_x₁, Polynomial.eval_mul, Polynomial.eval_X, P_i, P₀, P₁]
   set f_i := fun (x : (sDomain 𝔽q β h_ℓ_add_R_rate) i) => P_i.eval (x.val : L)
-  set f_i_plus_1 := fold (i := i) (destIdx := destIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f_i) (r_chal := r_chal)
+  set f_i_plus_1 := fold (i := i) (destIdx := destIdx) (h_destIdx := h_destIdx)
+    (h_destIdx_le := h_destIdx_le) (f := f_i) (r_chal := r_chal)
   -- Unfold the definition of f_i_plus_1 using the fold function
   have h_fold_def : f_i_plus_1 y =
       f_i x₀ * ((1 - r_chal) * x₁.val - r_chal) +
@@ -2094,7 +2089,7 @@ theorem fold_advances_evaluation_poly
       have h_destIdx_eq : destIdx = ⟨i + 1, h_i_add_1_lt⟩ := Fin.eq_of_val_eq (by omega)
       have h_fin_eq : Fin (2 ^ (ℓ - ↑i - 1)) = Fin (2 ^ (ℓ - ↑destIdx)) := by
         congr 1; congr 1; omega
-      conv_lhs => rw! (castMode := .all) [h_fin_eq]
+      rw! (castMode := .all) [h_fin_eq]
       -- We now prove that the terms inside the sums are equal for each index.
       apply Finset.sum_congr (by congr!)
       -- simp only [mem_univ, map_sub, map_one, Fin.eta, map_add, map_mul, forall_const]
@@ -2124,7 +2119,8 @@ then fold(f⁽ⁱ⁾, r_chal) is evaluation of P⁽ⁱ⁺¹⁾(X) over S⁽ⁱ�
 At level `i = ℓ`, we have P⁽ˡ⁾ = c (constant polynomial).
 -/
 theorem iterated_fold_advances_evaluation_poly
-  (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ)
+  (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : destIdx = i + steps)
+  (h_destIdx_le : destIdx ≤ ℓ)
   (coeffs : Fin (2 ^ (ℓ - ↑i)) → L) (r_challenges : Fin steps → L) : -- novel coeffs
   let P_i : L[X] := intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate (i := i) (h_i := by omega) coeffs
   let f_i := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -2149,13 +2145,13 @@ theorem iterated_fold_advances_evaluation_poly
     subst h_i_eq_destIdx
     -- funext y -- Sum over Fin 1 (j=0)
     -- Base Case: 0 Steps
-    dsimp only [iterated_fold, reduceAdd, Fin.coe_castSucc, Fin.val_succ, Lean.Elab.WF.paramLet,
+    dsimp only [iterated_fold, reduceAdd, Fin.val_castSucc, Fin.val_succ, Lean.Elab.WF.paramLet,
       id_eq, Fin.reduceLast, Fin.coe_ofNat_eq_mod, reduceMod, Nat.add_zero, Fin.eta,
       Fin.dfoldl_zero, Nat.pow_zero, multilinearWeight, Fin.val_eq_zero, zero_testBit,
       Bool.false_eq_true]
     simp only [univ_unique, Fin.default_eq_zero, Fin.isValue, univ_eq_empty, Fin.val_eq_zero,
       zero_testBit, Bool.false_eq_true, ↓reduceIte, prod_empty, mul_one, add_zero, one_mul,
-      sum_singleton]
+      sum_singleton, Subtype.coe_eta, Fin.dfoldl_zero, Fin.eta]
   | succ s ih =>
     intro destIdx h_destIdx h_destIdx_le
     simp only
@@ -2166,8 +2162,9 @@ theorem iterated_fold_advances_evaluation_poly
     set f_i := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := i) (P := P_i)
     let midIdx : Fin r := ⟨i + s, by omega⟩
     have h_midIdx : midIdx = i + s := by rfl
-
-    rw [iterated_fold_last 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := s) (h_midIdx := h_midIdx) (h_destIdx := by omega) (h_destIdx_le := by omega) (f := f_i) (r_challenges := r_challenges)]
+    rw [iterated_fold_last 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := s)
+      (h_midIdx := h_midIdx) (h_destIdx := by omega) (h_destIdx_le := by omega) (f := f_i)
+      (r_challenges := r_challenges)]
     set f_i_plus_steps := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
       (steps := s + 1) h_destIdx h_destIdx_le (f := f_i) (r_challenges := r_challenges)
     -- 2. Setup Inductive Step
@@ -2180,9 +2177,11 @@ theorem iterated_fold_advances_evaluation_poly
         multilinearWeight (r := r_s) (i := m) * coeffs ⟨j.val * 2 ^ s + m.val, by
           apply index_bound_check j.val m.val j.isLt m.isLt (by omega)
         ⟩
-    let f_folded_s_steps := (iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := s) h_midIdx (by omega) (f := f_i) (r_challenges := r_s))
+    let f_folded_s_steps := (iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
+      (steps := s) h_midIdx (by omega) (f := f_i) (r_challenges := r_s))
     let poly_eval_folded_s_steps :=
-      polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := midIdx) (P := intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate midIdx (h_i := by omega) coeffs_s)
+      polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := midIdx)
+        (P := intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate midIdx (h_i := by omega) coeffs_s)
     have h_eval_s : f_folded_s_steps = poly_eval_folded_s_steps := by
       unfold f_folded_s_steps poly_eval_folded_s_steps
       rw [ih (i := i)]
@@ -2194,7 +2193,9 @@ theorem iterated_fold_advances_evaluation_poly
     -- fold(P_s, r_last) -> P_{s+1}
     -- The lemma fold_advances_evaluation_poly tells us the coefficients transform as:
     -- C_new[j] = (1 - r) * C_s[2j] + r * C_s[2j+1]
-    let fold_advances_evaluation_poly_res := fold_advances_evaluation_poly 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := midIdx) (destIdx := destIdx) (h_destIdx := by omega) (h_destIdx_le := by omega) (coeffs := coeffs_s) (r_chal := r_last)
+    let fold_advances_evaluation_poly_res := fold_advances_evaluation_poly 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := midIdx) (destIdx := destIdx)
+      (h_destIdx := by omega) (h_destIdx_le := by omega) (coeffs := coeffs_s) (r_chal := r_last)
     simp only [r_last] at fold_advances_evaluation_poly_res
     unfold poly_eval_folded_s_steps
     conv_lhs => rw [fold_advances_evaluation_poly_res]
@@ -2205,13 +2206,12 @@ theorem iterated_fold_advances_evaluation_poly
     unfold coeffs_s
     simp only
     have h_two_pow_s_succ_eq: 2 ^ (s + 1) = 2 ^ s + 2 ^ s := by omega
-    conv_rhs =>
-      rw! (castMode := .all) [h_two_pow_s_succ_eq]
-      rw [Fin.sum_univ_add]
-      simp only [eqRec_eq_cast]
-      rw [←Fin.cast_eq_cast (h := by omega)]
-      simp only [Fin.coe_castAdd, Fin.natAdd_eq_addNat, Fin.coe_addNat]
-      unfold Fin.addNat
+    --- for rhs
+    rw! (castMode := .all) [h_two_pow_s_succ_eq]
+    rw [Fin.sum_univ_add]
+    simp only [eqRec_eq_cast]
+    rw [←Fin.cast_eq_cast (h := by omega)]
+    simp only [Fin.val_castAdd, Fin.natAdd_eq_addNat, Fin.val_addNat]
     -- ∑ + ∑ = ∑ + ∑
     congr 1
     · conv_lhs => rw [mul_sum]
@@ -2219,7 +2219,7 @@ theorem iterated_fold_advances_evaluation_poly
       funext (x : Fin (2 ^ s))
       conv_lhs => rw [←mul_assoc]
       congr 1
-      · rw [multilinearWeight_succ_lower_half (h_lt := by simp only [Fin.coe_cast, Fin.coe_castAdd,
+      · rw [multilinearWeight_succ_lower_half (h_lt := by simp only [Fin.val_cast, Fin.val_castAdd,
           Fin.is_lt])]
         rw [mul_comm]; rfl
       · simp_rw [←two_mul (n := 2 ^ s), ←mul_assoc]
@@ -2229,7 +2229,7 @@ theorem iterated_fold_advances_evaluation_poly
       conv_lhs => rw [←mul_assoc]
       congr 1
       · rw [multilinearWeight_succ_upper_half (r := r_challenges) (j := x)
-          (h_eq := by simp only [Fin.cast_mk]), mul_comm]
+          (h_eq := by simp only [Fin.val_cast, Fin.val_addNat, Nat.add_left_cancel_iff]), mul_comm]
       · congr 1
         congr 1
         conv_lhs => rw [add_mul, one_mul, add_assoc]

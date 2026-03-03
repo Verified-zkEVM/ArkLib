@@ -318,7 +318,7 @@ theorem castOutSimple_perfectCompleteness
     [∀ i, OracleInterface (OStmtOut₁ i)] [∀ i, OracleInterface (OStmtOut₂ i)]
     {WitOut₁ WitOut₂ : Type}
     [∀ i, OracleInterface (pSpec.Message i)]
-    [∀ i, SelectableType (pSpec.Challenge i)]
+    [∀ i, SampleableType (pSpec.Challenge i)]
     {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
     {relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)}
     {relOut₁ : Set ((StmtOut₁ × ∀ i, OStmtOut₁ i) × WitOut₁)}
@@ -343,7 +343,7 @@ theorem castOutSimple_completeness
     [∀ i, OracleInterface (OStmtOut₁ i)] [∀ i, OracleInterface (OStmtOut₂ i)]
     {WitOut₁ WitOut₂ : Type}
     [∀ i, OracleInterface (pSpec.Message i)]
-    [∀ i, SelectableType (pSpec.Challenge i)]
+    [∀ i, SampleableType (pSpec.Challenge i)]
     {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
     {relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)}
     {relOut₁ : Set ((StmtOut₁ × ∀ i, OStmtOut₁ i) × WitOut₁)}
@@ -374,7 +374,7 @@ theorem castInOut_perfectCompleteness
     {ιₛₒ₁ ιₛₒ₂ : Type} {OStmtOut₁ : ιₛₒ₁ → Type} {OStmtOut₂ : ιₛₒ₂ → Type}
     {WitOut₁ WitOut₂ : Type}
     -- 3. Context
-    [∀ i, SelectableType (pSpec.Challenge i)]
+    [∀ i, SampleableType (pSpec.Challenge i)]
     {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
     {relIn₁ : Set ((StmtIn₁ × ∀ i, OStmtIn₁ i) × WitIn₁)}
     {relIn₂ : Set ((StmtIn₂ × ∀ i, OStmtIn₂ i) × WitIn₂)}
@@ -420,7 +420,7 @@ theorem castInOut_completeness
     {ιₛₒ₁ ιₛₒ₂ : Type} {OStmtOut₁ : ιₛₒ₁ → Type} {OStmtOut₂ : ιₛₒ₂ → Type}
     {WitOut₁ WitOut₂ : Type}
     -- 3. Context
-    [∀ i, SelectableType (pSpec.Challenge i)]
+    [∀ i, SampleableType (pSpec.Challenge i)]
     {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
     {relIn₁ : Set ((StmtIn₁ × ∀ i, OStmtIn₁ i) × WitIn₁)}
     {relIn₂ : Set ((StmtIn₂ × ∀ i, OStmtIn₂ i) × WitIn₂)}
@@ -513,7 +513,7 @@ theorem castInOut_rbrKnowledgeSoundness
     {ιₛₒ₁ ιₛₒ₂ : Type} {OStmtOut₁ : ιₛₒ₁ → Type} {OStmtOut₂ : ιₛₒ₂ → Type}
     {WitOut₁ WitOut₂ : Type}
     -- 3. Context
-    [∀ i, SelectableType (pSpec.Challenge i)]
+    [∀ i, SampleableType (pSpec.Challenge i)]
     {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
     {relIn₁ : Set ((StmtIn₁ × ∀ i, OStmtIn₁ i) × WitIn₁)}
     {relIn₂ : Set ((StmtIn₂ × ∀ i, OStmtIn₂ i) × WitIn₂)}
@@ -578,7 +578,7 @@ theorem castOutSimple_rbrKnowledgeSoundness
     [∀ i, OracleInterface (OStmtOut₁ i)] [∀ i, OracleInterface (OStmtOut₂ i)]
     {WitOut₁ WitOut₂ : Type}
     [∀ i, OracleInterface (pSpec.Message i)]
-    [∀ i, SelectableType (pSpec.Challenge i)]
+    [∀ i, SampleableType (pSpec.Challenge i)]
     {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
     {relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)}
     {relOut₁ : Set ((StmtOut₁ × ∀ i, OStmtOut₁ i) × WitOut₁)}
