@@ -67,7 +67,7 @@ omit [NeZero ℓ] [NeZero ϑ] hdiv in
 lemma fin_zero_mul_eq (h : 0 * ϑ < ℓ + 1) : (⟨0 * ϑ, h⟩ : Fin (ℓ + 1)) = 0 := by
   ext; simp only [zero_mul, Fin.coe_ofNat_eq_mod, Nat.zero_mod]
 
-omit [Field L] [Fintype L] [DecidableEq L] [CharP L 2] [SelectableType L] [NeZero ℓ] in
+omit [Field L] [Fintype L] [DecidableEq L] [CharP L 2] [SampleableType L] [NeZero ℓ] in
 /-- Statement equality from Fin equality -/
 lemma Statement.of_fin_eq {i j : Fin (ℓ + 1)} (h : i = j) :
     Statement (L := L) (ℓ := ℓ) Context i = Statement (L := L) (ℓ := ℓ) Context j := by
@@ -79,21 +79,21 @@ lemma OracleStatement.idx_eq {i j : Fin (ℓ + 1)} (h : i = j) :
     Fin (toOutCodewordsCount ℓ ϑ i) = Fin (toOutCodewordsCount ℓ ϑ j) := by
   subst h; rfl
 
-omit [CharP L 2] [SelectableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] hdiv in
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] hdiv in
 /-- OracleStatement function HEq from Fin equality -/
 lemma OracleStatement.heq_of_fin_eq {i j : Fin (ℓ + 1)} (h : i = j) :
     HEq (fun k => OracleStatement 𝔽q β ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i k)
         (fun k => OracleStatement 𝔽q β ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) j k) := by
   subst h; rfl
 
-omit [CharP L 2] [SelectableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] [NeZero 𝓡] in
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] [NeZero 𝓡] in
 /-- Witness equality from Fin equality -/
 lemma Witness.of_fin_eq {i j : Fin (ℓ + 1)} (h : i = j) :
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i =
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) j := by
   subst h; rfl
 
-omit [CharP L 2] [SelectableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
 /-- Relation equality from Fin equality -/
 lemma strictRoundRelation.of_fin_eq {i j : Fin (ℓ + 1)} (h : i = j) :
     strictRoundRelation (mp := mp) 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i ≍
@@ -1234,13 +1234,13 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
 theorem coreInteractionOracleReduction_perfectCompleteness (hInit : init.neverFails)
     [(j : pSpecFold.ChallengeIdx) → Fintype ((pSpecFold (L := L)).Challenge j)]
     [(j : pSpecFold.ChallengeIdx) → Inhabited ((pSpecFold (L := L)).Challenge j)]
-    [(j : pSpecFold.ChallengeIdx) → SelectableType ((pSpecFold (L := L)).Challenge j)]
+    [(j : pSpecFold.ChallengeIdx) → SampleableType ((pSpecFold (L := L)).Challenge j)]
     [(i : Fin ℓ) → (j : (pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).ChallengeIdx) →
       Fintype ((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j)]
     [(i : Fin ℓ) → (j : (pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).ChallengeIdx) →
       Inhabited ((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j)]
     [(i : Fin ℓ) → (j : (pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).ChallengeIdx) →
-      SelectableType ((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j)] :
+      SampleableType ((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j)] :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecCoreInteraction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (relIn := strictRoundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)

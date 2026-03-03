@@ -223,7 +223,7 @@ noncomputable def iteratedSumcheckOracleReduction (i : Fin ℓ') :
 
 /-! ## Strong Completeness Theorem -/
 
-omit [NeZero κ] [Fintype L] [DecidableEq L] [CharP L 2] [SelectableType L]
+omit [NeZero κ] [Fintype L] [DecidableEq L] [CharP L 2] [SampleableType L]
     [Fintype K] [DecidableEq K] [NeZero ℓ] in
 lemma sumcheckStep_is_logic_complete (i : Fin ℓ') :
     (sumcheckStepLogic (κ:=κ) (L:=L) (K:=K) (β:=β) (ℓ:=ℓ) (ℓ':=ℓ') (h_l:=h_l)
@@ -977,10 +977,10 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
   simp only [probEvent_eq_one_iff]
 
   intro stmtIn oStmtIn witIn h_relIn
-  haveI : [pSpecFinalSumcheckStep (L := L).Challenge]ₒ.FiniteRange :=
-    instFiniteRangePSpecFinalSumcheckStepChallenge
-  haveI : ([]ₒ ++ₒ [pSpecFinalSumcheckStep (L := L).Challenge]ₒ).FiniteRange :=
-    []ₒ.instFiniteRangeSumAppend [pSpecFinalSumcheckStep (L := L).Challenge]ₒ
+  haveI : [pSpecFinalSumcheckStep (L := L).Challenge]ₒ.Fintype :=
+    instFintypePSpecFinalSumcheckStepChallenge
+  haveI : ([]ₒ + [pSpecFinalSumcheckStep (L := L).Challenge]ₒ).Fintype :=
+    []ₒ.instFintypeSumAppend [pSpecFinalSumcheckStep (L := L).Challenge]ₒ
 
   let step := finalSumcheckStepLogic κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) aOStmtIn
     -- Step 2e: Apply the logic completeness lemma
@@ -1022,12 +1022,12 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
       and_true
     ]
 
-    -- -- Apply FiniteRange instances for oracle simulation (defined in Spec.lean)
+    -- -- Apply Fintype instances for oracle simulation (defined in Spec.lean)
     -- haveI : [fun j => OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-    --   (Fin.last ℓ) j]ₒ.FiniteRange := by
-    --     apply instFiniteRangeOracleStatementFinLast
-    -- haveI : [(pSpecFinalSumcheckStep (L := L)).Message]ₒ.FiniteRange :=
-    --   instFiniteRangePSpecFinalSumcheckStepMessage
+    --   (Fin.last ℓ) j]ₒ.Fintype := by
+    --     apply instFintypeOracleStatementFinLast
+    -- haveI : [(pSpecFinalSumcheckStep (L := L)).Message]ₒ.Fintype :=
+    --   instFintypePSpecFinalSumcheckStepMessage
     -- simulateQ_query (q : OracleQuery spec α) : simulateQ so q = so.impl q
     simp only [MessageIdx, Fin.isValue, Message, Nat.reduceAdd, Fin.succ_zero_eq_one,
       SubSpec.liftM_query_eq_liftM_liftM, guard_eq, bind_pure_comp, simulateQ_bind, simulateQ_query,

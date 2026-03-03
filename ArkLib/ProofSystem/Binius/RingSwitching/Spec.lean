@@ -118,19 +118,19 @@ instance : ∀ i, SampleableType (mlIOPCS.pSpec.Challenge i) := mlIOPCS.O_challe
 instance : ∀ i, SampleableType ((fullPspec κ (L:=L) (K:=K) (ℓ':=ℓ') mlIOPCS).Challenge i) :=
   instSampleableTypeChallengeAppend
 
-/-! ## FiniteRange instances for oracle specifications -/
+/-! ## Fintype instances for oracle specifications -/
 
-instance : ([(pSpecSumcheckRound (L:=L)).Challenge]ₒ).FiniteRange := by
+instance : ([(pSpecSumcheckRound (L:=L)).Challenge]ₒ).Fintype := by
   sorry
 
-instance : ([(pSpecBatching κ (L:=L) (K:=K)).Challenge]ₒ).FiniteRange := by
+instance : ([(pSpecBatching κ (L:=L) (K:=K)).Challenge]ₒ).Fintype := by
   sorry
 
-instance : ([]ₒ ++ₒ [(pSpecSumcheckRound (L:=L)).Challenge]ₒ).FiniteRange
-  := []ₒ.instFiniteRangeSumAppend [(pSpecSumcheckRound (L:=L)).Challenge]ₒ
+instance : ([]ₒ + [(pSpecSumcheckRound (L:=L)).Challenge]ₒ).Fintype
+  := []ₒ.instFintypeSumAppend [(pSpecSumcheckRound (L:=L)).Challenge]ₒ
 
-instance : ([]ₒ ++ₒ [(pSpecBatching κ L K).Challenge]ₒ).FiniteRange :=
-  []ₒ.instFiniteRangeSumAppend [(pSpecBatching κ L K).Challenge]ₒ
+instance : ([]ₒ + [(pSpecBatching κ L K).Challenge]ₒ).Fintype :=
+  []ₒ.instFintypeSumAppend [(pSpecBatching κ L K).Challenge]ₒ
 
 instance : ∀ i, Fintype ((pSpecFinalSumcheck (L:=L)).Challenge i)
   | ⟨0, h0⟩ => nomatch h0

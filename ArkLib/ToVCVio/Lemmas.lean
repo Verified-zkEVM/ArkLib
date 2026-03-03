@@ -38,6 +38,37 @@ lemma mem_support_mk {m : Type u → Type v} [Monad m] [HasEvalSPMF m]
     x ∈ support (OptionT.mk mx : OptionT m α) ↔ some x ∈ support mx := by
   simp [support_mk]
 
+/-- Support of `OptionT.run (OptionT.mk mx)` is the same as support of the underlying `mx`. -/
+@[simp]
+lemma support_run {m : Type u → Type v} [Monad m] [HasEvalSPMF m]
+    {α : Type u} (mx : m (Option α)) :
+    support (m := m) (α := Option α) (OptionT.run mx) = support mx :=
+  rfl
+
+/-- Membership form of `support_run_mk`. -/
+@[simp]
+lemma mem_support_run_mk_iff {m : Type u → Type v} [Monad m] [HasEvalSPMF m]
+    {α : Type u} (mx : m (Option α)) (x : Option α) :
+    x ∈ support (m := m) (α := Option α) (OptionT.run mx) ↔ x ∈ support mx := by
+  simp
+
+/-- Convenience alias of `mem_support_run_mk_iff` with a standard name. -/
+@[simp]
+lemma mem_support_run_iff {m : Type u → Type v} [Monad m] [HasEvalSPMF m]
+    {α : Type u} (mx : m (Option α)) (x : Option α) :
+    x ∈ support (m := m) (α := Option α) (OptionT.run mx) ↔
+      x ∈ support (m := m) (α := Option α) mx := by
+  exact mem_support_run_mk_iff (m := m) (mx := mx) (x := x)
+
+/-- Equality transport through `OptionT.run` at base-monad support level. -/
+@[simp]
+lemma support_run_eq_iff {m : Type u → Type v} [Monad m] [HasEvalSPMF m]
+    {α : Type u} (mx my : m (Option α)) :
+    support (m := m) (α := Option α) (OptionT.run mx) =
+      support (m := m) (α := Option α) (OptionT.run my) ↔
+    support (m := m) (α := Option α) mx =
+      support (m := m) (α := Option α) my := Iff.rfl
+
 /-- Convenience name for support of `OptionT.pure`. -/
 @[simp]
 lemma support_OptionT_pure {m : Type u → Type v} [Monad m] [HasEvalSPMF m]
@@ -208,6 +239,23 @@ lemma probFailure_simulateQ_liftQuery_eq
   simpa [OracleComp.liftM_OptionT_eq] using
     (OptionT.probFailure_eq (mx := (liftM oa : OptionT (OracleComp superSpec) α)))
 
+/-- Symmetric form of `probFailure_simulateQ_liftQuery_eq` with `simulateQ` terms on the LHS. -/
+@[simp]
+lemma probFailure_simulateQ_liftQuery_add_none_eq
+    {ι' : Type w} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
+    [spec.Fintype] [spec.Inhabited]
+    [superSpec.Fintype] [superSpec.Inhabited]
+    [MonadLift (OracleQuery spec) (OracleQuery superSpec)]
+    {α : Type u} (oa : OptionT (OracleComp spec) α) :
+    Pr[⊥ | simulateQ (fun t ↦
+      (liftM (query (spec := spec) t) : OracleComp superSpec _)) oa] +
+    Pr[= none | simulateQ (fun t ↦
+      (liftM (query (spec := spec) t) : OracleComp superSpec _)) oa] =
+    Pr[⊥ | (liftM oa : OptionT (OracleComp superSpec) α)] := by
+  simpa [add_comm] using
+    (probFailure_simulateQ_liftQuery_eq (spec := spec)
+      (superSpec := superSpec) (oa := oa)).symm
+
 /-- `= 0` form of `probFailure_simulateQ_liftQuery_eq`. -/
 @[simp]
 lemma probFailure_simulateQ_liftQuery_eq_zero_iff
@@ -222,6 +270,33 @@ lemma probFailure_simulateQ_liftQuery_eq_zero_iff
       Pr[= none | simulateQ (fun t ↦
         (liftM (query (spec := spec) t) : OracleComp superSpec _)) oa] = 0 := by
   rw [probFailure_simulateQ_liftQuery_eq (oa := oa), add_eq_zero]
+
+/-- Run-level failure-probability bridge for `simulateQ ...` vs `liftM` on `OptionT` computations. -/
+@[simp]
+lemma probFailure_run_simulateQ_liftQuery_eq
+    {ι' : Type w} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
+    [spec.Fintype] [spec.Inhabited]
+    [superSpec.Fintype] [superSpec.Inhabited]
+    [MonadLift (OracleQuery spec) (OracleQuery superSpec)]
+    {α : Type u} (oa : OptionT (OracleComp spec) α) :
+    Pr[⊥ | simulateQ (fun t ↦
+      (liftM (query (spec := spec) t) : OracleComp superSpec _)) oa] =
+    Pr[⊥ | OptionT.run (liftM oa : OptionT (OracleComp superSpec) α)] := by
+  simpa [OracleComp.liftM_OptionT_eq]
+
+/-- `= 0` form of `probFailure_run_simulateQ_liftQuery_eq`. -/
+@[simp]
+lemma probFailure_run_simulateQ_liftQuery_eq_zero_iff
+    {ι' : Type w} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
+    [spec.Fintype] [spec.Inhabited]
+    [superSpec.Fintype] [superSpec.Inhabited]
+    [MonadLift (OracleQuery spec) (OracleQuery superSpec)]
+    {α : Type u} (oa : OptionT (OracleComp spec) α) :
+    Pr[⊥ | simulateQ (fun t ↦
+      (liftM (query (spec := spec) t) : OracleComp superSpec _)) oa] = 0 ↔
+    Pr[⊥ | OptionT.run (liftM oa : OptionT (OracleComp superSpec) α)] = 0 := by
+  simpa [probFailure_run_simulateQ_liftQuery_eq (spec := spec)
+    (superSpec := superSpec) (oa := oa)]
 
 /-- Run-level support membership bridge for `simulateQ ...` vs `liftM` on `OptionT` computations. -/
 @[simp]
@@ -256,6 +331,38 @@ lemma mem_support_simulateQ_liftQuery_some_iff
   simpa using (mem_support_simulateQ_liftQuery_iff
     (spec := spec) (superSpec := superSpec) (oa := oa) (x := some x))
 
+/-! this lemma makes goal more friendly to `OracleComp.probOutput_liftComp` -/
+@[simp 1100]
+lemma run_liftComp_eq {ι' : Type w} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
+    [spec.Fintype] [spec.Inhabited]
+    [superSpec.Fintype] [superSpec.Inhabited]
+    [MonadLift (OracleQuery spec) (OracleQuery superSpec)]
+    {α : Type u} (oa : OptionT (OracleComp spec) α) :
+    OptionT.run (liftComp oa superSpec) = ((oa.run).liftComp superSpec) := by
+  rfl
+
+/-- OptionT failure of the spec-lifted computation equals run failure + none mass of the original:
+  `Pr[⊥ | liftComp oa superSpec] = Pr[⊥ | oa.run] + Pr[= none | oa.run]`.
+  Cf. `OptionT.probFailure_liftM`: that lemma is for lifting a plain `m α` into `OptionT m α`
+  (then `Pr[⊥ | liftM mx] = Pr[⊥ | mx]`); it uses `[LawfulMonad m]`. OracleComp has LawfulMonad
+  (VCVio), so Binius is fine. Here we spec-lift `OptionT (OracleComp spec)` → `OptionT (OracleComp superSpec)`. -/
+@[simp]
+lemma probFailure_liftComp_of_OracleComp_Option {ι' : Type w} {spec : OracleSpec ι}
+    {superSpec : OracleSpec ι'} [spec.Fintype] [spec.Inhabited]
+    [superSpec.Fintype] [superSpec.Inhabited]
+    [spec ⊂ₒ superSpec] [LawfulSubSpec spec superSpec]
+    {α : Type u} (oa : OptionT (OracleComp spec) α) :
+    probFailure (m := (OptionT (OracleComp superSpec))) (mx :=
+      (liftComp oa superSpec : OracleComp superSpec (Option α))) =
+    probFailure (m := OracleComp spec) (mx := oa.run)
+    + probOutput (m := OracleComp spec) (mx := oa.run) (x := none) := by
+  conv_lhs => -- MUST BE explicit about `m` like this
+    rw [OptionT.probFailure_eq (m := (OracleComp superSpec))]
+  simp only [HasEvalPMF.probFailure_eq_zero, zero_add]
+  conv_lhs => rw [run_liftComp_eq]
+  rw [OracleComp.probOutput_liftComp (spec := spec)
+    (superSpec := superSpec) (mx := oa.run) (x := none)]
+
 end OptionT
 
 @[simp]
@@ -283,20 +390,38 @@ lemma probFailure_liftComp_eq {ι' : Type} {superSpec : OracleSpec ι'}
   rw [liftComp_eq_liftM]; simp only [HasEvalPMF.probFailure_eq_zero]
 
 @[simp]
-lemma liftComp_support {ι' : Type w} {superSpec : OracleSpec ι'}
+lemma support_liftComp {ι' : Type w} {superSpec : OracleSpec ι'}
     [spec.Fintype] [spec.Inhabited] [superSpec.Fintype] [superSpec.Inhabited]
-    [MonadLift (OracleQuery spec) (OracleQuery superSpec)]
+    [spec ⊂ₒ superSpec] [LawfulSubSpec spec superSpec]
     (oa : OracleComp spec α) : support (liftComp oa superSpec) = support oa := by
   induction oa using OracleComp.inductionOn with
   | pure a => simp
-  | query_bind t oa h =>
+  | query_bind t oa ih =>
     rw [liftComp_bind, support_bind, support_bind]
     have hq : support (liftComp (query t : OracleComp spec _) superSpec) = Set.univ := by
-      simp only [liftComp_eq_liftM]
-      sorry
+      rw [liftComp_eq_liftM]
+      calc support (liftM (query t : OracleQuery spec (spec.Range t)) : OracleComp superSpec _)
+        _ = Set.range ((MonadLift.monadLift (query t : OracleQuery spec _) : OracleQuery superSpec _)).cont := support_liftM _
+        _ = Set.univ :=
+          Set.range_eq_univ.mpr (LawfulSubSpec.cont_bijective t).surjective
     have hq' : support (query t : OracleComp spec _) = Set.univ := OracleComp.support_query t
     rw [hq, hq', Set.biUnion_univ, Set.biUnion_univ]
-    simp_rw [h]
+    simp_rw [ih]
+
+alias liftComp_support := support_liftComp
+
+-- /-- OptionT wrapper of `support_liftComp` for `liftM ((liftComp oa superSpec))`. -/
+-- @[simp]
+-- lemma OptionT.support_liftComp_to_superSpec {ι' : Type w} {superSpec : OracleSpec ι'}
+--     [spec.Fintype] [spec.Inhabited] [superSpec.Fintype] [superSpec.Inhabited]
+--     [spec ⊂ₒ superSpec] [LawfulSubSpec spec superSpec]
+--     (oa : OracleComp spec α) :
+--     support (m := OptionT (OracleComp superSpec)) (α := α)
+--       (oa) = support oa := by
+--     change support
+--       (liftComp (mx := liftM (m := OracleComp spec) oa)) = support oa
+
+--     sorry
 
 /-- Map preserves NeverFail. -/
 lemma neverFail_map_iff' [spec.Fintype] [spec.Inhabited]
@@ -517,47 +642,6 @@ end OptionT
 /-- Commute two curried implication antecedents. -/
 theorem imp_comm {P Q R : Prop} : (P → Q → R) ↔ (Q → P → R) := by
   constructor <;> intro h h1 h2 <;> exact h h2 h1
-
-/-- Two-level `forall`/membership elimination with an outer `Option.some` equality. -/
-theorem forall_eq_lift_mem_2_some
-    {α β γ : Type u} {S : Set α} {T : α → Set β}
-    (f : α → β → γ) (p : γ → α → β → Prop) :
-    (∀ (c : γ), ∀ a ∈ S, ∀ b ∈ T a, some c = some (f a b) → p c a b) ↔
-    (∀ a ∈ S, ∀ b ∈ T a, p (f a b) a b) := by
-  constructor
-  · intro h a ha b hb
-    exact h (f a b) a ha b hb rfl
-  · intro h c a ha b hb hEq
-    have hc : c = f a b := by simpa using hEq
-    rw [hc]
-    exact h a ha b hb
-
-/-- Three-level `forall`/membership elimination (nested support bind form). -/
-theorem forall_eq_lift_mem_3
-    {α β γ δ : Type u} {S : Set α} {T : α → Set β} {U : α → β → Set γ}
-    (f : α → β → γ → δ) (p : δ → α → β → γ → Prop) :
-    (∀ (d : δ), ∀ a ∈ S, ∀ b ∈ T a, ∀ c ∈ U a b, d = f a b c → p d a b c) ↔
-    (∀ a ∈ S, ∀ b ∈ T a, ∀ c ∈ U a b, p (f a b c) a b c) := by
-  constructor
-  · intro h a ha b hb c hc
-    exact h (f a b c) a ha b hb c hc rfl
-  · intro h d a ha b hb c hc hEq
-    rw [hEq]
-    exact h a ha b hb c hc
-
-/-- Three-level variant with an outer `Option.some` equality. -/
-theorem forall_eq_lift_mem_3_some
-    {α β γ δ : Type u} {S : Set α} {T : α → Set β} {U : α → β → Set γ}
-    (f : α → β → γ → δ) (p : δ → α → β → γ → Prop) :
-    (∀ (d : δ), ∀ a ∈ S, ∀ b ∈ T a, ∀ c ∈ U a b, some d = some (f a b c) → p d a b c) ↔
-    (∀ a ∈ S, ∀ b ∈ T a, ∀ c ∈ U a b, p (f a b c) a b c) := by
-  constructor
-  · intro h a ha b hb c hc
-    exact h (f a b c) a ha b hb c hc rfl
-  · intro h d a ha b hb c hc hEq
-    have hd : d = f a b c := by simpa using hEq
-    rw [hd]
-    exact h a ha b hb c hc
 
 /-- Simplifies the probability event of a deterministic pure result. -/
 @[simp]

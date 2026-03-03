@@ -5,19 +5,16 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude
-
-set_option maxHeartbeats 400000  -- Increase if needed
-set_option profiler true
-set_option profiler.threshold 50  -- Show anything taking over 10ms
-
+import ArkLib.Data.CodingTheory.ReedSolomon
+import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
 namespace Binius.BinaryBasefold
 
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
   Binius.BinaryBasefold
 open scoped NNReal
-open ReedSolomon Code BerlekampWelch Function
+open Function
 open Finset AdditiveNTT Polynomial MvPolynomial Nat Matrix
-open ProbabilityTheory
+open Code ReedSolomon BerlekampWelch ProbabilityTheory
 
 noncomputable section SoundnessTools
 
@@ -50,7 +47,8 @@ def BBF_Code (i : Fin r) :
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] [NeZero 𝓡] in
 lemma exists_BBF_poly_of_codeword (i : Fin r)
   (u : (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)) :
-  ∃ P : L⦃<2^(ℓ-i)⦄[X], polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := i) (P := P) = u := by
+  ∃ P : L⦃<2^(ℓ-i)⦄[X],
+    polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := i) (P := P) = u := by
   have h_u_mem := u.property
   unfold BBF_Code at h_u_mem
   simp only [code, evalOnPoints, Embedding.coeFn_mk, LinearMap.coe_mk,
@@ -117,7 +115,7 @@ lemma BBF_CodeDistance_eq (i : Fin r) (h_i : i ≤ ℓ) :
 
 /-- Disagreement set Δ : The set of points where two functions disagree.
 For functions f^(i) and g^(i), this is {y ∈ S^(i) | f^(i)(y) ≠ g^(i)(y)}. -/
-def disagreementSet (i : Fin r) (h_i : i ≤ ℓ)
+def disagreementSet (i : Fin r)
   (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :
   Finset ((sDomain 𝔽q β h_ℓ_add_R_rate) i) := {y | f y ≠ g y}
 
@@ -133,13 +131,15 @@ def fiberwiseDisagreementSet (i : Fin r) {destIdx : Fin r} (steps : ℕ)
   {y | ∃ x, (iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := i)
     (k := steps) h_destIdx h_destIdx_le x) = y ∧ f x ≠ g x}
 
-def pair_fiberwiseDistance (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+def pair_fiberwiseDistance (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+  (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
   (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : ℕ :=
     (fiberwiseDisagreementSet 𝔽q β i steps h_destIdx h_destIdx_le f g).card
 
 /-- Fiber-wise distance d^(i) : The minimum size of the fiber-wise disagreement set
 between f^(i) and any codeword in C^(i). -/
-def fiberwiseDistance (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ)
+def fiberwiseDistance (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+  (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ)
   (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : ℕ :=
   -- The minimum size of the fiber-wise disagreement set between f^(i) and any codeword in C^(i)
   -- d^(i)(f^(i), C^(i)) := min_{g^(i) ∈ C^(i)} |Δ^(i)(f^(i), g^(i))|
@@ -152,22 +152,23 @@ def fiberwiseDistance (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : d
 
 /-- Fiberwise closeness : f^(i) is fiberwise close to C^(i) if
 2 * d^(i)(f^(i), C^(i)) < d_{i+steps} -/
-def fiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ) [NeZero steps] (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
-    (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      i) : Prop :=
-  let left := fiberwiseDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f)
-  2 * (fiberwiseDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f)) <
+def fiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ) [NeZero steps]
+  (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+  (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : Prop :=
+  2 * (fiberwiseDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps)
+    (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f)) <
       (BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := destIdx): ℕ∞)
 
-def pair_fiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ) [NeZero steps] (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
-    (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : Prop :=
+def pair_fiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ) [NeZero steps]
+  (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+  (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : Prop :=
     2 * pair_fiberwiseDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) steps
       h_destIdx h_destIdx_le (f := f) (g := g) <
       (BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := destIdx): ℕ∞)
 
 /-- Hamming UDR-closeness : f is close to C in Hamming distance if `2 * d(f, C) < d_i` -/
-def UDRClose (i : Fin r) (h_i : i ≤ ℓ) (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
-    : Prop :=
+def UDRClose (i : Fin r) (h_i : i ≤ ℓ)
+  (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : Prop :=
     2 * Δ₀(f, (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)) <
       BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
 
@@ -211,10 +212,10 @@ lemma UDRClose_iff_within_UDR_radius (i : Fin r) (h_i : i ≤ ℓ)
     rw [ReedSolomonCode.uniqueDecodingRadius_RS_eq' (h := by
       rw [card_Sᵢ, hF₂.out]; apply Nat.pow_le_pow_right (hx := by omega); omega
     )];
-  simp_rw [card_Sᵢ, hF₂.out, BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (h_i := by omega)]
+  simp_rw [card_Sᵢ, hF₂.out,
+    BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (h_i := by omega)]
   simp only [cast_add, ENat.coe_sub, cast_pow, cast_ofNat, cast_one]
   constructor
-
   · intro h_UDRClose
     -- 1. Prove distance is finite
     -- The hypothesis implies 2 * Δ₀ is finite, so Δ₀ must be finite.
@@ -241,11 +242,9 @@ lemma UDRClose_iff_within_UDR_radius (i : Fin r) (h_i : i ≤ ℓ)
       intro h_top
       unfold BBF_Code at h_top
       simp only [h_top, top_le_iff, ENat.coe_ne_top] at h_within
-
     -- 2. Lift to Nat
     lift Δ₀(f, ↑(BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)) to ℕ
       using h_finite with d_nat h_eq
-
     unfold BBF_Code at h_eq
     rw [←h_eq] at h_within
     norm_cast at h_within ⊢
@@ -303,10 +302,10 @@ lemma dist_to_UDRCodeword_le_uniqueDecodingRadius (i : Fin r) (h_i : i ≤ ℓ)
     exact h_within_radius
   ) -- res : ∃! v, v ∈ ↑(BBF_Code 𝔽q β i) ∧ Δ₀(f, v) ≤ uniqueDecodingRadius ↑(BBF_Code 𝔽q β i)
   let res := (Classical.choose_spec h_ExistsUnique).1
-  simp only [Fin.eta, SetLike.mem_coe, and_imp] at res
+  simp only [SetLike.mem_coe, and_imp] at res
   let h_close := res.2
   unfold UDRCodeword
-  simp only [Fin.eta, SetLike.mem_coe, and_imp, ge_iff_le]
+  simp only [SetLike.mem_coe, and_imp, ge_iff_le]
   exact h_close
 
 /-- Computational version of `UDRCodeword`, where we use the Berlekamp-Welch decoder to extract
@@ -433,10 +432,12 @@ def extractUDRCodeword
       apply BerlekampWelch.decoder_eq_some
       · -- ⊢ `2 * e < d_i = n - k + 1`
         have h_le: 2 * e ≤ domain_size - k := by
-          have hS_card_eq_domain_size := sDomain_card 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (h_i := Sdomain_bound (by omega))
+          have hS_card_eq_domain_size := sDomain_card 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+            (i := i) (h_i := Sdomain_bound (by omega))
           simp only [domain_size, k]; simp_rw [hS_card_eq_domain_size, hF₂.out]
           unfold UDRClose at h_within_radius
-          rw [BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_i := by omega)] at h_within_radius
+          rw [BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+            (h_i := by omega)] at h_within_radius
           -- h_within_radius : 2 * Δ₀(f, ↑(BBF_Code 𝔽q β i))
             -- < ↑(2 ^ (ℓ + 𝓡 - ↑i) - 2 ^ (ℓ - ↑i) + 1)
           dsimp only [Fin.eta, e, d]
@@ -448,7 +449,8 @@ def extractUDRCodeword
         omega
       · -- ⊢ `k ≤ domain_size`. This holds by the problem setup.
         simp only [k, domain_size]
-        rw [sDomain_card 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_i := Sdomain_bound (by omega)), hF₂.out]
+        rw [sDomain_card 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (h_i := Sdomain_bound (by omega)), hF₂.out]
         apply Nat.pow_le_pow_right (by omega) -- ⊢ ℓ - ↑i ≤ ℓ + 𝓡 - ↑⟨↑i, ⋯⟩
         simp only [tsub_le_iff_right]
         omega
@@ -463,7 +465,7 @@ def extractUDRCodeword
         simp only [ωs]
         have h_functions_eq : (fun a ↦ Polynomial.eval a p) ∘ ωs
           = g_closest ∘ domain_to_fin.symm := by
-          ext j; simp only [Function.comp_apply, Fin.eta, ωs]
+          ext j; simp only [Function.comp_apply, ωs]
           rw [←hp_eval]
         rw [h_functions_eq]
         -- ⊢ Δ₀(f_vals, g_closest ∘ ⇑domain_to_fin.symm) ≤ e
@@ -479,10 +481,11 @@ def extractUDRCodeword
   let p : L[X] := berlekamp_welch_result.get (Option.ne_none_iff_isSome.mp h_ne_none)
   exact fun x => p.eval x.val
 
+/-! `Δ₀(f, g) ≤ pair_fiberwiseDistance(f, g) * 2 ^ steps` -/
 omit [CharP L 2] in
-/-- `Δ₀(f, g) ≤ pair_fiberwiseDistance(f, g) * 2 ^ steps` -/
-lemma hammingDist_le_fiberwiseDistance_mul_two_pow_steps (i : Fin r) {destIdx : Fin r} (steps : ℕ) [NeZero steps] (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
-    (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i):
+lemma hammingDist_le_fiberwiseDistance_mul_two_pow_steps (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+  [NeZero steps] (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+  (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :
     Δ₀(f, g) ≤ (pair_fiberwiseDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
       steps h_destIdx h_destIdx_le (f := f) (g := g)) * 2 ^ steps := by
   let d_fw := pair_fiberwiseDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
@@ -537,14 +540,14 @@ lemma hammingDist_le_fiberwiseDistance_mul_two_pow_steps (i : Fin r) {destIdx : 
         simp only [h_forward_iterated_qmap, Subtype.coe_eta, h_eval_diff,
           not_false_eq_true, and_self]
       simp only [h_elemenet_Y_bad, true_and]
-
       set qMapFiber := qMap_total_fiber 𝔽q β (i := i) (steps := steps)
         h_destIdx h_destIdx_le (y := y_of_x)
       simp only [coe_univ, Set.image_univ, Set.toFinset_range, mem_image, mem_univ, true_and]
       use (pointToIterateQuotientIndex (i := i) (steps := steps)
         (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (x := x))
-      have h_res := is_fiber_iff_generates_quotient_point 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
-        (x := x) (y := y_of_x).mp (by rfl)
+      have h_res := is_fiber_iff_generates_quotient_point 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i (steps := steps)
+        (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (x := x) (y := y_of_x).mp (by rfl)
       exact h_res
     -- ⊢ #ΔH ≤ Y_bad.ncard * 2 ^ steps
     -- The cardinality of a subset is at most the cardinality of the superset.
@@ -555,7 +558,8 @@ lemma hammingDist_le_fiberwiseDistance_mul_two_pow_steps (i : Fin r) {destIdx : 
       -- the size of each fiber (`2 ^ steps`).
       simp only [Set.toFinset_card]
       have h_card_fiber_per_quotient_point := card_qMap_total_fiber 𝔽q β
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i (steps := steps)
+        (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
       simp only [Set.image_univ, Fintype.card_ofFinset,
         Subtype.forall] at h_card_fiber_per_quotient_point
       have h_card_fiber_of_each_y : ∀ y ∈ Y_bad,
@@ -568,13 +572,14 @@ lemma hammingDist_le_fiberwiseDistance_mul_two_pow_steps (i : Fin r) {destIdx : 
         simp only [coe_univ, Set.image_univ, Fintype.card_ofFinset, hy_card_fiber_of_y]
       rw [Finset.sum_congr rfl h_card_fiber_of_each_y]
       -- ⊢ ∑ x ∈ Y_bad.toFinset, 2 ^ steps ≤ Y_bad.encard.toNat * 2 ^ steps
-      simp only [sum_const, smul_eq_mul, ofNat_pos, pow_pos, _root_.mul_le_mul_right, ge_iff_le]
+      simp only [sum_const, smul_eq_mul, ge_iff_le]
       -- ⊢ Fintype.card ↑Y_bad ≤ Nat.card ↑Y_bad
       simp only [Y_bad, d_fw, pair_fiberwiseDistance, le_refl]
     · -- Prove that the fibers for distinct quotient points y₁, y₂ are disjoint.
       intro y₁ hy₁ y₂ hy₂ hy_ne
       have h_disjoint := qMap_total_fiber_disjoint (i := i) (steps := steps)
-        (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (y₁ := y₁) (y₂ := y₂) (hy_ne := hy_ne)
+        (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (y₁ := y₁) (y₂ := y₂)
+        (hy_ne := hy_ne)
       simp only [Function.onFun, coe_univ]
       exact h_disjoint
   exact h_dist_le_fw_dist_times_fiber_size
@@ -582,8 +587,9 @@ lemma hammingDist_le_fiberwiseDistance_mul_two_pow_steps (i : Fin r) {destIdx : 
 omit [CharP L 2] in
 /-- if `d⁽ⁱ⁾(f⁽ⁱ⁾, g⁽ⁱ⁾) < d_{ᵢ₊steps} / 2` (fiberwise distance),
 then `d(f⁽ⁱ⁾, g⁽ⁱ⁾) < dᵢ/2` (regular code distance) -/
-lemma pairUDRClose_of_pairFiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ) [NeZero steps] (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
-    (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
+lemma pairUDRClose_of_pairFiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ) [NeZero steps]
+  (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+  (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
     (h_fw_dist_lt : pair_fiberwiseClose 𝔽q β i steps h_destIdx h_destIdx_le f g) :
     pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (by omega) (f := f)
       (g := g) := by
@@ -597,13 +603,11 @@ lemma pairUDRClose_of_pairFiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : 
   set d_next := BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := destIdx)
   -- d_next = 2 ^ (ℓ + 𝓡 - (i + steps)) - 2 ^ (ℓ - (i + steps)) + 1
-
   have h_le : 2 * Δ₀(f, g) ≤ 2 * (d_fw * 2 ^ steps) := by
     apply Nat.mul_le_mul_left
     apply hammingDist_le_fiberwiseDistance_mul_two_pow_steps
   -- h_fw_dist_lt : 2 * d_fw < BBF_CodeDistance 𝔽q β ⟨↑i + steps, ⋯⟩
   have h_2_fw_dist_le : 2 * d_fw ≤ d_next - 1 := by omega
-
   have h_2_fw_dist_mul_2_pow_steps_le :
     2 * (d_fw * 2 ^ steps) ≤ (d_next * 2 ^ steps - 2 ^ steps):= by
     rw [←mul_assoc]
@@ -612,10 +616,10 @@ lemma pairUDRClose_of_pairFiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : 
       rw [←Nat.sub_mul (n := d_next) (m := 1) (k := 2 ^ steps)];
     apply Nat.mul_le_mul_right
     exact h_2_fw_dist_le
-
   have h_2_fw_dist_mul_2_pow_steps_le : (d_next * 2 ^ steps - 2 ^ steps) = d_cur - 1 := by
     dsimp only [d_next, d_cur]
-    rw [BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_i := by omega), BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_i := by omega)]
+    rw [BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_i := by omega),
+      BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_i := by omega)]
     simp only [add_tsub_cancel_right]
     rw [Nat.add_mul, Nat.sub_mul]
     rw [←Nat.pow_add, ←Nat.pow_add]
@@ -623,12 +627,13 @@ lemma pairUDRClose_of_pairFiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : 
     have h_exp2 : ℓ - destIdx + steps = ℓ - i.val := by omega
     rw [h_exp1, h_exp2]
     omega
-
   have h_le_2 : 2 * (d_fw * 2 ^ steps) ≤ BBF_CodeDistance 𝔽q β
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) - 1:= by
     omega
-
-  apply Nat.lt_of_le_pred (h := by simp only [d_cur]; rw [BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_i := by omega)]; omega)
+  apply Nat.lt_of_le_pred (h := by
+    simp only [d_cur]
+    rw [BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_i := by omega)]
+    omega)
   simp only [pred_eq_sub_one]
   exact Nat.le_trans h_le h_le_2
 
@@ -648,11 +653,11 @@ lemma exists_fiberwiseClosestCodeword (i : Fin r) {destIdx : Fin r} (steps : ℕ
   set C_i := BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
   -- Let `S` be the set of all possible fiber-wise disagreement sizes.
   let S := (fun (g : C_i) =>
-    (fiberwiseDisagreementSet 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f) (g := g)).card) '' Set.univ
+    (fiberwiseDisagreementSet 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps)
+      (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f) (g := g)).card) '' Set.univ
   -- The code `C_i` (a submodule) is non-empty, so `S` is also non-empty.
   have hS_nonempty : S.Nonempty := by
     refine Set.image_nonempty.mpr ?_
-
     exact Set.univ_nonempty
   -- For a non-empty set of natural numbers, `sInf` is an element of the set.
   have h_sInf_mem : sInf S ∈ S := Nat.sInf_mem hS_nonempty
@@ -671,11 +676,13 @@ lemma exists_fiberwiseClosestCodeword (i : Fin r) {destIdx : Fin r} (steps : ℕ
     -- You may need to unfold `fiberwiseDistance` here if Lean doesn't reduce it automatically.
     exact id (Eq.symm h_eq)
 
-omit [CharP L 2] in
-/-- if `d⁽ⁱ⁾(f⁽ⁱ⁾, C⁽ⁱ⁾) < d_{ᵢ₊steps} / 2` (fiberwise distance),
+/-! if `d⁽ⁱ⁾(f⁽ⁱ⁾, C⁽ⁱ⁾) < d_{ᵢ₊steps} / 2` (fiberwise distance),
 then `d(f⁽ⁱ⁾, C⁽ⁱ⁾) < dᵢ/2` (regular code distance) -/
-theorem UDRClose_of_fiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ) [NeZero steps] (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
-    (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
+omit [CharP L 2] in
+@[simp]
+theorem UDRClose_of_fiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ) [NeZero steps]
+  (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+  (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
   (h_fw_dist_lt : fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := i) (steps := steps) h_destIdx h_destIdx_le (f := f)) :
   UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i (h_i := by omega) f := by
@@ -687,7 +694,6 @@ theorem UDRClose_of_fiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ) [
   let d_H := Δ₀(f, C_i)
   let d_i := BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
   let d_i_plus_steps := BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := destIdx)
-
   have h_d_i_gt_0 : d_i > 0 := by
     dsimp only [d_i]-- , BBF_CodeDistance] -- ⊢ 2 ^ (ℓ + 𝓡 - ↑i) - 2 ^ (ℓ - ↑i) + 1 > 0
     have h_exp_lt : ℓ - i.val < ℓ + 𝓡 - i.val := by
@@ -697,16 +703,13 @@ theorem UDRClose_of_fiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ) [
       exact Nat.pow_lt_pow_right (by norm_num) h_exp_lt
     rw [BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (h_i := by omega)]
     omega
-
   have h_C_i_nonempty : Nonempty C_i := by
     simp only [nonempty_subtype, C_i]
     exact Submodule.nonempty (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
-
   -- 1. Relate Hamming distance `d_H` to fiber-wise distance `d_fw`.
   obtain ⟨g', h_g'_mem, h_g'_min_card⟩ : ∃ g' ∈ C_i, d_fw
     = (fiberwiseDisagreementSet 𝔽q β i steps h_destIdx h_destIdx_le f g').card := by
     apply exists_fiberwiseClosestCodeword
-
   have h_UDR_close_f_g' := pairUDRClose_of_pairFiberwiseClose 𝔽q β
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps)
     h_destIdx h_destIdx_le (f := f) (g := g') (h_fw_dist_lt := by
@@ -725,7 +728,7 @@ theorem UDRClose_of_fiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : ℕ) [
     _ < _ := by norm_cast -- use result from h_UDR_close_f_g'
 
 omit [CharP L 2] in
-/-- This expands `exists_fiberwiseClosestCodeword` to the case `f` is fiberwise-close to `C_i`. -/
+/-! This expands `exists_fiberwiseClosestCodeword` to the case `f` is fiberwise-close to `C_i`. -/
 lemma exists_unique_fiberwiseClosestCodeword_within_UDR (i : Fin r) {destIdx : Fin r}
     (steps : ℕ) [NeZero steps] (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
@@ -739,7 +742,8 @@ lemma exists_unique_fiberwiseClosestCodeword_within_UDR (i : Fin r) {destIdx : F
         pair_fiberwiseDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (i := i) steps h_destIdx h_destIdx_le (f := f) (g := g)) ∧
       (g = UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i (h_i := by omega) f
-        (h_within_radius := UDRClose_of_fiberwiseClose 𝔽q β i steps h_destIdx h_destIdx_le f h_fw_close))
+        (h_within_radius := UDRClose_of_fiberwiseClose 𝔽q β i steps h_destIdx h_destIdx_le f
+        h_fw_close))
       := by
   set d_fw := fiberwiseDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
     steps h_destIdx h_destIdx_le f
@@ -753,13 +757,15 @@ lemma exists_unique_fiberwiseClosestCodeword_within_UDR (i : Fin r) {destIdx : F
   have h_neZero_dist_C_i_next : NeZero (‖(C_i_next : Set (S_i_next → L))‖₀) := {
     out := by
       unfold C_i_next
-      simp_rw [BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := destIdx) (h_i := by omega)]
+      simp_rw [BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := destIdx) (h_i := by omega)]
       omega
   }
   have h_neZero_dist_C_i : NeZero (‖(C_i : Set (S_i → L))‖₀) := {
     out := by
       unfold C_i
-      simp_rw [BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (h_i := by omega)]
+      simp_rw [BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := i) (h_i := by omega)]
       omega
   }
   use g
@@ -770,27 +776,32 @@ lemma exists_unique_fiberwiseClosestCodeword_within_UDR (i : Fin r) {destIdx : F
     rw [←Code.UDRClose_iff_two_mul_proximity_lt_d_UDR] at h_fw_close
     unfold d_fw at h_g_min_card
     rw [h_g_min_card] at h_fw_close
-    rw [Code.uniqueDecodingRadius, ←Nat.two_mul_lt_iff_le_half_of_sub_one (a := #(fiberwiseDisagreementSet 𝔽q β i steps h_destIdx h_destIdx_le f g)) (h_b_pos := by exact Nat.pos_of_neZero (n := ‖(C_i_next : Set (S_i_next → L))‖₀))] at h_fw_close
-    -- h_fw_close : 2 * #(fiberwiseDisagreementSet 𝔽q β i steps h_destIdx h_destIdx_le f g) < ‖↑(BBF_Code 𝔽q β ⟨↑i + steps, ⋯⟩)‖₀
-    rw [Code.uniqueDecodingRadius, ←Nat.two_mul_lt_iff_le_half_of_sub_one (a := Δ₀(f,g)) (h_b_pos := by exact Nat.pos_of_neZero (n := ‖(C_i : Set (S_i → L))‖₀))]
+    rw [Code.uniqueDecodingRadius,
+      ←Nat.two_mul_lt_iff_le_half_of_sub_one
+        (a := #(fiberwiseDisagreementSet 𝔽q β i steps h_destIdx h_destIdx_le f g))
+        (h_b_pos := by
+          exact Nat.pos_of_neZero (n := ‖(C_i_next : Set (S_i_next → L))‖₀))] at h_fw_close
+    -- h_fw_close : 2 * #(fiberwiseDisagreementSet ...) < ‖↑(BBF_Code 𝔽q β ...)‖₀
+    rw [Code.uniqueDecodingRadius,
+      ←Nat.two_mul_lt_iff_le_half_of_sub_one (a := Δ₀(f,g))
+        (h_b_pos := by exact Nat.pos_of_neZero (n := ‖(C_i : Set (S_i → L))‖₀))]
     -- 2 * Δ₀(f, g) < ‖↑(C_i)‖₀
-    let res := pairUDRClose_of_pairFiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) steps h_destIdx h_destIdx_le (f := f) (g := g) (h_fw_dist_lt := by
+    let res := pairUDRClose_of_pairFiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := i) steps h_destIdx h_destIdx_le (f := f) (g := g) (h_fw_dist_lt := by
       unfold pair_fiberwiseClose pair_fiberwiseDistance
       norm_cast
     )
     exact res
-
   let h_f_UDR_close := UDRClose_of_fiberwiseClose 𝔽q β i steps h_destIdx h_destIdx_le f h_fw_close
   have h_g_eq_UDRCodeword : g = UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     i (h_i := by omega) f h_f_UDR_close := by
-    apply Code.eq_of_le_uniqueDecodingRadius (C := C_i) (u := f)
-      (v := g) (w := UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i (h_i := by omega) f h_f_UDR_close) (hv := h_g_mem) (hw := by apply UDRCodeword_mem_BBF_Code (i := i) (f := f) (h_within_radius := h_f_UDR_close))
-      (huv := by
-        -- ⊢ Δ₀(f, g) ≤ uniqueDecodingRadius ↑C_i
-        exact h_f_g_UDR_close
-      )
+    apply Code.eq_of_le_uniqueDecodingRadius (C := C_i) (u := f) (v := g)
+      (w := UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i (h_i := by omega) f h_f_UDR_close)
+      (hv := h_g_mem) (huv := by exact h_f_g_UDR_close)
+      (hw := by apply UDRCodeword_mem_BBF_Code (i := i) (f := f) (h_within_radius := h_f_UDR_close))
       (huw := by
-        apply dist_to_UDRCodeword_le_uniqueDecodingRadius (i := i) (f := f) (h_within_radius := h_f_UDR_close)
+        apply dist_to_UDRCodeword_le_uniqueDecodingRadius (i := i) (f := f)
+          (h_within_radius := h_f_UDR_close)
       )
   simp only
   constructor
@@ -812,7 +823,8 @@ This relies on **Lemma 4.13** that 1-step folding advances the evaluation polyno
 lemma fold_preserves_BBF_Code_membership (i : Fin r) {destIdx : Fin r}
     (h_destIdx : destIdx = i.val + 1) (h_destIdx_le : destIdx ≤ ℓ)
     (f : (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)) (r_chal : L) :
-    (fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) h_destIdx h_destIdx_le (f := f) (r_chal := r_chal)) ∈
+    (fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) h_destIdx h_destIdx_le
+      (f := f) (r_chal := r_chal)) ∈
     (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx) := by
   -- 1. Unwrap the code definition to get the polynomial P
   -- BBF_Code is ReedSolomon, so f comes from some P with deg < 2^(ℓ-i)
@@ -849,8 +861,8 @@ lemma fold_preserves_BBF_Code_membership (i : Fin r) {destIdx : Fin r}
     apply degree_intermediateEvaluationPoly_lt
   · -- ⊢ (evalOnPoints ... P_i_plus_1) = fold 𝔽q β ⟨↑i, ⋯⟩ h_i_succ_lt (↑f) r_chal
     let fold_advances_evaluation_poly_res := fold_advances_evaluation_poly 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
-      (coeffs := iNovel_coeffs) (r_chal := r_chal)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (h_destIdx := h_destIdx)
+      (h_destIdx_le := h_destIdx_le) (coeffs := iNovel_coeffs) (r_chal := r_chal)
     simp only at fold_advances_evaluation_poly_res
     funext (y : (sDomain 𝔽q β h_ℓ_add_R_rate) destIdx)
     dsimp only [evalOnPoints, Embedding.coeFn_mk, LinearMap.coe_mk, AddHom.coe_mk]
@@ -875,11 +887,12 @@ omit [CharP L 2] in
 /-- **Lemma: Iterated BBF_Code membership preservation (Induction)**
 If `f` is in BBF_Code `C^{(i)}`, then `iterated_fold f r` is in BBF_Code `C^{(i+steps)}`.
 NOTE: we can potentially specifify the structure of the folded polynomial. -/
-lemma iterated_fold_preserves_BBF_Code_membership (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ)
-
-    (f : (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i))
+lemma iterated_fold_preserves_BBF_Code_membership (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+  (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ)
+  (f : (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i))
     (r_challenges : Fin steps → L) :
-    (iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps) h_destIdx h_destIdx_le (f := f) (r_challenges := r_challenges)) ∈
+    (iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps)
+      h_destIdx h_destIdx_le (f := f) (r_challenges := r_challenges)) ∈
     (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx) := by
   revert destIdx h_destIdx h_destIdx_le
   induction steps generalizing i with
@@ -888,7 +901,7 @@ lemma iterated_fold_preserves_BBF_Code_membership (i : Fin r) {destIdx : Fin r} 
     have h_i_eq_destIdx : i = destIdx := by omega
     subst h_i_eq_destIdx
     -- Base case: 0 steps. iterated_fold is identity. Code is the same.
-    simp only [Fin.eta, iterated_fold, reduceAdd, Fin.coe_castSucc, Fin.val_succ, id_eq,
+    simp only [Fin.eta, iterated_fold, reduceAdd, Fin.val_castSucc, Fin.val_succ, id_eq,
       Fin.reduceLast, Fin.coe_ofNat_eq_mod, reduceMod, Nat.add_zero, Subtype.coe_eta,
       Fin.dfoldl_zero, SetLike.coe_mem]
   | succ k ih =>
@@ -897,17 +910,22 @@ lemma iterated_fold_preserves_BBF_Code_membership (i : Fin r) {destIdx : Fin r} 
     have h_midIdx : midIdx = i + k := by rfl
     -- 1. Perform k steps first
     let f_k := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
-      (steps := k) (destIdx := midIdx) (h_destIdx := h_midIdx) (h_destIdx_le := by omega) (f := f) (r_challenges := Fin.init r_challenges)
+      (steps := k) (destIdx := midIdx) (h_destIdx := h_midIdx) (h_destIdx_le := by omega)
+      (f := f) (r_challenges := Fin.init r_challenges)
     -- 2. Apply IH: f_k is in C^{(i+k)}
     have h_fk_mem : f_k ∈ BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) midIdx := by
-      exact ih (i := i) (r_challenges := Fin.init r_challenges) (destIdx := midIdx) (h_destIdx := h_midIdx) (h_destIdx_le := by omega) (f := f)
+      exact ih (i := i) (r_challenges := Fin.init r_challenges) (destIdx := midIdx)
+        (h_destIdx := h_midIdx) (h_destIdx_le := by omega) (f := f)
     set f_k_code_word : (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) midIdx) :=
       ⟨f_k, h_fk_mem⟩
     -- 3. Perform the (k+1)-th fold on f_k
-    rw [iterated_fold_last 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := k) (midIdx := midIdx) (destIdx := destIdx) (h_midIdx := h_midIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f) (r_challenges := r_challenges)] -- (Helper lemma needed to unroll recursion)
+    rw [iterated_fold_last 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := k)
+      (midIdx := midIdx) (destIdx := destIdx) (h_midIdx := h_midIdx) (h_destIdx := h_destIdx)
+      (h_destIdx_le := h_destIdx_le) (f := f) (r_challenges := r_challenges)]
     -- 4. Apply the Single Step Lemma
-    let res := fold_preserves_BBF_Code_membership (i := midIdx) (destIdx := destIdx) (h_destIdx := by omega) (h_destIdx_le := by omega)
-      (f := f_k_code_word) (r_chal := r_challenges (Fin.last k))
+    let res := fold_preserves_BBF_Code_membership (i := midIdx) (destIdx := destIdx)
+      (h_destIdx := by omega) (h_destIdx_le := by omega) (f := f_k_code_word)
+      (r_chal := r_challenges (Fin.last k))
     exact res
 
 /--
@@ -916,7 +934,8 @@ the oracle `f_i` is compliant if it's close to the code fiber-wise, the next ora
 `f_i_plus_steps` is close to its code, and their unique closest codewords are consistent
 with folding.
 -/
-def isCompliant (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ) [NeZero steps]
+def isCompliant (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+  (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ) [NeZero steps]
   (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
   (f_i_plus_steps : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx)
   (challenges : Fin steps → L) : Prop :=
@@ -943,119 +962,129 @@ Farness implies non-compliance. If `f_i` is far from its code `C_i`, it cannot b
 compliant. This follows directly from the contrapositive of
 `fiberwise_dist_lt_imp_dist_lt`.
 -/
-lemma farness_implies_non_compliance (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ) [NeZero steps]
+lemma farness_implies_non_compliance (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+  (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ) [NeZero steps]
   (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
   (f_i_plus_steps : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx)
   (challenges : Fin steps → L)
   (h_far : 2 * Δ₀(f_i, (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i))
     ≥ (BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) : ℕ∞)) :
   ¬ isCompliant 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps)
-    (destIdx := destIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f_i := f_i) (f_i_plus_steps := f_i_plus_steps) (challenges := challenges) := by -- We use our key theorem that "fiber-wise close" implies "Hamming close".
+    (destIdx := destIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
+    (f_i := f_i) (f_i_plus_steps := f_i_plus_steps) (challenges := challenges) := by
   intro h_compliant
   rcases h_compliant with ⟨h_fw_dist_lt, _, _⟩
   have h_close := UDRClose_of_fiberwiseClose 𝔽q β
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps) (destIdx := destIdx)
-    (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f_i) (h_fw_dist_lt := h_fw_dist_lt)
+    (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f_i)
+    (h_fw_dist_lt := h_fw_dist_lt)
   have h_not_far := LT.lt.not_ge h_close
   exact h_not_far h_far
 
-/-- **Fold error containment**: Two words achieve `fold error containment` for a specific tuple of challenges if folding them does not
-introduce new errors outside of their fiberwise disagreement set. -/
-def fold_error_containment (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ)
+/-- **Fold error containment**: Two words achieve `fold error containment` for a specific
+tuple of challenges if folding them does not introduce new errors outside of their
+fiberwise disagreement set. -/
+def fold_error_containment (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+    (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (f f_bar : (sDomain 𝔽q β h_ℓ_add_R_rate) i → L)
     (r_challenges : Fin steps → L) :=
-    let fiberwise_Δ_set := fiberwiseDisagreementSet 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps)
-      h_destIdx h_destIdx_le (f := f) (g := f_bar)
+    let fiberwise_Δ_set := fiberwiseDisagreementSet 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := i) (steps := steps) h_destIdx h_destIdx_le (f := f) (g := f_bar)
     let folded_f := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (steps := steps) (i := i)
       h_destIdx h_destIdx_le (f := f) (r_challenges := r_challenges)
-    let folded_f_bar := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (steps := steps) (i := i)
-      h_destIdx h_destIdx_le (f := f_bar) (r_challenges := r_challenges)
-    let folded_Δ_set := disagreementSet 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := destIdx) (h_i := by omega) (f := folded_f) (g := folded_f_bar)
+    let folded_f_bar := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (steps := steps)
+      (i := i) h_destIdx h_destIdx_le (f := f_bar) (r_challenges := r_challenges)
+    let folded_Δ_set := disagreementSet 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := destIdx) (f := folded_f) (g := folded_f_bar)
     folded_Δ_set ⊆ fiberwise_Δ_set
 
-/-! **Lemma 4.18.** For each `i ∈ {0, steps, ..., ℓ-steps}`, if `f⁽ⁱ⁾` is `UDR-close`, then, for each tuple of folding challenges `(rᵢ', ..., r_{i+steps-1}') ∈ L^steps`, we have that `fold error containment` holds.
--- * **Main Idea of Proof:** Proceeds by contraposition. If `y ∉ Δ⁽ⁱ⁾(f⁽ⁱ⁾, f̄⁽ⁱ⁾)`, then the restrictions of `f⁽ⁱ⁾` and `f̄⁽ⁱ⁾` to the fiber over `y` are identical. By Definition 4.8, this implies their folded values at `y` are also identical.
--- * **Intuition**: Because folding is local (Def 4.8), if `f⁽ⁱ⁾` and `f̄⁽ⁱ⁾` agree completely on the fiber above a point `y`, their folded values at `y` must also agree.
--- * **Consequence**: If `f⁽ⁱ⁾` is close to `f̄⁽ⁱ⁾`, then `fold(f⁽ⁱ⁾)` must be close to `fold(f̄⁽ⁱ⁾)`.
+/-! **Lemma 4.18.** For each `i ∈ {0, steps, ..., ℓ-steps}`, if `f⁽ⁱ⁾` is `UDR-close`, then, for
+each tuple of folding challenges `(rᵢ', ..., r_{i+steps-1}') ∈ L^steps`, we have that
+`fold error containment` holds.
+-- * **Main Idea of Proof:** Proceeds by contraposition. If `y ∉ Δ⁽ⁱ⁾(f⁽ⁱ⁾, f̄⁽ⁱ⁾)`, then the
+  restrictions of `f⁽ⁱ⁾` and `f̄⁽ⁱ⁾` to the fiber over `y` are identical. By Definition 4.8, this
+  implies their folded values at `y` are also identical.
+-- * **Intuition**: Because folding is local (Def 4.8), if `f⁽ⁱ⁾` and `f̄⁽ⁱ⁾` agree completely on
+  the fiber above a point `y`, their folded values at `y` must also agree.
+-- * **Consequence**: If `f⁽ⁱ⁾` is close to `f̄⁽ⁱ⁾`, then `fold(f⁽ⁱ⁾)` must be close to
+  `fold(f̄⁽ⁱ⁾)`.
 -/
-lemma fold_error_containment_of_UDRClose (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ) [NeZero steps]
+omit [CharP L 2] [DecidableEq 𝔽q] in
+lemma fold_error_containment_of_UDRClose (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+  (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ) [NeZero steps]
   (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
   (challenges : Fin steps → L)
-  (h_UDRClose : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (h_i := by omega) (f := f_i)) :
-  let f_bar := UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (h_i := by omega) (f := f_i) (h_within_radius := h_UDRClose)
-  fold_error_containment 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps) (destIdx := destIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f_i) (f_bar := f_bar) (r_challenges := challenges) := by
+  (h_UDRClose : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (h_i := by omega)
+    (f := f_i)) :
+  let f_bar := UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (h_i := by omega)
+    (f := f_i) (h_within_radius := h_UDRClose)
+  fold_error_containment 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps)
+    (destIdx := destIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
+    (f := f_i) (f_bar := f_bar) (r_challenges := challenges) := by
 -- 1. Unfold definitions
   unfold fold_error_containment disagreementSet fiberwiseDisagreementSet
-
-  set f_bar := UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (h_i := by omega) (f := f_i) (h_within_radius := h_UDRClose)
-
+  set f_bar := UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (h_i := by omega)
+    (f := f_i) (h_within_radius := h_UDRClose)
   -- 2. Start the subset proof
   simp only
-  intro y -- convert subset relation to membership implication of y
+  intro y hy_in_folded_disagreement -- convert subset relation to membership implication of y
   -- ⊢ **y in folded disagreement set → y in fiberwise disagreement set**
-  intro hy_in_folded_disagreement -- ⊢ **y in fiberwise disagreement set**
-
   -- 3. Proof by contradiction (or contraposition logic)
   -- The hypothesis says: folded_f(y) ≠ folded_f_bar(y)
   simp only [ne_eq, mem_filter, mem_univ, true_and] at hy_in_folded_disagreement
-
   -- We want to show y ∈ fiberwiseDisagreementSet
   -- This means: ∃ x in fiber(y), f(x) ≠ f_bar(x)
   -- Let's assume the opposite: ∀ x in fiber(y), f(x) = f_bar(x)
   by_contra h_not_in_fiber_disagreement
-  simp only [Fin.eta, ne_eq, Subtype.exists, mem_filter, mem_univ, true_and, not_exists, not_and,
+  simp only [ne_eq, Subtype.exists, mem_filter, mem_univ, true_and, not_exists, not_and,
     Decidable.not_not] at h_not_in_fiber_disagreement
-
   -- 4. Use Lemma 4.9 (iterated_fold_eq_matrix_form) to express the fold operation
   -- We need to show that if the fiber inputs are equal, the folded output is equal.
-
   let folded_f_y := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (steps := steps)
       (i := i) h_destIdx h_destIdx_le
       (f := f_i) (r_challenges := challenges) (y := y)
-
   let folded_f_bar_y := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (steps := steps)
       (i := i) h_destIdx h_destIdx_le
       (f := f_bar) (r_challenges := challenges) (y := y)
-
   -- Apply the matrix form lemma to both sides
-  have h_matrix_f := iterated_fold_eq_matrix_form 𝔽q β (i := i) (steps := steps) h_destIdx h_destIdx_le (f := f_i) (r_challenges := challenges)
-  have h_matrix_f_bar := iterated_fold_eq_matrix_form 𝔽q β (i := i) (steps := steps) h_destIdx h_destIdx_le (f := f_bar) (r_challenges := challenges)
-
+  have h_matrix_f := iterated_fold_eq_matrix_form 𝔽q β (i := i) (steps := steps)
+    h_destIdx h_destIdx_le (f := f_i) (r_challenges := challenges)
+  have h_matrix_f_bar := iterated_fold_eq_matrix_form 𝔽q β (i := i) (steps := steps)
+    h_destIdx h_destIdx_le (f := f_bar) (r_challenges := challenges)
   rw [h_matrix_f] at hy_in_folded_disagreement
   rw [h_matrix_f_bar] at hy_in_folded_disagreement
-
   -- 5. Show the RHS of the matrix forms are equal
   -- The RHS depends on `localized_fold_matrix_form`.
   -- This function depends on `foldMatrix` (same for both) and `fiberEvaluations`.
   -- We just need to show `fiberEvaluations` is the same for both.
-
-  set fiberEvals_f_i := fiberEvaluations 𝔽q β (i := i) (steps := steps) h_destIdx h_destIdx_le (f := f_i) y
-  set fiberEvals_f_bar_i := fiberEvaluations 𝔽q β (i := i) (steps := steps) h_destIdx h_destIdx_le (f := f_bar) y
+  set fiberEvals_f_i := fiberEvaluations 𝔽q β (i := i) (steps := steps) h_destIdx h_destIdx_le
+    (f := f_i) y
+  set fiberEvals_f_bar_i := fiberEvaluations 𝔽q β (i := i) (steps := steps) h_destIdx h_destIdx_le
+    (f := f_bar) y
   have h_fiber_evals_eq : fiberEvals_f_i = fiberEvals_f_bar_i := by
     ext k
     unfold fiberEvals_f_i fiberEvals_f_bar_i fiberEvaluations
     -- The k-th fiber point x is:
     let x := qMap_total_fiber 𝔽q β (i := i) (steps := steps) h_destIdx h_destIdx_le y k
-
     -- We need to show f_i(x) = f_bar(x).
     -- This follows from our contradiction hypothesis `h_not_in_fiber_disagreement`.
     apply h_not_in_fiber_disagreement x
-
     -- We must prove x is actually in the fiber of y (which is true by construction/definition)
     -- Use the lemma `generates_quotient_point_if_is_fiber_of_y` or similar
-    let res := generates_quotient_point_if_is_fiber_of_y 𝔽q β (i := i) (steps := steps) h_destIdx h_destIdx_le (x := x) (y := y) (hx_is_fiber := by use k)
+    let res := generates_quotient_point_if_is_fiber_of_y 𝔽q β (i := i) (steps := steps)
+      h_destIdx h_destIdx_le (x := x) (y := y) (hx_is_fiber := by use k)
     exact res.symm
-
   -- 6. Final Contradiction
   -- Since the fiber evaluations are equal, the matrix products must be equal.
   -- localized_fold_matrix_form is just a function of these evaluations.
-  have h_folded_eq : localized_fold_matrix_form 𝔽q β (i := i) (steps := steps) h_destIdx h_destIdx_le (f := f_i) (r_challenges := challenges) y =
-                     localized_fold_matrix_form 𝔽q β (i := i) (steps := steps) h_destIdx h_destIdx_le (f := f_bar) (r_challenges := challenges) y := by
+  have h_folded_eq : localized_fold_matrix_form 𝔽q β (i := i) (steps := steps)
+      h_destIdx h_destIdx_le (f := f_i) (r_challenges := challenges) y =
+    localized_fold_matrix_form 𝔽q β (i := i) (steps := steps) h_destIdx h_destIdx_le
+      (f := f_bar) (r_challenges := challenges) y := by
     unfold localized_fold_matrix_form
     simp only
     unfold fiberEvals_f_i fiberEvals_f_bar_i at h_fiber_evals_eq
     rw [h_fiber_evals_eq]
-
   -- Contradiction: We proved they are equal, but hypothesis says they are unequal.
   exact hy_in_folded_disagreement h_folded_eq
 
@@ -1064,29 +1093,32 @@ open Classical in
 random folding challenges undermine the protocol's soundness checks.
 For `i ∈ {0, ..., ℓ - steps}`,
 - In case `d⁽ⁱ⁾(f⁽ⁱ⁾, C⁽ⁱ⁾) < dᵢ₊steps / 2` (fiberwise close):
-  `Δ⁽ⁱ⁾(f⁽ⁱ⁾, f̄⁽ⁱ⁾) ⊄ Δ(fold(f⁽ⁱ⁾, rᵢ', ..., r_{i+steps-1}'), fold(f̄⁽ⁱ⁾, rᵢ', ..., r_{i+steps-1}'))`, i.e. fiberwiseDisagreementSet ⊄ foldedDisagreementSet
+  `Δ⁽ⁱ⁾(f⁽ⁱ⁾, f̄⁽ⁱ⁾) ⊄ Δ(fold(f⁽ⁱ⁾, rᵢ', ..., r_{i+steps-1}'), fold(f̄⁽ⁱ⁾, rᵢ', ..., r_{i+steps-1}'))`,
+  i.e. fiberwiseDisagreementSet ⊄ foldedDisagreementSet
 - In case `d⁽ⁱ⁾(f⁽ⁱ⁾, C⁽ⁱ⁾) ≥ dᵢ₊steps / 2`  (fiberwise far):
-  `d(fold(f⁽ⁱ⁾, rᵢ', ..., rᵢ₊steps₋₁'), C⁽ⁱ⁺steps⁾) < dᵢ₊steps / 2`, i.e. foldedUDRClose -/
-def foldingBadEvent (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ) [NeZero steps]
+  `d(fold(f⁽ⁱ⁾, rᵢ', ..., rᵢ₊steps₋₁'), C⁽ⁱ⁺steps⁾) < dᵢ₊steps / 2`, i.e. foldedUDRClose
+-/
+def foldingBadEvent (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+  (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ) [NeZero steps]
   (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
   (r_challenges : Fin steps → L) : Prop :=
-
-  let folded_f_i := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f_i) (r_challenges := r_challenges)
-
-  if h_is_close : (fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps) h_destIdx h_destIdx_le (f := f_i)) then
+  let folded_f_i := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps)
+    (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f_i)
+    (r_challenges := r_challenges)
+  if h_is_close : (fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
+      (steps := steps) h_destIdx h_destIdx_le (f := f_i)) then
     -- Case 1 : The oracle `f_i` is fiber-wise "close" to the code.
     -- The bad event is when folding causes disagreements to vanish, violating Lemma 4.18.
     -- This happens if the random challenges are unlucky.
-
     let f_bar_i := UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      i (f := f_i) (h_within_radius := UDRClose_of_fiberwiseClose 𝔽q β i steps h_destIdx h_destIdx_le f_i h_is_close)
-
-    let folded_f_bar_i := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f_bar_i) (r_challenges := r_challenges)
-
+      i (f := f_i) (h_within_radius := UDRClose_of_fiberwiseClose 𝔽q β i steps h_destIdx
+        h_destIdx_le f_i h_is_close)
+    let folded_f_bar_i := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
+      (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
+      (f := f_bar_i) (r_challenges := r_challenges)
     -- The Bad Condition: FiberDisagreements ⊈ FoldedDisagreements
     ¬ (fiberwiseDisagreementSet 𝔽q β i steps h_destIdx h_destIdx_le (f := f_i) (g := f_bar_i) ⊆
-       disagreementSet 𝔽q β (i := destIdx) (h_i := by omega) (f := folded_f_i) (g := folded_f_bar_i))
-
+      disagreementSet 𝔽q β (i := destIdx) (f := folded_f_i) (g := folded_f_bar_i))
   else
     -- Case 2 : The oracle `f_i` is fiber-wise "far" from the code.
     -- Folding a "far" function should result in another "far" function.

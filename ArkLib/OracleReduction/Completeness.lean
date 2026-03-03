@@ -49,20 +49,6 @@ This section contains helper lemmas for proving safety equivalences between
 simulated protocol executions and their pure specification counterparts.
 -/
 
-section SafetyLemmas
-
-variable {ι : Type} {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
-
-end SafetyLemmas
-
-section BindChainSafety
-
-variable {ι : Type} {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
-
-end BindChainSafety
-
-
-
 /-! ## Generic n-Message Protocol Completeness
 
 This section provides a generic characterization of perfect completeness for protocols
@@ -104,6 +90,7 @@ theorem forall_eq_lift_mem_2 {α β γ} {S : Set α} {T : α → Set β}
   · intro h c a ha b hb heq; rw [heq]; exact h a ha b hb
 
 variable {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
+
   {StmtIn WitIn StmtOut WitOut : Type}
   {ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
   [∀ i, OracleInterface (OStmtIn i)] --[∀ i, OracleInterface (OStmtOut i)]
@@ -470,7 +457,7 @@ conv_lhs =>
   simp only
 dsimp only [ChallengeIdx, Challenge, Fin.isValue, Fin.castSucc_zero, Fin.succ_zero_eq_one, Message,
   liftComp_eq_liftM]
-simp only [Challenge, Fin.isValue, bind_pure_comp, pure_bind, liftM_map, Prod.mk.eta,
+simp only [Fin.isValue, bind_pure_comp, pure_bind, liftM_map, Prod.mk.eta,
   bind_map_left]
 congr!
 rename_i _ prvState1 prvOut
@@ -495,8 +482,6 @@ theorem unroll_1_message_reduction_perfectCompleteness_V_to_P
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hInit : NeverFail init)
     (hDir0 : pSpec.dir 0 = .V_to_P)
-    (hImplSafe : ∀ {β} (q : OracleQuery oSpec β) s,
-      Pr[⊥ | (QueryImpl.mapQuery impl q).run s] = 0)
     (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
       Prod.fst <$> ((QueryImpl.mapQuery impl q).run s).support = (liftQuery q).support) :
     OracleReduction.perfectCompleteness init impl relIn relOut reduction ↔
@@ -579,7 +564,6 @@ theorem unroll_2_message_reduction_perfectCompleteness
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hInit : NeverFail init)
     (hDir0 : pSpec.dir 0 = .P_to_V) (hDir1 : pSpec.dir 1 = .V_to_P)
-    (hImplSafe : ∀ {β} (q : OracleQuery oSpec β) s, Pr[⊥|(QueryImpl.mapQuery impl q).run s] = 0)
     (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
       Prod.fst <$> ((QueryImpl.mapQuery impl q).run s).support = (liftQuery q).support) :
     OracleReduction.perfectCompleteness init impl relIn relOut reduction ↔
