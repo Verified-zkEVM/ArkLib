@@ -68,6 +68,9 @@ Let `L = RS_{𝔽, n, k, η}` be a Reed-Solomon code with minimal distance
 - (1) for every `x ∈ ℓ_{u, v}` we have `d(x, L) ≤ e`,
 - or (2) for at most `d` points `x ∈ ℓ_{u, v}` we have `d(x, L) ≤ e`.
 This is a concrete statement via cardinality of proximity gap for affine lines.
+
+Implementation guardrail: keep this as an exclusive disjunction (`Xor'`) to
+match the issue target; weakening it to an inclusive `Or` is out of scope.
 -/
 lemma e_leq_dist_over_3 [DecidableEq F] {deg : ℕ} {α : ι ↪ F} {e : ℕ} {u v : ι → F}
   (he : (e : ℚ≥0) < ‖(RScodeSet α deg)‖₀ / 3) :
