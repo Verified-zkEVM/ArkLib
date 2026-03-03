@@ -8,7 +8,7 @@ import ArkLib.ProofSystem.Binius.RingSwitching.Prelude
 import ArkLib.ProofSystem.Binius.RingSwitching.Spec
 import ArkLib.OracleReduction.Basic
 import ArkLib.ProofSystem.Binius.BinaryBasefold.ReductionLogic
-import ArkLib.Data.FieldTheory.BinaryField.Tower.TensorAlgebra
+import CompPoly.Fields.Binary.Tower.TensorAlgebra
 
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
   Module Binius.BinaryBasefold TensorProduct Nat Matrix

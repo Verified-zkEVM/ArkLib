@@ -524,18 +524,28 @@ def Verifier.StateFunction.id {lang : Set Statement} :
     simp only [Verifier.id, Verifier.run]
     rw [probEvent_eq_zero_iff]
     intro x hx
-    rw [OptionT.support_eq] at hx
-    simp only [Set.mem_preimage, OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
-    obtain ⟨s, _, hx⟩ := hx
+    have hx_run : some x ∈ support (do
+        let s ← init
+        (simulateQ impl (pure stmt : OptionT (OracleComp oSpec) Statement)).run' s) := by
+      simpa [OptionT.run_mk] using
+        (OptionT.mem_support_iff
+          (mx := (OptionT.mk (do
+            let s ← init
+            (simulateQ impl (pure stmt : OptionT (OracleComp oSpec) Statement)).run' s) :
+              OptionT ProbComp Statement))
+          (x := x)).1 hx
+    rw [mem_support_bind_iff] at hx_run
+    rcases hx_run with ⟨s, hs, hx_run⟩
     have key : (simulateQ impl (pure stmt : OptionT (OracleComp oSpec) Statement)).run' s =
         pure (some stmt) := by
       change (simulateQ impl (pure (some stmt) : OracleComp oSpec (Option Statement))).run' s = _
       rw [simulateQ_pure]
       change Prod.fst <$> (pure (some stmt) : StateT σ ProbComp _).run s = _
       rw [StateT.run_pure]; simp [map_pure]
-    rw [key] at hx
-    simp only [support_pure, Set.mem_singleton_iff] at hx
-    cases hx; exact h
+    rw [key] at hx_run
+    simp only [support_pure, Set.mem_singleton_iff, Option.some.injEq] at hx_run
+    subst hx_run
+    exact h
 
 /-- The identity / trivial verifier is perfectly round-by-round sound. -/
 @[simp]
@@ -564,19 +574,28 @@ def Verifier.KnowledgeStateFunction.id {rel : Set (Statement × Witness)} :
     simp only [Verifier.id, Verifier.run] at h
     rw [gt_iff_lt, probEvent_pos_iff] at h
     obtain ⟨x, hx, hrel⟩ := h
-    rw [OptionT.support_eq] at hx
-    simp only [Set.mem_preimage, OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
-    obtain ⟨s, _, hx⟩ := hx
+    have hx_run : some x ∈ support (do
+        let s ← init
+        (simulateQ impl (pure stmtIn : OptionT (OracleComp oSpec) Statement)).run' s) := by
+      simpa [OptionT.run_mk] using
+        (OptionT.mem_support_iff
+          (mx := (OptionT.mk (do
+            let s ← init
+            (simulateQ impl (pure stmtIn : OptionT (OracleComp oSpec) Statement)).run' s) :
+              OptionT ProbComp Statement))
+          (x := x)).1 hx
+    rw [mem_support_bind_iff] at hx_run
+    rcases hx_run with ⟨s, hs, hx_run⟩
     have key : (simulateQ impl (pure stmtIn : OptionT (OracleComp oSpec) Statement)).run' s =
         pure (some stmtIn) := by
       change (simulateQ impl (pure (some stmtIn) : OracleComp oSpec (Option Statement))).run' s = _
       rw [simulateQ_pure]
       change Prod.fst <$> (pure (some stmtIn) : StateT σ ProbComp _).run s = _
       rw [StateT.run_pure]; simp [map_pure]
-    rw [key] at hx
-    simp only [support_pure, Set.mem_singleton_iff] at hx
-    cases (Option.some.inj hx)
-    exact hrel
+    rw [key] at hx_run
+    simp only [support_pure, Set.mem_singleton_iff, Option.some.injEq] at hx_run
+    subst hx_run
+    simpa [Extractor.RoundByRound.id] using hrel
 
 /-- The identity / trivial verifier is perfectly round-by-round knowledge sound. -/
 @[simp]

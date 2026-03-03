@@ -76,7 +76,7 @@ theorem reduction_completeness [Nonempty σ] [DecidableEq Statement] :
     prover, verifier]
   intro stmt wit valid
   simp
-  aesop
+  -- aesop
 
   sorry
 

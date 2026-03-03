@@ -37,7 +37,10 @@ import ArkLib.Data.CodingTheory.ProximityGap.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.DG25
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.EllipticCurve.BN254
+import ArkLib.Data.FieldTheory.AdditiveNTT.AdditiveNTT
+import ArkLib.Data.FieldTheory.AdditiveNTT.NovelPolynomialBasis
 import ArkLib.Data.Fin.Basic
+import ArkLib.Data.Fin.BigOperators
 import ArkLib.Data.Fin.Fold
 import ArkLib.Data.Fin.Lift
 import ArkLib.Data.Fin.Sigma
@@ -162,4 +165,4 @@ import ArkLib.ToVCVio.DistEq
 import ArkLib.ToVCVio.Lemmas
 import ArkLib.ToVCVio.Oracle
 import ArkLib.ToVCVio.SimOracle
-import ArkLib.ToVCVio.SimulationInfrastructure
+import ArkLib.ToVCVio.Simulation

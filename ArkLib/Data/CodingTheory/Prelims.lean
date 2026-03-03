@@ -7,7 +7,7 @@ Authors: Katerina Hristova, František Silváši, Julian Sutherland, Chung Thai 
 import Mathlib.Algebra.Lie.OfAssociative
 import Mathlib.LinearAlgebra.Matrix.Rank
 import Mathlib.LinearAlgebra.AffineSpace.Pointwise
-import ArkLib.Data.Nat.Bitwise
+import CompPoly.Data.Nat.Bitwise
 
 section TensorCombination
 variable {F : Type*} [CommRing F] [Fintype F] [DecidableEq F]

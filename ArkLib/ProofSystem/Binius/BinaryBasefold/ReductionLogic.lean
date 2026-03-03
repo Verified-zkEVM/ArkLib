@@ -5,7 +5,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 import ArkLib.ToVCVio.Oracle
-import ArkLib.ToVCVio.SimulationInfrastructure
+import ArkLib.ToVCVio.Simulation
 import ArkLib.OracleReduction.Completeness
 import ArkLib.Data.Misc.Basic
 

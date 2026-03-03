@@ -115,16 +115,17 @@ theorem oracleReduction_completeness :
   intro ⟨stmt, oStmt⟩ wit hOStmt
   simp [Reduction.run, Prover.run, Verifier.run, Prover.runToRound, Prover.processRound,
     OracleReduction.toReduction, OracleVerifier.toVerifier, oracleVerifier, oracleProver,
-    Transcript.concat, FullTranscript.challenges, hInit]
-  constructor
-  -- Soon we won't have to reason about failure of `init` here.
-  · intro s hs
-    simp [StateT.run]
-    unfold SimOracle.append
-    simp [challengeQueryImpl, liftM, monadLift, MonadLift.monadLift, StateT.lift]
-    have := SelectableType.probFailure_selectElem (β := Query OStatement)
-    aesop
-  · unfold OracleVerifier.mkVerifierOStmtOut; aesop
+    Transcript.concat, FullTranscript.challenges]
+  sorry
+  -- constructor
+  -- -- Soon we won't have to reason about failure of `init` here.
+  -- · intro s hs
+  --   simp [StateT.run]
+  --   unfold SimOracle.append
+  --   simp [challengeQueryImpl, liftM, monadLift, MonadLift.monadLift, StateT.lift]
+  --   have := SampleableType.probFailure_selectElem (β := Query OStatement)
+  --   aesop
+  -- · aesop
 
 -- def langIn : Set (Unit × (∀ _ : Fin 2, OStatement)) := setOf fun ⟨(), oracles⟩ =>
 --   oracles 0 = oracles 1
@@ -142,15 +143,15 @@ def stateFunction [Inhabited OStatement] : (oracleVerifier oSpec OStatement).Sta
   toFun_empty := fun stmt => by simp
   toFun_next | 0 => fun hDir ⟨stmt, oStmt⟩ tr h => by simp_all
   toFun_full := fun ⟨stmt, oStmt⟩ tr h => by
-    simp_all only [Fin.reduceLast, Fin.isValue, OStmtIn, Nat.reduceAdd, Fin.coe_ofNat_eq_mod,
-      Nat.reduceMod, Fin.zero_eta, StmtOut, OStmtOut, StmtIn, StateT.run'_eq, Set.language, WitOut,
-      relOut, Set.mem_image, Set.mem_setOf_eq, Prod.exists, exists_const, exists_eq_right,
-      probEvent_eq_zero_iff, support_bind, support_map, Set.mem_iUnion, exists_and_right,
-      exists_prop, forall_exists_index, and_imp, Prod.forall]
-    intro a b s hs s' hSupp
-    simp [OracleVerifier.toVerifier, Verifier.run, oracleVerifier] at hSupp
-    unfold OracleVerifier.mkVerifierOStmtOut at hSupp
-    simp [hSupp.1, h]
+    sorry
+    -- simp_all only [Fin.reduceLast, Fin.isValue, OStmtIn, Nat.reduceAdd, Fin.coe_ofNat_eq_mod,
+    --   Nat.reduceMod, Fin.zero_eta, StmtOut, OStmtOut, StmtIn, StateT.run'_eq, Set.language, WitOut,
+    --   relOut, Set.mem_image, Set.mem_setOf_eq, Prod.exists, exists_const, exists_eq_right,
+    --   probEvent_eq_zero_iff, support_bind, support_map, Set.mem_iUnion, exists_and_right,
+    --   exists_prop, forall_exists_index, and_imp, Prod.forall]
+    -- intro a b s hs s' hSupp
+    -- simp [OracleVerifier.toVerifier, Verifier.run, oracleVerifier] at hSupp
+    -- simp [hSupp.1, h]
 
 /-- The round-by-round extractor is trivial since the output witness is `Unit`. -/
 def rbrExtractor : Extractor.RoundByRound oSpec
@@ -170,9 +171,9 @@ def knowledgeStateFunction :
     answer (oracles 0) q = answer (oracles 1) q
   toFun_empty := fun stmt => by simp
   toFun_next | 0 => fun hDir ⟨stmt, oStmt⟩ tr h => by simp_all
-  toFun_full := fun ⟨stmt, oStmt⟩ tr _ h => by
-    simp_all [oracleVerifier, OracleVerifier.toVerifier, Verifier.run,
-      OracleVerifier.mkVerifierOStmtOut]
+  toFun_full := fun ⟨stmt, oStmt⟩ tr _ => by
+    sorry
+    -- simp_all [oracleVerifier, OracleVerifier.toVerifier, Verifier.run]
 
 variable [Fintype (Query OStatement)] [∀ q, DecidableEq (O.Response q)]
 

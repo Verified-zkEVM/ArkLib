@@ -5,7 +5,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 import ArkLib.ProofSystem.Binius.BinaryBasefold.ReductionLogic
 import ArkLib.ToVCVio.Oracle
-import ArkLib.ToVCVio.SimulationInfrastructure
+import ArkLib.ToVCVio.Simulation
 import ArkLib.OracleReduction.Completeness
 
 set_option maxHeartbeats 400000  -- Increase if needed

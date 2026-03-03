@@ -6,13 +6,14 @@ Authors: Chung Thai Nguyen, Quang Dao
 
 import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
 import ArkLib.Data.CodingTheory.ReedSolomon
-import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
+import ArkLib.Data.FieldTheory.AdditiveNTT.AdditiveNTT
 import ArkLib.Data.MvPolynomial.Multilinear
 import CompPoly.Data.Vector.Basic
 import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 import ArkLib.Data.Probability.Notation
 import ArkLib.Data.CodingTheory.InterleavedCode
 import ArkLib.Data.CodingTheory.ProximityGap.DG25
+import ArkLib.Data.Fin.BigOperators
 
 set_option maxHeartbeats 400000  -- Increase if needed
 set_option profiler true
@@ -57,7 +58,6 @@ theorem hammingDist_le_of_outer_comp_injective {ι₁ ι₂ : Type*} [Fintype ι
     ext i₁
     -- Now `simp` can easily unfold `mem_filter` and `mem_preimage` and see they are equivalent.
     simp only [ne_eq, mem_filter, mem_univ, true_and, mem_preimage, D₂]
-
   -- Now, rewrite the goal using `preimage`.
   rw [h_preimage]
   set D₁ := D₂.preimage g (by exact hg.injOn)
@@ -74,11 +74,9 @@ theorem hammingDist_le_of_outer_comp_injective {ι₁ ι₂ : Type*} [Fintype ι
     · -- Goal 2 : Prove that `g` is injective on the set `D₁`.
       -- This is true because our main hypothesis `hg` states that `g` is injective everywhere.
       exact Function.Injective.injOn hg
-
   -- Step 2 : The image of the preimage of a set is always a subset of the original set.
   have h_image_subset : D₁.image g ⊆ D₂ := by
     simp [D₁, Finset.image_preimage]
-
   -- Step 3 : By combining these two facts, we get our result.
   -- |D₁| ≤ |image g(D₁)|  (from Step 1)
   -- and |image g(D₁)| ≤ |D₂| (since it's a subset)
