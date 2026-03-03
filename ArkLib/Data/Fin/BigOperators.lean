@@ -14,6 +14,8 @@ import Mathlib.Data.Matrix.Mul
 import Mathlib.Data.Matrix.Block
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 import Mathlib.LinearAlgebra.Matrix.SchurComplement
+import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
+import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
 
 /-!
 
@@ -30,11 +32,11 @@ section NatHelpers
 theorem mul_two_add_bit_lt_two_pow (a b c : ℕ) (i : Fin 2)
     (h_a : a < 2 ^ b) (h_b : b < c) :
     a * 2 + i.val < 2^c := by
-  if h_b_eq_0: b = 0 then
+  if h_b_eq_0 : b = 0 then
     rw [h_b_eq_0, pow_zero] at h_a
     interval_cases a
     · simp only [zero_mul, zero_add];
-      have h_c_gt_0: c > 0 := by omega
+      have h_c_gt_0 : c > 0 := by omega
       have h_i_lt_2_pow_c: i.val < 2^c := by
         calc
           _ ≤ 2^1 := by omega
@@ -50,8 +52,9 @@ theorem mul_two_add_bit_lt_two_pow (a b c : ℕ) (i : Fin 2)
         _ ≤ 2^c - 1 := by omega
     exact Nat.lt_of_le_sub_one (n:=a * 2 + i) (m:=2^c) (by omega) (h_a_mul_2_add_i_lt_2_pow_c)
 
-theorem div_two_pow_lt_two_pow (x i j : ℕ) (h_x_lt_2_pow_i : x < 2 ^ (i + j)): x / 2^j < 2^(i) := by
-  by_cases h_i_eq_0: i = 0
+theorem div_two_pow_lt_two_pow (x i j : ℕ) (h_x_lt_2_pow_i : x < 2 ^ (i + j))
+    : x / 2^j < 2^(i) := by
+  by_cases h_i_eq_0 : i = 0
   · simp only [h_i_eq_0, zero_add, pow_zero, Nat.lt_one_iff, Nat.div_eq_zero_iff, Nat.pow_eq_zero,
     OfNat.ofNat_ne_zero, ne_eq, false_and, false_or] at *;
     omega
@@ -63,8 +66,8 @@ theorem div_two_pow_lt_two_pow (x i j : ℕ) (h_x_lt_2_pow_i : x < 2 ^ (i + j)):
       omega
     )
 
-lemma lt_two_pow_of_lt_two_pow_exp_le (x i j: ℕ)
-    (h_x_lt_2_pow_i: x < 2^i) (h_i_le_j: i ≤ j): x < 2^j := by
+lemma lt_two_pow_of_lt_two_pow_exp_le (x i j : ℕ)
+    (h_x_lt_2_pow_i : x < 2 ^ i) (h_i_le_j : i ≤ j) : x < 2^j := by
   calc
     _ < 2^i := by omega
     _ ≤ 2^j := by apply pow_le_pow_right' (by omega) (by omega)
@@ -80,7 +83,7 @@ lemma Fin.val_add_one' (a : Fin r) (h_a_add_1 : a + 1 < r) : (a + 1).val = a.val
   exact h_a_add_1
 
 @[simp]
-theorem Fin.cast_val_eq_val {n m : ℕ} [NeZero n] (a : Fin n) (h_eq : n = m):
+theorem Fin.cast_val_eq_val {n m : ℕ} [NeZero n] (a : Fin n) (h_eq : n = m) :
   (Fin.cast (h_eq) a).val = a.val := by
   subst h_eq
   rfl
@@ -143,12 +146,12 @@ lemma Fin.le_succ (a : Fin r) (h_a_add_1 : a + 1 < r) : a ≤ a + 1 := by
 
 @[elab_as_elim] def Fin.predRecOnSameFinType {motive : Fin r → Sort _}
     (last : motive (⟨r - 1, by
-      have h_r_ne_0: r ≠ 0 := by exact NeZero.ne r
+      have h_r_ne_0 : r ≠ 0 := by exact NeZero.ne r
       omega
     ⟩ : Fin r))
     (succ : ∀ i : Fin r, i.val > 0 → motive i → motive (⟨i.val - 1, by omega⟩ : Fin r))
-    (i : Fin r): motive i := by
-  have h_r_ne_0: r ≠ 0 := by exact NeZero.ne r
+    (i : Fin r) : motive i := by
+  have h_r_ne_0 : r ≠ 0 := by exact NeZero.ne r
   if h_i_eq_last: i = ⟨r - 1, by omega⟩ then
     subst h_i_eq_last
     exact last
@@ -175,7 +178,7 @@ termination_by (r - 1 - i.val)
 -- TODO: state a more generalized and reusable version of this, where f is from Fin r → M
 theorem Fin.sum_univ_odd_even {n : ℕ} {M : Type*} [AddCommMonoid M] (f : ℕ → M) :
     (∑ i : Fin (2 ^ n), f (2 * i)) + (∑ i : Fin (2 ^ n), f (2 * i + 1))
-    = ∑ i: Fin (2 ^ (n+1)), f i := by
+    = ∑ i : Fin (2 ^ (n+1)), f i := by
   set f_even := fun i => f (2 * i)
   set f_odd := fun i => f (2 * i + 1)
   conv_lhs =>
@@ -185,19 +188,15 @@ theorem Fin.sum_univ_odd_even {n : ℕ} {M : Type*} [AddCommMonoid M] (f : ℕ �
     enter [2, 2, i]
     change f_odd i
   simp only [Fin.sum_univ_eq_sum_range]
-
   -- Let's define the sets of even and odd numbers.
   let evens: Finset ℕ := Finset.image (fun i ↦ 2 * i) (Finset.range (2^n))
   let odds: Finset ℕ := Finset.image (fun i ↦ 2 * i + 1) (Finset.range (2^n))
-
   conv_lhs =>
     enter [1];
     rw [←Finset.sum_image (g:=fun i => 2 * i) (by simp)]
-
   conv_lhs =>
     enter [2];
     rw [← Finset.sum_image (g:=fun i => 2 * i + 1) (by simp)]
-
   -- First, we prove that the set on the RHS is the disjoint union of evens and odds.
   have h_disjoint : Disjoint evens odds := by
     apply Finset.disjoint_iff_ne.mpr
@@ -207,7 +206,6 @@ theorem Fin.sum_univ_odd_even {n : ℕ} {M : Type*} [AddCommMonoid M] (f : ℕ �
     rcases Finset.mem_image.mp hx with ⟨k₁, _, rfl⟩
     rcases Finset.mem_image.mp hy with ⟨k₂, _, rfl⟩
     omega
-
   have h_union : evens ∪ odds = Finset.range (2 ^ (n + 1)) := by
     apply Finset.ext; intro x
     simp only [Finset.mem_union, Finset.mem_range]
@@ -257,7 +255,6 @@ theorem sum_Icc_split {α : Type*} [AddCommMonoid α] (f : ℕ → α) (a b c : 
       exact absurd h_false (lt_irrefl b)
     · intro h -- h : i ∈ ∅
       exact absurd h (Finset.notMem_empty i)
-
   rw [←Finset.sum_union h_disjoint]
   · congr
     ext j
@@ -351,7 +348,7 @@ def splitFinMap_PO2_right {L : Type*} {n : ℕ} (v : Fin (2 ^ (n + 1)) → L)
 @[simp]
 def mergeFinMap_PO2_left_right {L : Type*} {n : ℕ} (left : Fin (2 ^ n) → L)
     (right : Fin (2 ^ n) → L) : Fin (2 ^ (n + 1)) → L := fun i =>
-    if hi: i.val < 2 ^ n then left ⟨i, by omega⟩
+    if hi : i.val < 2 ^ n then left ⟨i, by omega⟩
     else right ⟨i - 2 ^ n, by omega⟩
 
 lemma mergeFinMap_PO2_of_split_left_right {L : Type*} {n : ℕ} (v : Fin (2 ^ (n + 1)) → L) :
@@ -361,8 +358,7 @@ lemma mergeFinMap_PO2_of_split_left_right {L : Type*} {n : ℕ} (v : Fin (2 ^ (n
   simp only [mergeFinMap_PO2_left_right, splitFinMap_PO2_left, Fin.eta, splitFinMap_PO2_right,
     left_eq_dite_iff, not_lt]
   intro h
-  rw! [Nat.sub_add_cancel]
-  exact h
+  congr 1; apply Fin.eq_of_val_eq; simp only; omega
 
 lemma eq_split_finMap_PO2_iff_merge_finMap_PO2_eq {L : Type*} {n : ℕ} (v : Fin (2 ^ (n + 1)) → L)
   (left : Fin (2 ^ n) → L) (right : Fin (2 ^ n) → L) :
@@ -433,27 +429,23 @@ Moving reindexing from the Matrix to the Vector.
 lemma Matrix.reindex_mulVec {m n o l : Type*} [Fintype n] [Fintype l] [Fintype m] [Fintype o]
     (e_m : m ≃ o) (e_n : n ≃ l) (M : Matrix m n R) (v : l → R) :
     Matrix.reindex e_m e_n M *ᵥ v =
-      Fin.reindex (e := by exact e_m) (v := (M *ᵥ (Fin.reindex (e_n.symm) v))):= by
+      Fin.reindex (e := by exact e_m) (v := (M *ᵥ (Fin.reindex (e_n.symm) v))) := by
   -- 1. Prove equality at every index `i`
   unfold Fin.reindex
   ext i
   -- 2. Unfold multiplication and reindexing definitions
   simp only [Matrix.mulVec, dotProduct, Matrix.reindex_apply,
              Matrix.submatrix_apply, Function.comp_apply]
-
   -- 3. The LHS is a sum over `l`. The RHS is a sum over `n`.
   --    Use the equivalence `e_n` to reindex the sum from `l` to `n`.
   rw [← Fintype.sum_equiv e_n]
-
   -- 4. Simplify `e_n.symm (e_n j)` to `j` inside the sum
   simp only [Equiv.symm_symm, Equiv.symm_apply_apply, implies_true]
 
-/--
-Moving reindexing from the Vector to the Matrix.
-`M *ᵥ (Reindex v)` is the same as `(Reindex M) *ᵥ v`.
--/
+/-- Moving reindexing from the Vector to the Matrix.
+`M *ᵥ (Reindex v)` is the same as `(Reindex M) *ᵥ v`. -/
 @[simp]
-lemma Matrix.mulVec_reindex {m n l : Type*} [Fintype n] [Fintype l] [Fintype m]
+lemma Matrix.mulVec_reindex {m n l : Type*} [Fintype n] [Fintype l]
     (e : l ≃ n) (M : Matrix m n R) (v : l → R) :
     M *ᵥ (Fin.reindex e v) = (Matrix.reindex (eₘ := Equiv.refl m) (eₙ := e.symm) M) *ᵥ v := by
   ext i
@@ -480,20 +472,17 @@ lemma Matrix.vecMul_reindex {m n o l : Type*} [Fintype m] [Fintype o] [Fintype n
   -- 2. Unfold definitions
   simp only [Matrix.vecMul, _root_.dotProduct, Matrix.reindex_apply,
              Matrix.submatrix_apply, Function.comp_apply]
-
   -- 3. The sum is over `o` (the new rows). We reindex it to `m` (the old rows).
   --    We use `e_m` to map the summation domain.
   rw [← Fintype.sum_equiv e_m]
-
   -- 4. Simplify `e_m.symm (e_m k)` to `k`
   simp only [Equiv.symm_symm, Equiv.symm_apply_apply, implies_true]
 
-/--
-Moving reindexing from the Vector to the Matrix (Row Vector case).
+/-- Moving reindexing from the Vector to the Matrix (Row Vector case).
 `(Reindex v) ᵥ* M` is the same as `v ᵥ* (Reindex M)`.
 -/
 @[simp]
-lemma Matrix.reindex_vecMul {m n l : Type*} [Fintype m] [Fintype l] [Fintype n]
+lemma Matrix.reindex_vecMul {m n l : Type*} [Fintype m] [Fintype l]
     (e : l ≃ m) (v : l → R) (M : Matrix m n R) :
     (Fin.reindex e v) ᵥ* M = v ᵥ* (Matrix.reindex (eₘ := id e.symm) (eₙ := Equiv.refl n) M) := by
   ext j
@@ -589,17 +578,17 @@ lemma Matrix.from4Blocks_mul_from4Blocks {mTop mBot pLeft pRight nLeft nRight : 
   split_ifs with h_i_lt_mTop h_j_lt_nLeft
   · -- CASE: Top Row (i < mTop) and Left Column (j < nLeft)
     -- Simplify indices for A and B
-    simp only [Fin.coe_castAdd, Fin.is_lt, ↓reduceDIte, Fin.eta, Fin.coe_natAdd,
-      add_lt_iff_neg_left, not_lt_zero', add_tsub_cancel_left]
+    simp only [Fin.val_castAdd, Fin.is_lt, ↓reduceDIte, Fin.eta, Fin.val_natAdd,
+      add_lt_iff_neg_left, not_lt_zero, add_tsub_cancel_left]
   · -- CASE: Bottom Row (i >= mTop) and Right Column (j ≥ nLeft)
     -- Logic is symmetric to above
-    simp only [Fin.coe_castAdd, Fin.is_lt, ↓reduceDIte, Fin.eta, Fin.coe_natAdd,
+    simp only [Fin.val_castAdd, Fin.is_lt, ↓reduceDIte, Fin.eta, Fin.val_natAdd,
       add_lt_iff_neg_left, not_lt_zero', add_tsub_cancel_left]
   · -- CASE: Bottom Row (i >= mTop) and Left Column (j < nLeft)
-    simp only [Fin.coe_castAdd, Fin.is_lt, ↓reduceDIte, Fin.eta, Fin.coe_natAdd,
+    simp only [Fin.val_castAdd, Fin.is_lt, ↓reduceDIte, Fin.eta, Fin.val_natAdd,
       add_lt_iff_neg_left, not_lt_zero', add_tsub_cancel_left]
   · -- CASE: Bottom Row (i >= mTop) and Right Column (j ≥ nLeft)
-    simp only [Fin.coe_castAdd, Fin.is_lt, ↓reduceDIte, Fin.eta, Fin.coe_natAdd,
+    simp only [Fin.val_castAdd, Fin.is_lt, ↓reduceDIte, Fin.eta, Fin.val_natAdd,
       add_lt_iff_neg_left, not_lt_zero', add_tsub_cancel_left]
 
 /-- Helper: Link manual `from4Blocks` to Mathlib's `fromBlocks` via `finSumFinEquiv`.
@@ -632,7 +621,6 @@ lemma Matrix.from4Blocks_eq_fromBlocks {m n : ℕ} {α : Type*}
       -- 2. castAdd x < m is true
       -- 3. fromBlocks (inl) (inl) = A
       simp only [from4Blocks, Equiv.symm_symm, fromBlocks, of_apply, Sum.elim_inl]
-
       simp only [h_e_itop, Fin.is_lt, ↓reduceDIte, h_e_jleft, Fin.eta]
     | inr j_right =>
       have h_e_jright: e (Sum.inr j_right) = ⟨j_right + m, by omega⟩ := by
@@ -699,17 +687,14 @@ lemma Matrix.det_fromBlocks_of_squareSubblocks_commute {n : ℕ} {R : Type*} [Co
   let B' := B.map (Polynomial.C : R →+* P)
   let C' := C.map (Polynomial.C : R →+* P)
   let D' := D.map (Polynomial.C : R →+* P)
-
   have h_mat_map_map_eq_self : ∀ (m n :ℕ) (a : Matrix (Fin m) (Fin n) R),
     (a.map ⇑Polynomial.C).map ⇑(Polynomial.evalRingHom 0) = a := by
     intro m n a
     ext i j
     simp only [Polynomial.coe_evalRingHom, map_apply, Polynomial.eval_C]
-
   -- Define the perturbed matrix D(X) = D + X•I
   let D_poly : Matrix (Fin n) (Fin n) P :=
     D' + X • (1 : Matrix (Fin n) (Fin n) P)
-
   -- 1. Establish that C' and D_poly commute
   have h_comm_poly : Commute C' D_poly := by
     -- C' commutes with D' (lifted from R) and with X•I (scalar matrix)
@@ -723,12 +708,10 @@ lemma Matrix.det_fromBlocks_of_squareSubblocks_commute {n : ℕ} {R : Type*} [Co
       -- We prove it by simplifying M * (s • 1) -> s • M and (s • 1) * M -> s • M
       rw [Commute, SemiconjBy]
       simp only [Matrix.mul_smul, Matrix.smul_mul, Matrix.mul_one, Matrix.one_mul]
-
   -- 2. Construct the "Right-Multiplication" identity in P
   let M_poly := Matrix.fromBlocks A' B' C' D_poly
   let R_mat := Matrix.fromBlocks D_poly 0 (-C') (1 : Matrix (Fin n) (Fin n) P)
   let Res_mat := Matrix.fromBlocks (A' * D_poly - B' * C') B' 0 D_poly
-
   have h_mul : M_poly * R_mat = Res_mat := by
     -- 1. Apply our custom block multiplication rule
     rw [Matrix.fromBlocks_multiply]; unfold Res_mat
@@ -740,12 +723,10 @@ lemma Matrix.det_fromBlocks_of_squareSubblocks_commute {n : ℕ} {R : Type*} [Co
     · rw [← sub_eq_add_neg];
       rw [sub_eq_zero]
       exact h_comm_poly.eq
-
   -- 3. Take determinants
   apply_fun Matrix.det at h_mul
   rw [Matrix.det_mul, Matrix.det_fromBlocks_zero₂₁, Matrix.det_fromBlocks_zero₁₂] at h_mul
   simp only [Matrix.det_one, mul_one] at h_mul
-
   -- 4. Cancel det(D_poly). It is a monic polynomial (up to sign), so not a zero divisor.
   have h_monic : (Matrix.det D_poly).Monic := by
   -- 1. Show D_poly is actually the characteristic matrix of (-D)
@@ -769,21 +750,17 @@ lemma Matrix.det_fromBlocks_of_squareSubblocks_commute {n : ℕ} {R : Type*} [Co
     -- So we just need to prove the charpoly is Monic.
     change (Matrix.charpoly (-D)).Monic
     exact Matrix.charpoly_monic (-D)
-
   have h_cancel : Matrix.det M_poly = Matrix.det (A' * D_poly - B' * C') := by
     -- Apply right-cancellation for Monic polynomials
     refine h_monic.isRegular.right ?_
     exact h_mul
-
   -- 5. Evaluate at X = 0 using the Ring Homomorphism explicitly
   --    Using 'evalRingHom' ensures the syntax matches 'Matrix.det_map'
   apply_fun (Polynomial.evalRingHom 0) at h_cancel
-
   -- Now use the helper (or RingHom.map_det) to move eval inside
   -- This turns `evalRingHom 0 (det M)` into `det (M.map (evalRingHom 0))`
   rw [← Matrix.det_map (M := M_poly) (f := Polynomial.evalRingHom 0)] at h_cancel
   rw [← Matrix.det_map (M := A' * D_poly - B' * C') (f := Polynomial.evalRingHom 0)] at h_cancel
-
   have h_X_smul_1_map : ((X : P) • (1 : Matrix (Fin n) (Fin n) P)).map
     ⇑(Polynomial.evalRingHom 0) = 0 := by
     rw [Matrix.smul_one_eq_diagonal, Matrix.diagonal_map (h := by
@@ -798,7 +775,6 @@ lemma Matrix.det_fromBlocks_of_squareSubblocks_commute {n : ℕ} {R : Type*} [Co
     rw [h_X_smul_1_map]
     simp_rw [h_mat_map_map_eq_self] -- A'.map (Polynomial.evalRingHom 0) = A
     rw [add_zero]
-
   have h_eval_Res : (A' * D_poly - B' * C').map (Polynomial.evalRingHom 0) = (A * D - B * C) := by
     -- Distribute eval over sub, mul, add
     simp only [A', B', C', D', D_poly]
@@ -817,7 +793,6 @@ lemma Matrix.det_fromBlocks_of_squareSubblocks_commute {n : ℕ} {R : Type*} [Co
       rw [mul_add]
       simp only [h_mat_map_map_eq_self]
     simp only [mul_zero, add_zero]
-
   -- 7. Substitute and finish
   rw [h_eval_M, h_eval_Res] at h_cancel
   exact h_cancel

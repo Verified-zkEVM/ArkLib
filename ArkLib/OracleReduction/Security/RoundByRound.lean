@@ -834,9 +834,10 @@ def Verifier.StateFunction.id {lang : Set Statement} :
       rw [simulateQ_pure]
       change Prod.fst <$> (pure (some stmt) : StateT σ ProbComp _).run s = _
       rw [StateT.run_pure]; simp [map_pure]
-    rw [key] at hx
-    simp only [support_pure, Set.mem_singleton_iff] at hx
-    cases hx; exact h
+    rw [key] at hx_run
+    simp only [support_pure, Set.mem_singleton_iff, Option.some.injEq] at hx_run
+    subst hx_run
+    exact h
 
 /-- The identity / trivial verifier is perfectly round-by-round sound. -/
 @[simp]
@@ -874,10 +875,10 @@ def Verifier.KnowledgeStateFunction.id {rel : Set (Statement × Witness)} :
       rw [simulateQ_pure]
       change Prod.fst <$> (pure (some stmtIn) : StateT σ ProbComp _).run s = _
       rw [StateT.run_pure]; simp [map_pure]
-    rw [key] at hx
-    simp only [support_pure, Set.mem_singleton_iff] at hx
-    cases (Option.some.inj hx)
-    exact hrel
+    rw [key] at hx_run
+    simp only [support_pure, Set.mem_singleton_iff, Option.some.injEq] at hx_run
+    subst hx_run
+    simpa [Extractor.RoundByRound.id] using hrel
 
 /-- The identity / trivial verifier is perfectly round-by-round knowledge sound. -/
 @[simp]
