@@ -1,0 +1,119 @@
+import ArkLib.Data.Polynomial.Bivariate
+
+import Mathlib.Algebra.Polynomial.Basic
+import Mathlib.LinearAlgebra.Lagrange
+import Mathlib.Tactic.Cases
+import Mathlib.Tactic.LinearCombination'
+
+namespace Polynomial
+
+section
+
+open Polynomial Polynomial.Bivariate 
+
+variable {ι F : Type*} [Field F] [DecidableEq F]
+
+noncomputable def indicator (pos neg : Finset F) : F[X] :=
+  Lagrange.interpolate (pos ∪ neg) id 
+    (fun x => if x ∈ pos then 1 else 0) 
+
+@[simp]
+lemma indicator_is_0_if_pos_empty {neg : Finset F} :
+  indicator ∅ neg = 0 := by simp [indicator]
+
+lemma indicator_is_1_if_neg_is_empty_and_pos_non_empty
+  {pos : Finset F}
+  (h_pos : pos.Nonempty)
+  : 
+  indicator pos ∅ = 1 := by 
+  rw [Finset.nonempty_iff_ne_empty] at h_pos
+  unfold Polynomial.indicator;
+  refine' Polynomial.eq_of_degree_sub_lt_of_eval_finset_eq _ _ _;
+  exact pos ∪ ∅;
+  · refine' lt_of_le_of_lt ( Polynomial.degree_sub_le _ _ ) ( max_lt _ _ );
+    · convert Lagrange.degree_interpolate_lt _ _ ; aesop;
+    · simpa using Finset.card_pos.mpr ( Finset.nonempty_of_ne_empty h_pos );
+  · simp +decide [ Lagrange.basis ];
+    intro x hx; 
+    rw [ Polynomial.eval_finset_sum, Finset.sum_eq_single x ] 
+      <;> simp_all +decide 
+            [ Polynomial.eval_prod, 
+              Finset.prod_eq_zero_iff,
+              Lagrange.basisDivisor ] ;
+    · exact Finset.prod_eq_one fun y hy 
+        => by rw [ inv_mul_cancel₀ ] ; exact sub_ne_zero_of_ne <| by aesop;
+    · exact fun y hy hyx => ⟨ x, ⟨ Ne.symm hyx, hx ⟩, Or.inr ( sub_self _ ) ⟩
+
+lemma indicator_ne_if_pos_is_nonempty {pos neg : Finset F}
+  (h : pos.Nonempty)
+  :
+  indicator pos neg ≠ 0 := by 
+  rw [Finset.nonempty_iff_ne_empty] at h
+  sorry
+
+lemma indicator_eq_1_on_pos {pos neg : Finset F} {x : F}
+  (h_pos : x ∈ pos)
+  :
+  (indicator pos neg).eval x = 1 := by 
+  unfold Polynomial.indicator;
+  rw [ Polynomial.eval];
+  simp +decide [ Polynomial.eval₂_finset_sum, Lagrange.basis ];
+  rw [ Finset.sum_eq_single x ] <;> 
+    simp_all +decide [ Polynomial.eval_prod, Finset.prod_eq_zero_iff, Lagrange.basisDivisor ];
+  · exact Finset.prod_eq_one fun y hy 
+      => by rw [ inv_mul_cancel₀ ] ; exact sub_ne_zero_of_ne <| by aesop;
+  · exact fun y hy hyx => ⟨ x, ⟨ Ne.symm hyx, Or.inl h_pos ⟩, Or.inr ( sub_self x ) ⟩
+
+lemma indicator_eq_0_on_neg_sub_pos {pos neg : Finset F} {x : F}
+  (h_pos : x ∈ neg \ pos)
+  :
+  (indicator pos neg).eval x = 0 := by 
+  simp [Polynomial.indicator];
+  have h_basis_zero : ∀ y ∈ pos, Polynomial.eval x (Lagrange.basis (pos ∪ neg) id y) = 0 := by
+    simp_all +decide only [Finset.mem_sdiff, Lagrange.basis, id_eq];
+    intro y hy; 
+    rw [ Polynomial.eval_prod, Finset.prod_eq_zero 
+          ( Finset.mem_erase_of_ne_of_mem 
+              ( by aesop ) 
+              ( Finset.mem_union_right _ h_pos.1 ) ) ] ; 
+    simp +decide [ Lagrange.basisDivisor ] ;
+  rw [ Polynomial.eval_finset_sum, Finset.sum_eq_zero h_basis_zero ]
+
+lemma indicator_degree_lt {pos neg : Finset F} :
+  (indicator pos neg).degree < (pos ∪ neg).card := by
+  unfold indicator 
+  apply Lagrange.degree_interpolate_lt
+  simp
+
+lemma indicator_natDegree_lt {pos neg : Finset F}
+  (h : pos.Nonempty)
+  :
+  (indicator pos neg).natDegree < (pos ∪ neg).card := by
+  rw [Polynomial.natDegree_lt_iff_degree_lt 
+        (indicator_ne_if_pos_is_nonempty h)]
+  exact indicator_degree_lt
+
+lemma indicator_natDegree_lt' {pos neg : Finset F}
+  (h : neg.Nonempty)
+  :
+  (indicator pos neg).natDegree < (pos ∪ neg).card := by
+  by_cases hpos: pos.Nonempty
+  · exact indicator_natDegree_lt hpos
+  · aesop 
+
+lemma indicator_degree_lt_of_pos_subset_neg {pos neg : Finset F}
+  (h : pos ⊆ neg)
+  :
+  (indicator pos neg).degree < neg.card := by
+  apply lt_of_lt_of_le (indicator_degree_lt)
+  rw [←Finset.union_eq_right] at h
+  rw [h]
+
+
+    
+
+
+
+end
+
+end Polynomial
