@@ -100,4 +100,67 @@ noncomputable def fold (domain : ι ↪ F) (f : Word F ι) (k : ℕ) (α : F) :
   Word F (iotaK domain k)
   := fun x => (foldAux domain f k (domainK domain k x)).eval α 
 
+omit [Nonempty ι] [Fintype F] in
+@[simp]
+lemma fold_zero {domain : ι ↪ F} {k : ℕ} {α : F} :
+  fold domain 0 k α = 0 := by
+  unfold fold foldAux
+  ext i 
+  simp
+
+private noncomputable def foldAuxCoeff (domain : ι ↪ F) (f : Word F ι) (k : ℕ) (i : Fin k)
+  : iotaK domain k → F
+  := fun x => (foldAux domain f k (domainK domain k x)).coeff i
+
+private lemma foldAux_eq_sum_of_foldAuxCoeff
+  {domain : ι ↪ F} {f : Word F ι} {k : ℕ} {i : iotaK domain k}
+  [inst : NeZero k]
+  :
+  foldAux domain f k (domainK domain k i) 
+    = ∑ j, Polynomial.C (foldAuxCoeff domain f k j i) * Y ^ j.val := by 
+  unfold foldAuxCoeff
+  ext n
+  simp
+  by_cases hlt: n < k
+  · have h : n = (⟨n, hlt⟩ : Fin k) := by simp
+    conv =>
+      rhs
+      rw [h]
+    have h : 
+      ∀ {x : Fin k}, 
+        (if (↑(⟨n, hlt⟩ : Fin k) : ℕ) = ↑x then 
+          (foldAux domain f k ((domainK domain k) i)).coeff ↑x else 0) 
+            = (if (⟨n, hlt⟩ : Fin k) = x then 
+              (foldAux domain f k ((domainK domain k) i)).coeff ↑x 
+              else 0) := by
+      rintro ⟨x, hx⟩  
+      simp
+    conv =>
+      rhs
+      rhs
+      ext x
+      rw [h]
+    rw [Fintype.sum_ite_eq]
+  · simp at hlt
+    rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by {
+      apply lt_of_lt_of_le
+      exact foldAux_natDegree
+      simp [hlt]
+    })]
+    have h : 
+      ∀ {x : Fin k}, 
+        (if n = ↑x then (foldAux domain f k ((domainK domain k) i)).coeff ↑x else 0) 
+            = 0 := by
+        rintro ⟨x, hx⟩
+        simp
+        intro contra
+        rw [←contra] at hx
+        omega
+    conv =>
+      rhs
+      rhs
+      ext x
+      rw [h]
+    simp
+
 end ProximityGap
