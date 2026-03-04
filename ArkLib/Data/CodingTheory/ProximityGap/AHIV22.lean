@@ -436,7 +436,7 @@ lemma numberOfClosePts_eq_natCard (u v : ι → F) (deg : ℕ) (α : ι ↪ F) (
         closePtsOnAffineLine (F := F) (u := u) (v := v) (deg := deg) (α := α) (e := e)))
 
 /- We prove the distance-bound form (`e_leq_dist_over_3_strong`) first and derive the
-cardinality-only corollary `e_leq_dist_over_3` afterwards to avoid duplicating the long argument.
+mutual-exclusion corollary `e_leq_dist_over_3` afterwards to avoid duplicating the long argument.
 -/
 
 /-- **Lemma 4.4, [AHIV22] (strong form).**
@@ -1424,18 +1424,84 @@ lemma dirClose_of_manyClosePts
         exact_mod_cast le_trans hdist_vw hD_card)
   simpa [CRS] using this
 
-/-- **Lemma 4.4, [AHIV22] (cardinality-only corollary).**
+/-- **Lemma 4.4, [AHIV22] (mutual-exclusion corollary).**
 
 Either all points on the affine line are `e`-close to the Reed–Solomon code, or at most
 `‖RS‖₀` points are.
+
+The assumptions `v ≠ 0` and `‖RS‖₀ < |F|` are necessary for mutual exclusion:
+if `v = 0`, the affine line degenerates to a singleton and the two branches can hold
+simultaneously.
 -/
 lemma e_leq_dist_over_3
     {deg : ℕ}
     {α : ι ↪ F} {e : ℕ} {u v : ι → F}
-    (he : (e : ℚ≥0) < ‖(RScodeSet α deg)‖₀ / 3) :
-    (∀ x ∈ Affine.affineLineAtOrigin (F := F) u v, Δ₀(x, ReedSolomon.code α deg) ≤ e)
-      ∨ numberOfClosePts u v deg α e ≤ ‖(RScodeSet α deg)‖₀ := by
-  exact e_leq_dist_over_3_strong (F := F) (ι := ι) (α := α) (e := e) (u := u) (v := v) he
+    (he : (e : ℚ≥0) < ‖(RScodeSet α deg)‖₀ / 3)
+    (hv : v ≠ 0)
+    (hFd : ‖(RScodeSet α deg)‖₀ < Fintype.card F) :
+    Xor'
+      (∀ x ∈ Affine.affineLineAtOrigin (F := F) u v, Δ₀(x, ReedSolomon.code α deg) ≤ e)
+      (numberOfClosePts u v deg α e ≤ ‖(RScodeSet α deg)‖₀) := by
+  classical
+  have hA_not_B :
+      (∀ x ∈ Affine.affineLineAtOrigin (F := F) u v, Δ₀(x, ReedSolomon.code α deg) ≤ e) →
+      ¬(numberOfClosePts u v deg α e ≤ ‖(RScodeSet α deg)‖₀) := by
+    intro h_all h_few
+    have hnum_ge : Fintype.card F ≤ numberOfClosePts (F := F) (ι := ι) u v deg α e := by
+      have hex : ∃ j, v j ≠ 0 := by
+        by_contra h
+        apply hv
+        funext j
+        by_contra hj
+        exact h ⟨j, hj⟩
+      rcases hex with ⟨j, hj⟩
+      let g : F → closePtsOnAffineLine (F := F) (u := u) (v := v) (deg := deg) (α := α) (e := e) :=
+        fun r =>
+          ⟨u + r • v,
+            by
+              refine ⟨?_, ?_⟩
+              · refine
+                  (Affine.mem_affineLineAtOrigin_iff (F := F) (origin := u) (direction := v) _).2
+                    ?_
+                exact ⟨r, rfl⟩
+              · apply h_all
+                refine
+                  (Affine.mem_affineLineAtOrigin_iff (F := F) (origin := u) (direction := v) _).2
+                    ?_
+                exact ⟨r, rfl⟩⟩
+      have hg_inj : Function.Injective g := by
+        intro r₁ r₂ hr
+        have hval : u + r₁ • v = u + r₂ • v := congrArg Subtype.val hr
+        have hmul : r₁ * v j = r₂ * v j := by
+          have := congrArg (fun f : ι → F => f j) hval
+          simpa [Pi.add_apply, Pi.smul_apply] using add_left_cancel this
+        exact mul_right_cancel₀ hj hmul
+      have hnat :
+          Nat.card F ≤ Nat.card
+            (closePtsOnAffineLine (F := F) (u := u) (v := v) (deg := deg) (α := α) (e := e)) :=
+        Nat.card_le_card_of_injective g hg_inj
+      have hnum :
+          numberOfClosePts (F := F) (ι := ι) u v deg α e =
+            Nat.card
+              (closePtsOnAffineLine (F := F) (u := u) (v := v) (deg := deg) (α := α) (e := e)) :=
+        by simpa using numberOfClosePts_eq_natCard (F := F) (ι := ι) u v deg α e
+      have hcardF : Fintype.card F = Nat.card F := by
+        exact (Fintype.card_eq_nat_card (α := F))
+      calc
+        Fintype.card F = Nat.card F := hcardF
+        _ ≤ Nat.card
+              (closePtsOnAffineLine (F := F) (u := u) (v := v) (deg := deg) (α := α) (e := e)) :=
+          hnat
+        _ = numberOfClosePts (F := F) (ι := ι) u v deg α e := hnum.symm
+    have hcardF_le : Fintype.card F ≤ ‖(RScodeSet α deg)‖₀ := le_trans hnum_ge h_few
+    exact (not_lt_of_ge hcardF_le) hFd
+  have hline :
+      (∀ x ∈ Affine.affineLineAtOrigin (F := F) u v, Δ₀(x, ReedSolomon.code α deg) ≤ e)
+        ∨ numberOfClosePts u v deg α e ≤ ‖(RScodeSet α deg)‖₀ :=
+    e_leq_dist_over_3_strong (F := F) (ι := ι) (α := α) (e := e) (u := u) (v := v) he
+  rcases hline with h_all | h_few
+  · exact Or.inl ⟨h_all, hA_not_B h_all⟩
+  · exact Or.inr ⟨h_few, fun h_all => hA_not_B h_all h_few⟩
 
 /-- **Lemma 4.5, [AHIV22].**
 
