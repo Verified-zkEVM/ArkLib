@@ -170,4 +170,20 @@ private lemma foldAux_eq_sum_of_foldAuxCoeff
       rw [h]
     simp
 
+private lemma fold_eq_sum_of_foldAuxCoeff_mul_pow_alpha
+  {domain : ι ↪ F} {f : Word F ι} {k : ℕ} {α : F} {x : F}
+  [inst : NeZero k]
+  :
+  fold domain f k α x =
+    ∑ j : Fin k, (foldAuxCoeff domain f k j x) * α ^ j.val := by
+  unfold fold
+  rw [foldAux_eq_sum_of_foldAuxCoeff]
+  rw [Polynomial.eval_finset_sum]
+  conv =>
+    lhs
+    rhs
+    ext i
+    rw [Polynomial.eval_mul]
+    simp
+
 end ProximityGap
