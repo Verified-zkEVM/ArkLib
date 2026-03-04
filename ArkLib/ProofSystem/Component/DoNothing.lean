@@ -48,9 +48,9 @@ variable {oSpec} {Statement} {Witness}
 
 /-- The `DoNothing` reduction satisfies perfect completeness for any relation. -/
 @[simp]
-theorem reduction_perfectCompleteness (hInit : init.neverFails) :
+theorem reduction_perfectCompleteness :
     (reduction oSpec Statement Witness).perfectCompleteness init impl rel rel :=
-  Reduction.id_perfectCompleteness init impl hInit
+  Reduction.id_perfectCompleteness init impl
 
 /-- The `DoNothing` verifier is perfectly round-by-round knowledge sound. -/
 @[simp]
@@ -89,13 +89,13 @@ variable {oSpec} {Statement} {OStatement} {Witness}
 
 /-- The `DoNothing` oracle reduction satisfies perfect completeness for any relation. -/
 @[simp]
-theorem oracleReduction_perfectCompleteness (hInit : init.neverFails) :
+theorem oracleReduction_perfectCompleteness :
     (oracleReduction oSpec Statement OStatement Witness).perfectCompleteness init impl rel rel :=
-  OracleReduction.id_perfectCompleteness init impl hInit
+  OracleReduction.id_perfectCompleteness init impl
 
 /-- The `DoNothing` oracle verifier is perfectly round-by-round knowledge sound. -/
 @[simp]
-theorem oracleVerifier_rbrKnowledgeSoundness :
+theorem oracleVerifier_rbrKnowledgeSoundness [DecidablePred (· ∈ rel)] :
     (oracleVerifier oSpec Statement OStatement).rbrKnowledgeSoundness init impl rel rel 0 :=
   OracleVerifier.id_rbrKnowledgeSoundness init impl
 

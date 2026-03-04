@@ -4,11 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 
-import ArkLib.Data.FieldTheory.AdditiveNTT.AdditiveNTT
+import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
 import ArkLib.Data.MvPolynomial.Multilinear
 import ArkLib.OracleReduction.Basic
 import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.Data.FieldTheory.BinaryField.Tower.TensorAlgebra
+import CompPoly.Fields.Binary.Tower.TensorAlgebra
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Matrix.Basic
@@ -252,7 +252,7 @@ structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
   numRounds : ℕ
   pSpec : ProtocolSpec numRounds
   Oₘ: ∀ j, OracleInterface (pSpec.Message j)
-  O_challenges: ∀ (i : pSpec.ChallengeIdx), SelectableType (pSpec.Challenge i)
+  O_challenges: ∀ (i : pSpec.ChallengeIdx), SampleableType (pSpec.Challenge i)
   -- /-- The evaluation protocol Π' as an OracleReduction -/
   oracleReduction : OracleReduction (oSpec:=[]ₒ)
     (StmtIn := MLPEvalStatement L ℓ') (OStmtIn:= OStmtIn)
@@ -261,7 +261,6 @@ structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
     (pSpec := pSpec)
   -- Security properties
   perfectCompleteness : ∀ {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)},
-    init.neverFails →
     OracleReduction.perfectCompleteness (oSpec:=[]ₒ)
       (StmtIn:=MLPEvalStatement L ℓ') (OStmtIn:=OStmtIn)
       (StmtOut:=Bool) (OStmtOut:=fun _: Empty => Unit)
@@ -303,7 +302,7 @@ open Module Binius.BinaryBasefold
 
 variable (κ : ℕ) [NeZero κ]
 variable (L : Type) [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
-  [SelectableType L]
+  [SampleableType L]
 variable (K : Type) [Field K] [Fintype K] [DecidableEq K]
 variable [Algebra K L]
 variable (β : Basis (Fin κ → Fin 2) K L)

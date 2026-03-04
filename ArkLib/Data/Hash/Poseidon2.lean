@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.FieldTheory.NonBinaryField.KoalaBear
-import ArkLib.Data.Vector.Basic
+import CompPoly.Fields.KoalaBear
+import CompPoly.Data.Vector.Basic
 
 /-!
   # Poseidon2 Reference Implementation

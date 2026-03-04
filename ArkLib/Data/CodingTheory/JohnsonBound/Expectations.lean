@@ -20,32 +20,37 @@ variable {n : ℕ}
 variable {F : Type*} [DecidableEq F]
          {B : Finset (Fin n → F)} {v : Fin n → F}
 
+@[simp, grind]
 def e (B : Finset (Fin n → F)) (v : Fin n → F) : ℚ :=
   (1 : ℚ)/B.card * ∑ x ∈ B, Δ₀(v, x)
 
+@[simp, grind]
 def d (B : Finset (Fin n → F)) : ℚ :=
   (1 : ℚ)/(2 * choose_2 B.card) * ∑ x ∈ (Finset.product B B) with x.1 ≠ x.2, Δ₀(x.1, x.2)
 
+@[simp]
 lemma lin_shift_card [Field F] [Fintype F]
   :
   B.card = ({ x - v | x ∈ B} : Finset _).card := by
   apply Finset.card_bij (i := fun x _ => x - v) <;> aesop
 
-@[simp]
+@[simp, grind]
 lemma lin_shift_hamming_distance [Field F] {x₁ x₂ v : Fin n → F}
   :
   Δ₀(x₁ - v, x₂ - v) = Δ₀(x₁, x₂) := by simp [hammingDist]
 
+@[simp, grind]
 lemma lin_shift_e [Field F] [Fintype F]
   (h_B : B.card ≠ 0)
   :
   e B v = e ({ x - v | x ∈ B} : Finset _) 0 := by
-  simp [e]
+  simp only [e, one_div, Nat.cast_sum, hammingDist_zero_left]
   rw [←lin_shift_card]
   field_simp
   apply Finset.sum_bij (i := fun x _ => x - v) <;>
     simp [hammingDist, hammingNorm, sub_eq_zero, eq_comm]
 
+@[simp]
 lemma lin_shift_d [Field F] [Fintype F]
   (h_B : 2 ≤ B.card)
   :
@@ -56,6 +61,7 @@ lemma lin_shift_d [Field F] [Fintype F]
   field_simp
   apply Finset.sum_bij (fun x _ => (x.1 - v, x.2 -v)) <;> try aesop
 
+@[simp, grind]
 lemma e_ball_le_radius [Field F] [Fintype F] {B : Finset (Fin n → F)} (v : Fin n → F) (r : ℚ)
   (h_B : (B ∩ ({ x | Δ₀(x, v) ≤ r} : Finset _)).card > 0)
   :
@@ -67,19 +73,20 @@ lemma e_ball_le_radius [Field F] [Fintype F] {B : Finset (Fin n → F)} (v : Fin
   simp_rw[hamming_symm v]
   have : ∑ x ∈ (B ∩ ({x | ↑Δ₀(x, v) ≤ r} : Finset _)), Δ₀(x, v)
      ≤ ∑ x ∈ (B ∩ ({x | ↑Δ₀(x, v) ≤ r} : Finset _)), r := by
-    have h : ∀ x ∈ (B ∩ ({x | ↑Δ₀(x, v) ≤ r} : Finset _)), Δ₀(x, v) ≤ r := by simp
+    have h : ∀ x ∈ (B ∩ ({x | ↑Δ₀(x, v) ≤ r} : Finset _)), Δ₀(x, v) ≤ r := by
+      grind only [= Finset.mem_inter, = Finset.mem_filter]
     exact_mod_cast Finset.sum_le_sum h
   have : ∑ x ∈ (B ∩ ({x | ↑Δ₀(x, v) ≤ r} : Finset _)), r
     = r * (B ∩ ({x | ↑Δ₀(x, v) ≤ r} : Finset _)).card := by
     rw [Finset.sum_const, mul_comm] ; simp
   have : ∑ x ∈ B ∩ ({x | ↑Δ₀(x, v) ≤ r} : Finset _), Δ₀(x, v)
-    ≤ r * (B ∩ ({x | ↑Δ₀(x, v) ≤ r} : Finset _)).card := by grind
+    ≤ r * (B ∩ ({x | ↑Δ₀(x, v) ≤ r} : Finset _)).card := by grind only
   field_simp
   have h_B' : (0 : ℚ) < (B ∩ ({ x | Δ₀(x, v) ≤ r} : Finset _)).card := by
     exact_mod_cast h_B
-  rw[div_le_iff₀ h_B']
   exact_mod_cast this
 
+@[simp, grind]
 lemma min_dist_le_d [Field F] {B : Finset (Fin n → F)}
   (h_B : B.card > 1)
   :
@@ -88,38 +95,31 @@ lemma min_dist_le_d [Field F] {B : Finset (Fin n → F)}
   let d_weak := sInf { d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ hammingDist u v = d }
   have h_d :  ∀ x ∈ {x ∈ B.product B | x.1 ≠ x.2}, d_weak ≤ Δ₀(x.1, x.2) := by
     intro x hx
-    simp at hx
+    simp only [ne_eq, Finset.product_eq_sprod, Finset.mem_filter, Finset.mem_product] at hx
     unfold d_weak
     have : Δ₀(x.1, x.2) ∈ { d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ hammingDist u v = d } := by
       use x.1, hx.1.1, x.2, hx.1.2
       exact ⟨hx.2, rfl⟩
     apply Nat.sInf_le this
   have B2_card : 2 * choose_2 ↑B.card = {x ∈ B.product B | x.1 ≠ x.2}.card := by
-    simp
+    simp only [ne_eq, Finset.product_eq_sprod]
     unfold choose_2
     ring_nf
     have BBcard : (B ×ˢ B).card = B.card ^ 2 := by
         rw[Finset.card_product, sq]
     have BBdiagcard : {x ∈ B ×ˢ B | x.1=x.2}.card = B.card := by
       simp
-    have BBdisjoint : {x ∈ B ×ˢ B | x.1=x.2} ∩ {x ∈ B ×ˢ B | x.1 ≠ x.2} = ∅ := by grind
+    have BBdisjoint : {x ∈ B ×ˢ B | x.1=x.2} ∩ {x ∈ B ×ˢ B | x.1 ≠ x.2} = ∅ := by
+      grind only [= Finset.mem_inter, ← Finset.notMem_empty, = Finset.mem_filter]
     have BBunion : B ×ˢ B = {x ∈ B ×ˢ B | x.1 = x.2} ∪ {x ∈ B ×ˢ B | x.1 ≠ x.2} := by
-      ext ⟨a, b⟩
-      simp
-      tauto
+      grind only [= Finset.mem_union, = Finset.mem_filter]
     have BBcount: {x ∈ B ×ˢ B | x.1 ≠ x.2}.card
       = (B ×ˢ B).card - {x ∈ B ×ˢ B | x.1=x.2}.card := by
-      rw[BBunion, Finset.card_union, BBdiagcard, BBdisjoint]
-      have doubleindex1 : {x ∈ {x ∈ B ×ˢ B | x.1 = x.2} ∪ {x ∈ B ×ˢ B | x.1 ≠ x.2} | x.1 = x.2}
-        = {x ∈ B ×ˢ B | x.1 = x.2} := by grind
-      have doubleindex2 : {x ∈ {x ∈ B ×ˢ B | x.1 = x.2} ∪ {x ∈ B ×ˢ B | x.1 ≠ x.2} | x.1 ≠ x.2}
-        = {x ∈ B ×ˢ B | x.1 ≠ x.2} := by grind
-      rw[doubleindex1, BBdiagcard]
-      simp
-      rw[doubleindex2]
-    rw[BBcount, BBcard, BBdiagcard]
-    rw[Nat.cast_sub] ; ring_nf ; rfl
-    nlinarith [sq_nonneg (B.card - 1)]
+      grind only [usr Finset.card_filter_le, usr Finset.card_union_add_card_inter,
+        = Finset.card_empty]
+    rw[BBcount, BBcard, BBdiagcard, Nat.cast_sub]
+    grind only
+    grind only [usr Finset.card_filter_le]
   have B2_card_pos : {x ∈ B.product B | x.1 ≠ x.2}.card > 0 := by
     have : ∃ u ∈ B, ∃ v ∈ B, u ≠ v := by
       exact Finset.one_lt_card.mp h_B
@@ -132,7 +132,9 @@ lemma min_dist_le_d [Field F] {B : Finset (Fin n → F)}
       exact Finset.sum_le_sum h_d
   have : d_weak =
     1 / (2 * choose_2 ↑B.card) * ∑ x ∈ B.product B with x.1 ≠ x.2, d_weak := by
-    rw [Finset.sum_const, B2_card]; simp[Nat.cast_mul]; rw[←mul_assoc]
+    rw [Finset.sum_const, B2_card]
+    simp only [ne_eq, Finset.product_eq_sprod, one_div, smul_eq_mul, Nat.cast_mul]
+    rw[←mul_assoc]
     set c := ({x ∈ B ×ˢ B | ¬x.1 = x.2}.card : ℚ) with hc
     have c_nonzero : c > 0 := by unfold c ; exact_mod_cast B2_card_pos
     field_simp [c_nonzero]
@@ -143,6 +145,6 @@ lemma min_dist_le_d [Field F] {B : Finset (Fin n → F)}
   field_simp [c2_pos]
   simp at h_bound
   gcongr
-  exact_mod_cast h_bound
+  grind only
 
 end JohnsonBound

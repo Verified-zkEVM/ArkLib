@@ -70,9 +70,10 @@ open BerlekampWelch (elocPoly_succ) in
 protected lemma roots_of_eloc_poly {x : F}
   (h : (ElocPoly n ωs f p).eval x = 0) :
   ∃ i, i < n ∧ f i ≠ p.eval (ωs i) := by
-  induction' n with n ih generalizing x
-  · aesop
-  · rw [elocPoly_succ, Polynomial.eval_mul, mul_eq_zero] at h
+  induction n generalizing x with
+  | zero => aesop
+  | succ n ih =>
+    rw [elocPoly_succ, Polynomial.eval_mul, mul_eq_zero] at h
     rcases h with heval | heval
     · obtain ⟨i, _⟩ := ih heval
       aesop (add safe [(by existsi i), (by omega)])
@@ -80,24 +81,25 @@ protected lemma roots_of_eloc_poly {x : F}
 
 protected lemma errors_are_roots_of_elocPoly {i : ℕ}
   (hi : i < n) (h : f i ≠ p.eval (ωs i)) : (ElocPoly n ωs f p).eval (ωs i) = 0 := by
-  induction' n with n ih
-  · aesop
-  · by_cases i = n
+  induction n with
+  | zero => aesop
+  | succ n ih =>
+    by_cases i = n
     · aesop
     · have : i < n := by omega
       aesop
 
 @[simp]
 protected lemma elocPoly_ne_zero : ElocPoly n ωs f p ≠ 0 := by
-  induction' n with n _
-  · simp
-  · aesop (add simp [sub_eq_zero]) (add safe forward (Polynomial.X_ne_C (ωs n)))
+  induction n with
+  | zero => simp
+  | succ n hn => aesop (add simp [sub_eq_zero]) (add safe forward (Polynomial.X_ne_C (ωs n)))
 
 @[simp]
 protected lemma elocPoly_leading_coeff_one : (ElocPoly n ωs f p).leadingCoeff = 1 := by
-  induction' n with n _
-  · simp
-  · aesop
+  induction n with
+  | zero => simp
+  | succ n _ => aesop
 
 section
 
@@ -159,10 +161,12 @@ open Fin
 @[simp]
 lemma elocPolyF_deg {ωs f : Fin n → F} : (ElocPolyF ωs f p).natDegree = Δ₀(f, p.eval ∘ ωs) := by
   rw [elocPolyF_eq_elocPoly']
-  induction' n with n ih
-  · simp only [elocPoly_zero, natDegree_one, hamming_zero_eq_dist]
+  induction n with
+  | zero =>
+    simp only [elocPoly_zero, natDegree_one, hamming_zero_eq_dist]
     exact funext_iff.2 (Fin.elim0 ·)
-  · rw [
+  | succ n ih =>
+    rw [
       elocPoly_succ,
       natDegree_mul (by simp)
                     (by aesop (erase simp liftF_succ)

@@ -11,7 +11,7 @@ import Mathlib.Algebra.Polynomial.Eval.Defs
 import Mathlib.Data.Fin.Tuple.Take
 import Mathlib.Tactic.FinCases
 import Batteries.Data.Fin.Fold
-import ArkLib.Data.Classes.DCast
+import CompPoly.Data.Classes.DCast
 
 /-!
   # Lemmas on `Fin` and `Fin`-indexed tuples
@@ -138,7 +138,7 @@ theorem induction_append_left {m n : ℕ} {motive : Fin (m + n + 1) → Sort*} {
       induction (motive := motive) zero succ ⟨i, by omega⟩ =
         @induction m (fun j => motive ⟨j, by omega⟩) zero (fun j x => succ ⟨j, by omega⟩ x) i := by
   induction i using Fin.induction with
-  | zero => simp [induction_zero]; rfl
+  | zero => simp [induction_zero]
   | succ i ih =>
     simp at ih ⊢
     have : (⟨i.1 + 1, by omega⟩ : Fin (m + n + 1)) = (⟨i, by omega⟩ : Fin (m + n)).succ := rfl
@@ -222,6 +222,17 @@ theorem append_right' {u : Fin m → α} {v : Fin n → α} {i : Fin n}
     (j : Fin (m + n)) (h : j = natAdd m i) : append u v j = v i := by
   subst h
   simp only [append_right]
+
+theorem append_left_of_lt {u : Fin m → α} {v : Fin n → α}
+    (j : ℕ) (h : j < m + n) (hlt : j < m) :
+    append u v ⟨j, h⟩ = u ⟨j, hlt⟩ := by
+  rw [show (⟨j, h⟩ : Fin (m + n)) = castAdd n ⟨j, hlt⟩ from Fin.ext rfl, append_left]
+
+theorem append_right_of_not_lt {u : Fin m → α} {v : Fin n → α}
+    (j : ℕ) (h : j < m + n) (hge : ¬ j < m) :
+    append u v ⟨j, h⟩ = v ⟨j - m, by omega⟩ := by
+  rw [show (⟨j, h⟩ : Fin (m + n)) = natAdd m ⟨j - m, by omega⟩ from
+    Fin.ext (by simp; omega), append_right]
 
 theorem append_left_injective (b : Fin n → α) : Function.Injective (@Fin.append m n α · b) := by
   intro a a' h

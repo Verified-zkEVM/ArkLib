@@ -5,8 +5,7 @@ Authors: Quang Dao
 -/
 
 import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
-import ArkLib.Data.FieldTheory.NonBinaryField.BN254
-import ArkLib.ToMathlib.NumberTheory.PrattCertificate
+import CompPoly.Fields.BN254
 import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
 
 /-!

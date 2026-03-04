@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Poulami Das, Miguel Quaresma (Least Authority), Alexander Hicks,  Petar Maksimović
+Authors: Poulami Das, Miguel Quaresma (Least Authority), Alexander Hicks, Petar Maksimović
 -/
 
 import ArkLib.Data.Probability.Notation
@@ -175,7 +175,7 @@ def proximityListDecodingCondition (C : LinearCode ι F)
   (r : parℓ → F) [Fintype parℓ]
   (δ : ℝ≥0) (fs : Matrix parℓ ι F) : Prop := -- fs is a WordStack
       let f_r := fun x => ∑ j, r j * fs j x
-      let listHamming := relHammingBall C f_r δ
+      let listHamming := closeCodewordsRel C f_r δ
       let listIC := { fun x => ∑ j, r j * (us.val j x) | us ∈ Λᵢ(fs, (C : Set (ι → F)), δ)}
       listHamming ≠ listIC
 

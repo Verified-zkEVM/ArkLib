@@ -107,9 +107,10 @@ theorem cast_idx {i : MessageIdx pSpec₁} :
     pSpec₂.Message (i.cast hn hSpec) = pSpec₁.Message i :=
   cast_Type_idx hSpec
 
-instance [inst : ∀ i, OracleInterface (pSpec₁.Message i)] :
-    ∀ i, OracleInterface ((pSpec₁.cast hn).Message i) :=
-  fun i => inst (dcast₂ hn.symm (by rw [dcast_symm hn]; rfl) i)
+-- instance {Q : pSpec₁.MessageIdx → Type _}
+--     [inst : ∀ i : pSpec₁.MessageIdx, OracleInterface (Q i) (pSpec₁.Message i)] :
+--     ∀ i : (pSpec₁.cast hn).MessageIdx, OracleInterface (Q sorry) ((pSpec₁.cast hn).Message i) :=
+--   fun i => inst (dcast₂ hn.symm (by rw [dcast_symm hn]; rfl) i)
 
 end Message
 
@@ -171,7 +172,7 @@ variable {hn} (hIdx : k.val = l.val) (hSpec : pSpec₁.cast hn = pSpec₂)
 instance instDCast₃ : DCast₃ Nat (fun n => Fin (n + 1)) (fun n _ => ProtocolSpec n)
     (fun _ k pSpec => pSpec.Transcript k) where
   dcast₃ h h' h'' T := Transcript.cast h
-    (by simp only [dcast] at h'; rw [← h']; sorry)
+    (by simp only [dcast] at h'; rw [← h']; subst h; rfl)
     (by simp [ProtocolSpec.cast_eq_dcast, dcast_eq_root_cast]; exact h'')
     T
   dcast₃_id := cast_id
@@ -211,8 +212,7 @@ theorem challengeOracleInterface_cast {h : n₁ = n₂} {hSpec : pSpec₁.cast h
     {i : pSpec₁.ChallengeIdx} :
     pSpec₁.challengeOracleInterface i =
       dcast (by simp) (pSpec₂.challengeOracleInterface (i.cast hn hSpec)) := by
-  simp [challengeOracleInterface]
-  ext <;> sorry
+  subst h; subst hSpec; simp [challengeOracleInterface]
 
 end Instances
 

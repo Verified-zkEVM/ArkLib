@@ -10,7 +10,7 @@ namespace Binius.RingSwitching
 
 /-! ## Protocol Specs for Ring-Switching
 This module contains the protocol specs, oracle index bounds,
-instances of OracleInterface and SelectableType for the Ring Switching protocol.
+instances of OracleInterface and SampleableType for the Ring Switching protocol.
 -/
 
 noncomputable section
@@ -19,7 +19,7 @@ open scoped NNReal
 
 variable (κ : ℕ) [NeZero κ]
 variable (L : Type) [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
-  [SelectableType L]
+  [SampleableType L]
 variable (K : Type) [Field K] [Fintype K] [DecidableEq K]
 variable [Algebra K L]
 variable (β : Fin κ → L) [hβ_lin_indep : Fact (LinearIndependent K β)]
@@ -81,36 +81,36 @@ instance : ∀ i, OracleInterface (mlIOPCS.pSpec.Message i) := fun i => mlIOPCS.
 instance : ∀ i, OracleInterface ((fullPspec κ (L:=L) (K:=K) (ℓ':=ℓ') mlIOPCS).Message i) :=
   instOracleInterfaceMessageAppend
 
-/-! ## SelectableType instances -/
+/-! ## SampleableType instances -/
 
-instance : ∀ j, SelectableType ((pSpecBatching κ L K).Challenge j)
+instance : ∀ j, SampleableType ((pSpecBatching κ L K).Challenge j)
   | ⟨0, h0⟩ => by nomatch h0
   | ⟨1, _⟩ => by
     simp only [Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_fin_one]
-    exact instSelectableTypeFinFunc (α := L)
+    exact instSampleableTypeFinFunc (α := L)
 
-instance : ∀ j, SelectableType ((pSpecSumcheckRound (L:=L)).Challenge j)
+instance : ∀ j, SampleableType ((pSpecSumcheckRound (L:=L)).Challenge j)
   | ⟨0, h0⟩ => by nomatch h0
   | ⟨1, _⟩ => by
     simp only [Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_fin_one]
     infer_instance
 
-instance : ∀ j, SelectableType ((pSpecSumcheckLoop (L:=L) ℓ').Challenge j)
-  := instSelectableTypeChallengeSeqCompose
+instance : ∀ j, SampleableType ((pSpecSumcheckLoop (L:=L) ℓ').Challenge j)
+  := instSampleableTypeChallengeSeqCompose
 
-instance : ∀ i, SelectableType ((pSpecFinalSumcheck (L:=L)).Challenge i)
+instance : ∀ i, SampleableType ((pSpecFinalSumcheck (L:=L)).Challenge i)
   | ⟨0, h0⟩ => by nomatch h0 -- P->V message has no challenge
 
-instance : ∀ i, SelectableType ((pSpecCoreInteraction (L:=L) (ℓ':=ℓ')).Challenge i) :=
-  instSelectableTypeChallengeAppend
+instance : ∀ i, SampleableType ((pSpecCoreInteraction (L:=L) (ℓ':=ℓ')).Challenge i) :=
+  instSampleableTypeChallengeAppend
 
-instance : ∀ i, SelectableType ((pSpecLargeFieldReduction κ (L:=L) (K:=K) (ℓ':=ℓ')).Challenge i) :=
-  instSelectableTypeChallengeAppend
+instance : ∀ i, SampleableType ((pSpecLargeFieldReduction κ (L:=L) (K:=K) (ℓ':=ℓ')).Challenge i) :=
+  instSampleableTypeChallengeAppend
 
-instance : ∀ i, SelectableType (mlIOPCS.pSpec.Challenge i) := mlIOPCS.O_challenges
+instance : ∀ i, SampleableType (mlIOPCS.pSpec.Challenge i) := mlIOPCS.O_challenges
 
-instance : ∀ i, SelectableType ((fullPspec κ (L:=L) (K:=K) (ℓ':=ℓ') mlIOPCS).Challenge i) :=
-  instSelectableTypeChallengeAppend
+instance : ∀ i, SampleableType ((fullPspec κ (L:=L) (K:=K) (ℓ':=ℓ') mlIOPCS).Challenge i) :=
+  instSampleableTypeChallengeAppend
 
 end Pspec
 
