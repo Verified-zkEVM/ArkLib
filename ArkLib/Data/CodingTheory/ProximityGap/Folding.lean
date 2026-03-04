@@ -108,16 +108,16 @@ lemma fold_zero {domain : ι ↪ F} {k : ℕ} {α : F} :
   ext i 
   simp
 
-private noncomputable def foldAuxCoeff (domain : ι ↪ F) (f : Word F ι) (k : ℕ) (i : Fin k)
-  : iotaK domain k → F
-  := fun x => (foldAux domain f k (domainK domain k x)).coeff i
+private noncomputable def foldAuxCoeff (domain : ι ↪ F) (f : Word F ι) (k : ℕ) (i : Fin k) (x : F)
+  : F
+  := (foldAux domain f k x).coeff i
 
 private lemma foldAux_eq_sum_of_foldAuxCoeff
-  {domain : ι ↪ F} {f : Word F ι} {k : ℕ} {i : iotaK domain k}
+  {domain : ι ↪ F} {f : Word F ι} {k : ℕ} {x : F}
   [inst : NeZero k]
   :
-  foldAux domain f k (domainK domain k i) 
-    = ∑ j, Polynomial.C (foldAuxCoeff domain f k j i) * Y ^ j.val := by 
+  foldAux domain f k x 
+    = ∑ j, Polynomial.C (foldAuxCoeff domain f k j x) * Y ^ j.val := by 
   unfold foldAuxCoeff
   ext n
   simp
@@ -127,13 +127,13 @@ private lemma foldAux_eq_sum_of_foldAuxCoeff
       rhs
       rw [h]
     have h : 
-      ∀ {x : Fin k}, 
-        (if (↑(⟨n, hlt⟩ : Fin k) : ℕ) = ↑x then 
-          (foldAux domain f k ((domainK domain k) i)).coeff ↑x else 0) 
-            = (if (⟨n, hlt⟩ : Fin k) = x then 
-              (foldAux domain f k ((domainK domain k) i)).coeff ↑x 
+      ∀ {j : Fin k}, 
+        (if (↑(⟨n, hlt⟩ : Fin k) : ℕ) = ↑j then 
+          (foldAux domain f k x).coeff ↑j else 0) 
+            = (if (⟨n, hlt⟩ : Fin k) = j then 
+              (foldAux domain f k x).coeff ↑j 
               else 0) := by
-      rintro ⟨x, hx⟩  
+      rintro ⟨j, hj⟩  
       simp
     conv =>
       rhs
@@ -148,8 +148,8 @@ private lemma foldAux_eq_sum_of_foldAuxCoeff
       simp [hlt]
     })]
     have h : 
-      ∀ {x : Fin k}, 
-        (if n = ↑x then (foldAux domain f k ((domainK domain k) i)).coeff ↑x else 0) 
+      ∀ {j : Fin k}, 
+        (if n = ↑j then (foldAux domain f k x).coeff ↑j else 0) 
             = 0 := by
         rintro ⟨x, hx⟩
         simp
