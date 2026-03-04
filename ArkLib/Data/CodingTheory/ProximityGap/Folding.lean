@@ -96,9 +96,16 @@ lemma foldAux_natDegree {domain : ι ↪ F} {f : Word F ι} {k : ℕ} {x : F}
     apply Polynomial.natDegree_sub_le
     simp
   
-noncomputable def fold (domain : ι ↪ F) (f : Word F ι) (k : ℕ) (α : F) :
-  Word F (iotaK domain k)
-  := fun x => (foldAux domain f k (domainK domain k x)).eval α 
+noncomputable def fold (domain : ι ↪ F) (f : Word F ι) (k : ℕ) (α : F) 
+  (x : F)
+  :
+  F
+  := (foldAux domain f k x).eval α 
+
+noncomputable def foldWord (domain : ι ↪ F) (f : Word F ι) (k : ℕ) (α : F) 
+  :
+  Word F (iotaK domain k) 
+  := fun x => fold domain f k α (domainK domain k x)
 
 omit [Nonempty ι] [Fintype F] in
 @[simp]
