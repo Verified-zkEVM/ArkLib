@@ -57,6 +57,7 @@ import ArkLib.Data.Fin.Tuple.Defs
 import ArkLib.Data.Fin.Tuple.Lemmas
 import ArkLib.Data.Fin.Tuple.Notation
 import ArkLib.Data.Fin.Tuple.TakeDrop
+import ArkLib.Data.Finset.PickSubset
 import ArkLib.Data.GroupTheory.PrimeOrder
 import ArkLib.Data.GroupTheory.Smooth
 import ArkLib.Data.Hash.DomainSep
