@@ -1,7 +1,10 @@
 import Mathlib.Algebra.Polynomial.Roots
 import Mathlib.LinearAlgebra.Lagrange
 
+import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.CodingTheory.ProximityGap.Basic
+import ArkLib.Data.Finset.PickSubset
+import ArkLib.Data.Polynomial.Indicator
 
 namespace ProximityGap
 
@@ -185,5 +188,58 @@ private lemma fold_eq_sum_of_foldAuxCoeff_mul_pow_alpha
     ext i
     rw [Polynomial.eval_mul]
     simp
+
+private noncomputable def indicatedPolynomial
+  (domain : ι ↪ F) (f : Word F ι) (k : ℕ) (s' : Finset F)
+  : 
+  Polynomial (Polynomial F) 
+  := ∑ x ∈ s', 
+    Polynomial.C (singletonIndicator x s') * 
+      (Polynomial.map Polynomial.C <| foldAux domain f k x)
+
+lemma indicated_polynomial_degree_x_lt 
+  {domain : ι ↪ F} {f : Word F ι} {k : ℕ} {s' : Finset F}
+  (hs' : s'.Nonempty)
+  :
+  Bivariate.degreeX (indicatedPolynomial domain f k s')
+    < s'.card := by
+  simp [Bivariate.degreeX, indicatedPolynomial]
+  rw [Finset.sup_lt_iff (by simp [hs'])]
+  intro b hb 
+  rw [Nat.lt_iff_le_pred]
+  apply natDegree_sum_le_of_forall_le
+  intro i hi
+  rw [←Nat.lt_iff_le_pred]
+  apply lt_of_le_of_lt
+  apply natDegree_mul_le  
+  simp [singleton_indicator_natDegree_lt_of_mem hi]
+  simp [hs']
+  simp [hs']
+
+lemma indicated_polynomial_degree_y_lt 
+  {domain : ι ↪ F} {f : Word F ι} {k : ℕ} {s' : Finset F}
+  [inst : NeZero k]
+  :
+  Bivariate.natDegreeY (indicatedPolynomial domain f k s')
+    < k := by
+  simp [Bivariate.natDegreeY, indicatedPolynomial]
+  rw [Nat.lt_iff_le_pred (by {
+    have h : k ≠ 0 := inst.out
+    omega
+  })]
+  apply natDegree_sum_le_of_forall_le
+  intro i hi
+  rw [←Nat.lt_iff_le_pred (by {
+    have h : k ≠ 0 := inst.out
+    omega
+  })]
+  apply lt_of_le_of_lt
+  apply natDegree_mul_le
+  simp [foldAux_natDegree]
+
+
+
+
+  
 
 end ProximityGap
