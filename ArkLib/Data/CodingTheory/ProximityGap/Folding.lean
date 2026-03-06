@@ -511,7 +511,6 @@ private lemma master_lemma
   [Fintype F]
   {domain : ι ↪ F} {f : Word F ι} {k : ℕ} 
   {s : Finset ι}
-  {δ : ℝ}
   [inst : NeZero k]
   (h_s : s ⊆ (iotaK domain k))
   {u : Fin k → Polynomial F}
@@ -620,5 +619,49 @@ private lemma master_lemma
           rw [←h_eq, ←fold_def, fold_pow_x_k]
       · rintro ⟨x₁, x₂⟩ hx ⟨y₁, y₂⟩ hy
         aesop
+
+private lemma master_lemma'
+  [Nonempty ι]
+  [Fintype F]
+  {domain : ι ↪ F} {f : Word F ι} {k : ℕ} 
+  {s : Finset ι}
+  [inst : NeZero k]
+  (h_s : s ⊆ (iotaK domain k))
+  {u : Fin k → Polynomial F}
+  (h_u : ∀ i, ∀ j ∈ s, (u i).eval (domain j) 
+      = foldAuxCoeff domain f k i (domain j))
+  {d : ℕ}
+  (h_d : k < d)
+  (h_k_card : k ≤ Fintype.card F)
+  (h_u_deg : ∀ i, (u i).natDegree < d / k)
+  :
+  Δ₀(f, ReedSolomon.code domain d)
+        ≤ Fintype.card ι - 
+          ({i ∈ Finset.product Finset.univ s | (domain i.1) ^ k = domain i.2} : Finset (ι × ι)).card := by 
+  simp [distFromCode]
+  apply sInf_le_of_le
+    (b := ↑ (Fintype.card ι - ({i ∈ Finset.product Finset.univ s | (domain i.1) ^ k = domain i.2} : Finset (ι × ι)).card))
+  simp
+  have h := master_lemma h_s h_u h_d h_k_card h_u_deg
+  rcases h with ⟨f', ⟨h_f'_deg, hdist⟩⟩ 
+  simp [ReedSolomon.code, ReedSolomon.evalOnPoints]
+  exists f'
+  apply And.intro
+  · simp [Polynomial.degreeLT]
+    intro i hi
+    rw [Polynomial.coeff_eq_zero_of_natDegree_lt]
+    omega
+  · have hdist :  
+     (↑Δ₀(f, fun x ↦ Polynomial.eval (domain x) f') : ℕ∞) ≤ ↑(Fintype.card ι - #({i ∈ univ.product s | domain i.1 ^ k = domain i.2})) := by
+      rw [ENat.coe_le_coe]
+      assumption
+    simp at hdist
+    assumption
+
+
+  
+
+
+  simp
 
 end ProximityGap
