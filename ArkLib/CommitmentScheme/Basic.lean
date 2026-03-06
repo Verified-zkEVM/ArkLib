@@ -74,7 +74,9 @@ def correctness (scheme : Scheme oSpec Data Randomness Commitment pSpec)
   ∀ query : O.Query,
     Pr[ fun x => x.2.1 | do
         let cm ← liftM (scheme.commit data randomness)
-        let z ← scheme.opening.run sorry sorry --⟨cm, query, O.answer data query⟩ ⟨data, randomness⟩
+        let z ← scheme.opening.run
+          (show Commitment × (q : O.Query) × O.Response q from ⟨cm, query, O.answer data query⟩)
+          (show Data × Randomness from ⟨data, randomness⟩)
         return z.1] ≥ 1 - correctnessError
 
 /-- A commitment scheme satisfies **perfect correctness** if it satisfies correctness with no error.

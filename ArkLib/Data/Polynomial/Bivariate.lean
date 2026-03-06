@@ -145,10 +145,10 @@ def rootMultiplicity.{u} {F : Type u} [CommSemiring F] [DecidableEq F]
   rootMultiplicity₀ (F := F) ((f.comp (Y + (C (C y)))).map (Polynomial.compRingHom (X + C x)))
 
 /-- If the multiplicity of a pair `(x,y)` is non-negative, then the pair is a root of `f`. -/
-lemma rootMultiplicity_some_implies_root {F : Type} [CommSemiring F] [DecidableEq F]
-  {x y : F} {f : F[X][Y]} (h : some 0 < (rootMultiplicity (f := f) x y))
-  : (f.eval 0).eval 0 = 0 := by
-  sorry
+theorem rootMultiplicity_some_implies_root {F : Type} [CommRing F]
+  {x y : F} {f : F[X][Y]} (h : 0 < ((f.eval (C y)).rootMultiplicity x))
+  : (f.eval (C y)).eval x = 0 := by
+  simp_all only [rootMultiplicity_pos', ne_eq, IsRoot.def]
 
 open Univariate in
 /-- In the case of a bivariate polynomial we cannot easily use `discriminant`.
@@ -334,12 +334,12 @@ def evalSetY [DecidableEq F] (f : F[X][Y]) (P : Finset F) [Nonempty P] : Finset 
 def quotient (f g : F[X][Y]) : Prop := ∃ q : F[X][Y], g = q * f
 
 /-- The quotient of two non-zero bivariate polynomials is non-zero. -/
-@[grind]
+@[grind .]
 lemma quotient_nezero {f q : F[X][Y]} (hg : q * f ≠ 0) : q ≠ 0 := by by_contra h; apply hg; simp [h]
 
 /-- If a non-zero bivariate polynomial `f` divides a non-zero bivariate polynomial `g`, then
 all the coefficients of the quoetient are non-zero. -/
-@[grind]
+@[grind .]
 lemma coeff_ne_zero {f q : F[X][Y]} (hg : q * f ≠ 0) : q.coeff ≠ 0 :=
   (ne_zero_iff_coeffs_ne_zero q).1 (quotient_nezero hg)
 
@@ -347,7 +347,7 @@ lemma coeff_ne_zero {f q : F[X][Y]} (hg : q * f ≠ 0) : q.coeff ≠ 0 :=
 If `q * f ≠ 0`, then the `X`-degree of `q` is bounded above by the difference of the
 `X`-degrees: `degreeX q ≤ degreeX (q * f) - degreeX f`.
 -/
-@[grind]
+@[grind .]
 lemma degreeX_le_degreeX_sub_degreeX [IsDomain F] {f q : F[X][Y]} (hf : f ≠ 0) (hg : q * f ≠ 0) :
   degreeX q ≤ degreeX (q * f) - degreeX f := by grind
 
@@ -355,7 +355,7 @@ lemma degreeX_le_degreeX_sub_degreeX [IsDomain F] {f q : F[X][Y]} (hf : f ≠ 0)
 If `q * f ≠ 0`, then the `Y`-degree of `q` is bounded above by the difference of the
 `Y`-degrees: `natDegreeY q ≤ natDegreeY (q * f) - natDegreeY f`.
 -/
-@[grind]
+@[grind .]
 lemma degreeY_le_degreeY_sub_degreeY [IsDomain F] {f q : F[X][Y]} (hf : f ≠ 0) (hg : q * f ≠ 0) :
   natDegreeY q ≤ natDegreeY (q * f) - natDegreeY f := by grind
 
@@ -371,13 +371,13 @@ polynomial in `Y`. -/
 def monomialY (n : ℕ) : F[X] →ₗ[F[X]] F[X][Y] where
   toFun t := ⟨Finsupp.single n t⟩
   map_add' x y := by rw [Finsupp.single_add]; aesop
-  map_smul' r x := by simp; rw[smul_monomial]; aesop
+  map_smul' r x := by simp only [RingHom.id_apply, ofFinsupp_single]; rw [smul_monomial]
 
 /-- Definition of the bivariate monomial `X^n * Y^m` -/
 def monomialXY (n m : ℕ) : F →ₗ[F] F[X][Y] where
   toFun t := ⟨Finsupp.single m ⟨(Finsupp.single n t)⟩⟩
   map_add' x y := by
-    simp only [ofFinsupp_single, Polynomial.monomial_add, Polynomial.monomial_add]
+    simp only [ofFinsupp_single, map_add]
   map_smul' x y := by
     simp only [smul_eq_mul, ofFinsupp_single, RingHom.id_apply]
     rw[smul_monomial, smul_monomial]

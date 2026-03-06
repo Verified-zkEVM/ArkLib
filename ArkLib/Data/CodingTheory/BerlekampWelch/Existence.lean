@@ -114,10 +114,7 @@ private lemma E_and_Q_BerlekampWelch_condition
   },
   by simp [natDegree_E h_dist],
   by simp [leadingCoeff_E' h_dist],
-  by sorry
-  -- by aesop
-  --   (add safe forward (natDegree_Q h_dist))
-    -- (add safe (by omega))
+  by exact le_trans (natDegree_Q h_dist) (by omega)
   ⟩
 
 /-- If there has happened up to `e` errors

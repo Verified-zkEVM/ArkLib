@@ -237,7 +237,7 @@ theorem folding_listdecoding_if_genMutualCorrAgreement
                       let foldSet := fold_k_set listBlock αs hLe
                       let kFin : Fin (k + 1) := ⟨k, Nat.lt_succ_self k⟩
                       let Cₖ := (params.Gen_α kFin).C
-                      let listHamming := relHammingBall Cₖ fold δ
+                      let listHamming := closeCodewordsRel Cₖ fold δ
 
                       foldSet ≠ listHamming
                     ] < (∑ i : Fin (k + 1),

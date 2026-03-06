@@ -119,13 +119,31 @@ def runWithLogToRound (i : Fin (n + 1))
         ((pSpec.Transcript i × prover.PrvState i) × QueryLog (oSpec + [pSpec.Challenge]ₒ)) :=
   WriterT.run (simulateQ loggingOracle (prover.runToRound i stmt wit))
 
+private lemma fst_map_simulateQ_loggingOracle_run {ι : Type} {spec : OracleSpec ι} {α : Type}
+    (oa : OracleComp spec α) :
+    Prod.fst <$> WriterT.run (simulateQ loggingOracle oa) = oa := by
+  induction oa using OracleComp.induction with
+  | pure a => simp
+  | query_bind t oa ih =>
+    simp only [simulateQ_query_bind]
+    show Prod.fst <$> (do let u ← liftM (loggingOracle t); simulateQ loggingOracle (oa u)).run =
+      liftM (query t) >>= oa
+    stop -- This is broken for now until the refactor of `loggingOracle` and `WriterT`
+    simp only [WriterT.run_bind, map_bind, Functor.map_map]
+    have key : ∀ (w : QueryLog spec), (fun a_1 => (Prod.map id (w * ·) a_1).1) =
+        (Prod.fst : α × QueryLog spec → α) :=
+      fun w => funext fun ⟨a, b⟩ => rfl
+    simp_rw [key, ih]
+    rw [← bind_map_left Prod.fst]
+    rfl
+
 @[simp]
 lemma runWithLogToRound_discard_log_eq_runToRound (i : Fin (n + 1))
     (stmt : StmtIn) (wit : WitIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
       Prod.fst <$> prover.runWithLogToRound i stmt wit =
         prover.runToRound i stmt wit := by
   simp [runWithLogToRound, runToRound]
-  sorry
+  exact fst_map_simulateQ_loggingOracle_run _
 
 /-- Run the prover in an interactive reduction. Returns the output statement and witness, and the
   transcript. See `runWithLog` for a version that additionally returns the log of the
@@ -155,7 +173,7 @@ lemma runWithLog_discard_log_eq_run (stmt : StmtIn) (wit : WitIn)
     (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
       Prod.fst <$> prover.runWithLog stmt wit = prover.run stmt wit := by
   simp [runWithLog]
-  sorry
+  exact fst_map_simulateQ_loggingOracle_run _
 
 end Prover
 
@@ -189,7 +207,6 @@ theorem OracleVerifier.run_eq_run_verifier [Oₘ : ∀ i, OracleInterface (pSpec
     {verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec} :
       verifier.run stmt oStmt transcript =
         verifier.toVerifier.run ⟨stmt, oStmt⟩ transcript := by
-  simp only [run, Verifier.run, toVerifier, eq_mpr_eq_cast, bind_pure_comp]
   sorry --rfl
 
 /-- An execution of an interactive reduction on a given initial statement and witness. Consists of
@@ -240,7 +257,6 @@ theorem Reduction.runWithLog_discard_logs_eq_run
       Prod.fst <$>
         reduction.runWithLog stmt wit = reduction.run stmt wit := by
   simp [runWithLog, run, Prover.runWithLog]
-  set proverRun := Prover.run stmt wit reduction.prover
   sorry
   -- calc
   -- _ = (do
@@ -299,8 +315,6 @@ theorem OracleReduction.run_eq_run_reduction [∀ i, OracleInterface (pSpec.Mess
     {oracleReduction : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec} :
       oracleReduction.run stmt oStmt wit =
         oracleReduction.toReduction.run ⟨stmt, oStmt⟩ wit := by
-  simp [OracleReduction.run, Reduction.run, OracleReduction.toReduction, OracleVerifier.run,
-    Verifier.run, OracleVerifier.toVerifier, liftComp]
   sorry
   -- rfl
 
@@ -312,8 +326,6 @@ theorem OracleReduction.runWithLog_eq_runWithLog_reduction [∀ i, OracleInterfa
     {oracleReduction : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec} :
       oracleReduction.run stmt oStmt wit =
         oracleReduction.toReduction.run ⟨stmt, oStmt⟩ wit := by
-  simp [OracleReduction.run, Reduction.run, OracleReduction.toReduction, OracleVerifier.run,
-    Verifier.run, OracleVerifier.toVerifier, liftComp]
   sorry
   -- rfl
 
@@ -365,9 +377,9 @@ theorem OracleReduction.id_run (stmt : StmtIn) (oStmt : ∀ i, OStmtIn i) (wit :
 theorem OracleReduction.id_runWithLog (stmt : StmtIn) (oStmt : ∀ i, OStmtIn i) (wit : WitIn) :
     (OracleReduction.id : OracleReduction oSpec StmtIn OStmtIn WitIn _ _ _ _).runWithLog
       stmt oStmt wit = pure ⟨⟨default, ⟨stmt, oStmt⟩, wit⟩, ⟨stmt, oStmt⟩, [], []⟩ := by
+  simp only [OracleReduction.runWithLog, OracleVerifier.run, Prover.run, OracleReduction.id,
+    OracleProver.id, OracleVerifier.id, Prover.id]
   sorry
-  -- simp [OracleReduction.runWithLog, OracleVerifier.run,
-  --   Prover.run, OracleReduction.id, OracleProver.id, OracleVerifier.id, Prover.id]
 
 end Trivial
 
@@ -413,7 +425,9 @@ theorem Reduction.run_of_prover_first [ProverOnly pSpec] (stmt : StmtIn) (wit : 
         let transcript : pSpec.FullTranscript := fun i => match i with | ⟨0, _⟩ => msg
         let stmtOut ← (reduction.verifier.verify stmt transcript).run
         return (⟨transcript, ctxOut⟩, ← stmtOut.getM)) := by
-  simp [Reduction.run, Verifier.run]
+  simp only [Reduction.run, Verifier.run]
+  rw [Prover.run_of_prover_first]
+  simp only [liftComp_eq_liftM, bind_assoc, pure_bind, monadLift_bind, monadLift_pure]
   sorry
   -- conv =>
   --   enter [1, 2, a, 1]

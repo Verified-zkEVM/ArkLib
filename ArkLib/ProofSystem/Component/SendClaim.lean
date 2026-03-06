@@ -65,9 +65,24 @@ def oracleVerifier : OracleVerifier oSpec Statement OStatement Unit (OStatement 
 
   verify := fun stmt _ => relComp stmt
 
-  embed := sorry
+  embed := {
+    toFun := fun
+      | .inl i => .inl i
+      | .inr _ => .inr ⟨0, by simp⟩
+    inj' := by
+      intro a b h
+      match a, b with
+      | .inl _, .inl _ => simpa using h
+      | .inl _, .inr _ => simp at h
+      | .inr _, .inl _ => simp at h
+      | .inr _, .inr _ => congr 1; exact Subsingleton.elim _ _
+  }
 
-  hEq := sorry
+  hEq := by
+    intro i
+    match i with
+    | .inl _ => rfl
+    | .inr j => simp [ProtocolSpec.Message]; exact congrArg OStatement (Unique.uniq _ j)
 
 /--
 Combine the prover and verifier into an oracle reduction.

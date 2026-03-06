@@ -171,7 +171,7 @@ def knowledgeStateFunction :
     answer (oracles 0) q = answer (oracles 1) q
   toFun_empty := fun stmt => by simp
   toFun_next | 0 => fun hDir ⟨stmt, oStmt⟩ tr h => by simp_all
-  toFun_full := fun ⟨stmt, oStmt⟩ tr _ h => by
+  toFun_full := fun ⟨stmt, oStmt⟩ tr _ => by
     sorry
     -- simp_all [oracleVerifier, OracleVerifier.toVerifier, Verifier.run]
 

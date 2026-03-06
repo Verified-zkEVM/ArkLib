@@ -199,7 +199,7 @@ lemma generalised_round_consistency_completeness
       eval (ω a * s₀) (Lagrange.basis Finset.univ (fun (i : Fin n) ↦ ω i * s₀) x)) a
     rw
       [
-        Lagrange.eval_basis_self (v := fun i ↦ ω i * s₀) (by sorry) (Finset.mem_univ a),
+        Lagrange.eval_basis_self (v := fun i ↦ ω i * s₀) (by intro x₁ _ x₂ _ h; exact ω.injective (mul_right_cancel₀ h₁ h)) (Finset.mem_univ a),
         mul_one
       ] at sum_eq
     have sum_eq := sum_eq

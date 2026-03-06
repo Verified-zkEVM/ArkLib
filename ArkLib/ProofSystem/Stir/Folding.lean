@@ -92,7 +92,24 @@ noncomputable def polyQ (P q : Polynomial F) : MvPolynomial (Fin 2) F :=
   -- P'(z,y) := (y - q(z))
   let P' : MvPolynomial (Fin 2) F := (MvPolynomial.X 1) - uni2bi q
   -- proof that leading coefficient f q is not zero
-  have h_unit : IsUnit ((MonomialOrder.lex).leadingCoeff P') := sorry
+  have h_unit : IsUnit ((MonomialOrder.lex).leadingCoeff P') := by
+    apply IsUnit.mk0
+    rw [ne_eq, MonomialOrder.leadingCoeff_eq_zero_iff]
+    intro h
+    have h1 := sub_eq_zero.mp h
+    have h2 := congr_arg (MvPolynomial.coeff (Finsupp.single 1 1)) h1
+    simp only [uni2bi, MvPolynomial.coeff_X, ite_true] at h2
+    suffices ∀ r : Polynomial F, MvPolynomial.coeff (Finsupp.single 1 1)
+        (Polynomial.eval₂ (MvPolynomial.C (σ := Fin 2)) (MvPolynomial.X 0) r) = 0 by
+      rw [this q] at h2; exact one_ne_zero h2
+    intro r
+    induction r using Polynomial.induction_on' with
+    | add p q hp hq =>
+      simp only [Polynomial.eval₂_add, MvPolynomial.coeff_add, hp, hq, add_zero]
+    | monomial n a =>
+      simp only [Polynomial.eval₂_monomial, MvPolynomial.coeff_C_mul,
+        MvPolynomial.X_pow_eq_monomial, MvPolynomial.coeff_monomial]
+      simp [Finsupp.single_eq_single_iff]
   modBivar Pbi P' h_unit
 
 /-- Helper For Readability: Evaluate a bivariate polynomial Q at (a, b) ∈ F×F -/
@@ -134,8 +151,25 @@ lemma degree_bound_bivariate
   (hdegX : MvPolynomial.degreeOf 0 Q < t)
   (hdegY : MvPolynomial.degreeOf 1 Q < qPoly.natDegree) :
   (MvPolynomial.eval₂Hom (Polynomial.C : F →+* Polynomial F)
-      (fun i : Fin 2 => if i = 0 then qPoly else Polynomial.X) Q).natDegree < t * qPoly.natDegree :=
-    by sorry
+      (fun i : Fin 2 => if i = 0 then qPoly else Polynomial.X) Q).natDegree < t * qPoly.natDegree := by
+  simp_all +decide [MvPolynomial.degreeOf_lt_iff]
+  have h_deg_term : ∀ m ∈ Q.support, (m 0) * qPoly.natDegree + (m 1) < t * qPoly.natDegree := by
+    intro m hm
+    have := hdegX
+    simp_all +decide [MvPolynomial.degreeOf_eq_sup]
+    nlinarith [hdegY m hm,
+      show m 0 < t from lt_of_le_of_lt
+        (Finset.le_sup (f := fun m => m 0) (Finsupp.mem_support_iff.mpr hm)) hdegX]
+  rw [MvPolynomial.eval₂_eq']
+  have ht : 0 < t := Nat.pos_of_ne_zero (by omega)
+  have hpos : (0 : ℕ) < t * qPoly.natDegree := Nat.mul_pos ht hdeg_q_min
+  refine lt_of_le_of_lt (Polynomial.natDegree_sum_le _ _)
+    ((Finset.sup_lt_iff hpos).mpr ?_)
+  intro m hm
+  specialize h_deg_term m hm
+  by_cases h : Q.coeff m = 0 <;>
+    simp_all +decide [Polynomial.natDegree_C_mul]
+  rw [Polynomial.natDegree_mul'] <;> aesop
 
 /-- Definition 4.7
   `polyFold(f, k, r)` "folds" the polynomial `f`
@@ -145,8 +179,10 @@ noncomputable def polyFold
   (k : ℕ) (hk0 : 0 < k) (hkfin : k < Fintype.card F)
   (r : F) : Polynomial F :=
     let qPoly : Polynomial F := Polynomial.X ^ k
-    let hdeg_q_min : qPoly.natDegree > 0 := sorry
-    let hdeg_q_max : qPoly.natDegree < Fintype.card F := sorry
+    let hdeg_q_min : qPoly.natDegree > 0 := by
+      simp only [qPoly, Polynomial.natDegree_X_pow]; exact hk0
+    let hdeg_q_max : qPoly.natDegree < Fintype.card F := by
+      simp only [qPoly, Polynomial.natDegree_X_pow]; exact hkfin
   -- choose the unique bivariate lift Q
     let Q : MvPolynomial (Fin 2) F := polyQ fPoly qPoly
     MvPolynomial.eval₂Hom

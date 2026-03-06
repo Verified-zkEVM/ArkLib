@@ -14,7 +14,7 @@ import Mathlib.InformationTheory.Hamming
 import Mathlib.Tactic.Qify
 import Mathlib.Topology.MetricSpace.Infsep
 import Mathlib.Data.Real.ENatENNReal
-import ArkLib.Data.Nat.Bitwise
+import CompPoly.Data.Nat.Bitwise
 
 /-!
   # Basics of Coding Theory
@@ -1387,7 +1387,7 @@ lemma finite_relHammingDistRange [Nonempty ι] : (relHammingDistRange ι).Finite
         ⟨⟨
         fun ⟨s, _⟩ ↦ ⟨(s * Fintype.card ι).num, by aesop (add safe (by omega))⟩,
         fun n ↦ ⟨n / Fintype.card ι, by use n; simp [Nat.le_of_lt_add_one n.2]⟩,
-        fun ⟨_, _, _, h₂⟩ ↦ by field_simp [h₂]; sorry,
+        fun ⟨_, _, _, h₂⟩ ↦ by simp only [h₂]; ring_nf; simp [NNRat.num_natCast]; ring,
         fun _ ↦ by simp
         ⟩⟩
       ⟩

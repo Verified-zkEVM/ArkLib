@@ -5,7 +5,7 @@ Authors: Mirco Richter, Poulami Das (Least Authority)
 -/
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.MvPolynomial.Notation
+import CompPoly.Data.MvPolynomial.Notation
 
 open Polynomial NNReal ReedSolomon ListDecodable
 
@@ -61,7 +61,7 @@ noncomputable def disagreementSet (f : ι → F) (S : Finset F) (Ans : S → F) 
 lemma quotienting [DecidableEq F] {degree : ℕ} {domain : ι ↪ F} [Nonempty ι]
   (S : Finset F) (hS_lt : S.card < degree) (r : F)
   (f : ι → F) (Ans Fill : S → F) (δ : ℝ≥0) (hδPos : δ > 0) (hδLt : δ < 1)
-  (h : ∀ u : code domain degree, u.val ∈ (relHammingBall ↑(code domain degree) f δ) →
+  (h : ∀ u : code domain degree, u.val ∈ (closeCodewordsRel ↑(code domain degree) f δ) →
     ∃ (x : S) (hx : x.val ∈ S), ((decodeLT u) : F[X]).eval x.val ≠ Ans ⟨x.val, hx⟩) :
     δᵣ((funcQuotient f S Ans Fill), (code domain (degree - S.card))) +
       ((disagreementSet f S Ans).card) / (ι.card) > δ := by

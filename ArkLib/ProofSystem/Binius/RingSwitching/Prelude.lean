@@ -4,11 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 
-import ArkLib.Data.FieldTheory.AdditiveNTT.AdditiveNTT
+import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
 import ArkLib.Data.MvPolynomial.Multilinear
 import ArkLib.OracleReduction.Basic
 import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.Data.FieldTheory.BinaryField.Tower.TensorAlgebra
+import CompPoly.Fields.Binary.Tower.TensorAlgebra
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Matrix.Basic

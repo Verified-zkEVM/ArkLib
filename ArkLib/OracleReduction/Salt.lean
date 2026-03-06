@@ -169,10 +169,9 @@ def Verifier.addSalt (V : Verifier oSpec StmtIn StmtOut pSpec) :
   the old one, modulo casting of oracle interfaces. -/
 def OracleVerifier.addSalt (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
     OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut (pSpec.addSalt Salt) where
-  verify := fun stmtIn challenges => sorry
-  -- (V.verify stmtIn challenges.removeSalt).castOracle
-  -- OracleInterface (pSpec.addSalt Salt).Message = OracleInterface pSpec.Message
-  embed := sorry
+  verify := fun stmtIn challenges =>
+    V.verify stmtIn (fun i => cast (addSalt_Challenge i) (challenges i))
+  embed := V.embed
   hEq := sorry
 
 /-- Transform a reduction for a protocol specification `pSpec` into a reduction for the salted

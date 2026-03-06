@@ -172,7 +172,7 @@ variable {hn} (hIdx : k.val = l.val) (hSpec : pSpec₁.cast hn = pSpec₂)
 instance instDCast₃ : DCast₃ Nat (fun n => Fin (n + 1)) (fun n _ => ProtocolSpec n)
     (fun _ k pSpec => pSpec.Transcript k) where
   dcast₃ h h' h'' T := Transcript.cast h
-    (by simp only [dcast] at h'; rw [← h']; sorry)
+    (by simp only [dcast] at h'; rw [← h']; subst h; rfl)
     (by simp [ProtocolSpec.cast_eq_dcast, dcast_eq_root_cast]; exact h'')
     T
   dcast₃_id := cast_id
@@ -212,8 +212,7 @@ theorem challengeOracleInterface_cast {h : n₁ = n₂} {hSpec : pSpec₁.cast h
     {i : pSpec₁.ChallengeIdx} :
     pSpec₁.challengeOracleInterface i =
       dcast (by simp) (pSpec₂.challengeOracleInterface (i.cast hn hSpec)) := by
-  simp [challengeOracleInterface]
-  ext <;> sorry
+  subst h; subst hSpec; simp [challengeOracleInterface]
 
 end Instances
 
