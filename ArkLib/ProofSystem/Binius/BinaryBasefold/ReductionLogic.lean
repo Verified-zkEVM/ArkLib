@@ -142,9 +142,9 @@ structure OracleAwareReductionLogicStep
   -- 2. The Verifier (Oracle-Aware)
   -- Key difference: verifierCheck is monadic, can query oracles
   -- Uses the extended spec: oSpec + ([OracleIn]ₒ + [pSpec.Message]ₒ)
-  -- Same signature as OracleVerifier.verify
+  -- Same signature as OracleVerifier.verify (including OptionT for guard/failure)
   verifierCheck : StmtIn → FullTranscript pSpec →
-    OracleComp (oSpec + ([OracleIn]ₒ + [pSpec.Message]ₒ)) StmtOut
+    OptionT (OracleComp (oSpec + ([OracleIn]ₒ + [pSpec.Message]ₒ))) StmtOut
   -- Output computation remains pure/deterministic
   verifierOut   : StmtIn → FullTranscript pSpec → StmtOut
   -- 2b. Oracle Embedding (same as ReductionLogicStep)
@@ -196,7 +196,7 @@ def OracleAwareReductionLogicStep.IsStronglyCompleteUnderSimulation
     -- This answers queries to OracleIn using oStmtIn and queries to Messages using transcript
     let so := OracleInterface.simOracle2 oSpec oStmtIn transcript.messages
     -- 3. The Verifier check under simulation MUST succeed with probability 1
-    Pr[⊥ | simulateQ so (step.verifierCheck stmtIn transcript)] = 0 ∧
+    Pr[⊥ | OptionT.mk (simulateQ so (step.verifierCheck stmtIn transcript))] = 0 ∧
     -- 4. The output MUST be valid and consistent
     let verifierStmtOut := step.verifierOut stmtIn transcript
     -- Compute verifier oracle output via embedding (like OracleVerifier.toVerifier)

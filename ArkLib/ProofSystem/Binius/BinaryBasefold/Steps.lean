@@ -112,12 +112,9 @@ def foldOracleVerifier (i : Fin ℓ) :
   verify := fun stmtIn pSpecChallenges => do
     let h_i ← query (spec := [(pSpecFold (L := L)).Message]ₒ) ⟨⟨0, by rfl⟩, (by simpa using ())⟩
     let r_i' := pSpecChallenges ⟨1, rfl⟩
-
     let t := FullTranscript.mk2 h_i r_i'
-
     let logic := (foldStepLogic 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) i)
-
     guard (logic.verifierCheck stmtIn t)
     pure (logic.verifierOut stmtIn t)
 
@@ -155,26 +152,6 @@ lemma mem_ite_singleton {α : Type*} {c : Prop} [Decidable c] {a b x : α} :
   split_ifs with h
   · simp only [Set.mem_singleton_iff] -- Case c is True: x ∈ {a} ↔ x = a
   · simp only [Set.mem_singleton_iff] -- Case c is False: x ∈ {b} ↔ x = b
-
-
-@[simp]
-lemma OptionT.simulateQ_map'.{u} {α β : Type u}
-    {ι ι' : Type*} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
-    (so : QueryImpl spec (OracleComp spec')) (f : α → β)
-    (mx : OptionT (OracleComp spec) α) :
-    simulateQ so (Option.map f <$> (OptionT.run mx)) =
-      Option.map f <$> (simulateQ so (OptionT.run mx)) := by
-  simpa using
-    (_root_.simulateQ_map (impl := so)
-      (mx := OptionT.run mx) (f := Option.map f))
-
-@[simp]
-lemma OptionT.simulateQ_failure'.{u} {α : Type u}
-    {ι ι' : Type*} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
-    (so : QueryImpl spec (OracleComp spec')) :
-    simulateQ so (failure : OptionT (OracleComp spec) α) =
-      (failure : OptionT (OracleComp spec') α) := by
-  rfl
 
 /-!
 Perfect completeness for the binary folding oracle reduction.
@@ -215,16 +192,12 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
     (hImplSupp := by simp only [Set.fmap_eq_image,
       IsEmpty.forall_iff, implies_true])]
   intro stmtIn oStmtIn witIn h_relIn
-
   -- Step 2: Convert probability 1 to universal quantification over support
   rw [probEvent_eq_one_iff]
-
   -- Step 3: Unfold protocol definitions
   dsimp only [foldOracleReduction, foldOracleProver, foldOracleVerifier, OracleVerifier.toVerifier,
     FullTranscript.mk2]
-
   let step := (foldStepLogic 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) i)
-    -- Step 2e: Apply the logic completeness lemma
   let strongly_complete : step.IsStronglyComplete := foldStep_is_logic_complete (L := L)
     𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) (i := i)
 
@@ -240,10 +213,8 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
     simp only [Fin.isValue, Message, Matrix.cons_val_zero, Fin.succ_zero_eq_one, ChallengeIdx,
       Challenge, liftComp_eq_liftM, liftM_pure, support_pure,
       Set.mem_singleton_iff] at hInputState_mem_support
-    -- Now we get equality: hInputState_mem_support : inputState = (foldProverComputeMsg ...)
     conv_lhs =>
       simp only [liftM, monadLift, MonadLift.monadLift]
-      -- Pr[⊥ | OptionT.lift ...] = 0
       simp only [ChallengeIdx, Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_zero,
         liftComp_eq_liftM, OptionT.probFailure_lift, HasEvalPMF.probFailure_eq_zero]
     rw [true_and]
@@ -276,7 +247,7 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
     rw [and_true]
     rw [OptionT.probFailure_liftComp_of_OracleComp_Option]
     conv_lhs =>
-      enter [1]; -- Pr[⊥ | (...) : OracleComp ...] => easily 0, since we have HasEvalPMF
+      enter [1]
       simp only [MessageIdx, Fin.isValue, Message, Matrix.cons_val_zero, Fin.succ_zero_eq_one,
         id_eq, bind_pure_comp, OptionT.run_map, HasEvalPMF.probFailure_eq_zero]
     rw [zero_add]
@@ -284,7 +255,6 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
     rw [OptionT.support_run_eq]
     simp only [←probOutput_eq_zero_iff]
     simp_all only
-    -- **MUST show the OptionT.run and OptionT.bind explicitly**
     change Pr[= none | OptionT.run (m := (OracleComp []ₒ)) (x := (OptionT.bind _ _)) ] = 0
     rw [OptionT.probOutput_none_bind_eq_zero_iff]
     conv =>
@@ -313,16 +283,11 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
         exists_prop]
       simp only [OptionT.simulateQ_failure']
       erw [_root_.simulateQ_pure]
-      -- unfold OracleInterface.answer
-      -- dsimp only [instOracleInterfaceMessagePSpecFold]
-      -- hInputState_mem_support : inputState = (foldProverComputeMsg 𝔽q β i witIn, stmtIn, oStmtIn, witIn, foldProverComputeMsg 𝔽q β i witIn)
-      -- rw [←hInputState_mem_support]
     set V_check := step.verifierCheck stmtIn
       (FullTranscript.mk2
         (msg0 := _)
-        (msg1 := (FullTranscript.mk2 (foldProverComputeMsg 𝔽q β i witIn) r_i').challenges ⟨1, rfl⟩)) with h_V_check_def
-
-    -- Step 2e: Apply the logic completeness lemma
+        (msg1 := (FullTranscript.mk2 (foldProverComputeMsg 𝔽q β i witIn) r_i').challenges ⟨1, rfl⟩))
+      with h_V_check_def
     obtain ⟨h_V_check, h_rel, h_agree⟩ := strongly_complete (stmtIn := stmtIn)
       (witIn := witIn) (h_relIn := h_relIn) (challenges :=
       fun ⟨j, hj⟩ => by
@@ -335,8 +300,7 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
           exact hj_ne hj
         | 1 => exact r_i'
       )
-    have h_V_check_is_true : V_check := h_V_check -- by rfl
-    -- Now simp h_vStmtOut_mem_support
+    have h_V_check_is_true : V_check := h_V_check
     simp only [h_V_check_is_true, ↓reduceIte, support_pure, Set.mem_singleton_iff, Fin.isValue,
       exists_eq_left, OptionT.support_OptionT_pure_run] at h_vStmtOut_mem_support
     rw [h_vStmtOut_mem_support]
@@ -345,12 +309,9 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
     intro x hx_mem_support
     rcases x with ⟨⟨prvStmtOut, prvOStmtOut⟩, ⟨verStmtOut, verOStmtOut⟩, witOut⟩
     simp only
-
     -- Step 2a: Simplify the support membership to extract the challenge
-    simp only [
-      support_bind, support_pure, support_liftComp,
-      Set.mem_iUnion, Set.mem_singleton_iff,
-      exists_eq_left, exists_prop, Prod.exists
+    simp only [ support_bind, support_pure,
+      Set.mem_iUnion, Set.mem_singleton_iff, exists_prop, Prod.exists
     ] at hx_mem_support
     conv at hx_mem_support =>
       erw [OptionT.support_mk, support_pure]
@@ -362,80 +323,66 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
         toPFunctor_add, toPFunctor_emptySpec, OptionT.support_run, ↓existsAndEq, and_true, true_and,
         exists_eq_right_right', liftM_pure, support_pure, exists_eq_left]
       dsimp only [monadLift, MonadLift.monadLift]
-    simp only [liftComp_support] at hx_mem_support
+    simp only [Fin.isValue, Challenge, Matrix.cons_val_one, Matrix.cons_val_zero, ChallengeIdx,
+      liftComp_eq_liftM, liftM_pure, liftComp_pure, support_pure, Set.mem_singleton_iff,
+      Fin.reduceLast, MessageIdx, Message, exists_eq_left] at hx_mem_support
     -- Step 2b: Extract the challenge r1 and the trace equations
-    obtain ⟨r1, ⟨h_r1_mem_challenge_support, h_trace_support⟩⟩ := hx_mem_support
-    rcases h_trace_support with ⟨prvStmtOut_support, prvOStmtOut_support, prvWitOut_support,
-      h_prv_def_support, vStmtOut_support, vOracleOut_support,
-      h_ver_def_support, h_total_eq_support⟩
+    obtain ⟨r1, ⟨_h_r1_mem_challenge_support, h_trace_support⟩⟩ := hx_mem_support
+
+    rcases h_trace_support with ⟨prvOut_eq, h_verOut_mem_support⟩
 
     -- Step 2c: Simplify the verifier computation
-    conv at h_ver_def_support =>
-      rw [OptionT.simulateQ_bind]
-      erw [simulateQ_simOracle2_liftM (oSpec := []ₒ) (t₁ := oStmtIn)]
-      erw [simOracle2_impl_inr_inr]
-      rw [_root_.OptionT.bind_pure_simulateQ_comp]
-      -- Deep simplify the `guard`
-      simp only [Matrix.cons_val_zero, guard_eq, bind_pure_comp,
-        simulateQ_map, simulateQ_ite, simulateQ_pure, simulateQ_failure, support_map, support_ite,
-        support_pure, support_failure, Set.mem_image, Set.mem_ite_empty_right,
-        Set.mem_singleton_iff, and_true, exists_const, Prod.mk.injEq, existsAndEq]
+    conv at h_verOut_mem_support =>
+      erw [simulateQ_bind]
+      rw [OptionT.simulateQ_simOracle2_liftM_query_T2]
+      erw [_root_.bind_pure_simulateQ_comp]
+      simp only [Matrix.cons_val_zero, guard_eq]
+      erw [simulateQ_bind]
+      simp only [show OptionT.pure (m := (OracleComp ([]ₒ + ([OracleStatement 𝔽q β ϑ i.castSucc]ₒ +
+        [pSpecFold.Message]ₒ)))) = pure by rfl]
+      rw [simulateQ_ite]
+      simp only [Fin.isValue, Message, Matrix.cons_val_zero, id_eq, MessageIdx, support_ite,
+        toPFunctor_emptySpec, Function.comp_apply, simulateQ_pure, Set.mem_iUnion,
+        exists_prop]
+      simp only [OptionT.simulateQ_failure']
+      erw [_root_.simulateQ_pure]
+    set V_check := step.verifierCheck stmtIn
+      (FullTranscript.mk2
+        (msg0 := _)
+        (msg1 := (FullTranscript.mk2 (foldProverComputeMsg 𝔽q β i witIn) r1).challenges ⟨1, rfl⟩))
+      with h_V_check_def
+    obtain ⟨h_V_check, h_rel, h_agree⟩ := strongly_complete (stmtIn := stmtIn)
+      (witIn := witIn) (h_relIn := h_relIn) (challenges :=
+      fun ⟨j, hj⟩ => by
+        match j with
+        | 0 =>
+          have hj_ne : (pSpecFold (L := L)).dir 0 ≠ Direction.V_to_P := by
+            simp only [ne_eq, reduceCtorEq, not_false_eq_true, Fin.isValue, Matrix.cons_val_zero,
+              Direction.not_P_to_V_eq_V_to_P]
+          exfalso
+          exact hj_ne hj
+        | 1 => exact r1
+      )
 
-    -- Step 2d: Extract all the equalities
-    simp only [Prod.mk_inj] at h_total_eq_support
-    rcases h_total_eq_support with ⟨⟨h_prv_stmtOut_eq_support, h_prv_oracle_eq_support⟩,
-      ⟨h_ver_stmtOut_eq_support, h_ver_oracle_eq_support⟩, h_wit_eq_support⟩
+    have h_V_check_is_true : V_check := h_V_check
+    simp only [h_V_check_is_true, ↓reduceIte, Fin.isValue, pure_bind] at h_verOut_mem_support
+    erw [simulateQ_pure, liftM_pure] at h_verOut_mem_support
+    simp only [Fin.isValue, support_pure, Set.mem_singleton_iff, Option.some.injEq,
+      Prod.mk.injEq] at h_verOut_mem_support
+    rcases h_verOut_mem_support with ⟨verStmtOut_eq, verOStmtOut_eq⟩
+    dsimp only [foldStepLogic, foldProverComputeMsg, step, getFoldProverFinalOutput] at prvOut_eq
+    rw [Prod.mk.injEq, Prod.mk.injEq] at prvOut_eq
 
-    dsimp only [foldStepLogic, getFoldProverFinalOutput] at h_prv_def_support
-    simp only [Prod.mk_inj] at h_prv_def_support
-    rcases h_prv_def_support with ⟨⟨h_logic_stmt, h_logic_oracle⟩, h_logic_wit⟩
+    obtain ⟨⟨prvStmtOut_eq, prvOStmtOut_eq⟩, prvWitOut_eq⟩ := prvOut_eq
 
-    rcases h_ver_def_support with ⟨h_V_check_passed, h_ver_stmtOut_eq, h_ver_OstmtOut_eq⟩
-    -- h_V_check_passed exists due to unfolding the `guard` in `foldStepLogic`
-
-    -- Step 2e: Apply the logic completeness lemma
-    obtain ⟨_h_V_check_but_not_used, h_rel, h_agree⟩ := strongly_complete (stmtIn := stmtIn)
-      (witIn := witIn) (h_relIn := h_relIn) (challenges := fun ⟨j, hj⟩ => by
-        -- Convert single challenge r1 to challenge function
-        have h_j_eq_1 : j = 1 := by
-          dsimp [pSpecFold] at hj
-          cases j using Fin.cases
-          case zero => simp at hj
-          case succ j1 =>
-            cases j1 using Fin.cases
-            case zero => rfl
-            case succ k => exact k.elim0 (α := k.succ.succ = 1)
-        subst h_j_eq_1
-        exact r1)
-
-    -- Step 2f: Simplify the verifier check
-    dsimp only [foldStepLogic, foldProverComputeMsg, step] at h_V_check_passed
-    unfold FullTranscript.mk2 at h_V_check_passed
-    simp only [Fin.isValue, Transcript_get_message] at h_V_check_passed
-
-    dsimp only [Fin.isValue, foldProverComputeMsg, foldStepLogic, Challenge,
-      Matrix.cons_val_one, Matrix.cons_val_zero, Lean.Elab.WF.paramLet] at h_ver_stmtOut_eq
-    unfold FullTranscript.mk2 at h_ver_stmtOut_eq
-    unfold OracleInterface.answer at h_ver_stmtOut_eq
-    simp only [Fin.isValue, Transcript_get_message, Transcript_get_challenge] at h_ver_stmtOut_eq
-
-    -- Step 2g: Rewrite all variables to their concrete values
-    rw [
-      h_ver_stmtOut_eq_support, h_ver_stmtOut_eq,
-      h_ver_oracle_eq_support,  h_ver_OstmtOut_eq,
-      h_wit_eq_support,         h_logic_wit,
-      h_prv_stmtOut_eq_support, h_logic_stmt,
-      h_prv_oracle_eq_support,  h_logic_oracle
-    ]
-
-    -- Step 2h: Complete the proof using logic properties
     constructor
-    · exact h_rel
+    · rw [prvWitOut_eq, verStmtOut_eq, verOStmtOut_eq];
+      exact h_rel
     · constructor
-      · rfl  -- Statement agreement
-      · exact h_agree.2  -- Oracle agreement
+      · rw [verStmtOut_eq, prvStmtOut_eq]; rfl
+      · rw [verOStmtOut_eq, prvOStmtOut_eq];
+        exact h_agree.2
 
-#exit
 open scoped NNReal
 
 open Classical in
@@ -497,7 +444,6 @@ def foldKStateProp {i : Fin ℓ} (m : Fin (2 + 1))
       ⟨⟨0, Nat.lt_of_succ_le hm⟩, by simp [pSpecFold]; rfl⟩
     let h_i : L⦃≤ 2⦄[X] := msgsUpTo i_msg1
     h_i
-
   let get_rᵢ' := fun (m: Fin (2 + 1)) (tr: Transcript m pSpecFold) (hm: 2 ≤ m.val) =>
     let ⟨msgsUpTo, chalsUpTo⟩ := Transcript.equivMessagesChallenges (k := m)
       (pSpec := pSpecFold (L := L)) tr
@@ -508,7 +454,6 @@ def foldKStateProp {i : Fin ℓ} (m : Fin (2 + 1))
       ⟨⟨1, Nat.lt_of_succ_le hm⟩, by simp only [Nat.reduceAdd]; rfl⟩
     let r_i' : L := chalsUpTo i_msg2
     r_i'
-
   match m with
   | ⟨0, _⟩ => -- equiv s relIn
     masterKStateProp (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -549,7 +494,8 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
         (𝓑 := 𝓑)  i.castSucc)
       (relOut := foldStepRelOut (mp := mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑)  i)
-      (extractor := foldRbrExtractor (mp:=mp) (𝓡 := 𝓡) (ϑ := ϑ) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) where
+      (extractor := foldRbrExtractor (mp:=mp) (𝓡 := 𝓡) (ϑ := ϑ) 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) where
   toFun := fun m ⟨stmt, oStmt⟩ tr witMid =>
     foldKStateProp (mp:=mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (i := i) (m := m) (tr := tr) (stmt := stmt) (witMid := witMid) (oStmt := oStmt)
@@ -557,7 +503,7 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
   toFun_next := fun m hDir stmtIn tr msg witMid => by
     obtain ⟨stmt, oStmt⟩ := stmtIn
     fin_cases m
-    · exact fun ⟨_, h⟩ => ⟨trivial, h⟩
+    · exact fun ⟨_, h⟩ => by sorry
     · simp at hDir
   toFun_full := fun ⟨stmtLast, oStmtLast⟩ tr witOut h_relOut => by
     simp at h_relOut
@@ -567,9 +513,6 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
     set witLast := (foldRbrExtractor (mp:=mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).extractOut
       ⟨stmtLast, oStmtLast⟩ tr witOut
     simp only [Fin.reduceLast, Fin.isValue]
-    -- ⊢ foldKStateProp 𝔽q β 2 tr stmtLast witLast oStmtLast
-    -- TODO : prove this via the relations between stmtLast & stmtOut,
-      --  witLast & witOut, oStmtLast & oStmtOut
     have h_oStmt : oStmtLast = oStmtOut := by sorry
     sorry
 
@@ -706,12 +649,7 @@ The proof follows the same pattern as `foldOracleReduction_perfectCompleteness`:
 - Just extends the oracle with the new function
 -/
 theorem commitOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fin ℓ)
-    (hCR : isCommitmentRound ℓ ϑ i)
-    -- [(j : (pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).ChallengeIdx) →
-      -- Fintype ((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j)]
-    -- [(j : (pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).ChallengeIdx) →
-      -- Inhabited ((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j)]
-      :
+    (hCR : isCommitmentRound ℓ ϑ i) :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
       (relIn := strictFoldStepRelOut (mp := mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -723,45 +661,102 @@ theorem commitOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : 
       (init := init)
       (impl := impl) := by
   -- Step 1: Unroll the 1-message reduction
-  rw [OracleReduction.unroll_1_message_reduction_perfectCompleteness_P_to_V (oSpec := []ₒ) (hInit := hInit)
+  rw [OracleReduction.unroll_1_message_reduction_perfectCompleteness_P_to_V (oSpec := []ₒ)
+    (hInit := hInit) (pSpec := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
     (hDir0 := by rfl)
     (hImplSupp := by simp only [Set.fmap_eq_image, IsEmpty.forall_iff, implies_true])]
   intro stmtIn oStmtIn witIn h_relIn
-
   -- Step 2: Convert probability 1 to universal quantification over support
   rw [probEvent_eq_one_iff]
-
   -- Step 3: Unfold protocol definitions
-  simp only [commitOracleReduction, commitOracleProver, commitOracleVerifier, OracleVerifier.toVerifier,
-    FullTranscript.mk1]
+  dsimp only [commitOracleReduction]
+  let step := (commitStepLogic 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (mp := mp) i (hCR := hCR))
+  let strongly_complete : step.IsStronglyComplete := commitStep_is_logic_complete (L := L)
+    𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) (i := i) (hCR := hCR)
 
   -- Step 4: Split into safety and correctness goals
   refine ⟨?_, ?_⟩
   -- GOAL 1: SAFETY - Prove the verifier never crashes ([⊥|...] = 0)
   · -- Peel off monadic layers to reach the core verifier logic
-    simp only [probFailure_bind_eq_zero_iff, probFailure_liftComp_eq]
-    rw [probFailure_eq_zero_iff]
-    simp only [neverFails_pure, true_and]
-
+    dsimp only [commitOracleProver, commitOracleVerifier, OracleVerifier.toVerifier,
+    FullTranscript.mk1]
+    simp only [probFailure_bind_eq_zero_iff]
+    conv_lhs =>
+      simp only [liftComp_eq_liftM, liftM_pure, probFailure_eq_zero]
+    rw [true_and]
     intro inputState hInputState_mem_support
-    conv =>
-      enter [1];
-      simp only [probFailure_eq_zero_iff]
-      tactic => split; simp only [neverFails_pure]
+    simp only [Fin.isValue, Message, Matrix.cons_val_zero, Fin.succ_zero_eq_one, ChallengeIdx,
+      Challenge, liftComp_eq_liftM, liftM_pure, support_pure,
+      Set.mem_singleton_iff] at hInputState_mem_support
+    conv_lhs =>
+      simp only [liftM, monadLift, MonadLift.monadLift]
+      simp only [ChallengeIdx, Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_zero,
+        liftComp_eq_liftM, OptionT.probFailure_lift, HasEvalPMF.probFailure_eq_zero]
     rw [true_and]
 
-    -- ⊢ ∀ x ∈ .. support, ... ∧ ... ∧ ...
-    intro h_prover_final_output h_prover_final_output_support
+    intro r_i' h_r_i'_mem_query_1_support
     conv =>
-      simp only [
-        probFailure_liftComp,
-        probFailure_map,
-        probFailure_bind_eq_zero_iff,
-        probFailure_pure,
-        implies_true,
-        and_true
-      ]
-    rw [simulateQ_pure, probFailure_pure]
+      enter [2];
+      simp only [probFailure_eq_zero_iff]
+      simp only [liftM, monadLift, MonadLift.monadLift]
+      simp only [ChallengeIdx, Challenge, MessageIdx, Fin.isValue, Message, Matrix.cons_val_zero,
+        Fin.succ_zero_eq_one, bind_pure_comp, liftComp_eq_liftM, OptionT.mem_support_iff,
+        toPFunctor_add, toPFunctor_emptySpec, OptionT.support_run, Prod.mk.eta, probFailure_eq_zero,
+        implies_true]
+    rw [and_true]
+    -- erw [OptionT.probFailure_mk]
+    -- simp only [ChallengeIdx, Challenge, MessageIdx, Fin.isValue, Message, Matrix.cons_val_zero,
+    --       -- simp only [probOutput_eq_zero_iff]
+    -- rw [OptionT.support_run_eq]
+    -- rw [OptionT.probOutput_none_bind_eq_zero_iff]
+    simp only [bind_pure_comp]
+    rw [OptionT.probFailure_liftComp_of_OracleComp_Option]
+    conv_lhs =>
+      enter [1];
+      simp only [Fin.isValue, Message, Matrix.cons_val_zero, Fin.succ_zero_eq_one, MessageIdx,
+        OptionT.run_map, HasEvalPMF.probFailure_eq_zero]
+    rw [zero_add]
+    simp only [probOutput_eq_zero_iff]
+    rw [OptionT.support_run_eq]
+    simp only [←probOutput_eq_zero_iff]
+    simp_all only
+    change Pr[= none | OptionT.run (m := (OracleComp []ₒ)) (x := (OptionT.bind _ _)) ] = 0
+    rw [OptionT.probOutput_none_bind_eq_zero_iff]
+    conv =>
+      enter [x]
+      rw [OptionT.support_run]
+    intro vStmtOut h_vStmtOut_mem_support
+    conv at h_vStmtOut_mem_support =>
+      -- erw [simulateQ_bind]
+      -- turn the simulated oracle query into OracleInterface.answer form
+      -- rw [OptionT.simulateQ_simOracle2_liftM_query_T2]
+      -- change vStmtOut ∈ (Bind.bind (m := (OracleComp []ₒ)) _ _).support
+      -- erw [_root_.bind_pure_simulateQ_comp]
+      simp only [Matrix.cons_val_zero, guard_eq]
+      -- simp  [bind_pure_comp,
+      -- OptionT.simulateQ_map, OptionT.simulateQ_ite, OptionT.simulateQ_pure,
+      -- OptionT.support_map_run, OptionT.support_ite_run, support_pure,
+      -- OptionT.support_failure_run, Set.mem_image, Set.mem_ite_empty_right,
+      -- Set.mem_singleton_iff, and_true, exists_const, Prod.mk.injEq, existsAndEq]
+      -- rw [bind_pure_comp]
+      dsimp only [Functor.map]
+      -- rw [OptionT.simulateQ_bind]
+      -- erw [support_bind]
+      -- rw [simulateQ_ite]
+      simp only [Fin.isValue, Message, Matrix.cons_val_zero, id_eq, MessageIdx, support_ite,
+        toPFunctor_emptySpec, Function.comp_apply, OptionT.simulateQ_pure, Set.mem_iUnion,
+        exists_prop]
+      simp only [OptionT.simulateQ_failure']
+      erw [_root_.simulateQ_pure]
+      simp only [show OptionT.pure (m := (OracleComp ([]ₒ +
+        ([OracleStatement 𝔽q β ϑ i.castSucc]ₒ + [pSpecFold.Message]ₒ)))) = pure by rfl]
+      simp only [support_pure, Set.mem_singleton_iff]
+    simp only [show OptionT.pure (m := (OracleComp ([]ₒ))) = pure by rfl]
+    rw [h_vStmtOut_mem_support]
+    simp only [Fin.isValue, Message, Matrix.cons_val_zero, Fin.succ_zero_eq_one,
+      Function.comp_apply, OptionT.run_pure, probOutput_eq_zero_iff, support_pure,
+      Set.mem_singleton_iff, reduceCtorEq, not_false_eq_true]
   · -- GOAL 2: CORRECTNESS - Prove all outputs in support satisfy the relation
     intro x hx_mem_support
     rcases x with ⟨⟨prvStmtOut, prvOStmtOut⟩, ⟨verStmtOut, verOStmtOut⟩, witOut⟩
@@ -772,69 +767,80 @@ theorem commitOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : 
       Set.mem_iUnion, Set.mem_singleton_iff,
       exists_eq_left, exists_prop, Prod.exists
     ] at hx_mem_support
-
-    -- Step 2b: Extract the trace equations
-    let h_trace_support := hx_mem_support
-    rcases h_trace_support with ⟨prvStmtOut_support, prvOStmtOut_support, prvWitOut_support,
-      h_prv_def_support, vStmtOut_support, vOracleOut_support, h_ver_def_support, h_total_eq_support⟩
-
-    -- Step 2c: Simplify the verifier computation
-    conv at h_ver_def_support =>
-      rw [simulateQ_pure, support_pure]
-      simp only [Set.mem_singleton_iff]
-      simp only [Prod.mk.injEq, exists_eq_left]
-
-    -- Step 2d: Extract all the equalities
-    simp only [Prod.mk_inj] at h_total_eq_support
-    rcases h_total_eq_support with ⟨⟨h_prv_stmtOut_eq_support, h_prv_oracle_eq_support⟩,
-      ⟨h_ver_stmtOut_eq_support, h_ver_oracle_eq_support⟩, h_wit_eq_support⟩
-
-    dsimp only [commitStepLogic, getCommitProverFinalOutput] at h_prv_def_support
-    simp only [support_pure, Set.mem_singleton_iff, Prod.mk.injEq] at h_prv_def_support
-    rcases h_prv_def_support with ⟨⟨h_logic_stmt, h_logic_oracle⟩, h_logic_wit⟩
-
-    rcases h_ver_def_support with ⟨h_ver_stmtOut_eq, h_ver_OstmtOut_eq⟩
+    conv at hx_mem_support =>
+      erw [OptionT.support_mk, support_pure]
+      simp only [
+        Set.mem_singleton_iff, Option.some.injEq, Set.setOf_eq_eq_singleton, Prod.mk.injEq,
+        OptionT.mem_support_iff,
+        OptionT.run_monadLift, support_map, Set.mem_image, exists_eq_right, Fin.succ_one_eq_two,
+        id_eq, guard_eq, bind_pure_comp,
+        toPFunctor_add, toPFunctor_emptySpec, OptionT.support_run, ↓existsAndEq, and_true, true_and,
+        exists_eq_right_right', liftM_pure, support_pure, exists_eq_left]
+      dsimp only [monadLift, MonadLift.monadLift]
+    simp only [Fin.isValue, Message, Matrix.cons_val_zero, Fin.succ_zero_eq_one, ChallengeIdx,
+      Challenge, Fin.reduceLast, liftComp_eq_liftM, MessageIdx] at hx_mem_support
+    obtain ⟨newOracleFn, lastPrvState, h_prvFinalState_eq,
+      ⟨h_prvOut_mem_support, h_verOut_mem_support⟩⟩ := hx_mem_support
+    conv at h_prvFinalState_eq =>
+      dsimp only [getCommitProverFinalOutput, commitOracleProver]
+      rw [Prod.mk.injEq]
+    conv at h_prvOut_mem_support =>
+      dsimp only [commitOracleProver, commitOracleVerifier, OracleVerifier.toVerifier,
+        FullTranscript.mk1]
+      dsimp only [liftM, monadLift, MonadLift.monadLift]
+      rw [liftComp_id]
+      rw [support_liftComp]
+      simp only [h_prvFinalState_eq, Fin.val_succ, support_pure, Set.mem_singleton_iff,
+        Prod.mk.injEq]
+    conv at h_verOut_mem_support =>
+      dsimp only [commitOracleVerifier, OracleVerifier.toVerifier, FullTranscript.mk1]
+      erw [_root_.simulateQ_pure]
+      simp only [show OptionT.pure (m := (OracleComp ([]ₒ +
+        ([OracleStatement 𝔽q β ϑ i.castSucc]ₒ + [pSpecFold.Message]ₒ)))) = pure by rfl]
+      simp only [support_pure, Set.mem_singleton_iff]
+      dsimp only [liftM, monadLift, MonadLift.monadLift]
+      rw [support_liftComp]
+      dsimp only [Functor.map]
+      erw [support_bind]
+      simp only [support_pure, Set.mem_singleton_iff, Function.comp_apply,
+        Set.iUnion_iUnion_eq_left, OptionT.support_OptionT_pure_run, Option.some.injEq,
+        Prod.mk.injEq]
+      erw [support_pure]
+      simp only [Set.mem_singleton_iff, Option.some.injEq, Prod.mk.injEq]
+      -- pure equalities now
 
     -- Step 2e: Apply the logic completeness lemma
-    have h_logic := commitStep_is_logic_complete (hCR := hCR) (L := L) 𝔽q β (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) (i := i)
-      (stmtIn := stmtIn) (witIn := witIn) (h_relIn := h_relIn)
-      (challenges := fun ⟨j, hj⟩ => by
+    obtain ⟨h_V_check, h_rel, h_agree⟩ := strongly_complete (stmtIn := stmtIn)
+      (witIn := witIn) (h_relIn := h_relIn)
+       (challenges := fun ⟨j, hj⟩ => by
         dsimp only [pSpecCommit] at hj
         cases j using Fin.cases
         case zero => simp at hj
         case succ j' => exact j'.elim0
       )
 
-    obtain ⟨h_V_check, h_rel, h_agree⟩ := h_logic
+    obtain ⟨newOracleFn_eq, lastPrvState_eq⟩ := h_prvFinalState_eq
+    obtain ⟨⟨prvStmtOut_eq, prvOStmtOut_eq⟩, prvWitOut_eq⟩ := h_prvOut_mem_support
+    obtain ⟨verStmtOut_eq, verOStmtOut_eq⟩ := h_verOut_mem_support
 
     -- Step 2f: Simplify the verifier check
     -- simp only [commitStepLogic] at h_V_check
     -- unfold FullTranscript.mk1 at h_V_check
-    simp only [Fin.isValue, Transcript_get_message] at h_V_check
+    simp only [Fin.isValue] at h_V_check
 
-    -- dsimp? [Fin.isValue, commitStepLogic, Challenge,
-      -- Matrix.cons_val_one, Matrix.cons_val_zero, Lean.Elab.WF.paramLet] at h_ver_stmtOut_eq
-
-    -- Step 2g: Rewrite all variables to their concrete values
     rw [
-      h_ver_stmtOut_eq_support, h_ver_stmtOut_eq,
-      h_ver_oracle_eq_support,  h_ver_OstmtOut_eq,
-      h_wit_eq_support,         h_logic_wit,
-      h_prv_stmtOut_eq_support, h_logic_stmt,
-      h_prv_oracle_eq_support,  h_logic_oracle
+      -- lastPrvState_eq,
+      prvStmtOut_eq, prvOStmtOut_eq, prvWitOut_eq,
+      verStmtOut_eq, verOStmtOut_eq,
     ]
 
-    -- Step 2h: Complete the proof using logic properties
     constructor
-    · -- relOut holds
-      dsimp only [Fin.isValue, Challenge, Matrix.cons_val_one, Matrix.cons_val_zero,
-        foldStepLogic, Lean.Elab.WF.paramLet, Fin.val_succ] at h_rel
+    · rw [newOracleFn_eq]
       exact h_rel
-    · -- Prover and verifier agree
-      constructor
-      · rfl  -- Statement agreement
-      · exact h_agree.2  -- Oracle agreement
+    · constructor
+      · rfl -- or `exact h_agree.1`
+      · rw [newOracleFn_eq]
+        exact h_agree.2
 
 open scoped NNReal
 
@@ -868,7 +874,6 @@ def commitKStateProp (i : Fin ℓ) (m : Fin (1 + 1))
   (oStmtIn : (i_1 : Fin (toOutCodewordsCount ℓ ϑ i.castSucc)) →
     OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc i_1)
   : Prop :=
-
   match m with
   | ⟨0, _⟩ => -- same as relIn
     masterKStateProp (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) -- (𝓑 := 𝓑)
@@ -903,6 +908,7 @@ def commitKState (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
   toFun_full := fun (stmtIn, oStmtIn) tr witOut=> by
     sorry
 
+omit [CharP L 2] [SampleableType L] in
 /-- RBR knowledge soundness for a single round oracle verifier -/
 theorem commitOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
     (hCR : isCommitmentRound ℓ ϑ i) :
@@ -1027,8 +1033,8 @@ lemma strictRoundRelation_relay_preserved (i : Fin ℓ)
         toOutCodewordsCount ℓ ϑ i.castSucc := (h_oracle_size_eq_relay i hNCR).symm
       exact h_relIn.2.2 ⟨j, by omega⟩
 
-omit [CharP L 2] [SampleableType L] in
-theorem relayOracleReduction_perfectCompleteness (hInit : init.neverFails) (i : Fin ℓ)
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
+theorem relayOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecRelay)
@@ -1040,29 +1046,99 @@ theorem relayOracleReduction_perfectCompleteness (hInit : init.neverFails) (i : 
         i hNCR)
       (init := init)
       (impl := impl) := by
-  simp only [OracleReduction.perfectCompleteness, relayOracleReduction]
-  simp only [Reduction.perfectCompleteness_eq_prob_one]
-  -- ⊢ ∀ ⟨stmtIn, oStmtIn⟩ witIn h_relIn,
-    -- Pr[fun ⟨⟨_, (prvStmtOut, witOut)⟩, stmtOut⟩ =>
-    -- (stmtOut, witOut) ∈ relOut ∧ prvStmtOut = stmtOut, simulateQ ...] = 1
-  intro ⟨stmtIn, oStmtIn⟩ witIn h_relIn
-  -- Now simp the prover execution logic
-  simp only [pSpecRelay, ChallengeIdx, Reduction.run, Prover.run, Fin.reduceLast, relayOracleProver,
-    Fin.isValue, Challenge, relayOracleVerifier,
-    OracleReduction.toReduction, OracleVerifier.toVerifier, Function.Embedding.coeFn_mk,
-    Prover.runToRound, Nat.reduceAdd, Fin.induction_zero,
-    liftM_eq_liftComp, bind_pure_comp, pure_bind, liftComp_pure, map_pure,
-      Verifier.run, simulateQ_pure, StateT.run'_eq,
-    StateT.run_pure, probEvent_map, probEvent_eq_one_iff, probFailure_eq_zero_iff, hInit,
-    Function.comp_apply, Prod.mk.injEq, true_and]
-  intro (s : σ) (hs : s ∈ OracleComp.support init)
-  dsimp only [MessageIdx, Fin.isValue]
-  -- ⊢ ((stmtIn, fun i_1 ↦ oStmtIn ⟨↑i_1, ⋯⟩), witIn) ∈ strictRoundRelation 𝔽q β i.succ ∧
-  -- mapOStmtOutRelayStep 𝔽q β i hNCR oStmtIn = fun i_1 ↦ oStmtIn ⟨↑i_1, ⋯⟩
-  constructor
-  · exact (strictRoundRelation_relay_preserved (i := i) (hNCR := hNCR) (stmtIn := stmtIn)
+  -- must use `ProtocolSpec.challengeOracleInterface`
+  rw [OracleReduction.unroll_0_message_reduction_perfectCompleteness (oSpec := []ₒ)
+    (pSpec := pSpecRelay) (init := init) (impl := impl) (hInit := hInit)
+    (hImplSupp := by simp only [Set.fmap_eq_image,
+      IsEmpty.forall_iff, implies_true])]
+  intro stmtIn oStmtIn witIn h_relIn
+  -- Step 2: Convert probability 1 to universal quantification over support
+  rw [probEvent_eq_one_iff]
+  -- Step 3: Unfold protocol definitions
+  dsimp only [relayOracleReduction, relayOracleProver, relayOracleVerifier,
+    OracleVerifier.toVerifier, FullTranscript.mk2]
+  -- Step 4: Split into safety and correctness goals
+  refine ⟨?_, ?_⟩
+  -- GOAL 1: SAFETY - Prove the verifier never crashes ([⊥|...] = 0)
+  · -- Peel off monadic layers to reach the core verifier logic
+    simp only [probFailure_bind_eq_zero_iff]
+    conv_lhs =>
+      simp only [liftComp_eq_liftM, liftM_pure, probFailure_eq_zero]
+    rw [true_and]
+    intro inputState hInputState_mem_support
+    simp only [ChallengeIdx,
+      Challenge, liftComp_eq_liftM, liftM_pure, support_pure,
+      Set.mem_singleton_iff] at hInputState_mem_support
+    conv_lhs =>
+      simp only [liftM, monadLift, MonadLift.monadLift]
+      simp only [ChallengeIdx, Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_zero,
+        liftComp_eq_liftM, OptionT.probFailure_lift, HasEvalPMF.probFailure_eq_zero]
+    erw [simulateQ_pure];
+    -- erw [OptionT.probFailure_mk]
+    simp only [ liftComp_eq_liftM, ChallengeIdx, Challenge,
+      OptionT.mem_support_iff, toPFunctor_add, toPFunctor_emptySpec, OptionT.support_run,
+      Prod.mk.eta, probFailure_eq_zero, implies_true, and_true]
+    dsimp only [liftM, monadLift, MonadLift.monadLift]
+    rw [OptionT.probFailure_liftComp_of_OracleComp_Option]
+    conv_lhs =>
+      enter [1]
+      simp only [MessageIdx, Fin.isValue, Message, Matrix.cons_val_zero, Fin.succ_zero_eq_one,
+        id_eq, bind_pure_comp, OptionT.run_map, HasEvalPMF.probFailure_eq_zero]
+    rw [zero_add]
+    simp only [probOutput_eq_zero_iff]
+    rw [OptionT.support_run_eq]
+    simp only [←probOutput_eq_zero_iff]
+    change Pr[= none | OptionT.run (m := (OracleComp []ₒ)) (x := (OptionT.bind _ _)) ] = 0
+    rw [OptionT.probOutput_none_bind_eq_zero_iff]
+    conv =>
+      enter [x]
+      rw [OptionT.support_run]
+    intro vStmtOut h_vStmtOut_mem_support
+    conv at h_vStmtOut_mem_support =>
+      simp only [support_pure, Set.mem_singleton_iff]
+    rw [h_vStmtOut_mem_support]
+    simp only [MessageIdx, OptionT.run_pure, probOutput_eq_zero_iff, support_pure,
+      Set.mem_singleton_iff, reduceCtorEq, not_false_eq_true]
+  · -- GOAL 2: CORRECTNESS - Prove all outputs in support satisfy the relation
+    intro x hx_mem_support
+    rcases x with ⟨⟨prvStmtOut, prvOStmtOut⟩, ⟨verStmtOut, verOStmtOut⟩, witOut⟩
+    simp only
+    -- Step 2a: Simplify the support membership to extract the challenge
+    simp only [ support_bind, support_pure,
+      Set.mem_iUnion, Set.mem_singleton_iff, exists_prop, Prod.exists
+    ] at hx_mem_support
+    conv at hx_mem_support =>
+      erw [OptionT.support_mk, support_pure]
+      simp only [
+        Set.mem_singleton_iff, Option.some.injEq, Set.setOf_eq_eq_singleton, Prod.mk.injEq,
+        OptionT.mem_support_iff,
+        OptionT.run_monadLift, support_map, Set.mem_image, exists_eq_right, Fin.succ_one_eq_two,
+        id_eq, guard_eq, bind_pure_comp,
+        toPFunctor_add, toPFunctor_emptySpec, OptionT.support_run, ↓existsAndEq, and_true, true_and,
+        exists_eq_right_right', liftM_pure, support_pure, exists_eq_left]
+      dsimp only [monadLift, MonadLift.monadLift]
+    simp only [Challenge,ChallengeIdx,
+      liftComp_eq_liftM, MessageIdx, Message] at hx_mem_support
+    obtain ⟨h_verOut_mem_support, h_prvOut_mem_support⟩ := hx_mem_support
+    -- Step 2c: Simplify the verifier computation
+    conv at h_verOut_mem_support =>
+      dsimp only [liftM, monadLift, MonadLift.monadLift]
+      rw [support_liftComp]
+      erw [simulateQ_pure]
+      -- dsimp only [Functor.map]
+      erw [support_bind]
+      simp only [support_pure, Set.mem_singleton_iff, Function.comp_apply,
+        Set.iUnion_iUnion_eq_left, OptionT.support_OptionT_pure_run, Option.some.injEq,
+        Prod.mk.injEq]
+    rcases h_verOut_mem_support with ⟨verStmtOut_eq, verOStmtOut_eq⟩
+    obtain ⟨⟨prvStmtOut_eq, prvOStmtOut_eq⟩, prvWitOut_eq⟩ := h_prvOut_mem_support
+    constructor
+    · rw [prvWitOut_eq, verStmtOut_eq, verOStmtOut_eq];
+      exact (strictRoundRelation_relay_preserved (i := i) (hNCR := hNCR) (stmtIn := stmtIn)
     (oStmtIn := oStmtIn) (witIn := witIn) (h_relIn := h_relIn))
-  · rfl
+    · constructor
+      · rw [verStmtOut_eq, prvStmtOut_eq];
+      · rw [verOStmtOut_eq, prvOStmtOut_eq]; rfl
 
 def relayKnowledgeError (m : pSpecRelay.ChallengeIdx) : ℝ≥0 :=
   match m with
@@ -1109,7 +1185,7 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ �
   toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witIn => by
     simp only [foldStepRelOut, foldStepRelOutProp, Set.mem_setOf_eq, relayKStateProp]
     unfold masterKStateProp
-    simp only [Fin.val_succ, Fin.coe_castSucc, Fin.take_eq_init, true_and, Fin.take_eq_self]
+    simp only [Fin.val_succ, true_and]
     have hRight := oracleWitnessConsistency_relay_preserved (mp := mp) 𝔽q β i -- (𝓑 := 𝓑)
       hNCR stmtIn witIn oStmtIn
     -- rw [hRight]
@@ -1117,6 +1193,7 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ �
   toFun_next := fun m hDir (stmtIn, oStmtIn) tr msg witMid => by exact fun a ↦ a
   toFun_full := fun (stmtIn, oStmtIn) tr witOut=> by sorry
 
+omit [SampleableType L] in
 /-- RBR knowledge soundness for a single round oracle verifier -/
 theorem relayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
@@ -1205,15 +1282,13 @@ noncomputable def finalSumcheckVerifier :
     (pSpec := pSpecFinalSumcheckStep (L := L)) where
   verify := fun stmtIn _ => do
     -- Get the final constant `c` from the prover's message
-    let c : L ← query (spec := [(pSpecFinalSumcheckStep (L := L)).Message]ₒ) ⟨0, rfl⟩ ()
-
+    let c : L ← query (spec := [(pSpecFinalSumcheckStep (L := L)).Message]ₒ)
+      ⟨⟨0, by rfl⟩, (by simpa using ())⟩
     -- Construct the transcript
     let t := FullTranscript.mk1 (pSpec := pSpecFinalSumcheckStep (L := L)) c
-
     -- Get the logic instance
     let logic := (finalSumcheckStepLogic 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
-
     -- Use guard for verifier check (fails if check doesn't pass)
     guard (logic.verifierCheck stmtIn t)
     pure (logic.verifierOut stmtIn t)
@@ -1239,7 +1314,7 @@ noncomputable def finalSumcheckOracleReduction :
 
 /-- Perfect completeness for the final sumcheck step -/
 theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
-  (init : ProbComp σ)
+  (init : ProbComp σ) (hInit : NeverFail init)
   (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
   OracleReduction.perfectCompleteness
     (pSpec := pSpecFinalSumcheckStep (L := L))
@@ -1251,176 +1326,177 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
   -- Step 1: Unroll the 2-message reduction to convert from probability to logic
   rw [OracleReduction.unroll_1_message_reduction_perfectCompleteness_P_to_V (hInit := hInit)
     (hDir0 := by rfl)
-    (hImplSafe := by simp only [probFailure_eq_zero_iff, IsEmpty.forall_iff, implies_true])
     (hImplSupp := by simp only [Set.fmap_eq_image, IsEmpty.forall_iff, implies_true])]
-    -- Step 2: Convert probability 1 to universal quantification over support
-  simp only [probEvent_eq_one_iff]
 
   intro stmtIn oStmtIn witIn h_relIn
-  haveI : [pSpecFinalSumcheckStep (L := L).Challenge]ₒ.Fintype :=
-    instFintypePSpecFinalSumcheckStepChallenge
-  haveI : ([]ₒ + [pSpecFinalSumcheckStep (L := L).Challenge]ₒ).Fintype :=
-    []ₒ.instFintypeSumAppend [pSpecFinalSumcheckStep (L := L).Challenge]ₒ
+  -- Step 2: Convert probability 1 to universal quantification over support
+  rw [probEvent_eq_one_iff]
+  -- Step 3: Unfold protocol definitions
+  dsimp only [finalSumcheckOracleReduction, finalSumcheckProver, finalSumcheckVerifier,
+    OracleVerifier.toVerifier, FullTranscript.mk1]
 
-  let step := finalSumcheckStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-    -- Step 2e: Apply the logic completeness lemma
+  let step := (finalSumcheckStepLogic 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
   let strongly_complete : step.IsStronglyComplete := finalSumcheckStep_is_logic_complete (L := L)
     𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
 
-  -- -- Step 3: Unfold protocol definitions
-  dsimp only [finalSumcheckOracleReduction, finalSumcheckProver, finalSumcheckVerifier,
-    OracleVerifier.toVerifier,
-    FullTranscript.mk1]
-
--- Step 4: Split into safety and correctness goals
+  -- Step 4: Split into safety and correctness goals
   refine ⟨?_, ?_⟩
   -- GOAL 1: SAFETY - Prove the verifier never crashes ([⊥|...] = 0)
   · -- Peel off monadic layers to reach the core verifier logic
-    simp only [probFailure_bind_eq_zero_iff, probFailure_liftComp_eq]
-    rw [probFailure_eq_zero_iff]
-    simp only [neverFails_pure, true_and]
-
+    simp only [probFailure_bind_eq_zero_iff]
+    conv_lhs =>
+      simp only [liftComp_eq_liftM, liftM_pure, probFailure_eq_zero]
+    rw [true_and]
     intro inputState hInputState_mem_support
-    simp only [Fin.isValue, Message, Nat.reduceAdd, Fin.succ_zero_eq_one, ChallengeIdx,
-      Fin.val_last, liftComp_pure, support_pure, Set.mem_singleton_iff] at hInputState_mem_support
-    -- Now we get equality: hInputState_mem_support : inputState = (witIn.f ⟨0, ⋯⟩, stmtIn, oStmtIn, witIn, witIn.f ⟨0, ⋯⟩)
-    split
-    simp only [probFailure_pure, true_and]
-
+    simp only [Fin.isValue, Message, Matrix.cons_val_zero, Fin.succ_zero_eq_one, ChallengeIdx,
+      Challenge, liftComp_eq_liftM, liftM_pure, support_pure,
+      Set.mem_singleton_iff] at hInputState_mem_support
+    conv_lhs =>
+      simp only [liftM, monadLift, MonadLift.monadLift]
+      simp only [ChallengeIdx, Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_zero,
+        liftComp_eq_liftM, OptionT.probFailure_lift, HasEvalPMF.probFailure_eq_zero]
+    rw [true_and]
     -- ⊢ ∀ x ∈ .. support, ... ∧ ... ∧ ...
-    intro prover_final_output h_prover_final_output_support
+    intro h_prover_final_output h_prover_final_output_support
     conv =>
-      simp only [probFailure_liftComp]
-      simp only
-
-    simp only [
-      -- probFailure_liftComp,
-      -- probFailure_map,
-      -- probFailure_bind_eq_zero_iff,
-      -- probFailure_pure,
-      implies_true,
-      and_true
-    ]
-
-    -- Apply Fintype instances for oracle simulation (defined in Spec.lean)
-    haveI : [fun j => OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (Fin.last ℓ) j]ₒ.Fintype := by
-        apply instFintypeOracleStatementFinLast
-    haveI : [(pSpecFinalSumcheckStep (L := L)).Message]ₒ.Fintype :=
-      instFintypePSpecFinalSumcheckStepMessage
-    -- simulateQ_query (q : OracleQuery spec α) : simulateQ so q = so.impl q
-    simp only [MessageIdx, Fin.isValue, Message, Nat.reduceAdd, Fin.succ_zero_eq_one,
-      SubSpec.liftM_query_eq_liftM_liftM, guard_eq, bind_pure_comp, simulateQ_bind, simulateQ_query,
-      probFailure_eq_zero_iff, neverFails_bind_iff, Function.comp_apply, simulateQ_map,
-      simulateQ_ite, simulateQ_pure, simulateQ_failure, neverFails_map_iff, neverFails_pure,
-      neverFails_guard]
-    simp only [←probFailure_eq_zero_iff]
-    constructor
-    · -- the oracle query (to get the message `c`)
-      -- simulateQ-ed over simOracle2 is safe
-      simp only [Fin.isValue, probFailure_simOracle2]
-    · intro c c_mem_oracle_query_support
-      -- **Unfold the oracle query logic in h_i**
-
-      -- Step 1: Unfold liftM to expose the structure
-      -- simp only [←liftM_query_eq_liftM_liftM] at c_mem_oracle_query_support
-      simp only [liftM, monadLift, MonadLift.monadLift] at c_mem_oracle_query_support
-      -- Step 2: NOW apply the lemma inside the support
-      conv at c_mem_oracle_query_support => rw [simOracle2_impl_inr_inr]
-      -- Step 3: Extract equality from singleton support
-      simp only [Fin.isValue, support_pure, Set.mem_singleton_iff] at c_mem_oracle_query_support
-      -- Now: h_i = OracleInterface.answer (messages ⟨0, ...⟩) ()
-      rw [c_mem_oracle_query_support]
-      -- Unfold the actually query, which is getting the message computed by prover
-      unfold OracleInterface.answer
-      dsimp only [instOracleInterfaceMessagePSpecFinalSumcheckStep]
-
-      -- Step 2e: Apply the logic completeness lemma
-      obtain ⟨h_V_check, h_rel, h_agree⟩ := strongly_complete (stmtIn := stmtIn)
-        (witIn := witIn) (h_relIn := h_relIn) (challenges :=
-        fun ⟨j, hj⟩ => by
-          match j with
-          | 0 =>
-            have hj_ne : (pSpecFinalSumcheckStep (L := L)).dir 0 ≠ Direction.V_to_P := by
-              dsimp only [pSpecFinalSumcheckStep, Fin.isValue, Matrix.cons_val_zero]
-              simp only [ne_eq, reduceCtorEq, not_false_eq_true]
-            exfalso
-            exact hj_ne hj
-        )
-      rw [hInputState_mem_support] -- Convert input States into equality
-      exact h_V_check
-  -- GOAL 2: CORRECTNESS - Prove all outputs in support satisfy the relation
-  · intro x hx_mem_support
-    rcases x with ⟨⟨prvStmtOut, prvOStmtOut⟩, ⟨verStmtOut, verOStmtOut⟩, witOut⟩
-    simp only
-
-    -- Step 2a: Simplify the support membership to extract the challenge
-    simp only [
-      support_bind, support_pure, liftComp_support,
-      Set.mem_iUnion, Set.mem_singleton_iff,
-      exists_eq_left, exists_prop, Prod.exists
-    ] at hx_mem_support
-
-    -- Step 2b: Extract the challenge r1 and the trace equations
-    let h_trace_support := hx_mem_support
-    rcases h_trace_support with ⟨prvStmtOut_support, prvOStmtOut_support, prvWitOut_support,
-      h_prv_def_support, vStmtOut_support, vOracleOut_support,
-      h_ver_def_support, h_total_eq_support⟩
-
-    -- Step 2c: Simplify the verifier computation
-    conv at h_ver_def_support =>
-      rw [simulateQ_bind]
-      erw [simulateQ_simOracle2_liftM (oSpec := []ₒ) (t₁ := oStmtIn)]
-      erw [simOracle2_impl_inr_inr]
-      rw [_root_.OptionT.bind_pure_simulateQ_comp]
-      -- big simp to kill the `guard` here
-      simp only [MessageIdx, Fin.val_last, Fin.isValue, guard_eq, bind_pure_comp,
-        OptionT.simulateQ_map, OptionT.simulateQ_ite, OptionT.simulateQ_pure, simulateQ_failure,
-        OptionT.support_map_run, OptionT.support_ite_run, support_pure, OptionT.support_failure_run,
-        Set.mem_image, Set.mem_ite_empty_right, Set.mem_singleton_iff, and_true, exists_const,
-        Prod.mk.injEq, existsAndEq]
-
-    -- Step 2d: Extract all the equalities
-    simp only [Prod.mk_inj] at h_total_eq_support
-    rcases h_total_eq_support with ⟨⟨h_prv_stmtOut_eq_support, h_prv_oracle_eq_support⟩,
-      ⟨h_ver_stmtOut_eq_support, h_ver_oracle_eq_support⟩, h_wit_eq_support⟩
-
-    dsimp only [finalSumcheckStepLogic] at h_prv_def_support
-    simp only [Prod.mk_inj] at h_prv_def_support
-    rcases h_prv_def_support with ⟨⟨h_logic_stmt, h_logic_oracle⟩, h_logic_wit⟩
-
-    rcases h_ver_def_support with ⟨_h_V_check_but_not_used, h_ver_stmtOut_eq, h_ver_OstmtOut_eq⟩
-
-    -- Step 2e: Apply the logic completeness lemma
-    have h_logic := finalSumcheckStep_is_logic_complete 𝔽q β (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (stmtIn := stmtIn) (witIn := witIn) (h_relIn := h_relIn)
-      (challenges := fun ⟨j, hj⟩ => by
-        dsimp only [pSpecFinalSumcheckStep] at hj
-        cases j using Fin.cases
-        case zero => simp at hj
-        case succ j' => exact j'.elim0
+      simp only [guard_eq] -- simplify the `guard`
+      enter [2];
+      simp only [bind_pure_comp, NeverFail.probFailure_eq_zero, implies_true]
+    rw [and_true]
+    -- Pr[⊥ | (...) : OracleComp ... (Option ...)] = 0
+    rw [OptionT.probFailure_liftComp_of_OracleComp_Option] -- split into two summands
+    conv_lhs =>
+      enter [1]
+      simp only [MessageIdx, Fin.isValue, Message, Matrix.cons_val_zero, Fin.succ_zero_eq_one,
+        id_eq, bind_pure_comp, OptionT.run_map, HasEvalPMF.probFailure_eq_zero]
+    rw [zero_add]
+    simp only [probOutput_eq_zero_iff]
+    rw [OptionT.support_run_eq]
+    simp only [←probOutput_eq_zero_iff]
+    simp_all only
+    change Pr[= none | OptionT.run (m := (OracleComp []ₒ)) (x := (OptionT.bind _ _)) ] = 0
+    rw [OptionT.probOutput_none_bind_eq_zero_iff]
+    conv =>
+      enter [x]
+      rw [OptionT.support_run]
+    intro vStmtOut h_vStmtOut_mem_support
+    conv at h_vStmtOut_mem_support =>
+      erw [simulateQ_bind]
+      -- turn the simulated oracle query into OracleInterface.answer form
+      rw [OptionT.simulateQ_simOracle2_liftM_query_T2] -- V queries P's message
+      change vStmtOut ∈ (Bind.bind (m := (OracleComp []ₒ)) _ _).support
+      erw [_root_.bind_pure_simulateQ_comp]
+      simp only [Matrix.cons_val_zero, guard_eq]
+      -- simp  [bind_pure_comp,
+      -- OptionT.simulateQ_map, OptionT.simulateQ_ite, OptionT.simulateQ_pure,
+      -- OptionT.support_map_run, OptionT.support_ite_run, support_pure,
+      -- OptionT.support_failure_run, Set.mem_image, Set.mem_ite_empty_right,
+      -- Set.mem_singleton_iff, and_true, exists_const, Prod.mk.injEq, existsAndEq]
+      rw [bind_pure_comp]
+      dsimp only [Functor.map]
+      rw [OptionT.simulateQ_bind]
+      erw [support_bind]
+      rw [simulateQ_ite]
+      simp only [Fin.isValue, Message, Matrix.cons_val_zero, id_eq, MessageIdx, support_ite,
+        toPFunctor_emptySpec, Function.comp_apply, OptionT.simulateQ_pure, Set.mem_iUnion,
+        exists_prop]
+      simp only [OptionT.simulateQ_failure']
+      erw [_root_.simulateQ_pure]
+    set V_check := step.verifierCheck stmtIn
+      (FullTranscript.mk1 (msg0 := _)) with h_V_check_def
+    obtain ⟨h_V_check, h_rel, h_agree⟩ := strongly_complete (stmtIn := stmtIn)
+      (witIn := witIn) (h_relIn := h_relIn) (challenges :=
+      fun ⟨j, hj⟩ => by
+        match j with
+        | 0 =>
+          have hj_ne : (pSpecFinalSumcheckStep (L := L)).dir 0 ≠ Direction.V_to_P := by
+            dsimp only [pSpecFinalSumcheckStep, Fin.isValue, Matrix.cons_val_zero]
+            simp only [ne_eq, reduceCtorEq, not_false_eq_true]
+          exfalso
+          exact hj_ne hj
       )
 
-    obtain ⟨_h_V_check_but_also_not_used, h_rel, h_agree⟩ := h_logic
+    have h_V_check_is_true : V_check := h_V_check
+    simp only [h_V_check_is_true, ↓reduceIte, support_pure, Set.mem_singleton_iff, Fin.isValue,
+      Fin.val_last, exists_eq_left, OptionT.support_OptionT_pure_run] at h_vStmtOut_mem_support
+    rw [h_vStmtOut_mem_support]
+    simp only [Fin.isValue, Fin.val_last, OptionT.run_pure, probOutput_eq_zero_iff, support_pure,
+      Set.mem_singleton_iff, reduceCtorEq, not_false_eq_true]
+  · -- GOAL 2: CORRECTNESS - Prove all outputs in support satisfy the relation
+    intro x hx_mem_support
+    rcases x with ⟨⟨prvStmtOut, prvOStmtOut⟩, ⟨verStmtOut, verOStmtOut⟩, witOut⟩
+    simp only
+    -- Step 2a: Simplify the support membership to extract the challenge
+    simp only [
+      support_bind, support_pure,
+      Set.mem_iUnion, Set.mem_singleton_iff, exists_prop, Prod.exists
+    ] at hx_mem_support
+    conv at hx_mem_support =>
+      erw [OptionT.support_mk, support_pure]
+      simp only [
+        Set.mem_singleton_iff, Option.some.injEq, Set.setOf_eq_eq_singleton, Prod.mk.injEq,
+        OptionT.mem_support_iff,
+        OptionT.run_monadLift, support_map, Set.mem_image, exists_eq_right, Fin.succ_one_eq_two,
+        id_eq, guard_eq, bind_pure_comp,
+        toPFunctor_add, toPFunctor_emptySpec, OptionT.support_run, ↓existsAndEq, and_true, true_and,
+        exists_eq_right_right', liftM_pure, support_pure, exists_eq_left]
+      dsimp only [monadLift, MonadLift.monadLift]
+    simp only [Fin.isValue, Challenge, ChallengeIdx,
+      liftComp_eq_liftM, liftM_pure, liftComp_pure, support_pure, Set.mem_singleton_iff,
+      Fin.reduceLast, MessageIdx, Message] at hx_mem_support
+    -- Step 2b: Extract the challenge r1 and the trace equations
+    rcases hx_mem_support with ⟨prvWitOut, h_prvOut_mem_support, h_verOut_mem_support⟩
+    conv at h_prvOut_mem_support =>
+      dsimp only [finalSumcheckStepLogic]
+      simp only [Fin.val_last, Fin.isValue, Prod.mk.injEq, and_true]
+    -- Step 2c: Simplify the verifier computation
+    conv at h_verOut_mem_support =>
+      erw [simulateQ_bind]
+      simp only [Set.mem_singleton_iff]
+      change some (verStmtOut, verOStmtOut) ∈ (liftComp _ _).support
+      rw [support_liftComp]
+      dsimp only [Functor.map]
+      erw [support_bind]
+      simp only [Fin.isValue, Fin.val_last, OptionT.simulateQ_simOracle2_liftM_query_T2, pure_bind,
+        OptionT.simulateQ_bind, toPFunctor_emptySpec, Function.comp_apply, OptionT.simulateQ_pure,
+        Set.mem_iUnion, exists_prop]
+      rw [simulateQ_ite]; erw [simulateQ_pure]
+      simp only [OptionT.simulateQ_failure']
 
-    -- Step 2g: Rewrite all variables to their concrete values
-    rw [
-      h_ver_stmtOut_eq_support, h_ver_stmtOut_eq,
-      h_ver_oracle_eq_support,  h_ver_OstmtOut_eq,
-      -- h_wit_eq_support,         h_logic_wit, -- not used since both are `True`
-      h_prv_stmtOut_eq_support, h_logic_stmt,
-      h_prv_oracle_eq_support,  h_logic_oracle
-    ]
+    set V_check := step.verifierCheck stmtIn
+      (FullTranscript.mk1
+        (msg0 := _))with h_V_check_def
 
-    -- Step 2h: Complete the proof using logic properties
+    -- Step 2e: Apply the logic completeness lemma
+    obtain ⟨h_V_check, h_rel, h_agree⟩ := strongly_complete (stmtIn := stmtIn)
+      (witIn := witIn) (h_relIn := h_relIn) (challenges :=
+      fun ⟨j, hj⟩ => by
+        match j with
+        | 0 =>
+          have hj_ne : (pSpecFinalSumcheckStep (L := L)).dir 0 ≠ Direction.V_to_P := by
+            dsimp only [pSpecFinalSumcheckStep, Fin.isValue, Matrix.cons_val_zero]
+            simp only [ne_eq, reduceCtorEq, not_false_eq_true]
+          exfalso
+          exact hj_ne hj
+      )
+
+    have h_V_check_is_true : V_check := h_V_check
+    simp only [h_V_check_is_true, ↓reduceIte, Fin.isValue] at h_verOut_mem_support
+    erw [support_bind, support_pure] at h_verOut_mem_support
+    simp only [Set.mem_singleton_iff, Fin.isValue, Set.iUnion_iUnion_eq_left,
+      OptionT.support_OptionT_pure_run, exists_eq_left, Option.some.injEq,
+      Prod.mk.injEq] at h_verOut_mem_support
+    rcases h_verOut_mem_support with ⟨verStmtOut_eq, verOStmtOut_eq⟩
+
+    obtain ⟨prvStmtOut_eq, prvOStmtOut_eq⟩ := h_prvOut_mem_support
+
     constructor
-    · -- relOut holds
+    · rw [verStmtOut_eq, verOStmtOut_eq];
       exact h_rel
-    · -- Prover and verifier agree
-      constructor
-      · rfl  -- Statement agreement
-      · exact h_agree.2  -- Oracle agreement
+    · constructor
+      · rw [verStmtOut_eq, prvStmtOut_eq]; rfl
+      · rw [verOStmtOut_eq, prvOStmtOut_eq];
+        exact h_agree.2
 
 /-- RBR knowledge error for the final sumcheck step -/
 def finalSumcheckKnowledgeError (m : pSpecFinalSumcheckStep (L := L).ChallengeIdx) :
@@ -1436,8 +1512,8 @@ def FinalSumcheckWit := fun (m : Fin (1 + 1)) =>
 /-- The round-by-round extractor for the final sumcheck step -/
 noncomputable def finalSumcheckRbrExtractor :
   Extractor.RoundByRound []ₒ
-    (StmtIn := (Statement (L := L) (SumcheckBaseContext L ℓ) (Fin.last ℓ)) × (∀ j, OracleStatement 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ  (Fin.last ℓ) j))
+    (StmtIn := (Statement (L := L) (SumcheckBaseContext L ℓ) (Fin.last ℓ)) ×
+      (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j))
     (WitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
     (WitOut := Unit)
     (pSpec := pSpecFinalSumcheckStep (L := L))
@@ -1480,27 +1556,25 @@ def finalSumcheckKStateProp {m : Fin (1 + 1)} (tr : Transcript m (pSpecFinalSumc
     let i_msg0 : tr_so_far.MessageIdx := ⟨⟨0, by omega⟩, rfl⟩
     let c : L := (ProtocolSpec.Transcript.equivMessagesChallenges (k := 1)
       (pSpec := pSpecFinalSumcheckStep (L := L)) tr).1 i_msg0
-
     let stmtOut : FinalSumcheckStatementOut (L := L) (ℓ := ℓ) := {
       ctx := stmt.ctx,
       sumcheck_target := stmt.sumcheck_target,
       challenges := stmt.challenges,
       final_constant := c
     }
-
     let sumcheckFinalCheck : Prop := stmt.sumcheck_target = eqTilde r stmt.challenges * c
     let finalFoldingProp := finalFoldingStateProp 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_le := by
         apply Nat.le_of_dvd;
         · exact Nat.pos_of_neZero ℓ
         · exact hdiv.out) (input := ⟨stmtOut, oStmt⟩)
-
     sumcheckFinalCheck ∧ finalFoldingProp -- local checks ∧ (oracleConsitency ∨ badEventExists)
 
 /-- The knowledge state function for the final sumcheck step -/
 noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (finalSumcheckVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).KnowledgeStateFunction init impl
+    (finalSumcheckVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).KnowledgeStateFunction
+      init impl
     (relIn := roundRelation 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑) (mp := BBF_SumcheckMultiplierParam) (Fin.last ℓ) )
     (relOut := finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) )
@@ -1517,10 +1591,12 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
   toFun_full := fun stmt tr witOut h => by
     sorry
 
+ omit [Fintype L] [CharP L 2] in
 /-- Round-by-round knowledge soundness for the final sumcheck step -/
 theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness [Fintype L] {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (finalSumcheckVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).rbrKnowledgeSoundness init impl
+    (finalSumcheckVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).rbrKnowledgeSoundness
+      init impl
       (relIn := roundRelation 𝔽q β (ϑ := ϑ) (𝓑 := 𝓑)
         (mp := BBF_SumcheckMultiplierParam) (Fin.last ℓ) )
       (relOut := finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) )

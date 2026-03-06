@@ -19,6 +19,8 @@ management automatically, reducing boilerplate in protocol-specific completeness
 - `unroll_n_message_reduction_perfectCompleteness`: A generic lemma that bridges an n-message
   oracle reduction to its pure logic, handling induction unrolling, query implementation
   routing, and state peeling.
+- `unroll_0_message_reduction_perfectCompleteness`: A specific lemma for 0-message protocols
+  (e.g., relay steps), deriving the explicit no-round form from the generic theorem.
 - `unroll_2_message_reduction_perfectCompleteness`: A specific lemma for 2-message protocols
   (e.g., P→V, V→P), deriving the explicit step-by-step form from the generic theorem.
 - `unroll_1_message_reduction_perfectCompleteness_P_to_V`: A specific lemma for 1-message protocols
@@ -95,7 +97,6 @@ variable {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
   {ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
   [∀ i, OracleInterface (OStmtIn i)] --[∀ i, OracleInterface (OStmtOut i)]
   {n : ℕ} {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)]
-  [∀ i, Fintype (pSpec.Challenge i)] [∀ i, Inhabited (pSpec.Challenge i)]
   [[pSpec.Challenge]ₒ.Fintype] [[pSpec.Challenge]ₒ.Inhabited]
   [∀ i, OracleInterface (pSpec.Message i)]
 
@@ -387,6 +388,62 @@ theorem unroll_n_message_reduction_perfectCompleteness
 
 end GenericProtocol
 
+section ZeroMessageProtocol
+
+variable {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
+{StmtIn WitIn StmtOut WitOut : Type}
+{ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
+[∀ i, OracleInterface (OStmtIn i)] -- [∀ i, OracleInterface (OStmtOut i)]
+{pSpec : ProtocolSpec 0} [∀ i, SampleableType (pSpec.Challenge i)]
+[[pSpec.Challenge]ₒ.Fintype] [[pSpec.Challenge]ₒ.Inhabited]
+[∀ i, OracleInterface (pSpec.Message i)]
+
+/-- **Derive 0-message version from generic n-message theorem**
+
+This theorem handles protocols with no interaction rounds. It is useful for relay-style
+steps (e.g., `pSpecRelay`) where the prover outputs immediately and the verifier checks
+against the empty transcript.
+-/
+theorem unroll_0_message_reduction_perfectCompleteness
+    (reduction : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec)
+    (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
+    (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hInit : NeverFail init)
+    (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
+      Prod.fst <$> ((QueryImpl.mapQuery impl q).run s).support = (liftQuery q).support) :
+    OracleReduction.perfectCompleteness init impl relIn relOut reduction ↔
+    ∀ (stmtIn : StmtIn) (oStmtIn : ∀ i, OStmtIn i) (witIn : WitIn),
+      ((stmtIn, oStmtIn), witIn) ∈ relIn →
+      Pr[fun ((prvStmt, prvOStmt), (verStmt, verOStmt), witOut) =>
+          ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt
+        | ((do
+          let ⟨⟨prvStmtOut, prvOStmtOut⟩, witOut⟩ ←
+            liftComp
+              (reduction.prover.output (reduction.prover.input ((stmtIn, oStmtIn), witIn)))
+              (oSpec + [pSpec.Challenge]ₒ)
+          let verifierStmtOut ← liftComp
+            (reduction.verifier.toVerifier.verify (stmtIn, oStmtIn) default)
+            (oSpec + [pSpec.Challenge]ₒ)
+          pure ((prvStmtOut, prvOStmtOut), verifierStmtOut, witOut)
+        ) : OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
+            ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) ×
+              (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut))
+      ] = 1 := by
+  rw [unroll_n_message_reduction_perfectCompleteness (n := 0) (reduction := reduction)
+    relIn relOut init impl hInit hImplSupp]
+  apply forall_congr'; intro stmtIn
+  apply forall_congr'; intro oStmtIn
+  apply forall_congr'; intro witIn
+  apply imp_congr_right; intro h_relIn
+  simp only [Prover.runToRound]
+  have h_last_eq_zero : (Fin.last 0) = 0 := rfl
+  rw! (castMode := .all) [h_last_eq_zero]
+  simp only [Fin.induction_zero]
+  dsimp only [ChallengeIdx, Challenge, Fin.isValue, Fin.reduceLast, liftComp_eq_liftM]
+  simp only [liftM_pure, bind_pure_comp, pure_bind, Prod.mk.eta]
+
+end ZeroMessageProtocol
+
 section OneMessageProtocol
 
 variable {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
@@ -394,7 +451,6 @@ variable {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
 {ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
 [∀ i, OracleInterface (OStmtIn i)] -- [∀ i, OracleInterface (OStmtOut i)]
 {pSpec : ProtocolSpec 1} [∀ i, SampleableType (pSpec.Challenge i)]
-[∀ i, Fintype (pSpec.Challenge i)] [∀ i, Inhabited (pSpec.Challenge i)]
 [[pSpec.Challenge]ₒ.Fintype] [[pSpec.Challenge]ₒ.Inhabited]
 [∀ i, OracleInterface (pSpec.Message i)]
 
@@ -543,7 +599,6 @@ variable {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
   {ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
   [∀ i, OracleInterface (OStmtIn i)] -- [∀ i, OracleInterface (OStmtOut i)]
   {pSpec : ProtocolSpec 2} [∀ i, SampleableType (pSpec.Challenge i)]
-  [∀ i, Fintype (pSpec.Challenge i)] [∀ i, Inhabited (pSpec.Challenge i)]
   [[pSpec.Challenge]ₒ.Fintype] [[pSpec.Challenge]ₒ.Inhabited]
   [∀ i, OracleInterface (pSpec.Message i)]
 

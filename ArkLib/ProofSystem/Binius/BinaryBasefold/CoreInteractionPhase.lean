@@ -140,7 +140,7 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
 /-- Perfect completeness of the non-commitment round reduction follows by append composition
     of the fold-round and the transfer-round reductions. -/
 theorem foldRelayOracleReduction_perfectCompleteness
-    (hInit : init.neverFails) (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i)
+    (hInit : NeverFail init) (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i)
     [(i : pSpecFold.ChallengeIdx) → Fintype ((pSpecFold (L := L)).Challenge i)]
     [(i : pSpecFold.ChallengeIdx) → Inhabited ((pSpecFold (L := L)).Challenge i)] :
   OracleReduction.perfectCompleteness
@@ -232,7 +232,7 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
 
 /-- Perfect completeness for Fold+Commitment block by append composition. -/
 theorem foldCommitOracleReduction_perfectCompleteness
-    (hInit : init.neverFails) (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i)
+    (hInit : NeverFail init) (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i)
     [(i : pSpecFold.ChallengeIdx) → Fintype ((pSpecFold (L := L)).Challenge i)]
     [(i : pSpecFold.ChallengeIdx) → Inhabited ((pSpecFold (L := L)).Challenge i)]
     [(j : (pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).ChallengeIdx) →
@@ -819,11 +819,12 @@ end composedOracleRedutions
 
 section SecurityProps
 
-variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
+variable {σ : Type} {init : ProbComp σ}
+  {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
 /-- Perfect completeness for a single non-last block -/
-lemma nonLastSingleBlockOracleReduction_perfectCompleteness (hInit : init.neverFails)
-    (bIdx : Fin (ℓ / ϑ - 1)) :
+lemma nonLastSingleBlockOracleReduction_perfectCompleteness
+    (hInit : NeverFail init) (bIdx : Fin (ℓ / ϑ - 1)) :
     OracleReduction.perfectCompleteness (init := init) (impl := impl)
       (relIn := strictRoundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
@@ -907,7 +908,7 @@ lemma nonLastSingleBlockOracleReduction_perfectCompleteness (hInit : init.neverF
           strictRoundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
             (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
             (⟨↑bIdx * ϑ + ↑i, by simp only [bIdx_mul_ϑ_add_i_cast_lt_ℓ_succ]⟩ : Fin (ℓ + 1)))
-        (init := init) (impl := impl) (hInit := hInit)
+        (init := init) (impl := impl)
     apply foldRelayRoundsPerfectCompleteness
     intro (i : Fin (ϑ - 1))
     have hNCR : ¬ isCommitmentRound ℓ ϑ ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩ :=
@@ -970,7 +971,7 @@ lemma nonLastSingleBlockOracleReduction_perfectCompleteness (hInit : init.neverF
       (i := ⟨bIdx * ϑ + (ϑ - 1), h1⟩) (hInit := hInit)
 
 /-- Perfect completeness for the last block -/
-lemma lastBlockOracleReduction_perfectCompleteness (hInit : init.neverFails) :
+lemma lastBlockOracleReduction_perfectCompleteness (hInit : NeverFail init) :
     OracleReduction.perfectCompleteness (init := init) (impl := impl)
       (relIn := strictRoundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
@@ -1049,7 +1050,7 @@ lemma lastBlockOracleReduction_perfectCompleteness (hInit : init.neverFails) :
     (rel := fun i ↦
       strictRoundRelation (mp := mp) 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
         (⟨↑bIdx * ϑ + ↑i, lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (hx:=by omega)⟩ : Fin (ℓ + 1)))
-    (init := init) (impl := impl) (hInit := hInit)
+    (init := init) (impl := impl)
   apply foldRelayRoundsPerfectCompleteness
   intro (i : Fin ϑ)
   have hNCR : ¬ isCommitmentRound ℓ ϑ ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩ :=
@@ -1060,7 +1061,7 @@ lemma lastBlockOracleReduction_perfectCompleteness (hInit : init.neverFails) :
   exact res
 
 /-- Perfect completeness for the core interaction oracle reduction -/
-theorem sumcheckFoldOracleReduction_perfectCompleteness :
+theorem sumcheckFoldOracleReduction_perfectCompleteness (hInit : NeverFail init) :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecSumcheckFold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (relIn := strictRoundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
@@ -1157,7 +1158,6 @@ theorem sumcheckFoldOracleReduction_perfectCompleteness :
         (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (bIdx:=bIdx))
       (impl := impl)
       (init := init)
-      hInit
     intro bIdx
     -- Prove perfectCompleteness for each individual block
     exact nonLastSingleBlockOracleReduction_perfectCompleteness 𝔽q β (ϑ:=ϑ) (mp := mp)
@@ -1231,7 +1231,7 @@ def coreInteractionOracleReduction :=
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
 /-- Perfect completeness for the core interaction oracle reduction -/
-theorem coreInteractionOracleReduction_perfectCompleteness (hInit : init.neverFails)
+theorem coreInteractionOracleReduction_perfectCompleteness (hInit : NeverFail init)
     [(j : pSpecFold.ChallengeIdx) → Fintype ((pSpecFold (L := L)).Challenge j)]
     [(j : pSpecFold.ChallengeIdx) → Inhabited ((pSpecFold (L := L)).Challenge j)]
     [(j : pSpecFold.ChallengeIdx) → SampleableType ((pSpecFold (L := L)).Challenge j)]
@@ -1254,9 +1254,10 @@ theorem coreInteractionOracleReduction_perfectCompleteness (hInit : init.neverFa
   · -- Perfect completeness of sumcheckFoldOracleReduction
     exact sumcheckFoldOracleReduction_perfectCompleteness 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (mp := BBF_SumcheckMultiplierParam)
-      (init := init) (impl := impl)
+      (init := init) (impl := impl) (hInit := hInit)
   · -- Perfect completeness of finalSumcheckOracleReduction
-    exact finalSumcheckOracleReduction_perfectCompleteness 𝔽q β (ϑ:=ϑ) (𝓑:=𝓑) init impl
+    exact finalSumcheckOracleReduction_perfectCompleteness 𝔽q β
+      (ϑ:=ϑ) (𝓑:=𝓑) (init := init)  (hInit := hInit) (impl := impl)
 
 def coreInteractionOracleRbrKnowledgeError (j : (pSpecCoreInteraction 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).ChallengeIdx) : ℝ≥0 :=
