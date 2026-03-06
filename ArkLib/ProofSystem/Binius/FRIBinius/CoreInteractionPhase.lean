@@ -93,12 +93,10 @@ def sumcheckFoldCtxLens : OracleContext.Lens
     toFunA := fun ⟨⟨outerStmtIn, outerOStmtIn⟩, outerWitIn⟩ => by
       let t : L⦃≤ 1⦄[X Fin ℓ'] := outerWitIn.t'
       let H : L⦃≤ 2⦄[X Fin (ℓ' - 0)] := outerWitIn.H
-
       let P₀ : L⦃< 2^ℓ'⦄[X] := polynomialFromNovelCoeffsF₂ K β ℓ' (by omega)
         (fun ω => t.val.eval (bitsOfIndex ω))
       let f₀ : (sDomain K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
         ⟨0, by omega⟩ → L := fun x => P₀.val.eval x.val
-
       exact { t := t, H := H, f := f₀ }
     toFunB := fun ⟨⟨outerStmtIn, outerOStmtIn⟩, outerWitIn⟩
       ⟨⟨innerStmtOut, innerOStmtOut⟩, innerWitOut⟩ => innerWitOut
@@ -416,7 +414,6 @@ noncomputable def finalSumcheckVerifier :
     let eq_tilde_eval : L := RingSwitching.compute_final_eq_value κ L K
       (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l
       stmtIn.ctx.t_eval_point stmtIn.challenges stmtIn.ctx.r_batching
-
     -- 9. `V` requires `s_{ℓ'} ?= (Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1},`
       -- `r''_0, ..., r''_{κ-1}) ⋅ e_u) ⋅ s'`.
     unless stmtIn.sumcheck_target = eq_tilde_eval * s' do
@@ -429,7 +426,6 @@ noncomputable def finalSumcheckVerifier :
         challenges := 0,
         final_constant := 0,
       }
-
     -- Return the final sumcheck statement with the constant
     let stmtOut : BinaryBasefold.FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ') := {
       ctx := {
@@ -541,7 +537,6 @@ def finalSumcheckKStateProp {m : Fin (1 + 1)} (tr : Transcript m (pSpecFinalSumc
     let i_msg0 : tr_so_far.MessageIdx := ⟨⟨0, by omega⟩, rfl⟩
     let s' : L := (ProtocolSpec.Transcript.equivMessagesChallenges (k := 1)
       (pSpec := pSpecFinalSumcheckStep (L := L)) tr).1 i_msg0
-
     let stmtOut : BinaryBasefold.FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ') := {
       -- Dummy unused values
       ctx := {
@@ -553,7 +548,6 @@ def finalSumcheckKStateProp {m : Fin (1 + 1)} (tr : Transcript m (pSpecFinalSumc
       challenges := stmt.challenges,
       final_constant := s'
     }
-
     let sumcheckFinalCheck : Prop := stmt.sumcheck_target = compute_final_eq_value κ L K
       (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l
       stmt.ctx.t_eval_point stmt.challenges stmt.ctx.r_batching * s'
@@ -562,7 +556,6 @@ def finalSumcheckKStateProp {m : Fin (1 + 1)} (tr : Transcript m (pSpecFinalSumc
         apply Nat.le_of_dvd;
         · exact Nat.pos_of_neZero ℓ'
         · exact hdiv.out) (input := ⟨stmtOut, oStmt⟩)
-
     sumcheckFinalCheck ∧ finalFoldingProp -- local checks ∧ (oracleConsitency ∨ badEventExists)
 
 /-- The knowledge state function for the final sumcheck step -/

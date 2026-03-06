@@ -38,7 +38,6 @@ import ArkLib.Data.CodingTheory.ProximityGap.DG25
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.EllipticCurve.BN254
 import ArkLib.Data.FieldTheory.AdditiveNTT.AdditiveNTT
-import ArkLib.Data.FieldTheory.AdditiveNTT.NovelPolynomialBasis
 import ArkLib.Data.Fin.Basic
 import ArkLib.Data.Fin.BigOperators
 import ArkLib.Data.Fin.Fold

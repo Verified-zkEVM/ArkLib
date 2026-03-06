@@ -7,12 +7,10 @@ import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 import ArkLib.ProofSystem.Binius.BinaryBasefold.ReductionLogic
 import ArkLib.OracleReduction.Completeness
 import ArkLib.OracleReduction.Basic
--- import VCVio.OracleComp.Coercions.Append
 import ArkLib.Data.Misc.Basic
 
 set_option maxHeartbeats 400000  -- Increase if needed
 set_option profiler true
--- set_option profiler.threshold 50  -- Show anything taking over 10ms
 
 namespace Binius.BinaryBasefold.QueryPhase
 
@@ -53,7 +51,7 @@ section IndexBounds
 omit [NeZero ℓ] in
 @[simp]
 lemma k_mul_ϑ_lt_ℓ {k : Fin (ℓ / ϑ)} :
-  ↑k * ϑ < ℓ := by
+    ↑k * ϑ < ℓ := by
   have h_mul_eq : (ℓ/ϑ) * ϑ = ℓ := Nat.div_mul_cancel hdiv.out
   calc ↑k * ϑ < (ℓ / ϑ) * ϑ := Nat.mul_lt_mul_of_pos_right k.isLt (NeZero.pos ϑ)
     _ = ℓ := h_mul_eq
@@ -75,12 +73,12 @@ lemma k_succ_mul_ϑ_le_ℓ_₂ {k : Fin (ℓ / ϑ)} : (k.val * ϑ + ϑ) ≤ ℓ 
 omit [NeZero r] [NeZero ℓ] [NeZero 𝓡] in
 @[simp]
 lemma lt_r_of_le_ℓ {h_ℓ_add_R_rate : ℓ + 𝓡 < r} {x : ℕ} (h : x ≤ ℓ)
-  : x < r := by omega
+    : x < r := by omega
 
 omit [NeZero r] [NeZero ℓ] [NeZero 𝓡] in
 @[simp]
 lemma lt_r_of_lt_ℓ {h_ℓ_add_R_rate : ℓ + 𝓡 < r} {x : ℕ} (h : x < ℓ)
-  : x < r := by omega
+    : x < r := by omega
 
 end IndexBounds
 open scoped NNReal
@@ -124,9 +122,13 @@ lemma polyToOracleFunc_eq_getFirstOracle
     (t : MultilinearPoly L ℓ)
     (i : Fin (ℓ + 1))
     (challenges : Fin i → L)
-    (oStmt : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i j)
-    (h_consistency : strictOracleFoldingConsistencyProp 𝔽q β (t := t) (i := i) (challenges := challenges) (oStmt := oStmt)) :
-    let P₀ : L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) (fun ω => t.val.eval (bitsOfIndex ω))
+    (oStmt :
+      ∀ j, OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i j)
+    (h_consistency :
+      strictOracleFoldingConsistencyProp 𝔽q β (t := t) (i := i)
+        (challenges := challenges) (oStmt := oStmt)) :
+    let P₀ : L[X]_(2 ^ ℓ) :=
+      polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) (fun ω => t.val.eval (bitsOfIndex ω))
     let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
     f₀ = getFirstOracle 𝔽q β oStmt := by
   intro P₀ f₀
@@ -155,19 +157,10 @@ def decomposeChallenge (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
     (h_destIdx : destIdx = i.val + steps)
     (h_destIdx_le : destIdx ≤ ℓ) :
     Fin (2^steps) × sDomain 𝔽q β h_ℓ_add_R_rate destIdx :=
-  (extractMiddleFinMask 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (v:=v) (i:=i) (steps:=steps),
-   extractSuffixFromChallenge 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (v:=v) (destIdx:=destIdx) (h_destIdx_le:=h_destIdx_le))
-
--- TODO: KEY LEMMA for connecting fiber queries to challenge decomposition
--- lemma joinBits_decomposeChallenge_eq (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, _⟩)
---     (i steps : ℕ) (h : i + steps ≤ ℓ) :
---     let (fiberIdx, suffix) := decomposeChallenge v i steps h
---     let suffix_fin := sDomainToFin suffix
---     Nat.joinBits fiberIdx suffix_fin =
---       sDomainToFin (extractSuffixFromChallenge ... ) := by sorry
-
--- TODO: Lemma connecting queryFiberPoints to extractMiddleFinMask
--- lemma queryFiberPoints_at_extractMiddleFinMask ...
+  (extractMiddleFinMask 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (v := v) (i := i) (steps := steps),
+    extractSuffixFromChallenge 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (v := v) (destIdx := destIdx) (h_destIdx_le := h_destIdx_le))
 
 /-- This proposition declaratively captures the iterative logic of the verifier. For each repetition
 and each folding step, it asserts that the folded value of the function from level `i` must equal
@@ -214,7 +207,7 @@ def proximityChecksSpec (γ_challenges :
       let f_i_on_fiber : Fin (2^ϑ) → L := fun u =>
         let x: Fin (2 ^ (ℓ + 𝓡 - i)) := by
           let fiber_point_num_repr := Nat.joinBits (low := u) (high := next_suffix_of_v_fin)
-          simp at fiber_point_num_repr
+          simp only at fiber_point_num_repr
           have h: 2 ^ (ℓ + 𝓡 - (i + ϑ) + ϑ) = 2 ^ (ℓ + 𝓡 - i) := by
             simp only [Nat.ofNat_pos, ne_eq, OfNat.ofNat_ne_one, not_false_eq_true,
               pow_right_inj₀]
@@ -228,9 +221,12 @@ def proximityChecksSpec (γ_challenges :
       -- Compute the next value using localized fold matrix form
       let cur_challenge_batch : Fin ϑ → L := fun j => fold_challenges ⟨i + j.val, by omega⟩
 
-      let c_next : L := single_point_localized_fold_matrix_form 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i:=⟨i, by omega⟩) (steps:=ϑ) (destIdx:=destIdx)
-        (h_destIdx:=by dsimp only [destIdx]) (h_destIdx_le:=by omega)
-        (r_challenges:=cur_challenge_batch) (y:=next_suffix_of_v) (fiber_eval_mapping:=f_i_on_fiber)
+      let c_next : L :=
+        single_point_localized_fold_matrix_form 𝔽q β
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨i, by omega⟩) (steps := ϑ)
+          (destIdx := destIdx) (h_destIdx := by dsimp only [destIdx]) (h_destIdx_le := by omega)
+          (r_challenges := cur_challenge_batch) (y := next_suffix_of_v)
+          (fiber_eval_mapping := f_i_on_fiber)
 
       -- NOTE: at i, we do the consistency check FOR THE NEXT LEVEL (`i + ϑ`):
       -- `c_next ?= f^(i + ϑ)(v_{i + ϑ}, ..., v_{ℓ+R-1})`, the final check is also covered
@@ -278,8 +274,10 @@ def getChallengeSuffix (k : Fin (ℓ / ϑ)) (v : sDomain 𝔽q β h_ℓ_add_R_ra
       (v:=v) (destIdx := ⟨k.val * ϑ + ϑ, by omega⟩) (h_destIdx_le:=by omega)
 
 def challengeSuffixToFin (k : Fin (ℓ / ϑ))
-  (suffix : sDomain 𝔽q β h_ℓ_add_R_rate ⟨k.val * ϑ + ϑ, by
-    have := k_succ_mul_ϑ_le_ℓ_₂ (k := k); omega⟩) : Fin (2 ^ (ℓ + 𝓡 - (k.val * ϑ + ϑ))) :=
+    (suffix : sDomain 𝔽q β h_ℓ_add_R_rate ⟨k.val * ϑ + ϑ, by
+      have := k_succ_mul_ϑ_le_ℓ_₂ (k := k)
+      omega⟩) :
+    Fin (2 ^ (ℓ + 𝓡 - (k.val * ϑ + ϑ))) :=
   let i := k.val * ϑ
   have h_i_add_ϑ_le_ℓ : i + ϑ ≤ ℓ := k_succ_mul_ϑ_le_ℓ_₂ (k := k)
   let destIdx : Fin r := ⟨i + ϑ, by omega⟩
@@ -327,18 +325,21 @@ making it easier to prove properties about each component separately.
 noncomputable def queryFiberPoints
     (k : Fin (ℓ / ϑ))
     (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩) :
-    OptionT (OracleComp ([]ₒ + ([OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ + [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ)))
+    OptionT
+      (OracleComp
+        ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ +
+          [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ)))
       (Vector L (2^ϑ)) := do
   let k_th_oracleIdx : Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)) :=
     ⟨k, by simp only [toOutCodewordsCount, Fin.val_last, lt_self_iff_false, ↓reduceIte, add_zero,
       Fin.is_lt]⟩
   -- 2. Map over the Vector monadically
-  let results : Vector L (2^ϑ) ← (⟨Array.finRange (2^ϑ), by simp only [Array.size_finRange]⟩
-    : Vector (Fin (2^ϑ)) (2^ϑ)).mapM (fun (u : Fin (2^ϑ)) => do
-    queryCodeword 𝔽q β (γ_repetitions := γ_repetitions) (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (j := k_th_oracleIdx) (point :=
-        getFiberPoint 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (k := k) (v := v) (u := u))
-  )
+  let results : Vector L (2^ϑ) ←
+    (⟨Array.finRange (2^ϑ), by simp only [Array.size_finRange]⟩
+      : Vector (Fin (2^ϑ)) (2^ϑ)).mapM (fun (u : Fin (2^ϑ)) => do
+        queryCodeword 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (j := k_th_oracleIdx)
+          (point := getFiberPoint 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (k := k) (v := v) (u := u)))
   pure results
 
 /-- Check a single folding step: query fiber points, verify consistency, and compute next value.
@@ -366,7 +367,9 @@ noncomputable def checkSingleFoldingStep
     calc i ≤ ℓ - ϑ := by omega
       _ < ℓ := by
         apply Nat.sub_lt (by exact Nat.pos_of_neZero ℓ) (by exact Nat.pos_of_neZero ϑ)
-  let f_i_on_fiber ← queryFiberPoints 𝔽q β (γ_repetitions := γ_repetitions) (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k_val v
+  let f_i_on_fiber ←
+    queryFiberPoints 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k_val v
   -- Check consistency if i > 0
   if h_i_pos : i > 0 then
     let oracle_point_idx := extractMiddleFinMask 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -378,9 +381,11 @@ noncomputable def checkSingleFoldingStep
     getChallengeSuffix (k := k_val) (v := v)
   let cur_challenge_batch : Fin ϑ → L := fun j =>
     stmt.challenges ⟨i + j.val, by simp only [Fin.val_last]; omega⟩
-  let c_next : L := single_point_localized_fold_matrix_form 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-    (i:=⟨i, by omega⟩) (steps:=ϑ) (destIdx:=destIdx) (h_destIdx:=by dsimp only [destIdx])
-    (h_destIdx_le:=by omega) (r_challenges:=cur_challenge_batch) (y:=next_suffix_of_v)
+  let c_next : L :=
+    single_point_localized_fold_matrix_form 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := ⟨i, by omega⟩) (steps := ϑ) (destIdx := destIdx)
+      (h_destIdx := by dsimp only [destIdx]) (h_destIdx_le := by omega)
+      (r_challenges := cur_challenge_batch) (y := next_suffix_of_v)
     (fiber_eval_mapping := f_i_on_fiber.get)
   return c_next
 
@@ -448,7 +453,8 @@ noncomputable def queryPhaseLogicStep :
       challenges ⟨0, by rfl⟩
     for rep in (List.finRange γ_repetitions) do
       let v := fold_challenges rep
-      let _ ← checkSingleRepetition 𝔽q β (γ_repetitions := γ_repetitions) (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      let _ ← checkSingleRepetition 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         v stmtIn stmtIn.final_constant
     return true  -- StmtOut = Bool for QueryPhase
 
@@ -526,7 +532,6 @@ noncomputable def queryOracleVerifier :
     (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
 
   verify := fun stmtIn challenges => do
-    -- ⊢ OracleComp ([]ₒ + ([OracleStatement 𝔽q β ϑ (Fin.last ℓ)]ₒ + [(pSpecQuery 𝔽q β γ_repetitions).Message]ₒ)) Bool
     let transcript := FullTranscript.mk1 (pSpec := pSpecQuery 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) (challenges ⟨0, by rfl⟩)
     let logic := queryPhaseLogicStep 𝔽q β (ϑ:=ϑ) γ_repetitions
@@ -565,9 +570,11 @@ noncomputable def queryOracleProof : OracleProof
     (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   queryOracleReduction 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
 
-lemma OracleComp.liftM_query_eq_liftM_liftM.{u, v, z} {ι : Type u} {spec : OracleSpec ι} {m : Type v → Type z}
-  [MonadLift (OracleComp spec) m] {α : Type v}
-  (q : OracleQuery spec α) : (liftM q : m α) = liftM (liftM q : OracleComp spec α) := rfl
+lemma OracleComp.liftM_query_eq_liftM_liftM.{u, v, z}
+    {ι : Type u} {spec : OracleSpec ι} {m : Type v → Type z}
+    [MonadLift (OracleComp spec) m] {α : Type v}
+    (q : OracleQuery spec α) :
+    (liftM q : m α) = liftM (liftM q : OracleComp spec α) := rfl
 
 omit [CharP L 2] [SampleableType L] in
 lemma mem_support_queryFiberPoints
@@ -575,24 +582,30 @@ lemma mem_support_queryFiberPoints
     {oraclePositionIdx : Fin (ℓ / ϑ)} (v : sDomain 𝔽q β h_ℓ_add_R_rate 0)
     (f_i_on_fiber : Vector L (2 ^ ϑ))
     (stmtIn : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
-    (oStmtIn : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
+    (oStmtIn :
+      ∀ j, OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
     (witIn : Unit)
     (challenges : (pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenges)
     -- Hypothesis: The fiber evaluations come from the simulated oracle query
     (h_fiber_mem :
-      let step := queryPhaseLogicStep 𝔽q β (ϑ := ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      let step := queryPhaseLogicStep 𝔽q β (ϑ := ϑ) γ_repetitions
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
       let so := OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmtIn transcript.messages
       some (f_i_on_fiber) ∈
-      (simulateQ.{0, 0, 0} so ((queryFiberPoints 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oraclePositionIdx v))).support):
+      (simulateQ.{0, 0, 0} so
+        ((queryFiberPoints 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oraclePositionIdx v))).support) :
     let k_th_oracleIdx: Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)) :=
       ⟨oraclePositionIdx, by simp only [toOutCodewordsCount, Fin.val_last,
         lt_self_iff_false, ↓reduceIte, add_zero, Fin.is_lt];⟩
 
-    ∀ (fiberIndex : Fin (2 ^ ϑ)), f_i_on_fiber.get fiberIndex =
+    ∀ (fiberIndex : Fin (2 ^ ϑ)),
+      f_i_on_fiber.get fiberIndex =
       (oStmtIn k_th_oracleIdx (getFiberPoint 𝔽q β oraclePositionIdx v fiberIndex)) := by
   simp only [MessageIdx] at h_fiber_mem
-  set step := queryPhaseLogicStep 𝔽q β (ϑ := ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate) with h_step
+  set step := queryPhaseLogicStep 𝔽q β (ϑ := ϑ) γ_repetitions
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) with h_step
   set transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges with h_transcript
   set so := OracleInterface.simOracle2 []ₒ oStmtIn transcript.messages with h_so
   -- rw [simulateQ_liftComp] at h_fiber_mem

@@ -74,15 +74,12 @@ theorem forall_eq_bind_pure_iff {α β γ}
     (∀ (x : γ), ∀ a ∈ A, ∀ b ∈ B a, x = f a b → P x) ↔
     (∀ a ∈ A, ∀ b ∈ B a, P (f a b)) := by
   constructor
-  · -- Forward direction: Use the hypothesis with x := f a b
-    intro h a ha b hb
+  · intro h a ha b hb
     exact h (f a b) a ha b hb rfl
-  · -- Backward direction: Substitute x with f a b
-    intro h x a ha b hb hx
+  · intro h x a ha b hb hx
     rw [hx]
     exact h a ha b hb
 
--- 3. Nested Set version (Crucial for your goal): ∀ z, ∀ x ∈ S, ∀ y ∈ T, z = f x y → P z x y
 theorem forall_eq_lift_mem_2 {α β γ} {S : Set α} {T : α → Set β}
     (f : α → β → γ) (p : γ → α → β → Prop) :
     (∀ (c : γ), ∀ a ∈ S, ∀ b ∈ T a, c = f a b → p c a b) ↔
@@ -92,10 +89,9 @@ theorem forall_eq_lift_mem_2 {α β γ} {S : Set α} {T : α → Set β}
   · intro h c a ha b hb heq; rw [heq]; exact h a ha b hb
 
 variable {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
-
   {StmtIn WitIn StmtOut WitOut : Type}
   {ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
-  [∀ i, OracleInterface (OStmtIn i)] --[∀ i, OracleInterface (OStmtOut i)]
+  [∀ i, OracleInterface (OStmtIn i)]
   {n : ℕ} {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)]
   [[pSpec.Challenge]ₒ.Fintype] [[pSpec.Challenge]ₒ.Inhabited]
   [∀ i, OracleInterface (pSpec.Message i)]
@@ -130,20 +126,18 @@ theorem unroll_n_message_reduction_perfectCompleteness
       Pr[fun ((prvStmt, prvOStmt), (verStmt, verOStmt), witOut) =>
           ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt
         | ((do
-            -- Run prover to the last step (abstractly, without unfolding)
             let ⟨transcript, state⟩ ←
               liftM (reduction.prover.runToRound (Fin.last n) (stmtIn, oStmtIn) witIn)
-            -- Extract prover's output
             let ⟨⟨prvStmtOut, prvOStmtOut⟩, witOut⟩ ← liftComp
               (reduction.prover.output state)
               (oSpec + [pSpec.Challenge]ₒ)
-            -- Run verifier on the transcript
             let verifierStmtOut ← liftComp
               (reduction.verifier.toVerifier.verify (stmtIn, oStmtIn) transcript)
               (oSpec + [pSpec.Challenge]ₒ)
             pure ((prvStmtOut, prvOStmtOut), verifierStmtOut, witOut)
           ) : OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
-              ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) × (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut))
+              ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) ×
+                (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut))
         ] = 1 := by
   unfold OracleReduction.perfectCompleteness
   simp only [Reduction.perfectCompleteness_eq_prob_one]
@@ -162,9 +156,7 @@ theorem unroll_n_message_reduction_perfectCompleteness
 
   conv_lhs =>
     simp only
-    -- dsimp only [OptionT.mk]
     rw [OptionT.probFailure_mk_bind_eq_zero_iff]
-    -- rw [probFailure_bind_eq_zero_iff]
 
   conv_lhs =>
     simp only [h_init_probFailure_eq_0, true_and]
@@ -208,17 +200,12 @@ theorem unroll_n_message_reduction_perfectCompleteness
   simp only [liftM_bind]
   simp only [ChallengeIdx, Challenge, liftM_pure, bind_pure_comp, liftM_OptionT_eq, Prod.mk.eta,
     bind_assoc, bind_map_left, OptionT.support_mk, Set.mem_setOf_eq, Prod.mk.injEq,
-    liftComp_eq_liftM, probFailure_bind_eq_zero_iff, OptionT.mem_support_iff, -- OptionT.run_monadLift,
-    support_map, Set.mem_image, Option.some.injEq, exists_eq_right, probFailure_map, Prod.forall,
-    support_bind, Set.mem_iUnion, toPFunctor_add, exists_eq_right_right, exists_and_left,
-    exists_prop, ↓existsAndEq, and_true, Prod.exists, true_and, and_imp, forall_exists_index]
+    liftComp_eq_liftM, probFailure_bind_eq_zero_iff, OptionT.mem_support_iff, probFailure_map,
+    Prod.forall, support_bind, support_map, Set.mem_iUnion, Set.mem_image, toPFunctor_add,
+    Prod.exists, ↓existsAndEq, and_true, true_and, exists_and_left, exists_prop,
+    forall_exists_index, and_imp]
   rw [OptionT.probFailure_mk_do_bind_bindT_eq_zero_iff]
-  -- conv_lhs =>
-    -- simp only [liftComp_eq_liftM]
-  -- rw [OptionT.probFailure_mk_do_bind_bindT_eq_zero_iff]
-  simp only [probFailure_bind_eq_zero_iff, probFailure_pure, implies_true, and_true,
-    probFailure_liftM, probFailure_liftComp, support_liftComp, support_liftM,
-    OptionT.probFailure_mk_do_bindT_eq_zero_iff, OptionT.probFailure_liftM, OptionT.support_liftM]
+  simp only [OptionT.probFailure_mk_do_bindT_eq_zero_iff]
   simp only [OracleReduction.toReduction]
 
   have h_init_support_nonempty := support_nonempty_of_neverFails init hInit
@@ -234,10 +221,6 @@ theorem unroll_n_message_reduction_perfectCompleteness
     simp only [h_init_support_nonempty, true_implies]
   conv_lhs =>
     enter [1, 1]
-    -- simp only [liftM_bind]
-    -- rw [probFailure_bind_eq_zero_iff]
-  -- simp only [probFailure_bind_eq_zero_iff, probFailure_pure, implies_true, and_true,
-  -- simp only [OptionT.probFailure_liftM, HasEvalPMF.probFailure_eq_zero]
   simp only [and_assoc]
   apply and_congr_right
   intro h_prover_execution_neverFails
@@ -257,20 +240,19 @@ theorem unroll_n_message_reduction_perfectCompleteness
   · apply and_congr
     · constructor
       · intro h tr lastPrvState h_mem_prvRun stmtOut oStmtOut witOut h_mem_prvOutput_support
-        -- exact h ⟨tr, lastPrvState⟩ h_mem_prvRun
         have h_res := h ⟨tr, lastPrvState⟩ (by simpa using h_mem_prvRun)
           ⟨⟨stmtOut, oStmtOut⟩, witOut⟩ (by simpa only using h_mem_prvOutput_support)
         simp only [OptionT.probFailure_bind_pure_comp_eq_zero_iff] at h_res
         exact h_res
-      · intro h ⟨tr, lastPrvState⟩ h_mem_prvRun ⟨⟨stmtOut, oStmtOut⟩, witOut⟩ h_mem_prvOutput_support
+      · intro h ⟨tr, lastPrvState⟩ h_mem_prvRun ⟨⟨stmtOut, oStmtOut⟩, witOut⟩
+          h_mem_prvOutput_support
         simp only
         have h_res := h tr lastPrvState (by simpa only using h_mem_prvRun)
           stmtOut oStmtOut witOut (by simpa only using h_mem_prvOutput_support)
         simp only [OptionT.probFailure_bind_pure_comp_eq_zero_iff]
         exact h_res
     · apply and_congr
-      ·
-        constructor
+      · constructor
         · intro h pStmtOut pOStmtOut vStmtOut vOstmtOut witOut tr h_vOut
             lastPrvState h_mem_prvRun h_pOut
           have h_res := h tr pStmtOut pOStmtOut witOut vStmtOut vOstmtOut (by
@@ -285,19 +267,12 @@ theorem unroll_n_message_reduction_perfectCompleteness
                 · exact h_vOut
                 · simp only [OptionT.support_OptionT_pure_run, Set.mem_singleton_iff]
           )
-            -- (by simpa using h_vOut) (by simpa using h_mem_prvRun) (by simpa using h_pOut)
           exact h_res
         · intro h tr pStmtOut pOStmtOut witOut vStmtOut vOstmtOut h_exists_tr_lastPrvState
-          --   h_mem_prvOutput_support h_mem_ver
-          -- exact h tr lastPrvState h_mem_prvRun stmtOut oStmtOut witOut h_mem_prvOutput_support
-          --   verifierStmtOut h_mem_ver
-          -- 1. Extract the individual states and execution proofs from the chain
-          rcases h_exists_tr_lastPrvState with ⟨a, b, h_prv, a_1, b_1, b_2, h_out, a_2, b_ver, h_ver, h_pure⟩
-          -- 2. The innermost proposition is a pure support membership. Simplify it into equalities.
+          rcases h_exists_tr_lastPrvState with
+            ⟨a, b, h_prv, a_1, b_1, b_2, h_out, a_2, b_ver, h_ver, h_pure⟩
           simp only [OptionT.support_OptionT_pure_run, Set.mem_singleton_iff, Option.some.injEq,
             Prod.mk.injEq] at h_pure
-          -- 3. Destruct the nested tuple equalities to align the variables.
-          -- This forces Lean to substitute `a` with `tr`, `b_2` with `witOut`, `a_2` with `vStmtOut`, etc.
           rcases h_pure with ⟨⟨rfl, ⟨rfl, rfl⟩, rfl⟩, rfl, rfl⟩
           exact
             SetRel.mem_inv.mp
@@ -305,83 +280,45 @@ theorem unroll_n_message_reduction_perfectCompleteness
                 h_prv h_out)
       · apply and_congr
         · constructor
-          ·
-            -- 1. Introduce the hypotheses, renaming the variables for sanity
-            intro hLeft pStmtOut pOStmtOut vStmtOut vOStmtOut witOut tr h_ver lastPrvState h_mem_prvRun h_pOut
-
-            -- 2. Apply the master hypothesis to the specific variables we just introduced
+          · intro hLeft pStmtOut pOStmtOut vStmtOut vOStmtOut witOut
+              tr h_ver lastPrvState h_mem_prvRun h_pOut
             apply hLeft tr pStmtOut pOStmtOut witOut vStmtOut vOStmtOut
-
-            -- 3. The goal is now the massive existential chain. We provide the witnesses sequentially.
-
-            -- Prover Rounds
             use tr, lastPrvState
             refine ⟨h_mem_prvRun, ?_⟩
-
-            -- Prover Output
             use pStmtOut, pOStmtOut, witOut
             refine ⟨h_pOut, ?_⟩
-
-            -- Verifier Output
             use vStmtOut, vOStmtOut
-
-            -- 4. Split into the verifier execution and the pure tuple assembly
             refine ⟨?_, rfl⟩
             dsimp only [OptionT.run] at h_ver
             simp only [OptionT.mem_support_simulateQ_liftQuery_iff, liftM_OptionT_eq]
             exact h_ver
-          · -- 1. Introduce hypotheses. Lean auto-generated x, x_1, etc., so we keep them for the intro
-            -- and rename the existential block to h_mem.
-            intro hRight tr pStmtOut pOStmtOut pWitOut vStmtOut vOStmtOut h_exists_tr_lastPrvState
-            -- 1. Extract the individual states, outputs, and execution proofs from the chain
-            rcases h_exists_tr_lastPrvState with ⟨a, b, h_prv, a_1, b_1, b_2, h_out, a_2, b_ver, h_ver, h_pure⟩
-
-            -- 2. Simplify the innermost pure support membership into raw equalities
+          · intro hRight tr pStmtOut pOStmtOut pWitOut vStmtOut vOStmtOut h_exists_tr_lastPrvState
+            rcases h_exists_tr_lastPrvState with
+              ⟨a, b, h_prv, a_1, b_1, b_2, h_out, a_2, b_ver, h_ver, h_pure⟩
             simp only [OptionT.support_OptionT_pure_run, Set.mem_singleton_iff, Option.some.injEq,
               Prod.mk.injEq] at h_pure
-
-            -- 3. Destruct the nested tuple equalities.
-            -- This forces Lean to substitute `a` with `tr`, `a_1` with `pStmtOut`, `a_2` with `vStmtOut`, etc.
             rcases h_pure with ⟨⟨rfl, ⟨rfl, rfl⟩, rfl⟩, rfl, rfl⟩
             exact (hRight pStmtOut pOStmtOut vStmtOut vOStmtOut pWitOut tr h_ver b h_prv h_out)
         · constructor
-          · -- mp: combined support membership → x_2 = x_5
-            intro hLeft pStmtOut pOstmtOut vStmtOut vOstmtOut pWitOut tr h_vOut lastPrvState h_mem_prvRun h_pOut
+          · intro hLeft pStmtOut pOstmtOut vStmtOut vOstmtOut pWitOut
+              tr h_vOut lastPrvState h_mem_prvRun h_pOut
             have h_res := hLeft tr pStmtOut pOstmtOut pWitOut vStmtOut vOstmtOut (by
-            -- 1. Provide witnesses for the Prover Rounds
               use tr, lastPrvState
-
-              -- Split the `∧` into the Prover Rounds subgoal and the rest of the chain
               refine ⟨?_, ?_⟩
-
-              · -- Subgoal 1: Prove the Prover Rounds execution
-                -- `liftM (...).support` is definitionally equivalent to `(...).run.support` here.
-                exact h_mem_prvRun
-
-              -- 2. Provide witnesses for the Prover Output
+              · exact h_mem_prvRun
               · use pStmtOut, pOstmtOut, pWitOut
                 refine ⟨?_, ?_⟩
-
-                · -- Subgoal 2: Prove the Prover Output execution
-                  exact h_pOut
+                · exact h_pOut
                 · use vStmtOut, vOstmtOut
                   refine ⟨?_, rfl⟩
-                  · -- Subgoal 3: Prove the Verifier Output execution
-                    exact h_vOut
+                  · exact h_vOut
             )
             exact h_res
-          · -- mpr: decomposed witnesses → x_2 = x_5
-            intro hRight tr pStmtOut pOstmtOut pWitOut vStmtOut vOstmtOut h_exists_tr_lastPrvState
-             --   h_mem_prvOutput_support h_mem_ver
-            -- exact h tr lastPrvState h_mem_prvRun stmtOut oStmtOut witOut h_mem_prvOutput_support
-            --   verifierStmtOut h_mem_ver
-            -- 1. Extract the individual states and execution proofs from the chain
-            rcases h_exists_tr_lastPrvState with ⟨a, b, h_prv, a_1, b_1, b_2, h_out, a_2, b_ver, h_ver, h_pure⟩
-            -- 2. The innermost proposition is a pure support membership. Simplify it into equalities.
+          · intro hRight tr pStmtOut pOstmtOut pWitOut vStmtOut vOstmtOut h_exists_tr_lastPrvState
+            rcases h_exists_tr_lastPrvState with
+              ⟨a, b, h_prv, a_1, b_1, b_2, h_out, a_2, b_ver, h_ver, h_pure⟩
             simp only [OptionT.support_OptionT_pure_run, Set.mem_singleton_iff, Option.some.injEq,
               Prod.mk.injEq] at h_pure
-            -- 3. Destruct the nested tuple equalities to align the variables.
-            -- This forces Lean to substitute `a` with `tr`, `b_2` with `witOut`, `a_2` with `vStmtOut`, etc.
             rcases h_pure with ⟨⟨rfl, ⟨rfl, rfl⟩, rfl⟩, rfl, rfl⟩
             exact (hRight pStmtOut pOstmtOut vStmtOut vOstmtOut pWitOut tr h_ver b h_prv h_out)
 
@@ -393,7 +330,7 @@ section ZeroMessageProtocol
 variable {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
 {StmtIn WitIn StmtOut WitOut : Type}
 {ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
-[∀ i, OracleInterface (OStmtIn i)] -- [∀ i, OracleInterface (OStmtOut i)]
+[∀ i, OracleInterface (OStmtIn i)]
 {pSpec : ProtocolSpec 0} [∀ i, SampleableType (pSpec.Challenge i)]
 [[pSpec.Challenge]ₒ.Fintype] [[pSpec.Challenge]ₒ.Inhabited]
 [∀ i, OracleInterface (pSpec.Message i)]
@@ -449,7 +386,7 @@ section OneMessageProtocol
 variable {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
 {StmtIn WitIn StmtOut WitOut : Type}
 {ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
-[∀ i, OracleInterface (OStmtIn i)] -- [∀ i, OracleInterface (OStmtOut i)]
+[∀ i, OracleInterface (OStmtIn i)]
 {pSpec : ProtocolSpec 1} [∀ i, SampleableType (pSpec.Challenge i)]
 [[pSpec.Challenge]ₒ.Fintype] [[pSpec.Challenge]ₒ.Inhabited]
 [∀ i, OracleInterface (pSpec.Message i)]
@@ -466,7 +403,7 @@ The strategy is:
 3. Simplify to get the explicit 2-step form (send message, output)
 -/
 theorem unroll_1_message_reduction_perfectCompleteness_P_to_V
-  (reduction : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec)
+    (reduction : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec)
   (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
   (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
   (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hInit : NeverFail init)
@@ -493,34 +430,28 @@ theorem unroll_1_message_reduction_perfectCompleteness_P_to_V
       ) : OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
           ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) × (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut))
     ] = 1 := by
--- 1. Apply the generic theorem for n = 1
-rw [unroll_n_message_reduction_perfectCompleteness (n := 1) (reduction := reduction)
-  relIn relOut init impl hInit hImplSupp]
--- 2. Peel off the quantifiers to get to the ProbComp execution
-apply forall_congr'; intro stmtIn
-apply forall_congr'; intro oStmtIn
-apply forall_congr'; intro witIn
-apply imp_congr_right; intro h_relIn
--- 3. Unfold Prover.runToRound
-simp only [Prover.runToRound]
-have h_last_eq_one : (Fin.last 1) = 1 := rfl
--- 4. Set the limit to 1
-rw! (castMode := .all) [h_last_eq_one]
--- 5. Focus on the LHS (Generic Execution)
-conv_lhs =>
-  rw [Fin.induction_one'] -- Reduces induction 0 to pure init
-  rw [Prover.processRound_P_to_V (h := hDir0)]
-  simp only
-dsimp only [ChallengeIdx, Challenge, Fin.isValue, Fin.castSucc_zero, Fin.succ_zero_eq_one, Message,
-  liftComp_eq_liftM]
-simp only [Fin.isValue, bind_pure_comp, pure_bind, liftM_map, Prod.mk.eta,
-  bind_map_left]
-congr!
-rename_i _ prvState1 prvOut
-all_goals
-  -- unfold FullTranscript.mk1 Transcript.concat Fin.snoc
-  funext i
-  fin_cases i <;> rfl
+  rw [unroll_n_message_reduction_perfectCompleteness (n := 1) (reduction := reduction)
+    relIn relOut init impl hInit hImplSupp]
+  apply forall_congr'; intro stmtIn
+  apply forall_congr'; intro oStmtIn
+  apply forall_congr'; intro witIn
+  apply imp_congr_right; intro h_relIn
+  simp only [Prover.runToRound]
+  have h_last_eq_one : (Fin.last 1) = 1 := rfl
+  rw! (castMode := .all) [h_last_eq_one]
+  conv_lhs =>
+    rw [Fin.induction_one']
+    rw [Prover.processRound_P_to_V (h := hDir0)]
+    simp only
+  dsimp only [ChallengeIdx, Challenge, Fin.isValue, Fin.castSucc_zero, Fin.succ_zero_eq_one,
+    Message, liftComp_eq_liftM]
+  simp only [Fin.isValue, bind_pure_comp, pure_bind, liftM_map, Prod.mk.eta,
+    bind_map_left]
+  congr!
+  rename_i _ prvState1 prvOut
+  all_goals
+    funext i
+    fin_cases i <;> rfl
 
 /-- **Derive 1-message V→P version from generic n-message theorem**
 
@@ -597,7 +528,7 @@ section TwoMessageProtocol
 variable {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
   {StmtIn WitIn StmtOut WitOut : Type}
   {ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
-  [∀ i, OracleInterface (OStmtIn i)] -- [∀ i, OracleInterface (OStmtOut i)]
+  [∀ i, OracleInterface (OStmtIn i)]
   {pSpec : ProtocolSpec 2} [∀ i, SampleableType (pSpec.Challenge i)]
   [[pSpec.Challenge]ₒ.Fintype] [[pSpec.Challenge]ₒ.Inhabited]
   [∀ i, OracleInterface (pSpec.Message i)]
