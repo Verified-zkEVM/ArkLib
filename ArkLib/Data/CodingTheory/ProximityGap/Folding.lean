@@ -112,6 +112,14 @@ lemma fold_def {domain : ι ↪ F} {f : Word F ι} {k : ℕ} {α : F}
   :
   fold domain f k α x = (foldAux domain f k x).eval α := rfl
 
+lemma fold_pow_x_k {domain : ι ↪ F} {f : Word F ι} {k : ℕ}
+  {i : ι}
+  :
+  fold domain f k (domain i) ((domain i) ^ k) = 
+    f i := by
+  unfold fold foldAux
+  rw [Lagrange.eval_interpolate_at_node] <;> try simp
+
 noncomputable def foldWord (domain : ι ↪ F) (f : Word F ι) (k : ℕ) (α : F) 
   :
   Word F (iotaK domain k) 
@@ -482,12 +490,21 @@ lemma indicated_polynomial_comp_x_k_natDegree
     rw [h]
     exact foldAux_natDegree
 
-private lemma domain_card 
-    {domain : ι ↪ F} {k : ℕ}
-    (h_k : k ≠ 0)
-    :
-    #{i | ∃ i', domain i' ^ k = domain i} ≤ Fintype.card ι / k := by sorry
-
+private lemma poly_eval_lemma {f : Polynomial (Polynomial F)} {x : F}
+  {k : ℕ}
+  :
+  Polynomial.eval x
+    (Polynomial.eval 
+        Polynomial.X 
+        (Polynomial.map (Polynomial.X ^ k).compRingHom f)) = 
+             (Polynomial.eval 
+               x 
+               (Polynomial.map 
+                (Polynomial.evalRingHom (x ^ k))
+                f)) := by  
+  induction f using Polynomial.induction_on ; aesop;
+  · aesop;
+  · simp_all +decide [ pow_succ, mul_assoc, Polynomial.eval_map ]
 
 private lemma master_lemma 
   [Nonempty ι]
@@ -502,11 +519,14 @@ private lemma master_lemma
       = foldAuxCoeff domain f k i (domain j))
   {d : ℕ}
   (h_d : k < d)
+  (h_k_card : k ≤ Fintype.card F)
   (h_u_deg : ∀ i, (u i).natDegree < d / k)
   :
   ∃ f' : Polynomial F, 
     f'.natDegree < d 
-      ∧ hammingDist f (fun x => f'.eval (domain x)) ≤ Fintype.card ι - k * s.card := by 
+      ∧ hammingDist f (fun x => f'.eval (domain x)) 
+        ≤ Fintype.card ι - 
+          ({i ∈ Finset.product Finset.univ s | (domain i.1) ^ k = domain i.2} : Finset (ι × ι)).card := by 
   let s_f := (Finset.image domain s)
   let s' := s_f.pickSubset (d / k)
   by_cases h_empty : s = ∅ 
@@ -566,18 +586,39 @@ private lemma master_lemma
       rw [Finset.card_sdiff]
       apply Nat.sub_le_sub_left
       simp        
-
-          
-      · sorry 
-
-
-
-
-
-  
-  
-
-
-
+      apply Finset.card_le_card_of_injOn
+        (f := fun i => i.1)
+      · rintro ⟨a₁, a₂⟩ ha
+        simp at ha
+        simp
+        rw [poly_eval_lemma]
+        rcases ha with ⟨h_a_s, h_eq⟩
+        rw [h_eq]
+        by_cases h_s'_card_le : d / k ≤  s'.card 
+        · rw [indicated_polynomial_eq_foldAux' (by aesop) ] <;> try assumption
+          · rw [←fold_def, ←h_eq, fold_pow_x_k]
+          · intro i x hx
+            have h_x : ∃ j ∈ s, x = domain j := by
+              simp [s'] at hx
+              have hx : x ∈ s_f := Finset.mem_of_subset (pick_subset_subset) hx
+              simp [s_f] at hx
+              tauto
+            rcases h_x with ⟨j, ⟨h_j, h_x⟩⟩
+            rw [h_x]
+            rw [h_u i ]
+            assumption
+          · intro i
+            exact lt_of_lt_of_le (h_u_deg i) h_s'_card_le
+        · simp at h_s'_card_le
+          have h : s' = s_f := by
+            simp only [s'] at h_s'_card_le
+            simp only [s']
+            apply pick_subset_eq_s_of_card_pick_subset_lt_n h_s'_card_le
+          rw [h]
+          rw [h] at h_s'_card_le
+          rw [←eval_comm, indicated_polynomial_eq_foldAux (by simp [s_f, h_a_s])]
+          rw [←h_eq, ←fold_def, fold_pow_x_k]
+      · rintro ⟨x₁, x₂⟩ hx ⟨y₁, y₂⟩ hy
+        aesop
 
 end ProximityGap
