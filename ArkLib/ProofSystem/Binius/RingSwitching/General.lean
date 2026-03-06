@@ -42,7 +42,7 @@ variable (mlIOPCS : MLIOPCS L ℓ')
 
 def batchingCoreVerifier :=
   OracleVerifier.append (oSpec:=[]ₒ)
-    (V₁:= BatchingPhase.oracleVerifier κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) mlIOPCS.toAbstractOStmtIn)
+    (V₁:= BatchingPhase.batchingOracleVerifier κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) mlIOPCS.toAbstractOStmtIn)
     (pSpec₁:=pSpecBatching κ L K)
     (V₂:=SumcheckPhase.coreInteractionOracleVerifier κ L K β ℓ ℓ' h_l (𝓑 := 𝓑)
       mlIOPCS.toAbstractOStmtIn)
@@ -105,20 +105,20 @@ section SecurityProperties
 variable {σ : Type} (init : ProbComp σ) {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
 omit [(i : mlIOPCS.pSpec.ChallengeIdx) → SampleableType (mlIOPCS.pSpec.Challenge i)] in
-lemma batchingCore_perfectCompleteness :
+lemma batchingCore_perfectCompleteness (hInit : NeverFail init) :
   (batchingCoreReduction κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) mlIOPCS).perfectCompleteness
   (pSpec := pSpecLargeFieldReduction κ L K ℓ')
   (relIn := BatchingPhase.batchingInputRelation κ L K β ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
   (relOut := mlIOPCS.toRelInput)
   (init:=init) (impl:=impl) := by
   apply OracleReduction.append_perfectCompleteness
-  · exact BatchingPhase.batchingReduction_perfectCompleteness κ L K β ℓ ℓ' h_l
+  · exact BatchingPhase.batchingReduction_perfectCompleteness (hInit:=hInit) κ L K β ℓ ℓ' h_l
       (𝓑 := 𝓑) mlIOPCS.toAbstractOStmtIn
   · exact SumcheckPhase.coreInteraction_perfectCompleteness
-      κ L K β ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn (impl:=impl)
+      (hInit:=hInit) κ L K β ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn (impl:=impl)
 
 omit [(i : mlIOPCS.pSpec.ChallengeIdx) → SampleableType (mlIOPCS.pSpec.Challenge i)] in
-theorem fullOracleReduction_perfectCompleteness :
+theorem fullOracleReduction_perfectCompleteness (hInit : NeverFail init) :
   (fullOracleReduction κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) mlIOPCS).perfectCompleteness
     (relIn := BatchingPhase.batchingInputRelation κ L K β ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
     (relOut := acceptRejectOracleRel)
@@ -127,7 +127,7 @@ theorem fullOracleReduction_perfectCompleteness :
      := by
   apply OracleReduction.append_perfectCompleteness (Oₛ₃:=by
     exact fun _ ↦ OracleInterface.instDefault)
-  · exact batchingCore_perfectCompleteness κ L K β ℓ ℓ' h_l mlIOPCS init
+  · exact batchingCore_perfectCompleteness (hInit:=hInit) κ L K β ℓ ℓ' h_l mlIOPCS init
   · exact mlIOPCS.perfectCompleteness
 
 def batchingCoreRbrKnowledgeError
@@ -158,7 +158,7 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness {𝓑 : Fin 2 ↪ L} :
     (rel₁:=fullInputRelation κ L K β ℓ ℓ' h_l mlIOPCS)
     (rel₂:=sumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) mlIOPCS.toAbstractOStmtIn 0)
     (rel₃:=mlIOPCS.toRelInput)
-    (V₁:=BatchingPhase.oracleVerifier κ L K β ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
+    (V₁:=BatchingPhase.batchingOracleVerifier κ L K β ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
     (V₂:=SumcheckPhase.coreInteractionOracleVerifier κ L K β ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
     (rbrKnowledgeError₁:=BatchingPhase.batchingRBRKnowledgeError κ L K)
     (rbrKnowledgeError₂:=SumcheckPhase.coreInteractionRbrKnowledgeError L ℓ')

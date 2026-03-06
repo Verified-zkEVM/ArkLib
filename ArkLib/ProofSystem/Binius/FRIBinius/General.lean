@@ -76,7 +76,7 @@ end Pspec
 
 def batchingCoreVerifier :=
   OracleVerifier.append (oSpec:=[]ₒ)
-    (V₁:= RingSwitching.BatchingPhase.oracleVerifier κ (L := L) (K := K) (𝓑 := 𝓑)
+    (V₁:= RingSwitching.BatchingPhase.batchingOracleVerifier κ (L := L) (K := K) (𝓑 := 𝓑)
       (β:=booleanHypercubeBasis κ L K β) ℓ ℓ' h_l
       (aOStmtIn := BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate))
     (pSpec₁ := RingSwitching.pSpecBatching κ L K)
@@ -175,7 +175,7 @@ noncomputable def fullOracleProof :
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
 /-- Perfect completeness for the full Binary Basefold protocol (reduction) -/
-theorem fullOracleReduction_perfectCompleteness :
+theorem fullOracleReduction_perfectCompleteness (hInit : NeverFail init) :
   OracleReduction.perfectCompleteness
     (oracleReduction := fullOracleReduction κ L K β ℓ ℓ' 𝓡 ϑ γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l (𝓑:=𝓑))
@@ -211,15 +211,15 @@ theorem fullOracleReduction_perfectCompleteness :
           𝓡 ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) 0)
         (rel₃ := BinaryBasefold.strictFinalSumcheckRelOut K β (ϑ:=ϑ)
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      · apply BatchingPhase.batchingReduction_perfectCompleteness κ L K
+      · apply BatchingPhase.batchingReduction_perfectCompleteness (hInit:=hInit) κ L K
           (β:=booleanHypercubeBasis κ L K β) ℓ ℓ' h_l (𝓑 := 𝓑)
           (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
       · apply CoreInteractionPhase.coreInteractionOracleReduction_perfectCompleteness
           κ (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (𝓡 := 𝓡) (ϑ := ϑ)
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) hInit
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (hInit:=hInit)
     )
     (h₂ := QueryPhase.queryOracleProof_perfectCompleteness K β γ_repetitions
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) init impl)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) (hInit:=hInit) init impl)
 
 -- TODO: state RBR KS
 

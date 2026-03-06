@@ -105,10 +105,11 @@ noncomputable def fullOracleProof :
 ## Security Properties
 -/
 
-variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
+variable {σ : Type} {init : ProbComp σ}
+  {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
 /-- Perfect completeness for the full Binary Basefold protocol (reduction) -/
-theorem fullOracleReduction_perfectCompleteness :
+theorem fullOracleReduction_perfectCompleteness (hInit : NeverFail init) :
   OracleReduction.perfectCompleteness
     (oracleReduction := fullOracleReduction 𝔽q β γ_repetitions (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑))
@@ -130,11 +131,11 @@ theorem fullOracleReduction_perfectCompleteness :
     (rel₃ := acceptRejectOracleRel)
     (h₁ := by
       apply CoreInteraction.coreInteractionOracleReduction_perfectCompleteness 𝔽q β
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) (𝓑:=𝓑)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) (𝓑:=𝓑) (hInit := hInit)
     )
     (h₂ := by
       apply QueryPhase.queryOracleProof_perfectCompleteness 𝔽q β γ_repetitions (ϑ:=ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) init impl
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (init := init) (hInit := hInit) (impl := impl)
     )
 
 open scoped NNReal

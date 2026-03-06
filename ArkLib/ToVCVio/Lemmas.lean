@@ -8,12 +8,93 @@ universe u v w
 
 variable {ι : Type u} {spec : OracleSpec ι} {α β γ ω : Type u}
 
+-- section subSpec_id
+
+-- /- These instances are only used for proving lemmas about the id-spec
+-- liftings, e.g. `support_liftComp_self`. We don't expose them since they
+-- introduce some conflicts with other instances. -/
+
+-- private instance instSubSpec_id : spec ⊂ₒ spec where
+--   monadLift q := q
+--   liftM_map _q _f := rfl
+
+-- private instance instLawfulSubSpec_id : LawfulSubSpec spec spec where
+--   cont_bijective t := by
+--     refine ⟨?_, ?_⟩
+--     · intro x y hxy
+--       simpa [instSubSpec_id] using hxy
+--     · intro y
+--       refine ⟨y, ?_⟩
+--       simp [instSubSpec_id]
+-- end subSpec_id
 variable {m : Type u → Type v} [Monad m]
 variable [HasEvalSPMF m] {mx : m α} {p q : α → Prop}
 
 -- probFailure_bind_eq_zero_iff and loggingOracle.probFailure_simulateQ are in VCVio
 
+/-- Direct support form: if `none` has zero probability, then `none` is not in support. -/
+lemma not_mem_support_none_of_probOutput_none_eq_zero
+    {α : Type u} (oa : m (Option α)) (hnone : Pr[=none | oa] = 0) :
+    (none : Option α) ∉ support oa := by
+  exact (probOutput_eq_zero_iff oa (none : Option α)).1 hnone
+
+/-- If `none` has zero probability in an option-valued computation,
+every element in its support must be a successful output `some _`. -/
+lemma exists_eq_some_of_mem_support_of_probOutput_none_eq_zero
+    {α : Type u} (oa : m (Option α)) {x : Option α}
+    (hx : x ∈ support oa) (hnone : Pr[=none | oa] = 0) :
+    ∃ a, x = some a := by
+  have hnone_not_mem : (none : Option α) ∉ support oa :=
+    (probOutput_eq_zero_iff oa (none : Option α)).1 hnone
+  cases hx_opt : x with
+  | none =>
+      exact False.elim (hnone_not_mem (by simpa [hx_opt] using hx))
+  | some a =>
+      exact ⟨a, rfl⟩
+
+/-- `none` cannot be in support when it has zero probability. -/
+lemma ne_none_of_mem_support_of_probOutput_none_eq_zero
+    {α : Type u} (oa : m (Option α)) {x : Option α}
+    (hx : x ∈ support oa) (hnone : Pr[=none | oa] = 0) :
+    x ≠ none := by
+  rcases exists_eq_some_of_mem_support_of_probOutput_none_eq_zero
+    (oa := oa) (x := x) hx hnone with ⟨a, ha⟩
+  simp [ha]
+
+/-- Useful rewrite form for option-valued pure computations. -/
+@[simp]
+lemma probOutput_none_pure_some_eq_zero
+    {α : Type u} (x : α) :
+    Pr[=none | (pure (some x) : m (Option α))] = 0 := by
+  simp
+
 namespace OptionT
+
+@[simp]
+lemma probOutput_none_pure_eq_zero {m : Type u → Type v} [Monad m] [HasEvalSPMF m]
+    {α : Type u} (x : α) :
+    Pr[=none | OptionT.run (OptionT.pure x : OptionT m α)] = 0 := by
+  change Pr[=(none : Option α) | (pure (some x) : m (Option α))] = 0
+  simp
+
+/-- Bridge `OptionT` failure-freeness to run-level zero probability of `none`. -/
+lemma probOutput_none_run_eq_zero_of_probFailure_eq_zero
+    {m : Type u → Type v} [Monad m] [HasEvalPMF m]
+    {α : Type u} {mx : OptionT m α} (hfail : Pr[⊥ | mx] = 0) :
+    Pr[=none | OptionT.run mx] = 0 := by
+  have hfail_run : Pr[⊥ | OptionT.run mx] + Pr[=none | OptionT.run mx] = 0 := by
+    simpa [OptionT.probFailure_eq] using hfail
+  simpa [HasEvalPMF.probFailure_eq_zero] using hfail_run
+
+/-- OptionT run-level support form of failure-freeness. -/
+lemma not_mem_support_run_none_of_probFailure_eq_zero
+    {m : Type u → Type v} [Monad m] [HasEvalPMF m]
+    {α : Type u} (mx : OptionT m α) (hfail : Pr[⊥ | mx] = 0) :
+    (none : Option α) ∉ support (m := m) (α := Option α) (OptionT.run mx) := by
+  have hnone : Pr[=none | OptionT.run mx] = 0 :=
+    probOutput_none_run_eq_zero_of_probFailure_eq_zero (mx := mx) hfail
+  exact _root_.not_mem_support_none_of_probOutput_none_eq_zero
+    (oa := OptionT.run mx) hnone
 
 lemma probFailure_mk {m : Type u → Type v} [Monad m] [HasEvalSPMF m]
     {α : Type u} (mx : m (Option α)) :
@@ -91,6 +172,19 @@ lemma mem_support_OptionT_pure_run_some_iff {m : Type u → Type v} [Monad m] [H
     {α : Type u} (x y : α) :
     some y ∈ support (m := m) (α := Option α) (OptionT.pure x) ↔ y = x := by
   simp [support_OptionT_pure_run]
+
+/-- OptionT run-level specialization: if `mx` has zero failure probability,
+every run-support element is `some _`. -/
+lemma exists_eq_some_of_mem_support_run_of_probFailure_eq_zero
+    {m : Type u → Type v} [Monad m] [HasEvalPMF m]
+    {α : Type u} (mx : OptionT m α) {x : Option α}
+    (hx : x ∈ support (m := m) (α := Option α) (OptionT.run mx))
+    (hfail : Pr[⊥ | mx] = 0) :
+    ∃ a, x = some a := by
+  have hnone : Pr[=none | OptionT.run mx] = 0 :=
+    probOutput_none_run_eq_zero_of_probFailure_eq_zero (mx := mx) hfail
+  exact _root_.exists_eq_some_of_mem_support_of_probOutput_none_eq_zero
+    (oa := OptionT.run mx) (x := x) hx hnone
 
 /-- OptionT-native alias of generic `probFailure_pure`. -/
 @[simp]
@@ -331,6 +425,19 @@ lemma mem_support_simulateQ_liftQuery_some_iff
   simpa using (mem_support_simulateQ_liftQuery_iff
     (spec := spec) (superSpec := superSpec) (oa := oa) (x := some x))
 
+/-- **Generic**: any element of the range of a query is in the support of
+  `simulateQ (fun t => liftM (query t)) (liftM (query t))` (identity simulation).
+  Simplifies goals like `x ∈ support (simulateQ (fun t => liftM (query t)) (liftM (getChallenge i)))`. -/
+@[simp]
+lemma mem_support_simulateQ_id'_liftM_query {ι : Type*} {spec : OracleSpec ι}
+    (t : spec.Domain) (x : spec.Range t) :
+    x ∈ support (simulateQ (fun s => liftM (query (spec := spec) s)) (liftM (query (spec := spec) t)) :
+      OracleComp spec (spec.Range t)) := by
+  have heq : (fun s => liftM (query (spec := spec) s)) = QueryImpl.id' spec := by
+    ext s; exact QueryImpl.id'_apply s
+  rw [heq, simulateQ_id', OracleComp.support_query]
+  exact Set.mem_univ x
+
 /-! this lemma makes goal more friendly to `OracleComp.probOutput_liftComp` -/
 @[simp 1100]
 lemma run_liftComp_eq {ι' : Type w} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
@@ -409,6 +516,28 @@ lemma support_liftComp {ι' : Type w} {superSpec : OracleSpec ι'}
     simp_rw [ih]
 
 alias liftComp_support := support_liftComp
+
+@[simp]
+lemma liftComp_id
+    [spec.Fintype] [spec.Inhabited]
+    (oa : OracleComp spec α) : liftComp oa spec = oa := by
+  change simulateQ (fun t => (liftM (query (spec := spec) t) : OracleComp spec _)) oa = oa
+  have heq :
+      (fun t => (liftM (query (spec := spec) t) : OracleComp spec _)) = QueryImpl.id' spec := by
+    funext t
+    rfl
+  rw [heq, simulateQ_id']
+
+abbrev liftComp_self [spec.Fintype] [spec.Inhabited]
+  (oa : OracleComp spec α) : liftComp oa spec = oa := liftComp_id oa
+
+/-- Identity spec-lifting does not change support. -/
+@[simp]
+lemma support_liftComp_id
+    [spec.Fintype] [spec.Inhabited]
+    (oa : OracleComp spec α) :
+    support (liftComp oa spec) = support oa := by
+  rw [liftComp_id]
 
 -- /-- OptionT wrapper of `support_liftComp` for `liftM ((liftComp oa superSpec))`. -/
 -- @[simp]
