@@ -11,7 +11,6 @@ import ArkLib.Data.Misc.Basic
 
 set_option maxHeartbeats 400000  -- Increase if needed
 set_option profiler true
--- set_option profiler.threshold 50  -- Show anything taking over 10ms
 namespace Binius.BinaryBasefold.CoreInteraction
 /-!
 ## Binary Basefold single steps

@@ -8,7 +8,6 @@ import ArkLib.ToVCVio.SimOracle
 import ArkLib.ToVCVio.Lemmas
 import ArkLib.OracleReduction.Execution
 import VCVio.OracleComp.SimSemantics.Append
--- set_option linter.style.longFile 1600 AI, Don't ever write this shit
 import VCVio.OracleComp.SimSemantics.SimulateQ
 import Mathlib.Data.ENNReal.Basic
 import VCVio.OracleComp.EvalDist
@@ -125,10 +124,6 @@ lemma OptionT.probOutput_none_bind_eq_zero_iff
 
 end ProbOutputNone
 
--- lemma probFailure_eq_zero_iff {m : Type u → Type v} [Monad m] [HasEvalSPMF m]
---     {α : Type u} (mx : m α) : Pr[⊥ | mx] = 0 ↔ NeverFail mx := by
---   exact (HasEvalSPMF.neverFail_iff mx).symm
-
 namespace SimOracle
 
 abbrev Stateless {ι ι' : Type*} (spec : OracleSpec ι) (superSpec : OracleSpec ι') :=
@@ -137,21 +132,17 @@ abbrev Stateless {ι ι' : Type*} (spec : OracleSpec ι) (superSpec : OracleSpec
 end SimOracle
 
 section NestedMonadLiftLemmas
--- The ground spec is T₁, we lift it to a superSpec
 
--- lift to left then lift to right
 instance instMonadLift_left_right {ι₁ ι₂ ι₃ : Type}
     {T₁ : OracleSpec ι₁} {T₂ : OracleSpec ι₂} {T₃ : OracleSpec ι₃} :
     MonadLift (OracleQuery T₁) (OracleQuery (T₃ + (T₁ + T₂))) where
   monadLift q := liftM (liftM q : OracleQuery (T₁ + T₂) _)
 
--- lift to right then lift to right
 instance instMonadLift_right_right {ι₁ ι₂ ι₃ : Type}
     {T₁ : OracleSpec ι₁} {T₂ : OracleSpec ι₂} {T₃ : OracleSpec ι₃} :
     MonadLift (OracleQuery T₁) (OracleQuery (T₃ + (T₂ + T₁))) where
   monadLift q := liftM (liftM q : OracleQuery (T₂ + T₁) _)
 
--- lift to left then lift to left
 instance instMonadLift_left_left {ι₁ ι₂ ι₃ : Type}
     {T₁ : OracleSpec ι₁} {T₂ : OracleSpec ι₂} {T₃ : OracleSpec ι₃} :
     MonadLift (OracleQuery T₁) (OracleQuery ((T₁ + T₂) + T₃)) where
@@ -478,36 +469,6 @@ lemma support_challengeQueryImpl_eq {n : ℕ} {pSpec : ProtocolSpec n}
       OracleComp ([pSpec.Challenge]ₒ'challengeOracleInterface) _).support := by
   simp [challengeQueryImpl, support_uniformSample (α := pSpec.Type i.val)]
 
--- /-- Challenge query implementations never fail (stateful version).
---     Uniform sampling is always safe regardless of state. -/
--- @[simp]
--- lemma probFailure_challengeQueryImpl_run {n : ℕ} {pSpec : ProtocolSpec n} {σ : Type}
---     [∀ i, SampleableType (pSpec.Challenge i)]
---     (q : ([pSpec.Challenge]ₒ'challengeOracleInterface).OracleQuery β) (s : σ) :
---     Pr[⊥|(liftM (challengeQueryImpl.mapQuery q) : StateT σ ProbComp β).run s] = 0 := by
---   cases q with | query i t =>
---   cases t  -- t : Unit, so this eliminates the match
---   unfold challengeQueryImpl
---   simp only [StateT.run_liftM_lib, probFailure_bind_eq_zero_iff, probFailure_pure]
---   -- now apply `probFailure_uniformOfFintype` for the form `[⊥|$ᵗα] = 0`
---   exact ⟨@probFailure_uniformOfFintype (α := pSpec.Challenge i) _, fun _ _ => trivial⟩
-
--- /-- Challenge query implementations have full support (stateful version).
---     The first component of the result has the same support as the spec. -/
--- @[simp]
--- lemma support_challengeQueryImpl_run_eq {n : ℕ} {pSpec : ProtocolSpec n} {σ : Type}
---     [∀ i, SampleableType (pSpec.Challenge i)]
---     (q : ([pSpec.Challenge]ₒ'challengeOracleInterface).OracleQuery β) (s : σ) :
---     Prod.fst <$> ((liftM (challengeQueryImpl.mapQuery q) : StateT σ ProbComp β).run s).support =
---     (liftM q : OracleComp ([pSpec.Challenge]ₒ'challengeOracleInterface) β).support := by
---   cases q with | query i t =>
---   cases t  -- t : Unit, eliminate the match
---   simp only [StateT.run_liftM_lib, support_bind, support_pure, liftM, support_query]
---   ext x
---   simp only [ChallengeIdx, support_challengeQueryImpl_eq, support_query, Set.mem_univ,
---     Set.iUnion_true, Set.iUnion_singleton_eq_range, Set.fmap_eq_image, Set.mem_image, Set.mem_range,
---     exists_exists_eq_and, exists_eq]
-
 end SimulationSafety
 
 section ProtocolUnrolling
@@ -569,7 +530,6 @@ lemma Prover.run_succ (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
       prover.processRound i (prover.runToRound i.castSucc stmt wit) :=
 by simp [Prover.runToRound, Fin.induction_succ]
 
--- omit [(i : pSpec.ChallengeIdx) → SampleableType (pSpec.Challenge i)] in
 /-- Simplifies `Reduction.run` by unfolding it into the prover's run and verifier's check. -/
 @[simp]
 lemma Reduction_run_def (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
@@ -588,24 +548,10 @@ by
   funext proverOutput
   rw [map_eq_bind_pure_comp]
 
-  -- ⊢ (do
-  --   let stmtOut ← liftM (reduction.verifier.verify stmtIn tr_and_prvOutState.1).run
-  --   Prod.mk (tr_and_prvOutState.1, proverOutput) <$> stmtOut.getM) =
-  -- simulateQ (fun t ↦ liftM (query t)) (reduction.verifier.verify stmtIn tr_and_prvOutState.1) >>=
-  --   pure ∘ Prod.mk (tr_and_prvOutState.1, proverOutput)
-
-  -- Both sides use the same OptionT; show the continuations agree
-
-  -- ⊢ (do
-  --     let stmtOut ← liftM (reduction.verifier.verify stmtIn tr_and_prvOutState.1).run
-  --     Prod.mk (tr_and_prvOutState.1, proverOutput) <$> stmtOut.getM) =
-  --   liftM (reduction.verifier.verify stmtIn tr_and_prvOutState.1) >>= pure ∘ Prod.mk (tr_and_prvOutState.1, proverOutput)
-
   ext
-  simp only [Option.getM, map_eq_bind_pure_comp, OptionT.run_bind, Function.comp_apply, OptionT.run_pure]
+  simp only [Option.getM, map_eq_bind_pure_comp, OptionT.run_bind,
+    Function.comp_apply, OptionT.run_pure]
   sorry
-
--- alias Reduction.run_step := Reduction_run_def
 
 end ReductionUnrolling
 
@@ -697,20 +643,6 @@ lemma OptionT.support_run_simulateQ_eq_of_superSpec {ι' : Type}
       (oa := oa) (h_supp := h_supp))
   rw [OptionT.support_run_eq, OptionT.support_run_eq]
   rw [h_res]
-
--- omit [spec.Fintype] in
--- /-- Membership form of `OptionT.support_run_simulateQ_eq`. -/
--- @[simp]
--- lemma OptionT.mem_support_run_simulateQ_iff
---     (so : QueryImpl spec ProbComp) (oa : OptionT (OracleComp spec) α)
---     (h_supp : ∀ {β} (q : OracleQuery spec β),
---       support ((QueryImpl.mapQuery so q)) = support ((liftM q : OracleComp spec β)))
---     (x : Option α) :
---     x ∈ support (m := ProbComp) (α := Option α)
---       (OptionT.run (simulateQ so oa : OptionT ProbComp α)) ↔
---       x ∈ support (m := OracleComp spec) (α := Option α) (OptionT.run oa) := by
---   simp [support_simulateQ_eq (spec := spec) (so := so) (oa := OptionT.run oa) (h_supp := h_supp)]
-
 
 /-- Challenge query implementations have full support (stateful version).
     The first component of the result has the same support as the spec. -/
