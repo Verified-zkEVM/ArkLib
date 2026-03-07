@@ -6,6 +6,8 @@ Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
 
 import ArkLib.Data.Polynomial.Prelims
 
+import Mathlib.Algebra.Polynomial.BigOperators
+import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 /-!
   # Definitions and Theorems about Bivariate Polynomials with coefficients in a semiring
 
@@ -183,35 +185,65 @@ attribute [local grind =] natDegree_mul natDegree_add_eq_right_of_degree_lt
 @[local grind _=_]
 private lemma support_eq_support_toFinsupp {f : F[X][Y]} : f.support = f.toFinsupp.support := rfl
 
-open Classical in
-/-- If a summand in a finite sum has degree `deg`, and the degree of every other summand
-is strictly less than `deg`, then the degree of the whole sum is exactly `deg`. -/
-lemma natDeg_sum_eq_of_unique {α : Type} {s : Finset α} {f : α → F[X]} {deg : ℕ}
+theorem natDegree_sum_lt_of_forall_lt {F : Type} [Semiring F] {α : Type} {s : Finset α} {g : α → F[X]} {deg : ℕ} :
+  0 < deg → (∀ x ∈ s, (g x).natDegree < deg) → (∑ x ∈ s, g x).natDegree < deg := by
+  intro deg_pos h
+  have hle : (∑ x ∈ s, g x).natDegree ≤ Nat.pred deg := by
+    refine Polynomial.natDegree_sum_le_of_forall_le (s := s) (f := g) (n := Nat.pred deg) ?_
+    intro x hx
+    exact Nat.le_pred_of_lt (h x hx)
+  exact lt_of_le_of_lt hle (Nat.pred_lt_self deg_pos)
+
+
+theorem natDeg_sum_eq_of_unique {α : Type} {s : Finset α} {f : α → F[X]} {deg : ℕ}
   (mx : α) (h : mx ∈ s) :
     (f mx).natDegree = deg →
     (∀ y ∈ s, y ≠ mx → (f y).natDegree < deg ∨ f y = 0) →
     (∑ x ∈ s, f x).natDegree = deg := by
-  intros f_x_deg others_le
-  by_cases deg_zero : deg = 0
-  · rw [←f_x_deg, Finset.sum_eq_single] <;> grind
-  · suffices (∑ x ∈ s with x ≠ mx, f x).degree < (f mx).degree by
-      have : ∑ x ∈ s, f x = (∑ x ∈ s.filter (fun x => x ≠ mx), f x) + f mx := by
-        rw (occs := .pos [1]) [
-          show s = s.filter (fun x => x ≠ mx) ∪ {mx} by grind,
-          Finset.sum_union (by simp)
-        ]
-        grind
-      grind
-    apply lt_of_le_of_lt (Polynomial.degree_sum_le _ _)
-    rw [
-      Finset.sup_lt_iff (by rw [Polynomial.degree_eq_natDegree (by aesop)]
-                            exact WithBot.bot_lt_coe _)
-    ]
-    intros b h''
-    obtain ⟨h₁, h₂⟩ : b ∈ s ∧ ¬b = mx := by grind
-    rcases others_le b h₁ h₂ with h' | h'
-    · exact Polynomial.degree_lt_degree (f_x_deg.symm ▸ h')
-    · cases cs : (f mx).degree <;> sorry
+  classical
+  intro hmxdeg others
+  by_cases hdeg0 : deg = 0
+  ·
+    have hothers0 : ∀ y ∈ s, y ≠ mx → f y = 0 := by
+      intro y hy hne
+      have h' := others y hy hne
+      rcases h' with hlt | hy0
+      · have hlt0 : (f y).natDegree < 0 := by simpa [hdeg0] using hlt
+        exact (False.elim ((Nat.not_lt_zero _ ) hlt0))
+      · exact hy0
+    have hsum : (∑ x ∈ s, f x) = f mx := by
+      classical
+      refine Finset.sum_eq_single_of_mem mx h ?_?
+      intro y hy hne
+      exact hothers0 y hy hne
+    calc
+      (∑ x ∈ s, f x).natDegree = (f mx).natDegree := by simpa [hsum]
+      _ = deg := hmxdeg
+  ·
+    have deg_pos : 0 < deg := Nat.pos_of_ne_zero hdeg0
+    have hlt_sum : (∑ x ∈ s \ {mx}, f x).natDegree < deg := by
+      refine natDegree_sum_lt_of_forall_lt (s := s \ {mx}) (g := f) (deg := deg) deg_pos ?_
+      intro y hy
+      have hy_s : y ∈ s := (Finset.mem_sdiff.mp hy).1
+      have hy_not : y ∉ ({mx} : Finset α) := (Finset.mem_sdiff.mp hy).2
+      have hy_ne : y ≠ mx := by
+        simpa [Finset.mem_singleton] using hy_not
+      have h' := others y hy_s hy_ne
+      rcases h' with hlt | hy0
+      · exact hlt
+      · simpa [hy0] using deg_pos
+    have hlt_mx : (∑ x ∈ s \ {mx}, f x).natDegree < (f mx).natDegree := by
+      simpa [hmxdeg] using hlt_sum
+    have hsum_decomp : (∑ x ∈ s, f x) = (∑ x ∈ s \ {mx}, f x) + f mx := by
+      classical
+      simpa using (Finset.sum_eq_sum_diff_singleton_add (s := s) (i := mx) (f := f) h)
+    calc
+      (∑ x ∈ s, f x).natDegree = ((∑ x ∈ s \ {mx}, f x) + f mx).natDegree := by
+        simpa [hsum_decomp]
+      _ = (f mx).natDegree := by
+        exact Polynomial.natDegree_add_eq_right_of_natDegree_lt hlt_mx
+      _ = deg := hmxdeg
+
 
 /-- If some element `x ∈ s` maps to `y` under `f`, and every element of `s` maps to a value
 less than or equal to `y`, then the supremum of `f` over `s` is exactly `y`. -/
