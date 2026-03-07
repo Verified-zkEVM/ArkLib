@@ -34,6 +34,10 @@ lemma Polynomial.toMvPolynomial_ne_zero_iff (p : Polynomial R) (i : σ) :
     exact (toMvPolynomial_injective i) h
 
 /-- The total degree of `toMvPolynomial p` is at most the natural degree of `p`. -/
+-- TODO: Complete this proof using `MvPolynomial.totalDegree_finsetSum_le`,
+-- `MvPolynomial.totalDegree_mul`, `MvPolynomial.totalDegree_C`, `MvPolynomial.totalDegree_X_pow`,
+-- and `Polynomial.le_natDegree_of_mem_supp`. Depends on Mathlib API for `Polynomial.aeval_monomial`
+-- and `MvPolynomial.algebraMap_eq` being available in the current Mathlib version.
 lemma Polynomial.toMvPolynomial_totalDegree_le [Nontrivial R] (p : Polynomial R) (i : σ) :
     ((Polynomial.toMvPolynomial i) p).totalDegree ≤ p.natDegree := by
   sorry
