@@ -7,9 +7,9 @@ import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Code
 import ArkLib.Data.Misc.Basic
 import ArkLib.Data.Probability.Instances
+import ArkLib.Data.CodingTheory.ProximityGap.DG25
 import Mathlib.Data.Matrix.Mul
 import Mathlib.LinearAlgebra.Matrix.Nondegenerate
-import ArkLib.Data.FieldTheory.BinaryField.Tower.Prelude
 
 namespace Binius.BinaryBasefold
 
@@ -42,12 +42,12 @@ variable {ℓ 𝓡 ϑ : ℕ} (γ_repetitions : ℕ) [NeZero ℓ] [NeZero 𝓡] [
 variable {h_ℓ_add_R_rate : ℓ + 𝓡 < r} -- ℓ ∈ {1, ..., r-1}
 variable {𝓑 : Fin 2 ↪ L}
 noncomputable section
-variable [SelectableType L]
+variable [SampleableType L]
 variable [hdiv : Fact (ϑ ∣ ℓ)]
 
 open scoped NNReal ProbabilityTheory
 
-omit [CharP L 2] [SelectableType L] in
+omit [CharP L 2] [SampleableType L] in
 /-- **Probability bound for the bad sumcheck event** (Schwartz-Zippel).
 When the verifier challenge `r_i'` is uniform over `L`, the probability that two distinct
 degree-≤2 round polynomials agree at `r_i'` is at most `2 / |L|`. -/
@@ -1552,7 +1552,7 @@ lemma prop_4_20_bad_event_probability (i : Fin ℓ) (steps : ℕ) [NeZero steps]
     apply prop_4_20_case_2_fiberwise_far 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (steps := steps)
       (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (h_far := h_close)
 
-omit [CharP L 2] [DecidableEq 𝔽q] hF₂ [NeZero 𝓡] [SelectableType L] in
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ [NeZero 𝓡] [SampleableType L] in
 lemma iteratedQuotientMap_succ_comp
     (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ)
     (h_midIdx : midIdx.val = i.val + 1)
@@ -2137,7 +2137,7 @@ lemma fiberwiseClose_implies_jointProximityNat (i : Fin ℓ) (steps : ℕ)
     _ ≤ ↑(Code.uniqueDecodingRadius (C := C_next)) := by
         exact_mod_cast h_g_close_nat
 
-omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] [SelectableType L] in
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] [SampleableType L] in
 /-- **Splitting a WordStack preserves non-closeness.**
 If `U : WordStack L (Fin (2^{s+1})) ι` is NOT `e`-close to `C^{2^{s+1}}`, then
 the interleaved pair `(⋈|U₀, ⋈|U₁)` is NOT `e`-close to `(C^{2^s})^⋈(Fin 2)`,
@@ -2158,7 +2158,7 @@ lemma not_jointProximityNat_of_not_jointProximityNat_split
   exact fun h_close => h_far (CA_split_rowwise_implies_CA C U e h_close)
 
 open Classical in
-omit [CharP L 2] [DecidableEq 𝔽q] h_β₀_eq_1 [NeZero ℓ] [SelectableType L] in
+omit [CharP L 2] [DecidableEq 𝔽q] h_β₀_eq_1 [NeZero ℓ] [SampleableType L] in
 /-- **Affine proximity gap bound for RS interleaved codes (contrapositive form).**
 If the pair `(u₀, u₁)` is NOT `e`-close to the interleaved code, then the
 affine line `(1-r)·u₀ + r·u₁` is `e`-close to `C` for at most `|S|` values
@@ -2575,7 +2575,7 @@ lemma fold_preTensorCombine_eq_affineLineEvaluation_split
 section Fin1Interleaving
 variable {A : Type*} [DecidableEq A] {ι : Type*} [Fintype ι] [DecidableEq ι]
 
-omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] [NeZero 𝓡] [SelectableType L]
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] [NeZero 𝓡] [SampleableType L]
   [Field L] [Fintype L] [DecidableEq L] [Field 𝔽q] [Fintype 𝔽q] h_Fq_char_prime [Algebra 𝔽q L]
   hβ_lin_indep h_ℓ_add_R_rate in
 /-- For `κ = Fin 1`, the Hamming distance between two interleaved words equals the
@@ -2588,7 +2588,7 @@ lemma hammingDist_fin1_eq [DecidableEq (Fin 1 → A)] {u v : ι → Fin 1 → A}
   · intro h heq; exact h (funext fun k => by rwa [show k = 0 from Subsingleton.elim k 0])
   · intro h heq; exact h (congr_fun heq 0)
 
-omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] [NeZero 𝓡] [SelectableType L]
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] [NeZero 𝓡] [SampleableType L]
   [Field L] [Fintype L] [DecidableEq L] [Field 𝔽q] [Fintype 𝔽q] h_Fq_char_prime [Algebra 𝔽q L]
   hβ_lin_indep h_ℓ_add_R_rate in
 /-- For `κ = Fin 1`, the distance from an interleaved word to an interleaved code equals
@@ -3201,7 +3201,7 @@ lemma lemma_4_24_dist_folded_ge_of_last_noncompliant (i_star : Fin ℓ) (steps :
 section QueryPhaseSoundnessStatements
 
 variable [hdiv : Fact (ϑ ∣ ℓ)]
-variable [SelectableType L]
+variable [SampleableType L]
 open QueryPhase
 
 /-- Number of oracle blocks at the end of the protocol. -/
