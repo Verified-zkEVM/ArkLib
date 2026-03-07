@@ -196,8 +196,7 @@ following the enhanced specification.
 -/
 
 -- Initial Input (Input to Batching Phase)
-abbrev MLPEvalStatement :=
-  Binius.BinaryBasefold.InitialStatement (L := L) (ℓ := ℓ)
+abbrev MLPEvalStatement (L : Type) (ℓ : ℕ) := BinaryBasefold.MLPEvalStatement L ℓ
 
 structure WitMLP where
   t : MultilinearPoly K ℓ

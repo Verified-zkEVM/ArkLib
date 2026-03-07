@@ -926,6 +926,51 @@ noncomputable def extractMLP (i : Fin ℓ) (f : (sDomain 𝔽q β h_ℓ_add_R_ra
         let t_multilinear_mv := MvPolynomial.MLE hypercube_evals
         exact some ⟨t_multilinear_mv, MLE_mem_restrictDegree hypercube_evals⟩
 
+/-- The Berlekamp-Welch decoder on an oracle `f` returns `some tpoly` iff `f` is
+pair-UDR-close to the oracle function of the multilinear polynomial `tpoly`
+(i.e. the polynomial-as-oracle from novel coeffs of tpoly).
+Forward: decoder succeeds only when within UDR. Backward: within UDR the decoded codeword
+is `polyToOracleFunc (polynomialFromNovelCoeffsF₂ tpoly)`. -/
+lemma extractMLP_eq_some_iff_pair_UDRClose (f : (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨0, by omega⟩ → L)
+    (tpoly : MultilinearPoly L ℓ) :
+    (extractMLP 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0 f = some tpoly) ↔
+    pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0)
+      (h_i := by simp only [Fin.coe_ofNat_eq_mod, zero_mod, _root_.zero_le])
+      (f := f)
+      (g := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0)
+        (P := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
+          (fun ω => tpoly.val.eval (bitsOfIndex ω)))) := by
+  sorry
+
+/-- If a block starting at index `0` is compliant in the sense of `isCompliant`, then the
+Berlekamp–Welch decoder `extractMLP` at index `0` succeeds on the source oracle.
+
+Mathematically: `isCompliant` gives fiberwise-closeness of the source oracle to the
+appropriate code, which implies UDR-closeness, and hence decoder success. -/
+lemma extractMLP_some_of_isCompliant_at_zero
+    {destIdx : Fin r} {steps : ℕ} [NeZero steps]
+    (zero_Idx : Fin r) (h_zero_Idx : zero_Idx.val = 0)
+    (h_destIdx : destIdx = 0 + steps)
+    (h_destIdx_le : destIdx ≤ ℓ)
+    (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) zero_Idx)
+    (f_next : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx)
+    (challenges : Fin steps → L)
+    (h_compl :
+      isCompliant 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := zero_Idx) (steps := steps)
+        (destIdx := destIdx) (h_destIdx := by omega) (h_destIdx_le := h_destIdx_le)
+        (f_i := f_i) (f_i_plus_steps := f_next) (challenges := challenges)) :
+    ∃ tpoly : MultilinearPoly L ℓ,
+      extractMLP 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0
+        (fun x => f_i (cast (by
+          simp only [Fin.coe_ofNat_eq_mod, zero_mod, Fin.mk_zero'];
+          have h_eq := sDomain_eq_of_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0)
+            (j := zero_Idx) (h := by apply Fin.eq_of_val_eq; simp only [Fin.coe_ofNat_eq_mod,
+              zero_mod, h_zero_Idx])
+          rw [h_eq]) x)) = some tpoly := by
+  classical
+  sorry
+
 def dummyLastWitness :
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) := {
   t := ⟨0, by apply zero_mem⟩,
@@ -934,7 +979,7 @@ def dummyLastWitness :
 }
 
 /-- The initial statement for the commitment phase contains the evaluation claim s = t(r) -/
-structure InitialStatement where
+structure MLPEvalStatement (L : Type) (ℓ : ℕ) where
   -- Original evaluation claim: s = t(r)
   t_eval_point : Fin ℓ → L         -- r = (r_0, ..., r_{ℓ-1}) => shared input
   original_claim : L               -- s = t(r) => the original claim to verify
@@ -1347,6 +1392,9 @@ def oracleWitnessConsistency
     (oStmt := oStmt) (includeFinalFiberwiseClose := true)
   witnessStructuralInvariant ∧ firstOracleConsistency ∧
     oracleFoldingConsistency
+
+def badSumcheckEventProp (r_i' : L) (h_i h_star : L⦃≤ 2⦄[X]) :=
+  h_i ≠ h_star ∧ h_i.val.eval r_i' = h_star.val.eval r_i'
 
 section SingleStepRelationPreservationLemmas
 

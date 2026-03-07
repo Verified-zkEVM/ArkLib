@@ -9,6 +9,9 @@ import ArkLib.Data.Probability.Notation
 import CompPoly.Data.Fin.BigOperators
 import CompPoly.Data.Nat.Bitwise
 import Mathlib.Algebra.MvPolynomial.SchwartzZippel
+import ArkLib.ToMathlib.MvPolynomial.Equiv
+
+open ArkLib.ToMathlib
 
 open ProbabilityTheory Filter
 open NNReal Finset Function
@@ -493,5 +496,99 @@ lemma prob_schwartz_zippel_mv_polynomial {R : Type} [CommRing R] [IsDomain R] [F
   simp only [Fintype.card_pi, prod_const, card_univ, Fintype.card_fin, Nat.cast_pow, ge_iff_le]
   rw [Nat.cast_pow] at sz_bound_ENNReal
   exact sz_bound_ENNReal
+
+alias prob_mono := Pr_le_Pr_of_implies
+
+/-- **Union bound**: Pr[A ∨ B] ≤ Pr[A] + Pr[B]. -/
+theorem Pr_or_le {α : Type} (D : PMF α)
+    (f g : α → Prop) [DecidablePred f] [DecidablePred g] [DecidablePred (fun r => f r ∨ g r)] :
+    Pr_{ let r ← D }[ f r ∨ g r ] ≤ Pr_{ let r ← D }[ f r ] + Pr_{ let r ← D }[ g r ] := by
+  rw [prob_tsum_form_singleton D (fun r => f r ∨ g r),
+    prob_tsum_form_singleton D f, prob_tsum_form_singleton D g]
+  trans ∑' r, (D r * (if f r then 1 else 0) + D r * (if g r then 1 else 0))
+  · apply ENNReal.tsum_le_tsum
+    intro r
+    by_cases hf : f r
+    · by_cases hg : g r
+      · simp only [hf, hg, or_true, ↓reduceIte, mul_one]; exact le_add_of_nonneg_right (zero_le (D r))
+      · simp only [hf, hg, or_true, true_or, ↓reduceIte, mul_one, mul_zero, add_zero]; exact le_refl (D r)
+    · by_cases hg : g r
+      · simp only [hf, hg, true_or, or_true, ↓reduceIte, mul_one, mul_zero, zero_add]; exact le_refl (D r)
+      · simp only [hf, hg, false_or, ↓reduceIte, mul_zero, zero_add]; exact le_refl 0
+  · rw [ENNReal.tsum_add]
+
+/-- **Schwartz-Zippel for univariate (Fin 1) polynomials with arbitrary degree bound `d`**.
+For a non-zero `P : MvPolynomial (Fin 1) R` with `P.totalDegree ≤ d`, the probability that
+`P(r)` is 0 for uniform `r : Fin 1 → R` is at most `d / |R|`. -/
+lemma prob_schwartz_zippel_univariate_deg {R : Type} [CommRing R] [IsDomain R] [Fintype R]
+    [DecidableEq R] (d : ℕ) (P : MvPolynomial (Fin 1) R) (h_nonzero : P ≠ 0)
+    (h_deg : P.totalDegree ≤ d) :
+    Pr_{ let r ←$ᵖ (Fin 1 → R) }[ MvPolynomial.eval r P = 0 ] ≤
+      (d : ℝ≥0) / (Fintype.card R : ℝ≥0) := by
+  rw [prob_uniform_eq_card_filter_div_card]
+  push_cast
+  have sz_bound := MvPolynomial.schwartz_zippel_totalDegree (R := R) (n := 1)
+    (p := P) (hp := h_nonzero) (S := Finset.univ)
+  simp only [Fintype.piFinset_univ, card_univ] at sz_bound
+  have sz_bound_le_d_div_card_R : ((#{f | (MvPolynomial.eval f) P = 0}) : ℚ≥0)
+    / ((Fintype.card R ^ 1)) ≤ (d : ℚ≥0) / ((#(Finset.univ : Finset R)) : ℚ≥0) := by
+    calc
+      _ ≤ (P.totalDegree : ℚ≥0) / ((#(Finset.univ : Finset R)) : ℚ≥0) := sz_bound
+      _ ≤ (d : ℚ≥0) / ((#(Finset.univ : Finset R)) : ℚ≥0) := by
+        simp only [card_univ]
+        apply div_le_of_le_mul₀ (hb := by simp only [zero_le]) (hc := by simp only [zero_le])
+        rw [div_mul_cancel₀ (h := by simp only [ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero,
+          not_false_eq_true])]
+        exact Nat.cast_le.mpr h_deg
+  have sz_bound_le_d_div_card_R' : ((#{f | (MvPolynomial.eval f) P = 0}) : ℚ≥0)
+    / (Fintype.card R : ℚ≥0) ≤ (d : ℚ≥0) / (Fintype.card R : ℚ≥0) := by
+    rw [pow_one, card_univ] at sz_bound_le_d_div_card_R
+    exact sz_bound_le_d_div_card_R
+  have sz_bound_ENNReal : ((#{f | (MvPolynomial.eval f) P = 0}) : ENNReal)
+    / (Fintype.card R : ENNReal) ≤ (d : ENNReal) / (Fintype.card R : ENNReal) := by
+    simp_rw [ENNReal.coe_Nat_coe_NNRat]
+    conv_lhs => rw [ENNReal.coe_div_of_NNRat (hb := by
+      simp only [pow_one, ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero, not_false_eq_true])]
+    conv_rhs => rw [ENNReal.coe_div_of_NNRat (hb := by simp only [ne_eq, Nat.cast_eq_zero,
+      Fintype.card_ne_zero, not_false_eq_true])]
+    rw [ENNReal.coe_le_of_NNRat]
+    exact sz_bound_le_d_div_card_R'
+  simp only [Fintype.card_pi, prod_const, card_univ, Fintype.card_fin, pow_one, ge_iff_le]
+  exact sz_bound_ENNReal
+
+/-- **Schwartz-Zippel for degree-2 univariate polynomials**.
+For two distinct degree-2 univariate polynomials over a commutative ring, the probability
+that they agree at a random point is at most `2 / |R|`. -/
+lemma prob_poly_agreement_degree_two {R : Type} [CommRing R] [IsDomain R] [Fintype R]
+    [DecidableEq R]
+    (p q : R⦃≤ 2⦄[X])
+    (h_ne : p ≠ q) :
+    Pr_{ let r ←$ᵖ R }[ p.val.eval r = q.val.eval r ] ≤
+      (2 : ℝ≥0) / (Fintype.card R : ℝ≥0) := by
+  let P := (p.val - q.val).toMvPolynomial (σ := Fin 1) 0
+  have h_nz : P ≠ 0 := by
+    rw [Polynomial.toMvPolynomial_ne_zero_iff, sub_ne_zero]
+    exact fun h => h_ne (Subtype.eq h)
+  have h_p_deg : p.val.degree ≤ 2 :=
+    Polynomial.mem_degreeLE (f := p.val) (n := 2).mp (by simp only [SetLike.coe_mem])
+  have h_q_deg : q.val.degree ≤ 2 :=
+    Polynomial.mem_degreeLE (f := q.val) (n := 2).mp (by simp only [SetLike.coe_mem])
+  have h_deg : P.totalDegree ≤ 2 := by
+    apply (Polynomial.toMvPolynomial_totalDegree_le _ _).trans
+    apply (Polynomial.natDegree_sub_le _ _).trans
+    simp only [max_le_iff]
+    constructor <;> apply Polynomial.natDegree_le_of_degree_le <;>
+      first | exact h_p_deg | exact h_q_deg
+  calc Pr_{ let r ←$ᵖ R }[ p.val.eval r = q.val.eval r ]
+    _ = Pr_{ let r ←$ᵖ R }[ (p.val - q.val).eval r = 0 ] := by apply Pr_congr; simp [sub_eq_zero]
+    _ = Pr_{ let r ←$ᵖ R }[ MvPolynomial.eval (fun _ ↦ r) P = 0 ] := by
+      apply Pr_congr; intro; simp [P, MvPolynomial.eval_toMvPolynomial]
+    _ = Pr_{ let f ←$ᵖ (Fin 1 → R) }[ MvPolynomial.eval f P = 0 ] := by
+      rw [← prob_uniform_singleton_finFun_eq]
+      congr; funext f
+      simp [P, MvPolynomial.eval_toMvPolynomial]
+    _ ≤ _ := by
+      have h := prob_schwartz_zippel_univariate_deg 2 P h_nz h_deg
+      exact h
 
 end ProbabilityTools

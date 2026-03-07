@@ -112,11 +112,13 @@ import ArkLib.ProofSystem.Binius.BinaryBasefold.General
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude
 import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
 import ArkLib.ProofSystem.Binius.BinaryBasefold.ReductionLogic
+import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps
 import ArkLib.ProofSystem.Binius.FRIBinius.CoreInteractionPhase
 import ArkLib.ProofSystem.Binius.FRIBinius.General
 import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
+import ArkLib.ProofSystem.Binius.RingSwitching.BBFSmallFieldIOPCS
 import ArkLib.ProofSystem.Binius.RingSwitching.BatchingPhase
 import ArkLib.ProofSystem.Binius.RingSwitching.General
 import ArkLib.ProofSystem.Binius.RingSwitching.Prelude
@@ -160,6 +162,7 @@ import ArkLib.ToMathlib.Data.IndexedBinaryTree.Basic
 import ArkLib.ToMathlib.Data.IndexedBinaryTree.Equiv
 import ArkLib.ToMathlib.Data.IndexedBinaryTree.Lemmas
 import ArkLib.ToMathlib.Finset.Basic
+import ArkLib.ToMathlib.MvPolynomial.Equiv
 import ArkLib.ToVCVio.DistEq
 import ArkLib.ToVCVio.Lemmas
 import ArkLib.ToVCVio.Oracle
