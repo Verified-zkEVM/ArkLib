@@ -157,7 +157,11 @@ open Univariate in
 -/
 def discr_y {F : Type} [CommRing F] (f : F[X][Y]) : F[X] :=
   /- TODO: use `Polynomial.discr` once Mathlib is bumped. -/
-  Classical.choose (resultant_is_divisible_by_leadingCoeff f)
+  by
+    classical
+    by_cases h : 0 < f.degree
+    · exact Classical.choose (resultant_is_divisible_by_leadingCoeff f h)
+    · exact 0
 
 /-- Over an intergal domain, the product of two non-zero bivariate polynomials is non-zero. -/
 @[grind ←]

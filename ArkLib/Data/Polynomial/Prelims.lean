@@ -46,11 +46,19 @@ section
 noncomputable def discriminant {F : Type} [Field F] [Inhabited F] (f : F[X]) : F :=
   1/f.leadingCoeff * Polynomial.resultant f (Polynomial.derivative f)
 
-/-- The resultant of a polynomial is divisible by its leading coefficient. -/
-lemma resultant_is_divisible_by_leadingCoeff {F : Type} [CommRing F] [Inhabited F] (f : F[X])
-  : ∃ r',
-    Polynomial.resultant f (Polynomial.derivative f) = f.leadingCoeff * r'
-    := by sorry
+theorem resultant_is_divisible_by_leadingCoeff {F : Type} [CommRing F] [Inhabited F] (f : F[X]) (hf : 0 < f.degree) :
+    ∃ r',
+      Polynomial.resultant f (Polynomial.derivative f) f.natDegree (f.natDegree - 1) =
+        f.leadingCoeff * r' := by
+  classical
+  refine ⟨(-1) ^ (f.natDegree * (f.natDegree - 1) / 2) * f.discr, ?_⟩
+  -- Use the standard resultant–discriminant formula.
+  rw [Polynomial.resultant_deriv (f := f) hf]
+  -- Rearrange.
+  --
+  -- `simp` with commutativity/associativity should finish.
+  simp [mul_assoc, mul_left_comm, mul_comm]
+
 
 /-- A polynomial is separable if and only if its discriminant is non-zero. -/
 lemma separable_iff_discr_eq_zero {F : Type} [Field F] [Inhabited F] (f : F[X]) :
