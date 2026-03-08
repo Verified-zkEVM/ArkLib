@@ -173,9 +173,10 @@ noncomputable def proximity_gap_johnson (rho : ℚ) (m : ℕ) : ℝ :=
     Given the D_X (`proximity_gap_degree_bound`) and δ₀ (`proximity_gap_johnson`),
     a solution to Guruswami-Sudan system exists.
 -/
-lemma guruswami_sudan_for_proximity_gap_existence {k m : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F} :
-  ∃ Q, Condition (k + 1) m ((proximity_gap_degree_bound ((k + 1 : ℚ) / n) m n)) ωs f Q := by
-  sorry
+lemma guruswami_sudan_for_proximity_gap_existence {k m : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F}
+    (hm : 1 ≤ m) :
+  ∃ Q, Conditions (k + 1) m (_root_.proximity_gap_degree_bound (k + 1) n m) ωs f Q :=
+  GuruswamiSudan.proximity_gap_existence (k + 1) n ωs f hm
 
 open Polynomial in
 /-- The second part of lemma 5.3 from [BCIKS20].
@@ -188,11 +189,14 @@ open Polynomial in
 lemma guruswami_sudan_for_proximity_gap_property {k m : ℕ} {ωs : Fin n ↪ F}
   {w : Fin n → F}
   {Q : F[X][Y]}
-  (cond : Condition (k + 1) m (proximity_gap_degree_bound ((k + 1 : ℚ) / n) m n) ωs w Q)
-  {p : ReedSolomon.code ωs n}
-  (h : δᵣ(w, p) ≤ proximity_gap_johnson ((k + 1 : ℚ) / n) m)
+  (hk : k + 2 ≤ n) (hm : 1 ≤ m)
+  (cond : Conditions (k + 1) m (_root_.proximity_gap_degree_bound (k + 1) n m) ωs w Q)
+  {p : ReedSolomon.code ωs (k + 1)}
+  (h : (↑Δ₀(w, fun i ↦ Polynomial.eval (ωs i) (ReedSolomon.codewordToPoly p)) : ℝ) / ↑n <
+       _root_.proximity_gap_johnson (k + 1) n m)
   :
-  (X - Polynomial.C (ReedSolomon.codewordToPoly p)) ∣ Q := by sorry
+  (Polynomial.X - Polynomial.C (ReedSolomon.codewordToPoly p)) ∣ Q :=
+  GuruswamiSudan.proximity_gap_divisibility hk hm p cond h
 
 
 section

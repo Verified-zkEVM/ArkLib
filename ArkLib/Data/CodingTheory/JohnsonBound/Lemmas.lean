@@ -52,7 +52,9 @@ private lemma sum_K_eq_card : ∑ (α : F), K B i α = B.card := by
 private lemma K_eq_sum {α : F} : K B i α = ∑ (x : B), if x.1 i = α then 1 else 0 := by
   simp [K, Fi]
   simp_rw [Finset.card_filter, Finset.sum_attach_eq_sum_dite]
-  apply Finset.sum_congr <;> aesop
+  apply Finset.sum_congr
+  all_goals
+    aesop
 
 @[simp]
 private lemma K_le_card {α : F} : K B i α ≤ B.card := by
@@ -78,25 +80,27 @@ private lemma sum_choose_K' [Zero F]
     rw [sum_eq_sum_diff_singleton_add (i := 0) (by simp)]
     ring_nf
     rw [sum_mul]
-    apply sum_congr (ext _) <;> grind only [= mem_filter, = mem_sdiff, ← mem_univ, = mem_singleton]
+    apply sum_congr (ext _)
+    all_goals
+      grind only [= mem_filter, = mem_sdiff, ← mem_univ, = mem_singleton]
   simp only [Function.comp_apply, smul_eq_mul]
-  have hx1Nonneg : (0 : ℚ) ≤ x1 := by
+  have hx1_nonneg : (0 : ℚ) ≤ x1 := by
     simp [x1, sub_nonneg]
     omega
   have jensen := ConvexOn.map_sum_le choose_2_convex
     (t := Finset.univ.filter (· ≠ (0 : F)))
-    (w := fun _ => x1⁻¹)
+    (w := fun _ ↦ x1⁻¹)
     (p := fun α => (x2 α : ℚ))
     (by
       intro _ _
-      exact inv_nonneg.mpr hx1Nonneg)
+      exact inv_nonneg.mpr hx1_nonneg)
     (by
       simp [x1]
       field_simp
       exact div_self hx1)
     (by simp)
   simp only [smul_eq_mul] at jensen
-  exact le_trans (mul_le_mul_of_nonneg_left jensen hx1Nonneg) <|
+  exact le_trans (mul_le_mul_of_nonneg_left jensen hx1_nonneg) <|
     le_of_eq <| by
       rw [Finset.mul_sum]
       congr 1
@@ -182,7 +186,7 @@ private lemma k_choose_2 [Zero F] {B : Finset (Fin n → F)}
   have hn_ne : (n : ℚ) ≠ 0 := ne_of_gt hn_pos
   have jensen := ConvexOn.map_sum_le choose_2_convex
     (t := Finset.univ (α := Fin n))
-    (w := fun _ => (n : ℚ)⁻¹)
+    (w := fun _ ↦ (n : ℚ)⁻¹)
     (p := fun i => (K B i 0 : ℚ))
     (by intro _ _; exact inv_nonneg.mpr hn_nonneg)
     (by simp; field_simp) (by simp)
@@ -203,8 +207,9 @@ private lemma sum_1_over_n_aux_frac_k_i [Zero F]
   have hn_ne : (n : ℚ) ≠ 0 := by exact_mod_cast Nat.pos_iff_ne_zero.mp h_n
   simp only [aux_frac, k]
   rw [← Finset.mul_sum]
-  have key : (∑ x : Fin n, ((↑B.card : ℚ) - ↑(K B x 0)) / (↑(Fintype.card F) - 1))
-    = ((n : ℚ) * ↑B.card - ∑ x : Fin n, (↑(K B x 0) : ℚ)) / (↑(Fintype.card F) - 1) := by
+  have key :
+      (∑ x : Fin n, ((↑B.card : ℚ) - ↑(K B x 0)) / (↑(Fintype.card F) - 1)) =
+        ((n : ℚ) * ↑B.card - ∑ x : Fin n, (↑(K B x 0) : ℚ)) / (↑(Fintype.card F) - 1) := by
     rw [← Finset.sum_div, Finset.sum_sub_distrib, Finset.sum_const, Finset.card_univ,
       Fintype.card_fin, nsmul_eq_mul]
   rw [key]
@@ -230,7 +235,7 @@ private lemma aux_sum [Zero F]
   have hn_ne : (n : ℚ) ≠ 0 := ne_of_gt hn_pos
   have jensen := ConvexOn.map_sum_le choose_2_convex
     (t := Finset.univ (α := Fin n))
-    (w := fun _ => (n : ℚ)⁻¹)
+    (w := fun _ ↦ (n : ℚ)⁻¹)
     (p := fun i => aux_frac B (K B i 0 : ℚ))
     (by intro _ _; exact inv_nonneg.mpr hn_nonneg)
     (by simp; field_simp) (by simp)
@@ -253,8 +258,9 @@ private lemma le_sum_sum_choose_K [Zero F]
     rfl
   · have h1 := k_choose_2 (by omega : n ≠ 0) h_B (B := B)
     have h2 := aux_sum h_n (B := B)
-    have h3 : ↑n * ((Fintype.card F - 1 : ℚ) * choose_2 ((↑B.card - k B) / (Fintype.card F - 1)))
-            = (↑(Fintype.card F) - 1) * (↑n * choose_2 (aux_frac B (k B))) := by
+    have h3 :
+        ↑n * ((Fintype.card F - 1 : ℚ) * choose_2 ((↑B.card - k B) / (Fintype.card F - 1))) =
+          (↑(Fintype.card F) - 1) * (↑n * choose_2 (aux_frac B (k B))) := by
       simp [aux_frac]; ring
     rw [h3]
     apply le_trans (add_le_add h1 (mul_le_mul_of_nonneg_left h2 (by simp [sub_nonneg]; omega)))
@@ -289,7 +295,9 @@ private lemma F2i_card {α : F} :
   (F2i B i α).card = 2 * choose_2 (K B i α) := by
   set A := Fi B i α with hA
   have h1 : F2i B i α = (A ×ˢ A).filter (fun x ↦ x.1 ≠ x.2) := by
-    ext ⟨a, b⟩; simp [F2i, Fi, A, Finset.mem_filter, Finset.mem_product]; tauto
+    ext ⟨a, b⟩
+    simp [F2i, Fi, A, Finset.mem_filter, Finset.mem_product]
+    tauto
   rw [h1, Finset.filter_not, Finset.card_sdiff]
   rw [Finset.inter_eq_left.mpr (Finset.filter_subset _ _)]
   simp only [Finset.card_product]
@@ -409,14 +417,14 @@ private lemma almost_johnson_choose_2_elimed [Zero F]
   ≤
   B.card * (B.card - 1) * (n - d B)/n := by
   have h0 := almost_johnson h_n h_B h_card
-  set C := (Fintype.card F : ℚ) - 1
+  set c := (Fintype.card F : ℚ) - 1
   set δ := (B.card : ℚ) - k B
-  have hC : C ≠ 0 := by simp [C, sub_eq_zero]; omega
+  have h_c : c ≠ 0 := by simp [c, sub_eq_zero]; omega
   have hn_pos : (0 : ℚ) < n := by exact_mod_cast h_n
   rw [le_div_iff₀ hn_pos]
   have key :
-      choose_2 (k B) + C * choose_2 (δ / C) =
-        (k B * (k B - 1) + δ * (δ / C - 1)) / 2 := by
+      choose_2 (k B) + c * choose_2 (δ / c) =
+        (k B * (k B - 1) + δ * (δ / c - 1)) / 2 := by
     simp only [choose_2]; field_simp
   have key2 : choose_2 (↑B.card : ℚ) = ↑B.card * (↑B.card - 1) / 2 := by
     simp only [choose_2]
@@ -505,14 +513,14 @@ private lemma johnson_denom [Zero F]
   =
   (1 - ((Fintype.card F) / (Fintype.card F - 1)) *
   (e B 0 / n)) ^ 2 - (1 - ((Fintype.card F) / (Fintype.card F - 1)) * (d B/n))  := by
-  set C := Fintype.card F
-  set C₁ := (C : ℚ) - 1
-  have n₂ : C₁ ≠ 0 := by simp [C₁, C, sub_eq_zero]; grind only
-  suffices C / C₁ * (d B / n - 2 * e B 0 / n + C / C₁ * e B 0 ^ 2 / n ^ 2) =
-           (1 - C / C₁ * (e B 0 / n)) ^ 2 - (1 - C / C₁ * (d B / n)) by
-    have eq₂ : C₁ * C₁⁻¹ = 1 := by field_simp
+  set c := Fintype.card F
+  set c1 := (c : ℚ) - 1
+  have n₂ : c1 ≠ 0 := by simp [c1, c, sub_eq_zero]; grind only
+  suffices c / c1 * (d B / n - 2 * e B 0 / n + c / c1 * e B 0 ^ 2 / n ^ 2) =
+           (1 - c / c1 * (e B 0 / n)) ^ 2 - (1 - c / c1 * (d B / n)) by
+    have eq₂ : c1 * c1⁻¹ = 1 := by field_simp
     rw [←this]
-    have : C / C₁ = 1 + 1 / C₁ := by grind only
+    have : c / c1 = 1 + 1 / c1 := by grind only
     grind only [= e.eq_1]
   grind only
 
@@ -955,7 +963,7 @@ lemma johnson_worst_case_bound {n : ℕ} {F : Type*} [DecidableEq F]
   have hden0_pos' :
       (0 : ℚ) < D0 - 2 * E1 + frac * E1 ^ 2 := by
     exact lt_of_lt_of_le hden0_pos h_gmono
-  have hC_nonneg :
+  have h_c_nonneg :
       (0 : ℚ) ≤ 2 * E1 - frac * E1 ^ 2 := by
     have hmul :
         frac * E1 ≤ 1 := by
@@ -978,7 +986,7 @@ lemma johnson_worst_case_bound {n : ℕ} {F : Type*} [DecidableEq F]
         D1 * (D0 - 2 * E1 + frac * E1 ^ 2) ≤
         D0 * (D1 - 2 * E1 + frac * E1 ^ 2) := by
       have h : (0 : ℚ) ≤ (D1 - D0) := by linarith [hD]
-      have h' : (0 : ℚ) ≤ (2 * E1 - frac * E1 ^ 2) := hC_nonneg
+      have h' : (0 : ℚ) ≤ (2 * E1 - frac * E1 ^ 2) := h_c_nonneg
       nlinarith [h, h']
     exact (div_le_div_iff₀ hden1_pos' hden0_pos').2 hmul
   have hstep2 :
@@ -1058,11 +1066,13 @@ lemma johnson_gap_frac_d_gt_one {n d : ℕ} {F : Type*} [Fintype F] [DecidableEq
             calc
               (q - 1) * ↑n < (q - 1) * (frac * ↑d) := by
                 exact mul_lt_mul_of_pos_left h' hq1_pos
-              _ = q * ↑d := by simp [frac]; field_simp [hq1_ne]
+              _ = q * ↑d := by
+                simp [frac]
+                field_simp [hq1_ne]
       simpa [mul_comm, mul_left_comm, mul_assoc] using h''
-    have hF2 : (2 : ℕ) ≤ Fintype.card F := by
+    have h_f2 : (2 : ℕ) ≤ Fintype.card F := by
       exact_mod_cast (by simpa [q] using q_not_small')
-    have hF1 : (1 : ℕ) ≤ Fintype.card F := by omega
+    have h_f1 : (1 : ℕ) ≤ Fintype.card F := by omega
     have hqd_gt' :
         ((Fintype.card F : ℚ) * (d : ℚ) >
           ((Fintype.card F - 1 : ℕ) : ℚ) * (n : ℚ)) := by
@@ -1070,7 +1080,7 @@ lemma johnson_gap_frac_d_gt_one {n d : ℕ} {F : Type*} [Fintype F] [DecidableEq
           ((Fintype.card F : ℚ) * (d : ℚ) >
             ((Fintype.card F : ℚ) - 1) * (n : ℚ)) := by
         simpa [q] using hqd_gt
-      simpa [Nat.cast_sub hF1] using hqd_gt''
+      simpa [Nat.cast_sub h_f1] using hqd_gt''
     have hqd_gt_nat :
         (Fintype.card F) * d > (Fintype.card F - 1) * n := by
       exact_mod_cast hqd_gt'
@@ -1086,7 +1096,7 @@ lemma johnson_gap_frac_d_gt_one {n d : ℕ} {F : Type*} [Fintype F] [DecidableEq
           (1 : ℚ) ≤
             ((Fintype.card F) * d - (Fintype.card F - 1) * n : ℚ) := by
         exact_mod_cast hnum_ge_nat
-      simpa [q, Nat.cast_sub hF1, Nat.cast_sub hqd_ge_nat, Nat.cast_mul] using hnum_ge_q'
+      simpa [q, Nat.cast_sub h_f1, Nat.cast_sub hqd_ge_nat, Nat.cast_mul] using hnum_ge_q'
     have hgap_d : (1 : ℚ) / ((n : ℚ) * (q - 1)) ≤ frac * (d : ℚ) / n - 1 := by
       have hden_nonneg : (0 : ℚ) ≤ (q - 1) * n := by
         exact mul_nonneg (le_of_lt hq1_pos) (le_of_lt hn_pos)

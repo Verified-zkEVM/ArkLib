@@ -79,7 +79,7 @@ def natDegreeY (f : F[X][Y]) : ℕ := Polynomial.natDegree f
 /-- The set of `Y`-degrees is non-empty. -/
 lemma degreesY_nonempty {f : F[X][Y]} (hf : f ≠ 0) : (f.toFinsupp.support).Nonempty :=
   Finsupp.support_nonempty_iff.mpr
-    fun h ↦ hf (Polynomial.ext (fun n => by rw [←Polynomial.toFinsupp_apply, h]; rfl))
+    fun h ↦ hf (Polynomial.ext (fun n => by rw [← Polynomial.toFinsupp_apply, h]; rfl))
 
 /-- The `X`-degree of a bivariate polynomial. -/
 def degreeX (f : F[X][Y]) : ℕ := f.support.sup (fun n => (f.coeff n).natDegree)
@@ -99,6 +99,11 @@ def natWeightedDegree.{u} {F : Type u} [Semiring F] (f : F[X][Y]) (u v : ℕ) : 
   f.support.sup (fun m => u * (f.coeff m).natDegree + v * m)
 
 variable {f : F[X][Y]}
+
+/-- The weighted degree is always defined (never none). -/
+lemma weightedDegree_ne_none {F : Type} [Semiring F] (f : F[X][Y]) (u v : ℕ) :
+    weightedDegree f u v ≠ none := by
+  unfold weightedDegree; aesop
 
 @[grind _=_]
 lemma weightedDegree_eq_natWeightedDegree {u v : ℕ} :
@@ -133,16 +138,17 @@ def rootMultiplicity₀.{u} {F : Type u} [Semiring F] [DecidableEq F] (f : F[X][
   let deg := weightedDegree f 1 1
   match deg with
   | none => none
-  | some deg => List.max?
-    (List.map
-      (fun x => if coeff f x.1 x.2 ≠ 0 then x.1 + x.2 else 0)
-      (List.product (List.range deg.succ) (List.range deg.succ)))
+  | some deg => List.min?
+    (List.filterMap
+      (fun p ↦ if coeff f p.1 p.2 = 0 then none else some (p.1 + p.2))
+        (List.product (List.range deg.succ) (List.range deg.succ)))
 
-/-- The multiplicity of a pair `(x,y)` of a bivariate polynomial `f`. -/
+/-- Root multiplicity (order of vanishing) of a bivariate polynomial at `(x,y)`.
+It is the smallest total degree `s+t` of a nonzero coefficient after shifting
+the root to `(0,0)`. The zero polynomial has multiplicity `none`. -/
 def rootMultiplicity.{u} {F : Type u} [CommSemiring F] [DecidableEq F]
-  (f : F[X][Y]) (x y : F) : Option ℕ :=
-  let X := (Polynomial.X : Polynomial F)
-  rootMultiplicity₀ (F := F) ((f.comp (Y + (C (C y)))).map (Polynomial.compRingHom (X + C x)))
+    (f : F[X][Y]) (x y : F) : Option ℕ :=
+  rootMultiplicity₀ <| (f.comp (Y + C (C y))).map (Polynomial.compRingHom (X + C x))
 
 /-- If the multiplicity of a pair `(x,y)` is non-negative, then the pair is a root of `f`. -/
 theorem rootMultiplicity_some_implies_root {F : Type} [CommRing F]
@@ -380,7 +386,7 @@ def monomialXY (n m : ℕ) : F →ₗ[F] F[X][Y] where
     simp only [ofFinsupp_single, map_add]
   map_smul' x y := by
     simp only [smul_eq_mul, ofFinsupp_single, RingHom.id_apply]
-    rw[smul_monomial, smul_monomial]
+    rw [smul_monomial, smul_monomial]
     simp
 
 /-- The bivariate monomial is well-defined. -/
@@ -458,6 +464,10 @@ lemma degreeY_monomialXY {n m : ℕ} {a : F} (ha : a ≠ 0) :
 /-- `(a,b)`-weighted degree of a monomial `X^i * Y^j` -/
 def weightedDegreeMonomialXY {n m : ℕ} (a b t : ℕ) : ℕ :=
   a * (degreeX (monomialXY n m t)) + b * natDegreeY (monomialXY n m t)
+
+/-- Shift a bivariate polynomial by (x, y). -/
+noncomputable def shift {F : Type} [Field F] (f : F[X][Y]) (x y : F) : F[X][Y] :=
+  (f.comp (X + C (C y))).map ((X + C x).compRingHom)
 
 end
 end Polynomial.Bivariate

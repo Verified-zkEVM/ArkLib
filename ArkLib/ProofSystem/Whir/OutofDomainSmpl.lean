@@ -31,8 +31,8 @@ lemma crs_equiv_rs_random_point_agreement
   ∀ (r : Fin s → Fin m → F) (δ : ℝ≥0) (hδLe : δ ≤ 1),
     (∃ u u' : smoothCode φ m,
       u.val ≠ u'.val ∧
-      u.val ∈ relHammingBall (smoothCode φ m) f δ ∧
-      u'.val ∈ relHammingBall (smoothCode φ m) f δ ∧
+      u.val ∈ closeCodewordsRel (smoothCode φ m) f δ ∧
+      u'.val ∈ closeCodewordsRel (smoothCode φ m) f δ ∧
       ∀ i : Fin s, (mVdecode u).eval (r i) = (mVdecode u').eval (r i))
     ↔
     (∃ σ : Fin s → F,
@@ -40,8 +40,8 @@ lemma crs_equiv_rs_random_point_agreement
         fun i => MvPolynomial.X (Fin.last m) * rename Fin.castSucc (eqPolynomial (r i))
       let multiCRSCode := multiConstrainedCode φ m s w σ
       ∃ u u' : ι → F, u ≠ u' ∧
-        u ∈ relHammingBall multiCRSCode f δ ∧
-        u' ∈ relHammingBall multiCRSCode f δ)
+        u ∈ closeCodewordsRel multiCRSCode f δ ∧
+        u' ∈ closeCodewordsRel multiCRSCode f δ)
   := by sorry
 
 /-- Lemma 4.25 part 1
@@ -65,13 +65,13 @@ lemma oodSampling_crs_eq_rs
                             MvPolynomial.X (Fin.last m) * rename Fin.castSucc (eqPolynomial rVec)
                         let multiCRSCode := multiConstrainedCode φ m s w σ
                         ∃ u u' : ι → F, u ≠ u' ∧
-                          u ∈ relHammingBall multiCRSCode f δ ∧
-                          u' ∈ relHammingBall multiCRSCode f δ)]
+                          u ∈ closeCodewordsRel multiCRSCode f δ ∧
+                          u' ∈ closeCodewordsRel multiCRSCode f δ)]
     =
     Pr_{ let rs ←$ᵖ (Fin s → F) }[ (∃ u u' : smoothCode φ m,
                         u.val ≠ u'.val ∧
-                        u.val ∈ relHammingBall C f δ ∧
-                        u'.val ∈ relHammingBall C f δ ∧
+                        u.val ∈ closeCodewordsRel C f δ ∧
+                        u'.val ∈ closeCodewordsRel C f δ ∧
                         ∀ i : Fin s,
                           let ri := rs i
                           let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
@@ -88,13 +88,13 @@ lemma oodSampling_crs_eq_rs
           MvPolynomial.X (Fin.last m) * rename Fin.castSucc (eqPolynomial rVec)
       let multiCRSCode := multiConstrainedCode φ m s w σ
       ∃ u u' : ι → F, u ≠ u' ∧
-        u ∈ relHammingBall multiCRSCode f ↑δ ∧
-        u' ∈ relHammingBall multiCRSCode f ↑δ)
+        u ∈ closeCodewordsRel multiCRSCode f ↑δ ∧
+        u' ∈ closeCodewordsRel multiCRSCode f ↑δ)
     ↔
     (∃ u u' : smoothCode φ m,
       u.val ≠ u'.val ∧
-      u.val ∈ relHammingBall (↑(smoothCode φ m)) f ↑δ ∧
-      u'.val ∈ relHammingBall (↑(smoothCode φ m)) f ↑δ ∧
+      u.val ∈ closeCodewordsRel (↑(smoothCode φ m)) f ↑δ ∧
+      u'.val ∈ closeCodewordsRel (↑(smoothCode φ m)) f ↑δ ∧
       ∀ i : Fin s,
         let ri := rs i
         let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
@@ -108,12 +108,12 @@ lemma oodSampling_crs_eq_rs
         MvPolynomial.X (Fin.last m) * rename Fin.castSucc (eqPolynomial rVec)
       let multiCRSCode := multiConstrainedCode φ m s w σ
       ∃ u u' : ι → F, u ≠ u' ∧
-        u ∈ relHammingBall multiCRSCode f ↑δ ∧
-        u' ∈ relHammingBall multiCRSCode f ↑δ) : (Fin s → F) → PMF Prop) =
+        u ∈ closeCodewordsRel multiCRSCode f ↑δ ∧
+        u' ∈ closeCodewordsRel multiCRSCode f ↑δ) : (Fin s → F) → PMF Prop) =
     fun rs => PMF.pure (∃ u u' : smoothCode φ m,
       u.val ≠ u'.val ∧
-      u.val ∈ relHammingBall (↑(smoothCode φ m)) f ↑δ ∧
-      u'.val ∈ relHammingBall (↑(smoothCode φ m)) f ↑δ ∧
+      u.val ∈ closeCodewordsRel (↑(smoothCode φ m)) f ↑δ ∧
+      u'.val ∈ closeCodewordsRel (↑(smoothCode φ m)) f ↑δ ∧
       ∀ i : Fin s,
         let ri := rs i
         let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
@@ -133,8 +133,8 @@ lemma oodSampling_rs_le_bound
     (C : Set (ι → F)) (hcode : C = smoothCode φ m ∧ listDecodable C δ l) :
     Pr_{ let rs ←$ᵖ (Fin s → F) }[ ∃ u u' : smoothCode φ m,
                         u.val ≠ u'.val ∧
-                        u.val ∈ relHammingBall C f δ ∧
-                        u'.val ∈ relHammingBall C f δ ∧
+                        u.val ∈ closeCodewordsRel C f δ ∧
+                        u'.val ∈ closeCodewordsRel C f δ ∧
                         ∀ i : Fin s,
                           let ri := rs i
                           let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
