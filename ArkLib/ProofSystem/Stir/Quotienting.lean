@@ -61,7 +61,7 @@ noncomputable def disagreementSet (f : ι → F) (S : Finset F) (Ans : S → F) 
 lemma quotienting {degree : ℕ} {domain : ι ↪ F} [Nonempty ι]
   (S : Finset F) (hS_lt : S.card < degree) (r : F)
   (f : ι → F) (Ans Fill : S → F) (δ : ℝ≥0) (hδPos : δ > 0) (hδLt : δ < 1)
-  (h : ∀ u : code domain degree, u.val ∈ (relHammingBall ↑(code domain degree) f δ) →
+  (h : ∀ u : code domain degree, u.val ∈ (closeCodewordsRel ↑(code domain degree) f δ) →
     ∃ x : S, ((decodeLT u) : F[X]).eval x.val ≠ Ans x) :
     δᵣ((funcQuotient f S Ans Fill), (code domain (degree - S.card))) +
       ((disagreementSet f S Ans).card) / (ι.card) > δ := by
