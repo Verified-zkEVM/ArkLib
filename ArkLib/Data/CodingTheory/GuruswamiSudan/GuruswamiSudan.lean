@@ -1,642 +1,837 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: František Silváši, Ilia Vlasov, Stefano Rocca
+Authors: František Silváši, Ilia Vlasov, Elias Judin
 -/
+
 import Mathlib.Algebra.Field.Basic
 import Mathlib.Algebra.Polynomial.Basic
 import Mathlib.Data.Real.Sqrt
+import Mathlib.RingTheory.Polynomial.Basic
 
+import ArkLib.Data.CodingTheory.Basic
+import ArkLib.Data.CodingTheory.BerlekampWelch.Sorries
 import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
-/-! # Guruswami-Sudan Decoder -/
+import ArkLib.Data.CodingTheory.ReedSolomon
+import ArkLib.Data.Polynomial.Bivariate
+import ArkLib.Data.Polynomial.Interface
 
+import CompPoly.Univariate.Lagrange
 
+/-!
+# Guruswami-Sudan Decoder
 
-open Finset Finsupp Polynomial Polynomial.Bivariate ReedSolomon
+This module keeps the abstract Guruswami-Sudan specification decoder alongside
+constructive candidate generation for Reed-Solomon codes.
 
---Let `F` be a field (finite).
-variable {F : Type} [Field F] [DecidableEq F]
---Let `k + 1` be the **dimension** of the code.
-variable {k : ℕ}
---Let `n` be the **blocklength** of the code.
-variable {n : ℕ}
---Let `m` be a natural number, serving as the **multiplicity parameter**.
-variable {m : ℕ}
---Let `ωs` be the **domain of evaluation**, i.e. the interpolation points.
-variable {ωs : Fin n ↪ F}
---Let `f` be the **received word**, possibly corrupted.
-variable {f : Fin n → F}
+The witness search is implemented by `computeGsWitness`, which solves a linearized
+system of Hasse-derivative constraints with a normalization equation. Candidate
+message polynomials are then filtered by a computable root check for
+`$Q(X, p(X)) = 0$` using CompPoly arithmetic.
+
+## References
+
+* [Bafna, P., Chiesa, A., Ishai, Y., Khurana, D., and Spooner, N.,
+    *On the Proximity Gap of Reed-Solomon Codes*][BCIKS20]
+-/
 
 namespace GuruswamiSudan
 
+variable {F : Type} [Field F] [DecidableEq F]
+variable {k : ℕ}
+variable {n : ℕ}
+variable {m : ℕ}
+variable {ωs : Fin n ↪ F}
+variable {f : Fin n → F}
+
+open Finset Finsupp Polynomial Polynomial.Bivariate ReedSolomon
+
 variable (k m) in
 /--
-Guruswami–Sudan conditions for the polynomial searched by the decoder.
+Guruswami–Sudan conditions for the polynomial searched by the specification decoder.
 
-These conditions characterize a nonzero bivariate polynomial `Q(X,Y)`
-with bounded weighted degree that vanishes with sufficiently high
-multiplicity at all interpolation points `(ωs i, f i)`. As in the
-Berlekamp–Welch case, finding such a polynomial can be shown to be
-equivalent to solving a system of linear equations.
+These conditions characterize the existence of a nonzero bivariate
+polynomial `Q(X,Y)` that vanishes with sufficiently high multiplicity
+at all interpolation points `(ωs i, f i)`. As in the Berlekamp–Welch
+case, this can be shown to be equivalent to solving a system of linear
+equations.
 
 Here:
-* `D : ℕ` — the **degree bound** for `Q` under the weighted degree measure.
-* `ωs : Fin n ↪ F` — the **domain of evaluation**, i.e. the interpolation points.
-* `f : Fin n → F` — the **received word**.
-  It is the evaluation of the encoded polynomial, possibly corrupted.
-* `Q : F[X][Y]` — The candidate bivariate polynomial.
+* `D : ℕ` — the degree bound for `Q` under the weighted degree measure.
+* `ωs : Fin n ↪ F` — the domain of evaluation, i.e. the interpolation points.
+* `f : Fin n → F` — the received word.
+* `Q : F[X][Y]` — the candidate bivariate polynomial.
 -/
 structure Conditions (D : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) (Q : F[X][Y]) where
-  /-- The polynomial is non-zero. -/
+  /-- Q ≠ 0 -/
   Q_ne_0 : Q ≠ 0
-  /-- (1, k-1)-weighted degree of the polynomial is bounded. -/
+  /-- `(1, k - 1)`-weighted degree of the polynomial is bounded. -/
   Q_deg : weightedDegree Q 1 (k - 1) ≤ D
-  /-- (ωs i, f i) must be root of the polynomial Q. -/
+  /-- `(ωs i, f i)` must be a root of the polynomial `Q`. -/
   Q_roots : ∀ i, (Q.eval (C <| f i)).eval (ωs i) = 0
-  /-- Multiplicity of the roots is at least m. -/
+  /-- Multiplicity of the roots is at least `m`. -/
   Q_multiplicity : ∀ i, m ≤ rootMultiplicity Q (ωs i) (f i)
 
-/-- Guruswami-Sudan decoder. -/
+/-- Specification-level Guruswami-Sudan decoder. -/
 opaque decoder (k r D e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) : List F[X] := sorry
 
-/-- Each decoded codeword has to be e-far from the received message. -/
+/-- Each decoded codeword has to be `e`-close to the received message. -/
 theorem decoder_mem_impl_dist
     {k r D e : ℕ}
-  (h_e : e ≤ n - Real.sqrt (k * n))
-  {ωs : Fin n ↪ F}
-  {f : Fin n → F}
-  {p : F[X]}
-  (h_in : p ∈ decoder k r D e ωs f) :
-  Δ₀(f, p.eval ∘ ωs) ≤ e := by sorry
+    (h_e : e ≤ n - Real.sqrt (k * n))
+    {ωs : Fin n ↪ F}
+    {f : Fin n → F}
+    {p : F[X]}
+    (h_in : p ∈ decoder k r D e ωs f) :
+    Δ₀(f, p.eval ∘ ωs) ≤ e := by
+  sorry
 
-/-- If a codeword is e-far from the received message it appears in the output of
-    the decoder. -/
+/-- Alias for the specification decoder distance guarantee. -/
+theorem decoder_output_dist_le
+    {k r D e : ℕ}
+    (h_e : e ≤ n - Real.sqrt (k * n))
+    {ωs : Fin n ↪ F}
+    {f : Fin n → F}
+    {p : F[X]}
+    (h_in : p ∈ decoder k r D e ωs f) :
+    Δ₀(f, p.eval ∘ ωs) ≤ e :=
+  decoder_mem_impl_dist (k := k) (r := r) (D := D) (e := e) h_e h_in
+
+/-- If a codeword is `e`-close to the received message, it appears in the decoder output. -/
 theorem decoder_dist_impl_mem
     {k r D e : ℕ}
-  (h_e : e ≤ n - Real.sqrt (k * n))
-  {ωs : Fin n ↪ F}
-  {f : Fin n → F}
-  {p : F[X]}
-  (h_dist : Δ₀(f, p.eval ∘ ωs) ≤ e) :
-  p ∈ decoder k r D e ωs f := by sorry
+    (h_e : e ≤ n - Real.sqrt (k * n))
+    {ωs : Fin n ↪ F}
+    {f : Fin n → F}
+    {p : F[X]}
+    (h_dist : Δ₀(f, p.eval ∘ ωs) ≤ e) :
+    p ∈ decoder k r D e ωs f := by
+  sorry
 
-/-- Existence of a solution to the Guruswami-Sudan decoder.
-    It is the first part of Lemma 5.3 from [BCIKS20]. -/
+/-- Recover a polynomial from its first `k` coefficients when its degree is below `k`. -/
+private lemma polynomial_of_coeffs_coeffs_of_polynomial_of_degree_lt
+    {F : Type} [CommSemiring F] [DecidableEq F] {k : ℕ} {p : F[X]}
+    (h : p.degree < (k : WithBot ℕ)) :
+    polynomialOfCoeffs (coeffsOfPolynomial (deg := k) p) = p := by
+  ext x
+  simp only [coeff_polynomialOfCoeffs_eq_coeffs', coeffsOfPolynomial]
+  split
+  · rfl
+  · symm
+    exact Polynomial.coeff_eq_zero_of_degree_lt
+      (lt_of_lt_of_le h (by exact_mod_cast Nat.le_of_not_lt ‹_›))
+
+/-- The finset of all polynomials `p : F[X]` with `p.degree < k`, viewed as elements of `F[X]`.
+    Constructed computably by enumerating coefficient vectors `Fin k → F`.
+    Note that this always includes `0`, since `(0 : F[X]).degree = ⊥ < (k : WithBot ℕ)`. -/
+def polynomialsDegreeLt (F : Type) [CommSemiring F] [Fintype F]
+    [DecidableEq F] (k : ℕ) :
+    Finset F[X] :=
+  (Finset.univ : Finset (Fin k → F)).image polynomialOfCoeffs
+
+/-- Membership characterization for `polynomialsDegreeLt`. -/
+lemma mem_polynomials_degree_lt
+    {F : Type} [CommSemiring F] [Fintype F] [DecidableEq F]
+    {k : ℕ} {p : F[X]} :
+    p ∈ polynomialsDegreeLt F k ↔ p.degree < k := by
+  simp only [polynomialsDegreeLt, Finset.mem_image, Finset.mem_univ, true_and]
+  constructor
+  · rintro ⟨coeffs, rfl⟩
+    exact degree_polynomialOfCoeffs_deg_lt_deg
+  · intro h
+    exact ⟨coeffsOfPolynomial p, polynomial_of_coeffs_coeffs_of_polynomial_of_degree_lt h⟩
+
+/-! ### CompPoly-based interpolation candidate
+
+The following private helpers use CompPoly's computable `CPolynomial.Raw` type to build a
+Lagrange interpolation candidate from the first `min k n` evaluation points. The result is
+converted back to Mathlib's `Polynomial F` via coefficient extraction (`polynomialOfCoeffs`),
+which is fully computable.
+
+The candidate is constructed with `rawToPolyBounded`, whose output has bounded degree by
+construction (`degree_polynomialOfCoeffs_deg_lt_deg`). CompPoly's `Raw.toPoly` bridge is
+noncomputable, so we validate the candidate by degree and distance checks before insertion.
+-/
+
+/-- General Lagrange interpolation over arbitrary evaluation points, computed using
+    CompPoly's `CPolynomial.Raw` arithmetic.
+
+    Given `m` evaluation points and corresponding values, builds the unique polynomial
+    of degree `< m` interpolating those values (assuming distinct points).
+    Fully computable: avoids classical choice operators, nonconstructive root APIs,
+    and noncomputable terms. -/
+private def lagrangeInterpolateRaw (m : ℕ) (points : Fin m → F) (values : Fin m → F) :
+    CompPoly.CPolynomial.Raw F :=
+  (List.finRange m).foldl (fun acc i ↦
+    let basis := (List.finRange m).foldl (fun b j ↦
+      if i = j then b
+      else b.mul (CompPoly.CPolynomial.Raw.X - CompPoly.CPolynomial.Raw.C (points j))
+    ) (CompPoly.CPolynomial.Raw.C 1)
+    let denom := (List.finRange m).foldl (fun d j ↦
+      if i = j then d
+      else d * (points i - points j)
+    ) 1
+    acc + CompPoly.CPolynomial.Raw.smul (values i * denom⁻¹) basis
+  ) 0
+
+/-- Convert a `CPolynomial.Raw` to `Polynomial F` by extracting the first `bound` coefficients.
+    Fully computable; the result always has `degree < bound`. -/
+private def rawToPolyBounded (raw : CompPoly.CPolynomial.Raw F) (bound : ℕ) : F[X] :=
+  polynomialOfCoeffs (fun i : Fin bound ↦ raw.coeff i.val)
+
+/-- Build an interpolation candidate from the first `min k n` evaluation points.
+    Returns `none` when `k = 0` (no meaningful interpolation).
+    The result, when `some`, has `degree < k` by construction of `rawToPolyBounded`. -/
+private def compPolyCandidate [Fintype F] (k : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+    Option F[X] :=
+  if k = 0 then none
+  else
+    let m := min k n
+    if _hm : m = 0 then none
+    else
+      let points : Fin m → F := fun i ↦ ωs (Fin.castLE (Nat.min_le_right k n) i)
+      let values : Fin m → F := fun i ↦ f (Fin.castLE (Nat.min_le_right k n) i)
+      let raw := lagrangeInterpolateRaw m points values
+      some (rawToPolyBounded raw k)
+
+/-- The `Finset` of CompPoly interpolation candidates that pass the degree and distance check.
+    Always a subset of `{p | p.degree < k ∧ Δ₀(f, p.eval ∘ ωs) ≤ e}`. -/
+private def compPolyCandidateSet [Fintype F] (k e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+    Finset F[X] :=
+  match compPolyCandidate k ωs f with
+  | Option.some p =>
+    if decide (p.degree < (k : WithBot ℕ) ∧ Δ₀(f, p.eval ∘ ωs) ≤ e) then {p} else ∅
+  | Option.none => ∅
+
+/-- Every element of `compPolyCandidateSet` satisfies the degree and distance bounds. -/
+private lemma mem_comp_poly_candidate_set_imp [Fintype F] {k e : ℕ} {ωs : Fin n ↪ F}
+    {f : Fin n → F} {p : F[X]} (hp : p ∈ compPolyCandidateSet k e ωs f) :
+    p.degree < k ∧ Δ₀(f, p.eval ∘ ωs) ≤ e := by
+  simp only [compPolyCandidateSet] at hp
+  split at hp
+  · split at hp
+    · rw [Finset.mem_singleton.mp hp]
+      exact decide_eq_true_eq.mp ‹_›
+    · simp at hp
+  · simp at hp
+
+/-! ### Hasse derivative evaluation for multiplicity checking
+
+The Guruswami–Sudan multiplicity condition requires that for each interpolation
+point `(ωᵢ, fᵢ)`, the bivariate polynomial `Q` vanishes with multiplicity `≥ r`.
+Formally, this means every Hasse derivative `D^{(a,b)} Q` (for `a + b < r`)
+evaluates to zero at `(ωᵢ, fᵢ)`.
+
+For a bivariate polynomial `Q = ∑ cᵢⱼ X^i Y^j`, the `(a,b)`-Hasse derivative at
+`(x₀, y₀)` is `∑ C(i,a) C(j,b) cᵢⱼ x₀^{i-a} y₀^{j-b}`, where `C(n,k)` denotes
+the binomial coefficient.
+
+The following functions compute this evaluation purely computably over coefficient
+vectors, with no reliance on classical choice or nonconstructive root extraction.
+-/
+
+/-- Evaluate a bounded coefficient vector at `(x, y)` as
+    `∑ cᵢⱼ x^i y^j` over indices satisfying `i + (k - 1) * j ≤ D`. -/
+private def evalCoeffVecAt (k D : ℕ)
+    (c : Fin (D + 1) × Fin (D + 1) → F) (x y : F) : F :=
+  (List.finRange (D + 1)).foldl (fun a1 j ↦
+    (List.finRange (D + 1)).foldl (fun a2 i ↦
+      if i.val + (k - 1) * j.val ≤ D then
+        a2 + c (i, j) * x ^ i.val * y ^ j.val
+      else a2) a1) 0
+
+/-- Evaluate the `(a, b)`-Hasse derivative of a bivariate polynomial
+    (given as a bounded coefficient vector `c`) at the point `(x, y)`.
+
+    The Hasse derivative `D^{(a,b)} Q` of `Q = ∑ cᵢⱼ X^i Y^j` is
+    `∑_{i ≥ a, j ≥ b} C(i,a) C(j,b) cᵢⱼ X^{i-a} Y^{j-b}`.
+
+    This computes `D^{(a,b)} Q (x, y) = ∑ C(i,a) C(j,b) cᵢⱼ x^{i-a} y^{j-b}`
+    over indices in the weighted-degree region `i + (k-1)·j ≤ D`. -/
+private def hasseDerivEvalAt (k D a b : ℕ)
+    (c : Fin (D + 1) × Fin (D + 1) → F) (x y : F) : F :=
+  (List.finRange (D + 1)).foldl (fun a1 j ↦
+    (List.finRange (D + 1)).foldl (fun a2 i ↦
+      if i.val + (k - 1) * j.val ≤ D ∧ a ≤ i.val ∧ b ≤ j.val then
+        a2 + (↑(Nat.choose i.val a) : F) * (↑(Nat.choose j.val b) : F) *
+             c (i, j) * x ^ (i.val - a) * y ^ (j.val - b)
+      else a2) a1) 0
+
+/-- Check that all Hasse derivatives of order `< r` vanish at `(x, y)`.
+    This is the computable form of the multiplicity-`r` condition:
+    `(X - x, Y - y)^r | Q` iff `D^{(a,b)} Q(x,y) = 0` for all `a + b < r`. -/
+private def hasseMultiplicityCheck (k D r : ℕ)
+    (c : Fin (D + 1) × Fin (D + 1) → F) (x y : F) : Bool :=
+  (List.finRange r).all fun ab ↦
+    (List.finRange (ab.val + 1)).all fun a ↦
+      decide (hasseDerivEvalAt k D a.val (ab.val - a.val) c x y = 0)
+
+omit [DecidableEq F] in
+/-- The `(0,0)`-Hasse derivative is ordinary evaluation: `Nat.choose i 0 = 1`,
+    `Nat.choose j 0 = 1`, and shifting by zero leaves exponents unchanged, so
+    `hasseDerivEvalAt k D 0 0 c x y = evalCoeffVecAt k D c x y`. -/
+private lemma hasseDerivEvalAt_zero_zero (k D : ℕ)
+    (c : Fin (D + 1) × Fin (D + 1) → F) (x y : F) :
+    hasseDerivEvalAt k D 0 0 c x y = evalCoeffVecAt k D c x y := by
+  unfold hasseDerivEvalAt evalCoeffVecAt
+  congr 1; funext j; funext a2; congr 1; funext i
+  simp [Nat.choose_zero_right]
+
+/-- If the multiplicity check passes, every individual Hasse derivative of order
+    `< r` vanishes. This is the core unwinding of `hasseMultiplicityCheck`. -/
+private lemma hasseMultiplicityCheck_imp_deriv_zero {k D r a b : ℕ}
+    {c : Fin (D + 1) × Fin (D + 1) → F} {x y : F}
+    (hcheck : hasseMultiplicityCheck k D r c x y = true)
+    (hab : a + b < r) :
+    hasseDerivEvalAt k D a b c x y = 0 := by
+  simp only [hasseMultiplicityCheck, List.all_eq_true, List.mem_finRange, forall_true_left,
+    decide_eq_true_eq] at hcheck
+  have h := hcheck ⟨a + b, hab⟩ ⟨a, Nat.lt_succ_of_le (Nat.le_add_right a b)⟩
+  rwa [Nat.add_sub_cancel_left] at h
+
+/-- When `r > 0`, the multiplicity check implies pointwise evaluation vanishes:
+    `Q(x, y) = 0`. This is the `(a, b) = (0, 0)` specialization, combined with
+    `hasseDerivEvalAt_zero_zero`. -/
+private lemma hasseMultiplicityCheck_imp_eval_zero {k D r : ℕ}
+    {c : Fin (D + 1) × Fin (D + 1) → F} {x y : F}
+    (hr : 0 < r)
+    (hcheck : hasseMultiplicityCheck k D r c x y = true) :
+    evalCoeffVecAt k D c x y = 0 := by
+  rw [← hasseDerivEvalAt_zero_zero]
+  exact hasseMultiplicityCheck_imp_deriv_zero hcheck (by omega)
+
+/-- Decidable sound-first witness predicate on bounded coefficient vectors:
+    nonzero on the weighted region and full multiplicity vanishing at each interpolation
+    point (all Hasse derivatives of order `< r` vanish).
+
+    When `r = 0`, only the nonzero condition is checked; when `r ≥ 1`, the Hasse
+    derivative conditions imply (in particular) that `Q(ωᵢ, fᵢ) = 0` for each `i`. -/
+private def isWitnessC (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
+    (c : Fin (D + 1) × Fin (D + 1) → F) : Bool :=
+  -- nonzero in weighted-degree region
+  (List.finRange (D + 1)).any (fun j ↦
+    (List.finRange (D + 1)).any (fun i ↦
+      decide (i.val + (k - 1) * j.val ≤ D ∧ c (i, j) ≠ 0))) &&
+  -- multiplicity check: all Hasse derivatives of order < r vanish at each point
+  (List.finRange n).all (fun idx ↦
+    hasseMultiplicityCheck k D r c (ωs idx) (f idx))
+
+/-- When `r > 0` and the witness predicate `isWitnessC` holds, the bivariate polynomial
+    represented by `c` vanishes at every interpolation point `(ωs i, f i)`.
+
+    This connects the computable Hasse-derivative multiplicity filter to the classical
+    pointwise root condition `Q(ωᵢ, fᵢ) = 0` that the GS witness branch relies on. -/
+private lemma is_witness_c_imp_eval_zero_at_points {k D r : ℕ}
+    {ωs : Fin n ↪ F} {f : Fin n → F} {c : Fin (D + 1) × Fin (D + 1) → F}
+    (hr : 0 < r)
+    (hw : isWitnessC k D r ωs f c = true) (i : Fin n) :
+    evalCoeffVecAt k D c (ωs i) (f i) = 0 := by
+  simp only [isWitnessC, Bool.and_eq_true] at hw
+  obtain ⟨_, hmult⟩ := hw
+  simp only [List.all_eq_true, List.mem_finRange, forall_true_left] at hmult
+  exact hasseMultiplicityCheck_imp_eval_zero hr (hmult ⟨i.val, i.isLt⟩)
+
+/-- Extract the nonzero-coefficient condition from `isWitnessC`: there exists at least one
+    index pair `(i, j)` in the weighted-degree region `i + (k-1)·j ≤ D` where `c(i,j) ≠ 0`. -/
+private lemma is_witness_c_nonzero {k D r : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F}
+    {c : Fin (D + 1) × Fin (D + 1) → F}
+    (hw : isWitnessC k D r ωs f c = true) :
+    ∃ i : Fin (D + 1), ∃ j : Fin (D + 1),
+      i.val + (k - 1) * j.val ≤ D ∧ c (i, j) ≠ 0 := by
+  simp only [isWitnessC, Bool.and_eq_true] at hw
+  obtain ⟨hne, _⟩ := hw
+  simp only [List.any_eq_true, List.mem_finRange, true_and, decide_eq_true_eq] at hne
+  obtain ⟨j, i, hcond⟩ := hne
+  exact ⟨i, j, hcond⟩
+
+/-- Extract the per-point multiplicity check from `isWitnessC`: `hasseMultiplicityCheck`
+    passes at every interpolation point `(ωs i, f i)`. -/
+private lemma is_witness_c_multiplicity_at {k D r : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F}
+    {c : Fin (D + 1) × Fin (D + 1) → F}
+    (hw : isWitnessC k D r ωs f c = true) (i : Fin n) :
+    hasseMultiplicityCheck k D r c (ωs i) (f i) = true := by
+  simp only [isWitnessC, Bool.and_eq_true] at hw
+  obtain ⟨_, hmult⟩ := hw
+  simp only [List.all_eq_true, List.mem_finRange, forall_true_left] at hmult
+  exact hmult ⟨i.val, i.isLt⟩
+
+/-- When `isWitnessC` holds, every Hasse derivative of order `< r` vanishes at every
+    interpolation point. This combines `is_witness_c_multiplicity_at` with
+    `hasseMultiplicityCheck_imp_deriv_zero`. -/
+private lemma is_witness_c_hasse_deriv_vanishes {k D r a b : ℕ}
+    {ωs : Fin n ↪ F} {f : Fin n → F} {c : Fin (D + 1) × Fin (D + 1) → F}
+    (hw : isWitnessC k D r ωs f c = true)
+    (hab : a + b < r) (i : Fin n) :
+    hasseDerivEvalAt k D a b c (ωs i) (f i) = 0 :=
+  hasseMultiplicityCheck_imp_deriv_zero (is_witness_c_multiplicity_at hw i) hab
+
+/-- Number of unknown coefficients in the bounded witness grid `(D + 1) × (D + 1)`. -/
+private def witnessVarCount (D : ℕ) : ℕ := (D + 1) * (D + 1)
+
+/-- Decode a linearized witness variable index into the corresponding coefficient pair `(i, j)`. -/
+private def witnessVarToPair (D : ℕ) (idx : Fin (witnessVarCount D)) :
+    Fin (D + 1) × Fin (D + 1) :=
+  let i : Fin (D + 1) := ⟨idx.val % (D + 1), Nat.mod_lt _ (Nat.succ_pos _)⟩
+  let j : Fin (D + 1) := ⟨idx.val / (D + 1), by
+    refine (Nat.div_lt_iff_lt_mul (Nat.succ_pos D)).2 ?_
+    have hidx : idx.val < (D + 1) * (D + 1) := idx.isLt
+    exact hidx⟩
+  (i, j)
+
+/-- Encode a coefficient pair `(i, j)` into the linearized witness variable index. -/
+private def witnessPairToVar (D : ℕ) (ij : Fin (D + 1) × Fin (D + 1)) :
+    Fin (witnessVarCount D) :=
+  ⟨ij.2.val * (D + 1) + ij.1.val, by
+    have hi : ij.1.val < D + 1 := ij.1.isLt
+    have hj : ij.2.val < D + 1 := ij.2.isLt
+    have hlt :
+        ij.2.val * (D + 1) + ij.1.val < ij.2.val * (D + 1) + (D + 1) :=
+      Nat.add_lt_add_left hi (ij.2.val * (D + 1))
+    have hstep : ij.2.val * (D + 1) + (D + 1) = (ij.2.val + 1) * (D + 1) := by
+      simp [Nat.succ_mul, Nat.add_assoc, Nat.add_comm]
+    have hbound : (ij.2.val + 1) * (D + 1) ≤ (D + 1) * (D + 1) := by
+      exact Nat.mul_le_mul_right (D + 1) (Nat.succ_le_of_lt hj)
+    exact lt_of_lt_of_le (hstep ▸ hlt) (by simpa [witnessVarCount, Nat.mul_comm] using hbound)⟩
+
+/-- Convert a linear solver output vector into a coefficient function `c(i,j)`. -/
+private def witnessSolToCoeffVec (D : ℕ) (x : Fin (witnessVarCount D) → F) :
+    Fin (D + 1) × Fin (D + 1) → F :=
+  fun ij ↦ x (witnessPairToVar D ij)
+
+/-- Number of interpolation-equation rows per evaluation point (`(r+1)^2`, with inactive rows). -/
+private def gsDerivBlockSize (r : ℕ) : ℕ := (r + 1) * (r + 1)
+
+/-- Total number of derivative rows before appending normalization. -/
+private def gsDerivRowCount (n r : ℕ) : ℕ := n * gsDerivBlockSize r
+
+/-- Total row count for the linearized GS system (derivatives + one normalization row). -/
+private def gsLinearRowCount (n r : ℕ) : ℕ := gsDerivRowCount n r + 1
+
+/-- One coefficient entry of the linearized GS interpolation matrix. -/
+private def gsLinearMatrixEntry (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
+    (target : Fin (witnessVarCount D))
+    (row : Fin (gsLinearRowCount n r)) (col : Fin (witnessVarCount D)) : F :=
+  if hrow : row.val < gsDerivRowCount n r then
+    let point : Fin n := ⟨row.val / gsDerivBlockSize r, by
+      refine (Nat.div_lt_iff_lt_mul (Nat.mul_pos (Nat.succ_pos r) (Nat.succ_pos r))).2 ?_
+      simpa [gsDerivRowCount, gsDerivBlockSize, Nat.mul_assoc] using hrow⟩
+    let rem := row.val % gsDerivBlockSize r
+    let a := rem / (r + 1)
+    let b := rem % (r + 1)
+    let ij := witnessVarToPair D col
+    if a + b < r then
+      if hwd : ij.1.val + (k - 1) * ij.2.val ≤ D ∧ a ≤ ij.1.val ∧ b ≤ ij.2.val then
+        (↑(Nat.choose ij.1.val a) : F) * (↑(Nat.choose ij.2.val b) : F) *
+          (ωs point) ^ (ij.1.val - a) * (f point) ^ (ij.2.val - b)
+      else 0
+    else 0
+  else
+    if col = target then 1 else 0
+
+/-- Linearized GS interpolation matrix with an appended normalization row. -/
+private def gsLinearMatrix (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
+    (target : Fin (witnessVarCount D)) :
+    Matrix (Fin (gsLinearRowCount n r)) (Fin (witnessVarCount D)) F :=
+  Matrix.of (fun row col ↦ gsLinearMatrixEntry k D r ωs f target row col)
+
+/-- RHS vector for the linearized GS system (`0` for interpolation rows, `1` for normalization). -/
+private def gsLinearRhs (r : ℕ) : Fin (gsLinearRowCount n r) → F :=
+  fun row ↦ if row.val < gsDerivRowCount n r then 0 else 1
+
+/-- Solve the linearized GS system with one normalized coefficient target. -/
+private def solveGsWitnessAtTarget (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
+    (target : Fin (witnessVarCount D)) :
+    Option {c : Fin (D + 1) × Fin (D + 1) → F // isWitnessC k D r ωs f c = true} :=
+  match linsolve (gsLinearMatrix (n := n) k D r ωs f target) (gsLinearRhs (n := n) r) with
+  | Option.none => none
+  | Option.some x =>
+    let c := witnessSolToCoeffVec D x
+    if hc : isWitnessC k D r ωs f c = true then some ⟨c, hc⟩ else none
+
+/-- Candidate normalization targets in the weighted-degree region. -/
+private def witnessTargets (k D : ℕ) : List (Fin (witnessVarCount D)) :=
+  (List.finRange (witnessVarCount D)).filter fun idx ↦
+    let ij := witnessVarToPair D idx
+    decide (ij.1.val + (k - 1) * ij.2.val ≤ D)
+
+/-- Constructive witness search: solve the linearized GS system over all normalization targets. -/
+private def computeGsWitness (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+    Option {c : Fin (D + 1) × Fin (D + 1) → F // isWitnessC k D r ωs f c = true} :=
+  (witnessTargets k D).findSome? (solveGsWitnessAtTarget (n := n) k D r ωs f)
+
+/-- Constructive witness-availability check computed from `computeGsWitness`. -/
+private def hasWitnessC (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) : Bool :=
+  (computeGsWitness (n := n) k D r ωs f).isSome
+
+/-- `hasWitnessC = true` iff `computeGsWitness` returns an explicit witness package. -/
+private lemma hasWitnessC_eq_true_iff_exists_output
+    (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+    hasWitnessC (n := n) k D r ωs f = true ↔
+      ∃ w, computeGsWitness (n := n) k D r ωs f = some w := by
+  unfold hasWitnessC
+  simp [Option.isSome_iff_exists]
+
+/-! ### Q-root extraction via CompPoly
+
+Given a witness bivariate polynomial `Q = ∑ cᵢⱼ X^i Y^j` and a candidate
+univariate polynomial `p(X)`, the Guruswami–Sudan root-extraction step checks
+whether `Y - p(X)` divides `Q(X, Y)` in `F[X][Y]`. Equivalently, this reduces
+to checking `Q(X, p(X)) = 0` in `F[X]`.
+
+We compute `Q(X, p(X)) = ∑ cᵢⱼ X^i · p(X)^j` using CompPoly's `CPolynomial.Raw`
+arithmetic and check whether the result is zero. This avoids nonconstructive
+root extraction and classical choice entirely.
+-/
+
+/-- Convert a Mathlib polynomial to a `CPolynomial.Raw` by extracting coefficients
+    up to a given degree bound. -/
+private def polyToRaw (p : F[X]) (bound : ℕ) : CompPoly.CPolynomial.Raw F :=
+  Array.ofFn (fun i : Fin bound ↦ p.coeff i.val)
+
+/-- Evaluate `Q(X, p(X))` where `Q` is given as a bounded coefficient vector
+    `c : Fin (D+1) × Fin (D+1) → F` and `p` is given as a `CPolynomial.Raw`.
+
+    Computes `∑_{i + (k-1)·j ≤ D} cᵢⱼ · X^i · p(X)^j` in `CPolynomial.Raw F`.
+    The result is zero iff `p` is a Y-root of the bivariate polynomial `Q`. -/
+private def evalQAtPRaw (k D : ℕ)
+    (c : Fin (D + 1) × Fin (D + 1) → F) (pRaw : CompPoly.CPolynomial.Raw F) :
+    CompPoly.CPolynomial.Raw F :=
+  -- Precompute powers of p(X): pPows[j] = p(X)^j for j = 0, ..., D
+  let pPows : Array (CompPoly.CPolynomial.Raw F) :=
+    (List.finRange (D + 1)).foldl (fun acc j ↦
+      if j.val = 0 then acc.push (CompPoly.CPolynomial.Raw.C 1)
+      else acc.push (acc.getD (j.val - 1) (CompPoly.CPolynomial.Raw.C 0) |>.mul pRaw)
+    ) #[]
+  -- Sum cᵢⱼ · X^i · p(X)^j over the weighted-degree region
+  (List.finRange (D + 1)).foldl (fun a1 j ↦
+    (List.finRange (D + 1)).foldl (fun a2 i ↦
+      if i.val + (k - 1) * j.val ≤ D then
+        let term := CompPoly.CPolynomial.Raw.smul (c (i, j))
+          (CompPoly.CPolynomial.Raw.mulPowX i.val
+            (pPows.getD j.val (CompPoly.CPolynomial.Raw.C 0)))
+        a2 + term
+      else a2) a1) 0
+
+/-- Check whether `Q(X, p(X)) = 0` by evaluating via CompPoly and testing all
+    coefficients. Returns `true` when `p` is a Y-root of `Q`. -/
+private def isQRootRaw (k D : ℕ)
+    (c : Fin (D + 1) × Fin (D + 1) → F) (pRaw : CompPoly.CPolynomial.Raw F) : Bool :=
+  let result := evalQAtPRaw k D c pRaw
+  -- Check all coefficients are zero
+  result.all (· == 0)
+
+/-- Characterization of `isQRootRaw`: it holds iff every element of the result array
+    `evalQAtPRaw k D c pRaw` equals zero. This is a direct consequence of `Array.all`
+    semantics and `BEq` on `F` being faithful (from `DecidableEq F`). -/
+private lemma is_q_root_raw_iff_all_coeff_zero {k D : ℕ}
+    {c : Fin (D + 1) × Fin (D + 1) → F} {pRaw : CompPoly.CPolynomial.Raw F} :
+    isQRootRaw k D c pRaw = true ↔
+      ∀ idx : Fin (evalQAtPRaw k D c pRaw).size,
+        (evalQAtPRaw k D c pRaw)[idx] = 0 := by
+  simp only [isQRootRaw]
+  rw [Array.all_iff_forall]
+  constructor
+  · intro h idx
+    have hmem := h idx.val idx.isLt ⟨Nat.zero_le _, idx.isLt⟩
+    simp only [beq_iff_eq] at hmem
+    exact hmem
+  · intro h i hi hrange
+    simp only [beq_iff_eq]
+    exact h ⟨i, hi⟩
+
+/-- Candidate polynomials validated against a finite constructive witness search
+    with Hasse-derivative multiplicity checking and CompPoly-based Q-root extraction.
+
+    The filter first computes one concrete witness `Q` (as coefficient vector `c`)
+    using `computeGsWitness`. Then for each degree-`< k` candidate `p`, it verifies:
+    1. `Q(X, p(X)) = 0` (Y-root extraction), and
+    2. The Hamming distance `Δ₀(f, p ∘ ωs) ≤ e`.
+-/
+private def witnessCandidateSet [Fintype F] (k r D e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+    Finset F[X] :=
+  match computeGsWitness (n := n) k D r ωs f with
+  | Option.some w =>
+    (polynomialsDegreeLt F k).filter fun p ↦
+      isQRootRaw k D w.1 (polyToRaw p k) && decide (Δ₀(f, p.eval ∘ ωs) ≤ e)
+  | Option.none => ∅
+
+/-- Every element of `witnessCandidateSet` has degree `< k` and distance `≤ e`. -/
+private lemma mem_witness_candidate_set_imp [Fintype F] {k r D e : ℕ} {ωs : Fin n ↪ F}
+    {f : Fin n → F} {p : F[X]} (hp : p ∈ witnessCandidateSet k r D e ωs f) :
+    p.degree < k ∧ Δ₀(f, p.eval ∘ ωs) ≤ e := by
+  unfold witnessCandidateSet at hp
+  split at hp
+  · rw [Finset.mem_filter] at hp
+    simp only [Bool.and_eq_true, decide_eq_true_eq] at hp
+    exact ⟨mem_polynomials_degree_lt.mp hp.1, hp.2.2⟩
+  · simp at hp
+
+/-- Strengthened witness soundness: when `r > 0`, every candidate in `witnessCandidateSet`
+    is backed by a witness whose Hasse-derivative multiplicity conditions imply pointwise
+    root vanishing at every interpolation point.
+
+    Concretely, there exists a coefficient vector `c` satisfying:
+    * `isWitnessC` (nonzero in the weighted-degree region and full multiplicity vanishing), and
+    * `Q(X, p(X)) = 0` via CompPoly root extraction, and
+    * `evalCoeffVecAt k D c (ωs i) (f i) = 0` for every `i : Fin n`.
+
+    The last property is derived from `is_witness_c_imp_eval_zero_at_points`. -/
+private lemma witness_candidate_set_witness_vanishes [Fintype F] {k r D e : ℕ}
+    {ωs : Fin n ↪ F} {f : Fin n → F} {p : F[X]}
+    (hr : 0 < r)
+    (hp : p ∈ witnessCandidateSet k r D e ωs f) :
+    ∃ c : Fin (D + 1) × Fin (D + 1) → F,
+      isWitnessC k D r ωs f c = true ∧
+      isQRootRaw k D c (polyToRaw p k) = true ∧
+      ∀ i : Fin n, evalCoeffVecAt k D c (ωs i) (f i) = 0 := by
+  unfold witnessCandidateSet at hp
+  cases hcw : computeGsWitness (n := n) k D r ωs f
+  case none =>
+      simp [hcw] at hp
+  case some w =>
+      rw [hcw] at hp
+      rw [Finset.mem_filter] at hp
+      obtain ⟨_, hcond⟩ := hp
+      simp only [Bool.and_eq_true, decide_eq_true_eq] at hcond
+      exact ⟨w.1, w.2, hcond.1, fun i ↦ is_witness_c_imp_eval_zero_at_points hr w.2 i⟩
+
+/--
+Constructive decoder candidate set inspired by Guruswami–Sudan.
+
+**Definition.** The computable decoder returns the union of:
+* a CompPoly interpolation fast-path candidate set, and
+* a GS witness-filtered set computed from a constructive linear-system witness search.
+
+The implementation combines two candidate sources:
+
+1. **CompPoly Lagrange candidate** (`compPolyCandidateSet`): A fast-path candidate
+   constructed via CompPoly's computable Lagrange interpolation from the first
+   `min k n` evaluation points. Included only if it passes degree and distance checks.
+
+2. **GS witness-filtered candidates** (`witnessCandidateSet`): A concrete witness
+   coefficient vector is computed by solving a linearized GS system with normalization.
+   Candidates are filtered by `Q(X, p(X)) = 0` and the distance bound.
+
+The implementation is fully computable and avoids classical choice operators,
+classical proof-only decidability wrappers, and nonconstructive root extraction.
+-/
+def computableDecoder [Fintype F] (k r D e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+    Finset F[X] :=
+  compPolyCandidateSet k e ωs f ∪ witnessCandidateSet k r D e ωs f
+
+/-- Computable decoder soundness: every output polynomial has degree `< k` and distance `≤ e`. -/
+private lemma mem_computableDecoder_imp [Fintype F] {k r D e : ℕ} {ωs : Fin n ↪ F}
+    {f : Fin n → F} {p : F[X]} (hp : p ∈ computableDecoder k r D e ωs f) :
+    p.degree < k ∧ Δ₀(f, p.eval ∘ ωs) ≤ e := by
+  simp only [computableDecoder, Finset.mem_union] at hp
+  rcases hp with h | h
+  · exact mem_comp_poly_candidate_set_imp h
+  · exact mem_witness_candidate_set_imp h
+
+/-- Each computably decoded codeword is within `e` Hamming distance of the received message. -/
+theorem computableDecoder_mem_impl_dist
+    [Fintype F]
+    {k r D e : ℕ}
+    (_h_e : e ≤ n - Real.sqrt (k * n))
+    {ωs : Fin n ↪ F}
+    {f : Fin n → F}
+    {p : F[X]}
+    (h_in : p ∈ computableDecoder k r D e ωs f) :
+    Δ₀(f, p.eval ∘ ωs) ≤ e := by
+  exact (mem_computableDecoder_imp h_in).2
+
+/-- Alias for the computable decoder distance guarantee. -/
+theorem computableDecoder_output_dist_le
+    [Fintype F]
+    {k r D e : ℕ}
+    (h_e : e ≤ n - Real.sqrt (k * n))
+    {ωs : Fin n ↪ F}
+    {f : Fin n → F}
+    {p : F[X]}
+    (h_in : p ∈ computableDecoder k r D e ωs f) :
+    Δ₀(f, p.eval ∘ ωs) ≤ e :=
+  computableDecoder_mem_impl_dist (k := k) (r := r) (D := D) (e := e) h_e h_in
+
+/-- Alias to the `Basic` module degree bound used in lemma 5.3 of [BCIKS20]. -/
+noncomputable def proximityGapDegreeBound (k m : ℕ) : ℕ :=
+  proximity_gap_degree_bound k n m
+
+/-- Alias to the `Basic` module relative Johnson-radius term. -/
+noncomputable def proximityGapDelta0 (k m : ℕ) : ℝ :=
+  proximity_gap_johnson k n m
+
+/-- Absolute Johnson bound radius as an error-count:
+    `⌊ n * δ₀(ρ, m) ⌋`, where `δ₀` is `proximityGapDelta0`. -/
+noncomputable def proximityGapJohnson (k m : ℕ) : ℕ :=
+  Nat.floor ((n : ℝ) * proximityGapDelta0 (n := n) k m)
+
+/-! ### Bridge to classical formulations
+
+The following definitions and lemmas provide a noncomputable bridge between the computable
+coefficient-vector representation `c : Fin (D+1) × Fin (D+1) → F` and the classical
+Mathlib bivariate polynomial type `F[X][Y]`.
+
+The key function `coeffVecToBivariate` constructs a Mathlib bivariate polynomial from a
+bounded coefficient vector. Coefficient agreement between the two representations is
+established by `coeff_vec_to_bivariate_coeff`.
+-/
+
+/-- Construct a Mathlib bivariate polynomial `Q ∈ F[X][Y]` from a bounded coefficient
+    vector `c : Fin (D+1) × Fin (D+1) → F`, restricting to the weighted-degree region
+    `i + (k-1)·j ≤ D`.  Indices outside this region are treated as zero. -/
+noncomputable def coeffVecToBivariate (k D : ℕ)
+    (c : Fin (D + 1) × Fin (D + 1) → F) : Polynomial (Polynomial F) :=
+  ∑ j : Fin (D + 1), ∑ i : Fin (D + 1),
+    if i.val + (k - 1) * j.val ≤ D then
+      Polynomial.monomial j.val (Polynomial.monomial i.val (c (i, j)))
+    else 0
+
+omit [DecidableEq F] in
+/-- Coefficient extraction for `coeffVecToBivariate`: the `(i, j)`-coefficient of the
+    bivariate polynomial equals `c(i, j)` when `(i, j)` is in the weighted-degree region. -/
+lemma coeff_vec_to_bivariate_coeff (k D : ℕ)
+    (c : Fin (D + 1) × Fin (D + 1) → F)
+    (i : Fin (D + 1)) (j : Fin (D + 1))
+    (hwd : i.val + (k - 1) * j.val ≤ D) :
+    ((coeffVecToBivariate k D c).coeff j.val).coeff i.val = c (i, j) := by
+  unfold coeffVecToBivariate
+  simp only [Polynomial.finset_sum_coeff]
+  rw [Finset.sum_eq_single j]
+  · rw [Finset.sum_eq_single i]
+    · simp [hwd]
+    · intro i' _ hi'; split <;> simp [Polynomial.coeff_monomial, Fin.val_ne_of_ne hi']
+    · intro h; exact absurd (Finset.mem_univ _) h
+  · intro j' _ hj'
+    apply Finset.sum_eq_zero; intro i' _
+    split <;> simp [Polynomial.coeff_monomial, Fin.val_ne_of_ne hj']
+  · intro h; exact absurd (Finset.mem_univ _) h
+
+/-- A witness satisfying `isWitnessC` produces a nonzero Mathlib bivariate polynomial
+    via `coeffVecToBivariate`. This follows from `is_witness_c_nonzero`: there is at
+    least one nonzero coefficient in the weighted-degree region. -/
+lemma coeff_vec_to_bivariate_ne_zero_of_is_witness_c
+    {k D r : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F}
+    {c : Fin (D + 1) × Fin (D + 1) → F}
+    (hw : isWitnessC k D r ωs f c = true) :
+    coeffVecToBivariate k D c ≠ 0 := by
+  obtain ⟨i, j, hwd, hne⟩ := is_witness_c_nonzero hw
+  intro heq
+  apply hne
+  rw [← coeff_vec_to_bivariate_coeff k D c i j hwd, heq]
+  simp
+
+/-- Constructive witness extraction for the Guruswami–Sudan system.
+    When the computable `hasWitnessC` check returns `true`, we can extract a concrete
+    coefficient vector `c` satisfying `isWitnessC`.
+
+    Additionally, when `m > 0`, the witness satisfies:
+    * Nonzero coefficient in the weighted-degree region (`is_witness_c_nonzero`).
+    * All Hasse derivatives of order `< m` vanish at every interpolation point
+      (`is_witness_c_hasse_deriv_vanishes`).
+    * Pointwise evaluation vanishing at every interpolation point
+      (`is_witness_c_imp_eval_zero_at_points`).
+    * The corresponding Mathlib bivariate polynomial is nonzero
+      (`coeff_vec_to_bivariate_ne_zero_of_is_witness_c`).
+
+    This is an extraction lemma from a computable predicate, not the unconditional
+    existence statement of lemma 5.3 in [BCIKS20]. -/
+lemma guruswami_sudan_for_proximity_gap_existence
+    {k m : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F}
+    (hw : hasWitnessC k (proximityGapDegreeBound (n := n) k m) m ωs f = true) :
+    ∃ c : Fin (proximityGapDegreeBound (n := n) k m + 1) ×
+          Fin (proximityGapDegreeBound (n := n) k m + 1) → F,
+      isWitnessC k (proximityGapDegreeBound (n := n) k m) m ωs f c = true := by
+  obtain ⟨w, _⟩ :=
+    (hasWitnessC_eq_true_iff_exists_output (n := n) k
+      (proximityGapDegreeBound (n := n) k m) m ωs f).1 hw
+  exact ⟨w.1, w.2⟩
+
+/-- Strengthened existence: when the witness check passes and `m > 0`, the extracted
+    witness additionally satisfies pointwise evaluation vanishing at every interpolation
+    point, and the corresponding bivariate polynomial is nonzero.
+
+    This is a computable strengthening of
+    `guruswami_sudan_for_proximity_gap_existence`, not a full paper-level
+    quantifier match for lemma 5.3 in [BCIKS20]. -/
+lemma guruswami_sudan_for_proximity_gap_existence_strong
+    {k m : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F}
+    (hm : 0 < m)
+    (hw : hasWitnessC k (proximityGapDegreeBound (n := n) k m) m ωs f = true) :
+    ∃ c : Fin (proximityGapDegreeBound (n := n) k m + 1) ×
+          Fin (proximityGapDegreeBound (n := n) k m + 1) → F,
+      isWitnessC k (proximityGapDegreeBound (n := n) k m) m ωs f c = true ∧
+      (∀ i : Fin n,
+        evalCoeffVecAt k (proximityGapDegreeBound (n := n) k m) c (ωs i) (f i) = 0) ∧
+      coeffVecToBivariate k (proximityGapDegreeBound (n := n) k m) c ≠ 0 :=
+  let ⟨c, hc⟩ := guruswami_sudan_for_proximity_gap_existence hw
+  ⟨c, hc, is_witness_c_imp_eval_zero_at_points hm hc,
+    coeff_vec_to_bivariate_ne_zero_of_is_witness_c hc⟩
+
+/-- Constructive witness property for the Guruswami–Sudan system.
+    When `m > 0` and the codeword polynomial `ReedSolomon.codewordToPoly p` appears in
+    `witnessCandidateSet`, we can extract a witness coefficient vector `c` satisfying:
+    * `isWitnessC` (nonzero + full multiplicity vanishing),
+    * `Q(X, p(X)) = 0` via CompPoly root extraction, and
+    * pointwise evaluation vanishing `evalCoeffVecAt k D c (ωs i) (f i) = 0` at every
+      interpolation point. -/
+lemma guruswami_sudan_for_proximity_gap_property [Fintype F] {k m : ℕ} {ωs : Fin n ↪ F}
+    {f : Fin n → F}
+    {p : ReedSolomon.code ωs k}
+    (hm : 0 < m)
+    (hp : ReedSolomon.codewordToPoly p ∈
+      witnessCandidateSet k m (proximityGapDegreeBound (n := n) k m)
+        (proximityGapJohnson (n := n) k m) ωs f) :
+    ∃ c : Fin (proximityGapDegreeBound (n := n) k m + 1) ×
+          Fin (proximityGapDegreeBound (n := n) k m + 1) → F,
+      isWitnessC k (proximityGapDegreeBound (n := n) k m) m ωs f c = true ∧
+      isQRootRaw k (proximityGapDegreeBound (n := n) k m) c
+        (polyToRaw (ReedSolomon.codewordToPoly p) k) = true ∧
+      ∀ i : Fin n,
+        evalCoeffVecAt k (proximityGapDegreeBound (n := n) k m) c (ωs i) (f i) = 0 := by
+  exact witness_candidate_set_witness_vanishes hm hp
+
+/-- Strengthened proximity gap property: additionally asserts that the Q-root extraction
+    result has all coefficients zero (via `is_q_root_raw_iff_all_coeff_zero`), and the
+    corresponding bivariate polynomial is nonzero.
+
+    This lemma is conditional on membership in `witnessCandidateSet`; it should be read
+    as a constructive bridge lemma rather than a direct restatement of lemma 5.3 in
+    [BCIKS20]. -/
+lemma guruswami_sudan_for_proximity_gap_property_strong [Fintype F] {k m : ℕ} {ωs : Fin n ↪ F}
+    {f : Fin n → F}
+    {p : ReedSolomon.code ωs k}
+    (hm : 0 < m)
+    (hp : ReedSolomon.codewordToPoly p ∈
+      witnessCandidateSet k m (proximityGapDegreeBound (n := n) k m)
+        (proximityGapJohnson (n := n) k m) ωs f) :
+    ∃ c : Fin (proximityGapDegreeBound (n := n) k m + 1) ×
+          Fin (proximityGapDegreeBound (n := n) k m + 1) → F,
+      isWitnessC k (proximityGapDegreeBound (n := n) k m) m ωs f c = true ∧
+      (∀ idx : Fin (evalQAtPRaw k (proximityGapDegreeBound (n := n) k m) c
+          (polyToRaw (ReedSolomon.codewordToPoly p) k)).size,
+        (evalQAtPRaw k (proximityGapDegreeBound (n := n) k m) c
+          (polyToRaw (ReedSolomon.codewordToPoly p) k))[idx] = 0) ∧
+      (∀ i : Fin n,
+        evalCoeffVecAt k (proximityGapDegreeBound (n := n) k m) c (ωs i) (f i) = 0) ∧
+      coeffVecToBivariate k (proximityGapDegreeBound (n := n) k m) c ≠ 0 := by
+  obtain ⟨c, hwit, hroot, heval⟩ := witness_candidate_set_witness_vanishes hm hp
+  exact ⟨c, hwit,
+    is_q_root_raw_iff_all_coeff_zero.mp hroot,
+    heval,
+    coeff_vec_to_bivariate_ne_zero_of_is_witness_c hwit⟩
+
+/-- Existence of a classical Guruswami-Sudan witness polynomial. -/
 theorem proximity_gap_existence (k n : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) (hm : 1 ≤ m) :
     ∃ Q, Conditions k m (proximity_gap_degree_bound k n m) ωs f Q := by
   use polySol k n m ωs f
   exact ⟨polySol_ne_zero, polySol_weightedDegree_le, polySol_roots hm, polySol_multiplicity⟩
 
-/-- Given any Reed-Solomon code `p`, any solution of the Guruswami-Sudan decoder is
-    divisible by `Y - P(X)`, where `P(X)` is the polynomial corresponding to the codeword `p`.
-    It is the first part of Lemma 5.3 from [BCIKS20]. -/
+/-- Classical divisibility consequence for Guruswami-Sudan witnesses. -/
 theorem proximity_gap_divisibility (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k)
     {Q : F[X][Y]} (hQ : Conditions k m (proximity_gap_degree_bound k n m) ωs f Q)
     (h_dist : (hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) : ℝ) / n <
       proximity_gap_johnson k n m) :
     X - C (codewordToPoly p) ∣ Q :=
-  dvd_property (f := f) hk hm p hQ.Q_deg hQ.Q_multiplicity h_dist
-
-section GuruswamiSudanExistence
-
-open Polynomial BigOperators Finset Finsupp
-
-/-- Shift a bivariate polynomial by (x, y). -/
-noncomputable def shift (f : F[X][Y]) (x y : F) : F[X][Y] :=
-  (f.comp (X + C (C y))).map ((X + C x).compRingHom)
-
-/-- The monomial X^i Y^j as a bivariate polynomial. -/
-noncomputable def monomial (i j : ℕ) : F[X][Y] :=
-  Polynomial.monomial j (Polynomial.monomial i 1)
-
-section solution
-
-/-- The set of indices `(i,j)` such that `i + (k-1)j ≤ D`. -/
-def validIndices (k D : ℕ) : Finset (ℕ × ℕ) :=
-  (range (D + 1)).product (range (D + 1)) |>.filter (fun x ↦ x.1 + (k - 1) * x.2 ≤ D)
-
-/-- The number of variables in the linear system. -/
-def numVars (k D : ℕ) : ℕ := (validIndices k D).card
-
-/-- The set of derivative indices `(s,t)` such that `s + t < m`. -/
-def constraintIndex (m : ℕ) : Finset (ℕ × ℕ) :=
-  (range m).product (range m) |>.filter (fun x ↦ x.1 + x.2 < m)
-
-/-- The number of constraints. -/
-def numConstraints (n m : ℕ) : ℕ := n * (constraintIndex m).card
-
-/-- The number of constraints is m(m+1)/2. -/
-lemma card_constraintIndex (m : ℕ) : (constraintIndex m).card = m * (m + 1) / 2 := by
-  rw [Nat.div_eq_of_eq_mul_left zero_lt_two]
-  have h_eq : (constraintIndex m).card = ∑ s ∈ range m, (m - s) := by
-    have h_sum : (constraintIndex m).card = ∑ s ∈ range m, (range (m - s)).card := by
-      rw [show constraintIndex m = (range m).biUnion fun s ↦
-        (range (m - s)).image (fun t ↦ (s, t))  from ?_, card_biUnion]
-      · exact sum_congr rfl fun _ _ ↦
-          card_image_of_injective _ fun _ _ h ↦ by injection h
-      · exact fun i hi j hj hij ↦ disjoint_left.mpr fun x hx₁ hx₂ ↦ hij <| by aesop
-      · ext ⟨s, t⟩
-        simp [constraintIndex, mem_biUnion, mem_image]
-        grind
-    aesop
-  exact h_eq.symm ▸ Nat.recOn m (by norm_num) fun n ih ↦ by
-    cases n <;> simp [sum_range_succ', Nat.mul_succ] at *
-    linarith
-
-/-- The number of variables is the sum over j of the number of valid i's. -/
-lemma card_validIndices_eq_sum (k D : ℕ) (hk : 1 < k) :
-  (validIndices k D).card = ∑ j ∈ range (D / (k - 1) + 1), (D - (k - 1) * j + 1) := by
-    have h_split : (validIndices k D).card =
-        ∑ j ∈ range (D / (k - 1) + 1),
-          ∑ i ∈ range (D + 1), if i + (k - 1) * j ≤ D then 1 else 0 := by
-      rw [show validIndices k D =
-        filter (fun p : ℕ × ℕ ↦ p.1 + (k - 1) * p.2 ≤ D)
-        ((range (D + 1)).product (range (D / (k - 1) + 1))) from ?_, card_filter]
-      · erw [sum_product, Finset.sum_comm]
-      · ext ⟨i, j⟩
-        simp [validIndices]
-        exact fun _ _ ↦ iff_of_true (by
-          nlinarith [Nat.sub_pos_of_lt hk, D.div_add_mod (k - 1),
-            D.mod_lt (Nat.sub_pos_of_lt hk)])
-          (Nat.lt_succ_of_le (Nat.le_div_iff_mul_le (Nat.sub_pos_of_lt hk) |>.2
-          (by nlinarith [Nat.sub_pos_of_lt hk])))
-    have h_inner : ∀ j ∈ range (D / (k - 1) + 1), ∑ i ∈ range (D + 1),
-        (if i + (k - 1) * j ≤ D then 1 else 0) = (D - (k - 1) * j) + 1 := by
-      intro j hj
-      have h_filter : filter (fun i ↦ i + (k - 1) * j ≤ D) (range (D + 1)) =
-          Icc 0 (D - (k - 1) * j) := by
-        ext i
-        simp [mem_Icc]
-        refine ⟨fun h ↦ Nat.le_sub_of_add_le <| by linarith, fun h ↦ ⟨by
-            nlinarith [Nat.sub_add_cancel <| show (k - 1) * j ≤ D from by
-              nlinarith [Nat.sub_add_cancel <| show j ≤ D / (k - 1) from by
-                linarith [mem_range.mp hj], Nat.div_mul_le_self D (k - 1)]], by
-                  linarith [Nat.sub_add_cancel <| show (k - 1) * j ≤ D from by
-                    nlinarith [Nat.sub_add_cancel <| show j ≤ D / (k - 1) from by
-                      linarith [mem_range.mp hj], Nat.div_mul_le_self D (k - 1)]]⟩⟩
-      simp_all
-    exact h_split.trans (sum_congr rfl h_inner)
-
-/-- Closed form for the number of variables when k > 1. -/
-lemma numVars_eq_of_gt_one {k D : ℕ} (hk : 1 < k) :
-    numVars k D = let L := D / (k - 1); (L + 1) * (2 * D + 2 - (k - 1) * L) / 2 := by
-      convert card_validIndices_eq_sum k D hk using 1
-      have h_simp : ∑ j ∈ range (D / (k - 1) + 1), (D - (k - 1) * j) =
-          (D / (k - 1) + 1) * D - (k - 1) * ((D / (k - 1)) * (D / (k - 1) + 1)) / 2 := by
-        have h_simp : ∑ j ∈ range (D / (k - 1) + 1), (D - (k - 1) * j) =
-            ∑ j ∈ range (D / (k - 1) + 1), D -
-              ∑ j ∈ range (D / (k - 1) + 1), (k - 1) * j := by
-          exact eq_tsub_of_add_eq <| by
-            rw [← sum_add_distrib]
-            exact sum_congr rfl fun x hx ↦ tsub_add_cancel_of_le <| by
-              nlinarith [mem_range.mp hx, Nat.div_mul_le_self D (k - 1)]
-        simp_all [mul_comm]
-        exact congrArg _ (Eq.symm <| Nat.div_eq_of_eq_mul_left zero_lt_two <| by
-          rw [← sum_mul _ _ _]
-          exact (D / (k - 1)).recOn (by norm_num) fun n ih ↦ by
-            norm_num [range_succ] at *; linarith)
-      simp_all [sum_add_distrib]
-      rw [Nat.div_eq_of_eq_mul_left zero_lt_two]
-      rw [tsub_eq_of_eq_add (c := k - 1)]
-      · rw [tsub_add_eq_add_tsub]
-        rotate_left
-        · exact Nat.div_le_of_le_mul <| by
-            nlinarith [(D / (k - 1)).zero_le, D.div_mul_le_self (k - 1),
-              Nat.sub_add_cancel hk.le]
-        · rw [tsub_mul, Nat.mul_sub_left_distrib]
-          ring_nf
-          rw [tsub_mul]
-          ring_nf
-          rw [Nat.div_mul_cancel]
-          · rw [show D / (k - 1) * k - D / (k - 1) = D / (k - 1) * (k - 1) by
-              rw [Nat.mul_sub_left_distrib, Nat.mul_one]]; ring_nf
-          · norm_num [← even_iff_two_dvd, parity_simps]
-      · rw [Nat.sub_add_cancel hk.le]
-
-/-- The number of variables is (D+1)^2 when k ≤ 1. -/
-lemma numVars_eq_sq {k D : ℕ} (hk : k ≤ 1) : numVars k D = (D + 1) ^ 2 := by
-  interval_cases k <;> simp [numVars, validIndices]
-  all_goals
-  rw [filter_true_of_mem fun x hx ↦ by linarith [mem_range.mp (mem_product.mp hx |>.1)]]
-  norm_num [sq, card_product]
-
-/-- Lower bound for the square of (D+1). Specifically, (D+1)^2 > (m+1/2)^2 * (k+1) * n. -/
-lemma proximity_gap_degree_bound_sq_gt {n k m : ℕ} (hn : n ≠ 0) :
-    ((proximity_gap_degree_bound (n := n) k m : ℝ) + 1) ^ 2 >
-      (m + 1 / 2) ^ 2 * (k + 1) * n := by
-      set D := proximity_gap_degree_bound k m
-      have h_bound : (D + 1 : ℝ) > (m + 1 / 2) * √((k + 1 : ℝ) * n) := by
-        have hD_ge_floor : (D : ℝ) ≥ Nat.floor ((m + 1 / 2 : ℝ) * √((k + 1 : ℝ) * n)) := by
-          simp +zetaDelta at *
-          unfold proximity_gap_degree_bound
-          norm_num [mul_assoc, mul_div_assoc, hn]
-          rw [mul_comm_div]
-          gcongr
-          field_simp
-        exact lt_of_lt_of_le (Nat.lt_floor_add_one _) (add_le_add_right hD_ge_floor _)
-      nlinarith [show 0 < (m + 1 / 2 : ℝ) * √((k + 1) * n) by
-        positivity, Real.mul_self_sqrt (show 0 ≤ (k + 1 : ℝ) * n by positivity)]
-
-/-- A tighter lower bound for the number of variables when k > 1 :
-    2(k-1) * numVars ≥ D(D+2). -/
-lemma numVars_lower_bound_tight {k D : ℕ} (hk : 1 < k) :
-    2 * (k - 1) * numVars k D ≥ D * (D + 2) := by
-      have h_numVars_def : numVars k D =
-          ((D / (k - 1)) + 1) * (2 * D + 2 - (k - 1) * (D / (k - 1))) / 2 :=
-        numVars_eq_of_gt_one hk
-      rcases k with (_|_|k) <;> simp_all [Nat.mul_succ]
-      rw [← Nat.mul_div_assoc]
-      · rw [Nat.le_div_iff_mul_le] <;> ring_nf
-        · zify
-          rw [Nat.cast_sub] <;> push_cast <;>
-            nlinarith [D.div_mul_le_self (1 + k), D.div_add_mod (1 + k),
-              D.mod_lt (by linarith : 0 < (1 + k))]
-        · norm_num
-      · cases le_total (2 * D + 2) ((k + 1) * (D / (k + 1))) <;>
-          simp_all [← even_iff_two_dvd, parity_simps]
-        by_cases h : Even (D / (k + 1)) <;> simp_all [parity_simps]
-
-lemma numVars_gt_numConstraints_of_gt_one {n k m : ℕ} (hn : n ≠ 0) (hk : 1 < k) (hm : m ≠ 0) :
-    numVars k (proximity_gap_degree_bound (n := n) k m) > numConstraints n m := by
-      set D := proximity_gap_degree_bound (n := n) k m
-      have hD : ((D + 1)^2 : ℝ) > ((m : ℝ) + 1 / 2)^2 * (k + 1) * n := by
-        convert proximity_gap_degree_bound_sq_gt hn using 1
-      have h_ineq : 2 * (k - 1) * numVars k D > (k - 1) * n * m * (m + 1) := by
-        have h_ineq : 2 * (k - 1) * numVars k D ≥ (D : ℝ) * (D + 2) := by
-          convert numVars_lower_bound_tight hk using 1
-          norm_cast
-          rw [Int.subNatNat_of_le] <;> norm_cast
-          linarith
-        have h_ineq : (D : ℝ) * (D + 2) > (k - 1) * n * m * (m + 1) := by
-          nlinarith [show (k : ℝ) ≥ 2 by norm_cast, show (m : ℝ) ≥ 1 by
-            exact Nat.one_le_cast.mpr (Nat.pos_of_ne_zero hm), show (n : ℝ) ≥ 1 by
-              exact Nat.one_le_cast.mpr (Nat.pos_of_ne_zero hn), mul_le_mul_of_nonneg_left
-                (show (m : ℝ) ≥ 1 by exact Nat.one_le_cast.mpr (Nat.pos_of_ne_zero hm))
-                  (show (n : ℝ) ≥ 0 by positivity)]
-        norm_cast at *;
-        rw [Int.subNatNat_of_le] at * <;> (norm_cast at *; linarith)
-      have h_div : numVars k D > n * m * (m + 1) / 2 := by
-        exact Nat.div_lt_of_lt_mul <| by nlinarith [Nat.sub_pos_of_lt hk]
-      convert h_div using 1
-      convert congr_arg (fun x : ℕ ↦ n * x) (card_constraintIndex m) using 1
-      rw [← Nat.mul_div_assoc] <;> ring_nf
-      exact even_iff_two_dvd.mp (by simp [parity_simps])
-
-lemma numVars_gt_numConstraints (n k m : ℕ) :
-  numVars k (proximity_gap_degree_bound (n := n) k m) > numConstraints n m := by
-  by_cases hk : k ≤ 1
-  · interval_cases k <;> norm_num [numVars_eq_sq, numConstraints]
-    · unfold proximity_gap_degree_bound
-      norm_num
-      have h_constraint_card : (constraintIndex m).card = m * (m + 1) / 2 := by
-        exact card_constraintIndex m
-      rcases n with (_ | n) <;> rcases m with (_ | m) <;> norm_num at *
-      · norm_num [card_constraintIndex]
-      · have h_simplify : (n + 1) * (m + 1) * (m + 2) / 2 <
-            (⌊((m + 1 + 1 / 2) * √(n + 1))⌋₊ + 1) ^ 2 := by
-          have := Nat.lt_floor_add_one ((m + 1 + 1 / 2 : ℝ) * √(n + 1))
-          rw [Nat.div_lt_iff_lt_mul <| by positivity]
-          rw [← @Nat.cast_lt ℝ]
-          norm_num
-          ring_nf at *
-          nlinarith [show 0 ≤ (m : ℝ) * √(1 + n) by
-              positivity, show 0 ≤ √(1 + n) by
-                  positivity, Real.mul_self_sqrt (show (0 : ℝ) ≤ 1 + n by positivity)]
-        convert h_simplify using 1
-        · exact (Nat.div_eq_of_eq_mul_left zero_lt_two (by
-            nlinarith only [Nat.div_mul_cancel (show 2 ∣ (m + 1) * (m + 1 + 1) from
-              Nat.dvd_of_mod_eq_zero <| by norm_num [Nat.add_mod, Nat.mod_two_of_bodd]),
-                h_constraint_card])).symm
-        · rw [mul_assoc]
-          congr
-          field_simp
-    · by_cases hn : n = 0
-      · aesop
-      · by_cases hm : m = 0
-        · unfold constraintIndex; aesop
-        · have h_ineq : (m + 1 / 2 : ℝ) ^ 2 * 2 * n > n * m * (m + 1) / 2 := by
-            nlinarith [show (m : ℝ) ≥ 1 by exact Nat.one_le_cast.mpr (Nat.pos_of_ne_zero hm),
-              show (n : ℝ) ≥ 1 by exact Nat.one_le_cast.mpr (Nat.pos_of_ne_zero hn),
-                mul_pos (show (m : ℝ) > 0 by exact Nat.cast_pos.mpr (Nat.pos_of_ne_zero hm))
-                  (show (n : ℝ) > 0 by exact Nat.cast_pos.mpr (Nat.pos_of_ne_zero hn))]
-          have h_ineq : (n * m * (m + 1) / 2 : ℝ) <
-              ((proximity_gap_degree_bound (n := n) 1 m + 1) : ℝ) ^ 2 := by
-            refine lt_of_lt_of_le h_ineq ?_
-            convert proximity_gap_degree_bound_sq_gt hn |> le_of_lt using 1
-            ring
-          rw [div_lt_iff₀] at h_ineq <;> norm_cast at *
-          rw [card_constraintIndex]
-          nlinarith [Nat.div_mul_le_self (m * (m + 1)) 2]
-  · by_cases hn : n = 0 <;> by_cases hm : m = 0 <;> simp_all [numConstraints]
-    · exact card_pos.mpr ⟨⟨0, 0⟩,
-        mem_filter.mpr ⟨mem_product.mpr ⟨mem_range.mpr
-          <| Nat.succ_pos _, mem_range.mpr <| Nat.succ_pos _⟩, by norm_num⟩⟩
-    · exact card_pos.mpr ⟨⟨0, 0⟩, mem_filter.mpr ⟨mem_product.mpr
-        ⟨mem_range.mpr <| Nat.succ_pos _, mem_range.mpr <| Nat.succ_pos _⟩, by
-          norm_num⟩⟩
-    · exact lt_of_lt_of_le (by simp [constraintIndex])
-        (Nat.pos_of_ne_zero (ne_of_gt (card_pos.mpr ⟨(0, 0),
-          mem_filter.mpr ⟨mem_product.mpr ⟨mem_range.mpr (Nat.succ_pos _),
-            mem_range.mpr (Nat.succ_pos _)⟩, by norm_num⟩⟩)))
-    · exact numVars_gt_numConstraints_of_gt_one hn hk hm |> fun h ↦ by
-        simpa [numConstraints] using h
-
-/-- The linear map from the space of coefficients to polynomials. -/
-noncomputable def coeffsToPoly (k D : ℕ) : ((validIndices k D) → F) →ₗ[F] F[X][Y] :=
-  linearCombination F (fun p : validIndices k D ↦ monomial p.1.1 p.1.2) ∘ₗ
-    (linearEquivFunOnFinite F F (validIndices k D)).symm.toLinearMap
-
-/-- The linear map evaluating the (s,t)-th derivative coefficient at (x,y). -/
-noncomputable def evalConstraint (x y : F) (s t : ℕ) : F[X][Y] →ₗ[F] F where
-  toFun f := ((shift f x y).coeff t).coeff s
-  map_add' f g := by simp [shift]
-  map_smul' a f := by simp [shift]
-
-/-- The linear map representing the system of linear equations. -/
-noncomputable def constraintMap (n k m D : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
-  ((validIndices k D) → F) →ₗ[F] (Fin n → constraintIndex m → F) where
-  toFun c i st := evalConstraint (ωs i) (f i) st.1.1 st.1.2 (coeffsToPoly k D c)
-  map_add' c d := by simp +zetaDelta at *; rfl
-  map_smul' a c := by unfold evalConstraint coeffsToPoly; aesop
-
-omit [DecidableEq F]
-/-- There exists a non-zero polynomial Q satisfying the conditions. -/
-lemma exists_nonzero_solution (n k m : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
-  ∃ c : (validIndices k (proximity_gap_degree_bound (n := n) k m)) → F,
-    c ≠ 0 ∧ constraintMap n k m (proximity_gap_degree_bound (n := n) k m) ωs f c = 0 := by
-      have h_kernel_nontrivial : Module.finrank F ((validIndices k
-        (proximity_gap_degree_bound (n := n) k m)) → F) >
-          Module.finrank F ((Fin n → constraintIndex m → F)) := by
-        convert numVars_gt_numConstraints n k m using 1
-        · simp [numVars]
-        · simp [numConstraints]
-          norm_num [Module.finrank]
-      have h_inj : ¬ Function.Injective (constraintMap n k m
-          (proximity_gap_degree_bound (n := n) k m) ωs f) := by
-        intro h_inj
-        have := LinearMap.finrank_range_of_inj h_inj
-        exact h_kernel_nontrivial.not_ge (this ▸ Submodule.finrank_le _)
-      contrapose! h_inj
-      exact LinearMap.ker_eq_bot.mp (eq_bot_iff.mpr fun x hx ↦
-        by_contra fun hx' ↦ h_inj x hx' <| by simpa using hx)
-
-/-- The polynomial solution constructed from the non-zero kernel element. -/
-noncomputable def solvedPoly (n k m : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) : F[X][Y] :=
-  let c := Classical.choose (exists_nonzero_solution n k m ωs f)
-  coeffsToPoly k (proximity_gap_degree_bound k m) c
-
-end solution
-
-section neZero
-
-/-- The coefficient of X^i Y^j in a linear combination of monomials is the coefficient
-    of the combination. -/
-lemma coeff_linearCombination_monomial (c : ℕ × ℕ →₀ F) (i j : ℕ) :
-  ((linearCombination F (fun p ↦ monomial (F := F) p.1 p.2) c).coeff j).coeff i = c (i, j) := by
-    simp [linearCombination_apply, Finsupp.sum]
-    rw [Finset.sum_eq_single (i, j)] <;> simp +contextual
-    · erw [coeff_monomial, if_pos rfl]; aesop
-    · intro a b
-      rw [monomial]
-      by_cases ha : a = i <;> by_cases hb : b = j <;> simp_all [coeff_monomial]
-
-/-- The monomials are linearly independent. -/
-lemma linearIndependent_monomials :
-  LinearIndependent F (fun p : ℕ × ℕ ↦ monomial (F := F) p.1 p.2) := by
-    apply linearIndependent_iff.mpr
-    intro l hl
-    ext ⟨i, j⟩
-    simp_all
-    convert congr_arg (fun f ↦ (f.coeff j).coeff i) hl using 1
-    convert (coeff_linearCombination_monomial l i j).symm using 1
-
-/-- The solved polynomial is non-zero. -/
-lemma solvedPoly_ne_zero {n k m : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F} :
-  solvedPoly n k m ωs f ≠ 0 := by
-    have := Classical.choose_spec (exists_nonzero_solution n k m ωs f)
-    have h_inj : Function.Injective (coeffsToPoly (F := F) k
-    (proximity_gap_degree_bound (n := n) k m)) := by
-      have h_linear_combination_injective : Function.Injective (linearCombination F
-        (fun p : validIndices k (proximity_gap_degree_bound (n := n) k m) ↦
-          monomial (F := F) p.1.1 p.1.2)) :=
-        linearIndependent_monomials.comp _ (fun p q h ↦ by aesop)
-      exact h_linear_combination_injective.comp (LinearEquiv.injective _)
-    exact fun h ↦ this.1 <| h_inj <| by simpa using h
-
-end neZero
-
-section weightedDegree
-
-/-- The weighted degree of a monomial X^i Y^j is u*i + v*j. -/
-lemma natWeightedDegree_monomial (i j u v : ℕ) :
-  natWeightedDegree (monomial (F := F) i j) u v = u * i + v * j := by
-    simp [natWeightedDegree, monomial]
-    refine le_antisymm ?_ ?_ <;> norm_num
-    · intros b hb
-      simp [coeff_monomial] at hb
-      simp [← hb]
-    · refine le_trans ?_ (Finset.le_sup
-        (f := fun m ↦ u * (Polynomial.monomial j (Polynomial.monomial i 1)|>.coeff m|>.natDegree)
-          + v * m) (b := j) ?_)
-      all_goals norm_num [coeff_monomial]
-
-/-- The weighted degree of a monomial X^i Y^j is u*i + v*j. -/
-lemma natWeightedDegree_monomial_eq (i j u v : ℕ) :
-  natWeightedDegree (monomial (F := F) i j) u v = u * i + v * j := by
-    convert natWeightedDegree_monomial i j u v using 1
-    infer_instance
-
-/-- The weighted degree of a sum is at most the maximum of the weighted degrees. -/
-lemma natWeightedDegree_add_le (p q : F[X][Y]) (u v : ℕ) :
-    natWeightedDegree (p + q) u v ≤ max (natWeightedDegree p u v) (natWeightedDegree q u v) := by
-  refine Finset.sup_le fun m hm ↦ ?_
-  by_cases h : m ∈ p.support <;>
-  by_cases h' : m ∈ q.support <;> simp_all [coeff_add]
-  · have h_deg : (p.coeff m + q.coeff m).natDegree ≤
-        max ((p.coeff m).natDegree) ((q.coeff m).natDegree) := by
-      exact natDegree_add_le (p.coeff m) (q.coeff m)
-    cases max_cases (natDegree (p.coeff m))
-      (natDegree (q.coeff m)) <;> simp_all [natWeightedDegree]
-    · exact Or.inl (le_trans (add_le_add (mul_le_mul_of_nonneg_left h_deg <|
-        Nat.zero_le _) le_rfl) <| Finset.le_sup (f := fun m ↦ u * natDegree
-          (p.coeff m) + v * m) <| by aesop)
-    · exact Or.inr (le_trans (add_le_add (mul_le_mul_of_nonneg_left h_deg <|
-        Nat.zero_le _) le_rfl) <| Finset.le_sup
-        (f := fun m ↦ u * natDegree (q.coeff m) + v * m) <| by aesop)
-  · exact Or.inl <| Finset.le_sup (f := fun m ↦ u * natDegree (p.coeff m) + v * m) <| by aesop
-  · exact Or.inr <| Finset.le_sup (f := fun m ↦ u * natDegree (q.coeff m) + v * m) <| by aesop
-
-/-- The weighted degree of a sum is bounded by the supremum of the weighted degrees. -/
-lemma natWeightedDegree_sum_le {ι : Type*} [DecidableEq ι]
-    (s : Finset ι) (f : ι → F[X][Y]) (u v : ℕ) :
-    natWeightedDegree (∑ i ∈ s, f i) u v ≤ s.sup (fun i ↦ natWeightedDegree (f i) u v) := by
-  induction s using Finset.induction <;> simp_all
-  · simp [natWeightedDegree]
-  · have h_sum : natWeightedDegree (f ‹_› + ∑ i ∈ ‹Finset ι›, f i) u v ≤
-      max (natWeightedDegree (f ‹_›) u v) (natWeightedDegree (∑ i ∈ ‹Finset ι›, f i) u v) := by
-      (expose_names; exact natWeightedDegree_add_le (f a) (∑ i ∈ s, f i) u v)
-    cases max_cases (natWeightedDegree (f ‹_›) u v)
-      (natWeightedDegree (∑ i ∈ ‹Finset ι›, f i) u v) <;> [left; right] <;> linarith
-
-/-- The weighted degree of a scalar multiple is at most the weighted degree
-    of the polynomial. -/
-lemma natWeightedDegree_smul_le {F : Type} [Semiring F] (a : F) (p : F[X][Y]) (u v : ℕ) :
-  natWeightedDegree (a • p) u v ≤ natWeightedDegree p u v := by
-    simp [natWeightedDegree]
-    intro b _
-    exact le_trans (add_le_add
-      (mul_le_mul_of_nonneg_left (natDegree_smul_le a (p.coeff b)) u.zero_le)
-      (mul_le_mul_of_nonneg_left le_rfl v.zero_le))
-      (Finset.le_sup (f := fun m ↦ u * natDegree (p.coeff m) + v * m)
-        (show b ∈ p.support from by aesop))
-
-/-- The weighted degree of the polynomial constructed from coefficients is bounded by D. -/
-lemma natWeightedDegree_coeffsToPoly_le (k D : ℕ) (c : (validIndices k D) → F) :
-    natWeightedDegree (coeffsToPoly k D c) 1 (k - 1) ≤ D := by
-  have h_comb : ∃ (s : Finset (ℕ × ℕ)) (f : ℕ × ℕ → F), (coeffsToPoly k D c) =
-      ∑ p ∈ s, f p • (monomial (F := F) p.1 p.2) ∧ ∀ p ∈ s, p.1 + (k - 1) * p.2 ≤ D := by
-    norm_num +zetaDelta at *
-    refine ⟨univ.image
-      (fun p : { x // x ∈ validIndices k D } ↦ (p.val.1, p.val.2)) , ?_, ?_ ⟩;
-    · use fun p ↦ if h : p ∈ univ.image
-          (fun p : { x // x ∈ validIndices k D } ↦ (p.val.1, p.val.2))
-        then c ⟨p, by aesop⟩ else 0
-      unfold coeffsToPoly
-      simp [linearCombination_apply, sum_fintype]
-      refine sum_bij (fun x hx ↦ x) ?_ ?_ ?_ ?_ <;> aesop
-    · unfold validIndices at *; aesop
-  obtain ⟨s, f, h₁, h₂⟩ := h_comb
-  rw [h₁]
-  refine le_trans (natWeightedDegree_sum_le s _ _ _) ?_
-  refine Finset.sup_le fun p hp ↦ le_trans (natWeightedDegree_smul_le _ _ _ _) ?_
-  rw [natWeightedDegree_monomial_eq]
-  aesop
-
-/-- The solved polynomial has weighted degree at most the proximity gap degree bound. -/
-lemma solvedPoly_weightedDegree_le {n k m : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F} :
-    weightedDegree (solvedPoly n k m ωs f) 1 (k - 1) ≤
-    proximity_gap_degree_bound (n := n) k m := by
-  convert Option.some_le_some.mpr
-    (natWeightedDegree_coeffsToPoly_le k (proximity_gap_degree_bound k m)
-    (Classical.choose (exists_nonzero_solution n k m ωs f))) using 1
-  exact weightedDegree_eq_natWeightedDegree solvedPoly_ne_zero
-
-end weightedDegree
-
-section roots
-
-omit [DecidableEq F]
-/-- If constraints vanish up to order m ≥ 1, the polynomial vanishes at the point. -/
-lemma eval_eq_zero_of_constraint_zero {f : F[X][Y]} {x y : F} {m : ℕ} (hm : 1 ≤ m)
-    (h : ∀ s t, s + t < m → evalConstraint x y s t f = 0) : (f.eval (C y)).eval x = 0 := by
-  convert h 0 0 (by linarith) using 1
-  simp [evalConstraint, shift, coeff_zero_eq_eval_zero]
-
-/-- The solved polynomial vanishes at the interpolation points if m ≠ 0. -/
-lemma solvedPoly_roots {n k m : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F} (hm : m ≠ 0) (i : Fin n) :
-    ((solvedPoly n k m ωs f).eval (C <| f i)).eval (ωs i) = 0 := by
-  have := Classical.choose_spec (exists_nonzero_solution n k m ωs f)
-  refine eval_eq_zero_of_constraint_zero (Nat.pos_of_ne_zero hm) (fun s t hst ↦ ?_)
-  refine congr_fun (congr_fun this.2 i) ⟨(s, t), mem_filter.2 ⟨mem_product.mpr ?_, hst⟩⟩
-  exact ⟨mem_range.2 (by linarith), mem_range.2 (by linarith)⟩
-
-end roots
-
-section multiplicity
-
-/-- rootMultiplicity₀ computes the total degree. -/
-lemma rootMultiplicity₀_eq_totalDegree {f : F[X][Y]} (hf : f ≠ 0) :
-    rootMultiplicity₀ f = some (totalDegree f) := by
-  have h_max_eq : ∀ (f : F[X][Y]), f ≠ 0 → ∃ (deg : ℕ), (weightedDegree f 1 1) =
-      some deg ∧ (List.max? (List.map (fun x ↦ if coeff f x.1 x.2 ≠ 0 then x.1 + x.2 else 0)
-        (List.product (List.range (deg + 1)) (List.range (deg + 1))))) =
-          some (totalDegree f) := by
-    intros f hf_nonzero
-    obtain ⟨deg, hdeg⟩ : ∃ (deg : ℕ),
-        (weightedDegree f 1 1) = some deg ∧ deg = totalDegree f := by
-      convert weightedDegree_eq_natWeightedDegree hf_nonzero using 1
-      rw [total_deg_as_weighted_deg]
-      exact ⟨fun ⟨deg, hdeg₁, hdeg₂⟩ ↦ hdeg₁.trans (hdeg₂.symm ▸ rfl), fun hdeg ↦ ⟨_, hdeg, rfl⟩⟩
-    have h_max : ∃ x ∈ List.product (List.range (deg + 1)) (List.range (deg + 1)),
-        (if coeff f x.1 x.2 ≠ 0 then x.1 + x.2 else 0) = totalDegree f := by
-      obtain ⟨i, j, hij⟩ : ∃ i j, coeff f i j ≠ 0 ∧ i + j = totalDegree f := by
-        obtain ⟨i, j, hij⟩ : ∃ i j, (f.coeff j).coeff i ≠ 0 ∧ i + j = totalDegree f := by
-          have h_support : ∃ p ∈ f.support, (f.coeff p).natDegree + p = totalDegree f := by
-            have h_support : ∃ p ∈ f.support, ∀ q ∈ f.support, (f.coeff q).natDegree + q ≤
-                (f.coeff p).natDegree + p := by
-              apply_rules [exists_max_image]
-              exact nonempty_of_ne_empty (by aesop)
-            exact ⟨h_support.choose, h_support.choose_spec.1,
-                le_antisymm (Finset.le_sup
-                  (f := fun p ↦ (f.coeff p).natDegree + p) h_support.choose_spec.1)
-                    (Finset.sup_le fun q hq ↦ h_support.choose_spec.2 q hq)⟩
-          obtain ⟨p, hp₁, hp₂⟩ := h_support
-          use (f.coeff p).natDegree, p
-          aesop
-        exact ⟨i, j, hij⟩
-      exact ⟨⟨i, j⟩, by
-        erw [List.mem_product]
-        exact ⟨List.mem_range.mpr (by linarith), List.mem_range.mpr (by linarith)⟩, by aesop⟩
-    refine ⟨ deg, hdeg.1, (List.max?_eq_some_iff
-      (fun a ↦ le_rfl) (fun a b ↦ max_choice a b) (fun a b c ↦ Nat.max_le)).mpr ?_ ⟩
-    simp +zetaDelta at *
-    refine ⟨h_max, fun b x y hx hy hb ↦ ?_⟩
-    subst hb
-    split_ifs <;> simp_all [Bivariate.coeff]
-    exact le_sup (f := fun m ↦ (f.coeff m).natDegree + m)
-      (show y ∈ f.support from by aesop) |>
-        le_trans (by linarith [le_natDegree_of_ne_zero ‹_›])
-  unfold rootMultiplicity₀
-  specialize h_max_eq f hf
-  aesop
-
-/-- If all coefficients of degree less than m are zero, the total degree is at least m. -/
-lemma totalDegree_ge_m_of_forall_coeff_zero_lt_m {f : F[X][Y]} (hf : f ≠ 0) (m : ℕ)
-    (h : ∀ s t, s + t < m → Bivariate.coeff f s t = 0) : m ≤ totalDegree f := by
-  have h_totalDegree_ge_m : ∃ p ∈ f.support, (f.coeff p).natDegree + p ≥ m := by
-    by_contra h_contra
-    push_neg at h_contra
-    have h_zero : ∀ p ∈ f.support, (f.coeff p).natDegree + p < m := by assumption
-    refine hf (ext fun p ↦ ?_)
-    by_cases hp : p ∈ f.support <;> simp_all [Bivariate.coeff]
-    exact absurd (h ((f.coeff p).natDegree) p (h_zero p hp)) (by simp [coeff_natDegree, hp])
-  exact h_totalDegree_ge_m.choose_spec.2.trans (Finset.le_sup
-    (f := fun x ↦ (f.coeff x).natDegree + x) h_totalDegree_ge_m.choose_spec.1)
-
-/-- The solved polynomial has root multiplicity at least m at each point (ωs i, f i). -/
-lemma solvedPoly_multiplicity {n k m : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F} (i : Fin n) :
-    m ≤ rootMultiplicity (solvedPoly n k m ωs f) (ωs i) (f i) := by
-  let Q := solvedPoly n k m ωs f
-  have h_shift : shift Q (ωs i) (f i) ≠ 0 := by
-    intro h
-    have h_shift_nonzero : ∀ x y : F, shift Q x y = 0 → Q = 0 := by
-      intro x y hxy
-      have h_shift_nonzero : Q.comp (X + C (C y)) = 0 := by
-        have h_shift_nonzero : Q.comp (X + C (C y)) = (shift Q x y).map (X - C x).compRingHom := by
-          unfold shift; ext; simp; ring_nf; simp [comp_assoc]
-        aesop
-      exact comp_X_add_C_eq_zero_iff.mp h_shift_nonzero
-    exact solvedPoly_ne_zero <| h_shift_nonzero _ _ h
-  rw [Bivariate.rootMultiplicity]
-  change m ≤ rootMultiplicity₀ (shift Q (ωs i) (f i))
-  rw [rootMultiplicity₀_eq_totalDegree h_shift]
-  have := Classical.choose_spec (exists_nonzero_solution n k m ωs f)
-  refine totalDegree_ge_m_of_forall_coeff_zero_lt_m (F := F) h_shift _ (fun s t hst ↦ ?_)
-  refine congr_fun (congr_fun this.2 i) ⟨(s, t), ?_⟩
-  exact mem_filter.mpr ⟨mem_product.mpr
-    ⟨mem_range.mpr (by linarith), mem_range.mpr (by linarith)⟩, hst⟩
-
-end multiplicity
-
-/-- Existence of the Guruswami-Sudan polynomial (proven for m ≠ 0). -/
-theorem guruswami_sudan_for_proximity_gap_existence {n k m : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F} :
-  ∃ Q, Condition k m (proximity_gap_degree_bound (n := n) k m) ωs f Q := by
-  by_cases hm : m = 0
-  · sorry
-  · use solvedPoly n k m ωs f
-    exact ⟨solvedPoly_ne_zero, solvedPoly_weightedDegree_le,
-      solvedPoly_roots hm, solvedPoly_multiplicity⟩
-
-end GuruswamiSudanExistence
+  dvd_property (f := f) hk hm p hQ.Q_ne_0 hQ.Q_deg hQ.Q_multiplicity h_dist
 
 end GuruswamiSudan
