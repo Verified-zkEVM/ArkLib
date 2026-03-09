@@ -176,6 +176,7 @@ theorem take_append_left (T : FullTranscript pSpec₁) (T' : FullTranscript pSpe
     FullTranscript.cast, Transcript.cast]
   have : ⟨i.val, by omega⟩ = Fin.castAdd n i := by ext; simp
   rw! (castMode := .all) [this, Fin.happend_left]
+  rfl
 
 @[simp]
 theorem rtake_append_right (T : FullTranscript pSpec₁) (T' : FullTranscript pSpec₂) :

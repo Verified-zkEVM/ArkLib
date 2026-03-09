@@ -15,6 +15,8 @@ open NNReal Finset Function
 open scoped BigOperators ProbabilityTheory
 open Real
 
+-- TODO(dtumad): Move most of the stuff in this file to VCV and generalize as possible
+
 section
 variable {α : Type*}
 
@@ -22,9 +24,8 @@ instance [IsEmpty α] : IsEmpty (PMF α) := by
   refine Subtype.isEmpty_of_false ?_
   intro f h
   have : Fintype α := Fintype.ofIsEmpty
-  obtain h' := hasSum_fintype f ; simp at h'
-  have one_eq_zero := HasSum.unique h h'
-  simp_all only [one_ne_zero]
+  have one_eq_zero := HasSum.unique h (hasSum_fintype f)
+  aesop
 
 -- @[simp]
 -- theorem PMF.eq_pure_iff_ge_one {α : Type*} {p : PMF α} {a : α} : p = pure a ↔ p a ≥ 1 := by

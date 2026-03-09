@@ -359,27 +359,15 @@ theorem distanceLE_polynomial_degreeLT :
 
 theorem distanceLE_polynomial_degreeLE :
     distanceLE (instPolynomialDegreeLT R d) d := by
-  simp [distanceLE, instPolynomialDegreeLE, mem_degreeLE]
-  intro a ha b hb hNe
-  simp [Finset.card_filter_le_iff]
-  intro s hs
-  stop
-  have habNe : a - b ≠ 0 := sub_ne_zero_of_ne hNe
-  have hab : (a - b).degree ≤ d := le_trans (degree_sub_le a b) (by simp [ha, hb])
-  have : ¬ s.val ≤ (a - b).roots := by
-    intro h
-    have h1 : s.val.card ≤ (a - b).roots.card := Multiset.card_le_card h
-    have h2 : (a - b).roots.card ≤ (d : WithBot ℕ) := le_trans (card_roots habNe) hab
-    simp at h2
-    contrapose! hs
-    exact le_trans h1 h2
-  rw [Multiset.le_iff_subset s.nodup] at this
-  simp [Multiset.subset_iff] at this
-  obtain ⟨x, hMem, hx⟩ := this
-  exact ⟨x, hMem, fun h => by simp_all⟩
+  intro a b hab
+  exact le_trans (distanceLE_polynomial_degreeLT a b hab) (Nat.sub_le d 1)
 
+/-- Schwartz-Zippel-type distance bound for multivariable polynomials of degree ≤ d.
+    The bound is `Fintype.card σ * d * Fintype.card R ^ (Fintype.card σ - 1)` (the earlier
+    bound `Fintype.card σ * d` was false; see counterexample in comment history). -/
 theorem distanceLE_mvPolynomial_degreeLE {σ : Type} [Fintype σ] [DecidableEq σ] :
-    distanceLE (instMvPolynomialDegreeLE R d σ) (Fintype.card σ * d) := by
+    distanceLE (instMvPolynomialDegreeLE R d σ)
+      (Fintype.card σ * d * Fintype.card R ^ (Fintype.card σ - 1)) := by
   sorry
 
 end PolynomialDistance

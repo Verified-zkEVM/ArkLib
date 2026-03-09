@@ -721,13 +721,24 @@ instance {pSpec : ProtocolSpec n} {Statement : Type}
     [DecidableEq Statement]
     [∀ i, DecidableEq (pSpec.Message i)]
     [∀ i, DecidableEq (pSpec.Challenge i)] :
-    OracleSpec.DecidableEq (srChallengeOracle Statement pSpec) := sorry
+    OracleSpec.DecidableEq (srChallengeOracle Statement pSpec) := by
+  refine { decidableEq_A := ?_, decidableEq_B := fun q => ?_ }
+  all_goals (simp only [srChallengeOracle, OracleInterface.toOracleSpec,
+    challengeOracleInterfaceSR, OracleSpec.toPFunctor]; infer_instance)
 
 instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
-    OracleSpec.Fintype (srChallengeOracle Statement pSpec) := sorry
+    OracleSpec.Fintype (srChallengeOracle Statement pSpec) := by
+  refine { fintype_B := fun q => ?_ }
+  dsimp only [srChallengeOracle, OracleInterface.toOracleSpec,
+    challengeOracleInterfaceSR, OracleSpec.toPFunctor, OracleInterface.Response]
+  infer_instance
 
 instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
-    OracleSpec.Fintype (fsChallengeOracle Statement pSpec) := sorry
+    OracleSpec.Fintype (fsChallengeOracle Statement pSpec) := by
+  refine { fintype_B := fun q => ?_ }
+  dsimp only [fsChallengeOracle, srChallengeOracle, OracleInterface.toOracleSpec,
+    challengeOracleInterfaceSR, OracleSpec.toPFunctor, OracleInterface.Response]
+  infer_instance
 
 /-- Define the query implementation for the state-restoration / (slow) Fiat-Shamir oracle (returns a
     challenge given messages up to that point) in terms of `ProbComp`.

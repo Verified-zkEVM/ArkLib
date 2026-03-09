@@ -13,7 +13,7 @@ namespace OutOfDomSmpl
 
 open ListDecodable MvPolynomial NNReal ProbabilityTheory ReedSolomon
 
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [DecidableEq F]
          {ι : Type} [Fintype ι] [DecidableEq ι]
 
 /-- Lemma 4.24
@@ -31,8 +31,8 @@ lemma crs_equiv_rs_random_point_agreement
   ∀ (r : Fin s → Fin m → F) (δ : ℝ≥0) (hδLe : δ ≤ 1),
     (∃ u u' : smoothCode φ m,
       u.val ≠ u'.val ∧
-      u.val ∈ relHammingBall (smoothCode φ m) f δ ∧
-      u'.val ∈ relHammingBall (smoothCode φ m) f δ ∧
+      u.val ∈ closeCodewordsRel (smoothCode φ m) f δ ∧
+      u'.val ∈ closeCodewordsRel (smoothCode φ m) f δ ∧
       ∀ i : Fin s, (mVdecode u).eval (r i) = (mVdecode u').eval (r i))
     ↔
     (∃ σ : Fin s → F,
@@ -40,8 +40,8 @@ lemma crs_equiv_rs_random_point_agreement
         fun i => MvPolynomial.X (Fin.last m) * rename Fin.castSucc (eqPolynomial (r i))
       let multiCRSCode := multiConstrainedCode φ m s w σ
       ∃ u u' : ι → F, u ≠ u' ∧
-        u ∈ relHammingBall multiCRSCode f δ ∧
-        u' ∈ relHammingBall multiCRSCode f δ)
+        u ∈ closeCodewordsRel multiCRSCode f δ ∧
+        u' ∈ closeCodewordsRel multiCRSCode f δ)
   := by sorry
 
 /-- Lemma 4.25 part 1
@@ -54,7 +54,7 @@ lemma crs_equiv_rs_random_point_agreement
            C' = CRS [F, ι, φ, m, s, w, σ]
            σ = {σ₁,..,σₛ}, w = {w₁,..,wₛ}, wᵢ = Z * eqPolynomial(pow(r,m)) -/
 lemma oodSampling_crs_eq_rs
-    {f : ι → F} {m s : ℕ} {φ : ι ↪ F} [Smooth φ]
+    [Fintype F] {f : ι → F} {m s : ℕ} {φ : ι ↪ F} [Smooth φ]
     (l δ : ℝ≥0) (hδLe : δ ≤ 1)
     {C : Set (ι → F)} (hcode : C = smoothCode φ m ∧ listDecodable C δ l) :
     Pr_{ let rs ←$ᵖ (Fin s → F) }[ (∃ σ : Fin s → F,
@@ -65,18 +65,62 @@ lemma oodSampling_crs_eq_rs
                             MvPolynomial.X (Fin.last m) * rename Fin.castSucc (eqPolynomial rVec)
                         let multiCRSCode := multiConstrainedCode φ m s w σ
                         ∃ u u' : ι → F, u ≠ u' ∧
-                          u ∈ relHammingBall multiCRSCode f δ ∧
-                          u' ∈ relHammingBall multiCRSCode f δ)]
+                          u ∈ closeCodewordsRel multiCRSCode f δ ∧
+                          u' ∈ closeCodewordsRel multiCRSCode f δ)]
     =
     Pr_{ let rs ←$ᵖ (Fin s → F) }[ (∃ u u' : smoothCode φ m,
                         u.val ≠ u'.val ∧
-                        u.val ∈ relHammingBall C f δ ∧
-                        u'.val ∈ relHammingBall C f δ ∧
+                        u.val ∈ closeCodewordsRel C f δ ∧
+                        u'.val ∈ closeCodewordsRel C f δ ∧
                         ∀ i : Fin s,
                           let ri := rs i
                           let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
                           (mVdecode u).eval (rVec) = (mVdecode u').eval (rVec))]
-  := by sorry
+  := by
+  have h1 := hcode.1
+  subst h1
+  have hequiv : ∀ rs : Fin s → F,
+    (∃ σ : Fin s → F,
+      let w : Fin s → MvPolynomial (Fin (m + 1)) F :=
+        fun i =>
+          let ri := rs i
+          let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
+          MvPolynomial.X (Fin.last m) * rename Fin.castSucc (eqPolynomial rVec)
+      let multiCRSCode := multiConstrainedCode φ m s w σ
+      ∃ u u' : ι → F, u ≠ u' ∧
+        u ∈ closeCodewordsRel multiCRSCode f ↑δ ∧
+        u' ∈ closeCodewordsRel multiCRSCode f ↑δ)
+    ↔
+    (∃ u u' : smoothCode φ m,
+      u.val ≠ u'.val ∧
+      u.val ∈ closeCodewordsRel (↑(smoothCode φ m)) f ↑δ ∧
+      u'.val ∈ closeCodewordsRel (↑(smoothCode φ m)) f ↑δ ∧
+      ∀ i : Fin s,
+        let ri := rs i
+        let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
+        (mVdecode u).eval rVec = (mVdecode u').eval rVec) :=
+    fun rs => (crs_equiv_rs_random_point_agreement
+      (fun i j => (rs i) ^ (2 ^ (j : ℕ))) δ hδLe).symm
+  have hfun : (fun rs => PMF.pure (∃ σ : Fin s → F,
+      let w := fun i =>
+        let ri := rs i
+        let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
+        MvPolynomial.X (Fin.last m) * rename Fin.castSucc (eqPolynomial rVec)
+      let multiCRSCode := multiConstrainedCode φ m s w σ
+      ∃ u u' : ι → F, u ≠ u' ∧
+        u ∈ closeCodewordsRel multiCRSCode f ↑δ ∧
+        u' ∈ closeCodewordsRel multiCRSCode f ↑δ) : (Fin s → F) → PMF Prop) =
+    fun rs => PMF.pure (∃ u u' : smoothCode φ m,
+      u.val ≠ u'.val ∧
+      u.val ∈ closeCodewordsRel (↑(smoothCode φ m)) f ↑δ ∧
+      u'.val ∈ closeCodewordsRel (↑(smoothCode φ m)) f ↑δ ∧
+      ∀ i : Fin s,
+        let ri := rs i
+        let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
+        (mVdecode u).eval rVec = (mVdecode u').eval rVec) :=
+    funext fun rs => congr_arg PMF.pure (propext (hequiv rs))
+  simp only [Bind.bind, PMF.instMonad, PMF.bind_pure_comp] at hfun ⊢
+  rw [hfun]
 
 /-- Lemma 4.25 part 2
   Let `f : ι → F`, `m` be the number of variables, `s` be a repetition parameter
@@ -84,13 +128,13 @@ lemma oodSampling_crs_eq_rs
   if `C = RS [F, ι, m]` is `(δ,l)`-list decodable then
   the above equation is bounded as `≤ l²/2 * (2ᵐ/|F|)ˢ` -/
 lemma oodSampling_rs_le_bound
-    {f : ι → F} {m s : ℕ} {φ : ι ↪ F} [Smooth φ]
+    [Fintype F] {f : ι → F} {m s : ℕ} {φ : ι ↪ F} [Smooth φ]
     (δ l : ℝ≥0) (hδLe : δ ≤ 1)
     (C : Set (ι → F)) (hcode : C = smoothCode φ m ∧ listDecodable C δ l) :
     Pr_{ let rs ←$ᵖ (Fin s → F) }[ ∃ u u' : smoothCode φ m,
                         u.val ≠ u'.val ∧
-                        u.val ∈ relHammingBall C f δ ∧
-                        u'.val ∈ relHammingBall C f δ ∧
+                        u.val ∈ closeCodewordsRel C f δ ∧
+                        u'.val ∈ closeCodewordsRel C f δ ∧
                         ∀ i : Fin s,
                           let ri := rs i
                           let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))

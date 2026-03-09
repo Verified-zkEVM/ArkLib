@@ -351,7 +351,10 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
       (i := i) (m := m) (tr := tr) (stmt := stmt) (witMid := witMid) (oStmt := oStmt)
   toFun_empty := fun _ _ => by rfl
   toFun_next := fun m hDir stmtIn tr msg witMid => by
-    sorry
+    obtain ⟨stmt, oStmt⟩ := stmtIn
+    fin_cases m
+    · exact fun ⟨_, h⟩ => ⟨trivial, h⟩
+    · simp at hDir
   toFun_full := fun ⟨stmtLast, oStmtLast⟩ tr witOut h_relOut => by
     simp at h_relOut
     rcases h_relOut with ⟨stmtOut, ⟨oStmtOut, h_conj⟩⟩
@@ -488,6 +491,7 @@ noncomputable def commitOracleVerifier (i : Fin ℓ) (hCR : isCommitmentRound �
       simp_rw [hOracleIdx];
       have h := toOutCodewordsCount_mul_ϑ_eq_i_succ ℓ ϑ (i := i) (hCR := hCR)
       rw! [h]
+      rfl
 
 /-- The oracle reduction that is the `i`-th round of Binary commitmentfold. -/
 noncomputable def commitOracleReduction (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
@@ -608,7 +612,7 @@ theorem commitOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
   use commitRbrExtractor 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
   use commitKState (mp:=mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR
   intro stmtIn witIn prover j
-  sorry
+  exact absurd j.2 (by simp [pSpecCommit])
 
 end CommitStep
 
@@ -772,7 +776,7 @@ theorem relayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
   use relayKnowledgeStateFunction (mp:=mp) 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hNCR
   intro stmtIn witIn prover j
-  sorry
+  exact j.val.elim0
 
 end RelayStep
 
@@ -1027,7 +1031,7 @@ theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness [Fintype L] {σ : Type
   use finalSumcheckKnowledgeStateFunction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (𝓑 := 𝓑) init impl
   intro stmtIn witIn prover j
-  sorry
+  exact absurd j.2 (by simp [pSpecFinalSumcheckStep])
 
 end FinalSumcheckStep
 end

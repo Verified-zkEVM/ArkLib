@@ -107,8 +107,8 @@ section FoldingLemmas
 open MutualCorrAgreement Generator LinearMvExtension ListDecodable
      NNReal ReedSolomon ProbabilityTheory
 
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
-         {ι : Type} [Fintype ι] [Pow ι ℕ] [DecidableEq ι]
+variable {F : Type} [Field F] [DecidableEq F]
+         {ι : Type} [Pow ι ℕ]
 
 /-- Claim 4.15 part 1
   Let `f : ι → F`, `α ∈ Fᵏ` is the folding randomness, and let `g : (ι^(2ᵏ) → F) = fold_k(f,α)`
@@ -117,8 +117,8 @@ variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 lemma fold_f_g
   {S : Finset ι} {φ : ι ↪ F} {k m : ℕ}
   {φ_0 : (indexPowT S φ 0) ↪ F} {φ_k : (indexPowT S φ k) ↪ F}
-  [Fintype (indexPowT S φ 0)] [DecidableEq (indexPowT S φ 0)] [Smooth φ_0]
-  [Fintype (indexPowT S φ k)] [DecidableEq (indexPowT S φ k)] [Smooth φ_k]
+  [Fintype (indexPowT S φ 0)] [Smooth φ_0]
+  [Fintype (indexPowT S φ k)] [Smooth φ_k]
   [∀ i : ℕ, Neg (indexPowT S φ i)]
   (αs : Fin k → F) (hk : k ≤ m)
   (f : smoothCode φ_0 m) :
@@ -162,7 +162,7 @@ for `i ∈ [0,k]` :
     for its underlying code.
 - `hcard, hcard'` : `|Gen_αᵢ.parℓ| = 2` and `|parℓ_type| = 2`
 -/
-class GenMutualCorrParams (S : Finset ι) (φ : ι ↪ F) (k : ℕ) where
+class GenMutualCorrParams [Fintype F] (S : Finset ι) (φ : ι ↪ F) (k : ℕ) where
   m : ℕ
 
   inst1 : ∀ i : Fin (k + 1), Fintype (indexPowT S φ i)
@@ -197,13 +197,13 @@ class GenMutualCorrParams (S : Finset ι) (φ : ι ↪ F) (k : ℕ) where
   let Cⁱ = RS[F,ι^(2ⁱ),m-i] and let `Gen(2,α)` be a proxmity generator with
   mutual correlated agreement for `C⁰,...,C^{k}` with proximity bounds BStar and errStar
   Then for every `f : ι → F` and `δ ∈ (0, 1 - max {i ∈ [0,k]} BStar(Cⁱ, 2))`
-    `Pr_{α ← F} [ fold_k_set(Λᵣ(0,k,f,S',C,hcode,δ),vecα) ≠ Λ(Cᵏ,fold_k(f,vecα),δ)]`
+    `Pr_{αs ← F^k} [ fold_k_set(Λᵣ(0,k,f,S',C,hcode,δ),αs) ≠ Λ(Cᵏ,fold_k(f,αs),δ)]`
       `< ∑ i ∈ [0,k] errStar(Cⁱ,2,δ)`,
   where fold_k_set and fold_k are as defined above,
-  vecα is generated from α as `{1,α,α²,..}`
+  αs is a length-k vector of folding randomness,
   `Λᵣ(0,k,f,S',C,hcode,δ)` corresponds to the list of codewords of C δ-close to f,
   wrt (0,k)-wise block relative distance.
-  `Λ(Cᵏ,fold(f,vecα),δ)` is the list of codewords of Cᵏ δ-close to foldf(f, vecα),
+  `Λ(Cᵏ,fold_k(f,αs),δ)` is the list of codewords of Cᵏ δ-close to fold_k(f, αs),
   wrt the relative Hamming distance
   Below, we use an instance of the class `GenMutualCorrParams` to capture the
   conditions of proxmity generator with mutual correlated agreement for codes
@@ -212,7 +212,7 @@ class GenMutualCorrParams (S : Finset ι) (φ : ι ↪ F) (k : ℕ) where
 
 -- NOTE: need to align this better with the inductive way this is shown via the other lemmas below.
 theorem folding_listdecoding_if_genMutualCorrAgreement
-  {S : Finset ι} {φ : ι ↪ F} [Smooth φ] {k m : ℕ}
+  [Fintype F] {S : Finset ι} {φ : ι ↪ F} [Fintype ι] [DecidableEq ι] [Smooth φ] {k m : ℕ}
   {S' : Finset (indexPowT S φ 0)} {φ' : (indexPowT S φ 0) ↪ F}
   [∀ i : ℕ, Fintype (indexPowT S φ i)] [DecidableEq (indexPowT S φ 0)] [Smooth φ']
   [h : ∀ {f : (indexPowT S φ 0) → F}, DecidableBlockDisagreement 0 k f S' φ']
@@ -226,36 +226,39 @@ theorem folding_listdecoding_if_genMutualCorrAgreement
     let _ : ∀ j : Fin (k + 1), Fintype (indexPowT S φ j) := params.inst1
     let _ : ∀ j : Fin (k + 1), Nonempty (indexPowT S φ j) := params.inst2
 
-    Pr_{let αs ←$ᵖ (Fin k → F)}[ -- for every function `f : ι → F` and
-                      ∀ (f : (indexPowT S φ 0) → F),
-                      -- `hδLe` : `δ ∈ (0, max_{j ∈ [0,k]} BStar(Cⱼ, parℓ = 2))`
-                       (0 < δ ∧ δ < 1 - Finset.univ.sup
-                        (fun j => params.BStar j (params.Gen_α j).C (params.Gen_α j).parℓ)) →
-
-                      let listBlock : Set ((indexPowT S φ 0) → F) := Λᵣ(0, k, f, S', C, hcode, δ)
-                      let fold := fold_k f αs hLe
-                      let foldSet := fold_k_set listBlock αs hLe
-                      let kFin : Fin (k + 1) := ⟨k, Nat.lt_succ_self k⟩
-                      let Cₖ := (params.Gen_α kFin).C
-                      let listHamming := relHammingBall Cₖ fold δ
-
-                      foldSet ≠ listHamming
-                    ] < (∑ i : Fin (k + 1),
-                          params.errStar i (params.Gen_α i).C (params.Gen_α i).parℓ δ)
+    ∀ (f : (indexPowT S φ 0) → F)
+      (hδ :
+        0 < δ ∧
+          δ <
+            1 - Finset.univ.sup (fun j => params.BStar j (params.Gen_α j).C (params.Gen_α j).parℓ)),
+      Pr_{let αs ←$ᵖ (Fin k → F)}[
+          let listBlock : Set ((indexPowT S φ 0) → F) := Λᵣ(0, k, f, S', C, hcode, δ)
+          let fold := fold_k f αs hLe
+          let foldSet := fold_k_set listBlock αs hLe
+          let kFin : Fin (k + 1) := ⟨k, Nat.lt_succ_self k⟩
+          let Cₖ := (params.Gen_α kFin).C
+          let listHamming := closeCodewordsRel Cₖ fold δ
+          foldSet ≠ listHamming
+        ] <
+        (∑ i : Fin (k + 1), params.errStar i (params.Gen_α i).C (params.Gen_α i).parℓ δ)
 := by sorry
 
 /-- Lemma 4.21
   Let `C = RS[F,ι,m]` be a smooth ReedSolomon code and k ≤ m
   Denote `C' = RS[F,ι^2,m-1]`, then for every `f : ι → F` and `δ ∈ (0, 1 - BStar(C',2))`
-    `Pr_{α ← F} [ fold_k_set(Λᵣ(0,k,f,S_0,C,δ),α) ≠ Λᵣ(1,k-1,foldf(f,α),S_1,C',δ) ]`
+    `Pr_{α ← F} [
+      fold_k_set(Λᵣ(0,k,f,S_0,C,δ),(fun _ : Fin 1 => α)) ≠
+        Λᵣ(1,k-1,fold_k(f,(fun _ : Fin 1 => α)),S_1,C',δ)
+    ]`
       `< errStar(C',2,δ)`
-    where `foldf(f,α)` returns a function `ι^2 → F`,
+    where `fold_k(f,(fun _ : Fin 1 => α))` returns a function `ι^2 → F`,
     `S_0` and `S_1` denote finite sets of elements of type ι and ι², and
     `Λᵣ` denotes the list of δ-close codewords wrt block relative distance.
     `Λᵣ(0,k,f,S_0,C)` denotes Λᵣ at f : ι → F for code C and
-    `Λᵣ(1,k,foldf(f,α),S_1,C')` denotes Λᵣ at foldf : ι^2 → F for code C'. -/
+    `Λᵣ(1,k,fold_k(f,(fun _ : Fin 1 => α)),S_1,C')` denotes Λᵣ at fold_k : ι^2 → F for code C'. -/
 lemma folding_preserves_listdecoding_base
-  {S : Finset ι} {k m : ℕ} (hm : 1 ≤ m) {φ : ι ↪ F} [Smooth φ] {δ : ℝ≥0}
+  [Fintype F] {S : Finset ι} {k m : ℕ} (hm : 1 ≤ m) {φ : ι ↪ F}
+  [Fintype ι] [DecidableEq ι] [Smooth φ] {δ : ℝ≥0}
   {S_0 : Finset (indexPowT S φ 0)} {S_1 : Finset (indexPowT S φ 1)}
   {φ_0 : (indexPowT S φ 0) ↪ F} {φ_1 : (indexPowT S φ 1) ↪ F}
   [∀ i : ℕ, Fintype (indexPowT S φ i)] [∀ i : ℕ, DecidableEq (indexPowT S φ i)]
@@ -267,21 +270,24 @@ lemma folding_preserves_listdecoding_base
   (C' : Set ((indexPowT S φ 1) → F)) (hcode' : C' = smoothCode φ_1 (m-1))
   {BStar : (Set (indexPowT S φ 1 → F)) → ℕ → ℝ≥0}
   {errStar : (Set (indexPowT S φ 1 → F)) → ℕ → ℝ≥0 → ℝ≥0} :
-    Pr_{let α ←$ᵖ F}[ ∀ { f : (indexPowT S φ 0) → F} (hδLe: 0 < δ ∧ δ < 1 - (BStar C' 2)),
-               let listBlock : Set ((indexPowT S φ 0) → F) := Λᵣ(0, k, f, S_0, C, hcode, δ)
-               let vec_α : Fin 1 → F := (fun _ : Fin 1 => α)
-               let foldSet := fold_k_set listBlock vec_α hm
-               let fold := fold_k f vec_α hm
-               let listBlock' : Set ((indexPowT S φ 1) → F) := Λᵣ(1, k, fold, S_1, C', hcode', δ)
-               foldSet ≠ listBlock'
-             ] < errStar C' 2 δ
+    ∀ (f : (indexPowT S φ 0) → F) (hδ : 0 < δ ∧ δ < 1 - (BStar C' 2)),
+      Pr_{let α ←$ᵖ F}[
+          let listBlock : Set ((indexPowT S φ 0) → F) := Λᵣ(0, k, f, S_0, C, hcode, δ)
+          let vec_α : Fin 1 → F := (fun _ : Fin 1 => α)
+          let foldSet := fold_k_set listBlock vec_α hm
+          let fold := fold_k f vec_α hm
+          let listBlock' : Set ((indexPowT S φ 1) → F) := Λᵣ(1, k, fold, S_1, C', hcode', δ)
+          foldSet ≠ listBlock'
+        ] < errStar C' 2 δ
   := by sorry
 
 /-- Lemma 4.22
   Following same parameters as Lemma 4.21 above, and states
-  `∀ α : F, Λᵣ(0,k,f,S_0,C,δ),α) ⊆ Λᵣ(1,k-1,foldf(f,α),S_1,C',δ)` -/
+  `∀ α : F, fold_k_set(Λᵣ(0,k,f,S_0,C,δ),(fun _ : Fin 1 => α)) ⊆
+      Λᵣ(1,k-1,fold_k(f,(fun _ : Fin 1 => α)),S_1,C',δ)` -/
 lemma folding_preserves_listdecoding_bound
-  {S : Finset ι} {k m : ℕ} (hm : 1 ≤ m) {φ : ι ↪ F} [Smooth φ] {δ : ℝ≥0} {f : (indexPowT S φ 0) → F}
+  {S : Finset ι} {k m : ℕ} (hm : 1 ≤ m) {φ : ι ↪ F} [Fintype ι] [DecidableEq ι] [Smooth φ]
+  {δ : ℝ≥0} {f : (indexPowT S φ 0) → F}
   {S_0 : Finset (indexPowT S φ 0)} {S_1 : Finset (indexPowT S φ 1)}
   {φ_0 : (indexPowT S φ 0) ↪ F} {φ_1 : (indexPowT S φ 1) ↪ F}
   [∀ i : ℕ, Fintype (indexPowT S φ i)] [∀ i : ℕ, DecidableEq (indexPowT S φ i)]
@@ -304,9 +310,13 @@ lemma folding_preserves_listdecoding_bound
 
 /-- Lemma 4.23
   Following same parameters as Lemma 4.21 above, and states
-  `Pr_{α ← F} [ Λᵣ(1,k-1,foldf(f,α),S_1,C',δ) ¬ ⊆ Λᵣ(0,k,f,S_0,C,δ),α) ] < errStar(C',2,δ)` -/
+  `Pr_{α ← F} [
+      Λᵣ(1,k-1,fold_k(f,(fun _ : Fin 1 => α)),S_1,C',δ) ¬ ⊆
+        fold_k_set(Λᵣ(0,k,f,S_0,C,δ),(fun _ : Fin 1 => α))
+    ] < errStar(C',2,δ)` -/
 lemma folding_preserves_listdecoding_base_ne_subset
-  {S : Finset ι} {k m : ℕ} (hm : 1 ≤ m) {φ : ι ↪ F} [Smooth φ] {δ : ℝ≥0}
+  [Fintype F] {S : Finset ι} {k m : ℕ} (hm : 1 ≤ m) {φ : ι ↪ F}
+  [Fintype ι] [DecidableEq ι] [Smooth φ] {δ : ℝ≥0}
   {S_0 : Finset (indexPowT S φ 0)} {S_1 : Finset (indexPowT S φ 1)}
   {φ_0 : (indexPowT S φ 0) ↪ F} {φ_1 : (indexPowT S φ 1) ↪ F}
   [∀ i : ℕ, Fintype (indexPowT S φ i)] [∀ i : ℕ, DecidableEq (indexPowT S φ i)]
@@ -318,15 +328,16 @@ lemma folding_preserves_listdecoding_base_ne_subset
   (C' : Set ((indexPowT S φ 1) → F)) (hcode' : C' = smoothCode φ_1 (m-1))
   {BStar : (Set (indexPowT S φ 1 → F)) → ℕ → ℝ≥0}
   {errStar : (Set (indexPowT S φ 1 → F)) → ℕ → ℝ≥0 → ℝ≥0} :
-    Pr_{let α ←$ᵖ F}[ ∀ { f : (indexPowT S φ 0) → F} (hδLe: δ ≤ 1 - (BStar C' 2)),
-                      let listBlock : Set ((indexPowT S φ 0) → F) := Λᵣ(0, k, f, S_0, C, hcode, δ)
-                      let vec_α : Fin 1 → F := (fun _ : Fin 1 => α)
-                      let foldSet := fold_k_set listBlock vec_α hm
-                      let fold := fold_k f vec_α hm
-                      let listBlock' : Set ((indexPowT S φ 1) → F)
-                        := Λᵣ(1, k, fold, S_1, C', hcode', δ)
-                      ¬ (listBlock' ⊆ foldSet)
-                    ] < errStar C' 2 δ
+    ∀ (f : (indexPowT S φ 0) → F) (hδ : 0 < δ ∧ δ < 1 - (BStar C' 2)),
+      Pr_{let α ←$ᵖ F}[
+          let listBlock : Set ((indexPowT S φ 0) → F) := Λᵣ(0, k, f, S_0, C, hcode, δ)
+          let vec_α : Fin 1 → F := (fun _ : Fin 1 => α)
+          let foldSet := fold_k_set listBlock vec_α hm
+          let fold := fold_k f vec_α hm
+          let listBlock' : Set ((indexPowT S φ 1) → F) :=
+            Λᵣ(1, k, fold, S_1, C', hcode', δ)
+          ¬ (listBlock' ⊆ foldSet)
+        ] < errStar C' 2 δ
   := by sorry
 
 end FoldingLemmas

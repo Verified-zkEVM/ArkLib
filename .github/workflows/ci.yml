@@ -21,8 +21,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      # uses lean standard action with all default input values
+
+      - name: Restore Lean cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ./.lake
+          key: ${{ runner.os }}-lean-ci-${{ hashFiles('lake-manifest.json') }}
+          restore-keys: |
+            ${{ runner.os }}-lean-ci-
+            ${{ runner.os }}-lean-docs-${{ hashFiles('lake-manifest.json') }}
+            ${{ runner.os }}-lean-docs-
+
       - uses: leanprover/lean-action@v1.4.0
         with:
-          # Do not run linter for now, too many errors
           lint: false
+          use-github-cache: false

@@ -32,16 +32,15 @@ lemma proximity_gap
   {F : Type} [Field F] [Fintype F] [DecidableEq F]
   {ι : Type} [Fintype ι] [Nonempty ι] {φ : ι ↪ F}
   {degree m : ℕ} {δ : ℝ≥0} {f : Fin m → ι → F} {GenFun : F → Fin m → F}
-  (h : ∀ (hδLe : δ < 1 - Bstar (LinearCode.rate (code φ degree))) {f : Fin m → ι → F},
-        Pr_{
-          let r ← $ᵖ F}[δᵣ((fun x => ∑ j : Fin m, (GenFun r j) * f j x), code φ degree) ≤ δ]
-            > ENNReal.ofReal (proximityError F degree (LinearCode.rate (code φ degree)) δ m)) :
-
-        ∃ S : Finset ι,
-          S.card ≥ (1 - δ) * (Fintype.card ι) ∧
-        ∃ u : (ι → F),
-          u ∈ (code φ degree) ∧ ∀ i : Fin m, ∀ x ∈ S, f i x = u x
-
-:= by sorry
+  (hδPos : 0 < δ)
+  (hδLt : δ < 1 - Bstar (LinearCode.rate (code φ degree)))
+  (hProb :
+    Pr_{ let r ← $ᵖ F}[δᵣ((fun x => ∑ j : Fin m, (GenFun r j) * f j x), code φ degree) ≤ δ] >
+      ENNReal.ofReal (proximityError F degree (LinearCode.rate (code φ degree)) δ m)) :
+  ∃ S : Finset ι,
+    S.card ≥ (1 - δ) * (Fintype.card ι) ∧
+    ∀ i : Fin m, ∃ u : ι → F, u ∈ (code φ degree) ∧ ∀ x ∈ S, f i x = u x
+:= by
+  sorry
 
 end STIR

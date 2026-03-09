@@ -128,7 +128,9 @@ private lemma sum_add_one {i : Fin (k + 1)} :
               use
                 (by
                   rw [Nat.lt_min]
-                  simp
+                  simp only [zero_lt_one, List.length_drop, List.length_finRange, tsub_pos_iff_lt,
+                    Order.lt_add_one_iff, true_and]
+                  fin_omega
                 )
               rw [List.getElem_drop]
               simp

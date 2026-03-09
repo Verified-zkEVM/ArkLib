@@ -33,16 +33,14 @@ namespace Polynomial.Bivariate
 
 noncomputable section
 
-universe u
-
-variable {F : Type u} [Semiring F]
+variable {F : Type} [Semiring F]
 
 /-- The set of coefficients of a bivariate polynomial. -/
 def coeffs [DecidableEq F] (f : F[X][Y]) : Finset F[X] := f.support.image f.coeff
 
 /-- `(i, j)`-coefficient of a polynomial, i.e. the coefficient of `X^i Y^j`.
 -/
-def coeff {F : Type u} [Semiring F] (f : F[X][Y]) (i j : ℕ) : F := (f.coeff j).coeff i
+def coeff.{u} {F : Type u} [Semiring F] (f : F[X][Y]) (i j : ℕ) : F := (f.coeff j).coeff i
 
 /-- The polynomial coefficient of the highest power of `Y`. This is the leading coefficient in the
 classical sense if the bivariate polynomial is interpreted as a univariate polynomial over `F[X]`.
@@ -81,7 +79,7 @@ def natDegreeY (f : F[X][Y]) : ℕ := Polynomial.natDegree f
 /-- The set of `Y`-degrees is non-empty. -/
 lemma degreesY_nonempty {f : F[X][Y]} (hf : f ≠ 0) : (f.toFinsupp.support).Nonempty :=
   Finsupp.support_nonempty_iff.mpr
-    fun h ↦ hf (Polynomial.ext (fun n => by rw [←Polynomial.toFinsupp_apply, h]; rfl))
+    fun h ↦ hf (Polynomial.ext (fun n => by rw [← Polynomial.toFinsupp_apply, h]; rfl))
 
 /-- The `X`-degree of a bivariate polynomial. -/
 def degreeX (f : F[X][Y]) : ℕ := f.support.sup (fun n => (f.coeff n).natDegree)
@@ -93,14 +91,19 @@ def totalDegree (f : F[X][Y]) : ℕ :=
 /-- `(u,v)`-weighted degree of a polynomial.
 The maximal `u * i + v * j` such that the polynomial `p`
 contains a monomial `x^i * y^j`. -/
-def weightedDegree {F : Type u} [Semiring F] (p : F[X][Y]) (u v : ℕ) : Option ℕ :=
+def weightedDegree.{u} {F : Type u} [Semiring F] (p : F[X][Y]) (u v : ℕ) : Option ℕ :=
   List.max? <|
     List.map (fun n => u * (p.coeff n).natDegree + v * n) (List.range p.natDegree.succ)
 
-def natWeightedDegree {F : Type u} [Semiring F] (f : F[X][Y]) (u v : ℕ) : ℕ :=
+def natWeightedDegree.{u} {F : Type u} [Semiring F] (f : F[X][Y]) (u v : ℕ) : ℕ :=
   f.support.sup (fun m => u * (f.coeff m).natDegree + v * m)
 
 variable {f : F[X][Y]}
+
+/-- The weighted degree is always defined (never none). -/
+lemma weightedDegree_ne_none {F : Type} [Semiring F] (f : F[X][Y]) (u v : ℕ) :
+    weightedDegree f u v ≠ none := by
+  unfold weightedDegree; aesop
 
 @[grind _=_]
 lemma weightedDegree_eq_natWeightedDegree {u v : ℕ} :
@@ -131,26 +134,27 @@ lemma degreeY_as_weighted_deg (hf : f ≠ 0) :
   simp [Finset.sup'_eq_sup]
 
 /-- Root multiplicity of a bivariate polynomial. -/
-def rootMultiplicity₀ {F : Type u} [Semiring F] [DecidableEq F] (f : F[X][Y]) : Option ℕ :=
+def rootMultiplicity₀.{u} {F : Type u} [Semiring F] [DecidableEq F] (f : F[X][Y]) : Option ℕ :=
   let deg := weightedDegree f 1 1
   match deg with
   | none => none
-  | some deg => List.max?
-    (List.map
-      (fun x => if coeff f x.1 x.2 ≠ 0 then x.1 + x.2 else 0)
-      (List.product (List.range deg.succ) (List.range deg.succ)))
+  | some deg => List.min?
+    (List.filterMap
+      (fun p ↦ if coeff f p.1 p.2 = 0 then none else some (p.1 + p.2))
+        (List.product (List.range deg.succ) (List.range deg.succ)))
 
-/-- The multiplicity of a pair `(x,y)` of a bivariate polynomial `f`. -/
-def rootMultiplicity {F : Type u} [CommSemiring F] [DecidableEq F]
-  (f : F[X][Y]) (x y : F) : Option ℕ :=
-  let X := (Polynomial.X : Polynomial F)
-  rootMultiplicity₀ (F := F) ((f.comp (Y + (C (C y)))).map (Polynomial.compRingHom (X + C x)))
+/-- Root multiplicity (order of vanishing) of a bivariate polynomial at `(x,y)`.
+It is the smallest total degree `s+t` of a nonzero coefficient after shifting
+the root to `(0,0)`. The zero polynomial has multiplicity `none`. -/
+def rootMultiplicity.{u} {F : Type u} [CommSemiring F] [DecidableEq F]
+    (f : F[X][Y]) (x y : F) : Option ℕ :=
+  rootMultiplicity₀ <| (f.comp (Y + C (C y))).map (Polynomial.compRingHom (X + C x))
 
 /-- If the multiplicity of a pair `(x,y)` is non-negative, then the pair is a root of `f`. -/
-lemma rootMultiplicity_some_implies_root {F : Type} [CommSemiring F] [DecidableEq F]
-  {x y : F} {f : F[X][Y]} (h : some 0 < (rootMultiplicity (f := f) x y))
-  : (f.eval 0).eval 0 = 0 := by
-  sorry
+theorem rootMultiplicity_some_implies_root {F : Type} [CommRing F]
+  {x y : F} {f : F[X][Y]} (h : 0 < ((f.eval (C y)).rootMultiplicity x))
+  : (f.eval (C y)).eval x = 0 := by
+  simp_all only [rootMultiplicity_pos', ne_eq, IsRoot.def]
 
 open Univariate in
 /-- In the case of a bivariate polynomial we cannot easily use `discriminant`.
@@ -336,12 +340,12 @@ def evalSetY [DecidableEq F] (f : F[X][Y]) (P : Finset F) [Nonempty P] : Finset 
 def quotient (f g : F[X][Y]) : Prop := ∃ q : F[X][Y], g = q * f
 
 /-- The quotient of two non-zero bivariate polynomials is non-zero. -/
-@[grind]
+@[grind .]
 lemma quotient_nezero {f q : F[X][Y]} (hg : q * f ≠ 0) : q ≠ 0 := by by_contra h; apply hg; simp [h]
 
 /-- If a non-zero bivariate polynomial `f` divides a non-zero bivariate polynomial `g`, then
 all the coefficients of the quoetient are non-zero. -/
-@[grind]
+@[grind .]
 lemma coeff_ne_zero {f q : F[X][Y]} (hg : q * f ≠ 0) : q.coeff ≠ 0 :=
   (ne_zero_iff_coeffs_ne_zero q).1 (quotient_nezero hg)
 
@@ -349,7 +353,7 @@ lemma coeff_ne_zero {f q : F[X][Y]} (hg : q * f ≠ 0) : q.coeff ≠ 0 :=
 If `q * f ≠ 0`, then the `X`-degree of `q` is bounded above by the difference of the
 `X`-degrees: `degreeX q ≤ degreeX (q * f) - degreeX f`.
 -/
-@[grind]
+@[grind .]
 lemma degreeX_le_degreeX_sub_degreeX [IsDomain F] {f q : F[X][Y]} (hf : f ≠ 0) (hg : q * f ≠ 0) :
   degreeX q ≤ degreeX (q * f) - degreeX f := by grind
 
@@ -357,7 +361,7 @@ lemma degreeX_le_degreeX_sub_degreeX [IsDomain F] {f q : F[X][Y]} (hf : f ≠ 0)
 If `q * f ≠ 0`, then the `Y`-degree of `q` is bounded above by the difference of the
 `Y`-degrees: `natDegreeY q ≤ natDegreeY (q * f) - natDegreeY f`.
 -/
-@[grind]
+@[grind .]
 lemma degreeY_le_degreeY_sub_degreeY [IsDomain F] {f q : F[X][Y]} (hf : f ≠ 0) (hg : q * f ≠ 0) :
   natDegreeY q ≤ natDegreeY (q * f) - natDegreeY f := by grind
 
@@ -373,16 +377,16 @@ polynomial in `Y`. -/
 def monomialY (n : ℕ) : F[X] →ₗ[F[X]] F[X][Y] where
   toFun t := ⟨Finsupp.single n t⟩
   map_add' x y := by rw [Finsupp.single_add]; aesop
-  map_smul' r x := by simp; rw[smul_monomial]; aesop
+  map_smul' r x := by simp only [RingHom.id_apply, ofFinsupp_single]; rw [smul_monomial]
 
 /-- Definition of the bivariate monomial `X^n * Y^m` -/
 def monomialXY (n m : ℕ) : F →ₗ[F] F[X][Y] where
   toFun t := ⟨Finsupp.single m ⟨(Finsupp.single n t)⟩⟩
   map_add' x y := by
-    simp only [ofFinsupp_single, Polynomial.monomial_add, Polynomial.monomial_add]
+    simp only [ofFinsupp_single, map_add]
   map_smul' x y := by
     simp only [smul_eq_mul, ofFinsupp_single, RingHom.id_apply]
-    rw[smul_monomial, smul_monomial]
+    rw [smul_monomial, smul_monomial]
     simp
 
 /-- The bivariate monomial is well-defined. -/
@@ -460,6 +464,10 @@ lemma degreeY_monomialXY {n m : ℕ} {a : F} (ha : a ≠ 0) :
 /-- `(a,b)`-weighted degree of a monomial `X^i * Y^j` -/
 def weightedDegreeMonomialXY {n m : ℕ} (a b t : ℕ) : ℕ :=
   a * (degreeX (monomialXY n m t)) + b * natDegreeY (monomialXY n m t)
+
+/-- Shift a bivariate polynomial by (x, y). -/
+noncomputable def shift {F : Type} [Field F] (f : F[X][Y]) (x y : F) : F[X][Y] :=
+  (f.comp (X + C (C y))).map ((X + C x).compRingHom)
 
 end
 end Polynomial.Bivariate

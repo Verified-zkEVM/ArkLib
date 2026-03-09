@@ -173,9 +173,10 @@ noncomputable def proximity_gap_johnson (rho : ℚ) (m : ℕ) : ℝ :=
     Given the D_X (`proximity_gap_degree_bound`) and δ₀ (`proximity_gap_johnson`),
     a solution to Guruswami-Sudan system exists.
 -/
-lemma guruswami_sudan_for_proximity_gap_existence {k m : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F} :
-  ∃ Q, Condition (k + 1) m ((proximity_gap_degree_bound ((k + 1 : ℚ) / n) m n)) ωs f Q := by
-  sorry
+lemma guruswami_sudan_for_proximity_gap_existence {k m : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F}
+    (hm : 1 ≤ m) :
+  ∃ Q, Conditions (k + 1) m (_root_.proximity_gap_degree_bound (k + 1) n m) ωs f Q :=
+  GuruswamiSudan.proximity_gap_existence (k + 1) n ωs f hm
 
 open Polynomial in
 /-- The second part of lemma 5.3 from [BCIKS20].
@@ -188,11 +189,14 @@ open Polynomial in
 lemma guruswami_sudan_for_proximity_gap_property {k m : ℕ} {ωs : Fin n ↪ F}
   {w : Fin n → F}
   {Q : F[X][Y]}
-  (cond : Condition (k + 1) m (proximity_gap_degree_bound ((k + 1 : ℚ) / n) m n) ωs w Q)
-  {p : ReedSolomon.code ωs n}
-  (h : δᵣ(w, p) ≤ proximity_gap_johnson ((k + 1 : ℚ) / n) m)
+  (hk : k + 2 ≤ n) (hm : 1 ≤ m)
+  (cond : Conditions (k + 1) m (_root_.proximity_gap_degree_bound (k + 1) n m) ωs w Q)
+  {p : ReedSolomon.code ωs (k + 1)}
+  (h : (↑Δ₀(w, fun i ↦ Polynomial.eval (ωs i) (ReedSolomon.codewordToPoly p)) : ℝ) / ↑n <
+       _root_.proximity_gap_johnson (k + 1) n m)
   :
-  (X - Polynomial.C (ReedSolomon.codewordToPoly p)) ∣ Q := by sorry
+  (Polynomial.X - Polynomial.C (ReedSolomon.codewordToPoly p)) ∣ Q :=
+  GuruswamiSudan.proximity_gap_divisibility hk hm p cond h
 
 
 section
@@ -335,7 +339,8 @@ noncomputable def matching_set
 /-- `S'` is indeed a subset of `S` -/
 lemma matching_set_is_a_sub_of_coeffs_of_close_proximity
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  : matching_set k ωs δ u₀ u₁ h_gs ⊆ coeffs_of_close_proximity k ωs δ u₀ u₁ := by sorry
+  : matching_set k ωs δ u₀ u₁ h_gs ⊆ coeffs_of_close_proximity k ωs δ u₀ u₁ :=
+  (exists_a_set_and_a_matching_polynomial k h_gs (δ := δ)).choose_spec.choose
 
 /-- The equation 5.12 from [BCIKS20]. -/
 lemma irreducible_factorization_of_gs_solution
@@ -399,12 +404,8 @@ noncomputable def H
 lemma irreducible_H
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   :
-  Irreducible (H k δ x₀ h_gs) := by
-  have h := Classical.choose_spec <| Classical.choose_spec
-    (exists_factors_with_large_common_root_set (δ := δ) (x₀ := x₀) k h_gs)
-  simp [H]
-  rcases h with ⟨_, h, _⟩
-  sorry
+  Irreducible (H k δ x₀ h_gs) :=
+  (exists_factors_with_large_common_root_set k δ x₀ h_gs).choose_spec.choose_spec.2.1
 
 open BCIKS20AppendixA.ClaimA2 in
 /-- The claim 5.8 from [BCIKS20].
@@ -485,7 +486,9 @@ lemma gamma_eq_P
   :
   γ' x₀ (R k δ x₀ h_gs) (irreducible_H k (x₀ := x₀) (δ := δ) h_gs) =
   BCIKS20AppendixA.polyToPowerSeries𝕃 _
-    (P k δ x₀ h_gs) := by sorry
+    (P k δ x₀ h_gs) :=
+  Classical.choose_spec
+    (Classical.choose_spec (solution_gamma_is_linear_in_Z k (δ := δ) (x₀ := x₀) h_gs))
 
 /-- The set `S'_x` from [BCIKS20] (just before claim 5.10).
     The set of all `z∈S'` such that `w(x,z)` matches `P_z(x)`.
@@ -640,7 +643,12 @@ theorem average_proximity_implies_proximity_of_linear_subspace [DecidableEq ι] 
   letI U' : Finset (ι → F) :=
     SetLike.coe (affineSpan F (Finset.univ.image (Fin.tail u))) |>.toFinset
   letI U : Finset (ι → F) := u 0 +ᵥ U'
-  haveI : Nonempty U := sorry
+  haveI : Nonempty U := by
+    apply Finset.Nonempty.to_subtype
+    apply Finset.Nonempty.vadd_finset
+    rw [Set.toFinset_nonempty]
+    exact Set.Nonempty.mono (subset_affineSpan F _)
+      (Finset.coe_nonempty.mpr (Finset.univ_nonempty.image _))
   letI ε : ℝ≥0 := ProximityGap.errorBound δ (k + 1) domain
   letI V := ReedSolomon.code domain (k + 1)
   Pr_{let u ←$ᵖ U}[δᵣ(u.1, V) ≤ δ] > ε → ∀ u' ∈ U', δᵣ(u', V) ≤ δ := by

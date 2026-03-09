@@ -221,10 +221,11 @@ theorem liftContext_processRound
         let ⟨newTranscript, newPrvState⟩ ← P.processRound i (do return ⟨transcript, prvState⟩)
         return ⟨newTranscript, ⟨newPrvState, outerStmtIn, outerWitIn⟩⟩ := by
   unfold processRound liftContext
-  simp
-  stop
-  congr 1; funext
-  split <;> simp
+  simp only [bind_pure_comp]
+  congr 1; funext ⟨tr, ps, outerStmtIn', outerWitIn'⟩
+  simp only [pure_bind]
+  split <;> simp [Functor.map_map, Function.comp, liftM_map, map_bind,
+    bind_assoc, pure_bind, bind_map_left, bind_pure_comp]
 
 
 theorem liftContext_runToRound
@@ -308,7 +309,9 @@ theorem liftContext_run
                 lens.stmt.lift outerStmtIn verInnerStmtOut⟩ := by
   unfold run
   simp [liftContext, Prover.liftContext_run, Verifier.liftContext, Verifier.run, Function.uncurry]
-  sorry
+  congr 1; funext ⟨_, _⟩; congr 1; funext a_1
+  simp [Functor.map_map, Function.comp]
+  cases a_1 <;> simp [Option.getM, map_pure]
 
 theorem liftContext_runWithLog
     {lens : Context.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut

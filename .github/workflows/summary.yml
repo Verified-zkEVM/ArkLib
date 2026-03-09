@@ -1,15 +1,14 @@
 name: PR Summary
-
 on:
   pull_request_target:
-
-permissions:
-  pull-requests: write
-  issues: read
-
+    types: [opened, synchronize]
 jobs:
   summarize:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      pull-requests: write
+      issues: read
     steps:
       - uses: alexanderlhicks/lean-summary-workflow@main
         with:

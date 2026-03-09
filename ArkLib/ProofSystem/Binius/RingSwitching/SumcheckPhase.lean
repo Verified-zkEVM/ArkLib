@@ -303,8 +303,17 @@ def iteratedSumcheckKnowledgeStateFunction (i : Fin ℓ') :
     simp only [sumcheckRoundRelation, sumcheckRoundRelationProp, Fin.coe_castSucc, cast_eq,
       Set.mem_setOf_eq, iteratedSumcheckKStateProp, masterKStateProp, true_and]
   toFun_next := fun m hDir stmtIn tr msg witMid => by
-    sorry
-  toFun_full := fun ⟨stmtLast, oStmtLast⟩ tr witOut h_relOut => by
+    obtain ⟨stmt, oStmt⟩ := stmtIn
+    fin_cases m
+    · -- m = 0: succ = 1, castSucc = 0
+      unfold iteratedSumcheckKStateProp
+      simp only [masterKStateProp, iteratedSumcheckRbrExtractor, true_and]
+      simp only [Fin.succ_mk, Fin.castSucc_mk, Fin.castAdd_mk]
+      tauto
+    · -- m = 1: dir 1 = V_to_P, contradicts hDir
+      simp [pSpecSumcheckRound] at hDir
+  toFun_full := fun ⟨stmtLast, oStmtLast⟩ tr witOut => by
+    intro h_relOut
     simp at h_relOut
     rcases h_relOut with ⟨stmtOut, ⟨oStmtOut, h_conj⟩⟩
     have h_simulateQ := h_conj.1

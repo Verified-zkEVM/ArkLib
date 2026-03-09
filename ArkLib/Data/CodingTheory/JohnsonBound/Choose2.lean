@@ -40,7 +40,8 @@ theorem choose_2_convex : ConvexOn ℚ Set.univ choose_2 := by
   rw [choose_2_eq_half_f]
   refine ⟨convex_univ, fun x₁ _ x₂ _ α₁ α₂ hα₁ hα₂ h ↦ ?p₁⟩
   have := f_convex (x₁ := x₁) (x₂ := x₂) hα₁ hα₂ h
-  field_simp
-  sorry --linarith
+  change (1/2 * f) (α₁ * x₁ + α₂ * x₂) ≤ α₁ * (1/2 * f) x₁ + α₂ * (1/2 * f) x₂
+  simp only [Pi.mul_apply, Pi.div_apply, Pi.ofNat_apply]
+  nlinarith [mul_le_mul_of_nonneg_left this (by norm_num : (0:ℚ) ≤ 1/2)]
 
 end JohnsonBound
