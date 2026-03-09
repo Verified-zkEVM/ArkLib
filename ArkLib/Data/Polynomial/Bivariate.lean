@@ -33,7 +33,7 @@ namespace Polynomial.Bivariate
 
 noncomputable section
 
-variable {F : Type} [Semiring F]
+variable {F : Type*} [Semiring F]
 
 /-- The set of coefficients of a bivariate polynomial. -/
 def coeffs [DecidableEq F] (f : F[X][Y]) : Finset F[X] := f.support.image f.coeff
