@@ -670,7 +670,7 @@ lemma folded_poly_degree_bound {Q : F[X][Y]} {q : F[X]} {t : ℕ}
                       ( f := fun n => Polynomial.natDegree ( Q.coeff n ) ) 
                       ( by aesop ) );
               · exact Nat.le_sub_one_of_lt 
-                  ( lt_of_lt_of_le hb 
+                  ( lt_of_lt_of_le (Nat.lt_succ_of_le hb) 
                       ( Nat.succ_le_of_lt 
                           ( lt_of_le_of_lt 
                               ( Polynomial.le_natDegree_of_mem_supp _ 
