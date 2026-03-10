@@ -228,7 +228,7 @@ theorem fullOracleReduction_perfectCompleteness (hInit : NeverFail init) :
       · apply BatchingPhase.batchingReduction_perfectCompleteness (hInit:=hInit) κ L K
           (β:=booleanHypercubeBasis κ L K β) ℓ ℓ' h_l (𝓑 := 𝓑)
           (BinaryBasefoldAbstractOStmtIn (β := β)
-            (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) hInit
+            (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       · apply CoreInteractionPhase.coreInteractionOracleReduction_perfectCompleteness
           κ (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (𝓡 := 𝓡) (ϑ := ϑ)
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (hInit:=hInit)
@@ -308,7 +308,7 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness :
                 (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) 0)
             (rel₃ := BinaryBasefold.finalSumcheckRelOut K β (ϑ := ϑ)
               (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-            (V₁ := RingSwitching.BatchingPhase.oracleVerifier κ (L := L) (K := K)
+            (V₁ := RingSwitching.BatchingPhase.batchingOracleVerifier κ (L := L) (K := K)
               (β := booleanHypercubeBasis κ L K β)
               (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (𝓑 := 𝓑)
               (aOStmtIn :=  (BinaryBasefoldAbstractOStmtIn (β := β)
@@ -332,9 +332,8 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness :
               (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))))
       (h₂ := QueryPhase.queryOracleVerifier_rbrKnowledgeSoundness K β γ_repetitions
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) init impl)
-  simpa [fullOracleVerifier, batchingCoreVerifier, batchingCorePspec,
-    BinaryBasefold.pSpecCoreInteraction, fullRbrKnowledgeError, batchingCoreRbrKnowledgeError]
-    using res
+  simpa only [ChallengeIdx, fullOracleVerifier, batchingCorePspec,
+    BinaryBasefold.pSpecCoreInteraction, batchingCoreVerifier, MessageIdx] using res
 
 end
 end Binius.FRIBinius.FullFRIBinius

@@ -957,7 +957,6 @@ def extractMLP (i : Fin ℓ) (f : (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨i, by o
         let w_index : Fin (2^(ℓ - i.val)) := Nat.binaryFinMapToNat
           (n:=ℓ - i.val) (m:=w) (h_binary:=by intro j; simp only [Nat.cast_id]; omega)
         t_coeffs w_index
-
       let t_multilinear_mv := MvPolynomial.MLE hypercube_evals
       exact some ⟨t_multilinear_mv, MLE_mem_restrictDegree hypercube_evals⟩
 
@@ -1408,14 +1407,14 @@ lemma foldingBadEventAtBlock_snoc_castSucc_eq (i : Fin ℓ)
       (challenges := challenges) j := by
   unfold foldingBadEventAtBlock
   simp only [OracleFrontierIndex.val_mkFromStmtIdxCastSuccOfSucc,
-    Fin.coe_castSucc, OracleFrontierIndex.val_mkFromStmtIdx,
+    Fin.val_castSucc, OracleFrontierIndex.val_mkFromStmtIdx,
     Fin.val_succ]
   -- Both guards are satisfied since j*ϑ + ϑ ≤ i.val ≤ i.val + 1
   have h_guard_succ : oraclePositionToDomainIndex (positionIdx := j) + ϑ ≤ i.val + 1 := by
-    simp only [Fin.coe_castSucc] at ⊢ hj_le
+    simp only [Fin.val_castSucc] at ⊢ hj_le
     omega
   have h_guard_cast : oraclePositionToDomainIndex (positionIdx := j) + ϑ ≤ i.val := by
-    simp only [Fin.coe_castSucc] at ⊢ hj_le
+    simp only [Fin.val_castSucc] at ⊢ hj_le
     omega
   simp only [h_guard_succ, h_guard_cast, ↓reduceDIte]
   -- Now show the foldingBadEvent calls are equal by showing getFoldingChallenges agree
@@ -1659,7 +1658,6 @@ def finalSumcheckStepOracleConsistencyProp {h_le : ϑ ≤ ℓ}
       rw [getLastOraclePositionIndex_last, Nat.sub_mul, Nat.one_mul, Nat.div_mul_cancel (hdiv.out)]
       rw [Nat.sub_add_eq_sub_sub_rev (h1:=by omega) (h2:=by omega)]; omega
     ⟩
-
     -- **NOTE**: we must have this final oracle compliance check between the
       -- last explicit oracle and the virtual oracle (fun x => c) at the final sumcheck step
       -- because the virtual oracle is not availabe to be in commit steps of the interaction rounds
@@ -1667,7 +1665,6 @@ def finalSumcheckStepOracleConsistencyProp {h_le : ϑ ≤ ℓ}
       -- folding consistency between two adjacent oracles `j` & `j + ϑ`
       exact isCompliant 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨k, by omega⟩) (steps := ϑ) (destIdx := ⟨k + ϑ, by omega⟩) (by rfl) (by simp only; omega) (f_i := f_k)
         (f_i_plus_steps := fun x => stmtOut.final_constant) (challenges := challenges)
-
     -- If oracleFoldingConsistency is true, then we can extract the original
       -- well-formed poly `t` and derive witnesses that satisfy the relations at any state
     oracleFoldingConsistencyProp 𝔽q β (i := Fin.last ℓ)
@@ -1699,17 +1696,14 @@ def finalSumcheckStepFoldingStateProp {h_le : ϑ ≤ ℓ}
     rw [Nat.sub_add_eq_sub_sub_rev (h1:=by omega) (h2:=by omega)]; omega
   ⟩
   have h_k_add_ϑ: k + ϑ = ℓ := by rw [h_k]; apply Nat.sub_add_cancel; omega
-
   let oracleFoldingConsistency: Prop :=
     finalSumcheckStepOracleConsistencyProp 𝔽q β (h_le := h_le) (stmtOut := stmtOut)
       (oStmtOut := oStmtOut)
-
   -- All bad folding events are fully formed across the sum-check rounds,
     -- no new bad event needed at the final sumcheck step
   let foldingBadEventExists : Prop := (blockBadEventExistsProp 𝔽q β (stmtIdx := Fin.last ℓ)
     (oracleIdx := OracleFrontierIndex.mkFromStmtIdx (Fin.last ℓ))
     (oStmt := oStmtOut) (challenges := stmtOut.challenges))
-
   oracleFoldingConsistency ∨ foldingBadEventExists
 
 /-- **Relaxed fold step output relation for RBR Knowledge Soundness**.

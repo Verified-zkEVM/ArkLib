@@ -121,10 +121,8 @@ def packMLE (β : Basis (Fin κ → Fin 2) K L) (t : MultilinearPoly K ℓ) :
           w ⟨i.val - κ, by omega⟩
       -- Evaluate the small-field polynomial `t` at this point.
       MvPolynomial.eval (fun i => ↑(concatenated_point i)) t.val
-
     -- b. Use `equivFun.symm` = ∑ v, (coeffs_for_w v) • (β v).
     β.equivFun.symm coeffs_for_w
-
   -- 2. The packed polynomial `t'` is the multilinear extension of this function.
   ⟨MvPolynomial.MLE packing_func, MLE_mem_restrictDegree packing_func⟩
 
@@ -144,17 +142,14 @@ def unpackMLE (β : Basis (Fin κ → Fin 2) K L) (t' : MultilinearPoly L ℓ') 
     -- a. Deconstruct the evaluation point `p` into `v` (first κ bits) and `w` (last ℓ' bits).
     let v (i : Fin κ) : Fin 2 := p ⟨i.val, by omega⟩
     let w (i : Fin ℓ') : Fin 2 := p ⟨i.val + κ, by { rw [h_l]; omega }⟩
-
     -- b. Evaluate the large-field polynomial `t'` at the point `w`.
     let t'_eval_at_w : L := MvPolynomial.eval (fun i => ↑(w i)) t'.val
-
     -- c. Get the K-coefficients of this L-element with respect to the basis `β`.
     -- `β.repr/β.equivFun` maps an element of L to its coordinate function `(Fin κ → Fin 2) → K`.
     let coeffs : (Fin κ → Fin 2) → K := β.repr t'_eval_at_w
     -- d. The desired evaluation t(p) = t(v,w)
       -- is the coefficient corresponding to the basis vector `β_v`.
     coeffs v
-
   -- 2. The unpacked polynomial `t` is the multilinear extension of this evaluation function.
   ⟨MvPolynomial.MLE unpacked_evals, MLE_mem_restrictDegree unpacked_evals⟩
 
@@ -286,6 +281,7 @@ structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
     (pSpec := pSpec)
   -- Security properties
   perfectCompleteness : ∀ {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)},
+    NeverFail init →
     OracleReduction.perfectCompleteness (oSpec:=[]ₒ)
       (StmtIn:=MLPEvalStatement L ℓ') (OStmtIn:=OStmtIn)
       (StmtOut:=Bool) (OStmtOut:=fun _: Empty => Unit)
@@ -295,7 +291,7 @@ structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
       (oracleReduction := oracleReduction)
   strictPerfectCompleteness : ∀ {σ : Type} {init : ProbComp σ}
       {impl : QueryImpl []ₒ (StateT σ ProbComp)},
-    init.neverFails →
+    NeverFail init →
     OracleReduction.perfectCompleteness (oSpec:=[]ₒ)
       (StmtIn:=MLPEvalStatement L ℓ') (OStmtIn:=OStmtIn)
       (StmtOut:=Bool) (OStmtOut:=fun _: Empty => Unit)
@@ -375,7 +371,8 @@ lemma batching_check_correctness
     (eval_point : Fin ℓ → L) :
   performCheckOriginalEvaluation κ L K β ℓ ℓ' h_l
     (t.val.aeval eval_point)
-    (r := eval_point) (s_hat := embedded_MLP_eval κ (L := L) (K := K) ℓ ℓ' h_l (packMLE κ (L := L) (K := K) ℓ ℓ' h_l β t) eval_point) = true := by
+    (r := eval_point) (s_hat := embedded_MLP_eval κ (L := L) (K := K) ℓ ℓ' h_l
+      (packMLE κ (L := L) (K := K) ℓ ℓ' h_l β t) eval_point) = true := by
   -- Unfold the check definition
   unfold performCheckOriginalEvaluation
   simp only [decide_eq_true_eq]
@@ -463,7 +460,8 @@ lemma compute_A_MLE_eval_eq_final_eq_value
     (r_eval : Fin ℓ → L)
     (r'_challenges : Fin ℓ' → L)
     (r''_batching : Fin κ → L) :
-    (compute_A_MLE κ L K β ℓ' (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval) r''_batching).val.eval r'_challenges =
+    (compute_A_MLE κ L K β ℓ' (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval)
+      r''_batching).val.eval r'_challenges =
     compute_final_eq_value κ L K β ℓ ℓ' h_l r_eval r'_challenges r''_batching := by
   -- Unfold definitions
   simp only [compute_A_MLE, compute_final_eq_value, getEvaluationPointSuffix]
@@ -531,7 +529,7 @@ def strictSumcheckRoundRelation (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (�
   { ((stmt, oStmt), wit) | strictSumcheckRoundRelationProp κ L K β ℓ ℓ' h_l (𝓑:=𝓑)
     aOStmtIn i stmt oStmt wit }
 
-omit [Fintype L] [DecidableEq L] [CharP L 2] [SelectableType L] [Fintype K] [DecidableEq K]
+omit [Fintype L] [DecidableEq L] [CharP L 2] [SampleableType L] [Fintype K] [DecidableEq K]
   [NeZero ℓ] [NeZero ℓ'] in
 lemma strictSumcheckRoundRelation_subset_sumcheckRoundRelation (aOStmtIn : AbstractOStmtIn L ℓ')
     (i : Fin (ℓ' + 1)) :
@@ -555,7 +553,9 @@ lemma batching_target_consistency
     (r_batching : Fin κ → L)
     (ctx : RingSwitchingBaseContext κ L K ℓ) :
   let s₀ := compute_s0 κ L K β msg0 r_batching
-  let H := projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := t') (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx) (i := 0) (challenges := Fin.elim0)
+  let H := projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := t')
+    (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx) (i := 0)
+    (challenges := Fin.elim0)
   sumcheckConsistencyProp (𝓑:=𝓑) s₀ H := by
   -- This lemma proves that s₀ = Σ_{x ∈ {0,1}^ℓ'} H(x)
   -- It follows from the definition of compute_s0, H, and A_MLE.

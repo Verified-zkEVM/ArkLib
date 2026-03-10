@@ -801,78 +801,78 @@ by simp [StateT.run']
 
 alias run'_pure_bind := run'_bind_pure
 
-@[simp]
-lemma mem_support_pure_stateT_run {ι σ α : Type} {spec : OracleSpec ι} (x : α) (s s' : σ) (y : α) :
-  (y, s') ∈ OracleComp.support ((pure x : StateT σ (OracleComp spec) α).run s) ↔ y = x ∧ s' = s :=
-by simp only [StateT.run_pure, OracleComp.support_pure, Set.mem_singleton_iff, Prod.mk.injEq]
+-- @[simp]
+-- lemma mem_support_pure_stateT_run {ι σ α : Type} {spec : OracleSpec ι} (x : α) (s s' : σ) (y : α) :
+--   (y, s') ∈ OracleComp.support ((pure x : StateT σ (OracleComp spec) α).run s) ↔ y = x ∧ s' = s :=
+-- by simp only [StateT.run_pure, OracleComp.support_pure, Set.mem_singleton_iff, Prod.mk.injEq]
 
-@[simp]
-lemma mem_support_pure_state {ι σ α : Type} {spec : OracleSpec ι} (x : α) (s s' : σ) (y : α) :
-  (y, s') ∈ OracleComp.support ((pure x : StateT σ (OracleComp spec) α) s) ↔ y = x ∧ s' = s := by
-    apply mem_support_pure_stateT_run
+-- @[simp]
+-- lemma mem_support_pure_state {ι σ α : Type} {spec : OracleSpec ι} (x : α) (s s' : σ) (y : α) :
+--   (y, s') ∈ OracleComp.support ((pure x : StateT σ (OracleComp spec) α) s) ↔ y = x ∧ s' = s := by
+--     apply mem_support_pure_stateT_run
 
-section MapLemmas
+-- section MapLemmas
 
-variable {ι : Type} {spec : OracleSpec ι}
+-- variable {ι : Type} {spec : OracleSpec ι}
 
-/-- StateT.map distributes over if-then-else. -/
-@[simp]
-theorem map_ite [Monad m] (f : α → β) (p : Prop) [Decidable p]
-    (ma ma' : StateT σ m α) (s : σ) :
-    (if p then ma else ma').map f s =
-    if p then ma.map f s else ma'.map f s := by
-  split_ifs <;> rfl
+-- /-- StateT.map distributes over if-then-else. -/
+-- @[simp]
+-- theorem map_ite [Monad m] (f : α → β) (p : Prop) [Decidable p]
+--     (ma ma' : StateT σ m α) (s : σ) :
+--     (if p then ma else ma').map f s =
+--     if p then ma.map f s else ma'.map f s := by
+--   split_ifs <;> rfl
 
-/-- StateT.map over pure for OracleComp. -/
-@[simp]
-theorem map_pure (f : α → β) (a : α) (s : σ) :
-    (pure a : StateT σ (OracleComp spec) α).map f s =
-    pure (f a, s) := by
-  rfl
+-- /-- StateT.map over pure for OracleComp. -/
+-- @[simp]
+-- theorem map_pure (f : α → β) (a : α) (s : σ) :
+--     (pure a : StateT σ (OracleComp spec) α).map f s =
+--     pure (f a, s) := by
+--   rfl
 
-/-- StateT.map over failure for OracleComp. -/
-@[simp]
-theorem map_failure (f : α → β) (s : σ) :
-    (failure : StateT σ (OracleComp spec) α).map f s =
-    failure := by
-  rfl
+-- /-- StateT.map over failure for OracleComp. -/
+-- @[simp]
+-- theorem map_failure (f : α → β) (s : σ) :
+--     (failure : StateT σ (OracleComp spec) α).map f s =
+--     failure := by
+--   rfl
 
-/-- Support of StateT.map over pure. -/
-@[simp]
-theorem support_map_pure (f : α → β) (a : α) (s : σ) :
-    ((pure a : StateT σ (OracleComp spec) α).map f s).support =
-    {(f a, s)} := by
-  simp only [map_pure, support_pure]
+-- /-- Support of StateT.map over pure. -/
+-- @[simp]
+-- theorem support_map_pure (f : α → β) (a : α) (s : σ) :
+--     ((pure a : StateT σ (OracleComp spec) α).map f s).support =
+--     {(f a, s)} := by
+--   simp only [map_pure, support_pure]
 
-/-- Support of StateT.map over failure. -/
-@[simp]
-theorem support_map_failure (f : α → β) (s : σ) :
-    ((failure : StateT σ (OracleComp spec) α).map f s).support =
-    ∅ := by
-  simp only [map_failure, support_failure]
+-- /-- Support of StateT.map over failure. -/
+-- @[simp]
+-- theorem support_map_failure (f : α → β) (s : σ) :
+--     ((failure : StateT σ (OracleComp spec) α).map f s).support =
+--     ∅ := by
+--   simp only [map_failure, support_failure]
 
-/-- StateT.map with constant function over pure. Useful for `map (fun _ => result) (pure x)`. -/
-@[simp]
-theorem map_const_pure {γ : Type u} (result : β) (x : γ) (s : σ) :
-    (pure x : StateT σ (OracleComp spec) γ).map (fun _ => result) s =
-    pure (result, s) := by
-  rfl
+-- /-- StateT.map with constant function over pure. Useful for `map (fun _ => result) (pure x)`. -/
+-- @[simp]
+-- theorem map_const_pure {γ : Type u} (result : β) (x : γ) (s : σ) :
+--     (pure x : StateT σ (OracleComp spec) γ).map (fun _ => result) s =
+--     pure (result, s) := by
+--   rfl
 
-/-- Support of StateT.map with constant function over pure. -/
-@[simp]
-theorem support_map_const_pure {γ : Type u} (result : β) (x : γ) (s : σ) :
-    ((pure x : StateT σ (OracleComp spec) γ).map (fun _ => result) s).support =
-    {(result, s)} := by
-  simp only [map_const_pure, support_pure]
+-- /-- Support of StateT.map with constant function over pure. -/
+-- @[simp]
+-- theorem support_map_const_pure {γ : Type u} (result : β) (x : γ) (s : σ) :
+--     ((pure x : StateT σ (OracleComp spec) γ).map (fun _ => result) s).support =
+--     {(result, s)} := by
+--   simp only [map_const_pure, support_pure]
 
-/-- Support distributes over if-then-else for StateT with OracleComp. -/
-@[simp]
-theorem support_ite (p : Prop) [Decidable p]
-    (ma ma' : StateT σ (OracleComp spec) α) (s : σ) :
-    ((if p then ma else ma') s).support =
-    if p then (ma s).support else (ma' s).support := by
-  split_ifs <;> rfl
+-- /-- Support distributes over if-then-else for StateT with OracleComp. -/
+-- @[simp]
+-- theorem support_ite (p : Prop) [Decidable p]
+--     (ma ma' : StateT σ (OracleComp spec) α) (s : σ) :
+--     ((if p then ma else ma') s).support =
+--     if p then (ma s).support else (ma' s).support := by
+--   split_ifs <;> rfl
 
-end MapLemmas
+-- end MapLemmas
 
 end StateT
