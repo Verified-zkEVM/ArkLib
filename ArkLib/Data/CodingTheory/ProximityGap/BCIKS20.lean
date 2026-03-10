@@ -113,11 +113,15 @@ Take a Reed-Solomon code of length `ι` and degree `deg`, a proximity-error para
 pair `(δ, ε)` and a curve passing through words `u₀, ..., uκ`, such that
 the  probability that a random point on the curve is `δ`-close to the Reed-Solomon code
 is at most `ε`. Then, the words `u₀, ..., uκ` have correlated agreement. -/
-theorem correlatedAgreement_affine_curves [DecidableEq ι] {k : ℕ} {u : Fin k → ι → F}
+theorem correlatedAgreement_affine_curves [DecidableEq ι] {k : ℕ}
   {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
   (hδ : δ ≤ 1 - ReedSolomonCode.sqrtRate deg domain)
   : δ_ε_correlatedAgreementCurves (k := k) (A := F) (F := F) (ι := ι)
-    (C := ReedSolomon.code domain deg) (δ := δ) (ε := errorBound δ deg domain) := by sorry
+    (C := ReedSolomon.code domain deg) (δ := δ) (ε := errorBound δ deg domain) := by
+  unfold δ_ε_correlatedAgreementCurves
+
+
+  sorry
 
 open Affine in
 /-- Theorem 1.6 (Correlated agreement over affine spaces) in [BCIKS20].
