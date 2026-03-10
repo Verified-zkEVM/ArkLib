@@ -87,8 +87,8 @@ structure ReductionLogicStep
     (StmtOut WitOut : Type)
     {n : ℕ} (pSpec : ProtocolSpec n) where
   -- 1. The Specification (Relations) - now with indexed oracles
-  completeness_relIn    : (StmtIn × (∀ i, OracleIn i)) × WitIn → Prop
-  completeness_relOut   : (StmtOut × (∀ i, OracleOut i)) × WitOut → Prop
+  completeness_relIn : (StmtIn × (∀ i, OracleIn i)) × WitIn → Prop
+  completeness_relOut : (StmtOut × (∀ i, OracleOut i)) × WitOut → Prop
   -- 2. The Verifier (Pure Logic)
   verifierCheck : StmtIn → FullTranscript pSpec → Prop
   verifierOut   : StmtIn → FullTranscript pSpec → StmtOut
@@ -534,7 +534,8 @@ lemma snoc_oracle_eq_mkVerifierOStmtOut_commitStep
     (transcript : FullTranscript (pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i))
     (h_transcript_eq : transcript.messages ⟨0, rfl⟩ = newOracle)
     :
-    snoc_oracle 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (destIdx := ⟨i.val + 1, by omega⟩) (h_destIdx := by rfl) oStmtIn newOracle =
+    snoc_oracle 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (destIdx := ⟨i.val + 1, by omega⟩) (h_destIdx := by rfl) oStmtIn newOracle =
     OracleVerifier.mkVerifierOStmtOut (commitStepLogic (mp := mp) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR).embed
       (commitStepLogic (mp := mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -1183,7 +1184,7 @@ lemma iterated_fold_to_const_strict
    - Using `projectToMidSumcheckPoly_at_last`:
    - `witIn.H.val.eval (fun _ => 0) = eqTilde(...) * witIn.f ⟨0, ...⟩`
 3. Combining these gives the verifier check equation. -/
-omit [CharP L 2] [SampleableType L] in
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] in
 lemma finalSumcheckStep_verifierCheck_passed
     (stmtIn : Statement (SumcheckBaseContext L ℓ) (Fin.last ℓ))
     (witIn : Witness 𝔽q β (Fin.last ℓ))
@@ -1198,6 +1199,7 @@ lemma finalSumcheckStep_verifierCheck_passed
     let step := finalSumcheckStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
     let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
     step.verifierCheck stmtIn transcript := by
+  classical
   let step := finalSumcheckStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
   let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
   -- Simplify the verifier check to the equality we need to prove
@@ -1231,7 +1233,6 @@ lemma finalSumcheckStep_verifierCheck_passed
       (t := witIn.t) (destIdx := ⟨Fin.last ℓ, by omega⟩)
       (h_destIdx := by simp only [Fin.val_last]) (challenges := stmtIn.challenges)
     exact congr_fun (h := h_eval) ⟨0, by simp only [Fin.val_last, zero_mem]⟩
-
   -- Apply `projectToMidSumcheckPoly_at_last` to connect H.eval with eqTilde * f(0)
   have h_H_eval_at_zero_eq_mul : witIn.H.val.eval (fun _ => (0 : L)) =
       eqTilde stmtIn.ctx.t_eval_point stmtIn.challenges *
@@ -1261,6 +1262,7 @@ lemma finalSumcheckStep_verifierCheck_passed
 2. **Relation Out**: Show that the output satisfies `finalSumcheckRelOut`
    - This involves showing `finalSumcheckStepFoldingStateProp` holds for the output
 -/
+omit [DecidableEq 𝔽q] in
 lemma finalSumcheckStep_is_logic_complete :
     (finalSumcheckStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)).IsStronglyComplete := by
@@ -1301,8 +1303,8 @@ lemma finalSumcheckStep_is_logic_complete :
     -- Fact 2: Output relation holds (foldStepRelOut)
     simp only [finalSumcheckStepLogic, strictRoundRelation, strictRoundRelationProp, Fin.val_last,
       Prod.mk.eta, Set.mem_setOf_eq, strictFinalSumcheckRelOut, strictFinalSumcheckRelOutProp,
-      strictfinalSumcheckStepFoldingStateProp, exists_and_right, Subtype.exists, Fin.isValue, MessageIdx,
-      Fin.eta, step]
+      strictfinalSumcheckStepFoldingStateProp, exists_and_right, Subtype.exists,
+        Fin.isValue, MessageIdx, Fin.eta, step]
     -- let r_i' := challenges ⟨1, rfl⟩
     -- rw [h_verifierOStmtOut_eq];
     dsimp only [strictOracleWitnessConsistency, Fin.val_last, OracleFrontierIndex.mkFromStmtIdx,
@@ -1318,6 +1320,7 @@ lemma finalSumcheckStep_is_logic_complete :
       exact h_oracle_folding_In
     · -- Component 2: finalOracleFoldingConsistency
       funext y
+      classical
       let res := iterated_fold_to_const_strict 𝔽q β (𝓑 := 𝓑) (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (stmtIn := stmtIn) (witIn := witIn)
         (oStmtIn := oStmtIn) (challenges := challenges)

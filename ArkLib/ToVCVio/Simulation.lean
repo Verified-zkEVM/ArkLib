@@ -548,7 +548,6 @@ by
   congr 1
   funext proverOutput
   rw [map_eq_bind_pure_comp]
-
   ext
   simp only [Option.getM, map_eq_bind_pure_comp, OptionT.run_bind,
     Function.comp_apply, OptionT.run_pure]
@@ -725,6 +724,21 @@ lemma support_simulateQ_run'_eq
         exact h_y_sim
       simp only [QueryImpl.mapQuery_query] at h_pair
       exact ⟨(x', s'), h_pair, h_y_sim'⟩
+
+/-- OptionT run-level wrapper of `support_simulateQ_run'_eq` (stateful implementation). -/
+@[simp]
+lemma OptionT.support_run_simulateQ_run'_eq
+    {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited] {σ α : Type}
+    (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (oa : OptionT (OracleComp oSpec) α) (s : σ)
+    (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
+      Prod.fst <$> support ((QueryImpl.mapQuery impl q).run s)
+        = support (liftM q : OracleComp oSpec β)) :
+    support (m := ProbComp) (α := Option α) ((simulateQ impl oa).run' s) =
+      support (m := OracleComp oSpec) (α := Option α) oa := by
+  simpa using
+    (support_simulateQ_run'_eq (impl := impl) (oa := oa) (s := s)
+      (hImplSupp := hImplSupp))
 
 /-- OptionT-wrapper version of `neverFails_of_simulateQ` for option-valued computations. -/
 lemma neverFails_of_simulateQ_mk
@@ -1263,7 +1277,6 @@ lemma probFailure_forIn_of_relations
     Pr[⊥ | forIn l init f] = 0 := by
   -- Instead of using `probFailure_forIn_of_invariant` which has a weaker inductive hypothesis
   -- (it quantifies ∀ x ∈ l, losing the index information), we use a direct recursive helper.
-
   -- Helper: Proves safety for a suffix `xs` starting at index `k`.
   -- k: The current index in the original list `l`.
   -- xs: The suffix of `l` remaining to process.
@@ -1479,21 +1492,6 @@ lemma liftComp_forIn {ι ι' : Type} {spec : OracleSpec ι} {superSpec : OracleS
     congr; funext s
     cases s <;> simp only [liftComp_pure, forIn'_eq_forIn, ih]
 
-/-- `OptionT` variant of `liftComp_forIn`. -/
-@[simp]
-lemma OptionT.liftComp_forIn {ι ι' : Type _} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
-    [spec.Fintype] [superSpec.Fintype]
-    [MonadLift (OracleQuery spec) (OracleQuery superSpec)]
-    {α β : Type _} (l : List α) (init : β)
-    (f : α → β → OptionT (OracleComp spec) (ForInStep β)) :
-    (forIn l init f).liftComp superSpec =
-    forIn l init (fun a b ↦ OptionT.mk ((f a b).liftComp superSpec)) := by
-  induction l generalizing init with
-  | nil => rfl
-  | cons x xs ih =>
-      simp only [forIn, List.forIn'_cons]
-      sorry
-
 /-- Distributes `simulateQ` over a `forIn` loop.
 This allows us to verify the body of the loop under simulation.
 -/
@@ -1534,7 +1532,23 @@ lemma OptionT.simulateQ_forIn
       rfl
   | cons x xs ih =>
       simp only [forIn, List.forIn'_cons]
-      sorry
+      change simulateQ so (OptionT.bind (f x init) (fun step =>
+        match step with
+        | ForInStep.done b => pure b
+        | ForInStep.yield b => forIn' xs b (fun a' _ b => f a' b))) =
+        OptionT.bind (simulateQ so (f x init)) (fun step =>
+          match step with
+          | ForInStep.done b => pure b
+          | ForInStep.yield b => forIn' xs b (fun a' _ b => simulateQ so (f a' b)))
+      rw [OptionT.simulateQ_bind]
+      apply bind_congr
+      intro step
+      cases step with
+      | none => simp
+      | some step =>
+          cases step with
+          | done res => rfl
+          | yield res => simpa [forIn'_eq_forIn] using ih res
 
 /-- Stateful version of simulateQ_forIn.
     Distributes simulation over a loop where the oracle implementation itself has state. -/
@@ -1576,26 +1590,61 @@ lemma simulateQ_forIn_stateful_comp {ι : Type} {spec : OracleSpec ι}
       | done res => simp [simulateQ_pure]
       | yield res => exact ih res
 
+/-- Stateful `StateT` specialization of `OptionT.simulateQ_bind`. -/
+@[simp]
+lemma OptionT.simulateQ_bind_stateful {ι : Type} {spec : OracleSpec ι}
+    {σ α β : Type} (impl : QueryImpl spec (StateT σ ProbComp))
+    (mx : OptionT (OracleComp spec) α) (my : α → OptionT (OracleComp spec) β) :
+    simulateQ impl (OptionT.bind mx my) =
+      OptionT.bind (m := StateT σ ProbComp) (simulateQ impl mx)
+        (fun x => simulateQ impl (my x)) := by
+  change
+    simulateQ impl (mx >>= fun z => match z with | some a => my a | none => pure none) =
+      OptionT.bind (m := StateT σ ProbComp) (simulateQ impl mx) (fun x => simulateQ impl (my x))
+  rw [_root_.simulateQ_bind]
+  simp only [OptionT.bind, OptionT.mk]
+  apply bind_congr
+  intro z
+  cases z <;> rfl
 
-/-- **Guard Support Lemma**:
-    If a stateful guard succeeds in the support, the condition is true
-    and the state is unchanged. -/
-lemma mem_support_stateful_guard_iff {σ : Type} {p : Prop} [Decidable p]
-    {s s' : σ} {u : Unit} :
-    (u, s') ∈ ((if p then pure () else failure : StateT σ ProbComp Unit).run s).support ↔
-    p ∧ s' = s := by
-  split_ifs with h
-  · simp only [StateT.run_pure, support_pure, Set.mem_singleton_iff, Prod.mk.injEq, true_and, h]
-  · simp only [StateT.run_failure, support_failure, Set.mem_empty_iff_false, h, false_and]
+/-- `OptionT` version of `simulateQ_forIn_stateful_comp`. -/
+@[simp]
+lemma OptionT.simulateQ_forIn_stateful_comp {ι : Type} {spec : OracleSpec ι}
+    {σ α β : Type} (impl : QueryImpl spec (StateT σ ProbComp))
+    (l : List α) (init : β) (f : α → β → OptionT (OracleComp spec) (ForInStep β)) :
+    simulateQ impl (forIn l init f : OptionT (OracleComp spec) β) =
+      (forIn l init (fun a b => simulateQ impl (f a b)) :
+        OptionT (StateT σ ProbComp) β) := by
+  induction l generalizing init with
+  | nil =>
+      rfl
+  | cons x xs ih =>
+      simp only [forIn, List.forIn'_cons]
+      change simulateQ impl (OptionT.bind (f x init) (fun step =>
+        match step with
+        | ForInStep.done b => pure b
+        | ForInStep.yield b => forIn' xs b (fun a' _ b => f a' b))) =
+        OptionT.bind (m := StateT σ ProbComp) (simulateQ impl (f x init)) (fun step =>
+          match step with
+          | ForInStep.done b => pure b
+          | ForInStep.yield b => forIn' xs b (fun a' _ b => simulateQ impl (f a' b)))
+      rw [OptionT.simulateQ_bind_stateful]
+      apply bind_congr
+      intro step
+      cases step with
+      | none => simp
+      | some step =>
+          cases step with
+          | done res => rfl
+          | yield res => simpa [forIn'_eq_forIn] using ih res
 
 /-- **Loop Path Extraction**:
     If a stateful forIn loop over PUnit reaches a final state, then for every element
     in the list, there must exist a local start state and end state such that the
     body of that iteration succeeded.
-
     **Important:** this requires the loop body to be yield-only on support
     (i.e. no early `.done`). -/
-lemma exists_path_of_mem_support_forIn_unit {σ α : Type} [spec.FiniteRange]
+lemma exists_path_of_mem_support_forIn_unit {σ α : Type} [spec.Fintype]
     (l : List α) (f : α → PUnit → StateT σ ProbComp (ForInStep PUnit))
     (s_init s_final : σ) (u : PUnit)
     (h_yield : ∀ (x : α) (s_pre : σ) (res_step : ForInStep PUnit × σ),
@@ -1604,28 +1653,77 @@ lemma exists_path_of_mem_support_forIn_unit {σ α : Type} [spec.FiniteRange]
     (h_mem : (u, s_final) ∈ ((forIn l PUnit.unit f).run s_init).support) :
     ∀ x ∈ l, ∃ s_pre s_post,
       (ForInStep.yield PUnit.unit, s_post) ∈ ((f x PUnit.unit).run s_pre).support := by
-    sorry
+    induction l generalizing s_init s_final u with
+    | nil => simp
+    | cons a t ih =>
+      simp only [forIn, List.forIn'_cons] at h_mem
+      intro x hx
+      simp only [List.mem_cons] at hx
+      simp only [StateT.run_bind, support_bind,
+        Set.mem_iUnion, exists_prop, Prod.exists] at h_mem
+      obtain ⟨step, s_mid, h_step_mem, h_rest⟩ := h_mem
+      have h_y := h_yield a s_init (step, s_mid) h_step_mem
+      simp only at h_y; subst h_y
+      simp only [forIn'_eq_forIn] at h_rest
+      rcases hx with rfl | hx
+      · exact ⟨s_init, s_mid, h_step_mem⟩
+      · exact ih s_mid s_final u h_rest x hx
 
-/-- **Stateful forIn: path + relation from support** (combines path extraction and relation induction).
+lemma OptionT.exists_path_of_mem_support_forIn_unit {σ α : Type} [spec.Fintype]
+    (l : List α) (f : α → PUnit → OptionT (StateT σ ProbComp) (ForInStep PUnit))
+    (s_init s_final : σ) (u : PUnit)
+    (h_yield : ∀ (x : α) (s_pre : σ) (res_step : ForInStep PUnit × σ),
+      (some res_step.1, res_step.2) ∈ ((f x PUnit.unit).run s_pre).support →
+      res_step.1 = ForInStep.yield PUnit.unit)
+    (h_mem : (some u, s_final) ∈ ((forIn l PUnit.unit f).run s_init).support) :
+    ∀ x ∈ l, ∃ s_pre s_post,
+      (some (ForInStep.yield PUnit.unit), s_post) ∈
+        ((f x PUnit.unit).run s_pre).support := by
+    induction l generalizing s_init s_final u with
+    | nil => simp
+    | cons a t ih =>
+      simp only [forIn, List.forIn'_cons] at h_mem
+      rw [OptionT.run_bind] at h_mem
+      simp only [Option.elimM, OptionT.run] at h_mem
+      rw [show ∀ (m : StateT σ ProbComp _)
+          (g : _ → StateT σ ProbComp _) (s : σ),
+          (m >>= g) s = m.run s >>= fun p => (g p.1).run p.2
+        from fun _ _ _ => rfl] at h_mem
+      rw [_root_.mem_support_bind_iff] at h_mem
+      obtain ⟨⟨opt_step, s_mid⟩, h_step_mem, h_rest⟩ := h_mem
+      cases h_opt : opt_step with
+      | none =>
+          simp [h_opt] at h_rest
+      | some step =>
+          have h_step_some_mem : (some step, s_mid) ∈ ((f a PUnit.unit).run s_init).support := by
+            simpa [h_opt] using h_step_mem
+          have h_step_yield : step = ForInStep.yield PUnit.unit :=
+            h_yield a s_init (step, s_mid) h_step_some_mem
+          cases h_step_yield
+          simp only [h_opt, Option.elim, forIn'_eq_forIn] at h_rest
+          intro x hx
+          simp only [List.mem_cons] at hx
+          rcases hx with rfl | hx
+          · exact ⟨s_init, s_mid, h_step_some_mem⟩
+          · exact ih s_mid s_final u h_rest x hx
 
+/-- **Stateful forIn: path + relation from support** (combines path extraction and
+relation induction).
 Given a stateful forIn loop, a relation `rel : Fin (l.length + 1) → β → σ → Prop`, base case and
 step preservation, and a result `res` in the loop support, this lemma provides:
 1. The final relation holds: `rel ⟨l.length, _⟩ res.1 res.2`
 2. A constructive path: sequences `bs` and `ss` such that `(bs 0, ss 0) = (init, s)`,
    `(bs ⟨l.length, _⟩, ss ⟨l.length, _⟩) = (res.1, res.2)`, each step
-   `(.yield (bs k.succ), ss k.succ)` is in the support of the body run from `(bs k.castSucc, ss k.castSucc)`,
-   and `rel k (bs k) (ss k)` for all `k`.
-
+   `(.yield (bs k.succ), ss k.succ)` is in the support of the body run from
+      `(bs k.castSucc, ss k.castSucc)`, and `rel k (bs k) (ss k)` for all `k`.
 So you get both "exists_path_of_mem_support_forIn_unit"-style per-step membership and
 "support_forIn_stateful_of_relations"-style relation at every index (including the final one).
-
 **Note:** This also assumes the loop body is yield-only on support, so the loop does not stop
 early via `.done`.
-
-The loop's `.run` support is `Set (β × σ)` (the accumulated value and state);
-each body step's support is `Set (ForInStep β × σ)`, hence `h_step` uses `ForInStep.state res_step.1`. -/
+The loop's `.run` support is `Set (β × σ)` (the accumulated value and state); each body step's
+support is `Set (ForInStep β × σ)`, hence `h_step` uses `ForInStep.state res_step.1`. -/
 @[simp]
-lemma exists_rel_path_of_mem_support_forIn_stateful {ι : Type} {spec : OracleSpec ι} [spec.FiniteRange]
+lemma exists_rel_path_of_mem_support_forIn_stateful {ι : Type} {spec : OracleSpec ι} [spec.Fintype]
     {α σ β : Type} (l : List α) (init : β) (f : α → β → StateT σ ProbComp (ForInStep β))
     (s : σ)
     (rel : Fin (l.length + 1) → β → σ → Prop)
@@ -1644,10 +1742,270 @@ lemma exists_rel_path_of_mem_support_forIn_stateful {ι : Type} {spec : OracleSp
       bs 0 = init ∧ ss 0 = s ∧
       bs ⟨l.length, by omega⟩ = res.1 ∧ ss ⟨l.length, by omega⟩ = res.2 ∧
       (∀ k : Fin l.length,
-        (ForInStep.yield (bs k.succ), ss k.succ) ∈ ((f (l.get k) (bs k.castSucc)).run (ss k.castSucc)).support) ∧
+        (ForInStep.yield (bs k.succ), ss k.succ) ∈
+          ((f (l.get k) (bs k.castSucc)).run (ss k.castSucc)).support) ∧
       (∀ k : Fin (l.length + 1), rel k (bs k) (ss k)) := by
-  sorry
+  -- Helper: suffix induction parameterized by k (number of elements already processed).
+  -- Simultaneously constructs the relation proof and the path witnesses.
+  let rec aux (k : ℕ) (xs : List α) (b₀ : β) (s₀ : σ)
+      (h_suffix : l.drop k = xs)
+      (h_len : k + xs.length = l.length)
+      (h_rel : rel ⟨k, by omega⟩ b₀ s₀)
+      -- Accumulated path from step 0 to step k
+      (bs_acc : Fin (k + 1) → β) (ss_acc : Fin (k + 1) → σ)
+      (h_bs0 : bs_acc 0 = init) (h_ss0 : ss_acc 0 = s)
+      (h_bsk : bs_acc ⟨k, by omega⟩ = b₀) (h_ssk : ss_acc ⟨k, by omega⟩ = s₀)
+      (h_acc_steps : ∀ j : Fin k, (j.val < l.length) →
+        (ForInStep.yield (bs_acc ⟨j.val + 1, by omega⟩), ss_acc ⟨j.val + 1, by omega⟩) ∈
+          ((f (l.get ⟨j.val, by omega⟩) (bs_acc ⟨j.val, by omega⟩)).run
+            (ss_acc ⟨j.val, by omega⟩)).support)
+      (h_acc_rels : ∀ j : Fin (k + 1), rel ⟨j.val, by omega⟩ (bs_acc j) (ss_acc j))
+      (res' : β × σ)
+      (h_mem' : res' ∈ ((forIn xs b₀ f : StateT σ ProbComp β).run s₀).support) :
+      rel ⟨l.length, by omega⟩ res'.1 res'.2 ∧
+      ∃ (bs : Fin (l.length + 1) → β) (ss : Fin (l.length + 1) → σ),
+        bs 0 = init ∧ ss 0 = s ∧
+        bs ⟨l.length, by omega⟩ = res'.1 ∧ ss ⟨l.length, by omega⟩ = res'.2 ∧
+        (∀ j : Fin l.length,
+          (ForInStep.yield (bs j.succ), ss j.succ) ∈
+            ((f (l.get j) (bs j.castSucc)).run (ss j.castSucc)).support) ∧
+        (∀ j : Fin (l.length + 1), rel j (bs j) (ss j)) := by
+    induction xs generalizing k b₀ s₀ bs_acc ss_acc with
+    | nil =>
+      -- xs = [], so k = l.length
+      simp only [List.length_nil, add_zero] at h_len
+      have h_k_eq : k = l.length := h_len
+      have h_run : ((forIn ([] : List α) b₀ f : StateT σ ProbComp β).run s₀) =
+          pure (b₀, s₀) := rfl
+      rw [h_run, support_pure, Set.mem_singleton_iff] at h_mem'
+      subst h_mem'
+      subst h_k_eq
+      refine ⟨h_rel, ?_⟩
+      -- Extend bs_acc and ss_acc to Fin (l.length + 1) — already the right size
+      exact ⟨bs_acc, ss_acc, h_bs0, h_ss0, h_bsk, h_ssk,
+        fun j => h_acc_steps ⟨j.val, by exact j.isLt⟩ j.isLt,
+        fun j => by exact h_acc_rels j⟩
+    | cons y ys ih =>
+      -- Unfold forIn for (y :: ys)
+      simp only [forIn, List.forIn'_cons, support_bind, Set.mem_iUnion, exists_prop,
+        StateT.run_bind] at h_mem'
+      obtain ⟨⟨step, s'⟩, h_step_sup, h_rest_sup⟩ := h_mem'
+      -- step must be yield
+      obtain ⟨b', h_yield_eq⟩ := h_yield y b₀ s₀ _ h_step_sup
+      subst h_yield_eq
+      -- Simplify match in h_rest_sup
+      simp only [ForInStep.casesOn] at h_rest_sup
+      -- y = l.get ⟨k, ...⟩
+      have h_k_lt : k < l.length := by simp only [List.length_cons] at h_len; omega
+      have h_y_eq : y = l.get ⟨k, h_k_lt⟩ := by
+        have h_len_drop : 0 < (l.drop k).length := by rw [h_suffix]; exact Nat.zero_lt_succ _
+        have : l[k]'h_k_lt = (l.drop k)[0]'h_len_drop := by
+          simp only [List.getElem_drop, Nat.add_zero]
+        simp only [List.get_eq_getElem, this, h_suffix, List.getElem_cons_zero]
+      -- From h_step: relation advances
+      have h_rel_next : rel ⟨k + 1, by omega⟩ b' s' := by
+        have h_app := h_step ⟨k, h_k_lt⟩ b₀ s₀
+          h_rel
+          ⟨.yield b', s'⟩
+          (by
+            have hn := h_step_sup
+            rw [← h_y_eq]
+            exact hn)
+        simp only [Fin.succ, ForInStep.state] at h_app
+        exact h_app
+      -- Extend accumulated path by one step
+      let bs_next : Fin (k + 1 + 1) → β := fun j =>
+        if h : j.val ≤ k then bs_acc ⟨j.val, by omega⟩ else b'
+      let ss_next : Fin (k + 1 + 1) → σ := fun j =>
+        if h : j.val ≤ k then ss_acc ⟨j.val, by omega⟩ else s'
+      have h_suffix_ys : l.drop (k + 1) = ys := by
+        rw [← List.drop_drop, h_suffix]; rfl
+      -- Apply IH
+      exact ih (k + 1) b' s'
+        h_suffix_ys
+        (by simp only [List.length_cons] at h_len; omega)
+        h_rel_next
+        bs_next ss_next
+        (by simp [bs_next, h_bs0])
+        (by simp [ss_next, h_ss0])
+        (by simp [bs_next])
+        (by simp [ss_next])
+        (by
+          intro j h_j_lt
+          by_cases hj : j.val < k
+          · have h_from_acc := h_acc_steps ⟨j.val, by omega⟩ (by omega)
+            simp only [bs_next, ss_next,
+              show j.val + 1 ≤ k from by omega, show j.val ≤ k from by omega, ↓reduceDIte]
+            exact h_from_acc
+          · have h_j_eq : j.val = k := by omega
+            simp only [h_j_eq, List.get_eq_getElem, le_refl, ↓reduceDIte, add_le_iff_nonpos_right,
+              nonpos_iff_eq_zero, one_ne_zero, bs_next, ss_next]
+            have hn := h_step_sup
+            rw [h_y_eq, h_bsk.symm, h_ssk.symm] at hn
+            exact hn)
+        (by
+          intro j
+          by_cases hj : j.val ≤ k
+          · simp only [bs_next, ss_next, hj, ↓reduceDIte]
+            exact h_acc_rels ⟨j.val, by omega⟩
+          · have h_j_eq : j.val = k + 1 := by omega
+            have h_neg : ¬ (k + 1 ≤ k) := by omega
+            simp only [bs_next, ss_next, h_j_eq, h_neg, ↓reduceDIte]
+            exact h_rel_next)
+        h_rest_sup
+  -- Apply the helper starting at index 0
+  exact aux 0 l init s rfl (by omega) h_start
+    (fun _ => init) (fun _ => s) rfl rfl rfl rfl
+    (fun j => by exact Fin.elim0 j)
+    (fun j => by have : j = 0 := Fin.eq_zero j; subst this; simpa using h_start)
+    res h_mem
 
+/-- `OptionT` variant of `exists_rel_path_of_mem_support_forIn_stateful`.
+
+This keeps the same path/relation conclusion over `β`, while all support facts are
+expressed through the `some` branch of `OptionT.run`. -/
+@[simp]
+lemma OptionT.exists_rel_path_of_mem_support_forIn_stateful {ι : Type} {spec : OracleSpec ι}
+    [spec.Fintype]
+    {α σ β : Type} (l : List α) (init : β)
+    (f : α → β → OptionT (StateT σ ProbComp) (ForInStep β))
+    (s : σ)
+    (rel : Fin (l.length + 1) → Option β → σ → Prop)
+    (h_start : rel 0 (some init) s)
+    (h_step : ∀ (k : Fin l.length) (b : β) (s_curr : σ),
+      rel k.castSucc (some b) s_curr →
+      ∀ (res_step : ForInStep β × σ),
+        (some res_step.1, res_step.2) ∈ ((f (l.get k) b).run s_curr).support →
+        rel k.succ (some (ForInStep.state res_step.1)) res_step.2)
+    (h_yield : ∀ (x : α) (b : β) (s_curr : σ) (res_step : ForInStep β × σ),
+      (some res_step.1, res_step.2) ∈ ((f x b).run s_curr).support →
+      ∃ b', res_step.1 = ForInStep.yield b')
+    (res : β × σ)
+    (h_mem : (some res.1, res.2) ∈ ((forIn l init f).run s).support) :
+    rel ⟨l.length, by omega⟩ (some res.1) res.2 ∧
+    ∃ (bs : Fin (l.length + 1) → β) (ss : Fin (l.length + 1) → σ),
+      bs 0 = init ∧ ss 0 = s ∧
+      bs ⟨l.length, by omega⟩ = res.1 ∧ ss ⟨l.length, by omega⟩ = res.2 ∧
+      (∀ k : Fin l.length,
+        (some (ForInStep.yield (bs k.succ)), ss k.succ) ∈
+          ((f (l.get k) (bs k.castSucc)).run (ss k.castSucc)).support) ∧
+      (∀ k : Fin (l.length + 1), rel k (some (bs k)) (ss k)) := by
+  let rec aux (k : ℕ) (xs : List α) (b₀ : β) (s₀ : σ)
+      (h_suffix : l.drop k = xs)
+      (h_len : k + xs.length = l.length)
+      (h_rel : rel ⟨k, by omega⟩ (some b₀) s₀)
+      (bs_acc : Fin (k + 1) → β) (ss_acc : Fin (k + 1) → σ)
+      (h_bs0 : bs_acc 0 = init) (h_ss0 : ss_acc 0 = s)
+      (h_bsk : bs_acc ⟨k, by omega⟩ = b₀) (h_ssk : ss_acc ⟨k, by omega⟩ = s₀)
+      (h_acc_steps : ∀ j : Fin k, (j.val < l.length) →
+        (some (ForInStep.yield (bs_acc ⟨j.val + 1, by omega⟩)), ss_acc ⟨j.val + 1, by omega⟩) ∈
+          ((f (l.get ⟨j.val, by omega⟩) (bs_acc ⟨j.val, by omega⟩)).run
+            (ss_acc ⟨j.val, by omega⟩)).support)
+      (h_acc_rels : ∀ j : Fin (k + 1), rel ⟨j.val, by omega⟩ (some (bs_acc j)) (ss_acc j))
+      (res' : β × σ)
+      (h_mem' : (some res'.1, res'.2) ∈
+        ((forIn xs b₀ f : OptionT (StateT σ ProbComp) β).run s₀).support) :
+      rel ⟨l.length, by omega⟩ (some res'.1) res'.2 ∧
+      ∃ (bs : Fin (l.length + 1) → β) (ss : Fin (l.length + 1) → σ),
+        bs 0 = init ∧ ss 0 = s ∧
+        bs ⟨l.length, by omega⟩ = res'.1 ∧ ss ⟨l.length, by omega⟩ = res'.2 ∧
+        (∀ j : Fin l.length,
+          (some (ForInStep.yield (bs j.succ)), ss j.succ) ∈
+            ((f (l.get j) (bs j.castSucc)).run (ss j.castSucc)).support) ∧
+        (∀ j : Fin (l.length + 1), rel j (some (bs j)) (ss j)) := by
+    induction xs generalizing k b₀ s₀ bs_acc ss_acc with
+    | nil =>
+      simp only [List.length_nil, add_zero] at h_len
+      have h_k_eq : k = l.length := h_len
+      have h_run : ((forIn ([] : List α) b₀ f : OptionT (StateT σ ProbComp) β).run s₀) =
+          pure (some b₀, s₀) := rfl
+      rw [h_run, support_pure, Set.mem_singleton_iff] at h_mem'
+      have h_res_eq : res'.1 = b₀ ∧ res'.2 = s₀ := by
+        simpa [Prod.mk.injEq, Option.some.injEq] using h_mem'
+      rcases h_res_eq with ⟨h_res1, h_res2⟩
+      subst h_res1; subst h_res2
+      subst h_k_eq
+      refine ⟨h_rel, ?_⟩
+      exact ⟨bs_acc, ss_acc, h_bs0, h_ss0, h_bsk, h_ssk,
+        fun j => h_acc_steps ⟨j.val, by exact j.isLt⟩ j.isLt,
+        fun j => by exact h_acc_rels j⟩
+    | cons y ys ih =>
+      simp only [forIn, List.forIn'_cons] at h_mem'
+      rw [OptionT.run_bind] at h_mem'
+      simp only [Option.elimM, OptionT.run] at h_mem'
+      rw [show ∀ (m : StateT σ ProbComp _)
+          (g : _ → StateT σ ProbComp _) (s0 : σ),
+          (m >>= g) s0 = m.run s0 >>= fun p => (g p.1).run p.2
+        from fun _ _ _ => rfl] at h_mem'
+      rw [_root_.mem_support_bind_iff] at h_mem'
+      obtain ⟨⟨opt_step, s'⟩, h_step_sup, h_rest_sup⟩ := h_mem'
+      cases h_opt : opt_step with
+      | none =>
+        simp [h_opt] at h_rest_sup
+      | some step =>
+        have h_step_some_mem : (some step, s') ∈ ((f y b₀).run s₀).support := by
+          simpa [h_opt] using h_step_sup
+        obtain ⟨b', h_yield_eq⟩ := h_yield y b₀ s₀ (step, s') h_step_some_mem
+        subst h_yield_eq
+        simp [h_opt] at h_rest_sup
+        have h_k_lt : k < l.length := by simp only [List.length_cons] at h_len; omega
+        have h_y_eq : y = l.get ⟨k, h_k_lt⟩ := by
+          have h_len_drop : 0 < (l.drop k).length := by rw [h_suffix]; exact Nat.zero_lt_succ _
+          have : l[k]'h_k_lt = (l.drop k)[0]'h_len_drop := by
+            simp only [List.getElem_drop, Nat.add_zero]
+          simp only [List.get_eq_getElem, this, h_suffix, List.getElem_cons_zero]
+        have h_rel_next : rel ⟨k + 1, by omega⟩ (some b') s' := by
+          have h_app := h_step ⟨k, h_k_lt⟩ b₀ s₀ h_rel
+            (ForInStep.yield b', s')
+            (by
+              have hn := h_step_some_mem
+              rw [h_y_eq] at hn
+              exact hn)
+          simp [ForInStep.state, Fin.succ] at h_app
+          exact h_app
+        let bs_next : Fin (k + 1 + 1) → β := fun j =>
+          if h : j.val ≤ k then bs_acc ⟨j.val, by omega⟩ else b'
+        let ss_next : Fin (k + 1 + 1) → σ := fun j =>
+          if h : j.val ≤ k then ss_acc ⟨j.val, by omega⟩ else s'
+        have h_suffix_ys : l.drop (k + 1) = ys := by
+          rw [← List.drop_drop, h_suffix]; rfl
+        exact ih (k + 1) b' s'
+          h_suffix_ys
+          (by simp only [List.length_cons] at h_len; omega)
+          h_rel_next
+          bs_next ss_next
+          (by simp [bs_next, h_bs0])
+          (by simp [ss_next, h_ss0])
+          (by simp [bs_next])
+          (by simp [ss_next])
+          (by
+            intro j h_j_lt
+            by_cases hj : j.val < k
+            · have h_from_acc := h_acc_steps ⟨j.val, by omega⟩ (by omega)
+              simp only [bs_next, ss_next, show j.val + 1 ≤ k from by omega,
+                show j.val ≤ k from by omega, ↓reduceDIte]
+              exact h_from_acc
+            · have h_j_eq : j.val = k := by omega
+              simp only [h_j_eq, List.get_eq_getElem, le_refl, ↓reduceDIte, add_le_iff_nonpos_right,
+                nonpos_iff_eq_zero, one_ne_zero, bs_next, ss_next]
+              have hn := h_step_some_mem
+              rw [h_y_eq, h_bsk.symm, h_ssk.symm] at hn
+              exact hn)
+          (by
+            intro j
+            by_cases hj : j.val ≤ k
+            · simp only [bs_next, ss_next, hj, ↓reduceDIte]
+              exact h_acc_rels ⟨j.val, by omega⟩
+            · have h_j_eq : j.val = k + 1 := by omega
+              have h_neg : ¬ (k + 1 ≤ k) := by omega
+              simp only [bs_next, ss_next, h_j_eq, h_neg, ↓reduceDIte]
+              exact h_rel_next)
+          h_rest_sup
+  exact aux 0 l init s rfl (by omega) h_start
+    (fun _ => init) (fun _ => s) rfl rfl rfl rfl
+    (fun j => by exact Fin.elim0 j)
+    (fun j => by have : j = 0 := Fin.eq_zero j; subst this; simpa using h_start)
+    res h_mem
 /-- Distributes `simulateQ` over `Vector.mapM`.
 
 TODO: This proof is non-trivial because `Vector.mapM` is implemented via an auxiliary
@@ -1788,42 +2146,13 @@ Use `OracleComp.probEvent_bind_eq_tsum` to factor complex probability statements
 ```
 -/
 
-section ProbabilityNotationBridge
-
-variable {ι : Type*} {spec : OracleSpec ι} {α β σ : Type} [spec.FiniteRange]
-
-/-- **Key factorization lemma**: breaks down `probEvent` on bind into a tsum.
-This is the main tool for analyzing complex security bounds. -/
-lemma probEvent_bind_factor {α β : Type}
-    (oa : OracleComp spec α) (ob : α → OracleComp spec β)
-    (q : β → Prop) [DecidablePred q] :
-    [q | oa >>= ob] = ∑' x : α, [= x | oa] * [q | ob x] :=
-  OracleComp.probEvent_bind_eq_tsum oa ob q
-
-/-- Factor `probEvent` on a `StateT` computation after `.run'`.
-Useful pattern in security definitions with stateful simulations. -/
-lemma probEvent_StateT_run'_factor {σ α : Type} (init : ProbComp σ)
-    (comp : StateT σ ProbComp α) (p : α → Prop) [DecidablePred p] :
-    [p | do let s ← init; Prod.fst <$> comp.run s] =
-    ∑' s : σ, [= s | init] * [p | Prod.fst <$> comp.run s] := by
-  rw [OracleComp.probEvent_bind_eq_tsum]
-
-/-- Simplification when initial state is deterministic. -/
-lemma probEvent_StateT_run'_pure {σ α : Type}
-    (s : σ) (comp : StateT σ ProbComp α) (p : α → Prop) [DecidablePred p] :
-    [p | comp.run' s] = [p | Prod.fst <$> comp.run s] := by
-  simp only [StateT.run'_eq, OracleComp.probEvent_pure,
-    ite_mul, one_mul, zero_mul, tsum_ite_eq]
-
-end ProbabilityNotationBridge
-
 section NestedSimulateQSupport
 open OracleComp OracleSpec OracleQuery SimOracle
 
 variable {ι : Type} {oSpec oSpec' : OracleSpec ι}
-  [oSpec.FiniteRange] [oSpec'.FiniteRange]
+  [oSpec.Fintype] [oSpec'.Fintype]
 
-omit [oSpec.FiniteRange] in
+omit [oSpec.Fintype] in
 /-- **Support of simulateQ through bind with StateT**
 
 For stateful oracle implementations, the support of `(simulateQ impl oa >>= f).run s` can be
@@ -1839,6 +2168,7 @@ lemma support_simulateQ_bind_run_eq
     (do let ⟨x, s'⟩ ← (simulateQ impl oa).run s; (f x).run s').support := by
   simp only [StateT.run]; rfl
 
+-- OptionT (StateT σ ProbComp) PUnit.{1}
 /-- **Support of StateT bind (run form)**
 Membership in `support ((m >>= g).run s)` is equivalent to: there exists `out_forIn ∈ support (m.run s)`
 such that `x` is in the support of continuing with `g` from that result (i.e. `(g out_forIn.1).run out_forIn.2`).
@@ -1849,15 +2179,80 @@ lemma mem_support_StateT_bind_run {σ α β : Type}
     ∃ (y : α) (s' : σ), (y, s') ∈ (ma.run s).support ∧ x ∈ ((f y).run s').support := by
   simp only [StateT.run_bind, support_bind, Set.mem_iUnion, exists_prop, Prod.exists]
 
-/-- Handle the guard pattern inside support reasoning. -/
-@[simp]
-lemma support_guard_bind {ι : Type} {spec : OracleSpec ι} [spec.FiniteRange]
-    {α : Type} (p : Prop) [Decidable p]
-    (f : PUnit → OracleComp spec α) :
-    (guard p >>= f).support = if p then (f ()).support else ∅ :=
-by split_ifs with h <;> simp [h, guard]
+-- StateT σ ProbComp (Option (ForInStep PUnit.{1}))
+lemma OptionT.mem_support_StateT_bind_run {σ α β : Type}
+    (ma : StateT σ ProbComp α) (f : α → StateT σ ProbComp (Option β)) (s : σ) (x : Option (β) × σ) :
+    x ∈ ((ma >>= f).run s).support ↔
+    ∃ (y : α) (s' : σ), (y, s') ∈ (ma.run s).support ∧ x ∈ ((f y).run s').support := by
+  simp only [StateT.run_bind, _root_.support_bind, Set.mem_iUnion, exists_prop, Prod.exists]
+
+lemma support_StateT_ite_apply {σ α : Type}
+    (ma ma' : StateT σ ProbComp α) (p : Prop) [Decidable p] (s : σ) :
+    support ((ite p ma ma') s) = ite p (support (ma s)) (support (ma' s)) := by
+  by_cases hp : p <;> simp [hp]
 
 end NestedSimulateQSupport
+
+
+section QueryImplSimplification
+
+open ENNReal NNReal
+
+open OracleSpec OracleComp ProtocolSpec ProbComp QueryImpl
+open scoped ProbabilityTheory
+
+variable {ι : Type} {oSpec : OracleSpec ι} [oSpec.Fintype]
+  {StmtIn WitIn StmtOut WitOut : Type}
+  {n : ℕ} {pSpec : ProtocolSpec n}
+  [∀ i, SampleableType (pSpec.Challenge i)]
+  [∀ i, Fintype (pSpec.Challenge i)] [∀ i, Inhabited (pSpec.Challenge i)]
+  {σ : Type}
+
+/-- **Simplification: QueryImpl append for Sum.inr queries (challenge queries)**
+
+When appending a `QueryImpl` with `challengeQueryImpl`, queries to `Sum.inr` (challenge queries)
+are routed to `challengeQueryImpl`, which samples uniformly.
+
+This lemma simplifies `(impl ++ₛₒ challengeQueryImpl).impl (query (Sum.inr i) ())` to
+show it samples uniformly from the challenge space.
+
+**Note**: The `++ₛₒ` operator implicitly lifts `challengeQueryImpl` from `ProbComp` to `StateT σ ProbComp`.
+-/
+theorem QueryImpl_append_impl_inr_stateful
+    (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (i : pSpec.ChallengeIdx) (s : σ) :
+    ((QueryImpl.addLift impl challengeQueryImpl :
+        QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp)) (.inr ⟨i, ()⟩)) s =
+    (liftM (challengeQueryImpl ⟨i, ()⟩) : StateT σ ProbComp _).run s := by
+  rfl
+
+/-- **Simplification: QueryImpl append for Sum.inr queries (challenge queries) - run' version**
+
+Same as `QueryImpl_append_impl_inr_stateful` but using `run'` which discards the state.
+-/
+theorem QueryImpl_append_impl_inr_stateful_run'
+    (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (i : pSpec.ChallengeIdx) (s : σ) :
+    (((QueryImpl.addLift impl challengeQueryImpl :
+        QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp)) (.inr ⟨i, ()⟩)).run') s =
+    (liftM (challengeQueryImpl ⟨i, ()⟩) : StateT σ ProbComp _).run' s := by
+  rfl
+
+/-- For challenge queries, `monadLift` on `OracleQuery` lands in the `.inr` branch. -/
+lemma addLift_challengeQueryImpl_input_run_eq_liftM_run
+    {σ α : Type} {pSpec : ProtocolSpec n}
+    [∀ i, SampleableType (pSpec.Challenge i)]
+    (impl : QueryImpl []ₒ (StateT σ ProbComp))
+    (q : OracleQuery [pSpec.Challenge]ₒ α)
+    (s : σ) :
+    ((impl + QueryImpl.liftTarget (StateT σ ProbComp) (challengeQueryImpl (pSpec := pSpec)))
+      ((MonadLift.monadLift (query q.input) :
+        OracleQuery ([]ₒ + [pSpec.Challenge]ₒ)
+          ([pSpec.Challenge]ₒ.Range q.input)).input)).run s =
+      ((liftM (challengeQueryImpl (pSpec := pSpec) q.input)) :
+        StateT σ ProbComp ([pSpec.Challenge]ₒ.Range q.input)).run s := by rfl
+
+end QueryImplSimplification
 
 section MapLemmas
 
@@ -1867,12 +2262,5 @@ variable {ι : Type} {spec : OracleSpec ι} {α β : Type}
 @[simp]
 lemma map_pure (f : α → β) (a : α) :
     (f <$> pure a : OracleComp spec β) = pure (f a) := rfl
-
-/-- Map over failure is failure. -/
-@[simp]
-lemma map_failure (f : α → β) :
-    (f <$> (failure : OracleComp spec α) : OracleComp spec β) = failure := by
-  rw [map_eq_pure_bind]
-  rfl
 
 end MapLemmas

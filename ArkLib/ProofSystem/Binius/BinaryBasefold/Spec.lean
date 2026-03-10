@@ -455,10 +455,10 @@ instance : ∀ i, SampleableType ((pSpecQuery 𝔽q β γ_repetitions
 instance : ∀ j, SampleableType ((fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge j) := instSampleableTypeChallengeAppend
 
-instance : SelectableType (Fin γ_repetitions → ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0)) := by
+instance : SampleableType (Fin γ_repetitions → ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0)) := by
   let res := instSDomain 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (h_i := by
     apply Nat.lt_add_of_pos_right_of_le; simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_le])
-  exact instSelectableTypeFinFunc
+  exact instSampleableTypeFinFunc
 
 /-! ## Additional OracleInterface and Fintype instances -/
 
@@ -518,7 +518,7 @@ The response types are the polynomial and field element themselves,
   both finite and inhabited. -/
 instance : ([(pSpecFold (L:=L)).Message]ₒ).Fintype := by sorry
 
-instance instOracleStatementFiniteRange {i : Fin (ℓ + 1)} :
+instance instOracleStatementFintype {i : Fin (ℓ + 1)} :
   [OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i]ₒ.Fintype := by sorry
 
 instance instFintypePSpecFinalSumcheck_AllChallenges: ∀ i, Fintype ((pSpecFinalSumcheckStep (L:=L)).Challenge i) := by sorry

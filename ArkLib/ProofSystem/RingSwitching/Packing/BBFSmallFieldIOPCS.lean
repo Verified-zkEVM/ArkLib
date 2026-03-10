@@ -36,7 +36,6 @@ in contrast to `FRIBinius/CoreInteractionPhase.lean` which fuses the sumcheck-fo
   Towers." Cryptology ePrint Archive (2024).
 -/
 
--- **Plan**: fully prove bbfMLIOPCS now. I think we can just use the security theorems of the those protocols, the thing is we have to use some security transfer lemma for case of relIn equality (between Ring-switching output relation & Binary Basefold input relation, I guess they are equivalent since at state i = 0, the input relation of Binary Basefold has no bad events sure it's purely consistency).
 
 namespace Binius.RingSwitching.BBFSmallFieldIOPCS
 
@@ -57,7 +56,7 @@ section BinaryBasefoldMLIOPCS
 
 variable {r : ℕ} [NeZero r]
 variable {L : Type} [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
-  [SelectableType L]
+  [SampleableType L]
 variable (𝔽q : Type) [Field 𝔽q] [Fintype 𝔽q] [DecidableEq 𝔽q]
   [h_Fq_char_prime : Fact (Nat.Prime (ringChar 𝔽q))] [hF₂ : Fact (Fintype.card 𝔽q = 2)]
 variable [Algebra 𝔽q L]
@@ -162,7 +161,7 @@ def largeFieldInvocationOracleReduction :
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (ℓ := ℓ')).liftContext
     (lens := largeFieldInvocationCtxLens 𝔽q β)
 
-omit [SelectableType L] in
+omit [SampleableType L] in
 /-- Uniqueness of the polynomial witness from first-oracle UDR-compatibility. -/
 lemma firstOracleWitnessConsistency_unique
     (oStmt : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') ϑ
@@ -236,7 +235,8 @@ lemma witnessStructuralInvariant_MLPEvalWitness_to_BBF_Witness
       (mp := BBF_SumcheckMultiplierParam) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (reducedMLPEvalStatement_to_BBF_Statement (L := L) (ℓ' := ℓ') stmt)
       (MLPEvalWitness_to_BBF_Witness 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmt wit) := by
-  simpa [Binius.BinaryBasefold.witnessStructuralInvariant, reducedMLPEvalStatement_to_BBF_Statement, MLPEvalWitness_to_BBF_Witness]
+  simpa [Binius.BinaryBasefold.witnessStructuralInvariant,
+    reducedMLPEvalStatement_to_BBF_Statement, MLPEvalWitness_to_BBF_Witness]
 
 /-- If `t(r) = s` for the outer MLP statement, then the mapped round-0 BBF witness
 satisfies the BBF round-0 sumcheck consistency identity. -/
@@ -248,8 +248,8 @@ lemma sumcheckConsistency_MLPEvalWitness_to_BBF_Witness_of_eval
       (reducedMLPEvalStatement_to_BBF_Statement (L := L) (ℓ' := ℓ') stmt).sumcheck_target
       (MLPEvalWitness_to_BBF_Witness 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmt wit).H := by
   rw [sumcheckConsistencyProp]
-  dsimp [reducedMLPEvalStatement_to_BBF_Statement, MLPEvalWitness_to_BBF_Witness, computeInitialSumcheckPoly,
-    BBF_SumcheckMultiplierParam, BBF_eq_multiplier]
+  dsimp [reducedMLPEvalStatement_to_BBF_Statement, MLPEvalWitness_to_BBF_Witness,
+    computeInitialSumcheckPoly, BBF_SumcheckMultiplierParam, BBF_eq_multiplier]
   rw [← h_eval]
   let castEmb : Fin 2 ↪ L := ⟨fun b => (b : L), by
     intro a b h
@@ -280,7 +280,6 @@ lemma sumcheckConsistency_MLPEvalWitness_to_BBF_Witness_of_eval
             ⟨stmt.t_eval_point, stmt.original_claim⟩)).val)
     apply Subtype.ext
     simpa [projectToMidSumcheckPoly] using h_fix0
-
   let mEq : MultilinearPoly L ℓ' := BBF_eq_multiplier (L := L) stmt.t_eval_point
   have h_H0' :
       projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := wit.t)
@@ -315,8 +314,8 @@ lemma sumcheckConsistency_MLPEvalWitness_to_BBF_Witness_of_eval
           MvPolynomial.eval (fun i => castEmb (x i)) wit.t.val) := by
       apply Finset.sum_congr rfl
       intro x hx
-      have h_mEq : MvPolynomial.eval (fun i => castEmb (x i)) mEq.val =
-        MvPolynomial.eval (fun i => castEmb (x i)) (MvPolynomial.eqPolynomial stmt.t_eval_point) := by
+      have h_mEq : MvPolynomial.eval (fun i => castEmb (x i)) mEq.val = MvPolynomial.eval
+        (fun i => castEmb (x i)) (MvPolynomial.eqPolynomial stmt.t_eval_point) := by
         simp only [BBF_eq_multiplier, map_prod, map_add, map_mul, map_sub, map_one,
           MvPolynomial.eval_C, MvPolynomial.eval_X, mEq]
       rw [h_mEq]
@@ -429,7 +428,7 @@ instance largeFieldInvocationCtxLens_complete :
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
-theorem largeFieldInvocationOracleReduction_perfectCompleteness (hInit : init.neverFails) :
+theorem largeFieldInvocationOracleReduction_perfectCompleteness (hInit : NeverFail init) :
   OracleReduction.perfectCompleteness
     (oracleReduction := largeFieldInvocationOracleReduction 𝔽q β γ_repetitions (𝓑 := 𝓑))
     (relIn := (bbfAbstractOStmtIn 𝔽q β
@@ -484,8 +483,8 @@ lemma MLPEvalRelation_of_round0_local_and_structural
     original_claim := wit.t.val.eval stmt.t_eval_point
   }
   let wit_eval : WitMLP (K := L) (ℓ := ℓ') := { t := wit.t }
-  have h_eval_stmt_eval : wit_eval.t.val.eval stmt_eval.t_eval_point = stmt_eval.original_claim := by
-    rfl
+  have h_eval_stmt_eval : wit_eval.t.val.eval stmt_eval.t_eval_point
+    = stmt_eval.original_claim := by rfl
   have h_local_eval :
       sumcheckConsistencyProp (𝓑 := 𝓑)
         (reducedMLPEvalStatement_to_BBF_Statement (L := L) (ℓ' := ℓ') stmt_eval).sumcheck_target
@@ -690,7 +689,7 @@ section Composition
 
 variable {r : ℕ} [NeZero r]
 variable {L : Type} [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
-  [SelectableType L]
+  [SampleableType L]
 variable (𝔽q : Type) [Field 𝔽q] [Fintype 𝔽q] [DecidableEq 𝔽q]
   [h_Fq_char_prime : Fact (Nat.Prime (ringChar 𝔽q))] [hF₂ : Fact (Fintype.card 𝔽q = 2)]
 variable [Algebra 𝔽q L]
@@ -717,7 +716,7 @@ Ring-switching + Binary Basefold as MLIOPCS.
 
 This is a direct instantiation of `fullOracleReduction_perfectCompleteness` from
 `RingSwitching/General.lean` with the Binary Basefold MLIOPCS. -/
-theorem bbf_fullOracleReduction_perfectCompleteness (hInit : init.neverFails) :
+theorem bbf_fullOracleReduction_perfectCompleteness (hInit : NeverFail init) :
     OracleReduction.perfectCompleteness
       (oracleReduction := FullRingSwitching.fullOracleReduction κ L K β_rs ℓ ℓ' h_l
         (𝓑 := 𝓑)
