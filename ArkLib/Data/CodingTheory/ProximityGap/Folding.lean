@@ -18,8 +18,7 @@ open Polynomial
 
 universe u v w k l
 
-variable {ι : Type} [Fintype ι] [DecidableEq ι]
-variable {κ : Type k} {ι : Type l} [DecidableEq ι] [Fintype κ] [Fintype ι] [Nonempty ι]
+variable {κ : Type k} {ι : Type} [DecidableEq ι] [Fintype κ] [Fintype ι] [Nonempty ι]
 -- κ => row indices, ι => column indices
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 -- variable {M : Type} [Fintype M] -- Message space type
@@ -107,7 +106,7 @@ noncomputable def fold (domain : ι ↪ F) (f : Word F ι) (k : ℕ) (α : F)
   F
   := (foldAux domain f k x).eval α
 
-omit [Nonempty ι] [Fintype F]
+omit [Nonempty ι] [Fintype F] in
 lemma fold_def {domain : ι ↪ F} {f : Word F ι} {k : ℕ} {α : F}
   {x : F}
   :
@@ -665,14 +664,44 @@ private lemma master_lemma'
 
   simp
 
-lemma folding_proximity {domain : ι ↪ F} {f : Word F ι} {d k : ℕ} {δ : ℚ≥0}
+lemma folding_proximity {domain : ι ↪ F} {f : Word F ι} {d k : ℕ} [NeZero k] {δ : ℚ≥0}
   (k_div_d : k ∣ d)
   (d_gt_0 : d > 0)
   (δ_gt_0 : 0 < δ)
   (δ_lt : δ < min (δᵣ(f, ReedSolomon.code domain d)) (1 - (ReedSolomonCode.sqrtRate d domain))) :
     Pr_{ let r ←$ᵖ F}
-      [δᵣ(foldWord domain f k r, ReedSolomon.code (domainK domain k) (d / k)) ≤ δ] ≤ k * ProximityGap.errorBound δ d domain := by
+      [δᵣ(foldWord domain f k r, ReedSolomon.code (domainK domain k) (d / k)) ≤ δ] ≤
+        (k - 1) * ProximityGap.errorBound δ (d / (k - 1)) (domainK domain (k - 1)) := by
+  match k with
+  | .zero => aesop
+  | .succ k =>
+    unfold foldWord
+    have bound_tighter : ↑δ ≤ 1 - ReedSolomonCode.sqrtRate (d / k) (domainK domain k) := by
+      sorry
+    have h' :=
+      @correlatedAgreement_affine_curves (iotaK domain (k + 1)) _ sorry _ F _ _ _ _
+        k (fun j x ↦ foldAuxCoeff domain f (k + 1) j ((domainK domain (k + 1)) x)) (d / (k + 1))
+        (domainK domain (k + 1)) δ bound_tighter
+    unfold δ_ε_correlatedAgreementCurves at h'
+    by_contra h
+    have eq₁ : ((k + 1 : ℕ) : ENNReal) - 1 = (k : ENNReal) := by norm_cast
+    have {a b : ENNReal} : a < b → b > a := id
+    simp only [not_le, fold_eq_sum_of_foldAuxCoeff_mul_pow_alpha, bind_pure_comp, Functor.map, PMF.bind_apply,
+      PMF.uniformOfFintype_apply, comp_apply, PMF.pure_apply, ULift.up.injEq, eq_iff_iff, true_iff,
+      mul_ite, mul_one, mul_zero, tsum_fintype, Nat.succ_eq_add_one, eq₁] at h h'
+    have h := this h
 
-  sorry
+
+
+
+
+
+
+
+
+    have bla := @fold_eq_sum_of_foldAuxCoeff_mul_pow_alpha
+
+    -- simp [fold_eq_sum_of_foldAuxCoeff_mul_pow_alpha] at h
+    sorry
 
 end ProximityGap
