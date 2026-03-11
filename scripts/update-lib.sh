@@ -13,9 +13,12 @@ if [[ ! -d "ArkLib" || ! -f "ArkLib.lean" ]]; then
   exit 1
 fi
 
-mapfile -t untracked_lean_files < <(
-  git ls-files --others --exclude-standard -- 'ArkLib/*.lean'
-)
+untracked_lean_files=()
+while IFS= read -r file; do
+  if [[ -n "$file" ]]; then
+    untracked_lean_files+=("$file")
+  fi
+done < <(git ls-files --others --exclude-standard -- 'ArkLib/*.lean')
 
 if (( ${#untracked_lean_files[@]} > 0 )); then
   echo "ERROR: Untracked Lean files under ArkLib/ are not included in ArkLib.lean generation." >&2
