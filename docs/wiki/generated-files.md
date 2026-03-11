@@ -14,7 +14,7 @@ Edit the source of truth, not the output.
 
 ## Important Notes
 
-- `./scripts/update-lib.sh` uses `git ls-files 'ArkLib/*.lean'`, so untracked Lean files are
-  invisible until staged or otherwise tracked.
+- `./scripts/update-lib.sh` only uses tracked `ArkLib/**/*.lean` files and now fails fast if
+  untracked Lean files would be skipped.
 - Generated site and blueprint output are for review and deployment, not authoring.
 - If a path looks derived, confirm its source of truth before editing it.

@@ -1,21 +1,21 @@
 # Quickstart
 
-This page is the canonical agent playbook for commands and validation.
-Use it instead of treating `scripts/README.md` as the source of truth for what to run.
+This page is the recommended agent playbook for commands and validation.
+Use it as the main guide for routine local checks.
 
-## Baseline
+## Recommended Validation
 
-For ordinary Lean work:
+For a convenient routine check, run:
 
 ```bash
-lake build
+./scripts/validate.sh
 ```
 
 On a cold clone, fetch precompiled dependencies first:
 
 ```bash
 lake exe cache get
-lake build
+./scripts/validate.sh
 ```
 
 ## Validation By Change Type
@@ -23,39 +23,44 @@ lake build
 ### Existing Lean files only
 
 ```bash
-lake build
+./scripts/validate.sh
 ```
 
 ### Added, renamed, or deleted files under `ArkLib/`
 
 ```bash
 git add path/to/newfile.lean
-./scripts/check-imports.sh
-lake build
+./scripts/validate.sh
 ```
 
-`./scripts/update-lib.sh` uses `git ls-files 'ArkLib/*.lean'`, so new files must be staged or
-tracked before the import check sees them.
+`./scripts/update-lib.sh` only considers tracked files, and now fails fast if untracked
+`ArkLib/**/*.lean` files are present.
 
 ### Lean-heavy refactors or cleanup
 
 ```bash
-./scripts/lint-style.sh
+./scripts/validate.sh --lint
 ```
 
-This is a manual pre-PR check. The main CI build currently runs with lint disabled.
+This adds `./scripts/lint-style.sh` to the convenience wrapper. The main CI build currently runs
+with lint disabled, so treat this as opt-in for now.
 If the task is specifically Lean warning cleanup, follow
 [`../skills/fix-lean-warnings.md`](../skills/fix-lean-warnings.md).
 
 ### Docstrings, blueprint, or website changes
 
 ```bash
-DISABLE_EQUATIONS=1 lake build ArkLib:docs
-./scripts/build-web.sh
+./scripts/validate.sh --docs
 ```
 
-`./scripts/build-web.sh` skips blueprint generation if `leanblueprint` is not installed. If
-blueprint output matters, install it first:
+For website or blueprint output, run:
+
+```bash
+./scripts/validate.sh --site
+```
+
+`./scripts/build-web.sh` is still what assembles the site, and it skips blueprint generation if
+`leanblueprint` is not installed. If blueprint output matters, install it first:
 
 ```bash
 python3 -m pip install leanblueprint
@@ -63,10 +68,33 @@ python3 -m pip install leanblueprint
 
 ## Important Notes
 
-- There is no single perfect local "run everything" script. `lake build` checks the package
-  build, while import freshness for `ArkLib.lean` is a separate step.
-- Do not use `scripts/build-project.sh` as the authoritative validator; it is only commented
-  examples today.
+- `./scripts/validate.sh` is the recommended convenience wrapper for routine local validation.
+- By default it runs `lake build`, `./scripts/check-imports.sh`, and
+  `python3 ./scripts/check-docs-integrity.py`.
+- The lower-level scripts remain valid when you only want one specific check.
+- `scripts/build-project.sh` is now just a compile-only helper, not the convenience wrapper.
 - `scripts/README.md` is still useful as an inventory of helper scripts.
-- Only run doc and website builds when those surfaces are relevant; they are slower and more
+- Only run docs and site builds when those surfaces are relevant; they are slower and more
   tool-dependent than normal Lean builds.
+
+## Optional Direct Commands
+
+You can still run the underlying pieces directly when debugging a specific issue:
+
+```bash
+lake build
+./scripts/check-imports.sh
+python3 ./scripts/check-docs-integrity.py
+```
+
+If you specifically need to regenerate `ArkLib.lean`, use:
+
+```bash
+./scripts/update-lib.sh
+```
+
+If blueprint output matters and `leanblueprint` is missing:
+
+```bash
+python3 -m pip install leanblueprint
+```

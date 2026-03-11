@@ -7,13 +7,13 @@ Start with [`README.md`](README.md) for project overview.
 
 ## Fast Start
 
-1. `lake build`
+1. For a convenient routine check, start with `./scripts/validate.sh`.
 2. On a cold clone, run `lake exe cache get` first.
-3. If you add, rename, or delete files under `ArkLib/`, `git add` new paths first, then run
-   `./scripts/check-imports.sh`.
-4. For Lean-heavy changes, run `./scripts/lint-style.sh`.
-5. Only build docs or blueprint output when touching docstrings, `blueprint/`, or `home_page/`:
-   `DISABLE_EQUATIONS=1 lake build ArkLib:docs` or `./scripts/build-web.sh`.
+3. If you add, rename, or delete files under `ArkLib/`, `git add` new paths before validation.
+4. If you also want Lean style linting, run `./scripts/validate.sh --lint`.
+5. For docstring or docs work, `./scripts/validate.sh --docs` is a convenient add-on check.
+6. Only build site or blueprint output when touching `blueprint/` or `home_page/`:
+   `./scripts/validate.sh --site`.
 
 ## Where To Work
 

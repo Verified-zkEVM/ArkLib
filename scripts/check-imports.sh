@@ -1,31 +1,34 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Check if all imports are up to date
-# This script updates ArkLib.lean and checks if there are any differences
+# Check whether ArkLib.lean matches the tracked ArkLib/**/*.lean file set.
 
-set -e  # Exit on any error
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
 
 echo "Checking if all imports are up to date..."
 
-# Save current ArkLib.lean
-cp ArkLib.lean ArkLib.lean.backup
+backup_file="$(mktemp "${TMPDIR:-/tmp}/ArkLib.lean.backup.XXXXXX")"
+cp ArkLib.lean "$backup_file"
 
-# Update imports
+restore_original() {
+  if [[ -f "$backup_file" ]]; then
+    mv "$backup_file" ArkLib.lean
+  fi
+}
+trap restore_original EXIT
+
 ./scripts/update-lib.sh
 
-# Check for differences
-if git diff --exit-code ArkLib.lean > /dev/null; then
-    echo "✓ All imports are up to date!"
-    rm ArkLib.lean.backup
-    exit 0
-else
-    echo "❌ Import file is out of date!"
-    echo "Differences found:"
-    git diff ArkLib.lean
-    echo ""
-    echo "To fix this, run: ./scripts/update-lib.sh"
-
-    # Restore original file
-    mv ArkLib.lean.backup ArkLib.lean
-    exit 1
+if git diff --quiet -- ArkLib.lean; then
+  echo "✓ All imports are up to date!"
+  exit 0
 fi
+
+echo "❌ Import file is out of date!"
+echo "Differences found:"
+git diff -- ArkLib.lean
+echo ""
+echo "To fix this, run: ./scripts/update-lib.sh"
+exit 1
