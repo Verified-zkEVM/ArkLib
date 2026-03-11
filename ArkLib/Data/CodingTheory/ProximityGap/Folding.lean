@@ -664,9 +664,10 @@ private lemma master_lemma'
 
   simp
 
-lemma folding_proximity {domain : ι ↪ F} {f : Word F ι} {d k : ℕ} [NeZero k] {δ : ℚ≥0}
+lemma folding_proximity {domain : ι ↪ F} {f : Word F ι} {d k : ℕ} [inst: NeZero k] {δ : ℚ≥0}
   (k_div_d : k ∣ d)
-  (d_gt_0 : d > 0)
+  (h_k_d : k < d)
+  (h_k_card: k ≤ Fintype.card F)
   (δ_gt_0 : 0 < δ)
   (δ_lt : δ < min (δᵣ(f, ReedSolomon.code domain d)) (1 - (ReedSolomonCode.sqrtRate d domain))) :
     Pr_{ let r ←$ᵖ F}
@@ -709,6 +710,52 @@ lemma folding_proximity {domain : ι ↪ F} {f : Word F ι} {d k : ℕ} [NeZero 
     }) 
     simp [jointAgreement] at h'
     rcases h' with ⟨S, ⟨h_card, ⟨v, h'⟩⟩⟩
+    simp [ReedSolomon.code] at h'
+    rw [forall_and] at h'
+    rcases h' with ⟨h_rs, h'⟩ 
+    let u : Fin (k + 1) → Polynomial F :=
+      fun i => Classical.choose (h_rs i)
+    have contradiction := master_lemma' (k := k + 1) (domain := domain) (f := f)
+      (s := Finset.image (fun i => i.val) S)
+      (by {
+        intro x hx
+        simp at hx
+        rcases hx with ⟨x', hx'⟩ 
+        aesop
+      })
+      (u := u)
+      (by {
+        intros i j hj
+        have h_spec : u i ∈ F⦃< d / (k + 1)⦄[X] ∧ (ReedSolomon.evalOnPoints (domainK domain (k + 1))) (u i) = v i := Classical.choose_spec (h_rs i)
+        simp [ReedSolomon.evalOnPoints] at h_spec
+        rcases h_spec with ⟨_, h_spec⟩
+        simp [domainK] at h_spec
+        simp at hj
+        rcases hj with ⟨hj, hj'⟩
+        have h_spec := congrFun h_spec ⟨j, hj⟩ 
+        simp at h_spec
+        rw [h_spec]
+        specialize h' i hj'
+        simp [domainK] at h'
+        rw [←h']
+      })
+      (d := d)
+      (by assumption)
+      (by assumption)
+      (by {
+        intro i
+        have h_spec : u i ∈ F⦃< d / (k + 1)⦄[X] ∧ (ReedSolomon.evalOnPoints (domainK domain (k + 1))) (u i) = v i := Classical.choose_spec (h_rs i)
+        rcases h_spec with ⟨h_spec, _⟩
+        simp [degreeLT] at h_spec
+        by_cases heq : u i = 0
+        · simp [heq]
+          omega
+        · rw [Polynomial.natDegree_lt_iff_degree_lt heq]
+          rw [Polynomial.degree_lt_iff_coeff_zero]
+          exact h_spec
+      })
+      
+
 
     
 end ProximityGap
