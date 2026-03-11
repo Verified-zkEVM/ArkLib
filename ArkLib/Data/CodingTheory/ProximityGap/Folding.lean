@@ -690,20 +690,25 @@ lemma folding_proximity {domain : ι ↪ F} {f : Word F ι} {d k : ℕ} [NeZero 
       mul_ite, mul_one, mul_zero, tsum_fintype, Nat.succ_eq_add_one, eq₁] at h h'
     have h := this h
     specialize h' (Matrix.of (fun m n ↦ foldAuxCoeff domain f (k + 1) m ((domainK domain (k + 1)) n)))
-    -- unfold Curve.polynomialCurveFinite at h'
-    specialize h'
-      (by
-        have := @Finset.sum_equiv
-        convert h
+    have hh {a : F} : (fun x ↦ ∑ j, foldAuxCoeff domain f (k + 1) j ((domainK domain (k + 1)) x) * a ^ (↑j : ℕ))
+      =∑ i : Fin (k + 1), a ^ (↑i : ℕ) • Matrix.of (fun m n ↦ foldAuxCoeff domain f (k + 1) m ((domainK domain (k + 1)) n)) i := by 
+      ext x
+      simp
+      conv =>
+        lhs
+        rhs
+        ext y
+        rw [mul_comm]
+    specialize h' (by {
+      conv =>
+        lhs
+        rhs
+        ext a
+        rw [←hh]
+      assumption
+    }) 
+    simp [jointAgreement] at h'
+    rcases h' with ⟨S, ⟨h_card, ⟨v, h'⟩⟩⟩
 
-        sorry
-      )
-
-
-
-
-    have bla := @fold_eq_sum_of_foldAuxCoeff_mul_pow_alpha
-
-    sorry
-
+    
 end ProximityGap

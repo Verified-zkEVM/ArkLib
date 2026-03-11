@@ -162,7 +162,7 @@ noncomputable def δ_ε_correlatedAgreementCurves {k : ℕ}
     {A : Type 0} [AddCommMonoid A] [Module F A] [Fintype A] [DecidableEq A]
     (C : Set (ι → A)) (δ ε : ℝ≥0) : Prop :=
   ∀ (u : WordStack (A := A) (κ := Fin (k + 1)) (ι := ι)),
-    Pr_{let y ← $ᵖ (Curve.polynomialCurveFinite (F := F) (A := A) u)}[ δᵣ(y.1, C) ≤ δ ] > k * ε
+    Pr_{let r ← $ᵖ F}[ δᵣ(∑ i : Fin (k + 1), (r ^ (i : ℕ)) • u i, C) ≤ δ ] > k * ε
       → jointAgreement (F := A) (κ := Fin (k + 1)) (ι := ι) (C := C) (W := u) (δ := δ)
 
 /-- **`(δ, ε)`-CA for affine spaces**: Generalized statement of **Theorem 1.6, [BCIKS20]**

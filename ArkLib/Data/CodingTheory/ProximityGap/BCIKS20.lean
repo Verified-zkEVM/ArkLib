@@ -117,11 +117,7 @@ theorem correlatedAgreement_affine_curves [DecidableEq ι] {k : ℕ}
   {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
   (hδ : δ ≤ 1 - ReedSolomonCode.sqrtRate deg domain)
   : δ_ε_correlatedAgreementCurves (k := k) (A := F) (F := F) (ι := ι)
-    (C := ReedSolomon.code domain deg) (δ := δ) (ε := errorBound δ deg domain) := by
-  unfold δ_ε_correlatedAgreementCurves
-
-
-  sorry
+    (C := ReedSolomon.code domain deg) (δ := δ) (ε := errorBound δ deg domain) := by sorry
 
 open Affine in
 /-- Theorem 1.6 (Correlated agreement over affine spaces) in [BCIKS20].
