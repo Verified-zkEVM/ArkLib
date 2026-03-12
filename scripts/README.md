@@ -73,10 +73,10 @@ python3 ./scripts/check-docs-integrity.py
 ### `build_timing_report.sh`
 
 Helper used by CI to measure and render build timings for clean builds, warm
-rebuilds, and the `./scripts/validate.sh` path. The timing workflow uploads
+rebuilds, and the `./scripts/validate.sh` path. The CI workflow uploads
 timing-data artifacts so PR runs can compare against a previously recorded
 baseline without rerunning that baseline in the same job. This supports
-[`../.github/workflows/build-timing.yml`](../.github/workflows/build-timing.yml).
+[`../.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 
 ## Requirements
 

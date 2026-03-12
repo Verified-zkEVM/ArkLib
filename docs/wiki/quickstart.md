@@ -101,14 +101,14 @@ python3 -m pip install leanblueprint
 
 ## CI Mapping
 
-- [`../../.github/workflows/ci.yml`](../../.github/workflows/ci.yml) runs the main Lean build on PRs.
+- [`../../.github/workflows/ci.yml`](../../.github/workflows/ci.yml)
+  runs the timing-enabled main build on PRs and pushes to `main`, measures a
+  clean build, a warm rebuild, and the `./scripts/validate.sh` path, then
+  uploads timing artifacts and posts a comparison report on same-repo PRs.
 - [`../../.github/workflows/check-imports.yml`](../../.github/workflows/check-imports.yml)
   checks that `ArkLib.lean` matches the tracked source tree.
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
   checks local markdown links and the `CLAUDE.md` symlink.
-- [`../../.github/workflows/build-timing.yml`](../../.github/workflows/build-timing.yml)
-  measures a clean build, a warm rebuild, and the `./scripts/validate.sh` path,
-  then uploads timing artifacts and posts a comparison report on same-repo PRs.
 
 ## Manual Timing Helper
 
