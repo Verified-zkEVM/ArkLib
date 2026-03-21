@@ -3,7 +3,7 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
+import ArkLib.ProofSystem.Binius.BinaryBasefold.Relations
 import ArkLib.ToVCVio.Oracle
 
 namespace Binius.BinaryBasefold

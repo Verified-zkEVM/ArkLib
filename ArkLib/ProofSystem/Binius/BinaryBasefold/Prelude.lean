@@ -309,7 +309,17 @@ noncomputable def getSumcheckRoundPoly (i : Fin ℓ) (h : ↥L⦃≤ 2⦄[X Fin 
     exact h_deg_le_2
   ⟩
 
-lemma getSumcheckRoundPoly_eval_eq (i : Fin ℓ) (h_poly : ↥L⦃≤ 2⦄[X Fin (ℓ - ↑i.castSucc)]) (r : L) :
+private lemma cube_eval_sum_cons (n : ℕ) (p : L[X Fin (n + 1)]) :
+    ∑ y ∈ (univ.map 𝓑) ^ᶠ (n + 1), MvPolynomial.eval y p =
+      ∑ a ∈ univ.map 𝓑, ∑ x ∈ (univ.map 𝓑) ^ᶠ n, MvPolynomial.eval (Fin.cons a x) p := by
+  have h_pi := Finset.filter_piFinset_eq_map_consEquiv
+    (S := fun _ : Fin (n + 1) => univ.map 𝓑) (P := fun _ => True)
+  simp at h_pi
+  rw [h_pi, Finset.sum_map, Finset.sum_product]
+  congr 1
+
+lemma getSumcheckRoundPoly_eval_eq (i : Fin ℓ) (h_poly : ↥L⦃≤ 2⦄[X Fin (ℓ - ↑i.castSucc)])
+    (r : L) :
     (getSumcheckRoundPoly ℓ 𝓑 i h_poly).val.eval r =
     ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc - 1),
       MvPolynomial.eval (Fin.cons r x ∘ Fin.cast (by
@@ -318,6 +328,10 @@ lemma getSumcheckRoundPoly_eval_eq (i : Fin ℓ) (h_poly : ↥L⦃≤ 2⦄[X Fin
   have h_pos : 0 < (ℓ - ↑i.castSucc) := Nat.sub_pos_of_lt i.isLt
   have h_eq_nat : (ℓ - ↑i.castSucc) = ((ℓ - ↑i.castSucc) - 1) + 1 :=
     (Nat.sub_add_cancel (Nat.one_le_of_lt h_pos)).symm
+  have h_cast_rename {n m : ℕ} (h : n = m) (p : L[X Fin n]) :
+      cast (congrArg (fun k => L[X Fin k]) h) p = MvPolynomial.rename (Fin.cast h) p := by
+    cases h
+    simp
   unfold getSumcheckRoundPoly
   simp only [Polynomial.eval_finset_sum, Polynomial.eval_map]
   apply Finset.sum_congr rfl
@@ -341,12 +355,19 @@ lemma getSumcheckRoundPoly_eval_eq (i : Fin ℓ) (h_poly : ↥L⦃≤ 2⦄[X Fin
   · conv_lhs => rw [Fin.insertNth_zero]
     exact h_eval_eq.symm
   · rw [MvPolynomial.eval_eq_eval_mv_eval_finSuccEquivNth (p := 0)]
+    have h_eval_append :
+        MvPolynomial.eval (Fin.append (fun j : Fin 0 => j.elim0) x ∘
+          Fin.cast (Nat.zero_add _).symm) = MvPolynomial.eval x := by
+      ext j <;> simp [Fin.elim0_append]
+    rw [h_eval_append]
     simp only [Polynomial.eval_map]
-    stop
-    congr
-    ext j
-    simp [Fin.append, Fin.addCases]
-    split <;> simp
+    have h_cast_eq : cast (congrArg (fun k => L[X Fin k]) h_eq_nat) h_poly.val = h_val' := by
+      change cast (congrArg (fun k => L[X Fin k]) h_eq_nat) h_poly.val =
+        MvPolynomial.rename (Fin.cast h_eq_nat) h_poly.val
+      exact h_cast_rename h_eq_nat h_poly.val
+    exact congrArg
+      (fun p => Polynomial.eval₂ (MvPolynomial.eval x) r ((MvPolynomial.finSuccEquivNth L 0) p))
+      h_cast_eq
 
 lemma getSumcheckRoundPoly_sum_eq (i : Fin ℓ) (h : ↥L⦃≤ 2⦄[X Fin (ℓ - ↑i.castSucc)]) :
     (getSumcheckRoundPoly ℓ 𝓑 i h).val.eval (𝓑 0) + (getSumcheckRoundPoly ℓ 𝓑 i h).val.eval (𝓑 1) =
@@ -360,35 +381,36 @@ lemma getSumcheckRoundPoly_sum_eq (i : Fin ℓ) (h : ↥L⦃≤ 2⦄[X Fin (ℓ 
       invFun := Fin.cast hm.symm
       left_inv := fun _ => Fin.ext (by simp)
       right_inv := fun _ => Fin.ext (by simp) }
-  let e_pi := Equiv.piCongrLeft (fun _ => L) ψ
-  stop
-  have h_sum : ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc), MvPolynomial.eval x h.val =
-               ∑ y ∈ (univ.map 𝓑) ^ᶠ ((m - 1) + 1), MvPolynomial.eval (y ∘ ψ) h.val := by
+  let h_val' := MvPolynomial.rename ψ h.val
+  have h_eval_cons (a : L) (x : Fin (ℓ - ↑i.castSucc - 1) → L) :
+      MvPolynomial.eval (Fin.cons a x ∘ Fin.cast hm) h.val =
+        MvPolynomial.eval (Fin.cons a x) h_val' := by
+    rw [MvPolynomial.eval_rename]
+    rfl
+  have h_sum :
+      ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc), MvPolynomial.eval x h.val =
+        ∑ y ∈ (univ.map 𝓑) ^ᶠ (((ℓ - ↑i.castSucc) - 1) + 1), MvPolynomial.eval y h_val' := by
+    let e_pi : (Fin (ℓ - ↑i.castSucc) → L) ≃ (Fin (((ℓ - ↑i.castSucc) - 1) + 1) → L) :=
+      { toFun := fun x => x ∘ ψ.symm
+        invFun := fun y => y ∘ ψ
+        left_inv := by intro x; ext a; rfl
+        right_inv := by intro y; ext a; rfl }
     apply Finset.sum_equiv e_pi
     · intro x
-      simp only [Fintype.piFinset, Finset.mem_pi, Finset.mem_map, Finset.mem_univ, true_and]
-      exact fun h a => h (ψ a)
-    · intro y
-      simp only [Fintype.piFinset, Finset.mem_pi, Finset.mem_map, Finset.mem_univ, true_and]
-      exact fun h a => h (ψ.symm a)
+      simp only [Fintype.mem_piFinset, e_pi]
+      constructor
+      · intro hx a
+        exact hx (ψ.symm a)
+      · intro hx a
+        exact hx (ψ a)
     · intro x hx
-      congr
-      ext a
-      simp [e_pi]
-  change _ = ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc), MvPolynomial.eval x h.val
+      rw [MvPolynomial.eval_rename]
+      rfl
   erw [h_sum]
-  rw [Fintype.piFinset_succ]
-  simp only [Finset.map_univ_two, Fin.isValue, sum_insert, mem_singleton, Fin.reduceNe, ↓reduceIte,
-    sum_singleton]
+  rw [cube_eval_sum_cons, Finset.sum_map, Fin.sum_univ_two, ← Finset.sum_add_distrib]
   apply Finset.sum_congr rfl
   intro x hx
-  congr 1
-  · dsimp [ψ]
-    rw [MvPolynomial.eval_rename]
-    rfl
-  · dsimp [ψ]
-    rw [MvPolynomial.eval_rename]
-    rfl
+  rw [h_eval_cons (𝓑 0), h_eval_cons (𝓑 1)]
 
 /-- Helper to convert an index `k` into a vector of bits (as field elements). -/
 def bitsOfIndex {n : ℕ} (k : Fin (2 ^ n)) : Fin n → L :=
@@ -415,10 +437,52 @@ as the sum of its values on all Boolean vertices `bitsOfIndex x`, weighted by
 `multilinearWeight challenges x`, the standard multilinear “eq” polynomial.
 i.e., `t(challenges) = ∑ x ∈ {0, 1}, eq(challenges, x) * t(x)`.
 -/
-theorem multilinear_eval_eq_sum_bool_hypercube (challenges : Fin ℓ → L) (t : ↥L⦃≤ 1⦄[X Fin ℓ]) :
+lemma eval_eqPolynomial_bitsOfIndex [DecidableEq L] [IsDomain L]
+    (challenges : Fin ℓ → L) (k : Fin (2 ^ ℓ)) :
+    MvPolynomial.eval challenges (MvPolynomial.eqPolynomial (bitsOfIndex (L := L) k)) =
+      multilinearWeight (r := challenges) (i := k) := by
+  unfold MvPolynomial.eqPolynomial multilinearWeight bitsOfIndex
+  rw [MvPolynomial.eval_prod]
+  apply Finset.prod_congr rfl
+  intro j hj
+  by_cases hbit : k.val.testBit j.val
+  · simp [hbit]
+  · simp [hbit]
+
+theorem multilinear_eval_eq_sum_bool_hypercube [DecidableEq L] [IsDomain L]
+    (challenges : Fin ℓ → L) (t : ↥L⦃≤ 1⦄[X Fin ℓ]) :
     t.val.eval challenges = ∑ (x : Fin (2^ℓ)),
       (multilinearWeight (r := challenges) (i := x)) * (t.val.eval (bitsOfIndex x) : L) := by
-  sorry
+  have h_multilinear : MvPolynomial.MLE
+      (fun x : Fin ℓ → Fin 2 => MvPolynomial.eval (x : Fin ℓ → L) t.val) = t.val := by
+    exact (MvPolynomial.is_multilinear_iff_eq_evals_zeroOne (p := t.val)).mp t.property
+  calc
+    t.val.eval challenges = MvPolynomial.eval challenges
+        (MvPolynomial.MLE (fun x : Fin ℓ → Fin 2 => MvPolynomial.eval (x : Fin ℓ → L) t.val)) := by
+      exact congrArg (MvPolynomial.eval challenges) h_multilinear.symm
+    _ = ∑ x : Fin ℓ → Fin 2,
+          MvPolynomial.eval challenges (MvPolynomial.eqPolynomial (x : Fin ℓ → L)) *
+            MvPolynomial.eval (x : Fin ℓ → L) t.val := by
+      unfold MvPolynomial.MLE
+      simp only [MvPolynomial.eval_sum, MvPolynomial.eval_mul, MvPolynomial.eval_C]
+    _ = ∑ x : Fin (2 ^ ℓ),
+          multilinearWeight (r := challenges) (i := x) *
+            MvPolynomial.eval (bitsOfIndex x) t.val := by
+      apply Fintype.sum_equiv finFunctionFinEquiv
+      intro x
+      have hx_bits : (x : Fin ℓ → L) = bitsOfIndex (L := L) (finFunctionFinEquiv x) := by
+        rw [← coe_fin_pow_two_eq_bitsOfIndex (L := L) (k := finFunctionFinEquiv x)]
+        simp
+      calc
+        MvPolynomial.eval challenges (MvPolynomial.eqPolynomial (x : Fin ℓ → L)) *
+            MvPolynomial.eval (x : Fin ℓ → L) t.val
+          = MvPolynomial.eval challenges
+              (MvPolynomial.eqPolynomial (bitsOfIndex (L := L) (finFunctionFinEquiv x))) *
+              MvPolynomial.eval (bitsOfIndex (L := L) (finFunctionFinEquiv x)) t.val := by
+              rw [hx_bits]
+        _ = multilinearWeight (r := challenges) (i := finFunctionFinEquiv x) *
+              MvPolynomial.eval (bitsOfIndex (L := L) (finFunctionFinEquiv x)) t.val := by
+              rw [eval_eqPolynomial_bitsOfIndex (L := L) (ℓ := ℓ)]
 
 end Preliminaries
 

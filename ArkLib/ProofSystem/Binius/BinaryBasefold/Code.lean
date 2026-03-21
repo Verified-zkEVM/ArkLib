@@ -157,23 +157,26 @@ lemma fiberwiseDisagreementSet_steps_zero_eq_disagreementSet
     (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :
     fiberwiseDisagreementSet 𝔽q β i (steps := 0) (destIdx := destIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) f g =
     disagreementSet 𝔽q β (i := i) (destIdx := destIdx) (h_destIdx := h_destIdx) f g := by
-  -- iteratedQuotientMap at k = 0 evaluates intermediateNormVpoly (k=0) = X, i.e. the identity
-  -- have iqm_id : ∀ x : (sDomain 𝔽q β h_ℓ_add_R_rate) i,
-  --     iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate i (k := 0) (destIdx := destIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) x = x := by
-  --   intro x
-  --   apply Subtype.ext
-  --   simp only [iteratedQuotientMap, intermediateNormVpoly, Fin.foldl_zero, Polynomial.eval_X,
-  --     Subtype.coe_eta]
-  -- ext y
-  -- simp only [fiberwiseDisagreementSet, disagreementSet, Finset.mem_filter, Finset.mem_univ,
-  --   true_and, ne_eq]
-  -- constructor
-  -- · rintro ⟨x, hxy, hfg⟩
-  --   rw [iqm_id x] at hxy
-  --   exact hxy ▸ hfg
-  -- · intro hfg
-  --   exact ⟨y, iqm_id y, hfg⟩
-  sorry
+  have h_destIdx_eq_i : destIdx = i := Fin.ext h_destIdx
+  subst h_destIdx_eq_i
+  ext y
+  simp only [fiberwiseDisagreementSet, disagreementSet, Finset.mem_filter, Finset.mem_univ,
+    true_and, ne_eq]
+  constructor
+  · rintro ⟨x, hxy, hfg⟩
+    have hx_eq :
+        iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := destIdx) (k := 0)
+          (destIdx := destIdx) (h_destIdx := by simp) (h_destIdx_le := by omega) x = x := by
+      apply Subtype.ext
+      simp only [iteratedQuotientMap, intermediateNormVpoly, Fin.foldl_zero,
+        Polynomial.eval_X, Subtype.coe_eta]
+    rw [hx_eq] at hxy
+    exact hxy ▸ hfg
+  · intro hfg
+    refine ⟨y, ?_, hfg⟩
+    apply Subtype.ext
+    simp only [iteratedQuotientMap, intermediateNormVpoly, Fin.foldl_zero,
+      Polynomial.eval_X, Subtype.coe_eta]
 
 def pair_fiberwiseDistance (i : Fin r) {destIdx : Fin r} (steps : ℕ)
   (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
@@ -239,7 +242,46 @@ lemma fiberwiseClose_steps_zero_iff_UDRClose
     (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :
     fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i (steps := 0) (destIdx := destIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) f ↔
     UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i (h_i := by omega) f := by
-  sorry
+  have h_destIdx_eq_i : destIdx = i := Fin.ext h_destIdx
+  subst h_destIdx_eq_i
+  have h_dist_eq :
+      (fiberwiseDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := destIdx)
+        (steps := 0) (destIdx := destIdx) (h_destIdx := by simp)
+        (h_destIdx_le := by omega) (f := f) : ℕ∞) =
+        Δ₀(f, (↑(BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx) :
+          Set (OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx))) := by
+    let C_i := BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx
+    let S : Set ℕ := (fun (g : C_i) => hammingDist f g) '' Set.univ
+    let SENat : Set ℕ∞ := (fun (g : C_i) => (hammingDist f g : ℕ∞)) '' Set.univ
+    have hS_nonempty : S.Nonempty := Set.image_nonempty.mpr Set.univ_nonempty
+    have h_coe_sinfS_eq_sinfSENat : ↑(sInf S) = sInf SENat := by
+      rw [ENat.coe_sInf (hs := hS_nonempty)]
+      simp only [SENat, Set.image_univ, sInf_range]
+      simp only [S, Set.image_univ, iInf_range]
+    have h_distFromCode_eq_sInf :
+        Δ₀(f, (↑C_i :
+          Set (OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx))) =
+        sInf SENat := by
+      apply le_antisymm
+      · simp only [Code.distFromCode]
+        apply sInf_le_sInf
+        intro a ha
+        rcases (Set.mem_image _ _ _).mp ha with ⟨g, _, rfl⟩
+        exact ⟨g, g.property, le_refl _⟩
+      · simp only [Code.distFromCode]
+        apply le_sInf
+        intro d hd
+        rcases hd with ⟨v, hv_mem, h_dist_v_le_d⟩
+        have h_sInf_le_dist_v : sInf SENat ≤ ↑(hammingDist f v) := by
+          apply sInf_le
+          rw [Set.mem_image]
+          exact ⟨⟨v, hv_mem⟩, Set.mem_univ _, rfl⟩
+        exact h_sInf_le_dist_v.trans h_dist_v_le_d
+    unfold fiberwiseDistance
+    simp only [pair_fiberwiseDistance_steps_zero_eq_hammingDist]
+    rw [h_coe_sinfS_eq_sinfSENat, ← h_distFromCode_eq_sInf]
+  unfold fiberwiseClose UDRClose
+  rw [h_dist_eq]
 
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ [NeZero 𝓡] in
 lemma fiberwiseClose_congr_sourceDomain_index (sourceIdx₁ sourceIdx₂ : Fin r) {destIdx : Fin r} (steps : ℕ)
@@ -272,7 +314,19 @@ lemma constFunc_mem_BBFCode {i : Fin r} (h_i : i ≤ ℓ) (c : L) :
 
 lemma constFunc_UDRClose {i : Fin r} (h_i : i ≤ ℓ) (c : L) :
   UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i h_i (fun _ => c) := by
-  sorry
+  unfold UDRClose
+  have h_zero :
+      Code.distFromCode (fun _ => c)
+        ((↑(BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)) :
+          Set (OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)) = 0 := by
+    exact Code.distFromCode_of_mem
+      (C := ((↑(BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)) :
+        Set (OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)))
+      (u := fun _ => c)
+      (constFunc_mem_BBFCode 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_i c)
+  simp [h_zero]
+  rw [BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (h_i := h_i)]
+  omega
 
 end ConstantFunctions
 omit [CharP L 2] [DecidableEq 𝔽q] h_β₀_eq_1 in
@@ -346,7 +400,28 @@ def UDRCodeword (i : Fin r) (h_i : i ≤ ℓ)
 lemma UDRCodeword_constFunc_eq_self (i : Fin r) (h_i : i ≤ ℓ) (c : L) :
   UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) h_i (f := fun _ => c)
     (h_within_radius := by apply constFunc_UDRClose) = fun _ => c := by
-  sorry
+  unfold UDRCodeword
+  have h_within :
+      Δ₀((fun _ => c),
+        ((↑(BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)) :
+          Set (OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i))) ≤
+      ↑(Code.uniqueDecodingRadius
+        (((↑(BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)) :
+          Set (OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)))) := by
+    have h_udr :
+        UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i h_i (fun _ => c) :=
+      constFunc_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_i c
+    rw [UDRClose_iff_within_UDR_radius] at h_udr
+    exact h_udr
+  let h_ExistsUnique := (Code.UDR_close_iff_exists_unique_close_codeword
+    (C := ((↑(BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)) :
+      Set (OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)))
+    (fun _ => c)).mp h_within
+  exact ((Classical.choose_spec h_ExistsUnique).2 (fun _ => c) (by
+    constructor
+    · exact constFunc_mem_BBFCode 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_i c
+    · rw [hammingDist_self]
+      simp)).symm
 
 omit [CharP L 2] [DecidableEq 𝔽q] h_β₀_eq_1 in
 lemma UDRCodeword_mem_BBF_Code (i : Fin r) (h_i : i ≤ ℓ)
