@@ -1174,6 +1174,38 @@ lemma iteratedQuotientMap_congr_k
       (i := i) (k := k₂) (h_destIdx := h_destIdx₂) (h_destIdx_le := h_destIdx_le) x := by
   subst hk; rfl
 
+omit [DecidableEq 𝔽q] hF₂ in
+/-- Composing one quotient step with a `steps`-step quotient map equals the
+`steps + 1` step quotient map. -/
+theorem iteratedQuotientMap_succ_comp
+    (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ)
+    (h_midIdx : midIdx.val = i.val + 1)
+    (h_destIdx : destIdx.val = i.val + (steps + 1))
+    (h_destIdx_le : destIdx ≤ ℓ)
+    (x : sDomain 𝔽q β h_ℓ_add_R_rate i) :
+    iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+      (i := i) (k := steps + 1) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) x
+    =
+    iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+      (i := midIdx) (k := steps)
+      (h_destIdx := by omega)
+      (h_destIdx_le := h_destIdx_le)
+      (iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+        (i := i) (k := 1) (h_destIdx := h_midIdx) (h_destIdx_le := by omega) x) := by
+  apply Subtype.ext
+  simp only [iteratedQuotientMap]
+  have h_poly_comp := intermediateNormVpoly_comp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (i := i) (destIdx := midIdx) (k := 1) (l := steps)
+    (h_destIdx := by simpa using h_midIdx) (h_k := by omega) (h_l := by omega)
+  have h_poly_comp' :
+      intermediateNormVpoly 𝔽q β h_ℓ_add_R_rate (i := i) (k := steps + 1) (h_k := by omega) =
+        (intermediateNormVpoly 𝔽q β h_ℓ_add_R_rate (i := midIdx) (k := steps)
+          (h_k := by omega)).comp
+        (intermediateNormVpoly 𝔽q β h_ℓ_add_R_rate (i := i) (k := 1) (h_k := by omega)) := by
+    simpa [Nat.add_comm] using h_poly_comp
+  rw [h_poly_comp']
+  simp only [Polynomial.eval_comp]
+
 omit [DecidableEq 𝔽q] [NeZero ℓ] hF₂ h_β₀_eq_1 in
 /-- The evaluation of qMap on an element from sDomain i belongs to sDomain (i+1).
 This is a key property that qMap maps between successive domains. -/
