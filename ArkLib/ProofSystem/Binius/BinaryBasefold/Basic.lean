@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Code
+import ArkLib.ProofSystem.Binius.BinaryBasefold.Compliance
 
 /- ## Fundamental OracleReduction-related defintions for protocol specifications -/
 
@@ -502,6 +502,42 @@ lemma rounds_sub_steps_lt : ℓ - ϑ < ℓ :=
 lemma ϑ_sub_one_le_self : ϑ - 1 < ϑ := by
   have lt_0: ϑ > 0 := by exact Nat.pos_of_neZero ϑ
   exact Nat.sub_one_lt_of_lt lt_0
+
+omit [NeZero ℓ] in
+@[simp]
+lemma k_mul_ϑ_lt_ℓ {k : Fin (ℓ / ϑ)} :
+    ↑k * ϑ < ℓ := by
+  have h_mul_eq : (ℓ / ϑ) * ϑ = ℓ := Nat.div_mul_cancel hdiv.out
+  calc
+    ↑k * ϑ < (ℓ / ϑ) * ϑ := Nat.mul_lt_mul_of_pos_right k.isLt (NeZero.pos ϑ)
+    _ = ℓ := h_mul_eq
+
+omit [NeZero ℓ] [NeZero ϑ] in
+@[simp]
+lemma k_succ_mul_ϑ_le_ℓ {k : Fin (ℓ / ϑ)} : (k.val + 1) * ϑ ≤ ℓ := by
+  have h_mul_eq : (ℓ / ϑ) * ϑ = ℓ := Nat.div_mul_cancel hdiv.out
+  calc
+    (k.val + 1) * ϑ ≤ (ℓ / ϑ) * ϑ := Nat.mul_le_mul_right (k := ϑ) (h := by omega)
+    _ = ℓ := h_mul_eq
+
+omit [NeZero ℓ] [NeZero ϑ] in
+@[simp]
+lemma k_succ_mul_ϑ_le_ℓ_₂ {k : Fin (ℓ / ϑ)} : k.val * ϑ + ϑ ≤ ℓ := by
+  conv_lhs => enter [2]; rw [← Nat.one_mul ϑ]
+  rw [← Nat.add_mul]
+  exact k_succ_mul_ϑ_le_ℓ
+
+variable {r 𝓡 : ℕ} [NeZero r] [NeZero 𝓡]
+
+omit [NeZero r] [NeZero ℓ] [NeZero 𝓡] in
+@[simp]
+lemma lt_r_of_le_ℓ {h_ℓ_add_R_rate : ℓ + 𝓡 < r} {x : ℕ} (h : x ≤ ℓ) : x < r := by
+  omega
+
+omit [NeZero r] [NeZero ℓ] [NeZero 𝓡] in
+@[simp]
+lemma lt_r_of_lt_ℓ {h_ℓ_add_R_rate : ℓ + 𝓡 < r} {x : ℕ} (h : x < ℓ) : x < r := by
+  omega
 
 @[simp] -- main lemma for bIdx: Fin (ℓ / ϑ - 1) bounds
 lemma bIdx_mul_ϑ_add_x_lt_ℓ_sub_ϑ (bIdx : Fin (ℓ / ϑ - 1)) (x : ℕ) {hx : x ≤ ϑ} :
