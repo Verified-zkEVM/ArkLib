@@ -132,10 +132,14 @@ theorem embedSum_splitSum {m : ℕ} {n : Fin m → ℕ} (k : Fin (vsum n)) :
   induction m with
   | zero => exact Fin.elim0 k
   | succ m ih =>
-    simp [embedSum]
-    split
-    next i j j' h1 h2 => sorry
-    next i j j' h' j'' h1 h2 => sorry
+    rw [splitSum_succ]
+    induction k using Fin.addCases with
+    | left j =>
+      rw [Fin.dappend_left]
+      simp [embedSum_succ_zero]
+    | right j =>
+      rw [Fin.dappend_right]
+      simp [embedSum_succ_succ, ih]
 
 @[simp]
 theorem splitSum_embedSum {m : ℕ} {n : Fin m → ℕ} (i : Fin m) (j : Fin (n i)) :
@@ -143,10 +147,19 @@ theorem splitSum_embedSum {m : ℕ} {n : Fin m → ℕ} (i : Fin m) (j : Fin (n 
   induction m with
   | zero => exact Fin.elim0 i
   | succ m ih =>
-    simp [embedSum, splitSum]
-    split
-    next j => simp
-    next j => sorry
+    induction i using Fin.cases with
+    | zero =>
+      simp [embedSum_succ_zero, splitSum_succ, Fin.dappend_left]
+    | succ i =>
+      simp [embedSum_succ_succ, splitSum_succ, Fin.dappend_right]
+      have := ih (n := n ∘ Fin.succ) i j
+      rw [this]
+      simp
+
+@[simp]
+theorem splitSum_embedSum_fst {m : ℕ} {n : Fin m → ℕ} (i : Fin m) (j : Fin (n i)) :
+    (splitSum (embedSum i j)).1 = i :=
+  congr_arg Sigma.fst (splitSum_embedSum i j)
 
 def finSum'FinEquiv' {m : ℕ} {n : Fin m → ℕ} : (i : Fin m) × Fin (n i) ≃ Fin (vsum n) where
   toFun := fun ij => embedSum ij.1 ij.2
@@ -207,6 +220,7 @@ theorem dflatten_two_eq_append {n : Fin 2 → ℕ} {motive : (k : Fin (vsum n)) 
 --   | zero => exact Fin.elim0 k
 --   | succ m ih => sorry
 
+set_option maxHeartbeats 200000 in
 @[simp]
 theorem dflatten_splitSum {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum n)) → Sort*}
     (v : (k : Fin (vsum n)) → motive k) (k : Fin (vsum n)) :
@@ -214,7 +228,14 @@ theorem dflatten_splitSum {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum
   induction m with
   | zero => exact Fin.elim0 k
   | succ m ih =>
-    simp; sorry
+    induction k using Fin.addCases with
+    | left j =>
+      simp [dflatten_succ, embedSum_succ_zero]
+    | right j =>
+      simp [dflatten_succ, embedSum_succ_succ]
+      exact ih (n := n ∘ Fin.succ)
+        (motive := fun k => motive (Fin.natAdd (n 0) k))
+        (fun k => v (Fin.natAdd (n 0) k)) j
 
 @[simp]
 theorem dflatten_embedSum {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum n)) → Sort*}

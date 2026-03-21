@@ -25,9 +25,9 @@ This module defines the protocol specs, and the following instance types:
 
 - **OracleSpec.Inhabited**: For `[]ₒ` and for `[(pSpec ...).Message]ₒ` for every pSpec above.
 
-- **OracleSpec.Fintype** (some via sorry): For `[]ₒ`, and for various `[pSpec.Challenge]ₒ` specs.
+- **OracleSpec.Fintype**: For `[]ₒ`, and for various `[pSpec.Challenge]ₒ` specs.
 
-- **Fintype / Inhabited** (some via sorry): For individual `(pSpec ...).Challenge i` types where needed.
+- **Fintype / Inhabited**: For individual `(pSpec ...).Challenge i` types where needed.
 
 **NOTE**: For `∀ i, OracleInterface ((pSpec ...).Challenge i)`, use
   `ProtocolSpec.challengeOracleInterface` to avoid conflict.
@@ -145,46 +145,114 @@ instance instFintypeOracleSpecEmpty : (([]ₒ : OracleSpec PEmpty).Fintype) wher
 /-! ## OracleSpec.Inhabited for all pSpec.Message -/
 
 instance instInhabitedPSpecBatchingMessage : [(pSpecBatching κ L K).Message]ₒ.Inhabited := by
-  sorry
+  refine { inhabited_B := ?_ }
+  intro x
+  rcases x with ⟨⟨i, hi⟩, q⟩
+  have h0 : i = 0 := by
+    fin_cases i
+    · rfl
+    · simp [pSpecBatching] at hi
+  subst h0
+  cases q
+  change Inhabited (TensorAlgebra K L)
+  exact ⟨0⟩
 
-instance instInhabitedPSpecSumcheckRoundMessage : [(pSpecSumcheckRound (L:=L)).Message]ₒ.Inhabited := by
-  sorry
+instance instInhabitedPSpecSumcheckRoundMessage :
+    [(pSpecSumcheckRound (L:=L)).Message]ₒ.Inhabited := by
+  letI : Inhabited L := ⟨0⟩
+  refine { inhabited_B := ?_ }
+  intro x
+  rcases x with ⟨⟨i, hi⟩, q⟩
+  have h0 : i = 0 := by
+    fin_cases i
+    · rfl
+    · simp [pSpecSumcheckRound] at hi
+  subst h0
+  cases q
+  change Inhabited (L⦃≤ 2⦄[X])
+  infer_instance
 
-instance instInhabitedPSpecSumcheckLoopMessage : [(pSpecSumcheckLoop (L:=L) ℓ').Message]ₒ.Inhabited := by
-  sorry
-
-instance instInhabitedPSpecFinalSumcheckMessage : [(pSpecFinalSumcheck (L:=L)).Message]ₒ.Inhabited := by
-  sorry
-
-instance instInhabitedPSpecCoreInteractionMessage :
-    [(pSpecCoreInteraction (L:=L) (ℓ':=ℓ')).Message]ₒ.Inhabited := by
-  sorry
-
-instance instInhabitedPSpecLargeFieldReductionMessage :
-    [(pSpecLargeFieldReduction κ (L:=L) (K:=K) (ℓ':=ℓ')).Message]ₒ.Inhabited := by
-  sorry
-
-instance instInhabitedFullPSpecMessage :
-    [(fullPspec κ (L:=L) (K:=K) (ℓ':=ℓ') mlIOPCS).Message]ₒ.Inhabited := by
-  sorry
+instance instInhabitedPSpecFinalSumcheckMessage :
+    [(pSpecFinalSumcheck (L:=L)).Message]ₒ.Inhabited := by
+  letI : Inhabited L := ⟨0⟩
+  refine { inhabited_B := ?_ }
+  intro x
+  rcases x with ⟨⟨i, hi⟩, q⟩
+  have h0 : i = 0 := Fin.eq_zero i
+  subst h0
+  cases q
+  change Inhabited L
+  infer_instance
 
 /-! ## OracleSpec.Fintype for challenge specs -/
 
 instance instFintypePSpecSumcheckRoundChallenge :
     ([(pSpecSumcheckRound (L:=L)).Challenge]ₒ).Fintype := by
-  sorry
+  refine { fintype_B := ?_ }
+  intro x
+  rcases x with ⟨⟨i, hi⟩, q⟩
+  have h1 : i = 1 := by
+    fin_cases i
+    · simp [pSpecSumcheckRound] at hi
+    · rfl
+  subst h1
+  cases q
+  change Fintype L
+  infer_instance
 
 instance instInhabitedPSpecSumcheckRoundChallenge :
     ([(pSpecSumcheckRound (L:=L)).Challenge]ₒ).Inhabited := by
-  sorry
+  refine { inhabited_B := ?_ }
+  intro x
+  rcases x with ⟨⟨i, hi⟩, q⟩
+  have h1 : i = 1 := by
+    fin_cases i
+    · simp [pSpecSumcheckRound] at hi
+    · rfl
+  subst h1
+  cases q
+  change Inhabited L
+  exact ⟨0⟩
+
+instance instFintypePSpecBatching_AllChallenges :
+    ∀ i, Fintype ((pSpecBatching (κ := κ) (L := L) (K := K)).Challenge i)
+  | ⟨0, h0⟩ => nomatch h0
+  | ⟨1, _⟩ => by
+    simp only [Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_fin_one]
+    infer_instance
+
+instance instInhabitedPSpecBatching_AllChallenges :
+    ∀ i, Inhabited ((pSpecBatching (κ := κ) (L := L) (K := K)).Challenge i)
+  | ⟨0, h0⟩ => nomatch h0
+  | ⟨1, _⟩ => ⟨fun _ => 0⟩
 
 instance instFintypePSpecBatchingChallenge :
     ([(pSpecBatching κ L K).Challenge]ₒ).Fintype := by
-  sorry
+  refine { fintype_B := ?_ }
+  intro x
+  rcases x with ⟨⟨i, hi⟩, q⟩
+  have h1 : i = 1 := by
+    fin_cases i
+    · simp [pSpecBatching] at hi
+    · rfl
+  subst h1
+  cases q
+  change Fintype (Fin κ → L)
+  infer_instance
 
 instance instInhabitedPSpecBatchingChallenge :
     ([(pSpecBatching κ L K).Challenge]ₒ).Inhabited := by
-  sorry
+  refine { inhabited_B := ?_ }
+  intro x
+  rcases x with ⟨⟨i, hi⟩, q⟩
+  have h1 : i = 1 := by
+    fin_cases i
+    · simp [pSpecBatching] at hi
+    · rfl
+  subst h1
+  cases q
+  change Inhabited (Fin κ → L)
+  exact ⟨fun _ => 0⟩
 
 
 
@@ -196,27 +264,11 @@ instance instInhabitedPSpecFinalSumcheck_AllChallenges : ∀ i, Inhabited ((pSpe
 
 instance instFintypePSpecFinalSumcheckChallenge :
     ([(pSpecFinalSumcheck (L:=L)).Challenge]ₒ).Fintype := by
-  sorry
+  infer_instance
 
 instance instInhabitedPSpecFinalSumcheckChallenge :
     ([(pSpecFinalSumcheck (L:=L)).Challenge]ₒ).Inhabited := by
-  sorry
-
--- TODO: instances for TensorAlgebra K L
-
-instance instFintypePSpecBatching_AllChallenges :
-    ∀ i, Fintype ((pSpecBatching (κ := κ) (L := L) (K := K)).Challenge i)
-  | ⟨0, h0⟩ => nomatch h0
-  | ⟨1, _⟩ => by
-    simp only [Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_fin_one]
-    sorry
-
-instance instInhabitedPSpecBatching_AllChallenges :
-    ∀ i, Inhabited ((pSpecBatching (κ := κ) (L := L) (K := K)).Challenge i)
-  | ⟨0, h0⟩ => nomatch h0
-  | ⟨1, _⟩ => by
-    simp only [Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_fin_one]
-    sorry
+  infer_instance
 
 end Pspec
 
