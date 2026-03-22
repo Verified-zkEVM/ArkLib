@@ -220,6 +220,11 @@ def batchingStepLogic :
 
 /-! ## Strong Completeness Theorem -/
 
+section CanonicalB
+
+variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
+variable [h_B01 : Fact (𝓑 0 = 0 ∧ 𝓑 1 = 1)]
+
 /-- The Main Lemma: Batching Phase satisfies Strong Completeness.
 
 This proves that for any valid input satisfying `batchingInputRelation`, the honest
@@ -277,7 +282,9 @@ lemma batchingStep_is_logic_complete :
     constructor
     · -- ⊢ sumcheckConsistencyProp verifierStmtOut.sumcheck_target proverWitOut.H
         exact batching_target_consistency κ L K β ℓ ℓ' h_l (𝓑:=𝓑) witIn.t'
-          (transcript.messages ⟨0, rfl⟩) r_batching verifierStmtOut.ctx
+          (transcript.messages ⟨0, rfl⟩) verifierStmtOut.ctx
+          (by
+            simpa [step, batchingStepLogic, h_t'_eq_t_packed] using h_s_hat_eq)
     · constructor
       · -- ⊢ witnessStructuralInvariant κ L K β ℓ ℓ' h_l verifierStmtOut proverWitOut
         rfl
@@ -900,6 +907,8 @@ theorem batchingReduction_perfectCompleteness (hInit : NeverFail init) :
       · rw [verOStmtOut_eq, prvOStmtOut_eq];
         exact h_agree.2
 
+end CanonicalB
+
 #check ProtocolSpec.challengeOracleInterface
 
 /-- Repacking the unpacked polynomial is identity for multilinear `t'`. -/
@@ -1007,10 +1016,16 @@ lemma batchingMismatchPoly_nonzero_of_embed_ne
       (decompose_tensor_algebra_rows (L := L) (K := K) (β := β) msg0) ≠
       (decompose_tensor_algebra_rows (L := L) (K := K) (β := β) s_bar) := by
     intro h_eq
-    have h_repr_eq : (β.baseChange L).repr msg0 = (β.baseChange L).repr s_bar := by
+    letI rightAlgebra : Algebra L (TensorAlgebra K L) := by
+      exact Algebra.TensorProduct.rightAlgebra
+    letI rightModule : Module L (TensorAlgebra K L) := rightAlgebra.toModule
+    have h_repr_eq :
+        (Basis.baseChangeRight (b := β) (Right := L)).repr msg0 =
+          (Basis.baseChangeRight (b := β) (Right := L)).repr s_bar := by
       ext u
       exact congrFun h_eq u
-    have hs : msg0 = s_bar := (β.baseChange L).repr.injective h_repr_eq
+    have hs : msg0 = s_bar :=
+      (Basis.baseChangeRight (b := β) (Right := L)).repr.injective h_repr_eq
     have hs' : s_bar = msg0 := by
       exact hs.symm
     dsimp [s_bar] at hs'
@@ -1056,9 +1071,14 @@ lemma batchingMismatchPoly_nonzero_of_ne
       (decompose_tensor_algebra_rows (L := L) (K := K) (β := β) msg0) ≠
       (decompose_tensor_algebra_rows (L := L) (K := K) (β := β) s_bar) := by
     intro h_eq
-    have h_repr_eq : (β.baseChange L).repr msg0 = (β.baseChange L).repr s_bar := by
+    letI rightAlgebra : Algebra L (TensorAlgebra K L) := by
+      exact Algebra.TensorProduct.rightAlgebra
+    letI rightModule : Module L (TensorAlgebra K L) := rightAlgebra.toModule
+    have h_repr_eq :
+        (Basis.baseChangeRight (b := β) (Right := L)).repr msg0 =
+          (Basis.baseChangeRight (b := β) (Right := L)).repr s_bar := by
       ext u; exact congrFun h_eq u
-    exact h_ne ((β.baseChange L).repr.injective h_repr_eq)
+    exact h_ne ((Basis.baseChangeRight (b := β) (Right := L)).repr.injective h_repr_eq)
   have h_diff_ne :
       (fun u : Fin κ → Fin 2 =>
         decompose_tensor_algebra_rows (L := L) (K := K) (β := β) msg0 u -
@@ -1082,6 +1102,11 @@ lemma batchingMismatchPoly_nonzero_of_ne
     simp [batchingMismatchPoly, MvPolynomial.MLE_eval_zeroOne]
   rw [hu_eval_mle] at hu_eval_zero
   exact hu_eval_zero
+
+section CanonicalB
+
+variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
+variable [h_B01 : Fact (𝓑 0 = 0 ∧ 𝓑 1 = 1)]
 
 /-- From `KState 2` truth, derive equality of the two `compute_s0` forms. -/
 lemma batching_compute_eq_from_hafter
@@ -1123,11 +1148,11 @@ lemma batching_compute_eq_from_hafter
     exact batching_target_consistency (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ)
       (ℓ' := ℓ') (h_l := h_l) (𝓑 := 𝓑) (t' := witMid.t')
       (msg0 := embedded_MLP_eval κ L K ℓ ℓ' h_l witMid.t' stmtOStmtIn.1.t_eval_point)
-      (r_batching := y)
       (ctx := { t_eval_point := stmtOStmtIn.1.t_eval_point,
                 original_claim := stmtOStmtIn.1.original_claim,
                 s_hat := msg0,
                 r_batching := y })
+      rfl
   unfold sumcheckConsistencyProp at h_msg h_bar
   exact h_msg.trans h_bar.symm
 
@@ -1408,6 +1433,8 @@ theorem batchingOracleVerifier_rbrKnowledgeSoundness :
       (impl := impl) (init := init)
   · -- Prove: ∑' x, [=x|transcript computation] ≤ 1
     apply tsum_probOutput_le_one
+
+end CanonicalB
 
 end BatchingPhase
 end Binius.RingSwitching

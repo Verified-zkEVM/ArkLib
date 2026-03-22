@@ -1402,6 +1402,36 @@ private lemma extracted_mle_polynomial_eq
   exact polynomialFromNovelCoeffs_eq_self_of_monomialToNovelCoeffs
     (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (P := P) hP
 
+private lemma coeff_polynomialFromNovelCoeffsF₂_eq_novelToMonomialCoeffs
+    [NeZero 𝓡] (coeffs : Fin (2 ^ ℓ) → L) :
+    (fun k =>
+      (↑(polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) coeffs) : L[X]).coeff k.val) =
+      AdditiveNTT.novelToMonomialCoeffs 𝔽q β ℓ (by omega) coeffs := by
+  funext k
+  change
+    (AdditiveNTT.polynomialFromNovelCoeffs 𝔽q β ℓ (by omega) coeffs).coeff k.val =
+      AdditiveNTT.novelToMonomialCoeffs 𝔽q β ℓ (by omega) coeffs k
+  unfold AdditiveNTT.polynomialFromNovelCoeffs AdditiveNTT.novelToMonomialCoeffs
+  simp only [finset_sum_coeff, Polynomial.coeff_C_mul]
+  have h_matrix_def :
+      ∀ j : Fin (2 ^ ℓ),
+        (Xⱼ 𝔽q β ℓ (by omega) j).coeff k.val =
+          (AdditiveNTT.changeOfBasisMatrix 𝔽q β ℓ (by omega)) j k := by
+    intro j
+    dsimp only [AdditiveNTT.changeOfBasisMatrix, AdditiveNTT.toCoeffsVec,
+      AdditiveNTT.basisVectors, LinearMap.coe_mk, AddHom.coe_mk]
+  simp_rw [h_matrix_def]
+  dsimp only [Matrix.vecMul, dotProduct]
+
+private lemma monomialToNovelCoeffs_polynomialFromNovelCoeffsF₂
+    [NeZero 𝓡] (coeffs : Fin (2 ^ ℓ) → L) :
+    AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega)
+      (fun k =>
+        (↑(polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) coeffs) : L[X]).coeff k.val) = coeffs := by
+  rw [coeff_polynomialFromNovelCoeffsF₂_eq_novelToMonomialCoeffs
+    (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (coeffs := coeffs)]
+  exact AdditiveNTT.novelToMonomial_monomialToNovel_inverse 𝔽q β ℓ (by omega) coeffs
+
 private lemma closest_eq_of_le_udr
     {ι : Type*} [Fintype ι] (C : Set (ι → L)) [Nonempty C] (u : ι → L) {v : ι → L}
     (hv : v ∈ C)
@@ -1480,7 +1510,164 @@ lemma extractMLP_eq_some_iff_pair_UDRClose (f : (sDomain 𝔽q β h_ℓ_add_R_ra
   · intro h_close
     unfold extractMLP
     simp only [Fin.coe_ofNat_eq_mod, zero_mod, Nat.sub_zero, ge_iff_le]
-    sorry
+    let domain_size := Fintype.card (sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
+    let domain_to_fin : (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨0, by omega⟩ ≃ Fin domain_size := by
+      change (sDomain 𝔽q β h_ℓ_add_R_rate (0 : Fin r)) ≃
+        Fin (Fintype.card (sDomain 𝔽q β h_ℓ_add_R_rate (0 : Fin r)))
+      rw [sDomain_card 𝔽q β h_ℓ_add_R_rate
+        (i := (0 : Fin r))
+        (h_i := Sdomain_bound (𝓡 := 𝓡) (x := 0) (Nat.zero_le ℓ)), hF₂.out]
+      have h_equiv := sDomainFinEquiv 𝔽q β h_ℓ_add_R_rate
+        (i := (0 : Fin r))
+        (h_i := Sdomain_bound (𝓡 := 𝓡) (x := 0) (Nat.zero_le ℓ))
+      exact h_equiv
+    let ωs : Fin domain_size → L := fun j => (domain_to_fin.symm j).val
+    let f_vals : Fin domain_size → L := fun j => f (domain_to_fin.symm j)
+    let P₀ : L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
+      (fun ω => tpoly.val.eval (bitsOfIndex ω))
+    let g₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (domainIdx := (0 : Fin r)) (P := P₀)
+    let C₀ := (↑(BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r)) :
+      Set ((sDomain 𝔽q β h_ℓ_add_R_rate) (0 : Fin r) → L))
+    have h_domain_size : domain_size = 2 ^ (ℓ + 𝓡) := by
+      dsimp [domain_size]
+      change Fintype.card (sDomain 𝔽q β h_ℓ_add_R_rate (0 : Fin r)) = 2 ^ (ℓ + 𝓡)
+      rw [sDomain_card 𝔽q β h_ℓ_add_R_rate
+        (i := (0 : Fin r))
+        (h_i := Sdomain_bound (𝓡 := 𝓡) (x := 0) (Nat.zero_le ℓ)), hF₂.out]
+      simp
+    have h_g₀_mem : g₀ ∈ C₀ := by
+      dsimp [g₀, C₀]
+      exact (getBBF_Codeword_of_poly 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := (0 : Fin r)) (h_i := Nat.zero_le ℓ) P₀).property
+    haveI : Nonempty C₀ := ⟨⟨g₀, h_g₀_mem⟩⟩
+    haveI : NeZero ‖C₀‖₀ := by
+      refine ⟨?_⟩
+      have h_code_distance : ‖C₀‖₀ = 2 ^ (ℓ + 𝓡) - 2 ^ ℓ + 1 := by
+        dsimp [C₀]
+        exact BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (i := (0 : Fin r)) (h_i := Nat.zero_le ℓ)
+      rw [h_code_distance]
+      omega
+    have h_close_udr :
+        Δ₀(f, g₀) ≤ Code.uniqueDecodingRadius (C := C₀) := by
+      dsimp [g₀, C₀] at h_close ⊢
+      rw [Code.UDRClose_iff_two_mul_proximity_lt_d_UDR (C := C₀)]
+      exact h_close
+    have h_pick_eq :
+        (Code.pickClosestCodeword_of_Nonempty_Code C₀ f : C₀) = ⟨g₀, h_g₀_mem⟩ := by
+      exact closest_eq_of_le_udr (C := C₀) (u := f) h_g₀_mem h_close_udr
+    have h_dist_eq :
+        Δ₀(f, C₀) = (Δ₀(f, g₀) : ENat) := by
+      rw [Code.distFromPickClosestCodeword_of_Nonempty_Code (C := C₀) (u := f)]
+      rw [h_pick_eq]
+    have h_dist_eq_nat : (Δ₀(f, C₀)).toNat = Δ₀(f, g₀) := by
+      rw [h_dist_eq]
+      simp
+    have h_P₀_natDegree_lt : (↑P₀ : L[X]).natDegree < 2 ^ ℓ := by
+      by_cases hP₀_zero : (↑P₀ : L[X]) = 0
+      · rw [hP₀_zero, Polynomial.natDegree_zero]
+        exact pow_pos (by decide : 0 < 2) _
+      · have hP₀_deg_lt : (↑P₀ : L[X]).degree < 2 ^ ℓ := by
+          have hP₀_mem : (↑P₀ : L[X]) ∈ L[X]_(2 ^ ℓ) := P₀.property
+          rw [Polynomial.mem_degreeLT] at hP₀_mem
+          exact hP₀_mem
+        exact (Polynomial.natDegree_lt_iff_degree_lt (p := (↑P₀ : L[X]))
+          (n := 2 ^ ℓ) (hp := hP₀_zero)).2 hP₀_deg_lt
+    have h_decoder_succeeds :
+        BerlekampWelch.decoder (Δ₀(f, C₀)).toNat (2 ^ ℓ) ωs f_vals = some (↑P₀ : L[X]) := by
+      apply BerlekampWelch.decoder_eq_some
+      · have h_le :
+            2 * (Δ₀(f, C₀)).toNat ≤ domain_size - 2 ^ ℓ := by
+          rw [h_dist_eq_nat]
+          have h_close' := h_close
+          dsimp [pair_UDRClose, g₀] at h_close'
+          rw [BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+            (i := (0 : Fin r)) (h_i := Nat.zero_le ℓ)] at h_close'
+          rw [h_domain_size]
+          exact Nat.le_of_lt_succ h_close'
+        exact Nat.lt_succ_of_le h_le
+      · rw [h_domain_size]
+        exact Nat.pow_le_pow_right (by omega) (Nat.le_add_right ℓ 𝓡)
+      · exact Function.Injective.comp Subtype.val_injective (Equiv.injective domain_to_fin.symm)
+      · exact h_P₀_natDegree_lt
+      · have h_functions_eq :
+            (fun a => Polynomial.eval a (↑P₀ : L[X])) ∘ ωs = g₀ ∘ domain_to_fin.symm := by
+          ext j
+          simp only [Function.comp_apply, ωs, g₀, polyToOracleFunc]
+        rw [h_functions_eq]
+        calc
+          hammingDist f_vals (g₀ ∘ domain_to_fin.symm)
+              ≤ hammingDist f g₀ := by
+                apply hammingDist_le_of_outer_comp_injective f g₀ domain_to_fin.symm
+                exact Equiv.injective domain_to_fin.symm
+          _ = (Δ₀(f, C₀)).toNat := by
+                exact h_dist_eq_nat.symm
+    have h_not_invalid :
+        ¬((↑P₀ : L[X]).natDegree ≥ 2 ^ ℓ ∨
+          ¬pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+            (i := (0 : Fin r)) (h_i := by simp) (f := f) (g := g₀)) := by
+      intro h_invalid
+      rcases h_invalid with h_deg_ge | h_not_close
+      · exact (not_le_of_gt h_P₀_natDegree_lt) h_deg_ge
+      · exact h_not_close h_close
+    let decodePoly : L[X] → MultilinearPoly L ℓ := fun P =>
+      ⟨MvPolynomial.MLE (fun w =>
+          AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega)
+            (fun i => P.coeff i.val)
+            (Nat.binaryFinMapToNat
+              (n := ℓ) (m := fun i => (w i).val)
+              (h_binary := by
+                intro j
+                change ((w j : Fin 2) : ℕ) ≤ 1
+                exact Nat.le_of_lt_succ (w j).isLt))),
+        MLE_mem_restrictDegree _⟩
+    have h_not_invalid' := h_not_invalid
+    dsimp [g₀] at h_not_invalid'
+    have h_target :
+        ((match BerlekampWelch.decoder (Δ₀(f, C₀)).toNat (2 ^ ℓ) ωs f_vals with
+        | none => none
+        | some P =>
+            if h : P.natDegree ≥ 2 ^ ℓ ∨
+                ¬pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+                  (i := (0 : Fin r)) (h_i := by simp) (f := f)
+                  (g := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+                    (domainIdx := (0 : Fin r)) (P := P))
+            then none
+            else
+              some (decodePoly P)) = some tpoly) := by
+      rw [h_decoder_succeeds]
+      simp only [h_not_invalid']
+      split_ifs with h_false
+      · contradiction
+      apply congrArg Option.some
+      dsimp [decodePoly]
+      apply (MvPolynomial.MLEEquivFin (R := L) (n := ℓ)).injective
+      funext ω
+      dsimp [MvPolynomial.MLEEquivFin, MvPolynomial.MLEEquiv]
+      have hω : finFunctionFinEquiv (finFunctionFinEquiv.symm ω) = ω := by simp
+      rw [← hω]
+      rw [Equiv.piCongr_apply_apply (a := finFunctionFinEquiv.symm ω)]
+      rw [Equiv.piCongr_apply_apply (a := finFunctionFinEquiv.symm ω)]
+      simp only [Equiv.refl_apply, MvPolynomial.MLE_eval_zeroOne]
+      rw [monomialToNovelCoeffs_polynomialFromNovelCoeffsF₂
+        (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (coeffs := fun ω => tpoly.val.eval (bitsOfIndex ω))]
+      have h_index :
+          Nat.binaryFinMapToNat
+            (n := ℓ)
+            (m := fun i => ((finFunctionFinEquiv.symm ω i : Fin 2) : ℕ))
+            (h_binary := by
+              intro j
+              change ((finFunctionFinEquiv.symm ω j : Fin 2) : ℕ) ≤ 1
+              exact Nat.le_of_lt_succ (finFunctionFinEquiv.symm ω j).isLt) = ω := by
+        exact binaryFinMapToNat_invFun_eq (ℓ := ℓ) ω
+      rw [h_index]
+      have h_bits :
+          (fun i => ↑↑(finFunctionFinEquiv.symm ω i)) = bitsOfIndex (L := L) ω := by
+        exact coe_fin_pow_two_eq_bitsOfIndex (L := L) (k := ω)
+      rw [h_bits]
+    exact h_target
 
 /-- If a block starting at index `0` is compliant in the sense of `isCompliant`, then the
 Berlekamp–Welch decoder `extractMLP` at index `0` succeeds on the source oracle.
@@ -1512,7 +1699,107 @@ lemma extractMLP_some_of_isCompliant_at_zero
   -- From compliance we get fiberwise-closeness of `f_i` to the appropriate codeword,
   -- which implies UDR-closeness, and therefore decoder success via
   -- `extractMLP_eq_some_iff_pair_UDRClose`.
-  sorry
+  have h_zero_eq : zero_Idx = (0 : Fin r) := by
+    apply Fin.eq_of_val_eq
+    exact h_zero_Idx
+  let f₀ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r) :=
+    fun x => f_i (cast (by
+      have h_eq := sDomain_eq_of_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := (0 : Fin r)) (j := zero_Idx) (h := h_zero_eq.symm)
+      rw [h_eq]) x)
+  have h_fw_close_zeroIdx :
+      fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := zero_Idx) (steps := steps)
+        (h_destIdx := by omega) (h_destIdx_le := h_destIdx_le) (f := f_i) := by
+    rcases h_compl with ⟨h_fw_close, _, _⟩
+    exact h_fw_close
+  have h_fw_close_zero :
+      fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := (0 : Fin r)) (steps := steps)
+        (h_destIdx := by omega) (h_destIdx_le := h_destIdx_le) (f := f₀) := by
+    rw [← fiberwiseClose_congr_sourceDomain_index 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (sourceIdx₁ := zero_Idx) (sourceIdx₂ := (0 : Fin r)) (steps := steps)
+      (h_sourceIdx_eq := h_zero_eq) (h_destIdx := by omega) (h_destIdx_le := h_destIdx_le)
+      (f := f_i)]
+    exact h_fw_close_zeroIdx
+  have h_udr_f₀ :
+      UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := (0 : Fin r)) (h_i := by omega) f₀ := by
+    exact UDRClose_of_fiberwiseClose 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := (0 : Fin r))
+      (steps := steps) (h_destIdx := by omega) (h_destIdx_le := h_destIdx_le)
+      (f := f₀) h_fw_close_zero
+  let g₀ := UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (i := (0 : Fin r)) (h_i := by omega) (f := f₀) h_udr_f₀
+  have h_g₀_mem :
+      g₀ ∈ (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r) :
+        Set ((sDomain 𝔽q β h_ℓ_add_R_rate) 0 → L)) := by
+    exact UDRCodeword_mem_BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := (0 : Fin r)) (h_i := by omega) (f := f₀) h_udr_f₀
+  let g₀_sub : BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r) := ⟨g₀, h_g₀_mem⟩
+  let P₀ := getBBF_Codeword_poly 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r) g₀_sub
+  let t_evals : (Fin ℓ → Fin 2) → L := fun w =>
+    AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega)
+      (fun k => (↑P₀ : L[X]).coeff k.val)
+      (Nat.binaryFinMapToNat
+        (n := ℓ) (m := fun j => (w j).val)
+        (h_binary := by
+          intro j
+          change ((w j : Fin 2) : ℕ) ≤ 1
+          exact Nat.le_of_lt_succ (w j).isLt))
+  let tpoly : MultilinearPoly L ℓ := ⟨MvPolynomial.MLE t_evals, MLE_mem_restrictDegree t_evals⟩
+  have h_pair_close :
+      pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := (0 : Fin r)) (h_i := by simp) (f := f₀)
+        (g := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (domainIdx := 0) (P := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
+            (fun ω => tpoly.val.eval (bitsOfIndex ω)))) := by
+    have h_udr_g₀ :
+        Δ₀(f₀, g₀) ≤ Code.uniqueDecodingRadius
+          (C := (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r) :
+            Set ((sDomain 𝔽q β h_ℓ_add_R_rate) 0 → L))) := by
+      exact dist_to_UDRCodeword_le_uniqueDecodingRadius 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := (0 : Fin r))
+        (h_i := by omega) (f := f₀) h_udr_f₀
+    haveI :
+        NeZero ‖(BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r) :
+          Set ((sDomain 𝔽q β h_ℓ_add_R_rate) 0 → L))‖₀ := by
+      refine ⟨?_⟩
+      have h_code_distance :
+          ‖(BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r) :
+            Set ((sDomain 𝔽q β h_ℓ_add_R_rate) 0 → L))‖₀ =
+            2 ^ (ℓ + 𝓡) - 2 ^ ℓ + 1 := by
+        exact BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (i := (0 : Fin r)) (h_i := by omega)
+      rw [h_code_distance]
+      omega
+    have h_pair_close_g₀ :
+        pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (i := (0 : Fin r)) (h_i := by simp) (f := f₀) (g := g₀) := by
+      dsimp [pair_UDRClose, g₀] at ⊢
+      rw [Code.UDRClose_iff_two_mul_proximity_lt_d_UDR
+        (C := (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r) :
+          Set ((sDomain 𝔽q β h_ℓ_add_R_rate) 0 → L)))] at h_udr_g₀
+      exact h_udr_g₀
+    have h_P₀_deg_lt : (↑P₀ : L[X]).degree < 2 ^ ℓ := by
+      have hP₀_mem : (↑P₀ : L[X]) ∈ L[X]_(2 ^ ℓ) := P₀.property
+      rw [Polynomial.mem_degreeLT] at hP₀_mem
+      exact hP₀_mem
+    have h_g₀_eq :
+        g₀ = polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (domainIdx := (0 : Fin r)) (P := P₀) := by
+      exact getBBF_Codeword_poly_spec 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (0 : Fin r) g₀_sub
+    dsimp [tpoly, t_evals, polynomialFromNovelCoeffsF₂]
+    rw [extracted_mle_polynomial_eq (𝔽q := 𝔽q) (β := β)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (P := (↑P₀ : L[X])) h_P₀_deg_lt]
+    rw [← h_g₀_eq]
+    exact h_pair_close_g₀
+  refine ⟨tpoly, ?_⟩
+  change extractMLP 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0 f₀ = some tpoly
+  exact (extractMLP_eq_some_iff_pair_UDRClose 𝔽q β
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (f := f₀) (tpoly := tpoly)).2 h_pair_close
 
 def dummyLastWitness :
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) := {

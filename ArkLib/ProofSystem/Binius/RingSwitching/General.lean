@@ -99,6 +99,10 @@ open scoped NNReal
 section SecurityProperties
 variable {σ : Type} (init : ProbComp σ) {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
+section CanonicalB
+
+variable [h_B01 : Fact (𝓑 0 = 0 ∧ 𝓑 1 = 1)]
+
 omit [∀ i, SampleableType (mlIOPCS.pSpec.Challenge i)] in
 lemma batchingCore_perfectCompleteness (hInit : NeverFail init) :
   (batchingCoreReduction κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) mlIOPCS).perfectCompleteness
@@ -141,7 +145,7 @@ def fullRbrKnowledgeError (i : (fullPspec κ L K ℓ' mlIOPCS).ChallengeIdx) : �
 
 omit [∀ i, SampleableType (mlIOPCS.pSpec.Challenge i)] in
 /-- Round-by-round knowledge soundness for the full ring-switching oracle verifier -/
-theorem fullOracleVerifier_rbrKnowledgeSoundness {𝓑 : Fin 2 ↪ L} :
+theorem fullOracleVerifier_rbrKnowledgeSoundness :
   OracleVerifier.rbrKnowledgeSoundness
     (verifier := fullOracleVerifier κ L K β ℓ ℓ' (𝓑 := 𝓑) h_l mlIOPCS)
     (init := init)
@@ -182,6 +186,8 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness {𝓑 : Fin 2 ↪ L} :
     (init := init) (impl := impl)
     (h_ε := by intro i; rfl)
     (h := res)
+
+end CanonicalB
 
 end SecurityProperties
 end
