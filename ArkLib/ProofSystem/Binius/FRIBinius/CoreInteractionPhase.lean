@@ -214,11 +214,13 @@ instance sumcheckFoldCtxLens_complete :
     rcases oStmtIn with ⟨t', H⟩
     rcases hRelIn with ⟨h_local, h_struct, h_strict_compat⟩
     refine ⟨?_, ?_⟩
-    · simpa [sumcheckFoldStmtLens] using h_local
+    · dsimp [sumcheckFoldStmtLens] at h_local ⊢
+      exact h_local
     · refine ⟨?_, ?_⟩
       · refine ⟨?_, ?_⟩
-        · simpa [sumcheckFoldStmtLens, RingSwitching.witnessStructuralInvariant,
-            BinaryBasefold.witnessStructuralInvariant] using h_struct
+        · dsimp [sumcheckFoldStmtLens, RingSwitching.witnessStructuralInvariant,
+            BinaryBasefold.witnessStructuralInvariant] at h_struct ⊢
+          exact h_struct
         · rfl
       · change strictOracleFoldingConsistencyProp K β
           (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -229,16 +231,19 @@ instance sumcheckFoldCtxLens_complete :
               (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
               (t := t') (i := (0 : Fin (ℓ' + 1)))
               (challenges := Fin.elim0) (oStmt := oStmtIn') := by
-          simpa [BinaryBasefoldAbstractOStmtIn,
+          dsimp [BinaryBasefoldAbstractOStmtIn,
             Binius.RingSwitching.BBFSmallFieldIOPCS.bbfAbstractOStmtIn,
-            strictOracleFoldingConsistencyProp] using h_strict_compat
+            strictOracleFoldingConsistencyProp] at h_strict_compat ⊢
+          exact h_strict_compat
         have h_challenges : stmtIn.challenges = (Fin.elim0 : Fin 0 → L) := by
           funext i
           exact Fin.elim0 i
-        simpa [h_challenges] using h_strict_compat'
+        rw [h_challenges]
+        exact h_strict_compat'
   lift_complete := fun outerStmtIn outerWitIn innerStmtOut innerWitOut compat => by
     intro _ hRelOut
-    simpa [sumcheckFoldStmtLens] using hRelOut
+    dsimp [sumcheckFoldStmtLens] at hRelOut ⊢
+    exact hRelOut
 
 omit [NeZero κ] [NeZero ℓ] in
 -- Perfect completeness for the lifted oracle reduction
@@ -357,7 +362,8 @@ instance sumcheckFoldExtractorLens_rbr_knowledge_soundness
       where
   proj_knowledgeSound := by
     intro outerStmtIn innerStmtOut outerWitOut _ hOuter
-    simpa [sumcheckFoldExtractorLens, sumcheckFoldStmtLens] using hOuter
+    dsimp [sumcheckFoldExtractorLens, sumcheckFoldStmtLens] at hOuter ⊢
+    exact hOuter
   lift_knowledgeSound := by
     intro outerStmtIn outerWitOut innerWitIn _ hInner
     rcases outerStmtIn with ⟨stmtIn, oStmtIn⟩
@@ -367,7 +373,9 @@ instance sumcheckFoldExtractorLens_rbr_knowledge_soundness
             (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l)
           K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
           (0 : Fin (ℓ' + 1)) ((stmtIn, oStmtIn), innerWitIn) := by
-      simpa [BinaryBasefold.roundRelation, Set.mem_setOf_eq] using hInner
+      dsimp [BinaryBasefold.roundRelation] at hInner ⊢
+      dsimp [sumcheckFoldExtractorLens] at hInner ⊢
+      exact hInner
     unfold BinaryBasefold.roundRelationProp BinaryBasefold.masterKStateProp at hInner'
     have h_no_bad :
         ¬ incrementalBadEventExistsProp K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -379,7 +387,12 @@ instance sumcheckFoldExtractorLens_rbr_knowledge_soundness
       have hj0 : j = 0 := by
         apply Fin.eq_of_val_eq
         have hjlt : j.val < 1 := by
-          simpa [BinaryBasefold.toOutCodewordsCountOf0] using j.isLt
+          have hcount :
+              BinaryBasefold.toOutCodewordsCount ℓ' ϑ
+                ((OracleFrontierIndex.mkFromStmtIdx (0 : Fin (ℓ' + 1))).val) = 1 := by
+            change BinaryBasefold.toOutCodewordsCount ℓ' ϑ 0 = 1
+            exact BinaryBasefold.toOutCodewordsCountOf0 (ℓ := ℓ') (ϑ := ϑ)
+          exact Nat.lt_of_lt_of_eq j.isLt hcount
         exact Nat.lt_one_iff.mp hjlt
       subst hj0
       dsimp [BinaryBasefold.oraclePositionToDomainIndex] at hj
@@ -396,9 +409,11 @@ instance sumcheckFoldExtractorLens_rbr_knowledge_soundness
       have h_struct := h_good.2.1
       have h_first := h_good.2.2.1
       refine ⟨h_local, ?_, ?_⟩
-      · simpa [sumcheckFoldExtractorLens, RingSwitching.witnessStructuralInvariant,
-          BinaryBasefold.witnessStructuralInvariant] using h_struct.1
-      · simpa [BinaryBasefoldAbstractOStmtIn] using h_first
+      · dsimp [sumcheckFoldExtractorLens, RingSwitching.witnessStructuralInvariant,
+          BinaryBasefold.witnessStructuralInvariant] at h_struct ⊢
+        exact h_struct.1
+      · dsimp [BinaryBasefoldAbstractOStmtIn] at h_first ⊢
+        exact h_first
 
 -- Round-by-round knowledge soundness for the lifted oracle verifier
 theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness [Fintype L] :
@@ -473,16 +488,17 @@ theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness [Fintype L] :
           (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toVerifier.compatStatement
           (sumcheckFoldStmtLens κ L K β ℓ ℓ' 𝓡 ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate))))
       (h := by
-        simpa using
-          (BinaryBasefold.CoreInteraction.sumcheckFoldOracleVerifier_rbrKnowledgeSoundness
+        exact
+          BinaryBasefold.CoreInteraction.sumcheckFoldOracleVerifier_rbrKnowledgeSoundness
             (L := L) K β
             (ϑ := ϑ)
             (mp := RingSwitching_SumcheckMultParam κ L K
               (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l)
             (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
             (𝓑 := 𝓑)
-            (init := init) (impl := impl)))
-  simpa [sumcheckFoldOracleVerifier] using h_lifted
+            (init := init) (impl := impl))
+  dsimp [sumcheckFoldOracleVerifier] at h_lifted ⊢
+  exact h_lifted
 
 end Security
 end SumcheckFold
@@ -613,7 +629,7 @@ noncomputable def finalSumcheckVerifier :
     (pSpec := BinaryBasefold.pSpecFinalSumcheckStep (L:=L)) where
   verify := fun stmtIn _ => do
     let s' : L ← query (spec := [(BinaryBasefold.pSpecFinalSumcheckStep
-      (L:=L)).Message]ₒ) ⟨⟨0, by rfl⟩, (by simpa only using ())⟩
+      (L:=L)).Message]ₒ) ⟨⟨0, by rfl⟩, (by exact ())⟩
     let t := FullTranscript.mk1 (pSpec := BinaryBasefold.pSpecFinalSumcheckStep (L := L)) s'
     let logic := finalSumcheckStepLogic κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l (𝓑 := 𝓑)
     have : Decidable (logic.verifierCheck stmtIn t) := Classical.propDecidable _
@@ -1029,7 +1045,8 @@ lemma finalSumcheckStep_verifierCheck_passed
             stmtIn.ctx.t_eval_point stmtIn.challenges stmtIn.ctx.r_batching *
             cmsg := by
             rw [←h_msg_eq]
-  simpa [step, finalSumcheckStepLogic, finalSumcheckVerifierCheck, cmsg] using h_eq
+  dsimp [step, finalSumcheckStepLogic, finalSumcheckVerifierCheck, cmsg] at h_eq ⊢
+  exact h_eq
 
 /-- Strong completeness of the FRI final sumcheck logic step. -/
 lemma finalSumcheckStep_is_logic_complete :
@@ -1073,8 +1090,11 @@ lemma finalSumcheckStep_is_logic_complete :
         finalSumcheck_honest_message_eq_f_zero (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ)
           (ℓ' := ℓ') (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_l := h_l)
           (𝓑 := 𝓑) stmtIn witIn oStmtIn challenges
-      simpa [transcript, step, finalSumcheckStepLogic, finalSumcheckVerifierStmtOut, h_msg_eq]
-        using h_const
+      dsimp [verifierStmtOut, verifierOStmtOut, transcript, step, finalSumcheckStepLogic,
+        finalSumcheckVerifierStmtOut] at h_const ⊢
+      dsimp [transcript, step, finalSumcheckStepLogic] at h_msg_eq
+      rw [h_msg_eq]
+      exact h_const
   refine ⟨?_, ?_, ?_, ?_⟩
   · exact h_VCheck_passed
   · exact hRelOut

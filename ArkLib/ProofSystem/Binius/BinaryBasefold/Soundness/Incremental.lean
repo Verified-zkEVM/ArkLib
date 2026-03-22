@@ -119,11 +119,14 @@ lemma affineProximityGap_RS_interleaved_contrapositive
             BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx := by
           simp [BBF_CodeDistance_eq (L := L) 𝔽q β
             (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := destIdx) (h_i := h_destIdx_le)]
-        simpa [C_dest, BBF_CodeDistance] using h_pos
+        have h_dist_pos := h_pos
+        simp only [C_dest, BBF_CodeDistance] at h_dist_pos ⊢
+        exact h_dist_pos
       haveI : NeZero ‖(C_dest : Set (S_dest → L))‖₀ := NeZero.of_pos h_dist_pos
       have h_2e_lt_d : 2 * e < ‖(C_dest : Set (S_dest → L))‖₀ := by
         exact (Code.UDRClose_iff_two_mul_proximity_lt_d_UDR
-          (C := (C_dest : Set (S_dest → L))) (e := e)).1 (by simpa [C_dest, S_dest] using he)
+          (C := (C_dest : Set (S_dest → L))) (e := e)).1 (by
+            exact he)
       have h_e_add_one_le_d : e + 1 ≤ ‖(C_dest : Set (S_dest → L))‖₀ := by
         omega
       have h_d_le_card : ‖(C_dest : Set (S_dest → L))‖₀ ≤ Fintype.card S_dest := by
@@ -642,9 +645,10 @@ lemma multilinearCombine_recursive_form_first {ϑ : ℕ}
     rw [Fin.prod_univ_succ]
     have h_bit0 : (2 * i.val).testBit 0 = false := by
       rw [Nat.testBit_false_eq_getBit_eq_0]
-      simpa using (Nat.getBit_zero_of_two_mul (n := i.val))
+      exact Nat.getBit_zero_of_two_mul (n := i.val)
     have h_bit0' : (2 * i.val).testBit (↑(0 : Fin (ϑ + 1))) = false := by
-      simpa using h_bit0
+      change (2 * i.val).testBit 0 = false
+      exact h_bit0
     have h_prod :
         (∏ x : Fin ϑ,
           if (2 * i.val).testBit x.succ = true then r_challenges x.succ else 1 - r_challenges x.succ)
@@ -654,14 +658,23 @@ lemma multilinearCombine_recursive_form_first {ϑ : ℕ}
       have h_test :
           ((2 * i.val).testBit (↑j.succ) = true) = (i.val.testBit j.val = true) := by
         rw [Nat.testBit_true_eq_getBit_eq_1, Nat.testBit_true_eq_getBit_eq_1]
-        simpa [Fin.succ, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
-          congrArg (fun t : ℕ => t = 1)
-          (Nat.getBit_eq_succ_getBit_of_mul_two (n := i.val) (k := j.val))
+        have h_getBit :
+            Nat.getBit (j.val + 1) (2 * i.val) = Nat.getBit j.val i.val := by
+          exact Nat.getBit_eq_succ_getBit_of_mul_two (n := i.val) (k := j.val)
+        change (Nat.getBit (j.val + 1) (2 * i.val) = 1) = (Nat.getBit j.val i.val = 1)
+        exact congrArg (fun t : ℕ => t = 1) h_getBit
       have h_succ : (↑j.succ : ℕ) = ↑j + 1 := by simp [Fin.succ]
       have h_test' :
           ((2 * i.val).testBit (↑j + 1) = true) = (i.val.testBit j.val = true) := by
-        simpa [h_succ] using h_test
-      simpa [h_test', r_tail]
+        rw [← h_succ]
+        exact h_test
+      by_cases hcond : (2 * i.val).testBit (↑j + 1) = true
+      · have hcond' : i.val.testBit j.val = true := h_test'.mp hcond
+        simp [hcond, hcond', r_tail]
+      · have hcond' : ¬ i.val.testBit j.val = true := by
+          intro hbit
+          exact hcond (h_test'.mpr hbit)
+        simp [hcond, hcond', r_tail]
     rw [h_prod]
     simp [h_bit0']
     ring
@@ -676,7 +689,8 @@ lemma multilinearCombine_recursive_form_first {ϑ : ℕ}
       unfold Nat.getBit
       simp [Nat.and_one_is_mod]
     have h_bit0' : (2 * i.val + 1).testBit (↑(0 : Fin (ϑ + 1))) = true := by
-      simpa using h_bit0
+      change (2 * i.val + 1).testBit 0 = true
+      exact h_bit0
     have h_prod :
         (∏ x : Fin ϑ,
           if (2 * i.val + 1).testBit x.succ = true then r_challenges x.succ else 1 - r_challenges x.succ)
@@ -686,13 +700,15 @@ lemma multilinearCombine_recursive_form_first {ϑ : ℕ}
       have h_test :
           ((2 * i.val + 1).testBit (↑j.succ) = true) = (i.val.testBit j.val = true) := by
         rw [Nat.testBit_true_eq_getBit_eq_1, Nat.testBit_true_eq_getBit_eq_1]
-        simpa [Fin.succ, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
-          congrArg (fun t : ℕ => t = 1)
+        have h_test := congrArg (fun t : ℕ => t = 1)
           (Nat.getBit_eq_succ_getBit_of_mul_two_add_one (n := i.val) (k := j.val))
+        simp only [Fin.succ, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] at h_test ⊢
+        exact h_test
       have h_succ : (↑j.succ : ℕ) = ↑j + 1 := by simp [Fin.succ]
       have h_test' :
           ((2 * i.val + 1).testBit (↑j + 1) = true) = (i.val.testBit j.val = true) := by
-        simpa [h_succ] using h_test
+        rw [← h_succ]
+        exact h_test
       simp only [Fin.val_succ, h_test', r_tail]
     rw [h_prod]
     simp [h_bit0']
@@ -763,10 +779,24 @@ lemma not_jointProximityNat_of_not_jointProximityNat_evenOdd_split
     by_cases h_even : rowIdx.val % 2 = 0
     · let j : Fin (2 ^ s) := ⟨rowIdx.val / 2, by omega⟩
       have hRes := h_vSplit_rows_mem 0 j
-      simpa [v_IC, v_rowwise_finmap, h_even, VSplit_even_rowwise, VSplit_rowwise, j] using hRes
+      change (fun col => v_rowwise_finmap rowIdx col) ∈ C
+      have h_fun : (fun col => v_rowwise_finmap rowIdx col) = fun col => vSplit col 0 j := by
+        funext col
+        dsimp [v_rowwise_finmap, VSplit_even_rowwise, VSplit_rowwise, j]
+        rw [dif_pos h_even]
+        rfl
+      rw [h_fun]
+      exact hRes
     · let j : Fin (2 ^ s) := ⟨rowIdx.val / 2, by omega⟩
       have hRes := h_vSplit_rows_mem 1 j
-      simpa [v_IC, v_rowwise_finmap, h_even, VSplit_odd_rowwise, VSplit_rowwise, j] using hRes
+      change (fun col => v_rowwise_finmap rowIdx col) ∈ C
+      have h_fun : (fun col => v_rowwise_finmap rowIdx col) = fun col => vSplit col 1 j := by
+        funext col
+        dsimp [v_rowwise_finmap, VSplit_odd_rowwise, VSplit_rowwise, j]
+        rw [dif_neg h_even]
+        rfl
+      rw [h_fun]
+      exact hRes
   · use D
     constructor
     · exact hD_card_le_e
@@ -796,7 +826,9 @@ lemma not_jointProximityNat_of_not_jointProximityNat_evenOdd_split
         have hRes₀ := congrFun hRes0 ⟨rowIdx.val / 2, by omega⟩
         dsimp [splitEvenOddRowWiseInterleavedWords] at hRes₀
         simp [v_rowwise_finmap, h_even, VSplit_even_rowwise, VSplit_rowwise]
-        simpa [h_row_eq] using hRes₀
+        have hRes₀' := hRes₀
+        simp only [h_row_eq] at hRes₀' ⊢
+        exact hRes₀'
       · have h_row_val : rowIdx.val = 2 * (rowIdx.val / 2) + 1 := by
           have h_divmod := Nat.mod_add_div rowIdx.val 2
           omega
@@ -807,7 +839,9 @@ lemma not_jointProximityNat_of_not_jointProximityNat_evenOdd_split
         have hRes₁ := congrFun hRes1 ⟨rowIdx.val / 2, by omega⟩
         dsimp [splitEvenOddRowWiseInterleavedWords] at hRes₁
         simp [v_rowwise_finmap, h_even, VSplit_odd_rowwise, VSplit_rowwise]
-        simpa [h_row_eq] using hRes₁
+        have hRes₁' := hRes₁
+        simp only [h_row_eq] at hRes₁' ⊢
+        exact hRes₁'
 
 /-- **One fold step on preTensorCombine = affine line evaluation on even/odd split.**
 Given `f_i : S^i → L` and its preTensorCombine WordStack `U` of height `2^(steps+1)`,
@@ -884,8 +918,8 @@ lemma fold_preTensorCombine_eq_affineLineEvaluation_split
       multilinearCombine (affineLineEvaluation (F := L) U_even U_odd (r_chal 0))
         (fun k => r_chal (Fin.succ k)) := by
     intro r_chal
-    simpa [U_even, U_odd] using
-      (multilinearCombine_recursive_form_first (u := U) (r_challenges := r_chal))
+    dsimp [U_even, U_odd]
+    exact multilinearCombine_recursive_form_first (u := U) (r_challenges := r_chal)
   ext y j
   change V j y = affineLineEvaluation U_even U_odd r_new j y
   rw [←h_indicator V j y]
@@ -899,10 +933,23 @@ lemma fold_preTensorCombine_eq_affineLineEvaluation_split
         (i := midIdx) (steps := steps) (h_destIdx := by omega)
         (h_destIdx_le := h_destIdx_le) (f := fold_1_f)
         (r_challenges := bitsOfIndex j) := by
-    simpa [fold_1_f, Fin.cons_zero, Fin.cons_succ] using
-      (iterated_fold_first 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    change
+      iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := ⟨i, by omega⟩) (steps := steps + 1) (h_destIdx := h_destIdx)
+        (h_destIdx_le := h_destIdx_le) (f := f_i)
+        (r_challenges := Fin.cons r_new (bitsOfIndex j)) =
+      iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := midIdx) (steps := steps) (h_destIdx := by omega)
+        (h_destIdx_le := h_destIdx_le)
+        (f := fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (i := ⟨i, by omega⟩) (destIdx := midIdx) (h_destIdx := h_midIdx)
+          (h_destIdx_le := by omega) f_i r_new)
+        (r_challenges := bitsOfIndex j)
+    have h_first_raw :=
+      iterated_fold_first 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         ⟨i, by omega⟩ (steps := steps) h_midIdx h_destIdx h_destIdx_le f_i
-        (Fin.cons r_new (bitsOfIndex j)))
+        (Fin.cons r_new (bitsOfIndex j))
+    exact h_first_raw
   rw [←h_first]
   rw [h_fold_eq_U (Fin.cons r_new (bitsOfIndex j))]
   rw [h_recursive (Fin.cons r_new (bitsOfIndex j))]
@@ -1048,11 +1095,12 @@ lemma fiberwiseClose_fold_implies_affineLineEval_close
         fold_1_f by
       rw [h_eq]; exact h_udr_close
     have h_rhs : fold_1_f = multilinearCombine (F := L) U (fun (_ : Fin 1) => r_new) := by
-      simpa [fold_1_f, i_ℓ] using
-        fold_eq_multilinearCombine_preTensorCombine_step1 𝔽q β
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i_ℓ)
-          (destIdx := midIdx) (h_destIdx := by simp [i_ℓ]; omega)
-          (h_destIdx_le := h_midIdx_le_ℓ) (f_i := f_i) (r_new := r_new)
+      have h_rhs := fold_eq_multilinearCombine_preTensorCombine_step1 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i_ℓ)
+        (destIdx := midIdx) (h_destIdx := by simp [i_ℓ]; omega)
+        (h_destIdx_le := h_midIdx_le_ℓ) (f_i := f_i) (r_new := r_new)
+      simp only [fold_1_f, i_ℓ] at h_rhs ⊢
+      exact h_rhs
     have h_affine_eq_mc :
         (fun y => affineLineEvaluation
           (interleaveWordStack U_even) (interleaveWordStack U_odd) r_new y
@@ -1093,7 +1141,9 @@ lemma fiberwiseClose_fold_implies_affineLineEval_close
               (h_destIdx_le := h_destIdx_le) fold_1_f) =
           affineLineEvaluation (F := L)
             (interleaveWordStack U_even) (interleaveWordStack U_odd) r_new := by
-      simpa [U_even, U_odd] using h_eq
+      have h_eq' := h_eq
+      simp only [U_even, U_odd] at h_eq' ⊢
+      exact h_eq'
     unfold jointProximityNat at h_joint
     rw [← h_eq']
     exact h_joint

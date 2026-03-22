@@ -295,9 +295,11 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness :
       (rbrKnowledgeError₂ := QueryPhase.queryRbrKnowledgeError K β γ_repetitions
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (h₁ := by
-        simpa [batchingCoreVerifier, batchingCorePspec,
-          BinaryBasefold.pSpecCoreInteraction, batchingCoreRbrKnowledgeError] using
-          (OracleVerifier.append_rbrKnowledgeSoundness
+        dsimp [V₁_batchingCore]
+        unfold batchingCoreVerifier batchingCorePspec batchingCoreRbrKnowledgeError
+          BinaryBasefold.pSpecCoreInteraction
+        exact
+          OracleVerifier.append_rbrKnowledgeSoundness
             (init := init) (impl := impl)
             (rel₁ := BatchingPhase.batchingInputRelation κ L K
               (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l
@@ -329,11 +331,12 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness :
         (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))))
             (h₂ := coreInteractionOracleVerifier_rbrKnowledgeSoundness
               (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
-              (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))))
+              (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)))
       (h₂ := QueryPhase.queryOracleVerifier_rbrKnowledgeSoundness K β γ_repetitions
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) init impl)
-  simpa only [ChallengeIdx, fullOracleVerifier, batchingCorePspec,
-    BinaryBasefold.pSpecCoreInteraction, batchingCoreVerifier, MessageIdx] using res
+  dsimp only [ChallengeIdx, fullOracleVerifier, batchingCorePspec,
+    BinaryBasefold.pSpecCoreInteraction, batchingCoreVerifier, MessageIdx] at res ⊢
+  exact res
 
 end
 end Binius.FRIBinius.FullFRIBinius

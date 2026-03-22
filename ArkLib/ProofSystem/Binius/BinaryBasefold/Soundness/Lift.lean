@@ -807,7 +807,8 @@ lemma lemma_4_21_interleaved_word_UDR_far (i : Fin ℓ) (steps : ℕ) [NeZero st
               BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx := by
             simp [BBF_CodeDistance_eq (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
               (i := destIdx) (h_i := h_destIdx_le)]
-          simpa [C_next, BBF_CodeDistance] using h_pos
+          simp only [C_next, BBF_CodeDistance] at h_pos ⊢
+          exact h_pos
         )
         let res := Code.UDRClose_iff_two_mul_proximity_lt_d_UDR
           (C := (C_next : Set (S_next → L))) (e := e_udr).mp (by omega)

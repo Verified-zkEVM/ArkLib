@@ -157,14 +157,15 @@ lemma highestBadBlock_is_bad
         ∈ badBlockSet 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
             (stmtIn := stmtIn) (oStmtIn := oStmtIn) := by
     -- max' is always a member of the set
-    simpa [highestBadBlock] using
-      (Finset.max'_mem
+    dsimp [highestBadBlock]
+    exact
+      Finset.max'_mem
         (badBlockSet 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (stmtIn := stmtIn) (oStmtIn := oStmtIn))
         (by
           rcases h_exists with ⟨j, hj⟩
           refine ⟨j, ?_⟩
-          exact (Finset.mem_filter.mpr ⟨by simp, hj⟩)))
+          exact (Finset.mem_filter.mpr ⟨by simp, hj⟩))
   have hmem' := Finset.mem_filter.mp hmem
   exact hmem'.2
 
@@ -196,9 +197,10 @@ lemma not_badBlock_of_lt_highest
       (stmtIn := stmtIn) (oStmtIn := oStmtIn) h_exists :=
     by
       -- le_max' takes the membership proof; Nonempty is inferred from max'
-      simpa [highestBadBlock] using
-        (Finset.le_max' (badBlockSet 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-          (stmtIn := stmtIn) (oStmtIn := oStmtIn)) j hj_mem)
+      dsimp [highestBadBlock]
+      exact
+        Finset.le_max' (badBlockSet 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (stmtIn := stmtIn) (oStmtIn := oStmtIn)) j hj_mem
   exact not_lt_of_ge hle hlt
 
 /-- Congruence lemma for `UDRClose`: transport along a `Fin r` equality.
@@ -294,10 +296,11 @@ lemma prob_uniform_suffix_mem
             (Set.image (qMap_total_fiber 𝔽q β (i := (0 : Fin r)) (steps := steps)
               h_destIdx h_destIdx_le (y := y)) (Set.univ : Set (Fin (2 ^ steps)))) := by
       classical
-      simpa [fiberSet] using
-        (Set.toFinset_card
+      dsimp [fiberSet]
+      exact
+        Set.toFinset_card
           (s := Set.image (qMap_total_fiber 𝔽q β (i := (0 : Fin r)) (steps := steps)
-            h_destIdx h_destIdx_le (y := y)) (Set.univ : Set (Fin (2 ^ steps)))))
+            h_destIdx h_destIdx_le (y := y)) (Set.univ : Set (Fin (2 ^ steps))))
     calc
       (fiberSet y).card =
           Fintype.card
@@ -337,7 +340,11 @@ lemma prob_uniform_suffix_mem
         have : v ∈ Set.image (qMap_total_fiber 𝔽q β (i := (0 : Fin r)) (steps := steps)
               h_destIdx h_destIdx_le (y := suffix v)) (Set.univ : Set (Fin (2 ^ steps))) := by
           refine ⟨k, by simp, hk⟩
-        simpa [fiberSet] using this
+        change
+          v ∈ (Set.image (qMap_total_fiber 𝔽q β (i := (0 : Fin r)) (steps := steps)
+            h_destIdx h_destIdx_le (y := suffix v)) (Set.univ : Set (Fin (2 ^ steps)))).toFinset
+        rw [Set.mem_toFinset]
+        exact this
       -- Put together
       refine Finset.mem_biUnion.mpr ?_
       exact ⟨suffix v, hv', hv_fiber⟩
@@ -347,7 +354,11 @@ lemma prob_uniform_suffix_mem
       have hv_fiber' :
           v ∈ Set.image (qMap_total_fiber 𝔽q β (i := (0 : Fin r)) (steps := steps)
             h_destIdx h_destIdx_le (y := y)) (Set.univ : Set (Fin (2 ^ steps))) := by
-        simpa [fiberSet] using hv_fiber
+        change
+          v ∈ (Set.image (qMap_total_fiber 𝔽q β (i := (0 : Fin r)) (steps := steps)
+            h_destIdx h_destIdx_le (y := y)) (Set.univ : Set (Fin (2 ^ steps)))).toFinset at hv_fiber
+        rw [Set.mem_toFinset] at hv_fiber
+        exact hv_fiber
       rcases hv_fiber' with ⟨k, hk_mem, hk_eq⟩
       have h_eq :
           y =
@@ -363,13 +374,15 @@ lemma prob_uniform_suffix_mem
         exact hk_eq.symm
       have : suffix v = y := by
         -- Rewrite suffix v as iteratedQuotientMap
-        simpa [suffix, extractSuffixFromChallenge, steps] using h_eq.symm
+        dsimp [suffix, extractSuffixFromChallenge, steps]
+        exact h_eq.symm
       -- Conclude v ∈ preimage
       apply Finset.mem_filter.mpr
       constructor
       · simp only [mem_univ]
       · -- suffix v ∈ D
-        simpa [this] using hyD
+        rw [this]
+        exact hyD
   -- Cardinality of the preimage
   have h_preimage_card : preimage.card = D.card * 2 ^ steps := by
     -- Use disjoint union of fibers
@@ -401,12 +414,16 @@ lemma prob_uniform_suffix_mem
     -- Use sDomain_card and the fact |𝔽q| = 2
     have h0 :
         Fintype.card S0 = (Fintype.card 𝔽q) ^ (ℓ + 𝓡 - (0 : Fin r)) := by
-      simpa using (sDomain_card 𝔽q β h_ℓ_add_R_rate (i := (0 : Fin r))
-        (h_i := Sdomain_bound (by omega)))
+      change Fintype.card ↥(sDomain 𝔽q β h_ℓ_add_R_rate (0 : Fin r)) =
+        (Fintype.card 𝔽q) ^ (ℓ + 𝓡 - (0 : Fin r))
+      exact sDomain_card 𝔽q β h_ℓ_add_R_rate (i := (0 : Fin r))
+        (h_i := Sdomain_bound (by omega))
     have hdest :
         Fintype.card Sdest = (Fintype.card 𝔽q) ^ (ℓ + 𝓡 - destIdx) := by
-      simpa using (sDomain_card 𝔽q β h_ℓ_add_R_rate (i := destIdx)
-        (h_i := Sdomain_bound (by omega)))
+      change Fintype.card ↥(sDomain 𝔽q β h_ℓ_add_R_rate destIdx) =
+        (Fintype.card 𝔽q) ^ (ℓ + 𝓡 - destIdx)
+      exact sDomain_card 𝔽q β h_ℓ_add_R_rate (i := destIdx)
+        (h_i := Sdomain_bound (by omega))
     -- Rewrite and use pow_add
     have h_add : (ℓ + 𝓡) = (ℓ + 𝓡 - destIdx.val) + destIdx.val := by
       have h_le : destIdx.val ≤ ℓ + 𝓡 := by omega
@@ -417,7 +434,8 @@ lemma prob_uniform_suffix_mem
     calc
       Fintype.card S0
           = (Fintype.card 𝔽q) ^ (ℓ + 𝓡) := by
-              simpa using h0
+              rw [h0]
+              simp
       _ = (Fintype.card 𝔽q) ^ ((ℓ + 𝓡 - destIdx.val) + destIdx.val) := by
         exact congrArg (HPow.hPow (Fintype.card 𝔽q)) h_add
       _ = (Fintype.card 𝔽q) ^ (ℓ + 𝓡 - destIdx.val) *
@@ -427,9 +445,9 @@ lemma prob_uniform_suffix_mem
               -- rewrite with hdest and |𝔽q| = 2
           simp only [hFq, hdest, steps]
   -- Finish the probability computation
-  have h_card_pos : (2 ^ steps : ENNReal) ≠ 0 := by
+  have h_card_pos : (((2 ^ steps : ℕ) : ENNReal)) ≠ 0 := by
     exact_mod_cast (pow_ne_zero steps (by decide : (2 : ℕ) ≠ 0))
-  have h_card_fin : (2 ^ steps : ENNReal) ≠ ⊤ := by
+  have h_card_fin : (((2 ^ steps : ℕ) : ENNReal)) ≠ ⊤ := by
     simp
   -- Rewrite in terms of cards
   have h_prob :
@@ -443,11 +461,16 @@ lemma prob_uniform_suffix_mem
       _ = (D.card : ENNReal) / Fintype.card Sdest := by
             -- Cancel the factor 2^steps
             -- (a*b)/(c*b) = a/c
-            simpa [mul_comm, mul_left_comm, mul_assoc] using
-              (ENNReal.mul_div_mul_left (a := (D.card : ENNReal))
-                (b := (Fintype.card Sdest : ENNReal)) (c := (2 ^ steps : ENNReal))
-                h_card_pos h_card_fin)
-  simpa [preimage] using h_prob
+            rw [Nat.cast_mul, Nat.cast_mul]
+            rw [mul_comm (D.card : ENNReal) (((2 ^ steps : ℕ) : ENNReal))]
+            rw [mul_comm (Fintype.card Sdest : ENNReal) (((2 ^ steps : ℕ) : ENNReal))]
+            exact
+              ENNReal.mul_div_mul_left (a := (D.card : ENNReal))
+                (b := (Fintype.card Sdest : ENNReal))
+                (c := (((2 ^ steps : ℕ) : ENNReal)))
+                h_card_pos h_card_fin
+  dsimp [preimage] at h_prob ⊢
+  exact h_prob
 
 
 end QueryPhaseSoundnessStatements

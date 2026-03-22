@@ -188,7 +188,7 @@ noncomputable def iteratedSumcheckOracleVerifier (i : Fin ℓ') :
   verify := fun stmtIn pSpecChallenges => do
     -- Message 0 : Receive h_i(X) from prover
     let h_i : L⦃≤ 2⦄[X] ← query (spec := [(pSpecSumcheckRound L).Message]ₒ)
-       ⟨⟨0, by rfl⟩, (by simpa using ())⟩
+       ⟨⟨0, by rfl⟩, (by exact ())⟩
     -- Message 1 : Sample challenge r'_i and send to prover
     let r_i' : L := pSpecChallenges ⟨1, rfl⟩
     let t := FullTranscript.mk2 h_i r_i'
@@ -706,7 +706,7 @@ def iteratedSumcheckKnowledgeStateFunction (i : Fin ℓ') :
       simp only [Fin.val_succ, Set.mem_setOf_eq] at h_relOut
       dsimp only [iteratedSumcheckKStateProp]
       set h_i : ↥L⦃≤ 2⦄[X] := tr.messages ⟨(0 : Fin 2), rfl⟩ with h_i_def
-      set r_i' : L := tr.challenges ⟨(1 : Fin 2), rfl⟩ with h_i_def
+      set r_i' : L := tr.challenges ⟨(1 : Fin 2), rfl⟩ with h_r_i_def
       set extractedWitLast : SumcheckWitness L ℓ' i.succ :=
         (iteratedSumcheckRbrExtractor κ (L:=L) (K:=K) (ℓ:=ℓ) (ℓ':=ℓ') (β := β)
           (h_l := h_l) aOStmtIn i).extractOut (stmtIn, oStmtIn) tr witOut
@@ -722,7 +722,7 @@ def iteratedSumcheckKnowledgeStateFunction (i : Fin ℓ') :
       dsimp only [masterKStateProp]
       constructor
       · constructor
-        · simpa [h_i_def] using h_V_check
+        · exact h_V_check
         · rw [h_stmtOut_sumcheck_target_eq] at h_relOut
           exact h_relOut.1
       · obtain ⟨h_wit_struct_In, h_oStmtIn_compat⟩ := h_relOut.2
@@ -779,15 +779,15 @@ lemma iteratedSumcheck_rbrExtractionFailureEvent_imply_badSumcheck (i : Fin ℓ'
     at h_kState_before_false h_kState_after_true
   have h_explicit_after :
       h_i.val.eval (𝓑 0) + h_i.val.eval (𝓑 1) = stmtOStmtIn.1.sumcheck_target := by
-    simpa using h_kState_after_true.1.1
+    exact h_kState_after_true.1.1
   have h_sumcheck_after :
       sumcheckConsistencyProp (𝓑 := 𝓑) (Polynomial.eval r_i' h_i.val) witMid.H := by
-    simpa using h_kState_after_true.1.2
+    exact h_kState_after_true.1.2
   have h_wit_struct_after :
       witMid.H = projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := witMid.t')
         (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly stmtOStmtIn.1.ctx)
         (i := i.succ) (challenges := Fin.snoc stmtOStmtIn.1.challenges r_i') := by
-    simpa using h_kState_after_true.2.1
+    exact h_kState_after_true.2.1
   have h_init_compat : aOStmtIn.initialCompatibility (witMid.t', stmtOStmtIn.2)
     := h_kState_after_true.2.2
   let H_before : L⦃≤ 2⦄[X Fin (ℓ' - i.castSucc)] :=
@@ -810,7 +810,8 @@ lemma iteratedSumcheck_rbrExtractionFailureEvent_imply_badSumcheck (i : Fin ℓ'
           ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ' - i.succ),
             (projectToNextSumcheckPoly (L := L) (ℓ := ℓ') (i := i) (Hᵢ := H_before)
               (rᵢ := r_i')).val.eval x := by
-      simpa [h_star_extracted] using h_sum_eq
+      dsimp [h_star_extracted]
+      exact h_sum_eq
     calc
       Polynomial.eval r_i' h_i.val
           = ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ' - i.succ),
@@ -825,17 +826,19 @@ lemma iteratedSumcheck_rbrExtractionFailureEvent_imply_badSumcheck (i : Fin ℓ'
     constructor
     · constructor
       · exact h_explicit_after
-      · simpa [h_star_extracted] using h_eq
+      · dsimp [h_star_extracted]
+        exact h_eq
     · constructor
       · -- The middle conjunct at m=1 simplifies to `True`.
         trivial
       · -- initialCompatibility is preserved by extractMid(m=1) since t' is unchanged.
-        simpa [iteratedSumcheckRbrExtractor, Fin.isValue] using h_init_compat
+        dsimp [iteratedSumcheckRbrExtractor]
+        exact h_init_compat
   have h_bad_extracted : badSumcheckEventProp r_i' h_i h_star_extracted := by
     refine ⟨h_hi_ne_extracted, h_eval_eq_extracted⟩
   refine ⟨witMid, h_init_compat, ?_⟩
-  simpa [h_star_extracted, H_before, iteratedSumcheckRbrExtractor, Fin.isValue]
-    using h_bad_extracted
+  dsimp [h_star_extracted, H_before, iteratedSumcheckRbrExtractor]
+  exact h_bad_extracted
 
 /-- Per-transcript bound: for prover message h_i, the probability (over verifier challenge y)
   that extraction fails is at most iteratedSumcheckRoundKnowledgeError (2/|L|).
@@ -879,8 +882,10 @@ lemma iteratedSumcheck_doom_escape_probability_bound (i : Fin ℓ')
         have h_t_eq : witMid.t' = t_fixed :=
           aOStmtIn.initialCompatibility_unique stmtOStmtIn.2 witMid.t' t_fixed
             h_mid_compat h_t_fixed_compat
-        simpa [h_star_fixed, H_fixed, iteratedSumcheckRbrExtractor, Fin.isValue, h_t_eq]
-          using h_bad_extracted)
+        dsimp [h_star_fixed, H_fixed] at ⊢
+        rw [← h_t_eq]
+        dsimp [iteratedSumcheckRbrExtractor] at h_bad_extracted ⊢
+        exact h_bad_extracted)
     apply le_trans h_prob_mono
     have h_sz := probability_bound_badSumcheckEventProp (h_i := h_i) (h_star := h_star_fixed)
     conv_rhs =>
@@ -1274,7 +1279,7 @@ noncomputable def finalSumcheckVerifier :
   verify := fun stmtIn _ => do
     -- Get the final constant `s'` from the prover's message
     let s' : L ← query (spec := [(pSpecFinalSumcheckStep (L := L)).Message]ₒ)
-      ⟨⟨0, by rfl⟩, (by simpa using ())⟩
+      ⟨⟨0, by rfl⟩, (by exact ())⟩
     -- Construct the transcript
     let t := FullTranscript.mk1 (pSpec := pSpecFinalSumcheckStep (L := L)) s'
     -- Get the logic instance
@@ -1858,14 +1863,14 @@ theorem coreInteraction_rbrKnowledgeSoundness :
     (rbrKnowledgeError₁ := fun _ => (2 : ℝ≥0) / Fintype.card L)
     (rbrKnowledgeError₂ := finalSumcheckKnowledgeError (L := L))
     (h₁ := by
-      simpa using (sumcheckLoopOracleVerifier_rbrKnowledgeSoundness
+      exact sumcheckLoopOracleVerifier_rbrKnowledgeSoundness
         (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
-        (𝓑 := 𝓑) (aOStmtIn := aOStmtIn) (init := init) (impl := impl))
+        (𝓑 := 𝓑) (aOStmtIn := aOStmtIn) (init := init) (impl := impl)
     )
     (h₂ := by
-      simpa using (finalSumcheckOracleVerifier_rbrKnowledgeSoundness
+      exact finalSumcheckOracleVerifier_rbrKnowledgeSoundness
         (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
-        (𝓑 := 𝓑) (aOStmtIn := aOStmtIn) (init := init) (impl := impl))
+        (𝓑 := 𝓑) (aOStmtIn := aOStmtIn) (init := init) (impl := impl)
     )
   exact OracleVerifier.rbrKnowledgeSoundness_of_eq_error
     (init := init) (impl := impl)

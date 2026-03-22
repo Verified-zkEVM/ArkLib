@@ -185,7 +185,7 @@ lemma firstOracleWitnessConsistency_unique
       (ℓ := ℓ') (f := getFirstOracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmt)
       (tpoly := t₂)).2 h₂
   rw [h₁_some] at h₂_some
-  simpa using h₂_some
+  injection h₂_some
 
 lemma map_eval_sumToIter_rename_finSum_zero
     (p : MvPolynomial (Fin ℓ') L) :
@@ -201,17 +201,17 @@ lemma map_eval_sumToIter_rename_finSum_zero
     have h_ren_fun :
         (fun i : Fin ℓ' => (finSumFinEquiv (m := ℓ') (n := 0)).symm i) = Sum.inl := by
       funext i
-      simpa using (finSumFinEquiv_symm_apply_castAdd (m := ℓ') (n := 0) i)
+      exact finSumFinEquiv_symm_apply_castAdd (m := ℓ') (n := 0) i
     have h_ren :
         MvPolynomial.rename
           (f := ⇑(finSumFinEquiv (m := ℓ') (n := 0)).symm) p =
         MvPolynomial.rename (f := Sum.inl) p := by
-      simpa using congrArg (fun f => MvPolynomial.rename (f := f) p) h_ren_fun
+      exact congrArg (fun f => MvPolynomial.rename (f := f) p) h_ren_fun
     rw [h_ren]
     have h_comp := MvPolynomial.sumAlgEquiv_comp_rename_inl
       (R := L) (S₁ := Fin ℓ') (S₂ := Fin 0)
     have h_eval_comp := congrArg (fun f => f p) h_comp
-    simpa using h_eval_comp
+    exact h_eval_comp
   rw [h_sumToIter]
   rw [MvPolynomial.map_map]
   have h_eval_comp_id :
@@ -238,8 +238,9 @@ lemma witnessStructuralInvariant_MLPEvalWitness_to_BBF_Witness
       (mp := BBF_SumcheckMultiplierParam) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (reducedMLPEvalStatement_to_BBF_Statement (L := L) (ℓ' := ℓ') stmt)
       (MLPEvalWitness_to_BBF_Witness 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmt wit) := by
-  simpa [Binius.BinaryBasefold.witnessStructuralInvariant,
-    reducedMLPEvalStatement_to_BBF_Statement, MLPEvalWitness_to_BBF_Witness]
+  unfold Binius.BinaryBasefold.witnessStructuralInvariant
+  dsimp [reducedMLPEvalStatement_to_BBF_Statement, MLPEvalWitness_to_BBF_Witness]
+  simp
 
 /-- If `t(r) = s` for the outer MLP statement, then the mapped round-0 BBF witness
 satisfies the BBF round-0 sumcheck consistency identity. -/
@@ -282,13 +283,16 @@ lemma sumcheckConsistency_MLPEvalWitness_to_BBF_Witness_of_eval
           (BBF_SumcheckMultiplierParam.multpoly
             ⟨stmt.t_eval_point, stmt.original_claim⟩)).val)
     apply Subtype.ext
-    simpa [projectToMidSumcheckPoly] using h_fix0
+    unfold projectToMidSumcheckPoly
+    dsimp
+    exact h_fix0
   let mEq : MultilinearPoly L ℓ' := BBF_eq_multiplier (L := L) stmt.t_eval_point
   have h_H0' :
       projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := wit.t)
         (m := mEq) (i := (0 : Fin (ℓ' + 1))) (challenges := Fin.elim0) =
       computeInitialSumcheckPoly (ℓ := ℓ') wit.t mEq := by
-    simpa [mEq, BBF_SumcheckMultiplierParam, BBF_eq_multiplier] using h_H0
+    dsimp [mEq, BBF_SumcheckMultiplierParam, BBF_eq_multiplier] at h_H0 ⊢
+    exact h_H0
   change MvPolynomial.eval stmt.t_eval_point wit.t.val =
     ∑ x ∈ Fintype.piFinset (fun _ : Fin ℓ' => Finset.map castEmb (Finset.univ : Finset (Fin 2))),
       MvPolynomial.eval x
@@ -302,10 +306,18 @@ lemma sumcheckConsistency_MLPEvalWitness_to_BBF_Witness_of_eval
     Fintype.piFinset (fun _ : Fin ℓ' => Finset.map castEmb (Finset.univ : Finset (Fin 2))) =
       (Finset.univ : Finset (Fin ℓ' → Fin 2)).image
         (fun b : Fin ℓ' → Fin 2 => fun i => castEmb (b i)) := by
-    simpa [Finset.map_eq_image, Fintype.piFinset_univ] using
-      (Fintype.piFinset_image
+    have h_arg :
+        (fun _ : Fin ℓ' => Finset.map castEmb (Finset.univ : Finset (Fin 2))) =
+          (fun _ : Fin ℓ' => (Finset.univ : Finset (Fin 2)).image castEmb) := by
+      funext i
+      rw [Finset.map_eq_image]
+    have h_pi' :=
+      Fintype.piFinset_image
         (f := fun _ : Fin ℓ' => castEmb)
-        (s := fun _ : Fin ℓ' => (Finset.univ : Finset (Fin 2))))
+        (s := fun _ : Fin ℓ' => (Finset.univ : Finset (Fin 2)))
+    rw [h_arg]
+    rw [Fintype.piFinset_univ] at h_pi'
+    exact h_pi'
   rw [h_pi, Finset.sum_image]
   · simp only [MvPolynomial.eval_mul]
     have h_sum_symm :
@@ -323,7 +335,7 @@ lemma sumcheckConsistency_MLPEvalWitness_to_BBF_Witness_of_eval
           MvPolynomial.eval_C, MvPolynomial.eval_X, mEq]
       rw [h_mEq]
       congr 1
-      simpa using (MvPolynomial.eqPolynomial_symm
+      exact (MvPolynomial.eqPolynomial_symm
         (x := fun i => castEmb (x i)) (y := stmt.t_eval_point)).symm
     rw [h_sum_symm]
     have h_multilinear : MvPolynomial.MLE
@@ -423,11 +435,14 @@ instance largeFieldInvocationCtxLens_complete :
     · refine ⟨?_, ?_⟩
       · exact witnessStructuralInvariant_MLPEvalWitness_to_BBF_Witness 𝔽q β
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtIn witIn
-      · simpa [reducedMLPEvalStatement_to_BBF_Statement, strictOracleFoldingConsistencyProp] using
-          h_compat
+      · have h_compat' := h_compat
+        dsimp [reducedMLPEvalStatement_to_BBF_Statement, strictOracleFoldingConsistencyProp]
+          at h_compat' ⊢
+        exact h_compat'
   lift_complete := fun outerStmtIn outerWitIn innerStmtOut innerWitOut hCompat hRelIn hRelOut => by
     cases innerWitOut
-    simpa [largeFieldInvocationCtxLens, largeFieldInvocationStmtLens] using hRelOut
+    dsimp [largeFieldInvocationCtxLens, largeFieldInvocationStmtLens] at hRelOut ⊢
+    exact hRelOut
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
@@ -457,7 +472,7 @@ theorem largeFieldInvocationOracleReduction_perfectCompleteness (hInit : NeverFa
   have h_inner := FullBinaryBasefold.fullOracleReduction_perfectCompleteness
     𝔽q β γ_repetitions (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
     (init := init) (impl := impl) hInit
-  simpa [largeFieldInvocationOracleReduction, innerReduction] using
+  have h_lift :=
     (OracleReduction.liftContext_perfectCompleteness
       (R := innerReduction)
       (lens := largeFieldInvocationCtxLens 𝔽q β)
@@ -470,6 +485,8 @@ theorem largeFieldInvocationOracleReduction_perfectCompleteness (hInit : NeverFa
       (init := init)
       (impl := impl)
       h_inner)
+  dsimp [largeFieldInvocationOracleReduction, innerReduction] at h_lift ⊢
+  exact h_lift
 
 lemma MLPEvalRelation_of_round0_local_and_structural
     (stmt : MLPEvalStatement (L := L) (ℓ := ℓ'))
@@ -502,8 +519,10 @@ lemma MLPEvalRelation_of_round0_local_and_structural
       wit.H = projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := wit.t)
           (m := BBF_SumcheckMultiplierParam.multpoly ⟨stmt.t_eval_point, stmt.original_claim⟩)
           (i := (0 : Fin (ℓ' + 1))) (challenges := Fin.elim0) := by
-            simpa [Binius.BinaryBasefold.witnessStructuralInvariant,
-              reducedMLPEvalStatement_to_BBF_Statement] using h_struct.1
+            have h_struct0 := h_struct.1
+            dsimp [Binius.BinaryBasefold.witnessStructuralInvariant,
+              reducedMLPEvalStatement_to_BBF_Statement] at h_struct0 ⊢
+            exact h_struct0
       _ = projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := wit.t)
           (m := BBF_SumcheckMultiplierParam.multpoly ⟨stmt_eval.t_eval_point,
             stmt_eval.original_claim⟩)
@@ -515,7 +534,9 @@ lemma MLPEvalRelation_of_round0_local_and_structural
   have h_sum_eq_claim :
       stmt.original_claim = ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ'),
         wit.H.val.eval x := by
-    simpa [sumcheckConsistencyProp, reducedMLPEvalStatement_to_BBF_Statement] using h_local
+    have h_local' := h_local
+    dsimp [sumcheckConsistencyProp, reducedMLPEvalStatement_to_BBF_Statement] at h_local' ⊢
+    exact h_local'
   have h_sum_eq_eval :
       wit.t.val.eval stmt.t_eval_point = ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ'),
         wit.H.val.eval x := by
@@ -523,9 +544,17 @@ lemma MLPEvalRelation_of_round0_local_and_structural
         wit.t.val.eval stmt.t_eval_point = ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ'),
           (MLPEvalWitness_to_BBF_Witness 𝔽q β
             (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmt_eval wit_eval).H.val.eval x := by
-      simpa [sumcheckConsistencyProp, reducedMLPEvalStatement_to_BBF_Statement, stmt_eval] using
-        h_local_eval
-    simpa [h_H_eq] using h_sum_eq_eval'
+      have h_local_eval' := h_local_eval
+      dsimp [sumcheckConsistencyProp, reducedMLPEvalStatement_to_BBF_Statement, stmt_eval]
+        at h_local_eval' ⊢
+      exact h_local_eval'
+    have h_H_eval :
+        (∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ'),
+          (MLPEvalWitness_to_BBF_Witness 𝔽q β
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmt_eval wit_eval).H.val.eval x) =
+        ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ'), wit.H.val.eval x := by
+      exact congrArg (fun H => ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ'), H.val.eval x) h_H_eq.symm
+    exact h_sum_eq_eval'.trans h_H_eval
   calc
     wit.t.val.eval stmt.t_eval_point = ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ'), wit.H.val.eval x := h_sum_eq_eval
     _ = stmt.original_claim := h_sum_eq_claim.symm
@@ -582,7 +611,8 @@ instance largeFieldInvocationExtractorLens_rbr_knowledge_soundness
       (lens := largeFieldInvocationExtractorLens 𝔽q β) where
   proj_knowledgeSound := by
     intro outerStmtIn innerStmtOut outerWitOut _ hOuter
-    simpa [largeFieldInvocationExtractorLens, largeFieldInvocationStmtLens] using hOuter
+    dsimp [largeFieldInvocationExtractorLens, largeFieldInvocationStmtLens] at hOuter ⊢
+    exact hOuter
   lift_knowledgeSound := by
     intro outerStmtIn outerWitOut innerWitIn _ hInner
     rcases outerStmtIn with ⟨stmtIn, oStmtIn⟩
@@ -592,7 +622,8 @@ instance largeFieldInvocationExtractorLens_rbr_knowledge_soundness
           (0 : Fin (ℓ' + 1))
           ((reducedMLPEvalStatement_to_BBF_Statement (L := L) (ℓ' := ℓ') stmtIn,
             oStmtIn), innerWitIn) := by
-      simpa [roundRelation, Set.mem_setOf_eq] using hInner
+      dsimp [roundRelation, Set.mem_setOf_eq] at hInner ⊢
+      exact hInner
     unfold roundRelationProp Binius.BinaryBasefold.masterKStateProp at hInner'
     have h_no_bad :
         ¬ incrementalBadEventExistsProp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -606,7 +637,10 @@ instance largeFieldInvocationExtractorLens_rbr_knowledge_soundness
       have hj0 : j = 0 := by
         apply Fin.eq_of_val_eq
         have hjlt : j.val < 1 := by
-          simpa [toOutCodewordsCountOf0] using j.isLt
+          have h_j_lt := j.isLt
+          change j.val < toOutCodewordsCount ℓ' ϑ (0 : Fin (ℓ' + 1)) at h_j_lt
+          rw [toOutCodewordsCountOf0] at h_j_lt
+          exact h_j_lt
         exact Nat.lt_one_iff.mp hjlt
       subst hj0
       dsimp [oraclePositionToDomainIndex] at hj
@@ -626,7 +660,9 @@ instance largeFieldInvocationExtractorLens_rbr_knowledge_soundness
       · exact MLPEvalRelation_of_round0_local_and_structural 𝔽q β
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
           stmtIn innerWitIn h_local h_struct
-      · simpa [bbfAbstractOStmtIn] using h_first
+      · have h_first' := h_first
+        dsimp [bbfAbstractOStmtIn] at h_first' ⊢
+        exact h_first'
 
 /-! ### MLIOPCS Instance -/
 
@@ -677,8 +713,9 @@ def bbfMLIOPCS : MLIOPCS L ℓ' where
           (compatStmt := (FullBinaryBasefold.fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
             (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toVerifier.compatStatement
             (largeFieldInvocationStmtLens 𝔽q β)))
-        (h := by simpa using h_bbf)
-    simpa [largeFieldInvocationOracleReduction] using h_lifted
+        (h := by exact h_bbf)
+    dsimp [largeFieldInvocationOracleReduction] at h_lifted ⊢
+    exact h_lifted
 
 end BinaryBasefoldMLIOPCS
 
