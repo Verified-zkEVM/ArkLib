@@ -1030,6 +1030,16 @@ We rcases on h_not_fresh:
     which implies `exists_bad_until_j` to be true from `h_bad_after`
     => `h_bad_before = true` by definition
 -/
+private theorem fin_fun_heq_of_cast {m n : ℕ} (h : m = n)
+    (f : Fin m → L) (g : Fin n → L)
+    (hfg : ∀ i : Fin m, f i = g (Fin.cast h i)) :
+    HEq f g := by
+  subst h
+  apply heq_of_eq
+  funext i
+  simpa using hfg i
+
+set_option maxHeartbeats 200000 in
 lemma incrementalBadEventExistsProp_fold_step_backward (i : Fin ℓ)
     (stmtOStmtIn : (Statement (L := L) Context i.castSucc) × (∀ j,
       OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
@@ -1042,7 +1052,309 @@ lemma incrementalBadEventExistsProp_fold_step_backward (i : Fin ℓ)
   incrementalBadEventExistsProp 𝔽q β i.castSucc
       (OracleFrontierIndex.mkFromStmtIdx i.castSucc) stmtOStmtIn.2
       stmtOStmtIn.1.challenges := by
-  sorry
+  classical
+  unfold incrementalBadEventExistsProp at h_bad_after ⊢
+  rcases h_bad_after with ⟨j, hj⟩
+  by_cases h_old : j.val + 1 < toOutCodewordsCount ℓ ϑ i.castSucc
+  · refine ⟨j, ?_⟩
+    have hj_copy := hj
+    dsimp at hj_copy ⊢
+    have h_k_full : j.val * ϑ + ϑ ≤ i.val := by
+      exact oracle_block_k_next_le_i (ℓ := ℓ) (ϑ := ϑ) (i := i.castSucc) (j := j) (hj := h_old)
+    have hk_after : min ϑ (i.val + 1 - j.val * ϑ) = ϑ := by
+      omega
+    have hk_before : min ϑ (i.val - j.val * ϑ) = ϑ := by
+      omega
+    let afterSlice : Fin ϑ → L := fun cId =>
+      Fin.snoc (α := fun _ => L) stmtOStmtIn.1.challenges r_i'
+        ⟨j.val * ϑ + cId.val, by
+          have h_idx_lt : j.val * ϑ + cId.val < i.val := by
+            exact lt_of_lt_of_le (Nat.add_lt_add_left cId.isLt (j.val * ϑ)) h_k_full
+          exact lt_trans h_idx_lt (Nat.lt_succ_self i.val)⟩
+    let beforeSlice : Fin ϑ → L := fun cId =>
+      stmtOStmtIn.1.challenges
+        ⟨j.val * ϑ + cId.val, by
+          exact lt_of_lt_of_le (Nat.add_lt_add_left cId.isLt (j.val * ϑ)) h_k_full⟩
+    have h_challenges : afterSlice = beforeSlice := by
+      have h_slice :=
+        getFoldingChallenges_init_succ_eq (r := r) (L := L) (𝓡 := 𝓡) (ϑ := ϑ)
+          (i := i) (j := j) (challenges := Fin.snoc stmtOStmtIn.1.challenges r_i')
+          (h := h_k_full)
+      simp [getFoldingChallenges, afterSlice, beforeSlice] at h_slice
+      exact h_slice.symm
+    let blockStart : Fin r := ⟨j.val * ϑ, by
+      exact lt_r_of_lt_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (oraclePositionToDomainIndex (ℓ := ℓ) (ϑ := ϑ) j).isLt⟩
+    let blockDest : Fin r := ⟨j.val * ϑ + ϑ, by
+      exact lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (oracle_index_add_steps_le_ℓ ℓ ϑ (i := i.castSucc) (j := j))⟩
+    have hj_after_full :
+        incrementalFoldingBadEvent 𝔽q β
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (block_start_idx := blockStart)
+          (k := ϑ)
+          (h_k_le := le_rfl)
+          (midIdx := blockDest)
+          (destIdx := blockDest)
+          (h_midIdx := rfl)
+          (h_destIdx := rfl)
+          (h_destIdx_le := oracle_index_add_steps_le_ℓ ℓ ϑ (i := i.castSucc) (j := j))
+          (f_block_start := stmtOStmtIn.2 j)
+          (r_challenges := afterSlice) := by
+      convert hj_copy using 1
+      · apply Fin.eq_of_val_eq
+        dsimp [blockDest]
+        omega
+      · exact hk_after.symm
+      · have h_afterSlice_heq :
+            HEq
+              (fun cId : Fin (min ϑ (i.val + 1 - j.val * ϑ)) =>
+                Fin.snoc (α := fun _ => L) stmtOStmtIn.1.challenges r_i'
+                  ⟨j.val * ϑ + cId.val, by
+                    have h_cId_lt :
+                        cId.val < i.val + 1 - j.val * ϑ := by
+                      exact lt_of_lt_of_le cId.isLt (Nat.min_le_right ϑ _)
+                    have h_block_le : j.val * ϑ ≤ i.val + 1 := by
+                      omega
+                    calc
+                      j.val * ϑ + cId.val < j.val * ϑ + (i.val + 1 - j.val * ϑ) :=
+                        Nat.add_lt_add_left h_cId_lt (j.val * ϑ)
+                      _ = i.val + 1 := Nat.add_sub_of_le h_block_le⟩)
+              afterSlice := by
+          apply fin_fun_heq_of_cast hk_after
+          intro cId
+          dsimp [afterSlice]
+        exact HEq.symm h_afterSlice_heq
+    have h_bad_after_full :
+        foldingBadEvent 𝔽q β
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (i := blockStart)
+          (destIdx := blockDest)
+          (steps := ϑ)
+          (h_destIdx := rfl)
+          (h_destIdx_le := oracle_index_add_steps_le_ℓ ℓ ϑ (i := i.castSucc) (j := j))
+          (f_i := stmtOStmtIn.2 j)
+          (r_challenges := afterSlice) := by
+      exact
+        (incrementalFoldingBadEvent_eq_foldingBadEvent_of_k_eq_ϑ
+          (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (ϑ := ϑ)
+          (block_start_idx := blockStart)
+          (midIdx := blockDest)
+          (destIdx := blockDest)
+          (h_midIdx := by rfl)
+          (h_destIdx := rfl)
+          (h_destIdx_le := oracle_index_add_steps_le_ℓ ℓ ϑ (i := i.castSucc) (j := j))
+          (f_block_start := stmtOStmtIn.2 j)
+          (r_challenges := afterSlice)).1 hj_after_full
+    have h_bad_before_full := h_bad_after_full
+    rw [h_challenges] at h_bad_before_full
+    have hj_before_full :
+        incrementalFoldingBadEvent 𝔽q β
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (block_start_idx := blockStart)
+          (k := ϑ)
+          (h_k_le := le_rfl)
+          (midIdx := blockDest)
+          (destIdx := blockDest)
+          (h_midIdx := rfl)
+          (h_destIdx := rfl)
+          (h_destIdx_le := oracle_index_add_steps_le_ℓ ℓ ϑ (i := i.castSucc) (j := j))
+          (f_block_start := stmtOStmtIn.2 j)
+          (r_challenges := beforeSlice) := by
+      exact
+        (incrementalFoldingBadEvent_eq_foldingBadEvent_of_k_eq_ϑ
+          (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (ϑ := ϑ)
+          (block_start_idx := blockStart)
+          (midIdx := blockDest)
+          (destIdx := blockDest)
+          (h_midIdx := by rfl)
+          (h_destIdx := rfl)
+          (h_destIdx_le := oracle_index_add_steps_le_ℓ ℓ ϑ (i := i.castSucc) (j := j))
+          (f_block_start := stmtOStmtIn.2 j)
+          (r_challenges := beforeSlice)).2 h_bad_before_full
+    convert hj_before_full using 1
+    · apply Fin.eq_of_val_eq
+      dsimp [blockDest]
+      omega
+    · have h_beforeSlice_heq :
+          HEq
+            (fun cId : Fin (min ϑ (i.val - j.val * ϑ)) =>
+              stmtOStmtIn.1.challenges
+                ⟨j.val * ϑ + cId.val, by
+                  have h_cId_lt :
+                      cId.val < i.val - j.val * ϑ := by
+                    exact lt_of_lt_of_le cId.isLt (Nat.min_le_right ϑ _)
+                  have h_block_le : j.val * ϑ ≤ i.val := by
+                    exact le_trans (by omega) h_k_full
+                  calc
+                    j.val * ϑ + cId.val < j.val * ϑ + (i.val - j.val * ϑ) :=
+                      Nat.add_lt_add_left h_cId_lt (j.val * ϑ)
+                    _ = i.val := Nat.add_sub_of_le h_block_le⟩)
+            beforeSlice := by
+        apply fin_fun_heq_of_cast hk_before
+        intro cId
+        dsimp [beforeSlice]
+      exact h_beforeSlice_heq
+  · refine ⟨j, ?_⟩
+    have hj_copy := hj
+    dsimp at hj_copy ⊢
+    have h_j_last : j = getLastOraclePositionIndex ℓ ϑ i.castSucc := by
+      apply Fin.eq_of_val_eq
+      have hj_lt : j.val < toOutCodewordsCount ℓ ϑ i.castSucc := by
+        have hj_lt' := j.isLt
+        simp only [OracleFrontierIndex.val_mkFromStmtIdxCastSuccOfSucc, Fin.val_castSucc] at hj_lt'
+        exact hj_lt'
+      have h_val : j.val = toOutCodewordsCount ℓ ϑ i.castSucc - 1 := by
+        have h_ge : toOutCodewordsCount ℓ ϑ i.castSucc ≤ j.val + 1 := by
+          omega
+        omega
+      dsimp [getLastOraclePositionIndex]
+      exact h_val
+    subst j
+    dsimp [foldStepFreshDoomPreservationEvent] at h_not_fresh
+    have h_j_val : (getLastOraclePositionIndex ℓ ϑ i.castSucc).val = i.val / ϑ := by
+      dsimp only [getLastOraclePositionIndex]
+      unfold toOutCodewordsCount
+      simp only [Fin.val_castSucc, i.isLt, ↓reduceIte, add_tsub_cancel_right]
+    have h_diff_lt :
+        i.val - (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ < ϑ := by
+      rw [h_j_val, Nat.mul_comm, ← Nat.mod_eq_sub_mul_div]
+      exact Nat.mod_lt i.val (Nat.pos_of_neZero ϑ)
+    have h_diff_eq :
+        i.val - (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ = i.val % ϑ := by
+      rw [h_j_val, Nat.mul_comm, ← Nat.mod_eq_sub_mul_div]
+    have h_last_le :
+        (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ ≤ i.val := by
+      rw [h_j_val, Nat.mul_comm]
+      have h_div := Nat.div_mul_le_self i.val ϑ
+      rw [Nat.mul_comm] at h_div
+      exact h_div
+    have hk_after_last :
+        min ϑ (i.val + 1 - (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ) =
+          min ϑ (i.val - (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ) + 1 := by
+      rw [show i.val + 1 - (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ =
+          (i.val - (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ) + 1 by
+            omega]
+      rw [h_diff_eq]
+      have h_mod_lt : i.val % ϑ < ϑ := by
+        exact Nat.mod_lt i.val (Nat.pos_of_neZero ϑ)
+      omega
+    let kBefore : ℕ := min ϑ (i.val - (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ)
+    let prefixSlice : Fin kBefore → L := fun cId =>
+      stmtOStmtIn.1.challenges
+        ⟨(getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ + cId.val, by
+          have h_min_le :
+              kBefore ≤ i.val - (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ := by
+            dsimp [kBefore]
+            exact Nat.min_le_right ϑ _
+          have h_cId_lt :
+              cId.val < i.val - (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ := by
+            exact lt_of_lt_of_le cId.isLt h_min_le
+          have h_idx_lt :
+              (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ + cId.val < i.val := by
+            omega
+          exact h_idx_lt⟩
+    let afterSlice : Fin (kBefore + 1) → L := fun cId =>
+      Fin.snoc (α := fun _ => L) stmtOStmtIn.1.challenges r_i'
+        ⟨(getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ + cId.val, by
+          have h_cId_le : cId.val ≤ kBefore := by
+            exact Nat.lt_succ_iff.mp cId.isLt
+          have h_idx_le :
+              (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ + cId.val ≤ i.val := by
+            dsimp [kBefore] at h_cId_le
+            have h_min_le :
+                min ϑ (i.val - (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ) ≤
+                  i.val - (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ :=
+              Nat.min_le_right ϑ _
+            omega
+          exact lt_of_le_of_lt h_idx_le (Nat.lt_succ_self i.val)⟩
+    let freshSlice : Fin (kBefore + 1) → L := Fin.snoc (α := fun _ => L) prefixSlice r_i'
+    have h_after_challenges : afterSlice = freshSlice := by
+      funext cId
+      by_cases h_lt : cId.val < kBefore
+      · have h_idx_lt :
+            (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ + cId.val < i.val := by
+          dsimp [kBefore] at h_lt
+          omega
+        simp [afterSlice, freshSlice, prefixSlice, Fin.snoc, h_lt, h_idx_lt, h_idx_lt.ne]
+      · have h_eq_last :
+            cId.val = kBefore := by
+          omega
+        have h_idx_eq :
+            (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ + cId.val = i.val := by
+          rw [h_eq_last]
+          dsimp [kBefore]
+          omega
+        have h_not_idx_lt :
+            ¬ (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ + cId.val < i.val := by
+          omega
+        simp [afterSlice, freshSlice, prefixSlice, Fin.snoc, h_lt, h_idx_eq, h_not_idx_lt]
+    let blockStart : Fin r := ⟨(getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ, by
+      exact lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (Nat.le_of_lt (lt_of_le_of_lt h_last_le i.isLt))⟩
+    let blockMidAfter : Fin r :=
+      ⟨(getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ + (kBefore + 1), by
+        apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        dsimp [kBefore]
+        omega⟩
+    let blockDest : Fin r := ⟨(getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ + ϑ, by
+      exact lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (oracle_index_add_steps_le_ℓ ℓ ϑ (i := i.castSucc)
+          (j := getLastOraclePositionIndex ℓ ϑ i.castSucc))⟩
+    have h_after_last_afterSlice :
+        incrementalFoldingBadEvent 𝔽q β
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (block_start_idx := blockStart)
+          (k := kBefore + 1)
+          (h_k_le := by
+            dsimp [kBefore]
+            omega)
+          (midIdx := blockMidAfter)
+          (destIdx := blockDest)
+          (h_midIdx := rfl)
+          (h_destIdx := rfl)
+          (h_destIdx_le := oracle_index_add_steps_le_ℓ ℓ ϑ (i := i.castSucc)
+            (j := getLastOraclePositionIndex ℓ ϑ i.castSucc))
+          (f_block_start := stmtOStmtIn.2 (getLastOraclePositionIndex ℓ ϑ i.castSucc))
+          (r_challenges := afterSlice) := by
+      convert hj_copy using 1
+      · apply Fin.eq_of_val_eq
+        dsimp [blockStart, blockMidAfter, kBefore]
+        omega
+      · dsimp [kBefore]
+        omega
+      · have h_afterSlice_heq :
+            HEq
+              (fun cId : Fin
+                  (min ϑ (i.val + 1 - (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ)) =>
+                Fin.snoc (α := fun _ => L) stmtOStmtIn.1.challenges r_i'
+                  ⟨(getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ + cId.val, by
+                    have h_cId_lt :
+                        cId.val <
+                          i.val + 1 -
+                            (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ := by
+                      exact lt_of_lt_of_le cId.isLt (Nat.min_le_right ϑ _)
+                    have h_block_le :
+                        (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ ≤ i.val + 1 := by
+                      omega
+                    calc
+                      (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ + cId.val <
+                          (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ +
+                            (i.val + 1 -
+                              (getLastOraclePositionIndex ℓ ϑ i.castSucc).val * ϑ) :=
+                        Nat.add_lt_add_left h_cId_lt _
+                      _ = i.val + 1 := Nat.add_sub_of_le h_block_le⟩)
+              afterSlice := by
+          apply fin_fun_heq_of_cast hk_after_last
+          intro cId
+          dsimp [afterSlice]
+        exact HEq.symm h_afterSlice_heq
+    have h_after_last' := h_after_last_afterSlice
+    rw [h_after_challenges] at h_after_last'
+    by_contra h_before_false
+    exact h_not_fresh ⟨h_before_false, h_after_last'⟩
 lemma foldStep_rbrExtractionFailureEvent_imply_sumcheck_or_badEvent (i : Fin ℓ)
     (stmtOStmtIn : (Statement (L := L) Context i.castSucc) × (∀ j,
       OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))

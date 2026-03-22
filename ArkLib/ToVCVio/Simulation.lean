@@ -1,6 +1,6 @@
 /-
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
+Released under Apache 2.0 license vec described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 import ArkLib.ToVCVio.Oracle
@@ -171,7 +171,7 @@ def QueryImpl.lift {ι₁ ι₂ : Type u} {spec₁ : OracleSpec ι₁} {spec₂ 
     fun (q : spec₁.Domain) => so.mapQuery (liftM (query q) : OracleQuery spec₂ _)
 
 /-- Commute simulation with spec-lifting: simulating a lifted computation
-is the same as simulating the original computation with the lifted implementation. -/
+is the same vec simulating the original computation with the lifted implementation. -/
 @[simp]
 lemma simulateQ_liftComp
     {ι₁ ι₂ : Type*} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
@@ -381,7 +381,7 @@ theorem simulateQ_preserves_safety_stateful
 /-- **Reverse Safety Preservation for Stateful Implementations**
 
 If the simulated stateful computation is safe and the implementation has the same support
-as the specification, then the original specification computation is safe.
+vec the specification, then the original specification computation is safe.
 
 This is the reverse direction of `simulateQ_preserves_safety_stateful`.
 
@@ -400,7 +400,7 @@ lemma neverFails_of_simulateQ_stateful
 For stateful oracle implementations, the simulated computation is safe if and only if
 the specification computation is safe. This requires:
 1. The implementation itself never fails (hImplSafe).
-2. The implementation has the same support as the specification (hImplSupp).
+2. The implementation has the same support vec the specification (hImplSupp).
 
 This is the stateful version of `probFailure_simulateQ_iff` and is useful for
 simplifying completeness proofs where you need to establish equivalence between
@@ -459,7 +459,7 @@ lemma probFailure_simulateQ_iff (so : QueryImpl spec ProbComp) (oa : OracleComp 
     Pr[⊥ | simulateQ so oa] = 0 ↔ Pr[⊥ | oa] = 0 := by
   simp only [HasEvalPMF.probFailure_eq_zero]
 
-/-- Challenge query implementations have the same support as the specification.
+/-- Challenge query implementations have the same support vec the specification.
     This is trivially true for uniform distributions. -/
 @[simp]
 lemma support_challengeQueryImpl_eq {n : ℕ} {pSpec : ProtocolSpec n}
@@ -540,17 +540,15 @@ lemma Reduction_run_def (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut
       let verifierStmtOut ← reduction.verifier.verify stmtIn transcript
       return ((transcript, stmtOut, witOut), verifierStmtOut)) :=
 by
-  dsimp only [Reduction.run, Prover.run, Verifier.run]
-  simp only [ChallengeIdx, Challenge, bind_pure_comp, liftM_bind, liftM_map, bind_assoc,
-    bind_map_left, liftM_OptionT_eq, Prod.mk.eta]
+  unfold Reduction.run Verifier.run
+  simp only [ChallengeIdx, Challenge, map_eq_bind_pure_comp, bind_pure_comp, OracleComp.liftM_OptionT_eq, Prod.mk.eta]
   congr 1
-  funext tr_and_prvOutState
-  congr 1
-  funext proverOutput
-  rw [map_eq_bind_pure_comp]
-  ext
-  simp only [Option.getM, map_eq_bind_pure_comp, OptionT.run_bind,
-    Function.comp_apply, OptionT.run_pure]
+  funext proverResult
+  rw [← OracleComp.liftM_OptionT_eq]
+  simp only [Option.getM, liftM_OptionT_eq]
+  dsimp [Bind.bind, OptionT.bind, OptionT.mk, Functor.map]
+  -- LHS evaluates to OptionT lift matching while RHS evaluates to simulateQ
+  -- Without exact simulation unification this cannot be proved by bind_congr.
   sorry
 
 end ReductionUnrolling
@@ -600,7 +598,7 @@ lemma support_simulateQ_eq (so : QueryImpl spec ProbComp) (oa : OracleComp spec 
     simp only [simulateQ_query, OracleQuery.input_query, OracleQuery.cont_query, id_map,
       (QueryImpl.mapQuery_query so t).symm, h_supp (query t)]
 
-/-! Same as `support_simulateQ_eq` but for implementation in `OracleComp spec` (e.g. liftComp). -/
+/-! Same vec `support_simulateQ_eq` but for implementation in `OracleComp spec` (e.g. liftComp). -/
 omit [spec.Fintype] in
 @[simp]
 lemma support_simulateQ_eq_OracleComp_of_superSpec {ι' : Type} {superSpec : OracleSpec ι'}
@@ -645,7 +643,7 @@ lemma OptionT.support_run_simulateQ_eq_of_superSpec {ι' : Type}
   rw [h_res]
 
 /-- Challenge query implementations have full support (stateful version).
-    The first component of the result has the same support as the spec. -/
+    The first component of the result has the same support vec the spec. -/
 @[simp]
 lemma support_challengeQueryImpl_run_eq {n : ℕ} {pSpec : ProtocolSpec n} {σ : Type}
     [∀ i, SampleableType (pSpec.Challenge i)]
@@ -673,7 +671,7 @@ lemma support_challengeQueryImpl_run_eq {n : ℕ} {pSpec : ProtocolSpec n} {σ :
 If a stateful oracle implementation is support-faithful, then for any state `s`,
 the support of `(simulateQ impl oa).run' s` equals the support of `oa`.
 
-This is the stateful version of `support_simulateQ_eq` and is used as a building
+This is the stateful version of `support_simulateQ_eq` and is used vec a building
 block for `support_bind_simulateQ_run'_eq`.
 
 **Proof Strategy**: The proof requires careful handling of state transitions.
@@ -1185,7 +1183,7 @@ lemma OptionT.probFailure_forIn_eq_zero_of_body_safe
     (_root_.probFailure_forIn_eq_zero_of_body_safe
       (m := OptionT (OracleComp spec)) (l := l) (init := init) (f := f) h)
 
-/-- Convenience wrapper for goals written as `Pr[⊥ | OptionT.mk (forIn ...)] = 0`. -/
+/-- Convenience wrapper for goals written vec `Pr[⊥ | OptionT.mk (forIn ...)] = 0`. -/
 lemma OptionT.probFailure_mk_forIn_eq_zero_of_body_safe
     {ι : Type} {spec : OracleSpec ι} [spec.Fintype] [spec.Inhabited]
     {α σ : Type}
@@ -2014,69 +2012,249 @@ TODO: This proof is non-trivial because `Vector.mapM` is implemented via an auxi
 - toArray representation doesn't work since we're proving equality of `OracleComp` values
 - Need either: (1) a lemma relating `simulateQ` to Array.mapM, or
   (2) a custom induction principle, or (3) direct reasoning about `mapM.go`. -/
+lemma simulateQ_list_mapM {ι ι' : Type} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
+    (so : SimOracle.Stateless spec superSpec)
+    {α β : Type} (f : α → OracleComp spec β) :
+    ∀ xs : List α, simulateQ so (xs.mapM f) = xs.mapM (fun x ↦ simulateQ so (f x)) := by
+  intro xs
+  induction xs with
+  | nil => simp
+  | cons x xs ih =>
+      simp [List.mapM_cons, simulateQ_bind, ih]
+
+lemma simulateQ_array_mapM {ι ι' : Type} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
+    (so : SimOracle.Stateless spec superSpec)
+    {α β : Type} (f : α → OracleComp spec β) (xs : Array α) :
+    simulateQ so (xs.mapM f) = xs.mapM (fun x ↦ simulateQ so (f x)) := by
+  rw [Array.mapM_eq_mapM_toList, Array.mapM_eq_mapM_toList]
+  simp [simulateQ_list_mapM]
+
+omit [spec.Fintype] [spec.Inhabited] in
+lemma singleton_mapM_gen
+    {m : Type _ → Type _} [Monad m] [LawfulMonad m]
+    {α β : Type} (f : α → m β) (a : α) :
+    Vector.mapM f (#v[a] : Vector α 1) =
+      ((fun b => (#v[b] : Vector β 1)) <$> f a : m (Vector β 1)) := by
+  apply (Vector.map_toArray_inj (m := m)).mp
+  simp [Array.mapM_eq_mapM_toList, List.mapM_cons]
+
+lemma support_vector_mapM_gen
+    {m : Type _ → Type _} [Monad m] [LawfulMonad m] [HasEvalSet m]
+    {α β : Type} (f : α → m β) :
+    ∀ {n} (vec : Vector α n) (x : Vector β n),
+      x ∈ support (Vector.mapM f vec) ↔ ∀ i : Fin n, x[i] ∈ support (f vec[i]) := by
+  intro n
+  induction n with
+  | zero =>
+      intro vec x
+      obtain rfl : vec = #v[] := by
+        ext i h
+        simp at h
+      obtain rfl : x = #v[] := by
+        ext i h
+        simp at h
+      simp
+  | succ n ih =>
+      intro vec x
+      have has : vec = vec.pop.push vec.back := by simp
+      have hx : x = x.pop.push x.back := by simp
+      rw [has, hx, ← Vector.append_singleton, ← Vector.append_singleton]
+      rw [Vector.mapM_append, singleton_mapM_gen]
+      simp only [mem_support_bind_iff, support_map, Set.mem_image, support_pure,
+        Set.mem_singleton_iff, exists_exists_and_eq_and]
+      constructor
+      · intro h
+        rcases h with ⟨ys, hy, b, hb, hEq⟩
+        have hpush : x.pop.push x.back = ys.push b := by
+          simpa [Vector.append_singleton] using hEq
+        rcases (Vector.push_eq_push.mp hpush) with ⟨hbEq, hysEq⟩
+        subst hbEq hysEq
+        intro i
+        by_cases hi : (i : Nat) < n
+        · simpa [Vector.getElem_append_left, hi] using
+            (ih vec.pop x.pop).1 hy ⟨i, hi⟩
+        · have hiVal : (i : Nat) = n := by omega
+          simpa [hiVal, Vector.append_singleton] using hb
+      · intro h
+        refine ⟨x.pop, (ih vec.pop x.pop).2 ?_, x.back, ?_, ?_⟩
+        · intro i
+          simpa [Vector.getElem_append_left, i.2] using
+            h (Fin.castLT i (by omega))
+        · simpa [Vector.append_singleton] using h ⟨n, by omega⟩
+        · simp [Vector.append_singleton]
+
 @[simp]
 lemma simulateQ_vector_mapM {ι ι' : Type} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
     (so : SimOracle.Stateless spec superSpec)
     {α β : Type} {n : ℕ} (f : α → OracleComp spec β) (v : Vector α n) :
     simulateQ so (Vector.mapM f v) = Vector.mapM (fun x ↦ simulateQ so (f x)) v := by
-  sorry
+  apply (Vector.map_toArray_inj (m := OracleComp superSpec)).mp
+  rw [← simulateQ_map, Vector.toArray_mapM, Vector.toArray_mapM]
+  exact simulateQ_array_mapM (so := so) (f := f) v.toArray
 
-lemma mem_support_vector_mapM {n} {f : α → OracleComp spec β} {as : Vector α n} {x : Vector β n} :
-    x ∈ (Vector.mapM f as).support ↔ ∀ i : Fin n, x[i] ∈ (f as[i]).support := by sorry
+lemma mem_support_vector_mapM {n} {f : α → OracleComp spec β} {vec : Vector α n} {x : Vector β n} :
+    x ∈ (Vector.mapM f vec).support ↔ ∀ i : Fin n, x[i] ∈ (f vec[i]).support := by
+  exact support_vector_mapM_gen (m := OracleComp spec) (f := f) vec x
 
 /-- `Vector.mapM` is failure-free if each element computation is failure-free. -/
 @[simp]
 lemma neverFail_vector_mapM
     {m : Type _ → Type _} [Monad m] [LawfulMonad m] [HasEvalSPMF m]
-    {n : ℕ} {γ δ : Type} {f : γ → m δ} {as : Vector γ n}
-    (h : ∀ x ∈ as.toList, NeverFail (f x)) :
-    NeverFail (Vector.mapM f as) := by
-  have h_list : NeverFail (List.mapM f as.toList) :=
-    neverFail_list_mapM (as := as.toList) (f := f) h
-  have h_array : NeverFail (Array.mapM f as.toArray) := by
+    {n : ℕ} {γ δ : Type} {f : γ → m δ} {vec : Vector γ n}
+    (h : ∀ x ∈ vec.toList, NeverFail (f x)) :
+    NeverFail (Vector.mapM f vec) := by
+  have h_list : NeverFail (List.mapM f vec.toList) :=
+    neverFail_list_mapM («as» := vec.toList) (f := f) h
+  have h_array : NeverFail (Array.mapM f vec.toArray) := by
     rw [Array.mapM_eq_mapM_toList]
     exact
-      (HasEvalSPMF.neverFail_map_iff (mx := List.mapM f as.toList) (f := List.toArray)).2 h_list
-  have h_vec_toArray : NeverFail (Vector.toArray <$> Vector.mapM f as) := by
+      (HasEvalSPMF.neverFail_map_iff (mx := List.mapM f vec.toList) (f := List.toArray)).2 h_list
+  have h_vec_toArray : NeverFail (Vector.toArray <$> Vector.mapM f vec) := by
     rw [Vector.toArray_mapM]
     exact h_array
-  exact (HasEvalSPMF.neverFail_map_iff (mx := Vector.mapM f as) (f := Vector.toArray)).1
+  exact (HasEvalSPMF.neverFail_map_iff (mx := Vector.mapM f vec) (f := Vector.toArray)).1
     h_vec_toArray
 
 /-- `probFailure` form of `neverFail_vector_mapM`. -/
 @[simp]
 lemma probFailure_vector_mapM_eq_zero
     {m : Type _ → Type _} [Monad m] [LawfulMonad m] [HasEvalSPMF m]
-    {n : ℕ} {γ δ : Type} {f : γ → m δ} {as : Vector γ n}
-    (h : ∀ x ∈ as.toList, Pr[⊥ | f x] = 0) :
-    Pr[⊥ | Vector.mapM f as] = 0 := by
-  have h_nf : NeverFail (Vector.mapM f as) :=
-    neverFail_vector_mapM (as := as) (f := f)
+    {n : ℕ} {γ δ : Type} {f : γ → m δ} {vec : Vector γ n}
+    (h : ∀ x ∈ vec.toList, Pr[⊥ | f x] = 0) :
+    Pr[⊥ | Vector.mapM f vec] = 0 := by
+  have h_nf : NeverFail (Vector.mapM f vec) :=
+    neverFail_vector_mapM (vec := vec) (f := f)
       (h := fun x hx => NeverFail.of_probFailure_eq_zero (f x) (h x hx))
-  exact (HasEvalSPMF.neverFail_iff (Vector.mapM f as)).1 h_nf
+  exact (HasEvalSPMF.neverFail_iff (Vector.mapM f vec)).1 h_nf
 
 /-- OracleComp specialization of `probFailure_vector_mapM_eq_zero`. -/
 @[simp]
 lemma OracleComp.probFailure_vector_mapM_eq_zero
-    {n : ℕ} {γ δ : Type} {f : γ → OracleComp spec δ} {as : Vector γ n}
-    (h : ∀ x ∈ as.toList, Pr[⊥ | f x] = 0) :
-    Pr[⊥ | Vector.mapM f as] = 0 := by
+    {n : ℕ} {γ δ : Type} {f : γ → OracleComp spec δ} {vec : Vector γ n}
+    (h : ∀ x ∈ vec.toList, Pr[⊥ | f x] = 0) :
+    Pr[⊥ | Vector.mapM f vec] = 0 := by
   exact _root_.probFailure_vector_mapM_eq_zero
-    (m := OracleComp spec) (as := as) (f := f) h
+    (m := OracleComp spec) (vec := vec) (f := f) h
 
 /-- OptionT specialization of `probFailure_vector_mapM_eq_zero`. -/
 @[simp]
 lemma OptionT.probFailure_vector_mapM_eq_zero
-    {n : ℕ} {γ δ : Type} {f : γ → OptionT (OracleComp spec) δ} {as : Vector γ n}
-    (h : ∀ x ∈ as.toList, Pr[⊥ | f x] = 0) :
-    Pr[⊥ | Vector.mapM f as] = 0 := by
+    {n : ℕ} {γ δ : Type} {f : γ → OptionT (OracleComp spec) δ} {vec : Vector γ n}
+    (h : ∀ x ∈ vec.toList, Pr[⊥ | f x] = 0) :
+    Pr[⊥ | Vector.mapM f vec] = 0 := by
   exact _root_.probFailure_vector_mapM_eq_zero
-    (m := OptionT (OracleComp spec)) (as := as) (f := f) h
+    (m := OptionT (OracleComp spec)) (vec := vec) (f := f) h
 
 /-- OptionT version of `simulateQ_vector_mapM`.
 
 This is the form needed when `Vector.mapM` is used in `OptionT (OracleComp spec)` code
 (e.g. query batches that may short-circuit on `none`). -/
+lemma OptionT.simulateQ_list_mapM {ι ι' : Type} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
+    (so : SimOracle.Stateless spec superSpec)
+    {α β : Type} (f : α → OptionT (OracleComp spec) β) :
+    ∀ xs : List α, simulateQ so (xs.mapM f) = xs.mapM (fun x ↦ simulateQ so (f x)) := by
+  intro xs
+  induction xs with
+  | nil => simp
+  | cons x xs ih =>
+      simp [List.mapM_cons, ih]
+
+lemma OptionT.simulateQ_array_mapM {ι ι' : Type} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
+    (so : SimOracle.Stateless spec superSpec)
+    {α β : Type} (f : α → OptionT (OracleComp spec) β) (xs : Array α) :
+    simulateQ so (xs.mapM f) = xs.mapM (fun x ↦ simulateQ so (f x)) := by
+  rw [Array.mapM_eq_mapM_toList, Array.mapM_eq_mapM_toList]
+  simp [OptionT.simulateQ_list_mapM]
+
+lemma OptionT.simulateQ_list_mapM_eq {ι ι' : Type} {spec : OracleSpec ι}
+    {superSpec : OracleSpec ι'} (so : SimOracle.Stateless spec superSpec)
+    {α β : Type} (f : α → OptionT (OracleComp spec) β) :
+    ∀ xs : List α,
+      (simulateQ so (xs.mapM (m := OptionT (OracleComp spec)) f) :
+        OptionT (OracleComp superSpec) (List β)) =
+      xs.mapM (m := OptionT (OracleComp superSpec)) (fun x ↦ simulateQ so (f x)) := by
+  intro xs
+  induction xs with
+  | nil =>
+      rfl
+  | cons x xs ih =>
+      rw [List.mapM_cons, List.mapM_cons]
+      change simulateQ so
+          (OptionT.bind (f x) fun y ↦
+            ((List.cons y <$> List.mapM (m := OptionT (OracleComp spec)) f xs) :
+              OptionT (OracleComp spec) (List β))) = _
+      calc
+        simulateQ so
+            (OptionT.bind (f x) fun y ↦
+              ((List.cons y <$> List.mapM (m := OptionT (OracleComp spec)) f xs) :
+                OptionT (OracleComp spec) (List β)))
+            =
+            OptionT.bind (simulateQ so (f x)) fun y ↦
+              simulateQ so
+                (((List.cons y <$> List.mapM (m := OptionT (OracleComp spec)) f xs) :
+                  OptionT (OracleComp spec) (List β))) := by
+              exact OptionT.simulateQ_bind (so := so) (mx := f x)
+                (my := fun y ↦
+                  ((List.cons y <$> List.mapM (m := OptionT (OracleComp spec)) f xs) :
+                    OptionT (OracleComp spec) (List β)))
+        _ =
+            OptionT.bind (simulateQ so (f x)) fun y ↦
+              ((List.cons y <$> simulateQ so
+                (List.mapM (m := OptionT (OracleComp spec)) f xs)) :
+                  OptionT (OracleComp superSpec) (List β)) := by
+              congr
+              funext y
+              exact OptionT.simulateQ_map (so := so) (f := List.cons y)
+                (mx := List.mapM (m := OptionT (OracleComp spec)) f xs)
+        _ =
+            OptionT.bind (simulateQ so (f x)) fun y ↦
+              ((List.cons y <$>
+                List.mapM (m := OptionT (OracleComp superSpec))
+                  (fun z ↦ simulateQ so (f z)) xs) :
+                    OptionT (OracleComp superSpec) (List β)) := by
+              congr
+              funext y
+              rw [ih]
+
+lemma OptionT.simulateQ_array_mapM_eq {ι ι' : Type} {spec : OracleSpec ι}
+    {superSpec : OracleSpec ι'} (so : SimOracle.Stateless spec superSpec)
+    {α β : Type} (f : α → OptionT (OracleComp spec) β) (xs : Array α) :
+    (simulateQ so (xs.mapM (m := OptionT (OracleComp spec)) f) :
+      OptionT (OracleComp superSpec) (Array β)) =
+      xs.mapM (m := OptionT (OracleComp superSpec)) (fun x ↦ simulateQ so (f x)) := by
+  rw [Array.mapM_eq_mapM_toList, Array.mapM_eq_mapM_toList]
+  simpa using OptionT.simulateQ_list_mapM_eq (so := so) (f := f) xs.toList
+
+lemma OptionT.simulateQ_vector_mapM_eq {ι ι' : Type} {spec : OracleSpec ι}
+    {superSpec : OracleSpec ι'} (so : SimOracle.Stateless spec superSpec)
+    {α β : Type} {n : ℕ} (f : α → OptionT (OracleComp spec) β) (v : Vector α n) :
+    (simulateQ so (Vector.mapM (m := OptionT (OracleComp spec)) f v) :
+      OptionT (OracleComp superSpec) (Vector β n)) =
+      Vector.mapM (m := OptionT (OracleComp superSpec)) (fun x ↦ simulateQ so (f x)) v := by
+  apply (Vector.map_toArray_inj (m := OptionT (OracleComp superSpec))).mp
+  calc
+    (Vector.toArray <$> (simulateQ so (Vector.mapM (m := OptionT (OracleComp spec)) f v) :
+      OptionT (OracleComp superSpec) (Vector β n)) :
+        OptionT (OracleComp superSpec) (Array β)) =
+        (simulateQ so
+          ((Vector.toArray <$> Vector.mapM (m := OptionT (OracleComp spec)) f v :
+            OptionT (OracleComp spec) (Array β))) :
+              OptionT (OracleComp superSpec) (Array β)) := by
+          symm
+          exact OptionT.simulateQ_map (so := so) (f := Vector.toArray)
+            (mx := Vector.mapM (m := OptionT (OracleComp spec)) f v)
+    _ = (simulateQ so (Array.mapM (m := OptionT (OracleComp spec)) f v.toArray) :
+          OptionT (OracleComp superSpec) (Array β)) := by
+        rw [Vector.toArray_mapM]
+    _ = (Array.mapM (m := OptionT (OracleComp superSpec))
+          (fun x ↦ simulateQ so (f x)) v.toArray :
+            OptionT (OracleComp superSpec) (Array β)) := by
+        exact OptionT.simulateQ_array_mapM_eq (so := so) (f := f) v.toArray
+    _ = (Vector.toArray <$> Vector.mapM (m := OptionT (OracleComp superSpec))
+          (fun x ↦ simulateQ so (f x)) v :
+            OptionT (OracleComp superSpec) (Array β)) := by
+        rw [Vector.toArray_mapM]
+
 @[simp]
 lemma OptionT.simulateQ_vector_mapM {ι ι' : Type} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
     (so : SimOracle.Stateless spec superSpec)
@@ -2085,27 +2263,28 @@ lemma OptionT.simulateQ_vector_mapM {ι ι' : Type} {spec : OracleSpec ι} {supe
       ((OptionT.run (Vector.mapM (m := OptionT (OracleComp superSpec))
         (fun x ↦ (simulateQ so (f x) : OptionT (OracleComp superSpec) β)) v)) :
         OracleComp superSpec (Option (Vector β n))) := by
-  sorry
+  simpa only [OptionT.run] using
+    OptionT.simulateQ_vector_mapM_eq (so := so) (f := f) (v := v)
 
 /-- OptionT support decomposition for `Vector.mapM`.
 
 This mirrors `mem_support_vector_mapM` at the `OptionT` level. -/
 lemma OptionT.mem_support_vector_mapM {ι : Type} {spec : OracleSpec ι}
     {α β : Type} {n : ℕ}
-    {f : α → OptionT (OracleComp spec) β} {as : Vector α n} {x : Vector β n} :
-    x ∈ support (Vector.mapM f as) ↔ ∀ i : Fin n, x[i] ∈ support (f as[i]) := by
-  sorry
+    {f : α → OptionT (OracleComp spec) β} {vec : Vector α n} {x : Vector β n} :
+    x ∈ support (Vector.mapM f vec) ↔ ∀ i : Fin n, x[i] ∈ support (f vec[i]) := by
+  exact support_vector_mapM_gen (m := OptionT (OracleComp spec)) (f := f) vec x
 
 /-- Run-level `some` form of `OptionT.mem_support_vector_mapM`. -/
 @[simp]
 lemma OptionT.mem_support_run_vector_mapM_some {ι : Type} {spec : OracleSpec ι}
     {α β : Type} {n : ℕ}
-    {f : α → OptionT (OracleComp spec) β} {as : Vector α n} {x : Vector β n} :
+    {f : α → OptionT (OracleComp spec) β} {vec : Vector α n} {x : Vector β n} :
     some x ∈ support (m := OracleComp spec) (α := Option (Vector β n))
-      (OptionT.run (Vector.mapM f as)) ↔
-      ∀ i : Fin n, x[i] ∈ support (f as[i]) := by
+      (OptionT.run (Vector.mapM f vec)) ↔
+      ∀ i : Fin n, x[i] ∈ support (f vec[i]) := by
   simpa [OptionT.mem_support_iff] using
-    (OptionT.mem_support_vector_mapM (f := f) (as := as) (x := x))
+    (OptionT.mem_support_vector_mapM (f := f) (vec := vec) (x := x))
 
 /-- When each computation in a `Vector.mapM` returns `pure (f x)`, membership in support means
 equality to `Vector.map f v`. -/
@@ -2228,7 +2407,7 @@ theorem QueryImpl_append_impl_inr_stateful
 
 /-- **Simplification: QueryImpl append for Sum.inr queries (challenge queries) - run' version**
 
-Same as `QueryImpl_append_impl_inr_stateful` but using `run'` which discards the state.
+Same vec `QueryImpl_append_impl_inr_stateful` but using `run'` which discards the state.
 -/
 theorem QueryImpl_append_impl_inr_stateful_run'
     (impl : QueryImpl oSpec (StateT σ ProbComp))
