@@ -113,7 +113,7 @@ lemma getMidCodewords_succ (t : L⦃≤ 1⦄[X Fin ℓ]) (i : Fin ℓ)
     (t := t) (challenges := challenges)) (r_challenges := fun _ => r_i'))
   := by
   unfold getMidCodewords
-  simpa [Fin.append_right_eq_snoc] using
+  have h_trans :=
     (iterated_fold_transitivity (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := (0 : Fin r)) (midIdx := ⟨i, by omega⟩) (destIdx := ⟨i.succ, by omega⟩)
       (steps₁ := i) (steps₂ := 1)
@@ -124,6 +124,8 @@ lemma getMidCodewords_succ (t : L⦃≤ 1⦄[X Fin ℓ]) (i : Fin ℓ)
         (polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (h_ℓ := by omega)
           (a := fun ω => t.val.eval (bitsOfIndex ω))).val.eval x.val)
       (r_challenges₁ := challenges) (r_challenges₂ := fun _ => r_i')).symm
+  rw [Fin.append_right_eq_snoc] at h_trans
+  exact h_trans
 
 section FoldStepLogic
 variable {Context : Type} {mp : SumcheckMultiplierParam L ℓ Context}
@@ -233,7 +235,7 @@ lemma firstOracleWitnessConsistencyProp_unique (t₁ t₂ : MultilinearPoly L �
     (extractMLP_eq_some_iff_pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (f := f₀) (tpoly := t₂)).2 h₂
   rw [h₁_some] at h₂_some
-  simpa using h₂_some
+  injection h₂_some
 
 noncomputable def foldingBadEventAtBlock
     (stmtIdx : Fin (ℓ + 1)) (oracleIdx : OracleFrontierIndex stmtIdx)
@@ -528,14 +530,18 @@ lemma incrementalBadEventExistsProp_relay_preserved (i : Fin ℓ) (hNCR : ¬ isC
   constructor
   · rintro ⟨j, hj⟩
     refine ⟨Fin.cast h_count j, ?_⟩
-    simpa [incrementalBadEventExistsProp, mapOStmtOutRelayStep,
+    have hj' := hj
+    simp only [incrementalBadEventExistsProp, mapOStmtOutRelayStep,
       OracleFrontierIndex.val_mkFromStmtIdx, OracleFrontierIndex.val_mkFromStmtIdxCastSuccOfSucc,
-      h_count] using hj
+      h_count] at hj' ⊢
+    exact hj'
   · rintro ⟨j, hj⟩
     refine ⟨Fin.cast h_count.symm j, ?_⟩
-    simpa [incrementalBadEventExistsProp, mapOStmtOutRelayStep,
+    have hj' := hj
+    simp only [incrementalBadEventExistsProp, mapOStmtOutRelayStep,
       OracleFrontierIndex.val_mkFromStmtIdx, OracleFrontierIndex.val_mkFromStmtIdxCastSuccOfSucc,
-      h_count] using hj
+      h_count] at hj' ⊢
+    exact hj'
 
 lemma oracleFoldingConsistencyProp_relay_preserved (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i)
     (challenges : Fin i.succ.val → L)
@@ -547,13 +553,21 @@ lemma oracleFoldingConsistencyProp_relay_preserved (i : Fin ℓ) (hNCR : ¬ isCo
     simp [toOutCodewordsCount_succ_eq, hNCR]
   constructor
   · intro h j hj
-    simpa [oracleFoldingConsistencyProp, mapOStmtOutRelayStep, h_count] using
-      h (Fin.cast h_count.symm j) (by
-        simpa [h_count] using hj)
+    have hj_cast : (Fin.cast h_count.symm j).val + 1 < toOutCodewordsCount ℓ ϑ i.castSucc := by
+      change j.val + 1 < toOutCodewordsCount ℓ ϑ i.castSucc
+      rw [h_count]
+      exact hj
+    have h_old := h (Fin.cast h_count.symm j) hj_cast
+    simp only [oracleFoldingConsistencyProp, mapOStmtOutRelayStep, h_count] at h_old ⊢
+    exact h_old
   · intro h j hj
-    simpa [oracleFoldingConsistencyProp, mapOStmtOutRelayStep, h_count] using
-      h (Fin.cast h_count j) (by
-        simpa [h_count] using hj)
+    have hj_cast : (Fin.cast h_count j).val + 1 < toOutCodewordsCount ℓ ϑ i.succ := by
+      change j.val + 1 < toOutCodewordsCount ℓ ϑ i.succ
+      rw [← h_count]
+      exact hj
+    have h_old := h (Fin.cast h_count j) hj_cast
+    simp only [oracleFoldingConsistencyProp, mapOStmtOutRelayStep, h_count] at h_old ⊢
+    exact h_old
 
 section CommitStepPreservationLemmas
 
@@ -638,9 +652,11 @@ lemma oracleFoldingConsistencyProp_commit_step_backward (i : Fin ℓ) (hCR : isC
     dsimp [j']
     exact j.isLt
   have hj1_lt_old : j'.val + 1 < toOutCodewordsCount ℓ ϑ i.castSucc := by
-    simpa [j'] using hj
-  simpa [oracleFoldingConsistencyProp, getNextOracle, snoc_oracle, j', hj_lt_old,
-    hj1_lt_old, hCR] using h_old
+    change j.val + 1 < toOutCodewordsCount ℓ ϑ i.castSucc
+    exact hj
+  simp only [oracleFoldingConsistencyProp, getNextOracle, snoc_oracle, j', hj_lt_old,
+    hj1_lt_old, hCR] at h_old ⊢
+  exact h_old
 
 end CommitStepPreservationLemmas
 

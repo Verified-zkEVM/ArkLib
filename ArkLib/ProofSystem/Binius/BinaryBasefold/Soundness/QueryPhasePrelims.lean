@@ -177,8 +177,8 @@ noncomputable def getFiberPoint
       (positionIdx := ⟨k, by simp only [toOutCodewordsCount_last, Fin.is_lt]⟩),
         lt_r_of_lt_ℓ (x := k.val * ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h := k_mul_ϑ_lt_ℓ)⟩) :=
   by
-    simpa [oraclePositionToDomainIndex] using
-      (qMap_total_fiber 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    exact
+      qMap_total_fiber 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := ⟨k.val * ϑ,
           lt_r_of_lt_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := k.val * ϑ)
             (h := k_mul_ϑ_lt_ℓ (k := k))⟩)
@@ -187,7 +187,7 @@ noncomputable def getFiberPoint
         (h_destIdx_le := by
           exact k_succ_mul_ϑ_le_ℓ_₂ (k := k))
         (y := getChallengeSuffix 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (k := k) (v := v))
-        u)
+        u
 
 section MonadicOracleVerification
 /-!

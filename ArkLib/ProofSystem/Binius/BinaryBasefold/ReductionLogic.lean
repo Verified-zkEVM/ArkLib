@@ -125,9 +125,6 @@ def ReductionLogicStep.IsStronglyComplete
     -- Compute verifier oracle output via embedding (like OracleVerifier.toVerifier)
     let verifierOStmtOut := OracleVerifier.mkVerifierOStmtOut step.embed step.hEq
       oStmtIn transcript
-      -- fun i => match h : step.embed i with
-      -- | Sum.inl j => by simpa only [step.hEq, h] using (oStmtIn j)
-      -- | Sum.inr j => by simpa only [step.hEq, h] using (transcript.messages j)
     let ((proverStmtOut, proverOStmtOut), proverWitOut) :=
       step.proverOut stmtIn witIn oStmtIn transcript
     -- Conclusion A: The Prover's output satisfies the next relation (Soundness/Completeness)

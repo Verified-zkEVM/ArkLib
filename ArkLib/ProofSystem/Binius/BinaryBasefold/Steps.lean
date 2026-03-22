@@ -103,7 +103,7 @@ def foldOracleVerifier (i : Fin ℓ) :
   -- The core verification logic. Takes the input statement `stmtIn` and the transcript, and
   -- performs an oracle computation that outputs a new statement
   verify := fun stmtIn pSpecChallenges => do
-    let h_i ← query (spec := [(pSpecFold (L := L)).Message]ₒ) ⟨⟨0, by rfl⟩, (by simpa using ())⟩
+    let h_i ← query (spec := [(pSpecFold (L := L)).Message]ₒ) ⟨⟨0, by rfl⟩, (by exact ())⟩
     let r_i' := pSpecChallenges ⟨1, rfl⟩
     let t := FullTranscript.mk2 h_i r_i'
     let logic := (foldStepLogic 𝔽q β (ϑ := ϑ)
@@ -632,20 +632,28 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
       dsimp only [masterKStateProp]
       rw [h_stmtOut_sumcheck_target_eq] at h_relOut
       have h_explicit : h_i.val.eval (𝓑 0) + h_i.val.eval (𝓑 1) = stmtIn.sumcheck_target := by
-        simpa [h_i_def] using h_V_check
+        have h_explicit' := h_V_check
+        simp only [h_i_def] at h_explicit' ⊢
+        exact h_explicit'
       cases h_relOut with
       | inl h_bad =>
         have h_bad' : incrementalBadEventExistsProp 𝔽q β i.succ
             (OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i) oStmtIn
             (Fin.snoc stmtIn.challenges r_i') := by
-          simpa [h_stmtOut_challenges_eq] using h_bad
+          have h_bad'' := h_bad
+          simp only [h_stmtOut_challenges_eq] at h_bad'' ⊢
+          exact h_bad''
         exact Or.inl h_bad'
       | inr h_good =>
         refine Or.inr ?_
         refine ⟨?_, ?_, ?_, ?_⟩
         · exact ⟨h_explicit, h_good.1⟩
-        · simpa [h_stmtOut_eq] using h_good.2.1
-        · simpa [h_stmtOut_eq] using h_good.2.2.1
+        · have h_struct := h_good.2.1
+          simp only [h_stmtOut_eq] at h_struct ⊢
+          exact h_struct
+        · have h_init := h_good.2.2.1
+          simp only [h_stmtOut_eq] at h_init ⊢
+          exact h_init
         · have h_res := h_good.2.2.2
           simp only [h_stmtOut_eq] at ⊢ h_res
           exact h_res
@@ -778,7 +786,7 @@ lemma firstOracleWitnessConsistency_unique (i : Fin ℓ)
     (extractMLP_eq_some_iff_pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (f := getFirstOracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmt) (tpoly := t₂)).2 h₂
   rw [h₁_some] at h₂_some
-  simpa using h₂_some
+  injection h₂_some with h_t
 
 /-! Extract the round-`i` witness (before the verifier challenge) from a fold-step output
 witness. -/
@@ -915,7 +923,8 @@ def foldStepFreshDoomPreservationEvent (i : Fin ℓ)
     simp only [h_j_val]
   have h_diff_lt : stmtIdxBefore.val - curOracleDomainIdx.val < ϑ := by
     have h_div_mod : (i.val / ϑ) * ϑ + i.val % ϑ = i.val := by
-      simpa [Nat.mul_comm] using (Nat.div_add_mod i.val ϑ)
+      rw [Nat.mul_comm]
+      exact Nat.div_add_mod i.val ϑ
     have h_cur_le : curOracleDomainIdx.val ≤ stmtIdxBefore.val := by
       dsimp only [stmtIdxBefore]
       calc
@@ -1089,10 +1098,10 @@ lemma foldStep_rbrExtractionFailureEvent_imply_sumcheck_or_badEvent (i : Fin ℓ
     rcases h_after_good_exists with ⟨h_after_good, rfl⟩
     have h_explicit_after :
         h_i.val.eval (𝓑 0) + h_i.val.eval (𝓑 1) = stmtOStmtIn.1.sumcheck_target := by
-      simpa using h_after_good.1.1
+      exact h_after_good.1.1
     have h_sumcheck_after :
         sumcheckConsistencyProp (𝓑 := 𝓑) (Polynomial.eval r_i' h_i.val) witMid.H := by
-      simpa using h_after_good.1.2
+      exact h_after_good.1.2
     have h_consistency : foldStepWitMidOracleConsistency 𝔽q β i stmtOStmtIn h_i r_i' witMid :=
       ⟨h_after_good.2.1, h_after_good.2.2.1⟩
     have h_left_from_consistency :
@@ -1124,7 +1133,9 @@ lemma foldStep_rbrExtractionFailureEvent_imply_sumcheck_or_badEvent (i : Fin ℓ
               ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - i.succ),
                 (projectToNextSumcheckPoly (L := L) (ℓ := ℓ) (i := i)
                   (Hᵢ := H_before) (rᵢ := r_i')).val.eval x := by
-          simpa [h_star_extracted] using h_sum_eq
+          have h_sum_eq' := h_sum_eq
+          dsimp only [h_star_extracted] at h_sum_eq' ⊢
+          exact h_sum_eq'
         calc
           Polynomial.eval r_i' h_i.val
               = ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - i.succ),
@@ -1140,7 +1151,9 @@ lemma foldStep_rbrExtractionFailureEvent_imply_sumcheck_or_badEvent (i : Fin ℓ
         refine ⟨?_, ?_, ?_, ?_⟩
         · constructor
           · exact h_explicit_after
-          · simpa [h_star_extracted, H_before, foldRbrExtractor, Fin.isValue] using h_eq
+          · have h_eq' := h_eq
+            simp only [h_star_extracted, H_before, foldRbrExtractor, Fin.isValue] at h_eq' ⊢
+            exact h_eq'
         · unfold witnessStructuralInvariant
           simp only [Fin.val_castSucc, foldRbrExtractor, Fin.zero_eta, Fin.isValue,
             Fin.succ_zero_eq_one, Fin.mk_one, Fin.succ_one_eq_two,
@@ -1148,12 +1161,30 @@ lemma foldStep_rbrExtractionFailureEvent_imply_sumcheck_or_badEvent (i : Fin ℓ
         · exact h_consistency.2
         · have h_folding_after := h_after_good.2.2.2
           unfold oracleFoldingConsistencyProp at h_folding_after ⊢
-          simpa [OracleFrontierIndex.val_mkFromStmtIdx,
-            OracleFrontierIndex.val_mkFromStmtIdxCastSuccOfSucc] using h_folding_after
-      simpa [foldStepHStarFromWitMid, foldStepWitBeforeFromWitMid, h_star_extracted,
-        H_before, foldRbrExtractor, Fin.isValue] using
-        (show badSumcheckEventProp r_i' h_i h_star_extracted from
-          ⟨h_hi_ne_extracted, h_eval_eq_extracted⟩)
+          intro j hj
+          have h_fold_j := h_folding_after j hj
+          unfold isCompliant at h_fold_j ⊢
+          rcases h_fold_j with ⟨h_fw_close, h_next_close, h_iter⟩
+          refine ⟨h_fw_close, h_next_close, ?_⟩
+          have h_gc (y : L) :
+              getFoldingChallenges (r := r) (𝓡 := 𝓡) (ϑ := ϑ) i.castSucc
+                (Fin.take ↑i.castSucc (Nat.le_succ ↑i.castSucc)
+                  (Fin.snoc (α := fun _ : Fin i.succ => L) stmtOStmtIn.1.challenges y))
+                (↑j * ϑ) (h := by
+                  exact oracle_block_k_next_le_i (ℓ := ℓ) (ϑ := ϑ) (i := i.castSucc)
+                    (j := j) (hj := hj)) =
+              getFoldingChallenges (r := r) (𝓡 := 𝓡) (ϑ := ϑ) i.castSucc
+                stmtOStmtIn.1.challenges
+                (↑j * ϑ) (h := by
+                  exact oracle_block_k_next_le_i (ℓ := ℓ) (ϑ := ϑ) (i := i.castSucc)
+                    (j := j) (hj := hj)) := by
+            ext cId
+            dsimp [getFoldingChallenges]
+            simp only [Fin.take_eq_init, Fin.init_snoc]
+          erw [h_gc _] at h_iter
+          exact h_iter
+      change badSumcheckEventProp r_i' h_i h_star_extracted
+      exact ⟨h_hi_ne_extracted, h_eval_eq_extracted⟩
     exact ⟨witMid, h_consistency, h_left_from_consistency⟩
 
 #check prop_4_20_2_incremental_bad_event_probability
@@ -1221,7 +1252,9 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
       by_cases h_bad : foldStepFreshDoomPreservationEvent 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i stmtOStmtIn y
       · exact Or.inl h_bad
-      · simpa [h_bad] using h_imp
+      · cases h_imp with
+        | inl h_bad' => exact False.elim (h_bad h_bad')
+        | inr h_sum => exact Or.inr h_sum
     )
   refine le_trans h_prob_mono ?_
   dsimp only [incrementalBadFoldEvent_or_sumcheckBadEvent, foldKnowledgeError]
@@ -1248,7 +1281,8 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
       simp only [h_j_val]
     have h_diff_lt : stmtIdxBefore.val - curOracleDomainIdx.val < ϑ := by
       have h_div_mod : (i.val / ϑ) * ϑ + i.val % ϑ = i.val := by
-        simpa [Nat.mul_comm] using (Nat.div_add_mod i.val ϑ)
+        rw [Nat.mul_comm]
+        exact Nat.div_add_mod i.val ϑ
       have h_cur_le : curOracleDomainIdx.val ≤ stmtIdxBefore.val := by
         dsimp only [stmtIdxBefore]
         calc
@@ -1317,12 +1351,18 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
       exact Nat.min_eq_right (Nat.le_of_lt h_diff_lt)
     have h_kAfter_eq : min ϑ (i.succ.val - curOracleDomainIdx.val) = kBefore + 1 := by
       have h_cur_le_i : curOracleDomainIdx.val ≤ i.val := by
-        simpa [stmtIdxBefore] using h_cur_le_stmt
+        have h_cur_le_i' := h_cur_le_stmt
+        simp only [stmtIdxBefore] at h_cur_le_i'
+        exact h_cur_le_i'
       have h_sub_succ : i.val + 1 - curOracleDomainIdx.val
         = (i.val - curOracleDomainIdx.val) + 1 := by
-        simpa [Nat.succ_eq_add_one] using (Nat.succ_sub h_cur_le_i)
+        have h_sub_succ' := Nat.succ_sub h_cur_le_i
+        rw [Nat.succ_eq_add_one] at h_sub_succ'
+        exact h_sub_succ'
       have h_kBefore_eq' : kBefore = i.val - curOracleDomainIdx.val := by
-        simpa [stmtIdxBefore] using h_kBefore_eq
+        have h_kBefore_eq'' := h_kBefore_eq
+        simp only [stmtIdxBefore] at h_kBefore_eq''
+        exact h_kBefore_eq''
       simp only [Fin.val_succ]
       rw [h_sub_succ, ← h_kBefore_eq']
       exact Nat.min_eq_right (Nat.succ_le_of_lt h_kBefore_lt)
@@ -1368,9 +1408,11 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
             firstOracleWitnessConsistency_unique 𝔽q β
               (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (i := i)
               (oStmt := stmtOStmtIn.2) (h₁ := h_cons.2) (h₂ := h_t_fixed_compat)
-          simpa [h_star_fixed, H_fixed, foldStepHStarFromWitMid,
-            foldStepWitBeforeFromWitMid, foldRbrExtractor, Fin.isValue, h_t_eq]
-            using h_bad)
+          have h_bad' := h_bad
+          simp only [h_star_fixed, H_fixed, foldStepHStarFromWitMid,
+            foldStepWitBeforeFromWitMid, foldRbrExtractor, Fin.isValue, h_t_eq] at h_bad' ⊢
+          exact h_bad'
+        )
       refine le_trans h_prob_mono_sum ?_
       have h_sz := probability_bound_badSumcheckEventProp (h_i := h_i) (h_star := h_star_fixed)
       conv_rhs =>
@@ -1384,7 +1426,8 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
         (h_imp := by
           intro y h_sum
           rcases h_sum with ⟨_h_not_fresh, witMid, h_cons, _h_bad⟩
-          exact (hCompat ⟨witMid.t, h_cons.2⟩).elim)
+          exact (hCompat ⟨witMid.t, h_cons.2⟩).elim
+        )
       refine le_trans h_prob_mono_false ?_
       simp only [PMF.monad_pure_eq_pure, PMF.monad_bind_eq_bind, PMF.bind_const, PMF.pure_apply,
         eq_iff_iff, iff_false, not_true_eq_false, ↓reduceIte, _root_.zero_le]
@@ -1858,7 +1901,7 @@ def commitKState (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
         incrementalBadEventExistsProp_commit_step_backward 𝔽q β
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR oStmtIn
           _ _ hBad
-      simpa using hBad_cast
+      exact hBad_cast
     | inr hGood =>
       have h_sumcheck : sumcheckConsistencyProp (𝓑 := 𝓑) stmtIn.sumcheck_target witMid.H := hGood.1
       have h_struct : witnessStructuralInvariant 𝔽q β (mp := mp)
@@ -1878,7 +1921,9 @@ def commitKState (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
           (getFirstOracle 𝔽q β oStmtIn) := by
         have h_pos : 0 < toOutCodewordsCount ℓ ϑ i.castSucc := by
           exact Nat.pos_of_neZero (toOutCodewordsCount ℓ ϑ i.castSucc)
-        simpa [commitRbrExtractor, getFirstOracle, snoc_oracle, h_pos] using h_init
+        have h_init' := h_init
+        simp only [commitRbrExtractor, getFirstOracle, snoc_oracle, h_pos] at h_init' ⊢
+        exact h_init'
       have h_fold_cast :
           oracleFoldingConsistencyProp 𝔽q β (i := i.castSucc) (Fin.init stmtIn.challenges)
             oStmtIn := by
@@ -1943,10 +1988,12 @@ def commitKState (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
     have h_oStmt_eq : snoc_oracle 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (destIdx := ⟨i.val + 1, by omega⟩) (h_destIdx := by rfl) (oStmtIn := oStmtIn)
         (newOracleFn := tr.messages msgIdx0) = oStmtOut := by
-      simpa [h_oStmtOut_eq] using
-        (snoc_oracle_eq_mkVerifierOStmtOut_commitStep 𝔽q β (mp := mp)
+      have h_oStmt_eq' :=
+        snoc_oracle_eq_mkVerifierOStmtOut_commitStep 𝔽q β (mp := mp)
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR oStmtIn
-          (tr.messages msgIdx0) tr rfl)
+          (tr.messages msgIdx0) tr rfl
+      rw [← h_oStmtOut_eq] at h_oStmt_eq'
+      exact h_oStmt_eq'
     rw [h_oStmt_eq]
     exact h_relOut
 
@@ -2267,16 +2314,17 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ �
       | inr hGood =>
         right
         refine ⟨hGood.1, hGood.2.1, ?_, ?_⟩
-        · simpa [getFirstOracle_mapOStmtOutRelayStep_eq (i := i) (hNCR := hNCR)
-            (oStmtIn := oStmtIn)] using hGood.2.2.1
+        · rw [getFirstOracle_mapOStmtOutRelayStep_eq (i := i) (hNCR := hNCR)
+            (oStmtIn := oStmtIn)]
+          exact hGood.2.2.1
         · have hFold' :
             oracleFoldingConsistencyProp 𝔽q β (i := i.castSucc)
               (Fin.init stmtIn.challenges) oStmtIn := by
-            simpa using hGood.2.2.2
+            exact hGood.2.2.2
           have hFold_map :=
             (oracleFoldingConsistencyProp_relay_preserved 𝔽q β
               (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR stmtIn.challenges oStmtIn).1 hFold'
-          simpa using hFold_map
+          exact hFold_map
     · -- Backward: mkFromStmtIdx/mapped oStmt -> castSuccOfSucc/original oStmt
       cases h with
       | inl hBad =>
@@ -2286,17 +2334,19 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ �
       | inr hGood =>
         right
         refine ⟨hGood.1, hGood.2.1, ?_, ?_⟩
-        · simpa [getFirstOracle_mapOStmtOutRelayStep_eq (i := i) (hNCR := hNCR)
-            (oStmtIn := oStmtIn)] using hGood.2.2.1
+        · have hFirst := hGood.2.2.1
+          rw [getFirstOracle_mapOStmtOutRelayStep_eq (i := i) (hNCR := hNCR)
+            (oStmtIn := oStmtIn)] at hFirst
+          exact hFirst
         · have hFold' :
             oracleFoldingConsistencyProp 𝔽q β (i := i.succ)
               stmtIn.challenges
               (mapOStmtOutRelayStep 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR oStmtIn) := by
-            simpa using hGood.2.2.2
+            exact hGood.2.2.2
           have hFold_cast :=
             (oracleFoldingConsistencyProp_relay_preserved 𝔽q β
               (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR stmtIn.challenges oStmtIn).2 hFold'
-          simpa using hFold_cast
+          exact hFold_cast
   toFun_next := fun m hDir (stmtIn, oStmtIn) tr msg witMid => Fin.elim0 m
   toFun_full := by
     intro stmtOStmtIn tr witOut probEvent_relOut_gt_0
@@ -2357,11 +2407,15 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ �
       calc
         oStmtOut = OracleVerifier.mkVerifierOStmtOut v.embed v.hEq oStmtIn tr := h_oStmtOut_eq
         _ = mapOStmtOutRelayStep 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR oStmtIn := by
-          symm
-          simpa [v] using mapOStmtOut_eq_mkVerifierOStmtOut_relayStep
-            (Context := Context) (i := i) (hNCR := hNCR) (oStmtIn := oStmtIn) (transcript := tr)
+          have h_map :=
+            mapOStmtOut_eq_mkVerifierOStmtOut_relayStep
+              (Context := Context) (i := i) (hNCR := hNCR) (oStmtIn := oStmtIn)
+              (transcript := tr)
+          dsimp only [v] at h_map
+          exact h_map.symm
     rw [h_oStmt_eq_map] at h_relOut
-    simpa [relayRbrExtractor] using h_relOut
+    dsimp only [relayRbrExtractor] at h_relOut ⊢
+    exact h_relOut
 
 /-! RBR knowledge soundness for a single round oracle verifier -/
 theorem relayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
@@ -2449,7 +2503,7 @@ noncomputable def finalSumcheckVerifier :
   verify := fun stmtIn _ => do
     -- Get the final constant `c` from the prover's message
     let c : L ← query (spec := [(pSpecFinalSumcheckStep (L := L)).Message]ₒ)
-      ⟨⟨0, by rfl⟩, (by simpa using ())⟩
+      ⟨⟨0, by rfl⟩, (by exact ())⟩
     -- Construct the transcript
     let t := FullTranscript.mk1 (pSpec := pSpecFinalSumcheckStep (L := L)) c
     -- Get the logic instance
@@ -2695,12 +2749,21 @@ lemma extractMLP_some_of_oracleFoldingConsistency
     let jLast : Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)) :=
       getLastOraclePositionIndex ℓ ϑ (Fin.last ℓ)
     have h_jLast_eq_zero : jLast = 0 := by
-      simpa [jLast] using h_getLastOraclePositionIndex_last
+      dsimp only [jLast]
+      exact h_getLastOraclePositionIndex_last
+    have h_jLast_val : jLast.val = 0 := by
+      exact congrArg Fin.val h_jLast_eq_zero
     let zeroIdxLast : Fin r := ⟨↑jLast * ϑ, by
-      simpa [h_jLast_eq_zero] using (Nat.pos_of_neZero r)⟩
+      have h_r_pos : 0 < r := Nat.pos_of_neZero r
+      rw [h_jLast_val, zero_mul]
+      exact h_r_pos⟩
     let destIdxLast : Fin r := ⟨↑jLast * ϑ + ϑ, by
       have h_ℓ_lt_r : ℓ < r := by omega
-      simpa [h_jLast_eq_zero, h_ℓ_eq_ϑ] using h_ℓ_lt_r⟩
+      have h_ϑ_lt_r : ϑ < r := by
+        rw [← h_ℓ_eq_ϑ]
+        exact h_ℓ_lt_r
+      rw [h_jLast_val, zero_mul, zero_add]
+      exact h_ϑ_lt_r⟩
     let challengesLast : Fin ϑ → L := fun cId =>
       stmtOut.challenges ⟨↑jLast * ϑ + ↑cId, by
         simp only [h_jLast_eq_zero, Fin.coe_ofNat_eq_mod, toOutCodewordsCount_last, h_ℓ_eq_ϑ,
@@ -2718,12 +2781,16 @@ lemma extractMLP_some_of_oracleFoldingConsistency
           (i := zeroIdxLast)
           (steps := ϑ)
           (destIdx := destIdxLast)
-          (h_destIdx := by simpa [h_zeroIdxLast_eq] using h_destIdxLast)
+          (h_destIdx := by
+            rw [h_zeroIdxLast_eq]
+            exact h_destIdxLast)
           (h_destIdx_le := h_destIdxLast_le)
           (f_i := oStmt jLast)
           (f_i_plus_steps := fun _ => stmtOut.final_constant)
           (challenges := challengesLast) := by
-      simpa [jLast, zeroIdxLast, destIdxLast, challengesLast, h_ℓ_eq_ϑ] using h_final_cons
+      have h_final_cons' := h_final_cons
+      simp only [jLast, zeroIdxLast, destIdxLast, challengesLast, h_ℓ_eq_ϑ] at h_final_cons' ⊢
+      exact h_final_cons'
     rcases (extractMLP_some_of_isCompliant_at_zero 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (steps := ϑ)
       (zero_Idx := zeroIdxLast)
@@ -2753,19 +2820,28 @@ lemma extractMLP_some_of_oracleFoldingConsistency
       rw [Nat.div_self (n := ϑ) (H := by omega)] at h_res
       exact h_res
     have h_j0_next_lt : ↑j0 + 1 < toOutCodewordsCount ℓ ϑ (Fin.last ℓ) := by
-      simpa [j0, toOutCodewordsCount_last] using h_div_gt_1
+      dsimp only [j0]
+      rw [toOutCodewordsCount_last]
+      exact h_div_gt_1
     let zeroIdx0 : Fin r := ⟨↑j0 * ϑ, by
-      simpa [j0] using (Nat.pos_of_neZero r)⟩
+      have h_r_pos : 0 < r := Nat.pos_of_neZero r
+      dsimp only [j0]
+      rw [zero_mul]
+      exact h_r_pos⟩
     let destIdx0 : Fin r := ⟨↑j0 * ϑ + ϑ, by
       have h_ℓ_lt_r : ℓ < r := by omega
       have h_ϑ_lt_r : ϑ < r := lt_of_le_of_lt h_le h_ℓ_lt_r
-      simpa [j0] using h_ϑ_lt_r⟩
+      dsimp only [j0]
+      rw [zero_mul, zero_add]
+      exact h_ϑ_lt_r⟩
     have h_zeroIdx0 : zeroIdx0.val = 0 := by
       simp [zeroIdx0, j0]
     have h_destIdx0 : destIdx0 = 0 + ϑ := by
       simp [destIdx0, j0]
     have h_destIdx0_le : destIdx0 ≤ ℓ := by
-      simpa [destIdx0, j0] using h_le
+      dsimp only [destIdx0, j0]
+      rw [zero_mul, zero_add]
+      exact h_le
     have h_k_next_le_last : ↑j0 * ϑ + ϑ ≤ Fin.last ℓ := by
       exact oracle_block_k_next_le_i (ℓ := ℓ) (ϑ := ϑ)
         (i := Fin.last ℓ) (j := j0) (hj := h_j0_next_lt)
@@ -2779,12 +2855,16 @@ lemma extractMLP_some_of_oracleFoldingConsistency
         isCompliant 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (i := zeroIdx0) (steps := ϑ)
           (destIdx := destIdx0)
-          (h_destIdx := by simpa [h_zeroIdx0] using h_destIdx0)
+          (h_destIdx := by
+            rw [h_zeroIdx0]
+            exact h_destIdx0)
           (h_destIdx_le := h_destIdx0_le)
           (f_i := oStmt ⟨↑j0, by exact j0.isLt⟩)
           (f_i_plus_steps := fNext0)
           (challenges := challenges0) := by
-      simpa [zeroIdx0, destIdx0, fNext0, challenges0] using h_oracle_cons j0 h_j0_next_lt
+      have h_oracle_cons' := h_oracle_cons j0 h_j0_next_lt
+      simp only [zeroIdx0, destIdx0, fNext0, challenges0] at h_oracle_cons' ⊢
+      exact h_oracle_cons'
     rcases (extractMLP_some_of_isCompliant_at_zero 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (steps := ϑ)
       (zero_Idx := zeroIdx0)
@@ -2798,7 +2878,8 @@ lemma extractMLP_some_of_oracleFoldingConsistency
       (h_compl := h_isCompliant_f₀)) with
       ⟨tpoly, h_extract⟩
     refine ⟨tpoly, ?_⟩
-    simpa [getFirstOracle, j0] using h_extract
+    dsimp only [getFirstOracle, j0] at h_extract ⊢
+    exact h_extract
 
 /-! When oracle folding consistency holds from first oracle through the final constant,
 the extracted polynomial's evaluation at challenges equals the final constant.
@@ -2826,9 +2907,9 @@ lemma extracted_t_poly_eval_eq_final_constant
     -- 5. Therefore, tpoly.val.eval stmtOut.challenges = stmtOut.final_constant
       -- Somehow similar to the strict version `iterated_fold_to_const_strict`
   classical
-  rcases (by
-    simpa [finalSumcheckStepOracleConsistencyProp] using h_finalSumcheckStepOracleConsistency
-  ) with ⟨h_oracle_cons, h_final_cons⟩
+  have h_final_consistency := h_finalSumcheckStepOracleConsistency
+  dsimp only [finalSumcheckStepOracleConsistencyProp] at h_final_consistency
+  rcases h_final_consistency with ⟨h_oracle_cons, h_final_cons⟩
   let P₀ : L⦃< 2^ℓ⦄[X] :=
     polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
       (fun ω => tpoly.val.eval (bitsOfIndex ω))
@@ -2838,9 +2919,11 @@ lemma extracted_t_poly_eval_eq_final_constant
       pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := (0 : Fin r)) (h_i := by simp)
         (f := getFirstOracle 𝔽q β oStmtOut) (g := f₀) := by
-    simpa [f₀] using
+    have h_pair' :=
       (extractMLP_eq_some_iff_pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (f := getFirstOracle 𝔽q β oStmtOut) (tpoly := tpoly)).1 h_extractMLP
+    dsimp only [f₀] at h_pair' ⊢
+    exact h_pair'
   let C₀ : Set ((sDomain 𝔽q β h_ℓ_add_R_rate (0 : Fin r)) → L) :=
     (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := (0 : Fin r)))
   have h_f0_mem : f₀ ∈ C₀ := by
@@ -2848,9 +2931,12 @@ lemma extracted_t_poly_eval_eq_final_constant
     change polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (domainIdx := (0 : Fin r)) (P := P₀) ∈
       BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := (0 : Fin r))
-    simpa [getBBF_Codeword_of_poly] using
+    have h_codeword :=
       (getBBF_Codeword_of_poly 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := (0 : Fin r)) (h_i := by simp) (P := P₀)).property
+    unfold getBBF_Codeword_of_poly at h_codeword
+    dsimp only at h_codeword
+    exact h_codeword
   have h_close_first :
       UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut) := by
@@ -2872,12 +2958,14 @@ lemma extracted_t_poly_eval_eq_final_constant
         (i := (0 : Fin r)) (h_i := by simp)]
       omega
     dsimp [C₀]
-    exact ⟨by simpa [BBF_CodeDistance] using h_dist_ne_zero⟩
+    dsimp only [BBF_CodeDistance] at h_dist_ne_zero ⊢
+    exact ⟨h_dist_ne_zero⟩
   letI : NeZero ‖C₀‖₀ := h_neZero_C₀
   have h_f0_close_to_first :
       Δ₀(getFirstOracle 𝔽q β oStmtOut, f₀) ≤ Code.uniqueDecodingRadius C₀ := by
-    exact (Code.UDRClose_iff_two_mul_proximity_lt_d_UDR (C := C₀)).2
-      (by simpa [pair_UDRClose, C₀] using h_pair)
+    have h_pair_close := h_pair
+    dsimp only [pair_UDRClose, C₀] at h_pair_close
+    exact (Code.UDRClose_iff_two_mul_proximity_lt_d_UDR (C := C₀)).2 h_pair_close
   have h_dec0_eq_f0 :
       UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut)
@@ -2891,16 +2979,21 @@ lemma extracted_t_poly_eval_eq_final_constant
         (h_within_radius := h_close_first))
       (hv := h_f0_mem)
       (hw := by
-        simpa [C₀] using UDRCodeword_mem_BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-          (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut)
-          (h_within_radius := h_close_first))
+        have h_mem :=
+          UDRCodeword_mem_BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+            (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut)
+            (h_within_radius := h_close_first)
+        dsimp only [C₀] at h_mem ⊢
+        exact h_mem)
       (huv := h_f0_close_to_first)
       (huw := by
-        simpa [C₀] using
+        have h_dist :=
           dist_to_UDRCodeword_le_uniqueDecodingRadius 𝔽q β
             (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
             (i := (0 : Fin r)) (h_i := by simp)
-            (f := getFirstOracle 𝔽q β oStmtOut) (h_within_radius := h_close_first))
+            (f := getFirstOracle 𝔽q β oStmtOut) (h_within_radius := h_close_first)
+        dsimp only [C₀] at h_dist ⊢
+        exact h_dist)
   have h_oracle_cons' := h_oracle_cons
   dsimp only [oracleFoldingConsistencyProp] at h_oracle_cons'
   have h_final_cons_all := h_final_cons

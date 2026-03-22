@@ -319,7 +319,11 @@ lemma fixFirstVariablesOfMQP_eval_eq (v : Fin (ℓ + 1)) {challenges : Fin v →
     DFunLike.congr_fun
       (eval_map_sumAlgEquiv (R := L) (S₁ := Fin (ℓ - v)) (S₂ := Fin v) x challenges)
       (MvPolynomial.rename (splitFirstVariablesEquiv (ℓ := ℓ) v) poly)
-  simpa [fixFirstVariablesOfMQP, MvPolynomial.eval_rename, h_fun] using h_eval
+  unfold fixFirstVariablesOfMQP
+  dsimp
+  exact h_eval.trans (by
+    rw [MvPolynomial.eval_rename]
+    rw [h_fun])
 
 omit [NeZero ℓ] in
 /-- Auxiliary lemma for proving that the polynomial sent by the honest prover is of degree at most

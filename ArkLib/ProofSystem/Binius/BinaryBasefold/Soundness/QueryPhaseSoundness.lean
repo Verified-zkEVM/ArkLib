@@ -90,9 +90,10 @@ theorem lemma_4_25_reject_if_suffix_in_disagreement
         f_next =
           getNextOracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
             (i := Fin.last ℓ) (oStmt := oStmtIn) (j := j_star) (hj := by
-              simpa only [toOutCodewordsCount_last, nBlocks] using hj)
+              change j_star.val + 1 < nBlocks (ℓ := ℓ) (ϑ := ϑ)
+              exact hj)
             (destDomainIdx := destIdx) (h_destDomainIdx := by
-              simpa only using h_destIdx))
+              exact h_destIdx))
       ∨ (f_next = fun _ => stmtIn.final_constant))
     (h_no_bad_event : ¬ foldingBadEvent 𝔽q β (i := ⟨j_star.val * ϑ, by omega⟩) ϑ
       h_destIdx h_destIdx_le (oStmtIn j_star) r_challenges)
@@ -134,6 +135,11 @@ theorem lemma_4_25_reject_if_suffix_in_disagreement
   unfold logical_stepCondition at h_final
   split_ifs at h_final with h_absurd
   · exact absurd h_absurd (lt_irrefl _)
+  have h_j_star_lt_div : j_star.val < ℓ / ϑ := by
+    have h_lt := j_star.isLt
+    simp only [nBlocks, toOutCodewordsCount_last] at h_lt
+    exact h_lt
+  let j_star_idx : Fin (ℓ / ϑ) := ⟨j_star.val, h_j_star_lt_div⟩
   -- Step 2: Key inductive invariant — disagreement propagates from j* to the final step.
   -- For each block k from j_star to ℓ/ϑ - 1 (inclusive), conditioned on all guard checks
   -- in h_accept passing, the fold value computed by the verifier at step k disagrees with
@@ -159,31 +165,36 @@ theorem lemma_4_25_reject_if_suffix_in_disagreement
     -- Base disagreement at block j*: computed fold value differs from decoded next codeword.
     have h_base_ne :
         logical_computeFoldedValue 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-          ⟨j_star.val, by simpa [nBlocks, toOutCodewordsCount_last] using j_star.isLt⟩ v stmtIn
+          j_star_idx v stmtIn
           (logical_queryFiberPoints 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-            oStmtIn ⟨j_star.val, by simpa [nBlocks, toOutCodewordsCount_last] using j_star.isLt⟩ v)
+            oStmtIn j_star_idx v)
         ≠ f_bar_next v_suffix := by
       have h_eval_eq_fold :
           logical_computeFoldedValue 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-            ⟨j_star.val, by simpa [nBlocks, toOutCodewordsCount_last] using j_star.isLt⟩ v stmtIn
+            j_star_idx v stmtIn
             (logical_queryFiberPoints 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-              oStmtIn ⟨j_star.val, by simpa [nBlocks, toOutCodewordsCount_last] using j_star.isLt⟩ v)
+              oStmtIn j_star_idx v)
           = folded_f v_suffix := by
         have h_eval_eq_fold_raw :=
           logical_computeFoldedValue_eq_iterated_fold 𝔽q β
             (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (oStmt := oStmtIn)
-            (k := ⟨j_star.val, by
-              simpa [nBlocks, toOutCodewordsCount_last] using j_star.isLt⟩)
+            (k := j_star_idx)
             (v := v) (stmt := stmtIn)
         -- Most of the remaining work here is index-transport:
         -- identifying `getChallengeSuffix` with `v_suffix`, and aligning the
         -- challenge slice with `r_challenges`.
-        simpa [folded_f, f_star, v_suffix, h_r_challenges, h_destIdx]
-          using h_eval_eq_fold_raw
+        have h_eval_eq_fold := h_eval_eq_fold_raw
+        simp only [folded_f, f_star, v_suffix, h_r_challenges, h_destIdx] at h_eval_eq_fold
+        exact h_eval_eq_fold
       have h_disagree_val : folded_f v_suffix ≠ f_bar_next v_suffix := by
-        simpa [disagreementSet] using h_disagree
+        have h_disagree_val := h_disagree
+        simp only [disagreementSet] at h_disagree_val
+        exact h_disagree_val
       intro h_eq
-      exact h_disagree_val (by simpa [h_eval_eq_fold] using h_eq)
+      have h_eq' : folded_f v_suffix = f_bar_next v_suffix := by
+        rw [← h_eval_eq_fold]
+        exact h_eq
+      exact h_disagree_val h_eq'
     by_cases h_more : j_star.val + 1 < nBlocks (ℓ := ℓ) (ϑ := ϑ)
     · -- Main propagation case (j* is not the last block).
       have h_propagates_to_last :
@@ -215,13 +226,13 @@ theorem lemma_4_25_reject_if_suffix_in_disagreement
       exact h_propagates_to_last
     · -- Terminal case: j* is the last block, so base disagreement is already
       -- the final-step disagreement.
-      have hj_lt_div : j_star.val < ℓ / ϑ := by
-        simpa [nBlocks, toOutCodewordsCount_last] using j_star.isLt
       have hj_not_lt_succ : ¬ j_star.val + 1 < ℓ / ϑ := by
-        simpa [nBlocks, toOutCodewordsCount_last] using h_more
+        have hj_not_lt_succ := h_more
+        simp only [nBlocks, toOutCodewordsCount_last] at hj_not_lt_succ
+        exact hj_not_lt_succ
       have h_k_last_eq_jstar :
           (⟨ℓ / ϑ - 1, by omega⟩ : Fin (ℓ / ϑ)) =
-          ⟨j_star.val, by simpa [nBlocks, toOutCodewordsCount_last] using j_star.isLt⟩ := by
+          j_star_idx := by
         apply Fin.eq_of_val_eq
         have h_ge : ℓ / ϑ ≤ j_star.val + 1 := Nat.le_of_not_gt hj_not_lt_succ
         have h1 : ℓ / ϑ - 1 ≤ j_star.val := by omega
@@ -234,19 +245,26 @@ theorem lemma_4_25_reject_if_suffix_in_disagreement
       have h_f_bar_next_const : f_bar_next = fun _ => stmtIn.final_constant := by
         subst f_next
         dsimp [f_bar_next]
-        simpa using
-          (UDRCodeword_constFunc_eq_self (𝔽q := 𝔽q) (β := β)
+        exact
+          UDRCodeword_constFunc_eq_self (𝔽q := 𝔽q) (β := β)
             (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-            (i := destIdx) (h_i := h_destIdx_le) (c := stmtIn.final_constant))
+            (i := destIdx) (h_i := h_destIdx_le) (c := stmtIn.final_constant)
       have h_base_ne_const :
           logical_computeFoldedValue 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-            ⟨j_star.val, by simpa [nBlocks, toOutCodewordsCount_last] using j_star.isLt⟩ v stmtIn
+            j_star_idx v stmtIn
             (logical_queryFiberPoints 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-              oStmtIn ⟨j_star.val, by simpa [nBlocks, toOutCodewordsCount_last] using j_star.isLt⟩ v)
+              oStmtIn j_star_idx v)
           ≠ stmtIn.final_constant := by
         intro h_eq_const
-        exact h_base_ne (by simpa [h_f_bar_next_const] using h_eq_const)
-      simpa [h_k_last_eq_jstar] using h_base_ne_const
+        have h_eq' : logical_computeFoldedValue 𝔽q β
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) j_star_idx v stmtIn
+            (logical_queryFiberPoints 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+              oStmtIn j_star_idx v) = f_bar_next v_suffix := by
+          rw [h_f_bar_next_const]
+          exact h_eq_const
+        exact h_base_ne h_eq'
+      rw [← h_k_last_eq_jstar] at h_base_ne_const
+      exact h_base_ne_const
   -- Step 3: Contradiction.
   exact h_fold_ne_const h_final
 
@@ -284,7 +302,8 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
       simp only [getLastOraclePositionIndex_last, Nat.sub_mul, Nat.div_mul_cancel (hdiv.out),
         one_mul]
     have hk_add : k + ϑ = ℓ := by
-      simpa [h_k] using (Nat.sub_add_cancel (by omega))
+      rw [h_k]
+      exact Nat.sub_add_cancel (by omega)
     let final_compliance : Prop :=
       isCompliant 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := ⟨k, by
@@ -301,8 +320,9 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
         ¬ (oracleFoldingConsistencyProp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
               (i := Fin.last ℓ) (challenges := stmtIn.challenges) (oStmt := oStmtIn) ∧
             final_compliance) := by
-      simpa only [not_and, finalSumcheckStepOracleConsistencyProp, Fin.val_last] using
-        h_not_consistent
+      have h_not_and := h_not_consistent
+      simp only [not_and, finalSumcheckStepOracleConsistencyProp, Fin.val_last] at h_not_and ⊢
+      exact h_not_and
     by_cases h_final_ok : final_compliance
     · -- Final block compliant: then oracleFoldingConsistencyProp must fail.
       have h_oracle_bad :
@@ -334,7 +354,8 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
               (f_i_plus_steps :=
                 getNextOracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
                   (i := Fin.last ℓ) (oStmt := oStmtIn) (j := j) (hj := by
-                    simpa [nBlocks] using hj)
+                    change j.val + 1 < nBlocks (ℓ := ℓ) (ϑ := ϑ)
+                    exact hj)
                   (destDomainIdx := ⟨j.val * ϑ + ϑ, by
                     apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
                     exact oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ)
@@ -370,7 +391,8 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
                 (f_i_plus_steps :=
                   getNextOracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
                     (i := Fin.last ℓ) (oStmt := oStmtIn) (j := j) (hj := by
-                      simpa [nBlocks] using hj)
+                      change j.val + 1 < nBlocks (ℓ := ℓ) (ϑ := ϑ)
+                      exact hj)
                     (destDomainIdx := ⟨j.val * ϑ + ϑ, by
                       apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
                       exact oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ)
@@ -381,15 +403,21 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
                     stmtIn.challenges (k := j.val * ϑ) (h := by
                       exact oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ)
                         (i := Fin.last ℓ) (j := j)))) := by
-          simpa [oracleFoldingConsistencyProp, nBlocks] using h_oracle_bad
+          have h_not_forall := h_oracle_bad
+          simp only [oracleFoldingConsistencyProp] at h_not_forall
+          exact h_not_forall
         classical
         push_neg at h_not_forall
         exact h_not_forall
       rcases h_oracle_bad' with ⟨j, hj, hbad⟩
       refine ⟨j, ?_⟩
       have hj' : j.val + 1 < ℓ / ϑ := by
-        simpa [nBlocks, toOutCodewordsCount_last] using hj
-      simpa [badBlockProp, hj', nBlocks, toOutCodewordsCount_last] using hbad
+        have hj' := hj
+        simp only [nBlocks, toOutCodewordsCount_last] at hj'
+        exact hj'
+      have hbad' := hbad
+      simp only [badBlockProp, hj', nBlocks, toOutCodewordsCount_last] at hbad' ⊢
+      exact hbad'
     · -- Final block non-compliant: take the last block.
       refine ⟨j_last, ?_⟩
       have h_no_succ :
@@ -402,9 +430,13 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
             toOutCodewordsCount_last, Nat.sub_add_cancel h_div_pos']
         exact not_lt_of_ge (by simp only [toOutCodewordsCount_last, h_eq, le_refl])
       have h_no_succ' : ¬ j_last.val + 1 < ℓ / ϑ := by
-        simpa [nBlocks, toOutCodewordsCount_last] using h_no_succ
-      simpa [badBlockProp, h_no_succ', final_compliance, nBlocks, toOutCodewordsCount_last]
-        using h_final_ok
+        have h_no_succ' := h_no_succ
+        simp only [nBlocks, toOutCodewordsCount_last] at h_no_succ'
+        exact h_no_succ'
+      have h_final_ok' := h_final_ok
+      simp only [badBlockProp, h_no_succ', final_compliance, nBlocks, toOutCodewordsCount_last]
+        at h_final_ok' ⊢
+      exact h_final_ok'
   -- Pick the highest bad block.
   let j_star :=
     highestBadBlock 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -412,9 +444,9 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
   have h_j_star_bad :
       badBlockProp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (stmtIn := stmtIn) (oStmtIn := oStmtIn) j_star := by
-    simpa using
-      (highestBadBlock_is_bad 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (stmtIn := stmtIn) (oStmtIn := oStmtIn) h_exists_badBlock)
+    exact
+      highestBadBlock_is_bad 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (stmtIn := stmtIn) (oStmtIn := oStmtIn) h_exists_badBlock
   have h_good_of_lt {j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ))} (hlt : j_star < j) :
       ¬ badBlockProp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (stmtIn := stmtIn) (oStmtIn := oStmtIn) j :=
@@ -429,8 +461,8 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
   have h_destIdx : destIdx.val = i_star.val + ϑ := by
     simp [i_star, destIdx]
   have h_destIdx_le : destIdx ≤ ℓ := by
-    simpa [destIdx] using
-      (oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ) (j := j_star))
+    change j_star.val * ϑ + ϑ ≤ ℓ
+    exact oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ) (j := j_star)
   let f_star := oStmtIn j_star
   let r_challenges : Fin ϑ → L :=
     getFoldingChallenges (r := r) (𝓡 := 𝓡) (ϑ := ϑ) (i := Fin.last ℓ)
@@ -449,7 +481,9 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
         (oraclePositionToDomainIndex (positionIdx := j_star)).val + ϑ ≤ (Fin.last ℓ).val := by
       simp only [Fin.val_last,
         (oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ) (j := j_star))]
-    simpa [foldingBadEventAtBlock, h_branch, r_challenges, i_star, destIdx] using h_bad
+    have h_bad' := h_bad
+    simp only [foldingBadEventAtBlock, h_branch, r_challenges, i_star, destIdx] at h_bad' ⊢
+    exact h_bad'
   -- Choose `f_next` and extract compliance/UDR-close facts.
   have h_choose :
       ∃ f_next : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx,
@@ -463,9 +497,10 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
           f_next =
             getNextOracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
               (i := Fin.last ℓ) (oStmt := oStmtIn) (j := j_star) (hj := by
-                simpa [nBlocks, toOutCodewordsCount_last] using hj)
+                change j_star.val + 1 < nBlocks (ℓ := ℓ) (ϑ := ϑ)
+                exact hj)
               (destDomainIdx := destIdx) (h_destDomainIdx := by
-                simpa using h_destIdx))
+                exact h_destIdx))
         ∨ (f_next = fun _ => stmtIn.final_constant)) := by
     by_cases h_last : j_star.val + 1 < nBlocks (ℓ := ℓ) (ϑ := ϑ)
     · -- Intermediate bad block.
@@ -473,7 +508,8 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
           OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx :=
         getNextOracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
           (i := Fin.last ℓ) (oStmt := oStmtIn) (j := j_star) (hj := by
-            simpa [nBlocks] using h_last)
+            change j_star.val + 1 < nBlocks (ℓ := ℓ) (ϑ := ϑ)
+            exact h_last)
           (destDomainIdx := destIdx) (h_destDomainIdx := by rfl)
       have h_not_compliant :
           ¬ isCompliant 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -481,9 +517,13 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
             (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
             (f_i := f_star) (f_i_plus_steps := f_next) (challenges := r_challenges) := by
         have h_last' : j_star.val + 1 < ℓ / ϑ := by
-          simpa [nBlocks, toOutCodewordsCount_last] using h_last
-        simpa [badBlockProp, h_last', nBlocks, toOutCodewordsCount_last, i_star, destIdx]
-          using h_j_star_bad
+          have h_last' := h_last
+          simp only [nBlocks, toOutCodewordsCount_last] at h_last'
+          exact h_last'
+        have h_j_star_bad' := h_j_star_bad
+        simp only [badBlockProp, h_last', nBlocks, toOutCodewordsCount_last]
+          at h_j_star_bad'
+        exact h_j_star_bad'
       let j_next : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)) := ⟨j_star.val + 1, h_last⟩
       have h_next_good :
           ¬ badBlockProp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -767,24 +807,30 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
           simp only [cast_pow, cast_ofNat, ne_eq, h_pos_nn, not_false_eq_true])
         simp only [cast_pow, cast_ofNat] at h
         exact h
-      simpa [ENNReal.coe_div h_pos_nn] using (congr_arg (ENNReal.ofNNReal) h_div_nn)
+      have h_div_cast := congr_arg (ENNReal.ofNNReal) h_div_nn
+      simp only [ENNReal.coe_div h_pos_nn] at h_div_cast
+      exact h_div_cast
     have h_Dcomp_ennreal' :
         (2 * (Dᶜ).card : ENNReal) ≤
           (n : ENNReal) + (n : ENNReal) / (2 ^ 𝓡 : ENNReal) := by
-      simpa [h_div_cast] using h_Dcomp_ennreal
+      have h_Dcomp_ennreal' := h_Dcomp_ennreal
+      rw [h_div_cast] at h_Dcomp_ennreal'
+      exact h_Dcomp_ennreal'
     have h_step :
         ((Dᶜ).card : ENNReal) ≤
           ((2 : ENNReal)⁻¹ * ((n : ENNReal) + (n : ENNReal) / (2 ^ 𝓡 : ENNReal))) := by
       rw [← ENNReal.mul_le_iff_le_inv (by simp) (by simp)]
-      simpa [mul_comm] using h_Dcomp_ennreal'
+      exact h_Dcomp_ennreal'
     apply (ENNReal.div_le_iff h_n_pos h_n_fin).2
     have h_rhs :
         ((2 : ENNReal)⁻¹ * ((n : ENNReal) + (n : ENNReal) / (2 ^ 𝓡 : ENNReal))) =
           ((1/2 : ℝ≥0) + (1 : ℝ≥0) / (2 * 2 ^ 𝓡)) * (n : ENNReal) := by
       have h_inv : (2 * 2 ^ 𝓡 : ENNReal)⁻¹ = 2⁻¹ * (2 ^ 𝓡 : ENNReal)⁻¹ := by
         apply ENNReal.mul_inv (Or.inl (by simp)) (Or.inl (by simp))
-      simp [mul_add, add_mul, h_inv, div_eq_mul_inv, mul_assoc, mul_left_comm, mul_comm]
-    simpa [h_rhs] using h_step
+      simp [mul_add, add_mul, h_inv, div_eq_mul_inv, mul_assoc, mul_comm]
+    have h_step' := h_step
+    rw [h_rhs] at h_step'
+    exact h_step'
   have h_prob_suffix_not' :
       Pr_{ let v ←$ᵖ (sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
         extractSuffixFromChallenge 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)

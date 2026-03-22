@@ -1459,7 +1459,8 @@ theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness
         (i := ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩) hNCR
     )
     exact OracleVerifier.rbrKnowledgeSoundness_of_eq_error (h := by
-      simpa using hSeq') (h_ε := by
+      dsimp [OracleVerifier.castOutSimple]
+      exact hSeq') (h_ε := by
       intro k
       unfold nonLastSingleBlockFoldRelayRbrKnowledgeError
       rfl)
@@ -1590,13 +1591,13 @@ theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness :
     (rbrKnowledgeError₂ := lastBlockRbrKnowledgeError (L := L) 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (h₁ := by
-      simpa using (nonLastBlocksOracleVerifier_rbrKnowledgeSoundness (L := L) 𝔽q β
+      exact nonLastBlocksOracleVerifier_rbrKnowledgeSoundness (L := L) 𝔽q β
         (ϑ := ϑ) (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-        (init := init) (impl := impl)))
+        (init := init) (impl := impl))
     (h₂ := by
-      simpa using (lastBlockOracleVerifier_rbrKnowledgeSoundness (L := L) 𝔽q β
+      exact lastBlockOracleVerifier_rbrKnowledgeSoundness (L := L) 𝔽q β
         (ϑ := ϑ) (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-        (init := init) (impl := impl)))
+        (init := init) (impl := impl))
   apply OracleVerifier.castInOut_rbrKnowledgeSoundness
     (h_stmtIn := by
       apply Statement.of_fin_eq

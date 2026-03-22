@@ -678,9 +678,9 @@ def projectToMidSumcheckPoly (t : MultilinearPoly L ℓ)
     (H := H₀) (challenges := challenges)
   ⟨Hᵢ, by
     have hp := H₀.property
-    simpa using
-      (fixFirstVariablesOfMQP_degreeLE (L := L) (ℓ := ℓ) (v := ⟨i, by omega⟩)
-        (poly := H₀.val) (challenges := challenges) (deg := 2) hp)
+    exact
+      fixFirstVariablesOfMQP_degreeLE (L := L) (ℓ := ℓ) (v := ⟨i, by omega⟩)
+        (poly := H₀.val) (challenges := challenges) (deg := 2) hp
   ⟩
 
 /-- Derive `H_{i+1}` from `H_i` by projecting the first variable -/
@@ -691,9 +691,9 @@ def projectToNextSumcheckPoly (i : Fin (ℓ)) (Hᵢ : MultiquadraticPoly L (ℓ 
     (H := Hᵢ.val) (challenges := fun _ => rᵢ)
   exact ⟨projectedH, by
     have hp := Hᵢ.property
-    simpa using
-      (fixFirstVariablesOfMQP_degreeLE (L := L) (ℓ := ℓ - i) (v := ⟨1, by omega⟩)
-        (poly := Hᵢ.val) (challenges := fun _ => rᵢ) (deg := 2) hp)
+    exact
+      fixFirstVariablesOfMQP_degreeLE (L := L) (ℓ := ℓ - i) (v := ⟨1, by omega⟩)
+        (poly := Hᵢ.val) (challenges := fun _ => rᵢ) (deg := 2) hp
   ⟩
 
 lemma projectToNextSumcheckPoly_eval_eq (i : Fin ℓ) (Hᵢ : MultiquadraticPoly L (ℓ - i)) (rᵢ : L)
@@ -1017,9 +1017,23 @@ lemma fixFirstVariablesOfMQP_full_eval_eq_eval {deg : ℕ} {challenges : Fin (Fi
     {poly : L[X Fin ℓ]} (hp : poly ∈ L⦃≤ deg⦄[X Fin ℓ]) (x : Fin (ℓ - ℓ) → L) :
       (fixFirstVariablesOfMQP ℓ (v := Fin.last ℓ) poly challenges).eval x
       = poly.eval challenges := by
-  simpa [Fin.val_last] using
-    (fixFirstVariablesOfMQP_eval_eq (L := L) (ℓ := ℓ) (v := Fin.last ℓ)
-      (poly := poly) (challenges := challenges) (x := x))
+  have h_eval := fixFirstVariablesOfMQP_eval_eq (L := L) (ℓ := ℓ) (v := Fin.last ℓ)
+    (poly := poly) (challenges := challenges) (x := x)
+  have h_fun :
+      (fun j =>
+        if hj : j.val < (Fin.last ℓ).val then
+          challenges ⟨j.val, hj⟩
+        else
+          x ⟨j.val - Fin.last ℓ, by omega⟩) = challenges := by
+    funext j
+    have hj : j.val < (Fin.last ℓ).val := by
+      change j.val < ℓ
+      exact j.isLt
+    have h_cast : (⟨j.val, hj⟩ : Fin (Fin.last ℓ)) = j := by
+      apply Fin.ext
+      rfl
+    rw [dif_pos hj, h_cast]
+  exact h_eval.trans (congrArg (fun f => MvPolynomial.eval f poly) h_fun)
 
 /-- At `Fin.last ℓ`, the projected sumcheck polynomial evaluates to `multiplier * t(challenges)`.
 When evaluated at the "zero" point (empty domain), the product structure emerges. -/
@@ -1348,7 +1362,8 @@ private lemma extracted_mle_eval_bits [NeZero 𝓡] (P : L[X]) (ω : Fin (2 ^ �
   dsimp only
   rw [← coe_fin_pow_two_eq_bitsOfIndex (L := L) (k := ω)]
   rw [MvPolynomial.MLE_eval_zeroOne]
-  simpa [t_coeffs] using congrArg (fun x => t_coeffs x) (binaryFinMapToNat_invFun_eq (ℓ := ℓ) ω)
+  have h_index := congrArg (fun x => t_coeffs x) (binaryFinMapToNat_invFun_eq (ℓ := ℓ) ω)
+  exact h_index
 
 private lemma extracted_mle_polynomial_eq
     [NeZero 𝓡] (P : L[X]) (hP : P.degree < 2 ^ ℓ) :
