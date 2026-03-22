@@ -23,8 +23,6 @@ This file packages:
 
 namespace Binius.BinaryBasefold
 
-set_option maxHeartbeats 400000
-
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
   Binius.BinaryBasefold
 open scoped NNReal

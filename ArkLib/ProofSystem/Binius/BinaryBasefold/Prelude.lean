@@ -172,13 +172,46 @@ abbrev MultiquadraticPoly (L : Type) [CommSemiring L] (ℓ : ℕ) := L⦃≤ 2�
 /-- Fixes the first `v` variables of a `ℓ`-variate multivariate polynomial.
 `t` -> `H_i` derivation
 -/
+private def splitFirstVariables (v : Fin (ℓ + 1)) : Fin ℓ → Fin (ℓ - v) ⊕ Fin v :=
+  fun j =>
+    if hj : j.val < v.val then
+      Sum.inr ⟨j.val, hj⟩
+    else
+      Sum.inl ⟨j.val - v, by omega⟩
+
+private def mergeFirstVariables (v : Fin (ℓ + 1)) : Fin (ℓ - v) ⊕ Fin v → Fin ℓ
+  | Sum.inl j => ⟨j.val + v, by omega⟩
+  | Sum.inr j => ⟨j.val, by omega⟩
+
+private def splitFirstVariablesEquiv (v : Fin (ℓ + 1)) : Fin ℓ ≃ Fin (ℓ - v) ⊕ Fin v where
+  toFun := splitFirstVariables (ℓ := ℓ) v
+  invFun := mergeFirstVariables (ℓ := ℓ) v
+  left_inv := by
+    intro j
+    dsimp [splitFirstVariables, mergeFirstVariables]
+    by_cases hj : j.val < v.val
+    · simp [hj]
+    · simp [hj]
+      apply Fin.ext
+      exact Nat.sub_add_cancel (Nat.le_of_not_lt hj)
+  right_inv := by
+    intro j
+    cases j with
+    | inl j =>
+        dsimp [splitFirstVariables, mergeFirstVariables]
+        have hj : ¬ j.val + v < v := by omega
+        simp [hj]
+    | inr j =>
+        dsimp [splitFirstVariables, mergeFirstVariables]
+        have hj : j.val < v := j.isLt
+        simp [hj]
+
 noncomputable def fixFirstVariablesOfMQP (v : Fin (ℓ + 1))
   (H : MvPolynomial (Fin ℓ) L) (challenges : Fin v → L) : MvPolynomial (Fin (ℓ - v)) L :=
-  have h_l_eq : ℓ = (ℓ - v) + v := by rw [Nat.add_comm]; exact (Nat.add_sub_of_le v.is_le).symm
-  -- Step 1 : Rename L[X Fin ℓ] to L[X (Fin (ℓ - v) ⊕ Fin v)]
-  let finEquiv := finSumFinEquiv (m := ℓ - v) (n := v).symm
+  -- Step 1 : Rename L[X Fin ℓ] to L[X (Fin (ℓ - v) ⊕ Fin v)], sending
+  -- the first `v` variables to `Sum.inr` so they can be evaluated away.
   let H_sum : L[X (Fin (ℓ - v) ⊕ Fin v)] := by
-    apply MvPolynomial.rename (f := (finCongr h_l_eq).trans finEquiv) H
+    apply MvPolynomial.rename (f := splitFirstVariablesEquiv (ℓ := ℓ) v) H
   -- Step 2 : Convert to (L[X Fin v])[X Fin (ℓ - v)] via sumAlgEquiv
   let H_forward : L[X Fin v][X Fin (ℓ - v)] := (sumAlgEquiv L (Fin (ℓ - v)) (Fin v)) H_sum
   -- Step 3 : Evaluate the poly at the point challenges to get a final L[X Fin (ℓ - v)]
@@ -249,6 +282,45 @@ private lemma rename_equiv_mem_restrictDegree {R : Type*} [CommSemiring R]
       Finsupp.single_eq_of_ne (hm x (by aesop))
   aesop
 
+private lemma eval_map_sumAlgEquiv {R : Type*} [CommSemiring R]
+    {S₁ S₂ : Type*} (x : S₁ → R) (y : S₂ → R) :
+    ((MvPolynomial.eval x).comp
+      ((MvPolynomial.map (MvPolynomial.eval y)).comp
+        ((MvPolynomial.sumAlgEquiv R S₁ S₂).toRingHom))) =
+      (MvPolynomial.eval (Sum.elim x y) : MvPolynomial (S₁ ⊕ S₂) R →+* R) := by
+  ext
+  · simp [MvPolynomial.sumAlgEquiv, MvPolynomial.sumRingEquiv,
+      MvPolynomial.mvPolynomialEquivMvPolynomial]
+  · case hX i =>
+      cases i <;> simp [MvPolynomial.sumAlgEquiv, MvPolynomial.sumRingEquiv,
+        MvPolynomial.mvPolynomialEquivMvPolynomial]
+
+lemma fixFirstVariablesOfMQP_eval_eq (v : Fin (ℓ + 1)) {challenges : Fin v → L}
+    {poly : L[X Fin ℓ]} (x : Fin (ℓ - v) → L) :
+    (fixFirstVariablesOfMQP ℓ v poly challenges).eval x =
+      poly.eval (fun j =>
+        if hj : j.val < v.val then
+          challenges ⟨j.val, hj⟩
+        else
+          x ⟨j.val - v, by omega⟩) := by
+  have h_fun :
+      (Sum.elim x challenges) ∘ splitFirstVariablesEquiv (ℓ := ℓ) v =
+        (fun j =>
+          if hj : j.val < v.val then
+            challenges ⟨j.val, hj⟩
+          else
+            x ⟨j.val - v, by omega⟩) := by
+    funext j
+    dsimp [splitFirstVariablesEquiv, splitFirstVariables]
+    by_cases hj : j.val < v.val
+    · simp [hj]
+    · simp [hj]
+  have h_eval :=
+    DFunLike.congr_fun
+      (eval_map_sumAlgEquiv (R := L) (S₁ := Fin (ℓ - v)) (S₂ := Fin v) x challenges)
+      (MvPolynomial.rename (splitFirstVariablesEquiv (ℓ := ℓ) v) poly)
+  simpa [fixFirstVariablesOfMQP, MvPolynomial.eval_rename, h_fun] using h_eval
+
 omit [NeZero ℓ] in
 /-- Auxiliary lemma for proving that the polynomial sent by the honest prover is of degree at most
 `deg` -/
@@ -261,15 +333,14 @@ theorem fixFirstVariablesOfMQP_degreeLE {deg : ℕ} (v : Fin (ℓ + 1)) {challen
   dsimp only
   intro term h_term_in_support i
   -- ⊢ term i ≤ deg
-  have h_l_eq : ℓ = (ℓ - v) + v := (Nat.sub_add_cancel v.is_le).symm
-  set finEquiv := finSumFinEquiv (m := ℓ - v) (n := v).symm
-  set H_sum := MvPolynomial.rename (f := (finCongr h_l_eq).trans finEquiv) poly
+  set splitEquiv := splitFirstVariablesEquiv (ℓ := ℓ) v
+  set H_sum := MvPolynomial.rename (f := splitEquiv) poly
   set H_grouped : L[X Fin ↑v][X Fin (ℓ - ↑v)] := (sumAlgEquiv L (Fin (ℓ - v)) (Fin v)) H_sum
   set eval_map : L[X Fin ↑v] →+* L := (eval challenges : MvPolynomial (Fin v) L →+* L)
   have h_Hgrouped_degreeLE : H_grouped ∈ (L[X Fin ↑v])⦃≤ deg⦄[X Fin (ℓ - ↑v)] := by
     exact Binius.BinaryBasefold.sumAlgEquiv_mem_restrictDegree H_sum deg
       (Binius.BinaryBasefold.rename_equiv_mem_restrictDegree
-        ((finCongr h_l_eq).trans finEquiv) poly deg hp)
+        splitEquiv poly deg hp)
   have h_mem_support_max_deg_LE := MvPolynomial.mem_restrictDegree (R := L[X Fin ↑v]) (n := deg)
     (σ := Fin (ℓ - ↑v)) (p := H_grouped).mp (h_Hgrouped_degreeLE)
   have h_term_in_Hgrouped_support : term ∈ H_grouped.support := by
@@ -1386,7 +1457,7 @@ lemma blockDiagMatrix_mulVec_F₂_eq_Fin_merge_PO2 (n : ℕ)
 where `z₀` and `z₁` are the 1-step fiber of `y`. `M_{k, y}` is actually the
 `inverse additive NTT (LCH14)` on the coset `(x₀, ..., x_{2^k-1})` **(Remark 4.10)**. -/
 def foldMatrix (i : Fin r) {destIdx : Fin r} (steps : ℕ)
-    (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ)
+    (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (y : sDomain 𝔽q β h_ℓ_add_R_rate destIdx) :
     Matrix (Fin (2 ^ steps)) (Fin (2 ^ steps)) L :=
   match steps with
@@ -1484,7 +1555,7 @@ lemma foldMatrix_det_ne_zero (i : Fin r) {destIdx : Fin r} (steps : ℕ)
 
 /-- **Definition 4.8**: Iterated fold over `steps` steps starting at domain index `i`. -/
 def iterated_fold (i : Fin r) (steps : ℕ) {destIdx : Fin r}
-  (h_destIdx : destIdx = i + steps)
+  (h_destIdx : destIdx.val = i.val + steps)
   (h_destIdx_le : destIdx ≤ ℓ)
   (f : sDomain 𝔽q β h_ℓ_add_R_rate (i := i) → L) (r_challenges : Fin steps → L) :
     (y : sDomain 𝔽q β h_ℓ_add_R_rate (i := destIdx)) → L := by
@@ -1519,7 +1590,7 @@ omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
 /-- **Base Case**: Iterated fold with 0 steps is the identity
 (returning the initial function `f`). -/
 lemma iterated_fold_zero_steps (i : Fin r) {destIdx : Fin r}
-    (h_destIdx : destIdx = i.val) (h_destIdx_le : destIdx ≤ ℓ)
+    (h_destIdx : destIdx.val = i.val) (h_destIdx_le : destIdx ≤ ℓ)
     (f : sDomain 𝔽q β h_ℓ_add_R_rate (i := i) → L)
     (r_challenges : Fin 0 → L) :
     iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := 0)
@@ -1533,7 +1604,7 @@ lemma iterated_fold_zero_steps (i : Fin r) {destIdx : Fin r}
 
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
 lemma iterated_fold_last (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ)
-  (h_midIdx : midIdx = i + steps) (h_destIdx : destIdx = i + steps + 1) (h_destIdx_le : destIdx ≤ ℓ)
+  (h_midIdx : midIdx.val = i.val + steps) (h_destIdx : destIdx.val = i.val + steps + 1) (h_destIdx_le : destIdx ≤ ℓ)
   (f : sDomain 𝔽q β h_ℓ_add_R_rate (i := i) → L) (r_challenges : Fin (steps + 1) → L) :
   let fold_full := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
     (steps := steps + 1) h_destIdx h_destIdx_le (f := f) (r_challenges := r_challenges)
@@ -1604,12 +1675,35 @@ lemma iterated_fold_congr_steps_index
     (f) (fun (cIdx : Fin steps') => r_challenges ⟨cIdx, by omega⟩) (y := y) := by
   subst h_steps_eq_steps'; rfl
 
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
+private lemma fold_congr_source_dest_index
+    {i i' destIdx destIdx' : Fin r}
+    (hi : i = i')
+    (hd : destIdx = destIdx')
+    (h_destIdx : destIdx = i.val + 1)
+    (h_destIdx' : destIdx' = i'.val + 1)
+    (h_destIdx_le : destIdx ≤ ℓ)
+    (h_destIdx_le' : destIdx' ≤ ℓ)
+    (f : sDomain 𝔽q β h_ℓ_add_R_rate (i := i) → L)
+    (r_chal : L) :
+    fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := i) (destIdx := destIdx) h_destIdx h_destIdx_le f r_chal =
+    cast (congrArg (fun idx => sDomain 𝔽q β h_ℓ_add_R_rate (i := idx) → L) hd).symm
+      (fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := i') (destIdx := destIdx') h_destIdx' h_destIdx_le'
+        (cast (congrArg (fun idx => sDomain 𝔽q β h_ℓ_add_R_rate (i := idx) → L) hi) f)
+        r_chal) := by
+  subst hi
+  subst hd
+  simp only [cast_eq]
+
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
 /-- Transitivity of iterated_fold : folding for `steps₁` and then for `steps₂`
 equals folding for `steps₁ + steps₂` with concatenated challenges.
 -/
 lemma iterated_fold_transitivity
     (i : Fin r) {midIdx destIdx : Fin r} (steps₁ steps₂ : ℕ)
-    (h_midIdx : midIdx = i.val + steps₁) (h_destIdx : destIdx = i + steps₁ + steps₂)
+    (h_midIdx : midIdx.val = i.val + steps₁) (h_destIdx : destIdx.val = i.val + steps₁ + steps₂)
     (h_destIdx_le : destIdx ≤ ℓ)
     (f : sDomain 𝔽q β h_ℓ_add_R_rate (i := i) → L)
     (r_challenges₁ : Fin steps₁ → L) (r_challenges₂ : Fin steps₂ → L) :
@@ -1628,7 +1722,147 @@ lemma iterated_fold_transitivity
       (steps := steps₁ + steps₂) (h_destIdx := by omega) (h_destIdx_le := h_destIdx_le)
       (f := f) (r_challenges := Fin.append r_challenges₁ r_challenges₂)
     lhs = rhs := by
-  sorry -- admitted for brevity, relies on a lemma like `Fin.dfoldl_add`
+  revert destIdx h_destIdx h_destIdx_le r_challenges₂
+  induction steps₂ with
+  | zero =>
+      intro destIdx h_destIdx h_destIdx_le r_challenges₂
+      have h_dest_eq : destIdx = midIdx := by
+        apply Fin.eq_of_val_eq
+        omega
+      subst h_dest_eq
+      dsimp only
+      rw [iterated_fold_zero_steps (𝔽q := 𝔽q) (β := β)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := destIdx) (destIdx := destIdx)
+        (h_destIdx := by rfl) (h_destIdx_le := by omega)
+        (f := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
+          (steps := steps₁) (h_destIdx := h_midIdx) (h_destIdx_le := by omega) (f := f)
+          (r_challenges := r_challenges₁))
+        (r_challenges := r_challenges₂)]
+      simp only [cast_eq]
+      have h_append_zero : Fin.append r_challenges₁ r_challenges₂ = r_challenges₁ := by
+        funext j
+        rw [show j = Fin.castAdd 0 j from rfl]
+        rw [Fin.append_left]
+        rfl
+      rw [h_append_zero]
+      change iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
+          (steps := steps₁) (h_destIdx := h_midIdx) (h_destIdx_le := h_destIdx_le)
+          (f := f) (r_challenges := r_challenges₁) =
+        iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
+          (steps := steps₁) (h_destIdx := h_midIdx) (h_destIdx_le := h_destIdx_le)
+          (f := f) (r_challenges := r_challenges₁)
+      rfl
+  | succ n ih =>
+      intro destIdx h_destIdx h_destIdx_le r_challenges₂
+      let prevIdx : Fin r := ⟨i.val + steps₁ + n, by omega⟩
+      have h_prev_from_i : prevIdx.val = i.val + steps₁ + n := by
+        rfl
+      have h_prev_from_mid : prevIdx.val = midIdx.val + n := by
+        dsimp [prevIdx]
+        omega
+      have h_prev_le : prevIdx ≤ ℓ := by
+        dsimp [prevIdx]
+        omega
+      dsimp only
+      rw [iterated_fold_last (𝔽q := 𝔽q) (β := β)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := midIdx) (midIdx := prevIdx)
+        (destIdx := destIdx) (steps := n) (h_midIdx := h_prev_from_mid)
+        (h_destIdx := by
+          calc
+            destIdx.val = i.val + steps₁ + (n + 1) := h_destIdx
+            _ = midIdx.val + n + 1 := by omega)
+        (h_destIdx_le := h_destIdx_le)
+        (f := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
+          (steps := steps₁) (h_destIdx := h_midIdx) (h_destIdx_le := by omega) (f := f)
+          (r_challenges := r_challenges₁))
+        (r_challenges := r_challenges₂)]
+      have h_append_snoc :
+          Fin.append r_challenges₁ r_challenges₂ =
+            Fin.snoc (Fin.append r_challenges₁ (Fin.init r_challenges₂))
+              (r_challenges₂ (Fin.last n)) := by
+        ext j
+        cases j using Fin.lastCases with
+        | last =>
+            rw [Fin.snoc_last]
+            have hlast : Fin.last (steps₁.add n) = Fin.natAdd steps₁ (Fin.last n) := by
+              apply Fin.eq_of_val_eq
+              change steps₁.add n = steps₁ + n
+              rfl
+            rw [hlast, Fin.append_right]
+        | cast j =>
+            rw [Fin.snoc_castSucc]
+            by_cases hj : j.val < steps₁
+            · have hj_left :
+                  j.castSucc = Fin.castAdd (n + 1) ⟨j.val, hj⟩ := by
+                apply Fin.eq_of_val_eq
+                rfl
+              have hj_right :
+                  j = Fin.castAdd n ⟨j.val, hj⟩ := by
+                apply Fin.eq_of_val_eq
+                rfl
+              rw [hj_left, Fin.append_left]
+              have h_app_right :
+                  Fin.append r_challenges₁ (Fin.init r_challenges₂) j =
+                    Fin.append r_challenges₁ (Fin.init r_challenges₂)
+                      (Fin.castAdd n ⟨j.val, hj⟩) := by
+                exact congrArg (Fin.append r_challenges₁ (Fin.init r_challenges₂)) hj_right
+              rw [h_app_right, Fin.append_left]
+            · have hj_total : j.val < steps₁ + n := by
+                have hj' := j.isLt
+                change j.val < steps₁ + n at hj'
+                exact hj'
+              have hle : steps₁ ≤ j.val := Nat.le_of_not_lt hj
+              let k : Fin n := ⟨j.val - steps₁, by omega⟩
+              have hj_left :
+                  j.castSucc = Fin.natAdd steps₁ k.castSucc := by
+                apply Fin.eq_of_val_eq
+                simp only [k, Fin.coe_natAdd, Fin.val_castSucc]
+                rw [Nat.add_sub_of_le hle]
+              have hj_right :
+                  j = Fin.natAdd steps₁ k := by
+                apply Fin.eq_of_val_eq
+                simp only [k, Fin.coe_natAdd]
+                rw [Nat.add_sub_of_le hle]
+              rw [hj_left, Fin.append_right]
+              rw [hj_right, Fin.append_right]
+              rfl
+      rw [h_append_snoc]
+      change fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) prevIdx
+          (h_destIdx := by
+            calc
+              destIdx.val = i.val + steps₁ + (n + 1) := h_destIdx
+              _ = i.val + steps₁ + n + 1 := by omega
+              _ = prevIdx.val + 1 := by rw [h_prev_from_i])
+          h_destIdx_le
+          (iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) midIdx n h_prev_from_mid
+            (h_destIdx_le := by omega)
+            (iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i steps₁ h_midIdx
+              (h_destIdx_le := by omega) f r_challenges₁) (Fin.init r_challenges₂))
+          (r_challenges₂ (Fin.last n)) =
+        iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i ((steps₁ + n) + 1)
+          (h_destIdx := by
+            calc
+              destIdx.val = i.val + steps₁ + (n + 1) := h_destIdx
+              _ = i.val + (steps₁ + n) + 1 := by omega)
+          h_destIdx_le f
+          (Fin.snoc (Fin.append r_challenges₁ (Fin.init r_challenges₂))
+            (r_challenges₂ (Fin.last n)))
+      rw [iterated_fold_last (𝔽q := 𝔽q) (β := β)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (midIdx := prevIdx)
+        (destIdx := destIdx) (steps := steps₁ + n) (h_midIdx := by
+          calc
+            prevIdx.val = i.val + steps₁ + n := h_prev_from_i
+            _ = i.val + (steps₁ + n) := by omega)
+        (h_destIdx := by
+          calc
+            destIdx.val = i.val + steps₁ + (n + 1) := h_destIdx
+            _ = i.val + (steps₁ + n) + 1 := by omega)
+        (h_destIdx_le := h_destIdx_le) (f := f)
+        (r_challenges := Fin.snoc (Fin.append r_challenges₁ (Fin.init r_challenges₂))
+          (r_challenges₂ (Fin.last n)))]
+      simp only [Fin.init_snoc, Fin.snoc_last]
+      rw [ih (destIdx := prevIdx) (h_destIdx := h_prev_from_i) (h_destIdx_le := h_prev_le)
+        (r_challenges₂ := Fin.init r_challenges₂)]
 
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
 /-- **First-step decomposition**: `iterated_fold(i, steps+1, f, r₀ :: r_rest)` equals
@@ -1649,7 +1883,84 @@ lemma iterated_fold_first (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ)
         (destIdx := midIdx) (h_destIdx := h_midIdx)
         (h_destIdx_le := by omega) f (r_challenges 0))
       (r_challenges := fun j => r_challenges j.succ) := by
-  sorry
+  have h_bound_mid : i.val + 1 < r := by omega
+  have h_bound_dest : i.val + steps + 1 < r := by omega
+  have h_mid_clean : midIdx = ⟨i.val + 1, h_bound_mid⟩ := by
+    apply Fin.eq_of_val_eq
+    exact h_midIdx
+  have h_dest_clean : destIdx = ⟨i.val + steps + 1, h_bound_dest⟩ := by
+    apply Fin.eq_of_val_eq
+    calc
+      destIdx.val = i.val + (steps + 1) := h_destIdx
+      _ = i.val + steps + 1 := by omega
+  subst h_mid_clean h_dest_clean
+  have h_midIdx_le : (⟨i.val + 1, h_bound_mid⟩ : Fin r) ≤ ℓ := by omega
+  have h_one_step :
+      iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := i) (steps := 1) (destIdx := ⟨i.val + 1, h_bound_mid⟩) (h_destIdx := h_midIdx)
+        (h_destIdx_le := h_midIdx_le) (f := f)
+        (r_challenges := fun _ : Fin 1 => r_challenges 0) =
+      fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
+        (destIdx := ⟨i.val + 1, h_bound_mid⟩) (h_destIdx := h_midIdx)
+        (h_destIdx_le := h_midIdx_le) f (r_challenges 0) := by
+    funext y
+    unfold iterated_fold
+    rw [Fin.dfoldl_succ, Fin.dfoldl_zero]
+    simp only [Function.comp_apply, Fin.val_zero, Nat.add_zero, id_eq]
+    rfl
+  have h_challenges :
+      Fin.append (fun _ : Fin 1 => r_challenges 0) (fun j => r_challenges j.succ) =
+        fun cIdx : Fin (1 + steps) => r_challenges ⟨cIdx, by omega⟩ := by
+    funext j
+    by_cases hj : j.val = 0
+    · have hj0 : j = 0 := Fin.eq_of_val_eq hj
+      rw [hj0]
+      rw [show (0 : Fin (1 + steps)) = Fin.castAdd steps 0 from rfl]
+      rw [Fin.append_left]
+      rfl
+    · have hge : ¬ j.val < 1 := by omega
+      rw [Fin.append_right_of_not_lt
+        (u := fun _ : Fin 1 => r_challenges 0)
+        (v := fun j => r_challenges j.succ)
+        (j := j.val) (h := by omega) (hge := hge)]
+      have hsucc :
+          (⟨j.val - 1, by omega⟩ : Fin steps).succ = ⟨j, by omega⟩ := by
+        apply Fin.ext
+        simp only [Fin.val_succ]
+        omega
+      rw [hsucc]
+  have h_full_steps :
+      iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := i) (steps := steps + 1) (h_destIdx := h_destIdx)
+        (h_destIdx_le := h_destIdx_le) (f := f) (r_challenges := r_challenges) =
+      iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := i) (steps := 1 + steps) (h_destIdx := by
+          calc
+            (⟨i.val + steps + 1, h_bound_dest⟩ : Fin r).val = i.val + (steps + 1) := h_destIdx
+            _ = i.val + (1 + steps) := by omega)
+        (h_destIdx_le := h_destIdx_le) (f := f)
+        (r_challenges := fun cIdx : Fin (1 + steps) => r_challenges ⟨cIdx, by omega⟩) := by
+    funext y
+    exact iterated_fold_congr_steps_index 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
+      (steps := steps + 1) (steps' := 1 + steps) (destIdx := ⟨i.val + steps + 1, h_bound_dest⟩)
+      (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
+      (h_steps_eq_steps' := by omega) (f := f) (r_challenges := r_challenges) (y := y)
+  have h_trans := iterated_fold_transitivity (𝔽q := 𝔽q) (β := β)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
+      (midIdx := ⟨i.val + 1, h_bound_mid⟩) (destIdx := ⟨i.val + steps + 1, h_bound_dest⟩)
+      (steps₁ := 1) (steps₂ := steps) (h_midIdx := h_midIdx)
+      (h_destIdx := by
+        calc
+          (⟨i.val + steps + 1, h_bound_dest⟩ : Fin r).val = i.val + (steps + 1) := h_destIdx
+          _ = i.val + 1 + steps := by omega)
+      (h_destIdx_le := h_destIdx_le) (f := f)
+      (r_challenges₁ := fun _ : Fin 1 => r_challenges 0)
+      (r_challenges₂ := fun j => r_challenges j.succ)
+  dsimp only at h_trans
+  rw [h_one_step] at h_trans
+  rw [h_challenges] at h_trans
+  exact h_full_steps.trans h_trans.symm
 
 /-- **Definition 4.6** : the single-step vector-matrix-vector multiplication form of `fold` -/
 def fold_single_matrix_mul_form (i : Fin r) {destIdx : Fin r}
