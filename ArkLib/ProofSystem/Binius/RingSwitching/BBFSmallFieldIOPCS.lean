@@ -225,8 +225,11 @@ lemma fixFirstVariablesOfMQP_zero_eq
     (H : MvPolynomial (Fin ℓ') L) :
     fixFirstVariablesOfMQP (L := L) (ℓ := ℓ') (v := (0 : Fin (ℓ' + 1))) H
       (challenges := Fin.elim0) = H := by
-  simpa [fixFirstVariablesOfMQP] using
-    (map_eval_sumToIter_rename_finSum_zero (L := L) (p := H))
+  rw [fixFirstVariablesOfMQP_eq_bind₁ (L := L) (ℓ := ℓ') (v := (0 : Fin (ℓ' + 1)))
+    (poly := H) (challenges := Fin.elim0)]
+  change MvPolynomial.bind₁ (fun j : Fin ℓ' => MvPolynomial.X j) H = H
+  rw [MvPolynomial.bind₁_X_left]
+  rfl
 
 lemma witnessStructuralInvariant_MLPEvalWitness_to_BBF_Witness
     (stmt : MLPEvalStatement (L := L) (ℓ := ℓ'))

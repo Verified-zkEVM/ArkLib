@@ -700,11 +700,39 @@ lemma projectToNextSumcheckPoly_eval_eq (i : Fin ℓ) (Hᵢ : MultiquadraticPoly
     (x : Fin (ℓ - i.succ) → L) :
     (projectToNextSumcheckPoly ℓ i Hᵢ rᵢ).val.eval x =
     Hᵢ.val.eval (Fin.cons rᵢ x ∘ Fin.cast (by simp only [Fin.val_succ]; omega)) := by
-  unfold projectToNextSumcheckPoly fixFirstVariablesOfMQP
-  simp only
-  -- This requires unfolding the algebraic equivalences.
-  -- We admit this for now.
-  sorry
+  haveI : NeZero (ℓ - i) := ⟨Nat.sub_ne_zero_of_lt i.isLt⟩
+  have h_eq_nat : ℓ - i = (ℓ - i.succ) + 1 := by
+    exact (Nat.sub_add_cancel (Nat.one_le_of_lt (Nat.sub_pos_of_lt i.isLt))).symm
+  unfold projectToNextSumcheckPoly
+  dsimp
+  have h_eval := fixFirstVariablesOfMQP_eval_eq (L := L) (ℓ := ℓ - i) (v := ⟨1, by omega⟩)
+    (poly := Hᵢ.val) (challenges := fun _ => rᵢ) (x := x)
+  have h_fun :
+      (fun j : Fin (ℓ - i) =>
+        if hj : j.val < 1 then
+          (fun _ : Fin 1 => rᵢ) ⟨j.val, hj⟩
+        else
+          x ⟨j.val - 1, by omega⟩) =
+      Fin.cons rᵢ x ∘ Fin.cast h_eq_nat := by
+    ext j
+    rcases Fin.eq_zero_or_eq_succ (Fin.cast h_eq_nat j) with hzero | ⟨k, hk⟩
+    · have hj0 : j = 0 := by
+        apply Fin.cast_injective h_eq_nat
+        exact hzero
+      subst hj0
+      simp [hzero]
+    · have hj_val : j.val = k.val + 1 := by
+        have h_val : (Fin.cast h_eq_nat j).val = k.succ.val := congrArg Fin.val hk
+        simp only [Fin.val_succ] at h_val
+        exact h_val
+      have hj_not_lt : ¬ j.val < 1 := by
+        omega
+      have hk_eq : ⟨j.val - 1, by omega⟩ = k := by
+        apply Fin.ext
+        simp [hj_val]
+      simp [hj_not_lt, hk, hk_eq]
+  rw [h_fun] at h_eval
+  exact h_eval
 
 /-- **Key Sumcheck Property**: Evaluating the sumcheck round polynomial at a challenge equals
     the sum of the projected polynomial evaluations over the boolean hypercube.
@@ -721,18 +749,260 @@ lemma projectToNextSumcheckPoly_sum_eq (i : Fin ℓ) (Hᵢ : MultiquadraticPoly 
     (∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - i.succ),
       (projectToNextSumcheckPoly ℓ i Hᵢ rᵢ).val.eval x) :=
   by
-  -- By getSumcheckRoundPoly_eval_eq, the LHS equals:
-  --   ∑ y ∈ hypercube^{ℓ-i-1}, H_i.eval (Fin.cons rᵢ y)
-  -- By projectToNextSumcheckPoly definition, H_{i+1}(y) = H_i(Fin.cons rᵢ y)
-  -- So the RHS equals: ∑ x ∈ hypercube^{ℓ-i-1}, H_i.eval (Fin.cons rᵢ x)
-  -- These are the same sum with different variable names
-  sorry
+  rw [getSumcheckRoundPoly_eval_eq]
+  refine Finset.sum_congr rfl ?_
+  intro x hx
+  rw [projectToNextSumcheckPoly_eval_eq]
+  rfl
 
+set_option maxHeartbeats 200000 in
+-- Bound elaboration for the explicit `bind₁` normalization proof.
+lemma fixFirstVariablesOfMQP_eq_bind₁ (v : Fin (ℓ + 1)) (poly : MvPolynomial (Fin ℓ) L)
+    (challenges : Fin v → L) :
+    fixFirstVariablesOfMQP (L := L) ℓ v poly challenges =
+      bind₁ (fun j =>
+        if hj : j.val < v.val then
+          C (challenges ⟨j.val, hj⟩)
+        else
+          X (⟨j.val - v, by omega⟩ : Fin (ℓ - v))) poly := by
+  let subst : Fin ℓ → MvPolynomial (Fin (ℓ - v)) L := fun j =>
+    if hj : j.val < v.val then
+      C (challenges ⟨j.val, hj⟩)
+    else
+      X (⟨j.val - v, by omega⟩ : Fin (ℓ - v))
+  have hX : ∀ j : Fin ℓ,
+      fixFirstVariablesOfMQP (L := L) ℓ v (X j) challenges = bind₁ subst (X j) := by
+    intro j
+    rw [bind₁_X_right]
+    unfold subst
+    unfold fixFirstVariablesOfMQP
+    dsimp
+    rw [MvPolynomial.rename_X]
+    change
+      (MvPolynomial.map (MvPolynomial.eval challenges))
+        ((sumToIter L (Fin (ℓ - v)) (Fin v))
+          (MvPolynomial.X (if hj : j.val < v.val then
+            Sum.inr ⟨j.val, hj⟩
+          else
+            Sum.inl ⟨j.val - v, by omega⟩))) =
+      (if hj : j.val < v.val then
+        MvPolynomial.C (challenges ⟨j.val, hj⟩)
+      else
+        MvPolynomial.X (⟨j.val - v, by omega⟩ : Fin (ℓ - v)))
+    by_cases hj : j.val < v.val
+    · simp [hj, MvPolynomial.sumToIter_Xr]
+    · simp [hj, MvPolynomial.sumToIter_Xl]
+  induction poly using MvPolynomial.induction_on with
+  | C a =>
+      unfold fixFirstVariablesOfMQP
+      simp only [MvPolynomial.rename_C, MvPolynomial.sumAlgEquiv_apply, MvPolynomial.sumToIter_C,
+        MvPolynomial.map_C, MvPolynomial.eval_C, bind₁_C_right]
+  | add p q hp hq =>
+      calc
+        fixFirstVariablesOfMQP (L := L) ℓ v (p + q) challenges =
+            fixFirstVariablesOfMQP (L := L) ℓ v p challenges +
+              fixFirstVariablesOfMQP (L := L) ℓ v q challenges := by
+          unfold fixFirstVariablesOfMQP
+          simp
+        _ = bind₁ subst p + bind₁ subst q := by
+          rw [hp, hq]
+        _ = bind₁ subst (p + q) := by
+          symm
+          exact (bind₁ subst).map_add p q
+  | mul_X p j hp =>
+      calc
+        fixFirstVariablesOfMQP (L := L) ℓ v (p * X j) challenges =
+            fixFirstVariablesOfMQP (L := L) ℓ v p challenges *
+              fixFirstVariablesOfMQP (L := L) ℓ v (X j) challenges := by
+          unfold fixFirstVariablesOfMQP
+          simp
+        _ = bind₁ subst p * bind₁ subst (X j) := by
+          rw [hp, hX]
+        _ = bind₁ subst (p * X j) := by
+          symm
+          exact (bind₁ subst).map_mul p (X j)
+
+set_option maxHeartbeats 200000 in
+-- Bound elaboration for the substitution-composition proof.
 lemma projectToMidSumcheckPoly_succ (t : MultilinearPoly L ℓ) (m : MultilinearPoly L ℓ) (i : Fin ℓ)
     (challenges : Fin i.castSucc → L) (r_i' : L) :
     projectToMidSumcheckPoly ℓ t m i.succ (Fin.snoc challenges r_i') =
     projectToNextSumcheckPoly ℓ i (projectToMidSumcheckPoly ℓ t m i.castSucc challenges) r_i' := by
-  sorry
+  apply Subtype.ext
+  unfold projectToMidSumcheckPoly projectToNextSumcheckPoly
+  dsimp
+  haveI : NeZero (ℓ - i) := ⟨Nat.sub_ne_zero_of_lt i.isLt⟩
+  let H0 : MvPolynomial (Fin ℓ) L := (computeInitialSumcheckPoly (L := L) (ℓ := ℓ) t m).val
+  change
+    fixFirstVariablesOfMQP (L := L) ℓ (v := i.succ) H0 (Fin.snoc challenges r_i') =
+      fixFirstVariablesOfMQP (L := L) (ℓ - i) (v := (⟨1, by omega⟩ : Fin ((ℓ - i) + 1)))
+        (fixFirstVariablesOfMQP (L := L) ℓ (v := i.castSucc) H0 challenges)
+        (fun _ => r_i')
+  rw [fixFirstVariablesOfMQP_eq_bind₁ (L := L) (ℓ := ℓ) (v := i.succ) (poly := H0)
+    (challenges := Fin.snoc challenges r_i')]
+  rw [fixFirstVariablesOfMQP_eq_bind₁ (L := L) (ℓ := ℓ) (v := i.castSucc) (poly := H0)
+    (challenges := challenges)]
+  let oldPoly : MvPolynomial (Fin (ℓ - i)) L :=
+    bind₁
+      (fun j =>
+        if hj : j.val < i.castSucc.val then
+          C (challenges ⟨j.val, hj⟩)
+        else
+          X (⟨j.val - i.castSucc, by
+            have hj_ge : i.castSucc.val ≤ j.val := Nat.le_of_not_gt hj
+            have hsub : j.val - i.val < ℓ - i.val := Nat.sub_lt_sub_right hj_ge j.isLt
+            rw [Fin.val_castSucc]
+            exact hsub⟩ : Fin (ℓ - i))) H0
+  change
+    bind₁
+        (fun j =>
+          if hj : j.val < i.succ.val then
+            C ((Fin.snoc challenges r_i' : Fin i.succ → L) ⟨j.val, hj⟩)
+          else
+            X (⟨j.val - i.succ, by
+              have hj_ge : i.succ.val ≤ j.val := Nat.le_of_not_gt hj
+              exact Nat.sub_lt_sub_right hj_ge j.isLt⟩ : Fin (ℓ - i.succ))) H0 =
+      fixFirstVariablesOfMQP (L := L) (ℓ - i) (v := (⟨1, by omega⟩ : Fin ((ℓ - i) + 1)))
+        oldPoly (fun _ => r_i')
+  rw [fixFirstVariablesOfMQP_eq_bind₁ (L := L) (ℓ := ℓ - i)
+    (v := (⟨1, by omega⟩ : Fin ((ℓ - i) + 1)))
+    (poly := oldPoly)
+    (challenges := fun _ => r_i')]
+  dsimp only [oldPoly]
+  conv_rhs => rw [bind₁_bind₁]
+  let lhsSubst : Fin ℓ → MvPolynomial (Fin (ℓ - i.succ)) L := fun j =>
+    if hj : j.val < i.succ.val then
+      C ((Fin.snoc challenges r_i' : Fin i.succ → L) ⟨j.val, hj⟩)
+    else
+      X (⟨j.val - i.succ, by
+        have hj_ge : i.succ.val ≤ j.val := Nat.le_of_not_gt hj
+        exact Nat.sub_lt_sub_right hj_ge j.isLt⟩ : Fin (ℓ - i.succ))
+  let oldSubst : Fin ℓ → MvPolynomial (Fin (ℓ - i)) L := fun j =>
+    if hj : j.val < i.castSucc.val then
+      C (challenges ⟨j.val, hj⟩)
+    else
+      X (⟨j.val - i.castSucc, by
+        have hj_ge : i.castSucc.val ≤ j.val := Nat.le_of_not_gt hj
+        have hsub : j.val - i.val < ℓ - i.val := Nat.sub_lt_sub_right hj_ge j.isLt
+        rw [Fin.val_castSucc]
+        exact hsub⟩ : Fin (ℓ - i))
+  let oneSubst : Fin (ℓ - i) → MvPolynomial (Fin (ℓ - i.succ)) L := fun j =>
+    if hj : j.val < 1 then
+      C r_i'
+    else
+      X (⟨j.val - 1, by
+        have hj_ge : 1 ≤ j.val := Nat.le_of_not_gt hj
+        exact Nat.sub_lt_sub_right hj_ge j.isLt⟩ : Fin (ℓ - i.succ))
+  change bind₁ lhsSubst H0 = bind₁ (fun j => bind₁ oneSubst (oldSubst j)) H0
+  have hsubst : lhsSubst = fun j => bind₁ oneSubst (oldSubst j) := by
+    funext j
+    by_cases hj : j.val < i.val
+    · have hsucc : j.val < i.succ.val := by
+        rw [Fin.val_succ]
+        omega
+      have hcast :
+          (⟨j.val, hsucc⟩ : Fin i.succ) =
+            (⟨j.val, by
+              rw [Fin.val_castSucc]
+              exact hj⟩ : Fin i.castSucc).castSucc := by
+        apply Fin.ext
+        rfl
+      have hleft :
+          lhsSubst j = MvPolynomial.C ((Fin.snoc challenges r_i' : Fin i.succ → L) ⟨j.val, hsucc⟩) := by
+        dsimp [lhsSubst]
+        split_ifs with h
+        · rfl
+        · exfalso
+          omega
+      have hold :
+          oldSubst j = MvPolynomial.C (challenges ⟨j.val, by
+            rw [Fin.val_castSucc]
+            exact hj⟩) := by
+        dsimp [oldSubst]
+        simp [Fin.val_castSucc, hj]
+      rw [hleft, hold, bind₁_C_right]
+      rw [hcast, Fin.snoc_castSucc]
+    · by_cases hji : j = i
+      · subst j
+        have hsucc : i.val < i.succ.val := by
+          rw [Fin.val_succ]
+          omega
+        have hnotcast : ¬ i.val < i.castSucc.val := by
+          rw [Fin.val_castSucc]
+          omega
+        have hzero :
+            (⟨i.val - i.castSucc, by
+              dsimp
+              omega⟩ : Fin (ℓ - i)) = 0 := by
+          apply Fin.ext
+          dsimp
+          omega
+        have hleft :
+            lhsSubst i = MvPolynomial.C ((Fin.snoc challenges r_i' : Fin i.succ → L) ⟨i.val, hsucc⟩) := by
+          dsimp [lhsSubst]
+          split_ifs with h
+          · rfl
+          · exfalso
+            omega
+        have hold : oldSubst i = MvPolynomial.X (0 : Fin (ℓ - i)) := by
+          dsimp [oldSubst]
+          simp [Fin.val_castSucc, hnotcast, hzero]
+        have hright : bind₁ oneSubst (oldSubst i) = MvPolynomial.C r_i' := by
+          rw [hold, bind₁_X_right]
+          dsimp [oneSubst]
+        rw [hleft, hright]
+        have hlast : (⟨i.val, hsucc⟩ : Fin i.succ) = Fin.last i.val := by
+          apply Fin.ext
+          simp [Fin.val_last]
+        rw [hlast, Fin.snoc_last]
+      · have hnotsucc : ¬ j.val < i.succ.val := by
+          rw [Fin.val_succ]
+          omega
+        have hnotcast : ¬ j.val < i.castSucc.val := by
+          rw [Fin.val_castSucc]
+          exact hj
+        let k : Fin (ℓ - i) := ⟨j.val - i.castSucc, by
+          have hj_ge : i.castSucc.val ≤ j.val := Nat.le_of_not_gt hnotcast
+          have hsub : j.val - i.val < ℓ - i.val := Nat.sub_lt_sub_right hj_ge j.isLt
+          rw [Fin.val_castSucc]
+          exact hsub⟩
+        let lhsIdx : Fin (ℓ - i.succ) := ⟨j.val - i.succ, by
+          have hj_ge : i.succ.val ≤ j.val := Nat.le_of_not_gt hnotsucc
+          exact Nat.sub_lt_sub_right hj_ge j.isLt⟩
+        have hnotone : ¬ k.val < 1 := by
+          dsimp [k]
+          omega
+        have hidx :
+            lhsIdx =
+              ⟨k.val - 1, by
+                have hk_ge : 1 ≤ k.val := Nat.le_of_not_gt hnotone
+                exact Nat.sub_lt_sub_right hk_ge k.isLt⟩ := by
+          apply Fin.ext
+          dsimp [lhsIdx, k]
+          omega
+        have hleft : lhsSubst j = MvPolynomial.X lhsIdx := by
+          dsimp [lhsSubst, lhsIdx]
+          split_ifs with h
+          · exfalso
+            change j.val < i.succ.val at h
+            exact hnotsucc h
+          · rfl
+        have hold : oldSubst j = MvPolynomial.X k := by
+          change
+            (if h : j.val < i.val then
+              MvPolynomial.C (challenges ⟨j.val, by
+                rw [Fin.val_castSucc]
+                exact h⟩)
+            else
+              MvPolynomial.X k) = MvPolynomial.X k
+          split_ifs
+          rfl
+        have hright : bind₁ oneSubst (oldSubst j) = MvPolynomial.X lhsIdx := by
+          rw [hold, bind₁_X_right]
+          dsimp [oneSubst]
+          simp [hnotone, hidx]
+        rw [hleft, hright]
+  rw [hsubst]
 
 lemma projectToMidSumcheckPoly_eq_prod (t : MultilinearPoly L ℓ)
     (m : MultilinearPoly L ℓ) (i : Fin (ℓ + 1))
@@ -740,13 +1010,16 @@ lemma projectToMidSumcheckPoly_eq_prod (t : MultilinearPoly L ℓ)
     : projectToMidSumcheckPoly (ℓ := ℓ) (t := t) (m := m) (i := i) (challenges := challenges) =
       (fixFirstVariablesOfMQP ℓ (v := i) (H := m) (challenges := challenges)) *
        (fixFirstVariablesOfMQP ℓ (v := i) (H := t) (challenges := challenges)) := by
-  sorry
+  unfold projectToMidSumcheckPoly computeInitialSumcheckPoly fixFirstVariablesOfMQP
+  simp
 
 lemma fixFirstVariablesOfMQP_full_eval_eq_eval {deg : ℕ} {challenges : Fin (Fin.last ℓ) → L}
     {poly : L[X Fin ℓ]} (hp : poly ∈ L⦃≤ deg⦄[X Fin ℓ]) (x : Fin (ℓ - ℓ) → L) :
       (fixFirstVariablesOfMQP ℓ (v := Fin.last ℓ) poly challenges).eval x
       = poly.eval challenges := by
-  sorry
+  simpa [Fin.val_last] using
+    (fixFirstVariablesOfMQP_eval_eq (L := L) (ℓ := ℓ) (v := Fin.last ℓ)
+      (poly := poly) (challenges := challenges) (x := x))
 
 /-- At `Fin.last ℓ`, the projected sumcheck polynomial evaluates to `multiplier * t(challenges)`.
 When evaluated at the "zero" point (empty domain), the product structure emerges. -/
@@ -996,6 +1269,147 @@ def extractMLP (i : Fin ℓ) (f : (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨i, by o
       let t_multilinear_mv := MvPolynomial.MLE hypercube_evals
       exact some ⟨t_multilinear_mv, MLE_mem_restrictDegree hypercube_evals⟩
 
+private lemma monomialToINovelCoeffs_zero_eq_monomialToNovelCoeffs
+    [NeZero 𝓡] (monomial_coeffs : Fin (2 ^ ℓ) → L) :
+    AdditiveNTT.monomialToINovelCoeffs 𝔽q β h_ℓ_add_R_rate
+      (i := (0 : Fin r)) (h_i := by simp) monomial_coeffs =
+      AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega) monomial_coeffs := by
+  have hA :
+      AdditiveNTT.intermediateChangeOfBasisMatrix 𝔽q β h_ℓ_add_R_rate
+        (i := (0 : Fin r)) (h_i := by simp) =
+        AdditiveNTT.changeOfBasisMatrix 𝔽q β ℓ (by omega) := by
+    ext j k
+    change
+      (intermediateNovelBasisX 𝔽q β h_ℓ_add_R_rate
+        (i := (0 : Fin r)) (h_i := by simp) j).coeff k.val =
+      (Xⱼ 𝔽q β ℓ (by omega) j).coeff k.val
+    rw [AdditiveNTT.base_intermediateNovelBasisX
+      (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (j := j)]
+  simp [AdditiveNTT.monomialToINovelCoeffs, AdditiveNTT.monomialToNovelCoeffs, hA]
+
+private lemma polynomialFromNovelCoeffs_eq_self_of_monomialToNovelCoeffs
+    [NeZero 𝓡] (P : L[X]) (hP : P.degree < 2 ^ ℓ) :
+    polynomialFromNovelCoeffs 𝔽q β ℓ (by omega)
+      (AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega) (fun k => P.coeff k.val)) = P := by
+  have hget :
+      getINovelCoeffs 𝔽q β h_ℓ_add_R_rate
+        (i := (0 : Fin r)) (h_i := by simp) P =
+        AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega) (fun k => P.coeff k.val) := by
+    simp [getINovelCoeffs, monomialToINovelCoeffs_zero_eq_monomialToNovelCoeffs
+      (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)]
+  let hbase := intermediate_poly_P_base (𝔽q := 𝔽q) (β := β)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (L := L) (ℓ := ℓ) (h_ℓ := by omega)
+    (coeffs := getINovelCoeffs 𝔽q β h_ℓ_add_R_rate
+      (i := (0 : Fin r)) (h_i := by simp) P)
+  let hself := intermediateEvaluationPoly_from_inovel_coeffs_eq_self
+    (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (L := L) (i := (0 : Fin r)) (h_i := by simp) (P := P) hP
+  rw [hget] at hbase hself
+  exact hbase.symm.trans hself
+
+private lemma binaryFinMapToNat_invFun_eq (ω : Fin (2 ^ ℓ)) :
+    Nat.binaryFinMapToNat
+      (n := ℓ)
+      (m := fun i => ((finFunctionFinEquiv.invFun ω) i).val)
+      (h_binary := by
+        intro j
+        change ((finFunctionFinEquiv.invFun ω j : Fin 2) : ℕ) ≤ 1
+        exact Nat.le_of_lt_succ (finFunctionFinEquiv.invFun ω j).isLt) = ω := by
+  apply Fin.eq_of_val_eq
+  rw [Nat.eq_iff_eq_all_getBits]
+  intro k
+  rw [Nat.getBit_of_binaryFinMapToNat]
+  split_ifs with hk
+  · rw [Equiv.invFun_as_coe, finFunctionFinEquiv_symm_apply_val, Nat.getBit,
+      Nat.shiftRight_eq_div_pow, Nat.and_one_is_mod]
+  · have hk' : ℓ ≤ k := Nat.le_of_not_gt hk
+    have hω_lt : (ω : ℕ) < 2 ^ k := by
+      calc
+        (ω : ℕ) < 2 ^ ℓ := ω.isLt
+        _ ≤ 2 ^ k := by
+          exact Nat.pow_le_pow_right (by omega) hk'
+    rw [Nat.getBit_eq_testBit, Nat.testBit_eq_false_of_lt hω_lt]
+    simp
+
+private lemma extracted_mle_eval_bits [NeZero 𝓡] (P : L[X]) (ω : Fin (2 ^ ℓ)) :
+    let monomial_coeffs : Fin (2 ^ ℓ) → L := fun k => P.coeff k.val
+    let t_coeffs := AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega) monomial_coeffs
+    let hypercube_evals : (Fin ℓ → Fin 2) → L := fun w =>
+      let w_index : Fin (2 ^ ℓ) := Nat.binaryFinMapToNat
+        (n := ℓ) (m := fun i => (w i).val)
+        (h_binary := by
+          intro j
+          change ((w j : Fin 2) : ℕ) ≤ 1
+          exact Nat.le_of_lt_succ (w j).isLt)
+      t_coeffs w_index
+    MvPolynomial.eval (bitsOfIndex (L := L) ω) (MvPolynomial.MLE hypercube_evals) = t_coeffs ω := by
+  let t_coeffs : Fin (2 ^ ℓ) → L :=
+    AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega) (fun k => P.coeff k.val)
+  dsimp only
+  rw [← coe_fin_pow_two_eq_bitsOfIndex (L := L) (k := ω)]
+  rw [MvPolynomial.MLE_eval_zeroOne]
+  simpa [t_coeffs] using congrArg (fun x => t_coeffs x) (binaryFinMapToNat_invFun_eq (ℓ := ℓ) ω)
+
+private lemma extracted_mle_polynomial_eq
+    [NeZero 𝓡] (P : L[X]) (hP : P.degree < 2 ^ ℓ) :
+    polynomialFromNovelCoeffs 𝔽q β ℓ (by omega)
+      (fun ω =>
+        let monomial_coeffs : Fin (2 ^ ℓ) → L := fun k => P.coeff k.val
+        let t_coeffs := AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega) monomial_coeffs
+        let hypercube_evals : (Fin ℓ → Fin 2) → L := fun w =>
+          let w_index : Fin (2 ^ ℓ) := Nat.binaryFinMapToNat
+            (n := ℓ) (m := fun i => (w i).val)
+            (h_binary := by
+              intro j
+              change ((w j : Fin 2) : ℕ) ≤ 1
+              exact Nat.le_of_lt_succ (w j).isLt)
+          t_coeffs w_index
+        MvPolynomial.eval (bitsOfIndex (L := L) ω) (MvPolynomial.MLE hypercube_evals)) = P := by
+  let t_coeffs : Fin (2 ^ ℓ) → L :=
+    AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega) (fun k => P.coeff k.val)
+  have h_eval :
+      (fun ω =>
+        let monomial_coeffs : Fin (2 ^ ℓ) → L := fun k => P.coeff k.val
+        let t_coeffs := AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega) monomial_coeffs
+        let hypercube_evals : (Fin ℓ → Fin 2) → L := fun w =>
+          let w_index : Fin (2 ^ ℓ) := Nat.binaryFinMapToNat
+            (n := ℓ) (m := fun i => (w i).val)
+            (h_binary := by
+              intro j
+              change ((w j : Fin 2) : ℕ) ≤ 1
+              exact Nat.le_of_lt_succ (w j).isLt)
+          t_coeffs w_index
+        MvPolynomial.eval (bitsOfIndex (L := L) ω) (MvPolynomial.MLE hypercube_evals)) = t_coeffs := by
+    funext ω
+    exact extracted_mle_eval_bits (𝔽q := 𝔽q) (β := β)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (P := P) ω
+  rw [h_eval]
+  exact polynomialFromNovelCoeffs_eq_self_of_monomialToNovelCoeffs
+    (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (P := P) hP
+
+private lemma closest_eq_of_le_udr
+    {ι : Type*} [Fintype ι] (C : Set (ι → L)) [Nonempty C] (u : ι → L) {v : ι → L}
+    (hv : v ∈ C)
+    (hvu : Δ₀(u, v) ≤ Code.uniqueDecodingRadius C) :
+    (Code.pickClosestCodeword_of_Nonempty_Code C u : C) = ⟨v, hv⟩ := by
+  let w : C := Code.pickClosestCodeword_of_Nonempty_Code C u
+  have hwdist : Δ₀(u, (w : ι → L)) ≤ Code.uniqueDecodingRadius C := by
+    have hdist : Δ₀(u, C) ≤ Δ₀(u, v) := Code.distFromCode_le_dist_to_mem u v hv
+    have hdist' : Δ₀(u, C) = Δ₀(u, (w : ι → L)) :=
+      Code.distFromPickClosestCodeword_of_Nonempty_Code C u
+    have haux : Δ₀(u, C) ≤ (Code.uniqueDecodingRadius C : ℕ∞) := by
+      exact le_trans hdist (by exact_mod_cast hvu)
+    rw [hdist'] at haux
+    exact_mod_cast haux
+  have hw_mem : (w : ι → L) ∈ C := w.property
+  have h_eq : (w : ι → L) = v := by
+    apply Code.eq_of_le_uniqueDecodingRadius (C := C) (u := u)
+      (v := (w : ι → L)) (w := v)
+      (hv := hw_mem) (hw := hv)
+      (huv := hwdist) (huw := hvu)
+  apply Subtype.ext
+  exact h_eq
+
 /-- For index 0, `extractMLP 0 f = some tpoly` iff `f` is pair-UDR-close to the oracle function
 of the multilinear polynomial `tpoly` (i.e. the polynomial-as-oracle from novel coeffs of tpoly).
 Forward: decoder succeeds only when within UDR. Backward: within UDR the decoded codeword
@@ -1009,7 +1423,49 @@ lemma extractMLP_eq_some_iff_pair_UDRClose (f : (sDomain 𝔽q β h_ℓ_add_R_ra
       (g := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0)
         (P := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
           (fun ω => tpoly.val.eval (bitsOfIndex ω)))) := by
-  sorry
+  classical
+  constructor
+  · intro h_extract
+    unfold extractMLP at h_extract
+    simp only [Fin.coe_ofNat_eq_mod, zero_mod, Nat.sub_zero, ge_iff_le] at h_extract
+    split at h_extract
+    · cases h_extract
+    · rename_i berlekamp_welch_result P h_decoder
+      by_cases h_invalid : P.natDegree ≥ 2 ^ ℓ ∨ ¬ pair_UDRClose 𝔽q β
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (i := (0 : Fin r)) (h_i := by simp) (f := f)
+          (g := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+            (domainIdx := 0) (P := P))
+      · simp [h_invalid] at h_extract
+      · simp [h_invalid] at h_extract
+        have h_natdeg_lt : P.natDegree < 2 ^ ℓ := by
+          have h_not_ge : ¬ P.natDegree ≥ 2 ^ ℓ := by
+            intro h_ge
+            exact h_invalid (Or.inl h_ge)
+          exact Nat.lt_of_not_ge h_not_ge
+        have h_closeP : pair_UDRClose 𝔽q β
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+            (i := (0 : Fin r)) (h_i := by simp) (f := f)
+            (g := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+              (domainIdx := 0) (P := P)) := by
+          by_contra h_not_close
+          exact h_invalid (Or.inr h_not_close)
+        have h_deg_lt : P.degree < 2 ^ ℓ := by
+          by_cases hP_zero : P = 0
+          · simp only [hP_zero, degree_zero, cast_pow, cast_ofNat, gt_iff_lt]
+            exact compareOfLessAndEq_eq_lt.mp rfl
+          · have h_natDegree_lt_iff := Polynomial.natDegree_lt_iff_degree_lt
+                (p := P) (n := 2 ^ ℓ) (hp := hP_zero)
+            exact h_natDegree_lt_iff.mp h_natdeg_lt
+        subst tpoly
+        dsimp only [polynomialFromNovelCoeffsF₂]
+        rw [extracted_mle_polynomial_eq (𝔽q := 𝔽q) (β := β)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (P := P) h_deg_lt]
+        exact h_closeP
+  · intro h_close
+    unfold extractMLP
+    simp only [Fin.coe_ofNat_eq_mod, zero_mod, Nat.sub_zero, ge_iff_le]
+    sorry
 
 /-- If a block starting at index `0` is compliant in the sense of `isCompliant`, then the
 Berlekamp–Welch decoder `extractMLP` at index `0` succeeds on the source oracle.
