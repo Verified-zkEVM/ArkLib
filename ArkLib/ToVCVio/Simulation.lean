@@ -540,17 +540,15 @@ lemma Reduction_run_def (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut
       let verifierStmtOut ← reduction.verifier.verify stmtIn transcript
       return ((transcript, stmtOut, witOut), verifierStmtOut)) :=
 by
-  dsimp only [Reduction.run, Prover.run, Verifier.run]
-  simp only [ChallengeIdx, Challenge, bind_pure_comp, liftM_bind, liftM_map, bind_assoc,
-    bind_map_left, liftM_OptionT_eq, Prod.mk.eta]
+  unfold Reduction.run Verifier.run
+  simp only [ChallengeIdx, Challenge, map_eq_bind_pure_comp, bind_pure_comp, OracleComp.liftM_OptionT_eq, Prod.mk.eta]
   congr 1
-  funext tr_and_prvOutState
-  congr 1
-  funext proverOutput
-  rw [map_eq_bind_pure_comp]
-  ext
-  simp only [Option.getM, map_eq_bind_pure_comp, OptionT.run_bind,
-    Function.comp_apply, OptionT.run_pure]
+  funext proverResult
+  rw [← OracleComp.liftM_OptionT_eq]
+  simp only [Option.getM, liftM_OptionT_eq]
+  dsimp [Bind.bind, OptionT.bind, OptionT.mk, Functor.map]
+  -- LHS evaluates to OptionT lift matching while RHS evaluates to simulateQ
+  -- Without exact simulation unification this cannot be proved by bind_congr.
   sorry
 
 end ReductionUnrolling
@@ -2014,15 +2012,89 @@ TODO: This proof is non-trivial because `Vector.mapM` is implemented via an auxi
 - toArray representation doesn't work since we're proving equality of `OracleComp` values
 - Need either: (1) a lemma relating `simulateQ` to Array.mapM, or
   (2) a custom induction principle, or (3) direct reasoning about `mapM.go`. -/
+lemma simulateQ_list_mapM {ι ι' : Type} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
+    (so : SimOracle.Stateless spec superSpec)
+    {α β : Type} (f : α → OracleComp spec β) :
+    ∀ xs : List α, simulateQ so (xs.mapM f) = xs.mapM (fun x ↦ simulateQ so (f x)) := by
+  intro xs
+  induction xs with
+  | nil => simp
+  | cons x xs ih =>
+      simp [List.mapM_cons, simulateQ_bind, ih]
+
+lemma simulateQ_array_mapM {ι ι' : Type} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
+    (so : SimOracle.Stateless spec superSpec)
+    {α β : Type} (f : α → OracleComp spec β) (xs : Array α) :
+    simulateQ so (xs.mapM f) = xs.mapM (fun x ↦ simulateQ so (f x)) := by
+  rw [Array.mapM_eq_mapM_toList, Array.mapM_eq_mapM_toList]
+  simp [simulateQ_list_mapM]
+
+omit [spec.Fintype] [spec.Inhabited] in
+lemma singleton_mapM_gen
+    {m : Type _ → Type _} [Monad m] [LawfulMonad m]
+    {α β : Type} (f : α → m β) (a : α) :
+    Vector.mapM f (#v[a] : Vector α 1) =
+      ((fun b => (#v[b] : Vector β 1)) <$> f a : m (Vector β 1)) := by
+  apply (Vector.map_toArray_inj (m := m)).mp
+  simp [Array.mapM_eq_mapM_toList, List.mapM_cons]
+
+lemma support_vector_mapM_gen
+    {m : Type _ → Type _} [Monad m] [LawfulMonad m] [HasEvalSet m]
+    {α β : Type} (f : α → m β) :
+    ∀ {n} (as : Vector α n) (x : Vector β n),
+      x ∈ support (Vector.mapM f as) ↔ ∀ i : Fin n, x[i] ∈ support (f as[i]) := by
+  intro n
+  induction n with
+  | zero =>
+      intro as x
+      obtain rfl : as = #v[] := by
+        ext i h
+        simp at h
+      obtain rfl : x = #v[] := by
+        ext i h
+        simp at h
+      simp
+  | succ n ih =>
+      intro as x
+      have has : as = as.pop.push as.back := by simp
+      have hx : x = x.pop.push x.back := by simp
+      rw [has, hx, ← Vector.append_singleton, ← Vector.append_singleton]
+      rw [Vector.mapM_append, singleton_mapM_gen]
+      simp only [mem_support_bind_iff, support_map, Set.mem_image, support_pure,
+        Set.mem_singleton_iff, exists_exists_and_eq_and]
+      constructor
+      · intro h
+        rcases h with ⟨ys, hy, b, hb, hEq⟩
+        have hpush : x.pop.push x.back = ys.push b := by
+          simpa [Vector.append_singleton] using hEq
+        rcases (Vector.push_eq_push.mp hpush) with ⟨hbEq, hysEq⟩
+        subst hbEq hysEq
+        intro i
+        by_cases hi : (i : Nat) < n
+        · simpa [Vector.getElem_append_left, hi] using
+            (ih as.pop x.pop).1 hy ⟨i, hi⟩
+        · have hiVal : (i : Nat) = n := by omega
+          simpa [hiVal, Vector.append_singleton] using hb
+      · intro h
+        refine ⟨x.pop, (ih as.pop x.pop).2 ?_, x.back, ?_, ?_⟩
+        · intro i
+          simpa [Vector.getElem_append_left, i.2] using
+            h (Fin.castLT i (by omega))
+        · simpa [Vector.append_singleton] using h ⟨n, by omega⟩
+        · simp [Vector.append_singleton]
+
 @[simp]
 lemma simulateQ_vector_mapM {ι ι' : Type} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
     (so : SimOracle.Stateless spec superSpec)
     {α β : Type} {n : ℕ} (f : α → OracleComp spec β) (v : Vector α n) :
     simulateQ so (Vector.mapM f v) = Vector.mapM (fun x ↦ simulateQ so (f x)) v := by
-  sorry
+  apply (Vector.map_toArray_inj (m := OracleComp superSpec)).mp
+  rw [← simulateQ_map, Vector.toArray_mapM, Vector.toArray_mapM]
+  exact simulateQ_array_mapM (so := so) (f := f) v.toArray
 
 lemma mem_support_vector_mapM {n} {f : α → OracleComp spec β} {as : Vector α n} {x : Vector β n} :
-    x ∈ (Vector.mapM f as).support ↔ ∀ i : Fin n, x[i] ∈ (f as[i]).support := by sorry
+    x ∈ (Vector.mapM f as).support ↔ ∀ i : Fin n, x[i] ∈ (f as[i]).support := by
+  exact support_vector_mapM_gen (m := OracleComp spec) (f := f) as x
 
 /-- `Vector.mapM` is failure-free if each element computation is failure-free. -/
 @[simp]
@@ -2077,6 +2149,112 @@ lemma OptionT.probFailure_vector_mapM_eq_zero
 
 This is the form needed when `Vector.mapM` is used in `OptionT (OracleComp spec)` code
 (e.g. query batches that may short-circuit on `none`). -/
+lemma OptionT.simulateQ_list_mapM {ι ι' : Type} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
+    (so : SimOracle.Stateless spec superSpec)
+    {α β : Type} (f : α → OptionT (OracleComp spec) β) :
+    ∀ xs : List α, simulateQ so (xs.mapM f) = xs.mapM (fun x ↦ simulateQ so (f x)) := by
+  intro xs
+  induction xs with
+  | nil => simp
+  | cons x xs ih =>
+      simp [List.mapM_cons, ih]
+
+lemma OptionT.simulateQ_array_mapM {ι ι' : Type} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
+    (so : SimOracle.Stateless spec superSpec)
+    {α β : Type} (f : α → OptionT (OracleComp spec) β) (xs : Array α) :
+    simulateQ so (xs.mapM f) = xs.mapM (fun x ↦ simulateQ so (f x)) := by
+  rw [Array.mapM_eq_mapM_toList, Array.mapM_eq_mapM_toList]
+  simp [OptionT.simulateQ_list_mapM]
+
+lemma OptionT.simulateQ_list_mapM_eq {ι ι' : Type} {spec : OracleSpec ι}
+    {superSpec : OracleSpec ι'} (so : SimOracle.Stateless spec superSpec)
+    {α β : Type} (f : α → OptionT (OracleComp spec) β) :
+    ∀ xs : List α,
+      (simulateQ so (xs.mapM (m := OptionT (OracleComp spec)) f) :
+        OptionT (OracleComp superSpec) (List β)) =
+      xs.mapM (m := OptionT (OracleComp superSpec)) (fun x ↦ simulateQ so (f x)) := by
+  intro xs
+  induction xs with
+  | nil =>
+      rfl
+  | cons x xs ih =>
+      rw [List.mapM_cons, List.mapM_cons]
+      change simulateQ so
+          (OptionT.bind (f x) fun y ↦
+            ((List.cons y <$> List.mapM (m := OptionT (OracleComp spec)) f xs) :
+              OptionT (OracleComp spec) (List β))) = _
+      calc
+        simulateQ so
+            (OptionT.bind (f x) fun y ↦
+              ((List.cons y <$> List.mapM (m := OptionT (OracleComp spec)) f xs) :
+                OptionT (OracleComp spec) (List β)))
+            =
+            OptionT.bind (simulateQ so (f x)) fun y ↦
+              simulateQ so
+                (((List.cons y <$> List.mapM (m := OptionT (OracleComp spec)) f xs) :
+                  OptionT (OracleComp spec) (List β))) := by
+              exact OptionT.simulateQ_bind (so := so) (mx := f x)
+                (my := fun y ↦
+                  ((List.cons y <$> List.mapM (m := OptionT (OracleComp spec)) f xs) :
+                    OptionT (OracleComp spec) (List β)))
+        _ =
+            OptionT.bind (simulateQ so (f x)) fun y ↦
+              ((List.cons y <$> simulateQ so
+                (List.mapM (m := OptionT (OracleComp spec)) f xs)) :
+                  OptionT (OracleComp superSpec) (List β)) := by
+              congr
+              funext y
+              exact OptionT.simulateQ_map (so := so) (f := List.cons y)
+                (mx := List.mapM (m := OptionT (OracleComp spec)) f xs)
+        _ =
+            OptionT.bind (simulateQ so (f x)) fun y ↦
+              ((List.cons y <$>
+                List.mapM (m := OptionT (OracleComp superSpec))
+                  (fun z ↦ simulateQ so (f z)) xs) :
+                    OptionT (OracleComp superSpec) (List β)) := by
+              congr
+              funext y
+              rw [ih]
+
+lemma OptionT.simulateQ_array_mapM_eq {ι ι' : Type} {spec : OracleSpec ι}
+    {superSpec : OracleSpec ι'} (so : SimOracle.Stateless spec superSpec)
+    {α β : Type} (f : α → OptionT (OracleComp spec) β) (xs : Array α) :
+    (simulateQ so (xs.mapM (m := OptionT (OracleComp spec)) f) :
+      OptionT (OracleComp superSpec) (Array β)) =
+      xs.mapM (m := OptionT (OracleComp superSpec)) (fun x ↦ simulateQ so (f x)) := by
+  rw [Array.mapM_eq_mapM_toList, Array.mapM_eq_mapM_toList]
+  simpa using OptionT.simulateQ_list_mapM_eq (so := so) (f := f) xs.toList
+
+lemma OptionT.simulateQ_vector_mapM_eq {ι ι' : Type} {spec : OracleSpec ι}
+    {superSpec : OracleSpec ι'} (so : SimOracle.Stateless spec superSpec)
+    {α β : Type} {n : ℕ} (f : α → OptionT (OracleComp spec) β) (v : Vector α n) :
+    (simulateQ so (Vector.mapM (m := OptionT (OracleComp spec)) f v) :
+      OptionT (OracleComp superSpec) (Vector β n)) =
+      Vector.mapM (m := OptionT (OracleComp superSpec)) (fun x ↦ simulateQ so (f x)) v := by
+  apply (Vector.map_toArray_inj (m := OptionT (OracleComp superSpec))).mp
+  calc
+    (Vector.toArray <$> (simulateQ so (Vector.mapM (m := OptionT (OracleComp spec)) f v) :
+      OptionT (OracleComp superSpec) (Vector β n)) :
+        OptionT (OracleComp superSpec) (Array β)) =
+        (simulateQ so
+          ((Vector.toArray <$> Vector.mapM (m := OptionT (OracleComp spec)) f v :
+            OptionT (OracleComp spec) (Array β))) :
+              OptionT (OracleComp superSpec) (Array β)) := by
+          symm
+          exact OptionT.simulateQ_map (so := so) (f := Vector.toArray)
+            (mx := Vector.mapM (m := OptionT (OracleComp spec)) f v)
+    _ = (simulateQ so (Array.mapM (m := OptionT (OracleComp spec)) f v.toArray) :
+          OptionT (OracleComp superSpec) (Array β)) := by
+        rw [Vector.toArray_mapM]
+    _ = (Array.mapM (m := OptionT (OracleComp superSpec))
+          (fun x ↦ simulateQ so (f x)) v.toArray :
+            OptionT (OracleComp superSpec) (Array β)) := by
+        exact OptionT.simulateQ_array_mapM_eq (so := so) (f := f) v.toArray
+    _ = (Vector.toArray <$> Vector.mapM (m := OptionT (OracleComp superSpec))
+          (fun x ↦ simulateQ so (f x)) v :
+            OptionT (OracleComp superSpec) (Array β)) := by
+        rw [Vector.toArray_mapM]
+
 @[simp]
 lemma OptionT.simulateQ_vector_mapM {ι ι' : Type} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
     (so : SimOracle.Stateless spec superSpec)
@@ -2085,7 +2263,8 @@ lemma OptionT.simulateQ_vector_mapM {ι ι' : Type} {spec : OracleSpec ι} {supe
       ((OptionT.run (Vector.mapM (m := OptionT (OracleComp superSpec))
         (fun x ↦ (simulateQ so (f x) : OptionT (OracleComp superSpec) β)) v)) :
         OracleComp superSpec (Option (Vector β n))) := by
-  sorry
+  simpa only [OptionT.run] using
+    OptionT.simulateQ_vector_mapM_eq (so := so) (f := f) (v := v)
 
 /-- OptionT support decomposition for `Vector.mapM`.
 
@@ -2094,7 +2273,7 @@ lemma OptionT.mem_support_vector_mapM {ι : Type} {spec : OracleSpec ι}
     {α β : Type} {n : ℕ}
     {f : α → OptionT (OracleComp spec) β} {as : Vector α n} {x : Vector β n} :
     x ∈ support (Vector.mapM f as) ↔ ∀ i : Fin n, x[i] ∈ support (f as[i]) := by
-  sorry
+  exact support_vector_mapM_gen (m := OptionT (OracleComp spec)) (f := f) as x
 
 /-- Run-level `some` form of `OptionT.mem_support_vector_mapM`. -/
 @[simp]
