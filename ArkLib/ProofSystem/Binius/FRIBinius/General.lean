@@ -175,6 +175,10 @@ noncomputable def fullOracleProof :
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
+section CanonicalB
+
+variable [h_B01 : Fact (𝓑 0 = 0 ∧ 𝓑 1 = 1)]
+
 /-- Perfect completeness for the full Binary Basefold protocol (reduction) -/
 theorem fullOracleReduction_perfectCompleteness :
     OracleProof.perfectCompleteness
@@ -220,6 +224,8 @@ theorem fullOracleReduction_perfectCompleteness :
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) init impl)
 
 -- TODO: state RBR KS
+
+end CanonicalB
 
 end
 end Binius.FRIBinius.FullFRIBinius

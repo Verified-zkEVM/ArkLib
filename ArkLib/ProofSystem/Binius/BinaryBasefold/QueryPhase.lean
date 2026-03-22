@@ -296,6 +296,101 @@ lemma probFailure_simulateQ_queryFiberPoints_eq_zero
       simp only [OptionT.mk]
       erw [simulateQ_pure, probFailure_pure]
 
+lemma getBit_eq_testBit (n k : ℕ) : Nat.getBit k n = 1 ↔ Nat.testBit n k = true := by
+  unfold Nat.getBit Nat.testBit
+  have h : n >>> k &&& 1 = 1 &&& n >>> k := Nat.land_comm _ _
+  rw [h]
+  cases h_eq : 1 &&& n >>> k
+  · simp
+  · case succ m =>
+    have h_le : m + 1 ≤ 1 := by
+      calc m + 1 = 1 &&& n >>> k := h_eq.symm
+        _ ≤ 1 := Nat.and_le_left
+    have h_m_0 : m = 0 := by omega
+    subst h_m_0
+    simp
+
+set_option maxHeartbeats 200000 in
+lemma iteratedQuotientMap_eq_qMap_total_fiber_extractMiddleFinMask
+    (i : Fin r) (steps : ℕ) {destIdx : Fin r}
+    (h_destIdx : destIdx.val = i.val + steps)
+    (h_destIdx_le : destIdx.val ≤ ℓ)
+    (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩) :
+    iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := ⟨0, by omega⟩) (k := i.val)
+      (h_destIdx := by simp only [zero_add])
+      (h_destIdx_le := by omega) v =
+    qMap_total_fiber 𝔽q β i steps h_destIdx h_destIdx_le
+      (iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := ⟨0, by omega⟩) (k := destIdx.val)
+        (h_destIdx := by simp only [zero_add])
+        (h_destIdx_le := h_destIdx_le) v)
+      (extractMiddleFinMask 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) v i steps) := by
+  have h_R_pos : 0 < 𝓡 := NeZero.pos 𝓡
+  have h_i_le : i.val ≤ ℓ := by omega
+  have h_i : i.val < ℓ + 𝓡 := Nat.lt_of_le_of_lt h_i_le (Nat.lt_add_of_pos_right h_R_pos)
+  have h_zero : (0 : Fin r).val < ℓ + 𝓡 := by
+    change 0 < ℓ + 𝓡
+    exact Nat.lt_of_lt_of_le (NeZero.pos ℓ) (Nat.le_add_right ℓ 𝓡)
+  apply LinearEquiv.injective (sDomain_basis 𝔽q β h_ℓ_add_R_rate i h_i).repr
+  ext j
+  rw [getSDomainBasisCoeff_of_iteratedQuotientMap]
+  set y : sDomain 𝔽q β h_ℓ_add_R_rate destIdx :=
+    iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := ⟨0, by omega⟩) (k := destIdx.val)
+      (h_destIdx := by simp only [zero_add]) (h_destIdx_le := h_destIdx_le) v
+  have h_repr_fiber := qMap_total_fiber_repr_coeff 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (i := i) (steps := steps) h_destIdx h_destIdx_le (y := y)
+    (k := extractMiddleFinMask 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) v i steps) (j := j)
+  simp only [y] at h_repr_fiber
+  rw [h_repr_fiber]
+  by_cases h_j : j.val < steps
+  · unfold fiber_coeff
+    rw [dif_pos h_j]
+    set pointFinIdx :=
+      sDomainToFin 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩ h_zero v
+    have h_j_shift : j.val + i.val < ℓ + 𝓡 := by
+      omega
+    have h_coeff_v := finToBinaryCoeffs_sDomainToFin 𝔽q β h_ℓ_add_R_rate
+      ⟨0, by omega⟩ h_zero v
+    simp only [pointFinIdx] at h_coeff_v
+    have h_coeff_vj := congrFun h_coeff_v ⟨j.val + i.val, h_j_shift⟩
+    simp only [finToBinaryCoeffs] at h_coeff_vj
+    rw [← h_coeff_vj]
+    have h_middle_bit :
+        Nat.getBit (k := j) (n := extractMiddleFinMask 𝔽q β
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) v i steps) =
+          Nat.getBit (k := j.val + i.val) (n := pointFinIdx) := by
+      dsimp [extractMiddleFinMask, pointFinIdx]
+      rw [Nat.getBit_of_middleBits]
+      simp only [h_j, ↓reduceIte]
+    rw [← h_middle_bit]
+    by_cases h_bit :
+        Nat.getBit (k := j) (n := extractMiddleFinMask 𝔽q β
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) v i steps) = 0
+    · simp [h_bit]
+    · have h_bit_one :
+          Nat.getBit (k := j) (n := extractMiddleFinMask 𝔽q β
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) v i steps) = 1 := by
+        have h := Nat.getBit_eq_zero_or_one
+          (k := j) (n := extractMiddleFinMask 𝔽q β
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) v i steps)
+        simp only [h_bit, false_or] at h
+        exact h
+      simp [h_bit, h_bit_one]
+  · unfold fiber_coeff
+    rw [dif_neg h_j]
+    have h_res := getSDomainBasisCoeff_of_iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+      ⟨0, by omega⟩ (k := destIdx.val) (h_destIdx := by simp only [zero_add])
+      (h_destIdx_le := h_destIdx_le) (x := v) (j := ⟨j.val - steps, by omega⟩)
+    simp only [y] at h_res
+    have h_idx :
+        (⟨j.val + i.val, by omega⟩ : Fin (ℓ + 𝓡)) =
+          ⟨j.val - steps + destIdx.val, by omega⟩ := by
+      apply Fin.eq_of_val_eq
+      simp
+      rw [h_destIdx]
+      omega
+    rw [h_idx]
+    exact h_res.symm
+
 /-- Lemma 1 (Safety):
 Proves that if `c_k` is the result of `iterated_fold` up to step `k`,
 it must match the oracle evaluation at that step (provided by `h_relIn`).
@@ -338,6 +433,7 @@ lemma query_phase_consistency_guard_safe
   let := k_mul_ϑ_lt_ℓ (k := k)
   c_k = f_i_on_fiber.get (extractMiddleFinMask 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (v := v) (i := ⟨k.val * ϑ, by omega⟩) (steps := ϑ)) := by
+  have _ := h_k_pos
   have h_fiber_val := mem_support_queryFiberPoints 𝔽q β γ_repetitions
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (oraclePositionIdx := k) v f_i_on_fiber stmtIn
     oStmtIn witIn challenges (h_fiber_mem := h_fiber_mem)
@@ -368,11 +464,12 @@ lemma query_phase_consistency_guard_safe
     -- Unfold definitions
     dsimp only [getFiberPoint, getChallengeSuffix, challengeSuffixToFin, extractSuffixFromChallenge]
     -- Both sides use iteratedQuotientMap, so we need to show they're applied to the same element
-    -- This requires showing that finToSDomain (joinBits u suffix_fin) = iteratedQuotientMap v
-    -- where u = extractMiddleFinMask and suffix_fin comes from the suffix at i+ϑ
-    -- This requires deep reasoning about the relationship between
-      -- joinBits, sDomainToFin, finToSDomain, and iteratedQuotientMap
-    sorry
+    have h_aux := iteratedQuotientMap_eq_qMap_total_fiber_extractMiddleFinMask
+      𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := ⟨k.val * ϑ, by have := k_mul_ϑ_lt_ℓ (k := k); omega⟩) (steps := ϑ)
+      (destIdx := ⟨k.val * ϑ + ϑ, by have := k_succ_mul_ϑ_le_ℓ_₂ (k := k); omega⟩)
+      (h_destIdx := rfl) (h_destIdx_le := k_succ_mul_ϑ_le_ℓ_₂ (k := k)) (v := v)
+    exact h_aux
   rw [h_point_eq]
   rw [polyToOracleFunc_eq_getFirstOracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (t := ⟨t, h_t_mem_support⟩) (i := Fin.last ℓ)
@@ -744,7 +841,7 @@ lemma query_phase_step_preserves_fold
       have h_destIdx_eq : (⟨k.val * ϑ + ϑ, by omega⟩ : Fin r) = ⟨(k.val + 1) * ϑ, by omega⟩ := by
         apply Fin.eq_of_val_eq
         simp only [Nat.add_mul, one_mul]
-      simp only [id_eq, Fin.coe_ofNat_eq_mod, cast_cast]
+      simp only [Fin.coe_ofNat_eq_mod, cast_cast]
       have h_i_eq : (⟨k.val * ϑ, by omega⟩ : Fin r) = 0 := by
         apply Fin.eq_of_val_eq
         simp [h_mul_eq_0]

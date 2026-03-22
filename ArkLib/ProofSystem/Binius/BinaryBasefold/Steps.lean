@@ -1043,7 +1043,6 @@ lemma incrementalBadEventExistsProp_fold_step_backward (i : Fin ℓ)
       (OracleFrontierIndex.mkFromStmtIdx i.castSucc) stmtOStmtIn.2
       stmtOStmtIn.1.challenges := by
   sorry
-
 lemma foldStep_rbrExtractionFailureEvent_imply_sumcheck_or_badEvent (i : Fin ℓ)
     (stmtOStmtIn : (Statement (L := L) Context i.castSucc) × (∀ j,
       OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
@@ -2276,7 +2275,7 @@ lemma mapOStmtOut_eq_mkVerifierOStmtOut_relayStep
   intro v
   funext j
   simp only [mapOStmtOutRelayStep, OracleVerifier.mkVerifierOStmtOut, relayOracleVerifier, v]
-  sorry
+  simp [relayOracleVerifier_embed]
 
 lemma getFirstOracle_mapOStmtOutRelayStep_eq (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i)
