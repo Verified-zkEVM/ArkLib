@@ -1,6 +1,8 @@
 name: CI
 
 on:
+  push:
+    branches: ["main"]
   pull_request:
     branches: ["main"]
   workflow_dispatch:
@@ -12,12 +14,50 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      issues: write
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Initialize timing paths
+        run: |
+          echo "BUILD_TIMING_RESULTS=$RUNNER_TEMP/build-timing.jsonl" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_LOG_DIR=$RUNNER_TEMP/build-timing-logs" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_ARTIFACT_DIR=$RUNNER_TEMP/build-timing-artifact" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_ARTIFACT_NAME=arklib-build-timing-data" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_BASELINE_DIR=$RUNNER_TEMP/build-timing-baseline" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_REPORT=$RUNNER_TEMP/build-timing.md" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_COMMENT=$RUNNER_TEMP/build-timing-comment.md" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_SOURCE_SHA=$GITHUB_SHA" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_SOURCE_BRANCH=${{ github.head_ref || github.ref_name }}" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_BASE_REF=" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_MERGE_BASE_SHA=" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_TEST_NAME=Validation wrapper" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_TEST_COMMAND=./scripts/validate.sh" >> "$GITHUB_ENV"
+          {
+            echo "BUILD_TIMING_SOURCE_SUBJECT<<EOF"
+            git log -1 --format=%s
+            echo "EOF"
+          } >> "$GITHUB_ENV"
+
+      - name: Determine PR timing merge base
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "BUILD_TIMING_BASE_REF=${{ github.event.pull_request.base.ref }}" >> "$GITHUB_ENV"
+          merge_base_sha="$(git merge-base "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" || true)"
+          if [ -n "$merge_base_sha" ]; then
+            echo "BUILD_TIMING_MERGE_BASE_SHA=$merge_base_sha" >> "$GITHUB_ENV"
+          fi
 
       - name: Restore Lean cache
         uses: actions/cache/restore@v5
+        id: lake-cache
         with:
           path: ./.lake
           key: ${{ runner.os }}-lean-ci-${{ hashFiles('lake-manifest.json') }}
@@ -26,7 +66,230 @@ jobs:
             ${{ runner.os }}-lean-docs-${{ hashFiles('lake-manifest.json') }}
             ${{ runner.os }}-lean-docs-
 
-      - uses: leanprover/lean-action@v1.4.0
+      - uses: actions/setup-python@v5
         with:
+          python-version: "3.12"
+
+      - name: Set up Lean environment
+        uses: leanprover/lean-action@v1.4.0
+        with:
+          auto-config: false
+          build: false
+          test: false
           lint: false
           use-github-cache: false
+          use-mathlib-cache: false
+
+      - name: Fetch dependency cache
+        run: lake exe cache get
+
+      - name: Time clean build
+        run: |
+          bash scripts/build_timing_report.sh run clean_build "$BUILD_TIMING_RESULTS" -- \
+            bash -eo pipefail -c 'rm -rf .lake/build && lake build'
+
+      - name: Time warm rebuild
+        run: |
+          bash scripts/build_timing_report.sh run warm_rebuild "$BUILD_TIMING_RESULTS" -- \
+            bash -eo pipefail -c 'lake build'
+
+      - name: Time validation wrapper
+        run: |
+          bash scripts/build_timing_report.sh run test_path "$BUILD_TIMING_RESULTS" -- \
+            bash -eo pipefail -c './scripts/validate.sh'
+
+      - name: Save Lean cache
+        if: success() && steps.lake-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ./.lake
+          key: ${{ runner.os }}-lean-ci-${{ hashFiles('lake-manifest.json') }}
+
+      - name: Prepare timing artifact
+        if: always()
+        run: |
+          rm -rf "$BUILD_TIMING_ARTIFACT_DIR"
+          mkdir -p "$BUILD_TIMING_ARTIFACT_DIR"
+          if [ -f "$BUILD_TIMING_RESULTS" ]; then
+            cp "$BUILD_TIMING_RESULTS" "$BUILD_TIMING_ARTIFACT_DIR/results.jsonl"
+          fi
+          if [ -f "$BUILD_TIMING_LOG_DIR/clean_build.log" ]; then
+            cp "$BUILD_TIMING_LOG_DIR/clean_build.log" "$BUILD_TIMING_ARTIFACT_DIR/clean_build.log"
+          fi
+
+      - name: Upload timing artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUILD_TIMING_ARTIFACT_NAME }}
+          path: ${{ env.BUILD_TIMING_ARTIFACT_DIR }}
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Determine comparison baseline artifact
+        if: always() && github.event_name == 'pull_request'
+        id: timing-baseline
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const artifactName = process.env.BUILD_TIMING_ARTIFACT_NAME;
+            const workflowName = process.env.GITHUB_WORKFLOW;
+            const currentRunId = Number(process.env.GITHUB_RUN_ID);
+            const currentSha = process.env.GITHUB_SHA;
+            const pullRequest = context.payload.pull_request;
+            const headRef = pullRequest.head.ref;
+            const baseRef = process.env.BUILD_TIMING_BASE_REF;
+            const mergeBaseSha = process.env.BUILD_TIMING_MERGE_BASE_SHA;
+
+            async function firstRunWithArtifact(runs) {
+              for (const run of runs) {
+                if (run.id === currentRunId) {
+                  continue;
+                }
+                if (run.name !== workflowName || run.conclusion !== 'success') {
+                  continue;
+                }
+                const artifactsResponse = await github.rest.actions.listWorkflowRunArtifacts({
+                  owner,
+                  repo,
+                  run_id: run.id,
+                  per_page: 100,
+                });
+                const artifact = artifactsResponse.data.artifacts.find(candidate =>
+                  candidate.name === artifactName && !candidate.expired
+                );
+                if (artifact) {
+                  return run;
+                }
+              }
+              return null;
+            }
+
+            const prRunsResponse = await github.rest.actions.listWorkflowRunsForRepo({
+              owner,
+              repo,
+              event: 'pull_request',
+              branch: headRef,
+              status: 'completed',
+              per_page: 100,
+            });
+            const previousPrCandidates = prRunsResponse.data.workflow_runs.filter(run => {
+              if (run.head_sha === currentSha) {
+                return false;
+              }
+              const prs = run.pull_requests || [];
+              return prs.length === 0 || prs.some(pr => pr.number === pullRequest.number);
+            });
+            const previousPrRun = await firstRunWithArtifact(previousPrCandidates);
+            if (previousPrRun) {
+              core.setOutput('run-id', String(previousPrRun.id));
+              core.setOutput('sha', previousPrRun.head_sha);
+              core.setOutput('label', 'the previous successful PR update');
+              return;
+            }
+
+            const baseRunsResponse = await github.rest.actions.listWorkflowRunsForRepo({
+              owner,
+              repo,
+              event: 'push',
+              branch: baseRef,
+              status: 'completed',
+              per_page: 100,
+            });
+            const baseCandidates = baseRunsResponse.data.workflow_runs.filter(run =>
+              run.name === workflowName && run.conclusion === 'success'
+            );
+            const exactMergeBaseCandidates = mergeBaseSha
+              ? baseCandidates.filter(run => run.head_sha === mergeBaseSha)
+              : [];
+            const exactMergeBaseRun =
+              exactMergeBaseCandidates.length > 0
+                ? await firstRunWithArtifact(exactMergeBaseCandidates)
+                : null;
+            const fallbackBaseCandidates = mergeBaseSha
+              ? baseCandidates.filter(run => run.head_sha !== mergeBaseSha)
+              : baseCandidates;
+            const baseRun =
+              exactMergeBaseRun ?? await firstRunWithArtifact(fallbackBaseCandidates);
+            if (baseRun) {
+              const isMergeBase = Boolean(mergeBaseSha) && baseRun.head_sha === mergeBaseSha;
+              core.setOutput('run-id', String(baseRun.id));
+              core.setOutput('sha', baseRun.head_sha);
+              core.setOutput(
+                'label',
+                isMergeBase
+                  ? `merge-base on \`${baseRef}\``
+                  : `the latest successful \`${baseRef}\` run`
+              );
+              return;
+            }
+
+            core.info('No comparison baseline artifact found.');
+            core.setOutput('run-id', '');
+            core.setOutput('sha', '');
+            core.setOutput('label', '');
+
+      - name: Download comparison baseline artifact
+        if: always() && steps.timing-baseline.outputs.run-id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.BUILD_TIMING_ARTIFACT_NAME }}
+          path: ${{ env.BUILD_TIMING_BASELINE_DIR }}
+          run-id: ${{ steps.timing-baseline.outputs.run-id }}
+          github-token: ${{ github.token }}
+
+      - name: Render build timing report
+        if: always()
+        env:
+          BUILD_TIMING_BASELINE_LABEL: ${{ steps.timing-baseline.outputs.label }}
+          BUILD_TIMING_BASELINE_SHA: ${{ steps.timing-baseline.outputs.sha }}
+        run: |
+          if [ -f "$BUILD_TIMING_BASELINE_DIR/results.jsonl" ]; then
+            bash scripts/build_timing_report.sh render "$BUILD_TIMING_RESULTS" "$BUILD_TIMING_BASELINE_DIR" > "$BUILD_TIMING_REPORT"
+          else
+            bash scripts/build_timing_report.sh render "$BUILD_TIMING_RESULTS" > "$BUILD_TIMING_REPORT"
+          fi
+          cat "$BUILD_TIMING_REPORT" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo '<!-- arklib-build-timing-report -->'
+            echo
+            cat "$BUILD_TIMING_REPORT"
+          } > "$BUILD_TIMING_COMMENT"
+
+      - name: Upsert build timing PR comment
+        if: >-
+          always() &&
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- arklib-build-timing-report -->';
+            const body = fs.readFileSync(process.env.BUILD_TIMING_COMMENT, 'utf8');
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number, per_page: 100 }
+            );
+            const existing = comments.find(comment =>
+              comment.user?.type === 'Bot' && comment.body?.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }

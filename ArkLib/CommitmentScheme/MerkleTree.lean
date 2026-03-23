@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Fawad Haider
 -/
 
+import VCVio.OracleComp.QueryTracking.RandomOracle
 import ArkLib.ToVCVio.Oracle
 
 /-!

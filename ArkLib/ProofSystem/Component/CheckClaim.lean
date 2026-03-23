@@ -70,14 +70,8 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ Pro
 theorem reduction_completeness [Nonempty σ] [DecidableEq Statement] :
     (reduction oSpec Statement pred).perfectCompleteness init impl
     (relIn Statement pred) (relOut Statement) := by
-  -- Don't know why we need `Nonempty σ` here. TODO: figure out why
-  simp only [reduction, Reduction.perfectCompleteness_eq_prob_one,
-    Reduction.run, Prover.run, Prover.runToRound, Verifier.run,
-    prover, verifier]
+  unfold Reduction.perfectCompleteness Reduction.completeness
   intro stmt wit valid
-  simp
-  aesop
-
   sorry
 
 /-- The `CheckClaim` reduction satisfies perfect round-by-round knowledge soundness. -/

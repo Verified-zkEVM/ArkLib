@@ -7,6 +7,7 @@ This directory contains various utility scripts for the ArkLib project.
 ### Build and Validation
 - **`validate.sh`** - Recommended convenience wrapper for routine local validation
 - **`build-project.sh`** - Compile-only helper (`lake build`)
+- **`build_timing_report.sh`** - CI timing/report helper for clean builds, warm rebuilds, and the validation wrapper
 - **`update-lib.sh`** - Update ArkLib.lean with all imports from source files
 - **`check-imports.sh`** - Check if ArkLib.lean is up to date with all imports
 - **`check-docs-integrity.py`** - Check docs links and the `CLAUDE.md` symlink
@@ -50,6 +51,11 @@ python generate_dependency_graph.py --root ../../ --output-dir ../../dependency_
 ./scripts/build-project.sh
 ```
 
+### Build Timing Helper
+```bash
+bash scripts/build_timing_report.sh --help
+```
+
 ### Update Library Imports
 ```bash
 # Update ArkLib.lean with all imports
@@ -63,6 +69,14 @@ python generate_dependency_graph.py --root ../../ --output-dir ../../dependency_
 ```bash
 python3 ./scripts/check-docs-integrity.py
 ```
+
+### `build_timing_report.sh`
+
+Helper used by CI to measure and render build timings for clean builds, warm
+rebuilds, and the `./scripts/validate.sh` path. The CI workflow uploads
+timing-data artifacts so PR runs can compare against a previously recorded
+baseline without rerunning that baseline in the same job. This supports
+[`../.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 
 ## Requirements
 

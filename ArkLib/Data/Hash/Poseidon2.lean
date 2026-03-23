@@ -624,6 +624,54 @@ def partialRound (state : Vector KoalaBear.Field params.width) (roundConstant : 
   -- 3. Apply internal linear layer
   internalLinearLayer params stateAfterSbox
 
+private lemma firstHalfRoundConstants_extract_length (params : Params)
+    (rc_idx : Fin params.halfNumFullRounds) :
+    min (↑rc_idx + params.width) (params.numFullRounds * params.width + params.numPartialRounds) -
+      ↑rc_idx = params.width := by
+  simp only [Params.halfNumFullRounds] at rc_idx
+  have hw := params.width_pos
+  have hrc := rc_idx.isLt
+  have h1 : ↑rc_idx + params.width ≤ (↑rc_idx + 1) * params.width := by
+    nlinarith
+  have h2 : (↑rc_idx + 1) * params.width ≤ (params.numFullRounds / 2) * params.width := by
+    nlinarith
+  have h3 := Nat.mul_le_mul_right params.width (Nat.div_le_self params.numFullRounds 2)
+  rw [Nat.min_eq_left (by omega)]
+  omega
+
+private lemma partialRoundConstant_index_lt (params : Params)
+    (rc_idx : Fin params.numPartialRounds) :
+    ↑rc_idx < params.numFullRounds * params.width + params.numPartialRounds -
+      params.halfNumFullRounds * params.width := by
+  simp only [Params.halfNumFullRounds]
+  have := Nat.mul_le_mul_right params.width (Nat.div_le_self params.numFullRounds 2)
+  omega
+
+private lemma secondHalfRoundConstants_extract_length (params : Params)
+    (rc_idx : Fin params.halfNumFullRounds) :
+    min (↑rc_idx + params.width)
+        (params.numFullRounds * params.width + params.numPartialRounds -
+          params.halfNumFullRounds * params.width - params.numPartialRounds) -
+      ↑rc_idx = params.width := by
+  simp only [Params.halfNumFullRounds] at rc_idx ⊢
+  have hw := params.width_pos
+  have hrc := rc_idx.isLt
+  have h0 := Nat.mul_le_mul_right params.width (Nat.div_le_self params.numFullRounds 2)
+  have hsub : params.numFullRounds * params.width + params.numPartialRounds -
+      params.numFullRounds / 2 * params.width - params.numPartialRounds =
+      (params.numFullRounds - params.numFullRounds / 2) * params.width := by
+    rw [Nat.sub_mul]
+    omega
+  rw [hsub]
+  have h1 : ↑rc_idx + params.width ≤ (↑rc_idx + 1) * params.width := by
+    nlinarith
+  have h2 : (↑rc_idx + 1) * params.width ≤ (params.numFullRounds / 2) * params.width := by
+    nlinarith
+  have hd : params.numFullRounds / 2 ≤ params.numFullRounds - params.numFullRounds / 2 := by
+    omega
+  rw [Nat.min_eq_left (by nlinarith [Nat.mul_le_mul_right params.width hd])]
+  omega
+
 /-- Full Poseidon2 permutation on a state vector. -/
 @[inline]
 def permute (params : Params) (state : Vector KoalaBear.Field params.width) :
@@ -636,7 +684,8 @@ def permute (params : Params) (state : Vector KoalaBear.Field params.width) :
   -- First half of full rounds
   let st1 : Vector KoalaBear.Field params.width :=
     Fin.foldl params.halfNumFullRounds (fun st_acc rc_idx =>
-      let rc_chunk := (rcs.extract rc_idx (rc_idx + params.width)).cast (by sorry)
+      let rc_chunk := (rcs.extract rc_idx (rc_idx + params.width)).cast
+        (firstHalfRoundConstants_extract_length params rc_idx)
       let st_new := fullRound params st_acc rc_chunk
       st_new) st0
 
@@ -645,7 +694,7 @@ def permute (params : Params) (state : Vector KoalaBear.Field params.width) :
 
   -- Partial rounds
   let st2 := Fin.foldl params.numPartialRounds (fun st_acc rc_idx =>
-    let rc_val := rcs[rc_idx]'(sorry)
+    let rc_val := rcs[rc_idx]'(partialRoundConstant_index_lt params rc_idx)
     let st_new := partialRound params st_acc rc_val
     st_new) st1
 
@@ -654,7 +703,8 @@ def permute (params : Params) (state : Vector KoalaBear.Field params.width) :
 
   -- Second half of full rounds
   let st3 := Fin.foldl params.halfNumFullRounds (fun st_acc rc_idx =>
-    let rc_chunk := (rcs.extract rc_idx (rc_idx + params.width)).cast (by sorry)
+    let rc_chunk := (rcs.extract rc_idx (rc_idx + params.width)).cast
+      (secondHalfRoundConstants_extract_length params rc_idx)
     let st_new := fullRound params st_acc rc_chunk
     st_new) st2
 

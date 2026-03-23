@@ -72,9 +72,8 @@ open Classical in
 @[simp]
 theorem reduction_completeness :
     (reduction oSpec Statement Witness).perfectCompleteness init impl relIn (toRelOut relIn) := by
-  simp [Reduction.run, Prover.run, Prover.runToRound, Prover.processRound, Verifier.run,
-    reduction, prover, verifier]
-  aesop
+  unfold Reduction.perfectCompleteness Reduction.completeness
+  intro stmtIn witIn hIn
   sorry
 
 theorem reduction_rbr_knowledge_soundness : True := sorry

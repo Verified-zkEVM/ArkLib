@@ -98,3 +98,25 @@ If blueprint output matters and `leanblueprint` is missing:
 ```bash
 python3 -m pip install leanblueprint
 ```
+
+## CI Mapping
+
+- [`../../.github/workflows/ci.yml`](../../.github/workflows/ci.yml)
+  runs the timing-enabled main build on PRs and pushes to `main`, measures a
+  clean build, a warm rebuild, and the `./scripts/validate.sh` path, then
+  uploads timing artifacts and posts a comparison report on same-repo PRs.
+- [`../../.github/workflows/check-imports.yml`](../../.github/workflows/check-imports.yml)
+  checks that `ArkLib.lean` matches the tracked source tree.
+- [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
+  checks local markdown links and the `CLAUDE.md` symlink.
+
+## Manual Timing Helper
+
+If you need to reproduce the timing workflow locally, the same helper script can
+capture a measurement and render a report:
+
+```bash
+bash scripts/build_timing_report.sh run clean_build /tmp/build-timing.jsonl -- \
+  bash -eo pipefail -c 'rm -rf .lake/build && lake build'
+bash scripts/build_timing_report.sh render /tmp/build-timing.jsonl
+```

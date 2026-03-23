@@ -143,7 +143,6 @@ lemma runWithLogToRound_discard_log_eq_runToRound (i : Fin (n + 1))
       Prod.fst <$> prover.runWithLogToRound i stmt wit =
         prover.runToRound i stmt wit := by
   simp [runWithLogToRound, runToRound]
-  exact fst_map_simulateQ_loggingOracle_run _
 
 /-- Run the prover in an interactive reduction. Returns the output statement and witness, and the
   transcript. See `runWithLog` for a version that additionally returns the log of the
@@ -173,7 +172,6 @@ lemma runWithLog_discard_log_eq_run (stmt : StmtIn) (wit : WitIn)
     (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
       Prod.fst <$> prover.runWithLog stmt wit = prover.run stmt wit := by
   simp [runWithLog]
-  exact fst_map_simulateQ_loggingOracle_run _
 
 end Prover
 
