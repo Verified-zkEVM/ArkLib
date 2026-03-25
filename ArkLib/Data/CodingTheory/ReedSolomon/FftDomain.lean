@@ -56,6 +56,13 @@ lemma injective {ω : FftDomain ι F}
   simp [eval_fft_domain_eq_eval_domain] at h
   exact hinj (by aesop)
 
+lemma domain_elem_invertible {ω : FftDomain ι F} {i : ι}
+  :
+  IsUnit (ω i) := by 
+  rcases ω with ⟨ω, hinj⟩ 
+  simp [eval_fft_domain_eq_eval_domain] 
+
+
 @[simp]
 lemma domain_zero_eq_one {ω : FftDomain ι F} 
   :
@@ -120,27 +127,48 @@ theorem ext {ω₁ ω₂ : FftDomain ι F} (h : ∀ i, ω₁ i = ω₂ i)
 
 end FftDomain
 
-structure SmoothFftDomain (n : ℕ) (ι : Type) [AddCommGroup ι] 
-  [Fintype ι] [SMul ℤ ι]
-  (F : Type) [Field F] extends FftDomain ι F where
-  smooth_size : Fintype.card ι = 2 ^ n
-  is_cyclic : IsAddCyclic ι 
+abbrev SmoothFftDomain (n : ℕ) (F : Type) [Field F] : Type
+  := FftDomain (Fin (2 ^ n)) F
 
-instance {n} : FunLike (SmoothFftDomain n ι F) ι F where
-  coe fftDomain i := fftDomain.domain i
-  coe_injective' := by
-    rintro ⟨⟨f₁, _⟩, _, _, _⟩ ⟨⟨f₂, _⟩, _, _, _⟩ h 
-    simp only at h
-    simp only [SmoothFftDomain.mk.injEq, FftDomain.mk.injEq]
-    ext i
-    simp only [MonoidHom.toAdditiveRight_apply_apply, Multiplicative.ofAdd, Equiv.coe_fn_mk,
-      toMul_ofMul]
-    exact (congrFun h i)
+namespace SmoothFftDomain
 
-noncomputable def generator {n : ℕ} (ω : SmoothFftDomain n ι F) 
+@[simp]
+lemma size_of_smooth_fft_domain_eq_pow_of_2 {n : ℕ} {ω : SmoothFftDomain n F}
+  :
+  ω.size = 2 ^ n := by simp [FftDomain.size]
+
+private lemma domain_nsmul {n : ℕ} {ω : SmoothFftDomain n F} (k : ℕ) (i : Fin (2 ^ n))
+  : ω (k • i) = (ω i) ^ k := by
+  induction k with
+  | zero => simp [FftDomain.domain_zero_eq_one, pow_zero]
+  | succ k ih =>
+    rw [succ_nsmul, FftDomain.domain_add_eq_mul_domain, ih, pow_succ]
+
+private lemma val_eq_nsmul_one {n : ℕ} (i : Fin (2 ^ n)) : i = i.val • (1 : Fin (2 ^ n)) := by
+  simp +decide [ Fin.ext_iff, Fin.val_add, Fin.val_mul ];
+  convert Nat.mod_eq_of_lt i.2 using 1;
+  · rw [ Nat.mod_eq_of_lt i.2 ];
+  · convert Nat.mod_eq_of_lt i.2 using 1;
+    erw [ Fin.val_mk ];
+    induction i.val <;> simp_all +decide [ nsmulRec ];
+    simp_all +decide [ Fin.val_add, nsmulRec ]
+
+lemma domain_eq_pow_of_generator {n : ℕ} {ω : SmoothFftDomain n F} (i : Fin (2 ^ n))
+  : ω i = (ω 1) ^ i.val := by
+  conv_lhs => rw [val_eq_nsmul_one i]
+  rw [domain_nsmul]
+
+theorem eq_iff_generators_eq {n : ℕ} {ω₁ ω₂ : SmoothFftDomain n F}
   : 
-  F := ω <| 
-    Classical.choose (@exists_zsmul_surjective ι _ ω.is_cyclic)
+  ω₁ = ω₂ ↔ ω₁ 1 = ω₂ 1 := by
+  constructor
+  · intro h; rw [h]
+  · intro h
+    ext i
+    rw [domain_eq_pow_of_generator i, domain_eq_pow_of_generator i, h]
+  
+
+end SmoothFftDomain
 
 structure CosetFftDomain (ι : Type) [AddCommGroup ι]
   (F : Type) [Field F] where
@@ -259,10 +287,60 @@ theorem ext {ω₁ ω₂ : CosetFftDomain ι F} (h : ∀ i, ω₁ i = ω₂ i)
   simp [eval_coset_fft_domain_eq_eval_x_mul_domain] at h
   aesop
 
-class CosetSmooth (n : ℕ) (ω : CosetFftDomain ι F) where
-  fftSmooth : FftDomain.Smooth n ω.fftDomain
-
 end CosetFftDomain
 
+abbrev SmoothCosetFftDomain (n : ℕ) (F : Type) [Field F] : Type
+  := CosetFftDomain (Fin (2 ^ n)) F
+
+namespace SmoothFftDomain 
+
+def subdomain {n : ℕ} (ω : SmoothFftDomain n F) (i : Fin n)
+  :
+  SmoothFftDomain i F := 
+  ⟨⟨⟨fun k => 
+    let k' : Fin (2 ^ n) := ⟨2 ^ (n - i) * k.val, by {
+      rcases k with ⟨k, hk⟩ 
+      rcases i with ⟨i, hi⟩ 
+      simp
+      simp at hk
+      by_cases hk_zero : k = 0
+      · subst hk_zero
+        simp
+      · apply 
+          Nat.lt_of_lt_of_le
+            ((Nat.mul_lt_mul_left (a := 2 ^ (n - i)) (by simp)).2 hk)
+        rw [←pow_add]
+        have h : n - i + i = n := by omega
+        rw [h]
+  }⟩
+    (ω.domain k'), by {
+     sorry 
+
+  }⟩, by {
+    sorry
+  }⟩, by {sorry}⟩
+
+@[simp]
+lemma subdomain_0 {ω : SmoothFftDomain 0 F}
+  {i : Fin 1}
+  :
+  ω i = 1 := by 
+  rcases ω with ⟨ω, _⟩ 
+  simp [FftDomain.eval_fft_domain_eq_eval_domain]
+  rcases i with ⟨i, hi⟩ 
+  simp at hi
+  sorry
+  
+
+
+end SmoothFftDomain
+
+namespace SmoothCosetFftDomain 
+
+def subdomain {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : Fin n)  
+  :
+  SmoothCosetFftDomain (n - i) F := sorry
+
+end SmoothCosetFftDomain
 
 end ReedSolomon
