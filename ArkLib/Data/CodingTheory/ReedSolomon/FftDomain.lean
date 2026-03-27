@@ -1,6 +1,8 @@
 import Mathlib.GroupTheory.SpecificGroups.Cyclic
 import Mathlib.Algebra.Group.TypeTags.Basic
 import Mathlib.Algebra.Group.Defs
+import Mathlib.Tactic.Cases
+import Mathlib.Tactic.Linarith
 
 namespace ReedSolomon
 
@@ -339,7 +341,7 @@ abbrev SmoothCosetFftDomain (n : ℕ) (F : Type) [Field F] : Type
 
 namespace SmoothFftDomain 
 
-private noncomputable def subdomain_embed {n : ℕ} (i : Fin n) (k : Fin (2 ^ (i : ℕ)))
+private noncomputable def subdomain_embed {n : ℕ} (i : Fin n.succ) (k : Fin (2 ^ (i : ℕ)))
     : Fin (2 ^ n) :=
   ⟨2 ^ (n - i) * k.val, by
     rcases k with ⟨k, hk⟩
@@ -351,24 +353,25 @@ private noncomputable def subdomain_embed {n : ℕ} (i : Fin n) (k : Fin (2 ^ (i
             Nat.mul_lt_mul_of_pos_left hk (by positivity)
         _ = 2 ^ n := by rw [← pow_add, Nat.sub_add_cancel (by omega)]⟩
 
-private lemma subdomain_embed_add {n : ℕ} (i : Fin n) (a b : Fin (2 ^ (i : ℕ)))
+private lemma subdomain_embed_add {n : ℕ} (i : Fin n.succ) (a b : Fin (2 ^ (i : ℕ)))
     : subdomain_embed i (a + b) = subdomain_embed i a + subdomain_embed i b := by
-  unfold subdomain_embed; simp +decide [ Fin.val_add, Nat.mul_mod_mul_left ] ; ring;
+  unfold subdomain_embed; simp +decide [ Fin.val_add] ; ring_nf;
   norm_num [ Fin.ext_iff, Fin.val_add, Fin.val_mul ];
   rw [ ← add_mul ];
   rw [ ← Nat.mul_mod_mul_right ];
-  rw [ ← pow_add, Nat.add_sub_of_le ( Nat.le_of_lt i.2 ) ]
+  rw [ ← pow_add, 
+    Nat.add_sub_of_le (Nat.le_of_lt_succ i.2)]
 
-private lemma subdomain_embed_zero {n : ℕ} (i : Fin n)
+private lemma subdomain_embed_zero {n : ℕ} (i : Fin n.succ)
     : subdomain_embed i (0 : Fin (2 ^ (i : ℕ))) = (0 : Fin (2 ^ n)) := by
   unfold subdomain_embed; aesop;
 
-private lemma subdomain_embed_injective {n : ℕ} (i : Fin n)
+private lemma subdomain_embed_injective {n : ℕ} (i : Fin n.succ)
     : Function.Injective (subdomain_embed (n := n) i) := by
   intro a b h;
   simp_all +decide [ Fin.ext_iff, subdomain_embed ]
 
-noncomputable def subdomain {n : ℕ} (ω : SmoothFftDomain n F) (i : Fin n)
+noncomputable def subdomain {n : ℕ} (ω : SmoothFftDomain n F) (i : Fin n.succ)
   :
   SmoothFftDomain i F :=
   ⟨{ toFun := fun k => ω.domain (Multiplicative.ofAdd (subdomain_embed i (Multiplicative.toAdd k)))
@@ -386,14 +389,26 @@ noncomputable def subdomain {n : ℕ} (ω : SmoothFftDomain n F) (i : Fin n)
      exact Multiplicative.ofAdd.injective (subdomain_embed_injective i h3)⟩
 
 @[simp]
-lemma subdomain_0 {n} [NeZero n] {ω : SmoothFftDomain n F}
+lemma subdomain_0 {n} {ω : SmoothFftDomain n F}
   :
   (ω.subdomain 0 : Subgroup Fˣ) = ⊥ := by
   ext i
   rw [FftDomain.mem_subgroup_iff]
   simp
 
-private lemma subdomain_embed_of_le {n : ℕ} (i j : Fin n) (h : i ≤ j)
+private lemma subdomain_embed_last {n : ℕ} (k : Fin (2 ^ (Fin.last n : ℕ)))
+  : subdomain_embed (Fin.last n) k = Fin.cast (by simp [Fin.last]) k := by
+  unfold subdomain_embed; aesop;
+
+@[simp]
+lemma subdomain_last {n} {ω : SmoothFftDomain n F}
+  :
+  (ω.subdomain (Fin.last n) : Subgroup Fˣ) = (ω : Subgroup Fˣ) := by
+  ext x;
+  simp +decide [ FftDomain.toSubgroup, subdomain ];
+  constructor <;> intro h <;> rcases h with ⟨ a, rfl ⟩ <;> use Fin.cast ( by simp +decide [ Fin.last ] ) a <;> simp +decide [ subdomain_embed_last ] ;
+
+private lemma subdomain_embed_of_le {n : ℕ} (i j : Fin n.succ) (h : i ≤ j)
     (k : Fin (2 ^ (i : ℕ)))
     : ∃ (l : Fin (2 ^ (j : ℕ))), subdomain_embed i k = subdomain_embed j l := by
   refine ⟨⟨2 ^ ((j : ℕ) - (i : ℕ)) * k.val, ?_⟩, ?_⟩
@@ -405,8 +420,8 @@ private lemma subdomain_embed_of_le {n : ℕ} (i j : Fin n) (h : i ≤ j)
     have : n - ↑j + (↑j - ↑i) = n - ↑i := Nat.sub_add_sub_cancel (by omega) (by omega)
     rw [this]
 
-lemma subdomain_mono {n} {ω : SmoothFftDomain n F}
-  {i j : Fin n} (h : i ≤ j)
+lemma subdomain_le {n} {ω : SmoothFftDomain n F}
+  {i j : Fin n.succ} (h : i ≤ j)
   :
   (ω.subdomain i : Subgroup _) ≤ (ω.subdomain j : Subgroup Fˣ) := by
   simp +decide [ SetLike.le_def, FftDomain.toSubgroup, FftDomain.mem_subgroup_iff_mem_finset ];
@@ -414,12 +429,105 @@ lemma subdomain_mono {n} {ω : SmoothFftDomain n F}
   obtain ⟨l, hl⟩ := subdomain_embed_of_le i j h a;
   unfold subdomain; aesop;
 
+private lemma subdomain_embed_pow_eq {n : ℕ} (i j : Fin n.succ) (hji : j.val ≤ i.val)
+    (k : Fin (2 ^ i.val))
+    : (2 ^ j.val) • (subdomain_embed i k) =
+      subdomain_embed ⟨i.val - j.val, by omega⟩
+        ⟨k.val % 2 ^ (i.val - j.val), Nat.mod_lt _ (by positivity)⟩ := by
+          simp +zetaDelta at *;
+          unfold subdomain_embed;
+          norm_num [ Fin.ext_iff ];
+          erw [ Fin.val_mk ];
+          -- By definition of nsmulRec, we have:
+          have h_nsmulRec : ∀ (p : ℕ) (x : Fin (2 ^ n)), (nsmulRec p x : Fin (2 ^ n)).val = (p * x.val) % 2 ^ n := by
+            intro p x; induction' p with p ih generalizing x <;> simp +decide [ *, nsmulRec ] ;
+            simp +decide [ add_mul, Fin.val_add, Nat.add_mod, ih ];
+          rw [ h_nsmulRec ];
+          rw [ ← Nat.mul_mod_mul_left ];
+          rw [ ← pow_add, tsub_tsub_assoc ] <;> norm_num [ hji ];
+          · rw [ show n - i + i = n by rw [ tsub_add_cancel_of_le ( by linarith [ Fin.is_lt i ] ) ] ] ; ring;
+          · exact Fin.is_le i
+
+private lemma subdomain_eval {n : ℕ} {ω : SmoothFftDomain n F} (i : Fin n.succ) (k : Fin (2 ^ i.val))
+    : (ω.subdomain i k : F) = ω (subdomain_embed i k) := by
+  simp [subdomain, FftDomain.eval_fft_domain_eq_eval_domain, subdomain_embed]
+  rfl
+
+private lemma subdomain_pow_property_aux {n} {ω : SmoothFftDomain n F}
+  {i j : Fin n.succ} (hji : j ≤ i) {k : Fin (2 ^ i.val)}
+  :
+  (ω.subdomain i k) ^ (2 ^ j.val) 
+    = (ω.subdomain ⟨i.val - j.val, by omega⟩ (⟨k.val % 2 ^ (i.val - j.val), 
+        Nat.mod_lt _ (by positivity)⟩)) := by
+  rw [subdomain_eval, ← domain_nsmul, subdomain_eval, subdomain_embed_pow_eq i j hji]
+
+lemma subdomain_pow_property {n} {ω : SmoothFftDomain n F}
+  {i j : Fin n.succ} (hji : j ≤ i) {k : Fin (2 ^ i.val)}
+  :
+  (ω.subdomain i k) ^ (2 ^ j.val) 
+    = (ω.subdomain (i - j) (⟨k.val % 2 ^ (i.val - j.val),
+        by {
+          convert Nat.mod_lt _ ( pow_pos ( by decide : 0 < 2 ) _ ) using 1;
+          simp +decide [ Fin.val_sub ];
+          rw [ Nat.mod_eq_sub_mod ] <;> norm_num [ hji ];
+          · rw [ Nat.mod_eq_of_lt ];
+            · omega;
+            · omega;
+          · omega
+        }
+        ⟩)) := by
+  rw [subdomain_pow_property_aux hji] 
+  convert rfl;
+  · exact Fin.sub_val_of_le hji;
+  · exact Fin.sub_val_of_le hji;
+  · exact Fin.sub_val_of_le hji;
+  · exact Fin.sub_val_of_le hji;
+  · exact Fin.sub_val_of_le hji
+
+lemma subdomain_pow_property' {n} {ω : SmoothFftDomain n F}
+  {i j : Fin n.succ} (hji : j ≤ i) {x : F}
+  (h : x ∈ (ω.subdomain i).toFinset)
+  :
+  x ^ (2 ^ j.val) ∈ (ω.subdomain (i - j)).toFinset := by
+  simp only [Nat.succ_eq_add_one, FftDomain.mem_finset_iff_exists] at h
+  rcases h with ⟨u, hu⟩ 
+  rw [←hu, subdomain_pow_property hji]
+  simp
+
+lemma subdomain_roots_card {n} {ω : SmoothFftDomain n F}
+  {i j : Fin n.succ} (hji : j ≤ i)
+  {x : F}
+  (h : x ∈ (ω.subdomain (i - j)).toFinset)
+  :
+  Finset.card {y ∈ (ω.subdomain i).toFinset | y ^ (2 ^ j.val) = x}
+    = 2 ^ j.val
+  := by 
+  sorry
+
+lemma subdomain_subdomain_eq_subdomain {n} {ω : SmoothFftDomain n F}
+  {i : Fin n.succ} {j : Fin i.val.succ} 
+  :
+  (ω.subdomain i).subdomain j = ω.subdomain (Fin.castLE (by omega) j) := by
+    ext x
+    rw [subdomain_eval]
+    rw [subdomain_eval]
+    trans (ω (subdomain_embed (Fin.castLE (by omega) j) x))
+    · simp only [subdomain_embed] 
+      apply congrArg
+      simp only [Nat.succ_eq_add_one, Fin.val_castLE, Fin.mk.injEq]
+      rw [←mul_assoc]
+      rw [←pow_add]
+      simp only [mul_eq_mul_right_iff, Nat.ofNat_pos, ne_eq, OfNat.ofNat_ne_one, not_false_eq_true,
+        pow_right_inj₀, Fin.val_eq_zero_iff]
+      left
+      omega
+    · rfl
 
 end SmoothFftDomain
 
 namespace SmoothCosetFftDomain 
 
-def subdomain {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : Fin n)  
+def subdomain {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : Fin n)
   :
   SmoothCosetFftDomain (n - i) F := sorry
 
