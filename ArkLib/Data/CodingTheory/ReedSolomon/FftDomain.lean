@@ -273,8 +273,9 @@ lemma mem_coset {ω : CosetFftDomain ι F}
   {x : F}
   :
   x ∈ ω.toFinset ↔ ∃ y ∈ ω.fftDomain.toFinset, x = ω.x * y := by
-  simp [toFinset]
-  admit
+  simp only [toFinset, Finset.mem_image, Finset.mem_univ, true_and, FftDomain.mem_finset_iff_exists,
+    exists_exists_eq_and]
+  aesop
 
 lemma injective {ω : CosetFftDomain ι F}
   :
