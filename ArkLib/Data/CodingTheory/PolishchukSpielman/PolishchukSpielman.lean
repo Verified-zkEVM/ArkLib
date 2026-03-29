@@ -4,9 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland, Alexander Hicks, Aleph
 -/
 
-import ArkLib.Data.CodingTheory.PolishchukSpielman.Degrees
 import ArkLib.Data.CodingTheory.PolishchukSpielman.Existence
-import ArkLib.Data.CodingTheory.PolishchukSpielman.Resultant
 
 /-!
 # Polishchuk-Spielman lemma
@@ -71,40 +69,33 @@ theorem polishchuk_spielman {F : Type} [Field F]
           ∀ y ∈ Q_y, Polynomial.Bivariate.evalY y P = quot_x y) := by
   classical
   letI : DecidableEq F := Classical.decEq F
-
   -- 1. obtain P with B = P * A
   obtain ⟨P, hBA⟩ :=
     ps_exists_p (F := F) a_x a_y b_x b_y n_x n_y h_bx_ge_ax h_by_ge_ay A B
       h_f_degX h_g_degX h_f_degY h_g_degY P_x P_y quot_x quot_y h_card_Px h_card_Py h_quot_x
       h_quot_y h_le_1
-
   -- 2. degree bounds for P
   have hdeg : Polynomial.Bivariate.degreeX P ≤ b_x - a_x ∧
       Polynomial.Bivariate.natDegreeY P ≤ b_y - a_y :=
     ps_degree_bounds_of_mul (F := F) a_x a_y b_x b_y n_x n_y h_bx_ge_ax h_by_ge_ay
       (A := A) (B := B) (P := P) hA0 hBA h_f_degX h_f_degY h_g_degY P_x P_y
       quot_x quot_y h_card_Px h_card_Py h_quot_x h_quot_y h_le_1
-
   -- 3. cancellation in X gives Q_x
   have h_quot_y_eq :
   ∀ x ∈ P_x, Polynomial.Bivariate.evalX x B = (quot_y x) * Polynomial.Bivariate.evalX x A := by
     intro x hx
     exact (h_quot_y x hx).2
-
   obtain ⟨Q_x, hQx_card, hQx_sub, hQx_eval⟩ :=
     ps_exists_qx_of_cancel (F := F) a_x n_x (A := A) (B := B) (P := P) hA0 hBA P_x h_card_Px
       quot_y h_quot_y_eq h_f_degX
-
   -- 4. cancellation in Y gives Q_y
   have h_quot_x_eq :
   ∀ y ∈ P_y, Polynomial.Bivariate.evalY y B = (quot_x y) * Polynomial.Bivariate.evalY y A := by
     intro y hy
     exact (h_quot_x y hy).2
-
   obtain ⟨Q_y, hQy_card, hQy_sub, hQy_eval⟩ :=
     ps_exists_qy_of_cancel (F := F) a_y n_y (A := A) (B := B) (P := P) hA0 hBA P_y h_card_Py
       quot_x h_quot_x_eq h_f_degY
-
   -- assemble
   refine ⟨P, hBA, hdeg.1, hdeg.2, ?_, ?_⟩
   · exact ⟨Q_x, hQx_card, hQx_sub, hQx_eval⟩
