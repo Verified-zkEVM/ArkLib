@@ -821,5 +821,15 @@ def weightedDegreeMonomialXY {n m : ℕ} (a b t : ℕ) : ℕ :=
 noncomputable def shift {F : Type} [Field F] (f : F[X][Y]) (x y : F) : F[X][Y] :=
   (f.comp (X + C (C y))).map ((X + C x).compRingHom)
 
+/-- Evaluating a bivariate polynomial at `X = x` equals mapping by `evalRingHom x`. -/
+lemma evalX_eq_map {F : Type} [Field F] (x : F) (f : F[X][Y]) :
+    evalX x f = f.map (evalRingHom x) := by
+  ext n; simp [evalX, coeff_map, coe_evalRingHom, toFinsupp_apply]
+
+/-- `evalX` is multiplicative. -/
+lemma evalX_mul {F : Type} [Field F] (x : F) (f g : F[X][Y]) :
+    evalX x (f * g) = evalX x f * evalX x g := by
+  simp [evalX_eq_map]
+
 end
 end Polynomial.Bivariate
