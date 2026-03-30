@@ -5,6 +5,7 @@ Authors: Quang Dao, František Silváši, Julian Sutherland, Ilia Vlasov
 -/
 
 
+import ArkLib.Data.CodingTheory.ReedSolomon.FftDomain
 import ArkLib.OracleReduction.Basic
 import ArkLib.ProofSystem.Fri.Domain
 import ArkLib.ProofSystem.Fri.RoundConsistency
@@ -50,6 +51,7 @@ variable (D : Subgroup Fˣ) {n : ℕ} [DIsCyclicC : IsCyclicWithGen D] [DSmooth 
 variable (x : Fˣ)
 variable {k : ℕ} (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 variable (domain_size_cond : (2 ^ (∑ i, (s i).1)) * d ≤ 2 ^ n) (i : Fin k)
+variable {ω : ReedSolomon.SmoothCosetFftDomain n F}
 
 
 lemma round_bound {n k : ℕ} {s : Fin (k + 1) → ℕ+} {d : ℕ+}
@@ -71,21 +73,38 @@ def Statement (F : Type) (i : Fin (k + 1)) : Type := Fin i.val → F
 @[reducible]
 def FinalStatement (F : Type) (k : ℕ) : Type := Fin (k + 1) → F
 
+private lemma fin_range_aux {k n : ℕ} {j : ℕ}
+  {f : Fin k → ℕ}
+  (h : ∑ i, f i ≤ n)
+  :
+  ∑ i ∈ finRangeTo j, f i ≤ n := by 
+  sorry
+
 /-- For the `i`-th round of the protocol, there will be `i + 1` oracle statements, one for the
   beginning purported codeword, and `i` more for each of the rounds `0` to `i - 1`. After the `i`-th
   round, we append the `i`-th message sent by the prover to the oracle statement. -/
 @[reducible]
-def OracleStatement (i : Fin (k + 1)) : Fin (i.val + 1) → Type :=
+def OracleStatement {F : Type} [Field F] [DecidableEq F] [Fintype F] 
+  (ω : ReedSolomon.SmoothCosetFftDomain n F) 
+  (i : Fin (k + 1)) : Fin (i.val + 1) → Type :=
   fun j =>
-    evalDomain D x (∑ j' ∈ finRangeTo j.1, s j')
-      → F
+    let x: ℕ := (∑ j' ∈ finRangeTo j.1, (s i).1) 
+    sorry
 
 @[reducible]
-def FinalOracleStatement : Fin (k + 2) → Type :=
+def FinalOracleStatement 
+  (F : Type) [Field F] [DecidableEq F] [Fintype F] 
+  (ω : ReedSolomon.SmoothCosetFftDomain n F) 
+  : Fin (k + 2) → Type :=
   fun j =>
     if j.1 = k + 1
     then (Unit → F[X])
-    else (evalDomain D x (∑ j' ∈ finRangeTo j.1, s j') → F)
+    else ((ω.subdomain ⟨∑ j' ∈ finRangeTo j.1, (s j').1, by {
+      have h := round_bound domain_size_cond
+      simp only [Nat.succ_eq_add_one]
+      rw [←Nat.le_iff_lt_add_one]
+      exact fin_range_aux h
+  }⟩).toFinset → F)
 
 /-- The FRI protocol has as witness the polynomial that is supposed to correspond to the codeword in
   the oracle statement. -/
@@ -198,7 +217,7 @@ private lemma witness_lift {F : Type} [NonBinaryField F]
           )
         simp
 
-instance {i : Fin (k + 1)} : ∀ j, OracleInterface (OracleStatement D x s i j) :=
+instance {i : Fin (k + 1)} : ∀ j, OracleInterface (OracleStatement s ω i j) :=
   fun _ => inferInstance
 
 instance finalOracleStatementInterface :

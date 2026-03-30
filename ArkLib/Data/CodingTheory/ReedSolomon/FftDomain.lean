@@ -693,6 +693,53 @@ lemma subdomain_roots_card {n} {ω : SmoothCosetFftDomain n F}
     rw [ Finset.sum_image ] <;> aesop;
   · exact hij
 
+private lemma fft_neg_one_in_subgroup {n} {ω : SmoothFftDomain n F}
+  {i : Fin n.succ} (hi : 0 < i)
+  : ∃ k : Fin (2 ^ i.val), (ω.subdomain i k : F) = -1 := by
+  -- Let's denote this element as `k = 2^(i-1) : Fin (2^i)`.
+  set k : Fin (2 ^ i.val) := ⟨2 ^ (i.val - 1), by
+    exact pow_lt_pow_right₀ ( by decide ) ( Nat.pred_lt ( ne_bot_of_gt hi ) )⟩
+  generalize_proofs at *;
+  -- Since $k$ has additive order 2 in $\text{Fin}(2^i)$, we have $(ω.subdomain i k)^2 = ω.subdomain i (k + k) = ω.subdomain i 0 = 1$.
+  have h_order : (ω.subdomain i k) ^ 2 = 1 := by
+    have hk_order : (ω.subdomain i k) ^ 2 = (ω.subdomain i (k + k)) := by
+      rw [ sq, FftDomain.subdomain ] ; aesop;
+    convert hk_order using 1;
+    rw [ show k + k = 0 from _ ] ; aesop;
+    rcases i with ⟨ _ | i, hi ⟩ <;> norm_num [ Fin.ext_iff, Fin.val_add, Fin.val_mul ] at * ; ring_nf at * ; aesop;
+  generalize_proofs at *; (
+  -- Since $k$ has additive order 2 in $\text{Fin}(2^i)$, we have $(ω.subdomain i k) \neq 1$.
+  have h_ne_one : (ω.subdomain i k) ≠ 1 := by
+    have h_ne_one : (ω.subdomain i k) ≠ ω.subdomain i 0 := by
+      exact fun h => absurd ( ω.subdomain i |>.injective h ) ( ne_of_gt <| Nat.lt_of_le_of_lt ( Nat.zero_le _ ) <| pow_pos ( by decide ) _ )
+    generalize_proofs at *; (
+    exact fun h => h_ne_one <| h.trans <| by simp +decide [ FftDomain.subdomain ] ;)
+  generalize_proofs at *; (
+  exact ⟨ k, Or.resolve_left ( sq_eq_one_iff.mp h_order ) h_ne_one ⟩))
+
+lemma neg_mem_dom_of_mem_dom {n} {ω : SmoothCosetFftDomain n F}
+  {i : Fin n.succ}
+  {x : F}
+  (hi : 0 < i)
+  (h : x ∈ (ω.subdomain i).toFinset)
+  :
+  -x ∈ (ω.subdomain i).toFinset := by
+  obtain ⟨k, hk⟩ : ∃ k : Fin (2 ^ i.val), (ω.fftDomain.subdomain i k : F) = -1 := by
+    exact fft_neg_one_in_subgroup hi
+  -- By definition of subdomain, we know that $x = c * \omega.subdomain i u$ for some $u$.
+  obtain ⟨u, hu⟩ : ∃ u : Fin (2 ^ i.val), x = ω.x ^ (2 ^ (n - i.val)) * (ω.fftDomain.subdomain i u : F) := by
+    unfold toFinset at h; aesop;
+  -- Then $-x = (ω.x ^ 2^(n-i)) * (-(ω.fftDomain.subdomain i u)) = (ω.x ^ 2^(n-i)) * (ω.fftDomain.subdomain i k * ω.fftDomain.subdomain i u) = (ω.x ^ 2^(n-i)) * ω.fftDomain.subdomain i (k + u)$.
+  have h_neg_x : -x = ω.x ^ (2 ^ (n - i.val)) * (ω.fftDomain.subdomain i (k + u) : F) := by
+    simp +decide [ *, mul_add, add_mul, FftDomain.subdomain ];
+    erw [ hk ] ; ring!;
+  exact h_neg_x.symm ▸ Finset.mem_image.mpr ⟨ k + u, Finset.mem_univ _, rfl ⟩
+
+def subdomainNat {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : ℕ)
+  :
+  SmoothCosetFftDomain (Fin.ofNat n.succ i) F := 
+  ω.subdomain (Fin.ofNat n.succ i)
+
 end
 
 end CosetFftDomain
