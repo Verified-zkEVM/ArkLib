@@ -223,6 +223,17 @@ def pair_UDRClose (i : Fin r) (h_i : i ≤ ℓ)
     (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : Prop :=
   2 * Δ₀(f, g) < BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
 
+/-- Congruence lemma for `UDRClose`: transport along a `Fin r` equality.
+Given two `Fin r` indices with the same value and `HEq` functions, `UDRClose` transfers. -/
+lemma UDRClose_of_fin_eq {i j : Fin r} (hij : i = j)
+    {hi : ↑i ≤ ℓ} {hj : ↑j ≤ ℓ}
+    {f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i}
+    {g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) j}
+    (hfg : HEq f g) (h : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hi f) :
+    UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) j hj g := by
+  subst hij
+  exact eq_of_heq hfg ▸ h
+
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ [NeZero 𝓡] in
 /-- When `steps = 0`, `pair_fiberwiseDistance` equals the Hamming distance. -/
 @[simp]

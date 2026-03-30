@@ -315,6 +315,10 @@ import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude
 import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps
+import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Commit
+import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.FinalSumcheck
+import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Fold
+import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Relay
 import ArkLib.ProofSystem.Binius.FRIBinius.CoreInteractionPhase
 import ArkLib.ProofSystem.Binius.FRIBinius.General
 import ArkLib.ProofSystem.Binius.FRIBinius.Prelude

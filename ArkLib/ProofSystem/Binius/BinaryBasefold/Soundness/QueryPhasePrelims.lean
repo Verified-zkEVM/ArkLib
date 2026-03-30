@@ -23,8 +23,6 @@ This file packages:
 
 namespace Binius.BinaryBasefold
 
-set_option maxHeartbeats 400000
-
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
   Binius.BinaryBasefold
 open scoped NNReal
@@ -507,18 +505,7 @@ section QueryPhaseHelperLemmas
 
 open QueryPhase
 
-/-- Congruence lemma for `UDRClose`: transport along a `Fin r` equality.
-Given two `Fin r` indices with the same value and `HEq` functions, `UDRClose` transfers. -/
-lemma UDRClose_of_fin_eq {i j : Fin r} (hij : i = j)
-    {hi : ↑i ≤ ℓ} {hj : ↑j ≤ ℓ}
-    {f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i}
-    {g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) j}
-    (hfg : HEq f g) (h : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hi f) :
-    UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) j hj g := by
-  subst hij
-  exact eq_of_heq hfg ▸ h
-
-set_option maxHeartbeats 200000 in
+set_option maxHeartbeats 10000 in
 lemma iteratedQuotientMap_eq_qMap_total_fiber_extractMiddleFinMask
     (i : Fin r) (steps : ℕ) {destIdx : Fin r}
     (h_destIdx : destIdx.val = i.val + steps)
@@ -898,7 +885,7 @@ lemma queryBlockSourceSuffix_maps_to_destSuffix
     rw [getFiberPoint_eq_qMap_total_fiber]
   exact h_generates.symm
 
-set_option maxHeartbeats 200000 in
+set_option maxHeartbeats 10000 in
 lemma UDRCodeword_eval_eq_of_fin_eq
     {i j : Fin r} (hij : i = j)
     {hi : i ≤ ℓ} {hj : j ≤ ℓ}
@@ -930,7 +917,7 @@ lemma UDRCodeword_eval_eq_of_fin_eq
           rfl HEq.rfl hf_close))
       y
 
-set_option maxHeartbeats 200000 in
+set_option maxHeartbeats 10000 in
 lemma successor_codeword_eval_eq
     (oStmtIn : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
