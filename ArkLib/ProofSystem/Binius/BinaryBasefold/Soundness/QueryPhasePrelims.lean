@@ -58,6 +58,9 @@ and `queryKnowledgeStateFunction` for proximity testing, allowing code reuse
 and ensuring both implementations follow the same logic.
 -/
 
+/-- Number of oracle blocks at the end of the protocol. -/
+abbrev nBlocks : ℕ := toOutCodewordsCount ℓ ϑ (Fin.last ℓ)
+
 /-- Extract suffix starting at position `destIdx` from a full challenge. -/
 def extractSuffixFromChallenge (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
     (destIdx : Fin r) (h_destIdx_le : destIdx ≤ ℓ) :
@@ -499,6 +502,605 @@ end LogicalOracleVerification
 end FinalQueryRoundIOR
 
 end QueryPhase
+
+section QueryPhaseHelperLemmas
+
+open QueryPhase
+
+/-- Congruence lemma for `UDRClose`: transport along a `Fin r` equality.
+Given two `Fin r` indices with the same value and `HEq` functions, `UDRClose` transfers. -/
+lemma UDRClose_of_fin_eq {i j : Fin r} (hij : i = j)
+    {hi : ↑i ≤ ℓ} {hj : ↑j ≤ ℓ}
+    {f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i}
+    {g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) j}
+    (hfg : HEq f g) (h : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hi f) :
+    UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) j hj g := by
+  subst hij
+  exact eq_of_heq hfg ▸ h
+
+set_option maxHeartbeats 200000 in
+lemma iteratedQuotientMap_eq_qMap_total_fiber_extractMiddleFinMask
+    (i : Fin r) (steps : ℕ) {destIdx : Fin r}
+    (h_destIdx : destIdx.val = i.val + steps)
+    (h_destIdx_le : destIdx.val ≤ ℓ)
+    (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩) :
+    iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := ⟨0, by omega⟩) (k := i.val)
+      (h_destIdx := by simp only [zero_add])
+      (h_destIdx_le := by omega) v =
+    qMap_total_fiber 𝔽q β i steps h_destIdx h_destIdx_le
+      (iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := ⟨0, by omega⟩) (k := destIdx.val)
+        (h_destIdx := by simp only [zero_add])
+        (h_destIdx_le := h_destIdx_le) v)
+      (extractMiddleFinMask 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) v i steps) := by
+  have h_R_pos : 0 < 𝓡 := NeZero.pos 𝓡
+  have h_i_le : i.val ≤ ℓ := by omega
+  have h_i : i.val < ℓ + 𝓡 := Nat.lt_of_le_of_lt h_i_le (Nat.lt_add_of_pos_right h_R_pos)
+  have h_zero : (0 : Fin r).val < ℓ + 𝓡 := by
+    change 0 < ℓ + 𝓡
+    exact Nat.lt_of_lt_of_le (NeZero.pos ℓ) (Nat.le_add_right ℓ 𝓡)
+  apply LinearEquiv.injective (sDomain_basis 𝔽q β h_ℓ_add_R_rate i h_i).repr
+  ext j
+  rw [getSDomainBasisCoeff_of_iteratedQuotientMap]
+  set y : sDomain 𝔽q β h_ℓ_add_R_rate destIdx :=
+    iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := ⟨0, by omega⟩) (k := destIdx.val)
+      (h_destIdx := by simp only [zero_add]) (h_destIdx_le := h_destIdx_le) v
+  have h_repr_fiber := qMap_total_fiber_repr_coeff 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (i := i) (steps := steps) h_destIdx h_destIdx_le (y := y)
+    (k := extractMiddleFinMask 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) v i steps) (j := j)
+  simp only [y] at h_repr_fiber
+  rw [h_repr_fiber]
+  by_cases h_j : j.val < steps
+  · unfold fiber_coeff
+    rw [dif_pos h_j]
+    set pointFinIdx :=
+      sDomainToFin 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩ h_zero v
+    have h_j_shift : j.val + i.val < ℓ + 𝓡 := by
+      omega
+    have h_coeff_v := finToBinaryCoeffs_sDomainToFin 𝔽q β h_ℓ_add_R_rate
+      ⟨0, by omega⟩ h_zero v
+    simp only [pointFinIdx] at h_coeff_v
+    have h_coeff_vj := congrFun h_coeff_v ⟨j.val + i.val, h_j_shift⟩
+    simp only [finToBinaryCoeffs] at h_coeff_vj
+    rw [← h_coeff_vj]
+    have h_middle_bit :
+        Nat.getBit (k := j) (n := extractMiddleFinMask 𝔽q β
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) v i steps) =
+          Nat.getBit (k := j.val + i.val) (n := pointFinIdx) := by
+      dsimp [extractMiddleFinMask, pointFinIdx]
+      rw [Nat.getBit_of_middleBits]
+      simp only [h_j, ↓reduceIte]
+    rw [← h_middle_bit]
+    by_cases h_bit :
+        Nat.getBit (k := j) (n := extractMiddleFinMask 𝔽q β
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) v i steps) = 0
+    · simp [h_bit]
+    · have h_bit_one :
+          Nat.getBit (k := j) (n := extractMiddleFinMask 𝔽q β
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) v i steps) = 1 := by
+        have h := Nat.getBit_eq_zero_or_one
+          (k := j) (n := extractMiddleFinMask 𝔽q β
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) v i steps)
+        simp only [h_bit, false_or] at h
+        exact h
+      simp [h_bit, h_bit_one]
+  · unfold fiber_coeff
+    rw [dif_neg h_j]
+    have h_res := getSDomainBasisCoeff_of_iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+      ⟨0, by omega⟩ (k := destIdx.val) (h_destIdx := by simp only [zero_add])
+      (h_destIdx_le := h_destIdx_le) (x := v) (j := ⟨j.val - steps, by omega⟩)
+    simp only [y] at h_res
+    have h_idx :
+        (⟨j.val + i.val, by omega⟩ : Fin (ℓ + 𝓡)) =
+          ⟨j.val - steps + destIdx.val, by omega⟩ := by
+      apply Fin.eq_of_val_eq
+      simp
+      rw [h_destIdx]
+      omega
+    rw [h_idx]
+    exact h_res.symm
+
+open Classical in
+lemma previousSuffix_eq_getFiberPoint_extractMiddleFinMask
+    (j : Fin (ℓ / ϑ))
+    (v : sDomain 𝔽q β h_ℓ_add_R_rate 0) :
+    extractSuffixFromChallenge 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (v := v)
+      (destIdx := ⟨j.val * ϑ, by
+        exact lt_r_of_lt_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (h := k_mul_ϑ_lt_ℓ (k := j))⟩)
+      (h_destIdx_le := Nat.le_of_lt (k_mul_ϑ_lt_ℓ (k := j))) =
+      getFiberPoint 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) j v
+        (extractMiddleFinMask 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (v := v)
+          (i := ⟨j.val * ϑ, by
+            exact lt_r_of_lt_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+              (h := k_mul_ϑ_lt_ℓ (k := j))⟩)
+          (steps := ϑ)) := by
+  dsimp only [getFiberPoint, extractSuffixFromChallenge, getChallengeSuffix]
+  exact
+    iteratedQuotientMap_eq_qMap_total_fiber_extractMiddleFinMask
+      (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := ⟨j.val * ϑ, by
+        exact lt_r_of_lt_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (h := k_mul_ϑ_lt_ℓ (k := j))⟩)
+      (steps := ϑ)
+      (destIdx := ⟨j.val * ϑ + ϑ, by
+        exact lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (k_succ_mul_ϑ_le_ℓ_₂ (k := j))⟩)
+      (h_destIdx := by rfl)
+      (h_destIdx_le := k_succ_mul_ϑ_le_ℓ_₂ (k := j))
+      (v := v)
+
+set_option maxHeartbeats 800000 in
+-- The dependent index alignment in `getNextOracle` can take substantial elaboration.
+lemma getNextOracle_eq_oracleStatement
+    (oStmt : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
+    (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)))
+    (hj : j.val + 1 < nBlocks (ℓ := ℓ) (ϑ := ϑ)) :
+    getNextOracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
+      (i := Fin.last ℓ) (oStmt := oStmt) (j := j) (hj := hj)
+      (destDomainIdx := ⟨j.val * ϑ + ϑ, by
+        exact
+          lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+            (oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ)
+              (i := Fin.last ℓ) (j := j))⟩)
+      (h_destDomainIdx := by rfl) =
+    fun y =>
+      (oStmt ⟨j.val + 1, hj⟩)
+        (cast (by
+          apply congrArg (fun i => ↥(sDomain 𝔽q β h_ℓ_add_R_rate i))
+          apply Fin.eq_of_val_eq
+          simp only [oraclePositionToDomainIndex, toOutCodewordsCount_last]
+          ring) y) := by
+  funext y
+  unfold getNextOracle
+  simp only [cast_eq]
+
+lemma logical_checkSingleRepetition_guard_eq
+    (stmtIn : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
+    (oStmtIn : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
+    (v : sDomain 𝔽q β h_ℓ_add_R_rate 0)
+    (h_accept : logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      oStmtIn v stmtIn stmtIn.final_constant)
+    (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)))
+    (h_pos : 0 < j.val) :
+    let j_idx : Fin (ℓ / ϑ) := ⟨j.val, by
+      have h_lt := j.isLt
+      simp only [nBlocks, toOutCodewordsCount_last] at h_lt
+      exact h_lt⟩
+    let j_prev_idx : Fin (ℓ / ϑ) := ⟨j.val - 1, by
+      have h_lt := j.isLt
+      simp only [nBlocks, toOutCodewordsCount_last] at h_lt
+      omega⟩
+    logical_computeFoldedValue 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      j_prev_idx v stmtIn
+      (logical_queryFiberPoints 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        oStmtIn j_prev_idx v) =
+    (oStmtIn j)
+      (extractSuffixFromChallenge 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (v := v)
+        (destIdx := ⟨j.val * ϑ, by
+          exact
+            lt_r_of_lt_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+              (h := by
+                have h_lt := j.isLt
+                simp only [nBlocks, toOutCodewordsCount_last] at h_lt
+                exact k_mul_ϑ_lt_ℓ (k := ⟨j.val, h_lt⟩))⟩)
+        (h_destIdx_le := Nat.le_of_lt (by
+          have h_lt := j.isLt
+          simp only [nBlocks, toOutCodewordsCount_last] at h_lt
+          exact k_mul_ϑ_lt_ℓ (k := ⟨j.val, h_lt⟩)))) := by
+  let j_idx : Fin (ℓ / ϑ) := ⟨j.val, by
+    have h_lt := j.isLt
+    simp only [nBlocks, toOutCodewordsCount_last] at h_lt
+    exact h_lt⟩
+  let j_prev_idx : Fin (ℓ / ϑ) := ⟨j.val - 1, by
+    have h_lt := j.isLt
+    simp only [nBlocks, toOutCodewordsCount_last] at h_lt
+    omega⟩
+  have h_step := h_accept (⟨j.val, by
+    have h_lt := j.isLt
+    simp only [nBlocks, toOutCodewordsCount_last] at h_lt
+    omega⟩ : Fin (ℓ / ϑ + 1))
+  unfold logical_stepCondition at h_step
+  have h_lt_div :
+      (⟨j.val, by
+        have h_lt := j.isLt
+        simp only [nBlocks, toOutCodewordsCount_last] at h_lt
+        omega⟩ : Fin (ℓ / ϑ + 1)).val < ℓ / ϑ := by
+    have h_lt := j.isLt
+    simp only [nBlocks, toOutCodewordsCount_last] at h_lt
+    exact h_lt
+  rw [dif_pos h_lt_div] at h_step
+  unfold logical_checkSingleFoldingStep at h_step
+  have h_i_pos : j.val * ϑ > 0 := by
+    exact Nat.mul_pos h_pos (Nat.pos_of_neZero ϑ)
+  rw [dif_pos h_i_pos] at h_step
+  dsimp only [j_idx, j_prev_idx, logical_queryFiberPoints] at h_step
+  change
+    logical_computeFoldedValue 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      j_prev_idx v stmtIn
+      (logical_queryFiberPoints 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        oStmtIn j_prev_idx v) =
+    (oStmtIn j)
+      (getFiberPoint 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) j_idx v
+        (extractMiddleFinMask 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (v := v)
+          (i := ⟨j_idx.val * ϑ, by
+            exact
+              lt_r_of_lt_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+                (h := k_mul_ϑ_lt_ℓ (k := j_idx))⟩)
+          (steps := ϑ))) at h_step
+  rw [← previousSuffix_eq_getFiberPoint_extractMiddleFinMask
+    (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (j := j_idx) (v := v)] at h_step
+  exact h_step
+
+abbrev queryBlockIdx (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ))) : Fin (ℓ / ϑ) := ⟨j.val, by
+  have h_lt := j.isLt
+  simp only [nBlocks, toOutCodewordsCount_last] at h_lt
+  exact h_lt⟩
+
+abbrev queryBlockSourceIdx (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ))) : Fin r := ⟨j.val * ϑ, by
+  exact
+    lt_r_of_lt_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (h := k_mul_ϑ_lt_ℓ (k := queryBlockIdx (ℓ := ℓ) (ϑ := ϑ) j))⟩
+
+abbrev queryBlockDestIdx (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ))) : Fin r :=
+  ⟨j.val * ϑ + ϑ, by
+    exact
+      lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ)
+          (i := Fin.last ℓ) (j := j))⟩
+
+lemma queryBlockSourceIdx_le
+    (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ))) :
+    (queryBlockSourceIdx (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j).val ≤ ℓ := by
+  exact (Nat.le_add_right _ _).trans
+    (oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ)
+      (i := Fin.last ℓ) (j := j))
+
+lemma queryBlockDestIdx_le
+    (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ))) :
+    (queryBlockDestIdx (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j).val ≤ ℓ := by
+  exact oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ)
+    (i := Fin.last ℓ) (j := j)
+
+abbrev queryBlockSourceSuffix
+    (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)))
+    (v : sDomain 𝔽q β h_ℓ_add_R_rate 0) :
+    sDomain 𝔽q β h_ℓ_add_R_rate
+      (queryBlockSourceIdx (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j) :=
+  extractSuffixFromChallenge 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (v := v)
+    (destIdx := queryBlockSourceIdx (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+    (h_destIdx_le := queryBlockSourceIdx_le
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+
+abbrev queryBlockDestSuffix
+    (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)))
+    (v : sDomain 𝔽q β h_ℓ_add_R_rate 0) :
+    sDomain 𝔽q β h_ℓ_add_R_rate
+      (queryBlockDestIdx (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j) :=
+  extractSuffixFromChallenge 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (v := v)
+    (destIdx := queryBlockDestIdx (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+    (h_destIdx_le := queryBlockDestIdx_le
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+
+lemma queryBlockDestIdx_eq_queryBlockSourceIdx_succ
+    (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)))
+    (hj : j.val + 1 < nBlocks (ℓ := ℓ) (ϑ := ϑ)) :
+    queryBlockDestIdx (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j =
+      queryBlockSourceIdx (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ)
+        ⟨j.val + 1, hj⟩ := by
+  apply Fin.eq_of_val_eq
+  simp only [queryBlockDestIdx, queryBlockSourceIdx]
+  ring
+
+lemma queryBlockDestSuffix_eq_queryBlockSourceSuffix_succ
+    (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)))
+    (hj : j.val + 1 < nBlocks (ℓ := ℓ) (ϑ := ϑ))
+    (v : sDomain 𝔽q β h_ℓ_add_R_rate 0) :
+    queryBlockDestSuffix (𝔽q := 𝔽q) (β := β)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j v =
+      cast (by
+        rw [queryBlockDestIdx_eq_queryBlockSourceIdx_succ
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) (j := j) (hj := hj)])
+        (queryBlockSourceSuffix (𝔽q := 𝔽q) (β := β)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) ⟨j.val + 1, hj⟩ v) := by
+  dsimp only [queryBlockDestSuffix, queryBlockSourceSuffix]
+  exact
+    extractSuffixFromChallenge_congr_destIdx
+      (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (v := v)
+      (destIdx := queryBlockDestIdx
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+      (destIdx' := queryBlockSourceIdx
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) ⟨j.val + 1, hj⟩)
+      (h_idx_eq := queryBlockDestIdx_eq_queryBlockSourceIdx_succ
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) (j := j) (hj := hj))
+      (h_le := queryBlockDestIdx_le
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+      (h_le' := queryBlockSourceIdx_le
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) ⟨j.val + 1, hj⟩)
+
+lemma queryBlockSourceSuffix_maps_to_destSuffix
+    (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)))
+    (v : sDomain 𝔽q β h_ℓ_add_R_rate 0) :
+    iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+      (i := queryBlockSourceIdx
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+      (destIdx := queryBlockDestIdx
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+      (k := ϑ) (h_destIdx := by rfl)
+      (h_destIdx_le := queryBlockDestIdx_le
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+      (x := queryBlockSourceSuffix (𝔽q := 𝔽q) (β := β)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j v) =
+    queryBlockDestSuffix (𝔽q := 𝔽q) (β := β)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j v := by
+  have h_source_suffix_eq :
+      queryBlockSourceSuffix (𝔽q := 𝔽q) (β := β)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j v =
+      getFiberPoint 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (queryBlockIdx (ℓ := ℓ) (ϑ := ϑ) j) v
+        (extractMiddleFinMask 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (v := v)
+          (i := queryBlockSourceIdx
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+          (steps := ϑ)) := by
+    exact
+      previousSuffix_eq_getFiberPoint_extractMiddleFinMask
+        (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (j := queryBlockIdx (ℓ := ℓ) (ϑ := ϑ) j) (v := v)
+  rw [h_source_suffix_eq]
+  have h_generates :
+      getChallengeSuffix 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (k := queryBlockIdx (ℓ := ℓ) (ϑ := ϑ) j) (v := v) =
+      iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+        (i := queryBlockSourceIdx
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+        (destIdx := queryBlockDestIdx
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+        (k := ϑ) (h_destIdx := by rfl)
+        (h_destIdx_le := queryBlockDestIdx_le
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+        (x := getFiberPoint 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (queryBlockIdx (ℓ := ℓ) (ϑ := ϑ) j) v
+          (extractMiddleFinMask 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+            (v := v)
+            (i := queryBlockSourceIdx
+              (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+            (steps := ϑ))) := by
+    apply generates_quotient_point_if_is_fiber_of_y
+      (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := queryBlockSourceIdx
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+      (steps := ϑ)
+      (h_destIdx := by rfl)
+      (h_destIdx_le := queryBlockDestIdx_le
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+      (x := getFiberPoint 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (queryBlockIdx (ℓ := ℓ) (ϑ := ϑ) j) v
+        (extractMiddleFinMask 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (v := v)
+          (i := queryBlockSourceIdx
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+          (steps := ϑ)))
+      (y := getChallengeSuffix 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (k := queryBlockIdx (ℓ := ℓ) (ϑ := ϑ) j) (v := v))
+    refine ⟨extractMiddleFinMask 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (v := v)
+      (i := queryBlockSourceIdx
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+      (steps := ϑ), ?_⟩
+    rw [getFiberPoint_eq_qMap_total_fiber]
+  exact h_generates.symm
+
+set_option maxHeartbeats 200000 in
+lemma UDRCodeword_eval_eq_of_fin_eq
+    {i j : Fin r} (hij : i = j)
+    {hi : i ≤ ℓ} {hj : j ≤ ℓ}
+    {f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i}
+    {g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) j}
+    (hfg : HEq f g)
+    (hf_close : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hi f)
+    (y : sDomain 𝔽q β h_ℓ_add_R_rate j) :
+    let hg_close :=
+      UDRClose_of_fin_eq (𝔽q := 𝔽q) (β := β)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        hij hfg hf_close
+    UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      i hi f hf_close
+      (cast (by rw [hij]) y) =
+    UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      j hj g hg_close y := by
+  dsimp
+  cases hij
+  cases hfg
+  exact
+    congrFun
+      (UDRCodeword_eq_of_close (𝔽q := 𝔽q) (β := β)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := i) (h_i := hi) (f := f)
+        hf_close
+        (UDRClose_of_fin_eq (𝔽q := 𝔽q) (β := β)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          rfl HEq.rfl hf_close))
+      y
+
+set_option maxHeartbeats 200000 in
+lemma successor_codeword_eval_eq
+    (oStmtIn : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
+    (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)))
+    (hj : j.val + 1 < nBlocks (ℓ := ℓ) (ϑ := ϑ))
+    (v : sDomain 𝔽q β h_ℓ_add_R_rate 0)
+    (h_next_close_stmt :
+      let j_next : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)) := ⟨j.val + 1, hj⟩
+      UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (queryBlockDestIdx
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+        (queryBlockDestIdx_le
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+        (fun y => (oStmtIn j_next) (cast (by
+          rw [queryBlockDestIdx_eq_queryBlockSourceIdx_succ
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) (j := j) (hj := hj)]) y)))
+    (h_next_close :
+      let j_next : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)) := ⟨j.val + 1, hj⟩
+      UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (queryBlockSourceIdx
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next)
+        (queryBlockSourceIdx_le
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next)
+        (oStmtIn j_next)) :
+    let j_next : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)) := ⟨j.val + 1, hj⟩
+    UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (queryBlockDestIdx
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+      (queryBlockDestIdx_le
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+      (f := fun y => (oStmtIn j_next) (cast (by
+        rw [queryBlockDestIdx_eq_queryBlockSourceIdx_succ
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) (j := j) (hj := hj)]) y))
+      (h_within_radius := h_next_close_stmt)
+      (cast (by
+        rw [queryBlockDestIdx_eq_queryBlockSourceIdx_succ
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) (j := j) (hj := hj)])
+        (queryBlockSourceSuffix (𝔽q := 𝔽q) (β := β)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next v)) =
+    UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (queryBlockSourceIdx
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next)
+      (queryBlockSourceIdx_le
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next)
+      (f := oStmtIn j_next)
+      (h_within_radius := h_next_close)
+      (queryBlockSourceSuffix (𝔽q := 𝔽q) (β := β)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next v) := by
+  let j_next : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)) := ⟨j.val + 1, hj⟩
+  dsimp only [j_next] at h_next_close_stmt h_next_close ⊢
+  have h_idx_eq :=
+    queryBlockDestIdx_eq_queryBlockSourceIdx_succ
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) (j := j) (hj := hj)
+  let f_next_cast :
+      OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (queryBlockDestIdx
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j) :=
+    fun y => (oStmtIn j_next) (cast (by rw [h_idx_eq]) y)
+  have h_dom :
+      ↥(sDomain 𝔽q β h_ℓ_add_R_rate
+        (queryBlockDestIdx
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)) =
+      ↥(sDomain 𝔽q β h_ℓ_add_R_rate
+        (queryBlockSourceIdx
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next)) := by
+    exact
+      congrArg
+        (fun i => ↥(sDomain 𝔽q β h_ℓ_add_R_rate i))
+        h_idx_eq
+  have h_next_heq :
+      HEq f_next_cast (oStmtIn j_next) := by
+    exact
+      funext_heq h_dom (fun _ => rfl) (by
+        intro y
+        apply heq_of_eq
+        rfl)
+  have h_next_close_cast :
+      UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (queryBlockDestIdx
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+        (queryBlockDestIdx_le
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+        f_next_cast := by
+    change
+      UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (queryBlockDestIdx
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+        (queryBlockDestIdx_le
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+        (fun y => (oStmtIn j_next) (cast (by rw [h_idx_eq]) y))
+    exact h_next_close_stmt
+  have h_next_close_transport :
+      UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (queryBlockSourceIdx
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next)
+        (queryBlockSourceIdx_le
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next)
+        (oStmtIn j_next) := by
+    exact
+      UDRClose_of_fin_eq (𝔽q := 𝔽q) (β := β)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        h_idx_eq h_next_heq h_next_close_cast
+  have h_codeword_eq :
+      UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (queryBlockSourceIdx
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next)
+        (queryBlockSourceIdx_le
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next)
+        (f := oStmtIn j_next)
+        (h_within_radius := h_next_close_transport)
+        (queryBlockSourceSuffix (𝔽q := 𝔽q) (β := β)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next v) =
+      UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (queryBlockSourceIdx
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next)
+        (queryBlockSourceIdx_le
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next)
+        (f := oStmtIn j_next)
+        (h_within_radius := h_next_close)
+        (queryBlockSourceSuffix (𝔽q := 𝔽q) (β := β)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next v) := by
+    exact
+      congrFun
+        (UDRCodeword_eq_of_close (𝔽q := 𝔽q) (β := β)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (i := queryBlockSourceIdx
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next)
+          (h_i := queryBlockSourceIdx_le
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next)
+          (f := oStmtIn j_next)
+          h_next_close_transport h_next_close)
+        (queryBlockSourceSuffix (𝔽q := 𝔽q) (β := β)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next v)
+  have h_codeword_transport :
+      UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (queryBlockDestIdx
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+        (queryBlockDestIdx_le
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+        (f := f_next_cast)
+        (h_within_radius := h_next_close_cast)
+        (cast (by rw [h_idx_eq]) (queryBlockSourceSuffix (𝔽q := 𝔽q) (β := β)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next v)) =
+      UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (queryBlockSourceIdx
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next)
+        (queryBlockSourceIdx_le
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next)
+        (f := oStmtIn j_next)
+        (h_within_radius := h_next_close_transport)
+        (queryBlockSourceSuffix (𝔽q := 𝔽q) (β := β)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next v) := by
+    exact
+      UDRCodeword_eval_eq_of_fin_eq (𝔽q := 𝔽q) (β := β)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := queryBlockDestIdx
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+        (j := queryBlockSourceIdx
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next)
+        h_idx_eq
+        (hi := queryBlockDestIdx_le
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
+        (hj := queryBlockSourceIdx_le
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next)
+        h_next_heq h_next_close_cast
+        (queryBlockSourceSuffix (𝔽q := 𝔽q) (β := β)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next v)
+  exact h_codeword_transport.trans h_codeword_eq
+
+end QueryPhaseHelperLemmas
 
 end
 

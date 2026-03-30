@@ -393,9 +393,33 @@ def UDRCodeword (i : Fin r) (h_i : i ≤ ℓ)
     rw [UDRClose_iff_within_UDR_radius] at h_within_radius
     exact h_within_radius
   )
-  -- h_ExistsUnique : ∃! v, v ∈ ↑(BBF_Code 𝔽q β i)
+    -- h_ExistsUnique : ∃! v, v ∈ ↑(BBF_Code 𝔽q β i)
     -- ∧ Δ₀(f, v) ≤ Code.uniqueDecodingRadius ↑(BBF_Code 𝔽q β i)
   exact (Classical.choose h_ExistsUnique)
+
+open Classical in
+lemma UDRCodeword_eq_of_close
+    (i : Fin r) (h_i : i ≤ ℓ)
+    (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
+    (h₁ h₂ : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i h_i f) :
+    UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i h_i f h₁ =
+      UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i h_i f h₂ := by
+  unfold UDRCodeword
+  have h₁' :=
+    (UDRClose_iff_within_UDR_radius 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i h_i f).mp h₁
+  have h₂' :=
+    (UDRClose_iff_within_UDR_radius 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i h_i f).mp h₂
+  let h_existsUnique₁ :=
+    (Code.UDR_close_iff_exists_unique_close_codeword
+      (C := BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) f).mp h₁'
+  let h_existsUnique₂ :=
+    (Code.UDR_close_iff_exists_unique_close_codeword
+      (C := BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) f).mp h₂'
+  have h_spec₁ := Classical.choose_spec h_existsUnique₁
+  have h_spec₂ := Classical.choose_spec h_existsUnique₂
+  exact (h_spec₁.2 _ h_spec₂.1).symm
 
 lemma UDRCodeword_constFunc_eq_self (i : Fin r) (h_i : i ≤ ℓ) (c : L) :
   UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) h_i (f := fun _ => c)

@@ -54,9 +54,6 @@ variable [hdiv : Fact (ϑ ∣ ℓ)]
 variable [SampleableType L]
 open QueryPhase
 
-/-- Number of oracle blocks at the end of the protocol. -/
-abbrev nBlocks : ℕ := toOutCodewordsCount ℓ ϑ (Fin.last ℓ)
-
 /-- A block index is *bad* if the corresponding folding-compliance check fails. -/
 def badBlockProp
     (stmtIn : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
@@ -202,16 +199,6 @@ lemma not_badBlock_of_lt_highest
         Finset.le_max' (badBlockSet 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (stmtIn := stmtIn) (oStmtIn := oStmtIn)) j hj_mem
   exact not_lt_of_ge hle hlt
-
-/-- Congruence lemma for `UDRClose`: transport along a `Fin r` equality.
-Given two `Fin r` indices with the same value and `HEq` functions, `UDRClose` transfers. -/
-lemma UDRClose_of_fin_eq {i j : Fin r} (hij : i = j)
-    {hi : ↑i ≤ ℓ} {hj : ↑j ≤ ℓ}
-    {f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i}
-    {g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) j}
-    (hfg : HEq f g) (h : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hi f) :
-    UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) j hj g := by
-  subst hij; exact eq_of_heq hfg ▸ h
 
 /-- If block `j` is not bad (i.e. it is compliant), then the oracle `oStmtIn j` is UDR-close
 at its domain position `j.val * ϑ`. This extracts `fiberwiseClose` from `isCompliant`
