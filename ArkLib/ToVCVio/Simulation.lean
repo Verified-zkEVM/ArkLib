@@ -531,8 +531,41 @@ lemma Prover.run_succ (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
       prover.processRound i (prover.runToRound i.castSucc stmt wit) :=
 by simp [Prover.runToRound, Fin.induction_succ]
 
-/-- Simplifies `Reduction.run` by unfolding it into the prover's run and verifier's check. -/
-@[simp]
+set_option maxHeartbeats 200000 in
+-- Bound this normalization lemma to avoid long elaboration loops on nested lifts.
+lemma OptionT_run_liftM_run {α} {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁}
+    {spec₂ : OracleSpec ι₂} [MonadLift (OracleQuery spec₁) (OracleQuery spec₂)]
+    (x : OptionT (OracleComp spec₁) α) :
+    (liftM x.run : OptionT (OracleComp spec₂) (Option α)).run =
+      some <$> (simulateQ (fun t => liftM (query t)) x.run) := by
+  change
+    (liftM (monadLift x.run : OptionT (OracleComp spec₁) (Option α)) :
+      OptionT (OracleComp spec₂) (Option α)).run = _
+  rw [OracleComp.liftM_OptionT_eq]
+  change
+    simulateQ (fun t => liftM (query t))
+      ((monadLift x.run : OptionT (OracleComp spec₁) (Option α)).run) = _
+  rw [OptionT.run_monadLift (m := OracleComp spec₁) (n := OracleComp spec₁) (x := x.run)]
+  erw [simulateQ_map]
+  rw [monadLift_eq_self]
+
+set_option maxHeartbeats 200000 in
+-- Bound this helper for the same reason: it normalizes nested `OptionT` and `simulateQ` binds.
+lemma OptionT_liftM_run_getM_bind {α β} {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁}
+    {spec₂ : OracleSpec ι₂} [MonadLift (OracleQuery spec₁) (OracleQuery spec₂)]
+    (x : OptionT (OracleComp spec₁) α) (f : α → OptionT (OracleComp spec₂) β) :
+    (liftM x.run : OptionT (OracleComp spec₂) (Option α)) >>= (fun a => Option.getM a >>= f) =
+      liftM x >>= f := by
+  apply OptionT.ext
+  rw [OptionT.run_bind, OptionT_run_liftM_run]
+  rw [OptionT.run_bind, OracleComp.liftM_OptionT_eq]
+  rw [Option.elimM, map_eq_bind_pure_comp, bind_assoc]
+  congr 1
+  funext a
+  cases a <;> simp [Option.getM, Option.elimM]
+
+set_option maxHeartbeats 200000 in
+-- Bound the main unfolding lemma as well; it rewrites through the same nested lift structure.
 lemma Reduction_run_def (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (stmtIn : StmtIn) (witIn : WitIn) :
     reduction.run stmtIn witIn = (do
@@ -544,12 +577,13 @@ by
   simp only [ChallengeIdx, Challenge, map_eq_bind_pure_comp, bind_pure_comp, OracleComp.liftM_OptionT_eq, Prod.mk.eta]
   congr 1
   funext proverResult
-  rw [← OracleComp.liftM_OptionT_eq]
-  simp only [Option.getM, liftM_OptionT_eq]
-  dsimp [Bind.bind, OptionT.bind, OptionT.mk, Functor.map]
-  -- LHS evaluates to OptionT lift matching while RHS evaluates to simulateQ
-  -- Without exact simulation unification this cannot be proved by bind_congr.
-  sorry
+  cases proverResult
+  rename_i transcript stmtOut witOut
+  dsimp only
+  rw [OptionT_liftM_run_getM_bind]
+  rfl
+
+attribute [simp] Reduction_run_def
 
 end ReductionUnrolling
 
