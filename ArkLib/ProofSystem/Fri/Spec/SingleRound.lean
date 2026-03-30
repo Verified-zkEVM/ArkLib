@@ -77,29 +77,30 @@ private lemma fin_range_aux {k n : ℕ} {j : ℕ}
   {f : Fin k → ℕ}
   (h : ∑ i, f i ≤ n)
   :
-  ∑ i ∈ finRangeTo j, f i ≤ n := by 
+  ∑ i ∈ finRangeTo _ j, f i ≤ n := by 
   sorry
 
 /-- For the `i`-th round of the protocol, there will be `i + 1` oracle statements, one for the
   beginning purported codeword, and `i` more for each of the rounds `0` to `i - 1`. After the `i`-th
   round, we append the `i`-th message sent by the prover to the oracle statement. -/
 @[reducible]
-def OracleStatement {F : Type} [Field F] [DecidableEq F] [Fintype F] 
-  (ω : ReedSolomon.SmoothCosetFftDomain n F) 
+def OracleStatement {F : Type} [Field F] [DecidableEq F] [Fintype F]
+  (ω : ReedSolomon.SmoothCosetFftDomain n F)
   (i : Fin (k + 1)) : Fin (i.val + 1) → Type :=
   fun j =>
-    let x: ℕ := (∑ j' ∈ finRangeTo j.1, (s i).1) 
+    let x : ℕ := (∑ j' ∈ finRangeTo (i.1 + 1) j.1, (s i).1)
+    -- TODO(ilia): Please check if  ^^^^^^^^^ we mean `i.1 + 1`
     sorry
 
 @[reducible]
 def FinalOracleStatement 
-  (F : Type) [Field F] [DecidableEq F] [Fintype F] 
-  (ω : ReedSolomon.SmoothCosetFftDomain n F) 
+  (F : Type) [Field F] [DecidableEq F] [Fintype F]
+  (ω : ReedSolomon.SmoothCosetFftDomain n F)
   : Fin (k + 2) → Type :=
   fun j =>
     if j.1 = k + 1
     then (Unit → F[X])
-    else ((ω.subdomain ⟨∑ j' ∈ finRangeTo j.1, (s j').1, by {
+    else ((ω.subdomain ⟨∑ j' ∈ finRangeTo _ j.1, (s j').1, by {
       have h := round_bound domain_size_cond
       simp only [Nat.succ_eq_add_one]
       rw [←Nat.le_iff_lt_add_one]
@@ -111,10 +112,10 @@ def FinalOracleStatement
 @[reducible]
 def Witness (F : Type) [NonBinaryField F] {k : ℕ}
     (s : Fin (k + 1) → ℕ+) (d : ℕ+) (i : Fin (k + 2)) :=
-  F⦃< 2^((∑ j', (s j').1) - (∑ j' ∈ finRangeTo i.1, (s j').1)) * d⦄[X]
+  F⦃< 2^((∑ j', (s j').1) - (∑ j' ∈ finRangeTo _ i.1, (s j').1)) * d⦄[X]
 
 private lemma sum_add_one {i : Fin (k + 1)} :
-  ∑ j' ∈ finRangeTo (i.1 + 1), (s j').1 = (∑ j' ∈ finRangeTo i.1, (s j').1) + (s i).1 := by
+  ∑ j' ∈ finRangeTo _ (i.1 + 1), (s j').1 = (∑ j' ∈ finRangeTo _ i.1, (s j').1) + (s i).1 := by
           rw [finRangeTo, List.take_add, List.toFinset_append]
           rw
             [
@@ -222,16 +223,16 @@ instance {i : Fin (k + 1)} : ∀ j, OracleInterface (OracleStatement s ω i j) :
 
 instance finalOracleStatementInterface :
   ∀ j, OracleInterface (FinalOracleStatement D x s j) := fun j =>
-  { Query := if j = k + 1 then Unit else evalDomain D x (∑ j' ∈ finRangeTo j.1, s j')
+  { Query := if j = k + 1 then Unit else evalDomain D x (∑ j' ∈ finRangeTo _ j.1, s j')
     toOC.spec := fun _ => if j = k + 1 then F[X] else F
     toOC.impl := fun q => do
       if h : j = k + 1 then
         let st : Unit → F[X] := cast (by simp [FinalOracleStatement, h]) (← read)
         return cast (by simp [FinalOracleStatement, h]) (st ())
       else
-        let st : evalDomain D x (∑ j' ∈ finRangeTo j.1, s j') → F :=
+        let st : evalDomain D x (∑ j' ∈ finRangeTo _ j.1, s j') → F :=
           cast (by simp [FinalOracleStatement, h]) (← read)
-        let pt : evalDomain D x (∑ j' ∈ finRangeTo j.1, s j') :=
+        let pt : evalDomain D x (∑ j' ∈ finRangeTo _ j.1, s j') :=
           cast (by simp [FinalOracleStatement, h]) q
         return cast (by simp [FinalOracleStatement, h]) (st pt) }
 
@@ -256,7 +257,7 @@ omit [Finite F] in
 @[simp]
 lemma query_lem (j) :
     (finalOracleStatementInterface D x s j).Query =
-      if j = k + 1 then Unit else evalDomain D x (∑ j' ∈ finRangeTo j.1, s j') := by
+      if j = k + 1 then Unit else evalDomain D x (∑ j' ∈ finRangeTo _ j.1, s j') := by
   rfl
 
 -- omit [Finite F] in
@@ -705,7 +706,7 @@ def getConst (k : ℕ) (s : Fin (k + 1) → ℕ+) : OracleComp [FinalOracleState
 
 private lemma roots_of_unity_lem {s : Fin (k + 1) → ℕ+} {i : Fin (k + 1)}
     (k_le_n : (∑ j', (s j').1) ≤ n) :
-  (∑ j' ∈ finRangeTo i.1, (s j').1) ≤ n - (s i).1 := by
+  (∑ j' ∈ finRangeTo _ i.1, (s j').1) ≤ n - (s i).1 := by
     apply Nat.le_sub_of_add_le
     rw [←sum_add_one]
     transitivity
@@ -731,12 +732,12 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
                   let x₀ := prevChallenges i
                   let s₀ :
                     evalDomain D x
-                      (∑ j' ∈ finRangeTo i.1, (s j').1) :=
+                      (∑ j' ∈ finRangeTo _ i.1, (s j').1) :=
                     ⟨_, pow_2_pow_i_mem_Di_of_mem_D _ s₀.2⟩
                   let queries :
                     List (
                       evalDomain D x
-                        (∑ j' ∈ finRangeTo i.1, (s j').1)
+                        (∑ j' ∈ finRangeTo _ i.1, (s j').1)
                     ) :=
                     List.map
                       (fun r =>
