@@ -85,7 +85,7 @@ def OracleStatement {F : Type} [Field F] [DecidableEq F] [Fintype F]
     → F
 
 @[reducible]
-def FinalOracleStatement 
+def FinalOracleStatement
   {F : Type} [Field F] [DecidableEq F] [Fintype F]
   (ω : ReedSolomon.SmoothCosetFftDomain n F)
   : Fin (k + 2) → Type :=
@@ -160,7 +160,7 @@ private lemma witness_lift {F : Type} [NonBinaryField F]
   intro deg_bound
   unfold Witness at deg_bound ⊢
   rw [Polynomial.mem_degreeLT] at deg_bound ⊢
-  simp only [Fin.coe_castSucc, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat,
+  simp only [Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat,
     Fin.val_succ] at deg_bound ⊢
   by_cases h : p = 0
   · rw [h, foldNth_zero, degree_zero]
@@ -216,7 +216,7 @@ instance finalOracleStatementInterface :
         let st : Unit → F[X] := cast (by simp [FinalOracleStatement, h]) (← read)
         return cast (by simp [h]) (st ())
       else
-        let st : (ω.subdomainNatReversed (∑ j' ∈ finRangeTo _ j.1, s j')).toFinset 
+        let st : (ω.subdomainNatReversed (∑ j' ∈ finRangeTo _ j.1, s j')).toFinset
           → F :=
           cast (by {
             simp [FinalOracleStatement, h]
@@ -414,7 +414,7 @@ noncomputable def foldVerifier :
       Nat.reduceAdd, MessageIdx, Fin.isValue, Function.Embedding.coeFn_mk,
       Message]
     split_ifs with h
-    · rcases j with ⟨j, hj⟩ 
+    · rcases j with ⟨j, hj⟩
       aesop
     · rfl
 
@@ -681,13 +681,13 @@ noncomputable def queryProver :
 /- Used by the verified to query the `i`th oracle at `w`, a point of the
    appropriate evaluation domain. -/
 def queryCodeword (k : ℕ) (s : Fin (k + 1) → ℕ+) {i : Fin (k + 1)}
-      (w : 
-        (ω.subdomainNatReversed 
+      (w :
+        (ω.subdomainNatReversed
           (∑ j' ∈ finRangeTo (k + 1) i.1, (s j').1)).toFinset) :
     OracleComp [FinalOracleStatement s ω]ₒ F :=
   liftM (cast (β := OracleQuery [FinalOracleStatement s ω]ₒ F)
     (by {
-     simp 
+     simp
   } )
     (query (spec := [FinalOracleStatement s ω]ₒ) ⟨⟨i.1, by omega⟩,
       (by simpa [Nat.ne_of_lt i.2] using w)⟩))
@@ -728,7 +728,7 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
                   let s₀ :
                     (ω.subdomainNatReversed
                       (∑ j' ∈ finRangeTo _ i.1, (s j').1)).toFinset :=
-                    ⟨_, by {
+                    ⟨s₀ ^ (2 ^ i.1), by {
                       sorry
                     }⟩
                   let queries :
@@ -739,14 +739,15 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
                     List.map
                       (fun r =>
                         ⟨
-                          _,
+                          r * s₀,
                           by {
-                            
-                            
-}
+                            have := @CosetDomain.mul_root_of_unity
+
+                            sorry
+                          }
                         ⟩
                       )
-                      (Domain.rootsOfUnity D n (s i))
+                      (ω.subdomainNat (s i).1)
                   let (pts : List (F × F)) ←
                     List.mapM
                       (fun q => queryCodeword k s q >>= fun v => pure (q.1, v))
