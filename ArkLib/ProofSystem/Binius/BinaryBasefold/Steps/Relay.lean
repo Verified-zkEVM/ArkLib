@@ -367,13 +367,13 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ �
     rcases probEvent_relOut_gt_0 with ⟨stmtOut, oStmtOut, h_output_mem_V_run_support, h_relOut⟩
     have h_output_mem_V_run_support' :
         some (stmtOut, oStmtOut) ∈
-          (do
+          support (do
             let s ← init
             Prod.fst <$>
               (simulateQ impl
                 (Verifier.run (stmtIn, oStmtIn) tr
                   (relayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-                    i hNCR).toVerifier)).run s).support := by
+                    i hNCR).toVerifier)).run s) := by
       exact (OptionT.mem_support_iff
         (mx := OptionT.mk (do
           let s ← init

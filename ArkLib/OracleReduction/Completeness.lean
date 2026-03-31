@@ -120,7 +120,7 @@ theorem unroll_n_message_reduction_perfectCompleteness
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hInit : NeverFail init)
     (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
-      Prod.fst <$> ((QueryImpl.mapQuery impl q).run s).support = (liftQuery q).support) :
+      Prod.fst <$> support ((QueryImpl.mapQuery impl q).run s) = support (liftQuery q)) :
     OracleReduction.perfectCompleteness init impl relIn relOut reduction ↔
     ∀ (stmtIn : StmtIn) (oStmtIn : ∀ i, OStmtIn i) (witIn : WitIn),
       ((stmtIn, oStmtIn), witIn) ∈ relIn →
@@ -340,7 +340,7 @@ theorem unroll_0_message_reduction_perfectCompleteness
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hInit : NeverFail init)
     (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
-      Prod.fst <$> ((QueryImpl.mapQuery impl q).run s).support = (liftQuery q).support) :
+      Prod.fst <$> support ((QueryImpl.mapQuery impl q).run s) = support (liftQuery q)) :
     OracleReduction.perfectCompleteness init impl relIn relOut reduction ↔
     ∀ (stmtIn : StmtIn) (oStmtIn : ∀ i, OStmtIn i) (witIn : WitIn),
       ((stmtIn, oStmtIn), witIn) ∈ relIn →
@@ -402,7 +402,7 @@ theorem unroll_1_message_reduction_perfectCompleteness_P_to_V
   (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hInit : NeverFail init)
   (hDir0 : pSpec.dir 0 = .P_to_V)
   (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
-    Prod.fst <$> ((QueryImpl.mapQuery impl q).run s).support = (liftQuery q).support) :
+    Prod.fst <$> support ((QueryImpl.mapQuery impl q).run s) = support (liftQuery q)) :
   OracleReduction.perfectCompleteness init impl relIn relOut reduction ↔
   ∀ (stmtIn : StmtIn) (oStmtIn : ∀ i, OStmtIn i) (witIn : WitIn),
       ((stmtIn, oStmtIn), witIn) ∈ relIn →
@@ -463,7 +463,7 @@ theorem unroll_1_message_reduction_perfectCompleteness_V_to_P
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hInit : NeverFail init)
     (hDir0 : pSpec.dir 0 = .V_to_P)
     (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
-      Prod.fst <$> ((QueryImpl.mapQuery impl q).run s).support = (liftQuery q).support) :
+      Prod.fst <$> support ((QueryImpl.mapQuery impl q).run s) = support (liftQuery q)) :
     OracleReduction.perfectCompleteness init impl relIn relOut reduction ↔
     ∀ (stmtIn : StmtIn) (oStmtIn : ∀ i, OStmtIn i) (witIn : WitIn),
       ((stmtIn, oStmtIn), witIn) ∈ relIn →
@@ -544,7 +544,7 @@ theorem unroll_2_message_reduction_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hInit : NeverFail init)
     (hDir0 : pSpec.dir 0 = .P_to_V) (hDir1 : pSpec.dir 1 = .V_to_P)
     (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
-      Prod.fst <$> ((QueryImpl.mapQuery impl q).run s).support = (liftQuery q).support) :
+      Prod.fst <$> support ((QueryImpl.mapQuery impl q).run s) = support (liftQuery q)) :
     OracleReduction.perfectCompleteness init impl relIn relOut reduction ↔
     ∀ (stmtIn : StmtIn) (oStmtIn : ∀ i, OStmtIn i) (witIn : WitIn),
       ((stmtIn, oStmtIn), witIn) ∈ relIn →

@@ -215,9 +215,9 @@ lemma mem_support_queryFiberPoints
       let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
       let so := OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmtIn transcript.messages
       some (f_i_on_fiber) ∈
-      (simulateQ.{0, 0, 0} so
+      support (simulateQ.{0, 0, 0} so
         ((queryFiberPoints 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ)
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oraclePositionIdx v))).support) :
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oraclePositionIdx v)))) :
     let k_th_oracleIdx: Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)) :=
       ⟨oraclePositionIdx, by simp only [toOutCodewordsCount, Fin.val_last,
         lt_self_iff_false, ↓reduceIte, add_zero, Fin.is_lt];⟩
@@ -427,9 +427,9 @@ lemma query_phase_consistency_guard_safe
       let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
       let so := OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmtIn transcript.messages
       some (f_i_on_fiber) ∈
-      (simulateQ.{0, 0, 0} so
+      support (simulateQ.{0, 0, 0} so
         ((queryFiberPoints 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ)
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k v))).support) :
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k v)))) :
   let := k_mul_ϑ_lt_ℓ (k := k)
   c_k = f_i_on_fiber.get (extractMiddleFinMask 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (v := v) (i := ⟨k.val * ϑ, by omega⟩) (steps := ϑ)) := by
@@ -521,10 +521,10 @@ lemma query_phase_step_preserves_fold
       let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
       let so := OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmtIn transcript.messages
       s' ∈
-      (OptionT.mk
+      support (OptionT.mk
         (simulateQ.{0, 0, 0} so
           ((checkSingleFoldingStep 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ)
-            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k c_k v stmtIn))).support)) :
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k c_k v stmtIn))))) :
     let := k_succ_mul_ϑ_le_ℓ (k := k)
     s' = iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (steps := (k.val + 1) * ϑ)
         (destIdx := ⟨(k.val + 1) * ϑ, by omega⟩) (h_destIdx_le := by simp only; omega)
@@ -1480,7 +1480,7 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
             OracleComp []ₒ (Option Unit))) :
           OptionT (OracleComp []ₒ) (ForInStep PUnit.{1})))))
     (h_mem : ∃ (res : ForInStep PUnit.{1} × σ), (some res.1, res.2) ∈
-      ((forIn_body rep PUnit.unit).run state_pre).support) :
+     support ((forIn_body rep PUnit.unit).run state_pre)) :
     logical_checkSingleRepetition 𝔽q β oStmtIn (tr.challenges ⟨0, rfl⟩ rep) stmtIn
       stmtIn.final_constant := by
   -- 1. Extract the witness res = (control_flow, state_post)
@@ -1633,11 +1633,11 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
         (hImplSupp := by simp only [Set.fmap_eq_image, IsEmpty.forall_iff, implies_true])
       -- res_step ∈ (run s).support → res_step.1 ∈ (run' s).support = inner_oa.support
       have h_fst_mem :
-          some res_step.1 ∈ ((simulateQ impl
-            inner_oa).run' s_curr).support := by
+          some res_step.1 ∈ support ((simulateQ impl
+            inner_oa).run' s_curr) := by
         have h_run_mem :
             (some res_step.1, res_step.2) ∈
-              ((simulateQ impl inner_oa).run s_curr).support := by
+              support ((simulateQ impl inner_oa).run s_curr) := by
           have h_run_mem := h_res_step_mem
           simp only [inner_oa, inner_base, h_v, bind_pure_comp,
             OptionT.simulateQ_map] at h_run_mem ⊢
@@ -1674,10 +1674,10 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
           (hfail := h_probFailure_queryFiberPoints_eq_zero)
       have h_fiber_vec_opt_mem_support_run :
           fiber_vec_opt ∈
-            (simulateQ (OracleInterface.simOracle2 []ₒ oStmtIn tr.messages)
+            support (simulateQ (OracleInterface.simOracle2 []ₒ oStmtIn tr.messages)
               (queryFiberPoints 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ)
                 (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ((List.finRange (ℓ / ϑ)).get k)
-                v)).support := by
+                v)) := by
         have h_fiber_vec_opt_mem_support' := h_fiber_vec_opt_mem_support
         simp only [queryFiberPoints, support_bind,
           Set.mem_iUnion, exists_prop] at h_fiber_vec_opt_mem_support' ⊢
@@ -2077,11 +2077,11 @@ lemma logical_consistency_checks_passed_of_mem_support_V_run {σ : Type}
     (s : σ) (stmtOut : Bool) (oStmtOut : Empty → Unit)
     (h_mem_V_run_support :
       (stmtOut, oStmtOut) ∈
-        OptionT.mk (Prod.fst <$> ((simulateQ.{0, 0, 0} impl
+        support (OptionT.mk (Prod.fst <$> ((simulateQ.{0, 0, 0} impl
             (Verifier.run (stmtIn, oStmtIn) tr
               (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions
                 (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toVerifier)) :
-              StateT σ ProbComp (Option (Bool × (Empty → Unit)))).run s).support) :
+              StateT σ ProbComp (Option (Bool × (Empty → Unit)))).run s))) :
     (stmtOut = true ∧
       oStmtOut = OracleVerifier.mkVerifierOStmtOut
         (embed := (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions
@@ -2146,9 +2146,9 @@ lemma logical_consistency_checks_passed_of_mem_support_V_run {σ : Type}
     change (forIn_block)
   conv at hx_mem =>
     enter [1, x_1, 1, b, 1]
-    change ((x_1, b) ∈ (((forIn_block >>=
+    change ((x_1, b) ∈ support (((forIn_block >>=
       (fun (u : Option PUnit.{1}) => (_ : StateT σ ProbComp (Option Bool))))
-        : StateT σ ProbComp (Option Bool)).run s).support)
+        : StateT σ ProbComp (Option Bool)).run s))
     rw [OptionT.mem_support_StateT_bind_run (ma := forIn_block) (x := (x_1, b))]
   rcases hx_mem with ⟨y, s', h_y_s'_mem_support_forIn_block, h_x_eq⟩
   -- simp only [StateT.run_pure, support_pure, Set.mem_singleton_iff] at h_x_eq -- TODO
@@ -2194,9 +2194,9 @@ lemma logical_consistency_checks_passed_of_mem_support_V_run {σ : Type}
                 ([]ₒ + ([OracleStatement 𝔽q β ϑ (Fin.last ℓ)]ₒ +
                   [(pSpecQuery 𝔽q β γ_repetitions).Message]ₒ))) Unit).run) :
             OracleComp []ₒ (Option Unit))
-      have h_fst_mem : some res_step.1 ∈ ((simulateQ impl
+      have h_fst_mem : some res_step.1 ∈ support ((simulateQ impl
           ((((fun (_ : Unit) ↦ ForInStep.yield PUnit.unit) <$> oa) :
-            OptionT (OracleComp []ₒ) (ForInStep PUnit)))).run' s_pre).support := by
+            OptionT (OracleComp []ₒ) (ForInStep PUnit)))).run' s_pre) := by
         rw [StateT.run', support_map]
         exact Set.mem_image_of_mem Prod.fst h_res_step_mem
       have h_run'_supp_eq := support_simulateQ_run'_eq (impl := impl)
@@ -2540,7 +2540,7 @@ theorem queryOracleProof_perfectCompleteness {σ : Type}
       simp only
       -- simp only [show OptionT.pure (m := (OracleComp ([]ₒ
         -- + ([OracleStatement 𝔽q β ϑ (Fin.last ℓ)]ₒ + [pSpecFold.Message]ₒ)))) = pure by rfl]
-      change some (verStmtOut, verOStmtOut) ∈ (liftComp _ _).support
+      change (some (verStmtOut, verOStmtOut)) ∈ _root_.support (liftComp _ _)
       rw [support_liftComp]
       dsimp only [Functor.map]
       erw [support_bind]
@@ -2643,13 +2643,13 @@ noncomputable def queryKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
     rcases probEvent_relOut_gt_0 with ⟨stmtOut, oStmtOut, h_output_mem_V_run_support, h_relOut⟩
     have h_output_mem_V_run_support' :
         some (stmtOut, oStmtOut) ∈
-          (do
+          support (do
               let s ← init
               Prod.fst <$>
                 (simulateQ impl
                   (Verifier.run (stmtIn, oStmtIn) tr
                     (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions
-                      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toVerifier)).run s).support := by
+                      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toVerifier)).run s) := by
       exact (OptionT.mem_support_iff
         (mx := OptionT.mk (do
           let s ← init

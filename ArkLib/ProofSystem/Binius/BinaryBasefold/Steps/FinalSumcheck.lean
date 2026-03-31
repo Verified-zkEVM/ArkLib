@@ -195,7 +195,7 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
       erw [simulateQ_bind]
       -- turn the simulated oracle query into OracleInterface.answer form
       rw [OptionT.simulateQ_simOracle2_liftM_query_T2] -- V queries P's message
-      change vStmtOut ∈ (Bind.bind (m := (OracleComp []ₒ)) _ _).support
+      change vStmtOut ∈ _root_.support (Bind.bind (m := (OracleComp []ₒ)) _ _)
       erw [_root_.bind_pure_simulateQ_comp]
       simp only [Matrix.cons_val_zero, guard_eq]
       -- simp  [bind_pure_comp,
@@ -263,7 +263,7 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
     conv at h_verOut_mem_support =>
       erw [simulateQ_bind]
       simp only [Set.mem_singleton_iff]
-      change some (verStmtOut, verOStmtOut) ∈ (liftComp _ _).support
+      change some (verStmtOut, verOStmtOut) ∈ _root_.support (liftComp _ _)
       rw [support_liftComp]
       dsimp only [Functor.map]
       erw [support_bind]
@@ -1672,13 +1672,13 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
     rcases probEvent_relOut_gt_0 with ⟨stmtOut, oStmtOut, h_output_mem_V_run_support, h_relOut⟩
     have h_output_mem_V_run_support' :
         some (stmtOut, oStmtOut) ∈
-          (do
+          _root_.support (do
             let s ← init
             Prod.fst <$>
               (simulateQ impl
                 (Verifier.run (stmtIn, oStmtIn) tr
                   (finalSumcheckVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-                    (𝓑 := 𝓑)).toVerifier)).run s).support := by
+                    (𝓑 := 𝓑)).toVerifier)).run s) := by
       exact (OptionT.mem_support_iff
         (mx := OptionT.mk (do
           let s ← init

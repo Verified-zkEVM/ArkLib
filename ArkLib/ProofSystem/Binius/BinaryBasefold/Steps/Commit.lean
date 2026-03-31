@@ -447,13 +447,13 @@ def commitKState (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
     rcases probEvent_relOut_gt_0 with ⟨stmtOut, oStmtOut, h_output_mem_V_run_support, h_relOut⟩
     have h_output_mem_V_run_support' :
         some (stmtOut, oStmtOut) ∈
-          (do
+          support (do
             let s ← init
             Prod.fst <$>
               (simulateQ impl
                 (Verifier.run (stmtIn, oStmtIn) tr
                   (commitOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-                    (𝓑 := 𝓑) (mp := mp) i hCR).toVerifier)).run s).support := by
+                    (𝓑 := 𝓑) (mp := mp) i hCR).toVerifier)).run s) := by
       exact (OptionT.mem_support_iff
         (mx := OptionT.mk (do
           let s ← init

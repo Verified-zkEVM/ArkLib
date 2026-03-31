@@ -237,7 +237,7 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
     conv at h_vStmtOut_mem_support =>
       erw [simulateQ_bind]
       -- turn the simulated oracle query into OracleInterface.answer form
-      change vStmtOut ∈ (Bind.bind (m := (OracleComp []ₒ)) _ _).support
+      change vStmtOut ∈ _root_.support (Bind.bind (m := (OracleComp []ₒ)) _ _)
       erw [_root_.bind_pure_simulateQ_comp]
       simp only [Matrix.cons_val_zero, guard_eq]
       -- simp  [bind_pure_comp,
@@ -514,13 +514,13 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
     rcases probEvent_relOut_gt_0 with ⟨stmtOut, oStmtOut, h_output_mem_V_run_support, h_relOut⟩
     have h_output_mem_V_run_support' :
         some (stmtOut, oStmtOut) ∈
-          (do
+          _root_.support (do
             let s ← init
             Prod.fst <$>
               (simulateQ impl
                 (Verifier.run (stmtIn, oStmtIn) tr
                   (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-                    (𝓑 := 𝓑) (mp := mp) i).toVerifier)).run s).support := by
+                    (𝓑 := 𝓑) (mp := mp) i).toVerifier)).run s) := by
       exact (OptionT.mem_support_iff
         (mx := OptionT.mk (do
           let s ← init
