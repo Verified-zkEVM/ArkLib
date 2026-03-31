@@ -740,6 +740,12 @@ def subdomainNat {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : ℕ)
   SmoothCosetFftDomain (Fin.ofNat n.succ i) F := 
   ω.subdomain (Fin.ofNat n.succ i)
 
+def subdomainNatReversed {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : ℕ)
+  :
+  SmoothCosetFftDomain (Fin.ofNat n.succ (n - i)) F := 
+  ω.subdomainNat (n - i)
+
+
 end
 
 end CosetFftDomain
