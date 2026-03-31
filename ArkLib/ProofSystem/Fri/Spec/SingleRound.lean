@@ -231,14 +231,14 @@ instance finalOracleStatementInterface :
 
 @[simp]
 lemma range_lem₁ {i : Fin (k + 1)} (q) :
-    [FinalOracleStatement D x s]ₒ.Range ⟨⟨i.1, Nat.lt_succ_of_lt i.2⟩, q⟩ = F := by
+    [FinalOracleStatement s ω]ₒ.Range ⟨⟨i.1, Nat.lt_succ_of_lt i.2⟩, q⟩ = F := by
   unfold OracleSpec.Range FinalOracleStatement OracleInterface.toOracleSpec
   unfold OracleInterface.Query OracleInterface.Response
   unfold finalOracleStatementInterface
   simp [Nat.ne_of_lt i.2]
 
 @[simp]
-lemma range_lem₂ (q) : [FinalOracleStatement D x s]ₒ.Range ⟨(Fin.last (k + 1)), q⟩ = F[X] := by
+lemma range_lem₂ (q) : [FinalOracleStatement s ω]ₒ.Range ⟨(Fin.last (k + 1)), q⟩ = F[X] := by
   unfold OracleSpec.Range FinalOracleStatement OracleInterface.toOracleSpec
   unfold OracleInterface.Query OracleInterface.Response
   unfold finalOracleStatementInterface
@@ -689,14 +689,14 @@ def queryCodeword (k : ℕ) (s : Fin (k + 1) → ℕ+) {i : Fin (k + 1)}
     (by {
      simp 
   } )
-    (query (spec := [FinalOracleStatement D x s]ₒ) ⟨⟨i.1, by omega⟩,
+    (query (spec := [FinalOracleStatement s ω]ₒ) ⟨⟨i.1, by omega⟩,
       (by simpa [Nat.ne_of_lt i.2] using w)⟩))
 
 /- Used by the verifier to fetch the polynomial sent in final folding round. -/
-def getConst (k : ℕ) (s : Fin (k + 1) → ℕ+) : OracleComp [FinalOracleStatement D x s]ₒ F[X] :=
-  liftM (cast (β := OracleQuery [FinalOracleStatement D x s]ₒ F[X])
+def getConst (k : ℕ) (s : Fin (k + 1) → ℕ+) : OracleComp [FinalOracleStatement s ω]ₒ F[X] :=
+  liftM (cast (β := OracleQuery [FinalOracleStatement s ω]ₒ F[X])
     (by simp [FinalOracleStatement])
-    (query (spec := [FinalOracleStatement D x s]ₒ) ⟨(Fin.last (k + 1)), (by
+    (query (spec := [FinalOracleStatement s ω]ₒ) ⟨(Fin.last (k + 1)), (by
       simpa using ())⟩))
 
 private lemma roots_of_unity_lem {s : Fin (k + 1) → ℕ+} {i : Fin (k + 1)}
@@ -713,11 +713,11 @@ private lemma roots_of_unity_lem {s : Fin (k + 1) → ℕ+} {i : Fin (k + 1)}
    every folding round. -/
 noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [DecidableEq F] :
   OracleVerifier []ₒ
-    (FinalStatement F k) (FinalOracleStatement D x s)
-    (FinalStatement F k) (FinalOracleStatement D x s)
+    (FinalStatement F k) (FinalOracleStatement s ω)
+    (FinalStatement F k) (FinalOracleStatement s ω)
     (pSpec D x l) where
   verify := fun prevChallenges roundChallenge => do
-    let (p : F[X]) ← getConst D x k s
+    let (p : F[X]) ← getConst k s
     for m in (List.finRange l) do
       let s₀ := roundChallenge ⟨1, by aesop⟩ m
       discard <|
@@ -744,13 +744,13 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
                       (Domain.rootsOfUnity D n (s i))
                   let (pts : List (F × F)) ←
                     List.mapM
-                      (fun q => queryCodeword D x k s q >>= fun v => pure (q.1.1, v))
+                      (fun q => queryCodeword k s q >>= fun v => pure (q.1.1, v))
                       queries
                   let β ←
                     if h : i.1 < k
                     then
                       have := CosetDomain.pow_lift D x (s i).1 s₀.2
-                      queryCodeword D x k s (i := ⟨i.1.succ, Order.lt_add_one_iff.mpr h⟩)
+                      queryCodeword k s (i := ⟨i.1.succ, Order.lt_add_one_iff.mpr h⟩)
                         ⟨_, by rw [←sum_add_one] at this; exact this⟩
                     else
                       pure (p.eval (s₀.1.1 ^ (2 ^ (s (Fin.last k)).1)))
@@ -767,8 +767,8 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
 /- Query round oracle reduction. -/
 noncomputable def queryOracleReduction [DecidableEq F] :
   OracleReduction []ₒ
-    (FinalStatement F k) (FinalOracleStatement D x s) (Witness F s d (Fin.last (k + 1)))
-    (FinalStatement F k) (FinalOracleStatement D x s) (Witness F s d (Fin.last (k + 1)))
+    (FinalStatement F k) (FinalOracleStatement s ω) (Witness F s d (Fin.last (k + 1)))
+    (FinalStatement F k) (FinalOracleStatement s ω) (Witness F s d (Fin.last (k + 1)))
     (pSpec D x l) where
   prover := queryProver D x s d l
   verifier := queryVerifier D x s (round_bound domain_size_cond) l
