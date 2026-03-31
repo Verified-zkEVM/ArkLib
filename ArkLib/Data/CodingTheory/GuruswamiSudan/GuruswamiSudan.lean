@@ -52,7 +52,7 @@ Guruswami–Sudan conditions for the polynomial searched by the specification de
 
 These conditions characterize the existence of a nonzero bivariate
 polynomial `Q(X,Y)` that vanishes with sufficiently high multiplicity
-at all interpolation points `(ωs i, f i)`. As in the Berlekamp–Welch
+at all interpolation points `(ωs i, f i)`. As in the Berlekamp-Welch
 case, this can be shown to be equivalent to solving a system of linear
 equations.
 
@@ -72,41 +72,152 @@ structure Conditions (D : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) (Q : F[X][Y
   /-- Multiplicity of the roots is at least `m`. -/
   Q_multiplicity : ∀ i, m ≤ rootMultiplicity Q (ωs i) (f i)
 
-/-- Specification-level Guruswami-Sudan decoder. -/
-opaque decoder (k r D e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) : List F[X] := sorry
+/-! ## Guruswami-Sudan Decoder
 
-/-- Each decoded codeword has to be `e`-close to the received message. -/
+The decoder constructs the Guruswami-Sudan interpolation polynomial `Q`
+with a multiplicity parameter `m` chosen large enough that the Johnson
+radius `proximity_gap_johnson k n m` exceeds `e / n`.  It then returns
+every root of `Q` (viewed as a polynomial in `Y` over `F[X]`) whose
+evaluation is within Hamming distance `e` of the received word `f`.
+
+**Soundness** (`decoder_mem_impl_dist`): every output polynomial is
+`e`-close to `f` (immediate from the distance filter).
+
+**Completeness** (`decoder_dist_impl_mem`): every polynomial of degree
+`< k` that is `e`-close to `f` appears in the output, provided `e` is
+within the Johnson bound.  This relies on `dvd_property`.
+
+NOTE: The hypothesis in both theorems uses
+`(e : ℝ) < ↑n - Real.sqrt ((↑k + 1) * ↑n)` (matching the GS rate
+parameter `ρ = (k + 1) / n` used in `proximity_gap_johnson`), rather
+than the original `e ≤ n - Real.sqrt (k * n)`.
+-/
+
+open Classical in
+/-- Guruswami-Sudan decoder.  Returns all roots of the GS interpolation
+    polynomial whose evaluation is within Hamming distance `e` of `f`. -/
+noncomputable def decoder (k r D e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) : List F[X] :=
+  if h : ∃ m : ℕ, 0 < m ∧ (e : ℝ) / ↑n < proximity_gap_johnson k n m then
+    let Q := polySol k n h.choose ωs f
+    (Q.roots.toList).filter (fun p => decide (hammingDist f (p.eval ∘ ωs) ≤ e))
+  else []
+
+/-- Each decoded polynomial is e-close to the received word. -/
 theorem decoder_mem_impl_dist
-    {k r D e : ℕ}
-    (h_e : e ≤ n - Real.sqrt (k * n))
-    {ωs : Fin n ↪ F}
-    {f : Fin n → F}
-    {p : F[X]}
-    (h_in : p ∈ decoder k r D e ωs f) :
-    Δ₀(f, p.eval ∘ ωs) ≤ e := by
-  sorry
+  {k r D e : ℕ}
+  (h_e : (e : ℝ) < ↑n - Real.sqrt ((↑k + 1) * ↑n))
+  {ωs : Fin n ↪ F}
+  {f : Fin n → F}
+  {p : F[X]}
+  (h_in : p ∈ decoder k r D e ωs f)
+  :
+  Δ₀(f, p.eval ∘ ωs) ≤ e := by
+  simp only [decoder] at h_in
+  split at h_in
+  · simp only [List.mem_filter, decide_eq_true_eq] at h_in
+    exact h_in.2
+  · simp at h_in
 
-/-- Alias for the specification decoder distance guarantee. -/
-theorem decoder_output_dist_le
-    {k r D e : ℕ}
-    (h_e : e ≤ n - Real.sqrt (k * n))
-    {ωs : Fin n ↪ F}
-    {f : Fin n → F}
-    {p : F[X]}
-    (h_in : p ∈ decoder k r D e ωs f) :
-    Δ₀(f, p.eval ∘ ωs) ≤ e :=
-  decoder_mem_impl_dist (k := k) (r := r) (D := D) (e := e) h_e h_in
-
-/-- If a codeword is `e`-close to the received message, it appears in the decoder output. -/
+/-- If a polynomial of degree `< k` is e-close to the received word, it appears in
+    the decoder output. -/
 theorem decoder_dist_impl_mem
-    {k r D e : ℕ}
-    (h_e : e ≤ n - Real.sqrt (k * n))
-    {ωs : Fin n ↪ F}
-    {f : Fin n → F}
-    {p : F[X]}
-    (h_dist : Δ₀(f, p.eval ∘ ωs) ≤ e) :
-    p ∈ decoder k r D e ωs f := by
-  sorry
+  {k r D e : ℕ}
+  (h_e : (e : ℝ) < ↑n - Real.sqrt ((↑k + 1) * ↑n))
+  {ωs : Fin n ↪ F}
+  {f : Fin n → F}
+  {p : F[X]}
+  (h_deg : p.natDegree < k)
+  (h_dist : Δ₀(f, p.eval ∘ ωs) ≤ e)
+  :
+  p ∈ decoder k r D e ωs f := by
+  -- Extract basic bounds from h_e
+  have he_nn : (0 : ℝ) ≤ e := Nat.cast_nonneg e
+  have hsqrt_nn := Real.sqrt_nonneg ((↑k + 1) * (↑n : ℝ))
+  have hn_pos : (0 : ℝ) < n := by linarith
+  have hk_lt_n : k + 1 ≤ n := by
+    by_contra hc; push_neg at hc
+    have : (↑k + 1 : ℝ) * ↑n ≥ ↑n * ↑n := by
+      have h1 : n ≤ k + 1 := le_of_lt hc
+      exact_mod_cast Nat.mul_le_mul_right n h1
+    have : Real.sqrt ((↑k + 1) * ↑n) ≥ ↑n := by
+      calc Real.sqrt ((↑k + 1) * ↑n) ≥ Real.sqrt (↑n * ↑n) :=
+            Real.sqrt_le_sqrt (by exact_mod_cast this)
+        _ = ↑n := Real.sqrt_mul_self (le_of_lt hn_pos)
+    linarith
+  -- Show there exists a suitable multiplicity parameter m such that
+  -- proximity_gap_johnson k n m > e / n.
+  -- proximity_gap_johnson k n m = 1 - √ρ - √ρ/(2m) where ρ = (k+1)/n (as ℚ).
+  -- From h_e we get e/n < 1 - √ρ; for m large enough, √ρ/(2m) < gap.
+  have h_exists : ∃ m : ℕ, 0 < m ∧ (e : ℝ) / ↑n < proximity_gap_johnson k n m := by
+    -- Relate the ℚ-based √ρ in proximity_gap_johnson to the ℝ-based √((k+1)*n) in h_e.
+    -- ρ = (k+1:ℚ)/n casts to (↑k+1)/↑n in ℝ, and √(ρ) * n = √((k+1)*n).
+    set sqrtRho : ℝ := Real.sqrt (↑((k + 1 : ℚ) / (↑n : ℚ)))
+    have hρ_cast : (↑((k + 1 : ℚ) / (↑n : ℚ)) : ℝ) = (↑k + 1) / ↑n := by push_cast; ring
+    have hρ_nn : (0 : ℝ) ≤ ↑((k + 1 : ℚ) / (↑n : ℚ)) := by rw [hρ_cast]; positivity
+    have hsqrtRho_nn : 0 ≤ sqrtRho := Real.sqrt_nonneg _
+    -- Key identity: sqrtRho * n = √((k+1)*n)
+    have hsqrt_rel : sqrtRho * ↑n = Real.sqrt ((↑k + 1) * ↑n) := by
+      conv_rhs => rw [show (↑k + 1 : ℝ) * ↑n = ↑((k + 1 : ℚ) / ↑n) * (↑n * ↑n) from by
+        rw [hρ_cast]; field_simp]
+      rw [Real.sqrt_mul hρ_nn, Real.sqrt_mul_self (le_of_lt hn_pos)]
+    -- From h_e, derive e/n < 1 - sqrtRho
+    have h_gap : (e : ℝ) / ↑n < 1 - sqrtRho := by
+      rw [div_lt_iff₀ hn_pos]
+      nlinarith [hsqrt_rel]
+    -- The gap is positive
+    set gap := 1 - sqrtRho - (e : ℝ) / ↑n with gap_def
+    have hgap_pos : 0 < gap := by linarith
+    -- Find m₀ > sqrtRho / (2 * gap) by the Archimedean property
+    obtain ⟨m₀, hm₀⟩ := exists_nat_gt (sqrtRho / (2 * gap))
+    have hm₀_pos : 0 < m₀ := by
+      rcases Nat.eq_zero_or_pos m₀ with rfl | h
+      · exfalso; simp at hm₀; linarith [div_nonneg hsqrtRho_nn (by linarith : (0:ℝ) ≤ 2 * gap)]
+      · exact h
+    -- sqrtRho / (2 * m₀) < gap
+    have hm₀_pos_real : (0 : ℝ) < ↑m₀ := Nat.cast_pos.mpr hm₀_pos
+    have hm₀_bound : sqrtRho / (2 * ↑m₀) < gap := by
+      have h2m : (0 : ℝ) < 2 * ↑m₀ := by linarith
+      have h2g : (0 : ℝ) < 2 * gap := by linarith
+      rw [div_lt_iff₀ h2m]
+      have hm₀' : sqrtRho / (2 * gap) < ↑m₀ := hm₀
+      rw [div_lt_iff₀ h2g] at hm₀'
+      nlinarith
+    exact ⟨m₀, hm₀_pos, by simp only [proximity_gap_johnson]; linarith⟩
+  -- Unfold the decoder and enter the if-branch
+  simp only [decoder]
+  rw [dif_pos h_exists]
+  simp only [List.mem_filter, decide_eq_true_eq]
+  refine ⟨?_, h_dist⟩
+  -- Show p is a root of Q = polySol k n m ωs f via dvd_property.
+  -- dvd_property gives (Y - p(X)) | Q when p is a close codeword,
+  -- which by the factor theorem makes p a root of Q.
+  obtain ⟨hm_pos, hm_johnson⟩ := h_exists.choose_spec
+  set m_dec := h_exists.choose
+  -- Form p's evaluation as a codeword in code ωs k
+  have hp_deg : p.degree < (k : WithBot ℕ) :=
+    lt_of_le_of_lt degree_le_natDegree (by exact_mod_cast h_deg)
+  have hk_le_n : k ≤ n := by omega
+  have hp_code : p.eval ∘ (ωs : Fin n → F) ∈ code ωs k :=
+    Submodule.mem_map.mpr ⟨p, mem_degreeLT.mpr hp_deg, rfl⟩
+  set p' : code ωs k := ⟨p.eval ∘ (ωs : Fin n → F), hp_code⟩
+  -- codewordToPoly recovers p from its evaluations (since deg p < k ≤ n)
+  have hctp : codewordToPoly p' = p := by
+    simp only [codewordToPoly, p']
+    exact interpolate_eq_of_degree_lt p (lt_of_lt_of_le h_deg hk_le_n)
+  -- dvd_property gives divisibility
+  have hdvd : X - C p ∣ polySol k n m_dec ωs f := by
+    rw [← hctp]
+    exact dvd_property (f := f) hk_lt_n (by omega : 1 ≤ m_dec) p'
+      polySol_ne_zero polySol_weightedDegree_le polySol_multiplicity (by
+        have h_eq : (fun i ↦ (codewordToPoly p').eval (ωs i)) = p.eval ∘ ωs := by
+          ext i; simp [hctp]
+        rw [h_eq]
+        exact lt_of_le_of_lt
+          (div_le_div_of_nonneg_right (Nat.cast_le.mpr h_dist) (le_of_lt hn_pos))
+          hm_johnson)
+  -- From divisibility, p is a root of Q, hence in Q.roots
+  have hroot : (polySol k n m_dec ωs f).IsRoot p := dvd_iff_isRoot.mp hdvd
+  exact Multiset.mem_toList.mpr ((mem_roots polySol_ne_zero).mpr hroot)
 
 /-- Recover a polynomial from its first `k` coefficients when its degree is below `k`. -/
 private lemma polynomial_of_coeffs_coeffs_of_polynomial_of_degree_lt
