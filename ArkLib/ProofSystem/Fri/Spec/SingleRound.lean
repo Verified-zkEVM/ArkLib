@@ -641,7 +641,7 @@ def outputRelation (cond : ∑ i, (s i).1 ≤ n) [DecidableEq F] (δ : ℝ≥0) 
 -/
 @[reducible]
 def pSpec : ProtocolSpec 1 :=
-  ⟨!v[.V_to_P], !v[Fin l → (ω.subdomainNatReversed n).toFinset]⟩
+  ⟨!v[.V_to_P], !v[Fin l → (ω.subdomainNatReversed 0).toFinset]⟩
 
 /- `OracleInterface` instances for the query round `pSpec`. -/
 instance : ∀ j, OracleInterface ((pSpec (ω := ω) l).Message j) := fun j =>
@@ -711,6 +711,8 @@ private lemma roots_of_unity_lem {s : Fin (k + 1) → ℕ+} {i : Fin (k + 1)}
 /- Verifier for query round of the FRI protocol. Runs `l` checks on uniformly
    sampled points in the first evaluation domain against the oracles sent during
    every folding round. -/
+open ReedSolomon.CosetFftDomain in
+open ReedSolomon.FftDomain in
 noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [DecidableEq F] :
   OracleVerifier []ₒ
     (FinalStatement F k) (FinalOracleStatement s ω)
@@ -728,26 +730,39 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
                   let s₀ :
                     (ω.subdomainNatReversed
                       (∑ j' ∈ finRangeTo _ i.1, (s j').1)).toFinset :=
-                    ⟨s₀ ^ (2 ^ i.1), by {
-                      sorry
-                    }⟩
+                    ⟨s₀ ^ (2 ^ (∑ j' ∈ finRangeTo _ i.1, (s j').1)), 
+                      subdomainNatReversed_pow_property_main_domain (Nat.le_trans 
+                      (Finset.sum_le_sum_of_subset (t := Finset.univ) (by simp))
+                      (round_bound domain_size_cond)) s₀.2⟩
                   let queries :
                     List (
                       ω.subdomainNatReversed
                         (∑ j' ∈ finRangeTo _ i.1, (s j').1)
                     ).toFinset :=
                     List.map
-                      (fun r =>
+                      (fun (r : (ω.fftDomain.subdomainNatReversed (n - (s i).1)).toFinset) =>
                         ⟨
                           r * s₀,
                           by {
-                            have := @CosetDomain.mul_root_of_unity
-
-                            sorry
+                            rw [mul_comm]
+                            exact 
+                              subdomainNatReversed_mul_property (by {
+                                rw [Nat.le_sub_iff_add_le (by {
+                                  exact Nat.le_trans (m := ∑ j', ↑(s j')) 
+                                    (by {
+                                      apply Finset.single_le_sum (f := fun i => (s i : ℕ)) (by simp) (by simp)
+                                    }) k_le_n 
+                                })]
+                                rw [←sum_add_one]
+                                trans
+                                exact (Finset.sum_le_sum_of_subset (t := Finset.univ) (by simp))
+                                exact k_le_n
+                                 
+                              }) (by omega) s₀.2 r.2
                           }
                         ⟩
                       )
-                      (ω.subdomainNat (s i).1)
+                      (ω.fftDomain.subdomainNatReversed (n - (s i).1)).toList
                   let (pts : List (F × F)) ←
                     List.mapM
                       (fun q => queryCodeword k s q >>= fun v => pure (q.1, v))
