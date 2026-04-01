@@ -63,161 +63,202 @@ Here:
 * `Q : F[X][Y]` — the candidate bivariate polynomial.
 -/
 structure Conditions (D : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) (Q : F[X][Y]) where
-  /-- Q ≠ 0 -/
-  Q_ne_0 : Q ≠ 0
+  /-- `Q ≠ 0` -/
+  qNeZero : Q ≠ 0
   /-- `(1, k - 1)`-weighted degree of the polynomial is bounded. -/
-  Q_deg : weightedDegree Q 1 (k - 1) ≤ D
+  qDeg : weightedDegree Q 1 (k - 1) ≤ D
   /-- `(ωs i, f i)` must be a root of the polynomial `Q`. -/
-  Q_roots : ∀ i, (Q.eval (C <| f i)).eval (ωs i) = 0
+  qRoots : ∀ i, (Q.eval (C <| f i)).eval (ωs i) = 0
   /-- Multiplicity of the roots is at least `m`. -/
-  Q_multiplicity : ∀ i, m ≤ rootMultiplicity Q (ωs i) (f i)
+  qMultiplicity : ∀ i, m ≤ rootMultiplicity Q (ωs i) (f i)
 
 /-! ## Guruswami-Sudan Decoder
 
 The decoder constructs the Guruswami-Sudan interpolation polynomial `Q`
 with a multiplicity parameter `m` chosen large enough that the Johnson
-radius `proximity_gap_johnson k n m` exceeds `e / n`.  It then returns
+radius `proximity_gap_johnson` exceeds $e / n$.  It then returns
 every root of `Q` (viewed as a polynomial in `Y` over `F[X]`) whose
-evaluation is within Hamming distance `e` of the received word `f`.
+evaluation is within Hamming distance $e$ of the received word `f`.
 
-**Soundness** (`decoder_mem_impl_dist`): every output polynomial is
-`e`-close to `f` (immediate from the distance filter).
+**Soundness** (`dist_le_of_mem_decoder`): every output polynomial is
+$e$-close to `f` (immediate from the distance filter).
 
-**Completeness** (`decoder_dist_impl_mem`): every polynomial of degree
-`< k` that is `e`-close to `f` appears in the output, provided `e` is
+**Completeness** (`mem_decoder_of_dist`): every polynomial of degree
+$< k$ that is $e$-close to `f` appears in the output, provided $e$ is
 within the Johnson bound.  This relies on `dvd_property`.
 
 NOTE: The hypothesis in both theorems uses
-`(e : ℝ) < ↑n - Real.sqrt ((↑k + 1) * ↑n)` (matching the GS rate
-parameter `ρ = (k + 1) / n` used in `proximity_gap_johnson`), rather
-than the original `e ≤ n - Real.sqrt (k * n)`.
+$e < n - \sqrt{(k + 1) \cdot n}$ (matching the GS rate
+parameter $\rho = (k + 1) / n$ used in `proximity_gap_johnson`),
+rather than the original $e \leq n - \sqrt{k \cdot n}$.
 -/
 
 open Classical in
 /-- Guruswami-Sudan decoder.  Returns all roots of the GS interpolation
-    polynomial whose evaluation is within Hamming distance `e` of `f`. -/
-noncomputable def decoder (k r D e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) : List F[X] :=
+    polynomial whose evaluation is within Hamming distance $e$ of `f`. -/
+noncomputable def decoder (k r D e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+    List F[X] :=
   if h : ∃ m : ℕ, 0 < m ∧ (e : ℝ) / ↑n < proximity_gap_johnson k n m then
     let Q := polySol k n h.choose ωs f
-    (Q.roots.toList).filter (fun p => decide (hammingDist f (p.eval ∘ ωs) ≤ e))
+    Q.roots.toList.filter fun p ↦ decide (hammingDist f (p.eval ∘ ωs) ≤ e)
   else []
 
-/-- Each decoded polynomial is e-close to the received word. -/
-theorem decoder_mem_impl_dist
-  {k r D e : ℕ}
-  (h_e : (e : ℝ) < ↑n - Real.sqrt ((↑k + 1) * ↑n))
-  {ωs : Fin n ↪ F}
-  {f : Fin n → F}
-  {p : F[X]}
-  (h_in : p ∈ decoder k r D e ωs f)
-  :
-  Δ₀(f, p.eval ∘ ωs) ≤ e := by
-  simp only [decoder] at h_in
-  split at h_in
-  · simp only [List.mem_filter, decide_eq_true_eq] at h_in
-    exact h_in.2
-  · simp at h_in
+/-- Each decoded polynomial is $e$-close to the received word. -/
+theorem dist_le_of_mem_decoder
+    {k r D e : ℕ}
+    (he : (e : ℝ) < ↑n - Real.sqrt ((↑k + 1) * ↑n))
+    {ωs : Fin n ↪ F}
+    {f : Fin n → F}
+    {p : F[X]}
+    (hin : p ∈ decoder k r D e ωs f) :
+    Δ₀(f, p.eval ∘ ωs) ≤ e := by
+  simp only [decoder] at hin
+  split at hin
+  · simp only [List.mem_filter, decide_eq_true_eq] at hin
+    exact hin.2
+  · simp at hin
 
-/-- If a polynomial of degree `< k` is e-close to the received word, it appears in
-    the decoder output. -/
-theorem decoder_dist_impl_mem
-  {k r D e : ℕ}
-  (h_e : (e : ℝ) < ↑n - Real.sqrt ((↑k + 1) * ↑n))
-  {ωs : Fin n ↪ F}
-  {f : Fin n → F}
-  {p : F[X]}
-  (h_deg : p.natDegree < k)
-  (h_dist : Δ₀(f, p.eval ∘ ωs) ≤ e)
-  :
-  p ∈ decoder k r D e ωs f := by
-  -- Extract basic bounds from h_e
-  have he_nn : (0 : ℝ) ≤ e := Nat.cast_nonneg e
-  have hsqrt_nn := Real.sqrt_nonneg ((↑k + 1) * (↑n : ℝ))
-  have hn_pos : (0 : ℝ) < n := by linarith
-  have hk_lt_n : k + 1 ≤ n := by
-    by_contra hc; push_neg at hc
+/-- If a polynomial of degree $< k$ is $e$-close to the received word,
+    it appears in the decoder output. -/
+theorem mem_decoder_of_dist
+    {k r D e : ℕ}
+    (he : (e : ℝ) < ↑n - Real.sqrt ((↑k + 1) * ↑n))
+    {ωs : Fin n ↪ F}
+    {f : Fin n → F}
+    {p : F[X]}
+    (hdeg : p.natDegree < k)
+    (hdist : Δ₀(f, p.eval ∘ ωs) ≤ e) :
+    p ∈ decoder k r D e ωs f := by
+  -- Extract basic bounds from he
+  have heNonneg : (0 : ℝ) ≤ e := Nat.cast_nonneg e
+  have hsqrtNonneg := Real.sqrt_nonneg ((↑k + 1) * (↑n : ℝ))
+  have hnPos : (0 : ℝ) < n := by linarith
+  have hkLtN : k + 1 ≤ n := by
+    by_contra hc
+    push_neg at hc
     have : (↑k + 1 : ℝ) * ↑n ≥ ↑n * ↑n := by
       have h1 : n ≤ k + 1 := le_of_lt hc
       exact_mod_cast Nat.mul_le_mul_right n h1
     have : Real.sqrt ((↑k + 1) * ↑n) ≥ ↑n := by
-      calc Real.sqrt ((↑k + 1) * ↑n) ≥ Real.sqrt (↑n * ↑n) :=
+      calc Real.sqrt ((↑k + 1) * ↑n)
+            ≥ Real.sqrt (↑n * ↑n) :=
             Real.sqrt_le_sqrt (by exact_mod_cast this)
-        _ = ↑n := Real.sqrt_mul_self (le_of_lt hn_pos)
+        _ = ↑n := Real.sqrt_mul_self (le_of_lt hnPos)
     linarith
   -- Show there exists a suitable multiplicity parameter m such that
-  -- proximity_gap_johnson k n m > e / n.
-  -- proximity_gap_johnson k n m = 1 - √ρ - √ρ/(2m) where ρ = (k+1)/n (as ℚ).
-  -- From h_e we get e/n < 1 - √ρ; for m large enough, √ρ/(2m) < gap.
-  have h_exists : ∃ m : ℕ, 0 < m ∧ (e : ℝ) / ↑n < proximity_gap_johnson k n m := by
-    -- Relate the ℚ-based √ρ in proximity_gap_johnson to the ℝ-based √((k+1)*n) in h_e.
-    -- ρ = (k+1:ℚ)/n casts to (↑k+1)/↑n in ℝ, and √(ρ) * n = √((k+1)*n).
-    set sqrtRho : ℝ := Real.sqrt (↑((k + 1 : ℚ) / (↑n : ℚ)))
-    have hρ_cast : (↑((k + 1 : ℚ) / (↑n : ℚ)) : ℝ) = (↑k + 1) / ↑n := by push_cast; ring
-    have hρ_nn : (0 : ℝ) ≤ ↑((k + 1 : ℚ) / (↑n : ℚ)) := by rw [hρ_cast]; positivity
-    have hsqrtRho_nn : 0 ≤ sqrtRho := Real.sqrt_nonneg _
+  -- `proximity_gap_johnson k n m > e / n`.
+  -- `proximity_gap_johnson k n m = 1 - √ρ - √ρ/(2m)` where
+  -- $\rho = (k+1)/n$.
+  -- From `he` we get $e/n < 1 - \sqrt{\rho}$; for $m$ large enough,
+  -- $\sqrt{\rho}/(2m) < \text{gap}$.
+  have hExists :
+      ∃ m : ℕ, 0 < m ∧
+        (e : ℝ) / ↑n < proximity_gap_johnson k n m := by
+    -- Relate the ℚ-based √ρ in `proximity_gap_johnson` to the
+    -- ℝ-based $\sqrt{(k+1) \cdot n}$ in `he`.
+    -- $\rho = (k+1)/n$ casts to $(k+1)/n$ in ℝ, and
+    -- $\sqrt{\rho} \cdot n = \sqrt{(k+1) \cdot n}$.
+    set sqrtRho : ℝ :=
+      Real.sqrt (↑((k + 1 : ℚ) / (↑n : ℚ)))
+    have hρCast :
+        (↑((k + 1 : ℚ) / (↑n : ℚ)) : ℝ) = (↑k + 1) / ↑n := by
+      push_cast
+      ring
+    have hρNonneg :
+        (0 : ℝ) ≤ ↑((k + 1 : ℚ) / (↑n : ℚ)) := by
+      rw [hρCast]
+      positivity
+    have hsqrtRhoNonneg : 0 ≤ sqrtRho :=
+      Real.sqrt_nonneg _
     -- Key identity: sqrtRho * n = √((k+1)*n)
-    have hsqrt_rel : sqrtRho * ↑n = Real.sqrt ((↑k + 1) * ↑n) := by
-      conv_rhs => rw [show (↑k + 1 : ℝ) * ↑n = ↑((k + 1 : ℚ) / ↑n) * (↑n * ↑n) from by
-        rw [hρ_cast]; field_simp]
-      rw [Real.sqrt_mul hρ_nn, Real.sqrt_mul_self (le_of_lt hn_pos)]
-    -- From h_e, derive e/n < 1 - sqrtRho
-    have h_gap : (e : ℝ) / ↑n < 1 - sqrtRho := by
-      rw [div_lt_iff₀ hn_pos]
-      nlinarith [hsqrt_rel]
+    have hsqrtRel :
+        sqrtRho * ↑n = Real.sqrt ((↑k + 1) * ↑n) := by
+      conv_rhs =>
+        rw [show (↑k + 1 : ℝ) * ↑n =
+          ↑((k + 1 : ℚ) / ↑n) * (↑n * ↑n) from by
+          rw [hρCast]; field_simp]
+      rw [Real.sqrt_mul hρNonneg,
+        Real.sqrt_mul_self (le_of_lt hnPos)]
+    -- From he, derive e/n < 1 - sqrtRho
+    have hGap : (e : ℝ) / ↑n < 1 - sqrtRho := by
+      rw [div_lt_iff₀ hnPos]
+      nlinarith [hsqrtRel]
     -- The gap is positive
-    set gap := 1 - sqrtRho - (e : ℝ) / ↑n with gap_def
-    have hgap_pos : 0 < gap := by linarith
-    -- Find m₀ > sqrtRho / (2 * gap) by the Archimedean property
+    set gap := 1 - sqrtRho - (e : ℝ) / ↑n with gapDef
+    have hgapPos : 0 < gap := by linarith
+    -- Find m₀ > sqrtRho / (2 * gap) by the Archimedean
+    -- property
     obtain ⟨m₀, hm₀⟩ := exists_nat_gt (sqrtRho / (2 * gap))
-    have hm₀_pos : 0 < m₀ := by
+    have hm₀Pos : 0 < m₀ := by
       rcases Nat.eq_zero_or_pos m₀ with rfl | h
-      · exfalso; simp at hm₀; linarith [div_nonneg hsqrtRho_nn (by linarith : (0:ℝ) ≤ 2 * gap)]
+      · exfalso
+        simp at hm₀
+        linarith [div_nonneg hsqrtRhoNonneg
+          (by linarith : (0:ℝ) ≤ 2 * gap)]
       · exact h
     -- sqrtRho / (2 * m₀) < gap
-    have hm₀_pos_real : (0 : ℝ) < ↑m₀ := Nat.cast_pos.mpr hm₀_pos
-    have hm₀_bound : sqrtRho / (2 * ↑m₀) < gap := by
+    have hm₀PosReal : (0 : ℝ) < ↑m₀ :=
+      Nat.cast_pos.mpr hm₀Pos
+    have hm₀Bound : sqrtRho / (2 * ↑m₀) < gap := by
       have h2m : (0 : ℝ) < 2 * ↑m₀ := by linarith
       have h2g : (0 : ℝ) < 2 * gap := by linarith
       rw [div_lt_iff₀ h2m]
       have hm₀' : sqrtRho / (2 * gap) < ↑m₀ := hm₀
       rw [div_lt_iff₀ h2g] at hm₀'
       nlinarith
-    exact ⟨m₀, hm₀_pos, by simp only [proximity_gap_johnson]; linarith⟩
+    exact ⟨m₀, hm₀Pos, by
+      simp only [proximity_gap_johnson]
+      linarith⟩
   -- Unfold the decoder and enter the if-branch
   simp only [decoder]
-  rw [dif_pos h_exists]
+  rw [dif_pos hExists]
   simp only [List.mem_filter, decide_eq_true_eq]
-  refine ⟨?_, h_dist⟩
-  -- Show p is a root of Q = polySol k n m ωs f via dvd_property.
-  -- dvd_property gives (Y - p(X)) | Q when p is a close codeword,
-  -- which by the factor theorem makes p a root of Q.
-  obtain ⟨hm_pos, hm_johnson⟩ := h_exists.choose_spec
-  set m_dec := h_exists.choose
+  refine ⟨?_, hdist⟩
+  -- Show p is a root of Q = polySol k n m ωs f via
+  -- `dvd_property`.
+  -- `dvd_property` gives (Y - p(X)) | Q when p is a close
+  -- codeword, which by the factor theorem makes p a root of Q.
+  obtain ⟨hmPos, hmJohnson⟩ := hExists.choose_spec
+  set mDec := hExists.choose
   -- Form p's evaluation as a codeword in code ωs k
-  have hp_deg : p.degree < (k : WithBot ℕ) :=
-    lt_of_le_of_lt degree_le_natDegree (by exact_mod_cast h_deg)
-  have hk_le_n : k ≤ n := by omega
-  have hp_code : p.eval ∘ (ωs : Fin n → F) ∈ code ωs k :=
-    Submodule.mem_map.mpr ⟨p, mem_degreeLT.mpr hp_deg, rfl⟩
-  set p' : code ωs k := ⟨p.eval ∘ (ωs : Fin n → F), hp_code⟩
-  -- codewordToPoly recovers p from its evaluations (since deg p < k ≤ n)
+  have hpDeg : p.degree < (k : WithBot ℕ) :=
+    lt_of_le_of_lt degree_le_natDegree
+      (by exact_mod_cast hdeg)
+  have hkLeN : k ≤ n := by omega
+  have hpCode :
+      p.eval ∘ (ωs : Fin n → F) ∈ code ωs k :=
+    Submodule.mem_map.mpr
+      ⟨p, mem_degreeLT.mpr hpDeg, rfl⟩
+  set p' : code ωs k :=
+    ⟨p.eval ∘ (ωs : Fin n → F), hpCode⟩
+  -- `codewordToPoly` recovers p from its evaluations
+  -- (since deg p < k ≤ n)
   have hctp : codewordToPoly p' = p := by
     simp only [codewordToPoly, p']
-    exact interpolate_eq_of_degree_lt p (lt_of_lt_of_le h_deg hk_le_n)
-  -- dvd_property gives divisibility
-  have hdvd : X - C p ∣ polySol k n m_dec ωs f := by
+    exact interpolate_eq_of_degree_lt p
+      (lt_of_lt_of_le hdeg hkLeN)
+  -- `dvd_property` gives divisibility
+  have hdvd : X - C p ∣ polySol k n mDec ωs f := by
     rw [← hctp]
-    exact dvd_property (f := f) hk_lt_n (by omega : 1 ≤ m_dec) p'
-      polySol_ne_zero polySol_weightedDegree_le polySol_multiplicity (by
-        have h_eq : (fun i ↦ (codewordToPoly p').eval (ωs i)) = p.eval ∘ ωs := by
-          ext i; simp [hctp]
-        rw [h_eq]
+    exact dvd_property (f := f) hkLtN
+      (by omega : 1 ≤ mDec) p'
+      polySol_ne_zero polySol_weightedDegree_le
+      polySol_multiplicity (by
+        have hfEq :
+            (fun i ↦ (codewordToPoly p').eval (ωs i)) =
+            p.eval ∘ ωs := by
+          ext i
+          simp [hctp]
+        rw [hfEq]
         exact lt_of_le_of_lt
-          (div_le_div_of_nonneg_right (Nat.cast_le.mpr h_dist) (le_of_lt hn_pos))
-          hm_johnson)
+          (div_le_div_of_nonneg_right
+            (Nat.cast_le.mpr hdist) (le_of_lt hnPos))
+          hmJohnson)
   -- From divisibility, p is a root of Q, hence in Q.roots
-  have hroot : (polySol k n m_dec ωs f).IsRoot p := dvd_iff_isRoot.mp hdvd
-  exact Multiset.mem_toList.mpr ((mem_roots polySol_ne_zero).mpr hroot)
+  have hroot : (polySol k n mDec ωs f).IsRoot p :=
+    dvd_iff_isRoot.mp hdvd
+  exact Multiset.mem_toList.mpr
+    ((mem_roots polySol_ne_zero).mpr hroot)
 
 /-- Recover a polynomial from its first `k` coefficients when its degree is below `k`. -/
 private lemma polynomial_of_coeffs_coeffs_of_polynomial_of_degree_lt
@@ -935,14 +976,16 @@ lemma guruswami_sudan_for_proximity_gap_property_strong [Fintype F] {k m : ℕ} 
 theorem proximity_gap_existence (k n : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) (hm : 1 ≤ m) :
     ∃ Q, Conditions k m (proximity_gap_degree_bound k n m) ωs f Q := by
   use polySol k n m ωs f
-  exact ⟨polySol_ne_zero, polySol_weightedDegree_le, polySol_roots hm, polySol_multiplicity⟩
+  exact ⟨polySol_ne_zero, polySol_weightedDegree_le,
+    polySol_roots hm, polySol_multiplicity⟩
 
 /-- Classical divisibility consequence for Guruswami-Sudan witnesses. -/
 theorem proximity_gap_divisibility (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k)
     {Q : F[X][Y]} (hQ : Conditions k m (proximity_gap_degree_bound k n m) ωs f Q)
-    (h_dist : (hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) : ℝ) / n <
+    (hdist : (hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) : ℝ) / n <
       proximity_gap_johnson k n m) :
     X - C (codewordToPoly p) ∣ Q :=
-  dvd_property (f := f) hk hm p hQ.Q_ne_0 hQ.Q_deg hQ.Q_multiplicity h_dist
+  dvd_property (f := f) hk hm p hQ.qNeZero hQ.qDeg
+    hQ.qMultiplicity hdist
 
 end GuruswamiSudan
