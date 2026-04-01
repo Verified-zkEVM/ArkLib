@@ -232,7 +232,7 @@ jobs:
 
       - name: Download comparison baseline artifact
         if: always() && steps.timing-baseline.outputs.run-id != ''
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ env.BUILD_TIMING_ARTIFACT_NAME }}
           path: ${{ env.BUILD_TIMING_BASELINE_DIR }}
