@@ -30,18 +30,19 @@ open OracleSpec OracleComp ProtocolSpec Fri.Domain NNReal BatchingRound
   - `l`, the number of round consistency checks to be run by the query round.
   - `m`, number of batched polynomials.
 -/
-variable {F : Type} [NonBinaryField F] [Finite F]
+variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
 variable (D : Subgroup Fˣ) {n : ℕ} [DIsCyclicC : IsCyclicWithGen D] [DSmooth : SmoothPowerOfTwo n D]
 variable (x : Fˣ)
 variable (k : ℕ) (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 variable (dom_size_cond : (2 ^ (∑ i, (s i).1)) * d ≤ 2 ^ n)
 variable (l m : ℕ)
+variable {ω : ReedSolomon.SmoothCosetFftDomain n F}
 
 -- /- Input/Output relations for the Batched FRI protocol. -/
 def inputRelation [DecidableEq F] (δ : ℝ≥0) :
     Set
       (
-        Unit × (∀ j, OracleStatement D x m j) × (Witness F s d m)
+        Unit × (∀ j, OracleStatement m ω j) × (Witness F s d m)
       ) := sorry
 
 
@@ -54,15 +55,17 @@ def liftingLens :
   OracleContext.Lens
     ((Fin m → F) × Fri.Spec.Statement F (0 : Fin (k + 1))) (Fri.Spec.FinalStatement F k)
     (Fri.Spec.Statement F (0 : Fin (k + 1))) (Fri.Spec.FinalStatement F k)
-    (OracleStatement D x m) (Fri.Spec.FinalOracleStatement D x s)
-    (Fri.Spec.OracleStatement D x s 0) (Fri.Spec.FinalOracleStatement D x s)
+    (OracleStatement m ω) (Fri.Spec.FinalOracleStatement s ω)
+    (Fri.Spec.OracleStatement s ω 0) (Fri.Spec.FinalOracleStatement s ω)
     (Fri.Spec.Witness F s d 0) (Fri.Spec.Witness F s d (Fin.last (k + 1)))
     (Fri.Spec.Witness F s d 0) (Fri.Spec.Witness F s d (Fin.last (k + 1))) where
   stmt := Witness.InvLens.ofOutputOnly <| fun ⟨⟨cs, stmt⟩, ostmt⟩ =>
     ⟨
       stmt,
       fun j v =>
-          have : v.1 ∈ Fri.CosetDomain.evalDomain D x 0 := by convert v.2; simp
+          have : v.1 ∈ ω.toFinset := by {
+            sorry
+          }
           (ostmt 0) ⟨v.1, this⟩ + ∑ j, cs j * ostmt j.succ ⟨v.1, this⟩
     ⟩
   wit  := Witness.Lens.id
@@ -70,24 +73,24 @@ def liftingLens :
 noncomputable def liftedFRI [DecidableEq F] :
   OracleReduction []ₒ
     ((Fin m → F) × Fri.Spec.Statement F (0 : Fin (k + 1)))
-      (OracleStatement D x m) (Fri.Spec.Witness F s d 0)
+      (OracleStatement m ω) (Fri.Spec.Witness F s d 0)
     (Fri.Spec.FinalStatement F k)
-      (Fri.Spec.FinalOracleStatement D x s) (Fri.Spec.Witness F s d (Fin.last (k + 1)))
+      (Fri.Spec.FinalOracleStatement s ω) (Fri.Spec.Witness F s d (Fin.last (k + 1)))
     (
-      Fri.Spec.pSpecFold D x k s ++ₚ
+      Fri.Spec.pSpecFold (ω := ω) k s ++ₚ
       Fri.Spec.FinalFoldPhase.pSpec F ++ₚ
-      Fri.Spec.QueryRound.pSpec D x l
+      Fri.Spec.QueryRound.pSpec (ω := ω) l
     ) :=
     OracleReduction.liftContext
-      (liftingLens D x k s d m)
-      (Fri.Spec.reduction D x k s d dom_size_cond l)
+      (liftingLens k s d m)
+      (Fri.Spec.reduction k s d dom_size_cond l)
 
 /- Oracle reduction of the batched FRI protocol. -/
 @[reducible]
 noncomputable def batchedFRIreduction [DecidableEq F] :=
   OracleReduction.append
-    (BatchingRound.batchOracleReduction D x s d m)
-    (liftedFRI D x k s d dom_size_cond l m)
+    (BatchingRound.batchOracleReduction s d m)
+    (liftedFRI (ω := ω) k s d dom_size_cond l m)
 
 end Spec
 
