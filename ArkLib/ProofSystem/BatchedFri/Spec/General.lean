@@ -70,12 +70,12 @@ def liftingLens :
               Fin.ofNat_eq_cast, Fin.val_natCast] at v
             rcases v with ⟨v, h'⟩
             simp only
-
-
-
-
-
-            sorry
+            subst this
+            simp only [finRangeTo.eq_1, List.take_zero, List.toFinset_nil, Finset.sum_empty,
+              Nat.sub_zero, ReedSolomon.CosetFftDomain.subdomainNatReversed,
+              ReedSolomon.CosetFftDomain.subdomainNat, Nat.succ_eq_add_one, Fin.ofNat_eq_cast] at h'
+            rw [ReedSolomon.CosetFftDomain.subdomain_n'] at h'
+            exact h'
           }
           (ostmt 0) ⟨v.1, this⟩ + ∑ j, cs j * ostmt j.succ ⟨v.1, this⟩
     ⟩

@@ -479,6 +479,18 @@ lemma subdomain_last {n} {ω : SmoothFftDomain n F}
   simp +decide [ FftDomain.toSubgroup, subdomain ];
   constructor <;> intro h <;> rcases h with ⟨ a, rfl ⟩ <;> use Fin.cast ( by simp +decide [ Fin.last ] ) a <;> simp +decide [ subdomain_embed_last ] ;
 
+@[simp]
+lemma subdomain_last' {n : ℕ} {ω : SmoothFftDomain n F}
+  {v : F}
+  :
+  v ∈ (ω.subdomain (@Nat.cast (Fin (n + 1)) (Fin.NatCast.instNatCast (n + 1)) n)).toFinset ↔ v ∈ ω.toFinset := by
+  simp +decide [ subdomain, toFinset ];
+  constructor;
+  · aesop;
+  · rintro ⟨ a, rfl ⟩;
+    use Fin.cast (by simp [Fin.last]) a;
+    unfold subdomain_embed; aesop;
+
 private lemma subdomain_embed_of_le {n : ℕ} (i j : Fin n.succ) (h : i ≤ j)
     (k : Fin (2 ^ (i : ℕ)))
     : ∃ (l : Fin (2 ^ (j : ℕ))), subdomain_embed i k = subdomain_embed j l := by
@@ -686,6 +698,28 @@ lemma subdomain_n {n : ℕ} {ω : SmoothCosetFftDomain n F}
   simp only [mul_eq_mul_left_iff, Units.ne_zero, or_false]
   simp [subdomain_embed]
   rfl
+
+lemma subdomain_n' {n : ℕ} {ω : SmoothCosetFftDomain n F}
+  {v : F}
+  :
+  v ∈ (ω.subdomain (@Nat.cast (Fin (n + 1)) (Fin.NatCast.instNatCast (n + 1)) n)).toFinset ↔ v ∈ ω.toFinset := by
+  apply Iff.intro
+  · simp [subdomain] 
+    intro hv 
+    simp [mem_coset] at hv
+    obtain ⟨a, hv⟩ := hv
+    subst hv
+    rw [x_mul_mem_coset_iff]
+    rw [←FftDomain.subdomain_last']
+    simp
+  · simp [subdomain]
+    intro hv
+    simp [mem_coset] at hv
+    obtain ⟨a, hv⟩ := hv
+    subst hv
+    rw [x_mul_mem_coset_iff]
+    rw [FftDomain.subdomain_last']
+    simp
 
 lemma subdomain_pow_property {n} {ω : SmoothCosetFftDomain n F}
   {i j : Fin n.succ} (hji : j ≤ i) {k : Fin (2 ^ i.val)}
