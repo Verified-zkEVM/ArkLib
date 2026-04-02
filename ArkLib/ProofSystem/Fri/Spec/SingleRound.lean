@@ -7,7 +7,7 @@ Authors: Quang Dao, František Silváši, Julian Sutherland, Ilia Vlasov
 
 import ArkLib.Data.CodingTheory.ReedSolomon.FftDomain
 import ArkLib.OracleReduction.Basic
-import ArkLib.ProofSystem.Fri.Domain
+import CompPoly.Fields.Basic
 import ArkLib.ProofSystem.Fri.RoundConsistency
 import ArkLib.ToMathlib.Finset.Basic
 
@@ -29,7 +29,7 @@ import ArkLib.ToMathlib.Finset.Basic
 
 namespace Fri
 
-open Polynomial MvPolynomial OracleSpec OracleComp ProtocolSpec Finset CosetDomain NNReal
+open Polynomial MvPolynomial OracleSpec OracleComp ProtocolSpec Finset NNReal
 
 namespace Spec
 
@@ -554,7 +554,7 @@ noncomputable def finalFoldProver :
           then
             simpa [h] using fun x => p.1
           else
-          simpa [h, ↓reduceIte, OracleStatement, evalDomain] using
+          simpa [h, ↓reduceIte, OracleStatement] using
             o ⟨j.1, Nat.lt_of_le_of_ne (Fin.is_le j) h⟩
       ⟩,
       p

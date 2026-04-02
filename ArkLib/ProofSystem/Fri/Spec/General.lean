@@ -10,7 +10,7 @@ import ArkLib.ProofSystem.Fri.Spec.SingleRound
 
 namespace Fri
 
-open OracleSpec OracleComp ProtocolSpec Domain NNReal
+open OracleSpec OracleComp ProtocolSpec NNReal
 
 namespace Spec
 

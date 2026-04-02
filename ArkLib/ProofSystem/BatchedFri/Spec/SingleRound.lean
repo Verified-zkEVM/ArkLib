@@ -12,7 +12,7 @@ import ArkLib.ProofSystem.Fri.Spec.SingleRound
 
 namespace BatchedFri
 
-open Polynomial MvPolynomial OracleSpec OracleComp ProtocolSpec Finset Fri CosetDomain NNReal
+open Polynomial MvPolynomial OracleSpec OracleComp ProtocolSpec Finset Fri NNReal
 
 namespace Spec
 
