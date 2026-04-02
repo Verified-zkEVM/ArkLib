@@ -64,6 +64,17 @@ def liftingLens :
       stmt,
       fun j v =>
           have : v.1 ∈ ω.toFinset := by {
+            rcases j with ⟨j, h⟩
+            have : j = 0 := by simpa using h
+            simp only [Nat.succ_eq_add_one, Fin.coe_ofNat_eq_mod, Nat.zero_mod, Nat.reduceAdd,
+              Fin.ofNat_eq_cast, Fin.val_natCast] at v
+            rcases v with ⟨v, h'⟩
+            simp only
+
+
+
+
+
             sorry
           }
           (ostmt 0) ⟨v.1, this⟩ + ∑ j, cs j * ostmt j.succ ⟨v.1, this⟩
