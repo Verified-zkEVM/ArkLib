@@ -1,5 +1,4 @@
 import ArkLib.OracleReduction.Basic
-import ArkLib.ProofSystem.Fri.Domain
 import ArkLib.ProofSystem.Fri.RoundConsistency
 import ArkLib.ProofSystem.Fri.Spec.SingleRound
 
@@ -26,8 +25,8 @@ namespace Spec
    - `d` the degree bound on the final polynomial returned in the final folding round.
    - `m` the number of polynomials batched
 -/
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F] (D : Subgroup Fˣ)
-variable {n : ℕ} [DIsCyclicC : IsCyclicWithGen D] [DSmooth : SmoothPowerOfTwo n D] (x : Fˣ)
+variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F] 
+variable {n : ℕ}
 variable {k : ℕ} (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 variable (m : ℕ)
 variable {ω : ReedSolomon.SmoothCosetFftDomain n F}

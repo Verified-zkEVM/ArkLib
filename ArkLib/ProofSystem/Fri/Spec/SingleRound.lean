@@ -47,8 +47,7 @@ namespace Spec
 -/
 
 variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
-variable (D : Subgroup Fˣ) {n : ℕ} [DIsCyclicC : IsCyclicWithGen D] [DSmooth : SmoothPowerOfTwo n D]
-variable (x : Fˣ)
+variable {n : ℕ} 
 variable {k : ℕ} (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 variable (domain_size_cond : (2 ^ (∑ i, (s i).1)) * d ≤ 2 ^ n) (i : Fin k)
 variable {ω : ReedSolomon.SmoothCosetFftDomain n F}

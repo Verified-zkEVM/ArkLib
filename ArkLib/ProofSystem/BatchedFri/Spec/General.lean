@@ -15,7 +15,7 @@ namespace BatchedFri
 
 namespace Spec
 
-open OracleSpec OracleComp ProtocolSpec Fri.Domain NNReal BatchingRound
+open OracleSpec OracleComp ProtocolSpec NNReal BatchingRound
 
 /- Batched FRI parameters:
    - `F` a non-binary finite field.
@@ -31,8 +31,7 @@ open OracleSpec OracleComp ProtocolSpec Fri.Domain NNReal BatchingRound
   - `m`, number of batched polynomials.
 -/
 variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
-variable (D : Subgroup Fˣ) {n : ℕ} [DIsCyclicC : IsCyclicWithGen D] [DSmooth : SmoothPowerOfTwo n D]
-variable (x : Fˣ)
+variable {n : ℕ}
 variable (k : ℕ) (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 variable (dom_size_cond : (2 ^ (∑ i, (s i).1)) * d ≤ 2 ^ n)
 variable (l m : ℕ)
