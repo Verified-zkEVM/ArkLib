@@ -719,7 +719,7 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
     (FinalStatement F k) (FinalOracleStatement s ω)
     (pSpec (ω := ω) l) where
   verify := fun prevChallenges roundChallenge => do
-    let (p : F[X]) ← getConst k s
+    let (p : F[X]) ← getConst (ω := ω) k s
     for m in (List.finRange l) do
       let s₀ := roundChallenge ⟨1, by aesop⟩ m
       discard <|
@@ -770,9 +770,15 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
                   let β ←
                     if h : i.1 < k
                     then
-                      have := CosetDomain.pow_lift D x (s i).1 s₀.2
-                      queryCodeword k s (i := ⟨i.1.succ, Order.lt_add_one_iff.mpr h⟩)
-                        ⟨_, by rw [←sum_add_one] at this; exact this⟩
+                      queryCodeword (ω := ω) k s (i := ⟨i.1.succ, Order.lt_add_one_iff.mpr h⟩)
+                        ⟨s₀.1 ^ (2 ^ (s i).1), by {
+                          simp only
+                          rw [sum_add_one, Nat.add_comm]
+                          have h := subdomainNatReversed_pow_property'
+                            (i := s i)
+                            (h := s₀.2)
+
+                        }⟩
                     else
                       pure (p.eval (s₀.1 ^ (2 ^ (s (Fin.last k)).1)))
                   guard (RoundConsistency.roundConsistencyCheck x₀ pts β)

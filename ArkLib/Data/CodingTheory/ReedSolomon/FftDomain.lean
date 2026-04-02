@@ -836,7 +836,7 @@ def subdomainNatReversed {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : ℕ)
   ω.subdomainNat (n - i)
 
 lemma subdomainNatReversed_pow_property' {n} {ω : SmoothCosetFftDomain n F}
-  {i j : ℕ} (hji : j ≤ i) (hsum : j + i ≤ n) {x : F}
+  {i j : ℕ} (hsum : j + i ≤ n) {x : F}
   (h : x ∈ (ω.subdomainNatReversed j).toFinset)
   :
   x ^ (2 ^ i) ∈ (ω.subdomainNatReversed (j + i)).toFinset := by
@@ -866,7 +866,7 @@ lemma subdomainNatReversed_pow_property_main_domain {n} {ω : SmoothCosetFftDoma
   (h : x ∈ (ω.subdomainNatReversed 0).toFinset)
   :
   x ^ (2 ^ i) ∈ (ω.subdomainNatReversed i).toFinset := by
-  convert subdomainNatReversed_pow_property' ( Nat.zero_le i ) ( by linarith ) h using 1;
+  convert subdomainNatReversed_pow_property' (i := i) (j := 0) ( by linarith ) h using 1;
   grind
 
 lemma subdomainNat_mul_property {n : ℕ} {ω : SmoothCosetFftDomain n F}
