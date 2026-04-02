@@ -773,11 +773,16 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
                       queryCodeword (ω := ω) k s (i := ⟨i.1.succ, Order.lt_add_one_iff.mpr h⟩)
                         ⟨s₀.1 ^ (2 ^ (s i).1), by {
                           simp only
-                          rw [sum_add_one, Nat.add_comm]
-                          have h := subdomainNatReversed_pow_property'
+                          rw [sum_add_one]
+                          apply subdomainNatReversed_pow_property'
                             (i := s i)
                             (h := s₀.2)
-
+                          trans (∑ j' ∈ finRangeTo (k + 1) (↑i : ℕ).succ, (s j').1)
+                          rw [Nat.succ_eq_add_one, sum_add_one s (i := i)]
+                          rfl
+                          trans 
+                          exact (Finset.sum_le_sum_of_subset (t := Finset.univ) (by simp))
+                          exact k_le_n
                         }⟩
                     else
                       pure (p.eval (s₀.1 ^ (2 ^ (s (Fin.last k)).1)))
@@ -798,7 +803,7 @@ noncomputable def queryOracleReduction [DecidableEq F] :
     (FinalStatement F k) (FinalOracleStatement s ω) (Witness F s d (Fin.last (k + 1)))
     (pSpec (ω := ω) l) where
   prover := queryProver s d l
-  verifier := queryVerifier s (round_bound domain_size_cond) l
+  verifier := queryVerifier s _ domain_size_cond (round_bound domain_size_cond) l
 
 end QueryRound
 
