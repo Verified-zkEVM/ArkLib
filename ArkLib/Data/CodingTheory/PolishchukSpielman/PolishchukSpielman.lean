@@ -4,9 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland, Alexander Hicks, Aleph
 -/
 
-import ArkLib.Data.CodingTheory.PolishchukSpielman.Degrees
 import ArkLib.Data.CodingTheory.PolishchukSpielman.Existence
-import ArkLib.Data.CodingTheory.PolishchukSpielman.Resultant
 
 /-!
 # Polishchuk-Spielman lemma
