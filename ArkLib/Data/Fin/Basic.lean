@@ -308,7 +308,7 @@ def sumCases {l : List ℕ} {motive : Fin l.sum → Sort*}
     by_cases hi : i < n'
     · convert cases n' (by simp) ⟨i.val, hi⟩
       simp [castSum]
-    · have hj' : i.val - n' < l'.sum := by sorry
+    · have hj' : i.val - n' < l'.sum := by omega
       sorry
       -- refine sumCases (l := l') (motive := motive ∘ natAdd i') ?_ ⟨j.val - i', hj'⟩
 

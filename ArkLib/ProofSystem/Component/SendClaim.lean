@@ -20,7 +20,7 @@ import ArkLib.OracleReduction.Security.RoundByRound
    TODO: Generalize
 -/
 
-open OracleSpec OracleComp OracleQuery
+open OracleSpec OracleComp OracleQuery OracleInterface ProtocolSpec
 
 namespace SendClaim
 
@@ -104,7 +104,11 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ Pro
 Proof of perfect completeness: if `rel old new` holds in the real setting,
 it also holds in the ideal setting, etc.
 -/
-theorem completeness : (oracleReduction oSpec Statement OStatement relComp).perfectCompleteness
+instance : ProverOnly (pSpec OStatement) where
+  prover_first' := by simp
+
+theorem completeness [Nonempty σ] :
+    (oracleReduction oSpec Statement OStatement relComp).perfectCompleteness
     init impl relIn (relOut OStatement) := by
   sorry
 

@@ -70,9 +70,50 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ Pro
 theorem reduction_completeness [Nonempty σ] [DecidableEq Statement] :
     (reduction oSpec Statement pred).perfectCompleteness init impl
     (relIn Statement pred) (relOut Statement) := by
-  unfold Reduction.perfectCompleteness Reduction.completeness
-  intro stmt wit valid
-  sorry
+  simp only [Reduction.perfectCompleteness, Reduction.completeness, ENNReal.coe_zero, tsub_zero]
+  intro stmt () valid
+  simp only [relIn, Set.mem_setOf_eq] at valid
+  -- valid : pred stmt
+  -- First simplify the reduction run
+  have hrun : (reduction oSpec Statement pred).run stmt () =
+      (pure ((default, stmt, ()), stmt) :
+        OptionT (OracleComp _) _) := by
+    simp [reduction, Reduction.run, prover, verifier, Prover.run, Verifier.run,
+          Prover.runToRound, guard, if_pos valid]
+  simp only [hrun]
+  -- Now identical to id_perfectCompleteness pattern
+  rw [ge_iff_le, one_le_probEvent_iff, probEvent_eq_one_iff]
+  refine ⟨?_, ?_⟩
+  · rw [OptionT.probFailure_eq, OptionT.run_mk]
+    simp only [probFailure_eq_zero, zero_add]
+    apply probOutput_eq_zero_of_not_mem_support
+    simp only [support_bind, Set.mem_iUnion, not_exists]
+    intro s _ hmem
+    -- Unfold OptionT.run on pure, then simulateQ_pure, then StateT
+    change none ∈ _root_.support
+      (StateT.run' (simulateQ _ (pure (some ((default, stmt, ()), stmt)) :
+        OracleComp _ _)) s) at hmem
+    rw [simulateQ_pure] at hmem
+    change none ∈ _root_.support
+      (Prod.fst <$> (pure (some ((default, stmt, ()), stmt)) :
+        StateT σ ProbComp _).run s) at hmem
+    rw [StateT.run_pure] at hmem
+    simp [map_pure] at hmem
+  · intro x hx
+    rw [OptionT.mem_support_iff] at hx
+    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
+    obtain ⟨s, _, hx⟩ := hx
+    change some x ∈ _root_.support
+      (StateT.run' (simulateQ _ (pure (some ((default, stmt, ()), stmt)) :
+        OracleComp _ _)) s) at hx
+    rw [simulateQ_pure] at hx
+    change some x ∈ _root_.support
+      (Prod.fst <$> (pure (some ((default, stmt, ()), stmt)) :
+        StateT σ ProbComp _).run s) at hx
+    rw [StateT.run_pure] at hx
+    simp [map_pure, support_pure] at hx
+    cases hx
+    simp [relOut]
 
 /-- The `CheckClaim` reduction satisfies perfect round-by-round knowledge soundness. -/
 theorem verifier_rbr_knowledge_soundness :

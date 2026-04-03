@@ -717,12 +717,202 @@ If `q * f ≠ 0`, then the `Y`-degree of `q` is bounded above by the difference 
 lemma degreeY_le_degreeY_sub_degreeY [IsDomain F] {f q : F[X][Y]} (hf : f ≠ 0) (hg : q * f ≠ 0) :
   natDegreeY q ≤ natDegreeY (q * f) - natDegreeY f := by grind
 
+/-- Each coefficient's total-degree contribution is bounded by `totalDegree` when in support. -/
+theorem coeff_totalDegree_le (f : F[X][Y]) {n : ℕ} (hn : n ∈ f.support) :
+    (f.coeff n).natDegree + n ≤ totalDegree f := by
+  classical
+  unfold totalDegree
+  exact Finset.le_sup (f := fun m => (f.coeff m).natDegree + m) hn
+
+theorem coeff_totalDegree_le' (f : F[X][Y]) (n : ℕ) :
+    (f.coeff n).natDegree + n ≤ totalDegree f ∨ f.coeff n = 0 := by
+  by_cases hn : n ∈ f.support
+  · exact Or.inl (coeff_totalDegree_le f hn)
+  · exact Or.inr (Polynomial.notMem_support_iff.mp hn)
+
+/-- There exists a maximal Y-index achieving `totalDegree`. Above it, total-degree contributions
+    are strictly smaller or the coefficient vanishes. -/
+theorem exists_max_index_totalDegree (f : F[X][Y]) (hf : f ≠ 0) :
+    ∃ mm ∈ f.support,
+      (f.coeff mm).natDegree + mm = totalDegree f ∧
+      ∀ n, mm < n → (f.coeff n).natDegree + n < totalDegree f ∨ f.coeff n = 0 := by
+  classical
+  let s₁ : Finset ℕ := f.support.filter (fun n => (f.coeff n).natDegree + n = totalDegree f)
+  have hs₁ : s₁.Nonempty := by
+    have hsupp : f.support.Nonempty := Polynomial.support_nonempty.2 hf
+    obtain ⟨m, hm_mem, hm_sup⟩ :=
+      Finset.exists_mem_eq_sup _ hsupp (fun n => (f.coeff n).natDegree + n)
+    have hm_deg : (f.coeff m).natDegree + m = totalDegree f := by
+      simpa [totalDegree] using hm_sup.symm
+    exact ⟨m, Finset.mem_filter.mpr ⟨hm_mem, hm_deg⟩⟩
+  set mm : ℕ := s₁.max' hs₁ with hmm
+  have hmm_mem_s₁ : mm ∈ s₁ := by simpa [hmm] using Finset.max'_mem s₁ hs₁
+  have hmm_filter : mm ∈ f.support ∧ (f.coeff mm).natDegree + mm = totalDegree f := by
+    simpa [s₁] using Finset.mem_filter.mp hmm_mem_s₁
+  refine ⟨mm, hmm_filter.1, hmm_filter.2, ?_⟩
+  intro n hmn
+  by_cases hn0 : f.coeff n = 0
+  · exact Or.inr hn0
+  · have hn_support : n ∈ f.support := Polynomial.mem_support_iff.2 hn0
+    have hn_le : (f.coeff n).natDegree + n ≤ totalDegree f := coeff_totalDegree_le f hn_support
+    have hn_ne : (f.coeff n).natDegree + n ≠ totalDegree f := by
+      intro hEq
+      have hn_s₁ : n ∈ s₁ := Finset.mem_filter.mpr ⟨hn_support, hEq⟩
+      have : n ≤ mm := Finset.le_max' s₁ n hn_s₁
+      exact not_le_of_gt hmn this
+    exact Or.inl (lt_of_le_of_ne hn_le hn_ne)
+
+theorem totalDegree_mul_le (f g : F[X][Y]) :
+    totalDegree (f * g) ≤ totalDegree f + totalDegree g := by
+  classical
+  unfold totalDegree
+  refine Finset.sup_le ?_
+  intro k hk
+  have hk_supp : k ∈ (f * g).support := hk
+  rw [Polynomial.coeff_mul]
+  -- Bound: natDegree of each antidiagonal term
+  have hnd_le : ∀ x ∈ Finset.antidiagonal k,
+      (f.coeff x.1 * g.coeff x.2).natDegree ≤ totalDegree f + totalDegree g - k := by
+    intro x hx
+    have hij : x.1 + x.2 = k := Finset.mem_antidiagonal.mp hx
+    by_cases hfx : f.coeff x.1 = 0
+    · simp [hfx]
+    · by_cases hgx : g.coeff x.2 = 0
+      · simp [hgx]
+      · have hf_le : (f.coeff x.1).natDegree + x.1 ≤ totalDegree f :=
+          coeff_totalDegree_le f (Polynomial.mem_support_iff.2 hfx)
+        have hg_le : (g.coeff x.2).natDegree + x.2 ≤ totalDegree g :=
+          coeff_totalDegree_le g (Polynomial.mem_support_iff.2 hgx)
+        have hmul_le := Polynomial.natDegree_mul_le (p := f.coeff x.1) (q := g.coeff x.2)
+        omega
+  -- k ∈ (f*g).support means some f.coeff i * g.coeff j ≠ 0 with i + j = k
+  -- Hence i ∈ f.support, j ∈ g.support, and k ≤ totalDegree f + totalDegree g
+  have hk_le : k ≤ totalDegree f + totalDegree g := by
+    have hcoeff_ne : (f * g).coeff k ≠ 0 := Polynomial.mem_support_iff.mp hk_supp
+    rw [Polynomial.coeff_mul] at hcoeff_ne
+    obtain ⟨⟨i, j⟩, hij_mem, hij_ne⟩ := Finset.exists_ne_zero_of_sum_ne_zero hcoeff_ne
+    have hij : i + j = k := Finset.mem_antidiagonal.mp hij_mem
+    have hfi : f.coeff i ≠ 0 := left_ne_zero_of_mul hij_ne
+    have hgj : g.coeff j ≠ 0 := right_ne_zero_of_mul hij_ne
+    have hi_supp : i ∈ f.support := Polynomial.mem_support_iff.mpr hfi
+    have hj_supp : j ∈ g.support := Polynomial.mem_support_iff.mpr hgj
+    have hi_le := coeff_totalDegree_le f hi_supp
+    have hj_le := coeff_totalDegree_le g hj_supp
+    omega
+  have hsum_nd := Polynomial.natDegree_sum_le_of_forall_le
+    (s := Finset.antidiagonal k)
+    (f := fun x => f.coeff x.1 * g.coeff x.2)
+    (n := totalDegree f + totalDegree g - k) hnd_le
+  -- natDegree(sum) ≤ (td_f + td_g) - k, and k ≤ td_f + td_g
+  -- so natDegree(sum) + k ≤ td_f + td_g
+  calc (∑ x ∈ Finset.antidiagonal k, f.coeff x.1 * g.coeff x.2).natDegree + k
+      ≤ (totalDegree f + totalDegree g - k) + k := Nat.add_le_add_right hsum_nd k
+    _ = totalDegree f + totalDegree g := Nat.sub_add_cancel hk_le
+
 /-- The total degree of the product of two bivariate polynomials is the sum of their total degrees.
 -/
 @[simp, grind _=_]
-theorem totalDegree_mul {f g : F[X][Y]} (hf : f ≠ 0) (hg : g ≠ 0) :
+theorem totalDegree_mul [IsDomain F] {f g : F[X][Y]} (hf : f ≠ 0) (hg : g ≠ 0) :
     totalDegree (f * g) = totalDegree f + totalDegree g := by
-    sorry
+  apply le_antisymm (totalDegree_mul_le f g)
+  classical
+  rcases exists_max_index_totalDegree f hf with ⟨mmf, hmmf, hmmf_deg, hmmf_max⟩
+  rcases exists_max_index_totalDegree g hg with ⟨mmg, hmmg, hmmg_deg, hmmg_max⟩
+  let N := mmf + mmg
+  let deg := (f.coeff mmf).natDegree + (g.coeff mmg).natDegree
+  let term : ℕ × ℕ → F[X] := fun x => f.coeff x.1 * g.coeff x.2
+  have hmx : (mmf, mmg) ∈ Finset.antidiagonal N := by simp [N]
+  have hfx0 : f.coeff mmf ≠ 0 := Polynomial.mem_support_iff.mp hmmf
+  have hgx0 : g.coeff mmg ≠ 0 := Polynomial.mem_support_iff.mp hmmg
+  have hterm_mx : (term (mmf, mmg)).natDegree = deg := by
+    simpa [term, deg] using
+      Polynomial.natDegree_mul (p := f.coeff mmf) (q := g.coeff mmg) hfx0 hgx0
+  have hterm_other : ∀ y ∈ Finset.antidiagonal N, y ≠ (mmf, mmg) →
+      (term y).natDegree < deg ∨ term y = 0 := by
+    intro y hy hyne
+    rcases y with ⟨i, j⟩
+    have hij : i + j = mmf + mmg := by simpa [N] using Finset.mem_antidiagonal.mp hy
+    have hlt : mmf < i ∨ mmg < j := by
+      by_contra hcontra
+      push_neg at hcontra
+      have hi : i ≤ mmf := hcontra.1
+      have hj : j ≤ mmg := hcontra.2
+      have : i = mmf ∧ j = mmg := by omega
+      exact hyne (by simp [this.1, this.2])
+    cases hlt with
+    | inl hi_lt =>
+      have hfi := hmmf_max i hi_lt
+      cases hfi with
+      | inr hfi0 => exact Or.inr (by simp [term, hfi0])
+      | inl hfi_lt =>
+        by_cases hgj0 : g.coeff j = 0
+        · exact Or.inr (by simp [term, hgj0])
+        · left
+          have hg_le : (g.coeff j).natDegree + j ≤ totalDegree g := by
+            rcases coeff_totalDegree_le' g j with h | h
+            · exact h
+            · exact absurd h hgj0
+          have hnat_le : (term (i, j)).natDegree ≤
+              (f.coeff i).natDegree + (g.coeff j).natDegree := by
+            simpa [term] using Polynomial.natDegree_mul_le (p := f.coeff i) (q := g.coeff j)
+          have hsum_lt : (f.coeff i).natDegree + (g.coeff j).natDegree < deg := by
+            show _ < (f.coeff mmf).natDegree + (g.coeff mmg).natDegree
+            have h1 := Nat.add_lt_add_of_lt_of_le hfi_lt hg_le
+            have h2 : totalDegree f + totalDegree g =
+                ((f.coeff mmf).natDegree + mmf) + ((g.coeff mmg).natDegree + mmg) := by
+              rw [hmmf_deg, hmmg_deg]
+            omega
+          exact lt_of_le_of_lt hnat_le hsum_lt
+    | inr hj_lt =>
+      have hgj := hmmg_max j hj_lt
+      cases hgj with
+      | inr hgj0 => exact Or.inr (by simp [term, hgj0])
+      | inl hgj_lt =>
+        by_cases hfi0 : f.coeff i = 0
+        · exact Or.inr (by simp [term, hfi0])
+        · left
+          have hf_le : (f.coeff i).natDegree + i ≤ totalDegree f := by
+            rcases coeff_totalDegree_le' f i with h | h
+            · exact h
+            · exact absurd h hfi0
+          have hnat_le : (term (i, j)).natDegree ≤
+              (f.coeff i).natDegree + (g.coeff j).natDegree := by
+            simpa [term] using Polynomial.natDegree_mul_le (p := f.coeff i) (q := g.coeff j)
+          have hsum_lt : (f.coeff i).natDegree + (g.coeff j).natDegree < deg := by
+            show _ < (f.coeff mmf).natDegree + (g.coeff mmg).natDegree
+            have h1 := Nat.add_lt_add_of_le_of_lt hf_le hgj_lt
+            have h2 : totalDegree f + totalDegree g =
+                ((f.coeff mmf).natDegree + mmf) + ((g.coeff mmg).natDegree + mmg) := by
+              rw [hmmf_deg, hmmg_deg]
+            omega
+          exact lt_of_le_of_lt hnat_le hsum_lt
+  have hsum_nat : (∑ x ∈ Finset.antidiagonal N, term x).natDegree = deg :=
+    natDegree_sum_eq_of_unique (mmf, mmg) hmx hterm_mx hterm_other
+  have hcoeff_nat : ((f * g).coeff N).natDegree = deg := by
+    have : (f * g).coeff N = ∑ x ∈ Finset.antidiagonal N, term x := by
+      simpa [term] using Polynomial.coeff_mul f g N
+    simpa [this] using hsum_nat
+  have hcoeff_ne : (f * g).coeff N ≠ 0 := by
+    intro h0
+    have hfg_nd : ((f * g).coeff N).natDegree = 0 := by simp [h0]
+    rw [hcoeff_nat] at hfg_nd
+    -- deg = 0 means all other antidiag terms are zero (natDegree < 0 impossible)
+    have hfg_sum : (f * g).coeff N = ∑ x ∈ Finset.antidiagonal N, term x := by
+      simpa [term] using Polynomial.coeff_mul f g N
+    -- Since deg = 0, all non-(mmf,mmg) terms are zero
+    have hall_zero : ∀ y ∈ Finset.antidiagonal N, y ≠ (mmf, mmg) → term y = 0 := by
+      intro y hy hyne
+      rcases hterm_other y hy hyne with h | h
+      · omega  -- natDegree < 0 impossible
+      · exact h
+    have : (f * g).coeff N = term (mmf, mmg) := by
+      rw [hfg_sum]
+      exact Finset.sum_eq_single_of_mem (mmf, mmg) hmx (fun y hy hyne => hall_zero y hy hyne)
+    rw [this] at h0
+    exact _root_.mul_ne_zero hfx0 hgx0 h0
+  have hfg_support : N ∈ (f * g).support := Polynomial.mem_support_iff.2 hcoeff_ne
+  have hle := coeff_totalDegree_le (f * g) hfg_support
+  omega
 
 /-- Definition of a monomial when the bivariate polynomial is considered as a univariate
 polynomial in `Y`. -/
