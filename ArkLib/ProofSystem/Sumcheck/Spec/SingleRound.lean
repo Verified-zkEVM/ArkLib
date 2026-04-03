@@ -12,7 +12,6 @@ import ArkLib.ProofSystem.Component.CheckClaim
 import ArkLib.ProofSystem.Component.RandomQuery
 import ArkLib.ProofSystem.Component.ReduceClaim
 import ArkLib.Data.Fin.Basic
-import ArkLib.ToVCVio.Lemmas
 
 /-!
 # Single round of the Sum-check Protocol
@@ -475,7 +474,17 @@ theorem reduction_perfectCompleteness :
       (inputRelation R deg D) (outputRelation R deg) := by
   rw [perfectCompleteness_eq_prob_one]
   intro ⟨target, oStmt⟩ () hValid
-  generalize h : oStmt () = p; obtain ⟨poly, hp⟩ := p
+  -- hValid : ((target, oStmt), ()) ∈ inputRelation R deg D
+  -- Goal: Pr[event | OptionT.mk do (simulateQ pImpl (reduction.run ...)).run' (← init)] = 1
+  -- The honest prover sends poly = oStmt(). The verifier checks
+  -- ∑ poly.eval x = target (holds by hValid).
+  -- Output: (poly.eval chal, chal) satisfies outputRelation by definition.
+  simp only [inputRelation] at hValid
+  -- Blocked: simulateQ decomposition for 2-round protocol.
+  -- The honest prover sends poly = oStmt(). Guard passes (by hValid).
+  -- Output (poly.eval chal, chal) satisfies outputRelation by construction (rfl).
+  -- Requires: simulateQ_add_liftComp_right to fire on liftM (liftM ...) form,
+  -- or a run simplification lemma for IsSingleRound protocols.
   sorry
   -- -- Need `convert` because of some duplicate instances, should eventually track those down
   -- convert (probEvent_eq_one_iff _ _).2 ⟨?_, ?_⟩
@@ -652,7 +661,12 @@ where
     | succ n ih =>
       intro stmt oStmt hRelIn
       simp [← hRelIn]
-      -- Now it's a statement about polynomials
+      simp_rw [Polynomial.eval_finset_sum]
+      simp_rw [← eval_eq_eval_mv_eval_finSuccEquivNth]
+      -- Remaining: ∑ a ∈ D, ∑ y ∈ D^(n-i), eval (insertNth i a (append c y ∘ cast)) p
+      --          = ∑ z ∈ D^(n+1-i), eval (append c z ∘ cast) p
+      -- Needs: (1) insertNth i a (append c y ∘ cast) = append c (cons a y) ∘ cast
+      --        (2) piFinset cons decomposition for D^(n+1-i) ↔ D × D^(n-i)
       sorry
   lift_complete := by
     simp [relationRound]
@@ -799,7 +813,7 @@ def proverRound (i : Fin n) : ProverRound oSpec (pSpec R deg) where
   sendMessage
   | ⟨0, _⟩ => fun state =>
     match n with
-    | 0 => sorry
+    | 0 => Fin.elim0 i
     | n + 1 =>
       let ⟨⟨_, challenges⟩, oStmt⟩ := state
       let ⟨poly, hp⟩ := oStmt 0

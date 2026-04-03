@@ -8,7 +8,6 @@ import ArkLib.Data.Classes.HasSize
 import ArkLib.Data.Classes.Initialize
 import ArkLib.Data.Classes.Serde
 import VCVio
-import ArkLib.ToVCVio.SimOracle
 
 /-!
   # Duplex Sponge API (Overwrite Mode)

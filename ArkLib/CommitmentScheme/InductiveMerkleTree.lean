@@ -8,7 +8,6 @@ import VCVio
 import ArkLib.ToMathlib.Data.IndexedBinaryTree.Basic
 import ArkLib.CommitmentScheme.Basic
 import Mathlib.Data.Vector.Snoc
-import ArkLib.ToVCVio.Oracle
 
 /-!
 # Inductive Merkle Trees
@@ -112,8 +111,9 @@ Running the monadic version of `buildMerkleTree` with an oracle function `f`
 is equivalent to running the functional version of `buildMerkleTree_with_hash`
 with the same oracle function.
 -/
-lemma runWithOracle_buildMerkleTree {s} (leaf_data_tree : LeafData α s) (f) :
-    (runWithOracle f (buildMerkleTree leaf_data_tree))
+lemma simulateQ_buildMerkleTree {s} (leaf_data_tree : LeafData α s)
+    (f : QueryImpl (spec α) Id) :
+    simulateQ f (buildMerkleTree leaf_data_tree)
     = buildMerkleTree_with_hash leaf_data_tree fun (left right : α) =>
       (f ⟨left, right⟩) := by
   induction s with
@@ -125,7 +125,7 @@ lemma runWithOracle_buildMerkleTree {s} (leaf_data_tree : LeafData α s) (f) :
     match leaf_data_tree with
     | LeafData.internal left right =>
       simp only [buildMerkleTree, buildMerkleTree_with_hash, singleHash,
-        runWithOracle, simulateQ_bind, simulateQ_pure, Id.run] at left_ih right_ih ⊢
+        simulateQ_bind, simulateQ_pure] at left_ih right_ih ⊢
       rw [left_ih left, right_ih right]; rfl
 
 /--
@@ -224,9 +224,9 @@ def getPutativeRoot_with_hash {s} (idx : BinaryTree.SkeletonLeafIndex s)
 Running the monadic version of `getPutativeRoot` with an oracle function `f`,
 it is equivalent to running the functional version of `getPutativeRoot_with_hash`
 -/
-lemma runWithOracle_getPutativeRoot {s} (idx : BinaryTree.SkeletonLeafIndex s)
-    (leafValue : α) (proof : List α) (f) :
-    (runWithOracle f (getPutativeRoot idx leafValue proof))
+lemma simulateQ_getPutativeRoot {s} (idx : BinaryTree.SkeletonLeafIndex s)
+    (leafValue : α) (proof : List α) (f : QueryImpl (spec α) Id) :
+    simulateQ f (getPutativeRoot idx leafValue proof)
       =
     getPutativeRoot_with_hash idx leafValue proof fun (left right : α) => (f ⟨left, right⟩) := by
   induction proof generalizing s with
@@ -234,7 +234,6 @@ lemma runWithOracle_getPutativeRoot {s} (idx : BinaryTree.SkeletonLeafIndex s)
     unfold getPutativeRoot
     simp only [getPutativeRoot_with_hash]
     rfl
-    -- simp only [runWithOracle_pure, getPutativeRoot_with_hash]
   | cons siblingBelowRootHash restProof ih =>
     unfold getPutativeRoot
     cases s with
@@ -245,12 +244,12 @@ lemma runWithOracle_getPutativeRoot {s} (idx : BinaryTree.SkeletonLeafIndex s)
     | internal s_left s_right =>
       cases idx with
       | ofLeft idxLeft =>
-        simp only [singleHash, runWithOracle, simulateQ_bind, simulateQ_pure,
-          getPutativeRoot_with_hash, Id.run] at ih ⊢
+        simp only [singleHash, simulateQ_bind, simulateQ_pure,
+          getPutativeRoot_with_hash] at ih ⊢
         rw [ih]; rfl
       | ofRight idxRight =>
-        simp only [singleHash, runWithOracle, simulateQ_bind, simulateQ_pure,
-          getPutativeRoot_with_hash, Id.run] at ih ⊢
+        simp only [singleHash, simulateQ_bind, simulateQ_pure,
+          getPutativeRoot_with_hash] at ih ⊢
         rw [ih]; rfl
 
 /--

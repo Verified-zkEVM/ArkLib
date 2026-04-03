@@ -67,9 +67,44 @@ theorem reduction_completeness --(h : init.neverFails)
     (hRel : ∀ stmtIn witIn, (stmtIn, witIn) ∈ relIn ↔
       (mapStmt stmtIn, mapWit stmtIn witIn) ∈ relOut) :
     (reduction oSpec mapStmt mapWit).perfectCompleteness init impl relIn relOut := by
-  unfold Reduction.perfectCompleteness Reduction.completeness
+  simp only [Reduction.perfectCompleteness, Reduction.completeness, ENNReal.coe_zero, tsub_zero]
   intro stmtIn witIn hIn
-  sorry
+  have hrun : (reduction oSpec mapStmt mapWit).run stmtIn witIn =
+      (pure ((default, (mapStmt stmtIn, mapWit stmtIn witIn)), mapStmt stmtIn) :
+        OptionT (OracleComp _) _) := by
+    simp [reduction, Reduction.run, prover, verifier, Prover.run, Verifier.run, Prover.runToRound]
+  simp only [hrun]
+  rw [ge_iff_le, one_le_probEvent_iff, probEvent_eq_one_iff]
+  refine ⟨?_, ?_⟩
+  · rw [OptionT.probFailure_eq, OptionT.run_mk]
+    simp only [probFailure_eq_zero, zero_add]
+    apply probOutput_eq_zero_of_not_mem_support
+    simp only [support_bind, Set.mem_iUnion, not_exists]
+    intro s _ hmem
+    change none ∈ support
+      (StateT.run' (simulateQ _ (pure (some ((default, (mapStmt stmtIn, mapWit stmtIn witIn)),
+        mapStmt stmtIn)) : OracleComp _ _)) s) at hmem
+    rw [simulateQ_pure] at hmem
+    change none ∈ support
+      (Prod.fst <$> (pure (some ((default, (mapStmt stmtIn, mapWit stmtIn witIn)),
+        mapStmt stmtIn)) : StateT σ ProbComp _).run s) at hmem
+    rw [StateT.run_pure] at hmem
+    simp [map_pure] at hmem
+  · intro x hx
+    rw [OptionT.mem_support_iff] at hx
+    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
+    obtain ⟨s, _, hx⟩ := hx
+    change some x ∈ support
+      (StateT.run' (simulateQ _ (pure (some ((default, (mapStmt stmtIn, mapWit stmtIn witIn)),
+        mapStmt stmtIn)) : OracleComp _ _)) s) at hx
+    rw [simulateQ_pure] at hx
+    change some x ∈ support
+      (Prod.fst <$> (pure (some ((default, (mapStmt stmtIn, mapWit stmtIn witIn)),
+        mapStmt stmtIn)) : StateT σ ProbComp _).run s) at hx
+    rw [StateT.run_pure] at hx
+    simp [map_pure, support_pure] at hx
+    cases hx
+    exact ⟨(hRel stmtIn witIn).mp hIn, rfl⟩
 
 /-- The round-by-round extractor for the `ReduceClaim` (oracle) reduction. Requires a mapping
   `mapWitInv` from the output witness to the input witness. -/

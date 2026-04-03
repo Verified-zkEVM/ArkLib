@@ -21,7 +21,7 @@ Start with [`README.md`](README.md) for project overview.
 - `ArkLib/OracleReduction/` - core IOR abstractions and security theory.
 - `ArkLib/ProofSystem/` - protocol formalizations built on the core.
 - `ArkLib/CommitmentScheme/` - commitments and opening arguments.
-- `ArkLib/ToMathlib/`, `ArkLib/ToVCVio/` - bridge layers.
+- `ArkLib/ToMathlib/` - local extensions intended for upstreaming.
 - `blueprint/src/` - deep design docs and bibliography.
 - `scripts/` - repo utilities.
 

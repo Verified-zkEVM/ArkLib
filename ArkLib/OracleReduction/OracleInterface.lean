@@ -5,7 +5,6 @@ Authors: Quang Dao
 -/
 
 import VCVio
-import ArkLib.ToVCVio.SimOracle
 import CompPoly.Data.MvPolynomial.Notation
 import Mathlib.Algebra.Polynomial.Roots
 -- import ArkLib.Data.MlPoly.Basic

@@ -103,6 +103,9 @@ def oracleReduction :
   prover := oracleProver oSpec OStatement
   verifier := oracleVerifier oSpec OStatement
 
+instance : VerifierOnly (pSpec OStatement) where
+  verifier_first' := by simp
+
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 /-- The `RandomQuery` oracle reduction is perfectly complete. -/
@@ -113,19 +116,86 @@ theorem oracleReduction_completeness :
   simp only [OracleReduction.perfectCompleteness, oracleReduction, relIn, relOut]
   simp only [Reduction.perfectCompleteness_eq_prob_one]
   intro ⟨stmt, oStmt⟩ wit hOStmt
-  simp [Reduction.run, Prover.run, Verifier.run, Prover.runToRound, Prover.processRound,
-    OracleReduction.toReduction, OracleVerifier.toVerifier, oracleVerifier, oracleProver,
-    Transcript.concat, FullTranscript.challenges]
-  sorry
-  -- constructor
-  -- -- Soon we won't have to reason about failure of `init` here.
-  -- · intro s hs
-  --   simp [StateT.run]
-  --   unfold SimOracle.append
-  --   simp [challengeQueryImpl, liftM, monadLift, MonadLift.monadLift, StateT.lift]
-  --   have := SampleableType.probFailure_selectElem (β := Query OStatement)
-  --   aesop
-  -- · aesop
+  have hEq : oStmt 0 = oStmt 1 := hOStmt
+  -- Step 1: Unfold reduction definitions
+  simp only [OracleReduction.toReduction, Reduction.run,
+    Prover.run_of_verifier_first, oracleProver, oracleVerifier,
+    OracleVerifier.toVerifier, Verifier.run]
+  -- Step 2: Bridge OptionT.pure → OracleComp.pure (some x) so simulateQ_pure fires.
+  -- OptionT.pure x is definitionally OracleComp.pure (some x), but simp can't see
+  -- through the Pure instance. Use `show` on the inner term via simp_rw with unfold.
+  simp_rw [show (pure : _ → OptionT (OracleComp _) _) = fun x => (pure (some x) :
+    OracleComp _ _) from rfl]
+  -- Step 3: Convert liftM → liftComp (better simp lemmas), reduce inner pure/bind
+  simp only [← OracleComp.liftComp_eq_liftM, OracleComp.liftComp_pure,
+    pure_bind, bind_assoc]
+  -- Step 4: Push simulateQ through binds (erw matches where simp can't)
+  -- Round 1: outer bind (prover vs verifier)
+  erw [simulateQ_bind]
+  -- Round 2: prover's inner bind (query + pure)
+  erw [simulateQ_bind]
+  -- Reduce simulateQ on pure + liftComp terms
+  simp only [QueryImpl.addLift_def, simulateQ_pure,
+    QueryImpl.simulateQ_add_liftComp_right, QueryImpl.simulateQ_add_liftComp_left,
+    simulateQ_query,
+    ← OracleComp.liftComp_eq_liftM, OracleComp.liftComp_pure,
+    pure_bind, bind_assoc, map_pure, monadLift_pure, monadLift_bind]
+  -- Round 3: verifier's inner binds
+  erw [simulateQ_bind]
+  -- Final reduction: all simulateQ eliminated, close with hEq
+  simp only [QueryImpl.addLift_def, simulateQ_pure,
+    QueryImpl.simulateQ_add_liftComp_right, QueryImpl.simulateQ_add_liftComp_left,
+    simulateQ_query,
+    ← OracleComp.liftComp_eq_liftM, OracleComp.liftComp_pure,
+    pure_bind, bind_assoc, map_pure, monadLift_pure, monadLift_bind,
+    OptionT.run_mk, OptionT.run_pure, OptionT.run_bind, OptionT.run,
+    Option.getM, Option.bind_some, Option.elimM,
+    FullTranscript.challenges, FullTranscript.messages, ChallengeIdx, Challenge,
+    hEq]
+  -- Remaining: two simulateQ calls. First wraps monadLift (liftComp query),
+  -- second wraps verifier do-block with liftM/match.
+  -- Reduce liftComp (query t) → cont <$> liftM (query input), then simulateQ_query
+  simp only [OracleComp.liftComp_query, id_map, Functor.map_id]
+  -- Push simulateQ through the monadLift (OracleQuery → OracleComp) layer
+  erw [simulateQ_query]
+  -- After simulateQ_query: q.cont <$> (impl + challengeImpl) q.input
+  -- The OracleQuery cont/input accessors and the verifier do-block simplify away
+  simp [OracleQuery.cont_query, OracleQuery.input_query, id_map,
+    QueryImpl.addLift_def, simulateQ_pure, QueryImpl.simulateQ_add_liftComp_left,
+    QueryImpl.simulateQ_add_liftComp_right, MonadLift.monadLift,
+    ← OracleComp.liftComp_eq_liftM, OracleComp.liftComp_pure,
+    simulateQ_id', hEq]
+  -- Both subgoals have simulateQ wrapping a do-block with liftM/pure.
+  -- Shared normalization: push simulateQ through bind, unfold monadLift, reduce liftComp.
+  constructor <;> intro <;> intro <;> intro <;> intro
+  all_goals try erw [simulateQ_bind]
+  all_goals simp only [MonadLift.monadLift, liftM, monadLift, MonadLiftT.monadLift]
+  all_goals simp only [OracleComp.liftComp_pure, QueryImpl.simulateQ_add_liftComp_left,
+    simulateQ_pure, simulateQ_id', pure_bind, bind_assoc, map_pure, monadLift_pure,
+    OptionT.run_mk, OptionT.run_pure, OptionT.run_bind, OptionT.run,
+    StateT.run'_eq, probFailure_eq_zero, hEq,
+    support_pure, Set.mem_singleton_iff, Prod.eq_iff_fst_eq_snd_eq]
+  all_goals try erw [simulateQ_pure]
+  all_goals try erw [simulateQ_bind]
+  -- Close remaining with simp_all + OptionT probability reasoning
+  all_goals simp_all [simulateQ_pure, pure_bind, map_pure,
+    OptionT.run_mk, OptionT.run_pure, OptionT.run_bind, OptionT.run,
+    StateT.run'_eq, StateT.run_pure, probFailure_eq_zero,
+    support_pure, support_map, Set.mem_singleton_iff, Set.mem_image,
+    OptionT.probFailure_eq, probOutput_pure, hEq]
+  -- Goal 1: none ∉ support (OptionT.mk (pure (some ...)))
+  -- OptionT.mk = id, support_pure closes
+  · rw [show OptionT.mk = id from rfl]; simp [support_pure]
+  -- Goal 2: support membership implies relOut — reduce simulateQ layers to pure, then singleton
+  · intro a b x hx x_1 hx1 x_2
+    erw [simulateQ_bind]
+    simp only [liftComp_eq_liftM, pure_bind, simulateQ_pure, OptionT.lift,
+      OptionT.run_mk, map_pure]
+    erw [simulateQ_pure]
+    simp only [pure_bind, simulateQ_pure, support_pure, StateT.run, StateT.run',
+      Set.mem_singleton_iff, Prod.mk.injEq]
+    rintro ⟨⟨rfl, rfl⟩, rfl⟩
+    exact ⟨by simp [hEq], rfl, rfl⟩
 
 -- def langIn : Set (Unit × (∀ _ : Fin 2, OStatement)) := setOf fun ⟨(), oracles⟩ =>
 --   oracles 0 = oracles 1

@@ -102,8 +102,8 @@ theorem rbrKnowledgeSoundness_implies_knowledgeSoundness
 -- /-- Round-by-round soundness for a protocol implies state-restoration soundness for the same
 -- protocol with arbitrary added non-empty salts. -/
 -- theorem rbrSoundness_implies_srSoundness_addSalt
---     {init : ProbComp (srChallengeOracle StmtIn pSpec).FunctionType}
---     {impl : QueryImpl oSpec (StateT (srChallengeOracle StmtIn pSpec).FunctionType ProbComp)}
+--     {init : ProbComp (QueryImpl (srChallengeOracle StmtIn pSpec) Id)}
+--     {impl : QueryImpl oSpec (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)}
 --     (langIn : Set StmtIn) (langOut : Set StmtOut)
 --     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
 --     (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0)
@@ -115,8 +115,8 @@ theorem rbrKnowledgeSoundness_implies_knowledgeSoundness
 -- /-- Round-by-round knowledge soundness for a protocol implies state-restoration
 -- knowledge soundness for the same protocol with arbitrary added non-empty salts. -/
 -- theorem rbrKnowledgeSoundness_implies_srKnowledgeSoundness_addSalt
---     {init : ProbComp (srChallengeOracle StmtIn pSpec).FunctionType}
---     {impl : QueryImpl oSpec (StateT (srChallengeOracle StmtIn pSpec).FunctionType ProbComp)}
+--     {init : ProbComp (QueryImpl (srChallengeOracle StmtIn pSpec) Id)}
+--     {impl : QueryImpl oSpec (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)}
 --     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
 --     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
 --     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0)
@@ -132,9 +132,9 @@ theorem srSoundness_addSalt_implies_srSoundness_original
     (langIn : Set StmtIn) (langOut : Set StmtOut)
     (Salt : pSpec.MessageIdx → Type) [∀ i, Nonempty (Salt i)] [∀ i, Fintype (Salt i)]
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (srInit : ProbComp (srChallengeOracle StmtIn (pSpec.addSalt Salt)).FunctionType)
+    (srInit : ProbComp (QueryImpl (srChallengeOracle StmtIn (pSpec.addSalt Salt)) Id))
     (srImpl : QueryImpl oSpec
-      (StateT (srChallengeOracle StmtIn (pSpec.addSalt Salt)).FunctionType ProbComp))
+      (StateT (QueryImpl (srChallengeOracle StmtIn (pSpec.addSalt Salt)) Id) ProbComp))
     (srSoundnessError : ℝ≥0) :
       Verifier.StateRestoration.soundness srInit srImpl langIn langOut
         (verifier.addSalt Salt) srSoundnessError →
@@ -147,9 +147,9 @@ theorem srKnowledgeSoundness_addSalt_implies_srKnowledgeSoundness_original
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (Salt : pSpec.MessageIdx → Type) [∀ i, Nonempty (Salt i)] [∀ i, Fintype (Salt i)]
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (srInit : ProbComp (srChallengeOracle StmtIn (pSpec.addSalt Salt)).FunctionType)
+    (srInit : ProbComp (QueryImpl (srChallengeOracle StmtIn (pSpec.addSalt Salt)) Id))
     (srImpl : QueryImpl oSpec
-      (StateT (srChallengeOracle StmtIn (pSpec.addSalt Salt)).FunctionType ProbComp))
+      (StateT (QueryImpl (srChallengeOracle StmtIn (pSpec.addSalt Salt)) Id) ProbComp))
     (srKnowledgeError : ℝ≥0) :
       Verifier.StateRestoration.knowledgeSoundness srInit srImpl relIn relOut
         (verifier.addSalt Salt) srKnowledgeError →
@@ -163,8 +163,8 @@ The error is preserved in the implication. -/
 theorem srSoundness_implies_soundness
     (langIn : Set StmtIn) (langOut : Set StmtOut)
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (srInit : ProbComp (srChallengeOracle StmtIn pSpec).FunctionType)
-    (srImpl : QueryImpl oSpec (StateT (srChallengeOracle StmtIn pSpec).FunctionType ProbComp))
+    (srInit : ProbComp (QueryImpl (srChallengeOracle StmtIn pSpec) Id))
+    (srImpl : QueryImpl oSpec (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp))
     (srSoundnessError : ℝ≥0) :
       Verifier.StateRestoration.soundness srInit srImpl langIn langOut verifier srSoundnessError →
         soundness init impl langIn langOut verifier srSoundnessError := by
@@ -177,8 +177,8 @@ knowledge soundness. The error is preserved in the implication. -/
 theorem srKnowledgeSoundness_implies_knowledgeSoundness
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (srInit : ProbComp (srChallengeOracle StmtIn pSpec).FunctionType)
-    (srImpl : QueryImpl oSpec (StateT (srChallengeOracle StmtIn pSpec).FunctionType ProbComp))
+    (srInit : ProbComp (QueryImpl (srChallengeOracle StmtIn pSpec) Id))
+    (srImpl : QueryImpl oSpec (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp))
     (srKnowledgeError : ℝ≥0) :
       Verifier.StateRestoration.knowledgeSoundness srInit srImpl relIn relOut
         verifier srKnowledgeError →
