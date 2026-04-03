@@ -139,7 +139,7 @@ with respect to the proximity parameter `δ` and the error bound `ε`, folding d
   (a random multilinear combination of the word stack `u` with randomness `r` is `δ`-close to `C`)
   exceeds `ε`, then the word stack `u` has correlated agreement with `C ^⋈ (2^ϑ)`. -/
 def δ_ε_multilinearCorrelatedAgreement [CommRing F]
-  {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι] [Module F A]
+    {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι] [Module F A]
   (C : Set (ι → A)) (ϑ : ℕ) (δ ε : ℝ≥0) : Prop :=
   ∀ (u : WordStack A (Fin (2^ϑ)) ι),
     Pr_{let r ← $ᵖ (Fin ϑ → F)}[ -- This syntax only works with (A : Type 0)

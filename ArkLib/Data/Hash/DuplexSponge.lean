@@ -489,7 +489,8 @@ def absorbFast (sponge : DuplexSponge U C) (arr : Array U) :
         absorbPos := sponge.absorbPos + ⟨chunkSize, by omega⟩ }
       -- For termination proof
       have : arr.size - min arr.size (SpongeSize.R - ↑sponge.absorbPos) < arr.size := by
-        simp; exact ⟨Array.size_pos_iff.mpr (by simpa using hEmpty), by omega⟩
+        simp only [tsub_lt_self_iff, lt_inf_iff, tsub_pos_iff_lt, and_self_left]
+        exact ⟨Array.size_pos_iff.mpr (by simpa using hEmpty), by omega⟩
       absorbFast newSponge (arr.drop chunkSize)
 termination_by (arr.size, sponge.absorbPos)
 
@@ -591,7 +592,8 @@ def squeezeInto (sponge : DuplexSponge U C) (arr : Array U) :
     return (sponge4, extractedChunk.toArray ++ newArray)
 termination_by arr.size
 decreasing_by
-  simp at h ⊢
+  simp only [Array.drop_eq_extract, Array.size_extract, min_self, tsub_lt_self_iff, lt_inf_iff,
+    tsub_pos_iff_lt, and_self_left] at h ⊢
   exact ⟨Array.size_pos_iff.mpr (by simpa using hEmpty), h⟩
 
 def squeezeUnchecked [Permute C] (sponge : DuplexSponge U C) (arr : Array U) :

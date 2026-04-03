@@ -8,6 +8,8 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JointAgreement
+/-! # BCIKS20 Affine-Line Unique Decoding -/
+
 
 namespace ProximityGap
 
@@ -24,9 +26,9 @@ variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
          {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
 theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg))
-    : δ_ε_correlatedAgreementAffineLines (A := F) (F := F) (ι := ι)
-    (C := ReedSolomon.code domain deg) (δ := δ) (ε := errorBound δ deg domain) := by
+    (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg)) :
+    δ_ε_correlatedAgreementAffineLines (A := F) (F := F) (ι := ι)
+      (C := ReedSolomon.code domain deg) (δ := δ) (ε := errorBound δ deg domain) := by
   classical
   unfold δ_ε_correlatedAgreementAffineLines
   intro u hprob

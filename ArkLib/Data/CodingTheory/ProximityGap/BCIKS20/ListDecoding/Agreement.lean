@@ -7,6 +7,8 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Extraction
 
+/-! # BCIKS20 List-Decoding Agreement -/
+
 namespace ProximityGap
 
 open NNReal Finset Function
@@ -30,9 +32,8 @@ open Trivariate in
 open Bivariate in
 /-- Claim 5.7 of [BCIKS20]. -/
 lemma exists_factors_with_large_common_root_set
-  (δ : ℚ) (x₀ : F)
-  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  :
+    (δ : ℚ) (x₀ : F)
+  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
   ∃ R H, R ∈ (irreducible_factorization_of_gs_solution h_gs).choose_spec.choose ∧
     Irreducible H ∧ H ∣ (Bivariate.evalX (Polynomial.C x₀) R) ∧
     #(@Set.toFinset _ { z : coeffs_of_close_proximity (F := F) k ωs δ u₀ u₁ |
@@ -48,24 +49,23 @@ lemma exists_factors_with_large_common_root_set
 -/
 noncomputable def R
   (δ : ℚ) (x₀ : F)
-  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  : F[Z][X][Y] := (exists_factors_with_large_common_root_set k δ x₀ h_gs).choose
+  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) : F[Z][X][Y] :=
+  (exists_factors_with_large_common_root_set k δ x₀ h_gs).choose
 
 /-- Claim 5.7 establishes existens of a polynomial `H`.
     This is the extraction of this polynomial.
 -/
 noncomputable def H
   (δ : ℚ) (x₀ : F)
-  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  : F[Z][X] := (exists_factors_with_large_common_root_set k δ x₀ h_gs).choose_spec.choose
+  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) : F[Z][X] :=
+  (exists_factors_with_large_common_root_set k δ x₀ h_gs).choose_spec.choose
 
 /-- An important property of the polynomial
     `H` extracted from claim 5.7 is that it is
     irreducible.
 -/
 lemma irreducible_H
-  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  :
+    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
   Irreducible (H k δ x₀ h_gs) :=
   (exists_factors_with_large_common_root_set k δ x₀ h_gs).choose_spec.choose_spec.2.1
 
@@ -77,16 +77,14 @@ open BCIKS20AppendixA.ClaimA2 in
     of coefficients.
 -/
 lemma approximate_solution_is_exact_solution_coeffs
-  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  : ∀ t ≥ k,
+    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) : ∀ t ≥ k,
   α'
     x₀
     (R k δ x₀ h_gs)
     (irreducible_H k h_gs)
     t
   =
-  (0 : BCIKS20AppendixA.𝕃 (H k δ x₀ h_gs))
-  := by sorry
+  (0 : BCIKS20AppendixA.𝕃 (H k δ x₀ h_gs)) := by sorry
 
 open BCIKS20AppendixA.ClaimA2 in
 /-- The claim 5.8 from [BCIKS20].
@@ -95,8 +93,7 @@ open BCIKS20AppendixA.ClaimA2 in
     This version is in terms of polynomials.
 -/
 lemma approximate_solution_is_exact_solution_coeffs'
-  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  :
+    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
     γ' x₀ (R k δ x₀ h_gs) (irreducible_H k h_gs) =
         PowerSeries.mk (fun t =>
           if t ≥ k
@@ -114,8 +111,7 @@ open BCIKS20AppendixA.ClaimA2 in
     the variable `Z`.
 -/
 lemma solution_gamma_is_linear_in_Z
-  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  :
+    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
   ∃ (v₀ v₁ : F[X]),
     γ' x₀ (R k δ x₀ h_gs) (irreducible_H k (x₀ := x₀) (δ := δ) h_gs) =
         BCIKS20AppendixA.polyToPowerSeries𝕃 _
@@ -129,8 +125,7 @@ lemma solution_gamma_is_linear_in_Z
 -/
 noncomputable def P
   (δ : ℚ) (x₀ : F)
-  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  :
+  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
   F[Z][X] :=
   let v₀ := Classical.choose (solution_gamma_is_linear_in_Z k (δ := δ) (x₀ := x₀) h_gs)
   let v₁ := Classical.choose
@@ -144,8 +139,7 @@ open BCIKS20AppendixA.ClaimA2 in
 /-- The extracted `P` from claim 5.9 equals `γ`.
 -/
 lemma gamma_eq_P
-  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  :
+    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
   γ' x₀ (R k δ x₀ h_gs) (irreducible_H k (x₀ := x₀) (δ := δ) h_gs) =
   BCIKS20AppendixA.polyToPowerSeries𝕃 _
     (P k δ x₀ h_gs) :=
@@ -158,8 +152,7 @@ lemma gamma_eq_P
 noncomputable def matching_set_at_x
   (δ : ℚ)
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  (x : Fin n)
-  : Finset F := @Set.toFinset _ {z : F | ∃ h : z ∈ matching_set k ωs δ u₀ u₁ h_gs,
+  (x : Fin n) : Finset F := @Set.toFinset _ {z : F | ∃ h : z ∈ matching_set k ωs δ u₀ u₁ h_gs,
     u₀ x + z * u₁ x =
       (Pz (matching_set_is_a_sub_of_coeffs_of_close_proximity k h_gs h)).eval (ωs x)} sorry
 
@@ -169,7 +162,7 @@ noncomputable def matching_set_at_x
     the cardinality |S'_x| is big enough.
 -/
 lemma solution_gamma_matches_word_if_subset_large
-  {ωs : Fin n ↪ F}
+    {ωs : Fin n ↪ F}
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   {x : Fin n}
   {D : ℕ}
@@ -178,10 +171,8 @@ lemma solution_gamma_matches_word_if_subset_large
     (2 * k + 1)
       * (Bivariate.natDegreeY <| H k δ x₀ h_gs)
       * (Bivariate.natDegreeY <| R k δ x₀ h_gs)
-      * D)
-  : (P k δ x₀ h_gs).eval (Polynomial.C (ωs x)) =
-    (Polynomial.C <| u₀ x) + u₁ x • Polynomial.X
-  := by sorry
+      * D) : (P k δ x₀ h_gs).eval (Polynomial.C (ωs x)) =
+    (Polynomial.C <| u₀ x) + u₁ x • Polynomial.X := by sorry
 
 /-- Claim 5.11 from [BCIKS20].
     There exists a set of points `{x₀,...,x_{k+1}}`
@@ -189,12 +180,11 @@ lemma solution_gamma_matches_word_if_subset_large
     in the claim 5.10.
 -/
 lemma exists_points_with_large_matching_subset
-  {ωs : Fin n ↪ F}
+    {ωs : Fin n ↪ F}
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   {x : Fin n}
   {D : ℕ}
-  (hD : D ≥ Bivariate.totalDegree (H k δ x₀ h_gs))
-  :
+  (hD : D ≥ Bivariate.totalDegree (H k δ x₀ h_gs)) :
   ∃ Dtop : Finset (Fin n),
     Dtop.card = k + 1 ∧
     ∀ x ∈ Dtop,

@@ -252,7 +252,7 @@ def finalize (ds : DomainSeparator U H) : Array Op :=
         (acc, c :: rest)
     go 0 cs
   let parsePart (s : String) : Option Op :=
-    match s.data with
+    match s.toList with
     | [] => none
     | id :: rest =>
       let (n, _rest) := parseDigits rest

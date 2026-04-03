@@ -6,6 +6,8 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
+/-! # BCIKS20 Curves -/
+
 
 namespace ProximityGap
 
@@ -15,9 +17,8 @@ open Code
 
 section CoreResults
 
-variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+variable {ι : Type} [Fintype ι] [Nonempty ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
-
 /-- Theorem 1.5 (Correlated agreement for low-degree parameterised curves) in [BCIKS20].
 
 Take a Reed-Solomon code of length `ι` and degree `deg`, a proximity-error parameter

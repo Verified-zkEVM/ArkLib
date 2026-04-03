@@ -68,7 +68,7 @@ theorem natDegree_sum_lt_of_forall_lt {F : Type} [Semiring F]
 
 
 theorem natDeg_sum_eq_of_unique {α : Type} {s : Finset α} {f : α → F[X]} {deg : ℕ}
-  (mx : α) (h : mx ∈ s) :
+    (mx : α) (h : mx ∈ s) :
     (f mx).natDegree = deg →
     (∀ y ∈ s, y ≠ mx → (f y).natDegree < deg ∨ f y = 0) →
     (∑ x ∈ s, f x).natDegree = deg := by
@@ -117,7 +117,7 @@ theorem natDeg_sum_eq_of_unique {α : Type} {s : Finset α} {f : α → F[X]} {d
 /-- If some element `x ∈ s` maps to `y` under `f`, and every element of `s` maps to a value
 less than or equal to `y`, then the supremum of `f` over `s` is exactly `y`. -/
 lemma sup_eq_of_le_of_reach {α β : Type} [SemilatticeSup β] [OrderBot β] {s : Finset α} {f : α → β}
-      (x : α) {y : β} (h : x ∈ s) :
+    (x : α) {y : β} (h : x ∈ s) :
     f x = y →
     (∀ x ∈ s, f x ≤ y) →
     s.sup f = y := by
@@ -152,7 +152,7 @@ If `q * f ≠ 0`, then the `X`-degree of `q` is bounded above by the difference 
 -/
 @[grind .]
 lemma degreeX_le_degreeX_sub_degreeX [IsDomain F] {f q : F[X][Y]} (hf : f ≠ 0) (hg : q * f ≠ 0) :
-  degreeX q ≤ degreeX (q * f) - degreeX f := by
+    degreeX q ≤ degreeX (q * f) - degreeX f := by
   have hq : q ≠ 0 := quotient_nezero (f := f) (q := q) hg
   have hmul : degreeX (q * f) = degreeX q + degreeX f := degreeX_mul q f hq hf
   have hsum : degreeX q + degreeX f ≤ degreeX (q * f) := by
@@ -167,7 +167,7 @@ If `q * f ≠ 0`, then the `Y`-degree of `q` is bounded above by the difference 
 -/
 @[grind .]
 lemma degreeY_le_degreeY_sub_degreeY [IsDomain F] {f q : F[X][Y]} (hf : f ≠ 0) (hg : q * f ≠ 0) :
-  natDegreeY q ≤ natDegreeY (q * f) - natDegreeY f := by grind
+    natDegreeY q ≤ natDegreeY (q * f) - natDegreeY f := by grind
 
 /-- Each coefficient's total-degree contribution is bounded by `totalDegree` when in support. -/
 theorem coeff_totalDegree_le (f : F[X][Y]) {n : ℕ} (hn : n ∈ f.support) :
@@ -187,6 +187,101 @@ theorem coeff_totalDegree_le' (f : F[X][Y]) (n : ℕ) :
 theorem exists_max_index_totalDegree (f : F[X][Y]) (hf : f ≠ 0) :
     ∃ mm ∈ f.support,
       (f.coeff mm).natDegree + mm = totalDegree f ∧
+<<<<<<< quang/data-lint-cleanup-data
+      ∀ n, mm < n →
+        (f.coeff n).natDegree + n < totalDegree f ∨
+          f.coeff n = 0 := by
+  obtain ⟨mm, hmm⟩ :
+      ∃ mm ∈ f.support,
+        (f.coeff mm).natDegree + mm = totalDegree f :=
+    exists_max_index_totalDegree f hf
+  set Sf := f.support.filter
+    fun n => (f.coeff n).natDegree + n = totalDegree f
+  obtain ⟨mm, hmm⟩ :
+      ∃ mm ∈ f.support,
+        (f.coeff mm).natDegree + mm = totalDegree f ∧
+        ∀ n ∈ f.support,
+          (f.coeff n).natDegree + n = totalDegree f →
+            n ≤ mm := by
+    exact ⟨Finset.max' Sf ⟨mm, by aesop⟩,
+      (Finset.mem_filter.mp
+        (Finset.max'_mem Sf ⟨mm, by aesop⟩)).1,
+      (Finset.mem_filter.mp
+        (Finset.max'_mem Sf ⟨mm, by aesop⟩)).2,
+      fun n hn hn' =>
+        Finset.le_max' _ _ <| by aesop⟩
+  refine ⟨mm, hmm.1, hmm.2.1,
+    fun n hn =>
+      Classical.or_iff_not_imp_right.2 fun h => ?_⟩
+  contrapose! hmm
+  exact fun _ _ =>
+    ⟨n, by aesop,
+      le_antisymm
+        (Finset.le_sup
+          (f := fun m =>
+            (f.coeff m |> Polynomial.natDegree) + m)
+          (by aesop))
+        hmm, hn⟩
+
+set_option linter.flexible false in
+set_option linter.style.multiGoal false in
+private theorem coeff_mul_natDegree_eq
+    [NoZeroDivisors F] {f g : F[X][Y]}
+    (_hf : f ≠ 0) (_hg : g ≠ 0)
+    {mmf mmg : ℕ}
+    (hmmf : mmf ∈ f.support)
+    (hmmg : mmg ∈ g.support)
+    (hmmf_eq : (f.coeff mmf).natDegree + mmf =
+      totalDegree f)
+    (hmmg_eq : (g.coeff mmg).natDegree + mmg =
+      totalDegree g)
+    (hmmf_max : ∀ n, mmf < n →
+      (f.coeff n).natDegree + n < totalDegree f ∨
+        f.coeff n = 0)
+    (hmmg_max : ∀ n, mmg < n →
+      (g.coeff n).natDegree + n < totalDegree g ∨
+        g.coeff n = 0) :
+    ((f * g).coeff (mmf + mmg)).natDegree =
+      (f.coeff mmf).natDegree +
+        (g.coeff mmg).natDegree := by
+  have h_coeff : (f * g).coeff (mmf + mmg) =
+      ∑ i ∈ Finset.range (mmf + mmg + 1),
+        f.coeff i * g.coeff (mmf + mmg - i) := by
+    rw [Polynomial.coeff_mul,
+      Finset.Nat.sum_antidiagonal_eq_sum_range_succ_mk]
+  rw [h_coeff, natDeg_sum_eq_of_unique]
+  use mmf
+  simp only [Finset.mem_range, Order.lt_add_one_iff, le_add_iff_nonneg_right, zero_le]
+  · rw [Nat.add_sub_cancel_left,
+      Polynomial.natDegree_mul']
+    aesop
+  · intro i hi hi'
+    cases lt_or_gt_of_ne hi' <;>
+      simp_all +decide
+    · by_cases hi'' : g.coeff (mmf + mmg - i) = 0
+      · aesop
+      · cases hmmg_max (mmf + mmg - i) (by omega) <;>
+          simp_all +decide
+        have h_deg :
+            (f.coeff i *
+              g.coeff (mmf + mmg - i)).natDegree ≤
+            (f.coeff i).natDegree +
+              (g.coeff (mmf + mmg - i)).natDegree :=
+          natDegree_mul_le
+        have h_deg :
+            (f.coeff i).natDegree + i ≤
+              totalDegree f := by
+          by_cases hi''' : f.coeff i = 0 <;>
+            simp_all +decide
+              [Polynomial.natDegree_mul']
+          · linarith [Nat.zero_le
+              (Polynomial.natDegree (f.coeff mmf))]
+          · exact Finset.le_sup
+              (f := fun m =>
+                (f.coeff m |> Polynomial.natDegree) +
+                  m)
+              (by aesop)
+=======
       ∀ n, mm < n → (f.coeff n).natDegree + n < totalDegree f ∨ f.coeff n = 0 := by
   classical
   let s₁ : Finset ℕ := f.support.filter (fun n => (f.coeff n).natDegree + n = totalDegree f)
@@ -236,6 +331,7 @@ theorem totalDegree_mul_le (f g : F[X][Y]) :
         have hg_le : (g.coeff x.2).natDegree + x.2 ≤ totalDegree g :=
           coeff_totalDegree_le g (Polynomial.mem_support_iff.2 hgx)
         have hmul_le := Polynomial.natDegree_mul_le (p := f.coeff x.1) (q := g.coeff x.2)
+>>>>>>> quang/bump-comppoly
         omega
   -- k ∈ (f*g).support means some f.coeff i * g.coeff j ≠ 0 with i + j = k
   -- Hence i ∈ f.support, j ∈ g.support, and k ≤ totalDegree f + totalDegree g
@@ -394,7 +490,7 @@ theorem monomialXY_def {n m : ℕ} {a : F} :
 In particular, `(a + b) * X^n * Y^m = a * X^n * Y^m + b * X^n * Y^m`. -/
 @[simp, grind =]
 theorem monomialXY_add {n m : ℕ} {a b : F} :
-  monomialXY n m (a + b) = monomialXY n m a + monomialXY n m b :=
+    monomialXY n m (a + b) = monomialXY n m a + monomialXY n m b :=
   (monomialXY n m).map_add _ _
 
 /-- Multiplying bivariate monomials works as expected.
@@ -413,14 +509,14 @@ theorem monomialXY_mul_monomialXY {n m p q : ℕ} {a b : F} :
 In particular, ` (a * X^n * Y^m)^k = (a^k) * X^(n * k) * Y^(m * k)`. -/
 @[simp, grind _=_]
 theorem monomialXY_pow {n m k : ℕ} {a : F} :
-  monomialXY n m a ^ k = monomialXY (n * k) (m * k) (a ^ k) := by
+    monomialXY n m a ^ k = monomialXY (n * k) (m * k) (a ^ k) := by
   simp [monomialXY]
 
 /-- Multiplying a bivariate monomial by a scalar works as expected.
 In particular, ` b * a * X^n * Y^m = b * (a * X^n * Y^m)`. -/
 @[simp, grind _=_]
 theorem smul_monomialXY {n m : ℕ} {a : F} {S} [SMulZeroClass S F] {b : S} :
-  monomialXY n m (b • a) = b • monomialXY n m a := by
+    monomialXY n m (b • a) = b • monomialXY n m a := by
   grind [monomialXY]
 
 /-- A bivariate monimial `a * X^n * Y^m` is equal to zero if and only if `a = 0`. -/
@@ -432,13 +528,13 @@ theorem monomialXY_eq_zero_iff {n m : ℕ} {a : F} : monomialXY n m a = 0 ↔ a 
 `n = p` and `m = q` or if both are zero, i.e., `a = b = 0`. -/
 @[grind =]
 theorem monomialXY_eq_monomialXY_iff {n m p q : ℕ} {a b : F} :
-  monomialXY n m a = monomialXY p q b ↔ n = p ∧ m = q ∧ a = b ∨ a = 0 ∧ b = 0 := by
+    monomialXY n m a = monomialXY p q b ↔ n = p ∧ m = q ∧ a = b ∨ a = 0 ∧ b = 0 := by
   aesop (add simp [monomialXY, Polynomial.monomial_eq_monomial_iff])
 
 /-- The total degree of the monomial `a * X^n * Y^m` is `n + m`. -/
 @[simp, grind =]
 lemma totalDegree_monomialXY {n m : ℕ} {a : F} (ha : a ≠ 0) :
-  totalDegree (monomialXY n m a) = n + m := by
+    totalDegree (monomialXY n m a) = n + m := by
   classical
   have hma : Polynomial.monomial n a ≠ 0 := by simp [ha]
   unfold totalDegree
@@ -458,7 +554,7 @@ lemma degreeX_monomialXY {n m : ℕ} {a : F} (ha : a ≠ 0) :
 /-- The `Y`-degree of the monomial `a * X^n * Y^m` is `m`. -/
 @[simp]
 lemma degreeY_monomialXY {n m : ℕ} {a : F} (ha : a ≠ 0) :
-  natDegreeY (monomialXY n m a) = m := by
+    natDegreeY (monomialXY n m a) = m := by
   classical
   have hma : Polynomial.monomial n a ≠ 0 := by simp [ha]
   unfold natDegreeY

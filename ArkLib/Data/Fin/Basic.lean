@@ -140,7 +140,7 @@ theorem induction_append_left {m n : ℕ} {motive : Fin (m + n + 1) → Sort*} {
   induction i using Fin.induction with
   | zero => simp [induction_zero]
   | succ i ih =>
-    simp at ih ⊢
+    simp only [val_succ, val_castSucc, induction_succ] at ih ⊢
     have : (⟨i.1 + 1, by omega⟩ : Fin (m + n + 1)) = (⟨i, by omega⟩ : Fin (m + n)).succ := rfl
     rw! (castMode := .all) [this, induction_succ]
     simp_all only [succ_mk, castSucc_mk]
@@ -148,7 +148,7 @@ theorem induction_append_left {m n : ℕ} {motive : Fin (m + n + 1) → Sort*} {
 /-- `Fin.induction` on `m + n` for `m + i` steps is equivalent to `Fin.induction` on `n` on `i`
   steps on the result of `Fin.induction` on `m`. -/
 theorem induction_append_right {m n : ℕ} {motive : Fin (m + n + 1) → Sort*} {zero : motive 0}
-  {succ : ∀ i : Fin (m + n), motive i.castSucc → motive i.succ} {i : Fin (n + 1)} :
+    {succ : ∀ i : Fin (m + n), motive i.castSucc → motive i.succ} {i : Fin (n + 1)} :
     induction zero succ (i.natAdd m) =
       @induction n (fun i => motive (i.natAdd m))
         (@induction m (fun j => motive (Fin.cast (by omega) (j.castAdd n)))
@@ -156,11 +156,12 @@ theorem induction_append_right {m n : ℕ} {motive : Fin (m + n + 1) → Sort*} 
         (fun i x => succ (i.natAdd m) x) i := by
   induction i using Fin.induction with
   | zero =>
-    simp [castAdd, castLE, last, natAdd, HMod.hMod, Mod.mod, Nat.mod]
+    simp only [natAdd, coe_ofNat_eq_mod, Nat.zero_mod, Nat.add_zero, Nat.add_eq, castAdd,
+      castLE, cast_mk, val_castSucc, last, induction_zero]
     rw [induction_append_left (i := ⟨m, by omega⟩)]
     rfl
   | succ i ih =>
-    simp [← ih]
+    simp only [Nat.add_eq, induction_succ, ← ih]
     have : natAdd m i.succ = (natAdd m i).succ := rfl
     rw! (castMode := .all) [this, induction_succ]
     rfl
@@ -255,9 +256,13 @@ end Append
   the return type is `Fin.append α β`. -/
 def addCases' {m n : ℕ} {α : Fin m → Sort u} {β : Fin n → Sort u} (left : (i : Fin m) → α i)
     (right : (j : Fin n) → β j) (i : Fin (m + n)) : append α β i := by
-  refine addCases ?_ ?_ i <;> intro j <;> simp
-  · exact left j
-  · exact right j
+  refine addCases ?_ ?_ i
+  · intro j
+    simp only [append_left]
+    exact left j
+  · intro j
+    simp only [append_right]
+    exact right j
 
 @[simp]
 theorem addCases'_left {m n : ℕ} {α : Fin m → Sort u} {β : Fin n → Sort u}

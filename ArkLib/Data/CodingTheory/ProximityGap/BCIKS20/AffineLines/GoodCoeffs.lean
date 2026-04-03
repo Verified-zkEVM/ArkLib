@@ -7,6 +7,8 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.BWMatrix
+/-! # BCIKS20 Affine-Line Good Coefficients -/
+
 
 namespace ProximityGap
 

@@ -8,6 +8,8 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.UniqueDecoding
+/-! # BCIKS20 Affine-Line Main Results -/
+
 
 namespace ProximityGap
 
@@ -30,7 +32,7 @@ pair `(δ, ε)` and two words `u₀` and `u₁`, such that the probability that 
 line passing through `u₀` and `u₁` is `δ`-close to Reed-Solomon code is at most `ε`.
 Then, the words `u₀` and `u₁` have correlated agreement. -/
 theorem RS_correlatedAgreement_affineLines {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-  (hδ : δ ≤ 1 - (ReedSolomonCode.sqrtRate deg domain)) :
+    (hδ : δ ≤ 1 - (ReedSolomonCode.sqrtRate deg domain)) :
   δ_ε_correlatedAgreementAffineLines (A := F) (F := F) (ι := ι)
     (C := ReedSolomon.code domain deg) (δ := δ) (ε := errorBound δ deg domain) :=
   -- Do casing analysis on `hδ`

@@ -1,8 +1,11 @@
-/- Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+/-
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov, František Silváši
 -/
 import ArkLib.Data.CodingTheory.JohnsonBound.Expectations
+/-! # Johnson Bound Lemmas -/
+
 
 namespace JohnsonBound
 
@@ -197,7 +200,7 @@ lemma le_sum_sum_choose_K [Zero F] (h_n : 0 < n) (h_card : 2 ≤ card F) :
       · simp [h_n.ne']
       · exact fun _ _ ↦ Set.mem_univ _
     convert mul_le_mul_of_nonneg_left h_jensen (Nat.cast_nonneg n) using 1
-    · simp +decide [ ← Finset.mul_sum _ _ _, ← Finset.sum_div, k, h_n.ne' ] ; ring_nf
+    · simp +decide [ ← Finset.mul_sum _ _ _, ← Finset.sum_div, k, h_n.ne' ]; ring_nf
       simp +decide [ h_n.ne' ]
     · simp [← mul_sum _ _ _, h_n.ne']
   have h_combined : ∑ i : Fin n, sum_choose_K_i B i ≥
@@ -587,14 +590,19 @@ lemma johnson_den_lb_e_zero {n d : ℕ} {q : ℚ}
 
 /-- Lower bound on the Johnson denominator when `e > 0`. -/
 lemma johnson_den_lb_e_pos {n d e : ℕ} {q frac : ℚ}
-    (hn_pos : (0 : ℚ) < n) (hq_ne : (q : ℚ) ≠ 0) (he0 : e ≠ 0)
+    (hn_pos : (0 : ℚ) < n) (he0 : e ≠ 0)
     (one_div_q_le : (1 : ℚ) / q ≤ frac - 1) (hfrac1_pos : (0 : ℚ) < frac - 1)
     (hbase_nonneg : (0 : ℚ) ≤ (d / n : ℚ) - 2 * (e / n : ℚ) + (e / n : ℚ) ^ 2) :
     (1 : ℚ) / (q * (n : ℚ) ^ 2) ≤
     (d / n : ℚ) - 2 * (e / n : ℚ) + frac * (e / n : ℚ) ^ 2 := by
   have h_e_div_n_ge : (e / n : ℚ) ^ 2 ≥ 1 / (n : ℚ) ^ 2 := by
     field_simp; exact_mod_cast Nat.one_le_pow _ _ (Nat.pos_of_ne_zero he0)
-  ring_nf at *; nlinarith [mul_inv_cancel₀ hq_ne]
+  by_cases hq0 : q = 0
+  · subst hq0
+    simp
+    nlinarith [hbase_nonneg, hfrac1_pos, h_e_div_n_ge]
+  · ring_nf at *
+    nlinarith [mul_inv_cancel₀ hq0]
 
 /-- `q · d · n ≥ 2` when `q ≥ 2`, `d ≥ 1`, `n ≥ 1`. -/
 lemma johnson_qdn_ge_two {q : ℚ} {d n : ℕ}

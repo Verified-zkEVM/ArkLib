@@ -6,6 +6,8 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Guruswami
+/-! # BCIKS20 List-Decoding Extraction -/
+
 
 namespace ProximityGap
 
@@ -29,7 +31,7 @@ variable {m : ℕ} (k : ℕ) {δ : ℚ} {x₀ : F} {u₀ u₁ : Fin n → F} {Q 
 omit [DecidableEq (RatFunc F)] in
 /-- The equation 5.12 from [BCIKS20]. -/
 lemma irreducible_factorization_of_gs_solution
-  {k : ℕ}
+    {k : ℕ}
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
   ∃ (C : F[Z][X]) (R : List F[Z][X][Y]) (f : List ℕ) (e : List ℕ),
     R.length = f.length ∧
@@ -39,14 +41,12 @@ lemma irreducible_factorization_of_gs_solution
     ∀ Rᵢ ∈ R, Irreducible Rᵢ ∧
     Q = (Polynomial.C C) *
         ∏ (Rᵢ ∈ R.toFinset) (fᵢ ∈ f.toFinset) (eᵢ ∈ e.toFinset),
-          (Rᵢ.comp ((Polynomial.X : F[Z][X][Y]) ^ fᵢ))^eᵢ
-  := sorry
+          (Rᵢ.comp ((Polynomial.X : F[Z][X][Y]) ^ fᵢ))^eᵢ := sorry
 
 omit [DecidableEq (RatFunc F)] in
 /-- Claim 5.6 of [BCIKS20]. -/
 lemma discr_of_irred_components_nonzero
-  (_h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  : ∃ x₀,
+    (_h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) : ∃ x₀,
       ∀ R ∈ (irreducible_factorization_of_gs_solution _h_gs).choose_spec.choose,
       Bivariate.evalX x₀ (Bivariate.discr_y R) ≠ 0 := by sorry
 
@@ -56,7 +56,7 @@ noncomputable def pg_Rset
 
 omit [DecidableEq (RatFunc F)] [Finite F] in
 theorem pg_Rset_irreducible (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
-  ∀ R : F[Z][X][Y],
+    ∀ R : F[Z][X][Y],
     R ∈ pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁) h_gs →
       Irreducible R := by
   intro R hR
@@ -79,7 +79,7 @@ noncomputable def pg_candidatePairs
 
 omit [DecidableEq (RatFunc F)] [Finite F] in
 theorem pg_card_normalizedFactors_toFinset_le_natDegree (p : F[Z][X]) (hp : p.Separable) :
-  #((UniqueFactorizationMonoid.normalizedFactors p).toFinset) ≤ p.natDegree := by
+    #((UniqueFactorizationMonoid.normalizedFactors p).toFinset) ≤ p.natDegree := by
   classical
   let s : Multiset (F[Z][X]) := UniqueFactorizationMonoid.normalizedFactors p
   have hs0 : (0 : F[Z][X]) ∉ s := by
@@ -145,7 +145,7 @@ theorem pg_card_normalizedFactors_toFinset_le_natDegree (p : F[Z][X]) (hp : p.Se
 
 omit [DecidableEq F] [DecidableEq (RatFunc F)] [Finite F] in
 theorem pg_evalX_eq_map_evalRingHom (x₀ : F) (R : F[Z][X][Y]) :
-  Bivariate.evalX (Polynomial.C x₀) R = R.map (Polynomial.evalRingHom (Polynomial.C x₀)) := by
+    Bivariate.evalX (Polynomial.C x₀) R = R.map (Polynomial.evalRingHom (Polynomial.C x₀)) := by
   classical
   ext n n'
   · simp [Bivariate.evalX, Polynomial.coeff_map]
@@ -157,7 +157,7 @@ noncomputable def pg_eval_on_Z (p : F[Z][X][Y]) (z : F) : Polynomial (Polynomial
 
 omit [DecidableEq (RatFunc F)] in
 theorem pg_exists_H_of_R_eval_zero (δ : ℚ) (x₀ : F)
-  (_h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
+    (_h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   (z : coeffs_of_close_proximity (F := F) k ωs δ u₀ u₁)
   (R : F[Z][X][Y]) :
   let P : F[X] := Pz (k := k) (ωs := ωs) (δ := δ) (u₀ := u₀) (u₁ := u₁) z.2
@@ -268,7 +268,7 @@ theorem pg_exists_H_of_R_eval_zero (δ : ℚ) (x₀ : F)
 
 omit [DecidableEq (RatFunc F)] in
 theorem pg_exists_R_of_Q_eval_zero (δ : ℚ)
-  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
+    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   (z : coeffs_of_close_proximity (F := F) k ωs δ u₀ u₁) :
   let P : F[X] := Pz (k := k) (ωs := ωs) (δ := δ) (u₀ := u₀) (u₁ := u₁) z.2
   (pg_eval_on_Z (F := F) Q z.1).eval P = 0 →
@@ -321,7 +321,7 @@ theorem pg_exists_R_of_Q_eval_zero (δ : ℚ)
 
 omit [DecidableEq (RatFunc F)] in
 theorem pg_exists_pair_for_z (δ : ℚ) (x₀ : F)
-  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
+    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   (hx0 : ∀ R : F[Z][X][Y],
     R ∈ pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁) h_gs →
       Bivariate.evalX (Polynomial.C x₀) R ≠ 0)
@@ -390,7 +390,7 @@ theorem pg_exists_pair_for_z (δ : ℚ) (x₀ : F)
 
 omit [DecidableEq F] [DecidableEq (RatFunc F)] [Finite F] in
 theorem pg_natDegree_evalX_le_natDegreeY (x₀ : F) (R : F[Z][X][Y]) :
-  (Bivariate.evalX (Polynomial.C x₀) R).natDegree ≤ Bivariate.natDegreeY R := by
+    (Bivariate.evalX (Polynomial.C x₀) R).natDegree ≤ Bivariate.natDegreeY R := by
   classical
   -- Rewrite `evalX` in terms of `map`.
   rw [pg_evalX_eq_map_evalRingHom (x₀ := x₀) (R := R)]
@@ -403,7 +403,7 @@ theorem pg_natDegree_evalX_le_natDegreeY (x₀ : F) (R : F[Z][X][Y]) :
 
 omit [DecidableEq (RatFunc F)] [Finite F] in
 theorem pg_sum_natDegreeY_Rset_le_natDegreeY_Q (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
-  Finset.sum (pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁) h_gs)
+    Finset.sum (pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁) h_gs)
       (fun R => Bivariate.natDegreeY R)
     ≤ Bivariate.natDegreeY Q := by
   classical
@@ -456,10 +456,9 @@ theorem pg_sum_natDegreeY_Rset_le_natDegreeY_Q (h_gs : ModifiedGuruswami m n k �
 
 omit [DecidableEq (RatFunc F)] [Finite F] in
 theorem pg_card_candidatePairs_le_natDegreeY (x₀ : F) (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  (hsep : ∀ R : F[Z][X][Y],
+    (hsep : ∀ R : F[Z][X][Y],
     R ∈ pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁) h_gs →
-      (Bivariate.evalX (Polynomial.C x₀) R).Separable)
-  :
+      (Bivariate.evalX (Polynomial.C x₀) R).Separable) :
   #(pg_candidatePairs (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q)
       (u₀ := u₀) (u₁ := u₁) x₀ h_gs) ≤ Bivariate.natDegreeY Q := by
   classical

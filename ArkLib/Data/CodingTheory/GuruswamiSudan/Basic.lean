@@ -10,6 +10,8 @@ import Mathlib.Data.Real.Sqrt
 import ArkLib.Data.CodingTheory.Basic
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.Polynomial.Bivariate
+/-! # Guruswami-Sudan Basics -/
+
 
 open Polynomial Polynomial.Bivariate Finsupp Finset
 
@@ -48,7 +50,7 @@ def numVars (k D : ℕ) : ℕ := (weigthBoundIndices k D).card
 
 /-- The number of variables is the sum over j of the number of valid i's. -/
 lemma card_weigthBoundIndices_eq_sum (D : ℕ) (hk : 1 < k) :
-  (weigthBoundIndices k D).card = ∑ j ∈ range (D / (k - 1) + 1), (D - (k - 1) * j + 1) := by
+    (weigthBoundIndices k D).card = ∑ j ∈ range (D / (k - 1) + 1), (D - (k - 1) * j + 1) := by
     have h_split : (weigthBoundIndices k D).card =
         ∑ j ∈ range (D / (k - 1) + 1),
           ∑ i ∈ range (D + 1), if i + (k - 1) * j ≤ D then 1 else 0 := by
@@ -228,7 +230,7 @@ lemma numVars_gt_numConstraints_of_gt_one (hn : n ≠ 0) (hk : 1 < k) (hm : 1 �
       exact even_iff_two_dvd.mp (by simp [parity_simps])
 
 lemma numVars_gt_numConstraints (k n m : ℕ) :
-  numVars k (proximity_gap_degree_bound k n m) > numConstraints n m := by
+    numVars k (proximity_gap_degree_bound k n m) > numConstraints n m := by
   by_cases hk : k ≤ 1
   · interval_cases k <;> norm_num [numVars_eq_sq, numConstraints]
     · unfold proximity_gap_degree_bound
@@ -312,7 +314,7 @@ noncomputable def constraintMap (k n m : ℕ) (ωs : Fin n ↪ F) (f : Fin n →
 
 /-- There exists a non-zero polynomial satisfying the conditions. -/
 lemma exists_nonzero_solution (k n m : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
-  ∃ c : (weigthBoundIndices k (proximity_gap_degree_bound k n m)) → F,
+    ∃ c : (weigthBoundIndices k (proximity_gap_degree_bound k n m)) → F,
     c ≠ 0 ∧ constraintMap k n m ωs f (proximity_gap_degree_bound k n m) c = 0 := by
       have h_kernel_nontrivial : Module.finrank F ((weigthBoundIndices k
         (proximity_gap_degree_bound k n m)) → F) >
@@ -342,7 +344,7 @@ section neZero
 /-- The coefficient of X^i Y^j in a linear combination of monomials is the coefficient
     of the combination. -/
 lemma coeff_linearCombination_monomial (c : ℕ × ℕ →₀ F) (i j : ℕ) :
-  ((linearCombination F (fun p ↦ monomial (F := F) p.1 p.2) c).coeff j).coeff i = c (i, j) := by
+    ((linearCombination F (fun p ↦ monomial (F := F) p.1 p.2) c).coeff j).coeff i = c (i, j) := by
     simp only [linearCombination_apply, Finsupp.sum, finset_sum_coeff, coeff_smul, smul_eq_mul]
     rw [Finset.sum_eq_single (i, j)] <;> simp +contextual only [Finsupp.mem_support_iff, ne_eq,
       mul_eq_zero, false_or, Prod.forall, Prod.mk.injEq, not_and]
@@ -354,7 +356,7 @@ lemma coeff_linearCombination_monomial (c : ℕ × ℕ →₀ F) (i j : ℕ) :
 
 /-- The monomials are linearly independent. -/
 lemma linearIndependent_monomials :
-  LinearIndependent F (fun p : ℕ × ℕ ↦ monomial (F := F) p.1 p.2) := by
+    LinearIndependent F (fun p : ℕ × ℕ ↦ monomial (F := F) p.1 p.2) := by
     apply _root_.linearIndependent_iff.mpr
     intro l hl
     ext ⟨i, j⟩
@@ -364,7 +366,7 @@ lemma linearIndependent_monomials :
 
 /-- The solved polynomial is non-zero. -/
 lemma polySol_ne_zero :
-  polySol k n m ωs f ≠ 0 := by
+    polySol k n m ωs f ≠ 0 := by
     have := Classical.choose_spec (exists_nonzero_solution k n m ωs f)
     have h_inj : Function.Injective (coeffsToPoly (F := F) k
     (proximity_gap_degree_bound k n m)) := by
@@ -381,7 +383,7 @@ section weightedDegree
 
 /-- The weighted degree of a monomial X^i Y^j is u*i + v*j. -/
 lemma natWeightedDegree_monomial (i j u v : ℕ) :
-  natWeightedDegree (monomial (F := F) i j) u v = u * i + v * j := by
+    natWeightedDegree (monomial (F := F) i j) u v = u * i + v * j := by
     classical
     simp only [natWeightedDegree, monomial]
     refine le_antisymm ?_ ?_ <;> norm_num
@@ -395,7 +397,7 @@ lemma natWeightedDegree_monomial (i j u v : ℕ) :
 
 /-- The weighted degree of a monomial X^i Y^j is u*i + v*j. -/
 lemma natWeightedDegree_monomial_eq (i j u v : ℕ) :
-  natWeightedDegree (monomial (F := F) i j) u v = u * i + v * j :=
+    natWeightedDegree (monomial (F := F) i j) u v = u * i + v * j :=
     natWeightedDegree_monomial i j u v
 
 /-- The weighted degree of a sum is at most the maximum of the weighted degrees. -/
@@ -438,7 +440,7 @@ lemma natWeightedDegree_sum_le {ι : Type*} (s : Finset ι) (f : ι → F[X][Y])
 /-- The weighted degree of a scalar multiple is at most the weighted degree
     of the polynomial. -/
 lemma natWeightedDegree_smul_le {F : Type} [Semiring F] (a : F) (p : F[X][Y]) (u v : ℕ) :
-  natWeightedDegree (a • p) u v ≤ natWeightedDegree p u v := by
+    natWeightedDegree (a • p) u v ≤ natWeightedDegree p u v := by
     simp only [natWeightedDegree, coeff_smul, Finset.sup_le_iff, Polynomial.mem_support_iff, ne_eq]
     intro b _
     exact le_trans (add_le_add
@@ -685,7 +687,7 @@ lemma dvd_eval_of_rootMultiplicity_zero (Q : F[X][Y]) (P : F[X]) (m : ℕ)
 /-- Evaluating the shifted bivariate polynomial at the shifted univariate polynomial
     is equivalent to shifting the result of the evaluation. -/
 lemma eval_shifted_eq_shifted_eval (Q : F[X][Y]) (P : F[X]) (x y : F) :
-  let Q_sh := (Q.comp (Y + C (C y))).map (Polynomial.compRingHom (X + C x))
+    let Q_sh := (Q.comp (Y + C (C y))).map (Polynomial.compRingHom (X + C x))
   let P_sh := P.comp (X + C x) - C y
   Q_sh.eval P_sh = (Q.eval P).comp (X + C x) := by
     induction Q using Polynomial.induction_on <;> aesop
@@ -718,7 +720,7 @@ lemma orderAt_eval_ge (Q : F[X][Y]) (P : F[X]) (x : F) (m : ℕ)
 /-- If a polynomial R has roots at points indexed by A with multiplicity at least m,
     and its degree is strictly less than m * |A|, then R must be the zero polynomial. -/
 lemma roots_le_degree_of_deg_lt_roots (R : F[X]) (m : ℕ) (A : Finset (Fin n))
-  (h_roots : ∀ i ∈ A, m ≤ R.rootMultiplicity (ωs i)) (h_deg : R.natDegree < m * A.card) :
+    (h_roots : ∀ i ∈ A, m ≤ R.rootMultiplicity (ωs i)) (h_deg : R.natDegree < m * A.card) :
   R = 0 := by
     classical
     have h_sum_multiplicities :
@@ -740,7 +742,7 @@ lemma roots_le_degree_of_deg_lt_roots (R : F[X]) (m : ℕ) (A : Finset (Fin n))
 /-- If a polynomial `q` has degree less than `n`, then interpolating its values at `n`
     points recovers `q`. -/
 lemma interpolate_eq_of_degree_lt (q : F[X]) (hq : q.natDegree < n) :
-  Lagrange.interpolate Finset.univ ωs (fun i ↦ q.eval (ωs i)) = q := by
+    Lagrange.interpolate Finset.univ ωs (fun i ↦ q.eval (ωs i)) = q := by
     classical
     refine Polynomial.eq_of_degree_sub_lt_of_eval_finset_eq ?_ ?_ ?_
     · exact Finset.univ.image ωs
@@ -760,7 +762,7 @@ lemma interpolate_eq_of_degree_lt (q : F[X]) (hq : q.natDegree < n) :
 
 /-- The polynomial corresponding to a codeword has degree at most k-1. -/
 lemma codewordToPoly_degree_le (hk : k + 1 ≤ n) (p : code ωs k) :
-  (codewordToPoly p).natDegree ≤ k - 1 := by
+    (codewordToPoly p).natDegree ≤ k - 1 := by
     rw [codewordToPoly]
     obtain ⟨q, hq, hp⟩ := p.2
     have h_interpolate : (Lagrange.interpolate Finset.univ ωs.toFun) (evalOnPoints ωs q) = q := by
@@ -775,7 +777,7 @@ lemma codewordToPoly_degree_le (hk : k + 1 ≤ n) (p : code ωs k) :
 /-- The degree bound is strictly less than `m` times the number of agreement points,
     provided the distance is within the Johnson radius. -/
 lemma sufficient_multiplicity_bound {dist : ℕ}
-  (hk : k + 1 ≤ n) (hm : 1 ≤ m) (h_dist : (dist : ℝ) / n < proximity_gap_johnson k n m) :
+    (hk : k + 1 ≤ n) (hm : 1 ≤ m) (h_dist : (dist : ℝ) / n < proximity_gap_johnson k n m) :
   (proximity_gap_degree_bound k n m : ℝ) < m * (n - dist) := by
     have h_mul : (m * (n - dist) : ℝ) > (m * n * (1 - proximity_gap_johnson k n m)) := by
       rw [div_lt_iff₀] at h_dist <;> norm_num at * <;>
@@ -790,7 +792,7 @@ lemma sufficient_multiplicity_bound {dist : ℕ}
     $(\omega_i, f_i)$, and if $P$ is a codeword close enough to $f$, then $Y - P(X)$
     divides $Q(X,Y)$. -/
 theorem dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k)
-  {Q : F[X][Y]}
+    {Q : F[X][Y]}
   (hQ_deg : weightedDegree Q 1 (k - 1) ≤ proximity_gap_degree_bound k n m)
   (hQ_mult : ∀ i, m ≤ rootMultiplicity Q (ωs i) (f i))
   (h_dist : (hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) : ℝ) / n <

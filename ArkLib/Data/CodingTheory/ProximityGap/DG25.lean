@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024 - 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors : Chung Thai Nguyen, Quang Dao
+Authors: Chung Thai Nguyen, Quang Dao
 -/
 import CompPoly.Data.Nat.Bitwise
 import ArkLib.Data.CodingTheory.Basic
@@ -125,7 +125,7 @@ section TensorProximityGapDefinitions -- CommRing scalar set
 variable {F : Type} [CommRing F] [Module F A] [Fintype F]
 
 def δ_ε_multilinearCorrelatedAgreement_Nat [CommRing F]
-  {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι] [Module F A]
+    {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι] [Module F A]
   (C : Set (ι → A)) (ϑ : ℕ) (e : ℕ) (ε : ℕ) : Prop :=
   ∀ (u : WordStack A (Fin (2^ϑ)) ι),
     Pr_{let r ← $ᵖ (Fin ϑ → F)}[ -- This syntax only works with (A : Type 0)
@@ -134,11 +134,11 @@ def δ_ε_multilinearCorrelatedAgreement_Nat [CommRing F]
     jointProximityNat (u := u) (e := e) (C := C)
 
 def multilinearCombine_affineLineEvaluation {ϑ : ℕ}
-  (U₀ U₁ : WordStack A (Fin (2 ^ ϑ)) ι) (r : Fin ϑ → F) (r_affine_combine : F) : (Word A ι) :=
+    (U₀ U₁ : WordStack A (Fin (2 ^ ϑ)) ι) (r : Fin ϑ → F) (r_affine_combine : F) : (Word A ι) :=
   multilinearCombine  (u := affineLineEvaluation (F := F) U₀ U₁ r_affine_combine) (r := r)
 
 def splitHalfRowWiseInterleavedWords {ϑ : ℕ} (u : WordStack A (Fin (2 ^ (ϑ + 1))) ι) :
-  (WordStack A (Fin (2 ^ (ϑ))) ι) × (WordStack A (Fin (2 ^ (ϑ))) ι) := by
+    (WordStack A (Fin (2 ^ (ϑ))) ι) × (WordStack A (Fin (2 ^ (ϑ))) ι) := by
   have h_pow_lt: 2 ^ (ϑ) < 2 ^ (ϑ + 1) := by
     apply Nat.pow_lt_pow_succ (by omega)
   let u₀ : WordStack A (Fin (2 ^ (ϑ))) ι := fun rowIdx => u ⟨rowIdx, by omega⟩
@@ -149,7 +149,7 @@ def splitHalfRowWiseInterleavedWords {ϑ : ℕ} (u : WordStack A (Fin (2 ^ (ϑ +
   use u₀, u₁
 
 def mergeHalfRowWiseInterleavedWords {ϑ : ℕ}
-  (u₀ : WordStack A (Fin (2 ^ (ϑ))) ι)
+    (u₀ : WordStack A (Fin (2 ^ (ϑ))) ι)
   (u₁ : WordStack A (Fin (2 ^ (ϑ))) ι) :
   WordStack A (Fin (2 ^ (ϑ + 1))) ι := fun k =>
     if hk : k.val < 2 ^ ϑ then
@@ -159,7 +159,7 @@ def mergeHalfRowWiseInterleavedWords {ϑ : ℕ}
 
 omit [Fintype ι] [Nonempty ι] [Fintype A] [DecidableEq A] [AddCommMonoid A] [DecidableEq ι] in
 lemma eq_splitHalf_iff_merge_eq {ϑ : ℕ}
-  (u : WordStack A (Fin (2 ^ (ϑ + 1))) ι)
+    (u : WordStack A (Fin (2 ^ (ϑ + 1))) ι)
   (u₀ : WordStack A (Fin (2 ^ (ϑ))) ι)
   (u₁ : WordStack A (Fin (2 ^ (ϑ))) ι) :
   (u₀ = splitHalfRowWiseInterleavedWords (u := u).1
@@ -309,10 +309,10 @@ theorem CA_split_rowwise_implies_CA
         rfl
 
 omit [Fintype ι] [DecidableEq ι] [Nonempty ι] [Fintype A] [DecidableEq A] [Fintype F] in
-/-- `[⊗_{i=0}^{ϑ-1}(1-r_i, r_i)] · [ - u₀ - ; ... ; - u_{2^ϑ-1} - ]`
+/-- `[⊗_{i=0}^{ϑ-1}(1-r_i, r_i)] · [ - u₀ -; ...; - u_{2^ϑ-1} - ]`
 `- [⊗_{i=0}^{ϑ-2}(1-r_i, r_i)] · ([(1-r_{ϑ-1}) · U₀] + [r_{ϑ-1} · U₁])` -/
 lemma multilinearCombine_recursive_form
-  {ϑ : ℕ} (u : WordStack A (Fin (2 ^ (ϑ + 1))) ι) (r : Fin (ϑ + 1) → F) :
+    {ϑ : ℕ} (u : WordStack A (Fin (2 ^ (ϑ + 1))) ι) (r : Fin (ϑ + 1) → F) :
   let U₀ := (splitHalfRowWiseInterleavedWords (ϑ := ϑ) u).1
   let U₁ := (splitHalfRowWiseInterleavedWords (ϑ := ϑ) u).2
   let r_init : Fin (ϑ) → F := Fin.init r
@@ -391,7 +391,7 @@ lemma multilinearCombine_recursive_form
 
 omit [Fintype ι] [DecidableEq ι] [Nonempty ι] [Fintype A] [DecidableEq A] [Fintype F] in
 lemma multilinearCombine₁_eq_affineLineEvaluation -- ϑ = 1 case
-  (u : Fin (2) → (Word A ι)):
+    (u : Fin (2) → (Word A ι)):
   ∀ (r : Fin 1 → F), multilinearCombine (u:=u) (r:=r)
     = affineLineEvaluation (F := F) (u₀ := u 0) (u₁ := u 1) (r 0) := by
   intro r
@@ -504,7 +504,7 @@ It returns a tuple containing:
                           `(v₀ := getRow V₀ rowIdx) ⋈₂ (v₁ := getRow V₁ rowIdx)) ≤ e`
 -/
 def constructInterleavedCodewordsAndRowWiseCA
-  (U₀ U₁ : InterleavedWord A (Fin m) ι)
+    (U₀ U₁ : InterleavedWord A (Fin m) ι)
   (hC_gap : e_ε_correlatedAgreementAffineLinesNat (F := F) (C := C) e ε)
   (hR_star_card : (R_star (F := F) (C := C) (m := m) (e := e) U₀ U₁).card > ε) :
   Σ' (V₀ V₁ : C ^⋈ (Fin m)), -- Σ' creates a dependent tuple
@@ -623,7 +623,7 @@ and let `R* = { r ∈ F | d^m(U_r, C^m) ≤ e }` be the set of parameters yieldi
 to the interleaved code.
 -/
 lemma affineWord_close_to_affineInterleavedCodeword
-  (U₀ U₁ : InterleavedWord A (Fin m) ι)
+    (U₀ U₁ : InterleavedWord A (Fin m) ι)
   (he : e ≤ (Code.uniqueDecodingRadius (F := A) (ι := ι) (C := MC)))
   (hC_gap : e_ε_correlatedAgreementAffineLinesNat (F := F) (C := (MC : Set (ι → A))) e ε)
   (hR_star_card : (R_star (C := (MC : Set (ι → A))) (m := m) (e := e) U₀ U₁).card > ε) :
@@ -685,8 +685,9 @@ lemma affineWord_close_to_affineInterleavedCodeword
     have h_Uᵣ_i_eq_affine : getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx
       = affineLineEvaluation (getRow U₀ rowIdx) (getRow U₁ rowIdx) r := by rfl
     -- We need Δ₀((Uᵣ)ᵢ, (Vᵣ)ᵢ) ≤ e
-    have h_dist_Uᵣi_Vᵣi : Δ₀(getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx, Vᵣ_i) ≤ e
-      := by -- ⊢ Δ₀(getRow (affineLineEvaluation U₀ U₁ r) rowIdx, getRow Vᵣ rowIdx) ≤ e
+    have h_dist_Uᵣi_Vᵣi :
+        Δ₀(getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx, Vᵣ_i) ≤ e := by
+      -- ⊢ Δ₀(getRow (affineLineEvaluation U₀ U₁ r) rowIdx, getRow Vᵣ rowIdx) ≤ e
       have h_dist_row_le_dist_interleaved := dist_row_le_dist_ToInterleavedWord Uᵣ Vᵣ rowIdx
       -- apply le_trans h_dist_row_le_dist_interleaved
       -- ⊢ Δ₀(Uᵣ, Vᵣ) ≤ e
@@ -738,18 +739,20 @@ lemma affineWord_close_to_affineInterleavedCodeword
     -- We need to convert from ℕ∞ (Δ₀) to ℕ (hammingDist) for Code.eq_of_lt_dist
     have h_dist_v_vstar_nat : hammingDist Vᵣ_i Vᵣ_star_i < d := by
       -- Convert ℕ∞ inequalities to ℕ inequalities
-      have h1_nat : Δ₀((getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx), Vᵣ_i) ≤ e :=
+      have h1_nat :
+          Δ₀((getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx), Vᵣ_i) ≤ e :=
         ENat.coe_le_coe.mp (ENat.coe_le_coe.mpr h_dist_Uᵣi_Vᵣi)
-      have h2_nat : Δ₀((getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx), Vᵣ_star_i) ≤ e
-        := ENat.coe_le_coe.mp (ENat.coe_le_coe.mpr h_dist_Uᵣi_Vᵣstari)
+      have h2_nat :
+          Δ₀((getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx), Vᵣ_star_i) ≤ e :=
+        ENat.coe_le_coe.mp (ENat.coe_le_coe.mpr h_dist_Uᵣi_Vᵣstari)
       -- Apply triangle inequality for hammingDist
       calc
         Δ₀(Vᵣ_i, Vᵣ_star_i) ≤ Δ₀(Vᵣ_i, getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx)
           + Δ₀(getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx, Vᵣ_star_i) :=
             hammingDist_triangle _ _ _
         _ = Δ₀(getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx, Vᵣ_i) +
-          Δ₀(getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx, Vᵣ_star_i)
-          := by rw [hammingDist_comm]
+            Δ₀(getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx, Vᵣ_star_i) := by
+              rw [hammingDist_comm]
         _ ≤ e + e := Nat.add_le_add h1_nat h2_nat
         _ = 2 * e := by rw [two_mul]
         _ < d := h_2e_lt_d
@@ -761,16 +764,16 @@ lemma affineWord_close_to_affineInterleavedCodeword
 
 open Classical in
 def R_star_star_filter_columns_in_D (U₀ U₁ : InterleavedWord A (Fin m) ι)
-  (V₀ V₁ : MC^⋈(Fin m)) (e : ℕ) (D : Finset ι) : Finset (F × ι) :=
+    (V₀ V₁ : MC^⋈(Fin m)) (e : ℕ) (D : Finset ι) : Finset (F × ι) :=
   (R_star_star (A := A) (F := F) (ι := ι) (C := MC) (m := m) (e := e) U₀ U₁ V₀.val V₁.val).filter
     (fun p => p.2 ∈ D) in
 def R_star_star_filter_columns_not_in_D (U₀ U₁ : InterleavedWord A (Fin m) ι)
-  (V₀ V₁ : MC ^⋈ (Fin m)) (e : ℕ) (D : Finset ι) : Finset (F × ι) :=
+    (V₀ V₁ : MC ^⋈ (Fin m)) (e : ℕ) (D : Finset ι) : Finset (F × ι) :=
   (R_star_star (A := A) (F := F) (ι := ι) (C := MC) (m := m) (e := e) U₀ U₁ V₀.val V₁.val).filter
     (fun p => p.2 ∉ D) in
 omit [Nonempty ι] [NoZeroDivisors F] [Fintype A] [Module.Free F A] [Nontrivial ↥MC] in
 lemma R_star_star_eq_union (U₀ U₁ : InterleavedWord A (Fin m) ι)
-  (V₀ V₁ : MC ^⋈ (Fin m)) (e : ℕ) (D : Finset ι):
+    (V₀ V₁ : MC ^⋈ (Fin m)) (e : ℕ) (D : Finset ι):
   (R_star_star (A := A) (F := F) (ι := ι) (C := MC) (m := m) (e := e) U₀ U₁ V₀.val V₁.val) =
     (R_star_star_filter_columns_not_in_D MC U₀ U₁ V₀ V₁ (e := e) D)
     ∪ (R_star_star_filter_columns_in_D MC U₀ U₁ V₀ V₁ (e := e) D) := by
@@ -793,7 +796,7 @@ lemma disjoint_R_star_star_filter_columns_in_D_not_in_D (U₀ U₁ : Interleaved
 
 omit [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A] in
 lemma D_card_le_e_implies_interleaved_correlatedAgreement₂
-  (U₀ U₁ : InterleavedWord A (Fin m) ι)
+    (U₀ U₁ : InterleavedWord A (Fin m) ι)
   (hC_gap : e_ε_correlatedAgreementAffineLinesNat (F := F) (C := MC) e ε)
   (hR_star_card : (R_star (A := A) (F := F) (ι := ι) (C := MC) (m := m) (e := e) U₀ U₁).card > ε) :
     let V₀ := (constructInterleavedCodewordsAndRowWiseCA (F := F)
@@ -1076,8 +1079,7 @@ lemma R_star_star_upper_bound
       let D : Finset ι := disagreementSet U₀ U₁ V₀ V₁
       (R_star_star (A := A) (ι := ι) (F := F) (C := MC) (m := m) (e := e) U₀ U₁ V₀ V₁).card
         ≤ (R_star (A := A) (ι := ι) (F := F) (C := MC) (m := m) (e := e) U₀ U₁).card *
-          (Fintype.card ι - D.card) + D.card
-      := by
+          (Fintype.card ι - D.card) + D.card := by
   classical -- Use classical logic for decidable predicates on filters
   -- 1. Define local variables
   let ⟨V₀, V₁, _⟩ := constructInterleavedCodewordsAndRowWiseCA (F := F)
@@ -1179,8 +1181,8 @@ lemma R_star_star_lower_bound
       simp_rw [ne_eq]
       -- simp will solve the `ite` logic and apply `sum_const_one`
       simp only [ite_not, card_univ]
-      have h_inner : ∀ x, ((if Uᵣ x = Vᵣ x then 1 else 0) + if Uᵣ x = Vᵣ x then 0 else 1) = 1
-        := fun x => by
+      have h_inner :
+          ∀ x, ((if Uᵣ x = Vᵣ x then 1 else 0) + if Uᵣ x = Vᵣ x then 0 else 1) = 1 := fun x => by
         by_cases h : Uᵣ x = Vᵣ x
         · simp only [h, if_true]
         · simp only [h, if_false]
@@ -1211,7 +1213,7 @@ lemma R_star_star_lower_bound
 omit [NoZeroDivisors F] [Module.Free F A] [Nonempty ι] [Fintype A] [DecidableEq F]
   [DecidableEq ι] [Nontrivial ↥MC] in
 lemma probShadedAffineCombInterleavedCodeword_gt_threshold_iff
-  (U₀ U₁ : InterleavedWord A (Fin m) ι) :
+    (U₀ U₁ : InterleavedWord A (Fin m) ι) :
   Pr_{ let r ←$ᵖ F }[
     Δ₀(affineLineEvaluation (F := F) U₀ U₁ r,
       MC ^⋈ (Fin m)) ≤ e ] > ((ε: ℝ≥0) / (Fintype.card F : ℝ≥0))
@@ -1428,7 +1430,7 @@ lemma correlatedAgreement_of_mem_R_star_tensor
   exact hr
 
 def multilinearCombine_affineComb_split_last_close {ϑ : ℕ}
-  (u : WordStack A (Fin (2 ^ (ϑ + 1))) ι) (e : ℕ) (r_last : F) (r_init : Fin (ϑ) → F) : Prop :=
+    (u : WordStack A (Fin (2 ^ (ϑ + 1))) ι) (e : ℕ) (r_last : F) (r_init : Fin (ϑ) → F) : Prop :=
     let U₀ := (splitHalfRowWiseInterleavedWords (ϑ := ϑ) u).1
     let U₁ := (splitHalfRowWiseInterleavedWords (ϑ := ϑ) u).2
     Δ₀(multilinearCombine (F := F) (A := A) (ι := ι)
@@ -1438,7 +1440,7 @@ omit [Nonempty ι] [NoZeroDivisors F] [Fintype A] [Module.Free F A] [Nontrivial 
   [DecidableEq ι] [DecidableEq F] in
 open Classical in
 lemma prob_R_star_gt_threshold
-  {ϑ : ℕ}
+    {ϑ : ℕ}
   (u : WordStack A (Fin (2 ^ (ϑ + 1))) ι) (e : ℕ)
   (hP_multilinearCombine_affine_close_gt :
     Pr_{ let r_last ← $ᵖ F;
@@ -1776,7 +1778,7 @@ theorem interleaved_affine_gaps_imply_tensor_gaps
 omit [DecidableEq ι] [Fintype F] [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A]
   [Nontrivial ↥MC] in
 lemma jointProximity₂_affineShift_implies_jointProximity₂ (u₀ u₁ : Word A ι) (δ : ℝ≥0) :
-  jointProximity₂ (C := MC) (u₀ := u₀) (u₁ := u₁ - u₀) (δ := δ) →
+    jointProximity₂ (C := MC) (u₀ := u₀) (u₁ := u₁ - u₀) (δ := δ) →
     jointProximity₂ (C := MC) (u₀ := u₀) (u₁ := u₁) (δ := δ) := by
   classical
   intro h_shifted_jointProximity₂
@@ -1987,8 +1989,8 @@ theorem reedSolomon_multilinearCorrelatedAgreement [Nontrivial (ReedSolomon.code
       (C := (ReedSolomon.code α k : Set (ι → A))))) :
     ∀ (ϑ : ℕ), (hϑ_gt_0 : ϑ > 0) →
       δ_ε_multilinearCorrelatedAgreement (F := A) (A := A) (ι := ι) (ϑ := ϑ) (δ := δ)
-      (C := (ReedSolomon.code α k : Set (ι → A))) (ε := ((Fintype.card ι) : ℝ≥0) / (Fintype.card A))
-    := by
+      (C := (ReedSolomon.code α k : Set (ι → A)))
+      (ε := ((Fintype.card ι) : ℝ≥0) / (Fintype.card A)) := by
   set n := Fintype.card ι
   intro ϑ hϑ_gt_0 u h_prob_u_close_gt
   let e : ℕ := Nat.floor (δ * n)

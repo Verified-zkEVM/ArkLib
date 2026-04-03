@@ -54,7 +54,6 @@ lemma ps_nat_degree_resultant_le {F : Type} [Field F]
   classical
   -- Work with the Sylvester matrix whose determinant defines the resultant.
   let M : Matrix (Fin (n + m)) (Fin (n + m)) F[X] := Polynomial.sylvester B A n m
-
   -- Every coefficient of `A` has `X`-degree bounded by `degreeX A`.
   have h_a_coeff : ∀ k : ℕ, (A.coeff k).natDegree ≤ Polynomial.Bivariate.degreeX A := by
     intro k
@@ -65,7 +64,6 @@ lemma ps_nat_degree_resultant_le {F : Type} [Field F]
       simp [Finset.le_sup (s := A.support) (f := fun t : ℕ => (A.coeff t).natDegree) hk]
     · have hk0 : A.coeff k = 0 := by exact notMem_support_iff.mp hk
       simp [hk0]
-
   -- Every coefficient of `B` has `X`-degree bounded by `degreeX B`.
   have h_b_coeff : ∀ k : ℕ, (B.coeff k).natDegree ≤ Polynomial.Bivariate.degreeX B := by
     intro k
@@ -75,13 +73,11 @@ lemma ps_nat_degree_resultant_le {F : Type} [Field F]
     · simp [Finset.le_sup (s := B.support) (f := fun t : ℕ => (B.coeff t).natDegree) hk]
     · have hk0 : B.coeff k = 0 :=  by exact notMem_support_iff.mp hk
       simp [hk0]
-
   -- Column-wise `X`-degree bounds for the Sylvester matrix:
   -- first `n` columns come from `A`, last `m` columns come from `B`.
   let col_bound : Fin (n + m) → ℕ :=
     Fin.addCases (fun _ : Fin n => Polynomial.Bivariate.degreeX A)
       (fun _ : Fin m => Polynomial.Bivariate.degreeX B)
-
   have h_entry (σ : Equiv.Perm (Fin (n + m))) (i : Fin (n + m)) :
       (M (σ i) i).natDegree ≤ col_bound i := by
     -- split according to whether the column is in the `A`-block or the `B`-block
@@ -99,9 +95,11 @@ lemma ps_nat_degree_resultant_le {F : Type} [Field F]
           (show (M (σ (Fin.castAdd m i0)) (Fin.castAdd m i0)).natDegree ≤
               col_bound (Fin.castAdd m i0) from by
             by_cases h : ((σ (Fin.castAdd m i0) : ℕ) ∈ Set.Icc (i0 : ℕ) ((i0 : ℕ) + m))
-            · simp [hM, hB, h]
+            · simp only [hM, hB, h]
               exact h_a_coeff ((σ (Fin.castAdd m i0) : ℕ) - i0)
-            · simp [hM, hB, h])
+            · simp only [hM, hB, h]
+              exact Nat.zero_le _
+            )
     | right i0 =>
         have hM :
             M (σ (Fin.natAdd n i0)) (Fin.natAdd n i0) =
@@ -115,10 +113,11 @@ lemma ps_nat_degree_resultant_le {F : Type} [Field F]
           (show (M (σ (Fin.natAdd n i0)) (Fin.natAdd n i0)).natDegree ≤
               col_bound (Fin.natAdd n i0) from by
             by_cases h : ((σ (Fin.natAdd n i0) : ℕ) ∈ Set.Icc (i0 : ℕ) ((i0 : ℕ) + n))
-            · simp [hM, hB, h]
+            · simp only [hM, hB, h]
               exact h_b_coeff ((σ (Fin.natAdd n i0) : ℕ) - i0)
-            · simp [hM, hB, h])
-
+            · simp only [hM, hB, h]
+              exact Nat.zero_le _
+            )
   have h_term (σ : Equiv.Perm (Fin (n + m))) :
       (Equiv.Perm.sign σ • ∏ i : Fin (n + m), M (σ i) i).natDegree ≤
         m * Polynomial.Bivariate.degreeX B + n * Polynomial.Bivariate.degreeX A := by
@@ -147,7 +146,6 @@ lemma ps_nat_degree_resultant_le {F : Type} [Field F]
       simp [col_bound, Fin.sum_univ_add]
     -- Reorder the two summands to match the target.
     simp [hcolSum, Nat.add_comm]
-
   have hdet :
       (M.det).natDegree
       ≤ m * Polynomial.Bivariate.degreeX B + n * Polynomial.Bivariate.degreeX A := by
@@ -161,7 +159,6 @@ lemma ps_nat_degree_resultant_le {F : Type} [Field F]
       (by
         intro σ hσ
         simpa using h_term σ)
-
   -- Finish by unfolding `Polynomial.resultant`.
   simpa [Polynomial.resultant, M, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc, Nat.mul_comm,
     Nat.mul_left_comm, Nat.mul_assoc] using hdet
@@ -171,30 +168,14 @@ lemma ps_nat_degree_resultant_le {F : Type} [Field F]
 lemma ps_resultant_map {R S : Type} [CommRing R] [CommRing S]
     (f : R →+* S) (p q : R[X]) (m n : ℕ) :
     f (Polynomial.resultant p q m n) = Polynomial.resultant (p.map f) (q.map f) m n := by
-  classical
-  -- unfold resultant and push `f` through the determinant
-  simp [Polynomial.resultant, RingHom.map_det]
-  -- reduce to showing the Sylvester matrices agree entrywise after mapping
-  congr 1
-  ext i j
-  -- split on whether the column index `j` lies in the `p`-block or the `q`-block
-  refine j.addCases (fun j₁ => ?_) (fun j₁ => ?_)
-  · -- `j` in the `p`-block
-    by_cases h : ((j₁ : ℕ) ≤ (i : ℕ) ∧ (i : ℕ) ≤ (j₁ : ℕ) + n)
-    · simp [Polynomial.sylvester, Matrix.of_apply, Polynomial.coeff_map, h]
-    · simp [Polynomial.sylvester, Matrix.of_apply, Polynomial.coeff_map, h]
-  · -- `j` in the `q`-block
-    by_cases h : ((j₁ : ℕ) ≤ (i : ℕ) ∧ (i : ℕ) ≤ (j₁ : ℕ) + m)
-    · simp [Polynomial.sylvester, Matrix.of_apply, Polynomial.coeff_map, h]
-    · simp [Polynomial.sylvester, Matrix.of_apply, Polynomial.coeff_map, h]
+  simp only [resultant_map_map]
 
 lemma ps_resultant_eval_x {F : Type} [Field F]
     (x : F) (A B : F[X][Y]) (m n : ℕ) :
     (Polynomial.evalRingHom x) (Polynomial.resultant B A n m) =
       Polynomial.resultant (B.map (Polynomial.evalRingHom x))
         (A.map (Polynomial.evalRingHom x)) n m := by
-  simpa using
-    (ps_resultant_map (f := Polynomial.evalRingHom x) (p := A) (q := B) (m := m) (n := n))
+  exact ps_resultant_map (f := Polynomial.evalRingHom x) (p := B) (q := A) (m := n) (n := m)
 
 
 lemma ps_sylvester_map {R S : Type} [CommRing R] [CommRing S]
@@ -237,7 +218,8 @@ lemma ps_sylvester_mul_vec_eq_coeff_add {R : Type} [CommRing R]
     simp [hA, hB, add_comm]
 
 
-lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F] [DecidableEq F]
+open scoped Classical in
+lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F]
     (A B : F[X][Y]) (x : F) (Q : F[X]) (n : ℕ)
     (hmn : Polynomial.Bivariate.natDegreeY A ≤ n)
     (hn : Polynomial.Bivariate.natDegreeY B ≤ n)
@@ -252,10 +234,8 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F] [DecidableEq F]
     simpa [hm] using hmn
   have hQdeg' : Q.natDegree ≤ n - m := by
     simpa [hm] using hQdeg
-
   let p : F[X] := X - C x
   let M0 : Matrix (Fin (n + m)) (Fin (n + m)) F[X] := Polynomial.sylvester B A n m
-
   -- Column-operation matrix: identity on the left block, and subtract a linear combination of
   -- the left block from each right-block column.
   let U : Matrix (Fin (n + m)) (Fin (n + m)) F[X] :=
@@ -266,9 +246,7 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F] [DecidableEq F]
           i.addCases
             (fun in_ => -C ((Q * X ^ (jm : ℕ)).coeff in_))
             (fun im_ => if im_ = jm then 1 else 0))
-
   let M1 : Matrix (Fin (n + m)) (Fin (n + m)) F[X] := M0 * U
-
   -- `U` is upper triangular with ones on the diagonal, hence has determinant `1`.
   have h_u_tri : U.BlockTriangular (fun x : Fin (n + m) => x) := by
     intro i j hij
@@ -295,7 +273,6 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F] [DecidableEq F]
           apply ne_of_gt hij
           simp [hEq]
         simp [U, hne]
-
   have h_u_det : U.det = 1 := by
     classical
     have hdet := Matrix.det_of_upperTriangular (M := U) h_u_tri
@@ -309,33 +286,27 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F] [DecidableEq F]
         simp [U]
       simp [hsplit, hleft, hright, mul_one]
     simpa [hdiag] using hdet
-
   have hdet1 : M1.det = M0.det := by
     classical
     -- det(M0 * U) = det M0 * det U = det M0
     simp [M1, Matrix.det_mul, h_u_det, M0]
-
   -- show each entry of the right-block columns of `M1` is divisible by `p`
   have hdiv_entry : ∀ (i : Fin (n + m)) (j' : Fin m), p ∣ M1 i (Fin.natAdd n j') := by
     intro i j'
     let ev : F[X] →+* F := Polynomial.evalRingHom x
     let col : Fin (n + m) := Fin.natAdd n j'
     let v_col : Fin (n + m) → F := fun k => ev (U k col)
-
     -- enough to show the entry evaluates to zero at `x`
     have hx0 : ev (M1 i col) = 0 := by
       -- map the matrix product through `ev`
       have hmapmul : ev (M1 i col) = (M0.map ev * U.map ev) i col := by
         simpa [M1] using
           (RingHom.map_matrix_mul (M := M0) (N := U) (i := i) (j := col) (f := ev))
-
       have hmulVec : (M0.map ev * U.map ev) i col = (M0.map ev).mulVec v_col i := by
         -- definitional unfolding of `mulVec`/`dotProduct`
         simp [Matrix.mul_apply, Matrix.mulVec, dotProduct, v_col]
-
       have hM0map : M0.map ev = Polynomial.sylvester (B.map ev) (A.map ev) n m := by
         simpa [M0] using (ps_sylvester_map (R := F[X]) (S := F) ev A B m n)
-
       -- rewrite in terms of the Sylvester matrix over `F`
       have hSylv : ev (M1 i col) =
           (Polynomial.sylvester (B.map ev) (A.map ev) n m).mulVec v_col i := by
@@ -344,7 +315,6 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F] [DecidableEq F]
           _ = (M0.map ev).mulVec v_col i := hmulVec
           _ = (Polynomial.sylvester (B.map ev) (A.map ev) n m).mulVec v_col i := by
             simp [hM0map]
-
       -- degree hypotheses for applying `ps_sylvester_mul_vec_eq_coeff_add`
       have hmA : (A.map ev).natDegree ≤ m := by
         have h1 : (A.map ev).natDegree ≤ A.natDegree := by
@@ -353,26 +323,21 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F] [DecidableEq F]
           -- `m = natDegreeY A = A.natDegree`
           simp [hm, Polynomial.Bivariate.natDegreeY]
         exact le_trans h1 h2
-
       have hnB : (B.map ev).natDegree ≤ n := by
         have h1 : (B.map ev).natDegree ≤ B.natDegree := by
           simpa using (Polynomial.natDegree_map_le (f := ev) (p := B))
         have h2 : B.natDegree ≤ n := by
           simpa [Polynomial.Bivariate.natDegreeY] using hn
         exact le_trans h1 h2
-
       -- compute the `mulVec` entry
       have hmulVecCoeff :=
         congrArg (fun f : (Fin (n + m) → F) => f i)
           (ps_sylvester_mul_vec_eq_coeff_add (A := A.map ev) (B := B.map ev) (m := m) (n := n)
             hmA hnB v_col)
-
       -- simplify the two sums appearing in the formula
       let q : F[X] := Q * X ^ (j' : ℕ)
-
       have hqdeg_le : q.natDegree ≤ n - 1 := by
         simpa [q] using (ps_nat_degree_mul_x_pow_le (Q := Q) (j := j') hmn' hQdeg')
-
       have hqdeg_lt : q.natDegree < n := by
         have hmpos : 0 < m := Fin.size_positive j'
         have hnpos : 0 < n := lt_of_lt_of_le hmpos hmn'
@@ -380,37 +345,31 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F] [DecidableEq F]
         have hlt : n - 1 < n := by
           simpa [hsub] using (Nat.lt_succ_self (n - 1))
         exact lt_of_le_of_lt hqdeg_le hlt
-
       have hBmap : B.map ev = Q * A.map ev := by
         -- rewrite `evalX` as `map` in the hypothesis `hQ`
         simpa [ps_eval_x_eq_map, ev] using hQ
-
-      have hsum_left
-      : (∑ j : Fin n, Polynomial.monomial (j : ℕ) (v_col (Fin.castAdd m j))) = -q := by
+      have hsum_left :
+          (∑ j : Fin n, Polynomial.monomial (j : ℕ) (v_col (Fin.castAdd m j))) = -q := by
         -- identify this sum with `ofFn n` applied to `-toFn n q`
         have hsum1 : (∑ j : Fin n, Polynomial.monomial (j : ℕ) (v_col (Fin.castAdd m j))) =
             Polynomial.ofFn n (fun j : Fin n => v_col (Fin.castAdd m j)) := by
           simpa using
             (Polynomial.ofFn_eq_sum_monomial (v := fun j : Fin n => v_col (Fin.castAdd m j))).symm
-
         -- compute the coefficient vector
         have hv : (fun j : Fin n => v_col (Fin.castAdd m j)) =
             fun j : Fin n => -(Polynomial.toFn n q j) := by
           funext j
           -- on the left block, `U` has constant entries `-C (q.coeff j)`
           simp [v_col, col, U, ev, q, Polynomial.toFn]
-
         -- reconstruct `q` from its first `n` coefficients
         have hofFn : Polynomial.ofFn n (Polynomial.toFn n q) = q :=
           Polynomial.ofFn_comp_toFn_eq_id_of_natDegree_lt (p := q) hqdeg_lt
-
         have hofFn_neg :
             Polynomial.ofFn n (fun j : Fin n => -(Polynomial.toFn n q j)) =
               -Polynomial.ofFn n (Polynomial.toFn n q) := by
           classical
           -- convert to sum of monomials and pull out the minus
           simp [Polynomial.ofFn_eq_sum_monomial]
-
         -- put everything together
         calc
           (∑ j : Fin n, Polynomial.monomial (j : ℕ) (v_col (Fin.castAdd m j)))
@@ -420,16 +379,14 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F] [DecidableEq F]
           _ = -Polynomial.ofFn n (Polynomial.toFn n q) := hofFn_neg
           _ = -q := by
             simp [hofFn]
-
-      have hsum_right : (∑ j : Fin m, Polynomial.monomial (j : ℕ) (v_col (Fin.natAdd n j))) =
-          X ^ (j' : ℕ) := by
+      have hsum_right :
+          (∑ j : Fin m, Polynomial.monomial (j : ℕ) (v_col (Fin.natAdd n j))) = X ^ (j' : ℕ) := by
         classical
         have hv : ∀ j : Fin m, v_col (Fin.natAdd n j) = (if j = j' then (1 : F) else 0) := by
           intro j
           by_cases h : j = j'
           · simp [v_col, col, U, ev, h]
           · simp [v_col, col, U, ev, h]
-
         -- convert to a delta-sum
         have hdelta :
             (∑ j : Fin m, Polynomial.monomial (j : ℕ) (if j = j' then (1 : F) else 0)) =
@@ -440,8 +397,10 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F] [DecidableEq F]
                 = ∑ j : Fin m, (if j = j' then Polynomial.monomial (j : ℕ) (1 : F) else 0) := by
                     classical
                     have hfun :
-                        (fun j : Fin m => Polynomial.monomial (j : ℕ) (if j = j' then (1 : F) else 0)) =
-                          fun j : Fin m => (if j = j' then Polynomial.monomial (j : ℕ) (1 : F) else 0) := by
+                        (fun j : Fin m =>
+                          Polynomial.monomial (j : ℕ) (if j = j' then (1 : F) else 0)) =
+                            fun j : Fin m =>
+                              (if j = j' then Polynomial.monomial (j : ℕ) (1 : F) else 0) := by
                       funext j
                       by_cases hj : j = j'
                       · simp [hj]
@@ -450,9 +409,7 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F] [DecidableEq F]
             _ = Polynomial.monomial (j' : ℕ) (1 : F) := by
                 exact Fintype.sum_ite_eq' j' fun j ↦ (Polynomial.monomial ↑j) 1
             _ = X ^ (j' : ℕ) := by exact monomial_one_right_eq_X_pow ↑j'
-
         simpa [hv] using hdelta
-
       -- now the coefficient is zero, using `hBmap`
       have hcoeff0 :
           ((A.map ev) * (∑ j : Fin n, Polynomial.monomial (j : ℕ) (v_col (Fin.castAdd m j))) +
@@ -460,24 +417,19 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F] [DecidableEq F]
               (i : ℕ) = 0 := by
         -- rewrite the two sums
         simp [hsum_left, hsum_right, hBmap, q, mul_assoc, mul_left_comm, mul_comm]
-
       -- finish
       have : (Polynomial.sylvester (B.map ev) (A.map ev) n m).mulVec v_col i = 0 := by
         -- `hmulVecCoeff` is exactly this coefficient
         simp [hmulVecCoeff, hcoeff0]
-
       -- use the rewriting of `ev (M1 i col)` via Sylvester
       simpa [hSylv] using this
-
     -- convert to `IsRoot`, then to divisibility by `X - C x`
     have hroot : Polynomial.IsRoot (M1 i col) x := by
       have : (M1 i col).eval x = 0 := by
         simpa [ev, Polynomial.coe_evalRingHom] using hx0
       simpa [Polynomial.IsRoot, Polynomial.IsRoot.def] using this
-
     have hdiv : (X - C x) ∣ M1 i col := (Polynomial.dvd_iff_isRoot).2 hroot
     simpa [p, col] using hdiv
-
   -- build a matrix by dividing the right-block columns by `p`
   classical
   let q_mat : Matrix (Fin (n + m)) (Fin (n + m)) F[X] :=
@@ -485,15 +437,12 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F] [DecidableEq F]
       j.addCases
         (fun jn => M1 i (Fin.castAdd m jn))
         (fun jm => Classical.choose (hdiv_entry i jm))
-
   have hQmat_spec : ∀ (i : Fin (n + m)) (j' : Fin m),
       M1 i (Fin.natAdd n j') = p * q_mat i (Fin.natAdd n j') := by
     intro i j'
     simpa [q_mat, Fin.addCases_right] using (Classical.choose_spec (hdiv_entry i j'))
-
   -- express `M1` as column-scaled version of `Qmat`
   let v : Fin (n + m) → F[X] := fun j => j.addCases (fun _ => 1) (fun _ => p)
-
   have hM1_scale : M1 = fun i j => v j * q_mat i j := by
     apply Matrix.ext
     intro i j
@@ -503,11 +452,9 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F] [DecidableEq F]
     | right jm => -- right block
       have h := hQmat_spec i jm
       simpa [v, q_mat, Fin.addCases_right, mul_assoc] using h
-
   have hdet_factor : M1.det = (∏ j : Fin (n + m), v j) * q_mat.det := by
     classical
     simpa [hM1_scale] using (Matrix.det_mul_row v q_mat)
-
   -- compute product of `v`
   have hvprod : (∏ j : Fin (n + m), v j) = p ^ m := by
     classical
@@ -517,21 +464,19 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F] [DecidableEq F]
     have hright : (∏ j' : Fin m, v (Fin.natAdd n j')) = p ^ m := by
       simp [v]
     simp [hsplit, hleft, hright]
-
   -- conclude divisibility for `M1.det`
   have hdivM1 : p ^ m ∣ M1.det := by
     refine ⟨q_mat.det, ?_⟩
     simp [hdet_factor, hvprod]
-
   -- transfer back to `M0.det`
   have hdivM0 : p ^ m ∣ M0.det := by
     simpa [hdet1] using hdivM1
-
   -- rewrite goal
   -- `Polynomial.resultant` is defined as the determinant of the Sylvester matrix
   simpa [p, m, hm, Polynomial.Bivariate.natDegreeY, Polynomial.resultant, M0] using hdivM0
 
-lemma ps_resultant_dvd_pow_eval_y {F : Type} [Field F] [DecidableEq F]
+open scoped Classical in
+lemma ps_resultant_dvd_pow_eval_y {F : Type} [Field F]
     (A B : F[X][Y]) (y : F) (Q : F[X]) (n : ℕ)
     (hmn : Polynomial.Bivariate.degreeX A ≤ n)
     (hn : Polynomial.Bivariate.degreeX B ≤ n)
@@ -545,26 +490,22 @@ lemma ps_resultant_dvd_pow_eval_y {F : Type} [Field F] [DecidableEq F]
       Polynomial.Bivariate.evalX y (Polynomial.Bivariate.swap B) =
         Q * Polynomial.Bivariate.evalX y (Polynomial.Bivariate.swap A) := by
     simpa [-Polynomial.Bivariate.swap_apply, ps_eval_y_eq_eval_x_swap] using hQ
-
   have hmn' : Polynomial.Bivariate.natDegreeY (Polynomial.Bivariate.swap A) ≤ n := by
     simpa [-Polynomial.Bivariate.swap_apply, ps_nat_degree_y_swap] using hmn
-
   have hn' : Polynomial.Bivariate.natDegreeY (Polynomial.Bivariate.swap B) ≤ n := by
     simpa [-Polynomial.Bivariate.swap_apply, ps_nat_degree_y_swap] using hn
-
-  have hQdeg'
-  : Q.natDegree ≤ n - Polynomial.Bivariate.natDegreeY (Polynomial.Bivariate.swap A) := by
+  have hQdeg' :
+      Q.natDegree ≤ n - Polynomial.Bivariate.natDegreeY (Polynomial.Bivariate.swap A) := by
     simpa [-Polynomial.Bivariate.swap_apply, ps_nat_degree_y_swap] using hQdeg
-
   have h :=
     ps_resultant_dvd_pow_eval_x (A := Polynomial.Bivariate.swap A)
       (B := Polynomial.Bivariate.swap B) (x := y) (Q := Q) (n := n)
       (hmn := hmn') (hn := hn') (hQdeg := hQdeg') (hQ := hQ')
-
   simpa [-Polynomial.Bivariate.swap_apply, ps_nat_degree_y_swap] using h
 
 
-lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type} [Field F] [DecidableEq F]
+open scoped Classical in
+lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type} [Field F]
     (A B : F[X][Y]) (n : ℕ)
     (hn : Polynomial.Bivariate.natDegreeY B ≤ n)
     (hA0 : A ≠ 0) (hrel : IsRelPrime A B) :
@@ -601,7 +542,6 @@ lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type} [Field F] [DecidableEq F]
                 simpa using hsyl_i.symm
         _ = 0 := hv_i
     simpa [P, Q] using this
-
   -- If `n + m = 0`, then `Fin (n + m)` is empty, so `v = 0`, contradicting `hv0`.
   have hnmpos : 0 < n + m := by
     by_contra h
@@ -612,18 +552,14 @@ lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type} [Field F] [DecidableEq F]
         simpa [hnm0] using i.isLt
       exact (False.elim (Nat.not_lt_zero _ hlt))
     exact hv0 this
-
   have hA_natDegree : A.natDegree = m := by
     simpa [Polynomial.Bivariate.natDegreeY] using hm.symm
-
   have hP_ofFn : P = Polynomial.ofFn n (fun j : Fin n => v (Fin.castAdd m j)) := by
     simpa [P] using
       (Polynomial.ofFn_eq_sum_monomial (v := fun j : Fin n => v (Fin.castAdd m j))).symm
-
   have hQ_ofFn : Q = Polynomial.ofFn m (fun j : Fin m => v (Fin.natAdd n j)) := by
     simpa [Q] using
       (Polynomial.ofFn_eq_sum_monomial (v := fun j : Fin m => v (Fin.natAdd n j))).symm
-
   have hdegC : (A * P + B * Q).natDegree < n + m := by
     have hdegAP : (A * P).natDegree < n + m := by
       by_cases hn0 : n = 0
@@ -640,13 +576,12 @@ lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type} [Field F] [DecidableEq F]
         have hlt : m + P.natDegree < m + n := Nat.add_lt_add_left hPnat m
         have : (A * P).natDegree < m + n := lt_of_le_of_lt hmul_le' hlt
         simpa [Nat.add_comm] using this
-
     have hdegBQ : (B * Q).natDegree < n + m := by
       by_cases hm0 : m = 0
       · have hQ0 : Q = 0 := by
           simp [hm0, hQ_ofFn, Polynomial.ofFn]
         rw [hQ0, hm0]
-        simp
+        simp only [mul_zero, natDegree_zero, add_zero, gt_iff_lt]
         simpa [hm0] using hnmpos
       · have hmpos : 1 ≤ m := Nat.succ_le_iff.2 (Nat.pos_of_ne_zero hm0)
         have hQnat : Q.natDegree < m := by
@@ -656,13 +591,11 @@ lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type} [Field F] [DecidableEq F]
         have h1 : B.natDegree + Q.natDegree ≤ n + Q.natDegree := Nat.add_le_add_right hndeg _
         have h2 : n + Q.natDegree < n + m := Nat.add_lt_add_left hQnat n
         exact lt_of_le_of_lt hmul_le (lt_of_le_of_lt h1 h2)
-
     have hle : (A * P + B * Q).natDegree ≤ max (A * P).natDegree (B * Q).natDegree :=
       Polynomial.natDegree_add_le (A * P) (B * Q)
     have hmaxlt : max (A * P).natDegree (B * Q).natDegree < n + m :=
       max_lt_iff.2 ⟨hdegAP, hdegBQ⟩
     exact lt_of_le_of_lt hle hmaxlt
-
   have hcomb : A * P + B * Q = 0 := by
     apply Polynomial.ext
     intro k
@@ -671,7 +604,6 @@ lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type} [Field F] [DecidableEq F]
     · have hk' : n + m ≤ k := Nat.le_of_not_gt hk
       have hdegk : (A * P + B * Q).natDegree < k := lt_of_lt_of_le hdegC hk'
       simpa using (Polynomial.coeff_eq_zero_of_natDegree_lt hdegk)
-
   have hA_dvd_BQ : A ∣ B * Q := by
     refine ⟨-P, ?_⟩
     have hcomb' : B * Q + A * P = 0 := by
@@ -680,12 +612,12 @@ lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type} [Field F] [DecidableEq F]
     calc
       B * Q = -(A * P) := by simpa using hneg.symm
       _ = A * (-P) := (mul_neg A P).symm
-
   have hA_dvd_Q : A ∣ Q := hrel.dvd_of_dvd_mul_left hA_dvd_BQ
-
   have hQ0 : Q = 0 := by
     by_cases hm0 : m = 0
-    · simp_all [m, P, Q]
+    · simp_all only [ne_eq, le_refl, coeff_zero, implies_true, add_pos_iff,
+        resultant_zero_right_deg, pow_eq_zero_iff', lt_self_iff_false, or_false,
+        natDegree_zero, add_zero, m, P, Q]
       ext n_1 n_2 : 2
       simp_all only [zero_le, ofFn_coeff_eq_zero_of_ge, coeff_zero]
       -- simp [hm0]
@@ -708,40 +640,32 @@ lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type} [Field F] [DecidableEq F]
           exact lt_of_eq_of_lt (congrFun (congrArg HAdd.hAdd hm) R.natDegree) hlt
         have hge : m ≤ m + R.natDegree := Nat.le_add_right m R.natDegree
         exact (False.elim ((Nat.not_lt_of_ge hge) hlt'))
-
   have hP0 : P = 0 := by
     have hAP0 : A * P = 0 := by
       simpa [hQ0] using hcomb
     have hmul : A = 0 ∨ P = 0 := mul_eq_zero.mp hAP0
     exact hmul.resolve_left hA0
-
   have hcoeffP : ∀ j : Fin n, P.coeff (j : ℕ) = v (Fin.castAdd m j) := by
     intro j
     simp [hP_ofFn]
-
   have hcoeffQ : ∀ j : Fin m, Q.coeff (j : ℕ) = v (Fin.natAdd n j) := by
     intro j
     simp [hQ_ofFn]
-
   have hv_left : ∀ j : Fin n, v (Fin.castAdd m j) = 0 := by
     intro j
     have : P.coeff (j : ℕ) = 0 := by
       simp [hP0]
     simpa [hcoeffP j] using this
-
   have hv_right : ∀ j : Fin m, v (Fin.natAdd n j) = 0 := by
     intro j
     have : Q.coeff (j : ℕ) = 0 := by
       simp [hQ0]
     simpa [hcoeffQ j] using this
-
   have hv_all : ∀ i : Fin (n + m), v i = 0 := by
     exact
       (Fin.forall_fin_add (m := n) (n := m) (P := fun i : Fin (n + m) => v i = 0)).2
         ⟨hv_left, hv_right⟩
-
   have : v = 0 := by
     funext i
     exact hv_all i
-
   exact hv0 this

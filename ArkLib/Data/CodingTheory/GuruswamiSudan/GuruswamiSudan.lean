@@ -8,6 +8,8 @@ import Mathlib.Algebra.Polynomial.Basic
 import Mathlib.Data.Real.Sqrt
 
 import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
+/-! # Guruswami-Sudan Decoder -/
+
 
 
 open Finset Finsupp Polynomial Polynomial.Bivariate ReedSolomon
@@ -59,25 +61,23 @@ opaque decoder (k r D e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) : List F[X]
 
 /-- Each decoded codeword has to be e-far from the received message. -/
 theorem decoder_mem_impl_dist
-  {k r D e : ℕ}
+    {k r D e : ℕ}
   (h_e : e ≤ n - Real.sqrt (k * n))
   {ωs : Fin n ↪ F}
   {f : Fin n → F}
   {p : F[X]}
-  (h_in : p ∈ decoder k r D e ωs f)
-  :
+  (h_in : p ∈ decoder k r D e ωs f) :
   Δ₀(f, p.eval ∘ ωs) ≤ e := by sorry
 
 /-- If a codeword is e-far from the received message it appears in the output of
     the decoder. -/
 theorem decoder_dist_impl_mem
-  {k r D e : ℕ}
+    {k r D e : ℕ}
   (h_e : e ≤ n - Real.sqrt (k * n))
   {ωs : Fin n ↪ F}
   {f : Fin n → F}
   {p : F[X]}
-  (h_dist : Δ₀(f, p.eval ∘ ωs) ≤ e)
-  :
+  (h_dist : Δ₀(f, p.eval ∘ ωs) ≤ e) :
   p ∈ decoder k r D e ωs f := by sorry
 
 /-- Existence of a solution to the Guruswami-Sudan decoder.

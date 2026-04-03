@@ -53,6 +53,8 @@ import Mathlib.Logic.Equiv.Fin.Basic
 import ArkLib.Data.CodingTheory.PolishchukSpielman.Degrees
 import ArkLib.Data.CodingTheory.PolishchukSpielman
 
+/-! # BCIKS20 List-Decoding Guruswami-Sudan Setup -/
+
 namespace ProximityGap
 
 open NNReal Finset Function
@@ -100,14 +102,13 @@ open Polynomial in
     the outer variable, Y.
 -/
 lemma guruswami_sudan_for_proximity_gap_property {k m : ℕ} {ωs : Fin n ↪ F}
-  {w : Fin n → F}
+    {w : Fin n → F}
   {Q : F[X][Y]}
   (hk : k + 2 ≤ n) (hm : 1 ≤ m)
   (cond : Conditions (k + 1) m (_root_.proximity_gap_degree_bound (k + 1) n m) ωs w Q)
   {p : ReedSolomon.code ωs (k + 1)}
   (h : (↑Δ₀(w, fun i ↦ Polynomial.eval (ωs i) (ReedSolomon.codewordToPoly p)) : ℝ) / ↑n <
-       _root_.proximity_gap_johnson (k + 1) n m)
-  :
+       _root_.proximity_gap_johnson (k + 1) n m) :
   (Polynomial.X - Polynomial.C (ReedSolomon.codewordToPoly p)) ∣ Q :=
   GuruswamiSudan.proximity_gap_divisibility hk hm p cond h
 
@@ -175,22 +176,24 @@ omit [DecidableEq (RatFunc F)] in
     a soultion to the Guruswami-Sudan constraints above.
 -/
 lemma modified_guruswami_has_a_solution
-  {m n k : ℕ}
-  {ωs : Fin n ↪ F} {u₀ u₁ : Fin n → F}
-  :
-  ∃ Q : F[Z][X][Y], ModifiedGuruswami m n k ωs Q u₀ u₁
-    := by sorry
+    {m n k : ℕ}
+  {ωs : Fin n ↪ F} {u₀ u₁ : Fin n → F} :
+  ∃ Q : F[Z][X][Y], ModifiedGuruswami m n k ωs Q u₀ u₁ := by sorry
 
 end
 
 variable {m : ℕ} (k : ℕ) {δ : ℚ} {x₀ : F} {u₀ u₁ : Fin n → F} {Q : F[Z][X][Y]} {ωs : Fin n ↪ F}
          [Finite F]
 
-noncomputable instance {α : Type} (s : Set α) [inst : Finite s] : Fintype s := Fintype.ofFinite _
+noncomputable section
+
+local instance {α : Type} (s : Set α) [inst : Finite s] : Fintype s :=
+  Fintype.ofFinite _
 
 /-- The set `S` (equation 5.2 of [BCIKS20]). -/
-noncomputable def coeffs_of_close_proximity (ωs : Fin n ↪ F) (δ : ℚ) (u₀ u₁ : Fin n → F)
-  : Finset F := Set.toFinset { z | ∃ v : ReedSolomon.code ωs (k + 1), δᵣ(u₀ + z • u₁, v) ≤ δ}
+noncomputable def coeffs_of_close_proximity (ωs : Fin n ↪ F) (δ : ℚ) (u₀ u₁ : Fin n → F) :
+    Finset F :=
+  Set.toFinset { z | ∃ v : ReedSolomon.code ωs (k + 1), δᵣ(u₀ + z • u₁, v) ≤ δ}
 
 open Polynomial
 
@@ -199,10 +202,9 @@ omit [DecidableEq (RatFunc F)] in
     from the set `S`.
 -/
 lemma exists_Pz_of_coeffs_of_close_proximity
-  {k : ℕ}
+    {k : ℕ}
   {z : F}
-  (hS : z ∈ coeffs_of_close_proximity (k := k) ωs δ u₀ u₁)
-  :
+  (hS : z ∈ coeffs_of_close_proximity (k := k) ωs δ u₀ u₁) :
   ∃ Pz : F[X], Pz.natDegree ≤ k ∧ δᵣ(u₀ + z • u₁, Pz.eval ∘ ωs) ≤ δ := by
     unfold coeffs_of_close_proximity at hS
     obtain ⟨w, hS, dist⟩ : ∃ a ∈ ReedSolomon.code ωs (k + 1), ↑δᵣ(u₀ + z • u₁, a) ≤ δ := by
@@ -222,10 +224,8 @@ lemma exists_Pz_of_coeffs_of_close_proximity
 noncomputable def Pz
   {k : ℕ}
   {z : F}
-  (hS : z ∈ coeffs_of_close_proximity k ωs δ u₀ u₁)
-  :
-  F[X]
-  := (exists_Pz_of_coeffs_of_close_proximity (n := n) (k := k) hS).choose
+  (hS : z ∈ coeffs_of_close_proximity k ωs δ u₀ u₁) : F[X] :=
+  (exists_Pz_of_coeffs_of_close_proximity (n := n) (k := k) hS).choose
 
 omit [DecidableEq (RatFunc F)] in
 /-- Proposition 5.5 from [BCIKS20].
@@ -234,8 +234,7 @@ omit [DecidableEq (RatFunc F)] in
     `Pz` on that set.
 -/
 lemma exists_a_set_and_a_matching_polynomial
-  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  :
+    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
   ∃ S', ∃ (h_sub : S' ⊆ coeffs_of_close_proximity k ωs δ u₀ u₁), ∃ P : F[Z][X],
     #S' > #(coeffs_of_close_proximity k ωs δ u₀ u₁) / (2 * D_Y Q) ∧
     ∀ z : S', Pz (h_sub z.2) = P.map (Polynomial.evalRingHom z.1) ∧
@@ -248,15 +247,17 @@ noncomputable def matching_set
   (ωs : Fin n ↪ F)
   (δ : ℚ)
   (u₀ u₁ : Fin n → F)
-  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  : Finset F := (exists_a_set_and_a_matching_polynomial k h_gs (δ := δ)).choose
+  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) : Finset F :=
+  (exists_a_set_and_a_matching_polynomial k h_gs (δ := δ)).choose
 
 omit [DecidableEq (RatFunc F)] in
 /-- `S'` is indeed a subset of `S` -/
 lemma matching_set_is_a_sub_of_coeffs_of_close_proximity
-  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-  : matching_set k ωs δ u₀ u₁ h_gs ⊆ coeffs_of_close_proximity k ωs δ u₀ u₁ :=
+    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
+    matching_set k ωs δ u₀ u₁ h_gs ⊆ coeffs_of_close_proximity k ωs δ u₀ u₁ :=
   (exists_a_set_and_a_matching_polynomial k h_gs (δ := δ)).choose_spec.choose
+
+end
 
 end BCIKS20ProximityGapSection5
 

@@ -74,7 +74,7 @@ noncomputable def decoder (e k : ℕ) [NeZero n] (ωs f : Fin n → F) : Option 
 - `h` - Hypothesis that decoder succeeded (returns `some p`)
 -/
 theorem hammingDist_le_of_decoder_eq_some [NeZero n] {ωs f : Fin n → F}
-  (h : decoder e k ωs f = some p) : Δ₀(f, p.eval ∘ ωs) ≤ e :=
+    (h : decoder e k ωs f = some p) : Δ₀(f, p.eval ∘ ωs) ≤ e :=
   by aesop (add simp decoder)
 
 /--
@@ -90,12 +90,11 @@ then the decoder succeeds and returns `some p`.
 - `p : Polynomial F` - Original polynomial message
 -/
 theorem decoder_eq_some {e k : ℕ} [NeZero n] {ωs f : Fin n → F} {p : Polynomial F}
-  (he : 2 * e < n - k + 1)
+    (he : 2 * e < n - k + 1)
   (hn : k ≤ n)
   (h_inj : Function.Injective ωs)
   (h_deg : p.natDegree < k)
-  (h_dist : Δ₀(f, p.eval ∘ ωs) ≤ e)
-  : decoder e k ωs f = some p := by
+  (h_dist : Δ₀(f, p.eval ∘ ωs) ≤ e) : decoder e k ωs f = some p := by
   simp only [decoder]
   split_ifs with hif
   · suffices p = 0 from Option.some_inj.2 this.symm

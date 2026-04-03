@@ -1,0 +1,2 @@
+ArkLib/Data/CodingTheory/Basic.lean : line 1 : ERR_NUM_LIN : 2400 file contains 2291 lines, try to split it up
+ArkLib/Data/CodingTheory/ProximityGap/DG25.lean : line 1 : ERR_NUM_LIN : 2200 file contains 2027 lines, try to split it up

@@ -176,7 +176,7 @@ theorem drop_of_succ {α : Fin (n + 1) → Sort*} (v : (i : Fin (n + 1)) → α 
 theorem drop_all (v : (i : Fin n) → α i) :
     drop n n.le_refl v = fun i => Fin.elim0 (i.cast (Nat.sub_self n)) := by
   ext i
-  simp at i
+  simp only [tsub_self] at i
   exact Fin.elim0 i
 
 theorem drop_tail {α : Fin (n + 1) → Sort*} (m : ℕ) (h : m ≤ n) (v : (i : Fin (n + 1)) → α i) :
@@ -202,7 +202,7 @@ theorem drop_drop {m m' : ℕ} (h : m ≤ n - m') (h' : m' ≤ n) (v : (i : Fin 
         letI := drop (m + m') (Nat.add_le_of_le_sub h' h) v (i.cast (by omega))
         dcast (by simp [Fin.cast, add_assoc]) this) := by
   ext i
-  simp only [Fin.cast, coe_addNat, addNat_mk, cast_mk, drop_apply]
+  simp only [Fin.cast, val_addNat, addNat_mk, cast_mk, drop_apply]
   rw! [add_assoc]; simp
 
 /-- `drop` is unchanged after `update` for indices before the drop point. -/
@@ -210,7 +210,7 @@ theorem drop_drop {m m' : ℕ} (h : m ≤ n - m') (h' : m' ≤ n) (v : (i : Fin 
 theorem drop_update_of_lt (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) (i : Fin n)
     (hi : i < m) (x : α i) : drop m h (update v i x) = drop m h v := by
   ext j
-  simp only [Fin.cast, coe_addNat, drop_apply, update, dite_eq_right_iff]
+  simp only [Fin.cast, val_addNat, drop_apply, update, dite_eq_right_iff]
   intro h'
   subst h'
   simp_all only [add_lt_iff_neg_right, not_lt_zero']
@@ -220,10 +220,17 @@ theorem drop_update_of_lt (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) (i 
 theorem drop_update_of_ge (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) (i : Fin n) (hi : i ≥ m)
     (x : α i) : drop m h (update v i x) =
       update (drop m h v) ⟨i - m, by omega⟩
-        (dcast (by simp; ext; simp; rw [Nat.sub_add_cancel hi]) x) := by
+        (dcast (by
+          ext
+          simp only [addNat_mk, cast_mk]
+          rw [Nat.sub_add_cancel hi]) x) := by
   ext j
-  simp [update, Fin.cast]
+  simp only [update, Fin.cast, drop_apply, addNat_mk, cast_mk]
   split
+<<<<<<< quang/data-lint-cleanup-data
+  · sorry
+  · sorry
+=======
   next h_1 =>
     subst h_1
     simp_all only [add_tsub_cancel_right, Fin.eta, ↓reduceDIte]
@@ -233,6 +240,7 @@ theorem drop_update_of_ge (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) (i 
     intro h_2
     subst h_2
     simp_all only [Nat.sub_add_cancel, Fin.eta, not_true_eq_false]
+>>>>>>> quang/bump-comppoly
 
 -- /-- Dropping the first `m ≤ n` elements of an `addCases u v`, where `u` is a `n`-tuple,
 -- is the same as dropping the first `m` elements of `u` and then adding `v` to the result. -/
@@ -249,7 +257,8 @@ theorem drop_append_left {n' : ℕ} {α : Sort*} (m : ℕ) (h : m ≤ n) (u : (i
       drop m (Nat.le_add_right_of_le h) (append u v) =
           append (drop m h u) v ∘ Fin.cast (by omega) := by
   ext i
-  simp [append, addCases, Fin.cast]
+  simp only [append, drop_apply, addCases, Fin.cast, val_addNat, castLT_mk, cast_mk, subNat_mk,
+    natAdd_mk, eq_rec_constant, comp_apply, addNat_mk]
   split <;> rename_i h'
   · simp_all
   · simp at h'
@@ -264,12 +273,13 @@ theorem drop_addCases_right {n' : ℕ} {motive : Fin (n + n') → Sort*} (m : �
       drop (n + m) (Nat.add_le_add_left h n) (addCases u v) =
         fun i => dcast (by simp [natAdd, Fin.cast]; omega) (drop m h v (i.cast (by omega))) := by
   ext i
-  simp [Fin.cast, addCases]
+  simp only [Fin.cast, val_addNat, addCases, subNat_mk, natAdd_mk, drop_apply, castLT_mk,
+    addNat_mk, cast_mk]
   split <;> rename_i h'
   · omega
   · have : i.val + (n + m) - n = i.val + m := by omega
     rw! [this]
-    simp [dcast, cast,]
+    simp only [dcast, cast]
     rw [eqRec_fun_eq_eqRec_sort]
 
 /-- Version of `drop_addCases_right` that specializes `addCases` to `append`. -/
@@ -278,7 +288,8 @@ theorem drop_append_right {n' : ℕ} {α : Sort*} (m : ℕ) (h : m ≤ n') (u : 
       drop (n + m) (Nat.add_le_add_left h n) (append u v) =
         fun i => (drop m h v (i.cast (by omega))) := by
   ext i
-  simp [Fin.cast, append, addCases]
+  simp only [append, drop_apply, addCases, Fin.cast, val_addNat, castLT_mk, cast_mk, subNat_mk,
+    natAdd_mk, eq_rec_constant, addNat_mk]
   split <;> rename_i h'
   · omega
   · have : i.val + (n + m) - n = i.val + m := by omega
@@ -288,14 +299,17 @@ theorem drop_append_right {n' : ℕ} {α : Sort*} (m : ℕ) (h : m ≤ n') (u : 
 theorem ofFn_drop_eq_drop_ofFn {α : Type*} {m : ℕ} (h : m ≤ n) (v : Fin n → α) :
     List.ofFn (drop m h v) = (List.ofFn v).drop m := by
   ext i a
-  simp
+  simp only [List.getElem?_ofFn, drop_apply, addNat_mk, cast_mk, Option.dite_none_right_eq_some,
+    Option.some.injEq, List.getElem?_drop]
   constructor <;> intro ⟨h, h'⟩ <;> refine ⟨by omega, ?_⟩ <;> rw! [add_comm, h'] <;> rfl
 
 /-- Alternative version of `ofFn_drop_eq_drop_ofFn` with `l : List α` instead of `v : Fin n → α`. -/
 theorem ofFn_drop_get {α : Type*} {m : ℕ} (l : List α) (h : m ≤ l.length) :
     List.ofFn (drop m h l.get) = l.drop m := by
   ext i a
-  simp [List.getElem?_eq_some_iff]
+  simp only [List.getElem?_ofFn, drop_apply, addNat_mk, cast_mk, List.get_eq_getElem,
+    Option.dite_none_right_eq_some, Option.some.injEq, List.getElem?_drop,
+    List.getElem?_eq_some_iff]
   constructor <;> intro ⟨h, h'⟩ <;> refine ⟨by omega, ?_⟩ <;> rw! [add_comm, h'] <;> rfl
 
 /-- `Fin.drop` intertwines with `List.drop` via `List.get`. -/
@@ -316,7 +330,7 @@ the tuple. -/
 theorem drop_eq_rtake (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) :
     drop m h v = fun i => dcast (by simp [Fin.cast]; omega) (rtake (n - m) (by omega) v i) := by
   ext i
-  simp only [Fin.cast, coe_addNat, drop, dcast, cast, coe_natAdd, rtake]
+  simp only [Fin.cast, val_addNat, drop, dcast, cast, val_natAdd, rtake]
   have : n - (n - m) + i.val = i.val + m := by omega
   rw! [this]
   rfl
@@ -334,11 +348,13 @@ theorem take_drop_addCases' (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) :
     Fin.addCases' (take m h v) (drop m h v) =
       fun i =>
         cast (by
-          simp [append, addCases, castLE, Fin.cast]
+          simp only [Fin.cast, append, addCases, castLE, val_castLT, subNat_mk, natAdd_mk,
+            addNat_mk, eq_rec_constant, left_eq_dite_iff, not_lt]
           intro hi; rw! [Nat.sub_add_cancel hi]; rfl)
           (v (i.cast (by omega))) := by
   ext i
-  simp [addCases', addCases, Fin.cast, castLE, cast]
+  simp only [castLE, Fin.cast, val_addNat, addCases', addCases, castAdd_castLT, val_castLT,
+    take_apply, eq_mpr_eq_cast, cast, subNat_mk, natAdd_mk, drop_apply, addNat_mk, cast_mk]
   split
   · simp
   · have : i.val - m + m = i.val := by omega
