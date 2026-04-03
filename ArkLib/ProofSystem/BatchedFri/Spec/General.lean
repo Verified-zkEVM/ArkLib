@@ -63,6 +63,7 @@ def liftingLens :
       stmt,
       fun j v =>
           have : v.1 ∈ ω.toFinset := by {
+            rw [ReedSolomon.CosetFftDomain.mem_coset_finset_iff_mem_coset_domain] 
             rcases j with ⟨j, h⟩
             have : j = 0 := by simpa using h
             simp only [Nat.succ_eq_add_one, Fin.coe_ofNat_eq_mod, Nat.zero_mod, Nat.reduceAdd,
@@ -73,6 +74,7 @@ def liftingLens :
             simp only [finRangeTo.eq_1, List.take_zero, List.toFinset_nil, Finset.sum_empty,
               Nat.sub_zero, ReedSolomon.CosetFftDomain.subdomainNatReversed,
               ReedSolomon.CosetFftDomain.subdomainNat, Nat.succ_eq_add_one, Fin.ofNat_eq_cast] at h'
+            rw [ReedSolomon.CosetFftDomain.mem_coset_finset_iff_mem_coset_domain] at h'            
             rw [ReedSolomon.CosetFftDomain.subdomain_n'] at h'
             exact h'
           }

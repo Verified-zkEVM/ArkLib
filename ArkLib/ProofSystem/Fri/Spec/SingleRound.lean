@@ -223,8 +223,7 @@ instance finalOracleStatementInterface :
           }) (← read)
         let pt : (ω.subdomainNatReversed (∑ j' ∈ finRangeTo _ j.1, s j')).toFinset :=
           cast (by {
-            simp [h]
-
+            simp [Domain, h]
           }) q
         return cast (by simp [h]) (st pt) }
 
@@ -730,7 +729,7 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
                     (ω.subdomainNatReversed
                       (∑ j' ∈ finRangeTo _ i.1, (s j').1)).toFinset :=
                     ⟨s₀ ^ (2 ^ (∑ j' ∈ finRangeTo _ i.1, (s j').1)), 
-                      subdomainNatReversed_pow_property_main_domain (Nat.le_trans 
+                      subdomainNatReversed_pow_property_main_domain_toFinset (Nat.le_trans 
                       (Finset.sum_le_sum_of_subset (t := Finset.univ) (by simp))
                       (round_bound domain_size_cond)) s₀.2⟩
                   let queries :
@@ -743,7 +742,7 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
                         ⟨
                           r * s₀,
                           by {
-                            rw [mul_comm]
+                            rw [mul_comm, mem_coset_finset_iff_mem_coset_domain]
                             exact 
                               subdomainNatReversed_mul_property (by {
                                 rw [Nat.le_sub_iff_add_le (by {
@@ -757,7 +756,7 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
                                 exact (Finset.sum_le_sum_of_subset (t := Finset.univ) (by simp))
                                 exact k_le_n
                                  
-                              }) (by omega) s₀.2 r.2
+                              }) (by omega) (mem_coset_finset_iff_mem_coset_domain.1 s₀.2) (mem_finset_iff_mem_domain.1 r.2)
                           }
                         ⟩
                       )
@@ -772,10 +771,10 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
                       queryCodeword (ω := ω) k s (i := ⟨i.1.succ, Order.lt_add_one_iff.mpr h⟩)
                         ⟨s₀.1 ^ (2 ^ (s i).1), by {
                           simp only
-                          rw [sum_add_one]
+                          rw [sum_add_one, mem_coset_finset_iff_mem_coset_domain]
                           apply subdomainNatReversed_pow_property'
                             (i := s i)
-                            (h := s₀.2)
+                            (h := mem_coset_finset_iff_mem_coset_domain.1 s₀.2)
                           trans (∑ j' ∈ finRangeTo (k + 1) (↑i : ℕ).succ, (s j').1)
                           rw [Nat.succ_eq_add_one, sum_add_one s (i := i)]
                           rfl
