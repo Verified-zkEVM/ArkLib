@@ -96,77 +96,64 @@ lemma toListWithProof_mem.{u} {α : Type u} [DecidableEq α]
   ⟨x, hx⟩ ∈ toListWithProof s := by
   simp [toListWithProof, List.reduceOption, hx]
 
+private lemma list_reduceOption_helper {α : Type*} [DecidableEq α] {s : Finset α} {l : List α} (h : ∀ x ∈ l, x ∈ s) :
+    List.map Subtype.val (List.reduceOption (l.map (fun x => if hx : x ∈ s then some ⟨x, hx⟩ else none))) = l := by
+  induction l with
+  | nil => simp [List.reduceOption]
+  | cons a t ih =>
+    have ha := h a (by simp)
+    simp only [List.map_cons, ha, dite_true, List.reduceOption, List.filterMap_cons, id]
+    change a :: List.map Subtype.val _ = a :: t
+    congr 1
+    exact ih (fun x hx => h x (List.mem_cons_of_mem a hx))
+
+@[simp]
 lemma toListWithProof_eq_toList.{u} {α : Type u} [DecidableEq α]
   {s : Finset α}
   :
   (toListWithProof s).map (fun x => x.1) =
     s.toList := by
-  induction s using Finset.induction with
-  | empty => simp
-  | insert a s ih => 
-    sorry
-
-
-
+  simp only [toListWithProof]
+  exact list_reduceOption_helper (fun x hx => Finset.mem_toList.mp hx)
 
 end Finset
 
 namespace FftDomain
 
-
-
 noncomputable def toList (ω : FftDomain ι F) : List (ω.toFinset) := 
-  let list := ω.toFinset.toList
-  List.reduceOption <|
-    list.map (fun x => if h : x ∈ ω then some ⟨x, by { aesop }⟩ else none)
+  Finset.toListWithProof <| ω.toFinset
 
 lemma toList_eq_finset_toList {ω : FftDomain ι F}
   :
-  ω.toList.map (fun x => x.1) = ω.toFinset.toList := by  
-  rw [ FftDomain.toList, ← List.map_id ( ω.toFinset.toList ) ];
-  -- Since every element in the list is in the set, the if condition is always true.
-  have h_if_true : ∀ x ∈ ω.toFinset.toList, x ∈ ω.toFinset := by
-    aesop;
-  -- Since the list is finite, we can apply the definition of `List.reduceOption` directly.
-  have h_foldr : ∀ (l : List F), (∀ x ∈ l, x ∈ ω.toFinset) → List.reduceOption (List.map (fun x => if x ∈ ω.toFinset then some x else none) l) = l := by
-    intros l hl;
-    induction l <;> simp_all +decide [ List.reduceOption ];
-  convert h_foldr _ h_if_true;
-  · induction' ω.toFinset.toList with x l ih <;> simp +decide [ * ];
-    · rfl;
-    · split_ifs <;> simp_all +decide [ List.reduceOption ];
-  · norm_num
+  ω.toList.map (fun x => x.1) = ω.toFinset.toList := by simp [toList]
 
-
-def toSubgroup (ω : FftDomain ι F) : Subgroup Fˣ 
-  := ⟨⟨⟨Finset.image ω.domain Finset.univ, by {
-    intro a b 
-    simp only [Finset.coe_image, Finset.coe_univ, Set.image_univ, Set.mem_range,
-      Multiplicative.exists, forall_exists_index]
-    intro x ha y hb 
+def toSubgroup (ω : FftDomain ι F) : Subgroup Fˣ where
+  carrier := Finset.image ω.domain Finset.univ 
+  mul_mem' {a b} ha hb := by {
+    simp_all only [Finset.coe_image, Finset.coe_univ, Set.image_univ, Set.mem_range,
+      Multiplicative.exists]
+    rcases ha with ⟨x, ha⟩ 
+    rcases hb with ⟨y, hb⟩ 
     exists (x + y)
     simp [ha, hb]
-  }⟩, by {
-    simp only [Finset.coe_image, Finset.coe_univ, Set.image_univ, Set.mem_range,
+  }
+  one_mem' := by {
+    rw [show (1 : Fˣ) = ω.domain (Multiplicative.ofAdd 0) by simp]
+    aesop (add simp [Multiplicative.ofAdd])
+  }
+  inv_mem' {x} hx := by {
+    simp_all only [Finset.coe_image, Finset.coe_univ, Set.image_univ, Set.mem_range,
       Multiplicative.exists]
-    exists 0
-    simp
-  }⟩, by {
-    simp only [Finset.coe_image, Finset.coe_univ, Set.image_univ, Set.mem_range,
-      Multiplicative.exists, forall_exists_index, forall_apply_eq_imp_iff]
-    intro a
+    rcases hx with ⟨a, ha⟩
     exists (-a)
-    simp
-  }⟩
-
-
+    aesop
+  }
 
 @[simp]
 lemma mem_subgroup_iff_mem_finset {ω : FftDomain ι F} {x : Fˣ}
   :
   x ∈ ω.toSubgroup ↔ x.val ∈ ω.toFinset := by
-  unfold toSubgroup toFinset
-  aesop
+  aesop (add simp [toSubgroup, toFinset])
 
 end FftDomain
 
@@ -178,26 +165,20 @@ instance : CoeOut (FftDomain ι F) (Subgroup Fˣ) where
 
 namespace FftDomain
 
-
 lemma injective {ω : FftDomain ι F}
   :
-  Function.Injective ω := by 
-  intro i₁ i₂ h
-  rcases ω with ⟨ω, hinj⟩ 
-  simp [eval_fft_domain_eq_eval_domain] at h
-  exact hinj (by aesop)
+  Function.Injective ω := fun i₁ i₂ h => by cases ω with
+  | mk ω hinj => aesop (add simp [eval_fft_domain_eq_eval_domain])
 
 lemma domain_elem_invertible {ω : FftDomain ι F} {i : ι}
   :
-  IsUnit (ω i) := by 
-  rcases ω with ⟨ω, hinj⟩ 
-  simp [eval_fft_domain_eq_eval_domain] 
+  IsUnit (ω i) := by aesop (add simp [eval_fft_domain_eq_eval_domain])
 
 @[simp]
 lemma domain_zero_eq_one {ω : FftDomain ι F} 
   :
   ω 0 = 1 := by 
-  show ↑(ω.domain (Multiplicative.ofAdd (0 : ι))) = (1 : F)
+  change ↑(ω.domain (Multiplicative.ofAdd (0 : ι))) = (1 : F)
   rw [show Multiplicative.ofAdd (0 : ι) = (1 : Multiplicative ι) from rfl, map_one]
   simp
 
@@ -234,14 +215,7 @@ lemma domain_sub_eq_div_domain {ω : FftDomain ι F}
 @[ext]
 theorem ext {ω₁ ω₂ : FftDomain ι F} (h : ∀ i, ω₁ i = ω₂ i)
   :
-  ω₁ = ω₂ := by 
-  rcases ω₁ with ⟨f₁, _⟩ 
-  rcases ω₂ with ⟨f₂, _⟩ 
-  simp only [mk.injEq]
-  ext i
-  simp [Multiplicative.ofAdd]
-  specialize (h i)
-  aesop
+  ω₁ = ω₂ := by aesop (add simp [eq_iff_domains_eq, Multiplicative.ofAdd])
 
 end FftDomain
 
@@ -254,8 +228,7 @@ namespace FftDomain
 lemma size_of_smooth_fft_domain_eq_pow_of_2 {n : ℕ} {ω : SmoothFftDomain n F}
   :
   Finset.card (ω : Finset F) = 2 ^ n := by 
-  rw [FftDomain.toFinset, Finset.card_image_of_injective _ FftDomain.injective] 
-  simp
+  aesop (add simp [FftDomain.toFinset, Finset.card_image_of_injective, FftDomain.injective])
 
 private lemma domain_nsmul {n : ℕ} {ω : SmoothFftDomain n F} (k : ℕ) (i : Fin (2 ^ n))
   : ω (k • i) = (ω i) ^ k := by
@@ -265,28 +238,25 @@ private lemma domain_nsmul {n : ℕ} {ω : SmoothFftDomain n F} (k : ℕ) (i : F
     rw [succ_nsmul, FftDomain.domain_add_eq_mul_domain, ih, pow_succ]
 
 private lemma val_eq_nsmul_one {n : ℕ} (i : Fin (2 ^ n)) : i = i.val • (1 : Fin (2 ^ n)) := by
-  simp +decide [ Fin.ext_iff, Fin.val_add, Fin.val_mul ];
-  convert Nat.mod_eq_of_lt i.2 using 1;
+  simp +decide only [Fin.ext_iff];
+  convert Nat.mod_eq_of_lt i.2 using 1
   · rw [ Nat.mod_eq_of_lt i.2 ];
   · convert Nat.mod_eq_of_lt i.2 using 1;
     erw [ Fin.val_mk ];
     induction i.val <;> simp_all +decide [ nsmulRec ];
-    simp_all +decide [ Fin.val_add, nsmulRec ]
+    simp_all +decide [ Fin.val_add]
 
 lemma domain_eq_pow_of_generator {n : ℕ} {ω : SmoothFftDomain n F} (i : Fin (2 ^ n))
   : ω i = (ω 1) ^ i.val := by
   conv_lhs => rw [val_eq_nsmul_one i]
-  rw [domain_nsmul]
+  simp [domain_nsmul]
 
 theorem eq_iff_generators_eq {n : ℕ} {ω₁ ω₂ : SmoothFftDomain n F}
   : 
   ω₁ = ω₂ ↔ ω₁ 1 = ω₂ 1 := by
-  constructor
-  · intro h; rw [h]
-  · intro h
-    ext i
-    rw [domain_eq_pow_of_generator i, domain_eq_pow_of_generator i, h]
-  
+  constructor <;> (intro h; try rw [h])
+  ext i
+  aesop (add safe [(by rw [domain_eq_pow_of_generator i])])
 
 end FftDomain
 
