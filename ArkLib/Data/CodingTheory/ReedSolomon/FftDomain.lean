@@ -14,20 +14,24 @@ structure FftDomain (ι : Type) [AddCommGroup ι]
     domain : MonoidHom (Multiplicative ι) Fˣ 
     inj : Function.Injective domain
 
+namespace FftDomain
+
+lemma eq_iff_domains_eq {φ₁ φ₂ : FftDomain ι F} 
+  :
+  φ₁ = φ₂ ↔ φ₁.domain = φ₂.domain := by
+  rcases φ₁ with ⟨f₁, h₁⟩ 
+  aesop
+
+end FftDomain
+
 instance : FunLike (FftDomain ι F) ι F where
   coe fftDomain i := fftDomain.domain i
-  coe_injective' := by
-    rintro ⟨f₁, h₁⟩ ⟨f₂, h₂⟩ h 
-    simp only at h
-    simp only [FftDomain.mk.injEq]
-    ext i
-    simp only [MonoidHom.toAdditiveRight_apply_apply, Multiplicative.ofAdd, Equiv.coe_fn_mk,
-      toMul_ofMul]
-    exact (congrFun h i)
+  coe_injective' φ₁ φ₂ h := by
+    have h := congrFun h
+    aesop (add simp [FftDomain.eq_iff_domains_eq])
 
 namespace FftDomain 
 
-omit [Fintype ι] [Fintype F] [DecidableEq ι] [DecidableEq F] in
 lemma eval_fft_domain_eq_eval_domain
   {fftDomain : FftDomain ι F} {i : ι}
   :
@@ -36,16 +40,10 @@ lemma eval_fft_domain_eq_eval_domain
 end FftDomain
 
 instance : Coe (FftDomain ι F) (ι ↪ F) where
-  coe fftDomain := ⟨fftDomain, by {
-    intro i₁ i₂ h
-    rcases fftDomain with ⟨domain, hinj⟩
-    simp [FftDomain.eval_fft_domain_eq_eval_domain] at h
-    simp only [Function.Injective, Multiplicative.forall, EmbeddingLike.apply_eq_iff_eq] at hinj 
-    specialize hinj i₁ i₂ 
-    simp only [Multiplicative.ofAdd, Equiv.coe_fn_mk] at hinj 
-    apply hinj
-    aesop
-  }⟩
+  coe fftDomain := ⟨fftDomain, fun i₁ i₂ h => 
+    match fftDomain with
+    | ⟨domain, hinj⟩ => by aesop (add simp [FftDomain.eval_fft_domain_eq_eval_domain])
+  ⟩
 
 set_option synthInstance.checkSynthOrder false in
 instance : Membership F (FftDomain ι F) where
