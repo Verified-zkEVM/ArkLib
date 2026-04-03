@@ -62,22 +62,58 @@ lemma mem_domain_iff_exists {ω : FftDomain ι F} {x : F}
 @[simp]
 lemma mem_finset_iff_exists {ω : FftDomain ι F} {x : F}
   :
-  x ∈ ω.toFinset ↔ ∃ i, ω i = x := by
-  unfold toFinset
-  aesop
+  x ∈ ω.toFinset ↔ ∃ i, ω i = x := by simp [toFinset]
 
 lemma mem_finset_iff_mem_domain {ω : FftDomain ι F} {x : F}
   :
-  x ∈ ω.toFinset ↔ x ∈ ω := by
-  unfold toFinset
-  aesop
+  x ∈ ω.toFinset ↔ x ∈ ω := by simp [toFinset]
 
 end FftDomain
   
 instance {x : F} {ω : FftDomain ι F} : Decidable (x ∈ ω) := 
   decidable_of_iff _ FftDomain.mem_finset_iff_mem_domain
 
+namespace Finset
+
+noncomputable def toListWithProof.{u} {α : Type u} [DecidableEq α] (s : Finset α)
+  :
+  List s := 
+  let list := s.toList
+  List.reduceOption <|
+    list.map (fun x => if h : x ∈ s then some ⟨x, h⟩ else none)
+
+@[simp]
+lemma toListWithProof_empty.{u} {α : Type u} [DecidableEq α]
+  :
+  toListWithProof (∅ : Finset α) = [] := by 
+  simp [toListWithProof, List.reduceOption]
+
+lemma toListWithProof_mem.{u} {α : Type u} [DecidableEq α]
+  {x : α}
+  {s : Finset α}
+  (hx : x ∈ s)
+  :
+  ⟨x, hx⟩ ∈ toListWithProof s := by
+  simp [toListWithProof, List.reduceOption, hx]
+
+lemma toListWithProof_eq_toList.{u} {α : Type u} [DecidableEq α]
+  {s : Finset α}
+  :
+  (toListWithProof s).map (fun x => x.1) =
+    s.toList := by
+  induction s using Finset.induction with
+  | empty => simp
+  | insert a s ih => 
+    sorry
+
+
+
+
+end Finset
+
 namespace FftDomain
+
+
 
 noncomputable def toList (ω : FftDomain ι F) : List (ω.toFinset) := 
   let list := ω.toFinset.toList
@@ -142,7 +178,7 @@ instance : CoeOut (FftDomain ι F) (Subgroup Fˣ) where
 
 namespace FftDomain
 
-omit [Fintype ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
+
 lemma injective {ω : FftDomain ι F}
   :
   Function.Injective ω := by 
@@ -195,7 +231,6 @@ lemma domain_sub_eq_div_domain {ω : FftDomain ι F}
       FftDomain.domain_add_eq_mul_domain, 
       FftDomain.domain_neg_eq_inv_domain ];
 
-omit [Fintype ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
 @[ext]
 theorem ext {ω₁ ω₂ : FftDomain ι F} (h : ∀ i, ω₁ i = ω₂ i)
   :
@@ -933,7 +968,23 @@ lemma subdomainNatReversed_pow_property_main_domain {n} {ω : SmoothCosetFftDoma
   (h : x ∈ (ω.subdomainNatReversed 0))
   :
   x ^ (2 ^ i) ∈ (ω.subdomainNatReversed i) := by
-  sorry
+  unfold subdomainNatReversed subdomainNat at h ⊢
+  have hJ : (⟨i, by omega⟩ : Fin (n + 1)) ≤ Fin.ofNat (n + 1) (n - 0) := by
+    simp [Fin.le_def, Fin.ofNat]
+    omega
+  have hsub : Fin.ofNat (n + 1) (n - 0) - ⟨i, by omega⟩ = Fin.ofNat (n + 1) (n - i) := by
+    ext
+    simp only [Fin.ofNat, Fin.sub_def, Fin.val_mk]
+    rw [Nat.mod_eq_of_lt (show n - 0 < n + 1 by omega)]
+    have h1 : n + 1 - i + (n - 0) = (n - 0 - i) + 1 * (n + 1) := by omega
+    rw [h1, Nat.add_mul_mod_self_right]
+    rw [Nat.mod_eq_of_lt (show n - 0 - i < n + 1 by omega)]
+    rw [Nat.mod_eq_of_lt (show n - i < n + 1 by omega)]
+    omega
+  have hval : (⟨i, by omega⟩ : Fin (n + 1)).val = i := rfl
+  have key := subdomain_pow_property' hJ h
+  rw [hval] at key
+  exact hsub ▸ key
 
 lemma subdomainNatReversed_pow_property_main_domain_toFinset {n} {ω : SmoothCosetFftDomain n F}
   {i : ℕ} {x : F}
