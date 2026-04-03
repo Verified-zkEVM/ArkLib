@@ -53,7 +53,6 @@ The ArkLib project is organized into these main categories:
 4. **OracleReduction** - Oracle reduction protocols
 5. **ProofSystem** - Zero-knowledge proof systems
 6. **ToMathlib** - Extensions and utilities for mathlib
-7. **ToVCVio** - Integration with VCV-io
 
 ## Key Insights
 
@@ -66,7 +65,7 @@ The ArkLib project is organized into these main categories:
 - **Data** category is the largest and most foundational
 - **ProofSystem** modules build on **Data** and **CommitmentScheme**
 - **OracleReduction** provides protocol abstractions used throughout
-- **ToMathlib** and **ToVCVio** are integration layers
+- **ToMathlib** provides the main upstream-facing extension layer
 
 ## Usage
 

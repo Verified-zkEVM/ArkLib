@@ -5,7 +5,6 @@ Authors: Quang Dao, Fawad Haider
 -/
 
 import VCVio.OracleComp.QueryTracking.RandomOracle
-import ArkLib.ToVCVio.Oracle
 
 /-!
   # Merkle Trees as a vector commitment
@@ -277,75 +276,65 @@ def getPutativeRoot_with_hash {n : ℕ} (i : Fin (2 ^ n)) (leaf : α) (proof : L
         getPutativeRoot_with_hash i' newLeaf proof.tail hashFn
 
 @[simp, grind =]
-lemma runWithOracle_query (f : (spec α).FunctionType) (x : α × α) :
-    runWithOracle f (liftM (query x)) = f x := by
-  unfold runWithOracle simulateQ
-  simp_all only [range_def]
-  obtain ⟨fst, snd⟩ := x
-  rfl
+lemma simulateQ_query_eq (f : QueryImpl (spec α) Id) (x : α × α) :
+    simulateQ f (liftM (query x)) = f x := by
+  simpa using (simulateQ_query (impl := f) (q := query x))
 
 
 @[simp, grind =]
-lemma runWithOracle_listVector_mmap_query (f : (spec α).FunctionType) {m : ℕ}
+lemma simulateQ_listVector_mmap_query (f : QueryImpl (spec α) Id) {m : ℕ}
     (xs : List.Vector (α × α) m) :
-    runWithOracle f
-        (List.Vector.mmap (fun x => liftM (query x)) xs) =
+    simulateQ f (List.Vector.mmap (fun x => liftM (query x)) xs) =
       xs.map f := by
   induction xs using List.Vector.inductionOn with
   | nil =>
-    unfold runWithOracle simulateQ List.Vector.mmap
+    unfold simulateQ List.Vector.mmap
     simp_all only [vector_eq_nil, domain_def]
   | @cons m x xs ih =>
-    unfold runWithOracle simulateQ at *
+    unfold simulateQ at *
     simp_all only [domain_def, Nat.succ_eq_add_one, Vector.mmap_cons, bind_pure_comp,
-      PFunctor.FreeM.mapM_bind', PFunctor.FreeM.mapM_map, Id.run_bind, Id.run_map, Vector.map_cons]
+      PFunctor.FreeM.mapM_bind', PFunctor.FreeM.mapM_map, Vector.map_cons]
     obtain ⟨fst, snd⟩ := x
     rfl
 
 @[simp, grind =]
-lemma runWithOracle_buildLayer (f : (spec α).FunctionType) (n : ℕ)
+lemma simulateQ_buildLayer_eq (f : QueryImpl (spec α) Id) (n : ℕ)
     (leaves : List.Vector α (2 ^ (n + 1))) :
-    runWithOracle f (buildLayer α n leaves) =
+    simulateQ f (buildLayer α n leaves) =
       buildLayer_with_hash (α := α) n leaves f := by
   unfold buildLayer
-  simp_all only [range_def, eq_mp_eq_cast, cast_eq, bind_pure, runWithOracle_listVector_mmap_query,
+  simp_all only [range_def, eq_mp_eq_cast, cast_eq, bind_pure, simulateQ_listVector_mmap_query,
     domain_def]
   rfl
 
 @[simp, grind =]
-lemma runWithOracle_buildMerkleTree (f : (spec α).FunctionType) (n : ℕ)
+lemma simulateQ_buildMerkleTree_eq (f : QueryImpl (spec α) Id) (n : ℕ)
     (leaves : List.Vector α (2 ^ n)) :
-    runWithOracle f (buildMerkleTree α n leaves) =
+    simulateQ f (buildMerkleTree α n leaves) =
       buildMerkleTree_with_hash (α := α) n leaves f := by
   induction n with
   | zero =>
     simp_all only [Cache, Nat.reduceAdd, buildMerkleTree, Nat.pow_zero, eq_mpr_eq_cast]
     rfl
   | succ n ih =>
-    -- Establish that `runWithOracle f` distributes over monadic bind.
-    -- Proved by unfolding to `PFunctor.FreeM.mapM` and using `mapM_bind'`,
-    -- exactly as in the other `runWithOracle_*` lemmas in this file.
-    have rwb : ∀ {β γ : Type} (ma : OracleComp (spec α) β) (k : β → OracleComp (spec α) γ),
-        runWithOracle f (ma >>= k) = runWithOracle f (k (runWithOracle f ma)) := by
+    have sqb : ∀ {β γ : Type} (ma : OracleComp (spec α) β) (k : β → OracleComp (spec α) γ),
+        simulateQ f (ma >>= k) = simulateQ f (k (simulateQ f ma)) := by
       intros β γ ma k
-      unfold runWithOracle simulateQ
-      simp [PFunctor.FreeM.mapM_bind']
-    -- Establish that `runWithOracle f (pure a) = a`.
-    have rwp : ∀ {β : Type} (a : β),
-        runWithOracle f (pure a : OracleComp (spec α) β) = a := by
+      rw [simulateQ_bind]
+      rfl
+    have sqp : ∀ {β : Type} (a : β),
+        simulateQ f (pure a : OracleComp (spec α) β) = a := by
       intros β a
-      unfold runWithOracle simulateQ
-      simp [PFunctor.FreeM.mapM_pure]
-    -- Unfold one step of each side, then push `runWithOracle f` inside using
-    -- `rwb` (twice, for the two binds), then close via `runWithOracle_buildLayer`,
-    -- the induction hypothesis `ih`, and `rwp` for the final `pure`.
+      rw [simulateQ_pure]
+      show (pure a : Id β) = a
+      rfl
     simp only [buildMerkleTree, buildMerkleTree_with_hash]
-    simp only [rwb, runWithOracle_buildLayer, ih, rwp]
+    simp only [sqb, simulateQ_buildLayer_eq, ih, sqp]
 
 @[simp, grind =]
-lemma runWithOracle_getPutativeRoot (f : (spec α).FunctionType) {n : ℕ} (i : Fin (2 ^ n))
+lemma simulateQ_getPutativeRoot_eq (f : QueryImpl (spec α) Id) {n : ℕ} (i : Fin (2 ^ n))
     (leaf : α) (proof : List.Vector α n) :
-    runWithOracle f (getPutativeRoot α i leaf proof) =
+    simulateQ f (getPutativeRoot α i leaf proof) =
       getPutativeRoot_with_hash (α := α) i leaf proof f := by
   induction n generalizing leaf with
   | zero =>
@@ -353,11 +342,11 @@ lemma runWithOracle_getPutativeRoot (f : (spec α).FunctionType) {n : ℕ} (i : 
     rfl
   | succ n ih =>
     by_cases hsign : i.val % 2 = 0
-    · simp [getPutativeRoot, getPutativeRoot_with_hash, hsign]
-      apply ih
-    · simp [getPutativeRoot, getPutativeRoot_with_hash, hsign]
+    · simp [getPutativeRoot, getPutativeRoot_with_hash, hsign, ih]
+      rfl
+    · simp [getPutativeRoot, getPutativeRoot_with_hash, hsign, ih]
       simp_all only [Nat.mod_two_not_eq_zero]
-      apply ih
+      rfl
 
 /-- A functional completeness theorem for Merkle proofs built from `buildMerkleTree_with_hash`. -/
 theorem functional_completeness {n : ℕ} (leaves : List.Vector α (2 ^ n)) (i : Fin (2 ^ n))

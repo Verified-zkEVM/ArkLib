@@ -194,8 +194,8 @@ def OracleVerifier.run [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
   let f := OracleInterface.simOracle2 oSpec oStmtIn transcript.messages
   let stmtOut ← simulateQ f (verifier.verify stmt transcript.challenges)
   let oStmtOut : ∀ i, OStmtOut i := fun i => match h : verifier.embed i with
-  | .inl j => by sorry --simp only [h, verifier.hEq i]; exact oStmtIn j
-  | .inr j => by sorry --simp only [h, verifier.hEq i]; exact transcript j
+    | .inl j => (verifier.hEq i ▸ h ▸ oStmtIn j : OStmtOut i)
+    | .inr j => (verifier.hEq i ▸ h ▸ transcript.messages j : OStmtOut i)
   return ⟨stmtOut, oStmtOut⟩
 
 /-- Running an oracle verifier then is equal to running its non-oracle counterpart -/
@@ -205,7 +205,8 @@ theorem OracleVerifier.run_eq_run_verifier [Oₘ : ∀ i, OracleInterface (pSpec
     {verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec} :
       verifier.run stmt oStmt transcript =
         verifier.toVerifier.run ⟨stmt, oStmt⟩ transcript := by
-  sorry --rfl
+  simp only [OracleVerifier.run, OracleVerifier.toVerifier, Verifier.run]
+  rfl
 
 /-- An execution of an interactive reduction on a given initial statement and witness. Consists of
   first running the prover, and then the verifier. Returns the full transcript, the output statement
@@ -313,8 +314,8 @@ theorem OracleReduction.run_eq_run_reduction [∀ i, OracleInterface (pSpec.Mess
     {oracleReduction : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec} :
       oracleReduction.run stmt oStmt wit =
         oracleReduction.toReduction.run ⟨stmt, oStmt⟩ wit := by
-  sorry
-  -- rfl
+  simp only [OracleReduction.run, Reduction.run, OracleVerifier.run_eq_run_verifier,
+    OracleReduction.toReduction]
 
 /-- Running an oracle reduction with logging of queries to the shared oracle is equal to running its
   non-oracle counterpart with logging of queries to the shared oracle -/
@@ -324,8 +325,8 @@ theorem OracleReduction.runWithLog_eq_runWithLog_reduction [∀ i, OracleInterfa
     {oracleReduction : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec} :
       oracleReduction.run stmt oStmt wit =
         oracleReduction.toReduction.run ⟨stmt, oStmt⟩ wit := by
-  sorry
-  -- rfl
+  simp only [OracleReduction.run, Reduction.run, OracleVerifier.run_eq_run_verifier,
+    OracleReduction.toReduction]
 
 @[simp]
 theorem Prover.runToRound_zero_of_prover_first
@@ -376,8 +377,10 @@ theorem OracleReduction.id_runWithLog (stmt : StmtIn) (oStmt : ∀ i, OStmtIn i)
     (OracleReduction.id : OracleReduction oSpec StmtIn OStmtIn WitIn _ _ _ _).runWithLog
       stmt oStmt wit = pure ⟨⟨default, ⟨stmt, oStmt⟩, wit⟩, ⟨stmt, oStmt⟩, [], []⟩ := by
   simp only [OracleReduction.runWithLog, OracleVerifier.run, Prover.run, OracleReduction.id,
-    OracleProver.id, OracleVerifier.id, Prover.id]
-  sorry
+    OracleProver.id, OracleVerifier.id, Prover.id,
+    Prover.runToRound,
+    monadLift_pure, pure_bind, Option.getM]
+  rfl
 
 end Trivial
 
@@ -402,6 +405,44 @@ theorem Prover.runToRound_one_of_prover_first [ProverOnly pSpec] (stmt : StmtIn)
   · congr; funext a; congr; simp [default, Transcript.concat]; funext i
     have : i = 0 := by aesop
     rw [this]; simp [Fin.snoc]
+
+@[simp]
+theorem Prover.runToRound_one_of_verifier_first [VerifierOnly pSpec] (stmt : StmtIn) (wit : WitIn)
+    (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+      prover.runToRound 1 stmt wit = (do
+        let state := prover.input (stmt, wit)
+        let challenge ← liftComp (pSpec.getChallenge ⟨0, by simp⟩) _
+        letI newState := (← liftComp (prover.receiveChallenge ⟨0, by simp⟩ state) _) challenge
+        return (fun i => match i with | ⟨0, _⟩ => challenge, newState)) := by
+  simp [Prover.runToRound, Prover.processRound]
+  have : pSpec.dir 0 = .V_to_P := by simp
+  split <;> rename_i hDir
+  · -- V_to_P case: this is what we want
+    congr 1
+    funext challenge
+    congr 1
+    funext f
+    simp only [default, Transcript.concat, Prod.mk.injEq]
+    constructor
+    · funext ⟨i, hi⟩
+      have h : i = 0 := by omega
+      subst h
+      simp [Fin.snoc]
+    · trivial
+  · -- P_to_V case: contradiction
+    have : Direction.V_to_P = .P_to_V := by rw [← this, hDir]
+    contradiction
+
+@[simp]
+theorem Prover.run_of_verifier_first [VerifierOnly pSpec] (stmt : StmtIn) (wit : WitIn)
+    (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+      prover.run stmt wit = (do
+        let state := prover.input (stmt, wit)
+        let challenge ← liftComp (pSpec.getChallenge ⟨0, by simp⟩) _
+        let f ← liftComp (prover.receiveChallenge ⟨0, by simp⟩ state) _
+        let ctxOut ← prover.output (f challenge)
+        return ((fun i => match i with | ⟨0, _⟩ => challenge), ctxOut)) := by
+  simp [Prover.run]; rfl
 
 @[simp]
 theorem Prover.run_of_prover_first [ProverOnly pSpec] (stmt : StmtIn) (wit : WitIn)

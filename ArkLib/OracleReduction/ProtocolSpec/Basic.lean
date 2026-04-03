@@ -7,7 +7,6 @@ Authors: Quang Dao
 import ArkLib.Data.Fin.Tuple.Lemmas
 import ArkLib.OracleReduction.Prelude
 import ArkLib.OracleReduction.OracleInterface
-import ArkLib.ToVCVio.Oracle
 
 /-!
 # Protocol Specifications for (Oracle) Reductions
@@ -766,7 +765,7 @@ def srChallengeQueryImpl {Statement : Type} {pSpec : ProtocolSpec n}
 def srChallengeQueryImpl' {Statement : Type} {pSpec : ProtocolSpec n}
     [∀ i, SampleableType (pSpec.Challenge i)] :
     QueryImpl (srChallengeOracle Statement pSpec)
-      (StateT (srChallengeOracle Statement pSpec).FunctionType ProbComp)
+      (StateT (QueryImpl (srChallengeOracle Statement pSpec) Id) ProbComp)
     :=
   fun | ⟨i, t⟩ => fun f => pure (f ⟨i, t⟩, f)
 

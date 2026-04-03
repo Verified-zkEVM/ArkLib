@@ -214,7 +214,7 @@ theorem dflatten_splitSum {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum
   induction m with
   | zero => exact Fin.elim0 k
   | succ m ih =>
-    simp; sorry
+    sorry
 
 @[simp]
 theorem dflatten_embedSum {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum n)) → Sort*}
