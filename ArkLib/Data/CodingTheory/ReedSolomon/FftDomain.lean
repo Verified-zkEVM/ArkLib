@@ -3,6 +3,7 @@ import Mathlib.Algebra.Group.TypeTags.Basic
 import Mathlib.Algebra.Group.Defs
 import Mathlib.Tactic.Cases
 import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.Field
 
 namespace ReedSolomon
 
@@ -265,22 +266,25 @@ structure CosetFftDomain (ι : Type) [AddCommGroup ι]
   x : Fˣ 
   fftDomain : FftDomain ι F
 
+namespace CosetFftDomain
+
+lemma eq_iff_domains_and_gen_eq {φ₁ φ₂ : CosetFftDomain ι F} 
+  :
+  φ₁ = φ₂ ↔ φ₁.x = φ₂.x ∧ φ₁.fftDomain = φ₂.fftDomain := by
+  rcases φ₁ with ⟨f₁, h₁⟩ 
+  aesop
+
+end CosetFftDomain
+
+
 instance : FunLike (CosetFftDomain ι F) ι F where
   coe cosetDomain i := cosetDomain.x * cosetDomain.fftDomain i
-  coe_injective' := by
-    rintro ⟨x₁, f₁⟩ ⟨x₂, f₂⟩ h 
+  coe_injective' φ₁ φ₂ h := by
     simp only at h
-    simp only [CosetFftDomain.mk.injEq]
-    have hx : x₁ = x₂ := by
-      have h := congrFun h 0
-      aesop
-    subst hx
-    simp only [true_and]
-    ext i
-    have h := congrFun h i
-    simp only [mul_eq_mul_left_iff, Units.ne_zero, or_false] at h
-    exact h
-
+    have h₀ := congrFun h 0 
+    have h := congrFun h 
+    aesop (add simp [CosetFftDomain.eq_iff_domains_and_gen_eq])
+    
 namespace CosetFftDomain 
 
 lemma eval_coset_fft_domain_eq_eval_x_mul_domain
@@ -291,13 +295,12 @@ lemma eval_coset_fft_domain_eq_eval_x_mul_domain
 end CosetFftDomain
 
 instance : Coe (CosetFftDomain ι F) (ι ↪ F) where
-  coe cosetDomain := ⟨cosetDomain, by {
-    intro i₁ i₂ h
-    rcases cosetDomain with ⟨x, f⟩
-    simp only [CosetFftDomain.eval_coset_fft_domain_eq_eval_x_mul_domain, mul_eq_mul_left_iff,
-      Units.ne_zero, or_false] at h
-    exact FftDomain.injective h
-  }⟩
+  coe cosetDomain := ⟨cosetDomain, fun i₁ i₂ h => match cosetDomain with
+    | ⟨x, f⟩ => FftDomain.injective (ω := f) <| by
+      aesop (add simp 
+        [CosetFftDomain.eval_coset_fft_domain_eq_eval_x_mul_domain, 
+         FftDomain.injective])
+  ⟩
 
 instance : Membership F (CosetFftDomain ι F) where
   mem φ x := ∃ i, φ i = x
@@ -312,16 +315,15 @@ lemma mem_coset {ω : CosetFftDomain ι F}
   {x : F}
   :
   x ∈ ω.toFinset ↔ ∃ y ∈ ω.fftDomain, x = ω.x * y := by
-  simp only [toFinset, Finset.mem_image, Finset.mem_univ, true_and]
-  aesop
+  aesop (add simp [toFinset])
 
 @[simp]
 lemma mem_coset_domain {ω : CosetFftDomain ι F}
   {x : F}
   :
   x ∈ ω ↔ ∃ y ∈ ω.fftDomain, x = ω.x * y := by 
-  simp only [Membership.mem, eval_coset_fft_domain_eq_eval_x_mul_domain]
-  aesop
+  aesop (add simp 
+    [Membership.mem, eval_coset_fft_domain_eq_eval_x_mul_domain])
 
 lemma mem_coset_finset_iff_mem_coset_domain {ω : CosetFftDomain ι F}
   {x : F}
@@ -336,102 +338,75 @@ instance {x : F} {ω : CosetFftDomain ι F} : Decidable (x ∈ ω) :=
 namespace CosetFftDomain
 
 noncomputable def toList (ω : CosetFftDomain ι F) : List (ω.toFinset) := 
-  let list := ω.toFinset.toList
-  List.reduceOption <|
-    list.map (fun x => if h : x ∈ ω then some ⟨x, by aesop⟩ else none)
+  Finset.toListWithProof <| ω.toFinset
 
 lemma toList_eq_finset_toList {ω : CosetFftDomain ι F}
   :
-  ω.toList.map (fun x => x.1) = ω.toFinset.toList := by  
-  rw [ CosetFftDomain.toList, ← List.map_id ( ω.toFinset.toList ) ];
-  -- Since every element in the list is in the set, the if condition is always true.
-  have h_if_true : ∀ x ∈ ω.toFinset.toList, x ∈ ω.toFinset := by
-    aesop;
-  -- Since the list is finite, we can apply the definition of `List.reduceOption` directly.
-  have h_foldr : ∀ (l : List F), (∀ x ∈ l, x ∈ ω.toFinset) → List.reduceOption (List.map (fun x => if x ∈ ω.toFinset then some x else none) l) = l := by
-    intros l hl;
-    induction l <;> simp_all +decide [ List.reduceOption ];
-  convert h_foldr _ h_if_true;
-  · induction' ω.toFinset.toList with x l ih <;> simp +decide [ * ];
-    · rfl;
-    · split_ifs <;> simp_all +decide [ List.reduceOption ];
-  · norm_num
+  ω.toList.map (fun x => x.1) = ω.toFinset.toList := by simp [toList]
+  
+@[simp]
+lemma coset_domain_eq_image {ω : CosetFftDomain ι F} :
+  Finset.image (fun (w : F) => ω.x * w) ω.fftDomain.toFinset = ω.toFinset
+  := by aesop
 
 lemma card_eq_fft_domain_card {ω : CosetFftDomain ι F} :
   Finset.card ω.toFinset = Finset.card ω.fftDomain.toFinset := by
-  have h_inj : Function.Injective (fun w : F => ω.x * w) := by
-    exact mul_right_injective₀ ( Units.ne_zero _ );
-  rw [ show ω.toFinset = Finset.image ( fun w : F => ω.x * w ) ω.fftDomain.toFinset from ?_, Finset.card_image_of_injective _ h_inj ];
-  simp +decide [ Finset.ext_iff, CosetFftDomain.toFinset, FftDomain.toFinset ];
-  aesop 
-
+  rw [←coset_domain_eq_image,
+      Finset.card_image_of_injective _ 
+        (mul_right_injective₀ ( Units.ne_zero _ ))]
+  
 lemma injective {ω : CosetFftDomain ι F}
   :
-  Function.Injective ω := by 
-  intro i₁ i₂ h
-  rcases ω with ⟨x, ω⟩ 
-  simp [eval_coset_fft_domain_eq_eval_x_mul_domain] at h
-  exact FftDomain.injective (by aesop)
+  Function.Injective ω := fun _ _ h =>
+  FftDomain.injective (ω := ω.fftDomain) <| by 
+    aesop (add simp [eval_coset_fft_domain_eq_eval_x_mul_domain])
 
 @[simp]
 lemma coset_domain_zero_eq_x {ω : CosetFftDomain ι F} 
   :
-  ω 0 = ω.x := by 
-  rcases ω with ⟨x, ω⟩
-  simp [eval_coset_fft_domain_eq_eval_x_mul_domain]
+  ω 0 = ω.x := by cases ω with
+  | mk x _ =>
+    simp [eval_coset_fft_domain_eq_eval_x_mul_domain]
 
 @[simp]
 lemma coset_domain_add_eq_mul_domain {ω : CosetFftDomain ι F}
   {i₁ i₂ : ι}
   :
-  ω (i₁ + i₂) = (ω.x)⁻¹ * ω i₁ * ω i₂ := by
-  rcases ω with ⟨x, ω⟩
-  simp [eval_coset_fft_domain_eq_eval_x_mul_domain]
-  ring_nf
+  ω (i₁ + i₂) = (ω.x)⁻¹ * ω i₁ * ω i₂ := by cases ω with
+  | mk x ω =>
+    aesop 
+      (add simp [eval_coset_fft_domain_eq_eval_x_mul_domain])
+      (add safe (by ring_nf))
   
 @[simp]
 lemma coset_domain_neg_eq_inv_domain {ω : CosetFftDomain ι F}
   {i₁ : ι}
   :
-  ω (-i₁) = ω.x ^ 2 * (ω i₁)⁻¹ := by 
-  rcases ω with ⟨x, ω⟩
+  ω (-i₁) = ω.x ^ 2 * (ω i₁)⁻¹ := by cases ω with
+  | mk x ω =>
   simp [eval_coset_fft_domain_eq_eval_x_mul_domain]
-  ring_nf
-  rw [mul_comm ((↑x : F) ^ 2)]
-  have h : (↑x : F) ^ 2 = x * x := by ring_nf
-  rw [h]
-  rw [mul_assoc, mul_assoc]
-  rw [Field.mul_inv_cancel _ (by simp)]
-  ring_nf
+  field_simp 
 
 @[simp]
 lemma coset_domain_sub_eq_div_domain {ω : CosetFftDomain ι F}
   {i₁ i₂ : ι}
   :
-  ω (i₁ - i₂) = ω.x * ω i₁ / ω i₂ := by
-  rcases ω with ⟨x, ω⟩
+  ω (i₁ - i₂) = ω.x * ω i₁ / ω i₂ := by cases ω with
+  | mk x ω =>
   simp [eval_coset_fft_domain_eq_eval_x_mul_domain]
-  ring_nf
-  rw [mul_comm ((↑x : F) ^ 2), mul_assoc (ω i₁), 
-    mul_assoc (ω i₁), mul_comm ((↑x : F) ^ 2), mul_assoc (_⁻¹)]
-  have h : (↑x : F)^ 2 = x * x := by ring_nf
-  rw [h, mul_assoc (↑x : F) (↑x : F), Field.mul_inv_cancel _ (by simp)]
-  ring_nf
+  field_simp
 
 @[ext]
 theorem ext {ω₁ ω₂ : CosetFftDomain ι F} (h : ∀ i, ω₁ i = ω₂ i)
   :
   ω₁ = ω₂ := by 
-  rcases ω₁ with ⟨x₁, f₁⟩ 
-  rcases ω₂ with ⟨x₂, f₂⟩ 
-  have hx : x₁ = x₂ := by 
-    specialize (h 0)
-    aesop
-  simp only [hx, mk.injEq, true_and]
-  ext i
-  specialize (h i)
-  simp [eval_coset_fft_domain_eq_eval_x_mul_domain] at h
-  aesop
+  have hx : ω₁.x = ω₂.x := by
+    specialize h 0
+    aesop 
+  have hext : ω₁.fftDomain = ω₂.fftDomain := FftDomain.ext <| fun i => by
+    aesop (add simp [eval_coset_fft_domain_eq_eval_x_mul_domain])
+  exact 
+    eq_iff_domains_and_gen_eq.2 <| And.intro hx hext
 
 lemma x_mul_mem_coset_iff {φ : CosetFftDomain ι F}
   {y : F}
@@ -447,15 +422,13 @@ namespace FftDomain
 
 private def subdomain_embed {n : ℕ} (i : Fin n.succ) (k : Fin (2 ^ (i : ℕ)))
     : Fin (2 ^ n) :=
-  ⟨2 ^ (n - i) * k.val, by
-    rcases k with ⟨k, hk⟩
-    rcases i with ⟨i, hi⟩
-    simp at hk ⊢
-    by_cases hk_zero : k = 0
-    · subst hk_zero; simp
-    · calc 2 ^ (n - i) * k < 2 ^ (n - i) * 2 ^ i :=
-            Nat.mul_lt_mul_of_pos_left hk (by positivity)
-        _ = 2 ^ n := by rw [← pow_add, Nat.sub_add_cancel (by omega)]⟩
+  ⟨2 ^ (n - i) * k.val, match i, k with
+    | ⟨i, hi⟩, ⟨k, hk⟩ => by
+      simp only at hk ⊢
+      by_cases hk_zero : k = 0 <;> try (subst hk_zero; simp)
+      calc 2 ^ (n - i) * k < 2 ^ (n - i) * 2 ^ i :=
+              Nat.mul_lt_mul_of_pos_left hk (by positivity)
+          _ = 2 ^ n := by rw [← pow_add, Nat.sub_add_cancel (by omega)]⟩
 
 private lemma subdomain_embed_add {n : ℕ} (i : Fin n.succ) (a b : Fin (2 ^ (i : ℕ)))
     : subdomain_embed i (a + b) = subdomain_embed i a + subdomain_embed i b := by
@@ -468,12 +441,13 @@ private lemma subdomain_embed_add {n : ℕ} (i : Fin n.succ) (a b : Fin (2 ^ (i 
 
 private lemma subdomain_embed_zero {n : ℕ} (i : Fin n.succ)
     : subdomain_embed i (0 : Fin (2 ^ (i : ℕ))) = (0 : Fin (2 ^ n)) := by
-  unfold subdomain_embed; aesop;
+  unfold subdomain_embed 
+  aesop
 
 private lemma subdomain_embed_injective {n : ℕ} (i : Fin n.succ)
     : Function.Injective (subdomain_embed (n := n) i) := by
-  intro a b h;
-  simp_all +decide [ Fin.ext_iff, subdomain_embed ]
+  intro a b h
+  simp_all [ Fin.ext_iff, subdomain_embed ]
 
 def subdomain {n : ℕ} (ω : SmoothFftDomain n F) (i : Fin n.succ)
   :
@@ -496,9 +470,7 @@ def subdomain {n : ℕ} (ω : SmoothFftDomain n F) (i : Fin n.succ)
 lemma subdomain_0 {n} {ω : SmoothFftDomain n F}
   :
   (ω.subdomain 0 : Subgroup Fˣ) = ⊥ := by
-  ext i
-  rw [FftDomain.mem_subgroup_iff_mem_finset]
-  aesop
+  aesop (add simp [FftDomain.mem_subgroup_iff_mem_finset])
 
 private lemma subdomain_embed_last {n : ℕ} (k : Fin (2 ^ (Fin.last n : ℕ)))
   : subdomain_embed (Fin.last n) k = Fin.cast (by simp [Fin.last]) k := by
