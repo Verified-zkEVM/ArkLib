@@ -220,17 +220,10 @@ theorem drop_update_of_lt (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) (i 
 theorem drop_update_of_ge (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) (i : Fin n) (hi : i ≥ m)
     (x : α i) : drop m h (update v i x) =
       update (drop m h v) ⟨i - m, by omega⟩
-        (dcast (by
-          ext
-          simp only [addNat_mk, cast_mk]
-          rw [Nat.sub_add_cancel hi]) x) := by
+        (dcast (by simp; ext; simp; rw [Nat.sub_add_cancel hi]) x) := by
   ext j
-  simp only [update, Fin.cast, drop_apply, addNat_mk, cast_mk]
+  simp [update, Fin.cast]
   split
-<<<<<<< quang/data-lint-cleanup-data
-  · sorry
-  · sorry
-=======
   next h_1 =>
     subst h_1
     simp_all only [add_tsub_cancel_right, Fin.eta, ↓reduceDIte]
@@ -240,7 +233,6 @@ theorem drop_update_of_ge (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) (i 
     intro h_2
     subst h_2
     simp_all only [Nat.sub_add_cancel, Fin.eta, not_true_eq_false]
->>>>>>> quang/bump-comppoly
 
 -- /-- Dropping the first `m ≤ n` elements of an `addCases u v`, where `u` is a `n`-tuple,
 -- is the same as dropping the first `m` elements of `u` and then adding `v` to the result. -/
