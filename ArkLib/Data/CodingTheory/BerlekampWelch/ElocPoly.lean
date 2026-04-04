@@ -12,7 +12,10 @@ import Mathlib.Data.Finset.Insert
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Matrix.Mul
 
-import ArkLib.Data.CodingTheory.Basic
+import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+import ArkLib.Data.CodingTheory.Basic.Distance
+import ArkLib.Data.CodingTheory.Basic.LinearCode
+import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 import ArkLib.Data.Fin.Lift
 /-! # Berlekamp-Welch Error-Locator Polynomials -/
 

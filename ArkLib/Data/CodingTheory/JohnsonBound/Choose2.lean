@@ -6,7 +6,10 @@ Authors: Ilia Vlasov, František Silváši
 import Mathlib.Analysis.Convex.Function
 import Mathlib.Data.Set.Pairwise.Basic
 
-import ArkLib.Data.CodingTheory.Basic
+import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+import ArkLib.Data.CodingTheory.Basic.Distance
+import ArkLib.Data.CodingTheory.Basic.LinearCode
+import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 /-! # Johnson Bound Choose-2 Lemmas -/
 
 
