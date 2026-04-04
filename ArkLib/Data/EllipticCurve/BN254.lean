@@ -53,7 +53,7 @@ theorem BaseField_is_prime : Nat.Prime baseFieldSize := by
      405928799, 11465965001,
      13427688667394608761327070753331941386769]
     (fun r hr ↦ ?_) (by norm_num)
-  simp at hr
+  simp only [Nat.reducePow, List.mem_cons, List.not_mem_nil, or_false] at hr
   rcases hr with hr | hr | hr | hr | hr | hr
     | hr | hr | hr | hr | hr | hr <;> rw [hr]
   · exact .prime 2 1 _
@@ -82,7 +82,7 @@ theorem BaseField_is_prime : Nat.Prime baseFieldSize := by
       ⟨3, by reduce_mod_char, ?_⟩
     refine .split [2 ^ 3, 5 ^ 4, 7, 327599]
       (fun r hr ↦ ?_) (by norm_num)
-    simp at hr
+    simp only [Nat.reducePow, List.mem_cons, List.not_mem_nil, or_false] at hr
     rcases hr with hr | hr | hr | hr <;> rw [hr]
     · exact .prime 2 3 _
         (by pratt) (by reduce_mod_char; decide) (by norm_num)
@@ -101,7 +101,7 @@ theorem BaseField_is_prime : Nat.Prime baseFieldSize := by
       [2 ^ 4, 3, 7, 11, 1853641, 4562087,
        173171039, 2480874801745591]
       (fun r hr ↦ ?_) (by norm_num)
-    simp at hr
+    simp only [Nat.reducePow, List.mem_cons, List.not_mem_nil, or_false] at hr
     rcases hr with hr | hr | hr | hr
       | hr | hr | hr | hr <;> rw [hr]
     · exact .prime 2 4 _
@@ -125,7 +125,7 @@ theorem BaseField_is_prime : Nat.Prime baseFieldSize := by
       refine .split
         [2, 3 ^ 2, 5, 19, 41, 35385462869]
         (fun r hr ↦ ?_) (by norm_num)
-      simp at hr
+      simp only [Nat.reducePow, List.mem_cons, List.not_mem_nil, or_false] at hr
       rcases hr with hr | hr | hr
         | hr | hr | hr <;> rw [hr]
       · exact .prime 2 1 _

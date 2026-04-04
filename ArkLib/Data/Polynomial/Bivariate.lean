@@ -308,7 +308,7 @@ theorem totalDegree_mul [IsDomain F] {f g : F[X][Y]} (hf : f ≠ 0) (hg : g ≠ 
               (f.coeff i).natDegree + (g.coeff j).natDegree := by
             simpa [term] using Polynomial.natDegree_mul_le (p := f.coeff i) (q := g.coeff j)
           have hsum_lt : (f.coeff i).natDegree + (g.coeff j).natDegree < deg := by
-            show _ < (f.coeff mmf).natDegree + (g.coeff mmg).natDegree
+            change _ < (f.coeff mmf).natDegree + (g.coeff mmg).natDegree
             have h1 := Nat.add_lt_add_of_lt_of_le hfi_lt hg_le
             have h2 : totalDegree f + totalDegree g =
                 ((f.coeff mmf).natDegree + mmf) + ((g.coeff mmg).natDegree + mmg) := by
@@ -331,7 +331,7 @@ theorem totalDegree_mul [IsDomain F] {f g : F[X][Y]} (hf : f ≠ 0) (hg : g ≠ 
               (f.coeff i).natDegree + (g.coeff j).natDegree := by
             simpa [term] using Polynomial.natDegree_mul_le (p := f.coeff i) (q := g.coeff j)
           have hsum_lt : (f.coeff i).natDegree + (g.coeff j).natDegree < deg := by
-            show _ < (f.coeff mmf).natDegree + (g.coeff mmg).natDegree
+            change _ < (f.coeff mmf).natDegree + (g.coeff mmg).natDegree
             have h1 := Nat.add_lt_add_of_le_of_lt hf_le hgj_lt
             have h2 : totalDegree f + totalDegree g =
                 ((f.coeff mmf).natDegree + mmf) + ((g.coeff mmg).natDegree + mmg) := by

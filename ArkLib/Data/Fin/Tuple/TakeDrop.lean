@@ -220,9 +220,13 @@ theorem drop_update_of_lt (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) (i 
 theorem drop_update_of_ge (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) (i : Fin n) (hi : i ≥ m)
     (x : α i) : drop m h (update v i x) =
       update (drop m h v) ⟨i - m, by omega⟩
-        (dcast (by simp; ext; simp; rw [Nat.sub_add_cancel hi]) x) := by
+        (dcast (by
+          simp only [addNat_mk, cast_mk]
+          ext
+          simp only
+          rw [Nat.sub_add_cancel hi]) x) := by
   ext j
-  simp [update, Fin.cast]
+  simp only [Fin.cast, val_addNat, drop_apply, update, addNat_mk, cast_mk]
   split
   next h_1 =>
     subst h_1
