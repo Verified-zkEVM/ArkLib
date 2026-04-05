@@ -233,7 +233,7 @@ theorem commitOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : 
       simp only [Fin.isValue, Message, Matrix.cons_val_zero, id_eq, MessageIdx, support_ite,
         toPFunctor_emptySpec, Function.comp_apply, OptionT.simulateQ_pure, Set.mem_iUnion,
         exists_prop]
-      simp only [OptionT.simulateQ_failure']
+      simp only [OptionT.simulateQ_failure]
       erw [_root_.simulateQ_pure]
       simp only [show OptionT.pure (m := (OracleComp ([]ₒ +
         ([OracleStatement 𝔽q β ϑ i.castSucc]ₒ + [pSpecFold.Message]ₒ)))) = pure by rfl]

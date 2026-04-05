@@ -262,14 +262,6 @@ lemma OptionT.simulateQ_failure
   rfl
 
 @[simp]
-lemma OptionT.simulateQ_failure' {α : Type u}
-    {ι ι' : Type*} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
-    (so : QueryImpl spec (OracleComp spec')) :
-    simulateQ so (failure : OptionT (OracleComp spec) α) =
-      (failure : OptionT (OracleComp spec') α) := by
-  rfl
-
-@[simp]
 lemma OptionT.simulateQ_ite
     {ι ι' : Type*} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
     (so : QueryImpl spec (OracleComp spec'))
@@ -591,8 +583,6 @@ section SupportPreservation
 
 variable {ι : Type} {spec : OracleSpec ι} [spec.Fintype] {α β : Type}
   {m : Type → Type} -- [AlternativeMonad m] [LawfulAlternative m]
-
-#check support_liftM
 
 omit [spec.Fintype] in
 @[simp]

@@ -17,9 +17,6 @@ The FRI-Binius IOPCS consists of the following phases:
 3. **Query Phase**: FRI-style proximity testing with γ repetitions
 
 ## References
-- State RBR KS
-
-## References
 
 - [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over Binary
   Towers." Cryptology ePrint Archive (2024).

@@ -10,6 +10,18 @@ import ArkLib.Data.Fin.BigOperators
 import ArkLib.Data.MvPolynomial.Multilinear
 import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 
+/-!
+## Binary Basefold Prelude
+
+Core folding definitions and evaluation lemmas for Binary Basefold.
+
+## References
+
+* [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
+  - Lemma numbering in this file follows the ePrint PDF
+    `https://eprint.iacr.org/2024/504.pdf`.
+-/
+
 namespace Binius.BinaryBasefold
 
 open OracleSpec ProtocolSpec Polynomial MvPolynomial Binius.BinaryBasefold

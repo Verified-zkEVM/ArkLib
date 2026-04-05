@@ -253,7 +253,7 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
       simp only [Fin.isValue, Message, Matrix.cons_val_zero, id_eq, MessageIdx, support_ite,
         toPFunctor_emptySpec, Function.comp_apply, OptionT.simulateQ_pure, Set.mem_iUnion,
         exists_prop]
-      simp only [OptionT.simulateQ_failure']
+      simp only [OptionT.simulateQ_failure]
       erw [_root_.simulateQ_pure]
     set V_check := step.verifierCheck stmtIn
       (FullTranscript.mk2
@@ -314,7 +314,7 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
       simp only [Fin.isValue, Message, Matrix.cons_val_zero, id_eq, MessageIdx, support_ite,
         toPFunctor_emptySpec, Function.comp_apply, simulateQ_pure, Set.mem_iUnion,
         exists_prop]
-      simp only [OptionT.simulateQ_failure']
+      simp only [OptionT.simulateQ_failure]
       erw [_root_.simulateQ_pure]
     set V_check := step.verifierCheck stmtIn
       (FullTranscript.mk2
@@ -548,9 +548,9 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
       -- Now simplify the `guard` and `ite` of StateT.map generated from it
       simp only [MessageIdx, Fin.isValue, Matrix.cons_val_zero, simulateQ_pure, Message, guard_eq,
         pure_bind, Function.comp_apply, simulateQ_map, simulateQ_ite,
-        OptionT.simulateQ_failure', bind_map_left]
+        OptionT.simulateQ_failure, bind_map_left]
       simp only [MessageIdx, Message, Fin.isValue, Matrix.cons_val_zero, Matrix.cons_val_one,
-        bind_pure_comp, simulateQ_map, simulateQ_ite, simulateQ_pure, OptionT.simulateQ_failure',
+        bind_pure_comp, simulateQ_map, simulateQ_ite, simulateQ_pure, OptionT.simulateQ_failure,
         bind_map_left, Function.comp_apply]
       simp only [support_ite]
       simp only [Fin.isValue, Set.mem_ite_empty_right, Set.mem_singleton_iff, Prod.mk.injEq,
