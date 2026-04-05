@@ -999,12 +999,18 @@ private def finalOracleNextCodeword
     (i := finalOracleNextIdxOrig (ℓ := ℓ) (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t ht)
     (h_i := by
-      exact oracle_index_add_steps_le_ℓ ℓ ϑ (i := Fin.last ℓ) (j := ⟨t, Nat.lt_of_succ_lt ht⟩))
+      have h_le := oracle_block_k_next_le_i ℓ ϑ (i := Fin.last ℓ) (j := ⟨t, Nat.lt_of_succ_lt ht⟩) (hj := ht)
+      show (finalOracleNextIdxOrig (ℓ := ℓ) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t ht) ≤ ℓ
+      dsimp [finalOracleNextIdxOrig]
+      have h_eq : (t + 1) * ϑ = t * ϑ + ϑ := by
+        rw [Nat.add_mul, one_mul]
+      exact h_eq ▸ h_le)
     (f := finalOracleNextRaw (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht)
     (h_within_radius := h_close)
 
-private axiom finalOracleDecoded_next_heq
+set_option maxHeartbeats 200000 in
+private theorem finalOracleDecoded_next_heq
     (oStmtOut : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       ϑ (Fin.last ℓ) j)
     (t : ℕ)
@@ -1017,120 +1023,53 @@ private axiom finalOracleDecoded_next_heq
       (finalOracleNextCodeword (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht h_close_next)
       (finalOracleDecodedAt (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut (t + 1) ht h_close_next_final)
-
-private axiom finalDecodedPrefixAt_succ_heq
-    (stmtOut : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
-    (f₀ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r))
-    (t : ℕ)
-    (ht : t + 1 < toOutCodewordsCount ℓ ϑ (Fin.last ℓ)) :
-    HEq
-      (finalDecodedPrefixAt (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut f₀ (t + 1) ht)
-      (iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (i := ⟨t * ϑ, by
-          apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := t * ϑ)
-          exact oracle_block_k_le_i (ℓ := ℓ) (ϑ := ϑ)
-            (i := Fin.last ℓ) (j := ⟨t, Nat.lt_of_succ_lt ht⟩)⟩)
-        (steps := ϑ)
-        (destIdx := ⟨t * ϑ + ϑ, by
-          apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := t * ϑ + ϑ)
-          exact oracle_block_k_next_le_i (ℓ := ℓ) (ϑ := ϑ)
-            (i := Fin.last ℓ) (j := ⟨t, Nat.lt_of_succ_lt ht⟩) (hj := ht)⟩)
-        (h_destIdx := by rfl)
-        (h_destIdx_le := by
-          exact oracle_block_k_next_le_i (ℓ := ℓ) (ϑ := ϑ)
-            (i := Fin.last ℓ) (j := ⟨t, Nat.lt_of_succ_lt ht⟩) (hj := ht))
-        (f := finalDecodedPrefixAt (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut f₀ t (Nat.lt_of_succ_lt ht))
-        (r_challenges := finalBlockChallenges
-          (r := r) (L := L) (ℓ := ℓ) (𝓡 := 𝓡) (ϑ := ϑ) stmtOut t ht))
-
-set_option maxHeartbeats 50000 in
--- This transport-heavy step theorem needs extra heartbeats after the explicit HEq alignment.
-private theorem finalOracleDecoded_succ_eq_prefixFold
-    (stmtOut : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
-    (oStmtOut : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      ϑ (Fin.last ℓ) j)
-    (h_oracle_cons : oracleFoldingConsistencyProp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (i := Fin.last ℓ) (challenges := stmtOut.challenges) (oStmt := oStmtOut))
-    (f₀ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r))
-    (t : ℕ)
-    (ht : t + 1 < toOutCodewordsCount ℓ ϑ (Fin.last ℓ))
-    (h_close_curr : finalOracleClose (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t (Nat.lt_of_succ_lt ht))
-    (h_curr_eq :
-      finalOracleDecodedAt (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t (Nat.lt_of_succ_lt ht) h_close_curr =
-      finalDecodedPrefixAt (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut f₀ t (Nat.lt_of_succ_lt ht))
-    (h_close_next_final : finalOracleClose (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut (t + 1) ht) :
-    finalOracleDecodedAt (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut (t + 1) ht h_close_next_final =
-    finalDecodedPrefixAt (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut f₀ (t + 1) ht := by
-  let ht_prev : t < toOutCodewordsCount ℓ ϑ (Fin.last ℓ) := Nat.lt_of_succ_lt ht
-  let jCurr : Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)) := ⟨t, ht_prev⟩
-  have h_complCurr := h_oracle_cons jCurr ht
-  rcases h_complCurr with ⟨h_fw_curr, h_close_next, h_fold_curr⟩
-  have h_close_curr_fw :
-      finalOracleClose (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht_prev :=
-    finalOracleClose_curr (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut oStmtOut h_oracle_cons t ht
-  have h_curr_decoded_eq :
-      finalOracleDecoded (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht_prev h_close_curr_fw =
-      finalOracleDecoded (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht_prev h_close_curr := by
-    exact finalOracleDecoded_eq_of_close (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht_prev h_close_curr_fw h_close_curr
-  dsimp [finalOracleDecodedAt, finalDecodedPrefixAt, finalOracleDecoded, finalOracleRaw, jCurr,
-    oraclePositionToDomainIndex, getFoldingChallenges, finalOracleBlockIdx] at h_fold_curr h_curr_decoded_eq h_curr_eq
-  rw [h_curr_decoded_eq, h_curr_eq] at h_fold_curr
-  have h_rhs_heq :
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut (t + 1) ht h_close_next_final) := by
+  dsimp only [finalOracleNextCodeword, finalOracleDecodedAt, finalOracleDecoded]
+  have h_idx :
+      finalOracleNextIdxOrig (ℓ := ℓ) (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t ht =
+      finalOracleBlockIdx (ℓ := ℓ) (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (t + 1) ht := by
+    apply Fin.ext
+    dsimp [finalOracleNextIdxOrig, finalOracleBlockIdx]
+    rw [Nat.add_mul, Nat.one_mul]
+  have h_dom :
+      ↥(sDomain 𝔽q β h_ℓ_add_R_rate
+        (finalOracleNextIdxOrig (ℓ := ℓ) (ϑ := ϑ)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t ht)) =
+      ↥(sDomain 𝔽q β h_ℓ_add_R_rate
+        (finalOracleBlockIdx (ℓ := ℓ) (ϑ := ϑ)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (t + 1) ht)) := by
+    exact congrArg (fun i => ↥(sDomain 𝔽q β h_ℓ_add_R_rate i)) h_idx
+  have h_raw_heq :
       HEq
-        (UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-          (i := ⟨t * ϑ + ϑ, by
-            apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := t * ϑ + ϑ)
-            exact oracle_index_add_steps_le_ℓ ℓ ϑ (i := Fin.last ℓ) (j := jCurr)⟩)
-          (h_i := by
-            exact oracle_index_add_steps_le_ℓ ℓ ϑ (i := Fin.last ℓ) (j := jCurr))
-          (f := getNextOracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-            (Fin.last ℓ) oStmtOut jCurr ht
-            (destDomainIdx := ⟨t * ϑ + ϑ, by
-              apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := t * ϑ + ϑ)
-              exact oracle_index_add_steps_le_ℓ ℓ ϑ (i := Fin.last ℓ) (j := jCurr)⟩)
-            (h_destDomainIdx := by rfl))
-          (h_within_radius := h_close_next))
-        (finalOracleDecodedAt (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut (t + 1) ht h_close_next_final) := by
-    exact finalOracleDecoded_next_heq (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht h_close_next h_close_next_final
-  have h_fold_curr_heq := (heq_of_eq h_fold_curr).trans h_rhs_heq
-  have h_blockChallenges_eq :
-      getFoldingChallenges (r := r) (𝓡 := 𝓡) (ϑ := ϑ) (i := Fin.last ℓ)
-        (challenges := stmtOut.challenges) (t * ϑ)
-        (h := by
-          exact oracle_block_k_next_le_i (ℓ := ℓ) (ϑ := ϑ)
-            (i := Fin.last ℓ) (j := jCurr) (hj := ht)) =
-      finalBlockChallenges
-        (r := r) (L := L) (ℓ := ℓ) (𝓡 := 𝓡) (ϑ := ϑ) stmtOut t ht := by
-    funext cId
-    dsimp [getFoldingChallenges, finalBlockChallenges, jCurr, oraclePositionToDomainIndex]
-  rw [h_blockChallenges_eq] at h_fold_curr_heq
-  have h_res :
-      HEq
-        (finalDecodedPrefixAt (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut f₀ (t + 1) ht)
-        (finalOracleDecodedAt (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut (t + 1) ht h_close_next_final) := by
-    exact (finalDecodedPrefixAt_succ_heq (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut f₀ t ht).trans h_fold_curr_heq
-  exact eq_of_heq h_res.symm
+        (finalOracleNextRaw (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht)
+        (finalOracleRaw (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut (t + 1) ht) := by
+    exact funext_heq h_dom (fun _ => rfl) (by
+      intro y
+      apply heq_of_eq
+      dsimp [finalOracleNextRaw, getNextOracle, finalOracleRaw,
+        finalOracleNextIdxOrig, finalOracleBlockIdx])
+  exact UDRCodeword_heq_of_fin_eq (𝔽q := 𝔽q) (β := β)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_idx
+    (by
+      have h_le := oracle_block_k_next_le_i ℓ ϑ
+        (i := Fin.last ℓ) (j := ⟨t, Nat.lt_of_succ_lt ht⟩) (hj := ht)
+      show
+        (finalOracleNextIdxOrig (ℓ := ℓ) (ϑ := ϑ)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t ht) ≤ ℓ
+      dsimp [finalOracleNextIdxOrig]
+      have h_eq : (t + 1) * ϑ = t * ϑ + ϑ := by
+        rw [Nat.add_mul, Nat.one_mul]
+      exact h_eq ▸ h_le)
+    (by
+      exact oracle_index_le_ℓ (ℓ := ℓ) (ϑ := ϑ)
+        (i := Fin.last ℓ) (j := ⟨t + 1, ht⟩))
+    h_raw_heq h_close_next h_close_next_final
 
-set_option maxHeartbeats 100000 in
+set_option maxHeartbeats 200000 in
 -- This induction over all final oracles repeatedly invokes the transport-heavy successor theorem.
 private theorem finalOracleDecoded_nat_eq_prefixFold
     (stmtOut : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
@@ -1163,8 +1102,7 @@ private theorem finalOracleDecoded_nat_eq_prefixFold
   | succ t ih =>
       intro ht
       intro h_close
-      have ht_prev : t < toOutCodewordsCount ℓ ϑ (Fin.last ℓ) := by
-        omega
+      let ht_prev : t < toOutCodewordsCount ℓ ϑ (Fin.last ℓ) := Nat.lt_of_succ_lt ht
       have h_close_curr :
           finalOracleClose (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
             (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht_prev :=
@@ -1176,9 +1114,178 @@ private theorem finalOracleDecoded_nat_eq_prefixFold
           finalDecodedPrefixFold (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
             (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut f₀ t ht_prev :=
         ih ht_prev h_close_curr
-      exact finalOracleDecoded_succ_eq_prefixFold (𝔽q := 𝔽q) (β := β)
-        (ℓ := ℓ) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut
-        oStmtOut h_oracle_cons f₀ t ht h_close_curr h_curr_eq h_close
+      let jCurr : Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)) := ⟨t, ht_prev⟩
+      have h_complCurr := h_oracle_cons jCurr ht
+      rcases h_complCurr with ⟨h_fw_curr, h_close_next, h_fold_curr⟩
+      have h_close_curr_fw :
+          finalOracleClose (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht_prev :=
+        finalOracleClose_curr (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut oStmtOut h_oracle_cons t ht
+      have h_curr_decoded_eq :
+          finalOracleDecoded (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht_prev h_close_curr_fw =
+          finalOracleDecoded (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht_prev h_close_curr := by
+        exact finalOracleDecoded_eq_of_close (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht_prev h_close_curr_fw h_close_curr
+      dsimp [finalOracleDecodedAt, finalDecodedPrefixAt, finalOracleDecoded, finalOracleRaw, jCurr,
+        oraclePositionToDomainIndex, getFoldingChallenges, finalOracleBlockIdx] at h_fold_curr h_curr_decoded_eq h_curr_eq
+      rw [h_curr_decoded_eq, h_curr_eq] at h_fold_curr
+      change
+        iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (i := ⟨t * ϑ, by
+            apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := t * ϑ)
+            exact oracle_block_k_le_i (ℓ := ℓ) (ϑ := ϑ)
+              (i := Fin.last ℓ) (j := jCurr)⟩)
+          (steps := ϑ)
+          (destIdx := ⟨t * ϑ + ϑ, by
+            apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := t * ϑ + ϑ)
+            exact oracle_block_k_next_le_i (ℓ := ℓ) (ϑ := ϑ)
+              (i := Fin.last ℓ) (j := jCurr) (hj := ht)⟩)
+          (h_destIdx := by rfl)
+          (h_destIdx_le := by
+            exact oracle_block_k_next_le_i (ℓ := ℓ) (ϑ := ϑ)
+              (i := Fin.last ℓ) (j := jCurr) (hj := ht))
+          (f := finalDecodedPrefixAt (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut f₀ t ht_prev)
+          (r_challenges := getFoldingChallenges (r := r) (𝓡 := 𝓡) (ϑ := ϑ)
+            (i := Fin.last ℓ) (challenges := stmtOut.challenges) (t * ϑ)
+            (h := by
+              exact oracle_block_k_next_le_i (ℓ := ℓ) (ϑ := ϑ)
+                (i := Fin.last ℓ) (j := jCurr) (hj := ht))) =
+        finalOracleNextCodeword (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht h_close_next at h_fold_curr
+      have h_rhs_heq :
+          HEq
+            (finalOracleNextCodeword (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
+              (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht h_close_next)
+            (finalOracleDecodedAt (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
+              (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut (t + 1) ht h_close) := by
+        exact finalOracleDecoded_next_heq (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht h_close_next h_close
+      have h_fold_curr_heq := (heq_of_eq h_fold_curr).trans h_rhs_heq
+      have h_blockChallenges_eq :
+          getFoldingChallenges (r := r) (𝓡 := 𝓡) (ϑ := ϑ) (i := Fin.last ℓ)
+            (challenges := stmtOut.challenges) (t * ϑ)
+            (h := by
+              exact oracle_block_k_next_le_i (ℓ := ℓ) (ϑ := ϑ)
+                (i := Fin.last ℓ) (j := jCurr) (hj := ht)) =
+          finalBlockChallenges
+            (r := r) (L := L) (ℓ := ℓ) (𝓡 := 𝓡) (ϑ := ϑ) stmtOut t ht := by
+        funext cId
+        dsimp [getFoldingChallenges, finalBlockChallenges, jCurr, oraclePositionToDomainIndex]
+      rw [h_blockChallenges_eq] at h_fold_curr_heq
+      have h_step_heq :
+          HEq
+            (finalDecodedPrefixAt (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
+              (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut f₀ (t + 1) ht)
+            (iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+              (i := ⟨t * ϑ, by
+                apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := t * ϑ)
+                exact oracle_block_k_le_i (ℓ := ℓ) (ϑ := ϑ)
+                  (i := Fin.last ℓ) (j := ⟨t, Nat.lt_of_succ_lt ht⟩)⟩)
+              (steps := ϑ)
+              (destIdx := ⟨t * ϑ + ϑ, by
+                apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := t * ϑ + ϑ)
+                exact oracle_block_k_next_le_i (ℓ := ℓ) (ϑ := ϑ)
+                  (i := Fin.last ℓ) (j := ⟨t, Nat.lt_of_succ_lt ht⟩) (hj := ht)⟩)
+              (h_destIdx := by rfl)
+              (h_destIdx_le := by
+                exact oracle_block_k_next_le_i (ℓ := ℓ) (ϑ := ϑ)
+                  (i := Fin.last ℓ) (j := ⟨t, Nat.lt_of_succ_lt ht⟩) (hj := ht))
+              (f := finalDecodedPrefixAt (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
+                (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut f₀ t (Nat.lt_of_succ_lt ht))
+              (r_challenges := finalBlockChallenges
+                (r := r) (L := L) (ℓ := ℓ) (𝓡 := 𝓡) (ϑ := ϑ) stmtOut t ht)) := by
+        have h_step' := finalDecodedPrefixFold_step (𝔽q := 𝔽q) (β := β)
+          (ℓ := ℓ) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut f₀ t ht
+        have h_dest_eq :
+            finalOracleBlockIdx (ℓ := ℓ) (ϑ := ϑ)
+              (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (t + 1) ht =
+            ⟨t * ϑ + ϑ, by
+              apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := t * ϑ + ϑ)
+              exact oracle_block_k_next_le_i (ℓ := ℓ) (ϑ := ϑ)
+                (i := Fin.last ℓ) (j := ⟨t, Nat.lt_of_succ_lt ht⟩) (hj := ht)⟩ := by
+          apply Fin.eq_of_val_eq
+          change (t + 1) * ϑ = t * ϑ + ϑ
+          rw [Nat.add_mul, Nat.one_mul]
+        have h_rhs_transport :
+            HEq
+              (iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+                (i := finalOracleBlockIdx (ℓ := ℓ) (ϑ := ϑ)
+                  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t (Nat.lt_of_succ_lt ht))
+                (steps := ϑ)
+                (destIdx := finalOracleBlockIdx (ℓ := ℓ) (ϑ := ϑ)
+                  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (t + 1) ht)
+                (h_destIdx := by
+                  dsimp [finalOracleBlockIdx]
+                  rw [Nat.add_mul, Nat.one_mul])
+                (h_destIdx_le := by
+                  dsimp [finalOracleBlockIdx]
+                  rw [Nat.add_mul, Nat.one_mul]
+                  exact oracle_index_add_steps_le_ℓ ℓ ϑ
+                    (i := Fin.last ℓ) (j := ⟨t, Nat.lt_of_succ_lt ht⟩))
+                (f := finalDecodedPrefixFold (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
+                  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut f₀ t (Nat.lt_of_succ_lt ht))
+                (r_challenges := finalBlockChallenges
+                  (r := r) (L := L) (ℓ := ℓ) (𝓡 := 𝓡) (ϑ := ϑ) stmtOut t ht))
+              (iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+                (i := ⟨t * ϑ, by
+                  apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := t * ϑ)
+                  exact oracle_block_k_le_i (ℓ := ℓ) (ϑ := ϑ)
+                    (i := Fin.last ℓ) (j := ⟨t, Nat.lt_of_succ_lt ht⟩)⟩)
+                (steps := ϑ)
+                (destIdx := ⟨t * ϑ + ϑ, by
+                  apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := t * ϑ + ϑ)
+                  exact oracle_block_k_next_le_i (ℓ := ℓ) (ϑ := ϑ)
+                    (i := Fin.last ℓ) (j := ⟨t, Nat.lt_of_succ_lt ht⟩) (hj := ht)⟩)
+                (h_destIdx := by rfl)
+                (h_destIdx_le := by
+                  exact oracle_block_k_next_le_i (ℓ := ℓ) (ϑ := ϑ)
+                    (i := Fin.last ℓ) (j := ⟨t, Nat.lt_of_succ_lt ht⟩) (hj := ht))
+                (f := finalDecodedPrefixFold (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
+                  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut f₀ t (Nat.lt_of_succ_lt ht))
+                (r_challenges := finalBlockChallenges
+                  (r := r) (L := L) (ℓ := ℓ) (𝓡 := 𝓡) (ϑ := ϑ) stmtOut t ht)) := by
+          exact iterated_fold_heq_of_fin_eq (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (𝓡 := 𝓡)
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+            (i := finalOracleBlockIdx (ℓ := ℓ) (ϑ := ϑ)
+              (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t (Nat.lt_of_succ_lt ht))
+            (steps := ϑ)
+            (destIdx₁ := finalOracleBlockIdx (ℓ := ℓ) (ϑ := ϑ)
+              (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (t + 1) ht)
+            (destIdx₂ := ⟨t * ϑ + ϑ, by
+              apply lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := t * ϑ + ϑ)
+              exact oracle_block_k_next_le_i (ℓ := ℓ) (ϑ := ϑ)
+                (i := Fin.last ℓ) (j := ⟨t, Nat.lt_of_succ_lt ht⟩) (hj := ht)⟩)
+            h_dest_eq
+            (h_destIdx₁ := by
+              dsimp [finalOracleBlockIdx]
+              rw [Nat.add_mul, Nat.one_mul])
+            (h_destIdx₂ := by
+              dsimp [finalOracleBlockIdx])
+            (h_destIdx_le₁ := by
+              dsimp [finalOracleBlockIdx]
+              rw [Nat.add_mul, Nat.one_mul]
+              exact oracle_index_add_steps_le_ℓ ℓ ϑ
+                (i := Fin.last ℓ) (j := ⟨t, Nat.lt_of_succ_lt ht⟩))
+            (h_destIdx_le₂ := by
+              exact oracle_block_k_next_le_i (ℓ := ℓ) (ϑ := ϑ)
+                (i := Fin.last ℓ) (j := ⟨t, Nat.lt_of_succ_lt ht⟩) (hj := ht))
+            (f := finalDecodedPrefixFold (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
+              (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut f₀ t (Nat.lt_of_succ_lt ht))
+            (r_challenges := finalBlockChallenges
+              (r := r) (L := L) (ℓ := ℓ) (𝓡 := 𝓡) (ϑ := ϑ) stmtOut t ht)
+        exact (heq_of_eq h_step').symm.trans h_rhs_transport
+      have h_res :
+          HEq
+            (finalDecodedPrefixAt (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
+              (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut f₀ (t + 1) ht)
+            (finalOracleDecodedAt (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
+              (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut (t + 1) ht h_close) := by
+        exact h_step_heq.trans h_fold_curr_heq
+      exact eq_of_heq h_res.symm
 
 set_option maxHeartbeats 10000 in
 -- This positive-index wrapper is a thin specialization of the nat-index theorem.
