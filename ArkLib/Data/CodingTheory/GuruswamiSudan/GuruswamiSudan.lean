@@ -95,7 +95,7 @@ rather than the original $e \leq n - \sqrt{k \cdot n}$.
 open Classical in
 /-- Guruswami-Sudan decoder.  Returns all roots of the GS interpolation
     polynomial whose evaluation is within Hamming distance $e$ of `f`. -/
-noncomputable def decoder (k r D e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+noncomputable def decoder (k _r _D e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
     List F[X] :=
   if h : ∃ m : ℕ, 0 < m ∧ (e : ℝ) / ↑n < proximity_gap_johnson k n m then
     let Q := polySol k n h.choose ωs f
@@ -105,7 +105,7 @@ noncomputable def decoder (k r D e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) 
 /-- Each decoded polynomial is $e$-close to the received word. -/
 theorem dist_le_of_mem_decoder
     {k r D e : ℕ}
-    (he : (e : ℝ) < ↑n - Real.sqrt ((↑k + 1) * ↑n))
+    (_he : (e : ℝ) < ↑n - Real.sqrt ((↑k + 1) * ↑n))
     {ωs : Fin n ↪ F}
     {f : Fin n → F}
     {p : F[X]}
