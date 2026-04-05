@@ -39,7 +39,7 @@ variable {h_ℓ_add_R_rate : ℓ + 𝓡 < r}
 variable {𝓑 : Fin 2 ↪ L}
 
 /--
-Compliance condition (Definition 4.17) : For an index `i` that is a multiple of `steps`,
+Compliance condition (Definition 4.18) : For an index `i` that is a multiple of `steps`,
 the oracle `f_i` is compliant if it's close to the code fiber-wise, the next oracle
 `f_i_plus_steps` is close to its code, and their unique closest codewords are consistent
 with folding.
@@ -109,7 +109,7 @@ def fold_error_containment (i : Fin r) {destIdx : Fin r} (steps : ℕ)
       (g := folded_f_bar)
     folded_Δ_set ⊆ fiberwise_Δ_set
 
-/-! **Lemma 4.18.** For each `i ∈ {0, steps, ..., ℓ-steps}`, if `f⁽ⁱ⁾` is `UDR-close`, then, for
+/-! **Lemma 4.19.** For each `i ∈ {0, steps, ..., ℓ-steps}`, if `f⁽ⁱ⁾` is `UDR-close`, then, for
 each tuple of folding challenges `(rᵢ', ..., r_{i+steps-1}') ∈ L^steps`, we have that
 `fold error containment` holds.
 -- * **Main Idea of Proof:** Proceeds by contraposition. If `y ∉ Δ⁽ⁱ⁾(f⁽ⁱ⁾, f̄⁽ⁱ⁾)`, then the
@@ -176,7 +176,7 @@ lemma fold_error_containment_of_UDRClose (i : Fin r) {destIdx : Fin r} (steps : 
   exact hy_in_folded_disagreement h_folded_eq
 
 open Classical in
-/-- **Definition 4.19** Bad event for folding : This event captures two scenarios where the
+/-- **Definition 4.20** Bad event for folding : This event captures two scenarios where the
 random folding challenges undermine the protocol's soundness checks.
 For `i ∈ {0, ..., ℓ - steps}`,
 - In case `d⁽ⁱ⁾(f⁽ⁱ⁾, C⁽ⁱ⁾) < dᵢ₊steps / 2` (fiberwise close):
@@ -208,7 +208,7 @@ def foldingBadEvent (i : Fin r) {destIdx : Fin r} (steps : ℕ)
       (h_i := by omega) (f := folded_f_i)
 
 open Classical in
-/-- **Definition 4.19.2** (Incremental Bad Events).
+/-- **Definition 4.20.2** (Incremental Bad Events extending Definition 4.20).
 For block start index `block_start_idx`, block size `ϑ`, and **partial step count**
 `k ≤ ϑ`, with `destIdx = block_start_idx + ϑ` (the block destination), `E(block_start_idx, k)` is defined as follows:
 

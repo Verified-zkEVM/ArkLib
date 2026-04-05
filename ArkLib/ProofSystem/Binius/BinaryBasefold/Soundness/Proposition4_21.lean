@@ -9,22 +9,23 @@ import ArkLib.ProofSystem.Binius.BinaryBasefold.Compliance
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.Lift
 
 /-!
-## Binary Basefold Soundness Proposition 4.20
+## Binary Basefold Soundness Proposition 4.21
 
-Case analyses and probability bounds around Proposition 4.20 and its supporting lemmas.
+Case analyses and probability bounds around Proposition 4.21 and its supporting lemmas.
 This file packages:
-1. the fiberwise-close case of Proposition 4.20
+1. the fiberwise-close case of Proposition 4.21
 2. the fiberwise-far case, using the interleaved-distance bridge from `Soundness.Lift`
 3. the resulting one-step bad-event probability estimate
 
-**NOTE**: Proposition 4.20 is a core lemma in the soundness proof of `DP24`. However, in
-our formalization of FRI-Binius, we developed new incremental variants of Definition 4.19
-and Proposition 4.20 in `Soundness.Incremental` (`prop_4_20_2_incremental_bad_event_probability`)
-to enable more granular round-by-round analysis of the fold steps.
+**NOTE**: Proposition 4.21 is the numbering in the archived DP24 PDF. This file and some internal
+identifiers retain the older draft-number suffix `4_20`. In our formalization of FRI-Binius, we
+also developed incremental variants Definition 4.20.2 and Proposition 4.21.2 in
+`Soundness.Incremental` to enable more granular round-by-round analysis of the fold steps.
 
 ## References
 
 * [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
+  Statement numbering follows the archived revision of [DP24].
 -/
 
 namespace Binius.BinaryBasefold
@@ -53,11 +54,11 @@ variable [hdiv : Fact (ϑ ∣ ℓ)]
 open scoped NNReal ProbabilityTheory
 
 open Classical in
-/-- **Proposition 4.20 (Case 1)**:
+/-- **Proposition 4.21 (Case 1)**:
 If f⁽ⁱ⁾ is fiber-wise close to the code, the probability of the bad event is bounded.
 The bad event here is: `Δ⁽ⁱ⁾(f⁽ⁱ⁾, f̄⁽ⁱ⁾) ⊄ Δ(fold(f⁽ⁱ⁾), fold(f̄⁽ⁱ⁾))`.
 -/
-lemma prop_4_20_case_1_fiberwise_close (i : Fin ℓ) (steps : ℕ) [NeZero steps]
+lemma prop_4_21_case_1_fiberwise_close (i : Fin ℓ) (steps : ℕ) [NeZero steps]
     {destIdx : Fin r} (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i, by omega⟩)
     (h_close : fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -377,7 +378,7 @@ lemma prop_4_20_case_1_fiberwise_close (i : Fin ℓ) (steps : ℕ) [NeZero steps
       ring_nf
       conv_rhs => rw [mul_div_assoc]
 
-lemma prop_4_20_case_2_fiberwise_far (i : Fin ℓ) (steps : ℕ) [NeZero steps]
+lemma prop_4_21_case_2_fiberwise_far (i : Fin ℓ) (steps : ℕ) [NeZero steps]
     {destIdx : Fin r} (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i, by omega⟩)
     (h_far : ¬fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨i, by omega⟩) (steps := steps)
@@ -482,11 +483,11 @@ lemma prop_4_20_case_2_fiberwise_far (i : Fin ℓ) (steps : ℕ) [NeZero steps]
     rw [h_e_prox_def]
 
 /-!
-### Soundness Lemmas (4.20 - 4.25)
+### Soundness Lemmas Around Proposition 4.21
 -/
 
 open Classical in
-/-- **Proposition 4.20** (Bound on Bad Folding Event):
+/-- **Proposition 4.21** (Bound on Bad Folding Event):
 The probability (over random challenges `r`) of the bad folding event is bounded.
 Bound: `μ(Eᵢ) ≤ ϑ ⋅ |S⁽ⁱ⁺ϑ⁾| / |L|` (where `μ(R) = Pr_{ let r ←$ᵖ (Fin steps → L) }[ R ]`)
 **Case 1: Fiber-wise close** =>
@@ -497,7 +498,7 @@ Proof strategy:
 **Case 2: Fiber-wise far** =>
   μ(`d(fold(f⁽ⁱ⁾, rᵢ', ..., rᵢ₊steps₋₁'), C⁽ⁱ⁺steps⁾) < dᵢ₊steps / 2`) ≤ steps · |S⁽ⁱ⁺steps⁾| / |L|
 -/
-lemma prop_4_20_bad_event_probability (i : Fin ℓ) (steps : ℕ) [NeZero steps]
+lemma prop_4_21_bad_event_probability (i : Fin ℓ) (steps : ℕ) [NeZero steps]
     {destIdx : Fin r} (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i, by omega⟩) :
     let domain_size := Fintype.card (sDomain 𝔽q β h_ℓ_add_R_rate destIdx)
@@ -513,7 +514,7 @@ lemma prop_4_20_bad_event_probability (i : Fin ℓ) (steps : ℕ) [NeZero steps]
       (h_destIdx_le := h_destIdx_le) (f := f_i)
   · -- CASE 1: Fiber-wise Close (The main focus of the provided text)
     simp only [h_close, ↓reduceDIte]
-    let res := prop_4_20_case_1_fiberwise_close 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
+    let res := prop_4_21_case_1_fiberwise_close 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
       (steps := steps) (h_destIdx := h_destIdx)
       (h_destIdx_le := h_destIdx_le) (f_i := f_i) (h_close := h_close)
     exact res
@@ -522,7 +523,7 @@ lemma prop_4_20_bad_event_probability (i : Fin ℓ) (steps : ℕ) [NeZero steps]
     simp only [h_close, ↓reduceDIte]
     -- If fiberwise distance is "far" (≥ d_next / 2),
     -- then the probability of becoming "close" (< d_next / 2) is bounded.
-    apply prop_4_20_case_2_fiberwise_far 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (steps := steps)
+    apply prop_4_21_case_2_fiberwise_far 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (steps := steps)
       (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (h_far := h_close)
 
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ [NeZero 𝓡] [SampleableType L] in

@@ -15,12 +15,13 @@ This file packages:
 1. indicator-style identities for tensor expansions at binary challenges
 2. the `preTensorCombine` and lift constructions connecting oracle words and interleaved words
 3. disagreement isomorphisms and `preTensorCombine` proximity bridges that feed the
-   Proposition 4.20 case analyses
-4. the interleaved-distance lower bound of Lemma 4.21
+   Proposition 4.21 case analyses
+4. the interleaved-distance lower bound of Lemma 4.22
 
 ## References
 
 * [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
+  Statement numbering below follows the archived revision of [DP24].
 -/
 
 namespace Binius.BinaryBasefold
@@ -100,7 +101,7 @@ omit [Fintype L] [DecidableEq L] [CharP L 2] in
 /-- **Key Property of Tensor Expansion with Binary Challenges**:
 When `r = bitsOfIndex k`, the tensor expansion `challengeTensorExpansion n r`
 is the indicator vector for index `k` (i.e., 1 at position `k`, 0 elsewhere).
-This is a fundamental property used in both Proposition 4.20 and Lemma 4.21. -/
+This is a fundamental property used in both Proposition 4.21 and Lemma 4.22. -/
 lemma challengeTensorExpansion_bitsOfIndex_is_eq_indicator {n : ℕ} (k : Fin (2 ^ n)) :
     -- Key Property: Tensor(r_k) is the indicator vector for k.
     -- Tensor(r_k)[j] = 1 if j=k, 0 if j≠k.
@@ -113,7 +114,7 @@ lemma challengeTensorExpansion_bitsOfIndex_is_eq_indicator {n : ℕ} (k : Fin (2
 
 section Lift_PreTensorCombine
 
-/-! **Interleaved Word Construction (Supporting definition for Lemma 4.21)**
+/-! **Interleaved Word Construction (Supporting definition for Lemma 4.22)**
 Constructs the rows `f_j^{(i+steps)}` of the interleaved word.
 For a fixed row index `j` and a domain point `y ∈ S^{i+steps}`,
 the value is the `j`-th entry of the vector `M_y * fiber_vals`.
@@ -272,8 +273,8 @@ of `V` into a poly `P ∈ L[X]_(2^(ℓ-i))` that generates the fiber evaluator `
 (this `g` produces the RHS vector in equality of **Lemma 4.9**). If we fold this function `g` using
 **binary challenges** corresponding to each of the `2^steps` rows of `V`, let's say `j`,
 we also folds `P` into the corresponding row polynomial `P_j` of the `j`-th row of `V`
-(via **Lemma 4.13, aka iterated_fold_advances_evaluation_poly**). This works as a core engine for
-proof of **Lemma 4.21**. -/
+(via **Lemma 4.14, aka iterated_fold_advances_evaluation_poly**). This works as a core engine for
+proof of **Lemma 4.22**. -/
 def getLiftPoly (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
     (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (V_codeword : ((BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx)
@@ -314,7 +315,7 @@ noncomputable def lift_interleavedCodeword (i : Fin ℓ) (steps : ℕ) {destIdx 
   exact g
 
 omit [CharP L 2] in
-/-- **Lemma 4.21 Helper**: Folding the "Lifted" polynomial `g` with binary challenges corresponding
+/-- **Lemma 4.22 Helper**: Folding the "Lifted" polynomial `g` with binary challenges corresponding
 to row index `j ∈ Fin(2^steps)`, results exactly in the `j`-th row polynomial `P_j`.
 **Key insight**: **Binary folding** is a **(Row) Selector**
 Proof strategy: applying `iterated_fold_advances_evaluation_poly` and
@@ -363,7 +364,7 @@ lemma folded_lifted_IC_eq_IC_row_polyToOracleFunc (i : Fin ℓ) (steps : ℕ) {d
         rw [Polynomial.mem_degreeLT] at h_mem
         exact h_mem )
   conv_rhs => rw [←h_P_j_novel_form]
-  -- polyToOracleFunc(intermediateEvaluationPoly(FOLDED novelCoeffs of P))) (via Lemma 4.13)
+  -- polyToOracleFunc(intermediateEvaluationPoly(FOLDED novelCoeffs of P))) (via Lemma 4.14)
     -- = polyToOracleFunc(intermediateEvaluationPoly(inovelCoeffs of P_j))
   unfold polyToOracleFunc intermediateEvaluationPoly novelCoeffs
   simp only [map_sum, map_mul]
@@ -495,7 +496,7 @@ def fiberDiff (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
     f x ≠ g x
 
 /-- **Distance Isomorphism Lemma**
-The crucial logic for Lemma 4.21:
+The crucial logic for Lemma 4.22:
 Two functions `f, g` differ on a specific fiber `y` IF AND ONLY IF
 their tensor-combinations `U, V` differ at the column `y`.
 This holds because `M_y` is a bijection. -/
@@ -691,7 +692,7 @@ lemma preTensorCombine_jointProximityNat_of_fiberwiseClose (i : Fin ℓ) (steps 
         exact_mod_cast h_g_close_nat
 
 open Code.InterleavedCode in
-/-- **Lemma 4.21** (Interleaved Distance Preservation):
+/-- **Lemma 4.22** (Interleaved Distance Preservation):
 If `d⁽ⁱ⁾(f⁽ⁱ⁾, C⁽ⁱ⁾) ≥ d_{i+ϑ} / 2` (`f` is fiber-wise far wrt UDR),
 then `d^{2^ϑ}( (f_j⁽ⁱ⁺ϑ⁾)_{j=0}^{2^ϑ - 1}, C^{(i+ϑ)^{2^ϑ}} ) ≥ d_{i+ϑ} / 2`
   (i.e. interleaved distance ≥ UDR distance).

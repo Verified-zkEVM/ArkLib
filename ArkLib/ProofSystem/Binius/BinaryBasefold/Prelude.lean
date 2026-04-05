@@ -18,8 +18,7 @@ Core folding definitions and evaluation lemmas for Binary Basefold.
 ## References
 
 * [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
-  - Lemma numbering in this file follows the ePrint PDF
-    `https://eprint.iacr.org/2024/504.pdf`.
+  Lemma numbering in this file follows the archived revision of [DP24].
 -/
 
 namespace Binius.BinaryBasefold
@@ -2378,7 +2377,7 @@ def polyToOracleFunc {domainIdx : Fin r} (P : L[X]) :
   fun y => P.eval y.val
 
 omit [CharP L 2] in
-/-- **Lemma 4.13** : if f⁽ⁱ⁾ is evaluation of P⁽ⁱ⁾(X) over S⁽ⁱ⁾, then fold(f⁽ⁱ⁾, r_chal)
+/-- **Lemma 4.14** : if f⁽ⁱ⁾ is evaluation of P⁽ⁱ⁾(X) over S⁽ⁱ⁾, then fold(f⁽ⁱ⁾, r_chal)
   is evaluation of P⁽ⁱ⁺¹⁾(X) over S⁽ⁱ⁺¹⁾. At level `i = ℓ`, we have P⁽ˡ⁾ = c
 -/
 theorem fold_advances_evaluation_poly
@@ -2565,7 +2564,7 @@ theorem fold_advances_evaluation_poly
       simp only [←Polynomial.C_mul, ←Polynomial.C_add]
 
 omit [CharP L 2] in
-/-- **Lemma 4.13 Generalization** : if f⁽ⁱ⁾ is evaluation of P⁽ⁱ⁾(X) over S⁽ⁱ⁾,
+/-- **Lemma 4.14 Generalization** : if f⁽ⁱ⁾ is evaluation of P⁽ⁱ⁾(X) over S⁽ⁱ⁾,
 then fold(f⁽ⁱ⁾, r_chal) is evaluation of P⁽ⁱ⁺¹⁾(X) over S⁽ⁱ⁺¹⁾.
 At level `i = ℓ`, we have P⁽ˡ⁾ = c (constant polynomial).
 -/

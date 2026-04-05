@@ -20,6 +20,7 @@ The FRI-Binius IOPCS consists of the following phases:
 
 - [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over Binary
   Towers." Cryptology ePrint Archive (2024).
+  Statement numbering follows the archived revision of [DP24].
 -/
 
 namespace Binius.FRIBinius.FullFRIBinius

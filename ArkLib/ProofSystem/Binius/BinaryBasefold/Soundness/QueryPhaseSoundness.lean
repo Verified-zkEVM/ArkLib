@@ -12,13 +12,14 @@ import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.FoldDistance
 
 Final query-phase rejection and probability bounds for the Binary Basefold soundness proof.
 This file packages:
-1. Lemma 4.25, which turns disagreement on the terminal suffix into query rejection
-2. Proposition 4.23 for the single-repetition proximity-check bound
+1. Lemma 4.26, which turns disagreement on the terminal suffix into query rejection
+2. Proposition 4.24 for the single-repetition proximity-check bound
 3. the final query-phase probability statements built from the bad-block analysis
 
 ## References
 
 * [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
+  Statement numbering follows the archived revision of [DP24].
 -/
 
 namespace Binius.BinaryBasefold
@@ -559,13 +560,13 @@ lemma goodBlock_point_disagreement_step
   apply h_point_ne_transport
   exact h_eq.trans h_codeword_transport_eval.symm
 
-/-- **Lemma 4.25** (Query rejection from disagreement suffix).
+/-- **Lemma 4.26** (Query rejection from disagreement suffix).
 
 If the verifier's query point `v` has its suffix in the disagreement set between
 `fold(f^{(j*\cdot\vartheta)})` and `\bar f^{(j*\cdot\vartheta+\vartheta)}`, then the
 single-repetition logical check rejects.
 
-**Hypotheses (following BinaryBasefold.md, Lemma 4.25):**
+**Hypotheses (following BinaryBasefold.md, Lemma 4.26):**
 - `h_no_bad_event`: The bad event at block `j*` didn't occur.
 - `h_good_after`: All blocks after `j*` are compliant (maximality of `j*`).
 - `h_no_bad_global`: No bad events occur at any block (for the inductive step).
@@ -627,7 +628,7 @@ theorem lemma_4_25_reject_if_suffix_in_disagreement
     ¬ logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         oStmtIn v stmtIn stmtIn.final_constant := by
   classical
-  -- Proof per BinaryBasefold.md, Lemma 4.25.
+  -- Proof per BinaryBasefold.md, Lemma 4.26.
   -- We show: assuming all step conditions pass, the fold value at the last step
   -- disagrees with `final_constant`, contradicting the final step condition.
   -- Introduce the let bindings and hypotheses
@@ -1256,7 +1257,7 @@ theorem lemma_4_25_reject_if_suffix_in_disagreement
   exact h_fold_ne_const h_final
 
 open Classical in
-/-- **Proposition 4.23** (Query-phase soundness, assuming no bad events).
+/-- **Proposition 4.24** (Query-phase soundness, assuming no bad events).
 
 If any oracle is non-compliant and no bad folding event occurs, then a single
 repetition of the proximity check accepts with probability at most
@@ -1619,7 +1620,7 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
             (h_i := h_destIdx_le) (c := stmtIn.final_constant))
       exact ⟨f_next, h_not_compliant, h_next_close, Or.inr ⟨h_last, rfl⟩⟩
   rcases h_choose with ⟨f_next, h_not_compliant, h_next_close, h_f_next_shape⟩
-  -- Apply Lemma 4.24: folded function is far from the decoded next codeword.
+  -- Apply Lemma 4.25: folded function is far from the decoded next codeword.
   have h_not_pair :
       let f_i_star_folded :=
         iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)

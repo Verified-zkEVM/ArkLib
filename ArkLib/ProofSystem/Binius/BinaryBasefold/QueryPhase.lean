@@ -2673,15 +2673,15 @@ noncomputable def queryKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
     -- The lemma gives us:
     exact h_res.2.2
 
-/-- **Single Repetition Proximity Check Bound (Proposition 4.23)**
+/-- **Single Repetition Proximity Check Bound (Proposition 4.24)**
 
 For a single repetition of the proximity check, the probability that a non-compliant
 oracle (not close to RS codeword) passes the fold consistency check is bounded by:
   `(1/2) + 1/(2 * 2^𝓡)`
 
-**Preconditions (from Proposition 4.23 in DG25):**
+**Preconditions (from Proposition 4.24 in the archived DP24 PDF):**
 - `h_not_oracleFoldingConsistent`: At least one oracle is non-compliant
-- `h_no_bad_event`: No bad folding events occurred (Definition 4.19)
+- `h_no_bad_event`: No bad folding events occurred (Definition 4.20)
 
 This is the fundamental proximity testing bound used in the soundness proof. -/
 theorem prop_4_23_singleRepetition_proximityCheck_bound
@@ -2698,7 +2698,7 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
       logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         oStmtIn v stmtIn stmtIn.final_constant ] ≤
     queryRbrKnowledgeError_singleRepetition (𝓡 := 𝓡) := by
-  -- Delegates to Soundness Prop 4.23 (Lemma 4.25 supplies the query-rejection property).
+  -- Delegates to Soundness Prop 4.24 (Lemma 4.26 supplies the query-rejection property).
   have h_res :=
     (Binius.BinaryBasefold.prop_4_23_singleRepetition_proximityCheck_bound
       (stmtIn := stmtIn) (oStmtIn := oStmtIn)
@@ -2732,7 +2732,7 @@ theorem singleRepetition_proximityCheck_bound
       logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         oStmtIn v stmtIn stmtIn.final_constant ] ≤
     queryRbrKnowledgeError_singleRepetition (𝓡 := 𝓡) := by
-  -- This is Proposition 4.23 (DG25) specialized to a single repetition.
+  -- This is Proposition 4.24 from the archived DP24 PDF specialized to a single repetition.
   exact
     prop_4_23_singleRepetition_proximityCheck_bound (𝔽q := 𝔽q) (β := β)
       (stmtIn := stmtIn) (oStmtIn := oStmtIn)
@@ -2756,7 +2756,7 @@ This means:
   - `¬ oracleFoldingConsistency`: Some oracle is NOT compliant (not close to correct folding)
   - `¬ badEvent`: No bad events detected
 
-**Proposition 4.23 (DG25 - Assuming no bad events):**
+**Proposition 4.24 (archived DP24 - assuming no bad events):**
 If any of the adversary's oracles is not compliant (not close to RS codeword),
 then the verifier accepts with at most negligible probability:
   `Pr[V accepts] ≤ ((1/2) + 1/(2 * 2^𝓡))^γ_repetitions`

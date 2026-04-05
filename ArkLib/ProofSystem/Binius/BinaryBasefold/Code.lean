@@ -1005,7 +1005,7 @@ lemma exists_unique_fiberwiseClosestCodeword_within_UDR (i : Fin r) {destIdx : F
 omit [CharP L 2] in
 /-- **Lemma: Single Step BBF_Code membership preservation**
 It establishes that folding a codeword from the i-th code produces a codeword in the (i+1)-th code.
-This relies on **Lemma 4.13** that 1-step folding advances the evaluation polynomial. -/
+This relies on **Lemma 4.14** that 1-step folding advances the evaluation polynomial. -/
 lemma fold_preserves_BBF_Code_membership (i : Fin r) {destIdx : Fin r}
     (h_destIdx : destIdx = i.val + 1) (h_destIdx_le : destIdx ≤ ℓ)
     (f : (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)) (r_chal : L) :

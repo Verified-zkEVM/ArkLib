@@ -40,6 +40,7 @@ this proves that if the previous round satisfies the invariant, then the current
 ## References
 
 * [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
+  Reference the archived revision of [DP24] when comparing statement numbering.
 * [Lin, S., Chung, W., and Han, Y.S., *Novel polynomial basis and its application to reed-solomon
     erasure codes*][LCH14]
 * [Von zur Gathen, J. and Gerhard, J., *Arithmetic and factorization of polynomial over F2

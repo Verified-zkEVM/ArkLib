@@ -19,6 +19,7 @@ This file packages:
 ## References
 
 * [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
+  Statement numbering follows the archived revision of [DP24].
 -/
 
 namespace Binius.BinaryBasefold
@@ -108,7 +109,7 @@ lemma disagreement_fold_subset_fiberwiseDisagreement (i : Fin ℓ) (steps : ℕ)
   have h_fold_eq := fold_agreement_of_fiber_agreement 𝔽q β i steps h_destIdx h_destIdx_le f g (r_challenges := r_challenges) (y := y) h_agree_on_fiber
   exact hy_mem h_fold_eq
 
-/-- **Lemma 4.24**
+/-- **Lemma 4.25**
 For `i*` where `f^(i)` is non-compliant, `f^(i+ϑ)` is UDR-close, and the bad event `E_{i*}`
 doesn't occur, the folded function of `f^(i)` is not UDR-close to the UDR-decoded codeword
 of `f^(i+ϑ)`. -/
@@ -197,13 +198,13 @@ lemma lemma_4_24_dist_folded_ge_of_last_noncompliant (i_star : Fin ℓ) (steps :
       unfold d_fw
       unfold fiberwiseClose at h_fw_close
       norm_cast at h_fw_close
-    -- Lemma 4.18 (Geometric): d(fold(f), fold(g)) ≤ |Δ_fiber(f, g)|
+    -- Lemma 4.19 (Geometric): d(fold(f), fold(g)) ≤ |Δ_fiber(f, g)|
     have h_ineq_2 : 2 * Δ₀(f_i_star_folded, folded_f_bar_star) < d_next := by
       calc
         2 * Δ₀(iterated_fold 𝔽q β ⟨i_star, by omega⟩ steps h_destIdx h_destIdx_le f_star (r_challenges := r_challenges), folded_f_bar_star)
         _ ≤ 2 * (fiberwiseDisagreementSet 𝔽q β (i := ⟨i_star, by omega⟩) steps h_destIdx h_destIdx_le f_star f_bar_star).card := by
           -- Hamming distance is card(disagreementSet)
-          -- disagreementSet ⊆ fiberwiseDisagreementSet (Lemma 4.18 Helper)
+          -- disagreementSet ⊆ fiberwiseDisagreementSet (Lemma 4.19 Helper)
           apply Nat.mul_le_mul_left
           let res := disagreement_fold_subset_fiberwiseDisagreement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i_star) (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f_star) (g := f_bar_star) (r_challenges := r_challenges)
           simp only at res

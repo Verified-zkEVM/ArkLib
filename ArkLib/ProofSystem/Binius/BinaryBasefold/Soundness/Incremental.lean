@@ -14,12 +14,12 @@ import CompPoly.Fields.Binary.Tower.Prelude
 
 Incremental quotient-map and proximity lemmas for the refined Binary Basefold soundness proof.
 The incremental bad-event, even/odd reduction, doom-preservation arguments, and the full
-Proposition 4.20.2 development in this file are formalization-specific contributions of this
-development.
+incremental Proposition 4.21.2 development in this file are formalization-specific
+contributions of this development.
 This file packages:
 1. preliminary split and affine-line proximity lemmas used in the incremental far case
-2. the full Proposition 4.20.2 argument, including the even/odd reduction and both close/far
-   branches
+2. the full incremental Proposition 4.21.2 argument, including the even/odd reduction and both
+   close/far branches
 3. fold-to-affine-line bridges used by the incremental bad-event analysis
 -/
 
@@ -141,7 +141,7 @@ lemma affineProximityGap_RS_interleaved_contrapositive
 end Prelims
 
 open Classical in
-/-- **Proposition 4.20.2 (Case 1: FiberwiseClose)**.
+/-- **Proposition 4.21.2 (Case 1: FiberwiseClose)**.
 Incremental bad-event bound for a fixed block start and fixed consumed prefix, under the
 block-level close branch.
 
@@ -191,7 +191,7 @@ Applying the Union Bound over all `y ∈ Δ^{(i)} ⊆ S^{i+ϑ}` (noting that `|�
 
 This completes the proof for Case 1.
 -/
-lemma prop_4_20_2_case_1_fiberwise_close_incremental
+lemma prop_4_21_2_case_1_fiberwise_close_incremental
     (block_start_idx : Fin r) {midIdx_i midIdx_i_succ destIdx : Fin r} (k : ℕ) (h_k_lt : k < ϑ)
     (h_midIdx_i : midIdx_i = block_start_idx + k) (h_midIdx_i_succ : midIdx_i_succ = block_start_idx + k + 1)
     (h_destIdx : destIdx = block_start_idx + ϑ) (h_destIdx_le : destIdx ≤ ℓ)
@@ -1153,7 +1153,7 @@ lemma fiberwiseClose_fold_implies_affineLineEval_close
 
 **Proof outline (see infrastructure lemmas above for details):**
 1. Build `U := preTensorCombine(midIdx_i, ϑ-k, destIdx, fold_k_f)` of height `2^{ϑ-k}`.
-2. By Lemma 4.21: `¬fiberwiseClose(fold_k_f) → ¬jointProximityNat(U, e)`.
+2. By Lemma 4.22: `¬fiberwiseClose(fold_k_f) → ¬jointProximityNat(U, e)`.
 3. Split `U` into even/odd stacks `(U_even, U_odd) = splitEvenOdd(U)`,
    each of height `2^{ϑ-k-1}`.
    By `not_jointProximityNat_of_not_jointProximityNat_evenOdd_split`:
@@ -1167,7 +1167,7 @@ lemma fiberwiseClose_fold_implies_affineLineEval_close
    (by `affineProximityGap_RS_interleaved_contrapositive`):
    `Pr_r[close] ≤ |S|/|L|`.
 -/
-lemma prop_4_20_2_case_2_fiberwise_far_incremental
+lemma prop_4_21_2_case_2_fiberwise_far_incremental
     (block_start_idx : Fin r) {midIdx_i midIdx_i_succ destIdx : Fin r} (k : ℕ) (h_k_lt : k < ϑ)
     (h_midIdx_i : midIdx_i = block_start_idx + k) (h_midIdx_i_succ : midIdx_i_succ = block_start_idx + k + 1)
     (h_destIdx : destIdx = block_start_idx + ϑ) (h_destIdx_le : destIdx ≤ ℓ)
@@ -1274,7 +1274,10 @@ lemma prop_4_20_2_case_2_fiberwise_far_incremental
         simp only [Fin.init_snoc, Fin.snoc_last] at h_fw_close
         convert h_fw_close using 1)
 
-lemma prop_4_20_2_incremental_bad_event_probability
+/-- **Proposition 4.21.2** (Incremental bad-event probability bound).
+This is the formalization-specific refinement of Proposition 4.21 for prefix-by-prefix folding
+analysis. -/
+lemma prop_4_21_2_incremental_bad_event_probability
     (block_start_idx : Fin r) {midIdx_i midIdx_i_succ destIdx : Fin r} (k : ℕ) (h_k_lt : k < ϑ)
     (h_midIdx_i : midIdx_i = block_start_idx + k) (h_midIdx_i_succ : midIdx_i_succ = block_start_idx + k + 1)
     (h_destIdx : destIdx = block_start_idx + ϑ) (h_destIdx_le : destIdx ≤ ℓ)
@@ -1297,12 +1300,12 @@ lemma prop_4_20_2_incremental_bad_event_probability
   by_cases h_block_close : fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := block_start_idx) (steps := ϑ) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
     (f := f_block_start)
-  · exact prop_4_20_2_case_1_fiberwise_close_incremental 𝔽q β
+  · exact prop_4_21_2_case_1_fiberwise_close_incremental 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (block_start_idx := block_start_idx)
       (midIdx_i := midIdx_i) (midIdx_i_succ := midIdx_i_succ) (destIdx := destIdx) (k := k) (h_k_lt := h_k_lt) (h_midIdx_i := h_midIdx_i) (h_midIdx_i_succ := h_midIdx_i_succ) (h_destIdx := h_destIdx)
       (h_destIdx_le := h_destIdx_le) (f_block_start := f_block_start)
       (r_prefix := r_prefix) (h_block_close := h_block_close)
-  · exact prop_4_20_2_case_2_fiberwise_far_incremental 𝔽q β
+  · exact prop_4_21_2_case_2_fiberwise_far_incremental 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (block_start_idx := block_start_idx)
       (midIdx_i := midIdx_i) (midIdx_i_succ := midIdx_i_succ) (destIdx := destIdx) (k := k) (h_k_lt := h_k_lt) (h_midIdx_i := h_midIdx_i) (h_midIdx_i_succ := h_midIdx_i_succ) (h_destIdx := h_destIdx)
       (h_destIdx_le := h_destIdx_le) (f_block_start := f_block_start)

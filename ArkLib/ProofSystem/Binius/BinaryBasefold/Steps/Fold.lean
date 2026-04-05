@@ -1482,7 +1482,6 @@ lemma foldStep_rbrExtractionFailureEvent_imply_sumcheck_or_badEvent (i : Fin ℓ
       exact ⟨h_hi_ne_extracted, h_eval_eq_extracted⟩
     exact ⟨witMid, h_consistency, h_left_from_consistency⟩
 
-#check prop_4_20_2_incremental_bad_event_probability
 /-! Per-transcript bound: for the first prover message `msg0`, the probability (over the verifier
   challenge `y`) that extraction fails is at most `foldKnowledgeError`. Stated for
   `P (FullTranscript.mk1 msg0)` so it matches the goal after `tsum_uniform_Pr_eq_Pr` in the main
@@ -1496,7 +1495,7 @@ lemma foldStep_rbrExtractionFailureEvent_imply_sumcheck_or_badEvent (i : Fin ℓ
   4. **Schwartz–Zippel**: Bound `Pr[SZ]` by `1/|L|` using univariate degree-1
     agreement (lemmas from Instances.lean)
   5. **Bad event**: Bound `Pr[BE]` using the incremental folding bad-event probability
-    (`prop_4_20_2_incremental_bad_event_probability`).
+    (`prop_4_21_2_incremental_bad_event_probability`).
   6. **Combine**: Add the two bounds and match the RHS to `foldKnowledgeError`. -/
 lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
     (stmtOStmtIn : (Statement (L := L) Context i.castSucc) × (∀ j,
@@ -1609,7 +1608,7 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
         have h_cId_lt_k : cId.val < kBefore := cId.isLt
         omega
       ⟩
-    have h_res := prop_4_20_2_incremental_bad_event_probability 𝔽q β
+    have h_res := prop_4_21_2_incremental_bad_event_probability 𝔽q β
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (block_start_idx := curOracleDomainIdx)
       (midIdx_i := ⟨curOracleDomainIdx.val + kBefore, by

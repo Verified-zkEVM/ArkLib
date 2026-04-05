@@ -7,7 +7,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.QueryPhasePrelims
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.Lift
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.Proposition4_20
+import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.Proposition4_21
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.Incremental
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.FoldDistance
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.BadBlocks
@@ -21,9 +21,10 @@ This module packages the central bad-sumcheck probability estimate and re-export
 soundness submodules:
 1. `Soundness.QueryPhasePrelims` for query-phase helper definitions and logical/monadic
    alignment
-2. `Soundness.Lift`, `Soundness.Proposition4_20`, `Soundness.Incremental`, and
-   `Soundness.FoldDistance` for the folding and distance lemmas behind Lemmas 4.20-4.24, with
-   the full Proposition 4.20.2 incremental argument now living in `Soundness.Incremental`
+2. `Soundness.Lift`, `Soundness.Proposition4_21`, `Soundness.Incremental`, and
+   `Soundness.FoldDistance` for the folding and distance lemmas behind archived-DP24
+   Propositions/Lemmas 4.21-4.25, with the full incremental Proposition 4.21.2 argument now
+   living in `Soundness.Incremental`
 3. `Soundness.BadBlocks` and `Soundness.QueryPhaseSoundness` for bad-block analysis and the
    final query-phase soundness statement
 
@@ -33,6 +34,7 @@ Generic block-index and oracle-index arithmetic used across these files lives up
 ## References
 
 * [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
+  Statement numbering follows the archived revision of [DP24].
 -/
 
 namespace Binius.BinaryBasefold

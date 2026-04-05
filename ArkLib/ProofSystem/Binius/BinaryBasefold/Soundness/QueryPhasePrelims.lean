@@ -19,6 +19,7 @@ This file packages:
 ## References
 
 * [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
+  Statement numbering below follows the archived revision of [DP24].
 -/
 
 namespace Binius.BinaryBasefold
