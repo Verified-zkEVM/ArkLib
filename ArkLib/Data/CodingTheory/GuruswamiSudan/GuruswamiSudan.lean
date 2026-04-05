@@ -9,7 +9,6 @@ import Mathlib.Algebra.Polynomial.Basic
 import Mathlib.Data.Real.Sqrt
 import Mathlib.RingTheory.Polynomial.Basic
 
-import ArkLib.Data.CodingTheory.Basic
 import ArkLib.Data.CodingTheory.BerlekampWelch.Sorries
 import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
 import ArkLib.Data.CodingTheory.ReedSolomon
@@ -242,7 +241,7 @@ theorem mem_decoder_of_dist
     rw [← hctp]
     exact dvd_property (f := f) hkLtN
       (by omega : 1 ≤ mDec) p'
-      polySol_ne_zero polySol_weightedDegree_le
+      polySol_weightedDegree_le
       polySol_multiplicity (by
         have hfEq :
             (fun i ↦ (codewordToPoly p').eval (ωs i)) =
@@ -591,7 +590,7 @@ private def gsLinearRhs (r : ℕ) : Fin (gsLinearRowCount n r) → F :=
   fun row ↦ if row.val < gsDerivRowCount n r then 0 else 1
 
 /-- Solve the linearized GS system with one normalized coefficient target. -/
-private def solveGsWitnessAtTarget (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
+private noncomputable def solveGsWitnessAtTarget (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
     (target : Fin (witnessVarCount D)) :
     Option {c : Fin (D + 1) × Fin (D + 1) → F // isWitnessC k D r ωs f c = true} :=
   match linsolve (gsLinearMatrix (n := n) k D r ωs f target) (gsLinearRhs (n := n) r) with
@@ -607,12 +606,12 @@ private def witnessTargets (k D : ℕ) : List (Fin (witnessVarCount D)) :=
     decide (ij.1.val + (k - 1) * ij.2.val ≤ D)
 
 /-- Constructive witness search: solve the linearized GS system over all normalization targets. -/
-private def computeGsWitness (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+private noncomputable def computeGsWitness (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
     Option {c : Fin (D + 1) × Fin (D + 1) → F // isWitnessC k D r ωs f c = true} :=
   (witnessTargets k D).findSome? (solveGsWitnessAtTarget (n := n) k D r ωs f)
 
 /-- Constructive witness-availability check computed from `computeGsWitness`. -/
-private def hasWitnessC (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) : Bool :=
+private noncomputable def hasWitnessC (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) : Bool :=
   (computeGsWitness (n := n) k D r ωs f).isSome
 
 /-- `hasWitnessC = true` iff `computeGsWitness` returns an explicit witness package. -/
@@ -699,7 +698,8 @@ private lemma is_q_root_raw_iff_all_coeff_zero {k D : ℕ}
     1. `Q(X, p(X)) = 0` (Y-root extraction), and
     2. The Hamming distance `Δ₀(f, p ∘ ωs) ≤ e`.
 -/
-private def witnessCandidateSet [Fintype F] (k r D e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+private noncomputable def witnessCandidateSet [Fintype F] (k r D e : ℕ) (ωs : Fin n ↪ F)
+    (f : Fin n → F) :
     Finset F[X] :=
   match computeGsWitness (n := n) k D r ωs f with
   | Option.some w =>
@@ -767,7 +767,8 @@ The implementation combines two candidate sources:
 The implementation is fully computable and avoids classical choice operators,
 classical proof-only decidability wrappers, and nonconstructive root extraction.
 -/
-def computableDecoder [Fintype F] (k r D e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+noncomputable def computableDecoder [Fintype F] (k r D e : ℕ) (ωs : Fin n ↪ F)
+    (f : Fin n → F) :
     Finset F[X] :=
   compPolyCandidateSet k e ωs f ∪ witnessCandidateSet k r D e ωs f
 
@@ -985,7 +986,7 @@ theorem proximity_gap_divisibility (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code �
     (hdist : (hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) : ℝ) / n <
       proximity_gap_johnson k n m) :
     X - C (codewordToPoly p) ∣ Q :=
-  dvd_property (f := f) hk hm p hQ.qNeZero hQ.qDeg
+  dvd_property (f := f) hk hm p hQ.qDeg
     hQ.qMultiplicity hdist
 
 end GuruswamiSudan
