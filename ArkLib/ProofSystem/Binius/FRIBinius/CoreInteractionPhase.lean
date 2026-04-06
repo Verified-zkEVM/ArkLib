@@ -1744,5 +1744,25 @@ theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
 
 end CoreInteractionPhaseReduction
 
+/-- Sum of the per-round RBR knowledge error over core interaction challenges is **at most**
+`2 * ℓ' / |L| + 2^(ℓ' + 𝓡) / |L|` (see `BinaryBasefold.CoreInteraction.sumcheckFoldKnowledgeError_le`). -/
+theorem coreInteractionOracleRbrKnowledgeError_le :
+    (∑ i : (BinaryBasefold.pSpecCoreInteraction K β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).ChallengeIdx,
+      coreInteractionOracleRbrKnowledgeError κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate i)
+    ≤ 2 * (ℓ' : ℝ≥0) / (Fintype.card L : ℝ≥0)
+      + (2 ^ (ℓ' + 𝓡) : ℝ≥0) / (Fintype.card L : ℝ≥0) := by
+  classical
+  unfold coreInteractionOracleRbrKnowledgeError
+  rw [Equiv.sum_comp (Equiv.symm ChallengeIdx.sumEquiv)]
+  rw [Fintype.sum_sum_type]
+  simp only [Sum.elim_inl, Sum.elim_inr]
+  have hb : (∑ i : (BinaryBasefold.pSpecFinalSumcheckStep (L := L)).ChallengeIdx,
+      finalSumcheckKnowledgeError (L := L) i) = 0 := by
+    simpa using BinaryBasefold.CoreInteraction.finalSumcheckKnowledgeError_sum_eq_zero (L := L)
+  rw [hb, add_zero]
+  exact BinaryBasefold.CoreInteraction.sumcheckFoldKnowledgeError_le (𝔽q := K) (L := L) (β := β)
+    (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ')
+
 end
 end Binius.FRIBinius.CoreInteractionPhase
