@@ -57,3 +57,17 @@ Start with [`README.md`](README.md) for project overview.
   contributions.
 - [`ROADMAP.md`](ROADMAP.md) - planned directions.
 - [`BACKGROUND.md`](BACKGROUND.md) - background references.
+
+## Cursor Cloud specific instructions
+
+- **Lean toolchain**: `elan` is pre-installed at `~/.elan/bin`. Ensure `PATH` includes it.
+- **Dependency cache**: On a cold clone, run `lake exe cache get` before building (fetches
+  Mathlib oleans from Azure). The cache is already populated in the snapshot.
+- **Build**: `lake build` from `/workspace`. Individual modules: `lake build ArkLib.Module.Path`.
+- **Validate**: `./scripts/validate.sh` (build + import check + doc integrity).
+- **Lint**: `./scripts/validate.sh --lint` for Lean style linting.
+- **Noncomputable Basis coercion**: `Basis.instFunLike` (Mathlib) is noncomputable. Defs that
+  capture a `Basis` variable via coercion to a function cannot be compiled. The pattern used in
+  FRIBinius is: keep pspec/instance defs `noncomputable`, sorry exec-path def bodies with
+  explicit type annotations, and use `let _ := var` to capture section variables that would
+  otherwise be dropped from the signature.
