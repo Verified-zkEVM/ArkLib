@@ -6,7 +6,6 @@ Authors: Chung Thai Nguyen, Quang Dao
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Fold
 
 namespace Binius.BinaryBasefold.CoreInteraction
-noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
 open Binius.BinaryBasefold
 open scoped NNReal ProbabilityTheory
@@ -37,7 +36,7 @@ def commitPrvState (i : Fin ℓ) : Fin (1 + 1) → Type := fun
     (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.succ j) ×
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ
 
-def getCommitProverFinalOutput (i : Fin ℓ)
+noncomputable def getCommitProverFinalOutput (i : Fin ℓ)
     (inputPrvState : commitPrvState (Context := Context) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i 0) :
   (↥(sDomain 𝔽q β h_ℓ_add_R_rate ⟨↑i + 1, by omega⟩) → L) ×
@@ -527,5 +526,4 @@ theorem commitOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
 
 end CommitStep
 end SingleIteratedSteps
-end
 end Binius.BinaryBasefold.CoreInteraction

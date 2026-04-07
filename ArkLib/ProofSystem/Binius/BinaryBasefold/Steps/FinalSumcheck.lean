@@ -9,7 +9,6 @@ import ArkLib.ToVCVio.Simulation
 import ArkLib.OracleReduction.Completeness
 
 namespace Binius.BinaryBasefold.CoreInteraction
-noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
 -- open scoped Binius.BinaryBasefold
 open scoped NNReal ProbabilityTheory
@@ -556,7 +555,7 @@ private def finalBlockChallenges
     exact lt_of_lt_of_le h_lt
       (oracle_index_add_steps_le_ℓ ℓ ϑ (i := Fin.last ℓ) (j := ⟨t, Nat.lt_of_succ_lt ht⟩))⟩
 
-private def finalDecodedPrefixFold
+private noncomputable def finalDecodedPrefixFold
     (stmtOut : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (f₀ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r))
     (t : ℕ) (ht : t < toOutCodewordsCount ℓ ϑ (Fin.last ℓ)) :
@@ -585,7 +584,7 @@ private def finalOracleRaw
     (ϑ := ϑ) (i := Fin.last ℓ) ⟨t, ht⟩
   exact oStmtOut ⟨t, ht⟩
 
-private def finalOracleDecoded
+private noncomputable def finalOracleDecoded
     (oStmtOut : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       ϑ (Fin.last ℓ) j)
     (t : ℕ) (ht : t < toOutCodewordsCount ℓ ϑ (Fin.last ℓ))
@@ -935,7 +934,7 @@ private theorem finalOracleClose_curr
     (f := oStmtOut jCurr)
     h_fw_curr
 
-private def finalOracleDecodedAt
+private noncomputable def finalOracleDecodedAt
     (oStmtOut : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       ϑ (Fin.last ℓ) j)
     (t : ℕ) (ht : t < toOutCodewordsCount ℓ ϑ (Fin.last ℓ))
@@ -946,7 +945,7 @@ private def finalOracleDecodedAt
   finalOracleDecoded (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht h_close
 
-private def finalDecodedPrefixAt
+private noncomputable def finalDecodedPrefixAt
     (stmtOut : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (f₀ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r))
     (t : ℕ) (ht : t < toOutCodewordsCount ℓ ϑ (Fin.last ℓ)) :
@@ -986,7 +985,7 @@ private def finalOracleNextClose
     (f := finalOracleNextRaw (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht)
 
-private def finalOracleNextCodeword
+private noncomputable def finalOracleNextCodeword
     (oStmtOut : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       ϑ (Fin.last ℓ) j)
     (t : ℕ) (ht : t + 1 < toOutCodewordsCount ℓ ϑ (Fin.last ℓ))
@@ -1899,5 +1898,4 @@ theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
 
 end FinalSumcheckStep
 end SingleIteratedSteps
-end
 end Binius.BinaryBasefold.CoreInteraction

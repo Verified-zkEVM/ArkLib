@@ -36,7 +36,7 @@ This module defines the protocol specs, index bounds, and the following instance
   `ProtocolSpec.challengeOracleInterface` to avoid conflict.
 -/
 
-noncomputable section
+section
 open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial AdditiveNTT
 open scoped NNReal
 
@@ -357,7 +357,7 @@ instance : ∀ i, OracleInterface ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) :=
   ProtocolSpec.challengeOracleInterface
 
-instance : ∀ i, Fintype ((pSpecQuery 𝔽q β γ_repetitions
+noncomputable instance : ∀ i, Fintype ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i)
   | ⟨0, _⟩ => by
       change Fintype (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0)
@@ -433,7 +433,7 @@ instance : ∀ i, SampleableType ((pSpecCoreInteraction 𝔽q β (ϑ:=ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := instSampleableTypeChallengeAppend
 
 /-- SampleableType instance for sDomain, constructed via its equivalence with a Fin type. -/
-instance instSDomain {i : Fin r} (h_i : i < ℓ + 𝓡) :
+noncomputable instance instSDomain {i : Fin r} (h_i : i < ℓ + 𝓡) :
     SampleableType (sDomain 𝔽q β h_ℓ_add_R_rate i) :=
   let T := sDomain 𝔽q β h_ℓ_add_R_rate i
   haveI : Fintype T := fintype_sDomain 𝔽q β h_ℓ_add_R_rate i
@@ -441,7 +441,7 @@ instance instSDomain {i : Fin r} (h_i : i < ℓ + 𝓡) :
   haveI : DecidableEq T := Classical.decEq T
   SampleableType.ofEquiv (e := (sDomainFinEquiv 𝔽q β h_ℓ_add_R_rate i (by omega)).symm)
 
-instance : ∀ i, SampleableType ((pSpecQuery 𝔽q β γ_repetitions
+noncomputable instance : ∀ i, SampleableType ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i)
   | ⟨i, hi⟩ => by
     unfold ProtocolSpec.Challenge
@@ -455,10 +455,10 @@ instance : ∀ i, SampleableType ((pSpecQuery 𝔽q β γ_repetitions
       exact Nat.lt_add_right 𝓡 h_ℓ_gt_0
     exact instSampleableTypeFinFunc
 
-instance : ∀ j, SampleableType ((fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ)
+noncomputable instance : ∀ j, SampleableType ((fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge j) := instSampleableTypeChallengeAppend
 
-instance : SampleableType (Fin γ_repetitions → ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0)) := by
+noncomputable instance : SampleableType (Fin γ_repetitions → ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0)) := by
   let res := instSDomain 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (h_i := by
     apply Nat.lt_add_of_pos_right_of_le; simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_le])
   exact instSampleableTypeFinFunc
@@ -542,7 +542,7 @@ instance instInhabitedPSpecFinalSumcheckStepMessage :
     change Inhabited L
     infer_instance
 
-instance {i : Fin ℓ} :
+noncomputable instance {i : Fin ℓ} :
     ∀ j, ∀ q : OracleInterface.Query ((pSpecFoldCommit 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Message j), Inhabited
         (OracleInterface.Response (Message := (pSpecFoldCommit 𝔽q β
@@ -568,7 +568,7 @@ instance {i : Fin ℓ} :
         (OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i.val + 1, by omega⟩)
       exact ⟨fun _ => 0⟩
 
-instance {i : Fin ℓ} :
+noncomputable instance {i : Fin ℓ} :
     [(pSpecFoldCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Message]ₒ.Inhabited := by
   infer_instance
 
@@ -630,7 +630,7 @@ instance : ∀ i, ∀ j, Inhabited
   | _, ⟨0, h⟩ => nomatch h
 
 /-- Fintype instance for pSpecFold message oracle specification. -/
-instance : ∀ j, ∀ q : OracleInterface.Query ((pSpecFold (L:=L)).Message j), Fintype
+noncomputable instance : ∀ j, ∀ q : OracleInterface.Query ((pSpecFold (L:=L)).Message j), Fintype
     (OracleInterface.Response (Message := (pSpecFold (L:=L)).Message j) q)
   | ⟨0, h⟩, q => by
       change Fintype ((instOracleInterfaceMessagePSpecFold (L := L) ⟨0, h⟩).toOC.spec q)
@@ -641,7 +641,7 @@ instance : ∀ j, ∀ q : OracleInterface.Query ((pSpecFold (L:=L)).Message j), 
       change Direction.V_to_P = Direction.P_to_V at hj
       cases hj
 
-instance : ([(pSpecFold (L:=L)).Message]ₒ).Fintype := by
+noncomputable instance : ([(pSpecFold (L:=L)).Message]ₒ).Fintype := by
   refine { fintype_B := ?_ }
   intro x
   rcases x with ⟨⟨i, hi⟩, q⟩
@@ -684,7 +684,7 @@ instance instFintypePSpecFinalSumcheckStepChallenge :
     change Direction.P_to_V = Direction.V_to_P at hi
     cases hi
   exact False.elim hfalse
-instance : Fintype (Fin γ_repetitions → ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0)) := by
+noncomputable instance : Fintype (Fin γ_repetitions → ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0)) := by
   infer_instance
 
 instance instInhabitedPSpecFinalSumcheckStepChallenge :
@@ -699,7 +699,7 @@ instance instInhabitedPSpecFinalSumcheckStepChallenge :
     cases hi
   exact False.elim hfalse
 
-instance : ∀ i, Fintype ((pSpecQuery 𝔽q β γ_repetitions
+noncomputable instance : ∀ i, Fintype ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i)
   | ⟨0, _⟩ => by
       change Fintype (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0)
@@ -711,7 +711,7 @@ instance : ∀ i, Inhabited ((pSpecQuery 𝔽q β γ_repetitions
       change Inhabited (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0)
       exact ⟨fun _ => 0⟩
 
-instance instFintypePSpecQueryChallenge : [(pSpecQuery 𝔽q β γ_repetitions
+noncomputable instance instFintypePSpecQueryChallenge : [(pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge]ₒ.Fintype := by
   refine { fintype_B := ?_ }
   intro x
@@ -796,7 +796,7 @@ instance instFintypePSpecQueryMessage :
     cases hi
   exact False.elim hfalse
 
-instance instFintypePSpecQuery_AllChallenges :
+noncomputable instance instFintypePSpecQuery_AllChallenges :
   ∀ j, Fintype ((pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge j) := by
   infer_instance
 

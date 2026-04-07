@@ -6,7 +6,6 @@ Authors: Chung Thai Nguyen, Quang Dao
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Fold
 
 namespace Binius.BinaryBasefold.CoreInteraction
-noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
 open Binius.BinaryBasefold
 open scoped NNReal ProbabilityTheory
@@ -446,5 +445,4 @@ theorem relayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
 
 end RelayStep
 end SingleIteratedSteps
-end
 end Binius.BinaryBasefold.CoreInteraction

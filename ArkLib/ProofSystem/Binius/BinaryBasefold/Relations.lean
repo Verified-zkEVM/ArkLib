@@ -8,7 +8,6 @@ import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
 
 /-! ## Binary Basefold relations and bad-event layer -/
 
-noncomputable section
 namespace Binius.BinaryBasefold
 
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
@@ -83,14 +82,14 @@ def oracleFoldingConsistencyProp (i : Fin (ℓ + 1)) (challenges : Fin i → L)
         (h := h_k_next_le_i))
   )
 
-def BBF_eq_multiplier (r : Fin ℓ → L) : MultilinearPoly L ℓ :=
+noncomputable def BBF_eq_multiplier (r : Fin ℓ → L) : MultilinearPoly L ℓ :=
   ⟨MvPolynomial.eqPolynomial r, by simp only [eqPolynomial_mem_restrictDegree]⟩
 
-def BBF_SumcheckMultiplierParam : SumcheckMultiplierParam L ℓ (SumcheckBaseContext L ℓ) :=
+noncomputable def BBF_SumcheckMultiplierParam : SumcheckMultiplierParam L ℓ (SumcheckBaseContext L ℓ) :=
   { multpoly := fun ctx => BBF_eq_multiplier ctx.t_eval_point }
 
 /-- This condition ensures that the folding witness `f` is properly generated from `t` -/
-def getMidCodewords {i : Fin (ℓ + 1)} (t : L⦃≤ 1⦄[X Fin ℓ])
+noncomputable def getMidCodewords {i : Fin (ℓ + 1)} (t : L⦃≤ 1⦄[X Fin ℓ])
     (challenges : Fin i → L) : (sDomain 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) → L) :=
   let P₀ : L⦃< 2^ℓ⦄[X] := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (h_ℓ := by omega)
     (a := fun ω => t.val.eval (bitsOfIndex ω))
@@ -179,7 +178,7 @@ noncomputable def getFoldProverFinalOutput (i : Fin ℓ)
   exact ⟨⟨stmtOut, oStmtOut⟩, witOut⟩
 
 @[reducible]
-def foldProverComputeMsg (i : Fin ℓ)
+noncomputable def foldProverComputeMsg (i : Fin ℓ)
     (witIn : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc) :
     L⦃≤ 2⦄[X] :=
   getSumcheckRoundPoly ℓ 𝓑 (i := i) witIn.H

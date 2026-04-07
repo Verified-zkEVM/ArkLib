@@ -40,7 +40,6 @@ We define `(P, V)` as the following IOP, in which both parties have the common i
 -/
 namespace Binius.BinaryBasefold.CoreInteraction
 
-noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial Equiv
 open scoped NNReal
 
@@ -112,7 +111,7 @@ lemma roundRelation.of_fin_eq {i j : Fin (ℓ + 1)} (h : i = j) :
 section FoldRelayRound -- foldRound + relay
 
 @[reducible]
-def foldRelayOracleVerifier (i : Fin ℓ)
+noncomputable def foldRelayOracleVerifier (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
   OracleVerifier []ₒ
     (StmtIn := Statement (L := L) Context i.castSucc)
@@ -127,7 +126,7 @@ def foldRelayOracleVerifier (i : Fin ℓ)
     (relayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR)
 
 @[reducible]
-def foldRelayOracleReduction (i : Fin ℓ)
+noncomputable def foldRelayOracleReduction (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
   OracleReduction []ₒ
     (StmtIn := Statement (L := L) Context i.castSucc)
@@ -172,7 +171,7 @@ theorem foldRelayOracleReduction_perfectCompleteness
 
 /-! Flat form of RBR knowledge error for fold+relay: case split on challenge index
     instead of Sum.elim. Equal to the append-composed error (see foldRelayKnowledgeError_eq). -/
-def foldRelayKnowledgeError (i : Fin ℓ)
+noncomputable def foldRelayKnowledgeError (i : Fin ℓ)
     (j : (pSpecFoldRelay (L := L)).ChallengeIdx) : ℝ≥0 :=
   match ChallengeIdx.sumEquiv.symm j with
   | Sum.inl j₁ => foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i j₁
@@ -227,7 +226,7 @@ end FoldRelayRound -- foldRound + relay
 section FoldCommitRound -- foldRound + commit
 
 @[reducible]
-def foldCommitOracleVerifier (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
+noncomputable def foldCommitOracleVerifier (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
   OracleVerifier []ₒ
     (StmtIn := Statement (L := L) Context i.castSucc)
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc)
@@ -241,7 +240,7 @@ def foldCommitOracleVerifier (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
       (V₂ := commitOracleVerifier 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i hCR)
 
 @[reducible]
-def foldCommitOracleReduction (i : Fin ℓ)
+noncomputable def foldCommitOracleReduction (i : Fin ℓ)
     (hCR : isCommitmentRound ℓ ϑ i) :
   OracleReduction []ₒ
     (StmtIn := Statement (L := L) Context i.castSucc)
@@ -288,7 +287,7 @@ theorem foldCommitOracleReduction_perfectCompleteness
 
 /-! Flat form of RBR knowledge error for fold+commit: case split on challenge index
     instead of Sum.elim. Equal to the append-composed error (see foldCommitKnowledgeError_eq). -/
-def foldCommitKnowledgeError (i : Fin ℓ)
+noncomputable def foldCommitKnowledgeError (i : Fin ℓ)
     (j : (pSpecFoldCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).ChallengeIdx) : ℝ≥0 :=
   match ChallengeIdx.sumEquiv.symm j with
   | Sum.inl j₁ => foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i j₁
@@ -348,7 +347,7 @@ Iterative composition across ℓ rounds: for each i, use Fold+Commitment when
 block verifiers/reductions built earlier to avoid dependent casts.
 -/
 section composedOracleVerifiers
-def nonLastSingleBlockOracleVerifier (bIdx : Fin (ℓ / ϑ - 1)) :=
+noncomputable def nonLastSingleBlockOracleVerifier (bIdx : Fin (ℓ / ϑ - 1)) :=
   let stmt : Fin (ϑ - 1 + 1) → Type :=
     fun i => Statement (L := L) Context ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_cast_lt_ℓ_succ bIdx i⟩
   let oStmt := fun i: Fin (ϑ - 1 + 1) => OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ
@@ -436,7 +435,7 @@ def nonLastSingleBlockOracleVerifier (bIdx : Fin (ℓ / ϑ - 1)) :=
       )
   nonLastSingleBlockOracleVerifier
 
-def nonLastBlocksOracleVerifier :
+noncomputable def nonLastBlocksOracleVerifier :
   OracleVerifier []ₒ
     (StmtIn := Statement (L := L) (ℓ := ℓ) Context ⟨0 * ϑ, by omega⟩)
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ ⟨0 * ϑ, by omega⟩)
@@ -457,7 +456,7 @@ def nonLastBlocksOracleVerifier :
         (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (bIdx:=bIdx))
   res
 
-def lastBlockOracleVerifier :=
+noncomputable def lastBlockOracleVerifier :=
   have h_le: ϑ ≤ ℓ := by apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ); exact hdiv.out
   let bIdx := ℓ / ϑ - 1
   let stmt : Fin (ϑ + 1) → Type := fun i => Statement (L := L) (ℓ:=ℓ) Context
@@ -537,7 +536,7 @@ def lastBlockOracleVerifier :=
   V
 
 @[reducible]
-def sumcheckFoldOracleVerifier :=
+noncomputable def sumcheckFoldOracleVerifier :=
   let nonLastBlocksOracleVerifier := nonLastBlocksOracleVerifier (L := L)
     𝔽q β (mp := mp) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
   let lastOracleVerifier := lastBlockOracleVerifier 𝔽q β (mp := mp)
@@ -574,7 +573,7 @@ end composedOracleVerifiers
 
 section composedOracleRedutions
 
-def nonLastSingleBlockOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) :=
+noncomputable def nonLastSingleBlockOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) :=
   let stmt : Fin (ϑ - 1 + 1) → Type :=
     fun i => Statement (L := L) (ℓ := ℓ) Context
       ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_cast_lt_ℓ_succ bIdx i⟩
@@ -686,7 +685,7 @@ def nonLastSingleBlockOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) :=
       )
   nonLastSingleBlockOracleReduction
 
-def nonLastBlocksOracleReduction :
+noncomputable def nonLastBlocksOracleReduction :
   OracleReduction []ₒ
     (StmtIn := Statement (L := L) (ℓ := ℓ) Context ⟨0 * ϑ, by omega⟩)
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ ⟨0 * ϑ, by omega⟩)
@@ -713,7 +712,7 @@ def nonLastBlocksOracleReduction :
         (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (bIdx:=bIdx))
   res
 
-def lastBlockOracleReduction :=
+noncomputable def lastBlockOracleReduction :=
   have h_le : ϑ ≤ ℓ := by apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ); exact hdiv.out
   let bIdx := ℓ / ϑ - 1
   let stmt : Fin (ϑ + 1) → Type := fun i => Statement (L := L) (ℓ := ℓ) Context
@@ -818,7 +817,7 @@ def lastBlockOracleReduction :=
           ext; simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, add_zero])
   V
 
-def sumcheckFoldOracleReduction : OracleReduction []ₒ
+noncomputable def sumcheckFoldOracleReduction : OracleReduction []ₒ
     (StmtIn := Statement (L := L) (ℓ := ℓ) Context 0)
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
     (WitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ:=ℓ) 0)
@@ -1217,7 +1216,7 @@ theorem sumcheckFoldOracleReduction_perfectCompleteness (hInit : NeverFail init)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (init := init) (impl := impl) hInit
 
 /-! RBR knowledge error for last block: seqCompose of foldRelay over ϑ rounds. -/
-def lastBlockRbrKnowledgeError (k : (pSpecLastBlock (L := L) (ϑ := ϑ)).ChallengeIdx) : ℝ≥0 :=
+noncomputable def lastBlockRbrKnowledgeError (k : (pSpecLastBlock (L := L) (ϑ := ϑ)).ChallengeIdx) : ℝ≥0 :=
   let ij := seqComposeChallengeIdxToSigma k
   foldRelayKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     ⟨(ℓ / ϑ - 1) * ϑ + ij.1, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ ij.1⟩ ij.2
@@ -1362,14 +1361,14 @@ def nonLastSingleBlockCommitIdx (bIdx : Fin (ℓ / ϑ - 1)) : Fin ℓ :=
   ⟩
 
 /-! RBR knowledge error for the fold-relay prefix inside one non-last block. -/
-def nonLastSingleBlockFoldRelayRbrKnowledgeError (bIdx : Fin (ℓ / ϑ - 1))
+noncomputable def nonLastSingleBlockFoldRelayRbrKnowledgeError (bIdx : Fin (ℓ / ϑ - 1))
     (k : (pSpecFoldRelaySequence (L := L) (n := ϑ - 1)).ChallengeIdx) : ℝ≥0 :=
   let ij := seqComposeChallengeIdxToSigma k
   foldRelayKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     ⟨bIdx * ϑ + ij.1, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx ij.1⟩ ij.2
 
 /-! RBR knowledge error for one non-last block (fold-relay prefix + fold-commit suffix). -/
-def nonLastSingleBlockRbrKnowledgeError (bIdx : Fin (ℓ / ϑ - 1))
+noncomputable def nonLastSingleBlockRbrKnowledgeError (bIdx : Fin (ℓ / ϑ - 1))
     (k : (pSpecFullNonLastBlock 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx).ChallengeIdx) : ℝ≥0 :=
   Sum.elim
@@ -1510,7 +1509,7 @@ theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness
       (hCR := isCommitmentRoundOfNonLastBlock (r:=r) (𝓡:=𝓡) bIdx)
 
 /-! RBR knowledge error for non-last blocks: seqCompose over non-last blocks. -/
-def nonLastBlocksRbrKnowledgeError
+noncomputable def nonLastBlocksRbrKnowledgeError
     (k : (pSpecNonLastBlocks 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).ChallengeIdx) :
     ℝ≥0 :=
   let ij := seqComposeChallengeIdxToSigma k
@@ -1549,7 +1548,7 @@ theorem nonLastBlocksOracleVerifier_rbrKnowledgeSoundness :
     (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (init := init) (impl := impl) bIdx
 
 /-! RBR knowledge error for sumcheck-fold: append of non-last blocks and last block. -/
-def sumcheckFoldKnowledgeError (j : (pSpecSumcheckFold 𝔽q β (ϑ := ϑ)
+noncomputable def sumcheckFoldKnowledgeError (j : (pSpecSumcheckFold 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).ChallengeIdx) : ℝ≥0 :=
   Sum.elim
     (f := nonLastBlocksRbrKnowledgeError (L := L) 𝔽q β (ϑ := ϑ)
@@ -1633,7 +1632,7 @@ section CoreInteractionPhaseReduction
 
 /-! The final oracle verifier that composes sumcheckFold with finalSumcheckStep -/
 @[reducible]
-def coreInteractionOracleVerifier :=
+noncomputable def coreInteractionOracleVerifier :=
   OracleVerifier.append (oSpec:=[]ₒ)
     (Stmt₁ := Statement (L := L) (ℓ:=ℓ) (SumcheckBaseContext L ℓ) 0)
     (Stmt₂ := Statement (L := L) (ℓ:=ℓ) (SumcheckBaseContext L ℓ) (Fin.last ℓ))
@@ -1649,7 +1648,7 @@ def coreInteractionOracleVerifier :=
 
 /-! The final oracle reduction that composes sumcheckFold with finalSumcheckStep -/
 @[reducible]
-def coreInteractionOracleReduction :=
+noncomputable def coreInteractionOracleReduction :=
   OracleReduction.append (oSpec:=[]ₒ)
     (Stmt₁ := Statement (L := L) (ℓ:=ℓ) (SumcheckBaseContext L ℓ) 0)
     (Stmt₂ := Statement (L := L) (ℓ:=ℓ) (SumcheckBaseContext L ℓ) (Fin.last ℓ))
@@ -1697,7 +1696,7 @@ theorem coreInteractionOracleReduction_perfectCompleteness (hInit : NeverFail in
     exact finalSumcheckOracleReduction_perfectCompleteness 𝔽q β
       (ϑ:=ϑ) (𝓑:=𝓑) (init := init)  (hInit := hInit) (impl := impl)
 
-def coreInteractionOracleRbrKnowledgeError (j : (pSpecCoreInteraction 𝔽q β (ϑ := ϑ)
+noncomputable def coreInteractionOracleRbrKnowledgeError (j : (pSpecCoreInteraction 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).ChallengeIdx) : ℝ≥0 :=
     Sum.elim
       (f := fun i => sumcheckFoldKnowledgeError 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
@@ -2842,5 +2841,4 @@ theorem sumcheckFoldKnowledgeError_le :
 
 end CoreInteractionPhaseReduction
 
-end
 end Binius.BinaryBasefold.CoreInteraction

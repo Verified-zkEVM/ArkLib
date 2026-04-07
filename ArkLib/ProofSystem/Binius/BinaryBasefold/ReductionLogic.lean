@@ -31,7 +31,7 @@ namespace Binius.BinaryBasefold
   - V verifies : `s_ℓ = eqTilde(r, r') * c`
   => `c` should be equal to `t(r'_0, ..., r'_{ℓ-1})`
 -/
-noncomputable section
+section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
 open Binius.BinaryBasefold
 open scoped NNReal
@@ -234,7 +234,7 @@ variable {Context : Type} {mp : SumcheckMultiplierParam L ℓ Context} -- Sumche
 section FoldStep
 
 /-- The Logic Instance for the i-th round of Binary Folding. -/
-def foldStepLogic (i : Fin ℓ) :
+noncomputable def foldStepLogic (i : Fin ℓ) :
     ReductionLogicStep
       -- In/Out Types
       (Statement (L := L) Context i.castSucc)
@@ -475,7 +475,7 @@ def commitStepHEq (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
 /-- The Logic Instance for the commit step.
 This is a trivial 1-message protocol where the prover just sends an oracle and the verifier
 accepts it. -/
-def commitStepLogic (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
+noncomputable def commitStepLogic (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
     ReductionLogicStep
       (Statement (L := L) Context i.succ)
       (Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)

@@ -10,7 +10,6 @@ import ArkLib.OracleReduction.Completeness
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness
 
 namespace Binius.BinaryBasefold.CoreInteraction
-noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
 open Binius.BinaryBasefold
 open scoped NNReal ProbabilityTheory
@@ -70,7 +69,7 @@ noncomputable def foldOracleProver (i : Fin ℓ) :
 
 /-! The oracle verifier for the `i`-th round of Binary Foldfold. -/
 open Classical in
-def foldOracleVerifier (i : Fin ℓ) :
+noncomputable def foldOracleVerifier (i : Fin ℓ) :
   OracleVerifier
     (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context i.castSucc)
@@ -359,7 +358,7 @@ For round i : rbrKnowledgeError(i) = err_SC + err_BE where
 - err_SC = 2/|L| (Schwartz-Zippel for degree 1)
 - err_BE = |S^(last_oracle_domain_index_of_i + ϑ)| / |L|
 -/
-def foldKnowledgeError (i : Fin ℓ) (_ : (pSpecFold (L := L)).ChallengeIdx) : ℝ≥0 :=
+noncomputable def foldKnowledgeError (i : Fin ℓ) (_ : (pSpecFold (L := L)).ChallengeIdx) : ℝ≥0 :=
   let err_SC := (2 : ℝ≥0) / (Fintype.card L)
   -- Distributed fold-error budget: one incremental bad-event charge per fold round.
   let err_BE :=
@@ -773,7 +772,7 @@ lemma firstOracleWitnessConsistency_unique (i : Fin ℓ)
 /-! Extract the round-`i` witness (before the verifier challenge) from a fold-step output
 witness. -/
 @[reducible]
-def foldStepWitBeforeFromWitMid (i : Fin ℓ)
+noncomputable def foldStepWitBeforeFromWitMid (i : Fin ℓ)
     (stmtOStmtIn : (Statement (L := L) Context i.castSucc) × (∀ j,
       OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
     (h_i : (pSpecFold (L := L)).Message ⟨0, rfl⟩) (r_i' : L)
@@ -784,7 +783,7 @@ def foldStepWitBeforeFromWitMid (i : Fin ℓ)
 
 /-! Canonical fold-step round polynomial extracted from a specific `witMid`. -/
 @[reducible]
-def foldStepHStarFromWitMid (i : Fin ℓ)
+noncomputable def foldStepHStarFromWitMid (i : Fin ℓ)
     (stmtOStmtIn : (Statement (L := L) Context i.castSucc) × (∀ j,
       OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
     (h_i : (pSpecFold (L := L)).Message ⟨0, rfl⟩) (r_i' : L)
@@ -1815,5 +1814,4 @@ theorem foldOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ) :
 
 end FoldStep
 end SingleIteratedSteps
-end
 end Binius.BinaryBasefold.CoreInteraction

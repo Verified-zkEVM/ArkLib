@@ -27,7 +27,6 @@ The final verification phase (proximity testing) as an oracle reduction.
       `V` defines `c_{i+ϑ} := fold(f^(i), r'_i, ..., r'_{i+ϑ-1})(v_{i+ϑ}, ..., v_{ℓ+R-1})`.
     `V` requires `c_ℓ ?= c`.
 -/
-noncomputable section
 open OracleSpec OracleComp
 open AdditiveNTT Polynomial MvPolynomial ProtocolSpec
 
@@ -2932,5 +2931,4 @@ theorem queryOracleVerifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp �
     apply tsum_probOutput_le_one
 
 end FinalQueryRoundIOR
-end
 end Binius.BinaryBasefold.QueryPhase
