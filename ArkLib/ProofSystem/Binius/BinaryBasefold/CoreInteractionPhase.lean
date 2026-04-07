@@ -226,7 +226,7 @@ end FoldRelayRound -- foldRound + relay
 section FoldCommitRound -- foldRound + commit
 
 @[reducible]
-noncomputable def foldCommitOracleVerifier (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
+def foldCommitOracleVerifier (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
   OracleVerifier []ₒ
     (StmtIn := Statement (L := L) Context i.castSucc)
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc)
@@ -347,7 +347,7 @@ Iterative composition across ℓ rounds: for each i, use Fold+Commitment when
 block verifiers/reductions built earlier to avoid dependent casts.
 -/
 section composedOracleVerifiers
-noncomputable def nonLastSingleBlockOracleVerifier (bIdx : Fin (ℓ / ϑ - 1)) :=
+def nonLastSingleBlockOracleVerifier (bIdx : Fin (ℓ / ϑ - 1)) :=
   let stmt : Fin (ϑ - 1 + 1) → Type :=
     fun i => Statement (L := L) Context ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_cast_lt_ℓ_succ bIdx i⟩
   let oStmt := fun i: Fin (ϑ - 1 + 1) => OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ
@@ -435,7 +435,7 @@ noncomputable def nonLastSingleBlockOracleVerifier (bIdx : Fin (ℓ / ϑ - 1)) :
       )
   nonLastSingleBlockOracleVerifier
 
-noncomputable def nonLastBlocksOracleVerifier :
+def nonLastBlocksOracleVerifier :
   OracleVerifier []ₒ
     (StmtIn := Statement (L := L) (ℓ := ℓ) Context ⟨0 * ϑ, by omega⟩)
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ ⟨0 * ϑ, by omega⟩)
@@ -456,7 +456,7 @@ noncomputable def nonLastBlocksOracleVerifier :
         (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (bIdx:=bIdx))
   res
 
-noncomputable def lastBlockOracleVerifier :=
+def lastBlockOracleVerifier :=
   have h_le: ϑ ≤ ℓ := by apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ); exact hdiv.out
   let bIdx := ℓ / ϑ - 1
   let stmt : Fin (ϑ + 1) → Type := fun i => Statement (L := L) (ℓ:=ℓ) Context
@@ -536,7 +536,7 @@ noncomputable def lastBlockOracleVerifier :=
   V
 
 @[reducible]
-noncomputable def sumcheckFoldOracleVerifier :=
+def sumcheckFoldOracleVerifier :=
   let nonLastBlocksOracleVerifier := nonLastBlocksOracleVerifier (L := L)
     𝔽q β (mp := mp) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
   let lastOracleVerifier := lastBlockOracleVerifier 𝔽q β (mp := mp)
@@ -1632,7 +1632,7 @@ section CoreInteractionPhaseReduction
 
 /-! The final oracle verifier that composes sumcheckFold with finalSumcheckStep -/
 @[reducible]
-noncomputable def coreInteractionOracleVerifier :=
+def coreInteractionOracleVerifier :=
   OracleVerifier.append (oSpec:=[]ₒ)
     (Stmt₁ := Statement (L := L) (ℓ:=ℓ) (SumcheckBaseContext L ℓ) 0)
     (Stmt₂ := Statement (L := L) (ℓ:=ℓ) (SumcheckBaseContext L ℓ) (Fin.last ℓ))

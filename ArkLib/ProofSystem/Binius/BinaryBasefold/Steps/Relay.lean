@@ -66,7 +66,7 @@ def relayOracleVerifier_embed (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ 
   := fun j => Sum.inl ⟨j.val, by rw [h_oracle_size_eq_relay i hNCR]; omega⟩
 
 /-! The oracle verifier for the `i`-th round of Binary relayfold. -/
-noncomputable def relayOracleVerifier (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
+def relayOracleVerifier (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
   OracleVerifier.{0, 0}
     (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context i.succ)

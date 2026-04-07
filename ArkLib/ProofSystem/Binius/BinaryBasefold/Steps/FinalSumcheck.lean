@@ -83,9 +83,17 @@ noncomputable def finalSumcheckProver :
     pure ((finalSumcheckStepLogic 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).proverOut stmtIn witIn oStmtIn t)
 
+instance finalSumcheckStepLogic_verifierCheck_decidable
+    (stmtIn : Statement (L := L) (SumcheckBaseContext L ℓ) (Fin.last ℓ))
+    (t : FullTranscript (pSpecFinalSumcheckStep (L := L))) :
+    Decidable ((finalSumcheckStepLogic 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).verifierCheck stmtIn t) :=
+  let c : L := t.messages ⟨0, rfl⟩
+  show Decidable (stmtIn.sumcheck_target =
+    eqTilde stmtIn.ctx.t_eval_point stmtIn.challenges * c) from inferInstance
+
 /-! The verifier for the final sumcheck step -/
-open Classical in
-noncomputable def finalSumcheckVerifier :
+def finalSumcheckVerifier :
   OracleVerifier
     (oSpec := []ₒ)
     (StmtIn := Statement (L := L) (SumcheckBaseContext L ℓ) (Fin.last ℓ))

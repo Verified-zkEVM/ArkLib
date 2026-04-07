@@ -2829,10 +2829,21 @@ noncomputable def extractMiddleFinMask (v : (sDomain 𝔽q β h_ℓ_add_R_rate) 
   let middleBits := Nat.getMiddleBits (offset := i.val) (len := steps) (n := vToFin.val)
   exact ⟨middleBits, Nat.getMiddleBits_lt_two_pow⟩
 
-/-- The equality polynomial eq̃(r, r') that evaluates to 1 when r = r' and 0 otherwise.
+/-- The equality polynomial eq̃(r, r') = ∏ i, (r i * r' i + (1 - r i) * (1 - r' i)).
 This is used in the final sumcheck identity : s_ℓ = c · eq̃(r, r') -/
-noncomputable def eqTilde {L : Type} [CommRing L] {ℓ : ℕ} (r r' : Fin ℓ → L) : L :=
-  MvPolynomial.eval r' (MvPolynomial.eqPolynomial r)
+def eqTilde {L : Type} [CommRing L] {ℓ : ℕ} (r r' : Fin ℓ → L) : L :=
+  Finset.univ.prod fun i => r i * r' i + (1 - r i) * (1 - r' i)
+
+/-- `eqTilde` equals the evaluation of the MvPolynomial eqPolynomial. -/
+lemma eqTilde_eq_mvpoly_eval {L : Type} [CommRing L] {ℓ : ℕ}
+    (r r' : Fin ℓ → L) :
+    eqTilde r r' = MvPolynomial.eval r' (MvPolynomial.eqPolynomial r) := by
+  unfold eqTilde MvPolynomial.eqPolynomial
+  rw [MvPolynomial.eval_prod]
+  congr 1; ext i
+  simp [MvPolynomial.eval_add, MvPolynomial.eval_mul, MvPolynomial.eval_sub,
+    MvPolynomial.eval_X, MvPolynomial.eval_C]
+  ring
 
 end Essentials
 

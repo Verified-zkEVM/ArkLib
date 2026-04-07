@@ -67,9 +67,15 @@ noncomputable def foldOracleProver (i : Fin ℓ) :
     pure (foldStepLogic_proverOut 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i stmt wit oStmt t)
 
+instance foldStepLogic_verifierCheck_decidable (i : Fin ℓ)
+    (stmtIn : Statement (L := L) Context i.castSucc)
+    (t : FullTranscript (pSpecFold (L := L))) :
+    Decidable ((foldStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) (mp := mp) i).verifierCheck stmtIn t) :=
+  show Decidable (foldVerifierCheck i stmtIn (𝓑 := 𝓑) (t.messages ⟨0, rfl⟩)) from inferInstance
+
 /-! The oracle verifier for the `i`-th round of Binary Foldfold. -/
-open Classical in
-noncomputable def foldOracleVerifier (i : Fin ℓ) :
+def foldOracleVerifier (i : Fin ℓ) :
   OracleVerifier
     (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context i.castSucc)

@@ -1029,7 +1029,9 @@ lemma finalSumcheckStep_verifierCheck_passed
     rw [h_wit_structural_invariant.1]
     rw [projectToMidSumcheckPoly_at_last_eval]
     -- ↑witIn.t = witIn.f ⟨0, ⋯⟩
-    rw [h_witIn_f_0_eq_c, h_c_eq]; rfl
+    rw [h_witIn_f_0_eq_c, h_c_eq]
+    show _ = eqTilde _ _ * _
+    rw [eqTilde_eq_mvpoly_eval]; rfl
   -- Combine to finish the proof
   change stmtIn.sumcheck_target = eqTilde stmtIn.ctx.t_eval_point stmtIn.challenges *
     witIn.f ⟨0, by simp only [Fin.val_last, zero_mem]⟩

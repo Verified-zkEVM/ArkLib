@@ -74,7 +74,7 @@ noncomputable def commitOracleProver (i : Fin ℓ) :
     exact pure ⟨⟨stmt, oStmt⟩, wit⟩
 
 /-! The oracle verifier for the `i`-th round of Binary commitmentfold. -/
-noncomputable def commitOracleVerifier (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
+def commitOracleVerifier (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
   OracleVerifier
     (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context i.succ)
