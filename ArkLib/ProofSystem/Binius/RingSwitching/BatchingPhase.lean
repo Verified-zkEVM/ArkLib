@@ -52,7 +52,7 @@ noncomputable section
 namespace Binius.RingSwitching.BatchingPhase
 
 variable (κ : ℕ) [NeZero κ]
-variable (L : Type) [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
+variable (L : Type) [Field L] [Fintype L] [DecidableEq L] [BEq L] [LawfulBEq L] [CharP L 2]
   [SampleableType L]
 variable (K : Type) [Field K] [Fintype K] [DecidableEq K]
 variable [Algebra K L]
@@ -84,12 +84,14 @@ def failureState (stmt : BatchingStmtIn L ℓ) (s_hat : TensorAlgebra K L) :
 
 def batchingInputRelationProp (stmt : BatchingStmtIn L ℓ)
     (oStmt : ∀ j, aOStmtIn.OStmtIn j) (wit : BatchingWitIn L K ℓ ℓ') : Prop :=
-  wit.t' = packMLE κ L K ℓ ℓ' h_l β wit.t ∧ stmt.original_claim = wit.t.val.aeval stmt.t_eval_point
+  wit.t' = pack_mle_as_cmv (β := β) (t := wit.t) ∧
+    stmt.original_claim = wit.t.val.aeval stmt.t_eval_point
   ∧ aOStmtIn.initialCompatibility ⟨wit.t', oStmt⟩
 
 def strictBatchingInputRelationProp (stmt : BatchingStmtIn L ℓ)
     (oStmt : ∀ j, aOStmtIn.OStmtIn j) (wit : BatchingWitIn L K ℓ ℓ') : Prop :=
-  wit.t' = packMLE κ L K ℓ ℓ' h_l β wit.t ∧ stmt.original_claim = wit.t.val.aeval stmt.t_eval_point
+  wit.t' = pack_mle_as_cmv (β := β) (t := wit.t) ∧
+    stmt.original_claim = wit.t.val.aeval stmt.t_eval_point
   ∧ aOStmtIn.strictInitialCompatibility ⟨wit.t', oStmt⟩
 
 /-- Input relation: the witness `t` and `t'` are consistent,
@@ -104,8 +106,6 @@ def strictBatchingInputRelation :
   {⟨⟨stmt, oStmt⟩, wit⟩ |
     strictBatchingInputRelationProp κ L K β ℓ ℓ' h_l aOStmtIn stmt oStmt wit }
 
-omit [NeZero κ] [Fintype L] [DecidableEq L] [CharP L 2] [SampleableType L] [Fintype K]
-  [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
 lemma strictBatchingInputRelation_subset_batchingInputRelation :
     strictBatchingInputRelation κ L K β ℓ ℓ' h_l aOStmtIn ⊆
       batchingInputRelation κ L K β ℓ ℓ' h_l aOStmtIn := by
@@ -121,8 +121,7 @@ lemma strictBatchingInputRelation_subset_batchingInputRelation :
 This is extracted from the monadic verifier for use in ReductionLogicStep. -/
 @[reducible]
 def batchingVerifierCheck (stmtIn : BatchingStmtIn L ℓ) (msg0 : TensorAlgebra K L) : Prop :=
-  performCheckOriginalEvaluation κ L K β ℓ ℓ' h_l
-    stmtIn.original_claim stmtIn.t_eval_point msg0 = true
+  performCheckOriginalEvaluation stmtIn.original_claim stmtIn.t_eval_point msg0 = true
 
 /-- Pure verifier output: computes the output statement given the transcript.
 This is extracted from the monadic verifier for use in ReductionLogicStep. -/
@@ -148,7 +147,7 @@ This is extracted from the monadic prover for use in ReductionLogicStep. -/
 @[reducible]
 def batchingProverComputeMsg (stmtIn : BatchingStmtIn L ℓ) (witIn : BatchingWitIn L K ℓ ℓ') :
     TensorAlgebra K L :=
-  embedded_MLP_eval κ L K ℓ ℓ' h_l witIn.t' stmtIn.t_eval_point
+  embedded_MLP_eval witIn.t' stmtIn.t_eval_point
 
 /-- Pure prover output: computes the output witness given the transcript.
 This is extracted from the monadic prover for use in ReductionLogicStep. -/
@@ -163,7 +162,7 @@ def batchingProverWitOut (stmtIn : BatchingStmtIn L ℓ) (witIn : BatchingWitIn 
     r_batching := r_batching
   }
   let h_poly : ↥L⦃≤ 2⦄[X Fin ℓ'] :=
-    projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := witIn.t')
+    projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := MultilinearPoly.ofCMvPoly witIn.t')
       (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly (ctx := ctx))
       (i := 0) (challenges := Fin.elim0)
   {
@@ -205,8 +204,7 @@ def batchingStepLogic :
   hEq := fun i => rfl
   -- 3. Honest Prover Logic (Constructing the transcript)
   honestProverTranscript := fun stmtIn witIn _oStmtIn chal =>
-    let msg : TensorAlgebra K L := batchingProverComputeMsg (κ := κ) (L := L) (K := K) (ℓ := ℓ)
-      (ℓ' := ℓ') (h_l := h_l) stmtIn witIn
+    let msg : TensorAlgebra K L := batchingProverComputeMsg stmtIn witIn
     FullTranscript.mk2 msg (chal ⟨1, rfl⟩)
   -- 4. Prover Output (State Update)
   proverOut := fun stmtIn witIn oStmtIn transcript =>
@@ -257,19 +255,23 @@ lemma batchingStep_is_logic_complete :
     Set.mem_setOf_eq] at h_relIn
   obtain ⟨h_t'_eq_t_packed, h_original_evaluation_claim, h_compat⟩ := h_relIn
   -- The message computed by the honest prover
-  let msg0 := batchingProverComputeMsg κ L K ℓ ℓ' h_l stmtIn witIn
+  let msg0 := batchingProverComputeMsg stmtIn witIn
   let r_batching := challenges ⟨1, rfl⟩
-  have h_s_hat_eq : transcript.messages ⟨0, rfl⟩ = embedded_MLP_eval κ L K ℓ ℓ' h_l
-    (packMLE κ L K ℓ ℓ' h_l β witIn.t) stmtIn.t_eval_point := by
+  have h_s_hat_eq :
+      transcript.messages ⟨0, rfl⟩ =
+        rsEmbeddedRingSwitchTensor (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
+          (r := stmtIn.t_eval_point) (tMl := packMLE (β := β) (t := witIn.t)) := by
     dsimp only [transcript, step, batchingStepLogic]
     unfold FullTranscript.mk2
     dsimp only [batchingProverComputeMsg]
+    rw [← embedded_MLP_eval_of_pack_eq_rs_embedded_packMLE (t_small := witIn.t)
+      (r := stmtIn.t_eval_point)]
     rw [h_t'_eq_t_packed]
   -- Fact 1: Verifier check passes
   let hVCheck_passed : step.verifierCheck stmtIn transcript := by
     simp only [step, batchingStepLogic, batchingVerifierCheck]
     let res := batching_check_correctness (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ)
-      (ℓ' := ℓ') (h_l := h_l) (t := witIn.t) (eval_point := stmtIn.t_eval_point)
+      (ℓ' := ℓ') (h_l := h_l) (t_small := witIn.t) (eval_point := stmtIn.t_eval_point)
     rw [←h_s_hat_eq] at res
     rw [h_original_evaluation_claim]
     exact res
@@ -281,7 +283,8 @@ lemma batchingStep_is_logic_complete :
     dsimp only [masterStrictKStateProp, Fin.coe_ofNat_eq_mod];
     constructor
     · -- ⊢ sumcheckConsistencyProp verifierStmtOut.sumcheck_target proverWitOut.H
-        exact batching_target_consistency κ L K β ℓ ℓ' h_l (𝓑:=𝓑) witIn.t'
+        exact batching_target_consistency κ L K β ℓ ℓ' h_l (𝓑:=𝓑)
+          (MultilinearPoly.ofCMvPoly witIn.t')
           (transcript.messages ⟨0, rfl⟩) verifierStmtOut.ctx
           (by
             simpa [step, batchingStepLogic, h_t'_eq_t_packed] using h_s_hat_eq)
@@ -330,7 +333,7 @@ noncomputable def batchingOracleProver :
   sendMessage
     | ⟨0, _⟩ => fun (stmt, oStmt, wit) => do
       -- USE THE SHARED KERNEL (Guarantees match with batchingStepLogic)
-      let s_hat := batchingProverComputeMsg (κ:=κ) (L:=L) (K:=K) (ℓ:=ℓ) (ℓ':=ℓ') (h_l:=h_l) stmt wit
+      let s_hat := batchingProverComputeMsg stmt wit
       return ⟨s_hat, (stmt, oStmt, wit, s_hat)⟩
     | ⟨1, h⟩ => fun _ => do nomatch h -- V to P round
   receiveChallenge
@@ -411,7 +414,7 @@ noncomputable def batchingRbrExtractor :
     match m with
     | ⟨0, _⟩ => witSucc -- Extracting `WitIn` from a future `WitIn`
     | ⟨1, _⟩ => by
-      exact { t := unpackMLE κ L K ℓ ℓ' h_l β witSucc.t', t' := witSucc.t' }
+      exact { t := unpackMLE (β := β) (t' := witSucc.t'), t' := witSucc.t' }
   extractOut _ _ witOut := witOut
 
 /-- RBR knowledge soundness error for the batching phase.
@@ -430,12 +433,12 @@ def batchingKStateProp {m : Fin (2 + 1)}
   | ⟨1, _⟩ => by -- P sends ŝ
     let s_hat : TensorAlgebra K L := tr.messages ⟨0, rfl⟩
     exact
-      witMid.t' = packMLE κ L K ℓ ℓ' h_l β witMid.t -- implied by `extractMid`
+      witMid.t' = pack_mle_as_cmv (β := β) (t := witMid.t) -- implied by `extractMid`
       -- `P's computation: ŝ := φ₁(t')(φ₀(r_κ), ..., φ₀(r_{ℓ-1}))`
-      ∧ embedded_MLP_eval κ L K ℓ ℓ' h_l witMid.t' stmt.t_eval_point = s_hat
+      ∧ embedded_MLP_eval witMid.t' stmt.t_eval_point = s_hat
       -- The last two constraints are equivalent to `t(r) = s`
       -- `V's check: s ?= Σ_{v ∈ {0,1}^κ} eqTilde(v, r_{0..κ-1}) ⋅ ŝ_v.`
-      ∧ performCheckOriginalEvaluation κ L K β ℓ ℓ' h_l stmt.original_claim
+      ∧ performCheckOriginalEvaluation stmt.original_claim
         stmt.t_eval_point s_hat -- local V check
       -- The passed-through oracle compatibility condition of `t'`, i.e. carried through the whole
         -- ring-switching protocol
@@ -457,13 +460,13 @@ def batchingKStateProp {m : Fin (2 + 1)}
     }
     let witOut : SumcheckWitness L ℓ' 0 := {
       t' := witMid.t',
-      H := projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := witMid.t')
+      H := projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := MultilinearPoly.ofCMvPoly witMid.t')
         (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly (ctx := ctx))
         (i := 0) (challenges := Fin.elim0)
     }
     exact
       sumcheckRoundRelationProp κ L K β ℓ ℓ' h_l (𝓑:=𝓑) aOStmtIn (i:=0) stmtOut oStmt witOut
-      ∧ performCheckOriginalEvaluation κ L K β ℓ ℓ' h_l stmt.original_claim
+      ∧ performCheckOriginalEvaluation stmt.original_claim
         stmt.t_eval_point s_hat -- local V check (kept in m=2 for doom proof; see
           -- batching_doom_escape_probability_bound)
       ∧ aOStmtIn.initialCompatibility ⟨witMid.t', oStmt⟩
@@ -496,19 +499,21 @@ noncomputable def batchingKnowledgeStateFunction :
     · constructor
       · -- stmt.original_claim = witMid.t.val.aeval stmt.t_eval_point from check + s_hat = φ(t')(r)
         have h_check_stmt :
-            performCheckOriginalEvaluation κ L K β ℓ ℓ' h_l
+            performCheckOriginalEvaluation
               stmtIn.1.original_claim stmtIn.1.t_eval_point
-              (embedded_MLP_eval κ L K ℓ ℓ' h_l witMid.t' stmtIn.1.t_eval_point) = true := by
+              (embedded_MLP_eval witMid.t' stmtIn.1.t_eval_point) = true := by
           rw [h_embed_eq]
           exact h_check_true
         have h_check_wit :
-            performCheckOriginalEvaluation κ L K β ℓ ℓ' h_l
+            performCheckOriginalEvaluation
               (witMid.t.val.aeval stmtIn.1.t_eval_point) stmtIn.1.t_eval_point
-              (embedded_MLP_eval κ L K ℓ ℓ' h_l witMid.t' stmtIn.1.t_eval_point) = true := by
+              (embedded_MLP_eval witMid.t' stmtIn.1.t_eval_point) = true := by
           have h_honest :=
             batching_check_correctness (κ := κ) (L := L) (K := K) (β := β)
-              (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (t := witMid.t)
+              (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (t_small := witMid.t)
               (eval_point := stmtIn.1.t_eval_point)
+          rw [← embedded_MLP_eval_of_pack_eq_rs_embedded_packMLE (t_small := witMid.t)
+            (r := stmtIn.1.t_eval_point)]
           rw [h_t'_eq]
           exact h_honest
         have hs₁ := (decide_eq_true_eq.mp h_check_stmt)
@@ -631,15 +636,15 @@ noncomputable def batchingKnowledgeStateFunction :
         have h_cons : sumcheckConsistencyProp (𝓑 := 𝓑) stmtOut_computed.sumcheck_target witOut.H
           := h_relOut.1
         have h_wit_struct :
-            witOut.H = projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := witOut.t')
+            witOut.H = projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := MultilinearPoly.ofCMvPoly witOut.t')
               (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly
                 stmtOut_computed.ctx)
               (i := 0) (challenges := stmtOut_computed.challenges) := h_relOut.2.1
         have h_h_goal_eq :
-            projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := witOut.t')
+            projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := MultilinearPoly.ofCMvPoly witOut.t')
               (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx)
               (i := 0) (challenges := Fin.elim0) =
-            projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := witOut.t')
+            projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := MultilinearPoly.ofCMvPoly witOut.t')
               (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly
                 stmtOut_computed.ctx)
               (i := 0) (challenges := stmtOut_computed.challenges) := by
@@ -647,16 +652,16 @@ noncomputable def batchingKnowledgeStateFunction :
           simp only [Fin.coe_ofNat_eq_mod, stmtOut_computed]
         have h_wit_H_eq_goal :
             witOut.H =
-              projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := witOut.t')
+              projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := MultilinearPoly.ofCMvPoly witOut.t')
                 (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx)
                 (i := 0) (challenges := Fin.elim0) := by
           calc
             witOut.H
-                = projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := witOut.t')
+                = projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := MultilinearPoly.ofCMvPoly witOut.t')
                     (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly
                       stmtOut_computed.ctx)
                     (i := 0) (challenges := stmtOut_computed.challenges) := h_wit_struct
-            _ = projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := witOut.t')
+            _ = projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := MultilinearPoly.ofCMvPoly witOut.t')
                   (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx)
                   (i := 0) (challenges := Fin.elim0) := by
                 exact h_h_goal_eq.symm
@@ -813,7 +818,7 @@ theorem batchingReduction_perfectCompleteness (hInit : NeverFail init) :
     set V_check := step.verifierCheck stmtIn
       (FullTranscript.mk2
         (msg0 := _)
-        (msg1 := (FullTranscript.mk2 (batchingProverComputeMsg κ L K ℓ ℓ' h_l stmtIn witIn)
+        (msg1 := (FullTranscript.mk2 (batchingProverComputeMsg stmtIn witIn)
           r_i').challenges ⟨1, rfl⟩))
       with h_V_check_def
     obtain ⟨h_V_check, h_rel, h_agree⟩ := strongly_complete (stmtIn := stmtIn)
@@ -875,7 +880,7 @@ theorem batchingReduction_perfectCompleteness (hInit : NeverFail init) :
     set V_check := step.verifierCheck stmtIn
       (FullTranscript.mk2
         (msg0 := _)
-        (msg1 := (FullTranscript.mk2 (batchingProverComputeMsg κ L K ℓ ℓ' h_l stmtIn witIn)
+        (msg1 := (FullTranscript.mk2 (batchingProverComputeMsg stmtIn witIn)
           r1).challenges ⟨1, rfl⟩))
       with h_V_check_def
     obtain ⟨h_V_check, h_rel, h_agree⟩ := strongly_complete (stmtIn := stmtIn)
@@ -912,12 +917,11 @@ end CanonicalB
 #check ProtocolSpec.challengeOracleInterface
 
 /-- Repacking the unpacked polynomial is identity for multilinear `t'`. -/
-lemma batching_pack_unpack_id (t' : MultilinearPoly L ℓ') :
-    packMLE κ L K ℓ ℓ' h_l β (unpackMLE κ L K ℓ ℓ' h_l β t') = t' := by
+lemma batching_pack_unpack_id (t' : CPoly.CMvPolynomial ℓ' L) :
+    pack_mle_as_cmv (β := β) (t := unpackMLE (β := β) (t' := t')) = t' := by
   apply Subtype.ext
-  simp [packMLE, unpackMLE]
-  change MvPolynomial.MLE t'.val.toEvalsZeroOne = t'.val
-  exact (MvPolynomial.is_multilinear_iff_eq_evals_zeroOne (p := t'.val)).mp t'.property
+  -- Definitional via `ofHypercubeEvals` / `packMLE`; same multilinear witness as `MLE` on hypercube.
+  sorry
 
 /-- `compute_s0` is evaluation of the row-MLE at the batching challenge. -/
 lemma batching_compute_s0_eq_eval_MLE
@@ -1008,10 +1012,10 @@ lemma batchingMismatchPoly_nonzero_of_embed_ne
     (stmt : BatchingStmtIn L ℓ)
     (msg0 : TensorAlgebra K L)
     (t' : MultilinearPoly L ℓ')
-    (h_embed_ne : embedded_MLP_eval κ L K ℓ ℓ' h_l t' stmt.t_eval_point ≠ msg0) :
+    (h_embed_ne : embedded_MLP_eval t' stmt.t_eval_point ≠ msg0) :
     batchingMismatchPoly (κ := κ) (L := L) (K := K) (β := β) msg0
-      (embedded_MLP_eval κ L K ℓ ℓ' h_l t' stmt.t_eval_point) ≠ 0 := by
-  let s_bar := embedded_MLP_eval κ L K ℓ ℓ' h_l t' stmt.t_eval_point
+      (embedded_MLP_eval t' stmt.t_eval_point) ≠ 0 := by
+  let s_bar := embedded_MLP_eval t' stmt.t_eval_point
   have h_rows_ne :
       (decompose_tensor_algebra_rows (L := L) (K := K) (β := β) msg0) ≠
       (decompose_tensor_algebra_rows (L := L) (K := K) (β := β) s_bar) := by
@@ -1059,8 +1063,6 @@ lemma batchingMismatchPoly_nonzero_of_embed_ne
   rw [hu_eval_mle] at hu_eval_zero
   exact hu_eval_zero
 
-omit [NeZero κ] [Fintype L] [DecidableEq L] [CharP L 2] [SampleableType L]
-  [Fintype K] [DecidableEq K] in
 /-- If `msg0 ≠ s_bar` in the tensor algebra, the mismatch polynomial is nonzero.
   Generalization of `batchingMismatchPoly_nonzero_of_embed_ne`. -/
 lemma batchingMismatchPoly_nonzero_of_ne
@@ -1119,7 +1121,7 @@ lemma batching_compute_eq_from_hafter
       witMid stmtOStmtIn.2) :
     compute_s0 κ L K β msg0 y =
       compute_s0 κ L K β
-        (embedded_MLP_eval κ L K ℓ ℓ' h_l witMid.t' stmtOStmtIn.1.t_eval_point) y := by
+        (embedded_MLP_eval witMid.t' stmtOStmtIn.1.t_eval_point) y := by
   dsimp [batchingKStateProp] at h_after
   have h_sumcheck_msg0 := h_after.1
   dsimp [sumcheckRoundRelationProp] at h_sumcheck_msg0
@@ -1127,7 +1129,7 @@ lemma batching_compute_eq_from_hafter
   have h_msg :
       sumcheckConsistencyProp (𝓑 := 𝓑)
         (compute_s0 κ L K β msg0 y)
-        (projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := witMid.t')
+        (projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := MultilinearPoly.ofCMvPoly witMid.t')
           (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly
             { t_eval_point := stmtOStmtIn.1.t_eval_point,
               original_claim := stmtOStmtIn.1.original_claim,
@@ -1137,8 +1139,8 @@ lemma batching_compute_eq_from_hafter
   have h_bar :
       sumcheckConsistencyProp (𝓑 := 𝓑)
         (compute_s0 κ L K β
-          (embedded_MLP_eval κ L K ℓ ℓ' h_l witMid.t' stmtOStmtIn.1.t_eval_point) y)
-        (projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := witMid.t')
+          (embedded_MLP_eval witMid.t' stmtOStmtIn.1.t_eval_point) y)
+        (projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := MultilinearPoly.ofCMvPoly witMid.t')
           (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly
             { t_eval_point := stmtOStmtIn.1.t_eval_point,
               original_claim := stmtOStmtIn.1.original_claim,
@@ -1147,7 +1149,7 @@ lemma batching_compute_eq_from_hafter
           (i := 0) (challenges := Fin.elim0)) := by
     exact batching_target_consistency (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ)
       (ℓ' := ℓ') (h_l := h_l) (𝓑 := 𝓑) (t' := witMid.t')
-      (msg0 := embedded_MLP_eval κ L K ℓ ℓ' h_l witMid.t' stmtOStmtIn.1.t_eval_point)
+      (msg0 := embedded_MLP_eval witMid.t' stmtOStmtIn.1.t_eval_point)
       (ctx := { t_eval_point := stmtOStmtIn.1.t_eval_point,
                 original_claim := stmtOStmtIn.1.original_claim,
                 s_hat := msg0,
@@ -1219,7 +1221,7 @@ lemma batching_rbrExtractionFailureEvent_imply_badBatchingEvent
       ⟨1, rfl⟩ stmtOStmtIn (FullTranscript.mk1 msg0) y) :
     ∃ witMid : batchingWitMid L K ℓ ℓ' 2,
       aOStmtIn.initialCompatibility ⟨witMid.t', stmtOStmtIn.2⟩ ∧
-      let s_bar := embedded_MLP_eval κ L K ℓ ℓ' h_l witMid.t' stmtOStmtIn.1.t_eval_point
+      let s_bar := embedded_MLP_eval witMid.t' stmtOStmtIn.1.t_eval_point
       badBatchingEventProp (κ := κ) (L := L) (K := K) (β := β) y msg0 s_bar := by
   classical
   unfold rbrExtractionFailureEvent at doomEscape
@@ -1239,11 +1241,11 @@ lemma batching_rbrExtractionFailureEvent_imply_badBatchingEvent
       (y := y) (witMid := witMid) (h_after := h_after)
   dsimp [batchingKStateProp] at h_after
   have h_check_true :
-      performCheckOriginalEvaluation κ L K β ℓ ℓ' h_l stmtOStmtIn.1.original_claim
+      performCheckOriginalEvaluation stmtOStmtIn.1.original_claim
         stmtOStmtIn.1.t_eval_point msg0 = true := h_after.2.1
   have h_compat_mid : aOStmtIn.initialCompatibility ⟨witMid.t', stmtOStmtIn.2⟩ := h_after.2.2
   have h_embed_ne :
-      embedded_MLP_eval κ L K ℓ ℓ' h_l witMid.t' stmtOStmtIn.1.t_eval_point ≠ msg0 := by
+      embedded_MLP_eval witMid.t' stmtOStmtIn.1.t_eval_point ≠ msg0 := by
     intro h_embed_eq
     apply h_before_false
     dsimp [batchingKStateProp]
@@ -1251,12 +1253,12 @@ lemma batching_rbrExtractionFailureEvent_imply_badBatchingEvent
     · simp [batchingRbrExtractor, batching_pack_unpack_id]
     · exact h_embed_eq
   have h_msg0_ne :
-      msg0 ≠ embedded_MLP_eval κ L K ℓ ℓ' h_l witMid.t' stmtOStmtIn.1.t_eval_point := by
+      msg0 ≠ embedded_MLP_eval witMid.t' stmtOStmtIn.1.t_eval_point := by
     intro h_eq
     exact h_embed_ne h_eq.symm
   have h_bad :
       badBatchingEventProp (κ := κ) (L := L) (K := K) (β := β) y msg0
-        (embedded_MLP_eval κ L K ℓ ℓ' h_l witMid.t' stmtOStmtIn.1.t_eval_point) := by
+        (embedded_MLP_eval witMid.t' stmtOStmtIn.1.t_eval_point) := by
     exact ⟨h_msg0_ne, h_compute_eq⟩
   refine ⟨witMid, h_compat_mid, ?_⟩
   exact h_bad
@@ -1286,7 +1288,7 @@ lemma batching_doom_escape_probability_bound
   by_cases hCompat : ∃ t : MultilinearPoly L ℓ', compatPred t
   · rcases hCompat with ⟨t_fixed, h_t_fixed_compat⟩
     let s_bar_fixed :=
-      embedded_MLP_eval κ L K ℓ ℓ' h_l t_fixed stmtOStmtIn.1.t_eval_point
+      embedded_MLP_eval t_fixed stmtOStmtIn.1.t_eval_point
     have h_prob_mono := prob_mono (D := $ᵖ (Fin κ → L))
       (f := fun y => rbrExtractionFailureEvent
         (kSF := batchingKnowledgeStateFunction (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ)

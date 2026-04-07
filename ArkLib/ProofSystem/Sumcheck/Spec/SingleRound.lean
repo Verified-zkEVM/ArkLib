@@ -422,17 +422,27 @@ instance t {ι₁ ι₂ ι₃}
   (OracleQuery (spec₁ + (spec₂ + spec₃))) := by
   infer_instance
 
-open Function in
+open Function Sum in
+/--
+Oracle single-round verifier: sum the **prover message** polynomial on `D` via oracle queries,
+then read `p_stmt(r)` from the **statement** oracle at the verifier challenge `r`
+(the same pair as `verifier` / `outputRelation`).
+-/
 def oracleVerifier : OracleVerifier oSpec (StmtIn R) (OStmtIn R deg) (StmtOut R) (OStmtOut R deg)
     (pSpec R deg) where
   verify := fun target chal => do
-    let evals : Vector R m ← (Vector.finRange m).mapM
-      (fun i => OptionT.lift <| OracleComp.liftComp
-        (OracleComp.lift <| query (spec := [OStmtIn R deg]ₒ) (⟨(), D i⟩))
-        _)
+    let superSpec := oSpec + ([OStmtIn R deg]ₒ + [(pSpec R deg).Message]ₒ)
+    let msgIdx : (pSpec R deg).MessageIdx := default
+    let evals : Vector R m ← (Vector.finRange m).mapM fun i =>
+      OptionT.lift <|
+        query (spec := superSpec) (Sum.inr (Sum.inr ⟨msgIdx, D i⟩))
     guard (evals.sum = target)
-    -- Needs to convert `evals` to `R⦃≤ deg⦄[X]`, and then evaluate at `chal`
-    pure (sorry, chal default)
+    let chIx : (pSpec R deg).ChallengeIdx := default
+    let r : R := chal chIx
+    let newTarget ←
+      OptionT.lift <|
+        query (spec := superSpec) (Sum.inr (Sum.inl ⟨(), r⟩))
+    pure (newTarget, r)
   embed := .inl
   hEq := fun i => by simp [pSpec]
 

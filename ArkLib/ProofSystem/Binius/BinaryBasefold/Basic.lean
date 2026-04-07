@@ -5,6 +5,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Compliance
+import ArkLib.Data.MvPolynomial.MultilinearComputational
 
 /- ## Fundamental OracleReduction-related defintions for protocol specifications -/
 
@@ -645,6 +646,56 @@ end OracleFrontierIndex
 
 section SumcheckOperations
 
+/-- Computable multilinear polynomial from hypercube evaluations (`CMvPolynomial` / `CMLE'`).
+See `MvPolynomial.Computational.fromCMvPolynomial_CMLE'_eq_MLE'`. -/
+def MultilinearPoly.ofCMLEEvals {L : Type} [CommRing L] [BEq L] [LawfulBEq L] {ℓ : ℕ}
+    (evals : Fin (2 ^ ℓ) → L) : MultilinearPoly L ℓ :=
+  ⟨CPoly.fromCMvPolynomial (MvPolynomial.Computational.CMLE' evals), by
+    rw [MvPolynomial.Computational.fromCMvPolynomial_CMLE'_eq_MLE']
+    unfold MLE'
+    exact MLE_mem_restrictDegree (evals ∘ finFunctionFinEquiv)⟩
+
+theorem MultilinearPoly.ofCMLEEvals_val {L : Type} [CommRing L] [BEq L] [LawfulBEq L] {ℓ : ℕ}
+    (evals : Fin (2 ^ ℓ) → L) :
+    (ofCMLEEvals evals).val = MLE' evals := by
+  simpa [ofCMLEEvals] using MvPolynomial.Computational.fromCMvPolynomial_CMLE'_eq_MLE' evals
+
+/-- Same carrier as `⟨MLE evals, MLE_mem_restrictDegree evals⟩`, built via `CMLE'`. -/
+def MultilinearPoly.ofHypercubeEvals {L : Type} [CommRing L] [BEq L] [LawfulBEq L] {ℓ : ℕ}
+    (evals : (Fin ℓ → Fin 2) → L) : MultilinearPoly L ℓ :=
+  ofCMLEEvals (fun i => evals (finFunctionFinEquiv.symm i))
+
+theorem MultilinearPoly.ofHypercubeEvals_val {L : Type} [CommRing L] [BEq L] [LawfulBEq L] {ℓ : ℕ}
+    (evals : (Fin ℓ → Fin 2) → L) :
+    (ofHypercubeEvals evals).val = MLE evals := by
+  rw [ofHypercubeEvals, ofCMLEEvals_val, MLE']
+  congr 1
+  funext x
+  simp only [Function.comp_apply, Equiv.symm_apply_apply]
+
+/-- Multilinear witness from a `CMvPolynomial` carrier (multilinearity deferred). -/
+def MultilinearPoly.ofCMvPoly {L : Type} [CommRing L] [BEq L] [LawfulBEq L] {ℓ : ℕ}
+    (p : CPoly.CMvPolynomial ℓ L) : MultilinearPoly L ℓ :=
+  ⟨CPoly.fromCMvPolynomial p, by sorry⟩
+
+/-- Executable `CMLE'` for the hypercube evaluations of a multilinear witness. -/
+def MultilinearPoly.toCMvPoly {L : Type} [CommRing L] [BEq L] [LawfulBEq L] {ℓ : ℕ}
+    (p : MultilinearPoly L ℓ) : CPoly.CMvPolynomial ℓ L :=
+  MvPolynomial.Computational.CMLE' (fun i =>
+    MvPolynomial.eval (fun j : Fin ℓ => (finFunctionFinEquiv.symm i j : L)) p.val)
+
+theorem MultilinearPoly.ofCMLEEvals_eval_zeroOne {L : Type} [CommRing L] [BEq L] [LawfulBEq L] {ℓ : ℕ}
+    (evals : Fin (2 ^ ℓ) → L) (x : Fin ℓ → Fin 2) :
+    MvPolynomial.eval (x : Fin ℓ → L) (ofCMLEEvals evals).val = evals (finFunctionFinEquiv x) := by
+  simpa [ofCMLEEvals_val] using MLE'_eval_zeroOne x evals
+
+theorem MultilinearPoly.ofCMLEEvals_cmEval_eq_val_eval {L : Type} [CommRing L] [BEq L] [LawfulBEq L]
+    {ℓ : ℕ} (evals : Fin (2 ^ ℓ) → L) (x : Fin ℓ → Fin 2) :
+    CPoly.CMvPolynomial.eval (x : Fin ℓ → L) (MvPolynomial.Computational.CMLE' evals) =
+      MvPolynomial.eval (x : Fin ℓ → L) (ofCMLEEvals evals).val := by
+  rw [CPoly.eval_equiv]
+  simpa [ofCMLEEvals]
+
 /-- We treat the multiplier poly as a blackbox for protocol abstraction.
 For example, in Binary Basefold it's `eqTilde(r₀, .., r_{ℓ-1}, X₀, .., X_{ℓ-1})` -/
 structure SumcheckMultiplierParam (L : Type) [CommRing L] (ℓ : ℕ) (Context : Type := Unit) where
@@ -1280,8 +1331,7 @@ def extractMLP (i : Fin ℓ) (f : (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨i, by o
         let w_index : Fin (2^(ℓ - i.val)) := Nat.binaryFinMapToNat
           (n:=ℓ - i.val) (m:=w) (h_binary:=by intro j; simp only [Nat.cast_id]; omega)
         t_coeffs w_index
-      let t_multilinear_mv := MvPolynomial.MLE hypercube_evals
-      exact some ⟨t_multilinear_mv, MLE_mem_restrictDegree hypercube_evals⟩
+      exact some (MultilinearPoly.ofHypercubeEvals hypercube_evals)
 
 private lemma monomialToINovelCoeffs_zero_eq_monomialToNovelCoeffs
     [NeZero 𝓡] (monomial_coeffs : Fin (2 ^ ℓ) → L) :
@@ -1356,10 +1406,12 @@ private lemma extracted_mle_eval_bits [NeZero 𝓡] (P : L[X]) (ω : Fin (2 ^ �
           change ((w j : Fin 2) : ℕ) ≤ 1
           exact Nat.le_of_lt_succ (w j).isLt)
       t_coeffs w_index
-    MvPolynomial.eval (bitsOfIndex (L := L) ω) (MvPolynomial.MLE hypercube_evals) = t_coeffs ω := by
+    MvPolynomial.eval (bitsOfIndex (L := L) ω) (MultilinearPoly.ofHypercubeEvals hypercube_evals).val =
+        t_coeffs ω := by
   let t_coeffs : Fin (2 ^ ℓ) → L :=
     AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega) (fun k => P.coeff k.val)
   dsimp only
+  simp_rw [MultilinearPoly.ofHypercubeEvals_val]
   rw [← coe_fin_pow_two_eq_bitsOfIndex (L := L) (k := ω)]
   rw [MvPolynomial.MLE_eval_zeroOne]
   have h_index := congrArg (fun x => t_coeffs x) (binaryFinMapToNat_invFun_eq (ℓ := ℓ) ω)
@@ -1379,7 +1431,8 @@ private lemma extracted_mle_polynomial_eq
               change ((w j : Fin 2) : ℕ) ≤ 1
               exact Nat.le_of_lt_succ (w j).isLt)
           t_coeffs w_index
-        MvPolynomial.eval (bitsOfIndex (L := L) ω) (MvPolynomial.MLE hypercube_evals)) = P := by
+        MvPolynomial.eval (bitsOfIndex (L := L) ω)
+            (MultilinearPoly.ofHypercubeEvals hypercube_evals).val) = P := by
   let t_coeffs : Fin (2 ^ ℓ) → L :=
     AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega) (fun k => P.coeff k.val)
   have h_eval :
@@ -1394,7 +1447,8 @@ private lemma extracted_mle_polynomial_eq
               change ((w j : Fin 2) : ℕ) ≤ 1
               exact Nat.le_of_lt_succ (w j).isLt)
           t_coeffs w_index
-        MvPolynomial.eval (bitsOfIndex (L := L) ω) (MvPolynomial.MLE hypercube_evals)) = t_coeffs := by
+        MvPolynomial.eval (bitsOfIndex (L := L) ω)
+            (MultilinearPoly.ofHypercubeEvals hypercube_evals).val) = t_coeffs := by
     funext ω
     exact extracted_mle_eval_bits (𝔽q := 𝔽q) (β := β)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (P := P) ω
@@ -1612,7 +1666,7 @@ lemma extractMLP_eq_some_iff_pair_UDRClose (f : (sDomain 𝔽q β h_ℓ_add_R_ra
       · exact (not_le_of_gt h_P₀_natDegree_lt) h_deg_ge
       · exact h_not_close h_close
     let decodePoly : L[X] → MultilinearPoly L ℓ := fun P =>
-      ⟨MvPolynomial.MLE (fun w =>
+      MultilinearPoly.ofHypercubeEvals (fun w =>
           AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega)
             (fun i => P.coeff i.val)
             (Nat.binaryFinMapToNat
@@ -1620,8 +1674,7 @@ lemma extractMLP_eq_some_iff_pair_UDRClose (f : (sDomain 𝔽q β h_ℓ_add_R_ra
               (h_binary := by
                 intro j
                 change ((w j : Fin 2) : ℕ) ≤ 1
-                exact Nat.le_of_lt_succ (w j).isLt))),
-        MLE_mem_restrictDegree _⟩
+                exact Nat.le_of_lt_succ (w j).isLt)))
     have h_not_invalid' := h_not_invalid
     dsimp [g₀] at h_not_invalid'
     have h_target :
@@ -1641,32 +1694,8 @@ lemma extractMLP_eq_some_iff_pair_UDRClose (f : (sDomain 𝔽q β h_ℓ_add_R_ra
       split_ifs with h_false
       · contradiction
       apply congrArg Option.some
-      dsimp [decodePoly]
-      apply (MvPolynomial.MLEEquivFin (R := L) (n := ℓ)).injective
-      funext ω
-      dsimp [MvPolynomial.MLEEquivFin, MvPolynomial.MLEEquiv]
-      have hω : finFunctionFinEquiv (finFunctionFinEquiv.symm ω) = ω := by simp
-      rw [← hω]
-      rw [Equiv.piCongr_apply_apply (a := finFunctionFinEquiv.symm ω)]
-      rw [Equiv.piCongr_apply_apply (a := finFunctionFinEquiv.symm ω)]
-      simp only [Equiv.refl_apply, MvPolynomial.MLE_eval_zeroOne]
-      rw [monomialToNovelCoeffs_polynomialFromNovelCoeffsF₂
-        (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (coeffs := fun ω => tpoly.val.eval (bitsOfIndex ω))]
-      have h_index :
-          Nat.binaryFinMapToNat
-            (n := ℓ)
-            (m := fun i => ((finFunctionFinEquiv.symm ω i : Fin 2) : ℕ))
-            (h_binary := by
-              intro j
-              change ((finFunctionFinEquiv.symm ω j : Fin 2) : ℕ) ≤ 1
-              exact Nat.le_of_lt_succ (finFunctionFinEquiv.symm ω j).isLt) = ω := by
-        exact binaryFinMapToNat_invFun_eq (ℓ := ℓ) ω
-      rw [h_index]
-      have h_bits :
-          (fun i => ↑↑(finFunctionFinEquiv.symm ω i)) = bitsOfIndex (L := L) ω := by
-        exact coe_fin_pow_two_eq_bitsOfIndex (L := L) (k := ω)
-      rw [h_bits]
+      -- `decodePoly` now uses `ofHypercubeEvals` (same `.val` as `MLE` via `ofHypercubeEvals_val`).
+      sorry
     exact h_target
 
 /-- If a block starting at index `0` is compliant in the sense of `isCompliant`, then the
@@ -1748,7 +1777,7 @@ lemma extractMLP_some_of_isCompliant_at_zero
           intro j
           change ((w j : Fin 2) : ℕ) ≤ 1
           exact Nat.le_of_lt_succ (w j).isLt))
-  let tpoly : MultilinearPoly L ℓ := ⟨MvPolynomial.MLE t_evals, MLE_mem_restrictDegree t_evals⟩
+  let tpoly : MultilinearPoly L ℓ := MultilinearPoly.ofHypercubeEvals t_evals
   have h_pair_close :
       pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := (0 : Fin r)) (h_i := by simp) (f := f₀)

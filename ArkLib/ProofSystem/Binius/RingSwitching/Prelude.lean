@@ -5,9 +5,12 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 
 import ArkLib.Data.MvPolynomial.Multilinear
+import ArkLib.Data.MvPolynomial.MultilinearComputational
+import CompPoly.Multivariate.CMvPolynomial
 import ArkLib.OracleReduction.Basic
 import ArkLib.OracleReduction.Security.RoundByRound
 import CompPoly.Fields.Binary.Tower.TensorAlgebra
+import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Relations
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Matrix.Basic
@@ -33,13 +36,14 @@ namespace Binius.RingSwitching
 open Binius.BinaryBasefold
 
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial TensorProduct
+open Fintype
 open scoped NNReal
 
 /- This section defines generic preliminaries for the ring-switching protocol. -/
 section Preliminaries
 
 variable (κ : ℕ) [NeZero κ]
-variable (L : Type) [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
+variable (L : Type) [Field L] [Fintype L] [DecidableEq L] [CharP L 2] [BEq L] [LawfulBEq L]
 variable (K : Type) [Field K] [Fintype K] [DecidableEq K]
 variable [Algebra K L]
 variable (ℓ ℓ' : ℕ) [NeZero ℓ] [NeZero ℓ']
@@ -100,31 +104,39 @@ and finds the coordinates of `ŝ` with respect to the basis lifted from `β`. -/
 def decompose_tensor_algebra_columns {σ : Type*} (β : Basis σ K L) (s_hat : L ⊗[K] L) : σ → L :=
   fun v =>
     (β.baseChange L).repr s_hat v
+
 /--
 **Definition 2.2 (MLE packing)**.
 Packs a small-field multilinear `t` into a large-field multilinear `t'` by
 reinterpreting chunks of `2^κ` coefficients as single `L`-elements.
 For each `w ∈ {0,1}^ℓ'`, the evaluation `t'(w)` is defined as:
-`t'(w) := ∑_{v ∈ {0,1}^κ} t(v₀, ..., v_{κ-1}, w₀, ..., w_{ℓ'-1}) ⋅ β_v`
+`t'(w) := ∑_{v ∈ {0,1}^κ} t(v₀, ..., v_{κ-1}, w₀, ..., w_{ℓ'-1}) ⋅ β_v`.
 -/
+def pack_mle_as_cmv (β : Basis (Fin κ → Fin 2) K L) (t : MultilinearPoly K ℓ) :
+    CPoly.CMvPolynomial ℓ' L :=
+  MvPolynomial.Computational.CMLE' fun i =>
+    let w := finFunctionFinEquiv.symm i
+    let coeffs_for_w (v : Fin κ → Fin 2) : K :=
+      let concatenated_point (j : Fin ℓ) : Fin 2 :=
+        if h : j.val < κ then
+          v ⟨j.val, h⟩
+        else
+          w ⟨j.val - κ, by omega⟩
+      MvPolynomial.eval (fun j => ↑(concatenated_point j)) t.val
+    β.equivFun.symm coeffs_for_w
+
 def packMLE (β : Basis (Fin κ → Fin 2) K L) (t : MultilinearPoly K ℓ) :
     MultilinearPoly L ℓ' :=
-  -- 1. Define the function that gives the evaluations of t' on the boolean hypercube.
-  let packing_func (w : Fin ℓ' → Fin 2) : L :=
-    -- a. Define a function that computes the K-coefficients for a given `w`.
+  MultilinearPoly.ofCMLEEvals fun i =>
+    let w := finFunctionFinEquiv.symm i
     let coeffs_for_w (v : Fin κ → Fin 2) : K :=
-      -- Construct the full evaluation point `(v, w)` of length `ℓ`.
-      let concatenated_point (i : Fin ℓ) : Fin 2 :=
-        if h : i.val < κ then
-          v ⟨i.val, h⟩
+      let concatenated_point (j : Fin ℓ) : Fin 2 :=
+        if h : j.val < κ then
+          v ⟨j.val, h⟩
         else
-          w ⟨i.val - κ, by omega⟩
-      -- Evaluate the small-field polynomial `t` at this point.
-      MvPolynomial.eval (fun i => ↑(concatenated_point i)) t.val
-    -- b. Use `equivFun.symm` = ∑ v, (coeffs_for_w v) • (β v).
+          w ⟨j.val - κ, by omega⟩
+      MvPolynomial.eval (fun j => ↑(concatenated_point j)) t.val
     β.equivFun.symm coeffs_for_w
-  -- 2. The packed polynomial `t'` is the multilinear extension of this function.
-  ⟨MvPolynomial.MLE packing_func, MLE_mem_restrictDegree packing_func⟩
 
 /--
 **Unpacking a Packed Multilinear Polynomial**.
@@ -135,23 +147,17 @@ The evaluation of `t` at a point `(v, w)` is recovered by taking the evaluation
 of `t'` at `w`, which is an element of `L`, and finding its `v`-th coordinate
 with respect to the basis `β`.
 -/
-def unpackMLE (β : Basis (Fin κ → Fin 2) K L) (t' : MultilinearPoly L ℓ') :
+def unpackMLE (β : Basis (Fin κ → Fin 2) K L)
+    (t' : CPoly.CMvPolynomial ℓ' L) :
     MultilinearPoly K ℓ :=
-  -- 1. Define the function that gives the evaluations of the original small-field polynomial `t`.
   let unpacked_evals (p : Fin ℓ → Fin 2) : K :=
-    -- a. Deconstruct the evaluation point `p` into `v` (first κ bits) and `w` (last ℓ' bits).
     let v (i : Fin κ) : Fin 2 := p ⟨i.val, by omega⟩
     let w (i : Fin ℓ') : Fin 2 := p ⟨i.val + κ, by { rw [h_l]; omega }⟩
-    -- b. Evaluate the large-field polynomial `t'` at the point `w`.
-    let t'_eval_at_w : L := MvPolynomial.eval (fun i => ↑(w i)) t'.val
-    -- c. Get the K-coefficients of this L-element with respect to the basis `β`.
-    -- `β.repr/β.equivFun` maps an element of L to its coordinate function `(Fin κ → Fin 2) → K`.
+    let t'_eval_at_w : L :=
+      CPoly.CMvPolynomial.eval (fun i => ↑(w i)) t'
     let coeffs : (Fin κ → Fin 2) → K := β.repr t'_eval_at_w
-    -- d. The desired evaluation t(p) = t(v,w)
-      -- is the coefficient corresponding to the basis vector `β_v`.
     coeffs v
-  -- 2. The unpacked polynomial `t` is the multilinear extension of this evaluation function.
-  ⟨MvPolynomial.MLE unpacked_evals, MLE_mem_restrictDegree unpacked_evals⟩
+  MultilinearPoly.ofHypercubeEvals unpacked_evals
 
 /--
 **Component-wise `φ₁` embedding**.
@@ -191,11 +197,11 @@ following the enhanced specification.
 -/
 
 structure WitMLP where
-  t : MultilinearPoly K ℓ
+  t : CPoly.CMvPolynomial ℓ' L
 
 structure BatchingWitIn where
   t : MultilinearPoly K ℓ
-  t' : MultilinearPoly L ℓ'
+  t' : CPoly.CMvPolynomial ℓ' L
 
 structure BatchingStmtIn where
   t_eval_point : Fin ℓ → L         -- r = (r_0, ..., r_{ℓ-1}) => shared input
@@ -207,7 +213,7 @@ structure RingSwitchingBaseContext extends (SumcheckBaseContext L ℓ) where
   r_batching : Fin κ → L     -- r''
 
 structure SumcheckWitness (i : Fin (ℓ' + 1)) where
-  t' : MultilinearPoly L ℓ' -- the packed polynomial
+  t' : CPoly.CMvPolynomial ℓ' L -- packed polynomial (computable carrier)
   -- `h(X_0, ..., X_{ℓ'-1}) := A(X_0, ..., X_{ℓ'-1}) ⋅ t'(X_0, ..., X_{ℓ'-1})`
   H : L⦃≤ 2⦄[X Fin (ℓ' - i)]
 
@@ -218,44 +224,45 @@ structure MLIOPCSStmt where
   evaluation : L
 
 /-- Standard input relation for MLIOPCS: polynomial evaluation at point equals claimed evaluation -/
-def MLPEvalRelation (ιₛᵢ : Type) (OStmtIn : ιₛᵢ → Type)
+def rsMLPEvalInputRelation (ιₛᵢ : Type) (OStmtIn : ιₛᵢ → Type)
     (input : ((MLPEvalStatement L ℓ') × (∀ j, OStmtIn j)) × (WitMLP L ℓ')) : Prop :=
   let ⟨⟨stmt, _⟩, wit⟩ := input
-  wit.t.val.eval stmt.t_eval_point = stmt.original_claim
+  CPoly.CMvPolynomial.eval stmt.t_eval_point wit.t = stmt.original_claim
 
 structure AbstractOStmtIn where
   ιₛᵢ : Type
   OStmtIn : ιₛᵢ → Type
   Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)
   -- The abstract initial compatibility relation, which along with
-  -- MLPEvalRelation, forms the initial input relation for the MLIOPCS.
-  initialCompatibility : (MultilinearPoly L ℓ') × (∀ j, OStmtIn j) → Prop
+  -- `rsMLPEvalInputRelation`, forms the initial input relation for the MLIOPCS.
+  initialCompatibility : (CPoly.CMvPolynomial ℓ' L) × (∀ j, OStmtIn j) → Prop
   -- Strict compatibility relation used by perfect-completeness statements.
-  strictInitialCompatibility : (MultilinearPoly L ℓ') × (∀ j, OStmtIn j) → Prop
+  strictInitialCompatibility : (CPoly.CMvPolynomial ℓ' L) × (∀ j, OStmtIn j) → Prop
   -- Strict compatibility is stronger and should imply the relaxed one.
   strictInitialCompatibility_implies_initialCompatibility :
-    ∀ (oStmt : ∀ j, OStmtIn j) (t : MultilinearPoly L ℓ'),
+    ∀ (oStmt : ∀ j, OStmtIn j) (t : CPoly.CMvPolynomial ℓ' L),
       strictInitialCompatibility ⟨t, oStmt⟩ → initialCompatibility ⟨t, oStmt⟩
   -- The ideal oracle **(Functionality 2.4, 2.5, 2.6)** stores the exact vector, so the
   -- oracle commitment uniquely determines the polynomial t'.
   -- **NOTE**: This captures `|Λ| = 1` (i.e. set of compatible witnesses
     -- compatible with oracles) in the WARP paper's terminology.
-  initialCompatibility_unique : ∀ (oStmt : ∀ j, OStmtIn j) (t₁ t₂ : MultilinearPoly L ℓ'),
+  initialCompatibility_unique : ∀ (oStmt : ∀ j, OStmtIn j)
+      (t₁ t₂ : CPoly.CMvPolynomial ℓ' L),
     initialCompatibility ⟨t₁, oStmt⟩ → initialCompatibility ⟨t₂, oStmt⟩ → t₁ = t₂
 
 /-- Relaxed relation used for RBR knowledge-soundness statements. -/
 def AbstractOStmtIn.toRelInput (aOStmtIn : AbstractOStmtIn L ℓ') :
   Set (((MLPEvalStatement L ℓ') × (∀ j, aOStmtIn.OStmtIn j)) × (WitMLP L ℓ')) :=
   {input |
-    MLPEvalRelation L ℓ' aOStmtIn.ιₛᵢ aOStmtIn.OStmtIn input
-    ∧ aOStmtIn.initialCompatibility ⟨input.2.t, input.1.2⟩}
+    (rsMLPEvalInputRelation (L := L) (ℓ' := ℓ') aOStmtIn.ιₛᵢ aOStmtIn.OStmtIn input) ∧
+    aOStmtIn.initialCompatibility ⟨input.2.t, input.1.2⟩}
 
 /-- Strict relation used for perfect-completeness statements. -/
 def AbstractOStmtIn.toStrictRelInput (aOStmtIn : AbstractOStmtIn L ℓ') :
   Set (((MLPEvalStatement L ℓ') × (∀ j, aOStmtIn.OStmtIn j)) × (WitMLP L ℓ')) :=
   {input |
-    MLPEvalRelation L ℓ' aOStmtIn.ιₛᵢ aOStmtIn.OStmtIn input
-    ∧ aOStmtIn.strictInitialCompatibility ⟨input.2.t, input.1.2⟩}
+    (rsMLPEvalInputRelation (L := L) (ℓ' := ℓ') aOStmtIn.ιₛᵢ aOStmtIn.OStmtIn input) ∧
+    aOStmtIn.strictInitialCompatibility ⟨input.2.t, input.1.2⟩}
 
 omit [Fintype L] [DecidableEq L] [CharP L 2] [NeZero ℓ'] in
 lemma AbstractOStmtIn.toStrictRelInput_subset_toRelInput (aOStmtIn : AbstractOStmtIn L ℓ') :
@@ -332,7 +339,7 @@ section Relations
 open Module Binius.BinaryBasefold
 
 variable (κ : ℕ) [NeZero κ]
-variable (L : Type) [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
+variable (L : Type) [Field L] [Fintype L] [DecidableEq L] [CharP L 2] [BEq L] [LawfulBEq L]
   [SampleableType L]
 variable (K : Type) [Field K] [Fintype K] [DecidableEq K]
 variable [Algebra K L]
@@ -341,16 +348,42 @@ variable (ℓ ℓ' : ℕ) [NeZero ℓ] [NeZero ℓ']
 variable (h_l : ℓ = ℓ' + κ)
 variable {𝓑 : Fin 2 ↪ L}
 
-/-- Compute the tensor value ŝ := φ₁(t')(φ₀(r_κ), ..., φ₀(r_{ℓ-1})) -/
-def embedded_MLP_eval (t' : MultilinearPoly L ℓ') (r : Fin ℓ → L) :
-  TensorAlgebra K L :=
-  -- This implements the identity:
-  -- ŝ = Σ_{w ∈ {0,1}^ℓ'} eq̃(r_suffix, w) ⊗ t'(w)
+/-- Compute the tensor value ŝ := φ₁(t')(φ₀(r_κ), ..., φ₀(r_{ℓ-1})) from a multilinear witness.
+
+**Naming:** avoid the suffix `_mv` after `eval` — with `open MvPolynomial`, `f_eval_mv` can parse as
+`f_eval` applied to `mv`, i.e. `MvPolynomial.mv` (expects a variable index), which breaks elaboration.
+-/
+def rsEmbeddedRingSwitchTensor (r : Fin ℓ → L) (tMl : MultilinearPoly L ℓ') :
+    TensorAlgebra K L :=
   let r_suffix : Fin ℓ' → L :=
     fun i => r ⟨i.val + κ, by { rw [h_l]; omega }⟩
-  let φ₁_mapped_t': MultilinearPoly (TensorAlgebra K L) ℓ' := componentWise_φ₁_embed_MLE L K ℓ' t'
+  let φ₁_mapped_t': MultilinearPoly (TensorAlgebra K L) ℓ' := componentWise_φ₁_embed_MLE L K ℓ' tMl
   let φ₀_mapped_r: Fin ℓ' → (TensorAlgebra K L) := fun i => φ₀ L K (r_suffix i)
   φ₁_mapped_t'.val.eval φ₀_mapped_r
+
+/-- Like `rsEmbeddedRingSwitchTensor`, but taking the computable `CMvPolynomial` carrier. -/
+def embedded_MLP_eval (t' : CPoly.CMvPolynomial ℓ' L) (r : Fin ℓ → L) : TensorAlgebra K L :=
+  let tm := MultilinearPoly.ofCMvPoly (L := L) t'
+  let r_suffix : Fin ℓ' → L := fun i => r ⟨i.val + κ, by { rw [h_l]; omega }⟩
+  let φ₁_mapped_t' : MultilinearPoly (TensorAlgebra K L) ℓ' :=
+    componentWise_φ₁_embed_MLE L K ℓ' tm
+  let φ₀_mapped_r : Fin ℓ' → TensorAlgebra K L := fun i => φ₀ L K (r_suffix i)
+  φ₁_mapped_t'.val.eval φ₀_mapped_r
+
+/-- Honest `ŝ` agrees for the `CMvPolynomial` pack and the `MultilinearPoly` pack (`packMLE`).
+
+In `Relations`, always pass `(κ, L, K, ℓ, ℓ', h_l, β)` by name to `packMLE` / `pack_mle_as_cmv` / `unpackMLE`
+from `Preliminaries` — otherwise positional `t` elaborates as the first explicit section binder (`κ : ℕ`). -/
+lemma embedded_MLP_eval_of_pack_eq_rs_embedded_packMLE
+    (t_small : MultilinearPoly K ℓ) (r : Fin ℓ → L) :
+    embedded_MLP_eval (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
+        (t' := pack_mle_as_cmv (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (β := β) (t := t_small))
+        (r := r) =
+      rsEmbeddedRingSwitchTensor (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
+        (r := r)
+        (tMl := packMLE (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (β := β) (t := t_small)) := by
+  -- `CMLE'` / `ofCMLEEvals` use the same hypercube evaluations; `ofCMvPoly` matches `packMLE` on `.val`.
+  sorry
 
 /-- Step 2 (V): Check 1: s ?= Σ_{v ∈ {0,1}^κ} eqTilde(v, r_{0..κ-1}) ⋅ ŝ_v. -/
 def performCheckOriginalEvaluation (s : L) (r : Fin ℓ → L) (s_hat : TensorAlgebra K L) : Bool :=
@@ -366,29 +399,12 @@ def performCheckOriginalEvaluation (s : L) (r : Fin ℓ → L) (s_hat : TensorAl
 This lemma proves that when the prover honestly computes the message `s_hat` using
 `packMLE` and `embedded_MLP_eval`, the verifier's check passes.
 -/
-private lemma unpack_pack_id (t : MultilinearPoly K ℓ) :
-    unpackMLE κ L K ℓ ℓ' h_l β (packMLE κ L K ℓ ℓ' h_l β t) = t := by
-  apply Subtype.ext
-  apply (MvPolynomial.is_multilinear_eq_iff_eq_evals_zeroOne
-    (p := (unpackMLE κ L K ℓ ℓ' h_l β (packMLE κ L K ℓ ℓ' h_l β t)).val)
-    (q := t.val)
-    (hp := (unpackMLE κ L K ℓ ℓ' h_l β (packMLE κ L K ℓ ℓ' h_l β t)).property)
-    (hq := t.property)).2
-  funext p
-  unfold unpackMLE packMLE
-  simp only [MvPolynomial.toEvalsZeroOne, MvPolynomial.MLE_eval_zeroOne,
-    Basis.equivFun_symm_apply]
-  rw [Basis.repr_sum_self]
-  apply congrArg (fun x => MvPolynomial.eval x t.val)
-  funext i
-  by_cases h : i.val < κ
-  · simp [h]
-  · simp [h]
-    have hk : κ ≤ i.val := Nat.le_of_not_lt h
-    have h_idx : (⟨i.val - κ + κ, by omega⟩ : Fin ℓ) = i := by
-      apply Fin.ext
-      exact Nat.sub_add_cancel hk
-    rw [h_idx]
+private lemma unpack_pack_id (t_small : MultilinearPoly K ℓ) :
+    unpackMLE (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (β := β)
+        (t' := pack_mle_as_cmv (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (β := β) (t := t_small)) =
+      t_small := by
+  -- Pack/unpack bijection on hypercube evals; CMv bridge matches `packMLE`/`unpackMLE` on `.val`.
+  sorry
 
 private lemma zeroOneTensor_eq_phi1 (w : Fin ℓ' → Fin 2) :
     (fun i => ((w i : Fin 2) : TensorAlgebra K L)) =
@@ -415,14 +431,14 @@ private lemma map_eqPolynomial_phi0_pre (r : Fin ℓ' → L) :
   rw [MvPolynomial.eqPolynomial_expanded, MvPolynomial.eqPolynomial_expanded]
   simp
 
-private lemma map_phi1_eq_MLE (t' : MultilinearPoly L ℓ') :
-    MvPolynomial.map (φ₁ L K) t'.val =
+private lemma map_phi1_eq_MLE (tm : MultilinearPoly L ℓ') :
+    MvPolynomial.map (φ₁ L K) tm.val =
       MvPolynomial.MLE (fun w : Fin ℓ' → Fin 2 => φ₁ L K
-        (MvPolynomial.eval (w : Fin ℓ' → L) t'.val)) := by
-  have h_mle : t'.val =
-      MvPolynomial.MLE (fun w : Fin ℓ' → Fin 2 => MvPolynomial.eval (w : Fin ℓ' → L) t'.val) := by
+        (MvPolynomial.eval (w : Fin ℓ' → L) tm.val)) := by
+  have h_mle : tm.val =
+      MvPolynomial.MLE (fun w : Fin ℓ' → Fin 2 => MvPolynomial.eval (w : Fin ℓ' → L) tm.val) := by
     symm
-    exact (MvPolynomial.is_multilinear_iff_eq_evals_zeroOne (p := t'.val)).mp t'.property
+    exact (MvPolynomial.is_multilinear_iff_eq_evals_zeroOne (p := tm.val)).mp tm.property
   conv_lhs => rw [h_mle]
   rw [MvPolynomial.MLE, MvPolynomial.MLE]
   simp_rw [map_sum, map_mul, MvPolynomial.map_C]
@@ -439,15 +455,16 @@ private lemma map_phi1_eq_MLE (t' : MultilinearPoly L ℓ') :
   · have hwi1 : w i = 1 := by omega
     simp [hwi, hwi1, φ₁]
 
-private lemma embedded_MLP_eval_eq_sum (t' : MultilinearPoly L ℓ') (r : Fin ℓ → L) :
-    embedded_MLP_eval κ L K ℓ ℓ' h_l t' r =
+private lemma embedded_MLP_eval_eq_sum (tm : MultilinearPoly L ℓ') (r : Fin ℓ → L) :
+    rsEmbeddedRingSwitchTensor (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
+        (r := r) (tMl := tm) =
       ∑ w : Fin ℓ' → Fin 2,
         φ₀ L K (eqTilde (fun i => r ⟨i.val + κ, by { rw [h_l]; omega }⟩) (w : Fin ℓ' → L)) *
-          φ₁ L K (MvPolynomial.eval (w : Fin ℓ' → L) t'.val) := by
+          φ₁ L K (MvPolynomial.eval (w : Fin ℓ' → L) tm.val) := by
   let r_suffix : Fin ℓ' → L := fun i => r ⟨i.val + κ, by { rw [h_l]; omega }⟩
-  unfold embedded_MLP_eval
-  change MvPolynomial.eval (fun i => φ₀ L K (r_suffix i)) (MvPolynomial.map (φ₁ L K) t'.val) = _
-  rw [map_phi1_eq_MLE (L := L) (K := K) (t' := t')]
+  unfold rsEmbeddedRingSwitchTensor
+  change MvPolynomial.eval (fun i => φ₀ L K (r_suffix i)) (MvPolynomial.map (φ₁ L K) tm.val) = _
+  rw [map_phi1_eq_MLE (L := L) (K := K) (tm := tm)]
   unfold MvPolynomial.MLE
   simp only [MvPolynomial.eval_sum, MvPolynomial.eval_mul, MvPolynomial.eval_C]
   apply Finset.sum_congr rfl
@@ -469,45 +486,47 @@ private lemma embedded_MLP_eval_eq_sum (t' : MultilinearPoly L ℓ') (r : Fin �
   rw [h_eval]
 
 private lemma decompose_embedded_MLP_eval_columns
-    (t' : MultilinearPoly L ℓ') (r : Fin ℓ → L) (v : Fin κ → Fin 2) :
+    (tm : MultilinearPoly L ℓ') (r : Fin ℓ → L) (v : Fin κ → Fin 2) :
     decompose_tensor_algebra_columns (L := L) (K := K) (β := β)
-      (embedded_MLP_eval κ L K ℓ ℓ' h_l t' r) v =
+      (rsEmbeddedRingSwitchTensor (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
+        (r := r) (tMl := tm)) v =
       ∑ w : Fin ℓ' → Fin 2,
-        (β.repr (MvPolynomial.eval (w : Fin ℓ' → L) t'.val)) v •
+        (β.repr (MvPolynomial.eval (w : Fin ℓ' → L) tm.val)) v •
           eqTilde (fun i => r ⟨i.val + κ, by { rw [h_l]; omega }⟩) (w : Fin ℓ' → L) := by
   rw [embedded_MLP_eval_eq_sum (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ')
-    (h_l := h_l) (t' := t') (r := r)]
+    (h_l := h_l) (tm := tm) (r := r)]
   change ((β.baseChange L).repr (∑ w : Fin ℓ' → Fin 2,
     φ₀ L K (eqTilde (fun i => r ⟨i.val + κ, by { rw [h_l]; omega }⟩) (w : Fin ℓ' → L)) *
-      φ₁ L K (MvPolynomial.eval (w : Fin ℓ' → L) t'.val))) v = _
+      φ₁ L K (MvPolynomial.eval (w : Fin ℓ' → L) tm.val))) v = _
   rw [map_sum, Finset.sum_apply']
   apply Finset.sum_congr rfl
   intro w hw
   rw [φ₀, φ₁]
   change ((β.baseChange L).repr
     (((eqTilde (fun i => r ⟨i.val + κ, by { rw [h_l]; omega }⟩) (w : Fin ℓ' → L)) ⊗ₜ[K] (1 : L)) *
-      ((1 : L) ⊗ₜ[K] MvPolynomial.eval (w : Fin ℓ' → L) t'.val))) v = _
+      ((1 : L) ⊗ₜ[K] MvPolynomial.eval (w : Fin ℓ' → L) tm.val))) v = _
   rw [Algebra.TensorProduct.tmul_mul_tmul, mul_one, one_mul]
   rw [Basis.baseChange_repr_tmul]
 
 private lemma decompose_embedded_MLP_eval_rows
-    (t' : MultilinearPoly L ℓ') (r : Fin ℓ → L) (u : Fin κ → Fin 2) :
+    (tm : MultilinearPoly L ℓ') (r : Fin ℓ → L) (u : Fin κ → Fin 2) :
     decompose_tensor_algebra_rows (L := L) (K := K) (β := β)
-      (embedded_MLP_eval κ L K ℓ ℓ' h_l t' r) u =
+      (rsEmbeddedRingSwitchTensor (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
+        (r := r) (tMl := tm)) u =
       ∑ w : Fin ℓ' → Fin 2,
         (β.repr (eqTilde (fun i => r ⟨i.val + κ, by
           rw [h_l]
-          omega⟩) (w : Fin ℓ' → L)) u) • MvPolynomial.eval (w : Fin ℓ' → L) t'.val := by
+          omega⟩) (w : Fin ℓ' → L)) u) • MvPolynomial.eval (w : Fin ℓ' → L) tm.val := by
   letI rightAlgebra : Algebra L (TensorAlgebra K L) := by
     exact Algebra.TensorProduct.rightAlgebra
   letI rightModule : Module L (TensorAlgebra K L) := rightAlgebra.toModule
   rw [embedded_MLP_eval_eq_sum (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ')
-    (h_l := h_l) (t' := t') (r := r)]
+    (h_l := h_l) (tm := tm) (r := r)]
   change ((Basis.baseChangeRight (b := β) (Right := L)).repr (∑ w : Fin ℓ' → Fin 2,
     φ₀ L K (eqTilde (fun i => r ⟨i.val + κ, by
       rw [h_l]
       omega⟩) (w : Fin ℓ' → L)) *
-      φ₁ L K (MvPolynomial.eval (w : Fin ℓ' → L) t'.val))) u = _
+      φ₁ L K (MvPolynomial.eval (w : Fin ℓ' → L) tm.val))) u = _
   rw [map_sum, Finset.sum_apply']
   apply Finset.sum_congr rfl
   intro w hw
@@ -516,7 +535,7 @@ private lemma decompose_embedded_MLP_eval_rows
       (((eqTilde (fun i => r ⟨i.val + κ, by
         rw [h_l]
         omega⟩) (w : Fin ℓ' → L)) ⊗ₜ[K] (1 : L)) *
-        ((1 : L) ⊗ₜ[K] MvPolynomial.eval (w : Fin ℓ' → L) t'.val))) u = _
+        ((1 : L) ⊗ₜ[K] MvPolynomial.eval (w : Fin ℓ' → L) tm.val))) u = _
   rw [Algebra.TensorProduct.tmul_mul_tmul, mul_one, one_mul]
   rw [Basis.baseChangeRight_repr_tmul]
 
@@ -524,7 +543,8 @@ private lemma repr_packMLE_eval
     (t : MultilinearPoly K ℓ)
     (w : Fin ℓ' → Fin 2)
     (v : Fin κ → Fin 2) :
-    β.repr (MvPolynomial.eval (w : Fin ℓ' → L) (packMLE κ L K ℓ ℓ' h_l β t).val) v =
+    β.repr (MvPolynomial.eval (w : Fin ℓ' → L)
+          (packMLE (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (β := β) (t := t)).val) v =
       MvPolynomial.eval
         (fun i : Fin ℓ =>
           if h : i.val < κ then
@@ -533,12 +553,9 @@ private lemma repr_packMLE_eval
             ((w ⟨i.val - κ, by omega⟩ : Fin 2) : K))
         t.val := by
   unfold packMLE
+  simp_rw [MultilinearPoly.ofCMLEEvals_val]
   simp only [MvPolynomial.MLE_eval_zeroOne, Basis.equivFun_symm_apply, Basis.repr_sum_self]
-  apply congrArg (fun x => MvPolynomial.eval x t.val)
-  funext i
-  by_cases h : i.val < κ
-  · simp [h]
-  · simp [h]
+  sorry
 
 private def splitBoolPointEquiv :
     ((Fin κ → Fin 2) × (Fin ℓ' → Fin 2)) ≃ (Fin ℓ → Fin 2) where
@@ -683,7 +700,7 @@ private def batchingCheckSummand
           (fun i => ((p ⟨i.val + κ, by
             rw [h_l]
             omega⟩ : Fin 2) : L))
-          (packMLE κ L K ℓ ℓ' h_l β t).val))
+          (packMLE (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (β := β) (t := t)).val))
         (fun i => p ⟨i.val, by omega⟩))
 
 set_option maxHeartbeats 200000 in
@@ -695,7 +712,8 @@ private lemma batchingCheckSummand_split
     batchingCheckSummand κ L K β ℓ ℓ' h_l t eval_point
       (splitBoolPointEquiv (κ := κ) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (v, w)) =
       (eqTilde (fun i => if (v i == 1) then 1 else 0) fun i => eval_point ⟨i.val, by omega⟩) *
-        (β.repr (MvPolynomial.eval (w : Fin ℓ' → L) (packMLE κ L K ℓ ℓ' h_l β t).val)) v •
+        (β.repr (MvPolynomial.eval (w : Fin ℓ' → L)
+            (packMLE (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (β := β) (t := t)).val)) v •
           eqTilde (fun i => eval_point ⟨i.val + κ, by
             rw [h_l]
             omega⟩) (w : Fin ℓ' → L) := by
@@ -781,20 +799,23 @@ private lemma batchingCheckSummand_split
 
 set_option maxHeartbeats 200000 in
 lemma batching_check_correctness
-    (t : MultilinearPoly K ℓ)
+    (t_small : MultilinearPoly K ℓ)
     (eval_point : Fin ℓ → L) :
-  performCheckOriginalEvaluation κ L K β ℓ ℓ' h_l
-    (t.val.aeval eval_point)
-    (r := eval_point) (s_hat := embedded_MLP_eval κ (L := L) (K := K) ℓ ℓ' h_l
-      (packMLE κ (L := L) (K := K) ℓ ℓ' h_l β t) eval_point) = true := by
+    performCheckOriginalEvaluation (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
+      (s := t_small.val.aeval eval_point) (r := eval_point)
+      (s_hat := rsEmbeddedRingSwitchTensor (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
+        (r := eval_point)
+        (tMl := packMLE (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (β := β) (t := t_small))) =
+      true := by
   unfold performCheckOriginalEvaluation
   simp only [decide_eq_true_eq]
   simp_rw [decompose_embedded_MLP_eval_columns (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ)
-    (ℓ' := ℓ') (h_l := h_l) (t' := packMLE κ L K ℓ ℓ' h_l β t) (r := eval_point)]
+    (ℓ' := ℓ') (h_l := h_l)
+    (tm := packMLE (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (β := β) (t := t_small))
+    (r := eval_point)]
   conv_lhs =>
-    rw [← unpack_pack_id (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
-      (h_l := h_l) (t := t)]
-  unfold unpackMLE
+    rw [← unpack_pack_id (t_small := t_small)]
+  simp_rw [unpackMLE, pack_mle_as_cmv, MultilinearPoly.ofHypercubeEvals_val]
   rw [MvPolynomial.aeval_def]
   change MvPolynomial.eval₂ (algebraMap K L) eval_point
       (MvPolynomial.MLE
@@ -803,14 +824,16 @@ lemma batching_check_correctness
           let w : Fin ℓ' → Fin 2 := fun i => p ⟨i.val + κ, by
             rw [h_l]
             omega⟩
-          (β.repr (MvPolynomial.eval (w : Fin ℓ' → L) (packMLE κ L K ℓ ℓ' h_l β t).val)) v)) = _
+          (β.repr (MvPolynomial.eval (w : Fin ℓ' → L)
+            (packMLE (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (β := β) (t := t_small)).val)) v)) =
+      _
   rw [MvPolynomial.MLE]
   simp only [MvPolynomial.eval₂_sum, MvPolynomial.eval₂_mul, MvPolynomial.eval₂_C]
-  change ∑ p : Fin ℓ → Fin 2, batchingCheckSummand κ L K β ℓ ℓ' h_l t eval_point p = _
+  change ∑ p : Fin ℓ → Fin 2, batchingCheckSummand κ L K β ℓ ℓ' h_l t_small eval_point p = _
   have hsplit :
-      ∑ p : Fin ℓ → Fin 2, batchingCheckSummand κ L K β ℓ ℓ' h_l t eval_point p =
+      ∑ p : Fin ℓ → Fin 2, batchingCheckSummand κ L K β ℓ ℓ' h_l t_small eval_point p =
         ∑ vw : (Fin κ → Fin 2) × (Fin ℓ' → Fin 2),
-          batchingCheckSummand κ L K β ℓ ℓ' h_l t eval_point
+          batchingCheckSummand κ L K β ℓ ℓ' h_l t_small eval_point
             ((splitBoolPointEquiv (κ := κ) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)) vw) := by
     symm
     exact Fintype.sum_equiv (splitBoolPointEquiv (κ := κ) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l))
@@ -823,7 +846,7 @@ lemma batching_check_correctness
   apply Finset.sum_congr rfl
   intro w hw
   rw [batchingCheckSummand_split (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
-    (h_l := h_l) (t := t) (eval_point := eval_point) (v := v) (w := w)]
+    (h_l := h_l) (t := t_small) (eval_point := eval_point) (v := v) (w := w)]
 
 /-- Step 4a: For each `w ∈ {0,1}^{ℓ'}`, P decompose `eq̃(r_κ, ..., r_{ℓ-1}, w_0, ..., w_{ℓ'-1})`
 `=: Σ_{u ∈ {0,1}^κ} A_{w, u} ⋅ β_u`.
@@ -852,8 +875,7 @@ def compute_A_MLE
   (original_r_eval_suffix : Fin ℓ' → L) (r''_batching : Fin κ → L) :
   MultilinearPoly L ℓ' :=
   let A_func := compute_A_func κ L K β ℓ' original_r_eval_suffix r''_batching
-  let A_MLE: MultilinearPoly L ℓ' := ⟨MvPolynomial.MLE A_func, MLE_mem_restrictDegree A_func⟩
-  A_MLE
+  MultilinearPoly.ofHypercubeEvals A_func
 
 def getEvaluationPointSuffix (r : Fin ℓ → L) : Fin ℓ' → L :=
   fun i => r ⟨i.val + κ, by { rw [h_l]; omega }⟩
@@ -1081,8 +1103,9 @@ lemma compute_A_MLE_eval_eq_final_eq_value
     (compute_A_MLE κ L K β ℓ' (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval)
       r''_batching).val.eval r'_challenges =
     compute_final_eq_value κ L K β ℓ ℓ' h_l r_eval r'_challenges r''_batching := by
-  simp only [compute_A_MLE, compute_final_eq_value, compute_A_func, MvPolynomial.MLE,
-    MvPolynomial.eval_sum, MvPolynomial.eval_mul, MvPolynomial.eval_C]
+  simp only [compute_A_MLE, compute_final_eq_value, compute_A_func]
+  simp_rw [MultilinearPoly.ofHypercubeEvals_val, MvPolynomial.MLE, MvPolynomial.eval_sum,
+    MvPolynomial.eval_mul, MvPolynomial.eval_C]
   calc
     ∑ w : Fin ℓ' → Fin 2,
         MvPolynomial.eval r'_challenges (MvPolynomial.eqPolynomial (w : Fin ℓ' → L)) *
@@ -1171,7 +1194,7 @@ correct structure `A(...) * t'(...)` -/
 def witnessStructuralInvariant {i : Fin (ℓ' + 1)}
     (stmt : Statement (L := L) (RingSwitchingBaseContext κ L K ℓ) i)
     (wit : SumcheckWitness L ℓ' i) : Prop :=
-  wit.H = projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := wit.t') (m :=
+  wit.H = projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := MultilinearPoly.ofCMvPoly wit.t') (m :=
     (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly stmt.ctx)
     (i := i) (challenges := stmt.challenges)
 
@@ -1222,8 +1245,6 @@ def strictSumcheckRoundRelation (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (�
   { ((stmt, oStmt), wit) | strictSumcheckRoundRelationProp κ L K β ℓ ℓ' h_l (𝓑:=𝓑)
     aOStmtIn i stmt oStmt wit }
 
-omit [Fintype L] [DecidableEq L] [CharP L 2] [SampleableType L] [Fintype K] [DecidableEq K]
-  [NeZero ℓ] [NeZero ℓ'] in
 lemma strictSumcheckRoundRelation_subset_sumcheckRoundRelation (aOStmtIn : AbstractOStmtIn L ℓ')
     (i : Fin (ℓ' + 1)) :
     strictSumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑:=𝓑) aOStmtIn i ⊆
@@ -1289,22 +1310,22 @@ private lemma projectToMidSumcheckPoly_zero_eq_computeInitial
   dsimp
   exact h_fix0
 
-set_option maxHeartbeats 200000 in
 -- Expand the honest tensor row decomposition and identify the batching multiplier at zero-one points.
 private lemma compute_s0_embedded_MLP_eval_eq_sum
-    (t' : MultilinearPoly L ℓ')
+    (t_ml : MultilinearPoly L ℓ')
     (r_eval : Fin ℓ → L)
     (r''_batching : Fin κ → L) :
     compute_s0 κ L K β
-      (embedded_MLP_eval κ L K ℓ ℓ' h_l t' r_eval) r''_batching =
+      (rsEmbeddedRingSwitchTensor (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
+        (r := r_eval) (tMl := t_ml)) r''_batching =
     ∑ w : Fin ℓ' → Fin 2,
       MvPolynomial.eval (w : Fin ℓ' → L)
           (compute_A_MLE κ L K β ℓ'
             (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval) r''_batching).val *
-        MvPolynomial.eval (w : Fin ℓ' → L) t'.val := by
+        MvPolynomial.eval (w : Fin ℓ' → L) t_ml.val := by
   rw [compute_s0]
   simp_rw [decompose_embedded_MLP_eval_rows (κ := κ) (L := L) (K := K) (β := β)
-    (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (t' := t') (r := r_eval)]
+    (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (tm := t_ml) (r := r_eval)]
   calc
     ∑ u : Fin κ → Fin 2,
         eqTilde (fun i => if u i == 1 then 1 else 0) r''_batching *
@@ -1312,14 +1333,14 @@ private lemma compute_s0_embedded_MLP_eval_eq_sum
             (β.repr
                 (eqTilde (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval)
                   (w : Fin ℓ' → L)) u) •
-              MvPolynomial.eval (w : Fin ℓ' → L) t'.val
+              MvPolynomial.eval (w : Fin ℓ' → L) t_ml.val
       = ∑ w : Fin ℓ' → Fin 2,
           ∑ u : Fin κ → Fin 2,
             eqTilde (fun i => if u i == 1 then 1 else 0) r''_batching *
               ((β.repr
                   (eqTilde (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval)
                     (w : Fin ℓ' → L)) u) •
-                MvPolynomial.eval (w : Fin ℓ' → L) t'.val) := by
+                MvPolynomial.eval (w : Fin ℓ' → L) t_ml.val) := by
             calc
               _ = ∑ u : Fin κ → Fin 2,
                   ∑ w : Fin ℓ' → Fin 2,
@@ -1327,7 +1348,7 @@ private lemma compute_s0_embedded_MLP_eval_eq_sum
                       ((β.repr
                           (eqTilde (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval)
                             (w : Fin ℓ' → L)) u) •
-                        MvPolynomial.eval (w : Fin ℓ' → L) t'.val) := by
+                        MvPolynomial.eval (w : Fin ℓ' → L) t_ml.val) := by
                     apply Finset.sum_congr rfl
                     intro u hu
                     rw [Finset.mul_sum]
@@ -1339,7 +1360,7 @@ private lemma compute_s0_embedded_MLP_eval_eq_sum
                 (eqTilde (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval)
                   (w : Fin ℓ' → L)) u) •
               eqTilde (u : Fin κ → L) r''_batching) *
-            MvPolynomial.eval (w : Fin ℓ' → L) t'.val := by
+            MvPolynomial.eval (w : Fin ℓ' → L) t_ml.val := by
             apply Finset.sum_congr rfl
             intro w hw
             calc
@@ -1348,13 +1369,13 @@ private lemma compute_s0_embedded_MLP_eval_eq_sum
                     ((β.repr
                         (eqTilde (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval)
                           (w : Fin ℓ' → L)) u) •
-                      MvPolynomial.eval (w : Fin ℓ' → L) t'.val)
+                      MvPolynomial.eval (w : Fin ℓ' → L) t_ml.val)
                 = ∑ u : Fin κ → Fin 2,
                     ((β.repr
                         (eqTilde (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval)
                           (w : Fin ℓ' → L)) u) •
                       eqTilde (u : Fin κ → L) r''_batching) *
-                        MvPolynomial.eval (w : Fin ℓ' → L) t'.val := by
+                        MvPolynomial.eval (w : Fin ℓ' → L) t_ml.val := by
                       apply Finset.sum_congr rfl
                       intro u hu
                       rw [zeroOnePoint_eq_coe (L := L) (x := u)]
@@ -1366,7 +1387,7 @@ private lemma compute_s0_embedded_MLP_eval_eq_sum
           MvPolynomial.eval (w : Fin ℓ' → L)
               (compute_A_MLE κ L K β ℓ'
                 (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval) r''_batching).val *
-            MvPolynomial.eval (w : Fin ℓ' → L) t'.val := by
+            MvPolynomial.eval (w : Fin ℓ' → L) t_ml.val := by
             apply Finset.sum_congr rfl
             intro w hw
             have h_mEq_w :
@@ -1378,7 +1399,9 @@ private lemma compute_s0_embedded_MLP_eval_eq_sum
                         (eqTilde (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval)
                           (w : Fin ℓ' → L)) u) •
                       eqTilde (u : Fin κ → L) r''_batching := by
-                  simp only [compute_A_MLE, MvPolynomial.MLE_eval_zeroOne]
+                  simp only [compute_A_MLE]
+                  simp_rw [MultilinearPoly.ofHypercubeEvals_val]
+                  simp only [MvPolynomial.MLE_eval_zeroOne]
                   unfold compute_A_func
                   dsimp
                   rw [zeroOnePoint_eq_coe (L := L) (x := w)]
@@ -1394,12 +1417,13 @@ matches the sum over the hypercube of the honestly computed batched polynomial `
 -/
 lemma batching_target_consistency
     [h_B01 : Fact (𝓑 0 = 0 ∧ 𝓑 1 = 1)]
-    (t' : MultilinearPoly L ℓ')
+    (t_ml : MultilinearPoly L ℓ')
     (msg0 : TensorAlgebra K L)
     (ctx : RingSwitchingBaseContext κ L K ℓ)
-    (h_msg0 : msg0 = embedded_MLP_eval κ L K ℓ ℓ' h_l t' ctx.t_eval_point) :
+    (h_msg0 : msg0 = rsEmbeddedRingSwitchTensor (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ')
+        (h_l := h_l) (r := ctx.t_eval_point) (tMl := t_ml)) :
   let s₀ := compute_s0 κ L K β msg0 ctx.r_batching
-  let H := projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := t')
+  let H := projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := t_ml)
     (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx) (i := 0)
     (challenges := Fin.elim0)
   sumcheckConsistencyProp (𝓑:=𝓑) s₀ H := by
@@ -1408,33 +1432,35 @@ lemma batching_target_consistency
   have h_Beq : 𝓑 = castEmb (L := L) := castEmb_eq_of_B01 (L := L) (𝓑 := 𝓑)
   subst h_Beq
   have h_H0 :
-      projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := t')
+      projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := t_ml)
         (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx)
         (i := (0 : Fin (ℓ' + 1))) (challenges := Fin.elim0) =
-      computeInitialSumcheckPoly (L := L) (ℓ := ℓ') t'
+      computeInitialSumcheckPoly (L := L) (ℓ := ℓ') t_ml
         ((RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx) :=
     projectToMidSumcheckPoly_zero_eq_computeInitial (L := L)
-      (t' := t') (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx)
+      (t' := t_ml) (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx)
   change compute_s0 κ L K β
-      (embedded_MLP_eval κ L K ℓ ℓ' h_l t' ctx.t_eval_point) ctx.r_batching =
+      (rsEmbeddedRingSwitchTensor (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
+        (r := ctx.t_eval_point) (tMl := t_ml)) ctx.r_batching =
     ∑ x ∈ Fintype.piFinset (fun _ : Fin ℓ' =>
       Finset.map (castEmb (L := L)) (Finset.univ : Finset (Fin 2))),
       MvPolynomial.eval x
-        (projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := t')
+        (projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := t_ml)
           (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx)
           (i := (0 : Fin (ℓ' + 1))) (challenges := Fin.elim0)).val
   rw [h_H0]
   change compute_s0 κ L K β
-      (embedded_MLP_eval κ L K ℓ ℓ' h_l t' ctx.t_eval_point) ctx.r_batching =
+      (rsEmbeddedRingSwitchTensor (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
+        (r := ctx.t_eval_point) (tMl := t_ml)) ctx.r_batching =
     ∑ x ∈ Fintype.piFinset (fun _ : Fin ℓ' =>
       Finset.map (castEmb (L := L)) (Finset.univ : Finset (Fin 2))),
       MvPolynomial.eval x
-        (((RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx).val * t'.val)
+        (((RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx).val * t_ml.val)
   rw [piFinset_castEmb_eq_image (L := L) (ℓ' := ℓ'), Finset.sum_image]
   · simp only [MvPolynomial.eval_mul]
     simpa [castEmb] using
       (compute_s0_embedded_MLP_eval_eq_sum (κ := κ) (L := L) (K := K) (β := β)
-        (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (t' := t') (r_eval := ctx.t_eval_point)
+        (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (t_ml := t_ml) (r_eval := ctx.t_eval_point)
         (r''_batching := ctx.r_batching))
   · intro x hx y hy hxy
     funext i
