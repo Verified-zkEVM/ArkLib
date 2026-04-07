@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Julian Sutherland, Ilia Vlasov, Aristotle (Harmonic)
+-/
+
 import Mathlib.GroupTheory.SpecificGroups.Cyclic
 import Mathlib.Algebra.Group.TypeTags.Basic
 import Mathlib.Algebra.Group.Defs
@@ -5,11 +11,24 @@ import Mathlib.Tactic.Cases
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Field
 
+/-!
+# The FFT domains
+
+This module provides a unified treatment of 
+evaluation domains used in multiplicative NTTs
+and FRI-based protocols.
+ 
+-/
+
+
 namespace ReedSolomon
 
 variable {ι : Type} [Fintype ι] [AddCommGroup ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
+/-- An FFT domain is an injective group homomorphism
+  whose codomain is the multiplicative group of a field.
+-/
 structure FftDomain (ι : Type) [AddCommGroup ι]
   (F : Type) [Field F] where 
     domain : MonoidHom (Multiplicative ι) Fˣ 
@@ -17,7 +36,7 @@ structure FftDomain (ι : Type) [AddCommGroup ι]
 
 namespace FftDomain
 
-lemma eq_iff_domains_eq {φ₁ φ₂ : FftDomain ι F} 
+lemma eq_iff_domains_eq {φ₁ φ₂ : FftDomain ι F}
   :
   φ₁ = φ₂ ↔ φ₁.domain = φ₂.domain := by
   rcases φ₁ with ⟨f₁, h₁⟩ 
@@ -76,6 +95,10 @@ instance {x : F} {ω : FftDomain ι F} : Decidable (x ∈ ω) :=
 
 namespace Finset
 
+/-- A helper to convert a finset into 
+  a list whose elements are the members of the finset,
+  i.e. come with a proof that they belong to the finset.
+-/
 noncomputable def toListWithProof.{u} {α : Type u} [DecidableEq α] (s : Finset α)
   :
   List s := 
@@ -121,6 +144,8 @@ end Finset
 
 namespace FftDomain
 
+/-- Convert an FFT domain into a list of all its members 
+  with proofs the members belong to the FFT domain. -/
 noncomputable def toList (ω : FftDomain ι F) : List (ω.toFinset) := 
   Finset.toListWithProof <| ω.toFinset
 
@@ -220,6 +245,9 @@ theorem ext {ω₁ ω₂ : FftDomain ι F} (h : ∀ i, ω₁ i = ω₂ i)
 
 end FftDomain
 
+/-- A smooth FFT domain is an FFT domain whose 
+  domain (i.e. LHS) is a finite additive cyclic group,
+  which up to isomorphis is `Fin n`. -/
 abbrev SmoothFftDomain (n : ℕ) (F : Type) [Field F] : Type
   := FftDomain (Fin (2 ^ n)) F
 
@@ -261,6 +289,8 @@ theorem eq_iff_generators_eq {n : ℕ} {ω₁ ω₂ : SmoothFftDomain n F}
 
 end FftDomain
 
+/-- A coset FFT domain is a domain of the form `x · G` for
+  an FFT domain `G`. -/
 structure CosetFftDomain (ι : Type) [AddCommGroup ι]
   (F : Type) [Field F] where
   x : Fˣ 
@@ -414,6 +444,8 @@ lemma x_mul_mem_coset_iff {φ : CosetFftDomain ι F}
 
 end CosetFftDomain
 
+/-- A smooth coset FFT domain is a coset FFT domain
+  whose underlying FFT domain is smooth. -/
 abbrev SmoothCosetFftDomain (n : ℕ) (F : Type) [Field F] : Type
   := CosetFftDomain (Fin (2 ^ n)) F
 
@@ -448,6 +480,9 @@ private lemma subdomain_embed_injective {n : ℕ} (i : Fin n.succ)
   intro a b h
   simp_all [ Fin.ext_iff, subdomain_embed ]
 
+/-- Given a smooth FFT domain `ω` of log-order `n`
+  this function returns its subdomain of log-order `i`.
+-/
 def subdomain {n : ℕ} (ω : SmoothFftDomain n F) (i : Fin n.succ)
   :
   SmoothFftDomain i F :=
@@ -670,11 +705,14 @@ lemma subdomain_subdomain_eq_subdomain {n} {ω : SmoothFftDomain n F}
       omega
     · rfl
 
+/-- Same as `subdomain` but takes a natural number. -/
 def subdomainNat {n} (ω : SmoothFftDomain n F) (i : ℕ)
   :
   SmoothFftDomain (Fin.ofNat n.succ i) F := 
   ω.subdomain (Fin.ofNat n.succ i)
 
+/-- Same as `subdomain` but takes a natural number and reverses the order
+  of subdomains. -/
 def subdomainNatReversed {n : ℕ} (ω : SmoothFftDomain n F) (i : ℕ)
   :
   SmoothFftDomain (Fin.ofNat n.succ (n - i)) F := 
@@ -688,6 +726,8 @@ section
 
 open FftDomain
 
+/-- Given a smooth coset FFT domain `ω` of log-order `n` returns 
+  a subdomain of log-order `i`. -/
 def subdomain {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : Fin n.succ)
   :
   SmoothCosetFftDomain i F := 
@@ -875,11 +915,14 @@ lemma mul_property {n : ℕ} {ω : SmoothCosetFftDomain n F}
       exact h_mul _ _ hy ( by simpa using FftDomain.subdomain_le_mem hji hb );
     · ring
 
+/-- Same as `subdomain` but takes a natural number. -/
 def subdomainNat {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : ℕ)
   :
   SmoothCosetFftDomain (Fin.ofNat n.succ i) F := 
   ω.subdomain (Fin.ofNat n.succ i)
 
+/-- Same as `subdomain` but takes a natural number and reverses the order
+  of subdomains. -/
 def subdomainNatReversed {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : ℕ)
   :
   SmoothCosetFftDomain (Fin.ofNat n.succ (n - i)) F := 
