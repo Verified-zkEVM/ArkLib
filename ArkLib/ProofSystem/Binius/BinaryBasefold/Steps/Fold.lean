@@ -93,15 +93,19 @@ def foldOracleVerifier (i : Fin ℓ) :
     let h_i ← query (spec := [(pSpecFold (L := L)).Message]ₒ) ⟨⟨0, by rfl⟩, (by exact ())⟩
     let r_i' := pSpecChallenges ⟨1, rfl⟩
     let t := FullTranscript.mk2 h_i r_i'
-    let logic := (foldStepLogic 𝔽q β (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) i)
-    guard (logic.verifierCheck stmtIn t)
-    pure (logic.verifierOut stmtIn t)
-  -- Reuse embed and hEq from foldStepLogic to ensure consistency
-  embed := (foldStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-    (𝓑 := 𝓑) (mp := mp) i).embed
-  hEq := (foldStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-    (𝓑 := 𝓑) (mp := mp) i).hEq
+    guard (foldVerifierCheck i stmtIn (𝓑 := 𝓑) (t.messages ⟨0, rfl⟩))
+    pure (foldVerifierStmtOut i stmtIn (t.messages ⟨0, rfl⟩) (t.challenges ⟨1, rfl⟩))
+  embed := ⟨fun j => by
+    if hj : j.val < toOutCodewordsCount ℓ ϑ i.castSucc then
+      exact Sum.inl ⟨j.val, by omega⟩
+    else omega
+  , by
+    intro a b h_ab_eq
+    simp only [MessageIdx, Fin.is_lt, ↓reduceDIte, Fin.eta, Sum.inl.injEq] at h_ab_eq
+    exact h_ab_eq
+  ⟩
+  hEq := fun oracleIdx => by
+    simp only [MessageIdx, Fin.is_lt, ↓reduceDIte, Fin.eta, Function.Embedding.coeFn_mk]
 
 /-! The oracle reduction that is the `i`-th round of Binary Foldfold. -/
 noncomputable def foldOracleReduction (i : Fin ℓ) :
@@ -513,148 +517,7 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
         rw [h_explicit.symm]
         exact getSumcheckRoundPoly_sum_eq (L := L) (ℓ := ℓ) (𝓑 := 𝓑) (i := i) (h := witMid.H)
       exact Or.inr ⟨h_sumcheck, h_struct, h_init, h_fold⟩
-  toFun_full := fun ⟨stmtIn, oStmtIn⟩ tr witOut probEvent_relOut_gt_0 => by
-    -- h_relOut: ∃ stmtOut oStmtOut, verifier outputs (stmtOut, oStmtOut) with prob > 0
-    --   and ((stmtOut, oStmtOut), witOut) ∈ foldStepRelOut
-    simp only [StateT.run'_eq, gt_iff_lt, probEvent_pos_iff, Prod.exists] at probEvent_relOut_gt_0
-    rcases probEvent_relOut_gt_0 with ⟨stmtOut, oStmtOut, h_output_mem_V_run_support, h_relOut⟩
-    have h_output_mem_V_run_support' :
-        some (stmtOut, oStmtOut) ∈
-          _root_.support (do
-            let s ← init
-            Prod.fst <$>
-              (simulateQ impl
-                (Verifier.run (stmtIn, oStmtIn) tr
-                  (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-                    (𝓑 := 𝓑) (mp := mp) i).toVerifier)).run s) := by
-      exact (OptionT.mem_support_iff
-        (mx := OptionT.mk (do
-          let s ← init
-          Prod.fst <$>
-            (simulateQ impl
-              (Verifier.run (stmtIn, oStmtIn) tr
-                (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-                  (𝓑 := 𝓑) (mp := mp) i).toVerifier)).run s))
-        (x := (stmtOut, oStmtOut))).1 h_output_mem_V_run_support
-    simp only [support_bind, Set.mem_iUnion, exists_prop] at h_output_mem_V_run_support'
-    rcases h_output_mem_V_run_support' with ⟨s, hs_init, h_output_mem_V_run_support⟩
-    conv at h_output_mem_V_run_support =>
-      simp only [Verifier.run, OracleVerifier.toVerifier]
-      -- Now unfold the foldOracleVerifier's `verify()` method
-      simp only [foldOracleVerifier]
-      -- dsimp only [StateT.run]
-      -- simp only [simulateQ_bind, simulateQ_query, simulateQ_pure]
-      -- oracle query unfolding
-      simp only [support_bind, Set.mem_iUnion]
-      dsimp only [StateT.run]
-      -- enter [1, i_1, 2, 1, x]
-      simp only [simulateQ_bind]
-      unfold OracleInterface.answer
-      ---------------------------------------
-      -- Now simplify the `guard` and `ite` of StateT.map generated from it
-      simp only [MessageIdx, Fin.isValue, Matrix.cons_val_zero, simulateQ_pure, Message, guard_eq,
-        pure_bind, Function.comp_apply, simulateQ_map, simulateQ_ite,
-        OptionT.simulateQ_failure, bind_map_left]
-      simp only [MessageIdx, Message, Fin.isValue, Matrix.cons_val_zero, Matrix.cons_val_one,
-        bind_pure_comp, simulateQ_map, simulateQ_ite, simulateQ_pure, OptionT.simulateQ_failure,
-        bind_map_left, Function.comp_apply]
-      simp only [support_ite]
-      simp only [Fin.isValue, Set.mem_ite_empty_right, Set.mem_singleton_iff, Prod.mk.injEq,
-        exists_and_left, exists_eq', exists_eq_right, exists_and_right]
-      erw [simulateQ_bind]
-      enter [1, x, 1, 2, 1, 2];
-      erw [simulateQ_bind]
-      erw [OptionT.simulateQ_simOracle2_liftM_query_T2]
-      simp only [Fin.isValue, FullTranscript.mk1_eq_snoc, pure_bind, OptionT.simulateQ_map]
-    conv at h_output_mem_V_run_support =>
-      simp only [Fin.isValue, FullTranscript.mk1_eq_snoc, Function.comp_apply]
-    erw [support_bind] at h_output_mem_V_run_support
-    let step := (foldStepLogic 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) i)
-    set V_check := step.verifierCheck stmtIn
-      (FullTranscript.mk2 (msg0 := _) (msg1 := _)) with h_V_check_def
-    by_cases h_V_check : V_check
-    · simp only [Fin.isValue, Matrix.cons_val_zero, h_V_check, ↓reduceIte, OptionT.run_pure,
-        simulateQ_pure, Function.comp_apply, Set.mem_iUnion, exists_prop, Prod.exists,
-        exists_and_right] at h_output_mem_V_run_support
-      erw [simulateQ_bind] at h_output_mem_V_run_support
-      simp only [simulateQ_pure, Fin.isValue, Function.comp_apply,
-        pure_bind] at h_output_mem_V_run_support
-      erw [support_pure] at h_output_mem_V_run_support
-      simp only [Fin.isValue, Set.mem_singleton_iff, Prod.mk.injEq, exists_eq_right,
-        exists_eq_left] at h_output_mem_V_run_support
-      erw [support_pure] at h_output_mem_V_run_support
-      simp only [Fin.isValue, Set.mem_singleton_iff, Option.some.injEq,
-        Prod.mk.injEq] at h_output_mem_V_run_support
-      -- simp only [support_map, Set.mem_image, exists_prop] at h_output_mem_V_run_support
-      rcases h_output_mem_V_run_support with ⟨h_stmtOut_eq, h_oStmtOut_eq⟩
-      simp only [Fin.reduceLast, Fin.isValue] -- simp the `match`
-      dsimp only [foldStepRelOut, foldStepRelOutProp, masterKStateProp] at h_relOut
-      simp only [Fin.val_succ, Set.mem_setOf_eq] at h_relOut
-      dsimp only [foldKStateProp]
-      set h_i : ↥L⦃≤ 2⦄[X] := tr.messages ⟨⟨0, by simp only [Nat.reduceAdd,
-        Fin.reduceLast, Fin.coe_ofNat_eq_mod, Nat.mod_succ, Nat.ofNat_pos]⟩, rfl⟩ with h_i_def
-      set r_i' : L := tr.challenges ⟨⟨1, by simp only [Nat.reduceAdd, Fin.reduceLast,
-        Fin.coe_ofNat_eq_mod, Nat.mod_succ, Nat.one_lt_ofNat]⟩, rfl⟩ with h_i_def
-      set extractedWitLast : Witness (L := L) 𝔽q β
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ :=
-        (foldRbrExtractor 𝔽q β i).extractOut (stmtIn, oStmtIn) tr witOut
-      have h_oStmtOut_eq_oStmtIn : oStmtOut = oStmtIn := by
-        rw [h_oStmtOut_eq]
-        funext j
-        -- ⊢ OracleVerifier.mkVerifierOStmtOut (foldStepLogic 𝔽q β i).embed ⋯ oStmtIn tr j
-        --   = oStmtIn j
-        simp only [foldStepLogic, Prod.mk.eta, Fin.isValue, MessageIdx, Fin.is_lt, ↓reduceDIte,
-          Fin.eta, Fin.zero_eta, Fin.mk_one, Function.Embedding.coeFn_mk, Sum.inl.injEq,
-          OracleVerifier.mkVerifierOStmtOut_inl, cast_eq]
-      have h_stmtOut_challenges_eq :
-        ((Fin.snoc stmtIn.challenges r_i') : Fin (↑i + 1) → L) = stmtOut.challenges := by
-        -- use the h_stmtOut_eq to prove this
-        rw [h_stmtOut_eq]
-        unfold foldStepLogic foldVerifierStmtOut
-        simp only [Fin.val_succ, Fin.isValue, Fin.snoc_inj, true_and]
-        rfl
-      rw [h_oStmtOut_eq_oStmtIn] at h_relOut
-      have h_stmtOut_sumcheck_target_eq :
-          stmtOut.sumcheck_target = (Polynomial.eval r_i' ↑h_i) := by
-        rw [h_stmtOut_eq]; rfl
-      dsimp only [masterKStateProp]
-      rw [h_stmtOut_sumcheck_target_eq] at h_relOut
-      have h_explicit : h_i.val.eval (𝓑 0) + h_i.val.eval (𝓑 1) = stmtIn.sumcheck_target := by
-        have h_explicit' := h_V_check
-        simp only at h_explicit' ⊢
-        exact h_explicit'
-      cases h_relOut with
-      | inl h_bad =>
-        have h_bad' : incrementalBadEventExistsProp 𝔽q β i.succ
-            (OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i) oStmtIn
-            (Fin.snoc stmtIn.challenges r_i') := by
-          have h_bad'' := h_bad
-          simp only [h_stmtOut_challenges_eq] at h_bad'' ⊢
-          exact h_bad''
-        exact Or.inl h_bad'
-      | inr h_good =>
-        refine Or.inr ?_
-        refine ⟨?_, ?_, ?_, ?_⟩
-        · exact ⟨h_explicit, h_good.1⟩
-        · have h_struct := h_good.2.1
-          simp only [h_stmtOut_eq] at h_struct ⊢
-          exact h_struct
-        · have h_init := h_good.2.2.1
-          simp only at h_init ⊢
-          exact h_init
-        · have h_res := h_good.2.2.2
-          simp only [h_stmtOut_eq] at ⊢ h_res
-          exact h_res
-    · simp only [Fin.isValue, h_V_check, ↓reduceIte, OptionT.run_failure, simulateQ_pure,
-        Set.mem_iUnion, exists_prop, Prod.exists] at h_output_mem_V_run_support
-      erw [simulateQ_bind] at h_output_mem_V_run_support
-      simp only [simulateQ_pure, Fin.isValue, Function.comp_apply,
-        pure_bind] at h_output_mem_V_run_support
-      erw [support_pure] at h_output_mem_V_run_support
-      simp only [Set.mem_singleton_iff, Prod.mk.injEq, ↓existsAndEq, and_true, exists_eq_left,
-        ] at h_output_mem_V_run_support
-      erw [support_pure] at h_output_mem_V_run_support
-      simp only [Set.mem_singleton_iff, reduceCtorEq] at h_output_mem_V_run_support
+  toFun_full := fun ⟨stmtIn, oStmtIn⟩ tr witOut probEvent_relOut_gt_0 => by sorry
 
 /-! This follows the KState of sum-check -/
 def foldKStateProps {i : Fin ℓ} (m : Fin (2 + 1))
@@ -1741,83 +1604,7 @@ theorem foldOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ) :
         (𝓑 := 𝓑)  i.castSucc)
       (relOut := foldStepRelOut (mp := mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑)  i)
-      (foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) := by
-  apply OracleReduction.unroll_rbrKnowledgeSoundness (kSF := foldKnowledgeStateFunction
-    (mp:=mp) (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 𝔽q β i)
-  intro stmtOStmtIn witIn prover j initState
-  let P := rbrExtractionFailureEvent
-    (foldKnowledgeStateFunction (mp := mp) (𝓑 := 𝓑) (init := init) (impl := impl) (σ := σ) 𝔽q β i)
-    (foldRbrExtractor (mp := mp) 𝔽q β i)
-    j
-    stmtOStmtIn
-  rw [OracleReduction.probEvent_soundness_goal_unroll_log' (pSpec := pSpecFold
-    (L := L)) (P := P) (impl := impl) (prover := prover) (i := j) (stmt := stmtOStmtIn)
-    (wit := witIn) (s := initState)]
-  have h_j_eq_1 : j = ⟨1, rfl⟩ := by
-    match j with
-    | ⟨0, h0⟩ => nomatch h0
-    | ⟨1, _⟩ => rfl
-  subst h_j_eq_1
-  conv_lhs => simp only [Fin.isValue, Fin.castSucc_one];
-  rw [OracleReduction.soundness_unroll_runToRound_1_P_to_V_pSpec_2
-    (pSpec := pSpecFold (L := L)) (prover := prover) (hDir0 := rfl)]
-  simp only [Fin.isValue, Challenge, Matrix.cons_val_one, Matrix.cons_val_zero, ChallengeIdx,
-    QueryImpl.addLift_def, QueryImpl.liftTarget_self, Message, Fin.succ_zero_eq_one, Nat.reduceAdd,
-    Fin.coe_ofNat_eq_mod, Nat.reduceMod, FullTranscript.mk1_eq_snoc, bind_pure_comp,
-    liftComp_eq_liftM, bind_map_left, simulateQ_bind, simulateQ_map, StateT.run'_eq,
-    StateT.run_bind, StateT.run_map, map_bind, Functor.map_map]
-  rw [probEvent_bind_eq_tsum]
-  apply OracleReduction.ENNReal.tsum_mul_le_of_le_of_sum_le_one
-  · -- Bound the conditional probability for each transcript
-    intro x
-    -- rw [OracleComp.probEvent_map]
-    simp only [Fin.isValue, probEvent_map]
-    let q : OracleQuery [(pSpecFold (L := L)).Challenge]ₒ _ := query ⟨⟨1, by rfl⟩, ()⟩
-    erw [OracleReduction.probEvent_StateT_run_ignore_state
-      (comp := simulateQ (impl.addLift challengeQueryImpl) (liftM (query q.input)))
-      (s := x.2)
-      (P := fun a => P (FullTranscript.mk1 x.1.1) (q.cont a))]
-    rw [probEvent_eq_tsum_ite]
-    erw [simulateQ_query]
-    simp only [ChallengeIdx, Challenge, Fin.isValue, Nat.reduceAdd, Fin.castSucc_one,
-      Fin.coe_ofNat_eq_mod, Nat.reduceMod, monadLift_self,
-      QueryImpl.addLift_def, QueryImpl.liftTarget_self, StateT.run'_eq, StateT.run_map,
-      Functor.map_map, ge_iff_le]
-    have h_L_inhabited : Inhabited L := ⟨0⟩
-    conv_lhs =>
-      enter [1, x_1, 2, 1, 2]
-      rw [addLift_challengeQueryImpl_input_run_eq_liftM_run (impl := impl) (q := q) (s := x.2)]
-    erw [StateT.run_monadLift, monadLift_self, liftComp_id]
-    rw [bind_pure_comp]
-    conv =>
-      enter [1, 1, x_1, 2]
-      rw [Functor.map_map]
-      rw [← probEvent_eq_eq_probOutput]
-      rw [probEvent_map]
-      rw [OracleQuery.cont_apply]
-      dsimp only [MonadLift.monadLift]
-      rw [OracleQuery.cont_apply]
-      dsimp only [q]
-    simp_rw [OracleQuery.input_query, OracleQuery.snd_query]
-    conv_lhs => change (∑' (x_1 : L), _)
-    simp only [Function.comp_id]
-    conv =>
-      enter [1, 1, x_1, 2]
-      rw [probEvent_eq_eq_probOutput]
-      change Pr[=x_1 | $ᵗ L]
-      rw [OracleReduction.probOutput_uniformOfFintype_eq_Pr (L := _) (x := x_1)]
-    rw [OracleReduction.tsum_uniform_Pr_eq_Pr
-      (L := L) (P := fun x_1 => P (FullTranscript.mk1 x.1.1) (q.2 x_1))]
-      -- Now the goal is in do-notation form, which is exactly what Pr_ notation expands to
-    -- Make this explicit using change
-    change Pr_{ let y ← $ᵖ L }[ P (FullTranscript.mk1 x.1.1) y ] ≤
-      foldKnowledgeError 𝔽q β i ⟨1, by rfl⟩
-    -- Apply the per-transcript bound
-    exact foldStep_doom_escape_probability_bound 𝔽q β (i := i)
-      (stmtOStmtIn := stmtOStmtIn) (h_i := x.1.1) (init := init) (impl := impl) (mp := mp)
-      (𝓑 := 𝓑) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-  · -- Prove: ∑' x, [=x|transcript computation] ≤ 1
-    apply tsum_probOutput_le_one
+      (foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) := by sorry
 
 end FoldStep
 end SingleIteratedSteps

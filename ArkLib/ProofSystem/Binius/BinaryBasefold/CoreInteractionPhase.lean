@@ -111,7 +111,7 @@ lemma roundRelation.of_fin_eq {i j : Fin (ℓ + 1)} (h : i = j) :
 section FoldRelayRound -- foldRound + relay
 
 @[reducible]
-noncomputable def foldRelayOracleVerifier (i : Fin ℓ)
+def foldRelayOracleVerifier (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
   OracleVerifier []ₒ
     (StmtIn := Statement (L := L) Context i.castSucc)
