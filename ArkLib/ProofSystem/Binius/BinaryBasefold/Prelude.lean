@@ -572,7 +572,7 @@ theorem multilinear_eval_eq_sum_bool_hypercube [DecidableEq L] [IsDomain L]
 
 end Preliminaries
 
-noncomputable section       -- expands with 𝔽q in front
+section       -- expands with 𝔽q in front
 variable {r : ℕ} [NeZero r]
 variable {L : Type} [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
 variable (𝔽q : Type) [Field 𝔽q] [Fintype 𝔽q] [DecidableEq 𝔽q]
@@ -819,7 +819,7 @@ lemma qMap_total_fiber_repr_coeff (i : Fin r) {destIdx : Fin r} (steps : ℕ)
   · simp only [qMap_total_fiber, h_steps_eq_0, ↓reduceDIte, Module.Basis.repr_symm_apply,
     Module.Basis.repr_linearCombination, Finsupp.equivFunOnFinite_symm_apply_apply]
 
-def pointToIterateQuotientIndex (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+noncomputable def pointToIterateQuotientIndex (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (x : sDomain 𝔽q β h_ℓ_add_R_rate (i := i)) : Fin (2 ^ steps) := by
   let basis_x := sDomain_basis 𝔽q β h_ℓ_add_R_rate (i := i)
@@ -1191,7 +1191,7 @@ theorem qMap_total_fiber_disjoint
 
 /-- Evaluation vector `[f^(i)(x_0) ... f^(i)(x_{2 ^ steps-1})]^T`. This is the rhs
 vector in the identity in **Lemma 4.9** -/
-def fiberEvaluations (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+noncomputable def fiberEvaluations (i : Fin r) {destIdx : Fin r} (steps : ℕ)
   (h_destIdx : destIdx = i + steps)
   (h_destIdx_le : destIdx ≤ ℓ)
   (f : (sDomain 𝔽q β h_ℓ_add_R_rate) i → L)
@@ -1352,7 +1352,7 @@ section FoldTheory
 /-- Single-step fold : Given `f : S⁽ⁱ⁾ → L` and challenge `r`, produce `S⁽ⁱ⁺¹⁾ → L`, where
 `f⁽ⁱ⁺¹⁾ = fold(f⁽ⁱ⁾, r) : y ↦ [1-r, r] · [[x₁, -x₀], [-1, 1]] · [f⁽ⁱ⁾(x₀), f⁽ⁱ⁾(x₁)]`
 -/
-def fold (i : Fin r) {destIdx : Fin r} (h_destIdx : destIdx = i.val + 1)
+noncomputable def fold (i : Fin r) {destIdx : Fin r} (h_destIdx : destIdx = i.val + 1)
   (h_destIdx_le : destIdx ≤ ℓ) (f : (sDomain 𝔽q β h_ℓ_add_R_rate) i → L) (r_chal : L) :
     (sDomain 𝔽q β h_ℓ_add_R_rate) (i := destIdx) → L :=
   fun y => by
@@ -1471,7 +1471,7 @@ lemma blockDiagMatrix_mulVec_F₂_eq_Fin_merge_PO2 (n : ℕ)
 `M_{k, y} = butterflyMatrix(k, z₀, z₁) * [M_{k-1, z₀}, 0; 0, M_{k-1, z₁}]`
 where `z₀` and `z₁` are the 1-step fiber of `y`. `M_{k, y}` is actually the
 `inverse additive NTT (LCH14)` on the coset `(x₀, ..., x_{2^k-1})` **(Remark 4.10)**. -/
-def foldMatrix (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+noncomputable def foldMatrix (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (y : sDomain 𝔽q β h_ℓ_add_R_rate destIdx) :
     Matrix (Fin (2 ^ steps)) (Fin (2 ^ steps)) L :=
@@ -1569,7 +1569,7 @@ lemma foldMatrix_det_ne_zero (i : Fin r) {destIdx : Fin r} (steps : ℕ)
       · simp only [Fin.isValue, Commute.zero_left]
 
 /-- **Definition 4.8**: Iterated fold over `steps` steps starting at domain index `i`. -/
-def iterated_fold (i : Fin r) (steps : ℕ) {destIdx : Fin r}
+noncomputable def iterated_fold (i : Fin r) (steps : ℕ) {destIdx : Fin r}
   (h_destIdx : destIdx.val = i.val + steps)
   (h_destIdx_le : destIdx ≤ ℓ)
   (f : sDomain 𝔽q β h_ℓ_add_R_rate (i := i) → L) (r_challenges : Fin steps → L) :
@@ -1978,7 +1978,7 @@ lemma iterated_fold_first (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ)
   exact h_full_steps.trans h_trans.symm
 
 /-- **Definition 4.6** : the single-step vector-matrix-vector multiplication form of `fold` -/
-def fold_single_matrix_mul_form (i : Fin r) {destIdx : Fin r}
+noncomputable def fold_single_matrix_mul_form (i : Fin r) {destIdx : Fin r}
   (h_destIdx : destIdx = i.val + 1) (h_destIdx_le : destIdx ≤ ℓ)
   (f : (sDomain 𝔽q β h_ℓ_add_R_rate) i → L)
   (r_challenge : L) : (y : (sDomain 𝔽q β h_ℓ_add_R_rate) destIdx) → L :=
@@ -2047,7 +2047,7 @@ lemma fold_eval_single_matrix_mul_form (i : Fin r) {destIdx : Fin r}
   ring_nf
 
 /-- The single point vec-mat-vec form of `fold(...)` in **Lemma 4.9** -/
-def single_point_localized_fold_matrix_form (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+noncomputable def single_point_localized_fold_matrix_form (i : Fin r) {destIdx : Fin r} (steps : ℕ)
   (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
   (r_challenges : Fin steps → L)
   (y : (sDomain 𝔽q β h_ℓ_add_R_rate) destIdx)
@@ -2118,7 +2118,7 @@ where
 - `M_{steps, y}` is the `steps`-step **foldMatrix** of point `y`.
 - the right-hand vector's values `(x_0, ..., x_{2 ^ steps-1})` represent the fiber
 `(q^(i+steps-1) ∘ ... ∘ q^(i))⁻¹({y}) ⊂ S^(i)`. -/
-def localized_fold_matrix_form (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+noncomputable def localized_fold_matrix_form (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
   (f : (sDomain 𝔽q β h_ℓ_add_R_rate) i → L)
   (r_challenges : Fin steps → L) : (y : (sDomain 𝔽q β h_ℓ_add_R_rate) destIdx) → L :=
@@ -2133,7 +2133,7 @@ def localized_fold_matrix_form (i : Fin r) {destIdx : Fin r} (steps : ℕ)
 /-- The (2 x 1) vector `F₂(steps, r, z₀, z₁) = [fold(steps, r, z₀), fold(steps, r, z₁)]`.
 This is the right-most vector when decomposing the outer single-step fold of **Lemma 4.9**.
 NOTE: `h_F₂_y_eq` in lemma `iterated_fold_eq_matrix_form` below shows it OG form in Lemma 4.9. -/
-def fold_eval_fiber₂_vec (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ)
+noncomputable def fold_eval_fiber₂_vec (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ)
     (h_midIdx : midIdx = i + steps) (h_destIdx : destIdx = i + steps + 1)
     (h_destIdx_le : destIdx ≤ ℓ)
     (f : (sDomain 𝔽q β h_ℓ_add_R_rate) i → L) (r_challenges : Fin steps → L) :
@@ -2821,7 +2821,7 @@ end FoldTheory
 
 /-- Given a point `v ∈ S^(0)`, extract the middle `steps` bits `{v_i, ..., v_{i+steps-1}}`
 as a `Fin (2 ^ steps)`. -/
-def extractMiddleFinMask (v : (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨0, by exact pos_of_neZero r⟩)
+noncomputable def extractMiddleFinMask (v : (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨0, by exact pos_of_neZero r⟩)
     (i : Fin r) (steps : ℕ) : Fin (2 ^ steps) := by
   let vToFin := AdditiveNTT.sDomainToFin 𝔽q β h_ℓ_add_R_rate ⟨0, by
     exact pos_of_neZero r⟩ (by simp only [add_pos_iff]; left; exact pos_of_neZero ℓ) v
@@ -2831,7 +2831,7 @@ def extractMiddleFinMask (v : (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨0, by exact
 
 /-- The equality polynomial eq̃(r, r') that evaluates to 1 when r = r' and 0 otherwise.
 This is used in the final sumcheck identity : s_ℓ = c · eq̃(r, r') -/
-def eqTilde {L : Type} [CommRing L] {ℓ : ℕ} (r r' : Fin ℓ → L) : L :=
+noncomputable def eqTilde {L : Type} [CommRing L] {ℓ : ℕ} (r r' : Fin ℓ → L) : L :=
   MvPolynomial.eval r' (MvPolynomial.eqPolynomial r)
 
 end Essentials

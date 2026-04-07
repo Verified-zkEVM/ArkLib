@@ -9,7 +9,7 @@ import ArkLib.Data.MvPolynomial.MultilinearComputational
 
 /- ## Fundamental OracleReduction-related defintions for protocol specifications -/
 
-noncomputable section
+section
 namespace Binius.BinaryBasefold
 
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
@@ -703,7 +703,7 @@ structure SumcheckMultiplierParam (L : Type) [CommRing L] (ℓ : ℕ) (Context :
 
 /-- `H₀(X₀, ..., X_{ℓ-1}) = h(X₀, ..., X_{ℓ-1}) =`
   `m(X_0, ..., X_{ℓ-1}) · t(X_0, ..., X_{ℓ-1})` -/
-def computeInitialSumcheckPoly (t : MultilinearPoly L ℓ)
+noncomputable def computeInitialSumcheckPoly (t : MultilinearPoly L ℓ)
     (m : MultilinearPoly L ℓ) : MultiquadraticPoly L ℓ :=
   ⟨m * t, by
     rw [MvPolynomial.mem_restrictDegree_iff_degreeOf_le]
@@ -720,7 +720,7 @@ def computeInitialSumcheckPoly (t : MultilinearPoly L ℓ)
 
 /-- `Hᵢ(Xᵢ, ..., X_{ℓ-1}) = ∑ ω ∈ 𝓑ᵢ, H₀(ω₀, …, ω_{i-1}, Xᵢ, …, X_{ℓ-1}) (where H₀=h)` -/
 -- TODO: how to generalize this?
-def projectToMidSumcheckPoly (t : MultilinearPoly L ℓ)
+noncomputable def projectToMidSumcheckPoly (t : MultilinearPoly L ℓ)
     (m : MultilinearPoly L ℓ) (i : Fin (ℓ + 1))
     (challenges : Fin i → L)
     : MultiquadraticPoly L (ℓ-i) :=
@@ -735,7 +735,7 @@ def projectToMidSumcheckPoly (t : MultilinearPoly L ℓ)
   ⟩
 
 /-- Derive `H_{i+1}` from `H_i` by projecting the first variable -/
-def projectToNextSumcheckPoly (i : Fin (ℓ)) (Hᵢ : MultiquadraticPoly L (ℓ - i))
+noncomputable def projectToNextSumcheckPoly (i : Fin (ℓ)) (Hᵢ : MultiquadraticPoly L (ℓ - i))
     (rᵢ : L) : -- the current challenge
     MultiquadraticPoly L (ℓ - i.succ) := by
   let projectedH := fixFirstVariablesOfMQP (ℓ := ℓ - i) (v := ⟨1, by omega⟩)
@@ -1247,7 +1247,7 @@ structure Witness (i : Fin (ℓ + 1)) where
 
 /-- The extractor that recovers the multilinear polynomial t from f^(i).
 In the current protocol flow, call sites decode only the first oracle (`i = 0`). -/
-def extractMLP (i : Fin ℓ) (f : (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨i, by omega⟩ → L) :
+noncomputable def extractMLP (i : Fin ℓ) (f : (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨i, by omega⟩ → L) :
     Option (L⦃≤ 1⦄[X Fin (ℓ - i)]) := by
   set domain_size := Fintype.card (sDomain 𝔽q β h_ℓ_add_R_rate ⟨i, by omega⟩)
   set d := Code.distFromCode (u := f)
@@ -1830,7 +1830,7 @@ lemma extractMLP_some_of_isCompliant_at_zero
   exact (extractMLP_eq_some_iff_pair_UDRClose 𝔽q β
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (f := f₀) (tpoly := tpoly)).2 h_pair_close
 
-def dummyLastWitness :
+noncomputable def dummyLastWitness :
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) := {
   t := ⟨0, by apply zero_mem⟩,
   H := ⟨0, by apply zero_mem⟩,
@@ -1891,7 +1891,7 @@ lemma snoc_oracle_dest_eq_j {i : Fin ℓ} {destIdx : Fin r}
 
 open Classical in
 /-- snoc_oracle adds the latest oracle function to the end of an oStmtIn -/
-def snoc_oracle {i : Fin ℓ} {destIdx : Fin r} (h_destIdx : destIdx = i.val + 1)
+noncomputable def snoc_oracle {i : Fin ℓ} {destIdx : Fin r} (h_destIdx : destIdx = i.val + 1)
     (oStmtIn : ∀ j : Fin (toOutCodewordsCount ℓ ϑ i.castSucc),
       OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)
     (newOracleFn : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := destIdx)) :
@@ -1911,7 +1911,7 @@ def snoc_oracle {i : Fin ℓ} {destIdx : Fin r} (h_destIdx : destIdx = i.val + 1
         -- Case 3: Impossible (Not commitment round, but index increased)
         (snoc_oracle_impossible hj hi).elim
 
-def take_snoc_oracle (i : Fin ℓ) {destIdx : Fin r} (h_destIdx : destIdx = i.val + 1)
+noncomputable def take_snoc_oracle (i : Fin ℓ) {destIdx : Fin r} (h_destIdx : destIdx = i.val + 1)
     (oStmtIn : (j : Fin (toOutCodewordsCount ℓ ϑ i.castSucc)) →
       OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)
     (newOracleFn : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := destIdx)) :
