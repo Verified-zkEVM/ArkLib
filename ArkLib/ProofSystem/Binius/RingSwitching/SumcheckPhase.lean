@@ -173,7 +173,6 @@ noncomputable def iteratedSumcheckOracleProver (i : Fin ℓ') :
     let t := FullTranscript.mk2 h_i r_i'
     pure (logic.proverOut stmt wit oStmt t)
 
-open Classical in
 /-- The oracle verifier for the `i`-th round of Ring Switching. -/
 noncomputable def iteratedSumcheckOracleVerifier (i : Fin ℓ') :
   OracleVerifier
@@ -194,6 +193,7 @@ noncomputable def iteratedSumcheckOracleVerifier (i : Fin ℓ') :
     let t := FullTranscript.mk2 h_i r_i'
     let logic := sumcheckStepLogic (κ:=κ) (L:=L) (K:=K) (β:=β) (ℓ:=ℓ) (ℓ':=ℓ') (h_l:=h_l)
       (𝓑:=𝓑) (aOStmtIn:=aOStmtIn) i
+    have : Decidable (logic.verifierCheck stmtIn t) := Classical.propDecidable _
     guard (logic.verifierCheck stmtIn t)
     pure (logic.verifierOut stmtIn t)
   embed := ⟨fun j => Sum.inl j, fun a b h => by cases h; rfl⟩

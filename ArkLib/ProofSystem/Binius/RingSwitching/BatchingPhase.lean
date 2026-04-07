@@ -283,7 +283,6 @@ noncomputable def batchingOracleProver :
     -- Delegate to Logic Instance (ensures consistency with batchingStepLogic)
     pure (logic.proverOut stmt wit oStmt t)
 
-open Classical in
 noncomputable def batchingOracleVerifier :
   OracleVerifier (oSpec:=[]ₒ)
     (StmtIn := BatchingStmtIn L ℓ) (OStmtIn := aOStmtIn.OStmtIn)
@@ -295,12 +294,10 @@ noncomputable def batchingOracleVerifier :
     let s_hat : TensorAlgebra K L ← query (spec := [pSpecBatching (κ:=κ)
       (L:=L) (K:=K).Message]ₒ) ⟨⟨0, by rfl⟩, (by exact ())⟩
     let r_batching : Fin κ → L := pSpec_batching_challenges ⟨1, by rfl⟩
-    -- Reconstruct the transcript (matches what honestProverTranscript produces)
     let logic := (batchingStepLogic (κ := κ) (L := L) (K := K) (β := β) (𝓑 := 𝓑) (ℓ := ℓ)
       (ℓ' := ℓ') (h_l := h_l) (aOStmtIn := aOStmtIn))
-    -- Note: We can't call honestProverTranscript directly because we don't have the witness
-    -- But we know the transcript structure must match it
     let t := FullTranscript.mk2 s_hat r_batching
+    have : Decidable (logic.verifierCheck stmtIn t) := Classical.propDecidable _
     guard (logic.verifierCheck stmtIn t)
     pure (logic.verifierOut stmtIn t)
   -- Reuse embed and hEq from batchingStepLogic to ensure consistency
