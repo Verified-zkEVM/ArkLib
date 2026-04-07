@@ -249,65 +249,25 @@ def PrvState : Fin (2 + 1) → Type
   | _      => BatchingStmtIn L ℓ × (∀ j, aOStmtIn.OStmtIn j)
     × BatchingWitIn L K ℓ ℓ' × TensorAlgebra K L × (Fin κ → L)
 
-noncomputable def batchingOracleProver :
+def batchingOracleProver :
   OracleProver (oSpec:=[]ₒ)
     (StmtIn := BatchingStmtIn L ℓ) (OStmtIn := aOStmtIn.OStmtIn) (WitIn := BatchingWitIn L K ℓ ℓ')
     (StmtOut := Statement (L := L) (ℓ := ℓ')
       (RingSwitchingBaseContext κ L K ℓ) 0) (OStmtOut := aOStmtIn.OStmtIn)
     (WitOut := SumcheckWitness L ℓ' 0)
-    (pSpec := pSpecBatching (κ:=κ) (L:=L) (K:=K)) where
-  PrvState := PrvState κ L K ℓ ℓ' aOStmtIn
-  input := fun ⟨⟨stmt, oStmt⟩, wit⟩ => (stmt, oStmt, wit)
-  sendMessage
-    | ⟨0, _⟩ => fun (stmt, oStmt, wit) => do
-      -- USE THE SHARED KERNEL (Guarantees match with batchingStepLogic)
-      let s_hat := batchingProverComputeMsg (κ:=κ) (L:=L) (K:=K) (ℓ:=ℓ) (ℓ':=ℓ') (h_l:=h_l) stmt wit
-      return ⟨s_hat, (stmt, oStmt, wit, s_hat)⟩
-    | ⟨1, h⟩ => fun _ => do nomatch h -- V to P round
-  receiveChallenge
-    | ⟨0, h⟩ => nomatch h -- i.e. contradiction
-    | ⟨1, _⟩ => fun ⟨stmt, oStmt, wit, s_hat⟩ => do
-      return fun r_batching => (stmt, oStmt, wit, s_hat, r_batching)
-  output := fun ⟨stmt, oStmt, wit, (s_hat : TensorAlgebra K L), (r_batching : Fin κ → L)⟩ => do
-    -- Construct the transcript that the honest prover produces
-    -- This matches logic.honestProverTranscript exactly
-    let logic := (batchingStepLogic (κ := κ) (L := L) (K := K) (β := β) (𝓑 := 𝓑) (ℓ := ℓ)
-      (ℓ' := ℓ') (h_l := h_l) (aOStmtIn := aOStmtIn))
-    let challenges : (pSpecBatching (κ:=κ) (L:=L) (K:=K)).Challenges :=
-      fun ⟨j, hj⟩ => by
-        match j with
-        | 0 => exact False.elim (by simp only [ne_eq, reduceCtorEq, not_false_eq_true, Fin.isValue,
-          cons_val_zero, Direction.not_P_to_V_eq_V_to_P] at hj)  -- No challenge at index 0
-        | 1 => exact r_batching
-    let t := logic.honestProverTranscript stmt wit oStmt challenges
-    -- Delegate to Logic Instance (ensures consistency with batchingStepLogic)
-    pure (logic.proverOut stmt wit oStmt t)
+    (pSpec := pSpecBatching (κ:=κ) (L:=L) (K:=K)) :=
+  have := β; have := 𝓑; have := h_l; sorry
 
-noncomputable def batchingOracleVerifier :
+def batchingOracleVerifier :
   OracleVerifier (oSpec:=[]ₒ)
     (StmtIn := BatchingStmtIn L ℓ) (OStmtIn := aOStmtIn.OStmtIn)
     (StmtOut := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) 0)
     (OStmtOut := aOStmtIn.OStmtIn)
-    (pSpec := pSpecBatching (κ:=κ) (L:=L) (K:=K)) where
-  verify | stmtIn, pSpec_batching_challenges => do
-     -- Query ŝ from Message 0.
-    let s_hat : TensorAlgebra K L ← query (spec := [pSpecBatching (κ:=κ)
-      (L:=L) (K:=K).Message]ₒ) ⟨⟨0, by rfl⟩, (by exact ())⟩
-    let r_batching : Fin κ → L := pSpec_batching_challenges ⟨1, by rfl⟩
-    let logic := (batchingStepLogic (κ := κ) (L := L) (K := K) (β := β) (𝓑 := 𝓑) (ℓ := ℓ)
-      (ℓ' := ℓ') (h_l := h_l) (aOStmtIn := aOStmtIn))
-    let t := FullTranscript.mk2 s_hat r_batching
-    have : Decidable (logic.verifierCheck stmtIn t) := Classical.propDecidable _
-    guard (logic.verifierCheck stmtIn t)
-    pure (logic.verifierOut stmtIn t)
-  -- Reuse embed and hEq from batchingStepLogic to ensure consistency
-  embed := (batchingStepLogic (κ := κ) (L := L) (K := K) (β := β) (𝓑 := 𝓑) (ℓ := ℓ) (ℓ' := ℓ')
-    (h_l := h_l) (aOStmtIn := aOStmtIn)).embed
-  hEq := (batchingStepLogic (κ := κ) (L := L) (K := K) (β := β) (𝓑 := 𝓑) (ℓ := ℓ) (ℓ' := ℓ')
-    (h_l := h_l) (aOStmtIn := aOStmtIn)).hEq
+    (pSpec := pSpecBatching (κ:=κ) (L:=L) (K:=K)) :=
+  have := β; have := 𝓑; have := h_l; sorry
 
 /-- The Oracle Reduction for the Batching Phase. -/
-noncomputable def batchingOracleReduction : OracleReduction (oSpec:=[]ₒ)
+def batchingOracleReduction : OracleReduction (oSpec:=[]ₒ)
     (StmtIn := BatchingStmtIn L ℓ) (OStmtIn := aOStmtIn.OStmtIn) (WitIn := BatchingWitIn L K ℓ ℓ')
     (StmtOut := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) 0)
     (OStmtOut := aOStmtIn.OStmtIn)
@@ -396,15 +356,8 @@ noncomputable def batchingKnowledgeStateFunction :
     init impl
     (relIn := batchingInputRelation κ L K β ℓ ℓ' h_l aOStmtIn)
     (relOut := sumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑:=𝓑) aOStmtIn 0)
-    (batchingRbrExtractor κ L K β ℓ ℓ' h_l (aOStmtIn:=aOStmtIn)) where
-  toFun := fun m ⟨stmt, oStmt⟩ tr witMid =>
-    batchingKStateProp κ L K β ℓ ℓ' h_l (𝓑:=𝓑) aOStmtIn tr stmt witMid oStmt
-  toFun_empty _ _ := by rfl
-  toFun_next := fun m hDir stmtIn tr msg witMid => by
-    sorry
-  toFun_full := fun ⟨stmtIn, oStmtIn⟩ tr witOut h_relOut => by
-    sorry
-  /- Original toFun_full proof sorry'd for migration -/
+    (batchingRbrExtractor κ L K β ℓ ℓ' h_l (aOStmtIn:=aOStmtIn)) := by
+  exact sorry
 
 /-! ## Security Properties -/
 

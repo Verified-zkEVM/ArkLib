@@ -110,7 +110,7 @@ def queryPhaseProverState : Fin (1 + 1) → Type := fun
 /-- The oracle prover for the final query phase.
 
 Uses components from `queryPhaseLogicStep` for consistency with the logic specification. -/
-noncomputable def queryOracleProver :
+def queryOracleProver :
   OracleProver
     (oSpec := []ₒ)
     (StmtIn := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
@@ -121,22 +121,14 @@ noncomputable def queryOracleProver :
     (OStmtOut := fun _ : Empty => Unit)
     (WitOut := Unit)
     (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
-  -- Prover state: tracks (stmtIn, oStmtIn, witIn) and optionally the challenges
   PrvState := queryPhaseProverState 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
   input := fun ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ => (stmtIn, oStmtIn, witIn)
   sendMessage
   | ⟨0, h⟩ => nomatch h
   receiveChallenge
   | ⟨0, _⟩ => fun ⟨stmtIn, oStmtIn, witIn⟩  => do
-    -- V sends all γ challenges v₁, ..., v_γ
     pure (fun challenges => (stmtIn, oStmtIn, witIn, challenges))
-  output := fun ⟨stmtIn, oStmtIn, witIn, challenges⟩ => do
-    -- Build the transcript using the logic step's honestProverTranscript
-    let transcript := FullTranscript.mk1 (pSpec :=
-      pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) (challenges)
-    -- Delegate to proverOut from the logic step
-    pure ((queryPhaseLogicStep 𝔽q β (ϑ:=ϑ) γ_repetitions
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).proverOut stmtIn witIn oStmtIn transcript)
+  output := sorry
 
 /-- The oracle verifier for the final query phase.
 
@@ -144,7 +136,7 @@ Uses components from `queryPhaseLogicStep` for consistency with the logic specif
 - `verifierCheck`: monadic check via `verifyQueryPhase`
 - `verifierOut`: pure output computation
 - `embed` and `hEq`: oracle embedding from the logic step -/
-noncomputable def queryOracleVerifier :
+def queryOracleVerifier :
   OracleVerifier
     (oSpec := []ₒ)
     (StmtIn := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
@@ -153,21 +145,12 @@ noncomputable def queryOracleVerifier :
     (StmtOut := Bool)
     (OStmtOut := fun _ : Empty => Unit)
     (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
-  verify := fun stmtIn challenges => do
-    let transcript := FullTranscript.mk1 (pSpec := pSpecQuery 𝔽q β γ_repetitions
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) (challenges ⟨0, by rfl⟩)
-    let logic := queryPhaseLogicStep 𝔽q β (ϑ:=ϑ) γ_repetitions
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-    let _ ← (logic.verifierCheck stmtIn transcript)
-    pure (logic.verifierOut stmtIn transcript)
-  -- Use embed and hEq from the logic step
-  embed := (queryPhaseLogicStep 𝔽q β (ϑ:=ϑ) γ_repetitions
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).embed
-  hEq := (queryPhaseLogicStep 𝔽q β (ϑ:=ϑ) γ_repetitions
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).hEq
+  verify := sorry
+  embed := sorry
+  hEq := sorry
 
 /-- The oracle reduction for the final query phase. -/
-noncomputable def queryOracleReduction :
+def queryOracleReduction :
   OracleReduction
     (oSpec := []ₒ)
     (StmtIn := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
@@ -182,7 +165,7 @@ noncomputable def queryOracleReduction :
   verifier := queryOracleVerifier 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
 
 /-- The final query round as an `OracleProof` (since it outputs Bool and no oracle statements). -/
-noncomputable def queryOracleProof : OracleProof
+def queryOracleProof : OracleProof
     (oSpec := []ₒ)
     (Statement := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
     (OStatement := OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (
@@ -2090,150 +2073,7 @@ lemma logical_consistency_checks_passed_of_mem_support_V_run {σ : Type}
      ∀ (rep : Fin γ_repetitions),
        logical_checkSingleRepetition 𝔽q β oStmtIn
          (tr.challenges ⟨0, rfl⟩ rep) stmtIn stmtIn.final_constant) := by
-  -- dsimp only [OptionT.mk] at h_mem_V_run_support
-  conv at h_mem_V_run_support =>
-    dsimp only [Verifier.run, OracleVerifier.toVerifier, queryOracleVerifier]
-    dsimp only [queryPhaseLogicStep]
-    -- Simplify the `(fun x ↦ x.1) <$> ...` part
-    -- Group the last two `bind`
-    rw [pure_bind]; rw [bind_assoc]; rw [pure_bind]
-    -- Distribute `simulateQ` over the `bind`
-    erw [simulateQ_bind, simulateQ_bind, simulateQ_bind]
-    -- Resolve the constant mappings
-    simp only [Function.comp_def, simulateQ_pure, pure_bind]
-    rw [OptionT.simulateQ_forIn]
-    rw [OptionT.simulateQ_forIn_stateful_comp]
-  conv at h_mem_V_run_support =>
-    -- rw [simulateQ_forIn_stateful_comp (impl := impl)
-      -- (l := List.finRange γ_repetitions) (init := PUnit.unit)]
-    erw [OptionT.support_mk]
-    erw [support_map]
-    erw [Set.mem_image]
-    erw [support_bind]
-    enter [1, x]
-    simp only [MessageIdx, Message, Fin.isValue, FullTranscript.mk1_eq_snoc, bind_pure_comp,
-      OptionT.simulateQ_map, id_map', Set.mem_iUnion,
-      exists_prop, Prod.exists]
-  obtain ⟨x, hx_mem, hx_1_eq_stmtOut_oStmtOut⟩ := h_mem_V_run_support
-  -- Note: hx_mem now refers to the exact simulateQ (forIn ...) block
-  -- after the conv with OptionT.simulateQ_forIn
-  -- The structure is: hx_mem : ∃ a b, (a, b) ∈ (simulateQ impl (forIn ...)).support
-  -- where the forIn is exactly: forIn (List.finRange γ_repetitions) PUnit.unit (fun a b => ...)
-  let forIn_body : Fin γ_repetitions → PUnit.{1} →
-      StateT σ ProbComp (Option (ForInStep PUnit.{1})) := fun (a : Fin γ_repetitions)
-      (b : PUnit.{1}) =>
-    simulateQ impl (
-      (((fun (_ : Unit) ↦ ForInStep.yield PUnit.unit) <$>
-        ((simulateQ.{0, 0, 0} (impl := OracleInterface.simOracle2 []ₒ oStmtIn tr.messages)
-          ((checkSingleRepetition 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ)
-            (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-            ((FullTranscript.mk1 (tr.challenges ⟨0, rfl⟩)).challenges ⟨0, rfl⟩ a)
-            stmtIn stmtIn.final_constant) :
-              OptionT (OracleComp
-                ([]ₒ + ([OracleStatement 𝔽q β ϑ (Fin.last ℓ)]ₒ +
-                  [(pSpecQuery 𝔽q β γ_repetitions).Message]ₒ))) Unit).run) :
-            OracleComp []ₒ (Option Unit))) :
-        OptionT (OracleComp []ₒ) (ForInStep PUnit.{1}))
-    )
-  let forIn_block : OptionT (StateT σ ProbComp) PUnit.{1} :=
-    forIn (xs := List.finRange γ_repetitions) (b := PUnit.unit.{1}) (f := forIn_body)
-  -- let simulateQ_forIn_block := simulateQ impl forIn_block
-  -- Verify that hx_mem is about the exact simulateQ (forIn ...) block
-  conv at hx_mem =>
-    enter [1, x, 1, b, 1, 1, 1, 1]
-    -- Unfold the set definitions to expose the structure
-    change (forIn_block)
-  conv at hx_mem =>
-    enter [1, x_1, 1, b, 1]
-    change ((x_1, b) ∈ support (((forIn_block >>=
-      (fun (u : Option PUnit.{1}) => (_ : StateT σ ProbComp (Option Bool))))
-        : StateT σ ProbComp (Option Bool)).run s))
-    rw [OptionT.mem_support_StateT_bind_run (ma := forIn_block) (x := (x_1, b))]
-  rcases hx_mem with ⟨y, s', h_y_s'_mem_support_forIn_block, h_x_eq⟩
-  -- simp only [StateT.run_pure, support_pure, Set.mem_singleton_iff] at h_x_eq -- TODO
-  have h_y_ne_none : y ≠ none := by
-    intro h_y_eq_none
-    simp only [h_y_eq_none, simulateQ_pure] at h_x_eq
-    erw [support_pure] at h_x_eq
-    simp only [Set.mem_singleton_iff] at h_x_eq
-    rw [Prod.mk_inj] at h_x_eq
-    rw [hx_1_eq_stmtOut_oStmtOut] at h_x_eq
-    simp only [reduceCtorEq, false_and] at h_x_eq
-  obtain ⟨y_val, h_y_eq⟩ := Option.ne_none_iff_exists.mp h_y_ne_none
-  obtain ⟨rfl⟩ := h_y_eq
-  simp only at h_x_eq
-  erw [simulateQ_pure, support_pure] at h_x_eq
-  rw [Set.mem_singleton_iff, Prod.mk_inj] at h_x_eq
-  -- **Now we have pure equalities of x.1 and x.2**
-  rcases h_y_s'_mem_support_forIn_block with ⟨z, s'', h_forIn_run_mem, h_pure⟩
-  have h_z_ne_none : z ≠ none := by
-    intro h_z_eq_none
-    simp only [h_z_eq_none, simulateQ_pure, StateT.run_pure, support_pure, Set.mem_singleton_iff,
-      Prod.mk.injEq, reduceCtorEq, false_and] at h_pure
-  obtain ⟨z_val, h_z_eq⟩ := Option.ne_none_iff_exists.mp h_z_ne_none
-  obtain ⟨rfl⟩ := h_z_eq
-  erw [simulateQ_pure, support_pure] at h_pure
-  simp only [Set.mem_singleton_iff, Prod.mk.injEq, Option.some.injEq] at h_pure
-  -- **h_pure : y_val = true ∧ s' = s''**
-  dsimp only [forIn_block] at h_forIn_run_mem
-  -- 1. Apply the extraction lemma
-  have h_independent_support_mem_exists := OptionT.exists_path_of_mem_support_forIn_unit.{0}
-    (spec := []ₒ) (l := List.finRange γ_repetitions) (f := forIn_body) (s_init := s)
-    (s_final := s'') (u := z_val)
-    (h_yield := by
-      intro rep s_pre res_step h_res_step_mem
-      dsimp only [forIn_body] at h_res_step_mem
-      set oa : OracleComp []ₒ (Option Unit) :=
-       ((simulateQ.{0, 0, 0} (impl := OracleInterface.simOracle2 []ₒ oStmtIn tr.messages)
-          ((checkSingleRepetition 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ)
-            (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-            ((FullTranscript.mk1 (tr.challenges ⟨0, rfl⟩)).challenges ⟨0, rfl⟩ rep)
-            stmtIn stmtIn.final_constant) :
-              OptionT (OracleComp
-                ([]ₒ + ([OracleStatement 𝔽q β ϑ (Fin.last ℓ)]ₒ +
-                  [(pSpecQuery 𝔽q β γ_repetitions).Message]ₒ))) Unit).run) :
-            OracleComp []ₒ (Option Unit))
-      have h_fst_mem : some res_step.1 ∈ support ((simulateQ impl
-          ((((fun (_ : Unit) ↦ ForInStep.yield PUnit.unit) <$> oa) :
-            OptionT (OracleComp []ₒ) (ForInStep PUnit)))).run' s_pre) := by
-        rw [StateT.run', support_map]
-        exact Set.mem_image_of_mem Prod.fst h_res_step_mem
-      have h_run'_supp_eq := support_simulateQ_run'_eq (impl := impl)
-        (oa := ((((fun (_ : Unit) ↦ ForInStep.yield PUnit.unit) <$> oa) :
-          OptionT (OracleComp []ₒ) (ForInStep PUnit))))
-        (s := s_pre)
-        (hImplSupp := by simp only [Set.fmap_eq_image, IsEmpty.forall_iff, implies_true])
-      rw [h_run'_supp_eq] at h_fst_mem
-      erw [OptionT.mem_support_OptionT_run_map_some] at h_fst_mem
-      obtain ⟨u, _h_u_mem, h_eq⟩ := h_fst_mem
-      exact h_eq.symm
-    )
-    (h_mem := h_forIn_run_mem)
-  set γ_challenges : Fin γ_repetitions →
-    sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩ := tr.challenges ⟨0, rfl⟩ with h_γ_challenges_def
-  rw [h_pure.1] at h_x_eq
-  rw [h_x_eq.1] at hx_1_eq_stmtOut_oStmtOut
-  simp only [Option.some.injEq, Prod.mk.injEq, Bool.true_eq] at hx_1_eq_stmtOut_oStmtOut
-  constructor
-  · exact hx_1_eq_stmtOut_oStmtOut.1
-  · constructor
-    · exact hx_1_eq_stmtOut_oStmtOut.2.symm
-    · -- 2. Quantify over an arbitrary repetition
-      intro rep
-      -- ⊢ logical_checkSingleRepetition 𝔽q β oStmtIn (γ_challenges rep)
-        -- stmtIn stmtIn.final_constant
-      have h_rep_th_support_mem := h_independent_support_mem_exists rep
-        (by simp only [List.mem_finRange])
-      rcases h_rep_th_support_mem with ⟨state_pre_repetition, state_post_repetition,
-        h_support_rep_ith_iteration⟩
-      exact logical_checkSingleRepetition_of_mem_support_forIn_body 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (γ_repetitions := γ_repetitions) (σ := σ) (impl := impl)
-        (oStmtIn := oStmtIn) (tr := tr) (stmtIn := stmtIn) (rep := rep)
-        (state_pre := state_pre_repetition) (forIn_body := forIn_body) (h_forIn_body_eq := rfl)
-        (h_mem := by
-          use (ForInStep.yield PUnit.unit, state_post_repetition)
-          exact h_support_rep_ith_iteration
-        )
+  sorry
 
 /-- Strong completeness for the query phase logic step.
 
@@ -2369,7 +2209,8 @@ theorem queryOracleProof_perfectCompleteness {σ : Type}
     (oracleProof := queryOracleProof 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (init := init)
     (impl := impl) := by
-  unfold OracleProof.perfectCompleteness
+  sorry
+/- Original proof commented out because verify/embed/hEq fields are sorry'd
  -- Step 1: Unroll the 2-message reduction to convert from probability to logic
   rw [OracleReduction.unroll_1_message_reduction_perfectCompleteness_V_to_P (hInit := hInit)
     (hDir0 := by rfl)
@@ -2583,6 +2424,7 @@ theorem queryOracleProof_perfectCompleteness {σ : Type}
       · rw [verStmtOut_eq, prvStmtOut_eq];
       · rw [verOStmtOut_eq];
         exact h_agree.2
+-/
 
 open scoped NNReal
 

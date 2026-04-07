@@ -43,7 +43,7 @@ variable (h_l : ℓ = ℓ' + κ)
 variable {𝓑 : Fin 2 ↪ L}
 variable (mlIOPCS : MLIOPCS L ℓ')
 
-noncomputable def batchingCoreVerifier :=
+def batchingCoreVerifier :=
   OracleVerifier.append (oSpec:=[]ₒ)
     (V₁:= BatchingPhase.batchingOracleVerifier κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) mlIOPCS.toAbstractOStmtIn)
     (pSpec₁:=pSpecBatching κ L K)
@@ -53,14 +53,14 @@ noncomputable def batchingCoreVerifier :=
 
 /-- The oracle verifier for the full Binary Basefold protocol -/
 @[reducible]
-noncomputable def fullOracleVerifier :=
+def fullOracleVerifier :=
   OracleVerifier.append (oSpec:=[]ₒ)
     (V₁:=batchingCoreVerifier κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) mlIOPCS)
     (pSpec₁:=pSpecLargeFieldReduction κ L K ℓ')
     (V₂:=mlIOPCS.oracleReduction.verifier)
     (pSpec₂:=mlIOPCS.pSpec)
 
-noncomputable def batchingCoreReduction :=
+def batchingCoreReduction :=
   OracleReduction.append
     (R₁ := BatchingPhase.batchingOracleReduction κ L K β ℓ ℓ' h_l (𝓑 := 𝓑)
       mlIOPCS.toAbstractOStmtIn)
@@ -71,7 +71,7 @@ noncomputable def batchingCoreReduction :=
 
 /-- The reduction for the full Binary Basefold protocol -/
 @[reducible]
-noncomputable def fullOracleReduction :
+def fullOracleReduction :
   OracleReduction (oSpec:=[]ₒ)
     (StmtIn := BatchingStmtIn (L:=L) (ℓ := ℓ)) (StmtOut := Bool)
     (OStmtIn:= mlIOPCS.OStmtIn)
@@ -83,7 +83,7 @@ noncomputable def fullOracleReduction :
 
 /-- The full Binary Basefold protocol as a Proof -/
 @[reducible]
-noncomputable def fullOracleProof :
+def fullOracleProof :
   OracleProof []ₒ
     (Statement := BatchingStmtIn (L:=L) (ℓ := ℓ))
     (OStatement := mlIOPCS.OStmtIn)
