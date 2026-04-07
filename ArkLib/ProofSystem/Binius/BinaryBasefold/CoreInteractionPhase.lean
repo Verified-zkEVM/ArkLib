@@ -122,7 +122,7 @@ def foldRelayOracleVerifier (i : Fin ℓ)
   OracleVerifier.append
         (pSpec₁ := pSpecFold (L:=L))
     (pSpec₂ := pSpecRelay)
-    (foldOracleVerifier 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i)
+    (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i)
     (relayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR)
 
 @[reducible]
@@ -139,7 +139,7 @@ noncomputable def foldRelayOracleReduction (i : Fin ℓ)
   OracleReduction.append
     (pSpec₁ := pSpecFold (L:=L))
     (pSpec₂ := pSpecRelay)
-        (foldOracleReduction 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i)
+        (foldOracleReduction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i)
     (relayOracleReduction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR)
 
 
@@ -157,7 +157,7 @@ theorem foldRelayOracleReduction_perfectCompleteness
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i.castSucc)
     (relOut := strictRoundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i.succ)
-    (oracleReduction := foldRelayOracleReduction 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (oracleReduction := foldRelayOracleReduction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑:=𝓑) i hNCR) (init := init) (impl := impl) := by
   unfold foldRelayOracleReduction pSpecFoldRelay
   apply OracleReduction.append_perfectCompleteness
@@ -190,7 +190,7 @@ lemma foldRelayKnowledgeError_eq (i : Fin ℓ)
 /-! RBR KS for Fold+Relay block: append then convert to flat error. -/
 theorem foldRelayOracleVerifier_rbrKnowledgeSoundness
     (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
-    (foldRelayOracleVerifier 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (foldRelayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑:=𝓑) i hNCR).rbrKnowledgeSoundness (init := init) (impl := impl)
       (relIn := roundRelation 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑:=𝓑) i.castSucc  (mp := mp))
@@ -206,7 +206,7 @@ theorem foldRelayOracleVerifier_rbrKnowledgeSoundness
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
     (rel₃ := roundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.succ)
-    (V₁ := foldOracleVerifier 𝔽q β (mp := mp)
+    (V₁ := foldOracleVerifier 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
     (V₂ := relayOracleVerifier 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR)
@@ -236,7 +236,7 @@ def foldCommitOracleVerifier (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
     OracleVerifier.append (oSpec:=[]ₒ)
       (pSpec₁ := pSpecFold (L:=L))
       (pSpec₂ := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
-      (V₁ := foldOracleVerifier 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i)
+      (V₁ := foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i)
       (V₂ := commitOracleVerifier 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i hCR)
 
 @[reducible]
@@ -253,7 +253,7 @@ noncomputable def foldCommitOracleReduction (i : Fin ℓ)
   OracleReduction.append (oSpec:=[]ₒ)
     (pSpec₁ := pSpecFold (L:=L))
     (pSpec₂ := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
-    (R₁ := foldOracleReduction 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i)
+    (R₁ := foldOracleReduction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i)
     (R₂ := commitOracleReduction 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i hCR)
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
@@ -323,7 +323,7 @@ theorem foldCommitOracleVerifier_rbrKnowledgeSoundness
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
     (rel₃ := roundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.succ)
-    (V₁ := foldOracleVerifier 𝔽q β (mp := mp)
+    (V₁ := foldOracleVerifier 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
     (V₂ := commitOracleVerifier 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i hCR)
     (rbrKnowledgeError₁ := foldKnowledgeError 𝔽q β (ϑ := ϑ)
@@ -360,7 +360,7 @@ def nonLastSingleBlockOracleVerifier (bIdx : Fin (ℓ / ϑ - 1)) :=
       (V := fun i => by
         have hNCR : ¬ isCommitmentRound ℓ ϑ ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩
           := isNeCommitmentRound (r:=r) (ℓ:=ℓ) (𝓡:=𝓡) (ϑ:=ϑ) bIdx (x:=i.val) (hx:=by omega)
-        exact foldRelayOracleVerifier (L:=L) 𝔽q β (mp := mp)
+        exact foldRelayOracleVerifier (L:=L) 𝔽q β
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
           ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩ hNCR
       )
@@ -477,7 +477,7 @@ def lastBlockOracleVerifier :=
       (V := fun i => by
         have hNCR : ¬ isCommitmentRound ℓ ϑ ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩
           := lastBlockIdx_isNeCommitmentRound i
-        exact foldRelayOracleVerifier (L:=L) 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        exact foldRelayOracleVerifier (L:=L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (𝓑:=𝓑) ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩ hNCR
       )
     exact OracleVerifier.castInOut (V := cur)
@@ -591,7 +591,7 @@ noncomputable def nonLastSingleBlockOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) 
       (R := fun i => by
         have hNCR : ¬ isCommitmentRound ℓ ϑ ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩
           := isNeCommitmentRound (r:=r) (ℓ:=ℓ) (𝓡:=𝓡) (ϑ:=ϑ) bIdx (x:=i.val) (hx:=by omega)
-        exact foldRelayOracleReduction (L:=L) 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        exact foldRelayOracleReduction (L:=L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (𝓑:=𝓑) (i:=⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩) hNCR
       )
   let h1 : ↑bIdx * ϑ + (ϑ - 1) < ℓ := by
@@ -739,7 +739,7 @@ noncomputable def lastBlockOracleReduction :=
         (R := fun i => by
           have hNCR : ¬ isCommitmentRound ℓ ϑ ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩ :=
             lastBlockIdx_isNeCommitmentRound i
-          exact foldRelayOracleReduction (L:=L) 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          exact foldRelayOracleReduction (L:=L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
             (𝓑:=𝓑) (i:=⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩) hNCR
         )
       exact OracleReduction.castInOut (R := cur)
@@ -945,7 +945,7 @@ lemma nonLastSingleBlockOracleReduction_perfectCompleteness
           have hNCR : ¬ isCommitmentRound ℓ ϑ
             ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩
             := isNeCommitmentRound (r:=r) (ℓ:=ℓ) (𝓡:=𝓡) (ϑ:=ϑ) bIdx (x:=i.val) (hx:=by omega)
-          exact foldRelayOracleReduction (L:=L) 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          exact foldRelayOracleReduction (L:=L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
             (𝓑:=𝓑) (i:=⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩) hNCR
         )
         (rel := fun i ↦
@@ -957,7 +957,7 @@ lemma nonLastSingleBlockOracleReduction_perfectCompleteness
     intro (i : Fin (ϑ - 1))
     have hNCR : ¬ isCommitmentRound ℓ ϑ ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩ :=
       isNeCommitmentRound (r:=r) (ℓ:=ℓ) (𝓡:=𝓡) (ϑ:=ϑ) bIdx (x:=i.val) (hx:=by omega)
-    let res := foldRelayOracleReduction_perfectCompleteness 𝔽q β (mp := mp) (ϑ:=ϑ)
+    let res := foldRelayOracleReduction_perfectCompleteness 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (init := init) (impl := impl)
       (hInit := hInit) (i := ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩) (hNCR := hNCR)
     exact res
@@ -1084,7 +1084,7 @@ lemma lastBlockOracleReduction_perfectCompleteness (hInit : NeverFail init) :
     (R := fun i => by
       have hNCR : ¬ isCommitmentRound ℓ ϑ ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩ :=
         lastBlockIdx_isNeCommitmentRound i
-      exact foldRelayOracleReduction (L:=L) 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      exact foldRelayOracleReduction (L:=L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑:=𝓑) (i:=⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩) hNCR
     )
     (rel := fun i ↦
@@ -1095,7 +1095,7 @@ lemma lastBlockOracleReduction_perfectCompleteness (hInit : NeverFail init) :
   intro (i : Fin ϑ)
   have hNCR : ¬ isCommitmentRound ℓ ϑ ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩ :=
         lastBlockIdx_isNeCommitmentRound i
-  let res := foldRelayOracleReduction_perfectCompleteness 𝔽q β (mp := mp) (ϑ:=ϑ)
+  let res := foldRelayOracleReduction_perfectCompleteness 𝔽q β (ϑ:=ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (init := init) (impl := impl)
     (hInit := hInit) (i := ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩) (hNCR := hNCR)
   exact res
@@ -1308,7 +1308,7 @@ theorem lastBlockOracleVerifier_rbrKnowledgeSoundness :
     (V := fun i => by
       have hNCR : ¬ isCommitmentRound ℓ ϑ ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩ :=
         lastBlockIdx_isNeCommitmentRound i
-      exact foldRelayOracleVerifier (L:=L) 𝔽q β (mp := mp)
+      exact foldRelayOracleVerifier (L:=L) 𝔽q β
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
         ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩ hNCR
     )
@@ -1331,7 +1331,7 @@ theorem lastBlockOracleVerifier_rbrKnowledgeSoundness :
         (OracleVerifier.seqCompose stmt oStmt (fun i => by
           have hNCR : ¬ isCommitmentRound ℓ ϑ ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩ :=
             lastBlockIdx_isNeCommitmentRound i
-          exact foldRelayOracleVerifier (L:=L) 𝔽q β (mp := mp)
+          exact foldRelayOracleVerifier (L:=L) 𝔽q β
             (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
             ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩ hNCR))
         (fun combinedIdx =>
@@ -1342,7 +1342,7 @@ theorem lastBlockOracleVerifier_rbrKnowledgeSoundness :
     intro (i : Fin ϑ)
     have hNCR : ¬ isCommitmentRound ℓ ϑ ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩ :=
       lastBlockIdx_isNeCommitmentRound i
-    exact foldRelayOracleVerifier_rbrKnowledgeSoundness (L := L) 𝔽q β (ϑ := ϑ) (mp := mp)
+    exact foldRelayOracleVerifier_rbrKnowledgeSoundness (L := L) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (init := init) (impl := impl)
       (i := ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩) hNCR
   exact OracleVerifier.rbrKnowledgeSoundness_of_eq_error (h := hCur) (h_ε := by
@@ -1436,7 +1436,7 @@ theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness
       (V := fun i => by
         have hNCR : ¬ isCommitmentRound ℓ ϑ ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩
           := isNeCommitmentRound (r:=r) (ℓ:=ℓ) (𝓡:=𝓡) (ϑ:=ϑ) bIdx (x:=i.val) (hx:=by omega)
-        exact foldRelayOracleVerifier (L:=L) 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        exact foldRelayOracleVerifier (L:=L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (𝓑:=𝓑) ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩ hNCR
       )
       (rel := fun i ↦
@@ -1450,7 +1450,7 @@ theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness
       intro i
       have hNCR : ¬ isCommitmentRound ℓ ϑ ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩ :=
         isNeCommitmentRound (r:=r) (ℓ:=ℓ) (𝓡:=𝓡) (ϑ:=ϑ) bIdx (x:=i.val) (hx:=by omega)
-      exact foldRelayOracleVerifier_rbrKnowledgeSoundness (L := L) 𝔽q β (ϑ := ϑ) (mp := mp)
+      exact foldRelayOracleVerifier_rbrKnowledgeSoundness (L := L) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (init := init) (impl := impl)
         (i := ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩) hNCR
     )

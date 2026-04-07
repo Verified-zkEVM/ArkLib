@@ -121,7 +121,7 @@ noncomputable def foldOracleReduction (i : Fin ℓ) :
     (pSpec := pSpecFold (L := L)) where
   prover := foldOracleProver 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i
   verifier := foldOracleVerifier 𝔽q β (ϑ := ϑ)
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) i
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i
 
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
   {n : ℕ} {deg : ℕ} {m : ℕ} {D : Fin m ↪ R}
@@ -165,7 +165,7 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
       (relOut := strictFoldStepRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i (mp := mp))
       (oracleReduction := foldOracleReduction 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) i)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
       (init := init)
       (impl := impl) := by sorry
 /- Original proof depends on foldStepLogic.proverOut which is now sorry'd for computability. -/
@@ -474,7 +474,7 @@ def foldKStateProp {i : Fin ℓ} (m : Fin (2 + 1))
 /-! Knowledge state function (KState) for single round -/
 def foldKnowledgeStateFunction (i : Fin ℓ) :
     (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (mp := mp) i).KnowledgeStateFunction init impl
+      i).KnowledgeStateFunction init impl
       (relIn := roundRelation (mp := mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑)  i.castSucc)
       (relOut := foldStepRelOut (mp := mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -1599,7 +1599,7 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
 open Classical in
 theorem foldOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ) :
     (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (mp := mp) i).rbrKnowledgeSoundness init impl
+      i).rbrKnowledgeSoundness init impl
       (relIn := roundRelation (mp := mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑)  i.castSucc)
       (relOut := foldStepRelOut (mp := mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
