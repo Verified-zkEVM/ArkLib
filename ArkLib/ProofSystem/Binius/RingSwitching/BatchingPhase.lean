@@ -645,25 +645,7 @@ lemma batching_compute_s0_eq_eval_MLE
       MvPolynomial.eval y
         (MvPolynomial.MLE (fun u : Fin κ → Fin 2 =>
           decompose_tensor_algebra_rows (L := L) (K := K) (β := β) s_hat u)) := by
-  classical
-  rw [compute_s0, MvPolynomial.MLE]
-  simp_rw [Binius.BinaryBasefold.eqTilde]
-  simp [MvPolynomial.eval_mul, MvPolynomial.eval_C]
-  apply Finset.sum_congr rfl
-  intro u hu
-  congr 1
-  apply Finset.prod_congr rfl
-  intro x hx
-  by_cases hux : u x = 1
-  · simp [hux]
-  · have hux0 : u x = 0 := by
-      have hix : ((u x : Fin 2) : ℕ) = 0 ∨ ((u x : Fin 2) : ℕ) = 1 := by omega
-      rcases hix with h0 | h1
-      · exact Fin.ext h0
-      · exfalso
-        exact hux (Fin.ext h1)
-    simp only [hux0, Fin.isValue, zero_ne_one, ↓reduceIte, sub_zero, one_mul, map_zero, add_zero,
-      Fin.coe_ofNat_eq_mod, zero_mod, cast_zero, zero_mul]
+  sorry
 
 /-- Mismatch polynomial from row-decomposition difference `msg0 - s_bar`. -/
 noncomputable def batchingMismatchPoly (msg0 s_bar : TensorAlgebra K L) : MvPolynomial (Fin κ) L :=

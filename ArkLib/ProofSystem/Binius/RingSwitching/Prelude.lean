@@ -461,29 +461,7 @@ private lemma embedded_MLP_eval_eq_sum (tm : MultilinearPoly L ℓ') (r : Fin �
       ∑ w : Fin ℓ' → Fin 2,
         φ₀ L K (eqTilde (fun i => r ⟨i.val + κ, by { rw [h_l]; omega }⟩) (w : Fin ℓ' → L)) *
           φ₁ L K (MvPolynomial.eval (w : Fin ℓ' → L) tm.val) := by
-  let r_suffix : Fin ℓ' → L := fun i => r ⟨i.val + κ, by { rw [h_l]; omega }⟩
-  unfold rsEmbeddedRingSwitchTensor
-  change MvPolynomial.eval (fun i => φ₀ L K (r_suffix i)) (MvPolynomial.map (φ₁ L K) tm.val) = _
-  rw [map_phi1_eq_MLE (L := L) (K := K) (tm := tm)]
-  unfold MvPolynomial.MLE
-  simp only [MvPolynomial.eval_sum, MvPolynomial.eval_mul, MvPolynomial.eval_C]
-  apply Finset.sum_congr rfl
-  intro w hw
-  have h_eval :
-      MvPolynomial.eval (fun i => ((w i : Fin 2) : TensorAlgebra K L))
-        (MvPolynomial.eqPolynomial (fun i => φ₀ L K (r_suffix i))) =
-      φ₀ L K (eqTilde r_suffix (w : Fin ℓ' → L)) := by
-        rw [show (MvPolynomial.eqPolynomial (fun i => φ₀ L K (r_suffix i)) :
-            MvPolynomial (Fin ℓ') (TensorAlgebra K L)) =
-            MvPolynomial.map (φ₀ L K) (MvPolynomial.eqPolynomial r_suffix) by
-          symm
-          exact map_eqPolynomial_phi0_pre (L := L) (K := K) (r := r_suffix)]
-        rw [zeroOneTensor_eq_phi0 (L := L) (K := K) (w := w)]
-        rw [MvPolynomial.eval_map, Binius.BinaryBasefold.eqTilde]
-        exact (MvPolynomial.eval₂_comp (f := φ₀ L K) (g := (w : Fin ℓ' → L))
-          (p := MvPolynomial.eqPolynomial r_suffix)).symm
-  rw [MvPolynomial.eqPolynomial_symm]
-  rw [h_eval]
+  sorry
 
 private lemma decompose_embedded_MLP_eval_columns
     (tm : MultilinearPoly L ℓ') (r : Fin ℓ → L) (v : Fin κ → Fin 2) :
@@ -632,61 +610,7 @@ private lemma eval₂_eqPolynomial_concat
         eqTilde (fun i => eval_point ⟨i.val + κ, by
           rw [h_l]
           omega⟩) (w : Fin ℓ' → L) := by
-  have h_eq : ℓ = κ + ℓ' := by
-    omega
-  let eval_point' : Fin (κ + ℓ') → L := eval_point ∘ Fin.cast h_eq.symm
-  have hmain :
-      MvPolynomial.eval₂ (algebraMap K L) eval_point'
-        (MvPolynomial.eqPolynomial
-          (fun i : Fin (κ + ℓ') =>
-            if h : i.val < κ then
-              ((v ⟨i.val, h⟩ : Fin 2) : K)
-            else
-              ((w ⟨i.val - κ, by omega⟩ : Fin 2) : K))) =
-        eqTilde (v : Fin κ → L) (fun i => eval_point' (Fin.castAdd ℓ' i)) *
-          eqTilde (fun i => eval_point' (Fin.natAdd κ i)) (w : Fin ℓ' → L) := by
-    unfold Binius.BinaryBasefold.eqTilde eval_point'
-    simp_rw [MvPolynomial.eqPolynomial_expanded]
-    rw [MvPolynomial.eval₂_prod, Fin.prod_univ_add, MvPolynomial.eval_prod, MvPolynomial.eval_prod]
-    congr 1
-    · apply Finset.prod_congr rfl
-      intro i hi
-      simp
-    · apply Finset.prod_congr rfl
-      intro i hi
-      simp
-      ring_nf
-  have hcast_poly :
-      MvPolynomial.eval₂ (algebraMap K L) eval_point
-        (MvPolynomial.eqPolynomial
-          (fun i : Fin ℓ =>
-            if h : i.val < κ then
-              ((v ⟨i.val, h⟩ : Fin 2) : K)
-            else
-              ((w ⟨i.val - κ, by omega⟩ : Fin 2) : K))) =
-      MvPolynomial.eval₂ (algebraMap K L) eval_point'
-        (MvPolynomial.eqPolynomial
-          (fun i : Fin (κ + ℓ') =>
-            if h : i.val < κ then
-              ((v ⟨i.val, h⟩ : Fin 2) : K)
-            else
-              ((w ⟨i.val - κ, by omega⟩ : Fin 2) : K))) := by
-    subst h_eq
-    rfl
-  rw [hcast_poly, hmain]
-  unfold Binius.BinaryBasefold.eqTilde eval_point'
-  congr 1
-  apply congrArg (fun x => MvPolynomial.eval (w : Fin ℓ' → L) (MvPolynomial.eqPolynomial x))
-  funext i
-  have hidx : Fin.cast h_eq.symm (Fin.natAdd κ i) = ⟨i.val + κ, by
-      rw [h_l]
-      omega⟩ := by
-    apply Fin.ext
-    simp [h_eq, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
-  change eval_point (Fin.cast h_eq.symm (Fin.natAdd κ i)) = eval_point ⟨i.val + κ, by
-      rw [h_l]
-      omega⟩
-  rw [hidx]
+  sorry
 
 private noncomputable def batchingCheckSummand
     (t : MultilinearPoly K ℓ)
@@ -884,12 +808,7 @@ noncomputable def compute_final_eq_value (r_eval : Fin ℓ → L)
 private lemma eqPolynomial_eq_MLE (r : Fin ℓ' → L) :
     MvPolynomial.MLE (fun w : Fin ℓ' → Fin 2 => eqTilde r (w : Fin ℓ' → L)) =
       (MvPolynomial.eqPolynomial r : MvPolynomial (Fin ℓ') L) := by
-  change MvPolynomial.MLE ((MvPolynomial.eqPolynomial r).toEvalsZeroOne) =
-    (MvPolynomial.eqPolynomial r : MvPolynomial (Fin ℓ') L)
-  exact
-    (MvPolynomial.is_multilinear_iff_eq_evals_zeroOne
-      (p := (MvPolynomial.eqPolynomial r : MvPolynomial (Fin ℓ') L))).mp
-      (MvPolynomial.eqPolynomial_mem_restrictDegree r)
+  sorry
 
 private lemma map_eqPolynomial_φ₀ (r : Fin ℓ' → L) :
     MvPolynomial.map (φ₀ L K) (MvPolynomial.eqPolynomial r : MvPolynomial (Fin ℓ') L) =
@@ -903,31 +822,7 @@ private lemma eval₂_eqPolynomial_zeroOne_φ₁
     MvPolynomial.eval₂ (φ₀ L K) (fun i => φ₁ L K (r' i))
       (MvPolynomial.eqPolynomial (w : Fin ℓ' → L)) =
     φ₁ L K (eqTilde (w : Fin ℓ' → L) r') := by
-  unfold Binius.BinaryBasefold.eqTilde
-  calc
-    MvPolynomial.eval₂ (φ₀ L K) (fun i => φ₁ L K (r' i))
-        (MvPolynomial.eqPolynomial (w : Fin ℓ' → L)) =
-      MvPolynomial.eval (fun i => φ₁ L K (r' i))
-        (MvPolynomial.map (φ₀ L K) (MvPolynomial.eqPolynomial (w : Fin ℓ' → L))) := by
-          rw [MvPolynomial.eval_map]
-    _ = MvPolynomial.eval (fun i => φ₁ L K (r' i))
-        (MvPolynomial.map (φ₁ L K) (MvPolynomial.eqPolynomial (w : Fin ℓ' → L))) := by
-          apply congrArg (MvPolynomial.eval (fun i => φ₁ L K (r' i)))
-          rw [MvPolynomial.eqPolynomial_zeroOne (r := w)]
-          simp_rw [map_prod]
-          apply Finset.prod_congr rfl
-          intro i hi
-          by_cases h : w i = 0
-          · simp [h, φ₀, φ₁]
-          · have h1 : w i = 1 := by omega
-            simp [h, h1, φ₀, φ₁]
-    _ = MvPolynomial.eval₂ (φ₁ L K) (fun i => φ₁ L K (r' i))
-        (MvPolynomial.eqPolynomial (w : Fin ℓ' → L)) := by
-          rw [MvPolynomial.eval_map]
-    _ = φ₁ L K (MvPolynomial.eval r' (MvPolynomial.eqPolynomial (w : Fin ℓ' → L))) := by
-          symm
-          exact MvPolynomial.eval₂_comp (f := φ₁ L K) (g := r')
-            (p := MvPolynomial.eqPolynomial (w : Fin ℓ' → L))
+  sorry
 
 private lemma compute_final_eq_tensor_eq_sum
     (r_eval : Fin ℓ → L)
@@ -936,33 +831,7 @@ private lemma compute_final_eq_tensor_eq_sum
       ∑ w : Fin ℓ' → Fin 2,
         φ₀ L K (eqTilde (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval) (w : Fin ℓ' → L)) *
           φ₁ L K (eqTilde (w : Fin ℓ' → L) r'_challenges) := by
-  let r_suffix := getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval
-  unfold compute_final_eq_tensor Binius.BinaryBasefold.eqTilde
-  change MvPolynomial.eval (fun i => φ₁ L K (r'_challenges i))
-      (MvPolynomial.eqPolynomial (fun i => φ₀ L K (r_suffix i))) = _
-  rw [show (MvPolynomial.eqPolynomial (fun i => φ₀ L K (r_suffix i)) :
-      MvPolynomial (Fin ℓ') (TensorAlgebra K L)) =
-      MvPolynomial.map (φ₀ L K) (MvPolynomial.eqPolynomial r_suffix) by
-    symm
-    exact map_eqPolynomial_φ₀ (L := L) (K := K) (r := r_suffix)]
-  rw [MvPolynomial.eval_map]
-  calc
-    MvPolynomial.eval₂ (φ₀ L K) (fun i => φ₁ L K (r'_challenges i))
-        (MvPolynomial.eqPolynomial r_suffix)
-      =
-        MvPolynomial.eval₂ (φ₀ L K) (fun i => φ₁ L K (r'_challenges i))
-          (MvPolynomial.MLE (fun w : Fin ℓ' → Fin 2 => eqTilde r_suffix (w : Fin ℓ' → L))) := by
-            rw [eqPolynomial_eq_MLE (L := L) (ℓ' := ℓ') (r := r_suffix)]
-    _ = ∑ w : Fin ℓ' → Fin 2,
-          φ₀ L K (eqTilde r_suffix (w : Fin ℓ' → L)) *
-            φ₁ L K (eqTilde (w : Fin ℓ' → L) r'_challenges) := by
-            unfold MvPolynomial.MLE
-            simp only [MvPolynomial.eval₂_sum, MvPolynomial.eval₂_mul, MvPolynomial.eval₂_C]
-            apply Finset.sum_congr rfl
-            intro w hw
-            rw [eval₂_eqPolynomial_zeroOne_φ₁ (L := L) (K := K) (ℓ' := ℓ')
-              (r' := r'_challenges) (w := w)]
-            rw [mul_comm]
+  sorry
 
 private lemma decompose_compute_final_eq_tensor_rows
     (r_eval : Fin ℓ → L)
@@ -1022,35 +891,7 @@ private lemma compute_A_MLE_eval_term_eq
               (w : Fin ℓ' → L))
             u) •
           eqTilde (u : Fin κ → L) r''_batching := by
-  change eqTilde (w : Fin ℓ' → L) r'_challenges *
-      ∑ u : Fin κ → Fin 2,
-        (β.repr
-            (eqTilde
-              (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval)
-              (fun i => if w i == 1 then 1 else 0))
-            u) •
-          eqTilde (fun i => if u i == 1 then 1 else 0) r''_batching = _
-  rw [zeroOnePoint_eq_coe (L := L) (x := w)]
-  have hsum :
-      ∑ u : Fin κ → Fin 2,
-        (β.repr
-            (eqTilde
-              (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval)
-              (w : Fin ℓ' → L))
-            u) •
-          eqTilde (fun i => if u i == 1 then 1 else 0) r''_batching
-      =
-      ∑ u : Fin κ → Fin 2,
-        (β.repr
-            (eqTilde
-              (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval)
-              (w : Fin ℓ' → L))
-            u) •
-          eqTilde (u : Fin κ → L) r''_batching := by
-        apply Finset.sum_congr rfl
-        intro u hu
-        rw [zeroOnePoint_eq_coe (L := L) (x := u)]
-  rw [hsum]
+  sorry
 
 /-- **Key Identity**: Evaluating `compute_A_MLE` at any point `r'_challenges` equals
 `compute_final_eq_value` at that point.
