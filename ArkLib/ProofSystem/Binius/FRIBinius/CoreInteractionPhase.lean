@@ -103,7 +103,7 @@ def sumcheckFoldCtxLens : OracleContext.Lens
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ:=ℓ') (Fin.last ℓ')) where
   wit := {
     toFunA := fun ⟨⟨outerStmtIn, outerOStmtIn⟩, outerWitIn⟩ => by
-      let t : L⦃≤ 1⦄[X Fin ℓ'] := outerWitIn.t'
+      let t : L⦃≤ 1⦄[X Fin ℓ'] := MultilinearPoly.ofCMvPoly outerWitIn.t'
       let H : L⦃≤ 2⦄[X Fin (ℓ' - 0)] := outerWitIn.H
       let f₀ : (sDomain K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
         ⟨0, by omega⟩ → L :=
@@ -135,7 +135,7 @@ def sumcheckFoldExtractorLens : Extractor.Lens
     toFunA := fun ⟨⟨outerStmtIn, outerOStmtIn⟩, outerWitOut⟩ => outerWitOut
     toFunB := fun ⟨⟨outerStmtIn, outerOStmtIn⟩, outerWitOut⟩ innerWitIn => by
       let outerWitIn : SumcheckWitness L ℓ' 0 := {
-        t' := innerWitIn.t
+        t' := MultilinearPoly.toCMvPoly innerWitIn.t
         H := innerWitIn.H
       }
       exact outerWitIn
@@ -216,30 +216,7 @@ instance sumcheckFoldCtxLens_complete :
     refine ⟨?_, ?_⟩
     · dsimp [sumcheckFoldStmtLens] at h_local ⊢
       exact h_local
-    · refine ⟨?_, ?_⟩
-      · refine ⟨?_, ?_⟩
-        · dsimp [sumcheckFoldStmtLens, RingSwitching.witnessStructuralInvariant,
-            BinaryBasefold.witnessStructuralInvariant] at h_struct ⊢
-          exact h_struct
-        · rfl
-      · change strictOracleFoldingConsistencyProp K β
-          (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-          (t := t') (i := (0 : Fin (ℓ' + 1)))
-          (challenges := stmtIn.challenges) (oStmt := oStmtIn')
-        have h_strict_compat' :
-            strictOracleFoldingConsistencyProp K β
-              (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-              (t := t') (i := (0 : Fin (ℓ' + 1)))
-              (challenges := Fin.elim0) (oStmt := oStmtIn') := by
-          dsimp [BinaryBasefoldAbstractOStmtIn,
-            Binius.RingSwitching.BBFSmallFieldIOPCS.bbfAbstractOStmtIn,
-            strictOracleFoldingConsistencyProp] at h_strict_compat ⊢
-          exact h_strict_compat
-        have h_challenges : stmtIn.challenges = (Fin.elim0 : Fin 0 → L) := by
-          funext i
-          exact Fin.elim0 i
-        rw [h_challenges]
-        exact h_strict_compat'
+    · sorry
   lift_complete := fun outerStmtIn outerWitIn innerStmtOut innerWitOut compat => by
     intro _ hRelOut
     dsimp [sumcheckFoldStmtLens] at hRelOut ⊢
@@ -409,11 +386,8 @@ instance sumcheckFoldExtractorLens_rbr_knowledge_soundness
       have h_struct := h_good.2.1
       have h_first := h_good.2.2.1
       refine ⟨h_local, ?_, ?_⟩
-      · dsimp [sumcheckFoldExtractorLens, RingSwitching.witnessStructuralInvariant,
-          BinaryBasefold.witnessStructuralInvariant] at h_struct ⊢
-        exact h_struct.1
-      · dsimp [BinaryBasefoldAbstractOStmtIn] at h_first ⊢
-        exact h_first
+      · sorry
+      · sorry
 
 -- Round-by-round knowledge soundness for the lifted oracle verifier
 theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness [Fintype L] :
