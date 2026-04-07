@@ -49,7 +49,7 @@ open Binius.RingSwitching Binius.RingSwitching.FullRingSwitching
 open Polynomial MvPolynomial OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Module
 open scoped NNReal
 
-noncomputable section
+section
 
 /-! ## Part 1: Binary Basefold as MLIOPCS
 
@@ -95,7 +95,7 @@ def reducedMLPEvalStatement_to_BBF_Statement (stmt : MLPEvalStatement (L := L) (
   ctx := ⟨stmt.t_eval_point, stmt.original_claim⟩
 
 /-- Convert `WitMLP L ℓ'` to `Witness 𝔽q β 0`. -/
-def MLPEvalWitness_to_BBF_Witness (stmt : MLPEvalStatement (L := L) (ℓ := ℓ'))
+noncomputable def MLPEvalWitness_to_BBF_Witness (stmt : MLPEvalStatement (L := L) (ℓ := ℓ'))
     (wit : WitMLP L ℓ') :
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') (0 : Fin (ℓ' + 1)) where
   t := MultilinearPoly.ofCMvPoly wit.t
@@ -127,7 +127,7 @@ def largeFieldInvocationStmtLens : OracleStatement.Lens
   toFunB := fun _ ⟨stmtOut, oStmtOut⟩ => ⟨stmtOut, oStmtOut⟩
 
 /-- Context lens for the ring-switching large-field invocation into Binary Basefold. -/
-def largeFieldInvocationCtxLens : OracleContext.Lens
+noncomputable def largeFieldInvocationCtxLens : OracleContext.Lens
     (OuterStmtIn := MLPEvalStatement (L := L) (ℓ := ℓ'))
     (OuterStmtOut := Bool)
     (InnerStmtIn := Statement (L := L) (SumcheckBaseContext L ℓ') (0 : Fin (ℓ' + 1)))
@@ -151,7 +151,7 @@ def largeFieldInvocationCtxLens : OracleContext.Lens
   }
 
 /-- Binary Basefold oracle reduction lifted to the ring-switching large-field invocation context. -/
-def largeFieldInvocationOracleReduction :
+noncomputable def largeFieldInvocationOracleReduction :
     OracleReduction (oSpec := []ₒ)
       (StmtIn := MLPEvalStatement (L := L) (ℓ := ℓ'))
       (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') ϑ
@@ -434,7 +434,7 @@ instance largeFieldInvocationExtractorLens_rbr_knowledge_soundness
 
 This wraps the full Binary Basefold protocol (core interaction + query phase)
 as a multilinear polynomial commitment scheme over the large field `L`. -/
-def bbfMLIOPCS : MLIOPCS L ℓ' where
+noncomputable def bbfMLIOPCS : MLIOPCS L ℓ' where
   toAbstractOStmtIn := bbfAbstractOStmtIn 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
   numRounds := _  -- inferred from fullPSpec
   pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)

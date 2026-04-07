@@ -33,7 +33,7 @@ This module defines the protocol specs, and the following instance types:
   `ProtocolSpec.challengeOracleInterface` to avoid conflict.
 -/
 
-noncomputable section
+section
 open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial
 open scoped NNReal
 
@@ -157,7 +157,7 @@ instance instInhabitedPSpecBatchingMessage : [(pSpecBatching κ L K).Message]ₒ
   change Inhabited (TensorAlgebra K L)
   exact ⟨0⟩
 
-instance instInhabitedPSpecSumcheckRoundMessage :
+noncomputable instance instInhabitedPSpecSumcheckRoundMessage :
     [(pSpecSumcheckRound (L:=L)).Message]ₒ.Inhabited := by
   letI : Inhabited L := ⟨0⟩
   refine { inhabited_B := ?_ }

@@ -46,7 +46,7 @@ source of RBR knowledge soundness error.
   `(Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1}) ⋅ e_u) ⋅ s'`. -/
 
 namespace Binius.RingSwitching.SumcheckPhase
-noncomputable section
+section
 
 variable (κ : ℕ) [NeZero κ]
 variable (L : Type) [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
@@ -82,12 +82,12 @@ def sumcheckVerifierStmtOut (stmtIn : Statement (L := L) (ℓ := ℓ')
 
 /-- Pure prover message computation: computes h_i from the witness. -/
 @[reducible]
-def sumcheckProverComputeMsg (witIn : SumcheckWitness L ℓ' i.castSucc) : L⦃≤ 2⦄[X] :=
+noncomputable def sumcheckProverComputeMsg (witIn : SumcheckWitness L ℓ' i.castSucc) : L⦃≤ 2⦄[X] :=
   getSumcheckRoundPoly ℓ' 𝓑 (i := i) witIn.H
 
 /-- Pure prover output: computes the output witness given the transcript. -/
 @[reducible]
-def sumcheckProverWitOut (_stmtIn : Statement (L := L) (ℓ := ℓ')
+noncomputable def sumcheckProverWitOut (_stmtIn : Statement (L := L) (ℓ := ℓ')
   (RingSwitchingBaseContext κ L K ℓ) i.castSucc)
     (witIn : SumcheckWitness L ℓ' i.castSucc) (r_i' : L) : SumcheckWitness L ℓ' i.succ :=
   {
@@ -98,7 +98,7 @@ def sumcheckProverWitOut (_stmtIn : Statement (L := L) (ℓ := ℓ')
 /-! ## ReductionLogicStep Instance -/
 
 /-- The Logic Instance for the i-th round of Ring Switching Sumcheck. -/
-def sumcheckStepLogic :
+noncomputable def sumcheckStepLogic :
     Binius.BinaryBasefold.ReductionLogicStep
       (Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) i.castSucc)
       (SumcheckWitness L ℓ' i.castSucc)
@@ -504,7 +504,7 @@ theorem iteratedSumcheckOracleReduction_perfectCompleteness (i : Fin ℓ') (hIni
       · rw [verOStmtOut_eq, prvOStmtOut_eq];
         exact h_agree.2
 
-def iteratedSumcheckRoundKnowledgeError (_ : Fin ℓ') : ℝ≥0 := (2 : ℝ≥0) / (Fintype.card L)
+noncomputable def iteratedSumcheckRoundKnowledgeError (_ : Fin ℓ') : ℝ≥0 := (2 : ℝ≥0) / (Fintype.card L)
 
 /-- Witness type at each message index for the iterated sumcheck step
   (counterpart of BBF `foldWitMid`).
@@ -1372,7 +1372,7 @@ section LargeFieldReduction
 
 /-- Composed oracle verifier for the SumcheckStep (seqCompose over ℓ') -/
 @[reducible]
-def sumcheckLoopOracleVerifier :=
+noncomputable def sumcheckLoopOracleVerifier :=
   OracleVerifier.seqCompose (m := ℓ') (oSpec := []ₒ)
     (pSpec := fun _ => pSpecSumcheckRound L)
     (OStmt := fun _ => aOStmtIn.OStmtIn)
@@ -1381,7 +1381,7 @@ def sumcheckLoopOracleVerifier :=
 
 /-- Composed oracle reduction for the SumcheckStep (seqCompose over ℓ') -/
 @[reducible]
-def sumcheckLoopOracleReduction :
+noncomputable def sumcheckLoopOracleReduction :
   OracleReduction (oSpec := []ₒ)
     (StmtIn := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) 0)
     (OStmtIn := aOStmtIn.OStmtIn)
@@ -1402,7 +1402,7 @@ def sumcheckLoopOracleReduction :
 
 /-- Large-field reduction verifier: Sumcheck seqCompose, then append FinalSum -/
 @[reducible]
-def coreInteractionOracleVerifier :=
+noncomputable def coreInteractionOracleVerifier :=
   OracleVerifier.append (oSpec:=[]ₒ)
     (V₁:=sumcheckLoopOracleVerifier κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) aOStmtIn)
     (pSpec₁:=pSpecSumcheckLoop L ℓ')
@@ -1411,7 +1411,7 @@ def coreInteractionOracleVerifier :=
 
 /-- Large-field reduction: Sumcheck seqCompose, then append FinalSum -/
 @[reducible]
-def coreInteractionOracleReduction :=
+noncomputable def coreInteractionOracleReduction :=
   OracleReduction.append
     (R₁ := sumcheckLoopOracleReduction κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) aOStmtIn)
     (pSpec₁:=pSpecSumcheckLoop L ℓ')
@@ -1453,7 +1453,7 @@ theorem coreInteraction_perfectCompleteness (hInit : NeverFail init) :
       (β:=β) (ℓ:=ℓ) (ℓ':=ℓ') (h_l:=h_l) (aOStmtIn:=aOStmtIn) (init:=init) (impl:=impl)
 
 /-- standard sumcheck error -/
-def coreInteractionRbrKnowledgeError (_ : (pSpecCoreInteraction L ℓ').ChallengeIdx) : ℝ≥0 :=
+noncomputable def coreInteractionRbrKnowledgeError (_ : (pSpecCoreInteraction L ℓ').ChallengeIdx) : ℝ≥0 :=
   (2 : ℝ≥0) / (Fintype.card L) -- this terms comes from the sumcheck
     -- steps, i.e. iteratedSumcheckRoundKnowledgeError
 

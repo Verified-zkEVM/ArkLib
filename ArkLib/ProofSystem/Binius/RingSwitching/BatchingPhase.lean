@@ -48,7 +48,7 @@ Output: `witOut = (Statement (L := L) (ℓ := ℓ')`
   `(RingSwitchingBaseContext κ L K ℓ) 0) × (SumcheckWitness L ℓ' 0), oStmt = aOStmtIn.OStmtIn`
 -/
 
-noncomputable section
+section
 namespace Binius.RingSwitching.BatchingPhase
 
 variable (κ : ℕ) [NeZero κ]
@@ -122,7 +122,7 @@ def batchingVerifierCheck (stmtIn : BatchingStmtIn L ℓ) (msg0 : TensorAlgebra 
 /-- Pure verifier output: computes the output statement given the transcript.
 This is extracted from the monadic verifier for use in ReductionLogicStep. -/
 @[reducible]
-def batchingVerifierStmtOut (stmtIn : BatchingStmtIn L ℓ)
+noncomputable def batchingVerifierStmtOut (stmtIn : BatchingStmtIn L ℓ)
     (msg0 : TensorAlgebra K L) (r_batching : Fin κ → L) :
     Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) 0 :=
   let s₀ := compute_s0 κ L K β msg0 r_batching
@@ -141,14 +141,14 @@ def batchingVerifierStmtOut (stmtIn : BatchingStmtIn L ℓ)
 /-- Pure prover message computation: computes ŝ from the witness.
 This is extracted from the monadic prover for use in ReductionLogicStep. -/
 @[reducible]
-def batchingProverComputeMsg (stmtIn : BatchingStmtIn L ℓ) (witIn : BatchingWitIn L K ℓ ℓ') :
+noncomputable def batchingProverComputeMsg (stmtIn : BatchingStmtIn L ℓ) (witIn : BatchingWitIn L K ℓ ℓ') :
     TensorAlgebra K L :=
   embedded_MLP_eval (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) witIn.t' stmtIn.t_eval_point
 
 /-- Pure prover output: computes the output witness given the transcript.
 This is extracted from the monadic prover for use in ReductionLogicStep. -/
 @[reducible]
-def batchingProverWitOut (stmtIn : BatchingStmtIn L ℓ) (witIn : BatchingWitIn L K ℓ ℓ')
+noncomputable def batchingProverWitOut (stmtIn : BatchingStmtIn L ℓ) (witIn : BatchingWitIn L K ℓ ℓ')
     (msg0 : TensorAlgebra K L) (r_batching : Fin κ → L) :
     SumcheckWitness L ℓ' 0 :=
   let ctx : RingSwitchingBaseContext κ L K ℓ := {
@@ -171,7 +171,7 @@ def batchingProverWitOut (stmtIn : BatchingStmtIn L ℓ) (witIn : BatchingWitIn 
 /-- The Logic Instance for the Batching Phase.
 This encapsulates the pure logic of the batching phase, separating it from
 the monadic oracle operations. -/
-def batchingStepLogic :
+noncomputable def batchingStepLogic :
     Binius.BinaryBasefold.ReductionLogicStep
       -- In/Out Types
       (BatchingStmtIn L ℓ)
@@ -348,7 +348,7 @@ noncomputable def batchingRbrExtractor :
 /-- RBR knowledge soundness error for the batching phase.
 The only verifier randomness is `r''`. A collision has probability related to `κ/|L|`.
 For simplicity, we can set a placeholder value. -/
-def batchingRBRKnowledgeError : ℝ≥0 := (κ : ℝ≥0) / (Fintype.card L : ℝ≥0) -- Schwartz-Zippel error
+noncomputable def batchingRBRKnowledgeError : ℝ≥0 := (κ : ℝ≥0) / (Fintype.card L : ℝ≥0) -- Schwartz-Zippel error
 
 def batchingKStateProp {m : Fin (2 + 1)}
     (tr : Transcript m (pSpecBatching (κ := κ) (L := L) (K := K)))
@@ -669,7 +669,7 @@ lemma batching_compute_s0_eq_eval_MLE
       Fin.coe_ofNat_eq_mod, zero_mod, cast_zero, zero_mul]
 
 /-- Mismatch polynomial from row-decomposition difference `msg0 - s_bar`. -/
-def batchingMismatchPoly (msg0 s_bar : TensorAlgebra K L) : MvPolynomial (Fin κ) L :=
+noncomputable def batchingMismatchPoly (msg0 s_bar : TensorAlgebra K L) : MvPolynomial (Fin κ) L :=
   MvPolynomial.MLE (fun u : Fin κ → Fin 2 =>
     decompose_tensor_algebra_rows (L := L) (K := K) (β := β) msg0 u -
     decompose_tensor_algebra_rows (L := L) (K := K) (β := β) s_bar u)

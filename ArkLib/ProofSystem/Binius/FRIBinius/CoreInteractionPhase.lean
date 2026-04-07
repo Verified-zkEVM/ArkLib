@@ -44,7 +44,7 @@ identity on `innerWitOut`).
 -/
 
 namespace Binius.FRIBinius.CoreInteractionPhase
-noncomputable section
+section
 
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial
   MvPolynomial TensorProduct Module Binius.BinaryBasefold Binius.RingSwitching
@@ -84,7 +84,7 @@ def sumcheckFoldStmtLens : OracleStatement.Lens
   toFunB := fun ⟨_, _⟩ ⟨innerStmtOut, innerOStmtOut⟩ => ⟨innerStmtOut, innerOStmtOut⟩
 
 /-- Oracle context lens for sumcheck fold lifting -/
-def sumcheckFoldCtxLens : OracleContext.Lens
+noncomputable def sumcheckFoldCtxLens : OracleContext.Lens
     (OuterStmtIn := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) 0)
     (OuterStmtOut := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) (Fin.last ℓ'))
     (InnerStmtIn := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) 0)
@@ -142,14 +142,14 @@ def sumcheckFoldExtractorLens : Extractor.Lens
   }
 
 -- The lifted oracle verifier
-def sumcheckFoldOracleVerifier :=
+noncomputable def sumcheckFoldOracleVerifier :=
   (BinaryBasefold.CoreInteraction.sumcheckFoldOracleVerifier K β (ϑ:=ϑ)
     (mp := RingSwitching_SumcheckMultParam κ L K (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l)
     (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).liftContext
       (lens := sumcheckFoldStmtLens κ L K β ℓ ℓ' 𝓡 ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
 -- The lifted oracle reduction
-def sumcheckFoldOracleReduction :=
+noncomputable def sumcheckFoldOracleReduction :=
   (BinaryBasefold.CoreInteraction.sumcheckFoldOracleReduction K β (ϑ:=ϑ)
     (mp := RingSwitching_SumcheckMultParam κ L K (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).liftContext
@@ -1586,7 +1586,7 @@ section CoreInteractionPhaseReduction
 
 /-- The final oracle verifier that composes sumcheckFold with finalSumcheckStep -/
 @[reducible]
-def coreInteractionOracleVerifier :=
+noncomputable def coreInteractionOracleVerifier :=
   OracleVerifier.append (oSpec:=[]ₒ)
     (Stmt₁ := Statement (L := L) (ℓ:=ℓ') (RingSwitchingBaseContext κ L K ℓ) 0)
     (Stmt₂ := Statement (L := L) (ℓ:=ℓ') (RingSwitchingBaseContext κ L K ℓ) (Fin.last ℓ'))
@@ -1605,7 +1605,7 @@ def coreInteractionOracleVerifier :=
 
 /-- The final oracle reduction that composes sumcheckFold with finalSumcheckStep -/
 @[reducible]
-def coreInteractionOracleReduction :=
+noncomputable def coreInteractionOracleReduction :=
   OracleReduction.append (oSpec:=[]ₒ)
     (Stmt₁ := Statement (L := L) (ℓ:=ℓ') (RingSwitchingBaseContext κ L K ℓ) 0)
     (Stmt₂ := Statement (L := L) (ℓ:=ℓ') (RingSwitchingBaseContext κ L K ℓ) (Fin.last ℓ'))
@@ -1659,7 +1659,7 @@ theorem coreInteractionOracleReduction_perfectCompleteness (hInit : NeverFail in
     exact finalSumcheckOracleReduction_perfectCompleteness κ L K β ℓ ℓ' 𝓡 ϑ
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l (𝓑 := 𝓑) init (hInit := hInit) impl
 
-def coreInteractionOracleRbrKnowledgeError (j : (BinaryBasefold.pSpecCoreInteraction K β (ϑ := ϑ)
+noncomputable def coreInteractionOracleRbrKnowledgeError (j : (BinaryBasefold.pSpecCoreInteraction K β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).ChallengeIdx) : ℝ≥0 :=
     Sum.elim
       (f := fun i => BinaryBasefold.CoreInteraction.sumcheckFoldKnowledgeError

@@ -26,7 +26,7 @@ The FRI-Binius IOPCS consists of the following phases:
 -/
 
 namespace Binius.FRIBinius.FullFRIBinius
-noncomputable section
+section
 
 open Polynomial MvPolynomial OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Module
   Binius Verifier
@@ -48,33 +48,33 @@ variable [hdiv : Fact (ϑ ∣ ℓ')]
 
 section Pspec
 
-def batchingCorePspec := (RingSwitching.pSpecBatching κ L K) ++ₚ
+noncomputable def batchingCorePspec := (RingSwitching.pSpecBatching κ L K) ++ₚ
   (BinaryBasefold.pSpecCoreInteraction K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
-def fullPspec := (batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate) ++ₚ
+noncomputable def fullPspec := (batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate) ++ₚ
   (BinaryBasefold.pSpecQuery K β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
-instance : ∀ j, OracleInterface ((batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).Message j) :=
+noncomputable instance : ∀ j, OracleInterface ((batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).Message j) :=
   instOracleInterfaceMessageAppend (pSpec₁ := RingSwitching.pSpecBatching κ L K)
     (pSpec₂ := BinaryBasefold.pSpecCoreInteraction K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
-instance : ∀ j, SampleableType ((batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).Challenge j) :=
+noncomputable instance : ∀ j, SampleableType ((batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).Challenge j) :=
   instSampleableTypeChallengeAppend (pSpec₁ := RingSwitching.pSpecBatching κ L K)
     (pSpec₂ := BinaryBasefold.pSpecCoreInteraction K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
-instance : ∀ j, OracleInterface ((fullPspec κ L K β ℓ' 𝓡 ϑ γ_repetitions
+noncomputable instance : ∀ j, OracleInterface ((fullPspec κ L K β ℓ' 𝓡 ϑ γ_repetitions
     h_ℓ_add_R_rate).Message j) :=
   instOracleInterfaceMessageAppend (pSpec₁ := batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
     (pSpec₂ := BinaryBasefold.pSpecQuery K β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
-instance : ∀ j, SampleableType ((fullPspec κ L K β ℓ' 𝓡 ϑ γ_repetitions
+noncomputable instance : ∀ j, SampleableType ((fullPspec κ L K β ℓ' 𝓡 ϑ γ_repetitions
     h_ℓ_add_R_rate).Challenge j) :=
   instSampleableTypeChallengeAppend (pSpec₁ := batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
     (pSpec₂ := BinaryBasefold.pSpecQuery K β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
 end Pspec
 
-def batchingCoreVerifier :=
+noncomputable def batchingCoreVerifier :=
   OracleVerifier.append (oSpec:=[]ₒ)
     (V₁:= RingSwitching.BatchingPhase.batchingOracleVerifier κ (L := L) (K := K) (𝓑 := 𝓑)
       (β:=booleanHypercubeBasis κ L K β) ℓ ℓ' h_l
@@ -92,7 +92,7 @@ def batchingCoreVerifier :=
       (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (𝓡 := 𝓡) (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
 
-def batchingCoreReduction :=
+noncomputable def batchingCoreReduction :=
   OracleReduction.append (oSpec:=[]ₒ)
     (R₁ := RingSwitching.BatchingPhase.batchingOracleReduction κ (L := L) (K := K) (𝓑 := 𝓑)
       (β:=booleanHypercubeBasis κ L K β) ℓ ℓ' h_l
@@ -243,7 +243,7 @@ theorem fullOracleReduction_perfectCompleteness (hInit : NeverFail init) :
 open scoped NNReal
 
 /-- Combined RBR knowledge error for batching + core interaction. -/
-def batchingCoreRbrKnowledgeError
+noncomputable def batchingCoreRbrKnowledgeError
     (i : (batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).ChallengeIdx) : ℝ≥0 :=
   Sum.elim
     (f := fun _ => RingSwitching.BatchingPhase.batchingRBRKnowledgeError (κ := κ) (L := L))
@@ -253,7 +253,7 @@ def batchingCoreRbrKnowledgeError
     (ChallengeIdx.sumEquiv.symm i)
 
 /-- Combined RBR knowledge error for full FRI-Binius. -/
-def fullRbrKnowledgeError
+noncomputable def fullRbrKnowledgeError
     (i : (fullPspec κ L K β ℓ' 𝓡 ϑ γ_repetitions h_ℓ_add_R_rate).ChallengeIdx) : ℝ≥0 :=
   Sum.elim
     (f := batchingCoreRbrKnowledgeError κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
@@ -366,12 +366,12 @@ knowledge-soundness statement while keeping the scalar error exactly the same.
 -/
 
 /-- Single-repetition proximity testing error: `1/2 + 1/(2 · 2^𝓡)` (third factor of DP24 §5.2 (43)). -/
-def querySingleRepetitionError : ℝ≥0 :=
+noncomputable def querySingleRepetitionError : ℝ≥0 :=
   (1 / 2 : ℝ≥0) + 1 / (2 * 2 ^ 𝓡)
 
 /-- Concrete KS upper bound for full FRI-Binius matching **DP24 §5.2 eq. (43)** / **Construction 5.1**
 concrete soundness. -/
-def concreteFRIBiniusKnowledgeError : ℝ≥0 :=
+noncomputable def concreteFRIBiniusKnowledgeError : ℝ≥0 :=
   ((κ : ℝ≥0) + 2 * (ℓ' : ℝ≥0)) / (Fintype.card L : ℝ≥0)
     + (2 ^ (ℓ' + 𝓡) : ℝ≥0) / (Fintype.card L : ℝ≥0)
     + querySingleRepetitionError (𝓡 := 𝓡) ^ γ_repetitions

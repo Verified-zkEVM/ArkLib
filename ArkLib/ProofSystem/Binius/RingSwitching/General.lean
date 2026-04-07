@@ -29,7 +29,7 @@ ring-switching protocol. The protocol is a sequential composition of:
 -/
 
 namespace Binius.RingSwitching.FullRingSwitching
-noncomputable section
+section
 open Polynomial MvPolynomial OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Module
 
 variable (κ : ℕ) [NeZero κ]
@@ -43,7 +43,7 @@ variable (h_l : ℓ = ℓ' + κ)
 variable {𝓑 : Fin 2 ↪ L}
 variable (mlIOPCS : MLIOPCS L ℓ')
 
-def batchingCoreVerifier :=
+noncomputable def batchingCoreVerifier :=
   OracleVerifier.append (oSpec:=[]ₒ)
     (V₁:= BatchingPhase.batchingOracleVerifier κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) mlIOPCS.toAbstractOStmtIn)
     (pSpec₁:=pSpecBatching κ L K)
@@ -53,14 +53,14 @@ def batchingCoreVerifier :=
 
 /-- The oracle verifier for the full Binary Basefold protocol -/
 @[reducible]
-def fullOracleVerifier :=
+noncomputable def fullOracleVerifier :=
   OracleVerifier.append (oSpec:=[]ₒ)
     (V₁:=batchingCoreVerifier κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) mlIOPCS)
     (pSpec₁:=pSpecLargeFieldReduction κ L K ℓ')
     (V₂:=mlIOPCS.oracleReduction.verifier)
     (pSpec₂:=mlIOPCS.pSpec)
 
-def batchingCoreReduction :=
+noncomputable def batchingCoreReduction :=
   OracleReduction.append
     (R₁ := BatchingPhase.batchingOracleReduction κ L K β ℓ ℓ' h_l (𝓑 := 𝓑)
       mlIOPCS.toAbstractOStmtIn)
@@ -71,7 +71,7 @@ def batchingCoreReduction :=
 
 /-- The reduction for the full Binary Basefold protocol -/
 @[reducible]
-def fullOracleReduction :
+noncomputable def fullOracleReduction :
   OracleReduction (oSpec:=[]ₒ)
     (StmtIn := BatchingStmtIn (L:=L) (ℓ := ℓ)) (StmtOut := Bool)
     (OStmtIn:= mlIOPCS.OStmtIn)
@@ -83,7 +83,7 @@ def fullOracleReduction :
 
 /-- The full Binary Basefold protocol as a Proof -/
 @[reducible]
-def fullOracleProof :
+noncomputable def fullOracleProof :
   OracleProof []ₒ
     (Statement := BatchingStmtIn (L:=L) (ℓ := ℓ))
     (OStatement := mlIOPCS.OStmtIn)
@@ -135,13 +135,13 @@ theorem fullOracleReduction_perfectCompleteness (hInit : NeverFail init) :
       (𝓑 := 𝓑) mlIOPCS init (hInit := hInit) (impl := impl)
   · exact mlIOPCS.strictPerfectCompleteness hInit
 
-def batchingCoreRbrKnowledgeError
+noncomputable def batchingCoreRbrKnowledgeError
     (i : (pSpecBatching κ L K ++ₚ pSpecCoreInteraction L ℓ').ChallengeIdx) : ℝ≥0 :=
   Sum.elim (f:=fun _ => BatchingPhase.batchingRBRKnowledgeError (κ:=κ) (L:=L))
     (g:=SumcheckPhase.coreInteractionRbrKnowledgeError L ℓ')
     (ChallengeIdx.sumEquiv.symm i)
 
-def fullRbrKnowledgeError (i : (fullPspec κ L K ℓ' mlIOPCS).ChallengeIdx) : ℝ≥0
+noncomputable def fullRbrKnowledgeError (i : (fullPspec κ L K ℓ' mlIOPCS).ChallengeIdx) : ℝ≥0
   := Sum.elim (f:=batchingCoreRbrKnowledgeError κ L K ℓ')
   (g:=mlIOPCS.rbrKnowledgeError)
   (ChallengeIdx.sumEquiv.symm i)
