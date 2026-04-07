@@ -276,7 +276,6 @@ lemma eq_iff_domains_and_gen_eq {φ₁ φ₂ : CosetFftDomain ι F}
 
 end CosetFftDomain
 
-
 instance : FunLike (CosetFftDomain ι F) ι F where
   coe cosetDomain i := cosetDomain.x * cosetDomain.fftDomain i
   coe_injective' φ₁ φ₂ h := by
@@ -453,13 +452,8 @@ def subdomain {n : ℕ} (ω : SmoothFftDomain n F) (i : Fin n.succ)
   :
   SmoothFftDomain i F :=
   ⟨{ toFun := fun k => ω.domain (Multiplicative.ofAdd (subdomain_embed i (Multiplicative.toAdd k)))
-     map_one' := by
-       simp [subdomain_embed_zero]
-     map_mul' := by
-       intro a b
-       simp only [toAdd_mul]
-       rw [subdomain_embed_add]
-       exact map_mul ω.domain _ _ },
+     map_one' := by simp [subdomain_embed_zero]
+     map_mul' := by aesop (add simp [subdomain_embed_add, toAdd_mul]) },
    by
      intro a b h
      have h2 := ω.inj h
@@ -480,21 +474,28 @@ private lemma subdomain_embed_last {n : ℕ} (k : Fin (2 ^ (Fin.last n : ℕ)))
 lemma subdomain_last {n} {ω : SmoothFftDomain n F}
   :
   (ω.subdomain (Fin.last n) : Subgroup Fˣ) = (ω : Subgroup Fˣ) := by
-  ext x;
-  simp +decide [ FftDomain.toSubgroup, subdomain ];
-  constructor <;> intro h <;> rcases h with ⟨ a, rfl ⟩ <;> use Fin.cast ( by simp +decide [ Fin.last ] ) a <;> simp +decide [ subdomain_embed_last ] ;
+  ext x
+  simp only [toSubgroup, Nat.succ_eq_add_one, Fin.val_last, subdomain, MonoidHom.coe_mk,
+    OneHom.coe_mk, Finset.coe_image, Finset.coe_univ, Set.image_univ, Subgroup.mem_mk,
+    Submonoid.mem_mk, Subsemigroup.mem_mk, Set.mem_range, Multiplicative.exists, toAdd_ofAdd]
+  constructor 
+    <;> intro h 
+    <;> rcases h with ⟨ a, rfl ⟩ 
+    <;> use Fin.cast ( by simp ) a 
+    <;> simp +decide [ subdomain_embed_last ] 
 
 @[simp]
 lemma subdomain_last' {n : ℕ} {ω : SmoothFftDomain n F}
   {v : F}
   :
   v ∈ (ω.subdomain (@Nat.cast (Fin (n + 1)) (Fin.NatCast.instNatCast (n + 1)) n)) ↔ v ∈ ω := by
-  simp +decide [ subdomain, toFinset ];
-  constructor;
-  · aesop;
-  · rintro ⟨ a, rfl ⟩;
-    use Fin.cast (by simp [Fin.last]) a;
-    unfold subdomain_embed; aesop;
+  simp only [Nat.succ_eq_add_one, Fin.val_natCast, subdomain, mem_domain_iff_exists]
+  constructor
+  · aesop
+  · rintro ⟨ a, rfl ⟩
+    use Fin.cast (by simp) a
+    unfold subdomain_embed 
+    aesop
 
 private lemma subdomain_embed_of_le {n : ℕ} (i j : Fin n.succ) (h : i ≤ j)
     (k : Fin (2 ^ (i : ℕ)))
@@ -503,7 +504,7 @@ private lemma subdomain_embed_of_le {n : ℕ} (i j : Fin n.succ) (h : i ≤ j)
   · calc 2 ^ ((j : ℕ) - (i : ℕ)) * k.val < 2 ^ ((j : ℕ) - (i : ℕ)) * 2 ^ (i : ℕ) := by
           apply Nat.mul_lt_mul_of_pos_left k.isLt (by positivity)
         _ = 2 ^ (j : ℕ) := by rw [← pow_add, Nat.sub_add_cancel (by omega)]
-  · simp only [subdomain_embed, Fin.ext_iff, Fin.val_mk]
+  · simp only [subdomain_embed, Fin.ext_iff]
     rw [← mul_assoc, ← pow_add]
     have : n - ↑j + (↑j - ↑i) = n - ↑i := Nat.sub_add_sub_cancel (by omega) (by omega)
     rw [this]
@@ -512,10 +513,13 @@ lemma subdomain_le {n} {ω : SmoothFftDomain n F}
   {i j : Fin n.succ} (h : i ≤ j)
   :
   (ω.subdomain i : Subgroup _) ≤ (ω.subdomain j : Subgroup Fˣ) := by
-  simp +decide [ SetLike.le_def, FftDomain.toSubgroup, FftDomain.mem_subgroup_iff_mem_finset ];
+  simp only [toSubgroup, Nat.succ_eq_add_one, Finset.coe_image, Finset.coe_univ,
+    Set.image_univ, SetLike.le_def, Subgroup.mem_mk, Submonoid.mem_mk, Subsemigroup.mem_mk,
+    Set.mem_range, Multiplicative.exists, forall_exists_index, forall_apply_eq_imp_iff]
   intro a
-  obtain ⟨l, hl⟩ := subdomain_embed_of_le i j h a;
-  unfold subdomain; aesop;
+  obtain ⟨l, hl⟩ := subdomain_embed_of_le i j h a
+  unfold subdomain 
+  aesop
 
 lemma subdomain_le_finset {n} {ω : SmoothFftDomain n F}
   {i j : Fin n.succ} (hij : i ≤ j)
@@ -536,7 +540,7 @@ lemma subdomain_le_mem {n} {ω : SmoothFftDomain n F}
   x ∈ ω.subdomain j := by
   rw [←mem_finset_iff_mem_domain] at hx
   have hx := subdomain_le_finset hij hx
-  aesop
+  aesop 
 
 private lemma subdomain_embed_pow_eq {n : ℕ} (i j : Fin n.succ) (hji : j.val ≤ i.val)
     (k : Fin (2 ^ i.val))
@@ -675,7 +679,6 @@ def subdomainNatReversed {n : ℕ} (ω : SmoothFftDomain n F) (i : ℕ)
   :
   SmoothFftDomain (Fin.ofNat n.succ (n - i)) F := 
   ω.subdomainNat (n - i)
-
 
 end FftDomain
 
