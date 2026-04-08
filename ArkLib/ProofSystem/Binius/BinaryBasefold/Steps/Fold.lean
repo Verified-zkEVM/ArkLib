@@ -67,6 +67,71 @@ noncomputable def foldOracleProver (i : Fin ℓ) :
     pure (foldStepLogic_proverOut 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i stmt wit oStmt t)
 
+/-- Computable fold-round message companion: evaluate the round message polynomial at any `r`. -/
+def foldProverComputeMsgComp (i : Fin ℓ)
+    (witIn : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc) :
+    FoldMessageComp (L := L) :=
+  fun r =>
+    ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc - 1),
+      MvPolynomial.eval
+        (Fin.cons r x ∘ Fin.cast (by
+          exact (Nat.sub_add_cancel (Nat.one_le_of_lt (Nat.sub_pos_of_lt i.isLt))).symm))
+        witIn.H.val
+
+/-- Verifier check companion for function-valued fold messages. -/
+@[reducible]
+def foldVerifierCheckComp (i : Fin ℓ)
+    (stmtIn : Statement (L := L) Context i.castSucc)
+    (msg0 : FoldMessageComp (L := L)) : Prop :=
+  msg0 (𝓑 0) + msg0 (𝓑 1) = stmtIn.sumcheck_target
+
+/-- Statement-output companion for function-valued fold messages. -/
+@[reducible]
+def foldVerifierStmtOutComp (i : Fin ℓ)
+    (stmtIn : Statement (L := L) Context i.castSucc)
+    (msg0 : FoldMessageComp (L := L))
+    (chal1 : L) :
+    Statement (L := L) Context i.succ :=
+  {
+    ctx := stmtIn.ctx,
+    sumcheck_target := msg0 chal1,
+    challenges := Fin.snoc stmtIn.challenges chal1
+  }
+
+instance foldStepLogic_verifierCheckComp_decidable (i : Fin ℓ)
+    (stmtIn : Statement (L := L) Context i.castSucc)
+    (msg0 : FoldMessageComp (L := L)) :
+    Decidable (foldVerifierCheckComp (L := L) (𝓑 := 𝓑) i stmtIn msg0) := inferInstance
+
+/-- Computable verifier companion for a fold round, over `pSpecFoldComp`. -/
+def foldOracleVerifierComp (i : Fin ℓ) :
+  OracleVerifier
+    (oSpec := []ₒ)
+    (StmtIn := Statement (L := L) Context i.castSucc)
+    (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
+    (Oₘ := fun i => by infer_instance)
+    (StmtOut := Statement (L := L) Context i.succ)
+    (OStmtOut := OracleStatement 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
+    (pSpec := pSpecFoldComp (L := L)) where
+  verify := fun stmtIn pSpecChallenges => do
+    let h_i ← query (spec := [(pSpecFoldComp (L := L)).Message]ₒ) ⟨⟨0, by rfl⟩, (by exact ())⟩
+    let r_i' := pSpecChallenges ⟨1, rfl⟩
+    guard (foldVerifierCheckComp (L := L) (𝓑 := 𝓑) i stmtIn h_i)
+    pure (foldVerifierStmtOutComp (L := L) i stmtIn h_i r_i')
+  embed := ⟨fun j => by
+    if hj : j.val < toOutCodewordsCount ℓ ϑ i.castSucc then
+      exact Sum.inl ⟨j.val, by omega⟩
+    else omega
+  , by
+    intro a b h_ab_eq
+    simp only [MessageIdx, Fin.is_lt, ↓reduceDIte, Fin.eta, Sum.inl.injEq] at h_ab_eq
+    exact h_ab_eq
+  ⟩
+  hEq := fun oracleIdx => by
+    simp only [MessageIdx, Fin.is_lt, ↓reduceDIte, Fin.eta, Function.Embedding.coeFn_mk]
+
 instance foldStepLogic_verifierCheck_decidable (i : Fin ℓ)
     (stmtIn : Statement (L := L) Context i.castSucc)
     (t : FullTranscript (pSpecFold (L := L))) :

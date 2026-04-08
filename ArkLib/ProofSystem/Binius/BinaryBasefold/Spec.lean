@@ -225,6 +225,14 @@ section Pspec
 @[reducible]
 def pSpecFold : ProtocolSpec 2 := ⟨![Direction.P_to_V, Direction.V_to_P], ![L⦃≤ 2⦄[X], L]⟩
 
+/-- Computable fold-round message carrier: univariate function over `L`. -/
+abbrev FoldMessageComp : Type := L → L
+
+/-- Computable companion for `pSpecFold`, using function-valued prover messages. -/
+@[reducible]
+def pSpecFoldComp : ProtocolSpec 2 :=
+  ⟨![Direction.P_to_V, Direction.V_to_P], ![FoldMessageComp (L := L), L]⟩
+
 -- Conditional 1-message protocol (only for commitment rounds)
 @[reducible]
 def pSpecCommit (i : Fin ℓ) : ProtocolSpec 1 :=
@@ -242,13 +250,25 @@ def pSpecFoldCommit (i : Fin ℓ) : ProtocolSpec (3) :=
   pSpecFold (L:=L) ++ₚ pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
 
 @[reducible]
+def pSpecFoldCommitComp (i : Fin ℓ) : ProtocolSpec 3 :=
+  pSpecFoldComp (L := L) ++ₚ pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
+
+@[reducible]
 def pSpecFoldRelay : ProtocolSpec (2) :=
   pSpecFold (L:=L) ++ₚ pSpecRelay
+
+@[reducible]
+def pSpecFoldRelayComp : ProtocolSpec 2 :=
+  pSpecFoldComp (L := L) ++ₚ pSpecRelay
 
 @[reducible]
 -- Round-segment-level reductions
 def pSpecFoldRelaySequence (n : ℕ) :=
   ProtocolSpec.seqCompose fun (_: Fin n) ↦ pSpecFoldRelay (L:=L)
+
+@[reducible]
+def pSpecFoldRelaySequenceComp (n : ℕ) :=
+  ProtocolSpec.seqCompose fun (_ : Fin n) ↦ pSpecFoldRelayComp (L := L)
 -- Block-level reductions
 
 /-- A non-last block consists of `(ϑ-1)` fold-relay round and `1` fold-commit round -/
@@ -259,14 +279,30 @@ def pSpecFullNonLastBlock (bIdx : Fin (ℓ / ϑ - 1)) :=
         ⟨↑bIdx * ϑ + (ϑ - 1), by
           apply bIdx_mul_ϑ_add_i_lt_ℓ_succ bIdx (m:=0) (i:=⟨ϑ - 1, by exact ϑ_sub_one_le_self⟩)⟩)
 
+/-- Computable companion of non-last block pSpec. -/
+@[reducible]
+def pSpecFullNonLastBlockComp (bIdx : Fin (ℓ / ϑ - 1)) :=
+  pSpecFoldRelaySequenceComp (L := L) (n := ϑ - 1) ++ₚ
+    pSpecFoldCommitComp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      ⟨↑bIdx * ϑ + (ϑ - 1), by
+        apply bIdx_mul_ϑ_add_i_lt_ℓ_succ bIdx (m := 0) (i := ⟨ϑ - 1, by
+          exact ϑ_sub_one_le_self⟩)⟩
+
 /-- The last block consists of `ϑ` fold-relay rounds -/
 @[reducible]
 def pSpecLastBlock := pSpecFoldRelaySequence (L:=L) (n:=ϑ)
+
+@[reducible]
+def pSpecLastBlockComp := pSpecFoldRelaySequenceComp (L := L) (n := ϑ)
 
 /-- A sequence of `(ℓ / ϑ - 1)` non-last blocks -/
 @[reducible]
 def pSpecNonLastBlocks := seqCompose fun bIdx ↦
   pSpecFullNonLastBlock 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx
+
+@[reducible]
+def pSpecNonLastBlocksComp := seqCompose fun bIdx ↦
+  pSpecFullNonLastBlockComp 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx
 
 -- Protocol-level reductions
 /-- The final `CoreInteraction` consists of `(ℓ / ϑ - 1)` non-last blocks and `1` last block -/
@@ -274,10 +310,20 @@ def pSpecNonLastBlocks := seqCompose fun bIdx ↦
 def pSpecSumcheckFold := (pSpecNonLastBlocks 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) ++ₚ
   (pSpecLastBlock (L:=L) (ϑ:=ϑ))
 
+@[reducible]
+def pSpecSumcheckFoldComp :=
+  pSpecNonLastBlocksComp 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ++ₚ
+    pSpecLastBlockComp (L := L) (ϑ := ϑ)
+
 -- Complete protocol
 @[reducible]
 def pSpecCoreInteraction := (pSpecSumcheckFold 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) ++ₚ
   (pSpecFinalSumcheckStep (L:=L))
+
+@[reducible]
+def pSpecCoreInteractionComp :=
+  pSpecSumcheckFoldComp 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ++ₚ
+    pSpecFinalSumcheckStep (L := L)
 
 /-- The protocol specification for the query phase.
 V sends all γ challenges v₁, ..., v_γ ← B_{ℓ+R} to P. -/
@@ -321,13 +367,26 @@ def fullPSpec := (pSpecCoreInteraction 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_
 def fullPSpecFin := (pSpecCoreInteraction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) ++ₚ
   (pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions)
 
+/-- Computable full-spec companion using computable core interaction + Fin query challenge. -/
+@[reducible]
+def fullPSpecComp := pSpecCoreInteractionComp 𝔽q β (ϑ := ϑ)
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ++ₚ
+    pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions
+
 /-! ## Oracle Interface instances for Messages-/
 
 instance instOracleInterfaceMessagePSpecFold :
   ∀ j, OracleInterface ((pSpecFold (L:=L)).Message j) :=
   fun _ => OracleInterface.instDefault
 
+instance instOracleInterfaceMessagePSpecFoldComp :
+  ∀ j, OracleInterface ((pSpecFoldComp (L := L)).Message j) :=
+  fun _ => OracleInterface.instDefault
+
 instance : ∀ j, OracleInterface ((pSpecFold (L := L)).Challenge j) :=
+  ProtocolSpec.challengeOracleInterface
+
+instance : ∀ j, OracleInterface ((pSpecFoldComp (L := L)).Challenge j) :=
   ProtocolSpec.challengeOracleInterface
 
 instance : ∀ j, OracleInterface ((pSpecRelay).Message j)
