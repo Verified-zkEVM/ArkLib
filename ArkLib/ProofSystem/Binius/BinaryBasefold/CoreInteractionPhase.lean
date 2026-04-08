@@ -5,6 +5,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps
+import ArkLib.ProofSystem.Binius.BinaryBasefold.ComputableFold
 import ArkLib.OracleReduction.Cast
 import ArkLib.OracleReduction.Composition.Sequential.General
 import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
@@ -141,6 +142,70 @@ def foldRelayOracleVerifierComp (i : Fin ℓ)
     (pSpec₂ := pSpecRelay)
     (foldOracleVerifierComp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
     (relayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR)
+
+/-! Computable relay prover-state companion over `WitnessComp`. -/
+def relayPrvStateComp (i : Fin ℓ) : Fin (0 + 1) → Type := fun
+  | ⟨0, _⟩ => Statement (L := L) Context i.succ ×
+    (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j) ×
+    Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡) i.succ
+
+/-! Computable relay prover companion: identity on statement/witness, with oracle-frontier relay. -/
+def relayOracleProverComp (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
+  OracleProver (oSpec := []ₒ)
+    (StmtIn := Statement (L := L) Context i.succ)
+    (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
+    (WitIn := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡)
+      i.succ)
+    (StmtOut := Statement (L := L) Context i.succ)
+    (OStmtOut := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
+    (WitOut := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡)
+      i.succ)
+    (pSpec := pSpecRelay) where
+  PrvState := relayPrvStateComp (L := L) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
+  input := fun ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ => (stmtIn, oStmtIn, witIn)
+  sendMessage | ⟨x, h⟩ => by exact x.elim0
+  receiveChallenge | ⟨x, h⟩ => by exact x.elim0
+  output := fun ⟨stmt, oStmt, wit⟩ =>
+    pure ⟨⟨stmt, mapOStmtOutRelayStep 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      i hNCR oStmt⟩, wit⟩
+
+/-! Computable relay reduction companion over `WitnessComp`. -/
+def relayOracleReductionComp (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
+  OracleReduction (oSpec := []ₒ)
+    (StmtIn := Statement (L := L) Context i.succ)
+    (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
+    (WitIn := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡)
+      i.succ)
+    (StmtOut := Statement (L := L) Context i.succ)
+    (OStmtOut := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
+    (WitOut := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡)
+      i.succ)
+    (pSpec := pSpecRelay) where
+  prover := relayOracleProverComp (L := L) 𝔽q β (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR
+  verifier := relayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR
+
+@[reducible]
+def foldRelayOracleReductionComp (i : Fin ℓ)
+    (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
+  OracleReduction []ₒ
+    (StmtIn := Statement (L := L) Context i.castSucc)
+    (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc)
+    (WitIn := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡)
+      i.castSucc)
+    (StmtOut := Statement (L := L) Context i.succ)
+    (OStmtOut := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.succ)
+    (WitOut := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡)
+      i.succ)
+    (pSpec := pSpecFoldRelayComp (L := L)) :=
+  OracleReduction.append
+    (pSpec₁ := pSpecFoldComp (L := L))
+    (pSpec₂ := pSpecRelay)
+    (R₁ := Binius.BinaryBasefold.CoreInteraction.Comp.foldOracleReductionComp
+      (L := L) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+      (Context := Context) i)
+    (R₂ := relayOracleReductionComp (L := L) 𝔽q β (ϑ := ϑ) (𝓡 := 𝓡)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR)
 
 @[reducible]
 noncomputable def foldRelayOracleReduction (i : Fin ℓ)
