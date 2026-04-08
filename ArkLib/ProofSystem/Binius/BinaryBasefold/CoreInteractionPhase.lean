@@ -125,6 +125,23 @@ def foldRelayOracleVerifier (i : Fin ℓ)
     (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i)
     (relayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR)
 
+/-- Computable fold-message companion of `foldRelayOracleVerifier`. -/
+@[reducible]
+def foldRelayOracleVerifierComp (i : Fin ℓ)
+    (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
+  OracleVerifier []ₒ
+    (StmtIn := Statement (L := L) Context i.castSucc)
+    (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc)
+    (Oₘ := fun i => by infer_instance)
+    (StmtOut := Statement (L := L) Context i.succ)
+    (OStmtOut := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.succ)
+    (pSpec := pSpecFoldRelayComp (L := L)) :=
+  OracleVerifier.append
+    (pSpec₁ := pSpecFoldComp (L := L))
+    (pSpec₂ := pSpecRelay)
+    (foldOracleVerifierComp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
+    (relayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR)
+
 @[reducible]
 noncomputable def foldRelayOracleReduction (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
@@ -238,6 +255,23 @@ def foldCommitOracleVerifier (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
       (pSpec₂ := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
       (V₁ := foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i)
       (V₂ := commitOracleVerifier 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i hCR)
+
+/-- Computable fold-message companion of `foldCommitOracleVerifier`. -/
+@[reducible]
+def foldCommitOracleVerifierComp (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
+  OracleVerifier []ₒ
+    (StmtIn := Statement (L := L) Context i.castSucc)
+    (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc)
+    (Oₘ := fun i => by infer_instance)
+    (StmtOut := Statement (L := L) Context i.succ)
+    (OStmtOut := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.succ)
+    (pSpec := pSpecFoldCommitComp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
+  OracleVerifier.append (oSpec := []ₒ)
+    (pSpec₁ := pSpecFoldComp (L := L))
+    (pSpec₂ := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
+    (V₁ := foldOracleVerifierComp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
+    (V₂ := commitOracleVerifier 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) i hCR)
 
 @[reducible]
 noncomputable def foldCommitOracleReduction (i : Fin ℓ)

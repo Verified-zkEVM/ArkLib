@@ -415,20 +415,44 @@ instance {i : Fin ℓ} :
     ∀ j, OracleInterface ((pSpecFoldCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Message j) :=
   instOracleInterfaceMessageAppend
 
+instance {i : Fin ℓ} :
+    ∀ j, OracleInterface ((pSpecFoldCommitComp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Message j) :=
+  instOracleInterfaceMessageAppend (pSpec₁ := pSpecFoldComp (L := L))
+    (pSpec₂ := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
+
 instance {n : ℕ} : ∀ j, OracleInterface ((pSpecFoldRelaySequence (L:=L) n).Message j) :=
+  instOracleInterfaceMessageSeqCompose
+
+instance : ∀ j, OracleInterface ((pSpecFoldRelayComp (L := L)).Message j) :=
+  instOracleInterfaceMessageAppend
+
+instance {n : ℕ} : ∀ j, OracleInterface ((pSpecFoldRelaySequenceComp (L := L) n).Message j) :=
   instOracleInterfaceMessageSeqCompose
 
 instance {bIdx : Fin (ℓ / ϑ - 1)} : ∀ j, OracleInterface ((pSpecFullNonLastBlock 𝔽q β
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx).Message j) :=
   instOracleInterfaceMessageAppend
 
+instance {bIdx : Fin (ℓ / ϑ - 1)} : ∀ j, OracleInterface ((pSpecFullNonLastBlockComp 𝔽q β
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx).Message j) :=
+  instOracleInterfaceMessageAppend
+
 instance : ∀ j, OracleInterface ((pSpecNonLastBlocks 𝔽q β (ϑ:=ϑ)
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message j) := instOracleInterfaceMessageSeqCompose
+
+instance : ∀ j, OracleInterface ((pSpecNonLastBlocksComp 𝔽q β (ϑ := ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message j) := instOracleInterfaceMessageSeqCompose
 
 instance : ∀ j, OracleInterface ((pSpecLastBlock (L:=L) (ϑ:=ϑ)).Message j) :=
   instOracleInterfaceMessageSeqCompose
 
+instance : ∀ j, OracleInterface ((pSpecLastBlockComp (L := L) (ϑ := ϑ)).Message j) :=
+  instOracleInterfaceMessageSeqCompose
+
 instance : ∀ j, OracleInterface ((pSpecSumcheckFold 𝔽q β (ϑ:=ϑ)
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message j) := instOracleInterfaceMessageAppend
+
+instance : ∀ j, OracleInterface ((pSpecSumcheckFoldComp 𝔽q β (ϑ := ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message j) := instOracleInterfaceMessageAppend
 
 instance : ∀ i, OracleInterface ((pSpecFinalSumcheckStep (L:=L)).Message i)
@@ -438,6 +462,9 @@ instance : ∀ j, OracleInterface ((pSpecFinalSumcheckStep (L:=L)).Challenge j) 
   ProtocolSpec.challengeOracleInterface
 
 instance : ∀ i, OracleInterface ((pSpecCoreInteraction 𝔽q β (ϑ:=ϑ)
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message i) := instOracleInterfaceMessageAppend
+
+instance : ∀ i, OracleInterface ((pSpecCoreInteractionComp 𝔽q β (ϑ := ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message i) := instOracleInterfaceMessageAppend
 
 instance : ∀ i, OracleInterface ((pSpecQuery 𝔽q β γ_repetitions
@@ -528,6 +555,9 @@ instance : ∀ j, OracleInterface ((fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message j) := instOracleInterfaceMessageAppend
 
 instance : ∀ j, OracleInterface ((fullPSpecFin 𝔽q β γ_repetitions (ϑ := ϑ)
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message j) := instOracleInterfaceMessageAppend
+
+instance : ∀ j, OracleInterface ((fullPSpecComp 𝔽q β γ_repetitions (ϑ := ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message j) := instOracleInterfaceMessageAppend
 
 -- Oracle Interface instances for Ostmt
