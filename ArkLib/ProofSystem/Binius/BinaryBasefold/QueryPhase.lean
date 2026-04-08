@@ -334,6 +334,180 @@ def checkSingleRepetitionFromIndexFin
     c_cur := c_next
   guard (c_cur = final_constant)
 
+/-- Query a committed codeword from a loose global index, in the canonical `pSpecQuery` stack. -/
+def queryCodewordFromIndexCanonical
+    (j : Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)))
+    (pointIdx : Fin (2 ^ (ℓ + 𝓡))) :
+    OptionT
+      (OracleComp
+        ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (Fin.last ℓ)]ₒ +
+          [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ)))
+      L := do
+  let sourceIdx : Fin r :=
+    ⟨oraclePositionToDomainIndex (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ) (positionIdx := j), by
+      exact lt_r_of_lt_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (h := (oraclePositionToDomainIndex (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ)
+          (positionIdx := j)).isLt)⟩
+  let pointComp := AdditiveNTT.Comp.indexToSDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
+    (R_rate := 𝓡) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := sourceIdx) pointIdx
+  let pointCanonical := AdditiveNTT.Comp.toCanonicalSDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
+    (R_rate := 𝓡) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := sourceIdx) pointComp
+  let qBase :
+      OracleComp
+        ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (Fin.last ℓ)]ₒ) L :=
+    liftM
+      (query (spec := [OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (Fin.last ℓ)]ₒ) ⟨j, by simpa [sourceIdx] using pointCanonical⟩)
+  let q :
+      OracleComp
+        ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (Fin.last ℓ)]ₒ +
+          [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ)) L :=
+    OracleComp.liftComp
+      qBase
+      ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (Fin.last ℓ)]ₒ +
+        [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ))
+  OptionT.lift q
+
+/-- Query all `2^ϑ` fiber points at step `k`, for canonical-query verifier companions. -/
+def queryFiberPointsFromIndexCanonical
+    (k : Fin (ℓ / ϑ)) (vIdx : Fin (2 ^ (ℓ + 𝓡))) :
+    OptionT
+      (OracleComp
+        ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (Fin.last ℓ)]ₒ +
+          [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ)))
+      (Vector L (2 ^ ϑ)) := do
+  let k_th_oracleIdx : Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)) :=
+    ⟨k, by
+      simp only [toOutCodewordsCount, Fin.val_last, lt_self_iff_false, ↓reduceIte, add_zero,
+        Fin.is_lt]⟩
+  let sourceIdx : Fin r := ⟨k.val * ϑ, by
+    exact lt_r_of_lt_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := k.val * ϑ) (h := k_mul_ϑ_lt_ℓ)⟩
+  have h_i_steps_le : sourceIdx.val + ϑ ≤ ℓ + 𝓡 := by
+    have h_i_add_ϑ_le_ℓ : k.val * ϑ + ϑ ≤ ℓ := k_succ_mul_ϑ_le_ℓ_₂ (k := k)
+    dsimp [sourceIdx]
+    omega
+  let results : Vector L (2 ^ ϑ) ←
+    (⟨Array.finRange (2 ^ ϑ), by simp only [Array.size_finRange]⟩ :
+      Vector (Fin (2 ^ ϑ)) (2 ^ ϑ)).mapM (fun (u : Fin (2 ^ ϑ)) => do
+      let pointIdx := fiberPointIndexFromIndex (ℓ := ℓ) (𝓡 := 𝓡) (vIdx := vIdx)
+        (i := sourceIdx) (steps := ϑ) h_i_steps_le u
+      queryCodewordFromIndexCanonical (𝔽q := 𝔽q) (β := β)
+        (γ_repetitions := γ_repetitions) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (j := k_th_oracleIdx) pointIdx)
+  pure results
+
+/-- Single-step checker from loose indices for canonical-query verifier companions. -/
+def checkSingleFoldingStepFromIndexCanonical
+    (k_val : Fin (ℓ / ϑ)) (c_cur : L) (vIdx : Fin (2 ^ (ℓ + 𝓡)))
+    (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ)) :
+    OptionT
+      (OracleComp
+        ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (Fin.last ℓ)]ₒ +
+          [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ))) L := do
+  let i := k_val.val * ϑ
+  let iIdx : Fin r := ⟨i, by
+    exact lt_r_of_lt_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := i)
+      (h := k_mul_ϑ_lt_ℓ (k := k_val))⟩
+  have h_i_add_ϑ_le_ℓ : i + ϑ ≤ ℓ := k_succ_mul_ϑ_le_ℓ_₂ (k := k_val)
+  let f_i_on_fiber ← queryFiberPointsFromIndexCanonical (𝔽q := 𝔽q) (β := β)
+    (γ_repetitions := γ_repetitions) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k_val vIdx
+  if h_i_pos : i > 0 then
+    let oracle_point_idx := extractMiddleFinMaskFromIndex (ℓ := ℓ) (𝓡 := 𝓡) (vIdx := vIdx)
+      (i := iIdx) (steps := ϑ)
+    let f_i_val := f_i_on_fiber.get oracle_point_idx
+    guard (c_cur = f_i_val)
+  let cur_challenge_batch : Fin ϑ → L := fun j =>
+    stmt.challenges ⟨i + j.val, by
+      have h_i_add_j_lt : i + j.val < i + ϑ := Nat.add_lt_add_left j.isLt i
+      exact lt_of_lt_of_le h_i_add_j_lt h_i_add_ϑ_le_ℓ⟩
+  let c_next : L := computeFoldedValueFromFiber (ϑ := ϑ)
+    (r_challenges := cur_challenge_batch) (fiber_eval_mapping := f_i_on_fiber.get)
+  return c_next
+
+/-- Full repetition checker from loose indices for canonical-query verifier companions. -/
+def checkSingleRepetitionFromIndexCanonical
+    (vIdx : Fin (2 ^ (ℓ + 𝓡)))
+    (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ)) (final_constant : L) :
+    OptionT
+      (OracleComp
+        ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (Fin.last ℓ)]ₒ +
+          [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ))) Unit := do
+  let mut c_cur : L := 0
+  for k_val in List.finRange (ℓ / ϑ) do
+    let c_next ← checkSingleFoldingStepFromIndexCanonical (𝔽q := 𝔽q) (β := β)
+      (γ_repetitions := γ_repetitions) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      ⟨k_val, by omega⟩ c_cur vIdx stmt
+    c_cur := c_next
+  guard (c_cur = final_constant)
+
+/-- Search-based decoding from canonical `S⁽⁰⁾` points to loose global indices. -/
+def canonicalQueryPointToIndex?
+    (v : sDomain 𝔽q β h_ℓ_add_R_rate 0) : Option (Fin (2 ^ (ℓ + 𝓡))) :=
+  (List.finRange (2 ^ (ℓ + 𝓡))).find? (fun vIdx =>
+    decide (
+      AdditiveNTT.Comp.toCanonicalSDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0)
+        (AdditiveNTT.Comp.indexToSDomainZero (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) vIdx)
+      = v))
+
+/-- Computable canonical-query verifier companion (`pSpecQuery`), via index decoding + Fin checks. -/
+def queryOracleVerifierComp :
+  OracleVerifier
+    (oSpec := []ₒ)
+    (StmtIn := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
+    (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
+    (StmtOut := Bool)
+    (OStmtOut := fun _ : Empty => Unit)
+    (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
+  verify := fun stmtIn challenges => do
+    let fold_challenges : Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0 :=
+      challenges ⟨0, by rfl⟩
+    for rep in List.finRange γ_repetitions do
+      let v := fold_challenges rep
+      match canonicalQueryPointToIndex? (𝔽q := 𝔽q) (β := β)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (𝓡 := 𝓡) v with
+      | none => failure
+      | some vIdx =>
+        let _ ← checkSingleRepetitionFromIndexCanonical (𝔽q := 𝔽q) (β := β)
+          (γ_repetitions := γ_repetitions) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          vIdx stmtIn stmtIn.final_constant
+        pure ()
+    return true
+  embed := ⟨Empty.elim, fun a _ => Empty.elim a⟩
+  hEq := fun i => Empty.elim i
+
+/-- Computable canonical-query reduction companion (`pSpecQuery`). -/
+def queryOracleReductionComp :
+  OracleReduction
+    (oSpec := []ₒ)
+    (StmtIn := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
+    (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
+    (WitIn := Unit)
+    (StmtOut := Bool)
+    (OStmtOut := fun _ : Empty => Unit)
+    (WitOut := Unit)
+    (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
+  prover := queryOracleProver 𝔽q β (ϑ := ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+  verifier := queryOracleVerifierComp 𝔽q β (ϑ := ϑ) γ_repetitions
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+
+/-- Computable canonical-query proof companion (`pSpecQuery`). -/
+def queryOracleProofComp : OracleProof
+    (oSpec := []ₒ)
+    (Statement := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
+    (OStatement := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
+    (Witness := Unit)
+    (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  queryOracleReductionComp 𝔽q β (ϑ := ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+
 /-- Fin-indexed verifier companion.
 Challenges are decoded through the computable AdditiveNTT bridge before running checks. -/
 def queryOracleVerifierFin :
