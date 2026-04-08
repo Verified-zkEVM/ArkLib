@@ -5,6 +5,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Relations
 import ArkLib.ToVCVio.Oracle
+import ArkLib.Data.FieldTheory.AdditiveNTT.Impl
 
 namespace Binius.BinaryBasefold
 
@@ -286,9 +287,39 @@ def pSpecQuery : ProtocolSpec 1 :=
     ![Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0]⟩
   -- Round 0: constant c, Round 1: all γ challenges
 
+/-- Computable query challenge carrier (indexing points in `S⁽⁰⁾` by `Fin`). -/
+abbrev QueryChallengeIndex : Type := Fin γ_repetitions → Fin (2 ^ (ℓ + 𝓡))
+
+/-- Computable companion protocol spec for query challenges. -/
+@[reducible]
+def pSpecQueryFin : ProtocolSpec 1 :=
+  ⟨![Direction.V_to_P], ![QueryChallengeIndex (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions]⟩
+
+/-- Decode Fin-indexed query challenges into computable domain points (`sDomainComp` at `i = 0`). -/
+def decodeQueryChallengeFin
+    (challenges : QueryChallengeIndex (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions) :
+    Fin γ_repetitions →
+      AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0 :=
+  AdditiveNTT.Comp.decodeQueryChallenges (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) challenges
+
+/-- Decode Fin-indexed query challenges into canonical `sDomain` points (`i = 0`). -/
+def decodeQueryChallengeFinToCanonical
+    (challenges : QueryChallengeIndex (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions) :
+    Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0 :=
+  AdditiveNTT.Comp.decodeQueryChallengesToCanonical
+    (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) challenges
+
 @[reducible]
 def fullPSpec := (pSpecCoreInteraction 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) ++ₚ
     (pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+
+/-- Computable full-spec companion using `pSpecQueryFin`. -/
+@[reducible]
+def fullPSpecFin := (pSpecCoreInteraction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) ++ₚ
+  (pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions)
 
 /-! ## Oracle Interface instances for Messages-/
 
@@ -357,10 +388,70 @@ instance : ∀ i, OracleInterface ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) :=
   ProtocolSpec.challengeOracleInterface
 
+instance : ∀ i, OracleInterface ((pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions).Message i) :=
+  fun _ => OracleInterface.instDefault
+
+/-- Lift query-message oracles from canonical `pSpecQuery` messages into Fin-indexed
+`pSpecQueryFin` messages by decoding query challenges back to canonical `sDomain` points. -/
+instance instSubSpecPspecQueryMessageToPspecQueryFinMessage :
+    [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ ⊂ₒ
+      [(pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions).Message]ₒ where
+  monadLift
+    | .mk qInput qCont =>
+      .mk qInput (fun msgFin =>
+        match qInput with
+        | ⟨⟨0, _⟩, _⟩ =>
+          qCont (decodeQueryChallengeFinToCanonical
+            (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (𝓡 := 𝓡)
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) γ_repetitions msgFin))
+  liftM_map q f := by
+    cases q with
+    | mk qInput qCont =>
+      cases qInput with
+      | mk i q =>
+        fin_cases i
+
+/-- Direct SubSpec bridge for the query-phase verifier oracle stack:
+canonical query messages to Fin-indexed query messages. This avoids heavy typeclass search
+on nested append coercions. -/
+instance instSubSpecQueryOracleStackToFin :
+    ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ +
+      [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ)) ⊂ₒ
+      ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ +
+        [(pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions).Message]ₒ)) := by
+  letI :
+      ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ +
+        [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ) ⊂ₒ
+      ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ +
+        [(pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions).Message]ₒ) :=
+    OracleQuery.subSpec_right_add_right_add_of_subSpec
+      (spec₁ := [OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (Fin.last ℓ)]ₒ)
+      (spec₂ := [(pSpecQuery 𝔽q β γ_repetitions
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ)
+      (spec₃ := [(pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions).Message]ₒ)
+  exact
+    (OracleQuery.subSpec_right_add_right_add_of_subSpec
+      (spec₁ := []ₒ)
+      (spec₂ := ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (Fin.last ℓ)]ₒ +
+        [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ))
+      (spec₃ := ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (Fin.last ℓ)]ₒ +
+        [(pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions).Message]ₒ)))
+
+instance : ∀ i, OracleInterface ((pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions).Challenge i) :=
+  ProtocolSpec.challengeOracleInterface
+
 noncomputable instance : ∀ i, Fintype ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i)
   | ⟨0, _⟩ => by
       change Fintype (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0)
+      infer_instance
+
+instance : ∀ i, Fintype ((pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions).Challenge i)
+  | ⟨0, _⟩ => by
+      change Fintype (QueryChallengeIndex (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions)
       infer_instance
 
 instance : ∀ i, Inhabited ((pSpecQuery 𝔽q β γ_repetitions
@@ -369,7 +460,15 @@ instance : ∀ i, Inhabited ((pSpecQuery 𝔽q β γ_repetitions
       change Inhabited (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0)
       exact ⟨fun _ => 0⟩
 
+instance : ∀ i, Inhabited ((pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions).Challenge i)
+  | ⟨0, _⟩ => by
+      change Inhabited (QueryChallengeIndex (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions)
+      infer_instance
+
 instance : ∀ j, OracleInterface ((fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ)
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message j) := instOracleInterfaceMessageAppend
+
+instance : ∀ j, OracleInterface ((fullPSpecFin 𝔽q β γ_repetitions (ϑ := ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message j) := instOracleInterfaceMessageAppend
 
 -- Oracle Interface instances for Ostmt
@@ -455,7 +554,15 @@ noncomputable instance : ∀ i, SampleableType ((pSpecQuery 𝔽q β γ_repetiti
       exact Nat.lt_add_right 𝓡 h_ℓ_gt_0
     exact instSampleableTypeFinFunc
 
+instance : ∀ i, SampleableType ((pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions).Challenge i)
+  | ⟨0, _⟩ => by
+      change SampleableType (QueryChallengeIndex (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions)
+      infer_instance
+
 noncomputable instance : ∀ j, SampleableType ((fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ)
+  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge j) := instSampleableTypeChallengeAppend
+
+instance : ∀ j, SampleableType ((fullPSpecFin 𝔽q β γ_repetitions (ϑ := ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge j) := instSampleableTypeChallengeAppend
 
 noncomputable instance : SampleableType (Fin γ_repetitions → ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0)) := by

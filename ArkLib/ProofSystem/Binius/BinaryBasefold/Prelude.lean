@@ -6,6 +6,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 
 import ArkLib.Data.CodingTheory.Prelims
 import ArkLib.Data.FieldTheory.AdditiveNTT.AdditiveNTT
+import ArkLib.Data.FieldTheory.AdditiveNTT.Impl
 import ArkLib.Data.Fin.BigOperators
 import ArkLib.Data.MvPolynomial.Multilinear
 import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
@@ -2828,6 +2829,62 @@ noncomputable def extractMiddleFinMask (v : (sDomain 𝔽q β h_ℓ_add_R_rate) 
   simp only [tsub_zero] at vToFin
   let middleBits := Nat.getMiddleBits (offset := i.val) (len := steps) (n := vToFin.val)
   exact ⟨middleBits, Nat.getMiddleBits_lt_two_pow⟩
+
+/-- Computable companion of `extractMiddleFinMask` for loose-index query points. -/
+def extractMiddleFinMaskFromIndex (vIdx : Fin (2 ^ (ℓ + 𝓡))) (i : Fin r) (steps : ℕ) :
+    Fin (2 ^ steps) :=
+  ⟨Nat.getMiddleBits (offset := i.val) (len := steps) (n := vIdx.val),
+    Nat.getMiddleBits_lt_two_pow⟩
+
+/-- Extract the high-bit suffix (without shift) after dropping `i + steps` low bits. -/
+def challengeSuffixIndexFromIndex
+    (vIdx : Fin (2 ^ (ℓ + 𝓡))) (i : Fin r) (steps : ℕ)
+    (h_i_steps_le : i.val + steps ≤ ℓ + 𝓡) :
+    Fin (2 ^ (ℓ + 𝓡 - (i.val + steps))) := by
+  refine ⟨Nat.getHighBits_no_shl (i.val + steps) vIdx.val, ?_⟩
+  have h_div_lt :
+      vIdx.val / 2 ^ (i.val + steps) < 2 ^ (ℓ + 𝓡 - (i.val + steps)) := by
+    apply Nat.div_lt_of_lt_mul
+    calc
+      vIdx.val < 2 ^ (ℓ + 𝓡) := vIdx.is_lt
+      _ = 2 ^ (i.val + steps) * 2 ^ (ℓ + 𝓡 - (i.val + steps)) := by
+        exact (pow_mul_pow_sub (a := 2) (m := i.val + steps) (n := ℓ + 𝓡) h_i_steps_le).symm
+  simpa [Nat.getHighBits_no_shl, Nat.shiftRight_eq_div_pow] using h_div_lt
+
+/-- Build a global loose index for a fiber point at source level `i`.
+Low `i` bits are set to zero; middle `steps` bits come from `u`;
+remaining high bits are inherited from `vIdx`. -/
+def fiberPointIndexFromIndex
+    (vIdx : Fin (2 ^ (ℓ + 𝓡))) (i : Fin r) (steps : ℕ)
+    (h_i_steps_le : i.val + steps ≤ ℓ + 𝓡)
+    (u : Fin (2 ^ steps)) :
+    Fin (2 ^ (ℓ + 𝓡)) := by
+  let highSuffix : Fin (2 ^ (ℓ + 𝓡 - (i.val + steps))) :=
+    challengeSuffixIndexFromIndex (ℓ := ℓ) (𝓡 := 𝓡) (vIdx := vIdx) (i := i) (steps := steps)
+      h_i_steps_le
+  let highFromI : Fin (2 ^ ((ℓ + 𝓡 - (i.val + steps)) + steps)) :=
+    Nat.joinBits (low := u) (high := highSuffix)
+  let lowZeros : Fin (2 ^ i.val) := 0
+  let fullIdx : Fin (2 ^ (((ℓ + 𝓡 - (i.val + steps)) + steps) + i.val)) :=
+    Nat.joinBits (low := lowZeros) (high := highFromI)
+  have h_bits :
+      ((ℓ + 𝓡 - (i.val + steps)) + steps) + i.val = ℓ + 𝓡 := by
+    have h_sub : (ℓ + 𝓡 - (i.val + steps)) + (i.val + steps) = ℓ + 𝓡 :=
+      Nat.sub_add_cancel h_i_steps_le
+    omega
+  exact cast (by simpa [h_bits]) fullIdx
+
+/-- Decode an index-based fiber point into the computable AdditiveNTT domain. -/
+def getFiberPointCompFromIndex
+    (vIdx : Fin (2 ^ (ℓ + 𝓡))) (i : Fin r) (steps : ℕ)
+    (h_i_steps_le : i.val + steps ≤ ℓ + 𝓡)
+    (u : Fin (2 ^ steps)) :
+    AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i :=
+  AdditiveNTT.Comp.indexToSDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
+    (fiberPointIndexFromIndex (ℓ := ℓ) (𝓡 := 𝓡) (vIdx := vIdx) (i := i) (steps := steps)
+      h_i_steps_le u)
 
 /-- The equality polynomial eq̃(r, r') = ∏ i, (r i * r' i + (1 - r i) * (1 - r' i)).
 This is used in the final sumcheck identity : s_ℓ = c · eq̃(r, r') -/

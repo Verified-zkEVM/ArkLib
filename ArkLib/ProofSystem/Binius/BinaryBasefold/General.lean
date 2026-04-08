@@ -45,7 +45,7 @@ instance {_ : Empty} : OracleInterface (Unit) := OracleInterface.instDefault
 open CoreInteraction QueryPhase
 /-- The oracle verifier for the full Binary Basefold protocol -/
 @[reducible]
-def fullOracleVerifier :
+noncomputable def fullOracleVerifier :
   OracleVerifier (oSpec:=[]ₒ)
     (StmtIn := Statement (L := L) (ℓ:=ℓ) (SumcheckBaseContext L ℓ) 0)
     (OStmtIn:= OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
@@ -68,7 +68,7 @@ def fullOracleVerifier :
 
 /-- The reduction for the full Binary Basefold protocol -/
 @[reducible]
-def fullOracleReduction :
+noncomputable def fullOracleReduction :
   OracleReduction (oSpec:=[]ₒ)
     (StmtIn := Statement (L := L) (ℓ:=ℓ) (SumcheckBaseContext L ℓ) 0)
     (OStmtIn:= OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
@@ -96,13 +96,78 @@ def fullOracleReduction :
 
 /-- The full Binary Basefold protocol as a Proof -/
 @[reducible]
-def fullOracleProof :
+noncomputable def fullOracleProof :
   OracleProof []ₒ
     (Statement := Statement (L := L) (ℓ:=ℓ) (SumcheckBaseContext L ℓ) 0)
     (OStatement := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
     (Witness := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ:=ℓ) 0)
     (pSpec:=fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   fullOracleReduction 𝔽q β γ_repetitions (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
+
+/-- Fin-indexed full verifier companion (`fullPSpecFin`). -/
+@[reducible]
+noncomputable def fullOracleVerifierFin :
+  OracleVerifier (oSpec := []ₒ)
+    (StmtIn := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
+    (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+    (StmtOut := Bool)
+    (OStmtOut := fun _ : Empty => Unit)
+    (pSpec := fullPSpecFin 𝔽q β γ_repetitions (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  OracleVerifier.append (oSpec := []ₒ)
+    (Stmt₁ := Statement (L := L) (SumcheckBaseContext L ℓ) 0)
+    (Stmt₂ := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
+    (Stmt₃ := Bool)
+    (OStmt₁ := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+    (OStmt₂ := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
+    (OStmt₃ := fun _ : Empty => Unit)
+    (pSpec₁ := pSpecCoreInteraction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+    (pSpec₂ := pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions)
+    (V₁ := CoreInteraction.coreInteractionOracleVerifier 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (𝓑 := 𝓑))
+    (V₂ := QueryPhase.queryOracleVerifierFin 𝔽q β γ_repetitions
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ))
+
+/-- Fin-indexed full reduction companion (`fullPSpecFin`). -/
+@[reducible]
+noncomputable def fullOracleReductionFin :
+  OracleReduction (oSpec := []ₒ)
+    (StmtIn := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
+    (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+    (StmtOut := Bool)
+    (OStmtOut := fun _ : Empty => Unit)
+    (WitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) 0)
+    (WitOut := Unit)
+    (pSpec := fullPSpecFin 𝔽q β γ_repetitions (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  OracleReduction.append (oSpec := []ₒ)
+    (Stmt₁ := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
+    (Stmt₂ := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
+    (Stmt₃ := Bool)
+    (Wit₁ := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) 0)
+    (Wit₂ := Unit)
+    (Wit₃ := Unit)
+    (OStmt₁ := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+    (OStmt₂ := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
+    (OStmt₃ := fun _ : Empty => Unit)
+    (pSpec₁ := pSpecCoreInteraction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+    (pSpec₂ := pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions)
+    (R₁ := CoreInteraction.coreInteractionOracleReduction 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (𝓑 := 𝓑))
+    (R₂ := QueryPhase.queryOracleReductionFin 𝔽q β γ_repetitions
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ))
+
+/-- Fin-indexed full proof companion (`fullPSpecFin`). -/
+@[reducible]
+noncomputable def fullOracleProofFin :
+  OracleProof []ₒ
+    (Statement := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
+    (OStatement := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+    (Witness := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) 0)
+    (pSpec := fullPSpecFin 𝔽q β γ_repetitions (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  fullOracleReductionFin 𝔽q β γ_repetitions (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
 
 /-!
 ## Security Properties

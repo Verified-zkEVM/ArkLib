@@ -1572,7 +1572,7 @@ def coreInteractionOracleVerifier :=
 
 /-! The final oracle reduction that composes sumcheckFold with finalSumcheckStep -/
 @[reducible]
-def coreInteractionOracleReduction :
+noncomputable def coreInteractionOracleReduction :
     OracleReduction (oSpec:=[]ₒ)
     (StmtIn := Statement (L := L) (ℓ:=ℓ) (SumcheckBaseContext L ℓ) 0)
     (StmtOut := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
@@ -1580,9 +1580,24 @@ def coreInteractionOracleReduction :
     (WitOut := Unit)
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
     (OStmtOut := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
-    (pSpec := pSpecCoreInteraction 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
-  prover := sorry
-  verifier := coreInteractionOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
+    (pSpec := pSpecCoreInteraction 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  OracleReduction.append (oSpec:=[]ₒ)
+    (Stmt₁ := Statement (L := L) (ℓ:=ℓ) (SumcheckBaseContext L ℓ) 0)
+    (Stmt₂ := Statement (L := L) (ℓ:=ℓ) (SumcheckBaseContext L ℓ) (Fin.last ℓ))
+    (Stmt₃ := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
+    (Wit₁ := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ:=ℓ) 0)
+    (Wit₂ := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ:=ℓ) (Fin.last ℓ))
+    (Wit₃ := Unit)
+    (OStmt₁ := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+    (OStmt₂ := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
+    (OStmt₃ := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
+    (pSpec₁ := pSpecSumcheckFold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ))
+    (pSpec₂ := pSpecFinalSumcheckStep (L:=L))
+    (R₁ := sumcheckFoldOracleReduction 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+      (mp := BBF_SumcheckMultiplierParam))
+    (R₂ := finalSumcheckOracleReduction 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 

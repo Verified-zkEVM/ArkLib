@@ -1889,14 +1889,16 @@ lemma snoc_oracle_dest_eq_j {i : Fin ℓ} {destIdx : Fin r}
   rw [h_j_eq]
   rw [toOutCodewordsCount_mul_ϑ_eq_i_succ ℓ ϑ i h_commit]
 
-open Classical in
 /-- snoc_oracle adds the latest oracle function to the end of an oStmtIn -/
-noncomputable def snoc_oracle {i : Fin ℓ} {destIdx : Fin r} (h_destIdx : destIdx = i.val + 1)
+def snoc_oracle {i : Fin ℓ} {destIdx : Fin r} (h_destIdx : destIdx = i.val + 1)
     (oStmtIn : ∀ j : Fin (toOutCodewordsCount ℓ ϑ i.castSucc),
       OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)
     (newOracleFn : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := destIdx)) :
     ∀ j : Fin (toOutCodewordsCount ℓ ϑ i.succ),
       OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) i.succ j := fun j =>
+  letI : Decidable (isCommitmentRound ℓ ϑ i) := by
+    unfold isCommitmentRound
+    infer_instance
   if hj : j.val < toOutCodewordsCount ℓ ϑ i.castSucc then
       -- Case 1: Old oracle (index < old count)
       oStmtIn ⟨j.val, hj⟩
@@ -1911,7 +1913,7 @@ noncomputable def snoc_oracle {i : Fin ℓ} {destIdx : Fin r} (h_destIdx : destI
         -- Case 3: Impossible (Not commitment round, but index increased)
         (snoc_oracle_impossible hj hi).elim
 
-noncomputable def take_snoc_oracle (i : Fin ℓ) {destIdx : Fin r} (h_destIdx : destIdx = i.val + 1)
+def take_snoc_oracle (i : Fin ℓ) {destIdx : Fin r} (h_destIdx : destIdx = i.val + 1)
     (oStmtIn : (j : Fin (toOutCodewordsCount ℓ ϑ i.castSucc)) →
       OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)
     (newOracleFn : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := destIdx)) :

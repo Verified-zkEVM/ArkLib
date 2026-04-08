@@ -35,7 +35,7 @@ def relayPrvState (i : Fin ℓ) : Fin (0 + 1) → Type := fun
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ
 
 /-! The prover for the `i`-th round of Binary relayfold. -/
-noncomputable def relayOracleProver (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
+def relayOracleProver (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
   OracleProver (oSpec := []ₒ)
     -- current round
     (StmtIn := Statement (L := L) Context i.succ)
@@ -87,7 +87,7 @@ def relayOracleVerifier (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
     relayOracleVerifier_embed]
 
 /-! The oracle reduction that is the `i`-th round of Binary relayfold. -/
-noncomputable def relayOracleReduction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
+def relayOracleReduction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
   OracleReduction (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context i.succ)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
