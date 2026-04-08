@@ -418,16 +418,12 @@ structure Params where
   roundConstants : Vector KoalaBear.Field (numFullRounds * width + numPartialRounds)
 
   -- Conditions on the parameters
-
   /-- The width must be non-zero (i.e. positive) -/
   [width_ne_zero : NeZero width]
-
   /-- The number of full rounds must be non-zero (i.e. positive) -/
   [numFullRounds_ne_zero : NeZero numFullRounds]
-
   /-- The number of partial rounds must be non-zero (i.e. positive) -/
   [numPartialRounds_ne_zero : NeZero numPartialRounds]
-
   /-- The width must be a multiple of 4 -/
   width_dvd_by_4 : 4 ∣ width
   /-- The number of full rounds must be even -/
@@ -567,19 +563,14 @@ def externalLinearLayer (state : Vector KoalaBear.Field params.width) :
   -- First step: convert `state` into chunks of length 4, then apply M4 to each chunk
   let chunks := Vector.Matrix.ofFlatten (state.cast (params.widthDiv4_mul_4_eq_width).symm)
   let chunksAfterM4 := chunks.map (fun chunk => applyM4 chunk)
-
   -- Diffusion step: add column sums to each row
   -- This is equivalent to multiplication by circ(2*I, I, ..., I)
-
   -- Transpose the matrix
   let transposedMatrix := Vector.Matrix.transpose chunksAfterM4
-
   -- Compute the sum of each column
   let columnSums := transposedMatrix.map (fun col => col.foldl (· + ·) 0)
-
   -- Add the column sums to each row
   let chunksAfterDiffusion := chunksAfterM4.map (fun row => row.zipWith (· + ·) columnSums)
-
   -- Convert back to flat vector
   (Vector.flatten chunksAfterDiffusion).cast (params.widthDiv4_mul_4_eq_width)
 
@@ -599,7 +590,6 @@ def internalLinearLayer (state : Vector KoalaBear.Field params.width) :
   -- 1. Calculate the sum of all elements in the state vector.
   -- This single sum will be used for every element of the `J*s` product.
   let sumAll := state.foldl (fun acc x => acc + x) 0
-
   -- 2. Compute `(J*s)_i + (D*s)_i` for each element `i`.
   -- This is `sumAll + d_i * s_i`.
   state.zipWith (fun s d => sumAll + d * s) params.internalDiagVectors
@@ -677,10 +667,8 @@ private lemma secondHalfRoundConstants_extract_length (params : Params)
 def permute (params : Params) (state : Vector KoalaBear.Field params.width) :
     Vector KoalaBear.Field params.width :=
   letI rcs := params.roundConstants
-
   -- Initial external linear layer
   let st0 := externalLinearLayer params state
-
   -- First half of full rounds
   let st1 : Vector KoalaBear.Field params.width :=
     Fin.foldl params.halfNumFullRounds (fun st_acc rc_idx =>
@@ -688,26 +676,21 @@ def permute (params : Params) (state : Vector KoalaBear.Field params.width) :
         (firstHalfRoundConstants_extract_length params rc_idx)
       let st_new := fullRound params st_acc rc_chunk
       st_new) st0
-
   -- Drop the round constants used in the first half of full rounds
   let rcs := rcs.drop (params.halfNumFullRounds * params.width)
-
   -- Partial rounds
   let st2 := Fin.foldl params.numPartialRounds (fun st_acc rc_idx =>
     let rc_val := rcs[rc_idx]'(partialRoundConstant_index_lt params rc_idx)
     let st_new := partialRound params st_acc rc_val
     st_new) st1
-
   -- Drop the round constants used in the partial rounds
   let rcs := rcs.drop params.numPartialRounds
-
   -- Second half of full rounds
   let st3 := Fin.foldl params.halfNumFullRounds (fun st_acc rc_idx =>
     let rc_chunk := (rcs.extract rc_idx (rc_idx + params.width)).cast
       (secondHalfRoundConstants_extract_length params rc_idx)
     let st_new := fullRound params st_acc rc_chunk
     st_new) st2
-
   st3
 
 end Poseidon2

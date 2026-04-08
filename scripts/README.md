@@ -10,6 +10,7 @@ This directory contains various utility scripts for the ArkLib project.
 - **`build_timing_report.sh`** - CI timing/report helper for clean builds, warm rebuilds, and the validation wrapper
 - **`update-lib.sh`** - Update ArkLib.lean with all imports from source files
 - **`check-imports.sh`** - Check if ArkLib.lean is up to date with all imports
+- **`check-warning-log.py`** - Fail on scoped warning classes found in a captured build log
 - **`check-docs-integrity.py`** - Check docs links and the `CLAUDE.md` symlink
 - **`lint-style.py`** - Python-based style linting
 - **`lint-style.lean`** - Lean-based style linting
@@ -92,4 +93,5 @@ baseline without rerunning that baseline in the same job. This supports
 - Some scripts may require specific Lean toolchain versions
 - `validate.sh` is the recommended local wrapper; use the lower-level scripts directly when you
   want to run or debug one piece in isolation
+- `validate.sh` currently enforces a zero non-`sorry` warning budget under `ArkLib/Data/**`
 - New `ArkLib/**/*.lean` files must be staged before `update-lib.sh` or `check-imports.sh`

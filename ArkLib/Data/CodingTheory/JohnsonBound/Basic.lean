@@ -1,8 +1,11 @@
-/- Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+/-
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov, František Silváši
 -/
 import ArkLib.Data.CodingTheory.JohnsonBound.Lemmas
+/-! # Johnson Bound Basics -/
+
 
 namespace JohnsonBound
 
@@ -28,12 +31,12 @@ def JohnsonDenominator (B : Finset (Fin n → F)) (v : Fin n → F) : ℚ :=
   let d := d B
   let q : ℚ := card F
   let frac := q / (q - 1)
-  (1- frac * e/n) ^ 2 - (1 - frac * d/n)
+  (1 - frac * e / n) ^ 2 - (1 - frac * d / n)
 
 /-- Unfolds `JohnsonDenominator` into an explicit rational expression. -/
 lemma johnson_denominator_def :
-  JohnsonDenominator B v = ((1 - ((card F) / (card F - 1)) * (e B v / n)) ^ 2
-      - (1 - ((card F) / (card F - 1)) * (d B/n))) := by
+    JohnsonDenominator B v = ((1 - (card F) / (card F - 1) * (e B v / n)) ^ 2
+      - (1 - (card F) / (card F - 1) * (d B / n))) := by
   simp [JohnsonDenominator]
   field_simp
 
@@ -43,7 +46,7 @@ def JohnsonConditionStrong (B : Finset (Fin n → F)) (v : Fin n → F) : Prop :
   let d := d B
   let q : ℚ := card F
   let frac := q / (q - 1)
-  (1 - frac * d/n) < (1- frac * e/n) ^ 2
+  (1 - frac * d / n) < (1 - frac * e / n) ^ 2
 
 /-- The function used for the `q`-ary Johnson Bound. -/
 noncomputable def J (q δ : ℚ) : ℝ :=
@@ -51,18 +54,16 @@ noncomputable def J (q δ : ℚ) : ℝ :=
   (1 / frac) * (1 - √(1 - frac * δ))
 
 /-- Rationalization of `a - √b` via conjugate multiplication. -/
-@[simp, grind]
-lemma division_by_conjugate {a b : ℝ} (hpos : 0 ≤ b) (hnonzero : a + b.sqrt ≠ 0) :
-  a - (b).sqrt = (a^2 - b)/(a + b.sqrt) := by
-  rw[eq_div_iff hnonzero]
+lemma division_by_conjugate {a b : ℝ} (hpos : 0 ≤ b) (hnonzero : a + √b ≠ 0) :
+    a - √b = (a ^ 2 - b) / (a + √b) := by
+  rw [eq_div_iff hnonzero]
   ring_nf
   simp_all
 
 /-- The binary Johnson bound `1 - √(1-δ)` is at most the `q`-ary bound `J q δ`. -/
-@[simp, grind]
 lemma sqrt_le_J {q δ : ℚ} (hq : q > 1) (hx0 : 0 ≤ δ) (hx1 : δ ≤ 1)
     (hqx : q / (q - 1) * δ ≤ 1) :
-  1 - ((1-δ) : ℝ).sqrt ≤ J q δ := by
+    1 - √(1 - δ) ≤ J q δ := by
   unfold J
   set frac := q / (q - 1) with hfrac
   have hfrac_ge : frac ≥ 1 := by
@@ -98,14 +99,11 @@ def JohnsonConditionWeak (B : Finset (Fin n → F)) (e : ℕ) : Prop :=
 
 /-- The weak Johnson condition implies the strong one on the ball intersection. -/
 lemma johnson_condition_weak_implies_strong [Field F]
-  {B : Finset (Fin n → F)}
-  {v : Fin n → F}
-  {e : ℕ}
-  (h_J_cond_weak : JohnsonConditionWeak B e)
-  (h_B2_not_one : 1 < (B ∩ ({x | Δ₀(x, v) ≤ e} : Finset _)).card)
-  (h_F_nontriv : 2 ≤ card F)
-  :
-  JohnsonConditionStrong (B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)) v := by
+    {B : Finset (Fin n → F)} {v : Fin n → F} {e : ℕ}
+    (h_J_cond_weak : JohnsonConditionWeak B e)
+    (h_B2_not_one : 1 < (B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)).card)
+    (h_F_nontriv : 2 ≤ card F) :
+    JohnsonConditionStrong (B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)) v := by
   have h_n_pos : 0 < n := by
     by_contra hn
     push_neg at hn
@@ -113,44 +111,44 @@ lemma johnson_condition_weak_implies_strong [Field F]
     subst this
     have B_singleton : B.card ≤ 1 :=
       card_le_one.2 (fun _ _ _ _ => funext (Fin.elim0 ·))
-    have : (B ∩ ({x | Δ₀(x, v) ≤ e} : Finset _)).card ≤ 1 :=
+    have : (B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)).card ≤ 1 :=
       le_trans (card_le_card inter_subset_left) B_singleton
     omega
   unfold JohnsonConditionStrong
   intro e_1 d q frac
-  by_cases h_dsqrt_pos : (0 : ℝ)  ≤ 1 - frac * d / ↑n
-  · have h_B2_nonempty : (0 : ℚ) < ((B ∩ ({x | Δ₀(x, v) ≤ e} : Finset _)).card : ℚ)
-      := by norm_cast; omega
+  by_cases h_dsqrt_pos : (0 : ℝ) ≤ 1 - frac * d / ↑n
+  · have h_B2_nonempty : (0 : ℚ) < ((B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)).card : ℚ) :=
+      by norm_cast; omega
     have h_frac_pos : frac > 0 := by
       unfold frac
       have : 1 < card F := by
-        simpa [Fintype.one_lt_card_iff] using (⟨(0:F), (1:F), by simp⟩ : ∃ a b : F, a ≠ b)
+        simpa [Fintype.one_lt_card_iff] using (⟨(0 : F), (1 : F), by simp⟩ : ∃ a b : F, a ≠ b)
       field_simp
       unfold q
       simp only [Nat.cast_pos, Fintype.zero_lt_card, div_pos_iff_of_pos_left, sub_pos,
         Nat.one_lt_cast]
       exact h_F_nontriv
-    have j_fun_bound : (↑e / ↑n : ℝ) < (1/↑frac * (1-√(1 - ↑frac * ↑d / ↑n)))  := by
+    have j_fun_bound : (↑e / ↑n : ℝ) < (1 / ↑frac * (1 - √(1 - ↑frac * ↑d / ↑n))) := by
       unfold JohnsonConditionWeak J at h_J_cond_weak
       simp_all only [Rat.cast_natCast, Rat.cast_div, Rat.cast_sub, Rat.cast_one, one_div, inv_div,
         ne_eq, sub_nonneg, Nat.cast_pos, Finset.card_pos, gt_iff_lt]
-      let d_weak := sInf {d | ∃ u ∈ B, ∃ v ∈ B, ¬u=v ∧ Δ₀(u,v)=d}
-      have d_subset : ↑d_weak ≤ (d : ℚ)  := by
+      let d_weak := sInf { d | ∃ u ∈ B, ∃ v ∈ B, ¬u = v ∧ Δ₀(u, v) = d }
+      have d_subset : ↑d_weak ≤ (d : ℚ) := by
           unfold d
           unfold JohnsonBound.d
           unfold d_weak
           have min_dist := min_dist_le_d h_B2_not_one
           have subset_inf_ineq :
-              sInf {d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ Δ₀(u, v) = d} ≤
-              sInf {d |
-              ∃ u ∈ (B ∩ ({x | Δ₀(x, v) ≤ e} : Finset _)),
-              ∃ v_1 ∈ (B ∩ ({x | Δ₀(x, v) ≤ e} : Finset _)),
-              u ≠ v_1 ∧ Δ₀(u, v_1) = d}:= by
-              have subset : {d |
-                          ∃ u ∈ (B ∩ ({x | Δ₀(x, v) ≤ e} : Finset _)),
-                          ∃ v_1 ∈ (B ∩ ({x | Δ₀(x, v) ≤ e} : Finset _)),
-                          u ≠ v_1 ∧ Δ₀(u, v_1) = d}
-                          ⊆ {d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ Δ₀(u, v) = d} := by
+              sInf { d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ Δ₀(u, v) = d } ≤
+              sInf { d |
+              ∃ u ∈ (B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)),
+              ∃ v_1 ∈ (B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)),
+              u ≠ v_1 ∧ Δ₀(u, v_1) = d } := by
+              have subset : { d |
+                          ∃ u ∈ (B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)),
+                          ∃ v_1 ∈ (B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)),
+                          u ≠ v_1 ∧ Δ₀(u, v_1) = d }
+                          ⊆ { d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ Δ₀(u, v) = d } := by
                 intro d ⟨u, hu_in, v_1, hv_in, hne, heq⟩
                 exact
                   ⟨u, by
@@ -163,28 +161,27 @@ lemma johnson_condition_weak_implies_strong [Field F]
               use Δ₀(u, v_1)
               exact ⟨u, hu, v_1, hv_1, hne, rfl⟩
           calc ↑d_weak
-              = ↑(sInf {d | ∃ u ∈ B, ∃ v ∈ B, ¬u = v ∧ Δ₀(u, v) = d}) := by rfl
-            _ ≤ ↑(sInf {d |
-              ∃ u ∈ (B ∩ ({x | Δ₀(x, v) ≤ e} : Finset _)),
-              ∃ v_1 ∈ (B ∩ ({x | Δ₀(x, v) ≤ e} : Finset _)),
-              u ≠ v_1 ∧ Δ₀(u, v_1) = d}):= by exact_mod_cast subset_inf_ineq
-            _ ≤ JohnsonBound.d (B ∩ ({x | Δ₀(x, v) ≤ e} : Finset _)) :=
+              = ↑(sInf { d | ∃ u ∈ B, ∃ v ∈ B, ¬u = v ∧ Δ₀(u, v) = d }) := by rfl
+            _ ≤ ↑(sInf { d |
+              ∃ u ∈ (B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)),
+              ∃ v_1 ∈ (B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)),
+              u ≠ v_1 ∧ Δ₀(u, v_1) = d }) := by exact_mod_cast subset_inf_ineq
+            _ ≤ JohnsonBound.d (B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)) :=
               by exact_mod_cast min_dist
-      have bound: (↑frac)⁻¹ * (1 - √(1 - ↑frac * ↑d_weak / ↑n))
-        ≤ (↑frac)⁻¹ * (1 - √(1 - ↑frac * ↑d / ↑n)) := by
+      have bound : (↑frac)⁻¹ * (1 - √(1 - ↑frac * ↑d_weak / ↑n))
+          ≤ (↑frac)⁻¹ * (1 - √(1 - ↑frac * ↑d / ↑n)) := by
         have ineq1 : (↑d_weak / ↑n) ≤ (d / ↑n) := by
-          rw[←mul_le_mul_iff_of_pos_left (Nat.cast_pos.mpr h_n_pos)]
+          rw [← mul_le_mul_iff_of_pos_left (Nat.cast_pos.mpr h_n_pos)]
           field_simp
           exact d_subset
-        have ineq2 : frac * (d_weak / n) ≤ frac * (d / n) := by
-          exact_mod_cast (mul_le_mul_iff_of_pos_left h_frac_pos).mpr ineq1
+        have ineq2 : frac * (d_weak / n) ≤ frac * (d / n) :=
+          mod_cast (mul_le_mul_iff_of_pos_left h_frac_pos).mpr ineq1
         have ineq3' : (1 : ℝ) - frac * d / n ≤ (1 : ℝ) - frac * d_weak / n := by
           norm_cast; grind
         have ineq4 : √(1 - ↑frac * ↑d / ↑n) ≤ √(1 - ↑frac * ↑d_weak / ↑n) :=
           sqrt_le_sqrt ineq3'
         have ineq5 :
-            (1 - √(1 - ↑frac * ↑d_weak / ↑n)) ≤ (1 - √(1 - ↑frac * ↑d / ↑n)) :=
-          by linarith
+            (1 - √(1 - ↑frac * ↑d_weak / ↑n)) ≤ (1 - √(1 - ↑frac * ↑d / ↑n)) := by linarith
         simp_all
       have h_J_cond_weak' : ↑e / ↑n < 1 / (↑frac) * (1 - √(1 - frac * (d_weak / ↑n))) := by
         unfold frac
@@ -197,73 +194,60 @@ lemma johnson_condition_weak_implies_strong [Field F]
       field_simp at h_J_cond_weak'
       field_simp at bound
       nlinarith [mul_le_mul_of_nonneg_left bound (Nat.cast_nonneg n)]
-    have err_n : (↑e_1 / ↑n : ℝ) ≤ (↑e / ↑n : ℝ)   := by
-      gcongr
-      have err : e_1 ≤ e := by
-          unfold e_1
-          dsimp[JohnsonBound.e]
-          have : ∀ x ∈ B ∩ ({x | Δ₀(x, v) ≤ e} : Finset _), Δ₀(v, x) ≤ e := by
-            intro x hx
-            simp only [Finset.mem_inter, Finset.mem_filter, Finset.mem_univ, true_and] at hx
-            rw [hammingDist_comm]; exact hx.2
-          simp only [one_div, Nat.cast_sum, ge_iff_le]
-          rw[inv_mul_le_iff₀ h_B2_nonempty]
-          exact_mod_cast Finset.sum_le_card_nsmul
-            (B ∩ ({x | Δ₀(x, v) ≤ e} : Finset _)) (fun x => Δ₀(v, x)) e this
-      exact_mod_cast err
-    have j_fun_bound_e1 : (↑e_1 / ↑n : ℝ) < (1/↑frac * (1-√(1 - ↑frac * ↑d / ↑n))) :=
+    have err_n : (↑e_1 / ↑n : ℝ) ≤ (↑e / ↑n : ℝ) := by
+      apply div_le_div_of_nonneg_right _ (Nat.cast_nonneg n)
+      exact_mod_cast e_ball_le_radius v e
+        (by simpa using show 0 < (B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)).card by omega)
+    have j_fun_bound_e1 : (↑e_1 / ↑n : ℝ) < (1 / ↑frac * (1 - √(1 - ↑frac * ↑d / ↑n))) :=
       lt_of_le_of_lt err_n j_fun_bound
     have rearrange_jboundw_e1 : √(1 - ↑frac * ↑d / ↑n) < 1 - frac * e_1 / ↑n := by
-      have : frac * e_1 / ↑n < 1-√(1 - frac * d / ↑n) := by
+      have : frac * e_1 / ↑n < 1 - √(1 - frac * d / ↑n) := by
         calc ↑frac * ↑e_1 / ↑n
             = ↑frac * (↑e_1 / ↑n) := by ring
-          _ < ↑frac * (1/↑frac * (1-√(1 - ↑frac * ↑d / ↑n))) := by simp_all only [Rat.cast_div,
-            Rat.cast_natCast, Rat.cast_sub, Rat.cast_one, sub_nonneg, Nat.cast_pos, Finset.card_pos,
-            gt_iff_lt, Fintype.zero_lt_card, div_pos_iff_of_pos_left, sub_pos, Nat.one_lt_cast,
-            one_div, inv_div, mul_lt_mul_iff_right₀, frac, q, d, e_1]
-          _ = 1-√(1 - ↑frac * ↑d / ↑n) := by
-            grind only [= division_by_conjugate,= Real.sqrt_one]
+          _ < ↑frac * (1 / ↑frac * (1 - √(1 - ↑frac * ↑d / ↑n))) := by
+            simp_all only [Rat.cast_div, Rat.cast_natCast, Rat.cast_sub, Rat.cast_one, sub_nonneg,
+              Nat.cast_pos, Finset.card_pos, gt_iff_lt, zero_lt_card, div_pos_iff_of_pos_left,
+              sub_pos, Nat.one_lt_cast, one_div, inv_div, mul_lt_mul_iff_right₀, frac, q, d, e_1]
+          _ = 1 - √(1 - ↑frac * ↑d / ↑n) := by
+            grind only [= division_by_conjugate, = sqrt_one]
       grind only
-    have h_esqrtpos :  (0 : ℝ)  ≤ 1- frac * e_1 / ↑n  := by
-      have : (0 : ℝ) ≤ √(1 - ↑frac * ↑d / ↑n) := by simp_all only [Rat.cast_div, Rat.cast_natCast,
-        Rat.cast_sub, Rat.cast_one, sub_nonneg, Nat.cast_pos, Finset.card_pos, gt_iff_lt,
-        Fintype.zero_lt_card, div_pos_iff_of_pos_left, sub_pos, Nat.one_lt_cast, one_div, inv_div,
-        Real.sqrt_nonneg, frac, q, d, e_1]
+    have h_esqrtpos : (0 : ℝ) ≤ 1 - frac * e_1 / ↑n := by
+      have : (0 : ℝ) ≤ √(1 - ↑frac * ↑d / ↑n) := by
+        simp_all only [Rat.cast_div, Rat.cast_natCast, Rat.cast_sub, Rat.cast_one, sub_nonneg,
+          Nat.cast_pos, Finset.card_pos, gt_iff_lt, zero_lt_card, div_pos_iff_of_pos_left,
+          sub_pos, Nat.one_lt_cast, one_div, inv_div, sqrt_nonneg, frac, q, d, e_1]
       grind only
     suffices recast_main_goal : (1 - frac * d / ↑n : ℝ) < (1 - frac * e_1 / ↑n) ^ 2 by
-     exact_mod_cast recast_main_goal
-    suffices roots : √(1 - frac * d / ↑n) < 1- frac * e_1 / ↑n by
-      rw[←Real.sqrt_lt h_dsqrt_pos h_esqrtpos]
+      exact_mod_cast recast_main_goal
+    suffices roots : √(1 - frac * d / ↑n) < 1 - frac * e_1 / ↑n by
+      rw [← sqrt_lt h_dsqrt_pos h_esqrtpos]
       exact_mod_cast roots
     exact rearrange_jboundw_e1
   · have strict_neg : 1 - ↑frac * ↑d / ↑n < (0 : ℚ) := by
-      have : ¬(0 : ℚ)  ≤ 1 - frac * d / ↑n := by exact_mod_cast h_dsqrt_pos
-      rw[Rat.not_le] at this
+      have : ¬(0 : ℚ) ≤ 1 - frac * d / ↑n := by exact_mod_cast h_dsqrt_pos
+      rw [Rat.not_le] at this
       exact this
     calc 1 - ↑frac * ↑d / ↑n < (0 : ℚ) := strict_neg
       _ ≤ (1 - ↑frac * ↑e_1 / ↑n) ^ 2 := by exact_mod_cast sq_nonneg (1 - frac * ↑e_1 / ↑n)
 
 /-- The strong Johnson condition forces the block length to be positive. -/
-private lemma johnson_condition_strong_implies_n_pos
-  (h_johnson : JohnsonConditionStrong B v)
-  :
-  0 < n := by
+lemma johnson_condition_strong_implies_n_pos
+    (h_johnson : JohnsonConditionStrong B v) :
+    0 < n := by
   cases n <;> try simp [JohnsonConditionStrong] at *
 
 /-- The strong Johnson condition forces the alphabet to have at least two elements. -/
-private lemma johnson_condition_strong_implies_2_le_F_card
-  (h_johnson : JohnsonConditionStrong B v)
-  :
-  2 ≤ card F := by
+lemma johnson_condition_strong_implies_2_le_F_card
+    (h_johnson : JohnsonConditionStrong B v) :
+    2 ≤ card F := by
   revert h_johnson
   dsimp [JohnsonConditionStrong]
   rcases card F with _ | _ | _ <;> aesop
 
 /-- The strong Johnson condition forces the code to have at least two codewords. -/
-private lemma johnson_condition_strong_implies_2_le_B_card
-  (h_johnson : JohnsonConditionStrong B v)
-  :
-  2 ≤ B.card := by
+lemma johnson_condition_strong_implies_2_le_B_card
+    (h_johnson : JohnsonConditionStrong B v) :
+    2 ≤ B.card := by
   dsimp [JohnsonConditionStrong] at h_johnson
   rcases eq : B.card with _ | card | _ <;> [simp_all; skip; omega]
   obtain ⟨a, ha⟩ := card_eq_one.1 eq
@@ -279,20 +263,17 @@ private lemma johnson_condition_strong_implies_2_le_B_card
   exact absurd (lt_of_lt_of_le (h ▸ h_johnson) h') (lt_irrefl _)
 
 /-- `JohnsonConditionStrong` is equivalent to `JohnsonDenominator` being positive. -/
-@[simp, grind]
 lemma johnson_condition_strong_iff_johnson_denom_pos {B : Finset (Fin n → F)} {v : Fin n → F} :
-  JohnsonConditionStrong B v ↔ 0 < JohnsonDenominator B v := by
+    JohnsonConditionStrong B v ↔ 0 < JohnsonDenominator B v := by
   simp [JohnsonDenominator, JohnsonConditionStrong]
 
 /-- Theorem 3.1: the Johnson bound on list size. -/
 theorem johnson_bound [Field F]
-  (h_condition : JohnsonConditionStrong B v)
-  :
-  let d := d B
-  let q : ℚ := card F
-  let frac := q / (q - 1)
-  B.card ≤ (frac * d/n) / JohnsonDenominator B v
-  := by
+    (h_condition : JohnsonConditionStrong B v) :
+    let d := d B
+    let q : ℚ := card F
+    let frac := q / (q - 1)
+    B.card ≤ (frac * d / n) / JohnsonDenominator B v := by
   suffices B.card * JohnsonDenominator B v ≤
            (card F : ℚ) / (card F - 1) * d B / n by
     rw [johnson_condition_strong_iff_johnson_denom_pos] at h_condition
@@ -317,9 +298,9 @@ theorem johnson_bound_alphabet_free [Field F]
   have q_not_small : q ≥ (2 : ℚ) := by
     simpa [q] using show (2 : ℚ) ≤ (card F : ℚ) from by
       exact_mod_cast Nat.succ_le_of_lt (by
-        simpa [Fintype.one_lt_card_iff] using (⟨(0:F), (1:F), by simp⟩ : ∃ a b : F, a ≠ b))
+        simpa [Fintype.one_lt_card_iff] using (⟨(0 : F), (1 : F), by simp⟩ : ∃ a b : F, a ≠ b))
   have d_not_small : d ≥ 1 := by
-    let S : Set ℕ := {d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ hammingDist u v = d}
+    let S : Set ℕ := { d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ hammingDist u v = d }
     simpa [S] using sInf.le_sInf_of_LB (S := S) (i := 1)
       (by obtain ⟨u, hu, v, hv, huv⟩ := one_lt_card.mp hB
           exact ⟨hammingDist u v, u, hu, v, hv, huv, rfl⟩)
@@ -338,8 +319,8 @@ theorem johnson_bound_alphabet_free [Field F]
       (le_trans (by norm_num : (1 : ℚ) ≤ 2) qdn_not_small)
   -- Main case: |B'| ≥ 2.
   · have hd_le_dB' : (d : ℚ) ≤ JohnsonBound.d B' := by
-      let S : Set ℕ := {d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ hammingDist u v = d}
-      let S' : Set ℕ := {d | ∃ u ∈ B', ∃ v ∈ B', u ≠ v ∧ hammingDist u v = d}
+      let S : Set ℕ := { d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ hammingDist u v = d }
+      let S' : Set ℕ := { d | ∃ u ∈ B', ∃ v ∈ B', u ≠ v ∧ hammingDist u v = d }
       have hsubset : S' ⊆ S := fun _ ⟨u, hu, w, hw, huw, hd⟩ =>
         ⟨u, (mem_inter.mp hu).1, w, (mem_inter.mp hw).1, huw, hd⟩
       have hS'nonempty : S'.Nonempty := by
@@ -363,7 +344,7 @@ theorem johnson_bound_alphabet_free [Field F]
       have hden_ge : JohnsonDenominator B' v ≥ frac * JohnsonBound.d B' / n - 1 := by
         simpa [JohnsonDenominator, q, frac, mul_div_assoc] using
           johnson_den_ge_frac_d (B := B') (v := v)
-      have hgap : frac * JohnsonBound.d B' / (n:ℚ) - 1 ≥ 1 / (n * (q-1)) := by
+      have hgap : frac * JohnsonBound.d B' / (n : ℚ) - 1 ≥ 1 / (n * (q - 1)) := by
         simpa [q, frac] using johnson_gap_frac_d_gt_one (B := B')
           (q_not_small := by simpa [q] using q_not_small)
           (n_not_small := n_not_small)
@@ -391,7 +372,7 @@ theorem johnson_bound_alphabet_free [Field F]
     · have d_le_n : d ≤ n := by
         obtain ⟨u, hu, v, hv, huv⟩ := one_lt_card.mp hB
         exact le_trans (Nat.sInf_le ⟨u, hu, v, hv, huv, rfl⟩)
-          (by simpa using (hammingDist_le_card_fintype (x := u) (y := v)))
+          (by simpa using hammingDist_le_card_fintype (x := u) (y := v))
       have hn_nonneg : (0 : ℚ) ≤ n := hn_pos.le
       have hq_pos : (0 : ℚ) < q := by linarith
       have hfrac_pos : (0 : ℚ) < frac := div_pos hq_pos hq1_pos
@@ -430,7 +411,7 @@ theorem johnson_bound_alphabet_free [Field F]
             (le_of_not_gt h_d_close_n)))
           (show 1 < B'.card by omega) (by
             have : 1 < card F := by
-              simpa [Fintype.one_lt_card_iff] using (⟨(0:F), (1:F), by simp⟩ : ∃ a b : F, a ≠ b)
+              simpa [Fintype.one_lt_card_iff] using (⟨(0 : F), (1 : F), by simp⟩ : ∃ a b : F, a ≠ b)
             omega)
       -- Core inequality from the hypothesis.
       have h_div'_q : (1 - (d / n : ℚ)) ≤ (1 - (e / n : ℚ)) ^ 2 := by
@@ -452,14 +433,14 @@ theorem johnson_bound_alphabet_free [Field F]
             -- Expand and cancel frac from JohnsonDenominator.
             have denom_expansion : JohnsonDenominator B' v =
                 frac * (JohnsonBound.d B' / n - 2 * JohnsonBound.e B' v / n +
-                frac * (JohnsonBound.e B' v / n)^2) := by
+                frac * (JohnsonBound.e B' v / n) ^ 2) := by
               simp [JohnsonDenominator, q, frac, mul_div_assoc]; grind only
-            have term_simplification : (frac * (JohnsonBound.d B') / (n : ℚ)) /
+            have term_simplification : (frac * JohnsonBound.d B' / (n : ℚ)) /
                 JohnsonDenominator B' v =
                 (JohnsonBound.d B' / n) /
                 (JohnsonBound.d B' / n - 2 * JohnsonBound.e B' v / n +
-                frac * (JohnsonBound.e B' v / n)^2) := by
-                  grind only [=johnson_condition_strong_iff_johnson_denom_pos]
+                frac * (JohnsonBound.e B' v / n) ^ 2) := by
+                  grind only [= johnson_condition_strong_iff_johnson_denom_pos]
             -- Bound eB' by e.
             have e_ineq : JohnsonBound.e B' v ≤ e := by
               simpa [B'] using JohnsonBound.e_ball_le_radius (B := B) (v := v) (r := (e : ℚ))
@@ -490,8 +471,8 @@ theorem johnson_bound_alphabet_free [Field F]
               by_cases he0 : e = 0
               · subst he0; simpa [D0, E0, Den] using
                   johnson_den_lb_e_zero hn_pos_nat (by linarith) (by exact_mod_cast d_not_small)
-              · exact johnson_den_lb_e_pos hn_pos hn_nonneg (sq_nonneg _) (ne_of_gt hq_pos)
-                  one_div_q_le (by linarith) quad_nonneg he0
+              · exact johnson_den_lb_e_pos hn_pos he0 one_div_q_le
+                  (by linarith) quad_nonneg
             rw [term_simplification]
             calc (JohnsonBound.d B' / n) /
                     (JohnsonBound.d B' / n - 2 * JohnsonBound.e B' v / n +

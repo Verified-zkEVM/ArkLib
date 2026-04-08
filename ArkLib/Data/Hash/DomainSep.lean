@@ -83,7 +83,7 @@ abbrev SEP_CHAR : Char := Char.ofNat 0
 
 /-- The null byte separator between operations in the domain separator (unicode/ASCII value 0)
   and as such is the only forbidden character in labels. -/
-abbrev SEP_BYTE : String := sorry -- ⟨[SEP_CHAR]⟩
+abbrev SEP_BYTE : String := String.singleton SEP_CHAR
 
 /-- Sponge operations.
 
@@ -252,7 +252,7 @@ def finalize (ds : DomainSeparator U H) : Array Op :=
         (acc, c :: rest)
     go 0 cs
   let parsePart (s : String) : Option Op :=
-    match s.data with
+    match s.toList with
     | [] => none
     | id :: rest =>
       let (n, _rest) := parseDigits rest

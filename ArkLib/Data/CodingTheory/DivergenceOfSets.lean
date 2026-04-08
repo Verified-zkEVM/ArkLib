@@ -4,13 +4,18 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland
 -/
 
-import ArkLib.Data.CodingTheory.Basic
+import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+import ArkLib.Data.CodingTheory.Basic.Distance
+import ArkLib.Data.CodingTheory.Basic.LinearCode
+import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 import ArkLib.Data.CodingTheory.ProximityGap.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ReedSolomonGap
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.Probability.Notation
 import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Defs
+/-! # Divergence of Sets -/
+
 
 open NNReal ProximityGap
 
@@ -40,7 +45,7 @@ def possibleDeltas (U V : Set (ι → F)) [Nonempty V] [Fintype V] : Set ℚ≥0
 /-- The set of possible relative Hamming distances between two sets is well-defined. -/
 @[simp]
 lemma possibleDeltas_subset_relHammingDistRange :
-  possibleDeltas U V ⊆ relHammingDistRange ι :=
+    possibleDeltas U V ⊆ relHammingDistRange ι :=
   fun x hx_mem_deltas ↦ by
     simp only [possibleDeltas, Set.mem_setOf_eq] at hx_mem_deltas
     rcases hx_mem_deltas with ⟨u, hu_mem, h_dist_eq⟩
@@ -79,7 +84,7 @@ variable {ι : Type} [Fintype ι] [Nonempty ι]
 
 open scoped ProbabilityTheory in
 theorem Pr_uniform_eq_one_imp_forall {α : Type} [Fintype α] [Nonempty α] (P : α → Prop) :
-  Pr_{let a ← $ᵖ α}[P a] = 1 → ∀ a, P a := by
+    Pr_{let a ← $ᵖ α}[P a] = 1 → ∀ a, P a := by
   classical
   intro hPr a
   by_contra hPa
@@ -101,7 +106,7 @@ theorem Pr_uniform_eq_one_imp_forall {α : Type} [Fintype α] [Nonempty α] (P :
 
 open scoped ProbabilityTheory in
 theorem Pr_uniform_equiv {α β : Type} [Fintype α] [Nonempty α] [Fintype β] [Nonempty β]
-  (e : α ≃ β) (P : β → Prop) :
+    (e : α ≃ β) (P : β → Prop) :
   Pr_{let a ← $ᵖ α}[P (e a)] = Pr_{let b ← $ᵖ β}[P b] := by
   classical
   have hmap : (PMF.uniformOfFintype α).map e = PMF.uniformOfFintype β := by
@@ -157,7 +162,7 @@ theorem Pr_uniform_equiv {α β : Type} [Fintype α] [Nonempty α] [Fintype β] 
     )
 
 theorem divergence_attains {ι : Type} [Fintype ι] [Nonempty ι]
-  {F : Type} [DecidableEq F]
+    {F : Type} [DecidableEq F]
   {U V : Set (ι → F)} [Nonempty U] [Nonempty V] [Fintype V] :
   ∃ u ∈ U, δᵣ'(u, V) = divergence U V := by
   classical
@@ -178,7 +183,7 @@ theorem divergence_attains {ι : Type} [Fintype ι] [Nonempty ι]
 
 open scoped ProbabilityTheory in
 theorem proximity_gap_affineSubspace {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-  {F : Type} [Fintype F] [Field F] [DecidableEq F]
+    {F : Type} [Fintype F] [Field F] [DecidableEq F]
   {deg : ℕ} {domain : ι ↪ F}
   (U : AffineSubspace F (ι → F)) [Nonempty U] {δ : ℝ≥0}
   (hδ : δ ≤ 1 - ReedSolomonCode.sqrtRate deg domain) :
@@ -319,14 +324,14 @@ theorem real_sqrt_div_10_pow_two {r : ℝ≥0} :
       simp [Real.sq_sqrt hr, h10]
 
 theorem real_sqrt_rate_eq_coe_nnreal_sqrt {ι : Type} [Fintype ι] [Nonempty ι]
-  {F : Type} [Field F]
+    {F : Type} [Field F]
   {deg : ℕ} {domain : ι ↪ F} :
   Real.sqrt ((LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0) : ℝ)
     = (((LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0).sqrt : ℝ≥0) : ℝ) := by
   simp
 
 theorem reedSolomon_dim_le_deg {ι : Type} [Nonempty ι]
-  {F : Type} [Field F]
+    {F : Type} [Field F]
   {deg : ℕ} {domain : ι ↪ F} :
   LinearCode.dim (ReedSolomon.code domain deg) ≤ deg := by
   classical
@@ -342,7 +347,7 @@ theorem reedSolomon_dim_le_deg {ι : Type} [Nonempty ι]
   simpa [Polynomial.finrank_degreeLT_n] using hle
 
 theorem reedSolomon_rate_le_one {ι : Type} [Fintype ι] [Nonempty ι]
-  {F : Type} [Field F]
+    {F : Type} [Field F]
   {deg : ℕ} {domain : ι ↪ F} :
   LinearCode.rate (ReedSolomon.code domain deg) ≤ 1 := by
   classical
@@ -361,7 +366,7 @@ theorem reedSolomon_rate_le_one {ι : Type} [Fintype ι] [Nonempty ι]
   exact_mod_cast hdim_le_len_nat
 
 theorem reedSolomon_rate_mul_card_eq_dim {ι : Type} [Fintype ι] [Nonempty ι]
-  {F : Type} [Field F]
+    {F : Type} [Field F]
   {deg : ℕ} {domain : ι ↪ F} :
   (Fintype.card ι : ℝ≥0) * (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0)
     = (LinearCode.dim (ReedSolomon.code domain deg) : ℝ≥0) := by
@@ -381,7 +386,7 @@ theorem reedSolomon_rate_mul_card_eq_dim {ι : Type} [Fintype ι] [Nonempty ι]
   simp
 
 theorem reedSolomon_rate_mul_card_le_deg {ι : Type} [Fintype ι] [Nonempty ι]
-  {F : Type} [Field F]
+    {F : Type} [Field F]
   {deg : ℕ} {domain : ι ↪ F} :
   (Fintype.card ι : ℝ≥0) * (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0)
     ≤ (deg : ℝ≥0) := by
@@ -392,7 +397,7 @@ theorem reedSolomon_rate_mul_card_le_deg {ι : Type} [Fintype ι] [Nonempty ι]
 
 
 theorem reedSolomon_rate_pos {ι : Type} [Fintype ι] [Nonempty ι]
-  {F : Type} [Field F]
+    {F : Type} [Field F]
   {deg : ℕ} {domain : ι ↪ F}
   (hdeg : 0 < deg) :
   0 < LinearCode.rate (ReedSolomon.code domain deg) := by
@@ -426,7 +431,7 @@ theorem reedSolomon_rate_pos {ι : Type} [Fintype ι] [Nonempty ι]
   simpa [LinearCode.rate] using this
 
 theorem errorBound_ge_const {ι : Type} [Fintype ι] [Nonempty ι]
-  {F : Type} [Fintype F] [Field F]
+    {F : Type} [Fintype F] [Field F]
   {deg : ℕ} {domain : ι ↪ F}
   (hdeg : 0 < deg)
   {δ : ℝ≥0}
@@ -571,7 +576,7 @@ theorem errorBound_ge_const {ι : Type} [Fintype ι] [Nonempty ι]
 
 
 theorem errorBound_johnson_mono {ι : Type} [Fintype ι] [Nonempty ι]
-  {F : Type} [Fintype F] [Field F]
+    {F : Type} [Fintype F] [Field F]
   {deg : ℕ} {domain : ι ↪ F}
   (hdeg : 0 < deg)
   {δ₁ δ₂ : ℝ≥0}
@@ -671,7 +676,7 @@ theorem errorBound_johnson_mono {ι : Type} [Fintype ι] [Nonempty ι]
 
 
 theorem errorBound_mono {ι : Type} [Fintype ι] [Nonempty ι]
-  {F : Type} [Fintype F] [Field F]
+    {F : Type} [Fintype F] [Field F]
   {deg : ℕ} {domain : ι ↪ F}
   (hdeg : 0 < deg)
   {δ₁ δ₂ : ℝ≥0}
@@ -707,7 +712,7 @@ theorem errorBound_mono {ι : Type} [Fintype ι] [Nonempty ι]
       simpa [ProximityGap.errorBound, t, ρ, Set.mem_Icc, Set.mem_Ioo, h1, h2, ht1, ht2] using hmono
 
 theorem relDistFromCode'_le_divergence {ι : Type} [Fintype ι] [Nonempty ι]
-  {F : Type} [DecidableEq F]
+    {F : Type} [DecidableEq F]
   {U V : Set (ι → F)} [Nonempty U] [Nonempty V] [Fintype V]
   (u : ι → F) (hu : u ∈ U) :
   δᵣ'(u, V) ≤ divergence U V := by
@@ -724,7 +729,7 @@ theorem relDistFromCode'_le_divergence {ι : Type} [Fintype ι] [Nonempty ι]
   simpa [Set.mem_toFinset] using hδ
 
 theorem divergence_pred_spec {ι : Type} [Fintype ι] [Nonempty ι]
-  {F : Type} [DecidableEq F]
+    {F : Type} [DecidableEq F]
   {U V : Set (ι → F)} [Nonempty U] [Nonempty V] [Fintype V]
   (hdiv_pos : 0 < (divergence U V : ℝ≥0)) :
   ∃ δ : ℚ≥0, δ < divergence U V ∧
@@ -790,7 +795,7 @@ theorem divergence_pred_spec {ι : Type} [Fintype ι] [Nonempty ι]
 
 open scoped ProbabilityTheory in
 theorem concentration_bounds {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-  {F : Type} [Fintype F] [Field F] [DecidableEq F]
+    {F : Type} [Fintype F] [Field F] [DecidableEq F]
   {deg : ℕ} {domain : ι ↪ F}
   (hdeg : 0 < deg)
   {U : AffineSubspace F (ι → F)} [Nonempty U]

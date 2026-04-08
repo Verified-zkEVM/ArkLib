@@ -6,14 +6,19 @@ Authors: František Silváši, Ilia Vlasov
 import Init.Data.List.FinRange
 import Mathlib.Algebra.Field.Basic
 import Mathlib.Algebra.Polynomial.Basic
-import Mathlib.Algebra.Polynomial.Degree.Definitions
+import Mathlib.Algebra.Polynomial.Degree.Defs
 import Mathlib.Algebra.Polynomial.FieldDivision
 import Mathlib.Data.Finset.Insert
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Matrix.Mul
 
-import ArkLib.Data.CodingTheory.Basic
+import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+import ArkLib.Data.CodingTheory.Basic.Distance
+import ArkLib.Data.CodingTheory.Basic.LinearCode
+import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 import ArkLib.Data.Fin.Lift
+/-! # Berlekamp-Welch Error-Locator Polynomials -/
+
 
 namespace BerlekampWelch
 
@@ -42,12 +47,12 @@ protected lemma elocPoly_zero : ElocPoly 0 ωs f p = 1 := rfl
 
 @[simp]
 protected lemma elocPoly_one :
-  ElocPoly 1 ωs f p = if f 0 ≠ p.eval (ωs 0) then X - (C (ωs 0)) else 1 := by
+    ElocPoly 1 ωs f p = if f 0 ≠ p.eval (ωs 0) then X - (C (ωs 0)) else 1 := by
   simp [ElocPoly, List.range_succ]
 
 @[simp]
 protected lemma elocPoly_two :
-  ElocPoly 2 ωs f p =
+    ElocPoly 2 ωs f p =
   if f 1 = eval (ωs 1) p
   then if f 0 = eval (ωs 0) p then 1
        else X - C (ωs 0)
@@ -57,7 +62,7 @@ protected lemma elocPoly_two :
 
 @[simp]
 protected lemma elocPoly_succ :
-  ElocPoly (n + 1) ωs f p =
+    ElocPoly (n + 1) ωs f p =
   ElocPoly n ωs f p *
     if f n = p.eval (ωs n)
     then 1
@@ -68,7 +73,7 @@ protected lemma elocPoly_succ :
 
 open BerlekampWelch (elocPoly_succ) in
 protected lemma roots_of_eloc_poly {x : F}
-  (h : (ElocPoly n ωs f p).eval x = 0) :
+    (h : (ElocPoly n ωs f p).eval x = 0) :
   ∃ i, i < n ∧ f i ≠ p.eval (ωs i) := by
   induction n generalizing x with
   | zero => aesop
@@ -80,7 +85,7 @@ protected lemma roots_of_eloc_poly {x : F}
     · aesop (add safe (by use n))
 
 protected lemma errors_are_roots_of_elocPoly {i : ℕ}
-  (hi : i < n) (h : f i ≠ p.eval (ωs i)) : (ElocPoly n ωs f p).eval (ωs i) = 0 := by
+    (hi : i < n) (h : f i ≠ p.eval (ωs i)) : (ElocPoly n ωs f p).eval (ωs i) = 0 := by
   induction n with
   | zero => aesop
   | succ n ih =>
@@ -106,7 +111,7 @@ section
 open Fin
 
 protected lemma elocPoly_congr {ωs' f' : ℕ → F}
-  (h₁ : ∀ {m}, m < n → ωs m = ωs' m) (h₂ : ∀ {m}, m < n → f m = f' m) :
+    (h₁ : ∀ {m}, m < n → ωs m = ωs' m) (h₂ : ∀ {m}, m < n → f m = f' m) :
   ElocPoly n ωs f = ElocPoly n ωs' f' := by
   ext p
   unfold ElocPoly
@@ -124,24 +129,24 @@ noncomputable def ElocPolyF (ωs f : Fin n → F) (p : Polynomial F) : Polynomia
 
 @[simp]
 protected lemma elocPolyF_eq_elocPoly :
-  ElocPolyF (n := n) (liftF' ωs) (liftF' f) = ElocPoly n ωs f :=
+    ElocPolyF (n := n) (liftF' ωs) (liftF' f) = ElocPoly n ωs f :=
   elocPoly_congr liftF_liftF'_of_lt liftF_liftF'_of_lt
 
 @[simp]
 protected lemma elocPolyF_eq_elocPoly' {ωs f : Fin n → F} :
-  ElocPolyF ωs f p = ElocPoly n (liftF ωs) (liftF f) p := rfl
+    ElocPolyF ωs f p = ElocPoly n (liftF ωs) (liftF f) p := rfl
 
 protected lemma elocPoly_leftF_leftF_eq_contract {ωs f : Fin m → F} :
-  ElocPoly n (liftF ωs) (liftF f) =
+    ElocPoly n (liftF ωs) (liftF f) =
   ElocPoly n (contract n ωs) (contract n f) := by
   rw [elocPoly_congr contract_eq_liftF_of_lt contract_eq_liftF_of_lt]
 
 protected lemma elocPolyF_ne_zero {ωs f : Fin m → F} :
-  ElocPolyF ωs f p ≠ 0 := by
+    ElocPolyF ωs f p ≠ 0 := by
   aesop (add simp [BerlekampWelch.elocPoly_ne_zero])
 
 protected lemma errors_are_roots_of_elocPolyF {i : Fin n} {ωs f : Fin n → F}
-  (h : f i ≠ p.eval (ωs i)) : (ElocPolyF ωs f p).eval (ωs i) = 0 := by
+    (h : f i ≠ p.eval (ωs i)) : (ElocPolyF ωs f p).eval (ωs i) = 0 := by
   rw [←liftF_eval (f := ωs)]
   aesop (config := {warnOnNonterminal := false})
   rw [BerlekampWelch.errors_are_roots_of_elocPoly
@@ -149,8 +154,8 @@ protected lemma errors_are_roots_of_elocPolyF {i : Fin n} {ωs f : Fin n → F}
     (by aesop (add simp [liftF_eval]))]
 
 @[simp]
-protected lemma elocPolyF_leading_coeff_one {ωs f : Fin n → F}
-  : (ElocPolyF ωs f p).leadingCoeff = 1 := by
+protected lemma elocPolyF_leading_coeff_one {ωs f : Fin n → F} :
+    (ElocPolyF ωs f p).leadingCoeff = 1 := by
   aesop
 
 open BerlekampWelch

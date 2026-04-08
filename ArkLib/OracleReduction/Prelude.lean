@@ -4,9 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import VCVio
 import Batteries.Data.Vector.Lemmas
-import Mathlib
+import VCVio.OracleComp.Constructions.SampleableType
 
 /-!
   # Prelude for Interactive (Oracle) Reductions

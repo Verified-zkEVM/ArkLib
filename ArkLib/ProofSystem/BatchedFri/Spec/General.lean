@@ -97,9 +97,33 @@ noncomputable def liftedFRI [DecidableEq F] :
       (liftingLens k s d m)
       (Fri.Spec.reduction k s d dom_size_cond l)
 
+instance instBatchFRIreductionMessageOI : ∀ j,
+  OracleInterface
+    ((batchSpec F m ++ₚ
+      (
+        Fri.Spec.pSpecFold k (ω := ω) s ++ₚ
+        Fri.Spec.FinalFoldPhase.pSpec F ++ₚ
+        Fri.Spec.QueryRound.pSpec (ω := ω) l
+      )
+    ).Message j) := fun j ↦ by
+      apply instOracleInterfaceMessageAppend
+
+instance instBatchFRIreductionChallengeOI : ∀ j,
+  OracleInterface
+    ((batchSpec F m ++ₚ
+      (
+        Fri.Spec.pSpecFold k (ω := ω) s ++ₚ
+        Fri.Spec.FinalFoldPhase.pSpec F ++ₚ
+        Fri.Spec.QueryRound.pSpec (ω := ω) l
+      )
+    ).Challenge j) :=
+  ProtocolSpec.challengeOracleInterface
+
+
 /- Oracle reduction of the batched FRI protocol. -/
 @[reducible]
-noncomputable def batchedFRIreduction [DecidableEq F] :=
+noncomputable def batchedFRIreduction [DecidableEq F]
+ :=
   OracleReduction.append
     (BatchingRound.batchOracleReduction s d m)
     (liftedFRI (ω := ω) k s d dom_size_cond l m)

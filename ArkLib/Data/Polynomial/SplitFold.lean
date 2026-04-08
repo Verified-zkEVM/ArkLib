@@ -46,14 +46,12 @@ def splitNth (f : 𝔽[X]) (n : ℕ) [inst : NeZero n] : Fin n → 𝔽[X] :=
     let sup :=
       Finset.filterMap (fun x => if x % n = i.1 then .some (x / n) else .none)
       f.support
-      (
-        by
-          intros a a' b
-          simp only [Option.mem_def, Option.ite_none_right_eq_some, Option.some.injEq, and_imp]
-          intros h g h' g'
-          rw [Eq.symm (Nat.div_add_mod' a n), Eq.symm (Nat.div_add_mod' a' n)]
-          rw [h, g, h', g']
-      )
+      (by
+        intros a a' b
+        simp only [Option.mem_def, Option.ite_none_right_eq_some, Option.some.injEq, and_imp]
+        intros h g h' g'
+        rw [Eq.symm (Nat.div_add_mod' a n), Eq.symm (Nat.div_add_mod' a' n)]
+        rw [h, g, h', g'])
     Polynomial.ofFinsupp
       ⟨
         sup,
@@ -110,7 +108,7 @@ lemma splitNth_def (n : ℕ) (f : 𝔽[X]) [inst : NeZero n] :
       · skip
       ext n
       rw [←pow_mul, Polynomial.coeff_C_mul_X_pow]
-    by_cases h : e % n = 0 <;> simp [h]
+    by_cases h : e % n = 0 <;> simp only [h, ↓reduceIte]
     · rw [Finset.sum_eq_single (e / n)]
       · have : e = n * (e / n) :=
           Nat.eq_mul_of_div_eq_right
@@ -143,14 +141,14 @@ lemma splitNth_def (n : ℕ) (f : 𝔽[X]) [inst : NeZero n] :
     · ext b
       rw [h₀, h₁]
   unfold splitNth
-  simp
+  simp only [coeff_ofFinsupp, Finsupp.coe_mk]
   rw [Finset.sum_eq_single ⟨e % n, by refine Nat.mod_lt e (by have := inst.out; omega)⟩]
   · simp only
     have h₁ : ¬ (e < e % n) := by
       by_cases h : e < n
       · rw [Nat.mod_eq_of_lt h]
         simp
-      · simp at h ⊢
+      · simp only [not_lt] at h ⊢
         exact Nat.mod_le e n
     have h₂ : (e - e % n) % n = 0 := Nat.sub_mod_eq_zero_of_mod_eq (by simp)
     simp only [h₁, h₂, Eq.symm Nat.div_eq_sub_mod_div, Nat.div_add_mod' e n, ↓reduceIte]
@@ -207,7 +205,6 @@ lemma splitNth_def (n : ℕ) (f : 𝔽[X]) [inst : NeZero n] :
           congr 1
           grind
         rw [this, Nat.mul_add_mod_self_right] at h₂
-
         have {a : ℕ} : (n - a) % n = 0 ∧ a < n → a = 0 := by
           intros h
           rcases exists_eq_mul_left_of_dvd (Nat.dvd_of_mod_eq_zero h.1) with ⟨c, h'⟩
@@ -237,7 +234,7 @@ lemma splitNth_def (n : ℕ) (f : 𝔽[X]) [inst : NeZero n] :
 /- Lemma bounding degree of each `n`-split polynomial. -/
 omit [NoZeroDivisors 𝔽] in
 lemma splitNth_degree_le {n : ℕ} {f : 𝔽[X]} [inst : NeZero n] :
-  ∀ {i}, (splitNth f n i).natDegree ≤ f.natDegree / n := by
+    ∀ {i}, (splitNth f n i).natDegree ≤ f.natDegree / n := by
     intros i
     unfold splitNth Polynomial.natDegree Polynomial.degree
     simp only [support_ofFinsupp]

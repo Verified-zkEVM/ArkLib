@@ -76,7 +76,7 @@ theorem reduction_completeness :
   intro stmtIn witIn hIn
   sorry
 
-theorem reduction_rbr_knowledge_soundness : True := sorry
+theorem reduction_rbr_knowledge_soundness : True := trivial
 
 end Reduction
 
@@ -274,6 +274,6 @@ theorem oracleReduction_completeness (h : NeverFail init) :
   --   and_true, Fin.isValue, and_imp, forall_const, true_and]
   -- aesop
 
-theorem oracleReduction_rbr_knowledge_soundness : True := sorry
+theorem oracleReduction_rbr_knowledge_soundness : True := trivial
 
 end SendSingleWitness

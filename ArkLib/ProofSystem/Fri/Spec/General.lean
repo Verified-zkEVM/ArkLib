@@ -65,10 +65,19 @@ instance : ∀ j, OracleInterface ((pSpecFold (ω := ω) k s).Message j) :=
 instance : ∀ j, OracleInterface (((pSpecFold k (ω := ω) s ++ₚ FinalFoldPhase.pSpec F)).Message j) :=
   instOracleInterfaceMessageAppend
 
+instance : ∀ j, OracleInterface (((pSpecFold k (ω := ω) s ++ₚ FinalFoldPhase.pSpec F)).Challenge j) :=
+  ProtocolSpec.challengeOracleInterface
+
 instance :
     ∀ i, OracleInterface
           ((pSpecFold k (ω := ω) s ++ₚ FinalFoldPhase.pSpec F ++ₚ QueryRound.pSpec (ω := ω) l).Message i) :=
   instOracleInterfaceMessageAppend
+
+instance :
+    ∀ j,
+      OracleInterface
+        (((pSpecFold k (ω := ω) s ++ₚ FinalFoldPhase.pSpec F ++ₚ QueryRound.pSpec (ω := ω) l)).Challenge j) :=
+  ProtocolSpec.challengeOracleInterface
 
 /- Oracle reduction for all folding rounds of the FRI protocol -/
 @[reducible]

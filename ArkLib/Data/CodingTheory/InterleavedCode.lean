@@ -4,7 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Chung Thai Nguyen
 -/
 
-import ArkLib.Data.CodingTheory.Basic
+import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+import ArkLib.Data.CodingTheory.Basic.Distance
+import ArkLib.Data.CodingTheory.Basic.LinearCode
+import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 import ArkLib.Data.CodingTheory.ReedSolomon
 import Mathlib.Logic.Equiv.Fin.Basic
 import Mathlib.Order.CompletePartialOrder
@@ -20,6 +23,8 @@ import Mathlib.InformationTheory.Hamming
 import Mathlib.Tactic.Qify
 import Mathlib.Topology.MetricSpace.Infsep
 import Mathlib.Data.NNReal.Defs
+
+/-! # Interleaved Codes -/
 
 noncomputable section
 
@@ -213,8 +218,8 @@ abbrev CodewordStack := codewordStackSet (κ := κ) (C := C)
 -- TODO: mem of Module interleaved code, Module codeword stack
 
 @[simp]
-def interleaveWordStack {A : Type*} {κ ι : Type*} (u : WordStack A κ ι) : InterleavedWord A κ ι
-    := u.transpose
+def interleaveWordStack {A : Type*} {κ ι : Type*} (u : WordStack A κ ι) : InterleavedWord A κ ι :=
+  u.transpose
 
 /-- Interleave a codeword stack into an interleaved codeword. -/
 @[simp]
@@ -228,8 +233,8 @@ def interleaveCodewordStack (u : CodewordStack A κ ι C) : InterleavedCodeword 
   ⟩
 
 @[simp]
-def finMapTwoWords {A : Type*} {ι : Type*} (u₀ u₁ : Word A ι)
-    : WordStack A (κ := Fin 2) (ι := ι) := fun rowIdx =>
+def finMapTwoWords {A : Type*} {ι : Type*} (u₀ u₁ : Word A ι) : WordStack A (κ := Fin 2) (ι := ι) :=
+    fun rowIdx =>
   match rowIdx with
   | ⟨0, _⟩ => u₀
   | ⟨1, _⟩ => u₁
@@ -344,7 +349,7 @@ lemma interleave_wordStack_eq (u : WordStack A κ ι) : (⋈|u) = u.transpose :=
 omit [AddCommMonoid A] [Fintype κ] [Fintype ι] in
 @[simp]
 lemma interleave_codewordStack_val_eq (u : CodewordStack A κ ι C) :
-  (⋈| u).val = u.val.transpose := rfl
+    (⋈| u).val = u.val.transpose := rfl
 
 @[simp]
 instance instFintypeInterleavedModuleCode [Fintype A] : Fintype (MC ^⋈ κ) := by
@@ -357,8 +362,8 @@ lemma interleavedCode_eq_interleavedCodeSet {A : Type*} {ι : Type*} {κ : Type*
 @[simp]
 lemma interleavedCode_eq_interleavedCodeSet_of_moduleCode {F A : Type*} {κ ι : Type*} [Semiring F]
     [AddCommMonoid A] [Module F A] {MC : ModuleCode ι F A} :
-    ((MC ^⋈ κ) : Set (ι → (κ → A))) = interleavedCodeSet (κ := κ) (C := (MC : Set (ι → A)))
-    := by rfl
+    ((MC ^⋈ κ) : Set (ι → (κ → A))) = interleavedCodeSet (κ := κ) (C := (MC : Set (ι → A))) := by
+  rfl
 
 @[simp]
 instance {κ₁ κ₂ : Type*} :
@@ -569,13 +574,11 @@ example (MC : ModuleCode ι F A) : (MC ^⋈ (Fin 2))
 example (u : CodewordStack A κ ι C) :
   let iuCodewords: InterleavedCodeword A κ ι C := ⋈|u
   let iuWords: InterleavedWord A κ ι := ⋈|u.val
-  iuCodewords.val = iuWords
-  := by rfl
+  iuCodewords.val = iuWords := by rfl
 example (v₀ v₁ : C) :
   let iv_codeword : InterleavedWord A (Fin 2) ι := v₀.val ⋈₂ v₁.val
   let iv_word : InterleavedCodeword A (Fin 2) ι C := v₀ ⋈₂ v₁
-  iv_codeword = iv_word
-  := by rfl
+  iv_codeword = iv_word := by rfl
 
 end InterleavedCode
 
@@ -673,12 +676,13 @@ def jointAgreement {F κ ι : Type*} [Fintype ι] [DecidableEq F]
     ∃ v : κ → ι → F, ∀ i, v i ∈ C ∧ S ⊆ Finset.filter (fun j => v i j = W i j) Finset.univ
 
 open InterleavedCode in
+open scoped Classical in
 /-- Equivalence between the agreement-based definition `jointAgreement` and
 the distance/proximity-based definition `jointProximity` (the latter is represented in
 upperbound of interleaved-code distance). -/
 @[simp]
 theorem jointAgreement_iff_jointProximity
-    {F : Type*} {κ ι : Type*} [Fintype κ] [Fintype ι] [Nonempty ι] [DecidableEq F] [DecidableEq ι]
+    {F : Type*} {κ ι : Type*} [Fintype κ] [Fintype ι] [Nonempty ι] [DecidableEq F]
     (C : Set (ι → F)) (u : WordStack F κ ι) (δ : ℝ≥0) :
     jointAgreement (C := C) (δ := δ) (W := u)  ↔ jointProximity (C := C) (u := u) (δ := δ) := by
   let e : ℕ := Nat.floor (δ * Fintype.card ι)
@@ -733,8 +737,8 @@ theorem jointAgreement_iff_jointProximity
     rw [←ENNReal.coe_le_coe] at h_dist
     -- Since v_interleaved ∈ MC.interleavedCode, we have δᵣ(u_interleaved, MC.interleavedCode) ≤ δ
     unfold jointProximity
-    have h_min_dist : δᵣ(u_interleaved, interleavedCodeSet C) ≤ δᵣ(u_interleaved, v_interleaved)
-      := by
+    have h_min_dist :
+        δᵣ(u_interleaved, interleavedCodeSet C) ≤ δᵣ(u_interleaved, v_interleaved) := by
       apply relDistFromCode_le_relDist_to_mem (u := u_interleaved) (C := interleavedCodeSet C)
         (v := v_interleaved) (hv := hv_interleaved_mem)
     exact le_trans h_min_dist h_dist

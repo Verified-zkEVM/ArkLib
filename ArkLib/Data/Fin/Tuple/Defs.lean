@@ -196,7 +196,7 @@ Unlike `dcons` which requires an explicit unified motive, `fcons` uses `vcons` t
 construct the motive from the input types and applies functor `F` uniformly. When `F` is the
 identity functor, this reduces to `hcons`.
 
-Notation: `a ::ʰ⦃F⦄⟨α ; β⟩ b` with explicit functor and type ascriptions. -/
+Notation: `a ::ʰ⦃F⦄⟨α; β⟩ b` with explicit functor and type ascriptions. -/
 def fcons {A : Sort u} {F : A → Sort v} {n : ℕ} {α : A} {β : Fin n → A}
     (a : F α) (b : (i : Fin n) → F (β i)) : (i : Fin (n + 1)) → F (Fin.vcons α β i) :=
   match n with
@@ -210,7 +210,7 @@ def fcons {A : Sort u} {F : A → Sort v} {n : ℕ} {α : A} {β : Fin n → A}
 `(i : Fin (n + 1)) → F (vcons α₁ β₁ i) (vcons α₂ β₂ i)` where `F` is applied to the two motives
 built by `vcons` at the type level.
 
-Notation: `a ::ʰ⦃F⦄⟨α₁ ; β₁⟩⟨α₂ ; β₂⟩ b` with explicit binary functor and type ascriptions. -/
+Notation: `a ::ʰ⦃F⦄⟨α₁; β₁⟩⟨α₂; β₂⟩ b` with explicit binary functor and type ascriptions. -/
 def fcons₂ {A : Sort u} {B : Sort v} {F : A → B → Sort w} {n : ℕ}
     {α₁ : A} {β₁ : Fin n → A} {α₂ : B} {β₂ : Fin n → B}
     (a₁ : F α₁ α₂) (b : (i : Fin n) → F (β₁ i) (β₂ i)) :
@@ -240,7 +240,7 @@ Unlike `dconcat` which requires an explicit unified motive, `fconcat` uses `vcon
 automatically construct the motive from the input types and applies functor `F` uniformly. When `F`
 is the identity functor, this reduces to `hconcat`.
 
-Notation: `u :+ʰ⦃F⦄⟨α ; β⟩ a` with explicit functor and type ascriptions. -/
+Notation: `u :+ʰ⦃F⦄⟨α; β⟩ a` with explicit functor and type ascriptions. -/
 def fconcat {A : Sort u} {F : A → Sort v} {n : ℕ} {α : Fin n → A} {β : A}
     (u : (i : Fin n) → F (α i)) (a : F β) : (i : Fin (n + 1)) → F (Fin.vconcat α β i) :=
   match n with
@@ -252,7 +252,7 @@ def fconcat {A : Sort u} {F : A → Sort v} {n : ℕ} {α : Fin n → A} {β : A
 `(i : Fin (n + 1)) → F (vconcat α₁ β₁ i) (vconcat α₂ β₂ i)` where `F` is applied
 to the two motives built by `vconcat` at the type level.
 
-Notation: `u :+ʰ⦃F⦄⟨α₁ ; β₁⟩⟨α₂ ; β₂⟩ a` with explicit binary functor and type ascriptions. -/
+Notation: `u :+ʰ⦃F⦄⟨α₁; β₁⟩⟨α₂; β₂⟩ a` with explicit binary functor and type ascriptions. -/
 def fconcat₂ {A : Sort u} {B : Sort v} {F : A → B → Sort w} {n : ℕ}
     {α₁ : Fin n → A} {β₁ : A} {α₂ : Fin n → B} {β₂ : B}
     (u : (i : Fin n) → F (α₁ i) (α₂ i)) (a : F β₁ β₂) :
@@ -280,7 +280,7 @@ Unlike `dappend` which requires an explicit unified motive, `fappend` uses `vapp
 automatically construct the motive from the input types and applies functor `F` uniformly. When `F`
 is the identity functor, this reduces to `happend`.
 
-Notation: `u ++ʰ⦃F⦄⟨α ; β⟩ v` with explicit functor and type ascriptions. -/
+Notation: `u ++ʰ⦃F⦄⟨α; β⟩ v` with explicit functor and type ascriptions. -/
 def fappend {A : Sort u} {F : A → Sort v} {m n : ℕ} {α : Fin m → A} {β : Fin n → A}
     (u : (i : Fin m) → F (α i)) (v : (i : Fin n) → F (β i)) :
     (i : Fin (m + n)) → F (Fin.vappend α β i) :=
@@ -293,7 +293,7 @@ def fappend {A : Sort u} {F : A → Sort v} {m n : ℕ} {α : Fin m → A} {β :
 `(i : Fin (m + n)) → F (vappend α₁ β₁ i) (vappend α₂ β₂ i)` where `F` is applied to the two motives
 built by `vappend` at the type level.
 
-Notation: `u ++ʰ⦃F⦄⟨α₁ ; β₁⟩⟨α₂ ; β₂⟩ v` with explicit binary functor and type ascriptions. -/
+Notation: `u ++ʰ⦃F⦄⟨α₁; β₁⟩⟨α₂; β₂⟩ v` with explicit binary functor and type ascriptions. -/
 def fappend₂ {A : Sort u} {B : Sort v} {F : A → B → Sort w} {m n : ℕ}
     {α₁ : Fin m → A} {β₁ : Fin n → A} {α₂ : Fin m → B} {β₂ : Fin n → B}
     (u : (i : Fin m) → F (α₁ i) (α₂ i)) (v : (i : Fin n) → F (β₁ i) (β₂ i)) :

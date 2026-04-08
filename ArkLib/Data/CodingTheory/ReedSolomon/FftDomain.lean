@@ -74,6 +74,13 @@ namespace FftDomain
 def toFinset (ω : FftDomain ι F) : Finset F 
   := Finset.image ω Finset.univ 
 
+end FftDomain
+
+instance {ω : FftDomain ι F} : Inhabited ω.toFinset where
+  default := ⟨ω 0, by simp [FftDomain.toFinset]⟩
+
+namespace FftDomain
+
 @[simp]
 lemma mem_domain_iff_exists {ω : FftDomain ι F} {x : F}
   :
@@ -338,6 +345,13 @@ namespace CosetFftDomain
 
 def toFinset (ω : CosetFftDomain ι F) : Finset F := 
   Finset.image ω Finset.univ
+
+end CosetFftDomain
+
+instance {ω : CosetFftDomain ι F} : Inhabited ω.toFinset where
+  default := ⟨ω 0, by simp [CosetFftDomain.toFinset]⟩
+
+namespace CosetFftDomain
 
 @[simp]
 lemma mem_coset {ω : CosetFftDomain ι F}

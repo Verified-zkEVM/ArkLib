@@ -111,7 +111,9 @@ example : (![0, 1, 2] : Fin 3 → ℕ)⟦:0⟧ = ![] := by
   ext i; exact Fin.elim0 i
 
 example : (![0, 1, 2] : Fin 3 → ℕ)⟦3:⟧ = ![] := by
-  ext i; simp at i; exact Fin.elim0 i
+  ext i
+  simp only [Nat.succ_eq_add_one, Nat.reduceAdd] at i
+  exact Fin.elim0 i
 
 -- Show that the notation works in contexts where omega can prove bounds
 variable (w : Fin 20 → ℕ)
@@ -154,10 +156,10 @@ dependent tuples, and functorial operations, all with consistent notation patter
 - `a ::ᵛ v` - homogeneous cons
 - `a ::ᵛ⟨α⟩ v` - homogeneous cons with explicit type ascription
 - `a ::ʰ t` - heterogeneous cons
-- `a ::ʰ⟨α ; β⟩ t` - heterogeneous cons with explicit type ascription
+- `a ::ʰ⟨α; β⟩ t` - heterogeneous cons with explicit type ascription
 - `a ::ʰ⦃F⦄ t` - functorial cons (unary) with type besides `F` inferred
-- `a ::ʰ⦃F⦄⟨α ; β⟩ t` - functorial cons (unary) with explicit type ascription
-- `a ::ʰ⦃F⦄⟨α₁ ; β₁⟩⟨α₂ ; β₂⟩ t` - functorial cons (binary) with explicit type ascription
+- `a ::ʰ⦃F⦄⟨α; β⟩ t` - functorial cons (unary) with explicit type ascription
+- `a ::ʰ⦃F⦄⟨α₁; β₁⟩⟨α₂; β₂⟩ t` - functorial cons (binary) with explicit type ascription
 - `a ::ᵈ t` - dependent cons
 - `a ::ᵈ⟨motive⟩ t` - dependent cons with explicit motive
 
@@ -165,10 +167,10 @@ dependent tuples, and functorial operations, all with consistent notation patter
 - `v :+ᵛ a` - homogeneous concat
 - `v :+ᵛ⟨α⟩ a` - homogeneous concat with explicit type ascription
 - `t :+ʰ a` - heterogeneous concat
-- `t :+ʰ⟨α ; β⟩ a` - heterogeneous concat with explicit type ascription
+- `t :+ʰ⟨α; β⟩ a` - heterogeneous concat with explicit type ascription
 - `t :+ʰ⦃F⦄ a` - functorial concat (unary) with type besides `F` inferred
-- `t :+ʰ⦃F⦄⟨α ; β⟩ a` - functorial concat (unary)
-- `t :+ʰ⦃F⦄⟨α₁ ; β₁⟩⟨α₂ ; β₂⟩ a` - functorial concat (binary)
+- `t :+ʰ⦃F⦄⟨α; β⟩ a` - functorial concat (unary)
+- `t :+ʰ⦃F⦄⟨α₁; β₁⟩⟨α₂; β₂⟩ a` - functorial concat (binary)
 - `t :+ᵈ a` - dependent concat
 - `t :+ᵈ⟨motive⟩ a` - dependent concat with explicit motive
 
@@ -176,10 +178,10 @@ dependent tuples, and functorial operations, all with consistent notation patter
 - `u ++ᵛ v` - homogeneous append
 - `u ++ᵛ⟨α⟩ v` - homogeneous append with explicit type ascription
 - `u ++ʰ v` - heterogeneous append
-- `u ++ʰ⟨α ; β⟩ v` - heterogeneous append with explicit type ascription
+- `u ++ʰ⟨α; β⟩ v` - heterogeneous append with explicit type ascription
 - `u ++ʰ⦃F⦄ v` - functorial append (unary) with type besides `F` inferred
-- `u ++ʰ⦃F⦄⟨α ; β⟩ v` - functorial append (unary)
-- `u ++ʰ⦃F⦄⟨α₁ ; β₁⟩⟨α₂ ; β₂⟩ v` - functorial append (binary)
+- `u ++ʰ⦃F⦄⟨α; β⟩ v` - functorial append (unary)
+- `u ++ʰ⦃F⦄⟨α₁; β₁⟩⟨α₂; β₂⟩ v` - functorial append (binary)
 - `u ++ᵈ v` - dependent append
 - `u ++ᵈ⟨motive⟩ v` - dependent append with explicit motive
 
@@ -191,7 +193,7 @@ dependent tuples, and functorial operations, all with consistent notation patter
 2. **Unified `h` Superscript**: All heterogeneous and functorial operations use the `h`
    superscript with explicit type ascriptions when needed.
 
-3. **Semicolon Separators**: Functorial operations use `α ; β` syntax to clearly distinguish
+3. **Semicolon Separators**: Functorial operations use `α; β` syntax to clearly distinguish
    the two type arguments required for functor application.
 
 4. **Consistent Type Ascriptions**: Explicit type information uses `⟨...⟩` brackets throughout.
@@ -269,20 +271,20 @@ infixr:67 " ::ʰ " => Fin.hcons
 @[inherit_doc]
 infixl:65 " :+ʰ " => Fin.hconcat
 
-/-- `::ʰ⟨α ; β⟩` notation for hcons with explicit type ascriptions -/
-syntax:67 term:68 " ::ʰ⟨" term " ; " term "⟩ " term:67 : term
+/-- `::ʰ⟨α; β⟩` notation for hcons with explicit type ascriptions -/
+syntax:67 term:68 " ::ʰ⟨" term "; " term "⟩ " term:67 : term
 
-/-- `:+ʰ⟨α ; β⟩` notation for hconcat with explicit type ascriptions -/
-syntax:65 term:66 " :+ʰ⟨" term " ; " term "⟩ " term:65 : term
+/-- `:+ʰ⟨α; β⟩` notation for hconcat with explicit type ascriptions -/
+syntax:65 term:66 " :+ʰ⟨" term "; " term "⟩ " term:65 : term
 
 /-- Functorial cons with explicit functor but inferred type families: `::ʰ⦃F⦄`. -/
 syntax:67 term:68 " ::ʰ⦃" term "⦄ " term:67 : term
 
-/-- Functorial cons (unary) with explicit types: `::ʰ⦃F⦄⟨α ; β⟩`. -/
-syntax:67 term:68 " ::ʰ⦃" term "⦄⟨" term " ; " term "⟩ " term:67 : term
+/-- Functorial cons (unary) with explicit types: `::ʰ⦃F⦄⟨α; β⟩`. -/
+syntax:67 term:68 " ::ʰ⦃" term "⦄⟨" term "; " term "⟩ " term:67 : term
 
-/-- Functorial cons (binary) with explicit types: `::ʰ⦃F⦄⟨α₁ ; β₁⟩⟨α₂ ; β₂⟩`. -/
-syntax:67 term:68 " ::ʰ⦃" term "⦄⟨" term " ; " term "⟩⟨" term " ; " term "⟩ " term:67 : term
+/-- Functorial cons (binary) with explicit types: `::ʰ⦃F⦄⟨α₁; β₁⟩⟨α₂; β₂⟩`. -/
+syntax:67 term:68 " ::ʰ⦃" term "⦄⟨" term "; " term "⟩⟨" term "; " term "⟩ " term:67 : term
 
 @[inherit_doc]
 infixr:67 " ::ᵈ " => Fin.dcons
@@ -396,28 +398,28 @@ macro_rules
   | `($a:term :+ᵈ⟨$motive:term⟩ $b:term) => `(Fin.dconcat (motive := $motive) $a $b)
 
 macro_rules
-  | `($a:term ::ʰ⟨$α:term ; $β:term⟩ $b:term) => `(Fin.hcons (α := $α) (β := $β) $a $b)
+  | `($a:term ::ʰ⟨$α:term; $β:term⟩ $b:term) => `(Fin.hcons (α := $α) (β := $β) $a $b)
 
 macro_rules
   | `($a:term ::ʰ⦃$F:term⦄ $b:term) => `(Fin.fcons (F := $F) $a $b)
-  | `($a:term ::ʰ⦃$F:term⦄⟨$α:term ; $β:term⟩ $b:term) =>
+  | `($a:term ::ʰ⦃$F:term⦄⟨$α:term; $β:term⟩ $b:term) =>
     `(Fin.fcons (F := $F) (α := $α) (β := $β) $a $b)
-  | `($a:term ::ʰ⦃$F:term⦄⟨$α₁:term ; $β₁:term⟩⟨$α₂:term ; $β₂:term⟩ $b:term) =>
+  | `($a:term ::ʰ⦃$F:term⦄⟨$α₁:term; $β₁:term⟩⟨$α₂:term; $β₂:term⟩ $b:term) =>
     `(Fin.fcons₂ (F := $F) (α₁ := $α₁) (β₁ := $β₁) (α₂ := $α₂) (β₂ := $β₂) $a $b)
 
 macro_rules
-  | `($a:term :+ʰ⟨$α:term ; $β:term⟩ $b:term) => `(Fin.hconcat (α := $α) (β := $β) $a $b)
+  | `($a:term :+ʰ⟨$α:term; $β:term⟩ $b:term) => `(Fin.hconcat (α := $α) (β := $β) $a $b)
 
 /-! Functorial concat infix forms to match documentation -/
 syntax:65 term:66 " :+ʰ⦃" term "⦄ " term:65 : term
-syntax:65 term:66 " :+ʰ⦃" term "⦄⟨" term " ; " term "⟩ " term:65 : term
-syntax:65 term:66 " :+ʰ⦃" term "⦄⟨" term " ; " term "⟩⟨" term " ; " term "⟩ " term:65 : term
+syntax:65 term:66 " :+ʰ⦃" term "⦄⟨" term "; " term "⟩ " term:65 : term
+syntax:65 term:66 " :+ʰ⦃" term "⦄⟨" term "; " term "⟩⟨" term "; " term "⟩ " term:65 : term
 
 macro_rules
   | `($u:term :+ʰ⦃$F:term⦄ $a:term) => `(Fin.fconcat (F := $F) $u $a)
-  | `($u:term :+ʰ⦃$F:term⦄⟨$α:term ; $β:term⟩ $a:term) =>
+  | `($u:term :+ʰ⦃$F:term⦄⟨$α:term; $β:term⟩ $a:term) =>
     `(Fin.fconcat (F := $F) (α := $α) (β := $β) $u $a)
-  | `($u:term :+ʰ⦃$F:term⦄⟨$α₁:term ; $β₁:term⟩⟨$α₂:term ; $β₂:term⟩ $a:term) =>
+  | `($u:term :+ʰ⦃$F:term⦄⟨$α₁:term; $β₁:term⟩⟨$α₂:term; $β₂:term⟩ $a:term) =>
     `(Fin.fconcat₂ (F := $F) (α₁ := $α₁) (β₁ := $β₁) (α₂ := $α₂) (β₂ := $β₂) $u $a)
 
 /-- Unexpander for the `!h[x, y, ...]` notation using hcons. -/
@@ -455,8 +457,8 @@ infixl:65 " ++ᵈ " => Fin.dappend
 /-- Heterogeneous append notation `++ʰ` -/
 infixl:65 " ++ʰ " => Fin.happend
 
-/-- Heterogeneous append with explicit type ascriptions: `++ʰ⟨α ; β⟩` -/
-syntax:65 term:66 " ++ʰ⟨" term " ; " term "⟩ " term:65 : term
+/-- Heterogeneous append with explicit type ascriptions: `++ʰ⟨α; β⟩` -/
+syntax:65 term:66 " ++ʰ⟨" term "; " term "⟩ " term:65 : term
 
 /-- Dependent append with explicit motive: `++ᵈ⟨motive⟩` -/
 syntax:65 term:66 " ++ᵈ⟨" term "⟩ " term:65 : term
@@ -464,28 +466,28 @@ syntax:65 term:66 " ++ᵈ⟨" term "⟩ " term:65 : term
 /-- Functorial heterogeneous append with explicit functor but inferred types: `++ʰ⦃F⦄`. -/
 syntax:65 term:66 " ++ʰ⦃" term "⦄ " term:65 : term
 
-/-- Functorial heterogeneous append with unary functor: `++ʰ⦃F⦄⟨α ; β⟩` -/
-syntax:65 term:66 " ++ʰ⦃" term "⦄⟨" term " ; " term "⟩ " term:65 : term
+/-- Functorial heterogeneous append with unary functor: `++ʰ⦃F⦄⟨α; β⟩` -/
+syntax:65 term:66 " ++ʰ⦃" term "⦄⟨" term "; " term "⟩ " term:65 : term
 
-/-- Functorial heterogeneous append with binary functor: `++ʰ⦃F⦄⟨α₁ ; β₁⟩⟨α₂ ; β₂⟩` -/
-syntax:65 term:66 " ++ʰ⦃" term "⦄⟨" term " ; " term "⟩⟨" term " ; " term "⟩ " term:65 : term
+/-- Functorial heterogeneous append with binary functor: `++ʰ⦃F⦄⟨α₁; β₁⟩⟨α₂; β₂⟩` -/
+syntax:65 term:66 " ++ʰ⦃" term "⦄⟨" term "; " term "⟩⟨" term "; " term "⟩ " term:65 : term
 
 macro_rules
   | `($a:term ++ᵈ⟨$motive:term⟩ $b:term) => `(Fin.dappend (motive := $motive) $a $b)
 
 macro_rules
-  | `($a:term ++ʰ⟨$α:term ; $β:term⟩ $b:term) =>
+  | `($a:term ++ʰ⟨$α:term; $β:term⟩ $b:term) =>
   `(Fin.happend (α := fun i => $α) (β := fun i => $β) $a $b)
 
 macro_rules
   | `($a:term ++ʰ⦃$F:term⦄ $b:term) => `(Fin.fappend (F := $F) $a $b)
 
 macro_rules
-  | `($a:term ++ʰ⦃$F:term⦄⟨$α:term ; $β:term⟩ $b:term) =>
+  | `($a:term ++ʰ⦃$F:term⦄⟨$α:term; $β:term⟩ $b:term) =>
     `(Fin.fappend (F := $F) (α := $α) (β := $β) $a $b)
 
 macro_rules
-  | `($a:term ++ʰ⦃$F:term⦄⟨$α₁:term ; $β₁:term⟩⟨$α₂:term ; $β₂:term⟩ $b:term) =>
+  | `($a:term ++ʰ⦃$F:term⦄⟨$α₁:term; $β₁:term⟩⟨$α₂:term; $β₂:term⟩ $b:term) =>
     `(Fin.fappend₂ (F := $F) (α₁ := $α₁) (β₁ := $β₁) (α₂ := $α₂) (β₂ := $β₂) $a $b)
 
 -- End of core notation definitions
@@ -520,7 +522,7 @@ example : (1 : ℕ) ::ʰ (Fin.dempty : (i : Fin 0) → Fin.vempty i) =
 
 -- Basic heterogeneous tuple without type specification - now using !h[]
 example : !h[(1 : ℕ), (true : Bool), ("hello" : String)] =
-  Fin.hcons 1 (Fin.hcons true ("hello" ::ʰ⟨String ; !v[]⟩ !h[])) := rfl
+  Fin.hcons 1 (Fin.hcons true ("hello" ::ʰ⟨String; !v[]⟩ !h[])) := rfl
 
 -- With explicit type vector using predefined type
 def MyTypeVec : Fin 3 → Type := !v[ℕ, Bool, String]
@@ -589,18 +591,18 @@ end FinVecConcatTests
 section FinTupleConsTests
 
 -- Basic heterogeneous cons
-example : (1 : ℕ) ::ʰ ((true : Bool) ::ʰ⟨Bool ; !v[]⟩ !h[]) = !h[(1 : ℕ), (true : Bool)] := rfl
+example : (1 : ℕ) ::ʰ ((true : Bool) ::ʰ⟨Bool; !v[]⟩ !h[]) = !h[(1 : ℕ), (true : Bool)] := rfl
 
 -- Chaining different types (right associative)
-example : (1 : ℕ) ::ʰ (true : Bool) ::ʰ ("hello" : String) ::ʰ⟨_ ; !v[]⟩ !h[] =
+example : (1 : ℕ) ::ʰ (true : Bool) ::ʰ ("hello" : String) ::ʰ⟨_; !v[]⟩ !h[] =
           !h[(1 : ℕ), (true : Bool), ("hello" : String)] := rfl
 
 -- Mixing cons and bracket notation
-example : (0 : ℕ) ::ʰ⟨ℕ ; !v[ℕ, Bool]⟩ !h[(1 : ℕ), (true : Bool)] =
+example : (0 : ℕ) ::ʰ⟨ℕ; !v[ℕ, Bool]⟩ !h[(1 : ℕ), (true : Bool)] =
           !h[(0 : ℕ), (1 : ℕ), (true : Bool)] := rfl
 
 -- With explicit type annotation
-example : (42 : ℕ) ::ʰ⟨ℕ ; !v[]⟩ !h[] =
+example : (42 : ℕ) ::ʰ⟨ℕ; !v[]⟩ !h[] =
           !h[(42 : ℕ)] := rfl
 
 -- Complex nested example
@@ -614,15 +616,15 @@ end FinTupleConsTests
 section FinTupleConcatTests
 
 -- Basic heterogeneous concat
-example : !h[(1 : ℕ), (true : Bool)] :+ʰ⟨ !v[ℕ, Bool] ; String⟩ ("hello" : String) =
+example : !h[(1 : ℕ), (true : Bool)] :+ʰ⟨ !v[ℕ, Bool]; String⟩ ("hello" : String) =
           !h⟨ !v[ℕ, Bool, String] ⟩[(1 : ℕ), (true : Bool), ("hello" : String)] := rfl
 
 -- Chaining different types (left associative)
--- example : !h[(1 : ℕ)] :+ʰ⟨ _ ; _⟩ (true ) :+ʰ⟨ !v[Bool] ; _⟩ ("hello" : String) =
+-- example : !h[(1 : ℕ)] :+ʰ⟨ _; _⟩ (true ) :+ʰ⟨ !v[Bool]; _⟩ ("hello" : String) =
 --           !h[(1 : ℕ), (true : Bool), ("hello" : String)] := rfl
 
 -- Mixing concat and bracket notation
-example : !h[(1 : ℕ), (true : Bool)] :+ʰ⟨ !v[ℕ, Bool] ; String⟩ ("test" : String) =
+example : !h[(1 : ℕ), (true : Bool)] :+ʰ⟨ !v[ℕ, Bool]; String⟩ ("test" : String) =
           !h⟨!v[ℕ, Bool, String]⟩[(1 : ℕ), (true : Bool), ("test" : String)] := rfl
 
 -- With explicit type annotation
@@ -891,7 +893,7 @@ example : !d⟨!v[ℕ, Bool]⟩[(1 : ℕ), (true : Bool)] :+ʰ ("hello" : String
 -- Comprehensive test of all concat operations
 example : (!v[1, 2] :+ᵛ 3 = !v[1, 2, 3]) ∧
           (!d⟨!v[ℕ]⟩[(1 : ℕ)] :+ʰ (true : Bool) = !d⟨!v[ℕ, Bool]⟩[(1 : ℕ), (true : Bool)]) ∧
-          (!d[(1 : ℕ)]  :+ʰ⟨!v[ℕ] ; ℕ⟩ (2 : ℕ) = !d⟨!v[ℕ, ℕ]⟩[(1 : ℕ), (2 : ℕ)]) :=
+          (!d[(1 : ℕ)]  :+ʰ⟨!v[ℕ]; ℕ⟩ (2 : ℕ) = !d⟨!v[ℕ, ℕ]⟩[(1 : ℕ), (2 : ℕ)]) :=
           ⟨rfl, rfl, rfl⟩
 
 -- Test dependent vector functions for definitional equality
