@@ -118,6 +118,29 @@ def fullOracleVerifierComp :
     (V₂ := QueryPhase.queryOracleVerifierFin 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ))
 
+/-- Computable verifier companion over canonical `fullPSpec` (canonical query challenges). -/
+@[reducible]
+def fullOracleVerifierCanonicalComp :
+  OracleVerifier (oSpec := []ₒ)
+    (StmtIn := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
+    (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+    (StmtOut := Bool)
+    (OStmtOut := fun _ : Empty => Unit)
+    (pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  OracleVerifier.append (oSpec := []ₒ)
+    (Stmt₁ := Statement (L := L) (SumcheckBaseContext L ℓ) 0)
+    (Stmt₂ := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
+    (Stmt₃ := Bool)
+    (OStmt₁ := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+    (OStmt₂ := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
+    (OStmt₃ := fun _ : Empty => Unit)
+    (pSpec₁ := pSpecCoreInteraction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+    (pSpec₂ := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+    (V₁ := CoreInteraction.coreInteractionOracleVerifier 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (𝓑 := 𝓑))
+    (V₂ := QueryPhase.queryOracleVerifierComp 𝔽q β γ_repetitions (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+
 /-- The full Binary Basefold protocol as a Proof -/
 @[reducible]
 noncomputable def fullOracleProof :
