@@ -1890,6 +1890,41 @@ def coreInteractionOracleVerifierFunOfMultiplier
       (ℓ' := ℓ') (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (h_l := h_l) (𝓑 := 𝓑) βfun mp)
 
+/-- Executable core-interaction reduction companion parameterized by an external prover. -/
+@[reducible]
+def coreInteractionOracleReductionFunOfMultiplier
+    (βfun : Fin (2 ^ κ) → L)
+    [Fact (LinearIndependent K βfun)] [Fact (βfun 0 = 1)]
+    (mp : SumcheckMultiplierParam L ℓ' (RingSwitchingBaseContext κ L K ℓ))
+    (prover :
+      OracleProver
+        (oSpec := []ₒ)
+        (StmtIn := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) 0)
+        (OStmtIn := BinaryBasefold.OracleStatement K βfun
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+        (WitIn := RingSwitching.SumcheckWitness L ℓ' 0)
+        (StmtOut := BinaryBasefold.FinalSumcheckStatementOut (L := L) (ℓ := ℓ'))
+        (OStmtOut := BinaryBasefold.OracleStatement K βfun
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ'))
+        (WitOut := Unit)
+        (pSpec := BinaryBasefold.pSpecCoreInteraction K βfun (ϑ := ϑ)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate))) :
+    OracleReduction (oSpec := []ₒ)
+      (StmtIn := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) 0)
+      (OStmtIn := BinaryBasefold.OracleStatement K βfun
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+      (WitIn := RingSwitching.SumcheckWitness L ℓ' 0)
+      (StmtOut := BinaryBasefold.FinalSumcheckStatementOut (L := L) (ℓ := ℓ'))
+      (OStmtOut := BinaryBasefold.OracleStatement K βfun
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ'))
+      (WitOut := Unit)
+      (pSpec := BinaryBasefold.pSpecCoreInteraction K βfun (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
+  prover := prover
+  verifier := coreInteractionOracleVerifierFunOfMultiplier (κ := κ) (L := L) (K := K)
+    (ℓ := ℓ) (ℓ' := ℓ') (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (h_l := h_l) (𝓑 := 𝓑) βfun mp
+
 /-- The final oracle reduction that composes sumcheckFold with finalSumcheckStep -/
 @[reducible]
 noncomputable def coreInteractionOracleReduction :=

@@ -118,6 +118,50 @@ def fullOracleVerifierComp :
     (V₂ := QueryPhase.queryOracleVerifierFin 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ))
 
+/-- Computable reduction companion using computable core interaction + Fin query challenges. -/
+@[reducible]
+def fullOracleReductionComp :
+  OracleReduction (oSpec := []ₒ)
+    (StmtIn := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
+    (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+    (StmtOut := Bool)
+    (OStmtOut := fun _ : Empty => Unit)
+    (WitIn := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡)
+      0)
+    (WitOut := Unit)
+    (pSpec := fullPSpecComp 𝔽q β γ_repetitions (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  OracleReduction.append (oSpec := []ₒ)
+    (Stmt₁ := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
+    (Stmt₂ := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
+    (Stmt₃ := Bool)
+    (Wit₁ := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡)
+      0)
+    (Wit₂ := Unit)
+    (Wit₃ := Unit)
+    (OStmt₁ := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+    (OStmt₂ := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
+    (OStmt₃ := fun _ : Empty => Unit)
+    (pSpec₁ := pSpecCoreInteractionComp 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+    (pSpec₂ := pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions)
+    (R₁ := CoreInteraction.coreInteractionOracleReductionComp 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (𝓑 := 𝓑))
+    (R₂ := QueryPhase.queryOracleReductionFin 𝔽q β γ_repetitions
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ))
+
+/-- Computable full Binary Basefold proof companion over `fullPSpecComp`. -/
+@[reducible]
+def fullOracleProofComp :
+  OracleProof []ₒ
+    (Statement := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
+    (OStatement := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+    (Witness := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ)
+      (𝓡 := 𝓡) 0)
+    (pSpec := fullPSpecComp 𝔽q β γ_repetitions (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  fullOracleReductionComp 𝔽q β γ_repetitions (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+
 /-- Computable verifier companion over canonical `fullPSpec` (canonical query challenges). -/
 @[reducible]
 def fullOracleVerifierCanonicalComp :

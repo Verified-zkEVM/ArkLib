@@ -131,6 +131,39 @@ def toCanonicalSDomain (i : Fin r)
   ⟨x.1, mem_sDomain_of_mem_sDomainComp (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) x.2⟩
 
+/-- Search-based decoding from canonical `sDomain i` points to loose global indices. -/
+def canonicalPointToGlobalIndex? (i : Fin r)
+    (x : AdditiveNTT.sDomain (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :
+    Option (Fin (2 ^ (ℓ + R_rate))) :=
+  (List.finRange (2 ^ (ℓ + R_rate))).find? (fun vIdx =>
+    decide (
+      toCanonicalSDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
+        (indexToSDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) vIdx)
+      = x))
+
+/-- Decode canonical `sDomain i` points to loose local indices (`Fin (2^(ℓ+R_rate-i))`) by
+searching global indices and extracting middle bits. -/
+def canonicalPointToLocalIndex? (i : Fin r)
+    (x : AdditiveNTT.sDomain (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :
+    Option (Fin (2 ^ (ℓ + R_rate - i.val))) := do
+  let vIdx ← canonicalPointToGlobalIndex? (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i x
+  pure ⟨Nat.getMiddleBits (offset := i.val) (len := ℓ + R_rate - i.val) (n := vIdx.val),
+    Nat.getMiddleBits_lt_two_pow⟩
+
+/-- Bridge from loose local index functions to canonical-domain oracle functions.
+Returns `0` only on decode failure. -/
+def localIndexFunctionToCanonical (i : Fin r)
+    (f : Fin (2 ^ (ℓ + R_rate - i.val)) → L) :
+    AdditiveNTT.sDomain (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i → L :=
+  fun x =>
+    match canonicalPointToLocalIndex? (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i x with
+    | some idx => f idx
+    | none => 0
+
 /-- Decode all query repetitions from `Fin` indices to domain points. -/
 def decodeQueryChallenges {γ : ℕ} (challenges : Fin γ → Fin (2 ^ (ℓ + R_rate))) :
     Fin γ →
