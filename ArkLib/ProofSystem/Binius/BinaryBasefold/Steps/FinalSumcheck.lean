@@ -51,7 +51,7 @@ The step consists of :
 
 open Classical in
 /-! The prover for the final sumcheck step -/
-noncomputable def finalSumcheckProver :
+def finalSumcheckProver :
   OracleProver
     (oSpec := []ₒ)
     (StmtIn := Statement (L := L) (SumcheckBaseContext L ℓ) (Fin.last ℓ))
@@ -119,7 +119,7 @@ def finalSumcheckVerifier :
       (𝓑 := 𝓑)).hEq
 
 /-! The oracle reduction for the final sumcheck step -/
-noncomputable def finalSumcheckOracleReduction :
+def finalSumcheckOracleReduction :
   OracleReduction
     (oSpec := []ₒ)
     (StmtIn := Statement (L := L) (SumcheckBaseContext L ℓ) (Fin.last ℓ))

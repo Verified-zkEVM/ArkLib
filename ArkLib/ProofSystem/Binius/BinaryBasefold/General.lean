@@ -106,7 +106,7 @@ noncomputable def fullOracleProof :
 
 /-- Fin-indexed full verifier companion (`fullPSpecFin`). -/
 @[reducible]
-noncomputable def fullOracleVerifierFin :
+def fullOracleVerifierFin :
   OracleVerifier (oSpec := []ₒ)
     (StmtIn := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)

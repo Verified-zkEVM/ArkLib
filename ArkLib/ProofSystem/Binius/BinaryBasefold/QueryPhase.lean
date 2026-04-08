@@ -213,9 +213,130 @@ def queryOracleProverFin :
   output := fun _ => do
     pure ((true, fun i => Empty.elim i), ())
 
+/-! ### Fin-index-native executable query checks -/
+
+/-- Query a committed codeword using a loose global index, decoded through
+`AdditiveNTT.Comp.indexToSDomain` at the requested source domain index. -/
+def queryCodewordFromIndexFin
+    (j : Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)))
+    (pointIdx : Fin (2 ^ (ℓ + 𝓡))) :
+    OptionT
+      (OracleComp
+        ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (Fin.last ℓ)]ₒ +
+          [(pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions).Message]ₒ))) L := do
+  let sourceIdx : Fin r :=
+    ⟨oraclePositionToDomainIndex (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ) (positionIdx := j),
+      lt_r_of_lt_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (h := (oraclePositionToDomainIndex (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ)
+          (positionIdx := j)).isLt)⟩
+  let pointComp := AdditiveNTT.Comp.indexToSDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
+    (R_rate := 𝓡) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := sourceIdx) pointIdx
+  let pointCanonical := AdditiveNTT.Comp.toCanonicalSDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
+    (R_rate := 𝓡) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := sourceIdx) pointComp
+  let qBase :
+      OracleComp
+        ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (Fin.last ℓ)]ₒ) L :=
+    liftM
+      (query (spec := [OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (Fin.last ℓ)]ₒ) ⟨j, by simpa [sourceIdx] using pointCanonical⟩)
+  let q :
+      OracleComp
+        ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (Fin.last ℓ)]ₒ +
+          [(pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions).Message]ₒ)) L :=
+    OracleComp.liftComp
+      qBase
+      ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (Fin.last ℓ)]ₒ +
+        [(pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions).Message]ₒ))
+  OptionT.lift q
+
+/-- Query all `2^ϑ` fiber points for repetition challenge index `vIdx` at fold step `k`. -/
+def queryFiberPointsFromIndexFin
+    (k : Fin (ℓ / ϑ)) (vIdx : Fin (2 ^ (ℓ + 𝓡))) :
+    OptionT
+      (OracleComp
+        ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (Fin.last ℓ)]ₒ +
+          [(pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions).Message]ₒ)))
+      (Vector L (2 ^ ϑ)) := do
+  let k_th_oracleIdx : Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)) :=
+    ⟨k, by
+      simp only [toOutCodewordsCount, Fin.val_last, lt_self_iff_false, ↓reduceIte, add_zero,
+        Fin.is_lt]⟩
+  let sourceIdx : Fin r := ⟨k.val * ϑ, by
+    exact lt_r_of_lt_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := k.val * ϑ) (h := k_mul_ϑ_lt_ℓ)⟩
+  have h_i_steps_le : sourceIdx.val + ϑ ≤ ℓ + 𝓡 := by
+    have h_i_add_ϑ_le_ℓ : k.val * ϑ + ϑ ≤ ℓ := k_succ_mul_ϑ_le_ℓ_₂ (k := k)
+    dsimp [sourceIdx]
+    omega
+  let results : Vector L (2 ^ ϑ) ←
+    (⟨Array.finRange (2 ^ ϑ), by simp only [Array.size_finRange]⟩ :
+      Vector (Fin (2 ^ ϑ)) (2 ^ ϑ)).mapM (fun (u : Fin (2 ^ ϑ)) => do
+      let pointIdx := fiberPointIndexFromIndex (ℓ := ℓ) (𝓡 := 𝓡) (vIdx := vIdx)
+        (i := sourceIdx) (steps := ϑ) h_i_steps_le u
+      queryCodewordFromIndexFin (𝔽q := 𝔽q) (β := β) (γ_repetitions := γ_repetitions)
+        (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (j := k_th_oracleIdx) pointIdx)
+  pure results
+
+/-- Compute the folded value from queried fiber evaluations and fold challenges. -/
+def computeFoldedValueFromFiber
+    (r_challenges : Fin ϑ → L) (fiber_eval_mapping : Fin (2 ^ ϑ) → L) : L :=
+  let challenge_vec : Fin (2 ^ ϑ) → L := challengeTensorExpansion (n := ϑ) (r := r_challenges)
+  dotProduct challenge_vec fiber_eval_mapping
+
+/-- Single folding-step checker for the Fin-indexed query verifier companion. -/
+def checkSingleFoldingStepFromIndexFin
+    (k_val : Fin (ℓ / ϑ)) (c_cur : L) (vIdx : Fin (2 ^ (ℓ + 𝓡)))
+    (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ)) :
+    OptionT
+      (OracleComp
+        ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (Fin.last ℓ)]ₒ +
+          [(pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions).Message]ₒ))) L := do
+  let i := k_val.val * ϑ
+  let iIdx : Fin r := ⟨i, by
+    exact lt_r_of_lt_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := i)
+      (h := k_mul_ϑ_lt_ℓ (k := k_val))⟩
+  have h_i_add_ϑ_le_ℓ : i + ϑ ≤ ℓ := k_succ_mul_ϑ_le_ℓ_₂ (k := k_val)
+  let f_i_on_fiber ← queryFiberPointsFromIndexFin (𝔽q := 𝔽q) (β := β)
+    (γ_repetitions := γ_repetitions) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k_val vIdx
+  if h_i_pos : i > 0 then
+    let oracle_point_idx := extractMiddleFinMaskFromIndex (ℓ := ℓ) (𝓡 := 𝓡) (vIdx := vIdx)
+      (i := iIdx) (steps := ϑ)
+    let f_i_val := f_i_on_fiber.get oracle_point_idx
+    guard (c_cur = f_i_val)
+  let cur_challenge_batch : Fin ϑ → L := fun j =>
+    stmt.challenges ⟨i + j.val, by
+      have h_i_add_j_lt : i + j.val < i + ϑ := Nat.add_lt_add_left j.isLt i
+      exact lt_of_lt_of_le h_i_add_j_lt h_i_add_ϑ_le_ℓ⟩
+  let c_next : L := computeFoldedValueFromFiber (ϑ := ϑ)
+    (r_challenges := cur_challenge_batch) (fiber_eval_mapping := f_i_on_fiber.get)
+  return c_next
+
+/-- Full repetition checker for the Fin-indexed query verifier companion. -/
+def checkSingleRepetitionFromIndexFin
+    (vIdx : Fin (2 ^ (ℓ + 𝓡)))
+    (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ)) (final_constant : L) :
+    OptionT
+      (OracleComp
+        ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (Fin.last ℓ)]ₒ +
+          [(pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions).Message]ₒ))) Unit := do
+  let mut c_cur : L := 0
+  for k_val in List.finRange (ℓ / ϑ) do
+    let c_next ← checkSingleFoldingStepFromIndexFin (𝔽q := 𝔽q) (β := β)
+      (γ_repetitions := γ_repetitions) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      ⟨k_val, by omega⟩ c_cur vIdx stmt
+    c_cur := c_next
+  guard (c_cur = final_constant)
+
 /-- Fin-indexed verifier companion.
 Challenges are decoded through the computable AdditiveNTT bridge before running checks. -/
-noncomputable def queryOracleVerifierFin :
+def queryOracleVerifierFin :
   OracleVerifier
     (oSpec := []ₒ)
     (StmtIn := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
@@ -223,47 +344,20 @@ noncomputable def queryOracleVerifierFin :
     (StmtOut := Bool)
     (OStmtOut := fun _ : Empty => Unit)
     (pSpec := pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions) where
-  verify := fun stmtIn challenges => by
-    letI :
-        MonadLiftT
-          (OracleQuery
-            ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-              (Fin.last ℓ)]ₒ +
-              [(pSpecQuery 𝔽q β γ_repetitions
-                (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ)))
-          (OracleQuery
-            ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-              (Fin.last ℓ)]ₒ +
-              [(pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions).Message]ₒ))) :=
-      ⟨(instSubSpecQueryOracleStackToFin (𝔽q := 𝔽q) (β := β)
-        (ℓ := ℓ) (𝓡 := 𝓡) (ϑ := ϑ) (γ_repetitions := γ_repetitions)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toMonadLift.monadLift⟩
-    exact do
-      let fold_challenges : Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0 :=
-        decodeQueryChallengeFinToCanonical (𝔽q := 𝔽q) (β := β)
-          (ℓ := ℓ) (𝓡 := 𝓡) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) γ_repetitions
-          (challenges ⟨0, by rfl⟩)
-      for rep in List.finRange γ_repetitions do
-        let v := fold_challenges rep
-        let checkRep :
-            OptionT
-              (OracleComp
-                ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-                  (Fin.last ℓ)]ₒ +
-                  [(pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions).Message]ₒ))) Unit :=
-          OracleComp.liftComp
-            (checkSingleRepetition 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ)
-              (h_ℓ_add_R_rate := h_ℓ_add_R_rate) v stmtIn stmtIn.final_constant)
-            ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-              (Fin.last ℓ)]ₒ +
-              [(pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions).Message]ₒ))
-        let _ ← checkRep
-      return true
+  verify := fun stmtIn challenges => do
+    let fold_challenge_indices : Fin γ_repetitions → Fin (2 ^ (ℓ + 𝓡)) :=
+      challenges ⟨0, by rfl⟩
+    for rep in List.finRange γ_repetitions do
+      let vIdx := fold_challenge_indices rep
+      let _ ← checkSingleRepetitionFromIndexFin (𝔽q := 𝔽q) (β := β)
+        (γ_repetitions := γ_repetitions) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        vIdx stmtIn stmtIn.final_constant
+    return true
   embed := ⟨Empty.elim, fun a _ => Empty.elim a⟩
   hEq := fun i => Empty.elim i
 
 /-- Fin-indexed query-phase reduction companion. -/
-noncomputable def queryOracleReductionFin :
+def queryOracleReductionFin :
   OracleReduction
     (oSpec := []ₒ)
     (StmtIn := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
@@ -279,7 +373,7 @@ noncomputable def queryOracleReductionFin :
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
 
 /-- Fin-indexed query round as an `OracleProof` companion. -/
-noncomputable def queryOracleProofFin : OracleProof
+def queryOracleProofFin : OracleProof
     (oSpec := []ₒ)
     (Statement := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (OStatement := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
