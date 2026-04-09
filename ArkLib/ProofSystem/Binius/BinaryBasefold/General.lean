@@ -45,7 +45,7 @@ instance {_ : Empty} : OracleInterface (Unit) := OracleInterface.instDefault
 open CoreInteraction QueryPhase
 /-- The oracle verifier for the full Binary Basefold protocol -/
 @[reducible]
-noncomputable def fullOracleVerifier :
+def fullOracleVerifier :
   OracleVerifier (oSpec:=[]ₒ)
     (StmtIn := Statement (L := L) (ℓ:=ℓ) (SumcheckBaseContext L ℓ) 0)
     (OStmtIn:= OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
@@ -63,7 +63,7 @@ noncomputable def fullOracleVerifier :
     (pSpec₂ := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (V₁ := CoreInteraction.coreInteractionOracleVerifier 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) (𝓑:=𝓑))
-    (V₂ := QueryPhase.queryOracleVerifier 𝔽q β γ_repetitions
+    (V₂ := QueryPhase.queryOracleVerifierComp 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
 
 /-- The reduction for the full Binary Basefold protocol -/
