@@ -318,8 +318,8 @@ omit [NoZeroDivisors 𝔽] in
 Lemma bridges the coefficient-level identity `splitNth_def` and
 evaluation-level reasoning about `splitNth` and `foldNth`.
 -/
-lemma splitNth_eval_comp_pow {n : ℕ} [NeZero n] (f : 𝔽[X]) (s : 𝔽) (i : Fin n) :
-    (eval₂ C (X ^ n) (splitNth f n i)).eval s = (splitNth f n i).eval (s ^ n) := by
+lemma splitNth_eval_comp_pow {n : ℕ} [NeZero n] (f : 𝔽[X]) (x : 𝔽) (i : Fin n) :
+    (eval₂ C (X ^ n) (splitNth f n i)).eval x = (splitNth f n i).eval (x ^ n) := by
   rw [eval₂_eq_sum]
   unfold Polynomial.eval
   rw [Polynomial.eval₂_sum, eval₂_eq_sum]
