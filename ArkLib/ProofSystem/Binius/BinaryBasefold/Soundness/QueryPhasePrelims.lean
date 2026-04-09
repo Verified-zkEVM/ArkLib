@@ -52,7 +52,7 @@ namespace QueryPhase
 /-!
 ## Common Proximity Check Helpers
 
-These functions extract the shared logic between `queryOracleVerifier`
+These functions extract the shared logic between `queryOracleVerifierComp`
 and `queryKnowledgeStateFunction` for proximity testing, allowing code reuse
 and ensuring both implementations follow the same logic.
 -/

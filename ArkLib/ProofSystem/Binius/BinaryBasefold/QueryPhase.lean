@@ -2551,7 +2551,7 @@ theorem queryOracleProof_perfectCompleteness {σ : Type}
   -- Step 2: Convert probability 1 to universal quantification over support
   rw [probEvent_eq_one_iff]
   -- Step 3: Unfold protocol definitions
-  -- dsimp only [queryOracleProof, queryOracleProver, queryOracleVerifier,
+  -- dsimp only [queryOracleProofComp, queryOracleProver, queryOracleVerifierComp,
   dsimp only [OracleVerifier.toVerifier, FullTranscript.mk1]
   let step := (queryPhaseLogicStep 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
   let strongly_complete : step.IsStronglyCompleteUnderSimulation :=
@@ -2594,7 +2594,7 @@ theorem queryOracleProof_perfectCompleteness {σ : Type}
       simp only [Fin.isValue, liftComp_eq_liftM, liftComp_id, HasEvalPMF.probFailure_eq_zero]
     rw [true_and]
     intro h_receiveChallengeFn h_receiveChallengeFn_support
-    -- 1.B Handle the `(queryOracleReduction 𝔽q β γ_repetitions).prover.output
+    -- 1.B Handle the `(queryOracleReductionComp 𝔽q β γ_repetitions).prover.output
       -- (h_receiveChallengeFn chal)) ...`
     conv =>
       enter [1];
