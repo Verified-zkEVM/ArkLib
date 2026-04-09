@@ -32,8 +32,8 @@ variable {Context : Type} {mp : SumcheckMultiplierParam L ℓ Context} -- Sumche
 
 section FoldStep
 
-/-! Legacy noncomputable prover for the `i`-th round of Binary Foldfold. -/
-noncomputable def foldOracleProverLegacy (i : Fin ℓ) :
+/-! Noncomp noncomputable prover for the `i`-th round of Binary Foldfold. -/
+noncomputable def foldOracleProverNoncomp (i : Fin ℓ) :
   OracleProver (oSpec := []ₒ)
     -- current round
     (StmtIn := Statement (L := L) Context i.castSucc)
@@ -173,7 +173,7 @@ def foldOracleVerifier (i : Fin ℓ) :
     simp only [MessageIdx, Fin.is_lt, ↓reduceDIte, Fin.eta, Function.Embedding.coeFn_mk]
 
 /-! The oracle reduction that is the `i`-th round of Binary Foldfold. -/
-noncomputable def foldOracleReductionLegacy (i : Fin ℓ) :
+noncomputable def foldOracleReductionNoncomp (i : Fin ℓ) :
   OracleReduction (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context i.castSucc)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
@@ -184,7 +184,7 @@ noncomputable def foldOracleReductionLegacy (i : Fin ℓ) :
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
     (WitOut := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
     (pSpec := pSpecFold (L := L)) where
-  prover := foldOracleProverLegacy 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i
+  prover := foldOracleProverNoncomp 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i
   verifier := foldOracleVerifier 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i
 
@@ -255,7 +255,7 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
         (𝓑 := 𝓑) i.castSucc (mp := mp))
       (relOut := strictFoldStepRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i (mp := mp))
-      (oracleReduction := foldOracleReductionLegacy 𝔽q β (ϑ := ϑ)
+      (oracleReduction := foldOracleReductionNoncomp 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
       (init := init)
       (impl := impl) := by sorry
@@ -271,7 +271,7 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
   -- Step 2: Convert probability 1 to universal quantification over support
   rw [probEvent_eq_one_iff]
   -- Step 3: Unfold protocol definitions
-  dsimp only [foldOracleReductionLegacy, foldOracleProverLegacy, foldOracleVerifier,
+  dsimp only [foldOracleReductionNoncomp, foldOracleProverNoncomp, foldOracleVerifier,
     OracleVerifier.toVerifier,
     FullTranscript.mk2]
   let step := (foldStepLogic 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) i)
