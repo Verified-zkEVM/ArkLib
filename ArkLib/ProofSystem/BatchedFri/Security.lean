@@ -36,7 +36,7 @@ open OracleComp OracleSpec ProtocolSpec ReedSolomon
 open NNReal Finset Function ProbabilityTheory
 
 variable {𝔽 : Type} [NonBinaryField 𝔽] [Fintype 𝔽] [DecidableEq 𝔽] [Nontrivial 𝔽]
-variable (n : ℕ) 
+variable (n : ℕ)
 variable (g : 𝔽ˣ) {k : ℕ}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 variable {i : Fin (k + 1)}
@@ -53,25 +53,47 @@ abbrev evalDomainSigma {n k : ℕ} (s : Fin (k + 1) → ℕ+)
   (ω : SmoothCosetFftDomain n 𝔽) (i : ℕ) :=
   ω.subdomainNatReversed (∑ j' ∈ finRangeTo (k + 1) i, s j')
 
-def cosetEnum (s₀ : (evalDomainSigma s ω i).toFinset) (k_le_n : ∑ j', (s j').1 ≤ n)
+#check CosetFftDomain.subdomainNatReversed_mul_property
+
+def cosetEnum (s₀ : { x | x ∈ evalDomainSigma s ω i}) (k_le_n : ∑ j', (s j').1 ≤ n)
       (j : Fin (2 ^ (s i).1)) : { x // x ∈ (evalDomainSigma s ω ↑i) } :=
-  let r : (ω.fftDomain.subdomainNatReversed (n - ↑(s i))).toFinset :=
-        Domain.domainEnum D
-          ⟨n - (s i).1, show n - (s i).1 < n + 1 by omega⟩
-          ⟨j.1,
-            by
-              simp only
-              rw [Nat.sub_sub_eq_min]
-              apply lt_of_lt_of_le j.2
-              rw [Nat.pow_le_pow_iff_right Nat.le.refl, Nat.le_min]
-              apply And.intro
-              · refine le_trans ?_ k_le_n
-                apply Finset.single_le_sum (f := fun i ↦ (s i).1) <;> simp
-              · exact Nat.le_refl _
-          ⟩
+  let r : {x | x ∈ ω.fftDomain.subdomainNatReversed (n - ↑(s i))} :=
+    ⟨ω.fftDomain.subdomainNatReversed (n - (s i).1)
+      ⟨j.1,
+        by
+          have s_i_lim : (s i).1 < n + 1 := by sorry
+          rcases j with ⟨j, h⟩
+          simp only [Nat.succ_eq_add_one, Fin.ofNat_eq_cast, Fin.val_natCast]
+          have : n - (n - (s i).1) = (s i).1 := by
+            apply Nat.sub_sub_self
+            exact Nat.le_of_lt_succ s_i_lim
+          rw [this]
+          convert h
+          rw [@Nat.mod_succ_eq_iff_lt]
+          exact s_i_lim
+      ⟩,
+      by
+        simp
+        exact ⟨j.1, _⟩
+
+        sorry
+    ⟩
+        -- Domain.domainEnum D
+        --   ⟨n - (s i).1, show n - (s i).1 < n + 1 by omega⟩
+        --   ⟨j.1,
+        --     by
+        --       simp only
+        --       rw [Nat.sub_sub_eq_min]
+        --       apply lt_of_lt_of_le j.2
+        --       rw [Nat.pow_le_pow_iff_right Nat.le.refl, Nat.le_min]
+        --       apply And.intro
+        --       · refine le_trans ?_ k_le_n
+        --         apply Finset.single_le_sum (f := fun i ↦ (s i).1) <;> simp
+        --       · exact Nat.le_refl _
+        --   ⟩
   ⟨
-    _,
-    CosetDomain.mul_root_of_unity D (sum_finRangeTo_le_sub_of_le k_le_n) s₀.2 r.2
+    s₀.1 * r.1,
+    CosetFftDomain.subdomainNatReversed_mul_property sorry sorry s₀.2 r.2
   ⟩
 
 def cosetG (s₀ : evalDomainSigma D g s i) : Finset (evalDomainSigma D g s i) :=
