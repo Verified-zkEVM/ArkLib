@@ -210,7 +210,7 @@ noncomputable def batchingCoreReduction :
       (𝓑 := 𝓑)
       (aOStmtIn := Binius.RingSwitching.BBFSmallFieldIOPCS.bbfAbstractOStmtIn (𝔽q := K) (β := (fun i => β i))
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)))
-    (R₂ := coreInteractionOracleReductionNoncomp κ L K β ℓ ℓ' 𝓡 ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l
+    (R₂ := coreInteractionSecurityReductionNoncomp κ L K β ℓ ℓ' 𝓡 ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l
       (𝓑 := 𝓑))
 
 /-- Batching + core-interaction verifier specialized by an external multiplier parameter. -/
@@ -399,7 +399,7 @@ noncomputable def batchingCoreReductionOfMultiplier
       (𝓑 := 𝓑)
       (aOStmtIn := Binius.RingSwitching.BBFSmallFieldIOPCS.bbfAbstractOStmtIn (𝔽q := K)
         (β := (fun i => β i)) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)))
-    (R₂ := coreInteractionOracleReductionOfMultiplierNoncomp κ (L := L) (K := K) (β := β) (ℓ := ℓ)
+    (R₂ := coreInteractionSecurityReductionOfMultiplierNoncomp κ (L := L) (K := K) (β := β) (ℓ := ℓ)
       (ℓ' := ℓ') (𝓑 := 𝓑) (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l mp)
 
 /-- Full FRI-Binius verifier: batching + core interaction + query phase. -/
