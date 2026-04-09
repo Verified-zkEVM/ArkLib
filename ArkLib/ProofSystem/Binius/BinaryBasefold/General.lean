@@ -66,9 +66,9 @@ def fullOracleVerifier :
     (V₂ := QueryPhase.queryOracleVerifierComp 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
 
-/-- The reduction for the full Binary Basefold protocol -/
+/-- Legacy noncomputable reduction over canonical witness/pSpec types. -/
 @[reducible]
-noncomputable def fullOracleReduction :
+noncomputable def fullReductionLegacy :
   OracleReduction (oSpec:=[]ₒ)
     (StmtIn := Statement (L := L) (ℓ:=ℓ) (SumcheckBaseContext L ℓ) 0)
     (OStmtIn:= OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
@@ -89,9 +89,9 @@ noncomputable def fullOracleReduction :
     (OStmt₃ := fun _ : Empty => Unit)
     (pSpec₁ := pSpecCoreInteraction 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (pSpec₂ := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-    (R₁ := CoreInteraction.coreInteractionOracleReduction 𝔽q β
+    (R₁ := CoreInteraction.coreInteractionOracleReductionLegacy 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) (𝓑:=𝓑))
-    (R₂ := QueryPhase.queryOracleReduction 𝔽q β γ_repetitions
+    (R₂ := QueryPhase.queryOracleReductionComp 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
 
 /-- Computable verifier companion using computable core interaction + Fin query challenges. -/
@@ -149,6 +149,22 @@ def fullOracleReductionComp :
     (R₂ := QueryPhase.queryOracleReductionFin 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ))
 
+/-- Canonical full reduction API routed to the computable companion stack. -/
+@[reducible]
+def fullOracleReduction :
+  OracleReduction (oSpec := []ₒ)
+    (StmtIn := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
+    (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+    (StmtOut := Bool)
+    (OStmtOut := fun _ : Empty => Unit)
+    (WitIn := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡)
+      0)
+    (WitOut := Unit)
+    (pSpec := fullPSpecComp 𝔽q β γ_repetitions (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  fullOracleReductionComp 𝔽q β γ_repetitions (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+
 /-- Computable full Binary Basefold proof companion over `fullPSpecComp`. -/
 @[reducible]
 def fullOracleProofComp :
@@ -185,15 +201,29 @@ def fullOracleVerifierCanonicalComp :
     (V₂ := QueryPhase.queryOracleVerifierComp 𝔽q β γ_repetitions (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
-/-- The full Binary Basefold protocol as a Proof -/
+/-- Legacy noncomputable proof over canonical witness/pSpec types. -/
 @[reducible]
-noncomputable def fullOracleProof :
+noncomputable def fullProofLegacy :
   OracleProof []ₒ
     (Statement := Statement (L := L) (ℓ:=ℓ) (SumcheckBaseContext L ℓ) 0)
     (OStatement := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
     (Witness := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ:=ℓ) 0)
     (pSpec:=fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  fullOracleReduction 𝔽q β γ_repetitions (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
+  fullReductionLegacy 𝔽q β γ_repetitions (ϑ:=ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
+
+/-- Canonical full proof API routed to the computable companion stack. -/
+@[reducible]
+def fullOracleProof :
+  OracleProof []ₒ
+    (Statement := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
+    (OStatement := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+    (Witness := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ)
+      (𝓡 := 𝓡) 0)
+    (pSpec := fullPSpecComp 𝔽q β γ_repetitions (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  fullOracleProofComp 𝔽q β γ_repetitions (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
 
 /-- Fin-indexed full verifier companion (`fullPSpecFin`). -/
 @[reducible]
@@ -221,7 +251,7 @@ def fullOracleVerifierFin :
 
 /-- Fin-indexed full reduction companion (`fullPSpecFin`). -/
 @[reducible]
-noncomputable def fullOracleReductionFin :
+noncomputable def fullReductionFinLegacy :
   OracleReduction (oSpec := []ₒ)
     (StmtIn := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
@@ -243,21 +273,50 @@ noncomputable def fullOracleReductionFin :
     (OStmt₃ := fun _ : Empty => Unit)
     (pSpec₁ := pSpecCoreInteraction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (pSpec₂ := pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions)
-    (R₁ := CoreInteraction.coreInteractionOracleReduction 𝔽q β
+    (R₁ := CoreInteraction.coreInteractionOracleReductionLegacy 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (𝓑 := 𝓑))
     (R₂ := QueryPhase.queryOracleReductionFin 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ))
 
 /-- Fin-indexed full proof companion (`fullPSpecFin`). -/
 @[reducible]
-noncomputable def fullOracleProofFin :
+noncomputable def fullProofFinLegacy :
   OracleProof []ₒ
     (Statement := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
     (OStatement := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
     (Witness := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) 0)
     (pSpec := fullPSpecFin 𝔽q β γ_repetitions (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  fullOracleReductionFin 𝔽q β γ_repetitions (ϑ := ϑ)
+  fullReductionFinLegacy 𝔽q β γ_repetitions (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+
+/-- Fin-entry compatibility name now routed to the computable full reduction companion. -/
+@[reducible]
+def fullOracleReductionFin :
+  OracleReduction (oSpec := []ₒ)
+    (StmtIn := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
+    (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+    (StmtOut := Bool)
+    (OStmtOut := fun _ : Empty => Unit)
+    (WitIn := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡)
+      0)
+    (WitOut := Unit)
+    (pSpec := fullPSpecComp 𝔽q β γ_repetitions (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  fullOracleReductionComp 𝔽q β γ_repetitions (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+
+/-- Fin-entry compatibility name now routed to the computable full proof companion. -/
+@[reducible]
+def fullOracleProofFin :
+  OracleProof []ₒ
+    (Statement := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
+    (OStatement := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+    (Witness := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ)
+      (𝓡 := 𝓡) 0)
+    (pSpec := fullPSpecComp 𝔽q β γ_repetitions (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  fullOracleProofComp 𝔽q β γ_repetitions (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
 
 /-!
@@ -270,18 +329,18 @@ variable {σ : Type} {init : ProbComp σ}
 /-- Perfect completeness for the full Binary Basefold protocol (reduction) -/
 theorem fullOracleReduction_perfectCompleteness (hInit : NeverFail init) :
   OracleReduction.perfectCompleteness
-    (oracleReduction := fullOracleReduction 𝔽q β γ_repetitions (ϑ:=ϑ)
+    (oracleReduction := fullReductionLegacy 𝔽q β γ_repetitions (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑))
     (relIn := strictRoundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) 0)
     (relOut := acceptRejectOracleRel)
     (init := init)
     (impl := impl) := by
-  unfold fullOracleReduction
+  unfold fullReductionLegacy
   apply OracleReduction.append_perfectCompleteness
-    (R₁ := CoreInteraction.coreInteractionOracleReduction 𝔽q β
+    (R₁ := CoreInteraction.coreInteractionOracleReductionLegacy 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) (𝓑:=𝓑))
-    (R₂ := QueryPhase.queryOracleReduction 𝔽q β γ_repetitions
+    (R₂ := QueryPhase.queryOracleReductionComp 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
     (Oₛ₃ := fun _ => OracleInterface.instDefault)
     (rel₁ := strictRoundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β
@@ -327,7 +386,7 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness :
     (rel₃ := acceptRejectOracleRel)
     (V₁ := CoreInteraction.coreInteractionOracleVerifier 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
-    (V₂ := QueryPhase.queryOracleVerifier 𝔽q β γ_repetitions
+    (V₂ := QueryPhase.queryOracleVerifierComp 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
     (Oₛ₃:=by exact fun i ↦ by exact OracleInterface.instDefault)
     (rbrKnowledgeError₁ := CoreInteraction.coreInteractionOracleRbrKnowledgeError 𝔽q β (ϑ:=ϑ))

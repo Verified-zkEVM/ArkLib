@@ -215,7 +215,14 @@ def foldRelayOracleReductionComp (i : Fin ℓ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR)
 
 @[reducible]
-noncomputable def foldRelayOracleReduction (i : Fin ℓ)
+def foldRelayOracleReduction (i : Fin ℓ)
+    (hNCR : ¬ isCommitmentRound ℓ ϑ i) :=
+  foldRelayOracleReductionComp (L := L) 𝔽q β
+    (Context := Context) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (i := i) hNCR
+
+@[reducible]
+noncomputable def foldRelayOracleReductionLegacy (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
   OracleReduction []ₒ
     (StmtIn := Statement (L := L) Context i.castSucc)
@@ -228,7 +235,7 @@ noncomputable def foldRelayOracleReduction (i : Fin ℓ)
   OracleReduction.append
     (pSpec₁ := pSpecFold (L:=L))
     (pSpec₂ := pSpecRelay)
-        (foldOracleReduction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i)
+        (foldOracleReductionLegacy 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i)
     (relayOracleReduction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR)
 
 
@@ -246,11 +253,11 @@ theorem foldRelayOracleReduction_perfectCompleteness
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i.castSucc)
     (relOut := strictRoundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i.succ)
-    (oracleReduction := foldRelayOracleReduction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (oracleReduction := foldRelayOracleReductionLegacy 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑:=𝓑) i hNCR) (init := init) (impl := impl) := by
-  unfold foldRelayOracleReduction pSpecFoldRelay
+  unfold foldRelayOracleReductionLegacy pSpecFoldRelay
   apply OracleReduction.append_perfectCompleteness
-  · -- Perfect completeness of foldOracleReduction
+  · -- Perfect completeness of foldOracleReductionLegacy
     exact foldOracleReduction_perfectCompleteness (L := L) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) (init := init) (impl := impl) hInit i
   · -- Perfect completeness of relayOracleReduction
@@ -441,7 +448,14 @@ def foldCommitOracleReductionComp (i : Fin ℓ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (mp := mp) (𝓑 := 𝓑) i hCR)
 
 @[reducible]
-noncomputable def foldCommitOracleReduction (i : Fin ℓ)
+def foldCommitOracleReduction (i : Fin ℓ)
+    (hCR : isCommitmentRound ℓ ϑ i) :=
+  foldCommitOracleReductionComp (L := L) 𝔽q β
+    (Context := Context) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (mp := mp) (𝓑 := 𝓑) (i := i) hCR
+
+@[reducible]
+noncomputable def foldCommitOracleReductionLegacy (i : Fin ℓ)
     (hCR : isCommitmentRound ℓ ϑ i) :
   OracleReduction []ₒ
     (StmtIn := Statement (L := L) Context i.castSucc)
@@ -454,7 +468,7 @@ noncomputable def foldCommitOracleReduction (i : Fin ℓ)
   OracleReduction.append (oSpec:=[]ₒ)
     (pSpec₁ := pSpecFold (L:=L))
     (pSpec₂ := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
-    (R₁ := foldOracleReduction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i)
+    (R₁ := foldOracleReductionLegacy 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i)
     (R₂ := commitOracleReduction 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i hCR)
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
@@ -474,11 +488,11 @@ theorem foldCommitOracleReduction_perfectCompleteness
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i.castSucc)
       (relOut := strictRoundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i.succ)
-      (oracleReduction := foldCommitOracleReduction 𝔽q β (ϑ:=ϑ) (mp := mp)
+      (oracleReduction := foldCommitOracleReductionLegacy 𝔽q β (ϑ:=ϑ) (mp := mp)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i hCR) (init := init) (impl := impl) := by
-  unfold foldCommitOracleReduction pSpecFoldCommit
+  unfold foldCommitOracleReductionLegacy pSpecFoldCommit
   apply OracleReduction.append_perfectCompleteness
-  · -- Perfect completeness of foldOracleReduction
+  · -- Perfect completeness of foldOracleReductionLegacy
     exact foldOracleReduction_perfectCompleteness (L := L) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) (init := init) (impl := impl) hInit i
   · -- Perfect completeness of commitOracleReduction
@@ -1039,7 +1053,7 @@ def nonLastSingleBlockOracleReductionComp (bIdx : Fin (ℓ / ϑ - 1)) :=
   let lastOracleReduction := foldCommitOracleReductionComp 𝔽q β (mp := mp)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (i := ⟨bIdx * ϑ + (ϑ - 1), h1⟩)
     (hCR := isCommitmentRoundOfNonLastBlock (𝓡 := 𝓡) (r := r) bIdx)
-  let nonLastSingleBlockOracleReduction :=
+  let nonLastSingleBlockOracleReductionLegacy :=
     OracleReduction.append (oSpec := []ₒ)
       (Stmt₁ := Statement (L := L) (ℓ := ℓ) Context ⟨bIdx * ϑ, by
         apply Nat.lt_trans (m := ℓ) (h₁ := by
@@ -1125,9 +1139,15 @@ def nonLastSingleBlockOracleReductionComp (bIdx : Fin (ℓ / ϑ - 1)) :=
           apply instOracleStatementBinaryBasefold_heq_of_fin_eq
           ext; simp only [Fin.castSucc, Fin.castAdd_mk])
       )
-  nonLastSingleBlockOracleReduction
+  nonLastSingleBlockOracleReductionLegacy
 
-noncomputable def nonLastSingleBlockOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) :=
+@[reducible]
+def nonLastSingleBlockOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) :=
+  nonLastSingleBlockOracleReductionComp (L := L) 𝔽q β
+    (Context := Context) (mp := mp) (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (bIdx := bIdx)
+
+noncomputable def nonLastSingleBlockOracleReductionLegacy (bIdx : Fin (ℓ / ϑ - 1)) :=
   let stmt : Fin (ϑ - 1 + 1) → Type :=
     fun i => Statement (L := L) (ℓ := ℓ) Context
       ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_cast_lt_ℓ_succ bIdx i⟩
@@ -1145,7 +1165,7 @@ noncomputable def nonLastSingleBlockOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) 
       (R := fun i => by
         have hNCR : ¬ isCommitmentRound ℓ ϑ ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩
           := isNeCommitmentRound (r:=r) (ℓ:=ℓ) (𝓡:=𝓡) (ϑ:=ϑ) bIdx (x:=i.val) (hx:=by omega)
-        exact foldRelayOracleReduction (L:=L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        exact foldRelayOracleReductionLegacy (L:=L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (𝓑:=𝓑) (i:=⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩) hNCR
       )
   let h1 : ↑bIdx * ϑ + (ϑ - 1) < ℓ := by
@@ -1157,10 +1177,10 @@ noncomputable def nonLastSingleBlockOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) 
     change ↑bIdx * ϑ + fv.val < ℓ + 0
     apply bIdx_mul_ϑ_add_i_lt_ℓ_succ
   let h1_succ :  ↑bIdx * ϑ + (ϑ - 1) < ℓ + 1 := by omega
-  let lastOracleReduction := foldCommitOracleReduction 𝔽q β (mp := mp)
+  let lastOracleReduction := foldCommitOracleReductionLegacy 𝔽q β (mp := mp)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (i := ⟨bIdx * ϑ + (ϑ - 1), h1⟩)
     (hCR:=isCommitmentRoundOfNonLastBlock (𝓡:=𝓡) (r:=r) bIdx)
-  let nonLastSingleBlockOracleReduction :=
+  let nonLastSingleBlockOracleReductionLegacy :=
     OracleReduction.append (oSpec:=[]ₒ)
       (Stmt₁:=Statement (L := L) (ℓ := ℓ) Context ⟨bIdx * ϑ, by
         apply Nat.lt_trans (m:=ℓ) (h₁:=by
@@ -1237,7 +1257,7 @@ noncomputable def nonLastSingleBlockOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) 
           apply instOracleStatementBinaryBasefold_heq_of_fin_eq
           ext; simp only [Fin.castSucc, Fin.castAdd_mk])
       )
-  nonLastSingleBlockOracleReduction
+  nonLastSingleBlockOracleReductionLegacy
 
 def nonLastBlocksOracleReductionComp :
   OracleReduction []ₒ
@@ -1269,7 +1289,26 @@ def nonLastBlocksOracleReductionComp :
         (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (bIdx := bIdx))
   res
 
-noncomputable def nonLastBlocksOracleReduction :
+@[reducible]
+def nonLastBlocksOracleReduction :
+  OracleReduction []ₒ
+    (StmtIn := Statement (L := L) (ℓ := ℓ) Context ⟨0 * ϑ, by omega⟩)
+    (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ ⟨0 * ϑ, by omega⟩)
+    (WitIn := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡)
+      ⟨0 * ϑ, by omega⟩)
+    (StmtOut := Statement (L := L) (ℓ := ℓ) Context ⟨(ℓ / ϑ - 1) * ϑ, by
+      apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (x := 0) (hx := by omega)⟩)
+    (OStmtOut := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ
+      ⟨(ℓ / ϑ - 1) * ϑ, by
+        apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (x := 0) (hx := by omega)⟩)
+    (WitOut := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ)
+      (𝓡 := 𝓡) ⟨(ℓ / ϑ - 1) * ϑ, by
+        apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (x := 0) (hx := by omega)⟩)
+    (pSpec := pSpecNonLastBlocksComp 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  nonLastBlocksOracleReductionComp (L := L) 𝔽q β (ϑ := ϑ)
+    (Context := Context) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (mp := mp) (𝓑 := 𝓑)
+
+noncomputable def nonLastBlocksOracleReductionLegacy :
   OracleReduction []ₒ
     (StmtIn := Statement (L := L) (ℓ := ℓ) Context ⟨0 * ϑ, by omega⟩)
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ ⟨0 * ϑ, by omega⟩)
@@ -1292,7 +1331,7 @@ noncomputable def nonLastBlocksOracleReduction :
       (Stmt := stmt)
       (OStmt := oStmt) (Wit := wit)
       (pSpec := fun (bIdx: Fin (ℓ / ϑ - 1)) => pSpecFullNonLastBlock 𝔽q β (ϑ:=ϑ) bIdx)
-        (R := fun bIdx => nonLastSingleBlockOracleReduction (L:=L) 𝔽q β (mp := mp)
+        (R := fun bIdx => nonLastSingleBlockOracleReductionLegacy (L:=L) 𝔽q β (mp := mp)
         (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (bIdx:=bIdx))
   res
 
@@ -1407,7 +1446,12 @@ def lastBlockOracleReductionComp :=
           ext; simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, add_zero])
   V
 
-noncomputable def lastBlockOracleReduction :=
+@[reducible]
+def lastBlockOracleReduction :=
+  lastBlockOracleReductionComp (L := L) 𝔽q β
+    (Context := Context) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+
+noncomputable def lastBlockOracleReductionLegacy :=
   have h_le : ϑ ≤ ℓ := by apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ); exact hdiv.out
   let bIdx := ℓ / ϑ - 1
   let stmt : Fin (ϑ + 1) → Type := fun i => Statement (L := L) (ℓ := ℓ) Context
@@ -1434,7 +1478,7 @@ noncomputable def lastBlockOracleReduction :=
         (R := fun i => by
           have hNCR : ¬ isCommitmentRound ℓ ϑ ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩ :=
             lastBlockIdx_isNeCommitmentRound i
-          exact foldRelayOracleReduction (L:=L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          exact foldRelayOracleReductionLegacy (L:=L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
             (𝓑:=𝓑) (i:=⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩) hNCR
         )
       exact OracleReduction.castInOut (R := cur)
@@ -1522,14 +1566,14 @@ def sumcheckFoldOracleReductionComp : OracleReduction []ₒ
     (WitOut := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡)
       (Fin.last ℓ))
     (pSpec := pSpecSumcheckFoldComp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)) :=
-  let nonLastSingleBlockOracleReduction := nonLastBlocksOracleReductionComp (L := L) 𝔽q β
+  let nonLastSingleBlockOracleReductionLegacy := nonLastBlocksOracleReductionComp (L := L) 𝔽q β
     (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (ϑ := ϑ)
   let lastOracleReduction := lastBlockOracleReductionComp (L := L) 𝔽q β
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (ϑ := ϑ)
   (OracleReduction.append (oSpec := []ₒ)
     (pSpec₁ := pSpecNonLastBlocksComp 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (pSpec₂ := pSpecLastBlockComp (L := L) (ϑ := ϑ))
-    (R₁ := nonLastSingleBlockOracleReduction)
+    (R₁ := nonLastSingleBlockOracleReductionLegacy)
     (R₂ := lastOracleReduction)
   ).castInOut
     (h_stmtIn := by
@@ -1552,7 +1596,22 @@ def sumcheckFoldOracleReductionComp : OracleReduction []ₒ
       apply instOracleStatementBinaryBasefold_heq_of_fin_eq
       ext; simp only [zero_mul, Fin.coe_ofNat_eq_mod, Nat.zero_mod])
 
-noncomputable def sumcheckFoldOracleReduction : OracleReduction []ₒ
+@[reducible]
+def sumcheckFoldOracleReduction : OracleReduction []ₒ
+    (StmtIn := Statement (L := L) (ℓ := ℓ) Context 0)
+    (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+    (WitIn := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡)
+      0)
+    (StmtOut := Statement (L := L) (ℓ := ℓ) Context (Fin.last ℓ))
+    (OStmtOut := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
+    (WitOut := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡)
+      (Fin.last ℓ))
+    (pSpec := pSpecSumcheckFoldComp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)) :=
+  sumcheckFoldOracleReductionComp (L := L) 𝔽q β
+    (Context := Context) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (𝓑 := 𝓑) (mp := mp)
+
+noncomputable def sumcheckFoldOracleReductionLegacy : OracleReduction []ₒ
     (StmtIn := Statement (L := L) (ℓ := ℓ) Context 0)
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
     (WitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ:=ℓ) 0)
@@ -1567,14 +1626,14 @@ noncomputable def sumcheckFoldOracleReduction : OracleReduction []ₒ
   let wit := fun i: Fin (ℓ / ϑ - 1 + 1) =>
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ:=ℓ)
       ⟨i * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ i⟩
-  let nonLastSingleBlockOracleReduction := nonLastBlocksOracleReduction (L:=L) 𝔽q β (mp := mp)
+  let nonLastSingleBlockOracleReductionLegacy := nonLastBlocksOracleReductionLegacy (L:=L) 𝔽q β (mp := mp)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (ϑ := ϑ)
-  let lastOracleReduction := lastBlockOracleReduction 𝔽q β
+  let lastOracleReduction := lastBlockOracleReductionLegacy 𝔽q β
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
   (OracleReduction.append (oSpec:=[]ₒ)
     (pSpec₁ := pSpecNonLastBlocks 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (pSpec₂ := pSpecLastBlock (L:=L) (ϑ:=ϑ))
-    (R₁:=nonLastSingleBlockOracleReduction)
+    (R₁:=nonLastSingleBlockOracleReductionLegacy)
     (R₂:=lastOracleReduction)
   ).castInOut
     (h_stmtIn := by
@@ -1618,9 +1677,9 @@ lemma nonLastSingleBlockOracleReduction_perfectCompleteness
         ⟩)
       (relOut := strictRoundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) ⟨(bIdx + 1) * ϑ, bIdx_succ_mul_ϑ_lt_ℓ_succ bIdx⟩)
-      (oracleReduction := nonLastSingleBlockOracleReduction 𝔽q β (ϑ:=ϑ) (mp := mp)
+      (oracleReduction := nonLastSingleBlockOracleReductionLegacy 𝔽q β (ϑ:=ϑ) (mp := mp)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) bIdx) := by
-  unfold nonLastSingleBlockOracleReduction; simp only
+  unfold nonLastSingleBlockOracleReductionLegacy; simp only
   -- At this point the goal is perfectCompleteness for an `append`.
   apply OracleReduction.append_perfectCompleteness
     (rel₂ := strictRoundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
@@ -1680,7 +1739,7 @@ lemma nonLastSingleBlockOracleReduction_perfectCompleteness
           have hNCR : ¬ isCommitmentRound ℓ ϑ
             ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩
             := isNeCommitmentRound (r:=r) (ℓ:=ℓ) (𝓡:=𝓡) (ϑ:=ϑ) bIdx (x:=i.val) (hx:=by omega)
-          exact foldRelayOracleReduction (L:=L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          exact foldRelayOracleReductionLegacy (L:=L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
             (𝓑:=𝓑) (i:=⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩) hNCR
         )
         (rel := fun i ↦
@@ -1755,7 +1814,7 @@ lemma lastBlockOracleReduction_perfectCompleteness (hInit : NeverFail init) :
         ⟨(ℓ / ϑ - 1) * ϑ, by apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (x:=0) (hx:=by omega)⟩)
       (relOut := strictRoundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (Fin.last ℓ))
-      (oracleReduction := lastBlockOracleReduction 𝔽q β (ϑ:=ϑ)
+      (oracleReduction := lastBlockOracleReductionLegacy 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)) := by
   sorry
 
@@ -1767,11 +1826,11 @@ theorem sumcheckFoldOracleReduction_perfectCompleteness (hInit : NeverFail init)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) 0)
       (relOut := strictRoundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (Fin.last ℓ))
-      (oracleReduction := sumcheckFoldOracleReduction 𝔽q β (ϑ:=ϑ) (mp := mp)
+      (oracleReduction := sumcheckFoldOracleReductionLegacy 𝔽q β (ϑ:=ϑ) (mp := mp)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑))
       (init := init)
       (impl := impl) := by
-  unfold sumcheckFoldOracleReduction pSpecSumcheckFold
+  unfold sumcheckFoldOracleReductionLegacy pSpecSumcheckFold
   let stmt : Fin (ℓ / ϑ - 1 + 1) → Type :=
     fun i => Statement (L := L) (ℓ := ℓ) Context ⟨i * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ i⟩
   let oStmt := fun i: Fin (ℓ / ϑ - 1 + 1) =>
@@ -1841,15 +1900,15 @@ theorem sumcheckFoldOracleReduction_perfectCompleteness (hInit : NeverFail init)
       (𝓑:=𝓑) (Fin.last ℓ))
     (pSpec₁ := pSpecNonLastBlocks 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (pSpec₂ := pSpecLastBlock (L:=L) (ϑ:=ϑ))
-    (R₁ := nonLastBlocksOracleReduction 𝔽q β (ϑ:=ϑ) (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (R₁ := nonLastBlocksOracleReductionLegacy 𝔽q β (ϑ:=ϑ) (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑:=𝓑))
-    (R₂ := lastBlockOracleReduction 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (R₂ := lastBlockOracleReductionLegacy 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑:=𝓑))
     (impl := impl)
     (init := init)
   ·
-    -- Perfect completeness of nonLastBlocksOracleReduction
-    unfold nonLastBlocksOracleReduction
+    -- Perfect completeness of nonLastBlocksOracleReductionLegacy
+    unfold nonLastBlocksOracleReductionLegacy
     apply OracleReduction.seqCompose_perfectCompleteness
       (Stmt := fun i : Fin (ℓ / ϑ - 1 + 1) =>
         Statement (L := L) (ℓ := ℓ) Context ⟨i * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ i⟩)
@@ -1862,7 +1921,7 @@ theorem sumcheckFoldOracleReduction_perfectCompleteness (hInit : NeverFail init)
       (rel := fun i => strictRoundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) ⟨i * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ i⟩)
       (pSpec := fun (bIdx: Fin (ℓ / ϑ - 1)) => pSpecFullNonLastBlock 𝔽q β (ϑ:=ϑ) bIdx)
-      (R := fun bIdx => nonLastSingleBlockOracleReduction (L:=L) 𝔽q β (mp := mp)
+      (R := fun bIdx => nonLastSingleBlockOracleReductionLegacy (L:=L) 𝔽q β (mp := mp)
         (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (bIdx:=bIdx))
       (impl := impl)
       (init := init)
@@ -1870,7 +1929,7 @@ theorem sumcheckFoldOracleReduction_perfectCompleteness (hInit : NeverFail init)
     -- Prove perfectCompleteness for each individual block
     exact nonLastSingleBlockOracleReduction_perfectCompleteness 𝔽q β (ϑ:=ϑ) (mp := mp)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (hInit := by exact hInit) (bIdx:=bIdx)
-  · -- Perfect completeness of lastBlockOracleReduction
+  · -- Perfect completeness of lastBlockOracleReductionLegacy
     exact lastBlockOracleReduction_perfectCompleteness 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (init := init) (impl := impl) hInit
 
@@ -2408,7 +2467,21 @@ def coreInteractionOracleReductionComp :
 
 /-! The final oracle reduction that composes sumcheckFold with finalSumcheckStep -/
 @[reducible]
-noncomputable def coreInteractionOracleReduction :
+def coreInteractionOracleReduction :
+    OracleReduction (oSpec := []ₒ)
+    (StmtIn := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
+    (StmtOut := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
+    (WitIn := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ)
+      (𝓡 := 𝓡) 0)
+    (WitOut := Unit)
+    (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+    (OStmtOut := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
+    (pSpec := pSpecCoreInteractionComp 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  coreInteractionOracleReductionComp (L := L) 𝔽q β
+    (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+
+@[reducible]
+noncomputable def coreInteractionOracleReductionLegacy :
     OracleReduction (oSpec:=[]ₒ)
     (StmtIn := Statement (L := L) (ℓ:=ℓ) (SumcheckBaseContext L ℓ) 0)
     (StmtOut := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
@@ -2429,7 +2502,7 @@ noncomputable def coreInteractionOracleReduction :
     (OStmt₃ := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
     (pSpec₁ := pSpecSumcheckFold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ))
     (pSpec₂ := pSpecFinalSumcheckStep (L:=L))
-    (R₁ := sumcheckFoldOracleReduction 𝔽q β (ϑ := ϑ)
+    (R₁ := sumcheckFoldOracleReductionLegacy 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (mp := BBF_SumcheckMultiplierParam))
     (R₂ := finalSumcheckOracleReduction 𝔽q β (ϑ := ϑ)
@@ -2453,7 +2526,7 @@ theorem coreInteractionOracleReduction_perfectCompleteness (hInit : NeverFail in
       (relIn := strictRoundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) 0)
       (relOut := strictFinalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (oracleReduction := coreInteractionOracleReduction 𝔽q β (ϑ:=ϑ) (𝓑:=𝓑))
+      (oracleReduction := coreInteractionOracleReductionLegacy 𝔽q β (ϑ:=ϑ) (𝓑:=𝓑))
       (init := init)
       (impl := impl) := by
   sorry

@@ -32,8 +32,8 @@ variable {Context : Type} {mp : SumcheckMultiplierParam L ℓ Context} -- Sumche
 
 section FoldStep
 
-/-! The prover for the `i`-th round of Binary Foldfold. -/
-noncomputable def foldOracleProver (i : Fin ℓ) :
+/-! Legacy noncomputable prover for the `i`-th round of Binary Foldfold. -/
+noncomputable def foldOracleProverLegacy (i : Fin ℓ) :
   OracleProver (oSpec := []ₒ)
     -- current round
     (StmtIn := Statement (L := L) Context i.castSucc)
@@ -173,7 +173,7 @@ def foldOracleVerifier (i : Fin ℓ) :
     simp only [MessageIdx, Fin.is_lt, ↓reduceDIte, Fin.eta, Function.Embedding.coeFn_mk]
 
 /-! The oracle reduction that is the `i`-th round of Binary Foldfold. -/
-noncomputable def foldOracleReduction (i : Fin ℓ) :
+noncomputable def foldOracleReductionLegacy (i : Fin ℓ) :
   OracleReduction (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context i.castSucc)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
@@ -184,7 +184,33 @@ noncomputable def foldOracleReduction (i : Fin ℓ) :
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
     (WitOut := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
     (pSpec := pSpecFold (L := L)) where
-  prover := foldOracleProver 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i
+  prover := foldOracleProverLegacy 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i
+  verifier := foldOracleVerifier 𝔽q β (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i
+
+/-! Canonical fold-step reduction routed to the computable companion stack. -/
+@[reducible]
+def foldOracleReduction (i : Fin ℓ)
+    (prover : OracleProver
+      (oSpec := []ₒ)
+      (StmtIn := Statement (L := L) Context i.castSucc)
+      (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
+      (WitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
+      (StmtOut := Statement (L := L) Context i.succ)
+      (OStmtOut := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
+      (WitOut := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
+      (pSpec := pSpecFold (L := L))) :
+  OracleReduction (oSpec := []ₒ)
+    (StmtIn := Statement (L := L) Context i.castSucc)
+    (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
+    (WitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
+    (StmtOut := Statement (L := L) Context i.succ)
+    (OStmtOut := OracleStatement 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
+    (WitOut := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
+    (pSpec := pSpecFold (L := L)) where
+  prover := prover
   verifier := foldOracleVerifier 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i
 
@@ -229,7 +255,7 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
         (𝓑 := 𝓑) i.castSucc (mp := mp))
       (relOut := strictFoldStepRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i (mp := mp))
-      (oracleReduction := foldOracleReduction 𝔽q β (ϑ := ϑ)
+      (oracleReduction := foldOracleReductionLegacy 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
       (init := init)
       (impl := impl) := by sorry
@@ -245,7 +271,8 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
   -- Step 2: Convert probability 1 to universal quantification over support
   rw [probEvent_eq_one_iff]
   -- Step 3: Unfold protocol definitions
-  dsimp only [foldOracleReduction, foldOracleProver, foldOracleVerifier, OracleVerifier.toVerifier,
+  dsimp only [foldOracleReductionLegacy, foldOracleProverLegacy, foldOracleVerifier,
+    OracleVerifier.toVerifier,
     FullTranscript.mk2]
   let step := (foldStepLogic 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) i)
   let strongly_complete : step.IsStronglyComplete := foldStep_is_logic_complete (L := L)

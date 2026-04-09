@@ -456,47 +456,6 @@ def queryOracleProofComp : OracleProof
     (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   queryOracleReductionComp 𝔽q β (ϑ := ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
 
-/-! Canonical query-phase API migrated to the computable companions. -/
-
-/-- Canonical query verifier (`pSpecQuery`) now aliases the computable implementation. -/
-@[reducible]
-def queryOracleVerifier :
-  OracleVerifier
-    (oSpec := []ₒ)
-    (StmtIn := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
-    (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
-    (StmtOut := Bool)
-    (OStmtOut := fun _ : Empty => Unit)
-    (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  queryOracleVerifierComp 𝔽q β (ϑ := ϑ) γ_repetitions
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-
-/-- Canonical query reduction (`pSpecQuery`) now aliases the computable implementation. -/
-@[reducible]
-def queryOracleReduction :
-  OracleReduction
-    (oSpec := []ₒ)
-    (StmtIn := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
-    (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
-    (WitIn := Unit)
-    (StmtOut := Bool)
-    (OStmtOut := fun _ : Empty => Unit)
-    (WitOut := Unit)
-    (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  queryOracleReductionComp 𝔽q β (ϑ := ϑ) γ_repetitions
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-
-/-- Canonical query proof (`pSpecQuery`) now aliases the computable implementation. -/
-@[reducible]
-def queryOracleProof : OracleProof
-    (oSpec := []ₒ)
-    (Statement := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
-    (OStatement := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
-    (Witness := Unit)
-    (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  queryOracleProofComp 𝔽q β (ϑ := ϑ) γ_repetitions
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-
 /-- Fin-indexed verifier companion.
 Challenges are decoded through the computable AdditiveNTT bridge before running checks. -/
 def queryOracleVerifierFin :
@@ -2433,14 +2392,14 @@ lemma logical_consistency_checks_passed_of_mem_support_V_run {σ : Type}
       (stmtOut, oStmtOut) ∈
         support (OptionT.mk (Prod.fst <$> ((simulateQ.{0, 0, 0} impl
             (Verifier.run (stmtIn, oStmtIn) tr
-              (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions
+              (queryOracleVerifierComp 𝔽q β (ϑ := ϑ) γ_repetitions
                 (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toVerifier)) :
               StateT σ ProbComp (Option (Bool × (Empty → Unit)))).run s))) :
     (stmtOut = true ∧
       oStmtOut = OracleVerifier.mkVerifierOStmtOut
-        (embed := (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions
+        (embed := (queryOracleVerifierComp 𝔽q β (ϑ := ϑ) γ_repetitions
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).embed)
-        (hEq := (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions
+        (hEq := (queryOracleVerifierComp 𝔽q β (ϑ := ϑ) γ_repetitions
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).hEq) oStmtIn tr ∧
      ∀ (rep : Fin γ_repetitions),
        logical_checkSingleRepetition 𝔽q β oStmtIn
@@ -2578,7 +2537,8 @@ theorem queryOracleProof_perfectCompleteness {σ : Type}
   OracleProof.perfectCompleteness
     (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (relation := strictFinalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-    (oracleProof := queryOracleProof 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+    (oracleProof := queryOracleProofComp 𝔽q β (ϑ := ϑ) γ_repetitions
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (init := init)
     (impl := impl) := by
   sorry
@@ -2698,8 +2658,9 @@ theorem queryOracleProof_perfectCompleteness {σ : Type}
       have h_exists_some := exists_eq_some_of_mem_support_of_probOutput_none_eq_zero (x := vStmtOut)
         (hx := h_vStmtOut_mem_support) (hnone := by
           dsimp only [step] at h_probOutput_none_V_check_eq_0
-          dsimp only [queryOracleProof, queryOracleReduction, queryPhaseLogicStep,
-            queryOracleVerifier, OracleVerifier.toVerifier] at h_probOutput_none_V_check_eq_0 ⊢
+          dsimp only [queryOracleProofComp, queryOracleReductionComp, queryPhaseLogicStep,
+            queryOracleVerifierComp, OracleVerifier.toVerifier] at
+            h_probOutput_none_V_check_eq_0 ⊢
           rw [h_transcript_eq] at h_probOutput_none_V_check_eq_0 ⊢
           simp only [MessageIdx, Message, Fin.isValue, bind_pure_comp, Functor.map_map,
             OptionT.simulateQ_map]
@@ -2738,8 +2699,8 @@ theorem queryOracleProof_perfectCompleteness {σ : Type}
     obtain ⟨r1, ⟨_h_r1_mem_challenge_support, h_trace_support⟩⟩ := hx_mem_support
     rcases h_trace_support with ⟨prvWitOut, h_prvOut_mem_support, h_verOut_mem_support⟩
     conv at h_prvOut_mem_support => -- similar simplification as in commit step
-      dsimp only [queryOracleProof, queryOracleReduction, queryPhaseLogicStep, queryOracleProver,
-        queryOracleVerifier, OracleVerifier.toVerifier, FullTranscript.mk1]
+      dsimp only [queryOracleProofComp, queryOracleReductionComp, queryPhaseLogicStep,
+        queryOracleProver, queryOracleVerifierComp, OracleVerifier.toVerifier, FullTranscript.mk1]
       dsimp only [liftM, monadLift, MonadLift.monadLift]
       rw [liftComp_id]
       rw [support_liftComp]
@@ -2836,7 +2797,7 @@ def queryKStateProp (m : Fin (1 + 1))
 /-- The knowledge state function for the query phase -/
 noncomputable def queryKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-  (queryOracleVerifier 𝔽q β (ϑ:=ϑ) γ_repetitions).KnowledgeStateFunction init impl
+  (queryOracleVerifierComp 𝔽q β (ϑ:=ϑ) γ_repetitions).KnowledgeStateFunction init impl
   (relIn := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) )
   (relOut := acceptRejectOracleRel)
   (extractor := queryRbrExtractor 𝔽q β (ϑ:=ϑ)
@@ -2861,7 +2822,7 @@ noncomputable def queryKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
               Prod.fst <$>
                 (simulateQ impl
                   (Verifier.run (stmtIn, oStmtIn) tr
-                    (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions
+                    (queryOracleVerifierComp 𝔽q β (ϑ := ϑ) γ_repetitions
                       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toVerifier)).run s) := by
       exact (OptionT.mem_support_iff
         (mx := OptionT.mk (do
@@ -2869,7 +2830,7 @@ noncomputable def queryKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
           Prod.fst <$>
             (simulateQ impl
               (Verifier.run (stmtIn, oStmtIn) tr
-                (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions
+                (queryOracleVerifierComp 𝔽q β (ϑ := ϑ) γ_repetitions
                   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toVerifier)).run s))
         (x := (stmtOut, oStmtOut))).1 h_output_mem_V_run_support
     simp only [support_bind, Set.mem_iUnion, exists_prop] at h_output_mem_V_run_support'
@@ -2977,7 +2938,7 @@ then the verifier accepts with at most negligible probability:
 This is exactly `queryRbrKnowledgeError`. -/
 theorem queryOracleVerifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (queryOracleVerifier 𝔽q β (ϑ:=ϑ) γ_repetitions).rbrKnowledgeSoundness init impl
+    (queryOracleVerifierComp 𝔽q β (ϑ:=ϑ) γ_repetitions).rbrKnowledgeSoundness init impl
     (relIn := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) )
     (relOut := acceptRejectOracleRel)
     (rbrKnowledgeError := queryRbrKnowledgeError 𝔽q β γ_repetitions

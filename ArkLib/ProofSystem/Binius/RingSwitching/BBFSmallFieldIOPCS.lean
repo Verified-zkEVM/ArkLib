@@ -136,30 +136,6 @@ def largeFieldInvocationStmtLens : OracleStatement.Lens
     ⟨reducedMLPEvalStatement_to_BBF_Statement stmtIn, oStmtIn⟩
   toFunB := fun _ ⟨stmtOut, oStmtOut⟩ => ⟨stmtOut, oStmtOut⟩
 
-/-- Legacy (noncomputable) context lens for theorem compatibility on canonical BBF witnesses. -/
-noncomputable def largeFieldInvocationCtxLensLegacy : OracleContext.Lens
-    (OuterStmtIn := MLPEvalStatement (L := L) (ℓ := ℓ'))
-    (OuterStmtOut := Bool)
-    (InnerStmtIn := Statement (L := L) (SumcheckBaseContext L ℓ') (0 : Fin (ℓ' + 1)))
-    (InnerStmtOut := Bool)
-    (OuterOStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (ℓ := ℓ') ϑ (0 : Fin (ℓ' + 1)))
-    (OuterOStmtOut := fun _ : Empty => Unit)
-    (InnerOStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (ℓ := ℓ') ϑ (0 : Fin (ℓ' + 1)))
-    (InnerOStmtOut := fun _ : Empty => Unit)
-    (OuterWitIn := WitMLP L ℓ')
-    (OuterWitOut := Unit)
-    (InnerWitIn := Witness (L := L) 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') (0 : Fin (ℓ' + 1)))
-    (InnerWitOut := Unit) where
-  stmt := largeFieldInvocationStmtLens 𝔽q β
-  wit := {
-    toFunA := fun ⟨⟨stmtIn, _oStmtIn⟩, witIn⟩ =>
-      MLPEvalWitness_to_BBF_Witness 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtIn witIn
-    toFunB := fun _ _ => ()
-  }
-
 /-- Context lens for the ring-switching large-field invocation into computable BBF. -/
 def largeFieldInvocationCtxLens : OracleContext.Lens
     (OuterStmtIn := MLPEvalStatement (L := L) (ℓ := ℓ'))
@@ -183,24 +159,6 @@ def largeFieldInvocationCtxLens : OracleContext.Lens
       MLPEvalWitness_to_BBF_WitnessComp stmtIn witIn
     toFunB := fun _ _ => ()
   }
-
-/-- Legacy (noncomputable) BBF oracle reduction over canonical BBF witness types. -/
-noncomputable def largeFieldInvocationOracleReductionLegacy :
-    OracleReduction (oSpec := []ₒ)
-      (StmtIn := MLPEvalStatement (L := L) (ℓ := ℓ'))
-      (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') ϑ
-          (0 : Fin (ℓ' + 1)))
-      (StmtOut := Bool)
-      (OStmtOut := fun _ : Empty => Unit)
-      (WitIn := WitMLP L ℓ')
-      (WitOut := Unit)
-      (pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  OracleReduction.liftContext
-    (lens := largeFieldInvocationCtxLensLegacy 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ))
-    (R := FullBinaryBasefold.fullOracleReduction 𝔽q β γ_repetitions (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (ℓ := ℓ'))
 
 /-- Computable BBF oracle reduction lifted to the ring-switching large-field invocation context. -/
 def largeFieldInvocationOracleReduction :
@@ -345,34 +303,7 @@ def bbfAbstractOStmtIn : AbstractOStmtIn L ℓ' where
   initialCompatibility_unique := fun oStmt t₁ t₂ h₁ h₂ => by
     sorry
 
-instance largeFieldInvocationCtxLens_complete :
-  (largeFieldInvocationCtxLensLegacy 𝔽q β).toContext.IsComplete
-    (outerRelIn := (bbfAbstractOStmtIn 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)).toStrictRelInput)
-    (innerRelIn := strictRoundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β
-      (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (0 : Fin (ℓ' + 1)))
-    (outerRelOut := acceptRejectOracleRel)
-    (innerRelOut := acceptRejectOracleRel)
-    (compat := Reduction.compatContext (oSpec := []ₒ)
-      (pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (largeFieldInvocationCtxLensLegacy 𝔽q β).toContext
-      ((FullBinaryBasefold.fullOracleReduction 𝔽q β γ_repetitions (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (ℓ := ℓ')).toReduction)) where
-  proj_complete := fun stmtIn witIn hRelIn => by sorry
-  lift_complete := fun outerStmtIn outerWitIn innerStmtOut innerWitOut hCompat hRelIn hRelOut => by
-    sorry
-
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
-
-theorem largeFieldInvocationOracleReduction_perfectCompleteness (hInit : NeverFail init) :
-  OracleReduction.perfectCompleteness
-    (oracleReduction := largeFieldInvocationOracleReductionLegacy 𝔽q β γ_repetitions (𝓑 := 𝓑))
-    (relIn := (bbfAbstractOStmtIn 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)).toStrictRelInput)
-    (relOut := acceptRejectOracleRel)
-    (init := init)
-    (impl := impl) := sorry
 
 lemma MLPEvalRelation_of_round0_local_and_structural
     (stmt : MLPEvalStatement (L := L) (ℓ := ℓ'))
