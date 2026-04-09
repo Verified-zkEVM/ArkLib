@@ -424,7 +424,7 @@ noncomputable def fullOracleVerifier :
     (pSpec₁ := batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
     (pSpec₂ := BinaryBasefold.pSpecQuery K (fun i => β i) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (V₁ := batchingCoreVerifier κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l (𝓑 := 𝓑))
-    (V₂ := QueryPhase.queryOracleVerifier K (fun i => β i) γ_repetitions (ϑ:=ϑ)
+    (V₂ := QueryPhase.queryOracleVerifierComp K (fun i => β i) γ_repetitions (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
 /-- Full FRI-Binius reduction. -/
@@ -454,7 +454,7 @@ noncomputable def fullOracleReduction :
     (pSpec₁ := batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
     (pSpec₂ := BinaryBasefold.pSpecQuery K (fun i => β i) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (R₁ := batchingCoreReduction κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l (𝓑 := 𝓑))
-    (R₂ := QueryPhase.queryOracleReduction K (fun i => β i) γ_repetitions (ϑ:=ϑ)
+    (R₂ := QueryPhase.queryOracleReductionComp K (fun i => β i) γ_repetitions (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
 /-- Full FRI-Binius proof object. -/
@@ -496,7 +496,7 @@ noncomputable def fullOracleVerifierFunOfMultiplier
     (V₁ := batchingCoreVerifierFunOfMultiplier (κ := κ) (L := L) (K := K) (ℓ := ℓ)
       (ℓ' := ℓ') (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_l := h_l)
       (𝓑 := 𝓑) βfun βcube mp)
-    (V₂ := QueryPhase.queryOracleVerifier K βfun γ_repetitions (ϑ := ϑ)
+    (V₂ := QueryPhase.queryOracleVerifierComp K βfun γ_repetitions (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
 /-- Executable full verifier companion with Fin-indexed query challenges. -/
