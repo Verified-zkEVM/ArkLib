@@ -95,10 +95,24 @@ def reducedMLPEvalStatement_to_BBF_Statement (stmt : MLPEvalStatement (L := L) (
   ctx := ⟨stmt.t_eval_point, stmt.original_claim⟩
 
 /-- Convert `WitMLP L ℓ'` to `Witness 𝔽q β 0`. -/
-def MLPEvalWitness_to_BBF_Witness (stmt : MLPEvalStatement (L := L) (ℓ := ℓ'))
+noncomputable def MLPEvalWitness_to_BBF_Witness (_stmt : MLPEvalStatement (L := L) (ℓ := ℓ'))
     (wit : WitMLP L ℓ') :
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') (0 : Fin (ℓ' + 1)) :=
-  sorry
+  {
+    t := MultilinearPoly.ofCMvPoly wit.t
+    H := 0
+    f := fun _ => 0
+  }
+
+/-- Convert `WitMLP L ℓ'` to the computable BBF witness companion at round `0`. -/
+def MLPEvalWitness_to_BBF_WitnessComp (_stmt : MLPEvalStatement (L := L) (ℓ := ℓ'))
+    (wit : WitMLP L ℓ') :
+    Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ') (𝓡 := 𝓡)
+      (0 : Fin (ℓ' + 1)) := {
+    tComp := wit.t
+    HComp := wit.t
+    fComp := fun _ => 0
+  }
 
 /-! ### Large-Field Invocation Wrapper
 
@@ -123,7 +137,7 @@ def largeFieldInvocationStmtLens : OracleStatement.Lens
   toFunB := fun _ ⟨stmtOut, oStmtOut⟩ => ⟨stmtOut, oStmtOut⟩
 
 /-- Context lens for the ring-switching large-field invocation into Binary Basefold. -/
-def largeFieldInvocationCtxLens : OracleContext.Lens
+noncomputable def largeFieldInvocationCtxLens : OracleContext.Lens
     (OuterStmtIn := MLPEvalStatement (L := L) (ℓ := ℓ'))
     (OuterStmtOut := Bool)
     (InnerStmtIn := Statement (L := L) (SumcheckBaseContext L ℓ') (0 : Fin (ℓ' + 1)))
@@ -138,10 +152,40 @@ def largeFieldInvocationCtxLens : OracleContext.Lens
     (OuterWitOut := Unit)
     (InnerWitIn := Witness (L := L) 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') (0 : Fin (ℓ' + 1)))
-    (InnerWitOut := Unit) := sorry
+    (InnerWitOut := Unit) where
+  stmt := largeFieldInvocationStmtLens 𝔽q β
+  wit := {
+    toFunA := fun ⟨⟨stmtIn, _oStmtIn⟩, witIn⟩ =>
+      MLPEvalWitness_to_BBF_Witness 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtIn witIn
+    toFunB := fun _ _ => ()
+  }
+
+/-- Context lens for the ring-switching large-field invocation into computable BBF. -/
+def largeFieldInvocationCtxLensComp : OracleContext.Lens
+    (OuterStmtIn := MLPEvalStatement (L := L) (ℓ := ℓ'))
+    (OuterStmtOut := Bool)
+    (InnerStmtIn := Statement (L := L) (SumcheckBaseContext L ℓ') (0 : Fin (ℓ' + 1)))
+    (InnerStmtOut := Bool)
+    (OuterOStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (ℓ := ℓ') ϑ (0 : Fin (ℓ' + 1)))
+    (OuterOStmtOut := fun _ : Empty => Unit)
+    (InnerOStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (ℓ := ℓ') ϑ (0 : Fin (ℓ' + 1)))
+    (InnerOStmtOut := fun _ : Empty => Unit)
+    (OuterWitIn := WitMLP L ℓ')
+    (OuterWitOut := Unit)
+    (InnerWitIn := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ')
+      (𝓡 := 𝓡) (0 : Fin (ℓ' + 1)))
+    (InnerWitOut := Unit) where
+  stmt := largeFieldInvocationStmtLens 𝔽q β
+  wit := {
+    toFunA := fun ⟨⟨stmtIn, _oStmtIn⟩, witIn⟩ =>
+      MLPEvalWitness_to_BBF_WitnessComp stmtIn witIn
+    toFunB := fun _ _ => ()
+  }
 
 /-- Binary Basefold oracle reduction lifted to the ring-switching large-field invocation context. -/
-def largeFieldInvocationOracleReduction :
+noncomputable def largeFieldInvocationOracleReduction :
     OracleReduction (oSpec := []ₒ)
       (StmtIn := MLPEvalStatement (L := L) (ℓ := ℓ'))
       (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') ϑ
@@ -152,7 +196,28 @@ def largeFieldInvocationOracleReduction :
       (WitOut := Unit)
       (pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  let _ := 𝓑; sorry
+  OracleReduction.liftContext
+    (lens := largeFieldInvocationCtxLens 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ))
+    (R := FullBinaryBasefold.fullOracleReduction 𝔽q β γ_repetitions (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (ℓ := ℓ'))
+
+/-- Computable BBF oracle reduction lifted to the ring-switching large-field invocation context. -/
+def largeFieldInvocationOracleReductionComp :
+    OracleReduction (oSpec := []ₒ)
+      (StmtIn := MLPEvalStatement (L := L) (ℓ := ℓ'))
+      (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') ϑ
+          (0 : Fin (ℓ' + 1)))
+      (StmtOut := Bool)
+      (OStmtOut := fun _ : Empty => Unit)
+      (WitIn := WitMLP L ℓ')
+      (WitOut := Unit)
+      (pSpec := fullPSpecComp 𝔽q β γ_repetitions (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  OracleReduction.liftContext
+    (lens := largeFieldInvocationCtxLensComp 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (𝓡 := 𝓡))
+    (R := FullBinaryBasefold.fullOracleReductionComp 𝔽q β γ_repetitions (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
 
 omit [SampleableType L] in
 /-- Uniqueness of the polynomial witness from first-oracle UDR-compatibility. -/
@@ -385,8 +450,35 @@ instance largeFieldInvocationExtractorLens_rbr_knowledge_soundness
 This wraps the full Binary Basefold protocol (core interaction + query phase)
 as a multilinear polynomial commitment scheme over the large field `L`. -/
 def bbfMLIOPCS : MLIOPCS L ℓ' :=
-  let _ := 𝔽q; let _ := β; let _ := γ_repetitions
-  let _ := 𝓑; let _ := (ϑ : ℕ); let _ := h_ℓ_add_R_rate; sorry
+  let _ := 𝔽q
+  let _ := β
+  let _ := γ_repetitions
+  let _ := 𝓑
+  let _ := (ϑ : ℕ)
+  let _ := h_ℓ_add_R_rate
+  {
+    toAbstractOStmtIn := bbfAbstractOStmtIn 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
+    numRounds := _
+    pSpec := fullPSpecComp 𝔽q β γ_repetitions (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    Oₘ := by
+      intro i
+      infer_instance
+    O_challenges := by
+      intro i
+      infer_instance
+    oracleReduction := largeFieldInvocationOracleReductionComp 𝔽q β γ_repetitions
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (𝓡 := 𝓡) (𝓑 := 𝓑)
+    perfectCompleteness := by
+      intro σ init impl hInit
+      sorry
+    strictPerfectCompleteness := by
+      intro σ init impl hInit
+      sorry
+    rbrKnowledgeError := fun _ => 0
+    rbrKnowledgeSoundness := by
+      intro σ init impl
+      sorry
+  }
 
 end BinaryBasefoldMLIOPCS
 
