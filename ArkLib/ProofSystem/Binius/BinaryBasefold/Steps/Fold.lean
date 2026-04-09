@@ -33,7 +33,7 @@ variable {Context : Type} {mp : SumcheckMultiplierParam L ℓ Context} -- Sumche
 section FoldStep
 
 /-! Noncomp noncomputable prover for the `i`-th round of Binary Foldfold. -/
-noncomputable def foldOracleProverNoncomp (i : Fin ℓ) :
+noncomputable def foldSecurityProverNoncomp (i : Fin ℓ) :
   OracleProver (oSpec := []ₒ)
     -- current round
     (StmtIn := Statement (L := L) Context i.castSucc)
@@ -241,7 +241,7 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
         (𝓑 := 𝓑) i (mp := mp))
       (oracleReduction := foldOracleReduction 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i
-        (foldOracleProverNoncomp 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i))
+        (foldSecurityProverNoncomp 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i))
       (init := init)
       (impl := impl) := by sorry
 /- Original proof depends on foldStepLogic.proverOut which is now sorry'd for computability. -/
@@ -256,7 +256,7 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
   -- Step 2: Convert probability 1 to universal quantification over support
   rw [probEvent_eq_one_iff]
   -- Step 3: Unfold protocol definitions
-  dsimp only [foldOracleReduction, foldOracleProverNoncomp, foldOracleVerifier,
+  dsimp only [foldOracleReduction, foldSecurityProverNoncomp, foldOracleVerifier,
     OracleVerifier.toVerifier,
     FullTranscript.mk2]
   let step := (foldStepLogic 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) i)

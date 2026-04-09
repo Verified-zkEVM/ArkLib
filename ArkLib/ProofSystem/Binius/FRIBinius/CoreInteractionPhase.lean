@@ -159,14 +159,14 @@ def sumcheckFoldExtractorLens : Extractor.Lens
   }
 
 -- The lifted oracle verifier
-noncomputable def sumcheckFoldOracleVerifierNoncomp :=
+noncomputable def sumcheckFoldSecurityVerifierNoncomp :=
   (BinaryBasefold.CoreInteraction.sumcheckFoldOracleVerifier K β (ϑ:=ϑ)
     (mp := RingSwitching_SumcheckMultParam κ L K (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l)
     (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).liftContext
       (lens := sumcheckFoldStmtLens κ L K β ℓ ℓ' 𝓡 ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
 /-- Sumcheck-fold verifier specialized by an external multiplier parameter. -/
-noncomputable def sumcheckFoldOracleVerifierOfMultiplierNoncomp
+noncomputable def sumcheckFoldSecurityVerifierOfMultiplierNoncomp
     (mp : SumcheckMultiplierParam L ℓ' (RingSwitchingBaseContext κ L K ℓ)) :=
   (BinaryBasefold.CoreInteraction.sumcheckFoldOracleVerifier K β (ϑ:=ϑ)
     (mp := mp)
@@ -500,7 +500,7 @@ theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness [Fintype L] :
           (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l) K β (ϑ:=ϑ)
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)  (Fin.last ℓ')
       )
-      (verifier := sumcheckFoldOracleVerifierNoncomp κ L K β ℓ ℓ' (h_l := h_l) (𝓑 := 𝓑) 𝓡 ϑ
+      (verifier := sumcheckFoldSecurityVerifierNoncomp κ L K β ℓ ℓ' (h_l := h_l) (𝓑 := 𝓑) 𝓡 ϑ
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (init := init)
       (impl := impl)
@@ -559,7 +559,7 @@ theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness [Fintype L] :
             (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
             (𝓑 := 𝓑)
             (init := init) (impl := impl))
-  dsimp [sumcheckFoldOracleVerifierNoncomp] at h_lifted ⊢
+  dsimp [sumcheckFoldSecurityVerifierNoncomp] at h_lifted ⊢
   exact h_lifted
 
 end Security
@@ -1910,7 +1910,7 @@ section CoreInteractionPhaseReduction
 
 /-- The final oracle verifier that composes sumcheckFold with finalSumcheckStep -/
 @[reducible]
-noncomputable def coreInteractionOracleVerifierNoncomp :=
+noncomputable def coreInteractionSecurityVerifierNoncomp :=
   OracleVerifier.append (oSpec:=[]ₒ)
     (Stmt₁ := Statement (L := L) (ℓ:=ℓ') (RingSwitchingBaseContext κ L K ℓ) 0)
     (Stmt₂ := Statement (L := L) (ℓ:=ℓ') (RingSwitchingBaseContext κ L K ℓ) (Fin.last ℓ'))
@@ -1922,14 +1922,14 @@ noncomputable def coreInteractionOracleVerifierNoncomp :=
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ'))
     (pSpec₁ := BinaryBasefold.pSpecSumcheckFold K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (pSpec₂ := pSpecFinalSumcheckStep (L:=L))
-    (V₁ := sumcheckFoldOracleVerifierNoncomp κ (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
+    (V₁ := sumcheckFoldSecurityVerifierNoncomp κ (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
       (h_l := h_l)
       (𝓑 := 𝓑) (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (V₂ := finalSumcheckVerifier κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l (𝓑 := 𝓑))
 
 /-- Core-interaction verifier specialized by an external multiplier parameter. -/
 @[reducible]
-noncomputable def coreInteractionOracleVerifierOfMultiplierNoncomp
+noncomputable def coreInteractionSecurityVerifierOfMultiplierNoncomp
     (mp : SumcheckMultiplierParam L ℓ' (RingSwitchingBaseContext κ L K ℓ)) :=
   OracleVerifier.append (oSpec:=[]ₒ)
     (Stmt₁ := Statement (L := L) (ℓ:=ℓ') (RingSwitchingBaseContext κ L K ℓ) 0)
@@ -1942,7 +1942,7 @@ noncomputable def coreInteractionOracleVerifierOfMultiplierNoncomp
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ'))
     (pSpec₁ := BinaryBasefold.pSpecSumcheckFold K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (pSpec₂ := pSpecFinalSumcheckStep (L:=L))
-    (V₁ := sumcheckFoldOracleVerifierOfMultiplierNoncomp κ (L := L) (K := K) (β := β) (ℓ := ℓ)
+    (V₁ := sumcheckFoldSecurityVerifierOfMultiplierNoncomp κ (L := L) (K := K) (β := β) (ℓ := ℓ)
       (ℓ' := ℓ') (𝓑 := 𝓑) (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) mp)
     (V₂ := finalSumcheckVerifierOfMultiplier κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l
       (𝓑 := 𝓑) mp)
@@ -2138,7 +2138,7 @@ noncomputable def coreInteractionOracleRbrKnowledgeError (j : (BinaryBasefold.pS
 
 /-- Round-by-round knowledge soundness for the core interaction oracle verifier -/
 theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
-    (coreInteractionOracleVerifierNoncomp κ (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
+    (coreInteractionSecurityVerifierNoncomp κ (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
       (h_l := h_l) (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑)).rbrKnowledgeSoundness init impl
       (OStmtIn := BinaryBasefold.OracleStatement K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
@@ -2173,7 +2173,7 @@ theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
       (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l) K β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (Fin.last ℓ'))
     (rel₃ := finalSumcheckRelOut K β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-    (V₁ := sumcheckFoldOracleVerifierNoncomp κ (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
+    (V₁ := sumcheckFoldSecurityVerifierNoncomp κ (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
       (h_l := h_l)
       (𝓑 := 𝓑) (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (V₂ := finalSumcheckVerifier κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l (𝓑 := 𝓑))

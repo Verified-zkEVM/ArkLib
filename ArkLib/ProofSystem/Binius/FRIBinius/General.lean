@@ -177,7 +177,7 @@ noncomputable def batchingCoreVerifier :
       (𝓑 := 𝓑)
       (aOStmtIn := Binius.RingSwitching.BBFSmallFieldIOPCS.bbfAbstractOStmtIn (𝔽q := K) (β := (fun i => β i))
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)))
-    (V₂ := coreInteractionOracleVerifierNoncomp κ L K β ℓ ℓ' 𝓡 ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l
+    (V₂ := coreInteractionSecurityVerifierNoncomp κ L K β ℓ ℓ' 𝓡 ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l
       (𝓑 := 𝓑))
 
 noncomputable def batchingCoreReduction :
@@ -241,7 +241,7 @@ noncomputable def batchingCoreVerifierOfMultiplier
       (𝓑 := 𝓑)
       (aOStmtIn := Binius.RingSwitching.BBFSmallFieldIOPCS.bbfAbstractOStmtIn (𝔽q := K)
         (β := (fun i => β i)) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)))
-    (V₂ := coreInteractionOracleVerifierOfMultiplierNoncomp κ (L := L) (K := K) (β := β) (ℓ := ℓ)
+    (V₂ := coreInteractionSecurityVerifierOfMultiplierNoncomp κ (L := L) (K := K) (β := β) (ℓ := ℓ)
       (ℓ' := ℓ') (𝓑 := 𝓑) (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l mp)
 
 /-- Executable batching + core-interaction verifier companion using an explicit basis function. -/
