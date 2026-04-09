@@ -136,8 +136,8 @@ def largeFieldInvocationStmtLens : OracleStatement.Lens
     ⟨reducedMLPEvalStatement_to_BBF_Statement stmtIn, oStmtIn⟩
   toFunB := fun _ ⟨stmtOut, oStmtOut⟩ => ⟨stmtOut, oStmtOut⟩
 
-/-- Context lens for the ring-switching large-field invocation into Binary Basefold. -/
-noncomputable def largeFieldInvocationCtxLens : OracleContext.Lens
+/-- Legacy (noncomputable) context lens for theorem compatibility on canonical BBF witnesses. -/
+noncomputable def largeFieldInvocationCtxLensLegacy : OracleContext.Lens
     (OuterStmtIn := MLPEvalStatement (L := L) (ℓ := ℓ'))
     (OuterStmtOut := Bool)
     (InnerStmtIn := Statement (L := L) (SumcheckBaseContext L ℓ') (0 : Fin (ℓ' + 1)))
@@ -161,7 +161,7 @@ noncomputable def largeFieldInvocationCtxLens : OracleContext.Lens
   }
 
 /-- Context lens for the ring-switching large-field invocation into computable BBF. -/
-def largeFieldInvocationCtxLensComp : OracleContext.Lens
+def largeFieldInvocationCtxLens : OracleContext.Lens
     (OuterStmtIn := MLPEvalStatement (L := L) (ℓ := ℓ'))
     (OuterStmtOut := Bool)
     (InnerStmtIn := Statement (L := L) (SumcheckBaseContext L ℓ') (0 : Fin (ℓ' + 1)))
@@ -184,8 +184,8 @@ def largeFieldInvocationCtxLensComp : OracleContext.Lens
     toFunB := fun _ _ => ()
   }
 
-/-- Binary Basefold oracle reduction lifted to the ring-switching large-field invocation context. -/
-noncomputable def largeFieldInvocationOracleReduction :
+/-- Legacy (noncomputable) BBF oracle reduction over canonical BBF witness types. -/
+noncomputable def largeFieldInvocationOracleReductionLegacy :
     OracleReduction (oSpec := []ₒ)
       (StmtIn := MLPEvalStatement (L := L) (ℓ := ℓ'))
       (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') ϑ
@@ -197,12 +197,13 @@ noncomputable def largeFieldInvocationOracleReduction :
       (pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   OracleReduction.liftContext
-    (lens := largeFieldInvocationCtxLens 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ))
+    (lens := largeFieldInvocationCtxLensLegacy 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ))
     (R := FullBinaryBasefold.fullOracleReduction 𝔽q β γ_repetitions (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (ℓ := ℓ'))
 
 /-- Computable BBF oracle reduction lifted to the ring-switching large-field invocation context. -/
-def largeFieldInvocationOracleReductionComp :
+def largeFieldInvocationOracleReduction :
     OracleReduction (oSpec := []ₒ)
       (StmtIn := MLPEvalStatement (L := L) (ℓ := ℓ'))
       (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') ϑ
@@ -214,7 +215,7 @@ def largeFieldInvocationOracleReductionComp :
       (pSpec := fullPSpecComp 𝔽q β γ_repetitions (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   OracleReduction.liftContext
-    (lens := largeFieldInvocationCtxLensComp 𝔽q β
+    (lens := largeFieldInvocationCtxLens 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (𝓡 := 𝓡))
     (R := FullBinaryBasefold.fullOracleReductionComp 𝔽q β γ_repetitions (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
@@ -345,7 +346,7 @@ def bbfAbstractOStmtIn : AbstractOStmtIn L ℓ' where
     sorry
 
 instance largeFieldInvocationCtxLens_complete :
-  (largeFieldInvocationCtxLens 𝔽q β).toContext.IsComplete
+  (largeFieldInvocationCtxLensLegacy 𝔽q β).toContext.IsComplete
     (outerRelIn := (bbfAbstractOStmtIn 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)).toStrictRelInput)
     (innerRelIn := strictRoundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β
@@ -355,7 +356,7 @@ instance largeFieldInvocationCtxLens_complete :
     (compat := Reduction.compatContext (oSpec := []ₒ)
       (pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (largeFieldInvocationCtxLens 𝔽q β).toContext
+      (largeFieldInvocationCtxLensLegacy 𝔽q β).toContext
       ((FullBinaryBasefold.fullOracleReduction 𝔽q β γ_repetitions (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (ℓ := ℓ')).toReduction)) where
   proj_complete := fun stmtIn witIn hRelIn => by sorry
@@ -366,7 +367,7 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
 
 theorem largeFieldInvocationOracleReduction_perfectCompleteness (hInit : NeverFail init) :
   OracleReduction.perfectCompleteness
-    (oracleReduction := largeFieldInvocationOracleReduction 𝔽q β γ_repetitions (𝓑 := 𝓑))
+    (oracleReduction := largeFieldInvocationOracleReductionLegacy 𝔽q β γ_repetitions (𝓑 := 𝓑))
     (relIn := (bbfAbstractOStmtIn 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)).toStrictRelInput)
     (relOut := acceptRejectOracleRel)
@@ -466,7 +467,7 @@ def bbfMLIOPCS : MLIOPCS L ℓ' :=
     O_challenges := by
       intro i
       infer_instance
-    oracleReduction := largeFieldInvocationOracleReductionComp 𝔽q β γ_repetitions
+    oracleReduction := largeFieldInvocationOracleReduction 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (𝓡 := 𝓡) (𝓑 := 𝓑)
     perfectCompleteness := by
       intro σ init impl hInit
