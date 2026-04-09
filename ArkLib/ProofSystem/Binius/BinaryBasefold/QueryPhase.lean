@@ -131,58 +131,6 @@ def queryOracleProver :
   output := fun _ => do
     pure ((true, fun i => Empty.elim i), ())
 
-/-- The oracle verifier for the final query phase.
-
-Uses components from `queryPhaseLogicStep` for consistency with the logic specification:
-- `verifierCheck`: monadic check via `verifyQueryPhase`
-- `verifierOut`: pure output computation
-- `embed` and `hEq`: oracle embedding from the logic step -/
-noncomputable def queryOracleVerifier :
-  OracleVerifier
-    (oSpec := []ₒ)
-    (StmtIn := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
-    (OStmtIn := OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (
-    Fin.last ℓ))
-    (StmtOut := Bool)
-    (OStmtOut := fun _ : Empty => Unit)
-    (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
-  verify := fun stmtIn challenges => do
-    let fold_challenges : Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0 :=
-      challenges ⟨0, by rfl⟩
-    for rep in List.finRange γ_repetitions do
-      let v := fold_challenges rep
-      let _ ← checkSingleRepetition 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        v stmtIn stmtIn.final_constant
-    return true
-  embed := ⟨Empty.elim, fun a _ => Empty.elim a⟩
-  hEq := fun i => Empty.elim i
-
-/-- The oracle reduction for the final query phase. -/
-noncomputable def queryOracleReduction :
-  OracleReduction
-    (oSpec := []ₒ)
-    (StmtIn := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
-    (OStmtIn := OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (
-    Fin.last ℓ))
-    (WitIn := Unit)
-    (StmtOut := Bool)
-    (OStmtOut := fun _ : Empty => Unit)
-    (WitOut := Unit)
-    (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
-  prover := queryOracleProver 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-  verifier := queryOracleVerifier 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-
-/-- The final query round as an `OracleProof` (since it outputs Bool and no oracle statements). -/
-noncomputable def queryOracleProof : OracleProof
-    (oSpec := []ₒ)
-    (Statement := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
-    (OStatement := OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (
-    Fin.last ℓ))
-    (Witness := Unit)
-    (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  queryOracleReduction 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-
 /-- Prover state companion for the Fin-indexed query-spec track (`pSpecQueryFin`). -/
 def queryPhaseProverStateFin : Fin (1 + 1) → Type := fun
   | 0 => FinalSumcheckStatementOut (L := L) (ℓ := ℓ) ×
@@ -507,6 +455,47 @@ def queryOracleProofComp : OracleProof
     (Witness := Unit)
     (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   queryOracleReductionComp 𝔽q β (ϑ := ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+
+/-! Canonical query-phase API migrated to the computable companions. -/
+
+/-- Canonical query verifier (`pSpecQuery`) now aliases the computable implementation. -/
+@[reducible]
+def queryOracleVerifier :
+  OracleVerifier
+    (oSpec := []ₒ)
+    (StmtIn := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
+    (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
+    (StmtOut := Bool)
+    (OStmtOut := fun _ : Empty => Unit)
+    (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  queryOracleVerifierComp 𝔽q β (ϑ := ϑ) γ_repetitions
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+
+/-- Canonical query reduction (`pSpecQuery`) now aliases the computable implementation. -/
+@[reducible]
+def queryOracleReduction :
+  OracleReduction
+    (oSpec := []ₒ)
+    (StmtIn := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
+    (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
+    (WitIn := Unit)
+    (StmtOut := Bool)
+    (OStmtOut := fun _ : Empty => Unit)
+    (WitOut := Unit)
+    (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  queryOracleReductionComp 𝔽q β (ϑ := ϑ) γ_repetitions
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+
+/-- Canonical query proof (`pSpecQuery`) now aliases the computable implementation. -/
+@[reducible]
+def queryOracleProof : OracleProof
+    (oSpec := []ₒ)
+    (Statement := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
+    (OStatement := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
+    (Witness := Unit)
+    (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  queryOracleProofComp 𝔽q β (ϑ := ϑ) γ_repetitions
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
 
 /-- Fin-indexed verifier companion.
 Challenges are decoded through the computable AdditiveNTT bridge before running checks. -/
