@@ -89,7 +89,7 @@ noncomputable def fullReductionNoncomp :
     (OStmt₃ := fun _ : Empty => Unit)
     (pSpec₁ := pSpecCoreInteraction 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (pSpec₂ := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-    (R₁ := CoreInteraction.coreInteractionSecurityReductionNoncomp 𝔽q β
+    (R₁ := CoreInteraction.coreInteractionSecurityReduction 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) (𝓑:=𝓑))
     (R₂ := QueryPhase.queryOracleReductionComp 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
@@ -210,7 +210,7 @@ noncomputable def fullProofNoncomp :
     (Witness := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ:=ℓ) 0)
     (pSpec:=fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   fullReductionNoncomp 𝔽q β γ_repetitions (ϑ:=ϑ)
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
 
 /-- Canonical full proof API routed to the computable companion stack. -/
 @[reducible]
@@ -273,7 +273,7 @@ noncomputable def fullReductionFinNoncomp :
     (OStmt₃ := fun _ : Empty => Unit)
     (pSpec₁ := pSpecCoreInteraction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (pSpec₂ := pSpecQueryFin (ℓ := ℓ) (𝓡 := 𝓡) γ_repetitions)
-    (R₁ := CoreInteraction.coreInteractionSecurityReductionNoncomp 𝔽q β
+    (R₁ := CoreInteraction.coreInteractionSecurityReduction 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (𝓑 := 𝓑))
     (R₂ := QueryPhase.queryOracleReductionFin 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ))
@@ -330,7 +330,7 @@ variable {σ : Type} {init : ProbComp σ}
 theorem fullOracleReduction_perfectCompleteness (hInit : NeverFail init) :
   OracleReduction.perfectCompleteness
     (oracleReduction := fullReductionNoncomp 𝔽q β γ_repetitions (ϑ:=ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑))
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
     (relIn := strictRoundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) 0)
     (relOut := acceptRejectOracleRel)
@@ -338,7 +338,7 @@ theorem fullOracleReduction_perfectCompleteness (hInit : NeverFail init) :
     (impl := impl) := by
   unfold fullReductionNoncomp
   apply OracleReduction.append_perfectCompleteness
-    (R₁ := CoreInteraction.coreInteractionSecurityReductionNoncomp 𝔽q β
+    (R₁ := CoreInteraction.coreInteractionSecurityReduction 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) (𝓑:=𝓑))
     (R₂ := QueryPhase.queryOracleReductionComp 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))

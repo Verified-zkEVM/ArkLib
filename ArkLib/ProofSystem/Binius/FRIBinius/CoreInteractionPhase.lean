@@ -195,7 +195,7 @@ def sumcheckFoldOracleVerifier
 
 -- The lifted oracle reduction
 noncomputable def sumcheckFoldSecurityReductionNoncomp :=
-  (BinaryBasefold.CoreInteraction.sumcheckFoldSecurityReductionNoncomp K β (ϑ:=ϑ)
+  (BinaryBasefold.CoreInteraction.sumcheckFoldSecurityReduction K β (ϑ:=ϑ)
     (mp := RingSwitching_SumcheckMultParam κ L K (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).liftContext
       (lens := sumcheckFoldCtxLens κ L K β ℓ ℓ' 𝓡 ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l)
@@ -203,7 +203,7 @@ noncomputable def sumcheckFoldSecurityReductionNoncomp :=
 /-- Sumcheck-fold reduction specialized by an external multiplier parameter. -/
 noncomputable def sumcheckFoldSecurityReductionOfMultiplierNoncomp
     (mp : SumcheckMultiplierParam L ℓ' (RingSwitchingBaseContext κ L K ℓ)) :=
-  (BinaryBasefold.CoreInteraction.sumcheckFoldSecurityReductionNoncomp K β (ϑ:=ϑ)
+  (BinaryBasefold.CoreInteraction.sumcheckFoldSecurityReduction K β (ϑ:=ϑ)
     (mp := mp)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).liftContext
       (lens := sumcheckFoldCtxLens κ L K β ℓ ℓ' 𝓡 ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l)
@@ -290,7 +290,7 @@ instance sumcheckFoldCtxLens_complete :
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (Fin.last ℓ')
     )
     (compat :=
-      let originalReduction := (CoreInteraction.sumcheckFoldSecurityReductionNoncomp K β (ϑ:=ϑ)
+      let originalReduction := (CoreInteraction.sumcheckFoldSecurityReduction K β (ϑ:=ϑ)
         (mp := RingSwitching_SumcheckMultParam κ L K (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).toReduction
       Reduction.compatContext (oSpec := []ₒ) (pSpec :=
