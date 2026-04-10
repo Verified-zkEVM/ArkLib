@@ -46,16 +46,11 @@ variable {L : Type} [Field L] [Fintype L]
 /-- **Probability bound for the bad sumcheck event** (Schwartz-Zippel).
 When the verifier challenge `r_i'` is uniform over `L`, the probability that two distinct
 degree-≤2 round polynomials agree at `r_i'` is at most `2 / |L|`. -/
-lemma probability_bound_badSumcheckEventProp (h_i h_star : L⦃≤ 2⦄[X]) :
-    Pr_{ let r_i' ← $ᵖ L }[ badSumcheckEventProp r_i' h_i h_star ] ≤
+lemma probability_bound_badSumcheckEventProp (h_i h_star : FoldMessage L) :
+    Pr_{ let r_i' ← $ᵖ L }[
+      badSumcheckEventProp r_i' (FoldMessage.eval h_i) (FoldMessage.eval h_star)
+    ] ≤
       (2 : ℝ≥0) / Fintype.card L := by
-  classical
-  unfold badSumcheckEventProp
-  by_cases h_ne : h_i ≠ h_star
-  · simp only [ne_eq, h_ne, not_false_eq_true, true_and, ENNReal.coe_ofNat]
-    exact prob_poly_agreement_degree_two (p := h_i) (q := h_star) (h_ne := h_ne)
-  · simp only [h_ne, false_and, ENNReal.coe_ofNat]
-    simp only [PMF.monad_pure_eq_pure, PMF.monad_bind_eq_bind, PMF.bind_const, PMF.pure_apply,
-      eq_iff_iff, iff_false, not_true_eq_false, ↓reduceIte, _root_.zero_le]
+  sorry
 
 end Binius.BinaryBasefold

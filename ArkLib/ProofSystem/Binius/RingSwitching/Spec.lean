@@ -54,9 +54,12 @@ def pSpecBatching : ProtocolSpec 2 :=
   ⟨![Direction.P_to_V, Direction.V_to_P],
    ![TensorAlgebra K L, Fin κ → L]⟩
 
-@[reducible]
 -- Note, this one is same as pSpecFold in BinaryBasefold
-def pSpecSumcheckRound : ProtocolSpec 2 := ⟨![Direction.P_to_V, Direction.V_to_P], ![L⦃≤ 2⦄[X], L]⟩
+abbrev SumcheckRoundMessage : Type := FoldMessage (L := L)
+
+@[reducible]
+def pSpecSumcheckRound : ProtocolSpec 2 :=
+  ⟨![Direction.P_to_V, Direction.V_to_P], ![SumcheckRoundMessage (L := L), L]⟩
 
 def pSpecSumcheckLoop := ProtocolSpec.seqCompose (fun (_: Fin ℓ') => pSpecSumcheckRound L)
 
@@ -169,7 +172,7 @@ noncomputable instance instInhabitedPSpecSumcheckRoundMessage :
     · simp [pSpecSumcheckRound] at hi
   subst h0
   cases q
-  change Inhabited (L⦃≤ 2⦄[X])
+  change Inhabited (SumcheckRoundMessage (L := L))
   infer_instance
 
 instance instInhabitedPSpecFinalSumcheckMessage :

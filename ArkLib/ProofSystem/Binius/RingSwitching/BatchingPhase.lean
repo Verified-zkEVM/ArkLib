@@ -122,7 +122,7 @@ def batchingVerifierCheck (stmtIn : BatchingStmtIn L ℓ) (msg0 : TensorAlgebra 
 /-- Pure verifier output: computes the output statement given the transcript.
 This is extracted from the monadic verifier for use in ReductionLogicStep. -/
 @[reducible]
-noncomputable def batchingVerifierStmtOut (stmtIn : BatchingStmtIn L ℓ)
+def batchingVerifierStmtOut (stmtIn : BatchingStmtIn L ℓ)
     (msg0 : TensorAlgebra K L) (r_batching : Fin κ → L) :
     Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) 0 :=
   let s₀ := compute_s0 κ L K β msg0 r_batching
@@ -141,14 +141,15 @@ noncomputable def batchingVerifierStmtOut (stmtIn : BatchingStmtIn L ℓ)
 /-- Pure prover message computation: computes ŝ from the witness.
 This is extracted from the monadic prover for use in ReductionLogicStep. -/
 @[reducible]
-noncomputable def batchingProverComputeMsg (stmtIn : BatchingStmtIn L ℓ) (witIn : BatchingWitIn L K ℓ ℓ') :
+def batchingProverComputeMsg (stmtIn : BatchingStmtIn L ℓ) (witIn : BatchingWitIn L K ℓ ℓ') :
     TensorAlgebra K L :=
   embedded_MLP_eval (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) witIn.t' stmtIn.t_eval_point
 
 /-- Pure prover output: computes the output witness given the transcript.
 This is extracted from the monadic prover for use in ReductionLogicStep. -/
 @[reducible]
-noncomputable def batchingProverWitOut (stmtIn : BatchingStmtIn L ℓ) (witIn : BatchingWitIn L K ℓ ℓ')
+def batchingProverWitOut (stmtIn : BatchingStmtIn L ℓ)
+    (witIn : BatchingWitIn L K ℓ ℓ')
     (msg0 : TensorAlgebra K L) (r_batching : Fin κ → L) :
     SumcheckWitness L ℓ' 0 :=
   let ctx : RingSwitchingBaseContext κ L K ℓ := {
@@ -157,13 +158,12 @@ noncomputable def batchingProverWitOut (stmtIn : BatchingStmtIn L ℓ) (witIn : 
     s_hat := msg0,
     r_batching := r_batching
   }
-  let h_poly : ↥L⦃≤ 2⦄[X Fin ℓ'] :=
-    projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := MultilinearPoly.ofCMvPoly witIn.t')
-      (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly (ctx := ctx))
-      (i := 0) (challenges := Fin.elim0)
   {
     t' := witIn.t',
-    H := h_poly
+    H := projectToMidSumcheckPolyComp (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ)
+      (ℓ' := ℓ') (h_l := h_l) (t := witIn.t')
+      (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly (ctx := ctx))
+      (i := 0) (challenges := Fin.elim0)
   }
 
 /-! ## ReductionLogicStep Instance -/
@@ -171,7 +171,7 @@ noncomputable def batchingProverWitOut (stmtIn : BatchingStmtIn L ℓ) (witIn : 
 /-- The Logic Instance for the Batching Phase.
 This encapsulates the pure logic of the batching phase, separating it from
 the monadic oracle operations. -/
-noncomputable def batchingStepLogic :
+def batchingStepLogic :
     Binius.BinaryBasefold.ReductionLogicStep
       -- In/Out Types
       (BatchingStmtIn L ℓ)
@@ -255,16 +255,54 @@ def batchingOracleProver :
     (StmtOut := Statement (L := L) (ℓ := ℓ')
       (RingSwitchingBaseContext κ L K ℓ) 0) (OStmtOut := aOStmtIn.OStmtIn)
     (WitOut := SumcheckWitness L ℓ' 0)
-    (pSpec := pSpecBatching (κ:=κ) (L:=L) (K:=K)) :=
-  have := β; have := 𝓑; have := h_l; sorry
+    (pSpec := pSpecBatching (κ:=κ) (L:=L) (K:=K)) where
+  PrvState := PrvState κ L K ℓ ℓ' aOStmtIn
+  input := fun ⟨⟨stmt, oStmt⟩, wit⟩ => (stmt, oStmt, wit)
+  sendMessage
+    | ⟨0, _⟩ => fun (stmt, oStmt, wit) => do
+      let s_hat := batchingProverComputeMsg (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ')
+        (h_l := h_l) stmt wit
+      pure ⟨s_hat, (stmt, oStmt, wit, s_hat)⟩
+    | ⟨1, h⟩ => fun _ => do
+      nomatch h
+  receiveChallenge
+    | ⟨0, h⟩ => nomatch h
+    | ⟨1, _⟩ => fun ⟨stmt, oStmt, wit, s_hat⟩ => do
+      pure (fun r_batching => (stmt, oStmt, wit, s_hat, r_batching))
+  output := fun ⟨stmt, oStmt, wit, (s_hat : TensorAlgebra K L), (r_batching : Fin κ → L)⟩ => do
+    let logic := (batchingStepLogic (κ := κ) (L := L) (K := K) (β := β) (𝓑 := 𝓑) (ℓ := ℓ)
+      (ℓ' := ℓ') (h_l := h_l) (aOStmtIn := aOStmtIn))
+    let challenges : (pSpecBatching (κ := κ) (L := L) (K := K)).Challenges :=
+      fun ⟨j, hj⟩ => by
+        match j with
+        | 0 =>
+            exact False.elim (by
+              simp only [ne_eq, reduceCtorEq, not_false_eq_true, Fin.isValue, cons_val_zero,
+                Direction.not_P_to_V_eq_V_to_P] at hj)
+        | 1 => exact r_batching
+    let t := logic.honestProverTranscript stmt wit oStmt challenges
+    pure (logic.proverOut stmt wit oStmt t)
 
 def batchingOracleVerifier :
   OracleVerifier (oSpec:=[]ₒ)
     (StmtIn := BatchingStmtIn L ℓ) (OStmtIn := aOStmtIn.OStmtIn)
     (StmtOut := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) 0)
     (OStmtOut := aOStmtIn.OStmtIn)
-    (pSpec := pSpecBatching (κ:=κ) (L:=L) (K:=K)) :=
-  have := β; have := 𝓑; have := h_l; sorry
+    (pSpec := pSpecBatching (κ:=κ) (L:=L) (K:=K)) where
+  verify | stmtIn, pSpec_batching_challenges => do
+    let _keep𝓑 := 𝓑
+    let _keeph_l := h_l
+    let _keepOStmt := aOStmtIn
+    let s_hat : TensorAlgebra K L ← query
+      (spec := [pSpecBatching (κ := κ) (L := L) (K := K).Message]ₒ)
+      ⟨⟨0, by rfl⟩, (by exact ())⟩
+    let r_batching : Fin κ → L := pSpec_batching_challenges ⟨1, by rfl⟩
+    guard <| batchingVerifierCheck (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
+      (h_l := h_l) stmtIn s_hat
+    pure <| batchingVerifierStmtOut (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
+      stmtIn s_hat r_batching
+  embed := ⟨fun j => Sum.inl j, fun a b h => by cases h; rfl⟩
+  hEq := fun _ => rfl
 
 /-- The Oracle Reduction for the Batching Phase. -/
 def batchingOracleReduction : OracleReduction (oSpec:=[]ₒ)
@@ -677,13 +715,36 @@ lemma batchingMismatchPoly_nonzero_of_ne
       (decompose_tensor_algebra_rows (L := L) (K := K) (β := β) msg0) ≠
       (decompose_tensor_algebra_rows (L := L) (K := K) (β := β) s_bar) := by
     intro h_eq
+    have h_rows_repr :
+        ∀ s_hat : TensorAlgebra K L,
+          decompose_tensor_algebra_rows (L := L) (K := K) (β := β) s_hat =
+            fun u =>
+              letI rightAlgebra : Algebra L (TensorAlgebra K L) := Algebra.TensorProduct.rightAlgebra
+              letI rightModule : Module L (TensorAlgebra K L) := rightAlgebra.toModule
+              (Basis.baseChangeRight (b := β) (Right := L)).repr s_hat u := by
+      intro s_hat
+      letI rightAlgebra : Algebra L (TensorAlgebra K L) := Algebra.TensorProduct.rightAlgebra
+      letI rightModule : Module L (TensorAlgebra K L) := rightAlgebra.toModule
+      induction s_hat using TensorProduct.induction_on with
+      | zero =>
+          ext u
+          simp [decompose_tensor_algebra_rows]
+      | tmul a b =>
+          ext u
+          rw [decompose_tensor_algebra_rows_tmul]
+          rw [Basis.baseChangeRight_repr_tmul]
+      | add x y hx hy =>
+          ext u
+          simp [decompose_tensor_algebra_rows_add, hx, hy]
     letI rightAlgebra : Algebra L (TensorAlgebra K L) := by
       exact Algebra.TensorProduct.rightAlgebra
     letI rightModule : Module L (TensorAlgebra K L) := rightAlgebra.toModule
     have h_repr_eq :
         (Basis.baseChangeRight (b := β) (Right := L)).repr msg0 =
           (Basis.baseChangeRight (b := β) (Right := L)).repr s_bar := by
-      ext u; exact congrFun h_eq u
+      ext u
+      rw [← congrFun (h_rows_repr msg0) u, ← congrFun (h_rows_repr s_bar) u]
+      exact congrFun h_eq u
     exact h_ne ((Basis.baseChangeRight (b := β) (Right := L)).repr.injective h_repr_eq)
   have h_diff_ne :
       (fun u : Fin κ → Fin 2 =>

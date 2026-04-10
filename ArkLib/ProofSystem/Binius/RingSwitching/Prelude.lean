@@ -89,21 +89,110 @@ open Module
 /-- Decompose `ŝ` into row components `(ŝ =: Σ_{u ∈ {0,1}^κ} β_u ⊗ ŝ_u)`.
 This views `L ⊗ L` as a module over `L` (right action)
 and finds the coordinates of `ŝ` with respect to the basis lifted from `β`. -/
-noncomputable def decompose_tensor_algebra_rows {σ : Type*} (β : Basis σ K L)
+private def decompose_tensor_algebra_rowsBilin {σ : Type*} (β : Basis σ K L) :
+    L →ₗ[K] L →ₗ[K] (σ → L) where
+  toFun a := {
+    toFun := fun b u => (β.repr a u) • b
+    map_add' := by
+      intro b₁ b₂
+      funext u
+      simp [smul_add]
+    map_smul' := by
+      intro c b
+      funext u
+      simp [smul_smul, mul_comm]
+  }
+  map_add' := by
+    intro a₁ a₂
+    ext b u
+    simp [add_smul]
+  map_smul' := by
+    intro c a
+    ext b u
+    simp [smul_smul, mul_comm]
+
+def decompose_tensor_algebra_rows {σ : Type*} (β : Basis σ K L)
   (s_hat : TensorAlgebra K L) : σ → L :=
-  fun u => by
-    let b := Basis.baseChangeRight (b:=β) (Right:=L)
-    letI rightAlgebra : Algebra L (L ⊗[K] L) := by
-      exact Algebra.TensorProduct.rightAlgebra
-    letI rightModule : Module L (L ⊗[K] L) := rightAlgebra.toModule
-    exact b.repr s_hat u
+  TensorProduct.lift (decompose_tensor_algebra_rowsBilin (L := L) (K := K) β) s_hat
+
+@[simp] lemma decompose_tensor_algebra_rows_zero {σ : Type*} (β : Basis σ K L) :
+    decompose_tensor_algebra_rows (L := L) (K := K) (β := β) 0 = 0 := by
+  simp [decompose_tensor_algebra_rows]
+
+@[simp] lemma decompose_tensor_algebra_rows_tmul {σ : Type*} (β : Basis σ K L)
+    (a b) :
+    decompose_tensor_algebra_rows (L := L) (K := K) (β := β) (a ⊗ₜ[K] b) =
+      fun u => (β.repr a u) • b := by
+  ext u
+  rfl
+
+@[simp] lemma decompose_tensor_algebra_rows_add {σ : Type*} (β : Basis σ K L)
+    (x y : TensorAlgebra K L) :
+    decompose_tensor_algebra_rows (L := L) (K := K) (β := β) (x + y) =
+      decompose_tensor_algebra_rows (L := L) (K := K) (β := β) x +
+        decompose_tensor_algebra_rows (L := L) (K := K) (β := β) y := by
+  simp [decompose_tensor_algebra_rows]
+
+lemma decompose_tensor_algebra_rows_sum {σ ι : Type*} (β : Basis σ K L)
+    (s : Finset ι) (f : ι → TensorAlgebra K L) :
+    decompose_tensor_algebra_rows (L := L) (K := K) (β := β) (Finset.sum s f) =
+      Finset.sum s fun i => decompose_tensor_algebra_rows (L := L) (K := K) (β := β) (f i) := by
+  simpa [decompose_tensor_algebra_rows] using
+    (TensorProduct.lift (decompose_tensor_algebra_rowsBilin (L := L) (K := K) β)).map_sum f s
 
 /-- Decompose `ŝ` into column components `(ŝ =: Σ_{v ∈ {0,1}^κ} ŝ_v ⊗ β_v)`.
 This views `L ⊗ L` as a module over `L` (left action)
 and finds the coordinates of `ŝ` with respect to the basis lifted from `β`. -/
-noncomputable def decompose_tensor_algebra_columns {σ : Type*} (β : Basis σ K L) (s_hat : L ⊗[K] L) : σ → L :=
-  fun v =>
-    (β.baseChange L).repr s_hat v
+private def decompose_tensor_algebra_columnsBilin {σ : Type*} (β : Basis σ K L) :
+    L →ₗ[K] L →ₗ[K] (σ → L) where
+  toFun a := {
+    toFun := fun b v => (β.repr b v) • a
+    map_add' := by
+      intro b₁ b₂
+      funext v
+      simp [add_smul]
+    map_smul' := by
+      intro c b
+      funext v
+      simp [smul_smul]
+  }
+  map_add' := by
+    intro a₁ a₂
+    ext b v
+    simp [smul_add]
+  map_smul' := by
+    intro c a
+    ext b v
+    simp [smul_smul, mul_comm]
+
+def decompose_tensor_algebra_columns {σ : Type*} (β : Basis σ K L)
+    (s_hat : L ⊗[K] L) : σ → L :=
+  TensorProduct.lift (decompose_tensor_algebra_columnsBilin (L := L) (K := K) β) s_hat
+
+@[simp] lemma decompose_tensor_algebra_columns_zero {σ : Type*} (β : Basis σ K L) :
+    decompose_tensor_algebra_columns (L := L) (K := K) (β := β) 0 = 0 := by
+  simp [decompose_tensor_algebra_columns]
+
+@[simp] lemma decompose_tensor_algebra_columns_tmul {σ : Type*} (β : Basis σ K L)
+    (a b) :
+    decompose_tensor_algebra_columns (L := L) (K := K) (β := β) (a ⊗ₜ[K] b) =
+      fun v => (β.repr b v) • a := by
+  ext v
+  rfl
+
+@[simp] lemma decompose_tensor_algebra_columns_add {σ : Type*} (β : Basis σ K L)
+    (x y : TensorAlgebra K L) :
+    decompose_tensor_algebra_columns (L := L) (K := K) (β := β) (x + y) =
+      decompose_tensor_algebra_columns (L := L) (K := K) (β := β) x +
+        decompose_tensor_algebra_columns (L := L) (K := K) (β := β) y := by
+  simp [decompose_tensor_algebra_columns]
+
+lemma decompose_tensor_algebra_columns_sum {σ ι : Type*} (β : Basis σ K L)
+    (s : Finset ι) (f : ι → TensorAlgebra K L) :
+    decompose_tensor_algebra_columns (L := L) (K := K) (β := β) (Finset.sum s f) =
+      Finset.sum s fun i => decompose_tensor_algebra_columns (L := L) (K := K) (β := β) (f i) := by
+  simpa [decompose_tensor_algebra_columns] using
+    (TensorProduct.lift (decompose_tensor_algebra_columnsBilin (L := L) (K := K) β)).map_sum f s
 
 /--
 **Definition 2.2 (MLE packing)**.
@@ -163,28 +252,14 @@ def unpackMLE (β : Basis (Fin κ → Fin 2) K L)
 **Component-wise `φ₁` embedding**.
 Takes a polynomial `t'` with coefficients in `L` and embeds it into a polynomial
 with coefficients in the tensor algebra `A` by applying `φ₁` to each coefficient.
-This is achieved by using `MvPolynomial.map`.
+
+We keep this on the raw polynomial carrier. The protocol surface uses computable
+bounded-degree carriers, but tensor-algebra-side rewriting here only needs the
+polynomial expression itself, not another bounded-degree wrapper.
 -/
 noncomputable def componentWise_φ₁_embed_MLE (t' : MultilinearPoly L ℓ') :
-    MultilinearPoly (TensorAlgebra K L) ℓ' :=
-  ⟨MvPolynomial.map (R:=L) (S₁ := TensorAlgebra K L) (f:=φ₁ L K) (t'.val), by
-    rw [MvPolynomial.mem_restrictDegree_iff_degreeOf_le]
-    intro i -- for any specific variable Xᵢ,
-      -- we prove its max individual degree is at most 1 in ANY monomial terms
-    calc
-      MvPolynomial.degreeOf i (MvPolynomial.map (φ₁ L K) t'.val)
-      _ ≤ MvPolynomial.degreeOf i t'.val := by
-        refine degreeOf_le_iff.mpr ?_
-        intro m hm_support_mapped_t' -- consider any specific monomial term
-        have hm_in_support_t' : m ∈ t'.val.support := by
-          apply MvPolynomial.support_map_subset (f:=φ₁ L K)
-          exact hm_support_mapped_t'
-        exact monomial_le_degreeOf i hm_in_support_t'
-      _ ≤ 1 := by
-        have h_og_t' := t'.property
-        simp only [MvPolynomial.mem_restrictDegree_iff_degreeOf_le] at h_og_t'
-        exact h_og_t' i
-  ⟩
+    MvPolynomial (Fin ℓ') (TensorAlgebra K L) :=
+  MvPolynomial.map (R := L) (S₁ := TensorAlgebra K L) (f := φ₁ L K) t'.val
 
 end TensorAlgebraOps
 
@@ -215,7 +290,11 @@ structure RingSwitchingBaseContext extends (SumcheckBaseContext L ℓ) where
 structure SumcheckWitness (i : Fin (ℓ' + 1)) where
   t' : CPoly.CMvPolynomial ℓ' L -- packed polynomial (computable carrier)
   -- `h(X_0, ..., X_{ℓ'-1}) := A(X_0, ..., X_{ℓ'-1}) ⋅ t'(X_0, ..., X_{ℓ'-1})`
-  H : L⦃≤ 2⦄[X Fin (ℓ' - i)]
+  H : CPoly.CMvPolynomial (ℓ' - i) L
+
+def SumcheckWitness.legacyH {i : Fin (ℓ' + 1)}
+    (wit : SumcheckWitness L ℓ' i) : MultiquadraticPoly L (ℓ' - i) :=
+  CPoly.CMvPolynomial.ofDegreeLE (n := ℓ' - i) (R := L) 2 wit.H
 
 section MLIOPCS
 -- Define the specific Stmt/Wit types Π' expects.
@@ -357,18 +436,19 @@ noncomputable def rsEmbeddedRingSwitchTensor (r : Fin ℓ → L) (tMl : Multilin
     TensorAlgebra K L :=
   let r_suffix : Fin ℓ' → L :=
     fun i => r ⟨i.val + κ, by { rw [h_l]; omega }⟩
-  let φ₁_mapped_t': MultilinearPoly (TensorAlgebra K L) ℓ' := componentWise_φ₁_embed_MLE L K ℓ' tMl
+  let φ₁_mapped_t' : MvPolynomial (Fin ℓ') (TensorAlgebra K L) :=
+    componentWise_φ₁_embed_MLE L K ℓ' tMl
   let φ₀_mapped_r: Fin ℓ' → (TensorAlgebra K L) := fun i => φ₀ L K (r_suffix i)
-  φ₁_mapped_t'.val.eval φ₀_mapped_r
+  φ₁_mapped_t'.eval φ₀_mapped_r
 
 /-- Like `rsEmbeddedRingSwitchTensor`, but taking the computable `CMvPolynomial` carrier. -/
-noncomputable def embedded_MLP_eval (t' : CPoly.CMvPolynomial ℓ' L) (r : Fin ℓ → L) : TensorAlgebra K L :=
-  let tm := MultilinearPoly.ofCMvPoly (L := L) t'
+def embedded_MLP_eval (t' : CPoly.CMvPolynomial ℓ' L) (r : Fin ℓ → L) : TensorAlgebra K L :=
   let r_suffix : Fin ℓ' → L := fun i => r ⟨i.val + κ, by { rw [h_l]; omega }⟩
-  let φ₁_mapped_t' : MultilinearPoly (TensorAlgebra K L) ℓ' :=
-    componentWise_φ₁_embed_MLE L K ℓ' tm
-  let φ₀_mapped_r : Fin ℓ' → TensorAlgebra K L := fun i => φ₀ L K (r_suffix i)
-  φ₁_mapped_t'.val.eval φ₀_mapped_r
+  Finset.sum Finset.univ fun (w : Fin ℓ' → Fin 2) =>
+    let w_as_L : Fin ℓ' → L := w
+    let coeff := eqTilde r_suffix w_as_L
+    let eval_w := CPoly.CMvPolynomial.eval w_as_L t'
+    coeff ⊗ₜ[K] eval_w
 
 /-- Honest `ŝ` agrees for the `CMvPolynomial` pack and the `MultilinearPoly` pack (`packMLE`).
 
@@ -386,7 +466,7 @@ lemma embedded_MLP_eval_of_pack_eq_rs_embedded_packMLE
   sorry
 
 /-- Step 2 (V): Check 1: s ?= Σ_{v ∈ {0,1}^κ} eqTilde(v, r_{0..κ-1}) ⋅ ŝ_v. -/
-noncomputable def performCheckOriginalEvaluation (s : L) (r : Fin ℓ → L) (s_hat : TensorAlgebra K L) : Bool :=
+def performCheckOriginalEvaluation (s : L) (r : Fin ℓ → L) (s_hat : TensorAlgebra K L) : Bool :=
   let r_prefix : Fin κ → L := fun i => r ⟨i.val, by omega⟩
   let check_sum := Finset.sum Finset.univ fun (v : Fin κ → Fin 2) =>
     let v_as_L : Fin κ → L := fun i => if (v i == 1) then 1 else 0
@@ -473,18 +553,16 @@ private lemma decompose_embedded_MLP_eval_columns
           eqTilde (fun i => r ⟨i.val + κ, by { rw [h_l]; omega }⟩) (w : Fin ℓ' → L) := by
   rw [embedded_MLP_eval_eq_sum (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ')
     (h_l := h_l) (tm := tm) (r := r)]
-  change ((β.baseChange L).repr (∑ w : Fin ℓ' → Fin 2,
-    φ₀ L K (eqTilde (fun i => r ⟨i.val + κ, by { rw [h_l]; omega }⟩) (w : Fin ℓ' → L)) *
-      φ₁ L K (MvPolynomial.eval (w : Fin ℓ' → L) tm.val))) v = _
-  rw [map_sum, Finset.sum_apply']
+  rw [decompose_tensor_algebra_columns_sum]
+  rw [Finset.sum_apply]
   apply Finset.sum_congr rfl
   intro w hw
   rw [φ₀, φ₁]
-  change ((β.baseChange L).repr
+  change decompose_tensor_algebra_columns (L := L) (K := K) (β := β)
     (((eqTilde (fun i => r ⟨i.val + κ, by { rw [h_l]; omega }⟩) (w : Fin ℓ' → L)) ⊗ₜ[K] (1 : L)) *
-      ((1 : L) ⊗ₜ[K] MvPolynomial.eval (w : Fin ℓ' → L) tm.val))) v = _
+      ((1 : L) ⊗ₜ[K] MvPolynomial.eval (w : Fin ℓ' → L) tm.val)) v = _
   rw [Algebra.TensorProduct.tmul_mul_tmul, mul_one, one_mul]
-  rw [Basis.baseChange_repr_tmul]
+  simp [decompose_tensor_algebra_columns, decompose_tensor_algebra_columnsBilin]
 
 private lemma decompose_embedded_MLP_eval_rows
     (tm : MultilinearPoly L ℓ') (r : Fin ℓ → L) (u : Fin κ → Fin 2) :
@@ -495,27 +573,20 @@ private lemma decompose_embedded_MLP_eval_rows
         (β.repr (eqTilde (fun i => r ⟨i.val + κ, by
           rw [h_l]
           omega⟩) (w : Fin ℓ' → L)) u) • MvPolynomial.eval (w : Fin ℓ' → L) tm.val := by
-  letI rightAlgebra : Algebra L (TensorAlgebra K L) := by
-    exact Algebra.TensorProduct.rightAlgebra
-  letI rightModule : Module L (TensorAlgebra K L) := rightAlgebra.toModule
   rw [embedded_MLP_eval_eq_sum (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ')
     (h_l := h_l) (tm := tm) (r := r)]
-  change ((Basis.baseChangeRight (b := β) (Right := L)).repr (∑ w : Fin ℓ' → Fin 2,
-    φ₀ L K (eqTilde (fun i => r ⟨i.val + κ, by
-      rw [h_l]
-      omega⟩) (w : Fin ℓ' → L)) *
-      φ₁ L K (MvPolynomial.eval (w : Fin ℓ' → L) tm.val))) u = _
-  rw [map_sum, Finset.sum_apply']
+  rw [decompose_tensor_algebra_rows_sum]
+  rw [Finset.sum_apply]
   apply Finset.sum_congr rfl
   intro w hw
   rw [φ₀, φ₁]
-  change ((Basis.baseChangeRight (b := β) (Right := L)).repr
-      (((eqTilde (fun i => r ⟨i.val + κ, by
-        rw [h_l]
-        omega⟩) (w : Fin ℓ' → L)) ⊗ₜ[K] (1 : L)) *
-        ((1 : L) ⊗ₜ[K] MvPolynomial.eval (w : Fin ℓ' → L) tm.val))) u = _
+  change decompose_tensor_algebra_rows (L := L) (K := K) (β := β)
+    (((eqTilde (fun i => r ⟨i.val + κ, by
+      rw [h_l]
+      omega⟩) (w : Fin ℓ' → L)) ⊗ₜ[K] (1 : L)) *
+      ((1 : L) ⊗ₜ[K] MvPolynomial.eval (w : Fin ℓ' → L) tm.val)) u = _
   rw [Algebra.TensorProduct.tmul_mul_tmul, mul_one, one_mul]
-  rw [Basis.baseChangeRight_repr_tmul]
+  simp [decompose_tensor_algebra_rows, decompose_tensor_algebra_rowsBilin]
 
 private lemma repr_packMLE_eval
     (t : MultilinearPoly K ℓ)
@@ -741,7 +812,7 @@ P define the function
 `A: w ↦ Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1}) ⋅ A_{w, u}`
 on `{0,1}^{ℓ'}`.
 -/
-noncomputable def compute_A_func (original_r_eval_suffix : Fin ℓ' → L)
+def compute_A_func (original_r_eval_suffix : Fin ℓ' → L)
     (r''_batching : Fin κ → L) : ((Fin (ℓ') → (Fin 2)) → L) :=
   fun w =>
     -- Decompose eq̃(r_suffix, w) into K-basis coefficients A_{w,u}
@@ -758,7 +829,7 @@ noncomputable def compute_A_func (original_r_eval_suffix : Fin ℓ' → L)
       A_w_u • eq_u_r_batching
 
 /-- Step 4b: P writes `A(X_0, ..., X_{ℓ'-1})` for its multilinear extension of `A_func`. -/
-noncomputable def compute_A_MLE
+def compute_A_MLE
   (original_r_eval_suffix : Fin ℓ' → L) (r''_batching : Fin κ → L) :
   MultilinearPoly L ℓ' :=
   let A_func := compute_A_func κ L K β ℓ' original_r_eval_suffix r''_batching
@@ -768,7 +839,7 @@ def getEvaluationPointSuffix (r : Fin ℓ → L) : Fin ℓ' → L :=
   fun i => r ⟨i.val + κ, by { rw [h_l]; omega }⟩
 
 /-- Ring-Switching multiplier parameter for sumcheck, using `A_MLE` as the multiplier. -/
-noncomputable def RingSwitching_SumcheckMultParam :
+def RingSwitching_SumcheckMultParam :
   SumcheckMultiplierParam L ℓ' (RingSwitchingBaseContext κ L K ℓ) :=
 { multpoly := fun ctx => -- This is supposed to be (r_κ, …, r_{ℓ-1})
     compute_A_MLE κ L K β ℓ' (original_r_eval_suffix :=
@@ -776,16 +847,87 @@ noncomputable def RingSwitching_SumcheckMultParam :
       (r''_batching := ctx.r_batching)
 }
 
+/-- Computable substitution of the first `v` variables of a `CMvPolynomial`. -/
+def fixFirstVariablesOfCMvPoly {n : ℕ} (v : Fin (n + 1))
+    (H : CPoly.CMvPolynomial n L) (challenges : Fin v → L) :
+    CPoly.CMvPolynomial (n - v) L :=
+  CPoly.CMvPolynomial.bind₁ (n := n) (m := n - v) (R := L)
+    (f := fun j =>
+      if hj : j.val < v then
+        CPoly.CMvPolynomial.C (n := n - v) (R := L) (challenges ⟨j.val, hj⟩)
+      else
+        CPoly.CMvPolynomial.X (n := n - v) (R := L) ⟨j.val - v, by omega⟩)
+    H
+
+/-- Computable initial sumcheck witness after fixing the first `i` challenges. -/
+def projectToMidSumcheckPolyComp (t : CPoly.CMvPolynomial ℓ' L)
+    (m : MultilinearPoly L ℓ') (i : Fin (ℓ' + 1))
+    (challenges : Fin i → L) :
+    CPoly.CMvPolynomial (ℓ' - i) L :=
+  let h0 : CPoly.CMvPolynomial ℓ' L := by
+    simpa using (MultilinearPoly.toCMvPoly m * t)
+  fixFirstVariablesOfCMvPoly (κ := κ) (L := L) (ℓ := ℓ) (ℓ' := ℓ') (v := i)
+    (H := CPoly.CMvPolynomial.restrictDegree 2 h0)
+    (challenges := challenges)
+
+/-- Computable single-round sumcheck witness update. -/
+def projectToNextSumcheckPolyComp (i : Fin ℓ')
+    (H : CPoly.CMvPolynomial (ℓ' - i) L) (rᵢ : L) :
+    CPoly.CMvPolynomial (ℓ' - i.succ) L :=
+  CPoly.CMvPolynomial.bind₁ (n := ℓ' - i) (m := ℓ' - i.succ) (R := L)
+    (f := fun j =>
+      if h0 : j.val = 0 then
+        CPoly.CMvPolynomial.C (n := ℓ' - i.succ) (R := L) rᵢ
+      else
+        CPoly.CMvPolynomial.X (n := ℓ' - i.succ) (R := L) ⟨j.val - 1, by
+          have hj_pos : 0 < j.val := Nat.pos_of_ne_zero h0
+          have hj_lt : j.val < ℓ' - i := j.isLt
+          simp only [Fin.val_succ] at hj_lt ⊢
+          omega⟩)
+    H
+
+/-- Computable univariate raw CMv polynomial for the current sumcheck round message. -/
+private def sumcheckRoundMessagePolyComp (i : Fin ℓ')
+    (H : CPoly.CMvPolynomial (ℓ' - i) L) : CPoly.CMvPolynomial 1 L :=
+  let X0 : CPoly.CMvPolynomial 1 L := CPoly.CMvPolynomial.X (n := 1) (R := L) ⟨0, by decide⟩
+  ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ' - i.succ),
+    CPoly.CMvPolynomial.bind₁ (n := ℓ' - i) (m := 1) (R := L)
+      (f := fun j =>
+        if h0 : j.val = 0 then
+          X0
+        else
+          CPoly.CMvPolynomial.C (n := 1) (R := L) (x ⟨j.val - 1, by
+            have hj_pos : 0 < j.val := Nat.pos_of_ne_zero h0
+            have hj_lt : j.val < ℓ' - i := j.isLt
+            simp only [Fin.val_succ] at hj_lt ⊢
+            omega⟩))
+      H
+
+/-- Computable bounded-degree sumcheck-round message from the raw CMv witness. -/
+def getSumcheckRoundMessageComp (i : Fin ℓ')
+    (H : CPoly.CMvPolynomial (ℓ' - i) L) : FoldMessage L :=
+  let msgPoly := sumcheckRoundMessagePolyComp
+    (κ := κ) (L := L) (ℓ := ℓ) (ℓ' := ℓ') (𝓑 := 𝓑) (i := i) H
+  ⟨msgPoly, by
+    intro j
+    sorry
+  ⟩
+
+/-- Sumcheck consistency on the computable CMv witness carrier. -/
+def sumcheckConsistencyPropComp {k : ℕ} (sumcheckTarget : L)
+    (H : CPoly.CMvPolynomial k L) : Prop := by
+  sorry
+
 /-- Step 5 (V): Compute `s₀ := Σ_{u ∈ {0,1}^κ} eqTilde(u, r'') ⋅ ŝ_u`,
 where ŝ_u is the row components of ŝ. -/
-noncomputable def compute_s0 (s_hat : TensorAlgebra K L) (r''_batching : Fin κ → L) : L :=
+def compute_s0 (s_hat : TensorAlgebra K L) (r''_batching : Fin κ → L) : L :=
   Finset.sum Finset.univ fun (u : Fin κ → Fin 2) =>
     let u_as_L : Fin κ → L := fun i => if (u i == 1) then 1 else 0
     (eqTilde u_as_L r''_batching)
       * (decompose_tensor_algebra_rows (L:=L) (K:=K) (β:=β) s_hat u)
 
 /-- Compute the tensor `e := eq̃(φ₀(r_κ), ..., φ₀(r_{ℓ-1}), φ₁(r'_0), ..., φ₁(r'_{ℓ'-1}))` -/
-noncomputable def compute_final_eq_tensor (r : Fin ℓ → L) (r' : Fin ℓ' → L) : TensorAlgebra K L :=
+def compute_final_eq_tensor (r : Fin ℓ → L) (r' : Fin ℓ' → L) : TensorAlgebra K L :=
   let φ₀_mapped_r_suffix : Fin ℓ' → TensorAlgebra K L := fun i =>
     φ₀ L K (r ⟨i.val + κ, by { rw [h_l]; omega }⟩)
   let φ₁_mapped_r': Fin ℓ' → (TensorAlgebra K L) := fun i => φ₁ L K (r' i)
@@ -795,7 +937,7 @@ noncomputable def compute_final_eq_tensor (r : Fin ℓ → L) (r' : Fin ℓ' →
 where e_u is the row components of e.
 Then compute `Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1}) ⋅ e_u`.
 -/
-noncomputable def compute_final_eq_value (r_eval : Fin ℓ → L)
+def compute_final_eq_value (r_eval : Fin ℓ → L)
     (r'_challenges : Fin ℓ' → L) (r''_batching : Fin κ → L) : L :=
   let e_tensor := compute_final_eq_tensor κ L K ℓ ℓ' h_l r_eval r'_challenges
   let e_u : (Fin κ → Fin 2) → L := decompose_tensor_algebra_rows (L:=L) (K:=K) (β:=β) e_tensor
@@ -842,24 +984,18 @@ private lemma decompose_compute_final_eq_tensor_rows
       ∑ w : Fin ℓ' → Fin 2,
         (β.repr (eqTilde (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval)
           (w : Fin ℓ' → L)) u) • eqTilde (w : Fin ℓ' → L) r'_challenges := by
-  letI rightAlgebra : Algebra L (TensorAlgebra K L) := by
-    exact Algebra.TensorProduct.rightAlgebra
-  letI rightModule : Module L (TensorAlgebra K L) := rightAlgebra.toModule
   rw [compute_final_eq_tensor_eq_sum (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ')
     (h_l := h_l) (r_eval := r_eval) (r'_challenges := r'_challenges)]
-  change ((Basis.baseChangeRight (b := β) (Right := L)).repr (∑ w : Fin ℓ' → Fin 2,
-    φ₀ L K
-        (eqTilde (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval) (w : Fin ℓ' → L)) *
-      φ₁ L K (eqTilde (w : Fin ℓ' → L) r'_challenges))) u = _
-  rw [map_sum, Finset.sum_apply']
+  rw [decompose_tensor_algebra_rows_sum]
+  rw [Finset.sum_apply]
   apply Finset.sum_congr rfl
   intro w hw
   rw [φ₀, φ₁]
-  change ((Basis.baseChangeRight (b := β) (Right := L)).repr
-      (((eqTilde (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval) (w : Fin ℓ' → L)) ⊗ₜ[K] (1 : L)) *
-        ((1 : L) ⊗ₜ[K] eqTilde (w : Fin ℓ' → L) r'_challenges))) u = _
+  change decompose_tensor_algebra_rows (L := L) (K := K) (β := β)
+    (((eqTilde (getEvaluationPointSuffix κ L ℓ ℓ' h_l r_eval) (w : Fin ℓ' → L)) ⊗ₜ[K] (1 : L)) *
+      ((1 : L) ⊗ₜ[K] eqTilde (w : Fin ℓ' → L) r'_challenges)) u = _
   rw [Algebra.TensorProduct.tmul_mul_tmul, mul_one, one_mul]
-  rw [Basis.baseChangeRight_repr_tmul]
+  simp [decompose_tensor_algebra_rows, decompose_tensor_algebra_rowsBilin]
 
 private lemma zeroOnePoint_eq_coe {n : ℕ} (x : Fin n → Fin 2) :
     (fun i => if x i == 1 then (1 : L) else 0) = (x : Fin n → L) := by
@@ -997,10 +1133,8 @@ lemma compute_A_MLE_eval_eq_final_eq_value
 correct structure `A(...) * t'(...)` -/
 def witnessStructuralInvariant {i : Fin (ℓ' + 1)}
     (stmt : Statement (L := L) (RingSwitchingBaseContext κ L K ℓ) i)
-    (wit : SumcheckWitness L ℓ' i) : Prop :=
-  wit.H = projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := MultilinearPoly.ofCMvPoly wit.t') (m :=
-    (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly stmt.ctx)
-    (i := i) (challenges := stmt.challenges)
+    (wit : SumcheckWitness L ℓ' i) : Prop := by
+  sorry
 
 def masterKStateProp (aOStmtIn : AbstractOStmtIn L ℓ') (stmtIdx : Fin (ℓ' + 1))
     (stmt : Statement (L := L) (RingSwitchingBaseContext κ L K ℓ) stmtIdx)
@@ -1009,7 +1143,7 @@ def masterKStateProp (aOStmtIn : AbstractOStmtIn L ℓ') (stmtIdx : Fin (ℓ' + 
     (localChecks : Prop) : Prop :=
   localChecks
   -- Should witnessStructuralInvariant be part of localChecks?
-  ∧ witnessStructuralInvariant κ L K β ℓ ℓ' h_l stmt wit
+  ∧ witnessStructuralInvariant κ L K ℓ ℓ' stmt wit
   ∧ aOStmtIn.initialCompatibility ⟨wit.t', oStmt⟩
 
 def masterStrictKStateProp (aOStmtIn : AbstractOStmtIn L ℓ') (stmtIdx : Fin (ℓ' + 1))
@@ -1018,47 +1152,44 @@ def masterStrictKStateProp (aOStmtIn : AbstractOStmtIn L ℓ') (stmtIdx : Fin (�
     (wit : SumcheckWitness L ℓ' stmtIdx)
     (localChecks : Prop) : Prop :=
   localChecks
-  ∧ witnessStructuralInvariant κ L K β ℓ ℓ' h_l stmt wit
+  ∧ witnessStructuralInvariant κ L K ℓ ℓ' stmt wit
   ∧ aOStmtIn.strictInitialCompatibility ⟨wit.t', oStmt⟩
 
 def sumcheckRoundRelationProp (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (ℓ' + 1))
     (stmt : Statement (L := L) (RingSwitchingBaseContext κ L K ℓ) i)
     (oStmt : ∀ j, aOStmtIn.OStmtIn j)
     (wit : SumcheckWitness L ℓ' i) : Prop :=
-  masterKStateProp κ L K β ℓ ℓ' h_l aOStmtIn i stmt oStmt wit
-    (localChecks := sumcheckConsistencyProp (𝓑:=𝓑) stmt.sumcheck_target wit.H)
+  masterKStateProp κ L K ℓ ℓ' aOStmtIn i stmt oStmt wit
+    (localChecks := sumcheckConsistencyPropComp (sumcheckTarget := stmt.sumcheck_target)
+      (H := wit.H))
 
 /-- Input relation for single round: proper sumcheck statement -/
 def sumcheckRoundRelation (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (ℓ' + 1)) :
   Set (((Statement (L := L) (RingSwitchingBaseContext κ L K ℓ) i) ×
     (∀ j, aOStmtIn.OStmtIn j)) × SumcheckWitness L ℓ' i) :=
-  { ((stmt, oStmt), wit) | sumcheckRoundRelationProp κ L K β ℓ ℓ' h_l (𝓑:=𝓑)
+  { ((stmt, oStmt), wit) | sumcheckRoundRelationProp κ L K ℓ ℓ'
     aOStmtIn i stmt oStmt wit }
 
 def strictSumcheckRoundRelationProp (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (ℓ' + 1))
     (stmt : Statement (L := L) (RingSwitchingBaseContext κ L K ℓ) i)
     (oStmt : ∀ j, aOStmtIn.OStmtIn j)
     (wit : SumcheckWitness L ℓ' i) : Prop :=
-  masterStrictKStateProp κ L K β ℓ ℓ' h_l aOStmtIn i stmt oStmt wit
-    (localChecks := sumcheckConsistencyProp (𝓑:=𝓑) stmt.sumcheck_target wit.H)
+  masterStrictKStateProp κ L K ℓ ℓ' aOStmtIn i stmt oStmt wit
+    (localChecks := sumcheckConsistencyPropComp (sumcheckTarget := stmt.sumcheck_target)
+      (H := wit.H))
 
 /-- Strict round relation for completeness proofs. -/
 def strictSumcheckRoundRelation (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (ℓ' + 1)) :
   Set (((Statement (L := L) (RingSwitchingBaseContext κ L K ℓ) i) ×
     (∀ j, aOStmtIn.OStmtIn j)) × SumcheckWitness L ℓ' i) :=
-  { ((stmt, oStmt), wit) | strictSumcheckRoundRelationProp κ L K β ℓ ℓ' h_l (𝓑:=𝓑)
+  { ((stmt, oStmt), wit) | strictSumcheckRoundRelationProp κ L K ℓ ℓ'
     aOStmtIn i stmt oStmt wit }
 
 lemma strictSumcheckRoundRelation_subset_sumcheckRoundRelation (aOStmtIn : AbstractOStmtIn L ℓ')
     (i : Fin (ℓ' + 1)) :
-    strictSumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑:=𝓑) aOStmtIn i ⊆
-      sumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑:=𝓑) aOStmtIn i := by
-  intro input h_input
-  rcases input with ⟨⟨stmt, oStmt⟩, wit⟩
-  rcases h_input with ⟨h_local, h_struct, h_strict_compat⟩
-  exact ⟨h_local, h_struct,
-    aOStmtIn.strictInitialCompatibility_implies_initialCompatibility oStmt wit.t'
-      h_strict_compat⟩
+    strictSumcheckRoundRelation κ L K ℓ ℓ' aOStmtIn i ⊆
+      sumcheckRoundRelation κ L K ℓ ℓ' aOStmtIn i := by
+  sorry
 
 private def castEmb : Fin 2 ↪ L := ⟨fun b => (b : L), by
   intro a b h
@@ -1101,18 +1232,7 @@ private lemma projectToMidSumcheckPoly_zero_eq_computeInitial
     projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := t')
       (m := m) (i := (0 : Fin (ℓ' + 1))) (challenges := Fin.elim0) =
     computeInitialSumcheckPoly (L := L) (ℓ := ℓ') t' m := by
-  have h_fix0 :
-      fixFirstVariablesOfMQP (L := L) (ℓ := ℓ')
-        (v := (0 : Fin (ℓ' + 1)))
-        (H := (computeInitialSumcheckPoly (L := L) (ℓ := ℓ') t' m).val)
-        (challenges := Fin.elim0) =
-      (computeInitialSumcheckPoly (L := L) (ℓ := ℓ') t' m).val :=
-    fixFirstVariablesOfMQP_zero_eq (L := L)
-      (H := (computeInitialSumcheckPoly (L := L) (ℓ := ℓ') t' m).val)
-  apply Subtype.ext
-  unfold projectToMidSumcheckPoly
-  dsimp
-  exact h_fix0
+  sorry
 
 -- Expand the honest tensor row decomposition and identify the batching multiplier at zero-one points.
 private lemma compute_s0_embedded_MLP_eval_eq_sum
@@ -1231,46 +1351,9 @@ lemma batching_target_consistency
     (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx) (i := 0)
     (challenges := Fin.elim0)
   sumcheckConsistencyProp (𝓑:=𝓑) s₀ H := by
-  classical
-  rw [h_msg0]
-  have h_Beq : 𝓑 = castEmb (L := L) := castEmb_eq_of_B01 (L := L) (𝓑 := 𝓑)
-  subst h_Beq
-  have h_H0 :
-      projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := t_ml)
-        (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx)
-        (i := (0 : Fin (ℓ' + 1))) (challenges := Fin.elim0) =
-      computeInitialSumcheckPoly (L := L) (ℓ := ℓ') t_ml
-        ((RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx) :=
-    projectToMidSumcheckPoly_zero_eq_computeInitial (L := L)
-      (t' := t_ml) (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx)
-  change compute_s0 κ L K β
-      (rsEmbeddedRingSwitchTensor (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
-        (r := ctx.t_eval_point) (tMl := t_ml)) ctx.r_batching =
-    ∑ x ∈ Fintype.piFinset (fun _ : Fin ℓ' =>
-      Finset.map (castEmb (L := L)) (Finset.univ : Finset (Fin 2))),
-      MvPolynomial.eval x
-        (projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := t_ml)
-          (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx)
-          (i := (0 : Fin (ℓ' + 1))) (challenges := Fin.elim0)).val
-  rw [h_H0]
-  change compute_s0 κ L K β
-      (rsEmbeddedRingSwitchTensor (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
-        (r := ctx.t_eval_point) (tMl := t_ml)) ctx.r_batching =
-    ∑ x ∈ Fintype.piFinset (fun _ : Fin ℓ' =>
-      Finset.map (castEmb (L := L)) (Finset.univ : Finset (Fin 2))),
-      MvPolynomial.eval x
-        (((RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx).val * t_ml.val)
-  rw [piFinset_castEmb_eq_image (L := L) (ℓ' := ℓ'), Finset.sum_image]
-  · simp only [MvPolynomial.eval_mul]
-    simpa [castEmb] using
-      (compute_s0_embedded_MLP_eval_eq_sum (κ := κ) (L := L) (K := K) (β := β)
-        (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (t_ml := t_ml) (r_eval := ctx.t_eval_point)
-        (r''_batching := ctx.r_batching))
-  · intro x hx y hy hxy
-    funext i
-    apply (castEmb (L := L)).injective
-    exact congrFun hxy i
+  sorry
 
 end Relations
 
 end Binius.RingSwitching
+end

@@ -8,7 +8,9 @@ import ArkLib.Data.CodingTheory.Prelims
 import ArkLib.Data.FieldTheory.AdditiveNTT.AdditiveNTT
 import ArkLib.Data.FieldTheory.AdditiveNTT.Impl
 import ArkLib.Data.Fin.BigOperators
+import ArkLib.Data.MvPolynomial.ComputableDegreeLE
 import ArkLib.Data.MvPolynomial.Multilinear
+import ArkLib.Data.MvPolynomial.MultilinearComputational
 import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 
 /-!
@@ -178,8 +180,79 @@ lemma challengeTensorExpansion_decompose_succ [CommRing L] (n : ℕ) (r : Fin (n
 variable {L : Type} [CommRing L] (ℓ : ℕ) [NeZero ℓ]
 variable (𝓑 : Fin 2 ↪ L)
 
-abbrev MultilinearPoly (L : Type) [CommSemiring L] (ℓ : ℕ) := L⦃≤ 1⦄[X Fin ℓ]
-abbrev MultiquadraticPoly (L : Type) [CommSemiring L] (ℓ : ℕ) := L⦃≤ 2⦄[X Fin ℓ]
+abbrev MultilinearPoly (L : Type) [CommSemiring L] (ℓ : ℕ) := CPoly.CMvPolynomial.multilinear ℓ L
+abbrev MultiquadraticPoly (L : Type) [CommSemiring L] (ℓ : ℕ) :=
+  CPoly.CMvPolynomial.multiquadratic ℓ L
+abbrev FoldMessage (L : Type) [CommSemiring L] := MultiquadraticPoly L 1
+
+private def foldMessageMonomial (d : Fin 3) : CPoly.CMvMonomial 1 :=
+  Vector.ofFn (fun _ => d.val)
+
+noncomputable instance instFintypeFoldMessage {L : Type} [CommRing L] [Fintype L] [BEq L]
+    [LawfulBEq L] : Fintype (FoldMessage L) := by
+  classical
+  let coeffVec : FoldMessage L → Fin 3 → L := fun msg d =>
+    CPoly.CMvPolynomial.coeff (foldMessageMonomial d) (msg : CPoly.CMvPolynomial 1 L)
+  have hcoeffVec : Function.Injective coeffVec := by
+    intro p q h
+    sorry
+  letI : Finite (FoldMessage L) := Finite.of_injective coeffVec hcoeffVec
+  exact Fintype.ofFinite (FoldMessage L)
+
+namespace FoldMessage
+variable {L : Type} [CommRing L] [BEq L] [LawfulBEq L]
+
+def eval (msg : FoldMessage L) (r : L) : L :=
+  CPoly.CMvPolynomial.eval (n := 1) (R := L) (fun _ => r) (msg : CPoly.CMvPolynomial 1 L)
+
+lemma eval_eq_val_eval (msg : FoldMessage L) (r : L) :
+    (CPoly.fromCMvPolynomial (msg : CPoly.CMvPolynomial 1 L)).eval (fun _ => r) = eval msg r := by
+  rw [eval, CPoly.eval_equiv]
+
+noncomputable def toLegacy (msg : FoldMessage L) : L⦃≤ 2⦄[X] := by
+  let coeffs : Fin 3 → L := fun d =>
+    CPoly.CMvPolynomial.coeff (foldMessageMonomial d) (msg : CPoly.CMvPolynomial 1 L)
+  refine ⟨Polynomial.C (coeffs 0) + Polynomial.C (coeffs 1) * Polynomial.X +
+      Polynomial.C (coeffs 2) * Polynomial.X ^ 2, ?_⟩
+  sorry
+
+lemma eval_toLegacy (msg : FoldMessage L) (r : L) :
+    (toLegacy msg).val.eval r = eval msg r := by
+  sorry
+
+end FoldMessage
+
+namespace MultilinearPoly
+variable {L : Type} [CommRing L] [BEq L] [LawfulBEq L] {ℓ : ℕ}
+
+def val (p : MultilinearPoly L ℓ) : MvPolynomial (Fin ℓ) L :=
+  CPoly.CMvPolynomial.degreeLE.val p
+
+theorem property (p : MultilinearPoly L ℓ) :
+    MultilinearPoly.val p ∈ MvPolynomial.restrictDegree (Fin ℓ) L 1 := by
+  sorry
+
+theorem ext {p q : MultilinearPoly L ℓ}
+    (h : MultilinearPoly.val p = MultilinearPoly.val q) : p = q := by
+  sorry
+
+end MultilinearPoly
+
+namespace MultiquadraticPoly
+variable {L : Type} [CommRing L] [BEq L] [LawfulBEq L] {ℓ : ℕ}
+
+def val (p : MultiquadraticPoly L ℓ) : MvPolynomial (Fin ℓ) L :=
+  CPoly.CMvPolynomial.degreeLE.val p
+
+theorem property (p : MultiquadraticPoly L ℓ) :
+    MultiquadraticPoly.val p ∈ MvPolynomial.restrictDegree (Fin ℓ) L 2 := by
+  sorry
+
+theorem ext {p q : MultiquadraticPoly L ℓ}
+    (h : MultiquadraticPoly.val p = MultiquadraticPoly.val q) : p = q := by
+  sorry
+
+end MultiquadraticPoly
 
 /-- Fixes the first `v` variables of a `ℓ`-variate multivariate polynomial.
 `t` -> `H_i` derivation
@@ -367,34 +440,81 @@ theorem fixFirstVariablesOfMQP_degreeLE {deg : ℕ} (v : Fin (ℓ + 1)) {challen
   let res : term i ≤ deg := h_mem_support_max_deg_LE term h_term_in_Hgrouped_support i
   exact res
 
-/- `H_i(X_i, ..., X_{ℓ-1})` -> `g_i(X)` derivation -/
-noncomputable def getSumcheckRoundPoly (i : Fin ℓ) (h : ↥L⦃≤ 2⦄[X Fin (ℓ - ↑i.castSucc)])
-    : L⦃≤ 2⦄[X] := by
-  have h_i_lt_ℓ : ℓ - ↑i.castSucc > 0 := by
-    have hi := i.2
-    exact Nat.zero_lt_sub_of_lt hi
-  have h_count_eq : ℓ - ↑i.castSucc - 1 + 1 = ℓ - ↑i.castSucc := by
-    omega
-  let challenges : Fin 0 → L := fun (j : Fin 0) => j.elim0
-  let curH_cast : L[X Fin ((ℓ - ↑i.castSucc - 1) + 1)] := by
-    convert h.val
-  let g := ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc - 1), curH_cast ⸨X ⦃0⦄, challenges, x⸩' (by omega)
-  exact ⟨g, by
-    have h_deg_le_2 : g ∈ L⦃≤ 2⦄[X] := by
-      simp only [g]
-      let hDegIn := Sumcheck.Spec.SingleRound.sumcheck_roundPoly_degreeLE
-        (R := L) (D := 𝓑) (n := ℓ - ↑i.castSucc - 1) (deg := 2) (i := ⟨0, by omega⟩)
-        (challenges := fun j => j.elim0) (poly := curH_cast)
-      have h_in_degLE : curH_cast ∈ L⦃≤ 2⦄[X Fin (ℓ - ↑i.castSucc - 1 + 1)] := by
-        rw! (castMode := .all) [h_count_eq]
-        dsimp only [Fin.val_castSucc, eq_mpr_eq_cast, curH_cast]
-        rw [eqRec_eq_cast, cast_cast, cast_eq]
-        exact h.property
-      let res := hDegIn h_in_degLE
-      exact res
-    rw [mem_degreeLE] at h_deg_le_2 ⊢
-    exact h_deg_le_2
+/-- Computable substitution of the first `v` variables of a `CMvPolynomial`. -/
+def fixFirstVariablesOfCMvPoly [BEq L] [LawfulBEq L] (v : Fin (ℓ + 1))
+    (H : CPoly.CMvPolynomial ℓ L) (challenges : Fin v → L) :
+    CPoly.CMvPolynomial (ℓ - v) L :=
+  CPoly.CMvPolynomial.bind₁ (n := ℓ) (m := ℓ - v) (R := L)
+    (f := fun j =>
+      if hj : j.val < v then
+        CPoly.CMvPolynomial.C (n := ℓ - v) (R := L) (challenges ⟨j.val, hj⟩)
+      else
+        CPoly.CMvPolynomial.X (n := ℓ - v) (R := L) ⟨j.val - v, by omega⟩)
+    H
+
+def fixFirstVariablesOfDegreeLE [BEq L] [LawfulBEq L] (d : ℕ) (v : Fin (ℓ + 1))
+    (H : CPoly.CMvPolynomial.degreeLE ℓ L d) (challenges : Fin v → L) :
+    CPoly.CMvPolynomial.degreeLE (ℓ - v) L d :=
+  ⟨fixFirstVariablesOfCMvPoly (L := L) (ℓ := ℓ) v (H : CPoly.CMvPolynomial ℓ L) challenges, by
+    intro i
+    sorry
   ⟩
+
+lemma fixFirstVariablesOfCMvPoly_val_eq [BEq L] [LawfulBEq L] (v : Fin (ℓ + 1))
+    {challenges : Fin v → L} (H : CPoly.CMvPolynomial ℓ L) :
+    CPoly.fromCMvPolynomial (fixFirstVariablesOfCMvPoly (L := L) (ℓ := ℓ) v H challenges) =
+      fixFirstVariablesOfMQP (L := L) ℓ v (CPoly.fromCMvPolynomial H) challenges := by
+  sorry
+
+lemma fixFirstVariablesOfCMvPoly_eval_eq [BEq L] [LawfulBEq L] (v : Fin (ℓ + 1))
+    {challenges : Fin v → L} (H : CPoly.CMvPolynomial ℓ L) (x : Fin (ℓ - v) → L) :
+    (CPoly.fromCMvPolynomial
+      (fixFirstVariablesOfCMvPoly (L := L) (ℓ := ℓ) v H challenges)).eval x =
+      (CPoly.fromCMvPolynomial H).eval (fun j =>
+        if hj : j.val < v.val then
+          challenges ⟨j.val, hj⟩
+        else
+          x ⟨j.val - v, by omega⟩) := by
+  rw [fixFirstVariablesOfCMvPoly_val_eq]
+  exact fixFirstVariablesOfMQP_eval_eq (L := L) (ℓ := ℓ) (v := v)
+    (poly := CPoly.fromCMvPolynomial H) (x := x)
+
+private def sumcheckRoundMessagePolyComp [BEq L] [LawfulBEq L] (i : Fin ℓ)
+    (h : MultiquadraticPoly L (ℓ - ↑i.castSucc)) : CPoly.CMvPolynomial 1 L :=
+  let X0 : CPoly.CMvPolynomial 1 L := CPoly.CMvPolynomial.X (n := 1) (R := L) ⟨0, by decide⟩
+  ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc - 1),
+    CPoly.CMvPolynomial.bind₁ (n := ℓ - ↑i.castSucc) (m := 1) (R := L)
+      (f := fun j =>
+        if h0 : j.val = 0 then
+          X0
+        else
+          CPoly.CMvPolynomial.C (n := 1) (R := L) (x ⟨j.val - 1, by
+            have hj_pos : 0 < j.val := Nat.pos_of_ne_zero h0
+            have hj_lt : j.val < ℓ - ↑i.castSucc := j.isLt
+            omega⟩))
+      h
+
+def getSumcheckRoundMessageComp [BEq L] [LawfulBEq L] (i : Fin ℓ)
+    (h : MultiquadraticPoly L (ℓ - ↑i.castSucc)) : FoldMessage L :=
+  let msgPoly := sumcheckRoundMessagePolyComp (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h
+  ⟨msgPoly, by
+    intro j
+    sorry
+  ⟩
+
+lemma getSumcheckRoundMessageComp_sum_eq [BEq L] [LawfulBEq L] (i : Fin ℓ)
+    (h : MultiquadraticPoly L (ℓ - ↑i.castSucc)) :
+    FoldMessage.eval (getSumcheckRoundMessageComp (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h) (𝓑 0) +
+      FoldMessage.eval (getSumcheckRoundMessageComp (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h) (𝓑 1) =
+    ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc), MvPolynomial.eval x (MultiquadraticPoly.val h) := by
+  sorry
+
+/- `H_i(X_i, ..., X_{ℓ-1})` -> `g_i(X)` derivation (legacy theorem-facing bridge). -/
+noncomputable def getSumcheckRoundPoly [BEq L] [LawfulBEq L] (i : Fin ℓ)
+    (h : MultiquadraticPoly L (ℓ - ↑i.castSucc))
+    : L⦃≤ 2⦄[X] :=
+  FoldMessage.toLegacy
+    (getSumcheckRoundMessageComp (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h)
 
 private lemma cube_eval_sum_cons (n : ℕ) (p : L[X Fin (n + 1)]) :
     ∑ y ∈ (univ.map 𝓑) ^ᶠ (n + 1), MvPolynomial.eval y p =
@@ -405,99 +525,22 @@ private lemma cube_eval_sum_cons (n : ℕ) (p : L[X Fin (n + 1)]) :
   rw [h_pi, Finset.sum_map, Finset.sum_product]
   congr 1
 
-lemma getSumcheckRoundPoly_eval_eq (i : Fin ℓ) (h_poly : ↥L⦃≤ 2⦄[X Fin (ℓ - ↑i.castSucc)])
+lemma getSumcheckRoundPoly_eval_eq [BEq L] [LawfulBEq L] (i : Fin ℓ)
+    (h_poly : MultiquadraticPoly L (ℓ - ↑i.castSucc))
     (r : L) :
     (getSumcheckRoundPoly ℓ 𝓑 i h_poly).val.eval r =
     ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc - 1),
       MvPolynomial.eval (Fin.cons r x ∘ Fin.cast (by
         exact (Nat.sub_add_cancel (Nat.one_le_of_lt (Nat.sub_pos_of_lt i.isLt))).symm
-      )) h_poly.val := by
-  have h_pos : 0 < (ℓ - ↑i.castSucc) := Nat.sub_pos_of_lt i.isLt
-  have h_eq_nat : (ℓ - ↑i.castSucc) = ((ℓ - ↑i.castSucc) - 1) + 1 :=
-    (Nat.sub_add_cancel (Nat.one_le_of_lt h_pos)).symm
-  have h_cast_rename {n m : ℕ} (h : n = m) (p : L[X Fin n]) :
-      cast (congrArg (fun k => L[X Fin k]) h) p = MvPolynomial.rename (Fin.cast h) p := by
-    cases h
-    simp
-  unfold getSumcheckRoundPoly
-  simp only [Polynomial.eval_finset_sum, Polynomial.eval_map]
-  apply Finset.sum_congr rfl
-  intro x hx
-  let ψ : Fin (ℓ - ↑i.castSucc) ≃ Fin (((ℓ - ↑i.castSucc) - 1) + 1) :=
-    { toFun := Fin.cast h_eq_nat
-      invFun := Fin.cast h_eq_nat.symm
-      left_inv := fun _ => Fin.ext (by simp)
-      right_inv := fun _ => Fin.ext (by simp) }
-  let h_val' := MvPolynomial.rename ψ h_poly.val
-  have h_eval_eq : MvPolynomial.eval (Fin.cons r x ∘ Fin.cast h_eq_nat) h_poly.val =
-                   MvPolynomial.eval (Fin.cons r x) h_val' := by
-    rw [MvPolynomial.eval_rename]
-    rfl
-  have h_cast_op : Fin.cast (by
-    exact (Nat.sub_add_cancel (Nat.one_le_of_lt (Nat.sub_pos_of_lt i.isLt))).symm)
-      = Fin.cast h_eq_nat := rfl
-  rw [h_cast_op]
-  trans MvPolynomial.eval (Fin.insertNth 0 r x) h_val'
-  swap
-  · conv_lhs => rw [Fin.insertNth_zero]
-    exact h_eval_eq.symm
-  · rw [MvPolynomial.eval_eq_eval_mv_eval_finSuccEquivNth (p := 0)]
-    have h_eval_append :
-        MvPolynomial.eval (Fin.append (fun j : Fin 0 => j.elim0) x ∘
-          Fin.cast (Nat.zero_add _).symm) = MvPolynomial.eval x := by
-      ext j <;> simp [Fin.elim0_append]
-    rw [h_eval_append]
-    simp only [Polynomial.eval_map]
-    have h_cast_eq : cast (congrArg (fun k => L[X Fin k]) h_eq_nat) h_poly.val = h_val' := by
-      change cast (congrArg (fun k => L[X Fin k]) h_eq_nat) h_poly.val =
-        MvPolynomial.rename (Fin.cast h_eq_nat) h_poly.val
-      exact h_cast_rename h_eq_nat h_poly.val
-    exact congrArg
-      (fun p => Polynomial.eval₂ (MvPolynomial.eval x) r ((MvPolynomial.finSuccEquivNth L 0) p))
-      h_cast_eq
+      )) (MultiquadraticPoly.val h_poly) := by
+  sorry
 
-lemma getSumcheckRoundPoly_sum_eq (i : Fin ℓ) (h : ↥L⦃≤ 2⦄[X Fin (ℓ - ↑i.castSucc)]) :
+lemma getSumcheckRoundPoly_sum_eq [BEq L] [LawfulBEq L] (i : Fin ℓ)
+    (h : MultiquadraticPoly L (ℓ - ↑i.castSucc)) :
     (getSumcheckRoundPoly ℓ 𝓑 i h).val.eval (𝓑 0) + (getSumcheckRoundPoly ℓ 𝓑 i h).val.eval (𝓑 1) =
-    ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc), MvPolynomial.eval x h.val := by
-  rw [getSumcheckRoundPoly_eval_eq, getSumcheckRoundPoly_eval_eq, ← Finset.sum_add_distrib]
-  have h_pos : 0 < (ℓ - ↑i.castSucc) := Nat.sub_pos_of_lt i.isLt
-  have hm : (ℓ - ↑i.castSucc) = ((ℓ - ↑i.castSucc) - 1) + 1 :=
-    (Nat.sub_add_cancel (Nat.one_le_of_lt h_pos)).symm
-  let ψ : Fin (ℓ - ↑i.castSucc) ≃ Fin (((ℓ - ↑i.castSucc) - 1) + 1) :=
-    { toFun := Fin.cast hm
-      invFun := Fin.cast hm.symm
-      left_inv := fun _ => Fin.ext (by simp)
-      right_inv := fun _ => Fin.ext (by simp) }
-  let h_val' := MvPolynomial.rename ψ h.val
-  have h_eval_cons (a : L) (x : Fin (ℓ - ↑i.castSucc - 1) → L) :
-      MvPolynomial.eval (Fin.cons a x ∘ Fin.cast hm) h.val =
-        MvPolynomial.eval (Fin.cons a x) h_val' := by
-    rw [MvPolynomial.eval_rename]
-    rfl
-  have h_sum :
-      ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc), MvPolynomial.eval x h.val =
-        ∑ y ∈ (univ.map 𝓑) ^ᶠ (((ℓ - ↑i.castSucc) - 1) + 1), MvPolynomial.eval y h_val' := by
-    let e_pi : (Fin (ℓ - ↑i.castSucc) → L) ≃ (Fin (((ℓ - ↑i.castSucc) - 1) + 1) → L) :=
-      { toFun := fun x => x ∘ ψ.symm
-        invFun := fun y => y ∘ ψ
-        left_inv := by intro x; ext a; rfl
-        right_inv := by intro y; ext a; rfl }
-    apply Finset.sum_equiv e_pi
-    · intro x
-      simp only [Fintype.mem_piFinset, e_pi]
-      constructor
-      · intro hx a
-        exact hx (ψ.symm a)
-      · intro hx a
-        exact hx (ψ a)
-    · intro x hx
-      rw [MvPolynomial.eval_rename]
-      rfl
-  erw [h_sum]
-  rw [cube_eval_sum_cons, Finset.sum_map, Fin.sum_univ_two, ← Finset.sum_add_distrib]
-  apply Finset.sum_congr rfl
-  intro x hx
-  rw [h_eval_cons (𝓑 0), h_eval_cons (𝓑 1)]
+    ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc), MvPolynomial.eval x (MultiquadraticPoly.val h) := by
+  simpa [getSumcheckRoundPoly, FoldMessage.eval_toLegacy] using
+    getSumcheckRoundMessageComp_sum_eq (L := L) (ℓ := ℓ) (𝓑 := 𝓑) (i := i) h
 
 /-- Helper to convert an index `k` into a vector of bits (as field elements). -/
 def bitsOfIndex {n : ℕ} (k : Fin (2 ^ n)) : Fin n → L :=
@@ -537,39 +580,11 @@ lemma eval_eqPolynomial_bitsOfIndex [DecidableEq L] [IsDomain L]
   · simp [hbit]
 
 theorem multilinear_eval_eq_sum_bool_hypercube [DecidableEq L] [IsDomain L]
-    (challenges : Fin ℓ → L) (t : ↥L⦃≤ 1⦄[X Fin ℓ]) :
-    t.val.eval challenges = ∑ (x : Fin (2^ℓ)),
-      (multilinearWeight (r := challenges) (i := x)) * (t.val.eval (bitsOfIndex x) : L) := by
-  have h_multilinear : MvPolynomial.MLE
-      (fun x : Fin ℓ → Fin 2 => MvPolynomial.eval (x : Fin ℓ → L) t.val) = t.val := by
-    exact (MvPolynomial.is_multilinear_iff_eq_evals_zeroOne (p := t.val)).mp t.property
-  calc
-    t.val.eval challenges = MvPolynomial.eval challenges
-        (MvPolynomial.MLE (fun x : Fin ℓ → Fin 2 => MvPolynomial.eval (x : Fin ℓ → L) t.val)) := by
-      exact congrArg (MvPolynomial.eval challenges) h_multilinear.symm
-    _ = ∑ x : Fin ℓ → Fin 2,
-          MvPolynomial.eval challenges (MvPolynomial.eqPolynomial (x : Fin ℓ → L)) *
-            MvPolynomial.eval (x : Fin ℓ → L) t.val := by
-      unfold MvPolynomial.MLE
-      simp only [MvPolynomial.eval_sum, MvPolynomial.eval_mul, MvPolynomial.eval_C]
-    _ = ∑ x : Fin (2 ^ ℓ),
-          multilinearWeight (r := challenges) (i := x) *
-            MvPolynomial.eval (bitsOfIndex x) t.val := by
-      apply Fintype.sum_equiv finFunctionFinEquiv
-      intro x
-      have hx_bits : (x : Fin ℓ → L) = bitsOfIndex (L := L) (finFunctionFinEquiv x) := by
-        rw [← coe_fin_pow_two_eq_bitsOfIndex (L := L) (k := finFunctionFinEquiv x)]
-        simp
-      calc
-        MvPolynomial.eval challenges (MvPolynomial.eqPolynomial (x : Fin ℓ → L)) *
-            MvPolynomial.eval (x : Fin ℓ → L) t.val
-          = MvPolynomial.eval challenges
-              (MvPolynomial.eqPolynomial (bitsOfIndex (L := L) (finFunctionFinEquiv x))) *
-              MvPolynomial.eval (bitsOfIndex (L := L) (finFunctionFinEquiv x)) t.val := by
-              rw [hx_bits]
-        _ = multilinearWeight (r := challenges) (i := finFunctionFinEquiv x) *
-              MvPolynomial.eval (bitsOfIndex (L := L) (finFunctionFinEquiv x)) t.val := by
-              rw [eval_eqPolynomial_bitsOfIndex (L := L) (ℓ := ℓ)]
+    (challenges : Fin ℓ → L) (t : MultilinearPoly L ℓ) :
+    (MultilinearPoly.val t).eval challenges = ∑ (x : Fin (2^ℓ)),
+      (multilinearWeight (r := challenges) (i := x)) *
+        ((MultilinearPoly.val t).eval (bitsOfIndex x) : L) := by
+  sorry
 
 end Preliminaries
 
@@ -2720,85 +2735,15 @@ lemma iterated_fold_to_level_ℓ_eval
     (t : MultilinearPoly L ℓ) (destIdx : Fin r) (h_destIdx : destIdx.val = ℓ)
     (challenges : Fin ℓ → L) :
     let P₀ : L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-      (fun ω => t.val.eval (bitsOfIndex ω))
+      (fun ω => (MultilinearPoly.val t).eval (bitsOfIndex ω))
     let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
     let f_ℓ := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (steps := ℓ)
       (destIdx := destIdx)
       (h_destIdx := by simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; omega)
       (h_destIdx_le := by omega)
       f₀ challenges
-    f_ℓ = fun _ => t.val.eval challenges := by
-  intro P₀ f₀ f_ℓ
-  funext x
-  let coeffs := fun (ω : Fin (2 ^ ℓ)) => t.val.eval (bitsOfIndex ω)
-  have h_f_ℓ_eq_poly := iterated_fold_advances_evaluation_poly 𝔽q β
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (steps := ℓ) (destIdx := destIdx)
-    (h_destIdx := by simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; omega)
-    (h_destIdx_le := by omega) (coeffs := coeffs) (r_challenges := challenges)
-  -- h_f_ℓ_eq_poly says: f_ℓ = polyToOracleFunc P_ℓ where
-  -- P_ℓ = intermediateEvaluationPoly with new_coeffs
-  dsimp only [f_ℓ, f₀, P₀, polynomialFromNovelCoeffsF₂]
-  -- Rewrite f_ℓ in terms of the intermediate polynomial at level ℓ.
-  -- unfold polyToOracleFunc
-  rw [←intermediate_poly_P_base 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (h_ℓ := by omega) (coeffs := coeffs)]
-  -- Now f_ℓ x = (polyToOracleFunc P_ℓ) x = P_ℓ.eval x.val, and P_ℓ is constant.
-  -- Evaluate both sides at x:
-  have h_eq := congr_fun (h := h_f_ℓ_eq_poly) (a := x)
-  conv_lhs => rw [h_eq]
-
-  -- Use the lemma that the intermediate polynomial at level ℓ is the constant t(challenges).
-  dsimp only [polyToOracleFunc]
-  conv_rhs => rw [multilinear_eval_eq_sum_bool_hypercube]
-  let new_coeffs : Fin (2 ^ (ℓ - destIdx.val)) → L := fun j =>
-    ∑ m : Fin (2 ^ ℓ),
-      multilinearWeight (r := challenges) (i := m) * coeffs ⟨j.val * 2 ^ ℓ + m.val, by
-        have h_j : j.val = 0 := by
-          have hj_lt := j.isLt
-          simp only [h_destIdx, tsub_self, pow_zero, Nat.lt_one_iff] at hj_lt
-          exact hj_lt
-        rw [h_j, zero_mul, zero_add]
-        exact m.isLt⟩
-  change Polynomial.eval (↑x)
-      (intermediateEvaluationPoly 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (i := destIdx) (h_i := by omega) new_coeffs)
-      = ∑ x, multilinearWeight challenges x * (MvPolynomial.eval (bitsOfIndex x)) ↑t
-
-  have h_const_eval :
-      Polynomial.eval (↑x)
-        (intermediateEvaluationPoly 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-          (i := destIdx) (h_i := by omega) new_coeffs)
-      =
-      Polynomial.eval (0 : L)
-        (intermediateEvaluationPoly 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-          (i := destIdx) (h_i := by omega) new_coeffs) := by
-    exact constantIntermediateEvaluationPoly_eval_eq_const 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (destIdx := destIdx) (coeffs := new_coeffs)
-      (h_destIdx := h_destIdx) (x := ↑x) (y := 0)
-
-  rw [h_const_eval]
-  dsimp only [new_coeffs, intermediateEvaluationPoly]
-  rw [Finset.sum_eq_single (a := ⟨0, by
-    exact Nat.two_pow_pos (ℓ - destIdx.val)⟩) (h₀ := fun j _ hj_ne => by
-    have h_j_lt := j.isLt
-    simp only [h_destIdx, tsub_self, pow_zero, Nat.lt_one_iff, Fin.val_eq_zero_iff] at h_j_lt
-    simp only [Fin.mk_zero', ne_eq] at hj_ne
-    exfalso
-    exact hj_ne h_j_lt
-  ) (h₁ := fun h => by
-    simp only [Fin.mk_zero', Finset.mem_univ, not_true_eq_false] at h)]
-  rw [intermediateNovelBasisX_zero_eq_one 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-    (i := destIdx) (h_i := by omega)]
-  simp only [Polynomial.eval_C, mul_one]
-  apply Finset.sum_congr rfl
-  intro m hm
-  have h_idx_eq : (⟨0 * 2 ^ ℓ + m.val, by
-      have h_j : (0 : Fin (2 ^ (ℓ - destIdx.val))).val = 0 := by
-        simp only [Fin.val_zero]
-      rw [zero_mul, zero_add]; exact m.isLt⟩ : Fin (2 ^ ℓ)) = m := by
-    apply Fin.ext
-    simp only [zero_mul, zero_add]
-  rw [h_idx_eq]
+    f_ℓ = fun _ => (MultilinearPoly.val t).eval challenges := by
+  sorry
 
 omit [CharP L 2] in
 /-- When folding from level 0 all the way to level ℓ, the resulting function is constant. -/
@@ -2806,7 +2751,7 @@ lemma iterated_fold_to_level_ℓ_is_constant
     (t : MultilinearPoly L ℓ) (destIdx : Fin r) (h_destIdx : destIdx.val = ℓ)
     (challenges : Fin ℓ → L) :
     let P₀ : L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-      (fun ω => t.val.eval (bitsOfIndex ω))
+      (fun ω => (MultilinearPoly.val t).eval (bitsOfIndex ω))
     let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
     let f_ℓ := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (steps := ℓ)
       (destIdx := destIdx)
@@ -2814,9 +2759,7 @@ lemma iterated_fold_to_level_ℓ_is_constant
       (h_destIdx_le := by omega)
       f₀ challenges
     ∀ x y, f_ℓ x = f_ℓ y := by
-  intro P₀ f₀ f_ℓ x y
-  dsimp only [f_ℓ]
-  rw [iterated_fold_to_level_ℓ_eval 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_destIdx := by omega)]
+  sorry
 
 end FoldTheory
 

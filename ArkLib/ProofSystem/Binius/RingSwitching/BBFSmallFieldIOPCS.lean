@@ -109,9 +109,9 @@ def MLPEvalWitness_to_BBF_WitnessComp (_stmt : MLPEvalStatement (L := L) (ℓ :=
     (wit : WitMLP L ℓ') :
     Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ') (𝓡 := 𝓡)
       (0 : Fin (ℓ' + 1)) := {
-    tComp := wit.t
-    HComp := wit.t
-    fComp := fun _ => 0
+    t := wit.t
+    H := wit.t
+    f := fun _ => 0
   }
 
 /-! ### Large-Field Invocation Wrapper
@@ -170,12 +170,12 @@ def largeFieldInvocationOracleReduction :
       (OStmtOut := fun _ : Empty => Unit)
       (WitIn := WitMLP L ℓ')
       (WitOut := Unit)
-      (pSpec := fullPSpecComp 𝔽q β γ_repetitions (ϑ := ϑ)
+      (pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   OracleReduction.liftContext
     (lens := largeFieldInvocationCtxLens 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (𝓡 := 𝓡))
-    (R := FullBinaryBasefold.fullOracleReductionComp 𝔽q β γ_repetitions (ϑ := ϑ)
+    (R := FullBinaryBasefold.fullOracleReduction 𝔽q β γ_repetitions (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
 
 omit [SampleableType L] in
@@ -391,7 +391,7 @@ def bbfMLIOPCS : MLIOPCS L ℓ' :=
   {
     toAbstractOStmtIn := bbfAbstractOStmtIn 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
     numRounds := _
-    pSpec := fullPSpecComp 𝔽q β γ_repetitions (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     Oₘ := by
       intro i
       infer_instance

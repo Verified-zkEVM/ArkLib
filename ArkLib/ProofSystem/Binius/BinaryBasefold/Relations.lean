@@ -82,14 +82,23 @@ def oracleFoldingConsistencyProp (i : Fin (ℓ + 1)) (challenges : Fin i → L)
         (h := h_k_next_le_i))
   )
 
-noncomputable def BBF_eq_multiplier (r : Fin ℓ → L) : MultilinearPoly L ℓ :=
-  ⟨MvPolynomial.eqPolynomial r, by simp only [eqPolynomial_mem_restrictDegree]⟩
+def BBF_eq_multiplier (r : Fin ℓ → L) : MultilinearPoly L ℓ :=
+  letI : BEq L := inferInstance
+  letI : LawfulBEq L := inferInstance
+  MultilinearPoly.ofHypercubeEvals fun w =>
+    let w_index : Fin (2 ^ ℓ) := Nat.binaryFinMapToNat
+      (n := ℓ) (m := fun i => (w i).val)
+      (h_binary := by
+        intro j
+        change ((w j : Fin 2) : ℕ) ≤ 1
+        exact Nat.le_of_lt_succ (w j).isLt)
+    multilinearWeight (r := r) (i := w_index)
 
 noncomputable def BBF_SumcheckMultiplierParam : SumcheckMultiplierParam L ℓ (SumcheckBaseContext L ℓ) :=
   { multpoly := fun ctx => BBF_eq_multiplier ctx.t_eval_point }
 
 /-- This condition ensures that the folding witness `f` is properly generated from `t` -/
-noncomputable def getMidCodewords {i : Fin (ℓ + 1)} (t : L⦃≤ 1⦄[X Fin ℓ])
+noncomputable def getMidCodewords {i : Fin (ℓ + 1)} (t : MultilinearPoly L ℓ)
     (challenges : Fin i → L) : (sDomain 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) → L) :=
   let P₀ : L⦃< 2^ℓ⦄[X] := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (h_ℓ := by omega)
     (a := fun ω => t.val.eval (bitsOfIndex ω))
@@ -101,7 +110,7 @@ noncomputable def getMidCodewords {i : Fin (ℓ + 1)} (t : L⦃≤ 1⦄[X Fin �
     (r_challenges := challenges)
   fun x => fᵢ x
 
-lemma getMidCodewords_succ (t : L⦃≤ 1⦄[X Fin ℓ]) (i : Fin ℓ)
+lemma getMidCodewords_succ (t : MultilinearPoly L ℓ) (i : Fin ℓ)
   (challenges : Fin i.castSucc → L) (r_i' : L) :
   (getMidCodewords 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := i.succ) (t := t) (challenges := Fin.snoc challenges r_i')) =
@@ -135,10 +144,12 @@ def foldPrvState (i : Fin ℓ) : Fin (2 + 1) → Type := fun
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
   | ⟨1, _⟩ => Statement (L := L) Context i.castSucc ×
     (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j) ×
-    Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc × L⦃≤ 2⦄[X]
+    Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc ×
+      (L → L)
   | _ => Statement (L := L) Context i.castSucc ×
     (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j) ×
-    Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc × L⦃≤ 2⦄[X] × L
+    Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc ×
+      (L → L) × L
 
 @[reducible]
 noncomputable def getFoldProverFinalOutput (i : Fin ℓ)
@@ -149,13 +160,13 @@ noncomputable def getFoldProverFinalOutput (i : Fin ℓ)
       × Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
   := by
   let (stmtIn, oStmtIn, witIn, h_i, r_i') := finalPrvState
-  let newSumcheckTarget : L := h_i.val.eval r_i'
+  let newSumcheckTarget : L := h_i r_i'
   let stmtOut : Statement (L := L) Context i.succ := {
     ctx := stmtIn.ctx,
     sumcheck_target := newSumcheckTarget,
     challenges := Fin.snoc stmtIn.challenges r_i'
   }
-  let currentSumcheckPoly : L⦃≤ 2⦄[X Fin (ℓ - i)] := witIn.H
+  let currentSumcheckPoly : MultiquadraticPoly L (ℓ - i) := witIn.H
   let f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (domainIdx := ⟨i, by omega⟩) := witIn.f
   let challenges : Fin (1) → L := fun cId => r_i'
@@ -178,26 +189,26 @@ noncomputable def getFoldProverFinalOutput (i : Fin ℓ)
   exact ⟨⟨stmtOut, oStmtOut⟩, witOut⟩
 
 @[reducible]
-noncomputable def foldProverComputeMsg (i : Fin ℓ)
+def foldProverComputeMsg (i : Fin ℓ)
     (witIn : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc) :
-    L⦃≤ 2⦄[X] :=
-  getSumcheckRoundPoly ℓ 𝓑 (i := i) witIn.H
+    FoldMessage L :=
+  getSumcheckRoundMessageComp (L := L) (ℓ := ℓ) (𝓑 := 𝓑) (i := i) witIn.H
 
 @[reducible]
 def foldVerifierCheck (i : Fin ℓ)
     (stmtIn : Statement (L := L) Context i.castSucc)
-    (msg0 : L⦃≤ 2⦄[X]) : Prop :=
-  msg0.val.eval (𝓑 0) + msg0.val.eval (𝓑 1) = stmtIn.sumcheck_target
+    (msg0 : FoldMessage L) : Prop :=
+  FoldMessage.eval msg0 (𝓑 0) + FoldMessage.eval msg0 (𝓑 1) = stmtIn.sumcheck_target
 
 @[reducible]
 def foldVerifierStmtOut (i : Fin ℓ)
     (stmtIn : Statement (L := L) Context i.castSucc)
-    (msg0 : L⦃≤ 2⦄[X])
+    (msg0 : FoldMessage L)
     (chal1 : L) :
     Statement (L := L) Context i.succ :=
   {
     ctx := stmtIn.ctx,
-    sumcheck_target := msg0.val.eval chal1,
+    sumcheck_target := FoldMessage.eval msg0 chal1,
     challenges := Fin.snoc stmtIn.challenges chal1
   }
 
@@ -216,8 +227,8 @@ def witnessStructuralInvariant {i : Fin (ℓ + 1)} (stmt : Statement (L := L) Co
     stmt.challenges
 
 /-- Sumcheck consistency: the claimed sum equals the actual polynomial evaluation sum -/
-def sumcheckConsistencyProp {k : ℕ} (sumcheckTarget : L) (H : L⦃≤ 2⦄[X Fin (k)]) : Prop :=
-  sumcheckTarget = ∑ x ∈ (univ.map 𝓑) ^ᶠ (k), H.val.eval x
+def sumcheckConsistencyProp {k : ℕ} (sumcheckTarget : L) (H : MultiquadraticPoly L k) : Prop :=
+  sumcheckTarget = ∑ x ∈ (univ.map 𝓑) ^ᶠ k, (MultiquadraticPoly.val H).eval x
 
 lemma firstOracleWitnessConsistencyProp_unique (t₁ t₂ : MultilinearPoly L ℓ)
     (f₀ : sDomain 𝔽q β h_ℓ_add_R_rate 0 → L)
@@ -508,8 +519,9 @@ lemma badEventExistsProp_iff_incrementalBadEventExistsProp_last
       (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (ϑ := ϑ) oStmt challenges j h_j_inc_bad
 
-def badSumcheckEventProp (r_i' : L) (h_i h_star : L⦃≤ 2⦄[X]) :=
-  h_i ≠ h_star ∧ h_i.val.eval r_i' = h_star.val.eval r_i'
+def badSumcheckEventProp
+    (r_i' : L) (h_i h_star : L → L) :=
+  h_i ≠ h_star ∧ h_i r_i' = h_star r_i'
 section SingleStepRelationPreservationLemmas
 
 section FoldStepPreservationLemmas
