@@ -160,8 +160,8 @@ noncomputable def fin_equiv_coset (s₀ : { x // x ∈ (evalDomainSigma s ω ↑
       ↓reduceDIte, mem_image, mem_univ, cosetEnum, Subtype.mk.injEq, true_and] at h
     exact h
 
-def invertibleDomain (s₀ : evalDomainSigma D g s i) : Invertible (VDM D n g s s₀) := by
-  haveI : NeZero (VDM D n g s s₀).det := by
+def invertibleDomain (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) }) : Invertible (VDM n s s₀) := by
+  haveI : NeZero (VDM n s s₀).det := by
     constructor
     unfold VDM
     split_ifs with cond
@@ -174,7 +174,7 @@ def invertibleDomain (s₀ : evalDomainSigma D g s i) : Invertible (VDM D n g s 
         rename_i a
         simp_all only [mem_univ, mem_Ioi, ne_eq]
         obtain ⟨val, property⟩ := s₀
-        simp_all only [evalDomain, finRangeTo, Domain.evalDomain]
+        simp_all only [finRangeTo]
         apply Aesop.BuiltinRules.not_intro
         intro a
         subst a
@@ -182,18 +182,28 @@ def invertibleDomain (s₀ : evalDomainSigma D g s i) : Invertible (VDM D n g s 
       intros contra
       apply this
       rw [sub_eq_zero, cosetEnum, cosetEnum] at contra
-      norm_cast at contra
-      rw [mul_left_cancel_iff] at contra
-      norm_cast at contra
-      rw [Function.Embedding.apply_eq_iff_eq, Fin.mk.injEq] at contra
-      exact Fin.eq_of_val_eq (id (Eq.symm contra))
+      simp only [Nat.succ_eq_add_one, finRangeTo, Fin.ofNat_eq_cast, Fin.val_natCast,
+        Set.mem_setOf_eq, mul_eq_mul_left_iff] at contra
+      rcases contra with contra | contra
+      · simp only [FftDomain.subdomainNatReversed, FftDomain.subdomainNat] at contra 
+        have h := FftDomain.injective contra
+        simp only [Fin.mk.injEq] at h
+        ext
+        exact (symm h)      
+      · rcases s₀ with ⟨s₀, hs₀⟩ 
+        subst contra
+        simp only [Nat.succ_eq_add_one, finRangeTo.eq_1, Fin.ofNat_eq_cast, Fin.val_natCast,
+          evalDomainSigma, CosetFftDomain.subdomainNatReversed, CosetFftDomain.subdomainNat] at hs₀ 
+        have hs₀ := CosetFftDomain.zero_is_not_in_domain hs₀ 
+        simp at hs₀ 
     · simp
   apply @Matrix.invertibleOfDetInvertible
 
-noncomputable def VDMInv (s₀ : evalDomainSigma D g s i) (k_le_n : ∑ j', (s j').1 ≤ n) :
-  Matrix (Fin (2 ^ (s i).1)) (cosetG D n g s s₀) 𝔽 :=
-  Matrix.reindex (Equiv.refl _) (fin_equiv_coset D n g s s₀ k_le_n)
-  (invertibleDomain D n g s s₀).invOf
+noncomputable def VDMInv (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) }) 
+  (k_le_n : ∑ j', (s j').1 ≤ n) :
+  Matrix (Fin (2 ^ (s i).1)) (cosetG n s s₀) 𝔽 :=
+  Matrix.reindex (Equiv.refl _) (fin_equiv_coset n s s₀ k_le_n)
+  (invertibleDomain n s s₀).invOf
 
 lemma g_elem_zpower_iff_exists_nat {G : Type} [Group G] [Finite G] {gen g : G} :
     g ∈ Subgroup.zpowers gen ↔ ∃ n : ℕ, g = gen ^ n ∧ n < orderOf gen := by
