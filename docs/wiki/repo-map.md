@@ -37,6 +37,9 @@ home_page/            site assets and assembled website root
 ## Navigation Notes
 
 - `ArkLib.lean` is a generated umbrella import file, not a hand-maintained module index.
+- The Merkle tree implementations now live upstream in `VCVio`, so use
+  `VCVio.CryptoFoundations.MerkleTree` or `VCVio.CryptoFoundations.InductiveMerkleTree`
+  instead of the old ArkLib-local modules.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.
 - Before assuming a file is authoritative, check whether it is source or derived output. See
