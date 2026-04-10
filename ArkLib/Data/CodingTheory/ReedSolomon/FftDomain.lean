@@ -543,6 +543,13 @@ def subdomain {n : ℕ} (ω : SmoothFftDomain n F) (i : Fin n.succ)
      have h3 := Multiplicative.ofAdd.injective h2
      exact Multiplicative.ofAdd.injective (subdomain_embed_injective i h3)⟩
 
+lemma mem_subdomain_of_eq_vals {n : ℕ} {ω : SmoothFftDomain n F}
+  {x : F}
+  {i j : Fin n.succ}
+  (hij : i.val = j.val)
+  :
+  x ∈ ω.subdomain i ↔ x ∈ ω.subdomain j := by rw [Fin.ext hij]
+
 @[simp]
 lemma subdomain_0 {n} {ω : SmoothFftDomain n F}
   :
@@ -734,6 +741,23 @@ lemma subdomain_roots_card {n} {ω : SmoothFftDomain n F}
       have := ω.subdomain ( i - j ) |>.injective ( this.trans hk.symm ) ; aesop;
   rw [ ← h_image, Finset.card_image_of_injective _ ( FftDomain.injective ), h_bijection ]
 
+lemma subdomain_root_exists {n} {ω : SmoothFftDomain n F}
+  {i j : Fin n.succ} (hji : j ≤ i)
+  {x : F}
+  (h : x ∈ (ω.subdomain (i - j)))
+  :
+  ∃ y ∈ ω.subdomain i, y ^ (2 ^ j.val) = x
+  := by 
+  have h' := subdomain_roots_card hji h
+  have h' : Finset.Nonempty {y ∈ toFinset (subdomain ω i) | y ^ 2 ^ j.1 = x} := by
+    rw [←Finset.card_ne_zero, h']
+    simp
+  simp only [Finset.Nonempty, Nat.succ_eq_add_one, Finset.mem_filter, Finset.mem_univ,
+    true_and] at h'
+  rcases h' with ⟨y, h'⟩
+  rw [mem_finset_iff_mem_domain] at h'
+  aesop
+
 lemma subdomain_subdomain_eq_subdomain {n} {ω : SmoothFftDomain n F}
   {i : Fin n.succ} {j : Fin i.val.succ}
   :
@@ -796,7 +820,7 @@ lemma subdomainNatReversed_n {n : ℕ} {ω : SmoothFftDomain n F}
   x ∈ ω.subdomainNatReversed n ↔ x = 1 := by
   unfold subdomainNatReversed
   rw [show n - n = 0 by simp, subdomainNat_zero]
-   
+
 lemma subdomainNatReversed_sub {n : ℕ} {ω : SmoothFftDomain n F}
   {i : ℕ}
   {x : F}
@@ -820,6 +844,13 @@ def subdomain {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : Fin n.succ)
   :
   SmoothCosetFftDomain i F := 
   ⟨ω.x ^ 2 ^ (n - i.val), ω.fftDomain.subdomain i⟩
+
+lemma mem_subdomain_of_eq_vals {n : ℕ} {ω : SmoothCosetFftDomain n F}
+  {x : F}
+  {i j : Fin n.succ}
+  (hij : i.val = j.val)
+  :
+  x ∈ ω.subdomain i ↔ x ∈ ω.subdomain j := by rw [Fin.ext hij]
 
 @[simp]
 lemma subdomain_x {n : ℕ} {ω : SmoothCosetFftDomain n F} (i : Fin n.succ)
@@ -952,6 +983,21 @@ lemma subdomain_roots_card {n} {ω : SmoothCosetFftDomain n F}
   rw [card_filter_mod_eq' i.val (i.val - j.val) (by omega) r.val hr_lt]
   congr 1; omega
 
+lemma subdomain_root_exists {n} {ω : SmoothCosetFftDomain n F}
+  {i j : Fin n.succ} (hji : j ≤ i)
+  {x : F}
+  (h : x ∈ (ω.subdomain (i - j)))
+  :
+  ∃ y ∈ ω.subdomain i, y ^ (2 ^ j.val) = x
+  := by 
+  have h' := subdomain_roots_card hji h
+  have h' : Finset.Nonempty {y | y ∈ subdomain ω i ∧ y ^ 2 ^ j.1 = x} := by
+    rw [←Finset.card_ne_zero, h']
+    simp
+  simp only [Finset.Nonempty, Nat.succ_eq_add_one, Finset.mem_filter, Finset.mem_univ,
+    true_and] at h'
+  exact h'
+
 private lemma fft_neg_one_in_subgroup {n} {ω : SmoothFftDomain n F}
   {i : Fin n.succ} (hi : 0 < i)
   : ∃ k : Fin (2 ^ i.val), (ω.subdomain i k : F) = -1 := by
@@ -1037,6 +1083,16 @@ def subdomainNatReversed {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : ℕ)
   :
   SmoothCosetFftDomain (Fin.ofNat n.succ (n - i)) F := 
   ω.subdomainNat (n - i)
+
+lemma subdomainNatReversed_x {n : ℕ} {ω : SmoothCosetFftDomain n F}
+  {i : ℕ}
+  (hi : i ≤ n)
+  :
+  (ω.subdomainNatReversed i).x = ω.x ^ 2 ^ i := by
+  simp only [Nat.succ_eq_add_one, Fin.ofNat_eq_cast, Fin.val_natCast, subdomainNatReversed,
+    subdomainNat, subdomain_x]
+  congr 
+  rw [Nat.mod_eq_of_lt (by omega), Nat.sub_sub_self hi]
 
 @[simp high]
 lemma subdomainNatReversed_zero {n : ℕ} {ω : SmoothCosetFftDomain n F} 

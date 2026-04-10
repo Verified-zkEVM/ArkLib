@@ -210,25 +210,37 @@ noncomputable def f_succ'
   have :
     ∃ s₀ : (ω.subdomainNatReversed (∑ j' ∈ finRangeTo _ (i.1), (s j').1)).toFinset,
       s₀.1 ^ (2 ^ (s i).1) = s₀'.1 := by
+    rcases s₀' with ⟨s₀', hs₀'⟩
+    simp only [Fin.val_natCast]
+    
+    apply CosetFftDomain.subdomainNatReversed_pow_property'
+
+    simp
     have h := s₀'.2
     simp only [evalDomain] at h
     have :
       ((ω.x ^ 2 ^ ∑ j' ∈ finRangeTo _ (↑i + 1), (s j').1))⁻¹ * s₀'.1 ∈
         ω.fftDomain.subdomainNatReversed (∑ j' ∈ finRangeTo _ (↑i + 1), ↑(s j'))
         := by
-        simp only [FftDomain.subdomainNatReversed, FftDomain.subdomainNat]
+        simp only [FftDomain.subdomainNatReversed]
         simp only [evalDomainSigma] at h
         rw [CosetFftDomain.mem_coset_domain] at h
         rcases h with ⟨y, ⟨hy, h⟩⟩
-        rw [h]
-        simp only [
-          CosetFftDomain.subdomainNatReversed,
-          CosetFftDomain.subdomainNat]
+        rw [h, CosetFftDomain.subdomainNatReversed_x (by {
+          apply (swap <| Nat.le_trans) k_le_n
+          apply Finset.sum_le_sum_of_subset (by simp)
+        })]
+        rw [←mul_assoc]
+        field_simp
+        rw [Units.val_inv_eq_inv_val]
+        rw [mul_comm (Inv.inv _)]
+        erw [Field.mul_inv_cancel _ (by simp)]
+        field_simp
+        simp only [Nat.succ_eq_add_one, Fin.ofNat_eq_cast, Fin.val_natCast,
+          CosetFftDomain.subdomainNatReversed, CosetFftDomain.subdomainNat,
+          CosetFftDomain.subdomain_fftDomain] at hy
+        exact hy
 
-    simp only [Domain.evalDomain] at this
-    rw [g_elem_zpower_iff_exists_nat] at this
-    rcases this with ⟨m, this⟩
-    have m_lt := this.2
     have := eq_mul_of_inv_mul_eq this.1
     iterate 2 rw [sum_finRangeTo_add_one, Nat.pow_add, pow_mul] at this
     rw [pow_right_comm _ _ m] at this
