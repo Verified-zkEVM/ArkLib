@@ -59,7 +59,11 @@ def cosetEnum (s₀ : { x | x ∈ evalDomainSigma s ω i}) (k_le_n : ∑ j', (s 
     ⟨ω.fftDomain.subdomainNatReversed (n - (s i).1)
       ⟨j.1,
         by
-          have s_i_lim : (s i).1 < n + 1 := by sorry
+          have s_i_lim : (s i).1 < n + 1 := by 
+            apply Nat.lt_succ_of_le
+            rw [Finset.sum_eq_sum_diff_singleton_add (i := i) (by simp)] at k_le_n
+            apply (swap <| Nat.le_trans) k_le_n
+            omega 
           rcases j with ⟨j, h⟩
           simp only [Nat.succ_eq_add_one, Fin.ofNat_eq_cast, Fin.val_natCast]
           have : n - (n - (s i).1) = (s i).1 := by
@@ -73,67 +77,86 @@ def cosetEnum (s₀ : { x | x ∈ evalDomainSigma s ω i}) (k_le_n : ∑ j', (s 
       by
         simp
         exact ⟨⟨j.1, by {
-          have s_i_lim : (s i).1 < n + 1 := by sorry
+          have s_i_lim : (s i).1 < n + 1 := by 
+            apply Nat.lt_succ_of_le
+            rw [Finset.sum_eq_sum_diff_singleton_add (i := i) (by simp)] at k_le_n
+            apply (swap <| Nat.le_trans) k_le_n
+            omega
           rcases j with ⟨j, hj⟩
           simp
           have : n - (n - (s i).1) = (s i).1 := by
             apply Nat.sub_sub_self
             exact Nat.le_of_lt_succ s_i_lim
           erw [this] -- rw [show ↑(s i) = @Subtype.val ℕ (fun n ↦ 0 < n) (s i) from rfl, this]
-          sorry
-}⟩, sorry⟩
+          rw [Nat.mod_eq_of_lt (s_i_lim)]
+          exact hj
+        }⟩, rfl⟩
     ⟩
-        -- Domain.domainEnum D
-        --   ⟨n - (s i).1, show n - (s i).1 < n + 1 by omega⟩
-        --   ⟨j.1,
-        --     by
-        --       simp only
-        --       rw [Nat.sub_sub_eq_min]
-        --       apply lt_of_lt_of_le j.2
-        --       rw [Nat.pow_le_pow_iff_right Nat.le.refl, Nat.le_min]
-        --       apply And.intro
-        --       · refine le_trans ?_ k_le_n
-        --         apply Finset.single_le_sum (f := fun i ↦ (s i).1) <;> simp
-        --       · exact Nat.le_refl _
-        --   ⟩
   ⟨
     s₀.1 * r.1,
-    CosetFftDomain.subdomainNatReversed_mul_property sorry sorry s₀.2 r.2
+    CosetFftDomain.subdomainNatReversed_mul_property (by {
+      apply Nat.le_sub_of_add_le
+      apply le_trans 
+        (b := ∑ j' ∈ finRangeTo (k + 1) ↑i, (s j').1 + (s i).1)
+        (c := n)
+      · constructor
+      · rw [←Fri.Spec.sum_add_one] 
+        apply le_trans (b := ∑ j', (s j').1) <;> try omega
+        apply Finset.sum_le_sum_of_subset
+        simp
+    }) (by omega) s₀.2 r.2
   ⟩
 
-def cosetG (s₀ : evalDomainSigma D g s i) : Finset (evalDomainSigma D g s i) :=
+def cosetG (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) })
+  : Finset { x // x ∈ (evalDomainSigma s ω ↑i) } :=
   if k_le_n : ∑ j', (s j').1 ≤ n
   then
-    (Finset.univ).image (cosetEnum D n g s s₀ k_le_n)
+    (Finset.univ).image (cosetEnum n s s₀ k_le_n)
   else ∅
 
 def pows (z : 𝔽) (ℓ : ℕ) : Matrix Unit (Fin ℓ) 𝔽 :=
   Matrix.of <| fun _ j => z ^ j.val
 
-def VDM (s₀ : evalDomainSigma D g s i) :
+def VDM (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) }) :
   Matrix (Fin (2 ^ (s i : ℕ))) (Fin (2 ^ (s i : ℕ))) 𝔽 :=
   if k_le_n : (∑ j', (s j').1) ≤ n
-  then Matrix.vandermonde (fun j => (cosetEnum D n g s s₀ k_le_n j).1.1)
+  then Matrix.vandermonde (fun j => (cosetEnum n s s₀ k_le_n j).1)
   else 1
 
-def cosetEnum' (s₀ : evalDomainSigma D g s i) (k_le_n : ∑ j', (s j').1 ≤ n)
-      (j : Fin (2 ^ (s i).1)) : cosetG D n g s s₀ :=
+def cosetEnum' (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) })
+  (k_le_n : ∑ j', (s j').1 ≤ n)
+  (j : Fin (2 ^ (s i).1)) : cosetG n s s₀ :=
   ⟨
-    cosetEnum D n g s s₀ k_le_n j,
+    cosetEnum n s s₀ k_le_n j,
     by simp [cosetG, k_le_n]
   ⟩
 
-noncomputable def fin_equiv_coset (s₀ : evalDomainSigma D g s i) (k_le_n : ∑ j', (s j').1 ≤ n) :
-    (Fin (2 ^ (s i).1)) ≃ { x // x ∈ cosetG D n g s s₀ } := by
-  apply Equiv.ofBijective (cosetEnum' D n g s s₀ k_le_n)
+noncomputable def fin_equiv_coset (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) }) 
+    (k_le_n : ∑ j', (s j').1 ≤ n) :
+    (Fin (2 ^ (s i).1)) ≃ { x // x ∈ cosetG n s s₀ } := by
+  apply Equiv.ofBijective (cosetEnum' n s s₀ k_le_n)
   unfold cosetEnum' cosetEnum
   unfold Function.Bijective
   apply And.intro
-  · intros a b
-    aesop
+  · intros a b h
+    simp only [Nat.succ_eq_add_one, finRangeTo.eq_1, Fin.ofNat_eq_cast, Fin.val_natCast,
+      Set.mem_setOf_eq, FftDomain.subdomainNatReversed, FftDomain.subdomainNat, Subtype.mk.injEq,
+      mul_eq_mul_left_iff] at h
+    rcases h with h | h
+    · have h := FftDomain.injective h 
+      aesop
+    · rcases s₀ with ⟨s₀, hs₀⟩ 
+      simp at h
+      subst h
+      simp only [Nat.succ_eq_add_one, finRangeTo.eq_1, Fin.ofNat_eq_cast, Fin.val_natCast,
+        evalDomainSigma, CosetFftDomain.subdomainNatReversed, CosetFftDomain.subdomainNat] at hs₀ 
+      have hs₀ := CosetFftDomain.zero_is_not_in_domain hs₀ 
+      simp at hs₀ 
   · rintro ⟨⟨y, h'⟩, h⟩
-    simp only [evalDomain.eq_1, finRangeTo.eq_1, Domain.evalDomain.eq_1, Subtype.mk.injEq]
-    simp only [evalDomain.eq_1, finRangeTo.eq_1, Domain.evalDomain.eq_1, cosetG, k_le_n,
+    simp only [FftDomain.subdomainNatReversed,
+      FftDomain.subdomainNat,
+      finRangeTo.eq_1, Subtype.mk.injEq]
+    simp only [finRangeTo.eq_1, cosetG, k_le_n,
       ↓reduceDIte, mem_image, mem_univ, cosetEnum, Subtype.mk.injEq, true_and] at h
     exact h
 

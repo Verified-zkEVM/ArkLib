@@ -100,7 +100,7 @@ def Witness (F : Type) [NonBinaryField F] {k : ℕ}
     (s : Fin (k + 1) → ℕ+) (d : ℕ+) (i : Fin (k + 2)) :=
   F⦃< 2^((∑ j', (s j').1) - (∑ j' ∈ finRangeTo _ i.1, (s j').1)) * d⦄[X]
 
-private lemma sum_add_one {i : Fin (k + 1)} :
+lemma sum_add_one {i : Fin (k + 1)} :
   ∑ j' ∈ finRangeTo _ (i.1 + 1), (s j').1 = (∑ j' ∈ finRangeTo _ i.1, (s j').1) + (s i).1 := by
           rw [finRangeTo, List.take_add, List.toFinset_append]
           rw

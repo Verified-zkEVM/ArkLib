@@ -208,6 +208,15 @@ lemma domain_elem_invertible {ω : FftDomain ι F} {i : ι}
   IsUnit (ω i) := by aesop (add simp [eval_fft_domain_eq_eval_domain])
 
 @[simp]
+lemma zero_is_not_in_domain {ω : FftDomain ι F}
+  :
+  0 ∉ ω := by
+  simp only [mem_domain_iff_exists, not_exists]
+  intro x
+  have h := domain_elem_invertible (ω := ω) (i := x)
+  aesop
+
+@[simp]
 lemma domain_zero_eq_one {ω : FftDomain ι F} 
   :
   ω 0 = 1 := by 
@@ -403,6 +412,16 @@ lemma injective {ω : CosetFftDomain ι F}
   Function.Injective ω := fun _ _ h =>
   FftDomain.injective (ω := ω.fftDomain) <| by 
     aesop (add simp [eval_coset_fft_domain_eq_eval_x_mul_domain])
+
+@[simp]
+lemma zero_is_not_in_domain {ω : CosetFftDomain ι F}
+  :
+  0 ∉ ω := by
+  simp only [mem_coset_domain, FftDomain.mem_domain_iff_exists, zero_eq_mul, Units.ne_zero,
+    false_or, exists_eq_right, not_exists]
+  intro x contra
+  have h : 0 ∈ ω.fftDomain := by aesop
+  exact FftDomain.zero_is_not_in_domain h
 
 @[simp]
 lemma coset_domain_zero_eq_x {ω : CosetFftDomain ι F} 
