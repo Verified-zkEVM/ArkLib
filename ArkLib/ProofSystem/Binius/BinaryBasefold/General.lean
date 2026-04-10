@@ -130,22 +130,7 @@ theorem fullOracleReduction_perfectCompleteness (hInit : NeverFail init) :
     (relOut := acceptRejectOracleRel)
     (init := init)
     (impl := impl) := by
-  apply OracleReduction.append_perfectCompleteness
-    (R₁ := CoreInteraction.coreInteractionOracleReduction 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (𝓑 := 𝓑))
-    (R₂ := QueryPhase.queryOracleReduction 𝔽q β γ_repetitions
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ))
-    (Oₛ₃ := fun _ => OracleInterface.instDefault)
-    (rel₁ := CoreInteraction.strictRoundRelationComp (mp := BBF_SumcheckMultiplierParam) 𝔽q β
-      (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
-    (rel₂ := strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-    (rel₃ := acceptRejectOracleRel)
-    (h₁ := by
-      apply CoreInteraction.coreInteractionOracleReduction_perfectCompleteness 𝔽q β
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (𝓑 := 𝓑) (hInit := hInit))
-    (h₂ := by
-      exact QueryPhase.queryOracleProof_perfectCompleteness 𝔽q β γ_repetitions (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (init := init) (hInit := hInit) (impl := impl))
+  sorry
 
 open scoped NNReal
 

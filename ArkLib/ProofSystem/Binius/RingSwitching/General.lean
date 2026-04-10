@@ -162,16 +162,16 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness :
     OracleVerifier.append_rbrKnowledgeSoundness (init:=init) (impl:=impl)
     (rel₁:=BatchingPhase.batchingInputRelation κ L K β ℓ ℓ'
   h_l mlIOPCS.toAbstractOStmtIn)
-    (rel₂:=sumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) mlIOPCS.toAbstractOStmtIn 0)
+    (rel₂:=sumcheckRoundRelation κ L K ℓ ℓ' mlIOPCS.toAbstractOStmtIn 0)
     (rel₃:=mlIOPCS.toRelInput)
     (V₁:=BatchingPhase.batchingOracleVerifier κ L K β ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
     (V₂:=SumcheckPhase.coreInteractionOracleVerifier κ L K β ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
     (rbrKnowledgeError₁:=fun _ => BatchingPhase.batchingRBRKnowledgeError (κ:=κ) (L:=L))
     (rbrKnowledgeError₂:=SumcheckPhase.coreInteractionRbrKnowledgeError L ℓ')
     (h₁:=BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundness κ L K β ℓ
-      ℓ' h_l mlIOPCS.toAbstractOStmtIn)
+      ℓ' h_l (𝓑 := 𝓑) mlIOPCS.toAbstractOStmtIn)
     (h₂:=SumcheckPhase.coreInteraction_rbrKnowledgeSoundness κ L K β ℓ ℓ' h_l
-      mlIOPCS.toAbstractOStmtIn)
+      (𝓑 := 𝓑) mlIOPCS.toAbstractOStmtIn)
   have res :=
     OracleVerifier.append_rbrKnowledgeSoundness (init:=init) (impl:=impl)
     (rel₁:=BatchingPhase.batchingInputRelation κ L K β ℓ ℓ'

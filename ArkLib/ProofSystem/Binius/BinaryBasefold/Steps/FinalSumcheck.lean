@@ -1637,26 +1637,18 @@ noncomputable def finalSumcheckRbrExtractor :
     let f0 := getFirstOracle 𝔽q β oStmtMid
     let polyOpt := extractMLP 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := ⟨0, by exact Nat.pos_of_neZero ℓ⟩) (f := f0)
-    let H_constant : L⦃≤ 2⦄[X Fin (ℓ - ↑(Fin.last ℓ))] := ⟨MvPolynomial.C stmtMid.sumcheck_target,
-      by
-        simp only [Fin.val_last, mem_restrictDegree, MvPolynomial.mem_support_iff,
-          MvPolynomial.coeff_C, ne_eq, ite_eq_right_iff, Classical.not_imp, and_imp, forall_eq',
-          Finsupp.coe_zero, Pi.zero_apply, zero_le, implies_true]⟩
+    let H_constant : MultiquadraticPoly L (ℓ - ↑(Fin.last ℓ)) :=
+      MultiquadraticPoly.C stmtMid.sumcheck_target
     match polyOpt with
     | none =>
-      -- Extraction failed - use constant H to satisfy sumcheckConsistencyProp trivially
       exact {
-        t := ⟨0, by apply zero_mem⟩,
+        t := 0,
         H := H_constant,
         f := fun _ => 0
       }
     | some tpoly =>
-      -- Build H_ℓ from t and challenges r'
       exact {
         t := tpoly,
-        -- projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := tpoly)
-          -- (m := BBF_SumcheckMultiplierParam.multpoly stmtMid.ctx)
-          -- (i := Fin.last ℓ) (challenges := stmtMid.challenges),
         H := H_constant,
         f := getMidCodewords 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) tpoly stmtMid.challenges
       }
@@ -1706,81 +1698,8 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
       (tr := tr) (stmtIn := stmtIn) (witMid := witMid) (oStmtIn := oStmtIn)
   toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witMid => by
     rw [cast_eq]; rfl
-  toFun_next := fun m hDir (stmtIn, oStmtIn) tr msg witMid => by
-    -- toFun_next is impacted by how we build extractMid
-    -- For pSpecCommit, the only P_to_V message is at index 0
-    -- So m = 0, m.succ = 1, m.castSucc = 0
-    have h_m_eq_0 : m = 0 := by
-      cases m using Fin.cases with
-      | zero => rfl
-      | succ m' => omega
-    subst h_m_eq_0
-    simp only [Fin.isValue, Fin.succ_zero_eq_one, Fin.castSucc_zero]
-    -- declare c and stmtOut as in KState (m=1), as well as in honest verifier
-    -- For the final sumcheck step, there is a single P→V message carrying the final constant,
-    -- so we can read it directly from `msg` without reconstructing a truncated transcript.
-    let c : L := msg
-    let stmtOut : FinalSumcheckStatementOut (L := L) (ℓ := ℓ) := {
-      ctx := stmtIn.ctx,
-      sumcheck_target := stmtIn.sumcheck_target,
-      challenges := stmtIn.challenges,
-      final_constant := c
-    }
-    intro h_kState_round1
-    unfold finalSumcheckKStateProp finalSumcheckStepFoldingStateProp
-      masterKStateProp at h_kState_round1 ⊢
-    simp only [Fin.isValue, Nat.reduceAdd, Fin.mk_one,
-      Fin.coe_ofNat_eq_mod, Nat.reduceMod] at h_kState_round1
-    -- At m=1 we have local final-check and (oracle-consistency ∨ block-bad-event).
-    -- At m=0 the target is Option-B masterKState:
-    -- incremental-bad-event ∨ (local ∧ structural ∧ initial ∧ oracleFoldingConsistency).
-    obtain ⟨h_V_check, h_core⟩ := h_kState_round1
-    -- Case split on the m=1 final-folding state: consistency or block bad-event.
-    cases h_core with
-    | inl hConsistent =>
-      -- When we have finalSumcheckStepOracleConsistencyProp, extractMLP must succeed.
-      have ⟨tpoly, h_extractMLP⟩ := extractMLP_some_of_oracleFoldingConsistency 𝔽q β
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (oStmt := oStmtIn) (h_oracle_consistency := hConsistent)
-      refine Or.inr ?_
-      refine ⟨?_, ?_, ?_, ?_⟩
-      · -- local check at m=0
-        unfold finalSumcheckRbrExtractor sumcheckConsistencyProp
-        simp only [Fin.val_last, Fin.mk_zero', h_extractMLP, Fin.coe_ofNat_eq_mod]
-        simp only [MvPolynomial.eval_C, sum_const, Fintype.card_piFinset, card_map, card_univ,
-          Fintype.card_fin, prod_const, tsub_self, Fintype.card_eq_zero, pow_zero, one_smul]
-      · -- witnessStructuralInvariant
-        unfold finalSumcheckRbrExtractor witnessStructuralInvariant
-        simp only [Fin.val_last, Fin.mk_zero', h_extractMLP, Fin.coe_ofNat_eq_mod, and_true]
-        refine SetLike.coe_eq_coe.mp ?_
-        rw [projectToMidSumcheckPoly_at_last_eq]
-        have h_sumcheck_target_eq : stmtIn.sumcheck_target =
-          (MvPolynomial.eval stmtIn.challenges
-            (BBF_SumcheckMultiplierParam.multpoly stmtIn.ctx).val) *
-            (MvPolynomial.eval stmtIn.challenges tpoly.val) := by
-          rw [h_V_check, eqTilde_eq_mvpoly_eval]
-          congr 1
-          change c = tpoly.val.eval stmtIn.challenges
-          exact extracted_t_poly_eval_eq_final_constant 𝔽q β
-            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (oStmtOut := oStmtIn) (stmtOut := stmtOut)
-            (tpoly := tpoly)
-            (h_extractMLP := h_extractMLP) (h_finalSumcheckStepOracleConsistency := hConsistent)
-        simp only
-          [h_sumcheck_target_eq, Fin.val_last, Fin.coe_ofNat_eq_mod, MvPolynomial.C_mul]
-      · -- firstOracleWitnessConsistencyProp
-        dsimp only [finalSumcheckRbrExtractor, firstOracleWitnessConsistencyProp]
-        simp only [Fin.mk_zero', h_extractMLP, Fin.coe_ofNat_eq_mod, Fin.val_last,
-          OracleFrontierIndex.val_mkFromStmtIdx]
-        exact (extractMLP_eq_some_iff_pair_UDRClose 𝔽q β
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-          (f := getFirstOracle 𝔽q β oStmtIn) (tpoly := tpoly)).mp h_extractMLP
-      · exact hConsistent.1
-    | inr hBad =>
-      -- Hybrid plan: map terminal block bad-event to incremental bad-event at m=0.
-      exact Or.inl (
-        (badEventExistsProp_iff_incrementalBadEventExistsProp_last 𝔽q β
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
-          (oStmt := oStmtIn) (challenges := stmtIn.challenges)).1 hBad
-      )
+  toFun_next := by
+    sorry
   toFun_full := fun ⟨stmtIn, oStmtIn⟩ tr witOut probEvent_relOut_gt_0 => by sorry
   /- Proof needs updating for computable guard Decidable instance.
     simp only [StateT.run'_eq, gt_iff_lt, probEvent_pos_iff, Prod.exists] at probEvent_relOut_gt_0

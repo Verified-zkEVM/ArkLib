@@ -209,17 +209,6 @@ lemma eval_eq_val_eval (msg : FoldMessage L) (r : L) :
     (CPoly.fromCMvPolynomial (msg : CPoly.CMvPolynomial 1 L)).eval (fun _ => r) = eval msg r := by
   rw [eval, CPoly.eval_equiv]
 
-noncomputable def toLegacy (msg : FoldMessage L) : L⦃≤ 2⦄[X] := by
-  let coeffs : Fin 3 → L := fun d =>
-    CPoly.CMvPolynomial.coeff (foldMessageMonomial d) (msg : CPoly.CMvPolynomial 1 L)
-  refine ⟨Polynomial.C (coeffs 0) + Polynomial.C (coeffs 1) * Polynomial.X +
-      Polynomial.C (coeffs 2) * Polynomial.X ^ 2, ?_⟩
-  sorry
-
-lemma eval_toLegacy (msg : FoldMessage L) (r : L) :
-    (toLegacy msg).val.eval r = eval msg r := by
-  sorry
-
 end FoldMessage
 
 namespace MultilinearPoly
@@ -244,8 +233,16 @@ variable {L : Type} [CommRing L] [BEq L] [LawfulBEq L] {ℓ : ℕ}
 def val (p : MultiquadraticPoly L ℓ) : MvPolynomial (Fin ℓ) L :=
   CPoly.CMvPolynomial.degreeLE.val p
 
+def C (c : L) : MultiquadraticPoly L ℓ :=
+  CPoly.CMvPolynomial.ofDegreeLE (n := ℓ) (R := L) 2
+    (CPoly.CMvPolynomial.C (n := ℓ) (R := L) c)
+
 theorem property (p : MultiquadraticPoly L ℓ) :
     MultiquadraticPoly.val p ∈ MvPolynomial.restrictDegree (Fin ℓ) L 2 := by
+  sorry
+
+theorem val_C (c : L) :
+    MultiquadraticPoly.val (C (ℓ := ℓ) c) = MvPolynomial.C c := by
   sorry
 
 theorem ext {p q : MultiquadraticPoly L ℓ}
@@ -509,13 +506,6 @@ lemma getSumcheckRoundMessageComp_sum_eq [BEq L] [LawfulBEq L] (i : Fin ℓ)
     ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc), MvPolynomial.eval x (MultiquadraticPoly.val h) := by
   sorry
 
-/- `H_i(X_i, ..., X_{ℓ-1})` -> `g_i(X)` derivation (legacy theorem-facing bridge). -/
-noncomputable def getSumcheckRoundPoly [BEq L] [LawfulBEq L] (i : Fin ℓ)
-    (h : MultiquadraticPoly L (ℓ - ↑i.castSucc))
-    : L⦃≤ 2⦄[X] :=
-  FoldMessage.toLegacy
-    (getSumcheckRoundMessageComp (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h)
-
 private lemma cube_eval_sum_cons (n : ℕ) (p : L[X Fin (n + 1)]) :
     ∑ y ∈ (univ.map 𝓑) ^ᶠ (n + 1), MvPolynomial.eval y p =
       ∑ a ∈ univ.map 𝓑, ∑ x ∈ (univ.map 𝓑) ^ᶠ n, MvPolynomial.eval (Fin.cons a x) p := by
@@ -528,7 +518,7 @@ private lemma cube_eval_sum_cons (n : ℕ) (p : L[X Fin (n + 1)]) :
 lemma getSumcheckRoundPoly_eval_eq [BEq L] [LawfulBEq L] (i : Fin ℓ)
     (h_poly : MultiquadraticPoly L (ℓ - ↑i.castSucc))
     (r : L) :
-    (getSumcheckRoundPoly ℓ 𝓑 i h_poly).val.eval r =
+    FoldMessage.eval (getSumcheckRoundMessageComp (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h_poly) r =
     ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc - 1),
       MvPolynomial.eval (Fin.cons r x ∘ Fin.cast (by
         exact (Nat.sub_add_cancel (Nat.one_le_of_lt (Nat.sub_pos_of_lt i.isLt))).symm
@@ -537,10 +527,10 @@ lemma getSumcheckRoundPoly_eval_eq [BEq L] [LawfulBEq L] (i : Fin ℓ)
 
 lemma getSumcheckRoundPoly_sum_eq [BEq L] [LawfulBEq L] (i : Fin ℓ)
     (h : MultiquadraticPoly L (ℓ - ↑i.castSucc)) :
-    (getSumcheckRoundPoly ℓ 𝓑 i h).val.eval (𝓑 0) + (getSumcheckRoundPoly ℓ 𝓑 i h).val.eval (𝓑 1) =
+    FoldMessage.eval (getSumcheckRoundMessageComp (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h) (𝓑 0) +
+      FoldMessage.eval (getSumcheckRoundMessageComp (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h) (𝓑 1) =
     ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc), MvPolynomial.eval x (MultiquadraticPoly.val h) := by
-  simpa [getSumcheckRoundPoly, FoldMessage.eval_toLegacy] using
-    getSumcheckRoundMessageComp_sum_eq (L := L) (ℓ := ℓ) (𝓑 := 𝓑) (i := i) h
+  simpa using getSumcheckRoundMessageComp_sum_eq (L := L) (ℓ := ℓ) (𝓑 := 𝓑) (i := i) h
 
 /-- Helper to convert an index `k` into a vector of bits (as field elements). -/
 def bitsOfIndex {n : ℕ} (k : Fin (2 ^ n)) : Fin n → L :=

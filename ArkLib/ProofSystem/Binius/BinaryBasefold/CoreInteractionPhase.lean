@@ -74,21 +74,15 @@ lemma Statement.of_fin_eq {i j : Fin (ℓ + 1)} (h : i = j) :
     Statement (L := L) (ℓ := ℓ) Context i = Statement (L := L) (ℓ := ℓ) Context j := by
   subst h; rfl
 
-noncomputable def Comp.WitnessComp.toLegacy {i : Fin (ℓ + 1)}
+/-- Computable witness mapped to the round `Witness` for relation membership: `t`/`H` via
+`ofCMvPoly`; `f` reindexed through `sDomainFinEquiv` (only remaining noncomputable bridge). -/
+noncomputable def Comp.WitnessComp.toRoundWitness {i : Fin (ℓ + 1)}
     [BEq L] [LawfulBEq L]
     (wit : Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡) i) :
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i :=
   {
     t := MultilinearPoly.ofCMvPoly wit.t
-    H := by
-      refine ⟨CPoly.fromCMvPolynomial wit.H, ?_⟩
-      have h_deg_one :
-          CPoly.fromCMvPolynomial wit.H ∈ MvPolynomial.restrictDegree (Fin (ℓ - i)) L 1 :=
-        (MultilinearPoly.ofCMvPoly wit.H).property
-      rw [MvPolynomial.mem_restrictDegree_iff_degreeOf_le] at h_deg_one ⊢
-      intro j
-      have hj := h_deg_one j
-      omega
+    H := MultiquadraticPoly.ofCMvPoly wit.H
     f := fun x =>
       let h_i_lt : (i : ℕ) < ℓ + 𝓡 := by
         have hR : 1 ≤ 𝓡 := Nat.succ_le_of_lt (Nat.pos_of_neZero 𝓡)
@@ -103,7 +97,7 @@ def strictRoundRelationComp {mp : SumcheckMultiplierParam L ℓ Context}
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i j)) ×
       Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡) i) :=
   { input |
-      (input.1, Comp.WitnessComp.toLegacy (L := L) (𝔽q := 𝔽q) (β := β)
+      (input.1, Comp.WitnessComp.toRoundWitness (L := L) (𝔽q := 𝔽q) (β := β)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓡 := 𝓡) input.2)
         ∈ strictRoundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i }
@@ -114,7 +108,7 @@ def roundRelationComp {mp : SumcheckMultiplierParam L ℓ Context}
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i j)) ×
       Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡) i) :=
   { input |
-      (input.1, Comp.WitnessComp.toLegacy (L := L) (𝔽q := 𝔽q) (β := β)
+      (input.1, Comp.WitnessComp.toRoundWitness (L := L) (𝔽q := 𝔽q) (β := β)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓡 := 𝓡) input.2)
         ∈ roundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i }
@@ -174,7 +168,7 @@ def foldRelayOracleVerifier (i : Fin ℓ)
   OracleVerifier.append
         (pSpec₁ := pSpecFold (L:=L))
     (pSpec₂ := pSpecRelay)
-    (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i)
+    (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (mp := mp) i)
     (relayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR)
 
 /-- Computable fold-message companion of `foldRelayOracleVerifier`. -/
@@ -326,7 +320,7 @@ def foldCommitOracleVerifier (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
     OracleVerifier.append (oSpec:=[]ₒ)
       (pSpec₁ := pSpecFold (L:=L))
       (pSpec₂ := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
-      (V₁ := foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i)
+      (V₁ := foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (mp := mp) i)
       (V₂ := commitOracleVerifier 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i hCR)
 
 /-- Computable fold-message companion of `foldCommitOracleVerifier`. -/

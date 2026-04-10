@@ -619,7 +619,7 @@ The fold-step extraction failure event implies either:
 
 More precisely:
 - **Sumcheck bad**: `h_i ≠ h_star ∧ h_i.eval r_i' = h_star.eval r_i'`,
-  where `h_star = getSumcheckRoundPoly ℓ 𝓑 i witIn.H`.
+  where `h_star = getSumcheckRoundMessageComp ℓ 𝓑 i witIn.H`.
 - **Folding bad**: an incremental bad-event witness exists at frontier `i.castSucc`
   using challenges extended by `r_i'`.
 

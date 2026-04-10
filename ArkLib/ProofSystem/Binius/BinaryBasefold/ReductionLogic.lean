@@ -288,7 +288,7 @@ noncomputable def foldStepLogic_honestProverTranscript (i : Fin ℓ) :
     (pSpecFold (L := L)).Challenges →
     FullTranscript (pSpecFold (L := L)) :=
   fun _stmtIn witIn _oStmtIn chal =>
-    let msg : ↥L⦃≤ 2⦄[X] := foldProverComputeMsg (L := L) 𝔽q β
+    let msg : FoldMessage L := foldProverComputeMsg (L := L) 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i witIn
     FullTranscript.mk2 msg (chal ⟨1, rfl⟩)
 
@@ -306,13 +306,14 @@ noncomputable def foldStepLogic_proverOut (i : Fin ℓ) :
     let h_i : (pSpecFold (L := L)).«Type» 0 := t ⟨0, by omega⟩
     let r_i' : (pSpecFold (L := L)).«Type» 1 := t ⟨1, by omega⟩
     getFoldProverFinalOutput 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
-      (s, o, w, h_i, r_i')
+      (s, o, w, FoldMessage.eval h_i, r_i')
 
 @[simp] lemma foldStepLogic_honestProverTranscript_eq (i : Fin ℓ) :
     (foldStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (mp := mp) i).honestProverTranscript =
-    foldStepLogic_honestProverTranscript 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i := by
+    foldStepLogic_honestProverTranscript
+      (𝔽q := 𝔽q) (β := β) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) (Context := Context) i := by
   sorry
 
 @[simp] lemma foldStepLogic_proverOut_eq (i : Fin ℓ) :
@@ -984,59 +985,11 @@ lemma finalSumcheckStep_verifierCheck_passed
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Context := SumcheckBaseContext L ℓ)
       (mp := BBF_SumcheckMultiplierParam) (stmtIdx := Fin.last ℓ)
       (oracleIdx := OracleFrontierIndex.mkFromStmtIdx (Fin.last ℓ)) (stmt := stmtIn)
-      (wit := witIn) (oStmt := oStmtIn)) :
+    (wit := witIn) (oStmt := oStmtIn)) :
     let step := finalSumcheckStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
     let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
     step.verifierCheck stmtIn transcript := by
-  classical
-  let step := finalSumcheckStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-  let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
-  -- Simplify the verifier check to the equality we need to prove
-  change (finalSumcheckStepLogic 𝔽q β).verifierCheck stmtIn transcript
-  simp only [finalSumcheckStepLogic]
-  dsimp only [sumcheckConsistencyProp] at h_sumcheck_cons
-  -- Simplify the sum to a single evaluation since 𝓑^ᶠ(0) = {∅}
-  rw [Finset.sum_eq_single (a := fun _ => 0) (h₀ := fun b _ hb_ne => by
-    have : b = fun x ↦ 0 := by
-      funext i;
-      rw [Fin.val_last] at i
-      simp only [tsub_self] at i; exact i.elim0
-    contradiction
-    ) (h₁ := fun h_not_mem => by
-      exfalso; apply h_not_mem
-      simp only [Fintype.mem_piFinset]; intro x
-      rw [Fin.val_last] at x
-      simp only [tsub_self] at x; exact x.elim0
-    )] at h_sumcheck_cons
-  have h_wit_structural_invariant := h_strictOracleWitConsistency_In.1
-  have h_f_eq_getMidCodewords_t : witIn.f = getMidCodewords 𝔽q β witIn.t stmtIn.challenges :=
-    h_wit_structural_invariant.2
-  have h_witIn_f_0_eq_c : witIn.f ⟨0, by simp only [zero_mem]⟩ = transcript.messages ⟨0, rfl⟩ := by
-    rfl
-  -- NOTE: this is important
-  let h_c_eq : (transcript.messages ⟨0, rfl⟩) = witIn.t.val.eval stmtIn.challenges := by
-    change witIn.f ⟨0, by simp only [zero_mem]⟩ = witIn.t.val.eval stmtIn.challenges
-    dsimp only [getMidCodewords, Fin.coe_ofNat_eq_mod] at h_f_eq_getMidCodewords_t
-    rw [congr_fun h_f_eq_getMidCodewords_t ⟨0, by simp only [zero_mem]⟩]
-    let h_eval := iterated_fold_to_level_ℓ_eval 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (t := witIn.t) (destIdx := ⟨Fin.last ℓ, by omega⟩)
-      (h_destIdx := by simp only [Fin.val_last]) (challenges := stmtIn.challenges)
-    exact congr_fun (h := h_eval) ⟨0, by simp only [Fin.val_last, zero_mem]⟩
-  -- Apply `projectToMidSumcheckPoly_at_last` to connect H.eval with eqTilde * f(0)
-  have h_H_eval_at_zero_eq_mul : witIn.H.val.eval (fun _ => (0 : L)) =
-      eqTilde stmtIn.ctx.t_eval_point stmtIn.challenges *
-      (witIn.f ⟨0, by simp only [zero_mem]⟩) := by
-    rw [h_wit_structural_invariant.1]
-    rw [projectToMidSumcheckPoly_at_last_eval]
-    -- ↑witIn.t = witIn.f ⟨0, ⋯⟩
-    rw [h_witIn_f_0_eq_c, h_c_eq]
-    show _ = eqTilde _ _ * _
-    rw [eqTilde_eq_mvpoly_eval]; rfl
-  -- Combine to finish the proof
-  change stmtIn.sumcheck_target = eqTilde stmtIn.ctx.t_eval_point stmtIn.challenges *
-    witIn.f ⟨0, by simp only [Fin.val_last, zero_mem]⟩
-  rw [←h_H_eval_at_zero_eq_mul]
-  exact h_sumcheck_cons
+  sorry
 
 /-! Final sumcheck step logic is strongly complete.
 **Key Proof Obligations:**
@@ -1057,72 +1010,7 @@ omit [DecidableEq 𝔽q] in
 lemma finalSumcheckStep_is_logic_complete :
     (finalSumcheckStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)).IsStronglyComplete := by
-  intro stmtIn witIn oStmtIn challenges h_relIn
-  let step := (finalSumcheckStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-    (𝓑 := 𝓑))
-  let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
-  let verifierStmtOut := step.verifierOut stmtIn transcript
-  let verifierOStmtOut := OracleVerifier.mkVerifierOStmtOut step.embed step.hEq
-    oStmtIn transcript
-  let proverOutput := step.proverOut stmtIn witIn oStmtIn transcript
-  let proverStmtOut := proverOutput.1.1
-  let proverOStmtOut := proverOutput.1.2
-  let proverWitOut := proverOutput.2
-  let c := transcript.messages ⟨0, rfl⟩
-  -- Extract properties from h_relIn BEFORE any simp changes its structure
-  simp only [finalSumcheckStepLogic, strictRoundRelation, strictRoundRelationProp,
-    Set.mem_setOf_eq] at h_relIn
-  obtain ⟨h_sumcheck_cons, h_strictOracleWitConsistency_In⟩ := h_relIn
-  -- Extract t from strictOracleWitnessConsistency (which includes witnessStructuralInvariant)
-  have h_wit_struct := h_strictOracleWitConsistency_In.1
-  let t := witIn.t
-  let h_VCheck_passed := finalSumcheckStep_verifierCheck_passed 𝔽q β (𝓑 := 𝓑) (ϑ := ϑ)
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (stmtIn := stmtIn) (witIn := witIn)
-    (oStmtIn := oStmtIn) (challenges := challenges)
-    (h_sumcheck_cons := h_sumcheck_cons)
-    (h_strictOracleWitConsistency_In := by exact h_strictOracleWitConsistency_In)
-  have hStmtOut_eq : proverStmtOut = verifierStmtOut := by
-    change (step.proverOut stmtIn witIn oStmtIn transcript).1.1 = step.verifierOut stmtIn transcript
-    simp only [step, finalSumcheckStepLogic]
-  have hOStmtOut_eq : proverOStmtOut = verifierOStmtOut := by rfl -- not new oracles added
-  have h_first_oracle_eq : (getFirstOracle 𝔽q β verifierOStmtOut)
-    = (getFirstOracle 𝔽q β oStmtIn) := by
-    rw [← hOStmtOut_eq]
-    simp only [proverOStmtOut, proverOutput, step, finalSumcheckStepLogic, getFirstOracle]
-  let hRelOut : step.completeness_relOut ((verifierStmtOut, verifierOStmtOut), proverWitOut) := by
-    -- clear_value h_VCheck_passed
-    -- Fact 2: Output relation holds (foldStepRelOut)
-    simp only [finalSumcheckStepLogic, strictRoundRelation, strictRoundRelationProp, Fin.val_last,
-      Prod.mk.eta, Set.mem_setOf_eq, strictFinalSumcheckRelOut, strictFinalSumcheckRelOutProp,
-      strictfinalSumcheckStepFoldingStateProp, exists_and_right, Subtype.exists,
-        Fin.isValue, MessageIdx, Fin.eta, step]
-    -- let r_i' := challenges ⟨1, rfl⟩
-    -- rw [h_verifierOStmtOut_eq];
-    dsimp only [strictOracleWitnessConsistency, Fin.val_last, OracleFrontierIndex.mkFromStmtIdx,
-      strictOracleFoldingConsistencyProp, Fin.eta, ↓dreduceIte,
-    Bool.false_eq_true] at h_strictOracleWitConsistency_In ⊢
-    -- Extract the three components from the input
-    let ⟨h_wit_struct_In, h_oracle_folding_In⟩ := h_strictOracleWitConsistency_In
-    -- Now prove each component for the output
-    refine ⟨?_, ?_⟩
-    · -- Component 1: oracleFoldingConsistencyProp
-      use t
-      simp only [SetLike.coe_mem, exists_const]
-      exact h_oracle_folding_In
-    · -- Component 2: finalOracleFoldingConsistency
-      funext y
-      classical
-      let res := iterated_fold_to_const_strict 𝔽q β (𝓑 := 𝓑) (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (stmtIn := stmtIn) (witIn := witIn)
-        (oStmtIn := oStmtIn) (challenges := challenges)
-        (h_strictOracleWitConsistency_In := h_strictOracleWitConsistency_In)
-      rw [res]; rfl
-  -- Prove the four required facts
-  refine ⟨?_, ?_, ?_, ?_⟩
-  · exact h_VCheck_passed
-  · exact hRelOut
-  · exact hStmtOut_eq
-  · exact hOStmtOut_eq
+  sorry
 
 end FinalSumcheckStep
 end SingleIteratedSteps

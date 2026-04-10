@@ -160,8 +160,8 @@ def batchingProverWitOut (stmtIn : BatchingStmtIn L ℓ)
   }
   {
     t' := witIn.t',
-    H := projectToMidSumcheckPolyComp (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ)
-      (ℓ' := ℓ') (h_l := h_l) (t := witIn.t')
+    H := projectToMidSumcheckPolyComp (κ := κ) (L := L) (ℓ := ℓ)
+      (ℓ' := ℓ') (t := witIn.t')
       (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly (ctx := ctx))
       (i := 0) (challenges := Fin.elim0)
   }
@@ -187,7 +187,7 @@ def batchingStepLogic :
   completeness_relIn := fun ((s, o), w) =>
     ((s, o), w) ∈ strictBatchingInputRelation κ L K β ℓ ℓ' h_l aOStmtIn
   completeness_relOut := fun ((s, o), w) =>
-    ((s, o), w) ∈ strictSumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) aOStmtIn 0
+    ((s, o), w) ∈ strictSumcheckRoundRelation κ L K ℓ ℓ' aOStmtIn 0
   -- 2. Verifier Logic (Using extracted kernels)
   verifierCheck := fun stmtIn transcript =>
     batchingVerifierCheck (κ:=κ) (L:=L) (K:=K) (β:=β) (ℓ:=ℓ) (ℓ':=ℓ') (h_l:=h_l) (stmtIn := stmtIn)
@@ -210,7 +210,7 @@ def batchingStepLogic :
     let r_batching : Fin κ → L := transcript.challenges ⟨1, rfl⟩
     let stmtOut := batchingVerifierStmtOut (κ:=κ) (L:=L) (K:=K) (β:=β) (ℓ:=ℓ) (ℓ':=ℓ')
       (stmtIn := stmtIn) (msg0 := msg0) (r_batching := r_batching)
-    let witOut := batchingProverWitOut (κ:=κ) (L:=L) (K:=K) (β:=β) (ℓ:=ℓ) (ℓ':=ℓ') (h_l:=h_l)
+    let witOut := batchingProverWitOut κ L K β ℓ ℓ' h_l
       (stmtIn := stmtIn) (witIn := witIn) (msg0 := msg0) (r_batching := r_batching)
     ((stmtOut, oStmtIn), witOut)
 
@@ -235,7 +235,7 @@ a valid output satisfying `sumcheckRoundRelation 0`.
 - Agreement: Prover and verifier agree on output statements and oracles by construction.
 -/
 lemma batchingStep_is_logic_complete :
-    (batchingStepLogic (κ := κ) (L := L) (K := K) (β := β) (𝓑 := 𝓑) (ℓ := ℓ) (ℓ' := ℓ')
+    (batchingStepLogic (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
       (h_l := h_l) (aOStmtIn := aOStmtIn)).IsStronglyComplete := by
   sorry
 
@@ -270,7 +270,7 @@ def batchingOracleProver :
     | ⟨1, _⟩ => fun ⟨stmt, oStmt, wit, s_hat⟩ => do
       pure (fun r_batching => (stmt, oStmt, wit, s_hat, r_batching))
   output := fun ⟨stmt, oStmt, wit, (s_hat : TensorAlgebra K L), (r_batching : Fin κ → L)⟩ => do
-    let logic := (batchingStepLogic (κ := κ) (L := L) (K := K) (β := β) (𝓑 := 𝓑) (ℓ := ℓ)
+    let logic := (batchingStepLogic (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ)
       (ℓ' := ℓ') (h_l := h_l) (aOStmtIn := aOStmtIn))
     let challenges : (pSpecBatching (κ := κ) (L := L) (K := K)).Challenges :=
       fun ⟨j, hj⟩ => by
@@ -311,7 +311,7 @@ def batchingOracleReduction : OracleReduction (oSpec:=[]ₒ)
     (OStmtOut := aOStmtIn.OStmtIn)
     (WitOut := SumcheckWitness L ℓ' 0)
     (pSpec := pSpecBatching (κ:=κ) (L:=L) (K:=K)) where
-  prover := batchingOracleProver κ L K β ℓ ℓ' h_l (𝓑:=𝓑) (aOStmtIn:=aOStmtIn)
+  prover := batchingOracleProver κ L K β ℓ ℓ' h_l aOStmtIn
   verifier := batchingOracleVerifier κ L K β ℓ ℓ' h_l (𝓑:=𝓑) (aOStmtIn:=aOStmtIn)
 
 /-! ## RBR Knowledge Soundness Components -/
@@ -378,12 +378,13 @@ def batchingKStateProp {m : Fin (2 + 1)}
     }
     let witOut : SumcheckWitness L ℓ' 0 := {
       t' := witMid.t',
-      H := projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := MultilinearPoly.ofCMvPoly witMid.t')
+      H := projectToMidSumcheckPolyComp
+        (κ := κ) (L := L) (ℓ := ℓ) (ℓ' := ℓ') (t := witMid.t')
         (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly (ctx := ctx))
         (i := 0) (challenges := Fin.elim0)
     }
     exact
-      sumcheckRoundRelationProp κ L K β ℓ ℓ' h_l (𝓑:=𝓑) aOStmtIn (i:=0) stmtOut oStmt witOut
+      sumcheckRoundRelationProp κ L K ℓ ℓ' aOStmtIn (i:=0) stmtOut oStmt witOut
       ∧ performCheckOriginalEvaluation (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
         stmt.original_claim stmt.t_eval_point s_hat
       ∧ aOStmtIn.initialCompatibility ⟨witMid.t', oStmt⟩
@@ -393,9 +394,21 @@ noncomputable def batchingKnowledgeStateFunction :
   (batchingOracleVerifier κ L K β ℓ ℓ' h_l (𝓑:=𝓑) (aOStmtIn:=aOStmtIn)).KnowledgeStateFunction
     init impl
     (relIn := batchingInputRelation κ L K β ℓ ℓ' h_l aOStmtIn)
-    (relOut := sumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑:=𝓑) aOStmtIn 0)
-    (batchingRbrExtractor κ L K β ℓ ℓ' h_l (aOStmtIn:=aOStmtIn)) := by
-  exact sorry
+    (relOut := sumcheckRoundRelation κ L K ℓ ℓ' aOStmtIn 0)
+    (batchingRbrExtractor κ L K β ℓ ℓ' h_l (aOStmtIn:=aOStmtIn)) where
+  toFun := fun m ⟨stmtMid, oStmtMid⟩ tr witMid =>
+    batchingKStateProp
+      (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
+      (aOStmtIn := aOStmtIn) (m := m) (tr := tr)
+      (stmt := stmtMid) (witMid := witMid) (oStmt := oStmtMid)
+  toFun_empty := by
+    intro stmtIn witMid
+    cases stmtIn
+    rfl
+  toFun_next := by
+    sorry
+  toFun_full := by
+    sorry
 
 /-! ## Security Properties -/
 
@@ -420,7 +433,7 @@ theorem batchingReduction_perfectCompleteness (hInit : NeverFail init) :
   OracleReduction.perfectCompleteness
     (oracleReduction := batchingOracleReduction κ L K β ℓ ℓ' h_l (𝓑:=𝓑) (aOStmtIn:=aOStmtIn))
     (relIn := strictBatchingInputRelation κ L K β ℓ ℓ' h_l aOStmtIn)
-    (relOut := strictSumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑:=𝓑) aOStmtIn 0)
+    (relOut := strictSumcheckRoundRelation κ L K ℓ ℓ' aOStmtIn 0)
     (init := init) (impl := impl) := by sorry
 /-  Original proof sorry'd for migration:
   -- Step 1: Unroll the 2-message reduction to convert from probability to logic
@@ -782,7 +795,7 @@ lemma batching_compute_eq_from_hafter
     (y : Fin κ → L)
     (witMid : batchingWitMid L K ℓ ℓ' 2)
     (h_after : batchingKStateProp (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
-      (h_l := h_l) (𝓑 := 𝓑) (aOStmtIn := aOStmtIn) (tr := FullTranscript.mk2 msg0 y) stmtOStmtIn.1
+      (h_l := h_l) (aOStmtIn := aOStmtIn) (tr := FullTranscript.mk2 msg0 y) stmtOStmtIn.1
       witMid stmtOStmtIn.2) :
     compute_s0 κ L K β msg0 y =
       compute_s0 κ L K β
@@ -907,7 +920,7 @@ theorem batchingOracleVerifier_rbrKnowledgeSoundness :
     (verifier := batchingOracleVerifier κ L K β ℓ ℓ' h_l (𝓑:=𝓑) (aOStmtIn:=aOStmtIn))
     (init := init) (impl := impl)
     (relIn := batchingInputRelation κ L K β ℓ ℓ' h_l aOStmtIn)
-    (relOut := sumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑:=𝓑) aOStmtIn 0)
+    (relOut := sumcheckRoundRelation κ L K ℓ ℓ' aOStmtIn 0)
     (rbrKnowledgeError := fun _ => batchingRBRKnowledgeError (κ:=κ) (L:=L)) := by
   sorry
 /- Original proof sorry'd for migration:

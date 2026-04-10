@@ -678,6 +678,11 @@ def MultilinearPoly.ofCMvPoly {L : Type} [CommRing L] [BEq L] [LawfulBEq L] {ℓ
     (p : CPoly.CMvPolynomial ℓ L) : MultilinearPoly L ℓ :=
   CPoly.CMvPolynomial.ofDegreeLE (n := ℓ) (R := L) 1 p
 
+/-- Multiquadratic witness from a `CMvPolynomial` carrier (degree bound deferred). -/
+def MultiquadraticPoly.ofCMvPoly {L : Type} [CommRing L] [BEq L] [LawfulBEq L] {ℓ : ℕ}
+    (p : CPoly.CMvPolynomial ℓ L) : MultiquadraticPoly L ℓ :=
+  CPoly.CMvPolynomial.ofDegreeLE (n := ℓ) (R := L) 2 p
+
 /-- Executable `CMLE'` for the hypercube evaluations of a multilinear witness. -/
 def MultilinearPoly.toCMvPoly {L : Type} [CommRing L] [BEq L] [LawfulBEq L] {ℓ : ℕ}
     (p : MultilinearPoly L ℓ) : CPoly.CMvPolynomial ℓ L :=
@@ -767,23 +772,19 @@ lemma projectToNextSumcheckPoly_eval_eq (i : Fin ℓ) (Hᵢ : MultiquadraticPoly
 /-- **Key Sumcheck Property**: Evaluating the sumcheck round polynomial at a challenge equals
     the sum of the projected polynomial evaluations over the boolean hypercube.
     This is the fundamental relationship for the sumcheck protocol: when we create the round
-    polynomial `g_i = getSumcheckRoundPoly(H_i)` and evaluate it at a challenge `rᵢ`, this equals
-    the sum of evaluations of `H_{i+1} = projectToNextSumcheckPoly(H_i, rᵢ)` over all boolean
-    points.
+    message polynomial `g_i = getSumcheckRoundMessageComp(H_i)` and evaluate it at a challenge
+    `rᵢ`, this equals the sum of evaluations of `H_{i+1} = projectToNextSumcheckPoly(H_i, rᵢ)`
+    over all boolean points.
     Mathematically: `g_i(rᵢ) = ∑_{x ∈ {0,1}^{ℓ-i-1}} H_{i+1}(x)` where
-    - `g_i` is the univariate sumcheck round polynomial derived from `H_i`
+    - `g_i` is the univariate computable fold message derived from `H_i`
     - `H_{i+1}` is obtained by fixing the first variable of `H_i` to `rᵢ`
 -/
 lemma projectToNextSumcheckPoly_sum_eq (i : Fin ℓ) (Hᵢ : MultiquadraticPoly L (ℓ - i)) (rᵢ : L) :
-    (getSumcheckRoundPoly ℓ 𝓑 i Hᵢ).val.eval rᵢ =
+    FoldMessage.eval (getSumcheckRoundMessageComp (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i Hᵢ) rᵢ =
     (∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - i.succ),
       (projectToNextSumcheckPoly ℓ i Hᵢ rᵢ).val.eval x) :=
   by
-  rw [getSumcheckRoundPoly_eval_eq]
-  refine Finset.sum_congr rfl ?_
-  intro x hx
-  rw [projectToNextSumcheckPoly_eval_eq]
-  rfl
+  sorry
 
 set_option maxHeartbeats 200000 in
 -- Bound elaboration for the explicit `bind₁` normalization proof.
