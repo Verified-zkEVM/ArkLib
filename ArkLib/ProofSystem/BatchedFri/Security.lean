@@ -1,5 +1,4 @@
-/-
-  Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+/- Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
   Released under Apache 2.0 license as described in the file LICENSE.
   Authors: František Silváši, Julian Sutherland, Ilia Vlasov
 
@@ -74,23 +73,7 @@ def cosetEnum (s₀ : { x | x ∈ evalDomainSigma s ω i}) (k_le_n : ∑ j', (s 
           rw [@Nat.mod_succ_eq_iff_lt]
           exact s_i_lim
       ⟩,
-      by
-        simp
-        exact ⟨⟨j.1, by {
-          have s_i_lim : (s i).1 < n + 1 := by 
-            apply Nat.lt_succ_of_le
-            rw [Finset.sum_eq_sum_diff_singleton_add (i := i) (by simp)] at k_le_n
-            apply (swap <| Nat.le_trans) k_le_n
-            omega
-          rcases j with ⟨j, hj⟩
-          simp
-          have : n - (n - (s i).1) = (s i).1 := by
-            apply Nat.sub_sub_self
-            exact Nat.le_of_lt_succ s_i_lim
-          erw [this] -- rw [show ↑(s i) = @Subtype.val ℕ (fun n ↦ 0 < n) (s i) from rfl, this]
-          rw [Nat.mod_eq_of_lt (s_i_lim)]
-          exact hj
-        }⟩, rfl⟩
+      FftDomain.mem_domain_self
     ⟩
   ⟨
     s₀.1 * r.1,
@@ -219,21 +202,29 @@ lemma g_elem_zpower_iff_exists_nat {G : Type} [Group G] [Finite G] {gen g : G} :
     grind
   · grind [Subgroup.npow_mem_zpowers]
 
-
 open Matrix in
 noncomputable def f_succ'
-  (f : evalDomainSigma D g s i → 𝔽) (z : 𝔽) (k_le_n : ∑ j', ↑(s j') ≤ n)
-  (s₀' : evalDomainSigma D g s (i.1 + 1)) : 𝔽 :=
+  (f : { x // x ∈ (evalDomainSigma s ω ↑i) } → 𝔽) 
+  (z : 𝔽) (k_le_n : ∑ j', ↑(s j') ≤ n)
+  (s₀' : { x // x ∈ (evalDomainSigma s ω (↑i + 1)) }) : 𝔽 :=
   have :
-    ∃ s₀ : evalDomain D g (∑ j' ∈ finRangeTo (i.1), ↑(s j')),
+    ∃ s₀ : (ω.subdomainNatReversed (∑ j' ∈ finRangeTo _ (i.1), (s j').1)).toFinset,
       s₀.1 ^ (2 ^ (s i).1) = s₀'.1 := by
     have h := s₀'.2
     simp only [evalDomain] at h
     have :
-      ((g ^ 2 ^ ∑ j' ∈ finRangeTo (↑i + 1), (s j').1))⁻¹ * s₀'.1 ∈
-        Domain.evalDomain D (∑ j' ∈ finRangeTo (↑i + 1), ↑(s j'))
+      ((ω.x ^ 2 ^ ∑ j' ∈ finRangeTo _ (↑i + 1), (s j').1))⁻¹ * s₀'.1 ∈
+        ω.fftDomain.subdomainNatReversed (∑ j' ∈ finRangeTo _ (↑i + 1), ↑(s j'))
         := by
-        aesop_reconcile
+        simp only [FftDomain.subdomainNatReversed, FftDomain.subdomainNat]
+        simp only [evalDomainSigma] at h
+        rw [CosetFftDomain.mem_coset_domain] at h
+        rcases h with ⟨y, ⟨hy, h⟩⟩
+        rw [h]
+        simp only [
+          CosetFftDomain.subdomainNatReversed,
+          CosetFftDomain.subdomainNat]
+
     simp only [Domain.evalDomain] at this
     rw [g_elem_zpower_iff_exists_nat] at this
     rcases this with ⟨m, this⟩
