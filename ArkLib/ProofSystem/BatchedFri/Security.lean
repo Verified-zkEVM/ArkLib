@@ -79,12 +79,8 @@ def cosetEnum (s₀ : { x | x ∈ evalDomainSigma s ω i}) (k_le_n : ∑ j', (s 
           have : n - (n - (s i).1) = (s i).1 := by
             apply Nat.sub_sub_self
             exact Nat.le_of_lt_succ s_i_lim
-          conv =>
-            rhs
-            rhs
-            lhs
-            rw [this]
-
+          erw [this] -- rw [show ↑(s i) = @Subtype.val ℕ (fun n ↦ 0 < n) (s i) from rfl, this]
+          sorry
 }⟩, sorry⟩
     ⟩
         -- Domain.domainEnum D
