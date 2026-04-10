@@ -72,9 +72,20 @@ def cosetEnum (s₀ : { x | x ∈ evalDomainSigma s ω i}) (k_le_n : ∑ j', (s 
       ⟩,
       by
         simp
-        exact ⟨j.1, _⟩
+        exact ⟨⟨j.1, by {
+          have s_i_lim : (s i).1 < n + 1 := by sorry
+          rcases j with ⟨j, hj⟩
+          simp
+          have : n - (n - (s i).1) = (s i).1 := by
+            apply Nat.sub_sub_self
+            exact Nat.le_of_lt_succ s_i_lim
+          conv =>
+            rhs
+            rhs
+            lhs
+            rw [this]
 
-        sorry
+}⟩, sorry⟩
     ⟩
         -- Domain.domainEnum D
         --   ⟨n - (s i).1, show n - (s i).1 < n + 1 by omega⟩
