@@ -53,8 +53,6 @@ abbrev evalDomainSigma {n k : ℕ} (s : Fin (k + 1) → ℕ+)
   (ω : SmoothCosetFftDomain n 𝔽) (i : ℕ) :=
   ω.subdomainNatReversed (∑ j' ∈ finRangeTo (k + 1) i, s j')
 
-#check CosetFftDomain.subdomainNatReversed_mul_property
-
 def cosetEnum (s₀ : { x | x ∈ evalDomainSigma s ω i}) (k_le_n : ∑ j', (s j').1 ≤ n)
       (j : Fin (2 ^ (s i).1)) : { x // x ∈ (evalDomainSigma s ω ↑i) } :=
   let r : {x | x ∈ ω.fftDomain.subdomainNatReversed (n - ↑(s i))} :=
