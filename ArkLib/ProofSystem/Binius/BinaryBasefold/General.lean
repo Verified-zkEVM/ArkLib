@@ -123,7 +123,7 @@ theorem fullOracleReduction_perfectCompleteness (hInit : NeverFail init) :
   OracleReduction.perfectCompleteness
     (oracleReduction := fullOracleReduction 𝔽q β γ_repetitions
       (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
-    (relIn := CoreInteraction.strictRoundRelationComp
+    (relIn := strictRoundRelation
       (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
     (relOut := acceptRejectOracleRel)
@@ -147,7 +147,7 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
 theorem fullOracleVerifier_rbrKnowledgeSoundness :
   (fullOracleVerifier 𝔽q β γ_repetitions (ϑ:=ϑ) (𝓑 := 𝓑)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).rbrKnowledgeSoundness init impl
-    (relIn := roundRelationComp (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ := ϑ)
+    (relIn := roundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)  0)
     (relOut := acceptRejectOracleRel)
     (rbrKnowledgeError := fullRbrKnowledgeError 𝔽q β γ_repetitions (ϑ:=ϑ)
@@ -205,7 +205,7 @@ Depends on: `fullRbrKnowledgeError_sum_le_concrete` for
 theorem fullOracleVerifier_knowledgeSoundness :
     (fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ) (𝓑 := 𝓑)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toVerifier.knowledgeSoundness init impl
-      (relIn := roundRelationComp (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ := ϑ)
+      (relIn := roundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
       (relOut := acceptRejectOracleRel)
       (knowledgeError := concreteBinaryBasefoldKnowledgeError L ℓ 𝓡 γ_repetitions) := by

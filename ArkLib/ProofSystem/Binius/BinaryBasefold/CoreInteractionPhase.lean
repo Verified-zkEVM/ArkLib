@@ -72,22 +72,6 @@ lemma Statement.of_fin_eq {i j : Fin (ℓ + 1)} (h : i = j) :
     Statement (L := L) (ℓ := ℓ) Context i = Statement (L := L) (ℓ := ℓ) Context j := by
   subst h; rfl
 
-def strictRoundRelationComp {mp : SumcheckMultiplierParam L ℓ Context}
-    (i : Fin (ℓ + 1)) :
-    Set ((Statement (L := L) Context i ×
-      (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i j)) ×
-      Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i) :=
-  strictRoundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i
-
-def roundRelationComp {mp : SumcheckMultiplierParam L ℓ Context}
-    (i : Fin (ℓ + 1)) :
-    Set ((Statement (L := L) Context i ×
-      (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i j)) ×
-      Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i) :=
-  roundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i
-
 /-! OracleStatement index type equality from Fin equality -/
 lemma OracleStatement.idx_eq {i j : Fin (ℓ + 1)} (h : i = j) :
     Fin (toOutCodewordsCount ℓ ϑ i) = Fin (toOutCodewordsCount ℓ ϑ j) := by
@@ -1044,7 +1028,7 @@ lemma nonLastSingleBlockOracleReduction_perfectCompleteness
     OracleReduction.perfectCompleteness (init := init) (impl := impl)
       (pSpec := pSpecFullNonLastBlockComp 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx)
-      (relIn := strictRoundRelationComp (mp := mp) 𝔽q β (ϑ := ϑ)
+      (relIn := strictRoundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
         ⟨bIdx * ϑ, by
           apply Nat.lt_trans (m:=ℓ) (h₁:=by
@@ -1052,7 +1036,7 @@ lemma nonLastSingleBlockOracleReduction_perfectCompleteness
             apply bIdx_mul_ϑ_add_i_lt_ℓ_succ
           ) (by omega)
         ⟩)
-      (relOut := strictRoundRelationComp (mp := mp) 𝔽q β (ϑ := ϑ)
+      (relOut := strictRoundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) ⟨(bIdx + 1) * ϑ, bIdx_succ_mul_ϑ_lt_ℓ_succ bIdx⟩)
       (oracleReduction := nonLastSingleBlockOracleReduction 𝔽q β (ϑ := ϑ) (mp := mp)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) bIdx) := by
@@ -1062,10 +1046,10 @@ lemma nonLastSingleBlockOracleReduction_perfectCompleteness
 lemma lastBlockOracleReduction_perfectCompleteness (hInit : NeverFail init) :
     OracleReduction.perfectCompleteness (init := init) (impl := impl)
       (pSpec := pSpecLastBlockComp (L := L) (ϑ := ϑ))
-      (relIn := strictRoundRelationComp (mp := mp) 𝔽q β (ϑ := ϑ)
+      (relIn := strictRoundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
         ⟨(ℓ / ϑ - 1) * ϑ, by apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (x:=0) (hx:=by omega)⟩)
-      (relOut := strictRoundRelationComp (mp := mp) 𝔽q β (ϑ := ϑ)
+      (relOut := strictRoundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (Fin.last ℓ))
       (oracleReduction := lastBlockOracleReduction 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)) := by
@@ -1082,9 +1066,9 @@ noncomputable def lastBlockRbrKnowledgeError
 theorem sumcheckFoldOracleReduction_perfectCompleteness (hInit : NeverFail init) :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecSumcheckFoldComp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (relIn := strictRoundRelationComp (mp := mp) 𝔽q β (ϑ := ϑ)
+      (relIn := strictRoundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
-      (relOut := strictRoundRelationComp (mp := mp) 𝔽q β (ϑ := ϑ)
+      (relOut := strictRoundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (Fin.last ℓ))
       (oracleReduction := sumcheckFoldOracleReduction 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (mp := mp) (𝓑 := 𝓑))
@@ -1093,10 +1077,10 @@ theorem sumcheckFoldOracleReduction_perfectCompleteness (hInit : NeverFail init)
   sorry
 theorem lastBlockOracleVerifier_rbrKnowledgeSoundness :
     OracleVerifier.rbrKnowledgeSoundness init impl
-      (roundRelationComp (mp := mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (roundRelation (mp := mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑:=𝓑) ⟨(ℓ / ϑ - 1) * ϑ, by
           apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (x:=0) (hx:=by omega)⟩)
-      (roundRelationComp (mp := mp) 𝔽q β (ϑ := ϑ)
+      (roundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (Fin.last ℓ))
       (lastBlockOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
       (rbrKnowledgeError := lastBlockRbrKnowledgeError (L := L) 𝔽q β (ϑ := ϑ)
@@ -1137,7 +1121,7 @@ theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness
     (bIdx : Fin (ℓ / ϑ - 1)) :
     (nonLastSingleBlockOracleVerifier 𝔽q β (mp := mp) (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) bIdx).rbrKnowledgeSoundness init impl
-      (relIn := roundRelationComp (mp := mp) 𝔽q β (ϑ := ϑ)
+      (relIn := roundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
         ⟨bIdx * ϑ, by
           apply Nat.lt_trans (m:=ℓ) (h₁:=by
@@ -1145,7 +1129,7 @@ theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness
             apply bIdx_mul_ϑ_add_i_lt_ℓ_succ
           ) (by omega)
         ⟩)
-      (relOut := roundRelationComp (mp := mp) 𝔽q β (ϑ := ϑ)
+      (relOut := roundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) ⟨(bIdx + 1) * ϑ, bIdx_succ_mul_ϑ_lt_ℓ_succ bIdx⟩)
       (rbrKnowledgeError := nonLastSingleBlockRbrKnowledgeError (L := L) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx) := by
@@ -1164,9 +1148,9 @@ noncomputable def nonLastBlocksRbrKnowledgeError
 theorem nonLastBlocksOracleVerifier_rbrKnowledgeSoundness :
     (nonLastBlocksOracleVerifier 𝔽q β (mp := mp) (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).rbrKnowledgeSoundness init impl
-      (relIn := roundRelationComp (mp := mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (relIn := roundRelation (mp := mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑:=𝓑) ⟨0 * ϑ, by omega⟩)
-      (relOut := roundRelationComp (mp := mp) 𝔽q β (ϑ := ϑ)
+      (relOut := roundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
         ⟨(ℓ / ϑ - 1) * ϑ, by apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (x:=0) (hx:=by omega)⟩)
       (rbrKnowledgeError := nonLastBlocksRbrKnowledgeError (L := L) 𝔽q β (ϑ := ϑ)
@@ -1190,9 +1174,9 @@ noncomputable def sumcheckFoldKnowledgeError (j : (pSpecSumcheckFoldComp 𝔽q �
 theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness :
     (sumcheckFoldOracleVerifier 𝔽q β (mp := mp) (𝓑 := 𝓑)).rbrKnowledgeSoundness init impl
       (pSpec := pSpecSumcheckFoldComp 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (relIn := roundRelationComp (mp := mp) 𝔽q β (ϑ := ϑ)
+      (relIn := roundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) 0 )
-      (relOut := roundRelationComp (mp := mp) 𝔽q β (ϑ := ϑ)
+      (relOut := roundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (Fin.last ℓ) )
       (rbrKnowledgeError := sumcheckFoldKnowledgeError (L := L) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) := by
@@ -1300,7 +1284,7 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
 theorem coreInteractionOracleReduction_perfectCompleteness (hInit : NeverFail init) :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecCoreInteraction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (relIn := strictRoundRelationComp (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ := ϑ)
+      (relIn := strictRoundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
       (relOut := strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (oracleReduction := coreInteractionOracleReduction 𝔽q β (ϑ := ϑ)
@@ -1320,7 +1304,7 @@ noncomputable def coreInteractionOracleRbrKnowledgeError (j : (pSpecCoreInteract
 theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
     (coreInteractionOracleVerifier 𝔽q β (𝓑 := 𝓑)).rbrKnowledgeSoundness init impl
       (pSpec := pSpecCoreInteraction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (relIn := roundRelationComp (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ := ϑ)
+      (relIn := roundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) 0 )
       (relOut := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) )
       (rbrKnowledgeError := coreInteractionOracleRbrKnowledgeError 𝔽q β (ϑ:=ϑ)) := by
