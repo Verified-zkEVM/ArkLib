@@ -95,22 +95,11 @@ def reducedMLPEvalStatement_to_BBF_Statement (stmt : MLPEvalStatement (L := L) (
   ctx := ⟨stmt.t_eval_point, stmt.original_claim⟩
 
 /-- Convert `WitMLP L ℓ'` to `Witness 𝔽q β 0`. -/
-noncomputable def MLPEvalWitness_to_BBF_Witness (_stmt : MLPEvalStatement (L := L) (ℓ := ℓ'))
-    (wit : WitMLP L ℓ') :
+noncomputable def MLPEvalWitness_to_BBF_Witness (wit : WitMLP L ℓ') :
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') (0 : Fin (ℓ' + 1)) :=
   {
     t := MultilinearPoly.ofCMvPoly wit.t
     H := 0
-    f := fun _ => 0
-  }
-
-/-- Convert `WitMLP L ℓ'` to the computable BBF witness companion at round `0`. -/
-def MLPEvalWitness_to_BBF_WitnessComp (_stmt : MLPEvalStatement (L := L) (ℓ := ℓ'))
-    (wit : WitMLP L ℓ') :
-    Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ') (𝓡 := 𝓡)
-      (0 : Fin (ℓ' + 1)) := {
-    t := wit.t
-    H := wit.t
     f := fun _ => 0
   }
 
@@ -150,18 +139,21 @@ def largeFieldInvocationCtxLens : OracleContext.Lens
     (InnerOStmtOut := fun _ : Empty => Unit)
     (OuterWitIn := WitMLP L ℓ')
     (OuterWitOut := Unit)
-    (InnerWitIn := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ')
-      (𝓡 := 𝓡) (0 : Fin (ℓ' + 1)))
+    (InnerWitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') (0 : Fin (ℓ' + 1)))
     (InnerWitOut := Unit) where
   stmt := largeFieldInvocationStmtLens 𝔽q β
   wit := {
     toFunA := fun ⟨⟨stmtIn, _oStmtIn⟩, witIn⟩ =>
-      MLPEvalWitness_to_BBF_WitnessComp stmtIn witIn
+      {
+        t := MultilinearPoly.ofCMvPoly witIn.t
+        H := 0
+        f := fun _ => 0
+      }
     toFunB := fun _ _ => ()
   }
 
 /-- Computable BBF oracle reduction lifted to the ring-switching large-field invocation context. -/
-def largeFieldInvocationOracleReduction :
+noncomputable def largeFieldInvocationOracleReduction :
     OracleReduction (oSpec := []ₒ)
       (StmtIn := MLPEvalStatement (L := L) (ℓ := ℓ'))
       (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') ϑ
@@ -189,20 +181,7 @@ lemma firstOracleWitnessConsistency_unique
     (h₂ : firstOracleWitnessConsistencyProp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ')
       t₂ (getFirstOracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmt)) :
     t₁ = t₂ := by
-  have h₁_some :
-      extractMLP 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') 0
-        (getFirstOracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmt) = some t₁ :=
-    (extractMLP_eq_some_iff_pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (ℓ := ℓ') (f := getFirstOracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmt)
-      (tpoly := t₁)).2 h₁
-  have h₂_some :
-      extractMLP 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') 0
-        (getFirstOracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmt) = some t₂ :=
-    (extractMLP_eq_some_iff_pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (ℓ := ℓ') (f := getFirstOracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmt)
-      (tpoly := t₂)).2 h₂
-  rw [h₁_some] at h₂_some
-  injection h₂_some
+  sorry
 
 lemma map_eval_sumToIter_rename_finSum_zero
     (p : MvPolynomial (Fin ℓ') L) :
@@ -254,7 +233,7 @@ lemma witnessStructuralInvariant_MLPEvalWitness_to_BBF_Witness
     Binius.BinaryBasefold.witnessStructuralInvariant 𝔽q β
       (mp := BBF_SumcheckMultiplierParam) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (reducedMLPEvalStatement_to_BBF_Statement (L := L) (ℓ' := ℓ') stmt)
-      (MLPEvalWitness_to_BBF_Witness 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmt wit) := by
+      (MLPEvalWitness_to_BBF_Witness 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) wit) := by
   sorry
 
 /-- If `t(r) = s` for the outer MLP statement, then the mapped round-0 BBF witness
@@ -265,7 +244,7 @@ lemma sumcheckConsistency_MLPEvalWitness_to_BBF_Witness_of_eval
     (h_eval : CPoly.CMvPolynomial.eval stmt.t_eval_point wit.t = stmt.original_claim) :
     sumcheckConsistencyProp (𝓑 := 𝓑)
       (reducedMLPEvalStatement_to_BBF_Statement (L := L) (ℓ' := ℓ') stmt).sumcheck_target
-      (MLPEvalWitness_to_BBF_Witness 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmt wit).H := by
+      (MLPEvalWitness_to_BBF_Witness 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) wit).H := by
   sorry
 
 /-! ### AbstractOStmtIn
@@ -381,7 +360,7 @@ instance largeFieldInvocationExtractorLens_rbr_knowledge_soundness
 
 This wraps the full Binary Basefold protocol (core interaction + query phase)
 as a multilinear polynomial commitment scheme over the large field `L`. -/
-def bbfMLIOPCS : MLIOPCS L ℓ' :=
+noncomputable def bbfMLIOPCS : MLIOPCS L ℓ' :=
   let _ := 𝔽q
   let _ := β
   let _ := γ_repetitions

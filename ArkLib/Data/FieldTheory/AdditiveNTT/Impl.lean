@@ -16,7 +16,7 @@ This module provides computable Additive-NTT primitives and algorithm definition
 namespace AdditiveNTT.Comp
 
 universe u
-open Polynomial
+open Polynomial AdditiveNTT Module
 open scoped Polynomial
 
 section HelperFunctions
@@ -191,8 +191,131 @@ theorem mem_sDomain_of_mem_sDomainComp {i : Fin r} {x : L}
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i := by
   rcases hx with ⟨u, hu, rfl⟩
   refine ⟨u, hu, ?_⟩
-  rw [AdditiveNTT.evalNormalizedWLinearMap_apply]
-  rfl
+  simpa [AdditiveNTT.evalNormalizedWLinearMap_apply, polyEvalLinearMap]
+    using (AdditiveNTT.evalNormalizedWLinearMap_apply (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
+      (R_rate := R_rate) (i := i) (x := u)).symm
+
+/-- Bridge: canonical `sDomain` points are also computable `sDomainComp` points. -/
+theorem mem_sDomainComp_of_mem_sDomain {i : Fin r} {x : L}
+    (hx : x ∈ AdditiveNTT.sDomain (𝔽q := 𝔽q) (β := β)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :
+    x ∈ sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i := by
+  rcases hx with ⟨u, hu, rfl⟩
+  refine ⟨u, hu, ?_⟩
+  simpa [AdditiveNTT.evalNormalizedWLinearMap_apply, polyEvalLinearMap]
+
+/-- The computable and canonical `sDomain` carriers coincide. -/
+theorem sDomainComp_eq_sDomain (i : Fin r) :
+    sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i =
+    AdditiveNTT.sDomain (𝔽q := 𝔽q) (β := β)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i := by
+  ext x
+  constructor
+  · exact mem_sDomain_of_mem_sDomainComp (𝔽q := 𝔽q) (β := β)
+      (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+  · exact mem_sDomainComp_of_mem_sDomain (𝔽q := 𝔽q) (β := β)
+      (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+
+/-- Bridge: `sDomain_eq_of_eq` on computable carriers. -/
+lemma sDomain_eq_of_eq {i j : Fin r} (h : i = j) :
+    AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i =
+    AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) j := by
+  simpa [sDomainComp_eq_sDomain] using
+    (AdditiveNTT.sDomain_eq_of_eq (𝔽q := 𝔽q) (β := β)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h)
+
+/-- Bridge: `sDomain_basis` on computable carriers. -/
+noncomputable def sDomain_basis (i : Fin r) (h_i : i < ℓ + R_rate) :
+    Basis (Fin (ℓ + R_rate - i)) 𝔽q (
+      AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) := by
+  sorry
+
+/-- Bridge: `get_sDomain_basis` on computable carriers. -/
+lemma get_sDomain_basis (i : Fin r) (h_i : i < ℓ + R_rate) :
+    ∀ (k : Fin (ℓ + R_rate - i)),
+    (sDomain_basis (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i h_i) k =
+      Polynomial.eval (β ⟨i + k.val, by omega⟩) (normalizedW 𝔽q β i) := by
+  sorry
+
+/-- Bridge: cardinality of computable `sDomain`. -/
+noncomputable instance fintype_comp_sDomain (i : Fin r) :
+    Fintype (AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) := by
+  rw [sDomainComp_eq_sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i]
+  infer_instance
+
+lemma sDomain_card (i : Fin r) (h_i : i < ℓ + R_rate) :
+    Fintype.card (
+      AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) =
+      (Fintype.card 𝔽q)^(ℓ + R_rate - i) := by
+  sorry
+
+/-! Domain-index bijection bridges. -/
+/-- Bridge: split coefficients for computable `sDomain`. -/
+noncomputable def splitPointIntoCoeffs (i : Fin r) (h_i : i < ℓ + R_rate)
+    (x : AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :
+    Fin (ℓ + R_rate - i.val) → ℕ := fun j =>
+  if (sDomain_basis (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i h_i).repr x j = 0 then 0 else 1
+
+/-- Bridge: computable `sDomainToFin`. -/
+noncomputable def sDomainToFin (i : Fin r) (h_i : i < ℓ + R_rate)
+    (x : AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :
+    Fin (2 ^ (ℓ + R_rate - i.val)) :=
+  AdditiveNTT.sDomainToFin (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i h_i
+    ⟨x.1, by
+      simpa [sDomainComp_eq_sDomain] using x.2⟩
+
+/-- Bridge: computable `finToBinaryCoeffs_sDomainToFin`. -/
+lemma finToBinaryCoeffs_sDomainToFin (i : Fin r) (h_i : i < ℓ + R_rate)
+    (x : AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :
+    let pointFinIdx := (sDomainToFin (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      i h_i) x
+    finToBinaryCoeffs 𝔽q (i := i) (idx := pointFinIdx) =
+      (sDomain_basis (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i h_i).repr x := by
+  sorry
+
+/-- Bridge: computable `finToSDomain`. -/
+noncomputable def finToSDomain (i : Fin r) (h_i : i < ℓ + R_rate)
+    (idx : Fin (2 ^ (ℓ + R_rate - i.val))) :
+    AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i :=
+  ⟨(AdditiveNTT.finToSDomain (𝔽q := 𝔽q) (β := β)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i h_i idx).1,
+    mem_sDomainComp_of_mem_sDomain (𝔽q := 𝔽q) (β := β)
+      (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (x := (AdditiveNTT.finToSDomain (𝔽q := 𝔽q) (β := β)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i h_i idx).1)
+      (by
+        simpa [AdditiveNTT.finToSDomain] using
+          (AdditiveNTT.finToSDomain (𝔽q := 𝔽q) (β := β)
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i h_i idx).2)⟩
+
+/-- Bridge: computable `sDomainFinEquiv`. -/
+noncomputable def sDomainFinEquiv (i : Fin r) (h_i : i < ℓ + R_rate)
+    : AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i ≃
+      Fin (2 ^ (ℓ + R_rate - i.val)) := by
+  sorry
+
+/-- Bridge: computable `sDomainFin_bijective`. -/
+theorem sDomainFin_bijective (i : Fin r) (h_i : i < ℓ + R_rate) :
+    Function.Bijective
+      (sDomainFinEquiv (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i h_i) := by
+  sorry
 
 /-- Cast from computable `sDomainComp` carrier to canonical `sDomain` carrier. -/
 def toCanonicalSDomain (i : Fin r)

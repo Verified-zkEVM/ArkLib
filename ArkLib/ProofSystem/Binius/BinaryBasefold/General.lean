@@ -46,7 +46,7 @@ open CoreInteraction QueryPhase
 /-- Canonical full verifier over the computable core-interaction stack and computable query-domain
 challenges. -/
 @[reducible]
-def fullOracleVerifier :
+noncomputable def fullOracleVerifier :
   OracleVerifier (oSpec := []ₒ)
     (StmtIn := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
@@ -70,13 +70,13 @@ def fullOracleVerifier :
 
 /-- Canonical full reduction API on the computable core-interaction/query stack. -/
 @[reducible]
-def fullOracleReduction :
+noncomputable def fullOracleReduction :
   OracleReduction (oSpec := []ₒ)
     (StmtIn := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
     (StmtOut := Bool)
     (OStmtOut := fun _ : Empty => Unit)
-    (WitIn := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡)
+    (WitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ)
       0)
     (WitOut := Unit)
     (pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ := ϑ)
@@ -85,7 +85,7 @@ def fullOracleReduction :
     (Stmt₁ := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
     (Stmt₂ := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (Stmt₃ := Bool)
-    (Wit₁ := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ) (𝓡 := 𝓡)
+    (Wit₁ := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ)
       0)
     (Wit₂ := Unit)
     (Wit₃ := Unit)
@@ -101,12 +101,11 @@ def fullOracleReduction :
 
 /-- Canonical full proof API on the computable core-interaction/query stack. -/
 @[reducible]
-def fullOracleProof :
+noncomputable def fullOracleProof :
   OracleProof []ₒ
     (Statement := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
     (OStatement := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
-    (Witness := Binius.BinaryBasefold.CoreInteraction.Comp.WitnessComp (L := L) (ℓ := ℓ)
-      (𝓡 := 𝓡) 0)
+    (Witness := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) 0)
     (pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   fullOracleReduction 𝔽q β γ_repetitions (ϑ := ϑ)

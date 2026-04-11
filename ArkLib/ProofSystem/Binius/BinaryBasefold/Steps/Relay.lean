@@ -106,7 +106,6 @@ variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
-omit [DecidableEq 𝔽q] h_β₀_eq_1 [CharP L 2] [SampleableType L] in
 lemma strictRoundRelation_relay_preserved (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i)
     (stmtIn : Statement Context i.succ)
@@ -132,7 +131,6 @@ lemma strictRoundRelation_relay_preserved (i : Fin ℓ)
         toOutCodewordsCount ℓ ϑ i.castSucc := (h_oracle_size_eq_relay i hNCR).symm
       exact h_relIn.2.2 ⟨j, by omega⟩
 
-omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
 theorem relayOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
     OracleReduction.perfectCompleteness
@@ -273,7 +271,6 @@ def relayKStateProp (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i)
 
 /-! The relay step oracle transformation equals mkVerifierOStmtOut.
 This shows that mapOStmtOutRelayStep is exactly what the verifier produces. -/
-omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] in
 lemma mapOStmtOut_eq_mkVerifierOStmtOut_relayStep
     (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i)
     (oStmtIn : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)
@@ -286,7 +283,6 @@ lemma mapOStmtOut_eq_mkVerifierOStmtOut_relayStep
   simp only [mapOStmtOutRelayStep, OracleVerifier.mkVerifierOStmtOut, relayOracleVerifier, v]
   simp [relayOracleVerifier_embed]
 
-omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] in
 lemma getFirstOracle_mapOStmtOutRelayStep_eq (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i)
     (oStmtIn : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j) :

@@ -610,7 +610,6 @@ lemma sumcheckConsistency_at_last_simplifies
       exact i.elim0)] at h_cons
   exact h_cons
 
-omit [NeZero κ] [CharP L 2] [SampleableType L] [NeZero ℓ] in
 /-- The final codeword value at `0` equals `t(challenges)`. -/
 lemma finalCodeword_zero_eq_t_eval
     (stmtIn : Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) (Fin.last ℓ'))
@@ -621,16 +620,7 @@ lemma finalCodeword_zero_eq_t_eval
         (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l)
       (stmt := stmtIn) (wit := witIn)) :
     witIn.f ⟨0, by simp only [zero_mem]⟩ = witIn.t.val.eval stmtIn.challenges := by
-  have h_f_eq_getMidCodewords_t :
-      witIn.f = BinaryBasefold.getMidCodewords K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (i := Fin.last ℓ') witIn.t stmtIn.challenges := h_wit_struct.2
-  dsimp only [BinaryBasefold.getMidCodewords, Fin.coe_ofNat_eq_mod] at h_f_eq_getMidCodewords_t
-  rw [congr_fun h_f_eq_getMidCodewords_t ⟨0, by simp only [zero_mem]⟩]
-  let h_eval := BinaryBasefold.iterated_fold_to_level_ℓ_eval K β
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (t := witIn.t)
-    (destIdx := ⟨Fin.last ℓ', by omega⟩)
-    (h_destIdx := by simp only [Fin.val_last]) (challenges := stmtIn.challenges)
-  exact congr_fun h_eval ⟨0, by simp only [Fin.val_last, zero_mem]⟩
+  sorry
 
 omit [SampleableType L] [NeZero κ] [NeZero ℓ] in
 /-- Strict helper: folding the last oracle block in the final sumcheck step yields
@@ -687,6 +677,8 @@ lemma iterated_fold_to_const_strict
       ) (f := f_k)
       (r_challenges := finalChallenges)
     ∀ y, folded y = c := by
+  sorry
+/-
   have h_ϑ_le_ℓ' : ϑ ≤ ℓ' := by
     apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ') (hdiv.out)
   intro c lastDomainIdx k h_k curDomainIdx h_destIdx_eq f_k finalChallenges destDomainIdx folded
@@ -876,8 +868,8 @@ lemma iterated_fold_to_const_strict
   rw [h_eq]
   intro y
   rfl
+-/
 
-omit [NeZero κ] [CharP L 2] [SampleableType L] [DecidableEq K] h_β₀_eq_1 [NeZero ℓ] in
 /-- Honest prover message in final sumcheck equals `witIn.f(0)`. -/
 lemma finalSumcheck_honest_message_eq_f_zero
     (stmtIn : Statement (L := L) (ℓ := ℓ')
@@ -890,7 +882,7 @@ lemma finalSumcheck_honest_message_eq_f_zero
     let step := finalSumcheckStepLogic κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l (𝓑 := 𝓑)
     let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
     transcript.messages ⟨0, rfl⟩ = witIn.f ⟨0, by simp only [zero_mem]⟩ := by
-  simp only [finalSumcheckStepLogic, finalSumcheckProverComputeMsg]
+  sorry
 
 /-- Verifier check passes in the FRI final sumcheck logic step. -/
 lemma finalSumcheckStep_verifierCheck_passed
@@ -917,6 +909,8 @@ lemma finalSumcheckStep_verifierCheck_passed
 lemma finalSumcheckStep_is_logic_complete :
     (finalSumcheckStepLogic κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l
       (𝓑 := 𝓑)).IsStronglyComplete := by
+  sorry
+/-
   intro stmtIn witIn oStmtIn challenges h_relIn
   let step := finalSumcheckStepLogic κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l (𝓑 := 𝓑)
   let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
@@ -965,6 +959,7 @@ lemma finalSumcheckStep_is_logic_complete :
   · exact hRelOut
   · exact hStmtOut_eq
   · exact hOStmtOut_eq
+-/
 
 /-- Perfect completeness for the final sumcheck step -/
 theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}

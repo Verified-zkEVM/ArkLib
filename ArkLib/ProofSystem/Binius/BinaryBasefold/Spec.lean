@@ -437,14 +437,14 @@ instance : ∀ j, OracleInterface ((fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ)
 instance instOracleStatementBinaryBasefold {i : Fin (ℓ + 1)} :
     ∀ j, OracleInterface (OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i j) :=
   fun j => {
-    Query := (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨j.val * ϑ, by
+    Query := AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨j.val * ϑ, by
       calc j.val * ϑ < ℓ := by exact toCodewordsCount_mul_ϑ_lt_ℓ ℓ ϑ i j
       _ < r := by omega⟩
     toOC.spec := fun _ => L
     toOC.impl := fun queryPoint => do return (← read) queryPoint
   }
 
-omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] hdiv in
 @[simp]
 lemma instOracleStatementBinaryBasefold_heq_of_fin_eq {i₁ i₂ : Fin (ℓ + 1)} (h : i₁ = i₂) :
     HEq (instOracleStatementBinaryBasefold 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i₁))
@@ -522,12 +522,14 @@ instance : ∀ i, SampleableType ((pSpecCoreInteraction 𝔽q β (ϑ:=ϑ)
 
 /-- SampleableType instance for sDomain, constructed via its equivalence with a Fin type. -/
 noncomputable instance instSDomain {i : Fin r} (h_i : i < ℓ + 𝓡) :
-    SampleableType (sDomain 𝔽q β h_ℓ_add_R_rate i) :=
-  let T := sDomain 𝔽q β h_ℓ_add_R_rate i
-  haveI : Fintype T := fintype_sDomain 𝔽q β h_ℓ_add_R_rate i
-  haveI : Nonempty T := ⟨0⟩
+    SampleableType (AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
+      (R_rate := 𝓡) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
+  let T := AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
+  haveI : Fintype T := Fintype.ofEquiv _ (AdditiveNTT.Comp.sDomainFinEquiv
+    (𝔽q := 𝔽q) (β := β) h_ℓ_add_R_rate i (by omega)).symm
   haveI : DecidableEq T := Classical.decEq T
-  SampleableType.ofEquiv (e := (sDomainFinEquiv 𝔽q β h_ℓ_add_R_rate i (by omega)).symm)
+  SampleableType.ofEquiv (e := (AdditiveNTT.Comp.sDomainFinEquiv (𝔽q := 𝔽q) (β := β) h_ℓ_add_R_rate i (by omega)).symm)
 
 /-- SampleableType instance for the executable query-domain carrier used by `pSpecQuery`. -/
 instance instCompSDomainZero :
