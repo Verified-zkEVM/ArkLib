@@ -153,7 +153,7 @@ def largeFieldInvocationCtxLens : OracleContext.Lens
   }
 
 /-- Computable BBF oracle reduction lifted to the ring-switching large-field invocation context. -/
-noncomputable def largeFieldInvocationOracleReduction :
+def largeFieldInvocationOracleReduction :
     OracleReduction (oSpec := []ₒ)
       (StmtIn := MLPEvalStatement (L := L) (ℓ := ℓ'))
       (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') ϑ
@@ -242,9 +242,9 @@ lemma sumcheckConsistency_MLPEvalWitness_to_BBF_Witness_of_eval
     (stmt : MLPEvalStatement (L := L) (ℓ := ℓ'))
     (wit : WitMLP L ℓ')
     (h_eval : CPoly.CMvPolynomial.eval stmt.t_eval_point wit.t = stmt.original_claim) :
-    sumcheckConsistencyProp (𝓑 := 𝓑)
-      (reducedMLPEvalStatement_to_BBF_Statement (L := L) (ℓ' := ℓ') stmt).sumcheck_target
-      (MLPEvalWitness_to_BBF_Witness 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) wit).H := by
+    Binius.BinaryBasefold.sumcheckConsistencyProp (𝓑 := 𝓑)
+      (sumcheckTarget := (reducedMLPEvalStatement_to_BBF_Statement (L := L) (ℓ' := ℓ') stmt).sumcheck_target)
+      (H := (MLPEvalWitness_to_BBF_Witness 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) wit).H) := by
   sorry
 
 /-! ### AbstractOStmtIn
@@ -288,8 +288,9 @@ lemma MLPEvalRelation_of_round0_local_and_structural
     (stmt : MLPEvalStatement (L := L) (ℓ := ℓ'))
     (wit : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ')
       (0 : Fin (ℓ' + 1)))
-    (h_local : sumcheckConsistencyProp (𝓑 := 𝓑)
-      (reducedMLPEvalStatement_to_BBF_Statement (L := L) (ℓ' := ℓ') stmt).sumcheck_target wit.H)
+    (h_local : Binius.BinaryBasefold.sumcheckConsistencyProp (𝓑 := 𝓑)
+      (sumcheckTarget := (reducedMLPEvalStatement_to_BBF_Statement (L := L) (ℓ' := ℓ') stmt).sumcheck_target)
+      (H := wit.H))
     (h_struct : Binius.BinaryBasefold.witnessStructuralInvariant 𝔽q β
       (mp := BBF_SumcheckMultiplierParam) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (reducedMLPEvalStatement_to_BBF_Statement (L := L) (ℓ' := ℓ') stmt) wit) :

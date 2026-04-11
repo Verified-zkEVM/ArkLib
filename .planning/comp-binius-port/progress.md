@@ -2,6 +2,49 @@
 
 ## 2026-04-11
 
+- **Canonical `pSpec` names restored in BinaryBasefold + FRI call sites**
+  - Removed `pSpecFoldComp`, `pSpecFoldCommitComp`, `pSpecFoldRelayComp`,
+    `pSpecFoldRelaySequenceComp`, `pSpecFullNonLastBlockComp`,
+    `pSpecLastBlockComp`, `pSpecNonLastBlocksComp`, and `pSpecSumcheckFoldComp`
+    from `BinaryBasefold/Spec.lean`.
+  - Retargeted `BinaryBasefold/CoreInteractionPhase.lean`, `BinaryBasefold/Steps/Fold.lean`,
+    and `FRIBinius/CoreInteractionPhase.lean` to canonical `pSpecFold`, `pSpecFoldCommit`,
+    `pSpecFoldRelay`, `pSpecFoldRelaySequence`, `pSpecFullNonLastBlock`,
+    `pSpecLastBlock`, `pSpecNonLastBlocks`, and `pSpecSumcheckFold`.
+  - First build regression from this pass was a duplicate explicit `κ := κ` argument in
+    `RingSwitching/BatchingPhase.lean:381`; removed it.
+  - Next build rerun pending.
+
+- **Deep cross-repo drift scan against sibling `ArkLib-binius`**
+  - Compared file inventory under `ArkLib/ProofSystem/Binius`; only extra file difference is
+    `RingSwitching/FRI-Binius paper.md`.
+  - Compared named declaration sets file-by-file between sibling repo and local computable repo.
+  - Result: `12` Lean files still have declaration-list drift:
+    - `BinaryBasefold/Basic.lean`
+    - `BinaryBasefold/CoreInteractionPhase.lean`
+    - `BinaryBasefold/Prelude.lean`
+    - `BinaryBasefold/QueryPhase.lean`
+    - `BinaryBasefold/ReductionLogic.lean`
+    - `BinaryBasefold/Soundness/QueryPhasePrelims.lean`
+    - `BinaryBasefold/Spec.lean`
+    - `BinaryBasefold/Steps/Fold.lean`
+    - `FRIBinius/CoreInteractionPhase.lean`
+    - `RingSwitching/BBFSmallFieldIOPCS.lean`
+    - `RingSwitching/Prelude.lean`
+    - `RingSwitching/Spec.lean`
+  - Main structural drift clusters are:
+    - remaining public/semipublic `*Comp` protocol builders in `BinaryBasefold/Spec.lean`
+    - remaining `*Comp` reduction/prover/verifier layer in `BinaryBasefold/CoreInteractionPhase.lean`
+    - remaining `*FunOfMultiplier` / `*Fun` helper layer in `FRIBinius/CoreInteractionPhase.lean`
+      and `FRIBinius/General.lean`
+    - remaining `*Comp` message/projector helpers in `RingSwitching/Prelude.lean`
+  - Build status remains green:
+    - `lake build ArkLib.ProofSystem.Binius.BinaryBasefold.General`
+    - `lake build ArkLib.ProofSystem.Binius.FRIBinius.General`
+  - Conclusion from this audit:
+    - migration of definitions/statements to computable carriers is not fully done yet;
+    - repo is build-clean, but not yet item-by-item aligned with sibling code structure.
+
 - **Novel-coeff polynomial migration locked to a computable helper**
   - Added `computablePolynomialFromNovelCoeffsF₂` in `BinaryBasefold.Prelude` as the Binius-local
     computable version of `AdditiveNTT.polynomialFromNovelCoeffsF₂`.
@@ -1306,3 +1349,25 @@
 - Scan result:
   - no `sDomainFinEquiv` remains under `ArkLib/ProofSystem/Binius`.
   - no `roundRelationComp`, `strictRoundRelationComp`, `OracleFunctionComp`, `OracleStatementComp`, or `toRoundWitness` remain under `ArkLib/ProofSystem/Binius`.
+
+## Session 2026-04-11 — oracle reductions/verifiers forced computable
+
+- Fixed `CoreInteractionPhase` call-site drift so the computable fold/commit stack typechecks:
+  - added explicit `(mp := mp)` at `lastBlockOracleVerifier` / `lastBlockOracleReductionComp`
+    uses in `sumcheckFoldOracleVerifier`, `lastBlockOracleReduction`,
+    `sumcheckFoldOracleReductionComp`, and related soundness theorem heads.
+- Revalidated:
+  - `lake env lean ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean`
+- Removed remaining `noncomputable` wrappers on oracle-level protocol APIs:
+  - `BinaryBasefold/General.lean`
+    - `fullOracleVerifier : ...` now `def`
+    - `fullOracleReduction : ...` now `def`
+    - `fullOracleProof : ...` now `def`
+  - `RingSwitching/BBFSmallFieldIOPCS.lean`
+    - `largeFieldInvocationOracleReduction : ...` now `def`
+- Revalidated:
+  - `lake build ArkLib.ProofSystem.Binius.BinaryBasefold.General`
+  - `lake build ArkLib.ProofSystem.Binius.RingSwitching.BBFSmallFieldIOPCS`
+- Drift scan result:
+  - no `noncomputable def .*OracleReduction|.*OracleVerifier|.*OracleProver` remains under
+    `ArkLib/ProofSystem/Binius`.

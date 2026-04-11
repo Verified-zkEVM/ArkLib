@@ -46,7 +46,7 @@ open CoreInteraction QueryPhase
 /-- Canonical full verifier over the computable core-interaction stack and computable query-domain
 challenges. -/
 @[reducible]
-noncomputable def fullOracleVerifier :
+def fullOracleVerifier :
   OracleVerifier (oSpec := []ₒ)
     (StmtIn := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
@@ -70,7 +70,7 @@ noncomputable def fullOracleVerifier :
 
 /-- Canonical full reduction API on the computable core-interaction/query stack. -/
 @[reducible]
-noncomputable def fullOracleReduction :
+def fullOracleReduction :
   OracleReduction (oSpec := []ₒ)
     (StmtIn := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
@@ -101,7 +101,7 @@ noncomputable def fullOracleReduction :
 
 /-- Canonical full proof API on the computable core-interaction/query stack. -/
 @[reducible]
-noncomputable def fullOracleProof :
+def fullOracleProof :
   OracleProof []ₒ
     (Statement := Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
     (OStatement := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
