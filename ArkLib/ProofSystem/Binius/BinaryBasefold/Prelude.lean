@@ -536,7 +536,7 @@ def bitsOfIndex {n : ℕ} (k : Fin (2 ^ n)) : Fin n → L :=
   fun i => if Nat.testBit k i then 1 else 0
 
 /-- The double coercion `Fin (2^n) → (Fin n → Fin 2) → (Fin n → L)` equals `bitsOfIndex`.
-This connects the implicit coercion used in `polynomialFromNovelCoeffsF₂` with the explicit
+This connects the explicit computable polynomial helper with the polynomial view used in
 bit extraction, which is essential for proving multilinear polynomial evaluation formulas. -/
 lemma coe_fin_pow_two_eq_bitsOfIndex {n : ℕ} (k : Fin (2 ^ n)) :
     ((finFunctionFinEquiv.invFun k : Fin n → Fin 2) : Fin n → L) = bitsOfIndex k := by
@@ -597,6 +597,20 @@ f^(i) : S⁽ⁱ⁾ → L, where |S⁽ⁱ⁾| = 2^{ℓ + R - i}. -/
 abbrev OracleFunction (domainIdx : Fin r) :=
   AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) domainIdx → L
+
+/-- Computable canonical univariate counterpart of `polynomialFromNovelCoeffsF₂`. -/
+noncomputable def computablePolynomialFromNovelCoeffsF₂ (ℓ : ℕ) (h_ℓ : ℓ ≤ r)
+    (a : Fin (2 ^ ℓ) → L) : CompPoly.CPolynomial L :=
+  ⟨CompPoly.CPolynomial.Raw.trim (Array.ofFn (fun i : Fin (2 ^ ℓ) =>
+      AdditiveNTT.novelToMonomialCoeffs 𝔽q β ℓ h_ℓ a i)), by
+    exact CompPoly.CPolynomial.Raw.Trim.trim_twice _⟩
+
+/-- Evaluation of the computable novel-basis polynomial matches the abstract polynomial. -/
+lemma computablePolynomialFromNovelCoeffsF₂_eval [LawfulBEq L] (x : L) (ℓ : ℕ) (h_ℓ : ℓ ≤ r)
+    (a : Fin (2 ^ ℓ) → L) :
+    (computablePolynomialFromNovelCoeffsF₂ (𝔽q := 𝔽q) (β := β) ℓ h_ℓ a).eval x =
+      (AdditiveNTT.polynomialFromNovelCoeffsF₂ (𝔽q := 𝔽q) (β := β) ℓ h_ℓ a : Polynomial L).eval x := by
+  sorry
 
 lemma fin_ℓ_lt_ℓ_add_one (i : Fin ℓ) : i < ℓ + 1 :=
   Nat.lt_of_lt_of_le i.isLt (Nat.le_succ ℓ)
@@ -2447,13 +2461,16 @@ with value `t(challenges)`. -/
 lemma iterated_fold_to_level_ℓ_eval
     (t : MultilinearPoly L ℓ) (destIdx : Fin r) (h_destIdx : destIdx.val = ℓ)
     (challenges : Fin ℓ → L) :
-    let P₀ : L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-      (fun ω => (MultilinearPoly.val t).eval (bitsOfIndex ω))
-    let f₀ : AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) → L :=
-      fun y => P₀.val.eval y.val
-    let f_ℓ : AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx → L :=
+    letI : BEq L := inferInstance
+    letI : LawfulBEq L := inferInstance
+    let P₀ : CompPoly.CPolynomial L :=
+      computablePolynomialFromNovelCoeffsF₂ (𝔽q := 𝔽q) (β := β) ℓ (by omega)
+        (fun ω => (MultilinearPoly.val t).eval (bitsOfIndex ω))
+    let f₀ : OracleFunction (𝔽q := 𝔽q) (β := β)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (𝓡 := 𝓡) 0 :=
+      fun y => P₀.eval y.val
+    let f_ℓ : OracleFunction (𝔽q := 𝔽q) (β := β)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (𝓡 := 𝓡) destIdx :=
       iterated_fold (i := 0) (steps := ℓ) (destIdx := destIdx)
       (h_destIdx := by simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; omega)
       (h_destIdx_le := by omega)
@@ -2465,13 +2482,16 @@ lemma iterated_fold_to_level_ℓ_eval
 lemma iterated_fold_to_level_ℓ_is_constant
     (t : MultilinearPoly L ℓ) (destIdx : Fin r) (h_destIdx : destIdx.val = ℓ)
     (challenges : Fin ℓ → L) :
-    let P₀ : L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-      (fun ω => (MultilinearPoly.val t).eval (bitsOfIndex ω))
-    let f₀ : AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) → L :=
-      fun y => P₀.val.eval y.val
-    let f_ℓ : AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx → L :=
+    letI : BEq L := inferInstance
+    letI : LawfulBEq L := inferInstance
+    let P₀ : CompPoly.CPolynomial L :=
+      computablePolynomialFromNovelCoeffsF₂ (𝔽q := 𝔽q) (β := β) ℓ (by omega)
+        (fun ω => (MultilinearPoly.val t).eval (bitsOfIndex ω))
+    let f₀ : OracleFunction (𝔽q := 𝔽q) (β := β)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (𝓡 := 𝓡) 0 :=
+      fun y => P₀.eval y.val
+    let f_ℓ : OracleFunction (𝔽q := 𝔽q) (β := β)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (𝓡 := 𝓡) destIdx :=
       iterated_fold (i := 0) (steps := ℓ) (destIdx := destIdx)
       (h_destIdx := by simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; omega)
       (h_destIdx_le := by omega)

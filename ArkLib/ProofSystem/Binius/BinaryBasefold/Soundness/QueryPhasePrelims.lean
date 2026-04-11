@@ -5,6 +5,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 
 import ArkLib.Data.Misc.Basic
+import CompPoly.Univariate.ToPoly
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 
 /-!
@@ -109,9 +110,13 @@ lemma polyToOracleFunc_eq_getFirstOracle
     (oStmt : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i j)
     (h_consistency : strictOracleFoldingConsistencyProp 𝔽q β (t := t) (i := i)
       (challenges := challenges) (oStmt := oStmt)) :
-    let P₀ : L[X]_(2 ^ ℓ) :=
-      polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) (fun ω => t.val.eval (bitsOfIndex ω))
-    let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
+    let P₀ : CompPoly.CPolynomial L :=
+      ⟨CompPoly.CPolynomial.Raw.trim (Array.ofFn (fun i : Fin (2 ^ ℓ) =>
+          AdditiveNTT.novelToMonomialCoeffs 𝔽q β ℓ (by omega)
+            (fun ω => t.val.eval (bitsOfIndex ω)) i)), by
+        exact CompPoly.CPolynomial.Raw.Trim.trim_twice _⟩
+    let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0)
+      (P := CompPoly.CPolynomial.toPoly P₀)
     f₀ = getFirstOracle 𝔽q β oStmt := by
   sorry
 

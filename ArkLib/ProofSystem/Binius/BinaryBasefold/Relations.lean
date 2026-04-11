@@ -98,10 +98,15 @@ noncomputable def getMidCodewords {i : Fin (ℓ + 1)} (t : MultilinearPoly L ℓ
     (challenges : Fin i → L) :
     OracleFunction (𝔽q := 𝔽q) (β := β)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (𝓡 := 𝓡) ⟨i, by omega⟩ :=
-  let P₀ : L⦃< 2^ℓ⦄[X] := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (h_ℓ := by omega)
-    (a := fun ω => t.val.eval (bitsOfIndex ω))
+  letI : BEq L := inferInstance
+  letI : LawfulBEq L := inferInstance
+  let P₀ : CompPoly.CPolynomial L :=
+    ⟨CompPoly.CPolynomial.Raw.trim (Array.ofFn (fun i : Fin (2 ^ ℓ) =>
+        AdditiveNTT.novelToMonomialCoeffs 𝔽q β ℓ (by omega)
+          (fun ω => t.val.eval (bitsOfIndex ω)) i)), by
+      exact CompPoly.CPolynomial.Raw.Trim.trim_twice _⟩
   let f₀ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0 :=
-    fun x => P₀.val.eval x.val
+    fun x => P₀.eval x.val
   let fᵢ := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := 0) (steps := i) (destIdx := ⟨i, by omega⟩)
     (h_destIdx := by simp only [Fin.coe_ofNat_eq_mod, zero_mod, zero_add]) (h_destIdx_le := by simp only; omega)
@@ -652,9 +657,15 @@ def finalSumcheckRelOut :
 def strictOracleFoldingConsistencyProp (t : MultilinearPoly L ℓ) (i : Fin (ℓ + 1))
     (challenges : Fin i → L)
     (oStmt : ∀ j, (OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i) j) : Prop :=
-  let P₀: L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-    (fun ω => t.val.eval (bitsOfIndex ω))
-  let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
+  letI : BEq L := inferInstance
+  letI : LawfulBEq L := inferInstance
+  let P₀ : CompPoly.CPolynomial L :=
+    ⟨CompPoly.CPolynomial.Raw.trim (Array.ofFn (fun i : Fin (2 ^ ℓ) =>
+        AdditiveNTT.novelToMonomialCoeffs 𝔽q β ℓ (by omega)
+          (fun ω => t.val.eval (bitsOfIndex ω)) i)), by
+      exact CompPoly.CPolynomial.Raw.Trim.trim_twice _⟩
+  let f₀ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0 :=
+    fun y => P₀.eval y.val
   ∀ (j : Fin (toOutCodewordsCount ℓ ϑ i)),
     let destIdx : Fin r := ⟨oraclePositionToDomainIndex (positionIdx := j), by
       have h_le := oracle_index_le_ℓ (i := i) (j := j); omega

@@ -1222,14 +1222,16 @@ private lemma closest_eq_of_le_udr
 /-- For index 0, `extractMLP 0 f = some tpoly` iff `f` is pair-UDR-close to the oracle function
 of the multilinear polynomial `tpoly` (i.e. the polynomial-as-oracle from novel coeffs of tpoly).
 Forward: decoder succeeds only when within UDR. Backward: within UDR the decoded codeword
-is `polyToOracleFunc (polynomialFromNovelCoeffsF₂ tpoly)`. -/
+is the computable oracle induced by `computablePolynomialFromNovelCoeffsF₂`. -/
 lemma extractMLP_eq_some_iff_pair_UDRClose
-    (f : AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) → L)
+    (f : OracleFunction (𝔽q := 𝔽q) (β := β)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (𝓡 := 𝓡) ⟨0, by omega⟩)
     (tpoly : MultilinearPoly L ℓ) :
-    let P : L[X] :=
-      polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-        (fun ω => tpoly.val.eval (bitsOfIndex ω))
+    let P : CompPoly.CPolynomial L :=
+      ⟨CompPoly.CPolynomial.Raw.trim (Array.ofFn (fun i : Fin (2 ^ ℓ) =>
+          AdditiveNTT.novelToMonomialCoeffs 𝔽q β ℓ (by omega)
+            (fun ω => tpoly.val.eval (bitsOfIndex ω)) i)), by
+        exact CompPoly.CPolynomial.Raw.Trim.trim_twice _⟩
     (extractMLP 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0 f = some tpoly) ↔
       2 * Δ₀(f, (fun y => P.eval y.val)) <
         BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := (0 : Fin r)) := by

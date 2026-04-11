@@ -1357,8 +1357,8 @@ lemma extracted_t_poly_eval_eq_final_constant
   have h_final_consistency := h_finalSumcheckStepOracleConsistency
   dsimp only [finalSumcheckStepOracleConsistencyProp] at h_final_consistency
   rcases h_final_consistency with ⟨h_oracle_cons, h_final_cons⟩
-  let P₀ : L⦃< 2^ℓ⦄[X] :=
-    polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
+  let P₀ : CompPoly.CPolynomial L :=
+    Binius.BinaryBasefold.computablePolynomialFromNovelCoeffsF₂ ℓ (by omega)
       (fun ω => tpoly.val.eval (bitsOfIndex ω))
   let f₀ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := (0 : Fin r)) :=
     polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)

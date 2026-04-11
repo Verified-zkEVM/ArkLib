@@ -682,7 +682,7 @@ lemma iterated_fold_to_const_strict
   have h_ϑ_le_ℓ' : ϑ ≤ ℓ' := by
     apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ') (hdiv.out)
   intro c lastDomainIdx k h_k curDomainIdx h_destIdx_eq f_k finalChallenges destDomainIdx folded
-  let P₀ : L[X]_(2 ^ ℓ') := polynomialFromNovelCoeffsF₂ K β ℓ' (by omega)
+  let P₀ : L[X]_(2 ^ ℓ') := computablePolynomialFromNovelCoeffsF₂ K β ℓ' (by omega)
     (fun ω => witIn.t.val.eval (bitsOfIndex ω))
   let f₀ := polyToOracleFunc K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
   have h_wit_struct := h_strictOracleWitConsistency_In.1
