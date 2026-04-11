@@ -526,10 +526,9 @@ noncomputable instance instSDomain {i : Fin r} (h_i : i < ℓ + 𝓡) :
       (R_rate := 𝓡) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
   let T := AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
-  haveI : Fintype T := Fintype.ofEquiv _ (AdditiveNTT.Comp.sDomainFinEquiv
-    (𝔽q := 𝔽q) (β := β) h_ℓ_add_R_rate i (by omega)).symm
+  haveI : Fintype T := inferInstance
   haveI : DecidableEq T := Classical.decEq T
-  SampleableType.ofEquiv (e := (AdditiveNTT.Comp.sDomainFinEquiv (𝔽q := 𝔽q) (β := β) h_ℓ_add_R_rate i (by omega)).symm)
+  SampleableType.ofEquiv (e := (Fintype.equivFin T).symm)
 
 /-- SampleableType instance for the executable query-domain carrier used by `pSpecQuery`. -/
 instance instCompSDomainZero :

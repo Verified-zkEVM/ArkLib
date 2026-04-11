@@ -440,13 +440,13 @@ def extractUDRCodeword
       not_top_lt] at h_within_radius
   let k : ℕ := 2^(ℓ - i.val)  -- degree bound from BBF_Code definition
   -- Convert domain to Fin format for Berlekamp-Welch
-  let domain_to_fin : (AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-    i ≃ Fin domain_size := by
-    simp only [domain_size]
-    rw [AdditiveNTT.Comp.sDomain_card (𝔽q := 𝔽q) (β := β) h_ℓ_add_R_rate (i := i) (h_i := Sdomain_bound h_i)]
-    have h_equiv := AdditiveNTT.Comp.sDomainFinEquiv (𝔽q := 𝔽q) (β := β) h_ℓ_add_R_rate (i := i) (Sdomain_bound h_i)
-    convert h_equiv
-    exact hF₂.out
+  let domain_to_fin : (AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) i ≃ Fin domain_size := by
+    haveI : Fintype (AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) := inferInstance
+    simpa [domain_size] using
+      (Fintype.equivFin (AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
+        (R_rate := 𝓡) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i))
   -- ωs is the mapping from the point index to the actually point in the domain S^{i}
   let ωs : Fin domain_size → L := fun j => (domain_to_fin.symm j).val
   let f_vals : Fin domain_size → L := fun j => f (domain_to_fin.symm j)
