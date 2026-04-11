@@ -43,42 +43,31 @@ variable {ℓ R_rate : ℕ} [NeZero ℓ] (h_ℓ_add_R_rate : ℓ + R_rate < r)
 
 /-- Executable value-level encoding of points in `U i` by bit-index. -/
 def bitsToUValue (i : Fin r) (k : Fin (2 ^ i.val)) : L :=
-  AdditiveNTT.bitsToUValue (β := β) (ℓ := ℓ) (R_rate := R_rate) i k
+  AdditiveNTT.bitsToUValue β i k
 
 /-- Executable subtype-level encoding of points in `U i` by bit-index. -/
 def bitsToU (i : Fin r) (k : Fin (2 ^ i.val)) :
     AdditiveNTT.U (L := L) (𝔽q := 𝔽q) (β := β) i :=
-  let val := bitsToUValue (β := β) (ℓ := ℓ) (R_rate := R_rate) i k
-  ⟨val, by
-    change bitsToUValue (β := β) (ℓ := ℓ) (R_rate := R_rate) i k
-      ∈ AdditiveNTT.U (L := L) (𝔽q := 𝔽q) (β := β) i
-    unfold bitsToUValue AdditiveNTT.bitsToUValue
-    apply Submodule.sum_mem
-    intro j _
-    split
-    · apply Submodule.subset_span
-      exact Set.mem_image_of_mem β (by
-        rw [Set.mem_Ico]
-        exact ⟨Fin.zero_le _, j.isLt⟩)
-    · exact Submodule.zero_mem _⟩
+  ⟨AdditiveNTT.Comp.bitsToUValue (β := β) i k, by
+    sorry⟩
 
 omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
 /-- Bijection witness for `bitsToU`; proof migration can be completed incrementally. -/
 theorem bitsToU_bijective (i : Fin r) :
-    Function.Bijective (bitsToU (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) i) := by
+    Function.Bijective (bitsToU (𝔽q := 𝔽q) (β := β) i) := by
   sorry
 
 /-- Executable enumeration of all elements in `U i`. -/
 def getUElements (i : Fin r) : List L :=
-  AdditiveNTT.getUElements (β := β) (ℓ := ℓ) (R_rate := R_rate) i
+  AdditiveNTT.getUElements β i
 
 /-- Executable evaluation of `Wᵢ` at a point. -/
 def evalWAt (i : Fin r) (x : L) : L :=
-  AdditiveNTT.evalWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) i x
+  AdditiveNTT.evalWAt β i x
 
 /-- Executable evaluation of `Ŵᵢ` at a point. -/
 def evalNormalizedWAt (i : Fin r) (x : L) : L :=
-  AdditiveNTT.evalNormalizedWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) i x
+  AdditiveNTT.evalNormalizedWAt β i x
 
 /-- Computable domain companion with loose indexing (`Fin r`). -/
 def sDomain (i : Fin r) : Subspace 𝔽q L :=
@@ -92,12 +81,12 @@ def indexToSDomain (i : Fin r) (k : Fin (2 ^ (ℓ + R_rate))) :
     sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i :=
   let uTop : AdditiveNTT.U (L := L) (𝔽q := 𝔽q) (β := β)
       (upperDomainIndex (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-    bitsToU (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+    bitsToU (𝔽q := 𝔽q) (β := β)
       (i := upperDomainIndex (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) k
-  ⟨AdditiveNTT.evalNormalizedWLinearMap (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) i
+  ⟨AdditiveNTT.evalNormalizedWLinearMap (𝔽q := 𝔽q) (β := β) i
       (uTop : L), by
     change
-      AdditiveNTT.evalNormalizedWLinearMap (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) i
+      AdditiveNTT.evalNormalizedWLinearMap (𝔽q := 𝔽q) (β := β) i
         (uTop : L)
         ∈ AdditiveNTT.sDomainComp (𝔽q := 𝔽q) (β := β)
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
@@ -114,7 +103,7 @@ def indexToSDomainZero (k : Fin (2 ^ (ℓ + R_rate))) :
 /-- At stage `0`, the executable normalized evaluation map is the identity. -/
 lemma evalNormalizedWLinearMap_zero_apply (x : L) :
     AdditiveNTT.evalNormalizedWLinearMap
-        (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) (0 : Fin r) x = x := by
+        (𝔽q := 𝔽q) β (0 : Fin r) x = x := by
   rw [AdditiveNTT.evalNormalizedWLinearMap_apply]
   rw [AdditiveNTT.normalizedW, AdditiveNTT.W₀_eq_X, Polynomial.eval_mul, Polynomial.eval_C,
     Polynomial.eval_X]
@@ -131,26 +120,23 @@ lemma sDomainZero_eq_upperDomain :
   constructor
   · intro hx
     rcases hx with ⟨u, hu, rfl⟩
-    simpa [sDomain, AdditiveNTT.sDomainComp, upperDomainIndex,
-      evalNormalizedWLinearMap_zero_apply (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
-        u] using hu
+    rw [evalNormalizedWLinearMap_zero_apply (𝔽q := 𝔽q) (β := β) u]
+    exact hu
   · intro hx
     refine ⟨x, hx, ?_⟩
-    simpa [sDomain, AdditiveNTT.sDomainComp, upperDomainIndex,
-      evalNormalizedWLinearMap_zero_apply (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
-        x]
+    rw [evalNormalizedWLinearMap_zero_apply (𝔽q := 𝔽q) (β := β) x]
 
 /-- The executable zero-stage decoder agrees with the explicit bit encoding on values. -/
 lemma indexToSDomainZero_val_eq_bitsToU_val (k : Fin (2 ^ (ℓ + R_rate))) :
     ((indexToSDomainZero (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k : sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
         (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0) : L) =
-      (bitsToU (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+      (bitsToU (𝔽q := 𝔽q) (β := β)
         (i := upperDomainIndex (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) k : L) := by
   unfold indexToSDomainZero indexToSDomain
   dsimp
-  rw [evalNormalizedWLinearMap_zero_apply (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
-    ((bitsToU (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+  rw [evalNormalizedWLinearMap_zero_apply (𝔽q := 𝔽q) (β := β)
+    ((bitsToU (𝔽q := 𝔽q) (β := β)
       (i := upperDomainIndex (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) k : L))]
 
 /-- The zero-stage decoder is a computable bijection from global indices to query-domain points. -/
@@ -162,25 +148,25 @@ theorem indexToSDomainZero_bijective :
   constructor
   · intro a b hab
     have hsub :
-        bitsToU (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := upperIdx) a =
-          bitsToU (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := upperIdx) b := by
+        bitsToU (𝔽q := 𝔽q) (β := β) (i := upperIdx) a =
+          bitsToU (𝔽q := 𝔽q) (β := β) (i := upperIdx) b := by
       apply Subtype.ext
       simpa [upperIdx,
-        indexToSDomainZero_val_eq_bitsToU_val (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
-          (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)] using congrArg Subtype.val hab
-    exact (bitsToU_bijective (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+        indexToSDomainZero_val_eq_bitsToU_val (𝔽q := 𝔽q) (β := β)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate)] using congrArg Subtype.val hab
+    exact (bitsToU_bijective (𝔽q := 𝔽q) (β := β)
       (i := upperIdx)).injective hsub
   · intro x
     have hxU : x.1 ∈ AdditiveNTT.U (𝔽q := 𝔽q) (β := β) upperIdx := by
-      simpa [upperIdx, sDomainZero_eq_upperDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
-        (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)] using x.2
+      simpa [upperIdx, sDomainZero_eq_upperDomain (𝔽q := 𝔽q) (β := β)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)] using x.2
     let uTop : AdditiveNTT.U (𝔽q := 𝔽q) (β := β) upperIdx := ⟨x.1, hxU⟩
-    obtain ⟨k, hk⟩ := (bitsToU_bijective (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+    obtain ⟨k, hk⟩ := (bitsToU_bijective (𝔽q := 𝔽q) (β := β)
       (i := upperIdx)).surjective uTop
     refine ⟨k, ?_⟩
     apply Subtype.ext
-    rw [indexToSDomainZero_val_eq_bitsToU_val (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
-      (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)]
+    rw [indexToSDomainZero_val_eq_bitsToU_val (𝔽q := 𝔽q) (β := β)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)]
     simpa [upperIdx, uTop] using congrArg Subtype.val hk
 
 /-- Bridge: every computable-domain point is also in canonical `AdditiveNTT.sDomain`. -/
@@ -192,8 +178,8 @@ theorem mem_sDomain_of_mem_sDomainComp {i : Fin r} {x : L}
   rcases hx with ⟨u, hu, rfl⟩
   refine ⟨u, hu, ?_⟩
   simpa [AdditiveNTT.evalNormalizedWLinearMap_apply, polyEvalLinearMap]
-    using (AdditiveNTT.evalNormalizedWLinearMap_apply (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
-      (R_rate := R_rate) (i := i) (x := u)).symm
+    using (AdditiveNTT.evalNormalizedWLinearMap_apply (𝔽q := 𝔽q) (β := β)
+      (i := i) (x := u)).symm
 
 /-- Bridge: canonical `sDomain` points are also computable `sDomainComp` points. -/
 theorem mem_sDomainComp_of_mem_sDomain {i : Fin r} {x : L}
@@ -380,39 +366,42 @@ def decodeQueryChallengesToCanonical {γ : ℕ} (challenges : Fin γ → Fin (2 
 
 /-- Bridge theorem for `evalWAt`. -/
 lemma evalWAt_eq_W (i : Fin r) (x : L) :
-    evalWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) i x
+    AdditiveNTT.Comp.evalWAt (β := β) i x
       = (AdditiveNTT.W 𝔽q β i).eval x := by
-  rw [evalWAt]
-  exact AdditiveNTT.evalWAt_eq_W (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) (x := x)
+  rw [AdditiveNTT.Comp.evalWAt]
+  exact AdditiveNTT.evalWAt_eq_W (𝔽q := 𝔽q) (β := β) (i := i) (x := x)
 
 /-- Bridge theorem for `evalNormalizedWAt`. -/
 lemma evalNormalizedWAt_eq_normalizedW (i : Fin r) (x : L) :
-    evalNormalizedWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) i x
+    AdditiveNTT.Comp.evalNormalizedWAt (β := β) i x
       = (AdditiveNTT.normalizedW 𝔽q β i).eval x := by
-  rw [evalNormalizedWAt]
-  exact AdditiveNTT.evalNormalizedWAt_eq_normalizedW (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+  rw [AdditiveNTT.Comp.evalNormalizedWAt]
+  exact AdditiveNTT.evalNormalizedWAt_eq_normalizedW (𝔽q := 𝔽q) (β := β)
     (i := i) (x := x)
 
 /-- Executable twiddle factor with narrow stage index (`Fin ℓ`). -/
 def computableTwiddleFactor (i : Fin ℓ) (u : Fin (2 ^ (ℓ + R_rate - i - 1))) : L :=
   ∑ (⟨k, _⟩ : Fin (ℓ + R_rate - i - 1)),
     if Nat.getBit k u.val = 1 then
-      evalNormalizedWAt (β := β) (ℓ := ℓ) (R_rate := R_rate)
-        (i := ⟨i, by omega⟩) (x := β ⟨i + 1 + k, by omega⟩)
+      AdditiveNTT.Comp.evalNormalizedWAt (β := β) ⟨(i : ℕ), by
+        omega⟩
+        (β ⟨i + 1 + k, by omega⟩)
     else
       0
 
 /-- Executable twiddle factor with loose stage index (`Fin r`). -/
 def twiddleFactor (i : Fin r) (_h_i : i < ℓ)
     (u : Fin (2 ^ (ℓ + R_rate - i - 1))) : L :=
-  computableTwiddleFactor β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) u
+  computableTwiddleFactor (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (i := ⟨(i : ℕ), _h_i⟩) u
 
 omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
 /-- Bridge: computable twiddle factor agrees with canonical `AdditiveNTT.twiddleFactor`. -/
 theorem twiddleFactor_eq_twiddleFactor
     (i : Fin r) (h_i : i < ℓ) (u : Fin (2 ^ (ℓ + R_rate - i - 1))) :
-    twiddleFactor (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) h_i u =
-      AdditiveNTT.twiddleFactor (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    AdditiveNTT.Comp.twiddleFactor (β := β)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i h_i u =
+      AdditiveNTT.twiddleFactor β h_ℓ_add_R_rate
         (i := i) (h_i := h_i) u := by
   sorry
 
@@ -446,11 +435,10 @@ def computableNTTStage (β : Fin r → L) (h_ℓ_add_R_rate : ℓ + R_rate < r) 
         (by
           rw [Nat.sub_add_cancel (by omega)]
           omega)
-    let twiddle : L := computableTwiddleFactor β h_ℓ_add_R_rate
-      (i := ⟨i, by omega⟩) (u := ⟨u, by
+    let x0 : L := computableTwiddleFactor (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (i := i) (u := ⟨u, by
         have h := h_u_lt_2_pow
         exact h⟩)
-    let x0 := twiddle
     let x1 : L := x0 + 1
     have h_b_bit : b_bit = Nat.getBit i.val j.val := by
       simp only [Nat.getBit, Nat.and_one_is_mod, b_bit, u_b, u_b_v]

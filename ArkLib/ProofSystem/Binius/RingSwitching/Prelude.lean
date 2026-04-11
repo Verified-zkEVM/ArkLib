@@ -860,7 +860,7 @@ def fixFirstVariablesOfCMvPoly {n : ℕ} (v : Fin (n + 1))
     H
 
 /-- Computable initial sumcheck witness after fixing the first `i` challenges. -/
-def projectToMidSumcheckPolyComp (t : CPoly.CMvPolynomial ℓ' L)
+def projectToMidSumcheckPoly (t : CPoly.CMvPolynomial ℓ' L)
     (m : MultilinearPoly L ℓ') (i : Fin (ℓ' + 1))
     (challenges : Fin i → L) :
     CPoly.CMvPolynomial (ℓ' - i) L :=
@@ -871,7 +871,7 @@ def projectToMidSumcheckPolyComp (t : CPoly.CMvPolynomial ℓ' L)
     (challenges := challenges)
 
 /-- Computable single-round sumcheck witness update. -/
-def projectToNextSumcheckPolyComp (i : Fin ℓ')
+def projectToNextSumcheckPoly (i : Fin ℓ')
     (H : CPoly.CMvPolynomial (ℓ' - i) L) (rᵢ : L) :
     CPoly.CMvPolynomial (ℓ' - i.succ) L :=
   CPoly.CMvPolynomial.bind₁ (n := ℓ' - i) (m := ℓ' - i.succ) (R := L)
@@ -887,7 +887,7 @@ def projectToNextSumcheckPolyComp (i : Fin ℓ')
     H
 
 /-- Computable univariate raw CMv polynomial for the current sumcheck round message. -/
-private def sumcheckRoundMessagePolyComp (i : Fin ℓ')
+private def sumcheckRoundMessagePoly (i : Fin ℓ')
     (H : CPoly.CMvPolynomial (ℓ' - i) L) : CPoly.CMvPolynomial 1 L :=
   let X0 : CPoly.CMvPolynomial 1 L := CPoly.CMvPolynomial.X (n := 1) (R := L) ⟨0, by decide⟩
   ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ' - i.succ),
@@ -904,9 +904,9 @@ private def sumcheckRoundMessagePolyComp (i : Fin ℓ')
       H
 
 /-- Computable bounded-degree sumcheck-round message from the raw CMv witness. -/
-def getSumcheckRoundMessageComp (i : Fin ℓ')
+def getSumcheckRoundMessage (i : Fin ℓ')
     (H : CPoly.CMvPolynomial (ℓ' - i) L) : FoldMessage L :=
-  let msgPoly := sumcheckRoundMessagePolyComp
+  let msgPoly := sumcheckRoundMessagePoly
     (κ := κ) (L := L) (ℓ := ℓ) (ℓ' := ℓ') (𝓑 := 𝓑) (i := i) H
   ⟨msgPoly, by
     intro j
@@ -914,7 +914,7 @@ def getSumcheckRoundMessageComp (i : Fin ℓ')
   ⟩
 
 /-- Sumcheck consistency on the computable CMv witness carrier. -/
-def sumcheckConsistencyPropComp {k : ℕ} (sumcheckTarget : L)
+def sumcheckConsistencyProp {k : ℕ} (sumcheckTarget : L)
     (H : CPoly.CMvPolynomial k L) : Prop := by
   sorry
 
@@ -1160,7 +1160,7 @@ def sumcheckRoundRelationProp (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (ℓ'
     (oStmt : ∀ j, aOStmtIn.OStmtIn j)
     (wit : SumcheckWitness L ℓ' i) : Prop :=
   masterKStateProp κ L K ℓ ℓ' aOStmtIn i stmt oStmt wit
-    (localChecks := sumcheckConsistencyPropComp (sumcheckTarget := stmt.sumcheck_target)
+    (localChecks := sumcheckConsistencyProp (sumcheckTarget := stmt.sumcheck_target)
       (H := wit.H))
 
 /-- Input relation for single round: proper sumcheck statement -/
@@ -1175,7 +1175,7 @@ def strictSumcheckRoundRelationProp (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin
     (oStmt : ∀ j, aOStmtIn.OStmtIn j)
     (wit : SumcheckWitness L ℓ' i) : Prop :=
   masterStrictKStateProp κ L K ℓ ℓ' aOStmtIn i stmt oStmt wit
-    (localChecks := sumcheckConsistencyPropComp (sumcheckTarget := stmt.sumcheck_target)
+    (localChecks := sumcheckConsistencyProp (sumcheckTarget := stmt.sumcheck_target)
       (H := wit.H))
 
 /-- Strict round relation for completeness proofs. -/
@@ -1225,14 +1225,6 @@ private lemma fixFirstVariablesOfMQP_zero_eq
   simpa [MvPolynomial.bind₁_X_left] using
     (fixFirstVariablesOfMQP_eq_bind₁ (L := L) (ℓ := ℓ') (v := (0 : Fin (ℓ' + 1)))
       (poly := H) (challenges := Fin.elim0))
-
-private lemma projectToMidSumcheckPoly_zero_eq_computeInitial
-    (t' : MultilinearPoly L ℓ')
-    (m : MultilinearPoly L ℓ') :
-    projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := t')
-      (m := m) (i := (0 : Fin (ℓ' + 1))) (challenges := Fin.elim0) =
-    computeInitialSumcheckPoly (L := L) (ℓ := ℓ') t' m := by
-  sorry
 
 -- Expand the honest tensor row decomposition and identify the batching multiplier at zero-one points.
 private lemma compute_s0_embedded_MLP_eval_eq_sum
@@ -1347,10 +1339,12 @@ lemma batching_target_consistency
     (h_msg0 : msg0 = rsEmbeddedRingSwitchTensor (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ')
         (h_l := h_l) (r := ctx.t_eval_point) (tMl := t_ml)) :
   let s₀ := compute_s0 κ L K β msg0 ctx.r_batching
-  let H := projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := t_ml)
-    (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx) (i := 0)
-    (challenges := Fin.elim0)
-  sumcheckConsistencyProp (𝓑:=𝓑) s₀ H := by
+  let H : MultiquadraticPoly L ℓ' :=
+    MultiquadraticPoly.ofCMvPoly
+      (projectToMidSumcheckPoly (κ := κ) (L := L) (ℓ := ℓ') (t := t_ml)
+        (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly ctx) (i := 0)
+        (challenges := Fin.elim0))
+  Binius.BinaryBasefold.sumcheckConsistencyProp (𝓑 := 𝓑) s₀ H := by
   sorry
 
 end Relations

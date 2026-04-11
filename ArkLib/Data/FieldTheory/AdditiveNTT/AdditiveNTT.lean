@@ -99,72 +99,75 @@ section ComputableDomainPrimitives
 /-- Explicit value-level encoding of a point in `U i` from a bit-index. -/
 def bitsToUValue (i : Fin r) (k : Fin (2 ^ i.val)) : L :=
   (Finset.univ : Finset (Fin i)).sum fun j =>
-    if Nat.getBit (n := k.val) (k := j.val) == 1 then β ⟨j, by omega⟩ else 0
+    if Nat.getBit (n := k.val) (k := j.val) == 1 then
+      β ⟨j.val, by exact Nat.lt_trans j.isLt i.isLt⟩
+    else
+      0
 
 /-- Executable enumeration of all elements in `U i`. -/
 def getUElements (i : Fin r) : List L :=
   (List.finRange (2 ^ i.val)).map
-    (fun k => bitsToUValue (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) k)
+    (fun k : Fin (2 ^ i.val) => bitsToUValue (β := β) (i := i) (k := k))
 
 /-- Executable evaluation of the subspace-vanishing polynomial at a point. -/
 def evalWAt (i : Fin r) (x : L) : L :=
-  ((getUElements (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i)).map (fun u => x - u)).prod
+  ((getUElements (β := β) (i := i)).map (fun u => x - u)).prod
 
 /-- Executable evaluation of `Ŵᵢ` at a point. -/
 def evalNormalizedWAt (i : Fin r) (x : L) : L :=
-  let W_x := evalWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) x
-  let W_beta := evalWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) (β i)
+  let W_x := evalWAt (β := β) (i := i) x
+  let W_beta := evalWAt (β := β) (i := i) (β i)
   W_x * W_beta⁻¹
 
 /-- Bridge theorem: executable `evalWAt` agrees with `W.eval`. -/
 lemma evalWAt_eq_W (i : Fin r) (x : L) :
-    evalWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) x = (W 𝔽q β i).eval x := by
+    evalWAt (β := β) (i := i) x = (W 𝔽q β i).eval x := by
   sorry
 
 /-- Bridge theorem: executable `evalNormalizedWAt` agrees with `normalizedW.eval`. -/
 lemma evalNormalizedWAt_eq_normalizedW (i : Fin r) (x : L) :
-    evalNormalizedWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) x
+    evalNormalizedWAt (β := β) (i := i) x
       = (normalizedW 𝔽q β i).eval x := by
   sorry
 
 /-- Computable linear map given by executable evaluation of `Ŵᵢ`. -/
 def evalNormalizedWLinearMap (i : Fin r) : L →ₗ[𝔽q] L :=
-{ toFun := fun x => evalNormalizedWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) x
+{ toFun := fun x => evalNormalizedWAt (β := β) (i := i) x
   map_add' := by
     intro x y
     calc
-      evalNormalizedWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) (x + y)
+      evalNormalizedWAt (β := β) (i := i) (x + y)
           = (normalizedW 𝔽q β i).eval (x + y) := by
             simpa using evalNormalizedWAt_eq_normalizedW
-              (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) (x := x + y)
+              (𝔽q := 𝔽q) (β := β) (i := i) (x := x + y)
       _ = (normalizedW 𝔽q β i).eval x + (normalizedW 𝔽q β i).eval y := by
             simpa using (AdditiveNTT.normalizedW_is_additive (𝔽q := 𝔽q) (β := β) i).map_add x y
-      _ = evalNormalizedWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) x
-          + evalNormalizedWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) y := by
+      _ = evalNormalizedWAt (β := β) (i := i) x
+          + evalNormalizedWAt (β := β) (i := i) y := by
             rw [← evalNormalizedWAt_eq_normalizedW
-              (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) (x := x)]
+              (𝔽q := 𝔽q) (β := β) (i := i) (x := x)]
             rw [← evalNormalizedWAt_eq_normalizedW
-              (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) (x := y)]
+              (𝔽q := 𝔽q) (β := β) (i := i) (x := y)]
   map_smul' := by
     intro c x
     calc
-      evalNormalizedWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) (c • x)
+      evalNormalizedWAt (β := β) (i := i) (c • x)
           = (normalizedW 𝔽q β i).eval (c • x) := by
             simpa using evalNormalizedWAt_eq_normalizedW
-              (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) (x := c • x)
+              (𝔽q := 𝔽q) (β := β) (i := i) (x := c • x)
       _ = c • (normalizedW 𝔽q β i).eval x := by
             simpa using (AdditiveNTT.normalizedW_is_additive (𝔽q := 𝔽q) (β := β) i).map_smul c x
-      _ = c • evalNormalizedWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) x := by
+      _ = c • evalNormalizedWAt (β := β) (i := i) x := by
             rw [← evalNormalizedWAt_eq_normalizedW
-              (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) (x := x)]
+              (𝔽q := 𝔽q) (β := β) (i := i) (x := x)]
 }
 
 @[simp] lemma evalNormalizedWLinearMap_apply (i : Fin r) (x : L) :
-    evalNormalizedWLinearMap (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) i x
+    evalNormalizedWLinearMap (𝔽q := 𝔽q) (β := β) (i := i) x
       = (normalizedW 𝔽q β i).eval x := by
   simpa [evalNormalizedWLinearMap]
     using evalNormalizedWAt_eq_normalizedW
-      (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) (x := x)
+      (𝔽q := 𝔽q) (β := β) (i := i) (x := x)
 
 end ComputableDomainPrimitives
 
@@ -192,7 +195,7 @@ noncomputable def sDomain (i : Fin r) : Subspace 𝔽q L :=
 /-- Computable companion of `sDomain`, using executable evaluation primitives. -/
 def sDomainComp (i : Fin r) : Subspace 𝔽q L :=
   Submodule.map
-    (evalNormalizedWLinearMap (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) i)
+    (evalNormalizedWLinearMap (𝔽q := 𝔽q) (β := β) (i := i))
     (U 𝔽q β ⟨ℓ + R_rate, h_ℓ_add_R_rate⟩)
 
 noncomputable def sDomain_cast {i j : Fin r} (h : i = j) :
@@ -2206,8 +2209,7 @@ def twiddleFactor (i : Fin r) (h_i : i < ℓ)
     if Nat.getBit k u.val = 1 then
       -- this branch maps to the above Nat.getBit = 1 branch
         -- (of evaluationPointω (i+1)) under (qMap i)(X)
-      evalNormalizedWAt (β := β) (ℓ := ℓ) (R_rate := R_rate)
-        (i := ⟨i, by omega⟩) (x := β ⟨i + 1 + k, by omega⟩)
+      evalNormalizedWAt (β := β) (i := ⟨i, by omega⟩) (β ⟨i + 1 + k, by omega⟩)
     else 0
       -- 0 maps to the below Nat.getBit = 0 branch
         -- (of evaluationPointω (i+1)) under (qMap i)(X)
@@ -2217,13 +2219,13 @@ omit [NeZero ℓ] [DecidableEq L] [DecidableEq 𝔽q] [Fintype 𝔽q]
 lemma evaluationPointω_eq_twiddleFactor_of_div_2 (i : Fin r) (h_i : i < ℓ)
   (x : Fin (2 ^ (ℓ + R_rate - i))) :
   evaluationPointω 𝔽q β h_ℓ_add_R_rate (i := i) (h_i := by omega) x =
-  twiddleFactor β h_ℓ_add_R_rate (i := i) (h_i := by omega) ⟨x/2, by
+  twiddleFactor (β := β) h_ℓ_add_R_rate (i := i) (h_i := by omega) (u := ⟨x/2, by
     have h := div_two_pow_lt_two_pow (x:=x) (i := ℓ + R_rate - i - 1) (j:=1) (by
       rw [Nat.sub_add_cancel (by omega)]; omega)
     simp only [pow_one] at h
     calc _ < 2 ^ (ℓ + R_rate - i - 1) := by omega
       _ = _ := by rfl
-  ⟩ + (x.val % 2: ℕ) * eval (β ⟨i, by omega⟩) (normalizedW 𝔽q β ⟨i, by omega⟩) := by
+  ⟩) + (x.val % 2: ℕ) * eval (β ⟨i, by omega⟩) (normalizedW 𝔽q β ⟨i, by omega⟩) := by
   sorry
 
 omit [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [DecidableEq L] [NeZero ℓ] in
@@ -2231,7 +2233,7 @@ lemma eval_point_ω_eq_next_twiddleFactor_comp_qmap
   (i : Fin r) (h_i : i < ℓ) (x : Fin (2 ^ (ℓ + R_rate - (i + 1)))) :
   -- `j = u||b||v` => x here means u at level i
   evaluationPointω 𝔽q β h_ℓ_add_R_rate (i := ⟨i.val+1, by omega⟩) (h_i := by simp only; omega) x =
-  eval (twiddleFactor β h_ℓ_add_R_rate (i := i) (h_i := by omega) (u := ⟨x.val, by
+  eval (twiddleFactor (β := β) h_ℓ_add_R_rate (i := i) (h_i := by omega) (u := ⟨x.val, by
     calc x.val < 2 ^ (ℓ + R_rate - (i.val + 1)) := by omega
       _ = 2 ^ (ℓ + R_rate - i.val - 1) := by rfl
   ⟩)) (qMap 𝔽q β ⟨i, by omega⟩) := by
@@ -2291,7 +2293,7 @@ def NTTStage (β : Fin r → L) (h_ℓ_add_R_rate : ℓ + R_rate < r)
         rw [Nat.sub_add_cancel (by omega)]
         omega
       )
-    let twiddleFactor: L := twiddleFactor β h_ℓ_add_R_rate (i := i) (h_i := by omega) ⟨u, h_u_lt_2_pow⟩
+    let twiddleFactor : L := twiddleFactor (β := β) h_ℓ_add_R_rate (i := i) (h_i := by omega) ⟨u, h_u_lt_2_pow⟩
     let x0 := twiddleFactor -- since the last Nat.getBit of u||0 is 0
     let x1: L := x0 + 1 -- since the last Nat.getBit of u||1 is 1 and 1 * Ŵᵢ(βᵢ) = 1
 
@@ -2683,7 +2685,7 @@ by
   · simp only [h_b_bit_eq_0, ↓reduceDIte]
     simp only at h_b_bit_eq_0
     have bit_i_j_eq_0: Nat.getBit i.val j.val = 0 := by omega
-    set x0 := twiddleFactor β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) (h_i := by simp only; omega) ⟨j.val / 2 ^ i.val / 2, by
+    set x0 := twiddleFactor (β := β) h_ℓ_add_R_rate (i := ⟨i, by omega⟩) (h_i := by simp only; omega) ⟨j.val / 2 ^ i.val / 2, by
       rw [h_j_div_2_pow_left.symm]; exact h_j_div_2_pow_i_add_1_lt⟩
     have h_j_add_2_pow_i: j.val + 2 ^ i.val < 2 ^ (ℓ + R_rate):= by
       exact Nat.add_two_pow_of_getBit_eq_zero_lt_two_pow
@@ -2696,7 +2698,7 @@ by
       eval x0 (even_coeffs_poly.comp (qMap 𝔽q β ⟨↑i, by omega⟩)) := by
       rw [h_prev j]
       have h_twiddle_comp_qmap_eq_left := eval_point_ω_eq_next_twiddleFactor_comp_qmap
-        𝔽q β h_ℓ_add_R_rate     (i := ⟨i, by omega⟩) (x:=⟨j.val / 2 ^ i.val / 2, by
+        𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) (x:=⟨j.val / 2 ^ i.val / 2, by
         rw [←h_j_div_2_pow_left]; simp only [h_j_div_2_pow_i_add_1_lt]
       ⟩)
       simp only [Fin.is_lt, forall_true_left] at h_twiddle_comp_qmap_eq_left
@@ -2821,7 +2823,7 @@ by
     push_neg at h_b_bit_eq_0
     have bit_i_j_eq_1: Nat.getBit i.val j.val = 1 := by omega
     simp only [ne_eq, Nat.mod_two_not_eq_zero] at h_b_bit_eq_0
-    set x1 := twiddleFactor β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) (h_i := by simp only; omega)
+    set x1 := twiddleFactor (β := β) h_ℓ_add_R_rate (i := ⟨i, by omega⟩) (h_i := by simp only; omega)
       ⟨j.val / 2 ^ i.val / 2, by exact h_j_div_2_pow_div_2_left_lt⟩ + 1
     have h_j_xor_2_pow_i: j.val ^^^ 2 ^ i.val < 2 ^ (ℓ + R_rate):= by
       exact Nat.xor_lt_two_pow (by omega) (by
@@ -2883,8 +2885,7 @@ by
       conv_rhs =>
         rw [eval_comp]
         simp only [x1]
-      set t := twiddleFactor (r:=r) β h_ℓ_add_R_rate
-        (i := ⟨i, by omega⟩) (h_i := by simp only; omega) (u:=⟨j.val / 2 ^ i.val / 2, by
+      set t := twiddleFactor (β := β) h_ℓ_add_R_rate (i := ⟨i, by omega⟩) (h_i := by simp only; omega) (u:=⟨j.val / 2 ^ i.val / 2, by
         exact h_j_div_2_pow_div_2_left_lt⟩) with ht
       have hh := eval_qmap_linear.map_add' (x:=t) (y:=1)
       conv_rhs =>
@@ -2936,7 +2937,7 @@ by
       -- left (top) is the full poly of level (i+1),
       -- right (bottom) is the odd refinement of current level i
       have h_twiddle_comp_qmap_eq_left := eval_point_ω_eq_next_twiddleFactor_comp_qmap
-        𝔽q β h_ℓ_add_R_rate     (i := ⟨i, by omega⟩) (h_i := by simp only; omega) (x:=⟨j.val / 2 ^ i.val / 2, by
+        𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) (h_i := by simp only; omega) (x:=⟨j.val / 2 ^ i.val / 2, by
         rw [←h_j_div_2_pow_left]
         have h := div_two_pow_lt_two_pow (x:=j.val) (i :=
           ℓ + R_rate - (i.val + 1)) (j:=i.val + 1) (by
@@ -2949,7 +2950,7 @@ by
       conv_rhs =>
         rw [eval_comp]
         simp only [x1]
-      set t := twiddleFactor (r:=r) β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) (h_i := by simp only; omega)
+      set t := twiddleFactor ⟨i, by omega⟩ (by simp only; omega)
         (u:=⟨j.val / 2 ^ i.val / 2, by exact h_j_div_2_pow_div_2_left_lt⟩) with ht
       have hh := eval_qmap_linear.map_add' (x:=t) (y:=1)
       conv_rhs =>

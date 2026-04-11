@@ -772,7 +772,7 @@ lemma projectToNextSumcheckPoly_eval_eq (i : Fin ℓ) (Hᵢ : MultiquadraticPoly
 /-- **Key Sumcheck Property**: Evaluating the sumcheck round polynomial at a challenge equals
     the sum of the projected polynomial evaluations over the boolean hypercube.
     This is the fundamental relationship for the sumcheck protocol: when we create the round
-    message polynomial `g_i = getSumcheckRoundMessageComp(H_i)` and evaluate it at a challenge
+    message polynomial `g_i = getSumcheckRoundMessage(H_i)` and evaluate it at a challenge
     `rᵢ`, this equals the sum of evaluations of `H_{i+1} = projectToNextSumcheckPoly(H_i, rᵢ)`
     over all boolean points.
     Mathematically: `g_i(rᵢ) = ∑_{x ∈ {0,1}^{ℓ-i-1}} H_{i+1}(x)` where
@@ -780,7 +780,7 @@ lemma projectToNextSumcheckPoly_eval_eq (i : Fin ℓ) (Hᵢ : MultiquadraticPoly
     - `H_{i+1}` is obtained by fixing the first variable of `H_i` to `rᵢ`
 -/
 lemma projectToNextSumcheckPoly_sum_eq (i : Fin ℓ) (Hᵢ : MultiquadraticPoly L (ℓ - i)) (rᵢ : L) :
-    FoldMessage.eval (getSumcheckRoundMessageComp (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i Hᵢ) rᵢ =
+    FoldMessage.eval (getSumcheckRoundMessage (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i Hᵢ) rᵢ =
     (∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - i.succ),
       (projectToNextSumcheckPoly ℓ i Hᵢ rᵢ).val.eval x) :=
   by
@@ -1320,7 +1320,7 @@ lemma snoc_oracle_dest_eq_j {i : Fin ℓ} {destIdx : Fin r}
   rw [toOutCodewordsCount_mul_ϑ_eq_i_succ ℓ ϑ i h_commit]
 
 /-- snoc_oracle adds the latest oracle function to the end of an oStmtIn -/
-noncomputable def snoc_oracle {i : Fin ℓ} {destIdx : Fin r} (h_destIdx : destIdx = i.val + 1)
+def snoc_oracle {i : Fin ℓ} {destIdx : Fin r} (h_destIdx : destIdx = i.val + 1)
     (oStmtIn : ∀ j : Fin (toOutCodewordsCount ℓ ϑ i.castSucc),
       OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)
     (newOracleFn : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := destIdx)) :
@@ -1331,7 +1331,7 @@ noncomputable def snoc_oracle {i : Fin ℓ} {destIdx : Fin r} (h_destIdx : destI
 
  -/
 
-noncomputable def take_snoc_oracle (i : Fin ℓ) {destIdx : Fin r} (h_destIdx : destIdx = i.val + 1)
+def take_snoc_oracle (i : Fin ℓ) {destIdx : Fin r} (h_destIdx : destIdx = i.val + 1)
     (oStmtIn : (j : Fin (toOutCodewordsCount ℓ ϑ i.castSucc)) →
       OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)
     (newOracleFn : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := destIdx)) :
@@ -1363,7 +1363,7 @@ def getFirstOracle {oracleFrontierIdx : Fin (ℓ + 1)}
 
  -/
 
-noncomputable def getLastOracle {oracleFrontierIdx : Fin (ℓ + 1)} {destIdx : Fin r}
+def getLastOracle {oracleFrontierIdx : Fin (ℓ + 1)} {destIdx : Fin r}
     (h_destIdx : destIdx.val = getLastOracleDomainIndex ℓ ϑ oracleFrontierIdx)
     (oStmt : (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ
       (i := oracleFrontierIdx) j)) :

@@ -475,7 +475,7 @@ lemma fixFirstVariablesOfCMvPoly_eval_eq [BEq L] [LawfulBEq L] (v : Fin (ℓ + 1
   exact fixFirstVariablesOfMQP_eval_eq (L := L) (ℓ := ℓ) (v := v)
     (poly := CPoly.fromCMvPolynomial H) (x := x)
 
-private def sumcheckRoundMessagePolyComp [BEq L] [LawfulBEq L] (i : Fin ℓ)
+private def sumcheckRoundMessagePoly [BEq L] [LawfulBEq L] (i : Fin ℓ)
     (h : MultiquadraticPoly L (ℓ - ↑i.castSucc)) : CPoly.CMvPolynomial 1 L :=
   let X0 : CPoly.CMvPolynomial 1 L := CPoly.CMvPolynomial.X (n := 1) (R := L) ⟨0, by decide⟩
   ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc - 1),
@@ -490,18 +490,18 @@ private def sumcheckRoundMessagePolyComp [BEq L] [LawfulBEq L] (i : Fin ℓ)
             omega⟩))
       h
 
-def getSumcheckRoundMessageComp [BEq L] [LawfulBEq L] (i : Fin ℓ)
+def getSumcheckRoundMessage [BEq L] [LawfulBEq L] (i : Fin ℓ)
     (h : MultiquadraticPoly L (ℓ - ↑i.castSucc)) : FoldMessage L :=
-  let msgPoly := sumcheckRoundMessagePolyComp (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h
+  let msgPoly := sumcheckRoundMessagePoly (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h
   ⟨msgPoly, by
     intro j
     sorry
   ⟩
 
-lemma getSumcheckRoundMessageComp_sum_eq [BEq L] [LawfulBEq L] (i : Fin ℓ)
+lemma getSumcheckRoundMessage_sum_eq [BEq L] [LawfulBEq L] (i : Fin ℓ)
     (h : MultiquadraticPoly L (ℓ - ↑i.castSucc)) :
-    FoldMessage.eval (getSumcheckRoundMessageComp (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h) (𝓑 0) +
-      FoldMessage.eval (getSumcheckRoundMessageComp (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h) (𝓑 1) =
+    FoldMessage.eval (getSumcheckRoundMessage (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h) (𝓑 0) +
+      FoldMessage.eval (getSumcheckRoundMessage (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h) (𝓑 1) =
     ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc), MvPolynomial.eval x (MultiquadraticPoly.val h) := by
   sorry
 
@@ -517,7 +517,7 @@ private lemma cube_eval_sum_cons (n : ℕ) (p : L[X Fin (n + 1)]) :
 lemma getSumcheckRoundPoly_eval_eq [BEq L] [LawfulBEq L] (i : Fin ℓ)
     (h_poly : MultiquadraticPoly L (ℓ - ↑i.castSucc))
     (r : L) :
-    FoldMessage.eval (getSumcheckRoundMessageComp (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h_poly) r =
+    FoldMessage.eval (getSumcheckRoundMessage (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h_poly) r =
     ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc - 1),
       MvPolynomial.eval (Fin.cons r x ∘ Fin.cast (by
         exact (Nat.sub_add_cancel (Nat.one_le_of_lt (Nat.sub_pos_of_lt i.isLt))).symm
@@ -526,10 +526,10 @@ lemma getSumcheckRoundPoly_eval_eq [BEq L] [LawfulBEq L] (i : Fin ℓ)
 
 lemma getSumcheckRoundPoly_sum_eq [BEq L] [LawfulBEq L] (i : Fin ℓ)
     (h : MultiquadraticPoly L (ℓ - ↑i.castSucc)) :
-    FoldMessage.eval (getSumcheckRoundMessageComp (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h) (𝓑 0) +
-      FoldMessage.eval (getSumcheckRoundMessageComp (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h) (𝓑 1) =
+    FoldMessage.eval (getSumcheckRoundMessage (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h) (𝓑 0) +
+      FoldMessage.eval (getSumcheckRoundMessage (L := L) (ℓ := ℓ) (𝓑 := 𝓑) i h) (𝓑 1) =
     ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc), MvPolynomial.eval x (MultiquadraticPoly.val h) := by
-  simpa using getSumcheckRoundMessageComp_sum_eq (L := L) (ℓ := ℓ) (𝓑 := 𝓑) (i := i) h
+  simpa using getSumcheckRoundMessage_sum_eq (L := L) (ℓ := ℓ) (𝓑 := 𝓑) (i := i) h
 
 /-- Helper to convert an index `k` into a vector of bits (as field elements). -/
 def bitsOfIndex {n : ℕ} (k : Fin (2 ^ n)) : Fin n → L :=

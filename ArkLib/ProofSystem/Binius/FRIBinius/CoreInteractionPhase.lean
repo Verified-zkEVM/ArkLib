@@ -162,7 +162,7 @@ def sumcheckFoldOracleReduction
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ'))
       (WitOut := BinaryBasefold.Witness K βfun
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') (Fin.last ℓ'))
-      (pSpec := BinaryBasefold.pSpecSumcheckFoldComp (ℓ := ℓ') (ϑ := ϑ) K βfun
+      (pSpec := BinaryBasefold.pSpecSumcheckFold (ℓ := ℓ') (ϑ := ϑ) K βfun
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate))) :
     OracleReduction
       (oSpec := []ₒ)
@@ -174,7 +174,7 @@ def sumcheckFoldOracleReduction
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ'))
       (WitOut := BinaryBasefold.Witness K βfun
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') (Fin.last ℓ'))
-      (pSpec := BinaryBasefold.pSpecSumcheckFoldComp (ℓ := ℓ') (ϑ := ϑ) K βfun
+      (pSpec := BinaryBasefold.pSpecSumcheckFold (ℓ := ℓ') (ϑ := ϑ) K βfun
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
   prover := prover
   verifier := sumcheckFoldOracleVerifier (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ')
@@ -203,7 +203,7 @@ theorem sumcheckFoldOracleReduction_perfectCompleteness
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ'))
         (WitOut := BinaryBasefold.Witness K (fun i => β i)
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') (Fin.last ℓ'))
-        (pSpec := BinaryBasefold.pSpecSumcheckFoldComp K (fun i => β i)
+        (pSpec := BinaryBasefold.pSpecSumcheckFold K (fun i => β i)
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate)))
     (hInit : NeverFail init) :
   OracleReduction.perfectCompleteness
@@ -216,7 +216,7 @@ theorem sumcheckFoldOracleReduction_perfectCompleteness
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ'))
     (WitOut := BinaryBasefold.Witness K β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ:=ℓ') (Fin.last ℓ'))
-    (pSpec := BinaryBasefold.pSpecSumcheckFoldComp K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+    (pSpec := BinaryBasefold.pSpecSumcheckFold K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (relIn := RingSwitching.strictSumcheckRoundRelation κ L K ℓ ℓ'
       (BinaryBasefoldAbstractOStmtIn (β := β) (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) 0)
@@ -297,7 +297,7 @@ theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness [Fintype L] :
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ'))
       (WitOut := BinaryBasefold.Witness K β
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ:=ℓ') (Fin.last ℓ'))
-      (pSpec := BinaryBasefold.pSpecSumcheckFoldComp K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+      (pSpec := BinaryBasefold.pSpecSumcheckFold K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (relIn := RingSwitching.sumcheckRoundRelation κ L K ℓ ℓ'
         (BinaryBasefoldAbstractOStmtIn
           (κ := κ) (L := L) (K := K) (β := β)
@@ -1140,7 +1140,7 @@ def coreInteractionOracleVerifierFunOfMultiplier
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ'))
     (OStmt₃ := BinaryBasefold.OracleStatement K βfun
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ'))
-    (pSpec₁ := BinaryBasefold.pSpecSumcheckFoldComp K βfun (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+    (pSpec₁ := BinaryBasefold.pSpecSumcheckFold K βfun (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (pSpec₂ := pSpecFinalSumcheckStep (L:=L))
     (V₁ := sumcheckFoldOracleVerifierFunOfMultiplier (κ := κ) (L := L) (K := K) (ℓ := ℓ)
       (ℓ' := ℓ') (𝓑 := 𝓑) (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) βfun mp)

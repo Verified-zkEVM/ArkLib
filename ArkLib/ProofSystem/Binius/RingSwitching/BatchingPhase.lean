@@ -160,7 +160,7 @@ def batchingProverWitOut (stmtIn : BatchingStmtIn L ℓ)
   }
   {
     t' := witIn.t',
-    H := projectToMidSumcheckPolyComp (κ := κ) (L := L) (ℓ := ℓ)
+    H := projectToMidSumcheckPoly (κ := κ) (L := L) (ℓ := ℓ)
       (ℓ' := ℓ') (t := witIn.t')
       (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly (ctx := ctx))
       (i := 0) (challenges := Fin.elim0)
@@ -378,8 +378,7 @@ def batchingKStateProp {m : Fin (2 + 1)}
     }
     let witOut : SumcheckWitness L ℓ' 0 := {
       t' := witMid.t',
-      H := projectToMidSumcheckPolyComp
-        (κ := κ) (L := L) (ℓ := ℓ) (ℓ' := ℓ') (t := witMid.t')
+      H := projectToMidSumcheckPoly (κ := κ) (L := L) (ℓ := ℓ) (ℓ' := ℓ') (t := witMid.t')
         (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly (ctx := ctx))
         (i := 0) (challenges := Fin.elim0)
     }

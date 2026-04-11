@@ -90,7 +90,7 @@ def BBF_eq_multiplier (r : Fin ℓ → L) : MultilinearPoly L ℓ :=
         exact Nat.le_of_lt_succ (w j).isLt)
     multilinearWeight (r := r) (i := w_index)
 
-noncomputable def BBF_SumcheckMultiplierParam : SumcheckMultiplierParam L ℓ (SumcheckBaseContext L ℓ) :=
+def BBF_SumcheckMultiplierParam : SumcheckMultiplierParam L ℓ (SumcheckBaseContext L ℓ) :=
   { multpoly := fun ctx => BBF_eq_multiplier ctx.t_eval_point }
 
 /-- This condition ensures that the folding witness `f` is properly generated from `t` -/
@@ -138,11 +138,11 @@ def foldPrvState (i : Fin ℓ) : Fin (2 + 1) → Type := fun
   | ⟨1, _⟩ => Statement (L := L) Context i.castSucc ×
     (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j) ×
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc ×
-      (L → L)
+      FoldMessage L
   | _ => Statement (L := L) Context i.castSucc ×
     (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j) ×
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc ×
-      (L → L) × L
+      FoldMessage L × L
 
 @[reducible]
 noncomputable def getFoldProverFinalOutput (i : Fin ℓ)
@@ -152,13 +152,45 @@ noncomputable def getFoldProverFinalOutput (i : Fin ℓ)
     OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j))
       × Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
   := by
-  sorry
+  let (stmtIn, oStmtIn, witIn, h_i, r_i') := finalPrvState
+  let stmtOut : Statement (L := L) Context i.succ := {
+    ctx := stmtIn.ctx,
+    sumcheck_target := FoldMessage.eval h_i r_i',
+    challenges := Fin.snoc stmtIn.challenges r_i'
+  }
+  let sourceIdx : Fin r := ⟨i.val, by omega⟩
+  let destIdx : Fin r := ⟨i.val + 1, by omega⟩
+  let fᵢ_succ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (domainIdx := ⟨i.succ.val, by omega⟩) :=
+    fun y => by
+      let fiberMap : Fin 2 → AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
+          (R_rate := 𝓡) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) sourceIdx :=
+        qMap_total_fiber 𝔽q β (i := sourceIdx) (steps := 1)
+          (h_destIdx := by
+            simp only [sourceIdx, destIdx]
+            rfl)
+          (h_destIdx_le := by
+            simp only [destIdx]
+            exact Nat.succ_le_of_lt i.isLt)
+          (y := y)
+      let x₀ := fiberMap 0
+      let x₁ := fiberMap 1
+      exact witIn.f x₀ * ((1 - r_i') * x₁.val - r_i') +
+        witIn.f x₁ * (r_i' - (1 - r_i') * x₀.val)
+  let projectedH := projectToNextSumcheckPoly (L := L) (ℓ := ℓ)
+    (i := i) (Hᵢ := witIn.H) (rᵢ := r_i')
+  let witOut : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i.succ := {
+    t := witIn.t,
+    H := projectedH,
+    f := fᵢ_succ
+  }
+  exact ⟨⟨stmtOut, oStmtIn⟩, witOut⟩
 
 @[reducible]
 def foldProverComputeMsg (i : Fin ℓ)
     (witIn : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc) :
     FoldMessage L :=
-  getSumcheckRoundMessageComp (L := L) (ℓ := ℓ) (𝓑 := 𝓑) (i := i) witIn.H
+  getSumcheckRoundMessage (L := L) (ℓ := ℓ) (𝓑 := 𝓑) (i := i) witIn.H
 
 @[reducible]
 def foldVerifierCheck (i : Fin ℓ)

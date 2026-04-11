@@ -81,10 +81,8 @@ private def queryPointToIndex
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0) :
     Fin (2 ^ (ℓ + 𝓡)) :=
   match (List.finRange (2 ^ (ℓ + 𝓡))).find? (fun vIdx =>
-      decide (
-        AdditiveNTT.Comp.indexToSDomainZero (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) vIdx
-        = v)) with
+      decide ((AdditiveNTT.Comp.indexToSDomainZero (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
+        (R_rate := 𝓡) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) vIdx).1 = v.1)) with
   | some vIdx => vIdx
   | none => 0
 

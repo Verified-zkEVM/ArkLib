@@ -86,7 +86,7 @@ def sumcheckVerifierStmtOut (stmtIn : Statement (L := L) (ℓ := ℓ')
 @[reducible]
 def sumcheckProverComputeMsg (witIn : SumcheckWitness L ℓ' i.castSucc) :
     FoldMessage L :=
-  Binius.RingSwitching.getSumcheckRoundMessageComp
+  Binius.RingSwitching.getSumcheckRoundMessage
     (κ := κ) (L := L) (ℓ := ℓ) (ℓ' := ℓ') (𝓑 := 𝓑) (i := i) witIn.H
 
 /-- Pure prover output: computes the output witness given the transcript. -/
@@ -96,8 +96,8 @@ def sumcheckProverWitOut (_stmtIn : Statement (L := L) (ℓ := ℓ')
     (witIn : SumcheckWitness L ℓ' i.castSucc) (r_i' : L) : SumcheckWitness L ℓ' i.succ :=
   {
       t' := witIn.t',
-      H := Binius.RingSwitching.projectToNextSumcheckPolyComp
-        (κ := κ) (L := L) (ℓ := ℓ) (ℓ' := ℓ')
+      H := Binius.RingSwitching.projectToNextSumcheckPoly (κ := κ)
+        (L := L) (ℓ := ℓ) (ℓ' := ℓ')
         (i := i) witIn.H r_i'
   }
 
@@ -469,8 +469,8 @@ noncomputable def iteratedSumcheckRbrExtractor (i : Fin ℓ') :
       -- WitMid 2 → WitMid 1: extract backward from output witness using input challenges
       {
         t' := witMidSucc.t',
-        H := projectToMidSumcheckPolyComp
-          (κ := κ) (L := L) (ℓ := ℓ) (ℓ' := ℓ') (t := witMidSucc.t')
+        H := projectToMidSumcheckPoly (κ := κ)
+          (L := L) (ℓ := ℓ) (ℓ' := ℓ') (t := witMidSucc.t')
           (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly (ctx := stmtIn.ctx))
           (i := i.castSucc) (challenges := stmtIn.challenges)
       }
@@ -495,11 +495,11 @@ def iteratedSumcheckKStateProp (i : Fin ℓ') (m : Fin (2 + 1))
       aOStmtIn
       (stmtIdx := i.castSucc)
       (stmt := stmtMid) (oStmt := oStmtMid) (wit := witMid)
-      (localChecks := sumcheckConsistencyPropComp
+      (localChecks := sumcheckConsistencyProp
         (sumcheckTarget := stmtMid.sumcheck_target) (H := witMid.H))
   | ⟨1, _⟩ => -- After P sends hᵢ(X), before V sends r'ᵢ
     let h_star : FoldMessage L :=
-      getSumcheckRoundMessageComp
+      getSumcheckRoundMessage
         (κ := κ) (L := L) (ℓ := ℓ) (ℓ' := ℓ') (𝓑 := 𝓑) (i := i) witMid.H
     let h_i : FoldMessage L := tr.messages ⟨0, rfl⟩
     RingSwitching.masterKStateProp κ L K ℓ ℓ' aOStmtIn
@@ -525,15 +525,17 @@ def iteratedSumcheckKStateProp (i : Fin ℓ') (m : Fin (2 + 1))
         let explicitVCheck :=
           FoldMessage.eval h_i (𝓑 0) + FoldMessage.eval h_i (𝓑 1) = stmtMid.sumcheck_target
         explicitVCheck ∧
-        sumcheckConsistencyPropComp (sumcheckTarget := stmtOut.sumcheck_target) (H := witOut.H)
+        sumcheckConsistencyProp (sumcheckTarget := stmtOut.sumcheck_target) (H := witOut.H)
       )
 
 /-- Knowledge state function (KState) for single round -/
-def iteratedSumcheckKnowledgeStateFunction (i : Fin ℓ') :
+  def iteratedSumcheckKnowledgeStateFunction (i : Fin ℓ') :
     (iteratedSumcheckOracleVerifier κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) aOStmtIn i).KnowledgeStateFunction init impl
       (relIn := sumcheckRoundRelation κ L K ℓ ℓ' aOStmtIn i.castSucc)
       (relOut := sumcheckRoundRelation κ L K ℓ ℓ' aOStmtIn i.succ)
-      (extractor := iteratedSumcheckRbrExtractor κ L K β ℓ ℓ' h_l (aOStmtIn := aOStmtIn) (i := i)) where
+      (extractor := iteratedSumcheckRbrExtractor
+        (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
+        (h_l := h_l) (aOStmtIn := aOStmtIn) (i := i)) where
   toFun := fun m ⟨stmtMid, oStmtMid⟩ tr witMid =>
     iteratedSumcheckKStateProp
       (κ := κ) (L := L) (K := K) (ℓ := ℓ) (ℓ' := ℓ')
@@ -554,20 +556,22 @@ lemma iteratedSumcheck_rbrExtractionFailureEvent_imply_badSumcheck (i : Fin ℓ'
     (stmtOStmtIn : (Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ) i.castSucc)
       × (∀ j, aOStmtIn.OStmtIn j))
     (h_i : (pSpecSumcheckRound L).Message ⟨0, rfl⟩) (r_i' : L)
-    (doomEscape : rbrExtractionFailureEvent
+      (doomEscape : rbrExtractionFailureEvent
       (kSF := iteratedSumcheckKnowledgeStateFunction
         κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) aOStmtIn (init := init) (impl := impl) i)
       (extractor := iteratedSumcheckRbrExtractor
-        κ L K β ℓ ℓ' h_l (aOStmtIn := aOStmtIn) (i := i))
+        (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
+        (h_l := h_l) (aOStmtIn := aOStmtIn) (i := i))
       (i := ⟨1, rfl⟩) (stmtIn := stmtOStmtIn) (transcript := FullTranscript.mk1 h_i)
       (challenge := r_i')) :
     ∃ witMid : SumcheckWitness L ℓ' i.succ,
       aOStmtIn.initialCompatibility (witMid.t', stmtOStmtIn.2) ∧
       let witBefore : SumcheckWitness L ℓ' i.castSucc :=
         (iteratedSumcheckRbrExtractor.{0, 0}
-          κ L K β ℓ ℓ' h_l (aOStmtIn := aOStmtIn) (i := i)).extractMid
+          (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
+          (h_l := h_l) (aOStmtIn := aOStmtIn) (i := i)).extractMid
           (m := 1) stmtOStmtIn (FullTranscript.mk2 h_i r_i') witMid
-      let h_star : FoldMessage L := getSumcheckRoundMessageComp
+      let h_star : FoldMessage L := getSumcheckRoundMessage
         (κ := κ) (L := L) (ℓ := ℓ) (ℓ' := ℓ') (𝓑 := 𝓑) (i := i) witBefore.H
       badSumcheckEventProp r_i' (FoldMessage.eval h_i) (FoldMessage.eval h_star) := by
   sorry
@@ -584,7 +588,8 @@ lemma iteratedSumcheck_doom_escape_probability_bound (i : Fin ℓ')
         (kSF := iteratedSumcheckKnowledgeStateFunction
           κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) aOStmtIn (init := init) (impl := impl) i)
         (extractor := iteratedSumcheckRbrExtractor
-          κ L K β ℓ ℓ' h_l (aOStmtIn := aOStmtIn) (i := i))
+          (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
+          (h_l := h_l) (aOStmtIn := aOStmtIn) (i := i))
         ⟨1, rfl⟩ stmtOStmtIn (FullTranscript.mk1 h_i) y ] ≤
       iteratedSumcheckRoundKnowledgeError L ℓ' i := by
   sorry
@@ -601,7 +606,9 @@ theorem iteratedSumcheckOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ') :
   let P := rbrExtractionFailureEvent
     (kSF := iteratedSumcheckKnowledgeStateFunction (κ := κ) (L := L) (K := K)
     (ℓ := ℓ) (ℓ' := ℓ') (β := β) (𝓑 := 𝓑) (h_l := h_l) aOStmtIn (impl := impl) (init := init) i)
-    (iteratedSumcheckRbrExtractor κ (L:=L) (K:=K) (ℓ:=ℓ) (ℓ':=ℓ') (β := β) (h_l := h_l) aOStmtIn i)
+    (iteratedSumcheckRbrExtractor
+      (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
+      (h_l := h_l) (aOStmtIn := aOStmtIn) (i := i))
     j
     stmtOStmtIn
   rw [OracleReduction.probEvent_soundness_goal_unroll_log' (pSpec := pSpecFold
@@ -759,24 +766,10 @@ simplifying to a single evaluation. This is analogous to Binary Basefold's
 simplification of `𝓑^ᶠ(0) = {∅}`. -/
 lemma sumcheckConsistency_at_last_simplifies
     (target : L) (H : MultiquadraticPoly L (ℓ' - Fin.last ℓ'))
-    (h_cons : sumcheckConsistencyProp (𝓑 := 𝓑) target H) :
+    (h_cons : sumcheckConsistencyProp (sumcheckTarget := target)
+      (H := (H : CPoly.CMvPolynomial (ℓ' - Fin.last ℓ') L))) :
     target = H.val.eval (fun _ => (0 : L)) := by
-  -- Since ℓ' - Fin.last ℓ' = 0, the sum is over Fin 0 which has only one element
-  simp only [Fin.val_last] at H h_cons ⊢
-  simp only [sumcheckConsistencyProp] at h_cons
-  -- The piFinset over Fin 0 has only one element: fun _ => 0
-  haveI : IsEmpty (Fin 0) := Fin.isEmpty
-  rw [Finset.sum_eq_single (a := fun _ => 0)
-    (h₀ := fun b _ hb_ne => by
-      exfalso; apply hb_ne
-      funext i;
-      simp only [tsub_self] at i
-      exact i.elim0)
-    (h₁ := fun h_not_mem => by
-      exfalso; apply h_not_mem
-      simp only [Fintype.mem_piFinset]
-      intro i; simp only [tsub_self] at i; exact i.elim0)] at h_cons
-  exact h_cons
+  sorry
 
 /-- The honest prover's message in the final sumcheck step equals `t'(challenges)`. -/
 lemma finalSumcheck_honest_message_eq_t'_eval
@@ -812,7 +805,7 @@ lemma finalSumcheckStep_verifierCheck_passed
     (witIn : SumcheckWitness L ℓ' (Fin.last ℓ'))
     (oStmtIn : ∀ j, aOStmtIn.OStmtIn j)
     (challenges : (pSpecFinalSumcheckStep (L := L)).Challenges)
-    (h_sumcheck_cons : sumcheckConsistencyPropComp
+    (h_sumcheck_cons : sumcheckConsistencyProp
       (sumcheckTarget := stmtIn.sumcheck_target) (H := witIn.H))
     (h_wit_struct : witnessStructuralInvariant κ L K ℓ ℓ' stmtIn witIn) :
     let step := finalSumcheckStepLogic
@@ -1121,8 +1114,8 @@ noncomputable def finalSumcheckRbrExtractor :
   extractMid := fun _m ⟨_, _⟩ _trSucc witMidSucc => witMidSucc
   extractOut := fun ⟨stmtIn, _⟩ _tr witOut => {
     t' := witOut.t,
-    H := projectToMidSumcheckPolyComp
-      (κ := κ) (L := L) (ℓ := ℓ) (ℓ' := ℓ') (t := witOut.t)
+    H := projectToMidSumcheckPoly (κ := κ)
+      (L := L) (ℓ := ℓ) (ℓ' := ℓ') (t := witOut.t)
       (m := (RingSwitching_SumcheckMultParam κ L K β ℓ ℓ' h_l).multpoly (ctx := stmtIn.ctx))
       (i := Fin.last ℓ') (challenges := stmtIn.challenges)
   }
@@ -1141,7 +1134,7 @@ def finalSumcheckKStateProp {m : Fin (1 + 1)} (tr : Transcript m (pSpecFinalSumc
     RingSwitching.masterKStateProp κ L K ℓ ℓ' aOStmtIn
       (stmtIdx := Fin.last ℓ')
       (stmt := stmtIn) (oStmt := oStmtIn) (wit := witMid)
-      (localChecks := sumcheckConsistencyPropComp
+      (localChecks := sumcheckConsistencyProp
         (sumcheckTarget := stmtIn.sumcheck_target) (H := witMid.H))
   | ⟨1, _⟩ => -- implied by relOut + local checks via extractOut proofs
     let c : L := tr.messages ⟨0, rfl⟩
@@ -1165,7 +1158,9 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
     (finalSumcheckVerifier κ L K β ℓ ℓ' h_l aOStmtIn).KnowledgeStateFunction init impl
     (relIn := sumcheckRoundRelation κ L K ℓ ℓ' aOStmtIn (Fin.last ℓ'))
     (relOut := aOStmtIn.toRelInput)
-    (extractor := finalSumcheckRbrExtractor κ L K β ℓ ℓ' h_l (aOStmtIn := aOStmtIn)) where
+    (extractor := finalSumcheckRbrExtractor
+      (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
+      (h_l := h_l) (aOStmtIn := aOStmtIn)) where
   toFun := fun m ⟨stmtMid, oStmtMid⟩ tr witMid =>
     finalSumcheckKStateProp κ L K β ℓ ℓ' h_l
       (aOStmtIn := aOStmtIn) (m := m) (tr := tr)

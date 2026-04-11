@@ -226,9 +226,6 @@ section Pspec
 def pSpecFold : ProtocolSpec 2 :=
   ⟨![Direction.P_to_V, Direction.V_to_P], ![FoldMessage (L := L), L]⟩
 
-/-- Computable companion for `pSpecFold`, using coefficient-valued prover messages. -/
-abbrev pSpecFoldComp : ProtocolSpec 2 := pSpecFold (L := L)
-
 -- Conditional 1-message protocol (only for commitment rounds)
 @[reducible]
 def pSpecCommit (i : Fin ℓ) : ProtocolSpec 1 :=
@@ -246,25 +243,13 @@ def pSpecFoldCommit (i : Fin ℓ) : ProtocolSpec (3) :=
   pSpecFold (L:=L) ++ₚ pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
 
 @[reducible]
-def pSpecFoldCommitComp (i : Fin ℓ) : ProtocolSpec 3 :=
-  pSpecFoldComp (L := L) ++ₚ pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
-
-@[reducible]
 def pSpecFoldRelay : ProtocolSpec (2) :=
   pSpecFold (L:=L) ++ₚ pSpecRelay
-
-@[reducible]
-def pSpecFoldRelayComp : ProtocolSpec 2 :=
-  pSpecFoldComp (L := L) ++ₚ pSpecRelay
 
 @[reducible]
 -- Round-segment-level reductions
 def pSpecFoldRelaySequence (n : ℕ) :=
   ProtocolSpec.seqCompose fun (_: Fin n) ↦ pSpecFoldRelay (L:=L)
-
-@[reducible]
-def pSpecFoldRelaySequenceComp (n : ℕ) :=
-  ProtocolSpec.seqCompose fun (_ : Fin n) ↦ pSpecFoldRelayComp (L := L)
 -- Block-level reductions
 
 /-- A non-last block consists of `(ϑ-1)` fold-relay round and `1` fold-commit round -/
@@ -275,30 +260,14 @@ def pSpecFullNonLastBlock (bIdx : Fin (ℓ / ϑ - 1)) :=
         ⟨↑bIdx * ϑ + (ϑ - 1), by
           apply bIdx_mul_ϑ_add_i_lt_ℓ_succ bIdx (m:=0) (i:=⟨ϑ - 1, by exact ϑ_sub_one_le_self⟩)⟩)
 
-/-- Computable companion of non-last block pSpec. -/
-@[reducible]
-def pSpecFullNonLastBlockComp (bIdx : Fin (ℓ / ϑ - 1)) :=
-  pSpecFoldRelaySequenceComp (L := L) (n := ϑ - 1) ++ₚ
-    pSpecFoldCommitComp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      ⟨↑bIdx * ϑ + (ϑ - 1), by
-        apply bIdx_mul_ϑ_add_i_lt_ℓ_succ bIdx (m := 0) (i := ⟨ϑ - 1, by
-          exact ϑ_sub_one_le_self⟩)⟩
-
 /-- The last block consists of `ϑ` fold-relay rounds -/
 @[reducible]
 def pSpecLastBlock := pSpecFoldRelaySequence (L:=L) (n:=ϑ)
-
-@[reducible]
-def pSpecLastBlockComp := pSpecFoldRelaySequenceComp (L := L) (n := ϑ)
 
 /-- A sequence of `(ℓ / ϑ - 1)` non-last blocks -/
 @[reducible]
 def pSpecNonLastBlocks := seqCompose fun bIdx ↦
   pSpecFullNonLastBlock 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx
-
-@[reducible]
-def pSpecNonLastBlocksComp := seqCompose fun bIdx ↦
-  pSpecFullNonLastBlockComp 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx
 
 -- Protocol-level reductions
 /-- The final `CoreInteraction` consists of `(ℓ / ϑ - 1)` non-last blocks and `1` last block -/
@@ -306,15 +275,10 @@ def pSpecNonLastBlocksComp := seqCompose fun bIdx ↦
 def pSpecSumcheckFold := (pSpecNonLastBlocks 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) ++ₚ
   (pSpecLastBlock (L:=L) (ϑ:=ϑ))
 
-@[reducible]
-def pSpecSumcheckFoldComp :=
-  pSpecNonLastBlocksComp 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ++ₚ
-    pSpecLastBlockComp (L := L) (ϑ := ϑ)
-
 -- Complete protocol
 @[reducible]
 def pSpecCoreInteraction :=
-  pSpecSumcheckFoldComp 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ++ₚ
+  pSpecSumcheckFold 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ++ₚ
     pSpecFinalSumcheckStep (L := L)
 
 /-- The protocol specification for the query phase.
@@ -338,14 +302,7 @@ instance instOracleInterfaceMessagePSpecFold :
   ∀ j, OracleInterface ((pSpecFold (L:=L)).Message j) :=
   fun _ => OracleInterface.instDefault
 
-instance instOracleInterfaceMessagePSpecFoldComp :
-  ∀ j, OracleInterface ((pSpecFoldComp (L := L)).Message j) :=
-  fun _ => OracleInterface.instDefault
-
 instance : ∀ j, OracleInterface ((pSpecFold (L := L)).Challenge j) :=
-  ProtocolSpec.challengeOracleInterface
-
-instance : ∀ j, OracleInterface ((pSpecFoldComp (L := L)).Challenge j) :=
   ProtocolSpec.challengeOracleInterface
 
 instance : ∀ j, OracleInterface ((pSpecRelay).Message j)
@@ -374,44 +331,20 @@ instance {i : Fin ℓ} :
     ∀ j, OracleInterface ((pSpecFoldCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Message j) :=
   instOracleInterfaceMessageAppend
 
-instance {i : Fin ℓ} :
-    ∀ j, OracleInterface ((pSpecFoldCommitComp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Message j) :=
-  instOracleInterfaceMessageAppend (pSpec₁ := pSpecFoldComp (L := L))
-    (pSpec₂ := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
-
 instance {n : ℕ} : ∀ j, OracleInterface ((pSpecFoldRelaySequence (L:=L) n).Message j) :=
-  instOracleInterfaceMessageSeqCompose
-
-instance : ∀ j, OracleInterface ((pSpecFoldRelayComp (L := L)).Message j) :=
-  instOracleInterfaceMessageAppend
-
-instance {n : ℕ} : ∀ j, OracleInterface ((pSpecFoldRelaySequenceComp (L := L) n).Message j) :=
   instOracleInterfaceMessageSeqCompose
 
 instance {bIdx : Fin (ℓ / ϑ - 1)} : ∀ j, OracleInterface ((pSpecFullNonLastBlock 𝔽q β
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx).Message j) :=
   instOracleInterfaceMessageAppend
 
-instance {bIdx : Fin (ℓ / ϑ - 1)} : ∀ j, OracleInterface ((pSpecFullNonLastBlockComp 𝔽q β
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx).Message j) :=
-  instOracleInterfaceMessageAppend
-
 instance : ∀ j, OracleInterface ((pSpecNonLastBlocks 𝔽q β (ϑ:=ϑ)
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message j) := instOracleInterfaceMessageSeqCompose
-
-instance : ∀ j, OracleInterface ((pSpecNonLastBlocksComp 𝔽q β (ϑ := ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message j) := instOracleInterfaceMessageSeqCompose
 
 instance : ∀ j, OracleInterface ((pSpecLastBlock (L:=L) (ϑ:=ϑ)).Message j) :=
   instOracleInterfaceMessageSeqCompose
 
-instance : ∀ j, OracleInterface ((pSpecLastBlockComp (L := L) (ϑ := ϑ)).Message j) :=
-  instOracleInterfaceMessageSeqCompose
-
 instance : ∀ j, OracleInterface ((pSpecSumcheckFold 𝔽q β (ϑ:=ϑ)
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message j) := instOracleInterfaceMessageAppend
-
-instance : ∀ j, OracleInterface ((pSpecSumcheckFoldComp 𝔽q β (ϑ := ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message j) := instOracleInterfaceMessageAppend
 
 instance : ∀ i, OracleInterface ((pSpecFinalSumcheckStep (L:=L)).Message i)
@@ -463,55 +396,28 @@ instance : ∀ j, SampleableType ((pSpecFold (L:=L)).Challenge j)
     simp only [Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_fin_one]
     infer_instance
 
-instance : ∀ j, SampleableType ((pSpecFoldComp (L := L)).Challenge j)
-  | ⟨0, h0⟩ => by nomatch h0
-  | ⟨1, _⟩ => by
-    simp only [Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_fin_one]
-    infer_instance
-
 instance : ∀ j, SampleableType ((pSpecRelay).Challenge j)
   | ⟨x, hj⟩ => by exact x.elim0
 
 instance : ∀ j, SampleableType ((pSpecFoldRelay (L:=L)).Challenge j) :=
   instSampleableTypeChallengeAppend
 
-instance : ∀ j, SampleableType ((pSpecFoldRelayComp (L := L)).Challenge j) :=
-  instSampleableTypeChallengeAppend
-
 instance {i : Fin ℓ} : ∀ j, SampleableType ((pSpecFoldCommit 𝔽q β
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j) := instSampleableTypeChallengeAppend
-
-instance {i : Fin ℓ} : ∀ j, SampleableType ((pSpecFoldCommitComp 𝔽q β
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j) := instSampleableTypeChallengeAppend
 
 instance {n : ℕ} : ∀ j, SampleableType ((pSpecFoldRelaySequence (L:=L) n).Challenge j) :=
   instSampleableTypeChallengeSeqCompose
 
-instance {n : ℕ} : ∀ j, SampleableType ((pSpecFoldRelaySequenceComp (L := L) n).Challenge j) :=
-  instSampleableTypeChallengeSeqCompose
-
 instance {i : Fin (ℓ / ϑ - 1)} : ∀ j, SampleableType ((pSpecFullNonLastBlock 𝔽q β
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j) := instSampleableTypeChallengeAppend
-
-instance {i : Fin (ℓ / ϑ - 1)} : ∀ j, SampleableType ((pSpecFullNonLastBlockComp 𝔽q β
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j) := instSampleableTypeChallengeAppend
 
 instance : ∀ i, SampleableType ((pSpecNonLastBlocks 𝔽q β (ϑ:=ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := instSampleableTypeChallengeSeqCompose
 
-instance : ∀ i, SampleableType ((pSpecNonLastBlocksComp 𝔽q β (ϑ := ϑ)
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := instSampleableTypeChallengeSeqCompose
-
 instance : ∀ i, SampleableType ((pSpecLastBlock (L:=L) (ϑ:=ϑ)).Challenge i) :=
   instSampleableTypeChallengeSeqCompose
 
-instance : ∀ i, SampleableType ((pSpecLastBlockComp (L := L) (ϑ := ϑ)).Challenge i) :=
-  instSampleableTypeChallengeSeqCompose
-
 instance : ∀ i, SampleableType ((pSpecSumcheckFold 𝔽q β (ϑ:=ϑ)
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := instSampleableTypeChallengeAppend
-
-instance : ∀ i, SampleableType ((pSpecSumcheckFoldComp 𝔽q β (ϑ := ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := instSampleableTypeChallengeAppend
 
 instance : ∀ i, SampleableType ((pSpecFinalSumcheckStep (L:=L)).Challenge i)

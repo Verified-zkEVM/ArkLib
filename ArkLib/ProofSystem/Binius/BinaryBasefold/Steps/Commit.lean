@@ -36,7 +36,7 @@ def commitPrvState (i : Fin ℓ) : Fin (1 + 1) → Type := fun
     (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.succ j) ×
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ
 
-noncomputable def getCommitProverFinalOutput (i : Fin ℓ)
+def getCommitProverFinalOutput (i : Fin ℓ)
     (inputPrvState : commitPrvState (Context := Context) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i 0) :
   OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨↑i + 1, by omega⟩ ×
@@ -49,7 +49,7 @@ noncomputable def getCommitProverFinalOutput (i : Fin ℓ)
   (fᵢ_succ, (stmtIn, oStmtOut, witIn))
 
 /-! The prover for the `i`-th round of Binary commitmentfold. -/
-noncomputable def commitOracleProver (i : Fin ℓ) :
+def commitOracleProver (i : Fin ℓ) :
   OracleProver (oSpec := []ₒ)
     -- current round
     (StmtIn := Statement (L := L) Context i.succ)
@@ -96,7 +96,7 @@ def commitOracleVerifier (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
       (𝓑 := 𝓑) i hCR).hEq
 
 /-! The oracle reduction that is the `i`-th round of Binary commitmentfold. -/
-noncomputable def commitOracleReduction (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
+def commitOracleReduction (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
   OracleReduction (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context i.succ)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)

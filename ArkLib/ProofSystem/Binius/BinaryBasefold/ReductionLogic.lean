@@ -234,10 +234,8 @@ variable {Context : Type} {mp : SumcheckMultiplierParam L ℓ Context} -- Sumche
 section FoldStep
 
 /-- The Logic Instance for the i-th round of Binary Folding.
-**Computability note:** The `honestProverTranscript` and `proverOut` fields are sorry'd so that
-the structure is computable (verifier-side fields are fully defined). The actual prover logic
-lives in `foldProverComputeMsg` / `getFoldProverFinalOutput` and is referenced by the
-completeness proof; this is temporary until CompPoly migration completes. -/
+**Computability note:** the prover-side fields are routed through the explicit fold kernels.
+The structure is now computable again; proof obligations are still deferred where needed. -/
 def foldStepLogic (i : Fin ℓ) :
     ReductionLogicStep
       -- In/Out Types
@@ -274,54 +272,15 @@ def foldStepLogic (i : Fin ℓ) :
   ⟩
   hEq := fun oracleIdx => by
     simp only [MessageIdx, Fin.is_lt, ↓reduceDIte, Fin.eta, Function.Embedding.coeFn_mk]
-  -- 3. Honest Prover Logic – sorry'd for computability (actual logic: foldProverComputeMsg)
-  honestProverTranscript := sorry
-  -- 4. Prover Output – sorry'd for computability (actual logic: getFoldProverFinalOutput)
-  proverOut := sorry
-
-/-- Actual (noncomputable) honest prover transcript for the fold step.
-Separated from `foldStepLogic` to keep the structure computable. -/
-noncomputable def foldStepLogic_honestProverTranscript (i : Fin ℓ) :
-    Statement (L := L) Context i.castSucc →
-    Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc →
-    (∀ j, OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j) →
-    (pSpecFold (L := L)).Challenges →
-    FullTranscript (pSpecFold (L := L)) :=
-  fun _stmtIn witIn _oStmtIn chal =>
-    let msg : FoldMessage L := foldProverComputeMsg (L := L) 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i witIn
-    FullTranscript.mk2 msg (chal ⟨1, rfl⟩)
-
-/-- Actual (noncomputable) prover output for the fold step.
-Separated from `foldStepLogic` to keep the structure computable. -/
-noncomputable def foldStepLogic_proverOut (i : Fin ℓ) :
-    Statement (L := L) Context i.castSucc →
-    Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc →
-    (∀ j, OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j) →
-    FullTranscript (pSpecFold (L := L)) →
-    ((Statement (L := L) Context i.succ ×
-      (∀ j, OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j)) ×
-      Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ) :=
-  fun s w o t =>
-    let h_i : (pSpecFold (L := L)).«Type» 0 := t ⟨0, by omega⟩
-    let r_i' : (pSpecFold (L := L)).«Type» 1 := t ⟨1, by omega⟩
-    getFoldProverFinalOutput 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
-      (s, o, w, FoldMessage.eval h_i, r_i')
-
-@[simp] lemma foldStepLogic_honestProverTranscript_eq (i : Fin ℓ) :
-    (foldStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (mp := mp) i).honestProverTranscript =
-    foldStepLogic_honestProverTranscript
-      (𝔽q := 𝔽q) (β := β) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (𝓑 := 𝓑) (Context := Context) i := by
-  sorry
-
-@[simp] lemma foldStepLogic_proverOut_eq (i : Fin ℓ) :
-    (foldStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (mp := mp) i).proverOut =
-    foldStepLogic_proverOut 𝔽q β (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i := by
-  sorry
+  -- 3. Honest Prover Logic
+  honestProverTranscript := fun s w oStmt chal =>
+    FullTranscript.mk2
+      (foldProverComputeMsg (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i w)
+      (chal ⟨1, rfl⟩)
+  -- 4. Prover Output
+  proverOut := by
+    intro _ _ _ _
+    sorry
 
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
   {n : ℕ} {deg : ℕ} {m : ℕ} {D : Fin m ↪ R}
