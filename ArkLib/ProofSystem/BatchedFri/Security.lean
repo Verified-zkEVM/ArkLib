@@ -257,7 +257,7 @@ noncomputable def f_succ'
 
   Corresponds to Claim 8.1 of [BCIKS20] -/
 lemma fri_round_consistency_completeness
-  {f : ReedSolomon.code 
+  {f : ReedSolomon.code
     (⟨fun x => x, by simp⟩ : evalDomainSigma s ω i ↪ 𝔽)
     (2 ^ (n - (∑ j' ∈ finRangeTo _ i, (s j' : ℕ))))}
   {z : 𝔽}
@@ -265,7 +265,7 @@ lemma fri_round_consistency_completeness
   :
   f_succ' n s f.val z k_le_n ∈
     (ReedSolomon.code
-      (⟨fun x => x, sorry⟩ : (evalDomainSigma s ω (i.1 + 1)).toFinset ↪ 𝔽)
+      (⟨fun x => x, by simp⟩ : (evalDomainSigma s ω (i.1 + 1)).toFinset ↪ 𝔽)
       (2 ^ (n - (∑ j' ∈ finRangeTo _ (i.1 + 1), (s j' : ℕ))))
     ).carrier
   := by sorry
@@ -495,9 +495,9 @@ noncomputable instance {t l : ℕ} :
             ⟨i, h⟩)))
     i h
 
-noncomputable instance {t l : ℕ} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
     ([(fullChallengeProtocol
-        (𝔽 := 𝔽) (D := D) (g := g) (k := k) (s := s) t l).Challenge]ₒ).Inhabited where
+        (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge]ₒ).Inhabited where
   inhabited_B := by
     intro q
     rcases q with ⟨i, u⟩
@@ -508,7 +508,7 @@ noncomputable instance {t l : ℕ} :
 
 noncomputable instance {t l : ℕ} :
     ([(fullChallengeProtocol
-        (𝔽 := 𝔽) (D := D) (g := g) (k := k) (s := s) t l).Challenge]ₒ).Fintype where
+        (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge]ₒ).Fintype where
   fintype_B := by
     intro q
     rcases q with ⟨i, u⟩
@@ -520,49 +520,49 @@ noncomputable instance {t l : ℕ} :
 noncomputable instance {t l : ℕ} :
     ∀ j, Inhabited
       (((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
-          (Spec.pSpecFold D g k s ++ₚ
+          (Spec.pSpecFold k (ω := ω) s ++ₚ
             Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-              Spec.QueryRound.pSpec D g l)).Challenge j) := by
+              Spec.QueryRound.pSpec (ω := ω) l)).Challenge j) := by
   simpa [fullChallengeProtocol] using
     (inferInstance :
       ∀ j,
         Inhabited
           ((fullChallengeProtocol
-              (𝔽 := 𝔽) (D := D) (g := g) (k := k) (s := s) t l).Challenge j))
+              (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge j))
 
 noncomputable instance {t l : ℕ} :
     ∀ j, Fintype
       (((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
-          (Spec.pSpecFold D g k s ++ₚ
+          (Spec.pSpecFold (ω := ω) k s ++ₚ
             Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-              Spec.QueryRound.pSpec D g l)).Challenge j) := by
+              Spec.QueryRound.pSpec (ω := ω) l)).Challenge j) := by
   simpa [fullChallengeProtocol] using
     (inferInstance :
       ∀ j,
         Fintype
           ((fullChallengeProtocol
-              (𝔽 := 𝔽) (D := D) (g := g) (k := k) (s := s) t l).Challenge j))
+              (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge j))
 
 noncomputable instance {t l : ℕ} :
     ([((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
-        (Spec.pSpecFold D g k s ++ₚ
+        (Spec.pSpecFold (ω := ω) k s ++ₚ
           Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-            Spec.QueryRound.pSpec D g l)).Challenge]ₒ).Inhabited := by
+            Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Inhabited := by
   infer_instance
 
 noncomputable instance {t l : ℕ} :
     ([((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
-        (Spec.pSpecFold D g k s ++ₚ
+        (Spec.pSpecFold (ω := ω) k s ++ₚ
           Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-            Spec.QueryRound.pSpec D g l)).Challenge]ₒ).Fintype := by
+            Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Fintype := by
   infer_instance
 
 noncomputable instance {t l : ℕ} :
     ([]ₒ +
       [((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
-          (Spec.pSpecFold D g k s ++ₚ
+          (Spec.pSpecFold (ω := ω) k s ++ₚ
             Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-              Spec.QueryRound.pSpec D g l)).Challenge]ₒ).Inhabited where
+              Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Inhabited where
   inhabited_B := by
     intro q
     cases q with
@@ -572,16 +572,16 @@ noncomputable instance {t l : ℕ} :
           (inferInstance :
             Inhabited
               (([((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
-                  (Spec.pSpecFold D g k s ++ₚ
+                  (Spec.pSpecFold (ω := ω) k s ++ₚ
                     Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-                      Spec.QueryRound.pSpec D g l)).Challenge]ₒ).Range q))
+                      Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Range q))
 
 noncomputable instance {t l : ℕ} :
     ([]ₒ +
       [((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
-          (Spec.pSpecFold D g k s ++ₚ
+          (Spec.pSpecFold (ω := ω) k s ++ₚ
             Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-              Spec.QueryRound.pSpec D g l)).Challenge]ₒ).Fintype where
+              Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Fintype where
   fintype_B := by
     intro q
     cases q with
@@ -591,18 +591,18 @@ noncomputable instance {t l : ℕ} :
           (inferInstance :
             Fintype
               (([((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
-                  (Spec.pSpecFold D g k s ++ₚ
+                  (Spec.pSpecFold (ω := ω) k s ++ₚ
                     Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-                      Spec.QueryRound.pSpec D g l)).Challenge]ₒ).Range q))
+                      Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Range q))
 
 noncomputable instance {t l : ℕ} :
     HasEvalPMF
       (OracleComp
         ([]ₒ +
           [((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
-              (Spec.pSpecFold D g k s ++ₚ
+              (Spec.pSpecFold (ω := ω) k s ++ₚ
                 Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-                  Spec.QueryRound.pSpec D g l)).Challenge]ₒ)) := by
+                  Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ)) := by
   infer_instance
 
 noncomputable instance {t l : ℕ} :
@@ -611,9 +611,9 @@ noncomputable instance {t l : ℕ} :
         (OracleComp
           ([]ₒ +
             [((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
-                (Spec.pSpecFold D g k s ++ₚ
+                (Spec.pSpecFold (ω := ω) k s ++ₚ
                   Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-                    Spec.QueryRound.pSpec D g l)).Challenge]ₒ))) := by
+                    Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ))) := by
   infer_instance
 
 open ENNReal in
@@ -621,7 +621,7 @@ open ENNReal in
 lemma fri_query_soundness
   {t : ℕ}
   {α : ℝ}
-  (f : Fin t.succ → (CosetDomain.evalDomain D g 0 → 𝔽))
+  (f : Fin t.succ → (ω.subdomainNatReversed 0 → 𝔽))
   (h_agreement :
     correlated_agreement_density
       (Fₛ f)
@@ -643,7 +643,7 @@ lemma fri_query_soundness
           (
             (do
               simulateQ
-                (oracleImpl D g s 1 z (fun v ↦ f 0 v + ∑ i, x i * f i.succ v))
+                (oracleImpl (ω := ω) s 1 z (fun v ↦ f 0 v + ∑ i, x i * f i.succ v))
                 (
                   (
                     Fri.Spec.QueryRound.queryVerifier D g
