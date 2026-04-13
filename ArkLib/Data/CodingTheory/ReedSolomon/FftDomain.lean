@@ -836,6 +836,42 @@ lemma subdomainNatReversed_sub {n : ℕ} {ω : SmoothFftDomain n F}
   unfold subdomainNatReversed
   rw [show n - (n - i) = i by omega]
 
+lemma subdomainNatReversed_root_exists {n} {ω : SmoothFftDomain n F}
+  {i j : ℕ} (hij : i + j ≤ n)
+  {x : F}
+  (h : x ∈ (ω.subdomainNatReversed (i + j)))
+  :
+  ∃ y ∈ ω.subdomainNatReversed i, y ^ (2 ^ j) = x
+  := by
+  unfold subdomainNatReversed subdomainNat at *
+  rw [mem_subdomain_of_eq_vals 
+    (j := Fin.ofNat _ (n - i) - Fin.ofNat _ j)
+    (by {
+      norm_num
+      rw [Nat.mod_eq_of_lt (by omega)]
+      rw [Fin.val_sub]
+      simp
+      rw [Nat.mod_eq_of_lt (a := j) (by omega)]
+      have : n + 1 - j + (n - i) = n + 1 + (n - i) - j := by omega
+      rw [this, Nat.add_sub_assoc (by omega)] 
+      norm_num
+      rw [Nat.mod_eq_of_lt (by omega)]
+      omega
+    })] at h
+  have hh := subdomain_root_exists (by {
+    simp
+    rw [Fin.natCast_le_natCast (by omega) (by omega)]
+    omega
+  }) h
+  rw [show (Fin.ofNat _ j) = j by { simp; omega }] at hh
+  exact hh
+
+lemma subdomainNatReversed_mem_of_eq {n m k} {ω : SmoothFftDomain n F}
+  {x : F}
+  (h : m = k)
+  :
+  x ∈ ω.subdomainNatReversed m ↔ x ∈ ω.subdomainNatReversed k := by
+  aesop (add simp [subdomainNatReversed, subdomainNat])
 end FftDomain
 
 namespace CosetFftDomain
@@ -1205,6 +1241,43 @@ lemma subdomainNatReversed_mul_property {n : ℕ} {ω : SmoothCosetFftDomain n F
   a * b ∈ (ω.subdomainNatReversed j) := by
   simp only [subdomainNatReversed, FftDomain.subdomainNatReversed] at *
   exact subdomainNat_mul_property (j := n - i) (by omega) (by omega) ha hb
+
+lemma subdomainNatReversed_root_exists {n} {ω : SmoothCosetFftDomain n F}
+  {i j : ℕ} (hij : i + j ≤ n)
+  {x : F}
+  (h : x ∈ (ω.subdomainNatReversed (i + j)))
+  :
+  ∃ y ∈ ω.subdomainNatReversed i, y ^ (2 ^ j) = x
+  := by
+  unfold subdomainNatReversed subdomainNat at *
+  rw [mem_subdomain_of_eq_vals 
+    (j := Fin.ofNat _ (n - i) - Fin.ofNat _ j)
+    (by {
+      norm_num
+      rw [Nat.mod_eq_of_lt (by omega)]
+      rw [Fin.val_sub]
+      simp
+      rw [Nat.mod_eq_of_lt (a := j) (by omega)]
+      have : n + 1 - j + (n - i) = n + 1 + (n - i) - j := by omega
+      rw [this, Nat.add_sub_assoc (by omega)] 
+      norm_num
+      rw [Nat.mod_eq_of_lt (by omega)]
+      omega
+    })] at h
+  have hh := subdomain_root_exists (by {
+    simp
+    rw [Fin.natCast_le_natCast (by omega) (by omega)]
+    omega
+  }) h
+  rw [show (Fin.ofNat _ j) = j by { simp; omega }] at hh
+  exact hh
+
+lemma subdomainNatReversed_mem_of_eq {n m k} {ω : SmoothCosetFftDomain n F}
+  {x : F}
+  (h : m = k)
+  :
+  x ∈ ω.subdomainNatReversed m ↔ x ∈ ω.subdomainNatReversed k := by
+  aesop (add simp [subdomainNatReversed, subdomainNat])
 
 end
 

@@ -100,8 +100,8 @@ def cosetEnum (s₀ : evalDomainSigma s ω i) (k_le_n : ∑ j', (s j').1 ≤ n)
   ⟩
   ↑x
 
-def cosetG (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) })
-  : Finset { x // x ∈ (evalDomainSigma s ω ↑i) } :=
+def cosetG (s₀ : evalDomainSigma s ω ↑i)
+  : Finset (evalDomainSigma s ω ↑i) :=
   if k_le_n : ∑ j', (s j').1 ≤ n
   then
     (Finset.univ).image (cosetEnum n s s₀ k_le_n)
@@ -110,13 +110,13 @@ def cosetG (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) })
 def pows (z : 𝔽) (ℓ : ℕ) : Matrix Unit (Fin ℓ) 𝔽 :=
   Matrix.of <| fun _ j => z ^ j.val
 
-def VDM (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) }) :
+def VDM (s₀ : evalDomainSigma s ω ↑i) :
   Matrix (Fin (2 ^ (s i : ℕ))) (Fin (2 ^ (s i : ℕ))) 𝔽 :=
   if k_le_n : (∑ j', (s j').1) ≤ n
   then Matrix.vandermonde (fun j => (cosetEnum n s s₀ k_le_n j).1)
   else 1
 
-def cosetEnum' (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) })
+def cosetEnum' (s₀ : evalDomainSigma s ω ↑i)
   (k_le_n : ∑ j', (s j').1 ≤ n)
   (j : Fin (2 ^ (s i).1)) : cosetG n s s₀ :=
   ⟨
@@ -124,7 +124,7 @@ def cosetEnum' (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) })
     by simp [cosetG, k_le_n]
   ⟩
 
-noncomputable def fin_equiv_coset (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) })
+noncomputable def fin_equiv_coset (s₀ : evalDomainSigma s ω ↑i)
     (k_le_n : ∑ j', (s j').1 ≤ n) :
     (Fin (2 ^ (s i).1)) ≃ { x // x ∈ cosetG n s s₀ } := by
   apply Equiv.ofBijective (cosetEnum' n s s₀ k_le_n)
@@ -142,6 +142,7 @@ noncomputable def fin_equiv_coset (s₀ : { x // x ∈ (evalDomainSigma s ω ↑
       subst h
       simp only [Nat.succ_eq_add_one, finRangeTo.eq_1, Fin.ofNat_eq_cast, Fin.val_natCast,
         evalDomainSigma, CosetFftDomain.subdomainNatReversed, CosetFftDomain.subdomainNat] at hs₀
+      rw [CosetFftDomain.mem_coset_finset_iff_mem_coset_domain] at hs₀ 
       have hs₀ := CosetFftDomain.zero_is_not_in_domain hs₀
       simp at hs₀
   · rintro ⟨⟨y, h'⟩, h⟩
@@ -152,7 +153,7 @@ noncomputable def fin_equiv_coset (s₀ : { x // x ∈ (evalDomainSigma s ω ↑
       ↓reduceDIte, mem_image, mem_univ, cosetEnum, Subtype.mk.injEq, true_and] at h
     exact h
 
-def invertibleDomain (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) }) : Invertible (VDM n s s₀) := by
+def invertibleDomain (s₀ : evalDomainSigma s ω ↑i) : Invertible (VDM n s s₀) := by
   haveI : NeZero (VDM n s s₀).det := by
     constructor
     unfold VDM
@@ -186,12 +187,13 @@ def invertibleDomain (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) }) : Inver
         subst contra
         simp only [Nat.succ_eq_add_one, finRangeTo.eq_1, Fin.ofNat_eq_cast, Fin.val_natCast,
           evalDomainSigma, CosetFftDomain.subdomainNatReversed, CosetFftDomain.subdomainNat] at hs₀
+        rw [CosetFftDomain.mem_coset_finset_iff_mem_coset_domain] at hs₀
         have hs₀ := CosetFftDomain.zero_is_not_in_domain hs₀
         simp at hs₀
     · simp
   apply @Matrix.invertibleOfDetInvertible
 
-noncomputable def VDMInv (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) })
+noncomputable def VDMInv (s₀ : evalDomainSigma s ω ↑i)
   (k_le_n : ∑ j', (s j').1 ≤ n) :
   Matrix (Fin (2 ^ (s i).1)) (cosetG n s s₀) 𝔽 :=
   Matrix.reindex (Equiv.refl _) (fin_equiv_coset n s s₀ k_le_n)
@@ -221,56 +223,33 @@ noncomputable def f_succ'
       s₀.1 ^ (2 ^ (s i).1) = s₀'.1 := by
     rcases s₀' with ⟨s₀', hs₀'⟩
     simp only [Fin.val_natCast]
-
-    apply CosetFftDomain.subdomainNatReversed_pow_property'
-
-    simp
-    have h := s₀'.2
-    simp only [evalDomain] at h
-    have :
-      ((ω.x ^ 2 ^ ∑ j' ∈ finRangeTo _ (↑i + 1), (s j').1))⁻¹ * s₀'.1 ∈
-        ω.fftDomain.subdomainNatReversed (∑ j' ∈ finRangeTo _ (↑i + 1), ↑(s j'))
-        := by
-        simp only [FftDomain.subdomainNatReversed]
-        simp only [evalDomainSigma] at h
-        rw [CosetFftDomain.mem_coset_domain] at h
-        rcases h with ⟨y, ⟨hy, h⟩⟩
-        rw [h, CosetFftDomain.subdomainNatReversed_x (by {
-          apply (swap <| Nat.le_trans) k_le_n
-          apply Finset.sum_le_sum_of_subset (by simp)
-        })]
-        rw [←mul_assoc]
-        field_simp
-        rw [Units.val_inv_eq_inv_val]
-        rw [mul_comm (Inv.inv _)]
-        erw [Field.mul_inv_cancel _ (by simp)]
-        field_simp
-        simp only [Nat.succ_eq_add_one, Fin.ofNat_eq_cast, Fin.val_natCast,
-          CosetFftDomain.subdomainNatReversed, CosetFftDomain.subdomainNat,
-          CosetFftDomain.subdomain_fftDomain] at hy
-        exact hy
-
-    have := eq_mul_of_inv_mul_eq this.1
-    iterate 2 rw [sum_finRangeTo_add_one, Nat.pow_add, pow_mul] at this
-    rw [pow_right_comm _ _ m] at this
-    use
-      ⟨
-        (g ^ 2 ^ ∑ j' ∈ finRangeTo ↑i, (s j').1) *
-        ((DIsCyclicC.gen ^ 2 ^ ∑ j' ∈ finRangeTo ↑i, (s j').1) ^ m),
-        by
-          have := fun X₁ X₂ X₃ ↦ @mem_leftCoset_iff.{0} 𝔽ˣ _ X₁ X₂ X₃
-          reconcile
-          erw
-            [
-              evalDomain, this, ←mul_assoc, inv_mul_cancel,
-              one_mul, Domain.evalDomain, SetLike.mem_coe
-            ]
-          exact Subgroup.npow_mem_zpowers _ _
-      ⟩
-    simp only [this, mul_pow]
-    rfl
+    simp only [evalDomainSigma] at hs₀' 
+    rw [CosetFftDomain.mem_coset_finset_iff_mem_coset_domain] at hs₀'
+    rw [CosetFftDomain.subdomainNatReversed_mem_of_eq 
+      (ω := ω)
+      (k := (∑ j' ∈ finRangeTo (k + 1) ↑i, (s j').1 + (s i).1))
+      (by {
+        rw [←Fri.Spec.sum_add_one]
+        rfl
+    })] at hs₀'
+    have h := CosetFftDomain.subdomainNatReversed_root_exists (ω := ω)
+      (i := (∑ j' ∈ finRangeTo (k + 1) ↑i, ↑(s j')))
+      (j := (s i).1)
+      (by {
+        trans (∑ j' ∈ finRangeTo _ (i.1 + 1), (s j').1)
+        rw [Fri.Spec.sum_add_one]
+        rfl
+        apply (swap le_trans) k_le_n
+        apply Finset.sum_le_sum_of_subset (by simp)
+      })
+      hs₀' 
+    rcases h with ⟨y, ⟨h1, h2⟩⟩
+    exists ⟨y, by {
+      rw [CosetFftDomain.mem_coset_finset_iff_mem_coset_domain]
+      exact h1
+    }⟩
   let s₀ := Classical.choose this
-  (pows z _ *ᵥ VDMInv D n g s s₀ k_le_n *ᵥ Finset.restrict (cosetG D n g s s₀) f) ()
+  (pows z _ *ᵥ VDMInv n s s₀ k_le_n *ᵥ Finset.restrict (cosetG n s s₀) f) ()
 
 /-- This theorem asserts that given an appropriate codeword,
   `f` of an appropriate Reed-Solomon code, the result of honestly folding the corresponding
