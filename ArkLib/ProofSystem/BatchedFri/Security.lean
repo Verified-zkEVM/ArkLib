@@ -58,11 +58,11 @@ def cosetEnum (s₀ : { x | x ∈ evalDomainSigma s ω i}) (k_le_n : ∑ j', (s 
     ⟨ω.fftDomain.subdomainNatReversed (n - (s i).1)
       ⟨j.1,
         by
-          have s_i_lim : (s i).1 < n + 1 := by 
+          have s_i_lim : (s i).1 < n + 1 := by
             apply Nat.lt_succ_of_le
             rw [Finset.sum_eq_sum_diff_singleton_add (i := i) (by simp)] at k_le_n
             apply (swap <| Nat.le_trans) k_le_n
-            omega 
+            omega
           rcases j with ⟨j, h⟩
           simp only [Nat.succ_eq_add_one, Fin.ofNat_eq_cast, Fin.val_natCast]
           have : n - (n - (s i).1) = (s i).1 := by
@@ -79,11 +79,11 @@ def cosetEnum (s₀ : { x | x ∈ evalDomainSigma s ω i}) (k_le_n : ∑ j', (s 
     s₀.1 * r.1,
     CosetFftDomain.subdomainNatReversed_mul_property (by {
       apply Nat.le_sub_of_add_le
-      apply le_trans 
+      apply le_trans
         (b := ∑ j' ∈ finRangeTo (k + 1) ↑i, (s j').1 + (s i).1)
         (c := n)
       · constructor
-      · rw [←Fri.Spec.sum_add_one] 
+      · rw [←Fri.Spec.sum_add_one]
         apply le_trans (b := ∑ j', (s j').1) <;> try omega
         apply Finset.sum_le_sum_of_subset
         simp
@@ -114,7 +114,7 @@ def cosetEnum' (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) })
     by simp [cosetG, k_le_n]
   ⟩
 
-noncomputable def fin_equiv_coset (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) }) 
+noncomputable def fin_equiv_coset (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) })
     (k_le_n : ∑ j', (s j').1 ≤ n) :
     (Fin (2 ^ (s i).1)) ≃ { x // x ∈ cosetG n s s₀ } := by
   apply Equiv.ofBijective (cosetEnum' n s s₀ k_le_n)
@@ -126,15 +126,14 @@ noncomputable def fin_equiv_coset (s₀ : { x // x ∈ (evalDomainSigma s ω ↑
       Set.mem_setOf_eq, FftDomain.subdomainNatReversed, FftDomain.subdomainNat, Subtype.mk.injEq,
       mul_eq_mul_left_iff] at h
     rcases h with h | h
-    · have h := FftDomain.injective h 
+    · have h := FftDomain.injective h
       aesop
-    · rcases s₀ with ⟨s₀, hs₀⟩ 
-      simp at h
+    · rcases s₀ with ⟨s₀, hs₀⟩
       subst h
       simp only [Nat.succ_eq_add_one, finRangeTo.eq_1, Fin.ofNat_eq_cast, Fin.val_natCast,
-        evalDomainSigma, CosetFftDomain.subdomainNatReversed, CosetFftDomain.subdomainNat] at hs₀ 
-      have hs₀ := CosetFftDomain.zero_is_not_in_domain hs₀ 
-      simp at hs₀ 
+        evalDomainSigma, CosetFftDomain.subdomainNatReversed, CosetFftDomain.subdomainNat] at hs₀
+      have hs₀ := CosetFftDomain.zero_is_not_in_domain hs₀
+      simp at hs₀
   · rintro ⟨⟨y, h'⟩, h⟩
     simp only [FftDomain.subdomainNatReversed,
       FftDomain.subdomainNat,
@@ -168,21 +167,21 @@ def invertibleDomain (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) }) : Inver
       simp only [Nat.succ_eq_add_one, finRangeTo, Fin.ofNat_eq_cast, Fin.val_natCast,
         Set.mem_setOf_eq, mul_eq_mul_left_iff] at contra
       rcases contra with contra | contra
-      · simp only [FftDomain.subdomainNatReversed, FftDomain.subdomainNat] at contra 
+      · simp only [FftDomain.subdomainNatReversed, FftDomain.subdomainNat] at contra
         have h := FftDomain.injective contra
         simp only [Fin.mk.injEq] at h
         ext
-        exact (symm h)      
-      · rcases s₀ with ⟨s₀, hs₀⟩ 
+        exact (symm h)
+      · rcases s₀ with ⟨s₀, hs₀⟩
         subst contra
         simp only [Nat.succ_eq_add_one, finRangeTo.eq_1, Fin.ofNat_eq_cast, Fin.val_natCast,
-          evalDomainSigma, CosetFftDomain.subdomainNatReversed, CosetFftDomain.subdomainNat] at hs₀ 
-        have hs₀ := CosetFftDomain.zero_is_not_in_domain hs₀ 
-        simp at hs₀ 
+          evalDomainSigma, CosetFftDomain.subdomainNatReversed, CosetFftDomain.subdomainNat] at hs₀
+        have hs₀ := CosetFftDomain.zero_is_not_in_domain hs₀
+        simp at hs₀
     · simp
   apply @Matrix.invertibleOfDetInvertible
 
-noncomputable def VDMInv (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) }) 
+noncomputable def VDMInv (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) })
   (k_le_n : ∑ j', (s j').1 ≤ n) :
   Matrix (Fin (2 ^ (s i).1)) (cosetG n s s₀) 𝔽 :=
   Matrix.reindex (Equiv.refl _) (fin_equiv_coset n s s₀ k_le_n)
@@ -204,15 +203,15 @@ lemma g_elem_zpower_iff_exists_nat {G : Type} [Group G] [Finite G] {gen g : G} :
 
 open Matrix in
 noncomputable def f_succ'
-  (f : { x // x ∈ (evalDomainSigma s ω ↑i) } → 𝔽) 
+  (f : evalDomainSigma s ω ↑i → 𝔽)
   (z : 𝔽) (k_le_n : ∑ j', ↑(s j') ≤ n)
-  (s₀' : { x // x ∈ (evalDomainSigma s ω (↑i + 1)) }) : 𝔽 :=
+  (s₀' : evalDomainSigma s ω (↑i + 1)) : 𝔽 :=
   have :
     ∃ s₀ : (ω.subdomainNatReversed (∑ j' ∈ finRangeTo _ (i.1), (s j').1)).toFinset,
       s₀.1 ^ (2 ^ (s i).1) = s₀'.1 := by
     rcases s₀' with ⟨s₀', hs₀'⟩
     simp only [Fin.val_natCast]
-    
+
     apply CosetFftDomain.subdomainNatReversed_pow_property'
 
     simp
@@ -269,15 +268,15 @@ noncomputable def f_succ'
 
   Corresponds to Claim 8.1 of [BCIKS20] -/
 lemma fri_round_consistency_completeness
-  {f : ReedSolomon.code (domainEmb D g (i := ∑ j' ∈ finRangeTo i, s j'))
-                        (2 ^ (n - (∑ j' ∈ finRangeTo i, (s j' : ℕ))))}
+  {f : ReedSolomon.code (ω.subdomainNatReversed (i := ∑ j' ∈ finRangeTo _ i, s j'))
+                        (2 ^ (n - (∑ j' ∈ finRangeTo _ i, (s j' : ℕ))))}
   {z : 𝔽}
   (k_le_n : ∑ j', ↑(s j') ≤ n)
   :
-  f_succ' D n g s f.val z k_le_n ∈
+  f_succ' n s f.val z k_le_n ∈
     (ReedSolomon.code
-      (CosetDomain.domainEmb D g)
-      (2 ^ (n - (∑ j' ∈ finRangeTo (i.1 + 1), (s j' : ℕ))))
+      (ω.subdomainNatReversed (i := ∑ j' ∈ finRangeTo _ i, s j'))
+      (2 ^ (n - (∑ j' ∈ finRangeTo _ (i.1 + 1), (s j' : ℕ))))
     ).carrier
   := by sorry
 

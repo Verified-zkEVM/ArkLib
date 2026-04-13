@@ -14,10 +14,10 @@ import Mathlib.Tactic.Field
 /-!
 # The FFT domains
 
-This module provides a unified treatment of 
+This module provides a unified treatment of
 evaluation domains used in multiplicative NTTs
 and FRI-based protocols.
- 
+
 -/
 
 
@@ -30,8 +30,8 @@ variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
   whose codomain is the multiplicative group of a field.
 -/
 structure FftDomain (ι : Type) [AddCommGroup ι]
-  (F : Type) [Field F] where 
-    domain : MonoidHom (Multiplicative ι) Fˣ 
+  (F : Type) [Field F] where
+    domain : MonoidHom (Multiplicative ι) Fˣ
     inj : Function.Injective domain
 
 namespace FftDomain
@@ -39,7 +39,7 @@ namespace FftDomain
 lemma eq_iff_domains_eq {φ₁ φ₂ : FftDomain ι F}
   :
   φ₁ = φ₂ ↔ φ₁.domain = φ₂.domain := by
-  rcases φ₁ with ⟨f₁, h₁⟩ 
+  rcases φ₁ with ⟨f₁, h₁⟩
   aesop
 
 end FftDomain
@@ -50,7 +50,7 @@ instance : FunLike (FftDomain ι F) ι F where
     have h := congrFun h
     aesop (add simp [FftDomain.eq_iff_domains_eq])
 
-namespace FftDomain 
+namespace FftDomain
 
 lemma eval_fft_domain_eq_eval_domain
   {fftDomain : FftDomain ι F} {i : ι}
@@ -60,7 +60,7 @@ lemma eval_fft_domain_eq_eval_domain
 end FftDomain
 
 instance : Coe (FftDomain ι F) (ι ↪ F) where
-  coe fftDomain := ⟨fftDomain, fun i₁ i₂ h => 
+  coe fftDomain := ⟨fftDomain, fun i₁ i₂ h =>
     match fftDomain with
     | ⟨domain, hinj⟩ => by aesop (add simp [FftDomain.eval_fft_domain_eq_eval_domain])
   ⟩
@@ -69,10 +69,10 @@ set_option synthInstance.checkSynthOrder false in
 instance : Membership F (FftDomain ι F) where
   mem φ x := ∃ i, φ i = x
 
-namespace FftDomain 
+namespace FftDomain
 
-def toFinset (ω : FftDomain ι F) : Finset F 
-  := Finset.image ω Finset.univ 
+def toFinset (ω : FftDomain ι F) : Finset F
+  := Finset.image ω Finset.univ
 
 end FftDomain
 
@@ -99,19 +99,19 @@ lemma mem_finset_iff_mem_domain {ω : FftDomain ι F} {x : F}
   x ∈ ω.toFinset ↔ x ∈ ω := by simp [toFinset, mem_domain_iff_exists]
 
 end FftDomain
-  
-instance {x : F} {ω : FftDomain ι F} : Decidable (x ∈ ω) := 
+
+instance {x : F} {ω : FftDomain ι F} : Decidable (x ∈ ω) :=
   decidable_of_iff _ FftDomain.mem_finset_iff_mem_domain
 
 namespace Finset
 
-/-- A helper to convert a finset into 
+/-- A helper to convert a finset into
   a list whose elements are the members of the finset,
   i.e. come with a proof that they belong to the finset.
 -/
 noncomputable def toListWithProof.{u} {α : Type u} [DecidableEq α] (s : Finset α)
   :
-  List s := 
+  List s :=
   let list := s.toList
   List.reduceOption <|
     list.map (fun x => if h : x ∈ s then some ⟨x, h⟩ else none)
@@ -119,7 +119,7 @@ noncomputable def toListWithProof.{u} {α : Type u} [DecidableEq α] (s : Finset
 @[simp]
 lemma toListWithProof_empty.{u} {α : Type u} [DecidableEq α]
   :
-  toListWithProof (∅ : Finset α) = [] := by 
+  toListWithProof (∅ : Finset α) = [] := by
   simp [toListWithProof, List.reduceOption]
 
 lemma toListWithProof_mem.{u} {α : Type u} [DecidableEq α]
@@ -154,23 +154,23 @@ end Finset
 
 namespace FftDomain
 
-/-- Convert an FFT domain into a list of all its members 
+/-- Convert an FFT domain into a list of all its members
   with proofs the members belong to the FFT domain. -/
-noncomputable def toList (ω : FftDomain ι F) : List (ω.toFinset) := 
+noncomputable def toList (ω : FftDomain ι F) : List (ω.toFinset) :=
   Finset.toListWithProof <| ω.toFinset
 
 lemma toList_eq_finset_toList {ω : FftDomain ι F}
   :
-  ω.toList.map (fun x => x.1) = ω.toFinset.toList := by 
+  ω.toList.map (fun x => x.1) = ω.toFinset.toList := by
   simp [mem_finset_iff_exists, toList]
 
 def toSubgroup (ω : FftDomain ι F) : Subgroup Fˣ where
-  carrier := Finset.image ω.domain Finset.univ 
+  carrier := Finset.image ω.domain Finset.univ
   mul_mem' {a b} ha hb := by {
     simp_all only [Finset.coe_image, Finset.coe_univ, Set.image_univ, Set.mem_range,
       Multiplicative.exists]
-    rcases ha with ⟨x, ha⟩ 
-    rcases hb with ⟨y, hb⟩ 
+    rcases ha with ⟨x, ha⟩
+    rcases hb with ⟨y, hb⟩
     exists (x + y)
     simp [ha, hb]
   }
@@ -221,9 +221,9 @@ lemma zero_is_not_in_domain {ω : FftDomain ι F}
   aesop
 
 @[simp]
-lemma domain_zero_eq_one {ω : FftDomain ι F} 
+lemma domain_zero_eq_one {ω : FftDomain ι F}
   :
-  ω 0 = 1 := by 
+  ω 0 = 1 := by
   change ↑(ω.domain (Multiplicative.ofAdd (0 : ι))) = (1 : F)
   rw [show Multiplicative.ofAdd (0 : ι) = (1 : Multiplicative ι) from rfl, map_one]
   simp
@@ -233,15 +233,15 @@ lemma domain_add_eq_mul_domain {ω : FftDomain ι F}
   {i₁ i₂ : ι}
   :
   ω (i₁ + i₂) = ω i₁ * ω i₂ := by
-  convert congr_arg 
-    ( fun x : Fˣ => ( x : F ) ) 
-    ( ω.domain.map_mul ( Multiplicative.ofAdd i₁ ) ( Multiplicative.ofAdd i₂ ) ) using 1 
-  
+  convert congr_arg
+    ( fun x : Fˣ => ( x : F ) )
+    ( ω.domain.map_mul ( Multiplicative.ofAdd i₁ ) ( Multiplicative.ofAdd i₂ ) ) using 1
+
 @[simp]
 lemma domain_neg_eq_inv_domain {ω : FftDomain ι F}
   {i₁ : ι}
   :
-  ω (-i₁) = (ω i₁)⁻¹ := by 
+  ω (-i₁) = (ω i₁)⁻¹ := by
   have h_def : ω (-i₁) * ω i₁ = 1 := by
     rw [ ← FftDomain.domain_add_eq_mul_domain ] ; aesop;
   exact eq_inv_of_mul_eq_one_left h_def
@@ -252,10 +252,10 @@ lemma domain_sub_eq_div_domain {ω : FftDomain ι F}
   {i₁ i₂ : ι}
   :
   ω (i₁ - i₂) = ω i₁ / ω i₂ := by
-  rw 
-    [sub_eq_add_neg, 
-      div_eq_mul_inv, 
-      FftDomain.domain_add_eq_mul_domain, 
+  rw
+    [sub_eq_add_neg,
+      div_eq_mul_inv,
+      FftDomain.domain_add_eq_mul_domain,
       FftDomain.domain_neg_eq_inv_domain ];
 
 @[ext]
@@ -265,7 +265,7 @@ theorem ext {ω₁ ω₂ : FftDomain ι F} (h : ∀ i, ω₁ i = ω₂ i)
 
 end FftDomain
 
-/-- A smooth FFT domain is an FFT domain whose 
+/-- A smooth FFT domain is an FFT domain whose
   domain (i.e. LHS) is a finite additive cyclic group,
   which up to isomorphis is `Fin n`. -/
 abbrev SmoothFftDomain (n : ℕ) (F : Type) [Field F] : Type
@@ -276,7 +276,7 @@ namespace FftDomain
 @[simp]
 lemma size_of_smooth_fft_domain_eq_pow_of_2 {n : ℕ} {ω : SmoothFftDomain n F}
   :
-  Finset.card (ω : Finset F) = 2 ^ n := by 
+  Finset.card (ω : Finset F) = 2 ^ n := by
   aesop (add simp [FftDomain.toFinset, Finset.card_image_of_injective, FftDomain.injective])
 
 private lemma domain_nsmul {n : ℕ} {ω : SmoothFftDomain n F} (k : ℕ) (i : Fin (2 ^ n))
@@ -301,7 +301,7 @@ lemma domain_eq_pow_of_generator {n : ℕ} {ω : SmoothFftDomain n F} (i : Fin (
   simp [domain_nsmul]
 
 theorem eq_iff_generators_eq {n : ℕ} {ω₁ ω₂ : SmoothFftDomain n F}
-  : 
+  :
   ω₁ = ω₂ ↔ ω₁ 1 = ω₂ 1 := by
   constructor <;> (intro h; try rw [h])
   ext i
@@ -313,15 +313,15 @@ end FftDomain
   an FFT domain `G`. -/
 structure CosetFftDomain (ι : Type) [AddCommGroup ι]
   (F : Type) [Field F] where
-  x : Fˣ 
+  x : Fˣ
   fftDomain : FftDomain ι F
 
 namespace CosetFftDomain
 
-lemma eq_iff_domains_and_gen_eq {φ₁ φ₂ : CosetFftDomain ι F} 
+lemma eq_iff_domains_and_gen_eq {φ₁ φ₂ : CosetFftDomain ι F}
   :
   φ₁ = φ₂ ↔ φ₁.x = φ₂.x ∧ φ₁.fftDomain = φ₂.fftDomain := by
-  rcases φ₁ with ⟨f₁, h₁⟩ 
+  rcases φ₁ with ⟨f₁, h₁⟩
   aesop
 
 end CosetFftDomain
@@ -330,11 +330,11 @@ instance : FunLike (CosetFftDomain ι F) ι F where
   coe cosetDomain i := cosetDomain.x * cosetDomain.fftDomain i
   coe_injective' φ₁ φ₂ h := by
     simp only at h
-    have h₀ := congrFun h 0 
-    have h := congrFun h 
+    have h₀ := congrFun h 0
+    have h := congrFun h
     aesop (add simp [CosetFftDomain.eq_iff_domains_and_gen_eq])
-    
-namespace CosetFftDomain 
+
+namespace CosetFftDomain
 
 lemma eval_coset_fft_domain_eq_eval_x_mul_domain
   {cosetDomain : CosetFftDomain ι F} {i : ι}
@@ -346,8 +346,8 @@ end CosetFftDomain
 instance : Coe (CosetFftDomain ι F) (ι ↪ F) where
   coe cosetDomain := ⟨cosetDomain, fun i₁ i₂ h => match cosetDomain with
     | ⟨x, f⟩ => FftDomain.injective (ω := f) <| by
-      aesop (add simp 
-        [CosetFftDomain.eval_coset_fft_domain_eq_eval_x_mul_domain, 
+      aesop (add simp
+        [CosetFftDomain.eval_coset_fft_domain_eq_eval_x_mul_domain,
          FftDomain.injective])
   ⟩
 
@@ -356,8 +356,14 @@ instance : Membership F (CosetFftDomain ι F) where
 
 namespace CosetFftDomain
 
-def toFinset (ω : CosetFftDomain ι F) : Finset F := 
+def toFinset (ω : CosetFftDomain ι F) : Finset F :=
   Finset.image ω Finset.univ
+
+instance
+    {ι : Type} [AddCommGroup ι] [Fintype ι] [DecidableEq ι]
+    {F : Type} [Field F] [Fintype F] [DecidableEq F] :
+  CoeSort (CosetFftDomain ι F) Type where
+    coe d := toFinset d
 
 end CosetFftDomain
 
@@ -381,8 +387,8 @@ lemma mem_coset {ω : CosetFftDomain ι F}
 lemma mem_coset_domain {ω : CosetFftDomain ι F}
   {x : F}
   :
-  x ∈ ω ↔ ∃ y ∈ ω.fftDomain, x = ω.x * y := by 
-  aesop (add simp 
+  x ∈ ω ↔ ∃ y ∈ ω.fftDomain, x = ω.x * y := by
+  aesop (add simp
     [Membership.mem, eval_coset_fft_domain_eq_eval_x_mul_domain])
 
 @[simp]
@@ -394,7 +400,7 @@ lemma mem_coset_finset_iff_mem_coset_domain {ω : CosetFftDomain ι F}
   {x : F}
   :
   x ∈ ω.toFinset ↔ x ∈ ω := by simp [mem_coset_domain]
-  
+
 end CosetFftDomain
 
 instance {x : F} {ω : CosetFftDomain ι F} : Decidable (x ∈ ω) :=
@@ -402,30 +408,30 @@ instance {x : F} {ω : CosetFftDomain ι F} : Decidable (x ∈ ω) :=
 
 namespace CosetFftDomain
 
-noncomputable def toList (ω : CosetFftDomain ι F) : List (ω.toFinset) := 
+noncomputable def toList (ω : CosetFftDomain ι F) : List (ω.toFinset) :=
   Finset.toListWithProof <| ω.toFinset
 
 lemma toList_eq_finset_toList {ω : CosetFftDomain ι F}
   :
-  ω.toList.map (fun x => x.1) = ω.toFinset.toList := by 
+  ω.toList.map (fun x => x.1) = ω.toFinset.toList := by
     simp [toList, FftDomain.mem_domain_iff_exists]
-  
+
 @[simp]
 lemma coset_domain_eq_image {ω : CosetFftDomain ι F} :
   Finset.image (fun (w : F) => ω.x * w) ω.fftDomain.toFinset = ω.toFinset
-  := by aesop (add simp [FftDomain.mem_domain_iff_exists, 
+  := by aesop (add simp [FftDomain.mem_domain_iff_exists,
                          FftDomain.mem_finset_iff_exists])
 
 lemma card_eq_fft_domain_card {ω : CosetFftDomain ι F} :
   Finset.card ω.toFinset = Finset.card ω.fftDomain.toFinset := by
   rw [←coset_domain_eq_image,
-      Finset.card_image_of_injective _ 
+      Finset.card_image_of_injective _
         (mul_right_injective₀ ( Units.ne_zero _ ))]
-  
+
 lemma injective {ω : CosetFftDomain ι F}
   :
   Function.Injective ω := fun _ _ h =>
-  FftDomain.injective (ω := ω.fftDomain) <| by 
+  FftDomain.injective (ω := ω.fftDomain) <| by
     aesop (add simp [eval_coset_fft_domain_eq_eval_x_mul_domain])
 
 @[simp]
@@ -439,7 +445,7 @@ lemma zero_is_not_in_domain {ω : CosetFftDomain ι F}
   exact FftDomain.zero_is_not_in_domain h
 
 @[simp]
-lemma coset_domain_zero_eq_x {ω : CosetFftDomain ι F} 
+lemma coset_domain_zero_eq_x {ω : CosetFftDomain ι F}
   :
   ω 0 = ω.x := by cases ω with
   | mk x _ =>
@@ -451,10 +457,10 @@ lemma coset_domain_add_eq_mul_domain {ω : CosetFftDomain ι F}
   :
   ω (i₁ + i₂) = (ω.x)⁻¹ * ω i₁ * ω i₂ := by cases ω with
   | mk x ω =>
-    aesop 
+    aesop
       (add simp [eval_coset_fft_domain_eq_eval_x_mul_domain])
       (add safe (by ring_nf))
-  
+
 @[simp]
 lemma coset_domain_neg_eq_inv_domain {ω : CosetFftDomain ι F}
   {i₁ : ι}
@@ -462,7 +468,7 @@ lemma coset_domain_neg_eq_inv_domain {ω : CosetFftDomain ι F}
   ω (-i₁) = ω.x ^ 2 * (ω i₁)⁻¹ := by cases ω with
   | mk x ω =>
   simp [eval_coset_fft_domain_eq_eval_x_mul_domain]
-  field_simp 
+  field_simp
 
 @[simp]
 lemma coset_domain_sub_eq_div_domain {ω : CosetFftDomain ι F}
@@ -476,13 +482,13 @@ lemma coset_domain_sub_eq_div_domain {ω : CosetFftDomain ι F}
 @[ext]
 theorem ext {ω₁ ω₂ : CosetFftDomain ι F} (h : ∀ i, ω₁ i = ω₂ i)
   :
-  ω₁ = ω₂ := by 
+  ω₁ = ω₂ := by
   have hx : ω₁.x = ω₂.x := by
     specialize h 0
-    aesop 
+    aesop
   have hext : ω₁.fftDomain = ω₂.fftDomain := FftDomain.ext <| fun i => by
     aesop (add simp [eval_coset_fft_domain_eq_eval_x_mul_domain])
-  exact 
+  exact
     eq_iff_domains_and_gen_eq.2 <| And.intro hx hext
 
 lemma x_mul_mem_coset_iff {φ : CosetFftDomain ι F}
@@ -497,7 +503,7 @@ end CosetFftDomain
 abbrev SmoothCosetFftDomain (n : ℕ) (F : Type) [Field F] : Type
   := CosetFftDomain (Fin (2 ^ n)) F
 
-namespace FftDomain 
+namespace FftDomain
 
 private def subdomain_embed {n : ℕ} (i : Fin n.succ) (k : Fin (2 ^ (i : ℕ)))
     : Fin (2 ^ n) :=
@@ -515,12 +521,12 @@ private lemma subdomain_embed_add {n : ℕ} (i : Fin n.succ) (a b : Fin (2 ^ (i 
   norm_num [ Fin.ext_iff, Fin.val_add, Fin.val_mul ];
   rw [ ← add_mul ];
   rw [ ← Nat.mul_mod_mul_right ];
-  rw [ ← pow_add, 
+  rw [ ← pow_add,
     Nat.add_sub_of_le (Nat.le_of_lt_succ i.2)]
 
 private lemma subdomain_embed_zero {n : ℕ} (i : Fin n.succ)
     : subdomain_embed i (0 : Fin (2 ^ (i : ℕ))) = (0 : Fin (2 ^ n)) := by
-  unfold subdomain_embed 
+  unfold subdomain_embed
   aesop
 
 private lemma subdomain_embed_injective {n : ℕ} (i : Fin n.succ)
@@ -568,11 +574,11 @@ lemma subdomain_last {n} {ω : SmoothFftDomain n F}
   simp only [toSubgroup, Nat.succ_eq_add_one, Fin.val_last, subdomain, MonoidHom.coe_mk,
     OneHom.coe_mk, Finset.coe_image, Finset.coe_univ, Set.image_univ, Subgroup.mem_mk,
     Submonoid.mem_mk, Subsemigroup.mem_mk, Set.mem_range, Multiplicative.exists, toAdd_ofAdd]
-  constructor 
-    <;> intro h 
-    <;> rcases h with ⟨ a, rfl ⟩ 
-    <;> use Fin.cast ( by simp ) a 
-    <;> simp +decide [ subdomain_embed_last ] 
+  constructor
+    <;> intro h
+    <;> rcases h with ⟨ a, rfl ⟩
+    <;> use Fin.cast ( by simp ) a
+    <;> simp +decide [ subdomain_embed_last ]
 
 @[simp]
 lemma subdomain_last' {n : ℕ} {ω : SmoothFftDomain n F}
@@ -584,7 +590,7 @@ lemma subdomain_last' {n : ℕ} {ω : SmoothFftDomain n F}
   · aesop
   · rintro ⟨ a, rfl ⟩
     use Fin.cast (by simp) a
-    unfold subdomain_embed 
+    unfold subdomain_embed
     aesop
 
 private lemma subdomain_embed_of_le {n : ℕ} (i j : Fin n.succ) (h : i ≤ j)
@@ -608,7 +614,7 @@ lemma subdomain_le {n} {ω : SmoothFftDomain n F}
     Set.mem_range, Multiplicative.exists, forall_exists_index, forall_apply_eq_imp_iff]
   intro a
   obtain ⟨l, hl⟩ := subdomain_embed_of_le i j h a
-  unfold subdomain 
+  unfold subdomain
   aesop
 
 lemma subdomain_le_finset {n} {ω : SmoothFftDomain n F}
@@ -653,23 +659,23 @@ private lemma subdomain_embed_pow_eq {n : ℕ} (i j : Fin n.succ) (hji : j.val �
 
 private lemma subdomain_eval {n : ℕ} {ω : SmoothFftDomain n F} (i : Fin n.succ) (k : Fin (2 ^ i.val))
     : (ω.subdomain i k : F) = ω (subdomain_embed i k) := by
-  simp 
-    [Multiplicative.ofAdd, Multiplicative.toAdd, 
+  simp
+    [Multiplicative.ofAdd, Multiplicative.toAdd,
      subdomain, FftDomain.eval_fft_domain_eq_eval_domain, subdomain_embed]
-  
+
 
 private lemma subdomain_pow_property_aux {n} {ω : SmoothFftDomain n F}
   {i j : Fin n.succ} (hji : j ≤ i) {k : Fin (2 ^ i.val)}
   :
-  (ω.subdomain i k) ^ (2 ^ j.val) 
-    = (ω.subdomain ⟨i.val - j.val, by omega⟩ (⟨k.val % 2 ^ (i.val - j.val), 
+  (ω.subdomain i k) ^ (2 ^ j.val)
+    = (ω.subdomain ⟨i.val - j.val, by omega⟩ (⟨k.val % 2 ^ (i.val - j.val),
         Nat.mod_lt _ (by positivity)⟩)) := by
   rw [subdomain_eval, ← domain_nsmul, subdomain_eval, subdomain_embed_pow_eq i j hji]
 
 lemma subdomain_pow_property {n} {ω : SmoothFftDomain n F}
   {i j : Fin n.succ} (hji : j ≤ i) {k : Fin (2 ^ i.val)}
   :
-  (ω.subdomain i k) ^ (2 ^ j.val) 
+  (ω.subdomain i k) ^ (2 ^ j.val)
     = (ω.subdomain (i - j) (⟨k.val % 2 ^ (i.val - j.val),
         by {
           convert Nat.mod_lt _ ( pow_pos ( by decide : 0 < 2 ) _ ) using 1;
@@ -681,7 +687,7 @@ lemma subdomain_pow_property {n} {ω : SmoothFftDomain n F}
           · omega
         }
         ⟩)) := by
-  rw [subdomain_pow_property_aux hji] 
+  rw [subdomain_pow_property_aux hji]
   convert rfl;
   · exact Fin.sub_val_of_le hji;
   · exact Fin.sub_val_of_le hji;
@@ -703,7 +709,7 @@ lemma subdomain_roots_card {n} {ω : SmoothFftDomain n F}
   :
   Finset.card {y ∈ (ω.subdomain i) | y ^ (2 ^ j.val) = x}
     = 2 ^ j.val
-  := by 
+  := by
   have h_bijection : Finset.card (Finset.filter (fun y => y.val % 2 ^ (i.val - j.val) = (Classical.choose (FftDomain.mem_domain_iff_exists.mp h)).val) (Finset.univ : Finset (Fin (2 ^ i.val)))) = 2 ^ j.val := by
     rw [ Finset.card_eq_of_bijective ];
     use fun k hk => ⟨ ( Classical.choose ( FftDomain.mem_domain_iff_exists.mp h ) ).val + k * 2 ^ ( i.val - j.val ), by
@@ -747,7 +753,7 @@ lemma subdomain_root_exists {n} {ω : SmoothFftDomain n F}
   (h : x ∈ (ω.subdomain (i - j)))
   :
   ∃ y ∈ ω.subdomain i, y ^ (2 ^ j.val) = x
-  := by 
+  := by
   have h' := subdomain_roots_card hji h
   have h' : Finset.Nonempty {y ∈ toFinset (subdomain ω i) | y ^ 2 ^ j.1 = x} := by
     rw [←Finset.card_ne_zero, h']
@@ -766,7 +772,7 @@ lemma subdomain_subdomain_eq_subdomain {n} {ω : SmoothFftDomain n F}
     rw [subdomain_eval]
     rw [subdomain_eval]
     trans (ω (subdomain_embed (Fin.castLE (by omega) j) x))
-    · simp only [subdomain_embed] 
+    · simp only [subdomain_embed]
       apply congrArg
       simp only [Nat.succ_eq_add_one, Fin.val_castLE, Fin.mk.injEq]
       rw [←mul_assoc]
@@ -780,7 +786,7 @@ lemma subdomain_subdomain_eq_subdomain {n} {ω : SmoothFftDomain n F}
 /-- Same as `subdomain` but takes a natural number. -/
 def subdomainNat {n} (ω : SmoothFftDomain n F) (i : ℕ)
   :
-  SmoothFftDomain (Fin.ofNat n.succ i) F := 
+  SmoothFftDomain (Fin.ofNat n.succ i) F :=
   ω.subdomain (Fin.ofNat n.succ i)
 
 @[simp]
@@ -802,11 +808,11 @@ lemma subdomainNat_n {n} {ω : SmoothFftDomain n F}
   of subdomains. -/
 def subdomainNatReversed {n : ℕ} (ω : SmoothFftDomain n F) (i : ℕ)
   :
-  SmoothFftDomain (Fin.ofNat n.succ (n - i)) F := 
+  SmoothFftDomain (Fin.ofNat n.succ (n - i)) F :=
   ω.subdomainNat (n - i)
 
 @[simp high]
-lemma subdomainNatReversed_zero {n : ℕ} {ω : SmoothFftDomain n F} 
+lemma subdomainNatReversed_zero {n : ℕ} {ω : SmoothFftDomain n F}
   {x : F}
   :
   x ∈ ω.subdomainNatReversed 0 ↔ x ∈ ω := by
@@ -814,7 +820,7 @@ lemma subdomainNatReversed_zero {n : ℕ} {ω : SmoothFftDomain n F}
   rw [show n - 0 = n by simp, subdomainNat_n]
 
 @[simp high]
-lemma subdomainNatReversed_n {n : ℕ} {ω : SmoothFftDomain n F} 
+lemma subdomainNatReversed_n {n : ℕ} {ω : SmoothFftDomain n F}
   {x : F}
   :
   x ∈ ω.subdomainNatReversed n ↔ x = 1 := by
@@ -832,17 +838,17 @@ lemma subdomainNatReversed_sub {n : ℕ} {ω : SmoothFftDomain n F}
 
 end FftDomain
 
-namespace CosetFftDomain 
+namespace CosetFftDomain
 
 section
 
 open FftDomain
 
-/-- Given a smooth coset FFT domain `ω` of log-order `n` returns 
+/-- Given a smooth coset FFT domain `ω` of log-order `n` returns
   a subdomain of log-order `i`. -/
 def subdomain {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : Fin n.succ)
   :
-  SmoothCosetFftDomain i F := 
+  SmoothCosetFftDomain i F :=
   ⟨ω.x ^ 2 ^ (n - i.val), ω.fftDomain.subdomain i⟩
 
 lemma mem_subdomain_of_eq_vals {n : ℕ} {ω : SmoothCosetFftDomain n F}
@@ -858,7 +864,7 @@ lemma subdomain_x {n : ℕ} {ω : SmoothCosetFftDomain n F} (i : Fin n.succ)
   (ω.subdomain i).x = ω.x ^ 2 ^ (n - i.val) := rfl
 
 @[simp]
-lemma subdomain_fftDomain {n} {ω : SmoothCosetFftDomain n F} 
+lemma subdomain_fftDomain {n} {ω : SmoothCosetFftDomain n F}
   {i : Fin n.succ}
   :
   (ω.subdomain i).fftDomain = ω.fftDomain.subdomain i := by rfl
@@ -871,7 +877,7 @@ lemma subdomain_0 {n : ℕ} {ω : SmoothCosetFftDomain n F}
 lemma subdomain_n {n : ℕ} {ω : SmoothCosetFftDomain n F}
   :
   (ω.subdomain (Fin.last n)) = ω := by
-  aesop 
+  aesop
     (add simp [subdomain
     , FftDomain.subdomain
     , subdomain_embed
@@ -880,14 +886,14 @@ lemma subdomain_n {n : ℕ} {ω : SmoothCosetFftDomain n F}
 lemma subdomain_n' {n : ℕ} {ω : SmoothCosetFftDomain n F}
   {v : F}
   :
-  v ∈ (ω.subdomain (@Nat.cast (Fin (n + 1)) (Fin.NatCast.instNatCast (n + 1)) n)) ↔ v ∈ ω 
+  v ∈ (ω.subdomain (@Nat.cast (Fin (n + 1)) (Fin.NatCast.instNatCast (n + 1)) n)) ↔ v ∈ ω
   := Iff.intro
   (by aesop (add simp [subdomain, mem_coset_domain, mem_domain_iff_exists]))
   (by {
     intro hv
     simp only [mem_coset_domain, mem_domain_iff_exists, exists_exists_eq_and] at hv
-    rcases hv with ⟨a, hv⟩ 
-    aesop 
+    rcases hv with ⟨a, hv⟩
+    aesop
       (add simp [subdomain, mem_coset_domain, mem_domain_iff_exists])
       (add unsafe [(by (rw [←FftDomain.mem_domain_iff_exists, FftDomain.subdomain_last']))])
   })
@@ -895,15 +901,15 @@ lemma subdomain_n' {n : ℕ} {ω : SmoothCosetFftDomain n F}
 lemma subdomain_pow_property {n} {ω : SmoothCosetFftDomain n F}
   {i j : Fin n.succ} (hji : j ≤ i) {k : Fin (2 ^ i.val)}
   :
-  (ω.subdomain i k) ^ (2 ^ j.val) 
+  (ω.subdomain i k) ^ (2 ^ j.val)
     = (ω.subdomain (i - j) (⟨k.val % 2 ^ (i.val - j.val),
         by {
           convert Nat.mod_lt _ ( pow_pos ( by decide : 0 < 2 ) _ ) using 1;
-          aesop 
+          aesop
             (add simp [Fin.val_sub])
-            (add unsafe 
-              [(by rw [Nat.mod_eq_of_lt]), 
-               (by rw [ Nat.mod_eq_sub_mod ])]) 
+            (add unsafe
+              [(by rw [Nat.mod_eq_of_lt]),
+               (by rw [ Nat.mod_eq_sub_mod ])])
             (add safe (by omega))
         }
         ⟩)) := by
@@ -912,16 +918,16 @@ lemma subdomain_pow_property {n} {ω : SmoothCosetFftDomain n F}
       eval_coset_fft_domain_eq_eval_x_mul_domain,
       Units.val_pow_eq_pow_val,
       mul_pow,
-      FftDomain.subdomain_pow_property hji, 
-      ←pow_mul, 
+      FftDomain.subdomain_pow_property hji,
+      ←pow_mul,
       ←pow_add]
   congr
   have key : n.succ - j.val + i.val = (i.val - j.val) + n.succ := by omega
-  aesop 
+  aesop
     (add simp [Fin.val_sub])
     (add safe (by omega))
-    (add unsafe 
-      [(by rw [Nat.mod_eq_of_lt]),]) 
+    (add unsafe
+      [(by rw [Nat.mod_eq_of_lt]),])
 
 lemma subdomain_pow_property' {n} {ω : SmoothCosetFftDomain n F}
   {i j : Fin n.succ} (hji : j ≤ i) {x : F}
@@ -929,8 +935,8 @@ lemma subdomain_pow_property' {n} {ω : SmoothCosetFftDomain n F}
   :
   x ^ (2 ^ j.val) ∈ (ω.subdomain (i - j)) := by
   rcases h with ⟨u, hu⟩
-  aesop (add simp [subdomain_pow_property, 
-                   mem_domain_iff_exists, 
+  aesop (add simp [subdomain_pow_property,
+                   mem_domain_iff_exists,
                    mem_coset_domain])
 
 private lemma card_filter_mod_eq' (m b : ℕ) (hbm : b ≤ m) (r : ℕ) (hr : r < 2 ^ b) :
@@ -950,7 +956,7 @@ lemma subdomain_roots_card {n} {ω : SmoothCosetFftDomain n F}
   :
   Finset.card {y | y ∈ (ω.subdomain i) ∧ y ^ (2 ^ j.val) = x}
     = 2 ^ j.val
-  := by 
+  := by
   have h_card : Finset.card {y | y ∈ (ω.subdomain i) ∧ y ^ (2 ^ j.val) = x} =
     Finset.card (Finset.filter (fun k : Fin (2 ^ i.val) => (ω.subdomain i k) ^ (2 ^ j.val) = x) Finset.univ) := by
     rw [show ({y | y ∈ (ω.subdomain i) ∧ y ^ (2 ^ j.val) = x} : Finset F) =
@@ -989,7 +995,7 @@ lemma subdomain_root_exists {n} {ω : SmoothCosetFftDomain n F}
   (h : x ∈ (ω.subdomain (i - j)))
   :
   ∃ y ∈ ω.subdomain i, y ^ (2 ^ j.val) = x
-  := by 
+  := by
   have h' := subdomain_roots_card hji h
   have h' : Finset.Nonempty {y | y ∈ subdomain ω i ∧ y ^ 2 ^ j.1 = x} := by
     rw [←Finset.card_ne_zero, h']
@@ -1038,7 +1044,7 @@ lemma neg_mem_dom_of_mem_dom {n} {ω : SmoothCosetFftDomain n F}
   simp only [subdomain_fftDomain, FftDomain.domain_add_eq_mul_domain]
   rw [hk₀]
   ring
-  
+
 lemma mul_property {n : ℕ} {ω : SmoothCosetFftDomain n F}
   {i j : Fin n.succ} (hji : j ≤ i)
   {a b : F}
@@ -1058,14 +1064,14 @@ lemma mul_property {n : ℕ} {ω : SmoothCosetFftDomain n F}
 /-- Same as `subdomain` but takes a natural number. -/
 def subdomainNat {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : ℕ)
   :
-  SmoothCosetFftDomain (Fin.ofNat n.succ i) F := 
+  SmoothCosetFftDomain (Fin.ofNat n.succ i) F :=
   ω.subdomain (Fin.ofNat n.succ i)
 
 @[simp]
 lemma subdomainNat_zero {n} {ω : SmoothCosetFftDomain n F}
   {x : F}
   :
-  x ∈ ω.subdomainNat 0 ↔ x = ω.x ^ 2 ^ n := by 
+  x ∈ ω.subdomainNat 0 ↔ x = ω.x ^ 2 ^ n := by
     simp [subdomainNat, mem_coset_domain, FftDomain.mem_domain_iff_exists]
 
 @[simp]
@@ -1081,7 +1087,7 @@ lemma subdomainNat_n {n} {ω : SmoothCosetFftDomain n F}
   of subdomains. -/
 def subdomainNatReversed {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : ℕ)
   :
-  SmoothCosetFftDomain (Fin.ofNat n.succ (n - i)) F := 
+  SmoothCosetFftDomain (Fin.ofNat n.succ (n - i)) F :=
   ω.subdomainNat (n - i)
 
 lemma subdomainNatReversed_x {n : ℕ} {ω : SmoothCosetFftDomain n F}
@@ -1091,11 +1097,11 @@ lemma subdomainNatReversed_x {n : ℕ} {ω : SmoothCosetFftDomain n F}
   (ω.subdomainNatReversed i).x = ω.x ^ 2 ^ i := by
   simp only [Nat.succ_eq_add_one, Fin.ofNat_eq_cast, Fin.val_natCast, subdomainNatReversed,
     subdomainNat, subdomain_x]
-  congr 
+  congr
   rw [Nat.mod_eq_of_lt (by omega), Nat.sub_sub_self hi]
 
 @[simp high]
-lemma subdomainNatReversed_zero {n : ℕ} {ω : SmoothCosetFftDomain n F} 
+lemma subdomainNatReversed_zero {n : ℕ} {ω : SmoothCosetFftDomain n F}
   {x : F}
   :
   x ∈ ω.subdomainNatReversed 0 ↔ x ∈ ω := by
@@ -1103,13 +1109,13 @@ lemma subdomainNatReversed_zero {n : ℕ} {ω : SmoothCosetFftDomain n F}
   rw [show n - 0 = n by simp, subdomainNat_n]
 
 @[simp high]
-lemma subdomainNatReversed_n {n : ℕ} {ω : SmoothCosetFftDomain n F} 
+lemma subdomainNatReversed_n {n : ℕ} {ω : SmoothCosetFftDomain n F}
   {x : F}
   :
   x ∈ ω.subdomainNatReversed n ↔ x = ω.x ^ 2 ^ n := by
   unfold subdomainNatReversed
   rw [show n - n = 0 by simp, subdomainNat_zero]
-   
+
 lemma subdomainNatReversed_sub {n : ℕ} {ω : SmoothCosetFftDomain n F}
   {i : ℕ}
   {x : F}
@@ -1181,9 +1187,9 @@ lemma subdomainNat_mul_property {n : ℕ} {ω : SmoothCosetFftDomain n F}
   (ha : a ∈ (ω.subdomainNat i))
   (hb : b ∈ (ω.fftDomain.subdomainNat j))
   :
-  a * b ∈ (ω.subdomainNat i) := by 
+  a * b ∈ (ω.subdomainNat i) := by
   simp only [subdomainNat, FftDomain.subdomainNat] at *
-  apply mul_property 
+  apply mul_property
     (j := (Fin.ofNat n.succ j))
     (by {
       simp only [Nat.succ_eq_add_one, Fin.ofNat_eq_cast]
@@ -1196,7 +1202,7 @@ lemma subdomainNatReversed_mul_property {n : ℕ} {ω : SmoothCosetFftDomain n F
   (ha : a ∈ (ω.subdomainNatReversed j))
   (hb : b ∈ (ω.fftDomain.subdomainNatReversed i))
   :
-  a * b ∈ (ω.subdomainNatReversed j) := by 
+  a * b ∈ (ω.subdomainNatReversed j) := by
   simp only [subdomainNatReversed, FftDomain.subdomainNatReversed] at *
   exact subdomainNat_mul_property (j := n - i) (by omega) (by omega) ha hb
 
