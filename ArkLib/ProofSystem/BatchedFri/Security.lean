@@ -265,7 +265,7 @@ lemma fri_round_consistency_completeness
   :
   f_succ' n s f.val z k_le_n ∈
     (ReedSolomon.code
-      (⟨fun x => x, by sorry⟩ : evalDomainSigma s ω (i + 1) ↪ 𝔽)
+      (⟨fun x => x, sorry⟩ : (evalDomainSigma s ω (i.1 + 1)).toFinset ↪ 𝔽)
       (2 ^ (n - (∑ j' ∈ finRangeTo _ (i.1 + 1), (s j' : ℕ))))
     ).carrier
   := by sorry
