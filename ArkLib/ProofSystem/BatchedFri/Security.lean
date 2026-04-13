@@ -52,8 +52,8 @@ abbrev evalDomainSigma {n k : ℕ} (s : Fin (k + 1) → ℕ+)
   (ω : SmoothCosetFftDomain n 𝔽) (i : ℕ) :=
   ω.subdomainNatReversed (∑ j' ∈ finRangeTo (k + 1) i, s j')
 
-def cosetEnum (s₀ : { x | x ∈ evalDomainSigma s ω i}) (k_le_n : ∑ j', (s j').1 ≤ n)
-      (j : Fin (2 ^ (s i).1)) : { x // x ∈ (evalDomainSigma s ω ↑i) } :=
+def cosetEnum (s₀ : evalDomainSigma s ω i) (k_le_n : ∑ j', (s j').1 ≤ n)
+      (j : Fin (2 ^ (s i).1)) : evalDomainSigma s ω ↑i :=
   let r : {x | x ∈ ω.fftDomain.subdomainNatReversed (n - ↑(s i))} :=
     ⟨ω.fftDomain.subdomainNatReversed (n - (s i).1)
       ⟨j.1,
@@ -75,20 +75,30 @@ def cosetEnum (s₀ : { x | x ∈ evalDomainSigma s ω i}) (k_le_n : ∑ j', (s 
       ⟩,
       FftDomain.mem_domain_self
     ⟩
-  ⟨
+  let x : (evalDomainSigma s ω ↑i).toFinset := ⟨
     s₀.1 * r.1,
-    CosetFftDomain.subdomainNatReversed_mul_property (by {
-      apply Nat.le_sub_of_add_le
-      apply le_trans
-        (b := ∑ j' ∈ finRangeTo (k + 1) ↑i, (s j').1 + (s i).1)
-        (c := n)
-      · constructor
-      · rw [←Fri.Spec.sum_add_one]
-        apply le_trans (b := ∑ j', (s j').1) <;> try omega
-        apply Finset.sum_le_sum_of_subset
-        simp
-    }) (by omega) s₀.2 r.2
+    by {
+      rw [CosetFftDomain.mem_coset_finset_iff_mem_coset_domain]
+      exact CosetFftDomain.subdomainNatReversed_mul_property (by {
+        apply Nat.le_sub_of_add_le
+        apply le_trans
+          (b := ∑ j' ∈ finRangeTo (k + 1) ↑i, (s j').1 + (s i).1)
+          (c := n)
+        · constructor
+        · rw [←Fri.Spec.sum_add_one]
+          apply le_trans (b := ∑ j', (s j').1) <;> try omega
+          apply Finset.sum_le_sum_of_subset
+          simp
+      }) (by omega) (by {
+        rcases s₀ with ⟨s₀, hs₀⟩ 
+        simp only
+        simp only [evalDomainSigma] at hs₀ 
+        rw [CosetFftDomain.mem_coset_finset_iff_mem_coset_domain] at hs₀
+        exact hs₀
+      }) r.2
+    }
   ⟩
+  ↑x
 
 def cosetG (s₀ : { x // x ∈ (evalDomainSigma s ω ↑i) })
   : Finset { x // x ∈ (evalDomainSigma s ω ↑i) } :=
