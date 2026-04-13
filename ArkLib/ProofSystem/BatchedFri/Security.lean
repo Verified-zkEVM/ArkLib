@@ -257,14 +257,15 @@ noncomputable def f_succ'
 
   Corresponds to Claim 8.1 of [BCIKS20] -/
 lemma fri_round_consistency_completeness
-  {f : ReedSolomon.code (ω.subdomainNatReversed (i := ∑ j' ∈ finRangeTo _ i, s j'))
-                        (2 ^ (n - (∑ j' ∈ finRangeTo _ i, (s j' : ℕ))))}
+  {f : ReedSolomon.code 
+    (⟨fun x => x, by simp⟩ : evalDomainSigma s ω i ↪ 𝔽)
+    (2 ^ (n - (∑ j' ∈ finRangeTo _ i, (s j' : ℕ))))}
   {z : 𝔽}
   (k_le_n : ∑ j', ↑(s j') ≤ n)
   :
   f_succ' n s f.val z k_le_n ∈
     (ReedSolomon.code
-      (ω.subdomainNatReversed (i := ∑ j' ∈ finRangeTo _ i, s j'))
+      (⟨fun x => x, by sorry⟩ : evalDomainSigma s ω (i + 1) ↪ 𝔽)
       (2 ^ (n - (∑ j' ∈ finRangeTo _ (i.1 + 1), (s j' : ℕ))))
     ).carrier
   := by sorry
