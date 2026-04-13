@@ -283,47 +283,47 @@ def Fₛ {ι : Type} [Fintype ι] {t : ℕ} (f : Fin t.succ → (ι → 𝔽)) :
 
 noncomputable def correlated_agreement_density {ι : Type} [Fintype ι]
   (Fₛ : AffineSubspace 𝔽 (ι → 𝔽)) (V : Submodule 𝔽 (ι → 𝔽)) : ℝ :=
-  let Fc := Fₛ.carrier.toFinset
-  let Vc := V.carrier.toFinset
+  let Fc := @Set.toFinset _ Fₛ.carrier sorry
+  let Vc := @Set.toFinset _ V.carrier sorry
   (Fc ∩ Vc).card / Fc.card
 
 open Polynomial
 
 noncomputable def oracleImpl
-    (l : ℕ) (z : Fin (k + 1) → 𝔽) (f : (CosetDomain.evalDomain D g 0) → 𝔽) :
+    (l : ℕ) (z : Fin (k + 1) → 𝔽) (f : (ω.subdomainNatReversed 0) → 𝔽) :
   QueryImpl
-    ([]ₒ + ([Spec.FinalOracleStatement D g s]ₒ + [(Spec.QueryRound.pSpec D g l).Message]ₒ))
-    (OracleComp [(Spec.QueryRound.pSpec D g l).Message]ₒ) := by
+    ([]ₒ + ([Spec.FinalOracleStatement s ω]ₒ + [(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ))
+    (OracleComp [(Spec.QueryRound.pSpec (ω := ω) l).Message]ₒ) := by
   intro q
   rcases q with i | q
   · exact PEmpty.elim i
   · rcases q with q | q
     · rcases q with ⟨i, dom⟩
-      let f0 := Lagrange.interpolate Finset.univ (fun v => v.1.1) f
+      let f0 := Lagrange.interpolate Finset.univ (fun v => v.1) f
       let chals : List (Fin (k + 1) × 𝔽) :=
         ((List.finRange (k + 1)).map fun i => (i, z i)).take i.1
       let fi : 𝔽[X] := List.foldl (fun f (i, α) => Polynomial.foldNth (s i) f α) f0 chals
-      let st : Spec.FinalOracleStatement D g s i :=
+      let st : Spec.FinalOracleStatement (F := 𝔽) s ω i :=
         if h : i.1 = k + 1 then
           cast (by simp [Spec.FinalOracleStatement, h]) fi
         else
           cast
             (by simp [Spec.FinalOracleStatement, h])
-            (fun x : evalDomain D g (∑ j' ∈ finRangeTo i.1, s j') => fi.eval x.1.1)
-      exact pure <| (Spec.finalOracleStatementInterface D g s i).answer st dom
+            (fun x : ω.subdomainNatReversed (∑ j' ∈ finRangeTo _ i.1, s j') => fi.eval x.1)
+      exact pure <| (Spec.finalOracleStatementInterface s (ω := ω) i).answer st dom
     · rcases q with ⟨i, t⟩
       exact liftM <|
         cast
           (β := OracleQuery
-            [(Spec.QueryRound.pSpec D g l).Message]ₒ
+            [(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ
             (([]ₒ +
-                ([Spec.FinalOracleStatement D g s]ₒ +
-                  [(Spec.QueryRound.pSpec D g l).Message]ₒ)).Range
+                ([Spec.FinalOracleStatement s (ω := ω)]ₒ +
+                  [(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ)).Range
               (Sum.inr (Sum.inr ⟨i, t⟩))))
           (by simp [OracleSpec.Range])
-          (query (spec := [(Spec.QueryRound.pSpec D g l).Message]ₒ) ⟨i, t⟩)
+          (query (spec := [(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ) ⟨i, t⟩)
 
-instance {g : 𝔽ˣ} {l : ℕ} : ([(Spec.QueryRound.pSpec D g l).Message]ₒ).Inhabited where
+instance {g : 𝔽ˣ} {l : ℕ} : ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Inhabited where
   inhabited_B := by
     intro i
     unfold Spec.QueryRound.pSpec MessageIdx at i
@@ -331,7 +331,7 @@ instance {g : 𝔽ˣ} {l : ℕ} : ([(Spec.QueryRound.pSpec D g l).Message]ₒ).I
     have h := this ▸ i.1.2
     simp at h
 
-instance {g : 𝔽ˣ} {l : ℕ} : ([(Spec.QueryRound.pSpec D g l).Message]ₒ).Fintype where
+instance {g : 𝔽ˣ} {l : ℕ} : ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Fintype where
   fintype_B := by
     intro i
     unfold Spec.QueryRound.pSpec MessageIdx at i
@@ -341,7 +341,7 @@ instance {g : 𝔽ˣ} {l : ℕ} : ([(Spec.QueryRound.pSpec D g l).Message]ₒ).F
 
 open ENNReal in
 noncomputable def εC
-    (𝔽 : Type) [Finite 𝔽] (n : ℕ) {k : ℕ} (s : Fin (k + 1) → ℕ+) (m : ℕ) (ρ_sqrt : ℝ≥0) : ℝ≥0∞ :=
+    (𝔽 : Type) [Fintype 𝔽] (n : ℕ) {k : ℕ} (s : Fin (k + 1) → ℕ+) (m : ℕ) (ρ_sqrt : ℝ≥0) : ℝ≥0∞ :=
   ENNReal.ofReal <|
       (m + (1 : ℚ)/2)^7 * (2^n)^2
         / ((2 * ρ_sqrt ^ 3) * (Fintype.card 𝔽))
@@ -349,77 +349,77 @@ noncomputable def εC
 
 private abbrev fullChallengeProtocol (t l : ℕ) :=
   (BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
-    (Spec.pSpecFold D g k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ Spec.QueryRound.pSpec D g l)
+    (Spec.pSpecFold k (ω := ω) s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ Spec.QueryRound.pSpec l (ω := ω))
 
 noncomputable instance {t l : ℕ} :
     ∀ j,
       Inhabited
         ((fullChallengeProtocol
-            (𝔽 := 𝔽) (D := D) (g := g) (k := k) (s := s) t l).Challenge j) := by
+            (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge j) := by
   letI : ∀ j, Inhabited ((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t).Challenge j) := by
     infer_instance
-  letI : ∀ j, Inhabited ((Spec.pSpecFold D g k s).Challenge j) := by
+  letI : ∀ j, Inhabited ((Spec.pSpecFold k s).Challenge j) := by
     infer_instance
   letI : ∀ j, Inhabited ((Spec.FinalFoldPhase.pSpec 𝔽).Challenge j) := by
     infer_instance
-  letI : ∀ j, Inhabited ((Spec.QueryRound.pSpec D g l).Challenge j) := by
+  letI : ∀ j, Inhabited ((Spec.QueryRound.pSpec l).Challenge j) := by
     infer_instance
   letI :
       ∀ j,
         Inhabited
-          ((Spec.pSpecFold D g k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽).Challenge j) := by
+          ((Spec.pSpecFold k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽).Challenge j) := by
     intro ⟨i, h⟩
     exact Fin.fappend₂ (A := Direction) (B := Type)
       (F := fun dir type => (h : dir = .V_to_P) → Inhabited type)
-      (α₁ := (Spec.pSpecFold D g k s).dir)
+      (α₁ := (Spec.pSpecFold k s).dir)
       (β₁ := (Spec.FinalFoldPhase.pSpec 𝔽).dir)
-      (α₂ := (Spec.pSpecFold D g k s).Type)
+      (α₂ := (Spec.pSpecFold k s).Type)
       (β₂ := (Spec.FinalFoldPhase.pSpec 𝔽).Type)
       (fun i h =>
-        inferInstanceAs (Inhabited ((Spec.pSpecFold D g k s).Challenge ⟨i, h⟩)))
+        inferInstanceAs (Inhabited ((Spec.pSpecFold k s).Challenge ⟨i, h⟩)))
       (fun i h =>
         inferInstanceAs (Inhabited ((Spec.FinalFoldPhase.pSpec 𝔽).Challenge ⟨i, h⟩)))
       i h
   letI :
       ∀ j,
         Inhabited
-          ((Spec.pSpecFold D g k s ++ₚ
+          ((Spec.pSpecFold k (ω := ω) s ++ₚ
               Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-                Spec.QueryRound.pSpec D g l).Challenge j) := by
+                Spec.QueryRound.pSpec (ω := ω) l).Challenge j) := by
     intro ⟨i, h⟩
     exact Fin.fappend₂ (A := Direction) (B := Type)
       (F := fun dir type => (h : dir = .V_to_P) → Inhabited type)
-      (α₁ := (Spec.pSpecFold D g k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽).dir)
-      (β₁ := (Spec.QueryRound.pSpec D g l).dir)
-      (α₂ := (Spec.pSpecFold D g k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽).Type)
-      (β₂ := (Spec.QueryRound.pSpec D g l).Type)
+      (α₁ := (Spec.pSpecFold (ω := ω) k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽).dir)
+      (β₁ := (Spec.QueryRound.pSpec (ω := ω) l).dir)
+      (α₂ := (Spec.pSpecFold (ω := ω) k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽).Type)
+      (β₂ := (Spec.QueryRound.pSpec (ω := ω) l).Type)
       (fun i h =>
         inferInstanceAs
           (Inhabited
-            ((Spec.pSpecFold D g k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽).Challenge
+            ((Spec.pSpecFold (ω := ω) k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽).Challenge
               ⟨i, h⟩)))
       (fun i h =>
-        inferInstanceAs (Inhabited ((Spec.QueryRound.pSpec D g l).Challenge ⟨i, h⟩)))
+        inferInstanceAs (Inhabited ((Spec.QueryRound.pSpec (ω := ω) l).Challenge ⟨i, h⟩)))
       i h
   intro ⟨i, h⟩
   exact Fin.fappend₂ (A := Direction) (B := Type)
     (F := fun dir type => (h : dir = .V_to_P) → Inhabited type)
     (α₁ := (BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t).dir)
-    (β₁ := (Spec.pSpecFold D g k s ++ₚ
+    (β₁ := (Spec.pSpecFold (ω := ω) k s ++ₚ
       Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-        Spec.QueryRound.pSpec D g l).dir)
+        Spec.QueryRound.pSpec (ω := ω) l).dir)
     (α₂ := (BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t).Type)
-    (β₂ := (Spec.pSpecFold D g k s ++ₚ
+    (β₂ := (Spec.pSpecFold (ω := ω) k s ++ₚ
       Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-        Spec.QueryRound.pSpec D g l).Type)
+        Spec.QueryRound.pSpec (ω := ω) l).Type)
     (fun i h =>
       inferInstanceAs (Inhabited ((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t).Challenge ⟨i, h⟩)))
     (fun i h =>
       inferInstanceAs
         (Inhabited
-          ((Spec.pSpecFold D g k s ++ₚ
+          ((Spec.pSpecFold (ω := ω) k s ++ₚ
               Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-                Spec.QueryRound.pSpec D g l).Challenge
+                Spec.QueryRound.pSpec (ω := ω) l).Challenge
             ⟨i, h⟩)))
     i h
 
@@ -427,51 +427,51 @@ noncomputable instance {t l : ℕ} :
     ∀ j,
       Fintype
         ((fullChallengeProtocol
-            (𝔽 := 𝔽) (D := D) (g := g) (k := k) (s := s) t l).Challenge j) := by
+            (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge j) := by
   letI : ∀ j, Fintype ((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t).Challenge j) := by
     infer_instance
-  letI : ∀ j, Fintype ((Spec.pSpecFold D g k s).Challenge j) := by
+  letI : ∀ j, Fintype ((Spec.pSpecFold (ω := ω) k s).Challenge j) := by
     infer_instance
   letI : ∀ j, Fintype ((Spec.FinalFoldPhase.pSpec 𝔽).Challenge j) := by
     infer_instance
-  letI : ∀ j, Fintype ((Spec.QueryRound.pSpec D g l).Challenge j) := by
+  letI : ∀ j, Fintype ((Spec.QueryRound.pSpec (ω := ω) l).Challenge j) := by
     infer_instance
   letI :
       ∀ j,
         Fintype
-          ((Spec.pSpecFold D g k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽).Challenge j) := by
+          ((Spec.pSpecFold (ω := ω) k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽).Challenge j) := by
     intro ⟨i, h⟩
     exact Fin.fappend₂ (A := Direction) (B := Type)
       (F := fun dir type => (h : dir = .V_to_P) → Fintype type)
-      (α₁ := (Spec.pSpecFold D g k s).dir)
+      (α₁ := (Spec.pSpecFold (ω := ω) k s).dir)
       (β₁ := (Spec.FinalFoldPhase.pSpec 𝔽).dir)
-      (α₂ := (Spec.pSpecFold D g k s).Type)
+      (α₂ := (Spec.pSpecFold (ω := ω) k s).Type)
       (β₂ := (Spec.FinalFoldPhase.pSpec 𝔽).Type)
       (fun i h =>
-        inferInstanceAs (Fintype ((Spec.pSpecFold D g k s).Challenge ⟨i, h⟩)))
+        inferInstanceAs (Fintype ((Spec.pSpecFold (ω := ω) k s).Challenge ⟨i, h⟩)))
       (fun i h =>
         inferInstanceAs (Fintype ((Spec.FinalFoldPhase.pSpec 𝔽).Challenge ⟨i, h⟩)))
       i h
   letI :
       ∀ j,
         Fintype
-          ((Spec.pSpecFold D g k s ++ₚ
+          ((Spec.pSpecFold (ω := ω) k s ++ₚ
               Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-                Spec.QueryRound.pSpec D g l).Challenge j) := by
+                Spec.QueryRound.pSpec (ω := ω) l).Challenge j) := by
     intro ⟨i, h⟩
     exact Fin.fappend₂ (A := Direction) (B := Type)
       (F := fun dir type => (h : dir = .V_to_P) → Fintype type)
-      (α₁ := (Spec.pSpecFold D g k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽).dir)
-      (β₁ := (Spec.QueryRound.pSpec D g l).dir)
-      (α₂ := (Spec.pSpecFold D g k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽).Type)
-      (β₂ := (Spec.QueryRound.pSpec D g l).Type)
+      (α₁ := (Spec.pSpecFold (ω := ω) k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽).dir)
+      (β₁ := (Spec.QueryRound.pSpec (ω := ω) l).dir)
+      (α₂ := (Spec.pSpecFold (ω := ω) k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽).Type)
+      (β₂ := (Spec.QueryRound.pSpec (ω := ω) l).Type)
       (fun i h =>
         inferInstanceAs
           (Fintype
-            ((Spec.pSpecFold D g k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽).Challenge
+            ((Spec.pSpecFold (ω := ω) k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽).Challenge
               ⟨i, h⟩)))
       (fun i h =>
-        inferInstanceAs (Fintype ((Spec.QueryRound.pSpec D g l).Challenge ⟨i, h⟩)))
+        inferInstanceAs (Fintype ((Spec.QueryRound.pSpec (ω := ω) l).Challenge ⟨i, h⟩)))
       i h
   intro ⟨i, h⟩
   exact Fin.fappend₂ (A := Direction) (B := Type)
