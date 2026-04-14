@@ -608,7 +608,13 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
                 Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
                   Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ)) := by
   infer_instance
-
+--HasEvalSPMF
+--       (OptionT
+--         (OracleComp
+--           ([]ₒ +
+--             [(BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t ++ₚ
+--                   (Spec.pSpecFold k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ Spec.QueryRound.pSpec l)).Challenge]ₒ)))
+--
 noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
     HasEvalSPMF
       (OptionT
@@ -625,6 +631,7 @@ open ENNReal in
 lemma fri_query_soundness
   {t : ℕ}
   {α : ℝ}
+  {ω : SmoothCosetFftDomain t 𝔽}
   (f : Fin t.succ → (ω.subdomainNatReversed 0 → 𝔽))
   (h_agreement :
     correlated_agreement_density
@@ -641,18 +648,18 @@ lemma fri_query_soundness
     let α0 : ℝ≥0∞ := ENNReal.ofReal (max α (ρ_sqrt * (1 + 1 / (2 * (m : ℝ≥0)))))
     let εQ  (x : Fin t → 𝔽)
             (z : Fin (k + 1) → 𝔽) :=
-      Pr_{let samp ←$ᵖ (ω)}[
+      Pr_{let samp ←$ᵖ (ω.subdomainNatReversed 0)}[
         Pr[
           fun _ => True |
           (
             (do
               simulateQ
-                (oracleImpl n (ω := ω) s 1 z (fun v ↦ f 0 v + ∑ i, x i * f i.succ v))
+                (oracleImpl t (ω := ω) s 1 z (fun v ↦ f 0 v + ∑ i, x i * f i.succ v))
                 (
                   (
                     Fri.Spec.QueryRound.queryVerifier
                       (ω := ω)
-                      (n := n) s
+                      (n := t) s
                       (by
                         apply Spec.round_bound (d := d)
                         transitivity
@@ -748,6 +755,7 @@ open ENNReal in
 /-- Corresponds to Claim 8.3 of [BCIKS20] -/
 lemma fri_soundness
   {t l m : ℕ}
+  {ω : SmoothCosetFftDomain t 𝔽}
   (f : Fin t.succ → (ω → 𝔽))
   (m_ge_3 : m ≥ 3)
   :
