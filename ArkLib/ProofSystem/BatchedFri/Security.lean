@@ -327,7 +327,7 @@ noncomputable def oracleImpl
           (by simp [OracleSpec.Range])
           (query (spec := [(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ) ⟨i, t⟩)
 
-instance {g : 𝔽ˣ} {l : ℕ} : ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Inhabited where
+instance {l : ℕ} : ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Inhabited where
   inhabited_B := by
     intro i
     unfold Spec.QueryRound.pSpec MessageIdx at i
@@ -335,7 +335,7 @@ instance {g : 𝔽ˣ} {l : ℕ} : ([(Spec.QueryRound.pSpec l (ω := ω)).Message
     have h := this ▸ i.1.2
     simp at h
 
-instance {g : 𝔽ˣ} {l : ℕ} : ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Fintype where
+instance {l : ℕ} : ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Fintype where
   fintype_B := by
     intro i
     unfold Spec.QueryRound.pSpec MessageIdx at i
@@ -351,27 +351,27 @@ noncomputable def εC
         / ((2 * ρ_sqrt ^ 3) * (Fintype.card 𝔽))
       + (∑ i, 2 ^ (s i).1) * (2 * m + 1) * (2 ^ n + 1) / (Fintype.card 𝔽 * ρ_sqrt)
 
-private abbrev fullChallengeProtocol (t l : ℕ) :=
+private abbrev fullChallengeProtocol (t l : ℕ) (ω : SmoothCosetFftDomain t 𝔽) :=
   (BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
     (Spec.pSpecFold k (ω := ω) s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ Spec.QueryRound.pSpec l (ω := ω))
 
-noncomputable instance {t l : ℕ} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
     ∀ j,
       Inhabited
         ((fullChallengeProtocol
             (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge j) := by
   letI : ∀ j, Inhabited ((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t).Challenge j) := by
     infer_instance
-  letI : ∀ j, Inhabited ((Spec.pSpecFold k s).Challenge j) := by
+  letI : ∀ j, Inhabited ((Spec.pSpecFold k (ω := ω) s).Challenge j) := by
     infer_instance
   letI : ∀ j, Inhabited ((Spec.FinalFoldPhase.pSpec 𝔽).Challenge j) := by
     infer_instance
-  letI : ∀ j, Inhabited ((Spec.QueryRound.pSpec l).Challenge j) := by
+  letI : ∀ j, Inhabited ((Spec.QueryRound.pSpec (ω := ω) l).Challenge j) := by
     infer_instance
   letI :
       ∀ j,
         Inhabited
-          ((Spec.pSpecFold k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽).Challenge j) := by
+          ((Spec.pSpecFold (ω := ω) k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽).Challenge j) := by
     intro ⟨i, h⟩
     exact Fin.fappend₂ (A := Direction) (B := Type)
       (F := fun dir type => (h : dir = .V_to_P) → Inhabited type)
@@ -427,7 +427,7 @@ noncomputable instance {t l : ℕ} :
             ⟨i, h⟩)))
     i h
 
-noncomputable instance {t l : ℕ} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
     ∀ j,
       Fintype
         ((fullChallengeProtocol
@@ -481,21 +481,21 @@ noncomputable instance {t l : ℕ} :
   exact Fin.fappend₂ (A := Direction) (B := Type)
     (F := fun dir type => (h : dir = .V_to_P) → Fintype type)
     (α₁ := (BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t).dir)
-    (β₁ := (Spec.pSpecFold D g k s ++ₚ
+    (β₁ := (Spec.pSpecFold k (ω := ω) s ++ₚ
       Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-        Spec.QueryRound.pSpec D g l).dir)
+        Spec.QueryRound.pSpec (ω := ω) l).dir)
     (α₂ := (BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t).Type)
-    (β₂ := (Spec.pSpecFold D g k s ++ₚ
+    (β₂ := (Spec.pSpecFold k (ω := ω) s ++ₚ
       Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-        Spec.QueryRound.pSpec D g l).Type)
+        Spec.QueryRound.pSpec l (ω := ω)).Type)
     (fun i h =>
       inferInstanceAs (Fintype ((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t).Challenge ⟨i, h⟩)))
     (fun i h =>
       inferInstanceAs
         (Fintype
-          ((Spec.pSpecFold D g k s ++ₚ
+          ((Spec.pSpecFold k (ω := ω) s ++ₚ
               Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-                Spec.QueryRound.pSpec D g l).Challenge
+                Spec.QueryRound.pSpec l (ω := ω)).Challenge
             ⟨i, h⟩)))
     i h
 
@@ -507,10 +507,10 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
     rcases q with ⟨i, u⟩
     cases u
     change Inhabited
-      ((fullChallengeProtocol (𝔽 := 𝔽) (D := D) (g := g) (k := k) (s := s) t l).Challenge i)
+      ((fullChallengeProtocol (𝔽 := 𝔽) (k := k) (s := s) t l ω).Challenge i)
     infer_instance
 
-noncomputable instance {t l : ℕ} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
     ([(fullChallengeProtocol
         (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge]ₒ).Fintype where
   fintype_B := by
@@ -518,10 +518,10 @@ noncomputable instance {t l : ℕ} :
     rcases q with ⟨i, u⟩
     cases u
     change Fintype
-      ((fullChallengeProtocol (𝔽 := 𝔽) (D := D) (g := g) (k := k) (s := s) t l).Challenge i)
+      ((fullChallengeProtocol (𝔽 := 𝔽) (k := k) (s := s) t l (ω := ω)).Challenge i)
     infer_instance
 
-noncomputable instance {t l : ℕ} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
     ∀ j, Inhabited
       (((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
           (Spec.pSpecFold k (ω := ω) s ++ₚ
@@ -534,7 +534,7 @@ noncomputable instance {t l : ℕ} :
           ((fullChallengeProtocol
               (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge j))
 
-noncomputable instance {t l : ℕ} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
     ∀ j, Fintype
       (((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
           (Spec.pSpecFold (ω := ω) k s ++ₚ
@@ -547,21 +547,21 @@ noncomputable instance {t l : ℕ} :
           ((fullChallengeProtocol
               (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge j))
 
-noncomputable instance {t l : ℕ} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
     ([((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
         (Spec.pSpecFold (ω := ω) k s ++ₚ
           Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
             Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Inhabited := by
   infer_instance
 
-noncomputable instance {t l : ℕ} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
     ([((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
         (Spec.pSpecFold (ω := ω) k s ++ₚ
           Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
             Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Fintype := by
   infer_instance
 
-noncomputable instance {t l : ℕ} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
     ([]ₒ +
       [((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
           (Spec.pSpecFold (ω := ω) k s ++ₚ
@@ -580,7 +580,7 @@ noncomputable instance {t l : ℕ} :
                     Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
                       Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Range q))
 
-noncomputable instance {t l : ℕ} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
     ([]ₒ +
       [((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
           (Spec.pSpecFold (ω := ω) k s ++ₚ
@@ -599,7 +599,7 @@ noncomputable instance {t l : ℕ} :
                     Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
                       Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Range q))
 
-noncomputable instance {t l : ℕ} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
     HasEvalPMF
       (OracleComp
         ([]ₒ +
@@ -609,7 +609,7 @@ noncomputable instance {t l : ℕ} :
                   Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ)) := by
   infer_instance
 
-noncomputable instance {t l : ℕ} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
     HasEvalSPMF
       (OptionT
         (OracleComp
@@ -629,7 +629,7 @@ lemma fri_query_soundness
   (h_agreement :
     correlated_agreement_density
       (Fₛ f)
-      (ReedSolomon.code (CosetDomain.domainEmb (i := 0) D g) (2 ^ n))
+      (ReedSolomon.code (⟨fun x => x, by simp⟩ : ω.subdomainNatReversed 0 ↪ 𝔽) (2 ^ n))
     ≤ α)
   {m : ℕ}
   (m_ge_3 : m ≥ 3)
@@ -637,20 +637,21 @@ lemma fri_query_soundness
     let ρ_sqrt :=
       ReedSolomonCode.sqrtRate
         (2 ^ n)
-        (CosetDomain.domainEmb (i := 0) D g)
+        (⟨fun x => x, by simp⟩ : ω.subdomainNatReversed 0 ↪ 𝔽)
     let α0 : ℝ≥0∞ := ENNReal.ofReal (max α (ρ_sqrt * (1 + 1 / (2 * (m : ℝ≥0)))))
     let εQ  (x : Fin t → 𝔽)
             (z : Fin (k + 1) → 𝔽) :=
-      Pr_{let samp ←$ᵖ (CosetDomain.evalDomain D g 0)}[
+      Pr_{let samp ←$ᵖ (ω)}[
         Pr[
           fun _ => True |
           (
             (do
               simulateQ
-                (oracleImpl (ω := ω) s 1 z (fun v ↦ f 0 v + ∑ i, x i * f i.succ v))
+                (oracleImpl n (ω := ω) s 1 z (fun v ↦ f 0 v + ∑ i, x i * f i.succ v))
                 (
                   (
-                    Fri.Spec.QueryRound.queryVerifier D g
+                    Fri.Spec.QueryRound.queryVerifier
+                      (ω := ω)
                       (n := n) s
                       (by
                         apply Spec.round_bound (d := d)
@@ -747,27 +748,27 @@ open ENNReal in
 /-- Corresponds to Claim 8.3 of [BCIKS20] -/
 lemma fri_soundness
   {t l m : ℕ}
-  (f : Fin t.succ → (CosetDomain.evalDomain D g 0 → 𝔽))
+  (f : Fin t.succ → (ω → 𝔽))
   (m_ge_3 : m ≥ 3)
   :
     let ρ_sqrt :=
       ReedSolomonCode.sqrtRate
         (2 ^ n)
-        (CosetDomain.domainEmb (i := 0) D g)
+        (⟨fun x => x, by simp⟩ : ω ↪ 𝔽)
     let α : ℝ≥0 := (ρ_sqrt * (1 + 1 / (2 * (m : ℝ≥0))))
     (∃ prov : OracleProver (WitOut := Unit) ..,
         Pr[fun _ => True |
           OracleReduction.run () f ()
             ⟨
               prov,
-              (BatchedFri.Spec.batchedFRIreduction (n := n) D g k s d domain_size_cond l t).verifier
+              (BatchedFri.Spec.batchedFRIreduction (ω := ω) (n := n) k s d domain_size_cond l t).verifier
             ⟩
         ] > εC 𝔽 n s m ρ_sqrt + α ^ l) →
       Code.jointAgreement
         (F := 𝔽)
         (κ := Fin t.succ)
-        (ι := CosetDomain.evalDomain D g 0)
-        (C := (ReedSolomon.code (CosetDomain.domainEmb (i := 0) D g) (2 ^ n)).carrier)
+        (ι := ω)
+        (C := (ReedSolomon.code (⟨fun x => x, by simp⟩ : ω ↪ 𝔽) (2 ^ n)).carrier)
         (δ := 1 - α)
         (W := f) := by
   sorry

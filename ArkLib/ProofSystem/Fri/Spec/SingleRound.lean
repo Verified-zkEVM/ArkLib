@@ -817,7 +817,7 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
                     ⟨s₀ ^ (2 ^ (∑ j' ∈ finRangeTo _ i.1, (s j').1)), 
                       subdomainNatReversed_pow_property_main_domain_toFinset (Nat.le_trans 
                       (Finset.sum_le_sum_of_subset (t := Finset.univ) (by simp))
-                      (round_bound domain_size_cond)) s₀.2⟩
+                      (k_le_n)) s₀.2⟩
                   let queries :
                     List (
                       ω.subdomainNatReversed
@@ -887,7 +887,7 @@ noncomputable def queryOracleReduction [DecidableEq F] :
     (FinalStatement F k) (FinalOracleStatement s ω) (Witness F s d (Fin.last (k + 1)))
     (pSpec (ω := ω) l) where
   prover := queryProver s d l
-  verifier := queryVerifier s _ domain_size_cond (round_bound domain_size_cond) l
+  verifier := queryVerifier s (round_bound domain_size_cond) l
 
 end QueryRound
 
