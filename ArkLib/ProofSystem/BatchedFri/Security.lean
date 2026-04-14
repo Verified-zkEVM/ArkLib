@@ -41,6 +41,8 @@ variable (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 variable {i : Fin (k + 1)}
 variable {ω : SmoothCosetFftDomain n 𝔽}
 
+attribute [instance high] Spec.QueryRound.instOracleInterfaceMessagePSpec
+
 instance {F : Type} [Field F] {a : F} [inst : NeZero a] : Invertible a where
   invOf := a⁻¹
   invOf_mul_self := by field_simp [inst.out]
@@ -656,30 +658,30 @@ lemma fri_query_soundness
             (do
               simulateQ
                 (oracleImpl n (ω := ω) s 1 z (fun v ↦ f 0 v + ∑ i, x i * f i.succ v))
-                (
-                  (
+                ((
                     Fri.Spec.QueryRound.queryVerifier
                       (ω := ω)
                       (n := n) s
-                      (by
-                        apply Spec.round_bound (d := d)
-                        transitivity
-                        · exact domain_size_cond
-                        · apply pow_le_pow (by decide) (by decide)
-                          simp
+                      (
+                        by
+                          apply Spec.round_bound (d := d)
+                          transitivity
+                          · exact domain_size_cond
+                          · apply pow_le_pow (by decide) (by decide)
+                            simp
                       )
                       1
                   ).verify
-                  z
-                  (fun i =>
-                    by
-                      simpa only
-                        [
-                          Spec.QueryRound.pSpec, Challenge,
-                          show i.1 = 0 by omega, Fin.isValue,
-                          Fin.vcons_zero
-                        ] using fun _ => samp
-                  )
+                    z
+                    (fun i =>
+                      by
+                        simpa only
+                          [
+                            Spec.QueryRound.pSpec, Challenge,
+                            show i.1 = 0 by omega, Fin.isValue,
+                            Fin.vcons_zero
+                          ] using fun _ => samp
+                    )
                 )
             )
           )]
