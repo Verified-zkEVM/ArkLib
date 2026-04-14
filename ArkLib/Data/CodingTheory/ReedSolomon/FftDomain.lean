@@ -74,9 +74,18 @@ namespace FftDomain
 def toFinset (ω : FftDomain ι F) : Finset F
   := Finset.image ω Finset.univ
 
+instance
+    {ι : Type} [AddCommGroup ι] [Fintype ι] [DecidableEq ι]
+    {F : Type} [Field F] [Fintype F] [DecidableEq F] :
+  CoeSort (FftDomain ι F) Type where
+    coe d := toFinset d
+
 end FftDomain
 
 instance {ω : FftDomain ι F} : Inhabited ω.toFinset where
+  default := ⟨ω 0, by simp [FftDomain.toFinset]⟩
+
+instance {ω : FftDomain ι F} : Inhabited ω where
   default := ⟨ω 0, by simp [FftDomain.toFinset]⟩
 
 namespace FftDomain
@@ -368,6 +377,9 @@ instance
 end CosetFftDomain
 
 instance {ω : CosetFftDomain ι F} : Inhabited ω.toFinset where
+  default := ⟨ω 0, by simp [CosetFftDomain.toFinset]⟩
+
+instance {ω : CosetFftDomain ι F} : Inhabited ω where
   default := ⟨ω 0, by simp [CosetFftDomain.toFinset]⟩
 
 namespace CosetFftDomain
