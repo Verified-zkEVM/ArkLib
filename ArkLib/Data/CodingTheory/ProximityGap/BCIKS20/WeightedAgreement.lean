@@ -64,7 +64,7 @@ point on the curve is `δ`-close to Reed-Solomon code is at most `ε`.
 Then, the words `u` have weighted correlated agreement.
 
 Version with different bounds. -/
-theorem weighted_correlated_agreement_for_parameterized_curves' [DecidableEq ι]
+theorem weighted_correlated_agreement_for_parameterized_curves'
     {k l : ℕ} {u : Fin (l + 2) → ι → F}
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     {μ : ι → Set.Icc (0 : ℚ) 1}
@@ -157,7 +157,7 @@ end ProbabilityTheorems
 section ListAgreementLemmas
 
 variable {ι : Type} [Fintype ι] [Nonempty ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [DecidableEq F]
 /-- Lemma 7.5 in [BCIKS20].
 This is the "list agreement on a curve implies correlated agreement" lemma.
 

@@ -674,16 +674,16 @@ def jointAgreement {F κ ι : Type*} [Fintype ι] [DecidableEq F]
   ∃ S : Finset ι, S.card ≥ (1 - δ) * (Fintype.card ι) ∧
       ∃ v : κ → ι → F, ∀ i, v i ∈ C ∧ S ⊆ Finset.filter (fun j => v i j = W i j) Finset.univ
 
-set_option linter.unusedDecidableInType false in
 open InterleavedCode in
 /-- Equivalence between the agreement-based definition `jointAgreement` and
 the distance/proximity-based definition `jointProximity` (the latter is represented in
 upperbound of interleaved-code distance). -/
 @[simp]
 theorem jointAgreement_iff_jointProximity
-    {F : Type*} {κ ι : Type*} [Fintype κ] [Fintype ι] [Nonempty ι] [DecidableEq ι] [DecidableEq F]
+    {F : Type*} {κ ι : Type*} [Fintype κ] [Fintype ι] [Nonempty ι] [DecidableEq F]
     (C : Set (ι → F)) (u : WordStack F κ ι) (δ : ℝ≥0) :
     jointAgreement (C := C) (δ := δ) (W := u)  ↔ jointProximity (C := C) (u := u) (δ := δ) := by
+  classical
   let e : ℕ := Nat.floor (δ * Fintype.card ι)
   constructor
   · -- Forward direction: jointAgreement → jointProximity

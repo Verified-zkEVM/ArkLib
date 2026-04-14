@@ -69,7 +69,8 @@ lemma approximate_solution_is_exact_solution_coeffs
 
 open BCIKS20AppendixA.ClaimA2 in
 /-- Claim 5.8 from [BCIKS20].
-States that the approximate solution is actually a solution. This version is in terms of polynomials.
+States that the approximate solution is actually a solution.
+This version is in terms of polynomials.
 -/
 lemma approximate_solution_is_exact_solution_coeffs'
     (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)

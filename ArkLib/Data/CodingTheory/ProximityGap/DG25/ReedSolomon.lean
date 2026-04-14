@@ -172,6 +172,7 @@ theorem reedSolomon_multilinearCorrelatedAgreement_Nat [Nontrivial (ReedSolomon.
       exact h_affine_gap_interleaved) h_affine_gap_base
     exact RS_tensor_gap ϑ hϑ_gt_0 u h_prob_tensor_gt
 
+omit [DecidableEq ι] in
 theorem reedSolomon_multilinearCorrelatedAgreement [Nontrivial (ReedSolomon.code α k)]
     (hk : k ≤ Fintype.card ι) {δ : ℝ≥0} (he : δ ≤ (Code.relativeUniqueDecodingRadius
       (C := (ReedSolomon.code α k : Set (ι → A))))) :
@@ -179,6 +180,7 @@ theorem reedSolomon_multilinearCorrelatedAgreement [Nontrivial (ReedSolomon.code
       δ_ε_multilinearCorrelatedAgreement (F := A) (A := A) (ι := ι) (ϑ := ϑ) (δ := δ)
       (C := (ReedSolomon.code α k : Set (ι → A)))
       (ε := ((Fintype.card ι) : ℝ≥0) / (Fintype.card A)) := by
+  classical
   set n := Fintype.card ι
   intro ϑ hϑ_gt_0 u h_prob_u_close_gt
   let e : ℕ := Nat.floor (δ * n)
