@@ -313,4 +313,19 @@ lemma foldNth_zero {s : ℕ} {α : 𝔽} : foldNth (2 ^ s) 0 α = 0 := by
       (0 : 𝔽[X]) := by rfl
   simp [this]
 
+omit [NoZeroDivisors 𝔽] in
+/--
+Lemma bridges the coefficient-level identity `splitNth_def` and
+evaluation-level reasoning about `splitNth` and `foldNth`.
+-/
+lemma splitNth_eval_comp_pow {n : ℕ} [NeZero n] (f : 𝔽[X]) (x : 𝔽) (i : Fin n) :
+    (eval₂ C (X ^ n) (splitNth f n i)).eval x = (splitNth f n i).eval (x ^ n) := by
+  rw [eval₂_eq_sum]
+  unfold Polynomial.eval
+  rw [Polynomial.eval₂_sum, eval₂_eq_sum]
+  congr
+  ext e a
+  rw [← eval]
+  simp
+
 end Polynomial

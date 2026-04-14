@@ -91,15 +91,6 @@ lemma generalised_round_consistency_completeness
     rw [splitNth_def n f]
   rw [Polynomial.eval_finset_sum]
   simp only [eval_mul, eval_C, eval_pow]
-  have eval_eval₂_pow_eq_eval_pow {s : 𝔽} (i) :
-      eval s (eval₂ C (X ^ n) (splitNth f n i)) = (splitNth f n i).eval (s ^ n) := by
-    rw [eval₂_eq_sum]
-    unfold Polynomial.eval
-    rw [Polynomial.eval₂_sum, eval₂_eq_sum]
-    congr
-    ext e a
-    rw [←eval]
-    simp
   conv =>
     left
     congr
@@ -110,7 +101,7 @@ lemma generalised_round_consistency_completeness
     congr
     · skip
     ext j
-    rw [eval_mul, eval_pow, eval_X, eval_eval₂_pow_eq_eval_pow]
+    rw [eval_mul, eval_pow, eval_X, splitNth_eval_comp_pow]
     rhs
     rw [mul_pow, h, one_mul]
   generalize heq : @Lagrange.interpolate 𝔽 inst1 (Fin _) _ _ _ _ = p'
