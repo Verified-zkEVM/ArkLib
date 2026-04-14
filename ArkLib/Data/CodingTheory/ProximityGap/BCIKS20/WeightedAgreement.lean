@@ -6,8 +6,6 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
-/-! # BCIKS20 Weighted Agreement -/
-
 
 namespace ProximityGap
 
@@ -66,7 +64,7 @@ point on the curve is `δ`-close to Reed-Solomon code is at most `ε`.
 Then, the words `u` have weighted correlated agreement.
 
 Version with different bounds. -/
-theorem weighted_correlated_agreement_for_parameterized_curves'
+theorem weighted_correlated_agreement_for_parameterized_curves' [DecidableEq ι]
     {k l : ℕ} {u : Fin (l + 2) → ι → F}
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     {μ : ι → Set.Icc (0 : ℚ) 1}
@@ -159,9 +157,8 @@ end ProbabilityTheorems
 section ListAgreementLemmas
 
 variable {ι : Type} [Fintype ι] [Nonempty ι]
-variable {F : Type} [Field F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 /-- Lemma 7.5 in [BCIKS20].
-
 This is the "list agreement on a curve implies correlated agreement" lemma.
 
 We are given two lists of functions `u, v : Fin (l + 2) → ι → F`, where each `v i` is a
@@ -195,7 +192,6 @@ lemma list_agreement_on_curve_implies_correlated_agreement_bound
   sorry
 
 /-- Lemma 7.6 in [BCIKS20].
-
 This is the "integral-weight" strengthening of the list-agreement-on-a-curve =>
 correlated-agreement bound.
 

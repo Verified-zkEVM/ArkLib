@@ -6,8 +6,7 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
-/-! # BCIKS20 Error Bounds -/
-
+import ArkLib.Data.CodingTheory.ReedSolomon
 
 namespace ProximityGap
 

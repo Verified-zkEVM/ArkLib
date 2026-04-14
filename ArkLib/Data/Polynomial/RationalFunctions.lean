@@ -6,16 +6,10 @@ Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
 
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.Prelims
-import Mathlib.Algebra.Field.IsField
-import Mathlib.Algebra.Polynomial.Basic
-import Mathlib.Algebra.Polynomial.Bivariate
-import Mathlib.Algebra.Polynomial.Eval.Defs
 import Mathlib.FieldTheory.RatFunc.Defs
 import Mathlib.RingTheory.Ideal.Quotient.Defs
 import Mathlib.RingTheory.Ideal.Span
-import Mathlib.RingTheory.PowerSeries.Basic
 import Mathlib.RingTheory.PowerSeries.Substitution
-
 
 /-!
 # Definitions and Theorems about Function Fields and Rings of Regular Functions
@@ -235,8 +229,8 @@ lemma weight_ξ_bound (x₀ : F) {D : ℕ} (hD : D ≥ Bivariate.totalDegree H) 
 /-- There exist regular elements `β` with a weight bound as given in Claim A.2
 of Appendix A.4 of [BCIKS20]. -/
 lemma β_regular (R : F[X][X][Y])
-    (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
-    {D : ℕ} (hD : D ≥ Bivariate.totalDegree H) :
+                (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
+                {D : ℕ} (hD : D ≥ Bivariate.totalDegree H) :
     ∀ t : ℕ, ∃ β : 𝒪 H, weight_Λ_over_𝒪 β ≤ (2 * t + 1) * Bivariate.natDegreeY R * D :=
   sorry
 

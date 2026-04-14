@@ -12,18 +12,11 @@ import Mathlib.RingTheory.Henselian
 import Mathlib.Data.NNReal.Defs
 import Mathlib.Data.NNReal.Basic
 
-/-!
-# Non-square Vandermonde Matrices
-
-Definitions and theorems for non-square Vandermonde matrices, including rank characterizations and
-their relationship to polynomial evaluation.
--/
-
 open Polynomial Matrix Code LinearCode
 
 variable {F ι ι' : Type*}
 
-noncomputable section
+section
 
 namespace Vandermonde
 

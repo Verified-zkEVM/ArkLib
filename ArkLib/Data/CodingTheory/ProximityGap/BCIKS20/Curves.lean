@@ -6,8 +6,7 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
-/-! # BCIKS20 Curves -/
-
+import ArkLib.Data.CodingTheory.ReedSolomon
 
 namespace ProximityGap
 
@@ -17,8 +16,9 @@ open Code
 
 section CoreResults
 
-variable {ι : Type} [Fintype ι] [Nonempty ι]
+variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+
 /-- Theorem 1.5 (Correlated agreement for low-degree parameterised curves) in [BCIKS20].
 
 Take a Reed-Solomon code of length `ι` and degree `deg`, a proximity-error parameter
@@ -26,6 +26,7 @@ pair `(δ, ε)` and a curve passing through words `u₀, ..., uκ`, such that
 the probability that a random point on the curve is `δ`-close to the Reed-Solomon code
 is at most `ε`. Then, the words `u₀, ..., uκ` have correlated agreement. -/
 theorem correlatedAgreement_affine_curves {k : ℕ}
+    {u : Fin k → ι → F}
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hδ : δ ≤ 1 - ReedSolomon.sqrtRate deg domain) :
     δ_ε_correlatedAgreementCurves (k := k) (A := F) (F := F) (ι := ι)

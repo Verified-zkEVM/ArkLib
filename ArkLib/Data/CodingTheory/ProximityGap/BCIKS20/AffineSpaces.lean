@@ -6,8 +6,11 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.Main
-/-! # BCIKS20 Affine Spaces -/
-
+import ArkLib.Data.CodingTheory.GuruswamiSudan
+import ArkLib.Data.CodingTheory.ProximityGap.Basic
+import ArkLib.Data.Polynomial.RationalFunctions
+import ArkLib.Data.CodingTheory.ReedSolomon
+import ArkLib.Data.Polynomial.Trivariate
 
 namespace ProximityGap
 
@@ -16,8 +19,9 @@ open scoped BigOperators LinearCode ProbabilityTheory
 
 section CoreResults
 
-variable {ι : Type} [Fintype ι] [Nonempty ι]
+variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+
 /-- Theorem 1.6 (Correlated agreement over affine spaces) in [BCIKS20].
 
 Take a Reed-Solomon code of length `ι` and degree `deg`, a proximity-error parameter
@@ -25,11 +29,12 @@ pair `(δ, ε)` and an affine space with origin `u₀` and affine generting set 
 such that the probability a random point in the affine space is `δ`-close to the Reed-Solomon
 code is at most `ε`. Then the words `u₀, ..., uκ` have correlated agreement.
 
-Note that we have `k+2` vectors to form the affine space. This an intricacy needed us to be
+Note that we have `k + 2` vectors to form the affine space. This an intricacy needed us to be
 able to isolate the affine origin from the affine span and to form a generating set of the
 correct size. The reason for taking an extra vector is that after isolating the affine origin,
 the affine span is formed as the span of the difference of the rest of the vector set. -/
 theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
+    {u : Fin (k + 1) → ι → F}
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hδ : δ ≤ 1 - ReedSolomon.sqrtRate deg domain) :
     δ_ε_correlatedAgreementAffineSpaces (k := k) (A := F) (F := F) (ι := ι)

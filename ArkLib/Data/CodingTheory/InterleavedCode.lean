@@ -24,8 +24,6 @@ import Mathlib.Tactic.Qify
 import Mathlib.Topology.MetricSpace.Infsep
 import Mathlib.Data.NNReal.Defs
 
-/-! # Interleaved Codes -/
-
 /-!
 ## Main definitions
 
@@ -216,8 +214,8 @@ abbrev CodewordStack := codewordStackSet (κ := κ) (C := C)
 -- TODO: mem of Module interleaved code, Module codeword stack
 
 @[simp]
-def interleaveWordStack {A : Type*} {κ ι : Type*} (u : WordStack A κ ι) : InterleavedWord A κ ι :=
-  u.transpose
+def interleaveWordStack {A : Type*} {κ ι : Type*} (u : WordStack A κ ι) : InterleavedWord A κ ι
+    := u.transpose
 
 /-- Interleave a codeword stack into an interleaved codeword. -/
 @[simp]
@@ -231,8 +229,9 @@ def interleaveCodewordStack (u : CodewordStack A κ ι C) : InterleavedCodeword 
   ⟩
 
 @[simp]
-def finMapTwoWords {A : Type*} {ι : Type*} (u₀ u₁ : Word A ι) : WordStack A (κ := Fin 2) (ι := ι) :=
-    fun rowIdx =>
+def finMapTwoWords {A : Type*} {ι : Type*} (u₀ u₁ : Word A ι)
+    : WordStack A (κ := Fin 2) (ι := ι)
+    := fun rowIdx =>
   match rowIdx with
   | ⟨0, _⟩ => u₀
   | ⟨1, _⟩ => u₁
@@ -360,8 +359,8 @@ lemma interleavedCode_eq_interleavedCodeSet {A : Type*} {ι : Type*} {κ : Type*
 @[simp]
 lemma interleavedCode_eq_interleavedCodeSet_of_moduleCode {F A : Type*} {κ ι : Type*} [Semiring F]
     [AddCommMonoid A] [Module F A] {MC : ModuleCode ι F A} :
-    ((MC ^⋈ κ) : Set (ι → (κ → A))) = interleavedCodeSet (κ := κ) (C := (MC : Set (ι → A))) := by
-  rfl
+    ((MC ^⋈ κ) : Set (ι → (κ → A))) = interleavedCodeSet (κ := κ) (C := (MC : Set (ι → A)))
+    := by rfl
 
 @[simp]
 instance {κ₁ κ₂ : Type*} :
@@ -566,9 +565,11 @@ instance instNonemptyInterleavedCode [Nonempty C] :
   intro k
   exact c.property
 
-example (C : Set (ι → A)) : ((C ^⋈ (Fin 2))) = interleavedCodeSet (κ := Fin 2) C := by rfl
+example (C : Set (ι → A)) : ((C ^⋈ (Fin 2))) = interleavedCodeSet (κ := Fin 2) C
+    := by rfl
 example (MC : ModuleCode ι F A) : (MC ^⋈ (Fin 2))
-  = ModuleCode.moduleInterleavedCode (F := F) (A := A) (κ := Fin 2) (ι := ι) (MC := MC) := by rfl
+    = ModuleCode.moduleInterleavedCode (F := F) (A := A) (κ := Fin 2) (ι := ι) (MC := MC)
+    := by rfl
 example (u : CodewordStack A κ ι C) :
   let iuCodewords: InterleavedCodeword A κ ι C := ⋈|u
   let iuWords: InterleavedWord A κ ι := ⋈|u.val
@@ -671,16 +672,16 @@ TOOD: this can generalize further to support the consequent of mutual correlated
 def jointAgreement {F κ ι : Type*} [Fintype ι] [DecidableEq F]
     (C : Set (ι → F)) (δ : ℝ≥0) (W : κ → ι → F) : Prop :=
   ∃ S : Finset ι, S.card ≥ (1 - δ) * (Fintype.card ι) ∧
-    ∃ v : κ → ι → F, ∀ i, v i ∈ C ∧ S ⊆ Finset.filter (fun j => v i j = W i j) Finset.univ
+      ∃ v : κ → ι → F, ∀ i, v i ∈ C ∧ S ⊆ Finset.filter (fun j => v i j = W i j) Finset.univ
 
+set_option linter.unusedDecidableInType false in
 open InterleavedCode in
-open scoped Classical in
 /-- Equivalence between the agreement-based definition `jointAgreement` and
 the distance/proximity-based definition `jointProximity` (the latter is represented in
 upperbound of interleaved-code distance). -/
 @[simp]
 theorem jointAgreement_iff_jointProximity
-    {F : Type*} {κ ι : Type*} [Fintype κ] [Fintype ι] [Nonempty ι] [DecidableEq F]
+    {F : Type*} {κ ι : Type*} [Fintype κ] [Fintype ι] [Nonempty ι] [DecidableEq ι] [DecidableEq F]
     (C : Set (ι → F)) (u : WordStack F κ ι) (δ : ℝ≥0) :
     jointAgreement (C := C) (δ := δ) (W := u)  ↔ jointProximity (C := C) (u := u) (δ := δ) := by
   let e : ℕ := Nat.floor (δ * Fintype.card ι)
@@ -736,7 +737,8 @@ theorem jointAgreement_iff_jointProximity
     -- Since v_interleaved ∈ MC.interleavedCode, we have δᵣ(u_interleaved, MC.interleavedCode) ≤ δ
     unfold jointProximity
     have h_min_dist :
-        δᵣ(u_interleaved, interleavedCodeSet C) ≤ δᵣ(u_interleaved, v_interleaved) := by
+        δᵣ(u_interleaved, interleavedCodeSet C) ≤ δᵣ(u_interleaved, v_interleaved)
+      := by
       apply relDistFromCode_le_relDist_to_mem (u := u_interleaved) (C := interleavedCodeSet C)
         (v := v_interleaved) (hv := hv_interleaved_mem)
     exact le_trans h_min_dist h_dist

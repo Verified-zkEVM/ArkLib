@@ -5,32 +5,9 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
 
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-import ArkLib.Data.CodingTheory.Basic.Distance
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
-import ArkLib.Data.CodingTheory.GuruswamiSudan
-import ArkLib.Data.CodingTheory.Prelims
-import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.CodingTheory.InterleavedCode
-import ArkLib.Data.Polynomial.Bivariate
-import ArkLib.Data.Polynomial.RationalFunctions
 import ArkLib.Data.Probability.Notation
-import Mathlib.Algebra.Field.Basic
-import Mathlib.Algebra.Lie.OfAssociative
-import Mathlib.Algebra.Module.Submodule.Defs
-import Mathlib.Algebra.Polynomial.Basic
-import Mathlib.Data.Finset.BooleanAlgebra
-import Mathlib.Data.Real.Basic
-import Mathlib.Data.Real.Sqrt
-import Mathlib.Data.Set.Defs
-import Mathlib.FieldTheory.RatFunc.AsPolynomial
-import Mathlib.FieldTheory.Separable
-import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Defs
 import Mathlib.Probability.Distributions.Uniform
-import Mathlib.RingTheory.Henselian
-import Mathlib.RingTheory.PowerSeries.Basic
-import Mathlib.RingTheory.PowerSeries.Substitution
 
 /-!
 # Proximity gap fundamental definitions
@@ -74,7 +51,9 @@ open NNReal Finset Function Code Affine
 open scoped ProbabilityTheory BigOperators LinearCode Affine
 
 universe u v w k l
+
 section CoreSecurityDefinitions
+
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 variable {κ : Type k} {ι : Type l} [Fintype κ] [Fintype ι] [Nonempty ι]
 -- κ => row indices, ι => column indices
@@ -90,8 +69,8 @@ noncomputable def proximityMeasure (u v : Word A ι) (d : ℕ) : ℕ :=
   Fintype.card {r : F | Δ₀(r • u + (1 - r) • v, C) ≤ d}
 
 /-- A code `C` exhibits proximity gap at distance `d` and cardinality bound `bound` if for every
-      pair of vectors `u` and `v`, whenever the proximity measure for `C u v d` is greater than
-      `bound`, then the distance of `[u | v]` from the interleaved code `C ^⊗ 2` is at most `d`. -/
+  pair of vectors `u` and `v`, whenever the proximity measure for `C u v d` is greater than
+  `bound`, then the distance of `[u | v]` from the interleaved code `C ^⊗ 2` is at most `d`. -/
 def proximityGap (d : ℕ) (bound : ℕ) : Prop :=
   ∀ u v : Word (A := A) (ι := ι), (proximityMeasure (F := F) C u v d > bound)
     →
@@ -158,10 +137,9 @@ have correlated agreement.
 noncomputable def δ_ε_correlatedAgreementCurves {k : ℕ}
     {A : Type 0} [AddCommMonoid A] [Module F A] [Fintype A] [DecidableEq A]
     (C : Set (ι → A)) (δ ε : ℝ≥0) : Prop :=
-  ∀ (u : WordStack (A := A) (κ := Fin (k + 1)) (ι := ι)),
-    Pr_{let r ← $ᵖ F}[ δᵣ(∑ i : Fin (k + 1), (r ^ (i : ℕ)) • u i, C) ≤ δ ] > k * ε
+    ∀ (u : WordStack (A := A) (κ := Fin (k + 1)) (ι := ι)),
+    Pr_{let y ← $ᵖ (Curve.polynomialCurveFinite (F := F) (A := A) u)}[ δᵣ(y.1, C) ≤ δ ] > k * ε
       → jointAgreement (F := A) (κ := Fin (k + 1)) (ι := ι) (C := C) (W := u) (δ := δ)
-
 
 /-- **`(δ, ε)`-CA for affine spaces**: Generalized statement of **Theorem 1.6, [BCIKS20]**
 For `k+1` words `u₀, u₁, ..., uₖ ∈ A^ι` let `U = u₀ + span{u₁, ..., uₖ} ⊂ A^ι` be an affine subspace
@@ -171,8 +149,8 @@ exceeds `ε`, then the words `u₀, u₁, ..., uₖ` have correlated agreement. 
 noncomputable def δ_ε_correlatedAgreementAffineSpaces
     {A : Type 0} [AddCommGroup A] [Module F A] [Fintype A] [DecidableEq A]
     (C : Set (ι → A)) (δ ε : ℝ≥0) : Prop :=
-  ∀ (u : WordStack (A := A) (κ := Fin (k + 1)) (ι := ι)),
-    Pr_{let r ← $ᵖ (Fin k → F)}[ δᵣ(u 0 + ∑ i : Fin k, r i • u i.succ, C) ≤ δ ] > ε →
+    ∀ (u : WordStack (A := A) (κ := Fin (k + 1)) (ι := ι)),
+    Pr_{let y ← $ᵖ (affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[ δᵣ(y.1, C) ≤ δ ] > ε →
     jointAgreement (F := A) (κ := Fin (k + 1)) (ι := ι) (C := C) (W := u) (δ := δ)
 
 end CoreSecurityDefinitions
