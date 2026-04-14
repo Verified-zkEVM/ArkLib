@@ -12,11 +12,8 @@ import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.GoodCoeffs
 
 namespace ProximityGap
 
-open NNReal Finset Function
-open scoped BigOperators
-open NNReal Finset Function ProbabilityTheory Finset
+open NNReal Finset Function ProbabilityTheory Code
 open scoped BigOperators LinearCode
-open Code
 
 universe u v w k l
 

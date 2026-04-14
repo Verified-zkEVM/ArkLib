@@ -11,9 +11,8 @@ import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.Main
 
 namespace ProximityGap
 
-open NNReal Finset Function ProbabilityTheory
+open NNReal Finset Function ProbabilityTheory ReedSolomon Code
 open scoped BigOperators LinearCode ProbabilityTheory
-open Code
 
 section CoreResults
 
@@ -32,7 +31,7 @@ correct size. The reason for taking an extra vector is that after isolating the 
 the affine span is formed as the span of the difference of the rest of the vector set. -/
 theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    (hδ : δ ≤ 1 - ReedSolomonCode.sqrtRate deg domain) :
+    (hδ : δ ≤ 1 - ReedSolomon.sqrtRate deg domain) :
     δ_ε_correlatedAgreementAffineSpaces (k := k) (A := F) (F := F) (ι := ι)
       (C := ReedSolomon.code domain deg) (δ := δ) (ε := errorBound δ deg domain) := by
   sorry
@@ -41,7 +40,7 @@ end CoreResults
 
 section BCIKS20ProximityGapSection6
 
-open scoped ReedSolomonCode
+open scoped ReedSolomon
 
 variable {l : ℕ} [NeZero l]
 variable {ι : Type} [Fintype ι] [Nonempty ι]
@@ -273,7 +272,7 @@ theorem exists_basepoint_with_large_line_prob {ι : Type} [Fintype ι] [Nonempty
 omit [NeZero l] in
 theorem average_proximity_implies_proximity_of_linear_subspace
     {u : Fin (l + 2) → ι → F} {k : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    (hδ : δ ∈ Set.Ioo 0 (1 - ReedSolomonCode.sqrtRate (k + 1) domain)) :
+    (hδ : δ ∈ Set.Ioo 0 (1 - ReedSolomon.sqrtRate (k + 1) domain)) :
     letI U'_submodule : Submodule F (ι → F) :=
       Submodule.span F (Finset.univ.image (Fin.tail u) : Set (ι → F))
     letI U' : Finset (ι → F) := (U'_submodule : Set (ι → F)).toFinset
@@ -296,7 +295,7 @@ theorem average_proximity_implies_proximity_of_linear_subspace
       u' ∈ (Submodule.span F (Finset.univ.image (Fin.tail u) : Set (ι → F)) :
         Submodule F (ι → F)) := by
     simpa [Set.mem_toFinset] using hu'
-  have hδ_le : δ ≤ 1 - ReedSolomonCode.sqrtRate (k + 1) domain :=
+  have hδ_le : δ ≤ 1 - ReedSolomon.sqrtRate (k + 1) domain :=
     le_of_lt hδ.2
   rcases
       (exists_basepoint_with_large_line_prob

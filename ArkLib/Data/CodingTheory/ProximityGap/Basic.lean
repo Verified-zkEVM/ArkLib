@@ -70,19 +70,15 @@ module codes over (scalar) rings.
 
 namespace ProximityGap
 
-open NNReal Finset Function
-open scoped ProbabilityTheory
-open scoped BigOperators LinearCode
-open Code Affine
+open NNReal Finset Function Code Affine
+open scoped ProbabilityTheory BigOperators LinearCode Affine
 
 universe u v w k l
-
-open scoped Affine
 section CoreSecurityDefinitions
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 variable {κ : Type k} {ι : Type l} [Fintype κ] [Fintype ι] [Nonempty ι]
 -- κ => row indices, ι => column indices
-variable {F : Type v} [Ring F] [Fintype F] [DecidableEq F]
+variable {F : Type v} [Ring F] [Fintype F]
 -- variable {M : Type} [Fintype M] -- Message space type
 variable {A : Type w} [Fintype A] [DecidableEq A] [AddCommMonoid A] [Module F A] -- Alphabet type
 variable (C : Set (ι → A))
@@ -103,7 +99,7 @@ def proximityGap (d : ℕ) (bound : ℕ) : Prop :=
     (Δ₀(u ⋈₂ v, C ^⋈ (Fin 2)) ≤ d)
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-  {F : Type} [Ring F] [Fintype F] [DecidableEq F]
+  {F : Type} [Ring F] [Fintype F]
   {k : ℕ}
 
 /-- Definition 1.1 in [BCIKS20].
@@ -129,8 +125,7 @@ For every pair of words `u₀, u₁`, if the probability that a random affine li
 `δ`-close to `C` exceeds `ε`, then `u₀` and `u₁` have correlated agreement with `C`.
 -- **TODO**: prove that `δ_ε_correlatedAgreementAffineLines` implies `δ_ε_proximityGap`
 -/
-noncomputable def δ_ε_correlatedAgreementAffineLines
-    {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι] [Module F A]
+noncomputable def δ_ε_correlatedAgreementAffineLines [Module F A]
     (C : Set (ι → A)) (δ ε : ℝ≥0) : Prop :=
   ∀ (u : WordStack (A := A) (κ := Fin 2) (ι := ι)),
     Pr_{let z ← $ᵖ F}[δᵣ(u 0 + z • u 1, C) ≤ δ] > ε →
@@ -141,8 +136,7 @@ with respect to the proximity parameter `δ` and the error bound `ε`, folding d
 ∀ word stack `u` of size `2^ϑ`, if the probability that
   (a random multilinear combination of the word stack `u` with randomness `r` is `δ`-close to `C`)
   exceeds `ε`, then the word stack `u` has correlated agreement with `C ^⋈ (2^ϑ)`. -/
-def δ_ε_multilinearCorrelatedAgreement [CommRing F]
-    {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι] [Module F A]
+def δ_ε_multilinearCorrelatedAgreement [CommRing F] [Module F A]
   (C : Set (ι → A)) (ϑ : ℕ) (δ ε : ℝ≥0) : Prop :=
   ∀ (u : WordStack A (Fin (2^ϑ)) ι),
     Pr_{let r ← $ᵖ (Fin ϑ → F)}[ -- This syntax only works with (A : Type 0)
@@ -220,31 +214,5 @@ noncomputable def weightedCorrelatedAgreement
 end
 
 end WeightedAgreement
-
-namespace Trivariate
-
-variable {F : Type} [Field F] [DecidableEq F] [DecidableEq (RatFunc F)]
-
-open Polynomial Bivariate
-
-noncomputable def eval_on_Z₀ (p : (RatFunc F)) (z : F) : F :=
-  RatFunc.eval (RingHom.id _) z p
-
-notation3:max R "[Z][X]" => Polynomial (Polynomial R)
-
-notation3:max R "[Z][X][Y]" => Polynomial (Polynomial (Polynomial (R)))
-
-notation3:max "Y" => Polynomial.X
-notation3:max "X" => Polynomial.C Polynomial.X
-notation3:max "Z" => Polynomial.C (Polynomial.C Polynomial.X)
-
-noncomputable opaque eval_on_Z (p : F[Z][X][Y]) (z : F) : F[X][Y] :=
-  p.map (Polynomial.mapRingHom (Polynomial.evalRingHom z))
-
-open Polynomial.Bivariate in
-noncomputable def toRatFuncPoly (p : F[Z][X][Y]) : (RatFunc F)[X][Y] :=
-  p.map (Polynomial.mapRingHom (algebraMap F[X] (RatFunc F)))
-
-end Trivariate
 
 end ProximityGap

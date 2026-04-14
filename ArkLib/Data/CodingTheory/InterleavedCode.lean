@@ -26,8 +26,6 @@ import Mathlib.Data.NNReal.Defs
 
 /-! # Interleaved Codes -/
 
-noncomputable section
-
 /-!
 ## Main definitions
 
@@ -142,7 +140,7 @@ def interleavedCodeSet {A : Type*} {κ ι : Type*}
 
 /-- If C is finite and membership is decidable, then interleavedCodeSet C is finite. -/
 @[simp]
-instance interleavedCodeSet_fintype {A : Type*} {κ ι : Type*}
+noncomputable instance interleavedCodeSet_fintype {A : Type*} {κ ι : Type*}
     [Fintype κ] [Fintype ι] [Fintype A] [DecidableEq A]
     (C : Set (ι → A)) :
     Fintype (interleavedCodeSet (κ := κ) (ι := ι) C) := by
@@ -352,7 +350,7 @@ lemma interleave_codewordStack_val_eq (u : CodewordStack A κ ι C) :
     (⋈| u).val = u.val.transpose := rfl
 
 @[simp]
-instance instFintypeInterleavedModuleCode [Fintype A] : Fintype (MC ^⋈ κ) := by
+noncomputable instance instFintypeInterleavedModuleCode [Fintype A] : Fintype (MC ^⋈ κ) := by
   exact Fintype.ofFinite ((MC ^⋈ κ) : Set (ι → (κ → A)))
 
 @[simp]

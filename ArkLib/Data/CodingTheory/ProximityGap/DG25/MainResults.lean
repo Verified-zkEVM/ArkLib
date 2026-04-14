@@ -15,10 +15,9 @@ formalization, up to the generic tensor-gap lifting theorem.
 
 noncomputable section
 
-open Code LinearCode InterleavedCode ReedSolomonCode ProximityGap ProbabilityTheory Filter
-open NNReal Finset Function
+open Code LinearCode InterleavedCode ReedSolomon ProximityGap ProbabilityTheory Filter
+open NNReal Finset Function Real
 open scoped BigOperators LinearCode ProbabilityTheory
-open Real
 
 universe u v w k l
 variable {κ : Type k} {ι : Type l} [Fintype ι] [Nonempty ι] [DecidableEq ι] [DecidableEq κ]

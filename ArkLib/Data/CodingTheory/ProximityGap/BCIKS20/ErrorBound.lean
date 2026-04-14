@@ -11,10 +11,8 @@ import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
 
 namespace ProximityGap
 
-open NNReal Finset Function
-open scoped BigOperators
+open NNReal Finset Function Code
 open scoped BigOperators LinearCode
-open Code
 
 section CoreResults
 

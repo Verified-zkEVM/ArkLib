@@ -61,7 +61,7 @@ Communications in Cryptology 1.4 (Jan. 13, 2025). issn: 3006-5496. doi: 10.62056
 
 noncomputable section
 
-open Code LinearCode InterleavedCode ReedSolomonCode ProximityGap ProbabilityTheory Filter
+open Code LinearCode InterleavedCode ReedSolomon ProximityGap ProbabilityTheory Filter
 open NNReal Finset Function
 open scoped BigOperators LinearCode ProbabilityTheory
 open Real

@@ -11,13 +11,8 @@ import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Extraction
 
 namespace ProximityGap
 
-open NNReal Finset Function
-open Polynomial
-open Polynomial.Bivariate
-open scoped BigOperators
-open NNReal Finset Function ProbabilityTheory Finset
+open Polynomial Polynomial.Bivariate NNReal Finset Function ProbabilityTheory Code Trivariate
 open scoped BigOperators LinearCode
-open Code
 
 universe u v w k l
 
@@ -44,38 +39,28 @@ lemma exists_factors_with_large_common_root_set
     ∧ #(coeffs_of_close_proximity k ωs δ u₀ u₁) / (Bivariate.natDegreeY Q) >
       2 * D_Y Q ^ 2 * (D_X ((k + 1 : ℚ) / n) n m) * D_YZ Q := by sorry
 
-/-- Claim 5.7 establishes existens of a polynomial `R`.
-    This is the extraction of this polynomial.
--/
+/-- Claim 5.7 establishes existence of a polynomial `R`. This is the extraction of this polynomial. -/
 noncomputable def R
   (δ : ℚ) (x₀ : F)
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) : F[Z][X][Y] :=
   (exists_factors_with_large_common_root_set k δ x₀ h_gs).choose
 
-/-- Claim 5.7 establishes existens of a polynomial `H`.
-    This is the extraction of this polynomial.
--/
+/-- Claim 5.7 establishes existence of a polynomial `H`. This is the extraction of this polynomial. -/
 noncomputable def H
   (δ : ℚ) (x₀ : F)
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) : F[Z][X] :=
   (exists_factors_with_large_common_root_set k δ x₀ h_gs).choose_spec.choose
 
-/-- An important property of the polynomial
-    `H` extracted from claim 5.7 is that it is
-    irreducible.
--/
+/-- An important property of the polynomial `H` extracted from Claim 5.7 is that it is irreducible. -/
 lemma irreducible_H
     (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
   Irreducible (H k δ x₀ h_gs) :=
   (exists_factors_with_large_common_root_set k δ x₀ h_gs).choose_spec.choose_spec.2.1
 
 open BCIKS20AppendixA.ClaimA2 in
-/-- The claim 5.8 from [BCIKS20].
-    States that the approximate solution is
-    actually a solution.
-    This version of the claim is stated in terms
-    of coefficients.
--/
+/-- Claim 5.8 from [BCIKS20].
+States that the approximate solution is actually a solution.
+This version of the claim is stated in terms of coefficients. -/
 lemma approximate_solution_is_exact_solution_coeffs
     (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) : ∀ t ≥ k,
   α'
@@ -87,11 +72,9 @@ lemma approximate_solution_is_exact_solution_coeffs
   (0 : BCIKS20AppendixA.𝕃 (H k δ x₀ h_gs)) := by sorry
 
 open BCIKS20AppendixA.ClaimA2 in
-/-- The claim 5.8 from [BCIKS20].
-    States that the approximate solution is
-    actually a solution.
-    This version is in terms of polynomials.
--/
+/-- Claim 5.8 from [BCIKS20].
+States that the approximate solution is actually a solution.
+This version is in terms of polynomials. -/
 lemma approximate_solution_is_exact_solution_coeffs'
     (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
     γ' x₀ (R k δ x₀ h_gs) (irreducible_H k h_gs) =
@@ -107,9 +90,7 @@ lemma approximate_solution_is_exact_solution_coeffs'
 
 open BCIKS20AppendixA.ClaimA2 in
 /-- Claim 5.9 from [BCIKS20].
-    States that the solution `γ` is linear in
-    the variable `Z`.
--/
+States that the solution `γ` is linear in the variable `Z`. -/
 lemma solution_gamma_is_linear_in_Z
     (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
   ∃ (v₀ v₁ : F[X]),
@@ -120,9 +101,7 @@ lemma solution_gamma_is_linear_in_Z
             (Polynomial.C Polynomial.X) * (Polynomial.map Polynomial.C v₁)
           ) := by sorry
 
-/-- The linear represenation of the solution `γ`
-    extracted from the claim 5.9.
--/
+/-- The linear representation of the solution `γ` extracted from Claim 5.9. -/
 noncomputable def P
   (δ : ℚ) (x₀ : F)
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
@@ -136,8 +115,7 @@ noncomputable def P
   )
 
 open BCIKS20AppendixA.ClaimA2 in
-/-- The extracted `P` from claim 5.9 equals `γ`.
--/
+/-- The extracted `P` from Claim 5.9 equals `γ`. -/
 lemma gamma_eq_P
     (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
   γ' x₀ (R k δ x₀ h_gs) (irreducible_H k (x₀ := x₀) (δ := δ) h_gs) =
@@ -146,9 +124,7 @@ lemma gamma_eq_P
   Classical.choose_spec
     (Classical.choose_spec (solution_gamma_is_linear_in_Z k (δ := δ) (x₀ := x₀) h_gs))
 
-/-- The set `S'_x` from [BCIKS20] (just before claim 5.10).
-    The set of all `z∈S'` such that `w(x,z)` matches `P_z(x)`.
--/
+/-- The set `S'_x` from [BCIKS20] (just before Claim 5.10). The set of all `z∈S'` such that `w(x,z)` matches `P_z(x)`. -/
 noncomputable def matching_set_at_x
   (δ : ℚ)
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
@@ -157,10 +133,8 @@ noncomputable def matching_set_at_x
       (Pz (matching_set_is_a_sub_of_coeffs_of_close_proximity k h_gs h)).eval (ωs x)} sorry
 
 /-- Claim 5.10 of [BCIKS20].
-    Needed to prove the claim 5.9.
-    This claim states that `γ(x)=w(x,Z)` if
-    the cardinality |S'_x| is big enough.
--/
+Needed to prove Claim 5.9.
+This claim states that `γ(x)=w(x,Z)` if the cardinality |S'_x| is big enough. -/
 lemma solution_gamma_matches_word_if_subset_large
     {ωs : Fin n ↪ F}
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
@@ -175,10 +149,8 @@ lemma solution_gamma_matches_word_if_subset_large
     (Polynomial.C <| u₀ x) + u₁ x • Polynomial.X := by sorry
 
 /-- Claim 5.11 from [BCIKS20].
-    There exists a set of points `{x₀,...,x_{k+1}}`
-    such that the sets S_{x_j} satisfy the condition
-    in the claim 5.10.
--/
+There exists a set of points `{x₀,...,x_{k+1}}` such that the sets S_{x_j} satisfy the condition
+in Claim 5.10. -/
 lemma exists_points_with_large_matching_subset
     {ωs : Fin n ↪ F}
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)

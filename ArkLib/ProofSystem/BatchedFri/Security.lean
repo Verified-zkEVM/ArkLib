@@ -578,7 +578,7 @@ lemma fri_query_soundness
   (m_ge_3 : m ≥ 3)
   :
     let ρ_sqrt :=
-      ReedSolomonCode.sqrtRate
+      ReedSolomon.sqrtRate
         (2 ^ n)
         (CosetDomain.domainEmb (i := 0) D g)
     let α0 : ℝ≥0∞ := ENNReal.ofReal (max α (ρ_sqrt * (1 + 1 / (2 * (m : ℝ≥0)))))
@@ -694,7 +694,7 @@ lemma fri_soundness
   (m_ge_3 : m ≥ 3)
   :
     let ρ_sqrt :=
-      ReedSolomonCode.sqrtRate
+      ReedSolomon.sqrtRate
         (2 ^ n)
         (CosetDomain.domainEmb (i := 0) D g)
     let α : ℝ≥0 := (ρ_sqrt * (1 + 1 / (2 * (m : ℝ≥0))))

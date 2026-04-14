@@ -12,11 +12,8 @@ import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.BWMatrix
 
 namespace ProximityGap
 
-open NNReal Finset Function
-open scoped BigOperators
-open NNReal Finset Function ProbabilityTheory Finset
+open NNReal Finset Function ProbabilityTheory Code
 open scoped BigOperators LinearCode
-open Code
 
 universe u v w k l
 
@@ -60,7 +57,7 @@ theorem RS_exists_Pz_of_mem_goodCoeffs {deg : ℕ} {domain : ι ↪ F} {δ : ℝ
     ⟨v, hvC, hvdist⟩
   rcases hvC with ⟨Pz, hPz, rfl⟩
   refine ⟨Pz, ?_, ?_⟩
-  · exact ReedSolomonCode.natDegree_lt_of_mem_degreeLT (deg := deg) hPz
+  · exact ReedSolomon.natDegree_lt_of_mem_degreeLT (deg := deg) hPz
   · simpa [e] using hvdist
 
 open scoped BigOperators in

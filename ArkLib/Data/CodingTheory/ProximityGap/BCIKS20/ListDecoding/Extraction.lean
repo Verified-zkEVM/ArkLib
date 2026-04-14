@@ -11,13 +11,8 @@ import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Guruswami
 
 namespace ProximityGap
 
-open NNReal Finset Function
-open Polynomial
-open Polynomial.Bivariate
-open scoped BigOperators
-open NNReal Finset Function ProbabilityTheory Finset
+open Polynomial Polynomial.Bivariate NNReal Finset Function ProbabilityTheory Code Trivariate
 open scoped BigOperators LinearCode
-open Code
 
 universe u v w k l
 
@@ -29,7 +24,7 @@ variable {m : ℕ} (k : ℕ) {δ : ℚ} {x₀ : F} {u₀ u₁ : Fin n → F} {Q 
          [Finite F]
 
 omit [DecidableEq (RatFunc F)] in
-/-- The equation 5.12 from [BCIKS20]. -/
+/-- Equation 5.12 from [BCIKS20]. -/
 lemma irreducible_factorization_of_gs_solution
     {k : ℕ}
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
