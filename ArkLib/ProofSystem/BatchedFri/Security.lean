@@ -282,6 +282,7 @@ def Fₛ {ι : Type} [Fintype ι] {t : ℕ} (f : Fin t.succ → (ι → 𝔽)) :
   f 0 +ᵥ affineSpan 𝔽 (Finset.univ.image (f ∘ Fin.succ))
 
 noncomputable def correlated_agreement_density {ι : Type} [Fintype ι]
+  [Fintype 𝔽]
   (Fₛ : AffineSubspace 𝔽 (ι → 𝔽)) (V : Submodule 𝔽 (ι → 𝔽)) : ℝ :=
   let Fc := @Set.toFinset _ Fₛ.carrier sorry
   let Vc := @Set.toFinset _ V.carrier sorry
@@ -302,14 +303,17 @@ noncomputable def oracleImpl
       let f0 := Lagrange.interpolate Finset.univ (fun v => v.1) f
       let chals : List (Fin (k + 1) × 𝔽) :=
         ((List.finRange (k + 1)).map fun i => (i, z i)).take i.1
-      let fi : 𝔽[X] := List.foldl (fun f (i, α) => Polynomial.foldNth (s i) f α) f0 chals
+      let fi : Unit → 𝔽[X] := fun _ => List.foldl (fun f (i, α) => Polynomial.foldNth (s i) f α) f0 chals
       let st : Spec.FinalOracleStatement (F := 𝔽) s ω i :=
         if h : i.1 = k + 1 then
           cast (by simp [Spec.FinalOracleStatement, h]) fi
         else
           cast
-            (by simp [Spec.FinalOracleStatement, h])
-            (fun x : ω.subdomainNatReversed (∑ j' ∈ finRangeTo _ i.1, s j') => fi.eval x.1)
+            (by {
+              simp [Spec.FinalOracleStatement, h]
+              rfl
+            })
+            (fun x : ω.subdomainNatReversed (∑ j' ∈ finRangeTo _ i.1, s j') => (fi ⊥).eval x.1)
       exact pure <| (Spec.finalOracleStatementInterface s (ω := ω) i).answer st dom
     · rcases q with ⟨i, t⟩
       exact liftM <|
