@@ -351,14 +351,15 @@ noncomputable def εC
         / ((2 * ρ_sqrt ^ 3) * (Fintype.card 𝔽))
       + (∑ i, 2 ^ (s i).1) * (2 * m + 1) * (2 ^ n + 1) / (Fintype.card 𝔽 * ρ_sqrt)
 
-private abbrev fullChallengeProtocol (t l : ℕ) (ω : SmoothCosetFftDomain t 𝔽) :=
+private abbrev fullChallengeProtocol (t l : ℕ) (ω : SmoothCosetFftDomain n 𝔽) :=
   (BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
     (Spec.pSpecFold k (ω := ω) s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ Spec.QueryRound.pSpec l (ω := ω))
 
-noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
     ∀ j,
       Inhabited
         ((fullChallengeProtocol
+            n
             (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge j) := by
   letI : ∀ j, Inhabited ((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t).Challenge j) := by
     infer_instance
@@ -427,10 +428,11 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
             ⟨i, h⟩)))
     i h
 
-noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
     ∀ j,
       Fintype
         ((fullChallengeProtocol
+            n
             (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge j) := by
   letI : ∀ j, Fintype ((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t).Challenge j) := by
     infer_instance
@@ -499,29 +501,29 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
             ⟨i, h⟩)))
     i h
 
-noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
     ([(fullChallengeProtocol
-        (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge]ₒ).Inhabited where
+        n (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge]ₒ).Inhabited where
   inhabited_B := by
     intro q
     rcases q with ⟨i, u⟩
     cases u
     change Inhabited
-      ((fullChallengeProtocol (𝔽 := 𝔽) (k := k) (s := s) t l ω).Challenge i)
+      ((fullChallengeProtocol n (𝔽 := 𝔽) (k := k) (s := s) t l ω).Challenge i)
     infer_instance
 
-noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
     ([(fullChallengeProtocol
-        (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge]ₒ).Fintype where
+        n (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge]ₒ).Fintype where
   fintype_B := by
     intro q
     rcases q with ⟨i, u⟩
     cases u
     change Fintype
-      ((fullChallengeProtocol (𝔽 := 𝔽) (k := k) (s := s) t l (ω := ω)).Challenge i)
+      ((fullChallengeProtocol n (𝔽 := 𝔽) (k := k) (s := s) t l (ω := ω)).Challenge i)
     infer_instance
 
-noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
     ∀ j, Inhabited
       (((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
           (Spec.pSpecFold k (ω := ω) s ++ₚ
@@ -532,9 +534,9 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
       ∀ j,
         Inhabited
           ((fullChallengeProtocol
-              (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge j))
+              n (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge j))
 
-noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
     ∀ j, Fintype
       (((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
           (Spec.pSpecFold (ω := ω) k s ++ₚ
@@ -545,23 +547,23 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
       ∀ j,
         Fintype
           ((fullChallengeProtocol
-              (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge j))
+              n (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge j))
 
-noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
     ([((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
         (Spec.pSpecFold (ω := ω) k s ++ₚ
           Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
             Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Inhabited := by
   infer_instance
 
-noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
     ([((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
         (Spec.pSpecFold (ω := ω) k s ++ₚ
           Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
             Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Fintype := by
   infer_instance
 
-noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
     ([]ₒ +
       [((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
           (Spec.pSpecFold (ω := ω) k s ++ₚ
@@ -580,7 +582,7 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
                     Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
                       Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Range q))
 
-noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
     ([]ₒ +
       [((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
           (Spec.pSpecFold (ω := ω) k s ++ₚ
@@ -599,7 +601,7 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
                     Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
                       Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Range q))
 
-noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
     HasEvalPMF
       (OracleComp
         ([]ₒ +
@@ -615,7 +617,7 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
 --             [(BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t ++ₚ
 --                   (Spec.pSpecFold k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ Spec.QueryRound.pSpec l)).Challenge]ₒ)))
 --
-noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain t 𝔽} :
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
     HasEvalSPMF
       (OptionT
         (OracleComp
@@ -631,7 +633,6 @@ open ENNReal in
 lemma fri_query_soundness
   {t : ℕ}
   {α : ℝ}
-  {ω : SmoothCosetFftDomain t 𝔽}
   (f : Fin t.succ → (ω.subdomainNatReversed 0 → 𝔽))
   (h_agreement :
     correlated_agreement_density
@@ -654,12 +655,12 @@ lemma fri_query_soundness
           (
             (do
               simulateQ
-                (oracleImpl t (ω := ω) s 1 z (fun v ↦ f 0 v + ∑ i, x i * f i.succ v))
+                (oracleImpl n (ω := ω) s 1 z (fun v ↦ f 0 v + ∑ i, x i * f i.succ v))
                 (
                   (
                     Fri.Spec.QueryRound.queryVerifier
                       (ω := ω)
-                      (n := t) s
+                      (n := n) s
                       (by
                         apply Spec.round_bound (d := d)
                         transitivity
@@ -755,7 +756,6 @@ open ENNReal in
 /-- Corresponds to Claim 8.3 of [BCIKS20] -/
 lemma fri_soundness
   {t l m : ℕ}
-  {ω : SmoothCosetFftDomain t 𝔽}
   (f : Fin t.succ → (ω → 𝔽))
   (m_ge_3 : m ≥ 3)
   :
