@@ -2,9 +2,11 @@ import Mathlib.Algebra.Polynomial.Roots
 import Mathlib.LinearAlgebra.Lagrange
 
 import ArkLib.Data.Polynomial.Bivariate
+import ArkLib.Data.Polynomial.FoldingPolynomial
 import ArkLib.Data.CodingTheory.ProximityGap.Basic
 import ArkLib.Data.Finset.PickSubset
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
+import ArkLib.Data.CodingTheory.ReedSolomon.FftDomain
 import ArkLib.Data.Polynomial.Indicator
 import ArkLib.ToMathlib.Polynomial.EvalExt
 
@@ -13,43 +15,41 @@ namespace ProximityGap
 open NNReal Finset Function
 open scoped ProbabilityTheory
 open scoped BigOperators LinearCode
-open Code Affine
+open Code Affine ReedSolomon
 open Polynomial
 
-universe u v w k l
-
-variable {κ : Type k} {ι : Type} [DecidableEq ι] [Fintype κ] [Fintype ι] [Nonempty ι]
--- κ => row indices, ι => column indices
+variable {ι : Type} [DecidableEq ι] [Fintype ι] [Nonempty ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
--- variable {M : Type} [Fintype M] -- Message space type
-variable {A : Type w} [Fintype A] [DecidableEq A] [AddCommMonoid A] [Module F A] -- Alphabet type
-variable (C : Set (ι → A))
+variable {n : ℕ}
 
-def iotaK (domain : ι ↪ F) (k : ℕ) : Finset ι :=
-  {i : ι | ∃ i' : ι, domain i' ^ k = domain i}
+#check CosetFftDomain.subdomain_roots_card
 
-def domainK (domain : ι ↪ F) (k : ℕ) : iotaK domain k ↪ F :=
-  ⟨fun i => domain i.val, by {
-    intro x y hxy
-    simp at hxy
-    tauto
-  }⟩
+noncomputable def foldWordAux (domain : SmoothCosetFftDomain n F)
+  (f : Word F (Fin (2 ^ n))) (k : ℕ) (x : F) : Polynomial F :=
+  Lagrange.interpolate {i | domain i ^ k = x}
+    (fun i => domain i) f
 
-noncomputable def foldAux (domain : ι ↪ F) (f : Word F ι) (k : ℕ) (x : F) : Polynomial F :=
-  Lagrange.interpolate {i | domain i ^ k = x} (fun i => domain i) f
+section
 
-lemma foldAux_natDegree {domain : ι ↪ F} {f : Word F ι} {k : ℕ} {x : F}
+variable {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))}
+variable {k : ℕ} {x : F}
+
+lemma foldWordAux_natDegree {k : ℕ} {x : F}
   [inst : NeZero k]
   :
-  (foldAux domain f k x).natDegree < k := by
-  by_cases heq: foldAux domain f k x = 0
+  (foldWordAux domain f k x).natDegree < k := by
+  by_cases heq: foldWordAux domain f k x = 0
   · simp [heq]
     have h := NeZero.ne (h := inst)
     omega
-  · unfold foldAux at *
+  · unfold foldWordAux at *
     apply lt_of_lt_of_le
     rw [Polynomial.natDegree_lt_iff_degree_lt (by aesop)]
-    apply Lagrange.degree_interpolate_lt _ (by simp)
+    apply Lagrange.degree_interpolate_lt _ (by {
+      intro x hx y hy hxy
+      simp at hxy
+      apply CosetFftDomain.injective (ω := domain) hxy
+    })
     have h : Finset.image domain {i | domain i ^ k = x} =
       @Set.toFinset _ (((Polynomial.X : Polynomial F) ^ k - C x).rootSet F ∩ Finset.image domain Finset.univ) (by sorry) := by
       apply Finset.ext
@@ -77,7 +77,10 @@ lemma foldAux_natDegree {domain : ι ↪ F} {f : Word F ι} {k : ℕ} {x : F}
         rcases h1 with ⟨_, h1⟩
         rw [sub_eq_zero] at h1
         simp [h1]
-    rw [←Finset.card_image_of_injOn (f := domain) (by simp)]
+    rw [←Finset.card_image_of_injOn (f := domain) (by {
+      intro x hx y hy hxy
+      apply CosetFftDomain.injective (ω := domain) hxy
+    })]
     rw [h]
     simp
     apply le_trans
@@ -100,41 +103,60 @@ lemma foldAux_natDegree {domain : ι ↪ F} {f : Word F ι} {k : ℕ} {x : F}
     apply Polynomial.natDegree_sub_le
     simp
 
-noncomputable def fold (domain : ι ↪ F) (f : Word F ι) (k : ℕ) (α : F)
+noncomputable def fold (domain : SmoothCosetFftDomain n F) 
+  (f : Word F (Fin (2 ^ n))) (k : ℕ) (α : F)
   (x : F)
   :
   F
-  := (foldAux domain f k x).eval α
+  := (foldWordAux domain f k x).eval α
 
-omit [Nonempty ι] [Fintype F] in
-lemma fold_def {domain : ι ↪ F} {f : Word F ι} {k : ℕ} {α : F}
+lemma fold_def {α : F}
   {x : F}
   :
-  fold domain f k α x = (foldAux domain f k x).eval α := rfl
+  fold domain f k α x = (foldWordAux domain f k x).eval α := rfl
 
-lemma fold_pow_x_k {domain : ι ↪ F} {f : Word F ι} {k : ℕ}
-  {i : ι}
+lemma fold_pow_x_k 
+  {i : Fin (2 ^ n)}
   :
   fold domain f k (domain i) ((domain i) ^ k) =
     f i := by
-  unfold fold foldAux
+  unfold fold foldWordAux
   rw [Lagrange.eval_interpolate_at_node] <;> simp
+  intro x hx y hy hxy 
+  apply CosetFftDomain.injective hxy
 
-noncomputable def foldWord (domain : ι ↪ F) (f : Word F ι) (k : ℕ) (α : F)
+noncomputable def foldWord (domain : SmoothCosetFftDomain n F) 
+  (f : Word F (Fin (2 ^ n))) (k : ℕ) (α : F)
   :
-  Word F (iotaK domain k)
-  := fun x => fold domain f k α (domainK domain k x)
+  Word F (Fin (2 ^ (n - k)))
+  := fun x => fold domain f k α (domain.subdomainNatReversed k (cast (by {
+    simp only [Nat.succ_eq_add_one, Fin.ofNat_eq_cast, Fin.val_natCast]
+    rw [Nat.mod_eq_of_lt]
+    omega
+  }) x))
+
+lemma foldWord_codeword {d : ℕ}
+  {α : F}
+  {p : ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d}
+  :
+  foldWord domain p k α
+    = evalOnPoints (cast (by {
+      simp only [Nat.succ_eq_add_one, Fin.ofNat_eq_cast, Fin.val_natCast]
+      rw [Nat.mod_eq_of_lt (by omega)]
+    }) (domain.subdomainNatReversed k : Fin (2 ^ ↑(Fin.ofNat n.succ (n - k))) ↪ F)) 
+        (FoldingPolynomial.polyFold (ReedSolomon.codewordToPoly p) k α) := by sorry
 
 @[simp]
-lemma fold_zero {domain : ι ↪ F} {k : ℕ} {α : F} :
-  fold domain 0 k α = 0 := by
-  unfold fold foldAux
-  ext i
+lemma fold_zero {k : ℕ} :
+  fold domain 0 k = 0 := by
+  unfold fold foldWordAux
+  ext
   simp
 
-private noncomputable def foldAuxCoeff (domain : ι ↪ F) (f : Word F ι) (k : ℕ) (i : Fin k) (x : F)
+private noncomputable def foldAuxCoeff (domain : SmoothCosetFftDomain n F) 
+  (f : Word F (Fin (2 ^ n))) (k : ℕ) (i : Fin k) (x : F)
   : F
-  := (foldAux domain f k x).coeff i
+  := (foldWordAux domain f k x).coeff i
 
 private lemma foldAux_eq_sum_of_foldAuxCoeff
   [Nonempty ι]
@@ -755,6 +777,5 @@ lemma folding_proximity {domain : ι ↪ F} {f : Word F ι} {d k : ℕ} [inst: N
       })
     sorry  
 
-
-    
+end
 end ProximityGap

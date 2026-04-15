@@ -1122,6 +1122,13 @@ lemma subdomainNat_zero {n} {ω : SmoothCosetFftDomain n F}
   x ∈ ω.subdomainNat 0 ↔ x = ω.x ^ 2 ^ n := by
     simp [subdomainNat, mem_coset_domain, FftDomain.mem_domain_iff_exists]
 
+lemma subdomainNat_mem_of_eq {n m k} {ω : SmoothCosetFftDomain n F}
+  {x : F}
+  (h : m = k)
+  :
+  x ∈ ω.subdomainNat m ↔ x ∈ ω.subdomainNat k := by
+  aesop (add simp [subdomainNatReversed, subdomainNat])
+
 @[simp]
 lemma subdomainNat_n {n} {ω : SmoothCosetFftDomain n F}
   {x : F}
@@ -1135,8 +1142,12 @@ lemma subdomainNat_n {n} {ω : SmoothCosetFftDomain n F}
   of subdomains. -/
 def subdomainNatReversed {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : ℕ)
   :
-  SmoothCosetFftDomain (Fin.ofNat n.succ (n - i)) F :=
-  ω.subdomainNat (n - i)
+  SmoothCosetFftDomain (n - i) F :=
+  cast (by {
+    simp only [Nat.succ_eq_add_one, Fin.ofNat_eq_cast, Fin.val_natCast]
+    congr
+    rw [Nat.mod_eq_of_lt (by omega)]
+  }) (ω.subdomainNat (n - i))
 
 lemma subdomainNatReversed_x {n : ℕ} {ω : SmoothCosetFftDomain n F}
   {i : ℕ}
@@ -1284,12 +1295,41 @@ lemma subdomainNatReversed_root_exists {n} {ω : SmoothCosetFftDomain n F}
   rw [show (Fin.ofNat _ j) = j by { simp; omega }] at hh
   exact hh
 
+
 lemma subdomainNatReversed_mem_of_eq {n m k} {ω : SmoothCosetFftDomain n F}
   {x : F}
   (h : m = k)
   :
   x ∈ ω.subdomainNatReversed m ↔ x ∈ ω.subdomainNatReversed k := by
   aesop (add simp [subdomainNatReversed, subdomainNat])
+
+lemma subdomainNatReversed_gt_n {n} {ω : SmoothCosetFftDomain n F}
+  {i : ℕ}
+  (hi : n < i)
+  {x : F}
+  :
+  x ∈ ω.subdomainNatReversed i ↔ x = ω.x ^ 2 ^ n  := by
+  constructor <;> intro h 
+  · simp only [Nat.succ_eq_add_one, Fin.ofNat_eq_cast, Fin.val_natCast, subdomainNatReversed] at h
+    rw [show (n - i) = 0 by omega, subdomainNat_zero] at h
+    exact h
+  · simp only [Nat.succ_eq_add_one, Fin.ofNat_eq_cast, Fin.val_natCast, subdomainNatReversed]
+    rw [show (n - i) = 0 by omega, subdomainNat_zero] 
+    exact h
+
+lemma subdomainNatReversed_root_exists' {n} {ω : SmoothCosetFftDomain n F}
+  {i j : ℕ}
+  {x : F}
+  (h : x ∈ (ω.subdomainNatReversed i))
+  (hji : j ≤ i)
+  (hi : i ≤ n)
+  :
+  ∃ y ∈ ω.subdomainNatReversed (i - j), y ^ (2 ^ j) = x
+  := subdomainNatReversed_root_exists (ω := ω) 
+      (i := i - j) (j := j) (x := x) (by omega) (by {
+       rw [subdomainNatReversed_mem_of_eq (k := i) (by omega)] 
+       exact h
+    })
 
 end
 
