@@ -855,8 +855,15 @@ lemma subdomainNatReversed_sub {n : ℕ} {ω : SmoothFftDomain n F}
   (hi : i ≤ n)
   :
   x ∈ ω.subdomainNatReversed (n - i) ↔ x ∈ ω.subdomainNat i := by
-  unfold subdomainNatReversed
-  rw [show n - (n - i) = i by omega]
+  unfold subdomainNatReversed subdomainNat
+  rw [mem_subdomain_of_eq_vals (j := ⟨i, Nat.lt_succ_of_le hi⟩) (by {
+    simp
+    omega
+  })]
+  exact mem_subdomain_of_eq_vals (by {
+    simp only [Nat.succ_eq_add_one, Fin.ofNat_eq_cast, Fin.val_natCast]
+    rw [Nat.mod_eq_of_lt (by omega)]
+  })
 
 lemma subdomainNatReversed_root_exists {n} {ω : SmoothFftDomain n F}
   {i j : ℕ} (hij : i + j ≤ n)
