@@ -820,16 +820,18 @@ lemma subdomainNat_n {n} {ω : SmoothFftDomain n F}
   of subdomains. -/
 def subdomainNatReversed {n : ℕ} (ω : SmoothFftDomain n F) (i : ℕ)
   :
-  SmoothFftDomain (Fin.ofNat n.succ (n - i)) F :=
-  ω.subdomainNat (n - i)
-
+  SmoothFftDomain (n - i) F :=
+  ω.subdomain ⟨n - i, by omega⟩
+  
 @[simp high]
 lemma subdomainNatReversed_zero {n : ℕ} {ω : SmoothFftDomain n F}
   {x : F}
   :
   x ∈ ω.subdomainNatReversed 0 ↔ x ∈ ω := by
   unfold subdomainNatReversed
-  rw [show n - 0 = n by simp, subdomainNat_n]
+  rw [mem_subdomain_of_eq_vals (j := Fin.last n) (by rfl)]
+  rw [←subdomain_last' (ω := ω)]
+  exact mem_subdomain_of_eq_vals (by simp)
 
 @[simp high]
 lemma subdomainNatReversed_n {n : ℕ} {ω : SmoothFftDomain n F}
@@ -1135,8 +1137,12 @@ lemma subdomainNat_n {n} {ω : SmoothCosetFftDomain n F}
   of subdomains. -/
 def subdomainNatReversed {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : ℕ)
   :
-  SmoothCosetFftDomain (Fin.ofNat n.succ (n - i)) F :=
-  ω.subdomainNat (n - i)
+  SmoothCosetFftDomain (n - i) F :=
+  cast (by {
+    simp only [Nat.succ_eq_add_one, Fin.ofNat_eq_cast, Fin.val_natCast]
+    congr
+    rw [Nat.mod_eq_of_lt (by omega)]
+  }) (ω.subdomainNat (n - i))
 
 lemma subdomainNatReversed_x {n : ℕ} {ω : SmoothCosetFftDomain n F}
   {i : ℕ}
