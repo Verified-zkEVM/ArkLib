@@ -574,6 +574,14 @@ lemma subdomain_0 {n} {ω : SmoothFftDomain n F}
   (ω.subdomain 0 : Subgroup Fˣ) = ⊥ := by
   aesop (add simp [FftDomain.mem_finset_iff_exists, FftDomain.mem_subgroup_iff_mem_finset])
 
+@[simp]
+lemma subdomain_0' {n} {ω : SmoothFftDomain n F}
+  {x : F}
+  :
+  x ∈ ω.subdomain 0 ↔ x = 1 := by
+  aesop (add simp [FftDomain.mem_finset_iff_exists, FftDomain.mem_domain_iff_exists])
+
+
 private lemma subdomain_embed_last {n : ℕ} (k : Fin (2 ^ (Fin.last n : ℕ)))
   : subdomain_embed (Fin.last n) k = Fin.cast (by simp [Fin.last]) k := by
   unfold subdomain_embed; aesop;
@@ -839,7 +847,7 @@ lemma subdomainNatReversed_n {n : ℕ} {ω : SmoothFftDomain n F}
   :
   x ∈ ω.subdomainNatReversed n ↔ x = 1 := by
   unfold subdomainNatReversed
-  rw [show n - n = 0 by simp, subdomainNat_zero]
+  rw [mem_subdomain_of_eq_vals (j := 0) (by simp), subdomain_0']
 
 lemma subdomainNatReversed_sub {n : ℕ} {ω : SmoothFftDomain n F}
   {i : ℕ}
