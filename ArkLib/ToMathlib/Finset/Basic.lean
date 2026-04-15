@@ -111,12 +111,12 @@ theorem shift_left_mem {s : Finset ℕ} {d : ℕ} : d ∈ shift_left s ↔ (d + 
   aesop (add simp shift_left) (add safe (by existsi d + 1))
 
 @[simp]
-def finRangeTo {k : ℕ} (i : ℕ) : Finset (Fin k) :=
+def finRangeTo (k : ℕ) (i : ℕ) : Finset (Fin k) :=
   (List.take i (List.finRange k)).toFinset
 
 @[simp]
 lemma sum_finRangeTo_add_one {n} {i : Fin (n + 1)} {f : Fin (n + 1) → ℕ} :
-  ∑ j' ∈ finRangeTo (i + 1), f j' = (∑ j' ∈ finRangeTo i, f j') + f i := by
+  ∑ j' ∈ finRangeTo (n + 1) (i + 1), f j' = (∑ j' ∈ finRangeTo (n + 1) i, f j') + f i := by
   unfold finRangeTo
   suffices ∑ x ∈ insert i (List.take i (List.finRange (n + 1))).toFinset, f x =
            ∑ x ∈ (List.take i (List.finRange (n + 1))).toFinset, f x + f i by
@@ -127,7 +127,7 @@ lemma sum_finRangeTo_add_one {n} {i : Fin (n + 1)} {f : Fin (n + 1) → ℕ} :
 
 lemma sum_finRangeTo_le_sub_of_le {n k : ℕ} {s : Fin (k + 1) → ℕ+} {i : Fin (k + 1)}
   (k_le_n : ∑ j', (s j' : ℕ) ≤ n) :
-  ∑ j' ∈ finRangeTo i, (s j' : ℕ) ≤ n - (s i : ℕ) := by
+  ∑ j' ∈ finRangeTo (k + 1) i, (s j' : ℕ) ≤ n - (s i : ℕ) := by
     apply Nat.le_sub_of_add_le
     rw [←sum_finRangeTo_add_one]
     transitivity

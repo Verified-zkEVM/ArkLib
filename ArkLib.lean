@@ -54,6 +54,7 @@ import ArkLib.Data.CodingTheory.ProximityGap.DG25.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.MainResults
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.ReedSolomon
 import ArkLib.Data.CodingTheory.ReedSolomon
+import ArkLib.Data.CodingTheory.ReedSolomon.FftDomain
 import ArkLib.Data.EllipticCurve.BN254
 import ArkLib.Data.Fin.Basic
 import ArkLib.Data.Fin.Fold
@@ -151,7 +152,6 @@ import ArkLib.ProofSystem.ConstraintSystem.Lookup
 import ArkLib.ProofSystem.ConstraintSystem.MemoryChecking
 import ArkLib.ProofSystem.ConstraintSystem.Plonk
 import ArkLib.ProofSystem.ConstraintSystem.R1CS
-import ArkLib.ProofSystem.Fri.Domain
 import ArkLib.ProofSystem.Fri.RoundConsistency
 import ArkLib.ProofSystem.Fri.Spec.General
 import ArkLib.ProofSystem.Fri.Spec.SingleRound
