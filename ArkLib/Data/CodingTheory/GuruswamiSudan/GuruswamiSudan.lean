@@ -8,6 +8,8 @@ import Mathlib.Algebra.Polynomial.Basic
 import Mathlib.Data.Real.Sqrt
 
 import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
+/-! # Guruswami-Sudan Decoder -/
+
 
 
 open Finset Finsupp Polynomial Polynomial.Bivariate ReedSolomon
@@ -31,11 +33,11 @@ variable (k m) in
 /--
 Guruswami–Sudan conditions for the polynomial searched by the decoder.
 
-These conditions characterize the existence of a nonzero bivariate
-polynomial `Q(X,Y)` that vanishes with sufficiently high multiplicity
-at all interpolation points `(ωs i, f i)`. As in the Berlekamp–Welch
-case, this can be shown to be equivalent to solving a system of linear
-equations.
+These conditions characterize a nonzero bivariate polynomial `Q(X,Y)`
+with bounded weighted degree that vanishes with sufficiently high
+multiplicity at all interpolation points `(ωs i, f i)`. As in the
+Berlekamp–Welch case, finding such a polynomial can be shown to be
+equivalent to solving a system of linear equations.
 
 Here:
 * `D : ℕ` — the **degree bound** for `Q` under the weighted degree measure.
@@ -45,7 +47,7 @@ Here:
 * `Q : F[X][Y]` — The candidate bivariate polynomial.
 -/
 structure Conditions (D : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) (Q : F[X][Y]) where
-  /-- Q ≠ 0 -/
+  /-- The polynomial is non-zero. -/
   Q_ne_0 : Q ≠ 0
   /-- (1, k-1)-weighted degree of the polynomial is bounded. -/
   Q_deg : weightedDegree Q 1 (k - 1) ≤ D
@@ -59,25 +61,23 @@ opaque decoder (k r D e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) : List F[X]
 
 /-- Each decoded codeword has to be e-far from the received message. -/
 theorem decoder_mem_impl_dist
-  {k r D e : ℕ}
+    {k r D e : ℕ}
   (h_e : e ≤ n - Real.sqrt (k * n))
   {ωs : Fin n ↪ F}
   {f : Fin n → F}
   {p : F[X]}
-  (h_in : p ∈ decoder k r D e ωs f)
-  :
+  (h_in : p ∈ decoder k r D e ωs f) :
   Δ₀(f, p.eval ∘ ωs) ≤ e := by sorry
 
 /-- If a codeword is e-far from the received message it appears in the output of
     the decoder. -/
 theorem decoder_dist_impl_mem
-  {k r D e : ℕ}
+    {k r D e : ℕ}
   (h_e : e ≤ n - Real.sqrt (k * n))
   {ωs : Fin n ↪ F}
   {f : Fin n → F}
   {p : F[X]}
-  (h_dist : Δ₀(f, p.eval ∘ ωs) ≤ e)
-  :
+  (h_dist : Δ₀(f, p.eval ∘ ωs) ≤ e) :
   p ∈ decoder k r D e ωs f := by sorry
 
 /-- Existence of a solution to the Guruswami-Sudan decoder.
@@ -95,6 +95,6 @@ theorem proximity_gap_divisibility (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code �
     (h_dist : (hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) : ℝ) / n <
       proximity_gap_johnson k n m) :
     X - C (codewordToPoly p) ∣ Q :=
-  dvd_property (f := f) hk hm p hQ.Q_ne_0 hQ.Q_deg hQ.Q_multiplicity h_dist
+  dvd_property (f := f) hk hm p hQ.Q_deg hQ.Q_multiplicity h_dist
 
 end GuruswamiSudan

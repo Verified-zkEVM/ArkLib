@@ -4,6 +4,11 @@ on:
     types: [opened]
   issue_comment:
     types: [created]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
 jobs:
   review:
     if: >-

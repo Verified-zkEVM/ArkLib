@@ -524,8 +524,8 @@ def Verifier.StateFunction.id {lang : Set Statement} :
     simp only [Verifier.id, Verifier.run]
     rw [probEvent_eq_zero_iff]
     intro x hx
-    rw [OptionT.support_eq] at hx
-    simp only [Set.mem_preimage, OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
+    rw [OptionT.mem_support_iff] at hx
+    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
     obtain ⟨s, _, hx⟩ := hx
     have key : (simulateQ impl (pure stmt : OptionT (OracleComp oSpec) Statement)).run' s =
         pure (some stmt) := by
@@ -564,8 +564,8 @@ def Verifier.KnowledgeStateFunction.id {rel : Set (Statement × Witness)} :
     simp only [Verifier.id, Verifier.run] at h
     rw [gt_iff_lt, probEvent_pos_iff] at h
     obtain ⟨x, hx, hrel⟩ := h
-    rw [OptionT.support_eq] at hx
-    simp only [Set.mem_preimage, OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
+    rw [OptionT.mem_support_iff] at hx
+    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
     obtain ⟨s, _, hx⟩ := hx
     have key : (simulateQ impl (pure stmtIn : OptionT (OracleComp oSpec) Statement)).run' s =
         pure (some stmtIn) := by

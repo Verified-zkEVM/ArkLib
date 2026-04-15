@@ -6,6 +6,11 @@ Authors: František Silváši, Julian Sutherland, Ilia Vlasov
 import Mathlib.Algebra.Order.Ring.Nat
 import Mathlib.Algebra.Ring.Regular
 import Mathlib.Data.Finset.Image
+import Mathlib.Algebra.BigOperators.Group.Finset.Defs
+import ArkLib.ToMathlib.List.Basic
+import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+import Mathlib.Data.PNat.Notation
+import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
 /-!
   # Definitions and lemmas related to `Finset`.
@@ -108,3 +113,23 @@ theorem shift_left_mem {s : Finset ℕ} {d : ℕ} : d ∈ shift_left s ↔ (d + 
 @[simp]
 def finRangeTo {k : ℕ} (i : ℕ) : Finset (Fin k) :=
   (List.take i (List.finRange k)).toFinset
+
+@[simp]
+lemma sum_finRangeTo_add_one {n} {i : Fin (n + 1)} {f : Fin (n + 1) → ℕ} :
+  ∑ j' ∈ finRangeTo (i + 1), f j' = (∑ j' ∈ finRangeTo i, f j') + f i := by
+  unfold finRangeTo
+  suffices ∑ x ∈ insert i (List.take i (List.finRange (n + 1))).toFinset, f x =
+           ∑ x ∈ (List.take i (List.finRange (n + 1))).toFinset, f x + f i by
+    simpa [List.take_add]
+  have : i ∉ (List.take i (List.finRange (n + 1))).toFinset := by
+    aesop (add simp List.mem_iff_getElem) (add safe (by grind [cases Fin]))
+  simp +arith [Finset.sum_insert this]
+
+lemma sum_finRangeTo_le_sub_of_le {n k : ℕ} {s : Fin (k + 1) → ℕ+} {i : Fin (k + 1)}
+  (k_le_n : ∑ j', (s j' : ℕ) ≤ n) :
+  ∑ j' ∈ finRangeTo i, (s j' : ℕ) ≤ n - (s i : ℕ) := by
+    apply Nat.le_sub_of_add_le
+    rw [←sum_finRangeTo_add_one]
+    transitivity
+    · exact Finset.sum_le_univ_sum_of_nonneg (by simp)
+    · exact k_le_n

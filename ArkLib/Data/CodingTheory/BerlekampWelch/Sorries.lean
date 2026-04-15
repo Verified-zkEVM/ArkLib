@@ -44,8 +44,7 @@ Returning either:
 - Used internally by the Berlekamp-Welch decoder.
 -/
 noncomputable def linsolve (A : Matrix (Fin n) (Fin m) F) (b : Fin n → F) :
-    Option (Fin m → F) :=
-  by
+    Option (Fin m → F) := by
     classical
     exact if h : ∃ x, A.mulVec x = b then some (Classical.choose h) else none
 
@@ -62,8 +61,7 @@ If `linsolve` returns `some x`, then `x` is indeed a solution to the linear syst
 - `h : linsolve A b = some x` - Proof that the solver returned this solution
 -/
 theorem linsolve_some {A : Matrix (Fin n) (Fin m) F} {b : Fin n → F} {x : Fin m → F}
-  (h : linsolve A b = some x)
-  : A.mulVec x = b := by
+    (h : linsolve A b = some x) : A.mulVec x = b := by
   unfold linsolve at h
   by_cases hex : ∃ x, A.mulVec x = b
   · rw [dif_pos hex] at h
@@ -85,8 +83,7 @@ If `linsolve` returns `none`, the linear system has no solution.
 - `h : linsolve A b = none` - Proof that the solver failed to find a solution
 -/
 theorem linsolve_none {A : Matrix (Fin n) (Fin m) F} {b : Fin n → F}
-  (h : linsolve A b = none)
-  : ¬∃ x, A.mulVec x = b := by
+    (h : linsolve A b = none) : ¬∃ x, A.mulVec x = b := by
   unfold linsolve at h
   by_cases hex : ∃ x, A.mulVec x = b
   · rw [dif_pos hex] at h

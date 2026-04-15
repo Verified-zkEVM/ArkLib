@@ -9,6 +9,8 @@ import ArkLib.Data.Probability.Notation
 import CompPoly.Data.Fin.BigOperators
 import CompPoly.Data.Nat.Bitwise
 import Mathlib.Algebra.MvPolynomial.SchwartzZippel
+/-! # Probability Instances -/
+
 
 open ProbabilityTheory Filter
 open NNReal Finset Function
@@ -116,14 +118,15 @@ theorem prob_uniform_eq_card_filter_div_card {F : Type} [Fintype F] [Nonempty F]
   rw [h_card_eq]
 
 lemma Fintype.card_fun_fin_one_eq {F : Type} [Fintype F] [Nonempty F] :
-  Fintype.card (Fin 1 → F) = Fintype.card F := by
+    Fintype.card (Fin 1 → F) = Fintype.card F := by
   rw [Fintype.card_fun]
   simp only [Fintype.card_unique, pow_one]
 
 theorem prob_uniform_singleton_finFun_eq {F : Type} [Fintype F] [Nonempty F]
-    (P : F → Prop) [DecidablePred P] :
+    (P : F → Prop) :
   Pr_{ let r ← $ᵖ (Fin 1 → F) }[
     P (r 0) ] = Pr_{ let r ←$ᵖ F }[ P r ] := by
+  classical
 -- 1. Unfold both sides using the definition of probability for uniform distributions
   rw [prob_uniform_eq_card_filter_div_card (F := F)]
   rw [prob_uniform_eq_card_filter_div_card (F := Fin 1 → F)]
@@ -154,13 +157,12 @@ theorem prob_split_uniform_sampling_of_prod {γ δ : Type}
     [Fintype γ] [Fintype δ] [Nonempty γ] [Nonempty δ]
     -- The predicate on the original (combined) type
     (P : γ × δ → Prop)
-    -- Decidability for the predicates
-    [DecidablePred P]
-    [DecidablePred (fun xy : γ × δ => P xy)] :
+    :
     -- LHS: Probability over the combined space
     Pr_{ let r ← $ᵖ (γ × δ) }[ P r ] =
     -- RHS: Probability over the sequential, split spaces
     Pr_{ let x ← $ᵖ γ; let y ← $ᵖ δ }[ P (x, y) ] := by
+  classical
   rw [prob_tsum_form_singleton]
   let D_rest := fun (x : γ) => (do
     let y ← $ᵖ δ
@@ -239,16 +241,12 @@ theorem prob_split_uniform_sampling_of_equiv_prod {α γ δ : Type}
     (e : α ≃ γ × δ)
     -- The predicate on the original (combined) type
     (P : α → Prop)
-    -- Decidability for the predicates
-    [DecidablePred P]
-    [DecidablePred (fun xy : γ × δ => P (e.symm xy))] :
-
+    :
     -- LHS: Probability over the combined space
     Pr_{ let r ← $ᵖ α }[ P r ] =
-
     -- RHS: Probability over the sequential, split spaces
     Pr_{ let x ← $ᵖ γ; let y ← $ᵖ δ }[ P (e.symm (x, y)) ] := by
-
+  classical
   -- 1. Unroll the LHS (a single `let`) using `prStx_unfold_final`
   -- LHS = ∑' r, Pr[r] * (if P r then 1 else 0)
   rw [prob_tsum_form_singleton]
@@ -259,7 +257,6 @@ theorem prob_split_uniform_sampling_of_equiv_prod {α γ δ : Type}
   conv_rhs =>
     apply prob_tsum_form_split_first (D := $ᵖ γ) (D_rest := D_rest)
   simp_rw [D_rest]
-
   simp only [PMF.uniformOfFintype_apply, mul_ite, mul_one, mul_zero]
   simp_rw [prob_tsum_form_singleton]
   -- ⊢ (∑' (x : α), ... = ∑' (x : γ), (↑(Fintype.card γ))⁻¹ * ∑' (x_1 : δ), ...
@@ -281,7 +278,6 @@ theorem prob_split_uniform_sampling_of_equiv_prod {α γ δ : Type}
     )]
   -- ⊢ (∑ b : α, .. = ..) = (∑ b : γ × δ, ..)
   have hcard_of_equiv: (Fintype.card α) = (Fintype.card (γ × δ)) := Fintype.card_congr e
-
   rw [Finset.sum_equiv (s := Finset.univ (α := α)) (t := Finset.univ (α := γ × δ))
     (f := fun x => if P x then (↑(Fintype.card α))⁻¹ else 0)
     (g := fun x => (↑(Fintype.card γ))⁻¹ * (($ᵖ δ) x.2 * if P (e.symm x) then 1 else 0))
@@ -302,12 +298,11 @@ probability, sampling `r_last` *first*, then `r_init`.
 -/
 theorem prob_split_last_uniform_sampling_of_finFun {ϑ : ℕ} {F : Type} [Fintype F] [Nonempty F]
     (P : F → (Fin ϑ → F) → Prop)
-    [DecidablePred (fun r : Fin (ϑ + 1) → F => P (r (Fin.last ϑ)) (fun i => r i.castSucc))]
-    [∀ r_last, DecidablePred (fun r_init => P r_last r_init)] :
+    :
     Pr_{ let r ← $ᵖ (Fin (ϑ + 1) → F) }[ P (r (Fin.last ϑ)) (fun i ↦ r i.castSucc) ] =
     Pr_{ let r_last ← $ᵖ F; let r_init ← $ᵖ (Fin ϑ → F) }[ P r_last r_init ] := by
+  classical
   rw [prob_tsum_form_doubleton]
-
   let e : (Fin (ϑ + 1) → F) ≃ F × (Fin ϑ → F) := equivFinFunSplitLast
   conv_lhs =>
     rw [prob_split_uniform_sampling_of_equiv_prod (e := e)]
@@ -327,10 +322,10 @@ Helper lemma for probability marginalization.
 `Pr_{ (x, y) ← D₁ × D₂ }[ P x ] = Pr_{ x ← D₁ }[ P x ]`
 -/
 theorem prob_marginalization_first_of_prod {α β : Type} [Fintype α] [Fintype β]
-    [Nonempty α] [Nonempty β] (P : α → Prop) [DecidablePred P] :
+    [Nonempty α] [Nonempty β] (P : α → Prop) :
   Pr_{let r ← $ᵖ (α × β) }[ P r.1 ] = Pr_{ let x ← $ᵖ α }[ P x ] := by
+  classical
   rw [prob_split_uniform_sampling_of_prod]
-
   let D_rest := fun (x : α) => (do
     let y ← $ᵖ β
     pure (P (x, y).1)
@@ -352,9 +347,10 @@ predicate `g`) for all outcomes `r`, then the probability of `A`
 is less than or equal to the probability of `B`.
 -/
 theorem Pr_le_Pr_of_implies {α : Type} (D : PMF α)
-    (f g : α → Prop) [DecidablePred f] [DecidablePred g]
+    (f g : α → Prop)
     (h_imp : ∀ r, f r → g r) :
     Pr_{ let r ← D }[ f r ] ≤ Pr_{ let r ← D }[ g r ] := by
+  classical
   -- 1. Unroll both probability statements into their sum forms
   rw [prob_tsum_form_singleton D f]
   rw [prob_tsum_form_singleton D g]
@@ -376,13 +372,14 @@ theorem Pr_le_Pr_of_implies {α : Type} (D : PMF α)
 
 theorem Pr_multi_let_equiv_single_let {α β : Type}
     (D₁ : PMF α) (D₂ : PMF β) -- Assuming D₂ is independent for simplicity
-    (P : α → β → Prop) [∀ x, DecidablePred (P x)] :
+    (P : α → β → Prop) :
     -- LHS: Multi-let probability
     Pr_{ let x ← D₁; let y ← D₂ }[ P x y ]
     =
     -- RHS: Single-let probability over the combined distribution
     let D_combined : PMF (α × β) := do { let x ← D₁; let y ← D₂; pure (x, y) }
     Pr_{ let r ← D_combined }[ P r.1 r.2 ] := by
+  classical
   dsimp only [Lean.Elab.WF.paramLet] -- Expose LHS do block
   simp only [bind_pure_comp, _root_.map_bind, Functor.map_map]
 
@@ -395,12 +392,10 @@ summing the probabilities of two disjoint cases:
 Good to be used with `Pr_multi_let_equiv_single_let`
 -/
 theorem Pr_add_split_by_complement {α : Type} (D : PMF α)
-    (f g : α → Prop) [DecidablePred f] [DecidablePred g]
-    -- Need decidability for the combined predicates too
-    [DecidablePred (fun r => g r ∧ f r)]
-    [DecidablePred (fun r => ¬(g r) ∧ f r)] :
+    (f g : α → Prop) :
     Pr_{ let r ← D }[ f r ] =
     (D >>= (fun r => pure (g r ∧ f r))) True + Pr_{ let r ← D }[ ¬(g r) ∧ f r ] := by
+  classical
   -- 1. Unroll all three probability statements into their tsum forms
   rw [prob_tsum_form_singleton D f]
   rw [prob_tsum_form_singleton D (fun r => g r ∧ f r)]
@@ -439,8 +434,9 @@ example : -- Pr_split_two_complements
 -/
 theorem prob_const_and_prop_eq_ite {α : Type} (D : PMF α)
     (P_out : Prop) [Decidable P_out]
-    (P : α → Prop) [DecidablePred P] :
+    (P : α → Prop) :
     Pr_{ let r ← D }[ P_out ∧ P r ] = if P_out then Pr_{ let r ← D }[ P r ] else 0 := by
+  classical
   by_cases h_P_out : P_out
   · -- Case 1: P_out is True
     simp only [h_P_out, if_true, true_and]
@@ -459,10 +455,11 @@ lemma Pr_congr {α : Type} {D : PMF α} {P Q : α → Prop}
 For a non-zero multivariate polynomial `P` of total degree at most `d` over a finite field `L`,
 the probability that `P(r)` evaluates to 0 for a uniformly random `r` is at most `d / |L|`. -/
 lemma prob_schwartz_zippel_mv_polynomial {R : Type} [CommRing R] [IsDomain R] [Fintype R]
-    [DecidableEq R] {n : ℕ}
+    {n : ℕ}
     (P : MvPolynomial (Fin n) R) (h_nonzero : P ≠ 0) (h_deg : P.totalDegree ≤ n) :
     Pr_{ let r ←$ᵖ (Fin n → R) }[ MvPolynomial.eval r P = 0 ] ≤
       (n : ℝ≥0) / (Fintype.card R : ℝ≥0) := by
+  classical
   rw [prob_uniform_eq_card_filter_div_card]
   push_cast
   have sz_bound := MvPolynomial.schwartz_zippel_totalDegree (R := R) (n := n)

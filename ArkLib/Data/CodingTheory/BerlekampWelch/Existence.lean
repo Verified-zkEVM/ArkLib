@@ -5,6 +5,8 @@ Authors: František Silváši, Ilia Vlasov
 -/
 import ArkLib.Data.CodingTheory.BerlekampWelch.Condition
 
+/-! # Berlekamp-Welch Solution Existence -/
+
 namespace BerlekampWelch
 
 variable {α : Type} {F : Type} [Field F]
@@ -43,8 +45,7 @@ private lemma leadingCoeff_E : (E ωs f p e).leadingCoeff = 1 := by
   simp [E]
 
 private lemma leadingCoeff_E'
-  (h_dist : (Δ₀(f, p.eval ∘ ωs) : ℕ) ≤ e)
-  : (E ωs f p e).coeff e = 1 := by
+  (h_dist : (Δ₀(f, p.eval ∘ ωs) : ℕ) ≤ e) : (E ωs f p e).coeff e = 1 := by
   generalize he : (E ωs f p e) = E
   rw [←natDegree_E h_dist]
   aesop
@@ -66,8 +67,8 @@ private lemma Q_ne_zero (hne : p ≠ 0) : Q ωs f p e ≠ 0 := by
 
 private lemma solutionToQ_from_Q
   (h_p_deg : p.natDegree < k)
-  (h_dist : (Δ₀(f, p.eval ∘ ωs) : ℕ) ≤ e)
-  : solutionToQ e k (E_and_Q_to_a_solution e (E ωs f p e) (Q ωs f p e)) = Q ωs f p e := by
+  (h_dist : (Δ₀(f, p.eval ∘ ωs) : ℕ) ≤ e) :
+  solutionToQ e k (E_and_Q_to_a_solution e (E ωs f p e) (Q ωs f p e)) = Q ωs f p e := by
   refine Polynomial.ext fun i ↦ ?p₁
   simp only [solutionToQ_coeff, Fin.liftF, E_and_Q_to_a_solution_coeff, add_lt_iff_neg_left,
     not_lt_zero, ↓reduceIte, add_tsub_cancel_left, dite_eq_ite]
@@ -83,8 +84,8 @@ private lemma solutionToQ_from_Q
 
 private lemma solutionToE_from_E
   (h_p_deg : p.natDegree < k)
-  (h_dist : (Δ₀(f, p.eval ∘ ωs) : ℕ) ≤ e)
-  : solutionToE e k (E_and_Q_to_a_solution e (E ωs f p e) (Q ωs f p e)) = E ωs f p e := by
+  (h_dist : (Δ₀(f, p.eval ∘ ωs) : ℕ) ≤ e) :
+  solutionToE e k (E_and_Q_to_a_solution e (E ωs f p e) (Q ωs f p e)) = E ωs f p e := by
   apply Polynomial.ext
   intro i
   simp only [coeff_solutionToE]
@@ -101,8 +102,8 @@ private lemma solutionToE_from_E
 
 private lemma E_and_Q_BerlekampWelch_condition
   (h_p_deg : p.natDegree < k)
-  (h_dist : (Δ₀(f, p.eval ∘ ωs) : ℕ) ≤ e)
-  : BerlekampWelchCondition e k ωs f (E ωs f p e) (Q ωs f p e) := by
+  (h_dist : (Δ₀(f, p.eval ∘ ωs) : ℕ) ≤ e) :
+  BerlekampWelchCondition e k ωs f (E ωs f p e) (Q ωs f p e) := by
   exact ⟨
   by {
     intro i
@@ -123,7 +124,7 @@ private lemma E_and_Q_BerlekampWelch_condition
   `Q' \ E' = p`.
 -/
 lemma Q'_div_E'_eq_p
-  [NeZero n]
+    [NeZero n]
   {E' Q' : Polynomial F}
   {ωs f : Fin n → F}
   (hp_deg : p.natDegree < k)
@@ -133,8 +134,8 @@ lemma Q'_div_E'_eq_p
   (h_diff : Function.Injective ωs)
   (h_Q' : Q' ≠ 0)
   (hp : p ≠ 0)
-  (h_cond : BerlekampWelchCondition e k ωs f E' Q')
-  : E' ∣ Q' ∧ Q' / E' = p  := by
+  (h_cond : BerlekampWelchCondition e k ωs f E' Q') :
+  E' ∣ Q' ∧ Q' / E' = p := by
   have h_eq := E_and_Q_unique he hk_n (Q_ne_zero hp) h_Q' h_diff
     (E_and_Q_BerlekampWelch_condition hp_deg h_ham)
     h_cond
@@ -145,10 +146,10 @@ lemma Q'_div_E'_eq_p
 
 /-- If only up to `e` errors happened `linsolve` cannot fail to find a solution. -/
 lemma linsolve_always_some_berlekamp_welch
-  [NeZero n]
+    [NeZero n]
   (hp_deg : p.natDegree < k)
-  (h_ham : (Δ₀(f, p.eval ∘ ωs) : ℕ) ≤ e)
-  : linsolve (BerlekampWelchMatrix e k ωs f) (Rhs e ωs f) ≠ none := fun contr ↦ by
+  (h_ham : (Δ₀(f, p.eval ∘ ωs) : ℕ) ≤ e) :
+  linsolve (BerlekampWelchMatrix e k ωs f) (Rhs e ωs f) ≠ none := fun contr ↦ by
     refine linsolve_none contr ⟨E_and_Q_to_a_solution e (E ωs f p e) (Q ωs f p e), ?p₁⟩
     rw [←IsBerlekampWelchSolution_def]
     simp [

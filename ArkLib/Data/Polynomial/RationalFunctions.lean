@@ -164,8 +164,8 @@ def weight_Λ (f H : F[X][Y]) (D : ℕ) : WithBot ℕ :=
 
 /-- The weight function `Λ` on the ring of regular elements `𝒪` is defined as the weight their
 canonical representatives in `F[X][Y]`. -/
-noncomputable def weight_Λ_over_𝒪 {H : F[X][Y]} (f : 𝒪 H) (D : ℕ)
-  : WithBot ℕ := weight_Λ (canonicalRepOf𝒪 f) H D
+noncomputable def weight_Λ_over_𝒪 {H : F[X][Y]} (f : 𝒪 H) (D : ℕ) : WithBot ℕ :=
+  weight_Λ (canonicalRepOf𝒪 f) H D
 
 /-- The set `S_β` from the statement of Lemma A.1 in Appendix A of [BCIKS20].
 Note: Here `F[X][Y]` is `F[Z][T]`. -/
@@ -194,8 +194,7 @@ noncomputable def fieldTo𝕃 {H : F[X][Y]} : F →+* 𝕃 H :=
   RingHom.comp liftToFunctionField Polynomial.C
 
 noncomputable def polyToPowerSeries𝕃 (H : F[X][Y])
-  (P : F[X][Y])
-    : PowerSeries (𝕃 H) :=
+  (P : F[X][Y]) : PowerSeries (𝕃 H) :=
   PowerSeries.mk <| fun n =>
     liftToFunctionField (P.coeff n)
 
@@ -220,7 +219,7 @@ def ζ (R : F[X][X][Y]) (x₀ : F) (H : F[X][Y]) [H_irreducible : Fact (Irreduci
 /-- There exist regular elements `ξ = W(Z)^(d-2) * ζ` as defined in Claim A.2 of Appendix A.4
 of [BCIKS20]. -/
 lemma ξ_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)] :
-  ∃ pre : 𝒪 H,
+    ∃ pre : 𝒪 H,
     let d := R.natDegree
     let W : 𝕃 H := liftToFunctionField (H.leadingCoeff);
     embeddingOf𝒪Into𝕃 _ pre = W ^ (d - 2) * ζ R x₀ H := by
@@ -233,15 +232,15 @@ def ξ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [φ : Fact (Irreducible H)] : �
 /-- The bound of the weight `Λ` of the elements `ζ` as stated in Claim A.2 of Appendix A.4
 of [BCIKS20]. -/
 lemma weight_ξ_bound (x₀ : F) {D : ℕ} (hD : D ≥ Bivariate.totalDegree H) :
-  weight_Λ_over_𝒪 (ξ x₀ R H) D ≤
+    weight_Λ_over_𝒪 (ξ x₀ R H) D ≤
     WithBot.some ((Bivariate.natDegreeY R - 1) * (D - Bivariate.natDegreeY H + 1)) := by
   sorry
 
 /-- There exist regular elements `β` with a weight bound as given in Claim A.2
 of Appendix A.4 of [BCIKS20]. -/
 lemma β_regular (R : F[X][X][Y])
-                (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
-                {D : ℕ} (hD : D ≥ Bivariate.totalDegree H) :
+    (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
+    {D : ℕ} (hD : D ≥ Bivariate.totalDegree H) :
     ∀ t : ℕ, ∃ β : 𝒪 H, weight_Λ_over_𝒪 β ≤ (2 * t + 1) * Bivariate.natDegreeY R * D :=
   sorry
 

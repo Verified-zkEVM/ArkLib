@@ -37,7 +37,7 @@ variable (l : ℕ)
 def inputRelation [DecidableEq F] (δ : ℝ≥0) :
     Set
       (
-        (Statement (k := k) F 0 × (∀ j, OracleStatement (k := k) D x s 0 j)) ×
+        (Statement F (0 : Fin (k + 1)) × (∀ j, OracleStatement D x s 0 j)) ×
         Witness F s d (0 : Fin (k + 2))
       ) :=
   match k with
@@ -62,13 +62,25 @@ def pSpecFold : ProtocolSpec (Fin.vsum fun (_ : Fin k) ↦ 2) :=
 instance : ∀ j, OracleInterface ((pSpecFold D x k s).Message j) :=
   instOracleInterfaceMessageSeqCompose
 
+instance : ∀ j, OracleInterface ((pSpecFold D x k s).Challenge j) :=
+  ProtocolSpec.challengeOracleInterface
+
 instance : ∀ j, OracleInterface (((pSpecFold D x k s ++ₚ FinalFoldPhase.pSpec F)).Message j) :=
   instOracleInterfaceMessageAppend
+
+instance : ∀ j, OracleInterface (((pSpecFold D x k s ++ₚ FinalFoldPhase.pSpec F)).Challenge j) :=
+  ProtocolSpec.challengeOracleInterface
 
 instance :
     ∀ i, OracleInterface
           ((pSpecFold D x k s ++ₚ FinalFoldPhase.pSpec F ++ₚ QueryRound.pSpec D x l).Message i) :=
   instOracleInterfaceMessageAppend
+
+instance :
+    ∀ j,
+      OracleInterface
+        (((pSpecFold D x k s ++ₚ FinalFoldPhase.pSpec F ++ₚ QueryRound.pSpec D x l)).Challenge j) :=
+  ProtocolSpec.challengeOracleInterface
 
 /- Oracle reduction for all folding rounds of the FRI protocol -/
 @[reducible]
@@ -82,7 +94,7 @@ noncomputable def reductionFold :
  := OracleReduction.append
       (OracleReduction.seqCompose _ _ (fun (i : Fin (k + 1)) => Witness F s d i.castSucc)
         (FoldPhase.foldOracleReduction D x s d))
-      (FinalFoldPhase.finalFoldOracleReduction D x (k := k) s d)
+      (FinalFoldPhase.finalFoldOracleReduction D x s d)
 
 /- Oracle reduction of the FRI protocol. -/
 @[reducible]
@@ -93,7 +105,7 @@ noncomputable def reduction [DecidableEq F] :
     (FinalStatement F k) (FinalOracleStatement D x s) (Witness F s d (Fin.last (k + 1)))
     (pSpecFold D x k s ++ₚ FinalFoldPhase.pSpec F ++ₚ QueryRound.pSpec D x l) :=
   OracleReduction.append (reductionFold D x k s d)
-    (QueryRound.queryOracleReduction (k := k) D x s d dom_size_cond l)
+    (QueryRound.queryOracleReduction D x s d dom_size_cond l)
 
 end Spec
 

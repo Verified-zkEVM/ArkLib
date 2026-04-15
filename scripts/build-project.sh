@@ -1,9 +1,11 @@
-# Building the examples already builds this
-# echo "# Building ArkLib library"
-# lake build ArkLib
+#!/usr/bin/env bash
 
-# echo "# Building Project"
-# lake build Examples
+# Compile-only helper. For the recommended routine validation wrapper, use ./scripts/validate.sh.
 
-# echo "\n# Linting Files"
-# scripts/lint-style.sh && echo "All files okay"
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+echo "# Building project"
+lake build

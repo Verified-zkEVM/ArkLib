@@ -48,12 +48,12 @@ lemma liftF_succ {f : Fin (n + 1) → α} : liftF f n = f ⟨n, Nat.lt_add_one _
   aesop (add simp liftF)
 
 lemma liftF'_liftF_of_lt {k : Fin m} (h : k < n) :
-  liftF' (n := m) (liftF (n := n) f') k = f' ⟨k, by omega⟩ := by
+    liftF' (n := m) (liftF (n := n) f') k = f' ⟨k, by omega⟩ := by
   aesop (add simp [liftF, liftF'])
 
 @[simp]
 lemma liftF'_liftF_succ {f : Fin (n + 1) → α} {x : Fin n} :
-  liftF' (liftF (n := n + 1) f) x = f x.castSucc := by
+    liftF' (liftF (n := n + 1) f) x = f x.castSucc := by
   aesop (add simp [liftF, liftF']) (add safe (by omega))
 
 @[simp]
@@ -71,12 +71,11 @@ lemma liftF_liftF'_succ : liftF (liftF' (n := n + 1) f) n = f n := by
   aesop (add simp liftF)
 
 lemma liftF_eval {f : Fin n → α} {i : Fin n} :
-  liftF f i.val = f i := by
+    liftF f i.val = f i := by
   aesop (add simp liftF)
 
 lemma lt_of_liftF_ne_zero {f : Fin n → α} {i : ℕ}
-  (h : liftF f i ≠ 0)
-  : i < n := by
+    (h : liftF f i ≠ 0) : i < n := by
   aesop (add simp liftF)
 
 lemma liftF_ne_zero_of_lt {i : ℕ} (h : i < n) : liftF f' i ≠ 0 ↔ f' ⟨i, h⟩ ≠ 0 := by
@@ -86,13 +85,11 @@ lemma liftF_eq_of_lt {i : ℕ} (h : i < n) : liftF f' i = f' ⟨i, h⟩ := by
   aesop (add simp liftF)
 
 @[simp]
-lemma liftF_zero_eq_zero
-  : liftF (fun (_ : Fin n) ↦ (0 : α)) = (fun _ ↦ (0 : α)) := by
+lemma liftF_zero_eq_zero : liftF (fun (_ : Fin n) ↦ (0 : α)) = (fun _ ↦ (0 : α)) := by
   aesop (add simp liftF)
 
 @[simp]
-lemma liftF'_zero_eq_zero
-  : liftF' (fun _ ↦ (0 : α)) = (fun (_ : Fin n) ↦ (0 : α)) := by
+lemma liftF'_zero_eq_zero : liftF' (fun _ ↦ (0 : α)) = (fun (_ : Fin n) ↦ (0 : α)) := by
   aesop (add simp liftF')
 
 abbrev contract (m : ℕ) (f : Fin n → α) := liftF (liftF' (n := m) (liftF f))
@@ -100,7 +97,7 @@ abbrev contract (m : ℕ) (f : Fin n → α) := liftF (liftF' (n := m) (liftF f)
 open Fin (contract)
 
 lemma contract_eq_liftF_of_lt {k : ℕ} (h₁ : k < m) :
-  contract m f' k = liftF f' k := by
+    contract m f' k = liftF f' k := by
   aesop (add simp [contract, liftF, liftF'])
 
 attribute [simp] contract.eq_def
@@ -110,7 +107,7 @@ variable {F : Type*} [Semiring F] {p : Polynomial F}
 open Polynomial
 
 lemma eval_liftF_of_lt {f : Fin m → F} (h : n < m) :
-  eval (liftF f n) p = eval (f ⟨n, h⟩) p := by
+    eval (liftF f n) p = eval (f ⟨n, h⟩) p := by
   aesop (add simp liftF)
 
 @[simp]

@@ -370,6 +370,28 @@ instance [h₁ : ∀ i, SampleableType (pSpec₁.Challenge i)]
     (α₁ := pSpec₁.dir) (β₁ := pSpec₂.dir)
     (α₂ := pSpec₁.Type) (β₂ := pSpec₂.Type) (fun i h => h₁ ⟨i, h⟩) (fun i h => h₂ ⟨i, h⟩) i h
 
+/-- If two protocols' challenge types are inhabited, then their concatenation's challenge types are
+    also inhabited. -/
+@[inline]
+instance [h₁ : ∀ i, Inhabited (pSpec₁.Challenge i)]
+    [h₂ : ∀ i, Inhabited (pSpec₂.Challenge i)] :
+    ∀ i, Inhabited ((pSpec₁ ++ₚ pSpec₂).Challenge i) :=
+  fun ⟨i, h⟩ => Fin.fappend₂ (A := Direction) (B := Type)
+    (F := fun dir type => (h : dir = .V_to_P) → Inhabited type)
+    (α₁ := pSpec₁.dir) (β₁ := pSpec₂.dir)
+    (α₂ := pSpec₁.Type) (β₂ := pSpec₂.Type) (fun i h => h₁ ⟨i, h⟩) (fun i h => h₂ ⟨i, h⟩) i h
+
+/-- If two protocols' challenge types are finite, then their concatenation's challenge types are
+    also finite. -/
+@[inline]
+instance [h₁ : ∀ i, Fintype (pSpec₁.Challenge i)]
+    [h₂ : ∀ i, Fintype (pSpec₂.Challenge i)] :
+    ∀ i, Fintype ((pSpec₁ ++ₚ pSpec₂).Challenge i) :=
+  fun ⟨i, h⟩ => Fin.fappend₂ (A := Direction) (B := Type)
+    (F := fun dir type => (h : dir = .V_to_P) → Fintype type)
+    (α₁ := pSpec₁.dir) (β₁ := pSpec₂.dir)
+    (α₂ := pSpec₁.Type) (β₂ := pSpec₂.Type) (fun i h => h₁ ⟨i, h⟩) (fun i h => h₂ ⟨i, h⟩) i h
+
 /-- If two protocols' messages have oracle representations, then their concatenation's messages also
     have oracle representations. -/
 instance [O₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
@@ -480,6 +502,20 @@ instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     ∀ k, SampleableType ((seqCompose pSpec).Challenge k) :=
   fun ⟨k, h⟩ => Fin.fflatten₂
     (A := Direction) (B := Type) (F := fun dir type => (h : dir = .V_to_P) → SampleableType type)
+    (fun i' j' h' => inst i' ⟨j', h'⟩) k h
+
+instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    [inst : ∀ i, ∀ j, Inhabited ((pSpec i).Challenge j)] :
+    ∀ k, Inhabited ((seqCompose pSpec).Challenge k) :=
+  fun ⟨k, h⟩ => Fin.fflatten₂
+    (A := Direction) (B := Type) (F := fun dir type => (h : dir = .V_to_P) → Inhabited type)
+    (fun i' j' h' => inst i' ⟨j', h'⟩) k h
+
+instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    [inst : ∀ i, ∀ j, Fintype ((pSpec i).Challenge j)] :
+    ∀ k, Fintype ((seqCompose pSpec).Challenge k) :=
+  fun ⟨k, h⟩ => Fin.fflatten₂
+    (A := Direction) (B := Type) (F := fun dir type => (h : dir = .V_to_P) → Fintype type)
     (fun i' j' h' => inst i' ⟨j', h'⟩) k h
 
 /-- If all protocols' messages have oracle interfaces, then the messages of their sequential

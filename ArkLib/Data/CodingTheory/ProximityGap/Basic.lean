@@ -5,7 +5,10 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
 
-import ArkLib.Data.CodingTheory.Basic
+import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+import ArkLib.Data.CodingTheory.Basic.Distance
+import ArkLib.Data.CodingTheory.Basic.LinearCode
+import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 import ArkLib.Data.CodingTheory.GuruswamiSudan
 import ArkLib.Data.CodingTheory.Prelims
 import ArkLib.Data.CodingTheory.ReedSolomon
@@ -139,7 +142,7 @@ with respect to the proximity parameter `δ` and the error bound `ε`, folding d
   (a random multilinear combination of the word stack `u` with randomness `r` is `δ`-close to `C`)
   exceeds `ε`, then the word stack `u` has correlated agreement with `C ^⋈ (2^ϑ)`. -/
 def δ_ε_multilinearCorrelatedAgreement [CommRing F]
-  {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι] [Module F A]
+    {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι] [Module F A]
   (C : Set (ι → A)) (ϑ : ℕ) (δ ε : ℝ≥0) : Prop :=
   ∀ (u : WordStack A (Fin (2^ϑ)) ι),
     Pr_{let r ← $ᵖ (Fin ϑ → F)}[ -- This syntax only works with (A : Type 0)
@@ -162,8 +165,9 @@ noncomputable def δ_ε_correlatedAgreementCurves {k : ℕ}
     {A : Type 0} [AddCommMonoid A] [Module F A] [Fintype A] [DecidableEq A]
     (C : Set (ι → A)) (δ ε : ℝ≥0) : Prop :=
   ∀ (u : WordStack (A := A) (κ := Fin (k + 1)) (ι := ι)),
-    Pr_{let y ← $ᵖ (Curve.polynomialCurveFinite (F := F) (A := A) u)}[ δᵣ(y.1, C) ≤ δ ] > k * ε
+    Pr_{let r ← $ᵖ F}[ δᵣ(∑ i : Fin (k + 1), (r ^ (i : ℕ)) • u i, C) ≤ δ ] > k * ε
       → jointAgreement (F := A) (κ := Fin (k + 1)) (ι := ι) (C := C) (W := u) (δ := δ)
+
 
 /-- **`(δ, ε)`-CA for affine spaces**: Generalized statement of **Theorem 1.6, [BCIKS20]**
 For `k+1` words `u₀, u₁, ..., uₖ ∈ A^ι` let `U = u₀ + span{u₁, ..., uₖ} ⊂ A^ι` be an affine subspace
@@ -174,10 +178,48 @@ noncomputable def δ_ε_correlatedAgreementAffineSpaces
     {A : Type 0} [AddCommGroup A] [Module F A] [Fintype A] [DecidableEq A]
     (C : Set (ι → A)) (δ ε : ℝ≥0) : Prop :=
   ∀ (u : WordStack (A := A) (κ := Fin (k + 1)) (ι := ι)),
-    Pr_{let y ← $ᵖ (affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[ δᵣ(y.1, C) ≤ δ ] > ε →
+    Pr_{let r ← $ᵖ (Fin k → F)}[ δᵣ(u 0 + ∑ i : Fin k, r i • u i.succ, C) ≤ δ ] > ε →
     jointAgreement (F := A) (κ := Fin (k + 1)) (ι := ι) (C := C) (W := u) (δ := δ)
 
 end CoreSecurityDefinitions
+
+namespace WeightedAgreement
+
+open NNReal Finset Function
+open scoped BigOperators
+
+section
+
+variable {ι : Type} [Fintype ι] [Nonempty ι]
+variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable (μ : ι → Set.Icc (0 : ℚ) 1)
+
+/-- Relative `μ`-agreement between words `u` and `v`. -/
+noncomputable def agree (u v : ι → F) : ℝ :=
+  1 / (Fintype.card ι) * ∑ i ∈ { i | u i = v i }, (μ i).1
+
+/-- `μ`-agreement between a word and a finite set `V`. -/
+noncomputable def agree_set (u : ι → F) (V : Finset (ι → F)) [Nonempty V] : ℝ :=
+  (Finset.image (agree μ u) V).max' <| by
+    rcases ‹Nonempty V› with ⟨v, hv⟩
+    exact ⟨agree μ u v, Finset.mem_image.mpr ⟨v, hv, rfl⟩⟩
+
+/-- Weighted size of a subdomain. -/
+noncomputable def mu_set (ι' : Finset ι) : ℝ :=
+  1 / (Fintype.card ι) * ∑ i ∈ ι', (μ i).1
+
+/-- `μ`-weighted correlated agreement. -/
+noncomputable def weightedCorrelatedAgreement
+    (C : Set (ι → F)) [Nonempty C] {k : ℕ} (U : Fin k → ι → F) : ℝ :=
+  sSup {x |
+    ∃ D' ⊆ (Finset.univ (α := ι)),
+      x = mu_set μ D' ∧
+      ∃ v : Fin k → ι → F, ∀ i, v i ∈ C ∧ ∀ j ∈ D', v i j = U i j
+  }
+
+end
+
+end WeightedAgreement
 
 namespace Trivariate
 
