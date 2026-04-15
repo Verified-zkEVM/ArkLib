@@ -52,6 +52,8 @@ import ArkLib.Data.CodingTheory.ProximityGap.DG25
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.EllipticCurve.BN254
 import ArkLib.Data.FieldTheory.AdditiveNTT.AdditiveNTT
+import ArkLib.Data.FieldTheory.AdditiveNTT.Domain
+import ArkLib.Data.FieldTheory.AdditiveNTT.NovelPolynomialBasis
 import ArkLib.Data.Fin.Basic
 import ArkLib.Data.Fin.BigOperators
 import ArkLib.Data.Fin.Fold
@@ -69,10 +71,12 @@ import ArkLib.Data.Hash.Poseidon2
 import ArkLib.Data.Matrix.Basic
 import ArkLib.Data.Matrix.Sparse
 import ArkLib.Data.Misc.Basic
+import ArkLib.Data.MvPolynomial.ComputableDegreeLE
 import ArkLib.Data.MvPolynomial.Degrees
 import ArkLib.Data.MvPolynomial.Interpolation
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLib.Data.MvPolynomial.Multilinear
+import ArkLib.Data.MvPolynomial.MultilinearComputational
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.Interface
 import ArkLib.Data.Polynomial.Prelims

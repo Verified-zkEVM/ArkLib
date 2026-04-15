@@ -129,6 +129,11 @@ theorem MLE_eval_zeroOne (x : σ → Fin 2) (evals : (σ → Fin 2) → R) :
   simp only [MLE, eval_sum, eval_mul, eqPolynomial_eval_zeroOne]
   simp
 
+@[simp]
+theorem MLE'_eval_zeroOne {n : ℕ} (x : Fin n → Fin 2) (evals : Fin (2 ^ n) → R) :
+    MvPolynomial.eval (x : Fin n → R) (MLE' evals) = evals (finFunctionFinEquiv x) := by
+  simp [MLE', MLE_eval_zeroOne]
+
 theorem eval_zeroOne_eq_MLE_toEvalsZeroOne (p : MvPolynomial σ R) (x : σ → Fin 2) :
     eval (x : σ → R) p = eval (x : σ → R) (MLE p.toEvalsZeroOne) := by
   simp only [MLE_eval_zeroOne, toEvalsZeroOne]

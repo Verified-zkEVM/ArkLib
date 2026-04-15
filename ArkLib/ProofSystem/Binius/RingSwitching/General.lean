@@ -29,7 +29,7 @@ ring-switching protocol. The protocol is a sequential composition of:
 -/
 
 namespace Binius.RingSwitching.FullRingSwitching
-noncomputable section
+section
 open Polynomial MvPolynomial OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Module
 
 variable (κ : ℕ) [NeZero κ]
@@ -135,13 +135,13 @@ theorem fullOracleReduction_perfectCompleteness (hInit : NeverFail init) :
       (𝓑 := 𝓑) mlIOPCS init (hInit := hInit) (impl := impl)
   · exact mlIOPCS.strictPerfectCompleteness hInit
 
-def batchingCoreRbrKnowledgeError
+noncomputable def batchingCoreRbrKnowledgeError
     (i : (pSpecBatching κ L K ++ₚ pSpecCoreInteraction L ℓ').ChallengeIdx) : ℝ≥0 :=
   Sum.elim (f:=fun _ => BatchingPhase.batchingRBRKnowledgeError (κ:=κ) (L:=L))
     (g:=SumcheckPhase.coreInteractionRbrKnowledgeError L ℓ')
     (ChallengeIdx.sumEquiv.symm i)
 
-def fullRbrKnowledgeError (i : (fullPspec κ L K ℓ' mlIOPCS).ChallengeIdx) : ℝ≥0
+noncomputable def fullRbrKnowledgeError (i : (fullPspec κ L K ℓ' mlIOPCS).ChallengeIdx) : ℝ≥0
   := Sum.elim (f:=batchingCoreRbrKnowledgeError κ L K ℓ')
   (g:=mlIOPCS.rbrKnowledgeError)
   (ChallengeIdx.sumEquiv.symm i)
@@ -164,14 +164,15 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness :
   h_l mlIOPCS.toAbstractOStmtIn)
     (rel₂:=sumcheckRoundRelation κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) mlIOPCS.toAbstractOStmtIn 0)
     (rel₃:=mlIOPCS.toRelInput)
-    (V₁:=BatchingPhase.batchingOracleVerifier κ L K β ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
-    (V₂:=SumcheckPhase.coreInteractionOracleVerifier κ L K β ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
+    (V₁:=BatchingPhase.batchingOracleVerifier κ L K β ℓ ℓ' h_l (𝓑 := 𝓑) mlIOPCS.toAbstractOStmtIn)
+    (V₂:=SumcheckPhase.coreInteractionOracleVerifier κ L K β ℓ ℓ' h_l
+      (𝓑 := 𝓑) mlIOPCS.toAbstractOStmtIn)
     (rbrKnowledgeError₁:=fun _ => BatchingPhase.batchingRBRKnowledgeError (κ:=κ) (L:=L))
     (rbrKnowledgeError₂:=SumcheckPhase.coreInteractionRbrKnowledgeError L ℓ')
     (h₁:=BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundness κ L K β ℓ
-      ℓ' h_l mlIOPCS.toAbstractOStmtIn)
+      ℓ' h_l (𝓑 := 𝓑) mlIOPCS.toAbstractOStmtIn (init := init) (impl := impl))
     (h₂:=SumcheckPhase.coreInteraction_rbrKnowledgeSoundness κ L K β ℓ ℓ' h_l
-      mlIOPCS.toAbstractOStmtIn)
+      (𝓑 := 𝓑) mlIOPCS.toAbstractOStmtIn (init := init) (impl := impl))
   have res :=
     OracleVerifier.append_rbrKnowledgeSoundness (init:=init) (impl:=impl)
     (rel₁:=BatchingPhase.batchingInputRelation κ L K β ℓ ℓ'

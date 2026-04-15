@@ -33,7 +33,7 @@ This module defines the protocol specs, and the following instance types:
   `ProtocolSpec.challengeOracleInterface` to avoid conflict.
 -/
 
-noncomputable section
+section
 open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial
 open scoped NNReal
 
@@ -54,9 +54,12 @@ def pSpecBatching : ProtocolSpec 2 :=
   ⟨![Direction.P_to_V, Direction.V_to_P],
    ![TensorAlgebra K L, Fin κ → L]⟩
 
-@[reducible]
 -- Note, this one is same as pSpecFold in BinaryBasefold
-def pSpecSumcheckRound : ProtocolSpec 2 := ⟨![Direction.P_to_V, Direction.V_to_P], ![L⦃≤ 2⦄[X], L]⟩
+abbrev SumcheckRoundMessage : Type := FoldMessage (L := L)
+
+@[reducible]
+def pSpecSumcheckRound : ProtocolSpec 2 :=
+  ⟨![Direction.P_to_V, Direction.V_to_P], ![SumcheckRoundMessage (L := L), L]⟩
 
 def pSpecSumcheckLoop := ProtocolSpec.seqCompose (fun (_: Fin ℓ') => pSpecSumcheckRound L)
 
@@ -157,7 +160,7 @@ instance instInhabitedPSpecBatchingMessage : [(pSpecBatching κ L K).Message]ₒ
   change Inhabited (TensorAlgebra K L)
   exact ⟨0⟩
 
-instance instInhabitedPSpecSumcheckRoundMessage :
+noncomputable instance instInhabitedPSpecSumcheckRoundMessage :
     [(pSpecSumcheckRound (L:=L)).Message]ₒ.Inhabited := by
   letI : Inhabited L := ⟨0⟩
   refine { inhabited_B := ?_ }
@@ -169,7 +172,7 @@ instance instInhabitedPSpecSumcheckRoundMessage :
     · simp [pSpecSumcheckRound] at hi
   subst h0
   cases q
-  change Inhabited (L⦃≤ 2⦄[X])
+  change Inhabited (SumcheckRoundMessage (L := L))
   infer_instance
 
 instance instInhabitedPSpecFinalSumcheckMessage :

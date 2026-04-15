@@ -6,7 +6,6 @@ Authors: Chung Thai Nguyen, Quang Dao
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Fold
 
 namespace Binius.BinaryBasefold.CoreInteraction
-noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
 open Binius.BinaryBasefold
 open scoped NNReal ProbabilityTheory
@@ -36,7 +35,7 @@ def relayPrvState (i : Fin ℓ) : Fin (0 + 1) → Type := fun
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ
 
 /-! The prover for the `i`-th round of Binary relayfold. -/
-noncomputable def relayOracleProver (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
+def relayOracleProver (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
   OracleProver (oSpec := []ₒ)
     -- current round
     (StmtIn := Statement (L := L) Context i.succ)
@@ -67,7 +66,7 @@ def relayOracleVerifier_embed (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ 
   := fun j => Sum.inl ⟨j.val, by rw [h_oracle_size_eq_relay i hNCR]; omega⟩
 
 /-! The oracle verifier for the `i`-th round of Binary relayfold. -/
-noncomputable def relayOracleVerifier (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
+def relayOracleVerifier (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
   OracleVerifier.{0, 0}
     (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context i.succ)
@@ -88,7 +87,7 @@ noncomputable def relayOracleVerifier (i : Fin ℓ) (hNCR : ¬ isCommitmentRound
     relayOracleVerifier_embed]
 
 /-! The oracle reduction that is the `i`-th round of Binary relayfold. -/
-noncomputable def relayOracleReduction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
+def relayOracleReduction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
   OracleReduction (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context i.succ)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
@@ -107,7 +106,6 @@ variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
-omit [DecidableEq 𝔽q] h_β₀_eq_1 [CharP L 2] [SampleableType L] in
 lemma strictRoundRelation_relay_preserved (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i)
     (stmtIn : Statement Context i.succ)
@@ -133,7 +131,6 @@ lemma strictRoundRelation_relay_preserved (i : Fin ℓ)
         toOutCodewordsCount ℓ ϑ i.castSucc := (h_oracle_size_eq_relay i hNCR).symm
       exact h_relIn.2.2 ⟨j, by omega⟩
 
-omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
 theorem relayOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
     OracleReduction.perfectCompleteness
@@ -246,7 +243,7 @@ def relayKnowledgeError (m : pSpecRelay.ChallengeIdx) : ℝ≥0 :=
 
 /-! The round-by-round extractor for a single round.
 Since f^(0) is always available, we can invoke the extractMLP function directly. -/
-noncomputable def relayRbrExtractor (i : Fin ℓ) :
+def relayRbrExtractor (i : Fin ℓ) :
   Extractor.RoundByRound []ₒ
     (StmtIn := (Statement (L := L) Context i.succ) × (∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
@@ -274,7 +271,6 @@ def relayKStateProp (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i)
 
 /-! The relay step oracle transformation equals mkVerifierOStmtOut.
 This shows that mapOStmtOutRelayStep is exactly what the verifier produces. -/
-omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] in
 lemma mapOStmtOut_eq_mkVerifierOStmtOut_relayStep
     (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i)
     (oStmtIn : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)
@@ -287,7 +283,6 @@ lemma mapOStmtOut_eq_mkVerifierOStmtOut_relayStep
   simp only [mapOStmtOutRelayStep, OracleVerifier.mkVerifierOStmtOut, relayOracleVerifier, v]
   simp [relayOracleVerifier_embed]
 
-omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] in
 lemma getFirstOracle_mapOStmtOutRelayStep_eq (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i)
     (oStmtIn : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j) :
@@ -446,5 +441,4 @@ theorem relayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
 
 end RelayStep
 end SingleIteratedSteps
-end
 end Binius.BinaryBasefold.CoreInteraction

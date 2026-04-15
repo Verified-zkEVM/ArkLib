@@ -17,6 +17,16 @@ sum-check relations.
 In the future, we will have files that deal with implementations of the protocol, and we will prove
 that those implementations derive security from that of the abstract protocol.
 
+## Security theorems (this file)
+
+- **`reduction_perfectCompleteness`**: composes `SingleRound.reduction_perfectCompleteness` (`Spec/SingleRound.lean`).
+- **`oracleVerifier_rbrKnowledgeSoundness`**: composes `SingleRound.oracleVerifier_rbrKnowledgeSoundness`.
+
+Downstream **Hax / extraction** transport uses these names via
+`FRI-Binius-FV/bridge/FRIBiniusBridge/ArkLibSecurityReferences.lean` and
+`docs/Sumcheck-IOP-equivalence-showcase.md`.  (The bridge does **not** require you to finish generic
+`OracleReduction` lift-context infrastructure first; see that doc §2.1.)
+
 ## Protocol Specification
 
 The sum-check protocol is parameterized by the following:

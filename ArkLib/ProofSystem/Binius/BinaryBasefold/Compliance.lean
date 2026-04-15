@@ -65,7 +65,6 @@ def isCompliant (i : Fin r) {destIdx : Fin r} (steps : ℕ)
       h_destIdx h_destIdx_le
       f_bar_i challenges = f_bar_i_plus_steps
 
-omit [CharP L 2] in
 /--
 Farness implies non-compliance. If `f_i` is far from its code `C_i`, it cannot be
 compliant. This follows directly from the contrapositive of
@@ -95,7 +94,7 @@ tuple of challenges if folding them does not introduce new errors outside of the
 fiberwise disagreement set. -/
 def fold_error_containment (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ)
-    (f f_bar : (sDomain 𝔽q β h_ℓ_add_R_rate) i → L)
+    (f f_bar : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
     (r_challenges : Fin steps → L) :=
     let fiberwise_Δ_set := fiberwiseDisagreementSet 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := i) (steps := steps) h_destIdx h_destIdx_le (f := f) (g := f_bar)
@@ -120,7 +119,6 @@ each tuple of folding challenges `(rᵢ', ..., r_{i+steps-1}') ∈ L^steps`, we 
 -- * **Consequence**: If `f⁽ⁱ⁾` is close to `f̄⁽ⁱ⁾`, then `fold(f⁽ⁱ⁾)` must be close to
   `fold(f̄⁽ⁱ⁾)`.
 -/
-omit [CharP L 2] [DecidableEq 𝔽q] in
 lemma fold_error_containment_of_UDRClose (i : Fin r) {destIdx : Fin r} (steps : ℕ)
   (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ) [NeZero steps]
   (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
@@ -143,10 +141,10 @@ lemma fold_error_containment_of_UDRClose (i : Fin r) {destIdx : Fin r} (steps : 
     Decidable.not_not] at h_not_in_fiber_disagreement
   let folded_f_y := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (steps := steps)
       (i := i) h_destIdx h_destIdx_le
-      (f := f_i) (r_challenges := challenges) (y := y)
+      (f := f_i) (r_challenges := challenges) y
   let folded_f_bar_y := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (steps := steps)
       (i := i) h_destIdx h_destIdx_le
-      (f := f_bar) (r_challenges := challenges) (y := y)
+      (f := f_bar) (r_challenges := challenges) y
   have h_matrix_f := iterated_fold_eq_matrix_form 𝔽q β (i := i) (steps := steps)
     h_destIdx h_destIdx_le (f := f_i) (r_challenges := challenges)
   have h_matrix_f_bar := iterated_fold_eq_matrix_form 𝔽q β (i := i) (steps := steps)
@@ -160,11 +158,7 @@ lemma fold_error_containment_of_UDRClose (i : Fin r) {destIdx : Fin r} (steps : 
   have h_fiber_evals_eq : fiberEvals_f_i = fiberEvals_f_bar_i := by
     ext k
     unfold fiberEvals_f_i fiberEvals_f_bar_i fiberEvaluations
-    let x := qMap_total_fiber 𝔽q β (i := i) (steps := steps) h_destIdx h_destIdx_le y k
-    apply h_not_in_fiber_disagreement x
-    let res := generates_quotient_point_if_is_fiber_of_y 𝔽q β (i := i) (steps := steps)
-      h_destIdx h_destIdx_le (x := x) (y := y) (hx_is_fiber := by use k)
-    exact res.symm
+    exact h_not_in_fiber_disagreement k
   have h_folded_eq : localized_fold_matrix_form 𝔽q β (i := i) (steps := steps)
       h_destIdx h_destIdx_le (f := f_i) (r_challenges := challenges) y =
     localized_fold_matrix_form 𝔽q β (i := i) (steps := steps) h_destIdx h_destIdx_le
@@ -268,7 +262,6 @@ def incrementalFoldingBadEvent
       (h_destIdx_le := h_destIdx_le)
       (f := folded_f_block_start)
 
-omit [CharP L 2] in
 /-- When all folding steps have been applied (`k = ϑ`), the incremental bad event
 coincides with the full `foldingBadEvent`. -/
 @[simp]
@@ -307,7 +300,6 @@ lemma incrementalFoldingBadEvent_of_k_eq_0_is_false
       (r_challenges := r_challenges)]
     exact h_close
 
-omit [CharP L 2] in
 /-- When all folding steps have been applied (`k = ϑ`), the incremental bad event
 coincides with the full `foldingBadEvent`. -/
 lemma incrementalFoldingBadEvent_eq_foldingBadEvent_of_k_eq_ϑ

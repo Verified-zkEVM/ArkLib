@@ -48,19 +48,21 @@ variable [hdiv : Fact (ϑ ∣ ℓ)]
 open scoped NNReal ProbabilityTheory
 
 open Classical in
-omit [CharP L 2] [DecidableEq 𝔽q] hF₂ in
 /-- Helper: If `f` and `g` agree on the fiber of `y`, their folds agree at `y`.
 NOTE: this might not be needed -/
 lemma fold_agreement_of_fiber_agreement (i : Fin ℓ) (steps : ℕ)
     {destIdx : Fin r} (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i, by omega⟩)
-    (r_challenges : Fin steps → L) (y : sDomain 𝔽q β h_ℓ_add_R_rate destIdx) :
+    (r_challenges : Fin steps → L)
+    (y : AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx) :
     (∀ x,
-      iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) (destIdx := destIdx)
-        (k := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) x = y →
+      (∃ k : Fin (2 ^ steps),
+        x = qMap_total_fiber 𝔽q β (i := ⟨i, by omega⟩) (steps := steps)
+          (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (y := y) k) →
       f x = g x) →
     (iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i, by omega⟩ steps h_destIdx h_destIdx_le f (r_challenges := r_challenges) y =
-    (iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i, by omega⟩ steps h_destIdx h_destIdx_le g (r_challenges := r_challenges) (y := y))) := by
+      iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i, by omega⟩ steps h_destIdx h_destIdx_le g (r_challenges := r_challenges) y) := by
   intro h_fiber_agree
   -- Expand to matrix form: fold(y) = Tensor(r) * M_y * fiber_vals
   rw [iterated_fold_eq_matrix_form 𝔽q β (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)]
@@ -76,13 +78,10 @@ lemma fold_agreement_of_fiber_agreement (i : Fin ℓ) (steps : ℕ)
     unfold left right fiberEvaluations
     ext idx
     let x := qMap_total_fiber 𝔽q β (i := ⟨i, by omega⟩) (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) y idx
-    have h_x_folds_to_y := generates_quotient_point_if_is_fiber_of_y 𝔽q β (i := ⟨i, by omega⟩) (steps := steps)
-          (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (x := x) (y := y) (hx_is_fiber := by use idx)
-    exact h_fiber_agree x h_x_folds_to_y.symm
+    exact h_fiber_agree x ⟨idx, rfl⟩
   unfold left right at h_fiber_eval_eq
   rw [h_fiber_eval_eq]
 
-omit [CharP L 2] [DecidableEq 𝔽q] hF₂ in
 /-- Helper: The disagreement set of the folded functions is a subset of the fiberwise disagreement set. -/
 lemma disagreement_fold_subset_fiberwiseDisagreement (i : Fin ℓ) (steps : ℕ)
     {destIdx : Fin r} (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
@@ -100,12 +99,14 @@ lemma disagreement_fold_subset_fiberwiseDisagreement (i : Fin ℓ) (steps : ℕ)
   -- Then folds must agree (lemma above). Then y is NOT in disagreement set.
   by_contra h_not_in_fiber_diff
   have h_agree_on_fiber : ∀ x,
-      iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) (destIdx := destIdx)
-        (k := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) x = y →
+      (∃ k : Fin (2 ^ steps),
+        x = qMap_total_fiber 𝔽q β (i := ⟨i, by omega⟩) (steps := steps)
+          (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (y := y) k) →
       f x = g x := by
     intro x hx
+    rcases hx with ⟨k, rfl⟩
     by_contra h_neq
-    exact h_not_in_fiber_diff ⟨x, (by simp only [SetLike.coe_mem]), (by simp only [Subtype.coe_eta]; constructor; exact hx; exact h_neq)⟩
+    exact h_not_in_fiber_diff ⟨k, h_neq⟩
   have h_fold_eq := fold_agreement_of_fiber_agreement 𝔽q β i steps h_destIdx h_destIdx_le f g (r_challenges := r_challenges) (y := y) h_agree_on_fiber
   exact hy_mem h_fold_eq
 
@@ -133,7 +134,8 @@ lemma lemma_4_24_dist_folded_ge_of_last_noncompliant (i_star : Fin ℓ) (steps :
     ¬ pair_UDRClose 𝔽q β destIdx h_destIdx_le f_i_star_folded f_bar_next := by
   -- Definitions for clarity
   let d_next := BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx
-  let S_next := sDomain 𝔽q β h_ℓ_add_R_rate destIdx
+  let S_next := AdditiveNTT.Comp.sDomain (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := 𝓡)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx
   let C_cur := BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i_star, by omega⟩
   let C_next := BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx
   let f_bar_next := UDRCodeword 𝔽q β destIdx h_destIdx_le
@@ -206,7 +208,7 @@ lemma lemma_4_24_dist_folded_ge_of_last_noncompliant (i_star : Fin ℓ) (steps :
           -- Hamming distance is card(disagreementSet)
           -- disagreementSet ⊆ fiberwiseDisagreementSet (Lemma 4.19 Helper)
           apply Nat.mul_le_mul_left
-          let res := disagreement_fold_subset_fiberwiseDisagreement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i_star) (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f_star) (g := f_bar_star) (r_challenges := r_challenges)
+          let res := disagreement_fold_subset_fiberwiseDisagreement 𝔽q β (i := i_star) (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f_star) (g := f_bar_star) (r_challenges := r_challenges)
           simp only at res
           apply Finset.card_le_card
           exact res
