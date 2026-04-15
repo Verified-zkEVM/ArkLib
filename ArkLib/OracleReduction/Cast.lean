@@ -74,7 +74,7 @@ protected def cast (P : OracleProver oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut
 theorem cast_id :
     OracleProver.cast rfl rfl =
       (id : OracleProver oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec₁ → _) := by
-  sorry
+  exact Prover.cast_id
 
 instance instDCast₂OracleProver : DCast₂ Nat ProtocolSpec
     (fun _ pSpec => OracleProver oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec) where
@@ -228,20 +228,25 @@ theorem cast_processRound (j : Fin n₁)
     (currentResult : OracleComp (oSpec + [pSpec₁.Challenge]ₒ)
       (Transcript j.castSucc pSpec₁ × P.PrvState j.castSucc)) :
     P.processRound j currentResult =
-      cast (sorry) ((P.cast hn hSpec).processRound (Fin.cast hn j) sorry) := by
-  sorry
+      cast (by subst_vars; simp [ProtocolSpec.cast])
+        ((P.cast hn hSpec).processRound (Fin.cast hn j)
+          (cast (by subst_vars; simp [ProtocolSpec.cast]) currentResult)) := by
+  subst hn; subst hSpec; congr 1; ext <;> simp [Prover.cast]
+  funext; rfl
 
 theorem cast_runToRound (j : Fin (n₁ + 1)) (stmt : StmtIn) (wit : WitIn)
     (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec₁) :
     P.runToRound j stmt wit =
-      cast (sorry) ((P.cast hn hSpec).runToRound (Fin.cast (congrArg (· + 1) hn) j) stmt wit) := by
-  sorry
+      cast (by subst_vars; simp [ProtocolSpec.cast])
+        ((P.cast hn hSpec).runToRound (Fin.cast (congrArg (· + 1) hn) j) stmt wit) := by
+  subst hn; subst hSpec; congr 1; ext <;> simp [Prover.cast]
+  funext; rfl
 
 theorem cast_run (stmt : StmtIn) (wit : WitIn)
     (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec₁) :
     P.run stmt wit =
-      cast (sorry) ((P.cast hn hSpec).run stmt wit) := by
-  sorry
+      cast (by subst_vars; simp [ProtocolSpec.cast]) ((P.cast hn hSpec).run stmt wit) := by
+  subst hn; subst hSpec; simp
 
 end Prover
 
@@ -264,8 +269,8 @@ namespace Reduction
 variable (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec₁)
 
 theorem cast_run (stmt : StmtIn) (wit : WitIn) :
-    R.run stmt wit = cast (sorry) ((R.cast hn hSpec).run stmt wit) := by
-  sorry
+    R.run stmt wit = cast (by subst_vars; simp [ProtocolSpec.cast]) ((R.cast hn hSpec).run stmt wit) := by
+  subst hn; subst hSpec; simp
 
 end Reduction
 

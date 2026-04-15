@@ -763,12 +763,9 @@ lemma take_snoc_oracle_eq_oStmtIn (i : Fin ℓ)
       OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)
     (newOracleFn : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ) :
     (take_snoc_oracle 𝔽q β i oStmtIn newOracleFn) = oStmtIn := by
-  unfold take_snoc_oracle snoc_oracle
-  simp only [eq_mpr_eq_cast, id_eq]
-  if hi: isCommitmentRound ℓ ϑ i then
-    simp only [Fin.is_lt, ↓reduceDIte, Fin.eta]
-  else
-    simp only [Fin.is_lt, ↓reduceDIte, Fin.eta]
+  unfold take_snoc_oracle
+  unfold snoc_oracle
+  simp
 
 /-- Extract the first oracle f^(0) from oracle statements -/
 def getFirstOracle {i : Fin (ℓ + 1)}

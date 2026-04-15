@@ -520,7 +520,22 @@ def Verifier.StateFunction.id {lang : Set Statement} :
   toFun | ⟨0, _⟩ => fun stmtIn _ => stmtIn ∈ lang
   toFun_empty := fun _ => by simp
   toFun_next := fun i => Fin.elim0 i
-  toFun_full := fun _ _ _ => by sorry --simp_all [Verifier.id, Verifier.run]
+  toFun_full := fun stmt tr h => by
+    simp only [Verifier.id, Verifier.run]
+    rw [probEvent_eq_zero_iff]
+    intro x hx
+    rw [OptionT.mem_support_iff] at hx
+    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
+    obtain ⟨s, _, hx⟩ := hx
+    have key : (simulateQ impl (pure stmt : OptionT (OracleComp oSpec) Statement)).run' s =
+        pure (some stmt) := by
+      change (simulateQ impl (pure (some stmt) : OracleComp oSpec (Option Statement))).run' s = _
+      rw [simulateQ_pure]
+      change Prod.fst <$> (pure (some stmt) : StateT σ ProbComp _).run s = _
+      rw [StateT.run_pure]; simp [map_pure]
+    rw [key] at hx
+    simp only [support_pure, Set.mem_singleton_iff] at hx
+    cases hx; exact h
 
 /-- The identity / trivial verifier is perfectly round-by-round sound. -/
 @[simp]
@@ -545,7 +560,23 @@ def Verifier.KnowledgeStateFunction.id {rel : Set (Statement × Witness)} :
   toFun | ⟨0, _⟩ => fun stmtIn _ witIn => (stmtIn, witIn) ∈ rel
   toFun_empty := fun _ => by simp
   toFun_next := fun i => Fin.elim0 i
-  toFun_full := fun _ _ _ _ => by sorry --simp_all [Verifier.id, Extractor.RoundByRound.id, Verifier.run]
+  toFun_full := fun stmtIn tr witOut h => by
+    simp only [Verifier.id, Verifier.run] at h
+    rw [gt_iff_lt, probEvent_pos_iff] at h
+    obtain ⟨x, hx, hrel⟩ := h
+    rw [OptionT.mem_support_iff] at hx
+    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
+    obtain ⟨s, _, hx⟩ := hx
+    have key : (simulateQ impl (pure stmtIn : OptionT (OracleComp oSpec) Statement)).run' s =
+        pure (some stmtIn) := by
+      change (simulateQ impl (pure (some stmtIn) : OracleComp oSpec (Option Statement))).run' s = _
+      rw [simulateQ_pure]
+      change Prod.fst <$> (pure (some stmtIn) : StateT σ ProbComp _).run s = _
+      rw [StateT.run_pure]; simp [map_pure]
+    rw [key] at hx
+    simp only [support_pure, Set.mem_singleton_iff] at hx
+    cases (Option.some.inj hx)
+    exact hrel
 
 /-- The identity / trivial verifier is perfectly round-by-round knowledge sound. -/
 @[simp]
@@ -553,16 +584,8 @@ lemma Verifier.id_rbrKnowledgeSoundness {rel : Set (Statement × Witness)} :
     (Verifier.id : Verifier oSpec Statement _ _).rbrKnowledgeSoundness
       init impl rel rel 0 := by
   refine ⟨_, _, Verifier.KnowledgeStateFunction.id init impl, ?_⟩
-  simp only [Verifier.id, KnowledgeStateFunction.id, Extractor.RoundByRound.id]
-  stop
-  simp only [ChallengeIdx, Transcript.def_eq, Nat.reduceAdd, Fin.coe_castSucc, Challenge,
-    liftComp_query, SubSpec.liftM_query_eq_liftM_liftM, liftM_append_right_eq, bind_pure_comp,
-    simulateQ_bind, StateT.run'_eq, StateT.run_bind, Function.comp_apply, simulateQ_map,
-    simulateQ_query, StateT.run_map, map_bind, Functor.map_map, Fin.zero_eta, Fin.isValue,
-    Fin.coe_ofNat_eq_mod, Nat.reduceMod, Fin.castLE_refl, Fin.val_succ, Pi.zero_apply,
-    ENNReal.coe_zero, nonpos_iff_eq_zero, probEvent_eq_zero_iff, support_bind, support_map,
-    Set.mem_iUnion, Set.mem_image, Prod.exists, exists_and_right, exists_prop, not_exists, not_and,
-    forall_exists_index, and_imp, Prod.forall, Prod.mk.injEq, IsEmpty.forall_iff, implies_true]
+  intro stmtIn witIn prover i
+  exact Fin.elim0 i.1
 
 /-- The identity / trivial oracle verifier is perfectly round-by-round knowledge sound. -/
 @[simp]
@@ -571,7 +594,5 @@ lemma OracleVerifier.id_rbrKnowledgeSoundness
     (OracleVerifier.id : OracleVerifier oSpec Statement OStatement _ _ _).rbrKnowledgeSoundness
       init impl rel rel 0 := by
   convert Verifier.id_rbrKnowledgeSoundness init impl (rel := rel)
-  unfold rbrKnowledgeSoundness
-  simp only [ChallengeIdx, id_toVerifier]
 
 end Trivial

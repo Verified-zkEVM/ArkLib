@@ -7,7 +7,8 @@ Authors: Quang Dao
 /-!
 # Generic Slice Type Classes
 
-This file defines type classes for slicing operations on collections, inspired by Python's slice notation.
+This file defines type classes for slicing operations on collections, inspired by
+Python's slice notation.
 The notation provides three operations:
 - `v⟦:m⟧` takes the first `m` elements (via `SliceLT`)
 - `v⟦m:⟧` drops the first `m` elements (via `SliceGE`)

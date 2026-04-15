@@ -62,7 +62,7 @@ expands to
 (do let x ← PMF.uniformOfFintype F; let y ← PMF.uniformOfFintype F; return x = y).val True
 ```
 -/
-syntax (name := prStx) "Pr_{" doSeq "}" "[" term "]" : term
+syntax (name := prStx) "Pr_{" doSeq "}[" term "]" : term
 
 /--
 Elaboration rule for `Pr_{...}[...]` notation.
@@ -71,24 +71,20 @@ Handles both `doSeqBracketed` (curly braces) and `doSeqIndent` (no braces) forms
 -/
 scoped macro_rules (kind := prStx)
   -- `doSeqBracketed`
-  | `(Pr_{{$items*}}[$t]) =>
-    `((((do $items:doSeqItem*
-            return ($(mkIdent ``ULift.up) $t:term)) ($(mkIdent ``ULift.up) True)) : ENNReal))
+  | `(Pr_{{$items*}}[$t]) => `((((do $items:doSeqItem*
+                                     return $t:term) True) : ENNReal))
   -- `doSeqIndent`
-  | `(Pr_{$items*}[$t]) =>
-    `((((do $items:doSeqItem*
-            return ($(mkIdent ``ULift.up) $t:term)) ($(mkIdent ``ULift.up) True)) : ENNReal))
+  | `(Pr_{$items*}[$t]) => `((((do $items:doSeqItem*
+                                     return $t:term) True) : ENNReal))
 
 end ProbabilityTheory
 
---Pr_{ let x ←$ᵖ F; let y ←$ᵖ F; let z ←$ᵖ (F × F) }[z = (x, y)]
-
-example {F : Type*} [Fintype F] [Nonempty F] :
+example {F} [Fintype F] [Nonempty F] :
   Pr_{ let x ←$ᵖ F; let y ←$ᵖ F; let z ←$ᵖ (F × F) }[z = (x, y)] =
   (do let x ← PMF.uniformOfFintype F
       let y ← PMF.uniformOfFintype F
       let z ← PMF.uniformOfFintype (F × F)
-      return (ULift.up (z = (x, y)))).val (ULift.up True) := rfl
+      return (z = (x, y))).val True := rfl
 
 section
 
@@ -114,7 +110,7 @@ example :
     let x ← $ᵖ F
     let y ← $ᵖ F
     let z ← $ᵖ (F × F)
-    return ULift.up (z = (x, y))).val (ULift.up True) = ((1 : ℝ≥0∞) / Fintype.card (F × F)) := by
+    return z = (x, y)).val True = ((1 : ℝ≥0∞) / Fintype.card (F × F)) := by
   rfl
 
 end

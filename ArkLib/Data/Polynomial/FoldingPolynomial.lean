@@ -88,11 +88,9 @@ lemma folding_polynomial_C_q {q : F} {f : F[X]} :
   unfold foldingPolynomial foldingPolynomialAux
   simp only [ite_eq_left_iff, not_le, not_lt]
   intro h 
-  have hh := Polynomial.degree_C_le (a := q)
-  have hh : (0 : WithBot ℕ) < 0 := by
-    apply lt_of_lt_of_le h
-    simp [hh]
-  tauto
+  have contra : (0 : WithBot ℕ) < 0 := 
+    lt_of_lt_of_le h (Polynomial.degree_C_le (a := q)) 
+  simp at contra
 
 @[simp]
 lemma foldingPolynomial_C_f {f : F} {q : F[X]} :
@@ -111,13 +109,10 @@ private lemma folding_polynomial_def_base_case {q f : F[X]}
   :
     foldingPolynomial q f = Polynomial.map C f := by
   rcases h with h | h | h 
-  · rw [folding_polynomial_eq_map_of_f_degree_lt_q_degree h]
-  · rw [Polynomial.degree_le_zero_iff] at h
-    rw [h]
-    simp 
-  · rw [Polynomial.degree_le_zero_iff] at h
-    rw [h]
-    simp
+    <;> try (
+      rw [Polynomial.degree_le_zero_iff] at h; 
+      rw [h]; simp [map_C, folding_polynomial_C_q])
+  rw [folding_polynomial_eq_map_of_f_degree_lt_q_degree h]
 
 private lemma folding_polynomial_aux_natDegree_fuel_is_enough {q f : F[X]} {fuel : ℕ}
   (h : f.natDegree ≤ fuel)
@@ -388,11 +383,14 @@ private lemma folding_polynomial_deg_x_base {q f : F[X]}
   (h : f.degree < q.degree ∨ f.degree ≤ 0 ∨ q.degree ≤ 0)
   :
   degreeX (foldingPolynomial q f) = 0 := by
-  rw [folding_polynomial_def_base_case h]
-  simp only [degreeX, coeff_map, natDegree_C]
-  have h: (⊥ : ℕ) = 0 := by rfl
-  rw [←h, Finset.sup_eq_bot_iff]
-  simp
+  simp only 
+    [folding_polynomial_def_base_case h
+      , degreeX
+      , coeff_map
+      , natDegree_C
+      , show 0 = (⊥ : ℕ) by rfl
+      , Finset.sup_eq_bot_iff
+      , implies_true]
 
 private lemma folding_polynomial_deg_x_ind {q f : F[X]}
   (h₁ : f.degree ≥ q.degree)
@@ -435,8 +433,8 @@ private lemma folding_polynomial_deg_x_ind {q f : F[X]}
 private lemma folding_polynomial_deg_x_C_q {q : F} {f : F[X]} :
   degreeX (foldingPolynomial (C q) f) = 0 := by
   rw [folding_polynomial_deg_x_base]
-  right; right
-  exact Polynomial.degree_C_le
+  aesop 
+    (add simp [Polynomial.degree_C_le])
 
 /-- The degree of the `foldingPolynomial q f` is precisely 
     `f.natDegree / q.natDegree` in the first variable. -/
@@ -499,9 +497,8 @@ lemma folding_polynomial_deg_x_bound {q f : F[X]} {t : ℕ}
   rw [folding_polynomial_deg_x]
   by_cases heq: q.natDegree = 0
   · simp [heq] at h
-  · apply Nat.lt_of_mul_lt_mul_right (a := q.natDegree) 
-    apply Nat.lt_of_le_of_lt (Nat.div_mul_le_self _ _)
-    assumption
+  · exact Nat.lt_of_mul_lt_mul_right (a := q.natDegree) 
+      (Nat.lt_of_le_of_lt (Nat.div_mul_le_self _ _) h)
 
 private lemma satisfies_composition_property_implies_is_the_reminder
   {q f : F[X]}
@@ -556,7 +553,7 @@ lemma folding_polynomial_is_the_reminder {q f : F[X]} :
       substitution_property_of_folding_polynomial
 
 /-- The uniqueness of the folding polynomial. -/
-theorem folding_polynomial_is_unique {q f : F[X]} {Q : F[X][Y]} 
+theorem folding_polynomial_is_unique {q f : F[X]} {Q : F[X][Y]}
   (h : (Q.map (Polynomial.compRingHom q)).eval X = f)
   (h_x : degreeX Q = f.natDegree / q.natDegree)
   (h_y : natDegreeY Q < q.natDegree)
@@ -670,7 +667,7 @@ lemma folded_poly_degree_bound {Q : F[X][Y]} {q : F[X]} {t : ℕ}
                       ( f := fun n => Polynomial.natDegree ( Q.coeff n ) ) 
                       ( by aesop ) );
               · exact Nat.le_sub_one_of_lt 
-                  ( lt_of_lt_of_le hb 
+                  ( lt_of_lt_of_le (Nat.lt_succ_of_le hb) 
                       ( Nat.succ_le_of_lt 
                           ( lt_of_le_of_lt 
                               ( Polynomial.le_natDegree_of_mem_supp _ 
@@ -747,7 +744,7 @@ theorem folding_polynomial_is_unique' {q f : Polynomial F} {Q : Polynomial (Poly
 noncomputable def polyFold (f : F[X]) (k : ℕ) (r : F) : F[X]
   := (foldingPolynomial (X ^ k) f).eval (C r)
 
-@[simp]
+@[simp high]
 lemma polyFold_zero_eq_zero {k : ℕ} {r : F} :
   polyFold 0 k r = 0 := by simp [polyFold]
 

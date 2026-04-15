@@ -5,6 +5,10 @@ on:
     branches: ["main"]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-imports:
     name: Check Library File Imports
@@ -13,8 +17,5 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Update ArkLib.lean
-        run: ./scripts/update-lib.sh
-
       - name: Check that all files are imported
-        run: git diff --exit-code ArkLib.lean
+        run: ./scripts/check-imports.sh

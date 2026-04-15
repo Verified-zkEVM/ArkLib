@@ -23,7 +23,6 @@ namespace StirIOP
 
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
          {M : ℕ} (ι : Fin (M + 1) → Type) [∀ i : Fin (M + 1), Fintype (ι i)]
-         [∀ i : Fin (M + 1), DecidableEq (ι i)]
 
 /-- **Per‑round protocol parameters:**
   For a fixed depth `M`, the reduction runs `M + 1` rounds.
@@ -114,7 +113,7 @@ def stirRelation
 -/
 theorem stir_main
   (secpar : ℕ) [SampleableType F]
-  {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+  {ι : Type} [Fintype ι] [Nonempty ι]
   {φ : ι ↪ F} {degree : ℕ} [hsmooth : Smooth φ]
   {k proofLen qNumtoInput qNumtoProofstr : ℕ}
   (hk : ∃ p, k = 2 ^ p) (hkGe : k ≥ 4)
@@ -155,9 +154,8 @@ open LinearCode
   `rateᵢ = degreeᵢ / |ιᵢ|`
   `Codes : CodeParams ι degree P Dist`, containing smooth ReedSolomon codes `RS[F, ιᵢ, degreeᵢ]`
     where `RS[F, ιᵢ, degreeᵢ]` is `(δᵢ,lᵢ)`-list decodable for all `i ∈ {1, ..., M}`
-  for every `f₀ ∉ RS[F, ι₀, degree₀]`,
-  `δ₀ ∈ (0, δᵣ(f, RS[F, ι₀, degree₀]) ∩ (1 - BStar(ρ₀)))`
-  `∀ i ∈ {1, ..., M}, δᵢ ∈ (0, min{ 1 - ρᵢ - 1/|ιᵢ|, 1 - BStar(ρᵢ)})`
+  `δ₀ < (1 - BStar(ρ₀))`
+  `∀ i ∈ {1, ..., M}, δᵢ < (1 - ρᵢ - 1/|ιᵢ|)` and `δᵢ < (1 - BStar(ρᵢ))`
   then there exists a `vector IOPP π` with parameters as above such that
   `ε_fold ≤ errStar(degree₀/foldingParam₀, ρ₀, δ₀, repeatParam₀)`
   `ε_outᵢ ≤ lᵢ²/2 * (degreeᵢ/ |F| - |ιᵢ|)^s`
@@ -167,13 +165,11 @@ open LinearCode
 -/
 theorem stir_rbr_soundness
     [SampleableType F] {s : ℕ}
-    {P : Params ι F} {φ : (i : Fin (M + 1)) → (ι i ↪ F)}
+    {P : Params ι F}
     [h_nonempty : ∀ i : Fin (M + 1), Nonempty (ι i)]
     {hParams : ParamConditions ι P} {Dist : Distances M}
     {Codes : CodeParams ι P Dist}
-    (h_not_code : ∀ f₀ : (ι 0) → F, f₀ ∉ (Codes.C 0))
-    (hδ₀Le : ∀ f₀ : (ι 0) → F, Dist.δ 0 ≤ δᵣ(f₀, (Codes.C 0)) ∧
-      Dist.δ 0 < (1 - Bstar (rate (code (P.φ 0) P.deg))))
+    (hδ₀ : Dist.δ 0 < (1 - Bstar (rate (code (P.φ 0) P.deg))))
     (hδᵢ : ∀ {j : Fin (M + 1)}, j ≠ 0 →
         Dist.δ j < (1 - rate (code (P.φ j) (degree ι P j))
           - 1 / Fintype.card (ι j) : ℝ) ∧

@@ -12,7 +12,7 @@ open Polynomial NNReal ReedSolomon ListDecodable
 namespace Quotienting
 
 variable {n : ℕ}
-         {F : Type*} [Field F] [Fintype F] [DecidableEq F]
+         {F : Type*} [Field F] [DecidableEq F]
          {ι : Finset F}
 
 /-- Let `Ans : S → F`, `ansPoly(Ans, S)` is the unique interpolating polynomial of degree < |S|
@@ -58,11 +58,11 @@ noncomputable def disagreementSet (f : ι → F) (S : Finset F) (Ans : S → F) 
   there exists `x : S`, such that `uPoly(x) ≠ Ans(x)` then
   `δᵣ(funcQuotient(f, S, Ans, Fill), code[ι, F, degree - |S|]) + |T|/|ι| > δ`,
   where T is the disagreementSet as defined above -/
-lemma quotienting [DecidableEq F] {degree : ℕ} {domain : ι ↪ F} [Nonempty ι]
+lemma quotienting {degree : ℕ} {domain : ι ↪ F} [Nonempty ι]
   (S : Finset F) (hS_lt : S.card < degree) (r : F)
   (f : ι → F) (Ans Fill : S → F) (δ : ℝ≥0) (hδPos : δ > 0) (hδLt : δ < 1)
-  (h : ∀ u : code domain degree, u.val ∈ (relHammingBall ↑(code domain degree) f δ) →
-    ∃ (x : S) (hx : x.val ∈ S), ((decodeLT u) : F[X]).eval x.val ≠ Ans ⟨x.val, hx⟩) :
+  (h : ∀ u : code domain degree, u.val ∈ (closeCodewordsRel ↑(code domain degree) f δ) →
+    ∃ x : S, ((decodeLT u) : F[X]).eval x.val ≠ Ans x) :
     δᵣ((funcQuotient f S Ans Fill), (code domain (degree - S.card))) +
       ((disagreementSet f S Ans).card) / (ι.card) > δ := by
   sorry

@@ -29,6 +29,7 @@
 /.cursor/
 /.venv/
 /.vscode/
+__pycache__/
 
 # Generated dependency analysis files
 /dependency_graphs/

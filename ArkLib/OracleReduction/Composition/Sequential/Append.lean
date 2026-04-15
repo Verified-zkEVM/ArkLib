@@ -288,7 +288,14 @@ def StateFunction.append
       S₂ ⟨roundIdx - m, by omega⟩ (verify stmt₁
         (by simp at h; simpa [min_eq_right_of_lt h] using transcript.fst))
         (by simpa [h] using transcript.snd)
-  toFun_empty := sorry
+  toFun_empty := by
+    intro stmt
+    split
+    · constructor <;> intro h
+      · have h' := (S₁.toFun_empty stmt).mp h
+        convert h' using 2; exact funext fun i => i.elim0
+      · exact (S₁.toFun_empty stmt).mpr (by convert h using 2; exact funext fun i => i.elim0)
+    · exact absurd (Nat.zero_le m) ‹_›
   toFun_next := sorry
   toFun_full := sorry
 

@@ -32,10 +32,11 @@ open Finset
 
 section SchwartzZippel
 
-variable {σ : Type*} [DecidableEq σ] [Fintype σ]
+variable {σ : Type*} [DecidableEq σ]
 variable {R : Type*} [CommRing R] [IsDomain R] [DecidableEq R]
 
-lemma schwartz_zippel_of_fintype {p : MvPolynomial σ R} (hp : p ≠ 0) (S : σ → Finset R) :
+lemma schwartz_zippel_of_fintype [Fintype σ] {p : MvPolynomial σ R} (hp : p ≠ 0)
+    (S : σ → Finset R) :
     #{x ∈ S ^^ σ | eval x p = 0} / ∏ i, (#(S i) : ℚ≥0) ≤ ∑ i, (p.degreeOf i / #(S i) : ℚ≥0) := by
   let equiv : σ ≃ Fin (Fintype.card σ) := Fintype.equivFin σ
   have lem_of_equiv := by
@@ -44,7 +45,9 @@ lemma schwartz_zippel_of_fintype {p : MvPolynomial σ R} (hp : p ≠ 0) (S : σ 
   convert lem_of_equiv
   · refine Finset.card_bijective (fun f => f ∘ equiv.symm) ?_ ?_
     · exact Function.Bijective.comp_right (Equiv.bijective equiv.symm)
-    · intro i; simp; constructor
+    · intro i
+      simp only [mem_filter, Fintype.mem_piFinset, renameEquiv_apply, Function.comp_apply]
+      constructor
       · rintro ⟨h1, h2⟩
         exact And.intro (by simp [h1]) (by simp [h2, eval_rename, Function.comp_assoc])
       · rintro ⟨h1, h2⟩
@@ -52,11 +55,14 @@ lemma schwartz_zippel_of_fintype {p : MvPolynomial σ R} (hp : p ≠ 0) (S : σ 
         · intro a
           have := h1 (equiv a)
           simpa [this]
-        · simp [eval_rename, Function.comp_assoc] at h2
-          exact h2
+        · simpa [eval_rename, Function.comp_assoc] using h2
   · exact prod_equiv equiv (by simp) (by simp)
   · refine sum_equiv equiv (by simp) ?_
-    simp; intro i; congr; symm
+    simp only [mem_univ, renameEquiv_apply, Function.comp_apply, Equiv.symm_apply_apply,
+      forall_const]
+    intro i
+    congr
+    symm
     exact degreeOf_rename_of_injective (Equiv.injective equiv) i
 
 def Function.extendDomain {α β : Type*} [DecidableEq α] [Zero β] {s : Finset α}
@@ -64,9 +70,69 @@ def Function.extendDomain {α β : Type*} [DecidableEq α] [Zero β] {s : Finset
   fun x ↦ if hx : x ∈ s then f x hx else 0
 
 open Function in
-lemma schwartz_zippel' {p : MvPolynomial σ R} (hp : p ≠ 0) (S : σ → Finset R) :
+lemma schwartz_zippel' [Finite σ] {p : MvPolynomial σ R} (hp : p ≠ 0) (S : σ → Finset R) :
     #{x ∈ Finset.pi p.vars S | eval (extendDomain x) p = 0} / ∏ i ∈ p.vars, (#(S i) : ℚ≥0)
-      ≤ ∑ i ∈ p.vars, (p.degreeOf i / #(S i) : ℚ≥0) := by sorry
+      ≤ ∑ i ∈ p.vars, (p.degreeOf i / #(S i) : ℚ≥0) := by
+  letI : Fintype σ := Fintype.ofFinite σ
+  let S' : σ → Finset R := fun i ↦ if i ∈ p.vars then S i else {0}
+  have hsz := schwartz_zippel_of_fintype (p := p) hp S'
+  convert hsz using 1
+  · congr! 1
+    · refine congr_arg _ (Finset.card_bij ?_ ?_ ?_ ?_)
+      · intro a _ i
+        exact if hi : i ∈ p.vars then a i hi else 0
+      · intro a ha
+        rcases Finset.mem_filter.mp ha with ⟨ha_pi, ha_eval⟩
+        have ha_mem : ∀ i, ∀ hi : i ∈ p.vars, a i hi ∈ S i := by
+          rwa [Finset.mem_pi] at ha_pi
+        refine Finset.mem_filter.mpr ?_
+        constructor
+        · rw [Fintype.mem_piFinset]
+          intro i
+          by_cases hi : i ∈ p.vars
+          · simpa [S', hi] using ha_mem i hi
+          · simp [S', hi]
+        · simpa [extendDomain] using ha_eval
+      · intro a₁ ha₁ a₂ ha₂ h
+        funext i hi
+        have h' := congr_fun h i
+        simpa [extendDomain, hi] using h'
+      · intro b hb
+        rcases Finset.mem_filter.mp hb with ⟨hb_pi, hb_eval⟩
+        have hb_mem : ∀ i, b i ∈ S' i := by
+          rwa [Fintype.mem_piFinset] at hb_pi
+        have h_extend : extendDomain (s := p.vars) (fun i _hi ↦ b i) = b := by
+          funext i
+          by_cases hi : i ∈ p.vars
+          · simp [extendDomain, hi]
+          · have hzero : b i = 0 := by
+              have : b i ∈ ({0} : Finset R) := by simpa [S', hi] using hb_mem i
+              simpa using this
+            simp [extendDomain, hi, hzero]
+        refine ⟨fun i _hi ↦ b i, ?_, h_extend⟩
+        · refine Finset.mem_filter.mpr ?_
+          constructor
+          · rw [Finset.mem_pi]
+            intro i hi
+            simpa [S', hi] using hb_mem i
+          · simpa [h_extend] using hb_eval
+    · rw [← Finset.prod_subset (Finset.subset_univ p.vars)]
+      · refine Finset.prod_congr rfl ?_
+        intro i hi
+        simp [S', hi]
+      · intro i _ hi
+        simp [S', hi]
+  · rw [← Finset.sum_subset (Finset.subset_univ p.vars)]
+    · refine Finset.sum_congr rfl ?_
+      intro x hx
+      simp [S', hx]
+    · intro x _ hx
+      have hdeg : degreeOf x p = 0 := by
+        rw [degreeOf]
+        simp only [Multiset.count_eq_zero]
+        rw [vars_def] at hx
+        exact fun h => hx (Multiset.mem_toFinset.mpr h)
+      simp [S', hx, hdeg]
 
 
 end SchwartzZippel
@@ -95,7 +161,7 @@ open Function Fintype
 
 variable {n : ℕ}
 
-open Polynomial in
+open Polynomial
 /-- A polynomial is zero if its degrees are bounded and it is zero on the product set. -/
 -- This does not follow from Schwartz-Zippel!
 -- Instead we should do induction on the number of variables.
@@ -123,17 +189,18 @@ theorem eq_zero_of_degreeOf_lt_card_of_eval_eq_zero_of_fin {n : ℕ} {p : R[X Fi
       have hDegreePx (i : Fin n) : px.degreeOf i < (S i.succ).card :=
         lt_of_le_of_lt (degreeOf_eval_C_finSuccEquiv p i x) (hDegree i.succ)
       have hEvalPx : ∀ y ∈ piFinset fun (i : Fin n) ↦ S i.succ, eval y px = 0 := by
-        simp [px, q]
         intro y hy
-        simp [eval_comp_eval_C_finSuccEquiv]
+        change eval y (Polynomial.eval (C x) (finSuccEquiv R n p)) = 0
+        rw [eval_comp_eval_C_finSuccEquiv]
+        have hy' := Fintype.mem_piFinset.mp hy
         have : Fin.cons x y ∈ piFinset fun i ↦ S i := by
-          simp
+          rw [Fintype.mem_piFinset]
           intro a
           induction a using Fin.inductionOn with
-          | zero => simp [hx]
-          | succ => simp [hy]
-        exact hEval _ this
-      exact ih (fun i => S i.succ) hDegreePx hEvalPx
+          | zero => simpa using hx
+          | succ i => simpa using hy' i
+        simpa using hEval (Fin.cons x y) this
+      simpa [px] using ih (fun i => S i.succ) hDegreePx hEvalPx
     have hEvalQ' : ∀ x ∈ S', q.eval x = 0 := fun x hx => by
       obtain ⟨y, hy, hEq⟩ := Finset.mem_map.mp hx
       subst hEq
@@ -155,20 +222,25 @@ theorem eq_zero_of_degreeOf_lt_card_of_eval_eq_zero {p : R[X σ]} (S : σ → Fi
   have hEval' : ∀ x ∈ piFinset fun i ↦ S' i, eval x q = 0 := fun x hx => by
     let y := x ∘ equiv
     have hy : y ∈ piFinset fun i ↦ S i := by
-      simp [y, S'] at hx ⊢
-      convert fun a => hx (equiv a)
-      simp only [Equiv.symm_apply_apply]
+      rw [Fintype.mem_piFinset] at hx ⊢
+      intro a
+      simpa [y, S', Equiv.symm_apply_apply] using hx (equiv a)
     convert hEval y hy
     simp [q, y, eval_rename]
-  convert eq_zero_of_degreeOf_lt_card_of_eval_eq_zero_of_fin S' hDegree' hEval'
-  simp [q]
-  constructor <;> intro h
-  · simp [h]
-  · exact rename_eq_zero_of_injective equiv.injective h
+  have hq : q = 0 := eq_zero_of_degreeOf_lt_card_of_eval_eq_zero_of_fin S' hDegree' hEval'
+  exact rename_eq_zero_of_injective equiv.injective (by simpa [q] using hq)
 
+/-- Equality of multivariable polynomials when they agree on a product of sets and have
+    degree bounds on both (per-variable degree less than set size). -/
 theorem eq_of_degreeOf_lt_card_of_eval_eq {p q : R[X σ]} (S : σ → Finset R)
-    (hDegree : ∀ i, p.degreeOf i < #(S i))
-    (hEval : ∀ x ∈ piFinset fun i ↦ S i, eval x p = eval x q) : p = q := by sorry
+    (hDegreeP : ∀ i, p.degreeOf i < #(S i))
+    (hDegreeQ : ∀ i, q.degreeOf i < #(S i))
+    (hEval : ∀ x ∈ piFinset fun i ↦ S i, eval x p = eval x q) : p = q := by
+  have h : p - q = 0 :=
+    eq_zero_of_degreeOf_lt_card_of_eval_eq_zero S
+      (fun i ↦ lt_of_le_of_lt (degreeOf_sub_le i p q) (max_lt (hDegreeP i) (hDegreeQ i)))
+      (fun x hx ↦ by simp [hEval x hx])
+  exact sub_eq_zero.mp h
 
 end Finset
 

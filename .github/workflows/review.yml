@@ -1,60 +1,92 @@
-name: AI Code Review with External Context
-
+name: PR Review
 on:
+  pull_request:
+    types: [opened]
   issue_comment:
     types: [created]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
 
 jobs:
   review:
     if: >-
-      github.event.issue.pull_request &&
-      startsWith(github.event.comment.body, '/review') &&
       (
-        github.event.comment.author_association == 'OWNER' ||
-        github.event.comment.author_association == 'MEMBER' ||
-        github.event.comment.author_association == 'COLLABORATOR'
+        github.event_name == 'pull_request' &&
+        (
+          github.event.pull_request.author_association == 'OWNER' ||
+          github.event.pull_request.author_association == 'MEMBER' ||
+          github.event.pull_request.author_association == 'COLLABORATOR'
+        )
+      ) ||
+      (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        startsWith(github.event.comment.body, '/review') &&
+        (
+          github.event.comment.author_association == 'OWNER' ||
+          github.event.comment.author_association == 'MEMBER' ||
+          github.event.comment.author_association == 'COLLABORATOR'
+        )
       )
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     permissions:
       contents: read
       pull-requests: write
     steps:
       - name: Extract arguments from comment
         id: get_args
+        if: github.event_name == 'issue_comment'
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
-          PARSED_ARGS=$(awk '
+          # Generate a random EOF marker for the GITHUB_OUTPUT heredoc.
+          # This variable is passed to awk which handles all output writing.
+          EOF=$(openssl rand -hex 8)
+
+          awk -v eof="$EOF" -v gh_out="$GITHUB_OUTPUT" '
+            BEGIN {
+              ext = ""
+              repo = ""
+              com = ""
+              section = ""
+            }
             /^External:/ { section="ext"; next }
-            /^Internal:/ { section="int"; next }
+            /^Internal:/ { section="repo"; next }
             /^Comments:/ { section="com"; next }
             { 
-              gsub(/^[ 	]+|[ 	]+$/, "", $0);
+              gsub(/\r/, "", $0);
+              gsub(/^[ \t]+|[ \t]+$/, "", $0);
               if ($0 == "" || $0 == "/review") { next }
+
               if (section == "ext") {
                 sub(/^- +/, "");
-                if (ext) { ext = ext "," $0 } else { ext = $0 }
+                if (ext != "") { ext = ext "," $0 } else { ext = $0 }
               }
-              else if (section == "int") {
+              else if (section == "repo") {
                 sub(/^- +/, "");
-                if (ark) { ark = ark "," $0 } else { ark = $0 }
+                if (repo != "") { repo = repo "," $0 } else { repo = $0 }
               }
               else if (section == "com") {
-                if (com) { com = com " " $0 } else { com = $0 }
+                if (com != "") { com = com "\n" $0 } else { com = $0 }
               }
             }
             END {
-              print "external_refs=" ext
-              print "arklib_refs=" ark
-              print "additional_comments=" com
+              printf "external_refs=%s\n", ext >> gh_out
+              printf "repo_context_refs=%s\n", repo >> gh_out
+              printf "additional_comments<<%s\n", eof >> gh_out
+              printf "%s\n", com >> gh_out
+              printf "%s\n", eof >> gh_out
             }
-          ' <<< "${{ github.event.comment.body }}")
-          echo "$PARSED_ARGS" >> $GITHUB_OUTPUT
+          ' <<< "$COMMENT_BODY"
         shell: bash
-
       - uses: alexanderlhicks/lean-review-workflow@main
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          pr_number: ${{ github.event.issue.number }}
+          pr_number: ${{ github.event.issue.number || github.event.pull_request.number }}
           external_refs: "${{ steps.get_args.outputs.external_refs }}"
-          arklib_refs: "${{ steps.get_args.outputs.arklib_refs }}"
+          repo_context_refs: "${{ steps.get_args.outputs.repo_context_refs }}"
           additional_comments: "${{ steps.get_args.outputs.additional_comments }}"

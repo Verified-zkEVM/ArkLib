@@ -39,10 +39,6 @@ def CEmbedding : R ↪ MvPolynomial σ R := ⟨C, C_injective σ R⟩
 
 section Support
 
-theorem support_C {r : R} [h : Decidable (r = 0)] :
-    (@C R σ _ r).support = if r = 0 then ∅ else { 0 } := by
-  rw [←monomial_zero', support_monomial]
-
 theorem support_C_subset {r : R} : (@C R σ _ r).support ⊆ { 0 } := by
   rw [←monomial_zero']
   exact support_monomial_subset
@@ -139,10 +135,9 @@ theorem degreeOf_X_le (i j : σ) : degreeOf i (X (R := R) j) ≤ 1 := by
 
 theorem degreeOf_X_of_ne (i j : σ) (h : i ≠ j) : degreeOf i (X (R := R) j) = 0 := by
   classical
-  simp [degreeOf]
-  intro hMem
-  have hSub := degrees_X' (R := R) j
-  aesop
+  rw [degreeOf]
+  apply Nat.eq_zero_of_le_zero
+  exact le_trans (Multiset.count_le_of_le i (degrees_X' (R := R) j)) (by simp [h])
 
 theorem degreeOf_linear_le {a b : R} : degreeOf n (C a + C b * p) ≤ degreeOf n p := by
   apply le_trans (degreeOf_add_le _ _ _) _

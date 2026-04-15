@@ -4,7 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Mirco Richter (Least Authority)
 -/
 
-import ArkLib.Data.CodingTheory.Basic
+import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+import ArkLib.Data.CodingTheory.Basic.Distance
+import ArkLib.Data.CodingTheory.Basic.LinearCode
+import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 import Mathlib.Algebra.MvPolynomial.Eval
 import Mathlib.Algebra.Polynomial.Eval.Defs
 
@@ -35,7 +38,7 @@ def bitExpo (i : ℕ) : (Fin m) →₀ ℕ :=
     degree wise linear m-variate polynomials, sending
     `aᵢ Xⁱ ↦ aᵢ ∏ⱼ Xⱼ^(bitⱼ(i))`, where `bitⱼ(i)` is the j-th binary digit of `(i mod 2ᵐ)`. -/
 def linearMvExtension :
-  Polynomial.degreeLT F (2^m) →ₗ[F] MvPolynomial (Fin m) F where
+    Polynomial.degreeLT F (2^m) →ₗ[F] MvPolynomial (Fin m) F where
     -- p(X) = aᵢ Xᶦ ↦ aᵢ ∏ⱼ Xⱼ^(bitⱼ(i))
     toFun p := (p : Polynomial F).sum fun i a =>
       MvPolynomial.monomial (bitExpo i) a
@@ -44,8 +47,13 @@ def linearMvExtension :
       simp [Polynomial.sum_add_index]
     map_smul' := by
       rintro c p
-      simp [Polynomial.sum_smul_index]
-      sorry
+      simp only [SetLike.val_smul, RingHom.id_apply]
+      rw [Polynomial.sum_smul_index (hf := by
+        intro i
+        simp)]
+      simp_rw [← smul_eq_mul, ← smul_monomial]
+      unfold Polynomial.sum
+      simp_rw [← Finset.smul_sum]
 
 /-- `partialEval` takes a m-variate polynomial f and a k-vector α as input,
   partially evaluates f(X_0, X_1,..X_(m-1)) at {X_0 = α_0, X_1 = α_1,.., X_{k-1} = α_{k-1}}
@@ -57,7 +65,7 @@ def partialEval {k : ℕ} (f : MvPolynomial (Fin m) F) (α : Fin k → F) (h : k
       C (α ⟨i.val, h'⟩)
     else
       let j := i.val - k
-      let j' : Fin (m - k) := ⟨j, sorry⟩
+      let j' : Fin (m - k) := ⟨j, by omega⟩
       X j'
   eval₂ C φ f
 
@@ -66,19 +74,76 @@ def partialEval {k : ℕ} (f : MvPolynomial (Fin m) F) (α : Fin k → F) (h : k
     `aₑ X₀^σ(0) ⬝ ⋯ ⬝ Xₘ₋₁^σ(m-1) →  aₑ (X^(2⁰))^σ(0) ⬝ ⋯ ⬝ (X^(2ᵐ⁻¹))^σ(m-1)`
     for all `σ : Fin m → ℕ` -/
 def powAlgHom :
-  MvPolynomial (Fin m) F →ₐ[F] Polynomial F :=
+    MvPolynomial (Fin m) F →ₐ[F] Polynomial F :=
    aeval fun j => Polynomial.X ^ (2 ^ (j : ℕ))
 
 /- The linear map optained by forgetting the multiplicative structure-/
 def powContraction :
-  MvPolynomial (Fin m) F →ₗ[F] Polynomial F :=
+    MvPolynomial (Fin m) F →ₗ[F] Polynomial F :=
   powAlgHom.toLinearMap
+
+private lemma binary_repr_sum (m i : ℕ) (hi : i < 2 ^ m) :
+    ∑ j ∈ Finset.range m, (if Nat.testBit i j then 2 ^ j else 0) = i := by
+  induction m generalizing i with
+  | zero => simp_all
+  | succ m ih =>
+    rw [Finset.sum_range_succ']
+    simp only [Nat.testBit_zero, pow_zero, decide_eq_true_eq]
+    have key : ∑ x ∈ Finset.range m,
+        (if i.testBit (x + 1) then 2 ^ (x + 1) else 0) =
+      2 * ∑ x ∈ Finset.range m,
+        (if (i / 2).testBit x then 2 ^ x else 0) := by
+      rw [Finset.mul_sum]
+      apply Finset.sum_congr rfl
+      intro x _
+      simp [Nat.testBit_add_one, pow_succ]
+      ring_nf
+    have hi2 : i / 2 < 2 ^ m := by rw [pow_succ] at hi; omega
+    rw [key, ih (i / 2) hi2]
+    rcases Nat.mod_two_eq_zero_or_one i with h | h <;> simp [h] <;> omega
 
 /- Evaluating m-variate polynomials on (X^(2⁰), ... , X^(2ᵐ⁻¹) ) is
    right inverse to linear multivariate extensions on F^(< 2ᵐ)[X]  -/
 lemma powContraction_is_right_inverse_to_linearMvExtension
-  (p : Polynomial.degreeLT F (2^m)) :
-    powContraction.comp linearMvExtension p = p  := by sorry
+    (p : Polynomial.degreeLT F (2 ^ m)) :
+    powContraction.comp linearMvExtension p = p := by
+  have h_comp : powContraction (linearMvExtension p) =
+      ∑ i ∈ Finset.range (2 ^ m), p.val.coeff i • Polynomial.X ^ i := by
+    unfold powContraction linearMvExtension
+    simp +decide only [LinearMap.coe_mk, AddHom.coe_mk, AlgHom.toLinearMap_apply, powAlgHom]
+    rw [MvPolynomial.aeval_def]
+    have h_sum_range :
+        (p : Polynomial F).sum (fun i a => MvPolynomial.monomial (bitExpo (m := m) i) a) =
+          ∑ i ∈ Finset.range (2 ^ m),
+            MvPolynomial.monomial (bitExpo (m := m) i) ((p : Polynomial F).coeff i) := by
+      rw [Polynomial.sum_over_range'
+        (p := (p : Polynomial F))
+        (f := fun i a => MvPolynomial.monomial (bitExpo (m := m) i) a)
+        (h := by
+          intro n
+          simp)
+        (n := 2 ^ m)]
+      have h_deg : Polynomial.degree (p : Polynomial F) < 2 ^ m :=
+        Polynomial.mem_degreeLT.mp p.2
+      contrapose! h_deg
+      rw [Polynomial.degree_eq_natDegree] <;> norm_cast; aesop
+    rw [h_sum_range, MvPolynomial.eval₂_sum]
+    refine Finset.sum_congr rfl ?_
+    intro i hi
+    simp +decide only [Polynomial.algebraMap_eq, eval₂_monomial, Finsupp.prod_pow]
+    have h_sum : ∑ x : Fin m, 2 ^ (x : ℕ) * (bitExpo i) x = i := by
+      convert binary_repr_sum m i (Finset.mem_range.mp hi) using 1
+      rw [Finset.sum_range]
+      unfold bitExpo; aesop
+    simp_rw [← pow_mul]
+    rw [Finset.prod_pow_eq_pow_sum, h_sum]
+    simp [Polynomial.smul_eq_C_mul]
+  convert h_comp using 1
+  convert Polynomial.as_sum_range' p.val (2 ^ m) _ using 1
+  · simp +decide [Polynomial.smul_eq_C_mul, ← Polynomial.C_mul_X_pow_eq_monomial]
+  · have := Polynomial.mem_degreeLT.mp p.2
+    contrapose! this
+    rw [Polynomial.degree_eq_natDegree] <;> norm_cast; aesop
 
 end
 

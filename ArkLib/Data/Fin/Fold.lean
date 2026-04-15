@@ -221,8 +221,9 @@ theorem dfoldl_congr_dcast {n : ℕ}
   have hα' : α = α' := funext hα
   cases hα'
   simp_all only [dcast_eq, cast_eq]
-  simp at hf
-  have hf' : f = f' := funext₂ hf
+  have hf' : f = f' := by
+    funext i a
+    simpa using hf i a
   cases hf'
   cases hinit
   rfl

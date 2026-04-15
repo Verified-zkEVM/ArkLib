@@ -34,7 +34,7 @@ local instance : Fintype F := Fintype.ofFinite F
 Suppose `d(U⋆, L^⋈m) > e`. Then, there exists `v⋆ ∈ L⋆` such that `d(v⋆, L) > e`, where `L⋆` is the
 row-span of `U⋆`. -/
 lemma distInterleavedCodeToCodeLB
-  {L : LinearCode ι F} {U_star : WordStack (A := F) κ ι}
+    {L : LinearCode ι F} {U_star : WordStack (A := F) κ ι}
   {e : ℕ} -- Might change e to ℕ+ if really needed
   (hF : Fintype.card F ≥ e)
   (he : (e : ℚ≥0) < ‖(L : Set (ι → F))‖₀ / 3) -- `e < d/3`
@@ -50,7 +50,7 @@ open ReedSolomonCode NNReal
 /-- The set of points on an affine line, which are within distance `e` from a Reed-Solomon code.
 -/
 def closePtsOnAffineLine {ι : Type*} [Fintype ι]
-                         (u v : ι → F) (deg : ℕ) (α : ι ↪ F) (e : ℕ) : Set (ι → F) :=
+    (u v : ι → F) (deg : ℕ) (α : ι ↪ F) (e : ℕ) : Set (ι → F) :=
   {x : ι → F | x ∈ Affine.affineLineAtOrigin (F := F) (origin := u) (direction := v)
     ∧ Δ₀(x, ReedSolomon.code α deg) ≤ e}
 
@@ -60,6 +60,7 @@ Reed-Solomon code.
 def numberOfClosePts (u v : ι → F) (deg : ℕ) (α : ι ↪ F) (e : ℕ) : ℕ :=
   Fintype.card (closePtsOnAffineLine u v deg α e)
 
+open scoped Classical in
 /-- **Lemma 4.4, [AHIV22] (Combinatorial proximity gap for affine lines)**
 Let `L = RS_{𝔽, n, k, η}` be a Reed-Solomon code with minimal distance
 `d = n - k + 1`. Let `e` be a positive integer such that `e < d / 3`. Then for every two words
@@ -69,8 +70,8 @@ Let `L = RS_{𝔽, n, k, η}` be a Reed-Solomon code with minimal distance
 - or (2) for at most `d` points `x ∈ ℓ_{u, v}` we have `d(x, L) ≤ e`.
 This is a concrete statement via cardinality of proximity gap for affine lines.
 -/
-lemma e_leq_dist_over_3 [DecidableEq F] {deg : ℕ} {α : ι ↪ F} {e : ℕ} {u v : ι → F}
-  (he : (e : ℚ≥0) < ‖(RScodeSet α deg)‖₀ / 3) :
+lemma e_leq_dist_over_3 {deg : ℕ} {α : ι ↪ F} {e : ℕ} {u v : ι → F}
+    (he : (e : ℚ≥0) < ‖(RScodeSet α deg)‖₀ / 3) :
   Xor'
     (∀ x ∈ Affine.affineLineAtOrigin (F := F) u v, Δ₀(x, ReedSolomon.code α deg) ≤ e)
     ((numberOfClosePts u v deg α e) ≤ ‖(RScodeSet α deg)‖₀) := by sorry

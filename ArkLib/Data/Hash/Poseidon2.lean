@@ -418,16 +418,12 @@ structure Params where
   roundConstants : Vector KoalaBear.Field (numFullRounds * width + numPartialRounds)
 
   -- Conditions on the parameters
-
   /-- The width must be non-zero (i.e. positive) -/
   [width_ne_zero : NeZero width]
-
   /-- The number of full rounds must be non-zero (i.e. positive) -/
   [numFullRounds_ne_zero : NeZero numFullRounds]
-
   /-- The number of partial rounds must be non-zero (i.e. positive) -/
   [numPartialRounds_ne_zero : NeZero numPartialRounds]
-
   /-- The width must be a multiple of 4 -/
   width_dvd_by_4 : 4 ∣ width
   /-- The number of full rounds must be even -/
@@ -567,19 +563,14 @@ def externalLinearLayer (state : Vector KoalaBear.Field params.width) :
   -- First step: convert `state` into chunks of length 4, then apply M4 to each chunk
   let chunks := Vector.Matrix.ofFlatten (state.cast (params.widthDiv4_mul_4_eq_width).symm)
   let chunksAfterM4 := chunks.map (fun chunk => applyM4 chunk)
-
   -- Diffusion step: add column sums to each row
   -- This is equivalent to multiplication by circ(2*I, I, ..., I)
-
   -- Transpose the matrix
   let transposedMatrix := Vector.Matrix.transpose chunksAfterM4
-
   -- Compute the sum of each column
   let columnSums := transposedMatrix.map (fun col => col.foldl (· + ·) 0)
-
   -- Add the column sums to each row
   let chunksAfterDiffusion := chunksAfterM4.map (fun row => row.zipWith (· + ·) columnSums)
-
   -- Convert back to flat vector
   (Vector.flatten chunksAfterDiffusion).cast (params.widthDiv4_mul_4_eq_width)
 
@@ -599,7 +590,6 @@ def internalLinearLayer (state : Vector KoalaBear.Field params.width) :
   -- 1. Calculate the sum of all elements in the state vector.
   -- This single sum will be used for every element of the `J*s` product.
   let sumAll := state.foldl (fun acc x => acc + x) 0
-
   -- 2. Compute `(J*s)_i + (D*s)_i` for each element `i`.
   -- This is `sumAll + d_i * s_i`.
   state.zipWith (fun s d => sumAll + d * s) params.internalDiagVectors
@@ -624,40 +614,83 @@ def partialRound (state : Vector KoalaBear.Field params.width) (roundConstant : 
   -- 3. Apply internal linear layer
   internalLinearLayer params stateAfterSbox
 
+private lemma firstHalfRoundConstants_extract_length (params : Params)
+    (rc_idx : Fin params.halfNumFullRounds) :
+    min (↑rc_idx + params.width) (params.numFullRounds * params.width + params.numPartialRounds) -
+      ↑rc_idx = params.width := by
+  simp only [Params.halfNumFullRounds] at rc_idx
+  have hw := params.width_pos
+  have hrc := rc_idx.isLt
+  have h1 : ↑rc_idx + params.width ≤ (↑rc_idx + 1) * params.width := by
+    nlinarith
+  have h2 : (↑rc_idx + 1) * params.width ≤ (params.numFullRounds / 2) * params.width := by
+    nlinarith
+  have h3 := Nat.mul_le_mul_right params.width (Nat.div_le_self params.numFullRounds 2)
+  rw [Nat.min_eq_left (by omega)]
+  omega
+
+private lemma partialRoundConstant_index_lt (params : Params)
+    (rc_idx : Fin params.numPartialRounds) :
+    ↑rc_idx < params.numFullRounds * params.width + params.numPartialRounds -
+      params.halfNumFullRounds * params.width := by
+  simp only [Params.halfNumFullRounds]
+  have := Nat.mul_le_mul_right params.width (Nat.div_le_self params.numFullRounds 2)
+  omega
+
+private lemma secondHalfRoundConstants_extract_length (params : Params)
+    (rc_idx : Fin params.halfNumFullRounds) :
+    min (↑rc_idx + params.width)
+        (params.numFullRounds * params.width + params.numPartialRounds -
+          params.halfNumFullRounds * params.width - params.numPartialRounds) -
+      ↑rc_idx = params.width := by
+  simp only [Params.halfNumFullRounds] at rc_idx ⊢
+  have hw := params.width_pos
+  have hrc := rc_idx.isLt
+  have h0 := Nat.mul_le_mul_right params.width (Nat.div_le_self params.numFullRounds 2)
+  have hsub : params.numFullRounds * params.width + params.numPartialRounds -
+      params.numFullRounds / 2 * params.width - params.numPartialRounds =
+      (params.numFullRounds - params.numFullRounds / 2) * params.width := by
+    rw [Nat.sub_mul]
+    omega
+  rw [hsub]
+  have h1 : ↑rc_idx + params.width ≤ (↑rc_idx + 1) * params.width := by
+    nlinarith
+  have h2 : (↑rc_idx + 1) * params.width ≤ (params.numFullRounds / 2) * params.width := by
+    nlinarith
+  have hd : params.numFullRounds / 2 ≤ params.numFullRounds - params.numFullRounds / 2 := by
+    omega
+  rw [Nat.min_eq_left (by nlinarith [Nat.mul_le_mul_right params.width hd])]
+  omega
+
 /-- Full Poseidon2 permutation on a state vector. -/
 @[inline]
 def permute (params : Params) (state : Vector KoalaBear.Field params.width) :
     Vector KoalaBear.Field params.width :=
   letI rcs := params.roundConstants
-
   -- Initial external linear layer
   let st0 := externalLinearLayer params state
-
   -- First half of full rounds
   let st1 : Vector KoalaBear.Field params.width :=
     Fin.foldl params.halfNumFullRounds (fun st_acc rc_idx =>
-      let rc_chunk := (rcs.extract rc_idx (rc_idx + params.width)).cast (by sorry)
+      let rc_chunk := (rcs.extract rc_idx (rc_idx + params.width)).cast
+        (firstHalfRoundConstants_extract_length params rc_idx)
       let st_new := fullRound params st_acc rc_chunk
       st_new) st0
-
   -- Drop the round constants used in the first half of full rounds
   let rcs := rcs.drop (params.halfNumFullRounds * params.width)
-
   -- Partial rounds
   let st2 := Fin.foldl params.numPartialRounds (fun st_acc rc_idx =>
-    let rc_val := rcs[rc_idx]'(sorry)
+    let rc_val := rcs[rc_idx]'(partialRoundConstant_index_lt params rc_idx)
     let st_new := partialRound params st_acc rc_val
     st_new) st1
-
   -- Drop the round constants used in the partial rounds
   let rcs := rcs.drop params.numPartialRounds
-
   -- Second half of full rounds
   let st3 := Fin.foldl params.halfNumFullRounds (fun st_acc rc_idx =>
-    let rc_chunk := (rcs.extract rc_idx (rc_idx + params.width)).cast (by sorry)
+    let rc_chunk := (rcs.extract rc_idx (rc_idx + params.width)).cast
+      (secondHalfRoundConstants_extract_length params rc_idx)
     let st_new := fullRound params st_acc rc_chunk
     st_new) st2
-
   st3
 
 end Poseidon2

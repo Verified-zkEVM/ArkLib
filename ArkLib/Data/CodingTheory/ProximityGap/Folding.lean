@@ -3,8 +3,8 @@ import Mathlib.LinearAlgebra.Lagrange
 
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.CodingTheory.ProximityGap.Basic
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20
 import ArkLib.Data.Finset.PickSubset
+import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
 import ArkLib.Data.Polynomial.Indicator
 import ArkLib.ToMathlib.Polynomial.EvalExt
 
@@ -670,8 +670,7 @@ lemma folding_proximity {domain : ι ↪ F} {f : Word F ι} {d k : ℕ} [inst: N
   (h_k_card: k ≤ Fintype.card F)
   (δ_gt_0 : 0 < δ)
   (δ_lt : δ < min (δᵣ(f, ReedSolomon.code domain d)) (1 - (ReedSolomonCode.sqrtRate d domain))) :
-    Pr_{ let r ←$ᵖ F}
-      [δᵣ(foldWord domain f k r, ReedSolomon.code (domainK domain k) (d / k)) ≤ δ] ≤
+    Pr_{ let r ←$ᵖ F}[δᵣ(foldWord domain f k r, ReedSolomon.code (domainK domain k) (d / k)) ≤ δ] ≤
         (k - 1) * ProximityGap.errorBound δ (d / k) (domainK domain k) := by
   match k with
   | .zero => aesop
@@ -680,7 +679,7 @@ lemma folding_proximity {domain : ι ↪ F} {f : Word F ι} {d k : ℕ} [inst: N
     have bound_tighter : ↑δ ≤ 1 - ReedSolomonCode.sqrtRate (d / (k + 1)) (domainK domain (k + 1)) := by
       sorry
     have h' :=
-      @correlatedAgreement_affine_curves (iotaK domain (k + 1)) _ sorry _ F _ _ _ _
+      @correlatedAgreement_affine_curves (iotaK domain (k + 1)) _ sorry F _ _ _ 
         k (d / (k + 1)) (domainK domain (k + 1)) δ bound_tighter
     unfold δ_ε_correlatedAgreementCurves at h'
     by_contra h
@@ -754,7 +753,7 @@ lemma folding_proximity {domain : ι ↪ F} {f : Word F ι} {d k : ℕ} [inst: N
           rw [Polynomial.degree_lt_iff_coeff_zero]
           exact h_spec
       })
-      
+    sorry  
 
 
     

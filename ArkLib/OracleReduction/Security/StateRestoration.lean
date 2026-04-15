@@ -94,8 +94,8 @@ variable {oSpec : OracleSpec ι}
   {WitOut : Type}
   {n : ℕ} {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)]
   [DecidableEq StmtIn] [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
-  (init : ProbComp (srChallengeOracle StmtIn pSpec).FunctionType)
-  (impl : QueryImpl oSpec (StateT (srChallengeOracle StmtIn pSpec).FunctionType ProbComp))
+  (init : ProbComp (QueryImpl (srChallengeOracle StmtIn pSpec) Id))
+  (impl : QueryImpl oSpec (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp))
 
 /-- The state-restoration game for soundness. Basically a wrapper around the state-restoration
   prover to derive the full transcript from the messages output by the prover, with the challenges

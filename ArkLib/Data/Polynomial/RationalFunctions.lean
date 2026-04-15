@@ -104,7 +104,14 @@ noncomputable instance {H : F[X][Y]} : Ring (𝒪 H) :=
 noncomputable def embeddingOf𝒪Into𝕃 (H : F[X][Y]) : 𝒪 H →+* 𝕃 H :=
   Ideal.quotientMap
         (I := Ideal.span {H_tilde' H}) (Ideal.span {H_tilde H})
-        bivPolyHom sorry
+        bivPolyHom (by
+          rw [Ideal.span_le]
+          intro x hx
+          rw [Set.mem_singleton_iff] at hx; subst hx
+          change bivPolyHom (H_tilde' H) ∈ span {H_tilde H}
+          rw [show bivPolyHom (H_tilde' H) = (H_tilde' H).map univPolyHom from rfl,
+              H_tilde_equiv_H_tilde']
+          exact Ideal.subset_span rfl)
 
 /-- The set of regular elements inside `𝕃 H`, i.e. the set of elements of `𝕃 H`
 that in fact lie in `𝒪 H`. -/
@@ -130,7 +137,13 @@ noncomputable def π_z_lift {H : F[X][Y]} (z : F) (root : rationalRoot (H_tilde'
 /-- The rational substitution `π_z` from Appendix A.3 of [BCIKS20] is a well-defined map on the
 quotient ring `𝒪`. -/
 noncomputable def π_z {H : F[X][Y]} (z : F) (root : rationalRoot (H_tilde' H) z) : 𝒪 H →+* F :=
-  Ideal.Quotient.lift (Ideal.span {H_tilde' H}) (π_z_lift z root) sorry
+  Ideal.Quotient.lift (Ideal.span {H_tilde' H}) (π_z_lift z root) (by
+    intro a ha
+    rw [Ideal.mem_span_singleton] at ha
+    obtain ⟨c, rfl⟩ := ha
+    simp only [π_z_lift, map_mul]
+    rw [show (Polynomial.evalEvalRingHom z root.1) (H_tilde' H) = 0 from root.2]
+    ring)
 
 /-- The canonical representative of an element of `F[X][Y]` inside
 the ring of regular elements `𝒪`. -/
@@ -151,8 +164,8 @@ def weight_Λ (f H : F[X][Y]) (D : ℕ) : WithBot ℕ :=
 
 /-- The weight function `Λ` on the ring of regular elements `𝒪` is defined as the weight their
 canonical representatives in `F[X][Y]`. -/
-noncomputable def weight_Λ_over_𝒪 {H : F[X][Y]} (f : 𝒪 H) (D : ℕ)
-  : WithBot ℕ := weight_Λ (canonicalRepOf𝒪 f) H D
+noncomputable def weight_Λ_over_𝒪 {H : F[X][Y]} (f : 𝒪 H) (D : ℕ) : WithBot ℕ :=
+  weight_Λ (canonicalRepOf𝒪 f) H D
 
 /-- The set `S_β` from the statement of Lemma A.1 in Appendix A of [BCIKS20].
 Note: Here `F[X][Y]` is `F[Z][T]`. -/
@@ -181,8 +194,7 @@ noncomputable def fieldTo𝕃 {H : F[X][Y]} : F →+* 𝕃 H :=
   RingHom.comp liftToFunctionField Polynomial.C
 
 noncomputable def polyToPowerSeries𝕃 (H : F[X][Y])
-  (P : F[X][Y])
-    : PowerSeries (𝕃 H) :=
+  (P : F[X][Y]) : PowerSeries (𝕃 H) :=
   PowerSeries.mk <| fun n =>
     liftToFunctionField (P.coeff n)
 
@@ -207,7 +219,7 @@ def ζ (R : F[X][X][Y]) (x₀ : F) (H : F[X][Y]) [H_irreducible : Fact (Irreduci
 /-- There exist regular elements `ξ = W(Z)^(d-2) * ζ` as defined in Claim A.2 of Appendix A.4
 of [BCIKS20]. -/
 lemma ξ_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)] :
-  ∃ pre : 𝒪 H,
+    ∃ pre : 𝒪 H,
     let d := R.natDegree
     let W : 𝕃 H := liftToFunctionField (H.leadingCoeff);
     embeddingOf𝒪Into𝕃 _ pre = W ^ (d - 2) * ζ R x₀ H := by
@@ -220,15 +232,15 @@ def ξ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [φ : Fact (Irreducible H)] : �
 /-- The bound of the weight `Λ` of the elements `ζ` as stated in Claim A.2 of Appendix A.4
 of [BCIKS20]. -/
 lemma weight_ξ_bound (x₀ : F) {D : ℕ} (hD : D ≥ Bivariate.totalDegree H) :
-  weight_Λ_over_𝒪 (ξ x₀ R H) D ≤
+    weight_Λ_over_𝒪 (ξ x₀ R H) D ≤
     WithBot.some ((Bivariate.natDegreeY R - 1) * (D - Bivariate.natDegreeY H + 1)) := by
   sorry
 
 /-- There exist regular elements `β` with a weight bound as given in Claim A.2
 of Appendix A.4 of [BCIKS20]. -/
 lemma β_regular (R : F[X][X][Y])
-                (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
-                {D : ℕ} (hD : D ≥ Bivariate.totalDegree H) :
+    (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
+    {D : ℕ} (hD : D ≥ Bivariate.totalDegree H) :
     ∀ t : ℕ, ∃ β : 𝒪 H, weight_Λ_over_𝒪 β ≤ (2 * t + 1) * Bivariate.natDegreeY R * D :=
   sorry
 

@@ -107,7 +107,9 @@ theorem foldRelayOracleReduction_perfectCompleteness
     (oracleReduction := foldRelayOracleReduction 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑:=𝓑) i hNCR) (init := init) (impl := impl) := by
   unfold foldRelayOracleReduction pSpecFoldRelay
-  sorry
+  exact OracleReduction.append_perfectCompleteness _ _
+    (foldOracleReduction_perfectCompleteness 𝔽q β i)
+    (relayOracleReduction_perfectCompleteness 𝔽q β i hNCR)
 
 /-- RBR Knowledge Soundness of the non-commitment round verifier via append composition
     of fold-round and transfer-round RBR KS. -/
@@ -126,7 +128,21 @@ theorem foldRelayOracleVerifier_rbrKnowledgeSoundness
         | ⟨1, h1⟩ => rfl
       ⟩) := by
   unfold foldRelayOracleVerifier pSpecFoldRelay
-  sorry
+  suffices h : OracleVerifier.rbrKnowledgeSoundness init impl (roundRelation 𝔽q β i.castSucc)
+      (roundRelation 𝔽q β i.succ)
+      ((foldOracleVerifier 𝔽q β i).append (relayOracleVerifier 𝔽q β i hNCR))
+      (Sum.elim (foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
+        relayKnowledgeError ∘ ChallengeIdx.sumEquiv.symm) by
+    convert h using 1
+    funext m
+    simp only [Function.comp, ChallengeIdx.sumEquiv, Equiv.symm]
+    dsimp
+    split
+    · congr 1; ext; simp
+    · omega
+  exact OracleVerifier.append_rbrKnowledgeSoundness _ _
+    (foldOracleVerifier_rbrKnowledgeSoundness 𝔽q β i)
+    (relayOracleVerifier_rbrKnowledgeSoundness 𝔽q β i hNCR)
 
 end FoldRelayRound -- foldRound + relay
 
@@ -177,8 +193,9 @@ theorem foldCommitOracleReduction_perfectCompleteness
       (oracleReduction := foldCommitOracleReduction 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i hCR) (init := init) (impl := impl) := by
   unfold foldCommitOracleReduction pSpecFoldCommit
-  -- apply append completeness using fold and commitment lemmas
-  sorry
+  exact OracleReduction.append_perfectCompleteness _ _
+    (foldOracleReduction_perfectCompleteness 𝔽q β i)
+    (commitOracleReduction_perfectCompleteness 𝔽q β i hCR)
 
 /-- RBR KS for Fold+Commitment block by append composition. -/
 theorem foldCommitOracleVerifier_rbrKnowledgeSoundness
@@ -193,8 +210,28 @@ theorem foldCommitOracleVerifier_rbrKnowledgeSoundness
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i ⟨1, by rfl⟩
       ) := by
   unfold foldCommitOracleVerifier pSpecFoldCommit
-  -- apply append RBR KS using fold and commitment lemmas
-  sorry
+  have herr : (fun _ => foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      i ⟨1, by rfl⟩) =
+      (Sum.elim (foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
+        (commitKnowledgeError 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) ∘
+        (ChallengeIdx.sumEquiv (pSpec₁ := pSpecFold (L := L))
+          (pSpec₂ := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)).symm) := by
+    funext m
+    simp only [Function.comp, ChallengeIdx.sumEquiv, Equiv.symm]
+    dsimp
+    split
+    · simp [foldKnowledgeError]
+    · next hlt =>
+      exfalso
+      have hv := m.1.isLt
+      have hp := m.2
+      simp only [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append, Fin.addCases,
+        Direction.not_P_to_V_eq_V_to_P] at hp
+      split at hp <;> simp_all <;> omega
+  rw [herr]
+  exact OracleVerifier.append_rbrKnowledgeSoundness _ _
+    (foldOracleVerifier_rbrKnowledgeSoundness 𝔽q β i)
+    (commitOracleVerifier_rbrKnowledgeSoundness 𝔽q β i hCR)
 
 end FoldCommitRound
 
@@ -518,7 +555,6 @@ theorem sumcheckFoldOracleReduction_perfectCompleteness :
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑))
       (init := init)
       (impl := impl) := by
-  unfold sumcheckFoldOracleReduction pSpecSumcheckFold
   sorry
 
 def NBlockMessages := 2 * (ϑ - 1) + 3
@@ -527,7 +563,8 @@ def sumcheckFoldKnowledgeError := fun j : (pSpecSumcheckFold 𝔽q β (ϑ:=ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).ChallengeIdx =>
     if hj: (j.val % NBlockMessages (ϑ:=ϑ)) % 2 = 1 then
       foldKnowledgeError 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        ⟨j / NBlockMessages (ϑ:=ϑ) * ϑ + ((j % NBlockMessages (ϑ:=ϑ)) / 2 + 1), by sorry⟩ ⟨1, rfl⟩
+        ⟨j / NBlockMessages (ϑ:=ϑ) * ϑ + ((j % NBlockMessages (ϑ:=ϑ)) / 2 + 1), by
+          sorry⟩ ⟨1, rfl⟩
     else 0 -- this case never happens
 
 /-- Round-by-round knowledge soundness for the sumcheck fold oracle verifier -/
