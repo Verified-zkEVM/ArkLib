@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao
+Authors: Quang Dao, Chung Thai Nguyen
 -/
 
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.ProverTransform
@@ -17,8 +17,6 @@ Fiat-Shamir, following Section 5.6 in the paper.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
-
-#check QueryLog
 
 namespace OracleSpec
 
@@ -43,35 +41,90 @@ section DuplexSpongeFS
 variable {StmtIn : Type} {n : ℕ} {pSpec : ProtocolSpec n}
   {U : Type} [SpongeUnit U] [SpongeSize]
 
+/-- Redundancy test for a new entry against a prefix of the trace (Definition 5.5). -/
+private def redundantEntryDSPrefix
+    (pref : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (entry : Sigma (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
+  match entry with
+  | ⟨.inl stmt, capSeg⟩ =>
+      ⟨.inl stmt, capSeg⟩ ∈ pref
+  | ⟨.inr (.inl stateIn), stateOut⟩ =>
+      ⟨.inr (.inl stateIn), stateOut⟩ ∈ pref
+      ∨ ⟨.inr (.inr stateOut), stateIn⟩ ∈ pref
+  | ⟨.inr (.inr stateOut), stateIn⟩ =>
+      ⟨.inr (.inr stateOut), stateIn⟩ ∈ pref
+      ∨ ⟨.inr (.inl stateIn), stateOut⟩ ∈ pref
+
 /-- The definition of a redundant entry in a duplex sponge challenge oracle trace (Definition 5.5),
   used in the analysis of bad events
 
 TODO: refactor this into a combination of simpler properties? -/
 def redundantEntryDS (log : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (idx : Fin log.length) : Prop :=
-  match log[idx] with
-  /- If it's a hash query, it's redundant if there is a prior hash query with the same query-answer
-     pair -/
-  | ⟨.inl u, ⟨stmt, state⟩⟩ => ∃ j' < idx, log[j'] = ⟨.inl u, stmt, state⟩
-  /- If it's a permutation query (`dir ∈ {Fwd, Bwd}`), it's redundant if there is a prior
-    permutation query with either:
-    - the same direction and input-output pair, or
-    - the opposite direction and output-input pair -/
-  | ⟨.inr (.inl stateIn), stateOut⟩ =>
-    ∃ j' < idx, log[j'] = ⟨.inr (.inl stateIn), stateOut⟩ ∨
-      log[j'] = ⟨.inr <|.inl stateOut, stateIn⟩
-  | ⟨.inr (.inr stateOut), stateIn⟩ =>
-    ∃ j' < idx, log[j'] = ⟨.inr (.inr stateOut), stateIn⟩ ∨
-      log[j'] = ⟨.inr <|.inr stateIn, stateOut⟩
+  redundantEntryDSPrefix (log.take idx.1) log[idx]
 
 /-- A duplex sponge challenge oracle trace has no redundant entries if no entry is redundant -/
 def NoRedundantEntryDS (log : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
-  ∀ idx : Fin log.length, ¬ log.redundantEntryDS idx
+  ∀ i : ℕ, ∀ hi : i < log.length,
+    ¬ redundantEntryDSPrefix (log.take i) log[i]
+
+private lemma noRedundantEntryDS_nil : NoRedundantEntryDS (StmtIn := StmtIn) (U := U) [] := by
+  intro i hi _
+  exact (Nat.not_lt_zero i) hi
+
+private lemma noRedundantEntryDS_append_singleton
+    (acc : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (entry : Sigma (duplexSpongeChallengeOracle StmtIn U))
+    (hAcc : NoRedundantEntryDS acc)
+    (hEntry : ¬ redundantEntryDSPrefix acc entry) :
+    NoRedundantEntryDS (acc ++ [entry]) := by
+  intro i hi
+  have hi' : i < acc.length + 1 := by simpa using hi
+  by_cases hlt : i < acc.length
+  · have hOld :
+      ¬ redundantEntryDSPrefix (acc.take i) acc[i] := hAcc i hlt
+    simpa [List.take_append_of_le_length (Nat.le_of_lt hlt), List.getElem_append_left hlt]
+      using hOld
+  · have hEq : i = acc.length := Nat.eq_of_lt_succ_of_not_lt hi' hlt
+    subst hEq
+    simpa [List.take_left, redundantEntryDSPrefix] using hEntry
+
+private noncomputable def removeRedundantEntryDSAux
+    (remaining : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (acc : QueryLog (duplexSpongeChallengeOracle StmtIn U)) :
+    QueryLog (duplexSpongeChallengeOracle StmtIn U) := by
+  classical
+  exact match remaining with
+  | [] => acc
+  | entry :: rest =>
+      if hRed : redundantEntryDSPrefix acc entry then
+        removeRedundantEntryDSAux rest acc
+      else
+        removeRedundantEntryDSAux rest (acc ++ [entry])
+
+private lemma removeRedundantEntryDSAux_noRedundant
+    (remaining : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (acc : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (hAcc : NoRedundantEntryDS acc) :
+    NoRedundantEntryDS (removeRedundantEntryDSAux remaining acc) := by
+  classical
+  induction remaining generalizing acc with
+  | nil =>
+      simpa [removeRedundantEntryDSAux] using hAcc
+  | cons entry rest ih =>
+      by_cases hRed : redundantEntryDSPrefix acc entry
+      · simpa [removeRedundantEntryDSAux, hRed] using ih acc hAcc
+      · let hAcc' := noRedundantEntryDS_append_singleton acc entry hAcc hRed
+        simpa [removeRedundantEntryDSAux, hRed] using ih (acc ++ [entry]) hAcc'
 
 /-- Procedure to remove all redundant queries from the duplex sponge query-answer trace -/
-def removeRedundantEntryDS (log : QueryLog (duplexSpongeChallengeOracle StmtIn U)) :
-    {log : QueryLog (duplexSpongeChallengeOracle StmtIn U) | log.NoRedundantEntryDS} :=
-  sorry
+noncomputable def removeRedundantEntryDS
+    (log : QueryLog (duplexSpongeChallengeOracle StmtIn U)) :
+    {baseTrace : QueryLog (duplexSpongeChallengeOracle StmtIn U) |
+      NoRedundantEntryDS baseTrace} := by
+  refine ⟨removeRedundantEntryDSAux log [], ?_⟩
+  simpa using removeRedundantEntryDSAux_noRedundant
+    log [] (noRedundantEntryDS_nil (StmtIn := StmtIn) (U := U))
 
 namespace BadEventDS
 
@@ -86,6 +139,8 @@ and `p⁻¹` -/
 indexing is from 0 or from 1. We assume they mean from 1, and since indexing here is from 0, we just
 write `∃ j`. -/
 
+/-- Definition 5.7 Eq. (23), with all five prior-entry branches explicit:
+`h` output, `p` output, `p⁻¹` output, `p` input, `p⁻¹` input. -/
 def capacitySegmentDupHash : Prop :=
   let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
   ∃ j : Fin baseTrace.length, ∃ capSeg : Vector U SpongeSize.C,
@@ -152,11 +207,13 @@ alias E_dup := capacitySegmentDup
 and `p⁻¹` -/
 def notFunction : Prop :=
   let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
-  ∃ j : Fin baseTrace.length, ∃ stateIn _stateOut : CanonicalSpongeState U,
-    baseTrace[j] = ⟨.inr <|.inl stateIn, _stateOut⟩ ∧
+  ∃ j : Fin baseTrace.length, ∃ stateIn stateOut : CanonicalSpongeState U,
+    baseTrace[j] = ⟨.inr <|.inl stateIn, stateOut⟩ ∧
       ∃ j' < j,
-        ∃ stateOut1 : CanonicalSpongeState U, baseTrace[j'] = ⟨.inr <|.inl stateIn, stateOut1⟩ ∨
-        ∃ stateOut2 : CanonicalSpongeState U, baseTrace[j'] = ⟨.inr <|.inr stateOut2, stateIn⟩
+        (∃ stateOut1 : CanonicalSpongeState U,
+          baseTrace[j'] = ⟨.inr <|.inl stateIn, stateOut1⟩ ∧ stateOut1 ≠ stateOut) ∨
+        (∃ stateOut2 : CanonicalSpongeState U,
+          baseTrace[j'] = ⟨.inr <|.inr stateOut2, stateIn⟩ ∧ stateOut2 ≠ stateOut)
 
 alias E_func := notFunction
 
@@ -164,6 +221,86 @@ def combined : Prop :=
   capacitySegmentDup trace ∨ notFunction trace
 
 alias E := combined
+
+/-- Lemma 5.8 bound on the bad-event probability in either experiment. -/
+noncomputable def lemma5_8Bound (U : Type) [SpongeUnit U] [SpongeSize] [Fintype U]
+    (tₕ tₚ tₚᵢ L : ℕ) : ℝ :=
+  let tShift : ℝ := (tₕ + 1 + tₚ + L + tₚᵢ : ℕ)
+  (7 * tShift ^ 2 - 3 * tShift) / (2 * ((Fintype.card U : ℕ) : ℝ) ^ SpongeSize.C)
+
+/--
+Lemma 5.8 (paper-facing): for any `(tₕ, tₚ, tₚᵢ)`-query setting with `tₚ ≥ L`,
+the bad-event probability is bounded in both Section 5.6 experiments.
+-/
+theorem lemma_5_8
+    [Fintype U]
+    (traceDistS traceDistSigma : ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U)))
+    (tₕ tₚ tₚᵢ L : ℕ)
+    (hTp : tₚ ≥ L) :
+    max
+        (Pr[fun tr => BadEventDS.E tr | traceDistS])
+        (Pr[fun tr => BadEventDS.E tr | traceDistSigma])
+      ≤ ENNReal.ofReal (lemma5_8Bound U tₕ tₚ tₚᵢ L) := by
+  sorry
+
+/-- Run a concrete DS experiment under an oracle implementation and return its full DS trace. -/
+def traceDistOfConcreteExperiment
+    {σ α : Type}
+    (init : ProbComp σ)
+    (impl : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σ ProbComp))
+    (exp : OracleComp (duplexSpongeChallengeOracle StmtIn U) α) :
+    ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U)) := do
+  let outWithLog :
+      OracleComp (duplexSpongeChallengeOracle StmtIn U)
+        (α × QueryLog (duplexSpongeChallengeOracle StmtIn U)) :=
+    (simulateQ loggingOracle exp).run
+  let ⟨_, trace⟩ ← (simulateQ impl outWithLog).run' (← init)
+  pure trace
+
+/-- Concrete paired experiments for Lemma 5.8 (`S` and `Σ` traces). -/
+structure Lemma5_8Experiments where
+  σS : Type
+  αS : Type
+  initS : ProbComp σS
+  implS : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σS ProbComp)
+  expS : OracleComp (duplexSpongeChallengeOracle StmtIn U) αS
+  σSigma : Type
+  αSigma : Type
+  initSigma : ProbComp σSigma
+  implSigma : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σSigma ProbComp)
+  expSigma : OracleComp (duplexSpongeChallengeOracle StmtIn U) αSigma
+
+/-- DS trace distribution of the concrete `S` experiment in Lemma 5.8. -/
+def Lemma5_8Experiments.traceDistS
+    (experiments : Lemma5_8Experiments (StmtIn := StmtIn) (U := U)) :
+    ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U)) :=
+  traceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
+    experiments.initS experiments.implS experiments.expS
+
+/-- DS trace distribution of the concrete `Σ` experiment in Lemma 5.8. -/
+def Lemma5_8Experiments.traceDistSigma
+    (experiments : Lemma5_8Experiments (StmtIn := StmtIn) (U := U)) :
+    ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U)) :=
+  traceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
+    experiments.initSigma experiments.implSigma experiments.expSigma
+
+/-- Lemma 5.8 in concrete experiment form (paired `S`/`Σ` experiment objects). -/
+theorem lemma_5_8_concrete
+    [Fintype U]
+    (experiments : Lemma5_8Experiments (StmtIn := StmtIn) (U := U))
+    (tₕ tₚ tₚᵢ L : ℕ)
+    (hTp : tₚ ≥ L) :
+    max
+        (Pr[fun tr => BadEventDS.E tr | experiments.traceDistS])
+        (Pr[fun tr => BadEventDS.E tr | experiments.traceDistSigma])
+      ≤ ENNReal.ofReal (lemma5_8Bound U tₕ tₚ tₚᵢ L) := by
+  simpa [Lemma5_8Experiments.traceDistS, Lemma5_8Experiments.traceDistSigma] using
+    (lemma_5_8 (StmtIn := StmtIn) (U := U)
+      (traceDistS := traceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
+        experiments.initS experiments.implS experiments.expS)
+      (traceDistSigma := traceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
+        experiments.initSigma experiments.implSigma experiments.expSigma)
+      tₕ tₚ tₚᵢ L hTp)
 
 /-! Then we define other bad events that don't hold (`= 0`)
 if the combined event doesn't hold (`= 0`)
@@ -187,6 +324,7 @@ def collisionBwdBwd : Prop :=
 
 alias E_col_pinv := collisionBwdBwd
 
+/-- Staged mixed-collision predicate used by the current `lemma_5_10` proof chain. -/
 def collisionFwdBwd : Prop :=
   let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
   ∃ stateIn stateOut stateOut',
@@ -196,6 +334,7 @@ def collisionFwdBwd : Prop :=
 
 alias E_col_p_pinv := collisionFwdBwd
 
+/-- Staged mixed-collision predicate used by the current `lemma_5_10` proof chain. -/
 def collisionBwdFwd : Prop :=
   let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
   ∃ stateIn stateOut stateOut',
@@ -208,9 +347,59 @@ alias E_col_pinv_p := collisionBwdFwd
 def collisionPerm : Prop :=
   collisionFwdFwd trace ∨ collisionBwdBwd trace ∨ collisionFwdBwd trace ∨ collisionBwdFwd trace
 
-alias E_prp := collisionPerm
+/-- Staged `E_prp` surface kept for compatibility with existing proved helper chains. -/
+alias E_prp_staged := collisionPerm
 
-lemma not_collisionPerm_of_not_combined (h : ¬ E trace) : ¬ E_prp trace := by
+/-- Definition 5.9 Item 3 in exact paper shape (`E_{col,p,p^{-1}}`). -/
+def collisionFwdBwdPaper : Prop :=
+  let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
+  ∃ stateIn stateOut stateIn',
+    ⟨.inr <| .inl stateIn, stateOut⟩ ∈ baseTrace ∧
+    ⟨.inr <| .inr stateOut, stateIn'⟩ ∈ baseTrace ∧
+    stateIn ≠ stateIn'
+
+alias E_col_p_pinv_paper := collisionFwdBwdPaper
+
+/-- Definition 5.9 Item 4 in exact paper shape (`E_{col,p^{-1},p}`). -/
+def collisionBwdFwdPaper : Prop :=
+  let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
+  ∃ stateOut stateIn stateOut',
+    ⟨.inr <| .inr stateOut, stateIn⟩ ∈ baseTrace ∧
+    ⟨.inr <| .inl stateIn, stateOut'⟩ ∈ baseTrace ∧
+    stateOut ≠ stateOut'
+
+alias E_col_pinv_p_paper := collisionBwdFwdPaper
+
+/-- Definition 5.9 in exact paper form, preserving `p,p⁻¹` and `p⁻¹,p` mixed collisions. -/
+def collisionPermPaper : Prop :=
+  collisionFwdFwd trace ∨ collisionBwdBwd trace
+    ∨ collisionFwdBwdPaper trace ∨ collisionBwdFwdPaper trace
+
+alias E_prp := collisionPermPaper
+
+alias E_prp_paper := collisionPermPaper
+
+/--
+Paper-level `(h,p,p⁻¹)` trace consistency on the base trace `tr̄`:
+if both `p` and `p⁻¹` entries appear on the same middle state, they must agree on the opposite
+endpoint.
+
+This is the explicit well-formedness side condition needed for the Section 5.6 → Definition 5.9
+bridge over arbitrary Lean traces.
+-/
+def PaperTraceConsistent : Prop :=
+  let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
+  (∀ stateIn stateOut stateIn',
+      ⟨.inr <| .inl stateIn, stateOut⟩ ∈ baseTrace →
+      ⟨.inr <| .inr stateOut, stateIn'⟩ ∈ baseTrace →
+      stateIn = stateIn') ∧
+  (∀ stateOut stateIn stateOut',
+      ⟨.inr <| .inr stateOut, stateIn⟩ ∈ baseTrace →
+      ⟨.inr <| .inl stateIn, stateOut'⟩ ∈ baseTrace →
+      stateOut = stateOut')
+
+/-- Staged helper used by the current concrete proof script in this file. -/
+lemma not_collisionPermStaged_of_not_combined (h : ¬ E trace) : ¬ E_prp_staged trace := by
   intro hprp
   apply h; clear h
   rcases hprp with hff | hbb | hfb | hbf
@@ -292,47 +481,400 @@ lemma not_collisionPerm_of_not_combined (h : ¬ E trace) : ¬ E_prp trace := by
       right; left
       exact ⟨⟨j, hj⟩, h_lt, sO', sI, hgj, rfl⟩
 
-/- TODO: these events / predicates depend on the definition of backtracking sequence family and
-indices -/
+/--
+Paper-facing helper for Lemma 5.10:
+for a well-formed `(h,p,p⁻¹)` trace, if `E(tr) = 0`,
+then the exact paper-form `E_prp(tr)` does not hold.
+-/
+lemma not_collisionPerm_of_not_combined
+    (hTrace : PaperTraceConsistent trace)
+    (h : ¬ E trace) : ¬ E_prp trace := by
+  intro hprp
+  rcases hprp with hff | hbb | hfb | hbf
+  · exact (not_collisionPermStaged_of_not_combined (trace := trace) h) (Or.inl hff)
+  · exact (not_collisionPermStaged_of_not_combined (trace := trace) h) (Or.inr (Or.inl hbb))
+  · rcases hTrace with ⟨hFwdBwd, _⟩
+    rcases hfb with ⟨stateIn, stateOut, stateIn', hm1, hm2, hne⟩
+    exact hne (hFwdBwd stateIn stateOut stateIn' hm1 hm2)
+  · rcases hTrace with ⟨_, hBwdFwd⟩
+    rcases hbf with ⟨stateOut, stateIn, stateOut', hm1, hm2, hne⟩
+    exact hne (hBwdFwd stateOut stateIn stateOut' hm1 hm2)
 
-def inv : Prop :=
-  -- NOTE: placeholder for now
-  trace = [] ∧ state = 0
+/- Core Section 5.6 predicates, written in a paper-facing style. -/
 
-alias E_inv := inv
+def invCore (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (state : CanonicalSpongeState U) : Prop :=
+  ∃ stateOut stateIn : CanonicalSpongeState U,
+    ⟨.inr (.inr stateOut), stateIn⟩ ∈ trace ∧
+      stateIn.capacitySegment = state.capacitySegment
+
+/-- Definition 5.11 paper-form event `E_inv(tr,s)`. -/
+abbrev E_inv
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (state : CanonicalSpongeState U) : Prop :=
+  invCore trace state
+
+def forkCore (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (_state : CanonicalSpongeState U) : Prop :=
+  (∃ stateIn stateOut1 stateOut2 : CanonicalSpongeState U,
+    stateOut1 ≠ stateOut2 ∧
+      ⟨.inr (.inl stateIn), stateOut1⟩ ∈ trace ∧
+      ⟨.inr (.inl stateIn), stateOut2⟩ ∈ trace)
+  ∨
+  (∃ stateOut stateIn1 stateIn2 : CanonicalSpongeState U,
+    stateIn1 ≠ stateIn2 ∧
+      ⟨.inr (.inr stateOut), stateIn1⟩ ∈ trace ∧
+      ⟨.inr (.inr stateOut), stateIn2⟩ ∈ trace)
+
+/-- Definition 5.13 paper-form event `E_fork(tr,s)`. -/
+abbrev E_fork
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (state : CanonicalSpongeState U) : Prop :=
+  forkCore trace state
+
+def outOfOrderHashCore (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (_state : CanonicalSpongeState U) : Prop :=
+  ∃ jh : Fin trace.length, ∃ jp : Fin trace.length,
+    jp < jh ∧
+      ∃ stmt : StmtIn, ∃ capSeg : Vector U SpongeSize.C,
+        List.get trace jh = ⟨.inl stmt, capSeg⟩ ∧
+        ∃ stateIn stateOut : CanonicalSpongeState U,
+          List.get trace jp = ⟨.inr (.inl stateIn), stateOut⟩ ∧
+            stateIn.capacitySegment = capSeg
+
+/-- Definition 5.15 paper-form event `E_time_h(tr,s)`. -/
+abbrev E_time_h
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (state : CanonicalSpongeState U) : Prop :=
+  outOfOrderHashCore trace state
+
+def outOfOrderPermCore (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (_state : CanonicalSpongeState U) : Prop :=
+  ∃ j : Fin trace.length, ∃ j' : Fin trace.length,
+    j' < j ∧
+      ∃ sIn sMid sOut : CanonicalSpongeState U,
+        List.get trace j = ⟨.inr (.inl sMid), sOut⟩ ∧
+          List.get trace j' = ⟨.inr (.inl sIn), sMid⟩
+
+/-- Definition 5.15 paper-form event `E_time_p(tr,s)`. -/
+abbrev E_time_p
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (state : CanonicalSpongeState U) : Prop :=
+  outOfOrderPermCore trace state
+
+/-- Definition 5.15 paper-form event `E_time(tr,s)`. -/
+abbrev E_time
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (state : CanonicalSpongeState U) : Prop :=
+  E_time_h (StmtIn := StmtIn) (U := U) trace state
+    ∨ E_time_p (StmtIn := StmtIn) (U := U) trace state
+
+/-- Definition 5.11 paper-form event `E_inv(tr,s)` (without staging conjunction). -/
+abbrev E_inv_paper
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (state : CanonicalSpongeState U) : Prop :=
+  E_inv (StmtIn := StmtIn) (U := U) trace state
+
+/-- Definition 5.13 paper-form event `E_fork(tr,s)` (without staging conjunction). -/
+abbrev E_fork_paper
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (state : CanonicalSpongeState U) : Prop :=
+  E_fork (StmtIn := StmtIn) (U := U) trace state
+
+/-- Definition 5.15 paper-form event `E_time_h(tr,s)` (without staging conjunction). -/
+abbrev E_time_h_paper
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (state : CanonicalSpongeState U) : Prop :=
+  E_time_h (StmtIn := StmtIn) (U := U) trace state
+
+/-- Definition 5.15 paper-form event `E_time_p(tr,s)` (without staging conjunction). -/
+abbrev E_time_p_paper
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (state : CanonicalSpongeState U) : Prop :=
+  E_time_p (StmtIn := StmtIn) (U := U) trace state
+
+/-- Definition 5.15 paper-form event `E_time(tr,s)` (without staging conjunction). -/
+abbrev E_time_paper
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (state : CanonicalSpongeState U) : Prop :=
+  E_time (StmtIn := StmtIn) (U := U) trace state
+
+/--
+Lemma 5.10 (paper-facing):
+for a well-formed `(h,p,p⁻¹)` trace, if `E(tr) = 0` then `E_prp(tr) = 0`.
+-/
+lemma lemma_5_10 (hTrace : PaperTraceConsistent trace) (h : ¬ E trace) : ¬ E_prp trace :=
+  not_collisionPerm_of_not_combined (trace := trace) hTrace h
+
+/--
+Support-level packaging for the paper trace consistency side condition:
+all traces in the support satisfy `PaperTraceConsistent`.
+-/
+def paperTraceConsistentOnSupport
+    (traceDist : ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U))) : Prop :=
+  ∀ tr ∈ support traceDist, PaperTraceConsistent (StmtIn := StmtIn) (U := U) tr
+
+/-- Concrete `S` experiment package carries paper-trace consistency on support. -/
+def Lemma5_8Experiments.paperTraceConsistentS
+    (experiments : Lemma5_8Experiments (StmtIn := StmtIn) (U := U)) : Prop :=
+  paperTraceConsistentOnSupport (StmtIn := StmtIn) (U := U) experiments.traceDistS
+
+/-- Concrete `Σ` experiment package carries paper-trace consistency on support. -/
+def Lemma5_8Experiments.paperTraceConsistentSigma
+    (experiments : Lemma5_8Experiments (StmtIn := StmtIn) (U := U)) : Prop :=
+  paperTraceConsistentOnSupport (StmtIn := StmtIn) (U := U) experiments.traceDistSigma
+
+/--
+Concrete Section 5.6 experiment package with explicit paper-trace consistency witnesses on support.
+-/
+structure Lemma5_8ExperimentsPaper extends Lemma5_8Experiments (StmtIn := StmtIn) (U := U) where
+  paperConsS :
+    paperTraceConsistentOnSupport (StmtIn := StmtIn) (U := U)
+      (traceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
+        toLemma5_8Experiments.initS
+        toLemma5_8Experiments.implS
+        toLemma5_8Experiments.expS)
+  paperConsSigma :
+    paperTraceConsistentOnSupport (StmtIn := StmtIn) (U := U)
+      (traceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
+        toLemma5_8Experiments.initSigma
+        toLemma5_8Experiments.implSigma
+        toLemma5_8Experiments.expSigma)
+
+/--
+No backward `p⁻¹` entries occur in the base trace.
+
+This is a sufficient condition for `PaperTraceConsistent`.
+-/
+def NoBackwardInBaseTrace
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
+  let ⟨baseTrace, _⟩ := removeRedundantEntryDS trace
+  ∀ stateOut stateIn, ⟨.inr (.inr stateOut), stateIn⟩ ∉ baseTrace
+
+/--
+If the base trace has no backward entries, then the paper trace-consistency predicate holds
+trivially.
+-/
+lemma paperTraceConsistent_of_noBackwardInBaseTrace
+    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    (hNoBwd : NoBackwardInBaseTrace (StmtIn := StmtIn) (U := U) trace) :
+    PaperTraceConsistent (StmtIn := StmtIn) (U := U) trace := by
+  dsimp [PaperTraceConsistent, NoBackwardInBaseTrace] at *
+  constructor
+  · intro stateIn stateOut stateIn' _ hmBwd
+    exact False.elim (hNoBwd stateOut stateIn' hmBwd)
+  · intro stateOut stateIn stateOut' hmBwd _
+    exact False.elim (hNoBwd stateOut stateIn hmBwd)
+
+/--
+Support-level packaging of `NoBackwardInBaseTrace`.
+-/
+def noBackwardInBaseTraceOnSupport
+    (traceDist : ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U))) : Prop :=
+  ∀ tr ∈ support traceDist, NoBackwardInBaseTrace (StmtIn := StmtIn) (U := U) tr
+
+/--
+Support-level no-backward condition implies support-level paper consistency.
+-/
+lemma paperTraceConsistentOnSupport_of_noBackwardInBaseTraceOnSupport
+    {traceDist : ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U))}
+    (hNoBwd :
+      noBackwardInBaseTraceOnSupport (StmtIn := StmtIn) (U := U) traceDist) :
+    paperTraceConsistentOnSupport (StmtIn := StmtIn) (U := U) traceDist := by
+  intro tr hMem
+  exact paperTraceConsistent_of_noBackwardInBaseTrace
+    (StmtIn := StmtIn) (U := U) (hNoBwd tr hMem)
+
+section ConcreteSection58Instantiations
+
+variable {n : ℕ} {pSpec : ProtocolSpec n}
+  [HasMessageSize pSpec] [HasChallengeSize pSpec] [DecidableEq StmtIn] [DecidableEq U]
+  [SampleableType U]
+
+/--
+Concrete Lemma 5.8 paired experiments where:
+- `S` uses an explicit "real" DS query implementation;
+- `Σ` uses the Section 5.4 simulator core (`d2sQueryImplCoreProb`) with uniform unit sampling.
+-/
+noncomputable def Lemma5_8Experiments.realVsSimulator
+    {σReal αS αSigma : Type}
+    (initReal : ProbComp σReal)
+    (implReal : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σReal ProbComp))
+    (expS : OracleComp (duplexSpongeChallengeOracle StmtIn U) αS)
+    (simParams : DuplexSpongeFS.D2SQueryParams
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+    (expSigma : OracleComp (duplexSpongeChallengeOracle StmtIn U) αSigma)
+    (onSimAbort :
+      (q : (duplexSpongeChallengeOracle StmtIn U).Domain) →
+        DuplexSpongeFS.D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) →
+          (duplexSpongeChallengeOracle StmtIn U).Range q ×
+            DuplexSpongeFS.D2SQueryState
+              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) :=
+      DuplexSpongeFS.d2sQueryAbortFallback
+        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :
+    Lemma5_8Experiments (StmtIn := StmtIn) (U := U) where
+  σS := σReal
+  αS := αS
+  initS := initReal
+  implS := implReal
+  expS := expS
+  σSigma := DuplexSpongeFS.D2SQueryState
+    (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+  αSigma := αSigma
+  initSigma := pure default
+  implSigma :=
+    DuplexSpongeFS.d2sQueryImplCoreProb
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+      (unitImpl := DuplexSpongeFS.d2sUnitSampleImpl (U := U))
+      (params := simParams)
+      (onAbort := onSimAbort)
+  expSigma := expSigma
+
+/--
+Concrete Lemma 5.8 paper package for the `real-vs-simulator` instantiation.
+
+The two support-level consistency obligations are now explicit arguments over concrete traces.
+-/
+noncomputable def Lemma5_8ExperimentsPaper.realVsSimulator
+    {σReal αS αSigma : Type}
+    (initReal : ProbComp σReal)
+    (implReal : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σReal ProbComp))
+    (expS : OracleComp (duplexSpongeChallengeOracle StmtIn U) αS)
+    (simParams : DuplexSpongeFS.D2SQueryParams
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+    (expSigma : OracleComp (duplexSpongeChallengeOracle StmtIn U) αSigma)
+    (onSimAbort :
+      (q : (duplexSpongeChallengeOracle StmtIn U).Domain) →
+        DuplexSpongeFS.D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) →
+          (duplexSpongeChallengeOracle StmtIn U).Range q ×
+            DuplexSpongeFS.D2SQueryState
+              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) :=
+      DuplexSpongeFS.d2sQueryAbortFallback
+        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+    (paperConsS :
+      paperTraceConsistentOnSupport (StmtIn := StmtIn) (U := U)
+        (traceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
+          initReal implReal expS))
+    (paperConsSigma :
+      paperTraceConsistentOnSupport (StmtIn := StmtIn) (U := U)
+        (traceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
+          (pure default)
+          (DuplexSpongeFS.d2sQueryImplCoreProb
+            (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+            (unitImpl := DuplexSpongeFS.d2sUnitSampleImpl (U := U))
+            (params := simParams)
+            (onAbort := onSimAbort))
+          expSigma)) :
+    Lemma5_8ExperimentsPaper (StmtIn := StmtIn) (U := U) where
+  toLemma5_8Experiments :=
+    Lemma5_8Experiments.realVsSimulator
+      (StmtIn := StmtIn) (U := U)
+      initReal implReal expS simParams expSigma onSimAbort
+  paperConsS := paperConsS
+  paperConsSigma := paperConsSigma
+
+end ConcreteSection58Instantiations
+
+/--
+Lemma 5.10 instantiated from a support-level experiment invariant.
+-/
+lemma lemma_5_10_of_mem_support
+    {traceDist : ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U))}
+    (hCons : paperTraceConsistentOnSupport (StmtIn := StmtIn) (U := U) traceDist)
+    {tr : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    (hMem : tr ∈ support traceDist)
+    (h : ¬ E (trace := tr)) :
+    ¬ E_prp (trace := tr) := by
+  exact lemma_5_10 (trace := tr) (hTrace := hCons tr hMem) h
+
+/--
+Lemma 5.10 instantiated for traces sampled in the concrete `S` experiment package.
+-/
+lemma Lemma5_8Experiments.lemma_5_10_S_of_mem_support
+    (experiments : Lemma5_8Experiments (StmtIn := StmtIn) (U := U))
+    (hCons : experiments.paperTraceConsistentS)
+    {tr : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    (hMem : tr ∈ support experiments.traceDistS)
+    (h : ¬ E (trace := tr)) :
+    ¬ E_prp (trace := tr) := by
+  exact lemma_5_10_of_mem_support (StmtIn := StmtIn) (U := U)
+    (traceDist := experiments.traceDistS) hCons hMem h
+
+/--
+Lemma 5.10 instantiated for traces sampled in the concrete `Σ` experiment package.
+-/
+lemma Lemma5_8Experiments.lemma_5_10_Sigma_of_mem_support
+    (experiments : Lemma5_8Experiments (StmtIn := StmtIn) (U := U))
+    (hCons : experiments.paperTraceConsistentSigma)
+    {tr : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    (hMem : tr ∈ support experiments.traceDistSigma)
+    (h : ¬ E (trace := tr)) :
+    ¬ E_prp (trace := tr) := by
+  exact lemma_5_10_of_mem_support (StmtIn := StmtIn) (U := U)
+    (traceDist := experiments.traceDistSigma) hCons hMem h
+
+/--
+Lemma 5.10 instantiated for traces sampled in a concrete Section 5.6 `S` package with
+built-in support consistency.
+-/
+lemma Lemma5_8ExperimentsPaper.lemma_5_10_S_of_mem_support
+    (experiments : Lemma5_8ExperimentsPaper (StmtIn := StmtIn) (U := U))
+    {tr : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    (hMem : tr ∈ support
+      (Lemma5_8Experiments.traceDistS (StmtIn := StmtIn) (U := U)
+        experiments.toLemma5_8Experiments))
+    (h : ¬ E (trace := tr)) :
+    ¬ E_prp (trace := tr) := by
+  exact Lemma5_8Experiments.lemma_5_10_S_of_mem_support
+    (StmtIn := StmtIn) (U := U)
+    experiments.toLemma5_8Experiments experiments.paperConsS hMem h
+
+/--
+Lemma 5.10 instantiated for traces sampled in a concrete Section 5.6 `Σ` package with
+built-in support consistency.
+-/
+lemma Lemma5_8ExperimentsPaper.lemma_5_10_Sigma_of_mem_support
+    (experiments : Lemma5_8ExperimentsPaper (StmtIn := StmtIn) (U := U))
+    {tr : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    (hMem : tr ∈ support
+      (Lemma5_8Experiments.traceDistSigma (StmtIn := StmtIn) (U := U)
+        experiments.toLemma5_8Experiments))
+    (h : ¬ E (trace := tr)) :
+    ¬ E_prp (trace := tr) := by
+  exact Lemma5_8Experiments.lemma_5_10_Sigma_of_mem_support
+    (StmtIn := StmtIn) (U := U)
+    experiments.toLemma5_8Experiments experiments.paperConsSigma hMem h
+
+/-- Lemma 5.12 (paper-facing): if `E(tr) = 0` then `E_inv(tr, s) = 0`. -/
+lemma lemma_5_12 (h : ¬ E trace) : ¬ E_inv_paper trace state := by
+  sorry
+
+/-- Lemma 5.14 (paper-facing): if `E(tr) = 0` then `E_fork(tr, s) = 0`. -/
+lemma lemma_5_14 (h : ¬ E trace) : ¬ E_fork_paper trace state := by
+  sorry
+
+/-- Lemma 5.16 (paper-facing): if `E(tr) = 0` then `E_time(tr, s) = 0`. -/
+lemma lemma_5_16 (h : ¬ E trace) : ¬ E_time_paper trace state := by
+  sorry
 
 lemma not_inv_of_not_combined (h : ¬ E trace) : ¬ E_inv trace state :=
-  sorry
-
-def fork : Prop :=
-  -- NOTE: placeholder for now
-  trace = [] ∧ state = 0
-
-alias E_fork := fork
+  by simpa [E_inv_paper] using (lemma_5_12 (trace := trace) (state := state) h)
 
 lemma not_fork_of_not_combined (h : ¬ E trace) : ¬ E_fork trace state :=
-  sorry
-
-
-def outOfOrderHash : Prop :=
-  -- NOTE: placeholder for now
-  trace = [] ∧ state = 0
-
-alias E_time_h := outOfOrderHash
-
-def outOfOrderPerm : Prop :=
-  -- NOTE: placeholder for now
-  trace = [] ∧ state = 0
-
-alias E_time_p := outOfOrderPerm
-
-def outOfOrder : Prop :=
-  outOfOrderHash trace state ∨ outOfOrderPerm trace state
-
-alias E_time := outOfOrder
+  by simpa [E_fork_paper] using (lemma_5_14 (trace := trace) (state := state) h)
 
 lemma not_outOfOrder_of_not_combined (h : ¬ E trace) : ¬ E_time trace state :=
-  sorry
+  by simpa [E_time_paper] using (lemma_5_16 (trace := trace) (state := state) h)
+
+/-- Compatibility wrappers preserved as aliases to paper-form lemmas. -/
+lemma lemma_5_12_staged (h : ¬ E trace) : ¬ E_inv trace state :=
+  lemma_5_12 (trace := trace) (state := state) h
+
+lemma lemma_5_14_staged (h : ¬ E trace) : ¬ E_fork trace state :=
+  lemma_5_14 (trace := trace) (state := state) h
+
+lemma lemma_5_16_staged (h : ¬ E trace) : ¬ E_time trace state :=
+  lemma_5_16 (trace := trace) (state := state) h
 
 end BadEventDS
 

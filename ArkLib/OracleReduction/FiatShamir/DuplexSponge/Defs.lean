@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao
+Authors: Quang Dao, Chung Thai Nguyen
 -/
 
 import ArkLib.Data.Hash.DuplexSponge
@@ -12,8 +12,10 @@ import ArkLib.OracleReduction.FiatShamir.Basic
 
 We define the (multi-round) Fiat-Shamir transformation using duplex sponges.
 
-NOTE: we currently do _not_ define the salt explicitly. The salted version of the transform can be
-obtained via applying the transform to the protocol with the added salt as the first message.
+This file provides:
+- an unsalted DSFS surface (`duplexSpongeFiatShamir`) used by existing Section 5 machinery, and
+- an explicit salted surface (`duplexSpongeFiatShamirSalted`) matching Construction 4.3 shape,
+  where a salt `τ ∈ Σ^δ` is absorbed before round processing and included in the proof string.
 -/
 
 namespace ProtocolSpec
@@ -38,35 +40,35 @@ variable (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
     [HasChallengeSize pSpec] [∀ i, Deserialize (pSpec.Challenge i) (Vector U (challengeSize i))]
 
 /-- Number of queries to the permutation oracle needed to absorb the `i`-th message of the
-  protocol specification. This is `Lₚ(i)` in the paper (Equation 7). -/
+  protocol specification. This is `Lₚ(i)` in the paper block-count notation (Equation 6). -/
 def numPermQueriesMessage (i : pSpec.MessageIdx) : Nat :=
   Nat.ceil ((messageSize i : ℚ) / SpongeSize.R)
 
 alias Lₚᵢ := numPermQueriesMessage
 
 /-- Total number of queries to the permutation oracle needed to absorb all messages of the
-  protocol specification. This is `Lₚ` in the paper (Equation 8). -/
+  protocol specification. This is `Lₚ` in the paper block-count notation (Equation 7). -/
 def totalNumPermQueriesMessage : Nat :=
   ∑ i, pSpec.Lₚᵢ i
 
 /-- Number of queries to the permutation oracle needed to absorb the `i`-th challenge of the
-  protocol specification. This is `Lᵥ(i)` in the paper (Equation 7). -/
+  protocol specification. This is `Lᵥ(i)` in the paper block-count notation (Equation 6). -/
 def numPermQueriesChallenge (i : pSpec.ChallengeIdx) : Nat :=
   Nat.ceil ((challengeSize i : ℚ) / SpongeSize.R)
 
 alias Lᵥᵢ := numPermQueriesChallenge
 
 /-- Total number of queries to the permutation oracle needed to absorb all challenges of the
-  protocol specification. This is `Lᵥ` in the paper (Equation 8). -/
+  protocol specification. This is `Lᵥ` in the paper block-count notation (Equation 7). -/
 def totalNumPermQueriesChallenge : Nat :=
   ∑ i, pSpec.Lᵥᵢ i
 
 /-- Total number of queries to the permutation oracle needed to absorb all messages and challenges
-  of the protocol specification. This is `L` in the paper (Equation 8). -/
+  of the protocol specification. This is `L` in the paper block-count notation (Equation 7). -/
 def totalNumPermQueries : Nat :=
   pSpec.totalNumPermQueriesMessage + pSpec.totalNumPermQueriesChallenge
 
-/-- The oracle specification for duplex sponge Fiat-Shamir (Equation 16, written as `𝒟_Σ`).
+/-- The oracle specification for duplex sponge Fiat-Shamir (Equation 14, written as `𝒟_Σ`).
 It is indexed over the challenge rounds of the protocol specification, and for each such round `i`:
 - The input is the input statement `stmtIn` and, for each `j < i` that is a message round,
   a vector of units of size `Lₚ(j)` (the number of queries to the permutation oracle needed to
@@ -74,10 +76,18 @@ It is indexed over the challenge rounds of the protocol specification, and for e
 - The output is a vector of units of size `Lᵥ(i)` (the number of queries to the permutation oracle
   needed to absorb the `i`-th challenge) -/
 def duplexSpongeHybridOracle : OracleSpec
-    ((i : pSpec.ChallengeIdx) × StmtIn × ((j : pSpec.MessageIdx) → (j.1 < i.1) → Vector U (pSpec.Lₚᵢ j))) :=
+    ((i : pSpec.ChallengeIdx) × StmtIn ×
+      ((j : pSpec.MessageIdx) → (j.1 < i.1) → Vector U (pSpec.Lₚᵢ j))) :=
   fun i => Vector U (pSpec.Lᵥᵢ i.1)
 
 alias «𝒟_Σ» := duplexSpongeHybridOracle
+
+/-- Salted variant of Equation 14 (Construction 4.3-facing):
+query keys also include the absorbed salt `τ ∈ Σ^δ`. -/
+def duplexSpongeHybridOracleSalted (δ : Nat) : OracleSpec
+    ((i : pSpec.ChallengeIdx) × StmtIn × Vector U δ ×
+      ((j : pSpec.MessageIdx) → (j.1 < i.1) → Vector U (pSpec.Lₚᵢ j))) :=
+  fun i => Vector U (pSpec.Lᵥᵢ i.1)
 
 end ProtocolSpec
 
@@ -112,6 +122,10 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
   [HasMessageSize pSpec] [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
   -- All challenges are deserializable from an array of units
   [HasChallengeSize pSpec] [∀ i, Deserialize (pSpec.Challenge i) (Vector U (challengeSize i))]
+
+/-- Proof-string format for the salted DSFS surface (`τ` plus prover messages). -/
+abbrev DSSaltedProof (pSpec : ProtocolSpec n) (U : Type) (δ : Nat) :=
+  Vector U δ × (∀ i, pSpec.Message i)
 
 namespace ProtocolSpec.Messages
 
@@ -178,14 +192,16 @@ def Prover.processRoundDSFS [∀ i, VCVCompatible (pSpec.Challenge i)]
   | .V_to_P => do
     let f ← prover.receiveChallenge ⟨j, hDir⟩ state
     let (challenge, newSponge) ←
-      liftM (m := OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)) (DuplexSponge.squeeze sponge (challengeSize ⟨j, hDir⟩))
+      liftM (m := OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U))
+        (DuplexSponge.squeeze sponge (challengeSize ⟨j, hDir⟩))
     -- Deserialize the challenge
     let deserializedChallenge : pSpec.Challenge ⟨j, hDir⟩ := Deserialize.deserialize challenge
     return ⟨messages.extend hDir, newSponge, f deserializedChallenge⟩
   | .P_to_V => do
     let ⟨msg, newState⟩ ← prover.sendMessage ⟨j, hDir⟩ state
     let serializedMessage : Vector U (messageSize ⟨j, hDir⟩) := Serialize.serialize msg
-    let newSponge ← liftM (m := OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)) (DuplexSponge.absorb sponge serializedMessage.toList)
+    let newSponge ← liftM (m := OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U))
+      (DuplexSponge.absorb sponge serializedMessage.toList)
     return ⟨messages.concat hDir msg, newSponge, newState⟩
 
 /--
@@ -245,3 +261,83 @@ def Reduction.duplexSpongeFiatShamir (R : Reduction oSpec StmtIn WitIn StmtOut W
       StmtIn WitIn StmtOut WitOut where
   prover := R.prover.duplexSpongeFiatShamir
   verifier := R.verifier.duplexSpongeFiatShamir
+
+/--
+Derive the full transcript from prover messages after explicitly absorbing a public salt `τ`.
+
+This is the transcript path for the salted Construction 4.3 surface.
+-/
+def ProtocolSpec.Messages.deriveTranscriptDSFSSalted {ι : Type} {oSpec : OracleSpec ι}
+    {StmtIn : Type} {δ : Nat}
+    (stmtIn : StmtIn) (salt : Vector U δ) (messages : pSpec.Messages) :
+    OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
+      (CanonicalDuplexSponge U × pSpec.FullTranscript) := do
+  let sponge0 ← liftM (DuplexSponge.start stmtIn)
+  let sponge ← liftM (DuplexSponge.absorb sponge0 salt.toList)
+  ProtocolSpec.Messages.deriveTranscriptDSFSAux (pSpec := pSpec) (oSpec := oSpec) (U := U)
+    sponge messages (Fin.last n)
+
+/--
+Run the prover up to round `i` after first absorbing an explicit salt `τ`.
+-/
+@[inline, specialize]
+def Prover.runToRoundDSFSSalted [∀ i, VCVCompatible (pSpec.Challenge i)] {δ : Nat}
+    (salt : Vector U δ) (i : Fin (n + 1))
+    (stmt : StmtIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (state : prover.PrvState 0) :
+        OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
+          (pSpec.MessagesUpTo i ×
+            DuplexSponge U (Vector U SpongeSize.N) × prover.PrvState i) :=
+  Fin.induction
+    (do
+      let sponge0 ← liftM (DuplexSponge.start stmt)
+      let sponge ← liftM (DuplexSponge.absorb sponge0 salt.toList)
+      return ⟨default, sponge, state⟩
+    )
+    (prover.processRoundDSFS)
+    i
+
+/-- Salted DSFS prover surface (Construction 4.3-facing). -/
+def Prover.duplexSpongeFiatShamirSalted [∀ i, VCVCompatible (pSpec.Challenge i)] (δ : Nat)
+    (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (sampleSalt : (stmt : StmtIn) → P.PrvState 0 →
+      OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (Vector U δ)) :
+    NonInteractiveProver (DSSaltedProof (pSpec := pSpec) (U := U) δ)
+      (oSpec + duplexSpongeChallengeOracle StmtIn U)
+      StmtIn WitIn StmtOut WitOut where
+  PrvState := fun i => match i with
+    | 0 => StmtIn × P.PrvState 0
+    | _ => P.PrvState (Fin.last n)
+  input := fun ctx => ⟨ctx.1, P.input ctx⟩
+  sendMessage | ⟨0, _⟩ => fun ⟨stmtIn, state⟩ => do
+    let salt ← sampleSalt stmtIn state
+    let ⟨messages, _, state⟩ ← P.runToRoundDSFSSalted (salt := salt) (Fin.last n) stmtIn state
+    return ⟨(salt, messages), state⟩
+  receiveChallenge | ⟨0, h⟩ => nomatch h
+  output := fun st => (P.output st).liftComp _
+
+/-- Salted DSFS verifier surface (Construction 4.3-facing). -/
+def Verifier.duplexSpongeFiatShamirSalted (δ : Nat)
+    (V : Verifier oSpec StmtIn StmtOut pSpec) :
+    NonInteractiveVerifier (DSSaltedProof (pSpec := pSpec) (U := U) δ)
+      (oSpec + duplexSpongeChallengeOracle StmtIn U)
+      StmtIn StmtOut where
+  verify := fun stmtIn proof => do
+    let saltedProof : DSSaltedProof (pSpec := pSpec) (U := U) δ := proof 0
+    let salt : Vector U δ := saltedProof.1
+    let messages : pSpec.Messages := saltedProof.2
+    let ⟨_, transcript⟩ ←
+      messages.deriveTranscriptDSFSSalted (pSpec := pSpec) (oSpec := oSpec) (U := U) stmtIn salt
+    let v ← (V.verify stmtIn transcript).run
+    v.getM
+
+/-- Salted DSFS reduction surface (Construction 4.3-facing). -/
+def Reduction.duplexSpongeFiatShamirSalted [∀ i, VCVCompatible (pSpec.Challenge i)] (δ : Nat)
+    (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (sampleSalt : (stmt : StmtIn) → R.prover.PrvState 0 →
+      OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (Vector U δ)) :
+    NonInteractiveReduction (DSSaltedProof (pSpec := pSpec) (U := U) δ)
+      (oSpec + duplexSpongeChallengeOracle StmtIn U)
+      StmtIn WitIn StmtOut WitOut where
+  prover := R.prover.duplexSpongeFiatShamirSalted (δ := δ) sampleSalt
+  verifier := R.verifier.duplexSpongeFiatShamirSalted (δ := δ)
