@@ -75,8 +75,8 @@ def liftingLens :
               Nat.sub_zero, ReedSolomon.CosetFftDomain.subdomainNatReversed,
               ReedSolomon.CosetFftDomain.subdomainNat, Nat.succ_eq_add_one, Fin.ofNat_eq_cast] at h'
             rw [ReedSolomon.CosetFftDomain.mem_coset_finset_iff_mem_coset_domain] at h'            
-            rw [ReedSolomon.CosetFftDomain.subdomain_n'] at h'
-            exact h'
+            rw [←ReedSolomon.CosetFftDomain.subdomain_n']
+            exact (ReedSolomon.CosetFftDomain.mem_subdomain_of_eq_vals (by simp)).1 h'
           }
           (ostmt 0) ⟨v.1, this⟩ + ∑ j, cs j * ostmt j.succ ⟨v.1, this⟩
     ⟩

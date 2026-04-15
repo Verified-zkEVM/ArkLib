@@ -72,8 +72,6 @@ def cosetEnum (s₀ : evalDomainSigma s ω i) (k_le_n : ∑ j', (s j').1 ≤ n)
             exact Nat.le_of_lt_succ s_i_lim
           rw [this]
           convert h
-          rw [@Nat.mod_succ_eq_iff_lt]
-          exact s_i_lim
       ⟩,
       FftDomain.mem_domain_self
     ⟩
