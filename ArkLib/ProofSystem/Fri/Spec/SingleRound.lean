@@ -90,7 +90,7 @@ def FinalOracleStatement
   : Fin (k + 2) → Type :=
   fun j =>
     if j.1 = k + 1
-    then (Unit → F[X])
+    then F[X]
     else ((ω.subdomainNatReversed (∑ j' ∈ finRangeTo _ j.1, (s j').1)).toFinset → F)
 
 /-- The FRI protocol has as witness the polynomial that is supposed to correspond to the codeword in
@@ -212,8 +212,8 @@ instance finalOracleStatementInterface :
     toOC.spec := fun _ => if j = k + 1 then F[X] else F
     toOC.impl := fun q => do
       if h : j = k + 1 then
-        let st : Unit → F[X] := cast (by simp [FinalOracleStatement, h]) (← read)
-        return cast (by simp [h]) (st ())
+        let st : F[X] := cast (by simp [FinalOracleStatement, h]) (← read)
+        return cast (by simp [h]) st
       else
         let st : (ω.subdomainNatReversed (∑ j' ∈ finRangeTo _ j.1, s j')).toFinset
           → F :=
@@ -611,7 +611,9 @@ noncomputable def finalFoldProver :
           unfold FinalOracleStatement
           if h : j.1 = k + 1
           then
-            sorry
+            simp_all only [↓reduceIte]
+            obtain ⟨val, property⟩ := p
+            exact val
           else
           simpa [h, ↓reduceIte, OracleStatement] using
             o ⟨j.1, Nat.lt_of_le_of_ne (Fin.is_le j) h⟩
@@ -652,7 +654,7 @@ noncomputable def finalFoldVerifier :
       Function.Embedding.coeFn_mk, Message
     ]
     split_ifs with h
-    · sorry
+    · simp
     · rfl
 
 /-- The oracle reduction that is the final folding round of the FRI protocol. -/
@@ -732,10 +734,9 @@ noncomputable instance : ∀ j, Fintype ((pSpec (ω := ω) l).Challenge j) := by
     | zero => rfl
     | succ j1 => exact j1.elim0
   subst h_j_eq_0
-  simp only [Challenge, Nat.succ_eq_add_one, Nat.sub_zero, Fin.ofNat_eq_cast, Fin.val_natCast,
-     Fin.isValue, Fin.vcons_zero]
-  sorry
-
+  simp only [Challenge, Nat.sub_zero, ReedSolomon.CosetFftDomain.mem_coset, Fin.isValue,
+    Fin.vcons_zero]
+  infer_instance
 
 /- Query round prover, does nothing. After BCS transform is applied to
    construct the non-interactive FRI protocol, it will have to respond with
