@@ -12,17 +12,122 @@ import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Field
 
 /-!
-# The FFT domains
+# FFT domains
 
-This module provides a unified treatment of
-evaluation domains used in multiplicative NTTs
-and FRI-based protocols.
+This module develops a unified interface for finite evaluation domains used in
+multiplicative number-theoretic transforms (NTTs), Reed-Solomon encodings, and
+FRI-style protocols.
+
+The guiding idea is that an FFT evaluation domain should be viewed as a finite
+additive indexing group `ι` together with an injective homomorphism into the
+multiplicative group of a field. This lets us treat:
+
+* ordinary multiplicative subgroups,
+* smooth radix-2 domains indexed by `Fin (2^n)`,
+
+within one common framework. Coset FFT domains can be treated similarly.
+
+## Mathematical picture
+
+An `FftDomain ι F` is an injective homomorphism
+
+`ι → Fˣ`
+
+where `ι` is written additively and `Fˣ` multiplicatively.
+
+So if `ω : FftDomain ι F`, then morally one should think of `ω i` as the
+`i`-th point of a multiplicative evaluation domain.
+
+A `CosetFftDomain ι F` is a coset `x · ω`, where `x : Fˣ` is a multiplicative
+shift and `ω` is an underlying FFT domain.
+
+## Main definitions
+
+* `FftDomain`
+  : an injective additive-to-multiplicative group embedding
+* `SmoothFftDomain n F`
+  : an FFT domain indexed by `Fin (2^n)`
+* `CosetFftDomain`
+  : a multiplicative coset of an FFT domain
+* `SmoothCosetFftDomain n F`
+  : a coset of a radix-2 smooth FFT domain
+
+For convenience, domains are coerced to:
+
+* functions `ι → F`,
+* finite sets of evaluation points,
+* subgroups of `Fˣ` in the non-coset case.
+
+## Subdomains
+
+A major theme of the module is the construction of canonical radix-2 subdomains.
+
+For `ω : SmoothFftDomain n F`, the definition
+
+* `FftDomain.subdomain`
+
+produces the unique subdomain of log-size `i ≤ n`, compatible with the standard
+tower of radix-2 subgroups. This is developed further through:
+
+* monotonicity:
+  `FftDomain.subdomain_le`,
+  `FftDomain.subdomain_le_mem`
+* extremal cases:
+  `FftDomain.subdomain_0`,
+  `FftDomain.subdomain_last`
+* power maps:
+  `FftDomain.subdomain_pow_property`,
+  `FftDomain.subdomain_pow_property'`
+* "maps" between subdomains:
+  `FftDomain.subdomain_roots_card`,
+  `FftDomain.subdomain_root_exists`
+
+There are also natural-number indexed wrappers:
+
+* `FftDomain.subdomainNat`
+* `FftDomain.subdomainNatReversed`
+
+which are often more convenient in applications.
+
+## Cosets
+
+For `ω : SmoothCosetFftDomain n F`, the definition
+
+* `CosetFftDomain.subdomain`
+
+gives the corresponding tower of cosets, with the multiplicative shift
+adjusted by the appropriate power.
+
+Important lemmas include:
+
+* `CosetFftDomain.subdomain_pow_property`
+* `CosetFftDomain.subdomain_roots_card`
+* `CosetFftDomain.subdomain_root_exists`
+* `CosetFftDomain.neg_mem_dom_of_mem_dom`
+* `CosetFftDomain.mul_property`
+
+as well as the `subdomainNat` and `subdomainNatReversed` API for cosets.
+
+## Implementation notes
+
+The development is designed to support downstream formalizations of
+Reed-Solomon style protocols, especially settings where one repeatedly moves
+between:
+
+* a large radix-2 domain,
+* its smaller subdomains,
+* multiplicative cosets,
+* and power maps between these domains.
+
+The emphasis is on a reusable algebraic API rather than on any single FFT
+algorithm.
 
 -/
 
 set_option linter.style.induction false
 set_option linter.unusedDecidableInType false
 set_option linter.unusedFintypeInType false
+set_option linter.style.longFile 1800
 
 namespace ReedSolomon
 
