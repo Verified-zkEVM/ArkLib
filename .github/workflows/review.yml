@@ -10,83 +10,48 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  review:
-    if: >-
-      (
-        github.event_name == 'pull_request' &&
-        (
-          github.event.pull_request.author_association == 'OWNER' ||
-          github.event.pull_request.author_association == 'MEMBER' ||
-          github.event.pull_request.author_association == 'COLLABORATOR'
-        )
-      ) ||
-      (
-        github.event_name == 'issue_comment' &&
-        github.event.issue.pull_request &&
-        startsWith(github.event.comment.body, '/review') &&
-        (
-          github.event.comment.author_association == 'OWNER' ||
-          github.event.comment.author_association == 'MEMBER' ||
-          github.event.comment.author_association == 'COLLABORATOR'
-        )
-      )
+  ai_review_chatops:
+    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/review') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 45
     permissions:
       contents: read
       pull-requests: write
     steps:
-      - name: Extract arguments from comment
-        id: get_args
-        if: github.event_name == 'issue_comment'
+      - name: Parse Command
+        id: parse_command
+        uses: actions/github-script@v9.0.0
+        with:
+          script: |
+            const body = context.payload.comment.body;
+            let external_refs = "";
+            let additional_comments = "";
+            
+            const lines = body.split('\n');
+            for (const line of lines) {
+              if (line.startsWith('refs: ')) external_refs = line.replace('refs: ', '').trim();
+              if (line.startsWith('focus: ')) additional_comments = line.replace('focus: ', '').trim();
+            }
+            core.setOutput("external_refs", external_refs);
+            core.setOutput("additional_comments", additional_comments);
+
+      - name: Checkout repository
+        uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Checkout PR
         env:
-          COMMENT_BODY: ${{ github.event.comment.body }}
-        run: |
-          # Generate a random EOF marker for the GITHUB_OUTPUT heredoc.
-          # This variable is passed to awk which handles all output writing.
-          EOF=$(openssl rand -hex 8)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr checkout ${{ github.event.issue.number }}
 
-          awk -v eof="$EOF" -v gh_out="$GITHUB_OUTPUT" '
-            BEGIN {
-              ext = ""
-              repo = ""
-              com = ""
-              section = ""
-            }
-            /^External:/ { section="ext"; next }
-            /^Internal:/ { section="repo"; next }
-            /^Comments:/ { section="com"; next }
-            { 
-              gsub(/\r/, "", $0);
-              gsub(/^[ \t]+|[ \t]+$/, "", $0);
-              if ($0 == "" || $0 == "/review") { next }
-
-              if (section == "ext") {
-                sub(/^- +/, "");
-                if (ext != "") { ext = ext "," $0 } else { ext = $0 }
-              }
-              else if (section == "repo") {
-                sub(/^- +/, "");
-                if (repo != "") { repo = repo "," $0 } else { repo = $0 }
-              }
-              else if (section == "com") {
-                if (com != "") { com = com "\n" $0 } else { com = $0 }
-              }
-            }
-            END {
-              printf "external_refs=%s\n", ext >> gh_out
-              printf "repo_context_refs=%s\n", repo >> gh_out
-              printf "additional_comments<<%s\n", eof >> gh_out
-              printf "%s\n", com >> gh_out
-              printf "%s\n", eof >> gh_out
-            }
-          ' <<< "$COMMENT_BODY"
-        shell: bash
-      - uses: alexanderlhicks/lean-review-workflow@main
+      - name: Run AI Code Review Action
+        uses: alexanderlhicks/lean-review-workflow@main
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          pr_number: ${{ github.event.issue.number || github.event.pull_request.number }}
-          external_refs: "${{ steps.get_args.outputs.external_refs }}"
-          repo_context_refs: "${{ steps.get_args.outputs.repo_context_refs }}"
-          additional_comments: "${{ steps.get_args.outputs.additional_comments }}"
+          api_key: ${{ secrets.LLM_API_KEY }}
+          provider: gemini  # or: anthropic, openai
+          model: gemini-3.1-pro-preview  # or: claude-opus-4-6, gpt-5.4
+          pr_number: ${{ github.event.issue.number }}
+          external_refs: ${{ steps.parse_command.outputs.external_refs }}
+          additional_comments: ${{ steps.parse_command.outputs.additional_comments }}
