@@ -1134,7 +1134,46 @@ lemma subdomain_roots_card {n} {ω : SmoothCosetFftDomain n F}
   Finset.card {y ∈ (ω.subdomain i).toFinset | y ^ (2 ^ j.val) = x}
     = 2 ^ j.val
   := by
-  sorry
+  have hmem := mem_coset_def.mp h
+  let k₀_idx := Classical.choose hmem
+  have hk₀ : x = (ω.subdomain (i - j)) k₀_idx := Classical.choose_spec hmem
+  -- The filter on indices whose residue matches
+  have h_val_sub : (i - j : Fin n.succ).val = i.val - j.val := Fin.sub_val_of_le hji
+  -- Show the image equality
+  have h_image :
+    Finset.image (fun k : Fin (2 ^ i.val) => (ω.subdomain i) k)
+      (Finset.filter
+        (fun y : Fin (2 ^ i.val) => y.val % 2 ^ (i.val - j.val) = k₀_idx.val)
+        Finset.univ)
+      = Finset.filter (fun y => y ^ (2 ^ j.val) = x) (ω.subdomain i).toFinset := by
+    ext y
+    simp only [Nat.succ_eq_add_one, Finset.mem_image, Finset.mem_filter, Finset.mem_univ,
+      true_and, mem_coset_finset_iff_mem_coset_domain, mem_coset_def]
+    constructor
+    · rintro ⟨a, ha_mod, rfl⟩
+      refine ⟨⟨a, rfl⟩, ?_⟩
+      rw [subdomain_pow_property hji, hk₀]
+      congr 1
+      exact Fin.ext ha_mod
+    · rintro ⟨⟨k, rfl⟩, hpow⟩
+      refine ⟨k, ?_, rfl⟩
+      have hpow' := subdomain_pow_property hji (k := k) (ω := ω)
+      rw [hk₀] at hpow
+      have hinj := CosetFftDomain.injective (ω := ω.subdomain (i - j))
+        (hpow'.symm.trans hpow)
+      simp only [Fin.ext_iff] at hinj
+      exact hinj
+  -- Count using the bijection
+  rw [← h_image]
+  rw [Finset.card_image_of_injective _ (CosetFftDomain.injective (ω := ω.subdomain i))]
+  -- Now use card_filter_mod_eq'
+  have hk₀_lt : k₀_idx.val < 2 ^ (i.val - j.val) := by
+    have := k₀_idx.isLt
+    simp only [Nat.succ_eq_add_one, h_val_sub] at this
+    exact this
+  rw [card_filter_mod_eq' i.val (i.val - j.val) (Nat.sub_le i.val j.val) k₀_idx.val hk₀_lt]
+  congr 1
+  omega
 
 lemma subdomain_root_exists {n} {ω : SmoothCosetFftDomain n F}
   {i j : Fin n.succ} (hji : j ≤ i)
