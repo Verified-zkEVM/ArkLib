@@ -100,58 +100,6 @@ def Witness (F : Type) [NonBinaryField F] {k : ℕ}
     (s : Fin (k + 1) → ℕ+) (d : ℕ+) (i : Fin (k + 2)) :=
   F⦃< 2^((∑ j', (s j').1) - (∑ j' ∈ finRangeTo _ i.1, (s j').1)) * d⦄[X]
 
-lemma sum_add_one {i : Fin (k + 1)} :
-  ∑ j' ∈ finRangeTo _ (i.1 + 1), (s j').1 = (∑ j' ∈ finRangeTo _ i.1, (s j').1) + (s i).1 := by
-          rw [finRangeTo, List.take_add, List.toFinset_append]
-          rw
-            [
-              Finset.sum_union
-                (by
-                  rw [Finset.disjoint_iff_ne]
-                  intros a h b h'
-                  rw [List.mem_toFinset] at h h'
-                  rw [List.mem_take_iff_getElem] at h h'
-                  rcases h with ⟨ai, ah, ah'⟩
-                  rcases h' with ⟨bi, bh, bh'⟩
-                  have h₁ : ai < i.1 := by omega
-                  have h₂ : bi = 0 := by omega
-                  simp only [h₂, List.getElem_drop, add_zero, List.getElem_finRange, Fin.cast_mk,
-                    Fin.eta] at bh'
-                  simp only [List.getElem_finRange, Fin.cast_mk] at ah'
-                  rw [←bh', ←ah']
-                  rcases i with ⟨i, _⟩
-                  simp only [ne_eq, Fin.mk.injEq]
-                  linarith
-                )
-            ]
-          apply Nat.add_left_cancel_iff.mpr
-          have : (List.take 1 (List.drop (↑i) (List.finRange (k + 1)))).toFinset = {i} := by
-            apply eq_singleton_iff_unique_mem.mpr
-            apply And.intro
-            · rw [List.mem_toFinset]
-              apply List.mem_take_iff_getElem.mpr
-              use 0
-              use
-                (by
-                  rw [Nat.lt_min]
-                  simp only [zero_lt_one, List.length_drop, List.length_finRange, tsub_pos_iff_lt,
-                    Order.lt_add_one_iff, true_and]
-                  fin_omega
-                )
-              rw [List.getElem_drop]
-              simp
-            · simp only [List.mem_toFinset]
-              intros x h
-              (expose_names; rw [List.mem_take_iff_getElem] at h)
-              rcases h with ⟨j, h, h'⟩
-              have : j = 0 := by
-                omega
-              simp only [this, List.getElem_drop, add_zero, List.getElem_finRange, Fin.cast_mk,
-                Fin.eta] at h'
-              exact h'.symm
-          rw [this]
-          simp
-
 private lemma witness_lift {F : Type} [NonBinaryField F]
   {k : ℕ} {s : Fin (k + 1) → ℕ+} {d : ℕ+} {p : F[X]} {α : F} {i : Fin (k + 1)} :
     p ∈ Witness F s d i.castSucc →
@@ -783,16 +731,6 @@ def getConst (k : ℕ) (s : Fin (k + 1) → ℕ+) : OracleComp [FinalOracleState
     (query (spec := [FinalOracleStatement s ω]ₒ) ⟨(Fin.last (k + 1)), (by
       simpa using ())⟩))
 
-private lemma sum_finRangeTo_le_sub_of_le {s : Fin (k + 1) → ℕ+} {i : Fin (k + 1)}
-    (k_le_n : (∑ j', (s j').1) ≤ n) :
-  (∑ j' ∈ finRangeTo _ i.1, (s j').1) ≤ n - (s i).1 := by
-    apply Nat.le_sub_of_add_le
-    rw [←sum_finRangeTo_add_one]
-    transitivity
-    · exact sum_le_univ_sum_of_nonneg (by simp)
-    · exact k_le_n
-
-
 /- Verifier for query round of the FRI protocol. Runs `l` checks on uniformly
    sampled points in the first evaluation domain against the oracles sent during
    every folding round. -/
@@ -838,7 +776,7 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
                                       apply Finset.single_le_sum (f := fun i => (s i : ℕ)) (by simp) (by simp)
                                     }) k_le_n 
                                 })]
-                                rw [←sum_add_one]
+                                rw [←sum_finRangeTo_add_one]
                                 trans
                                 exact (Finset.sum_le_sum_of_subset (t := Finset.univ) (by simp))
                                 exact k_le_n
@@ -858,12 +796,12 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
                       queryCodeword (ω := ω) k s (i := ⟨i.1.succ, Order.lt_add_one_iff.mpr h⟩)
                         ⟨s₀.1 ^ (2 ^ (s i).1), by {
                           simp only
-                          rw [sum_add_one, mem_coset_finset_iff_mem_coset_domain]
+                          rw [sum_finRangeTo_add_one, mem_coset_finset_iff_mem_coset_domain]
                           apply subdomainNatReversed_pow_property'
                             (i := s i)
                             (h := mem_coset_finset_iff_mem_coset_domain.1 s₀.2)
                           trans (∑ j' ∈ finRangeTo (k + 1) (↑i : ℕ).succ, (s j').1)
-                          rw [Nat.succ_eq_add_one, sum_add_one s (i := i)]
+                          rw [Nat.succ_eq_add_one, sum_finRangeTo_add_one]
                           rfl
                           trans 
                           exact (Finset.sum_le_sum_of_subset (t := Finset.univ) (by simp))

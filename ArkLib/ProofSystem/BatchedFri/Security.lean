@@ -26,6 +26,7 @@ import ArkLib.ProofSystem.Fri.Spec.SingleRound
 import ArkLib.OracleReduction.Security.Basic
 import ToMathlib.Control.OptionT
 import ArkLib.ToMathlib.List.Basic
+import ArkLib.ToMathlib.Finset.Basic
 import Mathlib.Algebra.Ring.NonZeroDivisors
 
 namespace Fri
@@ -85,7 +86,7 @@ def cosetEnum (s₀ : evalDomainSigma s ω i) (k_le_n : ∑ j', (s j').1 ≤ n)
           (b := ∑ j' ∈ finRangeTo (k + 1) ↑i, (s j').1 + (s i).1)
           (c := n)
         · constructor
-        · rw [←Fri.Spec.sum_add_one]
+        · rw [←sum_finRangeTo_add_one]
           apply le_trans (b := ∑ j', (s j').1) <;> try omega
           apply Finset.sum_le_sum_of_subset
           simp
@@ -229,7 +230,7 @@ noncomputable def f_succ'
       (ω := ω)
       (k := (∑ j' ∈ finRangeTo (k + 1) ↑i, (s j').1 + (s i).1))
       (by {
-        rw [←Fri.Spec.sum_add_one]
+        rw [←sum_finRangeTo_add_one]
         rfl
     })] at hs₀'
     have h := CosetFftDomain.subdomainNatReversed_root_exists (ω := ω)
@@ -237,7 +238,7 @@ noncomputable def f_succ'
       (j := (s i).1)
       (by {
         trans (∑ j' ∈ finRangeTo _ (i.1 + 1), (s j').1)
-        rw [Fri.Spec.sum_add_one]
+        rw [sum_finRangeTo_add_one]
         rfl
         apply (swap le_trans) k_le_n
         apply Finset.sum_le_sum_of_subset (by simp)
