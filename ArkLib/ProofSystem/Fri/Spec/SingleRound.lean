@@ -79,7 +79,7 @@ def FinalStatement (F : Type) (k : ℕ) : Type := Fin (k + 1) → F
 def OracleStatement {F : Type} [Field F] [DecidableEq F] [Fintype F]
   (ω : ReedSolomon.SmoothCosetFftDomain n F)
   (i : Fin (k + 1)) : Fin (i.val + 1) → Type :=
-  fun j =>
+  fun j ↦
     (ω.subdomainNatReversed (∑ j' ∈ finRangeTo (k + 1) j.1, s j')).toFinset
     → F
 
@@ -88,7 +88,7 @@ def FinalOracleStatement
   {F : Type} [Field F] [DecidableEq F] [Fintype F]
   (ω : ReedSolomon.SmoothCosetFftDomain n F)
   : Fin (k + 2) → Type :=
-  fun j =>
+  fun j ↦
     if j.1 = k + 1
     then F[X]
     else ((ω.subdomainNatReversed (∑ j' ∈ finRangeTo _ j.1, (s j').1)).toFinset → F)
@@ -132,7 +132,7 @@ private lemma witness_lift {F : Type} [NonBinaryField F]
         apply sum_le_univ_sum_of_nonneg
         simp
       · apply @CanonicallyOrderedAddCommMonoid.single_le_sum (Fin (k + 1)) ℕ _ _ _
-            (fun j => (s j).1)
+            (fun j ↦ (s j).1)
             (List.take (↑i + 1) (List.finRange (k + 1))).toFinset i
         rw [List.mem_toFinset]
         apply List.mem_take_iff_getElem.mpr
@@ -152,13 +152,13 @@ private lemma witness_lift {F : Type} [NonBinaryField F]
         simp
 
 instance {i : Fin (k + 1)} : ∀ j, OracleInterface (OracleStatement s ω i j) :=
-  fun _ => inferInstance
+  fun _ ↦ inferInstance
 
 instance finalOracleStatementInterface :
-  ∀ j, OracleInterface (FinalOracleStatement s ω j) := fun j =>
+  ∀ j, OracleInterface (FinalOracleStatement s ω j) := fun j ↦
   { Query := if j = k + 1 then Unit else (ω.subdomainNatReversed (∑ j' ∈ finRangeTo _ j.1, s j')).toFinset
-    toOC.spec := fun _ => if j = k + 1 then F[X] else F
-    toOC.impl := fun q => do
+    toOC.spec := fun _ ↦ if j = k + 1 then F[X] else F
+    toOC.impl := fun q ↦ do
       if h : j = k + 1 then
         let st : F[X] := cast (by simp [FinalOracleStatement, h]) (← read)
         return cast (by simp [h]) st
@@ -340,30 +340,30 @@ noncomputable def foldProver :
 
   sendMessage
   | ⟨0, h⟩ => nomatch h
-  | ⟨1, _⟩ => fun ⟨⟨chals, o⟩, p⟩ =>
-    pure ⟨fun x => p.1.eval x.1, ⟨⟨chals, o⟩, p⟩⟩
+  | ⟨1, _⟩ => fun ⟨⟨chals, o⟩, p⟩ ↦
+    pure ⟨fun x ↦ p.1.eval x.1, ⟨⟨chals, o⟩, p⟩⟩
 
   receiveChallenge
-  | ⟨0, _⟩ => fun ⟨⟨chals, o⟩, p⟩ => pure <|
-    fun (α : F) =>
+  | ⟨0, _⟩ => fun ⟨⟨chals, o⟩, p⟩ ↦ pure <|
+    fun (α : F) ↦
       ⟨
-        ⟨Fin.append chals (fun (_ : Fin 1) => α), o⟩,
+        ⟨Fin.append chals (fun (_ : Fin 1) ↦ α), o⟩,
         ⟨p.1.foldNth (2 ^ (s i.castSucc).1) α, witness_lift p.2⟩
       ⟩
   | ⟨1, h⟩ => nomatch h
 
-  output := fun ⟨⟨chals, o⟩, p⟩ => pure <|
+  output := fun ⟨⟨chals, o⟩, p⟩ ↦ pure <|
     ⟨
       ⟨
         chals,
-        fun j =>
+        fun j ↦
           if h : j.1 < i.1
           then by
             simpa [OracleStatement] using o ⟨j.1, by
               rw [Fin.coe_castSucc]
               exact Nat.lt_add_right 1 h
             ⟩
-          else fun x => p.1.eval x.1
+          else fun x ↦ p.1.eval x.1
       ⟩,
       p
     ⟩
@@ -374,11 +374,11 @@ noncomputable def foldVerifier :
     (Statement F i.castSucc) (OracleStatement s ω i.castSucc)
     (Statement F i.succ) (OracleStatement s ω i.succ)
     (pSpec (ω := ω) s i) where
-  verify := fun prevChallenges roundChallenge =>
-    pure (Fin.vappend prevChallenges (fun _ => roundChallenge ⟨0, by simp⟩))
+  verify := fun prevChallenges roundChallenge ↦
+    pure (Fin.vappend prevChallenges (fun _ ↦ roundChallenge ⟨0, by simp⟩))
   embed :=
     ⟨
-      fun j =>
+      fun j ↦
         if h : j.val = (i.val + 1)
         then Sum.inr ⟨1, by simp⟩
         else Sum.inl ⟨j.val, by have := Nat.lt_succ_iff_lt_or_eq.mp j.2; aesop⟩,
@@ -534,12 +534,12 @@ noncomputable def finalFoldProver :
 
   sendMessage
   | ⟨0, h⟩ => nomatch h
-  | ⟨1, _⟩ => fun ⟨⟨chals, o⟩, p⟩ =>
+  | ⟨1, _⟩ => fun ⟨⟨chals, o⟩, p⟩ ↦
     pure ⟨p.1, ⟨⟨chals, o⟩, p⟩⟩
 
   receiveChallenge
-  | ⟨0, _⟩ => fun ⟨⟨chals, o⟩, p⟩ => pure <|
-    fun (α : F) =>
+  | ⟨0, _⟩ => fun ⟨⟨chals, o⟩, p⟩ ↦ pure <|
+    fun (α : F) ↦
       ⟨
         ⟨Fin.vappend chals !v[α], o⟩,
         ⟨
@@ -551,11 +551,11 @@ noncomputable def finalFoldProver :
       ⟩
   | ⟨1, h⟩ => nomatch h
 
-  output := fun ⟨⟨chals, o⟩, p⟩ => pure <|
+  output := fun ⟨⟨chals, o⟩, p⟩ ↦ pure <|
     ⟨
       ⟨
         chals,
-        fun j => by
+        fun j ↦ by
           unfold FinalOracleStatement
           if h : j.1 = k + 1
           then
@@ -582,13 +582,13 @@ noncomputable def finalFoldVerifier :
     (Statement F (Fin.last k)) (OracleStatement s ω (Fin.last k))
     (FinalStatement F k) (FinalOracleStatement s ω)
     (pSpec F)  where
-  verify := fun prevChallenges roundChallenge => do
+  verify := fun prevChallenges roundChallenge ↦ do
     let p ← getConst F
     guard (p.natDegree < d)
-    pure (Fin.append prevChallenges (fun _ => roundChallenge ⟨0, by simp⟩))
+    pure (Fin.append prevChallenges (fun _ ↦ roundChallenge ⟨0, by simp⟩))
   embed :=
     ⟨
-      fun j =>
+      fun j ↦
         if h : j.val = (k + 1)
         then Sum.inr ⟨1, by simp⟩
         else Sum.inl ⟨j.val, by have := Nat.lt_succ_iff_lt_or_eq.mp j.2; aesop⟩,
@@ -652,11 +652,11 @@ def pSpec : ProtocolSpec 1 :=
   ⟨!v[.V_to_P], !v[Fin l → (ω.subdomainNatReversed 0).toFinset]⟩
 
 /- `OracleInterface` instances for the query round `pSpec`. -/
-instance : ∀ j, OracleInterface ((pSpec (ω := ω) l).Message j) := fun j =>
+instance : ∀ j, OracleInterface ((pSpec (ω := ω) l).Message j) := fun j ↦
   match j with
   | ⟨0, h⟩ => nomatch h
 
-instance : ∀ j, OracleInterface ((pSpec (ω := ω) l).Challenge j) := fun j =>
+instance : ∀ j, OracleInterface ((pSpec (ω := ω) l).Challenge j) := fun j ↦
   by
     unfold Challenge
     rw [Fin.fin_one_eq_zero j.1]
@@ -671,7 +671,7 @@ noncomputable instance : ∀ j, Inhabited ((pSpec (ω := ω) l).Challenge j) := 
   subst h_j_eq_0
   simp only [Challenge, Nat.succ_eq_add_one, Nat.sub_zero, Fin.ofNat_eq_cast, Fin.val_natCast,
    Fin.isValue, Fin.vcons_zero]
-  exact ⟨fun _ => Inhabited.default⟩
+  exact ⟨fun _ ↦ Inhabited.default⟩
 
 noncomputable instance : ∀ j, Fintype ((pSpec (ω := ω) l).Challenge j) := by
   intro j
@@ -706,7 +706,7 @@ noncomputable def queryProver :
   | ⟨0, h⟩ => nomatch h
 
   receiveChallenge
-  | ⟨1, _⟩ => fun x => pure <| fun _ => x
+  | ⟨1, _⟩ => fun x ↦ pure <| fun _ ↦ x
 
   output := pure
 
@@ -741,13 +741,13 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
     (FinalStatement F k) (FinalOracleStatement s ω)
     (FinalStatement F k) (FinalOracleStatement s ω)
     (pSpec (ω := ω) l) where
-  verify := fun prevChallenges roundChallenge => do
+  verify := fun prevChallenges roundChallenge ↦ do
     let (p : F[X]) ← getConst (ω := ω) k s
     for m in (List.finRange l) do
       let s₀ := roundChallenge ⟨1, by aesop⟩ m
       discard <|
         (List.finRange (k + 1)).mapM
-              (fun i =>
+              (fun i ↦
                 do
                   let x₀ := prevChallenges i
                   let s₀ :
@@ -763,7 +763,7 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
                         (∑ j' ∈ finRangeTo _ i.1, (s j').1)
                     ).toFinset :=
                     List.map
-                      (fun (r : (ω.fftDomain.subdomainNatReversed (n - (s i).1)).toFinset) =>
+                      (fun (r : (ω.fftDomain.subdomainNatReversed (n - (s i).1)).toFinset) ↦
                         ⟨
                           r * s₀,
                           by {
@@ -773,7 +773,7 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
                                 rw [Nat.le_sub_iff_add_le (by {
                                   exact Nat.le_trans (m := ∑ j', ↑(s j')) 
                                     (by {
-                                      apply Finset.single_le_sum (f := fun i => (s i : ℕ)) (by simp) (by simp)
+                                      apply Finset.single_le_sum (f := fun i ↦ (s i : ℕ)) (by simp) (by simp)
                                     }) k_le_n 
                                 })]
                                 rw [←sum_finRangeTo_add_one]
@@ -788,7 +788,7 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
                       (ω.fftDomain.subdomainNatReversed (n - (s i).1)).toList
                   let (pts : List (F × F)) ←
                     List.mapM
-                      (fun q => queryCodeword (ω := ω) k s q >>= fun v => pure (q.1, v))
+                      (fun q ↦ queryCodeword (ω := ω) k s q >>= fun v ↦ pure (q.1, v))
                       queries
                   let β ←
                     if h : i.1 < k
@@ -814,7 +814,7 @@ noncomputable def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [D
     pure prevChallenges
   embed :=
     ⟨
-      fun j => Sum.inl j,
+      fun j ↦ Sum.inl j,
       by intros _; aesop
     ⟩
   hEq := by intros _; aesop
