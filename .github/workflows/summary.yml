@@ -1,4 +1,5 @@
-name: PR Summary
+name: 'PR Summary'
+
 on:
   pull_request_target:
     types: [opened, synchronize]
@@ -7,17 +8,25 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: read
+
 jobs:
   summarize:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      pull-requests: write
-      issues: read
     steps:
-      - uses: alexanderlhicks/lean-summary-workflow@main
+      - name: Generate PR Summary
+        uses: alexanderlhicks/lean-summary-workflow@main
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          api_key: ${{ secrets.GEMINI_API_KEY }}
+          provider: gemini  # or: anthropic, openai
+          model: gemini-3-flash-preview  # or: claude-sonnet-4-6, gpt-5.4-mini
           github_repository: ${{ github.repository }}
           pr_number: ${{ github.event.pull_request.number }}
+          # Optional:
+          style_guide_path: 'CONTRIBUTING.md'
+          validate_title: 'true'
+          # upstream_path: 'ToMathlib/'

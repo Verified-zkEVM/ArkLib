@@ -26,6 +26,7 @@ import ArkLib.ProofSystem.Fri.Spec.SingleRound
 import ArkLib.OracleReduction.Security.Basic
 import ToMathlib.Control.OptionT
 import ArkLib.ToMathlib.List.Basic
+import ArkLib.ToMathlib.Finset.Basic
 import Mathlib.Algebra.Ring.NonZeroDivisors
 
 namespace Fri
@@ -72,8 +73,6 @@ def cosetEnum (s₀ : evalDomainSigma s ω i) (k_le_n : ∑ j', (s j').1 ≤ n)
             exact Nat.le_of_lt_succ s_i_lim
           rw [this]
           convert h
-          rw [@Nat.mod_succ_eq_iff_lt]
-          exact s_i_lim
       ⟩,
       FftDomain.mem_domain_self
     ⟩
@@ -87,7 +86,7 @@ def cosetEnum (s₀ : evalDomainSigma s ω i) (k_le_n : ∑ j', (s j').1 ≤ n)
           (b := ∑ j' ∈ finRangeTo (k + 1) ↑i, (s j').1 + (s i).1)
           (c := n)
         · constructor
-        · rw [←Fri.Spec.sum_add_one]
+        · rw [←sum_finRangeTo_add_one]
           apply le_trans (b := ∑ j', (s j').1) <;> try omega
           apply Finset.sum_le_sum_of_subset
           simp
@@ -231,7 +230,7 @@ noncomputable def f_succ'
       (ω := ω)
       (k := (∑ j' ∈ finRangeTo (k + 1) ↑i, (s j').1 + (s i).1))
       (by {
-        rw [←Fri.Spec.sum_add_one]
+        rw [←sum_finRangeTo_add_one]
         rfl
     })] at hs₀'
     have h := CosetFftDomain.subdomainNatReversed_root_exists (ω := ω)
@@ -239,7 +238,7 @@ noncomputable def f_succ'
       (j := (s i).1)
       (by {
         trans (∑ j' ∈ finRangeTo _ (i.1 + 1), (s j').1)
-        rw [Fri.Spec.sum_add_one]
+        rw [sum_finRangeTo_add_one]
         rfl
         apply (swap le_trans) k_le_n
         apply Finset.sum_le_sum_of_subset (by simp)
@@ -286,8 +285,10 @@ def Fₛ {ι : Type} [Fintype ι] {t : ℕ} (f : Fin t.succ → (ι → 𝔽)) :
 noncomputable def correlated_agreement_density {ι : Type} [Fintype ι]
   [Fintype 𝔽]
   (Fₛ : AffineSubspace 𝔽 (ι → 𝔽)) (V : Submodule 𝔽 (ι → 𝔽)) : ℝ :=
-  let Fc := @Set.toFinset _ Fₛ.carrier sorry
-  let Vc := @Set.toFinset _ V.carrier sorry
+  haveI : Fintype Fₛ.carrier := Set.Finite.fintype (Set.toFinite _)
+  haveI : Fintype V.carrier := Set.Finite.fintype (Set.toFinite _)
+  let Fc := Fₛ.carrier.toFinset
+  let Vc := V.carrier.toFinset  
   (Fc ∩ Vc).card / Fc.card
 
 open Polynomial
@@ -305,7 +306,7 @@ noncomputable def oracleImpl
       let f0 := Lagrange.interpolate Finset.univ (fun v => v.1) f
       let chals : List (Fin (k + 1) × 𝔽) :=
         ((List.finRange (k + 1)).map fun i => (i, z i)).take i.1
-      let fi : Unit → 𝔽[X] := fun _ => List.foldl (fun f (i, α) => FoldingPolynomial.polyFold f (s i) α) f0 chals
+      let fi : 𝔽[X] := List.foldl (fun f (i, α) => FoldingPolynomial.polyFold f (s i) α) f0 chals
       let st : Spec.FinalOracleStatement (F := 𝔽) s ω i :=
         if h : i.1 = k + 1 then
           cast (by simp [Spec.FinalOracleStatement, h]) fi
@@ -315,7 +316,7 @@ noncomputable def oracleImpl
               simp [Spec.FinalOracleStatement, h]
               rfl
             })
-            (fun x : ω.subdomainNatReversed (∑ j' ∈ finRangeTo _ i.1, s j') => (fi ⊥).eval x.1)
+            (fun x : ω.subdomainNatReversed (∑ j' ∈ finRangeTo _ i.1, s j') => fi.eval x.1)
       exact pure <| (Spec.finalOracleStatementInterface s (ω := ω) i).answer st dom
     · rcases q with ⟨i, t⟩
       exact liftM <|
