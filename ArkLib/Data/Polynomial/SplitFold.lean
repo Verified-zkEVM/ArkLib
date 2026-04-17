@@ -253,12 +253,10 @@ lemma splitNth_degree_le {n : ℕ} {f : 𝔽[X]} [inst : NeZero n] :
     when `q = X ^ n`. -/
 @[simp]
 lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽]
-  {f : Polynomial 𝔽} {n : ℕ} 
-  [inst : NeZero n]
-  :
-  FoldingPolynomial.foldingPolynomial (X ^ n) f 
-    = ∑ i, C (splitNth f n i) * (X ^ i.val)
-  := by
+  {f : Polynomial 𝔽} {n : ℕ}
+  [inst : NeZero n] :
+  FoldingPolynomial.foldingPolynomial (X ^ n) f = 
+    ∑ i, C (splitNth f n i) * (X ^ i.val) := by
   symm
   apply FoldingPolynomial.folding_polynomial_is_unique'
   · conv =>
@@ -287,16 +285,14 @@ lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽]
     · simp only [heq, ↓reduceIte]
       exact splitNth_degree_le
     · simp [heq]
-  · simp [Bivariate.natDegreeY]
+  · simp only [Bivariate.natDegreeY, natDegree_pow, natDegree_X, mul_one]
     apply Nat.lt_of_le_pred (by {
       apply Nat.zero_lt_of_ne_zero
       aesop
     })
     apply Polynomial.natDegree_sum_le_of_forall_le
     intro i _
-    trans
-    exact Polynomial.natDegree_mul_le
-    simp
+    apply Nat.le_trans Polynomial.natDegree_mul_le
     rcases i with ⟨i, hi⟩ 
     simp
     omega
@@ -305,10 +301,9 @@ lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽]
 @[simp]
 lemma polyFold_eq_sum_of_splitNth {𝔽 : Type} [Field 𝔽]
   {f : 𝔽[X]} {n : ℕ} {r : 𝔽}
-  [inst : NeZero n]
-  :
-  FoldingPolynomial.polyFold f n r 
-    = ∑ i, C (r ^ i.val) * splitNth f n i := by
+  [inst : NeZero n] :
+  FoldingPolynomial.polyFold f n r = 
+    ∑ i, C (r ^ i.val) * splitNth f n i := by
   simp only [FoldingPolynomial.polyFold, folding_polynomial_eq_sum_splitNth, map_pow]
   rw [Polynomial.eval_finset_sum]
   simp only [eval_mul, eval_C, eval_pow, eval_X] 

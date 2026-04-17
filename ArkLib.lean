@@ -76,7 +76,6 @@ import ArkLib.Data.MvPolynomial.Interpolation
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLib.Data.MvPolynomial.Multilinear
 import ArkLib.Data.Polynomial.Bivariate
-import ArkLib.Data.Polynomial.EvenAndOdd
 import ArkLib.Data.Polynomial.FoldingPolynomial
 import ArkLib.Data.Polynomial.Interface
 import ArkLib.Data.Polynomial.Prelims
