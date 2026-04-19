@@ -236,6 +236,8 @@ private lemma folding_polynomial_def_ind_case {q f : F[X]}
           rw [h_fold_eq]
       exact h_fold le_rfl
 
+/-- If the folding polynomial is zero 
+  then so is the original polynomial. -/
 lemma eq_zero_of_folding_polynomial_eq_zero {q f : F[X]}
   (h : foldingPolynomial q f = 0) : f = 0 := by
     induction n : f.natDegree using Nat.strong_induction_on generalizing f with
