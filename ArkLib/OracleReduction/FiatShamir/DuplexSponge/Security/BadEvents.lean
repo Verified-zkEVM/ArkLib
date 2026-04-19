@@ -228,21 +228,6 @@ noncomputable def lemma5_8Bound (U : Type) [SpongeUnit U] [SpongeSize] [Fintype 
   let tShift : ℝ := (tₕ + 1 + tₚ + L + tₚᵢ : ℕ)
   (7 * tShift ^ 2 - 3 * tShift) / (2 * ((Fintype.card U : ℕ) : ℝ) ^ SpongeSize.C)
 
-/--
-Lemma 5.8 (paper-facing): for any `(tₕ, tₚ, tₚᵢ)`-query setting with `tₚ ≥ L`,
-the bad-event probability is bounded in both Section 5.6 experiments.
--/
-theorem lemma_5_8
-    [Fintype U]
-    (traceDistS traceDistSigma : ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U)))
-    (tₕ tₚ tₚᵢ L : ℕ)
-    (hTp : tₚ ≥ L) :
-    max
-        (Pr[fun tr => BadEventDS.E tr | traceDistS])
-        (Pr[fun tr => BadEventDS.E tr | traceDistSigma])
-      ≤ ENNReal.ofReal (lemma5_8Bound U tₕ tₚ tₚᵢ L) := by
-  sorry
-
 /-- Run a concrete DS experiment under an oracle implementation and return its full DS trace. -/
 def traceDistOfConcreteExperiment
     {σ α : Type}
@@ -284,8 +269,11 @@ def Lemma5_8Experiments.traceDistSigma
   traceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
     experiments.initSigma experiments.implSigma experiments.expSigma
 
-/-- Lemma 5.8 in concrete experiment form (paired `S`/`Σ` experiment objects). -/
-theorem lemma_5_8_concrete
+/--
+Lemma 5.8 (paper-facing): for any `(tₕ, tₚ, tₚᵢ)`-query setting with `tₚ ≥ L`,
+the bad-event probability is bounded in both Section 5.6 experiments.
+-/
+theorem lemma_5_8
     [Fintype U]
     (experiments : Lemma5_8Experiments (StmtIn := StmtIn) (U := U))
     (tₕ tₚ tₚᵢ L : ℕ)
@@ -294,13 +282,7 @@ theorem lemma_5_8_concrete
         (Pr[fun tr => BadEventDS.E tr | experiments.traceDistS])
         (Pr[fun tr => BadEventDS.E tr | experiments.traceDistSigma])
       ≤ ENNReal.ofReal (lemma5_8Bound U tₕ tₚ tₚᵢ L) := by
-  simpa [Lemma5_8Experiments.traceDistS, Lemma5_8Experiments.traceDistSigma] using
-    (lemma_5_8 (StmtIn := StmtIn) (U := U)
-      (traceDistS := traceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
-        experiments.initS experiments.implS experiments.expS)
-      (traceDistSigma := traceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
-        experiments.initSigma experiments.implSigma experiments.expSigma)
-      tₕ tₚ tₚᵢ L hTp)
+  sorry
 
 /-! Then we define other bad events that don't hold (`= 0`)
 if the combined event doesn't hold (`= 0`)
@@ -856,25 +838,6 @@ lemma lemma_5_14 (h : ¬ E trace) : ¬ E_fork_paper trace state := by
 /-- Lemma 5.16 (paper-facing): if `E(tr) = 0` then `E_time(tr, s) = 0`. -/
 lemma lemma_5_16 (h : ¬ E trace) : ¬ E_time_paper trace state := by
   sorry
-
-lemma not_inv_of_not_combined (h : ¬ E trace) : ¬ E_inv trace state :=
-  by simpa [E_inv_paper] using (lemma_5_12 (trace := trace) (state := state) h)
-
-lemma not_fork_of_not_combined (h : ¬ E trace) : ¬ E_fork trace state :=
-  by simpa [E_fork_paper] using (lemma_5_14 (trace := trace) (state := state) h)
-
-lemma not_outOfOrder_of_not_combined (h : ¬ E trace) : ¬ E_time trace state :=
-  by simpa [E_time_paper] using (lemma_5_16 (trace := trace) (state := state) h)
-
-/-- Compatibility wrappers preserved as aliases to paper-form lemmas. -/
-lemma lemma_5_12_staged (h : ¬ E trace) : ¬ E_inv trace state :=
-  lemma_5_12 (trace := trace) (state := state) h
-
-lemma lemma_5_14_staged (h : ¬ E trace) : ¬ E_fork trace state :=
-  lemma_5_14 (trace := trace) (state := state) h
-
-lemma lemma_5_16_staged (h : ¬ E trace) : ¬ E_time trace state :=
-  lemma_5_16 (trace := trace) (state := state) h
 
 end BadEventDS
 

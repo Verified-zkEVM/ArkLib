@@ -162,22 +162,6 @@ theorem claim_5_19_backTrack_noAbort
   sorry
 
 /--
-Claim 5.19 in explicit paper form with the auxiliary data structure `tr_∇`.
-The proof obligation is identical to `claim_5_19_backTrack_noAbort`; `trDelta` is a paper-facing
-input that records projections of `trace`.
--/
-theorem claim_5_19_backTrack_noAbort_withTraceDelta
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (_trDelta : TraceDelta (StmtIn := StmtIn) (U := U))
-    (state : CanonicalSpongeState U)
-    (hInv : ¬ OracleSpec.QueryLog.BadEventDS.E_inv_paper trace state)
-    (hPrp : ¬ OracleSpec.QueryLog.BadEventDS.E_prp trace)
-    (hFork : ¬ OracleSpec.QueryLog.BadEventDS.E_fork_paper trace state) :
-    BackTrackNoAbort (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) trace state := by
-  exact claim_5_19_backTrack_noAbort (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    trace state hInv hPrp hFork
-
-/--
 Claim 5.20: if `E_prp(tr) = 0`, then `lookAhead(tr.p, s, i) ≠ err` for all `(s, i)`.
 
 Here `tr.p` is `forwardPermTraceOfDS tr`.
@@ -190,22 +174,5 @@ theorem claim_5_20_lookAhead_noAbort
     LookAheadNoAbort (pSpec := pSpec) (U := U)
       (forwardPermTraceOfDS (StmtIn := StmtIn) (U := U) trace) state i := by
   sorry
-
-/--
-Claim 5.20 in explicit paper form with the auxiliary data structure `tr_∇`.
-The input `trDelta` makes the `tr_∇.p` projection explicit.
--/
-theorem claim_5_20_lookAhead_noAbort_withTraceDelta
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (trDelta : TraceDelta (StmtIn := StmtIn) (U := U))
-    (state : CanonicalSpongeState U)
-    (i : pSpec.ChallengeIdx)
-    (hDeltaP : trDelta.pLog = forwardPermTraceOfDS (StmtIn := StmtIn) (U := U) trace)
-    (hPrp : ¬ OracleSpec.QueryLog.BadEventDS.E_prp trace) :
-    LookAheadNoAbort (pSpec := pSpec) (U := U)
-      trDelta.pLog state i := by
-  simpa [hDeltaP] using
-    (claim_5_20_lookAhead_noAbort (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      trace state i hPrp)
 
 end DuplexSpongeFS
