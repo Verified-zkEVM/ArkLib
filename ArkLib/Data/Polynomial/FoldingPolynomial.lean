@@ -11,11 +11,9 @@ import Mathlib.Tactic.Cases
 import Mathlib.Tactic.LinearCombination'
 
 /-!
-  Proof of Proposition 6.3 from  
-    Eli Ben-Sasson and Madhu Sudan. 
-      “Short PCPs with Polylog Query Complexity”. In: SIAM Journal on Computing 38.2 (2008).
+  Proof of Proposition 6.3 from [BS08].
 
-  The statement is taken from the STIR paper. Namely,
+  The statement is taken from [ACFY24]. Namely,
   ```latex
   \textbf{Fact 4.6 (BS08).} \textit{Given a polynomial } $\hat{q} \in \mathbb{F}[X]$:
 
@@ -47,6 +45,13 @@ import Mathlib.Tactic.LinearCombination'
       \]
   \end{itemize}
   ```
+
+## References
+
+* [Ben-Sasson, E., Madhu, S., *Short PCPs with Polylog Query Complexity*][BS08]
+* [Arnon, G., Chiesa, A., Fenzi, G., Yogev, E., 
+  *STIR: Reed–Solomon Proximity Testing with Fewer Queries*][ACFY24]
+
 -/
 
 set_option linter.style.induction false
