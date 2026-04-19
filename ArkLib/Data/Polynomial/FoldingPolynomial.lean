@@ -67,6 +67,13 @@ variable {ι F : Type*} [Field F]
     as the upper bound of number of steps needed 
     to produce the polynomial `Q`. -/
 noncomputable def foldingPolynomialAux (q f : F[X]) (fuel : ℕ) : F[X][Y] :=
+  -- The main idea behind the `fuel` argument
+  -- is to assure the totality checker that 
+  -- the recursive function is indeed total
+  -- by providing the upper bound on the number
+  -- of iterations.
+  -- 
+  -- Later on, we eliminate it in the public API `foldingPolynomial`.
   if q.degree ≤ 0 then Polynomial.map C f else
   if f.degree < q.degree then Polynomial.map C f
   else
