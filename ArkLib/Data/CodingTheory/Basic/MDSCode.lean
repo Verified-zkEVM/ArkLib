@@ -38,7 +38,8 @@ equal to `n - k + 1`. -/
 lemma minWt_ge_of_MDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n) F}
 (hMDS : Matrix.IsMDS G) {c : Fin n → F} (hc_mem : c ∈ fromRowGenMat G) (hc_ne : c ≠ 0) :
     n - k + 1 ≤ hammingNorm c := by
-  have h_hamming_norm : n - Finset.card (Finset.filter (fun j => c j = 0) Finset.univ) ≥ n - k + 1 :=
+  have h_hamming_norm : n - Finset.card (Finset.filter (fun j => c j = 0) Finset.univ)
+    ≥ n - k + 1 :=
   by
     rcases le_or_gt k (Finset.card (Finset.filter (fun j => c j = 0) Finset.univ))
             with h | h <;> simp only [ge_iff_le, Order.add_one_le_iff];
@@ -53,7 +54,7 @@ lemma minWt_ge_of_MDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n) F}
         have h_contra : ∃ v : Fin k → F, v ≠ 0 ∧ Matrix.vecMul v (Matrix.submatrix G id σ) = 0 := by
           obtain ⟨v, hv⟩ := hc_mem;
           refine ⟨v, ?_, ?_⟩ <;> contrapose! hc_ne <;> simp_all +decide [funext_iff, Matrix.vecMul];
-          exact fun x => hv x ▸ rfl;
+          grind;
         exact Matrix.exists_vecMul_eq_zero_iff.mp h_contra;
       have := hMDS σ; aesop;
     · refine Nat.sub_lt_sub_left ?_ h;
@@ -115,7 +116,8 @@ lemma IsMDS_of_matrix_IsMDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n
         have h_proj_inj : Function.Injective (fun c : C => fun i : S => c.val i) := by
           intro c₁ c₂ h_eq;
           contrapose! h_dist_ge;
-          refine ⟨c₁, c₂, c₁.2, c₂.2, ?_, ?_⟩ <;> simp_all +decide [funext_iff, hammingDist];
+          refine ⟨c₁, c₂, c₁.2, c₂.2, ?_, ?_⟩ <;> simp_all +decide only [funext_iff,
+            Subtype.forall, ne_eq, SetLike.coe_eq_coe, not_false_eq_true];
           have h_card : (Finset.univ \ S).card < d := by
             simp only
                     [Finset.card_sdiff, Finset.card_univ, Fintype.card_fin, Finset.inter_univ, hS];
@@ -124,7 +126,7 @@ lemma IsMDS_of_matrix_IsMDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n
         have h_proj_inj : Module.finrank F C ≤ Module.finrank F (S → F) := by
           have h_proj_inj : ∃ f : C →ₗ[F] S → F, Function.Injective f := by
             refine ⟨?_, ?_⟩;
-              refine {toFun := fun c => fun i => c.val i, map_add' := ?_, map_smul' := ?_};
+            · refine {toFun := fun c => fun i => c.val i, map_add' := ?_, map_smul' := ?_};
               all_goals simp +decide [funext_iff];
             exact h_proj_inj;
           obtain ⟨ f, hf ⟩ := h_proj_inj;
@@ -144,7 +146,8 @@ lemma IsMDS_of_matrix_IsMDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n
       Module.finrank_fintype_fun_eq_card];
     exact vecMul_injective_of_rank_eq h_rank_eq_k);
   have h_dist_ge : Code.dist (fromRowGenMat G).carrier ≥ n - k + 1 := by
-    have h_dist_ge : ∀ (c : Fin n → F), c ∈ fromRowGenMat G → c ≠ 0 → hammingNorm c ≥ n - k + 1 := by
+    have h_dist_ge : ∀ (c : Fin n → F), c ∈ fromRowGenMat G → c ≠ 0 → hammingNorm c ≥ n - k + 1 :=
+    by
       apply_rules [ minWt_ge_of_MDS ];
     refine le_csInf ?_ ?_;
     · obtain ⟨u, hu⟩ : ∃ u : Fin n → F, u ∈ fromRowGenMat G ∧ u ≠ 0 := by
@@ -202,8 +205,8 @@ lemma matrix_IsMDS_of_IsMDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n
   refine ne_of_lt (lt_of_le_of_lt h_dist_le_norm (lt_of_le_of_lt hc_norm ?_));
   simp +decide [length, dim_fromRowGenMat, hrank]
 
-/-- A linear code `LC` of length `ι` and dimension `dim` over a field `F` is MDS if any `dim` columns
-of the generator matrix whose rows are an `F`-basis of `LC` are linearly independent. [GRS25]
+/-- A linear code `LC` of length `ι` and dimension `dim` over a field `F` is MDS if any `dim`
+columns of the generator matrix whose rows are an `F`-basis of `LC` are linearly independent.[GRS25]
 Equivalently, a linear code is MDS if and only if its generator matrix is MDS.
 
 Note: the hypothesis `0 < dim LC` is necessary because for a trivial code `(dim = 0)`,

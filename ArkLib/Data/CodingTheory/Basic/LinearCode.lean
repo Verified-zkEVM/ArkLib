@@ -336,7 +336,8 @@ lemma eq_span_rows [Field F] (LC : LinearCode ι F) :
     use (Module.finBasis F LC).equivFun ⟨x, h⟩
     have x_to_lin_comb : (⟨x, h⟩ : LC).1 =
       ∑ i, (Module.finBasis F LC).equivFun ⟨x, h⟩ i • ((Module.finBasis F LC) i).1 := by
-      rw (occs := .pos [1]) [←Module.Basis.sum_equivFun (Module.finBasis F LC) ⟨x, h⟩, @Submodule.coe_sum]
+      rw (occs := .pos [1]) [←Module.Basis.sum_equivFun (Module.finBasis F LC) ⟨x, h⟩,
+       @Submodule.coe_sum]
       congr
     simp only [Module.Basis.equivFun_apply] at x_to_lin_comb ⊢
     exact x_to_lin_comb.symm

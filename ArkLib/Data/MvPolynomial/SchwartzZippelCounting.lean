@@ -118,8 +118,7 @@ lemma ENNReal.div_le_div_of_mul_le {k n d m : ℕ}
   · exact Or.inl <| ENNReal.natCast_ne_top _
 
 /- A PMF probability is always at most `1`. -/
-lemma pmf_prob_le_one {α : Type} [Fintype α] [Nonempty α]
-    (P : α → Prop) [DecidablePred P] :
+lemma pmf_prob_le_one {α : Type} [Fintype α] [Nonempty α] (P : α → Prop) :
     Pr_{let x ←$ᵖ α}[P x] ≤ 1 := by
   erw [PMF.bind_apply];
   erw [tsum_fintype];
@@ -127,11 +126,12 @@ lemma pmf_prob_le_one {α : Type} [Fintype α] [Nonempty α]
   · exact PMF.coe_le_one _ True;
   · norm_num
 
+set_option linter.unusedDecidableInType false in
 /-- Probability of a nonzero polynomial evaluating to zero over a uniform product distribution
 is at most `d / m`, where `d` bounds the total degree and `m` bounds below the cardinality
 of each factor. This bridges `schwartz_zippel_counting` with the probability formulation. -/
 lemma prob_eval_zero_le_div
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [DecidableEq F]
     {s : ℕ}
     {S : Fin s → Set F} [∀ i, Fintype ↥(S i)] [∀ i, Nonempty ↥(S i)]
     (f : MvPolynomial (Fin s) F) (hf : f ≠ 0)
@@ -140,8 +140,8 @@ lemma prob_eval_zero_le_div
     Pr_{let x ←$ᵖ (∀ i, ↥(S i))}[MvPolynomial.eval (fun i => (↑(x i) : F)) f = 0]
       ≤ (d : ℝ≥0∞) / m := by
   convert ENNReal.div_le_div_of_mul_le hm_pos _ _ using 1;
-  convert uniform_prob_eq_card_div _;
-  · infer_instance;
+  · convert uniform_prob_eq_card_div _;
+    · infer_instance;
   · exact Fintype.card_pos_iff.mpr ⟨fun _ => Classical.arbitrary _⟩;
   · convert schwartz_zippel_counting f hf ( fun i => ( S i ).toFinset ) d m hd hm_pos hm using 1;
     · convert congr_arg₂ (· * ·) (card_filter_eval_subtype_eq_piFinset S f) rfl;
