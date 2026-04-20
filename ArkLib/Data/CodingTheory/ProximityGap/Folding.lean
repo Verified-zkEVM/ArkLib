@@ -453,7 +453,6 @@ private lemma indicated_polynomial_eq_combination_of_correlated
   (hu : ∀ i x, x ∈ s' → (u i).eval x = (foldWordAuxCoeff domain f (2 ^ k) i x))
   (hu_deg : ∀ i, (u i).natDegree < s'.card)
   (h_s' : s'.Nonempty)
-  [inst : NeZero k]
   :
   ((indicatedPolynomial domain f (2 ^ k) s').eval (Polynomial.C α))
     = ∑ i, (u i) * Polynomial.C (α ^ i.val) := by
@@ -483,7 +482,6 @@ private lemma indicated_polynomial_eq_combination_of_correlated
 
 
 private lemma indicated_polynomial_eq_foldAux'
-  [Nonempty ι]
   [Fintype F]
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {s' : Finset F}
   {u : Fin (2 ^ k) → Polynomial F}
@@ -493,7 +491,6 @@ private lemma indicated_polynomial_eq_foldAux'
   (hu_deg : ∀ i, (u i).natDegree < s'.card)
   (h_s' : s'.Nonempty)
   (h_card : 2 ^ k ≤ Fintype.card F)
-  [inst : NeZero k]
   :
   (Polynomial.map
     (Polynomial.evalRingHom x)
@@ -636,19 +633,20 @@ private lemma master_lemma
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ}
   {s : Finset F}
   (h_s : s ⊆ (domain.subdomainNatReversed k).toFinset)
-  {u : Fin k → Polynomial F}
+  {u : Fin (2 ^ k) → Polynomial F}
   (h_u : ∀ i, ∀ x ∈ s, (u i).eval x
-      = foldWordAuxCoeff domain f k i x)
+      = foldWordAuxCoeff domain f (2 ^ k) i x)
   {d : ℕ}
   (h_d : 2 ^ k ≤ d)
-  (h_k_card : k ≤ Fintype.card F)
-  (h_u_deg : ∀ i, (u i).natDegree < d / k)
+  (h_k_card : (2 ^ k) ≤ Fintype.card F)
+  (h_u_deg : ∀ i, (u i).natDegree < d / (2 ^ k))
   :
   ∃ f' : Polynomial F,
     f'.natDegree < d
       ∧ hammingDist f (fun x => f'.eval (domain x))
-        ≤ (2 ^ n) -
-          (2 ^ k) * Finset.card s := by
+        ≤ Fintype.card (Fin (2 ^ n)) -
+          ({i ∈ Finset.product Finset.univ (Finset.preimage s (domain : Fin (2 ^ n) ↪ F) (fun x hx y hy hxy ↦ 
+        CosetFftDomain.injective (ω := domain) hxy)) | (domain i.1) ^ (2 ^ k) = domain i.2} : Finset ((Fin (2 ^ n)) × (Fin (2 ^ n)))).card:= by
   let s' := s.pickSubset (d / (2 ^ k))
   by_cases h_empty : s = ∅
   · simp [h_empty]
@@ -710,14 +708,16 @@ private lemma master_lemma
         rw [poly_eval_lemma]
         rcases ha with ⟨h_a_s, h_eq⟩
         rw [h_eq]
-        by_cases h_s'_card_le : d / k ≤  s'.card
-        · rw [indicated_polynomial_eq_foldAux' (by aesop) ] <;> try assumption
+        by_cases h_s'_card_le : d / (2 ^ k) ≤  s'.card
+        · rw [indicated_polynomial_eq_foldAux' (u := u) (by aesop) ] <;> try assumption
           · rw [←fold_def, ←h_eq, fold_pow_x_k]
           · intro i x hx
-            have h_x : ∃ j ∈ s, x = domain j := by
+            have h_x : ∃ j ∈ (Finset.preimage s (domain : Fin (2 ^ n) ↪ F) (fun x hx y hy hxy ↦ 
+        CosetFftDomain.injective (ω := domain) hxy)), x = domain j := by
               simp [s'] at hx
-              have hx : x ∈ s_f := Finset.mem_of_subset (pick_subset_subset) hx
-              simp [s_f] at hx
+              have hx : x ∈ s := Finset.mem_of_subset (pick_subset_subset) hx
+              simp at hx
+              simp
               tauto
             rcases h_x with ⟨j, ⟨h_j, h_x⟩⟩
             rw [h_x]
@@ -726,7 +726,7 @@ private lemma master_lemma
           · intro i
             exact lt_of_lt_of_le (h_u_deg i) h_s'_card_le
         · simp at h_s'_card_le
-          have h : s' = s_f := by
+          have h : s' = s := by
             simp only [s'] at h_s'_card_le
             simp only [s']
             apply pick_subset_eq_s_of_card_pick_subset_lt_n h_s'_card_le
@@ -735,6 +735,11 @@ private lemma master_lemma
           rw [←eval_comm, indicated_polynomial_eq_foldAux (by simp [s_f, h_a_s])]
           rw [←h_eq, ←fold_def, fold_pow_x_k]
       · rintro ⟨x₁, x₂⟩ hx ⟨y₁, y₂⟩ hy
+        simp
+        intro hxy₁ 
+        simp [hxy₁]
+        simp at hx
+        simp at hy
         aesop
 
 private lemma master_lemma'
