@@ -625,3 +625,5 @@ noncomputable def d2STraceProjected
 end
 
 end DuplexSpongeFS
+
+-- TODO: move core defs to outer file

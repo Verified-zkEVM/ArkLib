@@ -332,6 +332,14 @@ def basicFiatShamirGameDist
       (StmtOut := StmtOut) (pSpec := pSpec)) := do
   (simulateQ impl (basicFiatShamirGame (V := V) P).run).run' (← init)
 
+-- /--
+-- fucntion fn()
+--   ---
+--   ---
+--   ---
+--   ---
+-- -/
+
 /-- Distribution of the DSFS game output under a concrete oracle implementation. -/
 def duplexSpongeFiatShamirGameDist
     {σ : Type}
@@ -1097,6 +1105,7 @@ theorem lemma_5_1
     (permInit : ProbComp σPerm)
     (permImpl : QueryImpl
       (permutationOracle (CanonicalSpongeState U)) (StateT σPerm ProbComp))
+      -- TODO: check p⁻¹ query impl
     (securityParam instanceBound : ℕ)
     (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
@@ -1110,8 +1119,10 @@ theorem lemma_5_1
             (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec))),
       ∀ (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
           (StmtIn × pSpec.Messages)),
+          -- TODO: fix query bound to each oracles `(tₕ, tₚ, tₚᵢ)`, via  `IsIndexQueryBound`
       OracleComp.IsTotalQueryBound maliciousProver (tₕ + tₚ + tₚᵢ) →
-      tvDist
+      tvDist -- 1/2 ∑ |p(i) - q(i)|
+         -- hybrid 0
         (mappedDuplexSpongeFiatShamirGameDist
           (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
           (pSpec := pSpec) (U := U)
@@ -1120,6 +1131,7 @@ theorem lemma_5_1
           (section58CanonicalDSImpl
             (oSpec := oSpec) (StmtIn := StmtIn) (U := U) sharedImpl permImpl)
           V maliciousProver paperD2STrace)
+        -- hybrid 4
         (basicFiatShamirGameDist
           (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
           (pSpec := pSpec)

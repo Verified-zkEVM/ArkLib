@@ -37,6 +37,49 @@ class HasChallengeSize {n : ℕ} (pSpec : ProtocolSpec n) where
 
 export HasChallengeSize (challengeSize)
 
+/-- Paper-facing codec surface for CO25 Definition 4.1.
+
+The existing DSFS implementation is written against `HasMessageSize` / `HasChallengeSize` plus
+`Serialize` / `Deserialize` instances. `Codec` packages that data together in one object while also
+recording the per-round decoder bias and a preimage sampler needed by later sections of the paper.
+-/
+structure Codec {n : ℕ} (pSpec : ProtocolSpec n) (U : Type) where
+  messageSize : pSpec.MessageIdx → Nat
+  challengeSize : pSpec.ChallengeIdx → Nat
+  encode : (i : pSpec.MessageIdx) → pSpec.Message i → Vector U (messageSize i)
+  encode_injective : ∀ i, Function.Injective (encode i)
+  decode : (i : pSpec.ChallengeIdx) → Vector U (challengeSize i) → pSpec.Challenge i
+  challengeBias : pSpec.ChallengeIdx → NNReal
+  sampleChallengePreimage :
+    (i : pSpec.ChallengeIdx) → pSpec.Challenge i → ProbComp (Vector U (challengeSize i))
+
+namespace Codec
+
+variable {n : ℕ} {pSpec : ProtocolSpec n} {U : Type}
+
+instance (cdc : Codec pSpec U) : HasMessageSize pSpec where
+  messageSize := cdc.messageSize
+
+instance (cdc : Codec pSpec U) : HasChallengeSize pSpec where
+  challengeSize := cdc.challengeSize
+
+instance (cdc : Codec pSpec U) :
+    ∀ i, Serialize (pSpec.Message i) (Vector U (cdc.messageSize i)) := by
+  intro i
+  exact ⟨cdc.encode i⟩
+
+instance (cdc : Codec pSpec U) :
+    ∀ i, Serialize.IsInjective (pSpec.Message i) (Vector U (cdc.messageSize i)) := by
+  intro i
+  exact ⟨cdc.encode_injective i⟩
+
+instance (cdc : Codec pSpec U) :
+    ∀ i, Deserialize (pSpec.Challenge i) (Vector U (cdc.challengeSize i)) := by
+  intro i
+  exact ⟨cdc.decode i⟩
+
+end Codec
+
 variable (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
     {U : Type} [SpongeUnit U] [SpongeSize]
     [HasMessageSize pSpec] [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
