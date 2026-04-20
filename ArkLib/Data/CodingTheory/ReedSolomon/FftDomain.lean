@@ -1066,6 +1066,12 @@ section
 
 open FftDomain
 
+@[simp]
+lemma size_of_smooth_coset_domain_eq_pow_of_2 {n : ℕ} {ω : SmoothCosetFftDomain n F} :
+  Finset.card ω.toFinset = 2 ^ n := by
+  aesop 
+    (add simp [CosetFftDomain.toFinset, Finset.card_image_of_injective, CosetFftDomain.injective])
+
 /-- Given a smooth coset FFT domain `ω` of log-order `n` returns
   a subdomain of log-order `i`. -/
 def subdomain {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : Fin n.succ) :

@@ -738,6 +738,48 @@ private lemma master_lemma
         aesop
 
 private lemma master_lemma'
+  [Fintype F]
+  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ}
+  {s : Finset F}
+  (h_s : s ⊆ (domain.subdomainNatReversed k).toFinset)
+  {u : Fin (2 ^ k) → Polynomial F}
+  (h_u : ∀ i, ∀ x ∈ s, (u i).eval x
+      = foldWordAuxCoeff domain f (2 ^ k) i x)
+  {d : ℕ}
+  (h_k_d : 2 ^ k ≤ d)
+  (h_d : d ≤ 2 ^ n)
+  (h_k_card : (2 ^ k) ≤ Fintype.card F)
+  (h_u_deg : ∀ i, (u i).natDegree < d / (2 ^ k))
+  :
+  ∃ f' : Polynomial F,
+    f'.natDegree < d
+      ∧ hammingDist f (fun x => f'.eval (domain x))
+        ≤ 2 ^ n -
+          2 ^ k * (Finset.card s):= by
+  obtain ⟨f, h₁, h₂⟩ := master_lemma h_s h_u h_k_d h_k_card h_u_deg
+  exists f
+  simp [h₁]
+  exact le_trans h₂ <| by  
+    simp only [Fintype.card_fin, Embedding.coeFn_mk, product_eq_sprod] 
+    rw [Nat.sub_le_sub_iff_left (by {
+      simp [CosetFftDomain.subdomainNatReversed] at h_s 
+      have hcard := Finset.card_le_card h_s
+      rw [CosetFftDomain.size_of_smooth_coset_domain_eq_pow_of_2] at hcard
+      simp at hcard
+      apply Nat.le_trans 
+      apply Nat.mul_le_mul_left _ hcard
+      rw [←Nat.pow_add]
+      have hkn : k ≤ n := by
+        rw [←Nat.pow_le_pow_iff_right (a := 2) (by simp)] 
+        omega
+      rw [Nat.add_sub_of_le hkn]
+    })]
+
+
+
+
+
+private lemma master_lemma'
   [Nonempty ι]
   [Fintype F]
   {domain : ι ↪ F} {f : Word F ι} {k : ℕ}
