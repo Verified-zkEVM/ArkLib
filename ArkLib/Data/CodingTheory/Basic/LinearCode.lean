@@ -7,7 +7,11 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 
 import ArkLib.Data.CodingTheory.Basic.DecodingRadius
 import ArkLib.Data.CodingTheory.Prelims
-import Mathlib
+import ArkLib.Data.CodingTheory.Basic.Distance
+import Mathlib.LinearAlgebra.FreeModule.PID
+import Mathlib.RingTheory.PicardGroup
+import Mathlib.RingTheory.RegularLocalRing.Defs
+import Mathlib.RingTheory.SimpleRing.Principal
 import CompPoly.Data.Nat.Bitwise
 
 /-!
@@ -358,7 +362,7 @@ lemma rank_genMatrix_eq_dim [Field F] (LC : LinearCode ι F) :
   unfold dim
   have h := Matrix.rank_eq_finrank_span_row (matrixFromBasis LC)
   symm
-  rw [h]
+  erw [h]
   have := congrArg (fun K : Submodule F (ι → F) => Module.finrank F ↥K) (eq_span_rows LC)
   exact this.symm
 
