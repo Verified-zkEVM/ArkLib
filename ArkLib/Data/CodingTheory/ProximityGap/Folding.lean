@@ -535,7 +535,6 @@ private lemma indicated_polynomial_eq_foldAux'
   · exact foldWordAux_natDegree
 
 lemma indicated_polynomial_comp_x_k_natDegree
-  [Nonempty ι]
   [Fintype F]
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {s' : Finset F}
   (h_s : s'.Nonempty)
@@ -641,7 +640,7 @@ private lemma master_lemma
   (h_u : ∀ i, ∀ x ∈ s, (u i).eval x
       = foldWordAuxCoeff domain f k i x)
   {d : ℕ}
-  (h_d : k < d)
+  (h_d : 2 ^ k ≤ d)
   (h_k_card : k ≤ Fintype.card F)
   (h_u_deg : ∀ i, (u i).natDegree < d / k)
   :
@@ -656,7 +655,7 @@ private lemma master_lemma
     exists (C <| f 0)
     apply And.intro
     · simp
-      omega
+      apply lt_of_lt_of_le (b := 2 ^ k) <;> simp [h_d]
     · simp [hammingDist]
       have h : ({i_1 | ¬f i_1 = f 0} : Finset (Fin (2 ^ n))) = Finset.univ \ ({i_1 | f i_1 = f 0} : Finset (Fin (2 ^ n))) := by
         ext a
@@ -668,8 +667,7 @@ private lemma master_lemma
       rw [Finset.nonempty_iff_ne_empty]
       simp [h_empty]
     have h_s'_card : s'.card = min s.card (d / (2 ^ k)) := by
-      simp [s', s_f]
-      rw [Finset.card_image_of_injOn (by simp)]
+      simp [s']
     have h_s'_non_empty : s'.Nonempty := by
       have h_s'_card : 0 < s'.card := by
         rw [h_s'_card]
@@ -679,12 +677,12 @@ private lemma master_lemma
       intro contra
       rw [contra] at h_s'_card
       simp at h_s'_card
-    exists ((Polynomial.map (Polynomial.compRingHom (Polynomial.X ^ k)) <| indicatedPolynomial domain f k s').eval Polynomial.X)
+    exists ((Polynomial.map (Polynomial.compRingHom (Polynomial.X ^ (2 ^ k))) <| indicatedPolynomial domain f (2 ^ k) s').eval Polynomial.X)
     apply And.intro
     · apply lt_of_lt_of_le
       apply indicated_polynomial_comp_x_k_natDegree h_s'_non_empty
       apply le_trans
-      apply Nat.mul_le_mul_left (m := d / k)
+      apply Nat.mul_le_mul_left (m := d / (2 ^ k))
       omega
       apply Nat.mul_div_le
     · simp [hammingDist]
@@ -692,18 +690,18 @@ private lemma master_lemma
         ( {i |
         ¬f i =
             Polynomial.eval (domain i)
-              (Polynomial.eval Y (Polynomial.map (Y ^ k).compRingHom (indicatedPolynomial domain f k s')))} : Finset _) =
+              (Polynomial.eval Y (Polynomial.map (Y ^ (2 ^ k)).compRingHom (indicatedPolynomial domain f (2 ^ k) s')))} : Finset _) =
             Finset.univ \ ({i |
             f i =
                 Polynomial.eval (domain i)
-                  (Polynomial.eval Y (Polynomial.map (Y ^ k).compRingHom (indicatedPolynomial domain f k s')))} : Finset _)  := by
+                  (Polynomial.eval Y (Polynomial.map (Y ^ (2 ^ k)).compRingHom (indicatedPolynomial domain f (2 ^ k) s')))} : Finset _)  := by
           ext a
           aesop
       rw [h]
       clear h
       rw [Finset.card_sdiff]
+      simp only [card_univ, Fintype.card_fin, inter_univ]
       apply Nat.sub_le_sub_left
-      simp
       apply Finset.card_le_card_of_injOn
         (f := fun i => i.1)
       · rintro ⟨a₁, a₂⟩ ha
