@@ -351,7 +351,17 @@ lemma substitution_property_of_folding_polynomial {q f : F[X]} :
     ring
 
 lemma eval_property_of_folding_polynomial {q f : F[X]} {x : F} :
-  ((foldingPolynomial q f).map (Polynomial.evalRingHom (q.eval x))).eval x = f.eval x := by sorry
+  ((foldingPolynomial q f).map (Polynomial.evalRingHom (q.eval x))).eval x = f.eval x := by 
+  have h_subst : ((Polynomial.FoldingPolynomial.foldingPolynomial q f).map 
+    (Polynomial.compRingHom q)).eval X = f := 
+      substitution_property_of_folding_polynomial
+  generalize_proofs at *
+  (replace h_subst := congr_arg (Polynomial.eval x) h_subst 
+   simp_all only [eval_map] 
+   convert h_subst using 1 
+   simp +decide [Polynomial.eval₂_eq_sum_range] 
+   ring_nf
+   simp +decide [Polynomial.eval_finset_sum])
 
 lemma eval_property_of_folding_polynomial_x_k {f : F[X]} {k : ℕ} {x : F} :
   ((foldingPolynomial (X ^ k) f).map (Polynomial.evalRingHom (x ^ k))).eval x =

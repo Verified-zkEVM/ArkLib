@@ -286,20 +286,19 @@ lemma fold_zero {k : ℕ} :
   ext
   simp
 
-private noncomputable def foldAuxCoeff (domain : SmoothCosetFftDomain n F) 
+private noncomputable def foldWordAuxCoeff (domain : SmoothCosetFftDomain n F) 
   (f : Word F (Fin (2 ^ n))) (k : ℕ) (i : Fin k) (x : F)
   : F
   := (foldWordAux domain f k x).coeff i
 
-private lemma foldAux_eq_sum_of_foldAuxCoeff
-  [Nonempty ι]
+private lemma foldWordAux_eq_sum_of_foldWordAuxCoeff
   [Fintype F]
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {x : F}
   [inst : NeZero k]
   :
   foldWordAux domain f k x
-    = ∑ j, Polynomial.C (foldAuxCoeff domain f k j x) * Y ^ j.val := by
-  unfold foldAuxCoeff
+    = ∑ j, Polynomial.C (foldWordAuxCoeff domain f k j x) * Y ^ j.val := by
+  unfold foldWordAuxCoeff
   ext n
   simp
   by_cases hlt: n < k
@@ -345,15 +344,14 @@ private lemma foldAux_eq_sum_of_foldAuxCoeff
     simp
 
 private lemma fold_eq_sum_of_foldAuxCoeff_mul_pow_alpha
-  [Nonempty ι]
   [Fintype F]
-  {domain : ι ↪ F} {f : Word F ι} {k : ℕ} {α : F} {x : F}
+  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {α : F} {x : F}
   [inst : NeZero k]
   :
   fold domain f k α x =
-    ∑ j : Fin k, (foldAuxCoeff domain f k j x) * α ^ j.val := by
+    ∑ j : Fin k, (foldWordAuxCoeff domain f k j x) * α ^ j.val := by
   unfold fold
-  rw [foldAux_eq_sum_of_foldAuxCoeff]
+  rw [foldWordAux_eq_sum_of_foldWordAuxCoeff]
   rw [Polynomial.eval_finset_sum]
   conv =>
     lhs
@@ -363,15 +361,15 @@ private lemma fold_eq_sum_of_foldAuxCoeff_mul_pow_alpha
     simp
 
 private noncomputable def indicatedPolynomial
-  (domain : ι ↪ F) (f : Word F ι) (k : ℕ) (s' : Finset F)
+  (domain : SmoothCosetFftDomain n F) (f : Word F (Fin (2 ^ n))) (k : ℕ) (s' : Finset F)
   :
   Polynomial (Polynomial F)
   := ∑ x ∈ s',
     Polynomial.C (singletonIndicator x s') *
-      (Polynomial.map Polynomial.C <| foldAux domain f k x)
+      (Polynomial.map Polynomial.C <| foldWordAux domain f k x)
 
 private lemma indicated_polynomial_degree_x_lt
-  {domain : ι ↪ F} {f : Word F ι} {k : ℕ} {s' : Finset F}
+  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {s' : Finset F}
   (hs' : s'.Nonempty)
   :
   Bivariate.degreeX (indicatedPolynomial domain f k s')
@@ -392,7 +390,7 @@ private lemma indicated_polynomial_degree_x_lt
 private lemma indicated_polynomial_degree_y_lt
   [Nonempty ι]
   [Fintype F]
-  {domain : ι ↪ F} {f : Word F ι} {k : ℕ} {s' : Finset F}
+  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {s' : Finset F}
   [inst : NeZero k]
   :
   Bivariate.natDegreeY (indicatedPolynomial domain f k s')
@@ -410,15 +408,14 @@ private lemma indicated_polynomial_degree_y_lt
   })]
   apply lt_of_le_of_lt
   apply natDegree_mul_le
-  simp [foldAux_natDegree]
-
+  simp [foldWordAux_natDegree]
 
 private lemma indicated_polynomial_eq_foldAux
-  {domain : ι ↪ F} {f : Word F ι} {k : ℕ} {s' : Finset F}
+  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {s' : Finset F}
   {α : F} {x : F} (hx : x ∈ s')
   :
   ((indicatedPolynomial domain f k s').eval (Polynomial.C α)).eval x
-    = (foldAux domain f k x).eval α := by
+    = (foldWordAux domain f k x).eval α := by
   simp only [indicatedPolynomial]
   rw [eval_finset_sum, eval_finset_sum]
   simp only [eval_mul, eval_C, eval_map_apply]
@@ -430,12 +427,11 @@ private lemma indicated_polynomial_eq_foldAux
   simp [hx]
 
 private lemma indicated_polynomial_eval_eq_combination_of_correlated
-  [Nonempty ι]
   [Fintype F]
-  {domain : ι ↪ F} {f : Word F ι} {k : ℕ} {s' : Finset F}
-  {u : Fin k → Polynomial F}
+  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {s' : Finset F}
+  {u : Fin (2 ^ k) → Polynomial F}
   {α : F} {x : F}
-  (hu : ∀ i x, x ∈ s' → (u i).eval x = (foldAuxCoeff domain f k i x))
+  (hu : ∀ i x, x ∈ s' → (u i).eval x = (foldWordAuxCoeff domain f (2 ^ k) i x))
   (hx : x ∈ s')
   [inst : NeZero k]
   :
