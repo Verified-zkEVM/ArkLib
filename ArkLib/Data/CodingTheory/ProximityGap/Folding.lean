@@ -712,17 +712,11 @@ private lemma master_lemma
         · rw [indicated_polynomial_eq_foldAux' (u := u) (by aesop) ] <;> try assumption
           · rw [←fold_def, ←h_eq, fold_pow_x_k]
           · intro i x hx
-            have h_x : ∃ j ∈ (Finset.preimage s (domain : Fin (2 ^ n) ↪ F) (fun x hx y hy hxy ↦ 
-        CosetFftDomain.injective (ω := domain) hxy)), x = domain j := by
-              simp [s'] at hx
-              have hx : x ∈ s := Finset.mem_of_subset (pick_subset_subset) hx
-              simp at hx
-              simp
-              tauto
-            rcases h_x with ⟨j, ⟨h_j, h_x⟩⟩
-            rw [h_x]
-            rw [h_u i ]
-            assumption
+            have hsub : s' ⊆ s := by
+              simp [s']
+              exact pick_subset_subset
+            have hx := hsub hx
+            rw [h_u _ _ hx]
           · intro i
             exact lt_of_lt_of_le (h_u_deg i) h_s'_card_le
         · simp at h_s'_card_le
@@ -732,7 +726,7 @@ private lemma master_lemma
             apply pick_subset_eq_s_of_card_pick_subset_lt_n h_s'_card_le
           rw [h]
           rw [h] at h_s'_card_le
-          rw [←eval_comm, indicated_polynomial_eq_foldAux (by simp [s_f, h_a_s])]
+          rw [←eval_comm, indicated_polynomial_eq_foldAux (by simp [h_a_s])]
           rw [←h_eq, ←fold_def, fold_pow_x_k]
       · rintro ⟨x₁, x₂⟩ hx ⟨y₁, y₂⟩ hy
         simp
@@ -740,6 +734,7 @@ private lemma master_lemma
         simp [hxy₁]
         simp at hx
         simp at hy
+        apply CosetFftDomain.injective (ω := domain)
         aesop
 
 private lemma master_lemma'
