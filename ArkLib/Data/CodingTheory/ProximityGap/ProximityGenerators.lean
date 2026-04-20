@@ -30,8 +30,8 @@ probability of obtaining a zero output from a non-zero vector is bounded above b
 - `polynomial generator`: the output is defined by `ℓ` linearly independent multivariate polynomials
 - `MDS generator`: A generator is MDS if the matrix whose rows are the outputs of the generator
 function is a generator matrix for an MDS code
-- `MCA generator`: A generator has mutual correlated agreement (MCA) with error `ε_mca` if the probability that the
-generator satisfies the MCA condition is bounded above by `ε_mca`.
+- `MCA generator`: A generator has mutual correlated agreement (MCA) with error `ε_mca` if the
+probability that the generator satisfies the MCA condition is bounded above by `ε_mca`.
 
 ## References
 
