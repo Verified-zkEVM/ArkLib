@@ -976,6 +976,15 @@ def subdomainNatReversed {n : ℕ} (ω : SmoothFftDomain n F) (i : ℕ) :
   ω.subdomain ⟨n - i, by omega⟩
 
 omit [DecidableEq F] in
+lemma mem_subdomainNatReversed_of_eq {n : ℕ} {ω : SmoothFftDomain n F}
+  {i j : ℕ}
+  (h : i = j)
+  {x : F} :
+  x ∈ ω.subdomainNatReversed i ↔ x ∈ ω.subdomainNatReversed j := by
+  unfold subdomainNatReversed
+  exact mem_subdomain_of_eq_vals (ω := ω) (by simp [h])
+
+omit [DecidableEq F] in
 @[simp]
 lemma subdomainNatReversed_zero {n : ℕ} {ω : SmoothFftDomain n F}
   {x : F} :
@@ -1327,6 +1336,15 @@ def subdomainNatReversed {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : ℕ) :
   ω.subdomain ⟨n - i, by omega⟩
 
 omit [DecidableEq F] in
+lemma mem_subdomainNatReversed_of_eq {n : ℕ} {ω : SmoothCosetFftDomain n F}
+  {i j : ℕ}
+  (h : i = j)
+  {x : F} :
+  x ∈ ω.subdomainNatReversed i ↔ x ∈ ω.subdomainNatReversed j := by
+  unfold subdomainNatReversed
+  exact mem_subdomain_of_eq_vals (ω := ω) (by simp [h])
+
+omit [DecidableEq F] in
 lemma subdomainNatReversed_x {n : ℕ} {ω : SmoothCosetFftDomain n F}
   {i : ℕ}
   (hi : i ≤ n) :
@@ -1469,6 +1487,14 @@ lemma subdomainNatReversed_mul_property {n : ℕ} {ω : SmoothCosetFftDomain n F
     })).1 hb
   })
   exact (mem_subdomain_of_eq_vals (by simp)).1 h
+
+lemma subdomainNatReversed_roots_card {n} {ω : SmoothCosetFftDomain n F}
+  {i j : ℕ} (hij : i + j ≤ n)
+  {x : F}
+  (h : x ∈ (ω.subdomainNatReversed (i + j))) :
+  Finset.card { y ∈ (ω.subdomainNatReversed i).toFinset | y ^ (2 ^ j) = x }
+    = 2 ^ j := by
+  sorry
 
 
 lemma subdomainNatReversed_root_exists {n} {ω : SmoothCosetFftDomain n F}

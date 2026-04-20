@@ -350,6 +350,18 @@ lemma substitution_property_of_folding_polynomial {q f : F[X]} :
       h_fold_def, EuclideanDomain.mod_eq_sub_mul_div] 
     ring
 
+lemma eval_property_of_folding_polynomial {q f : F[X]} {x : F} :
+  ((foldingPolynomial q f).map (Polynomial.evalRingHom (q.eval x))).eval x = f.eval x := by sorry
+
+lemma eval_property_of_folding_polynomial_x_k {f : F[X]} {k : ℕ} {x : F} :
+  ((foldingPolynomial (X ^ k) f).map (Polynomial.evalRingHom (x ^ k))).eval x =
+    f.eval x := by
+  have h : (X ^ k).eval x = x ^ k := by simp
+  conv =>
+    rhs
+    rw [←eval_property_of_folding_polynomial (f := f) (q := X ^ k)]
+  rw [h]
+
 /-- The degree of `foldingPolynomial` is less than `q.degree` in the second variable, 
   when `q` is not a constant polynomial.
 -/
