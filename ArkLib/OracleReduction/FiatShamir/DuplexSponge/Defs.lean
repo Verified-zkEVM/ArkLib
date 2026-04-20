@@ -20,6 +20,9 @@ This file provides:
 
 namespace ProtocolSpec
 
+-- TODO: unify `HasMessageSize` and `HasChallengeSize` into Codec
+-- infrastructure, since these are message length functions
+
 /-- Type class for protocol specifications to specify the size of each message as a natural number
   (to be interpreted as a vector of units `U` of the given size for some sponge unit `U`) -/
 class HasMessageSize {n : ℕ} (pSpec : ProtocolSpec n) where

@@ -242,48 +242,6 @@ def traceDistOfConcreteExperiment
   let ⟨_, trace⟩ ← (simulateQ impl outWithLog).run' (← init)
   pure trace
 
-/-- Concrete paired experiments for Lemma 5.8 (`S` and `Σ` traces). -/
-structure Lemma5_8Experiments where
-  σS : Type
-  αS : Type
-  initS : ProbComp σS
-  implS : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σS ProbComp)
-  expS : OracleComp (duplexSpongeChallengeOracle StmtIn U) αS
-  σSigma : Type
-  αSigma : Type
-  initSigma : ProbComp σSigma
-  implSigma : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σSigma ProbComp)
-  expSigma : OracleComp (duplexSpongeChallengeOracle StmtIn U) αSigma
-
-/-- DS trace distribution of the concrete `S` experiment in Lemma 5.8. -/
-def Lemma5_8Experiments.traceDistS
-    (experiments : Lemma5_8Experiments (StmtIn := StmtIn) (U := U)) :
-    ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U)) :=
-  traceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
-    experiments.initS experiments.implS experiments.expS
-
-/-- DS trace distribution of the concrete `Σ` experiment in Lemma 5.8. -/
-def Lemma5_8Experiments.traceDistSigma
-    (experiments : Lemma5_8Experiments (StmtIn := StmtIn) (U := U)) :
-    ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U)) :=
-  traceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
-    experiments.initSigma experiments.implSigma experiments.expSigma
-
-/--
-Lemma 5.8 (paper-facing): for any `(tₕ, tₚ, tₚᵢ)`-query setting with `tₚ ≥ L`,
-the bad-event probability is bounded in both Section 5.6 experiments.
--/
-theorem lemma_5_8
-    [Fintype U]
-    (experiments : Lemma5_8Experiments (StmtIn := StmtIn) (U := U))
-    (tₕ tₚ tₚᵢ L : ℕ)
-    (hTp : tₚ ≥ L) :
-    max
-        (Pr[fun tr => BadEventDS.E tr | experiments.traceDistS])
-        (Pr[fun tr => BadEventDS.E tr | experiments.traceDistSigma])
-      ≤ ENNReal.ofReal (lemma5_8Bound U tₕ tₚ tₚᵢ L) := by
-  sorry
-
 /-! Then we define other bad events that don't hold (`= 0`)
 if the combined event doesn't hold (`= 0`)
 -/
@@ -596,33 +554,6 @@ def paperTraceConsistentOnSupport
     (traceDist : ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U))) : Prop :=
   ∀ tr ∈ support traceDist, PaperTraceConsistent (StmtIn := StmtIn) (U := U) tr
 
-/-- Concrete `S` experiment package carries paper-trace consistency on support. -/
-def Lemma5_8Experiments.paperTraceConsistentS
-    (experiments : Lemma5_8Experiments (StmtIn := StmtIn) (U := U)) : Prop :=
-  paperTraceConsistentOnSupport (StmtIn := StmtIn) (U := U) experiments.traceDistS
-
-/-- Concrete `Σ` experiment package carries paper-trace consistency on support. -/
-def Lemma5_8Experiments.paperTraceConsistentSigma
-    (experiments : Lemma5_8Experiments (StmtIn := StmtIn) (U := U)) : Prop :=
-  paperTraceConsistentOnSupport (StmtIn := StmtIn) (U := U) experiments.traceDistSigma
-
-/--
-Concrete Section 5.6 experiment package with explicit paper-trace consistency witnesses on support.
--/
-structure Lemma5_8ExperimentsPaper extends Lemma5_8Experiments (StmtIn := StmtIn) (U := U) where
-  paperConsS :
-    paperTraceConsistentOnSupport (StmtIn := StmtIn) (U := U)
-      (traceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
-        toLemma5_8Experiments.initS
-        toLemma5_8Experiments.implS
-        toLemma5_8Experiments.expS)
-  paperConsSigma :
-    paperTraceConsistentOnSupport (StmtIn := StmtIn) (U := U)
-      (traceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
-        toLemma5_8Experiments.initSigma
-        toLemma5_8Experiments.implSigma
-        toLemma5_8Experiments.expSigma)
-
 /--
 No backward `p⁻¹` entries occur in the base trace.
 
@@ -669,23 +600,100 @@ lemma paperTraceConsistentOnSupport_of_noBackwardInBaseTraceOnSupport
 
 section ConcreteSection58Instantiations
 
-variable {n : ℕ} {pSpec : ProtocolSpec n}
+variable {StmtOut : Type}
+  {n : ℕ} {pSpec : ProtocolSpec n}
+  [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
   [HasMessageSize pSpec] [HasChallengeSize pSpec] [DecidableEq StmtIn] [DecidableEq U]
+  [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
+  [∀ i, Deserialize (pSpec.Challenge i) (Vector U (challengeSize i))]
   [SampleableType U]
 
-/--
-Concrete Lemma 5.8 paired experiments where:
-- `S` uses an explicit "real" DS query implementation;
-- `Σ` uses the Section 5.4 simulator core (`d2sQueryImplCoreProb`) with uniform unit sampling.
--/
-noncomputable def Lemma5_8Experiments.realVsSimulator
-    {σReal αS αSigma : Type}
+/-- Per-oracle query budget map for a Section 5.6 malicious prover:
+- `tₕ` bounds `h` queries,
+- `tₚ` bounds forward `p` queries,
+- `tₚᵢ` bounds backward `p⁻¹` queries. -/
+def lemma5_8QueryBudget (tₕ tₚ tₚᵢ : ℕ) :
+    (duplexSpongeChallengeOracle StmtIn U).Domain → ℕ
+  | .inl _ => tₕ
+  | .inr (.inl _) => tₚ
+  | .inr (.inr _) => tₚᵢ
+
+/-- Semantic `(tₕ, tₚ, tₚᵢ)` query bound for a malicious prover in Lemma 5.8. -/
+abbrev IsLemma5_8QueryBound
+    (maliciousProver :
+      OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages))
+    (tₕ tₚ tₚᵢ : ℕ) : Prop :=
+  OracleComp.IsPerIndexQueryBound maliciousProver
+    (lemma5_8QueryBudget (StmtIn := StmtIn) (U := U) tₕ tₚ tₚᵢ)
+
+/-- Project away the impossible empty-oracle side from a `[]ₒ + DS` trace log. -/
+def lemma5_8ProjectTraceLog
+    (log : QueryLog ([]ₒ + duplexSpongeChallengeOracle StmtIn U)) :
+    QueryLog (duplexSpongeChallengeOracle StmtIn U) :=
+  log.filterMap fun entry =>
+    match entry with
+    | ⟨.inl q, _⟩ => PEmpty.elim q
+    | ⟨.inr q, r⟩ => some ⟨q, r⟩
+
+/-- The empty-oracle branch of the Section 5.6 experiment is uncallable. -/
+private def lemma5_8EmptyQueryImpl {σ : Type} :
+    QueryImpl []ₒ (StateT σ ProbComp) :=
+  fun q => PEmpty.elim q
+
+/-- Run a concrete Section 5.6 experiment over `[]ₒ + DS` and keep only the DS trace. -/
+def lemma5_8ProjectedTraceDistOfConcreteExperiment
+    {σ α : Type}
+    (init : ProbComp σ)
+    (impl : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σ ProbComp))
+    (exp : OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) α) :
+    ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U)) := do
+  let combinedImpl :
+      QueryImpl ([]ₒ + duplexSpongeChallengeOracle StmtIn U) (StateT σ ProbComp) :=
+    (lemma5_8EmptyQueryImpl (σ := σ)) + impl
+  let outWithLog :
+      OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U)
+        (α × QueryLog ([]ₒ + duplexSpongeChallengeOracle StmtIn U)) :=
+    (simulateQ loggingOracle exp).run
+  let ⟨_, trace⟩ ←
+    (simulateQ combinedImpl outWithLog).run' (← init)
+  pure (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trace)
+
+/-- The Section 5.6 experiment shape used in both sides of Lemma 5.8:
+run the malicious prover, then run the DSFS verifier on the resulting statement/proof. -/
+def lemma5_8TraceExperiment
+    (V : Verifier []ₒ StmtIn StmtOut pSpec)
+    (maliciousProver :
+      OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) :
+    OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) (Option StmtOut) := do
+  let ⟨stmtIn, messages⟩ ← maliciousProver
+  ((Verifier.duplexSpongeFiatShamir
+      (oSpec := []ₒ) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec) (U := U) V).run
+    stmtIn (fun i => match i with | ⟨0, _⟩ => messages)).run
+
+/-- Left-hand-side Section 5.6 trace distribution:
+real DS execution under the explicit `(h, p, p⁻¹)` implementation. -/
+noncomputable def lemma5_8RealTraceDist
+    {σReal : Type}
     (initReal : ProbComp σReal)
     (implReal : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σReal ProbComp))
-    (expS : OracleComp (duplexSpongeChallengeOracle StmtIn U) αS)
+    (V : Verifier []ₒ StmtIn StmtOut pSpec)
+    (maliciousProver :
+      OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) :
+    ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U)) :=
+  lemma5_8ProjectedTraceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
+    initReal implReal
+    (lemma5_8TraceExperiment
+      (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U) V maliciousProver)
+
+/-- Right-hand-side Section 5.6 trace distribution:
+simulator execution under `g <- 𝒟_Σ(λ, n)` with `D2SQuery`. -/
+noncomputable def lemma5_8SigmaTraceDist
     (simParams : DuplexSpongeFS.D2SQueryParams
       (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
-    (expSigma : OracleComp (duplexSpongeChallengeOracle StmtIn U) αSigma)
+    (V : Verifier []ₒ StmtIn StmtOut pSpec)
+    (maliciousProver :
+      OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages))
     (onSimAbort :
       (q : (duplexSpongeChallengeOracle StmtIn U).Domain) →
         DuplexSpongeFS.D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) →
@@ -694,37 +702,69 @@ noncomputable def Lemma5_8Experiments.realVsSimulator
               (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) :=
       DuplexSpongeFS.d2sQueryAbortFallback
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :
-    Lemma5_8Experiments (StmtIn := StmtIn) (U := U) where
-  σS := σReal
-  αS := αS
-  initS := initReal
-  implS := implReal
-  expS := expS
-  σSigma := DuplexSpongeFS.D2SQueryState
-    (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-  αSigma := αSigma
-  initSigma := pure default
-  implSigma :=
-    DuplexSpongeFS.d2sQueryImplCoreProb
+    ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U)) :=
+  lemma5_8ProjectedTraceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
+    (pure default)
+    (DuplexSpongeFS.d2sQueryImplCoreProb
       (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
       (unitImpl := DuplexSpongeFS.d2sUnitSampleImpl (U := U))
       (params := simParams)
-      (onAbort := onSimAbort)
-  expSigma := expSigma
+      (onAbort := onSimAbort))
+    (lemma5_8TraceExperiment
+      (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U) V maliciousProver)
 
-/--
-Concrete Lemma 5.8 paper package for the `real-vs-simulator` instantiation.
-
-The two support-level consistency obligations are now explicit arguments over concrete traces.
--/
-noncomputable def Lemma5_8ExperimentsPaper.realVsSimulator
-    {σReal αS αSigma : Type}
+/-- Support-level paper trace consistency for the real Section 5.6 experiment. -/
+def lemma5_8RealTraceConsistentOnSupport
+    {σReal : Type}
     (initReal : ProbComp σReal)
     (implReal : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σReal ProbComp))
-    (expS : OracleComp (duplexSpongeChallengeOracle StmtIn U) αS)
+    (V : Verifier []ₒ StmtIn StmtOut pSpec)
+    (maliciousProver :
+      OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) : Prop :=
+  paperTraceConsistentOnSupport (StmtIn := StmtIn) (U := U)
+    (lemma5_8RealTraceDist
+      (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (n := n) (pSpec := pSpec) (U := U)
+      initReal implReal V maliciousProver)
+
+/-- Support-level paper trace consistency for the `Σ` Section 5.6 experiment. -/
+def lemma5_8SigmaTraceConsistentOnSupport
     (simParams : DuplexSpongeFS.D2SQueryParams
       (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
-    (expSigma : OracleComp (duplexSpongeChallengeOracle StmtIn U) αSigma)
+    (V : Verifier []ₒ StmtIn StmtOut pSpec)
+    (maliciousProver :
+      OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages))
+    (onSimAbort :
+      (q : (duplexSpongeChallengeOracle StmtIn U).Domain) →
+        DuplexSpongeFS.D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) →
+          (duplexSpongeChallengeOracle StmtIn U).Range q ×
+            DuplexSpongeFS.D2SQueryState
+              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) :=
+      DuplexSpongeFS.d2sQueryAbortFallback
+        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) : Prop :=
+  paperTraceConsistentOnSupport (StmtIn := StmtIn) (U := U)
+    (lemma5_8SigmaTraceDist
+      (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (n := n) (pSpec := pSpec) (U := U)
+      simParams V maliciousProver onSimAbort)
+
+/--
+Lemma 5.8 (paper-facing): for every malicious prover with explicit
+`(tₕ, tₚ, tₚᵢ)` query budget, compare the two concrete Section 5.6 experiments:
+- the real duplex-sponge execution under `(h, p, p⁻¹) <- 𝒟_𝔖(λ, n)`;
+- the simulator execution under `g <- 𝒟_Σ(λ, n)` with `D2SQuery`.
+-/
+theorem lemma_5_8
+    [Fintype U]
+    {σReal : Type}
+    (initReal : ProbComp σReal)
+    (implReal : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σReal ProbComp))
+    (simParams : DuplexSpongeFS.D2SQueryParams
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+    (V : Verifier []ₒ StmtIn StmtOut pSpec)
+    (maliciousProver :
+      OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages))
     (onSimAbort :
       (q : (duplexSpongeChallengeOracle StmtIn U).Domain) →
         DuplexSpongeFS.D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) →
@@ -733,27 +773,27 @@ noncomputable def Lemma5_8ExperimentsPaper.realVsSimulator
               (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) :=
       DuplexSpongeFS.d2sQueryAbortFallback
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
-    (paperConsS :
-      paperTraceConsistentOnSupport (StmtIn := StmtIn) (U := U)
-        (traceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
-          initReal implReal expS))
-    (paperConsSigma :
-      paperTraceConsistentOnSupport (StmtIn := StmtIn) (U := U)
-        (traceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
-          (pure default)
-          (DuplexSpongeFS.d2sQueryImplCoreProb
-            (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-            (unitImpl := DuplexSpongeFS.d2sUnitSampleImpl (U := U))
-            (params := simParams)
-            (onAbort := onSimAbort))
-          expSigma)) :
-    Lemma5_8ExperimentsPaper (StmtIn := StmtIn) (U := U) where
-  toLemma5_8Experiments :=
-    Lemma5_8Experiments.realVsSimulator
-      (StmtIn := StmtIn) (U := U)
-      initReal implReal expS simParams expSigma onSimAbort
-  paperConsS := paperConsS
-  paperConsSigma := paperConsSigma
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hMaliciousBound : -- `(tₕ, tₚ, tₚᵢ)`-query bound prover
+      IsLemma5_8QueryBound
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+        maliciousProver tₕ tₚ tₚᵢ)
+    (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
+    max
+        (Pr[fun tr => BadEventDS.E tr |
+          lemma5_8RealTraceDist
+            (StmtIn := StmtIn) (StmtOut := StmtOut)
+            (n := n) (pSpec := pSpec) (U := U)
+            initReal implReal V maliciousProver])
+        (Pr[fun tr => BadEventDS.E tr |
+          lemma5_8SigmaTraceDist
+            (StmtIn := StmtIn) (StmtOut := StmtOut)
+            (n := n) (pSpec := pSpec) (U := U)
+            simParams V maliciousProver onSimAbort])
+      ≤ ENNReal.ofReal (lemma5_8Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries) := by
+  let _ := hMaliciousBound
+  let _ := hTp
+  sorry
 
 end ConcreteSection58Instantiations
 
@@ -768,64 +808,6 @@ lemma lemma_5_10_of_mem_support
     (h : ¬ E (trace := tr)) :
     ¬ E_prp (trace := tr) := by
   exact lemma_5_10 (trace := tr) (hTrace := hCons tr hMem) h
-
-/--
-Lemma 5.10 instantiated for traces sampled in the concrete `S` experiment package.
--/
-lemma Lemma5_8Experiments.lemma_5_10_S_of_mem_support
-    (experiments : Lemma5_8Experiments (StmtIn := StmtIn) (U := U))
-    (hCons : experiments.paperTraceConsistentS)
-    {tr : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    (hMem : tr ∈ support experiments.traceDistS)
-    (h : ¬ E (trace := tr)) :
-    ¬ E_prp (trace := tr) := by
-  exact lemma_5_10_of_mem_support (StmtIn := StmtIn) (U := U)
-    (traceDist := experiments.traceDistS) hCons hMem h
-
-/--
-Lemma 5.10 instantiated for traces sampled in the concrete `Σ` experiment package.
--/
-lemma Lemma5_8Experiments.lemma_5_10_Sigma_of_mem_support
-    (experiments : Lemma5_8Experiments (StmtIn := StmtIn) (U := U))
-    (hCons : experiments.paperTraceConsistentSigma)
-    {tr : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    (hMem : tr ∈ support experiments.traceDistSigma)
-    (h : ¬ E (trace := tr)) :
-    ¬ E_prp (trace := tr) := by
-  exact lemma_5_10_of_mem_support (StmtIn := StmtIn) (U := U)
-    (traceDist := experiments.traceDistSigma) hCons hMem h
-
-/--
-Lemma 5.10 instantiated for traces sampled in a concrete Section 5.6 `S` package with
-built-in support consistency.
--/
-lemma Lemma5_8ExperimentsPaper.lemma_5_10_S_of_mem_support
-    (experiments : Lemma5_8ExperimentsPaper (StmtIn := StmtIn) (U := U))
-    {tr : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    (hMem : tr ∈ support
-      (Lemma5_8Experiments.traceDistS (StmtIn := StmtIn) (U := U)
-        experiments.toLemma5_8Experiments))
-    (h : ¬ E (trace := tr)) :
-    ¬ E_prp (trace := tr) := by
-  exact Lemma5_8Experiments.lemma_5_10_S_of_mem_support
-    (StmtIn := StmtIn) (U := U)
-    experiments.toLemma5_8Experiments experiments.paperConsS hMem h
-
-/--
-Lemma 5.10 instantiated for traces sampled in a concrete Section 5.6 `Σ` package with
-built-in support consistency.
--/
-lemma Lemma5_8ExperimentsPaper.lemma_5_10_Sigma_of_mem_support
-    (experiments : Lemma5_8ExperimentsPaper (StmtIn := StmtIn) (U := U))
-    {tr : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    (hMem : tr ∈ support
-      (Lemma5_8Experiments.traceDistSigma (StmtIn := StmtIn) (U := U)
-        experiments.toLemma5_8Experiments))
-    (h : ¬ E (trace := tr)) :
-    ¬ E_prp (trace := tr) := by
-  exact Lemma5_8Experiments.lemma_5_10_Sigma_of_mem_support
-    (StmtIn := StmtIn) (U := U)
-    experiments.toLemma5_8Experiments experiments.paperConsSigma hMem h
 
 /-- Lemma 5.12 (paper-facing): if `E(tr) = 0` then `E_inv(tr, s) = 0`. -/
 lemma lemma_5_12 (h : ¬ E trace) : ¬ E_inv_paper trace state := by

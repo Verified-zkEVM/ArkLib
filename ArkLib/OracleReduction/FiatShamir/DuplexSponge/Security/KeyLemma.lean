@@ -439,32 +439,32 @@ abbrev Section58FSState
     (σShared : Type) :=
   σShared × (srChallengeOracle StmtIn pSpec).QueryCache
 
-/-- Fixed ambient shared-oracle witness used by the paper's Section 5.8 experiments. -/
-class Section58SharedOracleWitness where
+/-- Fixed ambient shared-oracle package used by the paper's Section 5.8 experiments. -/
+class Section58SharedOraclePackage where
   σShared : Type
   initShared : ProbComp σShared
   implShared : QueryImpl oSpec (StateT σShared ProbComp)
 
-/-- Fixed permutation-sampler witness used by the paper's `𝒟_𝔖(λ,n)` experiment. -/
-class Section58PermutationWitness where
+/-- Fixed permutation-sampler package used by the paper's `𝒟_𝔖(λ,n)` experiment. -/
+class Section58PermutationPackage where
   σPerm : Type
   initPerm : ProbComp σPerm
   implPerm : QueryImpl (permutationOracle (CanonicalSpongeState U)) (StateT σPerm ProbComp)
 
-/-- Minimal semantic law currently exposed for a Section 5.8 permutation witness: answers in the
+/-- Minimal semantic law currently exposed for a Section 5.8 permutation package: answers in the
 support of the forward and backward directions must remain mutually consistent across one-step
 state transitions. This does not yet capture the full random-permutation law of `𝒟_𝔖(λ,n)`, but it
 at least prevents treating an arbitrary pair of unrelated forward/backward samplers as the paper's
 permutation oracle. -/
-def Section58PermutationWitnessLaw
-    [permW : Section58PermutationWitness (U := U)] : Prop :=
-  (∀ (σ : permW.σPerm) (stateIn stateOut : CanonicalSpongeState U) (σ' : permW.σPerm),
-      (stateOut, σ') ∈ support ((permW.implPerm (.inl stateIn)).run σ) →
-        stateIn ∈ Prod.fst '' support ((permW.implPerm (.inr stateOut)).run σ'))
+def Section58PermutationPackageLaw
+    [permPkg : Section58PermutationPackage (U := U)] : Prop :=
+  (∀ (σ : permPkg.σPerm) (stateIn stateOut : CanonicalSpongeState U) (σ' : permPkg.σPerm),
+      (stateOut, σ') ∈ support ((permPkg.implPerm (.inl stateIn)).run σ) →
+        stateIn ∈ Prod.fst '' support ((permPkg.implPerm (.inr stateOut)).run σ'))
     ∧
-  (∀ (σ : permW.σPerm) (stateOut stateIn : CanonicalSpongeState U) (σ' : permW.σPerm),
-      (stateIn, σ') ∈ support ((permW.implPerm (.inr stateOut)).run σ) →
-        stateOut ∈ Prod.fst '' support ((permW.implPerm (.inl stateIn)).run σ'))
+  (∀ (σ : permPkg.σPerm) (stateOut stateIn : CanonicalSpongeState U) (σ' : permPkg.σPerm),
+      (stateIn, σ') ∈ support ((permPkg.implPerm (.inr stateOut)).run σ) →
+        stateOut ∈ Prod.fst '' support ((permPkg.implPerm (.inl stateIn)).run σ'))
 
 /-- Canonical Section 5.8 initializer for the DS-side experiment: keep the shared-oracle state,
 start the hash oracle with an empty cache, and sample the permutation-oracle state separately. -/
@@ -545,50 +545,50 @@ def section58CanonicalFSImpl
         pure resp
 
 /-- Named DS-side sampler corresponding to the paper's fixed `𝒟_𝔖(λ,n)` experiment, relative to
-the ambient shared-oracle and permutation witnesses. -/
-abbrev paperDSInit [sharedW : Section58SharedOracleWitness (oSpec := oSpec)]
-    [permW : Section58PermutationWitness (U := U)] :
+the ambient shared-oracle and permutation packages. -/
+abbrev paperDSInit [sharedPkg : Section58SharedOraclePackage (oSpec := oSpec)]
+    [permPkg : Section58PermutationPackage (U := U)] :
     ProbComp (Section58DSState
       (StmtIn := StmtIn) (U := U)
-      sharedW.σShared permW.σPerm) :=
+      sharedPkg.σShared permPkg.σPerm) :=
   section58CanonicalDSInit
     (StmtIn := StmtIn) (U := U)
-    sharedW.initShared permW.initPerm
+    sharedPkg.initShared permPkg.initPerm
 
 /-- Named DS-side implementation corresponding to the paper's fixed `𝒟_𝔖(λ,n)` experiment,
-relative to the ambient shared-oracle and permutation witnesses. -/
+relative to the ambient shared-oracle and permutation packages. -/
 abbrev paperDSImpl [DecidableEq StmtIn] [SampleableType U]
-    [sharedW : Section58SharedOracleWitness (oSpec := oSpec)]
-    [permW : Section58PermutationWitness (U := U)] :
+    [sharedPkg : Section58SharedOraclePackage (oSpec := oSpec)]
+    [permPkg : Section58PermutationPackage (U := U)] :
     QueryImpl (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StateT (Section58DSState
         (StmtIn := StmtIn) (U := U)
-        sharedW.σShared permW.σPerm) ProbComp) :=
+        sharedPkg.σShared permPkg.σPerm) ProbComp) :=
   section58CanonicalDSImpl
     (oSpec := oSpec) (StmtIn := StmtIn) (U := U)
-    sharedW.implShared permW.implPerm
+    sharedPkg.implShared permPkg.implPerm
 
 /-- Named basic-FS-side sampler corresponding to the paper's fixed `𝒟_IP(λ,n)` experiment,
-relative to the ambient shared-oracle witness. -/
-abbrev paperIPInit [sharedW : Section58SharedOracleWitness (oSpec := oSpec)] :
+relative to the ambient shared-oracle package. -/
+abbrev paperIPInit [sharedPkg : Section58SharedOraclePackage (oSpec := oSpec)] :
     ProbComp (Section58FSState
-      (StmtIn := StmtIn) (pSpec := pSpec) sharedW.σShared) :=
+      (StmtIn := StmtIn) (pSpec := pSpec) sharedPkg.σShared) :=
   section58CanonicalFSInit
     (StmtIn := StmtIn) (pSpec := pSpec)
-    sharedW.initShared
+    sharedPkg.initShared
 
 /-- Named basic-FS-side implementation corresponding to the paper's fixed `𝒟_IP(λ,n)` experiment,
-relative to the ambient shared-oracle witness. -/
+relative to the ambient shared-oracle package. -/
 abbrev paperIPImpl [DecidableEq StmtIn] [SampleableType U]
     [∀ i, SampleableType (pSpec.Challenge i)]
     [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
-    [sharedW : Section58SharedOracleWitness (oSpec := oSpec)] :
+    [sharedPkg : Section58SharedOraclePackage (oSpec := oSpec)] :
     QueryImpl (oSpec + FSPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (StateT (Section58FSState
-        (StmtIn := StmtIn) (pSpec := pSpec) sharedW.σShared) ProbComp) :=
+        (StmtIn := StmtIn) (pSpec := pSpec) sharedPkg.σShared) ProbComp) :=
   section58CanonicalFSImpl
     (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-    sharedW.implShared
+    sharedPkg.implShared
 
 /-- `Hyb₀`: left experiment in Section 5.8 (mapped DSFS experiment). -/
 abbrev hyb0Dist
@@ -629,7 +629,9 @@ abbrev hyb4Dist
 
 /-- Surjectivity side condition for the verifier-message codec used in Section 5.8:
 every decoded challenge must have at least one encoded preimage under `Deserialize`. This is the
-formal hook needed to interpret the paper's `ψ⁻¹` sampler on verifier challenges. -/
+formal hook needed to interpret the paper's `ψ⁻¹` sampler on verifier challenges.
+-- TODO: use standard `surjective` definition instead
+-/
 def ChallengeDeserializeSurjective : Prop :=
   ∀ (i : pSpec.ChallengeIdx) (challenge : pSpec.Challenge i),
     ∃ encoded : Vector U (challengeSize (pSpec := pSpec) i),
@@ -700,8 +702,8 @@ noncomputable def section58Hyb1Dist
     [SampleableType U]
     [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
-    [Section58SharedOracleWitness (oSpec := oSpec)]
-    [Section58PermutationWitness (U := U)]
+    [Section58SharedOraclePackage (oSpec := oSpec)]
+    [Section58PermutationPackage (U := U)]
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) :
     ProbComp (Option <| BasicFiatShamirGameOutput
@@ -733,11 +735,11 @@ noncomputable def section58Hyb1Dist
       (pSpec := pSpec) (U := U)
       (init := section58ChallengeInit
         (challengeSpec := challengeSpec)
-        (sharedInit := Section58SharedOracleWitness.initShared
+        (sharedInit := Section58SharedOraclePackage.initShared
           (oSpec := oSpec)))
       (impl := section58ChallengeImpl
         (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec)
-        (sharedImpl := Section58SharedOracleWitness.implShared
+        (sharedImpl := Section58SharedOraclePackage.implShared
           (oSpec := oSpec)))
       params V maliciousProver
       (section58Hyb1Line4Trace
@@ -751,8 +753,8 @@ noncomputable def section58Hyb2Dist
     [∀ i, Fintype (pSpec.Challenge i)]
     [∀ i, SampleableType (pSpec.Challenge i)]
     [∀ i, DecidableEq (pSpec.Challenge i)]
-    [Section58SharedOracleWitness (oSpec := oSpec)]
-    [Section58PermutationWitness (U := U)]
+    [Section58SharedOraclePackage (oSpec := oSpec)]
+    [Section58PermutationPackage (U := U)]
     (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) :
@@ -790,11 +792,11 @@ noncomputable def section58Hyb2Dist
       (pSpec := pSpec) (U := U)
       (init := section58ChallengeInit
         (challengeSpec := challengeSpec)
-        (sharedInit := Section58SharedOracleWitness.initShared
+        (sharedInit := Section58SharedOraclePackage.initShared
           (oSpec := oSpec)))
       (impl := section58ChallengeImpl
         (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec)
-        (sharedImpl := Section58SharedOracleWitness.implShared
+        (sharedImpl := Section58SharedOraclePackage.implShared
           (oSpec := oSpec)))
       params V maliciousProver
       (section58Hyb2Line4Trace
@@ -808,8 +810,8 @@ noncomputable def section58Hyb3Dist
     [∀ i, Fintype (pSpec.Challenge i)]
     [∀ i, SampleableType (pSpec.Challenge i)]
     [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
-    [Section58SharedOracleWitness (oSpec := oSpec)]
-    [Section58PermutationWitness (U := U)]
+    [Section58SharedOraclePackage (oSpec := oSpec)]
+    [Section58PermutationPackage (U := U)]
     (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) :
@@ -852,11 +854,11 @@ noncomputable def section58Hyb3Dist
       (pSpec := pSpec) (U := U)
       (init := section58ChallengeInit
         (challengeSpec := challengeSpec)
-        (sharedInit := Section58SharedOracleWitness.initShared
+        (sharedInit := Section58SharedOraclePackage.initShared
           (oSpec := oSpec)))
       (impl := section58ChallengeImpl
         (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec)
-        (sharedImpl := Section58SharedOracleWitness.implShared
+        (sharedImpl := Section58SharedOraclePackage.implShared
           (oSpec := oSpec)))
       params V maliciousProver
       (section58Hyb3Line4Trace
@@ -867,8 +869,8 @@ noncomputable def section58Hyb3Dist
 def claim_5_21
     [Fintype U] [SampleableType U] [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
-    [Section58SharedOracleWitness (oSpec := oSpec)]
-    [Section58PermutationWitness (U := U)]
+    [Section58SharedOraclePackage (oSpec := oSpec)]
+    [Section58PermutationPackage (U := U)]
     (securityParam instanceBound : ℕ)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
@@ -896,8 +898,8 @@ def claim_5_22
     [∀ i, Fintype (pSpec.Challenge i)]
     [∀ i, SampleableType (pSpec.Challenge i)]
     [∀ i, DecidableEq (pSpec.Challenge i)]
-    [Section58SharedOracleWitness (oSpec := oSpec)]
-    [Section58PermutationWitness (U := U)]
+    [Section58SharedOraclePackage (oSpec := oSpec)]
+    [Section58PermutationPackage (U := U)]
     (securityParam instanceBound : ℕ)
     (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
@@ -922,8 +924,8 @@ def claim_5_23
     [∀ i, Fintype (pSpec.Challenge i)]
     [∀ i, SampleableType (pSpec.Challenge i)]
     [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
-    [Section58SharedOracleWitness (oSpec := oSpec)]
-    [Section58PermutationWitness (U := U)]
+    [Section58SharedOraclePackage (oSpec := oSpec)]
+    [Section58PermutationPackage (U := U)]
     (securityParam instanceBound : ℕ)
     (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
@@ -945,8 +947,8 @@ def claim_5_24
     [∀ i, Fintype (pSpec.Challenge i)]
     [∀ i, SampleableType (pSpec.Challenge i)]
     [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
-    [Section58SharedOracleWitness (oSpec := oSpec)]
-    [Section58PermutationWitness (U := U)]
+    [Section58SharedOraclePackage (oSpec := oSpec)]
+    [Section58PermutationPackage (U := U)]
     (securityParam instanceBound : ℕ)
     (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
@@ -979,10 +981,10 @@ theorem lemma_5_1_dist_from_claims
     [∀ i, Fintype (pSpec.Challenge i)]
     [∀ i, SampleableType (pSpec.Challenge i)]
     [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
-    [Section58SharedOracleWitness (oSpec := oSpec)]
-    [Section58PermutationWitness (U := U)]
+    [Section58SharedOraclePackage (oSpec := oSpec)]
+    [Section58PermutationPackage (U := U)]
     (securityParam instanceBound : ℕ)
-    (hPermWitnessLaw : Section58PermutationWitnessLaw (U := U))
+    (hPermPackageLaw : Section58PermutationPackageLaw (U := U))
     (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
@@ -1022,7 +1024,7 @@ theorem lemma_5_1_dist_from_claims
         (paperIPImpl (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
         V maliciousProver d2sAlgo)
         ≤ (ηStar U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries εcodec : ℝ) := by
-  let _ := hPermWitnessLaw
+  let _ := hPermPackageLaw
   have h23' :
       tvDist
         (section58Hyb2Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
@@ -1070,6 +1072,15 @@ the paper: the same transformed prover/trace algorithms must work for every mali
 the stated query bound. The auxiliary hybrid trace algorithms used in the Section 5.8 proof chain
 remain an internal proof obligation when proving this theorem from
 `lemma_5_1_dist_from_claims`.
+
+TODO: upgrade the malicious-prover hypothesis from `IsTotalQueryBound (tₕ + tₚ + tₚᵢ)` to the
+same per-index `(tₕ, tₚ, tₚᵢ)` query-bound surface used by `BadEvents.lemma_5_8`, so the theorem
+matches the paper's Section 5 statement more closely.
+
+TODO: reintroduce an explicit semantic assumption capturing that `(permInit, permImpl)` really
+samples the paper's random permutation experiment `𝒟_𝔖(λ,n)`. The old package-level law was too
+hidden for the public theorem surface, but the theorem should eventually state this requirement
+directly rather than leaving the permutation sampler unconstrained.
 -/
 theorem lemma_5_1
     [Fintype U] [SampleableType U]
@@ -1080,10 +1091,13 @@ theorem lemma_5_1
     [∀ i, SampleableType (pSpec.Challenge i)]
     [∀ i, DecidableEq (pSpec.Message i)]
     [∀ i, DecidableEq (pSpec.Challenge i)]
-    [Section58SharedOracleWitness (oSpec := oSpec)]
-    [Section58PermutationWitness (U := U)]
+    {σShared σPerm : Type}
+    (sharedInit : ProbComp σShared)
+    (sharedImpl : QueryImpl oSpec (StateT σShared ProbComp))
+    (permInit : ProbComp σPerm)
+    (permImpl : QueryImpl
+      (permutationOracle (CanonicalSpongeState U)) (StateT σPerm ProbComp))
     (securityParam instanceBound : ℕ)
-    (hPermWitnessLaw : Section58PermutationWitnessLaw (U := U))
     (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (tₕ tₚ tₚᵢ : ℕ)
@@ -1101,20 +1115,23 @@ theorem lemma_5_1
         (mappedDuplexSpongeFiatShamirGameDist
           (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
           (pSpec := pSpec) (U := U)
-          (paperDSInit (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-          (paperDSImpl (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
+          (section58CanonicalDSInit
+            (StmtIn := StmtIn) (U := U) sharedInit permInit)
+          (section58CanonicalDSImpl
+            (oSpec := oSpec) (StmtIn := StmtIn) (U := U) sharedImpl permImpl)
           V maliciousProver paperD2STrace)
         (basicFiatShamirGameDist
           (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
           (pSpec := pSpec)
-          (paperIPInit (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec))
-          (paperIPImpl (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+          (section58CanonicalFSInit
+            (StmtIn := StmtIn) (pSpec := pSpec) sharedInit)
+          (section58CanonicalFSImpl
+            (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) sharedImpl)
           V (d2sAlgo maliciousProver))
         ≤ (ηStar U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries εcodec : ℝ)
       ∧ OracleComp.IsTotalQueryBound (d2sAlgo maliciousProver) (θStar tₕ tₚ tₚᵢ) := by
   let _ := securityParam
   let _ := instanceBound
-  let _ := hPermWitnessLaw
   refine ⟨?_, ?_, ?_⟩
   · exact duplexSpongeToBasicFSAlgo
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
