@@ -7,6 +7,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 import ArkLib.OracleReduction.FiatShamir.Basic
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.ProverTransform
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
 import VCVio.EvalDist.TVDist
 import VCVio.OracleComp.QueryTracking.RandomOracle
 import VCVio.OracleComp.QueryTracking.QueryBound
@@ -16,7 +17,7 @@ import VCVio.OracleComp.QueryTracking.QueryBound
 
 This file provides the Section 5 key-lemma interface:
 - the DSFS and basic-FS game experiments,
-- paper-facing abstractions for `D2SAlgo` and the Section 5.8 trace-reporting maps, and
+- paper-facing abstractions for `D2SAlgo` and the Section 5.8 trace algorithms, and
 - a statistical-distance theorem surface with the query-bound side condition.
 
 The full hybrid proof from Section 5.8 is still staged across the other Section 5 files.
@@ -73,13 +74,11 @@ private def liftFSQueriesToFSPlusUnit :
 /-- Output of the basic Fiat-Shamir game used in Lemma 5.1. -/
 abbrev BasicFiatShamirGameOutput :=
   StmtIn × StmtOut × pSpec.Messages ×
-    QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) ×
     QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)
 
 /-- Output of the duplex-sponge Fiat-Shamir game used in Lemma 5.1. -/
 abbrev DuplexSpongeFiatShamirGameOutput :=
   StmtIn × StmtOut × pSpec.Messages ×
-    QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U) ×
     QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)
 
 /-- First game for the key lemma: the basic Fiat-Shamir transform. -/
@@ -107,7 +106,7 @@ def basicFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
   let verifyQueryLog :=
     projectFSPlusUnitQueryLog
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) verifyQueryLogRaw
-  return ⟨stmtIn, ← stmtOut.getM, messages, proveQueryLog, verifyQueryLog⟩
+  return ⟨stmtIn, ← stmtOut.getM, messages, proveQueryLog ++ verifyQueryLog⟩
 
 /-- Second game for the key lemma: the duplex-sponge Fiat-Shamir transform. -/
 def duplexSpongeFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
@@ -121,7 +120,7 @@ def duplexSpongeFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
     liftM (simulateQ loggingOracle
       (V.duplexSpongeFiatShamir.run
         stmtIn (fun i => match i with | ⟨0, _⟩ => messages))).run
-  return ⟨stmtIn, ← stmtOut.getM, messages, proveQueryLog, verifyQueryLog⟩
+  return ⟨stmtIn, ← stmtOut.getM, messages, proveQueryLog ++ verifyQueryLog⟩
 
 /-- The D2S prover transform from Section 5.4 (DSFS prover to basic-FS prover). -/
 abbrev D2SAlgo :=
@@ -129,34 +128,196 @@ abbrev D2SAlgo :=
     OracleComp (oSpec + FSPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (Option (StmtIn × pSpec.Messages))
 
-/-- Generic Section 5.8 trace-reporting map used to post-process DSFS logs into the common
-basic-FS output space. This is intentionally more general than the paper's single `D2STrace`
-algorithm. -/
-structure Section58TraceMap where
-  run :
-    QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U) → -- `tr_P̃`
-      QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U) → -- `tr_V`
-      -- `tr` is the mapped basic-FS logs; this can abort because `StdTrace` can abort, see
-      -- Section 5.5.1.
-      Option
-        (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) ×
-          QueryLog (oSpec + fsChallengeOracle StmtIn pSpec))
+/-- Execute a Section 5.8 trace map inside `ProbComp` by interpreting the auxiliary unit-sampling
+oracle uniformly. -/
+def runSection58TraceMap
+    [SampleableType U]
+    (traceMap :
+      QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U) →
+        OptionT (OracleComp (Unit →ₒ U))
+          (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)))
+    (fullTrace : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
+    ProbComp
+      (Option (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec))) :=
+  simulateQ
+    (d2sUnitSampleImpl (U := U))
+    ((traceMap fullTrace).run)
 
-/-- Apply a Section 5.8 trace-reporting map to the DSFS game output so both experiments live in the
-same output space. -/
-def Section58TraceMap.mapOutput (traceMap : Section58TraceMap (oSpec := oSpec) (StmtIn := StmtIn)
-    (pSpec := pSpec) (U := U)) :
-    DuplexSpongeFiatShamirGameOutput (oSpec := oSpec) (StmtIn := StmtIn)
-      (StmtOut := StmtOut) (pSpec := pSpec) (U := U) →
-      Option
-        (BasicFiatShamirGameOutput (oSpec := oSpec) (StmtIn := StmtIn)
-          (StmtOut := StmtOut) (pSpec := pSpec)) :=
-  fun output =>
-    let ⟨stmtIn, stmtOut, messages, proveQueryLogDS, verifyQueryLogDS⟩ := output
-    match traceMap.run proveQueryLogDS verifyQueryLogDS with
-    | none => none
-    | some (proveQueryLogFS, verifyQueryLogFS) =>
-        some (stmtIn, stmtOut, messages, proveQueryLogFS, verifyQueryLogFS)
+/-- Project out the auxiliary unit-sampling queries from logs over
+`oSpec + (challengeSpec + Unit →ₒ U)`. -/
+def projectD2SChallengePlusUnitQueryLog
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    (log : QueryLog (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)) :
+    QueryLog (oSpec + challengeSpec) :=
+  log.filterMap fun entry =>
+    match entry with
+    | ⟨.inl q, r⟩ => some ⟨.inl q, r⟩
+    | ⟨.inr (.inl q), r⟩ => some ⟨.inr q, r⟩
+    | ⟨.inr (.inr _), _⟩ => none
+
+/-- Execute a Section 5.8 line-4 trace map on a projected hybrid trace. -/
+def runSection58ProjectedTraceMap
+    [SampleableType U]
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    (traceMap :
+      QueryLog (oSpec + challengeSpec) →
+        OptionT (OracleComp (Unit →ₒ U))
+          (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)))
+    (fullTrace : QueryLog (oSpec + challengeSpec)) :
+    ProbComp
+      (Option (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec))) :=
+  simulateQ
+    (d2sUnitSampleImpl (U := U))
+    ((traceMap fullTrace).run)
+
+/-- Shared-oracle state paired with a lazy random-function cache for an explicit hybrid
+challenge-oracle family. -/
+abbrev Section58ChallengeState
+    {κ : Type}
+    (challengeSpec : OracleSpec κ)
+    (σShared : Type) :=
+  σShared × challengeSpec.QueryCache
+
+/-- Canonical initializer for a shared oracle plus a lazy random-function hybrid challenge family. -/
+def section58ChallengeInit
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    {σShared : Type}
+    (sharedInit : ProbComp σShared) :
+    ProbComp (Section58ChallengeState challengeSpec σShared) := do
+  let sharedState ← sharedInit
+  pure (sharedState, ∅)
+
+/-- Canonical implementation for a shared oracle plus a lazy random-function hybrid challenge
+family, augmented with the auxiliary unit-sampling oracle used by `D2SQuery`. -/
+def section58ChallengeImpl
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    [SampleableType U]
+    [DecidableEq κ]
+    [∀ q : challengeSpec.Domain, SampleableType (challengeSpec.Range q)]
+    {σShared : Type}
+    (sharedImpl : QueryImpl oSpec (StateT σShared ProbComp)) :
+    QueryImpl (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)
+      (StateT (Section58ChallengeState challengeSpec σShared) ProbComp) :=
+  fun q => do
+    let ⟨sharedState, challengeCache⟩ ← get
+    match q with
+    | .inl qShared =>
+        let (resp, sharedState') ← (sharedImpl qShared).run sharedState
+        set (sharedState', challengeCache)
+        pure resp
+    | .inr (.inl qChallenge) =>
+        let (resp, challengeCache') ←
+          ((randomOracle :
+            QueryImpl challengeSpec (StateT challengeSpec.QueryCache ProbComp)) qChallenge).run
+            challengeCache
+        set (sharedState, challengeCache')
+        pure resp
+    | .inr (.inr (.inl qUnit)) =>
+        let resp ← StateT.lift <| d2sUnitSampleImpl (U := U) qUnit
+        pure resp
+    | .inr (.inr (.inr qUnif)) =>
+        let resp ← StateT.lift <|
+          (show ProbComp (unifSpec.Range qUnif) from
+            query (spec := unifSpec) qUnif)
+        pure resp
+
+/-- Common Section 5.8 hybrid game skeleton: run the malicious prover and verifier under
+`D2SQuery`, exposing only the chosen external challenge-oracle family and then projecting away the
+auxiliary unit-sampling randomness. -/
+def section58HybridGame
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    [DecidableEq StmtIn] [DecidableEq U]
+    (params :
+      D2SQueryParamsWithOracle
+        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) challengeSpec)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (P : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
+      (StmtIn × pSpec.Messages)) :
+    OptionT (OracleComp (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec))
+      (StmtIn × StmtOut × pSpec.Messages × QueryLog (oSpec + challengeSpec)) := do
+  let d2sOuterImpl :
+      QueryImpl (oSpec + duplexSpongeChallengeOracle StmtIn U)
+        (StateT (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+          (OptionT
+            (OracleComp (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)))) :=
+    QueryImpl.addLift
+      (r := StateT (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+        (OptionT
+          (OracleComp (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec))))
+      (QueryImpl.id oSpec)
+      (d2sQueryImplCoreWithOracle
+        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+        (challengeSpec := challengeSpec) params)
+  let proverComp :
+      OptionT
+        (OracleComp (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec))
+        ((StmtIn × pSpec.Messages) ×
+          D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :=
+    (simulateQ d2sOuterImpl P).run default
+  let ⟨proverOut?, proveQueryLogRaw⟩ ← (simulateQ loggingOracle proverComp.run).run
+  let ⟨⟨stmtIn, messages⟩, _⟩ ←
+    match proverOut? with
+    | some proverOut => pure proverOut
+    | none => failure
+  let verifierComp :
+      OptionT
+        (OracleComp (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec))
+        (Option StmtOut ×
+          D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :=
+    (simulateQ d2sOuterImpl
+      (V.duplexSpongeFiatShamir.run
+        stmtIn (fun i => match i with | ⟨0, _⟩ => messages))).run default
+  let ⟨verifierOut?, verifyQueryLogRaw⟩ ← (simulateQ loggingOracle verifierComp.run).run
+  let ⟨stmtOut?, _⟩ ←
+    match verifierOut? with
+    | some verifierOut => pure verifierOut
+    | none => failure
+  let proveQueryLog :=
+    projectD2SChallengePlusUnitQueryLog
+      (oSpec := oSpec) (U := U) proveQueryLogRaw
+  let verifyQueryLog :=
+    projectD2SChallengePlusUnitQueryLog
+      (oSpec := oSpec) (U := U) verifyQueryLogRaw
+  return ⟨stmtIn, ← stmtOut?.getM, messages, proveQueryLog ++ verifyQueryLog⟩
+
+/-- Distribution of a Section 5.8 hybrid game after applying its line-4 trace map. -/
+def section58HybridGameDist
+    [SampleableType U] [DecidableEq StmtIn] [DecidableEq U]
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    {σ : Type}
+    (init : ProbComp σ)
+    (impl : QueryImpl
+      (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)
+      (StateT σ ProbComp))
+    (params :
+      D2SQueryParamsWithOracle
+        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) challengeSpec)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (P : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
+      (StmtIn × pSpec.Messages))
+    (traceMap :
+      QueryLog (oSpec + challengeSpec) →
+        OptionT (OracleComp (Unit →ₒ U))
+          (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec))) :
+    ProbComp (Option <| BasicFiatShamirGameOutput
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec)) := do
+  let hybridOutput ←
+    (simulateQ impl
+      ((section58HybridGame
+        (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+        (pSpec := pSpec) (U := U)
+        params V P).run)).run' (← init)
+  match hybridOutput with
+  | none => return none
+  | some ⟨stmtIn, stmtOut, messages, projectedTrace⟩ => do
+      let outputFS? ←
+        runSection58ProjectedTraceMap
+          (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+          traceMap projectedTrace
+      match outputFS? with
+      | none => return none
+      | some fullTraceFS =>
+          return some (stmtIn, stmtOut, messages, fullTraceFS)
 
 /-- Distribution of the basic-FS game output under a concrete oracle implementation. -/
 def basicFiatShamirGameDist
@@ -182,14 +343,18 @@ def duplexSpongeFiatShamirGameDist
       (StmtOut := StmtOut) (pSpec := pSpec) (U := U)) := do
   (simulateQ impl (duplexSpongeFiatShamirGame (V := V) P).run).run' (← init)
 
-/-- Left experiment of Lemma 5.1 after applying a trace-reporting map to DSFS logs. -/
+/-- Left experiment of Lemma 5.1 after applying a monadic trace algorithm to DSFS logs. -/
 def mappedDuplexSpongeFiatShamirGameDist
+    [SampleableType U]
     {σ : Type}
     (init : ProbComp σ)
     (impl : QueryImpl (oSpec + duplexSpongeChallengeOracle StmtIn U) (StateT σ ProbComp))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (P : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages))
-    (traceMap : Section58TraceMap (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
+    (traceMap :
+      QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U) →
+        OptionT (OracleComp (Unit →ₒ U))
+          (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec))) :
     ProbComp (Option <| BasicFiatShamirGameOutput (oSpec := oSpec) (StmtIn := StmtIn)
       (StmtOut := StmtOut) (pSpec := pSpec)) := do
   let outputDS ← duplexSpongeFiatShamirGameDist
@@ -197,8 +362,15 @@ def mappedDuplexSpongeFiatShamirGameDist
     (U := U) init impl V P
   match outputDS with
   | none => return none
-  | some output =>
-      return traceMap.mapOutput output
+  | some ⟨stmtIn, stmtOut, messages, fullTraceDS⟩ => do
+      let outputFS? ←
+        runSection58TraceMap
+          (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+          traceMap fullTraceDS
+      match outputFS? with
+      | none => return none
+      | some fullTraceFS =>
+          return some (stmtIn, stmtOut, messages, fullTraceFS)
 
 end SecurityGames
 
@@ -420,14 +592,17 @@ abbrev paperIPImpl [DecidableEq StmtIn] [SampleableType U]
 
 /-- `Hyb₀`: left experiment in Section 5.8 (mapped DSFS experiment). -/
 abbrev hyb0Dist
+    [SampleableType U]
     {σDS : Type}
     (initDS : ProbComp σDS)
     (implDS : QueryImpl (oSpec + duplexSpongeChallengeOracle StmtIn U) (StateT σDS ProbComp))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × pSpec.Messages))
-    (paperD2STrace : Section58TraceMap
-      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
+    (paperD2STrace :
+      QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U) →
+        OptionT (OracleComp (Unit →ₒ U))
+          (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec))) :
     ProbComp (Option <| BasicFiatShamirGameOutput
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec)) :=
   mappedDuplexSpongeFiatShamirGameDist
@@ -451,6 +626,55 @@ abbrev hyb4Dist
   basicFiatShamirGameDist
     (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec)
     initFS implFS V (d2sAlgo maliciousProver)
+
+/-- Surjectivity side condition for the verifier-message codec used in Section 5.8:
+every decoded challenge must have at least one encoded preimage under `Deserialize`. This is the
+formal hook needed to interpret the paper's `ψ⁻¹` sampler on verifier challenges. -/
+def ChallengeDeserializeSurjective : Prop :=
+  ∀ (i : pSpec.ChallengeIdx) (challenge : pSpec.Challenge i),
+    ∃ encoded : Vector U (challengeSize (pSpec := pSpec) i),
+      Deserialize.deserialize encoded = challenge
+
+private noncomputable def deserializePreimageFinset
+    {i : pSpec.ChallengeIdx}
+    [Fintype U] [DecidableEq U]
+    [Fintype (pSpec.Challenge i)] [DecidableEq (pSpec.Challenge i)]
+    (challenge : pSpec.Challenge i) :
+    Finset (Vector U (challengeSize (pSpec := pSpec) i)) := by
+  classical
+  let _ : Fintype (Vector U (challengeSize (pSpec := pSpec) i)) :=
+    Fintype.ofEquiv (Fin (challengeSize (pSpec := pSpec) i) → U) Equiv.rootVectorEquivFin.symm
+  exact (Finset.univ : Finset (Vector U (challengeSize (pSpec := pSpec) i))).filter fun encoded =>
+    Deserialize.deserialize encoded = challenge
+
+private noncomputable def uniformDeserializePreimage
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    [Fintype U] [DecidableEq U]
+    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]
+    (hSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
+    {i : pSpec.ChallengeIdx}
+    (challenge : pSpec.Challenge i) :
+    OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)
+      (Vector U (challengeSize (pSpec := pSpec) i)) := do
+  have hpreimages_nonempty :
+      (deserializePreimageFinset (pSpec := pSpec) (U := U) challenge).Nonempty := by
+    rcases hSurj i challenge with ⟨encoded, hencoded⟩
+    exact ⟨encoded, by simp [deserializePreimageFinset, hencoded]⟩
+  let preimages := (deserializePreimageFinset (pSpec := pSpec) (U := U) challenge).toList
+  have hpreimages_ne : preimages ≠ [] := by
+    simpa [preimages] using hpreimages_nonempty.toList_ne_nil
+  have hlen_pos : 0 < preimages.length := List.length_pos_iff_ne_nil.mpr hpreimages_ne
+  let idxRaw ←
+    (show OracleComp
+        (D2SChallengePlusUnitOracle (U := U) challengeSpec)
+        (Fin ((preimages.length - 1) + 1)) from
+      query
+        (spec := D2SChallengePlusUnitOracle (U := U) challengeSpec)
+        (.inr (.inr (preimages.length - 1))))
+  have hlen_eq : (preimages.length - 1) + 1 = preimages.length := Nat.sub_add_cancel
+    (Nat.succ_le_of_lt hlen_pos)
+  let idx : Fin preimages.length := ⟨idxRaw.1, by simpa [hlen_eq] using idxRaw.2⟩
+  pure (preimages.get idx)
 /-- Claim 5.21 bound (`Hyb₀` vs `Hyb₁`). -/
 noncomputable def claim5_21Bound (U : Type) [SpongeUnit U] [Fintype U]
     (tₕ tₚ tₚᵢ L : ℕ) : ℝ :=
@@ -472,91 +696,177 @@ noncomputable def claim5_24Bound (U : Type) [SpongeUnit U] [Fintype U]
     - (5 * (Lr + 1)) / cardPow
 
 /-- Canonical `Hyb₁` experiment from Section 5.8. -/
-abbrev section58Hyb1Dist
-    {σDS : Type}
-    (initDS : ProbComp σDS)
-    (implDS : QueryImpl (oSpec + duplexSpongeChallengeOracle StmtIn U) (StateT σDS ProbComp))
+noncomputable def section58Hyb1Dist
+    [SampleableType U]
+    [DecidableEq StmtIn] [DecidableEq U]
+    [∀ i, Fintype (pSpec.Message i)]
+    [Section58SharedOracleWitness (oSpec := oSpec)]
+    [Section58PermutationWitness (U := U)]
     (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
-      (StmtIn × pSpec.Messages))
-    (hyb1TraceMap : Section58TraceMap
-      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
+    (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) :
     ProbComp (Option <| BasicFiatShamirGameOutput
-      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec)) :=
-  mappedDuplexSpongeFiatShamirGameDist
-    (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-    (pSpec := pSpec) (U := U)
-    initDS implDS V maliciousProver hyb1TraceMap
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec)) := by
+  let challengeSpec := section58EncodedChallengeOracle (U := U) StmtIn pSpec
+  let _ : DecidableEq challengeSpec.Domain := by
+    classical infer_instance
+  let _ : ∀ q : challengeSpec.Domain, SampleableType (challengeSpec.Range q) := by
+    intro q
+    cases q with
+    | mk i qKey =>
+        change SampleableType (Vector U (challengeSize (pSpec := pSpec) i))
+        infer_instance
+  let params :=
+    defaultD2SQueryParamsWithOracle
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+      (challengeSpec := challengeSpec)
+      (fun roundIdx stmt0 absorbedRatePrefix0 =>
+        OptionT.lift <|
+          (show OracleComp
+              (D2SChallengePlusUnitOracle (U := U) challengeSpec)
+              (Vector U (challengeSize (pSpec := pSpec) roundIdx)) from
+            query
+              (spec := D2SChallengePlusUnitOracle (U := U) challengeSpec)
+              (.inl ⟨roundIdx, (stmt0, absorbedRatePrefix0)⟩)))
+  exact
+    section58HybridGameDist
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U)
+      (init := section58ChallengeInit
+        (challengeSpec := challengeSpec)
+        (sharedInit := Section58SharedOracleWitness.initShared
+          (oSpec := oSpec)))
+      (impl := section58ChallengeImpl
+        (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec)
+        (sharedImpl := Section58SharedOracleWitness.implShared
+          (oSpec := oSpec)))
+      params V maliciousProver
+      (section58Hyb1Line4Trace
+        (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
 
 /-- Canonical `Hyb₂` experiment from Section 5.8. -/
-abbrev section58Hyb2Dist
-    {σDS : Type}
-    (initDS : ProbComp σDS)
-    (implDS : QueryImpl (oSpec + duplexSpongeChallengeOracle StmtIn U) (StateT σDS ProbComp))
+noncomputable def section58Hyb2Dist
+    [Fintype U] [SampleableType U]
+    [DecidableEq StmtIn] [DecidableEq U]
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, Fintype (pSpec.Challenge i)]
+    [∀ i, SampleableType (pSpec.Challenge i)]
+    [∀ i, DecidableEq (pSpec.Challenge i)]
+    [Section58SharedOracleWitness (oSpec := oSpec)]
+    [Section58PermutationWitness (U := U)]
+    (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
-      (StmtIn × pSpec.Messages))
-    (hyb2TraceMap : Section58TraceMap
-      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
+    (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) :
     ProbComp (Option <| BasicFiatShamirGameOutput
-      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec)) :=
-  mappedDuplexSpongeFiatShamirGameDist
-    (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-    (pSpec := pSpec) (U := U)
-    initDS implDS V maliciousProver hyb2TraceMap
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec)) := by
+  let challengeSpec := section58DecodedChallengeOracle (U := U) StmtIn pSpec
+  let _ : DecidableEq challengeSpec.Domain := by
+    classical infer_instance
+  let _ : ∀ q : challengeSpec.Domain, SampleableType (challengeSpec.Range q) := by
+    intro q
+    cases q with
+    | mk i qKey =>
+        change SampleableType (pSpec.Challenge i)
+        infer_instance
+  let params :=
+    defaultD2SQueryParamsWithOracle
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+      (challengeSpec := challengeSpec)
+      (fun roundIdx stmt0 absorbedRatePrefix0 => do
+        let challenge ←
+          OptionT.lift <|
+            (show OracleComp
+                (D2SChallengePlusUnitOracle (U := U) challengeSpec)
+                (pSpec.Challenge roundIdx) from
+              query
+                (spec := D2SChallengePlusUnitOracle (U := U) challengeSpec)
+                (.inl ⟨roundIdx, (stmt0, absorbedRatePrefix0)⟩))
+        OptionT.lift <|
+          uniformDeserializePreimage
+            (pSpec := pSpec) (U := U)
+            (challengeSpec := challengeSpec) hChallengeSurj challenge)
+  exact
+    section58HybridGameDist
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U)
+      (init := section58ChallengeInit
+        (challengeSpec := challengeSpec)
+        (sharedInit := Section58SharedOracleWitness.initShared
+          (oSpec := oSpec)))
+      (impl := section58ChallengeImpl
+        (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec)
+        (sharedImpl := Section58SharedOracleWitness.implShared
+          (oSpec := oSpec)))
+      params V maliciousProver
+      (section58Hyb2Line4Trace
+        (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
 
 /-- Canonical `Hyb₃` experiment from Section 5.8. -/
-abbrev section58Hyb3Dist
-    {σDS : Type}
-    (initDS : ProbComp σDS)
-    (implDS : QueryImpl (oSpec + duplexSpongeChallengeOracle StmtIn U) (StateT σDS ProbComp))
+noncomputable def section58Hyb3Dist
+    [Fintype U] [SampleableType U]
+    [DecidableEq StmtIn] [DecidableEq U]
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, Fintype (pSpec.Challenge i)]
+    [∀ i, SampleableType (pSpec.Challenge i)]
+    [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
+    [Section58SharedOracleWitness (oSpec := oSpec)]
+    [Section58PermutationWitness (U := U)]
+    (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
-      (StmtIn × pSpec.Messages))
-    (hyb3TraceMap : Section58TraceMap
-      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
+    (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) :
     ProbComp (Option <| BasicFiatShamirGameOutput
-      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec)) :=
-  mappedDuplexSpongeFiatShamirGameDist
-    (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-    (pSpec := pSpec) (U := U)
-    initDS implDS V maliciousProver hyb3TraceMap
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec)) := by
+  let challengeSpec := fsChallengeOracle StmtIn pSpec
+  let _ : DecidableEq challengeSpec.Domain := by
+    classical infer_instance
+  let _ : ∀ q : challengeSpec.Domain, SampleableType (challengeSpec.Range q) := by
+    intro q
+    cases q with
+    | mk i qKey =>
+        change SampleableType (pSpec.Challenge i)
+        infer_instance
+  let params :=
+    defaultD2SQueryParamsWithOracle
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+      (challengeSpec := challengeSpec)
+      (fun roundIdx stmt0 absorbedRatePrefix0 => do
+        let messagesUpTo ←
+          match section58AbsorbedPrefixMessagesUpTo?
+              (pSpec := pSpec) (U := U) roundIdx absorbedRatePrefix0 with
+          | some messagesUpTo => pure messagesUpTo
+          | none => failure
+        let challenge ←
+          OptionT.lift <|
+            (show OracleComp
+                (D2SChallengePlusUnitOracle (U := U) challengeSpec)
+                (pSpec.Challenge roundIdx) from
+              query
+                (spec := D2SChallengePlusUnitOracle (U := U) challengeSpec)
+                (.inl ⟨roundIdx, (stmt0, messagesUpTo)⟩))
+        OptionT.lift <|
+          uniformDeserializePreimage
+            (pSpec := pSpec) (U := U)
+            (challengeSpec := challengeSpec) hChallengeSurj challenge)
+  exact
+    section58HybridGameDist
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U)
+      (init := section58ChallengeInit
+        (challengeSpec := challengeSpec)
+        (sharedInit := Section58SharedOracleWitness.initShared
+          (oSpec := oSpec)))
+      (impl := section58ChallengeImpl
+        (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec)
+        (sharedImpl := Section58SharedOracleWitness.implShared
+          (oSpec := oSpec)))
+      params V maliciousProver
+      (section58Hyb3Line4Trace
+        (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
 
-/-- The paper's single `D2STrace` algorithm, used by `Hyb₀` in the Section 5.8 proof chain.
-
-TODO: replace this placeholder by the exact trace transform corresponding to the left experiment of
-Lemma 5.1. -/
-noncomputable def paperD2STrace :
-    Section58TraceMap (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) := by
-  sorry
-
-/-- Concrete trace-reporting map used by `Hyb₁` in the Section 5.8 proof chain.
-
-TODO: instantiate the paper's first hybrid trace transform, including the exact line-11 sampling /
-programming behavior from Section 5.8. -/
-noncomputable def section58Hyb1TraceMap :
-    Section58TraceMap (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) := by
-  sorry
-
-/-- Concrete trace-reporting map used by `Hyb₂` in the Section 5.8 proof chain.
-
-TODO: instantiate the paper's second hybrid trace transform, where the verifier messages are
-sampled via `ψᵢ⁻¹ ∘ ψᵢ ∘ U(Σ^{ℓ_V(i)})`. -/
-noncomputable def section58Hyb2TraceMap :
-    Section58TraceMap (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) := by
-  sorry
-
-/-- Concrete trace-reporting map used by `Hyb₃` in the Section 5.8 proof chain.
-
-TODO: instantiate the paper's third hybrid trace transform, where verifier messages are sampled
-uniformly in the verifier message space and then lifted through `ψᵢ⁻¹`. -/
-noncomputable def section58Hyb3TraceMap :
-    Section58TraceMap (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) := by
-  sorry
 
 /-- Claim 5.21 target proposition on the canonical `Hyb₀`/`Hyb₁` experiments from Section 5.8. -/
 def claim_5_21
-    [Fintype U] [SampleableType U] [DecidableEq StmtIn]
+    [Fintype U] [SampleableType U] [DecidableEq StmtIn] [DecidableEq U]
+    [∀ i, Fintype (pSpec.Message i)]
     [Section58SharedOracleWitness (oSpec := oSpec)]
     [Section58PermutationWitness (U := U)]
     (securityParam instanceBound : ℕ)
@@ -572,20 +882,24 @@ def claim_5_21
         (pSpec := pSpec) (U := U)
         (paperDSInit (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
         (paperDSImpl (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-        V maliciousProver paperD2STrace)
+        V maliciousProver
+        (paperD2STraceSingle
+          (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
       (section58Hyb1Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U)
-        (paperDSInit (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-        (paperDSImpl (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-        V maliciousProver section58Hyb1TraceMap)
+        (pSpec := pSpec) (U := U) V maliciousProver)
     ≤ claim5_21Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries
 
 /-- Claim 5.22 target proposition on the canonical `Hyb₁`/`Hyb₂` experiments from Section 5.8. -/
 def claim_5_22
-    [SampleableType U] [DecidableEq StmtIn]
+    [Fintype U] [SampleableType U] [DecidableEq StmtIn] [DecidableEq U]
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, Fintype (pSpec.Challenge i)]
+    [∀ i, SampleableType (pSpec.Challenge i)]
+    [∀ i, DecidableEq (pSpec.Challenge i)]
     [Section58SharedOracleWitness (oSpec := oSpec)]
     [Section58PermutationWitness (U := U)]
     (securityParam instanceBound : ℕ)
+    (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × pSpec.Messages))
@@ -596,23 +910,22 @@ def claim_5_22
   let _ := instanceBound
   tvDist
       (section58Hyb1Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U)
-        (paperDSInit (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-        (paperDSImpl (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-        V maliciousProver section58Hyb1TraceMap)
+        (pSpec := pSpec) (U := U) V maliciousProver)
       (section58Hyb2Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U)
-        (paperDSInit (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-        (paperDSImpl (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-        V maliciousProver section58Hyb2TraceMap)
+        (pSpec := pSpec) (U := U) hChallengeSurj V maliciousProver)
     ≤ claim5_22Bound (pSpec := pSpec) tₕ tₚ tₚᵢ εcodec
 
 /-- Claim 5.23 target proposition on the canonical `Hyb₂`/`Hyb₃` experiments from Section 5.8. -/
 def claim_5_23
-    [SampleableType U] [DecidableEq StmtIn]
+    [Fintype U] [SampleableType U] [DecidableEq StmtIn] [DecidableEq U]
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, Fintype (pSpec.Challenge i)]
+    [∀ i, SampleableType (pSpec.Challenge i)]
+    [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
     [Section58SharedOracleWitness (oSpec := oSpec)]
     [Section58PermutationWitness (U := U)]
     (securityParam instanceBound : ℕ)
+    (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × pSpec.Messages)) :
@@ -621,24 +934,21 @@ def claim_5_23
   let _ := instanceBound
   tvDist
     (section58Hyb2Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-      (pSpec := pSpec) (U := U)
-      (paperDSInit (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-      (paperDSImpl (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-      V maliciousProver section58Hyb2TraceMap)
+      (pSpec := pSpec) (U := U) hChallengeSurj V maliciousProver)
     (section58Hyb3Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-      (pSpec := pSpec) (U := U)
-      (paperDSInit (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-      (paperDSImpl (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-      V maliciousProver section58Hyb3TraceMap) = 0
+      (pSpec := pSpec) (U := U) hChallengeSurj V maliciousProver) = 0
 
 /-- Claim 5.24 target proposition on the canonical `Hyb₃`/`Hyb₄` experiments from Section 5.8. -/
 def claim_5_24
-    [Fintype U] [SampleableType U] [DecidableEq StmtIn]
+    [Fintype U] [SampleableType U] [DecidableEq StmtIn] [DecidableEq U]
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, Fintype (pSpec.Challenge i)]
     [∀ i, SampleableType (pSpec.Challenge i)]
     [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
     [Section58SharedOracleWitness (oSpec := oSpec)]
     [Section58PermutationWitness (U := U)]
     (securityParam instanceBound : ℕ)
+    (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × pSpec.Messages))
@@ -649,10 +959,7 @@ def claim_5_24
   let _ := instanceBound
   tvDist
       (section58Hyb3Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U)
-        (paperDSInit (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-        (paperDSImpl (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-        V maliciousProver section58Hyb3TraceMap)
+        (pSpec := pSpec) (U := U) hChallengeSurj V maliciousProver)
       (hyb4Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
         (pSpec := pSpec) (U := U)
         (paperIPInit (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec))
@@ -667,13 +974,16 @@ This keeps the hybrid decomposition explicit and postpones the arithmetic reconc
 `ηStar` to dedicated proof steps.
 -/
 theorem lemma_5_1_dist_from_claims
-    [Fintype U] [SampleableType U] [DecidableEq StmtIn]
+    [Fintype U] [SampleableType U] [DecidableEq StmtIn] [DecidableEq U]
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, Fintype (pSpec.Challenge i)]
     [∀ i, SampleableType (pSpec.Challenge i)]
     [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
     [Section58SharedOracleWitness (oSpec := oSpec)]
     [Section58PermutationWitness (U := U)]
     (securityParam instanceBound : ℕ)
     (hPermWitnessLaw : Section58PermutationWitnessLaw (U := U))
+    (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × pSpec.Messages))
@@ -685,13 +995,13 @@ theorem lemma_5_1_dist_from_claims
       securityParam instanceBound V maliciousProver tₕ tₚ tₚᵢ)
     (h22 : claim_5_22 (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
-      securityParam instanceBound V maliciousProver tₕ tₚ tₚᵢ εcodec)
+      securityParam instanceBound hChallengeSurj V maliciousProver tₕ tₚ tₚᵢ εcodec)
     (h23 : claim_5_23 (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
-      securityParam instanceBound V maliciousProver)
+      securityParam instanceBound hChallengeSurj V maliciousProver)
     (h24 : claim_5_24 (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
-      securityParam instanceBound V maliciousProver d2sAlgo tₕ tₚ tₚᵢ)
+      securityParam instanceBound hChallengeSurj V maliciousProver d2sAlgo tₕ tₚ tₚᵢ)
     (hBound :
       claim5_21Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries
         + claim5_22Bound (pSpec := pSpec) tₕ tₚ tₚᵢ εcodec
@@ -703,7 +1013,9 @@ theorem lemma_5_1_dist_from_claims
         (pSpec := pSpec) (U := U)
         (paperDSInit (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
         (paperDSImpl (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-        V maliciousProver paperD2STrace)
+        V maliciousProver
+        (paperD2STraceSingle
+          (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
       (hyb4Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
         (pSpec := pSpec) (U := U)
         (paperIPInit (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec))
@@ -714,15 +1026,9 @@ theorem lemma_5_1_dist_from_claims
   have h23' :
       tvDist
         (section58Hyb2Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-          (pSpec := pSpec) (U := U)
-          (paperDSInit (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-          (paperDSImpl (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-          V maliciousProver section58Hyb2TraceMap)
+          (pSpec := pSpec) (U := U) hChallengeSurj V maliciousProver)
         (section58Hyb3Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-          (pSpec := pSpec) (U := U)
-          (paperDSInit (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-          (paperDSImpl (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-          V maliciousProver section58Hyb3TraceMap)
+          (pSpec := pSpec) (U := U) hChallengeSurj V maliciousProver)
         ≤ (0 : ℝ) := by
     rw [h23]
   have hChain :=
@@ -731,22 +1037,15 @@ theorem lemma_5_1_dist_from_claims
         (pSpec := pSpec) (U := U)
         (paperDSInit (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
         (paperDSImpl (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-        V maliciousProver paperD2STrace)
+        V maliciousProver
+        (paperD2STraceSingle
+          (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
       (H₁ := section58Hyb1Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U)
-        (paperDSInit (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-        (paperDSImpl (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-        V maliciousProver section58Hyb1TraceMap)
+        (pSpec := pSpec) (U := U) V maliciousProver)
       (H₂ := section58Hyb2Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U)
-        (paperDSInit (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-        (paperDSImpl (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-        V maliciousProver section58Hyb2TraceMap)
+        (pSpec := pSpec) (U := U) hChallengeSurj V maliciousProver)
       (H₃ := section58Hyb3Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U)
-        (paperDSInit (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-        (paperDSImpl (oSpec := oSpec) (StmtIn := StmtIn) (U := U))
-        V maliciousProver section58Hyb3TraceMap)
+        (pSpec := pSpec) (U := U) hChallengeSurj V maliciousProver)
       (H₄ := hyb4Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
         (pSpec := pSpec) (U := U)
         (paperIPInit (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec))
@@ -768,13 +1067,16 @@ DS-side hash oracle to the canonical lazy random-function sampler, while leaving
 shared-oracle implementation and the DS permutation sampler as explicit inputs. The existential
 quantifiers for `D2SAlgo` and the paper's `D2STrace` now precede the malicious prover, matching
 the paper: the same transformed prover/trace algorithms must work for every malicious prover under
-the stated query bound. The auxiliary hybrid trace-reporting maps used in the Section 5.8 proof
-chain remain an internal proof obligation when proving this theorem from
+the stated query bound. The auxiliary hybrid trace algorithms used in the Section 5.8 proof chain
+remain an internal proof obligation when proving this theorem from
 `lemma_5_1_dist_from_claims`.
 -/
 theorem lemma_5_1
     [Fintype U] [SampleableType U]
+    [DecidableEq U]
     [DecidableEq StmtIn]
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, Fintype (pSpec.Challenge i)]
     [∀ i, SampleableType (pSpec.Challenge i)]
     [∀ i, DecidableEq (pSpec.Message i)]
     [∀ i, DecidableEq (pSpec.Challenge i)]
@@ -782,13 +1084,16 @@ theorem lemma_5_1
     [Section58PermutationWitness (U := U)]
     (securityParam instanceBound : ℕ)
     (hPermWitnessLaw : Section58PermutationWitnessLaw (U := U))
+    (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (tₕ tₚ tₚᵢ : ℕ)
     (εcodec : CodecBias (pSpec := pSpec))
     (hTp : tₚ ≥ max pSpec.totalNumPermQueriesMessage pSpec.totalNumPermQueriesChallenge) :
     ∃ (d2sAlgo : D2SAlgo (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-      (paperD2STrace : Section58TraceMap
-        (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)),
+      (paperD2STrace :
+        QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U) →
+          OptionT (OracleComp (Unit →ₒ U))
+            (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec))),
       ∀ (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
           (StmtIn × pSpec.Messages)),
       OracleComp.IsTotalQueryBound maliciousProver (tₕ + tₚ + tₚᵢ) →
@@ -810,7 +1115,15 @@ theorem lemma_5_1
   let _ := securityParam
   let _ := instanceBound
   let _ := hPermWitnessLaw
-  sorry
+  refine ⟨?_, ?_, ?_⟩
+  · exact duplexSpongeToBasicFSAlgo
+      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+  · exact paperD2STraceSingle
+      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+  · intro maliciousProver hMaliciousBound
+    let _ := hTp
+    let _ := hMaliciousBound
+    sorry
 
 end KeyLemma
 

@@ -25,6 +25,48 @@ variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
 
 noncomputable section
 
+/-- Section 5.8 `Hyb₁` challenge-oracle surface: encoded prover-prefix queries, encoded verifier
+responses. -/
+@[inline, reducible]
+def section58EncodedChallengeOracleInterface
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    {n : ℕ} (StmtIn : Type) (pSpec : ProtocolSpec n) [HasChallengeSize pSpec] :
+    ∀ i, OracleInterface (Vector U (challengeSize (pSpec := pSpec) i)) := fun i =>
+  { Query := StmtIn × List (Vector U SpongeSize.R)
+    toOC.spec := fun _ => Vector U (challengeSize (pSpec := pSpec) i)
+    toOC.impl := fun _ => read }
+
+/-- Oracle family for the `gᵢ` queries in Section 5.8 `Hyb₁`. -/
+@[inline, reducible]
+def section58EncodedChallengeOracle
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) [HasChallengeSize pSpec] :
+    OracleSpec (((i : pSpec.ChallengeIdx) ×
+      (section58EncodedChallengeOracleInterface (U := U) StmtIn pSpec i).Query)) :=
+  [fun i => Vector U (challengeSize (pSpec := pSpec) i)]ₒ'
+    (section58EncodedChallengeOracleInterface (U := U) StmtIn pSpec)
+
+/-- Section 5.8 `Hyb₂` challenge-oracle surface: encoded prover-prefix queries, decoded verifier
+responses. -/
+@[inline, reducible]
+def section58DecodedChallengeOracleInterface
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    {n : ℕ} (StmtIn : Type) (pSpec : ProtocolSpec n) :
+    ∀ i, OracleInterface (pSpec.Challenge i) := fun i =>
+  { Query := StmtIn × List (Vector U SpongeSize.R)
+    toOC.spec := fun _ => pSpec.Challenge i
+    toOC.impl := fun _ => read }
+
+/-- Oracle family for the `eᵢ` queries in Section 5.8 `Hyb₂`. -/
+@[inline, reducible]
+def section58DecodedChallengeOracle
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
+    OracleSpec (((i : pSpec.ChallengeIdx) ×
+      (section58DecodedChallengeOracleInterface (U := U) StmtIn pSpec i).Query)) :=
+  [pSpec.Challenge]ₒ'
+    (section58DecodedChallengeOracleInterface (U := U) StmtIn pSpec)
+
 /-- Paper-facing key for `StdTrace` memoized `gᵢ`-style entries (Section 5.5.1 Item 4(a)iv). -/
 private structure StdTraceQuery where
   roundIdx : pSpec.ChallengeIdx
@@ -88,7 +130,8 @@ private def insertStdTraceMemo
   memo ++ [{ query := q, response := response }]
 
 /-- Keep only shared-oracle entries from a DSFS query log, and reinterpret them as basic-FS
-query-log entries. -/
+query-log entries. Needed in `stdTraceSingleWithRemap`,
+where the output is `sharedLog ++ remappedLog`. -/
 def projectSharedQueryLog
     (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
     QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) :=
@@ -238,6 +281,233 @@ def stdTraceSingleProjected
       log
   pure <| projectSharedQueryLog
     (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) log
+
+/-- Single-log remap-aware `D2STrace` surface for Section 5.5 / 5.8. -/
+def d2STraceSingleWithRemap
+    (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
+    OptionT (OracleComp (Unit →ₒ U))
+      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
+  stdTraceSingleWithRemap
+    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+    remap log
+
+/-- Single-log `D2STrace` surface for Section 5.5 / 5.8. -/
+def d2STraceSingle
+    (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
+    OptionT (OracleComp (Unit →ₒ U))
+      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
+  stdTraceSingle
+    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+    remap log
+
+/-- Projection-only single-log `D2STrace` compatibility surface. -/
+def d2STraceSingleProjected
+    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
+    OptionT (OracleComp (Unit →ₒ U))
+      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
+  stdTraceSingleProjected
+    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+    log
+
+section PaperTrace
+
+variable [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
+  [∀ i, Deserialize (pSpec.Challenge i) (Vector U (challengeSize i))]
+  [∀ i, Fintype (pSpec.Message i)]
+
+private def vectorOfListExact
+    (len : Nat) (xs : List U) : Option (Vector U len) := by
+  let ys := xs.take len
+  if hLen : ys.length = len then
+    exact some ⟨ys.toArray, by simpa using hLen⟩
+  else
+    exact none
+
+private noncomputable def chooseSerializedMessage?
+    (msgIdx : pSpec.MessageIdx)
+    (encoded : Vector U (messageSize msgIdx)) :
+    Option (pSpec.Message msgIdx) := by
+  classical
+  exact ((Finset.univ : Finset (pSpec.Message msgIdx)).toList.find? fun msg =>
+    Serialize.serialize msg = encoded
+  )
+
+private def encodedMessageAtOffset?
+    (absorbedRatePrefix : List (Vector U SpongeSize.R))
+    (offsetBlocks : Nat)
+    (msgIdx : pSpec.MessageIdx) :
+    Option (Vector U (messageSize msgIdx)) := by
+  let rateBlocks := (absorbedRatePrefix.drop offsetBlocks).take (pSpec.Lₚᵢ msgIdx)
+  let unitBlocks := rateBlocks.foldl (fun acc block => acc ++ block.toList) []
+  exact vectorOfListExact (U := U) (messageSize msgIdx) unitBlocks
+
+/-- Recover the basic-FS prover-message prefix encoded by a Section 5.8 absorbed-prefix query key.
+
+This walks the protocol round structure in order and slices the absorbed-rate prefix according to
+the message/challenge block counts `Lₚ(i)` / `Lᵥ(i)`. Message blocks are turned back into
+`pSpec.Message` values by choosing a preimage under `Serialize` when one exists. -/
+private noncomputable def absorbedPrefixMessagesUpTo?
+    (roundIdx : pSpec.ChallengeIdx)
+    (absorbedRatePrefix : List (Vector U SpongeSize.R)) :
+    Option (pSpec.MessagesUpTo roundIdx.1.castSucc) := by
+  classical
+  let build : (k : Fin (n + 1)) → Option (pSpec.MessagesUpTo k × Nat) :=
+    Fin.induction
+      (some (default, 0))
+      (fun j ih =>
+        match ih with
+        | none => none
+        | some (messages, offsetBlocks) =>
+            match hDir : pSpec.dir j with
+            | .P_to_V =>
+                let msgIdx : pSpec.MessageIdx := ⟨j, hDir⟩
+                match encodedMessageAtOffset?
+                    (pSpec := pSpec) (U := U)
+                    absorbedRatePrefix offsetBlocks msgIdx with
+                | none => none
+                | some encodedMsg =>
+                    match chooseSerializedMessage?
+                        (pSpec := pSpec) (U := U) msgIdx encodedMsg with
+                    | none => none
+                    | some msg =>
+                        some
+                          (ProtocolSpec.MessagesUpTo.concat
+                            (pSpec := pSpec) messages hDir msg,
+                            offsetBlocks + pSpec.Lₚᵢ msgIdx)
+            | .V_to_P =>
+                let chalIdx : pSpec.ChallengeIdx := ⟨j, hDir⟩
+                some
+                  (ProtocolSpec.MessagesUpTo.extend
+                    (pSpec := pSpec) messages hDir,
+                    offsetBlocks + pSpec.Lᵥᵢ chalIdx))
+  exact (build roundIdx.1.castSucc).map Prod.fst
+
+/-- Public wrapper for the Section 5.8 `φ⁻¹` parser from absorbed-rate prefixes to basic-FS
+message prefixes. This is the prover-prefix recovery used both by the line-4 trace maps and by the
+canonical Section 5.8 hybrid experiments. -/
+noncomputable def section58AbsorbedPrefixMessagesUpTo?
+    (roundIdx : pSpec.ChallengeIdx)
+    (absorbedRatePrefix : List (Vector U SpongeSize.R)) :
+    Option (pSpec.MessagesUpTo roundIdx.1.castSucc) :=
+  absorbedPrefixMessagesUpTo?
+    (pSpec := pSpec) (U := U)
+    roundIdx absorbedRatePrefix
+
+private noncomputable def stdTraceMessagesUpTo?
+    (q : StdTraceQuery (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
+    Option (pSpec.MessagesUpTo q.roundIdx.1.castSucc) :=
+  absorbedPrefixMessagesUpTo? q.roundIdx q.absorbedRatePrefix
+
+private noncomputable def paperStdTraceInCodecImage
+    (out : BacktrackOutput (StmtIn := StmtIn) (n := n) (U := U)) : Bool :=
+  match challengeIdxOfBacktrackOutput
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) out with
+  | none => false
+  | some roundIdx =>
+      let stdQuery :
+          StdTraceQuery (StmtIn := StmtIn) (pSpec := pSpec) (U := U) :=
+        { roundIdx := roundIdx
+          stmt := out.stmt
+          absorbedRatePrefix := out.absorbedRatePrefix }
+      match stdTraceMessagesUpTo?
+          (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stdQuery with
+      | some _ => true
+      | none => false
+
+private noncomputable def paperStdTraceEntryToFSQuery?
+    (entry : StdTraceEntry (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
+    Option (Sigma (fsChallengeOracle StmtIn pSpec)) := do
+  let messagesUpTo ←
+    stdTraceMessagesUpTo?
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+      entry.query
+  let challenge : pSpec.Challenge entry.query.roundIdx :=
+    Deserialize.deserialize entry.response
+  pure ⟨⟨entry.query.roundIdx, (entry.query.stmt, messagesUpTo)⟩, challenge⟩
+
+/-- Exact paper-facing single-log `D2STrace` witness.
+
+Unlike `stdTraceSingleProjected`, this reconstructs the Fiat-Shamir challenge-log entries produced
+by `StdTrace` and appends them to the shared-oracle projection, matching the paper's single-log
+`tr'` surface. The remapping is defined directly here because, under the current ArkLib codec
+surface, the exact remap is naturally partial until the codec-image check succeeds. -/
+noncomputable def paperD2STraceSingle
+    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
+    OptionT (OracleComp (Unit →ₒ U))
+      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) := do
+  let entries ←
+    stdTraceEntries
+      (inCodecImage := paperStdTraceInCodecImage
+        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+      (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+      log
+  let sharedLog :=
+    projectSharedQueryLog (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) log
+  let remappedLog :=
+    entries.filterMap fun entry =>
+      match paperStdTraceEntryToFSQuery?
+          (StmtIn := StmtIn) (pSpec := pSpec) (U := U) entry with
+      | some mapped => some ⟨.inr mapped.1, mapped.2⟩
+      | none => none
+  pure (sharedLog ++ remappedLog)
+
+/-- Section 5.8 `Hyb₁` line-4 trace translation.
+
+This is the explicit `(φ⁻¹, ψ)(tr)` post-processing map applied directly to the single concatenated
+query-answer trace `tr = tr_P̃ || tr_V`. -/
+noncomputable def section58Hyb1Line4Trace
+    (log : QueryLog (oSpec + section58EncodedChallengeOracle (U := U) StmtIn pSpec)) :
+    OptionT (OracleComp (Unit →ₒ U))
+      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) := do
+  let remappedLog := log.filterMap fun entry =>
+    match entry with
+    | ⟨.inl query, response⟩ => some ⟨.inl query, response⟩
+    | ⟨.inr query, response⟩ =>
+        match query with
+        | ⟨roundIdx, (stmt, absorbedRatePrefix)⟩ =>
+            match absorbedPrefixMessagesUpTo?
+                roundIdx absorbedRatePrefix with
+            | none => none
+            | some messagesUpTo =>
+                let responseVec :
+                    Vector U (challengeSize (pSpec := pSpec) roundIdx) := response
+                let challenge : pSpec.Challenge roundIdx :=
+                  Deserialize.deserialize responseVec
+                some ⟨.inr ⟨roundIdx, (stmt, messagesUpTo)⟩, challenge⟩
+  pure remappedLog
+
+/-- Section 5.8 `Hyb₂` line-4 trace translation.
+
+This is the explicit `φ⁻¹(tr)` post-processing map applied directly to the single concatenated
+query-answer trace `tr = tr_P̃ || tr_V`. -/
+noncomputable def section58Hyb2Line4Trace
+    (log : QueryLog (oSpec + section58DecodedChallengeOracle (U := U) StmtIn pSpec)) :
+    OptionT (OracleComp (Unit →ₒ U))
+      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) := do
+  let remappedLog := log.filterMap fun entry =>
+    match entry with
+    | ⟨.inl query, response⟩ => some ⟨.inl query, response⟩
+    | ⟨.inr ⟨roundIdx, (stmt, absorbedRatePrefix)⟩, challenge⟩ =>
+        match absorbedPrefixMessagesUpTo?
+            roundIdx absorbedRatePrefix with
+        | none => none
+        | some messagesUpTo =>
+            some ⟨.inr ⟨roundIdx, (stmt, messagesUpTo)⟩, challenge⟩
+  pure remappedLog
+
+/-- Section 5.8 `Hyb₃` line-4 trace translation.
+
+This is the identity-on-line-4 trace surface from the paper, viewed through the common
+single-log Section 5 interface used by `KeyLemma`. -/
+noncomputable def section58Hyb3Line4Trace
+    (log : QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :
+    OptionT (OracleComp (Unit →ₒ U))
+      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
+  pure log
+
+end PaperTrace
 
 /-- Optional `StdTrace` wrapper with explicit remap for synthesized challenge entries. -/
 def duplexSpongeToBasicFSTraceWithRemap?

@@ -6,6 +6,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Backtrack
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Lookahead
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
 
 /-!
 # Prover transformation
@@ -101,7 +102,8 @@ structure D2SCodecBridge where
     (i : pSpec.ChallengeIdx) →
       StmtIn →
         List (Vector U SpongeSize.R) →
-          OracleComp (Unit →ₒ U) (Vector U (challengeSize (pSpec := pSpec) i))
+          OptionT (OracleComp (Unit →ₒ U))
+            (Vector U (challengeSize (pSpec := pSpec) i))
 
 /-- Core parameters for a simplified (but paper-shaped) `D2SQuery` implementation.
 
@@ -302,9 +304,8 @@ def d2sQueryStep
                     | none =>
                         let sampledRhoHat ←
                           StateT.lift <|
-                            OptionT.lift <|
-                              params.codecBridge.evalGI
-                                roundIdx backtrackOut.stmt backtrackOut.absorbedRatePrefix
+                            params.codecBridge.evalGI
+                              roundIdx backtrackOut.stmt backtrackOut.absorbedRatePrefix
                         let sampledRateBlocks ←
                           StateT.lift <|
                             OptionT.lift <|
@@ -487,40 +488,72 @@ private def messageInSerializeImage
   classical
   exact decide (∃ msg : pSpec.Message msgIdx, Serialize.serialize msg = encoded)
 
-/-- Executable approximation of Item 4(d)/(e) tuple-image branching, tightened with
-`BackTrack` parser checks, challenge-block length sanity, and explicit
-`α̂ ∈ Im(φ)` checks (via `Serialize`). -/
-private def defaultInCodecImage
-    (out : BacktrackOutput (StmtIn := StmtIn) (n := n) (U := U)) : Bool :=
-  let parseParams : BacktrackParseParams := {}
+/-- Paper-facing witness that the `BackTrack` output has the tuple shape needed by Item 4(d)/(e),
+including successful recovery of the Section 5.8 `φ⁻¹` message prefix. -/
+private structure PaperCodecImageWitness where
+  roundIdx : pSpec.ChallengeIdx
+  messagesUpTo : pSpec.MessagesUpTo roundIdx.1.castSucc
+
+/-- Exact paper-facing branch data used by the Section 5.8 Item 4(d)/(e) split.
+
+This is the semantic side of the branch: `BackTrack` produced a challenge round, the recovered
+prefix is long enough, and the paper's `φ⁻¹` parser succeeded on the absorbed-rate prefix. -/
+private noncomputable def paperCodecImageWitness?
+    (out : BacktrackOutput (StmtIn := StmtIn) (n := n) (U := U)) :
+    Option (PaperCodecImageWitness (pSpec := pSpec)) := do
   match challengeIdxOfBacktrackOutput
       (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) out with
-  | none => false
+  | none => none
   | some roundIdx =>
-      BacktrackOutput.paperShapeValidb
-        (StmtIn := StmtIn) (n := n) (U := U) out &&
-      decide (pSpec.Lᵥᵢ roundIdx ≤ out.absorbedRatePrefix.length) &&
+      if _hShape :
+          BacktrackOutput.paperShapeValidb
+            (StmtIn := StmtIn) (n := n) (U := U) out &&
+          decide (pSpec.Lᵥᵢ roundIdx ≤ out.absorbedRatePrefix.length) then
+        match section58AbsorbedPrefixMessagesUpTo?
+            (pSpec := pSpec) (U := U) roundIdx out.absorbedRatePrefix with
+        | some messagesUpTo =>
+            some { roundIdx := roundIdx, messagesUpTo := messagesUpTo }
+        | none => none
+      else
+        none
+
+/-- Executable approximation of Item 4(d)/(e) tuple-image branching.
+
+This sits strictly on top of `paperCodecImageWitness?`: after the paper-facing tuple recovery
+succeeds, we additionally approximate the paper's `α̂ ∈ Im(φ)` side condition via explicit
+`Serialize`-image checks on the recovered encoded messages. -/
+private def defaultInCodecImageApprox
+    (out : BacktrackOutput (StmtIn := StmtIn) (n := n) (U := U)) : Bool :=
+  let parseParams : BacktrackParseParams := {}
+  match paperCodecImageWitness?
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) out with
+  | none => false
+  | some witness =>
       backtrackOutputMessagesInImage
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-        parseParams roundIdx
+        parseParams witness.roundIdx
         (messageInSerializeImage (pSpec := pSpec) (U := U))
         out
 
 /-- Executable default for Item 4(d)/(e) branching.
 
-This keeps an executable approximation of the paper's full codec-image predicate:
-- parser-consistent challenge-round recovery from `BackTrack`,
-- shape/length sanity checks on recovered tuples,
-- and `α̂ ∈ Im(φ)` checks via `Serialize`.
+This is intentionally layered:
+- `paperCodecImageWitness?` names the paper-facing semantic branch data, and
+- `defaultInCodecImageApprox` adds the current executable `Serialize`-image approximation.
 
 It still defers full paper parser recovery of all tuple components to the abstract
-`D2SCodecBridge` surface. -/
+`D2SCodecBridge` surface.
+
+TODO: state and prove the exact relationship between `paperCodecImageWitness?` and the paper's
+Item 4(d)/(e) branch predicate. At the moment, `defaultInCodecImageApprox` should be read only as
+the executable approximation used by the default simulator, not as a proved equivalent
+formalization of the paper condition. -/
 private def defaultD2SCodecBridge :
     D2SCodecBridge (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) :=
-  { inCodecImage := defaultInCodecImage
+  { inCodecImage := defaultInCodecImageApprox
       (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
     evalGI := fun i _stmt _absorbedRatePrefix =>
-      sampleVector (U := U) (challengeSize (pSpec := pSpec) i) }
+      OptionT.lift <| sampleVector (U := U) (challengeSize (pSpec := pSpec) i) }
 
 private def defaultD2SQueryParams :
     D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) :=
@@ -619,6 +652,293 @@ abbrev d2SAlgo
   duplexSpongeToBasicFSAlgo (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) P
 
 end D2SAlgoBridge
+
+section D2SQueryWithOracle
+
+variable [DecidableEq StmtIn] [DecidableEq U]
+  [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
+  [∀ i, Fintype (pSpec.Message i)]
+  [∀ i, DecidableEq (pSpec.Message i)]
+
+/-- External challenge-oracle family augmented with the auxiliary unit-sampling oracle used by the
+Section 5.4 simulator. -/
+abbrev D2SChallengePlusUnitOracle {κ : Type} (challengeSpec : OracleSpec κ) :=
+  challengeSpec + ((Unit →ₒ U) + unifSpec)
+
+/-- `D2SQuery` codec bridge with explicit access to an external challenge-oracle family. -/
+structure D2SCodecBridgeWithOracle {κ : Type} (challengeSpec : OracleSpec κ) where
+  /-- Codec-image predicate for BackTrack outputs (Item 4(d)/(e) branch split). -/
+  inCodecImage :
+    BacktrackOutput (StmtIn := StmtIn) (n := n) (U := U) → Bool := fun _ => true
+  /-- Evaluation of `gᵢ = ψᵢ⁻¹ ∘ fᵢ ∘ φᵢ⁻¹` on encoded tuple keys. -/
+  evalGI :
+    (i : pSpec.ChallengeIdx) →
+      StmtIn →
+        List (Vector U SpongeSize.R) →
+          OptionT
+            (OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec))
+            (Vector U (challengeSize (pSpec := pSpec) i))
+
+/-- Section 5.4 simulator parameters with explicit access to an external challenge-oracle family. -/
+structure D2SQueryParamsWithOracle {κ : Type} (challengeSpec : OracleSpec κ) where
+  codecBridge :
+    D2SCodecBridgeWithOracle
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) challengeSpec
+  forwardExtensionLength :
+    BacktrackOutput (StmtIn := StmtIn) (n := n) (U := U) → Nat := fun _ => 0
+
+private def sampleArrayExactWithOracle
+    {κ : Type} (challengeSpec : OracleSpec κ) :
+    (m : Nat) →
+      OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)
+        {xs : Array U // xs.size = m}
+  | 0 => pure ⟨#[], rfl⟩
+  | m + 1 => do
+      let u ← query
+        (spec := D2SChallengePlusUnitOracle (U := U) challengeSpec)
+        (Sum.inr (.inl ()))
+      let ⟨xs, hxs⟩ ← sampleArrayExactWithOracle challengeSpec m
+      pure ⟨xs.push u, by simp [hxs]⟩
+
+private def sampleVectorWithOracle
+    {κ : Type} (challengeSpec : OracleSpec κ)
+    (m : Nat) :
+    OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec) (Vector U m) := do
+  let ⟨xs, hxs⟩ ← sampleArrayExactWithOracle (U := U) challengeSpec m
+  pure ⟨xs, hxs⟩
+
+private def sampleCapacityWithOracle
+    {κ : Type} (challengeSpec : OracleSpec κ) :
+    OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)
+      (Vector U SpongeSize.C) :=
+  sampleVectorWithOracle (U := U) challengeSpec SpongeSize.C
+
+private def sampleCapacityListWithOracle
+    {κ : Type} (challengeSpec : OracleSpec κ) :
+    Nat →
+      OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)
+        (List (Vector U SpongeSize.C))
+  | 0 => pure []
+  | m + 1 => do
+      let head ← sampleCapacityWithOracle (U := U) challengeSpec
+      let tail ← sampleCapacityListWithOracle challengeSpec m
+      pure (head :: tail)
+
+private def sampleStateWithOracle
+    {κ : Type} (challengeSpec : OracleSpec κ) :
+    OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)
+      (CanonicalSpongeState U) :=
+  sampleVectorWithOracle (U := U) challengeSpec SpongeSize.N
+
+private def rateBlocksFromUnitsMWithOracle
+    {κ : Type} (challengeSpec : OracleSpec κ) :
+    Nat → List U →
+      OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)
+        (List (Vector U SpongeSize.R))
+  | 0, _ => pure []
+  | m + 1, units => do
+      let headUnits := units.take SpongeSize.R
+      let restUnits := units.drop SpongeSize.R
+      let block ←
+        if hFull : headUnits.length = SpongeSize.R then
+          pure <|
+            Vector.ofFn (fun j => headUnits.get ⟨j.1, by
+              rw [hFull]
+              exact j.2⟩)
+        else do
+          let padLen := SpongeSize.R - headUnits.length
+          let pad ← sampleVectorWithOracle (U := U) challengeSpec padLen
+          let blockList := headUnits ++ pad.toList
+          have hTake : headUnits.length ≤ SpongeSize.R := by
+            dsimp [headUnits]
+            exact List.length_take_le SpongeSize.R units
+          have hLen : blockList.length = SpongeSize.R := by
+            simp [blockList, padLen, Nat.add_sub_of_le hTake]
+          pure <|
+            Vector.ofFn (fun j => blockList.get ⟨j.1, by
+              rw [hLen]
+              exact j.2⟩)
+      let tail ← rateBlocksFromUnitsMWithOracle challengeSpec m restUnits
+      pure (block :: tail)
+
+private def rateBlocksFromChallengeMWithOracle
+    {κ : Type} (challengeSpec : OracleSpec κ)
+    {i : pSpec.ChallengeIdx}
+    (challenge : Vector U (challengeSize i)) :
+    OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)
+      (List (Vector U SpongeSize.R)) :=
+  rateBlocksFromUnitsMWithOracle
+    (U := U) challengeSpec (pSpec.Lᵥᵢ i) challenge.toList
+
+/-- Section 5.4 `D2SQuery` step with an explicit external challenge-oracle family. -/
+def d2sQueryStepWithOracle
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    (params :
+      D2SQueryParamsWithOracle
+        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) challengeSpec)
+    (q : (duplexSpongeChallengeOracle StmtIn U).Domain) :
+    StateT (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+      (OptionT
+        (OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)))
+      ((duplexSpongeChallengeOracle StmtIn U).Range q) := do
+  let st ← get
+  match q with
+  | .inl stmt =>
+      let capOut ← match lookupHashInTrace (StmtIn := StmtIn) (U := U) st.trace stmt with
+        | some capSeg => pure capSeg
+        | none =>
+            StateT.lift <|
+              OptionT.lift <| sampleCapacityWithOracle (U := U) challengeSpec
+      let trace' := st.trace ++ [⟨.inl stmt, capOut⟩]
+      set { st with trace := trace' }
+      return capOut
+  | .inr (.inr stateOut) =>
+      let stateIn ← match lookupPermByOutput (StmtIn := StmtIn) (U := U) st.trace stateOut with
+        | some recovered => pure recovered
+        | none =>
+            StateT.lift <|
+              OptionT.lift <| sampleStateWithOracle (U := U) challengeSpec
+      let trace' := st.trace ++ [⟨.inr (.inr stateOut), stateIn⟩]
+      set { st with trace := trace' }
+      return stateIn
+  | .inr (.inl stateIn) =>
+      match
+          (backTrack
+            (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+            st.trace stateIn).run with
+      | none =>
+          StateT.lift failure
+      | some none =>
+          let (stateOut, cache', stdMemo') ←
+            match popCacheByInput (U := U) st.cacheP stateIn with
+            | some (cachedOut, cacheTail) => pure (cachedOut, cacheTail, st.stdMemo)
+            | none =>
+                match lookupPermByInput (StmtIn := StmtIn) (U := U) st.trace stateIn with
+                | some recovered => pure (recovered, st.cacheP, st.stdMemo)
+                | none =>
+                    let sampledOut ←
+                      StateT.lift <|
+                        OptionT.lift <| sampleStateWithOracle (U := U) challengeSpec
+                    pure (sampledOut, st.cacheP, st.stdMemo)
+          let trace' := st.trace ++ [⟨.inr (.inl stateIn), stateOut⟩]
+          set { st with trace := trace', cacheP := cache', stdMemo := stdMemo' }
+          return stateOut
+      | some (some backtrackOut) =>
+          let (stateOut, cache', stdMemo') ←
+            if params.codecBridge.inCodecImage backtrackOut then
+              match challengeIdxOfBacktrackOutput
+                  (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) backtrackOut with
+              | some roundIdx =>
+                  let stdQuery :
+                      D2SStdQuery (StmtIn := StmtIn) (pSpec := pSpec) (U := U) :=
+                    { roundIdx := roundIdx
+                      stmt := backtrackOut.stmt
+                      absorbedRatePrefix := backtrackOut.absorbedRatePrefix }
+                  let (rateBlocks, stdMemo') ←
+                    match lookupStdMemo
+                        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+                        st.stdMemo stdQuery with
+                    | some cachedRateBlocks =>
+                        pure (cachedRateBlocks, st.stdMemo)
+                    | none =>
+                        let sampledRhoHat ←
+                          StateT.lift <|
+                            params.codecBridge.evalGI
+                              roundIdx backtrackOut.stmt backtrackOut.absorbedRatePrefix
+                        let sampledRateBlocks ←
+                          StateT.lift <|
+                            OptionT.lift <|
+                              rateBlocksFromChallengeMWithOracle
+                                (pSpec := pSpec) (U := U) challengeSpec sampledRhoHat
+                        let stdMemo' :=
+                          insertStdMemo
+                            (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+                            st.stdMemo stdQuery sampledRateBlocks
+                        pure (sampledRateBlocks, stdMemo')
+                  match lookupPermByInput (StmtIn := StmtIn) (U := U) st.trace stateIn with
+                  | some recovered =>
+                      pure (recovered, st.cacheP, stdMemo')
+                  | none =>
+                      let firstRate : Vector U SpongeSize.R :=
+                        rateBlocks.headD (Vector.replicate SpongeSize.R default)
+                      let sampledCap ←
+                        StateT.lift <|
+                          OptionT.lift <|
+                            sampleCapacityWithOracle (U := U) challengeSpec
+                      let synthesizedOut :=
+                        mkStateFromSegments (U := U) firstRate sampledCap
+                      let tailRatesAll := rateBlocks.drop 1
+                      let extensionLen :=
+                        Nat.min (params.forwardExtensionLength backtrackOut)
+                          tailRatesAll.length
+                      let tailRates := tailRatesAll.take extensionLen
+                      let caps ←
+                        StateT.lift <|
+                          OptionT.lift <|
+                            sampleCapacityListWithOracle (U := U) challengeSpec tailRates.length
+                      let extraStates :=
+                        (tailRates.zip caps).map fun rc =>
+                          mkStateFromSegments (U := U) rc.1 rc.2
+                      let extraPairs :=
+                        chainPairsFrom (U := U) synthesizedOut extraStates
+                      pure (synthesizedOut, st.cacheP ++ extraPairs, stdMemo')
+              | none =>
+                  match lookupPermByInput (StmtIn := StmtIn) (U := U) st.trace stateIn with
+                  | some recovered => pure (recovered, st.cacheP, st.stdMemo)
+                  | none =>
+                      let sampledOut ←
+                        StateT.lift <|
+                          OptionT.lift <| sampleStateWithOracle (U := U) challengeSpec
+                      pure (sampledOut, st.cacheP, st.stdMemo)
+            else
+              match lookupPermByInput (StmtIn := StmtIn) (U := U) st.trace stateIn with
+              | some recovered => pure (recovered, st.cacheP, st.stdMemo)
+              | none =>
+                  let sampledOut ←
+                    StateT.lift <|
+                      OptionT.lift <| sampleStateWithOracle (U := U) challengeSpec
+                  pure (sampledOut, st.cacheP, st.stdMemo)
+          let trace' := st.trace ++ [⟨.inr (.inl stateIn), stateOut⟩]
+          set { st with trace := trace', cacheP := cache', stdMemo := stdMemo' }
+          return stateOut
+
+/-- Query implementation form of the Section 5.4 simulator with an explicit external
+challenge-oracle family. -/
+def d2sQueryImplCoreWithOracle
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    (params :
+      D2SQueryParamsWithOracle
+        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) challengeSpec) :
+    QueryImpl (duplexSpongeChallengeOracle StmtIn U)
+      (StateT (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+        (OptionT
+          (OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)))) :=
+  fun q => d2sQueryStepWithOracle params q
+
+/-- Default `BackTrack`-shape checks and cache-extension length, paired with a caller-supplied
+external `evalGI` oracle bridge. -/
+def defaultD2SQueryParamsWithOracle
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    (evalGI :
+      (i : pSpec.ChallengeIdx) →
+        StmtIn →
+          List (Vector U SpongeSize.R) →
+            OptionT
+              (OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec))
+              (Vector U (challengeSize (pSpec := pSpec) i))) :
+    D2SQueryParamsWithOracle
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) challengeSpec :=
+  { codecBridge :=
+      { inCodecImage := defaultInCodecImageApprox
+          (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+        evalGI := evalGI }
+    forwardExtensionLength := fun out =>
+      match challengeIdxOfBacktrackOutput
+          (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) out with
+      | some roundIdx => (pSpec.Lᵥᵢ roundIdx).pred
+      | none => 0 }
+
+end D2SQueryWithOracle
 
 end
 
