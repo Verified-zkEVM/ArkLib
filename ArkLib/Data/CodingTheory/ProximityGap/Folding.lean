@@ -1074,6 +1074,14 @@ lemma folding_proximity
           exact h_spec
       })
     rw [Finset.card_image_of_injective _ (CosetFftDomain.injective)] at contradiction
+    have contradiction : 2 ^ n * (δ : ENNReal) ≤
+      2 ^ n - 2 ^ k * ↑(#S) := by
+      simp at δ_lt
+      obtain ⟨δ_lt, _⟩ := δ_lt
+      apply le_trans
+      · apply mul_le_mul_right (le_of_lt δ_lt)
+      · rw [relDistFromCode_eq_distFromCode_div]  
+
 
 
 end
