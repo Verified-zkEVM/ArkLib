@@ -645,8 +645,9 @@ private lemma master_lemma
     f'.natDegree < d
       ∧ hammingDist f (fun x => f'.eval (domain x))
         ≤ Fintype.card (Fin (2 ^ n)) -
-          ({i ∈ Finset.product Finset.univ (Finset.preimage s (domain : Fin (2 ^ n) ↪ F) (fun x hx y hy hxy ↦ 
-        CosetFftDomain.injective (ω := domain) hxy)) | (domain i.1) ^ (2 ^ k) = domain i.2} : Finset ((Fin (2 ^ n)) × (Fin (2 ^ n)))).card:= by
+          ({i ∈ Finset.product Finset.univ 
+            (Finset.preimage s (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) (fun x hx y hy hxy ↦ 
+        CosetFftDomain.injective (ω := domain.subdomainNatReversed k) hxy)) | (domain i.1) ^ (2 ^ k) = domain.subdomainNatReversed k i.2} : Finset ((Fin (2 ^ n)) × (Fin (2 ^ (n - k))))).card:= by
   let s' := s.pickSubset (d / (2 ^ k))
   by_cases h_empty : s = ∅
   · simp [h_empty]
@@ -734,7 +735,7 @@ private lemma master_lemma
         simp [hxy₁]
         simp at hx
         simp at hy
-        apply CosetFftDomain.injective (ω := domain)
+        apply CosetFftDomain.injective (ω := domain.subdomainNatReversed k)
         aesop
 
 private lemma master_lemma'
@@ -756,81 +757,147 @@ private lemma master_lemma'
       ∧ hammingDist f (fun x => f'.eval (domain x))
         ≤ 2 ^ n -
           2 ^ k * (Finset.card s):= by
-          sorry
-/-   obtain ⟨f', h₁, h₂⟩ := master_lemma h_s h_u h_k_d h_k_card h_u_deg -/
-/-   exists f' -/
-/-   simp [h₁] -/
-/-   exact le_trans h₂ <| by   -/
-/-     simp only [Fintype.card_fin, Embedding.coeFn_mk, product_eq_sprod]  -/
-/-     rw [Nat.sub_le_sub_iff_left (by { -/
-/-       simp [CosetFftDomain.subdomainNatReversed] at h_s  -/
-/-       have hcard := Finset.card_le_card h_s -/
-/-       rw [CosetFftDomain.size_of_smooth_coset_domain_eq_pow_of_2] at hcard -/
-/-       simp at hcard -/
-/-       apply Nat.le_trans  -/
-/-       apply Nat.mul_le_mul_left _ hcard -/
-/-       rw [←Nat.pow_add] -/
-/-       have hkn : k ≤ n := by -/
-/-         rw [←Nat.pow_le_pow_iff_right (a := 2) (by simp)]  -/
-/-         omega -/
-/-       rw [Nat.add_sub_of_le hkn] -/
-/-     })] -/
-/-     conv => -/
-/-       rhs -/
-/-       congr -/
-/-       rw [show @filter _ _ _ _ =  -/
-/-         (Finset.preimage s (domain : Fin (2 ^ n) ↪ F) (fun x hx y hy hxy ↦  -/
-/-         CosetFftDomain.injective (ω := domain) hxy)).biUnion (fun i ↦ {j | domain j.1 ^ 2 ^ k = domain i ∧ j.2 = i} ) by { -/
-/-         ext x -/
-/-         simp -/
-/-       }] -/
-/-     rw [Finset.card_biUnion (by { -/
-/-       intro x hx y hy hxy -/
-/-       simp [Disjoint] -/
-/-       simp at hx -/
-/-       simp at hy -/
-/-       intro a ha₁ ha₂  -/
-/-       by_contra contra -/
-/-       have contra : a ≠ ∅ := by simp [contra] -/
-/-       rw [←Finset.nonempty_iff_ne_empty] at contra -/
-/-       rcases contra with ⟨c, hc⟩ -/
-/-       specialize (ha₁ hc) -/
-/-       specialize (ha₂ hc) -/
-/-       simp at ha₁  -/
-/-       simp at ha₂  -/
-/-       aesop -/
-/-     })] -/
-/-     conv => -/
-/-       rhs -/
-/-       congr -/
-/-       rfl -/
-/-       ext u -/
-/-       rw [show (Finset.card _) = #{j | domain j ^ 2 ^ k = domain u} by { -/
-/-         apply Finset.card_bij (fun a _ ↦ a.1) -/
-/-         · aesop -/
-/-         · aesop -/
-/-         · aesop -/
-/-       }] -/
-/-     simp -/
-/-     rw [Finset.sum_bij (t := s)  -/
-/-       (g := fun x ↦ Finset.card {j | domain j ^ (2 ^ k) = x}) -/
-/-       (i := fun i _ ↦ domain i) -/
-/-       (by aesop) -/
-/-       (by { -/
-/-         intro x hx y hy hxy -/
-/-         apply CosetFftDomain.injective (ω := domain) -/
-/-         simp at hxy -/
-/-         exact hxy -/
-/-       }) -/
-/-       (by { -/
-/-         intro b hb -/
-/-         simp -/
-/- })] -/
-      
-
-
-
-
+  obtain ⟨f', h₁, h₂⟩ := master_lemma h_s h_u h_k_d h_k_card h_u_deg
+  exists f'
+  simp only [h₁, true_and]
+  exact le_trans h₂ <| by  
+    simp only [Fintype.card_fin, Embedding.coeFn_mk, product_eq_sprod] 
+    rw [Nat.sub_le_sub_iff_left (by {
+      simp only [CosetFftDomain.subdomainNatReversed, Nat.succ_eq_add_one] at h_s 
+      have hcard := Finset.card_le_card h_s
+      rw [CosetFftDomain.size_of_smooth_coset_domain_eq_pow_of_2] at hcard
+      apply Nat.le_trans 
+      apply Nat.mul_le_mul_left _ hcard
+      rw [←Nat.pow_add]
+      have hkn : k ≤ n := by
+        rw [←Nat.pow_le_pow_iff_right (a := 2) (by simp)] 
+        omega
+      rw [Nat.add_sub_of_le hkn]
+    })]
+    conv =>
+      rhs
+      congr
+      rw [show @filter _ _ _ _ = 
+        (Finset.preimage s (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) (fun x hx y hy hxy ↦ 
+        CosetFftDomain.injective (ω := domain.subdomainNatReversed k) hxy)).biUnion 
+          (fun i ↦ {j | domain j.1 ^ 2 ^ k = domain.subdomainNatReversed k i ∧ j.2 = i} ) by {
+        ext x
+        simp
+      }]
+    rw [Finset.card_biUnion (by {
+      intro x hx y hy hxy
+      simp only [Disjoint, le_eq_subset, bot_eq_empty, subset_empty]
+      simp only [Embedding.coeFn_mk, coe_preimage, Set.mem_preimage, SetLike.mem_coe] at hx
+      simp only [Embedding.coeFn_mk, coe_preimage, Set.mem_preimage, SetLike.mem_coe] at hy
+      intro a ha₁ ha₂ 
+      by_contra contra
+      have contra : a ≠ ∅ := by simp [contra]
+      rw [←Finset.nonempty_iff_ne_empty] at contra
+      rcases contra with ⟨c, hc⟩
+      specialize (ha₁ hc)
+      specialize (ha₂ hc)
+      simp only [mem_filter, mem_univ, true_and] at ha₁ 
+      simp only [mem_filter, mem_univ, true_and] at ha₂ 
+      aesop
+    })]
+    conv =>
+      rhs
+      congr
+      rfl
+      ext u
+      rw [show (Finset.card _) = #{j | domain j ^ 2 ^ k = 
+        (CosetFftDomain.subdomainNatReversed domain k) u} by {
+        apply Finset.card_bij (fun a _ ↦ a.1)
+        · aesop
+        · aesop
+        · aesop
+      }]
+    simp
+    rw [Finset.sum_bij (t := s) 
+      (g := fun x ↦ Finset.card {j | domain j ^ (2 ^ k) = x})
+      (i := fun i _ ↦ domain.subdomainNatReversed k i)
+      (by aesop)
+      (by {
+        intro x hx y hy hxy
+        apply CosetFftDomain.injective (ω := domain.subdomainNatReversed k)
+        simp at hxy
+        exact hxy
+      })
+      (by {
+        intro b hb
+        specialize (h_s hb)
+        rw [CosetFftDomain.mem_coset_finset_iff_mem_coset_domain,
+          CosetFftDomain.mem_coset_def] at h_s
+        rcases h_s with ⟨a, ha⟩
+        exists a
+        exists (by {
+          simp
+          rw [←ha]
+          exact hb
+        })
+        simp [ha]
+      }) 
+      (by {
+        intro a ha
+        simp
+      })]
+    rw [Finset.sum_bij (t := s) 
+      (g := fun i ↦ 2 ^ k) (fun i _ ↦ i) 
+      (by aesop)
+      (by {
+        intro x hx y hy hxy 
+        simp at hxy
+        exact hxy
+      })
+      (by {
+        intro b hb
+        exists b 
+        exists hb
+      }) 
+      (by {
+        intro a ha
+        simp
+        conv =>
+          rhs
+          rw [←CosetFftDomain.subdomainNatReversed_roots_card (i := 0) (j := k)
+            (ω := domain) (x := a) (by {
+              simp only [zero_add]
+              rw [←Nat.pow_le_pow_iff_right (a := 2) (by simp)] 
+              omega     
+          }) (by {
+            specialize (h_s ha)
+            rw [CosetFftDomain.mem_coset_finset_iff_mem_coset_domain] at h_s
+            rw [CosetFftDomain.mem_subdomainNatReversed_of_eq (j := k) (by simp)]
+            exact h_s
+          })]
+        apply Finset.card_bij 
+          (i := fun i _ ↦ domain i)
+        · intro j hj
+          simp at hj 
+          simp only [Finset.mem_filter]
+          rw [hj, CosetFftDomain.mem_coset_finset_iff_mem_coset_domain,
+            CosetFftDomain.subdomainNatReversed_zero]
+          constructor
+          · exact CosetFftDomain.mem_coset_domain_self 
+          · rfl
+        · intro x _ y _ hxy
+          apply CosetFftDomain.injective (ω := domain)
+          exact hxy
+        · intro y hy 
+          simp only [Nat.sub_zero, mem_filter] at hy
+          rw [CosetFftDomain.mem_coset_finset_iff_mem_coset_domain,
+            CosetFftDomain.subdomainNatReversed_zero,
+            CosetFftDomain.mem_coset_def] at hy
+          rcases hy with ⟨⟨i, hi⟩, hy⟩
+          exists i
+          exists (by {
+            simp
+            rw [←hy, hi]
+          })
+          rw [hi]
+      })]
+    simp
+    rw [mul_comm]
 
 private lemma master_lemma'
   [Nonempty ι]
