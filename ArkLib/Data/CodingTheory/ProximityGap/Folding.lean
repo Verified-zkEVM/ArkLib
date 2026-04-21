@@ -939,23 +939,28 @@ private lemma master_lemma''
     assumption
   simp
 
-lemma folding_proximity {domain : ι ↪ F} {f : Word F ι} {d k : ℕ} [inst: NeZero k] {δ : ℚ≥0}
-  (k_div_d : k ∣ d)
-  (h_k_d : k < d)
-  (h_k_card: k ≤ Fintype.card F)
+lemma folding_proximity 
+  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {d k : ℕ}
+  {δ : ℚ≥0}
+  (k_div_d : 2 ^ k ∣ d)
+  (h_k_d : 2 ^ k ≤ d)
+  (h_k_card: 2 ^ k ≤ Fintype.card F)
   (δ_gt_0 : 0 < δ)
-  (δ_lt : δ < min (δᵣ(f, ReedSolomon.code domain d)) (1 - (ReedSolomonCode.sqrtRate d domain))) :
-    Pr_{ let r ←$ᵖ F}[δᵣ(foldWord domain f k r, ReedSolomon.code (domainK domain k) (d / k)) ≤ δ] ≤
-        (k - 1) * ProximityGap.errorBound δ (d / k) (domainK domain k) := by
-  match k with
-  | .zero => aesop
-  | .succ k =>
+  (δ_lt : δ < min (δᵣ(f, ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d)) 
+    (1 - (ReedSolomonCode.sqrtRate d (domain : Fin (2 ^ n) ↪ F)))) :
+    Pr_{ let r ←$ᵖ F}[δᵣ(foldWord domain f k r, 
+      ReedSolomon.code (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) 
+      (d / (2 ^ k))) ≤ δ] ≤
+        ((2 ^ k) - 1) * ProximityGap.errorBound δ (d / (2 ^ k)) 
+        (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) := by
     unfold foldWord
-    have bound_tighter : ↑δ ≤ 1 - ReedSolomonCode.sqrtRate (d / (k + 1)) (domainK domain (k + 1)) := by
+    have bound_tighter : 
+      ↑δ ≤ 1 - ReedSolomonCode.sqrtRate (d / (2 ^ k)) 
+        (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) := by
       sorry
     have h' :=
-      @correlatedAgreement_affine_curves (iotaK domain (k + 1)) _ sorry F _ _ _ 
-        k (d / (k + 1)) (domainK domain (k + 1)) δ bound_tighter
+      @correlatedAgreement_affine_curves (Fin (2 ^ (n - k))) _ sorry F _ _ _ 
+        (2 ^ k - 1) (d / (2 ^ k)) (domain.subdomainNatReversed k) δ bound_tighter
     unfold δ_ε_correlatedAgreementCurves at h'
     by_contra h
     have eq₁ : ((k + 1 : ℕ) : ENNReal) - 1 = (k : ENNReal) := by norm_cast
@@ -964,9 +969,20 @@ lemma folding_proximity {domain : ι ↪ F} {f : Word F ι} {d k : ℕ} [inst: N
       PMF.uniformOfFintype_apply, comp_apply, PMF.pure_apply, ULift.up.injEq, eq_iff_iff, true_iff,
       mul_ite, mul_one, mul_zero, tsum_fintype, Nat.succ_eq_add_one, eq₁] at h h'
     have h := this h
-    specialize h' (Matrix.of (fun m n ↦ foldAuxCoeff domain f (k + 1) m ((domainK domain (k + 1)) n)))
-    have hh {a : F} : (fun x ↦ ∑ j, foldAuxCoeff domain f (k + 1) j ((domainK domain (k + 1)) x) * a ^ (↑j : ℕ))
-      =∑ i : Fin (k + 1), a ^ (↑i : ℕ) • Matrix.of (fun m n ↦ foldAuxCoeff domain f (k + 1) m ((domainK domain (k + 1)) n)) i := by 
+    specialize h' 
+      (Matrix.of (fun i j ↦ foldWordAuxCoeff domain f (2 ^ k) 
+        (Fin.cast (by {
+          rw [Nat.sub_add_cancel]
+          omega
+        }) i) 
+        (domain.subdomainNatReversed k j)))
+    have hh {a : F} : 
+      (fun x ↦ 
+        ∑ j, foldWordAuxCoeff domain f (2 ^ k) j 
+          (domain.subdomainNatReversed k x) * a ^ (↑j : ℕ))
+      =∑ i : Fin (2 ^ k), a ^ (↑i : ℕ) • 
+        Matrix.of (fun i j ↦ 
+          foldWordAuxCoeff domain f (2 ^ k) i (domain.subdomainNatReversed k j)) i := by 
       ext x
       simp
       conv =>
