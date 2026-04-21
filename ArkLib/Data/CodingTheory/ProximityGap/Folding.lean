@@ -756,24 +756,77 @@ private lemma master_lemma'
       ∧ hammingDist f (fun x => f'.eval (domain x))
         ≤ 2 ^ n -
           2 ^ k * (Finset.card s):= by
-  obtain ⟨f, h₁, h₂⟩ := master_lemma h_s h_u h_k_d h_k_card h_u_deg
-  exists f
-  simp [h₁]
-  exact le_trans h₂ <| by  
-    simp only [Fintype.card_fin, Embedding.coeFn_mk, product_eq_sprod] 
-    rw [Nat.sub_le_sub_iff_left (by {
-      simp [CosetFftDomain.subdomainNatReversed] at h_s 
-      have hcard := Finset.card_le_card h_s
-      rw [CosetFftDomain.size_of_smooth_coset_domain_eq_pow_of_2] at hcard
-      simp at hcard
-      apply Nat.le_trans 
-      apply Nat.mul_le_mul_left _ hcard
-      rw [←Nat.pow_add]
-      have hkn : k ≤ n := by
-        rw [←Nat.pow_le_pow_iff_right (a := 2) (by simp)] 
-        omega
-      rw [Nat.add_sub_of_le hkn]
-    })]
+          sorry
+/-   obtain ⟨f', h₁, h₂⟩ := master_lemma h_s h_u h_k_d h_k_card h_u_deg -/
+/-   exists f' -/
+/-   simp [h₁] -/
+/-   exact le_trans h₂ <| by   -/
+/-     simp only [Fintype.card_fin, Embedding.coeFn_mk, product_eq_sprod]  -/
+/-     rw [Nat.sub_le_sub_iff_left (by { -/
+/-       simp [CosetFftDomain.subdomainNatReversed] at h_s  -/
+/-       have hcard := Finset.card_le_card h_s -/
+/-       rw [CosetFftDomain.size_of_smooth_coset_domain_eq_pow_of_2] at hcard -/
+/-       simp at hcard -/
+/-       apply Nat.le_trans  -/
+/-       apply Nat.mul_le_mul_left _ hcard -/
+/-       rw [←Nat.pow_add] -/
+/-       have hkn : k ≤ n := by -/
+/-         rw [←Nat.pow_le_pow_iff_right (a := 2) (by simp)]  -/
+/-         omega -/
+/-       rw [Nat.add_sub_of_le hkn] -/
+/-     })] -/
+/-     conv => -/
+/-       rhs -/
+/-       congr -/
+/-       rw [show @filter _ _ _ _ =  -/
+/-         (Finset.preimage s (domain : Fin (2 ^ n) ↪ F) (fun x hx y hy hxy ↦  -/
+/-         CosetFftDomain.injective (ω := domain) hxy)).biUnion (fun i ↦ {j | domain j.1 ^ 2 ^ k = domain i ∧ j.2 = i} ) by { -/
+/-         ext x -/
+/-         simp -/
+/-       }] -/
+/-     rw [Finset.card_biUnion (by { -/
+/-       intro x hx y hy hxy -/
+/-       simp [Disjoint] -/
+/-       simp at hx -/
+/-       simp at hy -/
+/-       intro a ha₁ ha₂  -/
+/-       by_contra contra -/
+/-       have contra : a ≠ ∅ := by simp [contra] -/
+/-       rw [←Finset.nonempty_iff_ne_empty] at contra -/
+/-       rcases contra with ⟨c, hc⟩ -/
+/-       specialize (ha₁ hc) -/
+/-       specialize (ha₂ hc) -/
+/-       simp at ha₁  -/
+/-       simp at ha₂  -/
+/-       aesop -/
+/-     })] -/
+/-     conv => -/
+/-       rhs -/
+/-       congr -/
+/-       rfl -/
+/-       ext u -/
+/-       rw [show (Finset.card _) = #{j | domain j ^ 2 ^ k = domain u} by { -/
+/-         apply Finset.card_bij (fun a _ ↦ a.1) -/
+/-         · aesop -/
+/-         · aesop -/
+/-         · aesop -/
+/-       }] -/
+/-     simp -/
+/-     rw [Finset.sum_bij (t := s)  -/
+/-       (g := fun x ↦ Finset.card {j | domain j ^ (2 ^ k) = x}) -/
+/-       (i := fun i _ ↦ domain i) -/
+/-       (by aesop) -/
+/-       (by { -/
+/-         intro x hx y hy hxy -/
+/-         apply CosetFftDomain.injective (ω := domain) -/
+/-         simp at hxy -/
+/-         exact hxy -/
+/-       }) -/
+/-       (by { -/
+/-         intro b hb -/
+/-         simp -/
+/- })] -/
+      
 
 
 
