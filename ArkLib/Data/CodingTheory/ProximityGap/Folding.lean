@@ -899,29 +899,29 @@ private lemma master_lemma'
     simp
     rw [mul_comm]
 
-private lemma master_lemma'
-  [Nonempty ι]
+private lemma master_lemma''
   [Fintype F]
-  {domain : ι ↪ F} {f : Word F ι} {k : ℕ}
-  {s : Finset ι}
-  [inst : NeZero k]
-  (h_s : s ⊆ (iotaK domain k))
-  {u : Fin k → Polynomial F}
-  (h_u : ∀ i, ∀ j ∈ s, (u i).eval (domain j)
-      = foldAuxCoeff domain f k i (domain j))
+  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ}
+  {s : Finset F}
+  (h_s : s ⊆ (domain.subdomainNatReversed k).toFinset)
+  {u : Fin (2 ^ k) → Polynomial F}
+  (h_u : ∀ i, ∀ x ∈ s, (u i).eval x
+      = foldWordAuxCoeff domain f (2 ^ k) i x)
   {d : ℕ}
-  (h_d : k < d)
-  (h_k_card : k ≤ Fintype.card F)
-  (h_u_deg : ∀ i, (u i).natDegree < d / k)
+  (h_k_d : 2 ^ k ≤ d)
+  (h_d : d ≤ 2 ^ n)
+  (h_k_card : (2 ^ k) ≤ Fintype.card F)
+  (h_u_deg : ∀ i, (u i).natDegree < d / (2 ^ k))
   :
-  Δ₀(f, ReedSolomon.code domain d)
-        ≤ Fintype.card ι -
-          ({i ∈ Finset.product Finset.univ s | (domain i.1) ^ k = domain i.2} : Finset (ι × ι)).card := by
+  Δ₀(f, ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d)
+        ≤ 2 ^ n -
+          2 ^ k * (Finset.card s) := by
   simp [distFromCode]
   apply sInf_le_of_le
-    (b := ↑ (Fintype.card ι - ({i ∈ Finset.product Finset.univ s | (domain i.1) ^ k = domain i.2} : Finset (ι × ι)).card))
+    (b := ↑(2 ^ n -
+          2 ^ k * (Finset.card s)))
   simp
-  have h := master_lemma h_s h_u h_d h_k_card h_u_deg
+  have h := master_lemma' h_s h_u h_k_d h_d h_k_card h_u_deg
   rcases h with ⟨f', ⟨h_f'_deg, hdist⟩⟩
   simp [ReedSolomon.code, ReedSolomon.evalOnPoints]
   exists f'
@@ -931,16 +931,12 @@ private lemma master_lemma'
     rw [Polynomial.coeff_eq_zero_of_natDegree_lt]
     omega
   · have hdist :
-     (↑Δ₀(f, fun x ↦ Polynomial.eval (domain x) f') : ℕ∞) ≤ ↑(Fintype.card ι - #({i ∈ univ.product s | domain i.1 ^ k = domain i.2})) := by
+     (↑Δ₀(f, fun x ↦ Polynomial.eval (domain x) f') : ℕ∞) ≤ ↑(2 ^ n -
+          2 ^ k * (Finset.card s)) := by
       rw [ENat.coe_le_coe]
       assumption
     simp at hdist
     assumption
-
-
-
-
-
   simp
 
 lemma folding_proximity {domain : ι ↪ F} {f : Word F ι} {d k : ℕ} [inst: NeZero k] {δ : ℚ≥0}
