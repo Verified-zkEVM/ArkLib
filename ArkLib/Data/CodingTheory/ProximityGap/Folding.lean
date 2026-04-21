@@ -963,11 +963,10 @@ lemma folding_proximity
         (2 ^ k - 1) (d / (2 ^ k)) (domain.subdomainNatReversed k) δ bound_tighter
     unfold δ_ε_correlatedAgreementCurves at h'
     by_contra h
-    have eq₁ : ((k + 1 : ℕ) : ENNReal) - 1 = (k : ENNReal) := by norm_cast
     have {a b : ENNReal} : a < b → b > a := id
     simp only [not_le, fold_eq_sum_of_foldAuxCoeff_mul_pow_alpha, bind_pure_comp, Functor.map, PMF.bind_apply,
       PMF.uniformOfFintype_apply, comp_apply, PMF.pure_apply, ULift.up.injEq, eq_iff_iff, true_iff,
-      mul_ite, mul_one, mul_zero, tsum_fintype, Nat.succ_eq_add_one, eq₁] at h h'
+      mul_ite, mul_one, mul_zero, tsum_fintype, Nat.succ_eq_add_one] at h h'
     have h := this h
     specialize h' 
       (Matrix.of (fun i j ↦ foldWordAuxCoeff domain f (2 ^ k) 
@@ -980,7 +979,7 @@ lemma folding_proximity
       (fun x ↦ 
         ∑ j, foldWordAuxCoeff domain f (2 ^ k) j 
           (domain.subdomainNatReversed k x) * a ^ (↑j : ℕ))
-      =∑ i : Fin (2 ^ k), a ^ (↑i : ℕ) • 
+      =∑ i : Fin (2 ^ k - 1 + 1), a ^ (↑i : ℕ) • 
         Matrix.of (fun i j ↦ 
           foldWordAuxCoeff domain f (2 ^ k) i (domain.subdomainNatReversed k j)) i := by 
       ext x
@@ -1003,9 +1002,9 @@ lemma folding_proximity
     simp [ReedSolomon.code] at h'
     rw [forall_and] at h'
     rcases h' with ⟨h_rs, h'⟩ 
-    let u : Fin (k + 1) → Polynomial F :=
+    let u : Fin (2 ^ k - 1 + 1) → Polynomial F :=
       fun i => Classical.choose (h_rs i)
-    have contradiction := master_lemma' (k := k + 1) (domain := domain) (f := f)
+    have contradiction := master_lemma'' (k := k + 1) (domain := domain) (f := f)
       (s := Finset.image (fun i => i.val) S)
       (by {
         intro x hx
