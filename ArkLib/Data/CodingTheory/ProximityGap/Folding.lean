@@ -968,12 +968,14 @@ lemma folding_proximity
       PMF.uniformOfFintype_apply, comp_apply, PMF.pure_apply, ULift.up.injEq, eq_iff_iff, true_iff,
       mul_ite, mul_one, mul_zero, tsum_fintype, Nat.succ_eq_add_one] at h h'
     have h := this h
+    let cast (x : Fin (2 ^ k - 1 + 1)) 
+      : Fin (2 ^ k) := Fin.cast (by {
+        rw [Nat.sub_add_cancel]
+        omega
+      }) x
     specialize h' 
       (Matrix.of (fun i j ↦ foldWordAuxCoeff domain f (2 ^ k) 
-        (Fin.cast (by {
-          rw [Nat.sub_add_cancel]
-          omega
-        }) i) 
+        (cast i) 
         (domain.subdomainNatReversed k j)))
     have hh {a : F} : 
       (fun x ↦ 
@@ -981,7 +983,7 @@ lemma folding_proximity
           (domain.subdomainNatReversed k x) * a ^ (↑j : ℕ))
       =∑ i : Fin (2 ^ k - 1 + 1), a ^ (↑i : ℕ) • 
         Matrix.of (fun i j ↦ 
-          foldWordAuxCoeff domain f (2 ^ k) i (domain.subdomainNatReversed k j)) i := by 
+          foldWordAuxCoeff domain f (2 ^ k) (cast i) (domain.subdomainNatReversed k j)) i := by 
       ext x
       simp
       conv =>
@@ -995,7 +997,7 @@ lemma folding_proximity
         rhs
         ext a
         rw [←hh]
-      assumption
+      norm_cast at h
     }) 
     simp [jointAgreement] at h'
     rcases h' with ⟨S, ⟨h_card, ⟨v, h'⟩⟩⟩
@@ -1004,7 +1006,7 @@ lemma folding_proximity
     rcases h' with ⟨h_rs, h'⟩ 
     let u : Fin (2 ^ k - 1 + 1) → Polynomial F :=
       fun i => Classical.choose (h_rs i)
-    have contradiction := master_lemma'' (k := k + 1) (domain := domain) (f := f)
+    have contradiction := master_lemma'' (k := 2 ^ k) (domain := domain) (f := f)
       (s := Finset.image (fun i => i.val) S)
       (by {
         intro x hx
