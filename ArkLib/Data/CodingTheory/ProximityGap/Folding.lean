@@ -1073,7 +1073,8 @@ lemma folding_proximity
           rw [Polynomial.degree_lt_iff_coeff_zero]
           exact h_spec
       })
-    sorry  
+    rw [Finset.card_image_of_injective _ (CosetFftDomain.injective)] at contradiction
+
 
 end
 end ProximityGap
