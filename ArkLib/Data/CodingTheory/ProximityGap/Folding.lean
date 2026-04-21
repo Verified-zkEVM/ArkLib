@@ -944,7 +944,7 @@ lemma folding_proximity
   {δ : ℚ≥0}
   (k_div_d : 2 ^ k ∣ d)
   (h_k_d : 2 ^ k ≤ d)
-  (h_k_card: 2 ^ k ≤ Fintype.card F)
+  (h_d_n: d ≤ 2 ^ n)
   (δ_gt_0 : 0 < δ)
   (δ_lt : δ < min (δᵣ(f, ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d)) 
     (1 - (ReedSolomonCode.sqrtRate d (domain : Fin (2 ^ n) ↪ F)))) :
@@ -953,6 +953,14 @@ lemma folding_proximity
       (d / (2 ^ k))) ≤ δ] ≤
         ((2 ^ k) - 1) * ProximityGap.errorBound δ (d / (2 ^ k)) 
         (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) := by
+    have h_k_card : 2 ^ k ≤ Fintype.card F := by
+      exact le_trans h_k_d <| by
+        exact le_trans h_d_n <| by
+          rw [←CosetFftDomain.size_of_smooth_coset_domain_eq_pow_of_2 (ω := domain)]
+          simp only [CosetFftDomain.toFinset]
+          apply Finset.card_le_card
+          simp
+          
     unfold foldWord
     have bound_tighter : 
       ↑δ ≤ 1 - ReedSolomonCode.sqrtRate (d / (2 ^ k)) 
@@ -991,6 +999,16 @@ lemma folding_proximity
         rhs
         ext y
         rw [mul_comm]
+      symm
+      apply Fintype.sum_bijective cast
+      · constructor
+        · intro x y hxy
+          simp [cast] at hxy
+          exact hxy
+        · rintro ⟨b, hb⟩
+          exists ⟨b, by omega⟩
+      · intro y 
+        rfl
     specialize h' (by {
       conv =>
         lhs
@@ -1006,39 +1024,49 @@ lemma folding_proximity
     rcases h' with ⟨h_rs, h'⟩ 
     let u : Fin (2 ^ k - 1 + 1) → Polynomial F :=
       fun i => Classical.choose (h_rs i)
-    have contradiction := master_lemma'' (k := 2 ^ k) (domain := domain) (f := f)
-      (s := Finset.image (fun i => i.val) S)
+    let cast' : Fin (2 ^ k) → Fin (2 ^ k - 1 + 1) :=
+      fun x ↦ Fin.cast (by {
+        rw [Nat.sub_add_cancel]
+        omega
+  }) x
+    have contradiction := master_lemma'' (k := k) (domain := domain) (f := f)
+      (s := Finset.image 
+        (domain.subdomainNatReversed k) S)
       (by {
         intro x hx
         simp at hx
-        rcases hx with ⟨x', hx'⟩ 
-        aesop
+        rcases hx with ⟨x', ⟨_, hx'⟩⟩ 
+        rw [←hx', CosetFftDomain.mem_coset_finset_iff_mem_coset_domain] 
+        exact CosetFftDomain.mem_coset_domain_self
       })
-      (u := u)
+      (u := fun i => u (cast' i))
       (by {
         intros i j hj
-        have h_spec : u i ∈ F⦃< d / (k + 1)⦄[X] ∧ (ReedSolomon.evalOnPoints (domainK domain (k + 1))) (u i) = v i := Classical.choose_spec (h_rs i)
+        have h_spec : u (cast' i) ∈ F⦃< d / (2 ^ k)⦄[X] ∧ (ReedSolomon.evalOnPoints (domain.subdomainNatReversed k)) (u (cast' i)) = v (cast' i) := Classical.choose_spec (h_rs (cast' i))
         simp [ReedSolomon.evalOnPoints] at h_spec
         rcases h_spec with ⟨_, h_spec⟩
-        simp [domainK] at h_spec
         simp at hj
-        rcases hj with ⟨hj, hj'⟩
-        have h_spec := congrFun h_spec ⟨j, hj⟩ 
+        rcases hj with ⟨j', hj, hj'⟩
+        have h_spec := congrFun h_spec j'
         simp at h_spec
-        rw [h_spec]
-        specialize h' i hj'
-        simp [domainK] at h'
-        rw [←h']
+        simp
+        rw [←hj', h_spec]
+        specialize h' (cast' i) hj 
+        simp at h'
+        rw [h']
+        congr
       })
       (d := d)
       (by assumption)
       (by assumption)
+      (by assumption)
       (by {
         intro i
-        have h_spec : u i ∈ F⦃< d / (k + 1)⦄[X] ∧ (ReedSolomon.evalOnPoints (domainK domain (k + 1))) (u i) = v i := Classical.choose_spec (h_rs i)
+        have h_spec : u (cast' i) ∈ F⦃< d / (2 ^ k)⦄[X] ∧ 
+          (ReedSolomon.evalOnPoints (domain.subdomainNatReversed k)) (u (cast' i)) = v (cast' i) := Classical.choose_spec (h_rs (cast' i))
         rcases h_spec with ⟨h_spec, _⟩
         simp [degreeLT] at h_spec
-        by_cases heq : u i = 0
+        by_cases heq : u (cast' i) = 0
         · simp [heq]
           omega
         · rw [Polynomial.natDegree_lt_iff_degree_lt heq]
