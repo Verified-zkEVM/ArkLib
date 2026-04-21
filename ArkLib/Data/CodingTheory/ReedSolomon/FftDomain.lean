@@ -675,14 +675,19 @@ lemma mem_subdomain_of_eq_vals {n : ℕ} {ω : SmoothFftDomain n F}
 @[simp]
 lemma subdomain_0 {n} {ω : SmoothFftDomain n F} :
   (ω.subdomain 0 : Subgroup Fˣ) = ⊥ := by
-  aesop (add simp [FftDomain.mem_finset_iff_exists, FftDomain.mem_subgroup_iff_mem_finset])
+  simp only [toSubgroup, Nat.succ_eq_add_one, Fin.coe_ofNat_eq_mod, Nat.zero_mod, Nat.pow_zero,
+    Finset.univ_unique, Finset.image_singleton, Finset.coe_singleton, Subgroup.eq_bot_iff_forall,
+    Subgroup.mem_mk, Submonoid.mem_mk, Subsemigroup.mem_mk, Set.mem_singleton_iff, forall_eq]
+  exact map_one _
 
 omit [DecidableEq F] in
 @[simp]
 lemma subdomain_0' {n} {ω : SmoothFftDomain n F}
   {x : F} :
   x ∈ ω.subdomain 0 ↔ x = 1 := by
-  aesop (add simp [FftDomain.mem_finset_iff_exists, FftDomain.mem_domain_iff_exists])
+  simp only [mem_domain_iff_exists]; constructor
+  · rintro ⟨i, rfl⟩; simp [subdomain, subdomain_embed]; norm_cast
+  · intro h; subst h; exact ⟨0, by simp [subdomain, subdomain_embed]; norm_cast⟩
 
 
 private lemma subdomain_embed_last {n : ℕ} (k : Fin (2 ^ (Fin.last n : ℕ))) :
@@ -694,14 +699,15 @@ private lemma subdomain_embed_last {n : ℕ} (k : Fin (2 ^ (Fin.last n : ℕ))) 
 lemma subdomain_last {n} {ω : SmoothFftDomain n F} :
   (ω.subdomain (Fin.last n) : Subgroup Fˣ) = (ω : Subgroup Fˣ) := by
   ext x
-  simp only [toSubgroup, Nat.succ_eq_add_one, Fin.val_last, subdomain, MonoidHom.coe_mk,
-    OneHom.coe_mk, Finset.coe_image, Finset.coe_univ, Set.image_univ, Subgroup.mem_mk,
-    Submonoid.mem_mk, Subsemigroup.mem_mk, Set.mem_range, Multiplicative.exists, toAdd_ofAdd]
+  simp only [toSubgroup, Nat.succ_eq_add_one, Fin.val_last, subdomain,
+    Finset.coe_image, Finset.coe_univ, Set.image_univ, Subgroup.mem_mk,
+    Submonoid.mem_mk, Subsemigroup.mem_mk, Set.mem_range, Multiplicative.exists]
   constructor
     <;> intro h
     <;> rcases h with ⟨a, rfl⟩
     <;> use Fin.cast (by simp) a
     <;> simp +decide [subdomain_embed_last]
+    <;> rfl
 
 omit [DecidableEq F] in
 lemma subdomain_last' {n : ℕ} {ω : SmoothFftDomain n F}
@@ -709,7 +715,7 @@ lemma subdomain_last' {n : ℕ} {ω : SmoothFftDomain n F}
   v ∈ (ω.subdomain (@Nat.cast (Fin (n + 1)) (Fin.NatCast.instNatCast (n + 1)) n)) ↔ v ∈ ω := by
   simp only [Nat.succ_eq_add_one, Fin.val_natCast, subdomain, mem_domain_iff_exists]
   constructor
-  · aesop
+  · rintro ⟨a, rfl⟩; exact ⟨_, rfl⟩
   · rintro ⟨a, rfl⟩
     use Fin.cast (by simp) a
     unfold subdomain_embed
@@ -958,7 +964,10 @@ omit [DecidableEq F] in
 @[simp]
 lemma subdomainNat_zero {n} {ω : SmoothFftDomain n F}
   {x : F} :
-  x ∈ ω.subdomainNat 0 ↔ x = 1 := by aesop (add simp [subdomainNat, mem_domain_iff_exists])
+  x ∈ ω.subdomainNat 0 ↔ x = 1 := by
+    simp only [subdomainNat, mem_domain_iff_exists]; constructor
+    · rintro ⟨i, rfl⟩; simp [subdomain, subdomain_embed]; norm_cast
+    · intro h; subst h; exact ⟨0, by simp [subdomain, subdomain_embed]; norm_cast⟩
 
 omit [DecidableEq F] in
 @[simp]
@@ -1083,7 +1092,11 @@ lemma subdomain_fftDomain {n} {ω : SmoothCosetFftDomain n F}
 
 lemma subdomain_0 {n : ℕ} {ω : SmoothCosetFftDomain n F} :
   (ω.subdomain 0).toFinset = {ω.x.val ^ 2 ^ n} := by
-  simp [subdomain, toFinset]
+  simp only [toFinset, Nat.succ_eq_add_one, Fin.coe_ofNat_eq_mod, Nat.zero_mod, Nat.pow_zero,
+    subdomain, tsub_zero, FftDomain.subdomain, subdomain_embed, Fin.val_eq_zero, mul_zero,
+    Fin.mk_zero', ofAdd_zero, map_one, Finset.univ_unique, Fin.default_eq_zero, Fin.isValue,
+    Finset.image_singleton, Finset.singleton_inj]
+  exact mul_one _
 
 omit [DecidableEq F] in
 lemma subdomain_n {n : ℕ} {ω : SmoothCosetFftDomain n F} :
@@ -1097,16 +1110,15 @@ lemma subdomain_n {n : ℕ} {ω : SmoothCosetFftDomain n F} :
 omit [DecidableEq F] in
 lemma subdomain_n' {n : ℕ} {ω : SmoothCosetFftDomain n F}
   {v : F} :
-  v ∈ (ω.subdomain (@Nat.cast (Fin (n + 1)) (Fin.NatCast.instNatCast (n + 1)) n)) ↔ v ∈ ω := 
+  v ∈ (ω.subdomain (@Nat.cast (Fin (n + 1)) (Fin.NatCast.instNatCast (n + 1)) n)) ↔ v ∈ ω :=
   Iff.intro
-    (by aesop (add simp [subdomain, mem_coset_domain, mem_domain_iff_exists]))
+    (by rintro ⟨a, rfl⟩; simp only [Nat.succ_eq_add_one, Fin.val_natCast, subdomain,
+      Fin.natCast_eq_last, Fin.val_last, tsub_self, pow_zero, pow_one, mem_coset_domain,
+      mem_domain_iff_exists, exists_exists_eq_and]; exact ⟨_, rfl⟩)
     (by {
-      intro hv
-      simp only [mem_coset_domain, mem_domain_iff_exists, exists_exists_eq_and] at hv
-      rcases hv with ⟨a, hv⟩
-      aesop
-        (add simp [subdomain, mem_coset_domain, mem_domain_iff_exists])
-        (add unsafe [(by (rw [←FftDomain.mem_domain_iff_exists, FftDomain.subdomain_last']))])
+      have : @Nat.cast (Fin (n + 1)) (Fin.NatCast.instNatCast (n + 1)) n = Fin.last n := by
+        ext; simp [Fin.last]
+      rw [this, subdomain_n]; exact id
     })
 
 omit [DecidableEq F] in
@@ -1309,7 +1321,21 @@ omit [DecidableEq F] in
 lemma subdomainNat_zero {n} {ω : SmoothCosetFftDomain n F}
   {x : F} :
   x ∈ ω.subdomainNat 0 ↔ x = ω.x ^ 2 ^ n := by
-    simp [subdomainNat, mem_coset_domain, FftDomain.mem_domain_iff_exists]
+    simp only [subdomainNat]
+    rw [show Fin.ofNat n.succ 0 = (0 : Fin n.succ) from rfl]
+    simp only [subdomain, Fin.val_zero, Nat.sub_zero]
+    constructor
+    · rintro ⟨i, rfl⟩
+      simp only [eval_coset_fft_domain_eq_eval_x_mul_domain, Units.val_pow_eq_pow_val]
+      have : (ω.fftDomain.subdomain 0) i = 1 :=
+        FftDomain.subdomain_0'.mp ⟨i, rfl⟩
+      rw [this, mul_one]
+    · intro h; subst h
+      exact ⟨0, by
+        simp only [eval_coset_fft_domain_eq_eval_x_mul_domain, Units.val_pow_eq_pow_val]
+        have : (ω.fftDomain.subdomain 0) (0 : Fin _) = 1 :=
+          FftDomain.subdomain_0'.mp ⟨0, rfl⟩
+        rw [this, mul_one]⟩
 
 omit [DecidableEq F] in
 @[simp]

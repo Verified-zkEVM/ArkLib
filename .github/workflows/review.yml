@@ -86,8 +86,8 @@
           with:
             github_token: ${{ secrets.GITHUB_TOKEN }}
             api_key: ${{ secrets.CLAUDE_API_KEY }}
-            provider: anthropic
-            model: claude-opus-4-7
+            provider: gemini
+            model: gemini-3.1-pro-preview
             pr_number: ${{ github.event.issue.number || github.event.pull_request.number }}
             external_refs: "${{ steps.get_args.outputs.external_refs }}"
             repo_context_refs: "${{ steps.get_args.outputs.repo_context_refs }}"

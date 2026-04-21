@@ -123,10 +123,10 @@ lemma powContraction_is_right_inverse_to_linearMvExtension
           intro n
           simp)
         (n := 2 ^ m)]
-      have h_deg : Polynomial.degree (p : Polynomial F) < 2 ^ m :=
-        Polynomial.mem_degreeLT.mp p.2
-      contrapose! h_deg
-      rw [Polynomial.degree_eq_natDegree] <;> norm_cast; aesop
+      have h_deg := Polynomial.mem_degreeLT.mp p.2
+      rcases eq_or_ne (↑p : Polynomial F) 0 with hp | hp
+      · rw [hp, Polynomial.natDegree_zero]; positivity
+      · exact (Polynomial.natDegree_lt_iff_degree_lt hp).mpr h_deg
     rw [h_sum_range, MvPolynomial.eval₂_sum]
     refine Finset.sum_congr rfl ?_
     intro i hi
@@ -142,8 +142,9 @@ lemma powContraction_is_right_inverse_to_linearMvExtension
   convert Polynomial.as_sum_range' p.val (2 ^ m) _ using 1
   · simp +decide [Polynomial.smul_eq_C_mul, ← Polynomial.C_mul_X_pow_eq_monomial]
   · have := Polynomial.mem_degreeLT.mp p.2
-    contrapose! this
-    rw [Polynomial.degree_eq_natDegree] <;> norm_cast; aesop
+    rcases eq_or_ne (↑p : Polynomial F) 0 with hp | hp
+    · rw [hp, Polynomial.natDegree_zero]; positivity
+    · exact (Polynomial.natDegree_lt_iff_degree_lt hp).mpr this
 
 end
 

@@ -6,15 +6,12 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
-/-! # BCIKS20 Error Bounds -/
-
+import ArkLib.Data.CodingTheory.ReedSolomon
 
 namespace ProximityGap
 
-open NNReal Finset Function
-open scoped BigOperators
+open NNReal Finset Function Code
 open scoped BigOperators LinearCode
-open Code
 
 section CoreResults
 

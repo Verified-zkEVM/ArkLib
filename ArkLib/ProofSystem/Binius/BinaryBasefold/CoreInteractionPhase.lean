@@ -135,8 +135,7 @@ theorem foldRelayOracleVerifier_rbrKnowledgeSoundness
         relayKnowledgeError ∘ ChallengeIdx.sumEquiv.symm) by
     convert h using 1
     funext m
-    simp only [Function.comp, ChallengeIdx.sumEquiv, Equiv.symm]
-    dsimp
+    simp only [Function.comp, ChallengeIdx.sumEquiv, Equiv.symm, Equiv.coe_fn_mk]
     split
     · congr 1; ext; simp
     · omega
@@ -367,8 +366,10 @@ def sumcheckFoldOracleVerifier :=
         exact lastOracleVerifier
       )
     simp [stmt, oStmt, Nat.zero_mod] at res
+    unfold pSpecSumcheckFold pSpecNonLastBlocks
     convert res
     all_goals simp
+    all_goals (congr 1; ext; simp)
 
   sumcheckFoldOV
 
@@ -532,8 +533,10 @@ def sumcheckFoldOracleReduction :=
         exact lastOracleReduction
       )
     simp [stmt, oStmt, wit, Nat.zero_mod] at res
+    unfold pSpecSumcheckFold pSpecNonLastBlocks
     convert res
     all_goals simp
+    all_goals (congr 1; ext; simp)
 
   coreInteractionOracleReduction
 

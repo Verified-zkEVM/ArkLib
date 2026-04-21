@@ -236,12 +236,12 @@ lemma ps_resultant_dvd_pow_eval_y {F : Type} [Field F]
     (X - C y) ^ (degreeX A) ∣
       resultant (swap B) (swap A) n (degreeX A) := by
   classical
-  simpa [-swap_apply, ps_nat_degree_y_swap] using
+  simpa [ps_nat_degree_y_swap] using
     ps_resultant_dvd_pow_eval_x (swap A) (swap B) y Q n
-      (by simpa [-swap_apply, ps_nat_degree_y_swap] using hmn)
-      (by simpa [-swap_apply, ps_nat_degree_y_swap] using hn)
-      (by simpa [-swap_apply, ps_nat_degree_y_swap] using hQdeg)
-      (by simpa [-swap_apply, ps_eval_y_eq_eval_x_swap] using hQ)
+      (by simpa [ps_nat_degree_y_swap] using hmn)
+      (by simpa [ps_nat_degree_y_swap] using hn)
+      (by simpa [ps_nat_degree_y_swap] using hQdeg)
+      (by simpa [ps_eval_y_eq_eval_x_swap] using hQ)
 
 /-- The resultant of relatively prime polynomials is nonzero. -/
 lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type} [Field F]
@@ -284,7 +284,7 @@ lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type} [Field F]
             omega)
       have hdegBQ : (B * Q).natDegree < n + m := by
         by_cases hm0 : m = 0
-        · rw [show Q = 0 from by simp [hm0, hQ_ofFn, ofFn]]; simp; omega
+        · rw [show Q = 0 from by simp [hm0, hQ_ofFn, ofFn]; rfl]; simp; omega
         · have hndeg : B.natDegree ≤ n := by simpa [natDegreeY] using hn
           have hQnat : Q.natDegree < m := by
             simpa [hQ_ofFn] using

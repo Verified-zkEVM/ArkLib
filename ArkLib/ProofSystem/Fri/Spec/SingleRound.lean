@@ -96,7 +96,7 @@ def FinalOracleStatement
 /-- The FRI protocol has as witness the polynomial that is supposed to correspond to the codeword in
   the oracle statement. -/
 @[reducible]
-def Witness (F : Type) [NonBinaryField F] {k : ℕ}
+noncomputable def Witness (F : Type) [NonBinaryField F] {k : ℕ}
     (s : Fin (k + 1) → ℕ+) (d : ℕ+) (i : Fin (k + 2)) :=
   F⦃< 2^((∑ j', (s j').1) - (∑ j' ∈ finRangeTo _ i.1, (s j').1)) * d⦄[X]
 
@@ -133,10 +133,8 @@ private lemma witness_lift {F : Type} [NonBinaryField F]
       · simp only [ge_iff_le]
         apply sum_le_univ_sum_of_nonneg
         simp
-      · apply @CanonicallyOrderedAddCommMonoid.single_le_sum (Fin (k + 1)) ℕ _ _ _
-            (fun j ↦ (s j).1)
-            (List.take (↑i + 1) (List.finRange (k + 1))).toFinset i
-        rw [List.mem_toFinset]
+      · apply Finset.single_le_sum (f := fun j ↦ ↑(s j)) (fun _ _ => Nat.zero_le _)
+        simp only [finRangeTo, List.mem_toFinset]
         apply List.mem_take_iff_getElem.mpr
         use i.1
         use
@@ -389,8 +387,8 @@ noncomputable def foldVerifier :
   hEq := by
     unfold OracleStatement pSpec
     intros j
-    simp only [Fin.val_succ, Fin.coe_castSucc, Fin.vcons_fin_zero,
-      Nat.reduceAdd, MessageIdx, Fin.isValue, Function.Embedding.coeFn_mk,
+    simp only [Fin.val_succ, Fin.val_castSucc, Fin.vcons_fin_zero,
+      Nat.reduceAdd, MessageIdx, Fin.isValue, DFunLike.coe,
       Message]
     split_ifs with h
     · rcases j with ⟨j, hj⟩
@@ -601,7 +599,7 @@ noncomputable def finalFoldVerifier :
     intros j
     simp only [
       Fin.vcons_fin_zero, Nat.reduceAdd, MessageIdx, Fin.isValue,
-      Function.Embedding.coeFn_mk, Message
+      DFunLike.coe, Message
     ]
     split_ifs with h
     · simp

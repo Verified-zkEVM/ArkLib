@@ -6,35 +6,28 @@ Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
 
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.Prelims
-import Mathlib.Algebra.Field.IsField
-import Mathlib.Algebra.Polynomial.Basic
-import Mathlib.Algebra.Polynomial.Bivariate
-import Mathlib.Algebra.Polynomial.Eval.Defs
 import Mathlib.FieldTheory.RatFunc.Defs
 import Mathlib.RingTheory.Ideal.Quotient.Defs
 import Mathlib.RingTheory.Ideal.Span
-import Mathlib.RingTheory.PowerSeries.Basic
 import Mathlib.RingTheory.PowerSeries.Substitution
 
-
 /-!
-  # Definitions and Theorems about Function Fields and Rings of Regular Functions
+# Definitions and Theorems about Function Fields and Rings of Regular Functions
 
-  We define the notions of Appendix A of [BCIKS20].
+We define the notions of Appendix A of [BCIKS20].
 
-  ## References
+## References
 
-  * [Ben-Sasson, E., Carmon, D., Ishai, Y., Kopparty, S., and Saraf, S.,
-      *Proximity Gaps for Reed-Solomon Codes*][BCIKS20]
+[BCIKS20] Eli Ben-Sasson, Dan Carmon, Yuval Ishai, Swastik Kopparty, and Shubhangi Saraf.
+  Proximity gaps for Reed-Solomon codes. In 2020 IEEE 61st Annual Symposium on Foundations of
+  Computer Science (FOCS), 2020. Full paper: https://eprint.iacr.org/2020/654,
+  version 20210703:203025.
 
-  ## Main Definitions
+## Main Definitions
 
 -/
 
-open Polynomial
-open Polynomial.Bivariate
-open ToRatFunc
-open Ideal
+open Polynomial Polynomial.Bivariate ToRatFunc Ideal
 
 namespace BCIKS20AppendixA
 
@@ -124,8 +117,7 @@ def regularElms (H : F[X][Y]) : Type :=
   {a : 𝕃 H // ∃ b : 𝒪 H, a = embeddingOf𝒪Into𝕃 _ b}
 
 /-- Given an element `z ∈ F`, `t_z ∈ F` is a rational root of a bivariate polynomial if the pair
-`(z, t_z)` is a root of the bivariate polynomial.
--/
+`(z, t_z)` is a root of the bivariate polynomial. -/
 def rationalRoot (H : F[X][Y]) (z : F) : Type :=
   {t_z : F // evalEval z t_z H = 0}
 
@@ -145,17 +137,16 @@ noncomputable def π_z {H : F[X][Y]} (z : F) (root : rationalRoot (H_tilde' H) z
     rw [show (Polynomial.evalEvalRingHom z root.1) (H_tilde' H) = 0 from root.2]
     ring)
 
-/-- The canonical representative of an element of `F[X][Y]` inside
-the ring of regular elements `𝒪`. -/
+/-- The canonical representative of an element of `F[X][Y]` inside the ring of regular
+elements `𝒪`. -/
 noncomputable def canonicalRepOf𝒪 {H : F[X][Y]} (β : 𝒪 H) : F[X][Y] :=
   Polynomial.modByMonic β.out (H_tilde' H)
 
 /-- `Λ` is a weight function on the ring of bivariate polynomials `F[X][Y]`. The weight of
 a polynomial is the maximal weight of all monomials appearing in it with non-zero coefficients.
 The weight of the zero polynomial is `−∞`.
-Requires `D ≥ Bivariate.totalDegree H` to match definition in [BCIKS20].
--/
-def weight_Λ (f H : F[X][Y]) (D : ℕ) : WithBot ℕ :=
+Requires `D ≥ Bivariate.totalDegree H` to match definition in [BCIKS20]. -/
+noncomputable def weight_Λ (f H : F[X][Y]) (D : ℕ) : WithBot ℕ :=
   Finset.sup
     f.support
     (fun deg =>
@@ -164,8 +155,8 @@ def weight_Λ (f H : F[X][Y]) (D : ℕ) : WithBot ℕ :=
 
 /-- The weight function `Λ` on the ring of regular elements `𝒪` is defined as the weight their
 canonical representatives in `F[X][Y]`. -/
-noncomputable def weight_Λ_over_𝒪 {H : F[X][Y]} (f : 𝒪 H) (D : ℕ) : WithBot ℕ :=
-  weight_Λ (canonicalRepOf𝒪 f) H D
+noncomputable def weight_Λ_over_𝒪 {H : F[X][Y]} (f : 𝒪 H) (D : ℕ) :
+    WithBot ℕ := weight_Λ (canonicalRepOf𝒪 f) H D
 
 /-- The set `S_β` from the statement of Lemma A.1 in Appendix A of [BCIKS20].
 Note: Here `F[X][Y]` is `F[Z][T]`. -/
@@ -193,10 +184,9 @@ noncomputable def liftBivariate {H : F[X][Y]} : F[X][Y] →+* 𝕃 H :=
 noncomputable def fieldTo𝕃 {H : F[X][Y]} : F →+* 𝕃 H :=
   RingHom.comp liftToFunctionField Polynomial.C
 
-noncomputable def polyToPowerSeries𝕃 (H : F[X][Y])
-  (P : F[X][Y]) : PowerSeries (𝕃 H) :=
-  PowerSeries.mk <| fun n =>
-    liftToFunctionField (P.coeff n)
+/-- Constructing power series over the function field `𝕃 H` out of a polynomial. -/
+noncomputable def polyToPowerSeries𝕃 (H : F[X][Y]) (P : F[X][Y]) : PowerSeries (𝕃 H) :=
+  PowerSeries.mk <| fun n => liftToFunctionField (P.coeff n)
 
 
 end
@@ -239,8 +229,8 @@ lemma weight_ξ_bound (x₀ : F) {D : ℕ} (hD : D ≥ Bivariate.totalDegree H) 
 /-- There exist regular elements `β` with a weight bound as given in Claim A.2
 of Appendix A.4 of [BCIKS20]. -/
 lemma β_regular (R : F[X][X][Y])
-    (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
-    {D : ℕ} (hD : D ≥ Bivariate.totalDegree H) :
+                (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
+                {D : ℕ} (hD : D ≥ Bivariate.totalDegree H) :
     ∀ t : ℕ, ∃ β : 𝒪 H, weight_Λ_over_𝒪 β ≤ (2 * t + 1) * Bivariate.natDegreeY R * D :=
   sorry
 

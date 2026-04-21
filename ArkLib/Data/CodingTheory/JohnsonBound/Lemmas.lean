@@ -437,7 +437,7 @@ protected lemma abs_one_sub_div_le_one {v a : Fin n → F}
     exact mul_le_mul_of_nonneg_left
       (mod_cast le_trans (card_le_univ _) (by simp +decide)) zero_le_two
   refine abs_le.mpr ⟨?_, ?_⟩
-  · lia
+  · linarith
   · exact sub_le_self _ (div_nonneg (mul_nonneg (add_nonneg zero_le_one
       (one_div_nonneg.mpr (sub_nonneg.mpr (Nat.one_le_cast.mpr (by linarith)))))
         (Nat.cast_nonneg _)) (Nat.cast_nonneg _))

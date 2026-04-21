@@ -73,6 +73,7 @@ theorem reduction_completeness --(h : init.neverFails)
       (pure ((default, (mapStmt stmtIn, mapWit stmtIn witIn)), mapStmt stmtIn) :
         OptionT (OracleComp _) _) := by
     simp [reduction, Reduction.run, prover, verifier, Prover.run, Verifier.run, Prover.runToRound]
+    rfl
   simp only [hrun]
   rw [ge_iff_le, one_le_probEvent_iff, probEvent_eq_one_iff]
   refine ⟨?_, ?_⟩

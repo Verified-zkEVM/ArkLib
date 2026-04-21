@@ -113,7 +113,7 @@ noncomputable def polyQ (P q : Polynomial F) : MvPolynomial (Fin 2) F :=
   modBivar Pbi P' h_unit
 
 /-- Helper For Readability: Evaluate a bivariate polynomial Q at (a, b) ∈ F×F -/
-def evalBivar
+noncomputable def evalBivar
   (Q : MvPolynomial (Fin 2) F) (a b : F) : F := MvPolynomial.eval (Fin.cases a (fun _ ↦ b)) Q
 
 /-- The STIR paper assumes that the polynomials fPoly(.) and Q(qPoly(.),.) are

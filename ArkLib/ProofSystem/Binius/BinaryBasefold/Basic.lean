@@ -358,6 +358,7 @@ lemma mkLastOracleIndex_last : mkLastOracleIndex ℓ ϑ (Fin.last ℓ) = ℓ / �
   dsimp only [mkLastOracleIndex, Fin.val_last, lt_self_iff_false, Lean.Elab.WF.paramLet,
     eq_mpr_eq_cast, cast_eq]
   simp only [lt_self_iff_false, ↓reduceDIte]
+  rfl
 
 end OracleStatementIndex
 
@@ -612,7 +613,7 @@ noncomputable def extractMLP (i : Fin ℓ) (f : (sDomain 𝔽q β h_ℓ_add_R_ra
       -- 6. Convert P(X) from monomial basis to novel polynomial basis
       -- P(X) = Σᵢ aᵢ Xᵢ (monomial) → P(X) = Σⱼ tⱼ X_{j}(X) (novel)
       -- We need the inverse of the change-of-basis matrix
-      have h_deg_bound : P ∈ L[X]_(2^(ℓ - i.val)) := by
+      have h_deg_bound : P ∈ Polynomial.degreeLT L (2^(ℓ - i.val)) := by
         rw [Polynomial.mem_degreeLT]
         by_cases hi: i = ℓ
         · simp only [hi, tsub_self, pow_zero, cast_one]
@@ -884,7 +885,7 @@ def sumcheckConsistencyProp {k : ℕ} (sumcheckTarget : L) (H : L⦃≤ 2⦄[X F
     evaluated on the initial domain S^(0), must be close within unique decoding radius to f^(0) -/
 def firstOracleWitnessConsistencyProp (t : MultilinearPoly L ℓ)
     (f₀ : sDomain 𝔽q β h_ℓ_add_R_rate 0 → L) : Prop :=
-  let P₀: L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) (fun ω => t.val.eval ω)
+  let P₀ : L⦃< 2 ^ ℓ⦄[X] := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) (fun ω => t.val.eval ω)
   -- The constraint: P_0 evaluated on S^(0) is close within unique decoding radius to f^(0)
   2 * hammingDist (fun x => P₀.val.eval x.val) f₀ < BBF_CodeDistance ℓ 𝓡 ⟨0, by omega⟩
 
@@ -1028,6 +1029,7 @@ def finalNonDoomedFoldingProp {h_le : ϑ ≤ ℓ}
     dsimp only [mkLastOracleIndex, Fin.val_last, lt_self_iff_false, Lean.Elab.WF.paramLet,
       eq_mpr_eq_cast, cast_eq, k, j]
     simp only [lt_self_iff_false, ↓reduceDIte]
+    change (ℓ / ϑ - 1) * ϑ = ℓ - ϑ
     rw [Nat.sub_mul, Nat.one_mul]
     rw [Nat.div_mul_cancel (hdiv.out)]
   let f_k := oStmt j

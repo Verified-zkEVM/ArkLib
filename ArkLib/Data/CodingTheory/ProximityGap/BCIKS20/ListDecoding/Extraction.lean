@@ -6,18 +6,11 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Guruswami
-/-! # BCIKS20 List-Decoding Extraction -/
-
 
 namespace ProximityGap
 
-open NNReal Finset Function
-open Polynomial
-open Polynomial.Bivariate
-open scoped BigOperators
-open NNReal Finset Function ProbabilityTheory Finset
+open Polynomial Polynomial.Bivariate  NNReal Finset Function ProbabilityTheory Code Trivariate
 open scoped BigOperators LinearCode
-open Code
 
 universe u v w k l
 
@@ -29,7 +22,7 @@ variable {m : ℕ} (k : ℕ) {δ : ℚ} {x₀ : F} {u₀ u₁ : Fin n → F} {Q 
          [Finite F]
 
 omit [DecidableEq (RatFunc F)] in
-/-- The equation 5.12 from [BCIKS20]. -/
+/-- Equation 5.12 from [BCIKS20]. -/
 lemma irreducible_factorization_of_gs_solution
     {k : ℕ}
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
@@ -41,17 +34,17 @@ lemma irreducible_factorization_of_gs_solution
     ∀ Rᵢ ∈ R, Irreducible Rᵢ ∧
     Q = (Polynomial.C C) *
         ∏ (Rᵢ ∈ R.toFinset) (fᵢ ∈ f.toFinset) (eᵢ ∈ e.toFinset),
-          (Rᵢ.comp ((Polynomial.X : F[Z][X][Y]) ^ fᵢ))^eᵢ := sorry
+          (Rᵢ.comp ((Polynomial.X : F[Z][X][Y]) ^ fᵢ))^eᵢ
+    := sorry
 
 omit [DecidableEq (RatFunc F)] in
 /-- Claim 5.6 of [BCIKS20]. -/
-lemma discr_of_irred_components_nonzero
-    (_h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) : ∃ x₀,
+lemma discr_of_irred_components_nonzero (_h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
+    ∃ x₀,
       ∀ R ∈ (irreducible_factorization_of_gs_solution _h_gs).choose_spec.choose,
       Bivariate.evalX x₀ (Bivariate.discr_y R) ≠ 0 := by sorry
 
-noncomputable def pg_Rset
-    (_h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) : Finset F[Z][X][Y] :=
+noncomputable def pg_Rset (_h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) : Finset F[Z][X][Y] :=
   (UniqueFactorizationMonoid.normalizedFactors Q).toFinset
 
 omit [DecidableEq (RatFunc F)] [Finite F] in
@@ -458,7 +451,8 @@ omit [DecidableEq (RatFunc F)] [Finite F] in
 theorem pg_card_candidatePairs_le_natDegreeY (x₀ : F) (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
     (hsep : ∀ R : F[Z][X][Y],
     R ∈ pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁) h_gs →
-      (Bivariate.evalX (Polynomial.C x₀) R).Separable) :
+      (Bivariate.evalX (Polynomial.C x₀) R).Separable)
+    :
   #(pg_candidatePairs (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q)
       (u₀ := u₀) (u₁ := u₁) x₀ h_gs) ≤ Bivariate.natDegreeY Q := by
   classical

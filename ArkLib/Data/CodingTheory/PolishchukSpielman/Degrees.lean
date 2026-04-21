@@ -120,11 +120,10 @@ private lemma ps_swap_coeff {F : Type} [CommRing F] (g : F[X][Y]) (i j : ℕ) :
       ac_rfl
     simp only [h_swap_def, finset_sum_coeff, coeff_monomial, sum_ite_eq', mem_support_iff, ne_eq]
     intro g i j
-    rw [Finset.sum_eq_single i] <;> simp_all only [swap_apply, AlgHom.coe_comp,
-      AlgHom.coe_restrictScalars', coe_aeval_eq_eval, Function.comp_apply, mem_support_iff, ne_eq]
+    rw [Finset.sum_eq_single i] <;> simp_all only [swap_apply, mem_support_iff, ne_eq]
     · split_ifs <;> simp_all
     · intro b hb hb'; split_ifs <;> simp_all [coeff_monomial]
-    · push_neg; intro h; simp [h]
+    · push Not; intro h; simp [h]
   exact h_swap_coeff g i j
 
 private lemma ps_degree_x_swap_le {F : Type} [CommRing F] (f : F[X][Y]) :
@@ -155,7 +154,6 @@ private lemma ps_degree_x_swap_ge {F : Type} [CommRing F] (f : F[X][Y]) (hf : f 
       (Nat.max (((swap f).coeff n).natDegree) N) ≤ degreeX (swap f) := by
     refine le_trans ?_ (Finset.le_sup <| show n ∈ ((swap f).support) from ?_) <;>
       simp_all only [ne_eq, ext_iff, coeff_zero, not_forall, coeff_natDegree, swap_apply,
-        AlgHom.coe_comp, AlgHom.coe_restrictScalars', coe_aeval_eq_eval, Function.comp_apply,
         le_sup_left, sup_of_le_right, sup_le_iff, le_refl, true_and]
     · exact le_natDegree_of_ne_zero h_swap_coeff_nonzero |> le_trans (by aesop)
     · aesop
@@ -195,8 +193,9 @@ lemma ps_eval_x_eq_map {F : Type} [CommSemiring F]
 lemma ps_eval_y_eq_eval_x_swap {F : Type} [CommRing F]
     (y : F) (f : F[X][Y]) :
     evalY y f = evalX y (swap f) := by
+  letI : Algebra F[X] F[X] := Polynomial.algebra (R := F) (A := F)
   convert aveal_eq_map_swap y f using 1
-  · unfold evalY Polynomial.aeval; aesop
+  · unfold evalY; simp [Polynomial.aeval_def]
   · -- By definition of `evalX`, we have `evalX y (swap f) = (swap f).map (evalRingHom y)`.
     rw [ps_eval_x_eq_map]
     rfl
@@ -211,7 +210,7 @@ lemma ps_exists_x_preserve_nat_degree_y {F : Type} [Field F]
         (Finset.le_sup (f := fun n ↦ (B.coeff n).natDegree)
           (natDegree_mem_support_of_nonzero hB))
         hcard
-    by_contra h_contra; push_neg at h_contra
+    by_contra h_contra; push Not at h_contra
     have h_poly_zero : leadingCoeffY B = 0 :=
       eq_zero_of_degree_lt_of_eval_finset_eq_zero P_x
         (degree_le_natDegree.trans_lt (by exact_mod_cast h_p_ne_zero))
@@ -393,7 +392,7 @@ lemma ps_gcd_decompose {F : Type} [Field F]
     exact isUnit_of_dvd_one (by
     obtain ⟨k, hk⟩ := hG
     exact ⟨k, mul_left_cancel₀ hA.1 <| by linear_combination hk⟩)
-  all_goals push_neg
+  all_goals push Not
 
 lemma ps_is_rel_prime_swap {F : Type} [CommRing F] {A B : F[X][Y]}
     (h : IsRelPrime A B) : IsRelPrime (swap A) (swap B) := by

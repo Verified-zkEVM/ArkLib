@@ -180,7 +180,7 @@ theorem prob_split_uniform_sampling_of_prod {γ δ : Type}
     mul_zero, Prod.mk.eta]
   by_cases hP : P xy
   · simp only [hP, ↓reduceIte]
-    rw [ENNReal.mul_inv_rev_ENNReal (ha := Fintype.card_ne_zero) (hb := Fintype.card_ne_zero)]
+    rw [ENNReal.mul_inv_rev_ENNReal (ha := Fintype.card_ne_zero)]
   · simp only [hP, ↓reduceIte]
 
 /--
@@ -206,7 +206,7 @@ theorem do_two_uniform_sampling_eq_uniform_prod {α β : Type} [Fintype α] [Fin
   rw [←ENNReal.tsum_prod]
   rw [ENNReal.tsum_mul_left]
   rw [←mul_assoc]
-  rw [ENNReal.mul_inv_rev_ENNReal (ha := Fintype.card_ne_zero) (hb := Fintype.card_ne_zero)]
+  rw [ENNReal.mul_inv_rev_ENNReal (ha := Fintype.card_ne_zero)]
   conv_rhs =>
     rw [←mul_one (a := ((Fintype.card α : ENNReal) *  (Fintype.card β : ENNReal) : ENNReal)⁻¹)]
   congr 1
@@ -289,7 +289,7 @@ theorem prob_split_uniform_sampling_of_equiv_prod {α γ δ : Type}
     by_cases hP : P i
     · simp only [hP, ↓reduceIte]
       rw [hcard_of_equiv]
-      rw [ENNReal.mul_inv_rev_ENNReal (ha := Fintype.card_ne_zero) (hb := Fintype.card_ne_zero)]
+      rw [ENNReal.mul_inv_rev_ENNReal (ha := Fintype.card_ne_zero)]
       rw [Fintype.card_prod]; rw [Nat.cast_mul]
     · simp only [hP, ↓reduceIte]
   )]
@@ -490,5 +490,65 @@ lemma prob_schwartz_zippel_mv_polynomial {R : Type} [CommRing R] [IsDomain R] [F
   simp only [Fintype.card_pi, prod_const, card_univ, Fintype.card_fin, Nat.cast_pow, ge_iff_le]
   rw [Nat.cast_pow] at sz_bound_ENNReal
   exact sz_bound_ENNReal
+
+/-- Pushforward of `PMF.uniformOfFintype α` under a map `f : α → β` whose fibers
+over the image all have the same cardinality `k > 0` is the uniform distribution
+on the image of `f`.
+
+Useful when `f` is an affine-linear surjection: every fiber is a translate of
+the kernel and hence has constant cardinality. The proximity-gap proofs use this
+to bridge the coefficient-parameterised sampling of an affine span to the
+uniform sampling of the affine-span finset. -/
+theorem PMF.map_uniformOfFintype_of_fiber_const
+    {α β : Type*} [Fintype α] [Nonempty α] [DecidableEq β]
+    (f : α → β) {k : ℕ} (hk : 0 < k)
+    (hfib : ∀ b ∈ Finset.univ.image f,
+      ((Finset.univ : Finset α).filter (f · = b)).card = k) :
+    (PMF.uniformOfFintype α).map f =
+      PMF.uniformOfFinset (Finset.univ.image f)
+        (Finset.image_nonempty.mpr Finset.univ_nonempty) := by
+  classical
+  -- Total count = k * |image|.
+  have h_card : Fintype.card α = k * (Finset.univ.image f).card := by
+    rw [show Fintype.card α = (Finset.univ : Finset α).card from rfl,
+        Finset.card_eq_sum_card_image f Finset.univ,
+        Finset.sum_const_nat hfib]
+    ring
+  have h_k_ne : (k : ENNReal) ≠ 0 := Nat.cast_ne_zero.mpr hk.ne'
+  have h_k_lt_top : (k : ENNReal) ≠ ⊤ := ENNReal.natCast_ne_top _
+  -- PMF extensionality.
+  ext b
+  rw [PMF.map_apply, PMF.uniformOfFinset_apply]
+  simp_rw [PMF.uniformOfFintype_apply]
+  -- LHS: ∑' a, if b = f a then (Fintype.card α)⁻¹ else 0
+  rw [tsum_fintype, Finset.sum_ite, Finset.sum_const_zero, add_zero,
+      Finset.sum_const, nsmul_eq_mul]
+  by_cases hb : b ∈ Finset.univ.image f
+  · -- b ∈ image: filter (b = f ·) has card k.
+    rw [if_pos hb]
+    have h_filter_card : (Finset.univ.filter (fun a => b = f a)).card = k := by
+      have h_swap :
+          Finset.univ.filter (fun a => b = f a) =
+          Finset.univ.filter (fun a => f a = b) := by
+        ext a
+        simp [eq_comm]
+      rw [h_swap]
+      exact hfib b hb
+    rw [h_filter_card, h_card]
+    -- Goal: ↑k * (↑(k * |image|))⁻¹ = (↑|image|)⁻¹
+    push_cast
+    rw [ENNReal.mul_inv (Or.inl h_k_ne) (Or.inl h_k_lt_top),
+        ← mul_assoc, ENNReal.mul_inv_cancel h_k_ne h_k_lt_top, one_mul]
+  · -- b ∉ image: filter is empty.
+    rw [if_neg hb]
+    have h_empty : Finset.univ.filter (fun a => b = f a) = ∅ := by
+      ext a
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.notMem_empty,
+        iff_false]
+      intro h
+      apply hb
+      exact h ▸ Finset.mem_image_of_mem f (Finset.mem_univ a)
+    rw [h_empty, Finset.card_empty]
+    simp
 
 end ProbabilityTools

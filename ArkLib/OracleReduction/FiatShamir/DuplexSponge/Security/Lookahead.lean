@@ -101,7 +101,7 @@ one of the following:
 TODO: figure out the best way to encode the two errors (currently we encode `err` as the failure of
 OracleComp, and `none` as `Option.none` inside)
 -/
-def lookAhead (fwdPermTrace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
+noncomputable def lookAhead (fwdPermTrace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
     OptionT (OracleComp (Unit →ₒ U)) (Option (Vector U (challengeSize i))) := do
   /- Actual algorithm:
