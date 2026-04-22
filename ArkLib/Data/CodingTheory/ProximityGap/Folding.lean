@@ -1074,14 +1074,71 @@ lemma folding_proximity
           exact h_spec
       })
     rw [Finset.card_image_of_injective _ (CosetFftDomain.injective)] at contradiction
-    have contradiction : 2 ^ n * (δ : ENNReal) ≤
-      2 ^ n - 2 ^ k * ↑(#S) := by
-      simp at δ_lt
-      obtain ⟨δ_lt, _⟩ := δ_lt
-      apply le_trans
-      · apply mul_le_mul_right (le_of_lt δ_lt)
-      · rw [relDistFromCode_eq_distFromCode_div]  
+    have contradiction : (Δ₀(f, code (domain : Fin (2 ^ n) ↪ F) d) : ENNReal)
+      ≤ (↑(2 ^ n) : ℚ≥0) * δ := by
+      apply le_trans 
+      · rewrite [ENat.toENNReal_le]
+        exact contradiction
+      · apply le_trans (b := (2 ^n : ENNReal) - 2^k * (1 - ↑δ) * 2 ^ (n - k))
+        · rewrite [ENat.toENNReal_sub]
+          rw [show ENat.toENNReal (2 ^ n) = (2 ^ n : ENNReal) by simp] 
+          rw [ENNReal.sub_le_sub_iff_left] <;> try simp
+          · apply le_trans
+            · rewrite [mul_assoc]
+              rewrite [ENNReal.mul_le_mul_iff_right] <;> try simp
+              have h_card := ENNReal.coe_le_coe_of_le h_card
+              apply (swap le_trans h_card)
+              norm_cast
+            · norm_cast
+          · rw [mul_comm, ←mul_assoc] 
+            rw [←pow_add]
+            rw [Nat.sub_add_cancel (by {
+              rw [←Nat.pow_le_pow_iff_right (a := 2) (by simp)]
+              omega
+            })]
+            apply le_trans (b := 2 ^ n * 1)
+            · rw [ENNReal.mul_le_mul_iff_right] <;> try simp
+            · simp 
+        · rw [mul_comm, ←mul_assoc]
+          rw [←pow_add]
+          rw [Nat.sub_add_cancel (by {
+            rw [←Nat.pow_le_pow_iff_right (a := 2) (by simp)]
+            omega
+          })]
+          conv =>
+            lhs
+            lhs
+            rw [←mul_one (2 ^ n)]
+          rw [←ENNReal.mul_sub (by simp)]
+          rw [ENNReal.sub_sub_cancel (by simp)
+            (by {
+              simp at δ_lt
+              obtain ⟨_, δ_lt⟩ := δ_lt
+              apply le_trans
+              · exact le_of_lt δ_lt 
+              · simp
+            })]
+          norm_cast
+    have contradiction : δᵣ(f, code (domain : Fin (2 ^ n) ↪ F) d) ≤ δ := by
+      rw [relDistFromCode_eq_distFromCode_div]
+      rw [ENNReal.div_le_iff_le_mul (by simp) (by simp)]
+      apply le_trans contradiction
+      simp
+      rw [mul_comm]
+      norm_cast
+    simp at δ_lt
+    obtain ⟨δ_lt, _⟩ := δ_lt
+    have contradiction := lt_of_lt_of_le δ_lt contradiction 
+    simp at contradiction
+      
 
+
+          
+
+
+            
+                
+   
 
 
 end
