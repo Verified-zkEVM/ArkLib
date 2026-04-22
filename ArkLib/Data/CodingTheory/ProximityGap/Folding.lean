@@ -965,9 +965,13 @@ lemma folding_proximity
     have bound_tighter : 
       ↑δ ≤ 1 - ReedSolomonCode.sqrtRate (d / (2 ^ k)) 
         (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) := by
+      simp [ReedSolomonCode.sqrtRate]
+      rw [ReedSolomonCode.rateOfLinearCode_eq_min_div]
       sorry
     have h' :=
-      @correlatedAgreement_affine_curves (Fin (2 ^ (n - k))) _ sorry F _ _ _ 
+      @correlatedAgreement_affine_curves (Fin (2 ^ (n - k))) _ (by {
+       constructor 
+       exact 0 }) F _ _ _ 
         (2 ^ k - 1) (d / (2 ^ k)) (domain.subdomainNatReversed k) δ bound_tighter
     unfold δ_ε_correlatedAgreementCurves at h'
     by_contra h
