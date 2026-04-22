@@ -23,8 +23,6 @@ variable {ι : Type} [DecidableEq ι] [Fintype ι] [Nonempty ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 variable {n : ℕ}
 
-#check CosetFftDomain.subdomain_roots_card
-
 noncomputable def foldWordAux (domain : SmoothCosetFftDomain n F)
   (f : Word F (Fin (2 ^ n))) (k : ℕ) (x : F) : Polynomial F :=
   Lagrange.interpolate {i | domain i ^ k = x}
@@ -52,7 +50,8 @@ lemma foldWordAux_natDegree {k : ℕ} {x : F}
       apply CosetFftDomain.injective (ω := domain) hxy
     })
     have h : Finset.image domain {i | domain i ^ k = x} =
-      @Set.toFinset _ (((Polynomial.X : Polynomial F) ^ k - C x).rootSet F ∩ Finset.image domain Finset.univ) (by sorry) := by
+      @Set.toFinset _ 
+        (((Polynomial.X : Polynomial F) ^ k - C x).rootSet F) (by infer_instance) ∩ Finset.image domain Finset.univ := by
       apply Finset.ext
       intro a
       simp
@@ -953,6 +952,10 @@ lemma folding_proximity
       (d / (2 ^ k))) ≤ δ] ≤
         ((2 ^ k) - 1) * ProximityGap.errorBound δ (d / (2 ^ k)) 
         (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) := by
+    have h_k_le_n : k ≤ n := by
+      rw [←Nat.pow_le_pow_iff_right (a := 2) (by simp)]
+      omega
+
     have h_k_card : 2 ^ k ≤ Fintype.card F := by
       exact le_trans h_k_d <| by
         exact le_trans h_d_n <| by
@@ -963,11 +966,39 @@ lemma folding_proximity
           
     unfold foldWord
     have bound_tighter : 
-      ↑δ ≤ 1 - ReedSolomonCode.sqrtRate (d / (2 ^ k)) 
+      (↑δ) ≤ 1 - ReedSolomonCode.sqrtRate (d / (2 ^ k)) 
         (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) := by
+      rw [←ENNReal.coe_le_coe]
       simp [ReedSolomonCode.sqrtRate]
       rw [ReedSolomonCode.rateOfLinearCode_eq_min_div]
-      sorry
+      simp [ReedSolomonCode.sqrtRate] at δ_lt
+      rw [ReedSolomonCode.rateOfLinearCode_eq_min_div] at δ_lt
+      obtain ⟨_, δ_lt⟩ := δ_lt
+      apply le_trans
+      · exact le_of_lt δ_lt
+      · rw [ENNReal.sub_le_sub_iff_left (by {
+          simp
+          apply NNReal.div_le_of_le_mul
+          apply le_trans
+          · apply min_le_right
+          · simp
+          }) (by simp)]
+        simp
+        rw [←min_div_div_right (by simp)]
+        rw [←min_div_div_right (by simp)]
+        simp
+        left
+        apply div_le_of_le_mul
+        conv =>
+          lhs
+          rw [show Nat.cast (d / 2 ^ k)  = (↑d : NNReal) / 2 ^ k by norm_cast]
+        apply div_le_of_le_mul
+        rw [mul_assoc, ←pow_add, Nat.sub_add_cancel h_k_le_n]
+        rw [←ENNReal.coe_le_coe, ENNReal.coe_mul] 
+        rw [←ENNReal.div_le_iff (by simp) (by simp)]
+        norm_cast
+        rw [ENNReal.coe_div (by simp)]
+        norm_cast
     have h' :=
       @correlatedAgreement_affine_curves (Fin (2 ^ (n - k))) _ (by {
        constructor 

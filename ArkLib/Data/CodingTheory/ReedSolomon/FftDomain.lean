@@ -1500,8 +1500,21 @@ lemma subdomainNatReversed_roots_card {n} {ω : SmoothCosetFftDomain n F}
   (h : x ∈ (ω.subdomainNatReversed (i + j))) :
   Finset.card { y ∈ (ω.subdomainNatReversed i).toFinset | y ^ (2 ^ j) = x }
     = 2 ^ j := by
-  sorry
-
+  unfold subdomainNatReversed at *
+  set i_fin : Fin n.succ := ⟨n - i, by omega⟩
+  set j_fin : Fin n.succ := ⟨j, by omega⟩
+  have hji : j_fin ≤ i_fin := by
+    simp only [j_fin, i_fin, Fin.le_def]
+    omega
+  have h_eq : i_fin - j_fin = (⟨n - (i + j), by omega⟩ : Fin n.succ) := by
+    ext
+    simp only [i_fin, j_fin, Fin.val_sub]
+    have : n.succ - j + (n - i) = (n - (i + j)) + n.succ * 1 := by omega
+    rw [this, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt (by omega)]
+  have h' : x ∈ ω.subdomain (i_fin - j_fin) := by
+    rw [h_eq]
+    exact (mem_subdomain_of_eq_vals (by simp)).1 h
+  exact subdomain_roots_card hji h'
 
 lemma subdomainNatReversed_root_exists {n} {ω : SmoothCosetFftDomain n F}
   {i j : ℕ} (hij : i + j ≤ n)
