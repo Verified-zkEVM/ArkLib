@@ -7,16 +7,12 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.BWMatrix
-/-! # BCIKS20 Affine-Line Good Coefficients -/
-
+import ArkLib.Data.CodingTheory.ReedSolomon
 
 namespace ProximityGap
 
-open NNReal Finset Function
-open scoped BigOperators
-open NNReal Finset Function ProbabilityTheory Finset
+open NNReal Finset Function ProbabilityTheory Code
 open scoped BigOperators LinearCode
-open Code
 
 universe u v w k l
 
@@ -60,7 +56,7 @@ theorem RS_exists_Pz_of_mem_goodCoeffs {deg : ℕ} {domain : ι ↪ F} {δ : ℝ
     ⟨v, hvC, hvdist⟩
   rcases hvC with ⟨Pz, hPz, rfl⟩
   refine ⟨Pz, ?_, ?_⟩
-  · exact ReedSolomonCode.natDegree_lt_of_mem_degreeLT (deg := deg) hPz
+  · exact ReedSolomon.natDegree_lt_of_mem_degreeLT (deg := deg) hPz
   · simpa [e] using hvdist
 
 open scoped BigOperators in
@@ -350,7 +346,7 @@ theorem RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt_fun
       -- unfold Injective and push negation
       have : ¬ (∀ i j, r i = r j → i = j) := by
         simpa [Function.Injective] using hinj
-      push_neg at this
+      push Not at this
       -- `this` is now ∃ i j, r i = r j ∧ i ≠ j
       simpa [and_left_comm, and_assoc, and_comm] using this
     rcases hinj' with ⟨i, j, hij, hne⟩

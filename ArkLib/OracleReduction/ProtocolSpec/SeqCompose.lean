@@ -350,7 +350,7 @@ theorem seqCompose_succ_eq_append {m : ℕ} {n : Fin (m + 1) → ℕ} {pSpec : �
 theorem seqCompose_embedSum {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     {T : ∀ i, FullTranscript (pSpec i)} (i : Fin m) (j : Fin (n i)) :
     seqCompose T (Fin.embedSum i j) = cast (by simp) (T i j) := by
-  simp [seqCompose, cast]
+  simp [seqCompose, cast]; congr 1
 
 end FullTranscript
 

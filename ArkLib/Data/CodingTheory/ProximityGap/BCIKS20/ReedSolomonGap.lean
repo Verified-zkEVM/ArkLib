@@ -6,15 +6,11 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
-/-! # BCIKS20 Reed-Solomon Proximity Gaps -/
-
 
 namespace ProximityGap
 
-open NNReal Finset Function
-open scoped BigOperators
+open NNReal Finset Function Code
 open scoped BigOperators LinearCode
-open Code
 
 section CoreResults
 
@@ -22,15 +18,14 @@ variable {ι : Type} [Fintype ι] [Nonempty ι]
          {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
 /-- Theorem 1.2 (Proximity Gaps for Reed-Solomon codes) in [BCIKS20].
-
 Let `C` be a collection of affine spaces. Then `C` displays a `(δ, ε)`-proximity gap with respect to
 a Reed-Solomon code, where `(δ, ε)` are the proximity and error parameters defined up to the
 Johnson bound. -/
 theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {domain : ι ↪ F}
     (C : Fin t → (Fin k → (ι → F))) {δ : ℝ≥0}
-    (hδ : δ ≤ 1 - ReedSolomonCode.sqrtRate deg domain) :
+    (hδ : δ ≤ 1 - ReedSolomon.sqrtRate deg domain) :
     δ_ε_proximityGap
-      (ReedSolomonCode.toFinset domain deg)
+      (ReedSolomon.toFinset domain deg)
       (Affine.AffSpanFinsetCollection C)
       δ
       (errorBound δ deg domain) := by

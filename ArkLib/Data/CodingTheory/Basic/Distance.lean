@@ -514,7 +514,7 @@ theorem eq_of_lt_dist {C : Set (n → R)} {u v : n → R} (hu : u ∈ C) (hv : v
     (huv : Δ₀(u, v) < ‖C‖₀) : u = v := by
   simp only [dist] at huv
   by_contra hNe
-  push_neg at hNe
+  push Not at hNe
   revert huv
   simp only [ne_eq, imp_false, not_lt]
   refine Nat.sInf_le ?_
@@ -640,8 +640,7 @@ notation "‖" C "‖₀'" => dist' C
 variable {C : Set (n → R)} [Fintype C]
 
 @[simp]
-theorem dist'_empty : ‖(∅ : Set (n → R))‖₀' = ⊤ := by
-  simp [dist']
+theorem dist'_empty : ‖(∅ : Set (n → R))‖₀' = ⊤ := rfl
 
 @[simp]
 theorem codeDist'_subsingleton [Subsingleton C] : ‖C‖₀' = ⊤ := by
@@ -846,6 +845,7 @@ lemma distFromCode'_eq_distFromCode (C : Set (n → R)) [Fintype C] (u : n → R
     simp only [distFromCode', Finset.univ_eq_empty, Finset.image_empty, Finset.min_empty,
       distFromCode, Set.mem_empty_iff_false, false_and, exists_false, Set.setOf_false,
       _root_.sInf_empty]
+    rfl
   · have hC_nonempty : Nonempty C := Set.nonempty_iff_ne_empty'.mpr hC_empty
     unfold distFromCode distFromCode'
     -- The minimum equals the infimum for finite sets
@@ -864,12 +864,8 @@ lemma distFromCode'_eq_distFromCode (C : Set (n → R)) [Fintype C] (u : n → R
         intro d hd
         simp only [Set.mem_setOf_eq] at hd
         obtain ⟨v, hv, hdist⟩ := hd
-        calc Finset.min ((@Finset.univ C _).image (fun v => hammingDist u v.1))
-          _ ≤ hammingDist u v := by
-            apply Finset.min_le
-            apply Finset.mem_image.mpr
-            refine ⟨⟨v, hv⟩, Finset.mem_univ _, rfl⟩
-          _ ≤ d := hdist
+        exact le_trans (Finset.min_le (Finset.mem_image.mpr ⟨⟨v, hv⟩, Finset.mem_univ _, rfl⟩))
+          hdist
     · -- Show inf ≤ min
       apply csInf_le
       · -- The set is bounded below

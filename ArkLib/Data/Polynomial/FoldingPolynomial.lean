@@ -11,11 +11,9 @@ import Mathlib.Tactic.Cases
 import Mathlib.Tactic.LinearCombination'
 
 /-!
-  Proof of Proposition 6.3 from  
-    Eli Ben-Sasson and Madhu Sudan. 
-      “Short PCPs with Polylog Query Complexity”. In: SIAM Journal on Computing 38.2 (2008).
+  Proof of Proposition 6.3 from [BS08].
 
-  The statement is taken from the STIR paper. Namely,
+  The statement is taken from [ACFY24]. Namely,
   ```latex
   \textbf{Fact 4.6 (BS08).} \textit{Given a polynomial } $\hat{q} \in \mathbb{F}[X]$:
 
@@ -47,9 +45,14 @@ import Mathlib.Tactic.LinearCombination'
       \]
   \end{itemize}
   ```
--/
 
-set_option linter.style.induction false
+## References
+
+* [Ben-Sasson, E., Madhu, S., *Short PCPs with Polylog Query Complexity*][BS08]
+* [Arnon, G., Chiesa, A., Fenzi, G., Yogev, E., 
+  *STIR: Reed–Solomon Proximity Testing with Fewer Queries*][ACFY24]
+
+-/
 
 namespace Polynomial.FoldingPolynomial
 
@@ -64,6 +67,13 @@ variable {ι F : Type*} [Field F]
     as the upper bound of number of steps needed 
     to produce the polynomial `Q`. -/
 noncomputable def foldingPolynomialAux (q f : F[X]) (fuel : ℕ) : F[X][Y] :=
+  -- The main idea behind the `fuel` argument
+  -- is to assure the totality checker that 
+  -- the recursive function is indeed total
+  -- by providing the upper bound on the number
+  -- of iterations.
+  -- 
+  -- Later on, we eliminate it in the public API `foldingPolynomial`.
   if q.degree ≤ 0 then Polynomial.map C f else
   if f.degree < q.degree then Polynomial.map C f
   else
@@ -125,11 +135,12 @@ private lemma folding_polynomial_aux_natDegree_fuel_is_enough {q f : F[X]} {fuel
         deg₂ ≥ f.natDegree →
           foldingPolynomialAux q f deg₁ = foldingPolynomialAux q f deg₂ := by
       intro deg₁ deg₂ h₁ h₂
-      induction' deg₁ with deg₁ ih generalizing deg₂ f
-      · simp_all +decide only [ge_iff_le, nonpos_iff_eq_zero, natDegree_eq_zero_iff_degree_le_zero]
+      induction deg₁ generalizing deg₂ f with
+      | zero =>  
+        simp_all +decide only [ge_iff_le, nonpos_iff_eq_zero, natDegree_eq_zero_iff_degree_le_zero]
         rw [Polynomial.eq_C_of_degree_le_zero h₁] 
         simp +decide only [foldingPolynomialAux, map_C, ite_self] 
-        induction' deg₂ with deg₂ ih 
+        rcases deg₂ with _ | deg₂ 
           <;> simp_all only 
                 [foldingPolynomialAux, 
                  map_C, 
@@ -139,7 +150,8 @@ private lemma folding_polynomial_aux_natDegree_fuel_is_enough {q f : F[X]} {fuel
         exact fun h₃ h₄ ↦ 
           absurd h₄ 
             (not_le_of_gt (lt_of_le_of_lt (Polynomial.degree_C_le) h₃))
-      · rcases deg₂ with (_ | deg₂) 
+      | succ deg₁ ih => 
+        rcases deg₂ with _ | deg₂ 
           <;> simp_all +decide only 
                 [ge_iff_le, 
                  nonpos_iff_eq_zero, 
@@ -194,12 +206,14 @@ private lemma folding_polynomial_def_ind_case {q f : F[X]}
                   Polynomial.C Polynomial.X * 
                     foldingPolynomialAux q (f / q) (deg - 1) := by
           intros deg hdeg
-          induction' deg with deg ih generalizing f
-          · obtain ⟨c, hc⟩ : ∃ c : F, f = Polynomial.C c := 
+          induction deg generalizing f with
+          | zero => 
+            obtain ⟨c, hc⟩ : ∃ c : F, f = Polynomial.C c := 
               ⟨f.coeff 0, Polynomial.eq_C_of_natDegree_le_zero hdeg⟩
             simp_all +decide only [gt_iff_lt, ge_iff_le, natDegree_C, zero_le, zero_tsub]
             exact absurd h₁ (not_le_of_gt (lt_of_le_of_lt (Polynomial.degree_C_le) h₂))
-          · rw [foldingPolynomialAux]
+          | succ deg ih => 
+            rw [foldingPolynomialAux]
             rw [if_neg h₂.not_ge, if_neg (not_lt_of_ge h₁)]
             rfl
         convert h_fold hdeg using 1
@@ -222,38 +236,41 @@ private lemma folding_polynomial_def_ind_case {q f : F[X]}
           rw [h_fold_eq]
       exact h_fold le_rfl
 
+/-- If the folding polynomial is zero 
+  then so is the original polynomial. -/
 lemma eq_zero_of_folding_polynomial_eq_zero {q f : F[X]}
   (h : foldingPolynomial q f = 0) : f = 0 := by
-    induction' n : f.natDegree using Nat.strong_induction_on with n ih generalizing f
-    by_cases h₁ : 
+    induction n : f.natDegree using Nat.strong_induction_on generalizing f with
+    | h n' ih => 
+      by_cases h₁ : 
       f.degree < q.degree 
         ∨ f.degree ≤ 0 
         ∨ q.degree ≤ 0 <;> simp_all only [ext_iff, coeff_zero, not_or, not_lt, not_le]
-    · rw [folding_polynomial_def_base_case h₁] at h
-      intro n
-      specialize h n 0
-      aesop
-    · have h_rem_zero : f % q = 0 := by
-        rw [folding_polynomial_def_ind_case h₁.1 h₁.2.2] at h
-        ext n
+      · rw [folding_polynomial_def_base_case h₁] at h
+        intro n
         specialize h n 0
-        simp_all +decide [Polynomial.coeff_map] 
-      have h_quot_zero : f / q = 0 := by
-        have h_quot_zero : foldingPolynomial q (f / q) = 0 := by
-          have h_quot_zero : 
+        aesop
+      · have h_rem_zero : f % q = 0 := by
+          rw [folding_polynomial_def_ind_case h₁.1 h₁.2.2] at h
+          ext n
+          specialize h n 0
+          simp_all +decide [Polynomial.coeff_map] 
+        have h_quot_zero : f / q = 0 := by
+          have h_quot_zero : foldingPolynomial q (f / q) = 0 := by
+            have h_quot_zero : 
             foldingPolynomial q f 
               = (Polynomial.map Polynomial.C (f % q)) 
                 + Polynomial.C Polynomial.X 
                     * foldingPolynomial q (f / q) := by
-            rw [folding_polynomial_def_ind_case] <;> aesop
-          simp_all +decide only [Polynomial.map_zero, zero_add, coeff_C_mul,
+              rw [folding_polynomial_def_ind_case] <;> aesop
+            simp_all +decide only [Polynomial.map_zero, zero_add, coeff_C_mul,
             EuclideanDomain.mod_eq_zero, ext_iff, coeff_add, coeff_map, add_zero, coeff_zero]
-          intro n n_1
-          specialize h n (n_1 + 1) 
-          simp_all +decide
-        contrapose! ih
-        refine 
-          ⟨Polynomial.natDegree (f / q), 
+            intro n n_1
+            specialize h n (n_1 + 1) 
+            simp_all +decide
+          contrapose! ih
+          refine 
+            ⟨Polynomial.natDegree (f / q), 
             by {
               have h_deg_f : f.natDegree = q.natDegree + (f / q).natDegree := by
                 rw [←Polynomial.natDegree_mul']
@@ -267,51 +284,19 @@ lemma eq_zero_of_folding_polynomial_eq_zero {q f : F[X]}
             by simp_all +decide, 
             rfl, 
             Polynomial.natDegree (f / q), by simp [ih]⟩ 
-      rw [EuclideanDomain.mod_eq_sub_mul_div] at h_rem_zero 
-      aesop
+        rw [EuclideanDomain.mod_eq_sub_mul_div] at h_rem_zero 
+        aesop
 
 lemma substitution_property_of_folding_polynomial {q f : F[X]} :
     ((foldingPolynomial q f).map (Polynomial.compRingHom q)).eval X = f := 
   by 
   revert q f
   intro q f
-  induction' n : f.natDegree using Nat.strong_induction_on with n ih generalizing q f
-  by_cases h_deg : f.degree < q.degree ∨ f.degree ≤ 0 ∨ q.degree ≤ 0
-  · rw [folding_polynomial_def_base_case h_deg] 
-    simp +decide only [eval_map]
-    simp +decide only [eval₂_map]
-    simp +decide only 
-      [eval₂_eq_sum_range, 
-       RingHom.coe_comp, 
-       coe_compRingHom, 
-       Function.comp_apply,
-       C_comp]
-    conv_rhs => rw [Polynomial.as_sum_range_C_mul_X_pow f] 
-  · have h_fold_def : 
-      foldingPolynomial q f = 
-        (Polynomial.map Polynomial.C (f % q)) + 
-          Polynomial.C Polynomial.X * foldingPolynomial q (f / q) := by
-      apply folding_polynomial_def_ind_case
-      · exact le_of_not_gt fun h ↦ h_deg <| Or.inl h
-      · exact lt_of_not_ge fun h ↦ h_deg <| Or.inr <| Or.inr h
-    have h_fold_def : 
-      Polynomial.eval Polynomial.X 
-        (Polynomial.map q.compRingHom (foldingPolynomial q f)) = 
-          (f % q) + 
-            q * Polynomial.eval Polynomial.X 
-              (Polynomial.map q.compRingHom (foldingPolynomial q (f / q))) := by
-      simp +decide only 
-        [h_fold_def, 
-         Polynomial.map_add, 
-         Polynomial.map_mul, 
-         map_C, 
-         coe_compRingHom,
-         X_comp, 
-         eval_add, 
-         eval_map, 
-         eval_mul, 
-         eval_C, 
-         add_left_inj]
+  induction n : f.natDegree using Nat.strong_induction_on generalizing q f with
+  | h n ih => 
+    by_cases h_deg : f.degree < q.degree ∨ f.degree ≤ 0 ∨ q.degree ≤ 0
+    · rw [folding_polynomial_def_base_case h_deg] 
+      simp +decide only [eval_map]
       simp +decide only [eval₂_map]
       simp +decide only 
         [eval₂_eq_sum_range, 
@@ -319,36 +304,69 @@ lemma substitution_property_of_folding_polynomial {q f : F[X]} :
          coe_compRingHom, 
          Function.comp_apply,
          C_comp]
-      conv_rhs => rw [Polynomial.as_sum_range_C_mul_X_pow (f % q)] 
-    have h_fold_def : 
-      Polynomial.eval Polynomial.X 
-        (Polynomial.map q.compRingHom 
-          (foldingPolynomial q (f / q))) = f / q := by
-      convert ih (Polynomial.natDegree (f / q)) _ rfl using 1
-      rw [←n, Polynomial.div_def]
-      rw [Polynomial.natDegree_C_mul, Polynomial.natDegree_divByMonic] <;> norm_num
-      · by_cases hq : q = 0 
-          <;> simp_all only [not_or, not_lt, not_le, Polynomial.map_add, Polynomial.map_mul,
-            map_C, coe_compRingHom, X_comp, eval_add, eval_mul, eval_C, add_left_inj,
-            leadingCoeff_C, ne_eq, leadingCoeff_eq_zero, not_false_eq_true, mul_inv_cancel₀,
-            one_ne_zero, natDegree_mul', 
-            natDegree_C, add_zero, degree_zero, not_lt_bot, bot_le, or_true, not_true_eq_false]
-        exact ⟨n.symm 
-          ▸ Polynomial.natDegree_pos_iff_degree_pos.mpr 
-            h_deg.2.1, 
-          Polynomial.natDegree_pos_iff_degree_pos.mpr h_deg.2.2⟩
-      · exact Polynomial.monic_mul_leadingCoeff_inv (by aesop)
-      · aesop
-    rw [
-      ‹Polynomial.eval Polynomial.X 
-        (Polynomial.map q.compRingHom 
-          (foldingPolynomial q f)) = 
-            f % q + 
+      conv_rhs => rw [Polynomial.as_sum_range_C_mul_X_pow f] 
+    · have h_fold_def : 
+        foldingPolynomial q f = 
+          (Polynomial.map Polynomial.C (f % q)) + 
+            Polynomial.C Polynomial.X * foldingPolynomial q (f / q) := by
+        apply folding_polynomial_def_ind_case
+        · exact le_of_not_gt fun h ↦ h_deg <| Or.inl h
+        · exact lt_of_not_ge fun h ↦ h_deg <| Or.inr <| Or.inr h
+      have h_fold_def : 
+        Polynomial.eval Polynomial.X 
+          (Polynomial.map q.compRingHom (foldingPolynomial q f)) = 
+            (f % q) + 
               q * Polynomial.eval Polynomial.X 
-                (Polynomial.map q.compRingHom 
-                  (foldingPolynomial q (f / q)))›, 
-      h_fold_def, EuclideanDomain.mod_eq_sub_mul_div] 
-    ring
+                (Polynomial.map q.compRingHom (foldingPolynomial q (f / q))) := by
+        simp +decide only 
+          [h_fold_def, 
+           Polynomial.map_add, 
+           Polynomial.map_mul, 
+           map_C, 
+           coe_compRingHom,
+           X_comp, 
+           eval_add, 
+           eval_map, 
+           eval_mul, 
+           eval_C, 
+           add_left_inj]
+        simp +decide only [eval₂_map]
+        simp +decide only 
+          [eval₂_eq_sum_range, 
+           RingHom.coe_comp, 
+           coe_compRingHom, 
+           Function.comp_apply,
+           C_comp]
+        conv_rhs => rw [Polynomial.as_sum_range_C_mul_X_pow (f % q)] 
+      have h_fold_def : 
+        Polynomial.eval Polynomial.X 
+          (Polynomial.map q.compRingHom 
+            (foldingPolynomial q (f / q))) = f / q := by
+        convert ih (Polynomial.natDegree (f / q)) _ rfl using 1
+        rw [←n, Polynomial.div_def]
+        rw [Polynomial.natDegree_C_mul, Polynomial.natDegree_divByMonic] <;> norm_num
+        · by_cases hq : q = 0 
+            <;> simp_all only [not_or, not_lt, not_le, Polynomial.map_add, Polynomial.map_mul,
+              map_C, coe_compRingHom, X_comp, eval_add, eval_mul, eval_C, add_left_inj,
+              leadingCoeff_C, ne_eq, leadingCoeff_eq_zero, not_false_eq_true, mul_inv_cancel₀,
+              one_ne_zero, natDegree_mul', 
+              natDegree_C, add_zero, degree_zero, not_lt_bot, bot_le, or_true, not_true_eq_false]
+          exact ⟨n.symm 
+            ▸ Polynomial.natDegree_pos_iff_degree_pos.mpr 
+              h_deg.2.1, 
+            Polynomial.natDegree_pos_iff_degree_pos.mpr h_deg.2.2⟩
+        · exact Polynomial.monic_mul_leadingCoeff_inv (by aesop)
+        · aesop
+      rw [
+        ‹Polynomial.eval Polynomial.X 
+          (Polynomial.map q.compRingHom 
+            (foldingPolynomial q f)) = 
+              f % q + 
+                q * Polynomial.eval Polynomial.X 
+                  (Polynomial.map q.compRingHom 
+                    (foldingPolynomial q (f / q)))›, 
+        h_fold_def, EuclideanDomain.mod_eq_sub_mul_div] 
+      ring
 
 lemma eval_property_of_folding_polynomial {q f : F[X]} {x : F} :
   ((foldingPolynomial q f).map (Polynomial.evalRingHom (q.eval x))).eval x = f.eval x := by 
@@ -372,13 +390,15 @@ lemma eval_property_of_folding_polynomial_x_k {f : F[X]} {k : ℕ} {x : F} :
     rw [←eval_property_of_folding_polynomial (f := f) (q := X ^ k)]
   rw [h]
 
+
 /-- The degree of `foldingPolynomial` is less than `q.degree` in the second variable, 
   when `q` is not a constant polynomial.
 -/
 theorem folding_polynomial_deg_y_bound {q f : F[X]} (h : 0 < q.degree) :
    natDegreeY (foldingPolynomial q f) < q.degree := by 
   simp only [natDegreeY, coe_lt_degree]
-  induction' n : f.natDegree using Nat.strong_induction_on with n ih generalizing f q
+  induction n : f.natDegree using Nat.strong_induction_on generalizing f q with
+  | h n ih =>
   by_cases hq : f.degree < q.degree 
   · have h_folding_eq_map : foldingPolynomial q f = Polynomial.map Polynomial.C f := 
       folding_polynomial_eq_map_of_f_degree_lt_q_degree hq
@@ -498,7 +518,8 @@ theorem folding_polynomial_deg_x {q f : F[X]} :
       rw [h, folding_polynomial_deg_x_C_q]
       simp only [natDegree_C, Nat.div_zero]
     · simp only [not_le] at h 
-      induction' n : f.natDegree using Nat.strong_induction_on with n ih generalizing f q
+      induction n : f.natDegree using Nat.strong_induction_on generalizing f q with
+      | h n ih =>
       by_cases h₁ : f.degree < q.degree ∨ f.degree ≤ 0 ∨ q.degree ≤ 0
       · have h_deg_zero : degreeX (foldingPolynomial q f) = 0 := 
           folding_polynomial_deg_x_base h₁
@@ -573,25 +594,36 @@ private lemma satisfies_composition_property_implies_is_the_reminder
                         (Polynomial.eval Polynomial.X 
                           (Polynomial.map (Polynomial.compRingHom q) p)) := by
             intro p
-            induction' p using Polynomial.induction_on' with p q hp hq
-            · convert dvd_add hp hq using 1 
+            induction p using Polynomial.induction_on' with
+            | add p q hp hq =>
+              convert dvd_add hp hq using 1 
               simp +decide [sub_add_sub_comm]
-            · induction' ‹ℕ› with n ih 
-                <;> simp_all +decide only [←C_mul_X_pow_eq_monomial, Polynomial.map_mul, map_C,
-                  coe_compRingHom, Polynomial.map_pow, map_X, eval_mul, eval_C, eval_pow, eval_X,
-                  pow_succ, ←mul_assoc]
-              · induction' ‹F[X]› using 
-                  Polynomial.induction_on' with p q hp hq 
-                    <;> simp_all +decide only [pow_zero, mul_one, map_add, add_comp,
-                    Polynomial.map_add, ←C_mul_X_pow_eq_monomial, map_mul, map_pow,
-                      pow_zero, mul_one, mul_comp, C_comp, pow_comp, X_comp, Polynomial.map_mul,
-                      map_C, Polynomial.map_pow]
-                · convert dvd_add hp hq using 1 
+            | monomial n p =>
+              induction n with
+              | zero =>
+                simp_all +decide only [←C_mul_X_pow_eq_monomial, Polynomial.map_mul, map_C,
+                  coe_compRingHom, Polynomial.map_pow, map_X, eval_mul, eval_C, eval_pow, eval_X]
+                induction ‹F[X]› using 
+                  Polynomial.induction_on' with
+                | add p q hp hq =>
+                    
+                  simp_all +decide only [pow_zero, mul_one, map_add, add_comp,
+                    Polynomial.map_add]
+                  convert dvd_add hp hq using 1 
                   ring
-                · exact dvd_trans 
+                | monomial n p =>
+                  simp_all only [pow_zero, mul_one, 
+                  ←C_mul_X_pow_eq_monomial, map_mul, map_pow,
+                    pow_zero, mul_one, mul_comp, C_comp, pow_comp, X_comp, Polynomial.map_mul,
+                    map_C, Polynomial.map_pow]
+                  exact dvd_trans 
                     (sub_dvd_pow_sub_pow _ _ _) 
                     ⟨Polynomial.C (Polynomial.C ‹_›), by ring⟩
-              · simpa only [sub_mul] using ih.mul_right _
+              | succ n ih => 
+                simp_all +decide only [←C_mul_X_pow_eq_monomial, Polynomial.map_mul, map_C,
+                  coe_compRingHom, Polynomial.map_pow, map_X, eval_mul, eval_C, eval_pow, eval_X,
+                  pow_succ, ←mul_assoc]
+                simpa only [sub_mul] using ih.mul_right _
           exact h_div Q
         aesop
       exact ⟨-Q', by linear_combination -hQ'⟩

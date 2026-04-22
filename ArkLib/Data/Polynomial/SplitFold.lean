@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Julek, Elijah Vlasov
+Authors: Julian Sutherland, Ilia Vlasov
 -/
 import Mathlib.Algebra.Polynomial.BigOperators
 
@@ -10,8 +10,7 @@ import ArkLib.Data.Polynomial.FoldingPolynomial
 /-!
 # Generalized polynomial splitting and folding
 
-This file defines n-way splitting and folding operations on polynomials,
-generalizing the 2-way even/odd splitting found in `Polynomial/EvenAndOdd.lean`.
+This file defines n-way splitting and folding operations on polynomials.
 
 ## Main definitions
 
@@ -26,7 +25,7 @@ generalizing the 2-way even/odd splitting found in `Polynomial/EvenAndOdd.lean`.
 
 When `n = 2`, this recovers the even/odd splitting: `splitNth f 2 0` gives the even
 coefficients and `splitNth f 2 1` gives the odd coefficients (after appropriate
-reindexing). The formal connection will be established in future work.
+reindexing). 
 
 -/
 

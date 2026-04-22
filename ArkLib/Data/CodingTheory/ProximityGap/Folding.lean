@@ -257,7 +257,14 @@ theorem foldWord_codeword {d : ℕ}
       have h := FoldingPolynomial.folding_polynomial_deg_y_bound 
         (f := (Lagrange.interpolate univ ⇑domain) ↑p)
         (q := Y ^ 2 ^ k)
-        (by simp)
+        (by {
+          simp
+          rw [WithBot.lt_def]
+          simp
+          exists (2 ^ k)
+          simp
+          rfl
+      })
       simp only [Bivariate.natDegreeY, 
         degree_pow, degree_X, nsmul_eq_mul, Nat.cast_pow, Nat.cast_ofNat, mul_one] at h
       norm_cast at h
@@ -946,7 +953,7 @@ lemma folding_proximity
   (h_d_n: d ≤ 2 ^ n)
   (δ_gt_0 : 0 < δ)
   (δ_lt : δ < min (δᵣ(f, ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d)) 
-    (1 - (ReedSolomonCode.sqrtRate d (domain : Fin (2 ^ n) ↪ F)))) :
+    (1 - (ReedSolomon.sqrtRate d (domain : Fin (2 ^ n) ↪ F)))) :
     Pr_{ let r ←$ᵖ F}[δᵣ(foldWord domain f k r, 
       ReedSolomon.code (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) 
       (d / (2 ^ k))) ≤ δ] ≤
@@ -966,13 +973,13 @@ lemma folding_proximity
           
     unfold foldWord
     have bound_tighter : 
-      (↑δ) ≤ 1 - ReedSolomonCode.sqrtRate (d / (2 ^ k)) 
+      (↑δ) ≤ 1 - ReedSolomon.sqrtRate (d / (2 ^ k)) 
         (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) := by
       rw [←ENNReal.coe_le_coe]
-      simp [ReedSolomonCode.sqrtRate]
-      rw [ReedSolomonCode.rateOfLinearCode_eq_min_div]
-      simp [ReedSolomonCode.sqrtRate] at δ_lt
-      rw [ReedSolomonCode.rateOfLinearCode_eq_min_div] at δ_lt
+      simp [ReedSolomon.sqrtRate]
+      rw [ReedSolomon.rateOfLinearCode_eq_min_div]
+      simp [ReedSolomon.sqrtRate] at δ_lt
+      rw [ReedSolomon.rateOfLinearCode_eq_min_div] at δ_lt
       obtain ⟨_, δ_lt⟩ := δ_lt
       apply le_trans
       · exact le_of_lt δ_lt
@@ -1002,7 +1009,7 @@ lemma folding_proximity
     have h' :=
       @correlatedAgreement_affine_curves (Fin (2 ^ (n - k))) _ (by {
        constructor 
-       exact 0 }) F _ _ _ 
+       exact 0 }) _ F _ _ _ _
         (2 ^ k - 1) (d / (2 ^ k)) (domain.subdomainNatReversed k) δ bound_tighter
     unfold δ_ε_correlatedAgreementCurves at h'
     by_contra h

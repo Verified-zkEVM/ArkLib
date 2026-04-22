@@ -16,7 +16,7 @@ namespace Binius.BinaryBasefold
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
   Binius.BinaryBasefold
 open scoped NNReal
-open ReedSolomon Code BerlekampWelch
+open Code BerlekampWelch
 open Finset AdditiveNTT Polynomial MvPolynomial Nat Matrix
 
 section Preliminaries
@@ -131,7 +131,7 @@ private lemma sumAlgEquiv_mem_restrictDegree {R : Type*} [CommSemiring R]
       exact Finset.sum_congr rfl fun _ _ => sumToIter_monomial_aux _ _
     contrapose! hs
     simp +decide [h_sum]
-    rw [Finsupp.finset_sum_apply]
+    erw [Finsupp.finset_sum_apply]
     refine Finset.sum_eq_zero fun x hx => ?_
     erw [AddMonoidAlgebra.lsingle_apply, AddMonoidAlgebra.lsingle_apply]; aesop
   aesop
@@ -1045,6 +1045,7 @@ theorem fold_advances_evaluation_poly
     rw [normalizedWᵢ_eval_βᵢ_eq_1 𝔽q β]
     ring_nf
     conv_rhs => rw [←add_zero (a := 1)]
+    rw [add_sub_assoc]
     congr 1
     rw [sub_eq_zero]
     apply Finset.sum_congr (h := by rfl)
@@ -1313,9 +1314,9 @@ def uniqueClosestCodeword
       rw [h_dist_eq_hamming]
       rw [ENat.toNat_coe]
     -- Get the closest polynomial
-    obtain ⟨p, hp_deg_lt : p ∈ L[X]_k, hp_eval⟩ : ∃ p, p ∈ Polynomial.degreeLT L k ∧
+    obtain ⟨p, hp_deg_lt, hp_eval⟩ : ∃ p, p ∈ Polynomial.degreeLT L k ∧
       (fun (x : sDomain 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩)) ↦ p.eval (↑x)) = g_closest := by
-      simp only [Fin.eta, BBF_Code, code, evalOnPoints, Function.Embedding.coeFn_mk,
+      simp only [Fin.eta, BBF_Code, ReedSolomon.code, ReedSolomon.evalOnPoints, Function.Embedding.coeFn_mk,
         Submodule.mem_map, LinearMap.coe_mk, AddHom.coe_mk, C_i] at hg_mem
       rcases hg_mem with ⟨p_witness, hp_prop, hp_eq⟩
       use p_witness
