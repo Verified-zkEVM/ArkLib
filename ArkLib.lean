@@ -49,10 +49,10 @@ import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ReedSolomonGap
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.WeightedAgreement
 import ArkLib.Data.CodingTheory.ProximityGap.Basic
-import ArkLib.Data.CodingTheory.ProximityGap.Folding
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.MainResults
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.ReedSolomon
+import ArkLib.Data.CodingTheory.ProximityGap.Folding
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.CodingTheory.ReedSolomon.FftDomain
 import ArkLib.Data.EllipticCurve.BN254
@@ -176,5 +176,5 @@ import ArkLib.ProofSystem.Whir.ProximityGen
 import ArkLib.ProofSystem.Whir.RBRSoundness
 import ArkLib.ToMathlib.BigOperators.Fin
 import ArkLib.ToMathlib.Finset.Basic
-import ArkLib.ToMathlib.Polynomial.EvalExt
 import ArkLib.ToMathlib.List.Basic
+import ArkLib.ToMathlib.Polynomial.EvalExt
