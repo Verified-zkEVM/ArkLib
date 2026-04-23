@@ -23,74 +23,80 @@ section PickSubset
 
 variable {α : Type*} [DecidableEq α]
 
+/-- Returns a subset of `s` of cardinality `n`
+  if `#s ≥ n`, otherwise returns `s`.
+-/
 noncomputable def pickSubset (s : Finset α) (n : ℕ) : Finset α :=
   match n with
   | .zero => ∅ 
   | .succ n => 
     let subset_n := pickSubset s n
-    if h : (s \ subset_n).Nonempty then
-      {Classical.choose (Finset.Nonempty.exists_mem h)} ∪ subset_n
+    if h : (s \ subset_n).Nonempty 
+    then {Classical.choose (Finset.Nonempty.exists_mem h)} ∪ subset_n
     else subset_n
 
+/-- Picking zero elements yields an empty set. -/
 @[simp]
 lemma pick_subset_zero {s : Finset α} :
   pickSubset s 0 = ∅ := rfl
 
+/-- Picking from an empty set always yields an empty set. -/
 @[simp]
 lemma pick_subset_emptyset {n : ℕ} :
   pickSubset (∅ : Finset α) n = ∅ := by 
-  induction' n with n ih
-  · rfl
-  · simp [pickSubset, ih]
+  induction n with
+  | zero => rfl
+  | succ n ih => simp [pickSubset, ih]
 
+/-- `pickSubset s n` is indeed a subset of `s`. -/
 lemma pick_subset_subset {s : Finset α} {n : ℕ} :
   pickSubset s n ⊆ s := by
-  induction' n with n ih
-  · simp
-  · simp [pickSubset]
-    by_cases h : (s \ s.pickSubset n).Nonempty
-    · simp [h] 
-      rw [Finset.insert_subset_iff]
-      simp [ih]
-      have h_choose := Classical.choose_spec (Finset.Nonempty.exists_mem h)
-      apply Finset.mem_of_subset
-      · exact Finset.sdiff_subset (t := s.pickSubset n) 
-      · exact h_choose 
-    · simp [h, ih]
+  induction n with
+  | zero => simp
+  | succ n ih => 
+    by_cases h : (s \ s.pickSubset n).Nonempty 
+      <;> try 
+        (simp only [pickSubset, h, ↓reduceDIte, ih, singleton_union])
+    rw [Finset.insert_subset_iff]
+    have h_choose := Classical.choose_spec (Finset.Nonempty.exists_mem h)
+    aesop
 
+/-- The cardinality of picked subset is `min s.card n`. -/
 @[simp]
 lemma card_pick_subset {s : Finset α} {n : ℕ} :
   (pickSubset s n).card = min s.card n := by 
-  induction' n with n ih generalizing s <;> simp_all +decide [ Finset.pickSubset ];
-  split_ifs with h;
-  · rw [ Finset.card_insert_of_notMem ];
-    · rw [ ih, min_def, min_def ] ; split_ifs <;> simp_all +arith +decide [ Finset.card_sdiff ] ;
+  induction n generalizing s with
+  | zero => simp [Finset.pickSubset]
+  | succ n ih =>
+    simp_all only [pickSubset, singleton_union]
+    split_ifs with h
+    · rw [Finset.card_insert_of_notMem]
       · have := Finset.eq_of_subset_of_card_le 
-          ( Finset.pick_subset_subset : s.pickSubset n ⊆ s ) ; aesop;
-      · omega
-      · omega
-    · exact Classical.choose_spec h |> fun h' => by aesop;
-  · simp_all +decide [ Finset.nonempty_iff_ne_empty ];
-    rw [ le_antisymm ( Finset.card_le_card h ) ];
-    · grind +ring;
-    · exact Finset.card_le_card ( Finset.pick_subset_subset )
+          (Finset.pick_subset_subset : s.pickSubset n ⊆ s)
+        aesop 
+          (add safe (by omega))
+          (add simp [min_def])
+      · exact Classical.choose_spec h |> fun h' ↦ by aesop
+    · simp_all only [nonempty_iff_ne_empty, ne_eq, sdiff_eq_empty_iff_subset, Decidable.not_not]
+      have := Finset.card_le_card h 
+      aesop (add safe (by omega))
 
+/-- If the target cardinality `n` exceeds or is equal to the cardinality
+  of the set `s` then `pickSubset` returns the whole set `s`. -/
 lemma pick_subset_eq_s_of_card_le_n {s : Finset α} {n : ℕ}
-  (h : s.card ≤ n)
-  :
+  (h : s.card ≤ n) :
   pickSubset s n = s := by
   rw [←Finset.eq_iff_card_le_of_subset pick_subset_subset]
   simp [h]
 
+/-- If the picked subset does not meet the target cardinality requirement
+  then we must have obtained the original set `s`. -/
 lemma pick_subset_eq_s_of_card_pick_subset_lt_n {s : Finset α} {n : ℕ}
-  (h : (s.pickSubset n).card < n)
-  :
+  (h : (s.pickSubset n).card < n) :
   pickSubset s n = s := by
-  simp at h
   rw [←Finset.eq_iff_card_le_of_subset pick_subset_subset]
-  simp 
-  omega
-
+  aesop (add safe (by omega))
+  
 end PickSubset
 
 end Finset
