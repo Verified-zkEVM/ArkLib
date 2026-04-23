@@ -1004,13 +1004,13 @@ lemma folding_proximity
         rw [←ENNReal.coe_le_coe, ENNReal.coe_mul] 
         rw [←ENNReal.div_le_iff (by simp) (by simp)]
         norm_cast
-        rw [ENNReal.coe_div (by simp)]
-        norm_cast
     have h' :=
       @correlatedAgreement_affine_curves (Fin (2 ^ (n - k))) _ (by {
        constructor 
-       exact 0 }) _ F _ _ _ _
-        (2 ^ k - 1) (d / (2 ^ k)) (domain.subdomainNatReversed k) δ bound_tighter
+       exact 0 }) _ F _ _ _ 
+        (2 ^ k - 1) (fun _ _ ↦ 0) (d / (2 ^ k)) 
+        (domain := domain.subdomainNatReversed k) (δ := δ) 
+        (hδ := bound_tighter)
     unfold δ_ε_correlatedAgreementCurves at h'
     by_contra h
     have {a b : ENNReal} : a < b → b > a := id
