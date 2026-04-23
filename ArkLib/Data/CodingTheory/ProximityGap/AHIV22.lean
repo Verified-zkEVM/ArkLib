@@ -30,7 +30,7 @@ variable {F : Type} [Field F] [Finite F] [DecidableEq F]
 local instance : Fintype F := Fintype.ofFinite F
 
 namespace ProximityToRS
-open ReedSolomonCode NNReal
+open ReedSolomon NNReal
 
 -- We first prove the distance-bound form `e_leq_dist_over_3_strong` and then derive the
 -- mutual-exclusion corollary `e_leq_dist_over_3` from it.

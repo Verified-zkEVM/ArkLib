@@ -5,7 +5,7 @@ Authors: Katerina Hristova, František Silváši, Chung Thai Nguyen, Elias Judin
 -/
 
 import ArkLib.Data.CodingTheory.InterleavedCode
-import ArkLib.Data.CodingTheory.ProximityGap.DG25
+import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.Probability.Notation
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.LinearAlgebra.Quotient.Card
@@ -233,7 +233,7 @@ lemma distInterleavedCodeToCodeLB
     exact_mod_cast h'
   have h2e_lt_d : 2 * e < ‖(L : Set (ι → F))‖₀ := by omega
   by_contra h_contra
-  push_neg at h_contra
+  push Not at h_contra
   have h_close (v : Matrix.rowSpan U_star) :
       Δ₀((v : ι → F), (L : Set (ι → F))) ≤ e :=
     h_contra v v.property
@@ -353,7 +353,7 @@ lemma distInterleavedCodeToCodeLB
 
 namespace ProximityToRS
 
-open ReedSolomonCode NNReal
+open ReedSolomon NNReal
 
 /-- The set of points on an affine line, which are within distance `e` from a Reed-Solomon code.
 -/
