@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Julian Sutherland, Ilia Vlasov, Aristotle (Harmonic)
+-/
+
 import Mathlib.Algebra.Polynomial.Roots
 import Mathlib.LinearAlgebra.Lagrange
 
