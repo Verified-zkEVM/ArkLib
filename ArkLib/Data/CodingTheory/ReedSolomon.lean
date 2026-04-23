@@ -194,12 +194,14 @@ lemma dim_eq_deg_of_le' {ι : Type*} [Fintype ι] {F : Type*} [Field F]
             rw [h]
             simp
             omega
-          · calc p.val.natDegree
-              < n := @natDegree_lt_of_mem_degreeLT _ _ _ _ (⟨hn⟩) p.2
-              _ ≤ Fintype.card ι := h
+          · calc p.val.natDegree < n 
+              := @natDegree_lt_of_mem_degreeLT _ _ _ _ (⟨hn⟩) p.2
+                _ ≤ Fintype.card ι := h
       · intro hfp
         simp [hfp]
 
+/-- The dimension of an RS-code equals the cardinality
+  of the evaluation points if the original degree exceeds the cardinality. -/
 lemma dim_eq_card_of_lt {ι : Type*} [Fintype ι] {F : Type*} [Field F]
     {n : ℕ} {α : ι ↪ F} (h : Fintype.card ι < n) :
   LinearCode.dim (ReedSolomon.code α n) = Fintype.card ι := by
@@ -216,8 +218,8 @@ lemma dim_eq_card_of_lt {ι : Type*} [Fintype ι] {F : Type*} [Field F]
   · apply le_trans 
     · apply Submodule.finrank_le
     · simp
-  · have h_sub : ReedSolomon.code α (Fintype.card ι) 
-      ≤ ReedSolomon.code α n := by
+  · have h_sub : ReedSolomon.code α (Fintype.card ι) ≤ 
+      ReedSolomon.code α n := by
       intro x hx 
       simp only [code, Submodule.mem_map] at hx
       rcases hx with ⟨y, hy⟩
@@ -238,6 +240,9 @@ lemma dim_eq_card_of_lt {ι : Type*} [Fintype ι] {F : Type*} [Field F]
     rw [dim_eq] at h_sub
     exact h_sub
  
+/-- Assumption-less expression for the dimension of an RS-code.
+  The dimension equals the minimum of the degree and the cardinality
+  of the evaluation set. -/
 theorem dim_eq_min_deg_card {ι : Type*} [Fintype ι] {F : Type*} [Field F]
     {n : ℕ} {α : ι ↪ F} :
   LinearCode.dim (ReedSolomon.code α n) = min n (Fintype.card ι) := by
@@ -263,11 +268,15 @@ lemma length_eq_domain_card' {ι : Type*} [Fintype ι] {F : Type*} [Field F] {de
     length (ReedSolomon.code α deg) = Fintype.card ι := by
   simp [length]
 
+/- The usual formula for the rate of an RS-code: the degree divided by
+  the cardinality of the evaluation set. -/
 lemma rateOfLinearCode_eq_div' {ι : Type*} [Fintype ι] {F : Type*} [Field F]
     {n : ℕ} {α : ι ↪ F} (h : n ≤ Fintype.card ι) :
     rate (ReedSolomon.code α n) = n / Fintype.card ι := by
   rw [rate, dim_eq_deg_of_le' h, length_eq_domain_card']
 
+/- Assumption-less formula for the rate of an RS-code: the minimun of degree 
+  and the cardinality of the evaluation set divided by the cardinality. -/
 lemma rateOfLinearCode_eq_min_div
     {ι : Type*} [Fintype ι] {F : Type*} [Field F]
     {n : ℕ} {α : ι ↪ F} :
