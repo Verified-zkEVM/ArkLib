@@ -368,6 +368,8 @@ lemma substitution_property_of_folding_polynomial {q f : F[X]} :
         h_fold_def, EuclideanDomain.mod_eq_sub_mul_div] 
       ring
 
+/-- A means to evaluate the original polynomial in terms of
+  the folding polynomial. -/
 lemma eval_property_of_folding_polynomial {q f : F[X]} {x : F} :
   ((foldingPolynomial q f).map (Polynomial.evalRingHom (q.eval x))).eval x = f.eval x := by 
   have h_subst : ((Polynomial.FoldingPolynomial.foldingPolynomial q f).map 
@@ -381,15 +383,13 @@ lemma eval_property_of_folding_polynomial {q f : F[X]} {x : F} :
    ring_nf
    simp +decide [Polynomial.eval_finset_sum])
 
+/-- A means to evaluate the original polynomial in terms of
+  the folding polynomial when `q = X ^ k`. -/
 lemma eval_property_of_folding_polynomial_x_k {f : F[X]} {k : ℕ} {x : F} :
   ((foldingPolynomial (X ^ k) f).map (Polynomial.evalRingHom (x ^ k))).eval x =
     f.eval x := by
-  have h : (X ^ k).eval x = x ^ k := by simp
-  conv =>
-    rhs
-    rw [←eval_property_of_folding_polynomial (f := f) (q := X ^ k)]
-  rw [h]
-
+  have := eval_property_of_folding_polynomial (f := f) (q := X ^ k) (x := x) 
+  aesop
 
 /-- The degree of `foldingPolynomial` is less than `q.degree` in the second variable, 
   when `q` is not a constant polynomial.
