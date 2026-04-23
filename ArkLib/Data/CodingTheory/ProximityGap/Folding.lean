@@ -1008,7 +1008,7 @@ lemma folding_proximity
       @correlatedAgreement_affine_curves (Fin (2 ^ (n - k))) _ (by {
        constructor 
        exact 0 }) _ F _ _ _ 
-        (2 ^ k - 1) (fun _ _ ↦ 0) (d / (2 ^ k)) 
+        (2 ^ k - 1) (d / (2 ^ k)) 
         (domain := domain.subdomainNatReversed k) (δ := δ) 
         (hδ := bound_tighter)
     unfold δ_ε_correlatedAgreementCurves at h'
@@ -1172,16 +1172,6 @@ lemma folding_proximity
     obtain ⟨δ_lt, _⟩ := δ_lt
     have contradiction := lt_of_lt_of_le δ_lt contradiction 
     simp at contradiction
-      
-
-
-          
-
-
-            
-                
-   
-
 
 end
 end ProximityGap
