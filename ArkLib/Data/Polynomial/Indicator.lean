@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Ilia Vlasov
+Authors: Ilia Vlasov, Aristotle (Harmonic)
 -/
 import ArkLib.Data.Polynomial.Bivariate
 
@@ -9,6 +9,16 @@ import Mathlib.Algebra.Polynomial.Basic
 import Mathlib.LinearAlgebra.Lagrange
 import Mathlib.Tactic.Cases
 import Mathlib.Tactic.LinearCombination'
+
+/-! This module is mostly needed from proving lemma 4.9
+  from [ACFY24] but we thought it might be useful for 
+  something else as well. 
+
+## References
+
+* [Arnon, G., Chiesa, A., Fenzi, G., Yogev, E., 
+  *STIR: Reed–Solomon Proximity Testing with Fewer Queries*][ACFY24]
+-/
 
 namespace Polynomial
 
@@ -18,48 +28,58 @@ open Polynomial Polynomial.Bivariate
 
 variable {ι F : Type*} [Field F] [DecidableEq F]
 
+/-- The indicator polynomial is a univariate polynomial
+  `I(X)` of the minimal degree 
+  that takes the value `1` on a given finset `pos`
+  and the value `0` on `neg`. -/
 noncomputable def indicator (pos neg : Finset F) : F[X] :=
   Lagrange.interpolate (pos ∪ neg) id 
-    (fun x => if x ∈ pos then 1 else 0) 
+    (fun x ↦ if x ∈ pos then 1 else 0) 
 
+/-- The indicator polynomial is a constant zero polynomial 
+  if the set `pos` is empty. 
+
+  Note, `indicator ∅ ∅ = 0` too! -/
 @[simp]
 lemma indicator_is_0_if_pos_empty {neg : Finset F} :
   indicator ∅ neg = 0 := by simp [indicator]
 
+/-- The indicator polynomial is a constant one polynomial
+  if the set `neg` is empty while `pos` is not. -/
 lemma indicator_is_1_if_neg_is_empty_and_pos_non_empty
   {pos : Finset F}
-  (h_pos : pos.Nonempty)
-  : 
+  (h_pos : pos.Nonempty) : 
   indicator pos ∅ = 1 := by 
+  unfold indicator
   rw [Finset.nonempty_iff_ne_empty] at h_pos
-  unfold Polynomial.indicator;
-  refine' Polynomial.eq_of_degree_sub_lt_of_eval_finset_eq _ _ _;
-  exact pos ∪ ∅;
-  · refine' lt_of_le_of_lt ( Polynomial.degree_sub_le _ _ ) ( max_lt _ _ );
-    · convert Lagrange.degree_interpolate_lt _ _ ; aesop;
-    · simpa using Finset.card_pos.mpr ( Finset.nonempty_of_ne_empty h_pos );
-  · simp +decide [ Lagrange.basis ];
-    intro x hx; 
-    rw [ Polynomial.eval_finset_sum, Finset.sum_eq_single x ] 
-      <;> simp_all +decide 
-            [ Polynomial.eval_prod, 
-              Finset.prod_eq_zero_iff,
-              Lagrange.basisDivisor ] ;
-    · exact Finset.prod_eq_one fun y hy 
-        => by rw [ inv_mul_cancel₀ ] ; exact sub_ne_zero_of_ne <| by aesop;
-    · exact fun y hy hyx => ⟨ x, ⟨ Ne.symm hyx, hx ⟩, Or.inr ( sub_self _ ) ⟩
-
+  apply Polynomial.eq_of_degree_sub_lt_of_eval_finset_eq (pos ∪ ∅) _ _
+  · apply lt_of_le_of_lt (Polynomial.degree_sub_le _ _) (max_lt _ _)
+    · convert Lagrange.degree_interpolate_lt _ _ 
+      aesop
+    · simpa using Finset.card_pos.mpr (Finset.nonempty_of_ne_empty h_pos)
+  · have {x} {y} (hy : y ∈ pos.erase x) : 
+      (x - y)⁻¹ * (x - y) = 1 := 
+        inv_mul_cancel₀ (sub_ne_zero_of_ne (by aesop))
+    aesop 
+      (add simp 
+        [Polynomial.eval_prod, 
+          Finset.prod_eq_zero_iff,
+          Lagrange.basis,
+          Lagrange.basisDivisor, 
+          Finset.prod_eq_one]) 
+      (add safe [(by rw 
+        [Polynomial.eval_finset_sum, 
+        Finset.sum_eq_single x])])
+    
+/-- If `pos` is non-empty then the indicator polynomial is the constant 
+  zero polynomial. -/
 lemma indicator_ne_if_pos_is_nonempty {pos neg : Finset F}
-  (h : pos.Nonempty)
-  :
+  (h : pos.Nonempty) :
   indicator pos neg ≠ 0 := by 
-  rw [Finset.nonempty_iff_ne_empty] at h
-  obtain ⟨x, hx⟩ : ∃ x, x ∈ pos := by
-      -- Since pos is non-empty, we can use the fact that a non-empty finite set has an element.
-      apply Finset.nonempty_iff_ne_empty.mpr h;
-  unfold Polynomial.indicator;
-  intro H; 
-  have := congr_arg ( Polynomial.eval x ) H; 
+  unfold indicator
+  obtain ⟨x, hx⟩ := h
+  intro contra 
+  have := congr_arg (Polynomial.eval x) contra 
   norm_num [ hx, Lagrange.eval_interpolate_at_node ] at this;
   rw [ Polynomial.eval_finset_sum, Finset.sum_eq_single x ] at this 
     <;> simp_all +decide [ Lagrange.basis ];
