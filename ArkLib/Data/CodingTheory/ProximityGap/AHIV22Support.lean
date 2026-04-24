@@ -34,22 +34,26 @@ variable {F : Type} [Field F] [Finite F] [DecidableEq F]
 
 local instance : Fintype F := Fintype.ofFinite F
 
+/-- The finite support of a vector over `F`. -/
 private def vecSupport (u : ι → F) : Finset ι :=
-  Finset.filter (fun j => u j ≠ 0) Finset.univ
+  Finset.filter (fun j ↦ u j ≠ 0) Finset.univ
 
 omit [Finite F] in
+/-- Membership in `vecSupport` is exactly nonvanishing at that coordinate. -/
 private lemma mem_vecSupport {u : ι → F} {j : ι} :
     j ∈ vecSupport (F := F) u ↔ u j ≠ 0 := by
   simp [vecSupport]
 
 omit [Finite F] in
+/-- Non-membership in `vecSupport` is exactly vanishing at that coordinate. -/
 private lemma not_mem_vecSupport {u : ι → F} {j : ι} :
     j ∉ vecSupport (F := F) u ↔ u j = 0 := by
   simp [vecSupport]
 
 omit [Finite F] in
+/-- The support of a difference is the set of coordinates where the two words disagree. -/
 private lemma vecSupport_sub (u v : ι → F) :
-    vecSupport (F := F) (u - v) = Finset.filter (fun j => u j ≠ v j) Finset.univ := by
+    vecSupport (F := F) (u - v) = Finset.filter (fun j ↦ u j ≠ v j) Finset.univ := by
   ext j
   simp [vecSupport, Pi.sub_apply, sub_ne_zero]
 
@@ -76,7 +80,7 @@ private lemma exists_common_support_of_wt_le
     ∃ D : Finset ι, D.card ≤ e ∧ ∀ x : E, ∀ j, j ∉ D → (x : ι → F) j = 0 := by
   classical
   letI : Fintype E := Fintype.ofFinite E
-  let f : E → ℕ := fun x => (vecSupport (F := F) (x : ι → F)).card
+  let f : E → ℕ := fun x ↦ (vecSupport (F := F) (x : ι → F)).card
   have huniv : (Finset.univ : Finset E).Nonempty := Finset.univ_nonempty
   obtain ⟨x0, hx0⟩ := Finset.exists_maximalFor (f := f) (s := (Finset.univ : Finset E)) huniv
   have hx0_max : ∀ x : E, f x ≤ f x0 := by
@@ -94,8 +98,8 @@ private lemma exists_common_support_of_wt_le
     have hx0i : (x0 : ι → F) i = 0 := by
       have : i ∉ D := hi
       simpa [D, not_mem_vecSupport] using this
-    let S : Finset ι := D.filter (fun j => (x : ι → F) j ≠ 0)
-    let bad : Finset F := S.image (fun j => - (x0 : ι → F) j / (x : ι → F) j)
+    let S : Finset ι := D.filter (fun j ↦ (x : ι → F) j ≠ 0)
+    let bad : Finset F := S.image (fun j ↦ - (x0 : ι → F) j / (x : ι → F) j)
     let bad0 : Finset F := insert 0 bad
     have hS_subset : S ⊆ vecSupport (F := F) (x : ι → F) := by
       intro j hj
@@ -141,8 +145,8 @@ private lemma exists_common_support_of_wt_le
     have hbad0_card_le_D : bad0.card ≤ D.card := by
       calc
         bad0.card = bad.card + 1 := hbad0_card
-        _ ≤ S.card + 1 := Nat.add_le_add_right hbad_card_le 1
-        _ ≤ D.card := hS_succ_le_D
+        _         ≤ S.card + 1 := Nat.add_le_add_right hbad_card_le 1
+        _         ≤ D.card := hS_succ_le_D
     have hD_lt_cardF : D.card < Fintype.card F := lt_of_le_of_lt (hE x0) hF
     have hbad0_lt_cardF : bad0.card < Fintype.card F :=
       lt_of_le_of_lt hbad0_card_le_D hD_lt_cardF
@@ -264,17 +268,17 @@ lemma dist_interleaved_code_to_code_lb
         have hv :
             Δ₀((v + w : ι → F), (v : ι → F) + dec w) = Δ₀((w : ι → F), dec w) := by
           simpa [Pi.add_apply] using
-            (hammingDist_comp (f := fun i => fun t : F => (v : ι → F) i + t)
+            (hammingDist_comp (f := fun i ↦ fun t : F ↦ (v : ι → F) i + t)
               (x := (w : ι → F)) (y := dec w)
-              (hf := fun _ => by
+              (hf := fun _ ↦ by
                 intro a b hab
                 exact add_left_cancel hab))
         have hw :
             Δ₀((v : ι → F) + dec w, dec v + dec w) = Δ₀((v : ι → F), dec v) := by
           simpa [Pi.add_apply] using
-            (hammingDist_comp (f := fun i => fun t : F => t + dec w i)
+            (hammingDist_comp (f := fun i ↦ fun t : F ↦ t + dec w i)
               (x := (v : ι → F)) (y := dec v)
-              (hf := fun _ => by
+              (hf := fun _ ↦ by
                 intro a b hab
                 exact add_right_cancel hab))
         have : Δ₀((v + w : ι → F), dec v + dec w)
@@ -285,10 +289,10 @@ lemma dist_interleaved_code_to_code_lb
           Δ₀((v + w : ι → F), dec v + dec w)
               ≤ Δ₀((v + w : ι → F), (v : ι → F) + dec w)
                 + Δ₀((v : ι → F) + dec w, dec v + dec w) := this
-          _ = Δ₀((w : ι → F), dec w) + Δ₀((v : ι → F), dec v) := by
+          _   = Δ₀((w : ι → F), dec w) + Δ₀((v : ι → F), dec v) := by
               simp [hv, hw, add_comm]
-          _ ≤ e + e := Nat.add_le_add (hdec_dist w) (hdec_dist v)
-          _ = 2 * e := by ring
+          _   ≤ e + e := Nat.add_le_add (hdec_dist w) (hdec_dist v)
+          _   = 2 * e := by ring
       have h3 : Δ₀(dec (v + w), dec v + dec w) ≤ 3 * e := by
         calc
           Δ₀(dec (v + w), dec v + dec w)
@@ -296,8 +300,8 @@ lemma dist_interleaved_code_to_code_lb
                 + Δ₀((v + w : ι → F), dec v + dec w) := by
                   exact
                     hammingDist_triangle (dec (v + w)) (v + w : ι → F) (dec v + dec w)
-          _ ≤ e + 2 * e := Nat.add_le_add h1 h2
-          _ = 3 * e := by ring
+          _   ≤ e + 2 * e := Nat.add_le_add h1 h2
+          _   = 3 * e := by ring
       exact lt_of_le_of_lt h3 h3e_lt_d
   have hdec_smul (a : F) (v : Matrix.rowSpan U_star) : dec (a • v) = a • dec v := by
     apply Code.eq_of_lt_dist (C := (L : Set (ι → F)))
@@ -314,8 +318,8 @@ lemma dist_interleaved_code_to_code_lb
               ≤ Δ₀(dec (a • v), (a • v : ι → F))
                   + Δ₀((a • v : ι → F), a • dec v) := by
                 exact hammingDist_triangle (dec (a • v)) (a • v : ι → F) (a • dec v)
-          _ ≤ e + e := Nat.add_le_add h1 h2
-          _ = 2 * e := by ring
+          _   ≤ e + e := Nat.add_le_add h1 h2
+          _   = 2 * e := by ring
       exact lt_of_le_of_lt h3 h2e_lt_d
   let decLin : Matrix.rowSpan U_star →ₗ[F] (ι → F) :=
     { toFun := dec, map_add' := hdec_add, map_smul' := hdec_smul }
@@ -334,7 +338,7 @@ lemma dist_interleaved_code_to_code_lb
   have h_row_in_span (k : κ) : U_star k ∈ Matrix.rowSpan U_star := by
     unfold Matrix.rowSpan
     exact Submodule.subset_span ⟨k, rfl⟩
-  let V : WordStack (A := F) κ ι := fun k => dec ⟨U_star k, h_row_in_span k⟩
+  let V : WordStack (A := F) κ ι := fun k ↦ dec ⟨U_star k, h_row_in_span k⟩
   have hV_mem : (⋈|V) ∈ (L^⋈κ) := by
     refine (Code.mem_moduleInterleavedCode_iff (F := F) (A := F) (κ := κ) (ι := ι) (MC := L)
       (v := (⋈|V))).2 ?_

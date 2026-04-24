@@ -78,14 +78,14 @@ lemma e_le_dist_over_3_strong
     by_contra h_card
     have hcard_gt : numberOfClosePts u v deg α e > ‖C‖₀ := lt_of_not_ge h_card
     -- Parameterize the line by scalars.
-    let P : F → Prop := fun r => Δ₀(u + r • v, C) ≤ e
+    let P : F → Prop := fun r ↦ Δ₀(u + r • v, C) ≤ e
     let R : Finset F := Finset.filter P Finset.univ
     have h_close_le_card :
         numberOfClosePts u v deg α e ≤ R.card := by
       -- Surjection from good `r` values onto close points on the line.
       let f : {r : F // P r} → closePtsOnAffineLine (F := F) (u := u) (v := v)
           (deg := deg) (α := α) (e := e) :=
-        fun r =>
+        fun r ↦
           ⟨u + r.1 • v,
             by
               refine ⟨?_, r.2⟩
@@ -100,7 +100,7 @@ lemma e_le_dist_over_3_strong
         refine ⟨⟨r, ?_⟩, ?_⟩
         · simpa [P, hr] using x.2.2
         · ext i
-          simpa [f] using congrArg (fun w => w i) hr.symm
+          simpa [f] using congrArg (fun w ↦ w i) hr.symm
       have h_close_card :
           Fintype.card
               (closePtsOnAffineLine (F := F) (u := u) (v := v) (deg := deg) (α := α) (e := e))
@@ -164,8 +164,8 @@ lemma e_le_dist_over_3_strong
       calc
         v j = (r1.1 - r0.1)⁻¹ * ((r1.1 - r0.1) * v j) := by
           simp [hr10]
-        _ = (r1.1 - r0.1)⁻¹ * (c r1 j - c r0 j) := by simp [hdiff]
-        _ = w j := by simp [w, Pi.smul_apply, Pi.sub_apply]
+        _   = (r1.1 - r0.1)⁻¹ * (c r1 j - c r0 j) := by simp [hdiff]
+        _   = w j := by simp [w, Pi.smul_apply, Pi.sub_apply]
     -- Define the base codeword so that `c r = cBase + r•w`.
     let cBase : ι → F := c r0 - r0.1 • w
     have hcBase_mem : cBase ∈ CRS := by
@@ -224,8 +224,8 @@ lemma e_le_dist_over_3_strong
                 calc
                   v i = (r.1 - r0.1)⁻¹ * ((r.1 - r0.1) * v i) := by
                     simp [hneq]
-                  _ = (r.1 - r0.1)⁻¹ * (c r i - c r0 i) := by simp [hdiff]
-                  _ = w0r i := by simp [w0r, Pi.smul_apply, Pi.sub_apply]
+                  _   = (r.1 - r0.1)⁻¹ * (c r i - c r0 i) := by simp [hdiff]
+                  _   = w0r i := by simp [w0r, Pi.smul_apply, Pi.sub_apply]
               exact hi (hv0r.symm.trans hvw)
             have hcard_le : (E r0 ∪ E r1 ∪ E r).card ≤ 3 * e := by
               have h01 : (E r0 ∪ E r1).card ≤ (E r0).card + (E r1).card :=
@@ -236,9 +236,11 @@ lemma e_le_dist_over_3_strong
               have hUnion :
                   (E r0 ∪ E r1 ∪ E r).card ≤ (E r0).card + (E r1).card + (E r).card := by
                 calc
-                  (E r0 ∪ E r1 ∪ E r).card ≤ (E r0 ∪ E r1).card + (E r).card := h012
-                  _ ≤ ((E r0).card + (E r1).card) + (E r).card := Nat.add_le_add_right h01 _
-                  _ = (E r0).card + (E r1).card + (E r).card := by omega
+                  (E r0 ∪ E r1 ∪ E r).card
+                      ≤ (E r0 ∪ E r1).card + (E r).card := h012
+                  _   ≤ ((E r0).card + (E r1).card) + (E r).card := by
+                    exact Nat.add_le_add_right h01 _
+                  _   = (E r0).card + (E r1).card + (E r).card := by omega
               have hE0 : (E r0).card ≤ e := hE_card r0
               have hE1 : (E r1).card ≤ e := hE_card r1
               have hEr : (E r).card ≤ e := hE_card r
@@ -256,7 +258,7 @@ lemma e_le_dist_over_3_strong
           simpa [w0r, smul_smul, hneq] using hsmul
         ext i
         have hdiff_i : c r i - c r0 i = (r.1 - r0.1) * w i := by
-          have := congrArg (fun f => f i) hdiff
+          have := congrArg (fun f ↦ f i) hdiff
           simpa [Pi.sub_apply, Pi.smul_apply] using this
         have hcri : c r i = (r.1 - r0.1) * w i + c r0 i :=
           (sub_eq_iff_eq_add).1 hdiff_i
@@ -269,15 +271,15 @@ lemma e_le_dist_over_3_strong
         simp [h_codeword_eq (r := r), Pi.add_apply, Pi.smul_apply]
       simpa [hc] using hu
     -- The global disagreement set where `u` or `v` fail to match `cBase`/`w`.
-    let D : Finset ι := Finset.filter (fun j => u j ≠ cBase j ∨ v j ≠ w j) Finset.univ
+    let D : Finset ι := Finset.filter (fun j ↦ u j ≠ cBase j ∨ v j ≠ w j) Finset.univ
     have hD_card : D.card ≤ e := by
       -- For `j ∈ D`, at most one good scalar can avoid `E r` at coordinate `j`.
       have h_err_ge (j : ι) (hj : j ∈ D) :
-          (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card ≥ Fintype.card RS - 1 := by
+          (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card ≥ Fintype.card RS - 1 := by
         have hclean_le1 :
-            (Finset.filter (fun r : RS => j ∉ E r) Finset.univ).card ≤ 1 := by
+            (Finset.filter (fun r : RS ↦ j ∉ E r) Finset.univ).card ≤ 1 := by
           by_contra hgt
-          have hone : 1 < (Finset.filter (fun r : RS => j ∉ E r) Finset.univ).card :=
+          have hone : 1 < (Finset.filter (fun r : RS ↦ j ∉ E r) Finset.univ).card :=
             lt_of_not_ge hgt
           rcases Finset.one_lt_card.mp hone with ⟨r, hr, s, hs, hrs⟩
           have hr' : j ∉ E r := (Finset.mem_filter.mp hr).2
@@ -296,18 +298,18 @@ lemma e_le_dist_over_3_strong
             have hsj : u j + s.1 * v j = cBase j + s.1 * w j := by
               simpa [Pi.add_apply, Pi.smul_apply] using hs_eq
             have hrj' : u j - cBase j = r.1 * (w j - v j) := by
-              have h1 := congrArg (fun t => t - cBase j) hrj
+              have h1 := congrArg (fun t ↦ t - cBase j) hrj
               have h1' : u j + r.1 * v j - cBase j = r.1 * w j := by
                 simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h1
-              have h2 := congrArg (fun t => t - r.1 * v j) h1'
+              have h2 := congrArg (fun t ↦ t - r.1 * v j) h1'
               have h2' : u j - cBase j = r.1 * w j - r.1 * v j := by
                 simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h2
               simpa [mul_sub] using h2'
             have hsj' : u j - cBase j = s.1 * (w j - v j) := by
-              have h1 := congrArg (fun t => t - cBase j) hsj
+              have h1 := congrArg (fun t ↦ t - cBase j) hsj
               have h1' : u j + s.1 * v j - cBase j = s.1 * w j := by
                 simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h1
-              have h2 := congrArg (fun t => t - s.1 * v j) h1'
+              have h2 := congrArg (fun t ↦ t - s.1 * v j) h1'
               have h2' : u j - cBase j = s.1 * w j - s.1 * v j := by
                 simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h2
               simpa [mul_sub] using h2'
@@ -330,14 +332,15 @@ lemma e_le_dist_over_3_strong
           exact this ((Finset.mem_filter.mp hj).2)
         -- Use complement-card identity: `#err + #clean = #RS`.
         have hsum :
-            (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card
-              + (Finset.filter (fun r : RS => j ∉ E r) Finset.univ).card = Fintype.card RS := by
+            (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card
+              + (Finset.filter (fun r : RS ↦ j ∉ E r) Finset.univ).card = Fintype.card RS := by
           simpa using
-            (Finset.card_filter_add_card_filter_not (p := fun r : RS => j ∈ E r)
+            (Finset.card_filter_add_card_filter_not (p := fun r : RS ↦ j ∈ E r)
               (s := (Finset.univ : Finset RS)))
         omega
       -- Double-count pairs `(r,j)` with `j ∈ E r`.
-      let pairs : Finset (Sigma fun _ : RS => ι) := (Finset.univ : Finset RS).sigma (fun r => E r)
+      let pairs : Finset (Sigma (fun _ : RS ↦ ι)) :=
+        (Finset.univ : Finset RS).sigma (fun r ↦ E r)
       have h_pairs_card : pairs.card = ∑ r : RS, (E r).card := by
         simp [pairs]
       have h_pairs_le : pairs.card ≤ Fintype.card RS * e := by
@@ -354,38 +357,38 @@ lemma e_le_dist_over_3_strong
         -- First, sum the per-coordinate lower bound.
         have hsum :
             D.card * (Fintype.card RS - 1)
-              ≤ ∑ j ∈ D, (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card := by
+              ≤ ∑ j ∈ D, (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card := by
           -- `∑_{j∈D} (cardRS-1) ≤ ∑_{j∈D} countErr j`
           have :
               ∑ j ∈ D, (Fintype.card RS - 1)
-                ≤ ∑ j ∈ D, (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card := by
+                ≤ ∑ j ∈ D, (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card := by
             refine Finset.sum_le_sum ?_
             intro j hj
             exact h_err_ge j hj
           simpa [Finset.sum_const, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
         -- Next, this sum is bounded by all pairs.
         have hsum_le :
-            (∑ j ∈ D, (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card) ≤
+            (∑ j ∈ D, (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card) ≤
               pairs.card := by
           -- Express `pairs.card` as a sum over second-coordinate fibers.
           have hmap :
-              (pairs : Set (Sigma fun _ : RS => ι)).MapsTo
-                (fun p : Sigma fun _ : RS => ι => p.2)
+              (pairs : Set (Sigma (fun _ : RS ↦ ι))).MapsTo
+                (fun p : Sigma (fun _ : RS ↦ ι) ↦ p.2)
                 (Finset.univ : Finset ι) := by
             intro p hp
             simp
           have hcard_fiber :=
             (Finset.card_eq_sum_card_fiberwise (s := pairs) (t := (Finset.univ : Finset ι))
-              (f := fun p : Sigma fun _ : RS => ι => p.2) hmap)
+              (f := fun p : Sigma (fun _ : RS ↦ ι) ↦ p.2) hmap)
           -- Identify each fiber cardinality with the corresponding filter count.
           have hfiber (j : ι) :
-              (Finset.filter (fun p : Sigma fun _ : RS => ι => p.2 = j) pairs).card =
-                (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card := by
-            let emb : RS ↪ Sigma fun _ : RS => ι :=
-              ⟨fun r => ⟨r, j⟩, by intro a b h; simpa using congrArg Sigma.fst h⟩
+              (Finset.filter (fun p : Sigma (fun _ : RS ↦ ι) ↦ p.2 = j) pairs).card =
+                (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card := by
+            let emb : RS ↪ Sigma (fun _ : RS ↦ ι) :=
+              ⟨fun r ↦ ⟨r, j⟩, by intro a b h; simpa using congrArg Sigma.fst h⟩
             have :
-                Finset.filter (fun p : Sigma fun _ : RS => ι => p.2 = j) pairs =
-                  (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).map emb := by
+                Finset.filter (fun p : Sigma (fun _ : RS ↦ ι) ↦ p.2 = j) pairs =
+                  (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).map emb := by
               ext p
               rcases p with ⟨r, i⟩
               have h :
@@ -401,14 +404,14 @@ lemma e_le_dist_over_3_strong
             simp [this]
           have hpairs_sum :
               pairs.card = ∑ j ∈ (Finset.univ : Finset ι),
-                (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card := by
+                (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card := by
             classical
             simpa [hfiber] using hcard_fiber
           -- Restricting the sum to `D` only decreases it.
           have :
-              (∑ j ∈ D, (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card)
+              (∑ j ∈ D, (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card)
                 ≤ ∑ j ∈ (Finset.univ : Finset ι),
-                    (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card := by
+                    (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card := by
             refine
               Finset.sum_le_sum_of_subset_of_nonneg (s := D) (t := (Finset.univ : Finset ι)) ?_ ?_
             · intro j hj
@@ -529,13 +532,13 @@ lemma dir_close_of_many_close_pts
       simpa [h3mul'] using hmul
     exact_mod_cast h'
   -- Convert the `closePtsOnAffineLine` count into a count of good scalars.
-  let P : F → Prop := fun r => Δ₀(u + r • v, C) ≤ e
+  let P : F → Prop := fun r ↦ Δ₀(u + r • v, C) ≤ e
   let R : Finset F := Finset.filter P Finset.univ
   have h_close_le_card : numberOfClosePts u v deg α e ≤ R.card := by
     -- Surjection from good `r` values onto close points on the line.
     let f : {r : F // P r} → closePtsOnAffineLine (F := F) (u := u) (v := v)
         (deg := deg) (α := α) (e := e) :=
-      fun r =>
+      fun r ↦
         ⟨u + r.1 • v,
           by
             refine ⟨?_, r.2⟩
@@ -550,7 +553,7 @@ lemma dir_close_of_many_close_pts
       refine ⟨⟨r, ?_⟩, ?_⟩
       · simpa [P, C, hr] using x.2.2
       · ext i
-        simpa [f] using congrArg (fun w => w i) hr.symm
+        simpa [f] using congrArg (fun w ↦ w i) hr.symm
     have h_close_card :
         Fintype.card
             (closePtsOnAffineLine (F := F) (u := u) (v := v) (deg := deg) (α := α) (e := e))
@@ -611,8 +614,8 @@ lemma dir_close_of_many_close_pts
       simpa [sub_mul] using hdiff'
     calc
       v j = (r1.1 - r0.1)⁻¹ * ((r1.1 - r0.1) * v j) := by simp [hr10]
-      _ = (r1.1 - r0.1)⁻¹ * (c r1 j - c r0 j) := by simp [hdiff]
-      _ = w j := by simp [w, Pi.smul_apply, Pi.sub_apply]
+      _   = (r1.1 - r0.1)⁻¹ * (c r1 j - c r0 j) := by simp [hdiff]
+      _   = w j := by simp [w, Pi.smul_apply, Pi.sub_apply]
   -- Define the base codeword so that `c r = cBase + r•w`.
   let cBase : ι → F := c r0 - r0.1 • w
   have hcBase_mem : cBase ∈ CRS := by
@@ -699,7 +702,7 @@ lemma dir_close_of_many_close_pts
         simpa [w0r, smul_smul, hneq] using hsmul
       ext i
       have hdiff_i : c r i - c r0 i = (r.1 - r0.1) * w i := by
-        have := congrArg (fun f => f i) hdiff
+        have := congrArg (fun f ↦ f i) hdiff
         simpa [Pi.sub_apply, Pi.smul_apply] using this
       have hcri : c r i = (r.1 - r0.1) * w i + c r0 i := (sub_eq_iff_eq_add).1 hdiff_i
       simp [hcri, cBase, Pi.add_apply, Pi.smul_apply, Pi.sub_apply]
@@ -711,15 +714,15 @@ lemma dir_close_of_many_close_pts
       simp [h_codeword_eq (r := r), Pi.add_apply, Pi.smul_apply]
     simpa [hc] using hu
   -- The global disagreement set where `u` or `v` fail to match `cBase`/`w`.
-  let D : Finset ι := Finset.filter (fun j => u j ≠ cBase j ∨ v j ≠ w j) Finset.univ
+  let D : Finset ι := Finset.filter (fun j ↦ u j ≠ cBase j ∨ v j ≠ w j) Finset.univ
   have hD_card : D.card ≤ e := by
     -- For `j ∈ D`, at most one good scalar can avoid `E r` at coordinate `j`.
     have h_err_ge (j : ι) (hj : j ∈ D) :
-        (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card ≥ Fintype.card RS - 1 := by
-      have hclean_le1 : (Finset.filter (fun r : RS => j ∉ E r) Finset.univ).card ≤ 1 := by
+        (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card ≥ Fintype.card RS - 1 := by
+      have hclean_le1 : (Finset.filter (fun r : RS ↦ j ∉ E r) Finset.univ).card ≤ 1 := by
         by_contra hgt
         have hone :
-            1 < (Finset.filter (fun r : RS => j ∉ E r) Finset.univ).card :=
+            1 < (Finset.filter (fun r : RS ↦ j ∉ E r) Finset.univ).card :=
           lt_of_not_ge hgt
         rcases Finset.one_lt_card.mp hone with ⟨r, hr, s, hs, hrs⟩
         have hr' : j ∉ E r := (Finset.mem_filter.mp hr).2
@@ -738,18 +741,18 @@ lemma dir_close_of_many_close_pts
           have hsj : u j + s.1 * v j = cBase j + s.1 * w j := by
             simpa [Pi.add_apply, Pi.smul_apply] using hs_eq
           have hrj' : u j - cBase j = r.1 * (w j - v j) := by
-            have h1 := congrArg (fun t => t - cBase j) hrj
+            have h1 := congrArg (fun t ↦ t - cBase j) hrj
             have h1' : u j + r.1 * v j - cBase j = r.1 * w j := by
               simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h1
-            have h2 := congrArg (fun t => t - r.1 * v j) h1'
+            have h2 := congrArg (fun t ↦ t - r.1 * v j) h1'
             have h2' : u j - cBase j = r.1 * w j - r.1 * v j := by
               simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h2
             simpa [mul_sub] using h2'
           have hsj' : u j - cBase j = s.1 * (w j - v j) := by
-            have h1 := congrArg (fun t => t - cBase j) hsj
+            have h1 := congrArg (fun t ↦ t - cBase j) hsj
             have h1' : u j + s.1 * v j - cBase j = s.1 * w j := by
               simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h1
-            have h2 := congrArg (fun t => t - s.1 * v j) h1'
+            have h2 := congrArg (fun t ↦ t - s.1 * v j) h1'
             have h2' : u j - cBase j = s.1 * w j - s.1 * v j := by
               simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h2
             simpa [mul_sub] using h2'
@@ -777,63 +780,66 @@ lemma dir_close_of_many_close_pts
         | inl hu_ne => exact (hu_ne hu_eq).elim
         | inr hv_ne => exact (hv_ne hvw).elim
       have hclean :
-          (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card =
-            Fintype.card RS - (Finset.filter (fun r : RS => j ∉ E r) Finset.univ).card := by
+          (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card =
+            Fintype.card RS - (Finset.filter (fun r : RS ↦ j ∉ E r) Finset.univ).card := by
         classical
-        set a : ℕ := (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card
-        set b : ℕ := (Finset.filter (fun r : RS => j ∉ E r) Finset.univ).card
+        set a : ℕ := (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card
+        set b : ℕ := (Finset.filter (fun r : RS ↦ j ∉ E r) Finset.univ).card
         have hpart : a + b = Fintype.card RS := by
           simpa [a, b, Finset.card_univ, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
             (Finset.card_filter_add_card_filter_not (s := (Finset.univ : Finset RS))
-              (p := fun r : RS => j ∈ E r))
+              (p := fun r : RS ↦ j ∈ E r))
         have hab : a = Fintype.card RS - b := by
           -- Subtract `b` from both sides of `hpart`.
-          have := congrArg (fun t => t - b) hpart
+          have := congrArg (fun t ↦ t - b) hpart
           simpa [Nat.add_sub_cancel] using this
         simpa [a, b] using hab
       have h_err :
-          (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card ≥ Fintype.card RS - 1 := by
+          (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card ≥ Fintype.card RS - 1 := by
         have hle := hclean_le1
-        have hsub : Fintype.card RS - (Finset.filter (fun r : RS => j ∉ E r) Finset.univ).card ≥
-            Fintype.card RS - 1 := by
-          have : (Finset.filter (fun r : RS => j ∉ E r) Finset.univ).card ≤ 1 := hle
+        have hsub :
+            Fintype.card RS - (Finset.filter (fun r : RS ↦ j ∉ E r) Finset.univ).card ≥
+              Fintype.card RS - 1 := by
+          have : (Finset.filter (fun r : RS ↦ j ∉ E r) Finset.univ).card ≤ 1 := hle
           exact Nat.sub_le_sub_left this _
         simpa [hclean] using hsub
       exact h_err
     have h_pairs_le :
-        (∑ j ∈ D, (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card) ≤
+        (∑ j ∈ D, (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card) ≤
           Fintype.card RS * e := by
       -- Each `E r` has size `≤ e`, so sum over `r` bounds the total incidence count.
       have h_pairs_le' :
           (∑ j ∈ (Finset.univ : Finset ι),
-                (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card) ≤
+                (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card) ≤
             Fintype.card RS * e := by
         classical
         -- Count pairs `(r,j)` with `j ∈ E r` in two ways.
-        let pairs : Finset (Sigma fun _ : RS => ι) :=
-          Finset.filter (fun p : Sigma fun _ : RS => ι => p.2 ∈ E p.1) Finset.univ
+        let pairs : Finset (Sigma (fun _ : RS ↦ ι)) :=
+          Finset.filter (fun p : Sigma (fun _ : RS ↦ ι) ↦ p.2 ∈ E p.1) Finset.univ
         have h_pairs_ge :
             pairs.card =
               ∑ j ∈ (Finset.univ : Finset ι),
-                (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card := by
+                (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card := by
           classical
           -- Use fiberwise counting on `p ↦ p.2`.
-          let f : (Sigma fun _ : RS => ι) → ι := fun p => p.2
-          have hf : (pairs : Set (Sigma fun _ : RS => ι)).MapsTo f (Finset.univ : Finset ι) := by
+          let f : (Sigma (fun _ : RS ↦ ι)) → ι := fun p ↦ p.2
+          have hf :
+              (pairs : Set (Sigma (fun _ : RS ↦ ι))).MapsTo f
+                (Finset.univ : Finset ι) := by
             intro _ _; simp
           have hcard_fiber := Finset.card_eq_sum_card_fiberwise (f := f) (s := pairs)
             (t := (Finset.univ : Finset ι)) hf
           have hfiber (j : ι) :
               {p ∈ pairs | f p = j}.card =
-                (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card := by
+                (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card := by
             classical
-            let emb : RS ↪ Sigma fun _ : RS => ι :=
-              ⟨fun r => ⟨r, j⟩, by
+            let emb : RS ↪ Sigma (fun _ : RS ↦ ι) :=
+              ⟨fun r ↦ ⟨r, j⟩, by
                 intro a b h
                 simpa using congrArg Sigma.fst h⟩
             have :
-                Finset.filter (fun p : Sigma fun _ : RS => ι => p.2 = j) pairs =
-                  (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).map emb := by
+                Finset.filter (fun p : Sigma (fun _ : RS ↦ ι) ↦ p.2 = j) pairs =
+                  (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).map emb := by
               ext p
               rcases p with ⟨r, i⟩
               have h :
@@ -848,13 +854,13 @@ lemma dir_close_of_many_close_pts
               simp [pairs, emb, h]
             have hmap :
                 {p ∈ pairs | f p = j} =
-                  Finset.filter (fun p : Sigma fun _ : RS => ι => p.2 = j) pairs := by
+                  Finset.filter (fun p : Sigma (fun _ : RS ↦ ι) ↦ p.2 = j) pairs := by
               ext p
               simp [f]
             simp [hmap, this]
           have hpairs_sum :
               pairs.card = ∑ j ∈ (Finset.univ : Finset ι),
-                (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card := by
+                (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card := by
             classical
             simpa [hfiber] using hcard_fiber
           simp [hpairs_sum]
@@ -863,20 +869,22 @@ lemma dir_close_of_many_close_pts
             pairs.card ≤ ∑ r : RS, (E r).card := by
           classical
           -- Fiberwise count on `p ↦ p.1`.
-          let g : (Sigma fun _ : RS => ι) → RS := fun p => p.1
-          have hg : (pairs : Set (Sigma fun _ : RS => ι)).MapsTo g (Finset.univ : Finset RS) := by
+          let g : (Sigma (fun _ : RS ↦ ι)) → RS := fun p ↦ p.1
+          have hg :
+              (pairs : Set (Sigma (fun _ : RS ↦ ι))).MapsTo g
+                (Finset.univ : Finset RS) := by
             intro _ _; simp
           have hcard_fiber := Finset.card_eq_sum_card_fiberwise (f := g) (s := pairs)
             (t := (Finset.univ : Finset RS)) hg
           have hfiber (r : RS) :
               {p ∈ pairs | g p = r}.card = (E r).card := by
             classical
-            let emb : ι ↪ Sigma fun _ : RS => ι :=
-              ⟨fun j => ⟨r, j⟩, by
+            let emb : ι ↪ Sigma (fun _ : RS ↦ ι) :=
+              ⟨fun j ↦ ⟨r, j⟩, by
                 intro a b h
                 simpa using congrArg Sigma.snd h⟩
             have :
-                Finset.filter (fun p : Sigma fun _ : RS => ι => p.1 = r) pairs =
+                Finset.filter (fun p : Sigma (fun _ : RS ↦ ι) ↦ p.1 = r) pairs =
                   (E r).map emb := by
               ext p
               rcases p with ⟨r', i⟩
@@ -894,7 +902,7 @@ lemma dir_close_of_many_close_pts
                   exact hrr this.symm
             have hmap :
                 {p ∈ pairs | g p = r} =
-                  Finset.filter (fun p : Sigma fun _ : RS => ι => p.1 = r) pairs := by
+                  Finset.filter (fun p : Sigma (fun _ : RS ↦ ι) ↦ p.1 = r) pairs := by
               ext p
               simp [g]
             simp [hmap, this]
@@ -907,7 +915,7 @@ lemma dir_close_of_many_close_pts
           simp [hpairs_sum]
         have hsumE : (∑ r : RS, (E r).card) ≤ Fintype.card RS * e := by
           classical
-          have : ∀ r : RS, (E r).card ≤ e := fun r => hE_card r
+          have : ∀ r : RS, (E r).card ≤ e := fun r ↦ hE_card r
           calc
             (∑ r : RS, (E r).card) ≤ ∑ r : RS, e := by
               exact Finset.sum_le_sum (by intro r _; exact this r)
@@ -918,9 +926,9 @@ lemma dir_close_of_many_close_pts
         simpa [h_pairs_ge] using hpairs_le
       -- Restricting the sum to `D` only decreases it.
       have hsum_le :
-          (∑ j ∈ D, (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card)
+          (∑ j ∈ D, (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card)
             ≤ ∑ j ∈ (Finset.univ : Finset ι),
-              (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card := by
+              (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card := by
         refine
           Finset.sum_le_sum_of_subset_of_nonneg (s := D) (t := (Finset.univ : Finset ι)) ?_ ?_
         · intro j hj
@@ -929,13 +937,13 @@ lemma dir_close_of_many_close_pts
           exact Nat.zero_le _
       exact le_trans hsum_le h_pairs_le'
     have h_pairs_ge :
-        (∑ j ∈ D, (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card) ≥
+        (∑ j ∈ D, (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card) ≥
           D.card * (Fintype.card RS - 1) := by
       classical
       -- Each term is at least `card RS - 1`.
       have hterm : ∀ j ∈ D,
-          (Fintype.card RS - 1) ≤ (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card :=
-        fun j hj => by simpa using (h_err_ge j hj)
+          (Fintype.card RS - 1) ≤ (Finset.filter (fun r : RS ↦ j ∈ E r) Finset.univ).card :=
+        fun j hj ↦ by simpa using (h_err_ge j hj)
       have := Finset.sum_le_sum hterm
       -- Rewrite the LHS as `D.card * (card RS - 1)`.
       simpa [Finset.sum_const_nat, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
@@ -991,6 +999,8 @@ lemma dir_close_of_many_close_pts
         exact_mod_cast le_trans hdist_vw hD_card)
   simpa [CRS] using this
 
+/-- If every point on a nondegenerate affine line is close and the field is larger than the
+Reed-Solomon minimum distance, then the line cannot have only few close points. -/
 private lemma all_close_not_few_close_pts
     {deg : ℕ}
     {α : ι ↪ F} {e : ℕ} {u v : ι → F}
@@ -1010,7 +1020,7 @@ private lemma all_close_not_few_close_pts
     rcases hex with ⟨j, hj⟩
     let g : F → closePtsOnAffineLine (F := F) (u := u) (v := v)
         (deg := deg) (α := α) (e := e) :=
-      fun r =>
+      fun r ↦
         ⟨u + r • v,
           by
             refine ⟨?_, ?_⟩
@@ -1025,7 +1035,7 @@ private lemma all_close_not_few_close_pts
       intro r₁ r₂ hr
       have hval : u + r₁ • v = u + r₂ • v := congrArg Subtype.val hr
       have hmul : r₁ * v j = r₂ * v j := by
-        have := congrArg (fun f : ι → F => f j) hval
+        have := congrArg (fun f : ι → F ↦ f j) hval
         simpa [Pi.add_apply, Pi.smul_apply] using add_left_cancel this
       exact mul_right_cancel₀ hj hmul
     have hnat :
@@ -1076,7 +1086,7 @@ lemma e_le_dist_over_3
       ⟨h_all,
         all_close_not_few_close_pts (F := F) (ι := ι) (hv := hv) (hFd := hFd) h_all⟩
   · exact Or.inr
-      ⟨h_few, fun h_all =>
+      ⟨h_few, fun h_all ↦
         all_close_not_few_close_pts (F := F) (ι := ι) (hv := hv) (hFd := hFd) h_all
           h_few⟩
 
@@ -1170,7 +1180,7 @@ lemma prob_of_bad_pts
   -- Partition `S` into cosets of the 1D submodule `V = span{vDir}`.
   let V : Submodule F S := Submodule.span F ({vDir} : Set S)
   let Q : Type := S ⧸ V
-  let π : S → Q := fun w => V.mkQ w
+  let π : S → Q := fun w ↦ V.mkQ w
   have hπ_surj : Function.Surjective π := by
     intro q
     rcases V.mkQ_surjective q with ⟨w, hw⟩
@@ -1181,7 +1191,7 @@ lemma prob_of_bad_pts
     classical
     -- `r ↦ r • vDir` is a bijection `F ≃ V` because `vDir ≠ 0`.
     let g : F → V :=
-      fun r =>
+      fun r ↦
         ⟨r • vDir,
           Submodule.smul_mem V r (Submodule.subset_span (by simp))⟩
     have hg_surj : Function.Surjective g := by
@@ -1210,7 +1220,7 @@ lemma prob_of_bad_pts
       have : (r₁ - r₂) = 0 := by
         have hcoord :
             ((r₁ - r₂) • (vDir : S) : ι → F) j = ((0 : S) : ι → F) j := by
-          simpa using congrArg (fun f : S => (f : ι → F) j) hsub
+          simpa using congrArg (fun f : S ↦ (f : ι → F) j) hsub
         have hmul0 : (r₁ - r₂) * (vDir : ι → F) j = 0 := by
           simpa [Pi.smul_apply] using hcoord
         have hmul' : (r₁ - r₂) * (vDir : ι → F) j = 0 * (vDir : ι → F) j := by
@@ -1223,34 +1233,34 @@ lemma prob_of_bad_pts
   have hcardS : Fintype.card S = Fintype.card V * Fintype.card Q := by
     simpa [Q] using (Submodule.card_eq_card_quotient_mul_card (S := V) (M := S) (R := F))
   -- Count bad points fiberwise over the quotient map `π`.
-  let Pbad : S → Prop := fun w => Δ₀((w : ι → F), RS) ≤ e
+  let Pbad : S → Prop := fun w ↦ Δ₀((w : ι → F), RS) ≤ e
   let bad : Finset S := Finset.filter Pbad Finset.univ
   have hbad_sum :
       bad.card =
-        ∑ q ∈ (Finset.univ : Finset Q), (Finset.filter (fun w : S => π w = q) bad).card := by
+        ∑ q ∈ (Finset.univ : Finset Q), (Finset.filter (fun w : S ↦ π w = q) bad).card := by
     classical
     have hmaps : (bad : Set S).MapsTo π (Finset.univ : Finset Q) := by
       intro _ _
       simp
     simpa using
       (Finset.card_eq_sum_card_fiberwise (f := π) (s := bad) (t := (Finset.univ : Finset Q)) hmaps)
-  have hfiber_le : ∀ q : Q, (Finset.filter (fun w : S => π w = q) bad).card ≤ d := by
+  have hfiber_le : ∀ q : Q, (Finset.filter (fun w : S ↦ π w = q) bad).card ≤ d := by
     intro q
     -- Compare the fiber to close points on the affine line through `rep q` in direction `v_star`.
     let u0 : ι → F := (rep q : S)
     have hu0 : π (rep q) = q := hrep q
     have hclose_le :
-        (Finset.filter (fun w : S => π w = q) bad).card ≤
+        (Finset.filter (fun w : S ↦ π w = q) bad).card ≤
           numberOfClosePts (F := F) (ι := ι) u0 v_star deg α e := by
       -- Inject the fiber into `closePtsOnAffineLine`.
       let fiber : Type := {w : S // Pbad w ∧ π w = q}
       have hfiber_card :
-          (Finset.filter (fun w : S => π w = q) bad).card = Fintype.card fiber := by
+          (Finset.filter (fun w : S ↦ π w = q) bad).card = Fintype.card fiber := by
         classical
         -- Turn nested filters into one filter on `Finset.univ`.
         have hfilter :
-            Finset.filter (fun w : S => π w = q) bad =
-              Finset.filter (fun w : S => Pbad w ∧ π w = q) Finset.univ := by
+            Finset.filter (fun w : S ↦ π w = q) bad =
+              Finset.filter (fun w : S ↦ Pbad w ∧ π w = q) Finset.univ := by
           ext w
           constructor
           · intro hw
@@ -1270,13 +1280,13 @@ lemma prob_of_bad_pts
             exact ⟨by simp, hw_Pbad⟩
         rw [hfilter]
         simpa [fiber] using
-          (Fintype.card_subtype (α := S) (p := fun w : S => Pbad w ∧ π w = q)).symm
+          (Fintype.card_subtype (α := S) (p := fun w : S ↦ Pbad w ∧ π w = q)).symm
       have hcard_le_nat :
           Fintype.card fiber ≤ numberOfClosePts (F := F) (ι := ι) u0 v_star deg α e := by
         -- Use `Nat.card` to avoid choosing a `Fintype` instance for the close-point set.
         let f : fiber → closePtsOnAffineLine (F := F) (u := u0) (v := v_star)
             (deg := deg) (α := α) (e := e) :=
-          fun w =>
+          fun w ↦
             ⟨(w.1 : ι → F),
               by
                 refine ⟨?_, ?_⟩
@@ -1301,7 +1311,7 @@ lemma prob_of_bad_pts
                     simpa [add_comm, add_left_comm, add_assoc] using hw1'
                   -- Coerce the equality in `S` to an equality in `ι → F`.
                   ext i
-                  have := congrArg (fun x : S => (x : ι → F) i) hw1
+                  have := congrArg (fun x : S ↦ (x : ι → F) i) hw1
                   simpa [u0, vDir, Pi.add_apply, Pi.smul_apply] using this
                 · -- closeness to the code.
                   simpa [Pbad, RS] using w.2.1⟩
@@ -1312,7 +1322,7 @@ lemma prob_of_bad_pts
           exact congrArg
             (fun x :
                 closePtsOnAffineLine (F := F) (u := u0) (v := v_star) (deg := deg) (α := α)
-                  (e := e) =>
+                  (e := e) ↦
               (x : ι → F))
             hab
         have hnat :
@@ -1358,7 +1368,7 @@ lemma prob_of_bad_pts
           rcases hex with ⟨j, hj⟩
           let g : F → closePtsOnAffineLine (F := F) (u := u0) (v := v_star)
               (deg := deg) (α := α) (e := e) :=
-            fun r =>
+            fun r ↦
               ⟨u0 + r • v_star,
                 by
                   refine ⟨?_, ?_⟩
@@ -1375,7 +1385,7 @@ lemma prob_of_bad_pts
             intro r₁ r₂ hr
             have hval : u0 + r₁ • v_star = u0 + r₂ • v_star := congrArg Subtype.val hr
             have hmul : r₁ * v_star j = r₂ * v_star j := by
-              have := congrArg (fun f : ι → F => f j) hval
+              have := congrArg (fun f : ι → F ↦ f j) hval
               simpa [Pi.add_apply, Pi.smul_apply] using add_left_cancel this
             exact mul_right_cancel₀ hj hmul
           have hnat :
@@ -1415,7 +1425,7 @@ lemma prob_of_bad_pts
         calc
           bad.card =
               ∑ q ∈ (Finset.univ : Finset Q),
-                (Finset.filter (fun w : S => π w = q) bad).card := by
+                (Finset.filter (fun w : S ↦ π w = q) bad).card := by
             exact hbad_sum
           _ ≤ ∑ q ∈ (Finset.univ : Finset Q), d := by
             refine Finset.sum_le_sum ?_
