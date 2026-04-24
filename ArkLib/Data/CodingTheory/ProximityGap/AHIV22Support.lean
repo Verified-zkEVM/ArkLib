@@ -1,7 +1,8 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Katerina Hristova, František Silváši, Chung Thai Nguyen, Elias Judin, Aristotle (Harmonic)
+Authors: Katerina Hristova, František Silváši, Chung Thai Nguyen, Elias Judin,
+  Aristotle (Harmonic)
 -/
 
 import ArkLib.Data.CodingTheory.InterleavedCode
@@ -37,7 +38,8 @@ private def vecSupport (u : ι → F) : Finset ι :=
   Finset.filter (fun j => u j ≠ 0) Finset.univ
 
 omit [Finite F] in
-private lemma mem_vecSupport {u : ι → F} {j : ι} : j ∈ vecSupport (F := F) u ↔ u j ≠ 0 := by
+private lemma mem_vecSupport {u : ι → F} {j : ι} :
+    j ∈ vecSupport (F := F) u ↔ u j ≠ 0 := by
   simp [vecSupport]
 
 omit [Finite F] in
@@ -51,8 +53,11 @@ private lemma vecSupport_sub (u v : ι → F) :
   ext j
   simp [vecSupport, Pi.sub_apply, sub_ne_zero]
 
-lemma hammingDist_le_of_subset_disagree
-    {α : Type*} [DecidableEq α] {u v : ι → α} (D : Finset ι) (hD : ∀ j, u j ≠ v j → j ∈ D) :
+/-- If every coordinate where two words disagree lies in `D`, then their Hamming distance is at
+most `D.card`. -/
+lemma hamming_dist_le_of_subset_disagree
+    {α : Type*} [DecidableEq α] {u v : ι → α}
+    (D : Finset ι) (hD : ∀ j, u j ≠ v j → j ∈ D) :
     Δ₀(u, v) ≤ D.card := by
   classical
   unfold hammingDist
@@ -62,6 +67,8 @@ lemma hammingDist_le_of_subset_disagree
     simpa [Finset.mem_filter] using hj
   exact hD j this
 
+/-- A finite-dimensional submodule whose vectors all have support size at most `e` over a field
+with more than `e` elements has a common support of size at most `e`. -/
 private lemma exists_common_support_of_wt_le
     (E : Submodule F (ι → F)) (e : ℕ)
     (hE : ∀ x : E, (vecSupport (F := F) (x : ι → F)).card ≤ e)
@@ -194,7 +201,8 @@ private lemma exists_common_support_of_wt_le
       refine ⟨hD_subset, ?_⟩
       intro hSubset
       exact hi_not_mem_D (hSubset hi_mem)
-    have hx0_ge : (vecSupport (F := F) ((x0 : ι → F) + a • (x : ι → F))).card ≤ D.card := by
+    have hx0_ge :
+        (vecSupport (F := F) ((x0 : ι → F) + a • (x : ι → F))).card ≤ D.card := by
       have hx_in : x0 + a • x ∈ (Finset.univ : Finset E) := by simp
       simpa [D, f] using hx0_max (x0 + a • x)
     exact (not_lt_of_ge hx0_ge) hlt
@@ -207,7 +215,7 @@ row-span of `U⋆` contains a word more than `e` far from `L`.
 The additional field-size assumption `|F| > e` is needed: for small fields one can have a linear
 subspace of `F^ι` consisting entirely of `e`-sparse vectors whose supports are not aligned, making
 `⋈|U⋆` column-wise far while every row-span vector stays `e`-close. -/
-lemma distInterleavedCodeToCodeLB
+lemma dist_interleaved_code_to_code_lb
     {L : LinearCode ι F} {U_star : WordStack (A := F) κ ι}
     {e : ℕ}
     (hF : Fintype.card F > e)
@@ -221,13 +229,16 @@ lemma distInterleavedCodeToCodeLB
       have hmul := mul_lt_mul_of_pos_left he h3pos
       have h3ne : (3 : ℚ≥0) ≠ 0 := by norm_num
       have h3mul :
-          (3 : ℚ≥0) * (‖(L : Set (ι → F))‖₀ : ℚ≥0) / 3 = ‖(L : Set (ι → F))‖₀ := by
+          (3 : ℚ≥0) * (‖(L : Set (ι → F))‖₀ : ℚ≥0) / 3 =
+            ‖(L : Set (ι → F))‖₀ := by
         simp [h3ne]
       have : (3 : ℚ≥0) * (‖(L : Set (ι → F))‖₀ : ℚ≥0) / 3 =
           (3 : ℚ≥0) * ((‖(L : Set (ι → F))‖₀ : ℚ≥0) / 3) := by
         simpa [mul_div_assoc] using
           (mul_div_assoc (3 : ℚ≥0) (‖(L : Set (ι → F))‖₀ : ℚ≥0) (3 : ℚ≥0))
-      have h3mul' : (3 : ℚ≥0) * ((‖(L : Set (ι → F))‖₀ : ℚ≥0) / 3) = ‖(L : Set (ι → F))‖₀ := by
+      have h3mul' :
+          (3 : ℚ≥0) * ((‖(L : Set (ι → F))‖₀ : ℚ≥0) / 3) =
+            ‖(L : Set (ι → F))‖₀ := by
         simpa [this] using h3mul
       simpa [h3mul'] using hmul
     exact_mod_cast h'
@@ -240,8 +251,8 @@ lemma distInterleavedCodeToCodeLB
   have h_exists_codeword (v : Matrix.rowSpan U_star) :
       ∃ c ∈ (L : Set (ι → F)), Δ₀((v : ι → F), c) ≤ e := by
     simpa using
-      (Code.closeToCode_iff_closeToCodeword_of_minDist (u := (v : ι → F)) (C := (L : Set (ι → F)))
-        (e := e)).1 (h_close v)
+      (Code.closeToCode_iff_closeToCodeword_of_minDist (u := (v : ι → F))
+        (C := (L : Set (ι → F))) (e := e)).1 (h_close v)
   choose dec hdec_mem hdec_dist using h_exists_codeword
   have hdec_add (v w : Matrix.rowSpan U_star) : dec (v + w) = dec v + dec w := by
     apply Code.eq_of_lt_dist (C := (L : Set (ι → F)))
@@ -283,7 +294,8 @@ lemma distInterleavedCodeToCodeLB
           Δ₀(dec (v + w), dec v + dec w)
               ≤ Δ₀(dec (v + w), (v + w : ι → F))
                 + Δ₀((v + w : ι → F), dec v + dec w) := by
-                  exact hammingDist_triangle (dec (v + w)) (v + w : ι → F) (dec v + dec w)
+                  exact
+                    hammingDist_triangle (dec (v + w)) (v + w : ι → F) (dec v + dec w)
           _ ≤ e + 2 * e := Nat.add_le_add h1 h2
           _ = 3 * e := by ring
       exact lt_of_le_of_lt h3 h3e_lt_d
@@ -299,7 +311,8 @@ lemma distInterleavedCodeToCodeLB
       have h3 : Δ₀(dec (a • v), a • dec v) ≤ 2 * e := by
         calc
           Δ₀(dec (a • v), a • dec v)
-              ≤ Δ₀(dec (a • v), (a • v : ι → F)) + Δ₀((a • v : ι → F), a • dec v) := by
+              ≤ Δ₀(dec (a • v), (a • v : ι → F))
+                  + Δ₀((a • v : ι → F), a • dec v) := by
                 exact hammingDist_triangle (dec (a • v)) (a • v : ι → F) (a • dec v)
           _ ≤ e + e := Nat.add_le_add h1 h2
           _ = 2 * e := by ring
@@ -338,8 +351,10 @@ lemma distInterleavedCodeToCodeLB
       simpa [err, decLin, V, Pi.sub_apply] using hz
     exact sub_eq_zero.mp this
   have hUV_le : Δ₀(⋈|U_star, ⋈|V) ≤ e := by
-    refine le_trans (hammingDist_le_of_subset_disagree (ι := ι) (u := (⋈|U_star)) (v := (⋈|V))
-      (D := D) ?_) hD_card
+    refine le_trans
+      (hamming_dist_le_of_subset_disagree (ι := ι) (u := (⋈|U_star)) (v := (⋈|V))
+        (D := D) ?_)
+      hD_card
     intro j hj
     by_contra hjD
     apply hj
@@ -347,8 +362,10 @@ lemma distInterleavedCodeToCodeLB
     have := h_dist_rows k j hjD
     simpa [V] using this
   have h_dist_to_code : Δ₀(⋈|U_star, (L^⋈κ)) ≤ e := by
-    exact le_trans (Code.distFromCode_le_dist_to_mem (C := (L^⋈κ)) (u := (⋈|U_star)) (v := (⋈|V))
-      hV_mem) (by exact_mod_cast hUV_le)
+    exact le_trans
+      (Code.distFromCode_le_dist_to_mem (C := (L^⋈κ)) (u := (⋈|U_star)) (v := (⋈|V))
+        hV_mem)
+      (by exact_mod_cast hUV_le)
   exact (not_lt_of_ge h_dist_to_code) hU
 
 namespace ProximityToRS
@@ -375,7 +392,9 @@ def numberOfClosePts (u v : ι → F) (deg : ℕ) (α : ι ↪ F) (e : ℕ) : �
     Fintype.card
       (closePtsOnAffineLine (F := F) (u := u) (v := v) (deg := deg) (α := α) (e := e))
 
-lemma numberOfClosePts_eq_natCard (u v : ι → F) (deg : ℕ) (α : ι ↪ F) (e : ℕ) :
+/-- The explicit finite-cardinality definition of `numberOfClosePts` agrees with `Nat.card` of
+the corresponding close-point subtype. -/
+lemma number_of_close_pts_eq_nat_card (u v : ι → F) (deg : ℕ) (α : ι ↪ F) (e : ℕ) :
     numberOfClosePts (F := F) (ι := ι) u v deg α e =
       Nat.card
         (closePtsOnAffineLine (F := F) (u := u) (v := v) (deg := deg) (α := α) (e := e)) := by

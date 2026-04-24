@@ -1,7 +1,8 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Katerina Hristova, František Silváši, Chung Thai Nguyen, Elias Judin, Aristotle (Harmonic)
+Authors: Katerina Hristova, František Silváši, Chung Thai Nguyen, Elias Judin,
+  Aristotle (Harmonic)
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGap.AHIV22Support
@@ -32,14 +33,14 @@ local instance : Fintype F := Fintype.ofFinite F
 namespace ProximityToRS
 open ReedSolomon NNReal
 
--- We first prove the distance-bound form `e_leq_dist_over_3_strong` and then derive the
--- mutual-exclusion corollary `e_leq_dist_over_3` from it.
+-- We first prove the distance-bound form `e_le_dist_over_3_strong` and then derive the
+-- mutual-exclusion corollary `e_le_dist_over_3` from it.
 /-- **Lemma 4.4, [AHIV22] (strong form).**
 
 Either all points on the affine line are `e`-close to the Reed–Solomon code, or at most
 `‖RS‖₀` points are.
 -/
-lemma e_leq_dist_over_3_strong
+lemma e_le_dist_over_3_strong
     {deg : ℕ}
     {α : ι ↪ F} {e : ℕ} {u v : ι → F}
     (he : (e : ℚ≥0) < ‖(RScodeSet α deg)‖₀ / 3) :
@@ -192,7 +193,7 @@ lemma e_leq_dist_over_3_strong
           · exact hw_mem
           · have hdist :
                 Δ₀(w0r, w) ≤ (E r0 ∪ E r1 ∪ E r).card := by
-              refine hammingDist_le_of_subset_disagree (ι := ι) (u := w0r) (v := w)
+              refine hamming_dist_le_of_subset_disagree (ι := ι) (u := w0r) (v := w)
                 (D := E r0 ∪ E r1 ∪ E r) ?_
               intro i hi
               by_contra hiU
@@ -364,7 +365,8 @@ lemma e_leq_dist_over_3_strong
           simpa [Finset.sum_const, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this
         -- Next, this sum is bounded by all pairs.
         have hsum_le :
-            (∑ j ∈ D, (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card) ≤ pairs.card := by
+            (∑ j ∈ D, (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card) ≤
+              pairs.card := by
           -- Express `pairs.card` as a sum over second-coordinate fibers.
           have hmap :
               (pairs : Set (Sigma fun _ : RS => ι)).MapsTo
@@ -465,7 +467,8 @@ lemma e_leq_dist_over_3_strong
         Submodule.add_mem CRS hcBase_mem (Submodule.smul_mem CRS _ hw_mem)
       have hdist :
           Δ₀(u + r • v, cBase + r • w) ≤ D.card := by
-        refine hammingDist_le_of_subset_disagree (ι := ι) (u := u + r • v) (v := cBase + r • w)
+        refine hamming_dist_le_of_subset_disagree (ι := ι) (u := u + r • v)
+          (v := cBase + r • w)
           (D := D) ?_
         intro j hj
         by_contra hjD
@@ -495,9 +498,9 @@ lemma e_leq_dist_over_3_strong
     -- Contradiction with `h_all`.
     exact h_all (by simpa [C] using hall)
 
-/-- If an affine line has too many `e`-close points to the Reed–Solomon code, then its direction is
-itself `e`-close to the code. -/
-lemma dirClose_of_manyClosePts
+/-- If an affine line has too many `e`-close points to the Reed–Solomon code, then its direction
+is itself `e`-close to the code. -/
+lemma dir_close_of_many_close_pts
     {deg : ℕ}
     {α : ι ↪ F} {e : ℕ} {u v : ι → F}
     (he : (e : ℚ≥0) < ‖(RScodeSet α deg)‖₀ / 3)
@@ -511,11 +514,14 @@ lemma dirClose_of_manyClosePts
     have h3pos : (0 : ℚ≥0) < 3 := by norm_num
     have h' : (3 : ℚ≥0) * (e : ℚ≥0) < (‖C‖₀ : ℚ≥0) := by
       have hmul0 := mul_lt_mul_of_pos_left (by simpa [C, CRS, RScodeSet] using he) h3pos
-      have hmul : (3 : ℚ≥0) * (e : ℚ≥0) < (3 : ℚ≥0) * ((‖C‖₀ : ℚ≥0) / 3) := by
+      have hmul :
+          (3 : ℚ≥0) * (e : ℚ≥0) < (3 : ℚ≥0) * ((‖C‖₀ : ℚ≥0) / 3) := by
         simpa [mul_assoc] using hmul0
       have h3ne : (3 : ℚ≥0) ≠ 0 := by norm_num
       have h3mul : (3 : ℚ≥0) * (‖C‖₀ : ℚ≥0) / 3 = ‖C‖₀ := by simp [h3ne]
-      have : (3 : ℚ≥0) * (‖C‖₀ : ℚ≥0) / 3 = (3 : ℚ≥0) * ((‖C‖₀ : ℚ≥0) / 3) := by
+      have :
+          (3 : ℚ≥0) * (‖C‖₀ : ℚ≥0) / 3 =
+            (3 : ℚ≥0) * ((‖C‖₀ : ℚ≥0) / 3) := by
         simpa [mul_div_assoc] using
           (mul_div_assoc (3 : ℚ≥0) (‖C‖₀ : ℚ≥0) (3 : ℚ≥0))
       have h3mul' : (3 : ℚ≥0) * ((‖C‖₀ : ℚ≥0) / 3) = ‖C‖₀ := by
@@ -632,7 +638,7 @@ lemma dirClose_of_manyClosePts
         · exact hw0r_mem
         · exact hw_mem
         · have hdist : Δ₀(w0r, w) ≤ (E r0 ∪ E r1 ∪ E r).card := by
-            refine hammingDist_le_of_subset_disagree (ι := ι) (u := w0r) (v := w)
+            refine hamming_dist_le_of_subset_disagree (ι := ι) (u := w0r) (v := w)
               (D := E r0 ∪ E r1 ∪ E r) ?_
             intro i hi
             by_contra hiU
@@ -666,10 +672,14 @@ lemma dirClose_of_manyClosePts
                 _ = w0r i := by simp [w0r, Pi.smul_apply, Pi.sub_apply]
             exact hi (hv0r.symm.trans hvw)
           have hcard_le : (E r0 ∪ E r1 ∪ E r).card ≤ 3 * e := by
-            have h01 : (E r0 ∪ E r1).card ≤ (E r0).card + (E r1).card := Finset.card_union_le _ _
+            have h01 :
+                (E r0 ∪ E r1).card ≤ (E r0).card + (E r1).card :=
+              Finset.card_union_le _ _
             have hUnion : (E r0 ∪ E r1 ∪ E r).card ≤ (E r0 ∪ E r1).card + (E r).card :=
               Finset.card_union_le _ _
-            have hUnion' : (E r0 ∪ E r1 ∪ E r).card ≤ (E r0).card + (E r1).card + (E r).card := by
+            have hUnion' :
+                (E r0 ∪ E r1 ∪ E r).card ≤
+                  (E r0).card + (E r1).card + (E r).card := by
               calc
                 (E r0 ∪ E r1 ∪ E r).card ≤ (E r0 ∪ E r1).card + (E r).card := hUnion
                 _ ≤ ((E r0).card + (E r1).card) + (E r).card := Nat.add_le_add_right h01 _
@@ -708,7 +718,9 @@ lemma dirClose_of_manyClosePts
         (Finset.filter (fun r : RS => j ∈ E r) Finset.univ).card ≥ Fintype.card RS - 1 := by
       have hclean_le1 : (Finset.filter (fun r : RS => j ∉ E r) Finset.univ).card ≤ 1 := by
         by_contra hgt
-        have hone : 1 < (Finset.filter (fun r : RS => j ∉ E r) Finset.univ).card := lt_of_not_ge hgt
+        have hone :
+            1 < (Finset.filter (fun r : RS => j ∉ E r) Finset.univ).card :=
+          lt_of_not_ge hgt
         rcases Finset.one_lt_card.mp hone with ⟨r, hr, s, hs, hrs⟩
         have hr' : j ∉ E r := (Finset.mem_filter.mp hr).2
         have hs' : j ∉ E s := (Finset.mem_filter.mp hs).2
@@ -967,7 +979,7 @@ lemma dirClose_of_manyClosePts
     exact (not_lt_of_ge hle) hmul_lt
   -- Use `D` to show the direction is `e`-close to a codeword.
   have hdist_vw : Δ₀(v, w) ≤ D.card := by
-    refine hammingDist_le_of_subset_disagree (ι := ι) (u := v) (v := w) (D := D) ?_
+    refine hamming_dist_le_of_subset_disagree (ι := ι) (u := v) (v := w) (D := D) ?_
     intro j hj
     exact Finset.mem_filter.mpr ⟨Finset.mem_univ j, Or.inr hj⟩
   have hmem : w ∈ CRS := hw_mem
@@ -979,12 +991,13 @@ lemma dirClose_of_manyClosePts
         exact_mod_cast le_trans hdist_vw hD_card)
   simpa [CRS] using this
 
-private lemma allClose_not_fewClosePts
+private lemma all_close_not_few_close_pts
     {deg : ℕ}
     {α : ι ↪ F} {e : ℕ} {u v : ι → F}
     (hv : v ≠ 0)
     (hFd : ‖(RScodeSet α deg)‖₀ < Fintype.card F)
-    (h_all : ∀ x ∈ Affine.affineLineAtOrigin (F := F) u v, Δ₀(x, ReedSolomon.code α deg) ≤ e) :
+    (h_all :
+      ∀ x ∈ Affine.affineLineAtOrigin (F := F) u v, Δ₀(x, ReedSolomon.code α deg) ≤ e) :
     ¬numberOfClosePts u v deg α e ≤ ‖(RScodeSet α deg)‖₀ := by
   intro h_few
   have hnum_ge : Fintype.card F ≤ numberOfClosePts (F := F) (ι := ι) u v deg α e := by
@@ -995,7 +1008,8 @@ private lemma allClose_not_fewClosePts
       by_contra hj
       exact h ⟨j, hj⟩
     rcases hex with ⟨j, hj⟩
-    let g : F → closePtsOnAffineLine (F := F) (u := u) (v := v) (deg := deg) (α := α) (e := e) :=
+    let g : F → closePtsOnAffineLine (F := F) (u := u) (v := v)
+        (deg := deg) (α := α) (e := e) :=
       fun r =>
         ⟨u + r • v,
           by
@@ -1022,7 +1036,7 @@ private lemma allClose_not_fewClosePts
         numberOfClosePts (F := F) (ι := ι) u v deg α e =
           Nat.card
             (closePtsOnAffineLine (F := F) (u := u) (v := v) (deg := deg) (α := α) (e := e)) :=
-      by simpa using numberOfClosePts_eq_natCard (F := F) (ι := ι) u v deg α e
+      by simpa using number_of_close_pts_eq_nat_card (F := F) (ι := ι) u v deg α e
     have hcardF : Fintype.card F = Nat.card F := by
       exact (Fintype.card_eq_nat_card (α := F))
     calc
@@ -1043,7 +1057,7 @@ The assumptions `v ≠ 0` and `‖RS‖₀ < |F|` are necessary for mutual exclu
 if `v = 0`, the affine line degenerates to a singleton and the two branches can hold
 simultaneously.
 -/
-lemma e_leq_dist_over_3
+lemma e_le_dist_over_3
     {deg : ℕ}
     {α : ι ↪ F} {e : ℕ} {u v : ι → F}
     (he : (e : ℚ≥0) < ‖(RScodeSet α deg)‖₀ / 3)
@@ -1056,18 +1070,22 @@ lemma e_leq_dist_over_3
   have hline :
       (∀ x ∈ Affine.affineLineAtOrigin (F := F) u v, Δ₀(x, ReedSolomon.code α deg) ≤ e)
         ∨ numberOfClosePts u v deg α e ≤ ‖(RScodeSet α deg)‖₀ :=
-    e_leq_dist_over_3_strong (F := F) (ι := ι) (α := α) (e := e) (u := u) (v := v) he
+    e_le_dist_over_3_strong (F := F) (ι := ι) (α := α) (e := e) (u := u) (v := v) he
   rcases hline with h_all | h_few
-  · exact Or.inl ⟨h_all, allClose_not_fewClosePts (F := F) (ι := ι) (hv := hv) (hFd := hFd) h_all⟩
+  · exact Or.inl
+      ⟨h_all,
+        all_close_not_few_close_pts (F := F) (ι := ι) (hv := hv) (hFd := hFd) h_all⟩
   · exact Or.inr
       ⟨h_few, fun h_all =>
-        allClose_not_fewClosePts (F := F) (ι := ι) (hv := hv) (hFd := hFd) h_all h_few⟩
+        all_close_not_few_close_pts (F := F) (ι := ι) (hv := hv) (hFd := hFd) h_all
+          h_few⟩
 
 /-- **Lemma 4.5, [AHIV22].**
 
-If the interleaved word `U⋆` is far from the interleaved Reed–Solomon code, then a uniformly random
-word in the row-span is `e`-close to the code with probability at most `‖RS‖₀ / |F|`. -/
-lemma probOfBadPts
+If the interleaved word `U⋆` is far from the interleaved Reed–Solomon code, then a uniformly
+random word in the row-span is `e`-close to the code with probability at most
+`‖RS‖₀ / |F|`. -/
+lemma prob_of_bad_pts
     {deg : ℕ}
     {α : ι ↪ F} {e : ℕ} {U_star : WordStack (A := F) κ ι}
     (he : (e : ℚ≥0) < ‖(RScodeSet α deg)‖₀ / 3)
@@ -1130,7 +1148,7 @@ lemma probOfBadPts
     exact lt_of_le_of_lt he_le_3e h3e_lt_d
   have hF : Fintype.card F > e := lt_of_lt_of_le he_lt_d hd_le
   obtain ⟨v_star, hv_mem, hv_far⟩ :=
-    distInterleavedCodeToCodeLB (F := F) (ι := ι) (κ := κ) (L := ReedSolomon.code α deg)
+    dist_interleaved_code_to_code_lb (F := F) (ι := ι) (κ := κ) (L := ReedSolomon.code α deg)
       (U_star := U_star) hF (by simpa [RS, RScodeSet] using he) hU
   have hv_ne_zero : v_star ≠ 0 := by
     intro hv0
@@ -1306,7 +1324,7 @@ lemma probOfBadPts
               Nat.card
                 (closePtsOnAffineLine (F := F) (u := u0) (v := v_star) (deg := deg) (α := α)
                   (e := e)) := by
-          simpa using numberOfClosePts_eq_natCard (F := F) (ι := ι) u0 v_star deg α e
+          simpa using number_of_close_pts_eq_nat_card (F := F) (ι := ι) u0 v_star deg α e
         have hcard_fiber : Fintype.card fiber = Nat.card fiber := by
           exact (Fintype.card_eq_nat_card (α := fiber))
         -- Convert back to `Fintype.card` / `numberOfClosePts`.
@@ -1322,13 +1340,14 @@ lemma probOfBadPts
       exact hcard_le_nat
     have hclose_bd : numberOfClosePts (F := F) (ι := ι) u0 v_star deg α e ≤ d := by
       have hline :=
-        e_leq_dist_over_3_strong (F := F) (ι := ι) (deg := deg) (α := α)
+        e_le_dist_over_3_strong (F := F) (ι := ι) (deg := deg) (α := α)
           (e := e) (u := u0) (v := v_star) (by simpa [d, RS, RScodeSet] using he)
       rcases hline with h_all | h_few
       · exfalso
         -- All points close implies `numberOfClosePts > d`, hence `v_star` is close,
         -- contradicting `hv_far`.
-        have hnum_ge : Fintype.card F ≤ numberOfClosePts (F := F) (ι := ι) u0 v_star deg α e := by
+        have hnum_ge :
+            Fintype.card F ≤ numberOfClosePts (F := F) (ι := ι) u0 v_star deg α e := by
           -- Inject `F` into close points on the line (direction is nonzero).
           have hex : ∃ j, v_star j ≠ 0 := by
             by_contra h
@@ -1368,7 +1387,7 @@ lemma probOfBadPts
                 Nat.card
                   (closePtsOnAffineLine (F := F) (u := u0) (v := v_star) (deg := deg) (α := α)
                     (e := e)) := by
-            simpa using numberOfClosePts_eq_natCard (F := F) (ι := ι) u0 v_star deg α e
+            simpa using number_of_close_pts_eq_nat_card (F := F) (ι := ι) u0 v_star deg α e
           have hcardF : Fintype.card F = Nat.card F := by
             exact (Fintype.card_eq_nat_card (α := F))
           calc
@@ -1382,7 +1401,7 @@ lemma probOfBadPts
           lt_of_lt_of_le hd_lt hnum_ge
         have hv_close :
             Δ₀(v_star, ReedSolomon.code α deg) ≤ e :=
-          dirClose_of_manyClosePts (F := F) (ι := ι) (deg := deg) (α := α)
+          dir_close_of_many_close_pts (F := F) (ι := ι) (deg := deg) (α := α)
             (e := e) (u := u0) (v := v_star) (by simpa [d, RS, RScodeSet] using he)
             (by simpa [d] using hnum_gt)
         exact (not_lt_of_ge hv_close) hv_far
@@ -1395,7 +1414,8 @@ lemma probOfBadPts
       have :=
         calc
           bad.card =
-              ∑ q ∈ (Finset.univ : Finset Q), (Finset.filter (fun w : S => π w = q) bad).card := by
+              ∑ q ∈ (Finset.univ : Finset Q),
+                (Finset.filter (fun w : S => π w = q) bad).card := by
             exact hbad_sum
           _ ≤ ∑ q ∈ (Finset.univ : Finset Q), d := by
             refine Finset.sum_le_sum ?_
