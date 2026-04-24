@@ -236,62 +236,44 @@ theorem foldWord_codeword {d : ℕ}
     FoldingPolynomial.polyFold]
   rw [eval_comm, interpolate_eq_folding_poly_eval hk (by simp)]
 
-private noncomputable def foldWordAuxCoeff (domain : SmoothCosetFftDomain n F) 
-  (f : Word F (Fin (2 ^ n))) (k : ℕ) (i : Fin k) (x : F)
-  : F
-  := (foldWordAux domain f k x).coeff i
+private noncomputable def foldWordAuxCoeff (domain : SmoothCosetFftDomain n F)
+  (f : Word F (Fin (2 ^ n))) (k : ℕ) (i : Fin k) (x : F) : F := 
+  (foldWordAux domain f k x).coeff i
 
-private lemma foldWordAux_eq_sum_of_foldWordAuxCoeff
-  [Fintype F]
-  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {x : F}
+omit [Fintype F] in
+private lemma foldWordAux_coeff_eq_foldWordAuxCoeff_fin
+  {i : Fin k} :
+  (foldWordAux domain f k x).coeff i =  
+    (foldWordAuxCoeff domain f k i x) := by simp [foldWordAux, foldWordAuxCoeff]
+
+omit [Fintype F] in
+private lemma foldWordAux_coeff_eq_foldWordAuxCoeff_nat
   [inst : NeZero k]
-  :
-  foldWordAux domain f k x
-    = ∑ j, Polynomial.C (foldWordAuxCoeff domain f k j x) * Y ^ j.val := by
-  unfold foldWordAuxCoeff
+  {i : ℕ} :
+  (foldWordAux domain f k x).coeff i =  
+    if h : i < k 
+    then (foldWordAuxCoeff domain f k ⟨i, h⟩ x)
+    else 0 := by 
+  by_cases h : i < k <;> simp only [h, ↓reduceDIte]
+  · rw [←foldWordAux_coeff_eq_foldWordAuxCoeff_fin]
+  · rw [Polynomial.coeff_eq_zero_of_natDegree_lt <|
+            lt_of_lt_of_le foldWordAux_natDegree <| by simpa using h]
+
+omit [Fintype F] in
+private lemma foldWordAux_eq_sum_of_foldWordAuxCoeff
+  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {x : F}
+  [inst : NeZero k] :
+  foldWordAux domain f k x = 
+    ∑ j, Polynomial.C (foldWordAuxCoeff domain f k j x) * Y ^ j.val := by
   ext n
-  simp
-  by_cases hlt: n < k
-  · have h : n = (⟨n, hlt⟩ : Fin k) := by simp
-    conv =>
-      rhs
-      rw [h]
-    have h :
-      ∀ {j : Fin k},
-        (if (↑(⟨n, hlt⟩ : Fin k) : ℕ) = ↑j then
-          (foldWordAux domain f k x).coeff ↑j else 0)
-            = (if (⟨n, hlt⟩ : Fin k) = j then
-              (foldWordAux domain f k x).coeff ↑j
-              else 0) := by
-      rintro ⟨j, hj⟩
-      simp
-    conv =>
-      rhs
-      rhs
-      ext x
-      rw [h]
-    rw [Fintype.sum_ite_eq]
-  · simp at hlt
-    rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by {
-      apply lt_of_lt_of_le
-      exact foldWordAux_natDegree
-      simp [hlt]
-    })]
-    have h :
-      ∀ {j : Fin k},
-        (if n = ↑j then (foldWordAux domain f k x).coeff ↑j else 0)
-            = 0 := by
-        rintro ⟨x, hx⟩
-        simp
-        intro contra
-        rw [←contra] at hx
-        omega
-    conv =>
-      rhs
-      rhs
-      ext x
-      rw [h]
-    simp
+  simp only [finset_sum_coeff, coeff_C_mul, coeff_X_pow, mul_ite, mul_one, mul_zero]
+  by_cases hlt : n < k
+  · aesop 
+      (add simp [foldWordAuxCoeff])
+      (add safe [(by rw [Finset.sum_eq_single_of_mem ⟨n, hlt⟩])])
+  · simp only [foldWordAux_coeff_eq_foldWordAuxCoeff_nat, hlt, ↓reduceDIte]
+    exact symm ∘ Finset.sum_eq_zero <| fun x _ ↦ match x with
+      | ⟨x, hx⟩ => by aesop (add safe (by omega))
 
 private lemma fold_eq_sum_of_foldAuxCoeff_mul_pow_alpha
   [Fintype F]
