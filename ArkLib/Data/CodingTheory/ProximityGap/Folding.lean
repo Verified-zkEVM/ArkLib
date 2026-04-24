@@ -25,10 +25,12 @@ open scoped BigOperators LinearCode
 open Code Affine ReedSolomon
 open Polynomial
 
-variable {ι : Type} [DecidableEq ι] [Fintype ι] [Nonempty ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 variable {n : ℕ}
 
+/-- Given a word `f`, `foldWordAux` is a polynomial `pₓ` 
+  of degree < 'k' such that `pₓ(domain i) = f i` for each `i`
+  such that `domain i ^ k = x`. -/
 noncomputable def foldWordAux (domain : SmoothCosetFftDomain n F)
   (f : Word F (Fin (2 ^ n))) (k : ℕ) (x : F) : Polynomial F :=
   Lagrange.interpolate {i | domain i ^ k = x}
@@ -39,82 +41,57 @@ section
 variable {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))}
 variable {k : ℕ} {x : F}
 
+omit [Fintype F] in
+private lemma roots_of_x_in_domain_eq
+  (hk : k ≠ 0) :
+  ({i | domain i ^ k = x} : Finset (Fin (2 ^ n))) = 
+    Finset.preimage 
+      (nthRootsFinset k x) 
+      domain
+      CosetFftDomain.injOn := by
+  ext i 
+  simp only [mem_filter, mem_univ, true_and, mem_preimage]
+  rw [Polynomial.mem_nthRootsFinset (by omega)]
+
+omit [Fintype F] in
+private lemma roots_of_x_in_domain_card
+  (hk : k ≠ 0) :
+  Finset.card {i | domain i ^ k = x} ≤ 
+    Finset.card 
+      (nthRootsFinset k x) := by
+  rw [roots_of_x_in_domain_eq hk, Finset.card_preimage]
+  exact Finset.card_le_card (by simp)
+
+omit [Fintype F] in
+private lemma roots_of_x_in_domain_le_k
+  (hk : k ≠ 0) :
+  Finset.card {i | domain i ^ k = x} ≤ k := 
+  le_trans (roots_of_x_in_domain_card hk) <| by
+  simp only [nthRootsFinset, Multiset.toFinset, card_mk]
+  exact le_trans
+    (@Multiset.toFinset_card_le F (Classical.decEq F) _)
+    (Polynomial.card_nthRoots _ _)
+    
+omit [Fintype F] in
+/-- The natDegree of the auxiliary polynomial `foldWordAux`
+  is less than k. -/
 lemma foldWordAux_natDegree {k : ℕ} {x : F}
-  [inst : NeZero k]
-  :
+  [inst : NeZero k] :
   (foldWordAux domain f k x).natDegree < k := by
+  have hne := NeZero.ne (h := inst)
   by_cases heq: foldWordAux domain f k x = 0
-  · simp [heq]
-    have h := NeZero.ne (h := inst)
-    omega
+  · aesop 
+      (add safe (by omega)) 
   · unfold foldWordAux at *
     apply lt_of_lt_of_le
-    rw [Polynomial.natDegree_lt_iff_degree_lt (by aesop)]
-    apply Lagrange.degree_interpolate_lt _ (by {
-      intro x hx y hy hxy
-      simp at hxy
-      apply CosetFftDomain.injective (ω := domain) hxy
-    })
-    have h : Finset.image domain {i | domain i ^ k = x} =
-      @Set.toFinset _ 
-        (((Polynomial.X : Polynomial F) ^ k - C x).rootSet F) (by infer_instance) ∩ Finset.image domain Finset.univ := by
-      apply Finset.ext
-      intro a
-      simp
-      apply Iff.intro
-      · intro h
-        rcases h with ⟨y, ⟨h1, h2⟩⟩
-        rw [←h2]
-        rw [Polynomial.mem_rootSet]
-        simp [h1]
-        intro contra
-        have h: ( Y ^ k - C x ).coeff k = 0 := by
-          rw [contra]
-          simp
-        simp [Polynomial.coeff_C] at h
-        have hk : k ≠ 0 := NeZero.ne (h := inst)
-        simp [hk] at h
-      · intro h
-        rw [Polynomial.mem_rootSet] at h
-        simp at h
-        rcases h with ⟨h1, ⟨y, h2⟩⟩
-        exists y
-        simp [h2]
-        rcases h1 with ⟨_, h1⟩
-        rw [sub_eq_zero] at h1
-        simp [h1]
-    rw [←Finset.card_image_of_injOn (f := domain) (by {
-      intro x hx y hy hxy
-      apply CosetFftDomain.injective (ω := domain) hxy
-    })]
-    rw [h]
-    simp
-    apply le_trans
-    apply Finset.card_le_card (by {
-        apply Finset.inter_subset_left
-    })
-    rw [←Set.ncard_eq_toFinset_card']
-    apply le_trans (b := (Y ^ k - C x).natDegree)
-    grw [rootSet, Set.ncard_coe_finset, aroots]
-    rw [Polynomial.map]
-    simp
-    apply le_trans
-    apply @Multiset.toFinset_card_le F (Classical.decEq F)
-    apply le_trans
-    apply Polynomial.card_roots'
-    apply le_trans
-    apply Polynomial.natDegree_sub_le
-    simp
-    apply le_trans
-    apply Polynomial.natDegree_sub_le
-    simp
-
-noncomputable def fold (domain : SmoothCosetFftDomain n F) 
-  (f : Word F (Fin (2 ^ n))) (k : ℕ) (α : F)
-  (x : F)
-  :
-  F
-  := (foldWordAux domain f (2 ^ k) x).eval α
+    · rw [Polynomial.natDegree_lt_iff_degree_lt (by aesop)]
+      exact Lagrange.degree_interpolate_lt _ CosetFftDomain.injOn
+    · exact roots_of_x_in_domain_le_k hne
+            
+noncomputable def fold (domain : SmoothCosetFftDomain n F)
+  (f : Word F (Fin (2 ^ n)))
+  (k : ℕ) (α : F) (x : F) : F := 
+  (foldWordAux domain f (2 ^ k) x).eval α
 
 lemma fold_def {α : F}
   {x : F}
@@ -399,7 +376,6 @@ private lemma indicated_polynomial_degree_x_lt
   simp [hs']
 
 private lemma indicated_polynomial_degree_y_lt
-  [Nonempty ι]
   [Fintype F]
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {s' : Finset F}
   [inst : NeZero k]

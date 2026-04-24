@@ -320,9 +320,13 @@ instance : CoeOut (FftDomain ι F) (Subgroup Fˣ) where
 namespace FftDomain
 
 omit [Fintype ι] [DecidableEq ι] [DecidableEq F]
+
 lemma injective {ω : FftDomain ι F} :
   Function.Injective ω := fun i₁ i₂ h ↦ by cases ω with
   | mk ω hinj => aesop (add simp [eval_fft_domain_eq_eval_domain])
+
+lemma injOn {ω : FftDomain ι F} {s : Set ι} :
+  Set.InjOn ω s := fun _ _ _ _ h ↦ injective h
 
 lemma domain_elem_invertible {ω : FftDomain ι F} {i : ι} :
   IsUnit (ω i) := by aesop (add simp [eval_fft_domain_eq_eval_domain])
@@ -550,6 +554,10 @@ lemma injective {ω : CosetFftDomain ι F} :
   Function.Injective ω := fun _ _ h ↦
   FftDomain.injective (ω := ω.fftDomain) <| by
     aesop (add simp [eval_coset_fft_domain_eq_eval_x_mul_domain])
+
+omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
+lemma injOn {ω : CosetFftDomain ι F} {s : Set ι} :
+  Set.InjOn ω s := fun _ _ _ _ h ↦ injective h
 
 omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 @[simp]
