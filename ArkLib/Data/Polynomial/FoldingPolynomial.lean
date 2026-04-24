@@ -287,6 +287,10 @@ lemma eq_zero_of_folding_polynomial_eq_zero {q f : F[X]}
         rw [EuclideanDomain.mod_eq_sub_mul_div] at h_rem_zero 
         aesop
 
+lemma folding_polynomial_neq_zero_of_neq_zero {q f : F[X]}
+  (h : f ≠ 0) : foldingPolynomial q f ≠ 0 := fun contra ↦ by
+  simp_all [eq_zero_of_folding_polynomial_eq_zero contra]
+
 lemma substitution_property_of_folding_polynomial {q f : F[X]} :
     ((foldingPolynomial q f).map (Polynomial.compRingHom q)).eval X = f := 
   by 
@@ -443,6 +447,18 @@ theorem folding_polynomial_deg_y_bound {q f : F[X]} (h : 0 < q.degree) :
       · exact Polynomial.monic_mul_leadingCoeff_inv (by aesop)
     }))
     
+/-- The degree of `foldingPolynomial` is less than `k` in the second variable, 
+  when `q = X ^ k` and `k ≠ 0`.
+-/
+theorem folding_polynomial_deg_y_bound_x_k {f : F[X]} {k : ℕ}
+  [NeZero k] :
+  natDegreeY (foldingPolynomial (X ^ k) f) < k := by 
+  simpa using (folding_polynomial_deg_y_bound (q := X ^ k)  
+                (f := f) (by aesop 
+                              (add safe forward (NeZero.ne k))
+                              (add safe (by omega)))
+              )
+
 private lemma folding_polynomial_deg_x_base {q f : F[X]}
   (h : f.degree < q.degree ∨ f.degree ≤ 0 ∨ q.degree ≤ 0) :
   degreeX (foldingPolynomial q f) = 0 := by
