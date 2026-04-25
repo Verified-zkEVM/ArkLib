@@ -728,6 +728,9 @@ noncomputable def section58Hyb1Dist
     [∀ i, Fintype (pSpec.Message i)]
     [Section58SharedOraclePackage (oSpec := oSpec)]
     [Section58PermutationPackage (U := U)]
+    {T_H : Type} {T_P : Type}
+    [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) :
     ProbComp (Option <| BasicFiatShamirGameOutput
@@ -755,9 +758,7 @@ noncomputable def section58Hyb1Dist
               (.inl ⟨roundIdx, (stmt0, absorbedRatePrefix0)⟩)))
   exact
     section58HybridGameDist
-      (T_H := Section52.ListBacked.ListTraceTable StmtIn (Vector U SpongeSize.C))
-      (T_P := Section52.ListBacked.ListTraceTable
-        (CanonicalSpongeState U) (CanonicalSpongeState U))
+      (T_H := T_H) (T_P := T_P)
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
       (init := section58ChallengeInit
@@ -782,6 +783,9 @@ noncomputable def section58Hyb2Dist
     [∀ i, DecidableEq (pSpec.Challenge i)]
     [Section58SharedOraclePackage (oSpec := oSpec)]
     [Section58PermutationPackage (U := U)]
+    {T_H : Type} {T_P : Type}
+    [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) :
@@ -815,9 +819,7 @@ noncomputable def section58Hyb2Dist
             (challengeSpec := challengeSpec) hChallengeSurj challenge)
   exact
     section58HybridGameDist
-      (T_H := Section52.ListBacked.ListTraceTable StmtIn (Vector U SpongeSize.C))
-      (T_P := Section52.ListBacked.ListTraceTable
-        (CanonicalSpongeState U) (CanonicalSpongeState U))
+      (T_H := T_H) (T_P := T_P)
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
       (init := section58ChallengeInit
@@ -842,6 +844,9 @@ noncomputable def section58Hyb3Dist
     [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
     [Section58SharedOraclePackage (oSpec := oSpec)]
     [Section58PermutationPackage (U := U)]
+    {T_H : Type} {T_P : Type}
+    [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) :
@@ -880,9 +885,7 @@ noncomputable def section58Hyb3Dist
             (challengeSpec := challengeSpec) hChallengeSurj challenge)
   exact
     section58HybridGameDist
-      (T_H := Section52.ListBacked.ListTraceTable StmtIn (Vector U SpongeSize.C))
-      (T_P := Section52.ListBacked.ListTraceTable
-        (CanonicalSpongeState U) (CanonicalSpongeState U))
+      (T_H := T_H) (T_P := T_P)
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
       (init := section58ChallengeInit
@@ -904,6 +907,9 @@ def claim_5_21
     [∀ i, Fintype (pSpec.Message i)]
     [Section58SharedOraclePackage (oSpec := oSpec)]
     [Section58PermutationPackage (U := U)]
+    {T_H : Type} {T_P : Type}
+    [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (securityParam instanceBound : ℕ)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
@@ -920,7 +926,8 @@ def claim_5_21
         V maliciousProver
         (paperD2STraceSingle
           (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
-      (section58Hyb1Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (section58Hyb1Dist (T_H := T_H) (T_P := T_P)
+        (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
         (pSpec := pSpec) (U := U) V maliciousProver)
     ≤ claim5_21Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries
 
@@ -933,6 +940,9 @@ def claim_5_22
     [∀ i, DecidableEq (pSpec.Challenge i)]
     [Section58SharedOraclePackage (oSpec := oSpec)]
     [Section58PermutationPackage (U := U)]
+    {T_H : Type} {T_P : Type}
+    [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (securityParam instanceBound : ℕ)
     (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
@@ -944,9 +954,11 @@ def claim_5_22
   let _ := securityParam
   let _ := instanceBound
   tvDist
-      (section58Hyb1Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (section58Hyb1Dist (T_H := T_H) (T_P := T_P)
+        (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
         (pSpec := pSpec) (U := U) V maliciousProver)
-      (section58Hyb2Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (section58Hyb2Dist (T_H := T_H) (T_P := T_P)
+        (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
         (pSpec := pSpec) (U := U) hChallengeSurj V maliciousProver)
     ≤ claim5_22Bound (pSpec := pSpec) tₕ tₚ tₚᵢ εcodec
 
@@ -959,6 +971,9 @@ def claim_5_23
     [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
     [Section58SharedOraclePackage (oSpec := oSpec)]
     [Section58PermutationPackage (U := U)]
+    {T_H : Type} {T_P : Type}
+    [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (securityParam instanceBound : ℕ)
     (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
@@ -968,9 +983,11 @@ def claim_5_23
   let _ := securityParam
   let _ := instanceBound
   tvDist
-    (section58Hyb2Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+    (section58Hyb2Dist (T_H := T_H) (T_P := T_P)
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U) hChallengeSurj V maliciousProver)
-    (section58Hyb3Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+    (section58Hyb3Dist (T_H := T_H) (T_P := T_P)
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U) hChallengeSurj V maliciousProver) = 0
 
 /-- Claim 5.24 target proposition on the canonical `Hyb₃`/`Hyb₄` experiments from Section 5.8. -/
@@ -982,6 +999,9 @@ def claim_5_24
     [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
     [Section58SharedOraclePackage (oSpec := oSpec)]
     [Section58PermutationPackage (U := U)]
+    {T_H : Type} {T_P : Type}
+    [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (securityParam instanceBound : ℕ)
     (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
@@ -993,7 +1013,8 @@ def claim_5_24
   let _ := securityParam
   let _ := instanceBound
   tvDist
-      (section58Hyb3Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (section58Hyb3Dist (T_H := T_H) (T_P := T_P)
+        (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
         (pSpec := pSpec) (U := U) hChallengeSurj V maliciousProver)
       (hyb4Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
         (pSpec := pSpec) (U := U)
@@ -1016,6 +1037,9 @@ theorem lemma_5_1_dist_from_claims
     [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
     [Section58SharedOraclePackage (oSpec := oSpec)]
     [Section58PermutationPackage (U := U)]
+    {T_H : Type} {T_P : Type}
+    [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (securityParam instanceBound : ℕ)
     (hPermPackageLaw : Section58PermutationPackageLaw (U := U))
     (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U))
@@ -1025,16 +1049,20 @@ theorem lemma_5_1_dist_from_claims
     (d2sAlgo : D2SAlgo (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (tₕ tₚ tₚᵢ : ℕ)
     (εcodec : CodecBias (pSpec := pSpec))
-    (h21 : claim_5_21 (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+    (h21 : claim_5_21 (T_H := T_H) (T_P := T_P)
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
       securityParam instanceBound V maliciousProver tₕ tₚ tₚᵢ)
-    (h22 : claim_5_22 (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+    (h22 : claim_5_22 (T_H := T_H) (T_P := T_P)
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
       securityParam instanceBound hChallengeSurj V maliciousProver tₕ tₚ tₚᵢ εcodec)
-    (h23 : claim_5_23 (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+    (h23 : claim_5_23 (T_H := T_H) (T_P := T_P)
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
       securityParam instanceBound hChallengeSurj V maliciousProver)
-    (h24 : claim_5_24 (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+    (h24 : claim_5_24 (T_H := T_H) (T_P := T_P)
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
       securityParam instanceBound hChallengeSurj V maliciousProver d2sAlgo tₕ tₚ tₚᵢ)
     (hBound :
@@ -1060,9 +1088,11 @@ theorem lemma_5_1_dist_from_claims
   let _ := hPermPackageLaw
   have h23' :
       tvDist
-        (section58Hyb2Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+        (section58Hyb2Dist (T_H := T_H) (T_P := T_P)
+          (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
           (pSpec := pSpec) (U := U) hChallengeSurj V maliciousProver)
-        (section58Hyb3Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+        (section58Hyb3Dist (T_H := T_H) (T_P := T_P)
+          (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
           (pSpec := pSpec) (U := U) hChallengeSurj V maliciousProver)
         ≤ (0 : ℝ) := by
     rw [h23]
@@ -1075,11 +1105,14 @@ theorem lemma_5_1_dist_from_claims
         V maliciousProver
         (paperD2STraceSingle
           (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
-      (H₁ := section58Hyb1Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (H₁ := section58Hyb1Dist (T_H := T_H) (T_P := T_P)
+        (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
         (pSpec := pSpec) (U := U) V maliciousProver)
-      (H₂ := section58Hyb2Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (H₂ := section58Hyb2Dist (T_H := T_H) (T_P := T_P)
+        (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
         (pSpec := pSpec) (U := U) hChallengeSurj V maliciousProver)
-      (H₃ := section58Hyb3Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (H₃ := section58Hyb3Dist (T_H := T_H) (T_P := T_P)
+        (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
         (pSpec := pSpec) (U := U) hChallengeSurj V maliciousProver)
       (H₄ := hyb4Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
         (pSpec := pSpec) (U := U)
