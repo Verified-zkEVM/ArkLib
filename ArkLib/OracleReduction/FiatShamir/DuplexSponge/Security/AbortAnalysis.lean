@@ -79,26 +79,40 @@ def LookAheadNoAbort [DecidableEq U]
 section D2SQueryNoAbort
 
 variable [DecidableEq StmtIn] [DecidableEq U]
+  {T_H : Type}
+  {T_P : Type}
+  [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+  [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
 
 /-- Paper-facing predicate: `D2SQuery` does not hit the `err` branch when started from `trace`. -/
 def D2SQueryNoAbortOnTrace
     (params : D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
   ∀ q : (duplexSpongeChallengeOracle StmtIn U).Domain,
-    (d2sQueryStep (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) params q).run
-        { trace := trace, cacheP := [] } ≠
+    (d2sQueryStep
+        (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) params q).run
+        ({ trace := trace, cacheP := [] } :
+          D2SQueryState (T_H := T_H) (T_P := T_P)
+            (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) ≠
       (failure : OptionT (OracleComp (Unit →ₒ U))
         ((duplexSpongeChallengeOracle StmtIn U).Range q ×
-          D2SQueryState (StmtIn := StmtIn) (U := U)))
+          D2SQueryState (T_H := T_H) (T_P := T_P)
+            (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)))
 
 end D2SQueryNoAbort
 
 /-- Paper-facing predicate: `D2SQuery` aborts when started from `trace`. -/
 def D2SQueryAbortOnTrace
     [DecidableEq StmtIn] [DecidableEq U]
+    {T_H : Type}
+    {T_P : Type}
+    [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (params : D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
   ¬ D2SQueryNoAbortOnTrace
+      (T_H := T_H) (T_P := T_P)
       (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) params trace
 
 /-- Lemma 5.17: if `E(tr) = 0`, then `StdTrace(tr)` does not abort. -/
@@ -117,10 +131,15 @@ Lemma 5.18: if `E(tr_𝒜) = 0`, then `𝒜 ^ D2SQuery` does not abort.
 -/
 theorem lemma_5_18_d2sQuery_noAbort
     [DecidableEq StmtIn] [DecidableEq U]
+    {T_H : Type}
+    {T_P : Type}
+    [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (params : D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
     (traceA : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (hE : ¬ OracleSpec.QueryLog.BadEventDS.E traceA) :
     D2SQueryNoAbortOnTrace
+      (T_H := T_H) (T_P := T_P)
       (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) params traceA := by
   sorry
 
@@ -131,15 +150,21 @@ This is the non-contrapositive statement used in Section 5.7.
 -/
 theorem theorem_5_19_d2sQuery_abort_implies_badEvent
     [DecidableEq StmtIn] [DecidableEq U]
+    {T_H : Type}
+    {T_P : Type}
+    [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (params : D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
     (traceA : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (hAbort : D2SQueryAbortOnTrace
+      (T_H := T_H) (T_P := T_P)
       (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) params traceA) :
     OracleSpec.QueryLog.BadEventDS.E traceA := by
   classical
   by_contra hE
   exact hAbort
     (lemma_5_18_d2sQuery_noAbort
+      (T_H := T_H) (T_P := T_P)
       (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
       params traceA hE)
 

@@ -607,6 +607,11 @@ variable {StmtOut : Type}
   [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
   [∀ i, Deserialize (pSpec.Challenge i) (Vector U (challengeSize i))]
   [SampleableType U]
+  {T_H : Type}
+  {T_P : Type}
+  [DuplexSpongeFS.Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+  [DuplexSpongeFS.Section52.LawfulTraceTable T_P
+    (CanonicalSpongeState U) (CanonicalSpongeState U)]
 
 /-- Per-oracle query budget map for a Section 5.6 malicious prover:
 - `tₕ` bounds `h` queries,
@@ -696,16 +701,19 @@ noncomputable def lemma5_8SigmaTraceDist
       OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages))
     (onSimAbort :
       (q : (duplexSpongeChallengeOracle StmtIn U).Domain) →
-        DuplexSpongeFS.D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) →
+        DuplexSpongeFS.D2SQueryState (T_H := T_H) (T_P := T_P)
+              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) →
           (duplexSpongeChallengeOracle StmtIn U).Range q ×
             DuplexSpongeFS.D2SQueryState
               (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) :=
       DuplexSpongeFS.d2sQueryAbortFallback
+        (T_H := T_H) (T_P := T_P)
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :
     ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U)) :=
   lemma5_8ProjectedTraceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
     (pure default)
     (DuplexSpongeFS.d2sQueryImplCoreProb
+      (T_H := T_H) (T_P := T_P)
       (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
       (unitImpl := DuplexSpongeFS.d2sUnitSampleImpl (U := U))
       (params := simParams)
@@ -737,14 +745,17 @@ def lemma5_8SigmaTraceConsistentOnSupport
       OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages))
     (onSimAbort :
       (q : (duplexSpongeChallengeOracle StmtIn U).Domain) →
-        DuplexSpongeFS.D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) →
+        DuplexSpongeFS.D2SQueryState (T_H := T_H) (T_P := T_P)
+              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) →
           (duplexSpongeChallengeOracle StmtIn U).Range q ×
             DuplexSpongeFS.D2SQueryState
               (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) :=
       DuplexSpongeFS.d2sQueryAbortFallback
+        (T_H := T_H) (T_P := T_P)
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) : Prop :=
   paperTraceConsistentOnSupport (StmtIn := StmtIn) (U := U)
     (lemma5_8SigmaTraceDist
+      (T_H := T_H) (T_P := T_P)
       (StmtIn := StmtIn) (StmtOut := StmtOut)
       (n := n) (pSpec := pSpec) (U := U)
       simParams V maliciousProver onSimAbort)
@@ -767,11 +778,13 @@ theorem lemma_5_8
       OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages))
     (onSimAbort :
       (q : (duplexSpongeChallengeOracle StmtIn U).Domain) →
-        DuplexSpongeFS.D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) →
+        DuplexSpongeFS.D2SQueryState (T_H := T_H) (T_P := T_P)
+              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) →
           (duplexSpongeChallengeOracle StmtIn U).Range q ×
             DuplexSpongeFS.D2SQueryState
               (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) :=
       DuplexSpongeFS.d2sQueryAbortFallback
+        (T_H := T_H) (T_P := T_P)
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
     (tₕ tₚ tₚᵢ : ℕ)
     (hMaliciousBound : -- `(tₕ, tₚ, tₚᵢ)`-query bound prover
@@ -787,6 +800,7 @@ theorem lemma_5_8
             initReal implReal V maliciousProver])
         (Pr[fun tr => BadEventDS.E tr |
           lemma5_8SigmaTraceDist
+            (T_H := T_H) (T_P := T_P)
             (StmtIn := StmtIn) (StmtOut := StmtOut)
             (n := n) (pSpec := pSpec) (U := U)
             simParams V maliciousProver onSimAbort])

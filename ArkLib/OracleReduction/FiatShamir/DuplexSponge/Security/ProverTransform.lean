@@ -32,6 +32,10 @@ noncomputable section
 section D2SQueryCore
 
 variable [DecidableEq StmtIn] [DecidableEq U]
+  {T_H : Type}
+  {T_P : Type}
+  [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+  [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
 
 /-- Paper-facing key for `gᵢ`-style memoized queries in D2SQuery Item 4(e)i. -/
 private structure D2SStdQuery where
@@ -54,10 +58,12 @@ structure D2SQueryState where
   trace : QueryLog (duplexSpongeChallengeOracle StmtIn U) := []
   cacheP : List (CanonicalSpongeState U × CanonicalSpongeState U) := []
   stdMemo : List (D2SStdEntry (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) := []
-  trΔ : Section52.DefaultTraceDelta StmtIn U :=
+  trΔ : Section52.TraceNabla T_H T_P StmtIn U :=
     ⟨Section52.TraceTableOps.empty, Section52.TraceTableOps.empty⟩
 
-instance : Inhabited (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :=
+instance : Inhabited (D2SQueryState
+    (T_H := T_H) (T_P := T_P)
+    (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :=
   ⟨{}⟩
 
 /-- Forward-permutation projection `tr.p` of a DS trace. -/
@@ -226,7 +232,7 @@ The function preserves the key control flow:
 def d2sQueryStep
     (params : D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
     (q : (duplexSpongeChallengeOracle StmtIn U).Domain) :
-    StateT (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+    StateT (D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
       (OptionT (OracleComp (Unit →ₒ U)))
       ((duplexSpongeChallengeOracle StmtIn U).Range q) := do
   let st ← get
@@ -375,7 +381,7 @@ def d2sQueryStep
 def d2sQueryImplCore
     (params : D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+      (StateT (D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
         (OptionT (OracleComp (Unit →ₒ U)))) :=
   fun q => d2sQueryStep params q
 
@@ -387,7 +393,7 @@ def runD2SQueryCore
     {α : Type}
     (comp : OracleComp (duplexSpongeChallengeOracle StmtIn U) α) :
     OptionT (OracleComp (Unit →ₒ U))
-      (α × D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :=
+      (α × D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :=
   (simulateQ
     (d2sQueryImplCore params)
     comp).run default
@@ -412,11 +418,11 @@ def runD2SQueryStepWithUnitImpl
     (unitImpl : QueryImpl (Unit →ₒ U) ProbComp)
     (params : D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
     (q : (duplexSpongeChallengeOracle StmtIn U).Domain)
-    (st : D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :
+    (st : D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :
     ProbComp
       (Option
         ((duplexSpongeChallengeOracle StmtIn U).Range q ×
-          D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))) :=
+          D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))) :=
   simulateQ unitImpl
     (((d2sQueryStep
       (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) params q).run st).run)
@@ -428,9 +434,9 @@ It preserves the input state and returns a default response.
 -/
 def d2sQueryAbortFallback
     (q : (duplexSpongeChallengeOracle StmtIn U).Domain)
-    (st : D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :
+    (st : D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :
     (duplexSpongeChallengeOracle StmtIn U).Range q ×
-      D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) :=
+      D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) :=
   (default, st)
 
 /--
@@ -446,18 +452,21 @@ def d2sQueryImplCoreProb
     (params : D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
     (onAbort :
       (q : (duplexSpongeChallengeOracle StmtIn U).Domain) →
-        D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) →
+        D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) →
           (duplexSpongeChallengeOracle StmtIn U).Range q ×
-            D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) :=
-      d2sQueryAbortFallback (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :
+            D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) :=
+      d2sQueryAbortFallback
+        (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+      (StateT (D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
         ProbComp) :=
   fun q => do
     let st ← get
     let out? ←
       StateT.lift <|
         runD2SQueryStepWithUnitImpl
+          (T_H := T_H) (T_P := T_P)
           (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
           unitImpl params q st
     match out? with
@@ -476,9 +485,10 @@ def d2sQueryImplCoreUniform
     [SampleableType U]
     (params : D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+      (StateT (D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
         ProbComp) :=
   d2sQueryImplCoreProb
+    (T_H := T_H) (T_P := T_P)
     (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
     (unitImpl := d2sUnitSampleImpl (U := U))
     params
@@ -488,6 +498,10 @@ end D2SQueryCore
 section D2SAlgoBridge
 
 variable [DecidableEq StmtIn] [DecidableEq U]
+  {T_H : Type}
+  {T_P : Type}
+  [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+  [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
   [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
   [∀ i, Fintype (pSpec.Message i)]
   [∀ i, DecidableEq (pSpec.Message i)]
@@ -584,14 +598,15 @@ private def defaultD2SQueryParams :
 def duplexSpongeToBasicFSQueryImplWithParams
     (params : D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+      (StateT (D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
         (OptionT
           (OracleComp (fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))) ) :=
   QueryImpl.liftTarget
-    (StateT (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+    (StateT (D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
       (OptionT
         (OracleComp (fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))))
     (d2sQueryImplCore
+      (T_H := T_H) (T_P := T_P)
       (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
       params)
 
@@ -599,7 +614,7 @@ def duplexSpongeToBasicFSQueryImplWithParams
   composed with the duplex-sponge malicious prover to obtain a basic F-S malicious prover -/
 def duplexSpongeToBasicFSQueryImpl :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+      (StateT (D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
         (OptionT
           (OracleComp (fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))) ) :=
   duplexSpongeToBasicFSQueryImplWithParams
@@ -608,7 +623,7 @@ def duplexSpongeToBasicFSQueryImpl :
 
 abbrev d2SQueryImpl :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+      (StateT (D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
         (OptionT
           (OracleComp (fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))) ) :=
   duplexSpongeToBasicFSQueryImpl
@@ -624,17 +639,18 @@ def duplexSpongeToBasicFSAlgoWithParams
       (Option (StmtIn × pSpec.Messages)) :=
   let d2sOuterImpl :
       QueryImpl (oSpec + duplexSpongeChallengeOracle StmtIn U)
-        (StateT (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+        (StateT (D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
           (OptionT
             (OracleComp
               (oSpec + fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))))) :=
     QueryImpl.addLift
-      (r := StateT (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+      (r := StateT (D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
         (OptionT
           (OracleComp
             (oSpec + fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))))
       (QueryImpl.id oSpec)
       (duplexSpongeToBasicFSQueryImplWithParams
+        (T_H := T_H) (T_P := T_P)
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
         params)
   let outWithState :
@@ -642,7 +658,7 @@ def duplexSpongeToBasicFSAlgoWithParams
         (OracleComp
           (oSpec + fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
         ((StmtIn × pSpec.Messages) ×
-          D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :=
+          D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :=
     (simulateQ d2sOuterImpl P).run default
   do
     let out? ← outWithState.run
@@ -655,6 +671,7 @@ def duplexSpongeToBasicFSAlgo
     OracleComp (oSpec + fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (Option (StmtIn × pSpec.Messages)) :=
   duplexSpongeToBasicFSAlgoWithParams
+    (T_H := T_H) (T_P := T_P)
     (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
     (defaultD2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
     P
@@ -664,13 +681,19 @@ abbrev d2SAlgo
       (StmtIn × pSpec.Messages)) :
     OracleComp (oSpec + fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (Option (StmtIn × pSpec.Messages)) :=
-  duplexSpongeToBasicFSAlgo (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) P
+  duplexSpongeToBasicFSAlgo
+    (T_H := T_H) (T_P := T_P)
+    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) P
 
 end D2SAlgoBridge
 
 section D2SQueryWithOracle
 
 variable [DecidableEq StmtIn] [DecidableEq U]
+  {T_H : Type}
+  {T_P : Type}
+  [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+  [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
   [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
   [∀ i, Fintype (pSpec.Message i)]
   [∀ i, DecidableEq (pSpec.Message i)]
@@ -792,7 +815,7 @@ def d2sQueryStepWithOracle
       D2SQueryParamsWithOracle
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) challengeSpec)
     (q : (duplexSpongeChallengeOracle StmtIn U).Domain) :
-    StateT (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+    StateT (D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
       (OptionT
         (OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)))
       ((duplexSpongeChallengeOracle StmtIn U).Range q) := do
@@ -955,7 +978,7 @@ def d2sQueryImplCoreWithOracle
       D2SQueryParamsWithOracle
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) challengeSpec) :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+      (StateT (D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
         (OptionT
           (OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)))) :=
   fun q => d2sQueryStepWithOracle params q

@@ -37,6 +37,11 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
   [HasMessageSize pSpec] [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
   -- All challenges are deserializable from vectors of units
   [HasChallengeSize pSpec] [∀ i, Deserialize (pSpec.Challenge i) (Vector U (challengeSize i))]
+  [DecidableEq StmtIn] [DecidableEq U]
+  {T_H : Type}
+  {T_P : Type}
+  [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+  [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
 
 section SecurityGames
 
@@ -226,7 +231,9 @@ def section58ChallengeImpl
 auxiliary unit-sampling randomness. -/
 def section58HybridGame
     {κ : Type} {challengeSpec : OracleSpec κ}
-    [DecidableEq StmtIn] [DecidableEq U]
+    {T_H : Type} {T_P : Type}
+    [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (params :
       D2SQueryParamsWithOracle
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) challengeSpec)
@@ -237,22 +244,26 @@ def section58HybridGame
       (StmtIn × StmtOut × pSpec.Messages × QueryLog (oSpec + challengeSpec)) := do
   let d2sOuterImpl :
       QueryImpl (oSpec + duplexSpongeChallengeOracle StmtIn U)
-        (StateT (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+        (StateT (D2SQueryState (T_H := T_H) (T_P := T_P)
+              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
           (OptionT
             (OracleComp (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)))) :=
     QueryImpl.addLift
-      (r := StateT (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+      (r := StateT (D2SQueryState (T_H := T_H) (T_P := T_P)
+              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
         (OptionT
           (OracleComp (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec))))
       (QueryImpl.id oSpec)
       (d2sQueryImplCoreWithOracle
+        (T_H := T_H) (T_P := T_P)
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
         (challengeSpec := challengeSpec) params)
   let proverComp :
       OptionT
         (OracleComp (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec))
         ((StmtIn × pSpec.Messages) ×
-          D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :=
+          D2SQueryState (T_H := T_H) (T_P := T_P)
+              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :=
     (simulateQ d2sOuterImpl P).run default
   let ⟨proverOut?, proveQueryLogRaw⟩ ← (simulateQ loggingOracle proverComp.run).run
   let ⟨⟨stmtIn, messages⟩, _⟩ ←
@@ -263,7 +274,8 @@ def section58HybridGame
       OptionT
         (OracleComp (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec))
         (Option StmtOut ×
-          D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :=
+          D2SQueryState (T_H := T_H) (T_P := T_P)
+              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :=
     (simulateQ d2sOuterImpl
       (V.duplexSpongeFiatShamir.run
         stmtIn (fun i => match i with | ⟨0, _⟩ => messages))).run default
@@ -284,6 +296,9 @@ def section58HybridGame
 def section58HybridGameDist
     [SampleableType U] [DecidableEq StmtIn] [DecidableEq U]
     {κ : Type} {challengeSpec : OracleSpec κ}
+    {T_H : Type} {T_P : Type}
+    [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     {σ : Type}
     (init : ProbComp σ)
     (impl : QueryImpl
@@ -304,6 +319,7 @@ def section58HybridGameDist
   let hybridOutput ←
     (simulateQ impl
       ((section58HybridGame
+        (T_H := T_H) (T_P := T_P)
         (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
         (pSpec := pSpec) (U := U)
         params V P).run)).run' (← init)
@@ -739,6 +755,9 @@ noncomputable def section58Hyb1Dist
               (.inl ⟨roundIdx, (stmt0, absorbedRatePrefix0)⟩)))
   exact
     section58HybridGameDist
+      (T_H := Section52.ListBacked.ListTraceTable StmtIn (Vector U SpongeSize.C))
+      (T_P := Section52.ListBacked.ListTraceTable
+        (CanonicalSpongeState U) (CanonicalSpongeState U))
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
       (init := section58ChallengeInit
@@ -796,6 +815,9 @@ noncomputable def section58Hyb2Dist
             (challengeSpec := challengeSpec) hChallengeSurj challenge)
   exact
     section58HybridGameDist
+      (T_H := Section52.ListBacked.ListTraceTable StmtIn (Vector U SpongeSize.C))
+      (T_P := Section52.ListBacked.ListTraceTable
+        (CanonicalSpongeState U) (CanonicalSpongeState U))
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
       (init := section58ChallengeInit
@@ -858,6 +880,9 @@ noncomputable def section58Hyb3Dist
             (challengeSpec := challengeSpec) hChallengeSurj challenge)
   exact
     section58HybridGameDist
+      (T_H := Section52.ListBacked.ListTraceTable StmtIn (Vector U SpongeSize.C))
+      (T_P := Section52.ListBacked.ListTraceTable
+        (CanonicalSpongeState U) (CanonicalSpongeState U))
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
       (init := section58ChallengeInit
@@ -1146,6 +1171,9 @@ theorem lemma_5_1
   let _ := instanceBound
   refine ⟨?_, ?_, ?_⟩
   · exact duplexSpongeToBasicFSAlgo
+      (T_H := Section52.ListBacked.ListTraceTable StmtIn (Vector U SpongeSize.C))
+      (T_P := Section52.ListBacked.ListTraceTable
+        (CanonicalSpongeState U) (CanonicalSpongeState U))
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
   · exact paperD2STraceSingle
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
