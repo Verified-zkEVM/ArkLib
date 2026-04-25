@@ -5,6 +5,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 -/
 
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceDataStructures
 
 /-!
 # Backtracking sequence family and procedure
@@ -17,9 +18,11 @@ open OracleComp OracleSpec ProtocolSpec
 
 namespace DuplexSpongeFS
 
-variable {StmtIn : Type}
+open Section52
+
+variable {StmtIn : Type} [DecidableEq StmtIn]
   {n : ℕ} {pSpec : ProtocolSpec n}
-  {U : Type} [SpongeUnit U] [SpongeSize]
+  {U : Type} [SpongeUnit U] [SpongeSize] [DecidableEq U]
   [HasMessageSize pSpec] [HasChallengeSize pSpec]
 
 noncomputable section
@@ -133,50 +136,39 @@ def BacktrackSequence.Index (trace : QueryLog (duplexSpongeChallengeOracle StmtI
       else
         ⟨trace.length, Nat.lt_succ_self trace.length⟩)
 
-private def predecessorCandidates
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (nextInput : CanonicalSpongeState U) :
-    List (CanonicalSpongeState U × CanonicalSpongeState U) :=
-  by
-    classical
-    exact trace.filterMap fun entry =>
-      match entry with
-      | ⟨.inl _, _⟩ => none
-      | ⟨.inr (.inl stateIn), stateOut⟩ =>
-        if hCap : stateOut.capacitySegment = nextInput.capacitySegment then
-          if hLoop : stateIn.capacitySegment = stateOut.capacitySegment then
-            none
-          else
-            some (stateIn, stateOut)
-        else
-          none
-      | ⟨.inr (.inr stateOut), stateIn⟩ =>
-        if hCap : stateOut.capacitySegment = nextInput.capacitySegment then
-          if hLoop : stateIn.capacitySegment = stateOut.capacitySegment then
-            none
-          else
-            -- In the inverse-query case, output state is the query and input state is the answer.
-            some (stateIn, stateOut)
-        else
-          none
+/-- Paper §5.2 partial-cap-segment matching for `BackTrack`: enumerate all `(stateIn, stateOut)`
+pairs in `tr_∇.p` whose `stateOut.capacitySegment` equals `nextInput.capacitySegment`, with the
+no-loop guard `stateIn.cap ≠ stateOut.cap`.
 
-private def hashStmtCandidates
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (cap : Vector U SpongeSize.C) : List StmtIn :=
-  by
-    classical
-    exact trace.filterMap fun entry =>
-      match entry with
-      | ⟨.inl stmt, cap'⟩ =>
-        if hCap : cap' = cap then some stmt else none
-      | _ => none
+Black-box over `[LawfulTraceTable T_P ...]` via `TraceTableOps.entries`; both forward and inverse
+permutation directions already collapse into the same bidirectional `tr_∇.p`
+(cf. `TraceNabla.ofQueryLog` dispatch). -/
+private def predecessorCandidates
+    {T_P : Type}
+    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+    (trΔp : T_P)
+    (nextInput : CanonicalSpongeState U) :
+    List (CanonicalSpongeState U × CanonicalSpongeState U) := by
+  classical
+  exact (TraceTableOps.entries (V := CanonicalSpongeState U) trΔp).filterMap fun pair =>
+    let stateIn := pair.1
+    let stateOut := pair.2
+    if stateOut.capacitySegment = nextInput.capacitySegment then
+      if stateIn.capacitySegment = stateOut.capacitySegment then
+        none
+      else
+        some (stateIn, stateOut)
+    else
+      none
 
 private inductive BuildBacktrackResult (U : Type) [SpongeUnit U] [SpongeSize] where
   | err
   | ok (stepFamilies : List (List (CanonicalSpongeState U × CanonicalSpongeState U)))
 
 private def buildBacktrackSteps
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    {T_P : Type}
+    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+    (trΔp : T_P) (fuelBound : Nat)
     (state : CanonicalSpongeState U) :
     BuildBacktrackResult U :=
   let rec go (fuel : Nat) (current : CanonicalSpongeState U)
@@ -185,7 +177,7 @@ private def buildBacktrackSteps
     match fuel with
     | 0 => .err
     | fuel + 1 =>
-      let preds := predecessorCandidates (StmtIn := StmtIn) trace current
+      let preds := predecessorCandidates (T_P := T_P) (U := U) trΔp current
       match preds with
       | [] => .ok [stepsRev.reverse]
       | _ =>
@@ -200,7 +192,7 @@ private def buildBacktrackSteps
             | .err => .err
             | .ok childFamilies => collect rest (acc ++ childFamilies)
         collect preds []
-  go (trace.length + 1) state []
+  go fuelBound state []
 
 /-- A family of backtrack sequences, defined as a finite set of backtrack sequences such that
 no two sequences are strict subsets of each other -/
@@ -537,10 +529,14 @@ message remainder consistency, and verifier-squeeze window consistency).
 
 TODO: figure out the best way to encode the two errors (currently we encode `err` as the failure of
 OracleComp, and `none` as `Option.none` inside) -/
-def backTrack (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+def backTrack {T_H T_P : Type}
+    [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+    (trΔ : TraceNabla T_H T_P StmtIn U)
+    (fuelBound : Nat)
     (state : CanonicalSpongeState U) :
     OptionT Option (BacktrackOutput (StmtIn := StmtIn) (n := n) (U := U)) :=
-  match buildBacktrackSteps (StmtIn := StmtIn) trace state with
+  match buildBacktrackSteps (T_P := T_P) (U := U) trΔ.p fuelBound state with
   | .err =>
     -- `err` in the paper.
     OptionT.mk none
@@ -556,8 +552,10 @@ def backTrack (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
             []
           | some startState =>
             if hSteps : steps.length ≤ n then
+              -- Paper §5.2: `tr_∇.h.outlu(cap)` returns the unique stmt with that capacity, or
+              -- ⟂ on zero/multiple matches (collapsed here to the empty list, paper-`none`).
               let hashStmts :=
-                hashStmtCandidates (StmtIn := StmtIn) trace startState.capacitySegment
+                (Section52.TraceTableOps.outlu trΔ.h startState.capacitySegment).toList
               let i : Fin (n + 1) := ⟨steps.length, Nat.lt_succ_of_le hSteps⟩
               let absorbedRatePrefix := inputStates.map CanonicalSpongeState.rateSegment
               hashStmts.map fun stmt => ⟨stmt, i, absorbedRatePrefix, steps⟩

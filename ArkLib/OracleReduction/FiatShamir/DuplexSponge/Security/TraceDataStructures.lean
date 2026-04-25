@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen
 -/
@@ -91,12 +91,16 @@ namespace Section52
 
 /-- Operations for a trace table used in CO25 Definition 5.2.
 Covers both the one-way hash table (`tr_∇.h`) and the bidirectional permutation table (`tr_∇.p`);
-both have the same four-operation shape. -/
+both have the same four-operation shape, plus a bulk-enumeration op `entries` used by paper §5.2
+partial-key matching for backtracking. -/
 class TraceTableOps (T : Type) (K V : outParam Type) where
   empty : T
   add   : T → K → V → T
   inlu  : T → K → Option V
   outlu : T → V → Option K
+  /-- Enumerate all `(k, v)` pairs in the table. Concrete implementations may not preserve
+  order; the only stable handle on the result is its multiset content (cf. `LawfulTraceTable`). -/
+  entries : T → List (K × V)
 
 /-! ### Refinement-model lawful class -/
 
@@ -122,6 +126,9 @@ extends TraceTableOps T K V where
     outlu t v = some k ↔
       (toMultiSet t).count (k, v) = 1 ∧ -- Pair occurence = 1
       (∀ k', (k', v) ∈ toMultiSet t → k' = k) -- Value occurence = 1
+  /-- `entries` reflects the abstract multiset content. Order is unspecified; only the multiset
+  reading is stable. Used by paper §5.2 partial-key enumeration in `BackTrack`. -/
+  toMultiSet_entries : ∀ t, (entries t : Multiset (K × V)) = toMultiSet t
 
 /-! ### CO25 `tr_∇` — generic trace payload -/
 
@@ -421,15 +428,17 @@ instance instListBasedTraceTableOps {K V : Type} [DecidableEq K] [DecidableEq V]
   add   := ListTraceTable.add
   inlu  := ListTraceTable.inlu
   outlu := ListTraceTable.outlu
+  entries t := t.entries
 
 instance instLawfulListBasedTraceTable {K V : Type} [DecidableEq K] [DecidableEq V] :
     LawfulTraceTable (ListTraceTable K V) K V where
-  toTraceTableOps  := instListBasedTraceTableOps
-  toMultiSet       := ListTraceTable.toMultiSet
-  toMultiSet_empty := rfl
-  toMultiSet_add   := fun _ _ _ => rfl
-  inlu_eq_some     := fun t k v => ListTraceTable.inlu_eq_some_iff t k v
-  outlu_eq_some    := fun t k v => ListTraceTable.outlu_eq_some_iff t k v
+  toTraceTableOps     := instListBasedTraceTableOps
+  toMultiSet          := ListTraceTable.toMultiSet
+  toMultiSet_empty    := rfl
+  toMultiSet_add      := fun _ _ _ => rfl
+  inlu_eq_some        := fun t k v => ListTraceTable.inlu_eq_some_iff t k v
+  outlu_eq_some       := fun t k v => ListTraceTable.outlu_eq_some_iff t k v
+  toMultiSet_entries  := fun _ => rfl
 
 end ListBacked
 

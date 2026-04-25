@@ -6,6 +6,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Backtrack
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Lookahead
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceDataStructures
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
 
 /-!
@@ -43,12 +44,21 @@ private structure D2SStdEntry where
   query : D2SStdQuery (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
   responseRateBlocks : List (Vector U SpongeSize.R)
 
-/-- Internal mutable state of the Section 5.4 `D2SQuery` oracle wrapper. -/
+/-- Internal mutable state of the Section 5.4 `D2SQuery` oracle wrapper.
+
+`trΔ` is the paper's `tr_∇` (CO25 Definition 5.2): a deduplicated index over `trace` that supports
+`inlu`/`outlu` lookups in `O(log N)` (or `O(1)`) once the default `ListTraceTable` is later swapped
+for an `RBMap`/`HashMap`-backed instance. It mirrors the lazy "build alongside `tr`" pattern of
+the paper's `D2SQuery` (Section 5.4): each branch checks `tr_∇` first and only `add`s on a miss. -/
 structure D2SQueryState where
   trace : QueryLog (duplexSpongeChallengeOracle StmtIn U) := []
   cacheP : List (CanonicalSpongeState U × CanonicalSpongeState U) := []
   stdMemo : List (D2SStdEntry (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) := []
-deriving Inhabited
+  trΔ : Section52.DefaultTraceDelta StmtIn U :=
+    ⟨Section52.TraceTableOps.empty, Section52.TraceTableOps.empty⟩
+
+instance : Inhabited (D2SQueryState (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :=
+  ⟨{}⟩
 
 /-- Forward-permutation projection `tr.p` of a DS trace. -/
 private def forwardPermTraceOfDS
@@ -114,32 +124,6 @@ structure D2SQueryParams where
   codecBridge : D2SCodecBridge (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
   forwardExtensionLength :
     BacktrackOutput (StmtIn := StmtIn) (n := n) (U := U) → Nat := fun _ => 0
-
-private def lookupHashInTrace
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (stmt : StmtIn) : Option (Vector U SpongeSize.C) :=
-  trace.findSome? fun entry =>
-    match entry with
-    | ⟨.inl stmt', capSeg⟩ => if stmt' = stmt then some capSeg else none
-    | _ => none
-
-private def lookupPermByInput
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (stateIn : CanonicalSpongeState U) : Option (CanonicalSpongeState U) :=
-  trace.findSome? fun entry =>
-    match entry with
-    | ⟨.inl _, _⟩ => none
-    | ⟨.inr (.inl qIn), qOut⟩ => if qIn = stateIn then some qOut else none
-    | ⟨.inr (.inr qOut), qIn⟩ => if qIn = stateIn then some qOut else none
-
-private def lookupPermByOutput
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (stateOut : CanonicalSpongeState U) : Option (CanonicalSpongeState U) :=
-  trace.findSome? fun entry =>
-    match entry with
-    | ⟨.inl _, _⟩ => none
-    | ⟨.inr (.inl qIn), qOut⟩ => if qOut = stateOut then some qIn else none
-    | ⟨.inr (.inr qOut), qIn⟩ => if qOut = stateOut then some qIn else none
 
 private def popCacheByInput
     (cache : List (CanonicalSpongeState U × CanonicalSpongeState U))
@@ -248,44 +232,66 @@ def d2sQueryStep
   let st ← get
   match q with
   | .inl stmt =>
-      let capOut ← match lookupHashInTrace (StmtIn := StmtIn) (U := U) st.trace stmt with
-        | some capSeg => pure capSeg
-        | none => StateT.lift <| OptionT.lift <| sampleCapacity (U := U)
+      -- Paper Item 2 (CO25 §5.4, line 1039): `tr_∇.h.inlu(𝕩)`; on `⟂`, sample and
+      -- `tr_∇.h.add(𝕩, s_C,out)` (line 1041); always append to `tr` (line 1043).
+      let (capOut, trΔ') ←
+        match Section52.TraceTableOps.inlu st.trΔ.h stmt with
+        | some capSeg => pure (capSeg, st.trΔ)
+        | none =>
+            let sampled ← StateT.lift <| OptionT.lift <| sampleCapacity (U := U)
+            pure (sampled,
+              { st.trΔ with h := Section52.TraceTableOps.add st.trΔ.h stmt sampled })
       let trace' := st.trace ++ [⟨.inl stmt, capOut⟩]
-      set { st with trace := trace' }
+      set { st with trace := trace', trΔ := trΔ' }
       return capOut
   | .inr (.inr stateOut) =>
-      let stateIn ← match lookupPermByOutput (StmtIn := StmtIn) (U := U) st.trace stateOut with
-        | some recovered => pure recovered
-        | none => StateT.lift <| OptionT.lift <| sampleState (U := U)
+      -- Paper Item 3 (line 1044): `tr_∇.p.outlu(s_out)`; on `⟂`, sample and
+      -- `tr_∇.p.add(s_in, s_out)` (line 1046); always append `(p⁻¹, s_out, s_in)` to `tr`.
+      let (stateIn, trΔ') ←
+        match Section52.TraceTableOps.outlu st.trΔ.p stateOut with
+        | some recovered => pure (recovered, st.trΔ)
+        | none =>
+            let sampled ← StateT.lift <| OptionT.lift <| sampleState (U := U)
+            pure (sampled,
+              { st.trΔ with p := Section52.TraceTableOps.add st.trΔ.p sampled stateOut })
       let trace' := st.trace ++ [⟨.inr (.inr stateOut), stateIn⟩]
-      set { st with trace := trace' }
+      set { st with trace := trace', trΔ := trΔ' }
       return stateIn
   | .inr (.inl stateIn) =>
       match
           (backTrack
             (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-            st.trace stateIn).run with
+            st.trΔ (st.trace.length + 1) stateIn).run with
       | none =>
           -- `err` branch: abort.
           StateT.lift failure
       | some none =>
-          -- `none` branch: cache, then trace lookup, then fresh sampling.
-          let (stateOut, cache', stdMemo') ←
+          -- `none` branch: cache, then `tr_∇.p.inlu`, then fresh sampling.
+          -- Paper Item 4(c) (line 1052). Cache hit / fresh sample both extend `tr_∇.p`.
+          let (stateOut, cache', stdMemo', trΔ') ←
             match popCacheByInput (U := U) st.cacheP stateIn with
-            | some (cachedOut, cacheTail) => pure (cachedOut, cacheTail, st.stdMemo)
+            | some (cachedOut, cacheTail) =>
+                -- Cache extras from a prior `some` branch were not in `tr_∇.p`; record now.
+                let trΔ' :=
+                  { st.trΔ with p := Section52.TraceTableOps.add st.trΔ.p stateIn cachedOut }
+                pure (cachedOut, cacheTail, st.stdMemo, trΔ')
             | none =>
-                match lookupPermByInput (StmtIn := StmtIn) (U := U) st.trace stateIn with
-                | some recovered => pure (recovered, st.cacheP, st.stdMemo)
+                match Section52.TraceTableOps.inlu st.trΔ.p stateIn with
+                | some recovered => pure (recovered, st.cacheP, st.stdMemo, st.trΔ)
                 | none =>
                     let sampledOut ← StateT.lift <| OptionT.lift <| sampleState (U := U)
-                    pure (sampledOut, st.cacheP, st.stdMemo)
+                    let trΔ' :=
+                      { st.trΔ with p :=
+                          Section52.TraceTableOps.add st.trΔ.p stateIn sampledOut }
+                    pure (sampledOut, st.cacheP, st.stdMemo, trΔ')
           let trace' := st.trace ++ [⟨.inr (.inl stateIn), stateOut⟩]
-          set { st with trace := trace', cacheP := cache', stdMemo := stdMemo' }
+          set { st with trace := trace', cacheP := cache', stdMemo := stdMemo', trΔ := trΔ' }
           return stateOut
       | some (some backtrackOut) =>
-          -- `some` branch: valid tuple path evaluates `gᵢ` before `p.inlu` fallback.
-          let (stateOut, cache', stdMemo') ←
+          -- `some` branch: valid tuple path evaluates `gᵢ` before `tr_∇.p.inlu` fallback.
+          -- Paper Item 4(d)/(e) (lines 1056-1071). Only the head of the synthesized chain is
+          -- `tr_∇.p.add`-ed; cache extras stay in `cacheP` until consumed (line 1070).
+          let (stateOut, cache', stdMemo', trΔ') ←
             if params.codecBridge.inCodecImage backtrackOut then
               match challengeIdxOfBacktrackOutput
                   (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) backtrackOut with
@@ -316,9 +322,9 @@ def d2sQueryStep
                             (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
                             st.stdMemo stdQuery sampledRateBlocks
                         pure (sampledRateBlocks, stdMemo')
-                  match lookupPermByInput (StmtIn := StmtIn) (U := U) st.trace stateIn with
+                  match Section52.TraceTableOps.inlu st.trΔ.p stateIn with
                   | some recovered =>
-                      pure (recovered, st.cacheP, stdMemo')
+                      pure (recovered, st.cacheP, stdMemo', st.trΔ)
                   | none =>
                       let firstRate : Vector U SpongeSize.R :=
                         rateBlocks.headD (Vector.replicate SpongeSize.R default)
@@ -339,21 +345,30 @@ def d2sQueryStep
                           mkStateFromSegments (U := U) rc.1 rc.2
                       let extraPairs :=
                         chainPairsFrom (U := U) synthesizedOut extraStates
-                      pure (synthesizedOut, st.cacheP ++ extraPairs, stdMemo')
+                      let trΔ' :=
+                        { st.trΔ with p :=
+                            Section52.TraceTableOps.add st.trΔ.p stateIn synthesizedOut }
+                      pure (synthesizedOut, st.cacheP ++ extraPairs, stdMemo', trΔ')
               | none =>
-                  match lookupPermByInput (StmtIn := StmtIn) (U := U) st.trace stateIn with
-                  | some recovered => pure (recovered, st.cacheP, st.stdMemo)
+                  match Section52.TraceTableOps.inlu st.trΔ.p stateIn with
+                  | some recovered => pure (recovered, st.cacheP, st.stdMemo, st.trΔ)
                   | none =>
                       let sampledOut ← StateT.lift <| OptionT.lift <| sampleState (U := U)
-                      pure (sampledOut, st.cacheP, st.stdMemo)
+                      let trΔ' :=
+                        { st.trΔ with p :=
+                            Section52.TraceTableOps.add st.trΔ.p stateIn sampledOut }
+                      pure (sampledOut, st.cacheP, st.stdMemo, trΔ')
             else
-              match lookupPermByInput (StmtIn := StmtIn) (U := U) st.trace stateIn with
-              | some recovered => pure (recovered, st.cacheP, st.stdMemo)
+              match Section52.TraceTableOps.inlu st.trΔ.p stateIn with
+              | some recovered => pure (recovered, st.cacheP, st.stdMemo, st.trΔ)
               | none =>
                   let sampledOut ← StateT.lift <| OptionT.lift <| sampleState (U := U)
-                  pure (sampledOut, st.cacheP, st.stdMemo)
+                  let trΔ' :=
+                    { st.trΔ with p :=
+                        Section52.TraceTableOps.add st.trΔ.p stateIn sampledOut }
+                  pure (sampledOut, st.cacheP, st.stdMemo, trΔ')
           let trace' := st.trace ++ [⟨.inr (.inl stateIn), stateOut⟩]
-          set { st with trace := trace', cacheP := cache', stdMemo := stdMemo' }
+          set { st with trace := trace', cacheP := cache', stdMemo := stdMemo', trΔ := trΔ' }
           return stateOut
 
 /-- Query implementation form of the `D2SQuery` core procedure. -/
@@ -784,47 +799,68 @@ def d2sQueryStepWithOracle
   let st ← get
   match q with
   | .inl stmt =>
-      let capOut ← match lookupHashInTrace (StmtIn := StmtIn) (U := U) st.trace stmt with
-        | some capSeg => pure capSeg
+      -- Paper Item 2 (CO25 §5.4, line 1039): `tr_∇.h.inlu(𝕩)`; on `⟂`, sample and
+      -- `tr_∇.h.add(𝕩, s_C,out)` (line 1041); always append to `tr` (line 1043).
+      let (capOut, trΔ') ←
+        match Section52.TraceTableOps.inlu st.trΔ.h stmt with
+        | some capSeg => pure (capSeg, st.trΔ)
         | none =>
-            StateT.lift <|
-              OptionT.lift <| sampleCapacityWithOracle (U := U) challengeSpec
+            let sampled ←
+              StateT.lift <|
+                OptionT.lift <| sampleCapacityWithOracle (U := U) challengeSpec
+            pure (sampled,
+              { st.trΔ with h := Section52.TraceTableOps.add st.trΔ.h stmt sampled })
       let trace' := st.trace ++ [⟨.inl stmt, capOut⟩]
-      set { st with trace := trace' }
+      set { st with trace := trace', trΔ := trΔ' }
       return capOut
   | .inr (.inr stateOut) =>
-      let stateIn ← match lookupPermByOutput (StmtIn := StmtIn) (U := U) st.trace stateOut with
-        | some recovered => pure recovered
+      -- Paper Item 3 (line 1044): `tr_∇.p.outlu(s_out)`; on `⟂`, sample and
+      -- `tr_∇.p.add(s_in, s_out)` (line 1046); always append `(p⁻¹, s_out, s_in)` to `tr`.
+      let (stateIn, trΔ') ←
+        match Section52.TraceTableOps.outlu st.trΔ.p stateOut with
+        | some recovered => pure (recovered, st.trΔ)
         | none =>
-            StateT.lift <|
-              OptionT.lift <| sampleStateWithOracle (U := U) challengeSpec
+            let sampled ←
+              StateT.lift <|
+                OptionT.lift <| sampleStateWithOracle (U := U) challengeSpec
+            pure (sampled,
+              { st.trΔ with p := Section52.TraceTableOps.add st.trΔ.p sampled stateOut })
       let trace' := st.trace ++ [⟨.inr (.inr stateOut), stateIn⟩]
-      set { st with trace := trace' }
+      set { st with trace := trace', trΔ := trΔ' }
       return stateIn
   | .inr (.inl stateIn) =>
       match
           (backTrack
             (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-            st.trace stateIn).run with
+            st.trΔ (st.trace.length + 1) stateIn).run with
       | none =>
           StateT.lift failure
       | some none =>
-          let (stateOut, cache', stdMemo') ←
+          -- Paper Item 4(c) (line 1052). Cache hit / fresh sample both extend `tr_∇.p`.
+          let (stateOut, cache', stdMemo', trΔ') ←
             match popCacheByInput (U := U) st.cacheP stateIn with
-            | some (cachedOut, cacheTail) => pure (cachedOut, cacheTail, st.stdMemo)
+            | some (cachedOut, cacheTail) =>
+                let trΔ' :=
+                  { st.trΔ with p := Section52.TraceTableOps.add st.trΔ.p stateIn cachedOut }
+                pure (cachedOut, cacheTail, st.stdMemo, trΔ')
             | none =>
-                match lookupPermByInput (StmtIn := StmtIn) (U := U) st.trace stateIn with
-                | some recovered => pure (recovered, st.cacheP, st.stdMemo)
+                match Section52.TraceTableOps.inlu st.trΔ.p stateIn with
+                | some recovered => pure (recovered, st.cacheP, st.stdMemo, st.trΔ)
                 | none =>
                     let sampledOut ←
                       StateT.lift <|
                         OptionT.lift <| sampleStateWithOracle (U := U) challengeSpec
-                    pure (sampledOut, st.cacheP, st.stdMemo)
+                    let trΔ' :=
+                      { st.trΔ with p :=
+                          Section52.TraceTableOps.add st.trΔ.p stateIn sampledOut }
+                    pure (sampledOut, st.cacheP, st.stdMemo, trΔ')
           let trace' := st.trace ++ [⟨.inr (.inl stateIn), stateOut⟩]
-          set { st with trace := trace', cacheP := cache', stdMemo := stdMemo' }
+          set { st with trace := trace', cacheP := cache', stdMemo := stdMemo', trΔ := trΔ' }
           return stateOut
       | some (some backtrackOut) =>
-          let (stateOut, cache', stdMemo') ←
+          -- Paper Item 4(d)/(e) (lines 1056-1071). Only the head of the synthesized chain is
+          -- `tr_∇.p.add`-ed; cache extras stay in `cacheP` until consumed (line 1070).
+          let (stateOut, cache', stdMemo', trΔ') ←
             if params.codecBridge.inCodecImage backtrackOut then
               match challengeIdxOfBacktrackOutput
                   (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) backtrackOut with
@@ -855,9 +891,9 @@ def d2sQueryStepWithOracle
                             (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
                             st.stdMemo stdQuery sampledRateBlocks
                         pure (sampledRateBlocks, stdMemo')
-                  match lookupPermByInput (StmtIn := StmtIn) (U := U) st.trace stateIn with
+                  match Section52.TraceTableOps.inlu st.trΔ.p stateIn with
                   | some recovered =>
-                      pure (recovered, st.cacheP, stdMemo')
+                      pure (recovered, st.cacheP, stdMemo', st.trΔ)
                   | none =>
                       let firstRate : Vector U SpongeSize.R :=
                         rateBlocks.headD (Vector.replicate SpongeSize.R default)
@@ -881,25 +917,34 @@ def d2sQueryStepWithOracle
                           mkStateFromSegments (U := U) rc.1 rc.2
                       let extraPairs :=
                         chainPairsFrom (U := U) synthesizedOut extraStates
-                      pure (synthesizedOut, st.cacheP ++ extraPairs, stdMemo')
+                      let trΔ' :=
+                        { st.trΔ with p :=
+                            Section52.TraceTableOps.add st.trΔ.p stateIn synthesizedOut }
+                      pure (synthesizedOut, st.cacheP ++ extraPairs, stdMemo', trΔ')
               | none =>
-                  match lookupPermByInput (StmtIn := StmtIn) (U := U) st.trace stateIn with
-                  | some recovered => pure (recovered, st.cacheP, st.stdMemo)
+                  match Section52.TraceTableOps.inlu st.trΔ.p stateIn with
+                  | some recovered => pure (recovered, st.cacheP, st.stdMemo, st.trΔ)
                   | none =>
                       let sampledOut ←
                         StateT.lift <|
                           OptionT.lift <| sampleStateWithOracle (U := U) challengeSpec
-                      pure (sampledOut, st.cacheP, st.stdMemo)
+                      let trΔ' :=
+                        { st.trΔ with p :=
+                            Section52.TraceTableOps.add st.trΔ.p stateIn sampledOut }
+                      pure (sampledOut, st.cacheP, st.stdMemo, trΔ')
             else
-              match lookupPermByInput (StmtIn := StmtIn) (U := U) st.trace stateIn with
-              | some recovered => pure (recovered, st.cacheP, st.stdMemo)
+              match Section52.TraceTableOps.inlu st.trΔ.p stateIn with
+              | some recovered => pure (recovered, st.cacheP, st.stdMemo, st.trΔ)
               | none =>
                   let sampledOut ←
                     StateT.lift <|
                       OptionT.lift <| sampleStateWithOracle (U := U) challengeSpec
-                  pure (sampledOut, st.cacheP, st.stdMemo)
+                  let trΔ' :=
+                    { st.trΔ with p :=
+                        Section52.TraceTableOps.add st.trΔ.p stateIn sampledOut }
+                  pure (sampledOut, st.cacheP, st.stdMemo, trΔ')
           let trace' := st.trace ++ [⟨.inr (.inl stateIn), stateOut⟩]
-          set { st with trace := trace', cacheP := cache', stdMemo := stdMemo' }
+          set { st with trace := trace', cacheP := cache', stdMemo := stdMemo', trΔ := trΔ' }
           return stateOut
 
 /-- Query implementation form of the Section 5.4 simulator with an explicit external

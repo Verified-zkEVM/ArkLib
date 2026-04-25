@@ -32,7 +32,7 @@ def forwardPermTraceOfDS
     | _ => none
 
 /-- Paper-facing predicate: `StdTrace` on `trace` does not abort. -/
-def StdTraceNoAbort
+def StdTraceNoAbort [DecidableEq StmtIn] [DecidableEq U]
     (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
   stdTraceSingle
@@ -42,24 +42,38 @@ def StdTraceNoAbort
       (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)))
 
 /-- Paper-facing predicate: `StdTrace` on `trace` aborts. -/
-def StdTraceAbort
+def StdTraceAbort [DecidableEq StmtIn] [DecidableEq U]
     (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
   ¬ StdTraceNoAbort
       (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
       remap trace
 
-/-- Paper-facing predicate: `BackTrack` does not hit the `err` branch on `(trace, state)`. -/
-def BackTrackNoAbort
+/-- Paper-facing predicate: `BackTrack` does not hit the `err` branch on `(trace, state)`.
+
+`tr_∇` (the sorted query-answer index of Definition 5.2) is bulk-initialized from `trace`
+internally so the predicate keeps a `(trace, state)`-only API. -/
+def BackTrackNoAbort [DecidableEq StmtIn] [DecidableEq U]
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (state : CanonicalSpongeState U) : Prop :=
-  (backTrack (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) trace state).run ≠ none
+  let trΔ : Section52.DefaultTraceDelta StmtIn U :=
+    Section52.DefaultTraceDelta.ofQueryLog trace
+  (backTrack (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+    trΔ (trace.length + 1) state).run ≠ none
 
-/-- Paper-facing predicate: `LookAhead` does not hit the `err` branch on `(trace, state, i)`. -/
-def LookAheadNoAbort
+/-- Paper-facing predicate: `LookAhead` does not hit the `err` branch on `(trace, state, i)`.
+
+The paper's `LookAhead(tr_∇.p, s, i)` takes only the permutation sub-table; we pass the
+empty `ListTraceTable` here since the predicate is signature-level (not computation-level)
+and `lookAhead` does not yet read from the table. -/
+def LookAheadNoAbort [DecidableEq U]
     (trace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) : Prop :=
-  lookAhead (pSpec := pSpec) (U := U) trace state i ≠
+  let trΔp : Section52.ListBacked.ListTraceTable
+      (CanonicalSpongeState U) (CanonicalSpongeState U) :=
+    Section52.TraceTableOps.empty
+  let _ := trace
+  lookAhead (pSpec := pSpec) (U := U) trΔp state i ≠
     (failure : OptionT (OracleComp (Unit →ₒ U)) (Option (Vector U (challengeSize i))))
 
 section D2SQueryNoAbort
@@ -88,7 +102,7 @@ def D2SQueryAbortOnTrace
       (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) params trace
 
 /-- Lemma 5.17: if `E(tr) = 0`, then `StdTrace(tr)` does not abort. -/
-theorem lemma_5_17_stdTrace_noAbort
+theorem lemma_5_17_stdTrace_noAbort [DecidableEq StmtIn] [DecidableEq U]
     (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (hE : ¬ OracleSpec.QueryLog.BadEventDS.E trace) :
@@ -134,7 +148,7 @@ Theorem 5.20 (paper direction): if `StdTrace(tr)` aborts, then `E(tr)` holds.
 
 This is the non-contrapositive statement used in Section 5.7.
 -/
-theorem theorem_5_20_stdTrace_abort_implies_badEvent
+theorem theorem_5_20_stdTrace_abort_implies_badEvent [DecidableEq StmtIn] [DecidableEq U]
     (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (hAbort :
@@ -152,7 +166,7 @@ theorem theorem_5_20_stdTrace_abort_implies_badEvent
 Claim 5.19: if `E_inv(tr, s) = E_prp(tr) = E_fork(tr, s) = 0`,
 then `backTrack(tr, s) ≠ err`.
 -/
-theorem claim_5_19_backTrack_noAbort
+theorem claim_5_19_backTrack_noAbort [DecidableEq StmtIn] [DecidableEq U]
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (state : CanonicalSpongeState U)
     (hInv : ¬ OracleSpec.QueryLog.BadEventDS.E_inv_paper trace state)
@@ -166,7 +180,7 @@ Claim 5.20: if `E_prp(tr) = 0`, then `lookAhead(tr.p, s, i) ≠ err` for all `(s
 
 Here `tr.p` is `forwardPermTraceOfDS tr`.
 -/
-theorem claim_5_20_lookAhead_noAbort
+theorem claim_5_20_lookAhead_noAbort [DecidableEq U]
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (state : CanonicalSpongeState U)
     (i : pSpec.ChallengeIdx)

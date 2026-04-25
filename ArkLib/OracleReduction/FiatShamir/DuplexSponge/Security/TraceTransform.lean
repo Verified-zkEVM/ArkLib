@@ -18,9 +18,9 @@ open OracleComp OracleSpec ProtocolSpec
 
 namespace DuplexSpongeFS
 
-variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
+variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type} [DecidableEq StmtIn]
   {n : ℕ} {pSpec : ProtocolSpec n}
-  {U : Type} [SpongeUnit U] [SpongeSize]
+  {U : Type} [SpongeUnit U] [SpongeSize] [DecidableEq U]
   [HasMessageSize pSpec] [HasChallengeSize pSpec]
 
 noncomputable section
@@ -153,6 +153,9 @@ private def stdTraceEntries
     OptionT (OracleComp (Unit →ₒ U))
       (List (StdTraceEntry (StmtIn := StmtIn) (pSpec := pSpec) (U := U))) :=
   let dsTrace := dsTraceOfLog (oSpec := oSpec) (StmtIn := StmtIn) (U := U) log
+  -- Paper StdTrace step 3 (lines 1146–1149): bulk-init `tr_∇` once over `dsTrace`.
+  let dsTrΔ : Section52.DefaultTraceDelta StmtIn U :=
+    Section52.DefaultTraceDelta.ofQueryLog dsTrace
   let fwdPermTrace := forwardPermTraceOfDS (StmtIn := StmtIn) (U := U) dsTrace
   let rec go
       (remaining : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
@@ -174,7 +177,7 @@ private def stdTraceEntries
             match
                 (backTrack
                   (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-                  dsTrace stateIn).run with
+                  dsTrΔ (dsTrace.length + 1) stateIn).run with
             | none =>
                 failure
             | some none =>
@@ -201,7 +204,8 @@ private def stdTraceEntries
                           go rest (trStd ++ [stdEntry]) trStdLA
                       | none => do
                           let rhoHat? ←
-                            lookAhead (pSpec := pSpec) (U := U) fwdPermTrace stateIn roundIdx
+                            lookAhead (pSpec := pSpec) (U := U)
+                              dsTrΔ.p stateIn roundIdx
                           match rhoHat? with
                           | none =>
                               go rest trStd trStdLA

@@ -5,37 +5,59 @@ Authors: Quang Dao, Chung Thai Nguyen
 -/
 
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceDataStructures
 
 /-!
 # Lookahead sequence family and procedure
 
 This file contains the lookahead sequence family and procedure for the analysis of duplex sponge
 Fiat-Shamir, following Section 5.3 in the paper.
+
+## Paper-faithful black-box `tr_∇.p` access
+
+Following CO25 §5.3, `LookAhead` consults the simulator's permutation table `tr_∇.p` exclusively
+through the operational interface `TraceTableOps.inlu`. Concretely:
+
+* `successorCandidates trΔp s` collapses to `tr_∇.p.inlu(s)` plus the no-loop guard
+  `cap(s) ≠ cap(s')`. When `inlu = ⟂` (zero **or** multiple matches), the procedure terminates
+  the chain — matching the paper's Algorithm 2 spec.
+* `LookaheadSequence trΔp state` carries an `inlu`-membership invariant, so callers reason about
+  the abstract `Multiset (K × V)` model rather than the raw `forwardPermutationOracle` query log.
+
+By parameterizing every step over `[LawfulTraceTable T_P ...]`, the executable procedure and the
+soundness lemmas built atop `LookaheadSequence` are entirely independent of the concrete trace
+representation; swapping the list-backed default for an `RBMap`-backed implementation requires no
+proof changes.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
 
 namespace DuplexSpongeFS
 
+open Section52
+
 variable {StmtIn : Type}
   {n : ℕ} {pSpec : ProtocolSpec n}
-  {U : Type} [SpongeUnit U] [SpongeSize]
+  {U : Type} [SpongeUnit U] [SpongeSize] [DecidableEq U]
   [HasChallengeSize pSpec]
 
 noncomputable section
 
-/-- A look-ahead sequence (Equation 14) of a given trace of forward permutation queries, and an
+/-- A look-ahead sequence (Equation 14) over a black-box permutation table `tr_∇.p` and an
   initial state, consists of:
-- A list of input states
-- A list of output states
+- A list of `(s_in, s_out)` query-answer pairs,
 
 subject to the following conditions:
-- The two list of states have the same length
+- The list is nonempty
 - The first input state is the given initial state
-  ...
-
-TODO: refactor this to cut down on data (can just omit output states?) -/
-structure LookaheadSequence (trace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
+- Every pair appears as a unique forward lookup in `tr_∇.p`, i.e. `inlu trΔp s_in = some s_out`
+- Consecutive pairs are linked by output/input equality
+- No-loop: `cap(s_in) ≠ cap(s_out)` at every step
+-/
+structure LookaheadSequence
+    {T_P : Type}
+    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+    (trΔp : T_P)
     (state : CanonicalSpongeState U) where
   /-- The list of query-answer pairs `(s_in, s_out)` forming this look-ahead chain. -/
   pairs : List (CanonicalSpongeState U × CanonicalSpongeState U)
@@ -43,42 +65,46 @@ structure LookaheadSequence (trace : QueryLog (forwardPermutationOracle (Canonic
   nonempty : pairs ≠ []
   /-- The first input state in the chain is the given initial state. -/
   first_inputState_eq_state : pairs.head?.map Prod.fst = some state
-  /-- Every query-answer pair in the chain appears in the trace. -/
-  inputOutput_in_trace : ∀ pair ∈ pairs, ⟨pair.1, pair.2⟩ ∈ trace
+  /-- Every query-answer pair in the chain is a unique forward lookup in `tr_∇.p`. -/
+  inputOutput_via_inlu : ∀ pair ∈ pairs,
+    TraceTableOps.inlu (V := CanonicalSpongeState U) trΔp pair.1 = some pair.2
   /-- Consecutive pairs are linked by output/input equality. -/
   outputState_eq_next_inputState : List.IsChain (fun a b => a.2 = b.1) pairs
   /-- No loop across query and answer capacity segments at each step. -/
   capacitySegment_inputState_ne_outputState : ∀ pair ∈ pairs,
     pair.1.capacitySegment ≠ pair.2.capacitySegment
 
+variable {T_P : Type}
+  [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+
 def LookaheadSequence.inputState
-    {trace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U))}
-    {state : CanonicalSpongeState U} (seq : LookaheadSequence trace state) :
+    {trΔp : T_P}
+    {state : CanonicalSpongeState U} (seq : LookaheadSequence trΔp state) :
     List (CanonicalSpongeState U) :=
   seq.pairs.map Prod.fst
 
 def LookaheadSequence.outputState
-    {trace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U))}
-    {state : CanonicalSpongeState U} (seq : LookaheadSequence trace state) :
+    {trΔp : T_P}
+    {state : CanonicalSpongeState U} (seq : LookaheadSequence trΔp state) :
     List (CanonicalSpongeState U) :=
   seq.pairs.map Prod.snd
 
 lemma LookaheadSequence.inputState_length_eq_outputState_length
-    {trace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U))}
-    {state : CanonicalSpongeState U} (seq : LookaheadSequence trace state) :
+    {trΔp : T_P}
+    {state : CanonicalSpongeState U} (seq : LookaheadSequence trΔp state) :
     seq.inputState.length = seq.outputState.length := by
   simp [LookaheadSequence.inputState, LookaheadSequence.outputState]
 
-/-- A family of look-ahead sequences (Equation 14), parametrized by a trace of forward permutation
-  queries, an initial state, and a challenge round index `i`, is defined as a finite set of
-  look-ahead sequences such that:
+/-- A family of look-ahead sequences (Equation 14), parametrized by a black-box permutation
+  table `tr_∇.p`, an initial state, and a challenge round index `i`, is defined as a finite set
+  of look-ahead sequences such that:
 - no two sequences are strict subsets of each other
 - the length of any sequence is at most `Lᵥ(i)` (number of permutation calls for round `i`) -/
 structure LookaheadSequenceFamily
-    (trace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
+    (trΔp : T_P)
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) where
   /-- The family of look-ahead sequences, defined as a finite set -/
-  seqFamily : Finset (LookaheadSequence trace state)
+  seqFamily : Finset (LookaheadSequence trΔp state)
   /-- Maximality condition on distinct elements: no strict containment between two sequences,
   defined in terms of
     - the input states are not a strict subset of each other, or
@@ -89,21 +115,18 @@ structure LookaheadSequenceFamily
   /-- The length of any sequence is at most `Lᵥ(i)` -/
   length_le_numPermQueriesChallenge : ∀ s ∈ seqFamily, s.inputState.length ≤ pSpec.Lᵥᵢ i
 
+/-- Successor candidates from `tr_∇.p` (paper §5.3 Algorithm 2 line "next ← inlu(p, current)").
+Returns a singleton `[next]` when the unique forward lookup succeeds and `cap` does not loop;
+otherwise `[]` (i.e. paper-`⟂`/skip). Multiple matches collapse to `[]` via `inlu`'s uniqueness
+law — the paper-`err` case is detected only at the maximal-family level. -/
 private def successorCandidates
-    (trace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
-    (current : CanonicalSpongeState U) : List (CanonicalSpongeState U) :=
-  by
-    classical
-    exact trace.filterMap fun entry =>
-      match entry with
-      | ⟨stateIn, stateOut⟩ =>
-        if hIn : stateIn = current then
-          if hLoop : stateIn.capacitySegment = stateOut.capacitySegment then
-            none
-          else
-            some stateOut
-        else
-          none
+    (trΔp : T_P) (current : CanonicalSpongeState U) :
+    List (CanonicalSpongeState U) :=
+  match TraceTableOps.inlu (V := CanonicalSpongeState U) trΔp current with
+  | none => []
+  | some next =>
+    if current.capacitySegment = next.capacitySegment then []
+    else [next]
 
 private inductive BuildLookaheadResult (U : Type) [SpongeUnit U] [SpongeSize] where
   | err
@@ -111,7 +134,7 @@ private inductive BuildLookaheadResult (U : Type) [SpongeUnit U] [SpongeSize] wh
   | found (outputState : List (CanonicalSpongeState U))
 
 private def buildLookaheadOutputStates
-    (trace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
+    (trΔp : T_P)
     (state : CanonicalSpongeState U) (maxSteps : Nat) :
     BuildLookaheadResult U :=
   let rec go (fuel : Nat) (current : CanonicalSpongeState U)
@@ -121,8 +144,7 @@ private def buildLookaheadOutputStates
     | 0 =>
       if outputRev = [] then .none else .found outputRev.reverse
     | fuel + 1 =>
-      let succs := successorCandidates (U := U) trace current
-      match succs with
+      match successorCandidates (T_P := T_P) (U := U) trΔp current with
       | [] =>
         if outputRev = [] then .none else .found outputRev.reverse
       | [next] => go fuel next (next :: outputRev)
@@ -130,99 +152,120 @@ private def buildLookaheadOutputStates
   go maxSteps state []
 
 private lemma mem_successorCandidates_iff
-    (trace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
-    (current next : CanonicalSpongeState U) :
-    next ∈ successorCandidates (U := U) trace current ↔
-      ⟨current, next⟩ ∈ trace ∧ current.capacitySegment ≠ next.capacitySegment := by
-  classical
+    (trΔp : T_P) (current next : CanonicalSpongeState U) :
+    next ∈ successorCandidates (T_P := T_P) (U := U) trΔp current ↔
+      TraceTableOps.inlu (V := CanonicalSpongeState U) trΔp current = some next ∧
+        current.capacitySegment ≠ next.capacitySegment := by
   unfold successorCandidates
-  simp [List.mem_filterMap, and_comm]
+  cases hLookup :
+      TraceTableOps.inlu (V := CanonicalSpongeState U) trΔp current with
+  | none =>
+      constructor
+      · intro hMem
+        exact (List.not_mem_nil hMem).elim
+      · rintro ⟨hSome, _⟩
+        cases hSome
+  | some v =>
+      by_cases hCap : current.capacitySegment = v.capacitySegment
+      · simp only [hCap, ↓reduceIte, List.not_mem_nil, false_iff, not_and, not_not]
+        intro hSome
+        have hvn : v = next := Option.some.inj hSome
+        subst hvn
+        rfl
+      · simp only [hCap, ↓reduceIte, List.mem_singleton]
+        constructor
+        · intro hMem
+          subst hMem
+          exact ⟨rfl, hCap⟩
+        · rintro ⟨hSome, _⟩
+          exact (Option.some.inj hSome).symm
 
 private def singletonLookaheadSequence
-    (trace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
+    (trΔp : T_P)
     (state next : CanonicalSpongeState U)
-    (hInTrace : ⟨state, next⟩ ∈ trace)
+    (hInlu : TraceTableOps.inlu (V := CanonicalSpongeState U) trΔp state = some next)
     (hNoLoop : state.capacitySegment ≠ next.capacitySegment) :
-    LookaheadSequence trace state :=
+    LookaheadSequence trΔp state :=
   { pairs := [(state, next)]
     nonempty := by simp
     first_inputState_eq_state := by simp
-    inputOutput_in_trace := by
+    inputOutput_via_inlu := by
       intro pair hPair
-      have hPair' : pair = (state, next) := by simpa using hPair
+      have hPair' : pair = (state, next) := List.mem_singleton.mp hPair
       subst hPair'
-      simpa using hInTrace
+      exact hInlu
     outputState_eq_next_inputState := by simp
     capacitySegment_inputState_ne_outputState := by
       intro pair hPair
-      have hPair' : pair = (state, next) := by simpa using hPair
+      have hPair' : pair = (state, next) := List.mem_singleton.mp hPair
       subst hPair'
-      simpa using hNoLoop }
+      exact hNoLoop }
 
 private def prependLookaheadSequence
-    (trace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
+    (trΔp : T_P)
     (state next : CanonicalSpongeState U)
-    (hInTrace : ⟨state, next⟩ ∈ trace)
+    (hInlu : TraceTableOps.inlu (V := CanonicalSpongeState U) trΔp state = some next)
     (hNoLoop : state.capacitySegment ≠ next.capacitySegment)
-    (tail : LookaheadSequence trace next) :
-    LookaheadSequence trace state :=
+    (tail : LookaheadSequence trΔp next) :
+    LookaheadSequence trΔp state :=
   { pairs := (state, next) :: tail.pairs
     nonempty := by simp
     first_inputState_eq_state := by simp
-    inputOutput_in_trace := by
+    inputOutput_via_inlu := by
       intro pair hPair
-      have hMem : pair = (state, next) ∨ pair ∈ tail.pairs := by simpa using hPair
-      cases hMem with
-      | inl hEq =>
-          subst hEq
-          simpa using hInTrace
-      | inr hTail =>
-          exact tail.inputOutput_in_trace pair hTail
+      rcases List.mem_cons.mp hPair with hEq | hRest
+      · subst hEq
+        exact hInlu
+      · exact tail.inputOutput_via_inlu pair hRest
     outputState_eq_next_inputState := by
       cases hPairs : tail.pairs with
       | nil =>
-          cases (tail.nonempty hPairs)
+          exact (tail.nonempty hPairs).elim
       | cons head rest =>
           have hHead : head.1 = next := by
-            simpa [hPairs] using tail.first_inputState_eq_state
+            have hHd := tail.first_inputState_eq_state
+            rw [hPairs] at hHd
+            simp at hHd
+            exact hHd
           have hTailChain : List.IsChain (fun a b => a.2 = b.1) (head :: rest) := by
-            simpa [hPairs] using tail.outputState_eq_next_inputState
-          simpa [hPairs, List.IsChain, hHead] using hTailChain
+            have hCh := tail.outputState_eq_next_inputState
+            rw [hPairs] at hCh
+            exact hCh
+          exact List.IsChain.cons_cons hHead.symm hTailChain
     capacitySegment_inputState_ne_outputState := by
       intro pair hPair
-      have hMem : pair = (state, next) ∨ pair ∈ tail.pairs := by simpa using hPair
-      cases hMem with
-      | inl hEq =>
-          subst hEq
-          simpa using hNoLoop
-      | inr hTail =>
-          exact tail.capacitySegment_inputState_ne_outputState pair hTail }
+      rcases List.mem_cons.mp hPair with hEq | hRest
+      · subst hEq
+        exact hNoLoop
+      · exact tail.capacitySegment_inputState_ne_outputState pair hRest }
 
 private structure LookaheadCandidate
-    (trace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
+    (trΔp : T_P)
     (state : CanonicalSpongeState U) (maxSteps : Nat) where
-  seq : LookaheadSequence trace state
+  seq : LookaheadSequence trΔp state
   length_le : seq.pairs.length ≤ maxSteps
 
 private def buildLookaheadCandidates
-    (trace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
+    (trΔp : T_P)
     (state : CanonicalSpongeState U) (maxSteps : Nat) :
-    List (LookaheadCandidate (U := U) trace state maxSteps) := by
+    List (LookaheadCandidate (T_P := T_P) (U := U) trΔp state maxSteps) := by
   classical
   let rec go (fuel : Nat) (current : CanonicalSpongeState U) :
-      List (LookaheadCandidate (U := U) trace current fuel) :=
+      List (LookaheadCandidate (T_P := T_P) (U := U) trΔp current fuel) :=
     match fuel with
     | 0 => []
     | fuel + 1 =>
-      let succs := successorCandidates (U := U) trace current
+      let succs := successorCandidates (T_P := T_P) (U := U) trΔp current
       let buildFromNext (next : CanonicalSpongeState U) :
-          List (LookaheadCandidate (U := U) trace current (fuel + 1)) :=
-        if hInTrace : ⟨current, next⟩ ∈ trace then
+          List (LookaheadCandidate (T_P := T_P) (U := U) trΔp current (fuel + 1)) :=
+        if hInlu :
+            TraceTableOps.inlu (V := CanonicalSpongeState U) trΔp current = some next then
           if hNoLoop : current.capacitySegment ≠ next.capacitySegment then
             let singletonSeq :=
-              singletonLookaheadSequence (U := U) trace current next hInTrace hNoLoop
+              singletonLookaheadSequence (T_P := T_P) (U := U)
+                trΔp current next hInlu hNoLoop
             let singletonCandidate :
-                LookaheadCandidate (U := U) trace current (fuel + 1) :=
+                LookaheadCandidate (T_P := T_P) (U := U) trΔp current (fuel + 1) :=
               { seq := singletonSeq
                 length_le := by
                   have hSingletonLen : singletonSeq.pairs.length = 1 := by
@@ -231,9 +274,11 @@ private def buildLookaheadCandidates
                   exact hSingletonLen ▸ hOneLe }
             let tailCandidates := go fuel next
             let extendedCandidates :=
-              tailCandidates.map fun (tail : LookaheadCandidate (U := U) trace next fuel) =>
+              tailCandidates.map fun
+                  (tail : LookaheadCandidate (T_P := T_P) (U := U) trΔp next fuel) =>
                 let seq :=
-                  prependLookaheadSequence (U := U) trace current next hInTrace hNoLoop tail.seq
+                  prependLookaheadSequence (T_P := T_P) (U := U)
+                    trΔp current next hInlu hNoLoop tail.seq
                 have hLen : seq.pairs.length ≤ fuel + 1 := by
                   have hSeqLen : seq.pairs.length = tail.seq.pairs.length + 1 := by
                     unfold seq
@@ -252,51 +297,49 @@ private def buildLookaheadCandidates
   exact go maxSteps state
 
 private def computeAllLookaheadSequences
-    (trace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
+    (trΔp : T_P)
     (state : CanonicalSpongeState U) (maxSteps : Nat) :
-    Finset (LookaheadSequence trace state) := by
+    Finset (LookaheadSequence trΔp state) := by
   classical
   exact
-    ((buildLookaheadCandidates (U := U) trace state maxSteps).map
+    ((buildLookaheadCandidates (T_P := T_P) (U := U) trΔp state maxSteps).map
       (fun cand => cand.seq)).toFinset
 
 private lemma inputState_length_eq_pairs_length
-    {trace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U))}
-    {state : CanonicalSpongeState U} (seq : LookaheadSequence trace state) :
+    {trΔp : T_P}
+    {state : CanonicalSpongeState U} (seq : LookaheadSequence trΔp state) :
     seq.inputState.length = seq.pairs.length := by
   simp [LookaheadSequence.inputState]
 
 private lemma allLookaheadSequences_length_bound
-    (trace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
+    (trΔp : T_P)
     (state : CanonicalSpongeState U) (maxSteps : Nat)
-    (s : LookaheadSequence trace state)
-    (hs : s ∈ computeAllLookaheadSequences (U := U) trace state maxSteps) :
+    (s : LookaheadSequence trΔp state)
+    (hs : s ∈ computeAllLookaheadSequences (T_P := T_P) (U := U) trΔp state maxSteps) :
     s.inputState.length ≤ maxSteps := by
   classical
   unfold computeAllLookaheadSequences at hs
   have hsList :
-      s ∈ (buildLookaheadCandidates (U := U) trace state maxSteps).map
+      s ∈ (buildLookaheadCandidates (T_P := T_P) (U := U) trΔp state maxSteps).map
         (fun cand => cand.seq) := List.mem_toFinset.mp hs
   rcases List.mem_map.mp hsList with ⟨cand, hCandMem, hCandEq⟩
   have hCandInputLen : cand.seq.inputState.length = cand.seq.pairs.length := by
-    exact inputState_length_eq_pairs_length (U := U) cand.seq
+    exact inputState_length_eq_pairs_length (T_P := T_P) (U := U) cand.seq
   have hCandLe : cand.seq.inputState.length ≤ maxSteps := hCandInputLen ▸ cand.length_le
   have hSeqLen : s.inputState.length = cand.seq.inputState.length := by
     rw [← hCandEq]
   exact hSeqLen.trans_le hCandLe
 
-/-- Procedure to compute the lookahead sequence family (Equation 14)
-
-TODO: nail down exactly what this is; can it fail? -/
+/-- Procedure to compute the lookahead sequence family (Equation 14) over a black-box `tr_∇.p`. -/
 def computeLookaheadSequenceFamily
-    (trace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
+    (trΔp : T_P)
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
-    LookaheadSequenceFamily trace state i :=
+    LookaheadSequenceFamily trΔp state i :=
   by
     classical
     let maxSteps := pSpec.Lᵥᵢ i
-    let allSeqs := computeAllLookaheadSequences (U := U) trace state maxSteps
-    let isMaximal : LookaheadSequence trace state → Prop := fun s =>
+    let allSeqs := computeAllLookaheadSequences (T_P := T_P) (U := U) trΔp state maxSteps
+    let isMaximal : LookaheadSequence trΔp state → Prop := fun s =>
       ∀ s' ∈ allSeqs, s ≠ s' →
         ¬ (s.inputState ⊆ s'.inputState) ∨ ¬ (s'.outputState ⊆ s.outputState)
     let maxFamily := allSeqs.filter isMaximal
@@ -310,7 +353,8 @@ def computeLookaheadSequenceFamily
         length_le_numPermQueriesChallenge := by
           intro s hs
           have hsAll : s ∈ allSeqs := (Finset.mem_filter.mp hs).1
-          exact allLookaheadSequences_length_bound (U := U) trace state maxSteps s hsAll }
+          exact allLookaheadSequences_length_bound (T_P := T_P) (U := U)
+            trΔp state maxSteps s hsAll }
 
 private lemma challengeSize_le_Lvi_mul_R (i : pSpec.ChallengeIdx) :
     challengeSize i ≤ pSpec.Lᵥᵢ i * SpongeSize.R := by
@@ -362,25 +406,25 @@ private lemma length_flatten_vector_toList (blocks : List (Vector U SpongeSize.R
 private def takeVector (n : Nat) (xs : List U) (h : n ≤ xs.length) : Vector U n :=
   Vector.ofFn (fun j => xs[j.1]'(Nat.lt_of_lt_of_le j.2 h))
 
-/-- The lookahead procedure in Section 5.2, which takes in:
-- A query-answer trace for the oracle `p`
-- A permutation state (vector of `N` units)
-- A round index `i` for a challenge round
+/-- The lookahead procedure in Section 5.3, polymorphic over the black-box `tr_∇.p` table.
 
-Then performs a probabilistic computation (allowing to sample units uniformly at random) returning
-one of the following:
-- `none`
-- `err`
-- An encoded verifier's challenge (vector of `chalSize i` units)
+Takes:
+- `trΔp` — the simulator's permutation table `tr_∇.p` (any `LawfulTraceTable`),
+- `state` — initial permutation state,
+- `i` — challenge round index.
 
-TODO: figure out the best way to encode the two errors (currently we encode `err` as the failure of
-OracleComp, and `none` as `Option.none` inside)
+Performs a probabilistic computation (uniform unit sampling for missing blocks) returning:
+- `none` (paper-`⟂` / skip),
+- `err` (paper failure — multiple maximal sequences),
+- an encoded verifier challenge (`Vector U (challengeSize i)`).
 -/
-def lookAhead (_fwdPermTrace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
+def lookAhead
+    (trΔp : T_P)
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
     OptionT (OracleComp (Unit →ₒ U)) (Option (Vector U (challengeSize i))) := do
   let maxSteps := pSpec.Lᵥᵢ i
-  let family := computeLookaheadSequenceFamily (pSpec := pSpec) _fwdPermTrace state i
+  let family :=
+    computeLookaheadSequenceFamily (T_P := T_P) (U := U) (pSpec := pSpec) trΔp state i
   match hFamilyList : family.seqFamily.toList with
   | [] =>
     -- `none` in the paper.
@@ -400,7 +444,8 @@ def lookAhead (_fwdPermTrace : QueryLog (forwardPermutationOracle (CanonicalSpon
       have hKnownLenEqOutputLen : knownBlocks.length = seq.outputState.length := by
         simp [knownBlocks, outputState]
       have hOutputLenEqInputLen : seq.outputState.length = seq.inputState.length := by
-        exact (LookaheadSequence.inputState_length_eq_outputState_length (U := U) seq).symm
+        exact (LookaheadSequence.inputState_length_eq_outputState_length
+          (T_P := T_P) (U := U) seq).symm
       exact hKnownLenEqOutputLen.trans hOutputLenEqInputLen
     have hKnownLenLeMax : knownBlocks.length ≤ maxSteps := hKnownLenEqInputLen ▸ hInputLenLe
     let missingBlocks := maxSteps - knownBlocks.length
