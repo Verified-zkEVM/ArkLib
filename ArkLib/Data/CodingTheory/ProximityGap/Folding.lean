@@ -261,7 +261,6 @@ private lemma foldWordAux_coeff_eq_foldWordAuxCoeff_nat
 
 omit [Fintype F] in
 private lemma foldWordAux_eq_sum_of_foldWordAuxCoeff
-  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {x : F}
   [inst : NeZero k] :
   foldWordAux domain f k x = 
     ∑ j, Polynomial.C (foldWordAuxCoeff domain f k j x) * Y ^ j.val := by
@@ -310,43 +309,36 @@ private lemma indicated_polynomial_degree_x_lt
         (add unsafe (by rw [←Nat.lt_iff_le_pred]))
         (add simp [singleton_indicator_natDegree_lt_of_mem])
   
+omit [Fintype F] in
 private lemma indicated_polynomial_degree_y_lt
-  [Fintype F]
-  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {s' : Finset F}
-  [inst : NeZero k]
-  :
+  {s' : Finset F}
+  [inst : NeZero k] :
   Bivariate.natDegreeY (indicatedPolynomial domain f k s')
     < k := by
-  simp [Bivariate.natDegreeY, indicatedPolynomial]
-  rw [Nat.lt_iff_le_pred (by {
-    have h : k ≠ 0 := inst.out
-    omega
-  })]
-  apply natDegree_sum_le_of_forall_le
-  intro i hi
-  rw [←Nat.lt_iff_le_pred (by {
-    have h : k ≠ 0 := inst.out
-    omega
-  })]
-  apply lt_of_le_of_lt
-  apply natDegree_mul_le
-  simp [foldWordAux_natDegree]
-
+  simp only [Bivariate.natDegreeY, indicatedPolynomial]
+  rw [Nat.lt_iff_le_pred (by 
+    aesop 
+      (add safe forward [inst.out])
+      (add safe (by omega)))]
+  exact natDegree_sum_le_of_forall_le _ _ <| fun i hi ↦ 
+    le_trans natDegree_mul_le <| by
+      aesop 
+        (add unsafe (by rw [←Nat.lt_iff_le_pred]))
+        (add simp [foldWordAux_natDegree])
+        (add safe forward [inst.out])
+        (add safe (by omega))
+        
+omit [Fintype F] in
 private lemma indicated_polynomial_eq_foldAux
-  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {s' : Finset F}
-  {α : F} {x : F} (hx : x ∈ s')
-  :
+  {s' : Finset F}
+  {α : F} (hx : x ∈ s') :
   ((indicatedPolynomial domain f k s').eval (Polynomial.C α)).eval x
     = (foldWordAux domain f k x).eval α := by
-  simp only [indicatedPolynomial]
-  rw [eval_finset_sum, eval_finset_sum]
-  simp only [eval_mul, eval_C, eval_map_apply]
-  rw [Finset.sum_eq_ite x (by {
-    intro b hb hneq
-    rw [singleton_indicator_eq_0_on_S_minus_x (by aesop)]
-    simp
-  })]
-  simp [hx]
+  aesop 
+    (add simp [indicatedPolynomial, eval_finset_sum])
+    (add safe 
+      [(by rw [singleton_indicator_eq_0_on_S_minus_x]), 
+        (by rw [Finset.sum_eq_ite x])])
 
 private lemma indicated_polynomial_eval_eq_combination_of_correlated
   [Fintype F]
