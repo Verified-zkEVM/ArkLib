@@ -275,21 +275,16 @@ private lemma foldWordAux_eq_sum_of_foldWordAuxCoeff
     exact symm ∘ Finset.sum_eq_zero <| fun x _ ↦ match x with
       | ⟨x, hx⟩ => by aesop (add safe (by omega))
 
+omit [Fintype F] in
 private lemma fold_eq_sum_of_foldAuxCoeff_mul_pow_alpha
-  [Fintype F]
-  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {α : F} {x : F}
-  :
-  fold domain f k α x =
+  {α : F} :
+  foldValue domain f k α x =
     ∑ j, (foldWordAuxCoeff domain f (2 ^ k) j x) * α ^ j.val := by
-  unfold fold
-  rw [foldWordAux_eq_sum_of_foldWordAuxCoeff]
-  rw [Polynomial.eval_finset_sum]
-  conv =>
-    lhs
-    rhs
-    ext i
-    rw [Polynomial.eval_mul]
-    simp
+  aesop 
+    (add simp 
+      [foldValue,
+        Polynomial.eval_finset_sum,
+        foldWordAux_eq_sum_of_foldWordAuxCoeff])
 
 private noncomputable def indicatedPolynomial
   (domain : SmoothCosetFftDomain n F) (f : Word F (Fin (2 ^ n))) (k : ℕ) (s' : Finset F)
@@ -299,25 +294,22 @@ private noncomputable def indicatedPolynomial
     Polynomial.C (singletonIndicator x s') *
       (Polynomial.map Polynomial.C <| foldWordAux domain f k x)
 
+omit [Fintype F] in
 private lemma indicated_polynomial_degree_x_lt
-  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {s' : Finset F}
-  (hs' : s'.Nonempty)
-  :
+  {s' : Finset F}
+  (hs' : s'.Nonempty) :
   Bivariate.degreeX (indicatedPolynomial domain f k s')
     < s'.card := by
-  simp [Bivariate.degreeX, indicatedPolynomial]
+  simp only [Bivariate.degreeX, indicatedPolynomial, finset_sum_coeff, coeff_C_mul, coeff_map]
   rw [Finset.sup_lt_iff (by simp [hs'])]
   intro b hb
-  rw [Nat.lt_iff_le_pred]
-  apply natDegree_sum_le_of_forall_le
-  intro i hi
-  rw [←Nat.lt_iff_le_pred]
-  apply lt_of_le_of_lt
-  apply natDegree_mul_le
-  simp [singleton_indicator_natDegree_lt_of_mem hi]
-  simp [hs']
-  simp [hs']
-
+  rw [Nat.lt_iff_le_pred (by aesop)]
+  exact natDegree_sum_le_of_forall_le _ _ <| fun i hi ↦ 
+    le_trans natDegree_mul_le <| by
+      aesop 
+        (add unsafe (by rw [←Nat.lt_iff_le_pred]))
+        (add simp [singleton_indicator_natDegree_lt_of_mem])
+  
 private lemma indicated_polynomial_degree_y_lt
   [Fintype F]
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {s' : Finset F}
