@@ -82,6 +82,9 @@ class Codec {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
       [Fintype (pSpec.Challenge i)] [Nonempty (pSpec.Challenge i)],
       dist (PMF.uniformOfFintype (pSpec.Challenge i))
         (decode i <$> PMF.uniformOfFintype (Vector U (challengeSize i))) ≤ decodingBias i
+  /-- For every `i`, `decode i` is surjective: every challenge has at least one encoded preimage.
+    Required for the `ψ⁻¹` sampler in the Section 5.8 reduction. -/
+  decode_surjective : ∀ i, Function.Surjective (decode i)
   sampleChallengePreimage :
     (i : pSpec.ChallengeIdx) → pSpec.Challenge i → ProbComp (Vector U (challengeSize i))
 
@@ -113,6 +116,7 @@ def mk' {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
     [serMsgInj : ∀ i, Serialize.IsInjective (pSpec.Message i) (Vector U (mSize i))]
     [decChal : ∀ i, Deserialize (pSpec.Challenge i) (Vector U (cSize i))]
     [decChalUniform : ∀ i, Deserialize.CloseToUniform (pSpec.Challenge i) (Vector U (cSize i))]
+    (dechalSurj : ∀ i, Function.Surjective ((decChal i).deserialize))
     (sampler : (i : pSpec.ChallengeIdx) → pSpec.Challenge i → ProbComp (Vector U (cSize i))) :
     Codec pSpec U where
   messageSize := mSize
@@ -126,6 +130,7 @@ def mk' {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
       [_h3 : Fintype (pSpec.Challenge i)]
       [_h4 : Nonempty (pSpec.Challenge i)] => by
     convert (decChalUniform i).ε_close using 4
+  decode_surjective := dechalSurj
   sampleChallengePreimage := sampler
 
 end Codec

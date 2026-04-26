@@ -649,15 +649,6 @@ abbrev hyb4Dist
     (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec)
     initFS implFS V (d2sAlgo maliciousProver)
 
-/-- Surjectivity side condition for the verifier-message codec used in Section 5.8:
-every decoded challenge must have at least one encoded preimage under `Deserialize`. This is the
-formal hook needed to interpret the paper's `ψ⁻¹` sampler on verifier challenges.
--- TODO: use standard `surjective` definition instead
--/
-def ChallengeDeserializeSurjective : Prop :=
-  ∀ (i : pSpec.ChallengeIdx) (challenge : pSpec.Challenge i),
-    ∃ encoded : Vector U (challengeSize (pSpec := pSpec) i),
-      Deserialize.deserialize encoded = challenge
 
 private noncomputable def deserializePreimageFinset
     {i : pSpec.ChallengeIdx}
@@ -675,15 +666,15 @@ private noncomputable def uniformDeserializePreimage
     {κ : Type} {challengeSpec : OracleSpec κ}
     [Fintype U] [DecidableEq U]
     [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]
-    (hSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U) (codec := codec))
     {i : pSpec.ChallengeIdx}
     (challenge : pSpec.Challenge i) :
     OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)
       (Vector U (challengeSize (pSpec := pSpec) i)) := do
   have hpreimages_nonempty :
       (deserializePreimageFinset (pSpec := pSpec) (U := U) challenge).Nonempty := by
-    rcases hSurj i challenge with ⟨encoded, hencoded⟩
-    exact ⟨encoded, by simp [deserializePreimageFinset, hencoded]⟩
+    rcases codec.decode_surjective i challenge with ⟨encoded, hencoded⟩
+    have hencoded' : Deserialize.deserialize encoded = challenge := hencoded
+    exact ⟨encoded, by simp [deserializePreimageFinset, hencoded']⟩
   let preimages := (deserializePreimageFinset (pSpec := pSpec) (U := U) challenge).toList
   have hpreimages_ne : preimages ≠ [] := by
     simpa [preimages] using hpreimages_nonempty.toList_ne_nil
@@ -784,7 +775,6 @@ noncomputable def section58Hyb2Dist
     {T_H : Type} {T_P : Type}
     [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-    (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U) (codec := codec))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) :
     ProbComp (Option <| BasicFiatShamirGameOutput
@@ -814,7 +804,7 @@ noncomputable def section58Hyb2Dist
         OptionT.lift <|
           uniformDeserializePreimage
             (pSpec := pSpec) (U := U)
-            (challengeSpec := challengeSpec) hChallengeSurj challenge)
+            (challengeSpec := challengeSpec) challenge)
   exact
     section58HybridGameDist
       (T_H := T_H) (T_P := T_P)
@@ -845,7 +835,6 @@ noncomputable def section58Hyb3Dist
     {T_H : Type} {T_P : Type}
     [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-    (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U) (codec := codec))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) :
     ProbComp (Option <| BasicFiatShamirGameOutput
@@ -880,7 +869,7 @@ noncomputable def section58Hyb3Dist
         OptionT.lift <|
           uniformDeserializePreimage
             (pSpec := pSpec) (U := U)
-            (challengeSpec := challengeSpec) hChallengeSurj challenge)
+            (challengeSpec := challengeSpec) challenge)
   exact
     section58HybridGameDist
       (T_H := T_H) (T_P := T_P)
@@ -942,7 +931,6 @@ def claim_5_22
     [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (securityParam instanceBound : ℕ)
-    (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U) (codec := codec))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × pSpec.Messages))
@@ -956,7 +944,7 @@ def claim_5_22
         (pSpec := pSpec) (U := U) (codec := codec) V maliciousProver)
       (section58Hyb2Dist (T_H := T_H) (T_P := T_P)
         (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U) (codec := codec) hChallengeSurj V maliciousProver)
+        (pSpec := pSpec) (U := U) (codec := codec) V maliciousProver)
     ≤ claim5_22Bound (pSpec := pSpec) tₕ tₚ tₚᵢ (εcodec := codec.decodingBias)
 
 /-- Claim 5.23 target proposition on the canonical `Hyb₂`/`Hyb₃` experiments from Section 5.8. -/
@@ -972,7 +960,6 @@ def claim_5_23
     [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (securityParam instanceBound : ℕ)
-    (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U) (codec := codec))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × pSpec.Messages)) :
@@ -982,10 +969,10 @@ def claim_5_23
   tvDist
     (section58Hyb2Dist (T_H := T_H) (T_P := T_P)
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-      (pSpec := pSpec) (U := U) (codec := codec) hChallengeSurj V maliciousProver)
+      (pSpec := pSpec) (U := U) (codec := codec) V maliciousProver)
     (section58Hyb3Dist (T_H := T_H) (T_P := T_P)
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-      (pSpec := pSpec) (U := U) (codec := codec) hChallengeSurj V maliciousProver) = 0
+      (pSpec := pSpec) (U := U) (codec := codec) V maliciousProver) = 0
 
 /-- Claim 5.24 target proposition on the canonical `Hyb₃`/`Hyb₄` experiments from Section 5.8. -/
 def claim_5_24
@@ -1000,7 +987,6 @@ def claim_5_24
     [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (securityParam instanceBound : ℕ)
-    (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U) (codec := codec))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × pSpec.Messages))
@@ -1012,7 +998,7 @@ def claim_5_24
   tvDist
       (section58Hyb3Dist (T_H := T_H) (T_P := T_P)
         (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U) (codec := codec) hChallengeSurj V maliciousProver)
+        (pSpec := pSpec) (U := U) (codec := codec) V maliciousProver)
       (hyb4Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
         (pSpec := pSpec) (U := U)
         (paperIPInit (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec))
@@ -1039,7 +1025,6 @@ theorem lemma_5_1_dist_from_claims
     [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (securityParam instanceBound : ℕ)
     (hPermPackageLaw : Section58PermutationPackageLaw (U := U))
-    (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U) (codec := codec))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × pSpec.Messages))
@@ -1052,15 +1037,15 @@ theorem lemma_5_1_dist_from_claims
     (h22 : claim_5_22 (T_H := T_H) (T_P := T_P)
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U) (codec := codec)
-      securityParam instanceBound hChallengeSurj V maliciousProver tₕ tₚ tₚᵢ)
+      securityParam instanceBound V maliciousProver tₕ tₚ tₚᵢ)
     (h23 : claim_5_23 (T_H := T_H) (T_P := T_P)
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U) (codec := codec)
-      securityParam instanceBound hChallengeSurj V maliciousProver)
+      securityParam instanceBound V maliciousProver)
     (h24 : claim_5_24 (T_H := T_H) (T_P := T_P)
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U) (codec := codec)
-      securityParam instanceBound hChallengeSurj V maliciousProver d2sAlgo tₕ tₚ tₚᵢ)
+      securityParam instanceBound V maliciousProver d2sAlgo tₕ tₚ tₚᵢ)
     (hBound :
       claim5_21Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries
         + claim5_22Bound (pSpec := pSpec) tₕ tₚ tₚᵢ (εcodec := codec.decodingBias)
@@ -1086,10 +1071,10 @@ theorem lemma_5_1_dist_from_claims
       tvDist
         (section58Hyb2Dist (T_H := T_H) (T_P := T_P)
           (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-          (pSpec := pSpec) (U := U) (codec := codec) hChallengeSurj V maliciousProver)
+          (pSpec := pSpec) (U := U) (codec := codec) V maliciousProver)
         (section58Hyb3Dist (T_H := T_H) (T_P := T_P)
           (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-          (pSpec := pSpec) (U := U) (codec := codec) hChallengeSurj V maliciousProver)
+          (pSpec := pSpec) (U := U) (codec := codec) V maliciousProver)
         ≤ (0 : ℝ) := by
     rw [h23]
   have hChain :=
@@ -1106,10 +1091,10 @@ theorem lemma_5_1_dist_from_claims
         (pSpec := pSpec) (U := U) (codec := codec) V maliciousProver)
       (H₂ := section58Hyb2Dist (T_H := T_H) (T_P := T_P)
         (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U) (codec := codec) hChallengeSurj V maliciousProver)
+        (pSpec := pSpec) (U := U) (codec := codec) V maliciousProver)
       (H₃ := section58Hyb3Dist (T_H := T_H) (T_P := T_P)
         (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U) (codec := codec) hChallengeSurj V maliciousProver)
+        (pSpec := pSpec) (U := U) (codec := codec) V maliciousProver)
       (H₄ := hyb4Dist (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
         (pSpec := pSpec) (U := U)
         (paperIPInit (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec))
@@ -1169,7 +1154,6 @@ theorem lemma_5_1
       (permutationOracle (CanonicalSpongeState U)) (StateT σPerm ProbComp))
       -- TODO: check p⁻¹ query impl
     (securityParam instanceBound : ℕ)
-    (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U) (codec := codec))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (tShared : oSpec.Domain → ℕ) (tₕ tₚ tₚᵢ : ℕ)
     (hTp : tₚ ≥ max pSpec.totalNumPermQueriesMessage pSpec.totalNumPermQueriesChallenge) :
