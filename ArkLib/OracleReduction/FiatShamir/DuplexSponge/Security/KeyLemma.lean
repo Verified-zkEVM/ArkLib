@@ -1122,6 +1122,17 @@ theorem lemma_5_1_dist_from_claims
       h21 h22 h23' h24
   linarith
 
+/-- Semantic per-index query bound for a malicious prover in `lemma_5_1`.
+    `tShared` bounds queries to the ambient `oSpec`; `(tₕ, tₚ, tₚᵢ)` bound the three DS
+    sub-oracles. Uses `duplexSpongeQueryBudgetWithShared` from `Defs.lean`. -/
+abbrev IsLemma5_1QueryBound
+    [DecidableEq ι]
+    (maliciousProver :
+      OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages))
+    (tShared : oSpec.Domain → ℕ) (tₕ tₚ tₚᵢ : ℕ) : Prop :=
+  OracleComp.IsPerIndexQueryBound maliciousProver
+    (duplexSpongeQueryBudgetWithShared (StmtIn := StmtIn) (U := U) tShared tₕ tₚ tₚᵢ)
+
 /--
 Lemma 5.1 in existential form (paper-facing statement), for the canonical Section 5.8 oracle
 surface.
@@ -1135,10 +1146,6 @@ the stated query bound. The auxiliary hybrid trace algorithms used in the Sectio
 remain an internal proof obligation when proving this theorem from
 `lemma_5_1_dist_from_claims`.
 
-TODO: upgrade the malicious-prover hypothesis from `IsTotalQueryBound (tₕ + tₚ + tₚᵢ)` to the
-same per-index `(tₕ, tₚ, tₚᵢ)` query-bound surface used by `BadEvents.lemma_5_8`, so the theorem
-matches the paper's Section 5 statement more closely.
-
 TODO: reintroduce an explicit semantic assumption capturing that `(permInit, permImpl)` really
 samples the paper's random permutation experiment `𝒟_𝔖(λ,n)`. The old package-level law was too
 hidden for the public theorem surface, but the theorem should eventually state this requirement
@@ -1148,6 +1155,7 @@ theorem lemma_5_1
     [Fintype U] [SampleableType U]
     [DecidableEq U]
     [DecidableEq StmtIn]
+    [DecidableEq ι]
     [∀ i, Fintype (pSpec.Message i)]
     [∀ i, Fintype (pSpec.Challenge i)]
     [∀ i, SampleableType (pSpec.Challenge i)]
@@ -1163,7 +1171,7 @@ theorem lemma_5_1
     (securityParam instanceBound : ℕ)
     (hChallengeSurj : ChallengeDeserializeSurjective (pSpec := pSpec) (U := U) (codec := codec))
     (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (tₕ tₚ tₚᵢ : ℕ)
+    (tShared : oSpec.Domain → ℕ) (tₕ tₚ tₚᵢ : ℕ)
     (hTp : tₚ ≥ max pSpec.totalNumPermQueriesMessage pSpec.totalNumPermQueriesChallenge) :
     ∃ (d2sAlgo : D2SAlgo (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (paperD2STrace :
@@ -1172,8 +1180,7 @@ theorem lemma_5_1
             (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec))),
       ∀ (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
           (StmtIn × pSpec.Messages)),
-          -- TODO: fix query bound to each oracles `(tₕ, tₚ, tₚᵢ)`, via  `IsIndexQueryBound`
-      OracleComp.IsTotalQueryBound maliciousProver (tₕ + tₚ + tₚᵢ) →
+      IsLemma5_1QueryBound maliciousProver tShared tₕ tₚ tₚᵢ →
       tvDist -- 1/2 ∑ |p(i) - q(i)|
          -- hybrid 0
         (mappedDuplexSpongeFiatShamirGameDist

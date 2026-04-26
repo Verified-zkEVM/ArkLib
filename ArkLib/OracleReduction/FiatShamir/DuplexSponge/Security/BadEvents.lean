@@ -612,14 +612,11 @@ variable {StmtOut : Type}
     (CanonicalSpongeState U) (CanonicalSpongeState U)]
 
 /-- Per-oracle query budget map for a Section 5.6 malicious prover:
-- `tₕ` bounds `h` queries,
-- `tₚ` bounds forward `p` queries,
-- `tₚᵢ` bounds backward `p⁻¹` queries. -/
+`tₕ` bounds `h` queries, `tₚ` forward `p` queries, `tₚᵢ` backward `p⁻¹` queries.
+Alias for `duplexSpongeQueryBudget`. -/
 def lemma5_8QueryBudget (tₕ tₚ tₚᵢ : ℕ) :
-    (duplexSpongeChallengeOracle StmtIn U).Domain → ℕ
-  | .inl _ => tₕ
-  | .inr (.inl _) => tₚ
-  | .inr (.inr _) => tₚᵢ
+    (duplexSpongeChallengeOracle StmtIn U).Domain → ℕ :=
+  duplexSpongeQueryBudget tₕ tₚ tₚᵢ
 
 /-- Semantic `(tₕ, tₚ, tₚᵢ)` query bound for a malicious prover in Lemma 5.8. -/
 abbrev IsLemma5_8QueryBound
