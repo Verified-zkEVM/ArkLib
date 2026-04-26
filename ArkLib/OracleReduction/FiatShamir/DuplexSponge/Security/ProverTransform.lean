@@ -23,7 +23,7 @@ namespace DuplexSpongeFS
 variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
   {n : ℕ} {pSpec : ProtocolSpec n}
   {U : Type} [SpongeUnit U] [SpongeSize]
-  [HasMessageSize pSpec] [HasChallengeSize pSpec]
+  {codec : Codec pSpec U}
 
 local instance : Inhabited U := ⟨0⟩
 
@@ -127,7 +127,8 @@ structure D2SCodecBridge where
 and `forwardExtensionLength` controls how many additional permutation links are memoized in
 `cacheP` after a valid backtrack hit (Item 4(e)iiiD). -/
 structure D2SQueryParams where
-  codecBridge : D2SCodecBridge (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+  codecBridge :
+    D2SCodecBridge (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec)
   forwardExtensionLength :
     BacktrackOutput (StmtIn := StmtIn) (n := n) (U := U) → Nat := fun _ => 0
 
@@ -230,7 +231,8 @@ The function preserves the key control flow:
 - `backTrack = none` follows cache/trace/random fallback,
 - `backTrack = some` branches by validity and can extend `cacheP`. -/
 def d2sQueryStep
-    (params : D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+    (params : D2SQueryParams
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec))
     (q : (duplexSpongeChallengeOracle StmtIn U).Domain) :
     StateT (D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
       (OptionT (OracleComp (Unit →ₒ U)))
@@ -379,7 +381,8 @@ def d2sQueryStep
 
 /-- Query implementation form of the `D2SQuery` core procedure. -/
 def d2sQueryImplCore
-    (params : D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :
+    (params : D2SQueryParams
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec)) :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
       (StateT (D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
         (OptionT (OracleComp (Unit →ₒ U)))) :=
@@ -389,7 +392,8 @@ def d2sQueryImplCore
 
 `none` denotes abort (the `err` branch in the paper). -/
 def runD2SQueryCore
-    (params : D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+    (params : D2SQueryParams
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec))
     {α : Type}
     (comp : OracleComp (duplexSpongeChallengeOracle StmtIn U) α) :
     OptionT (OracleComp (Unit →ₒ U))
@@ -416,7 +420,8 @@ auxiliary unit-sampling oracle.
 -/
 def runD2SQueryStepWithUnitImpl
     (unitImpl : QueryImpl (Unit →ₒ U) ProbComp)
-    (params : D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+    (params : D2SQueryParams
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec))
     (q : (duplexSpongeChallengeOracle StmtIn U).Domain)
     (st : D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :
     ProbComp
@@ -449,7 +454,8 @@ into a concrete `QueryImpl ... (StateT ... ProbComp)` by:
 -/
 def d2sQueryImplCoreProb
     (unitImpl : QueryImpl (Unit →ₒ U) ProbComp)
-    (params : D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+    (params : D2SQueryParams
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec))
     (onAbort :
       (q : (duplexSpongeChallengeOracle StmtIn U).Domain) →
         D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) →
@@ -483,7 +489,8 @@ Uniform-sampling instantiation of `d2sQueryImplCoreProb`.
 -/
 def d2sQueryImplCoreUniform
     [SampleableType U]
-    (params : D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :
+    (params : D2SQueryParams
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec)) :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
       (StateT (D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
         ProbComp) :=
@@ -502,7 +509,6 @@ variable [DecidableEq StmtIn] [DecidableEq U]
   {T_P : Type}
   [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
   [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-  [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
   [∀ i, Fintype (pSpec.Message i)]
   [∀ i, DecidableEq (pSpec.Message i)]
 
@@ -539,6 +545,7 @@ private noncomputable def paperCodecImageWitness?
             (StmtIn := StmtIn) (n := n) (U := U) out &&
           decide (pSpec.Lᵥᵢ roundIdx ≤ out.absorbedRatePrefix.length) then
         match section58AbsorbedPrefixMessagesUpTo?
+            (codec := codec)
             (pSpec := pSpec) (U := U) roundIdx out.absorbedRatePrefix with
         | some messagesUpTo =>
             some { roundIdx := roundIdx, messagesUpTo := messagesUpTo }
@@ -555,6 +562,7 @@ private def defaultInCodecImageApprox
     (out : BacktrackOutput (StmtIn := StmtIn) (n := n) (U := U)) : Bool :=
   let parseParams : BacktrackParseParams := {}
   match paperCodecImageWitness?
+      (codec := codec)
       (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) out with
   | none => false
   | some witness =>
@@ -578,16 +586,20 @@ Item 4(d)/(e) branch predicate. At the moment, `defaultInCodecImageApprox` shoul
 the executable approximation used by the default simulator, not as a proved equivalent
 formalization of the paper condition. -/
 private def defaultD2SCodecBridge :
-    D2SCodecBridge (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) :=
+    D2SCodecBridge
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec) :=
   { inCodecImage := defaultInCodecImageApprox
+      (codec := codec)
       (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
     evalGI := fun i _stmt _absorbedRatePrefix =>
       OptionT.lift <| sampleVector (U := U) (challengeSize (pSpec := pSpec) i) }
 
 private def defaultD2SQueryParams :
-    D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) :=
+    D2SQueryParams
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec) :=
   { codecBridge :=
-      defaultD2SCodecBridge (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+      defaultD2SCodecBridge
+        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec)
     forwardExtensionLength := fun out =>
       match challengeIdxOfBacktrackOutput
           (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) out with
@@ -596,7 +608,8 @@ private def defaultD2SQueryParams :
 
 /-- Parametric query simulation bridge (Section 5.4) with explicit codec interface. -/
 def duplexSpongeToBasicFSQueryImplWithParams
-    (params : D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) :
+    (params : D2SQueryParams
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec)) :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
       (StateT (D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
         (OptionT
@@ -607,7 +620,7 @@ def duplexSpongeToBasicFSQueryImplWithParams
         (OracleComp (fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))))
     (d2sQueryImplCore
       (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec)
       params)
 
 /-- The query simulation between duplex sponge oracles and basic Fiat-Shamir oracles. This is then
@@ -618,8 +631,9 @@ def duplexSpongeToBasicFSQueryImpl :
         (OptionT
           (OracleComp (fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))) ) :=
   duplexSpongeToBasicFSQueryImplWithParams
-    (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    (defaultD2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+    (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec)
+    (defaultD2SQueryParams
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec))
 
 abbrev d2SQueryImpl :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
@@ -627,12 +641,14 @@ abbrev d2SQueryImpl :
         (OptionT
           (OracleComp (fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))) ) :=
   duplexSpongeToBasicFSQueryImpl
+    (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec)
 
 /-- The transformation of a duplex-sponge Fiat-Shamir malicious prover to a basic Fiat-Shamir one.
 
 Note: this transformation needs to be an oracle computation itself -/
 def duplexSpongeToBasicFSAlgoWithParams
-    (params : D2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+    (params : D2SQueryParams
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec))
     (P : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
     (StmtIn × pSpec.Messages)) :
     OracleComp (oSpec + fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
@@ -651,7 +667,7 @@ def duplexSpongeToBasicFSAlgoWithParams
       (QueryImpl.id oSpec)
       (duplexSpongeToBasicFSQueryImplWithParams
         (T_H := T_H) (T_P := T_P)
-        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec)
         params)
   let outWithState :
       OptionT
@@ -672,8 +688,9 @@ def duplexSpongeToBasicFSAlgo
       (Option (StmtIn × pSpec.Messages)) :=
   duplexSpongeToBasicFSAlgoWithParams
     (T_H := T_H) (T_P := T_P)
-    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    (defaultD2SQueryParams (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec)
+    (defaultD2SQueryParams
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec))
     P
 
 abbrev d2SAlgo
@@ -683,7 +700,7 @@ abbrev d2SAlgo
       (Option (StmtIn × pSpec.Messages)) :=
   duplexSpongeToBasicFSAlgo
     (T_H := T_H) (T_P := T_P)
-    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) P
+    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) P
 
 end D2SAlgoBridge
 
@@ -694,7 +711,6 @@ variable [DecidableEq StmtIn] [DecidableEq U]
   {T_P : Type}
   [Section52.LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
   [Section52.LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-  [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
   [∀ i, Fintype (pSpec.Message i)]
   [∀ i, DecidableEq (pSpec.Message i)]
 
@@ -721,7 +737,7 @@ structure D2SCodecBridgeWithOracle {κ : Type} (challengeSpec : OracleSpec κ) w
 structure D2SQueryParamsWithOracle {κ : Type} (challengeSpec : OracleSpec κ) where
   codecBridge :
     D2SCodecBridgeWithOracle
-      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) challengeSpec
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec) challengeSpec
   forwardExtensionLength :
     BacktrackOutput (StmtIn := StmtIn) (n := n) (U := U) → Nat := fun _ => 0
 
@@ -813,7 +829,7 @@ def d2sQueryStepWithOracle
     {κ : Type} {challengeSpec : OracleSpec κ}
     (params :
       D2SQueryParamsWithOracle
-        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) challengeSpec)
+        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec) challengeSpec)
     (q : (duplexSpongeChallengeOracle StmtIn U).Domain) :
     StateT (D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
       (OptionT
@@ -976,7 +992,7 @@ def d2sQueryImplCoreWithOracle
     {κ : Type} {challengeSpec : OracleSpec κ}
     (params :
       D2SQueryParamsWithOracle
-        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) challengeSpec) :
+        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec) challengeSpec) :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
       (StateT (D2SQueryState (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
         (OptionT
@@ -995,9 +1011,10 @@ def defaultD2SQueryParamsWithOracle
               (OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec))
               (Vector U (challengeSize (pSpec := pSpec) i))) :
     D2SQueryParamsWithOracle
-      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) challengeSpec :=
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec) challengeSpec :=
   { codecBridge :=
       { inCodecImage := defaultInCodecImageApprox
+          (codec := codec)
           (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
         evalGI := evalGI }
     forwardExtensionLength := fun out =>

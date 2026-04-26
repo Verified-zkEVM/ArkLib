@@ -20,36 +20,68 @@ This file provides:
 
 namespace ProtocolSpec
 
--- TODO: unify `HasMessageSize` and `HasChallengeSize` into Codec
--- infrastructure, since these are message length functions
-
 /-- Type class for protocol specifications to specify the size of each message as a natural number
-  (to be interpreted as a vector of units `U` of the given size for some sponge unit `U`) -/
+  (to be interpreted as a vector of units `U` of the given size for some sponge unit `U`).
+
+  `U`-independent so that size-only helpers (e.g. `numPermQueriesMessage`) stay free of the unit
+  parameter. `Codec pSpec U` extends this class. -/
 class HasMessageSize {n : ℕ} (pSpec : ProtocolSpec n) where
   messageSize : pSpec.MessageIdx → Nat
 
 export HasMessageSize (messageSize)
 
 /-- Type class for protocol specifications to specify the size of each challenge as a natural number
-  (to be interpreted as a vector of units `U` of the given size for some sponge unit `U`) -/
+  (to be interpreted as a vector of units `U` of the given size for some sponge unit `U`).
+
+  `U`-independent so that size-only helpers (e.g. `numPermQueriesChallenge`) stay free of the unit
+  parameter. `Codec pSpec U` extends this class. -/
 class HasChallengeSize {n : ℕ} (pSpec : ProtocolSpec n) where
   challengeSize : pSpec.ChallengeIdx → Nat
 
 export HasChallengeSize (challengeSize)
 
-/-- Paper-facing codec surface for CO25 Definition 4.1.
+/-- Paper-facing codec class for CO25 Definition 4.1.
 
-The existing DSFS implementation is written against `HasMessageSize` / `HasChallengeSize` plus
-`Serialize` / `Deserialize` instances. `Codec` packages that data together in one object while also
-recording the per-round decoder bias and a preimage sampler needed by later sections of the paper.
+`Codec pSpec U` is the paper-facing generic-parameter carrier for everything DSFS needs about a
+protocol's per-round encoder/decoder: per-round vector sizes, the encoder, its injectivity proof,
+the decoder, the per-round decoder bias `ε_cdc`, and the per-round preimage sampler.
+
+It extends the `U`-independent size classes `HasMessageSize` / `HasChallengeSize`, and projects
+to per-index `Serialize` / `Deserialize` / `Serialize.IsInjective` instances via the projection
+instances below — so generic alphabet-agnostic infrastructure in `ArkLib/Data/Classes/Serde.lean`
+remains the single landing zone for hax-extracted Rust trait impls. Use `Codec.mk'` to assemble a
+`Codec` from external `Serialize`/`Deserialize` instances plus the math-side metadata.
+
+Downstream consumers can either:
+1. Take `{codec : Codec pSpec U}` as a named implicit and thread `(codec := codec)` through
+   definitions and call sites that consume `decodingBias` / `sampleChallengePreimage` /
+   `encode_injective` (the paper-side metadata not present in the tetraplet). The projection
+   instances still satisfy any incidental `[Serialize ...]` / `[Deserialize ...]` requirements
+   at use sites with a *named* `(i : ...Idx)`.
+2. Continue taking the four-typeclass tetraplet
+   `[HasMessageSize pSpec] [∀ i, Serialize ...] [HasChallengeSize pSpec] [∀ i, Deserialize ...]`
+   when the function body calls `Serialize.serialize`/`Deserialize.deserialize` on an *anonymous*
+   `⟨i, hDir⟩` subtype constructor. (Lean's TC search currently does not unify the anonymous
+   `⟨i, hDir⟩` with a projection-instance parameter `(i : pSpec.ChallengeIdx)` inside deeply
+   nested elaboration contexts such as `Fin.induction` step lambdas — see `Defs.lean`'s own
+   `deriveTranscriptDSFSAux` / `Prover.processRoundDSFS`, which keep the tetraplet for that
+   reason.)
+
+We account for this by explicitly tracking **decoding biases**. We say that a codec has bias `ε_cdc` if, for every `i ∈ [k]`, `ψ_i : Σ^{ℓ_V(i)} → M_{V, i}` is a `ε_{cdc, i}`-biased map (i.e., it maps the uniform distribution on `Σ^{ℓ_V(i)}` to a distribution that is `ε_{cdc, i}`-close to the uniform distribution on `M_{V, i}`).
 -/
-structure Codec {n : ℕ} (pSpec : ProtocolSpec n) (U : Type) where
-  messageSize : pSpec.MessageIdx → Nat
-  challengeSize : pSpec.ChallengeIdx → Nat
+class Codec {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
+    extends HasMessageSize pSpec, HasChallengeSize pSpec where
   encode : (i : pSpec.MessageIdx) → pSpec.Message i → Vector U (messageSize i)
   encode_injective : ∀ i, Function.Injective (encode i)
   decode : (i : pSpec.ChallengeIdx) → Vector U (challengeSize i) → pSpec.Challenge i
-  challengeBias : pSpec.ChallengeIdx → NNReal
+  decodingBias : pSpec.ChallengeIdx → NNReal -- `ε_cdc`
+  /-- For every `i`, `decode i` is ε-biased: `dist (𝒰 Challenge_i) (decode_i <$> 𝒰 Domain_i)`
+    ≤ `decodingBias i`. Matches `Deserialize.CloseToUniform.ε_close` (CO25 Definition 4.1). -/
+  decode_isBiased : ∀ (i : pSpec.ChallengeIdx)
+      [Fintype (Vector U (challengeSize i))] [Nonempty (Vector U (challengeSize i))]
+      [Fintype (pSpec.Challenge i)] [Nonempty (pSpec.Challenge i)],
+      dist (PMF.uniformOfFintype (pSpec.Challenge i))
+        (decode i <$> PMF.uniformOfFintype (Vector U (challengeSize i))) ≤ decodingBias i
   sampleChallengePreimage :
     (i : pSpec.ChallengeIdx) → pSpec.Challenge i → ProbComp (Vector U (challengeSize i))
 
@@ -57,26 +89,44 @@ namespace Codec
 
 variable {n : ℕ} {pSpec : ProtocolSpec n} {U : Type}
 
-instance (cdc : Codec pSpec U) : HasMessageSize pSpec where
-  messageSize := cdc.messageSize
+instance (priority := high) instSerializeMessage [c : Codec pSpec U] (i : pSpec.MessageIdx) :
+    Serialize (pSpec.Message i) (Vector U (messageSize i)) where
+  serialize := c.encode i
 
-instance (cdc : Codec pSpec U) : HasChallengeSize pSpec where
-  challengeSize := cdc.challengeSize
+instance (priority := high) instSerializeMessageInjective [c : Codec pSpec U]
+    (i : pSpec.MessageIdx) :
+    Serialize.IsInjective (pSpec.Message i) (Vector U (messageSize i)) where
+  serialize_inj := c.encode_injective i
 
-instance (cdc : Codec pSpec U) :
-    ∀ i, Serialize (pSpec.Message i) (Vector U (cdc.messageSize i)) := by
-  intro i
-  exact ⟨cdc.encode i⟩
+instance (priority := high) instDeserializeChallenge [c : Codec pSpec U] (i : pSpec.ChallengeIdx) :
+    Deserialize (pSpec.Challenge i) (Vector U (challengeSize i)) where
+  deserialize := c.decode i
 
-instance (cdc : Codec pSpec U) :
-    ∀ i, Serialize.IsInjective (pSpec.Message i) (Vector U (cdc.messageSize i)) := by
-  intro i
-  exact ⟨cdc.encode_injective i⟩
-
-instance (cdc : Codec pSpec U) :
-    ∀ i, Deserialize (pSpec.Challenge i) (Vector U (cdc.challengeSize i)) := by
-  intro i
-  exact ⟨cdc.decode i⟩
+/-- hax-pipeline constructor: assemble a `Codec` from external `Serialize`/`Deserialize`
+    instances supplied by Rust→hax extraction, plus the math-side metadata. `decodingBias` is
+    derived from `[decChalUniform]`'s `ε` field; no separate bias parameter is needed. -/
+def mk' {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
+    (mSize : pSpec.MessageIdx → Nat) (cSize : pSpec.ChallengeIdx → Nat)
+    [∀ i, Fintype (Vector U (cSize i))] [∀ i, Nonempty (Vector U (cSize i))]
+    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, Nonempty (pSpec.Challenge i)]
+    [serMsg : ∀ i, Serialize (pSpec.Message i) (Vector U (mSize i))]
+    [serMsgInj : ∀ i, Serialize.IsInjective (pSpec.Message i) (Vector U (mSize i))]
+    [decChal : ∀ i, Deserialize (pSpec.Challenge i) (Vector U (cSize i))]
+    [decChalUniform : ∀ i, Deserialize.CloseToUniform (pSpec.Challenge i) (Vector U (cSize i))]
+    (sampler : (i : pSpec.ChallengeIdx) → pSpec.Challenge i → ProbComp (Vector U (cSize i))) :
+    Codec pSpec U where
+  messageSize := mSize
+  challengeSize := cSize
+  encode := fun i => (serMsg i).serialize
+  encode_injective := fun i => (serMsgInj i).serialize_inj
+  decode := fun i => (decChal i).deserialize
+  decodingBias := fun i => (decChalUniform i).ε
+  decode_isBiased := fun i [_h1 : Fintype (Vector U (cSize i))]
+      [_h2 : Nonempty (Vector U (cSize i))]
+      [_h3 : Fintype (pSpec.Challenge i)]
+      [_h4 : Nonempty (pSpec.Challenge i)] => by
+    convert (decChalUniform i).ε_close using 4
+  sampleChallengePreimage := sampler
 
 end Codec
 

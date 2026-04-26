@@ -603,9 +603,7 @@ section ConcreteSection58Instantiations
 variable {StmtOut : Type}
   {n : ℕ} {pSpec : ProtocolSpec n}
   [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
-  [HasMessageSize pSpec] [HasChallengeSize pSpec] [DecidableEq StmtIn] [DecidableEq U]
-  [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
-  [∀ i, Deserialize (pSpec.Challenge i) (Vector U (challengeSize i))]
+  {codec : Codec pSpec U} [DecidableEq StmtIn] [DecidableEq U]
   [SampleableType U]
   {T_H : Type}
   {T_P : Type}
@@ -670,9 +668,11 @@ def lemma5_8TraceExperiment
     (maliciousProver :
       OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) :
     OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) (Option StmtOut) := do
+  let _ : Codec pSpec U := codec
   let ⟨stmtIn, messages⟩ ← maliciousProver
   ((Verifier.duplexSpongeFiatShamir
-      (oSpec := []ₒ) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec) (U := U) V).run
+      (oSpec := []ₒ) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec)
+      (U := U) V).run
     stmtIn (fun i => match i with | ⟨0, _⟩ => messages)).run
 
 /-- Left-hand-side Section 5.6 trace distribution:
@@ -689,13 +689,13 @@ noncomputable def lemma5_8RealTraceDist
     initReal implReal
     (lemma5_8TraceExperiment
       (StmtIn := StmtIn) (StmtOut := StmtOut)
-      (pSpec := pSpec) (U := U) V maliciousProver)
+      (pSpec := pSpec) (U := U) (codec := codec) V maliciousProver)
 
 /-- Right-hand-side Section 5.6 trace distribution:
 simulator execution under `g <- 𝒟_Σ(λ, n)` with `D2SQuery`. -/
 noncomputable def lemma5_8SigmaTraceDist
     (simParams : DuplexSpongeFS.D2SQueryParams
-      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec))
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
     (maliciousProver :
       OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages))
@@ -714,13 +714,13 @@ noncomputable def lemma5_8SigmaTraceDist
     (pure default)
     (DuplexSpongeFS.d2sQueryImplCoreProb
       (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec)
       (unitImpl := DuplexSpongeFS.d2sUnitSampleImpl (U := U))
       (params := simParams)
       (onAbort := onSimAbort))
     (lemma5_8TraceExperiment
       (StmtIn := StmtIn) (StmtOut := StmtOut)
-      (pSpec := pSpec) (U := U) V maliciousProver)
+      (pSpec := pSpec) (U := U) (codec := codec) V maliciousProver)
 
 /-- Support-level paper trace consistency for the real Section 5.6 experiment. -/
 def lemma5_8RealTraceConsistentOnSupport
@@ -733,13 +733,13 @@ def lemma5_8RealTraceConsistentOnSupport
   paperTraceConsistentOnSupport (StmtIn := StmtIn) (U := U)
     (lemma5_8RealTraceDist
       (StmtIn := StmtIn) (StmtOut := StmtOut)
-      (n := n) (pSpec := pSpec) (U := U)
+      (n := n) (pSpec := pSpec) (U := U) (codec := codec)
       initReal implReal V maliciousProver)
 
 /-- Support-level paper trace consistency for the `Σ` Section 5.6 experiment. -/
 def lemma5_8SigmaTraceConsistentOnSupport
     (simParams : DuplexSpongeFS.D2SQueryParams
-      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec))
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
     (maliciousProver :
       OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages))
@@ -757,7 +757,7 @@ def lemma5_8SigmaTraceConsistentOnSupport
     (lemma5_8SigmaTraceDist
       (T_H := T_H) (T_P := T_P)
       (StmtIn := StmtIn) (StmtOut := StmtOut)
-      (n := n) (pSpec := pSpec) (U := U)
+      (n := n) (pSpec := pSpec) (U := U) (codec := codec)
       simParams V maliciousProver onSimAbort)
 
 /--
@@ -772,7 +772,7 @@ theorem lemma_5_8
     (initReal : ProbComp σReal)
     (implReal : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σReal ProbComp))
     (simParams : DuplexSpongeFS.D2SQueryParams
-      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec))
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
     (maliciousProver :
       OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages))
@@ -796,13 +796,13 @@ theorem lemma_5_8
         (Pr[fun tr => BadEventDS.E tr |
           lemma5_8RealTraceDist
             (StmtIn := StmtIn) (StmtOut := StmtOut)
-            (n := n) (pSpec := pSpec) (U := U)
+            (n := n) (pSpec := pSpec) (U := U) (codec := codec)
             initReal implReal V maliciousProver])
         (Pr[fun tr => BadEventDS.E tr |
           lemma5_8SigmaTraceDist
             (T_H := T_H) (T_P := T_P)
             (StmtIn := StmtIn) (StmtOut := StmtOut)
-            (n := n) (pSpec := pSpec) (U := U)
+            (n := n) (pSpec := pSpec) (U := U) (codec := codec)
             simParams V maliciousProver onSimAbort])
       ≤ ENNReal.ofReal (lemma5_8Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries) := by
   let _ := hMaliciousBound
