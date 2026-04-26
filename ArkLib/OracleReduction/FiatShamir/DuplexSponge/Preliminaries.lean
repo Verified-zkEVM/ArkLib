@@ -6,6 +6,8 @@ Authors: Chung Thai Nguyen
 
 import ArkLib.Data.Classes.Serde
 import ArkLib.Data.Probability.Instances
+import Mathlib.Probability.ProbabilityMassFunction.Constructions
+import ToMathlib.Probability.ProbabilityMassFunction.TotalVariation
 
 /-!
 # DSFS Preliminaries
@@ -189,5 +191,151 @@ theorem lemma_3_2_paperNotation (ψ : B → A) (hψ : Function.Surjective ψ) :
   simp [dist, 𝒰]
 
 end Lemma32
+
+section Claim1210
+
+variable {α : Type*}
+
+-- TV distance conditioning bound via indicator decomposition (CY24 Claim 1.2.10)
+/-- CY24 Claim 1.2.10: conditioning on equi-probable events bounds TV distance.
+
+Let `p q : PMF α` be distributions and `s₁ s₂ : Set α` events with equal probability
+under `p` and `q` respectively (`Pr_p[s₁] = Pr_q[s₂]`). Then
+`Δ(p, q) ≤ Δ(p | s₁, q | s₂) + Pr_p[s₁ᶜ]`,
+where `p | s₁` is `p.filter s₁` (PMF `p` conditioned on `s₁`, see `PMF.filter`),
+and `Pr_p[s₁ᶜ] = 1 - Pr_p[s₁] = 1 - ∑' a ∈ s₁, p a`. -/
+theorem claim_1_2_10
+    (p q : PMF α) (s₁ s₂ : Set α)
+    (hs₁ : ∃ a ∈ s₁, a ∈ p.support)
+    (hs₂ : ∃ a ∈ s₂, a ∈ q.support)
+    (hProb : ∑' a, s₁.indicator p a = ∑' a, s₂.indicator q a) :
+    p.tvDist q ≤ (p.filter s₁ hs₁).tvDist (q.filter s₂ hs₂) +
+      (1 - (∑' a, s₁.indicator p a).toReal) := by
+  set c := ∑' a, s₁.indicator p a with hc_def
+  -- Basic properties of c (= Pr_p[s₁] = Pr_q[s₂])
+  have hc_le : c ≤ 1 :=
+    (ENNReal.tsum_le_tsum fun a => Set.indicator_le_self s₁ p a).trans p.tsum_coe.le
+  have hc_ne_top : c ≠ ⊤ := ne_top_of_le_ne_top ENNReal.one_ne_top hc_le
+  have hc_ne_zero : c ≠ 0 := by
+    obtain ⟨a, ha₁, ha_p⟩ := hs₁
+    have : 0 < s₁.indicator p a := by
+      rw [Set.indicator_of_mem ha₁]
+      exact ha_p.bot_lt
+    exact (this.trans_le (ENNReal.le_tsum a)).ne'
+  have hc_inv_ne_top : c⁻¹ ≠ ⊤ := ENNReal.inv_ne_top.mpr hc_ne_zero
+  -- Each filter value equals the indicator value * c⁻¹
+  -- Pointwise: absDiff of filter values = absDiff of indicators * c⁻¹
+  have habs_filter : ∀ x,
+      ENNReal.absDiff ((p.filter s₁ hs₁) x) ((q.filter s₂ hs₂) x) =
+      ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x) * c⁻¹ := by
+    intro x
+    rw [PMF.filter_apply, PMF.filter_apply, ← hProb, ← hc_def]
+    simp only [ENNReal.absDiff]
+    rw [← ENNReal.sub_mul (fun _ _ => hc_inv_ne_top),
+        ← ENNReal.sub_mul (fun _ _ => hc_inv_ne_top),
+        ← add_mul]
+  -- Sum: ∑' x, absDiff (filter1 x) (filter2 x) = (∑' x, absDiff (ind1 x) (ind2 x)) * c⁻¹
+  have hsum_abs_filter :
+      ∑' x, ENNReal.absDiff ((p.filter s₁ hs₁) x) ((q.filter s₂ hs₂) x) =
+      (∑' x, ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x)) * c⁻¹ := by
+    simp_rw [habs_filter, ← ENNReal.tsum_mul_right]
+  -- Pointwise: absDiff (p x) (q x) ≤ absDiff (ind1 x) (ind2 x) + compl1 x + compl2 x
+  have hpointwise : ∀ x, ENNReal.absDiff (p x) (q x) ≤
+      ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x) +
+      (s₁ᶜ).indicator p x + (s₂ᶜ).indicator q x := by
+    intro x
+    have hpx : s₁.indicator p x ≠ ⊤ :=
+      ne_top_of_le_ne_top (PMF.apply_ne_top p x) (Set.indicator_le_self s₁ p x)
+    have hqx : (s₂ᶜ).indicator q x ≠ ⊤ :=
+      ne_top_of_le_ne_top (PMF.apply_ne_top q x) (Set.indicator_le_self _ q x)
+    rw [← Set.indicator_self_add_compl_apply s₁ p x,
+        ← Set.indicator_self_add_compl_apply s₂ q x]
+    -- two-step triangle: absDiff(a+b)(c+d) ≤ absDiff a c + absDiff b d
+    calc ENNReal.absDiff (s₁.indicator p x + (s₁ᶜ).indicator p x)
+            (s₂.indicator q x + (s₂ᶜ).indicator q x)
+        ≤ ENNReal.absDiff (s₁.indicator p x + (s₁ᶜ).indicator p x)
+              (s₁.indicator p x + (s₂ᶜ).indicator q x) +
+          ENNReal.absDiff (s₁.indicator p x + (s₂ᶜ).indicator q x)
+              (s₂.indicator q x + (s₂ᶜ).indicator q x) :=
+              ENNReal.absDiff_triangle _ _ _
+      _ = ENNReal.absDiff ((s₁ᶜ).indicator p x) ((s₂ᶜ).indicator q x) +
+            ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x) := by
+            simp only [ENNReal.absDiff,
+              ENNReal.add_sub_add_eq_sub_left hpx,
+              ENNReal.add_sub_add_eq_sub_right hqx]
+      _ ≤ (s₁ᶜ).indicator p x + (s₂ᶜ).indicator q x +
+            ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x) := by
+            gcongr; exact ENNReal.absDiff_le_add _ _
+      _ = _ := by ring
+  -- Complement tsums equal 1 - c
+  have hcompl₁ : ∑' a, (s₁ᶜ).indicator p a = 1 - c := by
+    have h : c + ∑' a, (s₁ᶜ).indicator p a = 1 := by
+      calc c + ∑' a, (s₁ᶜ).indicator p a
+          = ∑' a, s₁.indicator p a + ∑' a, (s₁ᶜ).indicator p a := rfl
+        _ = ∑' a, (s₁.indicator p a + (s₁ᶜ).indicator p a) := (ENNReal.tsum_add).symm
+        _ = ∑' a, p a := by
+            congr 1; ext a; exact Set.indicator_self_add_compl_apply s₁ p a
+        _ = 1 := p.tsum_coe
+    have key : c + ∑' a, (s₁ᶜ).indicator p a - c = ∑' a, (s₁ᶜ).indicator p a :=
+      ENNReal.add_sub_cancel_left hc_ne_top
+    rw [h] at key; exact key.symm
+  have hcompl₂ : ∑' a, (s₂ᶜ).indicator q a = 1 - c := by
+    have h : c + ∑' a, (s₂ᶜ).indicator q a = 1 := by
+      calc c + ∑' a, (s₂ᶜ).indicator q a
+          = ∑' a, s₂.indicator q a + ∑' a, (s₂ᶜ).indicator q a := by rw [hProb]
+        _ = ∑' a, (s₂.indicator q a + (s₂ᶜ).indicator q a) := (ENNReal.tsum_add).symm
+        _ = ∑' a, q a := by
+            congr 1; ext a; exact Set.indicator_self_add_compl_apply s₂ q a
+        _ = 1 := q.tsum_coe
+    have key : c + ∑' a, (s₂ᶜ).indicator q a - c = ∑' a, (s₂ᶜ).indicator q a :=
+      ENNReal.add_sub_cancel_left hc_ne_top
+    rw [h] at key; exact key.symm
+  -- Sum bound: ∑' absDiff (p) (q) ≤ ∑' absDiff (ind1) (ind2) + (1-c) + (1-c)
+  have hsum_ineq : ∑' x, ENNReal.absDiff (p x) (q x) ≤
+      (∑' x, ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x)) + (1 - c) + (1 - c) := by
+    calc ∑' x, ENNReal.absDiff (p x) (q x)
+        ≤ ∑' x, (ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x) +
+              (s₁ᶜ).indicator p x + (s₂ᶜ).indicator q x) :=
+            ENNReal.tsum_le_tsum hpointwise
+      _ = (∑' x, ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x)) +
+          (∑' x, (s₁ᶜ).indicator p x) + ∑' x, (s₂ᶜ).indicator q x := by
+            rw [← ENNReal.tsum_add, ← ENNReal.tsum_add]
+      _ = _ := by rw [hcompl₁, hcompl₂]
+  -- Main ENNReal inequality: etvDist p q ≤ c * etvDist(filter1, filter2) + (1 - c)
+  have hmain_ennreal : p.etvDist q ≤ c * (p.filter s₁ hs₁).etvDist (q.filter s₂ hs₂) + (1 - c) := by
+    rw [PMF.etvDist, PMF.etvDist, hsum_abs_filter]
+    -- c * (sum_ind * c⁻¹ / 2) = sum_ind / 2
+    have hc_mul : c * ((∑' x, ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x)) * c⁻¹ / 2) =
+        (∑' x, ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x)) / 2 := by
+      rw [← mul_div_assoc, ← mul_assoc, mul_comm c, mul_assoc,
+          ENNReal.mul_inv_cancel hc_ne_zero hc_ne_top, mul_one]
+    rw [hc_mul]
+    calc (∑' x, ENNReal.absDiff (p x) (q x)) / 2
+        ≤ ((∑' x, ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x)) + (1 - c) + (1 - c)) / 2 :=
+            ENNReal.div_le_div_right hsum_ineq 2
+      _ = (∑' x, ENNReal.absDiff (s₁.indicator p x) (s₂.indicator q x)) / 2 + (1 - c) := by
+            rw [ENNReal.add_div, ENNReal.add_div, add_assoc, ENNReal.add_halves]
+  -- Convert to ℝ:
+  -- tvDist ≤ c.toReal * tvDist(filter) + (1 - c.toReal) ≤ tvDist(filter) + (1 - c.toReal)
+  have hc_toReal_le : c.toReal ≤ 1 := by
+    rw [← ENNReal.toReal_one]
+    exact ENNReal.toReal_mono ENNReal.one_ne_top hc_le
+  have h1mc_eq : (1 - c).toReal = 1 - c.toReal :=
+    ENNReal.toReal_sub_of_le hc_le ENNReal.one_ne_top
+  have hmain_real :
+      p.tvDist q ≤ c.toReal * (p.filter s₁ hs₁).tvDist (q.filter s₂ hs₂) + (1 - c.toReal) := by
+    rw [PMF.tvDist, PMF.tvDist]
+    have hRHS_ne_top : c * (p.filter s₁ hs₁).etvDist (q.filter s₂ hs₂) + (1 - c) ≠ ⊤ :=
+      ENNReal.add_ne_top.mpr ⟨ENNReal.mul_ne_top hc_ne_top (PMF.etvDist_ne_top _ _),
+        ENNReal.sub_ne_top ENNReal.one_ne_top⟩
+    have := ENNReal.toReal_mono hRHS_ne_top hmain_ennreal
+    rw [ENNReal.toReal_add (ENNReal.mul_ne_top hc_ne_top (PMF.etvDist_ne_top _ _))
+          (ENNReal.sub_ne_top ENNReal.one_ne_top),
+        ENNReal.toReal_mul, h1mc_eq] at this
+    exact this
+  linarith [PMF.tvDist_nonneg (p.filter s₁ hs₁) (q.filter s₂ hs₂),
+    mul_le_of_le_one_left (PMF.tvDist_nonneg (p.filter s₁ hs₁) (q.filter s₂ hs₂)) hc_toReal_le]
+
+end Claim1210
 
 end DuplexSpongeFS
