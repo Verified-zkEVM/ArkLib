@@ -406,10 +406,11 @@ private lemma indicated_polynomial_eq_foldAux'
     -- rw [eval_comm] doesn't work although rw [h] does
     aesop 
      (add safe [
-      (by rw [indicated_polynomial_eq_combination_of_correlated, ←foldValue_def, foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha]),])
-     (add safe forward [eval_comm])
-     (add simp 
-      [eval_finset_sum])  
+      (by rw 
+        [indicated_polynomial_eq_combination_of_correlated, 
+          ←foldValue_def, 
+          foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha])])
+     (add simp [eval_finset_sum])  
   · simp [indicatedPolynomial]
     rw [Polynomial.map_sum]
     simp
