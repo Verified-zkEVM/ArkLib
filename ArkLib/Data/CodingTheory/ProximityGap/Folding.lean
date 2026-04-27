@@ -411,19 +411,16 @@ private lemma indicated_polynomial_eq_foldAux'
           ←foldValue_def, 
           foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha])])
      (add simp [eval_finset_sum])  
-  · simp [indicatedPolynomial]
-    rw [Polynomial.map_sum]
-    simp
+  · simp only 
+      [indicatedPolynomial, Polynomial.map_sum,
+        Polynomial.map_mul, map_C, coe_evalRingHom]
     rw [Nat.lt_iff_le_pred (by simp)]
-    apply natDegree_sum_le_of_forall_le
-    intro i hi
-    rw [←Nat.lt_iff_le_pred (by simp)]
-    apply lt_of_le_of_lt
-    apply natDegree_mul_le
-    simp
-    rw [Polynomial.map_map]
-    simp
-    exact foldWordAux_natDegree
+    exact natDegree_sum_le_of_forall_le _ _ <| fun i hi ↦ by 
+      exact le_trans natDegree_mul_le <| by 
+        aesop 
+          (add unsafe (by rw [←Nat.lt_iff_le_pred]))
+          (add simp [Polynomial.map_map])
+          (add safe [foldWordAux_natDegree])
   · exact foldWordAux_natDegree
 
 lemma indicated_polynomial_comp_x_k_natDegree
