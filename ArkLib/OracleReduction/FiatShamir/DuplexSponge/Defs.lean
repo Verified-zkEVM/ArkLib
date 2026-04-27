@@ -67,12 +67,17 @@ Downstream consumers can either:
    `deriveTranscriptDSFSAux` / `Prover.processRoundDSFS`, which keep the tetraplet for that
    reason.)
 
-We account for this by explicitly tracking **decoding biases**. We say that a codec has bias `ε_cdc` if, for every `i ∈ [k]`, `ψ_i : Σ^{ℓ_V(i)} → M_{V, i}` is a `ε_{cdc, i}`-biased map (i.e., it maps the uniform distribution on `Σ^{ℓ_V(i)}` to a distribution that is `ε_{cdc, i}`-close to the uniform distribution on `M_{V, i}`).
+We account for this by explicitly tracking **decoding biases**. We say that a codec has bias
+`ε_cdc` if, for every `i ∈ [k]`, `ψ_i : Σ^{ℓ_V(i)} → M_{V, i}` is a `ε_{cdc, i}`-biased map
+(i.e., it maps the uniform distribution on `Σ^{ℓ_V(i)}` to a distribution that is
+`ε_{cdc, i}`-close to the uniform distribution on `M_{V, i}`).
 -/
 class Codec {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
     extends HasMessageSize pSpec, HasChallengeSize pSpec where
+  /-- `φᵢ : Message i → Σ^{ℓ_P(i)}` — message encoder (CO25 Def. 4.1). -/
   encode : (i : pSpec.MessageIdx) → pSpec.Message i → Vector U (messageSize i)
-  encode_injective : ∀ i, Function.Injective (encode i)
+  encode_injective : ∀ i, Function.Injective (encode i) -- `φᵢ` is injective
+  /-- `ψᵢ : Σ^{ℓ_V(i)} → Challenge i` — challenge decoder (CO25 Def. 4.1). -/
   decode : (i : pSpec.ChallengeIdx) → Vector U (challengeSize i) → pSpec.Challenge i
   decodingBias : pSpec.ChallengeIdx → NNReal -- `ε_cdc`
   /-- For every `i`, `decode i` is ε-biased: `dist (𝒰 Challenge_i) (decode_i <$> 𝒰 Domain_i)`
@@ -85,6 +90,7 @@ class Codec {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
   /-- For every `i`, `decode i` is surjective: every challenge has at least one encoded preimage.
     Required for the `ψ⁻¹` sampler in the Section 5.8 reduction. -/
   decode_surjective : ∀ i, Function.Surjective (decode i)
+  /-- `ψᵢ⁻¹ : Challenge i → ProbComp (Σ^{ℓ_V(i)})` — preimage sampler (CO25 Def. 4.1). -/
   sampleChallengePreimage :
     (i : pSpec.ChallengeIdx) → pSpec.Challenge i → ProbComp (Vector U (challengeSize i))
 

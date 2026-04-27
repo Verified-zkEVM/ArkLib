@@ -230,9 +230,10 @@ private def stdTraceEntries
 
 /-- Explicit remap from synthesized `StdTrace` entries to basic-FS challenge-log entries. -/
 structure StdTraceToFSRemap where
-  /-- Codec-image test for backtrack outputs used to model Item 4(a)iii in `StdTrace`. -/
+  /-- `∀ ι ∈ [i], α̂_ι ∈ Im(φ_ι)` — codec-image predicate (§5.4 Item 4(a)iii). -/
   inCodecImage :
     BacktrackOutput (StmtIn := StmtIn) (n := n) (U := U) → Bool := fun _ => true
+  /-- Maps a synthesized `StdTrace` entry to a basic-FS challenge-log entry. -/
   mapEntry :
     StdTraceEntry (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) →
       Sigma (fsChallengeOracle StmtIn pSpec)
@@ -266,10 +267,10 @@ def stdTraceSingleWithRemap
       remap entries
   pure (sharedLog ++ remappedLog)
 
-/-- `StdTrace`-style conversion for a single DSFS log, with explicit remap.
+/-- §5.5.1 `StdTrace` single-log surface with explicit FS-remap (Item 4(a) control flow).
 
-This is the paper-primary surface: synthesized `StdTrace` entries are remapped into FS challenge-log
-entries and appended to the shared-oracle projection. -/
+Synthesized `StdTrace` entries are remapped into FS challenge-log entries and appended to the
+shared-oracle projection, implementing the paper's single-log `tr_std` transform. -/
 def stdTraceSingle
     (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
     (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
@@ -295,7 +296,7 @@ def stdTraceSingleProjected
   pure <| projectSharedQueryLog
     (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) log
 
-/-- Single-log remap-aware `D2STrace` surface for Section 5.5 / 5.8. -/
+/-- §5.5 / §5.8 single-log `D2STrace` surface with explicit FS-remap. -/
 def d2STraceSingleWithRemap
     (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
     (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
@@ -305,7 +306,7 @@ def d2STraceSingleWithRemap
     (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
     remap log
 
-/-- Single-log `D2STrace` surface for Section 5.5 / 5.8. -/
+/-- §5.5 / §5.8 single-log `D2STrace` surface (alias for `stdTraceSingle` in the D2S setting). -/
 def d2STraceSingle
     (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
     (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
@@ -315,7 +316,8 @@ def d2STraceSingle
     (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
     remap log
 
-/-- Projection-only single-log `D2STrace` compatibility surface. -/
+/-- §5.5 projection-only single-log `D2STrace`: runs abort check but exports only shared-oracle
+entries (no FS-challenge remap). -/
 def d2STraceSingleProjected
     (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
     OptionT (OracleComp (Unit →ₒ U))
@@ -521,7 +523,7 @@ noncomputable def section58Hyb3Line4Trace
 
 end PaperTrace
 
-/-- Optional `StdTrace` wrapper with explicit remap for synthesized challenge entries. -/
+/-- §5.5.1 optional `StdTrace` two-log wrapper with explicit remap; returns `none` on abort. -/
 def duplexSpongeToBasicFSTraceWithRemap?
     (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
     (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
@@ -551,7 +553,7 @@ def duplexSpongeToBasicFSTrace?
     (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
     remap proveQueryLog verifyQueryLog
 
-/-- Projection-only compatibility wrapper: returns `none` on abort. -/
+/-- §5.5 projection-only two-log compatibility wrapper; returns `none` on abort. -/
 def duplexSpongeToBasicFSTraceProjected?
     (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
     (verifyQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
@@ -593,7 +595,7 @@ def duplexSpongeToBasicFSTrace
     (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
     remap proveQueryLog verifyQueryLog
 
-/-- Projection-only compatibility trace transformation. -/
+/-- §5.5 projection-only two-log trace transformation. -/
 def duplexSpongeToBasicFSTraceProjected
     (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
     (verifyQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
@@ -604,6 +606,7 @@ def duplexSpongeToBasicFSTraceProjected
     (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
     proveQueryLog verifyQueryLog
 
+/-- §5.5 `D2STrace` two-log remap-aware surface (prover + verifier logs). -/
 noncomputable def d2STraceWithRemap
     (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
     (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
@@ -615,6 +618,7 @@ noncomputable def d2STraceWithRemap
     (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
     remap proveQueryLog verifyQueryLog
 
+/-- §5.5 `D2STrace` two-log surface (prover + verifier logs). -/
 noncomputable def d2STrace
     (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
     (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
@@ -626,6 +630,7 @@ noncomputable def d2STrace
     (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
     remap proveQueryLog verifyQueryLog
 
+/-- §5.5 projection-only `D2STrace` two-log surface (no FS-challenge remap). -/
 noncomputable def d2STraceProjected
     (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
     (verifyQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :

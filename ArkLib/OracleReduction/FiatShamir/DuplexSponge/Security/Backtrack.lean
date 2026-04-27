@@ -44,36 +44,37 @@ subject to the following conditions:
   `(hash, 𝕩, inputState[0].capacitySegment) ∈ tr` -/
 structure BacktrackSequence (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (state : CanonicalSpongeState U) where
-  /-- The input statement in a backtracking sequence -/
+  /-- `𝕩^(k) ∈ {0,1}^≤n` — input statement for this backtracking sequence. -/
   stmt : StmtIn
-  /-- The list of input states in a backtracking sequence -/
+  /-- `[s_{in,0}^(k), …, s_{in,m_k}^(k)]` — input sponge states of the chain; length `m_k + 1`. -/
   inputState : List (CanonicalSpongeState U)
-  /-- The list of output states in a backtracking sequence -/
+  /-- `[s_{out,0}^(k), …, s_{out,m_k-1}^(k)]` — output sponge states; one shorter than inputs. -/
   outputState : List (CanonicalSpongeState U)
 
-  /-- The input state list is one longer than the output state list -/
+  /-- `|inputState| = |outputState| + 1` — CO25 Def 5.3 condition (a). -/
   inputState_length_eq_outputState_length_succ : inputState.length = outputState.length + 1
 
-  /-- The last input state is the given final state -/
+  /-- `inputState[m_k] = s` — last input equals the given final state.
+    CO25 Def 5.3 condition (b). -/
   last_inputState_eq_state : inputState[inputState.length - 1] = state
 
-  /-- The query-answer pair `("hash", stmt, inputState[0].capacitySegment)` is in the trace -/
+  /-- `(h, 𝕩, inputState[0].capacitySegment) ∈ tr` — hash query anchors capacity.
+    CO25 Def 5.3 condition (c). -/
   hash_in_trace : ⟨.inl stmt, (Vector.drop inputState[0] SpongeSize.R)⟩ ∈ trace
 
-  /-- For all `i < outputState.length`, either
-    - `inputState[i]` is permuted to `outputState[i]` in the trace, or
-    - `outputState[i]` is inverted to `inputState[i]` in the trace -/
+  /-- For all `ι < m_k`, either `(p, s_{in,ι}, s_{out,ι}) ∈ tr`
+    or `(p⁻¹, s_{out,ι}, s_{in,ι}) ∈ tr`. CO25 Def 5.3 condition (d). -/
   permute_or_inv_in_trace : ∀ i : Fin outputState.length,
     ⟨.inr (.inl inputState[i]), outputState[i]⟩ ∈ trace
     ∨ ⟨.inr (.inr outputState[i]), inputState[i]⟩ ∈ trace
 
-  /-- For all `i < outputState.length`, the capacity segment of `inputState[i]` is the same as
-    the capacity segment of `outputState[i]` -/
+  /-- `s_{out,ι}.capacitySegment = s_{in,ι+1}.capacitySegment` — capacity threads through chain.
+    CO25 Def 5.3 condition (e). -/
   capacitySegment_output_eq_input : ∀ i : Fin outputState.length,
     outputState[i].capacitySegment = inputState[i.val + 1].capacitySegment
 
-  /-- For all `i < outputState.length`, the capacity segment of `inputState[i]` is not the same as
-    the capacity segment of `outputState[i]` -/
+  /-- `s_{in,ι}.capacitySegment ≠ s_{out,ι}.capacitySegment` — each step is a genuine permutation.
+    CO25 Def 5.3 condition (f). -/
   capacitySegment_input_ne_output : ∀ i : Fin outputState.length,
     inputState[i].capacitySegment ≠ outputState[i].capacitySegment
 
@@ -194,13 +195,14 @@ private def buildBacktrackSteps
         collect preds []
   go fuelBound state []
 
-/-- A family of backtrack sequences, defined as a finite set of backtrack sequences such that
-no two sequences are strict subsets of each other -/
+/-- CO25 Def 5.3 `S_BT(tr, s)` — maximal family of backtrack sequences (BackTrack §5.2 Step 2,
+Eq. 10): finite set of `BacktrackSequence` pairs `(s_{in,ι}, s_{out,ι})` rooted at `state`,
+with no sequence strictly containing another. -/
 structure BacktrackSequenceFamily (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (state : CanonicalSpongeState U) where
-  /-- The family of backtrack sequences, defined as a finite set -/
+  /-- `S_BT(tr, s)` — finite set of backtrack sequences (CO25 Def 5.3). -/
   seqFamily : Finset (BacktrackSequence trace state)
-  /-- Maximality condition (paper-facing): no strict containment between distinct sequences. -/
+  /-- Maximality: no `s ≠ s'` with `s ⊆ s'` both in `S_BT` (CO25 Def 5.3 maximality). -/
   maximality : ∀ s ∈ seqFamily, ∀ s' ∈ seqFamily, s ≠ s' →
     ¬ (s.stmt = s'.stmt ∧ s.inputState ⊆ s'.inputState ∧ s'.outputState ⊆ s.outputState)
 
@@ -232,9 +234,9 @@ Section 5.1 paper-facing auxiliary trace data structure `tr_∇`:
 - `pinvLog` stores inverse-permutation entries.
 -/
 structure TraceDelta where
-  hLog : QueryLog (StmtIn →ₒ Vector U SpongeSize.C)
-  pLog : QueryLog (forwardPermutationOracle (CanonicalSpongeState U))
-  pinvLog : QueryLog (backwardPermutationOracle (CanonicalSpongeState U))
+  hLog : QueryLog (StmtIn →ₒ Vector U SpongeSize.C)                -- `tr_∇.h` hash-query log
+  pLog : QueryLog (forwardPermutationOracle (CanonicalSpongeState U))  -- `tr_∇.p` forward
+  pinvLog : QueryLog (backwardPermutationOracle (CanonicalSpongeState U)) -- `tr_∇.p` inverse
 
 /-- Build the paper-facing `tr_∇` projection from a full duplex-sponge trace. -/
 def buildTraceDelta
@@ -253,18 +255,18 @@ def buildTraceDelta
       | ⟨.inr (.inr stateOut), stateIn⟩ => some ⟨stateOut, stateIn⟩
       | _ => none }
 
-/-- Backtracking output payload.
+/-- BackTrack §5.2 Step 4.D output tuple `(i, 𝕩, τ, (α̂_1,…,α̂_i))` stored in `Outs`.
 
-`absorbedRatePrefix` is a paper-facing, framework-independent representation of all absorbed blocks
-recovered by backtracking; downstream layers can slice it into salt / encoded prover messages via
-their own length metadata (`BacktrackOutput.parsedTuple?` exposes this parsed view). -/
+`absorbedRatePrefix` holds all absorbed rate blocks as a raw list (framework-independent);
+`parsedTuple?` slices it into salt `τ` (Step 3) and encoded messages `α̂_j` (Step 4.a.iii.A). -/
 structure BacktrackOutput where
-  stmt : StmtIn
-  round : Fin (n + 1)
-  absorbedRatePrefix : List (Vector U SpongeSize.R)
-  stepPairs : List (CanonicalSpongeState U × CanonicalSpongeState U)
+  stmt : StmtIn                                                      -- `𝕩` instance (Step 4.D)
+  round : Fin (n + 1)                                                -- `i ∈ [k]` round (Step 4.D)
+  absorbedRatePrefix : List (Vector U SpongeSize.R) -- rate blocks (Steps 3, 4.a.iii.A)
+  stepPairs : List (CanonicalSpongeState U × CanonicalSpongeState U) -- S_BT chain (Step 2, Eq. 10)
 
-/-- Structural consistency predicate for the executable `BackTrack` tuple surface. -/
+/-- Geometric invariants for a BackTrack §5.2 Step 4 candidate (chain-length,
+rate-segment alignment, no-loop, capacity threading). -/
 def BacktrackOutput.paperShapeValid
     (out : BacktrackOutput (StmtIn := StmtIn) (n := n) (U := U)) : Prop :=
   0 < out.absorbedRatePrefix.length ∧
@@ -285,9 +287,9 @@ private def backtrackOutputValid
     (out : BacktrackOutput (StmtIn := StmtIn) (n := n) (U := U)) : Bool :=
   BacktrackOutput.paperShapeValidb (StmtIn := StmtIn) (n := n) (U := U) out
 
-/-- Parser/validation parameters for BackTrack candidate checks. -/
+/-- Parser/validation parameters for BackTrack §5.2 Step 3 (salt extraction). -/
 structure BacktrackParseParams where
-  saltUnits : Nat := 0
+  saltUnits : Nat := 0  -- `δ`: salt size in `U`-units (BackTrack §5.2 Step 3)
 
 private def BacktrackParseParams.saltBlocks
     (params : BacktrackParseParams) : Nat :=
@@ -477,11 +479,12 @@ def backtrackOutputMessagesInImage
       else
         exact false
 
-/-- Parsed tuple view extracted from a `BackTrack` output candidate. -/
+/-- BackTrack §5.2 Step 4.D output parsed into named components. -/
 structure ParsedBacktrackTuple where
-  roundIdx : pSpec.ChallengeIdx
-  stmt : StmtIn
-  salt : List U
+  roundIdx : pSpec.ChallengeIdx  -- `i ∈ [k]` round index (Step 4.D)
+  stmt : StmtIn                  -- `𝕩` instance (Step 4.D)
+  salt : List U                  -- `τ ∈ Σ^δ` salt (Step 3)
+  /-- `(α̂_1,…,α̂_i)` encoded prover messages (BackTrack §5.2 Step 4.a.iii.A). -/
   encodedMessages : List (Sigma fun msgIdx : pSpec.MessageIdx => Vector U (messageSize msgIdx))
 
 /-- Recover the paper-facing tuple components from a `BackTrack` output candidate. -/

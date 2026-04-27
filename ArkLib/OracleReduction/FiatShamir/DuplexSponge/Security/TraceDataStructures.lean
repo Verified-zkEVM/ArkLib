@@ -94,12 +94,11 @@ Covers both the one-way hash table (`tr_∇.h`) and the bidirectional permutatio
 both have the same four-operation shape, plus a bulk-enumeration op `entries` used by paper §5.2
 partial-key matching for backtracking. -/
 class TraceTableOps (T : Type) (K V : outParam Type) where
-  empty : T
-  add   : T → K → V → T
-  inlu  : T → K → Option V
-  outlu : T → V → Option K
-  /-- Enumerate all `(k, v)` pairs in the table. Concrete implementations may not preserve
-  order; the only stable handle on the result is its multiset content (cf. `LawfulTraceTable`). -/
+  empty : T                    -- `∅` — empty table
+  add   : T → K → V → T       -- `t ∪ {(k,v)}` — insert a `(k, v)` pair
+  inlu  : T → K → Option V    -- `inlu(t, k)` — unique forward lookup (CO25 Def. 5.2)
+  outlu : T → V → Option K    -- `outlu(t, v)` — unique backward lookup (CO25 Def. 5.2)
+  /-- `entries(t)` — enumerate all `(k, v)` pairs (CO25 §5.2 partial-key matching). -/
   entries : T → List (K × V)
 
 /-! ### Refinement-model lawful class -/
@@ -144,8 +143,8 @@ structure TraceNabla (T_H T_P StmtIn U : Type) [SpongeUnit U] [SpongeSize]
     [DecidableEq StmtIn] [DecidableEq U]
     [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)] where
-  h : T_H
-  p : T_P
+  h : T_H -- `tr_∇.h` hash-query table (`StmtIn → Vector U C`)
+  p : T_P -- `tr_∇.p` permutation table (`CanonicalSpongeState U ↔ CanonicalSpongeState U`)
 
 /-! ### Generic `TraceNabla` API -/
 
@@ -186,7 +185,7 @@ namespace ListBacked
 `inlu`/`outlu` are computable: filter entries by key/value and return `some` iff exactly one
 match exists (zero or multiple → `none`), matching the paper's sorted-list semantics. -/
 structure ListTraceTable (K V : Type) where
-  entries : List (K × V)
+  entries : List (K × V)  -- list of `(k, v)` pairs; multiset model `↑entries`
 deriving Inhabited
 
 namespace ListTraceTable

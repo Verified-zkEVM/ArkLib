@@ -43,12 +43,13 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
 
 section SecurityGames
 
-/-- Basic-FS oracle family augmented with explicit unit-sampling randomness. -/
+/-- CO25 §5.8 Hyb_0. Basic-FS oracle family augmented with explicit unit-sampling randomness.
+Combines `fsChallengeOracle` with a `Unit →ₒ U` oracle to sample fresh sponge units. -/
 abbrev FSPlusUnitOracle :=
   (fsChallengeOracle StmtIn pSpec) + (Unit →ₒ U)
 
-/-- Project out the auxiliary unit-sampling queries from logs over
-`oSpec + (fsChallengeOracle + Unit →ₒ U)`. -/
+/-- CO25 §5.8. Project out the auxiliary unit-sampling queries from logs over
+`oSpec + (fsChallengeOracle + Unit →ₒ U)`, retaining only shared and FS-challenge entries. -/
 def projectFSPlusUnitQueryLog
     (log : QueryLog (oSpec + FSPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))) :
     QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) :=
@@ -74,17 +75,22 @@ private def liftFSQueriesToFSPlusUnit :
           (spec := oSpec + FSPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
           (Sum.inr (Sum.inl qFS))
 
-/-- Output of the basic Fiat-Shamir game used in Lemma 5.1. -/
+/-- CO25 Theorem 5.1. Output type for the basic Fiat-Shamir game (`Hyb_4` right-hand experiment):
+statement-in, statement-out, prover messages, and combined query log over `fsChallengeOracle`. -/
 abbrev BasicFiatShamirGameOutput :=
   StmtIn × StmtOut × pSpec.Messages ×
     QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)
 
-/-- Output of the duplex-sponge Fiat-Shamir game used in Lemma 5.1. -/
+/-- CO25 Theorem 5.1. Output type for the duplex-sponge Fiat-Shamir game (`Hyb_0` left-hand
+experiment): statement-in, statement-out, prover messages, and combined query log over
+`duplexSpongeChallengeOracle`. -/
 abbrev DuplexSpongeFiatShamirGameOutput :=
   StmtIn × StmtOut × pSpec.Messages ×
     QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)
 
-/-- First game for the key lemma: the basic Fiat-Shamir transform. -/
+/-- CO25 Theorem 5.1. First game for Lemma 5.1: the basic Fiat-Shamir transform under oracle
+family `𝒟_IP(λ,n)`.  Right-hand experiment in the lemma statement (line 3: `𝒱^{h,p}(𝕩, π)`
+with basic-FS challenges). -/
 def basicFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
   (P : OracleComp (oSpec + FSPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (Option (StmtIn × pSpec.Messages))) :
@@ -111,7 +117,9 @@ def basicFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) verifyQueryLogRaw
   return ⟨stmtIn, ← stmtOut.getM, messages, proveQueryLog ++ verifyQueryLog⟩
 
-/-- Second game for the key lemma: the duplex-sponge Fiat-Shamir transform. -/
+/-- CO25 Theorem 5.1. Second game for Lemma 5.1: the duplex-sponge Fiat-Shamir transform under
+oracle family `𝒟_𝔖(λ,n)`.  Left-hand experiment `Hyb_0` in the lemma statement (line 3:
+`𝒱^{D2SQuery^g}(𝕩, π)`). -/
 def duplexSpongeFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
     (P : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × pSpec.Messages)) :
@@ -125,14 +133,15 @@ def duplexSpongeFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
         stmtIn (fun i => match i with | ⟨0, _⟩ => messages))).run
   return ⟨stmtIn, ← stmtOut.getM, messages, proveQueryLog ++ verifyQueryLog⟩
 
-/-- The D2S prover transform from Section 5.4 (DSFS prover to basic-FS prover). -/
+/-- CO25 §5.4. D2SAlgo prover transform: lifts a duplex-sponge prover into a basic-FS prover.
+Eq. (16): `D2SAlgo^f(𝒫̃) = 𝒫̃^{D2SQuery^{ψ⁻¹∘f∘φ⁻¹}}`. -/
 abbrev D2SAlgo :=
   OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages) →
     OracleComp (oSpec + FSPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (Option (StmtIn × pSpec.Messages))
 
-/-- Execute a Section 5.8 trace map inside `ProbComp` by interpreting the auxiliary unit-sampling
-oracle uniformly. -/
+/-- CO25 §5.8. Execute a Section 5.8 line-4 trace map (e.g. D2STrace = `(φ⁻¹, ψ) ∘ StdTrace`)
+inside `ProbComp` by interpreting the auxiliary unit-sampling oracle uniformly. -/
 def runSection58TraceMap
     [SampleableType U]
     (traceMap :
@@ -146,8 +155,8 @@ def runSection58TraceMap
     (d2sUnitSampleImpl (U := U))
     ((traceMap fullTrace).run)
 
-/-- Project out the auxiliary unit-sampling queries from logs over
-`oSpec + (challengeSpec + Unit →ₒ U)`. -/
+/-- CO25 §5.8. Project out the auxiliary unit-sampling queries from logs over
+`oSpec + (challengeSpec + Unit →ₒ U)`, retaining only shared and challenge entries. -/
 def projectD2SChallengePlusUnitQueryLog
     {κ : Type} {challengeSpec : OracleSpec κ}
     (log : QueryLog (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)) :
@@ -158,7 +167,8 @@ def projectD2SChallengePlusUnitQueryLog
     | ⟨.inr (.inl q), r⟩ => some ⟨.inr q, r⟩
     | ⟨.inr (.inr _), _⟩ => none
 
-/-- Execute a Section 5.8 line-4 trace map on a projected hybrid trace. -/
+/-- CO25 §5.8. Execute a Section 5.8 line-4 trace map on a projected hybrid trace (after removing
+auxiliary unit-sampling entries), interpreting remaining randomness uniformly. -/
 def runSection58ProjectedTraceMap
     [SampleableType U]
     {κ : Type} {challengeSpec : OracleSpec κ}
@@ -173,15 +183,17 @@ def runSection58ProjectedTraceMap
     (d2sUnitSampleImpl (U := U))
     ((traceMap fullTrace).run)
 
-/-- Shared-oracle state paired with a lazy random-function cache for an explicit hybrid
-challenge-oracle family. -/
+/-- CO25 §5.8. Shared-oracle state paired with a lazy random-function cache for an explicit hybrid
+challenge-oracle family.  Used in `Hyb_1` (oracles `g_i ← 𝒟_Σ`), `Hyb_2` (oracles `e_i`),
+and `Hyb_3` (oracles `f_i ← 𝒟_IP`). -/
 abbrev Section58ChallengeState
     {κ : Type}
     (challengeSpec : OracleSpec κ)
     (σShared : Type) :=
   σShared × challengeSpec.QueryCache
 
-/-- Canonical initializer for a shared oracle plus a lazy random-function hybrid challenge family. -/
+/-- CO25 §5.8. Canonical initializer for a shared oracle plus a lazy random-function hybrid
+challenge family: run `sharedInit` and start with an empty challenge cache. -/
 def section58ChallengeInit
     {κ : Type} {challengeSpec : OracleSpec κ}
     {σShared : Type}
@@ -190,8 +202,10 @@ def section58ChallengeInit
   let sharedState ← sharedInit
   pure (sharedState, ∅)
 
-/-- Canonical implementation for a shared oracle plus a lazy random-function hybrid challenge
-family, augmented with the auxiliary unit-sampling oracle used by `D2SQuery`. -/
+/-- CO25 §5.8. Canonical query handler for a shared oracle plus a lazy random-function hybrid
+challenge family, augmented with the auxiliary unit-sampling oracle used by `D2SQuery`.
+Shared queries → `sharedImpl`; challenge queries → lazy random oracle; unit queries →
+`d2sUnitSampleImpl`. -/
 def section58ChallengeImpl
     {κ : Type} {challengeSpec : OracleSpec κ}
     [SampleableType U]
@@ -224,9 +238,11 @@ def section58ChallengeImpl
             query (spec := unifSpec) qUnif)
         pure resp
 
-/-- Common Section 5.8 hybrid game skeleton: run the malicious prover and verifier under
-`D2SQuery`, exposing only the chosen external challenge-oracle family and then projecting away the
-auxiliary unit-sampling randomness. -/
+/-- CO25 §5.8. Common hybrid game skeleton (Figure 4 lines 2–3): run `𝒫̃^{D2SQuery^g}` and
+`𝒱^{D2SQuery^g}` exposing only the chosen external challenge-oracle family, then project away
+the auxiliary unit-sampling randomness.  Instantiated at `section58EncodedChallengeOracle`
+for `Hyb_1`, `section58DecodedChallengeOracle` for `Hyb_2`, and `fsChallengeOracle` for
+`Hyb_3`. -/
 def section58HybridGame
     {κ : Type} {challengeSpec : OracleSpec κ}
     {T_H : Type} {T_P : Type}
@@ -290,7 +306,10 @@ def section58HybridGame
       (oSpec := oSpec) (U := U) verifyQueryLogRaw
   return ⟨stmtIn, ← stmtOut?.getM, messages, proveQueryLog ++ verifyQueryLog⟩
 
-/-- Distribution of a Section 5.8 hybrid game after applying its line-4 trace map. -/
+/-- CO25 §5.8. Distribution of a Section 5.8 hybrid game after applying its line-4 trace map
+(Figure 4 line 4: `tr := (φ⁻¹,ψ)(tr_𝒫̃ ‖ tr_𝒱)` or `φ⁻¹(…)` or identity).  Collapses the
+hybrid game output to `BasicFiatShamirGameOutput`, enabling the TV-distance chain
+of Claims 5.21–5.24. -/
 def section58HybridGameDist
     [SampleableType U] [DecidableEq StmtIn] [DecidableEq U]
     {κ : Type} {challengeSpec : OracleSpec κ}
@@ -333,7 +352,8 @@ def section58HybridGameDist
       | some fullTraceFS =>
           return some (stmtIn, stmtOut, messages, fullTraceFS)
 
-/-- Distribution of the basic-FS game output under a concrete oracle implementation. -/
+/-- CO25 Theorem 5.1. Distribution of the basic-FS game (`Hyb_4` right-hand side) under a
+concrete oracle implementation (oracle family `𝒟_IP`). Used for `hyb4Dist`. -/
 def basicFiatShamirGameDist
     {σ : Type}
     (init : ProbComp σ)
@@ -346,15 +366,8 @@ def basicFiatShamirGameDist
       (StmtOut := StmtOut) (pSpec := pSpec)) := do
   (simulateQ impl (basicFiatShamirGame (V := V) P).run).run' (← init)
 
--- /--
--- fucntion fn()
---   ---
---   ---
---   ---
---   ---
--- -/
-
-/-- Distribution of the DSFS game output under a concrete oracle implementation. -/
+/-- CO25 Theorem 5.1. Distribution of the DSFS game (`Hyb_0` left-hand side) under a concrete
+oracle implementation (oracle family `𝒟_𝔖`). Used via `mappedDuplexSpongeFiatShamirGameDist`. -/
 def duplexSpongeFiatShamirGameDist
     {σ : Type}
     (init : ProbComp σ)
@@ -365,7 +378,9 @@ def duplexSpongeFiatShamirGameDist
       (StmtOut := StmtOut) (pSpec := pSpec) (U := U)) := do
   (simulateQ impl (duplexSpongeFiatShamirGame (codec := codec) (V := V) P).run).run' (← init)
 
-/-- Left experiment of Lemma 5.1 after applying a monadic trace algorithm to DSFS logs. -/
+/-- CO25 Theorem 5.1. Left experiment of Lemma 5.1 (`Hyb_0`): run the DSFS game under
+`𝒟_𝔖(λ,n)` and apply the line-4 trace map D2STrace = `(φ⁻¹, ψ) ∘ StdTrace` to produce a
+basic-FS query log. Corresponds to `Pr[𝒱^{h,p}(𝕩, π) = 1]` in the lemma statement. -/
 def mappedDuplexSpongeFiatShamirGameDist
     [SampleableType U]
     {σ : Type}
@@ -400,21 +415,24 @@ section KeyLemma
 
 open scoped NNReal
 
-/-- `θStar` in the paper, equal to `t_p`, the forward-permutation query budget of the malicious
-prover. -/
+/-- CO25 §5.8 / Eq (57). `θ★(t) := t_p` — forward-permutation query budget of `𝒫̃`, used as the
+query-bound multiplier in `η★`. -/
 def θStar (_tₕ tₚ _tₚᵢ : ℕ) : ℕ := tₚ
 
-/--
-Fixed-parameter codec bias profile `i ↦ ε_{cdc,i}(λ,n)` from Definition 4.1.
-
-The paper parameters `(λ, n)` are suppressed in the Lean surface: they are assumed fixed by the
-ambient protocol/oracle instantiation, and `εcodec` records only the per-round bias values used in
-the Section 5 bounds.
--/
+/-- CO25 Definition 4.1. Per-round codec bias profile `i ↦ ε_{cdc,i}(λ,n)`.
+Parameters `(λ, n)` are suppressed (assumed fixed by the ambient instantiation); `CodecBias`
+carries only the per-round values `ε_{cdc,i}` used in Claims 5.22 and the `η★` formula. -/
 abbrev CodecBias :=
   pSpec.ChallengeIdx → ℝ≥0
 
-/-- `ηStar` in Equation (5) of Lemma 5.1. -/
+/-- CO25 Theorem 5.1 / Eq (57). Additive error bound `η★(t_h, t_p, t_{p⁻¹})`:
+```
+η★ := numerator / (2 · |Σ|^c) + θ★ · max_i ε_{cdc,i} + ∑_i ε_{cdc,i}
+```
+where `numerator = 7(t+L)² + … − 13(L+1)` with `t = t_h + t_p + t_{p⁻¹}`, `L` the total
+permutation-query count from message/challenge absorb.  Sums the four hybrid-step bounds from
+Claims 5.21 (Hyb_0 → Hyb_1), 5.22 (Hyb_1 → Hyb_2), 5.23 = 0 (Hyb_2 → Hyb_3), and 5.24
+(Hyb_3 → Hyb_4). -/
 noncomputable def ηStar (U : Type) [SpongeUnit U] [Fintype U]
     (tₕ tₚ tₚᵢ : ℕ) (L : ℕ) (εcodec : CodecBias (pSpec := pSpec)) : ℝ :=
   let tTotal : ℕ := (tₕ + tₚ + tₚᵢ)
@@ -431,7 +449,10 @@ noncomputable def ηStar (U : Type) [SpongeUnit U] [Fintype U]
   let thirdTerm : ℝ := ∑ i, (εcodec i : ℝ)
   firstTermNumerator / firstTermDenominator + secondTerm + thirdTerm
 
-/-- Reusable four-step hybrid composition bound. -/
+/-- CO25 §5.8. Four-step hybrid composition bound via triangle inequality.
+Combines `tvDist H₀ H₁ ≤ e₀₁`, …, `tvDist H₃ H₄ ≤ e₃₄` into
+`tvDist H₀ H₄ ≤ e₀₁ + e₁₂ + e₂₃ + e₃₄`. Applied in `lemma_5_1_dist_from_claims`
+with the four claim bounds (Hyb_0 → Hyb_1 → Hyb_2 → Hyb_3 → Hyb_4). -/
 theorem tvDist_hybridChain4
     {α : Type}
     (H₀ H₁ H₂ H₃ H₄ : ProbComp α)
@@ -449,35 +470,37 @@ theorem tvDist_hybridChain4
     simpa using tvDist_triangle H₂ H₃ H₄
   linarith
 
-/-- Shared state used by the canonical Section 5.8 DS experiment: ambient shared-oracle state,
-the random-hash cache, and the permutation-oracle state. -/
+/-- CO25 §5.8 Hyb_0. Shared state for the canonical DS experiment: ambient shared-oracle state,
+the random-hash cache (for `h : {0,1}^{≤n} → Σ^c`), and the permutation-oracle state (for
+`p, p⁻¹` sampled from `𝒟_𝔖(λ,n)`). -/
 abbrev Section58DSState
     (σShared σPerm : Type) :=
   σShared × (StmtIn →ₒ Vector U SpongeSize.C).QueryCache × σPerm
 
-/-- Shared state used by the canonical Section 5.8 basic-FS experiment: ambient shared-oracle state
-and the lazy random-function cache for FS challenges. -/
+/-- CO25 §5.8 Hyb_4. Shared state for the canonical basic-FS experiment: ambient shared-oracle
+state and the lazy random-function cache for `srChallengeOracle` (oracle family `𝒟_IP(λ,n)`). -/
 abbrev Section58FSState
     (σShared : Type) :=
   σShared × (srChallengeOracle StmtIn pSpec).QueryCache
 
-/-- Fixed ambient shared-oracle package used by the paper's Section 5.8 experiments. -/
+/-- CO25 §5.8. Fixed ambient shared-oracle package common to all Section 5.8 experiments.
+Bundles state type, initializer, and query handler for `oSpec`. -/
 class Section58SharedOraclePackage where
-  σShared : Type
-  initShared : ProbComp σShared
-  implShared : QueryImpl oSpec (StateT σShared ProbComp)
+  σShared : Type                                           -- state type for the shared oracle
+  initShared : ProbComp σShared                           -- shared-oracle sampler
+  implShared : QueryImpl oSpec (StateT σShared ProbComp)  -- shared-oracle query handler
 
-/-- Fixed permutation-sampler package used by the paper's `𝒟_𝔖(λ,n)` experiment. -/
+/-- CO25 §5.8 Hyb_0. Permutation-sampler package for the `𝒟_𝔖(λ,n)` experiment.
+Bundles state type, sampler, and query handler for `p / p⁻¹ : Σ^{r+c} → Σ^{r+c}`. -/
 class Section58PermutationPackage where
-  σPerm : Type
-  initPerm : ProbComp σPerm
+  σPerm : Type   -- state type for the permutation oracle
+  initPerm : ProbComp σPerm   -- permutation-oracle sampler (𝒟_𝔖)
+  -- forward/backward query handler (p / p⁻¹)
   implPerm : QueryImpl (permutationOracle (CanonicalSpongeState U)) (StateT σPerm ProbComp)
 
-/-- Minimal semantic law currently exposed for a Section 5.8 permutation package: answers in the
-support of the forward and backward directions must remain mutually consistent across one-step
-state transitions. This does not yet capture the full random-permutation law of `𝒟_𝔖(λ,n)`, but it
-at least prevents treating an arbitrary pair of unrelated forward/backward samplers as the paper's
-permutation oracle. -/
+/-- CO25 §5.8 Hyb_0. Partial semantic law for the permutation package: forward and backward
+answers must be mutually consistent across one-step transitions.  Approximates `p⁻¹ ∘ p = id`
+from `𝒟_𝔖(λ,n)` without fully capturing the random-permutation law. -/
 def Section58PermutationPackageLaw
     [permPkg : Section58PermutationPackage (U := U)] : Prop :=
   (∀ (σ : permPkg.σPerm) (stateIn stateOut : CanonicalSpongeState U) (σ' : permPkg.σPerm),
@@ -488,8 +511,8 @@ def Section58PermutationPackageLaw
       (stateIn, σ') ∈ support ((permPkg.implPerm (.inr stateOut)).run σ) →
         stateOut ∈ Prod.fst '' support ((permPkg.implPerm (.inl stateIn)).run σ'))
 
-/-- Canonical Section 5.8 initializer for the DS-side experiment: keep the shared-oracle state,
-start the hash oracle with an empty cache, and sample the permutation-oracle state separately. -/
+/-- CO25 §5.8 Hyb_0. Canonical initializer for the DS-side experiment: run `sharedInit`, start
+the hash-oracle cache empty, and sample the permutation state from `permInit` (𝒟_𝔖 line 1). -/
 def section58CanonicalDSInit
     {σShared σPerm : Type}
     (sharedInit : ProbComp σShared)
@@ -499,9 +522,8 @@ def section58CanonicalDSInit
   let permState ← permInit
   pure (sharedState, ∅, permState)
 
-/-- Canonical Section 5.8 implementation for the DS-side experiment: shared-oracle queries are
-answered by the ambient implementation, the `h` component is a lazy random oracle, and the
-permutation component is delegated to the supplied permutation sampler. -/
+/-- CO25 §5.8 Hyb_0. Canonical query handler for the DS-side experiment: shared queries →
+`sharedImpl`; `h` queries → lazy random oracle; `p / p⁻¹` queries → `permImpl` (𝒟_𝔖). -/
 def section58CanonicalDSImpl
     [DecidableEq StmtIn] [SampleableType U]
     {σShared σPerm : Type}
@@ -528,8 +550,9 @@ def section58CanonicalDSImpl
         set (sharedState, hashCache, permState')
         pure resp
 
-/-- Canonical Section 5.8 initializer for the basic-FS experiment: keep the shared-oracle state and
-start the lazy FS challenge random function with an empty cache. -/
+/-- CO25 §5.8 Hyb_4. Canonical initializer for the basic-FS experiment: run `sharedInit` and
+start the lazy FS challenge random function (`srChallengeOracle`) with an empty cache, matching
+`𝒟_IP(λ,n)` line 1 in Figure 4. -/
 def section58CanonicalFSInit
     {σShared : Type}
     (sharedInit : ProbComp σShared) :
@@ -537,9 +560,9 @@ def section58CanonicalFSInit
   let sharedState ← sharedInit
   pure (sharedState, ∅)
 
-/-- Canonical Section 5.8 implementation for the basic-FS experiment: shared-oracle queries are
-answered by the ambient implementation, FS challenges come from the canonical lazy random
-function, and explicit unit-sampling queries stay fresh via `d2sUnitSampleImpl`. -/
+/-- CO25 §5.8 Hyb_4. Canonical query handler for the basic-FS experiment: shared queries →
+`sharedImpl`; FS challenges → `srChallengeQueryImpl.withCaching` (lazy random function);
+unit-sampling queries → `d2sUnitSampleImpl`. -/
 def section58CanonicalFSImpl
     [DecidableEq StmtIn] [SampleableType U] [∀ i, SampleableType (pSpec.Challenge i)]
     [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
@@ -566,7 +589,7 @@ def section58CanonicalFSImpl
         let resp ← StateT.lift <| d2sUnitSampleImpl (U := U) qUnit
         pure resp
 
-/-- Named DS-side sampler corresponding to the paper's fixed `𝒟_𝔖(λ,n)` experiment, relative to
+/-- CO25 §5.8 Hyb_0. Named DS-side sampler for the paper's `𝒟_𝔖(λ,n)` experiment, relative to
 the ambient shared-oracle and permutation packages. -/
 abbrev paperDSInit [sharedPkg : Section58SharedOraclePackage (oSpec := oSpec)]
     [permPkg : Section58PermutationPackage (U := U)] :
@@ -577,8 +600,8 @@ abbrev paperDSInit [sharedPkg : Section58SharedOraclePackage (oSpec := oSpec)]
     (StmtIn := StmtIn) (U := U)
     sharedPkg.initShared permPkg.initPerm
 
-/-- Named DS-side implementation corresponding to the paper's fixed `𝒟_𝔖(λ,n)` experiment,
-relative to the ambient shared-oracle and permutation packages. -/
+/-- CO25 §5.8 Hyb_0. Named DS-side query handler for the paper's `𝒟_𝔖(λ,n)` experiment, relative
+to the ambient shared-oracle and permutation packages. -/
 abbrev paperDSImpl [DecidableEq StmtIn] [SampleableType U]
     [sharedPkg : Section58SharedOraclePackage (oSpec := oSpec)]
     [permPkg : Section58PermutationPackage (U := U)] :
@@ -590,8 +613,8 @@ abbrev paperDSImpl [DecidableEq StmtIn] [SampleableType U]
     (oSpec := oSpec) (StmtIn := StmtIn) (U := U)
     sharedPkg.implShared permPkg.implPerm
 
-/-- Named basic-FS-side sampler corresponding to the paper's fixed `𝒟_IP(λ,n)` experiment,
-relative to the ambient shared-oracle package. -/
+/-- CO25 §5.8 Hyb_4. Named basic-FS-side sampler for the paper's `𝒟_IP(λ,n)` experiment, relative
+to the ambient shared-oracle package. -/
 abbrev paperIPInit [sharedPkg : Section58SharedOraclePackage (oSpec := oSpec)] :
     ProbComp (Section58FSState
       (StmtIn := StmtIn) (pSpec := pSpec) sharedPkg.σShared) :=
@@ -599,7 +622,7 @@ abbrev paperIPInit [sharedPkg : Section58SharedOraclePackage (oSpec := oSpec)] :
     (StmtIn := StmtIn) (pSpec := pSpec)
     sharedPkg.initShared
 
-/-- Named basic-FS-side implementation corresponding to the paper's fixed `𝒟_IP(λ,n)` experiment,
+/-- CO25 §5.8 Hyb_4. Named basic-FS-side query handler for the paper's `𝒟_IP(λ,n)` experiment,
 relative to the ambient shared-oracle package. -/
 abbrev paperIPImpl [DecidableEq StmtIn] [SampleableType U]
     [∀ i, SampleableType (pSpec.Challenge i)]
@@ -612,7 +635,9 @@ abbrev paperIPImpl [DecidableEq StmtIn] [SampleableType U]
     (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
     sharedPkg.implShared
 
-/-- `Hyb₀`: left experiment in Section 5.8 (mapped DSFS experiment). -/
+/-- CO25 §5.8 Hyb_0. Left experiment of Theorem 5.1 (Figure 4 column 1): DSFS game under
+`𝒟_𝔖(λ,n)` with D2STrace applied to `tr_𝒫̃ ‖ tr_𝒱`.  Corresponds to
+`Pr[𝒱^{h,p}(𝕩, π) = 1]` in the lemma statement. -/
 abbrev hyb0Dist
     [SampleableType U]
     {σDS : Type}
@@ -632,7 +657,9 @@ abbrev hyb0Dist
     (pSpec := pSpec) (U := U) (codec := codec)
     initDS implDS V maliciousProver paperD2STrace
 
-/-- `Hyb₄`: right experiment in Section 5.8 (basic-FS experiment after `D2SAlgo`). -/
+/-- CO25 §5.8 Hyb_4. Right experiment of Theorem 5.1 (Figure 4 column 5): basic-FS game under
+`𝒟_IP(λ,n)` with prover `D2SAlgo^f(𝒫̃)` and verifier `𝒱_std^f`.  Corresponds to
+`Pr[𝒱^{D2SQuery^g}(𝕩, π) = 1]` in the lemma statement. -/
 abbrev hyb4Dist
     {σFS : Type}
     (initFS : ProbComp σFS)
@@ -690,19 +717,22 @@ private noncomputable def uniformDeserializePreimage
     (Nat.succ_le_of_lt hlen_pos)
   let idx : Fin preimages.length := ⟨idxRaw.1, by simpa [hlen_eq] using idxRaw.2⟩
   pure (preimages.get idx)
-/-- Claim 5.21 bound (`Hyb₀` vs `Hyb₁`). -/
+/-- CO25 Claim 5.21. Statistical-distance bound for `Hyb_0` vs `Hyb_1` (Eq. from the claim):
+`(7·T² − 3·T) / (2·|Σ|^c)` where `T = t_h + 1 + t_p + L + t_{p⁻¹}`. -/
 noncomputable def claim5_21Bound (U : Type) [SpongeUnit U] [Fintype U]
     (tₕ tₚ tₚᵢ L : ℕ) : ℝ :=
   let tShift : ℝ := (tₕ + 1 + tₚ + L + tₚᵢ : ℕ)
   (7 * tShift ^ 2 - 3 * tShift) / (2 * ((Fintype.card U : ℕ) : ℝ) ^ SpongeSize.C)
 
-/-- Claim 5.22 bound (`Hyb₁` vs `Hyb₂`). -/
+/-- CO25 Claim 5.22. Statistical-distance bound for `Hyb_1` vs `Hyb_2` (Eq. 53):
+`θ★(t_h, t_p, t_{p⁻¹}) · max_i ε_{cdc,i} + ∑_i ε_{cdc,i}`. -/
 noncomputable def claim5_22Bound
     (tₕ tₚ tₚᵢ : ℕ) (εcodec : CodecBias (pSpec := pSpec)) : ℝ :=
   (θStar tₕ tₚ tₚᵢ : ℝ) * iSup (fun i => (εcodec i : ℝ))
     + ∑ i, (εcodec i : ℝ)
 
-/-- Claim 5.24 bound (`Hyb₃` vs `Hyb₄`). -/
+/-- CO25 Claim 5.24. Statistical-distance bound for `Hyb_3` vs `Hyb_4` (Eq. 55):
+`(7·L·(2·t_h + 2 + 2·t_p + L + 2·t_{p⁻¹})) / (2·|Σ|^c) − 5·(L+1) / |Σ|^c`. -/
 noncomputable def claim5_24Bound (U : Type) [SpongeUnit U] [Fintype U]
     (tₕ tₚ tₚᵢ L : ℕ) : ℝ :=
   let Lr : ℝ := L
@@ -710,7 +740,9 @@ noncomputable def claim5_24Bound (U : Type) [SpongeUnit U] [Fintype U]
   (7 * Lr * (2 * (tₕ : ℝ) + 2 + 2 * (tₚ : ℝ) + Lr + 2 * (tₚᵢ : ℝ))) / (2 * cardPow)
     - (5 * (Lr + 1)) / cardPow
 
-/-- Canonical `Hyb₁` experiment from Section 5.8. -/
+/-- CO25 §5.8 Hyb_1. Canonical `Hyb_1` distribution (Figure 4, column 2): oracles
+`g := (g_i)_{i ∈ [k]} ← 𝒟_Σ(λ,n)` (Eq. 45); prover `𝒫̃^{D2SQuery^g}`; verifier
+`𝒱^{D2SQuery^g}`; line-4 trace `(φ⁻¹, ψ)(tr_𝒫̃ ‖ tr_𝒱)`. -/
 noncomputable def section58Hyb1Dist
     [SampleableType U]
     [DecidableEq StmtIn] [DecidableEq U]
@@ -762,7 +794,9 @@ noncomputable def section58Hyb1Dist
       (section58Hyb1Line4Trace
         (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
 
-/-- Canonical `Hyb₂` experiment from Section 5.8. -/
+/-- CO25 §5.8 Hyb_2. Canonical `Hyb_2` distribution (Figure 4, column 3): oracles
+`e := (e_i)_{i ∈ [k]} ← 𝒰(…)` (Eq. 52); prover `𝒫̃^{D2SQuery^{ψ⁻¹∘e}}`; verifier
+`𝒱^{D2SQuery^{ψ⁻¹∘e}}`; line-4 trace `φ⁻¹(tr_𝒫̃ ‖ tr_𝒱)`. -/
 noncomputable def section58Hyb2Dist
     [Fintype U] [SampleableType U]
     [DecidableEq StmtIn] [DecidableEq U]
@@ -822,7 +856,9 @@ noncomputable def section58Hyb2Dist
       (section58Hyb2Line4Trace
         (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
 
-/-- Canonical `Hyb₃` experiment from Section 5.8. -/
+/-- CO25 §5.8 Hyb_3. Canonical `Hyb_3` distribution (Figure 4, column 4): oracles
+`f := (f_i)_{i ∈ [k]} ← 𝒰(…)` (Eq. 54); prover `𝒫̃^{D2SQuery^{ψ⁻¹∘f∘φ⁻¹}}`; verifier
+`𝒱^{D2SQuery^{ψ⁻¹∘f∘φ⁻¹}}`; line-4 trace is `tr_𝒫̃ ‖ tr_𝒱` (no translation). -/
 noncomputable def section58Hyb3Dist
     [Fintype U] [SampleableType U]
     [DecidableEq StmtIn] [DecidableEq U]
@@ -888,7 +924,9 @@ noncomputable def section58Hyb3Dist
         (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
 
 
-/-- Claim 5.21 target proposition on the canonical `Hyb₀`/`Hyb₁` experiments from Section 5.8. -/
+/-- CO25 Claim 5.21. Target proposition for the canonical `Hyb_0` / `Hyb_1` step:
+`Δ(Hyb_0, Hyb_1) ≤ (7·T² − 3·T) / (2·|Σ|^c)` where `T = t_h + 1 + t_p + L + t_{p⁻¹}`.
+Proof uses `Theorem 5.8` (bad-event probability bound for `E(tr)`). -/
 def claim_5_21
     [Fintype U] [SampleableType U] [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
@@ -918,7 +956,10 @@ def claim_5_21
         (pSpec := pSpec) (U := U) (codec := codec) V maliciousProver)
     ≤ claim5_21Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries
 
-/-- Claim 5.22 target proposition on the canonical `Hyb₁`/`Hyb₂` experiments from Section 5.8. -/
+/-- CO25 Claim 5.22. Target proposition for the canonical `Hyb_1` / `Hyb_2` step (Eq. 53):
+`Δ(Hyb_1, Hyb_2) ≤ θ★ · max_i ε_{cdc,i} + ∑_i ε_{cdc,i}`.
+Hybrids differ in that `g_i` outputs `Σ^{ℓ_V(i)}` while `e_i` outputs `M_{V,i}`; the gap is
+bounded by the codec decoding bias `ε_{cdc,i}` via the map `ψ_i`. -/
 def claim_5_22
     [Fintype U] [SampleableType U] [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
@@ -947,7 +988,10 @@ def claim_5_22
         (pSpec := pSpec) (U := U) (codec := codec) V maliciousProver)
     ≤ claim5_22Bound (pSpec := pSpec) tₕ tₚ tₚᵢ (εcodec := codec.decodingBias)
 
-/-- Claim 5.23 target proposition on the canonical `Hyb₂`/`Hyb₃` experiments from Section 5.8. -/
+/-- CO25 Claim 5.23. Target proposition for the canonical `Hyb_2` / `Hyb_3` step:
+`Δ(Hyb_2, Hyb_3) = 0`.
+Hybrids are identically distributed: `φ_i` is injective so replacing encoded inputs by decoded
+inputs changes only the query format, not the distribution. -/
 def claim_5_23
     [Fintype U] [SampleableType U] [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
@@ -974,7 +1018,10 @@ def claim_5_23
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U) (codec := codec) V maliciousProver) = 0
 
-/-- Claim 5.24 target proposition on the canonical `Hyb₃`/`Hyb₄` experiments from Section 5.8. -/
+/-- CO25 Claim 5.24. Target proposition for the canonical `Hyb_3` / `Hyb_4` step (Eq. 55):
+`Δ(Hyb_3, Hyb_4) ≤ (7·L·(2t_h+2+2t_p+L+2t_{p⁻¹})) / (2·|Σ|^c) − 5·(L+1) / |Σ|^c`.
+The bound comes from the probability of the event `E_𝒱` (verifier D2SQuery aborts but
+prover does not), which is controlled by Eq. (34). -/
 def claim_5_24
     [Fintype U] [SampleableType U] [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
@@ -1006,12 +1053,11 @@ def claim_5_24
         V maliciousProver d2sAlgo)
     ≤ claim5_24Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries
 
-/--
-Lemma 5.1 distance component from Claims 5.21-5.24, as a statement-only bridge.
-
-This keeps the hybrid decomposition explicit and postpones the arithmetic reconciliation with
-`ηStar` to dedicated proof steps.
--/
+/-- CO25 Theorem 5.1 (bridge lemma). Distance component from Claims 5.21–5.24.
+Assembles the four-step hybrid chain `Hyb_0 → Hyb_1 → Hyb_2 → Hyb_3 → Hyb_4` via
+`tvDist_hybridChain4` and concludes `Δ(Hyb_0, Hyb_4) ≤ η★`.
+Keeps the hybrid decomposition explicit; arithmetic reconciliation with `ηStar` is a
+separate `hBound` hypothesis. -/
 theorem lemma_5_1_dist_from_claims
     [Fintype U] [SampleableType U] [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
@@ -1107,9 +1153,9 @@ theorem lemma_5_1_dist_from_claims
       h21 h22 h23' h24
   linarith
 
-/-- Semantic per-index query bound for a malicious prover in `lemma_5_1`.
-    `tShared` bounds queries to the ambient `oSpec`; `(tₕ, tₚ, tₚᵢ)` bound the three DS
-    sub-oracles. Uses `duplexSpongeQueryBudgetWithShared` from `Defs.lean`. -/
+/-- CO25 Theorem 5.1. Per-index query-bound predicate for the malicious prover `𝒫̃`.
+`tShared` bounds queries to the ambient `oSpec`; `(t_h, t_p, t_{p⁻¹})` bound the three
+DS sub-oracles `h`, `p`, `p⁻¹`. Uses `duplexSpongeQueryBudgetWithShared` from `Defs.lean`. -/
 abbrev IsLemma5_1QueryBound
     [DecidableEq ι]
     (maliciousProver :
@@ -1118,24 +1164,19 @@ abbrev IsLemma5_1QueryBound
   OracleComp.IsPerIndexQueryBound maliciousProver
     (duplexSpongeQueryBudgetWithShared (StmtIn := StmtIn) (U := U) tShared tₕ tₚ tₚᵢ)
 
-/--
-Lemma 5.1 in existential form (paper-facing statement), for the canonical Section 5.8 oracle
-surface.
+/-- CO25 Theorem 5.1 (Main lemma §5.8, existential form). For every malicious prover `𝒫̃` making
+at most `t_h` queries to `h` and `t_p` / `t_{p⁻¹}` queries to `p / p⁻¹`, there exist a
+D2SAlgo prover transform and a D2STrace line-4 map such that:
+```
+|Pr[𝒱^{h,p}(𝕩,π)=1] − Pr[𝒱^{D2SQuery^g}(𝕩,π)=1]| ≤ η★(t_h, t_p, t_{p⁻¹})
+```
+and D2SAlgo makes at most `θ★(t_h, t_p, t_{p⁻¹}) = t_p` total queries.
 
-The statement fixes the basic-FS side to the canonical lazy random-function sampler and the
-DS-side hash oracle to the canonical lazy random-function sampler, while leaving only the ambient
-shared-oracle implementation and the DS permutation sampler as explicit inputs. The existential
-quantifiers for `D2SAlgo` and the paper's `D2STrace` now precede the malicious prover, matching
-the paper: the same transformed prover/trace algorithms must work for every malicious prover under
-the stated query bound. The auxiliary hybrid trace algorithms used in the Section 5.8 proof chain
-remain an internal proof obligation when proving this theorem from
-`lemma_5_1_dist_from_claims`.
+The statement fixes both sides to canonical lazy-random-function oracle implementations and
+leaves only the ambient shared-oracle `(sharedInit, sharedImpl)` and permutation sampler
+`(permInit, permImpl)` explicit.
 
-TODO: reintroduce an explicit semantic assumption capturing that `(permInit, permImpl)` really
-samples the paper's random permutation experiment `𝒟_𝔖(λ,n)`. The old package-level law was too
-hidden for the public theorem surface, but the theorem should eventually state this requirement
-directly rather than leaving the permutation sampler unconstrained.
--/
+TODO: add an explicit semantic hypothesis that `(permInit, permImpl)` samples `𝒟_𝔖(λ,n)`. -/
 theorem lemma_5_1
     [Fintype U] [SampleableType U]
     [DecidableEq U]

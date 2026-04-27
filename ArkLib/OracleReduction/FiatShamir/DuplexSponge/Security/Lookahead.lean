@@ -59,18 +59,18 @@ structure LookaheadSequence
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (trΔp : T_P)
     (state : CanonicalSpongeState U) where
-  /-- The list of query-answer pairs `(s_in, s_out)` forming this look-ahead chain. -/
+  /-- `S_LA^(k)` chain (LookAhead §5.3 Step 1, Eq. 13): `(s_{in,ι}, s_{out,ι})` pairs. -/
   pairs : List (CanonicalSpongeState U × CanonicalSpongeState U)
-  /-- A look-ahead sequence is nonempty in the `.found` branch. -/
+  /-- `ℓ ≥ 1` — non-empty chain (`.found` branch of LookAhead §5.3 Step 2.c). -/
   nonempty : pairs ≠ []
-  /-- The first input state in the chain is the given initial state. -/
+  /-- `s_{in,0} = state` — LookAhead §5.3 Step 1(b). -/
   first_inputState_eq_state : pairs.head?.map Prod.fst = some state
-  /-- Every query-answer pair in the chain is a unique forward lookup in `tr_∇.p`. -/
+  /-- `inlu(tr_∇.p, s_{in,ι}) = some s_{out,ι}` — unique forward lookup (§5.3 Step 1). -/
   inputOutput_via_inlu : ∀ pair ∈ pairs,
     TraceTableOps.inlu (V := CanonicalSpongeState U) trΔp pair.1 = some pair.2
-  /-- Consecutive pairs are linked by output/input equality. -/
+  /-- `s_{out,ι-1} = s_{in,ι}` — LookAhead §5.3 Step 1(c) consecutive linkage. -/
   outputState_eq_next_inputState : List.IsChain (fun a b => a.2 = b.1) pairs
-  /-- No loop across query and answer capacity segments at each step. -/
+  /-- `cap(s_{in,ι}) ≠ cap(s_{out,ι})` — LookAhead §5.3 Step 1(d) no-loop guard. -/
   capacitySegment_inputState_ne_outputState : ∀ pair ∈ pairs,
     pair.1.capacitySegment ≠ pair.2.capacitySegment
 
@@ -103,16 +103,13 @@ lemma LookaheadSequence.inputState_length_eq_outputState_length
 structure LookaheadSequenceFamily
     (trΔp : T_P)
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) where
-  /-- The family of look-ahead sequences, defined as a finite set -/
+  /-- `S_LA` — the finite family of look-ahead sequences (LookAhead §5.3 Step 1). -/
   seqFamily : Finset (LookaheadSequence trΔp state)
-  /-- Maximality condition on distinct elements: no strict containment between two sequences,
-  defined in terms of
-    - the input states are not a strict subset of each other, or
-    - the output states are not a strict subset of each other -/
+  /-- LookAhead §5.3 Step 1(e) maximality: no sequence strictly contains another. -/
   maximality : ∀ s ∈ seqFamily, ∀ s' ∈ seqFamily,
     s ≠ s' →
       ¬ (s.inputState ⊆ s'.inputState) ∨ ¬ (s'.outputState ⊆ s.outputState)
-  /-- The length of any sequence is at most `Lᵥ(i)` -/
+  /-- `m_k ≤ L_V(i)` — LookAhead §5.3 Step 1(a) length bound. -/
   length_le_numPermQueriesChallenge : ∀ s ∈ seqFamily, s.inputState.length ≤ pSpec.Lᵥᵢ i
 
 /-- Successor candidates from `tr_∇.p` (paper §5.3 Algorithm 2 line "next ← inlu(p, current)").
