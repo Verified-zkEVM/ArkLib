@@ -275,7 +275,7 @@ private lemma foldWordAux_eq_sum_of_foldWordAuxCoeff
       | ⟨x, hx⟩ => by aesop (add safe (by omega))
 
 omit [Fintype F] in
-private lemma fold_eq_sum_of_foldAuxCoeff_mul_pow_alpha
+private lemma foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha
   {α : F} :
   foldValue domain f k α x =
     ∑ j, (foldWordAuxCoeff domain f (2 ^ k) j x) * α ^ j.val := by
@@ -297,8 +297,7 @@ omit [Fintype F] in
 private lemma indicated_polynomial_degree_x_lt
   {s' : Finset F}
   (hs' : s'.Nonempty) :
-  Bivariate.degreeX (indicatedPolynomial domain f k s')
-    < s'.card := by
+  Bivariate.degreeX (indicatedPolynomial domain f k s') < s'.card := by
   simp only [Bivariate.degreeX, indicatedPolynomial, finset_sum_coeff, coeff_C_mul, coeff_map]
   rw [Finset.sup_lt_iff (by simp [hs'])]
   intro b hb
@@ -313,8 +312,7 @@ omit [Fintype F] in
 private lemma indicated_polynomial_degree_y_lt
   {s' : Finset F}
   [inst : NeZero k] :
-  Bivariate.natDegreeY (indicatedPolynomial domain f k s')
-    < k := by
+  Bivariate.natDegreeY (indicatedPolynomial domain f k s') < k := by
   simp only [Bivariate.natDegreeY, indicatedPolynomial]
   rw [Nat.lt_iff_le_pred (by 
     aesop 
@@ -332,105 +330,86 @@ omit [Fintype F] in
 private lemma indicated_polynomial_eq_foldAux
   {s' : Finset F}
   {α : F} (hx : x ∈ s') :
-  ((indicatedPolynomial domain f k s').eval (Polynomial.C α)).eval x
-    = (foldWordAux domain f k x).eval α := by
+  ((indicatedPolynomial domain f k s').eval (Polynomial.C α)).eval x = 
+    (foldWordAux domain f k x).eval α := by
   aesop 
     (add simp [indicatedPolynomial, eval_finset_sum])
     (add safe 
       [(by rw [singleton_indicator_eq_0_on_S_minus_x]), 
         (by rw [Finset.sum_eq_ite x])])
 
+omit [Fintype F] in
 private lemma indicated_polynomial_eval_eq_combination_of_correlated
-  [Fintype F]
-  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {s' : Finset F}
+  {s' : Finset F}
   {u : Fin (2 ^ k) → Polynomial F}
-  {α : F} {x : F}
+  {α : F}
   (hu : ∀ i x, x ∈ s' → (u i).eval x = (foldWordAuxCoeff domain f (2 ^ k) i x))
-  (hx : x ∈ s')
-  :
-  ((indicatedPolynomial domain f (2 ^ k) s').eval (Polynomial.C α)).eval x
-    = ∑ i, (u i).eval x * α ^ i.val := by
-  rw [
-    indicated_polynomial_eq_foldAux hx,
-    ←fold_def,
-    fold_eq_sum_of_foldAuxCoeff_mul_pow_alpha]
-  conv =>
-    rhs
-    rhs
-    ext i
-    rw [hu i _ hx]
-
+  (hx : x ∈ s') :
+  ((indicatedPolynomial domain f (2 ^ k) s').eval (Polynomial.C α)).eval x = 
+    ∑ i, (u i).eval x * α ^ i.val := by
+  aesop 
+    (add safe (by rw [←foldValue_def]))
+    (add simp 
+      [indicated_polynomial_eq_foldAux, 
+        foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha])  
+  
+omit [Fintype F] in
 private lemma indicated_polynomial_eq_combination_of_correlated
-  [Fintype F]
-  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {s' : Finset F}
+  {s' : Finset F}
   {u : Fin (2 ^ k) → Polynomial F}
   {α : F}
   (hu : ∀ i x, x ∈ s' → (u i).eval x = (foldWordAuxCoeff domain f (2 ^ k) i x))
   (hu_deg : ∀ i, (u i).natDegree < s'.card)
-  (h_s' : s'.Nonempty)
-  :
-  ((indicatedPolynomial domain f (2 ^ k) s').eval (Polynomial.C α))
-    = ∑ i, (u i) * Polynomial.C (α ^ i.val) := by
+  (h_s' : s'.Nonempty) :
+  ((indicatedPolynomial domain f (2 ^ k) s').eval (Polynomial.C α)) = 
+    ∑ i, (u i) * Polynomial.C (α ^ i.val) := by
   apply Polynomial.poly_eq_of_eval_eq_natDegree (s := s') (n := #s')
-  · simp [indicatedPolynomial]
-    rw [eval_finset_sum]
-    simp
-    rw [Nat.lt_iff_le_pred (by simp [h_s'])]
-    apply natDegree_sum_le_of_forall_le
-    intro i hi
-    rw [←Nat.lt_iff_le_pred (by simp [h_s'])]
-    apply lt_of_le_of_lt
-    apply natDegree_mul_le
-    simp [singleton_indicator_natDegree_lt_of_mem hi]
-  · rw [Nat.lt_iff_le_pred (by simp [h_s'])]
-    apply natDegree_sum_le_of_forall_le
-    intro i _
-    rw [←Nat.lt_iff_le_pred (by simp [h_s'])]
-    apply lt_of_le_of_lt
-    apply natDegree_mul_le
-    simp [hu_deg i]
-  · simp
-  · intro x hx
-    rw [indicated_polynomial_eval_eq_combination_of_correlated hu hx]
-    rw [eval_finset_sum]
-    simp only [map_pow, eval_mul, eval_pow, eval_C]
-
+    <;> try rfl  
+  · simp only [indicatedPolynomial, 
+      eval_finset_sum, eval_mul, eval_C, eval_map_apply]
+    rw [Nat.lt_iff_le_pred (by aesop)]
+    exact natDegree_sum_le_of_forall_le _ _ <| fun i _ ↦ by
+      exact le_trans natDegree_mul_le <| by 
+        aesop 
+          (add unsafe (by rw [←Nat.lt_iff_le_pred]))
+          (add simp [singleton_indicator_natDegree_lt_of_mem])
+  · rw [Nat.lt_iff_le_pred (by aesop)]
+    exact natDegree_sum_le_of_forall_le _ _ <| fun i _ ↦ by
+      exact le_trans natDegree_mul_le <| by 
+        aesop 
+          (add unsafe (by rw [←Nat.lt_iff_le_pred]))
+  · aesop 
+      (add safe forward 
+        [indicated_polynomial_eval_eq_combination_of_correlated])
+      (add simp [eval_finset_sum])
 
 private lemma indicated_polynomial_eq_foldAux'
-  [Fintype F]
-  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {s' : Finset F}
+  {s' : Finset F}
   {u : Fin (2 ^ k) → Polynomial F}
-  {x : F}
   (hx : ∀ i, (u i).eval x = (foldWordAuxCoeff domain f (2 ^ k) i x))
   (hu : ∀ i x, x ∈ s' → (u i).eval x = (foldWordAuxCoeff domain f (2 ^ k) i x))
   (hu_deg : ∀ i, (u i).natDegree < s'.card)
   (h_s' : s'.Nonempty)
-  (h_card : 2 ^ k ≤ Fintype.card F)
-  :
+  (h_card : 2 ^ k ≤ Fintype.card F) :
   (Polynomial.map
     (Polynomial.evalRingHom x)
-    (indicatedPolynomial domain f (2 ^ k) s'))
-    = foldWordAux domain f (2 ^ k) x := by
+    (indicatedPolynomial domain f (2 ^ k) s')) = 
+    foldWordAux domain f (2 ^ k) x := by
   apply Polynomial.poly_eq_of_eval_eq_natDegree (s := Finset.univ) (n := (2 ^ k))
-  · simp [h_card]
+    <;> try tauto
   · intro α _
-    have h : Polynomial.eval α (Polynomial.map (evalRingHom x) (indicatedPolynomial domain f (2 ^ k) s'))
-      = ((indicatedPolynomial domain f (2 ^ k) s').eval (Polynomial.C α)).eval x
+    have h : Polynomial.eval α 
+      (Polynomial.map (evalRingHom x) (indicatedPolynomial domain f (2 ^ k) s')) = 
+        ((indicatedPolynomial domain f (2 ^ k) s').eval (Polynomial.C α)).eval x
       := by
         rw [eval_comm]
-    rw [
-      h,
-      indicated_polynomial_eq_combination_of_correlated hu hu_deg h_s',
-      ←fold_def,
-      fold_eq_sum_of_foldAuxCoeff_mul_pow_alpha,
-      eval_finset_sum]
-    conv =>
-      lhs
-      rhs
-      ext j
-      rw [eval_mul]
-      rw [hx j]
-      simp
+    -- rw [eval_comm] doesn't work although rw [h] does
+    aesop 
+     (add safe [
+      (by rw [indicated_polynomial_eq_combination_of_correlated, ←foldValue_def, foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha]),])
+     (add safe forward [eval_comm])
+     (add simp 
+      [eval_finset_sum])  
   · simp [indicatedPolynomial]
     rw [Polynomial.map_sum]
     simp
