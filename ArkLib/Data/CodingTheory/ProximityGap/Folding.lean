@@ -461,26 +461,52 @@ private lemma glorious_poly_eval_lemma {f : Polynomial (Polynomial F)} {x : F}
   · aesop
   · simp_all [pow_succ]
 
-private noncomputable def contradictoryHammingDistBound
+private noncomputable def contradictoryHammingDistBoundC
   {n : ℕ} (k : ℕ) (domain : SmoothCosetFftDomain n F) (s : Finset F) : ℕ := 
-  Fintype.card (Fin (2 ^ n)) -
   Finset.card { i ∈ 
     Finset.product 
       Finset.univ 
       (Finset.preimage s (domain.subdomainNatReversed k) CosetFftDomain.injOn) | 
     (domain i.1) ^ (2 ^ k) = domain.subdomainNatReversed k i.2 }
 
+
+private noncomputable def contradictoryHammingDistBound
+  {n : ℕ} (k : ℕ) (domain : SmoothCosetFftDomain n F) (s : Finset F) : ℕ := 
+  Fintype.card (Fin (2 ^ n)) - contradictoryHammingDistBoundC k domain s 
+
 omit [Fintype F] in
 @[simp]
 lemma contradictory_hamming_dist_zero :
   contradictoryHammingDistBound k domain ∅ = 2 ^ n := by 
-  simp [contradictoryHammingDistBound]
+  simp [contradictoryHammingDistBound, contradictoryHammingDistBoundC]
+
+omit [Fintype F] in
+private lemma card_helper
+  {s : Finset F} :
+  contradictoryHammingDistBoundC k domain s ≤
+  #{i |
+      f i =
+        Polynomial.eval (domain i)
+          (foldWordAux domain f (2 ^ k) (domain i ^ 2 ^ k))} := by
+  unfold contradictoryHammingDistBoundC
+  apply Finset.card_le_card_of_injOn (fun i => i.1) 
+  · rintro ⟨a₁, a₂⟩ ha
+    simp only [product_eq_sprod, coe_filter, mem_product, mem_univ, mem_preimage, true_and,
+      Set.mem_setOf_eq] at ha
+    simp only [coe_filter, mem_univ, true_and, Set.mem_setOf_eq]
+    rcases ha with ⟨h_a_s, h_eq⟩
+    rw [←foldValue_def, foldValue_pow_x_k]
+  · simp only [Set.InjOn]
+    aesop 
+      (add unsafe 
+        [(by apply CosetFftDomain.injective 
+              (ω := domain.subdomainNatReversed k))])
 
 private lemma correlated_agreement_implies_contradictory_hamm_dist
   {s : Finset F}
   (h_s : s ⊆ (domain.subdomainNatReversed k).toFinset)
   {u : Fin (2 ^ k) → Polynomial F}
-  (h_u : ∀ i, ∀ x ∈ s, (u i).eval x = 
+  (h_u : ∀ i, ∀ x ∈ s, (u i).eval x =
     foldWordAuxCoeff domain f (2 ^ k) i x)
   {d : ℕ}
   (h_d : 2 ^ k ≤ d)
@@ -500,74 +526,48 @@ private lemma correlated_agreement_implies_contradictory_hamm_dist
     have h_nonempty : s.Nonempty := by grind
     have h_s'_card : s'.card = min s.card (d / (2 ^ k)) := by simp [s']
     have h_s'_non_empty : s'.Nonempty := by
-      have h_s'_card : 0 < s'.card := by
-        rw [h_s'_card]
-        simp [h_nonempty]
-        omega
-      rw [Finset.nonempty_iff_ne_empty]
-      grind
-    exists ((Polynomial.map (Polynomial.compRingHom (Polynomial.X ^ (2 ^ k))) <| indicatedPolynomial domain f (2 ^ k) s').eval Polynomial.X)
-    apply And.intro
-    · apply lt_of_lt_of_le
-      apply indicated_polynomial_comp_x_k_natDegree h_s'_non_empty
-      apply le_trans
-      apply Nat.mul_le_mul_left (m := d / (2 ^ k))
-      omega
-      apply Nat.mul_div_le
-    · simp [hammingDist]
-      have h :
-        ( {i |
-        ¬f i =
-            Polynomial.eval (domain i)
-              (Polynomial.eval Y (Polynomial.map (Y ^ (2 ^ k)).compRingHom (indicatedPolynomial domain f (2 ^ k) s')))} : Finset _) =
-            Finset.univ \ ({i |
-            f i =
-                Polynomial.eval (domain i)
-                  (Polynomial.eval Y (Polynomial.map (Y ^ (2 ^ k)).compRingHom (indicatedPolynomial domain f (2 ^ k) s')))} : Finset _)  := by
-          ext a
-          aesop
-      rw [h]
-      clear h
-      rw [Finset.card_sdiff]
-      simp only [card_univ, Fintype.card_fin, inter_univ]
+      simp_all only [card_pick_subset, ne_eq, 
+        Nat.div_eq_zero_iff, Nat.pow_eq_zero, OfNat.ofNat_ne_zero, false_and,
+        false_or, not_lt, nonempty_pick_subset_of_nonempty_of_ne, s']
+    exists ((Polynomial.map (Polynomial.compRingHom (Polynomial.X ^ (2 ^ k))) <| 
+      indicatedPolynomial domain f (2 ^ k) s').eval Polynomial.X)
+    constructor
+    · exact lt_of_lt_of_le 
+        (indicated_polynomial_comp_x_k_natDegree h_s'_non_empty)
+        (le_trans
+          (Nat.mul_le_mul_left (m := d / (2 ^ k)) _ (by omega))
+          (Nat.mul_div_le _ _))
+    · simp only [hammingDist, ne_eq, contradictoryHammingDistBound, Fintype.card_fin]
+      rw [←Finset.compl_filter, Finset.card_compl, Fintype.card_fin]
       apply Nat.sub_le_sub_left
       apply Finset.card_le_card_of_injOn
-        (f := fun i => i.1)
-      · rintro ⟨a₁, a₂⟩ ha
-        simp at ha
-        simp
-        rw [glorious_poly_eval_lemma]
-        rcases ha with ⟨h_a_s, h_eq⟩
-        rw [h_eq]
-        by_cases h_s'_card_le : d / (2 ^ k) ≤  s'.card
-        · rw [indicated_polynomial_eq_foldAux' (u := u) (by aesop) ] <;> try assumption
-          · rw [←foldValue_def, ←h_eq, foldValue_pow_x_k]
-          · intro i x hx
-            have hsub : s' ⊆ s := by
-              simp [s']
-              exact pick_subset_subset
-            have hx := hsub hx
-            rw [h_u _ _ hx]
-          · intro i
-            exact lt_of_lt_of_le (h_u_deg i) h_s'_card_le
-        · simp at h_s'_card_le
-          have h : s' = s := by
-            simp only [s'] at h_s'_card_le
-            simp only [s']
-            apply pick_subset_eq_s_of_card_pick_subset_lt_n h_s'_card_le
-          rw [h]
-          rw [h] at h_s'_card_le
-          rw [←eval_comm, indicated_polynomial_eq_foldAux (by simp [h_a_s])]
-          rw [←h_eq, ←foldValue_def, foldValue_pow_x_k]
-      · rintro ⟨x₁, x₂⟩ hx ⟨y₁, y₂⟩ hy
-        simp
-        intro hxy₁ 
-        simp [hxy₁]
-        simp at hx
-        simp at hy
-        apply CosetFftDomain.injective (ω := domain.subdomainNatReversed k)
-        aesop
-
+        (fun i => i.1) (f_inj := by {
+          simp only [Set.InjOn]
+          aesop 
+            (add unsafe [(by apply CosetFftDomain.injective (ω := domain.subdomainNatReversed k))])
+})
+      rintro ⟨a₁, a₂⟩ ha
+      simp_all only [product_eq_sprod, coe_filter, mem_product, mem_univ, mem_preimage, true_and,
+        Set.mem_setOf_eq] 
+      rcases ha with ⟨h_a_s, h_eq⟩
+      rw [glorious_poly_eval_lemma, h_eq]
+      by_cases h_s'_s : s' = s
+      · rw [h_s'_s,
+            ←eval_comm, 
+            indicated_polynomial_eq_foldAux (by simp [h_a_s]),
+            ←h_eq, 
+            ←foldValue_def, 
+            foldValue_pow_x_k]
+      · rw [indicated_polynomial_eq_foldAux' (u := u) (by aesop) ] <;> try assumption
+        · rw [←foldValue_def, ←h_eq, foldValue_pow_x_k]
+        · intro i x hx
+          have hx := (pick_subset_subset : s' ⊆ s) hx
+          rw [h_u _ _ hx]
+        · intro i
+          exact lt_of_lt_of_le 
+            (h_u_deg i) 
+            (by rw [pick_subset_card_eq_n_of_ne h_s'_s])
+        
 private lemma master_lemma'
   [Fintype F]
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ}
