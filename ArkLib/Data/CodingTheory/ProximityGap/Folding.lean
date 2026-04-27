@@ -16,6 +16,7 @@ import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
 import ArkLib.Data.CodingTheory.ReedSolomon.FftDomain
 import ArkLib.Data.Polynomial.Indicator
 import ArkLib.ToMathlib.Polynomial.EvalExt
+import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 
 namespace ProximityGap
 
@@ -293,42 +294,38 @@ private noncomputable def indicatedPolynomial
     Polynomial.C (singletonIndicator x s') *
       (Polynomial.map Polynomial.C <| foldWordAux domain f k x)
 
+section IndicatedPolynomial
+
+variable {s' : Finset F} 
+
+private instance card_ne_zero (hs' : s'.Nonempty) : NeZero (Finset.card s') where
+  out := by aesop
+
 omit [Fintype F] in
-private lemma indicated_polynomial_degree_x_lt
-  {s' : Finset F}
-  (hs' : s'.Nonempty) :
+private lemma indicated_polynomial_degree_x_lt (hs' : s'.Nonempty) :
   Bivariate.degreeX (indicatedPolynomial domain f k s') < s'.card := by
   simp only [Bivariate.degreeX, indicatedPolynomial, finset_sum_coeff, coeff_C_mul, coeff_map]
   rw [Finset.sup_lt_iff (by simp [hs'])]
   intro b hb
-  rw [Nat.lt_iff_le_pred (by aesop)]
-  exact natDegree_sum_le_of_forall_le _ _ <| fun i hi ↦ 
-    le_trans natDegree_mul_le <| by
+  exact natDegree_sum_lt_of_forall_lt (inst := card_ne_zero hs') _ _ <| 
+    fun i hi ↦ lt_of_le_of_lt natDegree_mul_le <| by
       aesop 
-        (add unsafe (by rw [←Nat.lt_iff_le_pred]))
         (add simp [singleton_indicator_natDegree_lt_of_mem])
   
 omit [Fintype F] in
 private lemma indicated_polynomial_degree_y_lt
-  {s' : Finset F}
   [inst : NeZero k] :
   Bivariate.natDegreeY (indicatedPolynomial domain f k s') < k := by
   simp only [Bivariate.natDegreeY, indicatedPolynomial]
-  rw [Nat.lt_iff_le_pred (by 
-    aesop 
-      (add safe forward [inst.out])
-      (add safe (by omega)))]
-  exact natDegree_sum_le_of_forall_le _ _ <| fun i hi ↦ 
-    le_trans natDegree_mul_le <| by
+  exact natDegree_sum_lt_of_forall_lt _ _ <| fun i hi ↦ 
+    lt_of_le_of_lt natDegree_mul_le <| by
       aesop 
-        (add unsafe (by rw [←Nat.lt_iff_le_pred]))
         (add simp [foldWordAux_natDegree])
         (add safe forward [inst.out])
         (add safe (by omega))
         
 omit [Fintype F] in
 private lemma indicated_polynomial_eq_foldAux
-  {s' : Finset F}
   {α : F} (hx : x ∈ s') :
   ((indicatedPolynomial domain f k s').eval (Polynomial.C α)).eval x = 
     (foldWordAux domain f k x).eval α := by
@@ -340,7 +337,6 @@ private lemma indicated_polynomial_eq_foldAux
 
 omit [Fintype F] in
 private lemma indicated_polynomial_eval_eq_combination_of_correlated
-  {s' : Finset F}
   {u : Fin (2 ^ k) → Polynomial F}
   {α : F}
   (hu : ∀ i x, x ∈ s' → (u i).eval x = (foldWordAuxCoeff domain f (2 ^ k) i x))
@@ -355,29 +351,23 @@ private lemma indicated_polynomial_eval_eq_combination_of_correlated
   
 omit [Fintype F] in
 private lemma indicated_polynomial_eq_combination_of_correlated
-  {s' : Finset F}
+  (hs' : s'.Nonempty)
   {u : Fin (2 ^ k) → Polynomial F}
   {α : F}
   (hu : ∀ i x, x ∈ s' → (u i).eval x = (foldWordAuxCoeff domain f (2 ^ k) i x))
-  (hu_deg : ∀ i, (u i).natDegree < s'.card)
-  (h_s' : s'.Nonempty) :
+  (hu_deg : ∀ i, (u i).natDegree < s'.card) :
   ((indicatedPolynomial domain f (2 ^ k) s').eval (Polynomial.C α)) = 
     ∑ i, (u i) * Polynomial.C (α ^ i.val) := by
   apply Polynomial.poly_eq_of_eval_eq_natDegree (s := s') (n := #s')
     <;> try rfl  
   · simp only [indicatedPolynomial, 
       eval_finset_sum, eval_mul, eval_C, eval_map_apply]
-    rw [Nat.lt_iff_le_pred (by aesop)]
-    exact natDegree_sum_le_of_forall_le _ _ <| fun i _ ↦ 
-      le_trans natDegree_mul_le <| by 
+    exact natDegree_sum_lt_of_forall_lt (inst := card_ne_zero hs') _ _ <| 
+      fun i _ ↦ lt_of_le_of_lt natDegree_mul_le <| by 
         aesop 
-          (add unsafe (by rw [←Nat.lt_iff_le_pred]))
           (add simp [singleton_indicator_natDegree_lt_of_mem])
-  · rw [Nat.lt_iff_le_pred (by aesop)]
-    exact natDegree_sum_le_of_forall_le _ _ <| fun i _ ↦ 
-      le_trans natDegree_mul_le <| by 
-        aesop 
-          (add unsafe (by rw [←Nat.lt_iff_le_pred]))
+  · exact natDegree_sum_lt_of_forall_lt (inst := card_ne_zero hs') _ _ <| 
+      fun i _ ↦ lt_of_le_of_lt natDegree_mul_le <| by simp [hu_deg] 
   · aesop 
       (add safe forward 
         [indicated_polynomial_eval_eq_combination_of_correlated])
@@ -407,94 +397,56 @@ private lemma indicated_polynomial_eq_foldAux'
   · simp only 
       [indicatedPolynomial, Polynomial.map_sum,
         Polynomial.map_mul, map_C, coe_evalRingHom]
-    rw [Nat.lt_iff_le_pred (by simp)]
-    exact natDegree_sum_le_of_forall_le _ _ <| fun i hi ↦ 
-      le_trans natDegree_mul_le <| by 
+    exact natDegree_sum_lt_of_forall_lt _ _ <| fun i hi ↦ 
+      lt_of_le_of_lt natDegree_mul_le <| by 
         aesop 
-          (add unsafe (by rw [←Nat.lt_iff_le_pred]))
           (add simp [Polynomial.map_map])
           (add safe [foldWordAux_natDegree])
   · exact foldWordAux_natDegree
 
 omit [Fintype F] in
-lemma indicated_polynomial_comp_x_k_natDegree
-  {s' : Finset F}
-  (h_s : s'.Nonempty) :
+private lemma foldWordAux_poly_sum {a : F} : 
+  ((foldWordAux domain f (2 ^ k) a).sum fun e a ↦ Polynomial.C a * Polynomial.X ^ e) = 
+  foldWordAux domain f (2 ^ k) a := by
+  aesop (add safe 
+    [(by rw [←Polynomial.sum_monomial_eq]),
+     (by rw [Polynomial.sum])])
+
+omit [Fintype F] in
+private lemma indicated_polynomial_comp_x_k_natDegree
+  (hs' : s'.Nonempty) :
   ((Polynomial.map (Polynomial.compRingHom (Polynomial.X ^ (2 ^ k))) <| 
     indicatedPolynomial domain f (2 ^ k) s').eval Polynomial.X).natDegree < (2 ^ k) * s'.card := by
   by_cases h_card : 1 < s'.card
-  · simp [indicatedPolynomial]
-    rw [Polynomial.eval_map, eval₂_finset_sum]
-    simp
-    rw [Nat.lt_iff_le_pred (by simp [h_s])]
-    apply natDegree_sum_le_of_forall_le
-    intro i hi
-    rw [←Nat.lt_iff_le_pred (by simp [h_s])]
-    apply lt_of_le_of_lt
-    apply natDegree_mul_le
-    rw [natDegree_comp]
-    simp
-    rw [eval₂_map]
-    rw [eval₂]
-    simp
-    have h : ((foldWordAux domain f (2 ^ k) i).sum fun e a ↦ Polynomial.C a * Polynomial.X ^ e)
-      = foldWordAux domain f (2 ^ k) i := by
-      conv =>
-        rhs
-        rw [←Polynomial.sum_monomial_eq (foldWordAux _ _ _ _) ]
-      ext n
-      simp
-      rw [Polynomial.sum]
-      simp
-      aesop
-    simp
-    rw [h]
-    have h_ind : (singletonIndicator i s').natDegree
-      ≤ s'.card - 1 := by
-      rw [←Nat.lt_iff_le_pred (by omega)]
-      exact singleton_indicator_natDegree_lt_of_mem hi
-    apply lt_of_le_of_lt
-    apply Nat.add_le_add_right
-    apply Nat.mul_le_mul_right _ h_ind
-    apply lt_of_lt_of_le
-    apply Nat.add_lt_add_left
-    exact foldWordAux_natDegree
-    conv =>
-      lhs
-      rhs
-      rw [←Nat.mul_one (2 ^ k), mul_comm]
-    rw [←Nat.add_mul]
-    grind +ring
-  · simp at h_card
-    have h_card : #s' = 1 := by
-      by_contra contra
-      have h_card : #s' = 0 := by omega
-      rw [Finset.card_eq_zero] at h_card
-      rw [h_card] at h_s
-      simp at h_s
-    rw [Finset.card_eq_one] at h_card
-    rcases h_card with ⟨a, h_a⟩
-    simp [indicatedPolynomial ]
-    rw [h_a]
-    simp [singletonIndicator, indicator]
-    rw [Polynomial.eval_map, Polynomial.eval₂_map, eval₂]
-    simp
-    have h : ((foldWordAux domain f (2 ^ k) a).sum fun e a ↦ Polynomial.C a * Polynomial.X ^ e)
-      = foldWordAux domain f (2 ^ k) a := by
-      conv =>
-        rhs
-        rw [←Polynomial.sum_monomial_eq (foldWordAux _ _ _ _) ]
-      ext n
-      simp
-      rw [Polynomial.sum]
-      simp
-      aesop
-    rw [h]
-    exact foldWordAux_natDegree
+  · simp only [indicatedPolynomial, 
+      Polynomial.eval_map, eval₂_finset_sum,
+      eval₂_mul, eval₂_C, coe_compRingHom]
+    exact natDegree_sum_lt_of_forall_lt 
+      (inst := instNeZeroNatHMul (hm := card_ne_zero hs')) _ _ <| 
+      fun i hi ↦ lt_of_le_of_lt natDegree_mul_le <| by
+      simp only [natDegree_comp, natDegree_pow, natDegree_X, mul_one, eval₂_map, 
+        eval₂, RingHom.coe_comp, coe_compRingHom, comp_apply, C_comp, foldWordAux_poly_sum]
+      have h_ind := 
+        Nat.le_sub_one_of_lt (singleton_indicator_natDegree_lt_of_mem hi)
+      exact lt_of_le_of_lt 
+        (Nat.add_le_add_right (Nat.mul_le_mul_right _ h_ind) _) <|
+          lt_of_lt_of_le 
+            (Nat.add_lt_add_left foldWordAux_natDegree _) <| by
+            rw [Nat.mul_comm, ←Nat.mul_add_one]
+            grind +ring
+  · have h_card : #s' = 1 := by grind 
+    aesop 
+      (add unsafe [(by rw [Polynomial.eval_map, Polynomial.eval₂_map, eval₂])])
+      (add simp [Finset.card_eq_one, indicatedPolynomial, 
+        singletonIndicator, indicator, 
+        foldWordAux_poly_sum])
+      (add safe [foldWordAux_natDegree])
+    
+end IndicatedPolynomial
 
-private lemma poly_eval_lemma {f : Polynomial (Polynomial F)} {x : F}
-  {k : ℕ}
-  :
+omit [Fintype F] [DecidableEq F] in
+private lemma glorious_poly_eval_lemma {f : Polynomial (Polynomial F)} {x : F}
+  {k : ℕ} :
   Polynomial.eval x
     (Polynomial.eval
         Polynomial.X
@@ -504,9 +456,10 @@ private lemma poly_eval_lemma {f : Polynomial (Polynomial F)} {x : F}
                (Polynomial.map
                 (Polynomial.evalRingHom (x ^ k))
                 f)) := by
-  induction f using Polynomial.induction_on ; aesop;
-  · aesop;
-  · simp_all +decide [ pow_succ, mul_assoc, Polynomial.eval_map ]
+  induction f using Polynomial.induction_on 
+  · aesop
+  · aesop
+  · simp_all [pow_succ]
 
 private lemma master_lemma
   [Fintype F]
@@ -586,12 +539,12 @@ private lemma master_lemma
       · rintro ⟨a₁, a₂⟩ ha
         simp at ha
         simp
-        rw [poly_eval_lemma]
+        rw [obscure_poly_eval_lemma]
         rcases ha with ⟨h_a_s, h_eq⟩
         rw [h_eq]
         by_cases h_s'_card_le : d / (2 ^ k) ≤  s'.card
         · rw [indicated_polynomial_eq_foldAux' (u := u) (by aesop) ] <;> try assumption
-          · rw [←fold_def, ←h_eq, fold_pow_x_k]
+          · rw [←foldValue_def, ←h_eq, foldValue_pow_x_k]
           · intro i x hx
             have hsub : s' ⊆ s := by
               simp [s']
@@ -608,7 +561,7 @@ private lemma master_lemma
           rw [h]
           rw [h] at h_s'_card_le
           rw [←eval_comm, indicated_polynomial_eq_foldAux (by simp [h_a_s])]
-          rw [←h_eq, ←fold_def, fold_pow_x_k]
+          rw [←h_eq, ←foldValue_def, foldValue_pow_x_k]
       · rintro ⟨x₁, x₂⟩ hx ⟨y₁, y₂⟩ hy
         simp
         intro hxy₁ 
