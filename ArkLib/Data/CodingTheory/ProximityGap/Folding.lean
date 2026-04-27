@@ -521,79 +521,30 @@ private lemma contradictory_hamming_dist_formula {s : Finset F}
       CosetFftDomain.injOn
       (by {
         intro b hb
-        specialize (h_s hb)
-        rw [CosetFftDomain.mem_coset_finset_iff_mem_coset_domain,
-          CosetFftDomain.mem_coset_def] at h_s
-        rcases h_s with ⟨a, ha⟩
+        obtain ⟨a, ha⟩ : ∃ i, b = (CosetFftDomain.subdomainNatReversed domain k) i := by
+          rw [←CosetFftDomain.mem_coset_def, 
+            ←CosetFftDomain.mem_coset_finset_iff_mem_coset_domain]
+          exact h_s hb
         exists a
-        exists (by {
-          simp
-          rw [←ha]
-          exact hb
-        })
-        simp [ha]
+        aesop
       }) 
-      (by {
-        intro a ha
-        simp
-      })]
+      (by simp)]
     rw [Finset.sum_bij (t := s) 
       (g := fun i ↦ 2 ^ k) (fun i _ ↦ i) 
       (by aesop)
-      (by {
-        intro x hx y hy hxy 
-        simp at hxy
-        exact hxy
-      })
-      (by {
-        intro b hb
-        exists b 
-        exists hb
-      }) 
-      (by {
-        intro a ha
-        simp
-        conv =>
-          rhs
-          rw [←CosetFftDomain.subdomainNatReversed_roots_card (i := 0) (j := k)
-            (ω := domain) (x := a) (by {
-              simp only [zero_add]
-              rw [←Nat.pow_le_pow_iff_right (a := 2) (by simp)] 
-              omega     
-          }) (by {
-            specialize (h_s ha)
-            rw [CosetFftDomain.mem_coset_finset_iff_mem_coset_domain] at h_s
-            rw [CosetFftDomain.mem_subdomainNatReversed_of_eq (j := k) (by simp)]
-            exact h_s
-          })]
-        apply Finset.card_bij 
-          (i := fun i _ ↦ domain i)
-        · intro j hj
-          simp at hj 
-          simp only [Finset.mem_filter]
-          rw [hj, CosetFftDomain.mem_coset_finset_iff_mem_coset_domain,
-            CosetFftDomain.subdomainNatReversed_zero]
-          constructor
-          · exact CosetFftDomain.mem_coset_domain_self 
-          · rfl
-        · intro x _ y _ hxy
-          apply CosetFftDomain.injective (ω := domain)
-          exact hxy
-        · intro y hy 
-          simp only [Nat.sub_zero, mem_filter] at hy
-          rw [CosetFftDomain.mem_coset_finset_iff_mem_coset_domain,
-            CosetFftDomain.subdomainNatReversed_zero,
-            CosetFftDomain.mem_coset_def] at hy
-          rcases hy with ⟨⟨i, hi⟩, hy⟩
-          exists i
-          exists (by {
-            simp
-            rw [←hy, hi]
-          })
-          rw [hi]
-      })]
-    simp
-    rw [mul_comm]
+      (by aesop)
+      (by aesop) 
+      (fun a ha ↦ by
+        rw [roots_in_domain_card_eq_if_x_in_domain
+          (by {
+            rw [←Nat.pow_le_pow_iff_right (a := 2) (by simp)] 
+            omega
+        }) (by {
+          rw [←CosetFftDomain.mem_coset_finset_iff_mem_coset_domain] 
+          exact h_s ha
+        })]
+      )]
+    aesop (add safe (by grind))
 
 private lemma correlated_agreement_implies_contradictory_hamm_dist
   {s : Finset F}
