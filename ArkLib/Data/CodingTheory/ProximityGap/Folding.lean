@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Julian Sutherland, Ilia Vlasov, Aristotle (Harmonic)
+Authors: František Silváši, Julian Sutherland, Ilia Vlasov, Aristotle (Harmonic)
 -/
 
 import Mathlib.Algebra.Polynomial.Roots
@@ -602,7 +602,7 @@ private lemma correlated_agreement_implies_contradictory_hamm_dist
             ←h_eq, 
             ←foldValue_def, 
             foldValue_pow_x_k]
-      · rw [indicated_polynomial_eq_foldAux' (u := u) (by aesop) ] <;> try assumption
+      · rw [indicated_polynomial_eq_foldAux' (u := u) (by aesop)] <;> try assumption
         · rw [←foldValue_def, ←h_eq, foldValue_pow_x_k]
         · intro i x hx
           have hx := (pick_subset_subset : s' ⊆ s) hx
@@ -612,10 +612,8 @@ private lemma correlated_agreement_implies_contradictory_hamm_dist
             (h_u_deg i) 
             (by rw [pick_subset_card_eq_n_of_ne h_s'_s])
 
-omit [Fintype F] in
+set_option linter.unusedFintypeInType false in -- false alert
 private lemma master_lemma
-  [Fintype F]
-  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ}
   {s : Finset F}
   (h_s : s ⊆ (domain.subdomainNatReversed k).toFinset)
   {u : Fin (2 ^ k) → Polynomial F}
@@ -624,9 +622,7 @@ private lemma master_lemma
   {d : ℕ}
   (h_k_d : 2 ^ k ≤ d)
   (h_d : d ≤ 2 ^ n)
-  (h_k_card : (2 ^ k) ≤ Fintype.card F)
-  (h_u_deg : ∀ i, (u i).natDegree < d / (2 ^ k))
-  :
+  (h_u_deg : ∀ i, (u i).natDegree < d / (2 ^ k)) :
   Δ₀(f, ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d)
         ≤ 2 ^ n -
           2 ^ k * (Finset.card s) := by
@@ -639,7 +635,13 @@ private lemma master_lemma
           (by rw [contradictory_hamming_dist_formula]))
     ) <| by
     obtain ⟨f', h_f'_deg, hdist⟩ := 
-      correlated_agreement_implies_contradictory_hamm_dist h_s h_u h_k_d h_k_card h_u_deg
+      correlated_agreement_implies_contradictory_hamm_dist h_s h_u h_k_d (by {
+    exact le_trans h_k_d <| by
+      exact le_trans h_d <| by
+        rw [←CosetFftDomain.size_of_smooth_coset_domain_eq_pow_of_2 (ω := domain)]
+        simp only [CosetFftDomain.toFinset]
+        exact Finset.card_le_card (by simp)
+  }) h_u_deg
     simp only [code, evalOnPoints, Submodule.mem_map, 
       exists_exists_and_eq_and]
     exists f'
@@ -653,7 +655,7 @@ lemma folding_proximity
   {δ : ℚ≥0}
   (k_div_d : 2 ^ k ∣ d)
   (h_k_d : 2 ^ k ≤ d)
-  (h_d_n: d ≤ 2 ^ n)
+  (h_d_n : d ≤ 2 ^ n)
   (δ_gt_0 : 0 < δ)
   (δ_lt : δ < min (δᵣ(f, ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d)) 
     (1 - (ReedSolomon.sqrtRate d (domain : Fin (2 ^ n) ↪ F)))) :
@@ -665,15 +667,6 @@ lemma folding_proximity
     have h_k_le_n : k ≤ n := by
       rw [←Nat.pow_le_pow_iff_right (a := 2) (by simp)]
       omega
-
-    have h_k_card : 2 ^ k ≤ Fintype.card F := by
-      exact le_trans h_k_d <| by
-        exact le_trans h_d_n <| by
-          rw [←CosetFftDomain.size_of_smooth_coset_domain_eq_pow_of_2 (ω := domain)]
-          simp only [CosetFftDomain.toFinset]
-          apply Finset.card_le_card
-          simp
-          
     unfold foldWord
     have bound_tighter : 
       (↑δ) ≤ 1 - ReedSolomon.sqrtRate (d / (2 ^ k)) 
@@ -802,7 +795,6 @@ lemma folding_proximity
         congr
       })
       (d := d)
-      (by assumption)
       (by assumption)
       (by assumption)
       (by {
