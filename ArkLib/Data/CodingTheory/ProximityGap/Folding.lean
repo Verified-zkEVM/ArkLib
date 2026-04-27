@@ -368,14 +368,14 @@ private lemma indicated_polynomial_eq_combination_of_correlated
   · simp only [indicatedPolynomial, 
       eval_finset_sum, eval_mul, eval_C, eval_map_apply]
     rw [Nat.lt_iff_le_pred (by aesop)]
-    exact natDegree_sum_le_of_forall_le _ _ <| fun i _ ↦ by
-      exact le_trans natDegree_mul_le <| by 
+    exact natDegree_sum_le_of_forall_le _ _ <| fun i _ ↦ 
+      le_trans natDegree_mul_le <| by 
         aesop 
           (add unsafe (by rw [←Nat.lt_iff_le_pred]))
           (add simp [singleton_indicator_natDegree_lt_of_mem])
   · rw [Nat.lt_iff_le_pred (by aesop)]
-    exact natDegree_sum_le_of_forall_le _ _ <| fun i _ ↦ by
-      exact le_trans natDegree_mul_le <| by 
+    exact natDegree_sum_le_of_forall_le _ _ <| fun i _ ↦ 
+      le_trans natDegree_mul_le <| by 
         aesop 
           (add unsafe (by rw [←Nat.lt_iff_le_pred]))
   · aesop 
@@ -415,8 +415,8 @@ private lemma indicated_polynomial_eq_foldAux'
       [indicatedPolynomial, Polynomial.map_sum,
         Polynomial.map_mul, map_C, coe_evalRingHom]
     rw [Nat.lt_iff_le_pred (by simp)]
-    exact natDegree_sum_le_of_forall_le _ _ <| fun i hi ↦ by 
-      exact le_trans natDegree_mul_le <| by 
+    exact natDegree_sum_le_of_forall_le _ _ <| fun i hi ↦ 
+      le_trans natDegree_mul_le <| by 
         aesop 
           (add unsafe (by rw [←Nat.lt_iff_le_pred]))
           (add simp [Polynomial.map_map])
