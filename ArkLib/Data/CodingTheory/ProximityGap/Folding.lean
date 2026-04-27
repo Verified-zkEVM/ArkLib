@@ -397,10 +397,8 @@ private lemma indicated_polynomial_eq_foldAux'
     foldWordAux domain f (2 ^ k) x := by
   apply Polynomial.poly_eq_of_eval_eq_natDegree (s := Finset.univ) (n := (2 ^ k))
     <;> try tauto
-  · intro α _
-    rw [←eval_comm]
-    aesop 
-     (add safe [
+  · aesop 
+     (add safe [(by rw [←eval_comm]),
       (by rw 
         [indicated_polynomial_eq_combination_of_correlated, 
           ←foldValue_def, 
