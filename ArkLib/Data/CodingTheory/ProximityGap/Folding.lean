@@ -398,12 +398,7 @@ private lemma indicated_polynomial_eq_foldAux'
   apply Polynomial.poly_eq_of_eval_eq_natDegree (s := Finset.univ) (n := (2 ^ k))
     <;> try tauto
   · intro α _
-    have h : Polynomial.eval α 
-      (Polynomial.map (evalRingHom x) (indicatedPolynomial domain f (2 ^ k) s')) = 
-        ((indicatedPolynomial domain f (2 ^ k) s').eval (Polynomial.C α)).eval x
-      := by
-        rw [eval_comm]
-    -- rw [eval_comm] doesn't work although rw [h] does
+    rw [←eval_comm]
     aesop 
      (add safe [
       (by rw 
