@@ -476,136 +476,24 @@ private noncomputable def contradictoryHammingDistBound
 
 omit [Fintype F] in
 @[simp]
-lemma contradictory_hamming_dist_zero :
+private lemma contradictory_hamming_dist_zero :
   contradictoryHammingDistBound k domain ∅ = 2 ^ n := by 
   simp [contradictoryHammingDistBound, contradictoryHammingDistBoundC]
 
 omit [Fintype F] in
-private lemma card_helper
-  {s : Finset F} :
-  contradictoryHammingDistBoundC k domain s ≤
-  #{i |
-      f i =
-        Polynomial.eval (domain i)
-          (foldWordAux domain f (2 ^ k) (domain i ^ 2 ^ k))} := by
-  unfold contradictoryHammingDistBoundC
-  apply Finset.card_le_card_of_injOn (fun i => i.1) 
-  · rintro ⟨a₁, a₂⟩ ha
-    simp only [product_eq_sprod, coe_filter, mem_product, mem_univ, mem_preimage, true_and,
-      Set.mem_setOf_eq] at ha
-    simp only [coe_filter, mem_univ, true_and, Set.mem_setOf_eq]
-    rcases ha with ⟨h_a_s, h_eq⟩
-    rw [←foldValue_def, foldValue_pow_x_k]
-  · simp only [Set.InjOn]
-    aesop 
-      (add unsafe 
-        [(by apply CosetFftDomain.injective 
-              (ω := domain.subdomainNatReversed k))])
-
-private lemma correlated_agreement_implies_contradictory_hamm_dist
-  {s : Finset F}
-  (h_s : s ⊆ (domain.subdomainNatReversed k).toFinset)
-  {u : Fin (2 ^ k) → Polynomial F}
-  (h_u : ∀ i, ∀ x ∈ s, (u i).eval x =
-    foldWordAuxCoeff domain f (2 ^ k) i x)
+@[simp]
+private lemma contradictory_hamming_dist_formula {s : Finset F}
   {d : ℕ}
-  (h_d : 2 ^ k ≤ d)
-  (h_k_card : (2 ^ k) ≤ Fintype.card F)
-  (h_u_deg : ∀ i, (u i).natDegree < d / (2 ^ k)) :
-  ∃ f' : Polynomial F,
-    f'.natDegree < d ∧ 
-      hammingDist f (fun x => f'.eval (domain x)) ≤ 
-        contradictoryHammingDistBound k domain s := by
-  by_cases h_empty : s = ∅
-  · exists (C <| f 0)
-    aesop 
-      (add safe (by grind))
-      (add unsafe (by rw [←Finset.compl_filter, Finset.card_compl]))
-      (add simp [hammingDist, Finset.card_sdiff])
-  · let s' := s.pickSubset (d / (2 ^ k))
-    have h_nonempty : s.Nonempty := by grind
-    have h_s'_card : s'.card = min s.card (d / (2 ^ k)) := by simp [s']
-    have h_s'_non_empty : s'.Nonempty := by
-      simp_all only [card_pick_subset, ne_eq, 
-        Nat.div_eq_zero_iff, Nat.pow_eq_zero, OfNat.ofNat_ne_zero, false_and,
-        false_or, not_lt, nonempty_pick_subset_of_nonempty_of_ne, s']
-    exists ((Polynomial.map (Polynomial.compRingHom (Polynomial.X ^ (2 ^ k))) <| 
-      indicatedPolynomial domain f (2 ^ k) s').eval Polynomial.X)
-    constructor
-    · exact lt_of_lt_of_le 
-        (indicated_polynomial_comp_x_k_natDegree h_s'_non_empty)
-        (le_trans
-          (Nat.mul_le_mul_left (m := d / (2 ^ k)) _ (by omega))
-          (Nat.mul_div_le _ _))
-    · simp only [hammingDist, ne_eq, contradictoryHammingDistBound, Fintype.card_fin]
-      rw [←Finset.compl_filter, Finset.card_compl, Fintype.card_fin]
-      apply Nat.sub_le_sub_left
-      apply Finset.card_le_card_of_injOn
-        (fun i => i.1) (f_inj := by {
-          simp only [Set.InjOn]
-          aesop 
-            (add unsafe [(by apply CosetFftDomain.injective (ω := domain.subdomainNatReversed k))])
-})
-      rintro ⟨a₁, a₂⟩ ha
-      simp_all only [product_eq_sprod, coe_filter, mem_product, mem_univ, mem_preimage, true_and,
-        Set.mem_setOf_eq] 
-      rcases ha with ⟨h_a_s, h_eq⟩
-      rw [glorious_poly_eval_lemma, h_eq]
-      by_cases h_s'_s : s' = s
-      · rw [h_s'_s,
-            ←eval_comm, 
-            indicated_polynomial_eq_foldAux (by simp [h_a_s]),
-            ←h_eq, 
-            ←foldValue_def, 
-            foldValue_pow_x_k]
-      · rw [indicated_polynomial_eq_foldAux' (u := u) (by aesop) ] <;> try assumption
-        · rw [←foldValue_def, ←h_eq, foldValue_pow_x_k]
-        · intro i x hx
-          have hx := (pick_subset_subset : s' ⊆ s) hx
-          rw [h_u _ _ hx]
-        · intro i
-          exact lt_of_lt_of_le 
-            (h_u_deg i) 
-            (by rw [pick_subset_card_eq_n_of_ne h_s'_s])
-        
-private lemma master_lemma'
-  [Fintype F]
-  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ}
-  {s : Finset F}
   (h_s : s ⊆ (domain.subdomainNatReversed k).toFinset)
-  {u : Fin (2 ^ k) → Polynomial F}
-  (h_u : ∀ i, ∀ x ∈ s, (u i).eval x
-      = foldWordAuxCoeff domain f (2 ^ k) i x)
-  {d : ℕ}
   (h_k_d : 2 ^ k ≤ d)
-  (h_d : d ≤ 2 ^ n)
-  (h_k_card : (2 ^ k) ≤ Fintype.card F)
-  (h_u_deg : ∀ i, (u i).natDegree < d / (2 ^ k))
-  :
-  ∃ f' : Polynomial F,
-    f'.natDegree < d
-      ∧ hammingDist f (fun x => f'.eval (domain x))
-        ≤ 2 ^ n -
-          2 ^ k * (Finset.card s):= by
-  obtain ⟨f', h₁, h₂⟩ := master_lemma h_s h_u h_k_d h_k_card h_u_deg
-  exists f'
-  simp only [h₁, true_and]
-  exact le_trans h₂ <| by  
-    simp only [Fintype.card_fin, Embedding.coeFn_mk, product_eq_sprod] 
-    rw [Nat.sub_le_sub_iff_left (by {
-      simp only [CosetFftDomain.subdomainNatReversed, Nat.succ_eq_add_one] at h_s 
-      have hcard := Finset.card_le_card h_s
-      rw [CosetFftDomain.size_of_smooth_coset_domain_eq_pow_of_2] at hcard
-      apply Nat.le_trans 
-      apply Nat.mul_le_mul_left _ hcard
-      rw [←Nat.pow_add]
-      have hkn : k ≤ n := by
-        rw [←Nat.pow_le_pow_iff_right (a := 2) (by simp)] 
-        omega
-      rw [Nat.add_sub_of_le hkn]
-    })]
+  (h_d : d ≤ 2 ^ n) :
+  contradictoryHammingDistBound k domain s =
+    2 ^ n - 2 ^ k * (Finset.card s) := by
+    unfold contradictoryHammingDistBound contradictoryHammingDistBoundC
+    simp only [Fintype.card_fin, product_eq_sprod] 
+    congr
     conv =>
-      rhs
+      lhs
       congr
       rw [show @filter _ _ _ _ = 
         (Finset.preimage s (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) (fun x hx y hy hxy ↦ 
@@ -631,7 +519,7 @@ private lemma master_lemma'
       aesop
     })]
     conv =>
-      rhs
+      lhs
       congr
       rfl
       ext u
@@ -729,7 +617,74 @@ private lemma master_lemma'
     simp
     rw [mul_comm]
 
-private lemma master_lemma''
+private lemma correlated_agreement_implies_contradictory_hamm_dist
+  {s : Finset F}
+  (h_s : s ⊆ (domain.subdomainNatReversed k).toFinset)
+  {u : Fin (2 ^ k) → Polynomial F}
+  (h_u : ∀ i, ∀ x ∈ s, (u i).eval x =
+    foldWordAuxCoeff domain f (2 ^ k) i x)
+  {d : ℕ}
+  (h_d : 2 ^ k ≤ d)
+  (h_k_card : (2 ^ k) ≤ Fintype.card F)
+  (h_u_deg : ∀ i, (u i).natDegree < d / (2 ^ k)) :
+  ∃ f' : Polynomial F,
+    f'.natDegree < d ∧ 
+      hammingDist f (fun x => f'.eval (domain x)) ≤ 
+        contradictoryHammingDistBound k domain s := by
+  by_cases h_empty : s = ∅
+  · exists (C <| f 0)
+    aesop 
+      (add safe (by grind))
+      (add unsafe (by rw [←Finset.compl_filter, Finset.card_compl]))
+      (add simp [hammingDist, Finset.card_sdiff])
+  · let s' := s.pickSubset (d / (2 ^ k))
+    have h_nonempty : s.Nonempty := by grind
+    have h_s'_card : s'.card = min s.card (d / (2 ^ k)) := by simp [s']
+    have h_s'_non_empty : s'.Nonempty := by
+      simp_all only [card_pick_subset, ne_eq, 
+        Nat.div_eq_zero_iff, Nat.pow_eq_zero, OfNat.ofNat_ne_zero, false_and,
+        false_or, not_lt, nonempty_pick_subset_of_nonempty_of_ne, s']
+    exists ((Polynomial.map (Polynomial.compRingHom (Polynomial.X ^ (2 ^ k))) <| 
+      indicatedPolynomial domain f (2 ^ k) s').eval Polynomial.X)
+    constructor
+    · exact lt_of_lt_of_le 
+        (indicated_polynomial_comp_x_k_natDegree h_s'_non_empty)
+        (le_trans
+          (Nat.mul_le_mul_left (m := d / (2 ^ k)) _ (by omega))
+          (Nat.mul_div_le _ _))
+    · simp only [hammingDist, ne_eq, contradictoryHammingDistBound, Fintype.card_fin]
+      rw [←Finset.compl_filter, Finset.card_compl, Fintype.card_fin]
+      apply Nat.sub_le_sub_left
+      apply Finset.card_le_card_of_injOn
+        (fun i => i.1) (f_inj := by {
+          simp only [Set.InjOn]
+          aesop 
+            (add unsafe [(by apply CosetFftDomain.injective (ω := domain.subdomainNatReversed k))])
+})
+      rintro ⟨a₁, a₂⟩ ha
+      simp_all only [product_eq_sprod, coe_filter, mem_product, mem_univ, mem_preimage, true_and,
+        Set.mem_setOf_eq] 
+      rcases ha with ⟨h_a_s, h_eq⟩
+      rw [glorious_poly_eval_lemma, h_eq]
+      by_cases h_s'_s : s' = s
+      · rw [h_s'_s,
+            ←eval_comm, 
+            indicated_polynomial_eq_foldAux (by simp [h_a_s]),
+            ←h_eq, 
+            ←foldValue_def, 
+            foldValue_pow_x_k]
+      · rw [indicated_polynomial_eq_foldAux' (u := u) (by aesop) ] <;> try assumption
+        · rw [←foldValue_def, ←h_eq, foldValue_pow_x_k]
+        · intro i x hx
+          have hx := (pick_subset_subset : s' ⊆ s) hx
+          rw [h_u _ _ hx]
+        · intro i
+          exact lt_of_lt_of_le 
+            (h_u_deg i) 
+            (by rw [pick_subset_card_eq_n_of_ne h_s'_s])
+
+omit [Fintype F] in
+private lemma master_lemma
   [Fintype F]
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ}
   {s : Finset F}
@@ -746,28 +701,23 @@ private lemma master_lemma''
   Δ₀(f, ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d)
         ≤ 2 ^ n -
           2 ^ k * (Finset.card s) := by
-  simp [distFromCode]
-  apply sInf_le_of_le
-    (b := ↑(2 ^ n -
-          2 ^ k * (Finset.card s)))
-  simp
-  have h := master_lemma' h_s h_u h_k_d h_d h_k_card h_u_deg
-  rcases h with ⟨f', ⟨h_f'_deg, hdist⟩⟩
-  simp [ReedSolomon.code, ReedSolomon.evalOnPoints]
-  exists f'
-  apply And.intro
-  · simp [Polynomial.degreeLT]
-    intro i hi
-    rw [Polynomial.coeff_eq_zero_of_natDegree_lt]
-    omega
-  · have hdist :
-     (↑Δ₀(f, fun x ↦ Polynomial.eval (domain x) f') : ℕ∞) ≤ ↑(2 ^ n -
-          2 ^ k * (Finset.card s)) := by
-      rw [ENat.coe_le_coe]
-      assumption
-    simp at hdist
-    assumption
-  simp
+  simp only [distFromCode, SetLike.mem_coe]
+  exact sInf_le_of_le
+    (b := ↑(contradictoryHammingDistBound k domain s))
+    (h := by 
+      aesop 
+        (add safe 
+          (by rw [contradictory_hamming_dist_formula]))
+    ) <| by
+    obtain ⟨f', h_f'_deg, hdist⟩ := 
+      correlated_agreement_implies_contradictory_hamm_dist h_s h_u h_k_d h_k_card h_u_deg
+    simp only [code, evalOnPoints, Submodule.mem_map, 
+      exists_exists_and_eq_and]
+    exists f'
+    aesop 
+      (add simp [Polynomial.degreeLT])
+      (add safe (by rw [Polynomial.coeff_eq_zero_of_natDegree_lt]))
+      (add safe (by omega))
 
 lemma folding_proximity 
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {d k : ℕ}
@@ -838,7 +788,7 @@ lemma folding_proximity
     unfold δ_ε_correlatedAgreementCurves at h'
     by_contra h
     have {a b : ENNReal} : a < b → b > a := id
-    simp only [not_le, fold_eq_sum_of_foldAuxCoeff_mul_pow_alpha, bind_pure_comp, Functor.map, PMF.bind_apply,
+    simp only [not_le, foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha, bind_pure_comp, Functor.map, PMF.bind_apply,
       PMF.uniformOfFintype_apply, comp_apply, PMF.pure_apply, ULift.up.injEq, eq_iff_iff, true_iff,
       mul_ite, mul_one, mul_zero, tsum_fintype, Nat.succ_eq_add_one] at h h'
     have h := this h
@@ -895,7 +845,7 @@ lemma folding_proximity
         rw [Nat.sub_add_cancel]
         omega
   }) x
-    have contradiction := master_lemma'' (k := k) (domain := domain) (f := f)
+    have contradiction := master_lemma (k := k) (domain := domain) (f := f)
       (s := Finset.image 
         (domain.subdomainNatReversed k) S)
       (by {
