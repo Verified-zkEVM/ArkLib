@@ -650,6 +650,43 @@ private lemma master_lemma
       (add safe (by rw [Polynomial.coeff_eq_zero_of_natDegree_lt]))
       (add safe (by omega))
 
+private lemma sheer_glory {d : ℕ}
+  (hkn : k ≤ n) (hkd : 2 ^ k ∣ d) :
+  (↑(d / 2 ^ k) : ℚ≥0) / 2 ^ (n - k) = (↑d : ℚ≥0) / 2 ^ n := by
+  sorry
+
+
+
+lemma folded_rate {d : ℕ} (hkn : k ≤ n) (hkd : 2 ^ k ∣ d) : 
+  LinearCode.rate (ReedSolomon.code (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) (d / (2 ^ k))) =
+    LinearCode.rate (ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d) := by
+  simp [rateOfLinearCode_eq_min_div, min_def]
+  by_cases hif : d ≤ 2 ^ n
+  · simp [hif]
+    have hif : d / 2 ^ k ≤ 2 ^ (n - k) := by
+      rw [Nat.div_le_iff_le_mul (by simp)]
+      exact le_trans hif <| by
+        rw [←pow_add, Nat.sub_add_cancel hkn]
+        grind
+    simp [hif]
+    rw [sheer_glory hkn hkd]
+  · simp [hif]
+    have hif : ¬ d / 2 ^ k ≤ 2 ^ (n - k) := by
+      simp_all
+      rw [Nat.lt_div_iff_mul_lt (by simp),
+          ←pow_add,
+          Nat.sub_add_cancel hkn]
+      sorry
+    sorry
+
+
+
+
+
+
+
+
+
 lemma folding_proximity 
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {d k : ℕ}
   {δ : ℚ≥0}
