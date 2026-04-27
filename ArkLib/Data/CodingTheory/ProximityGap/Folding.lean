@@ -461,54 +461,51 @@ private lemma glorious_poly_eval_lemma {f : Polynomial (Polynomial F)} {x : F}
   · aesop
   · simp_all [pow_succ]
 
-private lemma master_lemma
-  [Fintype F]
-  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ}
+private noncomputable def contradictoryHammingDistBound
+  {n : ℕ} (k : ℕ) (domain : SmoothCosetFftDomain n F) (s : Finset F) : ℕ := 
+  Fintype.card (Fin (2 ^ n)) -
+  Finset.card { i ∈ 
+    Finset.product 
+      Finset.univ 
+      (Finset.preimage s (domain.subdomainNatReversed k) CosetFftDomain.injOn) | 
+    (domain i.1) ^ (2 ^ k) = domain.subdomainNatReversed k i.2 }
+
+omit [Fintype F] in
+@[simp]
+lemma contradictory_hamming_dist_zero :
+  contradictoryHammingDistBound k domain ∅ = 2 ^ n := by 
+  simp [contradictoryHammingDistBound]
+
+private lemma correlated_agreement_implies_contradictory_hamm_dist
   {s : Finset F}
   (h_s : s ⊆ (domain.subdomainNatReversed k).toFinset)
   {u : Fin (2 ^ k) → Polynomial F}
-  (h_u : ∀ i, ∀ x ∈ s, (u i).eval x
-      = foldWordAuxCoeff domain f (2 ^ k) i x)
+  (h_u : ∀ i, ∀ x ∈ s, (u i).eval x = 
+    foldWordAuxCoeff domain f (2 ^ k) i x)
   {d : ℕ}
   (h_d : 2 ^ k ≤ d)
   (h_k_card : (2 ^ k) ≤ Fintype.card F)
-  (h_u_deg : ∀ i, (u i).natDegree < d / (2 ^ k))
-  :
+  (h_u_deg : ∀ i, (u i).natDegree < d / (2 ^ k)) :
   ∃ f' : Polynomial F,
-    f'.natDegree < d
-      ∧ hammingDist f (fun x => f'.eval (domain x))
-        ≤ Fintype.card (Fin (2 ^ n)) -
-          ({i ∈ Finset.product Finset.univ 
-            (Finset.preimage s (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) (fun x hx y hy hxy ↦ 
-        CosetFftDomain.injective (ω := domain.subdomainNatReversed k) hxy)) | (domain i.1) ^ (2 ^ k) = domain.subdomainNatReversed k i.2} : Finset ((Fin (2 ^ n)) × (Fin (2 ^ (n - k))))).card:= by
-  let s' := s.pickSubset (d / (2 ^ k))
+    f'.natDegree < d ∧ 
+      hammingDist f (fun x => f'.eval (domain x)) ≤ 
+        contradictoryHammingDistBound k domain s := by
   by_cases h_empty : s = ∅
-  · simp [h_empty]
-    exists (C <| f 0)
-    apply And.intro
-    · simp
-      apply lt_of_lt_of_le (b := 2 ^ k) <;> simp [h_d]
-    · simp [hammingDist]
-      have h : ({i_1 | ¬f i_1 = f 0} : Finset (Fin (2 ^ n))) = Finset.univ \ ({i_1 | f i_1 = f 0} : Finset (Fin (2 ^ n))) := by
-        ext a
-        aesop
-      rw [h]
-      rw [Finset.card_sdiff]
-      simp
-  · have h_nonempty : s.Nonempty := by
-      rw [Finset.nonempty_iff_ne_empty]
-      simp [h_empty]
-    have h_s'_card : s'.card = min s.card (d / (2 ^ k)) := by
-      simp [s']
+  · exists (C <| f 0)
+    aesop 
+      (add safe (by grind))
+      (add unsafe (by rw [←Finset.compl_filter, Finset.card_compl]))
+      (add simp [hammingDist, Finset.card_sdiff])
+  · let s' := s.pickSubset (d / (2 ^ k))
+    have h_nonempty : s.Nonempty := by grind
+    have h_s'_card : s'.card = min s.card (d / (2 ^ k)) := by simp [s']
     have h_s'_non_empty : s'.Nonempty := by
       have h_s'_card : 0 < s'.card := by
         rw [h_s'_card]
         simp [h_nonempty]
         omega
       rw [Finset.nonempty_iff_ne_empty]
-      intro contra
-      rw [contra] at h_s'_card
-      simp at h_s'_card
+      grind
     exists ((Polynomial.map (Polynomial.compRingHom (Polynomial.X ^ (2 ^ k))) <| indicatedPolynomial domain f (2 ^ k) s').eval Polynomial.X)
     apply And.intro
     · apply lt_of_lt_of_le
@@ -539,7 +536,7 @@ private lemma master_lemma
       · rintro ⟨a₁, a₂⟩ ha
         simp at ha
         simp
-        rw [obscure_poly_eval_lemma]
+        rw [glorious_poly_eval_lemma]
         rcases ha with ⟨h_a_s, h_eq⟩
         rw [h_eq]
         by_cases h_s'_card_le : d / (2 ^ k) ≤  s'.card

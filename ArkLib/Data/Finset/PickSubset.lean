@@ -81,6 +81,17 @@ lemma card_pick_subset {s : Finset α} {n : ℕ} :
       have := Finset.card_le_card h 
       aesop (add safe (by omega))
 
+/-- Picking non-zero elements from a non-empty set is not empty. -/
+@[simp]
+lemma nonempty_pick_subset_of_nonempty {s : Finset α} {n : ℕ}
+  [NeZero n]
+  (h : s.Nonempty) :
+  (pickSubset s n).Nonempty := by 
+  have h_card : (pickSubset s n).card ≠ 0 := by
+    aesop
+  rw [Finset.nonempty_iff_ne_empty]
+  grind
+
 /-- If the target cardinality `n` exceeds or is equal to the cardinality
   of the set `s` then `pickSubset` returns the whole set `s`. -/
 lemma pick_subset_eq_s_of_card_le_n {s : Finset α} {n : ℕ}
