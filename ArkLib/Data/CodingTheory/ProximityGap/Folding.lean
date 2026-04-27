@@ -423,12 +423,12 @@ private lemma indicated_polynomial_eq_foldAux'
           (add safe [foldWordAux_natDegree])
   · exact foldWordAux_natDegree
 
+omit [Fintype F] in
 lemma indicated_polynomial_comp_x_k_natDegree
-  [Fintype F]
-  {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {k : ℕ} {s' : Finset F}
-  (h_s : s'.Nonempty)
-  :
-  ((Polynomial.map (Polynomial.compRingHom (Polynomial.X ^ (2 ^ k))) <| indicatedPolynomial domain f (2 ^ k) s').eval Polynomial.X).natDegree < (2 ^ k) * s'.card := by
+  {s' : Finset F}
+  (h_s : s'.Nonempty) :
+  ((Polynomial.map (Polynomial.compRingHom (Polynomial.X ^ (2 ^ k))) <| 
+    indicatedPolynomial domain f (2 ^ k) s').eval Polynomial.X).natDegree < (2 ^ k) * s'.card := by
   by_cases h_card : 1 < s'.card
   · simp [indicatedPolynomial]
     rw [Polynomial.eval_map, eval₂_finset_sum]
@@ -471,12 +471,7 @@ lemma indicated_polynomial_comp_x_k_natDegree
       rhs
       rw [←Nat.mul_one (2 ^ k), mul_comm]
     rw [←Nat.add_mul]
-    rw [Nat.sub_one_add_one]
-    rw [mul_comm]
-    simp
-    intro contra
-    rw [contra] at h_s
-    simp at h_s
+    grind +ring
   · simp at h_card
     have h_card : #s' = 1 := by
       by_contra contra
