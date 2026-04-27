@@ -492,55 +492,33 @@ private lemma contradictory_hamming_dist_formula {s : Finset F}
     unfold contradictoryHammingDistBound contradictoryHammingDistBoundC
     simp only [Fintype.card_fin, product_eq_sprod] 
     congr
-    conv =>
-      lhs
-      congr
-      rw [show @filter _ _ _ _ = 
-        (Finset.preimage s (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) (fun x hx y hy hxy ↦ 
-        CosetFftDomain.injective (ω := domain.subdomainNatReversed k) hxy)).biUnion 
-          (fun i ↦ {j | domain j.1 ^ 2 ^ k = domain.subdomainNatReversed k i ∧ j.2 = i} ) by {
-        ext x
-        simp
-      }]
-    rw [Finset.card_biUnion (by {
-      intro x hx y hy hxy
-      simp only [Disjoint, le_eq_subset, bot_eq_empty, subset_empty]
-      simp only [Embedding.coeFn_mk, coe_preimage, Set.mem_preimage, SetLike.mem_coe] at hx
-      simp only [Embedding.coeFn_mk, coe_preimage, Set.mem_preimage, SetLike.mem_coe] at hy
-      intro a ha₁ ha₂ 
-      by_contra contra
-      have contra : a ≠ ∅ := by simp [contra]
-      rw [←Finset.nonempty_iff_ne_empty] at contra
-      rcases contra with ⟨c, hc⟩
-      specialize (ha₁ hc)
-      specialize (ha₂ hc)
-      simp only [mem_filter, mem_univ, true_and] at ha₁ 
-      simp only [mem_filter, mem_univ, true_and] at ha₂ 
-      aesop
-    })]
+    rw [show @filter _ _ _ _ = 
+        (Finset.preimage s (domain.subdomainNatReversed k) CosetFftDomain.injOn).biUnion 
+          (fun i ↦ {j | domain j.1 ^ 2 ^ k = domain.subdomainNatReversed k i ∧ j.2 = i} ) by aesop, 
+        Finset.card_biUnion (fun x hx y hy hxy a ha₁ ha₂ ↦ by
+          by_contra contra
+          obtain ⟨c, hc⟩ : ∃ c, c ∈ a := by 
+            aesop 
+              (add simp [le_eq_subset])
+              (add safe (by grind))
+          specialize (ha₁ hc)
+          specialize (ha₂ hc)
+          aesop
+        )]
     conv =>
       lhs
       congr
       rfl
       ext u
       rw [show (Finset.card _) = #{j | domain j ^ 2 ^ k = 
-        (CosetFftDomain.subdomainNatReversed domain k) u} by {
-        apply Finset.card_bij (fun a _ ↦ a.1)
-        · aesop
-        · aesop
-        · aesop
-      }]
-    simp
+        (CosetFftDomain.subdomainNatReversed domain k) u} by 
+        aesop (add safe (by apply Finset.card_bij (fun a _ ↦ a.1)))
+      ]
     rw [Finset.sum_bij (t := s) 
       (g := fun x ↦ Finset.card {j | domain j ^ (2 ^ k) = x})
       (i := fun i _ ↦ domain.subdomainNatReversed k i)
       (by aesop)
-      (by {
-        intro x hx y hy hxy
-        apply CosetFftDomain.injective (ω := domain.subdomainNatReversed k)
-        simp at hxy
-        exact hxy
-      })
+      CosetFftDomain.injOn
       (by {
         intro b hb
         specialize (h_s hb)
