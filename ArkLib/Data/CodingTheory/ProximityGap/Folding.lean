@@ -699,11 +699,11 @@ lemma folded_sqrtRate {d : ℕ} (hkn : k ≤ n) (hkd : 2 ^ k ∣ d) :
     ReedSolomon.sqrtRate d (domain : Fin (2 ^ n) ↪ F) := by
   aesop (add simp [ReedSolomon.sqrtRate, folded_rate])
 
-lemma folding_proximity 
+theorem folding_preserves_distance
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {d k : ℕ}
   {δ : ℚ≥0}
   (k_div_d : 2 ^ k ∣ d)
-  (h_k_d : 2 ^ k ≤ d)
+  (hd0 : 0 < d)
   (h_d_n : d ≤ 2 ^ n)
   (δ_gt_0 : 0 < δ)
   (δ_lt : δ < min (δᵣ(f, ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d)) 
@@ -713,10 +713,10 @@ lemma folding_proximity
       (d / (2 ^ k))) ≤ δ] ≤
         ((2 ^ k) - 1) * ProximityGap.errorBound δ (d / (2 ^ k)) 
         (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) := by
+    have h_k_d : 2 ^ k ≤ d := by exact Nat.le_of_dvd (by omega) k_div_d
     have h_k_le_n : k ≤ n := by
       rw [←Nat.pow_le_pow_iff_right (a := 2) (by simp)]
       omega
-    unfold foldWord
     have bound_tighter : 
       (↑δ) ≤ 1 - ReedSolomon.sqrtRate (d / (2 ^ k)) 
         (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) := 
@@ -725,24 +725,21 @@ lemma folding_proximity
           (add safe [(by rw [folded_sqrtRate])])
           (add safe [(by grind)])
           (add safe (by norm_cast at *))
-    have h' :=
+    have correlated_agreement :=
       @correlatedAgreement_affine_curves (Fin (2 ^ (n - k))) _ inferInstance _ F _ _ _ 
         (2 ^ k - 1) (d / (2 ^ k)) 
         (domain := domain.subdomainNatReversed k) (δ := δ) 
         (hδ := bound_tighter)
-    unfold δ_ε_correlatedAgreementCurves at h'
-    by_contra h
-    have {a b : ENNReal} : a < b → b > a := id
-    simp only [not_le, foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha, bind_pure_comp, Functor.map, PMF.bind_apply,
-      PMF.uniformOfFintype_apply, comp_apply, PMF.pure_apply, ULift.up.injEq, eq_iff_iff, true_iff,
-      mul_ite, mul_one, mul_zero, tsum_fintype, Nat.succ_eq_add_one] at h h'
-    have h := this h
-    let cast (x : Fin (2 ^ k - 1 + 1)) 
-      : Fin (2 ^ k) := Fin.cast (by {
-        rw [Nat.sub_add_cancel]
-        omega
-      }) x
-    specialize h' 
+    unfold foldWord δ_ε_correlatedAgreementCurves at *
+    by_contra contra
+    simp only [not_le, foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha, bind_pure_comp, Functor.map, 
+      PMF.bind_apply,
+      PMF.uniformOfFintype_apply, 
+      comp_apply, PMF.pure_apply, eq_iff_iff, true_iff,
+      mul_ite, mul_one, mul_zero, tsum_fintype] at contra correlated_agreement
+    let cast (x : Fin (2 ^ k - 1 + 1)) : Fin (2 ^ k) := 
+      Fin.cast (by rw [Nat.sub_add_cancel (by omega)]) x
+    specialize correlated_agreement 
       (Matrix.of (fun i j ↦ foldWordAuxCoeff domain f (2 ^ k) 
         (cast i) 
         (domain.subdomainNatReversed k j)))
@@ -770,16 +767,16 @@ lemma folding_proximity
           exists ⟨b, by omega⟩
       · intro y 
         rfl
-    specialize h' (by {
+    specialize correlated_agreement (by {
       conv =>
         lhs
         rhs
         ext a
         rw [←hh]
-      norm_cast at h
+      norm_cast at contra
     }) 
-    simp [jointAgreement] at h'
-    rcases h' with ⟨S, ⟨h_card, ⟨v, h'⟩⟩⟩
+    simp [jointAgreement] at correlated_agreement
+    rcases correlated_agreement with ⟨S, ⟨h_card, ⟨v, h'⟩⟩⟩
     simp [ReedSolomon.code] at h'
     rw [forall_and] at h'
     rcases h' with ⟨h_rs, h'⟩ 
