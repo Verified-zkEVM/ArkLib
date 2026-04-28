@@ -701,7 +701,7 @@ lemma folded_sqrtRate {d : ℕ} (hkn : k ≤ n) (hkd : 2 ^ k ∣ d) :
 
 theorem folding_preserves_distance
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {d k : ℕ}
-  {δ : ℚ≥0}
+  {δ : ℝ≥0}
   (k_div_d : 2 ^ k ∣ d)
   (hd0 : 0 < d)
   (h_d_n : d ≤ 2 ^ n)
@@ -860,17 +860,14 @@ theorem folding_preserves_distance
               · simp
             })]
           norm_cast
-    have contradiction : δᵣ(f, code (domain : Fin (2 ^ n) ↪ F) d) ≤ δ := by
-      rw [relDistFromCode_eq_distFromCode_div]
-      rw [ENNReal.div_le_iff_le_mul (by simp) (by simp)]
-      apply le_trans contradiction
-      simp
-      rw [mul_comm]
-      norm_cast
-    simp at δ_lt
-    obtain ⟨δ_lt, _⟩ := δ_lt
-    have contradiction := lt_of_lt_of_le δ_lt contradiction 
-    simp at contradiction
-
+    have contradiction : δᵣ(f, code (domain : Fin (2 ^ n) ↪ F) d) ≤ (δ : NNReal) := by
+      rw [relDistFromCode_le_iff_distFromCode_le']
+      exact le_trans contradiction <| by
+        simp only [Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat]
+        rw [mul_comm]
+        norm_cast
+    simp only [lt_inf_iff] at δ_lt
+    simpa using lt_of_lt_of_le δ_lt.1 contradiction 
+    
 end
 end ProximityGap
