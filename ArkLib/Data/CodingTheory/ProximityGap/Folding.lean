@@ -18,6 +18,31 @@ import ArkLib.Data.Polynomial.Indicator
 import ArkLib.ToMathlib.Polynomial.EvalExt
 import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 
+/-! This file contains all the definition needed to state
+  and prove the lemma 4.9 from [ACFY24] as well as the proof of it.
+
+## Main definitions
+
+* `foldWord`
+  : the folding function that is to be used by the verifier to fold
+    purported codeword using a random challenge.
+* `folding_preserves_distance`
+  : lemma 4.9 from [ACFY24]. "Soundness" of the folding operation.
+    If a purported codeword `f` 
+    has distance `δ` to a given RS-code then, 
+    with high probability over the choice of folding randomness, 
+    its folding also has distance `δ` to the "k-wise folded" RS-code.
+* `foldWord_codeword`
+  : a bonus theorem not present in [ACFY24]. "Completeness" of the folding operation.
+    folding a codeword is the same RS-encoding folding polynomial applied to
+    the message.
+
+## References
+
+* [Arnon, G., Chiesa, A., Fenzi, G., Yogev, E., 
+  *STIR: Reed–Solomon Proximity Testing with Fewer Queries*][ACFY24]
+-/
+
 namespace ProximityGap
 
 open NNReal Finset Function
@@ -287,10 +312,8 @@ private lemma foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha
         foldWordAux_eq_sum_of_foldWordAuxCoeff])
 
 private noncomputable def indicatedPolynomial
-  (domain : SmoothCosetFftDomain n F) (f : Word F (Fin (2 ^ n))) (k : ℕ) (s' : Finset F)
-  :
-  Polynomial (Polynomial F)
-  := ∑ x ∈ s',
+  (domain : SmoothCosetFftDomain n F) (f : Word F (Fin (2 ^ n))) (k : ℕ) (s' : Finset F) :
+  Polynomial (Polynomial F) := ∑ x ∈ s',
     Polynomial.C (singletonIndicator x s') *
       (Polynomial.map Polynomial.C <| foldWordAux domain f k x)
 
