@@ -699,6 +699,9 @@ lemma folded_sqrtRate {d : ℕ} (hkn : k ≤ n) (hkd : 2 ^ k ∣ d) :
     ReedSolomon.sqrtRate d (domain : Fin (2 ^ n) ↪ F) := by
   aesop (add simp [ReedSolomon.sqrtRate, folded_rate])
 
+set_option linter.unusedVariables false in -- linter complains about `δ_gt_0`
+                                           -- which is a result of it missing
+                                           -- from the proximity gap theorem args.
 theorem folding_preserves_distance
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {d k : ℕ}
   {δ : ℝ≥0}
