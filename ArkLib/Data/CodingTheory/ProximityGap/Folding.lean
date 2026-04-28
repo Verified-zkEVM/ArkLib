@@ -809,18 +809,12 @@ theorem folding_preserves_distance
       )
       (u := u ∘ cast')
       (fun i j hj ↦ by
-        obtain ⟨_, h_spec⟩ : 
-          _ ∧ 
-            (ReedSolomon.evalOnPoints (domain.subdomainNatReversed k)) 
-              (u (cast' i)) = v (cast' i) := Classical.choose_spec (h_rs (cast' i))
-        simp_all only [evalOnPoints, Embedding.coeFn_mk, LinearMap.coe_mk, AddHom.coe_mk, mem_image]
-        obtain ⟨j', hj, hj'⟩ := hj
-        have h_spec := congrFun h_spec j'
-        rw [comp_apply, ←hj', h_spec]
-        specialize h' (cast' i) hj 
-        simp only [mem_filter, mem_univ, true_and] at h'
-        rw [h']
-        rfl
+        clear *- hj h'
+        let i' := cast' i
+        obtain ⟨j', hj, _⟩ := by simpa using hj
+        specialize h' i' hj
+        have h_spec := congrFun (a := j') <| Classical.choose_spec (h_rs i') |>.2
+        aesop (add norm evalOnPoints)
       )
       (d := d)
       h_k_d
