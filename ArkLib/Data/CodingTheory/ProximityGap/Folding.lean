@@ -739,81 +739,66 @@ theorem folding_preserves_distance
       mul_ite, mul_one, mul_zero, tsum_fintype] at contra correlated_agreement
     let cast (x : Fin (2 ^ k - 1 + 1)) : Fin (2 ^ k) := 
       Fin.cast (by rw [Nat.sub_add_cancel (by omega)]) x
+    let cast' (x : Fin (2 ^ k)) : Fin (2 ^ k - 1 + 1) :=
+      Fin.cast (by rw [Nat.sub_add_cancel (by omega)]) x
+    have bijective_cast : Bijective cast := by
+      rw [bijective_iff_has_inverse]
+      exists cast'
+      simp [LeftInverse, RightInverse, cast, cast']
     specialize correlated_agreement 
       (Matrix.of (fun i j ↦ foldWordAuxCoeff domain f (2 ^ k) 
         (cast i) 
         (domain.subdomainNatReversed k j)))
-    have hh {a : F} : 
+    have correlated_curve_eq_sum_of_foldWord_coeffs {a : F} : 
+      ∑ i : Fin (2 ^ k - 1 + 1), a ^ (↑i : ℕ) • 
+        Matrix.of (fun i j ↦ 
+          foldWordAuxCoeff domain f (2 ^ k) (cast i) (domain.subdomainNatReversed k j)) i =
       (fun x ↦ 
         ∑ j, foldWordAuxCoeff domain f (2 ^ k) j 
-          (domain.subdomainNatReversed k x) * a ^ (↑j : ℕ))
-      =∑ i : Fin (2 ^ k - 1 + 1), a ^ (↑i : ℕ) • 
-        Matrix.of (fun i j ↦ 
-          foldWordAuxCoeff domain f (2 ^ k) (cast i) (domain.subdomainNatReversed k j)) i := by 
+          (domain.subdomainNatReversed k x) * a ^ (↑j : ℕ)) := by
       ext x
-      simp
-      conv =>
-        lhs
-        rhs
-        ext y
-        rw [mul_comm]
-      symm
-      apply Fintype.sum_bijective cast
-      · constructor
-        · intro x y hxy
-          simp [cast] at hxy
-          exact hxy
-        · rintro ⟨b, hb⟩
-          exists ⟨b, by omega⟩
-      · intro y 
-        rfl
+      simp only [sum_apply]
+      exact Fintype.sum_bijective cast bijective_cast _ _ <| 
+        fun i ↦ by simp [cast, mul_comm]
     specialize correlated_agreement (by {
-      conv =>
-        lhs
+      conv_lhs =>
         rhs
         ext a
-        rw [←hh]
+        rw [correlated_curve_eq_sum_of_foldWord_coeffs]
       norm_cast at contra
     }) 
-    simp [jointAgreement] at correlated_agreement
-    rcases correlated_agreement with ⟨S, ⟨h_card, ⟨v, h'⟩⟩⟩
-    simp [ReedSolomon.code] at h'
+    simp only [jointAgreement, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat, ge_iff_le,
+      SetLike.mem_coe, Matrix.of_apply] at correlated_agreement
+    obtain ⟨S, h_card, v, h'⟩ := correlated_agreement
     rw [forall_and] at h'
     rcases h' with ⟨h_rs, h'⟩ 
+    simp only [code, Submodule.mem_map] at h_rs
     let u : Fin (2 ^ k - 1 + 1) → Polynomial F :=
       fun i => Classical.choose (h_rs i)
-    let cast' : Fin (2 ^ k) → Fin (2 ^ k - 1 + 1) :=
-      fun x ↦ Fin.cast (by {
-        rw [Nat.sub_add_cancel]
-        omega
-  }) x
     have contradiction := master_lemma (k := k) (domain := domain) (f := f)
       (s := Finset.image 
         (domain.subdomainNatReversed k) S)
-      (by {
-        intro x hx
-        simp at hx
-        rcases hx with ⟨x', ⟨_, hx'⟩⟩ 
-        rw [←hx', CosetFftDomain.mem_coset_finset_iff_mem_coset_domain] 
-        exact CosetFftDomain.mem_coset_domain_self
-      })
-      (u := fun i => u (cast' i))
-      (by {
-        intros i j hj
-        have h_spec : u (cast' i) ∈ F⦃< d / (2 ^ k)⦄[X] ∧ (ReedSolomon.evalOnPoints (domain.subdomainNatReversed k)) (u (cast' i)) = v (cast' i) := Classical.choose_spec (h_rs (cast' i))
-        simp [ReedSolomon.evalOnPoints] at h_spec
-        rcases h_spec with ⟨_, h_spec⟩
-        simp at hj
-        rcases hj with ⟨j', hj, hj'⟩
+      (fun x hx ↦ by
+        rw [CosetFftDomain.mem_coset_finset_iff_mem_coset_domain] 
+        simp only [mem_image] at hx
+        obtain ⟨x', _, hx'⟩ := hx
+        aesop
+      )
+      (u := u ∘ cast')
+      (fun i j hj ↦ by
+        obtain ⟨_, h_spec⟩ : 
+          _ ∧ 
+            (ReedSolomon.evalOnPoints (domain.subdomainNatReversed k)) 
+              (u (cast' i)) = v (cast' i) := Classical.choose_spec (h_rs (cast' i))
+        simp_all only [evalOnPoints, Embedding.coeFn_mk, LinearMap.coe_mk, AddHom.coe_mk, mem_image]
+        obtain ⟨j', hj, hj'⟩ := hj
         have h_spec := congrFun h_spec j'
-        simp at h_spec
-        simp
-        rw [←hj', h_spec]
+        rw [comp_apply, ←hj', h_spec]
         specialize h' (cast' i) hj 
-        simp at h'
+        simp only [mem_filter, mem_univ, true_and] at h'
         rw [h']
-        congr
-      })
+        rfl
+      )
       (d := d)
       (by assumption)
       (by assumption)
@@ -826,7 +811,8 @@ theorem folding_preserves_distance
         by_cases heq : u (cast' i) = 0
         · simp [heq]
           omega
-        · rw [Polynomial.natDegree_lt_iff_degree_lt heq]
+        · simp  
+          rw [Polynomial.natDegree_lt_iff_degree_lt heq]
           rw [Polynomial.degree_lt_iff_coeff_zero]
           exact h_spec
       })
