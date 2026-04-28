@@ -749,7 +749,7 @@ theorem folding_preserves_distance
           (add safe [(by grind)])
           (add safe (by norm_cast at *))
     have correlated_agreement :=
-      @correlatedAgreement_affine_curves (Fin (2 ^ (n - k))) _ inferInstance _ F _ _ _ 
+      @correlatedAgreement_affine_curves (Fin (2 ^ (n - k))) _ _ F _ _ _ 
         (2 ^ k - 1) (d / (2 ^ k)) 
         (domain := domain.subdomainNatReversed k) (δ := δ) 
         (hδ := bound_tighter)
