@@ -51,7 +51,7 @@ open scoped BigOperators LinearCode
 open Code Affine ReedSolomon
 open Polynomial
 
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [DecidableEq F]
 variable {n : ℕ}
 
 /-- Given a word `f`, `foldWordAux` is a polynomial `pₓ` 
@@ -67,7 +67,6 @@ section
 variable {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))}
 variable {k : ℕ} {x : F}
 
-omit [Fintype F] in
 private lemma roots_of_x_in_domain_eq
   (hk : k ≠ 0) :
   ({i | domain i ^ k = x} : Finset (Fin (2 ^ n))) = 
@@ -79,7 +78,6 @@ private lemma roots_of_x_in_domain_eq
   simp only [mem_filter, mem_univ, true_and, mem_preimage]
   rw [Polynomial.mem_nthRootsFinset (by omega)]
 
-omit [Fintype F] in
 private lemma roots_of_x_in_domain_card
   (hk : k ≠ 0) :
   Finset.card {i | domain i ^ k = x} ≤ 
@@ -88,7 +86,6 @@ private lemma roots_of_x_in_domain_card
   rw [roots_of_x_in_domain_eq hk, Finset.card_preimage]
   exact Finset.card_le_card (by simp)
 
-omit [Fintype F] in
 private lemma roots_of_x_in_domain_le_k
   (hk : k ≠ 0) :
   Finset.card {i | domain i ^ k = x} ≤ k := 
@@ -98,7 +95,6 @@ private lemma roots_of_x_in_domain_le_k
     (@Multiset.toFinset_card_le F (Classical.decEq F) _)
     (Polynomial.card_nthRoots _ _)
     
-omit [Fintype F] in
 /-- The natDegree of the auxiliary polynomial `foldWordAux`
   is less than k. -/
 lemma foldWordAux_natDegree {k : ℕ} {x : F}
@@ -122,22 +118,18 @@ noncomputable def foldValue (domain : SmoothCosetFftDomain n F)
   (k : ℕ) (α : F) (x : F) : F := 
   (foldWordAux domain f (2 ^ k) x).eval α
 
-omit [Fintype F] in
 lemma foldValue_def {α : F} {x : F} :
   foldValue domain f k α x = (foldWordAux domain f (2 ^ k) x).eval α := rfl
 
-omit [Fintype F] in
 lemma foldValue_def' {α : F} {x : F} :
   foldValue domain f k α x = (Lagrange.interpolate {i | domain i ^ (2 ^ k) = x}
     (fun i => domain i) f).eval α := rfl
 
-omit [Fintype F] in
 @[simp]
 lemma foldValue_pow_x_k {i : Fin (2 ^ n)} : 
   foldValue domain f k (domain i) ((domain i) ^ (2 ^ k)) = f i := 
   Lagrange.eval_interpolate_at_node _ CosetFftDomain.injOn (by simp)
   
-omit [Fintype F] in
 @[simp]
 lemma foldValue_zero {k : ℕ} :
   foldValue domain 0 k = 0 := by aesop (add simp [foldValue, foldWordAux])
@@ -149,12 +141,11 @@ noncomputable def foldWord (domain : SmoothCosetFftDomain n F)
   Word F (Fin (2 ^ (n - k))) := fun x ↦ 
   foldValue domain f k α (domain.subdomainNatReversed k x)
 
-omit [Fintype F] in
 @[simp]
 lemma foldWord_zero {k : ℕ} :
   foldWord domain 0 k = 0 := by aesop (add simp [foldWord])
 
-omit [Fintype F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- TODO: this will go once this https://github.com/Verified-zkEVM/CompPoly/pull/203
   is merged. -/
 private lemma eval_comm {f : Polynomial (Polynomial F)} {a x : F} :
@@ -166,7 +157,6 @@ private lemma eval_comm {f : Polynomial (Polynomial F)} {a x : F} :
   simp [h_eval, Polynomial.eval_finset_sum, 
         Polynomial.eval₂_eq_sum, Polynomial.sum_def]
 
-omit [Fintype F] in
 private lemma roots_in_domain_card_eq_if_x_in_domain
   (hk : k ≤ n)
   (hx : x ∈ domain.subdomainNatReversed k) :
@@ -194,7 +184,6 @@ private lemma roots_in_domain_card_eq_if_x_in_domain
       aesop
     )
 
-omit [Fintype F] in
 private lemma interpolate_eq_folding_poly_eval
   (hk : k ≤ n)
   (hx : x ∈ domain.subdomainNatReversed k) :
@@ -244,7 +233,6 @@ private lemma interpolate_eq_folding_poly_eval
         )] at h
         exact h
 
-omit [Fintype F] in
 /-- Perfect completeness of folding: folding a codeword is the same as 
   applying `polyFold` and then encoding.
 -/
@@ -266,13 +254,11 @@ private noncomputable def foldWordAuxCoeff (domain : SmoothCosetFftDomain n F)
   (f : Word F (Fin (2 ^ n))) (k : ℕ) (i : Fin k) (x : F) : F := 
   (foldWordAux domain f k x).coeff i
 
-omit [Fintype F] in
 private lemma foldWordAux_coeff_eq_foldWordAuxCoeff_fin
   {i : Fin k} :
   (foldWordAux domain f k x).coeff i =  
     (foldWordAuxCoeff domain f k i x) := by simp [foldWordAux, foldWordAuxCoeff]
 
-omit [Fintype F] in
 private lemma foldWordAux_coeff_eq_foldWordAuxCoeff_nat
   [inst : NeZero k]
   {i : ℕ} :
@@ -285,7 +271,6 @@ private lemma foldWordAux_coeff_eq_foldWordAuxCoeff_nat
   · rw [Polynomial.coeff_eq_zero_of_natDegree_lt <|
             lt_of_lt_of_le foldWordAux_natDegree <| by simpa using h]
 
-omit [Fintype F] in
 private lemma foldWordAux_eq_sum_of_foldWordAuxCoeff
   [inst : NeZero k] :
   foldWordAux domain f k x = 
@@ -300,7 +285,6 @@ private lemma foldWordAux_eq_sum_of_foldWordAuxCoeff
     exact symm ∘ Finset.sum_eq_zero <| fun x _ ↦ match x with
       | ⟨x, hx⟩ => by aesop (add safe (by omega))
 
-omit [Fintype F] in
 private lemma foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha
   {α : F} :
   foldValue domain f k α x =
@@ -324,7 +308,6 @@ variable {s' : Finset F}
 private instance card_ne_zero (hs' : s'.Nonempty) : NeZero (Finset.card s') where
   out := by aesop
 
-omit [Fintype F] in
 private lemma indicated_polynomial_degree_x_lt (hs' : s'.Nonempty) :
   Bivariate.degreeX (indicatedPolynomial domain f k s') < s'.card := by
   simp only [Bivariate.degreeX, indicatedPolynomial, finset_sum_coeff, coeff_C_mul, coeff_map]
@@ -335,7 +318,6 @@ private lemma indicated_polynomial_degree_x_lt (hs' : s'.Nonempty) :
       aesop 
         (add simp [singleton_indicator_natDegree_lt_of_mem])
   
-omit [Fintype F] in
 private lemma indicated_polynomial_degree_y_lt
   [inst : NeZero k] :
   Bivariate.natDegreeY (indicatedPolynomial domain f k s') < k := by
@@ -347,7 +329,6 @@ private lemma indicated_polynomial_degree_y_lt
         (add safe forward [inst.out])
         (add safe (by omega))
         
-omit [Fintype F] in
 private lemma indicated_polynomial_eq_foldAux
   {α : F} (hx : x ∈ s') :
   ((indicatedPolynomial domain f k s').eval (Polynomial.C α)).eval x = 
@@ -358,7 +339,6 @@ private lemma indicated_polynomial_eq_foldAux
       [(by rw [singleton_indicator_eq_0_on_S_minus_x]), 
         (by rw [Finset.sum_eq_ite x])])
 
-omit [Fintype F] in
 private lemma indicated_polynomial_eval_eq_combination_of_correlated
   {u : Fin (2 ^ k) → Polynomial F}
   {α : F}
@@ -372,7 +352,6 @@ private lemma indicated_polynomial_eval_eq_combination_of_correlated
       [indicated_polynomial_eq_foldAux, 
         foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha])  
   
-omit [Fintype F] in
 private lemma indicated_polynomial_eq_combination_of_correlated
   (hs' : s'.Nonempty)
   {u : Fin (2 ^ k) → Polynomial F}
@@ -397,6 +376,7 @@ private lemma indicated_polynomial_eq_combination_of_correlated
       (add simp [eval_finset_sum])
 
 private lemma indicated_polynomial_eq_foldAux'
+  [Fintype F]
   {s' : Finset F}
   {u : Fin (2 ^ k) → Polynomial F}
   (hx : ∀ i, (u i).eval x = (foldWordAuxCoeff domain f (2 ^ k) i x))
@@ -427,7 +407,6 @@ private lemma indicated_polynomial_eq_foldAux'
           (add safe [foldWordAux_natDegree])
   · exact foldWordAux_natDegree
 
-omit [Fintype F] in
 private lemma foldWordAux_poly_sum {a : F} : 
   ((foldWordAux domain f (2 ^ k) a).sum fun e a ↦ Polynomial.C a * Polynomial.X ^ e) = 
   foldWordAux domain f (2 ^ k) a := by
@@ -435,7 +414,6 @@ private lemma foldWordAux_poly_sum {a : F} :
     [(by rw [←Polynomial.sum_monomial_eq]),
      (by rw [Polynomial.sum])])
 
-omit [Fintype F] in
 private lemma indicated_polynomial_comp_x_k_natDegree
   (hs' : s'.Nonempty) :
   ((Polynomial.map (Polynomial.compRingHom (Polynomial.X ^ (2 ^ k))) <| 
@@ -467,7 +445,7 @@ private lemma indicated_polynomial_comp_x_k_natDegree
     
 end IndicatedPolynomial
 
-omit [Fintype F] [DecidableEq F] in
+omit [DecidableEq F] in
 private lemma glorious_poly_eval_lemma {f : Polynomial (Polynomial F)} {x : F}
   {k : ℕ} :
   Polynomial.eval x
@@ -497,13 +475,11 @@ private noncomputable def contradictoryHammingDistBound
   {n : ℕ} (k : ℕ) (domain : SmoothCosetFftDomain n F) (s : Finset F) : ℕ := 
   Fintype.card (Fin (2 ^ n)) - contradictoryHammingDistBoundC k domain s 
 
-omit [Fintype F] in
 @[simp]
 private lemma contradictory_hamming_dist_zero :
   contradictoryHammingDistBound k domain ∅ = 2 ^ n := by 
   simp [contradictoryHammingDistBound, contradictoryHammingDistBoundC]
 
-omit [Fintype F] in
 @[simp]
 private lemma contradictory_hamming_dist_formula {s : Finset F}
   {d : ℕ}
@@ -570,6 +546,7 @@ private lemma contradictory_hamming_dist_formula {s : Finset F}
     aesop (add safe (by grind))
 
 private lemma correlated_agreement_implies_contradictory_hamm_dist
+  [Fintype F]
   {s : Finset F}
   (h_s : s ⊆ (domain.subdomainNatReversed k).toFinset)
   {u : Fin (2 ^ k) → Polynomial F}
@@ -637,6 +614,7 @@ private lemma correlated_agreement_implies_contradictory_hamm_dist
 
 set_option linter.unusedFintypeInType false in -- false alert
 private lemma master_lemma
+  [Fintype F]
   {s : Finset F}
   (h_s : s ⊆ (domain.subdomainNatReversed k).toFinset)
   {u : Fin (2 ^ k) → Polynomial F}
@@ -684,7 +662,8 @@ private lemma sheer_glory {d : ℕ}
       mul_div_mul_left _ _ (by positivity)] 
   norm_num
 
-omit [Fintype F] [DecidableEq F] in
+omit [DecidableEq F] in
+/-- The rate of the folded RS-code is the same. -/
 lemma folded_rate {d : ℕ} (hkn : k ≤ n) (hkd : 2 ^ k ∣ d) : 
   LinearCode.rate 
       (ReedSolomon.code (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) (d / (2 ^ k))) =
@@ -714,7 +693,8 @@ lemma folded_rate {d : ℕ} (hkn : k ≤ n) (hkd : 2 ^ k ∣ d) :
         (add safe forward [div_eq_one_iff_eq])
         (add safe [(by norm_cast)])
 
-omit [Fintype F] [DecidableEq F] in
+omit [DecidableEq F] in
+/-- The square root of the rate of the folded RS-code is the same. -/
 lemma folded_sqrtRate {d : ℕ} (hkn : k ≤ n) (hkd : 2 ^ k ∣ d) : 
   ReedSolomon.sqrtRate 
      (d / (2 ^ k)) 
@@ -722,16 +702,33 @@ lemma folded_sqrtRate {d : ℕ} (hkn : k ≤ n) (hkd : 2 ^ k ∣ d) :
     ReedSolomon.sqrtRate d (domain : Fin (2 ^ n) ↪ F) := by
   aesop (add simp [ReedSolomon.sqrtRate, folded_rate])
 
+
 set_option linter.unusedVariables false in -- linter complains about `δ_gt_0`
                                            -- which is a result of it missing
                                            -- from the proximity gap theorem args.
+/--
+Folding preserves distance from Reed–Solomon codes.
+
+For any word `f` over the smooth coset FFT domain, degree parameter `d`,
+folding parameter `k`, and distance threshold `δ` satisfying
+`0 < δ < min (δᵣ(f, RS[d])) (1 - sqrtRate(d))`, the probability over a
+uniformly random folding challenge `r : F` that the folded word is within
+relative distance `δ` of the Reed–Solomon code of reduced degree
+`d / 2^k` on the folded subdomain is bounded by the proximity-gap error
+term.
+
+This is Lemma 4.9 from [ACFY24]: a random `2^k`-folding step preserves distance from
+the corresponding Reed–Solomon code except with probability controlled by
+`ProximityGap.errorBound`.
+-/
 theorem folding_preserves_distance
+  [Fintype F]
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {d k : ℕ}
   {δ : ℝ≥0}
   (k_div_d : 2 ^ k ∣ d)
   (hd0 : 0 < d)
   (h_d_n : d ≤ 2 ^ n)
-  (δ_gt_0 : 0 < δ)
+  (δ_gt_0 : 0 < δ) -- this one is not used but should be.
   (δ_lt : δ < min (δᵣ(f, ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d))
     (1 - (ReedSolomon.sqrtRate d (domain : Fin (2 ^ n) ↪ F)))) :
     Pr_{ let r ←$ᵖ F}[δᵣ(foldWord domain f k r, 
