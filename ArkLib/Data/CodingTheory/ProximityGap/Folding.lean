@@ -800,23 +800,21 @@ theorem folding_preserves_distance
         rfl
       )
       (d := d)
-      (by assumption)
-      (by assumption)
-      (by {
-        intro i
-        have h_spec : u (cast' i) ∈ F⦃< d / (2 ^ k)⦄[X] ∧ 
-          (ReedSolomon.evalOnPoints (domain.subdomainNatReversed k)) (u (cast' i)) = v (cast' i) := Classical.choose_spec (h_rs (cast' i))
-        rcases h_spec with ⟨h_spec, _⟩
-        simp [degreeLT] at h_spec
+      h_k_d
+      h_d_n
+      (fun i ↦ by
+        obtain ⟨h_spec, _⟩ : u (cast' i) ∈ F⦃< d / (2 ^ k)⦄[X] ∧ 
+          _ := Classical.choose_spec (h_rs (cast' i))
+        simp only [degreeLT, ge_iff_le, Submodule.mem_iInf, LinearMap.mem_ker,
+          lcoeff_apply] at h_spec
         by_cases heq : u (cast' i) = 0
-        · simp [heq]
-          omega
-        · simp  
-          rw [Polynomial.natDegree_lt_iff_degree_lt heq]
-          rw [Polynomial.degree_lt_iff_coeff_zero]
+        · simp [heq, h_k_d]
+        · rw [comp_apply, 
+              Polynomial.natDegree_lt_iff_degree_lt heq,
+              Polynomial.degree_lt_iff_coeff_zero]
           exact h_spec
-      })
-    rw [Finset.card_image_of_injective _ (CosetFftDomain.injective)] at contradiction
+      )
+    rw [Finset.card_image_of_injective _ CosetFftDomain.injective] at contradiction
     have contradiction : (Δ₀(f, code (domain : Fin (2 ^ n) ↪ F) d) : ENNReal)
       ≤ (↑(2 ^ n) : ℚ≥0) * δ := by
       apply le_trans 
