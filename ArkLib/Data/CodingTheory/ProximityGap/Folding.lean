@@ -653,39 +653,51 @@ private lemma master_lemma
 private lemma sheer_glory {d : ℕ}
   (hkn : k ≤ n) (hkd : 2 ^ k ∣ d) :
   (↑(d / 2 ^ k) : ℚ≥0) / 2 ^ (n - k) = (↑d : ℚ≥0) / 2 ^ n := by
-  sorry
+  obtain ⟨m, rfl⟩ := hkd
+  simp +zetaDelta only [ne_eq, Nat.pow_eq_zero, OfNat.ofNat_ne_zero, false_and, not_false_eq_true,
+    mul_div_cancel_left₀, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat] at *
+  rw [←Nat.add_sub_cancel' hkn, 
+      pow_add, 
+      mul_div_mul_left _ _ (by positivity)] 
+  norm_num
 
-
-
+omit [Fintype F] [DecidableEq F] in
 lemma folded_rate {d : ℕ} (hkn : k ≤ n) (hkd : 2 ^ k ∣ d) : 
-  LinearCode.rate (ReedSolomon.code (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) (d / (2 ^ k))) =
+  LinearCode.rate 
+      (ReedSolomon.code (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) (d / (2 ^ k))) =
     LinearCode.rate (ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d) := by
-  simp [rateOfLinearCode_eq_min_div, min_def]
+  simp only [rateOfLinearCode_eq_min_div, Fintype.card_fin, min_def, Nat.cast_ite, Nat.cast_pow,
+    Nat.cast_ofNat]
   by_cases hif : d ≤ 2 ^ n
-  · simp [hif]
+  · simp only [hif, ↓reduceIte]
     have hif : d / 2 ^ k ≤ 2 ^ (n - k) := by
       rw [Nat.div_le_iff_le_mul (by simp)]
       exact le_trans hif <| by
         rw [←pow_add, Nat.sub_add_cancel hkn]
         grind
-    simp [hif]
-    rw [sheer_glory hkn hkd]
-  · simp [hif]
-    have hif : ¬ d / 2 ^ k ≤ 2 ^ (n - k) := by
-      simp_all
-      rw [Nat.lt_div_iff_mul_lt (by simp),
-          ←pow_add,
-          Nat.sub_add_cancel hkn]
-      sorry
-    sorry
+    aesop (add safe forward [sheer_glory])
+  · simp only [hif, ↓reduceIte, ne_eq, pow_eq_zero_iff', OfNat.ofNat_ne_zero, false_and,
+    not_false_eq_true, div_self]
+    have hif := Nat.div_le_div_right (c := 2 ^ k) (Nat.le_of_lt (not_le.mp hif))
+    rw [show 2 ^ n / 2 ^ k = 2 ^ (n - k) by 
+      aesop (add safe 
+        [(by rw [Nat.div_eq_iff]), 
+          (by rw [←pow_add]), 
+          (by grind)])
+    ] at hif
+    rcases (Nat.lt_or_eq_of_le hif) with hif | hif
+    · aesop (add safe (by omega)) 
+    · aesop 
+        (add safe forward [div_eq_one_iff_eq])
+        (add safe [(by norm_cast)])
 
-
-
-
-
-
-
-
+omit [Fintype F] [DecidableEq F] in
+lemma folded_sqrtRate {d : ℕ} (hkn : k ≤ n) (hkd : 2 ^ k ∣ d) : 
+  ReedSolomon.sqrtRate 
+     (d / (2 ^ k)) 
+     (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) =
+    ReedSolomon.sqrtRate d (domain : Fin (2 ^ n) ↪ F) := by
+  aesop (add simp [ReedSolomon.sqrtRate, folded_rate])
 
 lemma folding_proximity 
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {d k : ℕ}
@@ -707,40 +719,14 @@ lemma folding_proximity
     unfold foldWord
     have bound_tighter : 
       (↑δ) ≤ 1 - ReedSolomon.sqrtRate (d / (2 ^ k)) 
-        (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) := by
-      rw [←ENNReal.coe_le_coe]
-      simp [ReedSolomon.sqrtRate]
-      rw [ReedSolomon.rateOfLinearCode_eq_min_div]
-      simp [ReedSolomon.sqrtRate] at δ_lt
-      rw [ReedSolomon.rateOfLinearCode_eq_min_div] at δ_lt
-      obtain ⟨_, δ_lt⟩ := δ_lt
-      apply le_trans
-      · exact le_of_lt δ_lt
-      · rw [ENNReal.sub_le_sub_iff_left (by {
-          simp
-          apply NNReal.div_le_of_le_mul
-          apply le_trans
-          · apply min_le_right
-          · simp
-          }) (by simp)]
-        simp
-        rw [←min_div_div_right (by simp)]
-        rw [←min_div_div_right (by simp)]
-        simp
-        left
-        apply div_le_of_le_mul
-        conv =>
-          lhs
-          rw [show Nat.cast (d / 2 ^ k)  = (↑d : NNReal) / 2 ^ k by norm_cast]
-        apply div_le_of_le_mul
-        rw [mul_assoc, ←pow_add, Nat.sub_add_cancel h_k_le_n]
-        rw [←ENNReal.coe_le_coe, ENNReal.coe_mul] 
-        rw [←ENNReal.div_le_iff (by simp) (by simp)]
-        norm_cast
+        (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) := 
+      le_of_lt <| by
+        aesop 
+          (add safe [(by rw [folded_sqrtRate])])
+          (add safe [(by grind)])
+          (add safe (by norm_cast at *))
     have h' :=
-      @correlatedAgreement_affine_curves (Fin (2 ^ (n - k))) _ (by {
-       constructor 
-       exact 0 }) _ F _ _ _ 
+      @correlatedAgreement_affine_curves (Fin (2 ^ (n - k))) _ inferInstance _ F _ _ _ 
         (2 ^ k - 1) (d / (2 ^ k)) 
         (domain := domain.subdomainNatReversed k) (δ := δ) 
         (hδ := bound_tighter)
