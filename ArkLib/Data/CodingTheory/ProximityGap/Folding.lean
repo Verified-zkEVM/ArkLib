@@ -706,7 +706,7 @@ theorem folding_preserves_distance
   (hd0 : 0 < d)
   (h_d_n : d ≤ 2 ^ n)
   (δ_gt_0 : 0 < δ)
-  (δ_lt : δ < min (δᵣ(f, ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d)) 
+  (δ_lt : δ < min (δᵣ(f, ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d))
     (1 - (ReedSolomon.sqrtRate d (domain : Fin (2 ^ n) ↪ F)))) :
     Pr_{ let r ←$ᵖ F}[δᵣ(foldWord domain f k r, 
       ReedSolomon.code (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) 
@@ -816,49 +816,40 @@ theorem folding_preserves_distance
       )
     rw [Finset.card_image_of_injective _ CosetFftDomain.injective] at contradiction
     have contradiction : (Δ₀(f, code (domain : Fin (2 ^ n) ↪ F) d) : ENNReal)
-      ≤ (↑(2 ^ n) : ℚ≥0) * δ := by
-      apply le_trans 
-      · rewrite [ENat.toENNReal_le]
-        exact contradiction
-      · apply le_trans (b := (2 ^n : ENNReal) - 2^k * (1 - ↑δ) * 2 ^ (n - k))
-        · rewrite [ENat.toENNReal_sub]
-          rw [show ENat.toENNReal (2 ^ n) = (2 ^ n : ENNReal) by simp] 
-          rw [ENNReal.sub_le_sub_iff_left] <;> try simp
-          · apply le_trans
-            · rewrite [mul_assoc]
-              rewrite [ENNReal.mul_le_mul_iff_right] <;> try simp
-              have h_card := ENNReal.coe_le_coe_of_le h_card
-              apply (swap le_trans h_card)
-              norm_cast
-            · norm_cast
-          · rw [mul_comm, ←mul_assoc] 
-            rw [←pow_add]
-            rw [Nat.sub_add_cancel (by {
-              rw [←Nat.pow_le_pow_iff_right (a := 2) (by simp)]
-              omega
-            })]
-            apply le_trans (b := 2 ^ n * 1)
-            · rw [ENNReal.mul_le_mul_iff_right] <;> try simp
-            · simp 
-        · rw [mul_comm, ←mul_assoc]
-          rw [←pow_add]
-          rw [Nat.sub_add_cancel (by {
-            rw [←Nat.pow_le_pow_iff_right (a := 2) (by simp)]
-            omega
-          })]
-          conv =>
-            lhs
+      ≤ (↑(2 ^ n) : ℚ≥0) * δ := 
+      le_trans (ENat.toENNReal_le.mpr contradiction) <| by
+        apply le_trans 
+          (b := (2 ^ n : ENNReal) - 2 ^ k * (1 - ↑δ) * 2 ^ (n - k))
+        · rw [ENat.toENNReal_sub,
+              show ENat.toENNReal (2 ^ n) = (2 ^ n : ENNReal) by simp,
+              ENNReal.sub_le_sub_iff_left (h' := by simp)
+                (h := swap (le_trans (b := 2 ^ n * 1)) (by simp) <| by
+                  rw [mul_comm, 
+                      ←mul_assoc,
+                      ←pow_add,
+                      Nat.sub_add_cancel h_k_le_n,
+                      ENNReal.mul_le_mul_iff_right (by simp) (by simp)]
+                  simp
+          )]
+          apply le_trans (b := 2 ^ k * ↑↑(#S))
+          · rw [mul_assoc,
+                ENNReal.mul_le_mul_iff_right (by simp) (by simp)]
+            have h_card := ENNReal.coe_le_coe_of_le h_card
+            exact (swap le_trans h_card) (by norm_cast)
+          · norm_cast
+        · rw [mul_comm, 
+              ←mul_assoc,
+              ←pow_add,
+              Nat.sub_add_cancel h_k_le_n]
+          conv_lhs =>
             lhs
             rw [←mul_one (2 ^ n)]
-          rw [←ENNReal.mul_sub (by simp)]
-          rw [ENNReal.sub_sub_cancel (by simp)
-            (by {
-              simp at δ_lt
-              obtain ⟨_, δ_lt⟩ := δ_lt
-              apply le_trans
-              · exact le_of_lt δ_lt 
-              · simp
-            })]
+          rw [←ENNReal.mul_sub (by simp),
+              ENNReal.sub_sub_cancel (by simp)
+                (by {
+                  simp only [lt_inf_iff] at δ_lt
+                  exact le_trans (le_of_lt δ_lt.2) (by simp)
+                })]
           norm_cast
     have contradiction : δᵣ(f, code (domain : Fin (2 ^ n) ↪ F) d) ≤ (δ : NNReal) := by
       rw [relDistFromCode_le_iff_distFromCode_le']
