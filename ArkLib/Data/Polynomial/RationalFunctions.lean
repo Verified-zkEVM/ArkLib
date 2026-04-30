@@ -83,6 +83,19 @@ noncomputable def H_tilde' (H : F[X][Y]) : F[X][Y] :=
       ∑ i ∈ Finset.range d,
         Polynomial.C (hᵢ i * W ^ (d - 1 - i)) * Polynomial.X ^ i
 
+omit [IsDomain F] in
+/-- If `H` has positive degree in `Y`, then `H_tilde' H` is monic. -/
+lemma H_tilde'_monic (H : F[X][Y]) (hH : 0 < H.natDegree) :
+    (H_tilde' H).Monic := by
+  classical
+  have hdeg : H.natDegree ≠ 0 := Nat.ne_of_gt hH
+  rw [H_tilde', if_neg hdeg]
+  exact Polynomial.monic_X_pow_add <| (Polynomial.degree_sum_le _ _).trans_lt <| by
+    exact (Finset.sup_lt_iff (WithBot.bot_lt_coe H.natDegree)).2 <| by
+      intro i hi
+      exact (Polynomial.degree_C_mul_X_pow_le i _).trans_lt
+        (WithBot.coe_lt_coe.2 (Finset.mem_range.mp hi))
+
 private lemma monicize_term {K : Type} [Field K] (a b : K) (i d : ℕ)
     (ha : a ≠ 0) (hi : i < d) :
     (Polynomial.C a ^ (d - 1)) * (Polynomial.C b * (Polynomial.X / Polynomial.C a) ^ i) =
@@ -284,9 +297,10 @@ noncomputable def π_z {H : F[X][Y]} (z : F) (root : rationalRoot (H_tilde' H) z
     rw [show (Polynomial.evalEvalRingHom z root.1) (H_tilde' H) = 0 from root.2]
     ring)
 
-/-- The canonical representative of an element of `F[X][Y]` inside the ring of regular
-elements `𝒪`. -/
-noncomputable def canonicalRepOf𝒪 {H : F[X][Y]} (β : 𝒪 H) : F[X][Y] :=
+/-- The canonical representative of an element of `F[X][Y]` inside the ring of regular elements
+`𝒪`, defined when `H` has positive degree in `Y`. -/
+noncomputable def canonicalRepOf𝒪 {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 𝒪 H) : F[X][Y] :=
+  let _hHt := H_tilde'_monic H hH
   Polynomial.modByMonic β.out (H_tilde' H)
 
 /-- `Λ` is a weight function on the ring of bivariate polynomials `F[X][Y]`. The weight of
@@ -302,8 +316,8 @@ noncomputable def weight_Λ (f H : F[X][Y]) (D : ℕ) : WithBot ℕ :=
 
 /-- The weight function `Λ` on the ring of regular elements `𝒪` is defined as the weight their
 canonical representatives in `F[X][Y]`. -/
-noncomputable def weight_Λ_over_𝒪 {H : F[X][Y]} (f : 𝒪 H) (D : ℕ) :
-    WithBot ℕ := weight_Λ (canonicalRepOf𝒪 f) H D
+noncomputable def weight_Λ_over_𝒪 {H : F[X][Y]} (hH : 0 < H.natDegree) (f : 𝒪 H) (D : ℕ) :
+    WithBot ℕ := weight_Λ (canonicalRepOf𝒪 hH f) H D
 
 /-- The set `S_β` from the statement of Lemma A.1 in Appendix A of [BCIKS20].
 Note: Here `F[X][Y]` is `F[Z][T]`. -/
@@ -311,8 +325,9 @@ noncomputable def S_β {H : F[X][Y]} (β : 𝒪 H) : Set F :=
   {z : F | ∃ root : rationalRoot (H_tilde' H) z, (π_z z root) β = 0}
 
 /-- The statement of Lemma A.1 in Appendix A.3 of [BCIKS20]. -/
-lemma Lemma_A_1 {H : F[X][Y]} (β : 𝒪 H) (D : ℕ) (hD : D ≥ Bivariate.totalDegree H)
-    (S_β_card : Set.ncard (S_β β) > (weight_Λ_over_𝒪 β D) * H.natDegree) :
+lemma Lemma_A_1 {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 𝒪 H) (D : ℕ)
+    (hD : D ≥ Bivariate.totalDegree H)
+    (S_β_card : Set.ncard (S_β β) > (weight_Λ_over_𝒪 hH β D) * H.natDegree) :
   embeddingOf𝒪Into𝕃 _ β = 0 := by sorry
 
 /-- The embeddining of the coefficients of a bivarite polynomial into the bivariate polynomial ring
@@ -368,8 +383,9 @@ def ξ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [φ : Fact (Irreducible H)] : �
 
 /-- The bound of the weight `Λ` of the elements `ζ` as stated in Claim A.2 of Appendix A.4
 of [BCIKS20]. -/
-lemma weight_ξ_bound (x₀ : F) {D : ℕ} (hD : D ≥ Bivariate.totalDegree H) :
-    weight_Λ_over_𝒪 (ξ x₀ R H) D ≤
+lemma weight_ξ_bound (x₀ : F) (hH : 0 < H.natDegree) {D : ℕ}
+    (hD : D ≥ Bivariate.totalDegree H) :
+    weight_Λ_over_𝒪 hH (ξ x₀ R H) D ≤
     WithBot.some ((Bivariate.natDegreeY R - 1) * (D - Bivariate.natDegreeY H + 1)) := by
   sorry
 
@@ -377,20 +393,26 @@ lemma weight_ξ_bound (x₀ : F) {D : ℕ} (hD : D ≥ Bivariate.totalDegree H) 
 of Appendix A.4 of [BCIKS20]. -/
 lemma β_regular (R : F[X][X][Y])
                 (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
+                (hH : 0 < H.natDegree)
                 {D : ℕ} (hD : D ≥ Bivariate.totalDegree H) :
-    ∀ t : ℕ, ∃ β : 𝒪 H, weight_Λ_over_𝒪 β ≤ (2 * t + 1) * Bivariate.natDegreeY R * D :=
+    ∀ t : ℕ, ∃ β : 𝒪 H,
+      weight_Λ_over_𝒪 hH β D ≤ (2 * t + 1) * Bivariate.natDegreeY R * D :=
   sorry
 
 /-- The definition of the regular elements `β` giving the numerators of the Hensel lift coefficients
 as defined in Claim A.2 of Appendix A.4 of [BCIKS20]. -/
 def β (R : F[X][X][Y]) (t : ℕ) : 𝒪 H :=
-  (β_regular R H (Nat.le_refl _) t).choose
+  if hH : 0 < H.natDegree then
+    (β_regular R H hH (Nat.le_refl _) t).choose
+  else
+    0
 
 /-- The Hensel lift coefficients `α` are of the form as given in Claim A.2 of Appendix A.4
 of [BCIKS20]. -/
 def α (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [φ : Fact (Irreducible H)] (t : ℕ) : 𝕃 H :=
   let W : 𝕃 H := liftToFunctionField (H.leadingCoeff)
-  embeddingOf𝒪Into𝕃 _ (β R t) / (W ^ (t + 1) * (embeddingOf𝒪Into𝕃 _ (ξ x₀ R H)) ^ (2*t - 1))
+  embeddingOf𝒪Into𝕃 _ (β R t) /
+    (W ^ (t + 1) * (embeddingOf𝒪Into𝕃 _ (ξ x₀ R H)) ^ (2*t - 1))
 
 def α' (x₀ : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H) (t : ℕ) : 𝕃 H :=
   α x₀ R _ (φ := ⟨H_irreducible⟩) t
