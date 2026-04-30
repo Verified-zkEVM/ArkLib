@@ -145,12 +145,17 @@ noncomputable def δ_ε_correlatedAgreementCurves {k : ℕ}
 For `k+1` words `u₀, u₁, ..., uₖ ∈ A^ι` let `U = u₀ + span{u₁, ..., uₖ} ⊂ A^ι` be an affine subspace
 (note that `span` here means linear span, so this formulation is not same as the default
 affine span/affine hull). If the probability that a random point in `U` is `δ`-close to `C`
-exceeds `ε`, then the words `u₀, u₁, ..., uₖ` have correlated agreement. -/
+exceeds `ε`, then the words `u₀, u₁, ..., uₖ` have correlated agreement.
+
+This samples uniformly from the generated affine subspace. An equivalent coefficient-sampling
+formulation would sample `r : Fin k → F` and test `u₀ + ∑ i, r i • uᵢ₊₁`; proving that
+equivalence requires showing the coefficient map has constant-size fibers. -/
 noncomputable def δ_ε_correlatedAgreementAffineSpaces
     {A : Type 0} [AddCommGroup A] [Module F A] [Fintype A] [DecidableEq A]
     (C : Set (ι → A)) (δ ε : ℝ≥0) : Prop :=
     ∀ (u : WordStack (A := A) (κ := Fin (k + 1)) (ι := ι)),
-    Pr_{let r ← $ᵖ (Fin k → F)}[ δᵣ(u 0 + ∑ i : Fin k, r i • u i.succ, C) ≤ δ ] > ε →
+    Pr_{let y ← $ᵖ ↥(Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
+      δᵣ(y.1, C) ≤ δ] > ε →
     jointAgreement (F := A) (κ := Fin (k + 1)) (ι := ι) (C := C) (W := u) (δ := δ)
 
 end CoreSecurityDefinitions
