@@ -91,15 +91,25 @@ Our [linting script](`./scripts/lint-style.sh`) helps enforce some aspects of th
 
 ### Variable Conventions
 
-* `u`, `v`, `w`, ... : Universes
-* `α`, `β`, `γ`, ... : Generic types
-* `a`, `b`, `c`, ... : Propositions
-* `x`, `y`, `z`, ... : Elements of a generic type
-* `h`, `h₁`, ...     : Assumptions/Hypotheses
-* `p`, `q`, `r`, ... : Predicates and relations
-* `m`, `n`, `k`, ... : Natural numbers
-* `i`, `j`, `k`, ... : Integers
-* `s`, `t`, ...      : Sets or Lists
+We follow Mathlib style, adapted for algebraic code. The conventions below
+reflect actual usage across the repository; please consult adjacent files
+when in doubt.
+
+* `u`, `v`, `w`, ...           : Universes
+* `α`, `β`, `γ`, ...            : Generic types (in non-algebraic contexts)
+* `R`, `M`, `G`, `F`, ...       : Algebraic carrier types (rings, modules,
+  groups, fields) — preferred over `α`, `β` in algebraic declarations such
+  as `variable {R : Type*} [Semiring R]`
+* `a`, `b`, `c`, ...            : Propositions
+* `x`, `y`, `z`, ...            : Elements of a generic type
+* `h`, `h₁`, ...                : Assumptions / hypotheses
+* `p`, `q`                     : Polynomials or predicates (disambiguate by
+  type and surrounding context)
+* `m`, `n`, `k`, ...            : Natural numbers
+* `i`, `j`, `k`, ...            : Indices into vectors, lists, or `Fin n`
+  (these may be `ℕ`- or `ℤ`-valued; the convention is about the indexing
+  role, not the underlying type)
+* `s`, `t`, ...                : Sets or lists
 
 ### Symbol Naming Dictionary
 
