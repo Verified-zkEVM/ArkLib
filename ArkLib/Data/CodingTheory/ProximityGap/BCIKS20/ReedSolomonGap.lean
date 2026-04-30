@@ -60,7 +60,7 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
       exact_mod_cast hε
     exact (not_lt_of_ge hcase) hε_lt_one_ENN
   · -- Left Xor' branch: `Pr = 1 ∧ ¬(Pr ≤ ε)`.
-    push_neg at hcase
+    push Not at hcase
     refine Or.inl ⟨?_, not_le.mpr hcase⟩
     -- Goal: `Pr = 1`. Suffices every point of `S` is δ-close to the RS code.
     suffices h_all : ∀ x : ↥S,
@@ -114,7 +114,7 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
       have hCi0_close :
           δᵣ(C i 0, (ReedSolomon.code domain deg : Set (ι → F))) ≤ δ := by
         by_contra hnotclose
-        push_neg at hnotclose
+        push Not at hnotclose
         -- All elements of S equal C i 0, which is NOT δ-close, so Pr = 0.
         have hPr_eq :
             Pr_{let x ← $ᵖ S}[δᵣ(x.val, (ReedSolomon.toFinset domain deg)) ≤ δ] = 0 := by
