@@ -427,7 +427,8 @@ def oracleVerifier : OracleVerifier oSpec (StmtIn R) (OStmtIn R deg) (StmtOut R)
   verify := fun target chal => do
     let evals : Vector R m ← (Vector.finRange m).mapM
       (fun i => OptionT.lift <| OracleComp.liftComp
-        (OracleComp.lift <| query (spec := [OStmtIn R deg]ₒ) (⟨(), D i⟩))
+        (OracleComp.lift <|
+          OracleSpec.query (show [OStmtIn R deg]ₒ.Domain from ⟨(), D i⟩))
         _)
     guard (evals.sum = target)
     -- Needs to convert `evals` to `R⦃≤ deg⦄[X]`, and then evaluate at `chal`
