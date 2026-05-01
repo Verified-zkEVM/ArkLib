@@ -1,7 +1,7 @@
 ---
 kind: paper
 bibkey: Spi95
-title: Computationally efficient error-correcting codes and holographic proofs
+title: "Computationally efficient error-correcting codes and holographic proofs"
 year: 1995
 bib_source: blueprint/src/references.bib
 source_metadata: ../sources/Spi95/metadata.yml

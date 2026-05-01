@@ -1,7 +1,7 @@
 ---
 kind: paper
 bibkey: listdecoding
-title: Algorithmic results in list decoding
+title: "Algorithmic results in list decoding"
 year: 2007
 bib_source: blueprint/src/references.bib
 source_metadata: ../sources/listdecoding/metadata.yml

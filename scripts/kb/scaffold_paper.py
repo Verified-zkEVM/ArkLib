@@ -14,6 +14,12 @@ PAPERS_DIR = REPO_ROOT / "docs" / "kb" / "papers"
 SOURCES_DIR = REPO_ROOT / "docs" / "kb" / "sources"
 
 
+def yaml_quote(value: str) -> str:
+    """Quote a string for the simple YAML metadata files used by the KB."""
+
+    return json.dumps(value)
+
+
 def load_entries(references_json: Path, bib_path: Path) -> dict[str, dict[str, object]]:
     """Load bibliography entries keyed by BibTeX key."""
 
@@ -35,8 +41,8 @@ def build_paper_template(key: str, entry: dict[str, object]) -> str:
         "---\n"
         "kind: paper\n"
         f"bibkey: {key}\n"
-        f"title: {title}\n"
-        f"year: {year}\n"
+        f"title: {yaml_quote(title)}\n"
+        f"year: {yaml_quote(year)}\n"
         "bib_source: blueprint/src/references.bib\n"
         f"{canonical_url_line}"
         f"source_metadata: ../sources/{key}/metadata.yml\n"
@@ -76,7 +82,7 @@ def build_metadata_template(key: str, entry: dict[str, object]) -> str:
     lines.extend(
         [
             "committed_artifacts: []",
-            f"notes: Scaffolded from references.bib for {title}.",
+            f"notes: {yaml_quote(f'Scaffolded from references.bib for {title}.')}",
         ]
     )
     return "\n".join(lines) + "\n"

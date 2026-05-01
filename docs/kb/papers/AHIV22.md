@@ -1,7 +1,7 @@
 ---
 kind: paper
 bibkey: AHIV22
-title: Ligero: Lightweight sublinear arguments without a trusted setup
+title: "Ligero: Lightweight sublinear arguments without a trusted setup"
 year: 2017
 bib_source: blueprint/src/references.bib
 source_metadata: ../sources/AHIV22/metadata.yml

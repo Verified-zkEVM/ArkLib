@@ -1,7 +1,7 @@
 ---
 kind: paper
 bibkey: BSS08
-title: Short PCPs with polylog query complexity
+title: "Short PCPs with polylog query complexity"
 year: 2008
 bib_source: blueprint/src/references.bib
 canonical_url: https://people.csail.mit.edu/madhu/papers/2005/rspcpp-full.pdf

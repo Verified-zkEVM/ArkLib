@@ -1,7 +1,7 @@
 ---
 kind: paper
 bibkey: Poseidon2
-title: Poseidon2: A Faster Version of the Poseidon Hash Function
+title: "Poseidon2: A Faster Version of the Poseidon Hash Function"
 year: 2023
 bib_source: blueprint/src/references.bib
 canonical_url: https://eprint.iacr.org/2023/323

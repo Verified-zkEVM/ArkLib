@@ -1,7 +1,7 @@
 ---
 kind: paper
 bibkey: BCIKS20
-title: Proximity Gaps for Reed-Solomon Codes
+title: "Proximity Gaps for Reed-Solomon Codes"
 year: 2020
 bib_source: blueprint/src/references.bib
 canonical_url: https://eprint.iacr.org/2020/654

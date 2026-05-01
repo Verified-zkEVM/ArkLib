@@ -1,7 +1,7 @@
 ---
 kind: paper
 bibkey: LFKN92
-title: Algebraic methods for interactive proof systems
+title: "Algebraic methods for interactive proof systems"
 year: 1992
 bib_source: blueprint/src/references.bib
 canonical_url: https://doi.org/10.1145/146585.146605

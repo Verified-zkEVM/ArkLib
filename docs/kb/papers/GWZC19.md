@@ -1,7 +1,7 @@
 ---
 kind: paper
 bibkey: GWZC19
-title: Plonk: Permutations over lagrange-bases for oecumenical noninteractive arguments of knowledge
+title: "Plonk: Permutations over lagrange-bases for oecumenical noninteractive arguments of knowledge"
 year: 2019
 bib_source: blueprint/src/references.bib
 canonical_url: https://eprint.iacr.org/2019/953.pdf

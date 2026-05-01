@@ -1,7 +1,7 @@
 ---
 kind: paper
 bibkey: codingtheory
-title: Essential coding theory
+title: "Essential coding theory"
 year: 2012
 bib_source: blueprint/src/references.bib
 source_metadata: ../sources/codingtheory/metadata.yml

@@ -1,7 +1,7 @@
 ---
 kind: paper
 bibkey: ACFY24stir
-title: STIR: Reed-Solomon proximity testing with fewer queries
+title: "STIR: Reed-Solomon proximity testing with fewer queries"
 year: 2024
 bib_source: blueprint/src/references.bib
 source_metadata: ../sources/ACFY24stir/metadata.yml

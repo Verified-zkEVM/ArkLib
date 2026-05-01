@@ -1,7 +1,7 @@
 ---
 kind: paper
 bibkey: LPS24
-title: On Knowledge-Soundness of Plonk in {ROM} from Falsifiable Assumptions
+title: "On Knowledge-Soundness of Plonk in {ROM} from Falsifiable Assumptions"
 year: 2024
 bib_source: blueprint/src/references.bib
 canonical_url: https://eprint.iacr.org/2024/994

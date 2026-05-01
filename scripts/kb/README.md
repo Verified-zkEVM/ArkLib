@@ -37,9 +37,12 @@ python3 ./scripts/kb/review_context.py --files ArkLib/ProofSystem/Fri/Spec/Singl
 
 ## Review Workflow Notes
 
-`review_context.py` is also used by `.github/workflows/review.yml`.
-The workflow merges three sources of review context:
+`review_context.py` emits a comment body shaped for `.github/workflows/review.yml`.
+The current workflow accepts three sources of review context:
 
 - explicit `External:` URLs from the review comment;
 - explicit `Internal:` repo paths from the review comment;
-- KB-derived refs inferred from either changed Lean files or an explicit `Citations:` section.
+- free-form `Comments:` from the review comment.
+
+Use `review_context.py` locally to infer citation-backed `External:` and `Internal:` entries from
+changed Lean files or explicit BibTeX keys, then paste its output into a `/review` comment.

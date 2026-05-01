@@ -1,7 +1,7 @@
 ---
 kind: paper
 bibkey: BBS24
-title: Formal Verification of the Sumcheck Protocol
+title: "Formal Verification of the Sumcheck Protocol"
 year: 2024
 bib_source: blueprint/src/references.bib
 source_metadata: ../sources/BBS24/metadata.yml

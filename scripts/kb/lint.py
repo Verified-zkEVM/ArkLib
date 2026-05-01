@@ -11,6 +11,7 @@ from common import DEFAULT_BIB_PATH, DEFAULT_REFERENCES_JSON, DEFAULT_CITATIONS_
 
 
 PAPERS_DIR = REPO_ROOT / "docs" / "kb" / "papers"
+SOURCES_DIR = REPO_ROOT / "docs" / "kb" / "sources"
 
 REQUIRED_PAPER_HEADINGS = [
     "## At A Glance",
@@ -56,6 +57,44 @@ def parse_frontmatter(text: str) -> dict[str, str]:
     return fields
 
 
+def is_quoted_yaml_scalar(value: str) -> bool:
+    """Return true if ``value`` is explicitly quoted as a YAML string."""
+
+    return len(value) >= 2 and (
+        (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'"))
+    )
+
+
+def lint_plain_yaml_scalars(path: Path, lines: list[str]) -> list[str]:
+    """Catch plain scalar values that are likely invalid YAML."""
+
+    errors: list[str] = []
+    for line_number, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if not stripped or stripped == "---" or line.startswith(" ") or line.startswith("-"):
+            continue
+        if ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        value = value.strip()
+        if not key.strip() or not value or is_quoted_yaml_scalar(value):
+            continue
+        if ": " in value:
+            rel_path = path.relative_to(REPO_ROOT)
+            errors.append(f"Unquoted YAML scalar with ': ' in {rel_path}:{line_number}")
+    return errors
+
+
+def lint_source_metadata() -> list[str]:
+    """Lint source metadata YAML files for basic scalar safety."""
+
+    errors: list[str] = []
+    for metadata_path in sorted(SOURCES_DIR.glob("*/metadata.yml")):
+        lines = metadata_path.read_text(encoding="utf-8").splitlines()
+        errors.extend(lint_plain_yaml_scalars(metadata_path, lines))
+    return errors
+
+
 def lint_paper_pages(reference_keys: set[str]) -> tuple[list[str], list[str], set[str]]:
     """Lint paper pages and collect structural errors and warnings."""
 
@@ -72,6 +111,13 @@ def lint_paper_pages(reference_keys: set[str]) -> tuple[list[str], list[str], se
             errors.append(f"Paper page without matching BibTeX key: {paper_path.relative_to(REPO_ROOT)}")
 
         text = paper_path.read_text(encoding="utf-8")
+        if text.startswith("---\n"):
+            frontmatter_end = text.find("\n---\n", 4)
+            if frontmatter_end == -1:
+                errors.append(f"Paper page has unterminated frontmatter: {paper_path.relative_to(REPO_ROOT)}")
+            else:
+                frontmatter_lines = text[:frontmatter_end].splitlines()
+                errors.extend(lint_plain_yaml_scalars(paper_path, frontmatter_lines))
         frontmatter = parse_frontmatter(text)
         bibkey = frontmatter.get("bibkey")
         if bibkey != key:
@@ -160,6 +206,7 @@ def main() -> int:
 
     errors, warnings, page_keys = lint_paper_pages(reference_keys)
     errors.extend(lint_duplicate_canonical_urls())
+    errors.extend(lint_source_metadata())
 
     missing_cited_pages = sorted(cited_keys - page_keys)
     if args.strict_cited_pages and missing_cited_pages:

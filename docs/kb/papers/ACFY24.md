@@ -1,7 +1,7 @@
 ---
 kind: paper
 bibkey: ACFY24
-title: WHIR: Reed-Solomon Proximity Testing with Super-Fast Verification
+title: "WHIR: Reed-Solomon Proximity Testing with Super-Fast Verification"
 year: 2024
 bib_source: blueprint/src/references.bib
 canonical_url: https://eprint.iacr.org/2024/1586
