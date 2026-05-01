@@ -129,7 +129,7 @@ jobs:
       - name: Determine comparison baseline artifact
         if: always() && github.event_name == 'pull_request'
         id: timing-baseline
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -262,7 +262,7 @@ jobs:
           always() &&
           github.event_name == 'pull_request' &&
           github.event.pull_request.head.repo.full_name == github.repository
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
