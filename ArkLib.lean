@@ -34,6 +34,7 @@ import ArkLib.Data.CodingTheory.PolishchukSpielman.PolishchukSpielman
 import ArkLib.Data.CodingTheory.PolishchukSpielman.Resultant
 import ArkLib.Data.CodingTheory.Prelims
 import ArkLib.Data.CodingTheory.ProximityGap.AHIV22
+import ArkLib.Data.CodingTheory.ProximityGap.AHIV22Support
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.BWMatrix
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.GoodCoeffs
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JointAgreement
@@ -53,6 +54,7 @@ import ArkLib.Data.CodingTheory.ProximityGap.DG25.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.MainResults
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.ReedSolomon
 import ArkLib.Data.CodingTheory.ReedSolomon
+import ArkLib.Data.CodingTheory.ReedSolomon.FftDomain
 import ArkLib.Data.EllipticCurve.BN254
 import ArkLib.Data.Fin.Basic
 import ArkLib.Data.Fin.Fold
@@ -69,16 +71,19 @@ import ArkLib.Data.Hash.DuplexSponge
 import ArkLib.Data.Hash.Poseidon2
 import ArkLib.Data.Matrix.Basic
 import ArkLib.Data.Matrix.Sparse
+import ArkLib.Data.Matrix.Vandermonde
 import ArkLib.Data.Misc.Basic
 import ArkLib.Data.MvPolynomial.Degrees
 import ArkLib.Data.MvPolynomial.Interpolation
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLib.Data.MvPolynomial.Multilinear
 import ArkLib.Data.Polynomial.Bivariate
+import ArkLib.Data.Polynomial.FoldingPolynomial
 import ArkLib.Data.Polynomial.Interface
 import ArkLib.Data.Polynomial.Prelims
 import ArkLib.Data.Polynomial.RationalFunctions
 import ArkLib.Data.Polynomial.SplitFold
+import ArkLib.Data.Polynomial.Trivariate
 import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.Notation
 import ArkLib.OracleReduction.BCS.Basic
@@ -146,7 +151,6 @@ import ArkLib.ProofSystem.ConstraintSystem.Lookup
 import ArkLib.ProofSystem.ConstraintSystem.MemoryChecking
 import ArkLib.ProofSystem.ConstraintSystem.Plonk
 import ArkLib.ProofSystem.ConstraintSystem.R1CS
-import ArkLib.ProofSystem.Fri.Domain
 import ArkLib.ProofSystem.Fri.RoundConsistency
 import ArkLib.ProofSystem.Fri.Spec.General
 import ArkLib.ProofSystem.Fri.Spec.SingleRound

@@ -14,8 +14,6 @@ import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ReedSolomonGap
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.Probability.Notation
 import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Defs
-/-! # Divergence of Sets -/
-
 
 open NNReal ProximityGap
 
@@ -30,7 +28,7 @@ open NNReal ProximityGap
 
 namespace DivergenceOfSets
 
-open Code ReedSolomonCode ProbabilityTheory
+open Code ReedSolomon ProbabilityTheory
 
 section Defs
 
@@ -186,7 +184,8 @@ theorem proximity_gap_affineSubspace {ι : Type} [Fintype ι] [Nonempty ι] [Dec
     {F : Type} [Fintype F] [Field F] [DecidableEq F]
   {deg : ℕ} {domain : ι ↪ F}
   (U : AffineSubspace F (ι → F)) [Nonempty U] {δ : ℝ≥0}
-  (hδ : δ ≤ 1 - ReedSolomonCode.sqrtRate deg domain) :
+  (hδ : δ ≤ 1 - ReedSolomon.sqrtRate deg domain)
+  (hε : ProximityGap.errorBound δ deg domain < 1) :
   Xor'
     (Pr_{let u ← $ᵖ U}[Code.relDistFromCode u (RScodeSet domain deg) ≤ δ] = 1)
     (Pr_{let u ← $ᵖ U}[Code.relDistFromCode u (RScodeSet domain deg) ≤ δ] ≤
@@ -202,11 +201,11 @@ theorem proximity_gap_affineSubspace {ι : Type} [Fintype ι] [Nonempty ι] [Dec
   let C : Fin 1 → (Fin k → (ι → F)) := fun _ => u
   -- Apply ProximityGap Theorem 1.2
   have hpg : ProximityGap.δ_ε_proximityGap
-      (ReedSolomonCode.toFinset domain deg)
+      (ReedSolomon.toFinset domain deg)
       (Affine.AffSpanFinsetCollection C)
       δ
       (errorBound δ deg domain) :=
-    ProximityGap.proximity_gap_RSCodes (C := C) (deg := deg) (domain := domain) (δ := δ) hδ
+    ProximityGap.proximity_gap_RSCodes (C := C) (deg := deg) (domain := domain) (δ := δ) hδ hε
   -- Specialize to the unique element of the collection
   let S : Finset (ι → F) := Affine.AffSpanFinset (C 0)
   have hS_mem : S ∈ Affine.AffSpanFinsetCollection C := by
@@ -232,8 +231,8 @@ theorem proximity_gap_affineSubspace {ι : Type} [Fintype ι] [Nonempty ι] [Dec
     exact ⟨⟨(x : ι → F), hx_mem_S⟩⟩
   have hxorS :
       Xor'
-        (Pr_{let x ← $ᵖ S}[δᵣ(x.val, (ReedSolomonCode.toFinset domain deg)) ≤ δ] = 1)
-        (Pr_{let x ← $ᵖ S}[δᵣ(x.val, (ReedSolomonCode.toFinset domain deg)) ≤ δ] ≤
+        (Pr_{let x ← $ᵖ S}[δᵣ(x.val, (ReedSolomon.toFinset domain deg)) ≤ δ] = 1)
+        (Pr_{let x ← $ᵖ S}[δᵣ(x.val, (ReedSolomon.toFinset domain deg)) ≤ δ] ≤
           errorBound δ deg domain) := by
     simpa using hpg S hS_mem
   -- The enumeration hits exactly the carrier of U
@@ -266,7 +265,7 @@ theorem proximity_gap_affineSubspace {ι : Type} [Fintype ι] [Nonempty ι] [Dec
     have hScoe : (S : Set (ι → F)) = Affine.AffSpanSet (U := C 0) := by
       dsimp [S, Affine.AffSpanFinset]
       -- coercion of `toFinset` gives back the set
-      simpa using (Affine.AffSpanSet.instFinite (u := C 0)).coe_toFinset
+      simp
     simpa [h_AffSpanSet] using hScoe.symm
   -- Build an equivalence between U and S (identity on the underlying word)
   let eUS : U ≃ S :=
@@ -306,7 +305,7 @@ theorem proximity_gap_affineSubspace {ι : Type} [Fintype ι] [Nonempty ι] [Dec
         (Pr_{let x ← $ᵖ S}[Code.relDistFromCode x (RScodeSet domain deg) ≤ δ] = 1)
         (Pr_{let x ← $ᵖ S}[Code.relDistFromCode x (RScodeSet domain deg) ≤ δ] ≤
           errorBound δ deg domain) := by
-    simpa [ReedSolomonCode.toFinset, ReedSolomonCode.RScodeSet] using hxorS
+    simpa [ReedSolomon.toFinset, ReedSolomon.RScodeSet] using hxorS
   -- Finish by rewriting the goal using hPr
   rw [hPr]
   exact hxorS'
@@ -403,15 +402,15 @@ theorem reedSolomon_rate_pos {ι : Type} [Fintype ι] [Nonempty ι]
   0 < LinearCode.rate (ReedSolomon.code domain deg) := by
   classical
   haveI : NeZero deg := ⟨Nat.ne_of_gt hdeg⟩
-  have hmem : ReedSolomonCode.constantCode (1 : F) ι ∈ ReedSolomon.code domain deg := by
+  have hmem : ReedSolomon.constantCode (1 : F) ι ∈ ReedSolomon.code domain deg := by
     simp
-  let c : ReedSolomon.code domain deg := ⟨ReedSolomonCode.constantCode (1 : F) ι, hmem⟩
+  let c : ReedSolomon.code domain deg := ⟨ReedSolomon.constantCode (1 : F) ι, hmem⟩
   have hc_ne_zero : c ≠ 0 := by
     intro hc
-    have hval : ReedSolomonCode.constantCode (1 : F) ι = 0 := by
+    have hval : ReedSolomon.constantCode (1 : F) ι = 0 := by
       simpa [c] using congrArg (fun x : ReedSolomon.code domain deg => (x : ι → F)) hc
     have : (1 : F) = 0 :=
-      (ReedSolomonCode.constantCode_eq_ofNat_zero_iff (ι := ι) (x := (1 : F))).1 hval
+      (ReedSolomon.constantCode_eq_ofNat_zero_iff (ι := ι) (x := (1 : F))).1 hval
     exact one_ne_zero this
   haveI : Nontrivial (ReedSolomon.code domain deg) := by
     refine ⟨c, 0, hc_ne_zero⟩
@@ -435,7 +434,7 @@ theorem errorBound_ge_const {ι : Type} [Fintype ι] [Nonempty ι]
   {deg : ℕ} {domain : ι ↪ F}
   (hdeg : 0 < deg)
   {δ : ℝ≥0}
-  (hδ : δ < 1 - ReedSolomonCode.sqrtRate deg domain) :
+  (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain) :
   (Fintype.card ι : ℝ≥0) / (Fintype.card F : ℝ≥0) ≤ errorBound δ deg domain := by
   classical
   set r : ℝ≥0 := (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0) with hr
@@ -443,7 +442,7 @@ theorem errorBound_ge_const {ι : Type} [Fintype ι] [Nonempty ι]
   · simp [ProximityGap.errorBound, ←hr, hUD]
   · have hlt : (1 - r) / 2 < δ := lt_of_not_ge hUD
     have hδ' : δ < 1 - r.sqrt := by
-      simpa [ReedSolomonCode.sqrtRate, ←hr] using hδ
+      simpa [ReedSolomon.sqrtRate, ←hr] using hδ
     have hmem2 : (1 - r) / 2 < δ ∧ δ < 1 - r.sqrt := ⟨hlt, hδ'⟩
     simp only [errorBound, ← hr, Set.mem_Icc, zero_le, hUD, and_false,
       ↓reduceIte, Set.mem_Ioo, hmem2, and_self, coe_pow, NNReal.coe_natCast,
@@ -582,7 +581,7 @@ theorem errorBound_johnson_mono {ι : Type} [Fintype ι] [Nonempty ι]
   {δ₁ δ₂ : ℝ≥0}
   (hδ : δ₁ ≤ δ₂)
   (hδ₁ : (1 - (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0)) / 2 < δ₁)
-  (hδ₂ : δ₂ < 1 - ReedSolomonCode.sqrtRate deg domain) :
+  (hδ₂ : δ₂ < 1 - ReedSolomon.sqrtRate deg domain) :
   errorBound δ₁ deg domain ≤ errorBound δ₂ deg domain := by
   classical
   -- threshold t = (1 - rate)/2
@@ -591,7 +590,7 @@ theorem errorBound_johnson_mono {ι : Type} [Fintype ι] [Nonempty ι]
   have ht2 : t < δ₂ := lt_of_lt_of_le ht1 hδ
   -- rewrite the Johnson upper bound using `sqrtRate`
   have hδ₂' : δ₂ < 1 - (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0).sqrt := by
-    simpa [ReedSolomonCode.sqrtRate] using hδ₂
+    simpa [ReedSolomon.sqrtRate] using hδ₂
   have hδ₁' : δ₁ < 1 - (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0).sqrt :=
     lt_of_le_of_lt hδ hδ₂'
   -- unfold `errorBound` into the Johnson branch for both δ₁ and δ₂
@@ -681,7 +680,7 @@ theorem errorBound_mono {ι : Type} [Fintype ι] [Nonempty ι]
   (hdeg : 0 < deg)
   {δ₁ δ₂ : ℝ≥0}
   (hδ : δ₁ ≤ δ₂)
-  (hδ₂ : δ₂ < 1 - ReedSolomonCode.sqrtRate deg domain) :
+  (hδ₂ : δ₂ < 1 - ReedSolomon.sqrtRate deg domain) :
   errorBound δ₁ deg domain ≤ errorBound δ₂ deg domain := by
   classical
   let ρ : ℝ≥0 := (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0)
@@ -801,7 +800,9 @@ theorem concentration_bounds {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq
   {U : AffineSubspace F (ι → F)} [Nonempty U]
   (hdiv_pos : 0 < (divergence U (RScodeSet domain deg) : ℝ≥0))
   (hdiv_lt : (divergence U (RScodeSet domain deg) : ℝ≥0) <
-    1 - ReedSolomonCode.sqrtRate deg domain) :
+    1 - ReedSolomon.sqrtRate deg domain)
+  (hε_cb : ∀ (δ' : ℝ≥0), δ' ≤ 1 - ReedSolomon.sqrtRate deg domain →
+    ProximityGap.errorBound δ' deg domain < 1) :
     let δ' := divergence U (RScodeSet domain deg)
     Pr_{let u ← $ᵖ U}[Code.relDistFromCode u (RScodeSet domain deg) ≠ δ']
       ≤ errorBound δ' deg domain := by
@@ -816,7 +817,7 @@ theorem concentration_bounds {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq
   set δ' : ℚ≥0 := divergence (U : Set (ι → F)) V
   have hδlt' : δ < δ' := by
     simpa [δ'] using hδlt
-  have hdiv_lt' : (δ' : ℝ≥0) < 1 - ReedSolomonCode.sqrtRate deg domain := by
+  have hdiv_lt' : (δ' : ℝ≥0) < 1 - ReedSolomon.sqrtRate deg domain := by
     -- rewrite the hypothesis `hdiv_lt` using our abbreviations
     simpa [δ', V] using hdiv_lt
   -- Pointwise spec on subtype elements `u : U`
@@ -869,10 +870,10 @@ theorem concentration_bounds {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq
       simpa using (hiffU u)
     simp [hfun]
   -- Apply proximity gap at parameter δ
-  have hδ_bound : (δ : ℝ≥0) ≤ 1 - ReedSolomonCode.sqrtRate deg domain := by
+  have hδ_bound : (δ : ℝ≥0) ≤ 1 - ReedSolomon.sqrtRate deg domain := by
     have hδ_lt_div : (δ : ℝ≥0) < (δ' : ℝ≥0) := by
       exact_mod_cast hδlt'
-    have hδ_lt_bound : (δ : ℝ≥0) < 1 - ReedSolomonCode.sqrtRate deg domain :=
+    have hδ_lt_bound : (δ : ℝ≥0) < 1 - ReedSolomon.sqrtRate deg domain :=
       lt_trans hδ_lt_div hdiv_lt'
     exact le_of_lt hδ_lt_bound
   have hx :
@@ -883,7 +884,7 @@ theorem concentration_bounds {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq
     -- rewrite the lemma `proximity_gap_affineSubspace` using `V`
     simpa [V] using
       (proximity_gap_affineSubspace (deg := deg) (domain := domain) (U := U) (δ := (δ : ℝ≥0))
-        (hδ := hδ_bound))
+        (hδ := hδ_bound) (hε := hε_cb (δ : ℝ≥0) hδ_bound))
   have hPr_le_errorBound_δ :
       Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ (δ : ℝ≥0)] ≤
         errorBound (δ : ℝ≥0) deg domain := by

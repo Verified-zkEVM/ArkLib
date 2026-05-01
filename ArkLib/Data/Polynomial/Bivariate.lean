@@ -39,7 +39,7 @@ lemma ne_zero_iff_coeffs_ne_zero (f : F[X][Y]) : f ≠ 0 ↔ f.coeff ≠ 0 :=
   ⟨
     fun hf ↦ by have f_finsupp : f.toFinsupp ≠ 0 := by aesop
                 simpa [Polynomial.coeff],
-    fun f_coeffs ↦ by aesop (add simp Polynomial.coeff)
+    fun f_coeffs ↦ by intro h; exact f_coeffs (by subst h; ext; simp)
   ⟩
 
 /-- The set of `Y`-degrees is non-empty. -/
@@ -286,7 +286,7 @@ theorem totalDegree_mul [IsDomain F] {f g : F[X][Y]} (hf : f ≠ 0) (hg : g ≠ 
     have hij : i + j = mmf + mmg := by simpa [N] using Finset.mem_antidiagonal.mp hy
     have hlt : mmf < i ∨ mmg < j := by
       by_contra hcontra
-      push_neg at hcontra
+      push Not at hcontra
       have hi : i ≤ mmf := hcontra.1
       have hj : j ≤ mmg := hcontra.2
       have : i = mmf ∧ j = mmg := by omega
@@ -403,11 +403,11 @@ In particular, `(a * X^n * Y^m) * (b * X^p * Y^q) = (a * b) * X^(n+p) * Y^(m+q)`
 theorem monomialXY_mul_monomialXY {n m p q : ℕ} {a b : F} :
     monomialXY n m a * monomialXY p q b = monomialXY (n + p) (m + q) (a * b) :=
   toFinsupp_injective <| by
-  unfold monomialXY
-  rw [@toFinsupp_mul, @AddMonoidAlgebra.mul_def]
-  simp only [ofFinsupp_single, LinearMap.coe_mk, AddHom.coe_mk, Polynomial.toFinsupp_monomial,
-    mul_zero, Finsupp.single_zero, Finsupp.sum_single_index, zero_mul]
-  rw [@Polynomial.monomial_mul_monomial]
+  rw [toFinsupp_mul]
+  change AddMonoidAlgebra.single m ((Polynomial.monomial n) a) *
+    AddMonoidAlgebra.single q ((Polynomial.monomial p) b) =
+    AddMonoidAlgebra.single (m + q) ((Polynomial.monomial (n + p)) (a * b))
+  rw [AddMonoidAlgebra.single_mul_single, Polynomial.monomial_mul_monomial]
 
 /-- Taking a bivariate monomial to a power works as expected.
 In particular, ` (a * X^n * Y^m)^k = (a^k) * X^(n * k) * Y^(m * k)`. -/

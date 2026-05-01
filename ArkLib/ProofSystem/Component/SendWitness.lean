@@ -216,7 +216,10 @@ def oracleVerifier : OracleVerifier oSpec
   embed := .sumMap (.refl _)
     <| Equiv.toEmbedding
     <|.symm (subtypeUnivEquiv (by aesop))
-  hEq := by intro i; rcases i <;> aesop
+  hEq := by
+    intro i; rcases i with j | j
+    · rfl
+    · fin_cases j; rfl
 
 @[inline, specialize]
 def oracleReduction : OracleReduction oSpec
@@ -232,8 +235,10 @@ omit [(i : ιₛ) → OracleInterface (OStatement i)] [OracleInterface Witness] 
 theorem oracleProver_run {stmt : Statement} {oStmt : ∀ i, OStatement i} {wit : Witness} :
     (oracleProver oSpec Statement OStatement Witness).run ⟨stmt, oStmt⟩ wit =
       pure (fun i => by aesop, ⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, ()) := by
-  simp [Prover.run, Prover.runToRound, Prover.processRound, oracleProver, Transcript.concat]
-  ext i; fin_cases i; aesop
+  simp only [oraclePSpec, Fin.vcons_fin_zero, Nat.reduceAdd, ChallengeIdx, Challenge,
+    Fin.isValue, id_eq]
+  change (pure _ : OracleComp _ _) = pure _
+  congr 1; dsimp; congr 1; funext i; fin_cases i; rfl
 
 theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatement i}
     {tr : (oraclePSpec Witness).FullTranscript} :

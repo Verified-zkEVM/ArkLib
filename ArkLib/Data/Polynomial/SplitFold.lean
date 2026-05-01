@@ -1,15 +1,16 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Julek, Elijah Vlasov
+Authors: Julian Sutherland, Ilia Vlasov
 -/
 import Mathlib.Algebra.Polynomial.BigOperators
+
+import ArkLib.Data.Polynomial.FoldingPolynomial
 
 /-!
 # Generalized polynomial splitting and folding
 
-This file defines n-way splitting and folding operations on polynomials,
-generalizing the 2-way even/odd splitting found in `Polynomial/EvenAndOdd.lean`.
+This file defines n-way splitting and folding operations on polynomials.
 
 ## Main definitions
 
@@ -24,7 +25,7 @@ generalizing the 2-way even/odd splitting found in `Polynomial/EvenAndOdd.lean`.
 
 When `n = 2`, this recovers the even/odd splitting: `splitNth f 2 0` gives the even
 coefficients and `splitNth f 2 1` gives the odd coefficients (after appropriate
-reindexing). The formal connection will be established in future work.
+reindexing). 
 
 -/
 
@@ -221,7 +222,7 @@ lemma splitNth_def (n : ℕ) (f : 𝔽[X]) [inst : NeZero n] :
             have : n = 1 * n := by rw [one_mul]
             rw (occs := .pos [2]) [this] at h'
             have h' := Nat.lt_of_mul_lt_mul_right h'
-            linarith
+            omega
           simp [this]
         exfalso
         have h₂ := this ⟨h₂, by apply Nat.sub_lt_of_lt; apply Nat.mod_lt; linarith⟩
@@ -247,71 +248,69 @@ lemma splitNth_degree_le {n : ℕ} {f : 𝔽[X]} [inst : NeZero n] :
     refine Nat.div_le_div ?_ (Nat.le_refl n) inst.out
     exact le_natDegree_of_ne_zero h
 
-/--
-Generalized n-way folding of a polynomial.
+/-- `foldingPolynomial` in terms of `splitNth`
+    when `q = X ^ n`. -/
+@[simp]
+lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽]
+  {f : Polynomial 𝔽} {n : ℕ}
+  [inst : NeZero n] :
+  FoldingPolynomial.foldingPolynomial (X ^ n) f = 
+    ∑ i, C (splitNth f n i) * (X ^ i.val) := by
+  symm
+  apply FoldingPolynomial.folding_polynomial_is_unique'
+  · conv =>
+      rhs
+      rw [splitNth_def (f := f) (inst := inst)]
+    rw [
+      Polynomial.map_sum,
+      Polynomial.eval_finset_sum] 
+    simp only [Polynomial.map_mul, map_C, coe_compRingHom, Polynomial.map_pow, map_X, 
+    eval_mul, eval_C, eval_pow, eval_X]
+    simp only [comp]
+    conv =>
+      lhs
+      rhs
+      ext x
+      rw [mul_comm]
+      rfl
+  · simp only [Bivariate.degreeX, finset_sum_coeff, coeff_C_mul, coeff_X_pow, mul_ite, mul_one,
+    mul_zero, natDegree_pow, natDegree_X]
+    simp only [Finset.sup_le_iff, mem_support_iff, finset_sum_coeff, coeff_C_mul, coeff_X_pow,
+    mul_ite, mul_one, mul_zero, ne_eq]
+    intro b hb
+    apply natDegree_sum_le_of_forall_le
+    rintro ⟨i, hi⟩ _
+    by_cases heq: b = i
+    · simp only [heq, ↓reduceIte]
+      exact splitNth_degree_le
+    · simp [heq]
+  · simp only [Bivariate.natDegreeY, natDegree_pow, natDegree_X, mul_one]
+    apply Nat.lt_of_le_pred (by {
+      apply Nat.zero_lt_of_ne_zero
+      aesop
+    })
+    apply Polynomial.natDegree_sum_le_of_forall_le
+    intro i _
+    apply Nat.le_trans Polynomial.natDegree_mul_le
+    rcases i with ⟨i, hi⟩ 
+    simp
+    omega
 
-Given a polynomial `f`, splits it into `n` component polynomials via `splitNth`,
-then recombines them with powers of `α` as coefficients:
-`foldNth n f α = ∑ i : Fin n, α^i * splitNth f n i`.
-
-This operation is central to FRI-style polynomial folding, where a polynomial
-over a domain of size `M` is reduced to a polynomial over a domain of size `M/n`.
--/
-noncomputable def foldNth (n : ℕ) (f : 𝔽[X]) (α : 𝔽) [inst : NeZero n] : 𝔽[X] :=
-  ∑ i : Fin n, Polynomial.C α ^ i.1 * splitNth f n i
-
-private lemma fold_max_lemma {ι : Type} {s : Finset ι} {f : ι → ℕ} {n : ℕ} :
-    (∀ i ∈ s, f i ≤ n) → Finset.fold max 0 f s ≤ n := by
-  intros h
-  apply Nat.le_of_lt_succ
-  rw [Finset.fold_max_lt]
-  apply And.intro (Nat.zero_lt_succ n)
-  intros x h'
-  exact Nat.lt_add_one_of_le (h x h')
-
-/- Lemma bounding degree of folded polynomial. -/
-omit [NoZeroDivisors 𝔽] in
-lemma foldNth_degree_le {n : ℕ} {f : 𝔽[X]} {α : 𝔽} [inst : NeZero n] :
-    (foldNth n f α).natDegree ≤ f.natDegree / n := by
-  unfold foldNth
-  by_cases h : α = 0
-  · have : ∑ i, C α ^ i.1 * splitNth f n i = splitNth f n 0 := by
-      rw [h]
-      simp only [map_zero]
-      have : splitNth f n 0 = (0 ^ ((0 : Fin n) : ℕ)) * splitNth f n 0 := by
-        simp
-      rw [this]
-      apply Finset.sum_eq_single (ι := Fin n) 0
-      · intros b _ h
-        simp [h]
-      · simp
-    rw [this]
-    exact splitNth_degree_le
-  · transitivity
-    · exact Polynomial.natDegree_sum_le _ _
-    · rw [Function.comp_def]
-      apply fold_max_lemma
-      intros i _
-      transitivity
-      · exact Polynomial.natDegree_mul_le
-      · rw [←Polynomial.C_pow, Polynomial.natDegree_C, zero_add]
-        exact splitNth_degree_le
-
-/- Lemma bounding degree of folded polynomial. -/
-omit [NoZeroDivisors 𝔽] in
-lemma foldNth_degree_le' {n : ℕ} {f : 𝔽[X]} {α : 𝔽} [inst : NeZero n] :
-    n * (foldNth n f α).natDegree ≤ f.natDegree := by
-  rw [mul_comm]
-  apply (Nat.le_div_iff_mul_le (Nat.zero_lt_of_ne_zero inst.out)).mp
-  exact foldNth_degree_le
-
-omit [NoZeroDivisors 𝔽] in
-lemma foldNth_zero {s : ℕ} {α : 𝔽} : foldNth (2 ^ s) 0 α = 0 := by
-  unfold foldNth splitNth
-  have :
-    { toFinsupp := { support := ∅, toFun := fun e ↦ 0, mem_support_toFun := (by simp) } } =
-      (0 : 𝔽[X]) := by rfl
-  simp [this]
+/-- `polyFold` in terms of `splitNth`. -/
+@[simp]
+lemma polyFold_eq_sum_of_splitNth {𝔽 : Type} [Field 𝔽]
+  {f : 𝔽[X]} {n : ℕ} {r : 𝔽}
+  [inst : NeZero n] :
+  FoldingPolynomial.polyFold f n r = 
+    ∑ i, C (r ^ i.val) * splitNth f n i := by
+  simp only [FoldingPolynomial.polyFold, folding_polynomial_eq_sum_splitNth, map_pow]
+  rw [Polynomial.eval_finset_sum]
+  simp only [eval_mul, eval_C, eval_pow, eval_X] 
+  conv =>
+    lhs
+    rhs
+    ext x
+    rw [mul_comm]
 
 omit [NoZeroDivisors 𝔽] in
 /--

@@ -6,8 +6,7 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
-/-! # BCIKS20 Curves -/
-
+import ArkLib.Data.CodingTheory.ReedSolomon
 
 namespace ProximityGap
 
@@ -17,8 +16,11 @@ open Code
 
 section CoreResults
 
-variable {ι : Type} [Fintype ι] [Nonempty ι]
+variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+
+
+omit [DecidableEq ι] in
 /-- Theorem 1.5 (Correlated agreement for low-degree parameterised curves) in [BCIKS20].
 
 Take a Reed-Solomon code of length `ι` and degree `deg`, a proximity-error parameter
@@ -27,7 +29,7 @@ the probability that a random point on the curve is `δ`-close to the Reed-Solom
 is at most `ε`. Then, the words `u₀, ..., uκ` have correlated agreement. -/
 theorem correlatedAgreement_affine_curves {k : ℕ}
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    (hδ : δ ≤ 1 - ReedSolomonCode.sqrtRate deg domain) :
+    (hδ : δ ≤ 1 - ReedSolomon.sqrtRate deg domain) :
     δ_ε_correlatedAgreementCurves (k := k) (A := F) (F := F) (ι := ι)
       (C := ReedSolomon.code domain deg) (δ := δ) (ε := errorBound δ deg domain) := by
   sorry
@@ -40,7 +42,7 @@ variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 variable {n : ℕ} [NeZero n]
 
 /-- The parameters for which the curve points are `δ`-close to a set `V`
-    (typically, a linear code). This is the set `S` from the proximity gap paper. -/
+(typically, a linear code). This is the set `S` from the proximity gap paper. -/
 noncomputable def coeffs_of_close_proximity_curve {l : ℕ}
     (δ : ℚ≥0) (u : Fin l → Fin n → F) (V : Finset (Fin n → F)) : Finset F :=
   have : Fintype { z | δᵣ(Curve.polynomialCurveEval (F := F) (A := F) u z, V) ≤ δ } := by
@@ -66,7 +68,7 @@ theorem large_agreement_set_on_curve_implies_correlated_agreement {l : ℕ}
           ({ x : Fin n | Finset.image u ≠ Finset.image v } : Finset _).card ≤ δ * n := by
   sorry
 
-/-- The distance bound from the proximity gap paper. -/
+/-- The distance bound from [BCIKS20]. -/
 noncomputable def δ₀ (rho : ℚ) (m : ℕ) : ℝ :=
   1 - Real.sqrt rho - Real.sqrt rho / (2 * m)
 

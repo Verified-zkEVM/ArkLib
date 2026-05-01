@@ -119,8 +119,7 @@ lemma oodSampling_crs_eq_rs
         let rVec := fun j : Fin m => ri ^ (2^(j : ℕ))
         (mVdecode u).eval rVec = (mVdecode u').eval rVec) :=
     funext fun rs => congr_arg PMF.pure (propext (hequiv rs))
-  simp only [Bind.bind, PMF.instMonad, PMF.bind_pure_comp] at hfun ⊢
-  rw [hfun]
+  exact congr_arg (· True) (congr_arg (PMF.bind ($ᵖ (Fin s → F))) hfun)
 
 /-- Lemma 4.25 part 2
   Let `f : ι → F`, `m` be the number of variables, `s` be a repetition parameter

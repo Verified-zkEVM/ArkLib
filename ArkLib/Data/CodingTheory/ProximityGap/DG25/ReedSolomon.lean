@@ -15,7 +15,7 @@ the resulting affine-line and tensor-gap corollaries.
 
 noncomputable section
 
-open Code LinearCode InterleavedCode ReedSolomonCode ProximityGap ProbabilityTheory Filter
+open Code LinearCode InterleavedCode ReedSolomon ProximityGap ProbabilityTheory Filter
 open NNReal Finset Function
 open scoped BigOperators LinearCode ProbabilityTheory
 open Real
@@ -52,7 +52,7 @@ theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolo
       not_false_eq_true]), div_one]
     simp only [Nat.floor_natCast]
   set CRS := ReedSolomon.code α k
-  have h_dist_RS := ReedSolomonCode.dist_eq' (F := A) (α := α)
+  have h_dist_RS := ReedSolomon.dist_eq' (F := A) (α := α)
     (n := k) (ι := ι) (h := hk)
   have h_dist_CRS : ‖(CRS : Set (ι → A))‖₀ = n - k + 1 := h_dist_RS
   have he_le_NNReal : (e : ℝ≥0)
@@ -88,7 +88,7 @@ theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolo
       simp only [Set.mem_Icc, zero_le, true_and]
       rw [rateOfLinearCode_eq_div' (h := by omega)]
       simp only [NNRat.cast_div, NNRat.cast_natCast]
-      rw [←ReedSolomonCode.relativeUniqueDecodingRadius_RS_eq' (F := A)
+      rw [←ReedSolomon.relativeUniqueDecodingRadius_RS_eq' (F := A)
         (ι := ι) (h := by omega)]
       rw [dist_le_UDR_iff_relDist_le_relUDR] at he_unique_decoding_radius
       exact he_unique_decoding_radius
@@ -127,7 +127,7 @@ theorem reedSolomon_multilinearCorrelatedAgreement_Nat [Nontrivial (ReedSolomon.
     set n := Fintype.card ι
     intro ϑ hϑ_gt_0 u h_prob_tensor_gt
     set C_RS: ModuleCode ι A A := ReedSolomon.code α k
-    have h_dist_RS := ReedSolomonCode.dist_eq'  (F := A) (α := α)
+    have h_dist_RS := ReedSolomon.dist_eq'  (F := A) (α := α)
       (n := k) (ι := ι) (h := hk)
     have h_dist_CRS : ‖(C_RS : Set (ι → A))‖₀ = n - k + 1 := h_dist_RS
     -- 1. Apply ReedSolomon_ProximityGapAffineLines_UniqueDecoding (BCIKS20 Thm 4.1)
@@ -172,6 +172,7 @@ theorem reedSolomon_multilinearCorrelatedAgreement_Nat [Nontrivial (ReedSolomon.
       exact h_affine_gap_interleaved) h_affine_gap_base
     exact RS_tensor_gap ϑ hϑ_gt_0 u h_prob_tensor_gt
 
+omit [DecidableEq ι] in
 theorem reedSolomon_multilinearCorrelatedAgreement [Nontrivial (ReedSolomon.code α k)]
     (hk : k ≤ Fintype.card ι) {δ : ℝ≥0} (he : δ ≤ (Code.relativeUniqueDecodingRadius
       (C := (ReedSolomon.code α k : Set (ι → A))))) :
@@ -179,6 +180,7 @@ theorem reedSolomon_multilinearCorrelatedAgreement [Nontrivial (ReedSolomon.code
       δ_ε_multilinearCorrelatedAgreement (F := A) (A := A) (ι := ι) (ϑ := ϑ) (δ := δ)
       (C := (ReedSolomon.code α k : Set (ι → A)))
       (ε := ((Fintype.card ι) : ℝ≥0) / (Fintype.card A)) := by
+  classical
   set n := Fintype.card ι
   intro ϑ hϑ_gt_0 u h_prob_u_close_gt
   let e : ℕ := Nat.floor (δ * n)

@@ -7,16 +7,12 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.GoodCoeffs
-/-! # BCIKS20 Affine-Line Joint Agreement -/
-
+import ArkLib.Data.CodingTheory.ReedSolomon
 
 namespace ProximityGap
 
-open NNReal Finset Function
-open scoped BigOperators
-open NNReal Finset Function ProbabilityTheory Finset
+open NNReal Finset Function ProbabilityTheory Code
 open scoped BigOperators LinearCode
-open Code
 
 universe u v w k l
 
