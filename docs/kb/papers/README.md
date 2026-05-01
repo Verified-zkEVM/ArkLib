@@ -1,6 +1,7 @@
 # Paper Pages
 
-This directory contains one canonical markdown page per BibTeX key.
+This directory contains canonical markdown pages for BibTeX keys that are cited from Lean files or
+are otherwise active in ArkLib development.
 
 The naming convention is:
 

@@ -70,7 +70,7 @@ If a paper is cited in Lean as `[KEY]`, the preferred landing page for it is:
 
 - [`index.md`](index.md) - content-oriented KB index.
 - [`log.md`](log.md) - append-only chronology of KB changes and ingests.
-- [`papers/`](papers/README.md) - one canonical page per BibTeX key.
+- [`papers/`](papers/README.md) - canonical paper pages for cited or active BibTeX keys.
 - [`concepts/`](concepts/README.md) - cross-paper topic pages.
 - [`audits/`](audits/README.md) - source-to-ArkLib comparison artifacts.
 - [`queries/`](queries/README.md) - filed answers to recurring research/review questions.
@@ -137,7 +137,7 @@ If you are unsure where to start, use [`index.md`](index.md) first.
 ### I want review context for a PR
 
 1. Run `python3 ./scripts/kb/review_context.py --files <changed-lean-files> --format review`.
-2. Paste the output into a `/review` comment, or let the workflow infer context from the PR.
+2. Paste the output into a `/review` comment.
 
 ## Workflows
 

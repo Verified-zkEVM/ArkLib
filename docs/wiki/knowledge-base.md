@@ -41,7 +41,7 @@ The current KB policy is:
 
 ## Review Integration
 
-For `.github/workflows/review.yml`, prefer attaching:
+For `.github/workflows/review.yml`, attach:
 
 - KB paper pages via `repo_context_refs`;
 - KB audit pages for deep source-to-code comparison;
@@ -59,8 +59,8 @@ python3 ./scripts/kb/review_context.py \
 
 or pass explicit keys with `--keys BCIKS20,ACFY24`.
 
-The review workflow also now accepts a `Citations:` section in a `/review` comment body, for
-example:
+The helper emits a normal `/review` comment body using the sections supported by the current
+workflow:
 
 ```text
 /review
@@ -68,12 +68,6 @@ External:
 - https://eprint.iacr.org/2020/654
 Internal:
 - docs/kb/audits/open-problems-list-decoding-and-correlated-agreement.md
-Citations:
-- BCIKS20
-- ACFY24
 Comments:
 Focus on whether the formalization matches the cited paper statements.
 ```
-
-Even without an explicit `Citations:` section, the workflow now infers citation-backed KB context
-from the changed `.lean` files in the PR.

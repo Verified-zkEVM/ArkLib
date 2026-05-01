@@ -21,7 +21,7 @@ def parse_csv_items(raw_items: list[str]) -> list[str]:
 
     items: list[str] = []
     for raw in raw_items:
-      items.extend(part.strip() for part in raw.split(",") if part.strip())
+        items.extend(part.strip() for part in raw.split(",") if part.strip())
     return items
 
 
@@ -91,6 +91,17 @@ def unique_in_order(items: list[str]) -> list[str]:
         seen.add(item)
         result.append(item)
     return result
+
+
+def validate_explicit_keys(keys: list[str], references_payload: dict[str, object]) -> None:
+    """Reject explicit keys that are not present in the bibliography export."""
+
+    entries = references_payload.get("entries", {})
+    if not isinstance(entries, dict):
+        raise SystemExit("references.json is missing an `entries` object")
+    unknown = sorted(key for key in keys if key not in entries)
+    if unknown:
+        raise SystemExit(f"Unknown BibTeX key(s): {', '.join(unknown)}")
 
 
 def parse_args() -> argparse.Namespace:
@@ -165,6 +176,7 @@ def main() -> int:
     references_payload = load_json(args.references_json.resolve())
 
     explicit_keys = parse_csv_items(args.keys)
+    validate_explicit_keys(explicit_keys, references_payload)
     file_paths = parse_csv_items(args.files)
     inferred_keys = infer_keys_from_files(file_paths, citations_payload)
     keys = unique_in_order(explicit_keys + sorted(inferred_keys))

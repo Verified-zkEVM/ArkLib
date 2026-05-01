@@ -83,6 +83,7 @@ python3 ./scripts/check-docs-integrity.py
 ```bash
 python3 ./scripts/kb/sync_from_bib.py
 python3 ./scripts/kb/extract_lean_citations.py
+python3 ./scripts/kb/check_generated.py
 python3 ./scripts/kb/lint.py
 python3 ./scripts/kb/review_context.py --files ArkLib/ProofSystem/Fri/Spec/SingleRound.lean
 ```
