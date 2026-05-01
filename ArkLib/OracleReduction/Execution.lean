@@ -352,6 +352,7 @@ theorem Reduction.id_run (stmt : StmtIn) (wit : WitIn) :
     (Reduction.id : Reduction oSpec StmtIn WitIn _ _ _).run stmt wit =
       pure ⟨⟨default, stmt, wit⟩, stmt⟩ := by
   simp [Reduction.run, Reduction.id, Prover.run, Verifier.run, Prover.id, Verifier.id]
+  rfl
 
 /-- Running the identity or trivial reduction, with logging of queries to the shared oracle,
   results in the same input statement and witness, empty transcript, and empty query logs. -/
@@ -466,14 +467,8 @@ theorem Reduction.run_of_prover_first [ProverOnly pSpec] (stmt : StmtIn) (wit : 
         return (⟨transcript, ctxOut⟩, ← stmtOut.getM)) := by
   simp only [Reduction.run, Verifier.run]
   rw [Prover.run_of_prover_first]
-  simp only [liftComp_eq_liftM, bind_assoc, pure_bind, monadLift_bind, monadLift_pure]
-  sorry
-  -- conv =>
-  --   enter [1, 2, a, 1]
-  --   rw [map_eq_pure_bind]
-  --   rw [loggingOracle.simulateQ_bind_fst
-  --     (reduction.verifier.verify stmt _) (fun a_1_1 => pure (a_1_1, _))]
-  -- simp
+  simp only [liftComp_eq_liftM, bind_assoc, pure_bind, monadLift_bind, monadLift_pure,
+    monadLift_liftM_OptionT]
 
 end SingleMessage
 

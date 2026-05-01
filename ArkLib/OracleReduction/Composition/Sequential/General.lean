@@ -230,8 +230,13 @@ lemma seqCompose_toVerifier {m : ℕ}
     (seqCompose Stmt OStmt V).toVerifier =
       Verifier.seqCompose (fun i => Stmt i × (∀ j, OStmt i j)) (fun i => (V i).toVerifier) := by
   induction m with
-  | zero => simp
-  | succ m ih => simp [ih]; rfl
+  | zero => simp; exact OracleVerifier.id_toVerifier
+  | succ m ih =>
+    simp only [seqCompose_succ, Verifier.seqCompose_succ]
+    have h1 := OracleVerifier.append_toVerifier (V 0) (seqCompose (Stmt ∘ Fin.succ)
+      (fun i => OStmt (Fin.succ i)) (fun i => V (Fin.succ i)))
+    exact h1.trans (congrArg ((V 0).toVerifier.append ·)
+      (ih (Stmt ∘ Fin.succ) (fun i => OStmt (Fin.succ i)) (fun i => V (Fin.succ i))))
 
 end OracleVerifier
 
@@ -299,8 +304,14 @@ lemma seqCompose_toReduction {m : ℕ}
       Reduction.seqCompose (fun i => Stmt i × (∀ j, OStmt i j)) Wit
         (fun i => (R i).toReduction) := by
   induction m with
-  | zero => simp
-  | succ m ih => simp [ih]; rfl
+  | zero => simp; exact OracleReduction.id_toReduction
+  | succ m ih =>
+    simp only [seqCompose_succ, Reduction.seqCompose_succ]
+    have h1 := OracleReduction.append_toReduction (R 0) (seqCompose (Stmt ∘ Fin.succ)
+      (fun i => OStmt (Fin.succ i)) (Wit ∘ Fin.succ) (fun i => R (Fin.succ i)))
+    exact h1.trans (congrArg ((R 0).toReduction.append ·)
+      (ih (Stmt ∘ Fin.succ) (fun i => OStmt (Fin.succ i)) (Wit ∘ Fin.succ)
+        (fun i => R (Fin.succ i))))
 
 end OracleReduction
 
@@ -350,11 +361,11 @@ theorem seqCompose_completeness
     have := ih (fun i => rel i.succ) (fun i => R i.succ)
       (fun i => completenessError i.succ) (fun i => h i.succ)
     simp at this
-    convert append_completeness
+    rw [Fin.sum_univ_succ]
+    exact append_completeness
       (R 0)
       (seqCompose (Stmt ∘ Fin.succ) (Wit ∘ Fin.succ) (fun i => R (Fin.succ i)))
       (h 0) this
-    exact Fin.sum_univ_succ completenessError
 
 omit Oₘ in
 theorem seqCompose_perfectCompleteness
@@ -383,15 +394,15 @@ theorem seqCompose_soundness
       (Verifier.seqCompose Stmt V).soundness init impl (lang 0) (lang (Fin.last m))
         (∑ i, soundnessError i) := by
   induction m with
-  | zero => simp
+  | zero => simp; exact Verifier.id_soundness init impl
   | succ m ih =>
     simp
     have := ih (fun i => lang i.succ) (fun i => V i.succ)
       (fun i => soundnessError i.succ) (fun i => h i.succ)
     simp at this
-    convert append_soundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
+    rw [Fin.sum_univ_succ]
+    exact append_soundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
       (h 0) this
-    exact Fin.sum_univ_succ soundnessError
 
 /-- If all verifiers in a sequence satisfy knowledge soundness with respective knowledge errors,
     then their sequential composition also satisfies knowledge soundness.
@@ -404,15 +415,15 @@ theorem seqCompose_knowledgeSoundness
       (Verifier.seqCompose Stmt V).knowledgeSoundness init impl (rel 0) (rel (Fin.last m))
         (∑ i, knowledgeError i) := by
   induction m with
-  | zero => simp
+  | zero => simp; exact Verifier.id_knowledgeSoundness init impl
   | succ m ih =>
     simp
     have := ih (fun i => rel i.succ) (fun i => V i.succ)
       (fun i => knowledgeError i.succ) (fun i => h i.succ)
     simp at this
-    convert append_knowledgeSoundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
+    rw [Fin.sum_univ_succ]
+    exact append_knowledgeSoundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
       (h 0) this
-    exact Fin.sum_univ_succ knowledgeError
 
 /-- If all verifiers in a sequence satisfy round-by-round soundness with respective RBR soundness
     errors, then their sequential composition also satisfies round-by-round soundness. -/
@@ -428,16 +439,16 @@ theorem seqCompose_rbrSoundness
   induction m with
   | zero =>
     simp
-    convert Verifier.id_rbrSoundness init impl
-    rename_i i
-    exact Fin.elim0 i.1
+    convert Verifier.id_rbrSoundness init impl using 1
+    funext ⟨i, _⟩
+    exact Fin.elim0 i
   | succ m ih =>
     simp
     have := ih (fun i => lang i.succ) (fun i => V i.succ)
       (fun i => rbrSoundnessError i.succ) (fun i => h i.succ)
     simp at this
     convert append_rbrSoundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
-      (h 0) this
+      (h 0) this <;>
     sorry
 
 /-- If all verifiers in a sequence satisfy round-by-round knowledge soundness with respective RBR
@@ -456,17 +467,16 @@ theorem seqCompose_rbrKnowledgeSoundness
   induction m with
   | zero =>
     simp
-    convert Verifier.id_rbrKnowledgeSoundness init impl
-    rename_i i
-    exact Fin.elim0 i.1
+    convert Verifier.id_rbrKnowledgeSoundness init impl using 1
+    funext ⟨i, _⟩
+    exact Fin.elim0 i
   | succ m ih =>
     simp
     have := ih (fun i => rel i.succ) (fun i => V i.succ)
       (fun i => rbrKnowledgeError i.succ) (fun i => h i.succ)
     simp at this
     convert append_rbrKnowledgeSoundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
-      (h 0) this
-    simp [seqComposeChallengeIdxToSigma]
+      (h 0) this <;>
     sorry
 
 end Verifier

@@ -628,7 +628,7 @@ lemma rootMultiplicity_ge_of_shift_zero [DecidableEq F] {f : F[X][Y]} {x y : F}
     exact absurd (h_min_ge_m _
       (List.min?_mem (by simpa [Bivariate.rootMultiplicity, rootMultiplicity₀,
         weightedDegree, shift, hdeg] using h)))
-      (by push_neg; exact h_contra)
+      (by push Not; exact h_contra)
 
 lemma polySol_multiplicity [DecidableEq F] (i : Fin n) :
     m ≤ rootMultiplicity (polySol k n m ωs f) (ωs i) (f i) := by

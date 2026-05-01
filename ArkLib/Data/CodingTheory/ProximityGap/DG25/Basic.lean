@@ -61,7 +61,7 @@ Communications in Cryptology 1.4 (Jan. 13, 2025). issn: 3006-5496. doi: 10.62056
 
 noncomputable section
 
-open Code LinearCode InterleavedCode ReedSolomonCode ProximityGap ProbabilityTheory Filter
+open Code LinearCode InterleavedCode ReedSolomon ProximityGap ProbabilityTheory Filter
 open NNReal Finset Function
 open scoped BigOperators LinearCode ProbabilityTheory
 open Real
@@ -175,29 +175,24 @@ lemma eq_splitHalf_iff_merge_eq {ϑ : ℕ}
     simp only [splitHalfRowWiseInterleavedWords] at h_split_eq_merge
     by_cases hk : rowIdx.val < 2 ^ ϑ
     · simp only [hk, ↓reduceDIte]
-      have h_eq := h_split_eq_merge.1
-      rw [funext_iff] at h_eq
-      let res := h_eq ⟨rowIdx, by omega⟩
-      simp only at res
-      exact res
+      have h_eq := congr_fun h_split_eq_merge.1 ⟨rowIdx, by omega⟩
+      simp only at h_eq
+      exact h_eq
     · simp only [hk, ↓reduceDIte]
-      have h_eq := h_split_eq_merge.2
-      rw [funext_iff] at h_eq
-      let res := h_eq ⟨rowIdx - 2 ^ ϑ, by omega⟩
-      simp only at res
-      rw! (castMode:=.all) [Nat.sub_add_cancel (h := by omega)] at res
-      exact res
+      have h_eq := congr_fun h_split_eq_merge.2 ⟨rowIdx - 2 ^ ϑ, by omega⟩
+      simp only at h_eq
+      rw! (castMode:=.all) [Nat.sub_add_cancel (h := by omega)] at h_eq
+      exact h_eq
   · intro h_merge_eq_split
     simp only [splitHalfRowWiseInterleavedWords]
     unfold mergeHalfRowWiseInterleavedWords at h_merge_eq_split
-    rw [funext_iff] at h_merge_eq_split
     constructor
     · funext rowIdx
-      let res := h_merge_eq_split ⟨rowIdx, by omega⟩
+      let res := congr_fun h_merge_eq_split ⟨rowIdx, by omega⟩
       simp only [Fin.is_lt, ↓reduceDIte, Fin.eta] at res
       exact res
     · funext rowIdx
-      let res := h_merge_eq_split ⟨rowIdx + 2 ^ ϑ, by omega⟩
+      let res := congr_fun h_merge_eq_split ⟨rowIdx + 2 ^ ϑ, by omega⟩
       simp only [add_lt_iff_neg_right, not_lt_zero', ↓reduceDIte, add_tsub_cancel_right,
         Fin.eta] at res
       exact res
@@ -242,71 +237,35 @@ theorem CA_split_rowwise_implies_CA
       intro i
       specialize hvSplit_mem i
       exact hvSplit_mem
-    -- Now we prove `v_rowwise_finmap rowIdx ∈ C` by cases on rowIdx.
     dsimp only [v_IC]
+    change v_rowwise_finmap rowIdx ∈ C
+    unfold v_rowwise_finmap mergeHalfRowWiseInterleavedWords
     by_cases hk : rowIdx.val < 2 ^ ϑ
-    · -- Case 1: rowIdx is in the first half
-      -- exact h_vSplit_rows_mem 0 ⟨rowIdx.val, hk⟩
-      let hRes₀ := h_vSplit_rows_mem 0 ⟨rowIdx.val, hk⟩
-      simp only [Fin.isValue] at hRes₀
-      convert hRes₀
-      rename_i colIdx
-      -- ⊢ getRow (⋈|v_rowwise_finmap) rowIdx colIdx = vSplit colIdx 0 ⟨↑rowIdx, hk⟩
-      unfold v_rowwise_finmap mergeHalfRowWiseInterleavedWords VSplit₀_rowwise
-       VSplit_rowwise -- unfold them all
-      simp only [WordStack, InterleavedWord, instInterleavableWordStackInterleavedWord,
-        Fin.isValue, interleaveWordStack, Matrix.transpose_apply, hk, ↓reduceDIte]
-    · -- Case 2: rowIdx is in the second half
-      let hRes₁ := h_vSplit_rows_mem 1 ⟨rowIdx.val - 2 ^ ϑ, by omega⟩
-      simp only [Fin.isValue] at hRes₁
-      convert hRes₁
-      rename_i colIdx
-      -- ⊢ getRow (⋈|v_rowwise_finmap) rowIdx colIdx = vSplit colIdx 1 ⟨↑rowIdx - 2 ^ ϑ, by omega⟩
-      unfold v_rowwise_finmap mergeHalfRowWiseInterleavedWords VSplit₁_rowwise
-        VSplit_rowwise -- unfold them all
-      simp only [WordStack, InterleavedWord, instInterleavableWordStackInterleavedWord,
-        Fin.isValue, interleaveWordStack, Matrix.transpose_apply, hk, ↓reduceDIte]
+    · simp only [hk, ↓reduceDIte]
+      exact h_vSplit_rows_mem 0 ⟨rowIdx.val, hk⟩
+    · simp only [hk, ↓reduceDIte]
+      exact h_vSplit_rows_mem 1 ⟨rowIdx.val - 2 ^ ϑ, by omega⟩
     -- END OF MODIFIED SECTION
   · use D
     constructor
     · exact hD_card_le_e
     · intro colIdx h_colIdx_notin_D
       funext rowIdx
-      -- simp only [interleaveWords]
       dsimp only [v_IC]
+      change u rowIdx colIdx = v_rowwise_finmap rowIdx colIdx
       have hRes := h_agree_outside_D colIdx (h_colIdx_notin_D)
-      -- hRes : (⋈|finMapTwoWords (⋈|U₀) (⋈|U₁)) colIdx = vSplit colIdx
-      -- ⊢ u rowIdx colIdx = (⋈|v_rowwise_finmap) colIdx rowIdx
       simp_rw [funext_iff] at hRes
-      -- unfold finMapTwoWords at hRes
+      unfold v_rowwise_finmap mergeHalfRowWiseInterleavedWords
       by_cases hk : rowIdx.val < 2 ^ ϑ
-      · -- Case 1: We are in the "U₀" half
-        unfold v_rowwise_finmap mergeHalfRowWiseInterleavedWords VSplit₀_rowwise
-          VSplit_rowwise
-        simp only [WordStack, InterleavedWord, instInterleavableWordStackInterleavedWord,
-          interleaveWordStack, Matrix.transpose_apply, Fin.isValue, hk,
-          ↓reduceDIte]
-        -- ⊢ u rowIdx colIdx = vSplit colIdx 0 ⟨↑rowIdx, ⋯⟩
-        have hRes₀ := hRes 0 ⟨rowIdx, by omega⟩
-        simp only [Fin.isValue] at hRes₀
-        exact hRes₀
-      · -- Case 2: We are in the "U₁" half
-        unfold v_rowwise_finmap mergeHalfRowWiseInterleavedWords VSplit₁_rowwise
-          VSplit_rowwise
-        simp only [WordStack, InterleavedWord, instInterleavableWordStackInterleavedWord,
-          interleaveWordStack, Matrix.transpose_apply, Fin.isValue, hk,
-          ↓reduceDIte]
-        -- ⊢ u rowIdx colIdx = vSplit colIdx 1 ⟨↑rowIdx - 2 ^ ϑ, ⋯⟩
+      · simp only [hk, ↓reduceDIte]
+        exact hRes 0 ⟨rowIdx, by omega⟩
+      · simp only [hk, ↓reduceDIte]
+        change u rowIdx colIdx = vSplit colIdx 1 ⟨↑rowIdx - 2 ^ ϑ, by omega⟩
         have hRes₁ := hRes 1 ⟨rowIdx - 2 ^ ϑ, by omega⟩
-        simp only [Fin.isValue] at hRes₁
-        ---
         dsimp only [splitHalfRowWiseInterleavedWords, Fin.isValue, U₁] at hRes₁
         rw [←hRes₁]
-        conv_rhs =>
-          unfold finMapTwoWords
-          simp only [InterleavedSymbol, WordStack, InterleavedWord,
-            instInterleavableWordStackInterleavedWord, interleaveWordStack, Fin.isValue,
-            Matrix.transpose_apply]
+        simp only [Interleavable.interleave, interleaveWordStack, finMapTwoWords,
+          Matrix.transpose_apply]
         rw! [Nat.sub_add_cancel (h := by omega)]
         rfl
 

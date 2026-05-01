@@ -106,7 +106,7 @@ lemma johnson_condition_weak_implies_strong [Field F]
     JohnsonConditionStrong (B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)) v := by
   have h_n_pos : 0 < n := by
     by_contra hn
-    push_neg at hn
+    push Not at hn
     have : n = 0 := by omega
     subst this
     have B_singleton : B.card ≤ 1 :=

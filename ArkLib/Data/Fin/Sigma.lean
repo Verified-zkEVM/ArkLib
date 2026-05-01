@@ -218,7 +218,8 @@ theorem dflatten_embedSum {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum
     induction i using induction with
     | zero => simp
     | succ i ih' =>
-      simp only [embedSum_succ_succ, dflatten_succ, dappend_right]
+      simp only [embedSum_succ_succ, dflatten_succ]
+      erw [dappend_right]
       exact ih (motive := fun i => motive (natAdd (n 0) i)) (fun i => v i.succ) i j
 
 /-- Homogeneous flatten: flattens a nested homogeneous vector
@@ -250,10 +251,7 @@ theorem vflatten_eq_vappend_last {m : ℕ} {n : Fin (m + 1) → ℕ}
   induction m with
   | zero => ext i; simp
   | succ m ih =>
-    ext i
-    rw [vflatten_succ, ih, vflatten_succ, vappend_assoc]
-    simp only [vsum_succ, succ_zero_eq_one, succ_last, Nat.succ_eq_add_one, Function.comp_apply,
-      castSucc_zero, castSucc_succ, cast_cast]
+    rw [vflatten_succ, ih, vflatten_succ]
     sorry
 
 @[simp]

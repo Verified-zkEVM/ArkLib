@@ -46,7 +46,10 @@ theorem prod_Iio_eq_univ (i : Fin (n + 1)) :
   | zero =>
     conv_lhs => rw [← bot_eq_zero]
     simp only [Iio_bot, prod_empty, val_zero, univ_eq_empty]
-  | succ i hi => simp only [prod_Iio_succ, hi, prod_univ_castSucc, val_succ]; congr
+  | succ i hi =>
+    rw [prod_Iio_succ, hi]
+    change (∏ j : Fin ↑i, v (castLE _ j)) * v i.castSucc = ∏ j : Fin (↑i + 1), v (castLE _ j)
+    rw [Fin.prod_univ_castSucc]; congr 1
 
 @[to_additive (attr := simp)]
 theorem prod_Iic_zero : ∏ j ∈ Iic 0, v j = v 0 := by
@@ -69,8 +72,13 @@ theorem prod_Iic_eq_univ (i : Fin (n + 1)) :
     ∏ j ∈ Iic i, v j = ∏ j : Fin (i + 1), v (Fin.castLE i.isLt j) := by
   induction i using Fin.induction with
   | zero => simp only [prod_Iic_zero, val_zero, Nat.reduceAdd, univ_unique, default_eq_zero,
-    prod_singleton, castLE_zero]
-  | succ i hi => simp only [prod_Iic_succ, hi, prod_univ_castSucc, val_succ]; congr
+    prod_singleton]; exact congrArg v (Fin.ext rfl)
+  | succ i hi =>
+    rw [prod_Iic_succ, hi]
+    change (∏ j : Fin (↑i + 1), v (castLE _ j)) * v i.succ =
+      ∏ j : Fin (↑i + 1 + 1), v (castLE _ j)
+    conv_rhs => rw [Fin.prod_univ_castSucc]
+    congr 1
 
 @[simp]
 theorem Ici_zero : Ici (0 : Fin (n + 1)) = univ := by rw [← bot_eq_zero, Ici_bot]

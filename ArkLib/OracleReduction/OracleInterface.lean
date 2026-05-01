@@ -240,8 +240,10 @@ open Finset in
   message and the query is a position of the codeword. In particular, it applies to
   `(Mv)Polynomial`. -/
 def distanceLE {Message : Type*} (O : OracleInterface Message)
-    [Fintype O.Query] [∀ q, DecidableEq (O.spec q)] (d : ℕ) : Prop :=
-  ∀ a b : Message, a ≠ b → #{q | (O.toOC.impl q).run a = (O.toOC.impl q).run b} ≤ d
+    [Fintype O.Query] [∀ q, DecidableEq (O.toOC.spec q)] (d : ℕ) : Prop :=
+  have eval : Message → (q : O.Query) → O.toOC.spec q :=
+    fun m q => (O.toOC.impl q).run m
+  ∀ a b : Message, a ≠ b → #{q | eval a q = eval b q} ≤ d
 
 section Polynomial
 
@@ -271,16 +273,14 @@ instance instPolynomialDegreeLT : OracleInterface (R⦃< d⦄[X]) where
   toOC.impl point := do return (← read).1.eval point
 
 /-- Multivariate polynomials can be accessed via evaluation queries. -/
-@[reducible, inline]
-instance instMvPolynomial : OracleInterface (R[X σ]) where
+noncomputable instance instMvPolynomial : OracleInterface (R[X σ]) where
   Query := (σ → R)
   toOC.spec := (σ → R) →ₒ R
   toOC.impl points := do return (← read).eval points
 
 /-- Multivariate polynomials with individual degree at most `d` can be accessed via evaluation
 queries. -/
-@[reducible, inline]
-instance instMvPolynomialDegreeLE : OracleInterface (R⦃≤ d⦄[X σ]) where
+noncomputable instance instMvPolynomialDegreeLE : OracleInterface (R⦃≤ d⦄[X σ]) where
   Query := (σ → R)
   toOC.spec := (σ → R) →ₒ R
   toOC.impl points := do return (← read).1.eval points

@@ -6,16 +6,13 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
-/-! # BCIKS20 Weighted Agreement -/
-
 
 namespace ProximityGap
 
 namespace WeightedAgreement
 
-open NNReal Finset Function ProbabilityTheory
+open NNReal Finset Function ProbabilityTheory ReedSolomon Uniform
 open scoped BigOperators Pointwise ProbabilityTheory
-open ReedSolomonCode Uniform
 
 section ProbabilityTheorems
 
@@ -25,7 +22,7 @@ variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 instance {domain : ι ↪ F} {deg : ℕ} : Nonempty (finCarrier domain deg) := by
   rcases Submodule.nonempty (ReedSolomon.code domain deg) with ⟨v, hv⟩
   refine ⟨v, ?_⟩
-  simpa [ReedSolomonCode.finCarrier, Set.mem_toFinset] using hv
+  simpa [ReedSolomon.finCarrier, Set.mem_toFinset] using hv
 
 /-- Weighted correlated agreement over curves.
 Take a Reed-Solomon code of length `ι` and degree `deg`, a proximity-error parameter
@@ -39,7 +36,7 @@ theorem weighted_correlated_agreement_for_parameterized_curves [DecidableEq ι]
     {M : ℕ}
     {α : ℝ≥0}
     (hμ : ∀ i, ∃ n : ℤ, (μ i).1 = (n : ℚ) / (M : ℚ)) :
-    letI sqrtRate := ReedSolomonCode.sqrtRate deg domain
+    letI sqrtRate := ReedSolomon.sqrtRate deg domain
     (hα : sqrtRate < α) →
     (hα₁ : α < 1) →
     letI ε := ProximityGap.errorBound δ deg domain
@@ -75,7 +72,7 @@ theorem weighted_correlated_agreement_for_parameterized_curves'
     (hm : 3 ≤ m)
     (hμ : ∀ i, ∃ n : ℤ, (μ i).1 = (n : ℚ) / (M : ℚ))
     {α : ℝ≥0} :
-    letI sqrtRate := ReedSolomonCode.sqrtRate deg domain
+    letI sqrtRate := ReedSolomon.sqrtRate deg domain
     letI S : Finset F := {
       z : F |
         agree_set μ (Curve.polynomialCurveEval (F := F) (A := F) u z) (finCarrier domain deg) ≥ α
@@ -103,7 +100,7 @@ theorem weighted_correlated_agreement_over_affine_spaces
     {μ : ι → Set.Icc (0 : ℚ) 1}
     {M : ℕ}
     {α : ℝ≥0} :
-    letI sqrtRate := ReedSolomonCode.sqrtRate deg domain
+    letI sqrtRate := ReedSolomon.sqrtRate deg domain
     (hα : sqrtRate < α) →
     (hα₁ : α < 1) →
     (hμ : ∀ i, ∃ n : ℤ, (μ i).1 = (n : ℚ) / (M : ℚ)) →
@@ -139,7 +136,7 @@ theorem weighted_correlated_agreement_over_affine_spaces'
     {M m : ℕ}
     (hm : 3 ≤ m)
     (hμ : ∀ i, ∃ n : ℤ, (μ i).1 = (n : ℚ) / (M : ℚ)) :
-    letI sqrtRate := ReedSolomonCode.sqrtRate deg domain
+    letI sqrtRate := ReedSolomon.sqrtRate deg domain
     letI pr :=
       let spacePts :=
         u 0 +ᵥ affineSpan F (((Finset.univ.image (Fin.tail u) : Finset (ι → F)) : Set (ι → F)))
@@ -161,9 +158,7 @@ section ListAgreementLemmas
 
 variable {ι : Type} [Fintype ι] [Nonempty ι]
 variable {F : Type} [Field F] [DecidableEq F]
-/--
-Lemma 7.5 in [BCIKS20].
-
+/-- Lemma 7.5 in [BCIKS20].
 This is the "list agreement on a curve implies correlated agreement" lemma.
 
 We are given two lists of functions `u, v : Fin (l + 2) → ι → F`, where each `v i` is a
@@ -196,9 +191,7 @@ lemma list_agreement_on_curve_implies_correlated_agreement_bound
       α - ((l + 1) : ℝ) / (S'.card - (l + 1)) := by
   sorry
 
-/--
-Lemma 7.6 in [BCIKS20].
-
+/-- Lemma 7.6 in [BCIKS20].
 This is the "integral-weight" strengthening of the list-agreement-on-a-curve =>
 correlated-agreement bound.
 

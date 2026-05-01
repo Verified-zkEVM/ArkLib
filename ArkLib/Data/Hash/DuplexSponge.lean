@@ -40,6 +40,7 @@ class LawfulPermute (α : Type*) [Permute α] where
   right_inv : Function.RightInverse permuteInv Permute.permute
 
 /-- Constructing a `Permute` instance from an `Equiv` -/
+@[reducible]
 def Permute.ofEquiv (α : Type*) (e : Equiv α α) : Permute α where
   permute := e.toFun
 

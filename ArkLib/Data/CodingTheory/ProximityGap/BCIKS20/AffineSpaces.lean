@@ -6,19 +6,22 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.Main
-/-! # BCIKS20 Affine Spaces -/
-
+import ArkLib.Data.CodingTheory.GuruswamiSudan
+import ArkLib.Data.CodingTheory.ProximityGap.Basic
+import ArkLib.Data.Polynomial.RationalFunctions
+import ArkLib.Data.CodingTheory.ReedSolomon
+import ArkLib.Data.Polynomial.Trivariate
 
 namespace ProximityGap
 
-open NNReal Finset Function ProbabilityTheory
+open NNReal Finset Function ProbabilityTheory ReedSolomon Code
 open scoped BigOperators LinearCode ProbabilityTheory
-open Code
 
 section CoreResults
 
-variable {ι : Type} [Fintype ι] [Nonempty ι]
+variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+
 /-- Theorem 1.6 (Correlated agreement over affine spaces) in [BCIKS20].
 
 Take a Reed-Solomon code of length `ι` and degree `deg`, a proximity-error parameter
@@ -26,13 +29,13 @@ pair `(δ, ε)` and an affine space with origin `u₀` and affine generting set 
 such that the probability a random point in the affine space is `δ`-close to the Reed-Solomon
 code is at most `ε`. Then the words `u₀, ..., uκ` have correlated agreement.
 
-Note that we have `k+2` vectors to form the affine space. This an intricacy needed us to be
+Note that we have `k + 2` vectors to form the affine space. This an intricacy needed us to be
 able to isolate the affine origin from the affine span and to form a generating set of the
 correct size. The reason for taking an extra vector is that after isolating the affine origin,
 the affine span is formed as the span of the difference of the rest of the vector set. -/
-theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
+theorem correlatedAgreement_affine_spaces {k : ℕ}
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    (hδ : δ ≤ 1 - ReedSolomonCode.sqrtRate deg domain) :
+    (hδ : δ ≤ 1 - ReedSolomon.sqrtRate deg domain) :
     δ_ε_correlatedAgreementAffineSpaces (k := k) (A := F) (F := F) (ι := ι)
       (C := ReedSolomon.code domain deg) (δ := δ) (ε := errorBound δ deg domain) := by
   sorry
@@ -41,7 +44,7 @@ end CoreResults
 
 section BCIKS20ProximityGapSection6
 
-open scoped ReedSolomonCode
+open scoped ReedSolomon
 
 variable {l : ℕ} [NeZero l]
 variable {ι : Type} [Fintype ι] [Nonempty ι]
@@ -97,6 +100,56 @@ theorem jointAgreement_implies_second_proximity {ι : Type} [Fintype ι] [Nonemp
     exact ⟨v 1, hv1, hdist⟩
   exact
     (Code.relCloseToCode_iff_relCloseToCodeword_of_minDist (u := W 1) (C := C) (δ := δ)).2 hclose
+
+/-- Generalisation of `jointAgreement_implies_second_proximity` to an arbitrary word stack over a
+submodule code. If a stack `W : Fin k → ι → F` jointly agrees with a submodule `C ⊆ ι → F`, then
+every element of the linear span of the stack is `δ`-close to `C`. The pointwise case
+`W i ∈ C` is the special case `x = W i` (choose coefficients `c` to be the i-th basis vector);
+the original `Fin 2` lemma is the case `k = 2`, `x = W 1`.
+
+The proof bounds the linear combination against the matching linear combination of the agreement
+witnesses: on each agreement column `j ∈ S`, `v i j = W i j` for every `i`, so `∑ cᵢ • vᵢ` and
+`∑ cᵢ • Wᵢ` agree on `S`; `v'` is a codeword by submodule closure; lift via
+`relCloseToCode_iff_relCloseToCodeword_of_minDist`. -/
+theorem jointAgreement_implies_linSpan_proximity {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [DecidableEq F] {k : ℕ}
+    (C : Submodule F (ι → F)) {δ : ℝ≥0} {W : Fin k → ι → F}
+    (h : jointAgreement (C := (C : Set (ι → F))) (δ := δ) (W := W)) :
+    ∀ x ∈ Submodule.span F (Set.range W), δᵣ(x, (C : Set (ι → F))) ≤ δ := by
+  rcases h with ⟨S, hS_card, v, hv⟩
+  intro x hx
+  rw [Submodule.mem_span_range_iff_exists_fun] at hx
+  rcases hx with ⟨c, rfl⟩
+  set v' : ι → F := ∑ i : Fin k, c i • v i with hv'_def
+  have hv'_mem : v' ∈ C := by
+    refine Submodule.sum_mem C (fun i _ => ?_)
+    exact Submodule.smul_mem C (c i) (hv i).1
+  have hagree : ∀ j ∈ S, (∑ i, c i • v i) j = (∑ i, c i • W i) j := by
+    intro j hj
+    simp only [Finset.sum_apply, Pi.smul_apply]
+    refine Finset.sum_congr rfl (fun i _ => ?_)
+    have h_j_in_filter : j ∈ Finset.filter (fun j => v i j = W i j) Finset.univ :=
+      (hv i).2 hj
+    have : v i j = W i j := by simpa [Finset.mem_filter] using h_j_in_filter
+    rw [this]
+  have hdist : δᵣ(∑ i, c i • W i, v') ≤ δ := by
+    rw [Code.relCloseToWord_iff_exists_agreementCols
+      (u := ∑ i, c i • W i) (v := v') (δ := δ)]
+    refine ⟨S, ?_, ?_⟩
+    · have hS' : (1 - δ) * (Fintype.card ι : ℝ≥0) ≤ (S.card : ℝ≥0) := by
+        simpa [ge_iff_le, mul_comm, mul_left_comm, mul_assoc] using hS_card
+      exact (Code.relDist_floor_bound_iff_complement_bound (n := Fintype.card ι)
+        (upperBound := S.card) (δ := δ)).2 hS'
+    · intro j
+      constructor
+      · intro hj
+        exact (hagree j hj).symm
+      · intro hj_ne hj
+        exact hj_ne (hagree j hj).symm
+  exact
+    (Code.relCloseToCode_iff_relCloseToCodeword_of_minDist
+      (u := ∑ i, c i • W i) (C := (C : Set (ι → F))) (δ := δ)).2
+      ⟨v', hv'_mem, hdist⟩
 
 theorem prob_uniform_congr_equiv {α : Type} [Fintype α] [Nonempty α]
     (e : α ≃ α) (P : α → Prop) :
@@ -273,7 +326,7 @@ theorem exists_basepoint_with_large_line_prob {ι : Type} [Fintype ι] [Nonempty
 omit [NeZero l] in
 theorem average_proximity_implies_proximity_of_linear_subspace
     {u : Fin (l + 2) → ι → F} {k : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    (hδ : δ ∈ Set.Ioo 0 (1 - ReedSolomonCode.sqrtRate (k + 1) domain)) :
+    (hδ : δ ∈ Set.Ioo 0 (1 - ReedSolomon.sqrtRate (k + 1) domain)) :
     letI U'_submodule : Submodule F (ι → F) :=
       Submodule.span F (Finset.univ.image (Fin.tail u) : Set (ι → F))
     letI U' : Finset (ι → F) := (U'_submodule : Set (ι → F)).toFinset
@@ -296,7 +349,7 @@ theorem average_proximity_implies_proximity_of_linear_subspace
       u' ∈ (Submodule.span F (Finset.univ.image (Fin.tail u) : Set (ι → F)) :
         Submodule F (ι → F)) := by
     simpa [Set.mem_toFinset] using hu'
-  have hδ_le : δ ≤ 1 - ReedSolomonCode.sqrtRate (k + 1) domain :=
+  have hδ_le : δ ≤ 1 - ReedSolomon.sqrtRate (k + 1) domain :=
     le_of_lt hδ.2
   rcases
       (exists_basepoint_with_large_line_prob

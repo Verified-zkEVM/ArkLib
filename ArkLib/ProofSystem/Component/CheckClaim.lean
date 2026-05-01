@@ -79,7 +79,7 @@ theorem reduction_completeness [Nonempty σ] [DecidableEq Statement] :
       (pure ((default, stmt, ()), stmt) :
         OptionT (OracleComp _) _) := by
     simp [reduction, Reduction.run, prover, verifier, Prover.run, Verifier.run,
-          Prover.runToRound, guard, if_pos valid]
+          Prover.runToRound, guard, if_pos valid]; rfl
   simp only [hrun]
   -- Now identical to id_perfectCompleteness pattern
   rw [ge_iff_le, one_le_probEvent_iff, probEvent_eq_one_iff]

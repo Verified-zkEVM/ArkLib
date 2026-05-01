@@ -51,3 +51,4 @@ import Mathlib.LinearAlgebra.Matrix.Determinant.Misc
 import Mathlib.Logic.Equiv.Fin.Basic
 import ArkLib.Data.CodingTheory.PolishchukSpielman.Degrees
 import ArkLib.Data.CodingTheory.PolishchukSpielman
+import ArkLib.Data.Polynomial.Trivariate

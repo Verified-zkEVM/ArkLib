@@ -59,7 +59,7 @@ lemma invFun_toFun (f : F) : inst.equiv.invFun (inst.equiv.toFun f) = f :=
 
 @[simp]
 lemma coe_toFun_of_coe_apply (f : ∀ a, β a) (a : α) : (f : F) a = f a := by
-  simp [instDFunLike]
+  exact congrFun (inst.equiv.right_inv f) a
 
 @[simp]
 lemma coe_fn_of_coe (f : ∀ a, β a) : (f : F) = inst.equiv.invFun f := rfl
