@@ -472,7 +472,7 @@ private def isWitnessC (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
 
     This connects the computable Hasse-derivative multiplicity filter to the classical
     pointwise root condition `Q(ωᵢ, fᵢ) = 0` that the GS witness branch relies on. -/
-private lemma is_witness_c_imp_eval_zero_at_points {k D r : ℕ}
+private lemma isWitnessC_imp_eval_zero_at_points {k D r : ℕ}
     {ωs : Fin n ↪ F} {f : Fin n → F} {c : Fin (D + 1) × Fin (D + 1) → F}
     (hr : 0 < r)
     (hw : isWitnessC k D r ωs f c = true) (i : Fin n) :
@@ -484,7 +484,7 @@ private lemma is_witness_c_imp_eval_zero_at_points {k D r : ℕ}
 
 /-- Extract the nonzero-coefficient condition from `isWitnessC`: there exists at least one
     index pair `(i, j)` in the weighted-degree region `i + (k-1)·j ≤ D` where `c(i,j) ≠ 0`. -/
-private lemma is_witness_c_nonzero {k D r : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F}
+private lemma isWitnessC_nonzero {k D r : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F}
     {c : Fin (D + 1) × Fin (D + 1) → F}
     (hw : isWitnessC k D r ωs f c = true) :
     ∃ i : Fin (D + 1), ∃ j : Fin (D + 1),
@@ -497,7 +497,7 @@ private lemma is_witness_c_nonzero {k D r : ℕ} {ωs : Fin n ↪ F} {f : Fin n 
 
 /-- Extract the per-point multiplicity check from `isWitnessC`: `hasseMultiplicityCheck`
     passes at every interpolation point `(ωs i, f i)`. -/
-private lemma is_witness_c_multiplicity_at {k D r : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F}
+private lemma isWitnessC_multiplicity_at {k D r : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F}
     {c : Fin (D + 1) × Fin (D + 1) → F}
     (hw : isWitnessC k D r ωs f c = true) (i : Fin n) :
     hasseMultiplicityCheck k D r c (ωs i) (f i) = true := by
@@ -507,14 +507,14 @@ private lemma is_witness_c_multiplicity_at {k D r : ℕ} {ωs : Fin n ↪ F} {f 
   exact hmult ⟨i.val, i.isLt⟩
 
 /-- When `isWitnessC` holds, every Hasse derivative of order `< r` vanishes at every
-    interpolation point. This combines `is_witness_c_multiplicity_at` with
+    interpolation point. This combines `isWitnessC_multiplicity_at` with
     `hasseMultiplicityCheck_imp_deriv_zero`. -/
-private lemma is_witness_c_hasse_deriv_vanishes {k D r a b : ℕ}
+private lemma isWitnessC_hasse_deriv_vanishes {k D r a b : ℕ}
     {ωs : Fin n ↪ F} {f : Fin n → F} {c : Fin (D + 1) × Fin (D + 1) → F}
     (hw : isWitnessC k D r ωs f c = true)
     (hab : a + b < r) (i : Fin n) :
     hasseDerivEvalAt k D a b c (ωs i) (f i) = 0 :=
-  hasseMultiplicityCheck_imp_deriv_zero (is_witness_c_multiplicity_at hw i) hab
+  hasseMultiplicityCheck_imp_deriv_zero (isWitnessC_multiplicity_at hw i) hab
 
 /-- Number of unknown coefficients in the bounded witness grid `(D + 1) × (D + 1)`. -/
 private def witnessVarCount (D : ℕ) : ℕ := (D + 1) * (D + 1)
@@ -674,7 +674,7 @@ private def isQRootRaw (k D : ℕ)
 /-- Characterization of `isQRootRaw`: it holds iff every element of the result array
     `evalQAtPRaw k D c pRaw` equals zero. This is a direct consequence of `Array.all`
     semantics and `BEq` on `F` being faithful (from `DecidableEq F`). -/
-private lemma is_q_root_raw_iff_all_coeff_zero {k D : ℕ}
+private lemma isQRootRaw_iff_all_coeff_zero {k D : ℕ}
     {c : Fin (D + 1) × Fin (D + 1) → F} {pRaw : CompPoly.CPolynomial.Raw F} :
     isQRootRaw k D c pRaw = true ↔
       ∀ idx : Fin (evalQAtPRaw k D c pRaw).size,
@@ -727,7 +727,7 @@ private lemma mem_witness_candidate_set_imp [Fintype F] {k r D e : ℕ} {ωs : F
     * `Q(X, p(X)) = 0` via CompPoly root extraction, and
     * `evalCoeffVecAt k D c (ωs i) (f i) = 0` for every `i : Fin n`.
 
-    The last property is derived from `is_witness_c_imp_eval_zero_at_points`. -/
+    The last property is derived from `isWitnessC_imp_eval_zero_at_points`. -/
 private lemma witness_candidate_set_witness_vanishes [Fintype F] {k r D e : ℕ}
     {ωs : Fin n ↪ F} {f : Fin n → F} {p : F[X]}
     (hr : 0 < r)
@@ -745,7 +745,7 @@ private lemma witness_candidate_set_witness_vanishes [Fintype F] {k r D e : ℕ}
       rw [Finset.mem_filter] at hp
       obtain ⟨_, hcond⟩ := hp
       simp only [Bool.and_eq_true, decide_eq_true_eq] at hcond
-      exact ⟨w.1, w.2, hcond.1, fun i ↦ is_witness_c_imp_eval_zero_at_points hr w.2 i⟩
+      exact ⟨w.1, w.2, hcond.1, fun i ↦ isWitnessC_imp_eval_zero_at_points hr w.2 i⟩
 
 /--
 Constructive decoder candidate set inspired by Guruswami–Sudan.
@@ -860,14 +860,14 @@ lemma coeff_vec_to_bivariate_coeff (k D : ℕ)
   · intro h; exact absurd (Finset.mem_univ _) h
 
 /-- A witness satisfying `isWitnessC` produces a nonzero Mathlib bivariate polynomial
-    via `coeffVecToBivariate`. This follows from `is_witness_c_nonzero`: there is at
+    via `coeffVecToBivariate`. This follows from `isWitnessC_nonzero`: there is at
     least one nonzero coefficient in the weighted-degree region. -/
-lemma coeff_vec_to_bivariate_ne_zero_of_is_witness_c
+lemma coeff_vec_to_bivariate_ne_zero_of_isWitnessC
     {k D r : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F}
     {c : Fin (D + 1) × Fin (D + 1) → F}
     (hw : isWitnessC k D r ωs f c = true) :
     coeffVecToBivariate k D c ≠ 0 := by
-  obtain ⟨i, j, hwd, hne⟩ := is_witness_c_nonzero hw
+  obtain ⟨i, j, hwd, hne⟩ := isWitnessC_nonzero hw
   intro heq
   apply hne
   rw [← coeff_vec_to_bivariate_coeff k D c i j hwd, heq]
@@ -878,13 +878,13 @@ lemma coeff_vec_to_bivariate_ne_zero_of_is_witness_c
     coefficient vector `c` satisfying `isWitnessC`.
 
     Additionally, when `m > 0`, the witness satisfies:
-    * Nonzero coefficient in the weighted-degree region (`is_witness_c_nonzero`).
+    * Nonzero coefficient in the weighted-degree region (`isWitnessC_nonzero`).
     * All Hasse derivatives of order `< m` vanish at every interpolation point
-      (`is_witness_c_hasse_deriv_vanishes`).
+      (`isWitnessC_hasse_deriv_vanishes`).
     * Pointwise evaluation vanishing at every interpolation point
-      (`is_witness_c_imp_eval_zero_at_points`).
+      (`isWitnessC_imp_eval_zero_at_points`).
     * The corresponding Mathlib bivariate polynomial is nonzero
-      (`coeff_vec_to_bivariate_ne_zero_of_is_witness_c`).
+      (`coeff_vec_to_bivariate_ne_zero_of_isWitnessC`).
 
     This is an extraction lemma from a computable predicate, not the unconditional
     existence statement of lemma 5.3 in [BCIKS20]. -/
@@ -917,8 +917,8 @@ lemma guruswami_sudan_for_proximity_gap_existence_strong
         evalCoeffVecAt k (proximityGapDegreeBound (n := n) k m) c (ωs i) (f i) = 0) ∧
       coeffVecToBivariate k (proximityGapDegreeBound (n := n) k m) c ≠ 0 :=
   let ⟨c, hc⟩ := guruswami_sudan_for_proximity_gap_existence hw
-  ⟨c, hc, is_witness_c_imp_eval_zero_at_points hm hc,
-    coeff_vec_to_bivariate_ne_zero_of_is_witness_c hc⟩
+  ⟨c, hc, isWitnessC_imp_eval_zero_at_points hm hc,
+    coeff_vec_to_bivariate_ne_zero_of_isWitnessC hc⟩
 
 /-- Constructive witness property for the Guruswami–Sudan system.
     When `m > 0` and the codeword polynomial `ReedSolomon.codewordToPoly p` appears in
@@ -944,7 +944,7 @@ lemma guruswami_sudan_for_proximity_gap_property [Fintype F] {k m : ℕ} {ωs : 
   exact witness_candidate_set_witness_vanishes hm hp
 
 /-- Strengthened proximity gap property: additionally asserts that the Q-root extraction
-    result has all coefficients zero (via `is_q_root_raw_iff_all_coeff_zero`), and the
+    result has all coefficients zero (via `isQRootRaw_iff_all_coeff_zero`), and the
     corresponding bivariate polynomial is nonzero.
 
     This lemma is conditional on membership in `witnessCandidateSet`; it should be read
@@ -969,9 +969,9 @@ lemma guruswami_sudan_for_proximity_gap_property_strong [Fintype F] {k m : ℕ} 
       coeffVecToBivariate k (proximityGapDegreeBound (n := n) k m) c ≠ 0 := by
   obtain ⟨c, hwit, hroot, heval⟩ := witness_candidate_set_witness_vanishes hm hp
   exact ⟨c, hwit,
-    is_q_root_raw_iff_all_coeff_zero.mp hroot,
+    isQRootRaw_iff_all_coeff_zero.mp hroot,
     heval,
-    coeff_vec_to_bivariate_ne_zero_of_is_witness_c hwit⟩
+    coeff_vec_to_bivariate_ne_zero_of_isWitnessC hwit⟩
 
 /-- Existence of a classical Guruswami-Sudan witness polynomial. -/
 theorem proximity_gap_existence (k n : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) (hm : 1 ≤ m) :
