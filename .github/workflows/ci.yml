@@ -71,7 +71,7 @@ jobs:
           python-version: "3.12"
 
       - name: Set up Lean environment
-        uses: leanprover/lean-action@v1.4.0
+        uses: leanprover/lean-action@v1.5.0
         with:
           auto-config: false
           build: false
