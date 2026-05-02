@@ -43,7 +43,8 @@ used in `ArkLib/**/*.lean`, including:
 - [`audits/README.md`](audits/README.md) - audit conventions and migration notes for paper-to-code
   comparison pages.
 - [`audits/open-problems-list-decoding-and-correlated-agreement.md`](audits/open-problems-list-decoding-and-correlated-agreement.md)
-  - detailed paper-to-ArkLib matrix for `paper.pdf`.
+  - detailed paper-to-ArkLib matrix for *Open Problems in List Decoding and Correlated Agreement*
+    (dated April 8, 2026).
 
 ## Query Pages
 

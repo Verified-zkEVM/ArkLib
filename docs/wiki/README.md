@@ -16,8 +16,8 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
 - [`knowledge-base.md`](knowledge-base.md) - when to use `docs/kb/` and how it relates to the
   agent wiki and bibliography.
 - [`../kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md)
-  - paper-to-ArkLib matrix for `paper.pdf`, with status labels, Lean references, and a follow-up
-    roadmap.
+  - paper-to-ArkLib matrix for *Open Problems in List Decoding and Correlated Agreement*, with
+    status labels, Lean references, and a follow-up roadmap.
 
 ## Maintenance Contract
 

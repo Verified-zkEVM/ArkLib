@@ -64,7 +64,7 @@ The BibTeX key is the canonical identifier for a paper across:
 
 If a paper is cited in Lean as `[KEY]`, the preferred landing page for it is:
 
-- [`papers/KEY.md`](papers/README.md)
+- `docs/kb/papers/KEY.md`
 
 ## Content Types
 
