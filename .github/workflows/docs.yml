@@ -31,7 +31,7 @@ jobs:
             ${{ runner.os }}-lean-docs-
 
       - name: Build the project
-        uses: leanprover/lean-action@v1.4.0
+        uses: leanprover/lean-action@v1.5.0
         with:
           lint: false
           use-github-cache: false
@@ -73,7 +73,7 @@ jobs:
           cp -r blueprint/web/* _deploy/blueprint/
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: ./_deploy
 
