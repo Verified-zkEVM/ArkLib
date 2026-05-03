@@ -19,7 +19,7 @@ Currently it provides CO25 Lemma 3.2 about uniform preimage sampling.
 open ProbabilityTheory
 open scoped BigOperators ProbabilityTheory
 
-namespace DuplexSpongeFS
+namespace DuplexSpongeFS.Preliminaries
 
 section Lemma32
 
@@ -338,4 +338,4 @@ theorem claim_1_2_10
 
 end Claim1210
 
-end DuplexSpongeFS
+end DuplexSpongeFS.Preliminaries

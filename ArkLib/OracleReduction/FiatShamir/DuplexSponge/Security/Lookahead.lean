@@ -10,31 +10,37 @@ import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceDataStructur
 /-!
 # Lookahead sequence family and procedure
 
-This file contains the lookahead sequence family and procedure for the analysis of duplex sponge
-Fiat-Shamir, following Section 5.3 in the paper.
+This file contains the lookahead sequence family `S_LA(tr_∇.p, s, i)` and the procedure
+`LookAhead(tr_∇.p, s, i)` from CO25 §5.3.
+
+## Declaration order (top-to-bottom, matching CO25 §5.3 Algorithm 2)
+
+1. **Paper structures** — `LookaheadSequence` (Eq. 13 chain), `LookaheadSequenceFamily`
+   (the maximal family), and the paper-facing abbrev `S_LA(tr_∇.p, s, i)`.
+2. **§5.3 Step 1** — `S_LA.compute` parses `tr_∇.p` into the maximal family `S_LA(tr_∇.p, s, i)`.
+   Internal helpers: `successorCandidates`, `singletonLookaheadSequence`,
+   `prependLookaheadSequence`, `LookaheadCandidate`, `buildLookaheadCandidates`,
+   `enumerateLookaheadCandidates`.
+3. **§5.3 Step 2** — `lookAhead` dispatches on `|S_LA|`: `err` (multiple), `none` (empty),
+   or a sampled `Vector U (challengeSize i)` (single).  Internal helpers: `sampleArrayExact`,
+   `sampleRateVector`, `sampleRateVectorsExact`, `takeVector`, plus the size lemma
+   `challengeSize_le_Lvi_mul_R`.
 
 ## Paper-faithful black-box `tr_∇.p` access
 
-Following CO25 §5.3, `LookAhead` consults the simulator's permutation table `tr_∇.p` exclusively
-through the operational interface `TraceTableOps.inlu`. Concretely:
-
-* `successorCandidates trΔp s` collapses to `tr_∇.p.inlu(s)` plus the no-loop guard
-  `cap(s) ≠ cap(s')`. When `inlu = ⟂` (zero **or** multiple matches), the procedure terminates
-  the chain — matching the paper's Algorithm 2 spec.
-* `LookaheadSequence trΔp state` carries an `inlu`-membership invariant, so callers reason about
-  the abstract `Multiset (K × V)` model rather than the raw `forwardPermutationOracle` query log.
-
-By parameterizing every step over `[LawfulTraceTable T_P ...]`, the executable procedure and the
-soundness lemmas built atop `LookaheadSequence` are entirely independent of the concrete trace
-representation; swapping the list-backed default for an `RBMap`-backed implementation requires no
-proof changes.
+`LookAhead` consults the simulator's permutation table `tr_∇.p` exclusively through the
+operational interface `TraceTableOps.inlu`.  `successorCandidates trΔp s` collapses to
+`tr_∇.p.inlu(s)` plus the no-loop guard `cap(s) ≠ cap(s')`; when `inlu = ⟂` (zero **or** multiple
+matches), the procedure terminates the chain — matching Algorithm 2.  By parameterizing every
+step over `[LawfulTraceTable T_P ...]`, the executable procedure and the soundness lemmas built
+on `LookaheadSequence` are independent of the concrete trace representation.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
 
-namespace DuplexSpongeFS
+namespace DuplexSpongeFS.Lookahead
 
-open Section52
+open DSTraceStorage
 
 variable {StmtIn : Type}
   {n : ℕ} {pSpec : ProtocolSpec n}
@@ -43,7 +49,9 @@ variable {StmtIn : Type}
 
 noncomputable section
 
-/-- A look-ahead sequence (Equation 14) over a black-box permutation table `tr_∇.p` and an
+/-! ## §5.3 paper structures — `LookaheadSequence`, `S_LA(tr_∇.p, s, i)` -/
+
+/-- A look-ahead sequence (Equation 13) over a black-box permutation table `tr_∇.p` and an
   initial state, consists of:
 - A list of `(s_in, s_out)` query-answer pairs,
 
@@ -95,7 +103,7 @@ lemma LookaheadSequence.inputState_length_eq_outputState_length
     seq.inputState.length = seq.outputState.length := by
   simp [LookaheadSequence.inputState, LookaheadSequence.outputState]
 
-/-- A family of look-ahead sequences (Equation 14), parametrized by a black-box permutation
+/-- A family of look-ahead sequences (Equation 13), parametrized by a black-box permutation
   table `tr_∇.p`, an initial state, and a challenge round index `i`, is defined as a finite set
   of look-ahead sequences such that:
 - no two sequences are strict subsets of each other
@@ -112,6 +120,17 @@ structure LookaheadSequenceFamily
   /-- `m_k ≤ L_V(i)` — LookAhead §5.3 Step 1(a) length bound. -/
   length_le_numPermQueriesChallenge : ∀ s ∈ seqFamily, s.inputState.length ≤ pSpec.Lᵥᵢ i
 
+/-- CO25 §5.3 paper-facing abbreviation: `S_LA(tr_∇.p, s, i)`, the maximal lookahead
+sequence family produced by LookAhead Step 1.
+
+Parallel to `S_BT(tr, s)` in `Backtrack.lean`. -/
+abbrev S_LA
+    (trΔp : T_P)
+    (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :=
+  LookaheadSequenceFamily (pSpec := pSpec) trΔp state i
+
+/-! ## §5.3 Step 1 — Parse `tr_∇.p` into the maximal family `S_LA(tr_∇.p, s, i)` (Eq. 13) -/
+
 /-- Successor candidates from `tr_∇.p` (paper §5.3 Algorithm 2 line "next ← inlu(p, current)").
 Returns a singleton `[next]` when the unique forward lookup succeeds and `cap` does not loop;
 otherwise `[]` (i.e. paper-`⟂`/skip). Multiple matches collapse to `[]` via `inlu`'s uniqueness
@@ -124,29 +143,6 @@ private def successorCandidates
   | some next =>
     if current.capacitySegment = next.capacitySegment then []
     else [next]
-
-private inductive BuildLookaheadResult (U : Type) [SpongeUnit U] [SpongeSize] where
-  | err
-  | none
-  | found (outputState : List (CanonicalSpongeState U))
-
-private def buildLookaheadOutputStates
-    (trΔp : T_P)
-    (state : CanonicalSpongeState U) (maxSteps : Nat) :
-    BuildLookaheadResult U :=
-  let rec go (fuel : Nat) (current : CanonicalSpongeState U)
-      (outputRev : List (CanonicalSpongeState U)) :
-      BuildLookaheadResult U :=
-    match fuel with
-    | 0 =>
-      if outputRev = [] then .none else .found outputRev.reverse
-    | fuel + 1 =>
-      match successorCandidates (T_P := T_P) (U := U) trΔp current with
-      | [] =>
-        if outputRev = [] then .none else .found outputRev.reverse
-      | [next] => go fuel next (next :: outputRev)
-      | _ :: _ :: _ => .err
-  go maxSteps state []
 
 private lemma mem_successorCandidates_iff
     (trΔp : T_P) (current next : CanonicalSpongeState U) :
@@ -198,6 +194,7 @@ private def singletonLookaheadSequence
       subst hPair'
       exact hNoLoop }
 
+set_option linter.flexible false in
 private def prependLookaheadSequence
     (trΔp : T_P)
     (state next : CanonicalSpongeState U)
@@ -293,7 +290,7 @@ private def buildLookaheadCandidates
       List.flatten (succs.map buildFromNext)
   exact go maxSteps state
 
-private def computeAllLookaheadSequences
+private def enumerateLookaheadCandidates
     (trΔp : T_P)
     (state : CanonicalSpongeState U) (maxSteps : Nat) :
     Finset (LookaheadSequence trΔp state) := by
@@ -308,14 +305,14 @@ private lemma inputState_length_eq_pairs_length
     seq.inputState.length = seq.pairs.length := by
   simp [LookaheadSequence.inputState]
 
-private lemma allLookaheadSequences_length_bound
+private lemma enumerateLookaheadCandidates_length_bound
     (trΔp : T_P)
     (state : CanonicalSpongeState U) (maxSteps : Nat)
     (s : LookaheadSequence trΔp state)
-    (hs : s ∈ computeAllLookaheadSequences (T_P := T_P) (U := U) trΔp state maxSteps) :
+    (hs : s ∈ enumerateLookaheadCandidates (T_P := T_P) (U := U) trΔp state maxSteps) :
     s.inputState.length ≤ maxSteps := by
   classical
-  unfold computeAllLookaheadSequences at hs
+  unfold enumerateLookaheadCandidates at hs
   have hsList :
       s ∈ (buildLookaheadCandidates (T_P := T_P) (U := U) trΔp state maxSteps).map
         (fun cand => cand.seq) := List.mem_toFinset.mp hs
@@ -327,15 +324,22 @@ private lemma allLookaheadSequences_length_bound
     rw [← hCandEq]
   exact hSeqLen.trans_le hCandLe
 
-/-- Procedure to compute the lookahead sequence family (Equation 14) over a black-box `tr_∇.p`. -/
-def computeLookaheadSequenceFamily
+/-- CO25 §5.3 Algorithm 2 **Step 1** — parse `tr_∇.p` into the maximal family
+`S_LA(tr_∇.p, s, i)` (Eq. 13).
+
+Step 1(a)-(d) are baked into `LookaheadSequence`; Step 1(e) maximality is enforced here by
+filtering `enumerateLookaheadCandidates` (the unfiltered candidate pool of length `≤ Lᵥᵢ i`).
+
+This is **only Step 1** of the paper algorithm — Step 2 (the `err` / `none` / sampled-output
+dispatch on `|S_LA|`) is implemented in `lookAhead`. -/
+def S_LA.compute
     (trΔp : T_P)
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
-    LookaheadSequenceFamily trΔp state i :=
+    S_LA (pSpec := pSpec) trΔp state i :=
   by
     classical
     let maxSteps := pSpec.Lᵥᵢ i
-    let allSeqs := computeAllLookaheadSequences (T_P := T_P) (U := U) trΔp state maxSteps
+    let allSeqs := enumerateLookaheadCandidates (T_P := T_P) (U := U) trΔp state maxSteps
     let isMaximal : LookaheadSequence trΔp state → Prop := fun s =>
       ∀ s' ∈ allSeqs, s ≠ s' →
         ¬ (s.inputState ⊆ s'.inputState) ∨ ¬ (s'.outputState ⊆ s.outputState)
@@ -350,8 +354,10 @@ def computeLookaheadSequenceFamily
         length_le_numPermQueriesChallenge := by
           intro s hs
           have hsAll : s ∈ allSeqs := (Finset.mem_filter.mp hs).1
-          exact allLookaheadSequences_length_bound (T_P := T_P) (U := U)
+          exact enumerateLookaheadCandidates_length_bound (T_P := T_P) (U := U)
             trΔp state maxSteps s hsAll }
+
+/-! ## §5.3 Step 2 — Final output dispatch on `|S_LA|`: `err` / `none` / sampled vector -/
 
 private lemma challengeSize_le_Lvi_mul_R (i : pSpec.ChallengeIdx) :
     challengeSize i ≤ pSpec.Lᵥᵢ i * SpongeSize.R := by
@@ -393,6 +399,7 @@ private def sampleRateVectorsExact :
       let ⟨tail, htail⟩ ← sampleRateVectorsExact m
       pure ⟨head :: tail, by simp [htail]⟩
 
+omit [SpongeUnit U] [DecidableEq U] in
 private lemma length_flatten_vector_toList (blocks : List (Vector U SpongeSize.R)) :
     (List.flatten (blocks.map Vector.toList)).length = blocks.length * SpongeSize.R := by
   induction blocks with
@@ -403,31 +410,37 @@ private lemma length_flatten_vector_toList (blocks : List (Vector U SpongeSize.R
 private def takeVector (n : Nat) (xs : List U) (h : n ≤ xs.length) : Vector U n :=
   Vector.ofFn (fun j => xs[j.1]'(Nat.lt_of_lt_of_le j.2 h))
 
-/-- The lookahead procedure in Section 5.3, polymorphic over the black-box `tr_∇.p` table.
+/-- CO25 §5.3 Algorithm 2 — `LookAhead(tr_∇.p, s, i)`, polymorphic over any
+`[LawfulTraceTable T_P ...]` for `tr_∇.p`.
 
-Takes:
-- `trΔp` — the simulator's permutation table `tr_∇.p` (any `LawfulTraceTable`),
-- `state` — initial permutation state,
-- `i` — challenge round index.
+Inputs:
+- `trΔp` — the simulator's permutation table `tr_∇.p`,
+- `state` — initial permutation state `s = (s_R, s_C) ∈ Σ^{r+c}`,
+- `i` — challenge round index `i ∈ [k]`.
 
-Performs a probabilistic computation (uniform unit sampling for missing blocks) returning:
-- `none` (paper-`⟂` / skip),
-- `err` (paper failure — multiple maximal sequences),
-- an encoded verifier challenge (`Vector U (challengeSize i)`).
--/
+Output: a probabilistic computation returning either
+- `err` — multiple maximal lookahead sequences (paper Step 2(a)),
+- `none` — empty `S_LA` (paper Step 2(b)),
+- `some ρ̂_i ∈ Σ^{ℓ_V(i)}` — single maximal sequence; the missing rate blocks
+  `s_{R,out,m_1}, …, s_{R,out,L_V(i)-1}` are sampled uniformly from `Σ^r` and the prefix
+  of length `ℓ_V(i)` is returned (paper Step 2(c)). -/
 def lookAhead
     (trΔp : T_P)
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
     OptionT (OracleComp (Unit →ₒ U)) (Option (Vector U (challengeSize i))) := do
   let maxSteps := pSpec.Lᵥᵢ i
+  -- §5.3 Step 1: parse `tr_∇.p` into the maximal family `S_LA(tr_∇.p, s, i)`.
   let family :=
-    computeLookaheadSequenceFamily (T_P := T_P) (U := U) (pSpec := pSpec) trΔp state i
+    S_LA.compute (T_P := T_P) (U := U) (pSpec := pSpec) trΔp state i
+  -- §5.3 Step 2: dispatch on `|S_LA|`.
   match hFamilyList : family.seqFamily.toList with
   | [] =>
-    -- `none` in the paper.
+    -- §5.3 Step 2(b): `S_LA` is empty → return `none`.
     return Option.none
   | [seq] =>
-    -- Single maximal sequence.
+    -- §5.3 Step 2(c): single maximal sequence `S_LA^{(1)}` of length `m_1 ≤ L_V(i)`.
+    -- Sample the `L_V(i) - m_1` missing rate blocks `s_{R,out,m_1}, …, s_{R,out,L_V(i)-1}`,
+    -- concatenate, and take the first `ℓ_V(i)` units to form `ρ̂_i ∈ Σ^{ℓ_V(i)}`.
     let outputState := seq.outputState
     let knownBlocks : List (Vector U SpongeSize.R) :=
       outputState.map CanonicalSpongeState.rateSegment
@@ -463,9 +476,9 @@ def lookAhead
       exact le_trans hChal_le_maxR hMaxR_le_units
     return Option.some (takeVector (U := U) (challengeSize i) units hChal_le_units)
   | _ :: _ :: _ =>
-    -- `err` in the paper.
+    -- §5.3 Step 2(a): `|S_LA| > 1` → return `err`.
     failure
 
 end
 
-end DuplexSpongeFS
+end DuplexSpongeFS.Lookahead

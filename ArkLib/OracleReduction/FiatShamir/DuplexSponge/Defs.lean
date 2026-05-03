@@ -30,6 +30,23 @@ class HasMessageSize {n : ℕ} (pSpec : ProtocolSpec n) where
 
 export HasMessageSize (messageSize)
 
+/-- CO25 §5.2 — Encoded prover messages `(α̂_1, …, α̂_i)` for message rounds strictly before `k`.
+`f j h` gives the `U`-vector encoding of message `j` whenever the round of `j` is before `k`. -/
+abbrev EncodedMessagesUpTo {n : ℕ} (pSpec : ProtocolSpec n) (U : Type) [HasMessageSize pSpec]
+    (k : Fin (n + 1)) : Type :=
+  (j : pSpec.MessageIdx) → j.1.1 < k.1 → Vector U (messageSize j)
+
+namespace EncodedMessagesUpTo
+
+/-- Flatten to a sigma-list for consumers still expecting `List (Sigma ...)`. -/
+noncomputable def toList {n : ℕ} {pSpec : ProtocolSpec n} {U : Type} [HasMessageSize pSpec]
+    {k : Fin (n + 1)} (f : pSpec.EncodedMessagesUpTo U k) :
+    List (Sigma fun msgIdx : pSpec.MessageIdx => Vector U (messageSize msgIdx)) :=
+  (Finset.univ : Finset (pSpec.MessageIdx)).toList.filterMap fun j =>
+    if h : j.1.1 < k.1 then some ⟨j, f j h⟩ else none
+
+end EncodedMessagesUpTo
+
 /-- Type class for protocol specifications to specify the size of each challenge as a natural number
   (to be interpreted as a vector of units `U` of the given size for some sponge unit `U`).
 
@@ -52,20 +69,24 @@ instances below — so generic alphabet-agnostic infrastructure in `ArkLib/Data/
 remains the single landing zone for hax-extracted Rust trait impls. Use `Codec.mk'` to assemble a
 `Codec` from external `Serialize`/`Deserialize` instances plus the math-side metadata.
 
-Downstream consumers can either:
-1. Take `{codec : Codec pSpec U}` as a named implicit and thread `(codec := codec)` through
-   definitions and call sites that consume `decodingBias` / `sampleChallengePreimage` /
-   `encode_injective` (the paper-side metadata not present in the tetraplet). The projection
-   instances still satisfy any incidental `[Serialize ...]` / `[Deserialize ...]` requirements
-   at use sites with a *named* `(i : ...Idx)`.
-2. Continue taking the four-typeclass tetraplet
-   `[HasMessageSize pSpec] [∀ i, Serialize ...] [HasChallengeSize pSpec] [∀ i, Deserialize ...]`
-   when the function body calls `Serialize.serialize`/`Deserialize.deserialize` on an *anonymous*
-   `⟨i, hDir⟩` subtype constructor. (Lean's TC search currently does not unify the anonymous
-   `⟨i, hDir⟩` with a projection-instance parameter `(i : pSpec.ChallengeIdx)` inside deeply
-   nested elaboration contexts such as `Fin.induction` step lambdas — see `Defs.lean`'s own
-   `deriveTranscriptDSFSAux` / `Prover.processRoundDSFS`, which keep the tetraplet for that
-   reason.)
+Downstream consumers should take a single `[Codec pSpec U]` instance. The projection instances
+`instSerializeMessage` / `instSerializeMessageInjective` / `instDeserializeChallenge` (declared
+`(priority := high)` below) discharge any incidental `[Serialize ...]` / `[Deserialize ...]`
+requirement at use sites with a *named* `(i : ...Idx)`.
+
+For function bodies that need to serialize/deserialize on an *anonymous* `⟨i, hDir⟩` subtype
+constructor inside deeply nested elaboration contexts (`Fin.induction` step lambdas, `match`
+arms with named hypothesis), Lean's TC search may fail to unify. The fix is to (a) name the
+index and (b) bind the projection instance explicitly, then call its method directly:
+
+```
+let idx : pSpec.ChallengeIdx := ⟨i, hDir⟩
+let inst : Deserialize (pSpec.Challenge idx) (Vector U (challengeSize idx)) :=
+  Codec.instDeserializeChallenge idx
+let challenge : pSpec.Challenge idx := inst.deserialize raw
+```
+
+See `deriveTranscriptDSFSAux` / `Prover.processRoundDSFS` for the canonical pattern.
 
 We account for this by explicitly tracking **decoding biases**. We say that a codec has bias
 `ε_cdc` if, for every `i ∈ [k]`, `ψ_i : Σ^{ℓ_V(i)} → M_{V, i}` is a `ε_{cdc, i}`-biased map
@@ -225,10 +246,7 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn WitIn StmtOut WitOut : Type}
   [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
   {U : Type} [SpongeUnit U] [SpongeSize]
-  -- All messages are serializable to an array of units
-  [HasMessageSize pSpec] [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
-  -- All challenges are deserializable from an array of units
-  [HasChallengeSize pSpec] [∀ i, Deserialize (pSpec.Challenge i) (Vector U (challengeSize i))]
+  [Codec pSpec U]
 
 namespace OracleSpec
 
@@ -271,15 +289,21 @@ def deriveTranscriptDSFSAux {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
       let ⟨curSponge, prevTranscript⟩ ← ih
       match hDir : pSpec.dir i with
       | .V_to_P =>
-        let ⟨challenge, newSponge⟩ ← liftM (curSponge.squeeze (challengeSize ⟨i, hDir⟩))
-        let deserializedChallenge : pSpec.Challenge ⟨i, hDir⟩ :=
-          Deserialize.deserialize challenge
+        let idx : pSpec.ChallengeIdx := ⟨i, hDir⟩
+        let inst : Deserialize (pSpec.Challenge idx) (Vector U (challengeSize idx)) :=
+          Codec.instDeserializeChallenge idx
+        let ⟨challenge, newSponge⟩ ← liftM (curSponge.squeeze (challengeSize idx))
+        let deserializedChallenge : pSpec.Challenge idx :=
+          inst.deserialize challenge
         return (newSponge, prevTranscript.concat deserializedChallenge)
       | .P_to_V =>
-        let serializedMessage : Vector U (messageSize ⟨i, hDir⟩) :=
-          Serialize.serialize (messages ⟨i, hDir⟩)
+        let idx : pSpec.MessageIdx := ⟨i, hDir⟩
+        let inst : Serialize (pSpec.Message idx) (Vector U (messageSize idx)) :=
+          Codec.instSerializeMessage idx
+        let serializedMessage : Vector U (messageSize idx) :=
+          inst.serialize (messages idx)
         let newSponge ← liftM (DuplexSponge.absorb curSponge serializedMessage.toList)
-        return (newSponge, prevTranscript.concat (messages ⟨i, hDir⟩)))
+        return (newSponge, prevTranscript.concat (messages idx)))
     i
 
 /-- Derive the full transcript from the (full) messages, via doing absorb / squeeze operations on
@@ -317,16 +341,22 @@ def Prover.processRoundDSFS [∀ i, VCVCompatible (pSpec.Challenge i)]
   let ⟨messages, sponge, state⟩ ← currentResult
   match hDir : pSpec.dir j with
   | .V_to_P => do
-    let f ← prover.receiveChallenge ⟨j, hDir⟩ state
+    let idx : pSpec.ChallengeIdx := ⟨j, hDir⟩
+    let inst : Deserialize (pSpec.Challenge idx) (Vector U (challengeSize idx)) :=
+      Codec.instDeserializeChallenge idx
+    let f ← prover.receiveChallenge idx state
     let (challenge, newSponge) ←
       liftM (m := OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U))
-        (DuplexSponge.squeeze sponge (challengeSize ⟨j, hDir⟩))
+        (DuplexSponge.squeeze sponge (challengeSize idx))
     -- Deserialize the challenge
-    let deserializedChallenge : pSpec.Challenge ⟨j, hDir⟩ := Deserialize.deserialize challenge
+    let deserializedChallenge : pSpec.Challenge idx := inst.deserialize challenge
     return ⟨messages.extend hDir, newSponge, f deserializedChallenge⟩
   | .P_to_V => do
-    let ⟨msg, newState⟩ ← prover.sendMessage ⟨j, hDir⟩ state
-    let serializedMessage : Vector U (messageSize ⟨j, hDir⟩) := Serialize.serialize msg
+    let idx : pSpec.MessageIdx := ⟨j, hDir⟩
+    let inst : Serialize (pSpec.Message idx) (Vector U (messageSize idx)) :=
+      Codec.instSerializeMessage idx
+    let ⟨msg, newState⟩ ← prover.sendMessage idx state
+    let serializedMessage : Vector U (messageSize idx) := inst.serialize msg
     let newSponge ← liftM (m := OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U))
       (DuplexSponge.absorb sponge serializedMessage.toList)
     return ⟨messages.concat hDir msg, newSponge, newState⟩

@@ -44,13 +44,13 @@ By parameterizing algorithms (`BackTrack`, `LookAhead`) over `TraceTableOps`, we
 
 open OracleComp OracleSpec
 
+namespace DuplexSpongeFS.DSTraceStorage
 
-section DuplexSpongeTraceDef5_2
-/-- The duplex-sponge `(h, p, p⁻¹)`-trace in Definition 5.2 -/
+/-- The canonical duplex-sponge `(h, p, p⁻¹)`-trace in Definition 5.2 -/
 abbrev DuplexSpongeTrace (StmtIn U : Type) [SpongeUnit U] [SpongeSize] :=
   QueryLog (duplexSpongeChallengeOracle StmtIn U)
 
-namespace DuplexSpongeTrace
+section TraceFilters
 
 variable {StmtIn U : Type} [SpongeUnit U] [SpongeSize]
 
@@ -59,14 +59,16 @@ def prefix_lt_j (tr : DuplexSpongeTrace StmtIn U) (j : ℕ) : DuplexSpongeTrace 
   tr.take (j - 1)
 
 /-- `tr_h`: Filter the trace for hash queries (`'h'`).
-`(tr.prefix_lt_j j).filterHash` is exactly `tr_h^{<j}` from CO25 Definition 5.2. -/
+`(tr.prefix_lt_j j).filterHash` is exactly `tr_h^{<j}` from CO25 Definition 5.2.
+This is the log of the oracle spec `(StartType →ₒ Vector U SpongeSize.C)`. -/
 def filterHash (tr : DuplexSpongeTrace StmtIn U) : List (StmtIn × Vector U SpongeSize.C) :=
   tr.filterMap fun
     | ⟨.inl stmt, capSeg⟩ => some (stmt, capSeg)
     | _ => none
 
 /-- `tr_p`: Filter the trace for forward permutation queries (`'p'`).
-`(tr.prefix_lt_j j).filterFwdPerm` is exactly `tr_p^{<j}` from CO25 Definition 5.2. -/
+`(tr.prefix_lt_j j).filterFwdPerm` is exactly `tr_p^{<j}` from CO25 Definition 5.2.
+This is the log of the oracle spec `(forwardPermutationOracle (CanonicalSpongeState U))`. -/
 def filterFwdPerm (tr : DuplexSpongeTrace StmtIn U) :
   List (CanonicalSpongeState U × CanonicalSpongeState U) :=
   tr.filterMap fun
@@ -74,18 +76,17 @@ def filterFwdPerm (tr : DuplexSpongeTrace StmtIn U) :
     | _ => none
 
 /-- `tr_{p⁻¹}`: Filter the trace for backward permutation queries (`'p⁻¹'`).
-`(tr.prefix_lt_j j).filterBwdPerm` is exactly `tr_{p⁻¹}^{<j}` from CO25 Definition 5.2. -/
+`(tr.prefix_lt_j j).filterBwdPerm` is exactly `tr_{p⁻¹}^{<j}` from CO25 Definition 5.2.
+This is the log of the oracle spec `(backwardPermutationOracle (CanonicalSpongeState U))`. -/
 def filterBwdPerm (tr : DuplexSpongeTrace StmtIn U) :
   List (CanonicalSpongeState U × CanonicalSpongeState U) :=
   tr.filterMap fun
     | ⟨.inr (.inr sOut), sIn⟩ => some (sOut, sIn)
     | _ => none
 
-end DuplexSpongeTrace
-end DuplexSpongeTraceDef5_2
+end TraceFilters
 
-namespace DuplexSpongeFS
-namespace Section52
+section TraceDataStructures
 
 /-! ### Generic operations typeclass -/
 
@@ -94,7 +95,7 @@ Covers both the one-way hash table (`tr_∇.h`) and the bidirectional permutatio
 both have the same four-operation shape, plus a bulk-enumeration op `entries` used by paper §5.2
 partial-key matching for backtracking. -/
 class TraceTableOps (T : Type) (K V : outParam Type) where
-  empty : T                    -- `∅` — empty table
+  empty : T                    -- `∅` — return an empty table
   add   : T → K → V → T       -- `t ∪ {(k,v)}` — insert a `(k, v)` pair
   inlu  : T → K → Option V    -- `inlu(t, k)` — unique forward lookup (CO25 Def. 5.2)
   outlu : T → V → Option K    -- `outlu(t, v)` — unique backward lookup (CO25 Def. 5.2)
@@ -111,23 +112,25 @@ in the multiset — handling duplicate-entry traces correctly. -/
 class LawfulTraceTable (T : Type) (K V : outParam Type) [DecidableEq K] [DecidableEq V]
 extends TraceTableOps T K V where
   toMultiSet : T → Multiset (K × V)
-  toMultiSet_empty : toMultiSet empty = 0
+  toMultiSet_empty : toMultiSet TraceTableOps.empty = (0 : Multiset (K × V)) := by simp [empty]
   toMultiSet_add : ∀ t k v, toMultiSet (add t k v) = (k, v) ::ₘ toMultiSet t
   -- **inlu's query result MUST BE UNIQUE**, i.e. two copies
     -- of `(k, v)` in the multiset do not trigger the "multiple" case
   inlu_eq_some : ∀ t k v,
     inlu t k = some v ↔
-      (toMultiSet t).count (k, v) = 1 ∧ -- Pair occurence = 1
-      (∀ v', (k, v') ∈ toMultiSet t → v' = v) -- Key occurence = 1
+      (toMultiSet t).count (k, v) = 1 ∧ -- Uniqueness of the whole (query, answer) pair `(k, v)`
+      (∀ v', (k, v') ∈ toMultiSet t → v' = v) -- Uniqueness of answer value `v` according
+        -- to the query key `k`
   -- **outlu's query result MUST BE UNIQUE**, i.e. two copies
     -- of `(k, v)` in the multiset do not trigger the "multiple" case
   outlu_eq_some : ∀ t k v,
     outlu t v = some k ↔
-      (toMultiSet t).count (k, v) = 1 ∧ -- Pair occurence = 1
-      (∀ k', (k', v) ∈ toMultiSet t → k' = k) -- Value occurence = 1
+      (toMultiSet t).count (k, v) = 1 ∧ -- Uniqueness of the whole (query, answer) pair `(k, v)`
+      (∀ k', (k', v) ∈ toMultiSet t → k' = k) -- Uniqueness of query key `k` according
+        -- to the query value `v`
   /-- `entries` reflects the abstract multiset content. Order is unspecified; only the multiset
   reading is stable. Used by paper §5.2 partial-key enumeration in `BackTrack`. -/
-  toMultiSet_entries : ∀ t, (entries t : Multiset (K × V)) = toMultiSet t
+  toMultiSet_ofEntries : ∀ t, (TraceTableOps.entries t : Multiset (K × V)) = toMultiSet t
 
 /-! ### CO25 `tr_∇` — generic trace payload -/
 
@@ -141,7 +144,8 @@ Both `T_H` and `T_P` must satisfy `LawfulTraceTable`; by parameterizing over the
 algorithms and security proofs are implementation-agnostic. -/
 structure TraceNabla (T_H T_P StmtIn U : Type) [SpongeUnit U] [SpongeSize]
     [DecidableEq StmtIn] [DecidableEq U]
-    [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)] -- lawful trace DS for the hash queries
+    -- lawful trace DS for the permutation queries (`p` and `p⁻¹`)
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)] where
   h : T_H -- `tr_∇.h` hash-query table (`StmtIn → Vector U C`)
   p : T_P -- `tr_∇.p` permutation table (`CanonicalSpongeState U ↔ CanonicalSpongeState U`)
@@ -188,7 +192,6 @@ structure ListTraceTable (K V : Type) where
   entries : List (K × V)  -- list of `(k, v)` pairs; multiset model `↑entries`
 deriving Inhabited
 
-namespace ListTraceTable
 
 variable {K V : Type} [DecidableEq K] [DecidableEq V]
 
@@ -419,36 +422,36 @@ lemma outlu_eq_some_iff (t : ListTraceTable K V) (k : K) (v : V) :
       subst k'
       rfl⟩
 
-end ListTraceTable
-
 instance instListBasedTraceTableOps {K V : Type} [DecidableEq K] [DecidableEq V] :
   TraceTableOps (ListTraceTable K V) K V where
-  empty := ListTraceTable.empty
-  add   := ListTraceTable.add
-  inlu  := ListTraceTable.inlu
-  outlu := ListTraceTable.outlu
+  empty := empty
+  add   := add
+  inlu  := inlu
+  outlu := outlu
   entries t := t.entries
 
 instance instLawfulListBasedTraceTable {K V : Type} [DecidableEq K] [DecidableEq V] :
     LawfulTraceTable (ListTraceTable K V) K V where
   toTraceTableOps     := instListBasedTraceTableOps
-  toMultiSet          := ListTraceTable.toMultiSet
+  toMultiSet          := toMultiSet
   toMultiSet_empty    := rfl
   toMultiSet_add      := fun _ _ _ => rfl
-  inlu_eq_some        := fun t k v => ListTraceTable.inlu_eq_some_iff t k v
-  outlu_eq_some       := fun t k v => ListTraceTable.outlu_eq_some_iff t k v
-  toMultiSet_entries  := fun _ => rfl
+  inlu_eq_some        := fun t k v => inlu_eq_some_iff t k v
+  outlu_eq_some       := fun t k v => outlu_eq_some_iff t k v
+  toMultiSet_ofEntries  := fun _ => rfl
 
 end ListBacked
 
 /-! ### Default `tr_∇` type alias and `ofQueryLog` -/
 
-/-- Convenience alias: the default (list-backed) `tr_∇`. -/
+/-- The default (list-backed) `tr_∇`. In fact we want to use a more optimized data structure
+for efficient storage and query complexity. -/
 abbrev DefaultTraceDelta (StmtIn U : Type) [SpongeUnit U] [SpongeSize]
   [DecidableEq StmtIn] [DecidableEq U] :=
   TraceNabla
-    (ListBacked.ListTraceTable StmtIn (Vector U SpongeSize.C))
-    (ListBacked.ListTraceTable (CanonicalSpongeState U) (CanonicalSpongeState U))
+    (DuplexSpongeFS.DSTraceStorage.ListBacked.ListTraceTable StmtIn (Vector U SpongeSize.C))
+    (DuplexSpongeFS.DSTraceStorage.ListBacked.ListTraceTable
+      (CanonicalSpongeState U) (CanonicalSpongeState U))
     StmtIn U
 
 /-- Specialization of `TraceNabla.ofQueryLog` to the default list-backed implementation. -/
@@ -456,5 +459,5 @@ def DefaultTraceDelta.ofQueryLog
     (log : DuplexSpongeTrace StmtIn U) : DefaultTraceDelta StmtIn U :=
     TraceNabla.ofQueryLog log
 
-end Section52
-end DuplexSpongeFS
+end TraceDataStructures
+end DuplexSpongeFS.DSTraceStorage

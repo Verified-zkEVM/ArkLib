@@ -16,12 +16,16 @@ the paper.
 
 open OracleComp OracleSpec ProtocolSpec
 
-namespace DuplexSpongeFS
+namespace DuplexSpongeFS.TraceTransform
+
+open Backtrack Lookahead DSTraceStorage
 
 variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type} [DecidableEq StmtIn]
   {n : ℕ} {pSpec : ProtocolSpec n}
   {U : Type} [SpongeUnit U] [SpongeSize] [DecidableEq U]
-  {codec : Codec pSpec U}
+  [codec : Codec pSpec U]
+  [∀ i, Fintype (pSpec.Message i)]
+  {δ : Nat}
 
 noncomputable section
 
@@ -30,9 +34,12 @@ responses. -/
 @[inline, reducible]
 def section58EncodedChallengeOracleInterface
     {U : Type} [SpongeUnit U] [SpongeSize]
-    {n : ℕ} (StmtIn : Type) (pSpec : ProtocolSpec n) [HasChallengeSize pSpec] :
+    {n : ℕ} (StmtIn : Type) (pSpec : ProtocolSpec n)
+    [HasMessageSize pSpec] [HasChallengeSize pSpec] :
     ∀ i, OracleInterface (Vector U (challengeSize (pSpec := pSpec) i)) := fun i =>
-  { Query := StmtIn × List (Vector U SpongeSize.R)
+  { Query :=
+      StmtIn × List U ×
+        List (Sigma fun msgIdx : pSpec.MessageIdx => Vector U (messageSize msgIdx))
     toOC.spec := fun _ => Vector U (challengeSize (pSpec := pSpec) i)
     toOC.impl := fun _ => read }
 
@@ -40,7 +47,8 @@ def section58EncodedChallengeOracleInterface
 @[inline, reducible]
 def section58EncodedChallengeOracle
     {U : Type} [SpongeUnit U] [SpongeSize]
-    (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) [HasChallengeSize pSpec] :
+    (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
+    [HasMessageSize pSpec] [HasChallengeSize pSpec] :
     OracleSpec (((i : pSpec.ChallengeIdx) ×
       (section58EncodedChallengeOracleInterface (U := U) StmtIn pSpec i).Query)) :=
   [fun i => Vector U (challengeSize (pSpec := pSpec) i)]ₒ'
@@ -51,9 +59,11 @@ responses. -/
 @[inline, reducible]
 def section58DecodedChallengeOracleInterface
     {U : Type} [SpongeUnit U] [SpongeSize]
-    {n : ℕ} (StmtIn : Type) (pSpec : ProtocolSpec n) :
+    {n : ℕ} (StmtIn : Type) (pSpec : ProtocolSpec n) [HasMessageSize pSpec] :
     ∀ i, OracleInterface (pSpec.Challenge i) := fun i =>
-  { Query := StmtIn × List (Vector U SpongeSize.R)
+  { Query :=
+      StmtIn × List U ×
+        List (Sigma fun msgIdx : pSpec.MessageIdx => Vector U (messageSize msgIdx))
     toOC.spec := fun _ => pSpec.Challenge i
     toOC.impl := fun _ => read }
 
@@ -61,21 +71,22 @@ def section58DecodedChallengeOracleInterface
 @[inline, reducible]
 def section58DecodedChallengeOracle
     {U : Type} [SpongeUnit U] [SpongeSize]
-    (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
+    (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) [HasMessageSize pSpec] :
     OracleSpec (((i : pSpec.ChallengeIdx) ×
       (section58DecodedChallengeOracleInterface (U := U) StmtIn pSpec i).Query)) :=
   [pSpec.Challenge]ₒ'
     (section58DecodedChallengeOracleInterface (U := U) StmtIn pSpec)
 
-/-- Paper-facing key for `StdTrace` memoized `gᵢ`-style entries (Section 5.5.1 Item 4(a)iv). -/
-private structure StdTraceQuery where
-  roundIdx : pSpec.ChallengeIdx
-  stmt : StmtIn
-  absorbedRatePrefix : List (Vector U SpongeSize.R)
+/-- Paper-facing key for `StdTrace` memoized `gᵢ`-style entries (CO25 §5.2 Step 4.D output;
+strict shape `BacktrackOutput`). -/
+private abbrev StdTraceQuery :=
+  Backtrack.BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
 
+-- TODO(section5-cleanup): parallel to ProverTransform.D2SStdEntry but stores deserialized challenge
+-- vectors instead of rate blocks. Consider a shared key plus two response wrappers later.
 /-- One query-answer pair in `tr_std` / `tr_std^LA`. -/
 private structure StdTraceEntry where
-  query : StdTraceQuery (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+  query : StdTraceQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
   response : Vector U (challengeSize query.roundIdx)
 
 /-- Project DS-oracle entries from a mixed `oSpec + DS` log. -/
@@ -87,32 +98,11 @@ private def dsTraceOfLog
     | ⟨.inl _, _⟩ => none
     | ⟨.inr q, r⟩ => some ⟨q, r⟩
 
-/-- Forward-permutation projection `tr.p` of a DS trace. -/
-private def forwardPermTraceOfDS
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) :
-    QueryLog (forwardPermutationOracle (CanonicalSpongeState U)) :=
-  trace.filterMap fun entry =>
-    match entry with
-    | ⟨.inr (.inl stateIn), stateOut⟩ => some ⟨stateIn, stateOut⟩
-    | _ => none
-
-/-- Recover the challenge-round index (if any) from a `BackTrack` output. -/
-private def challengeIdxOfBacktrackOutput
-    (out : BacktrackOutput (StmtIn := StmtIn) (n := n) (U := U)) :
-    Option pSpec.ChallengeIdx := by
-  if hRound : out.round.1 < n then
-    let roundFin : Fin n := ⟨out.round.1, hRound⟩
-    if hDir : pSpec.dir roundFin = Direction.V_to_P then
-      exact some ⟨roundFin, hDir⟩
-    else
-      exact none
-  else
-    exact none
-
 /-- Lookup of a prior `tr_std^LA` entry with the same query key. -/
 private def lookupStdTraceMemo
-    (memo : List (StdTraceEntry (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)))
-    (q : StdTraceQuery (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
+    (memo : List (StdTraceEntry (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec)
+                                (U := U) (codec := codec)))
+    (q : StdTraceQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     Option (Vector U (challengeSize q.roundIdx)) := by
   classical
   exact memo.findSome? fun entry =>
@@ -123,213 +113,23 @@ private def lookupStdTraceMemo
 
 /-- Insert a fresh query-answer pair into `tr_std^LA` order. -/
 private def insertStdTraceMemo
-    (memo : List (StdTraceEntry (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)))
-    (q : StdTraceQuery (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (memo : List (StdTraceEntry (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec)
+                                (U := U) (codec := codec)))
+    (q : StdTraceQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (response : Vector U (challengeSize q.roundIdx)) :
-    List (StdTraceEntry (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)) :=
+    List (StdTraceEntry (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec)
+                        (U := U) (codec := codec)) :=
   memo ++ [{ query := q, response := response }]
 
-/-- Keep only shared-oracle entries from a DSFS query log, and reinterpret them as basic-FS
-query-log entries. Needed in `stdTraceSingleWithRemap`,
-where the output is `sharedLog ++ remappedLog`. -/
-def projectSharedQueryLog
-    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-    QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) :=
-  log.filterMap fun entry =>
-    match entry with
-    | ⟨.inl query, response⟩ => some ⟨.inl query, response⟩
-    | ⟨.inr _, _⟩ => none
+/-! ## Paper-faithful StdTrace helpers (CO25 §5.5.1)
 
-/-- Compute paper-facing `StdTrace` query-answer entries (`tr_std`) from a full mixed log.
+These helpers implement the paper's exact `∀ι, α̂_ι ∈ Im(φ_ι)` codec-image predicate and the
+deterministic `e_i := ψ_i(ρ̂_i)` entry remap. They are forward-declared here so that the
+single `StdTrace` pipeline (and its abort analysis) can use them without exposing a free
+predicate/function field. -/
 
-This implements Section 5.5.1 Item 4(a) control-flow over the DS entries:
-- abort on `backTrack = err` or `lookAhead = err`,
-- skip on `backTrack = none` or non-challenge backtrack tuples,
-- memoize `LookAhead` outputs in `tr_std^LA` keyed by backtrack tuples. -/
-private def stdTraceEntries
-    (inCodecImage :
-      BacktrackOutput (StmtIn := StmtIn) (n := n) (U := U) → Bool := fun _ => true)
-    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-    OptionT (OracleComp (Unit →ₒ U))
-      (List (StdTraceEntry
-        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))) :=
-  let dsTrace := dsTraceOfLog (oSpec := oSpec) (StmtIn := StmtIn) (U := U) log
-  -- Paper StdTrace step 3 (lines 1146–1149): bulk-init `tr_∇` once over `dsTrace`.
-  let dsTrΔ : Section52.DefaultTraceDelta StmtIn U :=
-    Section52.DefaultTraceDelta.ofQueryLog dsTrace
-  let fwdPermTrace := forwardPermTraceOfDS (StmtIn := StmtIn) (U := U) dsTrace
-  let rec go
-      (remaining : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
-      (trStd trStdLA : List (StdTraceEntry
-        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))) :
-      OptionT (OracleComp (Unit →ₒ U))
-        (List (StdTraceEntry
-          (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))) := do
-    match remaining with
-    | [] =>
-        pure trStd
-    | entry :: rest =>
-        match entry with
-        | ⟨.inl _, _⟩ =>
-            go rest trStd trStdLA
-        | ⟨.inr (.inl _), _⟩ =>
-            go rest trStd trStdLA
-        | ⟨.inr (.inr (.inr _)), _⟩ =>
-            go rest trStd trStdLA
-        | ⟨.inr (.inr (.inl stateIn)), _stateOut⟩ =>
-            match
-                (backTrack
-                  (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-                  dsTrΔ (dsTrace.length + 1) stateIn).run with
-            | none =>
-                failure
-            | some none =>
-                go rest trStd trStdLA
-            | some (some backtrackOut) =>
-                if inCodecImage backtrackOut then
-                  match challengeIdxOfBacktrackOutput
-                      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) backtrackOut with
-                  | none =>
-                      go rest trStd trStdLA
-                  | some roundIdx =>
-                      let stdQuery :
-                          StdTraceQuery (StmtIn := StmtIn) (pSpec := pSpec) (U := U) :=
-                        { roundIdx := roundIdx
-                          stmt := backtrackOut.stmt
-                          absorbedRatePrefix := backtrackOut.absorbedRatePrefix }
-                      match lookupStdTraceMemo
-                          (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-                          trStdLA stdQuery with
-                      | some rhoHat =>
-                          let stdEntry :
-                              StdTraceEntry
-                                (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) :=
-                            { query := stdQuery, response := rhoHat }
-                          go rest (trStd ++ [stdEntry]) trStdLA
-                      | none => do
-                          let rhoHat? ←
-                            lookAhead (pSpec := pSpec) (U := U)
-                              dsTrΔ.p stateIn roundIdx
-                          match rhoHat? with
-                          | none =>
-                              go rest trStd trStdLA
-                          | some rhoHat =>
-                              let stdEntry :
-                                  StdTraceEntry
-                                    (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-                                    (codec := codec) :=
-                                { query := stdQuery, response := rhoHat }
-                              let trStdLA' :=
-                                insertStdTraceMemo
-                                  (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-                                  trStdLA stdQuery rhoHat
-                              go rest (trStd ++ [stdEntry]) trStdLA'
-                else
-                  go rest trStd trStdLA
-  go log [] []
-
-/-- Explicit remap from synthesized `StdTrace` entries to basic-FS challenge-log entries. -/
-structure StdTraceToFSRemap where
-  /-- `∀ ι ∈ [i], α̂_ι ∈ Im(φ_ι)` — codec-image predicate (§5.4 Item 4(a)iii). -/
-  inCodecImage :
-    BacktrackOutput (StmtIn := StmtIn) (n := n) (U := U) → Bool := fun _ => true
-  /-- Maps a synthesized `StdTrace` entry to a basic-FS challenge-log entry. -/
-  mapEntry :
-    StdTraceEntry (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) →
-      Sigma (fsChallengeOracle StmtIn pSpec)
-
-private def remapStdTraceEntries
-    (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
-    (entries : List (StdTraceEntry
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))) :
-    QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) :=
-  entries.map fun entry =>
-    let mapped := remap.mapEntry entry
-    ⟨.inr mapped.1, mapped.2⟩
-
-/-- `StdTrace` conversion with an explicit FS challenge-log remap of synthesized entries. -/
-def stdTraceSingleWithRemap
-    (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
-    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-    OptionT (OracleComp (Unit →ₒ U))
-      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) := do
-  let entries ←
-    stdTraceEntries (codec := codec)
-      (inCodecImage := remap.inCodecImage)
-      (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      log
-  let sharedLog :=
-    projectSharedQueryLog (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) log
-  let remappedLog :=
-    remapStdTraceEntries
-      (codec := codec)
-      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-      remap entries
-  pure (sharedLog ++ remappedLog)
-
-/-- §5.5.1 `StdTrace` single-log surface with explicit FS-remap (Item 4(a) control flow).
-
-Synthesized `StdTrace` entries are remapped into FS challenge-log entries and appended to the
-shared-oracle projection, implementing the paper's single-log `tr_std` transform. -/
-def stdTraceSingle
-    (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
-    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-    OptionT (OracleComp (Unit →ₒ U))
-      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
-  stdTraceSingleWithRemap (codec := codec)
-    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    remap log
-
-/-- Projection-only compatibility conversion for a single DSFS log.
-
-This keeps the legacy behavior: execute `StdTrace` abort checks, but export only shared-oracle log
-entries. -/
-def stdTraceSingleProjected
-    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-    OptionT (OracleComp (Unit →ₒ U))
-      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) := do
-  let _ ←
-    stdTraceEntries (codec := codec)
-      (inCodecImage := fun _ => true)
-      (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      log
-  pure <| projectSharedQueryLog
-    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) log
-
-/-- §5.5 / §5.8 single-log `D2STrace` surface with explicit FS-remap. -/
-def d2STraceSingleWithRemap
-    (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
-    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-    OptionT (OracleComp (Unit →ₒ U))
-      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
-  stdTraceSingleWithRemap (codec := codec)
-    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    remap log
-
-/-- §5.5 / §5.8 single-log `D2STrace` surface (alias for `stdTraceSingle` in the D2S setting). -/
-def d2STraceSingle
-    (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
-    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-    OptionT (OracleComp (Unit →ₒ U))
-      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
-  stdTraceSingle (codec := codec)
-    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    remap log
-
-/-- §5.5 projection-only single-log `D2STrace`: runs abort check but exports only shared-oracle
-entries (no FS-challenge remap). -/
-def d2STraceSingleProjected
-    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-    OptionT (OracleComp (Unit →ₒ U))
-      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
-  stdTraceSingleProjected (codec := codec)
-    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    log
-
-section PaperTrace
-
-variable [∀ i, Fintype (pSpec.Message i)]
-
+-- TODO(section5-cleanup): duplicate of the Backtrack.lean helper. Consider moving to a shared
+-- small utility module once the parser/projection APIs stop changing.
 private def vectorOfListExact
     (len : Nat) (xs : List U) : Option (Vector U len) := by
   let ys := xs.take len
@@ -346,6 +146,50 @@ private noncomputable def chooseSerializedMessage?
   exact ((Finset.univ : Finset (pSpec.Message msgIdx)).toList.find? fun msg =>
     Serialize.serialize msg = encoded
   )
+
+private def lookupEncodedMessage?
+    (encodedMessages :
+      List (Sigma fun msgIdx : pSpec.MessageIdx => Vector U (messageSize msgIdx)))
+    (msgIdx : pSpec.MessageIdx) :
+    Option (Vector U (messageSize msgIdx)) := by
+  classical
+  exact encodedMessages.findSome? fun entry =>
+    match entry with
+    | ⟨idx, encoded⟩ =>
+        if hEq : idx = msgIdx then
+          some (hEq ▸ encoded)
+        else
+          none
+
+private noncomputable def encodedMessagesUpTo?
+    (roundIdx : pSpec.ChallengeIdx)
+    (encodedMessages :
+      List (Sigma fun msgIdx : pSpec.MessageIdx => Vector U (messageSize msgIdx))) :
+    Option (pSpec.MessagesUpTo roundIdx.1.castSucc) := by
+  classical
+  let build : (k : Fin (n + 1)) → Option (pSpec.MessagesUpTo k) :=
+    Fin.induction
+      (some default)
+      (fun j ih =>
+        match ih with
+        | none => none
+        | some messages =>
+            match hDir : pSpec.dir j with
+            | .P_to_V =>
+                let msgIdx : pSpec.MessageIdx := ⟨j, hDir⟩
+                match lookupEncodedMessage? (pSpec := pSpec) encodedMessages msgIdx with
+                | none => none
+                | some encodedMsg =>
+                    match chooseSerializedMessage?
+                        (pSpec := pSpec) (U := U) msgIdx encodedMsg with
+                    | none => none
+                    | some msg =>
+                        some
+                          (ProtocolSpec.MessagesUpTo.concat
+                            (pSpec := pSpec) messages hDir msg)
+            | .V_to_P =>
+                some (ProtocolSpec.MessagesUpTo.extend (pSpec := pSpec) messages hDir))
+  exact build roundIdx.1.castSucc
 
 private def encodedMessageAtOffset?
     (absorbedRatePrefix : List (Vector U SpongeSize.R))
@@ -397,6 +241,37 @@ private noncomputable def absorbedPrefixMessagesUpTo?
                     offsetBlocks + pSpec.Lᵥᵢ chalIdx))
   exact (build roundIdx.1.castSucc).map Prod.fst
 
+private noncomputable def stdTraceMessagesUpTo?
+    (q : StdTraceQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
+    Option (pSpec.MessagesUpTo q.roundIdx.1.castSucc) :=
+  encodedMessagesUpTo? (codec := codec) (pSpec := pSpec) (U := U)
+    q.roundIdx (EncodedMessagesUpTo.toList q.encodedMessages)
+
+/-- CO25 §5.5.1 Item 4(a)iii — paper-faithful `∀ι, α̂_ι ∈ Im(φ_ι)` codec-image predicate over
+StdTrace backtrack outputs. This is the canonical inCodecImage check baked into `stdTraceEntries`
+in place of the previous free `BacktrackOutput → Bool` parameter (see D5.2 in audit-report.md). -/
+private noncomputable def paperStdTraceInCodecImage
+    (out : BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) : Bool :=
+  let stdQuery : StdTraceQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) := out
+  match stdTraceMessagesUpTo? (codec := codec)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stdQuery with
+  | some _ => true
+  | none => false
+
+/-- CO25 §5.5.1 Item 4(a)v — paper-faithful `e_i := ψ_i(ρ̂_i)` entry remap. Partial because
+the codec-image preimage may not exist; callers compose with `paperStdTraceInCodecImage` to
+guarantee `some`. -/
+private noncomputable def paperStdTraceEntryToFSQuery?
+    (entry : StdTraceEntry (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)) :
+    Option (Sigma (fsChallengeOracle StmtIn pSpec)) := do
+  let messagesUpTo ←
+    stdTraceMessagesUpTo? (codec := codec)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+      entry.query
+  let challenge : pSpec.Challenge entry.query.roundIdx :=
+    Deserialize.deserialize entry.response
+  pure ⟨⟨entry.query.roundIdx, (entry.query.stmt, messagesUpTo)⟩, challenge⟩
+
 /-- Public wrapper for the Section 5.8 `φ⁻¹` parser from absorbed-rate prefixes to basic-FS
 message prefixes. This is the prover-prefix recovery used both by the line-4 trace maps and by the
 canonical Section 5.8 hybrid experiments. -/
@@ -408,64 +283,267 @@ noncomputable def section58AbsorbedPrefixMessagesUpTo?
     (pSpec := pSpec) (U := U)
     roundIdx absorbedRatePrefix
 
-private noncomputable def stdTraceMessagesUpTo?
-    (q : StdTraceQuery (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
-    Option (pSpec.MessagesUpTo q.roundIdx.1.castSucc) :=
-  absorbedPrefixMessagesUpTo? (codec := codec) q.roundIdx q.absorbedRatePrefix
+/-- Public wrapper for the Section 5.8 `φ⁻¹` parser from the paper-facing encoded-message tuple
+returned by `BackTrack` to basic-FS message prefixes. -/
+noncomputable def section58EncodedMessagesUpTo?
+    (roundIdx : pSpec.ChallengeIdx)
+    (encodedMessages :
+      List (Sigma fun msgIdx : pSpec.MessageIdx => Vector U (messageSize msgIdx))) :
+    Option (pSpec.MessagesUpTo roundIdx.1.castSucc) :=
+  encodedMessagesUpTo? (codec := codec)
+    (pSpec := pSpec) (U := U)
+    roundIdx encodedMessages
 
-private noncomputable def paperStdTraceInCodecImage
-    (out : BacktrackOutput (StmtIn := StmtIn) (n := n) (U := U)) : Bool :=
-  match challengeIdxOfBacktrackOutput
-      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) out with
-  | none => false
-  | some roundIdx =>
-      let stdQuery :
-          StdTraceQuery (StmtIn := StmtIn) (pSpec := pSpec) (U := U) :=
-        { roundIdx := roundIdx
-          stmt := out.stmt
-          absorbedRatePrefix := out.absorbedRatePrefix }
-      match stdTraceMessagesUpTo? (codec := codec)
-          (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stdQuery with
-      | some _ => true
-      | none => false
+/-- Keep only shared-oracle entries from a DSFS query log, and reinterpret them as basic-FS
+query-log entries. Needed in `stdTraceSingle`, where the output is `sharedLog ++ remappedLog`. -/
+def projectSharedQueryLog
+    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
+    QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) :=
+  log.filterMap fun entry =>
+    match entry with
+    | ⟨.inl query, response⟩ => some ⟨.inl query, response⟩
+    | ⟨.inr _, _⟩ => none
 
-private noncomputable def paperStdTraceEntryToFSQuery?
-    (entry : StdTraceEntry (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)) :
-    Option (Sigma (fsChallengeOracle StmtIn pSpec)) := do
+/-- Compute paper-facing `StdTrace` query-answer entries (`tr_std`) from a full mixed log.
+
+This implements Section 5.5.1 Item 4(a) control-flow over the DS entries:
+- abort on `backTrack = err` or `lookAhead = err`,
+- skip on `backTrack = none` or non-challenge backtrack tuples,
+- skip when `paperStdTraceInCodecImage` rejects the backtrack output (CO25 §5.5.1 Item 4(a)iii),
+- memoize `LookAhead` outputs in `tr_std^LA` keyed by backtrack tuples.
+
+D5.2 (audit-report.md): the codec-image predicate is now baked in as
+`paperStdTraceInCodecImage` rather than a free `BacktrackOutput → Bool` parameter, eliminating
+the prior non-paper-faithful adversarial instantiation surface. -/
+private noncomputable def stdTraceEntries
+    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
+    OptionT (OracleComp (Unit →ₒ U))
+      (List (StdTraceEntry
+        (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))) :=
+  let dsTrace := dsTraceOfLog (oSpec := oSpec) (StmtIn := StmtIn) (U := U) log
+  -- Paper StdTrace step 3 (lines 1146–1149): bulk-init `tr_∇` once over `dsTrace`.
+  -- Built via generic `TraceNabla.ofQueryLog` with explicit list-backed instantiation; the
+  -- generic helper `stdTraceEntriesGeneric` (below) is the parameterized surface for Phase D.
+  let dsTrΔ :
+      TraceNabla
+        (ListBacked.ListTraceTable StmtIn (Vector U SpongeSize.C))
+        (ListBacked.ListTraceTable (CanonicalSpongeState U) (CanonicalSpongeState U))
+        StmtIn U :=
+    TraceNabla.ofQueryLog dsTrace
+  let rec go
+      (remaining : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
+      (trStd trStdLA : List (StdTraceEntry
+        (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))) :
+      OptionT (OracleComp (Unit →ₒ U))
+        (List (StdTraceEntry
+          (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))) := do
+    match remaining with
+    | [] =>
+        pure trStd
+    | entry :: rest =>
+        match entry with
+        | ⟨.inl _, _⟩ =>
+            go rest trStd trStdLA
+        | ⟨.inr (.inl _), _⟩ =>
+            go rest trStd trStdLA
+        | ⟨.inr (.inr (.inr _)), _⟩ =>
+            go rest trStd trStdLA
+        | ⟨.inr (.inr (.inl stateIn)), _stateOut⟩ =>
+            match
+                (backTrack (δ := δ)
+                  (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+                  dsTrΔ (dsTrace.length + 1) stateIn).run with
+            | none =>
+                failure
+            | some none =>
+                go rest trStd trStdLA
+            | some (some backtrackOut) =>
+                if paperStdTraceInCodecImage (codec := codec)
+                    (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+                    backtrackOut then
+                  let roundIdx := backtrackOut.roundIdx
+                  let stdQuery :
+                      StdTraceQuery
+                        (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) :=
+                    backtrackOut
+                  match lookupStdTraceMemo
+                      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+                      trStdLA stdQuery with
+                  | some rhoHat =>
+                      let stdEntry :
+                          StdTraceEntry
+                            (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+                            (codec := codec) :=
+                        { query := stdQuery, response := rhoHat }
+                      go rest (trStd ++ [stdEntry]) trStdLA
+                  | none => do
+                      let rhoHat? ←
+                        lookAhead (pSpec := pSpec) (U := U)
+                          dsTrΔ.p stateIn roundIdx
+                      match rhoHat? with
+                      | none =>
+                          go rest trStd trStdLA
+                      | some rhoHat =>
+                          let stdEntry :
+                              StdTraceEntry
+                                (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+                                (codec := codec) :=
+                            { query := stdQuery, response := rhoHat }
+                          let trStdLA' :=
+                            insertStdTraceMemo
+                              (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+                              trStdLA stdQuery rhoHat
+                          go rest (trStd ++ [stdEntry]) trStdLA'
+                else
+                  go rest trStd trStdLA
+  go log [] []
+
+/-- Map synthesized `StdTrace` entries to basic-FS challenge-log entries via the paper-faithful
+`paperStdTraceEntryToFSQuery?` (CO25 §5.5.1 Item 4(a)v). Entries whose codec preimage is missing
+are dropped; under `stdTraceEntries`'s baked-in `paperStdTraceInCodecImage` filter, every entry
+that survives has `stdTraceMessagesUpTo? entry.query = some _`, so the remap returns `some` on
+every input in practice. D5.2 (audit-report.md): replaces the prior free `mapEntry` field. -/
+private noncomputable def remapStdTraceEntries
+    (entries : List (StdTraceEntry
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))) :
+    QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) :=
+  entries.filterMap fun entry =>
+    match paperStdTraceEntryToFSQuery? (codec := codec)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) entry with
+    | none => none
+    | some mapped => some ⟨.inr mapped.1, mapped.2⟩
+
+/-- §5.5.1 `StdTrace` single-log surface (Item 4(a) control flow).
+
+Synthesized `StdTrace` entries are remapped into FS challenge-log entries via the paper-faithful
+`paperStdTraceEntryToFSQuery?` (Item 4(a)v) and appended to the shared-oracle projection,
+implementing the paper's single-log `tr_std` transform. The codec-image predicate
+(Item 4(a)iii) is baked into `stdTraceEntries` directly via `paperStdTraceInCodecImage`;
+no free remap field is exposed. -/
+noncomputable def stdTraceSingle
+    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
+    OptionT (OracleComp (Unit →ₒ U))
+      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) := do
+  let entries ←
+    stdTraceEntries (δ := δ) (codec := codec)
+      (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+      log
+  let sharedLog :=
+    projectSharedQueryLog (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) log
+  let remappedLog :=
+    remapStdTraceEntries (δ := δ) (codec := codec)
+      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) entries
+  pure (sharedLog ++ remappedLog)
+
+/-- §5.5 / §5.8 single-log `D2STrace` surface — paper-faithful alias for `stdTraceSingle`.
+
+CO25 §5.5.1 Item 4(a)iii (`∀ι, α̂_ι ∈ Im(φ_ι)` codec-image filter) and Item 4(a)v
+(`e_i := ψ_i(ρ̂_i)` entry remap) are both baked in via `paperStdTraceInCodecImage` /
+`paperStdTraceEntryToFSQuery?`. Used by KeyLemma at the §5.8 hybrid distance bounds. -/
+noncomputable def paperD2STraceSingle
+    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
+    OptionT (OracleComp (Unit →ₒ U))
+      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
+  stdTraceSingle (codec := codec) (δ := δ)
+    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) log
+
+/-! ## Salted FS variants (CO25 §5.5.1 Item 4(a)v paper-faithful)
+
+The paper's `f_i(x, τ, α_1, …, α_i)` query keeps the public salt `τ ∈ Σ^δ` threaded through the
+augmented statement, matching the encoding-A oracle `fsChallengeOracle (Vector U δ × StmtIn) pSpec`
+already used in `SingleSalt.lean`. The salted variants below are net-new surfaces consumed by
+`KeyLemma`'s Section 5.8 hybrids; the unsalted helpers above are kept for compatibility. -/
+
+/-- Salted variant of `paperStdTraceEntryToFSQuery?` — preserves the BackTrack salt
+`out.salt : Vector U δ` in the augmented statement of the salted FS oracle query. -/
+private noncomputable def paperStdTraceEntryToFSQuerySalted?
+    (entry : StdTraceEntry (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)) :
+    Option (Sigma (fsChallengeOracle (Vector U δ × StmtIn) pSpec)) := do
   let messagesUpTo ←
     stdTraceMessagesUpTo? (codec := codec)
       (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
       entry.query
   let challenge : pSpec.Challenge entry.query.roundIdx :=
     Deserialize.deserialize entry.response
-  pure ⟨⟨entry.query.roundIdx, (entry.query.stmt, messagesUpTo)⟩, challenge⟩
+  pure ⟨⟨entry.query.roundIdx, ((entry.query.salt, entry.query.stmt), messagesUpTo)⟩, challenge⟩
 
-/-- Exact paper-facing single-log `D2STrace` witness.
+/-- Salted variant of `remapStdTraceEntries` — produces a salted-FS query log. -/
+private noncomputable def remapStdTraceEntriesSalted
+    (entries : List (StdTraceEntry
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))) :
+    QueryLog (oSpec + fsChallengeOracle (Vector U δ × StmtIn) pSpec) :=
+  entries.filterMap fun entry =>
+    match paperStdTraceEntryToFSQuerySalted? (codec := codec)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) entry with
+    | none => none
+    | some mapped => some ⟨.inr mapped.1, mapped.2⟩
 
-Unlike `stdTraceSingleProjected`, this reconstructs the Fiat-Shamir challenge-log entries produced
-by `StdTrace` and appends them to the shared-oracle projection, matching the paper's single-log
-`tr'` surface. The remapping is defined directly here because, under the current ArkLib codec
-surface, the exact remap is naturally partial until the codec-image check succeeds. -/
-noncomputable def paperD2STraceSingle
+/-- Salted variant of `projectSharedQueryLog` — keeps `oSpec` shared entries, reinterpreted as
+salted-FS log entries. -/
+def projectSharedQueryLogSalted
+    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
+    QueryLog (oSpec + fsChallengeOracle (Vector U δ × StmtIn) pSpec) :=
+  log.filterMap fun entry =>
+    match entry with
+    | ⟨.inl query, response⟩ => some ⟨.inl query, response⟩
+    | ⟨.inr _, _⟩ => none
+
+/-- Salted variant of `stdTraceSingle` — produces a salted-FS query log per Encoding A. -/
+noncomputable def stdTraceSingleSalted
     (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
     OptionT (OracleComp (Unit →ₒ U))
-      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) := do
+      (QueryLog (oSpec + fsChallengeOracle (Vector U δ × StmtIn) pSpec)) := do
   let entries ←
-    stdTraceEntries (codec := codec)
-      (inCodecImage := paperStdTraceInCodecImage
-        (codec := codec)
-        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+    stdTraceEntries (δ := δ) (codec := codec)
       (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
       log
   let sharedLog :=
-    projectSharedQueryLog (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) log
+    projectSharedQueryLogSalted (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec)
+      (U := U) (δ := δ) log
   let remappedLog :=
-    entries.filterMap fun entry =>
-      match paperStdTraceEntryToFSQuery? (codec := codec)
-          (StmtIn := StmtIn) (pSpec := pSpec) (U := U) entry with
-      | some mapped => some ⟨.inr mapped.1, mapped.2⟩
-      | none => none
+    remapStdTraceEntriesSalted (δ := δ) (codec := codec)
+      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) entries
   pure (sharedLog ++ remappedLog)
+
+/-- Salted variant of `paperD2STraceSingle` — output is keyed by the salted FS oracle. Used by
+`KeyLemma`'s Section 5.8 Hyb₁/Hyb₂/Hyb₃ to keep the salt on every challenge query. -/
+noncomputable def paperD2STraceSingleSalted
+    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
+    OptionT (OracleComp (Unit →ₒ U))
+      (QueryLog (oSpec + fsChallengeOracle (Vector U δ × StmtIn) pSpec)) :=
+  stdTraceSingleSalted (codec := codec) (δ := δ)
+    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) log
+
+/-- Projection-only compatibility conversion for a single DSFS log.
+
+This keeps the legacy behavior: execute `StdTrace` abort checks, but export only shared-oracle log
+entries. -/
+-- TODO(section5-cleanup): legacy projection-only wrapper. Reassess after BadEvents.lean is settled;
+-- delete it if no external compatibility need remains.
+noncomputable def stdTraceSingleProjected
+    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
+    OptionT (OracleComp (Unit →ₒ U))
+      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) := do
+  let _ ←
+    stdTraceEntries (δ := δ) (codec := codec)
+      (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+      log
+  pure <| projectSharedQueryLog
+    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) log
+
+/-- §5.5 projection-only single-log `D2STrace`: runs abort check but exports only shared-oracle
+entries (no FS-challenge remap). -/
+-- TODO(section5-cleanup): projection-only compatibility alias. Prefer `paperD2STraceSingle` for
+-- paper-facing Section 5.8 statements.
+noncomputable def d2STraceSingleProjected
+    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
+    OptionT (OracleComp (Unit →ₒ U))
+      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
+  stdTraceSingleProjected (δ := δ) (codec := codec)
+    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+    log
+
+section PaperTrace
 
 /-- Section 5.8 `Hyb₁` line-4 trace translation.
 
@@ -480,9 +558,9 @@ noncomputable def section58Hyb1Line4Trace
     | ⟨.inl query, response⟩ => some ⟨.inl query, response⟩
     | ⟨.inr query, response⟩ =>
         match query with
-        | ⟨roundIdx, (stmt, absorbedRatePrefix)⟩ =>
-            match absorbedPrefixMessagesUpTo? (codec := codec)
-                roundIdx absorbedRatePrefix with
+        | ⟨roundIdx, (stmt, _salt, encodedMessages)⟩ =>
+            match section58EncodedMessagesUpTo? (codec := codec)
+                (pSpec := pSpec) (U := U) roundIdx encodedMessages with
             | none => none
             | some messagesUpTo =>
                 let responseVec :
@@ -503,9 +581,9 @@ noncomputable def section58Hyb2Line4Trace
   let remappedLog := log.filterMap fun entry =>
     match entry with
     | ⟨.inl query, response⟩ => some ⟨.inl query, response⟩
-    | ⟨.inr ⟨roundIdx, (stmt, absorbedRatePrefix)⟩, challenge⟩ =>
-        match absorbedPrefixMessagesUpTo? (codec := codec)
-            roundIdx absorbedRatePrefix with
+    | ⟨.inr ⟨roundIdx, (stmt, _salt, encodedMessages)⟩, challenge⟩ =>
+        match section58EncodedMessagesUpTo? (codec := codec)
+            (pSpec := pSpec) (U := U) roundIdx encodedMessages with
         | none => none
         | some messagesUpTo =>
             some ⟨.inr ⟨roundIdx, (stmt, messagesUpTo)⟩, challenge⟩
@@ -523,113 +601,80 @@ noncomputable def section58Hyb3Line4Trace
 
 end PaperTrace
 
-/-- §5.5.1 optional `StdTrace` two-log wrapper with explicit remap; returns `none` on abort. -/
-def duplexSpongeToBasicFSTraceWithRemap?
-    (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+/-- Optional `StdTrace` two-log wrapper (Section 5.5.1 shape); returns `none` on abort. -/
+noncomputable def duplexSpongeToBasicFSTrace?
     (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
     (verifyQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
       OptionT (OracleComp (Unit →ₒ U))
         (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) ×
           QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) := do
   let proveLogFS ←
-    stdTraceSingleWithRemap (codec := codec)
-      (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      remap proveQueryLog
+    stdTraceSingle (codec := codec)
+      (δ := δ) (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+      proveQueryLog
   let verifyLogFS ←
-    stdTraceSingleWithRemap (codec := codec)
+    stdTraceSingle (codec := codec) (δ := δ)
       (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      remap verifyQueryLog
+      verifyQueryLog
   pure (proveLogFS, verifyLogFS)
 
-/-- Optional `StdTrace` wrapper (Section 5.5.1 shape): returns `none` on abort. -/
-def duplexSpongeToBasicFSTrace?
-    (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
-    (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
-    (verifyQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-      OptionT (OracleComp (Unit →ₒ U))
-        (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) ×
-          QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
-  duplexSpongeToBasicFSTraceWithRemap? (codec := codec)
-    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    remap proveQueryLog verifyQueryLog
-
+-- TODO(section5-cleanup): projection-only compatibility wrapper; likely removable if no downstream
+-- code still depends on the old projected-trace behavior.
 /-- §5.5 projection-only two-log compatibility wrapper; returns `none` on abort. -/
-def duplexSpongeToBasicFSTraceProjected?
+noncomputable def duplexSpongeToBasicFSTraceProjected?
     (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
     (verifyQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
       OptionT (OracleComp (Unit →ₒ U))
         (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) ×
           QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) := do
-  let proveLogFS ← stdTraceSingleProjected
+  let proveLogFS ← stdTraceSingleProjected (δ := δ)
     (codec := codec)
     (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec)
     (U := U) proveQueryLog
-  let verifyLogFS ← stdTraceSingleProjected
+  let verifyLogFS ← stdTraceSingleProjected (δ := δ)
     (codec := codec)
     (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec)
     (U := U) verifyQueryLog
   pure (proveLogFS, verifyLogFS)
 
-/-- The remap-aware trace transformation in Section 5.5, from DSFS logs to basic-FS logs. -/
-def duplexSpongeToBasicFSTraceWithRemap
-    (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
-    (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
-    (verifyQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-      OptionT (OracleComp (Unit →ₒ U))
-        (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) ×
-          QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
-  duplexSpongeToBasicFSTraceWithRemap? (codec := codec)
-    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    remap proveQueryLog verifyQueryLog
-
 /-- The trace transformation in Section 5.5, from DSFS logs to basic-FS logs.
 Returns `none` when `StdTrace` aborts. -/
-def duplexSpongeToBasicFSTrace
-    (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+noncomputable def duplexSpongeToBasicFSTrace
     (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
     (verifyQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
       OptionT (OracleComp (Unit →ₒ U))
         (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) ×
           QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
-  duplexSpongeToBasicFSTrace? (codec := codec)
-    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    remap proveQueryLog verifyQueryLog
-
-/-- §5.5 projection-only two-log trace transformation. -/
-def duplexSpongeToBasicFSTraceProjected
-    (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
-    (verifyQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-      OptionT (OracleComp (Unit →ₒ U))
-        (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) ×
-          QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
-  duplexSpongeToBasicFSTraceProjected? (codec := codec)
+  duplexSpongeToBasicFSTrace? (δ := δ) (codec := codec)
     (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
     proveQueryLog verifyQueryLog
 
-/-- §5.5 `D2STrace` two-log remap-aware surface (prover + verifier logs). -/
-noncomputable def d2STraceWithRemap
-    (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+-- TODO(section5-cleanup): projection-only compatibility wrapper; keep out of new Section 5 proofs
+-- unless the projected trace is explicitly required.
+/-- §5.5 projection-only two-log trace transformation. -/
+noncomputable def duplexSpongeToBasicFSTraceProjected
     (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
     (verifyQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
       OptionT (OracleComp (Unit →ₒ U))
         (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) ×
           QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
-  duplexSpongeToBasicFSTraceWithRemap (codec := codec)
+  duplexSpongeToBasicFSTraceProjected? (δ := δ) (codec := codec)
     (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    remap proveQueryLog verifyQueryLog
+    proveQueryLog verifyQueryLog
 
 /-- §5.5 `D2STrace` two-log surface (prover + verifier logs). -/
 noncomputable def d2STrace
-    (remap : StdTraceToFSRemap (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
     (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
     (verifyQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
       OptionT (OracleComp (Unit →ₒ U))
         (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) ×
           QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
-  duplexSpongeToBasicFSTrace (codec := codec)
+  duplexSpongeToBasicFSTrace (δ := δ) (codec := codec)
     (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    remap proveQueryLog verifyQueryLog
+    proveQueryLog verifyQueryLog
 
+-- TODO(section5-cleanup): projection-only alias retained for compatibility. Prefer `d2STrace` for
+-- paper-faithful trace transformation once BadEvents.lean cleanup is complete.
 /-- §5.5 projection-only `D2STrace` two-log surface (no FS-challenge remap). -/
 noncomputable def d2STraceProjected
     (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
@@ -637,12 +682,12 @@ noncomputable def d2STraceProjected
       OptionT (OracleComp (Unit →ₒ U))
         (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) ×
           QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
-  duplexSpongeToBasicFSTraceProjected (codec := codec)
+  duplexSpongeToBasicFSTraceProjected (δ := δ) (codec := codec)
     (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
     proveQueryLog verifyQueryLog
 
 end
 
-end DuplexSpongeFS
+end DuplexSpongeFS.TraceTransform
 
 -- TODO: move core defs to outer file
