@@ -379,10 +379,39 @@ noncomputable def weight_Λ (f H : F[X][Y]) (D : ℕ) : WithBot ℕ :=
       WithBot.some <| deg * (D + 1 - Bivariate.natDegreeY H) + (f.coeff deg).natDegree
     )
 
+omit [IsDomain F] in
+/-- The zero polynomial has bottom `Λ`-weight. -/
+@[simp]
+lemma weight_Λ_zero (H : F[X][Y]) (D : ℕ) :
+    weight_Λ (0 : F[X][Y]) H D = ⊥ := by
+  simp [weight_Λ]
+
 /-- The weight function `Λ` on the ring of regular elements `𝒪` is defined as the weight their
 canonical representatives in `F[X][Y]`. -/
 noncomputable def weight_Λ_over_𝒪 {H : F[X][Y]} (hH : 0 < H.natDegree) (f : 𝒪 H) (D : ℕ) :
     WithBot ℕ := weight_Λ (canonicalRepOf𝒪 hH f) H D
+
+omit [IsDomain F] in
+/-- The `𝒪`-weight of zero is bottom. -/
+@[simp]
+lemma weight_Λ_over_𝒪_zero {H : F[X][Y]} (hH : 0 < H.natDegree) (D : ℕ) :
+    weight_Λ_over_𝒪 hH (0 : 𝒪 H) D = ⊥ := by
+  simp [weight_Λ_over_𝒪]
+
+omit [IsDomain F] in
+/-- The `𝒪`-weight of a quotient constructor is computed on its canonical remainder. -/
+lemma weight_Λ_over_𝒪_mk {H : F[X][Y]} (hH : 0 < H.natDegree) (p : F[X][Y])
+    (D : ℕ) :
+    weight_Λ_over_𝒪 hH (Ideal.Quotient.mk (Ideal.span {H_tilde' H}) p : 𝒪 H) D =
+      weight_Λ (p %ₘ H_tilde' H) H D := by
+  simp [weight_Λ_over_𝒪, canonicalRepOf𝒪_mk]
+
+/-- If a representative is already reduced, its `𝒪`-weight is its polynomial `Λ`-weight. -/
+lemma weight_Λ_over_𝒪_mk_eq_self_of_degree_lt {H : F[X][Y]} (hH : 0 < H.natDegree)
+    {p : F[X][Y]} (hp : p.degree < (H_tilde' H).degree) (D : ℕ) :
+    weight_Λ_over_𝒪 hH (Ideal.Quotient.mk (Ideal.span {H_tilde' H}) p : 𝒪 H) D =
+      weight_Λ p H D := by
+  simp [weight_Λ_over_𝒪, canonicalRepOf𝒪_mk_eq_self_of_degree_lt hH hp]
 
 /-- The set `S_β` from the statement of Lemma A.1 in Appendix A of [BCIKS20].
 Note: Here `F[X][Y]` is `F[Z][T]`. -/

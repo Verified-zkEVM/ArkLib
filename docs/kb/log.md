@@ -113,3 +113,12 @@ and added a concept hub:
 - `docs/kb/concepts/polishchuk-spielman-lineage.md`
 
 for the corrected-vs-original Polishchuk-Spielman source lineage.
+
+## [2026-05-03] audit | BCIKS20 Appendix A rational functions
+
+Added:
+
+- `docs/kb/audits/bciks20-appendix-a-rational-functions.md`
+
+to track the rational-function and Hensel-lifting declarations supporting the BCIKS20
+list-decoding branch.
