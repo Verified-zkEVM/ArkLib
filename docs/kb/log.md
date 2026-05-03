@@ -122,3 +122,10 @@ Added:
 
 to track the rational-function and Hensel-lifting declarations supporting the BCIKS20
 list-decoding branch.
+
+## [2026-05-03] prove | BCIKS20 function-field regularity API
+
+Updated `ArkLib/Data/Polynomial/RationalFunctions.lean` with an explicit function-field `T`
+variable, regular-element closure lemmas, and a concrete low-degree `ξ` regularity helper.
+The Appendix A rational-functions audit now records this as the next denominator-clearing layer
+toward `ClaimA2.ξ_regular`.
