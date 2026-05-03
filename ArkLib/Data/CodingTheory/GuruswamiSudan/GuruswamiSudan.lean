@@ -134,7 +134,7 @@ theorem mem_decoder_of_dist
   have hnPos : (0 : ℝ) < n := by linarith
   have hkLtN : k + 1 ≤ n := by
     by_contra hc
-    push_neg at hc
+    push Not at hc
     have : (↑k + 1 : ℝ) * ↑n ≥ ↑n * ↑n := by
       have h1 : n ≤ k + 1 := le_of_lt hc
       exact_mod_cast Nat.mul_le_mul_right n h1
