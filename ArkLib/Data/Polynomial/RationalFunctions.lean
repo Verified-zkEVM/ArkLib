@@ -303,6 +303,71 @@ noncomputable def canonicalRepOf𝒪 {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 
   let _hHt := H_tilde'_monic H hH
   Polynomial.modByMonic β.out (H_tilde' H)
 
+/-- The canonical representative has degree strictly smaller than the defining relation. -/
+lemma canonicalRepOf𝒪_degree_lt {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 𝒪 H) :
+    (canonicalRepOf𝒪 hH β).degree < (H_tilde' H).degree := by
+  rw [canonicalRepOf𝒪]
+  exact Polynomial.degree_modByMonic_lt _ (H_tilde'_monic H hH)
+
+omit [IsDomain F] in
+/-- The canonical representative has natural degree bounded by the defining relation. -/
+lemma canonicalRepOf𝒪_natDegree_le {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 𝒪 H) :
+    (canonicalRepOf𝒪 hH β).natDegree ≤ (H_tilde' H).natDegree := by
+  rw [canonicalRepOf𝒪]
+  exact Polynomial.natDegree_modByMonic_le _ (H_tilde'_monic H hH)
+
+omit [IsDomain F] in
+/-- The canonical representative maps back to the original quotient element of `𝒪`. -/
+@[simp]
+lemma mk_canonicalRepOf𝒪 {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 𝒪 H) :
+    Ideal.Quotient.mk (Ideal.span {H_tilde' H}) (canonicalRepOf𝒪 hH β) = β := by
+  let I : Ideal F[X][Y] := Ideal.span {H_tilde' H}
+  let q : F[X][Y] := H_tilde' H
+  let p : F[X][Y] := β.out
+  have hq_zero : Ideal.Quotient.mk I (q * (p /ₘ q)) = 0 := by
+    rw [Ideal.Quotient.eq_zero_iff_mem]
+    exact Ideal.mul_mem_right _ _ (Ideal.subset_span rfl)
+  calc
+    Ideal.Quotient.mk (Ideal.span {H_tilde' H}) (canonicalRepOf𝒪 hH β)
+        = Ideal.Quotient.mk I (p %ₘ q) := by
+            simp [canonicalRepOf𝒪, I, q, p]
+    _ = Ideal.Quotient.mk I (p %ₘ q) + Ideal.Quotient.mk I (q * (p /ₘ q)) := by
+            simp [hq_zero]
+    _ = Ideal.Quotient.mk I (p %ₘ q + q * (p /ₘ q)) := by
+            rw [map_add]
+    _ = Ideal.Quotient.mk I p := by
+            rw [Polynomial.modByMonic_add_div]
+    _ = β := by
+            simp [I, p]
+
+omit [IsDomain F] in
+/-- Canonical representatives of quotient constructors are computed by `modByMonic`. -/
+lemma canonicalRepOf𝒪_mk {H : F[X][Y]} (hH : 0 < H.natDegree) (p : F[X][Y]) :
+    canonicalRepOf𝒪 hH (Ideal.Quotient.mk (Ideal.span {H_tilde' H}) p : 𝒪 H) =
+      p %ₘ H_tilde' H := by
+  apply Polynomial.modByMonic_eq_of_dvd_sub (H_tilde'_monic H hH)
+  rw [← Ideal.mem_span_singleton]
+  rw [← Ideal.Quotient.mk_eq_mk_iff_sub_mem]
+  calc
+    Ideal.Quotient.mk (Ideal.span {H_tilde' H})
+        ((Ideal.Quotient.mk (Ideal.span {H_tilde' H}) p : 𝒪 H).out)
+        = (Ideal.Quotient.mk (Ideal.span {H_tilde' H}) p : 𝒪 H) := by simp
+    _ = Ideal.Quotient.mk (Ideal.span {H_tilde' H}) p := rfl
+
+omit [IsDomain F] in
+/-- The canonical representative of zero is zero. -/
+@[simp]
+lemma canonicalRepOf𝒪_zero {H : F[X][Y]} (hH : 0 < H.natDegree) :
+    canonicalRepOf𝒪 hH (0 : 𝒪 H) = 0 := by
+  simpa using (canonicalRepOf𝒪_mk (H := H) hH 0)
+
+/-- A polynomial whose degree is already below the relation is its own canonical representative. -/
+lemma canonicalRepOf𝒪_mk_eq_self_of_degree_lt {H : F[X][Y]} (hH : 0 < H.natDegree)
+    {p : F[X][Y]} (hp : p.degree < (H_tilde' H).degree) :
+    canonicalRepOf𝒪 hH (Ideal.Quotient.mk (Ideal.span {H_tilde' H}) p : 𝒪 H) = p := by
+  rw [canonicalRepOf𝒪_mk]
+  exact (Polynomial.modByMonic_eq_self_iff (H_tilde'_monic H hH)).2 hp
+
 /-- `Λ` is a weight function on the ring of bivariate polynomials `F[X][Y]`. The weight of
 a polynomial is the maximal weight of all monomials appearing in it with non-zero coefficients.
 The weight of the zero polynomial is `−∞`.

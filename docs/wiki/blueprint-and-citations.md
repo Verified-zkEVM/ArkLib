@@ -25,8 +25,16 @@ For substantial contributions, discuss the blueprint-first workflow described in
 1. Cite papers in Lean docstrings by citation key, for example `[BCIKS20]`.
 2. Give the Lean file a `## References` section in its module docstring.
 3. Add the matching BibTeX entry to `blueprint/src/references.bib`.
-4. Prefer public paper titles, venues, DOIs, or URLs in shared docs rather than pointing readers
+4. For durable paper context, create or update `docs/kb/papers/KEY.md` for the same citation key.
+5. Prefer public paper titles, venues, DOIs, or URLs in shared docs rather than pointing readers
    to private or local notes.
+
+## Knowledge Base Mapping
+
+- `blueprint/src/references.bib` is the bibliographic source of truth.
+- `docs/kb/papers/KEY.md` is the preferred repository-local landing page for a cited paper key.
+- `docs/kb/sources/KEY/metadata.yml` records source provenance and optional local artifacts.
+- `docs/kb/_generated/lean-citations.json` is the generated map from Lean files to cited keys.
 
 ## Build And Publish Checks
 

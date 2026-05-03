@@ -13,6 +13,11 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
 - [`generated-files.md`](generated-files.md) - derived outputs and their sources of truth.
 - [`blueprint-and-citations.md`](blueprint-and-citations.md) - blueprint workflow, paper
   references, and citation keys.
+- [`knowledge-base.md`](knowledge-base.md) - when to use `docs/kb/` and how it relates to the
+  agent wiki and bibliography.
+- [`../kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md)
+  - paper-to-ArkLib matrix for *Open Problems in List Decoding and Correlated Agreement*, with
+    status labels, Lean references, and a follow-up roadmap.
 
 ## Maintenance Contract
 
@@ -22,6 +27,7 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   - `repo-map.md` for repo structure and main work areas.
   - `generated-files.md` for derived outputs and source-of-truth rules.
   - `blueprint-and-citations.md` for blueprint workflow, references, and citation updates.
+  - `knowledge-base.md` for when and how agents should use `docs/kb/`.
 - Add new pages when a recurring topic no longer fits cleanly in an existing guide.
 - If a PR changes commands, repo structure, generated-file behavior, or the paper workflow,
   update the matching page in the same PR, or add a new page when that is the cleaner split.
