@@ -174,6 +174,7 @@ import ArkLib.ProofSystem.Whir.MutualCorrAgreement
 import ArkLib.ProofSystem.Whir.OutofDomainSmpl
 import ArkLib.ProofSystem.Whir.ProximityGen
 import ArkLib.ProofSystem.Whir.RBRSoundness
+import ArkLib.ToCompPoly.Univariate.Basic
 import ArkLib.ToMathlib.BigOperators.Fin
 import ArkLib.ToMathlib.Finset.Basic
 import ArkLib.ToMathlib.List.Basic
