@@ -31,7 +31,7 @@ variable {ι F : Type*} [Field F] [DecidableEq F]
 /-- The indicator polynomial is a univariate polynomial
   `I(X)` of the minimal degree 
   that takes the value `1` on a given finset `pos`
-  and the value `0` on `neg`. -/
+  and the value `0` on `neg \ pos`. -/
 noncomputable def indicator (pos neg : Finset F) : F[X] :=
   Lagrange.interpolate (pos ∪ neg) id 
     (fun x ↦ if x ∈ pos then 1 else 0) 
