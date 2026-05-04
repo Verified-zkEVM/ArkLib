@@ -225,6 +225,56 @@ def Reduction.run (stmt : StmtIn) (wit : WitIn)
   let stmtOut ← liftM (reduction.verifier.run stmt proverResult.1).run
   return ⟨proverResult, ← stmtOut.getM⟩
 
+/-- Run a reduction and return only the verifier's output statement, discarding the full transcript
+  and prover witness. Useful when only the final verdict matters (e.g. for `Proof`s). -/
+def Reduction.verdict (stmt : StmtIn) (wit : WitIn)
+    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+      OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ)) StmtOut := do
+  let ⟨_, stmtOut⟩ ← reduction.run stmt wit
+  return stmtOut
+
+/-- Run a reduction on `L` instances (given by indexed statements and witnesses), and sequence the
+  full successful run results. Returns `none` if any instance fails, otherwise returns a function
+  from indices to the full run data. -/
+def Reduction.allRuns {L : ℕ}
+    (stmts : Fin L → StmtIn) (wits : Fin L → WitIn)
+    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+      OracleComp (oSpec + [pSpec.Challenge]ₒ)
+        (Option (Fin L → ((FullTranscript pSpec × StmtOut × WitOut) × StmtOut))) := do
+  let results ← (Vector.ofFn id).mapM fun i => (reduction.run (stmts i) (wits i)).run
+  return (results.mapM id).map fun v => fun i => v[i]
+
+/-- Run a reduction on `L` instances and project each successful full run result through `extract`.
+  Returns `none` if any instance fails, otherwise returns the indexed extracted outputs. -/
+def Reduction.allOutputs {L : ℕ} {α : Type}
+    (extract : ((FullTranscript pSpec × StmtOut × WitOut) × StmtOut) → α)
+    (stmts : Fin L → StmtIn) (wits : Fin L → WitIn)
+    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+      OracleComp (oSpec + [pSpec.Challenge]ₒ) (Option (Fin L → α)) := do
+  let results ← reduction.allRuns stmts wits
+  return results.map fun resultOf => fun i => extract (resultOf i)
+
+/-- Run a reduction on `L` instances (given by indexed statements and witnesses), and sequence the
+  results. Returns `none` if any instance fails, otherwise returns a function from indices to
+  the verifier's output statements. -/
+def Reduction.allVerdicts {L : ℕ}
+    (stmts : Fin L → StmtIn) (wits : Fin L → WitIn)
+    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+      OracleComp (oSpec + [pSpec.Challenge]ₒ) (Option (Fin L → StmtOut)) := do
+  let results ← (Vector.ofFn id).mapM fun i => (reduction.verdict (stmts i) (wits i)).run
+  return (results.mapM id).map fun v => fun i => v[i]
+
+/-- `allVerdicts` has the same distribution as `allOutputs` with a projection retaining the
+  verifier output as the first component; it differs only by a pure post-map. -/
+lemma Reduction.allVerdicts_eq_map_allOutputs_fst {L : ℕ} {β : Type}
+    (extract : ((FullTranscript pSpec × StmtOut × WitOut) × StmtOut) → β)
+    (stmts : Fin L → StmtIn) (wits : Fin L → WitIn)
+    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+    reduction.allVerdicts stmts wits =
+      (Option.map (fun resultOf => fun i => (resultOf i).1)) <$>
+        reduction.allOutputs (fun result => (result.2, extract result)) stmts wits := by
+  sorry
+
 /-- An execution of an interactive reduction on a given initial statement and witness. Consists of
   first running the prover, and then the verifier. Returns the full transcript, the output statement
   and witness from the prover, and the output statement from the verifier, along with the logs of

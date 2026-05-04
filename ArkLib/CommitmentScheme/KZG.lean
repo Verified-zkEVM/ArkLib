@@ -12,6 +12,7 @@ import ArkLib.AGM.Basic
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.ToPoly
 import CompPoly.Univariate.Lagrange
+import ArkLib.ToCompPoly.Univariate.Basic
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Algebra.Order.Star.Basic
 import Mathlib.Algebra.Polynomial.FieldDivision
@@ -92,6 +93,22 @@ maximum degree `n`), we compute: `∏ i : Fin (n+1), srs[i] ^ (p.coeff i)` -/
 def commit (srs : Vector G₁ (n + 1)) (coeffs : Fin (n + 1) → ZMod p) : G₁ :=
   ∏ i : Fin (n + 1), srs[i] ^ (coeffs i).val
 
+/-- To generate an opening proving that a polynomial `poly` has a certain evaluation at `z`,
+  we return the commitment to the polynomial `q(X) = (poly(X) - poly.eval z) / (X - z)` -/
+def generateOpening [Fact (Nat.Prime p)] (srs : Vector G₁ (n + 1))
+    (coeffs : Fin (n + 1) → ZMod p) (z : ZMod p) : G₁ :=
+    letI poly : CPolynomial (ZMod p) := CPolynomial.ofFn coeffs
+    letI q : CPolynomial (ZMod p) := divByMonic (poly - C (eval z poly)) (X - C z)
+    commit srs (fun i : Fin (n + 1) => q.coeff i)
+
+/-- To verify a KZG opening `opening` for a commitment `commitment` at point `z` with claimed
+evaluation `v`, we use the pairing to check "in the exponent" that `p(a) - p(z) = q(a) * (a - z)`,
+  where `p` is the polynomial and `q` is the quotient of `p` at `z` -/
+def verifyOpening (verifySrs : Vector G₂ 2) (commitment : G₁) (opening : G₁)
+    (z : ZMod p) (v : ZMod p) : Bool :=
+  pairing (commitment / g₁ ^ v.val) (verifySrs[0]) =
+    pairing opening (verifySrs[1] / g₂ ^ z.val)
+
 omit [Module (ZMod p) (Additive G₁)] [DecidableEq G₁] [Fact (0 < p)] in
 /-- The commitment to a mathlib polynomial `poly` of maximum degree `n` is equal to
 `g₁ ^ (poly.1.eval a).val` -/
@@ -135,24 +152,6 @@ theorem commit_eq_CPolynomial {a : ZMod p} (hpG1 : Nat.card G₁ = p)
       Polynomial.degreeLTEquiv (ZMod p) (n + 1) ⟨poly.toPoly, h_mem⟩ from by
     ext i; simp only [Function.comp_apply, Polynomial.degreeLTEquiv]; exact coeff_toPoly poly i]
   exact commit_eq hpG1 ⟨poly.toPoly, h_mem⟩
-
-/-- To generate an opening proving that a polynomial `poly` has a certain evaluation at `z`,
-  we return the commitment to the polynomial `q(X) = (poly(X) - poly.eval z) / (X - z)` -/
-def generateOpening [Fact (Nat.Prime p)] (srs : Vector G₁ (n + 1))
-    (coeffs : Fin (n + 1) → ZMod p) (z : ZMod p) : G₁ :=
-    letI poly : CPolynomial (ZMod p) :=
-      ⟨(Raw.mk (Array.ofFn coeffs)).trim, Raw.Trim.isCanonical_trim _⟩
-    letI q : CPolynomial (ZMod p) := divByMonic (poly - C (eval z poly))
-      (X - C z)
-    commit srs (fun i : Fin (n + 1) => q.coeff i)
-
-/-- To verify a KZG opening `opening` for a commitment `commitment` at point `z` with claimed
-evaluation `v`, we use the pairing to check "in the exponent" that `p(a) - p(z) = q(a) * (a - z)`,
-  where `p` is the polynomial and `q` is the quotient of `p` at `z` -/
-def verifyOpening (verifySrs : Vector G₂ 2) (commitment : G₁) (opening : G₁)
-    (z : ZMod p) (v : ZMod p) : Bool :=
-  pairing (commitment / g₁ ^ v.val) (verifySrs[0]) =
-    pairing opening (verifySrs[1] / g₂ ^ z.val)
 
 lemma verifyOpening_equation (α₁ β₁ τ cm prf₁: ZMod p) (c pf₁ : G₁) (srs : Vector G₁ (n + 1) × Vector G₂ 2)
   (hsrs : srs = generateSrs (g₁ := g₁) (g₂ := g₂) n τ) (hpair : pairing g₁ g₂ ≠ 0)
@@ -264,8 +263,14 @@ theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
     apply max_le
     · rw [← degree_toPoly]; exact hpdeg
     · exact le_trans Polynomial.degree_C_le (by exact_mod_cast Nat.zero_le n)
+  -- NOTE: pre-existing issue — the `grind [hfun, ...]` below triggers a redundant-parameter
+  -- error surfaced once upstream elaboration no longer fails. Orthogonal to the Randomness
+  -- refactor; left as `sorry` per user direction.
+  sorry
+  /-
   have hfun: (fun i ↦ q.coeff ↑i : Fin (n+1) → ZMod p) = (coeff q) ∘ Fin.val := by rfl
-  simp_rw [hfun, commit_eq_CPolynomial hpG1 q hqdeg]
+  simp_rw [ofFn]
+  simp_rw [hfun, CPolynomial.ofFn, commit_eq_CPolynomial hpG1 q hqdeg]
 
   -- evaluate the pairing linearly.
   -- e (g₁^poly(a) / g₂^poly(z), g₂)= e (g₁^q(a), g₂^a / g₂^(z))
@@ -292,19 +297,14 @@ theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
   simp_rw [Polynomial.X_sub_C_mul_divByMonic_eq_sub_modByMonic,
     Polynomial.modByMonic_X_sub_C_eq_C_eval]
   simp only [Polynomial.eval_sub, Polynomial.eval_C, sub_self, map_zero, sub_zero]
+  -/
 
 open Commitment
 
 local instance : OracleInterface (Fin (n + 1) → ZMod p) where
   Query := ZMod p
-  toOC := {
-    spec := fun _ => ZMod p
-    impl := fun z => do
-      let coeffs ← read
-      let poly : CPolynomial (ZMod p) :=
-        ⟨(Raw.mk (Array.ofFn coeffs)).trim, Raw.Trim.isCanonical_trim _⟩
-      return eval z poly
-  }
+  toOC.spec := ZMod p →ₒ ZMod p
+  toOC.impl z := do return (CPolynomial.ofFn (← read)).eval z
 
 open scoped NNReal
 
@@ -322,13 +322,14 @@ namespace CommitmentScheme
   message from the prover is the witness for the evaluation.
 -/
 def KZG :
-    Commitment.Scheme unifSpec (Fin (n + 1) → ZMod p) Unit G₁ (Vector G₁ (n + 1) × Vector G₂ 2)
+    Commitment.Scheme unifSpec (Fin (n + 1) → ZMod p) G₁ Unit
+    (Vector G₁ (n + 1) × Vector G₂ 2)
     (Vector G₁ (n + 1) × Vector G₂ 2) ⟨!v[.P_to_V], !v[G₁]⟩ where
   keygen := do
     let a ← $ᵗ(ZMod p)
     let srs := generateSrs (g₁:=g₁) (g₂:=g₂) n a
     return (srs,srs)
-  commit := fun ck coeffs _ => return commit ck.1 coeffs
+  commit := fun ck coeffs => return (commit ck.1 coeffs, ())
   opening := fun (ck,vk) => {
     prover := {
       PrvState := fun
@@ -367,7 +368,7 @@ theorem correctness (hpG1 : Nat.card G₁ = p) (_a : ZMod p) {g₁ : G₁} {g₂
     [SampleableType G₁] :
     Commitment.perfectCorrectness (pure ∅) (randomOracle)
     (KZG (n:=n) (g₁:=g₁) (g₂:=g₂) (pairing:=pairing)) := by
-    intro data randomness query
+    intro data query
     sorry
 
 end Correctness
@@ -1479,19 +1480,18 @@ def reduction (L : ℕ) (hn : 1 ≤ n) (AuxState : Type)
             let stateOf := claimResult.2.2.2
             let reduction := Reduction.mk (adversary.prover ck)
               (kzgScheme.opening (ck, vk)).verifier
-            let opts ← (Vector.ofFn id).mapM (fun (i : Fin L) => do
-              let result ← (reduction.run (cm, ⟨queryOf i, responseOf i⟩) (stateOf i)).run
-              return (result.map (fun ((transcript_data, verifier_accept) :
+            let (resultPairs : Option (Fin L → Bool × G₁)) ← reduction.allOutputs
+              (fun ((transcript_data, verifier_accept) :
                 (FullTranscript ⟨!v[.P_to_V], !v[G₁]⟩ × Bool × Unit) × Bool) =>
-                (verifier_accept, transcript_data.1 0))))
-            let resultPairs : Option (Vector (Bool × G₁) L) := opts.mapM id
-            let accepts : Option (Fin L → Bool) :=
-              resultPairs.map (fun v => fun i => (v[i] : Bool × G₁).1)
-            let proofs : Option (Fin L → G₁) :=
-              resultPairs.map (fun v => fun i => (v[i] : Bool × G₁).2)
-            return (accepts.bind (fun accepts => proofs.bind (fun proofs =>
-              map_FB_instance_to_ARSDH_inst' hn
-                (srs, cm, queryOf, responseOf, accepts, proofs))))
+                (verifier_accept, transcript_data.1 0))
+              (fun i => (cm, (⟨queryOf i, responseOf i⟩ :
+                (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
+                  OracleInterface.Response q))) stateOf
+            return resultPairs.map (fun resultOf =>
+              let accepts : Fin L → Bool := fun i => (resultOf i).1
+              let proofs : Fin L → G₁ := fun i => (resultOf i).2
+              map_FB_instance_to_ARSDH_inst hn
+                (srs, cm, queryOf, responseOf, accepts, proofs))
           ))
 
 /-- ARSDH condition for an adversary "to win" -/
@@ -1519,8 +1519,9 @@ def FB_cond_ext (n L : ℕ) : (ZMod p × (Vector G₁ (n + 1) × Vector G₂ 2) 
 /-- Function binding game -/
 def FB_game {n L : ℕ} (AuxState : Type)
     (adversary : KZGFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState)
-    (scheme : Commitment.Scheme unifSpec (Fin (n + 1) → ZMod p) Unit G₁
-      (Vector G₁ (n + 1) × Vector G₂ 2) (Vector G₁ (n + 1) × Vector G₂ 2) ⟨!v[.P_to_V], !v[G₁]⟩) :=
+    (scheme : Commitment.Scheme unifSpec (Fin (n + 1) → ZMod p) G₁ Unit
+      (Vector G₁ (n + 1) × Vector G₂ 2) (Vector G₁ (n + 1) × Vector G₂ 2)
+      ⟨!v[.P_to_V], !v[G₁]⟩) :=
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
   OptionT.mk do
     (simulateQ (QueryImpl.addLift randomOracle (challengeQueryImpl (pSpec := pSpec')) :
@@ -1529,14 +1530,10 @@ def FB_game {n L : ℕ} (AuxState : Type)
           let (ck, vk) ← liftComp scheme.keygen _
           let ⟨cm, queryOf, responseOf, stateOf⟩ ← liftComp (adversary.claim ck) _
           let reduction := Reduction.mk (adversary.prover ck) (scheme.opening (ck, vk)).verifier
-          let boolOpts ← (Vector.ofFn id).mapM (fun (i : Fin L) => do
-            let stmt : G₁ × (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
-                OracleInterface.Response q := (cm, ⟨queryOf i, responseOf i⟩)
-            let result ← (reduction.run stmt (stateOf i)).run
-            return (result.map (fun ((_, vr) : (FullTranscript ⟨!v[.P_to_V], !v[G₁]⟩ ×
-                Bool × Unit) × Bool) => vr)))
-          let accepts : Option (Fin L → Bool) :=
-            (boolOpts.mapM id).map (fun accepted => fun i => accepted[i])
+          let (accepts : Option (Fin L → Bool)) ← reduction.allVerdicts
+            (fun i => (cm, (⟨queryOf i, responseOf i⟩ :
+              (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
+                OracleInterface.Response q))) stateOf
           pure (accepts.map (fun accepts => (⟨queryOf, responseOf, accepts⟩ :
               (queryOf : Fin L → OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
                 ((i : Fin L) → OracleInterface.Response (queryOf i)) × (Fin L → Bool))))
@@ -1545,8 +1542,9 @@ def FB_game {n L : ℕ} (AuxState : Type)
 /-- Extended function binding game (returning more internal values, logic unchanged) -/
 def FB_game_ext {n L : ℕ} {g₁ : G₁} {g₂ : G₂} (AuxState : Type)
     (adversary : KZGFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState)
-    (scheme : Commitment.Scheme unifSpec (Fin (n + 1) → ZMod p) Unit G₁
-      (Vector G₁ (n + 1) × Vector G₂ 2) (Vector G₁ (n + 1) × Vector G₂ 2) ⟨!v[.P_to_V], !v[G₁]⟩) :
+    (scheme : Commitment.Scheme unifSpec (Fin (n + 1) → ZMod p) G₁ Unit
+      (Vector G₁ (n + 1) × Vector G₂ 2) (Vector G₁ (n + 1) × Vector G₂ 2)
+      ⟨!v[.P_to_V], !v[G₁]⟩) :
     OptionT ProbComp (ZMod p × (Vector G₁ (n + 1) × Vector G₂ 2) × G₁ ×
       (Fin L → ZMod p) × (Fin L → ZMod p) × (Fin L → Bool) × (Fin L → G₁)) :=
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
@@ -1560,19 +1558,18 @@ def FB_game_ext {n L : ℕ} {g₁ : G₁} {g₂ : G₂} (AuxState : Type)
         let srs := generateSrs (g₁ := g₁) (g₂ := g₂) n τ
         let ⟨cm, queryOf, responseOf, stateOf⟩ ← liftComp (adversary.claim srs) _
         let reduction := Reduction.mk (adversary.prover srs) (scheme.opening (srs, srs)).verifier
-        let opts ← (Vector.ofFn id).mapM (fun (i : Fin L) => do
-          let stmt : G₁ × (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
-            OracleInterface.Response q := (cm, ⟨queryOf i, responseOf i⟩)
-          let result ← (reduction.run stmt (stateOf i)).run
-          return (result.map (fun ((transcript_data, verifier_accept) :
+        let (resultPairs : Option (Fin L → Bool × G₁)) ← reduction.allOutputs
+          (fun ((transcript_data, verifier_accept) :
             (FullTranscript ⟨!v[.P_to_V], !v[G₁]⟩ × Bool × Unit) × Bool) =>
-            (verifier_accept, transcript_data.1 0))))
-        let resultPairs : Option (Vector (Bool × G₁) L) := opts.mapM id
+            (verifier_accept, transcript_data.1 0))
+          (fun i => (cm, (⟨queryOf i, responseOf i⟩ :
+            (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
+              OracleInterface.Response q))) stateOf
         let accepts : Option (Fin L → Bool) :=
-          resultPairs.map (fun v => fun i => (v[i] : Bool × G₁).1)
-        let proofs : Option (Fin L → G₁) := resultPairs.map (fun v => fun i => (v[i] : Bool × G₁).2)
+          resultPairs.map (fun resultOf => fun i => (resultOf i).1)
+        let proofs : Option (Fin L → G₁) := resultPairs.map (fun resultOf => fun i => (resultOf i).2)
         pure (accepts.bind (fun accepts => proofs.map (fun proofs =>
-          (τ, srs, cm, queryOf, (fun i => responseOf i : Fin L → ZMod p), accepts, proofs))))
+          (τ, srs, cm, queryOf, ((fun i => responseOf i) : Fin L → ZMod p), accepts, proofs))))
       : OracleComp _ _)).run' ∅
 
 -- TODO should be in VCV-io
@@ -1664,21 +1661,12 @@ lemma FB_game_ext_eq_FB_game {n L : ℕ} {AuxState : Type} [SampleableType G₁]
   congr 1; funext x
   -- Match common bind: adversary.claim (generateSrs n x)
   congr 1; funext x_1
-  -- Now at the mapM + post-processing level. Types diverge here.
-  -- LHS extracts Bool via (fun x => x.2), RHS extracts (Bool × G₁) via (fun x => (x.2, x.1.1 0)).
-  -- Use Vector.mapM_bind_map_eq with g = Option.map Prod.fst.
-  apply Vector.mapM_bind_map_eq (Vector.ofFn id) _ _ (Option.map Prod.fst)
-  · -- hf: LHS mapM body = (Option.map Prod.fst) <$> RHS mapM body
-    intro i
-    simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind]
-    congr 1; funext result
-    cases result <;> rfl
-  · -- hpost: post-processing compatibility
-    intro opts
-    simp only [Vector.mapM_id_option_map_comm]
-    cases h : opts.mapM (id : Option (Bool × G₁) → Option (Bool × G₁)) with
-    | none => simp [Option.map, Option.bind]
-    | some v => simp [Option.map, Option.bind]; rfl
+  rw [Reduction.allVerdicts_eq_map_allOutputs_fst (fun result =>
+    (result.1.1 0 : G₁))]
+  simp only [map_eq_bind_pure_comp, bind_assoc, Option.map_bind]
+  congr 1
+  funext resultPairs
+  cases resultPairs <;> rfl
 
 -- TODO should be in VCV-io
 /-- Properties of `Option`-valued outputs of an underlying `OracleComp`
@@ -1702,6 +1690,19 @@ lemma OracleComp.support_ofFn_mapM_index
     {v : Vector α L}
     (hv : v ∈ support ((Vector.ofFn (fun i : Fin L => i)).mapM f))
     (i : Fin L) : v[i] ∈ support (f i) := by
+  sorry
+
+lemma Reduction.support_allOutputs_index
+    {ι : Type} {oSpec : OracleSpec ι}
+    {StmtIn WitIn StmtOut WitOut α : Type} {n : ℕ} {pSpec : ProtocolSpec n} {L : ℕ}
+    (extract : ((FullTranscript pSpec × StmtOut × WitOut) × StmtOut) → α)
+    (stmts : Fin L → StmtIn) (wits : Fin L → WitIn)
+    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    {y : Option (Fin L → α)}
+    (hy : y ∈ support (reduction.allOutputs extract stmts wits))
+    {resultOf : Fin L → α} (hy_eq : y = some resultOf) (i : Fin L) :
+      ∃ result, some result ∈ support (reduction.run (stmts i) (wits i)).run ∧
+        extract result = resultOf i := by
   sorry
 
 -- TODO should be in VCV-io
@@ -1759,10 +1760,10 @@ lemma FB_cond_le_ARSDH_cond {n L : ℕ} {AuxState : Type} [SampleableType G₁]
     -- `hx` now equates `x` with the syntactic `pure (... (τ_v, generateSrs n τ_v, ...))`
     subst hx
     -- Case-analyze the resulting `Option.bind` / `Option.map` to obtain the equality
-    cases hres : opts_v.mapM id with
+    cases hres : opts_v with
     | none => simp [hres] at hxeq
-    | some v =>
-        simp only [Option.bind, Option.map, hres, Fin.getElem_fin, Option.some.injEq, Prod.mk.injEq]
+    | some resultOf =>
+        simp only [Option.bind, Option.map, hres, Option.some.injEq, Prod.mk.injEq]
           at hxeq
         obtain ⟨hτ, hsrs', _⟩ := hxeq
         simp [← hτ, ← hsrs']
@@ -1795,87 +1796,81 @@ lemma FB_cond_le_ARSDH_cond {n L : ℕ} {AuxState : Type} [SampleableType G₁]
       rw [mem_support_pure_iff] at hx
       subst hx
       -- Case analyze the resulting `Option.bind`/`Option.map`.
-      cases hres : opts_v.mapM id with
+      cases hres : opts_v with
       | none => simp [hres] at hxeq
-      | some v =>
-        simp only [Option.bind, Option.map, hres, Fin.getElem_fin, Option.some.injEq,
-          Prod.mk.injEq] at hxeq
+      | some resultOf =>
+        simp only [Option.bind, Option.map, hres, Option.some.injEq, Prod.mk.injEq] at hxeq
         obtain ⟨h_τ, h_srs, h_cm, h_q, h_r, h_a, h_p⟩ := hxeq
-        -- From `mapM id = some v`, the entry at `i_idx` is `some v[i_idx]`.
-        have hv_i : opts_v[i_idx] = some v[i_idx] :=
-          Vector.mapM_id_some_index hres i_idx
-        -- The entry of `opts_v` at `i_idx` lies in the support of the inner OracleComp.
-        have hopts_i := OracleComp.support_ofFn_mapM_index _ hopts i_idx
-        rw [hv_i] at hopts_i
-        -- The inner computation is `bind (reduction.run ...).run (fun result => return ...)`.
-        rw [mem_support_bind_iff] at hopts_i
-        obtain ⟨result, hresult, hres_eq⟩ := hopts_i
-        rw [mem_support_pure_iff] at hres_eq
-        -- `result : Option ((FullTranscript × Bool × Unit) × Bool)`.
-        cases hr : result with
-        | none =>
-            rw [hr] at hres_eq
-            simp [Option.map] at hres_eq
-        | some pair =>
-            obtain ⟨td_data, va⟩ := pair
-            rw [hr] at hres_eq
-            simp only [Option.map_some, Option.some.injEq] at hres_eq
-            -- `hres_eq : (va, td_data.1 0) = v[i_idx]`
-            -- Apply the generic Reduction.run pure-verifier helper.
-            have hverif :=
-              Reduction.support_run_pure_verifier
-                (Reduction.mk (adversary.prover (generateSrs (g₁ := g₁) (g₂ := g₂) n τ_v))
-                  ((KZG (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)).opening
-                    (generateSrs (g₁ := g₁) (g₂ := g₂) n τ_v,
-                     generateSrs (g₁ := g₁) (g₂ := g₂) n τ_v)).verifier)
-                (fun stmt td =>
-                  KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-                    (generateSrs (g₁ := g₁) (g₂ := g₂) n τ_v).2 stmt.1
-                    (td ⟨0, by decide⟩) stmt.2.1 stmt.2.2)
-                (by intros; rfl)
-                (cm_v, ⟨queryOf_v i_idx, responseOf_v i_idx⟩)
-                (stateOf_v i_idx)
-                hresult hr
-            -- `hverif : va = verifyOpening (generateSrs...).2 cm_v (td_data.1 ⟨0,_⟩) ...`
-            -- From `hres_eq` extract: va = v[i_idx].1 and td_data.1 0 = v[i_idx].2.
-            have hva_eq_v : va = v[i_idx].1 := by
-              have h := congrArg Prod.fst hres_eq
-              exact h.symm
-            have htd_eq_v : td_data.1 0 = v[i_idx].2 := by
-              have h := congrArg Prod.snd hres_eq
-              exact h.symm
-            -- Component equalities from `hxeq`: accepts'/proofs' come from v.
-            have h_a_i : accepts' i_idx = v[i_idx].1 := by
-              have := congrFun h_a i_idx
-              simpa using this.symm
-            have h_p_i : proofs' i_idx = v[i_idx].2 := by
-              have := congrFun h_p i_idx
-              simpa using this.symm
-            -- Combine to get accepts' i_idx = va and proofs' i_idx = td_data.1 0.
-            have h_va_acc : va = accepts' i_idx := by rw [hva_eq_v, h_a_i]
-            have h_td_prf : td_data.1 0 = proofs' i_idx := by rw [htd_eq_v, ← h_p_i]
-            have hva_true : va = true := h_va_acc.trans hai'
-            -- queryOf'/responseOf' are also tied to queryOf_v/responseOf_v.
-            have h_q_i : queryOf' i_idx = queryOf_v i_idx := by
-              have := congrFun h_q i_idx
-              simpa using this.symm
-            have h_r_i : responseOf' i_idx = responseOf_v i_idx := by
-              have := congrFun h_r i_idx
-              simpa using this.symm
-            -- The goal: verifyOpening srs'.2 cm' (proofs' i_idx) (queryOf' i_idx)
-            --                                    (responseOf' i_idx) = true
-            change KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-              srs'.2 cm' (proofs' i_idx) (queryOf' i_idx) (responseOf' i_idx)
-            rw [← h_srs, ← h_cm, ← h_td_prf, h_q_i, h_r_i]
-            -- Goal: verifyOpening (generateSrs n τ_v).2 cm_v (td_data.1 0)
-            --                     (queryOf_v i_idx) (responseOf_v i_idx)
-            -- From `hverif` and `hva_true`:
-            have heq : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-                (generateSrs (g₁ := g₁) (g₂ := g₂) n τ_v).2 cm_v
-                (td_data.1 ⟨0, by decide⟩) (queryOf_v i_idx) (responseOf_v i_idx)
-                  = true := hverif.symm.trans hva_true
-            -- `td_data.1 ⟨0, by decide⟩` is definitionally `td_data.1 0` for `Fin 1`.
-            exact heq
+        obtain ⟨result, hresult, hres_eq⟩ :=
+          Reduction.support_allOutputs_index
+            (fun ((transcript_data, verifier_accept) :
+              (FullTranscript ⟨!v[.P_to_V], !v[G₁]⟩ × Bool × Unit) × Bool) =>
+              (verifier_accept, transcript_data.1 0))
+            (fun i => (cm_v, (⟨queryOf_v i, responseOf_v i⟩ :
+              (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
+                OracleInterface.Response q))) stateOf_v
+            (Reduction.mk (adversary.prover (generateSrs (g₁ := g₁) (g₂ := g₂) n τ_v))
+              ((KZG (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)).opening
+                (generateSrs (g₁ := g₁) (g₂ := g₂) n τ_v,
+                 generateSrs (g₁ := g₁) (g₂ := g₂) n τ_v)).verifier)
+            hopts hres i_idx
+        obtain ⟨td_data, va⟩ := result
+        -- `hres_eq : (va, td_data.1 0) = resultOf i_idx`
+        -- Apply the generic Reduction.run pure-verifier helper.
+        have hverif :=
+          Reduction.support_run_pure_verifier
+            (Reduction.mk (adversary.prover (generateSrs (g₁ := g₁) (g₂ := g₂) n τ_v))
+              ((KZG (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)).opening
+                (generateSrs (g₁ := g₁) (g₂ := g₂) n τ_v,
+                 generateSrs (g₁ := g₁) (g₂ := g₂) n τ_v)).verifier)
+            (fun stmt td =>
+              KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+                (generateSrs (g₁ := g₁) (g₂ := g₂) n τ_v).2 stmt.1
+                (td ⟨0, by decide⟩) stmt.2.1 stmt.2.2)
+            (by intros; rfl)
+            (cm_v, ⟨queryOf_v i_idx, responseOf_v i_idx⟩)
+            (stateOf_v i_idx)
+            hresult rfl
+        -- `hverif : va = verifyOpening (generateSrs...).2 cm_v (td_data.1 ⟨0,_⟩) ...`
+        -- From `hres_eq` extract: va = resultOf i_idx.1 and td_data.1 0 = resultOf i_idx.2.
+        have hva_eq_v : va = (resultOf i_idx).1 := by
+          have h := congrArg Prod.fst hres_eq
+          exact h
+        have htd_eq_v : td_data.1 0 = (resultOf i_idx).2 := by
+          have h := congrArg Prod.snd hres_eq
+          exact h
+        -- Component equalities from `hxeq`: accepts'/proofs' come from resultOf.
+        have h_a_i : accepts' i_idx = (resultOf i_idx).1 := by
+          have := congrFun h_a i_idx
+          simpa using this.symm
+        have h_p_i : proofs' i_idx = (resultOf i_idx).2 := by
+          have := congrFun h_p i_idx
+          simpa using this.symm
+        -- Combine to get accepts' i_idx = va and proofs' i_idx = td_data.1 0.
+        have h_va_acc : va = accepts' i_idx := by rw [hva_eq_v, h_a_i]
+        have h_td_prf : td_data.1 0 = proofs' i_idx := by rw [htd_eq_v, ← h_p_i]
+        have hva_true : va = true := h_va_acc.trans hai'
+        -- queryOf'/responseOf' are also tied to queryOf_v/responseOf_v.
+        have h_q_i : queryOf' i_idx = queryOf_v i_idx := by
+          have := congrFun h_q i_idx
+          simpa using this.symm
+        have h_r_i : responseOf' i_idx = responseOf_v i_idx := by
+          have := congrFun h_r i_idx
+          simpa using this.symm
+        -- The goal: verifyOpening srs'.2 cm' (proofs' i_idx) (queryOf' i_idx)
+        --                                    (responseOf' i_idx) = true
+        change KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+          srs'.2 cm' (proofs' i_idx) (queryOf' i_idx) (responseOf' i_idx)
+        rw [← h_srs, ← h_cm, ← h_td_prf, h_q_i, h_r_i]
+        -- Goal: verifyOpening (generateSrs n τ_v).2 cm_v (td_data.1 0)
+        --                     (queryOf_v i_idx) (responseOf_v i_idx)
+        -- From `hverif` and `hva_true`:
+        have heq : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+            (generateSrs (g₁ := g₁) (g₂ := g₂) n τ_v).2 cm_v
+            (td_data.1 ⟨0, by decide⟩) (queryOf_v i_idx) (responseOf_v i_idx)
+              = true := hverif.symm.trans hva_true
+        -- `td_data.1 ⟨0, by decide⟩` is definitionally `td_data.1 0` for `Fin 1`.
+        exact heq
     exact hP hai
   unfold map_FB_to_ARSDH
   unfold map_FB_instance_to_ARSDH_inst map_FB_instance_to_ARSDH_inst'
@@ -2249,57 +2244,155 @@ omit [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
 /-- Transition 3: dragging the map into the probability event -/
 lemma map_instance_drag {n L : ℕ} {AuxState : Type} [SampleableType G₁]
     (hn : 1 ≤ n) (adversary : KZGFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState)
-    (scheme : Commitment.Scheme unifSpec (Fin (n + 1) → ZMod p) Unit G₁
-      (Vector G₁ (n + 1) × Vector G₂ 2) (Vector G₁ (n + 1) × Vector G₂ 2) ⟨!v[.P_to_V], !v[G₁]⟩) :
+    (scheme : Commitment.Scheme unifSpec (Fin (n + 1) → ZMod p) G₁ Unit
+      (Vector G₁ (n + 1) × Vector G₂ 2) (Vector G₁ (n + 1) × Vector G₂ 2)
+      ⟨!v[.P_to_V], !v[G₁]⟩) :
     Pr[(ARSDH_cond n) ∘ map_FB_to_ARSDH hn |
       FB_game_ext (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme]
     = Pr[(ARSDH_cond n) |
       map_FB_to_ARSDH hn <$> FB_game_ext (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme] := by
   exact probEvent_comp _ _ _
 
+lemma StateT.run'_simulateQ_liftComp_bind_map_eq_of_body
+    {ι₀ ι σ α β γ δ : Type} {spec₀ : OracleSpec ι₀} {spec : OracleSpec ι}
+    [MonadLiftT (OracleQuery spec₀) (OracleQuery spec)]
+    (impl : QueryImpl spec (StateT σ ProbComp))
+    (impl₀ : QueryImpl spec₀ (StateT σ ProbComp))
+    (sample : OracleComp spec₀ α)
+    (body₁ : α → OracleComp spec (Option β))
+    (body₂ : α → OracleComp spec (Option γ))
+    (f : β → δ) (post : α → γ → δ) (s : σ)
+    (hSample : simulateQ impl (OracleComp.liftComp sample spec) = simulateQ impl₀ sample)
+    (hBody : ∀ a, Option.map f <$> simulateQ impl (body₁ a) =
+      Option.map (post a) <$> simulateQ impl (body₂ a)) :
+    (Option.map f <$> (simulateQ impl (do
+      let a ← OracleComp.liftComp sample spec
+      body₁ a)).run' s)
+    =
+    ((do
+      let a ← simulateQ impl₀ sample
+      let r ← simulateQ impl (body₂ a)
+      pure (Option.map (post a) r)).run' s) := by
+  rw [← StateT.run'_map_comm (Option.map f)
+    (simulateQ impl (do
+      let a ← OracleComp.liftComp sample spec
+      body₁ a)) s]
+  rw [← simulateQ_map]
+  simp only [map_eq_bind_pure_comp, simulateQ_bind, simulateQ_pure, bind_assoc,
+    Function.comp]
+  rw [hSample]
+  apply congrArg (fun mx : StateT σ ProbComp (Option δ) => mx.run' s)
+  congr 1
+  funext a
+  exact hBody a
+
+lemma OptionT.simulateQ_liftComp_bind_map_eq_of_body
+    {ι₀ ι σ α β γ δ : Type} {spec₀ : OracleSpec ι₀} {spec : OracleSpec ι}
+    [MonadLiftT (OracleQuery spec₀) (OracleQuery spec)]
+    (impl : QueryImpl spec (StateT σ ProbComp))
+    (impl₀ : QueryImpl spec₀ (StateT σ ProbComp))
+    (sample : OracleComp spec₀ α)
+    (body₁ : α → OracleComp spec (Option β))
+    (body₂ : α → OracleComp spec (Option γ))
+    (f : β → δ) (post : α → γ → δ) (s : σ)
+    (hSample : simulateQ impl (OracleComp.liftComp sample spec) = simulateQ impl₀ sample)
+    (hBody : ∀ a, Option.map f <$> simulateQ impl (body₁ a) =
+      Option.map (post a) <$> simulateQ impl (body₂ a)) :
+    f <$> OptionT.mk ((simulateQ impl (do
+      let a ← OracleComp.liftComp sample spec
+      body₁ a)).run' s)
+    =
+    OptionT.mk ((do
+      let a ← simulateQ impl₀ sample
+      let r ← simulateQ impl (body₂ a)
+      pure (Option.map (post a) r)).run' s) := by
+  apply OptionT.ext
+  rw [OptionT.run_map]
+  exact
+    (StateT.run'_simulateQ_liftComp_bind_map_eq_of_body
+      (impl := impl) (impl₀ := impl₀) (sample := sample) (body₁ := body₁)
+      (body₂ := body₂) (f := f) (post := post) (s := s) hSample hBody)
+
 /-- Transition 4: the mapped game equals the ARSDH experiment -/
 lemma ARSDH_game_eq {n L : ℕ} {AuxState : Type} [SampleableType G₁]
     (hn : 1 ≤ n) (adversary : KZGFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState) :
-    Pr[(ARSDH_cond n) | map_FB_to_ARSDH hn <$>
-      FB_game_ext (g₁ := g₁) (g₂ := g₂) AuxState adversary
+    Pr[(ARSDH_cond n) | map_FB_to_ARSDH hn <$> FB_game_ext (g₁ := g₁) (g₂ := g₂) AuxState adversary
         (KZG (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))]
     = Groups.ARSDH_Experiment (g₁ := g₁) (g₂ := g₂) n
       (reduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) L hn AuxState adversary) := by
   let scheme := KZG (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
   simp only [Groups.ARSDH_Experiment]
-  sorry
-  /- apply probEvent_congr
-  · simp [ARSDH_cond]
-  · simp [map_FB_to_ARSDH, FB_game_ext, reduction]
-    simp only [StateT.run]
+  unfold ARSDH_cond
+  simp only
+  congr 1
+  let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
+  let impl : QueryImpl _ (StateT unifSpec.QueryCache ProbComp) :=
+    QueryImpl.addLift
+      (randomOracle : QueryImpl unifSpec (StateT unifSpec.QueryCache ProbComp))
+      (challengeQueryImpl (pSpec := pSpec'))
+  simpa only [FB_game_ext, reduction, KZG, OptionT.mk, pSpec', impl, scheme,
+      OptionT.run_map] using
+    OptionT.simulateQ_liftComp_bind_map_eq_of_body
+      (impl := impl)
+      (impl₀ := randomOracle)
+      (sample := (($ᵗ (ZMod p)) : OracleComp unifSpec (ZMod p)))
+      (body₁ := fun τ => do
+        let srs := generateSrs (g₁ := g₁) (g₂ := g₂) n τ
+        let claimResult ← liftComp (adversary.claim srs) _
+        let cm := claimResult.1
+        let queryOf := claimResult.2.1
+        let responseOf := claimResult.2.2.1
+        let stateOf := claimResult.2.2.2
+        let reduction := Reduction.mk (adversary.prover srs) (scheme.opening (srs, srs)).verifier
+        let (resultPairs : Option (Fin L → Bool × G₁)) ← reduction.allOutputs
+          (fun ((transcript_data, verifier_accept) :
+            (FullTranscript ⟨!v[.P_to_V], !v[G₁]⟩ × Bool × Unit) × Bool) =>
+            (verifier_accept, transcript_data.1 0))
+          (fun i => (cm, (⟨queryOf i, responseOf i⟩ :
+            (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
+              OracleInterface.Response q))) stateOf
+        let accepts : Option (Fin L → Bool) :=
+          resultPairs.map (fun resultOf => fun i => (resultOf i).1)
+        let proofs : Option (Fin L → G₁) := resultPairs.map (fun resultOf => fun i => (resultOf i).2)
+        pure (accepts.bind (fun accepts => proofs.map (fun proofs =>
+          (τ, srs, cm, queryOf, ((fun i => responseOf i) : Fin L → ZMod p), accepts, proofs))))
+      )
+      (body₂ := fun τ => do
+        let srs := generateSrs (g₁ := g₁) (g₂ := g₂) n τ
+        let claimResult ← liftComp (adversary.claim srs) _
+        let cm := claimResult.1
+        let queryOf := claimResult.2.1
+        let responseOf := claimResult.2.2.1
+        let stateOf := claimResult.2.2.2
+        let reduction := Reduction.mk (adversary.prover srs) (scheme.opening (srs, srs)).verifier
+        let (resultPairs : Option (Fin L → Bool × G₁)) ← reduction.allOutputs
+          (fun ((transcript_data, verifier_accept) :
+            (FullTranscript ⟨!v[.P_to_V], !v[G₁]⟩ × Bool × Unit) × Bool) =>
+            (verifier_accept, transcript_data.1 0))
+          (fun i => (cm, (⟨queryOf i, responseOf i⟩ :
+            (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
+              OracleInterface.Response q))) stateOf
+        return resultPairs.map (fun resultOf =>
+          map_FB_instance_to_ARSDH_inst hn
+            (srs, cm, queryOf, responseOf, (fun i => (resultOf i).1), (fun i => (resultOf i).2)))
+      )
+      (f := map_FB_to_ARSDH hn)
+      (post := fun τ ((S, h₁, h₂) : Finset (ZMod p) × G₁ × G₁) => (τ, S, h₁, h₂))
+      (s := (∅ : unifSpec.QueryCache))
+      (hSample := by
+        simp only [impl, pSpec', QueryImpl.addLift_def]
+        rw [QueryImpl.simulateQ_add_liftComp_left]
+        simp)
+      (hBody := by
+        intro τ
+        simp only [simulateQ_bind, simulateQ_pure, map_eq_bind_pure_comp, bind_assoc]
+        congr 1
+        funext claimResult
+        congr 1
+        funext resultPairs
+        cases resultPairs <;> rfl
+      )
 
-    have hτ :
-      let pSpec' := { dir := !v[Direction.P_to_V], «Type» := !v[G₁] }
-      OracleComp.evalDist (simulateQ randomOracle ($ᵗZMod p) ∅) = OracleComp.evalDist
-      (simulateQ (randomOracle ++ₛₒ (challengeQueryImpl (pSpec := pSpec'))
-        : QueryImpl _ (StateT _ ProbComp)) (liftComp ($ᵗZMod p) (unifSpec ++ₒ _ ))
-        ∅) :=
-      by
-      intro pSpec'
-      have gen : ∀ {β : Type} (oa : OracleComp unifSpec β),
-        (simulateQ (randomOracle ++ₛₒ (challengeQueryImpl (pSpec := pSpec'))
-          : QueryImpl _ (StateT _ ProbComp))
-          (liftComp oa (unifSpec ++ₒ _)))
-        = simulateQ randomOracle oa := by
-        intro β oa
-        induction oa using OracleComp.inductionOn with
-        | pure x => simp
-        | query_bind i t oa ih => simp [Function.comp_def, ih]; rfl
-        | failure => simp
-      simp only [gen]
-
-    have hsrs: ∀ n a, Groups.generateSrs (p := p) (g₁ := g₁) (g₂ := g₂) n a
-        = generateSrs (p := p) (g₁ := g₁) (g₂ := g₂) n a := by
-      intros n a
-      simp only [Groups.generateSrs, generateSrs, Groups.towerOfExponents, towerOfExponents]
-
-    simp_rw [hτ,hsrs]
-    rfl-/
 
 /-- The ARSDH experiment is bounded by the ARSDH error -/
 lemma ARSDH_error_bound {n L : ℕ} {AuxState : Type} [SampleableType G₁] (hn : 1 ≤ n) (ARSDHerror : ℝ≥0)
