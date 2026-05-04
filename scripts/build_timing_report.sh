@@ -100,6 +100,7 @@ render_report() {
 
   python3 - "$results_file" "$baseline_dir" <<'PY'
 import json
+import html
 import os
 import pathlib
 import re
@@ -146,6 +147,18 @@ def fmt(value: float) -> str:
 
 def fmt_delta(value: float) -> str:
     return f"{value:+.2f}"
+
+
+def md_text(value: str) -> str:
+    return html.escape(str(value).replace("\r", " ").replace("\n", " "), quote=False)
+
+
+def md_table_cell(value: str) -> str:
+    return md_text(value).replace("|", "&#124;")
+
+
+def md_code(value: str) -> str:
+    return f"<code>{md_table_cell(value)}</code>"
 
 
 def status(record: dict) -> str:
@@ -223,9 +236,9 @@ if source_sha:
         commit_ref = f"`{short_sha}`"
     print(f"- Commit: {commit_ref}")
 if source_subject:
-    print(f"- Message: {source_subject}")
+    print(f"- Message: {md_text(source_subject)}")
 if source_branch:
-    print(f"- Ref: `{source_branch}`")
+    print(f"- Ref: {md_code(source_branch)}")
 if baseline_records:
     if baseline_sha:
         baseline_short_sha = baseline_sha[:7]
@@ -236,11 +249,11 @@ if baseline_records:
         else:
             baseline_commit_ref = f"`{baseline_short_sha}`"
         if baseline_label:
-            print(f"- Comparison baseline: {baseline_commit_ref} from {baseline_label}.")
+            print(f"- Comparison baseline: {baseline_commit_ref} from {md_text(baseline_label)}.")
         else:
             print(f"- Comparison baseline: {baseline_commit_ref}.")
     elif baseline_label:
-        print(f"- Comparison baseline: {baseline_label}.")
+        print(f"- Comparison baseline: {md_text(baseline_label)}.")
 print("- Measured on `ubuntu-latest` with `/usr/bin/time -p`.")
 print(
     "- Commands: "
@@ -343,7 +356,7 @@ if current_clean_build_targets:
                 if baseline_entry
                 else "-"
             )
-            print(f"| {fmt(entry['seconds'])} | {baseline_time} | {delta} | `{key}` |")
+            print(f"| {fmt(entry['seconds'])} | {baseline_time} | {delta} | {md_code(key)} |")
     else:
         print(
             f"Showing {len(shown)} slowest of {len(current_clean_build_targets)} repo targets parsed from the current clean build log."
@@ -352,7 +365,7 @@ if current_clean_build_targets:
         print("| Wall (s) | Path |")
         print("| ---: | --- |")
         for entry in shown:
-            print(f"| {fmt(entry['seconds'])} | `{target_key(entry)}` |")
+            print(f"| {fmt(entry['seconds'])} | {md_code(target_key(entry))} |")
 else:
     print("No per-target timings were parsed from the current clean build log.")
 PY
