@@ -22,7 +22,6 @@ section CoreResults
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
-omit [DecidableEq ι] in
 /-- Theorem 1.6 (Correlated agreement over affine spaces) in [BCIKS20].
 
 Take a Reed-Solomon code of length `ι` and degree `deg`, a proximity-error parameter

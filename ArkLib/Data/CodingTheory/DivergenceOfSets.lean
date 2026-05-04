@@ -184,7 +184,8 @@ theorem proximity_gap_affineSubspace {ι : Type} [Fintype ι] [Nonempty ι] [Dec
     {F : Type} [Fintype F] [Field F] [DecidableEq F]
   {deg : ℕ} {domain : ι ↪ F}
   (U : AffineSubspace F (ι → F)) [Nonempty U] {δ : ℝ≥0}
-  (hδ : δ ≤ 1 - ReedSolomon.sqrtRate deg domain) :
+  (hδ : δ ≤ 1 - ReedSolomon.sqrtRate deg domain)
+  (hε : ProximityGap.errorBound δ deg domain < 1) :
   Xor'
     (Pr_{let u ← $ᵖ U}[Code.relDistFromCode u (RScodeSet domain deg) ≤ δ] = 1)
     (Pr_{let u ← $ᵖ U}[Code.relDistFromCode u (RScodeSet domain deg) ≤ δ] ≤
@@ -204,7 +205,7 @@ theorem proximity_gap_affineSubspace {ι : Type} [Fintype ι] [Nonempty ι] [Dec
       (Affine.AffSpanFinsetCollection C)
       δ
       (errorBound δ deg domain) :=
-    ProximityGap.proximity_gap_RSCodes (C := C) (deg := deg) (domain := domain) (δ := δ) hδ
+    ProximityGap.proximity_gap_RSCodes (C := C) (deg := deg) (domain := domain) (δ := δ) hδ hε
   -- Specialize to the unique element of the collection
   let S : Finset (ι → F) := Affine.AffSpanFinset (C 0)
   have hS_mem : S ∈ Affine.AffSpanFinsetCollection C := by
@@ -799,7 +800,9 @@ theorem concentration_bounds {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq
   {U : AffineSubspace F (ι → F)} [Nonempty U]
   (hdiv_pos : 0 < (divergence U (RScodeSet domain deg) : ℝ≥0))
   (hdiv_lt : (divergence U (RScodeSet domain deg) : ℝ≥0) <
-    1 - ReedSolomon.sqrtRate deg domain) :
+    1 - ReedSolomon.sqrtRate deg domain)
+  (hε_cb : ∀ (δ' : ℝ≥0), δ' ≤ 1 - ReedSolomon.sqrtRate deg domain →
+    ProximityGap.errorBound δ' deg domain < 1) :
     let δ' := divergence U (RScodeSet domain deg)
     Pr_{let u ← $ᵖ U}[Code.relDistFromCode u (RScodeSet domain deg) ≠ δ']
       ≤ errorBound δ' deg domain := by
@@ -881,7 +884,7 @@ theorem concentration_bounds {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq
     -- rewrite the lemma `proximity_gap_affineSubspace` using `V`
     simpa [V] using
       (proximity_gap_affineSubspace (deg := deg) (domain := domain) (U := U) (δ := (δ : ℝ≥0))
-        (hδ := hδ_bound))
+        (hδ := hδ_bound) (hε := hε_cb (δ : ℝ≥0) hδ_bound))
   have hPr_le_errorBound_δ :
       Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ (δ : ℝ≥0)] ≤
         errorBound (δ : ℝ≥0) deg domain := by

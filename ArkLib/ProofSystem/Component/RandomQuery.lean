@@ -108,7 +108,7 @@ instance : VerifierOnly (pSpec OStatement) where
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
-set_option maxHeartbeats 250000 in
+set_option linter.unusedSimpArgs false in
 /-- The `RandomQuery` oracle reduction is perfectly complete. -/
 @[simp]
 theorem oracleReduction_completeness :
@@ -143,7 +143,14 @@ theorem oracleReduction_completeness :
     FullTranscript.challenges, FullTranscript.messages, ChallengeIdx, Challenge,
     hEq]
   erw [simulateQ_query]
-  simp [MonadLift.monadLift]
+  simp only [StmtOut, OStmtOut, WitOut, Fin.isValue, Fin.vcons_of_one, ChallengeIdx,
+    Challenge, ofPFunctor_toPFunctor, QueryImpl.liftTarget_self, MessageIdx, OStmtIn,
+    Message, bind_map_left, StateT.run'_eq, StateT.run_bind, map_bind, OptionT.mk_bind,
+    Set.mem_setOf_eq, probEvent_eq_one_iff, probFailure_bind_eq_zero_iff,
+    OptionT.probFailure_liftM, HasEvalPMF.probFailure_eq_zero, OptionT.support_liftM,
+    Prod.forall, true_and, support_bind, Set.mem_iUnion, OptionT.mem_support_iff,
+    OptionT.run_mk, support_map, Set.mem_image, Prod.exists, exists_and_right,
+    exists_eq_right, exists_prop, forall_exists_index, and_imp, Prod.mk.injEq]
   constructor <;> intro <;> intro <;> intro <;> intro
   all_goals try erw [simulateQ_bind]
   all_goals simp only [MonadLift.monadLift, liftM, monadLift, MonadLiftT.monadLift]
@@ -153,14 +160,18 @@ theorem oracleReduction_completeness :
     StateT.run'_eq, probFailure_eq_zero, hEq,
     support_pure, Set.mem_singleton_iff, Prod.eq_iff_fst_eq_snd_eq]
   all_goals try erw [simulateQ_pure]
-  all_goals try erw [simulateQ_bind]
-  all_goals simp_all [simulateQ_pure, pure_bind, map_pure,
+  all_goals try simp_all only [simulateQ_pure, pure_bind, map_pure,
     OptionT.run_mk, OptionT.run_pure, OptionT.run_bind, OptionT.run,
     StateT.run'_eq, StateT.run_pure, probFailure_eq_zero,
     support_pure, support_map, Set.mem_singleton_iff, Set.mem_image,
     OptionT.probFailure_eq, probOutput_pure, hEq]
-  · rw [show OptionT.mk = id from rfl]; simp [support_pure]
-    intro; erw [simulateQ_pure]; simp [support_pure, pure_bind]
+  · rw [show OptionT.mk = id from rfl]
+    simp only [ChallengeIdx, Fin.vcons_of_one, Challenge, Fin.isValue, input_query,
+      cont_query, input_apply, id_eq, zero_add, probOutput_eq_zero_iff, support_map,
+      Set.mem_image, Prod.exists, exists_and_right, exists_eq_right, not_exists]
+    intro
+    erw [simulateQ_pure]
+    simp [support_pure, pure_bind]
   · intro a b x hx x_1 hx1 x_2 x_3
     erw [simulateQ_bind]
     simp only [liftComp_eq_liftM, pure_bind, simulateQ_pure, OptionT.lift,

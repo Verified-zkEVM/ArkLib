@@ -571,8 +571,9 @@ noncomputable def finalFoldProver :
 
 /- Used to fetch the polynomial sent by the prover. -/
 def getConst (F : Type) [NonBinaryField F] : OracleComp [(pSpec F).Message]ₒ F[X] :=
-  liftM <| OracleQuery.query (spec := [(pSpec F).Message]ₒ)
-    ⟨⟨1, by rfl⟩, (by simpa using ())⟩
+  liftM <|
+    OracleSpec.query
+      (show [(pSpec F).Message]ₒ.Domain from ⟨⟨1, by rfl⟩, (by simpa using ())⟩)
 
 
 /-- The oracle verifier for the final folding round of the FRI protocol.
@@ -721,15 +722,17 @@ def queryCodeword (k : ℕ) (s : Fin (k + 1) → ℕ+) {i : Fin (k + 1)}
     (by {
      simp
   } )
-    (query (spec := [FinalOracleStatement s ω]ₒ) ⟨⟨i.1, by omega⟩,
-      (by simpa [Nat.ne_of_lt i.2] using w)⟩))
+    (OracleSpec.query
+      (show [FinalOracleStatement s ω]ₒ.Domain from
+        ⟨⟨i.1, by omega⟩, (by simpa [Nat.ne_of_lt i.2] using w)⟩)))
 
 /- Used by the verifier to fetch the polynomial sent in final folding round. -/
 def getConst (k : ℕ) (s : Fin (k + 1) → ℕ+) : OracleComp [FinalOracleStatement s ω]ₒ F[X] :=
   liftM (cast (β := OracleQuery [FinalOracleStatement s ω]ₒ F[X])
     (by simp [FinalOracleStatement])
-    (query (spec := [FinalOracleStatement s ω]ₒ) ⟨(Fin.last (k + 1)), (by
-      simpa using ())⟩))
+    (OracleSpec.query
+      (show [FinalOracleStatement s ω]ₒ.Domain from
+        ⟨(Fin.last (k + 1)), (by simpa using ())⟩)))
 
 /- Verifier for query round of the FRI protocol. Runs `l` checks on uniformly
    sampled points in the first evaluation domain against the oracles sent during

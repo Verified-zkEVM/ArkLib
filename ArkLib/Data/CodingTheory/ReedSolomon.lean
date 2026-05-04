@@ -144,37 +144,114 @@ lemma dim_eq_deg_of_le [NeZero n] (inj : Function.Injective α) (h : n ≤ m) :
        ← genMatIsVandermonde, ← rank_eq_dim_fromColGenMat, Vandermonde.rank_nonsquare_rows_eq_min
     ] <;> simp [inj, h]
 
-open Finset in
-/-- Generalized dimension formula for a Reed-Solomon code with arbitrary finite index type `ι`. -/
-lemma dim_eq_deg_of_le' {ι : Type*} [Fintype ι] {F : Type*} [Field F] {n : ℕ} {α : ι ↪ F} [NeZero n]
- (h : n ≤ Fintype.card ι) :
+
+/-- Generalized dimension formula for RS code with arbitrary finite index type `ι`. -/
+lemma dim_eq_deg_of_le' {ι : Type*} [Fintype ι] {F : Type*} [Field F]
+    {n : ℕ} {α : ι ↪ F} (h : n ≤ Fintype.card ι) :
   LinearCode.dim (ReedSolomon.code α n) = n := by
+  by_cases hcard : Fintype.card ι = 0
+  · rw [hcard] at h
+    rw [Fintype.card_eq_zero_iff] at hcard
+    simp only [nonpos_iff_eq_zero] at h
+    subst h
+    simp [ReedSolomon.code, dim]
+  · rw [LinearCode.dim]
+    let f := ReedSolomon.evalOnPoints (F := F) α
+    let S := Polynomial.degreeLT F n
+    have h_code : ReedSolomon.code α n = S.map f := rfl
+    rw [h_code]
+    have h_range : S.map f = LinearMap.range (f.domRestrict S) := by
+      ext
+      simp [Submodule.mem_map]
+    rw [h_range, LinearMap.finrank_range_of_inj]
+    · rw [Polynomial.finrank_degreeLT_n]
+    · -- Injectivity proof
+      rw [←LinearMap.ker_eq_bot]
+      ext p
+      simp only [LinearMap.mem_ker, LinearMap.domRestrict_apply, Submodule.mem_bot]
+      constructor
+      · intro hfp
+        apply Subtype.ext
+        apply Polynomial.eq_zero_of_natDegree_lt_card_of_eval_eq_zero' p.val (Finset.univ.map α)
+        · intro x hx
+          simp only [Finset.mem_map, Finset.mem_univ, true_and] at hx
+          rcases hx with ⟨i, rfl⟩
+          exact congr_fun hfp i
+        · simp only [Finset.card_map]
+          by_cases hn : n = 0
+          · subst hn
+            have h : ∀ i, p.val.coeff i = 0 := by
+              intro i
+              rcases p with ⟨p, hp⟩ 
+              simp [S, Polynomial.degreeLT] at hp
+              simp [hp i]
+            have h : p.val.natDegree = 0 := by
+              rw [Polynomial.natDegree_eq_zero_iff_degree_le_zero]
+              rw [Polynomial.degree_le_zero_iff]
+              ext n
+              rw [h n]
+              rcases n with _ | n <;> simp [h 0]
+            rw [h]
+            simp
+            omega
+          · calc p.val.natDegree < n 
+              := @natDegree_lt_of_mem_degreeLT _ _ _ _ (⟨hn⟩) p.2
+                _ ≤ Fintype.card ι := h
+      · intro hfp
+        simp [hfp]
+
+/-- The dimension of an RS-code equals the cardinality
+  of the evaluation points if the original degree exceeds the cardinality. -/
+lemma dim_eq_card_of_lt {ι : Type*} [Fintype ι] {F : Type*} [Field F]
+    {n : ℕ} {α : ι ↪ F} (h : Fintype.card ι < n) :
+  LinearCode.dim (ReedSolomon.code α n) = Fintype.card ι := by
   rw [LinearCode.dim]
   let f := ReedSolomon.evalOnPoints (F := F) α
   let S := Polynomial.degreeLT F n
   have h_code : ReedSolomon.code α n = S.map f := rfl
   rw [h_code]
   have h_range : S.map f = LinearMap.range (f.domRestrict S) := by
-    ext; simp [Submodule.mem_map];
-  rw [h_range, LinearMap.finrank_range_of_inj]
-  · rw [Polynomial.finrank_degreeLT_n]
-  · rw [← LinearMap.ker_eq_bot]
-    ext p
-    simp only [LinearMap.mem_ker, LinearMap.domRestrict_apply, Submodule.mem_bot]
-    constructor
-    · intro hfp
-      apply Subtype.ext
-      apply Polynomial.eq_zero_of_natDegree_lt_card_of_eval_eq_zero' p.val (Finset.univ.map α)
-      · intro x hx
-        simp only [Finset.mem_map, Finset.mem_univ, true_and] at hx
-        rcases hx with ⟨i, rfl⟩
-        exact congr_fun hfp i
-      · simp only [Finset.card_map]
-        calc p.val.natDegree
-          < n := natDegree_lt_of_mem_degreeLT p.2
-          _ ≤ Fintype.card ι := h
-    · intro hfp
-      simp [hfp]
+    ext
+    simp [Submodule.mem_map]
+  simp only [ModuleCode]
+  apply le_antisymm
+  · apply le_trans 
+    · apply Submodule.finrank_le
+    · simp
+  · have h_sub : ReedSolomon.code α (Fintype.card ι) ≤ 
+      ReedSolomon.code α n := by
+      intro x hx 
+      simp only [code, Submodule.mem_map] at hx
+      rcases hx with ⟨y, hy⟩
+      simp only [code, Submodule.mem_map]
+      exists y
+      constructor
+      · simp only [LinearMap.range_domRestrict, degreeLT, ge_iff_le, Submodule.mem_iInf,
+        LinearMap.mem_ker, lcoeff_apply] at *
+        intro i hi 
+        exact (hy.1 i (by omega))
+      · tauto
+    have h_sub := Submodule.finrank_mono h_sub
+    have dim_eq := dim_eq_deg_of_le' 
+      (n := Fintype.card ι)
+      (α := α)
+      (by simp)
+    simp only [dim] at dim_eq
+    rw [dim_eq] at h_sub
+    exact h_sub
+ 
+/-- Assumption-less expression for the dimension of an RS-code.
+  The dimension equals the minimum of the degree and the cardinality
+  of the evaluation set. -/
+theorem dim_eq_min_deg_card {ι : Type*} [Fintype ι] {F : Type*} [Field F]
+    {n : ℕ} {α : ι ↪ F} :
+  LinearCode.dim (ReedSolomon.code α n) = min n (Fintype.card ι) := by
+  by_cases hle : n ≤ Fintype.card ι
+  · simp [dim_eq_deg_of_le' hle, hle]
+  · simp only [not_le] at hle
+    rw [dim_eq_card_of_lt hle]
+    simp
+    omega
 
 @[simp]
 lemma length_eq_domain_size (inj : Function.Injective α) :
@@ -191,10 +268,20 @@ lemma length_eq_domain_card' {ι : Type*} [Fintype ι] {F : Type*} [Field F] {de
     length (ReedSolomon.code α deg) = Fintype.card ι := by
   simp [length]
 
+/- The usual formula for the rate of an RS-code: the degree divided by
+  the cardinality of the evaluation set. -/
 lemma rateOfLinearCode_eq_div' {ι : Type*} [Fintype ι] {F : Type*} [Field F]
-    {n : ℕ} {α : ι ↪ F} [NeZero n] (h : n ≤ Fintype.card ι) :
+    {n : ℕ} {α : ι ↪ F} (h : n ≤ Fintype.card ι) :
     rate (ReedSolomon.code α n) = n / Fintype.card ι := by
   rw [rate, dim_eq_deg_of_le' h, length_eq_domain_card']
+
+/- Assumption-less formula for the rate of an RS-code: the minimun of degree 
+  and the cardinality of the evaluation set divided by the cardinality. -/
+lemma rateOfLinearCode_eq_min_div
+    {ι : Type*} [Fintype ι] {F : Type*} [Field F]
+    {n : ℕ} {α : ι ↪ F} :
+    rate (ReedSolomon.code α n) = (min n (Fintype.card ι)) / Fintype.card ι := by
+  rw [rate, dim_eq_min_deg_card, length_eq_domain_card']
 
 @[simp]
 lemma dist_le_length [DecidableEq F] (inj : Function.Injective α) :

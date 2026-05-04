@@ -398,15 +398,18 @@ def toOracleVerifier
     (naVerifier : OracleVerifier.NonAdaptive oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
     OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec where
   verify := fun stmt challenges => do
+    let oc := oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ)
     let queryResponsesOStmt : List ((i : ιₛᵢ) × ((q : (Oₛᵢ i).Query) × (Oₛᵢ i).Response q)) ←
       (naVerifier.queryOStmt stmt challenges).mapM
       (fun q => do
-        let resp ← liftM <| query (spec := [OStmtIn]ₒ) q
+        let resp ← liftM <|
+          query (spec := [OStmtIn]ₒ) (m := OracleComp oc) q
         return ⟨q.1, ⟨q.2, by simpa only using resp⟩⟩)
     let queryResponsesOMsg : List ((i : pSpec.MessageIdx) × ((q : (Oₘ i).Query) × (Oₘ i).Response q)) ←
       (naVerifier.queryMsg stmt challenges).mapM
       (fun q => do
-        let resp ← liftM <| query (spec := [pSpec.Message]ₒ) q
+        let resp ← liftM <|
+          query (spec := [pSpec.Message]ₒ) (m := OracleComp oc) q
         return ⟨q.1, ⟨q.2, by simpa only using resp⟩⟩)
     let stmtOut ← liftM <| naVerifier.verify stmt challenges queryResponsesOStmt queryResponsesOMsg
     return stmtOut

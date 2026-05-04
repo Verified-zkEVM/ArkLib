@@ -1,0 +1,939 @@
+{
+  "count": 40,
+  "entries": {
+    "ACFY24": {
+      "authors": [
+        "Gal Arnon",
+        "Alessandro Chiesa",
+        "Giacomo Fenzi",
+        "Eylon Yogev"
+      ],
+      "authors_text": "Gal Arnon and Alessandro Chiesa and Giacomo Fenzi and Eylon Yogev",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Gal Arnon and Alessandro Chiesa and Giacomo Fenzi and Eylon Yogev",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2024/1586",
+        "title": "{WHIR}: Reed--Solomon Proximity Testing with Super-Fast Verification",
+        "url": "https://eprint.iacr.org/2024/1586",
+        "year": "2024"
+      },
+      "key": "ACFY24",
+      "title": "{WHIR}: Reed--Solomon Proximity Testing with Super-Fast Verification",
+      "url": "https://eprint.iacr.org/2024/1586",
+      "venue": "",
+      "year": "2024"
+    },
+    "ACFY24stir": {
+      "authors": [
+        "Arnon, Gal",
+        "Chiesa, Alessandro",
+        "Fenzi, Giacomo",
+        "Yogev, Eylon"
+      ],
+      "authors_text": "Arnon, Gal and Chiesa, Alessandro and Fenzi, Giacomo and Yogev, Eylon",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Arnon, Gal and Chiesa, Alessandro and Fenzi, Giacomo and Yogev, Eylon",
+        "booktitle": "Annual International Cryptology Conference",
+        "organization": "Springer",
+        "pages": "380--413",
+        "title": "STIR: Reed-Solomon proximity testing with fewer queries",
+        "year": "2024"
+      },
+      "key": "ACFY24stir",
+      "title": "STIR: Reed-Solomon proximity testing with fewer queries",
+      "url": "",
+      "venue": "Annual International Cryptology Conference",
+      "year": "2024"
+    },
+    "ACFY25": {
+      "authors": [
+        "Arnon, Gal",
+        "Chiesa, Alessandro",
+        "Fenzi, Giacomo",
+        "Yogev, Eylon"
+      ],
+      "authors_text": "Arnon, Gal and Chiesa, Alessandro and Fenzi, Giacomo and Yogev, Eylon",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Arnon, Gal and Chiesa, Alessandro and Fenzi, Giacomo and Yogev, Eylon",
+        "booktitle": "Annual International Conference on the Theory and Applications of Cryptographic Techniques",
+        "organization": "Springer",
+        "pages": "214--243",
+        "title": "WHIR: Reed--Solomon proximity testing with super-fast verification",
+        "year": "2025"
+      },
+      "key": "ACFY25",
+      "title": "WHIR: Reed--Solomon proximity testing with super-fast verification",
+      "url": "",
+      "venue": "Annual International Conference on the Theory and Applications of Cryptographic Techniques",
+      "year": "2025"
+    },
+    "AHIV22": {
+      "authors": [
+        "Ames, Scott",
+        "Hazay, Carmit",
+        "Ishai, Yuval",
+        "Venkitasubramaniam, Muthuramakrishnan"
+      ],
+      "authors_text": "Ames, Scott and Hazay, Carmit and Ishai, Yuval and Venkitasubramaniam, Muthuramakrishnan",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Ames, Scott and Hazay, Carmit and Ishai, Yuval and Venkitasubramaniam, Muthuramakrishnan",
+        "booktitle": "Proceedings of the 2017 acm sigsac conference on computer and communications security",
+        "pages": "2087--2104",
+        "title": "Ligero: Lightweight sublinear arguments without a trusted setup",
+        "year": "2017"
+      },
+      "key": "AHIV22",
+      "title": "Ligero: Lightweight sublinear arguments without a trusted setup",
+      "url": "",
+      "venue": "Proceedings of the 2017 acm sigsac conference on computer and communications security",
+      "year": "2017"
+    },
+    "ARoK": {
+      "authors": [
+        "Kothapalli, Abhiram",
+        "Parno, Bryan"
+      ],
+      "authors_text": "Kothapalli, Abhiram and Parno, Bryan",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Kothapalli, Abhiram and Parno, Bryan",
+        "booktitle": "Annual International Cryptology Conference",
+        "organization": "Springer",
+        "pages": "669--701",
+        "title": "Algebraic reductions of knowledge",
+        "year": "2023"
+      },
+      "key": "ARoK",
+      "title": "Algebraic reductions of knowledge",
+      "url": "",
+      "venue": "Annual International Cryptology Conference",
+      "year": "2023"
+    },
+    "Arc": {
+      "authors": [
+        "B{\\\"u}nz, Benedikt",
+        "Mishra, Pratyush",
+        "Nguyen, Wilson",
+        "Wang, William"
+      ],
+      "authors_text": "B{\\\"u}nz, Benedikt and Mishra, Pratyush and Nguyen, Wilson and Wang, William",
+      "doi": "",
+      "entry_type": "article",
+      "fields": {
+        "author": "B{\\\"u}nz, Benedikt and Mishra, Pratyush and Nguyen, Wilson and Wang, William",
+        "journal": "Cryptology ePrint Archive",
+        "title": "Arc: Accumulation for Reed--Solomon Codes",
+        "year": "2024"
+      },
+      "key": "Arc",
+      "title": "Arc: Accumulation for Reed--Solomon Codes",
+      "url": "",
+      "venue": "Cryptology ePrint Archive",
+      "year": "2024"
+    },
+    "BBS24": {
+      "authors": [
+        "Bosshard, Azucena Garvia",
+        "Bootle, Jonathan",
+        "Sprenger, Christoph"
+      ],
+      "authors_text": "Bosshard, Azucena Garvia and Bootle, Jonathan and Sprenger, Christoph",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Bosshard, Azucena Garvia and Bootle, Jonathan and Sprenger, Christoph",
+        "booktitle": "2024 IEEE 37th Computer Security Foundations Symposium (CSF)",
+        "organization": "IEEE Computer Society",
+        "pages": "205--219",
+        "title": "Formal Verification of the Sumcheck Protocol",
+        "year": "2024"
+      },
+      "key": "BBS24",
+      "title": "Formal Verification of the Sumcheck Protocol",
+      "url": "",
+      "venue": "2024 IEEE 37th Computer Security Foundations Symposium (CSF)",
+      "year": "2024"
+    },
+    "BCGMMW18": {
+      "authors": [
+        "Sean Bowe",
+        "Alessandro Chiesa",
+        "Matthew Green",
+        "Ian Miers",
+        "Pratyush Mishra",
+        "Howard Wu"
+      ],
+      "authors_text": "Sean Bowe and Alessandro Chiesa and Matthew Green and Ian Miers and Pratyush Mishra and Howard Wu",
+      "doi": "10.1109/SP40000.2020.00050",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Sean Bowe and Alessandro Chiesa and Matthew Green and Ian Miers and Pratyush Mishra and Howard Wu",
+        "doi": "10.1109/SP40000.2020.00050",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2018/962",
+        "title": "Zexe: Enabling Decentralized Private Computation",
+        "url": "https://eprint.iacr.org/2018/962",
+        "year": "2018"
+      },
+      "key": "BCGMMW18",
+      "title": "Zexe: Enabling Decentralized Private Computation",
+      "url": "https://eprint.iacr.org/2018/962",
+      "venue": "",
+      "year": "2018"
+    },
+    "BCIKS20": {
+      "authors": [
+        "Eli Ben-Sasson",
+        "Dan Carmon",
+        "Yuval Ishai",
+        "Swastik Kopparty",
+        "Shubhangi Saraf"
+      ],
+      "authors_text": "Eli Ben-Sasson and Dan Carmon and Yuval Ishai and Swastik Kopparty and Shubhangi Saraf",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Eli Ben-Sasson and Dan Carmon and Yuval Ishai and Swastik Kopparty and Shubhangi Saraf",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2020/654",
+        "title": "Proximity Gaps for Reed-Solomon Codes",
+        "url": "https://eprint.iacr.org/2020/654",
+        "year": "2020"
+      },
+      "key": "BCIKS20",
+      "title": "Proximity Gaps for Reed-Solomon Codes",
+      "url": "https://eprint.iacr.org/2020/654",
+      "venue": "",
+      "year": "2020"
+    },
+    "BCIKS23": {
+      "authors": [
+        "Ben-Sasson, Eli",
+        "Carmon, Dan",
+        "Ishai, Yuval",
+        "Kopparty, Swastik",
+        "Saraf, Shubhangi"
+      ],
+      "authors_text": "Ben-Sasson, Eli and Carmon, Dan and Ishai, Yuval and Kopparty, Swastik and Saraf, Shubhangi",
+      "doi": "",
+      "entry_type": "article",
+      "fields": {
+        "author": "Ben-Sasson, Eli and Carmon, Dan and Ishai, Yuval and Kopparty, Swastik and Saraf, Shubhangi",
+        "journal": "Journal of the ACM",
+        "number": "5",
+        "pages": "1--57",
+        "publisher": "ACM New York, NY",
+        "title": "Proximity gaps for Reed--Solomon codes",
+        "volume": "70",
+        "year": "2023"
+      },
+      "key": "BCIKS23",
+      "title": "Proximity gaps for Reed--Solomon codes",
+      "url": "",
+      "venue": "Journal of the ACM",
+      "year": "2023"
+    },
+    "BCS16": {
+      "authors": [
+        "Ben-Sasson, Eli",
+        "Chiesa, Alessandro",
+        "Spooner, Nicholas"
+      ],
+      "authors_text": "Ben-Sasson, Eli and Chiesa, Alessandro and Spooner, Nicholas",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Ben-Sasson, Eli and Chiesa, Alessandro and Spooner, Nicholas",
+        "booktitle": "Theory of Cryptography: 14th International Conference, TCC 2016-B, Beijing, China, October 31-November 3, 2016, Proceedings, Part II 14",
+        "organization": "Springer",
+        "pages": "31--60",
+        "title": "Interactive Ooracle Proofs",
+        "year": "2016"
+      },
+      "key": "BCS16",
+      "title": "Interactive Ooracle Proofs",
+      "url": "",
+      "venue": "Theory of Cryptography: 14th International Conference, TCC 2016-B, Beijing, China, October 31-November 3, 2016, Proceedings, Part II 14",
+      "year": "2016"
+    },
+    "BLS12377": {
+      "authors": [
+        "Alessandro Chiesa",
+        "Yuncong Hu",
+        "Mary Maller",
+        "Pratyush Mishra",
+        "Psi Vesely",
+        "Nicholas Ward"
+      ],
+      "authors_text": "Alessandro Chiesa and Yuncong Hu and Mary Maller and Pratyush Mishra and Psi Vesely and Nicholas Ward",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Alessandro Chiesa and Yuncong Hu and Mary Maller and Pratyush Mishra and Psi Vesely and Nicholas Ward",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2018/962",
+        "title": "Marlin: Preprocessing zkSNARKs with Universal and Updatable SRS",
+        "url": "https://eprint.iacr.org/2018/962",
+        "year": "2018"
+      },
+      "key": "BLS12377",
+      "title": "Marlin: Preprocessing zkSNARKs with Universal and Updatable SRS",
+      "url": "https://eprint.iacr.org/2018/962",
+      "venue": "",
+      "year": "2018"
+    },
+    "BSS08": {
+      "authors": [
+        "Ben-Sasson, Eli",
+        "Sudan, Madhu"
+      ],
+      "authors_text": "Ben-Sasson, Eli and Sudan, Madhu",
+      "doi": "",
+      "entry_type": "article",
+      "fields": {
+        "author": "Ben-Sasson, Eli and Sudan, Madhu",
+        "journal": "SIAM Journal on Computing",
+        "number": "2",
+        "pages": "551--607",
+        "publisher": "SIAM",
+        "title": "Short PCPs with polylog query complexity",
+        "url": "https://people.csail.mit.edu/madhu/papers/2005/rspcpp-full.pdf",
+        "volume": "38",
+        "year": "2008"
+      },
+      "key": "BSS08",
+      "title": "Short PCPs with polylog query complexity",
+      "url": "https://people.csail.mit.edu/madhu/papers/2005/rspcpp-full.pdf",
+      "venue": "SIAM Journal on Computing",
+      "year": "2008"
+    },
+    "ChiesaYogev2024": {
+      "authors": [
+        "Chiesa, Alessandro",
+        "Yogev, Eylon"
+      ],
+      "authors_text": "Chiesa, Alessandro and Yogev, Eylon",
+      "doi": "",
+      "entry_type": "book",
+      "fields": {
+        "author": "Chiesa, Alessandro and Yogev, Eylon",
+        "title": "Building Cryptographic Proofs from Hash Functions",
+        "url": "https://github.com/hash-based-snargs-book",
+        "year": "2024"
+      },
+      "key": "ChiesaYogev2024",
+      "title": "Building Cryptographic Proofs from Hash Functions",
+      "url": "https://github.com/hash-based-snargs-book",
+      "venue": "",
+      "year": "2024"
+    },
+    "DARK": {
+      "authors": [
+        "B{\\\"u}nz, Benedikt",
+        "Fisch, Ben",
+        "Szepieniec, Alan"
+      ],
+      "authors_text": "B{\\\"u}nz, Benedikt and Fisch, Ben and Szepieniec, Alan",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "B{\\\"u}nz, Benedikt and Fisch, Ben and Szepieniec, Alan",
+        "booktitle": "Advances in Cryptology--EUROCRYPT 2020: 39th Annual International Conference on the Theory and Applications of Cryptographic Techniques, Zagreb, Croatia, May 10--14, 2020, Proceedings, Part I 39",
+        "organization": "Springer",
+        "pages": "677--706",
+        "title": "Transparent SNARKs from DARK compilers",
+        "year": "2020"
+      },
+      "key": "DARK",
+      "title": "Transparent SNARKs from DARK compilers",
+      "url": "",
+      "venue": "Advances in Cryptology--EUROCRYPT 2020: 39th Annual International Conference on the Theory and Applications of Cryptographic Techniques, Zagreb, Croatia, May 10--14, 2020, Proceedings, Part I 39",
+      "year": "2020"
+    },
+    "DP23": {
+      "authors": [
+        "Benjamin E. Diamond",
+        "Jim Posen"
+      ],
+      "authors_text": "Benjamin E. Diamond and Jim Posen",
+      "doi": "10.1007/978-3-031-91134-7_4",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Benjamin E. Diamond and Jim Posen",
+        "doi": "10.1007/978-3-031-91134-7_4",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2023/1784",
+        "title": "Succinct Arguments over Towers of Binary Fields",
+        "url": "https://eprint.iacr.org/2023/1784",
+        "year": "2023"
+      },
+      "key": "DP23",
+      "title": "Succinct Arguments over Towers of Binary Fields",
+      "url": "https://eprint.iacr.org/2023/1784",
+      "venue": "",
+      "year": "2023"
+    },
+    "DP24": {
+      "authors": [
+        "Diamond, Benjamin E",
+        "Posen, Jim"
+      ],
+      "authors_text": "Diamond, Benjamin E and Posen, Jim",
+      "doi": "",
+      "entry_type": "article",
+      "fields": {
+        "author": "Diamond, Benjamin E and Posen, Jim",
+        "journal": "Cryptology ePrint Archive",
+        "title": "Polylogarithmic proofs for multilinears over binary towers",
+        "year": "2024"
+      },
+      "key": "DP24",
+      "title": "Polylogarithmic proofs for multilinears over binary towers",
+      "url": "",
+      "venue": "Cryptology ePrint Archive",
+      "year": "2024"
+    },
+    "DP25": {
+      "authors": [
+        "Diamond, Benjamin E.",
+        "Posen, Jim"
+      ],
+      "authors_text": "Diamond, Benjamin E. and Posen, Jim",
+      "doi": "10.1007/978-3-031-91134-7_4",
+      "entry_type": "inproceedings",
+      "fields": {
+        "abstract": "We introduce an efficient SNARK for towers of binary fields. Adapting Brakedown (CRYPTO \u201923), we construct a multilinear polynomial commitment scheme suitable for polynomials over tiny fields, including that with just two elements. Our commitment scheme, unlike those of previous works, treats small-field polynomials with no embedding overhead. We further introduce binary-field adaptations of HyperPlonk (EUROCRYPT \u201923)\u2019s product and permutation checks and of Lasso (EUROCRYPT \u201924)\u2019s lookup. Our binary PLONKish variant captures standard hash functions\u2014like Keccak-256 and Gr\\o{}stl\u2014extremely efficiently. With recourse to thorough performance benchmarks, we argue that our scheme can efficiently generate precisely those Keccak-256-proofs which critically underlie modern efforts to scale Ethereum.",
+        "address": "Berlin, Heidelberg",
+        "author": "Diamond, Benjamin E. and Posen, Jim",
+        "booktitle": "Advances in Cryptology \u2013 EUROCRYPT 2025: 44th Annual International Conference on the Theory and Applications of Cryptographic Techniques, Madrid, Spain, May 4\u20138, 2025, Proceedings, Part IV",
+        "doi": "10.1007/978-3-031-91134-7_4",
+        "isbn": "978-3-031-91133-0",
+        "keywords": "succinct arguments, binary fields, error-correcting codes",
+        "location": "Madrid, Spain",
+        "numpages": "30",
+        "pages": "93\u2013122",
+        "publisher": "Springer-Verlag",
+        "title": "Succinct Arguments over Towers of Binary Fields",
+        "url": "https://doi.org/10.1007/978-3-031-91134-7_4",
+        "year": "2025"
+      },
+      "key": "DP25",
+      "title": "Succinct Arguments over Towers of Binary Fields",
+      "url": "https://doi.org/10.1007/978-3-031-91134-7_4",
+      "venue": "Advances in Cryptology \u2013 EUROCRYPT 2025: 44th Annual International Conference on the Theory and Applications of Cryptographic Techniques, Madrid, Spain, May 4\u20138, 2025, Proceedings, Part IV",
+      "year": "2025"
+    },
+    "FP97": {
+      "authors": [
+        "Fan, J.L.",
+        "Paar, C."
+      ],
+      "authors_text": "Fan, J.L. and Paar, C.",
+      "doi": "10.1109/ISIT.1997.612935",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Fan, J.L. and Paar, C.",
+        "booktitle": "Proceedings of IEEE International Symposium on Information Theory",
+        "doi": "10.1109/ISIT.1997.612935",
+        "keywords": "Poles and towers;Polynomials;Vectors;Galois fields;Hardware;Equations",
+        "number": "",
+        "pages": "20-",
+        "title": "On efficient inversion in tower fields of characteristic two",
+        "volume": "",
+        "year": "1997"
+      },
+      "key": "FP97",
+      "title": "On efficient inversion in tower fields of characteristic two",
+      "url": "",
+      "venue": "Proceedings of IEEE International Symposium on Information Theory",
+      "year": "1997"
+    },
+    "FRI1216": {
+      "authors": [
+        "Ulrich Hab\u00f6ck"
+      ],
+      "authors_text": "Ulrich Hab\u00f6ck",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Ulrich Hab\u00f6ck",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2022/1216",
+        "title": "A summary on the FRI low degree test",
+        "url": "https://eprint.iacr.org/2022/1216",
+        "year": "2022"
+      },
+      "key": "FRI1216",
+      "title": "A summary on the FRI low degree test",
+      "url": "https://eprint.iacr.org/2022/1216",
+      "venue": "",
+      "year": "2022"
+    },
+    "GGJ96": {
+      "authors": [
+        "Von zur Gathen, Joachim",
+        "Gerhard, J{\\\"u}rgen"
+      ],
+      "authors_text": "Von zur Gathen, Joachim and Gerhard, J{\\\"u}rgen",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Von zur Gathen, Joachim and Gerhard, J{\\\"u}rgen",
+        "booktitle": "Proceedings of the 1996 international symposium on Symbolic and algebraic computation",
+        "pages": "1--9",
+        "title": "Arithmetic and factorization of polynomial over F2 (extended abstract)",
+        "year": "1996"
+      },
+      "key": "GGJ96",
+      "title": "Arithmetic and factorization of polynomial over F2 (extended abstract)",
+      "url": "",
+      "venue": "Proceedings of the 1996 international symposium on Symbolic and algebraic computation",
+      "year": "1996"
+    },
+    "GWZC19": {
+      "authors": [
+        "Gabizon, Ariel",
+        "Williamson, Zachary J",
+        "Ciobotaru, Oana"
+      ],
+      "authors_text": "Gabizon, Ariel and Williamson, Zachary J and Ciobotaru, Oana",
+      "doi": "",
+      "entry_type": "article",
+      "fields": {
+        "author": "Gabizon, Ariel and Williamson, Zachary J and Ciobotaru, Oana",
+        "journal": "Cryptology ePrint Archive",
+        "title": "Plonk: Permutations over lagrange-bases for oecumenical noninteractive arguments of knowledge",
+        "url": "https://eprint.iacr.org/2019/953.pdf",
+        "year": "2019"
+      },
+      "key": "GWZC19",
+      "title": "Plonk: Permutations over lagrange-bases for oecumenical noninteractive arguments of knowledge",
+      "url": "https://eprint.iacr.org/2019/953.pdf",
+      "venue": "Cryptology ePrint Archive",
+      "year": "2019"
+    },
+    "IOPs": {
+      "authors": [
+        "Ben-Sasson, Eli",
+        "Chiesa, Alessandro",
+        "Spooner, Nicholas"
+      ],
+      "authors_text": "Ben-Sasson, Eli and Chiesa, Alessandro and Spooner, Nicholas",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Ben-Sasson, Eli and Chiesa, Alessandro and Spooner, Nicholas",
+        "booktitle": "Theory of Cryptography: 14th International Conference, TCC 2016-B, Beijing, China, October 31-November 3, 2016, Proceedings, Part II 14",
+        "organization": "Springer",
+        "pages": "31--60",
+        "title": "Interactive oracle proofs",
+        "year": "2016"
+      },
+      "key": "IOPs",
+      "title": "Interactive oracle proofs",
+      "url": "",
+      "venue": "Theory of Cryptography: 14th International Conference, TCC 2016-B, Beijing, China, October 31-November 3, 2016, Proceedings, Part II 14",
+      "year": "2016"
+    },
+    "JM24": {
+      "authors": [
+        "Jaeger, Joseph",
+        "Mohan, Deep Inder"
+      ],
+      "authors_text": "Jaeger, Joseph and Mohan, Deep Inder",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Jaeger, Joseph and Mohan, Deep Inder",
+        "booktitle": "Annual International Cryptology Conference",
+        "organization": "Springer",
+        "pages": "14--45",
+        "title": "Generic and algebraic computation models: When AGM proofs transfer to the GGM",
+        "url": "https://link.springer.com/content/pdf/10.1007/978-3-031-68388-6_2",
+        "year": "2024"
+      },
+      "key": "JM24",
+      "title": "Generic and algebraic computation models: When AGM proofs transfer to the GGM",
+      "url": "https://link.springer.com/content/pdf/10.1007/978-3-031-68388-6_2",
+      "venue": "Annual International Cryptology Conference",
+      "year": "2024"
+    },
+    "LCH14": {
+      "authors": [
+        "Lin, Sian-Jheng",
+        "Chung, Wei-Ho",
+        "Han, Yunghsiang S"
+      ],
+      "authors_text": "Lin, Sian-Jheng and Chung, Wei-Ho and Han, Yunghsiang S",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Lin, Sian-Jheng and Chung, Wei-Ho and Han, Yunghsiang S",
+        "booktitle": "2014 ieee 55th annual symposium on foundations of computer science",
+        "organization": "IEEE",
+        "pages": "316--325",
+        "title": "Novel polynomial basis and its application to reed-solomon erasure codes",
+        "year": "2014"
+      },
+      "key": "LCH14",
+      "title": "Novel polynomial basis and its application to reed-solomon erasure codes",
+      "url": "",
+      "venue": "2014 ieee 55th annual symposium on foundations of computer science",
+      "year": "2014"
+    },
+    "LFKN92": {
+      "authors": [
+        "Lund, Carsten",
+        "Fortnow, Lance",
+        "Karloff, Howard",
+        "Nisan, Noam"
+      ],
+      "authors_text": "Lund, Carsten and Fortnow, Lance and Karloff, Howard and Nisan, Noam",
+      "doi": "10.1145/146585.146605",
+      "entry_type": "article",
+      "fields": {
+        "abstract": "A new algebraic technique for the construction of interactive proof systems is presented. Our technique is used to prove that every language in the polynomial-time hierarchy has an interactive proof system. This technique played a pivotal role in the recent proofs that IP = PSPACE [28] and that MIP = NEXP [4].",
+        "address": "New York, NY, USA",
+        "author": "Lund, Carsten and Fortnow, Lance and Karloff, Howard and Nisan, Noam",
+        "doi": "10.1145/146585.146605",
+        "issn": "0004-5411",
+        "issue_date": "Oct. 1992",
+        "journal": "J. ACM",
+        "keywords": "interactive proof systems",
+        "month": "oct",
+        "number": "4",
+        "numpages": "10",
+        "pages": "859\u2013868",
+        "publisher": "Association for Computing Machinery",
+        "title": "Algebraic methods for interactive proof systems",
+        "url": "https://doi.org/10.1145/146585.146605",
+        "volume": "39",
+        "year": "1992"
+      },
+      "key": "LFKN92",
+      "title": "Algebraic methods for interactive proof systems",
+      "url": "https://doi.org/10.1145/146585.146605",
+      "venue": "J. ACM",
+      "year": "1992"
+    },
+    "LPS24": {
+      "authors": [
+        "Helger Lipmaa",
+        "Roberto Parisella",
+        "Janno Siim"
+      ],
+      "authors_text": "Helger Lipmaa and Roberto Parisella and Janno Siim",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Helger Lipmaa and Roberto Parisella and Janno Siim",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2024/994",
+        "title": "On Knowledge-Soundness of Plonk in {ROM} from Falsifiable Assumptions",
+        "url": "https://eprint.iacr.org/2024/994",
+        "year": "2024"
+      },
+      "key": "LPS24",
+      "title": "On Knowledge-Soundness of Plonk in {ROM} from Falsifiable Assumptions",
+      "url": "https://eprint.iacr.org/2024/994",
+      "venue": "",
+      "year": "2024"
+    },
+    "Lan02": {
+      "authors": [
+        "Lang, Serge"
+      ],
+      "authors_text": "Lang, Serge",
+      "doi": "",
+      "entry_type": "book",
+      "fields": {
+        "author": "Lang, Serge",
+        "edition": "Revised Third",
+        "publisher": "Springer",
+        "series": "Graduate Texts in Mathematics",
+        "title": "Algebra",
+        "volume": "211",
+        "year": "2002"
+      },
+      "key": "Lan02",
+      "title": "Algebra",
+      "url": "",
+      "venue": "",
+      "year": "2002"
+    },
+    "Marlin": {
+      "authors": [
+        "Chiesa, Alessandro",
+        "Hu, Yuncong",
+        "Maller, Mary",
+        "Mishra, Pratyush",
+        "Vesely, Noah",
+        "Ward, Nicholas"
+      ],
+      "authors_text": "Chiesa, Alessandro and Hu, Yuncong and Maller, Mary and Mishra, Pratyush and Vesely, Noah and Ward, Nicholas",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Chiesa, Alessandro and Hu, Yuncong and Maller, Mary and Mishra, Pratyush and Vesely, Noah and Ward, Nicholas",
+        "booktitle": "Advances in Cryptology--EUROCRYPT 2020: 39th Annual International Conference on the Theory and Applications of Cryptographic Techniques, Zagreb, Croatia, May 10--14, 2020, Proceedings, Part I 39",
+        "organization": "Springer",
+        "pages": "738--768",
+        "title": "Marlin: Preprocessing zkSNARKs with universal and updatable SRS",
+        "year": "2020"
+      },
+      "key": "Marlin",
+      "title": "Marlin: Preprocessing zkSNARKs with universal and updatable SRS",
+      "url": "",
+      "venue": "Advances in Cryptology--EUROCRYPT 2020: 39th Annual International Conference on the Theory and Applications of Cryptographic Techniques, Zagreb, Croatia, May 10--14, 2020, Proceedings, Part I 39",
+      "year": "2020"
+    },
+    "PS94": {
+      "authors": [
+        "Polishchuk, Alexander",
+        "Spielman, Daniel A"
+      ],
+      "authors_text": "Polishchuk, Alexander and Spielman, Daniel A",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Polishchuk, Alexander and Spielman, Daniel A",
+        "booktitle": "Proceedings of the twenty-sixth annual ACM symposium on Theory of computing",
+        "pages": "194--203",
+        "title": "Nearly-linear size holographic proofs",
+        "year": "1994"
+      },
+      "key": "PS94",
+      "title": "Nearly-linear size holographic proofs",
+      "url": "",
+      "venue": "Proceedings of the twenty-sixth annual ACM symposium on Theory of computing",
+      "year": "1994"
+    },
+    "Poseidon2": {
+      "authors": [
+        "Lorenzo Grassi",
+        "Dmitry Khovratovich",
+        "Christian Rechberger",
+        "Arnab Roy",
+        "Markus Schofnegger"
+      ],
+      "authors_text": "Lorenzo Grassi and Dmitry Khovratovich and Christian Rechberger and Arnab Roy and Markus Schofnegger",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Lorenzo Grassi and Dmitry Khovratovich and Christian Rechberger and Arnab Roy and Markus Schofnegger",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2023/323",
+        "title": "Poseidon2: A Faster Version of the Poseidon Hash Function",
+        "url": "https://eprint.iacr.org/2023/323",
+        "year": "2023"
+      },
+      "key": "Poseidon2",
+      "title": "Poseidon2: A Faster Version of the Poseidon Hash Function",
+      "url": "https://eprint.iacr.org/2023/323",
+      "venue": "",
+      "year": "2023"
+    },
+    "STIR2005": {
+      "authors": [
+        "Madhu Sudan"
+      ],
+      "authors_text": "Madhu Sudan",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Madhu Sudan",
+        "howpublished": "Available at https://people.csail.mit.edu/madhu/papers/2005/rspcpp-full.pdf",
+        "title": "Reed-Solomon codes and polynomial reconstruction",
+        "year": "2005"
+      },
+      "key": "STIR2005",
+      "title": "Reed-Solomon codes and polynomial reconstruction",
+      "url": "",
+      "venue": "",
+      "year": "2005"
+    },
+    "Spi95": {
+      "authors": [
+        "Spielman, Daniel Alan"
+      ],
+      "authors_text": "Spielman, Daniel Alan",
+      "doi": "",
+      "entry_type": "phdthesis",
+      "fields": {
+        "author": "Spielman, Daniel Alan",
+        "school": "Massachusetts Institute of Technology",
+        "title": "Computationally efficient error-correcting codes and holographic proofs",
+        "year": "1995"
+      },
+      "key": "Spi95",
+      "title": "Computationally efficient error-correcting codes and holographic proofs",
+      "url": "",
+      "venue": "",
+      "year": "1995"
+    },
+    "WARP": {
+      "authors": [
+        "B{\\\"u}nz, Benedikt",
+        "Chiesa, Alessandro",
+        "Fenzi, Giacomo",
+        "Wang, William"
+      ],
+      "authors_text": "B{\\\"u}nz, Benedikt and Chiesa, Alessandro and Fenzi, Giacomo and Wang, William",
+      "doi": "",
+      "entry_type": "article",
+      "fields": {
+        "author": "B{\\\"u}nz, Benedikt and Chiesa, Alessandro and Fenzi, Giacomo and Wang, William",
+        "journal": "Cryptology ePrint Archive",
+        "title": "Linear-Time Accumulation Schemes",
+        "year": "2025"
+      },
+      "key": "WARP",
+      "title": "Linear-Time Accumulation Schemes",
+      "url": "",
+      "venue": "Cryptology ePrint Archive",
+      "year": "2025"
+    },
+    "WHIR": {
+      "authors": [
+        "Arnon, Gal",
+        "Chiesa, Alessandro",
+        "Fenzi, Giacomo",
+        "Yogev, Eylon"
+      ],
+      "authors_text": "Arnon, Gal and Chiesa, Alessandro and Fenzi, Giacomo and Yogev, Eylon",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Arnon, Gal and Chiesa, Alessandro and Fenzi, Giacomo and Yogev, Eylon",
+        "booktitle": "Annual International Conference on the Theory and Applications of Cryptographic Techniques",
+        "organization": "Springer",
+        "pages": "214--243",
+        "title": "WHIR: Reed--Solomon proximity testing with super-fast verification",
+        "year": "2025"
+      },
+      "key": "WHIR",
+      "title": "WHIR: Reed--Solomon proximity testing with super-fast verification",
+      "url": "",
+      "venue": "Annual International Conference on the Theory and Applications of Cryptographic Techniques",
+      "year": "2025"
+    },
+    "Wie88": {
+      "authors": [
+        "Wiedemann, Doug"
+      ],
+      "authors_text": "Wiedemann, Doug",
+      "doi": "10.1080/00150517.1988.12429608",
+      "entry_type": "article",
+      "fields": {
+        "author": "Wiedemann, Doug",
+        "doi": "10.1080/00150517.1988.12429608",
+        "eprint": "https://doi.org/10.1080/00150517.1988.12429608",
+        "journal": "The Fibonacci Quarterly",
+        "number": "4",
+        "pages": "290--295",
+        "publisher": "Taylor \\& Francis",
+        "title": "An Iterated Quadratic Extension of GF(2)",
+        "url": "https://doi.org/10.1080/00150517.1988.12429608",
+        "volume": "26",
+        "year": "1988"
+      },
+      "key": "Wie88",
+      "title": "An Iterated Quadratic Extension of GF(2)",
+      "url": "https://doi.org/10.1080/00150517.1988.12429608",
+      "venue": "The Fibonacci Quarterly",
+      "year": "1988"
+    },
+    "codingtheory": {
+      "authors": [
+        "Guruswami, Venkatesan",
+        "Rudra, Atri",
+        "Sudan, Madhu"
+      ],
+      "authors_text": "Guruswami, Venkatesan and Rudra, Atri and Sudan, Madhu",
+      "doi": "",
+      "entry_type": "article",
+      "fields": {
+        "author": "Guruswami, Venkatesan and Rudra, Atri and Sudan, Madhu",
+        "journal": "Draft available at http://www. cse. buffalo. edu/atri/courses/coding-theory/book",
+        "number": "1",
+        "title": "Essential coding theory",
+        "volume": "2",
+        "year": "2012"
+      },
+      "key": "codingtheory",
+      "title": "Essential coding theory",
+      "url": "",
+      "venue": "Draft available at http://www. cse. buffalo. edu/atri/courses/coding-theory/book",
+      "year": "2012"
+    },
+    "fics-facs": {
+      "authors": [
+        "Baweja, Anubhav",
+        "Mishra, Pratyush",
+        "Mopuri, Tushar",
+        "Shtepel, Matan"
+      ],
+      "authors_text": "Baweja, Anubhav and Mishra, Pratyush and Mopuri, Tushar and Shtepel, Matan",
+      "doi": "",
+      "entry_type": "article",
+      "fields": {
+        "author": "Baweja, Anubhav and Mishra, Pratyush and Mopuri, Tushar and Shtepel, Matan",
+        "journal": "Cryptology ePrint Archive",
+        "title": "FICS and FACS: Fast IOPPs and Accumulation via Code-Switching",
+        "year": "2025"
+      },
+      "key": "fics-facs",
+      "title": "FICS and FACS: Fast IOPPs and Accumulation via Code-Switching",
+      "url": "",
+      "venue": "Cryptology ePrint Archive",
+      "year": "2025"
+    },
+    "listdecoding": {
+      "authors": [
+        "Guruswami, Venkatesan",
+        "others"
+      ],
+      "authors_text": "Guruswami, Venkatesan and others",
+      "doi": "",
+      "entry_type": "article",
+      "fields": {
+        "author": "Guruswami, Venkatesan and others",
+        "journal": "Foundations and Trends{\\textregistered} in Theoretical Computer Science",
+        "number": "2",
+        "pages": "107--195",
+        "publisher": "Now Publishers, Inc.",
+        "title": "Algorithmic results in list decoding",
+        "volume": "2",
+        "year": "2007"
+      },
+      "key": "listdecoding",
+      "title": "Algorithmic results in list decoding",
+      "url": "",
+      "venue": "Foundations and Trends{\\textregistered} in Theoretical Computer Science",
+      "year": "2007"
+    },
+    "spartan": {
+      "authors": [
+        "Setty, Srinath"
+      ],
+      "authors_text": "Setty, Srinath",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Setty, Srinath",
+        "booktitle": "Annual International Cryptology Conference",
+        "organization": "Springer",
+        "pages": "704--737",
+        "title": "Spartan: Efficient and general-purpose zkSNARKs without trusted setup",
+        "year": "2020"
+      },
+      "key": "spartan",
+      "title": "Spartan: Efficient and general-purpose zkSNARKs without trusted setup",
+      "url": "",
+      "venue": "Annual International Cryptology Conference",
+      "year": "2020"
+    }
+  },
+  "source_bib": "blueprint/src/references.bib"
+}

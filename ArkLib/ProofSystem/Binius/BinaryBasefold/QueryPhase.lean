@@ -152,9 +152,10 @@ def queryCodeword (j : Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)))
   Fin.last ℓ)]ₒ) L :=
       OracleComp.lift <| by
         simpa using
-          OracleQuery.query
-            (spec := [OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ)
-            ⟨⟨j, by omega⟩, point⟩
+          OracleSpec.query
+            (show
+                [OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ.Domain from
+              ⟨⟨j, by omega⟩, point⟩)
 
 section FinalQueryRoundIOR
 
