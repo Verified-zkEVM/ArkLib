@@ -13,6 +13,7 @@ ArkLib/
   ProofSystem/        protocol families and higher-level proofs
   ToMathlib/          local additions not upstreamed to Mathlib
 blueprint/src/        blueprint sources and references.bib
+docs/kb/             persistent paper, concept, audit, and query knowledge base
 scripts/              repo utilities
 home_page/            site assets and assembled website root
 ```
@@ -33,6 +34,7 @@ home_page/            site assets and assembled website root
 - Updating commitment interfaces or concrete schemes: start in `ArkLib/CommitmentScheme/`.
 - Moving reusable helper lemmas that ideally belong upstream: start in `ArkLib/ToMathlib/`.
 - Updating theory docs, references, or long-form exposition: start in `blueprint/src/`.
+- Updating repository-local paper summaries, audits, or reference context: start in `docs/kb/`.
 
 ## Navigation Notes
 

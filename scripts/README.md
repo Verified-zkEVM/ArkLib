@@ -22,6 +22,14 @@ This directory contains various utility scripts for the ArkLib project.
   - Visual representations (PNG, SVG)
   - See `dependency_analysis/README.md` for detailed usage
 
+### Knowledge Base
+- **`kb/`** - Scripts for syncing and inspecting the repository knowledge base
+  - Export bibliography metadata
+  - Extract citation usage from `ArkLib/**/*.lean`
+  - Scaffold paper pages and lint KB structure
+  - Resolve review context from cited keys or changed Lean files
+  - See `kb/README.md` for usage
+
 ## Quick Start
 
 ### Recommended Routine Validation
@@ -69,6 +77,15 @@ bash scripts/build_timing_report.sh --help
 ### Check Docs Integrity
 ```bash
 python3 ./scripts/check-docs-integrity.py
+```
+
+### Knowledge Base Indexes
+```bash
+python3 ./scripts/kb/sync_from_bib.py
+python3 ./scripts/kb/extract_lean_citations.py
+python3 ./scripts/kb/check_generated.py
+python3 ./scripts/kb/lint.py
+python3 ./scripts/kb/review_context.py --files ArkLib/ProofSystem/Fri/Spec/SingleRound.lean
 ```
 
 ### `build_timing_report.sh`

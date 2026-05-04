@@ -1,0 +1,5 @@
+bibkey: BSS08
+source_kind: bibliography-only
+canonical_url: https://people.csail.mit.edu/madhu/papers/2005/rspcpp-full.pdf
+committed_artifacts: []
+notes: "Scaffolded from references.bib for Short PCPs with polylog query complexity."
