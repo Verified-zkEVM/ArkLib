@@ -359,7 +359,7 @@ theorem relDistFromCode_le_iff_distFromCode_le {C : Set (ι → F)} (u : ι → 
   intro hv_mem
   rw [pairRelDist_le_iff_pairDist_le]
 
-theorem relDistFromCode_le_iff_distFromCode_le' {C : Set (ι → F)} (u : ι → F) (δ : ℝ≥0) :
+theorem relDistFromCode_le_iff_distFromCode_toENNReal_le {C : Set (ι → F)} (u : ι → F) (δ : ℝ≥0) :
     δᵣ(u, C) ≤ δ ↔ (Δ₀(u, C) : ENNReal) ≤ δ * (Fintype.card ι : ℝ≥0) := by
   rw [relDistFromCode_le_iff_distFromCode_le] 
   constructor <;> intro h 

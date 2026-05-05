@@ -287,7 +287,7 @@ lemma eq_zero_of_folding_polynomial_eq_zero {q f : F[X]}
         rw [EuclideanDomain.mod_eq_sub_mul_div] at h_rem_zero 
         aesop
 
-lemma folding_polynomial_neq_zero_of_neq_zero {q f : F[X]}
+lemma folding_polynomial_ne_zero_of_ne_zero {q f : F[X]}
   (h : f ≠ 0) : foldingPolynomial q f ≠ 0 := fun contra ↦ by
   simp_all [eq_zero_of_folding_polynomial_eq_zero contra]
 

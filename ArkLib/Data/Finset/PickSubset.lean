@@ -42,7 +42,7 @@ lemma pick_subset_zero {s : Finset α} :
 
 /-- Picking from an empty set always yields an empty set. -/
 @[simp]
-lemma pick_subset_emptyset {n : ℕ} :
+lemma pick_subset_empty {n : ℕ} :
   pickSubset (∅ : Finset α) n = ∅ := by 
   induction n with
   | zero => rfl
@@ -82,7 +82,7 @@ lemma card_pick_subset {s : Finset α} {n : ℕ} :
       aesop (add safe (by omega))
 
 @[simp]
-lemma card_pick_le_n {s : Finset α} {n : ℕ} :
+lemma card_pick_subset_le {s : Finset α} {n : ℕ} :
   (pickSubset s n).card ≤ n := by simp 
 
 /-- Picking non-zero elements from a non-empty set is not empty. -/
@@ -106,18 +106,18 @@ lemma pick_subset_eq_s_of_card_le_n {s : Finset α} {n : ℕ}
 
 /-- If the picked subset does not meet the target cardinality requirement
   then we must have obtained the original set `s`. -/
-lemma pick_subset_eq_s_of_card_pick_subset_lt_n {s : Finset α} {n : ℕ}
+lemma pick_subset_eq_of_card_pick_subset_lt {s : Finset α} {n : ℕ}
   (h : (s.pickSubset n).card < n) :
   pickSubset s n = s := by
   rw [←Finset.eq_iff_card_le_of_subset pick_subset_subset]
   aesop (add safe (by omega))
   
 /-- `pickSubset` is of cardinality `n` if it is a proper subset of `s`. -/
-lemma pick_subset_card_eq_n_of_ne {s : Finset α} {n : ℕ}
+lemma pick_subset_card_eq_of_ne {s : Finset α} {n : ℕ}
   (h : pickSubset s n ≠ s) :
   (pickSubset s n).card = n := by
   by_contra contra
-  exact h ∘ pick_subset_eq_s_of_card_pick_subset_lt_n <| 
+  exact h ∘ pick_subset_eq_of_card_pick_subset_lt <| 
     lt_of_le_of_ne (by simp) contra 
   
 end PickSubset

@@ -41,12 +41,12 @@ noncomputable def indicator (pos neg : Finset F) : F[X] :=
 
   Note, `indicator ∅ ∅ = 0` too! -/
 @[simp]
-lemma indicator_is_0_if_pos_empty {neg : Finset F} :
+lemma indicator_eq_0_of_pos_empty {neg : Finset F} :
   indicator ∅ neg = 0 := by simp [indicator]
 
 /-- The indicator polynomial is a constant one polynomial
   if the set `neg` is empty while `pos` is not. -/
-lemma indicator_is_1_if_neg_is_empty_and_pos_non_empty
+lemma indicator_eq_1_of_neg_empty_empty_of_pos_nonempty
   {pos : Finset F}
   (h_pos : pos.Nonempty) : 
   indicator pos ∅ = 1 := by 
@@ -73,7 +73,7 @@ lemma indicator_is_1_if_neg_is_empty_and_pos_non_empty
     
 /-- If `pos` is non-empty then the indicator polynomial is the constant 
   zero polynomial. -/
-lemma indicator_ne_if_pos_is_nonempty {pos neg : Finset F}
+lemma indicator_ne_zero_of_pos_nonempty {pos neg : Finset F}
   (h : pos.Nonempty) :
   indicator pos neg ≠ 0 := by 
   unfold indicator
@@ -133,20 +133,20 @@ lemma indicator_degree_lt {pos neg : Finset F} :
 
 /-- The natDegree of the indicator polynomial 
   is less than `#(pos ∪ neg)` when `pos` is non-empty. -/
-lemma indicator_natDegree_lt {pos neg : Finset F}
+lemma indicator_natDegree_lt_of_pos_nonempty {pos neg : Finset F}
   (h : pos.Nonempty) :
   (indicator pos neg).natDegree < (pos ∪ neg).card := by
   rw [Polynomial.natDegree_lt_iff_degree_lt 
-        (indicator_ne_if_pos_is_nonempty h)]
+        (indicator_ne_zero_of_pos_nonempty h)]
   exact indicator_degree_lt
 
 /-- The natDegree of the indicator polynomial 
   is less than `#(pos ∪ neg)` when `neg` is non-empty. -/
-lemma indicator_natDegree_lt' {pos neg : Finset F}
+lemma indicator_natDegree_lt_of_neg_nonempty {pos neg : Finset F}
   (h : neg.Nonempty) :
   (indicator pos neg).natDegree < (pos ∪ neg).card := by
   by_cases hpos : pos.Nonempty
-  · exact indicator_natDegree_lt hpos
+  · exact indicator_natDegree_lt_of_pos_nonempty hpos
   · aesop 
 
 /-- If `pos` is a subset of `neg` then the degree of
@@ -161,23 +161,23 @@ lemma indicator_degree_lt_of_pos_subset_neg {pos neg : Finset F}
 
 /-- If `pos` is a subset of `neg` then the natDegree of
   the indicator polynomial is less than `#neg` when `pos` is nonempty. -/
-lemma indicator_natDegree_lt_of_pos_subset_neg {pos neg : Finset F}
+lemma indicator_natDegree_lt_of_pos_nonempty_of_pos_subset_neg {pos neg : Finset F}
   (h_nonEmpty : pos.Nonempty)
   (h : pos ⊆ neg) :
   (indicator pos neg).natDegree < neg.card := by
   rw [Polynomial.natDegree_lt_iff_degree_lt 
-        (indicator_ne_if_pos_is_nonempty h_nonEmpty)]
+        (indicator_ne_zero_of_pos_nonempty h_nonEmpty)]
   exact indicator_degree_lt_of_pos_subset_neg h
 
 /-- If `pos` is a subset of `neg` then the natDegree of
   the indicator polynomial is less than `#neg` when `neg` is nonempty. -/
-lemma indicator_natDegree_lt_of_pos_subset_neg' {pos neg : Finset F}
+lemma indicator_natDegree_lt_of_neg_nonempty_of_pos_subset_neg {pos neg : Finset F}
   (h_nonEmpty : neg.Nonempty)
   (h : pos ⊆ neg)
   :
   (indicator pos neg).natDegree < neg.card := by
   by_cases h_pos : pos.Nonempty
-  · exact indicator_natDegree_lt_of_pos_subset_neg h_pos h
+  · exact indicator_natDegree_lt_of_pos_nonempty_of_pos_subset_neg h_pos h
   · rw [Finset.not_nonempty_iff_eq_empty] at h_pos
     simp [h_pos, h_nonEmpty]
 
@@ -193,20 +193,20 @@ noncomputable def singletonIndicator (x : F) (S : Finset F) : F[X]
 /-- Singleton indicator polynomial is a constant one polynomial
   when `S` is empty. -/
 @[simp]
-lemma singleton_indicator_eq_1 :
+lemma singleton_indicator_eq_1_empty :
   singletonIndicator x ∅ = 1 := by
   unfold singletonIndicator
-  rw [indicator_is_1_if_neg_is_empty_and_pos_non_empty (by simp)]
+  rw [indicator_eq_1_of_neg_empty_empty_of_pos_nonempty (by simp)]
 
 /-- Singleton indicator evaluated on `x` is one. -/
 @[simp]
-lemma singleton_indicator_eq_1_on_x {S : Finset F} :
+lemma singleton_indicator_eval_self {S : Finset F} :
   (singletonIndicator x S).eval x = 1 := by
   unfold singletonIndicator
   rw [indicator_eq_1_on_pos (by simp)]
 
 /-- Singleton indicator on `S \ {x}` is zero. -/
-lemma singleton_indicator_eq_0_on_S_minus_x {S : Finset F} {a : F}
+lemma singleton_indicator_eval_eq_zero_of_mem_sdiff {S : Finset F} {a : F}
   (h : a ∈ S \ {x}) :
   (singletonIndicator x S).eval a = 0 := by
   unfold singletonIndicator
@@ -224,7 +224,7 @@ lemma singleton_indicator_natDegree_lt_of_mem {S : Finset F}
   (h : x ∈ S) :
   (singletonIndicator x S).natDegree < S.card := by
   unfold singletonIndicator
-  exact indicator_natDegree_lt_of_pos_subset_neg (by simp) (by simp [h])
+  exact indicator_natDegree_lt_of_pos_nonempty_of_pos_subset_neg (by simp) (by simp [h])
 
 end SingletonIndicator
 

@@ -4,7 +4,7 @@ namespace Polynomial
 
 variable {𝔽 : Type*} [Field 𝔽] 
 
-lemma poly_eq_of_eval_eq_degree {p q : 𝔽[X]} {n : ℕ}
+lemma eq_of_eval_eq_degree {p q : 𝔽[X]} {n : ℕ}
       (hp : p.degree < .some n) (hq : q.degree < .some n) (s : Finset 𝔽) :
     s.card ≥ n → (∀ x ∈ s, p.eval x = q.eval x) → p = q := by
   intros h h'
@@ -39,10 +39,10 @@ lemma poly_eq_of_eval_eq_degree {p q : 𝔽[X]} {n : ℕ}
           · rw [Polynomial.degree_eq_natDegree p_eq, this, WithBot.coe_lt_coe] at hp
             simp [hp, hq]
 
-lemma poly_eq_of_eval_eq_natDegree {p q : 𝔽[X]} {n : ℕ}
+lemma eq_of_eval_eq_natDegree {p q : 𝔽[X]} {n : ℕ}
       (hp : p.natDegree < n) (hq : q.natDegree < n) (s : Finset 𝔽) :
     s.card ≥ n → (∀ x ∈ s, p.eval x = q.eval x) → p = q := by
-    intros hs h_eval; use poly_eq_of_eval_eq_degree (by
+    intros hs h_eval; use eq_of_eval_eq_degree (by
     exact lt_of_le_of_lt (Polynomial.degree_le_natDegree) (WithBot.coe_lt_coe.mpr hp)) (by
     exact lt_of_le_of_lt (Polynomial.degree_le_natDegree) (WithBot.coe_lt_coe.mpr hq)) s hs h_eval
 
