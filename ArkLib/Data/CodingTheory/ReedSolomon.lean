@@ -414,14 +414,12 @@ theorem minDist' {ι : Type*} [Fintype ι] {F : Type*} [Field F] [DecidableEq F]
       simp
     omega
 
-set_option linter.unusedDecidableInType false
 /-- Reed-Solomon codes are maximum distance separable (MDS). -/
-lemma isMDS_code {ι : Type} [Fintype ι] [DecidableEq ι] {F : Type*} [Field F] [DecidableEq F]
+lemma isMDS_code {ι : Type} [Fintype ι] {F : Type*} [Field F] [DecidableEq F]
   {α : ι ↪ F} [NeZero n] (h : n ≤ Fintype.card ι) : LinearCode.IsMDS ((ReedSolomon.code α n)) := by
   unfold IsMDS
   rw [length_eq_domain_card', dim_eq_deg_of_le' h, Code.dist_eq_minDist]
   exact minDist' h
-
 
 /-- Generalized distance equality for RS code with arbitrary finite index type `ι`. -/
 theorem dist_eq' {ι : Type*} [Fintype ι] {F : Type*} {n : ℕ} {α : ι ↪ F}

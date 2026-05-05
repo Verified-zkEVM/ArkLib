@@ -9,18 +9,18 @@ import Mathlib.RingTheory.PicardGroup
 import Mathlib.RingTheory.SimpleRing.Principal
 
 /-!
- # Basics of MDS codes and MDS matrices
+# Basics of MDS codes and MDS matrices
 
 Lay out the fundamental definitions and theorems for maximum distance separable (MDS) codes and
 matrices. Establish an equivalence theorem : A linear code is MDS if and only if its generator
 matrix is MDS.
 
-  ## References
+## References
 
 * [Guruswami, V., Rudra, A., Sudan M., *Essential Coding Theory*, online copy][GRS25]
 -/
 
-namespace CoreResults
+namespace MDSCode
 
 variable {F : Type*}
          {k n : ℕ}
@@ -53,7 +53,7 @@ lemma minWt_ge_of_MDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n) F}
       have h_det : Matrix.det (Matrix.submatrix G id σ) = 0 := by
         have h_contra : ∃ v : Fin k → F, v ≠ 0 ∧ Matrix.vecMul v (Matrix.submatrix G id σ) = 0 := by
           obtain ⟨v, hv⟩ := hc_mem;
-          refine ⟨v, ?_, ?_⟩ <;> contrapose! hc_ne <;> simp_all +decide [funext_iff, Matrix.vecMul];
+          refine ⟨v, ?_, ?_⟩ <;> contrapose! hc_ne <;> simp_all [funext_iff, Matrix.vecMul];
           grind;
         exact Matrix.exists_vecMul_eq_zero_iff.mp h_contra;
       have := hMDS σ; aesop;
@@ -80,12 +80,6 @@ lemma vecMul_injective_of_rank_eq [Field F] {G : Matrix (Fin k) (Fin n) F} (hran
     have := LinearMap.finrank_range_add_finrank_ker (G.vecMulLinear);
     simp_all +decide [LinearMap.ker_eq_bot];
   exact h_injective hrank
-
-/-- A `k × n` matrix is MDS (Maximum Distance Separable) if every square `k × k` submatrix
-obtained by selecting `k` columns has nonzero determinant. Equivalently, every set of `k` columns
-is linearly independent. -/
-def IsMDS [CommRing F] (G : Matrix (Fin k) (Fin n) F) : Prop :=
-  ∀ σ : Fin k ↪ Fin n, (G.submatrix id σ).det ≠ 0
 
 /-- If a generator matrix is MDS with at least one row, then the code it generates is MDS. -/
 lemma IsMDS_of_matrix_IsMDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n) F}
@@ -127,7 +121,7 @@ lemma IsMDS_of_matrix_IsMDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n
           have h_proj_inj : ∃ f : C →ₗ[F] S → F, Function.Injective f := by
             refine ⟨?_, ?_⟩;
             · refine {toFun := fun c => fun i => c.val i, map_add' := ?_, map_smul' := ?_};
-              all_goals simp +decide [funext_iff];
+              all_goals simp [funext_iff];
             exact h_proj_inj;
           obtain ⟨ f, hf ⟩ := h_proj_inj;
           exact LinearMap.finrank_le_finrank_of_injective hf
@@ -137,12 +131,12 @@ lemma IsMDS_of_matrix_IsMDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n
     have h_rank_eq_k : Matrix.rank G = k := by
       have h_rank : Matrix.rank (subLeftFull G (Fin.castLE hkn)) = k := by
         apply Matrix.rank_eq_if_det_ne_zero;
-        exact hMDS ( ⟨ Fin.castLE hkn, Fin.castLE_injective hkn ⟩ );
+        exact hMDS (⟨ Fin.castLE hkn, Fin.castLE_injective hkn ⟩);
       convert Matrix.full_row_rank_via_rank_subLeftFull hkn h_rank using 1
-    generalize_proofs at *; (
+    (
     rw [show fromRowGenMat G =
     LinearMap.range (G.vecMulLinear) from rfl, LinearMap.finrank_range_of_inj ] <;>
-    simp_all +decide only [Fintype.card_fin, Submodule.carrier_eq_coe,
+    simp_all only [Fintype.card_fin, Submodule.carrier_eq_coe,
       Module.finrank_fintype_fun_eq_card];
     exact vecMul_injective_of_rank_eq h_rank_eq_k);
   have h_dist_ge : Code.dist (fromRowGenMat G).carrier ≥ n - k + 1 := by
@@ -154,8 +148,8 @@ lemma IsMDS_of_matrix_IsMDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n
         contrapose! h_rank_eq_k;
         rw [ show fromRowGenMat G = ⊥ from eq_bot_iff.mpr h_rank_eq_k ] ; simp +decide;
         linarith;
-      exact ⟨ _, ⟨ u, hu.1, 0, by simp +decide, hu.2, le_rfl ⟩ ⟩;
-    · rintro d ⟨ u, hu, v, hv, huv, hd ⟩;
+      exact ⟨ _, ⟨u, hu.1, 0, by simp +decide, hu.2, le_rfl⟩⟩;
+    · rintro d ⟨u, hu, v, hv, huv, hd⟩;
       refine le_trans (h_dist_ge (u - v) ?_ ?_) ?_;
       · exact Submodule.sub_mem _ hu hv;
       · exact sub_ne_zero_of_ne huv;
@@ -163,20 +157,20 @@ lemma IsMDS_of_matrix_IsMDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n
         exact congr_arg Finset.card ( Finset.filter_congr fun x _ => by simp +decide [sub_eq_zero]);
   have h_dist_le : Code.dist (fromRowGenMat G).carrier ≤ n - k + 1 := by
     contrapose! h_singleton_bound;
-    rw [ tsub_add_eq_add_tsub ];
-    · rw [ tsub_lt_iff_left ] <;> norm_num;
-      · linarith! [ Nat.sub_add_cancel hkn ];
-      · refine le_trans ( Code.dist_le_card _ ) ?_;
+    rw [tsub_add_eq_add_tsub];
+    · rw [tsub_lt_iff_left] <;> norm_num;
+      · linarith! [Nat.sub_add_cancel hkn];
+      · refine le_trans (Code.dist_le_card _) ?_;
         simp only [Fintype.card_fin, le_add_iff_nonneg_right, zero_le];
     · convert Code.dist_le_card _;
   convert le_antisymm h_dist_le h_dist_ge using 1;
   unfold LinearCode.IsMDS; simp only [Submodule.carrier_eq_coe];
-  unfold length dim; simp +decide [h_rank_eq_k];
+  unfold length dim; simp [h_rank_eq_k];
 
 /-- If a linear code generated by a full-rank matrix is MDS, then the matrix is MDS. -/
 lemma matrix_IsMDS_of_IsMDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n) F}
     (hCode : (fromRowGenMat G).IsMDS) (hrank : G.rank = k) : Matrix.IsMDS G := by
-  contrapose! hCode; simp_all +decide only [Matrix.IsMDS, ne_eq, not_forall, Decidable.not_not] ;
+  contrapose! hCode; simp_all only [Matrix.IsMDS, ne_eq, not_forall, Decidable.not_not] ;
   obtain ⟨σ, hσ⟩ := hCode
   obtain ⟨v, hv⟩ : ∃ v : Fin k → F, v ≠ 0 ∧ Matrix.vecMul v (G.submatrix id σ) = 0 :=
     exists_vecMul_eq_zero_iff.mpr hσ
@@ -185,8 +179,7 @@ lemma matrix_IsMDS_of_IsMDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n
     have h_inj : Function.Injective (Matrix.vecMulLinear G) := by
       apply vecMul_injective_of_rank_eq; assumption;
     exact fun h => hv.1 ( h_inj <| by simpa using h )
-  have hc_in_code : c ∈ fromRowGenMat G := by
-    exact ⟨v, rfl⟩
+  have hc_in_code : c ∈ fromRowGenMat G := ⟨v, rfl⟩
   have hc_norm : hammingNorm c ≤ n - k := by
     have hc_norm : ∀ j : Fin k, c (σ j) = 0 := by
       intro j; specialize hv; replace hv := congr_fun hv.2 j; aesop;
@@ -194,16 +187,16 @@ lemma matrix_IsMDS_of_IsMDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n
     Finset.card (Finset.univ.filter (fun i => c i ≠ 0)) ≤
     Finset.card (Finset.univ \ Finset.image σ Finset.univ) := by
       exact Finset.card_le_card fun i hi => by aesop;
-    simp_all +decide only [ne_eq, Finset.card_sdiff, Finset.card_univ, Fintype.card_fin,
+    simp_all only [ne_eq, Finset.card_sdiff, Finset.card_univ, Fintype.card_fin,
       Finset.inter_univ, Finset.card_image_of_injective _ σ.injective, ge_iff_le];
     exact hc_norm;
   have h_dist_le_norm : Code.dist (fromRowGenMat G).carrier ≤ hammingNorm c := by
-    refine Nat.sInf_le ⟨ c, hc_in_code, 0, ?_, ?_, ?_ ⟩ <;> simp +decide [hc_ne_zero];
+    refine Nat.sInf_le ⟨c, hc_in_code, 0, ?_, ?_, ?_⟩ <;> simp +decide [hc_ne_zero];
   unfold LinearCode.IsMDS;
-  simp_all +decide only [ne_eq, Code.dist, Submodule.carrier_eq_coe,
+  simp_all only [ne_eq, Code.dist, Submodule.carrier_eq_coe,
     SetLike.mem_coe];
   refine ne_of_lt (lt_of_le_of_lt h_dist_le_norm (lt_of_le_of_lt hc_norm ?_));
-  simp +decide [length, dim_fromRowGenMat, hrank]
+  simp [length, dim_fromRowGenMat, hrank]
 
 /-- A linear code `LC` of length `ι` and dimension `dim` over a field `F` is MDS if any `dim`
 columns of the generator matrix whose rows are an `F`-basis of `LC` are linearly independent.[GRS25]
@@ -211,7 +204,7 @@ Equivalently, a linear code is MDS if and only if its generator matrix is MDS.
 
 Note: the hypothesis `0 < dim LC` is necessary because for a trivial code `(dim = 0)`,
 `Matrix.IsMDS` is vacuously true while `IsMDS` requires positive distance. -/
-lemma colRank_genMatrix_eq_dim_of_MDS [Field F] [DecidableEq F]
+lemma colRank_genMatrix_iff_dim_of_MDS [Field F] [DecidableEq F]
     (LC : LinearCode (Fin n) F) (h_pos : 0 < dim LC) :
     LC.IsMDS ↔ Matrix.IsMDS (matrixFromBasis LC) := by
   set G := matrixFromBasis LC with hG
@@ -232,4 +225,4 @@ lemma colRank_genMatrix_eq_dim_of_MDS [Field F] [DecidableEq F]
     rw [hLC]
     exact IsMDS_of_matrix_IsMDS hMDS hkn h_pos
 
-end CoreResults
+end MDSCode

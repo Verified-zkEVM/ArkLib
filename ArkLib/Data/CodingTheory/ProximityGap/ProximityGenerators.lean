@@ -5,16 +5,7 @@ Authors: Katerina Hristova
 -/
 
 import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.CodingTheory.Prelims
-import ArkLib.Data.Probability.Notation
-import ArkLib.Data.MvPolynomial.Degrees
 import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
-import Mathlib.Algebra.MvPolynomial.SchwartzZippel
-import Mathlib.Data.Rat.Star
-import Mathlib.Order.CompletePartialOrder
-import Mathlib.Probability.Distributions.Uniform
-import Mathlib.RingTheory.SimpleRing.Principal
-
 
 /-!
 # Proximity Generators fundamental definitions
@@ -50,18 +41,19 @@ open scoped ProbabilityTheory
 variable {ι : Type} [Fintype ι]
          {F : Type} [Field F] [Fintype F]
          {ℓ : Type} [Fintype ℓ]
+         {S : Type} [Nonempty S] [Fintype S]
 
 /-- The type of generators, where a generator `G` over a field `F` with output size `ℓ` is a
 function that maps a seed `x` in a set `S` to a coefficient vector in `F^ℓ`.
 Definition 3.10 [BSGM25]. -/
-def Generator (S ℓ F : Type) : Type := S → (ℓ → F)
+abbrev Generator (S ℓ F : Type) : Type := S → (ℓ → F)
 
 /-- A generator `G` is zero-evading with a zero-evading error `ε_ze` if the probability of obtaining
 a zero output from a non-zero vector is bounded above by `ε_ze`.
 Definition 3.11 [BSGM25]. -/
-def IsZeroEvadingGenerator {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (ε_ze : I) :
+def IsZeroEvadingGenerator (G : Generator S ℓ F) (ε_ze : I) :
   Prop :=
-  (sSup {y | ∃ v : ℓ → F, v ≠ 0 ∧ y = Pr_{let x ←$ᵖ S}[dotProduct (G x) v = 0]})
+    (sSup {y | ∃ v : ℓ → F, v ≠ 0 ∧ y = Pr_{let x ←$ᵖ S}[dotProduct (G x) v = 0]})
     ≤ ENNReal.ofReal ε_ze
 
 /-- Let the set `S` be a product of `ℓ` subsets of `F`. A polynomial generator is a generator if
@@ -78,37 +70,35 @@ def IsPolynomialGeneratorOf {s : ℕ} (S : Fin s → Set F) (G : Generator (∀ 
 
 /-- A matrix whose rows are the outputs of the generator function.
 Defined inside Definition 3.12 [BSGM25]. -/
-def M_G {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) : Matrix S ℓ F :=
+def M_G (G : Generator S ℓ F) : Matrix S ℓ F :=
   Matrix.of G
 
-noncomputable example {S : Type} [Nonempty S] [Fintype S] [DecidableEq F] (G : Generator S ℓ F) :
-  LinearCode S F := LinearCode.fromColGenMat (M_G G)
+noncomputable example [DecidableEq F] (G : Generator S ℓ F) : LinearCode S F :=
+  LinearCode.fromColGenMat (M_G G)
 
 /-- A generator `G` is MDS if the matrix `M_G` whose rows are the outputs of the generator
 function is a generator matrix for an MDS code.
 Definition 3.12 [BSGM25]. -/
-def IsMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F] (G : Generator S ℓ F) :
-  Prop := LinearCode.IsMDS (LinearCode.fromColGenMat (M_G G))
+def IsMDSGenerator [DecidableEq F] (G : Generator S ℓ F) : Prop :=
+    LinearCode.IsMDS (LinearCode.fromColGenMat (M_G G))
 
 /-- The condition for MCA generator. -/
-def IsMCA {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (LC : LinearCode ι F)
-  (x : S) (U : ℓ → (ι → F)) (γ : I) : Prop :=
-  let v := Matrix.vecMul (G x) (U)
-  ∃ (T : Finset ι), (T.card : ℝ) ≥ (Fintype.card ι) * (1 - γ) ∧
-  projectedWord v T ∈ projectedCode LC T ∧
-  ∃ j : ℓ, projectedWord (U j) T ∉ projectedCode LC T
+def IsMCA (G : Generator S ℓ F) (LC : LinearCode ι F) (x : S) (U : ℓ → (ι → F)) (γ : I) : Prop :=
+    let v := Matrix.vecMul (G x) (U)
+    ∃ (T : Finset ι), (T.card : ℝ) ≥ (Fintype.card ι) * (1 - γ) ∧
+    projectedWord v T ∈ projectedCode LC T ∧
+    ∃ j : ℓ, projectedWord (U j) T ∉ projectedCode LC T
 
 /-- A generator has mutual correlated agreement (MCA) with error `ε_mca` if the probability that the
 generator satisfies the MCA condition is bounded above by `ε_mca`.
 Definition 3.14 [BSGM25]. -/
-def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (ε_mca : I → I)
-  (LC : LinearCode ι F) : Prop :=
-  ∀ U : ℓ → (ι → F), ∀ γ : I,
-    Pr_{let x ←$ᵖ S}[(IsMCA G LC x U γ)] ≤ ENNReal.ofReal (ε_mca γ)
+def IsMCAGenerator (G : Generator S ℓ F) (ε_mca : I → I) (LC : LinearCode ι F) : Prop :=
+    ∀ U : ℓ → (ι → F), ∀ γ : I,
+      Pr_{let x ←$ᵖ S}[(IsMCA G LC x U γ)] ≤ ENNReal.ofReal (ε_mca γ)
 
 end CoreDefinitions
 
-namespace PolyGenIsZeroEvading
+namespace PolynomialGenerator
 
 open NNReal ENNReal unitInterval MvPolynomial LinearCombination CoreDefinitions
 open scoped ProbabilityTheory ENNReal NNReal BigOperators
@@ -138,21 +128,23 @@ lemma minSeedCard_pos {F : Type} {s : ℕ} (S : Fin s → Set F)
 
 /-- The minimum of the cardinality of a family of nonempty sets is smaller than the cardinality of
 each set in the family. -/
-lemma minSeedCard_le {F : Type} {s : ℕ} (S : Fin s → Set F)
-    [∀ i, Fintype ↥(S i)] (hs : 0 < s) (i : Fin s) :
-    minSeedCard S ≤ (S i).toFinset.card := by
+lemma minSeedCard_le {F : Type} {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype ↥(S i)]
+(hs : 0 < s) (i : Fin s) : minSeedCard S ≤ (S i).toFinset.card := by
   unfold minSeedCard;
   split_ifs ; aesop
 
 noncomputable instance {F : Type} [Fintype F] {S : Set F} : Fintype S := Fintype.ofFinite ↑S
 
-set_option linter.unusedDecidableInType false
 /-- If `G` is a polynomial generator, then `G` is zero-evading with error the maximum of the total
 degrees of the individual polynomials divided by the size of the smallest evaluation sets `S i`.
-Remark 3.20 [BSGM25]. -/
-theorem remark_3_20
-  {F : Type} [Field F] [Fintype F] [DecidableEq F]
-  {ℓ : Type} [Fintype ℓ] [DecidableEq ℓ]
+Remark 3.20, the version of the statement in the brackets [BSGM25].
+Note: Remark 3.20 provides two ways of viewing a polynomial generator as a zero-evading generator.
+one in terms of individual degrees, and one in terms of total degrees. We choose the total degree
+approach. Ultimately, the reasoning is the same. The difference is the version of Schwartz-Zippel
+used to obtain the upper bound. -/
+theorem poly_gen_is_zero_evading
+  {F : Type} [Field F] [Fintype F]
+  {ℓ : Type} [Fintype ℓ]
   {s : ℕ}
   {S : Fin s → Set F} [∀ i, Nonempty ↥(S i)]
   {P : ℓ → MvPolynomial (Fin s) F}
@@ -160,8 +152,9 @@ theorem remark_3_20
   (hdm : maxTotalDegree P ≤ minSeedCard S)
   : IsZeroEvadingGenerator G ⟨(maxTotalDegree P : ℝ) / minSeedCard S,
     error_in_unit_interval (maxTotalDegree P) (minSeedCard S) (minSeedCard_pos S) hdm⟩ := by
+  classical
   unfold IsZeroEvadingGenerator;
-  simp +zetaDelta only [ne_eq, bind_pure_comp, sSup_le_iff, Set.mem_setOf_eq, forall_exists_index,
+  simp only [ne_eq, bind_pure_comp, sSup_le_iff, Set.mem_setOf_eq, forall_exists_index,
     and_imp];
   intros b x hx hb
   rw [hb];
@@ -177,6 +170,6 @@ theorem remark_3_20
                 Finset.le_sup (f := fun j => (P j |> MvPolynomial.totalDegree)) (Finset.mem_univ j)
   · exact minSeedCard_pos S
 
-end PolyGenIsZeroEvading
+end PolynomialGenerator
 
 end

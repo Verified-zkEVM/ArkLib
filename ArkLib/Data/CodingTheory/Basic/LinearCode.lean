@@ -256,14 +256,14 @@ scoped macro_rules
 /-- Let `c` be a word of length `ι`. For every finite `ι`-subset `T` , we define the projection of a
 word `c` to `T` as the word obtained by restricting the indexing set of `c` to `T`.
 We denote this by `c|[T]`.
-Definition 3.6 [BSGM25]. -/
+Definition 3.7 [BSGM25]. -/
 def projectedWord [Fintype ι] (c : ι → F) (T : Finset ι) : T → F := Set.restrict T c
 
 notation:60 c "|[" T "]" => projectedWord c T
 
 /-- Let `C` be a code of length `ι`. For every finite `ι`-subset `T`, we define the projected code
 `C|[T]` as the set of projected codewords `c|[T]`, for `c ∈ C`.
-Definition 3.6 [BSGM25]. -/
+Definition 3.7 [BSGM25]. -/
 def projectedCode [Fintype ι] (C : Set (ι → F)) (T : Finset ι) : Set (T → F) :=
   {w | ∃ c ∈ C, w = c|[T]}
 
