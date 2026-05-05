@@ -1,0 +1,272 @@
+name: Build Timing Report
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  report:
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Locate pull request and timing artifact
+        id: timing-context
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const run = context.payload.workflow_run;
+            const artifactName = 'arklib-build-timing-data';
+
+            let pullNumber = run.pull_requests?.[0]?.number;
+            if (!pullNumber) {
+              const pullRequests = await github.paginate(
+                github.rest.pulls.list,
+                { owner, repo, state: 'open', per_page: 100 }
+              );
+              const headRepo = run.head_repository?.full_name;
+              const matchedPullRequest = pullRequests.find(candidate => {
+                if (candidate.head.sha === run.head_sha) {
+                  return true;
+                }
+                return candidate.head.ref === run.head_branch &&
+                  (!headRepo || candidate.head.repo?.full_name === headRepo);
+              });
+              pullNumber = matchedPullRequest?.number;
+            }
+
+            if (!pullNumber) {
+              core.info('CI run is not associated with an open pull request.');
+              core.setOutput('should-report', 'false');
+              return;
+            }
+
+            const pullRequestResponse = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: pullNumber,
+            });
+            const pullRequest = pullRequestResponse.data;
+
+            const artifactsResponse = await github.rest.actions.listWorkflowRunArtifacts({
+              owner,
+              repo,
+              run_id: run.id,
+              per_page: 100,
+            });
+            const artifact = artifactsResponse.data.artifacts.find(candidate =>
+              candidate.name === artifactName && !candidate.expired
+            );
+            if (!artifact) {
+              core.info(`No unexpired \`${artifactName}\` artifact found for CI run ${run.id}.`);
+              core.setOutput('should-report', 'false');
+              return;
+            }
+
+            core.setOutput('should-report', 'true');
+            core.setOutput('artifact-name', artifactName);
+            core.setOutput('pr-number', String(pullRequest.number));
+            core.setOutput('head-ref', pullRequest.head.ref);
+            core.setOutput('head-sha', pullRequest.head.sha);
+            core.setOutput('base-ref', pullRequest.base.ref);
+            core.setOutput('base-sha', pullRequest.base.sha);
+            core.setOutput('source-subject', run.display_title || '');
+
+      - name: Check out reporting scripts
+        if: steps.timing-context.outputs.should-report == 'true'
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.timing-context.outputs.base-ref }}
+
+      - name: Download current timing artifact
+        if: steps.timing-context.outputs.should-report == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ steps.timing-context.outputs.artifact-name }}
+          path: ${{ runner.temp }}/build-timing-current
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Determine comparison baseline artifact
+        if: steps.timing-context.outputs.should-report == 'true'
+        id: timing-baseline
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const artifactName = '${{ steps.timing-context.outputs.artifact-name }}';
+            const workflowName = 'CI';
+            const currentRunId = Number('${{ github.event.workflow_run.id }}');
+            const currentSha = '${{ steps.timing-context.outputs.head-sha }}';
+            const pullNumber = Number('${{ steps.timing-context.outputs.pr-number }}');
+            const headRef = '${{ steps.timing-context.outputs.head-ref }}';
+            const baseRef = '${{ steps.timing-context.outputs.base-ref }}';
+            const baseSha = '${{ steps.timing-context.outputs.base-sha }}';
+
+            async function firstRunWithArtifact(runs) {
+              for (const candidateRun of runs) {
+                if (candidateRun.id === currentRunId) {
+                  continue;
+                }
+                if (candidateRun.name !== workflowName || candidateRun.conclusion !== 'success') {
+                  continue;
+                }
+                const artifactsResponse = await github.rest.actions.listWorkflowRunArtifacts({
+                  owner,
+                  repo,
+                  run_id: candidateRun.id,
+                  per_page: 100,
+                });
+                const artifact = artifactsResponse.data.artifacts.find(candidate =>
+                  candidate.name === artifactName && !candidate.expired
+                );
+                if (artifact) {
+                  return candidateRun;
+                }
+              }
+              return null;
+            }
+
+            const prRunsResponse = await github.rest.actions.listWorkflowRunsForRepo({
+              owner,
+              repo,
+              event: 'pull_request',
+              branch: headRef,
+              status: 'completed',
+              per_page: 100,
+            });
+            const previousPrCandidates = prRunsResponse.data.workflow_runs.filter(candidateRun => {
+              if (candidateRun.head_sha === currentSha) {
+                return false;
+              }
+              const prs = candidateRun.pull_requests || [];
+              return prs.length === 0 || prs.some(pr => pr.number === pullNumber);
+            });
+            const previousPrRun = await firstRunWithArtifact(previousPrCandidates);
+            if (previousPrRun) {
+              core.setOutput('run-id', String(previousPrRun.id));
+              core.setOutput('sha', previousPrRun.head_sha);
+              core.setOutput('label', 'the previous successful PR update');
+              return;
+            }
+
+            const baseRunsResponse = await github.rest.actions.listWorkflowRunsForRepo({
+              owner,
+              repo,
+              event: 'push',
+              branch: baseRef,
+              status: 'completed',
+              per_page: 100,
+            });
+            const baseCandidates = baseRunsResponse.data.workflow_runs.filter(candidateRun =>
+              candidateRun.name === workflowName && candidateRun.conclusion === 'success'
+            );
+            const exactBaseRun = await firstRunWithArtifact(
+              baseCandidates.filter(candidateRun => candidateRun.head_sha === baseSha)
+            );
+            const baseRun = exactBaseRun ?? await firstRunWithArtifact(
+              baseCandidates.filter(candidateRun => candidateRun.head_sha !== baseSha)
+            );
+            if (baseRun) {
+              const isExactBase = baseRun.head_sha === baseSha;
+              core.setOutput('run-id', String(baseRun.id));
+              core.setOutput('sha', baseRun.head_sha);
+              core.setOutput(
+                'label',
+                isExactBase
+                  ? `current base of \`${baseRef}\``
+                  : `the latest successful \`${baseRef}\` run`
+              );
+              return;
+            }
+
+            core.info('No comparison baseline artifact found.');
+            core.setOutput('run-id', '');
+            core.setOutput('sha', '');
+            core.setOutput('label', '');
+
+      - name: Download comparison baseline artifact
+        if: steps.timing-context.outputs.should-report == 'true' && steps.timing-baseline.outputs.run-id != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ steps.timing-context.outputs.artifact-name }}
+          path: ${{ runner.temp }}/build-timing-baseline
+          run-id: ${{ steps.timing-baseline.outputs.run-id }}
+          github-token: ${{ github.token }}
+
+      - name: Render build timing report
+        if: steps.timing-context.outputs.should-report == 'true'
+        env:
+          BUILD_TIMING_RESULTS: ${{ runner.temp }}/build-timing-current/results.jsonl
+          BUILD_TIMING_LOG_DIR: ${{ runner.temp }}/build-timing-current
+          BUILD_TIMING_REPORT: ${{ runner.temp }}/build-timing.md
+          BUILD_TIMING_COMMENT: ${{ runner.temp }}/build-timing-comment.md
+          BUILD_TIMING_SOURCE_SHA: ${{ steps.timing-context.outputs.head-sha }}
+          BUILD_TIMING_SOURCE_SUBJECT: ${{ steps.timing-context.outputs.source-subject }}
+          BUILD_TIMING_SOURCE_BRANCH: ${{ steps.timing-context.outputs.head-ref }}
+          BUILD_TIMING_BASELINE_LABEL: ${{ steps.timing-baseline.outputs.label }}
+          BUILD_TIMING_BASELINE_SHA: ${{ steps.timing-baseline.outputs.sha }}
+          BUILD_TIMING_TEST_NAME: Validation wrapper
+          BUILD_TIMING_TEST_COMMAND: ./scripts/validate.sh
+        run: |
+          baseline_dir="${{ runner.temp }}/build-timing-baseline"
+          if [ -f "$baseline_dir/results.jsonl" ]; then
+            bash scripts/build_timing_report.sh render "$BUILD_TIMING_RESULTS" "$baseline_dir" > "$BUILD_TIMING_REPORT"
+          else
+            bash scripts/build_timing_report.sh render "$BUILD_TIMING_RESULTS" > "$BUILD_TIMING_REPORT"
+          fi
+          cat "$BUILD_TIMING_REPORT" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo '<!-- arklib-build-timing-report -->'
+            echo
+            cat "$BUILD_TIMING_REPORT"
+          } > "$BUILD_TIMING_COMMENT"
+
+      - name: Upsert build timing PR comment
+        if: steps.timing-context.outputs.should-report == 'true'
+        uses: actions/github-script@v9
+        env:
+          BUILD_TIMING_COMMENT: ${{ runner.temp }}/build-timing-comment.md
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- arklib-build-timing-report -->';
+            const body = fs.readFileSync(process.env.BUILD_TIMING_COMMENT, 'utf8');
+            const { owner, repo } = context.repo;
+            const issue_number = Number('${{ steps.timing-context.outputs.pr-number }}');
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number, per_page: 100 }
+            );
+            const existing = comments.find(comment =>
+              comment.user?.type === 'Bot' && comment.body?.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }
