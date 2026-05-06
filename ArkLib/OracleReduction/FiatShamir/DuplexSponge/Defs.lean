@@ -100,6 +100,7 @@ class Codec {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
   encode_injective : ∀ i, Function.Injective (encode i) -- `φᵢ` is injective
   /-- `ψᵢ : Σ^{ℓ_V(i)} → Challenge i` — challenge decoder (CO25 Def. 4.1). -/
   decode : (i : pSpec.ChallengeIdx) → Vector U (challengeSize i) → pSpec.Challenge i
+  -- TODO: should we let it depend on `λ, n`?
   decodingBias : pSpec.ChallengeIdx → NNReal -- `ε_cdc`
   /-- For every `i`, `decode i` is ε-biased: `dist (𝒰 Challenge_i) (decode_i <$> 𝒰 Domain_i)`
     ≤ `decodingBias i`. Matches `Deserialize.CloseToUniform.ε_close` (CO25 Definition 4.1). -/

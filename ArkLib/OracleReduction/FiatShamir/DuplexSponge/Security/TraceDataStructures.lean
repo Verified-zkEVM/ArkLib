@@ -20,14 +20,13 @@ shape: `empty`, `add`, `inlu` (forward lookup), `outlu` (backward lookup).
 
 The lawful class `LawfulTraceTable` uses a `Multiset (K × V)` model:
 
-- `inlu t k = some v` iff `(k, v)` is in the multiset **and** no conflicting value `v'` exists,
-  and it's the unique pair with values `(k, v)` in the multiset.
-- `outlu t v = some k` iff `(k, v)` is in the multiset **and** no conflicting key `k'` exists,
-  and it's the unique pair with values `(k, v)` in the multiset.
+- `inlu t k = some v` iff `(k, v)` occurs exactly once in the multiset and no conflicting
+  value `v'` exists.
+- `outlu t v = some k` iff `(k, v)` occurs exactly once in the multiset and no conflicting
+  key `k'` exists.
 
-This handles the "redundant query" case correctly: if an adversary queries `(k, v)` twice, the
-multiset contains `[(k, v), (k, v)]`; the uniqueness condition still holds for `v`, so `inlu`
-returns `v` instead of aborting.
+Duplicate entries, even identical duplicate `(k, v)` entries, are treated as multiple matches and
+therefore lookup failure, matching CO25 Definition 5.2's sorted-list lookup semantics.
 
 By parameterizing algorithms (`BackTrack`, `LookAhead`) over `TraceTableOps`, we can swap in an
 `O(log N)` or `O(1)` implementation later without touching algorithms or security proofs.
@@ -107,22 +106,22 @@ class TraceTableOps (T : Type) (K V : outParam Type) where
 /-- Refinement-model lawfulness for a trace table, expressed via a `Multiset (K × V)` model.
 
 `toMultiSet` is the abstract mathematical content of the table.
-The `inlu`/`outlu` laws state that a lookup succeeds iff the entry exists **and** is unique
-in the multiset — handling duplicate-entry traces correctly. -/
+The `inlu`/`outlu` laws state that a lookup succeeds iff the entry exists exactly once and is the
+unique value/key match in the multiset; duplicate-entry traces are treated as multiple matches. -/
 class LawfulTraceTable (T : Type) (K V : outParam Type) [DecidableEq K] [DecidableEq V]
 extends TraceTableOps T K V where
   toMultiSet : T → Multiset (K × V)
   toMultiSet_empty : toMultiSet TraceTableOps.empty = (0 : Multiset (K × V)) := by simp [empty]
   toMultiSet_add : ∀ t k v, toMultiSet (add t k v) = (k, v) ::ₘ toMultiSet t
   -- **inlu's query result MUST BE UNIQUE**, i.e. two copies
-    -- of `(k, v)` in the multiset do not trigger the "multiple" case
+    -- of `(k, v)` in the multiset trigger the "multiple" case
   inlu_eq_some : ∀ t k v,
     inlu t k = some v ↔
       (toMultiSet t).count (k, v) = 1 ∧ -- Uniqueness of the whole (query, answer) pair `(k, v)`
       (∀ v', (k, v') ∈ toMultiSet t → v' = v) -- Uniqueness of answer value `v` according
         -- to the query key `k`
   -- **outlu's query result MUST BE UNIQUE**, i.e. two copies
-    -- of `(k, v)` in the multiset do not trigger the "multiple" case
+    -- of `(k, v)` in the multiset trigger the "multiple" case
   outlu_eq_some : ∀ t k v,
     outlu t v = some k ↔
       (toMultiSet t).count (k, v) = 1 ∧ -- Uniqueness of the whole (query, answer) pair `(k, v)`
@@ -179,6 +178,23 @@ def TraceNabla.ofQueryLog
       | ⟨.inl stmt,        capSeg⟩ => { acc with h := TraceTableOps.add acc.h stmt capSeg }
       | ⟨.inr (.inl sIn),  sOut⟩   => { acc with p := TraceTableOps.add acc.p sIn sOut }
       | ⟨.inr (.inr sOut), sIn⟩    => { acc with p := TraceTableOps.add acc.p sIn sOut }
+
+/-- Build the `tr_∇` used by CO25 StdTrace §5.5.1 Step 3.
+
+Unlike `TraceNabla.ofQueryLog`, this constructor deliberately ignores inverse-permutation trace
+entries, matching Step 3(c) of StdTrace. D2SQuery still uses the bidirectional constructor above. -/
+def TraceNabla.ofQueryLogForwardOnly
+    {T_H T_P : Type}
+    [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+    (log : DuplexSpongeTrace StmtIn U) :
+    TraceNabla T_H T_P StmtIn U :=
+  log.foldl (init := ⟨TraceTableOps.empty, TraceTableOps.empty⟩)
+    fun acc entry =>
+      match entry with
+      | ⟨.inl stmt,        capSeg⟩ => { acc with h := TraceTableOps.add acc.h stmt capSeg }
+      | ⟨.inr (.inl sIn),  sOut⟩   => { acc with p := TraceTableOps.add acc.p sIn sOut }
+      | ⟨.inr (.inr _),    _⟩      => acc
 
 /-! ### List-backed instantiation -/
 

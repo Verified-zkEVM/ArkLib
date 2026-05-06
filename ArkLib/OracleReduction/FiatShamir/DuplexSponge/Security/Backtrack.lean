@@ -169,7 +169,7 @@ private def buildBacktrackSteps
     [DecidableEq U]
     {T_P : Type}
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-    (trΔp : T_P) (fuelBound : Nat)
+    (trΔp : T_P) (depthBound : Nat)
     (state : CanonicalSpongeState U) :
     BuildBacktrackResult U :=
   let rec go (fuel : Nat) (current : CanonicalSpongeState U)
@@ -193,7 +193,7 @@ private def buildBacktrackSteps
             | .err => .err
             | .ok childFamilies => collect rest (acc ++ childFamilies)
         collect preds []
-  go fuelBound state []
+  go depthBound state []
 
 /-- CO25 Def 5.3 `S_BT(tr, s)` — maximal family of backtrack sequences
 (Eq. 8 & BackTrack §5.2 Step 2, Eq. 10): a finite set of `BacktrackSequence` pairs
@@ -230,7 +230,6 @@ def J_BT
 
 private structure RawBacktrackOutput where
   stmt : StmtIn
-  round : Fin (n + 1)
   absorbedRatePrefix : List (Vector U SpongeSize.R)
   stepPairs : List (CanonicalSpongeState U × CanonicalSpongeState U)
 
@@ -245,9 +244,8 @@ structure BacktrackOutput where
 /-- Geometric invariants for a BackTrack §5.2 Step 4 candidate (chain-length,
 rate-segment alignment, no-loop, capacity threading). -/
 private def RawBacktrackOutput.paperShapeValid
-    (out : RawBacktrackOutput (StmtIn := StmtIn) (n := n) (U := U)) : Prop :=
+    (out : RawBacktrackOutput (StmtIn := StmtIn) (U := U)) : Prop :=
   0 < out.absorbedRatePrefix.length ∧
-    out.round.1 + 1 = out.absorbedRatePrefix.length ∧
     out.stepPairs.length + 1 = out.absorbedRatePrefix.length ∧
     out.stepPairs.map (fun pair => pair.1.rateSegment) = out.absorbedRatePrefix.dropLast ∧
     (∀ pair ∈ out.stepPairs, pair.1.capacitySegment ≠ pair.2.capacitySegment) ∧
@@ -256,9 +254,9 @@ private def RawBacktrackOutput.paperShapeValid
 
 /-- Boolean executable check for `RawBacktrackOutput.paperShapeValid`. -/
 private def RawBacktrackOutput.paperShapeValidb
-    (out : RawBacktrackOutput (StmtIn := StmtIn) (n := n) (U := U)) : Bool := by
+    (out : RawBacktrackOutput (StmtIn := StmtIn) (U := U)) : Bool := by
   classical
-  exact decide (RawBacktrackOutput.paperShapeValid (StmtIn := StmtIn) (n := n) (U := U) out)
+  exact decide (RawBacktrackOutput.paperShapeValid (StmtIn := StmtIn) (U := U) out)
 
 /-- CO25 Eq. 6 — `L_δ = ⌈δ / r⌉`: number of rate blocks for the salt. -/
 private def Lδ : Nat := Nat.ceil ((δ : ℚ) / SpongeSize.R)
@@ -330,7 +328,7 @@ private def parserCheckSqueezeWindow
   exact go numBlocks
 
 private def candidateRoundFromParser
-    (out : RawBacktrackOutput (StmtIn := StmtIn) (n := n) (U := U)) :
+    (out : RawBacktrackOutput (StmtIn := StmtIn) (U := U)) :
     Option pSpec.ChallengeIdx := by
   let inputRates := out.absorbedRatePrefix
   let outputRates := out.stepPairs.map (fun pair => pair.2.rateSegment)
@@ -380,14 +378,13 @@ private def candidateRoundFromParser
     exact scan (challengeIdxList (pSpec := pSpec))
 
 private def backtrackOutputValidWithParser
-    (out : RawBacktrackOutput (StmtIn := StmtIn) (n := n) (U := U)) : Bool := by
+    (out : RawBacktrackOutput (StmtIn := StmtIn) (U := U)) : Bool := by
   match
       candidateRoundFromParser
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (δ := δ) out with
   | some parsedRound =>
-      let parsedRoundFin : Fin (n + 1) := ⟨parsedRound.1, Nat.lt_succ_of_lt parsedRound.1.2⟩
-      exact RawBacktrackOutput.paperShapeValidb (StmtIn := StmtIn) (n := n) (U := U)
-        { out with round := parsedRoundFin }
+      exact RawBacktrackOutput.paperShapeValidb (StmtIn := StmtIn) (U := U)
+        out
   | none => exact false
 
 -- TODO: duplicate of TraceTransform.lean's local helper. Consider moving to a shared module.
@@ -400,7 +397,7 @@ private def vectorOfListExact
     exact none
 
 private def encodedMessageAtChallenge
-    (out : RawBacktrackOutput (StmtIn := StmtIn) (n := n) (U := U))
+    (out : RawBacktrackOutput (StmtIn := StmtIn) (U := U))
     (i : pSpec.ChallengeIdx) :
     Option (Sigma fun msgIdx : pSpec.MessageIdx => Vector U (messageSize msgIdx)) := by
   match lastMessageBefore? (pSpec := pSpec) i with
@@ -419,7 +416,7 @@ private def encodedMessageAtChallenge
 
 private def encodedMessagesUpTo?
     (roundIdx : pSpec.ChallengeIdx)
-    (out : RawBacktrackOutput (StmtIn := StmtIn) (n := n) (U := U)) :
+    (out : RawBacktrackOutput (StmtIn := StmtIn) (U := U)) :
     Option (pSpec.EncodedMessagesUpTo U roundIdx.1.castSucc) :=
   let rec collect
       (rounds : List pSpec.ChallengeIdx) :
@@ -456,7 +453,7 @@ def backtrackOutputMessagesInImage
 
 /-- Recover the paper-facing tuple components from a raw internal candidate. -/
 private def RawBacktrackOutput.parsedTuple?
-    (out : RawBacktrackOutput (StmtIn := StmtIn) (n := n) (U := U)) :
+    (out : RawBacktrackOutput (StmtIn := StmtIn) (U := U)) :
     Option (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) := by
   match
       candidateRoundFromParser
@@ -479,6 +476,82 @@ private def RawBacktrackOutput.parsedTuple?
                   salt := salt
                   encodedMessages := encodedMessages }
 
+/-- BackTrack §5.2 Step 1: initialize the input-state list for a candidate chain. -/
+private def backtrackStep1Init
+    (state : CanonicalSpongeState U)
+    (steps : List (CanonicalSpongeState U × CanonicalSpongeState U)) :
+    List (CanonicalSpongeState U) :=
+  (steps.map Prod.fst) ++ [state]
+
+/-- BackTrack §5.2 Step 2: compute `S_BT(tr, s)` as maximal predecessor chains. -/
+private def backtrackStep2ComputeSBT
+    [DecidableEq U]
+    {T_P : Type}
+    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+    (trΔp : T_P)
+    (depthBound : Nat)
+    (state : CanonicalSpongeState U) :
+    BuildBacktrackResult U :=
+  buildBacktrackSteps (T_P := T_P) (U := U) trΔp depthBound state
+
+/-- BackTrack §5.2 Step 3: recover candidate statements/salts from `tr_∇.h.outlu`. -/
+private def backtrackStep3CandidateSalt
+    [DecidableEq StmtIn]
+    [DecidableEq U]
+    {T_H : Type}
+    [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    (trΔh : T_H)
+    (state : CanonicalSpongeState U)
+    (stepFamilies : List (List (CanonicalSpongeState U × CanonicalSpongeState U))) :
+    List (RawBacktrackOutput (StmtIn := StmtIn) (U := U)) :=
+  stepFamilies.foldr (fun steps acc =>
+    let inputStates := backtrackStep1Init (U := U) state steps
+    let outsForSteps :=
+      match inputStates.head? with
+      | none =>
+        -- Unreachable because Step 1 appends `state`.
+        []
+      | some startState =>
+        -- Paper §5.2: `tr_∇.h.outlu(cap)` returns the unique statement, or `⊥`.
+        let hashStmts :=
+          (TraceTableOps.outlu trΔh startState.capacitySegment).toList
+        let absorbedRatePrefix := inputStates.map CanonicalSpongeState.rateSegment
+        hashStmts.map fun stmt => ⟨stmt, absorbedRatePrefix, steps⟩
+    outsForSteps ++ acc) []
+
+/-- BackTrack §5.2 Step 4: parser checks and assembly of paper output tuples. -/
+private def backtrackStep4CandidateMessages
+    (rawOuts : List (RawBacktrackOutput (StmtIn := StmtIn) (U := U))) :
+    List (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
+  rawOuts.filterMap fun out =>
+    match
+        candidateRoundFromParser
+          (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (δ := δ) out with
+    | some _ =>
+        if
+            backtrackOutputValidWithParser
+              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (δ := δ) out
+        then
+          RawBacktrackOutput.parsedTuple?
+            (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (δ := δ) out
+        else
+          none
+    | none => none
+
+/-- BackTrack §5.2 Step 5: select the unique tuple, return paper-`none`, or paper-`err`. -/
+private def backtrackStep5Select
+    (outs : List (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))) :
+    OptionT Option (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
+  match outs with
+  | [] =>
+      -- `none` in the paper.
+      failure
+  | [out] =>
+      return out
+  | _ :: _ :: _ =>
+      -- More than one valid candidate output: `err` in the paper.
+      OptionT.mk none
+
 /-- The backtracking procedure in Section 5.2, which takes in:
 - the query-answer trace for the oracle `(h, p, p⁻¹)`
 - a state (vector of `N` units)
@@ -488,73 +561,31 @@ And returns one of the following:
 - `err`
 - the unique paper tuple `(i, 𝕩, τ, (α̂_1, …, α̂_i))` in `Outs`
 
-Implementation note: this executable surface now enforces structural tuple-shape checks used by
-downstream reductions (exact round/prefix alignment plus capacity-chain coherence across recovered
-steps), together with Algorithm 1 Item 3/4 parser-level checks (salt remainder, block offsets,
+Implementation note: this executable surface enforces capacity-chain coherence across recovered
+steps, together with Algorithm 1 Item 3/4 parser-level checks (salt remainder, block offsets,
 message remainder consistency, and verifier-squeeze window consistency).
 
-TODO: figure out the best way to encode the two errors (currently we encode `err` as the failure of
-OracleComp, and `none` as `Option.none` inside) -/
+TODO: replace the temporary `OptionT Option` carrier with a dedicated result enum once callers need
+to distinguish paper-`err` from paper-`none` at the type level. -/
 def backTrack [DecidableEq StmtIn] [DecidableEq U] {T_H T_P : Type}
     [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (trΔ : TraceNabla T_H T_P StmtIn U)
-    (fuelBound : Nat)
+    (depthBound : Nat)
     (state : CanonicalSpongeState U) :
     OptionT Option (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
-  match buildBacktrackSteps (T_P := T_P) (U := U) trΔ.p fuelBound state with
+  match backtrackStep2ComputeSBT (T_P := T_P) (U := U) trΔ.p depthBound state with
   | .err =>
     -- `err` in the paper.
     OptionT.mk none
   | .ok stepFamilies =>
-    let rawOuts :
-        List (RawBacktrackOutput (StmtIn := StmtIn) (n := n) (U := U)) :=
-      stepFamilies.foldr (fun steps acc =>
-        let inputStates : List (CanonicalSpongeState U) := (steps.map Prod.fst) ++ [state]
-        let outsForSteps :=
-          match inputStates.head? with
-          | none =>
-            -- Unreachable because `inputStates` is always nonempty.
-            []
-          | some startState =>
-            if hSteps : steps.length ≤ n then
-              -- Paper §5.2: `tr_∇.h.outlu(cap)` returns the unique stmt with that capacity, or
-              -- ⟂ on zero/multiple matches (collapsed here to the empty list, paper-`none`).
-              let hashStmts :=
-                (TraceTableOps.outlu trΔ.h startState.capacitySegment).toList
-              let i : Fin (n + 1) := ⟨steps.length, Nat.lt_succ_of_le hSteps⟩
-              let absorbedRatePrefix := inputStates.map CanonicalSpongeState.rateSegment
-              hashStmts.map fun stmt => ⟨stmt, i, absorbedRatePrefix, steps⟩
-            else
-              -- Backtrack candidates beyond the protocol round bound are discarded.
-              []
-        outsForSteps ++ acc) []
-    let outs := rawOuts.filterMap fun out =>
-      match
-          candidateRoundFromParser
-            (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (δ := δ) out with
-      | some parsedRound =>
-          let parsedRoundFin : Fin (n + 1) := ⟨parsedRound.1, Nat.lt_succ_of_lt parsedRound.1.2⟩
-          let out' : RawBacktrackOutput (StmtIn := StmtIn) (n := n) (U := U) :=
-            { out with round := parsedRoundFin }
-          if
-              backtrackOutputValidWithParser
-                (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (δ := δ) out'
-          then
-            RawBacktrackOutput.parsedTuple?
-              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (δ := δ) out'
-          else
-            none
-      | none => none
-    match outs with
-    | [] =>
-      -- `none` in the paper.
-      failure
-    | [out] =>
-      return out
-    | _ :: _ :: _ =>
-      -- More than one valid candidate output: `err` in the paper.
-      OptionT.mk none
+    let rawOuts :=
+      backtrackStep3CandidateSalt
+        (StmtIn := StmtIn) (U := U) trΔ.h state stepFamilies
+    let outs :=
+      backtrackStep4CandidateMessages
+        (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) rawOuts
+    backtrackStep5Select (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) outs
 
 end
 

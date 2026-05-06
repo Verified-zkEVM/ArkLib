@@ -60,18 +60,18 @@ def StdTraceAbort [DecidableEq StmtIn] [DecidableEq U]
 
 /-- Paper-facing predicate: `BackTrack` does not hit the `err` branch on `(trace, state)`.
 
-The caller supplies the generic `tr_∇`; the predicate keeps `trace` only for the fuel bound and
+The caller supplies the generic `tr_∇`; the predicate keeps `trace` only for the depth bound and
 for alignment with the bad-event hypotheses. -/
 def BackTrackNoAbort [DecidableEq StmtIn] [DecidableEq U]
     {T_H : Type}
     {T_P : Type}
     [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-    (fuelBound : ℕ)
+    (depthBound : ℕ)
     (trΔ : TraceNabla T_H T_P StmtIn U)
     (state : CanonicalSpongeState U) : Prop :=
   (backTrack (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    (trΔ := trΔ) (fuelBound := fuelBound) (state := state)).run ≠
+    (trΔ := trΔ) (depthBound := depthBound) (state := state)).run ≠
     (none : Option (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
 
 /-- Paper-facing predicate: `LookAhead(tr_∇.p, state, i)` does not hit the `err` branch. -/
@@ -152,7 +152,7 @@ lemma claim_5_19_backTrack_noAbort [DecidableEq StmtIn] [DecidableEq U]
     (hFork : ¬ BadEventDS.E_fork trace state S_BT) :
     BackTrackNoAbort (δ := δ)
       (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      (codec := codec) (fuelBound := trace.length + 1) (trΔ := trΔ) (state := state) := by
+      (codec := codec) (depthBound := trace.length + 1) (trΔ := trΔ) (state := state) := by
   sorry
 
 /-- CO25 Claim 5.20 — If `¬ E_prp(tr)`, then `LookAhead(tr.p, s, i) ≠ err` for all `(s, i)`.

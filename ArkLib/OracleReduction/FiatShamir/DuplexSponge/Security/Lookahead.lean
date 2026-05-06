@@ -28,12 +28,9 @@ This file contains the lookahead sequence family `S_LA(tr_∇.p, s, i)` and the 
 
 ## Paper-faithful black-box `tr_∇.p` access
 
-`LookAhead` consults the simulator's permutation table `tr_∇.p` exclusively through the
-operational interface `TraceTableOps.inlu`.  `successorCandidates trΔp s` collapses to
-`tr_∇.p.inlu(s)` plus the no-loop guard `cap(s) ≠ cap(s')`; when `inlu = ⟂` (zero **or** multiple
-matches), the procedure terminates the chain — matching Algorithm 2.  By parameterizing every
-step over `[LawfulTraceTable T_P ...]`, the executable procedure and the soundness lemmas built
-on `LookaheadSequence` are independent of the concrete trace representation.
+`LookAhead` enumerates the query-answer entries in the simulator's permutation table `tr_∇.p`.
+This preserves the paper's branching behavior: zero successors means `none`, while multiple
+maximal successor chains survive into `S_LA` and make Step 2 return `err`.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
@@ -58,7 +55,7 @@ noncomputable section
 subject to the following conditions:
 - The list is nonempty
 - The first input state is the given initial state
-- Every pair appears as a unique forward lookup in `tr_∇.p`, i.e. `inlu trΔp s_in = some s_out`
+- Every pair appears in the query-answer entries of `tr_∇.p`
 - Consecutive pairs are linked by output/input equality
 - No-loop: `cap(s_in) ≠ cap(s_out)` at every step
 -/
@@ -73,9 +70,9 @@ structure LookaheadSequence
   nonempty : pairs ≠ []
   /-- `s_{in,0} = state` — LookAhead §5.3 Step 1(b). -/
   first_inputState_eq_state : pairs.head?.map Prod.fst = some state
-  /-- `inlu(tr_∇.p, s_{in,ι}) = some s_{out,ι}` — unique forward lookup (§5.3 Step 1). -/
-  inputOutput_via_inlu : ∀ pair ∈ pairs,
-    TraceTableOps.inlu (V := CanonicalSpongeState U) trΔp pair.1 = some pair.2
+  /-- `(s_{in,ι}, s_{out,ι}) ∈ tr_∇.p` — LookAhead §5.3 Step 1(c) query-answer membership. -/
+  inputOutput_mem_entries : ∀ pair ∈ pairs,
+    pair ∈ TraceTableOps.entries (V := CanonicalSpongeState U) trΔp
   /-- `s_{out,ι-1} = s_{in,ι}` — LookAhead §5.3 Step 1(c) consecutive linkage. -/
   outputState_eq_next_inputState : List.IsChain (fun a b => a.2 = b.1) pairs
   /-- `cap(s_{in,ι}) ≠ cap(s_{out,ι})` — LookAhead §5.3 Step 1(d) no-loop guard. -/
@@ -131,62 +128,33 @@ abbrev S_LA
 
 /-! ## §5.3 Step 1 — Parse `tr_∇.p` into the maximal family `S_LA(tr_∇.p, s, i)` (Eq. 13) -/
 
-/-- Successor candidates from `tr_∇.p` (paper §5.3 Algorithm 2 line "next ← inlu(p, current)").
-Returns a singleton `[next]` when the unique forward lookup succeeds and `cap` does not loop;
-otherwise `[]` (i.e. paper-`⟂`/skip). Multiple matches collapse to `[]` via `inlu`'s uniqueness
-law — the paper-`err` case is detected only at the maximal-family level. -/
+/-- Successor candidates from the query-answer entries of `tr_∇.p`.
+
+Unlike `TraceTableOps.inlu`, this keeps all forward matches so multiple successor chains reach
+`S_LA` and are reported as paper-`err` by Step 2. -/
 private def successorCandidates
     (trΔp : T_P) (current : CanonicalSpongeState U) :
-    List (CanonicalSpongeState U) :=
-  match TraceTableOps.inlu (V := CanonicalSpongeState U) trΔp current with
-  | none => []
-  | some next =>
-    if current.capacitySegment = next.capacitySegment then []
-    else [next]
-
-private lemma mem_successorCandidates_iff
-    (trΔp : T_P) (current next : CanonicalSpongeState U) :
-    next ∈ successorCandidates (T_P := T_P) (U := U) trΔp current ↔
-      TraceTableOps.inlu (V := CanonicalSpongeState U) trΔp current = some next ∧
-        current.capacitySegment ≠ next.capacitySegment := by
-  unfold successorCandidates
-  cases hLookup :
-      TraceTableOps.inlu (V := CanonicalSpongeState U) trΔp current with
-  | none =>
-      constructor
-      · intro hMem
-        exact (List.not_mem_nil hMem).elim
-      · rintro ⟨hSome, _⟩
-        cases hSome
-  | some v =>
-      by_cases hCap : current.capacitySegment = v.capacitySegment
-      · simp only [hCap, ↓reduceIte, List.not_mem_nil, false_iff, not_and, not_not]
-        intro hSome
-        have hvn : v = next := Option.some.inj hSome
-        subst hvn
-        rfl
-      · simp only [hCap, ↓reduceIte, List.mem_singleton]
-        constructor
-        · intro hMem
-          subst hMem
-          exact ⟨rfl, hCap⟩
-        · rintro ⟨hSome, _⟩
-          exact (Option.some.inj hSome).symm
+    List (CanonicalSpongeState U) := by
+  classical
+  exact (TraceTableOps.entries (V := CanonicalSpongeState U) trΔp).filterMap fun pair =>
+    if pair.1 = current then
+      if current.capacitySegment = pair.2.capacitySegment then none else some pair.2
+    else none
 
 private def singletonLookaheadSequence
     (trΔp : T_P)
     (state next : CanonicalSpongeState U)
-    (hInlu : TraceTableOps.inlu (V := CanonicalSpongeState U) trΔp state = some next)
+    (hEntry : (state, next) ∈ TraceTableOps.entries (V := CanonicalSpongeState U) trΔp)
     (hNoLoop : state.capacitySegment ≠ next.capacitySegment) :
     LookaheadSequence trΔp state :=
   { pairs := [(state, next)]
     nonempty := by simp
     first_inputState_eq_state := by simp
-    inputOutput_via_inlu := by
+    inputOutput_mem_entries := by
       intro pair hPair
       have hPair' : pair = (state, next) := List.mem_singleton.mp hPair
       subst hPair'
-      exact hInlu
+      exact hEntry
     outputState_eq_next_inputState := by simp
     capacitySegment_inputState_ne_outputState := by
       intro pair hPair
@@ -198,19 +166,19 @@ set_option linter.flexible false in
 private def prependLookaheadSequence
     (trΔp : T_P)
     (state next : CanonicalSpongeState U)
-    (hInlu : TraceTableOps.inlu (V := CanonicalSpongeState U) trΔp state = some next)
+    (hEntry : (state, next) ∈ TraceTableOps.entries (V := CanonicalSpongeState U) trΔp)
     (hNoLoop : state.capacitySegment ≠ next.capacitySegment)
     (tail : LookaheadSequence trΔp next) :
     LookaheadSequence trΔp state :=
   { pairs := (state, next) :: tail.pairs
     nonempty := by simp
     first_inputState_eq_state := by simp
-    inputOutput_via_inlu := by
+    inputOutput_mem_entries := by
       intro pair hPair
       rcases List.mem_cons.mp hPair with hEq | hRest
       · subst hEq
-        exact hInlu
-      · exact tail.inputOutput_via_inlu pair hRest
+        exact hEntry
+      · exact tail.inputOutput_mem_entries pair hRest
     outputState_eq_next_inputState := by
       cases hPairs : tail.pairs with
       | nil =>
@@ -252,12 +220,12 @@ private def buildLookaheadCandidates
       let succs := successorCandidates (T_P := T_P) (U := U) trΔp current
       let buildFromNext (next : CanonicalSpongeState U) :
           List (LookaheadCandidate (T_P := T_P) (U := U) trΔp current (fuel + 1)) :=
-        if hInlu :
-            TraceTableOps.inlu (V := CanonicalSpongeState U) trΔp current = some next then
+        if hEntry :
+            (current, next) ∈ TraceTableOps.entries (V := CanonicalSpongeState U) trΔp then
           if hNoLoop : current.capacitySegment ≠ next.capacitySegment then
             let singletonSeq :=
               singletonLookaheadSequence (T_P := T_P) (U := U)
-                trΔp current next hInlu hNoLoop
+                trΔp current next hEntry hNoLoop
             let singletonCandidate :
                 LookaheadCandidate (T_P := T_P) (U := U) trΔp current (fuel + 1) :=
               { seq := singletonSeq
@@ -272,7 +240,7 @@ private def buildLookaheadCandidates
                   (tail : LookaheadCandidate (T_P := T_P) (U := U) trΔp next fuel) =>
                 let seq :=
                   prependLookaheadSequence (T_P := T_P) (U := U)
-                    trΔp current next hInlu hNoLoop tail.seq
+                    trΔp current next hEntry hNoLoop tail.seq
                 have hLen : seq.pairs.length ≤ fuel + 1 := by
                   have hSeqLen : seq.pairs.length = tail.seq.pairs.length + 1 := by
                     unfold seq
