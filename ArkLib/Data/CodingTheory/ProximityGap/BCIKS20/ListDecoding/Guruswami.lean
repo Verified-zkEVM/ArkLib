@@ -78,7 +78,7 @@ structure ModifiedGuruswami
     degreeX Q < D_X ((k + 1) / (n : ℚ)) n m
   /-- The Y-degree bound. -/
   Q_D_Y :
-    D_Y Q < D_X (k + 1 / (n : ℚ)) n m / k
+    D_Y Q < D_X ((k + 1 : ℚ) / n) n m / k
   /-- The YZ-degree bound. -/
   Q_D_YZ :
     D_YZ Q ≤ n * (m + 1/(2 : ℚ))^3 / (6 * Real.sqrt ((k + 1) / n))
