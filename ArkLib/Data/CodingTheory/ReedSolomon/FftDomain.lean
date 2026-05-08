@@ -271,15 +271,17 @@ end Finset
 namespace FftDomain
 
 /-- Convert an FFT domain into a list of all its members
-  with proofs the members belong to the FFT domain. -/
-noncomputable def toList (ω : FftDomain ι F) : List (ω.toFinset) :=
-  Finset.toListWithProof <| ω.toFinset
+  with proofs the members belong to the FFT domain.
 
-set_option linter.unusedSimpArgs false in -- false alert
+  Computable for FFT domains indexed by `Fin m`, by enumerating via `List.finRange m`. -/
+def toList {m : ℕ} [NeZero m] (ω : FftDomain (Fin m) F) : List (ω.toFinset) :=
+  (List.finRange m).map fun i ↦ ⟨ω i, by simp [toFinset]⟩
+
 omit [DecidableEq ι] in
-lemma toList_eq_finset_toList {ω : FftDomain ι F} :
-  ω.toList.map (fun x ↦ x.1) = ω.toFinset.toList := by
-  simp [mem_finset_iff_exists, toList]
+lemma toList_eq_finset_toList {m : ℕ} [NeZero m] {ω : FftDomain (Fin m) F} :
+  ω.toList.map (fun x ↦ x.1) =
+    (List.finRange m).map ω := by
+  simp [toList]
 
 def toSubgroup (ω : FftDomain ι F) : Subgroup Fˣ where
   carrier := Finset.image ω.domain Finset.univ
@@ -1086,7 +1088,7 @@ open FftDomain
 @[simp]
 lemma size_of_smooth_coset_domain_eq_pow_of_2 {n : ℕ} {ω : SmoothCosetFftDomain n F} :
   Finset.card ω.toFinset = 2 ^ n := by
-  aesop 
+  aesop
     (add simp [CosetFftDomain.toFinset, Finset.card_image_of_injective, CosetFftDomain.injective])
 
 /-- Given a smooth coset FFT domain `ω` of log-order `n` returns

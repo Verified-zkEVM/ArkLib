@@ -81,7 +81,7 @@ instance :
 
 /- Oracle reduction for all folding rounds of the FRI protocol -/
 @[reducible]
-noncomputable def reductionFold :
+def reductionFold :
   OracleReduction []ₒ
     (Statement F (0 : Fin (k + 1))) (OracleStatement s ω (0 : Fin (k + 1)))
       (Witness F s d (0 : Fin (k + 2)))
@@ -95,7 +95,7 @@ noncomputable def reductionFold :
 
 /- Oracle reduction of the FRI protocol. -/
 @[reducible]
-noncomputable def reduction [DecidableEq F] :
+def reduction [DecidableEq F] :
   OracleReduction []ₒ
     (Statement F (0 : Fin (k + 1))) (OracleStatement s ω (0 : Fin (k + 1)))
       (Witness F s d (0 : Fin (k + 2)))
