@@ -32,5 +32,10 @@ name = "CompPoly"
 git = "https://github.com/Verified-zkEVM/CompPoly"
 rev = "56d10c947e3427c852b708a424f585c5673b039c"
 
+[[require]]
+name = "Clean"
+git = "https://github.com/XC0R/clean"
+rev = "6c0f7da5"
+
 [[lean_lib]]
 name = "ArkLib"

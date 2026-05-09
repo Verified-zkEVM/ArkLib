@@ -1,4 +1,5 @@
 import ArkLib.AGM.Basic
+import ArkLib.Bridge.Clean
 import ArkLib.CommitmentScheme.Basic
 import ArkLib.CommitmentScheme.Fold
 import ArkLib.CommitmentScheme.KZG
