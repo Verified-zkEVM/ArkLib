@@ -24,7 +24,8 @@ This directory contains tools and visualizations for analyzing the dependency st
 
 ### 1. `arklib_dependencies.dot` / `arklib_dependencies.png`
 - **Full dependency graph** showing all modules and their import relationships
-- Size depends on the current checkout; the generator prints the current module and edge counts
+- Size depends on the current checkout; the generator prints Lean file and module counts, and the
+  explorer reports node and edge counts when it loads the JSON
 - Includes internal `ArkLib.*` import edges; external imports such as Mathlib are parsed but not
   emitted in the graph
 - **Warning**: This graph is very large and may be hard to read due to the number of connections
@@ -50,7 +51,7 @@ This directory contains tools and visualizations for analyzing the dependency st
 The dependency graph groups modules by the first component after `ArkLib.`. Current categories
 include:
 
-1. **AGM** - Algebraic Geometry and Mathematics
+1. **AGM** - Algebraic Group Model
 2. **CommitmentScheme** - Cryptographic commitment schemes
 3. **Data** - Core data structures and algorithms
 4. **OracleReduction** - Oracle reduction protocols
