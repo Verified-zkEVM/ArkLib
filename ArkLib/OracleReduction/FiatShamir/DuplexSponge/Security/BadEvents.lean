@@ -348,7 +348,7 @@ def traceDistOfConcreteExperiment
 
 variable {StmtOut : Type}
   [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
-  {codec : Codec pSpec U} {δ : ℕ} [DecidableEq StmtIn] [DecidableEq U]
+  [codec : Codec pSpec U] {δ : ℕ} [DecidableEq StmtIn] [DecidableEq U]
   [SampleableType U]
   [∀ i, Fintype (pSpec.Message i)]
   [∀ i, DecidableEq (pSpec.Message i)]
@@ -440,39 +440,39 @@ noncomputable def lemma5_8RealTraceDist
     initReal implReal
     (lemma5_8TraceExperiment
       (StmtIn := StmtIn) (StmtOut := StmtOut)
-      (pSpec := pSpec) (U := U) (codec := codec) V maliciousProver)
+      (pSpec := pSpec) (U := U) V maliciousProver)
 
 /-- CO25 Lemma 5.8 — Right-hand-side trace distribution.
 Simulator execution under `g ← 𝒟_Σ(λ, n)` with `D2SQuery` as the oracle implementation.
 Returns the DS query-answer trace of the combined `(P̃ ‖ V)` execution. -/
 noncomputable def lemma5_8SigmaTraceDist
-    (simParams : ProverTransform.D2SQueryParams
-      (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec))
+    (simParams : ProverTransform.D2SCodecBridge
+      (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
     (maliciousProver :
       OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages))
     (onSimAbort :
       (q : (duplexSpongeChallengeOracle StmtIn U).Domain) →
         ProverTransform.D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
-              (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) →
+              (StmtIn := StmtIn) (pSpec := pSpec) (U := U) →
           (duplexSpongeChallengeOracle StmtIn U).Range q ×
             ProverTransform.D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
-              (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) :=
+              (StmtIn := StmtIn) (pSpec := pSpec) (U := U) :=
       ProverTransform.d2sQueryAbortFallback
         (δ := δ) (T_H := T_H) (T_P := T_P)
-        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)) :
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U)) :=
   lemma5_8ProjectedTraceDistOfConcreteExperiment (StmtIn := StmtIn) (U := U)
     (pure default)
     (ProverTransform.d2sQueryImplCoreProb
       (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec)
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
       (unitImpl := ProverTransform.d2sUnitSampleImpl (U := U))
       (params := simParams)
       (onAbort := onSimAbort))
     (lemma5_8TraceExperiment
       (StmtIn := StmtIn) (StmtOut := StmtOut)
-      (pSpec := pSpec) (U := U) (codec := codec) V maliciousProver)
+      (pSpec := pSpec) (U := U) V maliciousProver)
 
 set_option linter.unusedDecidableInType false in
 /-- CO25 Lemma 5.8 — Bad-event probability bound.
@@ -491,21 +491,21 @@ theorem lemma_5_8
     {σReal : Type}
     (initReal : ProbComp σReal)
     (implReal : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σReal ProbComp))
-    (simParams : ProverTransform.D2SQueryParams
-      (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec))
+    (simParams : ProverTransform.D2SCodecBridge
+      (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
     (maliciousProver :
       OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages))
     (onSimAbort :
       (q : (duplexSpongeChallengeOracle StmtIn U).Domain) →
         ProverTransform.D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
-              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec) →
+              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) →
           (duplexSpongeChallengeOracle StmtIn U).Range q ×
             ProverTransform.D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
-              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec) :=
+              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) :=
       ProverTransform.d2sQueryAbortFallback
         (δ := δ) (T_H := T_H) (T_P := T_P)
-        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec))
+        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
     (tₕ tₚ tₚᵢ : ℕ)
     (hMaliciousBound : -- `(tₕ, tₚ, tₚᵢ)`-query bound prover
       IsLemma5_8QueryBound
@@ -516,18 +516,87 @@ theorem lemma_5_8
         (Pr[fun tr => BadEventDS.E tr |
           lemma5_8RealTraceDist
             (StmtIn := StmtIn) (StmtOut := StmtOut)
-            (n := n) (pSpec := pSpec) (U := U) (codec := codec)
+            (n := n) (pSpec := pSpec) (U := U)
             initReal implReal V maliciousProver])
         (Pr[fun tr => BadEventDS.E tr |
           lemma5_8SigmaTraceDist
             (T_H := T_H) (T_P := T_P)
             (StmtIn := StmtIn) (StmtOut := StmtOut)
-            (n := n) (pSpec := pSpec) (U := U) (codec := codec)
+            (n := n) (pSpec := pSpec) (U := U)
             simParams V maliciousProver onSimAbort])
       ≤ ENNReal.ofReal (lemma5_8Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries) := by
   let _ := hMaliciousBound
   let _ := hTp
   sorry
+
+/-- CO25 Lemma 5.8 — paper-faithful eager carrier impl wrapper.
+Wraps `D𝔖.toImpl` (a stateless `QueryImpl _ ProbComp` per carrier sample) into the
+`StateT D𝔖.Carrier ProbComp` shape required by `lemma5_8RealTraceDist`. The carrier is
+sampled once at game start (CO25 Def. 4.2) and then read-only — `get` reads, never
+mutates. -/
+noncomputable def lemma5_8EagerImpl
+    [SampleableType
+      (ArkLib.OracleReduction.OracleFamily (StmtIn →ₒ Vector U SpongeSize.C))]
+    [SampleableType (Equiv.Perm (CanonicalSpongeState U))] :
+    QueryImpl (duplexSpongeChallengeOracle StmtIn U)
+      (StateT (D𝔖 StmtIn U).Carrier ProbComp) :=
+  fun q => do
+    let k ← StateT.get
+    StateT.lift ((D𝔖 StmtIn U).toImpl k q)
+
+set_option linter.unusedDecidableInType false in
+/-- CO25 Lemma 5.8 — paper-faithful eager corollary.
+Same bound as `lemma_5_8`, restated with the real-side `(initReal, implReal)` instantiated
+to `D𝔖`'s eager `OracleDistribution`. CO25 Def. 4.2 says `(h, p, p⁻¹) ← 𝒟_𝔖(λ,n)` is
+sampled at the start of the experiment; this corollary makes that sampling shape explicit
+through `OracleDistribution`-based init/impl. -/
+theorem lemma_5_8_eager
+    [Fintype U]
+    [SampleableType
+      (ArkLib.OracleReduction.OracleFamily (StmtIn →ₒ Vector U SpongeSize.C))]
+    [SampleableType (Equiv.Perm (CanonicalSpongeState U))]
+    (simParams : ProverTransform.D2SCodecBridge
+      (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+    (V : Verifier []ₒ StmtIn StmtOut pSpec)
+    (maliciousProver :
+      OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages))
+    (onSimAbort :
+      (q : (duplexSpongeChallengeOracle StmtIn U).Domain) →
+        ProverTransform.D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
+              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) →
+          (duplexSpongeChallengeOracle StmtIn U).Range q ×
+            ProverTransform.D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
+              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) :=
+      ProverTransform.d2sQueryAbortFallback
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hMaliciousBound :
+      IsLemma5_8QueryBound
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+        maliciousProver tₕ tₚ tₚᵢ)
+    (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
+    max
+        (Pr[fun tr => BadEventDS.E tr |
+          lemma5_8RealTraceDist
+            (StmtIn := StmtIn) (StmtOut := StmtOut)
+            (n := n) (pSpec := pSpec) (U := U)
+            (D𝔖 StmtIn U).sample
+            (lemma5_8EagerImpl (StmtIn := StmtIn) (U := U))
+            V maliciousProver])
+        (Pr[fun tr => BadEventDS.E tr |
+          lemma5_8SigmaTraceDist
+            (T_H := T_H) (T_P := T_P)
+            (StmtIn := StmtIn) (StmtOut := StmtOut)
+            (n := n) (pSpec := pSpec) (U := U)
+            simParams V maliciousProver onSimAbort])
+      ≤ ENNReal.ofReal (lemma5_8Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries) :=
+  lemma_5_8
+    (T_H := T_H) (T_P := T_P)
+    (StmtIn := StmtIn) (StmtOut := StmtOut) (n := n) (pSpec := pSpec) (U := U) (δ := δ)
+    (initReal := (D𝔖 StmtIn U).sample)
+    (implReal := lemma5_8EagerImpl (StmtIn := StmtIn) (U := U))
+    simParams V maliciousProver onSimAbort tₕ tₚ tₚᵢ hMaliciousBound hTp
 
 end Lemma_5_8
 

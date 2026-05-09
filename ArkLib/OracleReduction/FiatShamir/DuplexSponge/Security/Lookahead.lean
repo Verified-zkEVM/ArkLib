@@ -387,15 +387,15 @@ Inputs:
 - `i` — challenge round index `i ∈ [k]`.
 
 Output: a probabilistic computation returning either
-- `err` — multiple maximal lookahead sequences (paper Step 2(a)),
-- `none` — empty `S_LA` (paper Step 2(b)),
-- `some ρ̂_i ∈ Σ^{ℓ_V(i)}` — single maximal sequence; the missing rate blocks
+- `ExperimentOutput.err` — multiple maximal lookahead sequences (paper Step 2(a)),
+- `ExperimentOutput.noResult` — empty `S_LA` (paper Step 2(b)),
+- `ExperimentOutput.some ρ̂_i` — single maximal sequence; the missing rate blocks
   `s_{R,out,m_1}, …, s_{R,out,L_V(i)-1}` are sampled uniformly from `Σ^r` and the prefix
   of length `ℓ_V(i)` is returned (paper Step 2(c)). -/
 def lookAhead
     (trΔp : T_P)
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
-    OptionT (OracleComp (Unit →ₒ U)) (Option (Vector U (challengeSize i))) := do
+    OracleComp (Unit →ₒ U) (ExperimentOutput (Vector U (challengeSize i))) := do
   let maxSteps := pSpec.Lᵥᵢ i
   -- §5.3 Step 1: parse `tr_∇.p` into the maximal family `S_LA(tr_∇.p, s, i)`.
   let family :=
@@ -403,8 +403,8 @@ def lookAhead
   -- §5.3 Step 2: dispatch on `|S_LA|`.
   match hFamilyList : family.seqFamily.toList with
   | [] =>
-    -- §5.3 Step 2(b): `S_LA` is empty → return `none`.
-    return Option.none
+    -- §5.3 Step 2(b): `S_LA` is empty → return `noResult`.
+    pure ExperimentOutput.noResult
   | [seq] =>
     -- §5.3 Step 2(c): single maximal sequence `S_LA^{(1)}` of length `m_1 ≤ L_V(i)`.
     -- Sample the `L_V(i) - m_1` missing rate blocks `s_{R,out,m_1}, …, s_{R,out,L_V(i)-1}`,
@@ -427,7 +427,7 @@ def lookAhead
       exact hKnownLenEqOutputLen.trans hOutputLenEqInputLen
     have hKnownLenLeMax : knownBlocks.length ≤ maxSteps := hKnownLenEqInputLen ▸ hInputLenLe
     let missingBlocks := maxSteps - knownBlocks.length
-    let ⟨randomBlocks, hRandomLen⟩ ← liftM (sampleRateVectorsExact (U := U) missingBlocks)
+    let ⟨randomBlocks, hRandomLen⟩ ← sampleRateVectorsExact (U := U) missingBlocks
     let allBlocks := knownBlocks ++ randomBlocks
     let units : List U := List.flatten (allBlocks.map Vector.toList)
     have hMax_le_allBlocks : maxSteps ≤ allBlocks.length := by
@@ -442,10 +442,10 @@ def lookAhead
       have hChal_le_maxR : challengeSize i ≤ maxSteps * SpongeSize.R := by
         simpa [maxSteps] using challengeSize_le_Lvi_mul_R (pSpec := pSpec) i
       exact le_trans hChal_le_maxR hMaxR_le_units
-    return Option.some (takeVector (U := U) (challengeSize i) units hChal_le_units)
+    pure (ExperimentOutput.some (takeVector (U := U) (challengeSize i) units hChal_le_units))
   | _ :: _ :: _ =>
     -- §5.3 Step 2(a): `|S_LA| > 1` → return `err`.
-    failure
+    pure ExperimentOutput.err
 
 end
 

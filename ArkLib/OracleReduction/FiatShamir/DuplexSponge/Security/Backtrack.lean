@@ -541,43 +541,40 @@ private def backtrackStep4CandidateMessages
 /-- BackTrack §5.2 Step 5: select the unique tuple, return paper-`none`, or paper-`err`. -/
 private def backtrackStep5Select
     (outs : List (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))) :
-    OptionT Option (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
+    ExperimentOutput (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
   match outs with
   | [] =>
       -- `none` in the paper.
-      failure
+      ExperimentOutput.noResult
   | [out] =>
-      return out
+      ExperimentOutput.some out
   | _ :: _ :: _ =>
       -- More than one valid candidate output: `err` in the paper.
-      OptionT.mk none
+      ExperimentOutput.err
 
 /-- The backtracking procedure in Section 5.2, which takes in:
 - the query-answer trace for the oracle `(h, p, p⁻¹)`
 - a state (vector of `N` units)
 
 And returns one of the following:
-- `none`
-- `err`
-- the unique paper tuple `(i, 𝕩, τ, (α̂_1, …, α̂_i))` in `Outs`
+- `ExperimentOutput.noResult` — paper-`none` (no elements found in Outs)
+- `ExperimentOutput.err` — paper-`err` (multiple elements in Outs, ambiguous)
+- `ExperimentOutput.some out` — paper-success (unique tuple `(i, 𝕩, τ, (α̂_1, …, α̂_i))` in Outs)
 
 Implementation note: this executable surface enforces capacity-chain coherence across recovered
 steps, together with Algorithm 1 Item 3/4 parser-level checks (salt remainder, block offsets,
-message remainder consistency, and verifier-squeeze window consistency).
-
-TODO: replace the temporary `OptionT Option` carrier with a dedicated result enum once callers need
-to distinguish paper-`err` from paper-`none` at the type level. -/
+message remainder consistency, and verifier-squeeze window consistency). -/
 def backTrack [DecidableEq StmtIn] [DecidableEq U] {T_H T_P : Type}
     [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (trΔ : TraceNabla T_H T_P StmtIn U)
     (depthBound : Nat)
     (state : CanonicalSpongeState U) :
-    OptionT Option (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
+    ExperimentOutput (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
   match backtrackStep2ComputeSBT (T_P := T_P) (U := U) trΔ.p depthBound state with
   | .err =>
-    -- `err` in the paper.
-    OptionT.mk none
+    -- `err` in the paper: step 2 failed (structural parse error in permutation table).
+    ExperimentOutput.err
   | .ok stepFamilies =>
     let rawOuts :=
       backtrackStep3CandidateSalt

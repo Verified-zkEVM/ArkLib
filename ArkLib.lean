@@ -172,6 +172,7 @@ import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
 import ArkLib.OracleReduction.Salt
 import ArkLib.OracleReduction.Security.Basic
 import ArkLib.OracleReduction.Security.Implications
+import ArkLib.OracleReduction.Security.OracleDistribution
 import ArkLib.OracleReduction.Security.Rewinding
 import ArkLib.OracleReduction.Security.RoundByRound
 import ArkLib.OracleReduction.Security.SpecialSoundness

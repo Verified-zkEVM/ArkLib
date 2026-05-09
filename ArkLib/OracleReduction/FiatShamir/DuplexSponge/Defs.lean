@@ -6,6 +6,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 
 import ArkLib.Data.Hash.DuplexSponge
 import ArkLib.OracleReduction.FiatShamir.Basic
+import ArkLib.OracleReduction.Security.OracleDistribution
 
 /-!
 # Duplex Sponge Fiat-Shamir
@@ -237,7 +238,97 @@ def duplexSpongeChallengeOracle (StartType : Type) (U : Type) [SpongeUnit U] [Sp
     OracleSpec (StartType ⊕ CanonicalSpongeState U ⊕ CanonicalSpongeState U) :=
   (StartType →ₒ Vector U SpongeSize.C) + permutationOracle (CanonicalSpongeState U)
 
-alias 𝒟_𝔖 := duplexSpongeChallengeOracle
+alias «𝒟_𝔖» := duplexSpongeChallengeOracle
+
+section OracleDistribution
+
+/-- One sampled realization of the DSFS ideal oracle distribution `𝒟_𝔖`:
+a random function `h : StartType → Σ^c` and a random permutation `p : Σ^{r+c} → Σ^{r+c}`.
+The inverse oracle `p⁻¹` is *derived* as `p.symm`, not sampled — the bijection invariant
+`p ∘ p⁻¹ = id` holds by construction since the carrier is `Equiv.Perm`. -/
+abbrev DuplexSpongeOracleRealization (StartType : Type) (U : Type) [SpongeUnit U] [SpongeSize] :=
+  ArkLib.OracleReduction.OracleFamily (StartType →ₒ Vector U SpongeSize.C) ×
+    Equiv.Perm (CanonicalSpongeState U)
+
+/-- Interpret one sampled `𝒟_𝔖` realization as the concrete `(h, p, p⁻¹)` query implementation. -/
+@[reducible]
+def duplexSpongeOracleQueryImpl
+    {StartType U : Type} [SpongeUnit U] [SpongeSize]
+    (realization : DuplexSpongeOracleRealization StartType U) :
+    QueryImpl (duplexSpongeChallengeOracle StartType U) ProbComp
+  | Sum.inl qHash => ArkLib.OracleReduction.tableQueryImpl (g := realization.1) qHash
+  | Sum.inr (Sum.inl state) => pure (realization.2 state)
+  | Sum.inr (Sum.inr state) => pure (realization.2.symm state)
+
+/-- Interpret one sampled permutation as forward/backward permutation-oracle answers. -/
+@[reducible]
+def permutationOracleQueryImpl {α : Type} (p : Equiv.Perm α) :
+    QueryImpl (permutationOracle α) ProbComp
+  | Sum.inl state => pure (p state)
+  | Sum.inr state => pure (p.symm state)
+
+/-- Uniform random-function distribution for the `h` component of `𝒟_𝔖`. -/
+def duplexSpongeHashOracleDistribution (StartType U : Type) [SpongeUnit U] [SpongeSize]
+    [SampleableType
+      (ArkLib.OracleReduction.OracleFamily (StartType →ₒ Vector U SpongeSize.C))] :
+    ArkLib.OracleReduction.OracleDistribution (StartType →ₒ Vector U SpongeSize.C) :=
+  ArkLib.OracleReduction.OracleDistribution.uniform _
+
+/-- Uniform random-permutation distribution for the `(p, p⁻¹)` component of `𝒟_𝔖`.
+
+Only `p` is sampled; `p⁻¹` is derived as `p.symm`. -/
+def duplexSpongePermutationOracleDistribution (U : Type) [SpongeUnit U] [SpongeSize]
+    [SampleableType (Equiv.Perm (CanonicalSpongeState U))] :
+    ArkLib.OracleReduction.OracleDistribution (permutationOracle (CanonicalSpongeState U)) where
+  Carrier := Equiv.Perm (CanonicalSpongeState U)
+  sample := $ᵗ (Equiv.Perm (CanonicalSpongeState U))
+  toImpl := permutationOracleQueryImpl
+
+/-- CO25 Definition 4.2 — ideal duplex-sponge oracle distribution `𝒟_𝔖`.
+
+Samples `h` as a uniform random function and `p` as a uniform random permutation, then answers
+inverse-permutation queries using `p.symm`. -/
+def duplexSpongeOracleDistribution (StartType U : Type) [SpongeUnit U] [SpongeSize]
+    [SampleableType
+      (ArkLib.OracleReduction.OracleFamily (StartType →ₒ Vector U SpongeSize.C))]
+    [SampleableType (Equiv.Perm (CanonicalSpongeState U))] :
+    ArkLib.OracleReduction.OracleDistribution
+      (duplexSpongeChallengeOracle StartType U) :=
+  ArkLib.OracleReduction.OracleDistribution.prod
+    (duplexSpongeHashOracleDistribution StartType U)
+    (duplexSpongePermutationOracleDistribution U)
+
+alias D𝔖 := duplexSpongeOracleDistribution
+
+@[simp]
+lemma duplexSpongeOracleDistribution_toImpl
+    (StartType U : Type) [SpongeUnit U] [SpongeSize]
+    [SampleableType
+      (ArkLib.OracleReduction.OracleFamily (StartType →ₒ Vector U SpongeSize.C))]
+    [SampleableType (Equiv.Perm (CanonicalSpongeState U))]
+    (realization : DuplexSpongeOracleRealization StartType U) :
+    (duplexSpongeOracleDistribution StartType U).toImpl realization =
+      duplexSpongeOracleQueryImpl realization := by
+  funext q
+  cases q with
+  | inl qHash => rfl
+  | inr qPerm =>
+      cases qPerm <;> rfl
+
+@[simp]
+lemma duplexSpongeOracleDistribution_sample
+    (StartType U : Type) [SpongeUnit U] [SpongeSize]
+    [SampleableType
+      (ArkLib.OracleReduction.OracleFamily (StartType →ₒ Vector U SpongeSize.C))]
+    [SampleableType (Equiv.Perm (CanonicalSpongeState U))] :
+    (duplexSpongeOracleDistribution StartType U).sample =
+      (do
+        let h ← $ᵗ (ArkLib.OracleReduction.OracleFamily
+          (StartType →ₒ Vector U SpongeSize.C))
+        let p ← $ᵗ (Equiv.Perm (CanonicalSpongeState U))
+        pure (h, p)) := rfl
+
+end OracleDistribution
 
 end OracleSpec
 

@@ -37,17 +37,17 @@ open ProverTransform Backtrack Lookahead TraceTransform DSTraceStorage
 variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
   {n : ℕ} {pSpec : ProtocolSpec n}
   {U : Type} [SpongeUnit U] [SpongeSize]
-  {codec : Codec pSpec U}
+  [codec : Codec pSpec U]
   {δ : ℕ}
 
 /-- Paper-facing predicate: `StdTrace` on `trace` does not abort. -/
 def StdTraceNoAbort [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
-  stdTraceSingle (δ := δ) (codec := codec)
+  stdTraceSingle (δ := δ)
       (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
       trace ≠
-    (failure : OptionT (OracleComp (Unit →ₒ U))
+    (failure : DSAbort U
       (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)))
 
 /-- Paper-facing predicate: `StdTrace` on `trace` aborts. -/
@@ -56,7 +56,7 @@ def StdTraceAbort [DecidableEq StmtIn] [DecidableEq U]
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
   ¬ StdTraceNoAbort (δ := δ)
       (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      (codec := codec) trace
+      trace
 
 /-- Paper-facing predicate: `BackTrack` does not hit the `err` branch on `(trace, state)`.
 
@@ -70,9 +70,10 @@ def BackTrackNoAbort [DecidableEq StmtIn] [DecidableEq U]
     (depthBound : ℕ)
     (trΔ : TraceNabla T_H T_P StmtIn U)
     (state : CanonicalSpongeState U) : Prop :=
-  (backTrack (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    (trΔ := trΔ) (depthBound := depthBound) (state := state)).run ≠
-    (none : Option (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
+  backTrack (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+    (trΔ := trΔ) (depthBound := depthBound) (state := state) ≠
+    (ExperimentOutput.err :
+      ExperimentOutput (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
 
 /-- Paper-facing predicate: `LookAhead(tr_∇.p, state, i)` does not hit the `err` branch. -/
 def LookAheadNoAbort [DecidableEq StmtIn] [DecidableEq U]
@@ -82,7 +83,8 @@ def LookAheadNoAbort [DecidableEq StmtIn] [DecidableEq U]
     (trΔ : TraceNabla T_H T_P StmtIn U)
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) : Prop :=
   lookAhead (pSpec := pSpec) (U := U) (trΔp := trΔ.p) state i ≠
-    (failure : OptionT (OracleComp (Unit →ₒ U)) (Option (Vector U (challengeSize i))))
+    (pure ExperimentOutput.err :
+      OracleComp (Unit →ₒ U) (ExperimentOutput (Vector U (challengeSize i))))
 
 section D2SQueryNoAbort
 
@@ -96,8 +98,8 @@ variable [DecidableEq StmtIn] [DecidableEq U]
 
 /-- Paper-facing predicate: `D2SQuery` does not hit the `err` branch when started from `trace`. -/
 def D2SQueryNoAbortOnTrace
-    (params : D2SQueryParams (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec)
-      (U := U) (codec := codec))
+    (params : D2SCodecBridge (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec)
+      (U := U))
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
   ∀ q : (duplexSpongeChallengeOracle StmtIn U).Domain,
     (d2sQueryStep (δ := δ)
@@ -106,7 +108,7 @@ def D2SQueryNoAbortOnTrace
         ({ trace := trace, cacheP := [] } :
           D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
             (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) ≠
-      (failure : OptionT (OracleComp (Unit →ₒ U))
+      (failure : DSAbort U
         ((duplexSpongeChallengeOracle StmtIn U).Range q ×
           D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
             (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)))
@@ -122,8 +124,8 @@ def D2SQueryAbortOnTrace
     {T_P : Type}
     [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-    (params : D2SQueryParams (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec)
-      (U := U) (codec := codec))
+    (params : D2SCodecBridge (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec)
+      (U := U))
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
   ¬ D2SQueryNoAbortOnTrace (δ := δ)
       (T_H := T_H) (T_P := T_P)
@@ -152,7 +154,7 @@ lemma claim_5_19_backTrack_noAbort [DecidableEq StmtIn] [DecidableEq U]
     (hFork : ¬ BadEventDS.E_fork trace state S_BT) :
     BackTrackNoAbort (δ := δ)
       (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      (codec := codec) (depthBound := trace.length + 1) (trΔ := trΔ) (state := state) := by
+      (depthBound := trace.length + 1) (trΔ := trΔ) (state := state) := by
   sorry
 
 /-- CO25 Claim 5.20 — If `¬ E_prp(tr)`, then `LookAhead(tr.p, s, i) ≠ err` for all `(s, i)`.
@@ -170,7 +172,7 @@ lemma claim_5_20_lookAhead_noAbort [DecidableEq StmtIn] [DecidableEq U]
     (hPrp : ¬ BadEventDS.E_prp trace) :
     LookAheadNoAbort
       (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
       trΔ state i := by
   sorry
 
@@ -194,7 +196,7 @@ lemma lemma_5_17_stdTrace_noAbort [DecidableEq StmtIn] [DecidableEq U]
     (hE : ¬ BadEventDS.E trace) :
     StdTraceNoAbort (δ := δ)
       (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      (codec := codec) trace := by
+      trace := by
   sorry
 
 -- `[∀ i, DecidableEq (pSpec.Message i)]` is needed in the proof body but not the type.
@@ -216,8 +218,8 @@ lemma lemma_5_18_d2sQuery_noAbort
     {T_P : Type}
     [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-    (params : D2SQueryParams (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec)
-      (U := U) (codec := codec))
+    (params : D2SCodecBridge (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec)
+      (U := U))
     (traceA : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (hConsistent : BadEventDS.isConsistentTrace traceA)
     (hE : ¬ BadEventDS.E traceA) :
@@ -239,8 +241,8 @@ theorem theorem_5_19_d2sQuery_abort_implies_badEvent
     {T_P : Type}
     [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-    (params : D2SQueryParams (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec)
-      (U := U) (codec := codec))
+    (params : D2SCodecBridge (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec)
+      (U := U))
     (traceA : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (hConsistent : BadEventDS.isConsistentTrace traceA)
     (hAbort : D2SQueryAbortOnTrace (δ := δ)
@@ -265,13 +267,13 @@ theorem theorem_5_20_stdTrace_abort_implies_badEvent [DecidableEq StmtIn] [Decid
     (hAbort :
       StdTraceAbort (δ := δ)
         (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-        (codec := codec) trace) :
+        trace) :
     BadEventDS.E trace := by
   classical
   by_contra hE
   exact hAbort
     (lemma_5_17_stdTrace_noAbort (δ := δ)
       (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      (codec := codec) trace hConsistent hE)
+      trace hConsistent hE)
 
 end DuplexSpongeFS.AbortAnalysis

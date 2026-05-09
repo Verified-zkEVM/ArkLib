@@ -43,7 +43,31 @@ By parameterizing algorithms (`BackTrack`, `LookAhead`) over `TraceTableOps`, we
 
 open OracleComp OracleSpec
 
-namespace DuplexSpongeFS.DSTraceStorage
+universe u
+
+namespace DuplexSpongeFS
+
+/-- Result type for three-valued algorithm outcomes: paper-`err`, paper-`none`, success.
+
+Used for BackTrack (§5.2) and LookAhead (§5.3), which have two distinct failure modes at the type
+level. Other Section 5 algorithms (D2SQuery, D2SAlgo, StdTrace, D2STrace) have only binary
+abort/success and continue to use `OptionT`. -/
+inductive ExperimentOutput (Out : Type u) : Type u where
+  /-- Paper-`err`: e.g., multiple elements in `Outs` (BackTrack) or multiple chains (LookAhead). -/
+  | err : ExperimentOutput Out
+  /-- Paper-`none`: e.g., zero elements found, empty lookahead family. -/
+  | noResult : ExperimentOutput Out
+  /-- Success case: unique paper tuple recovered. -/
+  | some : Out → ExperimentOutput Out
+  deriving Repr
+
+/-- Shared abort/randomness monad stack used by Section 5 algorithms.
+
+`OptionT` provides paper-binary `abort`/`success`; the inner `OracleComp (Unit →ₒ U)` provides the
+fresh `𝒰(Σ)` sampling oracle used by `D2SQuery`/`D2SAlgo`/`StdTrace`/`D2STrace`/`LookAhead`. -/
+abbrev DSAbort (U : Type) [SpongeUnit U] := OptionT (OracleComp (Unit →ₒ U))
+
+namespace DSTraceStorage
 
 /-- The canonical duplex-sponge `(h, p, p⁻¹)`-trace in Definition 5.2 -/
 abbrev DuplexSpongeTrace (StmtIn U : Type) [SpongeUnit U] [SpongeSize] :=

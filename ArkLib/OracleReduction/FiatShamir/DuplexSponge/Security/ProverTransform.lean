@@ -25,7 +25,7 @@ open Backtrack Lookahead DSTraceStorage TraceTransform
 variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
   {n : ℕ} {pSpec : ProtocolSpec n}
   {U : Type} [SpongeUnit U] [SpongeSize]
-  {codec : Codec pSpec U}
+  [codec : Codec pSpec U]
   {δ : Nat}
 
 local instance : Inhabited U := ⟨0⟩
@@ -68,7 +68,7 @@ cached response of the `gᵢ` oracle for consistency across repeated D2SQuery ca
 -- TODO(section5-cleanup): parallel to TraceTransform.StdTraceEntry but stores rate blocks instead
 -- of a deserialized challenge vector. Consider a shared key plus two response wrappers later.
 private structure D2SStdEntry where
-  query : D2SStdQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)
+  query : D2SStdQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
   responseRateBlocks : List (Vector U SpongeSize.R)  -- `ρ̂_i` encoded as rate blocks `∈ Σ^r`
 
 /-- CO25 §5.4 Item 1 — Internal mutable state of the `D2SQuery` oracle wrapper.
@@ -91,21 +91,40 @@ structure D2SQueryState where
   cacheP : List (CanonicalSpongeState U × CanonicalSpongeState U) := []
   -- memoized `gᵢ` query-answer pairs for consistency (§5.4 Item 4(e)i)
   stdMemo :
-    List (D2SStdEntry (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)) := []
+    List (D2SStdEntry (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) := []
   -- `tr_∇`: deduplicated index for `O(log N)` `inlu`/`outlu` lookups (CO25 Def. 5.2, §5.1)
   trΔ : TraceNabla T_H T_P StmtIn U :=
     ⟨TraceTableOps.empty, TraceTableOps.empty⟩
 
 instance : Inhabited (D2SQueryState
     (δ := δ) (T_H := T_H) (T_P := T_P)
-    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)) :=
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
   ⟨{}⟩
+
+/-- §5.4 `D2SQuery` simulator monad — `D2SQueryState` mutated under the paper-facing
+abort/randomness stack `DSAbort U = OptionT (OracleComp (Unit →ₒ U))`.
+
+This is the canonical paper-facing monad for `d2sQueryStep`/`d2sQueryImplCore`. -/
+abbrev D2SStateM :=
+  StateT
+    (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (DSAbort U)
+
+/-- §5.4 `D2SQuery` simulator monad in `ProbComp` — `D2SQueryState` mutated under the
+totalized probabilistic stack `ProbComp` (after `unitImpl` resolves `Unit →ₒ U` and an
+`onAbort` fallback removes the `OptionT` layer). -/
+abbrev D2SProbM :=
+  StateT
+    (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    ProbComp
 
 /-- Lookup of a prior `gᵢ`-style answer for the same key (Item 4(e)i consistency). -/
 private def lookupStdMemo
     (memo :
-      List (D2SStdEntry (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)))
-    (q : D2SStdQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)) :
+      List (D2SStdEntry (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
+    (q : D2SStdQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     Option (List (Vector U SpongeSize.R)) := by
   classical
   exact memo.findSome? fun entry =>
@@ -117,10 +136,10 @@ private def lookupStdMemo
 /-- Insert a fresh `gᵢ`-style answer in memo order. -/
 private def insertStdMemo
     (memo :
-      List (D2SStdEntry (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)))
-    (q : D2SStdQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+      List (D2SStdEntry (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
+    (q : D2SStdQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (responseRateBlocks : List (Vector U SpongeSize.R)) :
-    List (D2SStdEntry (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)) :=
+    List (D2SStdEntry (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
   memo ++ [{ query := q, responseRateBlocks := responseRateBlocks }]
 
 /-- Executable approximation of Item 4(d)/(e) tuple-image branching, tightened with
@@ -154,7 +173,7 @@ The paper requires appending exactly `L_V(i) - 1` pairs to `Cache_p` after a val
 hit (CO25 §5.4 lines 1064–1068). Returns that count given a `BackTrack` output; returns `0`
 when the round index is unrecoverable (the simulator falls through to the non-tuple branch).
 
-Replaces the prior free `forwardExtensionLength` field of `D2SQueryParams` (D5 in
+Replaces the prior free `forwardExtensionLength` field of `D2SCodecBridge` (D5 in
 `audit-report.md`). -/
 private def paperForwardExtensionLength
     (out : BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) : Nat :=
@@ -180,20 +199,8 @@ structure D2SCodecBridge where
       StmtIn →
         Vector U δ →
           pSpec.EncodedMessagesUpTo U i.1.castSucc →
-            OptionT (OracleComp (Unit →ₒ U))
+            DSAbort U
               (Vector U (challengeSize (pSpec := pSpec) i))
-
-/-- CO25 §5.4 — Core parameters for the (paper-shaped) `D2SQuery` implementation.
-
-`codecBridge` provides the `ψᵢ⁻¹ ∘ fᵢ ∘ φᵢ⁻¹` evaluation interface for Item 4(e)i.
-
-The `Cache_p` forward-extension length is **not** a free field — `d2sQueryStep` uses the
-paper-derived `paperForwardExtensionLength = L_V(i) - 1` directly (CO25 §5.4 Item 4(e)iiiD,
-lines 1064–1068). See D5 in `audit-report.md`. -/
-structure D2SQueryParams where
-  -- `D2SCodecBridge` supplying the `φ⁻¹`/`ψ⁻¹` codec interface (§5.4 Item 4(e)i)
-  codecBridge :
-    D2SCodecBridge (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)
 
 private def popCacheByInput
     (cache : List (CanonicalSpongeState U × CanonicalSpongeState U))
@@ -288,7 +295,21 @@ private def rateBlocksFromChallengeM
   rateBlocksFromUnitsM (U := U) (pSpec.Lᵥᵢ i) challenge.toList
 
 /-- Runtime operations that differ between the uniform Hyb1-style `D2SQuery` wrapper and the
-paper-facing external-`f` wrapper. The shared `d2sQueryStepCore` below owns the §5.4 branch tree. -/
+paper-facing external-`f` wrapper. The shared `d2sQueryStepCore` below owns the §5.4 branch tree.
+
+The generic `m : Type _ → Type _ [Monad m]` is **kept generic** (not specialized to
+`DSAbort U`) to support two instantiations of the §5.4 simulator core:
+
+1. The paper-facing default: `m := DSAbort U = OptionT (OracleComp (Unit →ₒ U))` —
+   `d2sQueryStep` (uniform `evalGI` via `sampleVector`) and the §5.4 `D2SAlgo`
+   prover transform (CO25 Equation 16).
+2. The oracle-aware variant: `m := OptionT (OracleComp (D2SChallengePlusUnitOracle ...))` —
+   `d2sQueryStepWithOracle` (external `fᵢ` oracle via `D2SCodecBridgeWithOracle`), used by
+   the §5.8 Hyb₁ hybrid-game wrappers in `KeyLemma.section58HybridGameDist` to bridge
+   between uniform and `f_i`-driven evaluations.
+
+Keeping the runtime generic in `m` lets both wrappers share the §5.4 Items 2–4 branch tree
+in `d2sQueryStepCore` without duplication. -/
 private structure D2SQueryRuntime
     (pSpec : ProtocolSpec n) (U : Type) [SpongeUnit U] [SpongeSize]
     [HasMessageSize pSpec] [HasChallengeSize pSpec]
@@ -309,7 +330,15 @@ private structure D2SQueryRuntime
 /-- CO25 §5.4 — shared branch tree for `D2SQuery`.
 
 The runtime supplies only sampling and `g_i`/`f_i` evaluation. All control flow remains here, in
-paper order: Item 2 (`h`), Item 3 (`p⁻¹`), and Item 4 (`p`) with BackTrack branches 4(b)-4(g). -/
+paper order: Item 2 (`h`), Item 3 (`p⁻¹`), and Item 4 (`p`) with BackTrack branches 4(b)-4(g).
+
+`m` is left generic (with `[Monad m] [Alternative m]`) so the same branch tree is shared by:
+- `d2sQueryStep` (paper-facing): `m := DSAbort U` for the §5.4/§5.8 default.
+- `d2sQueryStepWithOracle` (oracle-aware): `m := OptionT (OracleComp (D2SChallengePlusUnitOracle ...))`
+  for the §5.8 Hyb₁ wrapper that threads an external `fᵢ` oracle.
+
+`Alternative m` is used by `BackTrack`/`LookAhead` lifts inside the body to abort on `err`-style
+results; both instantiations satisfy this via `OptionT`. -/
 private def d2sQueryStepCore
     {m : Type _ → Type _} [Monad m] [Alternative m]
     (runtime : D2SQueryRuntime pSpec U δ StmtIn m)
@@ -317,7 +346,7 @@ private def d2sQueryStepCore
     StateT
       (D2SQueryState
         (δ := δ) (T_H := T_H) (T_P := T_P)
-        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       m
       ((duplexSpongeChallengeOracle StmtIn U).Range q) := do
   let st ← get
@@ -350,14 +379,14 @@ private def d2sQueryStepCore
       return stateIn
   | .inr (.inl stateIn) =>
       match
-          (backTrack
+          backTrack
             (δ := δ)
             (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-            st.trΔ (st.trace.length + 1) stateIn).run with
-      | none =>
+            st.trΔ (st.trace.length + 1) stateIn with
+      | .err =>
           -- Paper Item 4(b): `err` branch aborts.
           StateT.lift failure
-      | some none =>
+      | .noResult =>
           -- Paper Item 4(c): cache, then `tr_∇.p.inlu`, then fresh sampling.
           let (stateOut, cache', stdMemo', trΔ') ←
             match popCacheByInput (U := U) st.cacheP stateIn with
@@ -377,16 +406,16 @@ private def d2sQueryStepCore
           let trace' := st.trace ++ [⟨.inr (.inl stateIn), stateOut⟩]
           set { st with trace := trace', cacheP := cache', stdMemo := stdMemo', trΔ := trΔ' }
           return stateOut
-      | some (some backtrackOut) =>
+      | .some backtrackOut =>
           -- Paper Items 4(d)-4(g). Only Item 4(e)'s `g_i` evaluation comes from the runtime.
           let (stateOut, cache', stdMemo', trΔ') ←
             if paperInCodecImagePredicate
-                (codec := codec)
+
                 (StmtIn := StmtIn) (pSpec := pSpec) (U := U) backtrackOut then
               let roundIdx := backtrackOut.roundIdx
               let stdQuery :
                   D2SStdQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-                    (codec := codec) :=
+                    :=
                 { roundIdx := roundIdx
                   stmt := backtrackOut.stmt
                   salt := backtrackOut.salt
@@ -461,22 +490,22 @@ Handles a single query `q` to `(h, p, p⁻¹)` by dispatching on its variant:
     `Cache_p` chain from `ρ̂_i ‖ z` rate-segments, set `s_out` (§5.4 Item 4(e)).
 Returns `none` (abort) or `some resp` with updated `D2SQueryState`. -/
 def d2sQueryStep
-    (params : D2SQueryParams
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+    (params : D2SCodecBridge
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (q : (duplexSpongeChallengeOracle StmtIn U).Domain) :
-    StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
-      (OptionT (OracleComp (Unit →ₒ U)))
+    StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+      (DSAbort U)
       ((duplexSpongeChallengeOracle StmtIn U).Range q) :=
   let runtime :
-      D2SQueryRuntime pSpec U δ StmtIn (OptionT (OracleComp (Unit →ₒ U))) :=
+      D2SQueryRuntime pSpec U δ StmtIn (DSAbort U) :=
     { sampleCapacity := OptionT.lift <| sampleCapacity (U := U)
       sampleState := OptionT.lift <| sampleState (U := U)
       sampleCapacityList := fun k => OptionT.lift <| sampleCapacityList (U := U) k
       rateBlocksFromChallenge := fun challenge =>
         OptionT.lift <| rateBlocksFromChallengeM (pSpec := pSpec) (U := U) challenge
-      evalGI := params.codecBridge.evalGI }
+      evalGI := params.evalGI }
   d2sQueryStepCore (δ := δ) (T_H := T_H) (T_P := T_P)
-    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) runtime q
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) runtime q
 
 /-- CO25 §5.4 — `QueryImpl` form of the `D2SQuery` oracle wrapper core.
 
@@ -484,11 +513,11 @@ Lifts `d2sQueryStep` into a `QueryImpl` so it can be passed to `simulateQ`. Each
 dispatches one query `q` to `(h, p, p⁻¹)` following the §5.4 Items 2–4 control flow
 and threads the mutable `D2SQueryState` via `StateT`. -/
 def d2sQueryImplCore
-    (params : D2SQueryParams
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)) :
+    (params : D2SCodecBridge
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
-        (OptionT (OracleComp (Unit →ₒ U)))) :=
+      (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+      (DSAbort U)) :=
   fun q => d2sQueryStep (δ := δ) params q
 
 /-- CO25 §5.4 — Execute the `D2SQuery` oracle-wrapper semantics on a DS oracle computation.
@@ -497,12 +526,12 @@ Runs `comp` under the `D2SQuery` simulation starting from an empty `D2SQueryStat
 Returns `none` when `D2SQuery` aborts (the `err` branch, §5.4 Item 4(b)), or
 `some (result, finalState)` on success. -/
 def runD2SQueryCore
-    (params : D2SQueryParams
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+    (params : D2SCodecBridge
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     {α : Type}
     (comp : OracleComp (duplexSpongeChallengeOracle StmtIn U) α) :
-    OptionT (OracleComp (Unit →ₒ U))
-      (α × D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)) :=
+    DSAbort U
+      (α × D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
   (simulateQ
     (d2sQueryImplCore (δ := δ) params)
     comp).run default
@@ -526,14 +555,14 @@ the `OracleComp (Unit →ₒ U)` monad stack inside `d2sQueryStep` into `ProbCom
 Returns `none` on abort (§5.4 `err` branch) or `some (resp, newState)` on success. -/
 def runD2SQueryStepWithUnitImpl
     (unitImpl : QueryImpl (Unit →ₒ U) ProbComp)
-    (params : D2SQueryParams
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+    (params : D2SCodecBridge
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (q : (duplexSpongeChallengeOracle StmtIn U).Domain)
-    (st : D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)) :
+    (st : D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     ProbComp
       (Option
         ((duplexSpongeChallengeOracle StmtIn U).Range q ×
-          D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))) :=
+          D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))) :=
   simulateQ unitImpl
     (((d2sQueryStep
       (δ := δ)
@@ -546,33 +575,33 @@ totalizes the computation by returning `(default, st)` — preserving the curren
 and answering with a type-default response. Used as `onAbort` in `d2sQueryImplCoreProb`. -/
 def d2sQueryAbortFallback
     (q : (duplexSpongeChallengeOracle StmtIn U).Domain)
-    (st : D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)) :
+    (st : D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     (duplexSpongeChallengeOracle StmtIn U).Range q ×
-      D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) :=
+      D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) :=
   (default, st)
 
 /-- CO25 §5.4 — `ProbComp` adapter for the `D2SQuery` simulator core.
 
-Converts `d2sQueryStep` (monad stack: `StateT D2SQueryState (OptionT (OracleComp (Unit →ₒ U)))`)
+Converts `d2sQueryStep` (monad stack: `StateT D2SQueryState (DSAbort U)`)
 into a `QueryImpl … (StateT D2SQueryState ProbComp)` by:
 1. resolving the `Unit →ₒ U` sampling oracle via `unitImpl` (uniform `𝒰(Σ)` sampling);
 2. totalizing `err`-aborts via `onAbort` (defaults to `d2sQueryAbortFallback`).
 This is the main entry point for constructing the §5.4 D2SAlgo prover-transform in `ProbComp`. -/
 def d2sQueryImplCoreProb
     (unitImpl : QueryImpl (Unit →ₒ U) ProbComp)
-    (params : D2SQueryParams
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+    (params : D2SCodecBridge
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (onAbort :
       (q : (duplexSpongeChallengeOracle StmtIn U).Domain) →
-        D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) →
+        D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) →
           (duplexSpongeChallengeOracle StmtIn U).Range q ×
-            D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) :=
+            D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) :=
       d2sQueryAbortFallback
         (T_H := T_H) (T_P := T_P)
         (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
-        ProbComp) :=
+      (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+      ProbComp) :=
   fun q => do
     let st ← get
     let out? ←
@@ -597,11 +626,11 @@ Specializes `d2sQueryImplCoreProb` with `d2sUnitSampleImpl` as the uniform `𝒰
 giving the canonical §5.4 D2SQuery semantics where all fresh samples are drawn uniformly. -/
 def d2sQueryImplCoreUniform
     [SampleableType U]
-    (params : D2SQueryParams
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)) :
+    (params : D2SCodecBridge
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
-        ProbComp) :=
+      (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+      ProbComp) :=
   d2sQueryImplCoreProb
     (δ := δ)
     (T_H := T_H) (T_P := T_P)
@@ -635,58 +664,51 @@ simulator now uses the paper-derived `paperInCodecImagePredicate` directly (see 
 specialized to a uniform `𝒰(Σ^{ℓ_V(i)})` sampler. -/
 private def defaultD2SCodecBridge :
     D2SCodecBridge
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) :=
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) :=
   { evalGI := fun i _stmt _salt _encodedMessages =>
       OptionT.lift <| sampleVector (U := U) (challengeSize (pSpec := pSpec) i) }
-
-private def defaultD2SQueryParams :
-    D2SQueryParams
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) :=
-  { codecBridge :=
-      defaultD2SCodecBridge
-        (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) }
 
 /-- CO25 §5.4 — Parametric `D2SQuery` simulation bridge with explicit codec interface.
 
 Lifts `d2sQueryImplCore` into the larger oracle `fsPlusUnitOracle` target monad,
 enabling the D2SQuery simulation to run within computations that also make queries to
 `fsChallengeOracle StmtIn pSpec` (the standard Fiat-Shamir challenge oracle) alongside
-the auxiliary `Unit →ₒ U` sampling oracle. Parametrized by `D2SQueryParams` to allow
+the auxiliary `Unit →ₒ U` sampling oracle. Parametrized by `D2SCodecBridge` to allow
 different `φ⁻¹`/`ψ⁻¹` codec bridges (§5.4, CO25 Equation 16). -/
 def duplexSpongeToBasicFSQueryImplWithParams
-    (params : D2SQueryParams
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)) :
+    (params : D2SCodecBridge
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+      (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
         (OptionT
           (OracleComp (fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))) ) :=
   QueryImpl.liftTarget
-    (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+    (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (OptionT
         (OracleComp (fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))))
     (d2sQueryImplCore
       (δ := δ)
       (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
       params)
 
 /-- CO25 §5.4 — Default `D2SQuery` simulation: duplex-sponge oracles → basic Fiat-Shamir oracles.
 
-Uses `defaultD2SQueryParams` (uniform `evalGI` via `sampleVector`; `inCodecImage` is baked in
+Uses `defaultD2SCodecBridge` (uniform `evalGI` via `sampleVector`; `inCodecImage` is baked in
 as `paperInCodecImagePredicate` and `forwardExtensionLength` inlined as `(pSpec.Lᵥᵢ i).pred`
 after D5.1 cleanup, so they are no longer free fields). Composed with a duplex-sponge malicious
 prover `𝒜`
 to obtain the basic Fiat-Shamir malicious prover `D2SAlgo(𝒜)` from CO25 §5.4 (Equation 16). -/
 def duplexSpongeToBasicFSQueryImpl :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+      (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
         (OptionT
           (OracleComp (fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))) ) :=
   duplexSpongeToBasicFSQueryImplWithParams
     (δ := δ)
-    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)
-    (defaultD2SQueryParams
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+    (defaultD2SCodecBridge
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
 
 /-- CO25 §5.4 — Main paper-facing `D2SQuery` oracle wrapper.
 
@@ -695,12 +717,12 @@ This is the clean entry point for the default §5.4 query simulator. The longer
 construction with explicit parameterization. -/
 abbrev d2sQuery :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+      (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
         (OptionT
           (OracleComp (fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))) ) :=
   duplexSpongeToBasicFSQueryImpl
     (δ := δ)
-    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
 
 /-- CO25 §5.4 — `D2SAlgo^f`: parametric duplex-sponge → basic Fiat-Shamir prover transform.
 
@@ -712,20 +734,20 @@ Given a malicious prover `P` against the duplex-sponge Fiat-Shamir oracle `𝒟_
 the standard Fiat-Shamir oracle `𝒟_{IP}(λ, n)`. Returns `none` when D2SQuery aborts. The output
 oracle family is `oSpec + fsChallengeOracle + Unit →ₒ U` (CO25 §5.4, Equation 17 time bound). -/
 def duplexSpongeToBasicFSAlgoWithParams
-    (params : D2SQueryParams
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+    (params : D2SCodecBridge
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (P : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
     (StmtIn × pSpec.Messages)) :
     OracleComp (oSpec + fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (Option (StmtIn × pSpec.Messages)) :=
   let d2sOuterImpl :
       QueryImpl (oSpec + duplexSpongeChallengeOracle StmtIn U)
-        (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+        (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
           (OptionT
             (OracleComp
               (oSpec + fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))))) :=
     QueryImpl.addLift
-      (r := StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+      (r := StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
         (OptionT
           (OracleComp
             (oSpec + fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))))
@@ -733,14 +755,14 @@ def duplexSpongeToBasicFSAlgoWithParams
       (duplexSpongeToBasicFSQueryImplWithParams
         (δ := δ)
         (T_H := T_H) (T_P := T_P)
-        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
         params)
   let outWithState :
       OptionT
         (OracleComp
           (oSpec + fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
         ((StmtIn × pSpec.Messages) ×
-          D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)) :=
+          D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
     (simulateQ d2sOuterImpl P).run default
   do
     let out? ← outWithState.run
@@ -748,10 +770,10 @@ def duplexSpongeToBasicFSAlgoWithParams
 
 /-- CO25 §5.4 — Default `D2SAlgo`: duplex-sponge → basic Fiat-Shamir prover transform.
 
-Specializes `duplexSpongeToBasicFSAlgoWithParams` with `defaultD2SQueryParams`:
+Specializes `duplexSpongeToBasicFSAlgoWithParams` with `defaultD2SCodecBridge`:
 - `inCodecImage` is baked into `d2sQueryStep` as `paperInCodecImagePredicate` (built from
   `paperCodecImageWitness?` + `messageInSerializeImage`) — D5.1 cleanup removed it as a
-  free field of `D2SCodecBridge`/`D2SQueryParams`,
+  free field of `D2SCodecBridge`/`D2SCodecBridge`,
 - `evalGI` via uniform sampling `𝒰(Σ^{ℓ_V(i)})` (i.e. `gᵢ ← 𝒟_Σ(λ, n)`),
 - `forwardExtensionLength` is inlined as `(pSpec.Lᵥᵢ i).pred` (also exposed as
   `paperForwardExtensionLength`); fills `Cache_p` chain, §5.4 Item 4(e)iiiD.
@@ -764,9 +786,9 @@ def duplexSpongeToBasicFSAlgo
   duplexSpongeToBasicFSAlgoWithParams
     (δ := δ)
     (T_H := T_H) (T_P := T_P)
-    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)
-    (defaultD2SQueryParams
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+    (defaultD2SCodecBridge
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     P
 
 /-- CO25 §5.4 — Main paper-facing `D2SAlgo` prover transform.
@@ -782,7 +804,7 @@ abbrev d2sAlgo
   duplexSpongeToBasicFSAlgo
     (δ := δ)
     (T_H := T_H) (T_P := T_P)
-    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) P
+    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) P
 
 /-- CO25 §5.4 — Salted basic-FS challenge oracle augmented with auxiliary unit-sampling.
 
@@ -795,27 +817,27 @@ private abbrev fsSaltedPlusUnitOracle :=
 /-- CO25 §5.4 — Salted variant of `duplexSpongeToBasicFSQueryImplWithParams`.
 
 Same simulator core as the unsalted version, but lifts the inner
-`OptionT (OracleComp (Unit →ₒ U))` target to `oSpec + fsSaltedPlusUnitOracle` so the
+`DSAbort U` target to `oSpec + fsSaltedPlusUnitOracle` so the
 output prover can be embedded in a context with a salted basic-FS challenge oracle. The
 simulator core itself does not query `f` (default `evalGI` samples uniformly); the salt is
 passed through at the wrapper level via the salted output proof type. -/
 def duplexSpongeToBasicFSQueryImplWithParamsSalted
-    (params : D2SQueryParams
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)) :
+    (params : D2SCodecBridge
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+      (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
         (OptionT
           (OracleComp
             (fsSaltedPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ))))) :=
   QueryImpl.liftTarget
-    (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+    (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (OptionT
         (OracleComp
           (fsSaltedPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)))))
     (d2sQueryImplCore
       (δ := δ)
       (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
       params)
 
 /-- CO25 §5.4 — Salted parametric `D2SAlgo`: duplex-sponge → salted basic Fiat-Shamir prover.
@@ -826,8 +848,8 @@ the salted basic-FS oracle with the same salted proof type. The salt is threaded
 unchanged (the simulator core is salt-agnostic; the salted oracle records salt-aware
 challenges only when the bridge `evalGI` issues `f_i` queries on `(stmt, salt, ·)`). -/
 def duplexSpongeToBasicFSAlgoSaltedWithParams
-    (params : D2SQueryParams
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+    (params : D2SCodecBridge
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (P : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)) :
     OracleComp
@@ -835,13 +857,13 @@ def duplexSpongeToBasicFSAlgoSaltedWithParams
       (Option (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)) :=
   let d2sOuterImpl :
       QueryImpl (oSpec + duplexSpongeChallengeOracle StmtIn U)
-        (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+        (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
           (OptionT
             (OracleComp
               (oSpec + fsSaltedPlusUnitOracle
                 (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ))))) :=
     QueryImpl.addLift
-      (r := StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+      (r := StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
         (OptionT
           (OracleComp
             (oSpec + fsSaltedPlusUnitOracle
@@ -850,7 +872,7 @@ def duplexSpongeToBasicFSAlgoSaltedWithParams
       (duplexSpongeToBasicFSQueryImplWithParamsSalted
         (δ := δ)
         (T_H := T_H) (T_P := T_P)
-        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
         params)
   let outWithState :
       OptionT
@@ -858,14 +880,14 @@ def duplexSpongeToBasicFSAlgoSaltedWithParams
           (oSpec + fsSaltedPlusUnitOracle
             (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)))
         ((StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ) ×
-          D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)) :=
+          D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
     (simulateQ d2sOuterImpl P).run default
   do
     let out? ← outWithState.run
     pure (out?.map Prod.fst)
 
 /-- CO25 §5.4 — Default salted `D2SAlgo`: specializes `duplexSpongeToBasicFSAlgoSaltedWithParams`
-with `defaultD2SQueryParams` (uniform `evalGI` and paper-derived `paperForwardExtensionLength`). -/
+with `defaultD2SCodecBridge` (uniform `evalGI` and paper-derived `paperForwardExtensionLength`). -/
 def duplexSpongeToBasicFSAlgoSalted
     (P : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)) :
@@ -875,14 +897,14 @@ def duplexSpongeToBasicFSAlgoSalted
   duplexSpongeToBasicFSAlgoSaltedWithParams
     (δ := δ)
     (T_H := T_H) (T_P := T_P)
-    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)
-    (defaultD2SQueryParams
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+    (defaultD2SCodecBridge
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     P
 
 /-- Salted Hyb₁-style uniform `D2SAlgo` helper.
 
-This helper specializes with `defaultD2SQueryParams`, so its `g_i` responses are sampled uniformly
+This helper specializes with `defaultD2SCodecBridge`, so its `g_i` responses are sampled uniformly
 from encoded challenges. The paper-facing Theorem 5.1 witness instead uses
 `KeyLemma.paperD2SAlgoSaltedExternal`, which bridges through an external salted `f_i` oracle. -/
 abbrev d2sAlgoSaltedUniform
@@ -894,7 +916,7 @@ abbrev d2sAlgoSaltedUniform
   duplexSpongeToBasicFSAlgoSalted
     (δ := δ)
     (T_H := T_H) (T_P := T_P)
-    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) P
+    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) P
 
 end D2SAlgoBridge
 
@@ -988,7 +1010,7 @@ the simulator uses the paper-derived `paperInCodecImagePredicate` directly (CO25
 structure D2SCodecBridgeWithOracle {κ : Type} (challengeSpec : OracleSpec κ) where
   /-- `gᵢ = ψᵢ⁻¹ ∘ fᵢ ∘ φᵢ⁻¹ : {0,1}^{≤n} × Σ^{ℓ_P(<i)} → Σ^{ℓ_V(i)}` via oracle query
     to `challengeSpec` (§5.4 Item 4(e)i). Already encoded in `Σ^{ℓ_V(i)}` — the user-facing
-    helper `defaultD2SQueryParamsWithOracle` performs the `ψᵢ⁻¹` composition via
+    helper `defaultD2SCodecBridgeWithOracle` performs the `ψᵢ⁻¹` composition via
     `uniformDeserializePreimage` when constructing this bridge. -/
   evalGI :
     (i : pSpec.ChallengeIdx) →
@@ -998,21 +1020,6 @@ structure D2SCodecBridgeWithOracle {κ : Type} (challengeSpec : OracleSpec κ) w
             OptionT
               (OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec))
               (Vector U (challengeSize (pSpec := pSpec) i))
-
-/-- CO25 §5.4 — `D2SQueryParams` variant with access to an external challenge-oracle family.
-
-Oracle-aware counterpart to `D2SQueryParams`: uses `D2SCodecBridgeWithOracle` so that
-the `evalGI` branch can make oracle queries to `challengeSpec` (e.g. `fᵢ`) when computing
-the `gᵢ = ψᵢ⁻¹ ∘ fᵢ ∘ φᵢ⁻¹` response in §5.4 Item 4(e)i.
-
-The `Cache_p` forward-extension length is **not** a free field — `d2sQueryStepWithOracle`
-uses the paper-derived `paperForwardExtensionLength = L_V(i) - 1` directly (CO25 §5.4
-Item 4(e)iiiD, lines 1064–1068). See D5 in `audit-report.md`. -/
-structure D2SQueryParamsWithOracle {κ : Type} (challengeSpec : OracleSpec κ) where
-  -- `D2SCodecBridgeWithOracle` with oracle-access `evalGI` (§5.4 Item 4(e)i)
-  codecBridge :
-    D2SCodecBridgeWithOracle
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) challengeSpec
 
 private def sampleArrayExactWithOracle
     {κ : Type} (challengeSpec : OracleSpec κ) :
@@ -1104,18 +1111,18 @@ query `challengeSpec` (the `fᵢ`-family oracle) via `D2SChallengePlusUnitOracle
 D2SQuery is embedded in a larger computation that already holds the `fᵢ` oracles.
 
 Item 4(e)i `ρ̂_i := ψᵢ⁻¹(f_i(𝕩, τ̂, α̂_1, …, α̂_i))` is materialized inside
-`params.codecBridge.evalGI`; the user-facing constructor `defaultD2SQueryParamsWithOracle`
+`params.evalGI`; the user-facing constructor `defaultD2SCodecBridgeWithOracle`
 auto-composes `ψᵢ⁻¹` from a caller-supplied `f_i` via `uniformDeserializePreimage`. -/
 def d2sQueryStepWithOracle
     {κ : Type} {challengeSpec : OracleSpec κ}
     (params :
-      D2SQueryParamsWithOracle
-        (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) challengeSpec)
+      D2SCodecBridgeWithOracle
+        (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) challengeSpec)
     (q : (duplexSpongeChallengeOracle StmtIn U).Domain) :
     StateT
         (D2SQueryState
           (δ := δ) (T_H := T_H) (T_P := T_P)
-          (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+          (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (OptionT
         (OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)))
       ((duplexSpongeChallengeOracle StmtIn U).Range q) :=
@@ -1130,9 +1137,9 @@ def d2sQueryStepWithOracle
         OptionT.lift <|
           rateBlocksFromChallengeMWithOracle
             (pSpec := pSpec) (U := U) challengeSpec challenge
-      evalGI := params.codecBridge.evalGI }
+      evalGI := params.evalGI }
   d2sQueryStepCore (δ := δ) (T_H := T_H) (T_P := T_P)
-    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) runtime q
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) runtime q
 
 /-- CO25 §5.4 — `QueryImpl` form of `d2sQueryStepWithOracle`.
 
@@ -1142,21 +1149,21 @@ enabling the §5.4 D2SQuery simulation under an explicit external challenge-orac
 def d2sQueryImplCoreWithOracle
     {κ : Type} {challengeSpec : OracleSpec κ}
     (params :
-      D2SQueryParamsWithOracle
-        (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)
+      D2SCodecBridgeWithOracle
+        (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
         challengeSpec) :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
       (StateT
         (D2SQueryState
           (δ := δ) (T_H := T_H) (T_P := T_P)
-          (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
+          (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
         (OptionT
           (OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)))) :=
-  fun q => d2sQueryStepWithOracle (δ := δ) (codec := codec) params q
+  fun q => d2sQueryStepWithOracle (δ := δ) params q
 
-/-- CO25 §5.4 — Default `D2SQueryParamsWithOracle` with caller-supplied `fᵢ` oracle bridge.
+/-- CO25 §5.4 — Default `D2SCodecBridgeWithOracle` with caller-supplied `fᵢ` oracle bridge.
 
-Constructs `D2SQueryParamsWithOracle` using `evalGI := f_i` — the paper-facing external
+Constructs `D2SCodecBridgeWithOracle` using `evalGI := f_i` — the paper-facing external
 challenge oracle returning `pSpec.Challenge i = ℳ_{V,i}`. The simulator
 (`d2sQueryStepWithOracle`) auto-applies `ψᵢ⁻¹` via `uniformDeserializePreimage` to recover
 the encoded `ρ̂_i ∈ Σ^{ℓ_V(i)}` (CO25 §5.4 Item 4(e)i, D5.1 #2 in `audit-report.md`).
@@ -1165,7 +1172,7 @@ The Item 4(d) vs 4(e) branch predicate `∀ ι, α̂_ι ∈ Im(φ_ι)` and the `
 length are **not** parameters — `d2sQueryStepWithOracle` uses the paper-derived
 `paperInCodecImagePredicate` and `paperForwardExtensionLength = L_V(i) - 1` directly
 (CO25 §5.4 lines 1056/1059, 1064–1068). See D5 in `audit-report.md`. -/
-def defaultD2SQueryParamsWithOracle
+def defaultD2SCodecBridgeWithOracle
     [Fintype U] [DecidableEq U]
     [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]
     {κ : Type} {challengeSpec : OracleSpec κ}
@@ -1177,16 +1184,15 @@ def defaultD2SQueryParamsWithOracle
               OptionT
                 (OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec))
                 (pSpec.Challenge i)) :
-    D2SQueryParamsWithOracle
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)
+    D2SCodecBridgeWithOracle
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
       challengeSpec :=
-  { codecBridge :=
-      { evalGI := fun i stmt salt encodedMessages => do
-          let challenge ← evalGI i stmt salt encodedMessages
-          OptionT.lift <|
-            uniformDeserializePreimage
-              (pSpec := pSpec) (U := U) (codec := codec)
-              (challengeSpec := challengeSpec) challenge } }
+  { evalGI := fun i stmt salt encodedMessages => do
+      let challenge ← evalGI i stmt salt encodedMessages
+      OptionT.lift <|
+        uniformDeserializePreimage
+          (pSpec := pSpec) (U := U)
+          (challengeSpec := challengeSpec) challenge }
 
 end D2SQueryWithOracle
 
