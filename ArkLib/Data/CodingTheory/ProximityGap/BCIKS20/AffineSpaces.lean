@@ -22,6 +22,7 @@ section CoreResults
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
+omit [DecidableEq ι] in
 /-- Theorem 1.6 (Correlated agreement over affine spaces) in [BCIKS20].
 
 Take a Reed-Solomon code of length `ι` and degree `deg`, a proximity-error parameter
@@ -33,8 +34,7 @@ Note that we have `k + 2` vectors to form the affine space. This an intricacy ne
 able to isolate the affine origin from the affine span and to form a generating set of the
 correct size. The reason for taking an extra vector is that after isolating the affine origin,
 the affine span is formed as the span of the difference of the rest of the vector set. -/
-theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
-    {u : Fin (k + 1) → ι → F}
+theorem correlatedAgreement_affine_spaces {k : ℕ}
     {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hδ : δ ≤ 1 - ReedSolomon.sqrtRate deg domain) :
     δ_ε_correlatedAgreementAffineSpaces (k := k) (A := F) (F := F) (ι := ι)
