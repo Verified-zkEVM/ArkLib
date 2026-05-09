@@ -534,8 +534,8 @@ noncomputable def paperD2STraceSingle
 
 The paper's `f_i(x, τ, α_1, …, α_i)` query keeps the public salt `τ ∈ Σ^δ` threaded through the
 augmented statement, matching the encoding-A oracle `fsChallengeOracle (Vector U δ × StmtIn) pSpec`
-already used in `SingleSalt.lean`. The salted variants below are net-new surfaces consumed by
-`KeyLemma`'s Section 5.8 hybrids; the unsalted helpers above are kept for compatibility. -/
+already used in `SingleSalt.lean`. The salted variants below are consumed by `KeyLemma`'s
+Section 5.8 hybrids. -/
 
 /-- Salted variant of `paperStdTraceEntryToFSQuery?` — preserves the BackTrack salt
 `out.salt : Vector U δ` in the augmented statement of the salted FS oracle query. -/
@@ -596,35 +596,6 @@ noncomputable def paperD2STraceSingleSalted
       (QueryLog (oSpec + fsChallengeOracle (Vector U δ × StmtIn) pSpec)) :=
   stdTraceSingleSalted (codec := codec) (δ := δ)
     (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) log
-
-/-- Projection-only compatibility conversion for a single DSFS log.
-
-This keeps the legacy behavior: execute `StdTrace` abort checks, but export only shared-oracle log
-entries. -/
--- TODO(section5-cleanup): legacy projection-only wrapper. Reassess after BadEvents.lean is settled;
--- delete it if no external compatibility need remains.
-noncomputable def stdTraceSingleProjected
-    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-    OptionT (OracleComp (Unit →ₒ U))
-      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) := do
-  let _ ←
-    stdTraceEntries (δ := δ) (codec := codec)
-      (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      log
-  pure <| projectSharedQueryLog
-    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) log
-
-/-- §5.5 projection-only single-log `D2STrace`: runs abort check but exports only shared-oracle
-entries (no FS-challenge remap). -/
--- TODO(section5-cleanup): projection-only compatibility alias. Prefer `paperD2STraceSingle` for
--- paper-facing Section 5.8 statements.
-noncomputable def d2STraceSingleProjected
-    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-    OptionT (OracleComp (Unit →ₒ U))
-      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
-  stdTraceSingleProjected (δ := δ) (codec := codec)
-    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    log
 
 section PaperTrace
 
@@ -701,25 +672,6 @@ noncomputable def duplexSpongeToBasicFSTrace?
       verifyQueryLog
   pure (proveLogFS, verifyLogFS)
 
--- TODO(section5-cleanup): projection-only compatibility wrapper; likely removable if no downstream
--- code still depends on the old projected-trace behavior.
-/-- §5.5 projection-only two-log compatibility wrapper; returns `none` on abort. -/
-noncomputable def duplexSpongeToBasicFSTraceProjected?
-    (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
-    (verifyQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-      OptionT (OracleComp (Unit →ₒ U))
-        (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) ×
-          QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) := do
-  let proveLogFS ← stdTraceSingleProjected (δ := δ)
-    (codec := codec)
-    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec)
-    (U := U) proveQueryLog
-  let verifyLogFS ← stdTraceSingleProjected (δ := δ)
-    (codec := codec)
-    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec)
-    (U := U) verifyQueryLog
-  pure (proveLogFS, verifyLogFS)
-
 /-- The trace transformation in Section 5.5, from DSFS logs to basic-FS logs.
 Returns `none` when `StdTrace` aborts. -/
 noncomputable def duplexSpongeToBasicFSTrace
@@ -732,19 +684,6 @@ noncomputable def duplexSpongeToBasicFSTrace
     (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
     proveQueryLog verifyQueryLog
 
--- TODO(section5-cleanup): projection-only compatibility wrapper; keep out of new Section 5 proofs
--- unless the projected trace is explicitly required.
-/-- §5.5 projection-only two-log trace transformation. -/
-noncomputable def duplexSpongeToBasicFSTraceProjected
-    (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
-    (verifyQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-      OptionT (OracleComp (Unit →ₒ U))
-        (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) ×
-          QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
-  duplexSpongeToBasicFSTraceProjected? (δ := δ) (codec := codec)
-    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    proveQueryLog verifyQueryLog
-
 /-- §5.5 `D2STrace` two-log surface (prover + verifier logs). -/
 noncomputable def d2STrace
     (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
@@ -753,19 +692,6 @@ noncomputable def d2STrace
         (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) ×
           QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
   duplexSpongeToBasicFSTrace (δ := δ) (codec := codec)
-    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    proveQueryLog verifyQueryLog
-
--- TODO(section5-cleanup): projection-only alias retained for compatibility. Prefer `d2STrace` for
--- paper-faithful trace transformation once BadEvents.lean cleanup is complete.
-/-- §5.5 projection-only `D2STrace` two-log surface (no FS-challenge remap). -/
-noncomputable def d2STraceProjected
-    (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
-    (verifyQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-      OptionT (OracleComp (Unit →ₒ U))
-        (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) ×
-          QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
-  duplexSpongeToBasicFSTraceProjected (δ := δ) (codec := codec)
     (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
     proveQueryLog verifyQueryLog
 

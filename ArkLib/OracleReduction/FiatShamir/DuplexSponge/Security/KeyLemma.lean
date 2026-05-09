@@ -31,8 +31,6 @@ The full hybrid proof from Section 5.8 is still staged across the other Section 
 
 noncomputable section
 
-set_option linter.style.longFile 1700
-
 open OracleComp OracleSpec ProtocolSpec
 
 namespace DuplexSpongeFS.KeyLemma
@@ -63,85 +61,6 @@ instance instSampleableSaltedFSChallengeRange [∀ i, SampleableType (pSpec.Chal
 
 section SecurityGames
 
-/- Compatibility helpers for older unsalted/basic-FS-plus-unit surfaces. The theorem-facing
-Section 5 path below uses `D2SChallengePlusUnitOracle` and salted proof/log types. -/
-section Compatibility
-
-/-- Legacy unsalted basic-FS oracle family augmented with explicit unit-sampling randomness.
-Combines `fsChallengeOracle` with a `Unit →ₒ U` oracle to sample fresh sponge units. -/
-abbrev FSPlusUnitOracle :=
-  (fsChallengeOracle StmtIn pSpec) + (Unit →ₒ U)
-
-/-- CO25 §5.8. Project out the auxiliary unit-sampling queries from logs over
-`oSpec + (fsChallengeOracle + Unit →ₒ U)`, retaining only shared and FS-challenge entries. -/
-def projectFSPlusUnitQueryLog
-    (log : QueryLog (oSpec + FSPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))) :
-    QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) :=
-  log.filterMap fun entry =>
-    match entry with
-    | ⟨.inl q, r⟩ => some ⟨.inl q, r⟩
-    | ⟨.inr (.inl q), r⟩ => some ⟨.inr q, r⟩
-    | ⟨.inr (.inr _), _⟩ => none
-
-/-- Lift queries from `oSpec + fsChallengeOracle` into
-`oSpec + (fsChallengeOracle + Unit →ₒ U)` by routing through `.inl`. -/
-private def liftFSQueriesToFSPlusUnit :
-    QueryImpl (oSpec + fsChallengeOracle StmtIn pSpec)
-      (OracleComp (oSpec + FSPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))) :=
-  fun q =>
-    match q with
-    | .inl qShared =>
-        query
-          (spec := oSpec + FSPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-          (Sum.inl qShared)
-    | .inr qFS =>
-        query
-          (spec := oSpec + FSPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-          (Sum.inr (Sum.inl qFS))
-
-/-- CO25 §5.8 Hyb_3. Salted basic-FS oracle family augmented with explicit unit-sampling
-randomness. The FS oracle's query domain is extended with the public salt vector
-`Vector U δ`, matching the paper's `f_i(x, bin(τ), α_1, …, α_i)` shape (encoding A:
-salt threaded through the augmented statement, reusing the SingleSalt.lean precedent).
-Salted analogue of `FSPlusUnitOracle`. -/
-abbrev FSSaltedPlusUnitOracle :=
-  (fsChallengeOracle (Vector U δ × StmtIn) pSpec) + (Unit →ₒ U)
-
-/-- CO25 §5.8. Project out the auxiliary unit-sampling queries from logs over
-`oSpec + (fsChallengeOracle (Vector U δ × StmtIn) pSpec + Unit →ₒ U)`,
-retaining only shared and salted FS-challenge entries. -/
-def projectFSSaltedPlusUnitQueryLog
-    (log : QueryLog (oSpec +
-      FSSaltedPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ))) :
-    QueryLog (oSpec + fsChallengeOracle (Vector U δ × StmtIn) pSpec) :=
-  log.filterMap fun entry =>
-    match entry with
-    | ⟨.inl q, r⟩ => some ⟨.inl q, r⟩
-    | ⟨.inr (.inl q), r⟩ => some ⟨.inr q, r⟩
-    | ⟨.inr (.inr _), _⟩ => none
-
-/-- Lift queries from `oSpec + fsChallengeOracle (Vector U δ × StmtIn) pSpec` into
-`oSpec + (fsChallengeOracle (Vector U δ × StmtIn) pSpec + Unit →ₒ U)` by routing
-through `.inl`. Salted analogue of `liftFSQueriesToFSPlusUnit`. -/
-private def liftFSSaltedQueriesToFSSaltedPlusUnit :
-    QueryImpl (oSpec + fsChallengeOracle (Vector U δ × StmtIn) pSpec)
-      (OracleComp (oSpec +
-        FSSaltedPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ))) :=
-  fun q =>
-    match q with
-    | .inl qShared =>
-        query
-          (spec := oSpec +
-            FSSaltedPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ))
-          (Sum.inl qShared)
-    | .inr qFS =>
-        query
-          (spec := oSpec +
-            FSSaltedPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ))
-          (Sum.inr (Sum.inl qFS))
-
-end Compatibility
-
 /-- Lift salted basic-FS verifier queries into the paper `f_i` oracle plus D2S auxiliary
 sampling oracles used by `D2SAlgo^f`. -/
 private def liftFSSaltedQueriesToD2SChallengePlusUnit :
@@ -171,28 +90,12 @@ private def projectPaperIPPlusUnitQueryLog
     | ⟨.inr (.inl q), r⟩ => some ⟨.inr q, r⟩
     | ⟨.inr (.inr _), _⟩ => none
 
-/-- Legacy unsalted basic-FS game output kept for compatibility helpers. -/
-abbrev BasicFiatShamirGameOutputCompat :=
-  StmtIn × StmtOut × pSpec.Messages ×
-    QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)
-
 /-- CO25 Theorem 5.1. Output type for the salted basic Fiat-Shamir game (`Hyb_4`):
 statement-in, statement-out, salted proof (`(τ, messages)`), and combined query log over
 the salted `fsChallengeOracle (Vector U δ × StmtIn) pSpec`. -/
 abbrev BasicFiatShamirGameOutput :=
   StmtIn × StmtOut × DSSaltedProof (pSpec := pSpec) (U := U) δ ×
     QueryLog (oSpec + fsChallengeOracle (Vector U δ × StmtIn) pSpec)
-
-/-- Compatibility alias for older salted name. Prefer `BasicFiatShamirGameOutput`. -/
-abbrev BasicSaltedFiatShamirGameOutput :=
-  BasicFiatShamirGameOutput
-    (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-    (pSpec := pSpec) (U := U) (δ := δ)
-
-/-- Legacy unsalted DSFS game output kept for compatibility helpers. -/
-abbrev DuplexSpongeFiatShamirGameOutputCompat :=
-  StmtIn × StmtOut × pSpec.Messages ×
-    QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)
 
 /-- CO25 Theorem 5.1. Output type for the duplex-sponge Fiat-Shamir game (`Hyb_0` left-hand
 experiment): statement-in, statement-out, salted proof, and combined query log over
@@ -619,18 +522,6 @@ abbrev Section58DSState
     (σShared σPerm : Type) :=
   σShared × (StmtIn →ₒ Vector U SpongeSize.C).QueryCache × σPerm
 
-/-- CO25 §5.8 Hyb_4. Shared state for the canonical basic-FS experiment: ambient shared-oracle
-state and the lazy random-function cache for `srChallengeOracle` (oracle family `𝒟_IP(λ,n)`). -/
-abbrev Section58FSState
-    (σShared : Type) :=
-  σShared × (srChallengeOracle StmtIn pSpec).QueryCache
-
-/-- CO25 §5.8 Hyb_4, salted paper-facing state: ambient shared-oracle state and lazy cache for
-`f_i(x, τ, α_1, …, α_i)`. -/
-abbrev Section58FSSaltedState
-    (σShared : Type) :=
-  σShared × (srChallengeOracle (Vector U δ × StmtIn) pSpec).QueryCache
-
 /-- CO25 §5.8. Fixed ambient shared-oracle package common to all Section 5.8 experiments.
 Bundles state type, initializer, and query handler for `oSpec`. -/
 class Section58SharedOraclePackage where
@@ -715,86 +606,6 @@ def section58CanonicalDSImpl
     | .inr (.inr qPerm) =>
         let (resp, permState') ← (permImpl qPerm).run permState
         set (sharedState, hashCache, permState')
-        pure resp
-
-/-- CO25 §5.8 Hyb_4. Canonical initializer for the basic-FS experiment: run `sharedInit` and
-start the lazy FS challenge random function (`srChallengeOracle`) with an empty cache, matching
-`𝒟_IP(λ,n)` line 1 in Figure 4. -/
-def section58CanonicalFSInit
-    {σShared : Type}
-    (sharedInit : ProbComp σShared) :
-    ProbComp (Section58FSState (StmtIn := StmtIn) (pSpec := pSpec) σShared) := do
-  let sharedState ← sharedInit
-  pure (sharedState, ∅)
-
-/-- CO25 §5.8 Hyb_4. Canonical query handler for the basic-FS experiment: shared queries →
-`sharedImpl`; FS challenges → `srChallengeQueryImpl.withCaching` (lazy random function);
-unit-sampling queries → `d2sUnitSampleImpl`. -/
-def section58CanonicalFSImpl
-    [DecidableEq StmtIn] [SampleableType U] [∀ i, SampleableType (pSpec.Challenge i)]
-    [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
-    {σShared : Type}
-    (sharedImpl : QueryImpl oSpec (StateT σShared ProbComp)) :
-    QueryImpl (oSpec + FSPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-      (StateT (Section58FSState (StmtIn := StmtIn) (pSpec := pSpec) σShared) ProbComp) :=
-  fun q => do
-    let ⟨sharedState, challengeCache⟩ ← get
-    match q with
-    | .inl qShared =>
-        let (resp, sharedState') ← (sharedImpl qShared).run sharedState
-        set (sharedState', challengeCache)
-        pure resp
-    | .inr (.inl qFS) =>
-        let (resp, challengeCache') ←
-          (((srChallengeQueryImpl (Statement := StmtIn) (pSpec := pSpec)).withCaching :
-            QueryImpl (fsChallengeOracle StmtIn pSpec)
-              (StateT (fsChallengeOracle StmtIn pSpec).QueryCache ProbComp)) qFS).run
-            challengeCache
-        set (sharedState, challengeCache')
-        pure resp
-    | .inr (.inr qUnit) =>
-        let resp ← StateT.lift <| d2sUnitSampleImpl (U := U) qUnit
-        pure resp
-
-/-- CO25 §5.8 Hyb_4 salted initializer: run `sharedInit` and start the salted FS oracle cache
-empty. -/
-def section58CanonicalFSSaltedInit
-    {σShared : Type}
-    (sharedInit : ProbComp σShared) :
-    ProbComp (Section58FSSaltedState
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) σShared) := do
-  let sharedState ← sharedInit
-  pure (sharedState, ∅)
-
-/-- CO25 §5.8 Hyb_4 salted query handler: shared queries → `sharedImpl`; salted FS challenges →
-lazy random function; unit-sampling queries → `d2sUnitSampleImpl`. -/
-def section58CanonicalFSSaltedImpl
-    [SampleableType U] [∀ i, SampleableType (pSpec.Challenge i)]
-    [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
-    {σShared : Type}
-    (sharedImpl : QueryImpl oSpec (StateT σShared ProbComp)) :
-    QueryImpl (oSpec + FSSaltedPlusUnitOracle
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ))
-      (StateT (Section58FSSaltedState
-        (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) σShared) ProbComp) :=
-  fun q => do
-    let ⟨sharedState, challengeCache⟩ ← get
-    match q with
-    | .inl qShared =>
-        let (resp, sharedState') ← (sharedImpl qShared).run sharedState
-        set (sharedState', challengeCache)
-        pure resp
-    | .inr (.inl qFS) =>
-        let (resp, challengeCache') ←
-          (((srChallengeQueryImpl (Statement := Vector U δ × StmtIn) (pSpec := pSpec)).withCaching :
-            QueryImpl (fsChallengeOracle (Vector U δ × StmtIn) pSpec)
-              (StateT (srChallengeOracle (Vector U δ × StmtIn) pSpec).QueryCache ProbComp))
-            qFS).run
-            challengeCache
-        set (sharedState, challengeCache')
-        pure resp
-    | .inr (.inr qUnit) =>
-        let resp ← StateT.lift <| d2sUnitSampleImpl (U := U) qUnit
         pure resp
 
 /-- CO25 §5.8 Hyb_0. Named DS-side sampler for the paper's `𝒟_𝔖(λ,n)` experiment, relative to
@@ -944,22 +755,21 @@ noncomputable def section58Hyb1Dist
     | mk i qKey =>
         change SampleableType (Vector U (challengeSize (pSpec := pSpec) i))
         infer_instance
-  let params :=
-    defaultD2SQueryParamsWithOracle
-      (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec)
-      (challengeSpec := challengeSpec)
-      (fun roundIdx stmt0 salt0 encodedMessages0 =>
-        OptionT.lift <| do
-          let encoded ←
-            (show OracleComp
-                (D2SChallengePlusUnitOracle (U := U) challengeSpec)
-                (Vector U (challengeSize (pSpec := pSpec) roundIdx)) from
-              query
-                (spec := D2SChallengePlusUnitOracle (U := U) challengeSpec)
-                (.inl ⟨roundIdx,
-                  (stmt0, salt0,
-                    EncodedMessagesUpTo.toList encodedMessages0)⟩))
-          pure (codec.decode roundIdx encoded))
+  let params :
+      D2SQueryParamsWithOracle
+        (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (codec := codec)
+        challengeSpec :=
+    { codecBridge :=
+        { evalGI := fun roundIdx stmt0 salt0 encodedMessages0 =>
+            OptionT.lift <|
+              (show OracleComp
+                  (D2SChallengePlusUnitOracle (U := U) challengeSpec)
+                  (Vector U (challengeSize (pSpec := pSpec) roundIdx)) from
+                query
+                  (spec := D2SChallengePlusUnitOracle (U := U) challengeSpec)
+                  (.inl ⟨roundIdx,
+                    (stmt0, salt0,
+                      EncodedMessagesUpTo.toList encodedMessages0)⟩)) } }
   exact
     section58HybridGameDist
       (δ := δ)

@@ -702,16 +702,6 @@ abbrev d2sQuery :
     (δ := δ)
     (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)
 
-/-- Compatibility alias for the older §5.4 `D2SQuery` implementation name. Prefer `d2sQuery`. -/
-abbrev d2SQueryImpl :
-    QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec))
-        (OptionT
-          (OracleComp (fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))) ) :=
-  d2sQuery
-    (δ := δ)
-    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec)
-
 /-- CO25 §5.4 — `D2SAlgo^f`: parametric duplex-sponge → basic Fiat-Shamir prover transform.
 
 Implements the D2SAlgo construction (CO25 §5.4, Equation 16):
@@ -790,17 +780,6 @@ abbrev d2sAlgo
     OracleComp (oSpec + fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (Option (StmtIn × pSpec.Messages)) :=
   duplexSpongeToBasicFSAlgo
-    (δ := δ)
-    (T_H := T_H) (T_P := T_P)
-    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) P
-
-/-- Compatibility alias for the older §5.4 `D2SAlgo` name. Prefer `d2sAlgo`. -/
-abbrev d2SAlgo
-    (P : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
-      (StmtIn × pSpec.Messages)) :
-    OracleComp (oSpec + fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-      (Option (StmtIn × pSpec.Messages)) :=
-  d2sAlgo
     (δ := δ)
     (T_H := T_H) (T_P := T_P)
     (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (codec := codec) P
