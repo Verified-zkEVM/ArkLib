@@ -240,6 +240,21 @@ def duplexSpongeChallengeOracle (StartType : Type) (U : Type) [SpongeUnit U] [Sp
 
 alias «𝒟_𝔖» := duplexSpongeChallengeOracle
 
+/-- Forward-only sub-spec of `duplexSpongeChallengeOracle`: only `h` and the forward permutation
+slot `p` are exposed. The backward slot `p⁻¹` is omitted.
+
+This is the type-level encoding of CO25 Figure 4 line 3 — `𝒱^{h,p}` — the honest verifier in the
+DSFS hybrid experiment has no syntactic access to `p⁻¹`. Used as the typing surface of the verify
+helpers (`deriveTranscriptDSFS{,Salted}`) and a parallel narrow-typed verifier surface
+`Verifier.duplexSpongeFiatShamirSaltedForward`. The wide reduction surface
+`Reduction.duplexSpongeFiatShamir{,Salted}` keeps the full `duplexSpongeChallengeOracle` because
+`NonInteractiveReduction` requires uniform spec across prover and verifier.
+-/
+@[reducible]
+def duplexSpongeForwardOracle (StartType : Type) (U : Type) [SpongeUnit U] [SpongeSize] :
+    OracleSpec (StartType ⊕ CanonicalSpongeState U) :=
+  (StartType →ₒ Vector U SpongeSize.C) + forwardPermutationOracle (CanonicalSpongeState U)
+
 section OracleDistribution
 
 /-- One sampled realization of the DSFS ideal oracle distribution `𝒟_𝔖`:
@@ -369,11 +384,13 @@ namespace ProtocolSpec.Messages
 /-- Auxiliary function for deriving the transcript up to round `k` from the (full) messages, via
   querying the permutation oracle for the challenges.
 
-  This is used to define `deriveTranscriptDSFS`. -/
+  This is used to define `deriveTranscriptDSFS`. The body uses only forward permutation queries
+  (`squeeze`, `absorb`); the return type is the narrow `duplexSpongeForwardOracle`, encoding
+  CO25 Figure 4 line 3 (`𝒱^{h,p}`) at the type level. -/
 def deriveTranscriptDSFSAux {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
     (sponge : CanonicalDuplexSponge U)
     (messages : pSpec.Messages) (i : Fin (n + 1)) :
-      OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
+      OracleComp (oSpec + duplexSpongeForwardOracle StmtIn U)
         (CanonicalDuplexSponge U × pSpec.Transcript i) :=
   Fin.induction
     (pure (sponge, fun i => i.elim0))
@@ -401,10 +418,11 @@ def deriveTranscriptDSFSAux {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
 /-- Derive the full transcript from the (full) messages, via doing absorb / squeeze operations on
     the duplex sponge.
 
-  Returns the final state of the duplex sponge and the full transcript -/
+  Returns the final state of the duplex sponge and the full transcript. Lives at the narrow
+  forward-only spec (CO25 Figure 4 line 3, `𝒱^{h,p}`). -/
 def deriveTranscriptDSFS {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
     (stmtIn : StmtIn) (messages : pSpec.Messages) :
-    OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
+    OracleComp (oSpec + duplexSpongeForwardOracle StmtIn U)
       (CanonicalDuplexSponge U × pSpec.FullTranscript) := do
   let sponge ← liftM (DuplexSponge.start stmtIn)
   deriveTranscriptDSFSAux sponge messages (Fin.last n)
@@ -490,18 +508,45 @@ def Prover.duplexSpongeFiatShamir (P : Prover oSpec StmtIn WitIn StmtOut WitOut 
   receiveChallenge | ⟨0, h⟩ => nomatch h
   output := fun st => (P.output st).liftComp _
 
-/-- The duplex sponge Fiat-Shamir transformation for the verifier. -/
+/-- The duplex sponge Fiat-Shamir transformation for the verifier (wide-spec surface).
+
+The verify body itself only uses forward operations (`start`, `absorb`, `squeeze`) via the narrow
+helper `deriveTranscriptDSFS`; the surface is kept at the wide
+`oSpec + duplexSpongeChallengeOracle StmtIn U` so it lines up with
+`Reduction.duplexSpongeFiatShamir` (which requires the prover and verifier to share a single
+oracle spec). The helper is `liftComp`-ed into the wide spec at the call site.
+For the strict CO25 Figure 4 line 3 typing
+(`𝒱^{h,p}` — no `p⁻¹`) used inside security games, see
+`Verifier.duplexSpongeFiatShamirForward`. -/
 def Verifier.duplexSpongeFiatShamir (V : Verifier oSpec StmtIn StmtOut pSpec) :
     NonInteractiveVerifier (∀ i, pSpec.Message i) (oSpec + duplexSpongeChallengeOracle StmtIn U)
       StmtIn StmtOut where
   verify := fun stmtIn proof => do
     -- Get the messages from the non-interactive proof
     let messages : pSpec.Messages := proof 0
-    -- Derive the full transcript based on the messages and the sponge
-    let ⟨_, transcript⟩ ← (messages.deriveTranscriptDSFS (oSpec := oSpec) (U := U) stmtIn)
+    -- Derive the full transcript based on the messages and the sponge (forward-only helper),
+    -- then lift into the wide spec required by this surface.
+    let ⟨_, transcript⟩ ←
+      liftComp (messages.deriveTranscriptDSFS (oSpec := oSpec) (U := U) stmtIn)
+        (oSpec + duplexSpongeChallengeOracle StmtIn U)
     let v ← (V.verify stmtIn transcript).run
     v.getM
     -- Option.getM (← (V.verify stmtIn transcript).run)
+
+/-- Narrow-typed verifier surface matching CO25 Figure 4 line 3 (`𝒱^{h,p}`).
+
+Lives at `oSpec + duplexSpongeForwardOracle StmtIn U`, omitting the inverse permutation slot
+`p⁻¹` at the type level. This is the surface the security game in §5.8 uses for the honest
+verifier; the wider surface `Verifier.duplexSpongeFiatShamir` is preserved for compatibility
+with `Reduction.duplexSpongeFiatShamir` (whose `NonInteractiveReduction` requires uniform spec). -/
+def Verifier.duplexSpongeFiatShamirForward (V : Verifier oSpec StmtIn StmtOut pSpec) :
+    NonInteractiveVerifier (∀ i, pSpec.Message i) (oSpec + duplexSpongeForwardOracle StmtIn U)
+      StmtIn StmtOut where
+  verify := fun stmtIn proof => do
+    let messages : pSpec.Messages := proof 0
+    let ⟨_, transcript⟩ ← messages.deriveTranscriptDSFS (oSpec := oSpec) (U := U) stmtIn
+    let v ← (V.verify stmtIn transcript).run
+    v.getM
 
 /-- The duplex sponge Fiat-Shamir transformation for an (interactive) reduction, which consists of
   applying the duplex sponge Fiat-Shamir transformation to both the prover and the verifier. -/
@@ -519,7 +564,7 @@ This is the transcript path for the salted Construction 4.3 surface.
 def ProtocolSpec.Messages.deriveTranscriptDSFSSalted {ι : Type} {oSpec : OracleSpec ι}
     {StmtIn : Type} {δ : Nat}
     (stmtIn : StmtIn) (salt : Vector U δ) (messages : pSpec.Messages) :
-    OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
+    OracleComp (oSpec + duplexSpongeForwardOracle StmtIn U)
       (CanonicalDuplexSponge U × pSpec.FullTranscript) := do
   let sponge0 ← liftM (DuplexSponge.start stmtIn)
   let sponge ← liftM (DuplexSponge.absorb sponge0 salt.toList)
@@ -565,7 +610,12 @@ def Prover.duplexSpongeFiatShamirSalted [∀ i, VCVCompatible (pSpec.Challenge i
   receiveChallenge | ⟨0, h⟩ => nomatch h
   output := fun st => (P.output st).liftComp _
 
-/-- Salted DSFS verifier surface (Construction 4.3-facing). -/
+/-- Salted DSFS verifier surface (Construction 4.3-facing, wide-spec).
+
+Wide-spec wrapper around the forward-only helper `deriveTranscriptDSFSSalted`. Kept at the wide
+`oSpec + duplexSpongeChallengeOracle StmtIn U` for compatibility with
+`Reduction.duplexSpongeFiatShamirSalted`. For the strict `𝒱^{h,p}` typing used inside §5.8
+security games, see `Verifier.duplexSpongeFiatShamirSaltedForward`. -/
 def Verifier.duplexSpongeFiatShamirSalted (δ : Nat)
     (V : Verifier oSpec StmtIn StmtOut pSpec) :
     NonInteractiveVerifier (DSSaltedProof (pSpec := pSpec) (U := U) δ)
@@ -576,7 +626,31 @@ def Verifier.duplexSpongeFiatShamirSalted (δ : Nat)
     let salt : Vector U δ := saltedProof.1
     let messages : pSpec.Messages := saltedProof.2
     let ⟨_, transcript⟩ ←
-      messages.deriveTranscriptDSFSSalted (pSpec := pSpec) (oSpec := oSpec) (U := U) stmtIn salt
+      liftComp
+        (messages.deriveTranscriptDSFSSalted
+          (pSpec := pSpec) (oSpec := oSpec) (U := U) stmtIn salt)
+        (oSpec + duplexSpongeChallengeOracle StmtIn U)
+    let v ← (V.verify stmtIn transcript).run
+    v.getM
+
+/-- Narrow-typed salted DSFS verifier surface — CO25 Figure 4 line 3 (`𝒱^{h,p}`) for the salted
+Construction 4.3 path.
+
+Lives at `oSpec + duplexSpongeForwardOracle StmtIn U`, omitting the inverse permutation slot
+`p⁻¹` at the type level. Used by the §5.8 hybrid security games to invoke the honest verifier
+without granting it syntactic access to `p⁻¹`. -/
+def Verifier.duplexSpongeFiatShamirSaltedForward (δ : Nat)
+    (V : Verifier oSpec StmtIn StmtOut pSpec) :
+    NonInteractiveVerifier (DSSaltedProof (pSpec := pSpec) (U := U) δ)
+      (oSpec + duplexSpongeForwardOracle StmtIn U)
+      StmtIn StmtOut where
+  verify := fun stmtIn proof => do
+    let saltedProof : DSSaltedProof (pSpec := pSpec) (U := U) δ := proof 0
+    let salt : Vector U δ := saltedProof.1
+    let messages : pSpec.Messages := saltedProof.2
+    let ⟨_, transcript⟩ ←
+      messages.deriveTranscriptDSFSSalted
+        (pSpec := pSpec) (oSpec := oSpec) (U := U) stmtIn salt
     let v ← (V.verify stmtIn transcript).run
     v.getM
 

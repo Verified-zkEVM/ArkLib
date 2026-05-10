@@ -412,7 +412,11 @@ def lemma5_8ProjectedTraceDistOfConcreteExperiment
 
 /-- CO25 §5.6 Lemma 5.8 — Shared experiment shape for both sides of Lemma 5.8.
 Runs the malicious prover under the DS oracle, then runs the DSFS verifier on the resulting
-`(statement, proof)` pair.  Returns the optional verifier output. -/
+`(statement, proof)` pair.  Returns the optional verifier output.
+
+Type-level CO25 Figure 4 line 3: the honest verifier is invoked at the narrow forward-only spec
+`[]ₒ + duplexSpongeForwardOracle StmtIn U` (`𝒱^{h,p}` — no `p⁻¹`); its computation is then
+`liftComp`-ed into the wide spec used by the (adversarial) prover for trace concatenation. -/
 def lemma5_8TraceExperiment
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
     (maliciousProver :
@@ -420,10 +424,13 @@ def lemma5_8TraceExperiment
     OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) (Option StmtOut) := do
   let _ : Codec pSpec U := codec
   let ⟨stmtIn, messages⟩ ← maliciousProver
-  ((Verifier.duplexSpongeFiatShamir
-      (oSpec := []ₒ) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec)
-      (U := U) V).run
-    stmtIn (fun i => match i with | ⟨0, _⟩ => messages)).run
+  let verifyCompNarrow :
+      OracleComp ([]ₒ + duplexSpongeForwardOracle StmtIn U) (Option StmtOut) :=
+    ((Verifier.duplexSpongeFiatShamirForward
+        (oSpec := []ₒ) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec)
+        (U := U) V).run
+      stmtIn (fun i => match i with | ⟨0, _⟩ => messages)).run
+  liftComp verifyCompNarrow ([]ₒ + duplexSpongeChallengeOracle StmtIn U)
 
 /-- CO25 Lemma 5.8 — Left-hand-side trace distribution.
 Real DS execution under the explicit `(h, p, p⁻¹) ← 𝒟_𝔖(λ, n)` implementation.
@@ -775,10 +782,7 @@ sequence is constructed using `p⁻¹` rather than `p`.
 `𝒥_BT(tr, s)` is computed deterministically from `S_BT(tr, s)` via
 `Backtrack.BacktrackSequence.Index` (cf. CO25 Def 5.4), so this definition takes `S_BT` as input
 but quantifies directly over `Backtrack.J_BT S_BT` in the body. -/
-def E_inv
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (state : CanonicalSpongeState U)
-    (S_BT : Backtrack.S_BT trace state) : Prop :=
+def E_inv (S_BT : Backtrack.S_BT trace state) : Prop :=
   ∃ p ∈ Backtrack.J_BT S_BT,
   ∃ ι : Fin p.1.outputState.length,
   ∃ s_out s_in : CanonicalSpongeState U,
@@ -804,19 +808,13 @@ section Def513_Lemma514
 
 /-- CO25 Definition 5.13 — Event `E_fork(tr, s)`: there is a (capacity-segment) collision for
 `h` or `p`, formalized directly as `|𝒮_BT(tr, s)| > 1`. -/
-def E_fork
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (state : CanonicalSpongeState U)
-    (S_BT : Backtrack.S_BT trace state) : Prop :=
+def E_fork (S_BT : Backtrack.S_BT trace state) : Prop :=
   S_BT.seqFamily.card > 1
 
 /-- CO25 Definition 5.13 / Eq. 38 — `E_{fork,h}(tr, s)`: collision of two outputs of `h`.
 Two backtrack sequences in `𝒮_BT(tr, s)` have distinct input statements `𝕩^{(1)} ≠ 𝕩^{(2)}` but
 their first input states share the same capacity segment `s_{C,in,0}^{(1)} = s_{C,in,0}^{(2)}`. -/
-def E_fork_h
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (state : CanonicalSpongeState U)
-    (S_BT : Backtrack.S_BT trace state) : Prop :=
+def E_fork_h (S_BT : Backtrack.S_BT trace state) : Prop :=
   ∃ S₁ ∈ S_BT.seqFamily, ∃ S₂ ∈ S_BT.seqFamily,
     S₁.stmt ≠ S₂.stmt ∧
     (S₁.inputState[0]'(by
@@ -829,10 +827,7 @@ outputs of `p`.  There exist `S^{(1)}, S^{(2)} ∈ 𝒮_BT(tr, s)` and indices
 `ι_1 ∈ [0, m_1 - 1]`, `ι_2 ∈ [0, m_2 - 1]` with `s_{in,ι_1}^{(1)} ≠ s_{in,ι_2}^{(2)}` (full input
 states differ) and `s_{C,out,ι_1}^{(1)} = s_{C,out,ι_2}^{(2)}` (output capacity segments
 coincide). -/
-def E_fork_p
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (state : CanonicalSpongeState U)
-    (S_BT : Backtrack.S_BT trace state) : Prop :=
+def E_fork_p (S_BT : Backtrack.S_BT trace state) : Prop :=
   ∃ S₁ ∈ S_BT.seqFamily, ∃ S₂ ∈ S_BT.seqFamily,
   ∃ ι₁ : Fin S₁.outputState.length, ∃ ι₂ : Fin S₂.outputState.length,
     (S₁.inputState[ι₁.val]'(by
@@ -846,10 +841,7 @@ def E_fork_p
 /-- CO25 Definition 5.13 / Eq. 40 — `E_{fork,h,p}(tr, s)`: collision of `h` with the output
 capacity segment of a query to `p`.  There exist `S^{(1)}, S^{(2)} ∈ 𝒮_BT(tr, s)` and
 `ι ∈ [m_2 - 1]` with `s_{C,in,0}^{(1)} = s_{C,out,ι}^{(2)}`. -/
-def E_fork_h_p
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (state : CanonicalSpongeState U)
-    (S_BT : Backtrack.S_BT trace state) : Prop :=
+def E_fork_h_p (S_BT : Backtrack.S_BT trace state) : Prop :=
   ∃ S₁ ∈ S_BT.seqFamily, ∃ S₂ ∈ S_BT.seqFamily,
   ∃ ι : Fin S₂.outputState.length,
     (S₁.inputState[0]'(by
@@ -878,10 +870,7 @@ section Def515_Lemma516
 /-- CO25 Definition 5.15 / Eq. 41 — `E_{time,h}(tr, s)`: the query to `h` is out of order.
 There exists `J^{(k)} = (j_h^{(k)}, j_0^{(k)}, …, j_{m_k}^{(k)}) ∈ 𝒥_BT(tr, s)` with
 `j_h^{(k)} > j_0^{(k)}`. -/
-def E_time_h
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (state : CanonicalSpongeState U)
-    (S_BT : Backtrack.S_BT trace state) : Prop :=
+def E_time_h (S_BT : Backtrack.S_BT trace state) : Prop :=
   ∃ p ∈ Backtrack.J_BT S_BT,
     p.2.1.val > (p.2.2 ⟨0, by
       have := p.1.inputState_length_eq_outputState_length_succ; omega⟩).val
@@ -889,10 +878,7 @@ def E_time_h
 /-- CO25 Definition 5.15 / Eq. 42 — `E_{time,p}(tr, s)`: a query to `p` is out of order.
 There exists `J^{(k)} ∈ 𝒥_BT(tr, s)` and `ι ∈ [m_k - 1]` (paper indexing) with
 `j_{ι-1}^{(k)} > j_ι^{(k)}`, i.e. some consecutive pair of `j`-indices is out of order. -/
-def E_time_p
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (state : CanonicalSpongeState U)
-    (S_BT : Backtrack.S_BT trace state) : Prop :=
+def E_time_p (S_BT : Backtrack.S_BT trace state) : Prop :=
   ∃ p ∈ Backtrack.J_BT S_BT,
   ∃ ι : Fin p.1.outputState.length,
     (p.2.2 ⟨ι.val, by
@@ -903,10 +889,7 @@ def E_time_p
       have := ι.isLt; omega⟩).val
 
 /-- CO25 Definition 5.15 — `E_time(tr, s) := E_{time,h}(tr, s) ∨ E_{time,p}(tr, s)`. -/
-def E_time
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (state : CanonicalSpongeState U)
-    (S_BT : Backtrack.S_BT trace state) : Prop :=
+def E_time (S_BT : Backtrack.S_BT trace state) : Prop :=
   E_time_h trace state S_BT ∨ E_time_p trace state S_BT
 
 /-- CO25 Lemma 5.16 — If `E(tr) = 0` then `E_time(tr, s) = 0`. -/

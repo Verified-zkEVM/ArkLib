@@ -163,7 +163,11 @@ def basicFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
 
 /-- CO25 Theorem 5.1. Left-hand game for Lemma 5.1: the duplex-sponge Fiat-Shamir transform under
 DS oracles `h, p, p⁻¹` sampled from `𝒟_𝔖(λ,n)`. This is `Hyb_0`, before the Section 5.8
-hybrid rewrite through `D2SQuery`. -/
+hybrid rewrite through `D2SQuery`.
+
+Type-level CO25 Figure 4 line 3: the honest verifier is invoked at the narrow forward-only spec
+`oSpec + duplexSpongeForwardOracle StmtIn U` (`𝒱^{h,p}` — no `p⁻¹`); its query log is then lifted
+into the wide spec used by the (adversarial) prover for log concatenation. -/
 def duplexSpongeFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
     (P : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)) :
@@ -171,10 +175,16 @@ def duplexSpongeFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
       (DuplexSpongeFiatShamirGameOutput (oSpec := oSpec) (StmtIn := StmtIn)
         (StmtOut := StmtOut) (pSpec := pSpec) (U := U) (δ := δ)) := do
   let ⟨⟨stmtIn, proof⟩, proveQueryLog⟩ ← (simulateQ loggingOracle P).run
-  let ⟨stmtOut, verifyQueryLog⟩ ←
-    liftM (simulateQ loggingOracle
-      ((V.duplexSpongeFiatShamirSalted δ).run
-        stmtIn (fun i => match i with | ⟨0, _⟩ => proof))).run
+  -- Build V's verify computation at the narrow forward-only spec (`𝒱^{h,p}`) — this is the
+  -- type-level CO25 Figure 4 line 3 guarantee. Then `liftComp` it into the wide spec so the
+  -- subsequent `simulateQ loggingOracle` emits a wide-spec query log; by construction the
+  -- wide log's `p⁻¹` slot contains no entries from V.
+  let verifyCompNarrow := ((V.duplexSpongeFiatShamirSaltedForward δ).run
+    stmtIn (fun i => match i with | ⟨0, _⟩ => proof))
+  let verifyCompWide :
+      OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (Option StmtOut) :=
+    liftComp verifyCompNarrow (oSpec + duplexSpongeChallengeOracle StmtIn U)
+  let ⟨stmtOut, verifyQueryLog⟩ ← liftM (simulateQ loggingOracle verifyCompWide).run
   return ⟨stmtIn, ← stmtOut.getM, proof, proveQueryLog ++ verifyQueryLog⟩
 
 /-- CO25 §5.4. D2SAlgo prover transform: lifts a duplex-sponge prover into a basic-FS prover.
@@ -362,15 +372,22 @@ def section58HybridGame
     match proverOut? with
     | some proverOut => pure proverOut
     | none => failure
+  -- Type-level CO25 Figure 4 line 3: honest verifier runs at the narrow forward-only spec
+  -- (`𝒱^{h,p}` — no `p⁻¹`), then `liftComp`-ed into the wide spec consumed by `d2sOuterImpl`.
+  let verifyCompNarrow :
+      OracleComp (oSpec + duplexSpongeForwardOracle StmtIn U) (Option StmtOut) :=
+    ((V.duplexSpongeFiatShamirSaltedForward δ).run
+      stmtIn (fun i => match i with | ⟨0, _⟩ => proof)).run
+  let verifyCompWide :
+      OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (Option StmtOut) :=
+    liftComp verifyCompNarrow (oSpec + duplexSpongeChallengeOracle StmtIn U)
   let verifierComp :
       OptionT
         (OracleComp (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec))
         (Option StmtOut ×
           D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
               (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
-    (simulateQ d2sOuterImpl
-      ((V.duplexSpongeFiatShamirSalted δ).run
-        stmtIn (fun i => match i with | ⟨0, _⟩ => proof))).run default
+    (simulateQ d2sOuterImpl verifyCompWide).run default
   let ⟨verifierOut?, verifyQueryLogRaw⟩ ← (simulateQ loggingOracle verifierComp.run).run
   let ⟨stmtOut?, _⟩ ←
     match verifierOut? with
