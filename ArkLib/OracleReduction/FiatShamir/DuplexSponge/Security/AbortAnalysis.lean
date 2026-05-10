@@ -40,7 +40,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
   [codec : Codec pSpec U]
   {δ : ℕ}
 
-/-- Paper-facing predicate: `StdTrace` on `trace` does not abort. -/
+/-- Predicate: `StdTrace` on `trace` does not abort. -/
 def StdTraceNoAbort [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
@@ -50,7 +50,7 @@ def StdTraceNoAbort [DecidableEq StmtIn] [DecidableEq U]
     (failure : DSAbort U
       (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)))
 
-/-- Paper-facing predicate: `StdTrace` on `trace` aborts. -/
+/-- Predicate: `StdTrace` on `trace` aborts. -/
 def StdTraceAbort [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
@@ -58,7 +58,7 @@ def StdTraceAbort [DecidableEq StmtIn] [DecidableEq U]
       (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
       trace
 
-/-- Paper-facing predicate: `BackTrack` does not hit the `err` branch on `(trace, state)`.
+/-- Predicate: `BackTrack` does not hit the `err` branch on `(trace, state)`.
 
 The caller supplies the generic `tr_∇`; the predicate keeps `trace` only for the depth bound and
 for alignment with the bad-event hypotheses. -/
@@ -75,7 +75,7 @@ def BackTrackNoAbort [DecidableEq StmtIn] [DecidableEq U]
     (ExperimentOutput.err :
       ExperimentOutput (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
 
-/-- Paper-facing predicate: `LookAhead(tr_∇.p, state, i)` does not hit the `err` branch. -/
+/-- Predicate: `LookAhead(tr_∇.p, state, i)` does not hit the `err` branch. -/
 def LookAheadNoAbort [DecidableEq StmtIn] [DecidableEq U]
     {T_H : Type}
     {T_P : Type} [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
@@ -96,7 +96,7 @@ variable [DecidableEq StmtIn] [DecidableEq U]
   [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
   [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
 
-/-- Paper-facing predicate: `D2SQuery` does not hit the `err` branch when started from `trace`. -/
+/-- Predicate: `D2SQuery` does not hit the `err` branch when started from `trace`. -/
 def D2SQueryNoAbortOnTrace
     (params : D2SCodecBridge (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec)
       (U := U))
@@ -115,7 +115,7 @@ def D2SQueryNoAbortOnTrace
 
 end D2SQueryNoAbort
 
-/-- Paper-facing predicate: `D2SQuery` aborts when started from `trace`. -/
+/-- Predicate: `D2SQuery` aborts when started from `trace`. -/
 def D2SQueryAbortOnTrace
     [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
@@ -228,7 +228,7 @@ lemma lemma_5_18_d2sQuery_noAbort
       (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) params traceA := by
   sorry
 
-/-! ## Theorem 5.19 and Theorem 5.20 — paper-facing contrapositives (used in Section 5.8) -/
+/-! ## Theorem 5.19 and Theorem 5.20 — contrapositives (used in Section 5.8) -/
 
 /-- CO25 Theorem 5.19 — If `A^D2SQuery` aborts then `E(tr_A)` holds.
 

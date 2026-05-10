@@ -12,7 +12,7 @@ import ToMathlib.Probability.ProbabilityMassFunction.TotalVariation
 /-!
 # DSFS Preliminaries
 
-This file contains paper-facing preliminaries for the duplex-sponge Fiat-Shamir formalization.
+This file contains preliminaries for the duplex-sponge Fiat-Shamir formalization.
 Currently it provides CO25 Lemma 3.2 about uniform preimage sampling.
 -/
 

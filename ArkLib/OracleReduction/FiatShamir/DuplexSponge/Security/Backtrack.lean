@@ -207,20 +207,20 @@ structure BacktrackSequenceFamily (trace : QueryLog (duplexSpongeChallengeOracle
   maximality : ∀ s ∈ seqFamily, ∀ s' ∈ seqFamily, s ≠ s' →
     ¬ (s.stmt = s'.stmt ∧ s.inputState ⊆ s'.inputState ∧ s.outputState ⊆ s'.outputState)
 
-/-- Definition 5.3 (paper-facing): `S_BT(tr,s)` family of backtracking sequences. -/
+/-- Definition 5.3: `S_BT(tr,s)` family of backtracking sequences. -/
 abbrev S_BT
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (state : CanonicalSpongeState U) :=
   BacktrackSequenceFamily trace state
 
-/-- Definition 5.4 (paper-facing): index list payload attached to one sequence. -/
+/-- Definition 5.4: index list payload attached to one sequence. -/
 abbrev BacktrackIndexList
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     {state : CanonicalSpongeState U}
     (seq : BacktrackSequence trace state) :=
   Fin trace.length × (Fin seq.inputState.length → Fin (trace.length + 1))
 
-/-- Definition 5.4 (paper-facing): `J_BT(tr,s)` index lists associated to `S_BT(tr,s)`. -/
+/-- Definition 5.4: `J_BT(tr,s)` index lists associated to `S_BT(tr,s)`. -/
 def J_BT
     {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
     {state : CanonicalSpongeState U}
@@ -243,7 +243,7 @@ structure BacktrackOutput where
 
 /-- Geometric invariants for a BackTrack §5.2 Step 4 candidate (chain-length,
 rate-segment alignment, no-loop, capacity threading). -/
-private def RawBacktrackOutput.paperShapeValid
+private def RawBacktrackOutput.shapeValid
     (out : RawBacktrackOutput (StmtIn := StmtIn) (U := U)) : Prop :=
   0 < out.absorbedRatePrefix.length ∧
     out.stepPairs.length + 1 = out.absorbedRatePrefix.length ∧
@@ -251,12 +251,6 @@ private def RawBacktrackOutput.paperShapeValid
     (∀ pair ∈ out.stepPairs, pair.1.capacitySegment ≠ pair.2.capacitySegment) ∧
     (∀ pair ∈ out.stepPairs.zip out.stepPairs.tail,
       pair.1.2.capacitySegment = pair.2.1.capacitySegment)
-
-/-- Boolean executable check for `RawBacktrackOutput.paperShapeValid`. -/
-private def RawBacktrackOutput.paperShapeValidb
-    (out : RawBacktrackOutput (StmtIn := StmtIn) (U := U)) : Bool := by
-  classical
-  exact decide (RawBacktrackOutput.paperShapeValid (StmtIn := StmtIn) (U := U) out)
 
 /-- CO25 Eq. 6 — `L_δ = ⌈δ / r⌉`: number of rate blocks for the salt. -/
 private def Lδ : Nat := Nat.ceil ((δ : ℚ) / SpongeSize.R)
@@ -382,12 +376,11 @@ private def backtrackOutputValidWithParser
   match
       candidateRoundFromParser
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) (δ := δ) out with
-  | some parsedRound =>
-      exact RawBacktrackOutput.paperShapeValidb (StmtIn := StmtIn) (U := U)
-        out
+  | some _ =>
+      classical
+      exact decide (RawBacktrackOutput.shapeValid (StmtIn := StmtIn) (U := U) out)
   | none => exact false
 
--- TODO: duplicate of TraceTransform.lean's local helper. Consider moving to a shared module.
 private def vectorOfListExact
     (len : Nat) (xs : List U) : Option (Vector U len) := by
   let ys := xs.take len
@@ -451,7 +444,7 @@ def backtrackOutputMessagesInImage
         inImage j (out.encodedMessages j hlt))
       (fun _ hj => hj)).all id
 
-/-- Recover the paper-facing tuple components from a raw internal candidate. -/
+/-- Recover the tuple components from a raw internal candidate. -/
 private def RawBacktrackOutput.parsedTuple?
     (out : RawBacktrackOutput (StmtIn := StmtIn) (U := U)) :
     Option (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) := by

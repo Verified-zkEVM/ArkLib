@@ -101,10 +101,10 @@ instance : Inhabited (D2SQueryState
     (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
   ⟨{}⟩
 
-/-- §5.4 `D2SQuery` simulator monad — `D2SQueryState` mutated under the paper-facing
+/-- §5.4 `D2SQuery` simulator monad — `D2SQueryState` mutated under the canonical
 abort/randomness stack `DSAbort U = OptionT (OracleComp (Unit →ₒ U))`.
 
-This is the canonical paper-facing monad for `d2sQueryStep`/`d2sQueryImplCore`. -/
+This is the canonical monad for `d2sQueryStep`/`d2sQueryImplCore`. -/
 abbrev D2SStateM :=
   StateT
     (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
@@ -157,42 +157,28 @@ Implements the executable approximation of the paper branch predicate (CO25 §5.
 satisfies the codec-image side condition. Since `BackTrack` now returns the paper tuple directly,
 this is just the `Serialize`-image check on the recovered encoded messages.
 
-This is the **paper-derived** predicate used directly inside `d2sQueryStep`; it is no longer a
-free field of `D2SCodecBridge`, removing the prior under-constrained shape (D5 in
-`audit-report.md`). -/
-private noncomputable def paperInCodecImagePredicate
+This predicate is used directly inside `d2sQueryStep`; it is no longer a free field of
+`D2SCodecBridge`, removing the prior under-constrained shape. -/
+private noncomputable def d2sInCodecImagePredicate
     (out : BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) : Bool :=
   backtrackOutputMessagesInImage
     (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
     (messageInSerializeImage (pSpec := pSpec) (U := U))
     out
 
-/-- CO25 §5.4 Item 4(e)iiiD — paper-derived `Cache_p` extension length.
-
-The paper requires appending exactly `L_V(i) - 1` pairs to `Cache_p` after a valid backtrack
-hit (CO25 §5.4 lines 1064–1068). Returns that count given a `BackTrack` output; returns `0`
-when the round index is unrecoverable (the simulator falls through to the non-tuple branch).
-
-Replaces the prior free `forwardExtensionLength` field of `D2SCodecBridge` (D5 in
-`audit-report.md`). -/
-private def paperForwardExtensionLength
-    (out : BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) : Nat :=
-  (pSpec.Lᵥᵢ out.roundIdx).pred
-
-/-- CO25 §5.4 — Paper-facing `gᵢ = ψᵢ⁻¹ ∘ fᵢ ∘ φᵢ⁻¹` codec bridge for `D2SQuery`.
+/-- CO25 §5.4 — `gᵢ = ψᵢ⁻¹ ∘ fᵢ ∘ φᵢ⁻¹` codec bridge for `D2SQuery`.
 
 Bundles the function needed by D2SQuery Item 4(e)i:
 - `evalGI`: computes `ρ̂_i := gᵢ(𝕩, τ̂, α̂_1, …, α̂_i)` for the valid branch (§5.4 Item 4(e)i),
   where `gᵢ = ψᵢ⁻¹ ∘ fᵢ ∘ φᵢ⁻¹` with `φᵢ` the prover-message encoder and `ψᵢ` the
   verifier-message encoder from the Codec (CO25 §5.2).
 
-The Item 4(d) vs 4(e) branch predicate `∀ ι ∈ [i], α̂_ι ∈ Im(φ_ι)` is **not** a free field —
-the simulator uses the paper-derived `paperInCodecImagePredicate` directly (CO25 §5.4 lines
-1056/1059). See D5 in `audit-report.md`. -/
+The Item 4(d) vs 4(e) branch predicate `∀ ι ∈ [i], α̂_ι ∈ Im(φ_ι)` is **not** a free field:
+the simulator uses `d2sInCodecImagePredicate` directly (CO25 §5.4 lines 1056/1059). -/
 structure D2SCodecBridge where
   /-- `gᵢ(𝕩, τ̂, α̂_1, …, α̂_i) = ψᵢ⁻¹(fᵢ(𝕩, τ̌, φᵢ⁻¹(α̂_1), …, φᵢ⁻¹(α̂_i)))` (§5.4 Item 4(e)i).
 
-  Paper-strict argument shape: `salt : Vector U δ` and
+  Strict argument shape: `salt : Vector U δ` and
   `encodedMessages : pSpec.EncodedMessagesUpTo U i.1.castSucc` matching `BacktrackOutput`. -/
   evalGI :
     (i : pSpec.ChallengeIdx) →
@@ -295,12 +281,12 @@ private def rateBlocksFromChallengeM
   rateBlocksFromUnitsM (U := U) (pSpec.Lᵥᵢ i) challenge.toList
 
 /-- Runtime operations that differ between the uniform Hyb1-style `D2SQuery` wrapper and the
-paper-facing external-`f` wrapper. The shared `d2sQueryStepCore` below owns the §5.4 branch tree.
+external-`f` wrapper. The shared `d2sQueryStepCore` below owns the §5.4 branch tree.
 
 The generic `m : Type _ → Type _ [Monad m]` is **kept generic** (not specialized to
 `DSAbort U`) to support two instantiations of the §5.4 simulator core:
 
-1. The paper-facing default: `m := DSAbort U = OptionT (OracleComp (Unit →ₒ U))` —
+1. The default: `m := DSAbort U = OptionT (OracleComp (Unit →ₒ U))` —
    `d2sQueryStep` (uniform `evalGI` via `sampleVector`) and the §5.4 `D2SAlgo`
    prover transform (CO25 Equation 16).
 2. The oracle-aware variant: `m := OptionT (OracleComp (D2SChallengePlusUnitOracle ...))` —
@@ -333,7 +319,7 @@ The runtime supplies only sampling and `g_i`/`f_i` evaluation. All control flow 
 paper order: Item 2 (`h`), Item 3 (`p⁻¹`), and Item 4 (`p`) with BackTrack branches 4(b)-4(g).
 
 `m` is left generic (with `[Monad m] [Alternative m]`) so the same branch tree is shared by:
-- `d2sQueryStep` (paper-facing): `m := DSAbort U` for the §5.4/§5.8 default.
+- `d2sQueryStep`: `m := DSAbort U` for the §5.4/§5.8 default.
 - `d2sQueryStepWithOracle` (oracle-aware): `m := OptionT (OracleComp (D2SChallengePlusUnitOracle ...))`
   for the §5.8 Hyb₁ wrapper that threads an external `fᵢ` oracle.
 
@@ -407,10 +393,9 @@ private def d2sQueryStepCore
           set { st with trace := trace', cacheP := cache', stdMemo := stdMemo', trΔ := trΔ' }
           return stateOut
       | .some backtrackOut =>
-          -- Paper Items 4(d)-4(g). Only Item 4(e)'s `g_i` evaluation comes from the runtime.
+          -- CO25 Items 4(d)-4(g). Only Item 4(e)'s `g_i` evaluation comes from the runtime.
           let (stateOut, cache', stdMemo', trΔ') ←
-            if paperInCodecImagePredicate
-
+            if d2sInCodecImagePredicate
                 (StmtIn := StmtIn) (pSpec := pSpec) (U := U) backtrackOut then
               let roundIdx := backtrackOut.roundIdx
               let stdQuery :
@@ -520,22 +505,6 @@ def d2sQueryImplCore
       (DSAbort U)) :=
   fun q => d2sQueryStep (δ := δ) params q
 
-/-- CO25 §5.4 — Execute the `D2SQuery` oracle-wrapper semantics on a DS oracle computation.
-
-Runs `comp` under the `D2SQuery` simulation starting from an empty `D2SQueryState`.
-Returns `none` when `D2SQuery` aborts (the `err` branch, §5.4 Item 4(b)), or
-`some (result, finalState)` on success. -/
-def runD2SQueryCore
-    (params : D2SCodecBridge
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    {α : Type}
-    (comp : OracleComp (duplexSpongeChallengeOracle StmtIn U) α) :
-    DSAbort U
-      (α × D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
-  (simulateQ
-    (d2sQueryImplCore (δ := δ) params)
-    comp).run default
-
 /-- CO25 §5.4 — Uniform `ProbComp` implementation of the auxiliary `U`-sampling oracle.
 
 Provides the concrete `𝒰(Σ)` random-sampling semantics used by `d2sQueryStep` for the
@@ -603,7 +572,7 @@ def d2sQueryImplCoreProb
       (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       ProbComp) :=
   fun q => do
-    let st ← get
+    let st : D2SQueryState ← get
     let out? ←
       StateT.lift <|
         runD2SQueryStepWithUnitImpl
@@ -619,24 +588,6 @@ def d2sQueryImplCoreProb
         let (resp, st') := onAbort q st
         set st'
         pure resp
-
-/-- CO25 §5.4 — Uniform-sampling `ProbComp` instantiation of the `D2SQuery` core.
-
-Specializes `d2sQueryImplCoreProb` with `d2sUnitSampleImpl` as the uniform `𝒰(Σ)` oracle,
-giving the canonical §5.4 D2SQuery semantics where all fresh samples are drawn uniformly. -/
-def d2sQueryImplCoreUniform
-    [SampleableType U]
-    (params : D2SCodecBridge
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
-    QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-      ProbComp) :=
-  d2sQueryImplCoreProb
-    (δ := δ)
-    (T_H := T_H) (T_P := T_P)
-    (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-    (unitImpl := d2sUnitSampleImpl (U := U))
-    params
 
 end D2SQueryCore
 
@@ -659,9 +610,9 @@ private abbrev fsPlusUnitOracle :=
 /-- CO25 §5.4 — Default `D2SCodecBridge` with uniform `evalGI` sampler.
 
 The Item 4(d)/(e) branch predicate `∀ ι ∈ [i], α̂_ι ∈ Im(φ_ι)` is no longer a field; the
-simulator now uses the paper-derived `paperInCodecImagePredicate` directly (see D5 in
-`audit-report.md`). Only `evalGI` (the `gᵢ = ψ⁻¹ ∘ f ∘ φ⁻¹` evaluator) remains, here
-specialized to a uniform `𝒰(Σ^{ℓ_V(i)})` sampler. -/
+simulator now uses `d2sInCodecImagePredicate` directly. Only `evalGI` (the
+`gᵢ = ψ⁻¹ ∘ f ∘ φ⁻¹` evaluator) remains, here specialized to a uniform
+`𝒰(Σ^{ℓ_V(i)})` sampler. -/
 private def defaultD2SCodecBridge :
     D2SCodecBridge
       (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) :=
@@ -695,9 +646,8 @@ def duplexSpongeToBasicFSQueryImplWithParams
 /-- CO25 §5.4 — Default `D2SQuery` simulation: duplex-sponge oracles → basic Fiat-Shamir oracles.
 
 Uses `defaultD2SCodecBridge` (uniform `evalGI` via `sampleVector`; `inCodecImage` is baked in
-as `paperInCodecImagePredicate` and `forwardExtensionLength` inlined as `(pSpec.Lᵥᵢ i).pred`
-after D5.1 cleanup, so they are no longer free fields). Composed with a duplex-sponge malicious
-prover `𝒜`
+as `d2sInCodecImagePredicate` and `forwardExtensionLength` is inlined as
+`(pSpec.Lᵥᵢ i).pred`). Composed with a duplex-sponge malicious prover `𝒜`
 to obtain the basic Fiat-Shamir malicious prover `D2SAlgo(𝒜)` from CO25 §5.4 (Equation 16). -/
 def duplexSpongeToBasicFSQueryImpl :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U)
@@ -710,7 +660,7 @@ def duplexSpongeToBasicFSQueryImpl :
     (defaultD2SCodecBridge
       (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
 
-/-- CO25 §5.4 — Main paper-facing `D2SQuery` oracle wrapper.
+/-- CO25 §5.4 — Main `D2SQuery` oracle wrapper.
 
 This is the clean entry point for the default §5.4 query simulator. The longer
 `duplexSpongeToBasicFSQueryImpl*` names are implementation/bridge names exposing the same
@@ -771,12 +721,11 @@ def duplexSpongeToBasicFSAlgoWithParams
 /-- CO25 §5.4 — Default `D2SAlgo`: duplex-sponge → basic Fiat-Shamir prover transform.
 
 Specializes `duplexSpongeToBasicFSAlgoWithParams` with `defaultD2SCodecBridge`:
-- `inCodecImage` is baked into `d2sQueryStep` as `paperInCodecImagePredicate` (built from
-  `paperCodecImageWitness?` + `messageInSerializeImage`) — D5.1 cleanup removed it as a
-  free field of `D2SCodecBridge`/`D2SCodecBridge`,
+- `inCodecImage` is baked into `d2sQueryStep` as `d2sInCodecImagePredicate` (built from
+  `backtrackOutputMessagesInImage` + `messageInSerializeImage`),
 - `evalGI` via uniform sampling `𝒰(Σ^{ℓ_V(i)})` (i.e. `gᵢ ← 𝒟_Σ(λ, n)`),
-- `forwardExtensionLength` is inlined as `(pSpec.Lᵥᵢ i).pred` (also exposed as
-  `paperForwardExtensionLength`); fills `Cache_p` chain, §5.4 Item 4(e)iiiD.
+- `forwardExtensionLength` is inlined as `(pSpec.Lᵥᵢ i).pred`; fills `Cache_p` chain,
+  §5.4 Item 4(e)iiiD.
 This is the canonical D2SAlgo instance used throughout the CO25 §5 security analysis. -/
 def duplexSpongeToBasicFSAlgo
     (P : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
@@ -791,7 +740,7 @@ def duplexSpongeToBasicFSAlgo
       (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     P
 
-/-- CO25 §5.4 — Main paper-facing `D2SAlgo` prover transform.
+/-- CO25 §5.4 — Main `D2SAlgo` prover transform.
 
 This is the clean entry point for the default §5.4 prover transform
 `D2SAlgo(𝒜) := 𝒜^{D2SQuery}`. The longer `duplexSpongeToBasicFSAlgo*` names are
@@ -802,118 +751,6 @@ abbrev d2sAlgo
     OracleComp (oSpec + fsPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (Option (StmtIn × pSpec.Messages)) :=
   duplexSpongeToBasicFSAlgo
-    (δ := δ)
-    (T_H := T_H) (T_P := T_P)
-    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) P
-
-/-- CO25 §5.4 — Salted basic-FS challenge oracle augmented with auxiliary unit-sampling.
-
-Encoding A (salt threaded through the augmented statement, matching
-`Prover.singleSaltFiatShamir` in `SingleSalt.lean`): the basic-FS oracle queries
-`(salt, stmt) ∈ Vector U δ × StmtIn`. Salted analogue of `fsPlusUnitOracle`. -/
-private abbrev fsSaltedPlusUnitOracle :=
-  (fsChallengeOracle (Vector U δ × StmtIn) pSpec) + (Unit →ₒ U)
-
-/-- CO25 §5.4 — Salted variant of `duplexSpongeToBasicFSQueryImplWithParams`.
-
-Same simulator core as the unsalted version, but lifts the inner
-`DSAbort U` target to `oSpec + fsSaltedPlusUnitOracle` so the
-output prover can be embedded in a context with a salted basic-FS challenge oracle. The
-simulator core itself does not query `f` (default `evalGI` samples uniformly); the salt is
-passed through at the wrapper level via the salted output proof type. -/
-def duplexSpongeToBasicFSQueryImplWithParamsSalted
-    (params : D2SCodecBridge
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
-    QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-        (OptionT
-          (OracleComp
-            (fsSaltedPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ))))) :=
-  QueryImpl.liftTarget
-    (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-      (OptionT
-        (OracleComp
-          (fsSaltedPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)))))
-    (d2sQueryImplCore
-      (δ := δ)
-      (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-      params)
-
-/-- CO25 §5.4 — Salted parametric `D2SAlgo`: duplex-sponge → salted basic Fiat-Shamir prover.
-
-Paper-faithful per Eq. 16 Step 4-6: input prover `P̃` outputs `(x, π)` with
-`π = (τ, α_1, …, α_k) ∈ Σ^δ × messages` (`DSSaltedProof pSpec U δ`); output prover targets
-the salted basic-FS oracle with the same salted proof type. The salt is threaded through
-unchanged (the simulator core is salt-agnostic; the salted oracle records salt-aware
-challenges only when the bridge `evalGI` issues `f_i` queries on `(stmt, salt, ·)`). -/
-def duplexSpongeToBasicFSAlgoSaltedWithParams
-    (params : D2SCodecBridge
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (P : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
-      (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)) :
-    OracleComp
-      (oSpec + fsSaltedPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ))
-      (Option (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)) :=
-  let d2sOuterImpl :
-      QueryImpl (oSpec + duplexSpongeChallengeOracle StmtIn U)
-        (StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-          (OptionT
-            (OracleComp
-              (oSpec + fsSaltedPlusUnitOracle
-                (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ))))) :=
-    QueryImpl.addLift
-      (r := StateT (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-        (OptionT
-          (OracleComp
-            (oSpec + fsSaltedPlusUnitOracle
-              (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)))))
-      (QueryImpl.id oSpec)
-      (duplexSpongeToBasicFSQueryImplWithParamsSalted
-        (δ := δ)
-        (T_H := T_H) (T_P := T_P)
-        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-        params)
-  let outWithState :
-      OptionT
-        (OracleComp
-          (oSpec + fsSaltedPlusUnitOracle
-            (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)))
-        ((StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ) ×
-          D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
-    (simulateQ d2sOuterImpl P).run default
-  do
-    let out? ← outWithState.run
-    pure (out?.map Prod.fst)
-
-/-- CO25 §5.4 — Default salted `D2SAlgo`: specializes `duplexSpongeToBasicFSAlgoSaltedWithParams`
-with `defaultD2SCodecBridge` (uniform `evalGI` and paper-derived `paperForwardExtensionLength`). -/
-def duplexSpongeToBasicFSAlgoSalted
-    (P : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
-      (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)) :
-    OracleComp
-      (oSpec + fsSaltedPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ))
-      (Option (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)) :=
-  duplexSpongeToBasicFSAlgoSaltedWithParams
-    (δ := δ)
-    (T_H := T_H) (T_P := T_P)
-    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-    (defaultD2SCodecBridge
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    P
-
-/-- Salted Hyb₁-style uniform `D2SAlgo` helper.
-
-This helper specializes with `defaultD2SCodecBridge`, so its `g_i` responses are sampled uniformly
-from encoded challenges. The paper-facing Theorem 5.1 witness instead uses
-`KeyLemma.paperD2SAlgoSaltedExternal`, which bridges through an external salted `f_i` oracle. -/
-abbrev d2sAlgoSaltedUniform
-    (P : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
-      (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)) :
-    OracleComp
-      (oSpec + fsSaltedPlusUnitOracle (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ))
-      (Option (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)) :=
-  duplexSpongeToBasicFSAlgoSalted
     (δ := δ)
     (T_H := T_H) (T_P := T_P)
     (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) P
@@ -998,15 +835,13 @@ caller-supplied `fᵢ`-family oracle) in addition to the auxiliary `Unit →ₒ 
 This is the oracle-aware version used when D2SQuery is embedded inside a larger computation
 that already has access to challenge oracles `f_i : {0,1}^{≤n} × … → ℳ_{V,i}`.
 
-`evalGI` returns the **paper-facing `f_i` value** in `pSpec.Challenge i = ℳ_{V,i}`; the
+`evalGI` returns the external `f_i` value in `pSpec.Challenge i = ℳ_{V,i}`; the
 simulator (`d2sQueryStepWithOracle`) auto-applies `ψᵢ⁻¹` via `uniformDeserializePreimage`
 to recover the encoded `ρ̂_i ∈ Σ^{ℓ_V(i)}`. The φᵢ⁻¹ side stays implicit in the
-paper tuple `(τ, α̂_1, …, α̂_i)` argument shape (CO25 §5.4 Item 4(e)i). See D5.1 #2 in
-`audit-report.md`.
+tuple `(τ, α̂_1, …, α̂_i)` argument shape (CO25 §5.4 Item 4(e)i).
 
-The Item 4(d) vs 4(e) branch predicate `∀ ι ∈ [i], α̂_ι ∈ Im(φ_ι)` is **not** a free field —
-the simulator uses the paper-derived `paperInCodecImagePredicate` directly (CO25 §5.4 lines
-1056/1059). See D5 in `audit-report.md`. -/
+The Item 4(d) vs 4(e) branch predicate `∀ ι ∈ [i], α̂_ι ∈ Im(φ_ι)` is **not** a free field:
+the simulator uses `d2sInCodecImagePredicate` directly (CO25 §5.4 lines 1056/1059). -/
 structure D2SCodecBridgeWithOracle {κ : Type} (challengeSpec : OracleSpec κ) where
   /-- `gᵢ = ψᵢ⁻¹ ∘ fᵢ ∘ φᵢ⁻¹ : {0,1}^{≤n} × Σ^{ℓ_P(<i)} → Σ^{ℓ_V(i)}` via oracle query
     to `challengeSpec` (§5.4 Item 4(e)i). Already encoded in `Σ^{ℓ_V(i)}` — the user-facing
@@ -1163,15 +998,14 @@ def d2sQueryImplCoreWithOracle
 
 /-- CO25 §5.4 — Default `D2SCodecBridgeWithOracle` with caller-supplied `fᵢ` oracle bridge.
 
-Constructs `D2SCodecBridgeWithOracle` using `evalGI := f_i` — the paper-facing external
-challenge oracle returning `pSpec.Challenge i = ℳ_{V,i}`. The simulator
+Constructs `D2SCodecBridgeWithOracle` using `evalGI := f_i` — the external challenge oracle
+returning `pSpec.Challenge i = ℳ_{V,i}`. The simulator
 (`d2sQueryStepWithOracle`) auto-applies `ψᵢ⁻¹` via `uniformDeserializePreimage` to recover
-the encoded `ρ̂_i ∈ Σ^{ℓ_V(i)}` (CO25 §5.4 Item 4(e)i, D5.1 #2 in `audit-report.md`).
+the encoded `ρ̂_i ∈ Σ^{ℓ_V(i)}` (CO25 §5.4 Item 4(e)i).
 
 The Item 4(d) vs 4(e) branch predicate `∀ ι, α̂_ι ∈ Im(φ_ι)` and the `Cache_p` forward-extension
-length are **not** parameters — `d2sQueryStepWithOracle` uses the paper-derived
-`paperInCodecImagePredicate` and `paperForwardExtensionLength = L_V(i) - 1` directly
-(CO25 §5.4 lines 1056/1059, 1064–1068). See D5 in `audit-report.md`. -/
+length are **not** parameters: `d2sQueryStepWithOracle` uses `d2sInCodecImagePredicate` and
+`L_V(i) - 1` directly (CO25 §5.4 lines 1056/1059, 1064–1068). -/
 def defaultD2SCodecBridgeWithOracle
     [Fintype U] [DecidableEq U]
     [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]

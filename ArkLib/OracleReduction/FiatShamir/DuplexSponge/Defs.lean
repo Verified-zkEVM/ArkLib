@@ -58,9 +58,9 @@ class HasChallengeSize {n : ℕ} (pSpec : ProtocolSpec n) where
 
 export HasChallengeSize (challengeSize)
 
-/-- Paper-facing codec class for CO25 Definition 4.1.
+/-- Codec class for CO25 Definition 4.1.
 
-`Codec pSpec U` is the paper-facing generic-parameter carrier for everything DSFS needs about a
+`Codec pSpec U` is the generic-parameter carrier for everything DSFS needs about a
 protocol's per-round encoder/decoder: per-round vector sizes, the encoder, its injectivity proof,
 the decoder, the per-round decoder bias `ε_cdc`, and the per-round preimage sampler.
 
@@ -282,18 +282,24 @@ def permutationOracleQueryImpl {α : Type} (p : Equiv.Perm α) :
   | Sum.inl state => pure (p state)
   | Sum.inr state => pure (p.symm state)
 
+/-- `CanonicalSpongeState U = Vector U SpongeSize.N` is `VCVCompatible` whenever `U` is.
+Needed so `VCVCompatible U` implies `SampleableType (Equiv.Perm (CanonicalSpongeState U))`. -/
+instance instVCVCompatibleCanonicalSpongeState
+    {U : Type} [SpongeUnit U] [SpongeSize] [VCVCompatible U] :
+    VCVCompatible (CanonicalSpongeState U) :=
+  (inferInstance : VCVCompatible (Vector U SpongeSize.N))
+
 /-- Uniform random-function distribution for the `h` component of `𝒟_𝔖`. -/
-def duplexSpongeHashOracleDistribution (StartType U : Type) [SpongeUnit U] [SpongeSize]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily (StartType →ₒ Vector U SpongeSize.C))] :
+noncomputable def duplexSpongeHashOracleDistribution (StartType U : Type) [SpongeUnit U] [SpongeSize]
+    [VCVCompatible StartType] [VCVCompatible U] :
     ArkLib.OracleReduction.OracleDistribution (StartType →ₒ Vector U SpongeSize.C) :=
   ArkLib.OracleReduction.OracleDistribution.uniform _
 
 /-- Uniform random-permutation distribution for the `(p, p⁻¹)` component of `𝒟_𝔖`.
 
 Only `p` is sampled; `p⁻¹` is derived as `p.symm`. -/
-def duplexSpongePermutationOracleDistribution (U : Type) [SpongeUnit U] [SpongeSize]
-    [SampleableType (Equiv.Perm (CanonicalSpongeState U))] :
+noncomputable def duplexSpongePermutationOracleDistribution (U : Type) [SpongeUnit U] [SpongeSize]
+    [VCVCompatible U] :
     ArkLib.OracleReduction.OracleDistribution (permutationOracle (CanonicalSpongeState U)) where
   Carrier := Equiv.Perm (CanonicalSpongeState U)
   sample := $ᵗ (Equiv.Perm (CanonicalSpongeState U))
@@ -303,10 +309,8 @@ def duplexSpongePermutationOracleDistribution (U : Type) [SpongeUnit U] [SpongeS
 
 Samples `h` as a uniform random function and `p` as a uniform random permutation, then answers
 inverse-permutation queries using `p.symm`. -/
-def duplexSpongeOracleDistribution (StartType U : Type) [SpongeUnit U] [SpongeSize]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily (StartType →ₒ Vector U SpongeSize.C))]
-    [SampleableType (Equiv.Perm (CanonicalSpongeState U))] :
+noncomputable def duplexSpongeOracleDistribution (StartType U : Type) [SpongeUnit U] [SpongeSize]
+    [VCVCompatible StartType] [VCVCompatible U] :
     ArkLib.OracleReduction.OracleDistribution
       (duplexSpongeChallengeOracle StartType U) :=
   ArkLib.OracleReduction.OracleDistribution.prod
@@ -318,9 +322,7 @@ alias D𝔖 := duplexSpongeOracleDistribution
 @[simp]
 lemma duplexSpongeOracleDistribution_toImpl
     (StartType U : Type) [SpongeUnit U] [SpongeSize]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily (StartType →ₒ Vector U SpongeSize.C))]
-    [SampleableType (Equiv.Perm (CanonicalSpongeState U))]
+    [VCVCompatible StartType] [VCVCompatible U]
     (realization : DuplexSpongeOracleRealization StartType U) :
     (duplexSpongeOracleDistribution StartType U).toImpl realization =
       duplexSpongeOracleQueryImpl realization := by
@@ -333,9 +335,7 @@ lemma duplexSpongeOracleDistribution_toImpl
 @[simp]
 lemma duplexSpongeOracleDistribution_sample
     (StartType U : Type) [SpongeUnit U] [SpongeSize]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily (StartType →ₒ Vector U SpongeSize.C))]
-    [SampleableType (Equiv.Perm (CanonicalSpongeState U))] :
+    [VCVCompatible StartType] [VCVCompatible U] :
     (duplexSpongeOracleDistribution StartType U).sample =
       (do
         let h ← $ᵗ (ArkLib.OracleReduction.OracleFamily

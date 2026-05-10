@@ -16,7 +16,7 @@ This file contains the lookahead sequence family `S_LA(tr_∇.p, s, i)` and the 
 ## Declaration order (top-to-bottom, matching CO25 §5.3 Algorithm 2)
 
 1. **Paper structures** — `LookaheadSequence` (Eq. 13 chain), `LookaheadSequenceFamily`
-   (the maximal family), and the paper-facing abbrev `S_LA(tr_∇.p, s, i)`.
+   (the maximal family), and the abbrev `S_LA(tr_∇.p, s, i)`.
 2. **§5.3 Step 1** — `S_LA.compute` parses `tr_∇.p` into the maximal family `S_LA(tr_∇.p, s, i)`.
    Internal helpers: `successorCandidates`, `singletonLookaheadSequence`,
    `prependLookaheadSequence`, `LookaheadCandidate`, `buildLookaheadCandidates`,
@@ -117,7 +117,7 @@ structure LookaheadSequenceFamily
   /-- `m_k ≤ L_V(i)` — LookAhead §5.3 Step 1(a) length bound. -/
   length_le_numPermQueriesChallenge : ∀ s ∈ seqFamily, s.inputState.length ≤ pSpec.Lᵥᵢ i
 
-/-- CO25 §5.3 paper-facing abbreviation: `S_LA(tr_∇.p, s, i)`, the maximal lookahead
+/-- CO25 §5.3 abbreviation: `S_LA(tr_∇.p, s, i)`, the maximal lookahead
 sequence family produced by LookAhead Step 1.
 
 Parallel to `S_BT(tr, s)` in `Backtrack.lean`. -/

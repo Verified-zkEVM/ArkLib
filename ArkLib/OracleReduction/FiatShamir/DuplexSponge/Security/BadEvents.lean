@@ -349,7 +349,7 @@ def traceDistOfConcreteExperiment
 variable {StmtOut : Type}
   [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
   [codec : Codec pSpec U] {δ : ℕ} [DecidableEq StmtIn] [DecidableEq U]
-  [SampleableType U]
+  [VCVCompatible U] [SampleableType U]
   [∀ i, Fintype (pSpec.Message i)]
   [∀ i, DecidableEq (pSpec.Message i)]
   {T_H : Type}
@@ -481,8 +481,20 @@ noncomputable def lemma5_8SigmaTraceDist
       (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U) V maliciousProver)
 
+/-- CO25 Lemma 5.8 — eager carrier impl wrapper.
+Wraps `D𝔖.toImpl` (a stateless `QueryImpl _ ProbComp` per carrier sample) into the
+`StateT D𝔖.Carrier ProbComp` shape required by `lemma5_8RealTraceDist`. The carrier is
+sampled once at game start (CO25 Def. 4.2) and then read-only — `get` reads, never
+mutates. -/
+noncomputable def lemma5_8EagerImpl :
+    QueryImpl (duplexSpongeChallengeOracle StmtIn U)
+      (StateT (D𝔖 StmtIn U).Carrier ProbComp) :=
+  fun q => do
+    let k ← StateT.get
+    StateT.lift ((D𝔖 StmtIn U).toImpl k q)
+
 set_option linter.unusedDecidableInType false in
-/-- CO25 Lemma 5.8 — Bad-event probability bound.
+/-- CO25 Lemma 5.8 — Bad-event probability bound (paper-faithful eager statement).
 For every `(tₕ, tₚ, tₚᵢ)`-query malicious prover P̃ with `tₚ ≥ L` (where `L` is the total number
 of verifier permutation queries),
 
@@ -491,13 +503,12 @@ max{ Pr[E(tr_P̃ ‖ tr_V) | 𝒟_𝔖], Pr[E(tr_P̃ ‖ tr_V) | 𝒟_Σ] }
   ≤ (7·T² − 3·T) / (2·|Σ|^c)
 ```
 
-where `T = tₕ + 1 + tₚ + L + tₚᵢ`.  Bounds both the real `(h, p, p⁻¹) ← 𝒟_𝔖(λ, n)` and the
-simulator `g ← 𝒟_Σ(λ, n)` with `D2SQuery` experiments. -/
+where `T = tₕ + 1 + tₚ + L + tₚᵢ`. Both sides match CO25 Lemma 5.8 verbatim:
+the left-hand side samples `(h, p, p⁻¹) ← 𝒟_𝔖(λ, n)` once at the start of the experiment
+(eager sampling, CO25 Def. 4.2), the right-hand side runs `g ← 𝒟_Σ(λ, n)` via the `D2SQuery`
+simulator. -/
 theorem lemma_5_8
     [Fintype U]
-    {σReal : Type}
-    (initReal : ProbComp σReal)
-    (implReal : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σReal ProbComp))
     (simParams : ProverTransform.D2SCodecBridge
       (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
@@ -524,7 +535,9 @@ theorem lemma_5_8
           lemma5_8RealTraceDist
             (StmtIn := StmtIn) (StmtOut := StmtOut)
             (n := n) (pSpec := pSpec) (U := U)
-            initReal implReal V maliciousProver])
+            (D𝔖 StmtIn U).sample
+            (lemma5_8EagerImpl (StmtIn := StmtIn) (U := U))
+            V maliciousProver])
         (Pr[fun tr => BadEventDS.E tr |
           lemma5_8SigmaTraceDist
             (T_H := T_H) (T_P := T_P)
@@ -535,75 +548,6 @@ theorem lemma_5_8
   let _ := hMaliciousBound
   let _ := hTp
   sorry
-
-/-- CO25 Lemma 5.8 — paper-faithful eager carrier impl wrapper.
-Wraps `D𝔖.toImpl` (a stateless `QueryImpl _ ProbComp` per carrier sample) into the
-`StateT D𝔖.Carrier ProbComp` shape required by `lemma5_8RealTraceDist`. The carrier is
-sampled once at game start (CO25 Def. 4.2) and then read-only — `get` reads, never
-mutates. -/
-noncomputable def lemma5_8EagerImpl
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily (StmtIn →ₒ Vector U SpongeSize.C))]
-    [SampleableType (Equiv.Perm (CanonicalSpongeState U))] :
-    QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D𝔖 StmtIn U).Carrier ProbComp) :=
-  fun q => do
-    let k ← StateT.get
-    StateT.lift ((D𝔖 StmtIn U).toImpl k q)
-
-set_option linter.unusedDecidableInType false in
-/-- CO25 Lemma 5.8 — paper-faithful eager corollary.
-Same bound as `lemma_5_8`, restated with the real-side `(initReal, implReal)` instantiated
-to `D𝔖`'s eager `OracleDistribution`. CO25 Def. 4.2 says `(h, p, p⁻¹) ← 𝒟_𝔖(λ,n)` is
-sampled at the start of the experiment; this corollary makes that sampling shape explicit
-through `OracleDistribution`-based init/impl. -/
-theorem lemma_5_8_eager
-    [Fintype U]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily (StmtIn →ₒ Vector U SpongeSize.C))]
-    [SampleableType (Equiv.Perm (CanonicalSpongeState U))]
-    (simParams : ProverTransform.D2SCodecBridge
-      (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
-    (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (maliciousProver :
-      OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages))
-    (onSimAbort :
-      (q : (duplexSpongeChallengeOracle StmtIn U).Domain) →
-        ProverTransform.D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
-              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) →
-          (duplexSpongeChallengeOracle StmtIn U).Range q ×
-            ProverTransform.D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
-              (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) :=
-      ProverTransform.d2sQueryAbortFallback
-        (δ := δ) (T_H := T_H) (T_P := T_P)
-        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U))
-    (tₕ tₚ tₚᵢ : ℕ)
-    (hMaliciousBound :
-      IsLemma5_8QueryBound
-        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-        maliciousProver tₕ tₚ tₚᵢ)
-    (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
-    max
-        (Pr[fun tr => BadEventDS.E tr |
-          lemma5_8RealTraceDist
-            (StmtIn := StmtIn) (StmtOut := StmtOut)
-            (n := n) (pSpec := pSpec) (U := U)
-            (D𝔖 StmtIn U).sample
-            (lemma5_8EagerImpl (StmtIn := StmtIn) (U := U))
-            V maliciousProver])
-        (Pr[fun tr => BadEventDS.E tr |
-          lemma5_8SigmaTraceDist
-            (T_H := T_H) (T_P := T_P)
-            (StmtIn := StmtIn) (StmtOut := StmtOut)
-            (n := n) (pSpec := pSpec) (U := U)
-            simParams V maliciousProver onSimAbort])
-      ≤ ENNReal.ofReal (lemma5_8Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries) :=
-  lemma_5_8
-    (T_H := T_H) (T_P := T_P)
-    (StmtIn := StmtIn) (StmtOut := StmtOut) (n := n) (pSpec := pSpec) (U := U) (δ := δ)
-    (initReal := (D𝔖 StmtIn U).sample)
-    (implReal := lemma5_8EagerImpl (StmtIn := StmtIn) (U := U))
-    simParams V maliciousProver onSimAbort tₕ tₚ tₚᵢ hMaliciousBound hTp
 
 end Lemma_5_8
 
@@ -745,7 +689,7 @@ lemma not_collisionBwdBwd_of_not_combined (h : ¬ E trace) : ¬ collisionBwdBwd 
     right; right; left
     exact ⟨⟨j, hj⟩, h_lt, sI, sO', hgj, rfl⟩
 
-/-- CO25 Lemma 5.10 — Paper-facing helper.
+/-- CO25 Lemma 5.10 — helper.
 For a well-formed `(h, p, p⁻¹)` trace, if `E(tr) = 0`, then the exact paper-form
 `E_prp(tr)` does not hold. -/
 lemma not_collisionPerm_of_not_combined
@@ -762,7 +706,7 @@ lemma not_collisionPerm_of_not_combined
     rcases hbf with ⟨stateOut, stateIn, stateOut', hm1, hm2, hne⟩
     exact hne (hBwdFwd stateOut stateIn stateOut' hm1 hm2)
 
-/-- CO25 Lemma 5.10 — Paper-facing.
+/-- CO25 Lemma 5.10.
 For a well-formed `(h, p, p⁻¹)` trace, if `E(tr) = 0` then `E_prp(tr) = 0`. -/
 theorem lemma_5_10 (hTrace : isConsistentTrace trace) (h : ¬ E trace) : ¬ E_prp trace :=
   not_collisionPerm_of_not_combined (trace := trace) hTrace h

@@ -10,8 +10,8 @@ import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Lookahead
 /-!
 # Trace Transformations
 
-This file contains the trace transformations for duplex sponge Fiat-Shamir, following Section 5.5 in
-the paper.
+This file contains the trace transformations for duplex sponge Fiat-Shamir, following CO25
+Section 5.5.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
@@ -88,14 +88,14 @@ def section58DecodedChallengeOracle
   [pSpec.Challenge]ₒ'
     (section58DecodedChallengeOracleInterface (U := U) StmtIn pSpec δ)
 
-/-- CO25 Eq. 15 — eager full-table distribution `𝒟_Σ` (paper symbol `g`) over the encoded
+/-- CO25 Eq. 15 — eager full-table distribution `𝒟_Σ` (symbol `g`) over the encoded
 challenge-oracle family for `Hyb₁`.
 
-Samples a single full random table `g : (q : Domain) → Range q` once at game start; all
-subsequent queries deterministically index into this fixed table. The `[SampleableType
-(OracleFamily _)]` hypothesis is paper-faithful: with a fixed-length round-indexed prefix
-(see `EncodedMessagesUpTo`), the oracle's domain is finite, and uniform sampling of the
-function table is the canonical realization of the paper's `g ← 𝒰((dom_i → Σ^{ℓ_V(i)})_{i∈[k]})`. -/
+Samples a single full random table `g : (q : Domain) → Range q` once at game start; all subsequent
+queries deterministically index into this fixed table. The `[SampleableType (OracleFamily _)]`
+hypothesis matches CO25: with a fixed-length round-indexed prefix (see `EncodedMessagesUpTo`), the
+oracle's domain is finite, and uniform sampling of the function table is the canonical realization
+of `g ← 𝒰((dom_i → Σ^{ℓ_V(i)})_{i∈[k]})`. -/
 def section58EncodedChallengeDist
     {U : Type} [SpongeUnit U] [SpongeSize]
     (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
@@ -111,8 +111,8 @@ def section58EncodedChallengeDist
 /-- CO25 Eq. 52 — eager full-table distribution `e` over the decoded challenge-oracle family
 for `Hyb₂`.
 
-Same paper-eager full-table semantics as `section58EncodedChallengeDist`, with the response
-type swapped from `Σ^{ℓ_V(i)}` to the decoded `pSpec.Challenge i`. Realizes the paper's
+Same eager full-table semantics as `section58EncodedChallengeDist`, with the response type swapped
+from `Σ^{ℓ_V(i)}` to the decoded `pSpec.Challenge i`. Realizes
 `e ← 𝒰((dom_i → ℳ_{V,i})_{i∈[k]})`. -/
 def section58DecodedChallengeDist
     {U : Type} [SpongeUnit U] [SpongeSize]
@@ -126,8 +126,8 @@ def section58DecodedChallengeDist
       (section58DecodedChallengeOracle (U := U) StmtIn pSpec δ) :=
   ArkLib.OracleReduction.OracleDistribution.uniform _
 
-/-- Paper-facing key for `StdTrace` memoized `gᵢ`-style entries (CO25 §5.2 Step 4.D output;
-strict shape `BacktrackOutput`). -/
+/-- Key for `StdTrace` memoized `gᵢ`-style entries (CO25 §5.2 Step 4.D output; strict shape
+`BacktrackOutput`). -/
 private abbrev StdTraceQuery :=
   Backtrack.BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
 
@@ -142,13 +142,12 @@ private abbrev StdTraceEntries :=
   List (StdTraceEntry
     (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
 
-/-- Internal accumulator for paper `StdTrace`.
+/-- Internal accumulator for `StdTrace`.
 Stores synthesized entries plus memoized LookAhead results. -/
 private structure StdTraceState where
   trStd : StdTraceEntries (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
 
   trStdLA : StdTraceEntries (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-
 
 /-- Project DS-oracle entries from a mixed `oSpec + DS` log. -/
 private def dsTraceOfLog
@@ -182,22 +181,12 @@ private def insertStdTraceMemo
                         (U := U)) :=
   memo ++ [{ query := q, response := response }]
 
-/-! ## Paper-faithful StdTrace helpers (CO25 §5.5.1)
+/-! ## StdTrace helpers (CO25 §5.5.1)
 
-These helpers implement the paper's exact `∀ι, α̂_ι ∈ Im(φ_ι)` codec-image predicate and the
+These helpers implement CO25's exact `∀ι, α̂_ι ∈ Im(φ_ι)` codec-image predicate and the
 deterministic `e_i := ψ_i(ρ̂_i)` entry remap. They are forward-declared here so that the
 single `StdTrace` pipeline (and its abort analysis) can use them without exposing a free
 predicate/function field. -/
-
--- TODO(section5-cleanup): duplicate of the Backtrack.lean helper. Consider moving to a shared
--- small utility module once the parser/projection APIs stop changing.
-private def vectorOfListExact
-    (len : Nat) (xs : List U) : Option (Vector U len) := by
-  let ys := xs.take len
-  if hLen : ys.length = len then
-    exact some ⟨ys.toArray, by simpa using hLen⟩
-  else
-    exact none
 
 private noncomputable def chooseSerializedMessage?
     (msgIdx : pSpec.MessageIdx)
@@ -256,66 +245,16 @@ private noncomputable def encodedMessagesUpTo?
                 some (ProtocolSpec.MessagesUpTo.extend (pSpec := pSpec) messages hDir))
   exact build roundIdx.1.castSucc
 
-private def encodedMessageAtOffset?
-    (absorbedRatePrefix : List (Vector U SpongeSize.R))
-    (offsetBlocks : Nat)
-    (msgIdx : pSpec.MessageIdx) :
-    Option (Vector U (messageSize msgIdx)) := by
-  let rateBlocks := (absorbedRatePrefix.drop offsetBlocks).take (pSpec.Lₚᵢ msgIdx)
-  let unitBlocks := rateBlocks.foldl (fun acc block => acc ++ block.toList) []
-  exact vectorOfListExact (U := U) (messageSize msgIdx) unitBlocks
-
-/-- Recover the basic-FS prover-message prefix encoded by a Section 5.8 absorbed-prefix query key.
-
-This walks the protocol round structure in order and slices the absorbed-rate prefix according to
-the message/challenge block counts `Lₚ(i)` / `Lᵥ(i)`. Message blocks are turned back into
-`pSpec.Message` values by choosing a preimage under `Serialize` when one exists. -/
-private noncomputable def absorbedPrefixMessagesUpTo?
-    (roundIdx : pSpec.ChallengeIdx)
-    (absorbedRatePrefix : List (Vector U SpongeSize.R)) :
-    Option (pSpec.MessagesUpTo roundIdx.1.castSucc) := by
-  classical
-  let build : (k : Fin (n + 1)) → Option (pSpec.MessagesUpTo k × Nat) :=
-    Fin.induction
-      (some (default, 0))
-      (fun j ih =>
-        match ih with
-        | none => none
-        | some (messages, offsetBlocks) =>
-            match hDir : pSpec.dir j with
-            | .P_to_V =>
-                let msgIdx : pSpec.MessageIdx := ⟨j, hDir⟩
-                match encodedMessageAtOffset?
-                    (pSpec := pSpec) (U := U)
-                    absorbedRatePrefix offsetBlocks msgIdx with
-                | none => none
-                | some encodedMsg =>
-                    match chooseSerializedMessage?
-                        (pSpec := pSpec) (U := U) msgIdx encodedMsg with
-                    | none => none
-                    | some msg =>
-                        some
-                          (ProtocolSpec.MessagesUpTo.concat
-                            (pSpec := pSpec) messages hDir msg,
-                            offsetBlocks + pSpec.Lₚᵢ msgIdx)
-            | .V_to_P =>
-                let chalIdx : pSpec.ChallengeIdx := ⟨j, hDir⟩
-                some
-                  (ProtocolSpec.MessagesUpTo.extend
-                    (pSpec := pSpec) messages hDir,
-                    offsetBlocks + pSpec.Lᵥᵢ chalIdx))
-  exact (build roundIdx.1.castSucc).map Prod.fst
-
 private noncomputable def stdTraceMessagesUpTo?
     (q : StdTraceQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     Option (pSpec.MessagesUpTo q.roundIdx.1.castSucc) :=
   encodedMessagesUpTo? (pSpec := pSpec) (U := U)
     q.roundIdx q.encodedMessages
 
-/-- CO25 §5.5.1 Item 4(a)iii — paper-faithful `∀ι, α̂_ι ∈ Im(φ_ι)` codec-image predicate over
+/-- CO25 §5.5.1 Item 4(a)iii — `∀ι, α̂_ι ∈ Im(φ_ι)` codec-image predicate over
 StdTrace backtrack outputs. This is the canonical inCodecImage check baked into `stdTraceEntries`
-in place of the previous free `BacktrackOutput → Bool` parameter (see D5.2 in audit-report.md). -/
-private noncomputable def paperStdTraceInCodecImage
+in place of the previous free `BacktrackOutput → Bool` parameter. -/
+private noncomputable def stdTraceInCodecImage
     (out : BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) : Bool :=
   let stdQuery : StdTraceQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) := out
   match stdTraceMessagesUpTo?
@@ -323,10 +262,9 @@ private noncomputable def paperStdTraceInCodecImage
   | some _ => true
   | none => false
 
-/-- CO25 §5.5.1 Item 4(a)v — paper-faithful `e_i := ψ_i(ρ̂_i)` entry remap. Partial because
-the codec-image preimage may not exist; callers compose with `paperStdTraceInCodecImage` to
-guarantee `some`. -/
-private noncomputable def paperStdTraceEntryToFSQuery?
+/-- CO25 §5.5.1 Item 4(a)v — `e_i := ψ_i(ρ̂_i)` entry remap. Partial because the codec-image
+preimage may not exist; callers compose with `stdTraceInCodecImage` to guarantee `some`. -/
+private noncomputable def stdTraceEntryToFSQuery?
     (entry : StdTraceEntry (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     Option (Sigma (fsChallengeOracle StmtIn pSpec)) := do
   let messagesUpTo ←
@@ -347,8 +285,7 @@ private def stdTraceDelta
   TraceNabla.ofQueryLogForwardOnly dsTrace
 
 private def StdTraceState.appendEntry
-    (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-     )
+    (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (q : StdTraceQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (rhoHat : Vector U (challengeSize q.roundIdx)) :
     StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
@@ -356,8 +293,7 @@ private def StdTraceState.appendEntry
   { st with trStd := st.trStd ++ [{ query := q, response := rhoHat }] }
 
 private def StdTraceState.appendMemoAndEntry
-    (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-     )
+    (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (q : StdTraceQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (rhoHat : Vector U (challengeSize q.roundIdx)) :
     StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
@@ -373,11 +309,9 @@ private def stdTraceLookupOrLookAhead
     (trΔp : ListBacked.ListTraceTable (CanonicalSpongeState U) (CanonicalSpongeState U))
     (stateIn : CanonicalSpongeState U)
     (q : StdTraceQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-     ) :
+    (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     DSAbort U
-      (StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-       ) := do
+      (StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) := do
   match lookupStdTraceMemo
       (StmtIn := StmtIn) (pSpec := pSpec) (U := U) st.trStdLA q with
   | some rhoHat =>
@@ -386,7 +320,7 @@ private def stdTraceLookupOrLookAhead
       let rhoHat? ← lookAhead (pSpec := pSpec) (U := U) trΔp stateIn q.roundIdx
       match rhoHat? with
       | .err =>
-          -- Paper-`err`: multiple lookahead chains found (unexpected after backtrack).
+          -- CO25 `err`: multiple lookahead chains found (unexpected after backtrack).
           failure
       | .noResult =>
           -- CO25 §5.5.1 Item 4(a)ivB-D: once BackTrack returns a valid tuple for the
@@ -401,12 +335,10 @@ private noncomputable def stdTraceHandleBacktrackTuple
     (trΔp : ListBacked.ListTraceTable (CanonicalSpongeState U) (CanonicalSpongeState U))
     (stateIn : CanonicalSpongeState U)
     (backtrackOut : BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-     ) :
+    (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     DSAbort U
-      (StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-       ) :=
-  if paperStdTraceInCodecImage
+      (StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
+  if stdTraceInCodecImage
       (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) backtrackOut then
     let stdQuery : StdTraceQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) :=
       backtrackOut
@@ -425,11 +357,9 @@ private noncomputable def stdTraceHandlePQuery
         StmtIn U)
     (depthBound : Nat)
     (stateIn : CanonicalSpongeState U)
-    (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-     ) :
+    (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     DSAbort U
-      (StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-       ) :=
+      (StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
   match
       backTrack (δ := δ)
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
@@ -452,11 +382,9 @@ private noncomputable def stdTraceHandleEntry
         StmtIn U)
     (depthBound : Nat)
     (entry : Sigma (oSpec + duplexSpongeChallengeOracle StmtIn U))
-    (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-     ) :
+    (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     DSAbort U
-      (StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-       ) :=
+      (StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
   match entry with
   | ⟨.inr (.inr (.inl stateIn)), _stateOut⟩ =>
       stdTraceHandlePQuery (δ := δ)
@@ -465,19 +393,8 @@ private noncomputable def stdTraceHandleEntry
   | _ =>
       pure st
 
-/-- Public wrapper for the Section 5.8 `φ⁻¹` parser from absorbed-rate prefixes to basic-FS
-message prefixes. This is the prover-prefix recovery used both by the line-4 trace maps and by the
-canonical Section 5.8 hybrid experiments. -/
-noncomputable def section58AbsorbedPrefixMessagesUpTo?
-    (roundIdx : pSpec.ChallengeIdx)
-    (absorbedRatePrefix : List (Vector U SpongeSize.R)) :
-    Option (pSpec.MessagesUpTo roundIdx.1.castSucc) :=
-  absorbedPrefixMessagesUpTo?
-    (pSpec := pSpec) (U := U)
-    roundIdx absorbedRatePrefix
-
-/-- Public wrapper for the Section 5.8 `φ⁻¹` parser from the paper-facing encoded-message tuple
-returned by `BackTrack` to basic-FS message prefixes.
+/-- Public wrapper for the Section 5.8 `φ⁻¹` parser from the encoded-message tuple returned by
+`BackTrack` to basic-FS message prefixes.
 
 CO25 Eq. 15 prefix shape: the input is `pSpec.EncodedMessagesUpTo U roundIdx.1.castSucc`
 (exactly `i` encoded messages indexed by message rounds `< i`). -/
@@ -499,17 +416,17 @@ def projectSharedQueryLog
     | ⟨.inl query, response⟩ => some ⟨.inl query, response⟩
     | ⟨.inr _, _⟩ => none
 
-/-- Compute paper-facing `StdTrace` query-answer entries (`tr_std`) from a full mixed log.
+/-- Compute `StdTrace` query-answer entries (`tr_std`) from a full mixed log.
 
 This implements Section 5.5.1 Item 4(a) control-flow over the DS entries:
 - abort on `backTrack = err` or `lookAhead = err`,
 - skip on `backTrack = none` or non-challenge backtrack tuples,
-- skip when `paperStdTraceInCodecImage` rejects the backtrack output (CO25 §5.5.1 Item 4(a)iii),
+- skip when `stdTraceInCodecImage` rejects the backtrack output (CO25 §5.5.1 Item 4(a)iii),
 - memoize `LookAhead` outputs in `tr_std^LA` keyed by backtrack tuples.
 
-D5.2 (audit-report.md): the codec-image predicate is now baked in as
-`paperStdTraceInCodecImage` rather than a free `BacktrackOutput → Bool` parameter, eliminating
-the prior non-paper-faithful adversarial instantiation surface. -/
+The codec-image predicate is now baked in as `stdTraceInCodecImage` rather than a free
+`BacktrackOutput → Bool` parameter, eliminating the prior non-canonical adversarial instantiation
+surface. -/
 private noncomputable def stdTraceEntries
     (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
     DSAbort U
@@ -537,28 +454,27 @@ private noncomputable def stdTraceEntries
   let st ← go log { trStd := [], trStdLA := [] }
   pure st.trStd
 
-/-- Map synthesized `StdTrace` entries to basic-FS challenge-log entries via the paper-faithful
-`paperStdTraceEntryToFSQuery?` (CO25 §5.5.1 Item 4(a)v). Entries whose codec preimage is missing
-are dropped; under `stdTraceEntries`'s baked-in `paperStdTraceInCodecImage` filter, every entry
-that survives has `stdTraceMessagesUpTo? entry.query = some _`, so the remap returns `some` on
-every input in practice. D5.2 (audit-report.md): replaces the prior free `mapEntry` field. -/
+/-- Map synthesized `StdTrace` entries to basic-FS challenge-log entries via
+`stdTraceEntryToFSQuery?` (CO25 §5.5.1 Item 4(a)v). Entries whose codec preimage is missing are
+dropped; under `stdTraceEntries`'s baked-in `stdTraceInCodecImage` filter, every entry that
+survives has `stdTraceMessagesUpTo? entry.query = some _`, so the remap returns `some` on every
+input in practice. This replaces the prior free `mapEntry` field. -/
 private noncomputable def remapStdTraceEntries
     (entries : List (StdTraceEntry
       (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))) :
     QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) :=
   entries.filterMap fun entry =>
-    match paperStdTraceEntryToFSQuery?
+    match stdTraceEntryToFSQuery?
         (StmtIn := StmtIn) (pSpec := pSpec) (U := U) entry with
     | none => none
     | some mapped => some ⟨.inr mapped.1, mapped.2⟩
 
 /-- §5.5.1 `StdTrace` single-log surface (Item 4(a) control flow).
 
-Synthesized `StdTrace` entries are remapped into FS challenge-log entries via the paper-faithful
-`paperStdTraceEntryToFSQuery?` (Item 4(a)v) and appended to the shared-oracle projection,
-implementing the paper's single-log `tr_std` transform. The codec-image predicate
-(Item 4(a)iii) is baked into `stdTraceEntries` directly via `paperStdTraceInCodecImage`;
-no free remap field is exposed. -/
+Synthesized `StdTrace` entries are remapped into FS challenge-log entries via
+`stdTraceEntryToFSQuery?` (Item 4(a)v) and appended to the shared-oracle projection,
+implementing CO25's single-log `tr_std` transform. The codec-image predicate (Item 4(a)iii) is
+baked into `stdTraceEntries` directly via `stdTraceInCodecImage`; no free remap field is exposed. -/
 noncomputable def stdTraceSingle
     (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
     DSAbort U
@@ -574,28 +490,16 @@ noncomputable def stdTraceSingle
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) entries
   pure (sharedLog ++ remappedLog)
 
-/-- §5.5 / §5.8 single-log `D2STrace` surface — paper-faithful alias for `stdTraceSingle`.
+/-! ## Salted FS variants (CO25 §5.5.1 Item 4(a)v)
 
-CO25 §5.5.1 Item 4(a)iii (`∀ι, α̂_ι ∈ Im(φ_ι)` codec-image filter) and Item 4(a)v
-(`e_i := ψ_i(ρ̂_i)` entry remap) are both baked in via `paperStdTraceInCodecImage` /
-`paperStdTraceEntryToFSQuery?`. Used by KeyLemma at the §5.8 hybrid distance bounds. -/
-noncomputable def paperD2STraceSingle
-    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-    DSAbort U
-      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
-  stdTraceSingle (δ := δ)
-    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) log
-
-/-! ## Salted FS variants (CO25 §5.5.1 Item 4(a)v paper-faithful)
-
-The paper's `f_i(x, τ, α_1, …, α_i)` query keeps the public salt `τ ∈ Σ^δ` threaded through the
+CO25's `f_i(x, τ, α_1, …, α_i)` query keeps the public salt `τ ∈ Σ^δ` threaded through the
 augmented statement, matching the encoding-A oracle `fsChallengeOracle (Vector U δ × StmtIn) pSpec`
-already used in `SingleSalt.lean`. The salted variants below are consumed by `KeyLemma`'s
-Section 5.8 hybrids. -/
+already used in `SingleSalt.lean`. The salted variants below are consumed by `KeyLemma`'s Section
+5.8 hybrids. -/
 
-/-- Salted variant of `paperStdTraceEntryToFSQuery?` — preserves the BackTrack salt
+/-- Salted variant of `stdTraceEntryToFSQuery?` — preserves the BackTrack salt
 `out.salt : Vector U δ` in the augmented statement of the salted FS oracle query. -/
-private noncomputable def paperStdTraceEntryToFSQuerySalted?
+private noncomputable def stdTraceEntryToFSQuerySalted?
     (entry : StdTraceEntry (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     Option (Sigma (fsChallengeOracle (Vector U δ × StmtIn) pSpec)) := do
   let messagesUpTo ←
@@ -612,7 +516,7 @@ private noncomputable def remapStdTraceEntriesSalted
       (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))) :
     QueryLog (oSpec + fsChallengeOracle (Vector U δ × StmtIn) pSpec) :=
   entries.filterMap fun entry =>
-    match paperStdTraceEntryToFSQuerySalted?
+    match stdTraceEntryToFSQuerySalted?
         (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) entry with
     | none => none
     | some mapped => some ⟨.inr mapped.1, mapped.2⟩
@@ -644,16 +548,7 @@ noncomputable def stdTraceSingleSalted
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) entries
   pure (sharedLog ++ remappedLog)
 
-/-- Salted variant of `paperD2STraceSingle` — output is keyed by the salted FS oracle. Used by
-`KeyLemma`'s Section 5.8 Hyb₁/Hyb₂/Hyb₃ to keep the salt on every challenge query. -/
-noncomputable def paperD2STraceSingleSalted
-    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-    DSAbort U
-      (QueryLog (oSpec + fsChallengeOracle (Vector U δ × StmtIn) pSpec)) :=
-  stdTraceSingleSalted (δ := δ)
-    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U) log
-
-section PaperTrace
+section Line4Trace
 
 /-- Section 5.8 `Hyb₁` line-4 trace translation.
 
@@ -701,55 +596,15 @@ noncomputable def section58Hyb2Line4Trace
 
 /-- Section 5.8 `Hyb₃` line-4 trace translation.
 
-This is the identity-on-line-4 trace surface from the paper, viewed through the common
-single-log Section 5 interface used by `KeyLemma`. -/
+This is the identity-on-line-4 trace surface, viewed through the common single-log Section 5
+interface used by `KeyLemma`. -/
 noncomputable def section58Hyb3Line4Trace
     (log : QueryLog (oSpec + fsChallengeOracle (Vector U δ × StmtIn) pSpec)) :
     DSAbort U
       (QueryLog (oSpec + fsChallengeOracle (Vector U δ × StmtIn) pSpec)) :=
   pure log
 
-end PaperTrace
-
-/-- Optional `StdTrace` two-log wrapper (Section 5.5.1 shape); returns `none` on abort. -/
-noncomputable def duplexSpongeToBasicFSTrace?
-    (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
-    (verifyQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-      DSAbort U
-        (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) ×
-          QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) := do
-  let proveLogFS ←
-    stdTraceSingle
-      (δ := δ) (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      proveQueryLog
-  let verifyLogFS ←
-    stdTraceSingle (δ := δ)
-      (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      verifyQueryLog
-  pure (proveLogFS, verifyLogFS)
-
-/-- The trace transformation in Section 5.5, from DSFS logs to basic-FS logs.
-Returns `none` when `StdTrace` aborts. -/
-noncomputable def duplexSpongeToBasicFSTrace
-    (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
-    (verifyQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-      DSAbort U
-        (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) ×
-          QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
-  duplexSpongeToBasicFSTrace? (δ := δ)
-    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    proveQueryLog verifyQueryLog
-
-/-- §5.5 `D2STrace` two-log surface (prover + verifier logs). -/
-noncomputable def d2STrace
-    (proveQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
-    (verifyQueryLog : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-      DSAbort U
-        (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) ×
-          QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) :=
-  duplexSpongeToBasicFSTrace (δ := δ)
-    (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    proveQueryLog verifyQueryLog
+end Line4Trace
 
 end
 

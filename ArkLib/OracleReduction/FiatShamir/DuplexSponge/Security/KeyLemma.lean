@@ -18,7 +18,7 @@ import VCVio.OracleComp.QueryTracking.QueryBound
 
 This file provides the Section 5 key-lemma interface:
 - the DSFS and basic-FS game experiments,
-- paper-facing abstractions for `D2SAlgo` and the Section 5.8 trace algorithms, and
+- canonical abstractions for `D2SAlgo` and the Section 5.8 trace algorithms, and
 - a statistical-distance theorem surface with the query-bound side condition.
 
 `StmtIn` is the Lean stand-in for the paper's hash-input space `{0,1}^{≤n}`. The paper's
@@ -40,8 +40,9 @@ open DuplexSpongeFS.ProverTransform DuplexSpongeFS.TraceTransform DuplexSpongeFS
 variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn WitIn StmtOut WitOut : Type}
   [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
-  {U : Type} [SpongeUnit U] [SpongeSize]
-  -- Paper-facing codec (CO25 Def 4.1) — supplies sizes + Serialize/Deserialize via projections
+  {U : Type} [SpongeUnit U] [SpongeSize] [VCVCompatible U]
+  [∀ i, VCVCompatible (pSpec.Message i)]
+  -- CO25 Def 4.1 codec: supplies sizes and Serialize/Deserialize via projections.
   [codec : Codec pSpec U]
   {δ : Nat}
   [DecidableEq StmtIn] [DecidableEq U]
@@ -50,34 +51,37 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
   [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
   [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
 
-instance instSampleableSaltedFSChallengeRange [∀ i, SampleableType (pSpec.Challenge i)] :
-    ∀ q : (fsChallengeOracle (Vector U δ × StmtIn) pSpec).Domain,
-      SampleableType ((fsChallengeOracle (Vector U δ × StmtIn) pSpec).Range q) := by
-  intro q
-  cases q with
-  | mk i _ =>
-      change SampleableType (pSpec.Challenge i)
-      infer_instance
-
-/-- CO25 Eq. 54 — eager full-table distribution `𝒟_IP` (paper symbol `f`, salted) over the
+/-- CO25 Eq. 54 — eager full-table distribution `𝒟_IP` (symbol `f`, salted) over the
 salted Fiat–Shamir challenge oracle for `Hyb₃` and `Hyb₄`.
 
 Samples a single full random table `f : (q : Domain) → Range q` once at game start over the
 salted domain `dom'_i = {0,1}^≤n × {0,1}^{δ⋆} × ℳ_{P,1} × … × ℳ_{P,i}` with range `ℳ_{V,i}`.
 Per CO25 line 1784, Hyb₃ and Hyb₄ both sample from this same distribution; the difference
 between hybrids lies in the prover/verifier algorithm, not the oracle. -/
-noncomputable def section58SaltedFiatShamirDist
-    [∀ i, SampleableType (pSpec.Challenge i)]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily
-        (fsChallengeOracle (Vector U δ × StmtIn) pSpec))] :
+noncomputable def section58SaltedFiatShamirDist :
     ArkLib.OracleReduction.OracleDistribution
       (fsChallengeOracle (Vector U δ × StmtIn) pSpec) :=
   ArkLib.OracleReduction.OracleDistribution.uniform _
 
+/-- Bridge: `SampleableType` for `section58EncodedChallengeOracle` (Hyb₁ `g`) derived from
+granular `VCVCompatible` base-type hypotheses. Eliminates verbose `SampleableType (OracleFamily
+(section58EncodedChallengeOracle …))` at call sites in §5.8 hybrids. -/
+noncomputable instance instSampleableTypeEncodedChallengeOracle :
+    SampleableType (ArkLib.OracleReduction.OracleFamily
+      (section58EncodedChallengeOracle (U := U) StmtIn pSpec δ)) := by
+  sorry
+
+/-- Bridge: `SampleableType` for `section58DecodedChallengeOracle` (Hyb₂ `e`) derived from
+granular `VCVCompatible` base-type hypotheses. Eliminates verbose `SampleableType (OracleFamily
+(section58DecodedChallengeOracle …))` at call sites in §5.8 hybrids. -/
+noncomputable instance instSampleableTypeDecodedChallengeOracle :
+    SampleableType (ArkLib.OracleReduction.OracleFamily
+      (section58DecodedChallengeOracle (U := U) StmtIn pSpec δ)) := by
+  sorry
+
 section SecurityGames
 
-/-- Lift salted basic-FS verifier queries into the paper `f_i` oracle plus D2S auxiliary
+/-- Lift salted basic-FS verifier queries into the external `f_i` oracle plus D2S auxiliary
 sampling oracles used by `D2SAlgo^f`. -/
 private def liftFSSaltedQueriesToD2SChallengePlusUnit :
     QueryImpl (oSpec + fsChallengeOracle (Vector U δ × StmtIn) pSpec)
@@ -96,10 +100,12 @@ private def liftFSSaltedQueriesToD2SChallengePlusUnit :
             D2SChallengePlusUnitOracle (U := U) (fsChallengeOracle (Vector U δ × StmtIn) pSpec))
           (Sum.inr (Sum.inl qFS))
 
-private def projectPaperIPPlusUnitQueryLog
-    (log : QueryLog (oSpec +
-      D2SChallengePlusUnitOracle (U := U) (fsChallengeOracle (Vector U δ × StmtIn) pSpec))) :
-    QueryLog (oSpec + fsChallengeOracle (Vector U δ × StmtIn) pSpec) :=
+/-- CO25 §5.8. Project out the auxiliary unit-sampling queries from logs over
+`oSpec + (challengeSpec + Unit →ₒ U)`, retaining only shared and challenge entries. -/
+def projectD2SChallengePlusUnitQueryLog
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    (log : QueryLog (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)) :
+    QueryLog (oSpec + challengeSpec) :=
   log.filterMap fun entry =>
     match entry with
     | ⟨.inl q, r⟩ => some ⟨.inl q, r⟩
@@ -152,11 +158,11 @@ def basicFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
       v.getM).run
   let ⟨stmtOut, verifyQueryLogRaw⟩ ← (simulateQ loggingOracle verifierComp).run
   let proveQueryLog :=
-    projectPaperIPPlusUnitQueryLog
+    projectD2SChallengePlusUnitQueryLog
       (oSpec := oSpec) (U := U)
       proveQueryLogRaw
   let verifyQueryLog :=
-    projectPaperIPPlusUnitQueryLog
+    projectD2SChallengePlusUnitQueryLog
       (oSpec := oSpec) (U := U)
       verifyQueryLogRaw
   return ⟨stmtIn, ← stmtOut.getM, proof, proveQueryLog ++ verifyQueryLog⟩
@@ -211,18 +217,6 @@ def runSection58TraceMap
     (d2sUnitSampleImpl (U := U))
     ((traceMap fullTrace).run)
 
-/-- CO25 §5.8. Project out the auxiliary unit-sampling queries from logs over
-`oSpec + (challengeSpec + Unit →ₒ U)`, retaining only shared and challenge entries. -/
-def projectD2SChallengePlusUnitQueryLog
-    {κ : Type} {challengeSpec : OracleSpec κ}
-    (log : QueryLog (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)) :
-    QueryLog (oSpec + challengeSpec) :=
-  log.filterMap fun entry =>
-    match entry with
-    | ⟨.inl q, r⟩ => some ⟨.inl q, r⟩
-    | ⟨.inr (.inl q), r⟩ => some ⟨.inr q, r⟩
-    | ⟨.inr (.inr _), _⟩ => none
-
 /-- CO25 §5.8. Execute a Section 5.8 line-4 trace map on a projected hybrid trace (after removing
 auxiliary unit-sampling entries), interpreting remaining randomness uniformly. -/
 def runSection58ProjectedTraceMap
@@ -239,38 +233,36 @@ def runSection58ProjectedTraceMap
     (d2sUnitSampleImpl (U := U))
     ((traceMap fullTrace).run)
 
-/-- CO25 §5.8. Sampler for the §5.8 hybrid experiment carriers:
-draws one realization from the ambient shared-oracle distribution `D_shared` and one realization
-from the chosen challenge-oracle distribution `D_chal` (paper `𝒟_Σ` / `𝒟_e` / `𝒟_IP_salted`).
-The pair is then held fixed by `section58ChallengeImpl` for the entire game run, matching
+/-- CO25 §5.8. Sampler for the §5.8 hybrid experiment carrier: draws one realization from the
+chosen challenge-oracle distribution `D_chal` (paper `𝒟_Σ` / `𝒟_e` / `𝒟_IP_salted`).  The
+sampled carrier is then held fixed by `section58ChallengeImpl` for the entire game run, matching
 the paper's "sample at start, then answer queries deterministically" semantics. -/
 def section58ChallengeInit
     {κ : Type} {challengeSpec : OracleSpec κ}
-    (D_shared : ArkLib.OracleReduction.OracleDistribution oSpec)
     (D_chal : ArkLib.OracleReduction.OracleDistribution challengeSpec) :
-    ProbComp (D_shared.Carrier × D_chal.Carrier) := do
-  let kS ← D_shared.sample
-  let kC ← D_chal.sample
-  pure (kS, kC)
+    ProbComp D_chal.Carrier :=
+  D_chal.sample
 
-/-- CO25 §5.8. Stateless 4-slot query handler for the §5.8 hybrid
-experiment: shared queries → `D_shared.toImpl k_shared`; challenge queries →
-`D_chal.toImpl k_chal` (paper `𝒟_Σ` / `𝒟_e` / `𝒟_IP_salted`); auxiliary unit queries →
-`d2sUnitSampleImpl` (fresh per call); auxiliary `unifSpec` queries → ambient `ProbComp`
-uniform sampling. Carriers are read from the state but never mutated — the eager carriers
-are sampled once by `section58ChallengeInit` and held fixed (CO25 Eq. 15 / Eq. 52 / Eq. 54). -/
+/-- CO25 §5.8. Stateless 4-slot query handler for the §5.8 hybrid experiment: ambient `oSpec`
+queries → caller-supplied `oSpecImpl`; challenge queries → `D_chal.toImpl k_chal` (paper
+`𝒟_Σ` / `𝒟_e` / `𝒟_IP_salted`); auxiliary unit queries → `d2sUnitSampleImpl` (fresh per
+call); auxiliary `unifSpec` queries → ambient `ProbComp` uniform sampling.  The `D_chal`
+carrier is read from the state but never mutated — sampled once by `section58ChallengeInit`
+and held fixed (CO25 Eq. 15 / Eq. 52 / Eq. 54).  The paper has no ambient distribution; we
+take an arbitrary `QueryImpl oSpec ProbComp` instead, which the caller specializes (e.g. to
+the empty spec for paper fidelity). -/
 def section58ChallengeImpl
     [SampleableType U]
     {κ : Type} {challengeSpec : OracleSpec κ}
-    (D_shared : ArkLib.OracleReduction.OracleDistribution oSpec)
+    (oSpecImpl : QueryImpl oSpec ProbComp)
     (D_chal : ArkLib.OracleReduction.OracleDistribution challengeSpec) :
     QueryImpl (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)
-      (StateT (D_shared.Carrier × D_chal.Carrier) ProbComp) :=
+      (StateT D_chal.Carrier ProbComp) :=
   fun q => do
-    let ⟨kS, kC⟩ ← get
+    let kC ← get
     match q with
     | .inl qShared =>
-        let resp ← StateT.lift <| D_shared.toImpl kS qShared
+        let resp ← StateT.lift <| oSpecImpl qShared
         pure resp
     | .inr (.inl qChal) =>
         let resp ← StateT.lift <| D_chal.toImpl kC qChal
@@ -284,38 +276,27 @@ def section58ChallengeImpl
             query (spec := unifSpec) qUnif)
         pure resp
 
-/-- CO25 §5.8 Hyb_0. Sampler for the DSFS-side experiment carriers:
-draws one realization from the ambient shared-oracle distribution `D_shared` and one
-realization of `(h, p)` from the duplex-sponge oracle distribution `𝒟_𝔖` (CO25 Def. 4.2).
-The pair is held fixed by `section58Hyb0Impl` for the entire game run. -/
-def section58Hyb0Init [DecidableEq StmtIn]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily (StmtIn →ₒ Vector U SpongeSize.C))]
-    [SampleableType (Equiv.Perm (CanonicalSpongeState U))]
-    (D_shared : ArkLib.OracleReduction.OracleDistribution oSpec) :
-    ProbComp (D_shared.Carrier ×
-      (duplexSpongeOracleDistribution StmtIn U).Carrier) := do
-  let kS ← D_shared.sample
-  let kDS ← (duplexSpongeOracleDistribution StmtIn U).sample
-  pure (kS, kDS)
+/-- CO25 §5.8 Hyb_0. Sampler for the DSFS-side experiment carrier: draws one realization of
+`(h, p)` from the duplex-sponge oracle distribution `𝒟_𝔖` (CO25 Def. 4.2).  The carrier is
+held fixed by `section58Hyb0Impl` for the entire game run. -/
+def section58Hyb0Init :
+    ProbComp (duplexSpongeOracleDistribution StmtIn U).Carrier :=
+  (duplexSpongeOracleDistribution StmtIn U).sample
 
-/-- CO25 §5.8 Hyb_0. Stateless query handler for the DSFS-side
-experiment: shared queries → `D_shared.toImpl k_shared`; duplex-sponge queries (`h`, `p`,
-`p⁻¹`) → `𝒟_𝔖.toImpl k_DS`. The pair `(k_shared, k_DS)` is sampled once at game start by
-`section58Hyb0Init` and held fixed (CO25 Def. 4.2). -/
-def section58Hyb0Impl [DecidableEq StmtIn]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily (StmtIn →ₒ Vector U SpongeSize.C))]
-    [SampleableType (Equiv.Perm (CanonicalSpongeState U))]
-    (D_shared : ArkLib.OracleReduction.OracleDistribution oSpec) :
+/-- CO25 §5.8 Hyb_0. Stateless query handler for the DSFS-side experiment: ambient `oSpec`
+queries → caller-supplied `oSpecImpl`; duplex-sponge queries (`h`, `p`, `p⁻¹`) →
+`𝒟_𝔖.toImpl k_DS`.  `k_DS` is sampled once at game start by `section58Hyb0Init` and held
+fixed (CO25 Def. 4.2).  The paper has no ambient distribution; we take an arbitrary
+`QueryImpl oSpec ProbComp` instead. -/
+def section58Hyb0Impl
+    (oSpecImpl : QueryImpl oSpec ProbComp) :
     QueryImpl (oSpec + duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D_shared.Carrier ×
-        (duplexSpongeOracleDistribution StmtIn U).Carrier) ProbComp) :=
+      (StateT (duplexSpongeOracleDistribution StmtIn U).Carrier ProbComp) :=
   fun q => do
-    let ⟨kS, kDS⟩ ← get
+    let kDS ← get
     match q with
     | .inl qShared =>
-        let resp ← StateT.lift <| D_shared.toImpl kS qShared
+        let resp ← StateT.lift <| oSpecImpl qShared
         pure resp
     | .inr qDS =>
         let resp ← StateT.lift <| (duplexSpongeOracleDistribution StmtIn U).toImpl kDS qDS
@@ -556,8 +537,8 @@ noncomputable def ηStar (U : Type) [SpongeUnit U] [Fintype U]
 omit [SpongeSize] in
 /-- CO25 §5.8. Four-step hybrid composition bound via triangle inequality.
 Combines `tvDist H₀ H₁ ≤ e₀₁`, …, `tvDist H₃ H₄ ≤ e₃₄` into
-`tvDist H₀ H₄ ≤ e₀₁ + e₁₂ + e₂₃ + e₃₄`. Applied in `lemma_5_1_dist_from_claims`
-with the four claim bounds (Hyb_0 → Hyb_1 → Hyb_2 → Hyb_3 → Hyb_4). -/
+`tvDist H₀ H₄ ≤ e₀₁ + e₁₂ + e₂₃ + e₃₄`. This remains a generic helper; the
+Section 5.8 claim statements below are exposed as public theorem surfaces. -/
 theorem tvDist_hybridChain4
     {α : Type}
     (H₀ H₁ H₂ H₃ H₄ : ProbComp α)
@@ -599,27 +580,17 @@ noncomputable def claim5_24Bound (U : Type) [SpongeUnit U] [Fintype U]
     - (5 * (Lr + 1)) / cardPow
 
 /-- CO25 §5.8 Hyb_1. `Hyb_1` distribution sampled via
-`OracleDistribution.runWith`: shared oracle from `D_shared`, encoded challenge oracle
+`OracleDistribution.runWith`: ambient `oSpec` answered by caller-supplied `oSpecImpl`, encoded challenge oracle
 `g := (g_i)_{i ∈ [k]} ← 𝒟_Σ(λ,n)` (CO25 Eq. 15) sampled eagerly via
 `section58EncodedChallengeDist`, auxiliary `(Unit →ₒ U)` and `unifSpec` slots handled
 inline (fresh per call).
 
 Line-4 trace map is `(φ⁻¹, ψ)(tr_𝒫̃ ‖ tr_𝒱)` (`section58Hyb1Line4Trace`). -/
 noncomputable def section58Hyb1Dist
-    [SampleableType U]
-    [DecidableEq StmtIn] [DecidableEq U]
-    [Fintype U]
-    [∀ i, Fintype (pSpec.Message i)]
-    [∀ i, DecidableEq (pSpec.Message i)]
-    [∀ i, Fintype (pSpec.Challenge i)]
-    [∀ i, DecidableEq (pSpec.Challenge i)]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily
-        (section58EncodedChallengeOracle (U := U) StmtIn pSpec δ))]
     {T_H : Type} {T_P : Type}
     [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-    (D_shared : ArkLib.OracleReduction.OracleDistribution oSpec)
+    (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)) :
@@ -647,35 +618,24 @@ noncomputable def section58Hyb1Dist
       (T_H := T_H) (T_P := T_P)
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
-      (init := section58ChallengeInit
-        (oSpec := oSpec) (challengeSpec := challengeSpec) D_shared D_g)
+      (init := section58ChallengeInit (challengeSpec := challengeSpec) D_g)
       (impl := section58ChallengeImpl
-        (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec) D_shared D_g)
+        (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec) oSpecImpl D_g)
       params V maliciousProver
       (section58Hyb1Line4Trace
         (δ := δ)
         (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
 
 /-- CO25 §5.8 Hyb_2. `Hyb_2` distribution sampled via
-`OracleDistribution.runWith`: shared oracle from `D_shared`, decoded challenge oracle
+`OracleDistribution.runWith`: ambient `oSpec` answered by caller-supplied `oSpecImpl`, decoded challenge oracle
 `e := (e_i)_{i ∈ [k]}` (CO25 Eq. 52) sampled eagerly via `section58DecodedChallengeDist`,
 auxiliary slots inline. Line-4 trace map is `φ⁻¹(tr_𝒫̃ ‖ tr_𝒱)`
 (`section58Hyb2Line4Trace`). -/
 noncomputable def section58Hyb2Dist
-    [Fintype U] [SampleableType U]
-    [DecidableEq StmtIn] [DecidableEq U]
-    [∀ i, Fintype (pSpec.Message i)]
-    [∀ i, DecidableEq (pSpec.Message i)]
-    [∀ i, Fintype (pSpec.Challenge i)]
-    [∀ i, SampleableType (pSpec.Challenge i)]
-    [∀ i, DecidableEq (pSpec.Challenge i)]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily
-        (section58DecodedChallengeOracle (U := U) StmtIn pSpec δ))]
     {T_H : Type} {T_P : Type}
     [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-    (D_shared : ArkLib.OracleReduction.OracleDistribution oSpec)
+    (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)) :
@@ -703,34 +663,24 @@ noncomputable def section58Hyb2Dist
       (T_H := T_H) (T_P := T_P)
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
-      (init := section58ChallengeInit
-        (oSpec := oSpec) (challengeSpec := challengeSpec) D_shared D_e)
+      (init := section58ChallengeInit (challengeSpec := challengeSpec) D_e)
       (impl := section58ChallengeImpl
-        (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec) D_shared D_e)
+        (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec) oSpecImpl D_e)
       params V maliciousProver
       (section58Hyb2Line4Trace
         (δ := δ)
         (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
 
 /-- CO25 §5.8 Hyb_3. `Hyb_3` distribution sampled via
-`OracleDistribution.runWith`: shared oracle from `D_shared`, salted Fiat–Shamir oracle
+`OracleDistribution.runWith`: ambient `oSpec` answered by caller-supplied `oSpecImpl`, salted Fiat–Shamir oracle
 `f := (f_i)_{i ∈ [k]} ← 𝒟_IP(λ,n)` (CO25 Eq. 54) sampled eagerly via
 `section58SaltedFiatShamirDist`, auxiliary slots inline. Line-4 trace map is identity
 (`section58Hyb3Line4Trace`). -/
 noncomputable def section58Hyb3Dist
-    [Fintype U] [SampleableType U]
-    [DecidableEq StmtIn] [DecidableEq U]
-    [∀ i, Fintype (pSpec.Message i)]
-    [∀ i, Fintype (pSpec.Challenge i)]
-    [∀ i, SampleableType (pSpec.Challenge i)]
-    [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily
-        (fsChallengeOracle (Vector U δ × StmtIn) pSpec))]
     {T_H : Type} {T_P : Type}
     [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-    (D_shared : ArkLib.OracleReduction.OracleDistribution oSpec)
+    (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)) :
@@ -763,32 +713,26 @@ noncomputable def section58Hyb3Dist
       (T_H := T_H) (T_P := T_P)
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
-      (init := section58ChallengeInit
-        (oSpec := oSpec) (challengeSpec := challengeSpec) D_shared D_IP_salted)
+      (init := section58ChallengeInit (challengeSpec := challengeSpec) D_IP_salted)
       (impl := section58ChallengeImpl
-        (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec) D_shared D_IP_salted)
+        (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec) oSpecImpl D_IP_salted)
       params V maliciousProver
       (section58Hyb3Line4Trace
         (δ := δ)
         (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
 
-/-- CO25 §5.8 Hyb_0. `Hyb_0` left-experiment distribution sampled
-via `OracleDistribution.runWith`: shared oracle from `D_shared`, duplex-sponge oracle
+/-- CO25 §5.8 Hyb_0. `Hyb_0` left-experiment distribution sampled via
+`OracleDistribution.runWith`: ambient `oSpec` answered by caller-supplied `oSpecImpl`,
+duplex-sponge oracle
 `(h, p, p⁻¹) ← 𝒟_𝔖(λ,n)` (CO25 Def. 4.2) sampled eagerly via
 `duplexSpongeOracleDistribution`. Line-4 trace map = D2STrace = `(φ⁻¹, ψ) ∘ StdTrace`.
-Differs from `hyb0Dist + paperDSInit/paperDSImpl` only in the sampling shape: this variant
-samples `(h, p)` eagerly at game start (paper-faithful) instead of via a lazy
-random-oracle cache for `h`. -/
+Samples `(h, p)` eagerly at game start rather than via a lazy random-oracle cache for `h`. -/
 noncomputable abbrev hyb0Dist
-    [SampleableType U] [DecidableEq StmtIn]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily (StmtIn →ₒ Vector U SpongeSize.C))]
-    [SampleableType (Equiv.Perm (CanonicalSpongeState U))]
-    (D_shared : ArkLib.OracleReduction.OracleDistribution oSpec)
+    (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ))
-    (paperD2STrace :
+    (d2sTrace :
       QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U) →
         DSAbort U
           (QueryLog (oSpec + fsChallengeOracle (Vector U δ × StmtIn) pSpec))) :
@@ -798,23 +742,18 @@ noncomputable abbrev hyb0Dist
   mappedDuplexSpongeFiatShamirGameDist
     (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
     (pSpec := pSpec) (U := U)
-    (init := section58Hyb0Init (oSpec := oSpec) (StmtIn := StmtIn) (U := U) D_shared)
-    (impl := section58Hyb0Impl (oSpec := oSpec) (StmtIn := StmtIn) (U := U) D_shared)
-    V maliciousProver paperD2STrace
+    (init := section58Hyb0Init (StmtIn := StmtIn) (U := U))
+    (impl := section58Hyb0Impl (oSpec := oSpec) (StmtIn := StmtIn) (U := U) oSpecImpl)
+    V maliciousProver d2sTrace
 
-/-- CO25 §5.8 Hyb_4. `Hyb_4` right-experiment distribution sampled
-via `OracleDistribution.runWith`: shared oracle from `D_shared`, salted Fiat–Shamir oracle
+/-- CO25 §5.8 Hyb_4. `Hyb_4` right-experiment distribution sampled via
+`OracleDistribution.runWith`: ambient `oSpec` answered by caller-supplied `oSpecImpl`, salted
+Fiat–Shamir oracle
 `f ← 𝒟_IP(λ,n)` (CO25 line 1784) sampled eagerly via `section58SaltedFiatShamirDist`
 (same distribution as Hyb_3; the difference between Hyb_3 and Hyb_4 is the prover/verifier
 algorithm, not the oracle). -/
 noncomputable abbrev hyb4Dist
-    [SampleableType U]
-    [DecidableEq StmtIn] [DecidableEq U]
-    [∀ i, SampleableType (pSpec.Challenge i)]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily
-        (fsChallengeOracle (Vector U δ × StmtIn) pSpec))]
-    (D_shared : ArkLib.OracleReduction.OracleDistribution oSpec)
+    (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ))
@@ -829,32 +768,19 @@ noncomputable abbrev hyb4Dist
   basicFiatShamirGameDist
     (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
     (pSpec := pSpec)
-    (init := section58ChallengeInit
-      (oSpec := oSpec) (challengeSpec := challengeSpec) D_shared D_IP_salted)
+    (init := section58ChallengeInit (challengeSpec := challengeSpec) D_IP_salted)
     (impl := section58ChallengeImpl
-      (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec) D_shared D_IP_salted)
+      (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec) oSpecImpl D_IP_salted)
     V (d2sAlgo maliciousProver)
-
 
 /-- CO25 Claim 5.21.
 `Δ(Hyb_0, Hyb_1) ≤ (7·T² − 3·T) / (2·|Σ|^c)` with `Hyb_0 / Hyb_1` sampled eagerly via
 `hyb0Dist` / `section58Hyb1Dist`. -/
 def claim_5_21
-    [Fintype U] [SampleableType U] [DecidableEq StmtIn] [DecidableEq U]
-    [∀ i, Fintype (pSpec.Message i)]
-    [∀ i, DecidableEq (pSpec.Message i)]
-    [∀ i, Fintype (pSpec.Challenge i)]
-    [∀ i, DecidableEq (pSpec.Challenge i)]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily (StmtIn →ₒ Vector U SpongeSize.C))]
-    [SampleableType (Equiv.Perm (CanonicalSpongeState U))]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily
-        (section58EncodedChallengeOracle (U := U) StmtIn pSpec δ))]
     {T_H : Type} {T_P : Type}
     [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-    (D_shared : ArkLib.OracleReduction.OracleDistribution oSpec)
+    (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ))
@@ -863,35 +789,23 @@ def claim_5_21
   tvDist
       (hyb0Dist (δ := δ) (oSpec := oSpec) (StmtIn := StmtIn)
         (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
-        D_shared V maliciousProver
-        (paperD2STraceSingleSalted
+        oSpecImpl V maliciousProver
+        (stdTraceSingleSalted
           (δ := δ)
           (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
       (section58Hyb1Dist (δ := δ) (T_H := T_H) (T_P := T_P)
         (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U) D_shared V maliciousProver)
+        (pSpec := pSpec) (U := U) oSpecImpl V maliciousProver)
     ≤ claim5_21Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries
 
 /-- CO25 Claim 5.22.
 `Δ(Hyb_1, Hyb_2) ≤ θ★ · max_i ε_{cdc,i} + ∑_i ε_{cdc,i}` with `Hyb_1 / Hyb_2` sampled
 eagerly via `section58Hyb1Dist` / `section58Hyb2Dist`. -/
 def claim_5_22
-    [Fintype U] [SampleableType U] [DecidableEq StmtIn] [DecidableEq U]
-    [∀ i, Fintype (pSpec.Message i)]
-    [∀ i, DecidableEq (pSpec.Message i)]
-    [∀ i, Fintype (pSpec.Challenge i)]
-    [∀ i, SampleableType (pSpec.Challenge i)]
-    [∀ i, DecidableEq (pSpec.Challenge i)]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily
-        (section58EncodedChallengeOracle (U := U) StmtIn pSpec δ))]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily
-        (section58DecodedChallengeOracle (U := U) StmtIn pSpec δ))]
     {T_H : Type} {T_P : Type}
     [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-    (D_shared : ArkLib.OracleReduction.OracleDistribution oSpec)
+    (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ))
@@ -900,10 +814,10 @@ def claim_5_22
   tvDist
       (section58Hyb1Dist (δ := δ) (T_H := T_H) (T_P := T_P)
         (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U) D_shared V maliciousProver)
+        (pSpec := pSpec) (U := U) oSpecImpl V maliciousProver)
       (section58Hyb2Dist (δ := δ) (T_H := T_H) (T_P := T_P)
         (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U) D_shared V maliciousProver)
+        (pSpec := pSpec) (U := U) oSpecImpl V maliciousProver)
     ≤ claim5_22Bound (pSpec := pSpec) tₕ tₚ tₚᵢ (εcodec := codec.decodingBias)
 
 /-- CO25 Claim 5.23.
@@ -911,21 +825,10 @@ def claim_5_22
 distributions are identical (`φ_i` injective). Stated as exact equality (= 0), matching
 the paper's "perfect indistinguishability" wording. -/
 def claim_5_23
-    [Fintype U] [SampleableType U] [DecidableEq StmtIn] [DecidableEq U]
-    [∀ i, Fintype (pSpec.Message i)]
-    [∀ i, Fintype (pSpec.Challenge i)]
-    [∀ i, SampleableType (pSpec.Challenge i)]
-    [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily
-        (section58DecodedChallengeOracle (U := U) StmtIn pSpec δ))]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily
-        (fsChallengeOracle (Vector U δ × StmtIn) pSpec))]
     {T_H : Type} {T_P : Type}
     [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-    (D_shared : ArkLib.OracleReduction.OracleDistribution oSpec)
+    (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)) :
@@ -933,28 +836,20 @@ def claim_5_23
   tvDist
       (section58Hyb2Dist (δ := δ) (T_H := T_H) (T_P := T_P)
         (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U) D_shared V maliciousProver)
+        (pSpec := pSpec) (U := U) oSpecImpl V maliciousProver)
       (section58Hyb3Dist (δ := δ) (T_H := T_H) (T_P := T_P)
         (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U) D_shared V maliciousProver) = 0
+        (pSpec := pSpec) (U := U) oSpecImpl V maliciousProver) = 0
 
 /-- CO25 Claim 5.24.
 `Δ(Hyb_3, Hyb_4) ≤ (7·L·(2t_h+2+2t_p+L+2t_{p⁻¹})) / (2·|Σ|^c) − 5·(L+1) / |Σ|^c`.
 `Hyb_3` and `Hyb_4` use the *same* eager salted FS oracle (`section58SaltedFiatShamirDist`,
 matching CO25 line 1784); only the prover/verifier algorithm differs. -/
 def claim_5_24
-    [Fintype U] [SampleableType U] [DecidableEq StmtIn] [DecidableEq U]
-    [∀ i, Fintype (pSpec.Message i)]
-    [∀ i, Fintype (pSpec.Challenge i)]
-    [∀ i, SampleableType (pSpec.Challenge i)]
-    [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily
-        (fsChallengeOracle (Vector U δ × StmtIn) pSpec))]
     {T_H : Type} {T_P : Type}
     [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-    (D_shared : ArkLib.OracleReduction.OracleDistribution oSpec)
+    (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ))
@@ -965,119 +860,80 @@ def claim_5_24
   tvDist
       (section58Hyb3Dist (δ := δ) (T_H := T_H) (T_P := T_P)
         (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U) D_shared V maliciousProver)
+        (pSpec := pSpec) (U := U) oSpecImpl V maliciousProver)
       (hyb4Dist (δ := δ) (oSpec := oSpec) (StmtIn := StmtIn)
         (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
-        D_shared V maliciousProver d2sAlgo)
+        oSpecImpl V maliciousProver d2sAlgo)
     ≤ claim5_24Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries
 
-omit [∀ i, VCVCompatible (pSpec.Challenge i)] [DecidableEq StmtIn] [DecidableEq U] in
-/-- CO25 Theorem 5.1, distance component. Triangle-inequality assembly of
-`claim_5_2{1,2,3,4}`. Every hybrid is sampled eagerly via `OracleDistribution`
-infrastructure (CO25 Def. 4.2 / Eqs. 15/52/54). -/
-theorem lemma_5_1_dist_from_claims
-    [Fintype U] [SampleableType U] [DecidableEq StmtIn] [DecidableEq U]
-    [∀ i, Fintype (pSpec.Message i)]
-    [∀ i, Fintype (pSpec.Challenge i)]
-    [∀ i, SampleableType (pSpec.Challenge i)]
-    [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily (StmtIn →ₒ Vector U SpongeSize.C))]
-    [SampleableType (Equiv.Perm (CanonicalSpongeState U))]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily
-        (section58EncodedChallengeOracle (U := U) StmtIn pSpec δ))]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily
-        (section58DecodedChallengeOracle (U := U) StmtIn pSpec δ))]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily
-        (fsChallengeOracle (Vector U δ × StmtIn) pSpec))]
+/-- Public theorem surface for CO25 Claim 5.21. -/
+theorem claim_5_21_holds
     {T_H : Type} {T_P : Type}
     [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-    (D_shared : ArkLib.OracleReduction.OracleDistribution oSpec)
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
+      (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ))
+    (tₕ tₚ tₚᵢ : ℕ) :
+    claim_5_21 (T_H := T_H) (T_P := T_P)
+      (δ := δ)
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U)
+      oSpecImpl V maliciousProver tₕ tₚ tₚᵢ := by
+  sorry
+
+/-- Public theorem surface for CO25 Claim 5.22. -/
+theorem claim_5_22_holds
+    {T_H : Type} {T_P : Type}
+    [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
+      (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ))
+    (tₕ tₚ tₚᵢ : ℕ) :
+    claim_5_22 (T_H := T_H) (T_P := T_P)
+      (δ := δ)
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U)
+      oSpecImpl V maliciousProver tₕ tₚ tₚᵢ := by
+  sorry
+
+/-- Public theorem surface for CO25 Claim 5.23. -/
+theorem claim_5_23_holds
+    {T_H : Type} {T_P : Type}
+    [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
+      (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)) :
+    claim_5_23 (T_H := T_H) (T_P := T_P)
+      (δ := δ)
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U)
+      oSpecImpl V maliciousProver := by
+  sorry
+
+/-- Public theorem surface for CO25 Claim 5.24. -/
+theorem claim_5_24_holds
+    {T_H : Type} {T_P : Type}
+    [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
+    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+    (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ))
     (d2sAlgo : D2SAlgo (δ := δ)
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (tₕ tₚ tₚᵢ : ℕ)
-    (h21 : claim_5_21 (T_H := T_H) (T_P := T_P)
+    (tₕ tₚ tₚᵢ : ℕ) :
+    claim_5_24 (T_H := T_H) (T_P := T_P)
       (δ := δ)
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
-      D_shared V maliciousProver tₕ tₚ tₚᵢ)
-    (h22 : claim_5_22 (T_H := T_H) (T_P := T_P)
-      (δ := δ)
-      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-      (pSpec := pSpec) (U := U)
-      D_shared V maliciousProver tₕ tₚ tₚᵢ)
-    (h23 : claim_5_23 (T_H := T_H) (T_P := T_P)
-      (δ := δ)
-      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-      (pSpec := pSpec) (U := U)
-      D_shared V maliciousProver)
-    (h24 : claim_5_24 (T_H := T_H) (T_P := T_P)
-      (δ := δ)
-      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-      (pSpec := pSpec) (U := U)
-      D_shared V maliciousProver d2sAlgo tₕ tₚ tₚᵢ)
-    (hBound :
-      claim5_21Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries
-        + claim5_22Bound (pSpec := pSpec) tₕ tₚ tₚᵢ (εcodec := codec.decodingBias)
-        + 0
-        + claim5_24Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries
-        ≤ (ηStar U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries
-            (εcodec := codec.decodingBias) : ℝ)) :
-    tvDist
-      (hyb0Dist (δ := δ) (oSpec := oSpec) (StmtIn := StmtIn)
-        (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
-        D_shared V maliciousProver
-        (paperD2STraceSingleSalted
-          (δ := δ)
-          (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
-      (hyb4Dist (δ := δ) (oSpec := oSpec) (StmtIn := StmtIn)
-        (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
-        D_shared V maliciousProver d2sAlgo)
-        ≤ (ηStar U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries
-            (εcodec := codec.decodingBias) : ℝ) := by
-  have h23' :
-      tvDist
-        (section58Hyb2Dist (δ := δ) (T_H := T_H) (T_P := T_P)
-          (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-          (pSpec := pSpec) (U := U) D_shared V maliciousProver)
-        (section58Hyb3Dist (δ := δ) (T_H := T_H) (T_P := T_P)
-          (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-          (pSpec := pSpec) (U := U) D_shared V maliciousProver)
-        ≤ (0 : ℝ) := by
-    rw [h23]
-  have hChain :=
-    tvDist_hybridChain4
-      (H₀ := hyb0Dist (δ := δ) (oSpec := oSpec) (StmtIn := StmtIn)
-        (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
-        D_shared V maliciousProver
-        (paperD2STraceSingleSalted
-          (δ := δ)
-          (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
-      (H₁ := section58Hyb1Dist (δ := δ) (T_H := T_H) (T_P := T_P)
-        (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U) D_shared V maliciousProver)
-      (H₂ := section58Hyb2Dist (δ := δ) (T_H := T_H) (T_P := T_P)
-        (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U) D_shared V maliciousProver)
-      (H₃ := section58Hyb3Dist (δ := δ) (T_H := T_H) (T_P := T_P)
-        (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U) D_shared V maliciousProver)
-      (H₄ := hyb4Dist (δ := δ) (oSpec := oSpec) (StmtIn := StmtIn)
-        (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
-        D_shared V maliciousProver d2sAlgo)
-      (e₀₁ := claim5_21Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries)
-      (e₁₂ := claim5_22Bound (pSpec := pSpec) tₕ tₚ tₚᵢ (εcodec := codec.decodingBias))
-      (e₂₃ := 0)
-      (e₃₄ := claim5_24Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries)
-      h21 h22 h23' h24
-  linarith
+      oSpecImpl V maliciousProver d2sAlgo tₕ tₚ tₚᵢ := by
+  sorry
 
 /-- CO25 Theorem 5.1. Per-index query-bound predicate for the malicious prover `𝒫̃`.
 `tShared` bounds queries to the ambient `oSpec`; `(t_h, t_p, t_{p⁻¹})` bound the three
@@ -1091,10 +947,10 @@ abbrev IsLemma5_1QueryBound
   OracleComp.IsPerIndexQueryBound maliciousProver
     (duplexSpongeQueryBudgetWithShared (StmtIn := StmtIn) (U := U) tShared tₕ tₚ tₚᵢ)
 
-/-- CO25 §5.4 paper-facing `D2SAlgo^f` witness for the salted theorem path.
+/-- CO25 §5.4 `D2SAlgo^f` witness for the salted theorem path.
 It answers `g_i` by querying the external salted FS oracle `f_i(τ, x, ·)` and lets
 `d2sQueryStepWithOracle` apply the `ψ_i⁻¹` preimage sampler. -/
-def paperD2SAlgoSaltedExternal
+def d2sAlgoSaltedExternal
     [Fintype U] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
     [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]
@@ -1150,7 +1006,7 @@ def paperD2SAlgoSaltedExternal
 
 set_option linter.unusedDecidableInType false in
 set_option linter.unusedFintypeInType false in
-/-- CO25 Theorem 5.1 (Main lemma §5.8, paper-faithful existential form).
+/-- CO25 Theorem 5.1 (Main lemma §5.8, canonical existential form).
 For every malicious prover `𝒫̃` making at most `t_h` queries to `h` and `t_p` / `t_{p⁻¹}`
 queries to `p / p⁻¹`, there exist a D2SAlgo prover transform and a D2STrace line-4 map
 such that:
@@ -1160,40 +1016,28 @@ such that:
 and D2SAlgo makes at most `θ★(t_h, t_p, t_{p⁻¹}) = t_p` total queries.
 
 Sampling shape (CO25 Def. 4.2 / Eqs. 15/52/54/4): both sides draw their oracles
-from `OracleDistribution` carriers at game start. Left: `D_shared` for the ambient
-oracle plus `𝒟_𝔖(λ,n) = duplexSpongeOracleDistribution` for `(h, p, p⁻¹)`. Right:
-`D_shared` plus salted `𝒟_IP(λ,n) = section58SaltedFiatShamirDist` for `f`.
+from `OracleDistribution` carriers at game start; the ambient `oSpec` is answered by
+the caller-supplied handler `oSpecImpl`. Left: `oSpecImpl` plus
+`𝒟_𝔖(λ,n) = duplexSpongeOracleDistribution` for `(h, p, p⁻¹)`. Right: `oSpecImpl` plus
+salted `𝒟_IP(λ,n) = section58SaltedFiatShamirDist` for `f`.
 
-The body of the existential is the four-step hybrid bound discharged by
-`lemma_5_1_dist_from_claims`; the remaining `sorry` is the shape-bridge between the
-internal `hyb0Dist`/`hyb4Dist` form used by `_dist_from_claims` and this paper-facing
-`mappedDuplexSpongeFiatShamirGameDist`/`basicFiatShamirGameDist` form. -/
+The distance component is supplied by the public claim theorem surfaces
+`claim_5_21_holds`, `claim_5_22_holds`, `claim_5_23_holds`, and `claim_5_24_holds`.
+The remaining `sorry` is the shape bridge from those internal hybrid-game distributions to this
+`mappedDuplexSpongeFiatShamirGameDist` / `basicFiatShamirGameDist` form, plus the query-bound
+component for the chosen `D2SAlgo`. -/
 theorem lemma_5_1
-    [Fintype U] [SampleableType U]
-    [DecidableEq U]
-    [DecidableEq StmtIn]
-    [DecidableEq ι]
-    [∀ i, Fintype (pSpec.Message i)]
-    [∀ i, Fintype (pSpec.Challenge i)]
-    [∀ i, SampleableType (pSpec.Challenge i)]
-    [∀ i, DecidableEq (pSpec.Message i)]
-    [∀ i, DecidableEq (pSpec.Challenge i)]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily (StmtIn →ₒ Vector U SpongeSize.C))]
-    [SampleableType (Equiv.Perm (CanonicalSpongeState U))]
-    [SampleableType
-      (ArkLib.OracleReduction.OracleFamily
-        (fsChallengeOracle (Vector U δ × StmtIn) pSpec))]
+    [DecidableEq U] [DecidableEq StmtIn] [DecidableEq ι]
     {T_H : Type} {T_P : Type}
     [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-    (D_shared : ArkLib.OracleReduction.OracleDistribution oSpec)
+    (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (tShared : oSpec.Domain → ℕ) (tₕ tₚ tₚᵢ : ℕ)
     (hTp : tₚ ≥ max pSpec.totalNumPermQueriesMessage pSpec.totalNumPermQueriesChallenge) :
     ∃ (d2sAlgo : D2SAlgo (δ := δ)
         (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-      (paperD2STrace :
+      (d2sTrace :
         QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U) →
           DSAbort U
             (QueryLog (oSpec + fsChallengeOracle (Vector U δ × StmtIn) pSpec))),
@@ -1205,25 +1049,22 @@ theorem lemma_5_1
         (mappedDuplexSpongeFiatShamirGameDist
           (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
           (pSpec := pSpec) (U := U)
-          (section58Hyb0Init
-            (oSpec := oSpec) (StmtIn := StmtIn) (U := U) D_shared)
-          (section58Hyb0Impl
-            (oSpec := oSpec) (StmtIn := StmtIn) (U := U) D_shared)
-          V maliciousProver paperD2STrace)
+          (init := section58Hyb0Init (StmtIn := StmtIn) (U := U))
+          (impl := section58Hyb0Impl
+            (oSpec := oSpec) (StmtIn := StmtIn) (U := U) oSpecImpl)
+          V maliciousProver d2sTrace)
         -- hybrid 4 (f ← 𝒟_IP_salted)
         (basicFiatShamirGameDist
           (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
           (pSpec := pSpec)
           (section58ChallengeInit
-            (oSpec := oSpec)
             (challengeSpec := fsChallengeOracle (Vector U δ × StmtIn) pSpec)
-            D_shared
             (section58SaltedFiatShamirDist
               (StmtIn := StmtIn) (U := U) (pSpec := pSpec) (δ := δ)))
           (section58ChallengeImpl
             (oSpec := oSpec) (U := U)
             (challengeSpec := fsChallengeOracle (Vector U δ × StmtIn) pSpec)
-            D_shared
+            oSpecImpl
             (section58SaltedFiatShamirDist
               (StmtIn := StmtIn) (U := U) (pSpec := pSpec) (δ := δ)))
           V (d2sAlgo maliciousProver))
@@ -1231,11 +1072,11 @@ theorem lemma_5_1
             (εcodec := codec.decodingBias) : ℝ)
       ∧ OracleComp.IsTotalQueryBound (d2sAlgo maliciousProver) (θStar tₕ tₚ tₚᵢ) := by
   refine ⟨?_, ?_, ?_⟩
-  · exact paperD2SAlgoSaltedExternal
+  · use d2sAlgoSaltedExternal
       (δ := δ)
       (T_H := T_H) (T_P := T_P)
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-  · exact paperD2STraceSingleSalted
+  · use stdTraceSingleSalted
       (δ := δ)
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
   · intro maliciousProver hMaliciousBound

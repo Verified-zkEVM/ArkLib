@@ -50,10 +50,67 @@ instance {α : Type*} {n : ℕ} [VCVCompatible α] : VCVCompatible (Fin n → α
 
 instance {α : Type*} {n : ℕ} [VCVCompatible α] : VCVCompatible (Vector α n) where
 
+instance {α β : Type*} [VCVCompatible α] [VCVCompatible β] : VCVCompatible (α × β) where
+
 /-- `Sampleable` extends `VCVCompabible` with `SampleableType` -/
 class Sampleable (α : Type) extends VCVCompatible α, SampleableType α
 
 instance {α : Type} [Sampleable α] : DecidableEq α := inferInstance
+
+/-!
+## FinEnum bridge instances
+
+These four instances form a chain that lets typeclass synthesis derive
+`SampleableType (OracleFamily spec)` and `SampleableType (Equiv.Perm α)`
+from granular `[VCVCompatible _]` hypotheses alone, without requiring verbose
+`[SampleableType (OracleFamily (...))]` assumptions at call sites.
+
+Chain: `VCVCompatible α` → `FinEnum α`
+  → `FinEnum (Vector α n)` (via `Equiv.rootVectorEquivFin`)
+  → `FinEnum (Equiv.Perm α)` (via `Fintype.equivFin`)
+  → `SampleableType _` (via `FinEnum.SampleableType`)
+-/
+
+/-- `VCVCompatible` implies `FinEnum` (noncomputable, via `Fintype.equivFin`).
+Low priority so explicit `FinEnum` instances on specific types take precedence. -/
+noncomputable instance (priority := 50) VCVCompatible.instFinEnum
+    {α : Type*} [VCVCompatible α] : FinEnum α where
+  card := Fintype.card α
+  equiv := Fintype.equivFin α
+  decEq := inferInstance
+
+/-- `FinEnum α` implies `FinEnum (Vector α n)` via `Equiv.rootVectorEquivFin`. -/
+noncomputable instance Vector.instFinEnum
+    {α : Type*} {n : ℕ} [FinEnum α] : FinEnum (Vector α n) :=
+  FinEnum.ofEquiv _ Equiv.rootVectorEquivFin
+
+/-- `Equiv.Perm α` is always nonempty (contains `Equiv.refl α`). -/
+instance instNonemptyEquivPerm {α : Type*} : Nonempty (Equiv.Perm α) := ⟨Equiv.refl _⟩
+
+/-- `FinEnum α` implies `FinEnum (Equiv.Perm α)` noncomputably. -/
+noncomputable instance instFinEnumEquivPerm
+    {α : Type*} [FinEnum α] : FinEnum (Equiv.Perm α) where
+  card := Fintype.card (Equiv.Perm α)
+  equiv := Fintype.equivFin _
+  decEq := inferInstance
+
+/-- `VCVCompatible α` implies `SampleableType α`.
+
+Direct bridge: `VCVCompatible` → `FinEnum` → `SampleableType`, without relying on
+multi-step typeclass synthesis that may fail at priority 50. -/
+noncomputable instance VCVCompatible.instSampleableType
+    {α : Type} [VCVCompatible α] : SampleableType α :=
+  letI : FinEnum α := VCVCompatible.instFinEnum
+  inferInstance
+
+/-- `VCVCompatible α` implies `SampleableType (Equiv.Perm α)`.
+
+Consolidates the chain: `VCVCompatible` → `FinEnum` → `FinEnum (Perm)` → `SampleableType`. -/
+noncomputable instance instSampleableTypeEquivPermVCV
+    {α : Type} [VCVCompatible α] : SampleableType (Equiv.Perm α) := by
+  letI : FinEnum α := VCVCompatible.instFinEnum
+  letI : Nonempty (Equiv.Perm α) := ⟨Equiv.refl _⟩
+  infer_instance
 
 /-- Enum type for the direction of a round in a protocol specification. It is either `.P_to_V`
 (the prover sends a message to the verifier) or `.V_to_P` (the verifier sends a challenge to the
