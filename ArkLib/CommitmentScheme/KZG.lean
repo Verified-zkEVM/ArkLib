@@ -375,12 +375,105 @@ private lemma support_simulateQ_run'_subset
         Set.mem_image, support_bind, Set.mem_iUnion] at hy ⊢
       aesop
 
+-- TODO should be in VCV-io
+lemma OracleComp.mem_support_of_mem_support_liftComp
+    {ι τ α : Type} {spec : OracleSpec ι} {superSpec : OracleSpec τ}
+    [MonadLiftT (OracleQuery spec) (OracleQuery superSpec)]
+    (oa : OracleComp spec α) (x : α) :
+    x ∈ support (oa.liftComp superSpec) → x ∈ support oa := by
+  intro hx
+  induction oa using OracleComp.inductionOn generalizing x with
+  | pure y =>
+      simpa using hx
+  | query_bind q oa ih =>
+      rw [OracleComp.liftComp_bind, mem_support_bind_iff] at hx
+      rw [mem_support_bind_iff]
+      obtain ⟨u, _hu, hx⟩ := hx
+      exact ⟨u, OracleComp.mem_support_query q u, ih u x hx⟩
+
+-- TODO should be in VCV-io
+lemma OptionT.probEvent_eq_one_of_simulateQ_support
+    {ι σ α : Type} {spec : OracleSpec ι}
+    (impl : QueryImpl spec (StateT σ ProbComp))
+    (oa : OracleComp spec (Option α)) (s₀ : σ) (P : α → Prop)
+    (h : ∀ x ∈ support oa, ∃ a, x = some a ∧ P a) :
+    Pr[P | OptionT.mk ((simulateQ impl oa).run' s₀)] = 1 := by
+  letI := Classical.decPred P
+  rw [probEvent_eq_one_iff]
+  constructor
+  · rw [OptionT.probFailure_eq, OptionT.run_mk]
+    have hfail : Pr[⊥ | (simulateQ impl oa).run' s₀] = 0 :=
+      HasEvalPMF.probFailure_eq_zero _
+    rw [hfail, _root_.zero_add]
+    exact probOutput_eq_zero_of_not_mem_support fun hnone =>
+      let hnone' := support_simulateQ_run'_subset impl oa s₀ hnone
+      let ⟨_, hsome, _⟩ := h none hnone'
+      by cases hsome
+  · intro x hx
+    rw [OptionT.mem_support_iff] at hx
+    obtain ⟨a, ha, hP⟩ := h (some x) (support_simulateQ_run'_subset impl oa s₀ hx)
+    cases ha
+    exact hP
+
 /- the KZG satisfies perfect correctness as defined in `CommitmentScheme` -/
 theorem correctness (hpG1 : Nat.card G₁ = p) (_a : ZMod p) {g₁ : G₁} {g₂ : G₂}
     [SampleableType G₁] :
     Commitment.perfectCorrectness (pure ∅) (randomOracle)
     (KZG (n:=n) (g₁:=g₁) (g₂:=g₂) (pairing:=pairing)) := by
-    sorry
+  intro data query
+  simp only [ENNReal.coe_zero, tsub_zero]
+  rw [ge_iff_le, one_le_probEvent_iff]
+  refine OptionT.probEvent_eq_one_of_simulateQ_support _ _ ∅ _ ?_
+  intro x hx
+  simp only [KZG] at hx
+  rw [mem_support_bind_iff] at hx
+  obtain ⟨⟨ck, vk⟩, hkeygen, hx⟩ := hx
+  rw [mem_support_bind_iff] at hx
+  obtain ⟨⟨cm, decomm⟩, hcommit, hx⟩ := hx
+  replace hkeygen := OracleComp.mem_support_of_mem_support_liftComp _ _ hkeygen
+  replace hcommit := OracleComp.mem_support_of_mem_support_liftComp _ _ hcommit
+  rw [mem_support_bind_iff] at hkeygen
+  obtain ⟨τ, _hτ, hkeygen⟩ := hkeygen
+  rw [mem_support_pure_iff] at hkeygen
+  simp only [Prod.mk.injEq] at hkeygen
+  obtain ⟨rfl, rfl⟩ := hkeygen
+  rw [mem_support_pure_iff] at hcommit
+  obtain ⟨rfl, rfl⟩ := Prod.mk.inj hcommit
+  haveI : ProverOnly ({ dir := !v[Direction.P_to_V], «Type» := !v[G₁] } : ProtocolSpec 1) := {
+    prover_first' := by simp
+  }
+  rw [Reduction.run_of_prover_first] at hx
+  simp only [OptionT.run_bind, OptionT.run_pure] at hx
+  have hverify : verifyOpening (g₁ := g₁) (g₂ := g₂) pairing
+      (generateSrs (g₁ := g₁) (g₂ := g₂) n τ).2
+      (commit (generateSrs (g₁ := g₁) (g₂ := g₂) n τ).1 data)
+      (generateOpening (generateSrs (g₁ := g₁) (g₂ := g₂) n τ).1 data query)
+      query (OracleInterface.answer data query) := by
+    simpa [OracleInterface.answer] using
+      (KZG.correctness (pairing := pairing) (g₁ := g₁) (g₂ := g₂) hpG1 n τ data query)
+  simp only [Option.elimM] at hx
+  rw [mem_support_bind_iff] at hx
+  obtain ⟨openingOpt, hopeningOpt, hx⟩ := hx
+  simp at hopeningOpt
+  subst openingOpt
+  dsimp only [Option.elim] at hx
+  rw [mem_support_bind_iff] at hx
+  obtain ⟨outputOpt, houtputOpt, hx⟩ := hx
+  simp at houtputOpt
+  subst outputOpt
+  dsimp only [Option.elim] at hx
+  rw [mem_support_bind_iff] at hx
+  obtain ⟨verifierOpt, hverifierOpt, hx⟩ := hx
+  simp [hverify] at hverifierOpt
+  subst verifierOpt
+  simp only [Option.getM_some] at hx
+  rw [mem_support_bind_iff] at hx
+  obtain ⟨verdict, hverdict, hx⟩ := hx
+  simp at hverdict
+  subst verdict
+  simp at hx
+  subst x
+  simp [acceptRejectRel]
 
 end Correctness
 
