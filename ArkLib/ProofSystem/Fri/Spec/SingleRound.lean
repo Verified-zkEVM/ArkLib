@@ -655,7 +655,7 @@ def outputRelation (cond : ∑ i, (s i).1 ≤ n) [DecidableEq F] (δ : ℝ≥0) 
       )
   := FinalFoldPhase.outputRelation s d cond δ
 
-/- The query round consistens of the verifier sending `l` elements of the
+/- The query round consists of the verifier sending `l` elements of the
    the first evaluation domain, which will be used as a basis for the round
    consistency checks. This makes this implementation a public-coin protocol.
 -/
