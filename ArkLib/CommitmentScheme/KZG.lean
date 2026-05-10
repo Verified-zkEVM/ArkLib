@@ -263,14 +263,13 @@ theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
     apply max_le
     · rw [← degree_toPoly]; exact hpdeg
     · exact le_trans Polynomial.degree_C_le (by exact_mod_cast Nat.zero_le n)
-  -- NOTE: pre-existing issue — the `grind [hfun, ...]` below triggers a redundant-parameter
-  -- error surfaced once upstream elaboration no longer fails. Orthogonal to the Randomness
-  -- refactor; left as `sorry` per user direction.
-  sorry
-  /-
   have hfun: (fun i ↦ q.coeff ↑i : Fin (n+1) → ZMod p) = (coeff q) ∘ Fin.val := by rfl
   simp_rw [ofFn]
-  simp_rw [hfun, CPolynomial.ofFn, commit_eq_CPolynomial hpG1 q hqdeg]
+  change pairing (g₁ ^ (eval a poly).val / g₁ ^ v.val) (towerOfExponents g₂ a 1)[0] =
+    pairing (commit (towerOfExponents g₁ a n) (fun i : Fin (n + 1) => q.coeff i) : G₁)
+      ((towerOfExponents g₂ a 1)[1] / g₂ ^ z.val)
+  rw [hfun]
+  rw [commit_eq_CPolynomial hpG1 q hqdeg]
 
   -- evaluate the pairing linearly.
   -- e (g₁^poly(a) / g₂^poly(z), g₂)= e (g₁^q(a), g₂^a / g₂^(z))
@@ -297,7 +296,6 @@ theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
   simp_rw [Polynomial.X_sub_C_mul_divByMonic_eq_sub_modByMonic,
     Polynomial.modByMonic_X_sub_C_eq_C_eval]
   simp only [Polynomial.eval_sub, Polynomial.eval_C, sub_self, map_zero, sub_zero]
-  -/
 
 open Commitment
 
@@ -363,12 +361,25 @@ open OracleSpec OracleComp SubSpec ProtocolSpec
 
 section Correctness
 
+private lemma support_simulateQ_run'_subset
+    {ι σ α : Type} {spec : OracleSpec ι}
+    (impl : QueryImpl spec (StateT σ ProbComp)) (oa : OracleComp spec α) (s : σ) :
+    support ((simulateQ impl oa).run' s) ⊆ support oa := by
+  intro y hy
+  induction oa using OracleComp.inductionOn generalizing y s with
+  | pure x =>
+      simpa [simulateQ_pure, StateT.run'_eq, StateT.run_pure] using hy
+  | query_bind t oa ih =>
+      simp only [simulateQ_bind, simulateQ_query, OracleQuery.input_query,
+        OracleQuery.cont_query, StateT.run'_eq, StateT.run_bind, support_map,
+        Set.mem_image, support_bind, Set.mem_iUnion] at hy ⊢
+      aesop
+
 /- the KZG satisfies perfect correctness as defined in `CommitmentScheme` -/
 theorem correctness (hpG1 : Nat.card G₁ = p) (_a : ZMod p) {g₁ : G₁} {g₂ : G₂}
     [SampleableType G₁] :
     Commitment.perfectCorrectness (pure ∅) (randomOracle)
     (KZG (n:=n) (g₁:=g₁) (g₂:=g₂) (pairing:=pairing)) := by
-    intro data query
     sorry
 
 end Correctness
@@ -1589,7 +1600,10 @@ lemma OptionT.probEvent_eq_of_run_map_eq {α β : Type}
 lemma StateT.run'_map_comm {m : Type → Type} {σ α β : Type}
     [Monad m] [LawfulMonad m]
     (f : α → β) (mx : StateT σ m α) (s : σ) :
-    (f <$> mx).run' s = f <$> mx.run' s := by sorry
+    (f <$> mx).run' s = f <$> mx.run' s := by
+  change (fun x : β × σ => x.1) <$> (StateT.map f mx) s =
+    f <$> ((fun x : α × σ => x.1) <$> mx s)
+  simp [StateT.map, Functor.map_map]
 
 -- TODO should be in VCV-io
 /-- `Vector.mapM` commutes with post-composition by a pure map:
@@ -1597,7 +1611,21 @@ lemma StateT.run'_map_comm {m : Type → Type} {σ α β : Type}
 lemma Vector.mapM_map_postcomp {m : Type → Type} {α β γ : Type} {n : ℕ}
     [Monad m] [LawfulMonad m]
     (v : Vector α n) (f : α → m β) (g : β → γ) :
-    (v.mapM (fun a => g <$> f a)) = (Vector.map g) <$> (v.mapM f) := by sorry
+    (v.mapM (fun a => g <$> f a)) = (Vector.map g) <$> (v.mapM f) := by
+  have hlist : ∀ l : List α, l.mapM (fun a => g <$> f a) = List.map g <$> l.mapM f := by
+    intro l
+    induction l with
+    | nil => simp
+    | cons a t ih => simp [ih]
+  apply Vector.map_toArray_inj.mp
+  rw [Vector.toArray_mapM]
+  simp only [Functor.map_map, Vector.toArray_map]
+  rw [← Functor.map_map]
+  rw [Vector.toArray_mapM]
+  rw [Array.mapM_eq_mapM_toList, Array.mapM_eq_mapM_toList]
+  simp only [Functor.map_map]
+  rw [hlist]
+  simp [Functor.map_map]
 
 -- TODO should be in VCV-io
 /-- `Option.map` distributes through `Vector.mapM id` (sequencing of options):
@@ -1605,7 +1633,9 @@ lemma Vector.mapM_map_postcomp {m : Type → Type} {α β γ : Type} {n : ℕ}
 lemma Vector.mapM_id_option_map_comm {α β : Type} {n : ℕ}
     (v : Vector (Option α) n) (g : α → β) :
     (v.map (Option.map g)).mapM (id : Option β → Option β) =
-    (v.mapM (id : Option α → Option α)).map (Vector.map g) := by sorry
+    (v.mapM (id : Option α → Option α)).map (Vector.map g) := by
+  rw [Vector.mapM_map]
+  exact Vector.mapM_map_postcomp v (id : Option α → Option α) g
 
 -- TODO should be in VCV-io
 /-- Two `Vector.mapM` calls with pointwise-related monadic bodies produce equal
@@ -1618,7 +1648,16 @@ lemma Vector.mapM_bind_map_eq {m : Type → Type} {α β γ δ : Type} {n : ℕ}
     (hf : ∀ a, f₁ a = g <$> f₂ a)
     (post₁ : Vector γ n → m δ) (post₂ : Vector β n → m δ)
     (hpost : ∀ opts, post₁ (opts.map g) = post₂ opts) :
-    (v.mapM f₁ >>= post₁) = (v.mapM f₂ >>= post₂) := by sorry
+    (v.mapM f₁ >>= post₁) = (v.mapM f₂ >>= post₂) := by
+  have hf' : f₁ = fun a => g <$> f₂ a := by
+    funext a
+    exact hf a
+  rw [hf']
+  rw [Vector.mapM_map_postcomp]
+  simp only [map_eq_bind_pure_comp, bind_assoc, Function.comp, pure_bind]
+  apply bind_congr
+  intro opts
+  exact hpost opts
 
 omit [DecidableEq G₁] in
 /-- Transition 1: extending output for proofs and commitment preserves the condition -/
@@ -1678,9 +1717,49 @@ lemma OptionT.aux_mem_support_simulateQ_run'
     (oa : OracleComp spec (Option α)) (s₀ : σ) (P : α → Prop)
     (h : ∀ x ∈ support oa, ∀ a, x = some a → P a)
     {x : α} (hx : x ∈ support (OptionT.mk ((simulateQ impl oa).run' s₀))) : P x := by
-  sorry
+  rw [OptionT.mem_support_iff] at hx
+  exact h (some x) (support_simulateQ_run'_subset impl oa s₀ hx) x rfl
 
 -- TODO should be in VCV-io
+/-- Index-extraction for `Vector.mapM`: any component of a vector in the support of
+    the sequenced computation lies in the support of the corresponding component computation. -/
+private lemma Vector.support_mapM_index
+    {m : Type → Type} [Monad m] [LawfulMonad m] [HasEvalSet m]
+    {α β : Type} {L : ℕ} (xs : Vector β L) (f : β → m α)
+    {v : Vector α L} (hv : v ∈ support (xs.mapM f)) (i : Fin L) :
+    v[i] ∈ support (f xs[i]) := by
+  induction L with
+  | zero => exact Fin.elim0 i
+  | succ L ih =>
+      obtain ⟨xs0, x, hxs⟩ := Vector.exists_push (xs := xs)
+      obtain ⟨v0, y, hv0⟩ := Vector.exists_push (xs := v)
+      subst hxs
+      subst hv0
+      have hpush : (xs0.push x).mapM f =
+          (xs0.mapM f >>= (fun ys => f x >>= fun last => pure (ys.push last))) := by
+        have hsingle : (#v[x]).mapM f = (fun last => #v[last]) <$> f x := by
+          apply Vector.map_toArray_inj.mp
+          simp
+        rw [← Vector.append_singleton, Vector.mapM_append, hsingle]
+        simp only [map_eq_bind_pure_comp, bind_assoc, Function.comp, pure_bind]
+        rfl
+      rw [hpush] at hv
+      rw [mem_support_bind_iff] at hv
+      obtain ⟨ys, hys, hv⟩ := hv
+      rw [mem_support_bind_iff] at hv
+      obtain ⟨last, hlast, hpush_eq⟩ := hv
+      rw [mem_support_pure_iff] at hpush_eq
+      have hparts := Vector.push_eq_push.mp hpush_eq.symm
+      by_cases hi : (i : ℕ) < L
+      · change (v0.push y)[(i : ℕ)] ∈ support (f ((xs0.push x)[(i : ℕ)]))
+        rw [Vector.getElem_push_lt hi, Vector.getElem_push_lt hi]
+        rw [← hparts.2]
+        exact ih xs0 hys ⟨i, hi⟩
+      · have hilast : (i : ℕ) = L := by omega
+        have hi_eq : i = ⟨L, Nat.lt_succ_self L⟩ := Fin.ext hilast
+        subst i
+        simpa [← hparts.1] using hlast
+
 /-- Index-extraction for `(Vector.ofFn id).mapM` over an `OracleComp`: any element in the
     support of the monadic `mapM` has each component lying in the support of the corresponding
     inner computation. -/
@@ -1690,7 +1769,49 @@ lemma OracleComp.support_ofFn_mapM_index
     {v : Vector α L}
     (hv : v ∈ support ((Vector.ofFn (fun i : Fin L => i)).mapM f))
     (i : Fin L) : v[i] ∈ support (f i) := by
-  sorry
+  simpa using
+    Vector.support_mapM_index (Vector.ofFn (fun i : Fin L => i)) f hv i
+
+-- TODO should be in VCV-io
+/-- For a `Vector` of `Option` values, if `mapM id` yields `some w`, then each entry is
+    `some` of the corresponding entry in `w`. -/
+lemma Vector.mapM_id_some_index
+    {α : Type} {L : ℕ} {v : Vector (Option α) L} {w : Vector α L}
+    (h : v.mapM id = some w) (i : Fin L) : v[i] = some w[i] := by
+  induction L with
+  | zero => exact Fin.elim0 i
+  | succ L ih =>
+      obtain ⟨v0, a, hv⟩ := Vector.exists_push (xs := v)
+      obtain ⟨w0, b, hw⟩ := Vector.exists_push (xs := w)
+      subst hv
+      subst hw
+      have hdecomp : v0.mapM id = some w0 ∧ a = some b := by
+        have hpush : (v0.push a).mapM id =
+            (v0.mapM id >>= (fun x => a.map (fun last => x.push last))) := by
+          have hsingle : (#v[a]).mapM id = a.map (fun last => #v[last]) := by
+            apply Vector.map_toArray_inj.mp
+            cases a <;> simp
+          rw [← Vector.append_singleton, Vector.mapM_append, hsingle]
+          cases a <;> simp [Vector.append_singleton]
+        rw [hpush] at h
+        cases hv0 : v0.mapM id with
+        | none => simp [hv0] at h
+        | some w0' =>
+            cases ha : a with
+            | none => simp [hv0, ha] at h
+            | some aval =>
+                simp only [hv0, ha, Option.map_some, Option.bind_eq_bind, Option.bind_some,
+                  Option.some.injEq] at h
+                have hp := Vector.push_eq_push.mp h
+                exact ⟨congrArg some hp.2, congrArg some hp.1⟩
+      by_cases hi : (i : ℕ) < L
+      · change (v0.push a)[(i : ℕ)] = some ((w0.push b)[(i : ℕ)])
+        rw [Vector.getElem_push_lt hi, Vector.getElem_push_lt hi]
+        exact ih hdecomp.1 ⟨i, hi⟩
+      · have hilast : (i : ℕ) = L := by omega
+        have hi_eq : i = ⟨L, Nat.lt_succ_self L⟩ := Fin.ext hilast
+        subst i
+        simp [hdecomp.2]
 
 lemma Reduction.support_allOutputs_index
     {ι : Type} {oSpec : OracleSpec ι}
@@ -1703,15 +1824,34 @@ lemma Reduction.support_allOutputs_index
     {resultOf : Fin L → α} (hy_eq : y = some resultOf) (i : Fin L) :
       ∃ result, some result ∈ support (reduction.run (stmts i) (wits i)).run ∧
         extract result = resultOf i := by
-  sorry
-
--- TODO should be in VCV-io
-/-- For a `Vector` of `Option` values, if `mapM id` yields `some w`, then each entry is
-    `some` of the corresponding entry in `w`. -/
-lemma Vector.mapM_id_some_index
-    {α : Type} {L : ℕ} {v : Vector (Option α) L} {w : Vector α L}
-    (h : v.mapM id = some w) (i : Fin L) : v[i] = some w[i] := by
-  sorry
+  unfold Reduction.allOutputs at hy
+  rw [mem_support_bind_iff] at hy
+  obtain ⟨runsOpt, hrunsOpt, hy_mem⟩ := hy
+  rw [mem_support_pure_iff] at hy_mem
+  rw [hy_eq] at hy_mem
+  cases hruns : runsOpt with
+  | none => simp [hruns] at hy_mem
+  | some runOf =>
+      simp only [hruns, Option.map_some, Option.some.injEq] at hy_mem
+      unfold Reduction.allRuns at hrunsOpt
+      rw [mem_support_bind_iff] at hrunsOpt
+      obtain ⟨results, hresults, hrunsOpt⟩ := hrunsOpt
+      rw [mem_support_pure_iff] at hrunsOpt
+      cases hseq : results.mapM id with
+      | none => simp [hseq, hruns] at hrunsOpt
+      | some results' =>
+          simp only [hseq, Option.map_some] at hrunsOpt
+          rw [hruns] at hrunsOpt
+          simp only [Option.some.injEq] at hrunsOpt
+          have hidx : results[i] = some results'[i] :=
+            Vector.mapM_id_some_index hseq i
+          refine ⟨results'[i], ?_, ?_⟩
+          · simpa [hidx] using
+              OracleComp.support_ofFn_mapM_index
+                (fun i => (reduction.run (stmts i) (wits i)).run) hresults i
+          · have hrunOf_i := congrFun hrunsOpt i
+            have hresult_i := congrFun hy_mem i
+            rw [hresult_i, hrunOf_i]
 
 -- TODO should be in VCV-io
 /-- If a reduction's verifier is a pure function `f` of the input statement and full transcript,
@@ -1730,7 +1870,28 @@ lemma Reduction.support_run_pure_verifier
     (hy : y ∈ support (reduction.run stmt wit).run)
     {td : FullTranscript pSpec} {prv : StmtOut × WitOut} {vOut : StmtOut}
     (heq : y = some ((td, prv), vOut)) : vOut = f stmt td := by
-  sorry
+  rw [heq] at hy
+  unfold Reduction.run at hy
+  simp only [OptionT.run_bind, Option.elimM] at hy
+  rw [mem_support_bind_iff] at hy
+  obtain ⟨proverResultOpt, _hprover, hy⟩ := hy
+  cases proverResultOpt with
+  | none =>
+      exfalso
+      simp at hy
+  | some proverResult =>
+      simp only [Option.elim_some] at hy
+      rw [mem_support_bind_iff] at hy
+      obtain ⟨stmtOutOpt, hstmtOutOpt, hy⟩ := hy
+      simp only [ChallengeIdx, Challenge, Verifier.run, hf, OptionT.run_pure, liftM_pure,
+        support_pure, Set.mem_singleton_iff] at hstmtOutOpt
+      subst stmtOutOpt
+      simp only [Option.elim_some, Option.getM_some, OptionT.run_pure] at hy
+      injection hy with hpair
+      have htd : td = proverResult.1 := congrArg Prod.fst (congrArg Prod.fst hpair)
+      have hvOut : vOut = f stmt proverResult.1 := congrArg Prod.snd hpair
+      rw [htd]
+      exact hvOut
 
 include g₁ g₂ pairing in
 /-- Transition 2: FB condition implies ARSDH condition after mapping -/
@@ -2431,12 +2592,45 @@ theorem functionBinding {g₁ : G₁} {g₂ : G₂}
     _ ≤ ARSDHerror := ARSDH_error_bound (g₁ := g₁) (g₂ := g₂) (pairing := pairing) hn ARSDHerror
       hARSDH adversary)
 
---#check probEvent_mono
-#check probEvent_map
-#check probEvent_bind_eq_tsum
-#check probEvent_eq_tsum_ite
-
 end FunctionBinding
+
+section Binding
+/- In this section prove that the KZG is evakuation binding under the t-SDH assumption. The proof is a
+reduction to t-SDH following (TODO KZG citation etc. here)
+-/
+
+variable {η : Type} (advSpec : OracleSpec η) [hp : Fact (Nat.Prime p)]
+
+/- the KZG satisfies evaluation binding as defined in `CommitmentScheme` provided t-SDH holds. -/
+theorem Binding {g₁ : G₁} {g₂ : G₂} (hn : 1 ≤ n) (hp : p ≥ n + 2) (hg₁ : g₁ ≠ 1)
+    (hpair : pairing g₁ g₂ ≠ 0) [SampleableType G₁] (tSDHerror : ℝ≥0)
+    (htSDH : Groups.tSDHAssumption (p := p) (G₁ := G₁) (G₂ := G₂) (g₁ := g₁) (g₂ := g₂)
+     n tSDHerror) :
+    Commitment.binding (init := pure ∅) (impl := randomOracle)
+      (KZG (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) tSDHerror := by
+  letI scheme := KZG (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+  simp only [Commitment.binding]
+  intro adversary
+  sorry /-
+  letI game := FB_game adversary scheme
+  letI game_ext := FB_game_ext (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme
+  convert (
+    calc Pr[FB_cond n L | game]
+    _ = Pr[FB_cond_ext n L | game_ext] :=
+      FB_game_ext_eq_FB_game (pairing := pairing) adversary
+    _ ≤ Pr[(ARSDH_cond n) ∘ map_FB_to_ARSDH hn | game_ext] :=
+      FB_cond_le_ARSDH_cond (pairing := pairing) hn hp hg₁ hpair adversary
+    _ = Pr[(ARSDH_cond n) | map_FB_to_ARSDH hn <$> game_ext] :=
+      map_instance_drag hn adversary scheme
+    _ = Groups.ARSDH_Experiment (g₁ := g₁) (g₂ := g₂) n
+      (reduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) L hn AuxState adversary) :=
+      ARSDH_game_eq (g₁ := g₁) (g₂ := g₂) (pairing := pairing) hn adversary
+    _ ≤ ARSDHerror := ARSDH_error_bound (g₁ := g₁) (g₂ := g₂) (pairing := pairing) hn ARSDHerror
+      hARSDH adversary)
+  -/
+
+
+end Binding
 
 end CommitmentScheme
 

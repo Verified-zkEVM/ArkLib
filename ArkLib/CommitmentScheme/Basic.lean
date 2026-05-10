@@ -104,9 +104,14 @@ def perfectCorrectness (scheme : Scheme oSpec Data Commitment Decommitment ComKe
 /-- An adversary in the (evaluation) binding game returns a commitment `cm`, a query `q`, two
   purported responses `r₁, r₂` to the query, and an auxiliary private state (to be passed to the
   malicious prover in the opening procedure). -/
-def BindingAdversary (oSpec : OracleSpec ι) (Data Commitment AuxState : Type)
-    [O : OracleInterface Data] :=
-  OracleComp oSpec (Commitment × (q : O.Query) × O.Response q × O.Response q × AuxState)
+structure BindingAdversary (oSpec : OracleSpec ι) (Data Commitment AuxState : Type)
+  [O : OracleInterface Data] {n : ℕ} (pSpec : ProtocolSpec n) (ComKey : Type)
+where
+  claim : (ComKey →
+    OracleComp oSpec
+      (Commitment × (q : O.Query) × O.Response q × O.Response q × AuxState × AuxState))
+  prover : (ComKey →
+    Prover oSpec (Commitment × (q : O.Query) × O.Response q) AuxState Bool Unit pSpec)
 
 /-- A commitment scheme satisfies **(evaluation) binding** with error `bindingError` if for all
     adversaries that output a commitment `cm`, query `q`, two responses `resp₁, resp₂`, and
@@ -123,17 +128,23 @@ def BindingAdversary (oSpec : OracleSpec ι) (Data Commitment AuxState : Type)
 def binding (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey pSpec)
     (bindingError : ℝ≥0) : Prop :=
   ∀ AuxState : Type,
-  ∀ adversary : BindingAdversary oSpec Data Commitment AuxState,
-  ∀ prover : Prover oSpec (Commitment × (q : O.Query) × O.Response q) AuxState Bool Unit pSpec,
-    False
-    -- [ fun ⟨x, x', b₁, b₂⟩ => x ≠ x' ∧ b₁ ∧ b₂ | do
-    --     let result ← liftM adversary
-    --     let ⟨cm, query, resp₁, resp₂, st⟩ := result
-    --     let proof : Proof pSpec oSpec (Commitment × O.Query × O.Response) AuxState :=
-    --       ⟨prover, scheme.opening.verifier⟩
-    --     let ⟨accept₁, _⟩ ← proof.run ⟨cm, query, resp₁⟩ st
-    --     let ⟨accept₂, _⟩ ← proof.run ⟨cm, query, resp₂⟩ st
-    --     return (resp₁, resp₂, accept₁, accept₂)] ≤ bindingError
+  ∀ adversary : BindingAdversary oSpec Data Commitment AuxState pSpec ComKey,
+    Pr[fun (result : (query : O.Query) × O.Response query × O.Response query × Bool × Bool) =>
+        let ⟨_, resp₁, resp₂, accept₁, accept₂⟩ := result
+        resp₁ ≠ resp₂ ∧ accept₁ ∧ accept₂
+       | OptionT.mk do
+        (simulateQ (QueryImpl.addLift impl (challengeQueryImpl (pSpec := pSpec))
+          : QueryImpl _ (StateT σ ProbComp)) <| (do
+          let (ck,vk) ← liftComp scheme.keygen _
+          let ⟨cm, query, resp₁, resp₂, st₁, st₂⟩ ← liftComp (adversary.claim ck) _
+          let reduction := Reduction.mk (adversary.prover ck) (scheme.opening (ck,vk)).verifier
+          let accept₁ := (← (reduction.verdict
+            (cm, (⟨query, resp₁⟩ : (q : O.Query) × O.Response q)) st₁).run).getD false
+          let accept₂ := (← (reduction.verdict
+            (cm, (⟨query, resp₂⟩ : (q : O.Query) × O.Response q)) st₂).run).getD false
+          pure (some (⟨query, resp₁, resp₂, accept₁, accept₂⟩ :
+            (query : O.Query) × O.Response query × O.Response query × Bool × Bool))
+        : OracleComp _ _)).run' (← init)] ≤ bindingError
 
 /-- A **straightline extractor** for a commitment scheme takes in the commitment, the log of queries
     made during the commitment phase, and returns the underlying data for the commitment. -/
@@ -195,7 +206,7 @@ where
 
 /-- The probabillity of breaking function binding for a specific adversary. -/
 def functionBinding_Experiment {L : ℕ} (hn : n = 1) (hpSpec : NonInteractive (hn ▸ pSpec))
-    (AuxState : Type)
+    (AuxState : Type) --TODO take AuxState to the ∀level
     [∀ i, VCVCompatible ((hn ▸ pSpec).Challenge i)]
     [∀ i, SampleableType ((hn ▸ pSpec).Challenge i)]
     (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey (hn ▸ pSpec))
@@ -205,25 +216,18 @@ def functionBinding_Experiment {L : ℕ} (hn : n = 1) (hpSpec : NonInteractive (
         let S : Finset (Fin L) := Finset.univ
         (∀ i ∈ S, acceptedOf i = true)
         ∧ (¬ ∃ (d : Data), ∀ i ∈ S, O.answer d (queryOf i) = responseOf i)
-        ∧ Function.Injective queryOf -- TODO change to injective **on S**
+        ∧ Function.Injective queryOf
        | OptionT.mk do
-          (simulateQ
-            (QueryImpl.addLift impl (challengeQueryImpl (pSpec := hn ▸ pSpec)) :
-            QueryImpl _ (StateT σ ProbComp))
-            <|
-            (do
-                let (ck,vk) ← liftComp scheme.keygen _
-                let ⟨cm, queryOf, responseOf, stateOf⟩ ← liftComp (adversary.claim ck) _
-                let reduction := Reduction.mk (adversary.prover ck)
-                  (scheme.opening (ck,vk)).verifier
-                let (accepts : Option (Fin L → Bool)) ← reduction.allVerdicts
-                  (fun i => (cm, (⟨queryOf i, responseOf i⟩ :
-                    (q : O.Query) × O.Response q))) stateOf
-                pure (accepts.map fun accepts => (⟨queryOf, responseOf, accepts⟩ :
-                  (queryOf : Fin L → O.Query) × ((i : Fin L) → O.Response (queryOf i))
-                    × (Fin L → Bool)))
-              : OracleComp _ _)
-            ).run' (← init)]
+        (simulateQ (QueryImpl.addLift impl (challengeQueryImpl (pSpec := hn ▸ pSpec))
+          : QueryImpl _ (StateT σ ProbComp)) <| (do
+          let (ck,vk) ← liftComp scheme.keygen _
+          let ⟨cm, queryOf, responseOf, stateOf⟩ ← liftComp (adversary.claim ck) _
+          let reduction := Reduction.mk (adversary.prover ck) (scheme.opening (ck,vk)).verifier
+          let (accepts : Option (Fin L → Bool)) ← reduction.allVerdicts
+            (fun i => (cm, (⟨queryOf i, responseOf i⟩ : (q : O.Query) × O.Response q))) stateOf
+          pure (accepts.map fun accepts => (⟨queryOf, responseOf, accepts⟩ :
+            (queryOf : Fin L → O.Query) × ((i : Fin L) → O.Response (queryOf i)) × (Fin L → Bool)))
+        : OracleComp _ _)).run' (← init)]
 
 /-- A commitment scheme satisfies **function binding** with error `functionBindingError` if for all
 adversaries that output a commitment `cm`, and a vector of length `L` of queries `q_i`, claimed

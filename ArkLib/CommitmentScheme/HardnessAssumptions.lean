@@ -53,6 +53,34 @@ def towerOfExponents (g : G) (a : ZMod p) (n : ℕ) : Vector G (n + 1) :=
 def generateSrs (n : ℕ) (a : ZMod p) : Vector G₁ (n + 1) × Vector G₂ 2 :=
   (towerOfExponents g₁ a n, towerOfExponents g₂ a 1)
 
+/-- The tSDH adversary returns a set of size D+1 and two group elements h₁ and h₂ upon receiving
+the srs. -/
+def tSDHAdversary (D : ℕ) :=
+  Vector G₁ (D + 1) × Vector G₂ 2 →
+    StateT unifSpec.QueryCache ProbComp (Option (ZMod p × G₁))
+
+/-- The probabillity of breaking tSDH for a specific adversary. -/
+noncomputable def tSDH_Experiment [∀ i, SampleableType (unifSpec.Range i)]
+    {g₁ : G₁} {g₂ : G₂} (D : ℕ)
+    (adversary : tSDHAdversary D (G₁ := G₁) (G₂ := G₂) (p := p))
+    : ℝ≥0∞ :=
+  Pr[fun (τ,c,h) =>
+    τ + c ≠ 0 ∧ h = g₁ ^ (1 / (τ+c)).val --TODO τ≠c in here?
+  | OptionT.mk ((do
+    let τ ← simulateQ randomOracle ($ᵗ(ZMod p))
+    let srs := generateSrs (g₁ := g₁) (g₂ := g₂) D τ
+    let result ← adversary srs
+    pure (result.map (fun ((c, h) : ZMod p × G₁) =>
+      (τ, c, h)))).run' (∅))
+  ]
+
+def tSDHAssumption [∀ i, SampleableType (unifSpec.Range i)]
+    {g₁ : G₁} {g₂ : G₂} (D : ℕ) (error : ℝ≥0)
+    : Prop :=
+     ∀ (adversary : tSDHAdversary D
+        (G₁ := G₁) (G₂ := G₂) (p := p)),
+      tSDH_Experiment (g₁ := g₁) (g₂ := g₂) D adversary ≤ (error : ℝ≥0∞)
+
 /-- The ARSDH adversary returns a set of size D+1 and two group elements h₁ and h₂ upon receiving
 the srs. -/
 def ARSDHAdversary (D : ℕ) :=
