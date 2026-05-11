@@ -2,8 +2,11 @@ import ArkLib.AGM.Basic
 import ArkLib.CommitmentScheme.Basic
 import ArkLib.CommitmentScheme.Fold
 import ArkLib.CommitmentScheme.HardnessAssumptions
-import ArkLib.CommitmentScheme.KZG
-import ArkLib.CommitmentScheme.KZGDivision
+import ArkLib.CommitmentScheme.KZG.Basic
+import ArkLib.CommitmentScheme.KZG.Binding
+import ArkLib.CommitmentScheme.KZG.Correctness
+import ArkLib.CommitmentScheme.KZG.DivByMonic
+import ArkLib.CommitmentScheme.KZG.FunctionBinding
 import ArkLib.CommitmentScheme.SimpleRO
 import ArkLib.Data.Classes.FunEquiv
 import ArkLib.Data.Classes.HasSize

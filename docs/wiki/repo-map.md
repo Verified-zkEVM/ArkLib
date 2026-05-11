@@ -39,6 +39,10 @@ home_page/            site assets and assembled website root
 ## Navigation Notes
 
 - `ArkLib.lean` is a generated umbrella import file, not a hand-maintained module index.
+- KZG commitment-scheme modules live under `ArkLib/CommitmentScheme/KZG/`: `Basic` for the
+  construction and scheme instance, `Correctness` for correctness proofs, `FunctionBinding` for
+  the function-binding reduction, `Binding` for evaluation binding, and `DivByMonic` for the
+  CPolynomial division bridge used by KZG proofs.
 - The Merkle tree implementations now live upstream in `VCVio`, so use
   `VCVio.CryptoFoundations.MerkleTree` or `VCVio.CryptoFoundations.InductiveMerkleTree`
   instead of the old ArkLib-local modules.

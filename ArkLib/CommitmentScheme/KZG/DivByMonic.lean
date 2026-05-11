@@ -30,7 +30,7 @@ lemma raw_toPoly_sub (p q : CPolynomial.Raw R) :
 theorem toPoly_sub (p q : CPolynomial R) :
     (p - q).toPoly = p.toPoly - q.toPoly := raw_toPoly_sub p.val q.val
 
-namespace KZGDivision
+namespace KZG.DivByMonic
 
 variable {R : Type*} [Field R] [BEq R] [LawfulBEq R]
 
@@ -271,4 +271,4 @@ theorem toPoly_divByMonic (fp fq : CPolynomial R) (hq : fq.toPoly.Monic) :
     quot.toPoly rem.toPoly hq ⟨by rw [_root_.add_comm]; exact heq, hdeg⟩
   rw [hd]; exact huniq.1.symm
 
-end KZGDivision
+end KZG.DivByMonic
