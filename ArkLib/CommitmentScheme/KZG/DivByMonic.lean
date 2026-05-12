@@ -230,7 +230,7 @@ theorem go_degree_bound (n : ℕ) (p q : CPolynomial.Raw R)
   have hqs := monic_size_ge_one q hq hqm
   induction n generalizing p with
   | zero =>
-    show p.toPoly.degree < q.toPoly.degree
+    change p.toPoly.degree < q.toPoly.degree
     sorry
     -- exact degree_lt_of_canonical_size_lt p q hp hq hqm (by omega)
   | succ n ih => sorry
@@ -263,9 +263,9 @@ theorem toPoly_divByMonic (fp fq : CPolynomial R) (hq : fq.toPoly.Monic) :
   set quot := (Raw.divModByMonicAux.go fuel fp.val fq.val).1
   set rem := (Raw.divModByMonicAux.go fuel fp.val fq.val).2
   have hd : (fp.divByMonic fq).toPoly = quot.toPoly := by
-    show (Raw.divByMonic fp.val fq.val).trim.toPoly = quot.toPoly
+    change (Raw.divByMonic fp.val fq.val).trim.toPoly = quot.toPoly
     rw [Raw.toPoly_trim]
-    show (Raw.divModByMonicAux fp.val fq.val).1.toPoly = quot.toPoly
+    change (Raw.divModByMonicAux fp.val fq.val).1.toPoly = quot.toPoly
     simp only [Raw.divModByMonicAux, fuel, quot]
   have huniq := @Polynomial.div_modByMonic_unique R _ fp.toPoly fq.toPoly
     quot.toPoly rem.toPoly hq ⟨by rw [_root_.add_comm]; exact heq, hdeg⟩

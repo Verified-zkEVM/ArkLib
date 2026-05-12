@@ -7,6 +7,8 @@ Authors: Tobias Rothmann
 import ArkLib.CommitmentScheme.KZG.Correctness
 import ArkLib.CommitmentScheme.HardnessAssumptions
 
+set_option linter.style.longFile 2400
+
 /-! ## Function binding for the KZG Polynomial Commitment Scheme -/
 
 open CompPoly CompPoly.CPolynomial
@@ -124,8 +126,8 @@ lemma filterMap_conflict_length (hp : p ≥ n + 2) (hn : 1 ≤ n)
     1. the array (Array.range p) is distinct and of size p.
     2. the if condition can be false for at most 2 values: one value that does not match the srs
       and one value that is equal to αᵢ
-    3. since p ≥ n + 2, we can tolerate removing at most 2 values from the array (via the if statement)
-      and still have at least n values remaining (to take).
+    3. since p ≥ n + 2, we can tolerate removing at most 2 values from the array
+      (via the if statement) and still have at least n values remaining (to take).
     -/
   set arr := (Array.range p).filterMap fun i =>
     if h : i < p then
@@ -224,6 +226,8 @@ lemma choose_S_conflict_size (hp : p ≥ n + 2) (hn : 1 ≤ n)
   · rw [htoList]
     exact (List.take_sublist n arr.toList).nodup hnodup
 
+omit [Fact (0 < p)] [PrimeOrderWith G₁ p] [Group G₂] [PrimeOrderWith G₂ p]
+  [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
 lemma choose_S_conflict_αᵢ (hn : 1 ≤ n) (αᵢ : ZMod p) (srs : Vector G₁ (n + 1) × Vector G₂ 2)
   : ¬ αᵢ ∈ choose_S_conflict αᵢ srs hn := by
   unfold choose_S_conflict
@@ -246,6 +250,8 @@ lemma choose_S_conflict_αᵢ (hn : 1 ≤ n) (αᵢ : ZMod p) (srs : Vector G₁
     · simp at hi
   · simp at hi
 
+omit [Fact (0 < p)] [Group G₂] [PrimeOrderWith G₂ p]
+  [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
 lemma choose_S_conflict_size_adjoined (hp : p ≥ n + 2) (hn : 1 ≤ n)
   (αᵢ : ZMod p) (srs : Vector G₁ (n + 1) × Vector G₂ 2) (hgen : srs.1[0] ≠ 1)
   : (choose_S_conflict αᵢ srs hn ∪ {αᵢ}).card = n+1 := by
@@ -281,13 +287,98 @@ lemma choose_S_conflict_τ (hn : 1 ≤ n) (αᵢ : ZMod p) (τ : ZMod p)
     · simp at hi
   · simp at hi
 
+omit [Fact (0 < p)] in
+private lemma prod_X_sub_C_toPoly (S : Finset (ZMod p)) :
+    (∏ s ∈ S, (X - C s : CPolynomial (ZMod p))).toPoly =
+      ∏ s ∈ S, (Polynomial.X - Polynomial.C s) := by
+  have h : ∀ x : CPolynomial (ZMod p), x.toPoly = ringEquiv x := fun _ => rfl
+  simp_rw [h, map_prod, map_sub, ← h, X_toPoly, C_toPoly]
+
+omit [Fact (0 < p)] in
+private lemma prod_X_sub_C_eval_ne_zero {S : Finset (ZMod p)} {τ : ZMod p}
+    (hτS : τ ∉ S) :
+    (∏ s ∈ S, (X - C s : CPolynomial (ZMod p))).eval τ ≠ 0 := by
+  rw [eval_toPoly, prod_X_sub_C_toPoly S, Polynomial.eval_prod, Finset.prod_ne_zero_iff]
+  intro s hs
+  simp only [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C]
+  exact fun h => hτS (by simpa [sub_eq_zero.mp h])
+
+omit [Fact (0 < p)] in
+private lemma prod_X_sub_C_insert_eval {S : Finset (ZMod p)} {α τ : ZMod p}
+    (hαS : α ∉ S) :
+    (∏ s ∈ S ∪ {α}, (X - C s : CPolynomial (ZMod p))).eval τ =
+      (∏ s ∈ S, (X - C s : CPolynomial (ZMod p))).eval τ * (τ - α) := by
+  rw [eval_toPoly, eval_toPoly, prod_X_sub_C_toPoly (S ∪ {α}), prod_X_sub_C_toPoly S,
+    Finset.union_singleton, Finset.prod_insert hαS]
+  simp [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C,
+    _root_.mul_comm]
+
+omit [DecidableEq G₁] [Fact (0 < p)] [Group G₂] [PrimeOrderWith G₂ p]
+  [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
+private lemma orderOf_eq_prime_of_ne_one (x : G₁) (hx : x ≠ 1) : orderOf x = p := by
+  have hdvd := orderOf_dvd_natCard (G := G₁) x
+  rw [PrimeOrderWith.hCard] at hdvd
+  rcases (Nat.dvd_prime Fact.out).1 hdvd with h1 | hp'
+  · exact absurd (orderOf_eq_one_iff.1 h1) hx
+  · exact hp'
+
+omit [Fact (0 < p)] [DecidableEq G₁] [PrimeOrderWith G₂ p]
+  [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
+private lemma g₁_ne_one_of_srs_gen (τ : ZMod p) (srs : Vector G₁ (n + 1) × Vector G₂ 2)
+    (hsrs : srs = generateSrs (g₁ := g₁) (g₂ := g₂) n τ) (hgen : srs.1[0] ≠ 1) :
+    g₁ ≠ 1 := by
+  rw [hsrs] at hgen
+  simpa [generateSrs, towerOfExponents] using hgen
+
+omit [DecidableEq G₁] [Fact (0 < p)] [Group G₂] [PrimeOrderWith G₂ p]
+  [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
+private lemma zmod_eq_zero_of_gpow_eq_one (hord : orderOf g₁ = p) {a : ZMod p}
+    (ha : g₁ ^ a.val = 1) : a = 0 := by
+  have hdvd := orderOf_dvd_of_pow_eq_one ha
+  rw [hord] at hdvd
+  apply ZMod.val_injective p
+  have hval : a.val = 0 := by
+    by_contra h
+    exact absurd (ZMod.val_lt a) (not_lt.mpr (Nat.le_of_dvd (Nat.pos_of_ne_zero h) hdvd))
+  simpa using hval
+
+omit [DecidableEq G₁] [Fact (0 < p)] [PrimeOrderWith G₁ p]
+  [Module (ZMod p) (Additive G₁)] in
+/-- If two ℕ exponents are equal when cast to `ZMod p`, then `g₁` raised to each is the same. -/
+lemma gpow_eq_of_natCast_eq (hord : orderOf g₁ = p) (a b : ℕ)
+    (hab : ((a : ℕ) : ZMod p) = ((b : ℕ) : ZMod p)) : g₁ ^ a = g₁ ^ b := by
+  conv_lhs => rw [← pow_mod_orderOf, hord]
+  conv_rhs => rw [← pow_mod_orderOf, hord]
+  congr 1
+  have := congr_arg ZMod.val hab
+  rwa [ZMod.val_natCast, ZMod.val_natCast] at this
+
+omit [DecidableEq G₁] [Fact (0 < p)] [PrimeOrderWith G₁ p]
+  [Module (ZMod p) (Additive G₁)] in
+/-- Group division of powers equals the power of the `ZMod p` difference. -/
+lemma gpow_div_eq (hord : orderOf g₁ = p) (a b : ZMod p) :
+    g₁ ^ a.val / g₁ ^ b.val = g₁ ^ (a - b).val := by
+  rw [div_eq_iff_eq_mul, ← pow_add]
+  exact gpow_eq_of_natCast_eq hord _ _ (by push_cast [ZMod.natCast_zmod_val]; ring)
+
+omit [DecidableEq G₁] [Fact (0 < p)] [PrimeOrderWith G₁ p]
+  [Module (ZMod p) (Additive G₁)] in
+/-- Product of `.val`s as exponent equals `ZMod p` product's `.val` as exponent. -/
+lemma gpow_val_mul_eq (hord : orderOf g₁ = p) (a b : ZMod p) :
+    g₁ ^ (a.val * b.val) = g₁ ^ (a * b).val :=
+  gpow_eq_of_natCast_eq hord _ _ (by push_cast [ZMod.natCast_zmod_val]; ring)
+
+omit [DecidableEq G₁] [Fact (0 < p)] [Group G₂] [PrimeOrderWith G₂ p]
+  [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
+private lemma exists_zmod_power_of_generator (hpG1 : Nat.card G₁ = p) (hg₁ : g₁ ≠ 1)
+    (hord : orderOf g₁ = p) (x : G₁) : ∃ a : ZMod p, x = g₁ ^ a.val := by
+  obtain ⟨k, hk⟩ : ∃ k : ℕ, g₁ ^ k = x := mem_powers_of_prime_card hpG1 hg₁
+  exact ⟨(k : ZMod p), by rw [ZMod.val_natCast, ← hk, ← pow_mod_orderOf g₁ k, hord]⟩
+
+omit [Fact (0 < p)] in
 lemma deg_of_Zₛ {S : Finset (ZMod p)} (hcardS : S.card = n) :
   (∏ s ∈ S, (X - C s)).degree ≤ ↑n := by
-  have heq : (∏ s ∈ S, (X - C s : CPolynomial (ZMod p))).toPoly
-      = ∏ s ∈ S, (Polynomial.X - Polynomial.C s) := by
-    have h : ∀ x : CPolynomial (ZMod p), x.toPoly = ringEquiv x := fun _ => rfl
-    simp_rw [h, map_prod, map_sub, ← h, X_toPoly, C_toPoly]
-  rw [degree_toPoly, heq]
+  rw [degree_toPoly, prod_X_sub_C_toPoly S]
   apply Polynomial.degree_le_of_natDegree_le
   calc (∏ s ∈ S, (Polynomial.X - Polynomial.C s)).natDegree
       ≤ ∑ s ∈ S, (Polynomial.X - Polynomial.C s).natDegree :=
@@ -296,6 +387,8 @@ lemma deg_of_Zₛ {S : Finset (ZMod p)} (hcardS : S.card = n) :
     _ = n := hcardS
 
 
+omit [Fact (0 < p)] [PrimeOrderWith G₂ p]
+  [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
 lemma h₁_not_zero (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n) (αᵢ : ZMod p) (τ : ZMod p)
   (srs : Vector G₁ (n + 1) × Vector G₂ 2) (hsrs : srs = generateSrs (g₁ := g₁) (g₂ := g₂) n τ)
   (hgen : srs.1[0] ≠ 1)
@@ -315,39 +408,12 @@ lemma h₁_not_zero (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
       exact choose_S_conflict_τ hn αᵢ τ srs hsrs
     have hZₛeval : Zₛ.eval τ ≠ 0 := by
       unfold Zₛ
-      rw [eval_toPoly]
-      have heq : (∏ s ∈ S, (X - C s)).toPoly = ∏ s ∈ S, (Polynomial.X - Polynomial.C s) := by
-        have h : ∀ x : CPolynomial (ZMod p), x.toPoly = ringEquiv x := fun _ => rfl
-        simp_rw [h, map_prod, map_sub, ← h, X_toPoly, C_toPoly]
-      rw [heq, Polynomial.eval_prod]
-      rw [Finset.prod_ne_zero_iff]
-      intro s hs
-      simp only [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C]
-      intro h
-      apply hτS
-      have : τ = s := sub_eq_zero.mp h
-      rwa [this]
+      exact prod_X_sub_C_eval_ne_zero hτS
     rw [hh₁]
     intro heq
     apply hZₛeval
-    have hg₁ : g₁ ≠ 1 := by
-      rw [hsrs] at hgen
-      simp only [generateSrs, towerOfExponents, Nat.reduceAdd, Vector.getElem_ofFn, pow_zero,
-        pow_one, ne_eq] at hgen
-      exact hgen
-    have hord : orderOf g₁ = p := by
-      have hdvd := orderOf_dvd_natCard (G := G₁) g₁
-      rw [PrimeOrderWith.hCard] at hdvd
-      rcases (Nat.dvd_prime Fact.out).1 hdvd with h1 | hp'
-      · exact absurd (orderOf_eq_one_iff.1 h1) hg₁
-      · exact hp'
-    have hdvd := orderOf_dvd_of_pow_eq_one heq
-    rw [hord] at hdvd
-    have hval : (Zₛ.eval τ).val = 0 := by
-      by_contra h
-      exact absurd (ZMod.val_lt (Zₛ.eval τ)) (not_lt.mpr (Nat.le_of_dvd (by omega) hdvd))
-    calc Zₛ.eval τ = ↑(Zₛ.eval τ).val := (ZMod.natCast_zmod_val _).symm
-      _ = 0 := by simp [hval]
+    exact zmod_eq_zero_of_gpow_eq_one
+      (orderOf_eq_prime_of_ne_one g₁ (g₁_ne_one_of_srs_gen τ srs hsrs hgen)) heq
 
 lemma h₁Zₛ_eq_h₂ (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n) (α₁ α₂ β₁ β₂ τ : ZMod p)
   (c pf₁ pf₂ : G₁) (hα : α₁ = α₂) (hβ : β₁ ≠ β₂) (srs : Vector G₁ (n + 1) × Vector G₂ 2)
@@ -373,43 +439,16 @@ lemma h₁Zₛ_eq_h₂ (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤
     have hτS : ¬ τ ∈ S := choose_S_conflict_τ hn α₁ τ srs hsrs
     have hZₛeval : Zₛ.eval τ ≠ 0 := by
       unfold Zₛ
-      rw [eval_toPoly]
-      have heq : (∏ s ∈ S, (X - C s)).toPoly = ∏ s ∈ S, (Polynomial.X - Polynomial.C s) := by
-        have h : ∀ x : CPolynomial (ZMod p), x.toPoly = ringEquiv x := fun _ => rfl
-        simp_rw [h, map_prod, map_sub, ← h, X_toPoly, C_toPoly]
-      rw [heq, Polynomial.eval_prod, Finset.prod_ne_zero_iff]
-      intro s hs
-      simp only [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C]
-      intro h; apply hτS; rwa [sub_eq_zero.mp h]
+      exact prod_X_sub_C_eval_ne_zero hτS
     have hZsua_eval : Zₛᵤₐ.eval τ = Zₛ.eval τ * (τ - α₁) := by
       unfold Zₛᵤₐ Zₛ
-      rw [eval_toPoly, eval_toPoly]
-      have heqU : (∏ s ∈ S ∪ {α₁}, (X - C s)).toPoly
-          = ∏ s ∈ S ∪ {α₁}, (Polynomial.X - Polynomial.C s) := by
-        have h : ∀ x : CPolynomial (ZMod p), x.toPoly = ringEquiv x := fun _ => rfl
-        simp_rw [h, map_prod, map_sub, ← h, X_toPoly, C_toPoly]
-      have heqS : (∏ s ∈ S, (X - C s)).toPoly
-          = ∏ s ∈ S, (Polynomial.X - Polynomial.C s) := by
-        have h : ∀ x : CPolynomial (ZMod p), x.toPoly = ringEquiv x := fun _ => rfl
-        simp_rw [h, map_prod, map_sub, ← h, X_toPoly, C_toPoly]
-      rw [heqU, heqS, Finset.union_singleton, Finset.prod_insert hα₁S]
-      simp [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C,
-        _root_.mul_comm]
+      exact prod_X_sub_C_insert_eval hα₁S
     have hrhsfield : Zₛ.eval τ * (1 / Zₛᵤₐ.eval τ) = 1 / (τ - α₁) := by
       rw [hZsua_eval, one_div, one_div, mul_inv_rev,
         show (τ - α₁)⁻¹ * (Zₛ.eval τ)⁻¹ = (Zₛ.eval τ)⁻¹ * (τ - α₁)⁻¹ from _root_.mul_comm _ _,
         ← _root_.mul_assoc, mul_inv_cancel₀ hZₛeval, _root_.one_mul]
-    have hg₁ : g₁ ≠ 1 := by
-      rw [hsrs] at hgen
-      simp only [generateSrs, towerOfExponents, Nat.reduceAdd, Vector.getElem_ofFn, pow_zero,
-        pow_one, ne_eq] at hgen
-      exact hgen
-    have hord : orderOf g₁ = p := by
-      have hdvd := orderOf_dvd_natCard (G := G₁) g₁
-      rw [PrimeOrderWith.hCard] at hdvd
-      rcases (Nat.dvd_prime Fact.out).1 hdvd with h1 | hp'
-      · exact absurd (orderOf_eq_one_iff.1 h1) hg₁
-      · exact hp'
+    have hg₁ : g₁ ≠ 1 := g₁_ne_one_of_srs_gen τ srs hsrs hgen
+    have hord : orderOf g₁ = p := orderOf_eq_prime_of_ne_one g₁ hg₁
     have hrhs : h₁ ^ (1 / Zₛᵤₐ.eval τ).val = g₁ ^ (1 / (τ - α₁)).val := by
       rw [hh₁, ← pow_mul, pow_eq_pow_iff_modEq, hord]
       change (Zₛ.eval τ).val * (1 / Zₛᵤₐ.eval τ).val % p = (1 / (τ - α₁)).val % p
@@ -422,15 +461,9 @@ lemma h₁Zₛ_eq_h₂ (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤
       rw [ZMod.val_natCast] at this
       exact this
     /- prove lhs: h₂ = g₁ ^ (1 / (τ - α₁))-/
-    obtain ⟨cm, hc⟩ : ∃ cm : ZMod p, c = g₁ ^ cm.val := by
-      obtain ⟨n, hn⟩ : ∃ n : ℕ, g₁ ^ n = c := mem_powers_of_prime_card hpG1 hg₁
-      exact ⟨(n : ZMod p), by rw [ZMod.val_natCast, ← hn, ← pow_mod_orderOf g₁ n, hord]⟩
-    obtain ⟨prf₁, hprf₁⟩ : ∃ prf₁ : ZMod p, pf₁ = g₁ ^ prf₁.val := by
-      obtain ⟨n, hn⟩ : ∃ n : ℕ, g₁ ^ n = pf₁ := mem_powers_of_prime_card hpG1 hg₁
-      exact ⟨(n : ZMod p), by rw [ZMod.val_natCast, ← hn, ← pow_mod_orderOf g₁ n, hord]⟩
-    obtain ⟨prf₂, hprf₂⟩ : ∃ prf₂ : ZMod p, pf₂ = g₁ ^ prf₂.val := by
-      obtain ⟨n, hn⟩ : ∃ n : ℕ, g₁ ^ n = pf₂ := mem_powers_of_prime_card hpG1 hg₁
-      exact ⟨(n : ZMod p), by rw [ZMod.val_natCast, ← hn, ← pow_mod_orderOf g₁ n, hord]⟩
+    obtain ⟨cm, hc⟩ := exists_zmod_power_of_generator hpG1 hg₁ hord c
+    obtain ⟨prf₁, hprf₁⟩ := exists_zmod_power_of_generator hpG1 hg₁ hord pf₁
+    obtain ⟨prf₂, hprf₂⟩ := exists_zmod_power_of_generator hpG1 hg₁ hord pf₂
     have hfield_verify₁ : cm = prf₁ * (τ - α₁) + β₁ := by
       grind [verifyOpening_equation pairing α₁ β₁ τ cm prf₁ c pf₁ srs hsrs hpair hverify₁ hc hprf₁]
     have hfield_verify₂ : cm = prf₂ * (τ - α₁) + β₂ := by
@@ -450,14 +483,7 @@ lemma h₁Zₛ_eq_h₂ (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤
     have hlhs : h₂ = g₁ ^ (1 / (τ - α₁)).val := by
       simp_rw [h₂]
       rw [hprf₁, hprf₂]
-      have hdiv : g₁ ^ prf₁.val / g₁ ^ prf₂.val = g₁ ^ (prf₁ - prf₂).val := by
-        rw [div_eq_iff_eq_mul, ← pow_add, pow_eq_pow_iff_modEq, hord]
-        have hcast : (((prf₁ - prf₂).val + prf₂.val : ℕ) : ZMod p) = (prf₁.val : ZMod p) := by
-          push_cast [ZMod.natCast_zmod_val]; ring
-        have := congr_arg ZMod.val hcast
-        simp only [ZMod.val_natCast] at this
-        exact this.symm
-      rw [hdiv, ← pow_mul, pow_eq_pow_iff_modEq, hord]
+      rw [gpow_div_eq hord, ← pow_mul, pow_eq_pow_iff_modEq, hord]
       change (prf₁ - prf₂).val * (1 / (β₂ - β₁)).val % p = (1 / (τ - α₁)).val % p
       rw [Nat.mod_eq_of_lt (ZMod.val_lt _)]
       have hcast : (((prf₁ - prf₂).val * (1 / (β₂ - β₁)).val : ℕ) : ZMod p)
@@ -475,10 +501,12 @@ lemma h₁Zₛ_eq_h₂ (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤
 /-- step 4a) find A ⊆ {αᵢ,βᵢ,pfᵢ}, i ∈ [L], such that Lagrange(A).degree = n -/
 def find_A {L : ℕ} (n : ℕ) (query : Fin L → ZMod p) (response : Fin L → ZMod p)
   : Option (Finset (Fin L)) :=
-    let candidateslist := (List.finRange L).sublistsLen (n+1) -- TODO change this to take a Finset (Fin L) instead of finRange L.
+    -- TODO change this to take a Finset (Fin L) instead of finRange L.
+    let candidateslist := (List.finRange L).sublistsLen (n+1)
     let candidates := candidateslist.map List.toFinset
     candidates.find? fun s => (CLagrange.interpolate s query response).degree = n
 
+omit [Fact (0 < p)] in
 lemma find_A_card {L : ℕ} (n : ℕ) (A : Finset (Fin L)) (query : Fin L → ZMod p)
   (response : Fin L → ZMod p) (hres : some (A) = find_A n query response)
   : A.card = n+1 := by
@@ -490,6 +518,7 @@ lemma find_A_card {L : ℕ} (n : ℕ) (A : Finset (Fin L)) (query : Fin L → ZM
   obtain ⟨hl_sub, hl_len⟩ := hl_mem
   rw [← hl_eq, List.toFinset_card_of_nodup ((List.nodup_finRange L).sublist hl_sub), hl_len]
 
+omit [Fact (0 < p)] in
 lemma find_A_deg {L : ℕ} (n : ℕ) (A : Finset (Fin L)) (query : Fin L → ZMod p)
   (response : Fin L → ZMod p)
   (hres : some (A) = find_A n query response)
@@ -514,6 +543,7 @@ private lemma finset_mem_sublistsLen_map {L : ℕ} (s : Finset (Fin L)) (hn : s.
      by rw [Finset.length_sort]; exact hn⟩,
     Finset.sort_toFinset (s := s) (r := (· ≤ ·))⟩
 
+omit [Fact (0 < p)] in
 private lemma interp_degree_le_of_card {L : ℕ} (s : Finset (Fin L))
     (query : Fin L → ZMod p) (response : Fin L → ZMod p)
     (hquery : Function.Injective query) (hn : s.card = n + 1) :
@@ -524,6 +554,7 @@ private lemma interp_degree_le_of_card {L : ℕ} (s : Finset (Fin L))
   simp only [hn, Nat.add_sub_cancel] at hle
   exact hle
 
+omit [Fact (0 < p)] in
 lemma find_A_successful {L : ℕ} (n : ℕ) (hL : n < L) (S : Finset (Fin L)) (query : Fin L → ZMod p)
   (response : Fin L → ZMod p) (hquery : Function.Injective query)
   (hinterp : (CLagrange.interpolate S query response).degree ≥ n)
@@ -543,8 +574,9 @@ lemma find_A_successful {L : ℕ} (n : ℕ) (hL : n < L) (S : Finset (Fin L)) (q
       (h_none s (finset_mem_sublistsLen_map s hs))
   -- Core argument: construct a polynomial of degree < n agreeing with all L values
   -- Pick a subset T of size n
-  obtain ⟨T, -, hTcard⟩ := Finset.exists_subset_card_eq (n := n) (s := (Finset.univ : Finset (Fin L)))
-    (by simp [Finset.card_univ, Fintype.card_fin]; omega)
+  obtain ⟨T, -, hTcard⟩ :=
+    Finset.exists_subset_card_eq (n := n) (s := (Finset.univ : Finset (Fin L)))
+      (by simp [Finset.card_univ, Fintype.card_fin]; omega)
   -- Let Q_T be the Mathlib interpolation over T
   set Q_T := Lagrange.interpolate T query response with hQ_T_def
   have hQ_T_deg : Q_T.degree < ↑n := by
@@ -604,16 +636,18 @@ lemma find_A_successful {L : ℕ} (n : ℕ) (hL : n < L) (S : Finset (Fin L)) (q
   -- Contradiction: interp over S has degree ≥ n but Q_T has degree < n
   exact absurd (hP_eq ▸ hQ_T_deg) (not_lt.mpr hinterp_poly)
 
-/-- step 4b) Assume A has size n+1, check all n-sized subsets of A until you find a subset whose interpolation
-commitment differs from the adversaries commitment c. -/
+/-- step 4b) Assume A has size n+1, check all n-sized subsets of A until you find a
+subset whose interpolation commitment differs from the adversaries commitment c. -/
 def find_S' {L : ℕ} (n : ℕ) (A : Finset (Fin L)) (c : G₁)
-  (srs : Vector G₁ (n + 1) × Vector G₂ 2) (query : Fin L → ZMod p) (response : Fin L → ZMod p)
+  (srs : Vector G₁ (n + 1) × Vector G₂ 2) (query : Fin L → ZMod p)
+  (response : Fin L → ZMod p)
   : Option (Finset (Fin L)) :=
     let candidateslist := (A.sort (· ≤ ·)).sublistsLen (n+1)
     let candidates := candidateslist.map List.toFinset
     candidates.find? fun s =>
       commit srs.1 ((CLagrange.interpolate s query response).val.coeff ∘ Fin.val) ≠ c
 
+omit [Fact (0 < p)] in
 lemma find_S'_existence {L : ℕ} (n : ℕ) (τ c : ZMod p) (A : Finset (Fin L))
   (query : Fin L → ZMod p) (response : Fin L → ZMod p)
   (hA : (CLagrange.interpolate A query response).degree = n + 1)
@@ -748,7 +782,9 @@ private lemma finset_subset_mem_sublistsLen_map {L : ℕ} (S A : Finset (Fin L))
      by rw [Finset.length_sort]; exact hn⟩,
     Finset.sort_toFinset (s := S) (r := (· ≤ ·))⟩
 
-lemma find_S'_successful {L : ℕ} (n : ℕ) (τ: ZMod p) (c : G₁) (A : Finset (Fin L))
+omit [Fact (0 < p)] [PrimeOrderWith G₂ p] [Module (ZMod p) (Additive G₁)]
+  [Module (ZMod p) (Additive G₂)] in
+lemma find_S'_successful {L : ℕ} (n : ℕ) (τ : ZMod p) (c : G₁) (A : Finset (Fin L))
   (query : Fin L → ZMod p) (response : Fin L → ZMod p) (srs : Vector G₁ (n + 1) × Vector G₂ 2)
   (hsrs : srs = generateSrs (g₁ := g₁) (g₂ := g₂) n τ) (hgen : srs.1[0] ≠ 1)
   (hA : (CLagrange.interpolate A query response).degree = n + 1)
@@ -762,25 +798,10 @@ lemma find_S'_successful {L : ℕ} (n : ℕ) (τ: ZMod p) (c : G₁) (A : Finset
   unfold find_S' at h_none
   rw [List.find?_eq_none] at h_none
   simp only [decide_eq_true_eq, not_not] at h_none
-  -- Derive g₁ ≠ 1
-  have hg₁ : g₁ ≠ 1 := by
-    rw [hsrs] at hgen
-    simp only [generateSrs, towerOfExponents, Nat.reduceAdd, Vector.getElem_ofFn, pow_zero,
-      pow_one, ne_eq] at hgen
-    exact hgen
-  -- Derive orderOf g₁ = p
+  have hg₁ : g₁ ≠ 1 := g₁_ne_one_of_srs_gen τ srs hsrs hgen
   have hpG1 : Nat.card G₁ = p := PrimeOrderWith.hCard
-  have hord : orderOf g₁ = p := by
-    have hdvd := orderOf_dvd_natCard (G := G₁) g₁
-    rw [hpG1] at hdvd
-    rcases (Nat.dvd_prime Fact.out).1 hdvd with h1 | hp'
-    · exact absurd (orderOf_eq_one_iff.1 h1) hg₁
-    · exact hp'
-  -- Express c as g₁ ^ c'.val for some c' : ZMod p
-  obtain ⟨k, hk⟩ : ∃ k : ℕ, g₁ ^ k = c := mem_powers_of_prime_card hpG1 hg₁
-  set c' : ZMod p := (k : ZMod p) with hc'_def
-  have hc_eq : c = g₁ ^ c'.val := by
-    rw [ZMod.val_natCast, ← hk, ← pow_mod_orderOf g₁ k, hord]
+  have hord : orderOf g₁ = p := orderOf_eq_prime_of_ne_one g₁ hg₁
+  obtain ⟨c', hc_eq⟩ := exists_zmod_power_of_generator hpG1 hg₁ hord c
   -- For every candidate S, commit = c means eval τ = c'
   have h_all_eq : ∀ S ⊆ A, S.card = n + 1 →
       (CLagrange.interpolate S query response).eval τ = c' := by
@@ -813,6 +834,8 @@ lemma find_S'_successful {L : ℕ} (n : ℕ) (τ: ZMod p) (c : G₁) (A : Finset
   obtain ⟨S₀, hS₀_sub, hS₀_card, hS₀_ne⟩ := find_S'_existence n τ c' A query response hA hquery hn
   exact hS₀_ne (h_all_eq S₀ hS₀_sub hS₀_card)
 
+omit [Fact (0 < p)] [Group G₂] [PrimeOrderWith G₂ p]
+  [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
 lemma find_S'_card
   {L : ℕ} (n : ℕ) (c : G₁) (A S : Finset (Fin L))
   (srs : Vector G₁ (n + 1) × Vector G₂ 2) (query : Fin L → ZMod p)
@@ -826,6 +849,8 @@ lemma find_S'_card
     obtain ⟨hl_sub, hl_len⟩ := hl_mem
     rw [← hl_eq, List.toFinset_card_of_nodup ((A.sort_nodup (· ≤ ·)).sublist hl_sub), hl_len]
 
+omit [Fact (0 < p)] [Group G₂] [PrimeOrderWith G₂ p]
+  [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
 lemma find_S'_diverges
   {L : ℕ} (n : ℕ) (c : G₁) (A S : Finset (Fin L))
   (query : Fin L → ZMod p) (response : Fin L → ZMod p) (srs : Vector G₁ (n + 1) × Vector G₂ 2)
@@ -862,6 +887,7 @@ private lemma Zₛ_toPoly_eq_nodal {L : ℕ} (S : Finset (Fin L))
   exact Finset.prod_image (f := fun s => Polynomial.X - Polynomial.C s)
     (hquery.injOn (s := ↑S))
 
+omit [Fact (0 < p)] in
 private lemma divByMonic_Zₛ_toPoly_eq_nodal_erase {L : ℕ}
     (S : Finset (Fin L)) (query : Fin L → ZMod p)
     (hquery : Function.Injective query) (i : Fin L) (hi : i ∈ S) :
@@ -878,6 +904,7 @@ private lemma divByMonic_Zₛ_toPoly_eq_nodal_erase {L : ℕ}
     Lagrange.nodal_eq_mul_nodal_erase hi]
   exact Polynomial.mul_divByMonic_cancel_left _ (Polynomial.monic_X_sub_C _)
 
+omit [Fact (0 < p)] in
 lemma lagrange_Zₛ_conversion {L : ℕ} (τ : ZMod p) (S : Finset (Fin L)) (query : Fin L → ZMod p)
   (response : Fin L → ZMod p) (hτ : ∀ i ∈ S, (query i) ≠ τ) (hquery : Function.Injective query)
   : let Zₛ := ∏ s ∈ S.image query, (X - C s)
@@ -917,29 +944,7 @@ lemma lagrange_Zₛ_conversion {L : ℕ} (τ : ZMod p) (S : Finset (Fin L)) (que
   have hτqi_ne : τ - query i ≠ 0 := sub_ne_zero.mpr (hτ' i hi)
   field_simp
 
-omit [DecidableEq G₁] [Fact (0 < p)] [Module (ZMod p) (Additive G₁)] in
-/-- If two ℕ exponents are equal when cast to `ZMod p`, then `g₁` raised to each is the same. -/
-lemma gpow_eq_of_natCast_eq (hord : orderOf g₁ = p) (a b : ℕ)
-    (hab : ((a : ℕ) : ZMod p) = ((b : ℕ) : ZMod p)) : g₁ ^ a = g₁ ^ b := by
-  conv_lhs => rw [← pow_mod_orderOf, hord]
-  conv_rhs => rw [← pow_mod_orderOf, hord]
-  congr 1
-  have := congr_arg ZMod.val hab
-  rwa [ZMod.val_natCast, ZMod.val_natCast] at this
-
-omit [DecidableEq G₁] [Fact (0 < p)] [Module (ZMod p) (Additive G₁)] in
-/-- Group division of powers equals the power of the `ZMod p` difference. -/
-lemma gpow_div_eq (hord : orderOf g₁ = p) (a b : ZMod p) :
-    g₁ ^ a.val / g₁ ^ b.val = g₁ ^ (a - b).val := by
-  rw [div_eq_iff_eq_mul, ← pow_add]
-  exact gpow_eq_of_natCast_eq hord _ _ (by push_cast [ZMod.natCast_zmod_val]; ring)
-
-omit [DecidableEq G₁] [Fact (0 < p)] [Module (ZMod p) (Additive G₁)] in
-/-- Product of `.val`s as exponent equals `ZMod p` product's `.val` as exponent. -/
-lemma gpow_val_mul_eq (hord : orderOf g₁ = p) (a b : ZMod p) :
-    g₁ ^ (a.val * b.val) = g₁ ^ (a * b).val :=
-  gpow_eq_of_natCast_eq hord _ _ (by push_cast [ZMod.natCast_zmod_val]; ring)
-
+omit [DecidableEq G₁] in
 lemma h₁Zₛ_eq_h₂' {L : ℕ} (n : ℕ) (τ : ZMod p) (cm : G₁) (S : Finset (Fin L))
   (query : Fin L → ZMod p) (response : Fin L → ZMod p) (proofs : Fin L → G₁)
   (srs : Vector G₁ (n + 1) × Vector G₂ 2) (hn : 1 ≤ n)
@@ -956,6 +961,7 @@ lemma h₁Zₛ_eq_h₂' {L : ℕ} (n : ℕ) (τ : ZMod p) (cm : G₁) (S : Finse
       -- 1/(Z_{S \ {α}}(α))
     let h₂ : G₁ := ∏ i ∈ S, (proofs i) ^ (d (query i)).val
     h₂ = h₁ ^ (1 / Zₛ.eval τ).val := by
+    letI := Classical.decEq G₁
     intro Zₛ c' h₁ d h₂
     unfold h₁ h₂
     -- rewrite the equation to g₁^{*equation*} (expose the field values)
@@ -966,24 +972,12 @@ lemma h₁Zₛ_eq_h₂' {L : ℕ} (n : ℕ) (τ : ZMod p) (cm : G₁) (S : Finse
       exact commit_eq_CPolynomial (g₁ := g₁) hpG1
         (CLagrange.interpolate S query response) hS
     rw [hcommit_rw]
-    have hg₁ : g₁ ≠ 1 := by
-      rw [hsrs] at hgen
-      simp only [generateSrs, towerOfExponents, Nat.reduceAdd, Vector.getElem_ofFn, pow_zero,
-        pow_one, ne_eq] at hgen
-      exact hgen
-    have hord : orderOf g₁ = p := by
-      have hdvd := orderOf_dvd_natCard (G := G₁) g₁
-      rw [hpG1] at hdvd
-      rcases (Nat.dvd_prime Fact.out).1 hdvd with h1 | hp'
-      · exact absurd (orderOf_eq_one_iff.1 h1) hg₁
-      · exact hp'
-    obtain ⟨cm', hcm⟩ : ∃ cm' : ZMod p, cm = g₁ ^ cm'.val := by
-      obtain ⟨k, hk⟩ : ∃ k : ℕ, g₁ ^ k = cm := mem_powers_of_prime_card hpG1 hg₁
-      exact ⟨(k : ZMod p), by rw [ZMod.val_natCast, ← hk, ← pow_mod_orderOf g₁ k, hord]⟩
+    have hg₁ : g₁ ≠ 1 := g₁_ne_one_of_srs_gen τ srs hsrs hgen
+    have hord : orderOf g₁ = p := orderOf_eq_prime_of_ne_one g₁ hg₁
+    obtain ⟨cm', hcm⟩ := exists_zmod_power_of_generator hpG1 hg₁ hord cm
     have hproofs_pow : ∀ i, ∃ prf : ZMod p, proofs i = g₁ ^ prf.val := by
       intro i
-      obtain ⟨k, hk⟩ : ∃ k : ℕ, g₁ ^ k = proofs i := mem_powers_of_prime_card hpG1 hg₁
-      exact ⟨(k : ZMod p), by rw [ZMod.val_natCast, ← hk, ← pow_mod_orderOf g₁ k, hord]⟩
+      exact exists_zmod_power_of_generator hpG1 hg₁ hord (proofs i)
     choose prf hprf using hproofs_pow
     rw [hcm]
     simp_rw [hprf]
@@ -1058,7 +1052,8 @@ lemma h₁Zₛ_eq_h₂' {L : ℕ} (n : ℕ) (τ : ZMod p) (cm : G₁) (S : Finse
 
 -- put all steps together
 
-/-- These are steps 3 and 4 of the reduction listed in the paper (Proof of Lemma 9.1 in https://eprint.iacr.org/2025/902.pdf) -/
+/-- These are steps 3 and 4 of the reduction listed in the paper (Proof of Lemma 9.1
+in https://eprint.iacr.org/2025/902.pdf) -/
 def map_FB_instance_to_ARSDH_inst' {L : ℕ} (hn : 1 ≤ n)
   (val : (Vector G₁ (n + 1) × Vector G₂ 2) × G₁ ×
     (Fin L → ZMod p) × (Fin L → ZMod p) × (Fin L → Bool) × (Fin L → G₁))
@@ -1066,7 +1061,8 @@ def map_FB_instance_to_ARSDH_inst' {L : ℕ} (hn : 1 ≤ n)
   do
   let (srs, cm, queryOf, responseOf, _accepts, proofs) := val
   let points := List.ofFn (fun (i : Fin L) => (queryOf i, responseOf i, proofs i))
-  if let some ((α₁,β₁,pf₁),(α₂,β₂,pf₂)) := find_conflict points then -- TODO update find conflicts to use index maps instead of points lists
+  -- TODO update find conflicts to use index maps instead of points lists
+  if let some ((α₁,β₁,pf₁),(α₂,β₂,pf₂)) := find_conflict points then
     -- step 3
     let S := choose_S_conflict α₁ srs hn
     let Zₛ := ∏ s ∈ S, (X - C s)
@@ -1085,10 +1081,12 @@ def map_FB_instance_to_ARSDH_inst' {L : ℕ} (hn : 1 ≤ n)
     -- h₂ = h₁ ^ (1 / Zₛ.eval τ).val with h₁:= g₁
   else
     -- step 4
-    let A ← find_A (n+1) queryOf responseOf --TODO add Finset for query and reponse here TODO was n+1
+    -- TODO add Finset for query and reponse here
+    let A ← find_A (n+1) queryOf responseOf
     let S ← find_S' n A cm srs queryOf responseOf
     let Zₛ := ∏ s ∈ S.image queryOf, (X - C s)
-    let c' : G₁ := commit srs.1 ((CLagrange.interpolate S queryOf responseOf).val.coeff ∘ Fin.val)
+    let c' : G₁ :=
+      commit srs.1 ((CLagrange.interpolate S queryOf responseOf).val.coeff ∘ Fin.val)
     let h₁ := cm / c'
     let d := fun α => 1 / eval α (divByMonic Zₛ (X - C α))
       -- 1/(Z_{S \ {α}}(α))
@@ -1231,7 +1229,8 @@ def FB_game_ext {n L : ℕ} {g₁ : G₁} {g₂ : G₂} (AuxState : Type)
               OracleInterface.Response q))) stateOf
         let accepts : Option (Fin L → Bool) :=
           resultPairs.map (fun resultOf => fun i => (resultOf i).1)
-        let proofs : Option (Fin L → G₁) := resultPairs.map (fun resultOf => fun i => (resultOf i).2)
+        let proofs : Option (Fin L → G₁) :=
+          resultPairs.map (fun resultOf => fun i => (resultOf i).2)
         pure (accepts.bind (fun accepts => proofs.map (fun proofs =>
           (τ, srs, cm, queryOf, ((fun i => responseOf i) : Fin L → ZMod p), accepts, proofs))))
       : OracleComp _ _)).run' ∅
@@ -1312,7 +1311,7 @@ lemma Vector.mapM_bind_map_eq {m : Type → Type} {α β γ δ : Type} {n : ℕ}
   intro opts
   exact hpost opts
 
-omit [DecidableEq G₁] in
+omit [DecidableEq G₁] [Fact (0 < p)] in
 /-- Transition 1: extending output for proofs and commitment preserves the condition -/
 lemma FB_game_ext_eq_FB_game {n L : ℕ} {AuxState : Type} [SampleableType G₁]
     (adversary : KZGFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState) :
@@ -1690,8 +1689,6 @@ lemma FB_cond_le_ARSDH_cond {n L : ℕ} {AuxState : Type} [SampleableType G₁]
   unfold map_FB_instance_to_ARSDH_inst map_FB_instance_to_ARSDH_inst'
   simp only [one_div, Finset.union_singleton, Option.pure_def, beq_iff_eq, Option.bind_eq_bind,
     Function.comp_apply]
-
-
   -- first branch from map_FB_instance_to_ARSDH_inst'
   set fc := find_conflict (List.ofFn fun i ↦ (queryOf i, responseOf i, proofs i)) with hfc_def
   cases hfc : fc with
@@ -1784,8 +1781,6 @@ lemma FB_cond_le_ARSDH_cond {n L : ℕ} {AuxState : Type} [SampleableType G₁]
             hp PrimeOrderWith.hCard hn α₁ α₂ β₁ β₂ τ cm pf₁ pf₂
             hα hβ srs hsrs hgen hpair hverify₁ hverify₂
           simpa [Finset.union_singleton, one_div] using key
-
-
   | none => -- second branch from map_FB_instance_to_ARSDH_inst'
       set fs := List.findSome?
         (fun i ↦ if srs.1[0] ^ (queryOf i).val = srs.1[1] then some (queryOf i) else none)
@@ -1809,13 +1804,7 @@ lemma FB_cond_le_ARSDH_cond {n L : ℕ} {AuxState : Type} [SampleableType G₁]
               rw [← hbody]; exact hif
             · rw [if_neg hif] at hbody
               exact absurd hbody (by simp)
-          -- The order of `g₁` is `p`.
-          have hord : orderOf g₁ = p := by
-            have hdvd := orderOf_dvd_natCard (G := G₁) g₁
-            rw [PrimeOrderWith.hCard] at hdvd
-            rcases (Nat.dvd_prime Fact.out).1 hdvd with h1 | hp'
-            · exact absurd (orderOf_eq_one_iff.1 h1) hg₁
-            · exact hp'
+          have hord : orderOf g₁ = p := orderOf_eq_prime_of_ne_one g₁ hg₁
           -- Identify `srs.1[0] = g₁` and `srs.1[1] = g₁ ^ τ.val`.
           have h_srs0 : srs.1[0] = g₁ := by
             rw [hsrs]; simp [generateSrs, towerOfExponents]
@@ -1850,13 +1839,11 @@ lemma FB_cond_le_ARSDH_cond {n L : ℕ} {AuxState : Type} [SampleableType G₁]
             exact hgen
           · -- `h₂ = h₁ ^ (1 / eval τ Zₛ).val`
             rw [hα_τ]
-
-
       | none => -- third branch from map_FB_instance_to_ARSDH_inst'
           set fa := find_A (n+1) queryOf responseOf with hfa_def
-          -- The interpolation has degree ≥ n + 1, since otherwise its first n + 1 coefficients would witness a
-          -- degree-`n` polynomial fitting all `(queryOf i, responseOf i)` pairs, contradicting the
-          -- function-binding hypothesis `hFBcond`.
+          -- The interpolation has degree ≥ n + 1, since otherwise its first n + 1
+          -- coefficients would witness a degree-`n` polynomial fitting all pairs,
+          -- contradicting the function-binding hypothesis `hFBcond`.
           have hquery : Function.Injective queryOf := hFBcond.2.2
           have huniv_deg : (↑(n + 1) : WithBot ℕ) ≤
               (CLagrange.interpolate (Finset.univ : Finset (Fin L))
@@ -2054,7 +2041,7 @@ lemma FB_cond_le_ARSDH_cond {n L : ℕ} {AuxState : Type} [SampleableType G₁]
               rw [hnone] at hsome
               simp at hsome
 
-omit [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
+omit [Fact (0 < p)] [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
 /-- Transition 3: dragging the map into the probability event -/
 lemma map_instance_drag {n L : ℕ} {AuxState : Type} [SampleableType G₁]
     (hn : 1 ≤ n) (adversary : KZGFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState)
@@ -2127,6 +2114,7 @@ lemma OptionT.simulateQ_liftComp_bind_map_eq_of_body
       (impl := impl) (impl₀ := impl₀) (sample := sample) (body₁ := body₁)
       (body₂ := body₂) (f := f) (post := post) (s := s) hSample hBody)
 
+omit [Fact (0 < p)] in
 /-- Transition 4: the mapped game equals the ARSDH experiment -/
 lemma ARSDH_game_eq {n L : ℕ} {AuxState : Type} [SampleableType G₁]
     (hn : 1 ≤ n) (adversary : KZGFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState) :
@@ -2167,7 +2155,8 @@ lemma ARSDH_game_eq {n L : ℕ} {AuxState : Type} [SampleableType G₁]
               OracleInterface.Response q))) stateOf
         let accepts : Option (Fin L → Bool) :=
           resultPairs.map (fun resultOf => fun i => (resultOf i).1)
-        let proofs : Option (Fin L → G₁) := resultPairs.map (fun resultOf => fun i => (resultOf i).2)
+        let proofs : Option (Fin L → G₁) :=
+          resultPairs.map (fun resultOf => fun i => (resultOf i).2)
         pure (accepts.bind (fun accepts => proofs.map (fun proofs =>
           (τ, srs, cm, queryOf, ((fun i => responseOf i) : Fin L → ZMod p), accepts, proofs))))
       )
@@ -2207,16 +2196,19 @@ lemma ARSDH_game_eq {n L : ℕ} {AuxState : Type} [SampleableType G₁]
         cases resultPairs <;> rfl
       )
 
-
+omit [Fact (0 < p)] in
 /-- The ARSDH experiment is bounded by the ARSDH error -/
-lemma ARSDH_error_bound {n L : ℕ} {AuxState : Type} [SampleableType G₁] (hn : 1 ≤ n) (ARSDHerror : ℝ≥0)
-    (hARSDH : Groups.ARSDHAssumption (G₁ := G₁) (G₂ := G₂) (g₁ := g₁) (g₂ := g₂) n ARSDHerror)
+lemma ARSDH_error_bound {n L : ℕ} {AuxState : Type} [SampleableType G₁]
+    (hn : 1 ≤ n) (ARSDHerror : ℝ≥0)
+    (hARSDH : Groups.ARSDHAssumption (G₁ := G₁) (G₂ := G₂)
+      (g₁ := g₁) (g₂ := g₂) n ARSDHerror)
     (adversary : KZGFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState) :
     Groups.ARSDH_Experiment (g₁ := g₁) (g₂ := g₂) n (reduction (g₁ := g₁) (g₂ := g₂)
       (pairing := pairing) L hn AuxState adversary)
     ≤ ARSDHerror := by
   simp_all [Groups.ARSDHAssumption]
 
+omit [DecidableEq G₁] in
 /- the KZG satisfies function binding as defined in `CommitmentScheme` provided ARSDH holds. -/
 theorem functionBinding {g₁ : G₁} {g₂ : G₂}
     (L : ℕ) (hn : 1 ≤ n) (hp : p ≥ n + 2) (hg₁ : g₁ ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
@@ -2226,6 +2218,7 @@ theorem functionBinding {g₁ : G₁} {g₂ : G₂}
     Commitment.functionBinding (L := L) (init := pure ∅) (impl := randomOracle)
       (hn := rfl) (hpSpec := { prover_first' := by simp }) AuxState
       (KZG (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) ARSDHerror := by
+  letI := Classical.decEq G₁
   letI scheme := KZG (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
   simp only [Commitment.functionBinding]
   intro adversary

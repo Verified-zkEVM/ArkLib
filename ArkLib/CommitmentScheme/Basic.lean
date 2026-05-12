@@ -9,12 +9,14 @@ import ArkLib.OracleReduction.Security.Basic
 import ArkLib.Data.Fin.Fold
 
 /-!
-  # Commitment Schemes with Oracle Openings
+  # Functional Commitment Schemes (with Oracle Openings)
 
   A commitment scheme, relative to an oracle `oSpec : OracleSpec ι`, and for a given function
   `oracle : Data → Query → Response` transforming underlying data `Data` into an oracle `Query →
-  Response`, is a tuple of two operations:
+  Response`, is a tuple of three operations:
 
+  - KeyGen, which is a function `keygen : OracleComp oSpec (ComKey × VerifKey)` that samples keys
+    for the committer and the verifier.
   - Commit, which is a function `commit : Data → OracleComp oSpec (Commitment × Decommitment)`.
     The `Decommitment` value captures any auxiliary information (e.g. blinding randomness) produced
     during the commit phase that is needed to open the commitment later.
@@ -176,7 +178,7 @@ def extractability (scheme : Scheme oSpec Data Commitment Decommitment ComKey Ve
   ∀ AuxState : Type,
   ∀ adversary : ExtractabilityAdversary oSpec Data Commitment AuxState,
   ∀ prover : Prover oSpec (Commitment × (q : O.Query) × O.Response q) AuxState Bool Unit pSpec,
-    False
+    False --TODO fill this in from the EPFL paper.
     -- [ fun ⟨b, d, q, r⟩ => b ∧ O.answer d q = r | do
     --     let result ← liftM (simulate loggingOracle ∅ adversary)
     --     let ⟨⟨cm, query, response, st⟩, queryLog⟩ := result
