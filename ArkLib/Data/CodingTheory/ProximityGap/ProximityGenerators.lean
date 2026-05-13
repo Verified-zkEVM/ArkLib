@@ -112,10 +112,10 @@ lemma error_in_unit_interval (d : ℕ) (m : ℕ) (hm_pos : 0 < m) (hdm : d ≤ m
 
 /-- The minimum of the cardinality of a family of sets nonempty sets, indexed by a possibly empty
 set. Returns 1 if the indexing set is empty. -/
-noncomputable def minSeedCard {F : Type} {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype ↥(S i)] : ℕ :=
+def minSeedCard {F : Type} {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype ↥(S i)] : ℕ :=
   if h : 0 < s then
     Finset.inf' Finset.univ (Finset.univ_nonempty_iff.mpr (Fin.pos_iff_nonempty.mp h))
-      (fun i => (S i).toFinset.card)
+      (fun i => Fintype.card ↥(S i))
   else 1
 
 /-- The minimum of the cardinality of a family of nonempty sets indexed by a posibly empty set is
@@ -123,17 +123,19 @@ greater than zero. -/
 lemma minSeedCard_pos {F : Type} {s : ℕ} (S : Fin s → Set F)
     [∀ i, Fintype ↥(S i)] [∀ i, Nonempty ↥(S i)] :
     0 < minSeedCard S := by
-  unfold minSeedCard;
-  split_ifs <;> simp_all;
+  unfold minSeedCard
+  split_ifs <;> simp_all
+
 
 /-- The minimum of the cardinality of a family of nonempty sets is smaller than the cardinality of
 each set in the family. -/
 lemma minSeedCard_le {F : Type} {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype ↥(S i)]
 (hs : 0 < s) (i : Fin s) : minSeedCard S ≤ (S i).toFinset.card := by
-  unfold minSeedCard;
-  split_ifs ; aesop
+  unfold minSeedCard
+  split_ifs
+  aesop
 
-noncomputable instance {F : Type} [Fintype F] {S : Set F} : Fintype S := Fintype.ofFinite ↑S
+noncomputable local instance {F : Type} [Fintype F] {S : Set F} : Fintype S := Fintype.ofFinite ↑S
 
 /-- If `G` is a polynomial generator, then `G` is zero-evading with error the maximum of the total
 degrees of the individual polynomials divided by the size of the smallest evaluation sets `S i`.
@@ -155,15 +157,15 @@ theorem poly_gen_is_zero_evading
   classical
   unfold IsZeroEvadingGenerator;
   simp only [ne_eq, bind_pure_comp, sSup_le_iff, Set.mem_setOf_eq, forall_exists_index,
-    and_imp];
+    and_imp]
   intros b x hx hb
-  rw [hb];
+  rw [hb]
   convert prob_eval_zero_le_div (∑ j, x j • P j) _ (maxTotalDegree P) (minSeedCard S) _ _ _ using 1;
   any_goals intro i; exact minSeedCard_le S (Fin.pos_iff_nonempty.mpr ⟨i⟩) i;
-  any_goals assumption;
-  · convert rfl;
-    ext; simp +decide [MvPolynomial.dotProduct_eq_eval_linearCombination, hG.2] ;
-  · rw [ENNReal.ofReal_div_of_pos] <;> norm_cast;
+  any_goals assumption
+  · convert rfl
+    ext; simp +decide [MvPolynomial.dotProduct_eq_eval_linearCombination, hG.2]
+  · rw [ENNReal.ofReal_div_of_pos] <;> norm_cast
     exact minSeedCard_pos S
   · exact LinearCombination.linearCombination_ne_zero hG.1 hx
   · exact MvPolynomial.totalDegree_linearCombination_le _ _ _ fun j =>
