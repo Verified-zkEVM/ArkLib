@@ -127,7 +127,7 @@ algorithm.
 set_option linter.style.induction false
 set_option linter.unusedDecidableInType false
 set_option linter.unusedFintypeInType false
-set_option linter.style.longFile 1700
+set_option linter.style.longFile 1900
 
 namespace ReedSolomon
 
