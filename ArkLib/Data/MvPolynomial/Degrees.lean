@@ -106,19 +106,17 @@ theorem degrees_eval [DecidableEq σ] {τ : Type*} {f : τ → R} {p : R[X σ][X
   exact degrees_mul_C_le _ _
 
 /-- The max total degree of a family of multivariate polynomials. -/
-noncomputable def maxTotalDegree {F : Type} [CommSemiring F] {s : ℕ} {ℓ : Type} [Fintype ℓ]
+noncomputable def maxTotalDegree {F : Type*} [CommSemiring F] {s : ℕ} {ℓ : Type*} [Fintype ℓ]
     (P : ℓ → MvPolynomial (Fin s) F) : ℕ := Finset.sup Finset.univ (fun j => (P j).totalDegree)
 
 /-- The total degree of a linear combination is at most the maximum of the total degrees. -/
 theorem totalDegree_linearCombination_le
-    {F : Type} [Field F] {s : ℕ} {ℓ : Type} [Fintype ℓ]
+    {F : Type*} [Field F] {s : ℕ} {ℓ : Type*} [Fintype ℓ]
     (P : ℓ → MvPolynomial (Fin s) F) (v : ℓ → F) (d : ℕ)
     (hd : ∀ j, (P j).totalDegree ≤ d) :
     (∑ j : ℓ, v j • P j).totalDegree ≤ d := by
-  have h_total_degree_sum : ∀ (L : Finset ℓ) (f : ℓ → MvPolynomial (Fin s) F),
-      (∀ j ∈ L, (f j).totalDegree ≤ d) → (Finset.sum L (fun j => f j)).totalDegree ≤ d := by
-    exact fun L f a => MvPolynomial.totalDegree_finsetSum_le a
-  convert h_total_degree_sum Finset.univ (fun j => v j • P j) fun j _ => _
+  apply MvPolynomial.totalDegree_finsetSum_le
+  intro j _
   exact le_trans (MvPolynomial.totalDegree_smul_le _ _) (hd j)
 
 /-- The dot product `G(x) • v` equals the evaluation of the linear combination `∑ v_j P_j`
@@ -195,7 +193,6 @@ theorem mem_restrictDegree_iff_degreeOf_le (p : MvPolynomial σ R) (n : ℕ) :
   simp only [degreeOf]
 
 end DegreeOf
-
 
 section Equiv
 
