@@ -176,8 +176,8 @@ namespace LinearCombination
 
 /-- A nonzero linear combination of linearly independent vectors is nonzero. -/
 theorem linearCombination_ne_zero
-    {F : Type} [Field F] {ℓ : Type} [Fintype ℓ]
-    {M : Type} [AddCommMonoid M] [Module F M]
+    {F : Type*} [Field F] {ℓ : Type*} [Fintype ℓ]
+    {M : Type*} [AddCommMonoid M] [Module F M]
     {P : ℓ → M} (hP : LinearIndependent F P)
     {v : ℓ → F} (hv : v ≠ 0) :
     ∑ j : ℓ, v j • P j ≠ 0 := by
