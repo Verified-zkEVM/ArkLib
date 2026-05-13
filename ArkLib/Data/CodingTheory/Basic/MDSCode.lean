@@ -3,24 +3,23 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova
 -/
+
 import ArkLib.Data.CodingTheory.Basic.LinearCode
 import Mathlib.Data.Int.Star
-import Mathlib.RingTheory.PicardGroup
-import Mathlib.RingTheory.SimpleRing.Principal
 
 /-!
-# Basics of MDS codes and MDS matrices
+ # Basics of MDS codes and MDS matrices
 
 Lay out the fundamental definitions and theorems for maximum distance separable (MDS) codes and
 matrices. Establish an equivalence theorem : A linear code is MDS if and only if its generator
 matrix is MDS.
 
-## References
+  ## References
 
 * [Guruswami, V., Rudra, A., Sudan M., *Essential Coding Theory*, online copy][GRS25]
 -/
 
-namespace MDSCode
+namespace CoreResults
 
 variable {F : Type*}
          {k n : ℕ}
@@ -42,160 +41,121 @@ lemma minWt_ge_of_MDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n) F}
     ≥ n - k + 1 :=
   by
     rcases le_or_gt k (Finset.card (Finset.filter (fun j => c j = 0) Finset.univ))
-            with h | h <;> simp only [ge_iff_le, Order.add_one_le_iff];
+            with h | h <;> simp only [ge_iff_le, Order.add_one_le_iff]
     · have h_contra : ∃ σ : Fin k ↪ Fin n, ∀ j, c (σ j) = 0 := by
         obtain ⟨s, hs⟩ : ∃ s : Finset (Fin n), s.card = k ∧ ∀ j ∈ s, c j = 0 := by
-          exact Exists.elim (Finset.exists_subset_card_eq h) fun s hs => ⟨ s, hs.2, fun j hj =>
-          Finset.mem_filter.mp ( hs.1 hj ) |>.2⟩;
+          exact Exists.elim (Finset.exists_subset_card_eq h) fun s hs => ⟨s, hs.2, fun j hj =>
+          Finset.mem_filter.mp ( hs.1 hj ) |>.2⟩
         exact ⟨⟨fun j => s.orderEmbOfFin (by aesop) j, fun j j' h => by aesop⟩,
-          fun j => hs.2 _ (by aesop)⟩;
+          fun j => hs.2 _ (by aesop)⟩
       obtain ⟨σ, hσ⟩ := h_contra
       have h_det : Matrix.det (Matrix.submatrix G id σ) = 0 := by
         have h_contra : ∃ v : Fin k → F, v ≠ 0 ∧ Matrix.vecMul v (Matrix.submatrix G id σ) = 0 := by
-          obtain ⟨v, hv⟩ := hc_mem;
-          refine ⟨v, ?_, ?_⟩ <;> contrapose! hc_ne <;> simp_all [funext_iff, Matrix.vecMul];
-          grind;
+          obtain ⟨v, hv⟩ := hc_mem
+          refine ⟨v, ?_, ?_⟩ <;> contrapose! hc_ne <;> simp_all +decide [funext_iff, Matrix.vecMul]
+          grind
         exact Matrix.exists_vecMul_eq_zero_iff.mp h_contra;
-      have := hMDS σ; aesop;
-    · refine Nat.sub_lt_sub_left ?_ h;
-      by_contra h_contra;
+      have := hMDS σ
+      aesop
+    · refine Nat.sub_lt_sub_left ?_ h
+      by_contra h_contra
       exact hc_ne (funext fun j => by_contradiction fun hj =>
       h_contra <| lt_of_lt_of_le (Finset.card_lt_card <| Finset.filter_ssubset.mpr ⟨j, by aesop⟩)
-      <| by simp only [Finset.card_univ, Fintype.card_fin, le_refl]);
-  convert h_hamming_norm.le using 1;
+      <| by simp only [Finset.card_univ, Fintype.card_fin, le_refl])
+  convert h_hamming_norm.le using 1
   simp [hammingNorm, Finset.filter_not, Finset.card_sdiff]
-
 
 /-- If `G` has full row rank, then every nonzero vector maps to a nonzero codeword. -/
 lemma vecMul_injective_of_rank_eq [Field F] {G : Matrix (Fin k) (Fin n) F} (hrank : G.rank = k) :
     Function.Injective (G.vecMulLinear) := by
-  have h_injective : G.rank = k → Function.Injective (G.vecMulLinear) := by
-    intro h;
-    have h_injective : Module.finrank F (LinearMap.range (G.vecMulLinear)) = k := by
-      rw [show G.vecMulLinear = Matrix.mulVecLin G.transpose from ?_];
-      · rw [← Matrix.rank, Matrix.rank_transpose, h];
-      · ext; simp only [LinearMap.coe_comp, LinearMap.coe_single, Function.comp_apply,
+  have h_injective : Module.finrank F (LinearMap.range (G.vecMulLinear)) = k := by
+    rw [show G.vecMulLinear = Matrix.mulVecLin G.transpose from ?_]
+    · rw [← Matrix.rank, Matrix.rank_transpose, hrank];
+    · ext
+      simp only [LinearMap.coe_comp, LinearMap.coe_single, Function.comp_apply,
         LinearMap.flip_apply, vecMulBilin_apply, vecMul, single_dotProduct, one_mul,
         mulVecLin_transpose];
-    have := LinearMap.finrank_range_add_finrank_ker (G.vecMulLinear);
-    simp_all +decide [LinearMap.ker_eq_bot];
-  exact h_injective hrank
+  have := LinearMap.finrank_range_add_finrank_ker (G.vecMulLinear)
+  simp_all [LinearMap.ker_eq_bot]
 
 /-- If a generator matrix is MDS with at least one row, then the code it generates is MDS. -/
 lemma IsMDS_of_matrix_IsMDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n) F}
     (hMDS : Matrix.IsMDS G) (hkn : k ≤ n) (hk : 0 < k) : (fromRowGenMat G).IsMDS := by
   have h_singleton_bound : (Module.finrank F (fromRowGenMat G)) ≤
-                           (Fintype.card (Fin n)) - (Code.dist (fromRowGenMat G).carrier) + 1 := by
-    have h_singleton_bound :
-    ∀ (C : LinearCode (Fin n) F),
-                     (Module.finrank F C) ≤ (Fintype.card (Fin n)) - (Code.dist C.carrier) + 1 := by
-      intro C;
-      have h_dist_ge :
-        ∀ u v : Fin n → F, u ∈ C → v ∈ C → u ≠ v → Code.dist C.carrier ≤ hammingDist u v := by
-        exact fun u v hu hv huv => Nat.sInf_le ⟨u, hu, v, hv, huv, le_rfl⟩;
-      set k := Module.finrank F C
-      set d := Code.dist C.carrier;
-      by_cases hd : d = 0;
-      · exact le_trans (Submodule.finrank_le _) (by simp only [Module.finrank_fintype_fun_eq_card,
-        Fintype.card_fin, hd, tsub_zero, le_add_iff_nonneg_right, zero_le]);
-      · obtain ⟨S, hS⟩ : ∃ S : Finset (Fin n), S.card = n - d + 1 := by
-          have h_card : n - d + 1 ≤ n := by
-            exact Nat.succ_le_of_lt (Nat.sub_lt (Nat.pos_of_ne_zero (by aesop))
-                                                (Nat.pos_of_ne_zero hd));
-          have h_card : ∃ S : Finset (Fin n), S.card = n - d + 1 := by
-            have h_card : Finset.card (Finset.univ : Finset (Fin n)) ≥ n - d + 1 := by
-              simpa using h_card
-            exact Exists.elim (Finset.exists_subset_card_eq h_card) fun S hS => ⟨S, hS.2⟩;
-          exact h_card;
-        have h_proj_inj : Function.Injective (fun c : C => fun i : S => c.val i) := by
-          intro c₁ c₂ h_eq;
-          contrapose! h_dist_ge;
-          refine ⟨c₁, c₂, c₁.2, c₂.2, ?_, ?_⟩ <;> simp_all +decide only [funext_iff,
-            Subtype.forall, ne_eq, SetLike.coe_eq_coe, not_false_eq_true];
-          have h_card : (Finset.univ \ S).card < d := by
-            simp only
-                    [Finset.card_sdiff, Finset.card_univ, Fintype.card_fin, Finset.inter_univ, hS];
-            omega;
-          exact lt_of_le_of_lt (Finset.card_le_card fun x hx => by aesop) h_card;
-        have h_proj_inj : Module.finrank F C ≤ Module.finrank F (S → F) := by
-          have h_proj_inj : ∃ f : C →ₗ[F] S → F, Function.Injective f := by
-            refine ⟨?_, ?_⟩;
-            · refine {toFun := fun c => fun i => c.val i, map_add' := ?_, map_smul' := ?_};
-              all_goals simp [funext_iff];
-            exact h_proj_inj;
-          obtain ⟨ f, hf ⟩ := h_proj_inj;
-          exact LinearMap.finrank_le_finrank_of_injective hf
-        aesop;
-    exact h_singleton_bound _;
+                           (Fintype.card (Fin n)) - (Code.dist (fromRowGenMat G).carrier) + 1 :=
+      LinearCode.singleton_bound_linear (fromRowGenMat G)
   have h_rank_eq_k : (Module.finrank F (fromRowGenMat G)) = k := by
-    have h_rank_eq_k : Matrix.rank G = k := by
-      have h_rank : Matrix.rank (subLeftFull G (Fin.castLE hkn)) = k := by
-        apply Matrix.rank_eq_if_det_ne_zero;
-        exact hMDS (⟨ Fin.castLE hkn, Fin.castLE_injective hkn ⟩);
-      convert Matrix.full_row_rank_via_rank_subLeftFull hkn h_rank using 1
-    (
-    rw [show fromRowGenMat G =
-    LinearMap.range (G.vecMulLinear) from rfl, LinearMap.finrank_range_of_inj ] <;>
-    simp_all only [Fintype.card_fin, Submodule.carrier_eq_coe,
-      Module.finrank_fintype_fun_eq_card];
-    exact vecMul_injective_of_rank_eq h_rank_eq_k);
+    rw [← LinearCode.dim, dim_fromRowGenMat]
+    have h_rank : Matrix.rank (subLeftFull G (Fin.castLE hkn)) = k := by
+        apply Matrix.rank_eq_if_det_ne_zero
+        exact hMDS (⟨Fin.castLE hkn, Fin.castLE_injective hkn⟩)
+    convert Matrix.full_row_rank_via_rank_subLeftFull hkn h_rank using 1
   have h_dist_ge : Code.dist (fromRowGenMat G).carrier ≥ n - k + 1 := by
     have h_dist_ge : ∀ (c : Fin n → F), c ∈ fromRowGenMat G → c ≠ 0 → hammingNorm c ≥ n - k + 1 :=
     by
-      apply_rules [ minWt_ge_of_MDS ];
+      apply_rules [minWt_ge_of_MDS]
     refine le_csInf ?_ ?_;
     · obtain ⟨u, hu⟩ : ∃ u : Fin n → F, u ∈ fromRowGenMat G ∧ u ≠ 0 := by
         contrapose! h_rank_eq_k;
-        rw [ show fromRowGenMat G = ⊥ from eq_bot_iff.mpr h_rank_eq_k ] ; simp +decide;
-        linarith;
-      exact ⟨ _, ⟨u, hu.1, 0, by simp +decide, hu.2, le_rfl⟩⟩;
-    · rintro d ⟨u, hu, v, hv, huv, hd⟩;
-      refine le_trans (h_dist_ge (u - v) ?_ ?_) ?_;
-      · exact Submodule.sub_mem _ hu hv;
-      · exact sub_ne_zero_of_ne huv;
-      · convert hd using 1;
-        exact congr_arg Finset.card ( Finset.filter_congr fun x _ => by simp +decide [sub_eq_zero]);
+        rw [show fromRowGenMat G = ⊥ from eq_bot_iff.mpr h_rank_eq_k]
+        simp only [Module.finrank_eq_zero_of_subsingleton, ne_eq]
+        linarith
+      exact ⟨_, ⟨u, hu.1, 0, by simp only [Submodule.carrier_eq_coe, SetLike.mem_coe, zero_mem],
+      hu.2, le_rfl⟩⟩
+    · rintro d ⟨u, hu, v, hv, huv, hd⟩
+      refine le_trans (h_dist_ge (u - v) ?_ ?_) ?_
+      · exact Submodule.sub_mem _ hu hv
+      · exact sub_ne_zero_of_ne huv
+      · convert hd using 1
+        exact congr_arg Finset.card (Finset.filter_congr fun x _ => by simp [sub_eq_zero])
   have h_dist_le : Code.dist (fromRowGenMat G).carrier ≤ n - k + 1 := by
-    contrapose! h_singleton_bound;
-    rw [tsub_add_eq_add_tsub];
-    · rw [tsub_lt_iff_left] <;> norm_num;
-      · linarith! [Nat.sub_add_cancel hkn];
-      · refine le_trans (Code.dist_le_card _) ?_;
-        simp only [Fintype.card_fin, le_add_iff_nonneg_right, zero_le];
-    · convert Code.dist_le_card _;
-  convert le_antisymm h_dist_le h_dist_ge using 1;
-  unfold LinearCode.IsMDS; simp only [Submodule.carrier_eq_coe];
-  unfold length dim; simp [h_rank_eq_k];
+    contrapose! h_singleton_bound
+    rw [tsub_add_eq_add_tsub ]
+    · rw [tsub_lt_iff_left ] <;> norm_num
+      · linarith! [Nat.sub_add_cancel hkn]
+      · refine le_trans (Code.dist_le_card _) ?_
+        simp only [Fintype.card_fin, le_add_iff_nonneg_right, zero_le]
+    · convert Code.dist_le_card _
+  convert le_antisymm h_dist_le h_dist_ge using 1
+  unfold LinearCode.IsMDS
+  simp only [Submodule.carrier_eq_coe]
+  unfold length dim
+  simp [h_rank_eq_k]
 
 /-- If a linear code generated by a full-rank matrix is MDS, then the matrix is MDS. -/
 lemma matrix_IsMDS_of_IsMDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n) F}
     (hCode : (fromRowGenMat G).IsMDS) (hrank : G.rank = k) : Matrix.IsMDS G := by
-  contrapose! hCode; simp_all only [Matrix.IsMDS, ne_eq, not_forall, Decidable.not_not] ;
+  contrapose! hCode
+  simp_all only [Matrix.IsMDS, ne_eq, not_forall, Decidable.not_not]
   obtain ⟨σ, hσ⟩ := hCode
   obtain ⟨v, hv⟩ : ∃ v : Fin k → F, v ≠ 0 ∧ Matrix.vecMul v (G.submatrix id σ) = 0 :=
     exists_vecMul_eq_zero_iff.mpr hσ
   set c : Fin n → F := v ᵥ* G
   have hc_ne_zero : c ≠ 0 := by
     have h_inj : Function.Injective (Matrix.vecMulLinear G) := by
-      apply vecMul_injective_of_rank_eq; assumption;
-    exact fun h => hv.1 ( h_inj <| by simpa using h )
+      apply vecMul_injective_of_rank_eq
+      assumption
+    exact fun h => hv.1 (h_inj <| by simpa using h)
   have hc_in_code : c ∈ fromRowGenMat G := ⟨v, rfl⟩
   have hc_norm : hammingNorm c ≤ n - k := by
     have hc_norm : ∀ j : Fin k, c (σ j) = 0 := by
-      intro j; specialize hv; replace hv := congr_fun hv.2 j; aesop;
+      intro j
+      specialize hv
+      replace hv := congr_fun hv.2 j
+      aesop
     have hc_norm :
     Finset.card (Finset.univ.filter (fun i => c i ≠ 0)) ≤
-    Finset.card (Finset.univ \ Finset.image σ Finset.univ) := by
-      exact Finset.card_le_card fun i hi => by aesop;
+    Finset.card (Finset.univ \ Finset.image σ Finset.univ) :=
+      Finset.card_le_card fun i hi => by aesop
     simp_all only [ne_eq, Finset.card_sdiff, Finset.card_univ, Fintype.card_fin,
-      Finset.inter_univ, Finset.card_image_of_injective _ σ.injective, ge_iff_le];
-    exact hc_norm;
+      Finset.inter_univ, Finset.card_image_of_injective _ σ.injective, ge_iff_le]
+    exact hc_norm
   have h_dist_le_norm : Code.dist (fromRowGenMat G).carrier ≤ hammingNorm c := by
-    refine Nat.sInf_le ⟨c, hc_in_code, 0, ?_, ?_, ?_⟩ <;> simp +decide [hc_ne_zero];
-  unfold LinearCode.IsMDS;
+    refine Nat.sInf_le ⟨c, hc_in_code, 0, ?_, ?_, ?_⟩ <;> simp [hc_ne_zero]
+  unfold LinearCode.IsMDS
   simp_all only [ne_eq, Code.dist, Submodule.carrier_eq_coe,
-    SetLike.mem_coe];
-  refine ne_of_lt (lt_of_le_of_lt h_dist_le_norm (lt_of_le_of_lt hc_norm ?_));
+    SetLike.mem_coe]
+  refine ne_of_lt (lt_of_le_of_lt h_dist_le_norm (lt_of_le_of_lt hc_norm ?_))
   simp [length, dim_fromRowGenMat, hrank]
 
 /-- A linear code `LC` of length `ι` and dimension `dim` over a field `F` is MDS if any `dim`
@@ -204,7 +164,7 @@ Equivalently, a linear code is MDS if and only if its generator matrix is MDS.
 
 Note: the hypothesis `0 < dim LC` is necessary because for a trivial code `(dim = 0)`,
 `Matrix.IsMDS` is vacuously true while `IsMDS` requires positive distance. -/
-lemma colRank_genMatrix_iff_dim_of_MDS [Field F] [DecidableEq F]
+lemma colRank_genMatrix_eq_dim_of_MDS [Field F] [DecidableEq F]
     (LC : LinearCode (Fin n) F) (h_pos : 0 < dim LC) :
     LC.IsMDS ↔ Matrix.IsMDS (matrixFromBasis LC) := by
   set G := matrixFromBasis LC with hG
@@ -225,4 +185,4 @@ lemma colRank_genMatrix_iff_dim_of_MDS [Field F] [DecidableEq F]
     rw [hLC]
     exact IsMDS_of_matrix_IsMDS hMDS hkn h_pos
 
-end MDSCode
+end CoreResults
