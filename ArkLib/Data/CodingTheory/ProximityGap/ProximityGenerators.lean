@@ -28,7 +28,7 @@ probability that the generator satisfies the MCA condition is bounded above by `
 
 * [Guruswami, V., Rudra, A., Sudan M., *Essential Coding Theory*, online copy][GRS25]
 * [Bordage, S., Chiesa, A., Guan, Z., Manzur, I., *All Polynomial Generators Preserve Distance
-with Mutual Correlated Agreement*][BSGM25]. Full paper : https://eprint.iacr.org/2025/2051}
+with Mutual Correlated Agreement*][BCGM25]. Full paper : https://eprint.iacr.org/2025/2051}
 -/
 
 section
@@ -45,12 +45,12 @@ variable {ι : Type} [Fintype ι]
 
 /-- The type of generators, where a generator `G` over a field `F` with output size `ℓ` is a
 function that maps a seed `x` in a set `S` to a coefficient vector in `F^ℓ`.
-Definition 3.10 [BSGM25]. -/
+Definition 3.10 [BCGM25]. -/
 abbrev Generator (S ℓ F : Type) : Type := S → (ℓ → F)
 
 /-- A generator `G` is zero-evading with a zero-evading error `ε_ze` if the probability of obtaining
 a zero output from a non-zero vector is bounded above by `ε_ze`.
-Definition 3.11 [BSGM25]. -/
+Definition 3.11 [BCGM25]. -/
 def IsZeroEvadingGenerator (G : Generator S ℓ F) (ε_ze : I) :
   Prop :=
     (sSup {y | ∃ v : ℓ → F, v ≠ 0 ∧ y = Pr_{let x ←$ᵖ S}[dotProduct (G x) v = 0]})
@@ -59,7 +59,7 @@ def IsZeroEvadingGenerator (G : Generator S ℓ F) (ε_ze : I) :
 /-- Let the set `S` be a product of `ℓ` subsets of `F`. A polynomial generator is a generator if
 there exist `ℓ` linearly independent multivariate polynomials, such that the output is an evaluation
 of the seed at each of these polynomials.
-Definition 3.19 [BSGM25]. -/
+Definition 3.19 [BCGM25]. -/
 def IsPolynomialGenerator {s : ℕ} (S : Fin s → Set F) (G : Generator (∀ i, S i) ℓ F) : Prop :=
   ∃ P : ℓ → MvPolynomial (Fin s) F, LinearIndependent F P ∧
   ∀ x : (∀ i, S i), G x = MvPolynomial.eval (fun i ↦ (x i : F)) ∘ P
@@ -69,7 +69,7 @@ def IsPolynomialGeneratorOf {s : ℕ} (S : Fin s → Set F) (G : Generator (∀ 
   LinearIndependent F P ∧ ∀ x : (∀ i, S i), G x = MvPolynomial.eval (fun i ↦ (x i : F)) ∘ P
 
 /-- A matrix whose rows are the outputs of the generator function.
-Defined inside Definition 3.12 [BSGM25]. -/
+Defined inside Definition 3.12 [BCGM25]. -/
 def M_G (G : Generator S ℓ F) : Matrix S ℓ F :=
   Matrix.of G
 
@@ -78,7 +78,7 @@ noncomputable example [DecidableEq F] (G : Generator S ℓ F) : LinearCode S F :
 
 /-- A generator `G` is MDS if the matrix `M_G` whose rows are the outputs of the generator
 function is a generator matrix for an MDS code.
-Definition 3.12 [BSGM25]. -/
+Definition 3.12 [BCGM25]. -/
 def IsMDSGenerator [DecidableEq F] (G : Generator S ℓ F) : Prop :=
     LinearCode.IsMDS (LinearCode.fromColGenMat (M_G G))
 
@@ -89,9 +89,9 @@ def IsMCA (G : Generator S ℓ F) (LC : LinearCode ι F) (x : S) (U : ℓ → (�
     projectedWord v T ∈ projectedCode LC T ∧
     ∃ j : ℓ, projectedWord (U j) T ∉ projectedCode LC T
 
-/-- A generator has mutual correlated agreement (MCA) with error `ε_mca` if the probability that the
+/-- A generator has mututual correlated agreement (MCA) with error `ε_mca` if the probability that the
 generator satisfies the MCA condition is bounded above by `ε_mca`.
-Definition 3.14 [BSGM25]. -/
+Definition 3.14 [BCGM25]. -/
 def IsMCAGenerator (G : Generator S ℓ F) (ε_mca : I → I) (LC : LinearCode ι F) : Prop :=
     ∀ U : ℓ → (ι → F), ∀ γ : I,
       Pr_{let x ←$ᵖ S}[(IsMCA G LC x U γ)] ≤ ENNReal.ofReal (ε_mca γ)
@@ -139,7 +139,7 @@ noncomputable local instance {F : Type} [Fintype F] {S : Set F} : Fintype S := F
 
 /-- If `G` is a polynomial generator, then `G` is zero-evading with error the maximum of the total
 degrees of the individual polynomials divided by the size of the smallest evaluation sets `S i`.
-Remark 3.20, the version of the statement in the brackets [BSGM25].
+Remark 3.20, the version of the statement in the brackets [BCGM25].
 Note: Remark 3.20 provides two ways of viewing a polynomial generator as a zero-evading generator.
 one in terms of individual degrees, and one in terms of total degrees. We choose the total degree
 approach. Ultimately, the reasoning is the same. The difference is the version of Schwartz-Zippel
