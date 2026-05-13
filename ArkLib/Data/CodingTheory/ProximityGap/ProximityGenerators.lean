@@ -90,8 +90,8 @@ def IsMCA (G : Generator S ℓ F) (LC : LinearCode ι F) (x : S) (U : ℓ → (�
     projectedWord v T ∈ projectedCode LC T ∧
     ∃ j : ℓ, projectedWord (U j) T ∉ projectedCode LC T
 
-/-- A generator has mututual correlated agreement (MCA) with error `ε_mca` if the probability that the
-generator satisfies the MCA condition is bounded above by `ε_mca`.
+/-- A generator has mututual correlated agreement (MCA) with error `ε_mca` if the probability that
+the generator satisfies the MCA condition is bounded above by `ε_mca`.
 Definition 3.14 [BCGM25]. -/
 def IsMCAGenerator (G : Generator S ℓ F) (ε_mca : I → I) (LC : LinearCode ι F) : Prop :=
     ∀ U : ℓ → (ι → F), ∀ γ : I,
