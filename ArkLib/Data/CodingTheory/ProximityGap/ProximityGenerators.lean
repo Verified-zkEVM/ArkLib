@@ -5,6 +5,7 @@ Authors: Katerina Hristova
 -/
 
 import ArkLib.Data.CodingTheory.Basic.LinearCode
+import ArkLib.Data.MvPolynomial.Degrees
 import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 
 /-!
