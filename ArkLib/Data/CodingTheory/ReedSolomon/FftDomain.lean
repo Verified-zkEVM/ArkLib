@@ -655,6 +655,7 @@ private def logAux {n : ℕ} (ω : SmoothFftDomain n F)
       if ω ⟨fuel, h⟩ = x then ⟨fuel, h⟩ else logAux ω x fuel
     else logAux ω x fuel
 
+/-- Finds a preimage of `x` under the mapping `ω`. -/
 def log {n : ℕ} (ω : SmoothFftDomain n F) (x : ω) : Fin (2 ^ n) := 
   logAux ω x (2 ^ n)
 
@@ -662,8 +663,8 @@ def log {n : ℕ} (ω : SmoothFftDomain n F) (x : ω) : Fin (2 ^ n) :=
 lemma log_right_inverse' {n : ℕ} {ω : SmoothFftDomain n F} {x : ω} :
   ω (ω.log x) = x := by 
   have h_log : ∃ i : Fin (2 ^ n), ω i = x := by
-    exact Finset.mem_image.mp x.2 |> fun ⟨ i, _, hi ⟩ => ⟨ i, hi ⟩;
-  obtain ⟨i, hi⟩ := h_log;
+    exact Finset.mem_image.mp x.2 |> fun ⟨i, _, hi⟩ ↦ ⟨i, hi⟩
+  obtain ⟨i, hi⟩ := h_log
   have h_log_aux : 
     ∀ (fuel : ℕ) (i : Fin (2 ^ n)), 
       i.val < fuel → ω i = x → ω (FftDomain.logAux ω x fuel) = x := by
@@ -1138,6 +1139,7 @@ def twoNthRootAux (n i : ℕ) (ω : SmoothFftDomain n F)
       else twoNthRootAux n i ω x fuel 
     else default
 
+/-- Finds a `2 ^ n`th root of `x`. -/
 def twoNthRoot {n i : ℕ} {ω : SmoothFftDomain n F}
   (x : ω.subdomainNatReversed i) : ω :=
   twoNthRootAux n i ω x.1 (2 ^ n)
@@ -1191,6 +1193,7 @@ private def logAux {n : ℕ} (ω : SmoothCosetFftDomain n F)
       if ω ⟨fuel, h⟩ = x then ⟨fuel, h⟩ else logAux ω x fuel
     else logAux ω x fuel
 
+/-- Finds a preimage of `x` under the mapping `ω`. -/
 def log {n : ℕ} (ω : SmoothCosetFftDomain n F) (x : ω) : Fin (2 ^ n) := 
   logAux ω x (2 ^ n)
 
@@ -1198,8 +1201,8 @@ def log {n : ℕ} (ω : SmoothCosetFftDomain n F) (x : ω) : Fin (2 ^ n) :=
 lemma log_right_inverse' {n : ℕ} {ω : SmoothCosetFftDomain n F} {x : ω} :
   ω (ω.log x) = x := by 
   have h_log : ∃ i : Fin (2 ^ n), ω i = x := by
-    exact Finset.mem_image.mp x.2 |> fun ⟨ i, _, hi ⟩ => ⟨ i, hi ⟩;
-  obtain ⟨i, hi⟩ := h_log;
+    exact Finset.mem_image.mp x.2 |> fun ⟨i, _, hi⟩ ↦ ⟨i, hi⟩
+  obtain ⟨i, hi⟩ := h_log
   have h_log_aux : 
     ∀ (fuel : ℕ) (i : Fin (2 ^ n)), 
       i.val < fuel → ω i = x → ω (CosetFftDomain.logAux ω x fuel) = x := by
@@ -1732,6 +1735,7 @@ def twoNthRootAux (n i : ℕ) (ω : SmoothCosetFftDomain n F)
       else twoNthRootAux n i ω x fuel 
     else default
 
+/-- Finds a `2 ^ n`th root of `x`. -/
 def twoNthRoot {n i : ℕ} {ω : SmoothCosetFftDomain n F}
   (x : ω.subdomainNatReversed i) : ω :=
   twoNthRootAux n i ω x.1 (2 ^ n)
