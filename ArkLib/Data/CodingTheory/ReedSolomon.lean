@@ -135,9 +135,9 @@ section
 
 variable [Semiring F]
 
-lemma mem_code_of_polynomial_of_degee_lt_of_eval {n : ℕ} {α : ι ↪ F} {f : ι → F}
-  (g : Polynomial F)
-  (hdeg : g.degree < n) (heval : ∀ i, f i = g.eval (α i)) :
+lemma mem_code_of_polynomial_of_degree_lt_of_eval {n : ℕ} {α : ι ↪ F} {f : ι → F}
+  (p : Polynomial F)
+  (hdeg : p.degree < n) (heval : ∀ i, f i = p.eval (α i)) :
   f ∈ code α n := by 
   aesop 
     (add simp [code, evalOnPoints,
@@ -145,34 +145,34 @@ lemma mem_code_of_polynomial_of_degee_lt_of_eval {n : ℕ} {α : ι ↪ F} {f : 
                Polynomial.degree_lt_iff_coeff_zero])
 
 lemma mem_code_of_polynomial_of_natDegree_lt_of_eval {n : ℕ} {α : ι ↪ F} {f : ι → F}
-  (g : Polynomial F)
-  (hdeg : g.natDegree < n) (heval : ∀ i, f i = g.eval (α i)) :
+  (p : Polynomial F)
+  (hdeg : p.natDegree < n) (heval : ∀ i, f i = p.eval (α i)) :
   f ∈ code α n := by 
-  by_cases h0 : g = 0
+  by_cases h0 : p = 0
   · have hf : f = 0 := by aesop
     simp [hf]
   · rw [Polynomial.natDegree_lt_iff_degree_lt h0] at hdeg
-    exact mem_code_of_polynomial_of_degee_lt_of_eval _ hdeg heval
+    exact mem_code_of_polynomial_of_degree_lt_of_eval _ hdeg heval
 
 lemma mem_code_iff_exists_polynomial {n : ℕ} {α : ι ↪ F} {f : ι → F} :
-  f ∈ code α n ↔ ∃ g : Polynomial F, g.degree < n ∧ f = evalOnPoints α g := by 
+  f ∈ code α n ↔ ∃ p : Polynomial F, p.degree < n ∧ f = evalOnPoints α p := by 
   constructor <;> 
     intro h <;>
-    obtain ⟨y, h₁, h₂⟩ := h <;>
-    exists y <;>
+    obtain ⟨p, h₁, h₂⟩ := h <;>
+    exists p <;>
     aesop (add simp 
             [Polynomial.degreeLT, 
              Polynomial.degree_lt_iff_coeff_zero])
 
-lemma mem_code_iff_exists_polynomial_of_nezero {n : ℕ} [ne : NeZero n] {α : ι ↪ F} {f : ι → F} :
-  f ∈ code α n ↔ ∃ g : Polynomial F, g.natDegree < n ∧ f = evalOnPoints α g := by 
+lemma mem_code_iff_exists_polynomial_of_ne_zero {n : ℕ} [ne : NeZero n] {α : ι ↪ F} {f : ι → F} :
+  f ∈ code α n ↔ ∃ p : Polynomial F, p.natDegree < n ∧ f = evalOnPoints α p := by 
   rw [mem_code_iff_exists_polynomial] 
   have hne := ne.out
   constructor <;> 
   intro h <;>
-  obtain ⟨y, h₁, h₂⟩ := h <;>
-  exists y <;>
-  by_cases hy : y = 0 <;> 
+  obtain ⟨p, h₁, h₂⟩ := h <;>
+  exists p <;>
+  by_cases hy : p = 0 <;> 
   aesop 
     (add simp [Polynomial.natDegree_lt_iff_degree_lt])
     (add safe (by omega))
