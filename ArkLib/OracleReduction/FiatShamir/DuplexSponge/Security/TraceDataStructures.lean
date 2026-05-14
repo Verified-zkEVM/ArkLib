@@ -47,25 +47,20 @@ universe u
 
 namespace DuplexSpongeFS
 
-/-- Result type for three-valued algorithm outcomes: paper-`err`, paper-`none`, success.
+/-- `OracleComp σ` paired with a paper-faithful abort layer (`OptionT`).
 
-Used for BackTrack (§5.2) and LookAhead (§5.3), which have two distinct failure modes at the type
-level. Other Section 5 algorithms (D2SQuery, D2SAlgo, StdTrace, D2STrace) have only binary
-abort/success and continue to use `OptionT`. -/
-inductive ExperimentOutput (Out : Type u) : Type u where
-  /-- Paper-`err`: e.g., multiple elements in `Outs` (BackTrack) or multiple chains (LookAhead). -/
-  | err : ExperimentOutput Out
-  /-- Paper-`none`: e.g., zero elements found, empty lookahead family. -/
-  | noResult : ExperimentOutput Out
-  /-- Success case: unique paper tuple recovered. -/
-  | some : Out → ExperimentOutput Out
-  deriving Repr
+`OracleComp σ` queries `σ`; `OptionT` adds `none = abort` (CO25 §5 `err` outcome). Section 5
+simulators (`D2SQuery`, `LookAhead`, `BackTrack`, `StdTrace`, `D2STrace`) all live in this stack
+with various choices of `σ`. -/
+abbrev AbortComp {ι : Type} (σ : OracleSpec ι) := OptionT (OracleComp σ)
 
 /-- Shared abort/randomness monad stack used by Section 5 algorithms.
 
 `OptionT` provides paper-binary `abort`/`success`; the inner `OracleComp (Unit →ₒ U)` provides the
-fresh `𝒰(Σ)` sampling oracle used by `D2SQuery`/`D2SAlgo`/`StdTrace`/`D2STrace`/`LookAhead`. -/
-abbrev DSAbort (U : Type) [SpongeUnit U] := OptionT (OracleComp (Unit →ₒ U))
+fresh `𝒰(Σ)` sampling oracle used by `D2SQuery`/`D2SAlgo`/`StdTrace`/`D2STrace`/`LookAhead`.
+
+This is `AbortComp (Unit →ₒ U)` — specialized to the uniform-`U` sampling oracle. -/
+abbrev UnitSampleM (U : Type) [SpongeUnit U] := AbortComp (Unit →ₒ U)
 
 namespace DSTraceStorage
 
@@ -155,6 +150,15 @@ extends TraceTableOps T K V where
   reading is stable. Used by paper §5.2 partial-key enumeration in `BackTrack`. -/
   toMultiSet_ofEntries : ∀ t, (TraceTableOps.entries t : Multiset (K × V)) = toMultiSet t
 
+class LawfulTraceNablaImpl (T_H T_P StmtIn U : Type) [SpongeUnit U] [SpongeSize]
+    [DecidableEq StmtIn] [DecidableEq U] where
+  /-- lawful trace data structure implementation for the hash queries -/
+  lawfulHash : LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)
+  /-- lawful trace data structure implementation for the permutation queries (`p` and `p⁻¹`) -/
+  lawfulPermutation : LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)
+
+attribute [instance] LawfulTraceNablaImpl.lawfulHash LawfulTraceNablaImpl.lawfulPermutation
+
 /-! ### CO25 `tr_∇` — generic trace payload -/
 
 /-- The simulator's trace table `tr_∇` from CO25 Definition 5.2, generic over any lawful
@@ -167,9 +171,9 @@ Both `T_H` and `T_P` must satisfy `LawfulTraceTable`; by parameterizing over the
 algorithms and security proofs are implementation-agnostic. -/
 structure TraceNabla (T_H T_P StmtIn U : Type) [SpongeUnit U] [SpongeSize]
     [DecidableEq StmtIn] [DecidableEq U]
-    [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)] -- lawful trace DS for the hash queries
-    -- lawful trace DS for the permutation queries (`p` and `p⁻¹`)
-    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)] where
+    [instImpl : LawfulTraceNablaImpl T_H T_P StmtIn U]
+    -- this holds the implementation & correctness of the `tr_∇` data structure
+    where
   h : T_H -- `tr_∇.h` hash-query table (`StmtIn → Vector U C`)
   p : T_P -- `tr_∇.p` permutation table (`CanonicalSpongeState U ↔ CanonicalSpongeState U`)
 
@@ -192,8 +196,7 @@ Both permutation directions contribute `(s_in, s_out)` pairs to the **same** bid
 table, because `tr_∇.p` is the single bidirectional structure over `(s_in, s_out)` pairs. -/
 def TraceNabla.ofQueryLog
     {T_H T_P : Type}
-    [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
-    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (log : DuplexSpongeTrace StmtIn U) :
     TraceNabla T_H T_P StmtIn U :=
   log.foldl (init := ⟨TraceTableOps.empty, TraceTableOps.empty⟩)
@@ -209,8 +212,7 @@ Unlike `TraceNabla.ofQueryLog`, this constructor deliberately ignores inverse-pe
 entries, matching Step 3(c) of StdTrace. D2SQuery still uses the bidirectional constructor above. -/
 def TraceNabla.ofQueryLogForwardOnly
     {T_H T_P : Type}
-    [LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)]
-    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (log : DuplexSpongeTrace StmtIn U) :
     TraceNabla T_H T_P StmtIn U :=
   log.foldl (init := ⟨TraceTableOps.empty, TraceTableOps.empty⟩)
@@ -480,9 +482,15 @@ instance instLawfulListBasedTraceTable {K V : Type} [DecidableEq K] [DecidableEq
   outlu_eq_some       := fun t k v => outlu_eq_some_iff t k v
   toMultiSet_ofEntries  := fun _ => rfl
 
-end ListBacked
-
 /-! ### Default `tr_∇` type alias and `ofQueryLog` -/
+
+instance instLawfulTraceNablaImplListBased [SpongeUnit U] [SpongeSize]
+    [DecidableEq StmtIn] [DecidableEq U] :
+    LawfulTraceNablaImpl
+      (ListBacked.ListTraceTable StmtIn (Vector U SpongeSize.C))
+      (ListBacked.ListTraceTable (CanonicalSpongeState U) (CanonicalSpongeState U))
+      StmtIn U :=
+  ⟨instLawfulListBasedTraceTable, instLawfulListBasedTraceTable⟩
 
 /-- The default (list-backed) `tr_∇`. In fact we want to use a more optimized data structure
 for efficient storage and query complexity. -/
@@ -498,6 +506,7 @@ abbrev DefaultTraceDelta (StmtIn U : Type) [SpongeUnit U] [SpongeSize]
 def DefaultTraceDelta.ofQueryLog
     (log : DuplexSpongeTrace StmtIn U) : DefaultTraceDelta StmtIn U :=
     TraceNabla.ofQueryLog log
+end ListBacked
 
 end TraceDataStructures
 end DuplexSpongeFS.DSTraceStorage

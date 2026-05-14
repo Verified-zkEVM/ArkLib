@@ -19,6 +19,20 @@ This file provides:
   where a salt `τ ∈ Σ^δ` is absorbed before round processing and included in the proof string.
 -/
 
+/-- Result type for three-valued algorithm outcomes: paper-`err`, paper-`none`, success.
+
+Used for BackTrack (§5.2) and LookAhead (§5.3), which have two distinct failure modes at the type
+level. Other Section 5 algorithms (D2SQuery, D2SAlgo, StdTrace, D2STrace) have only binary
+abort/success and continue to use `OptionT`. -/
+inductive ExperimentOutput.{u} (Out : Type u) : Type u where
+  /-- Paper-`err`: e.g., multiple elements in `Outs` (BackTrack) or multiple chains (LookAhead). -/
+  | err : ExperimentOutput Out
+  /-- Paper-`none`: e.g., zero elements found, empty lookahead family. -/
+  | noResult : ExperimentOutput Out
+  /-- Success case: unique paper tuple recovered. -/
+  | some : Out → ExperimentOutput Out
+  deriving Repr
+
 namespace ProtocolSpec
 
 /-- Type class for protocol specifications to specify the size of each message as a natural number
@@ -31,22 +45,19 @@ class HasMessageSize {n : ℕ} (pSpec : ProtocolSpec n) where
 
 export HasMessageSize (messageSize)
 
+/-- Message indices in rounds strictly before `k`. -/
+abbrev MessageIdxBefore {n : ℕ} (k : Fin (n + 1)) (pSpec : ProtocolSpec n) : Type :=
+  {j : pSpec.MessageIdx // j.1.1 < k.1}
+
+/-- Challenge indices in rounds strictly before `k`. -/
+abbrev ChallengeIdxBefore {n : ℕ} (k : Fin (n + 1)) (pSpec : ProtocolSpec n) : Type :=
+  {j : pSpec.ChallengeIdx // j.1.1 < k.1}
+
 /-- CO25 §5.2 — Encoded prover messages `(α̂_1, …, α̂_i)` for message rounds strictly before `k`.
 `f j h` gives the `U`-vector encoding of message `j` whenever the round of `j` is before `k`. -/
-abbrev EncodedMessagesUpTo {n : ℕ} (pSpec : ProtocolSpec n) (U : Type) [HasMessageSize pSpec]
+abbrev EncodedMessagesBefore {n : ℕ} (pSpec : ProtocolSpec n) (U : Type) [HasMessageSize pSpec]
     (k : Fin (n + 1)) : Type :=
-  (j : pSpec.MessageIdx) → j.1.1 < k.1 → Vector U (messageSize j)
-
-namespace EncodedMessagesUpTo
-
-/-- Flatten to a sigma-list for consumers still expecting `List (Sigma ...)`. -/
-noncomputable def toList {n : ℕ} {pSpec : ProtocolSpec n} {U : Type} [HasMessageSize pSpec]
-    {k : Fin (n + 1)} (f : pSpec.EncodedMessagesUpTo U k) :
-    List (Sigma fun msgIdx : pSpec.MessageIdx => Vector U (messageSize msgIdx)) :=
-  (Finset.univ : Finset (pSpec.MessageIdx)).toList.filterMap fun j =>
-    if h : j.1.1 < k.1 then some ⟨j, f j h⟩ else none
-
-end EncodedMessagesUpTo
+  (j : MessageIdxBefore k pSpec) → Vector U (messageSize j.val)
 
 /-- Type class for protocol specifications to specify the size of each challenge as a natural number
   (to be interpreted as a vector of units `U` of the given size for some sponge unit `U`).
@@ -57,6 +68,21 @@ class HasChallengeSize {n : ℕ} (pSpec : ProtocolSpec n) where
   challengeSize : pSpec.ChallengeIdx → Nat
 
 export HasChallengeSize (challengeSize)
+
+abbrev EncodedChallengesBefore {n : ℕ} (pSpec : ProtocolSpec n) (U : Type) [HasChallengeSize pSpec]
+    (k : Fin (n + 1)) : Type :=
+  (j : ChallengeIdxBefore k pSpec) → Vector U (challengeSize j.val)
+
+namespace EncodedMessagesBefore
+
+/-- Flatten to a sigma-list for consumers still expecting `List (Sigma ...)`. -/
+noncomputable def toList {n : ℕ} {pSpec : ProtocolSpec n} {U : Type} [HasMessageSize pSpec]
+    {k : Fin (n + 1)} (f : pSpec.EncodedMessagesBefore U k) :
+    List (Sigma fun msgIdx : pSpec.MessageIdx => Vector U (messageSize msgIdx)) :=
+  (Finset.univ : Finset (pSpec.MessageIdx)).toList.filterMap fun j =>
+    if h : j.1.1 < k.1 then some ⟨j, f ⟨j, h⟩⟩ else none
+
+end EncodedMessagesBefore
 
 /-- Codec class for CO25 Definition 4.1.
 
@@ -164,10 +190,21 @@ def mk' {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
 
 end Codec
 
+/-!
+## Block-count notation (CO25 Equations 6–7)
+
+`L_δ`, `L_P(i)`, `L_V(i)`, `L_P`, `L_V`, `L` from the paper. -/
+section BlockCountNotation
+
 variable (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
     {U : Type} [SpongeUnit U] [SpongeSize]
     [HasMessageSize pSpec] [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
     [HasChallengeSize pSpec] [∀ i, Deserialize (pSpec.Challenge i) (Vector U (challengeSize i))]
+
+/-- CO25 Eq. 6 — `L_δ = ⌈δ / r⌉`: number of rate blocks needed for a salt of size `δ`. -/
+def numSaltBlocks (δ : Nat) : Nat := Nat.ceil ((δ : ℚ) / SpongeSize.R)
+
+alias Lδ := numSaltBlocks
 
 /-- Number of queries to the permutation oracle needed to absorb the `i`-th message of the
   protocol specification. This is `Lₚ(i)` in the paper block-count notation (Equation 6). -/
@@ -181,6 +218,8 @@ alias Lₚᵢ := numPermQueriesMessage
 def totalNumPermQueriesMessage : Nat :=
   ∑ i, pSpec.Lₚᵢ i
 
+alias Lₚ := totalNumPermQueriesMessage
+
 /-- Number of queries to the permutation oracle needed to absorb the `i`-th challenge of the
   protocol specification. This is `Lᵥ(i)` in the paper block-count notation (Equation 6). -/
 def numPermQueriesChallenge (i : pSpec.ChallengeIdx) : Nat :=
@@ -193,10 +232,21 @@ alias Lᵥᵢ := numPermQueriesChallenge
 def totalNumPermQueriesChallenge : Nat :=
   ∑ i, pSpec.Lᵥᵢ i
 
+alias Lᵥ := totalNumPermQueriesChallenge
+
 /-- Total number of queries to the permutation oracle needed to absorb all messages and challenges
   of the protocol specification. This is `L` in the paper block-count notation (Equation 7). -/
 def totalNumPermQueries : Nat :=
   pSpec.totalNumPermQueriesMessage + pSpec.totalNumPermQueriesChallenge
+
+alias L := totalNumPermQueries
+
+end BlockCountNotation
+
+variable (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    [HasMessageSize pSpec] [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
+    [HasChallengeSize pSpec] [∀ i, Deserialize (pSpec.Challenge i) (Vector U (challengeSize i))]
 
 /-- The oracle specification for duplex sponge Fiat-Shamir (Equation 14, written as `𝒟_Σ`).
 It is indexed over the challenge rounds of the protocol specification, and for each such round `i`:
@@ -237,6 +287,11 @@ is the backward direction of the random permutation
 def duplexSpongeChallengeOracle (StartType : Type) (U : Type) [SpongeUnit U] [SpongeSize] :
     OracleSpec (StartType ⊕ CanonicalSpongeState U ⊕ CanonicalSpongeState U) :=
   (StartType →ₒ Vector U SpongeSize.C) + permutationOracle (CanonicalSpongeState U)
+
+/-- The type of a single entry in a duplex sponge query trace -/
+abbrev duplexSpongeTraceEntry {StartType : Type} {U : Type} [SpongeUnit U] [SpongeSize]
+  := Sigma (α := StartType ⊕ CanonicalSpongeState U ⊕ CanonicalSpongeState U)
+      (β := duplexSpongeChallengeOracle StartType U)
 
 alias «𝒟_𝔖» := duplexSpongeChallengeOracle
 
@@ -427,11 +482,8 @@ def deriveTranscriptDSFS {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
   let sponge ← liftM (DuplexSponge.start stmtIn)
   deriveTranscriptDSFSAux sponge messages (Fin.last n)
 
-end Messages
-
-end ProtocolSpec
-
-open ProtocolSpec
+end ProtocolSpec.Messages
+section Execution
 
 /--
 Prover's function for processing the next round, given the current result of the previous round.
@@ -664,3 +716,5 @@ def Reduction.duplexSpongeFiatShamirSalted [∀ i, VCVCompatible (pSpec.Challeng
       StmtIn WitIn StmtOut WitOut where
   prover := R.prover.duplexSpongeFiatShamirSalted (δ := δ) sampleSalt
   verifier := R.verifier.duplexSpongeFiatShamirSalted (δ := δ)
+
+end Execution

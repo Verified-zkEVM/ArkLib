@@ -325,6 +325,7 @@ def S_LA.compute
           exact enumerateLookaheadCandidates_length_bound (T_P := T_P) (U := U)
             trΔp state maxSteps s hsAll }
 
+
 /-! ## §5.3 Step 2 — Final output dispatch on `|S_LA|`: `err` / `none` / sampled vector -/
 
 private lemma challengeSize_le_Lvi_mul_R (i : pSpec.ChallengeIdx) :
@@ -378,6 +379,60 @@ private lemma length_flatten_vector_toList (blocks : List (Vector U SpongeSize.R
 private def takeVector (n : Nat) (xs : List U) (h : n ≤ xs.length) : Vector U n :=
   Vector.ofFn (fun j => xs[j.1]'(Nat.lt_of_lt_of_le j.2 h))
 
+/-- CO25 §5.3 Step 2(c) — given a single maximal lookahead sequence of length `m₁ ≤ L_V(i)`,
+sample the `L_V(i) - m₁` missing rate blocks uniformly from `Σ^r`, concatenate with the known
+output-rate blocks, and return the first `ℓ_V(i)` units as `ρ̂_i ∈ Σ^{ℓ_V(i)}`. -/
+private def sampleChallengeFromSequence
+    {trΔp : T_P}
+    {state : CanonicalSpongeState U}
+    (seq : LookaheadSequence trΔp state)
+    (i : pSpec.ChallengeIdx)
+    (hInputLenLe : seq.inputState.length ≤ pSpec.Lᵥᵢ i) :
+    OracleComp (Unit →ₒ U) (Vector U (challengeSize i)) := do
+  -- `L_V(i)` — total number of permutation calls in the verifier squeeze window for round `i`.
+  let maxSteps := pSpec.Lᵥᵢ i
+  -- `knownBlocks = [s_{R,out,0}^{(1)}, …, s_{R,out,m₁-1}^{(1)}]` — the `m₁` output-rate
+  -- segments already determined by the unique maximal sequence `S_LA^{(1)}`.
+  let knownBlocks : List (Vector U SpongeSize.R) :=
+    seq.outputState.map CanonicalSpongeState.rateSegment
+  -- `|knownBlocks| = |inputState| = m₁` (output and input lists have equal length by
+  -- `LookaheadSequence.inputState_length_eq_outputState_length`).
+  have hKnownLenEqInputLen : knownBlocks.length = seq.inputState.length := by
+    have hKnownLenEqOutputLen : knownBlocks.length = seq.outputState.length := by
+      simp [knownBlocks]
+    have hOutputLenEqInputLen : seq.outputState.length = seq.inputState.length := by
+      exact (LookaheadSequence.inputState_length_eq_outputState_length
+        (T_P := T_P) (U := U) seq).symm
+    exact hKnownLenEqOutputLen.trans hOutputLenEqInputLen
+  -- `m₁ ≤ L_V(i)` (from the family length bound).
+  have hKnownLenLeMax : knownBlocks.length ≤ maxSteps := hKnownLenEqInputLen ▸ hInputLenLe
+  -- `L_V(i) - m₁` — number of additional random rate blocks to sample.
+  let missingBlocks := maxSteps - knownBlocks.length
+  -- Sample `s_{R,out,m₁}^{(1)}, …, s_{R,out,L_V(i)-1}^{(1)} ←$ U(Σ^r)`.
+  let ⟨randomBlocks, hRandomLen⟩ ← sampleRateVectorsExact (U := U) missingBlocks
+  -- `allBlocks = [s_{R,out,0}^{(1)}, …, s_{R,out,L_V(i)-1}^{(1)}]` — full output-rate list.
+  let allBlocks := knownBlocks ++ randomBlocks
+  -- `units = s_{R,out,0}^{(1)} ‖ s_{R,out,1}^{(1)} ‖ ⋯ ‖ s_{R,out,L_V(i)-1}^{(1)}` —
+  -- concatenation of all `L_V(i)` rate blocks into a flat unit list.
+  let units : List U := List.flatten (allBlocks.map Vector.toList)
+  -- `|allBlocks| ≥ L_V(i)` (known `m₁` + sampled `L_V(i) - m₁`).
+  have hMax_le_allBlocks : maxSteps ≤ allBlocks.length := by
+    simp [allBlocks, missingBlocks, hRandomLen, Nat.add_sub_of_le hKnownLenLeMax]
+  -- `|units| ≥ L_V(i) · r` (each rate block contributes exactly `r` units).
+  have hMaxR_le_units : maxSteps * SpongeSize.R ≤ units.length := by
+    have hmul : maxSteps * SpongeSize.R ≤ allBlocks.length * SpongeSize.R :=
+      Nat.mul_le_mul_right SpongeSize.R hMax_le_allBlocks
+    have hUnitsLen : units.length = allBlocks.length * SpongeSize.R := by
+      exact length_flatten_vector_toList (U := U) allBlocks |>.symm ▸ rfl
+    rw [hUnitsLen]; exact hmul
+  -- `ℓ_V(i) ≤ L_V(i) · r ≤ |units|` — the challenge size fits within the concatenated units.
+  have hChal_le_units : challengeSize i ≤ units.length := by
+    have hChal_le_maxR : challengeSize i ≤ maxSteps * SpongeSize.R := by
+      exact challengeSize_le_Lvi_mul_R (pSpec := pSpec) i
+    exact le_trans hChal_le_maxR hMaxR_le_units
+  -- Return `ρ̂_i := units[0 : ℓ_V(i)] ∈ Σ^{ℓ_V(i)}`.
+  pure (takeVector (U := U) (challengeSize i) units hChal_le_units)
+
 /-- CO25 §5.3 Algorithm 2 — `LookAhead(tr_∇.p, s, i)`, polymorphic over any
 `[LawfulTraceTable T_P ...]` for `tr_∇.p`.
 
@@ -396,7 +451,6 @@ def lookAhead
     (trΔp : T_P)
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
     OracleComp (Unit →ₒ U) (ExperimentOutput (Vector U (challengeSize i))) := do
-  let maxSteps := pSpec.Lᵥᵢ i
   -- §5.3 Step 1: parse `tr_∇.p` into the maximal family `S_LA(tr_∇.p, s, i)`.
   let family :=
     S_LA.compute (T_P := T_P) (U := U) (pSpec := pSpec) trΔp state i
@@ -406,43 +460,13 @@ def lookAhead
     -- §5.3 Step 2(b): `S_LA` is empty → return `noResult`.
     pure ExperimentOutput.noResult
   | [seq] =>
-    -- §5.3 Step 2(c): single maximal sequence `S_LA^{(1)}` of length `m_1 ≤ L_V(i)`.
-    -- Sample the `L_V(i) - m_1` missing rate blocks `s_{R,out,m_1}, …, s_{R,out,L_V(i)-1}`,
-    -- concatenate, and take the first `ℓ_V(i)` units to form `ρ̂_i ∈ Σ^{ℓ_V(i)}`.
-    let outputState := seq.outputState
-    let knownBlocks : List (Vector U SpongeSize.R) :=
-      outputState.map CanonicalSpongeState.rateSegment
-    have hSeqMemList : seq ∈ family.seqFamily.toList := by
-      rw [hFamilyList]
-      simp
-    have hSeqMem : seq ∈ family.seqFamily := Finset.mem_toList.mp hSeqMemList
-    have hInputLenLe : seq.inputState.length ≤ maxSteps :=
-      family.length_le_numPermQueriesChallenge seq hSeqMem
-    have hKnownLenEqInputLen : knownBlocks.length = seq.inputState.length := by
-      have hKnownLenEqOutputLen : knownBlocks.length = seq.outputState.length := by
-        simp [knownBlocks, outputState]
-      have hOutputLenEqInputLen : seq.outputState.length = seq.inputState.length := by
-        exact (LookaheadSequence.inputState_length_eq_outputState_length
-          (T_P := T_P) (U := U) seq).symm
-      exact hKnownLenEqOutputLen.trans hOutputLenEqInputLen
-    have hKnownLenLeMax : knownBlocks.length ≤ maxSteps := hKnownLenEqInputLen ▸ hInputLenLe
-    let missingBlocks := maxSteps - knownBlocks.length
-    let ⟨randomBlocks, hRandomLen⟩ ← sampleRateVectorsExact (U := U) missingBlocks
-    let allBlocks := knownBlocks ++ randomBlocks
-    let units : List U := List.flatten (allBlocks.map Vector.toList)
-    have hMax_le_allBlocks : maxSteps ≤ allBlocks.length := by
-      simp [allBlocks, missingBlocks, hRandomLen, Nat.add_sub_of_le hKnownLenLeMax]
-    have hMaxR_le_units : maxSteps * SpongeSize.R ≤ units.length := by
-      have hmul : maxSteps * SpongeSize.R ≤ allBlocks.length * SpongeSize.R :=
-        Nat.mul_le_mul_right SpongeSize.R hMax_le_allBlocks
-      have hUnitsLen : units.length = allBlocks.length * SpongeSize.R := by
-        simpa [units] using (length_flatten_vector_toList (U := U) allBlocks)
-      simpa [hUnitsLen] using hmul
-    have hChal_le_units : challengeSize i ≤ units.length := by
-      have hChal_le_maxR : challengeSize i ≤ maxSteps * SpongeSize.R := by
-        simpa [maxSteps] using challengeSize_le_Lvi_mul_R (pSpec := pSpec) i
-      exact le_trans hChal_le_maxR hMaxR_le_units
-    pure (ExperimentOutput.some (takeVector (U := U) (challengeSize i) units hChal_le_units))
+    -- §5.3 Step 2(c): single maximal sequence.
+    have hSeqMem : seq ∈ family.seqFamily := by
+      have : seq ∈ family.seqFamily.toList := by rw [hFamilyList]; simp
+      exact Finset.mem_toList.mp this
+    let rhoHat ← sampleChallengeFromSequence (T_P := T_P) (U := U) (pSpec := pSpec)
+      (seq := seq) (i := i) (hInputLenLe := family.length_le_numPermQueriesChallenge seq hSeqMem)
+    pure (ExperimentOutput.some rhoHat)
   | _ :: _ :: _ =>
     -- §5.3 Step 2(a): `|S_LA| > 1` → return `err`.
     pure ExperimentOutput.err

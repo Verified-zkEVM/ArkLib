@@ -289,13 +289,14 @@ partial application of `OracleDistribution.uniform`.
 
 namespace OracleDistribution.Examples
 
-/-! ### `D_ROM` — random oracle hash. -/
+/-! ### `D_ROM` — random-function constructor. -/
 
-/-- `D_ROM` over `Input →ₒ Output`: uniform random function, paper notation `H ← D_ROM`. -/
+/-- Generic `D_ROM` constructor for any random-function oracle spec:
+uniformly sample one deterministic table realization. -/
 @[reducible]
-def DROM (Input Output : Type) [SampleableType (OracleFamily (Input →ₒ Output))] :
-    OracleDistribution (Input →ₒ Output) :=
-  OracleDistribution.uniform _
+def DROM {ι : Type} (spec : OracleSpec ι) [SampleableType (OracleFamily spec)] :
+    OracleDistribution spec :=
+  OracleDistribution.uniform spec
 
 /-! ### `D_IP` — ideal-protocol Fiat-Shamir challenger.
 
@@ -336,7 +337,7 @@ noncomputable def DIP {n : ℕ} (Statement : Type) (pSpec : ProtocolSpec n)
     [∀ i, VCVCompatible (pSpec.Message i)]
     [∀ i, VCVCompatible (pSpec.Challenge i)] :
     OracleDistribution (ProtocolSpec.fsChallengeOracle Statement pSpec) :=
-  OracleDistribution.uniform _
+  DROM (spec := ProtocolSpec.fsChallengeOracle Statement pSpec)
 
 /-! ### `D_Σ` — §5.8 encoded-challenge oracle.
 
