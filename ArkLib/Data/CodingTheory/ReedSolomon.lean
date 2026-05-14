@@ -133,6 +133,54 @@ lemma genMatIsVandermonde [Fintype ι] [Field F] [inst : NeZero m] {α : ι ↪ 
 
 section
 
+variable [Semiring F]
+
+lemma mem_code_of_polynomial_of_degee_lt_of_eval {n : ℕ} {α : ι ↪ F} {f : ι → F}
+  (g : Polynomial F)
+  (hdeg : g.degree < n) (heval : ∀ i, f i = g.eval (α i)) :
+  f ∈ code α n := by 
+  aesop 
+    (add simp [code, evalOnPoints,
+               Polynomial.degreeLT,
+               Polynomial.degree_lt_iff_coeff_zero])
+
+lemma mem_code_of_polynomial_of_natDegree_lt_of_eval {n : ℕ} {α : ι ↪ F} {f : ι → F}
+  (g : Polynomial F)
+  (hdeg : g.natDegree < n) (heval : ∀ i, f i = g.eval (α i)) :
+  f ∈ code α n := by 
+  by_cases h0 : g = 0
+  · have hf : f = 0 := by aesop
+    simp [hf]
+  · rw [Polynomial.natDegree_lt_iff_degree_lt h0] at hdeg
+    exact mem_code_of_polynomial_of_degee_lt_of_eval _ hdeg heval
+
+lemma mem_code_iff_exists_polynomial {n : ℕ} {α : ι ↪ F} {f : ι → F} :
+  f ∈ code α n ↔ ∃ g : Polynomial F, g.degree < n ∧ f = evalOnPoints α g := by 
+  constructor <;> 
+    intro h <;>
+    obtain ⟨y, h₁, h₂⟩ := h <;>
+    exists y <;>
+    aesop (add simp 
+            [Polynomial.degreeLT, 
+             Polynomial.degree_lt_iff_coeff_zero])
+
+lemma mem_code_iff_exists_polynomial_of_nezero {n : ℕ} [ne : NeZero n] {α : ι ↪ F} {f : ι → F} :
+  f ∈ code α n ↔ ∃ g : Polynomial F, g.natDegree < n ∧ f = evalOnPoints α g := by 
+  rw [mem_code_iff_exists_polynomial] 
+  have hne := ne.out
+  constructor <;> 
+  intro h <;>
+  obtain ⟨y, h₁, h₂⟩ := h <;>
+  exists y <;>
+  by_cases hy : y = 0 <;> 
+  aesop 
+    (add simp [Polynomial.natDegree_lt_iff_degree_lt])
+    (add safe (by omega))
+
+end
+
+section
+
 open NNReal
 
 variable [Field F]
