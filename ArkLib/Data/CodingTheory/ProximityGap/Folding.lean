@@ -788,7 +788,7 @@ theorem folding_preserves_distance
     obtain ⟨S, h_card, v, h'⟩ := correlated_agreement
     rw [forall_and] at h'
     rcases h' with ⟨h_rs, h'⟩ 
-    have h_rs := fun x ↦ (mem_code_iff_exists_polynomial_of_nezero 
+    have h_rs := fun x ↦ (mem_code_iff_exists_polynomial_of_ne_zero 
         (ne := ⟨by rw [Nat.div_ne_zero_iff]; omega⟩)).mp (h_rs x) 
     let u : Fin (2 ^ k - 1 + 1) → Polynomial F :=
       fun i => Classical.choose (h_rs i)
