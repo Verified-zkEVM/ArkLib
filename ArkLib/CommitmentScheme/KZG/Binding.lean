@@ -5,6 +5,7 @@ Authors: Tobias Rothmann
 -/
 
 import ArkLib.CommitmentScheme.KZG.FunctionBinding
+import ArkLib.ToVCVio.EvalDist.Defs.Support
 
 /-! ## Evaluation binding for the KZG Polynomial Commitment Scheme -/
 
@@ -288,48 +289,6 @@ def bindingReduction (_hn : 1 ≤ n) (AuxState : Type)
           (srs, cm, query, resp₁, resp₂, accept₁, accept₂, proof₁, proof₂))
       ))
 
-private lemma StateT.run'_simulateQ_liftComp_map_sample_bind
-    {ι₀ ι σ α κ γ : Type} {spec₀ : OracleSpec ι₀} {spec : OracleSpec ι}
-    [MonadLiftT (OracleQuery spec₀) (OracleQuery spec)]
-    (impl : QueryImpl spec (StateT σ ProbComp))
-    (sample : OracleComp spec₀ α) (mk : α → κ)
-    (body : κ → OracleComp spec γ) (s : σ) :
-    (simulateQ impl (do
-      let k ← OracleComp.liftComp (do let a ← sample; pure (mk a)) spec
-      body k)).run' s =
-    (simulateQ impl (do
-      let a ← OracleComp.liftComp sample spec
-      body (mk a))).run' s := by
-  simp only [liftComp_bind, liftComp_pure, bind_assoc, pure_bind]
-
-private lemma StateT.run'_simulateQ_liftComp_bind_project_of_body
-    {ι₀ ι σ α β γ : Type} {spec₀ : OracleSpec ι₀} {spec : OracleSpec ι}
-    [MonadLiftT (OracleQuery spec₀) (OracleQuery spec)]
-    (impl : QueryImpl spec (StateT σ ProbComp))
-    (sample : OracleComp spec₀ α)
-    (bodyBase : α → OracleComp spec (Option β))
-    (bodyExt : α → OracleComp spec (Option γ))
-    (proj : γ → β) (s : σ)
-    (hBody : ∀ a, simulateQ impl (bodyBase a) =
-      Option.map proj <$> simulateQ impl (bodyExt a)) :
-    (simulateQ impl (do
-      let a ← OracleComp.liftComp sample spec
-      bodyBase a)).run' s =
-    Option.map proj <$> (simulateQ impl (do
-      let a ← OracleComp.liftComp sample spec
-      bodyExt a)).run' s := by
-  rw [← StateT.run'_map_comm (Option.map proj)
-    (simulateQ impl (do
-      let a ← OracleComp.liftComp sample spec
-      bodyExt a)) s]
-  rw [← simulateQ_map]
-  simp only [map_eq_bind_pure_comp, simulateQ_bind, simulateQ_pure, bind_assoc,
-    Function.comp]
-  apply congrArg (fun mx : StateT σ ProbComp (Option β) => mx.run' s)
-  congr 1
-  funext a
-  exact hBody a
-
 private lemma Reduction.verdict_run_eq_map_run
     {ι : Type} {oSpec : OracleSpec ι} {StmtIn WitIn StmtOut WitOut : Type}
     {n : ℕ} {pSpec : ProtocolSpec n}
@@ -368,15 +327,6 @@ private lemma exists_of_option_map_getD_true {α : Type} (f : α → Bool) (x : 
   | none => simp at h
   | some a =>
       exact ⟨a, rfl, by simpa using h⟩
-
-private lemma support_bind_exists {m : Type → Type} [Monad m] [LawfulMonad m] [HasEvalSet m]
-    {α β : Type} (x : m α) (f : α → m β) {y : β}
-    (hy : y ∈ support (x >>= f)) : ∃ a, a ∈ support x ∧ y ∈ support (f a) := by
-  simpa [mem_support_bind_iff] using hy
-
-private lemma eq_of_mem_support_pure {m : Type → Type} [Monad m] [LawfulMonad m] [HasEvalSet m]
-    {α : Type} {x y : α} (h : y ∈ support (pure x : m α)) : y = x := by
-  simpa [mem_support_pure_iff] using h
 
 omit [Fact (0 < p)] [DecidableEq G₁] in
 /-- Transition 1: extending the binding game output preserves the event. -/

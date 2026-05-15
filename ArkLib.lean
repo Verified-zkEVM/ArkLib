@@ -180,3 +180,10 @@ import ArkLib.ToCompPoly.Univariate.Basic
 import ArkLib.ToMathlib.BigOperators.Fin
 import ArkLib.ToMathlib.Finset.Basic
 import ArkLib.ToMathlib.List.Basic
+import ArkLib.ToVCVio.EvalDist.Defs.Support
+import ArkLib.ToVCVio.EvalDist.Instances.OptionT
+import ArkLib.ToVCVio.OracleComp.Coercions.SubSpec
+import ArkLib.ToVCVio.OracleComp.EvalDist
+import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
+import ArkLib.ToVCVio.ToMathlib.Control.StateT
+import ArkLib.ToVCVio.ToMathlib.Data.Vector.Basic

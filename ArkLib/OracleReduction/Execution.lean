@@ -1,5 +1,6 @@
 import ArkLib.OracleReduction.Basic
 import ArkLib.Data.Fin.Basic
+import ArkLib.ToVCVio.OracleComp.EvalDist
 
 /-!
   # Execution Semantics of Interactive Oracle Reductions
@@ -274,6 +275,84 @@ lemma Reduction.allVerdicts_eq_map_allOutputs_fst {L : ℕ} {β : Type}
       (Option.map (fun resultOf => fun i => (resultOf i).1)) <$>
         reduction.allOutputs (fun result => (result.2, extract result)) stmts wits := by
   sorry
+
+lemma Reduction.support_allOutputs_index
+    {StmtIn WitIn StmtOut WitOut α : Type} {n : ℕ} {pSpec : ProtocolSpec n} {L : ℕ}
+    (extract : ((FullTranscript pSpec × StmtOut × WitOut) × StmtOut) → α)
+    (stmts : Fin L → StmtIn) (wits : Fin L → WitIn)
+    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    {y : Option (Fin L → α)}
+    (hy : y ∈ support (reduction.allOutputs extract stmts wits))
+    {resultOf : Fin L → α} (hy_eq : y = some resultOf) (i : Fin L) :
+      ∃ result, some result ∈ support (reduction.run (stmts i) (wits i)).run ∧
+        extract result = resultOf i := by
+  unfold Reduction.allOutputs at hy
+  rw [mem_support_bind_iff] at hy
+  obtain ⟨runsOpt, hrunsOpt, hy_mem⟩ := hy
+  rw [mem_support_pure_iff] at hy_mem
+  rw [hy_eq] at hy_mem
+  cases hruns : runsOpt with
+  | none => simp [hruns] at hy_mem
+  | some runOf =>
+      simp only [hruns, Option.map_some, Option.some.injEq] at hy_mem
+      unfold Reduction.allRuns at hrunsOpt
+      rw [mem_support_bind_iff] at hrunsOpt
+      obtain ⟨results, hresults, hrunsOpt⟩ := hrunsOpt
+      rw [mem_support_pure_iff] at hrunsOpt
+      cases hseq : results.mapM id with
+      | none => simp [hseq, hruns] at hrunsOpt
+      | some results' =>
+          simp only [hseq, Option.map_some] at hrunsOpt
+          rw [hruns] at hrunsOpt
+          simp only [Option.some.injEq] at hrunsOpt
+          have hidx : results[i] = some results'[i] :=
+            Vector.mapM_id_some_index hseq i
+          refine ⟨results'[i], ?_, ?_⟩
+          · simpa [hidx] using
+              OracleComp.support_ofFn_mapM_index
+                (fun i => (reduction.run (stmts i) (wits i)).run) hresults i
+          · have hrunOf_i := congrFun hrunsOpt i
+            have hresult_i := congrFun hy_mem i
+            rw [hresult_i, hrunOf_i]
+
+/-- If a reduction's verifier is a pure function `f` of the input statement and full transcript,
+    then the verifier output of any complete result in the support of `Reduction.run` equals
+    `f stmt td` applied to the input statement and the produced transcript. -/
+lemma Reduction.support_run_pure_verifier
+    {StmtIn WitIn StmtOut WitOut : Type}
+    {n : ℕ} {pSpec : ProtocolSpec n}
+    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (f : StmtIn → FullTranscript pSpec → StmtOut)
+    (hf : ∀ stmt td,
+      reduction.verifier.verify stmt td =
+        (pure (f stmt td) : OptionT (OracleComp oSpec) StmtOut))
+    (stmt : StmtIn) (wit : WitIn)
+    {y : Option ((FullTranscript pSpec × StmtOut × WitOut) × StmtOut)}
+    (hy : y ∈ support (reduction.run stmt wit).run)
+    {td : FullTranscript pSpec} {prv : StmtOut × WitOut} {vOut : StmtOut}
+    (heq : y = some ((td, prv), vOut)) : vOut = f stmt td := by
+  rw [heq] at hy
+  unfold Reduction.run at hy
+  simp only [OptionT.run_bind, Option.elimM] at hy
+  rw [mem_support_bind_iff] at hy
+  obtain ⟨proverResultOpt, _hprover, hy⟩ := hy
+  cases proverResultOpt with
+  | none =>
+      exfalso
+      simp at hy
+  | some proverResult =>
+      simp only [Option.elim_some] at hy
+      rw [mem_support_bind_iff] at hy
+      obtain ⟨stmtOutOpt, hstmtOutOpt, hy⟩ := hy
+      simp only [ChallengeIdx, Challenge, Verifier.run, hf, OptionT.run_pure, liftM_pure,
+        support_pure, Set.mem_singleton_iff] at hstmtOutOpt
+      subst stmtOutOpt
+      simp only [Option.elim_some, Option.getM_some, OptionT.run_pure] at hy
+      injection hy with hpair
+      have htd : td = proverResult.1 := congrArg Prod.fst (congrArg Prod.fst hpair)
+      have hvOut : vOut = f stmt proverResult.1 := congrArg Prod.snd hpair
+      rw [htd]
+      exact hvOut
 
 /-- An execution of an interactive reduction on a given initial statement and witness. Consists of
   first running the prover, and then the verifier. Returns the full transcript, the output statement
