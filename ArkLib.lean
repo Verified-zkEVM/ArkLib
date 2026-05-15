@@ -5,7 +5,6 @@ import ArkLib.CommitmentScheme.HardnessAssumptions
 import ArkLib.CommitmentScheme.KZG.Basic
 import ArkLib.CommitmentScheme.KZG.Binding
 import ArkLib.CommitmentScheme.KZG.Correctness
-import ArkLib.CommitmentScheme.KZG.DivByMonic
 import ArkLib.CommitmentScheme.KZG.FunctionBinding
 import ArkLib.CommitmentScheme.SimpleRO
 import ArkLib.Data.Classes.FunEquiv

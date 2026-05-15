@@ -779,8 +779,6 @@ theorem Binding {g₁ : G₁} {g₂ : G₂} (hn : 1 ≤ n) (hp : p ≥ n + 2) (h
     _ ≤ tSDHerror := tSDH_error_bound (g₁ := g₁) (g₂ := g₂) (pairing := pairing) hn
       tSDHerror htSDH adversary)
 
--- TODO put VCV-io lemmas in the right place.
-
 end Binding
 
 end CommitmentScheme

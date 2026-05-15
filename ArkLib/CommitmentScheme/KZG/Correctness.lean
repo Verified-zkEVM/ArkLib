@@ -5,7 +5,6 @@ Authors: Tobias Rothmann
 -/
 
 import ArkLib.CommitmentScheme.KZG.Basic
-import ArkLib.CommitmentScheme.KZG.DivByMonic
 
 /-! ## Correctness of the KZG Polynomial Commitment Scheme -/
 
@@ -28,7 +27,7 @@ variable {n : ℕ} -- the maximal degree of polynomials that can be commited to/
 private theorem toPoly_divByMonic {p : ℕ} [Fact (Nat.Prime p)]
     (f q : CPolynomial (ZMod p)) (hq : q.toPoly.Monic) :
     (f.divByMonic q).toPoly = f.toPoly /ₘ q.toPoly :=
-  KZG.DivByMonic.toPoly_divByMonic f q hq -- TODO replace this with a native proof of CompPoly?
+  CPolynomial.toPoly_divByMonic f q hq
 
 -- p(a) - p(z) = q(a) * (a - z)
 -- e ( C / g₁ ^ v , g₂ ) = e ( O , g₂ ^ a / g₂ ^ z)

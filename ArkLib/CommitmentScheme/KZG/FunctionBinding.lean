@@ -900,7 +900,7 @@ private lemma divByMonic_Zₛ_toPoly_eq_nodal_erase {L : ℕ}
     rw [CPolynomial.toPoly_sub, X_toPoly, C_toPoly]
   have hmonic : (X - C (query i) : CPolynomial (ZMod p)).toPoly.Monic := by
     rw [hq_toPoly]; exact Polynomial.monic_X_sub_C _
-  rw [KZG.DivByMonic.toPoly_divByMonic _ _ hmonic, Zₛ_toPoly_eq_nodal S query hquery, hq_toPoly,
+  rw [CPolynomial.toPoly_divByMonic _ _ hmonic, Zₛ_toPoly_eq_nodal S query hquery, hq_toPoly,
     Lagrange.nodal_eq_mul_nodal_erase hi]
   exact Polynomial.mul_divByMonic_cancel_left _ (Polynomial.monic_X_sub_C _)
 
