@@ -140,8 +140,8 @@ variable [Semiring F]
 lemma mem_code_of_polynomial_of_degree_lt_of_eval {n : ℕ} {α : ι ↪ F} {f : ι → F}
   (p : Polynomial F)
   (hdeg : p.degree < n) (heval : ∀ i, f i = p.eval (α i)) :
-  f ∈ code α n := by 
-  aesop 
+  f ∈ code α n := by
+  aesop
     (add simp [code, evalOnPoints,
                Polynomial.degreeLT,
                Polynomial.degree_lt_iff_coeff_zero])
@@ -149,7 +149,7 @@ lemma mem_code_of_polynomial_of_degree_lt_of_eval {n : ℕ} {α : ι ↪ F} {f :
 lemma mem_code_of_polynomial_of_natDegree_lt_of_eval {n : ℕ} {α : ι ↪ F} {f : ι → F}
   (p : Polynomial F)
   (hdeg : p.natDegree < n) (heval : ∀ i, f i = p.eval (α i)) :
-  f ∈ code α n := by 
+  f ∈ code α n := by
   by_cases h0 : p = 0
   · have hf : f = 0 := by aesop
     simp [hf]
@@ -157,13 +157,13 @@ lemma mem_code_of_polynomial_of_natDegree_lt_of_eval {n : ℕ} {α : ι ↪ F} {
     exact mem_code_of_polynomial_of_degree_lt_of_eval _ hdeg heval
 
 lemma mem_code_iff_exists_polynomial {n : ℕ} {α : ι ↪ F} {f : ι → F} :
-  f ∈ code α n ↔ ∃ p : Polynomial F, p.degree < n ∧ f = evalOnPoints α p := by 
-  constructor <;> 
+  f ∈ code α n ↔ ∃ p : Polynomial F, p.degree < n ∧ f = evalOnPoints α p := by
+  constructor <;>
     intro h <;>
     obtain ⟨p, h₁, h₂⟩ := h <;>
     exists p <;>
-    aesop (add simp 
-            [Polynomial.degreeLT, 
+    aesop (add simp
+            [Polynomial.degreeLT,
              Polynomial.degree_lt_iff_coeff_zero])
 
 lemma mem_code_iff_exists_polynomial_of_ne_zero {n : ℕ} [ne : NeZero n] {α : ι ↪ F} {f : ι → F} :

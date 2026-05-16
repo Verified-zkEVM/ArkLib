@@ -643,7 +643,7 @@ private lemma dist_from_code_bound_of_correlated_agreement
         exact Finset.card_le_card (by simp)
   }) h_u_deg
     aesop (add safe [mem_code_of_polynomial_of_natDegree_lt_of_eval])
-    
+
 private lemma folded_rate_div_eq_helper {d : ℕ}
   (hkn : k ≤ n) (hkd : 2 ^ k ∣ d) :
   (↑(d / 2 ^ k) : ℚ≥0) / 2 ^ (n - k) = (↑d : ℚ≥0) / 2 ^ n := by
@@ -787,9 +787,9 @@ theorem folding_preserves_distance
       SetLike.mem_coe, Matrix.of_apply] at correlated_agreement
     obtain ⟨S, h_card, v, h'⟩ := correlated_agreement
     rw [forall_and] at h'
-    rcases h' with ⟨h_rs, h'⟩ 
-    have h_rs := fun x ↦ (mem_code_iff_exists_polynomial_of_ne_zero 
-        (ne := ⟨by rw [Nat.div_ne_zero_iff]; omega⟩)).mp (h_rs x) 
+    rcases h' with ⟨h_rs, h'⟩
+    have h_rs := fun x ↦ (mem_code_iff_exists_polynomial_of_ne_zero
+        (ne := ⟨by rw [Nat.div_ne_zero_iff]; omega⟩)).mp (h_rs x)
     let u : Fin (2 ^ k - 1 + 1) → Polynomial F :=
       fun i => Classical.choose (h_rs i)
     have contradiction := dist_from_code_bound_of_correlated_agreement (domain := domain) (f := f)
@@ -813,7 +813,7 @@ theorem folding_preserves_distance
       (d := d)
       h_k_d
       h_d_n
-      (fun i ↦ 
+      (fun i ↦
         And.left <| Classical.choose_spec (h_rs (cast' i)))
     rw [Finset.card_image_of_injective _ CosetFftDomain.injective] at contradiction
     have contradiction : (Δ₀(f, code (domain : Fin (2 ^ n) ↪ F) d) : ENNReal)

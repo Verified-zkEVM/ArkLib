@@ -74,14 +74,14 @@ Defined inside Definition 3.12 [BCGM25]. -/
 def M_G (G : Generator S ℓ F) : Matrix S ℓ F :=
   Matrix.of G
 
-noncomputable example [DecidableEq F] (G : Generator S ℓ F) : LinearCode S F :=
-  LinearCode.fromColGenMat (M_G G)
+noncomputable example [DecidableEq F] (G : Generator S ℓ F) : LinearCode ℓ F :=
+  LinearCode.fromRowGenMat (M_G G)
 
 /-- A generator `G` is MDS if the matrix `M_G` whose rows are the outputs of the generator
 function is a generator matrix for an MDS code.
 Definition 3.12 [BCGM25]. -/
 def IsMDSGenerator [DecidableEq F] (G : Generator S ℓ F) : Prop :=
-    LinearCode.IsMDS (LinearCode.fromColGenMat (M_G G))
+    LinearCode.IsMDS (LinearCode.fromRowGenMat (M_G G))
 
 /-- The condition for MCA generator. -/
 def IsMCA (G : Generator S ℓ F) (LC : LinearCode ι F) (x : S) (U : ℓ → (ι → F)) (γ : I) : Prop :=
