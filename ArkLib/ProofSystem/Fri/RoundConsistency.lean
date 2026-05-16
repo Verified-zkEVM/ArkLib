@@ -1,5 +1,7 @@
 import Mathlib.LinearAlgebra.Lagrange
 import ArkLib.Data.Polynomial.SplitFold
+import CompPoly.Univariate.Lagrange
+import CompPoly.Univariate.ToPoly.Impl
 
 /-!
 # FRI Round Consistency
@@ -19,10 +21,14 @@ variable {𝔽 : Type} [CommSemiring 𝔽] [NoZeroDivisors 𝔽]
 The generalized round consistency check: checks that the Lagrange-interpolating polynomial through
 `pts` evaluates to `β` at the challenge `γ`. Used in FRI to verify that the next-round value equals
 the fold evaluated at the challenge.
+
+Implemented via `CompPoly.CPolynomial`'s computable Lagrange interpolation, so the check itself is
+computable.
 -/
-noncomputable def roundConsistencyCheck [Field 𝔽] [DecidableEq 𝔽]
+def roundConsistencyCheck [Field 𝔽] [DecidableEq 𝔽]
     {n : ℕ} (γ : 𝔽) (pts : Fin n → 𝔽 × 𝔽) (β : 𝔽) : Bool :=
-  let p := Lagrange.interpolate Finset.univ (fun i => (pts i).1) (fun i => (pts i).2)
+  let p := CompPoly.CPolynomial.CLagrange.interpolate
+    (Finset.univ : Finset (Fin n)) (fun i => (pts i).1) (fun i => (pts i).2)
   p.eval γ == β
 
 /--
@@ -44,10 +50,12 @@ lemma generalised_round_consistency_completeness
   :
     roundConsistencyCheck
       γ
-      (fun i => (ω i * s₀, f.eval (ω i * s₀))) 
+      (fun i => (ω i * s₀, f.eval (ω i * s₀)))
       ((FoldingPolynomial.polyFold f n γ).eval (s₀ ^ n)) = true := by
   unfold roundConsistencyCheck
   simp only [beq_iff_eq]
+  rw [CompPoly.CPolynomial.eval_toPoly,
+      CompPoly.CPolynomial.CLagrange.cinterpolate_eq_interpolate]
   have eval_eval₂_pow_eq_eval_pow {s : 𝔽} (i) :
       eval s (eval₂ C (X ^ n) (splitNth f n i)) = (splitNth f n i).eval (s ^ n) := by
     rw [eval₂_eq_sum]
@@ -67,27 +75,27 @@ lemma generalised_round_consistency_completeness
     simp
 
   apply Eq.trans (b := eval γ <| ∑ i : Fin n, X ^ (↑i : ℕ) * C (eval (s₀ ^ n) (f.splitNth n i)))
-  · rw [Lagrange.eq_interpolate (ι := Fin n) 
-        (v := fun i => ω i * s₀) 
+  · rw [Lagrange.eq_interpolate (ι := Fin n)
+        (v := fun i => ω i * s₀)
         (s := Finset.univ)
         (f := (∑ i : Fin n, X ^ (↑i : ℕ) * C (eval (s₀ ^ n) (f.splitNth n i)))) (by {
-    simp
+    simp only [Finset.coe_univ, Set.injOn_univ]
     intro x y hxy
     simp at hxy
     tauto
   }) (by {
-      simp
+      simp only [X_pow_mul_C, Finset.card_univ, Fintype.card_fin]
       apply lt_of_le_of_lt
-      apply Polynomial.degree_sum_le
-      simp only [WithBot.bot_lt_natCast, Finset.sup_lt_iff]
-      intro b _
-      simp
-      by_cases heq: eval (s₀ ^ n) (f.splitNth n b) = 0
-      · rw [heq,]
-        simp
-      · rw [degree_C]
-        simp
-        tauto
+      · apply Polynomial.degree_sum_le
+      · simp only [WithBot.bot_lt_natCast, Finset.sup_lt_iff]
+        intro b _
+        simp only [degree_mul, degree_pow, degree_X, nsmul_eq_mul, mul_one]
+        by_cases heq: eval (s₀ ^ n) (f.splitNth n b) = 0
+        · rw [heq,]
+          simp
+        · rw [degree_C]
+          · simp only [zero_add, Nat.cast_lt, Fin.is_lt]
+          · tauto
     })]
     congr
     ext i
@@ -116,5 +124,5 @@ lemma generalised_round_consistency_completeness
       ext i
       rw [eval_mul]
       simp
-  
+
 end RoundConsistency

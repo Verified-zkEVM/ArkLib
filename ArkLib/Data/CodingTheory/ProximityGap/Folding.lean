@@ -642,13 +642,7 @@ private lemma dist_from_code_bound_of_correlated_agreement
         simp only [CosetFftDomain.toFinset]
         exact Finset.card_le_card (by simp)
   }) h_u_deg
-    simp only [code, evalOnPoints, Submodule.mem_map, 
-      exists_exists_and_eq_and]
-    exists f'
-    aesop 
-      (add simp [Polynomial.degreeLT])
-      (add safe (by rw [Polynomial.coeff_eq_zero_of_natDegree_lt]))
-      (add safe (by omega))
+    aesop (add safe [mem_code_of_polynomial_of_natDegree_lt_of_eval])
 
 private lemma folded_rate_div_eq_helper {d : ℕ}
   (hkn : k ≤ n) (hkd : 2 ^ k ∣ d) :
@@ -793,8 +787,9 @@ theorem folding_preserves_distance
       SetLike.mem_coe, Matrix.of_apply] at correlated_agreement
     obtain ⟨S, h_card, v, h'⟩ := correlated_agreement
     rw [forall_and] at h'
-    rcases h' with ⟨h_rs, h'⟩ 
-    simp only [code, Submodule.mem_map] at h_rs
+    rcases h' with ⟨h_rs, h'⟩
+    have h_rs := fun x ↦ (mem_code_iff_exists_polynomial_of_ne_zero
+        (ne := ⟨by rw [Nat.div_ne_zero_iff]; omega⟩)).mp (h_rs x)
     let u : Fin (2 ^ k - 1 + 1) → Polynomial F :=
       fun i => Classical.choose (h_rs i)
     have contradiction := dist_from_code_bound_of_correlated_agreement (domain := domain) (f := f)
@@ -818,18 +813,8 @@ theorem folding_preserves_distance
       (d := d)
       h_k_d
       h_d_n
-      (fun i ↦ by
-        obtain ⟨h_spec, _⟩ : u (cast' i) ∈ F⦃< d / (2 ^ k)⦄[X] ∧ 
-          _ := Classical.choose_spec (h_rs (cast' i))
-        simp only [degreeLT, ge_iff_le, Submodule.mem_iInf, LinearMap.mem_ker,
-          lcoeff_apply] at h_spec
-        by_cases heq : u (cast' i) = 0
-        · simp [heq, h_k_d]
-        · rw [comp_apply, 
-              Polynomial.natDegree_lt_iff_degree_lt heq,
-              Polynomial.degree_lt_iff_coeff_zero]
-          exact h_spec
-      )
+      (fun i ↦
+        And.left <| Classical.choose_spec (h_rs (cast' i)))
     rw [Finset.card_image_of_injective _ CosetFftDomain.injective] at contradiction
     have contradiction : (Δ₀(f, code (domain : Fin (2 ^ n) ↪ F) d) : ENNReal)
       ≤ (↑(2 ^ n) : ℚ≥0) * δ := 
