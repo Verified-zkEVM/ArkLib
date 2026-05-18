@@ -23,11 +23,8 @@ lemma mem_rs_code_iff_exists_mle
   · obtain ⟨g, h⟩ := h 
     apply mem_code_of_polynomial_of_natDegree_lt_of_eval
       (powAlgHom g.1)
-    · exact Nat.lt_of_le_of_lt powAlgHom_natDegree <| by
-       obtain ⟨g, hg⟩ := g
-       rw [mem_restrictDegree] at hg
-       have htotal : g.totalDegree ≤ 1 := by
-        simp [totalDegree]
-        intro b hcoeff
+    · exact Nat.lt_of_le_of_lt powAlgHom_of_restrict_degree_natDegree <| by
+        grind
+    · 
 
 end ReedSolomon

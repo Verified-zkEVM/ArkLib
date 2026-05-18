@@ -8,6 +8,7 @@ import ArkLib.Data.CodingTheory.Basic.DecodingRadius
 import ArkLib.Data.CodingTheory.Basic.Distance
 import ArkLib.Data.CodingTheory.Basic.LinearCode
 import ArkLib.Data.CodingTheory.Basic.RelativeDistance
+import ArkLib.Data.MvPolynomial.Multilinear
 import Mathlib.Algebra.MvPolynomial.Eval
 import Mathlib.Algebra.Polynomial.Eval.Defs
 
@@ -76,6 +77,73 @@ def partialEval {k : ℕ} (f : MvPolynomial (Fin m) F) (α : Fin k → F) (h : k
 def powAlgHom :
     MvPolynomial (Fin m) F →ₐ[F] Polynomial F :=
    aeval fun j => Polynomial.X ^ (2 ^ (j : ℕ))
+
+lemma powAlgHom_of_restrict_degree_natDegree {p : MvPolynomial.restrictDegree (Fin m) F 1} :
+  (powAlgHom p.1).natDegree ≤ (2 ^ m - 1) := by
+  have h_monomial_deg : ∀ d ∈ p.val.support, (∑ j : Fin m, d j * 2 ^ j.val) ≤ 2 ^ m - 1 := by
+    have h_deg {d} (hd : d ∈ p.val.support) : 
+      (∑ j : Fin m, d j * 2 ^ j.val) ≤ ∑ j : Fin m, 2 ^ j.val := by
+      have h_deg {j : Fin m} : d j ≤ 1 := by
+        have := p.2
+        simp_all only [restrictDegree, mem_support_iff, ne_eq, SetLike.coe_mem, ge_iff_le]
+        have := p.2
+        rw [mem_restrictDegree] at this
+        exact this d (by aesop) j
+      exact Finset.sum_le_sum fun i _ ↦ mul_le_of_le_one_left (Nat.zero_le _) h_deg
+    convert (fun d hd ↦ h_deg (d := d) hd) using 3
+    exact Nat.sub_eq_of_eq_add 
+      (by exact Nat.recOn m (by norm_num) fun n ih ↦ 
+        by simp [Fin.sum_univ_castSucc, pow_succ'] at *; linarith)
+  exact le_trans (Polynomial.natDegree_sum_le _ _) <| Finset.sup_le <| fun d hd ↦ by 
+    specialize h_monomial_deg d hd
+    simp_all only [Finsupp.mem_support_iff, ne_eq, Polynomial.algebraMap_eq, Finsupp.prod_pow,
+      Function.comp_apply, Polynomial.natDegree_le_iff_coeff_eq_zero, Polynomial.coeff_C_mul] 
+    simp_all only [←pow_mul', Finset.prod_pow_eq_pow_sum, Polynomial.coeff_X_pow, mul_ite, mul_one,
+      mul_zero, ite_eq_right_iff, imp_false]
+    exact fun N hN ↦ ne_of_gt (lt_of_le_of_lt h_monomial_deg hN)
+
+lemma powAlgHom_natDegree {p : MvPolynomial (Fin m) F} :
+  (powAlgHom p).natDegree ≤ p.totalDegree * (2 ^ m - 1) := by
+  have h_deg {d} (hd : d ∈ p.support) : 
+    (powAlgHom (MvPolynomial.monomial d (p.coeff d))).natDegree ≤ 
+        d.sum (fun i k => 2^i.val * k) := by
+    simp only [
+      powAlgHom,
+      aeval_def,
+      Polynomial.algebraMap_eq,
+      eval₂_monomial,
+      Finsupp.prod]
+    exact le_trans (Polynomial.natDegree_C_mul_le _ _) <| by
+      exact le_trans (Polynomial.natDegree_prod_le _ _) <| by
+        simp only [←pow_mul, Finsupp.sum]
+        exact Finset.sum_le_sum fun i _ ↦ Polynomial.natDegree_X_pow_le _
+  have h_le {d} (hd : d ∈ p.support) : 
+    (powAlgHom (MvPolynomial.monomial d (p.coeff d))).natDegree ≤ p.totalDegree * (2^m - 1) := by
+    have h_sum : d.sum (fun i k ↦ 2^i.val * k) ≤ 
+      p.totalDegree * (2^m - 1) := by
+      have h_sum : d.sum (fun i k ↦ 2^i.val * k) ≤ 
+        d.sum (fun _ k => k) * (2^m - 1) := by
+        rw [Finsupp.sum, Finsupp.sum, Finset.sum_mul _ _ _]
+        exact Finset.sum_le_sum fun i hi ↦ by 
+          rw [mul_comm] 
+          exact Nat.mul_le_mul_left _ 
+            (Nat.le_sub_one_of_lt (pow_lt_pow_right₀ (by decide) (Fin.is_lt i)))
+      exact h_sum.trans 
+        (Nat.mul_le_mul_right _ (Finset.le_sup (f := fun s ↦ s.sum fun x k ↦ k) hd))
+    exact le_trans (h_deg hd) h_sum
+  have h_sum_le : (powAlgHom p).natDegree ≤ 
+    Finset.sup p.support (fun d ↦ (powAlgHom (MvPolynomial.monomial d (p.coeff d))).natDegree) := by
+    have h_sum : powAlgHom p = 
+      ∑ d ∈ p.support, powAlgHom (MvPolynomial.monomial d (p.coeff d)) := by
+      rw [MvPolynomial.as_sum p, map_sum]
+      simp [MvPolynomial.support_sum_monomial_coeff]
+    exact h_sum.symm ▸ Polynomial.natDegree_sum_le _ _
+  exact h_sum_le.trans (Finset.sup_le (fun d hd ↦ h_le hd))
+
+lemma powAlgHom_degree {p : MvPolynomial (Fin m) F} :
+  (powAlgHom p).degree ≤ ↑(p.totalDegree * (2 ^ m - 1)) := by
+  rw [←Polynomial.natDegree_le_iff_degree_le]
+  exact powAlgHom_natDegree
 
 /- The linear map optained by forgetting the multiplicative structure-/
 def powContraction :
