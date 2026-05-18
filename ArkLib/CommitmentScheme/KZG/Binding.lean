@@ -170,7 +170,7 @@ lemma tSDH_denominator_ne_zero_of_opening_equations
 
 omit [Fact (0 < p)] [DecidableEq G₁] [Group G₂] [PrimeOrderWith G₂ p]
   [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
-private lemma binding_orderOf_eq_prime_of_ne_one (x : G₁) (hx : x ≠ 1) : orderOf x = p := by
+lemma binding_orderOf_eq_prime_of_ne_one (x : G₁) (hx : x ≠ 1) : orderOf x = p := by
   have hdvd := orderOf_dvd_natCard (G := G₁) x
   rw [PrimeOrderWith.hCard] at hdvd
   rcases (Nat.dvd_prime Fact.out).1 hdvd with h1 | hp'
@@ -179,7 +179,7 @@ private lemma binding_orderOf_eq_prime_of_ne_one (x : G₁) (hx : x ≠ 1) : ord
 
 omit [Fact (0 < p)] [DecidableEq G₁] [Group G₂] [PrimeOrderWith G₂ p]
   [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
-private lemma binding_exists_zmod_power_of_generator (hpG1 : Nat.card G₁ = p) (hg₁ : g₁ ≠ 1)
+lemma binding_exists_zmod_power_of_generator (hpG1 : Nat.card G₁ = p) (hg₁ : g₁ ≠ 1)
     (hord : orderOf g₁ = p) (x : G₁) : ∃ a : ZMod p, x = g₁ ^ a.val := by
   obtain ⟨k, hk⟩ : ∃ k : ℕ, g₁ ^ k = x := mem_powers_of_prime_card hpG1 hg₁
   exact ⟨(k : ZMod p), by rw [ZMod.val_natCast, ← hk, ← pow_mod_orderOf g₁ k, hord]⟩
@@ -289,7 +289,7 @@ def bindingReduction (_hn : 1 ≤ n) (AuxState : Type)
           (srs, cm, query, resp₁, resp₂, accept₁, accept₂, proof₁, proof₂))
       ))
 
-private lemma Reduction.verdict_run_eq_map_run
+lemma Reduction.verdict_run_eq_map_run
     {ι : Type} {oSpec : OracleSpec ι} {StmtIn WitIn StmtOut WitOut : Type}
     {n : ℕ} {pSpec : ProtocolSpec n}
     (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
@@ -299,7 +299,7 @@ private lemma Reduction.verdict_run_eq_map_run
         result.2) <$> (reduction.run stmt wit).run := by
   simp [Reduction.verdict, OptionT.run_map]
 
-private lemma bind_two_option_project_getD
+lemma bind_two_option_project_getD
     {m : Type → Type} [Monad m] [LawfulMonad m]
     {α β γ δ ε ζ : Type} (mx : m (Option α)) (my : m (Option β))
     (fa : α → γ) (fb : β → δ) (da : γ) (db : δ)
@@ -321,7 +321,7 @@ private lemma bind_two_option_project_getD
   funext y
   simp [hproj]
 
-private lemma exists_of_option_map_getD_true {α : Type} (f : α → Bool) (x : Option α)
+lemma exists_of_option_map_getD_true {α : Type} (f : α → Bool) (x : Option α)
     (h : (Option.map f x).getD false = true) : ∃ a, x = some a ∧ f a = true := by
   cases x with
   | none => simp at h
@@ -392,12 +392,20 @@ lemma B_game_ext_eq_B_game {n : ℕ} {AuxState : Type} [SampleableType G₁]
   trans (simulateQ impl (do
       let τ ← OracleComp.liftComp sample _
       bodyBase τ)).run' (∅ : unifSpec.QueryCache)
-  · exact StateT.run'_simulateQ_liftComp_map_sample_bind
-      (impl := impl) (sample := sample) (mk := mk) (body := bodyKey)
-      (s := (∅ : unifSpec.QueryCache))
-  · refine StateT.run'_simulateQ_liftComp_bind_project_of_body
-      (impl := impl) (sample := sample) (bodyBase := bodyBase) (bodyExt := bodyExt)
-      (proj := proj) (s := (∅ : unifSpec.QueryCache)) ?_
+  · apply congrArg (fun oa => (simulateQ impl oa).run' (∅ : unifSpec.QueryCache))
+    calc
+      (do
+        let k ← OracleComp.liftComp (do let τ ← sample; pure (mk τ)) _
+        bodyKey k)
+        = (do
+          let k ← mk <$> OracleComp.liftComp sample _
+          bodyKey k) := by rw [OracleComp.liftComp_bind_pure]
+      _ = (do
+        let τ ← OracleComp.liftComp sample _
+        bodyKey (mk τ)) := OracleComp.bind_liftComp_map sample mk bodyKey
+  · refine StateT.run'_simulateQ_bind_map_eq_of_body
+      (impl := impl) (oa := OracleComp.liftComp sample _) (body₁ := bodyBase)
+      (body₂ := bodyExt) (f := Option.map proj) (s := (∅ : unifSpec.QueryCache)) ?_
     intro τ
     dsimp only [bodyBase, bodyKey, bodyExt, mk]
     rw [← simulateQ_map]
@@ -639,10 +647,11 @@ lemma tSDH_game_eq {n : ℕ} {AuxState : Type} [SampleableType G₁]
       (challengeQueryImpl (pSpec := pSpec'))
   simpa only [B_game_ext, bindingReduction, KZG, OptionT.mk, pSpec', impl, scheme,
       OptionT.run_map] using
-    OptionT.simulateQ_liftComp_bind_map_eq_of_body
+    OptionT.map_mk_run'_simulateQ_bind_eq_of_body
       (impl := impl)
       (impl₀ := randomOracle)
-      (sample := (($ᵗ (ZMod p)) : OracleComp unifSpec (ZMod p)))
+      (oa := OracleComp.liftComp (($ᵗ (ZMod p)) : OracleComp unifSpec (ZMod p)) _)
+      (oa₀ := (($ᵗ (ZMod p)) : OracleComp unifSpec (ZMod p)))
       (body₁ := fun τ => do
         let srs := generateSrs (g₁ := g₁) (g₂ := g₂) n τ
         let ⟨cm, query, resp₁, resp₂, st₁, st₂⟩ ← liftComp (adversary.claim srs) _

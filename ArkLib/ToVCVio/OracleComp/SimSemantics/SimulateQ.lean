@@ -66,105 +66,79 @@ lemma OptionT.aux_mem_support_simulateQ_run'
   rw [OptionT.mem_support_iff] at hx
   exact h (some x) (support_simulateQ_run'_subset impl oa s₀ hx) x rfl
 
--- TODO: These lemmas (this and all following) are way too structured. Break them up into more generic, simpler lemmas.
-lemma StateT.run'_simulateQ_liftComp_map_sample_bind
-    {ι₀ ι σ α κ γ : Type} {spec₀ : OracleSpec ι₀} {spec : OracleSpec ι}
-    [MonadLiftT (OracleQuery spec₀) (OracleQuery spec)]
+lemma simulateQ_bind_map_eq_of_body
+    {ι σ α β γ : Type} {spec : OracleSpec ι}
     (impl : QueryImpl spec (StateT σ ProbComp))
-    (sample : OracleComp spec₀ α) (mk : α → κ)
-    (body : κ → OracleComp spec γ) (s : σ) :
-    (simulateQ impl (do
-      let k ← OracleComp.liftComp (do let a ← sample; pure (mk a)) spec
-      body k)).run' s =
-    (simulateQ impl (do
-      let a ← OracleComp.liftComp sample spec
-      body (mk a))).run' s := by
-  simp only [liftComp_bind, liftComp_pure, bind_assoc, pure_bind]
-
-lemma StateT.run'_simulateQ_liftComp_bind_project_of_body
-    {ι₀ ι σ α β γ : Type} {spec₀ : OracleSpec ι₀} {spec : OracleSpec ι}
-    [MonadLiftT (OracleQuery spec₀) (OracleQuery spec)]
-    (impl : QueryImpl spec (StateT σ ProbComp))
-    (sample : OracleComp spec₀ α)
-    (bodyBase : α → OracleComp spec (Option β))
-    (bodyExt : α → OracleComp spec (Option γ))
-    (proj : γ → β) (s : σ)
-    (hBody : ∀ a, simulateQ impl (bodyBase a) =
-      Option.map proj <$> simulateQ impl (bodyExt a)) :
-    (simulateQ impl (do
-      let a ← OracleComp.liftComp sample spec
-      bodyBase a)).run' s =
-    Option.map proj <$> (simulateQ impl (do
-      let a ← OracleComp.liftComp sample spec
-      bodyExt a)).run' s := by
-  rw [← StateT.run'_map_comm (Option.map proj)
-    (simulateQ impl (do
-      let a ← OracleComp.liftComp sample spec
-      bodyExt a)) s]
+    (oa : OracleComp spec α) (body₁ : α → OracleComp spec β)
+    (body₂ : α → OracleComp spec γ) (f : γ → β)
+    (hBody : ∀ a, simulateQ impl (body₁ a) = f <$> simulateQ impl (body₂ a)) :
+    simulateQ impl (oa >>= body₁) = f <$> simulateQ impl (oa >>= body₂) := by
   rw [← simulateQ_map]
   simp only [map_eq_bind_pure_comp, simulateQ_bind, simulateQ_pure, bind_assoc,
     Function.comp]
-  apply congrArg (fun mx : StateT σ ProbComp (Option β) => mx.run' s)
   congr 1
   funext a
   exact hBody a
 
-lemma StateT.run'_simulateQ_liftComp_bind_map_eq_of_body
+lemma StateT.run'_simulateQ_bind_map_eq_of_body
+    {ι σ α β γ : Type} {spec : OracleSpec ι}
+    (impl : QueryImpl spec (StateT σ ProbComp))
+    (oa : OracleComp spec α) (body₁ : α → OracleComp spec β)
+    (body₂ : α → OracleComp spec γ) (f : γ → β) (s : σ)
+    (hBody : ∀ a, simulateQ impl (body₁ a) = f <$> simulateQ impl (body₂ a)) :
+    (simulateQ impl (oa >>= body₁)).run' s =
+      f <$> (simulateQ impl (oa >>= body₂)).run' s := by
+  rw [← StateT.run'_map_comm f]
+  exact congrArg (fun mx : StateT σ ProbComp β => mx.run' s)
+    (simulateQ_bind_map_eq_of_body impl oa body₁ body₂ f hBody)
+
+lemma StateT.run'_map_simulateQ_bind_eq_of_body
     {ι₀ ι σ α β γ δ : Type} {spec₀ : OracleSpec ι₀} {spec : OracleSpec ι}
-    [MonadLiftT (OracleQuery spec₀) (OracleQuery spec)]
     (impl : QueryImpl spec (StateT σ ProbComp))
     (impl₀ : QueryImpl spec₀ (StateT σ ProbComp))
-    (sample : OracleComp spec₀ α)
-    (body₁ : α → OracleComp spec (Option β))
-    (body₂ : α → OracleComp spec (Option γ))
+    (oa : OracleComp spec α) (oa₀ : OracleComp spec₀ α)
+    (body₁ : α → OracleComp spec β) (body₂ : α → OracleComp spec γ)
     (f : β → δ) (post : α → γ → δ) (s : σ)
-    (hSample : simulateQ impl (OracleComp.liftComp sample spec) = simulateQ impl₀ sample)
-    (hBody : ∀ a, Option.map f <$> simulateQ impl (body₁ a) =
-      Option.map (post a) <$> simulateQ impl (body₂ a)) :
-    (Option.map f <$> (simulateQ impl (do
-      let a ← OracleComp.liftComp sample spec
-      body₁ a)).run' s)
+    (hSample : simulateQ impl oa = simulateQ impl₀ oa₀)
+    (hBody : ∀ a, f <$> simulateQ impl (body₁ a) =
+      post a <$> simulateQ impl (body₂ a)) :
+    (f <$> (simulateQ impl (oa >>= body₁)).run' s)
     =
     ((do
-      let a ← simulateQ impl₀ sample
+      let a ← simulateQ impl₀ oa₀
       let r ← simulateQ impl (body₂ a)
-      pure (Option.map (post a) r)).run' s) := by
-  rw [← StateT.run'_map_comm (Option.map f)
-    (simulateQ impl (do
-      let a ← OracleComp.liftComp sample spec
-      body₁ a)) s]
+      pure (post a r)).run' s) := by
+  rw [← StateT.run'_map_comm f]
   rw [← simulateQ_map]
   simp only [map_eq_bind_pure_comp, simulateQ_bind, simulateQ_pure, bind_assoc,
     Function.comp]
   rw [hSample]
-  apply congrArg (fun mx : StateT σ ProbComp (Option δ) => mx.run' s)
+  apply congrArg (fun mx : StateT σ ProbComp δ => mx.run' s)
   congr 1
   funext a
   exact hBody a
 
-lemma OptionT.simulateQ_liftComp_bind_map_eq_of_body
+lemma OptionT.map_mk_run'_simulateQ_bind_eq_of_body
     {ι₀ ι σ α β γ δ : Type} {spec₀ : OracleSpec ι₀} {spec : OracleSpec ι}
-    [MonadLiftT (OracleQuery spec₀) (OracleQuery spec)]
     (impl : QueryImpl spec (StateT σ ProbComp))
     (impl₀ : QueryImpl spec₀ (StateT σ ProbComp))
-    (sample : OracleComp spec₀ α)
+    (oa : OracleComp spec α) (oa₀ : OracleComp spec₀ α)
     (body₁ : α → OracleComp spec (Option β))
     (body₂ : α → OracleComp spec (Option γ))
     (f : β → δ) (post : α → γ → δ) (s : σ)
-    (hSample : simulateQ impl (OracleComp.liftComp sample spec) = simulateQ impl₀ sample)
+    (hSample : simulateQ impl oa = simulateQ impl₀ oa₀)
     (hBody : ∀ a, Option.map f <$> simulateQ impl (body₁ a) =
       Option.map (post a) <$> simulateQ impl (body₂ a)) :
-    f <$> OptionT.mk ((simulateQ impl (do
-      let a ← OracleComp.liftComp sample spec
-      body₁ a)).run' s)
+    f <$> OptionT.mk ((simulateQ impl (oa >>= body₁)).run' s)
     =
     OptionT.mk ((do
-      let a ← simulateQ impl₀ sample
+      let a ← simulateQ impl₀ oa₀
       let r ← simulateQ impl (body₂ a)
       pure (Option.map (post a) r)).run' s) := by
   apply OptionT.ext
   rw [OptionT.run_map]
   exact
-    (StateT.run'_simulateQ_liftComp_bind_map_eq_of_body
-      (impl := impl) (impl₀ := impl₀) (sample := sample) (body₁ := body₁)
-      (body₂ := body₂) (f := f) (post := post) (s := s) hSample hBody)
+    (StateT.run'_map_simulateQ_bind_eq_of_body
+      (impl := impl) (impl₀ := impl₀) (oa := oa) (oa₀ := oa₀)
+      (body₁ := body₁) (body₂ := body₂) (f := Option.map f)
+      (post := fun a => Option.map (post a)) (s := s) hSample hBody)

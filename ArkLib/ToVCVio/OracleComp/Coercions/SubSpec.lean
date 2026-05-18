@@ -26,4 +26,25 @@ lemma mem_support_of_mem_support_liftComp
       obtain ⟨u, _hu, hx⟩ := hx
       exact ⟨u, OracleComp.mem_support_query q u, ih u x hx⟩
 
+lemma liftComp_bind_pure
+    {ι τ α β : Type} {spec : OracleSpec ι} {superSpec : OracleSpec τ}
+    [MonadLiftT (OracleQuery spec) (OracleQuery superSpec)]
+    (oa : OracleComp spec α) (f : α → β) :
+    OracleComp.liftComp (do let a ← oa; pure (f a)) superSpec =
+      f <$> OracleComp.liftComp oa superSpec := by
+  change (f <$> oa).liftComp superSpec = f <$> oa.liftComp superSpec
+  exact OracleComp.liftComp_map superSpec oa f
+
+lemma bind_liftComp_map
+    {ι τ α β γ : Type} {spec : OracleSpec ι} {superSpec : OracleSpec τ}
+    [MonadLiftT (OracleQuery spec) (OracleQuery superSpec)]
+    (oa : OracleComp spec α) (f : α → β) (body : β → OracleComp superSpec γ) :
+    (do
+      let b ← f <$> OracleComp.liftComp oa superSpec
+      body b) =
+    (do
+      let a ← OracleComp.liftComp oa superSpec
+      body (f a)) := by
+  simp only [map_eq_bind_pure_comp, bind_assoc, Function.comp_apply, pure_bind]
+
 end OracleComp

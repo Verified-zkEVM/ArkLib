@@ -25,7 +25,7 @@ variable {G₁ : Type} [Group G₁] [PrimeOrderWith G₁ p] [DecidableEq G₁] {
 variable {n : ℕ} -- the maximal degree of polynomials that can be commited to/opened.
 
 -- Helper: toPoly commutes with divByMonic for monic divisors
-private theorem toPoly_divByMonic {p : ℕ} [Fact (Nat.Prime p)]
+lemma toPoly_divByMonic {p : ℕ} [Fact (Nat.Prime p)]
     (f q : CPolynomial (ZMod p)) (hq : q.toPoly.Monic) :
     (f.divByMonic q).toPoly = f.toPoly /ₘ q.toPoly :=
   CPolynomial.toPoly_divByMonic f q hq
