@@ -65,7 +65,7 @@ section Def_5_5_6_RedundantEntryDSHelpers
 variable {StmtIn : Type} {n : ℕ} {pSpec : ProtocolSpec n}
   {U : Type} [SpongeUnit U] [SpongeSize]
 
-/-- Redundancy test for a new entry against a prefix of the trace (Definition 5.5). -/
+/-- **Definition 5.5**: Redundancy test for a new entry against a prefix of the trace -/
 private def redundantEntryDSPrefix
     (pref : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (entry : Sigma (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
@@ -78,19 +78,6 @@ private def redundantEntryDSPrefix
   | ⟨.inr (.inr stateOut), stateIn⟩ =>
       ⟨.inr (.inr stateOut), stateIn⟩ ∈ pref
       ∨ ⟨.inr (.inl stateIn), stateOut⟩ ∈ pref
-
-/-- CO25 Definition 5.5 — Redundant entry in a duplex-sponge trace.
-An entry `tr_j` is redundant if a prior entry `tr_{j'} (j' < j)` makes it superfluous:
-- `(h, x, s_C)` is redundant if the same pair already appears earlier (Eq. 20).
-- `(p, s_in, s_out)` is redundant if `(p, s_in, s_out)` or `(p⁻¹, s_out, s_in)` appears earlier
-  (Eq. 21).
-- `(p⁻¹, s_out, s_in)` is redundant if `(p⁻¹, s_out, s_in)` or `(p, s_in, s_out)` appears
-  earlier (Eq. 22).
-
-TODO: refactor this into a combination of simpler properties? -/
-def redundantEntryDS (log : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (idx : Fin log.length) : Prop :=
-  redundantEntryDSPrefix (log.take idx.1) log[idx]
 
 /-- CO25 Definition 5.6 — Base trace `tr̄` side condition.
 `NoRedundantEntryDS log` holds iff no entry of `log` is redundant in the sense of
@@ -282,7 +269,7 @@ def capacitySegmentDup : Prop :=
 alias E_dup := capacitySegmentDup
 
 /-- CO25 Definition 5.7 — Event `E_func(tr)` (Eq. 26).
-The same query to `p` leads to different answers, or there are inconsistent queries across `p`
+**The same query to `p` leads to different answers**, or there are inconsistent queries across `p`
 and `p⁻¹`:
 
 ```
@@ -356,19 +343,21 @@ variable {StmtOut : Type}
   {T_P : Type}
   [LawfulTraceNablaImpl T_H T_P StmtIn U]
 
-/-- CO25 §5.6 Lemma 5.8 — Per-oracle query budget map for a malicious prover.
-`tₕ` bounds `h` queries, `tₚ` forward `p` queries, `tₚᵢ` backward `p⁻¹` queries.
-Alias for `duplexSpongeQueryBudget`. -/
+/-- CO25 §5.6 Lemma 5.8 — Per-oracle query budget map for a salted malicious prover on
+`[]ₒ + duplexSpongeChallengeOracle`. `tₕ` bounds `h` queries, `tₚ` forward `p` queries,
+`tₚᵢ` backward `p⁻¹` queries; the `[]ₒ` branch is uncallable so its share is `0`.
+Aligns with the §5.8 hybrid bookkeeping (`duplexSpongeQueryBudgetWithShared` in `Defs.lean`)
+so Lemma 5.8 plugs into `claim_5_21` / `claim_5_22` / `claim_5_24` without re-keying. -/
 def lemma5_8QueryBudget (tₕ tₚ tₚᵢ : ℕ) :
-    (duplexSpongeChallengeOracle StmtIn U).Domain → ℕ :=
-  duplexSpongeQueryBudget tₕ tₚ tₚᵢ
+    ([]ₒ + duplexSpongeChallengeOracle StmtIn U).Domain → ℕ :=
+  duplexSpongeQueryBudgetWithShared (oSpec := []ₒ) PEmpty.elim tₕ tₚ tₚᵢ
 
-/-- CO25 Lemma 5.8 — Semantic `(tₕ, tₚ, tₚᵢ)` query bound for a malicious prover.
+/-- CO25 Lemma 5.8 — Semantic `(tₕ, tₚ, tₚᵢ)` query bound for the salted §5.6 prover.
 `IsLemma5_8QueryBound maliciousProver tₕ tₚ tₚᵢ` asserts that the prover makes at most `tₕ`
-hash queries, `tₚ` forward permutation queries, and `tₚᵢ` inverse permutation queries. -/
+hash queries, `tₚ` forward permutation queries, and `tₚᵢ` inverse permutation queries on the
+combined `[]ₒ + DS` surface that matches the §5.8 hybrid games (LHS=Hyb_0, RHS=Hyb_1). -/
 abbrev IsLemma5_8QueryBound
-    (maliciousProver :
-      OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages))
+    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
     (tₕ tₚ tₚᵢ : ℕ) : Prop :=
   OracleComp.IsPerIndexQueryBound maliciousProver
     (lemma5_8QueryBudget (StmtIn := StmtIn) (U := U) tₕ tₚ tₚᵢ)
@@ -423,17 +412,25 @@ private def lemma5_8LoggingWrapper {σ : Type}
 /-- CO25 §5.6 (Option G — paper-faithful abort) — Abortable Lemma-5.8 trace experiment with
 separate prover and verifier query-log slots.
 
-Runs the malicious prover under `impl` (wrapped via `lemma5_8LoggingWrapper`) with a fresh log
-`[]`, yielding either an abort or the prover output `(stmtIn, messages)`. The carrier state `σ`
-(e.g., `D𝔖.Carrier` or `D2SQueryState`) is threaded; the log accumulates the prover-phase trace
-`tr_P̃`. If the prover aborts mid-execution, the returned pair is `(tr_P̃, [])` (paper line 1417:
-abort halts the experiment; `V` never runs; `tr_V` is empty).
+Mirrors the §5.8 hybrid skeleton (`KeyLemma.dsfsGame` / `hybridGame`):
 
-On `some`, the verifier `𝒱^{h,p} := Verifier.duplexSpongeFiatShamirForward V` runs over the
-narrow forward-only spec `[]ₒ + duplexSpongeForwardOracle`, then is `liftComp`-ed up to the wide
-spec `[]ₒ + duplexSpongeChallengeOracle` shared with the prover. The verifier simulation reuses
-the post-prover carrier state `s₁` but starts with a fresh log `[]` so the returned `tr_V`
-contains only verifier-phase queries.
+- The prover is the salted `MaliciousProver []ₒ pSpec StmtIn U δ` outputting
+  `(𝕩, (τ, messages)) : StmtIn × DSSaltedProof pSpec U δ`.
+- The verifier is the narrow forward-only `𝒱^{h,p} := V.toDSFS δ` (paper Figure 4 line 3),
+  lifted to the wide `[]ₒ + duplexSpongeChallengeOracle` spec via `runForwardVerifierWide`
+  so its salt-absorb + transcript-derivation queries are recorded against the same wide log
+  as the prover's queries.
+
+Runs the prover under `impl` (wrapped via `lemma5_8LoggingWrapper`, then composed with the
+unreachable `[]ₒ` branch via `lemma5_8EmptyQueryImplGeneric`) on a fresh log `[]`, yielding
+either an abort or the prover output. The carrier state `σ` (e.g., `D_𝔖.Carrier` or
+`D2SQueryState`) is threaded; the log accumulates the prover-phase trace `tr_P̃`. If the prover
+aborts mid-execution, the returned pair is `(tr_P̃, [])` (paper line 1417: abort halts the
+experiment; `V` never runs; `tr_V` is empty).
+
+On `some`, the verifier reuses the post-prover carrier state `s₁` but starts with a fresh log
+`[]` so the returned `tr_V` contains only verifier-phase queries. The combined `[]ₒ + DS`
+trace logs are projected down to bare DS via `lemma5_8ProjectTraceLog`.
 
 Returns the pair `(tr_P̃, tr_V)`. The bad-event predicate of CO25 Def 5.7 is evaluated on the
 concatenation `tr_P̃ ++ tr_V`. -/
@@ -443,40 +440,42 @@ noncomputable def lemma5_8ProjectedTraceDistAbortable
     (impl : QueryImpl (duplexSpongeChallengeOracle StmtIn U)
       (StateT σ (OptionT ProbComp)))
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (maliciousProver :
-      OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) :
+    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ) :
     ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U) ×
               QueryLog (duplexSpongeChallengeOracle StmtIn U)) := do
   let s₀ ← init
-  let wrappedImpl :
+  let wrappedDSImpl :
       QueryImpl (duplexSpongeChallengeOracle StmtIn U)
         (OptionT
-          (StateT (σ × QueryLog (duplexSpongeChallengeOracle StmtIn U)) ProbComp)) :=
-    lemma5_8LoggingWrapper (StmtIn := StmtIn) (U := U) impl
-  let proverResult ← ((simulateQ wrappedImpl maliciousProver).run) (s₀, [])
+          (StateT (σ ×
+            QueryLog ([]ₒ + duplexSpongeChallengeOracle StmtIn U)) ProbComp)) :=
+    fun q => OptionT.mk fun st => do
+      let r ← (impl q st.1).run
+      match r with
+      | none => pure (none, st)
+      | some (a, s') => pure (some a, (s', st.2 ++ [⟨Sum.inr q, a⟩]))
+  let combinedImpl :
+      QueryImpl ([]ₒ + duplexSpongeChallengeOracle StmtIn U)
+        (OptionT
+          (StateT (σ ×
+            QueryLog ([]ₒ + duplexSpongeChallengeOracle StmtIn U)) ProbComp)) :=
+    (lemma5_8EmptyQueryImplGeneric
+      (m := OptionT
+        (StateT (σ ×
+          QueryLog ([]ₒ + duplexSpongeChallengeOracle StmtIn U)) ProbComp)))
+    + wrappedDSImpl
+  let proverResult ← ((simulateQ combinedImpl maliciousProver).run) (s₀, [])
   match proverResult with
-  | (none, (_, trP)) => pure (trP, [])
-  | (some ⟨stmtIn, messages⟩, (s₁, trP)) =>
-      let verifyCompNarrow :
-          OracleComp ([]ₒ + duplexSpongeForwardOracle StmtIn U) (Option StmtOut) :=
-        ((Verifier.duplexSpongeFiatShamirForward
-            (oSpec := []ₒ) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec)
-            (U := U) V).run
-          stmtIn (fun i => match i with | ⟨0, _⟩ => messages)).run
+  | (none, (_, trP)) =>
+      pure (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP, [])
+  | (some ⟨stmtIn, proof⟩, (s₁, trP)) =>
       let verifyCompWide :
           OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) (Option StmtOut) :=
-        liftComp verifyCompNarrow ([]ₒ + duplexSpongeChallengeOracle StmtIn U)
-      let combinedImpl :
-          QueryImpl ([]ₒ + duplexSpongeChallengeOracle StmtIn U)
-            (OptionT
-              (StateT (σ × QueryLog (duplexSpongeChallengeOracle StmtIn U)) ProbComp)) :=
-        (lemma5_8EmptyQueryImplGeneric
-          (m := OptionT
-            (StateT (σ × QueryLog (duplexSpongeChallengeOracle StmtIn U)) ProbComp)))
-        + wrappedImpl
+        runForwardVerifierWide (oSpec := []ₒ) δ V stmtIn proof
       let verifierResult ← ((simulateQ combinedImpl verifyCompWide).run) (s₁, [])
       let trV := verifierResult.2.2
-      pure (trP, trV)
+      pure (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP,
+            lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trV)
 
 /-- CO25 §5.6 — Run a concrete Lemma 5.8 experiment over `[]ₒ + DS` and keep only the DS trace.
 Combines the logging oracle with the given DS implementation, runs the experiment, and projects
@@ -536,12 +535,11 @@ noncomputable def lemma5_8RealTraceDist
     (initReal : ProbComp σReal)
     (implReal : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σReal ProbComp))
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (maliciousProver :
-      OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) :
+    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ) :
     ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U) ×
               QueryLog (duplexSpongeChallengeOracle StmtIn U)) :=
   lemma5_8ProjectedTraceDistAbortable (StmtIn := StmtIn) (StmtOut := StmtOut)
-    (pSpec := pSpec) (U := U)
+    (pSpec := pSpec) (U := U) (δ := δ)
     initReal
     (lemma5_8TotalAbortLift (StmtIn := StmtIn) (U := U) implReal)
     V maliciousProver
@@ -551,48 +549,35 @@ Simulator execution under eager `g ← 𝒟_Σ(λ, n)` with `D2SQuery` as the or
 The `d2sQueryImpl` runs in `StateT D2SQueryState (OptionT ProbComp)`: an `OptionT`-abort halts the
 experiment (paper line 1417). Returns the pair `(tr_P̃, tr_V)`.
 
-The `g` carrier is sampled **once** at experiment start from
-`TraceTransform.section58EncodedChallengeOracleDistribution` (the canonical `𝒟_Σ`), captured by closure,
+The `g` carrier is sampled **once** at experiment start from `𝒟_Σ`, captured by closure,
 and consulted deterministically by every `gᵢ` query. This mirrors `lemma5_8RealTraceDist`'s
 eager `(h, p, p⁻¹) ← 𝒟_𝔖` sampling — CO25 Def. 4.2 + Lemma 5.8 statement. -/
 noncomputable def lemma5_8SigmaTraceDist
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (maliciousProver :
-      OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) :
+    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ) :
     ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U) ×
               QueryLog (duplexSpongeChallengeOracle StmtIn U)) := do
   let k_g ←
-    (TraceTransform.section58EncodedChallengeOracleDistribution (U := U) StmtIn pSpec δ).sample
+    (D_Sigma (U := U) StmtIn pSpec δ).sample
   lemma5_8ProjectedTraceDistAbortable (StmtIn := StmtIn) (StmtOut := StmtOut)
-    (pSpec := pSpec) (U := U)
+    (pSpec := pSpec) (U := U) (δ := δ)
     (init := pure default)
     (impl := ProverTransform.d2sQueryImpl
       (δ := δ) (T_H := T_H) (T_P := T_P)
       (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
       (gImpl := fun q => OptionT.lift
-        ((TraceTransform.section58EncodedChallengeOracleDistribution
-          (U := U) StmtIn pSpec δ).toImpl k_g q))
+        ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q))
       (auxImpl := fun aux => OptionT.lift
         ((ProverTransform.d2sUnitSampleImpl (U := U) +
           QueryImpl.id' unifSpec) aux)))
     V maliciousProver
 
-/-- CO25 Lemma 5.8 — eager carrier impl wrapper.
-Wraps `D𝔖.toImpl` (a stateless `QueryImpl _ ProbComp` per carrier sample) into the
-`StateT D𝔖.Carrier ProbComp` shape required by `lemma5_8RealTraceDist`. The carrier is
-sampled once at game start (CO25 Def. 4.2) and then read-only — `get` reads, never
-mutates. -/
-noncomputable def lemma5_8EagerImpl :
-    QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-      (StateT (D𝔖 StmtIn U).Carrier ProbComp) :=
-  fun q => do
-    let k ← StateT.get
-    StateT.lift ((D𝔖 StmtIn U).toImpl k q)
 
 set_option linter.unusedDecidableInType false in
 /-- CO25 Lemma 5.8 — Bad-event probability bound (paper-faithful eager statement).
-For every `(tₕ, tₚ, tₚᵢ)`-query malicious prover P̃ with `tₚ ≥ L` (where `L` is the total number
-of verifier permutation queries),
+For every salted `(tₕ, tₚ, tₚᵢ)`-query malicious prover P̃ with `tₚ ≥ L` (where
+`L = pSpec.totalNumPermQueries = Lₚ + Lᵥ` is the verifier's total message/challenge
+permutation-query count, matching the §5.8 hybrid bookkeeping in `claim_5_21` / `_22` / `_24`),
 
 ```
 max{ Pr[E(tr_P̃ ‖ tr_V) | 𝒟_𝔖], Pr[E(tr_P̃ ‖ tr_V) | 𝒟_Σ] }
@@ -601,17 +586,17 @@ max{ Pr[E(tr_P̃ ‖ tr_V) | 𝒟_𝔖], Pr[E(tr_P̃ ‖ tr_V) | 𝒟_Σ] }
 
 where `T = tₕ + 1 + tₚ + L + tₚᵢ`. Both sides match CO25 Lemma 5.8 verbatim:
 the left-hand side samples `(h, p, p⁻¹) ← 𝒟_𝔖(λ, n)` once at the start of the experiment
-(eager sampling, CO25 Def. 4.2), the right-hand side runs `g ← 𝒟_Σ(λ, n)` via the `D2SQuery`
-simulator. -/
+(eager sampling, CO25 Def. 4.2) and corresponds to `KeyLemma.dsfsGame` (`Hyb_0`); the
+right-hand side runs `g ← 𝒟_Σ(λ, n)` via the `D2SQuery` simulator and corresponds to
+`KeyLemma.hybridGame` instantiated as `Hyb_1`. -/
 theorem lemma_5_8
     [Fintype U]
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (maliciousProver :
-      OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages))
+    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
     (tₕ tₚ tₚᵢ : ℕ)
     (hMaliciousBound : -- `(tₕ, tₚ, tₚᵢ)`-query bound prover
       IsLemma5_8QueryBound
-        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
         maliciousProver tₕ tₚ tₚᵢ)
     (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
     max
@@ -620,9 +605,9 @@ theorem lemma_5_8
               BadEventDS.E (tr.1 ++ tr.2) |
           lemma5_8RealTraceDist
             (StmtIn := StmtIn) (StmtOut := StmtOut)
-            (n := n) (pSpec := pSpec) (U := U)
-            (D𝔖 StmtIn U).sample
-            (lemma5_8EagerImpl (StmtIn := StmtIn) (U := U))
+            (n := n) (pSpec := pSpec) (U := U) (δ := δ)
+            (D_𝔖 StmtIn U).sample
+            ((D_𝔖 StmtIn U).eagerImpl)
             V maliciousProver])
         (Pr[fun (tr : QueryLog (duplexSpongeChallengeOracle StmtIn U) ×
                       QueryLog (duplexSpongeChallengeOracle StmtIn U)) =>

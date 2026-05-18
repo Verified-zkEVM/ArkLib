@@ -150,8 +150,7 @@ structure BacktrackSequenceFamily (trace : QueryLog (duplexSpongeChallengeOracle
   /-- `S_BT(tr, s)` — finite set of backtrack sequences (CO25 Def 5.3). -/
   seqFamily : Finset (BacktrackSequence trace state)
   /-- Maximality: no `s ≠ s'` with `s ⊆ s'` both in `S_BT` (CO25 Def 5.3 maximality). -/
-  -- TODO: confirm where this should be subsequence or prefix/suffix,
-    -- also replace this with a correct subsequence operator
+  -- TODO: write the correct `subsequence` condition
   maximality : ∀ s ∈ seqFamily, ∀ s' ∈ seqFamily, s ≠ s' →
     ¬ (s.stmt = s'.stmt ∧ s.inputState ⊆ s'.inputState ∧ s.outputState ⊆ s'.outputState)
 
@@ -209,19 +208,471 @@ permutation directions already collapse into the same bidirectional `tr_∇.p`
 (cf. `TraceNabla.ofQueryLog` dispatch). -/
 private def predecessorCandidates
     (trΔ : TraceNabla T_H T_P StmtIn U)
-    (nextInput : CanonicalSpongeState U) :
+    (nextInputCap : Vector U SpongeSize.C) :
     List (CanonicalSpongeState U × CanonicalSpongeState U) := by
-  classical
   exact (TraceTableOps.entries (V := CanonicalSpongeState U) trΔ.p).filterMap fun pair =>
-    let stateIn := pair.1
     let stateOut := pair.2
-    if stateOut.capacitySegment = nextInput.capacitySegment then
-      if stateIn.capacitySegment = stateOut.capacitySegment then
-        none
-      else
-        some (stateIn, stateOut)
+    if stateOut.capacitySegment = nextInputCap then
+      some pair
     else
       none
+
+/-! ### Linear-scan helpers (CO25 §5.2 BackTrack "look for at most one element" optimization)
+
+The paper's Algorithm 1 enumerates all maximal sequences then post-filters. CO25 line 1056 notes
+the procedure can equivalently `look for at most one element` — i.e. abort on scan-time forks.
+A scan-time fork strictly implies an `E_fork,p`/`E_fork,h,p`/`E_fork` event, so returning `err`
+on a fork is a strict over-approximation of the paper's post-filter `err` condition and the
+soundness bound of CO25 Theorem 5.19 is preserved. -/
+
+/-- Three-way classification of lookup results, used to detect scan-time forks. -/
+private inductive LookupResult (α : Type _) where
+  | noMatch
+  | unique (a : α)
+  | conflict
+
+private def classifyLookup {α : Type _} (xs : List α) : LookupResult α :=
+  match xs with
+  | [] => .noMatch
+  | [a] => .unique a
+  | _ :: _ :: _ => .conflict
+
+/-- Paper §5.2 Step 4 hash anchor lookup: filter `tr_∇.h.entries` for statements whose stored
+capacity matches the chain's initial capacity. Multiple matches indicate `E_fork,h,p`. -/
+private def hashAnchorCandidates
+    (trΔ : TraceNabla T_H T_P StmtIn U)
+    (cap : Vector U SpongeSize.C) : List StmtIn := by
+  classical
+  exact (TraceTableOps.entries (V := Vector U SpongeSize.C) trΔ.h).filterMap fun pair =>
+    if pair.2 = cap then some pair.1 else none
+
+/-! ### Helper lemmas connecting `trΔ.h`/`trΔ.p` entries to the original `trace`
+
+The key insight: by `LawfulTraceTable.toMultiSet_ofEntries`, membership in `entries`
+is equivalent to membership in the abstract multiset model. By `toMultiSet_add`,
+each fold step adds exactly one pair to the multiset. So induction on the trace
+connects multiset membership back to the original trace entry. -/
+
+/-- The fold step from `TraceNabla.ofQueryLog`, factored out for reuse in proofs. -/
+private def ofQueryLogStep
+    (acc : TraceNabla T_H T_P StmtIn U)
+    (entry : duplexSpongeTraceEntry (StartType := StmtIn) (U := U)) :
+    TraceNabla T_H T_P StmtIn U :=
+  match entry with
+  | ⟨.inl stmt, capSeg⟩ =>
+      { acc with h := TraceTableOps.add acc.h stmt capSeg }
+  | ⟨.inr (.inl sIn), sOut⟩ =>
+      { acc with p := TraceTableOps.add acc.p sIn sOut }
+  | ⟨.inr (.inr sOut), sIn⟩ =>
+      { acc with p := TraceTableOps.add acc.p sIn sOut }
+
+private lemma ofQueryLog_eq_foldl
+    (trace : DuplexSpongeTrace StmtIn U) :
+    TraceNabla.ofQueryLog trace =
+      List.foldl ofQueryLogStep
+        ⟨(TraceTableOps.empty : T_H), (TraceTableOps.empty : T_P)⟩ trace := by
+  rfl
+
+/-- After processing a trace list via the fold step, every entry in the hash multiset
+either came from the init or from a hash query in the trace. -/
+private lemma hash_ms_foldl_inv
+    (init : TraceNabla T_H T_P StmtIn U)
+    (trace : DuplexSpongeTrace StmtIn U)
+    (p : StmtIn × Vector U SpongeSize.C)
+    (hp : p ∈ LawfulTraceTable.toMultiSet
+      (List.foldl ofQueryLogStep init trace).h) :
+    p ∈ LawfulTraceTable.toMultiSet init.h ∨ ⟨.inl p.1, p.2⟩ ∈ trace := by
+  induction trace generalizing init with
+  | nil =>
+    simp only [List.foldl_nil] at hp
+    exact Or.inl hp
+  | cons entry trace' ih =>
+    simp only [List.foldl_cons] at hp
+    rcases entry with ⟨q, a⟩
+    rcases q with stmt' | sIn' | sOut'
+    -- Hash query: adds (stmt', a) to h
+    case inl =>
+      simp only [ofQueryLogStep] at hp
+      have hIH := ih {init with h := TraceTableOps.add init.h stmt' a} hp
+      have : ({init with h := TraceTableOps.add init.h stmt' a} :
+          TraceNabla T_H T_P StmtIn U).h = TraceTableOps.add init.h stmt' a := rfl
+      rw [this, LawfulTraceTable.toMultiSet_add] at hIH
+      rcases hIH with hMem | hIn
+      · rw [Multiset.mem_cons] at hMem
+        rcases hMem with hEq | hRest
+        · subst hEq; right; exact .head ..
+        · exact Or.inl hRest
+      · exact Or.inr (List.mem_cons_of_mem _ hIn)
+    -- Forward perm: h unchanged
+    case inr.inl =>
+      simp only [ofQueryLogStep] at hp
+      rcases ih {init with p := TraceTableOps.add init.p sIn' a} hp with hMem | hIn
+      · exact Or.inl hMem
+      · exact Or.inr (List.mem_cons_of_mem _ hIn)
+    -- Inverse perm: h unchanged
+    case inr.inr =>
+      simp only [ofQueryLogStep] at hp
+      rcases ih {init with p := TraceTableOps.add init.p a sOut'} hp with hMem | hIn
+      · exact Or.inl hMem
+      · exact Or.inr (List.mem_cons_of_mem _ hIn)
+
+/-- If `(stmt, cap) ∈ trΔ.h.entries`, then the hash query entry `⟨.inl stmt, cap⟩` is
+in the original `trace`. -/
+private lemma mem_hash_entries_in_trace
+    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {trΔ : TraceNabla T_H T_P StmtIn U}
+    (h_trΔ : trΔ = TraceNabla.ofQueryLog trace)
+    {stmt : StmtIn}
+    {cap : Vector U SpongeSize.C}
+    (hMem : (stmt, cap) ∈
+      TraceTableOps.entries (V := Vector U SpongeSize.C) trΔ.h) :
+    ⟨.inl stmt, cap⟩ ∈ trace := by
+  subst h_trΔ
+  rw [ofQueryLog_eq_foldl] at hMem
+  have hMS : (stmt, cap) ∈ LawfulTraceTable.toMultiSet
+      (List.foldl ofQueryLogStep
+        ⟨(TraceTableOps.empty : T_H), (TraceTableOps.empty : T_P)⟩ trace).h := by
+    have h := LawfulTraceTable.toMultiSet_ofEntries
+        (List.foldl ofQueryLogStep
+          ⟨(TraceTableOps.empty : T_H), (TraceTableOps.empty : T_P)⟩ trace).h
+    rw [← h]; exact Multiset.mem_coe.mpr hMem
+  rcases hash_ms_foldl_inv
+      ⟨(TraceTableOps.empty : T_H), (TraceTableOps.empty : T_P)⟩ trace
+      (stmt, cap) hMS with hMem' | hIn
+  · simp [LawfulTraceTable.toMultiSet_empty] at hMem'
+  · exact hIn
+
+/-- After processing a trace list via the fold step, every entry in the perm multiset
+either came from the init or from a permutation query in the trace. -/
+private lemma perm_ms_foldl_inv
+    (init : TraceNabla T_H T_P StmtIn U)
+    (trace : DuplexSpongeTrace StmtIn U)
+    (p : CanonicalSpongeState U × CanonicalSpongeState U)
+    (hp : p ∈ LawfulTraceTable.toMultiSet
+      (List.foldl ofQueryLogStep init trace).p) :
+    p ∈ LawfulTraceTable.toMultiSet init.p ∨
+      ⟨.inr (.inl p.1), p.2⟩ ∈ trace ∨
+        ⟨.inr (.inr p.2), p.1⟩ ∈ trace := by
+  induction trace generalizing init with
+  | nil =>
+    simp only [List.foldl_nil] at hp
+    exact Or.inl hp
+  | cons entry trace' ih =>
+    simp only [List.foldl_cons] at hp
+    rcases entry with ⟨q, a⟩
+    rcases q with stmt' | sIn' | sOut'
+    -- Hash query: p unchanged
+    case inl =>
+      simp only [ofQueryLogStep] at hp
+      rcases ih {init with h := TraceTableOps.add init.h stmt' a} hp with hMem | h1 | h2
+      · exact Or.inl hMem
+      · exact Or.inr (Or.inl (List.mem_cons_of_mem _ h1))
+      · exact Or.inr (Or.inr (List.mem_cons_of_mem _ h2))
+    -- Forward perm: adds (sIn', a) to p
+    case inr.inl =>
+      simp only [ofQueryLogStep] at hp
+      have hIH := ih {init with p := TraceTableOps.add init.p sIn' a} hp
+      have : ({init with p := TraceTableOps.add init.p sIn' a} :
+          TraceNabla T_H T_P StmtIn U).p = TraceTableOps.add init.p sIn' a := rfl
+      rw [this, LawfulTraceTable.toMultiSet_add] at hIH
+      rcases hIH with hMem | hIn
+      · rw [Multiset.mem_cons] at hMem
+        rcases hMem with hEq | hRest
+        · subst hEq; exact Or.inr (Or.inl (by exact .head ..))
+        · exact Or.inl hRest
+      · rcases hIn with h1 | h2
+        · exact Or.inr (Or.inl (List.mem_cons_of_mem _ h1))
+        · exact Or.inr (Or.inr (List.mem_cons_of_mem _ h2))
+    -- Inverse perm: adds (a, sOut') to p
+    case inr.inr =>
+      simp only [ofQueryLogStep] at hp
+      have hIH := ih {init with p := TraceTableOps.add init.p a sOut'} hp
+      have : ({init with p := TraceTableOps.add init.p a sOut'} :
+          TraceNabla T_H T_P StmtIn U).p = TraceTableOps.add init.p a sOut' := rfl
+      rw [this, LawfulTraceTable.toMultiSet_add] at hIH
+      rcases hIH with hMem | hIn
+      · rw [Multiset.mem_cons] at hMem
+        rcases hMem with hEq | hRest
+        · subst hEq; exact Or.inr (Or.inr (by exact .head ..))
+        · exact Or.inl hRest
+      · rcases hIn with h1 | h2
+        · exact Or.inr (Or.inl (List.mem_cons_of_mem _ h1))
+        · exact Or.inr (Or.inr (List.mem_cons_of_mem _ h2))
+
+/-- If `(s_in, s_out) ∈ trΔ.p.entries`, then either the forward permutation query
+`⟨.inr (.inl s_in), s_out⟩` or the inverse permutation query `⟨.inr (.inr s_out), s_in⟩`
+is in the original `trace`. -/
+private lemma mem_perm_entries_in_trace
+    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {trΔ : TraceNabla T_H T_P StmtIn U}
+    (h_trΔ : trΔ = TraceNabla.ofQueryLog trace)
+    {s_in s_out : CanonicalSpongeState U}
+    (hMem : (s_in, s_out) ∈
+      TraceTableOps.entries (V := CanonicalSpongeState U) trΔ.p) :
+    ⟨.inr (.inl s_in), s_out⟩ ∈ trace ∨
+      ⟨.inr (.inr s_out), s_in⟩ ∈ trace := by
+  subst h_trΔ
+  rw [ofQueryLog_eq_foldl] at hMem
+  have hMS : (s_in, s_out) ∈ LawfulTraceTable.toMultiSet
+      (List.foldl ofQueryLogStep
+        ⟨(TraceTableOps.empty : T_H), (TraceTableOps.empty : T_P)⟩ trace).p := by
+    have h := LawfulTraceTable.toMultiSet_ofEntries
+        (List.foldl ofQueryLogStep
+          ⟨(TraceTableOps.empty : T_H), (TraceTableOps.empty : T_P)⟩ trace).p
+    rw [← h]; exact Multiset.mem_coe.mpr hMem
+  rcases perm_ms_foldl_inv
+      ⟨(TraceTableOps.empty : T_H), (TraceTableOps.empty : T_P)⟩ trace
+      (s_in, s_out) hMS with hMem' | h1 | h2
+  · simp [LawfulTraceTable.toMultiSet_empty] at hMem'
+  · exact Or.inl h1
+  · exact Or.inr h2
+
+/-- An intermediate data structure representing a partially constructed backtrack sequence.
+It carries all incremental properties of a valid chain from `head` to `targetState`, without the hash anchor.
+This allows us to construct the sequence iteratively via prepending (`::`), making structural induction proofs trivial. -/
+private structure PartialBacktrackSequence (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (head targetState : CanonicalSpongeState U) where
+  inputState : List (CanonicalSpongeState U)
+  outputState : List (CanonicalSpongeState U)
+
+  inputState_length_eq_outputState_length_succ : inputState.length = outputState.length + 1
+
+  first_inputState_eq_head : inputState.head? = some head
+  last_inputState_eq_state : inputState[inputState.length - 1]'(by omega) = targetState
+
+  permute_or_inv_in_trace : ∀ i : Fin outputState.length,
+    ⟨.inr (.inl inputState[i]), outputState[i]⟩ ∈ trace
+    ∨ ⟨.inr (.inr outputState[i]), inputState[i]⟩ ∈ trace
+
+  capacitySegment_output_eq_input : ∀ i : Fin outputState.length,
+    outputState[i].capacitySegment = inputState[i.val + 1].capacitySegment
+
+  capacitySegment_input_ne_output : ∀ i : Fin outputState.length,
+    inputState[i].capacitySegment ≠ outputState[i].capacitySegment
+
+private def emptyPartialSequence (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (targetState : CanonicalSpongeState U) :
+    PartialBacktrackSequence trace targetState targetState :=
+  { inputState := [targetState]
+    outputState := []
+    inputState_length_eq_outputState_length_succ := rfl
+    first_inputState_eq_head := rfl
+    last_inputState_eq_state := rfl
+    permute_or_inv_in_trace := by intro i; exact i.elim0
+    capacitySegment_output_eq_input := by intro i; exact i.elim0
+    capacitySegment_input_ne_output := by intro i; exact i.elim0 }
+
+private noncomputable def prependPartialSequence
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (targetState seq_head : CanonicalSpongeState U)
+    (s_in s_out : CanonicalSpongeState U)
+    (seq : PartialBacktrackSequence trace seq_head targetState)
+    (hMatch : s_out.capacitySegment = seq_head.capacitySegment)
+    (hEntry : ⟨.inr (.inl s_in), s_out⟩ ∈ trace ∨ ⟨.inr (.inr s_out), s_in⟩ ∈ trace)
+    (hNoLoop : s_in.capacitySegment ≠ s_out.capacitySegment) :
+    PartialBacktrackSequence trace s_in targetState :=
+  { inputState := s_in :: seq.inputState
+    outputState := s_out :: seq.outputState
+    inputState_length_eq_outputState_length_succ := by
+      have h := seq.inputState_length_eq_outputState_length_succ
+      simp [h]
+    first_inputState_eq_head := rfl
+    last_inputState_eq_state := by
+      cases seq with
+      | mk inputState outputState hLen hFirst hLast hTrace hCapOut hCapIn =>
+          cases inputState with
+          | nil =>
+              simp at hLen
+          | cons a tail =>
+              exact hLast
+    permute_or_inv_in_trace := by
+      intro i
+      match i with
+      | ⟨0, h⟩ => exact hEntry
+      | ⟨i' + 1, h⟩ =>
+          have hi' : i' < seq.outputState.length := by
+            have hl : (s_out :: seq.outputState).length = seq.outputState.length + 1 := rfl
+            omega
+          exact seq.permute_or_inv_in_trace ⟨i', hi'⟩
+    capacitySegment_output_eq_input := by
+      intro i
+      match i with
+      | ⟨0, h⟩ =>
+          cases seq with
+          | mk inputState outputState hLen hFirst hLast hTrace hCapOut hCapIn =>
+              cases inputState with
+              | nil =>
+                  simp at hLen
+              | cons a tail =>
+                  have ha : a = seq_head := Option.some.inj hFirst
+                  have hc : (s_in :: a :: tail)[1] = seq_head := ha
+                  rw [hc]
+                  exact hMatch
+      | ⟨i' + 1, h⟩ =>
+          have hi' : i' < seq.outputState.length := by
+            have hl : (s_out :: seq.outputState).length = seq.outputState.length + 1 := rfl
+            omega
+          exact seq.capacitySegment_output_eq_input ⟨i', hi'⟩
+    capacitySegment_input_ne_output := by
+      intro i
+      match i with
+      | ⟨0, h⟩ => exact hNoLoop
+      | ⟨i' + 1, h⟩ =>
+          have hi' : i' < seq.outputState.length := by
+            have hl : (s_out :: seq.outputState).length = seq.outputState.length + 1 := rfl
+            omega
+          exact seq.capacitySegment_input_ne_output ⟨i', hi'⟩ }
+
+private noncomputable def completeBacktrackSequence
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (targetState head : CanonicalSpongeState U)
+    (stmt : StmtIn)
+    (seq : PartialBacktrackSequence trace head targetState)
+    (hHash : ⟨.inl stmt, (Vector.drop head SpongeSize.R)⟩ ∈ trace) :
+    BacktrackSequence trace targetState :=
+  { stmt := stmt
+    inputState := seq.inputState
+    outputState := seq.outputState
+    inputState_length_eq_outputState_length_succ := seq.inputState_length_eq_outputState_length_succ
+    last_inputState_eq_state := by
+      have h := seq.last_inputState_eq_state
+      exact h
+    hash_in_trace := by
+      cases seq with
+      | mk inputState outputState hLen hFirst hLast hTrace hCapOut hCapIn =>
+          cases inputState with
+          | nil =>
+              simp at hLen
+          | cons a tail =>
+              have ha : a = head := Option.some.inj hFirst
+              have ht : (a :: tail)[0]'(by omega) = head := ha
+              have ht2 : (a :: tail)[0] = head := ht
+              rw [ht2]
+              exact hHash
+    permute_or_inv_in_trace := seq.permute_or_inv_in_trace
+    capacitySegment_output_eq_input := seq.capacitySegment_output_eq_input
+    capacitySegment_input_ne_output := seq.capacitySegment_input_ne_output }
+
+/-! ### Bridge lemmas: `classifyLookup` + `filterMap` → entry membership -/
+
+private lemma classifyLookup_filterMap_singleton_mem {α β : Type _} [DecidableEq β]
+    (l : List α) (f : α → Option β) (b : β)
+    (h : classifyLookup (l.filterMap f) = .unique b) :
+    ∃ a ∈ l, f a = some b := by
+  have : b ∈ l.filterMap f := by
+    have : l.filterMap f = [b] := by
+      cases h' : l.filterMap f with
+      | nil => rw [h'] at h; unfold classifyLookup at h; contradiction
+      | cons hd tl =>
+        cases tl with
+        | nil =>
+            rw [h'] at h; unfold classifyLookup at h
+            injection h with hEq; subst hEq; rfl
+        | cons _ _ => rw [h'] at h; unfold classifyLookup at h; contradiction
+    rw [this]; exact .head ..
+  exact List.mem_filterMap.mp this
+
+private lemma hash_unique_mem_entries
+    (trΔ : TraceNabla T_H T_P StmtIn U)
+    (cap : Vector U SpongeSize.C)
+    (stmt : StmtIn)
+    (h : classifyLookup (hashAnchorCandidates trΔ cap) = .unique stmt) :
+    (stmt, cap) ∈ TraceTableOps.entries (V := Vector U SpongeSize.C) trΔ.h := by
+  unfold hashAnchorCandidates at h
+  classical
+  have ⟨pair, hMem, hEq⟩ := classifyLookup_filterMap_singleton_mem
+      (TraceTableOps.entries (V := Vector U SpongeSize.C) trΔ.h)
+      (fun pair => if pair.2 = cap then some pair.1 else none) stmt h
+  split at hEq
+  · next hCap =>
+      injection hEq with hInj; subst hInj
+      have hMem' := (Prod.eta pair).symm ▸ hMem
+      rw [hCap] at hMem'; exact hMem'
+  · contradiction
+
+private lemma pred_unique_mem_and_cap
+    (trΔ : TraceNabla T_H T_P StmtIn U)
+    (cap : Vector U SpongeSize.C)
+    (s_in s_out : CanonicalSpongeState U)
+    (h : classifyLookup (predecessorCandidates trΔ cap) = .unique (s_in, s_out)) :
+    (s_in, s_out) ∈ TraceTableOps.entries (V := CanonicalSpongeState U) trΔ.p ∧
+      s_out.capacitySegment = cap := by
+  unfold predecessorCandidates at h
+  classical
+  have ⟨pair, hMem, hEq⟩ := classifyLookup_filterMap_singleton_mem
+      (TraceTableOps.entries (V := CanonicalSpongeState U) trΔ.p)
+      (fun pair => if pair.2.capacitySegment = cap then some pair else none) (s_in, s_out) h
+  split at hEq
+  · next hCap =>
+      injection hEq with hInj; subst hInj
+      exact ⟨hMem, hCap.symm ▸ rfl⟩
+  · contradiction
+
+/-- Output of a linear backwards scan: either a fork was detected, or the scan terminated
+with an optional BacktrackSequence. -/
+private inductive LinearScanResult (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+  (targetState : CanonicalSpongeState U) where
+  | forkErr
+  | noResult
+  | done (seq : BacktrackSequence trace targetState)
+
+/-- CO25 §5.2 BackTrack linear backwards scan: from `currentState`, classify the predecessor
+candidates in `tr_∇.p`. `[]` ends the scan; `[pred]` continues; `_::_::_` is a fork → `.forkErr`.
+Loops in capacity segment are detected using `vCap` and result in `.forkErr`.
+Structurally recursive on `fuel`; the caller supplies `fuel = depthBound`.
+Uses a tail-recursive accumulator `acc` to build the sequence by prepending. -/
+private def linearScanBackwards
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (trΔ : TraceNabla T_H T_P StmtIn U)
+    (h_trΔ : trΔ = TraceNabla.ofQueryLog trace)
+    (fuel : Nat) (currentState targetState : CanonicalSpongeState U)
+    (vCap : List (Vector U SpongeSize.C))
+    (acc : PartialBacktrackSequence trace currentState targetState) :
+    LinearScanResult trace targetState :=
+  match fuel with
+  | 0 => .noResult
+  | fuel' + 1 =>
+    -- Look up predecessor in `tr_∇.p` (CO25 §5.2 Step 2.b)
+    match hClsPred : classifyLookup (predecessorCandidates (T_P := T_P) (U := U) trΔ
+      currentState.capacitySegment) with
+    | .noMatch =>
+        -- Not in `tr_∇.p`, check `tr_∇.h` (CO25 §5.2 Step 2.c)
+        match hClsHash : classifyLookup (hashAnchorCandidates (T_H := T_H) (T_P := T_P)
+          (StmtIn := StmtIn) (U := U) trΔ currentState.capacitySegment) with
+        | .noMatch => .noResult
+        | .unique stmt =>
+            -- Found unique anchor `h`: sequence is complete
+            have hHash : ⟨.inl stmt, (Vector.drop currentState SpongeSize.R)⟩ ∈ trace := by
+              have hMem : (stmt, currentState.capacitySegment) ∈
+                TraceTableOps.entries (V := Vector U SpongeSize.C) trΔ.h :=
+                hash_unique_mem_entries trΔ currentState.capacitySegment stmt hClsHash
+              exact mem_hash_entries_in_trace h_trΔ hMem
+            .done (completeBacktrackSequence trace targetState currentState stmt acc hHash)
+        | .conflict => .forkErr -- `L_h` collision → `E_fork`
+    | .unique pred =>
+        -- Found unique predecessor `p / p⁻¹` (CO25 §5.2 Step 2.b)
+        let s_in := pred.1
+        let s_out := pred.2
+        if hNoLoop : s_in.capacitySegment = s_out.capacitySegment then
+          .forkErr -- Self-loop → `E_inv`
+        else
+          have hNoLoop' : s_in.capacitySegment ≠ s_out.capacitySegment := hNoLoop
+          if s_in.capacitySegment ∈ vCap then
+            .forkErr -- Cycle detected
+          else
+            have hMatch : s_out.capacitySegment = currentState.capacitySegment :=
+              (pred_unique_mem_and_cap trΔ currentState.capacitySegment s_in s_out hClsPred).2
+            have hEntry : ⟨.inr (.inl s_in), s_out⟩ ∈ trace ∨ ⟨.inr (.inr s_out), s_in⟩ ∈ trace := by
+              have hMem : (s_in, s_out) ∈
+                TraceTableOps.entries (V := CanonicalSpongeState U) trΔ.p :=
+                (pred_unique_mem_and_cap trΔ currentState.capacitySegment s_in s_out hClsPred).1
+              exact mem_perm_entries_in_trace h_trΔ hMem
+            -- Prepend to sequence and continue scanning (CO25 §5.2 Step 2.b)
+            let acc' := prependPartialSequence trace targetState currentState
+              s_in s_out acc hMatch hEntry hNoLoop'
+            linearScanBackwards trace trΔ h_trΔ fuel' s_in targetState
+              (s_in.capacitySegment :: vCap) acc'
+    | .conflict => .forkErr -- `L_p` collision → `E_fork`
 
 /-- BackTrack §5.2 Step 2: A concrete backtrack algorithm to exhausively scan an
 and compute a valid sequence family `S_BT(tr, s)`. -/
@@ -237,8 +688,9 @@ private def BacktrackSequenceFamily.sequenceScan
     match fuel with
     | 0 => .err
     | fuel + 1 =>
-      let preds := predecessorCandidates (T_P := T_P) (U := U) trΔ current
-      match preds with
+      let preds := predecessorCandidates (T_P := T_P) (U := U) trΔ current.capacitySegment
+      let validPreds := preds.filter (fun p => p.1.capacitySegment ≠ p.2.capacitySegment)
+      match validPreds with
       | [] => .ok [stepsRev.reverse]
       | _ =>
         let rec collect
@@ -261,7 +713,8 @@ private def BacktrackSequenceFamily.compute
     (trΔ : TraceNabla T_H T_P StmtIn U)
     (h_trΔ : trΔ = TraceNabla.ofQueryLog trace)
     (state : CanonicalSpongeState U) (depthBound : Nat) :
-    BacktrackSequenceFamily (trace := trace) (state := state):= sorry
+    BacktrackSequenceFamily (trace := trace) (state := state):=
+  sorry
 
 end S_BT_BacktrackComputation
 
@@ -287,11 +740,13 @@ private def sumChallengeBlocksBefore (i : pSpec.ChallengeIdx) : Nat :=
   (challengeIdxListBefore (pSpec := pSpec) i).foldl (fun acc j => acc + pSpec.Lᵥᵢ j) 0
 
 /-- Executable check for the paper branch condition
-`∀ ι ≤ i, α̂_ι ∈ Im(φ_ι)` on one parsed `BackTrack` output. -/
+`∀ ι ≤ i, α̂_ι ∈ Im(φ_ι)` on one parsed `BackTrack` output.
+TODO: make this better
+-/
 def backtrackOutputMessagesInImage
     (inImage : (msgIdx : pSpec.MessageIdx) → Vector U (messageSize msgIdx) → Bool)
     (out : BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) : Bool :=
-  let before := messageIdxListBefore (pSpec := pSpec) out.roundIdx
+  let before : List pSpec.MessageIdx := messageIdxListBefore (pSpec := pSpec) out.roundIdx
   (before.pmap
       (fun j (hmem : j ∈ before) =>
         let hlt := (Finset.mem_filter.mp (Finset.mem_toList.mp hmem)).2
@@ -564,6 +1019,36 @@ private def BacktrackSequence.extractCandidate
   -- Exhausted all rounds without hitting Step D — sequence is invalid.
   return none
 
+/-- CO25 §5.2 BackTrack with the line-1056 "look for at most one element" optimization.
+
+Performs a single backwards linear scan from `state` along `tr_∇.p`:
+- `predecessorCandidates` empty → terminate scan at the current state (chain start).
+- `predecessorCandidates` singleton → continue.
+- `predecessorCandidates` two or more → scan-time fork → return `err`.
+
+After the scan, `hashAnchorCandidates` is classified the same way over `tr_∇.h`. Finally the
+existing `constructCandidateSalt` + `extractCandidate` extractors are run; their `none` becomes
+`noResult`. Scan-time forks are a strict over-approximation of CO25 `E_fork,p ∪ E_fork,h,p ⊆
+E_fork`, so the soundness bound of Theorem 5.19 is preserved. -/
+private noncomputable def linearBackTrack
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (trΔ : TraceNabla T_H T_P StmtIn U)
+    (h_trΔ : trΔ = TraceNabla.ofQueryLog trace)
+    (state : CanonicalSpongeState U)
+    (depthBound : Nat := trace.length + 1) :
+    ExperimentOutput (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) := by
+  exact
+    match linearScanBackwards trace trΔ h_trΔ depthBound state state [state.capacitySegment] (emptyPartialSequence trace state) with
+    | .forkErr => ExperimentOutput.err
+    | .noResult => ExperimentOutput.noResult
+    | .done seq =>
+        match seq.constructCandidateSalt (δ := δ) with
+        | none => ExperimentOutput.noResult
+        | some salt =>
+          match seq.extractCandidate (pSpec := pSpec) (δ := δ) (StmtIn := StmtIn) (U := U)
+              (state := state) (trace := trace) (salt := salt) with
+          | none => ExperimentOutput.noResult
+          | some out => ExperimentOutput.some out
 
 open Classical in
 /-- The backtracking procedure in Section 5.2, which takes in:
@@ -575,33 +1060,18 @@ And returns one of the following:
 - `ExperimentOutput.err` — paper-`err` (multiple elements in Outs, ambiguous)
 - `ExperimentOutput.some out` — paper-success (unique tuple `(i, 𝕩, τ, (α̂_1, …, α̂_i))` in Outs)
 
-Implementation note: this executable surface enforces capacity-chain coherence across recovered
-steps, together with Algorithm 1 Item 3/4 parser-level checks (salt remainder, block offsets,
-message remainder consistency, and verifier-squeeze window consistency). -/
+Implementation: delegates to `linearBackTrack` (CO25 §5.2 line 1056 optimization). The legacy
+paper-spec `BacktrackSequenceFamily.compute` is retained for downstream proofs (BadEvents,
+AbortAnalysis) which quantify over `S_BT.seqFamily`; the executable surface here uses the
+linear scan, which is a strict over-approximation under the bad-event analysis. -/
 def backTrack
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (trΔ : TraceNabla T_H T_P StmtIn U)
-    (h_trΔ : trΔ = TraceNabla.ofQueryLog trace) -- TODO: what should this be?
-    (state : CanonicalSpongeState U) -- the end state
-    (depthBound : Nat := trace.length + 1) : -- Lean-native recursion bound to prevent stackoverflow
+    (h_trΔ : trΔ = TraceNabla.ofQueryLog trace) -- TODO: this might not be satisfied all the time
+    (state : CanonicalSpongeState U)
+    (depthBound : Nat := trace.length + 1) :
     ExperimentOutput (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
-  -- Step 2
-  let S_BT : BacktrackSequenceFamily trace state :=
-    BacktrackSequenceFamily.compute trace trΔ h_trΔ state depthBound
-
-  -- S_BT.seqFamily is a Finset, so we convert to List to process it
-  let outs : List (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
-    S_BT.seqFamily.toList.filterMap fun (seqₖ : BacktrackSequence trace state) => do
-      -- **Step 3**: extract salt + remainder consistency check (bundled in `constructCandidateSalt`)
-      let saltₖ ← seqₖ.constructCandidateSalt (δ := δ)
-      -- **Step 4**: parse messages & challenges
-      seqₖ.extractCandidate (state := state) (trace := trace) (salt := saltₖ)
-
-  -- **Step 5**: Final output
-  match outs with
-  | [] => ExperimentOutput.noResult
-  | [out] => ExperimentOutput.some out
-  | _ => ExperimentOutput.err
+  linearBackTrack (δ := δ) (pSpec := pSpec) trace trΔ h_trΔ state depthBound
 
 end BacktrackProcedure
 

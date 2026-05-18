@@ -6,6 +6,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 
 import ArkLib.Data.Hash.DuplexSponge
 import ArkLib.OracleReduction.FiatShamir.Basic
+import ArkLib.OracleReduction.FiatShamir.SingleSalt
 import ArkLib.OracleReduction.Security.OracleDistribution
 
 /-!
@@ -17,6 +18,13 @@ This file provides:
 - an unsalted DSFS surface (`duplexSpongeFiatShamir`) used by existing Section 5 machinery, and
 - an explicit salted surface (`duplexSpongeFiatShamirSalted`) matching Construction 4.3 shape,
   where a salt `τ ∈ Σ^δ` is absorbed before round processing and included in the proof string.
+- Oracle distributions:
+  + duplexSpongeHashOracleDistribution: `h`-oracle
+  + duplexSpongePermutationOracleDistribution: `(p, p⁻¹)`-oracle
+  + duplexSpongeOracleDistribution (D_𝔖): `(h, p, p⁻¹)`-oracle
+  + D_g: for Hyb1
+  + D_e: for Hyb2
+  + D_IP_salted (D_f): single-salt FS random oracle
 -/
 
 /-- Result type for three-valued algorithm outcomes: paper-`err`, paper-`none`, success.
@@ -191,6 +199,50 @@ def mk' {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
 end Codec
 
 /-!
+## Salt codec (CO25 line 1188, line 1729)
+
+The paper distinguishes two views of a single salt:
+
+- **On-sponge view** (CO25 Construction 4.3): the salt lives in `Σ^δ` and is absorbed into the
+  duplex sponge directly. In Lean this is `Vector U δ`.
+- **FS-standard view** (CO25 Construction 3.17 + §5.8 hybrids `Hyb₃`, `Hyb₄`): the salt is a
+  binary string in `{0,1}^{δ★}` (where `δ★ := δ · log₂|Σ|`) used as part of the FS-standard
+  oracle key. We model this as an abstract type `Salt`.
+
+The two views are bridged by an injective encoding `bin : Σ^δ → {0,1}^{δ★}` (paper line 1188:
+`τ̌ := bin(τ) ∈ {0,1}^{δ★}`; line 1729 states `bin(·)` is injective). The encoding contributes
+*no* bias to the §5 error analysis — only the time cost `t_bin = δ · log|Σ|`.
+
+`SaltCodec U δ Salt` packages `bin` and its left inverse. The class is intentionally minimal:
+`decode_encode` gives injectivity of `encode` automatically.
+-/
+
+/-- Bridge between on-sponge salts (`Σ^δ = Vector U δ`) and the pre-encoded abstract salt type
+`Salt` (paper's `{0,1}^{δ★}`). `encode = bin` per CO25 line 1188. -/
+class SaltCodec (U : Type) (δ : Nat) (Salt : Type) where
+  /-- `bin : Σ^δ → {0,1}^{δ★}` — inject `Σ^δ` salt into the FS-standard pre-encoded salt type. -/
+  encode : Vector U δ → Salt
+  /-- Left inverse of `encode`. Exists because `encode = bin` is injective with a recoverable
+    code (paper line 1729). -/
+  decode : Salt → Vector U δ
+  /-- `decode ∘ encode = id`. Gives **injectivity** of `encode` (and matches CO25 line 1729). -/
+  decode_encode : ∀ τ, decode (encode τ) = τ
+
+namespace SaltCodec
+
+variable {U : Type} {δ : Nat} {Salt : Type}
+
+/-- `encode` is injective, derived from `decode_encode`. Matches CO25 line 1729. -/
+theorem encode_injective [SaltCodec U δ Salt] :
+    Function.Injective (encode (U := U) (δ := δ) (Salt := Salt)) := by
+  intro a b h
+  have := congrArg (decode (U := U) (δ := δ) (Salt := Salt)) h
+  rw [decode_encode, decode_encode] at this
+  exact this
+
+end SaltCodec
+
+/-!
 ## Block-count notation (CO25 Equations 6–7)
 
 `L_δ`, `L_P(i)`, `L_V(i)`, `L_P`, `L_V`, `L` from the paper. -/
@@ -248,26 +300,155 @@ variable (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
     [HasMessageSize pSpec] [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
     [HasChallengeSize pSpec] [∀ i, Deserialize (pSpec.Challenge i) (Vector U (challengeSize i))]
 
-/-- The oracle specification for duplex sponge Fiat-Shamir (Equation 14, written as `𝒟_Σ`).
-It is indexed over the challenge rounds of the protocol specification, and for each such round `i`:
-- The input is the input statement `stmtIn` and, for each `j < i` that is a message round,
-  a vector of units of size `Lₚ(j)` (the number of queries to the permutation oracle needed to
-  absorb the `j`-th message)
-- The output is a vector of units of size `Lᵥ(i)` (the number of queries to the permutation oracle
-  needed to absorb the `i`-th challenge) -/
-def duplexSpongeHybridOracle : OracleSpec
-    ((i : pSpec.ChallengeIdx) × StmtIn ×
-      ((j : pSpec.MessageIdx) → (j.1 < i.1) → Vector U (pSpec.Lₚᵢ j))) :=
-  fun i => Vector U (pSpec.Lᵥᵢ i.1)
+section Section58Oracles
 
-alias «𝒟_Σ» := duplexSpongeHybridOracle
+/-- Section 5.8 `Hyb₁` challenge-oracle surface: encoded prover-prefix queries, encoded verifier
+responses.
 
-/-- Salted variant of Equation 14 (Construction 4.3-facing):
-query keys also include the absorbed salt `τ ∈ Σ^δ`. -/
-def duplexSpongeHybridOracleSalted (δ : Nat) : OracleSpec
-    ((i : pSpec.ChallengeIdx) × StmtIn × Vector U δ ×
-      ((j : pSpec.MessageIdx) → (j.1 < i.1) → Vector U (pSpec.Lₚᵢ j))) :=
-  fun i => Vector U (pSpec.Lᵥᵢ i.1)
+Per CO25 Eq. 15: `dom_i = {0,1}^≤n × Σ^δ × Σ^{ℓ_P(1)} × … × Σ^{ℓ_P(i)}` — the prover prefix is
+*exactly* `i` encoded messages, not an unbounded list. We model this as
+`pSpec.EncodedMessagesBefore U i.1.castSucc`, the dependent function indexed by message rounds
+strictly before `i`. With `Fintype` instances for the components this Query is also `Fintype`,
+which is required for the eager full-table `OracleDistribution.uniform _` realization. -/
+@[inline, reducible]
+def gSpecInterface
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    {n : ℕ} (StmtIn : Type) (pSpec : ProtocolSpec n)
+    (δ : Nat)
+    [HasMessageSize pSpec] [HasChallengeSize pSpec] :
+    ∀ i, OracleInterface (Vector U (challengeSize (pSpec := pSpec) i)) := fun i =>
+  { Query :=
+      StmtIn × Vector U δ ×
+        pSpec.EncodedMessagesBefore U i.1.castSucc
+    toOC.spec := fun _ => Vector U (challengeSize (pSpec := pSpec) i)
+    toOC.impl := fun _ => read }
+
+/-- Oracle family for the `gᵢ` queries in Section 5.8 `Hyb₁`. -/
+@[inline, reducible]
+def gSpec
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
+    (δ : Nat)
+    [HasMessageSize pSpec] [HasChallengeSize pSpec] :
+    OracleSpec (((i : pSpec.ChallengeIdx) ×
+      (gSpecInterface (U := U) StmtIn pSpec δ i).Query)) :=
+  [fun i => Vector U (challengeSize (pSpec := pSpec) i)]ₒ'
+    (gSpecInterface (U := U) StmtIn pSpec δ)
+
+/-- Section 5.8 `Hyb₂` challenge-oracle surface: encoded prover-prefix queries, decoded verifier
+responses.
+
+Same CO25 Eq. 52 prefix shape as `gSpecInterface` (encoded messages
+indexed by rounds `< i`); only the response type differs (decoded `pSpec.Challenge i`). -/
+@[inline, reducible]
+def eSpecInterface
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    {n : ℕ} (StmtIn : Type) (pSpec : ProtocolSpec n) (δ : Nat) [HasMessageSize pSpec] :
+    ∀ i, OracleInterface (pSpec.Challenge i) := fun i =>
+  { Query :=
+      StmtIn × Vector U δ ×
+        pSpec.EncodedMessagesBefore U i.1.castSucc
+    toOC.spec := fun _ => pSpec.Challenge i
+    toOC.impl := fun _ => read }
+
+/-- Oracle family for the `eᵢ` queries in Section 5.8 `Hyb₂`. -/
+@[inline, reducible]
+def eSpec
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) (δ : Nat) [HasMessageSize pSpec] :
+    OracleSpec (((i : pSpec.ChallengeIdx) ×
+      (eSpecInterface (U := U) StmtIn pSpec δ i).Query)) :=
+  [pSpec.Challenge]ₒ'
+    (eSpecInterface (U := U) StmtIn pSpec δ)
+
+/-- CO25 Eq. 15 — eager full-table distribution `𝒟_Σ` (symbol `g`) over the encoded
+challenge-oracle family for `Hyb₁`.
+
+Samples a single full random table `g : (q : Domain) → Range q` once at game start; all subsequent
+queries deterministically index into this fixed table. The `[SampleableType (OracleFamily _)]`
+hypothesis matches CO25: with a fixed-length round-indexed prefix (see `EncodedMessagesBefore`), the
+oracle's domain is finite, and uniform sampling of the function table is the canonical realization
+of `g ← 𝒰((dom_i → Σ^{ℓ_V(i)})_{i∈[k]})`. -/
+def D_Sigma
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
+    (δ : Nat)
+    [HasMessageSize pSpec] [HasChallengeSize pSpec]
+    [SampleableType
+      (OracleReduction.OracleFamily
+        (gSpec (U := U) StmtIn pSpec δ))] :
+    OracleReduction.OracleDistribution
+      (gSpec (U := U) StmtIn pSpec δ) :=
+  OracleReduction.D_ROM _
+
+/-- Bridge: `SampleableType` for `gSpec` (Hyb₁ `g`) derived from
+granular `VCVCompatible` base-type hypotheses. Eliminates verbose `SampleableType (OracleFamily
+(gSpec …))` at call sites in §5.8 hybrids and in `BadEvents.lemma_5_8`'s
+eager `𝒟_Σ` sampling. -/
+instance instSampleableTypeEncodedChallengeOracle
+    {U : Type} [SpongeUnit U] [SpongeSize] {n : ℕ} {StmtIn : Type} {pSpec : ProtocolSpec n} {δ : Nat}
+    [HasMessageSize pSpec] [HasChallengeSize pSpec] :
+    SampleableType (OracleReduction.OracleFamily
+      (gSpec (U := U) StmtIn pSpec δ)) := by
+  sorry
+
+/-- CO25 Eq. 52 — eager full-table distribution `e` over the decoded challenge-oracle family
+for `Hyb₂`.
+
+Same eager full-table semantics as `D_Sigma`, with the
+response type swapped from `Σ^{ℓ_V(i)}` to the decoded `pSpec.Challenge i`. Realizes
+`e ← 𝒰((dom_i → ℳ_{V,i})_{i∈[k]})`. -/
+def D_e
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
+    (δ : Nat)
+    [HasMessageSize pSpec]
+    [SampleableType
+      (OracleReduction.OracleFamily
+        (eSpec (U := U) StmtIn pSpec δ))] :
+    OracleReduction.OracleDistribution
+      (eSpec (U := U) StmtIn pSpec δ) :=
+    OracleReduction.D_ROM _
+
+/-! ## Setup: oracle distributions and `SampleableType` bridges -/
+
+/-- CO25 Eq. 54 — eager full-table distribution `𝒟_IP` (symbol `f`, salted) over the
+salted Fiat–Shamir challenge oracle for `Hyb₃` and `Hyb₄`.
+
+Samples a single full random table `f : (q : Domain) → Range q` once at game start over the
+salted domain `dom'_i = {0,1}^≤n × {0,1}^{δ⋆} × ℳ_{P,1} × … × ℳ_{P,i}` with range `ℳ_{V,i}`.
+Per CO25 line 1784, Hyb₃ and Hyb₄ both sample from this same distribution; the difference
+between hybrids lies in the prover/verifier algorithm, not the oracle.
+
+The salt slot of `dom'_i` is the pre-encoded `{0,1}^{δ⋆}`-side, modeled here by the abstract
+type `Salt`. The on-sponge `Σ^δ` salt produced by Construction 4.3 is projected via
+`SaltCodec.encode = bin` before being used as an oracle key. -/
+noncomputable def D_IP_salted
+    {n : ℕ} {StmtIn Salt : Type} (pSpec : ProtocolSpec n)
+    [VCVCompatible StmtIn] [VCVCompatible Salt]
+    [∀ i, VCVCompatible (pSpec.Message i)] [∀ i, VCVCompatible (pSpec.Challenge i)] :
+    OracleReduction.OracleDistribution (fsChallengeOracle (StmtIn × Salt) pSpec) :=
+  OracleReduction.D_IP (Statement := StmtIn × Salt) pSpec
+
+noncomputable def D_f
+    {n : ℕ} {StmtIn Salt : Type} (pSpec : ProtocolSpec n)
+    [VCVCompatible StmtIn] [VCVCompatible Salt]
+    [∀ i, VCVCompatible (pSpec.Message i)] [∀ i, VCVCompatible (pSpec.Challenge i)] :
+    OracleReduction.OracleDistribution (fsChallengeOracle (StmtIn × Salt) pSpec) :=
+  D_IP_salted pSpec
+
+/-- Bridge: `SampleableType` for `eSpec` (Hyb₂ `e`) derived from
+granular `VCVCompatible` base-type hypotheses. Eliminates verbose `SampleableType (OracleFamily
+(eSpec …))` at call sites in §5.8 hybrids. -/
+instance instSampleableTypeDecodedChallengeOracle
+    {U : Type} [SpongeUnit U] [SpongeSize] {n : ℕ} {StmtIn : Type} {pSpec : ProtocolSpec n} {δ : Nat}
+    [VCVCompatible StmtIn] [VCVCompatible U] [∀ i, VCVCompatible (pSpec.Challenge i)]
+    [HasMessageSize pSpec] :
+    SampleableType (OracleReduction.OracleFamily
+      (eSpec (U := U) StmtIn pSpec δ)) := by
+  sorry
+
+end Section58Oracles
 
 end ProtocolSpec
 
@@ -295,6 +476,41 @@ abbrev duplexSpongeTraceEntry {StartType : Type} {U : Type} [SpongeUnit U] [Spon
 
 alias «𝒟_𝔖» := duplexSpongeChallengeOracle
 
+/-! ### Smart constructors for the three `(h, p, p⁻¹)` `𝒟_𝔖` query flavors
+
+CO25 §5.4 paper notation `('h', 𝕩, …)` / `('p', s_in, …)` / `('p⁻¹', s_out, …)` corresponds
+to three nested-`Sum` injections into
+
+  `(duplexSpongeChallengeOracle StartType U).Domain
+     = StartType ⊕ CanonicalSpongeState U ⊕ CanonicalSpongeState U`.
+
+The wrappers below tag each injection with the paper query name, so trace constructions
+(`⟨dsHashQuery 𝕩, capOut⟩`, `⟨dsPermInvQuery s_out, s_in⟩`) and pattern matches read directly
+as paper notation rather than as nested-`Sum.inl/.inr` chains. `@[match_pattern]` keeps them
+usable as match patterns; `@[reducible]` lets the elaborator unfold them where the bare
+`Sum`-form is expected. -/
+
+/-- CO25 §5.4 paper `h(𝕩)` — hash query index. -/
+@[match_pattern, reducible]
+def dsHashQuery {StartType : Type} {U : Type} [SpongeUnit U] [SpongeSize]
+    (stmt : StartType) :
+    StartType ⊕ CanonicalSpongeState U ⊕ CanonicalSpongeState U :=
+  Sum.inl stmt
+
+/-- CO25 §5.4 paper `p(s_in)` — forward permutation query index. -/
+@[match_pattern, reducible]
+def dsPermQuery {StartType : Type} {U : Type} [SpongeUnit U] [SpongeSize]
+    (stateIn : CanonicalSpongeState U) :
+    StartType ⊕ CanonicalSpongeState U ⊕ CanonicalSpongeState U :=
+  Sum.inr (Sum.inl stateIn)
+
+/-- CO25 §5.4 paper `p⁻¹(s_out)` — inverse permutation query index. -/
+@[match_pattern, reducible]
+def dsPermInvQuery {StartType : Type} {U : Type} [SpongeUnit U] [SpongeSize]
+    (stateOut : CanonicalSpongeState U) :
+    StartType ⊕ CanonicalSpongeState U ⊕ CanonicalSpongeState U :=
+  Sum.inr (Sum.inr stateOut)
+
 /-- Forward-only sub-spec of `duplexSpongeChallengeOracle`: only `h` and the forward permutation
 slot `p` are exposed. The backward slot `p⁻¹` is omitted.
 
@@ -316,19 +532,19 @@ section OracleDistribution
 a random function `h : StartType → Σ^c` and a random permutation `p : Σ^{r+c} → Σ^{r+c}`.
 The inverse oracle `p⁻¹` is *derived* as `p.symm`, not sampled — the bijection invariant
 `p ∘ p⁻¹ = id` holds by construction since the carrier is `Equiv.Perm`. -/
-abbrev DuplexSpongeOracleRealization (StartType : Type) (U : Type) [SpongeUnit U] [SpongeSize] :=
-  ArkLib.OracleReduction.OracleFamily (StartType →ₒ Vector U SpongeSize.C) ×
+abbrev DuplexSpongeOracleFamily (StartType : Type) (U : Type) [SpongeUnit U] [SpongeSize] :=
+  OracleReduction.OracleFamily (StartType →ₒ Vector U SpongeSize.C) ×
     Equiv.Perm (CanonicalSpongeState U)
 
 /-- Interpret one sampled `𝒟_𝔖` realization as the concrete `(h, p, p⁻¹)` query implementation. -/
 @[reducible]
 def duplexSpongeOracleQueryImpl
     {StartType U : Type} [SpongeUnit U] [SpongeSize]
-    (realization : DuplexSpongeOracleRealization StartType U) :
+    (duplexSpongeOracle : DuplexSpongeOracleFamily StartType U) :
     QueryImpl (duplexSpongeChallengeOracle StartType U) ProbComp
-  | Sum.inl qHash => ArkLib.OracleReduction.tableQueryImpl (g := realization.1) qHash
-  | Sum.inr (Sum.inl state) => pure (realization.2 state)
-  | Sum.inr (Sum.inr state) => pure (realization.2.symm state)
+  | Sum.inl qHash => OracleReduction.tableQueryImpl (g := duplexSpongeOracle.1) qHash
+  | Sum.inr (Sum.inl state) => pure (duplexSpongeOracle.2 state)
+  | Sum.inr (Sum.inr state) => pure (duplexSpongeOracle.2.symm state)
 
 /-- Interpret one sampled permutation as forward/backward permutation-oracle answers. -/
 @[reducible]
@@ -347,15 +563,15 @@ instance instVCVCompatibleCanonicalSpongeState
 /-- Uniform random-function distribution for the `h` component of `𝒟_𝔖`. -/
 noncomputable def duplexSpongeHashOracleDistribution (StartType U : Type) [SpongeUnit U] [SpongeSize]
     [VCVCompatible StartType] [VCVCompatible U] :
-    ArkLib.OracleReduction.OracleDistribution (StartType →ₒ Vector U SpongeSize.C) :=
-  ArkLib.OracleReduction.OracleDistribution.uniform _
+    OracleReduction.OracleDistribution (StartType →ₒ Vector U SpongeSize.C) :=
+  OracleReduction.D_ROM _
 
 /-- Uniform random-permutation distribution for the `(p, p⁻¹)` component of `𝒟_𝔖`.
 
 Only `p` is sampled; `p⁻¹` is derived as `p.symm`. -/
 noncomputable def duplexSpongePermutationOracleDistribution (U : Type) [SpongeUnit U] [SpongeSize]
     [VCVCompatible U] :
-    ArkLib.OracleReduction.OracleDistribution (permutationOracle (CanonicalSpongeState U)) where
+    OracleReduction.OracleDistribution (permutationOracle (CanonicalSpongeState U)) where
   Carrier := Equiv.Perm (CanonicalSpongeState U)
   sample := $ᵗ (Equiv.Perm (CanonicalSpongeState U))
   toImpl := permutationOracleQueryImpl
@@ -366,19 +582,19 @@ Samples `h` as a uniform random function and `p` as a uniform random permutation
 inverse-permutation queries using `p.symm`. -/
 noncomputable def duplexSpongeOracleDistribution (StartType U : Type) [SpongeUnit U] [SpongeSize]
     [VCVCompatible StartType] [VCVCompatible U] :
-    ArkLib.OracleReduction.OracleDistribution
+    OracleReduction.OracleDistribution
       (duplexSpongeChallengeOracle StartType U) :=
-  ArkLib.OracleReduction.OracleDistribution.prod
+  OracleReduction.OracleDistribution.prod -- **prod**
     (duplexSpongeHashOracleDistribution StartType U)
     (duplexSpongePermutationOracleDistribution U)
 
-alias D𝔖 := duplexSpongeOracleDistribution
+alias D_𝔖 := duplexSpongeOracleDistribution
 
 @[simp]
 lemma duplexSpongeOracleDistribution_toImpl
     (StartType U : Type) [SpongeUnit U] [SpongeSize]
     [VCVCompatible StartType] [VCVCompatible U]
-    (realization : DuplexSpongeOracleRealization StartType U) :
+    (realization : DuplexSpongeOracleFamily StartType U) :
     (duplexSpongeOracleDistribution StartType U).toImpl realization =
       duplexSpongeOracleQueryImpl realization := by
   funext q
@@ -393,7 +609,7 @@ lemma duplexSpongeOracleDistribution_sample
     [VCVCompatible StartType] [VCVCompatible U] :
     (duplexSpongeOracleDistribution StartType U).sample =
       (do
-        let h ← $ᵗ (ArkLib.OracleReduction.OracleFamily
+        let h ← $ᵗ (OracleReduction.OracleFamily
           (StartType →ₒ Vector U SpongeSize.C))
         let p ← $ᵗ (Equiv.Perm (CanonicalSpongeState U))
         pure (h, p)) := rfl
@@ -432,7 +648,41 @@ end OracleSpec
 
 /-- Proof-string format for the salted DSFS surface (`τ` plus prover messages). -/
 abbrev DSSaltedProof (pSpec : ProtocolSpec n) (U : Type) (δ : Nat) :=
-  Vector U δ × (∀ i, pSpec.Message i)
+  Vector U δ × pSpec.Messages
+
+/-- Paper-faithful type of the malicious DSFS prover `𝒫̃` (`\tilde{\mathcal{P}}`), per
+CO25 §5.4 line 1136 (paper Step 4 of `D2SAlgo`):
+*"Let `𝒜`'s output be `(x, π_𝒜)`, and parse `π_𝒜` as `(τ, α_1, ..., α_k)`"*.
+
+`𝒫̃` queries `(h, p, p⁻¹) = duplexSpongeChallengeOracle` plus an ambient `oSpec` (for oracle-IP
+generalization; `oSpec = []ₒ` recovers the paper's pure-IP case), and outputs a salted proof
+`(x, (τ, messages))` with on-sponge salt `τ : Vector U δ`.
+
+Used uniformly in §5.4 (`D2SAlgo` input), §5.6 (`BadEvents.lemma_5_8` — LHS matches `Hyb_0`,
+RHS matches `Hyb_1`), §5.8 hybrids `Hyb_0 .. Hyb_4`, and Lemma 5.1. -/
+abbrev MaliciousProver {n : ℕ} {ι : Type} (oSpec : OracleSpec ι) (pSpec : ProtocolSpec n)
+    (StmtIn U : Type) [SpongeUnit U] [SpongeSize] (δ : ℕ) :=
+  OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
+    (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)
+
+/-- Paper-faithful type of the narrow DSFS honest verifier `𝒱^{h,p}` (`\mathcal{V}^{h,p}`),
+per CO25 Figure 4 line 3 and §5.8 hybrid security games.
+
+`𝒱^{h,p}` consumes salted proofs `(τ, π) : DSSaltedProof pSpec U δ` and queries `(h, p)` only —
+the inverse permutation `p⁻¹` is **not** exposed at the type level (`duplexSpongeForwardOracle`,
+not `duplexSpongeChallengeOracle`). This narrow typing is what makes the §5.6 / §5.8 trace
+analysis go through: the honest verifier provably cannot witness `p⁻¹`-collisions.
+
+Constructed from a base interactive `Verifier` via `Verifier.duplexSpongeFiatShamirSaltedForward`.
+Used in `dsfsGame`, `hybridGame`, `hyb_0 .. hyb_4` (`KeyLemma.lean`), and the conclusion of
+Lemma 5.1. For the wide-spec variant kept for `Reduction.duplexSpongeFiatShamirSalted` API
+compatibility (with `p⁻¹` in the spec but unused), see
+`Verifier.duplexSpongeFiatShamirSalted`. -/
+abbrev DSFSSaltedVerifier {n : ℕ} {ι : Type} (oSpec : OracleSpec ι) (pSpec : ProtocolSpec n)
+    (StmtIn StmtOut U : Type) [SpongeUnit U] [SpongeSize] (δ : ℕ) :=
+  NonInteractiveVerifier (DSSaltedProof (pSpec := pSpec) (U := U) δ)
+    (oSpec + duplexSpongeForwardOracle StmtIn U)
+    StmtIn StmtOut
 
 namespace ProtocolSpec.Messages
 
@@ -693,9 +943,7 @@ Lives at `oSpec + duplexSpongeForwardOracle StmtIn U`, omitting the inverse perm
 without granting it syntactic access to `p⁻¹`. -/
 def Verifier.duplexSpongeFiatShamirSaltedForward (δ : Nat)
     (V : Verifier oSpec StmtIn StmtOut pSpec) :
-    NonInteractiveVerifier (DSSaltedProof (pSpec := pSpec) (U := U) δ)
-      (oSpec + duplexSpongeForwardOracle StmtIn U)
-      StmtIn StmtOut where
+    DSFSSaltedVerifier oSpec pSpec StmtIn StmtOut U δ where
   verify := fun stmtIn proof => do
     let saltedProof : DSSaltedProof (pSpec := pSpec) (U := U) δ := proof 0
     let salt : Vector U δ := saltedProof.1
@@ -716,5 +964,47 @@ def Reduction.duplexSpongeFiatShamirSalted [∀ i, VCVCompatible (pSpec.Challeng
       StmtIn WitIn StmtOut WitOut where
   prover := R.prover.duplexSpongeFiatShamirSalted (δ := δ) sampleSalt
   verifier := R.verifier.duplexSpongeFiatShamirSalted (δ := δ)
+
+/-- Short alias for `Verifier.duplexSpongeFiatShamirSaltedForward` — lift an interactive
+`Verifier` to the paper-faithful narrow DSFS NARG verifier `𝒱^{h,p}`
+(`DSFSSaltedVerifier`).
+
+This is the canonical §5.8 surface: salted (consumes `(τ, π) : DSSaltedProof`) and forward-only
+(`oSpec + duplexSpongeForwardOracle StmtIn U` — no `p⁻¹`). -/
+@[inline, reducible]
+def Verifier.toDSFS (δ : Nat) (V : Verifier oSpec StmtIn StmtOut pSpec) :
+    DSFSSaltedVerifier oSpec pSpec StmtIn StmtOut U δ :=
+  V.duplexSpongeFiatShamirSaltedForward δ
+
+/-- Run the narrow-spec salted forward verifier `𝒱^{h,p}` (`V.toDSFS δ`) on
+`(stmtIn, proof : DSSaltedProof pSpec U δ)`, then `liftComp` the resulting computation up to the
+wide spec `oSpec + duplexSpongeChallengeOracle StmtIn U`.
+
+Shared by:
+- `dsfsGame` / `hybridGame` (KeyLemma.lean — `Hyb_0` through `Hyb_3` skeleton);
+- `lemma5_8ProjectedTraceDistAbortable` / `lemma5_8TraceExperiment` (BadEvents.lean — §5.6).
+
+Encodes CO25 Figure 4 line 3 at the type level: the narrow input spec
+`oSpec + duplexSpongeForwardOracle StmtIn U` exposes only `(h, p)`, while the wide output spec
+`oSpec + duplexSpongeChallengeOracle StmtIn U` exposes `(h, p, p⁻¹)`. Because the body is just
+`liftComp`-ed from the narrow surface, no `p⁻¹` query ever appears in the resulting query log. -/
+def runForwardVerifierWide (δ : Nat) (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (stmtIn : StmtIn) (proof : DSSaltedProof (pSpec := pSpec) (U := U) δ) :
+    OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (Option StmtOut) :=
+  let verifyCompNarrow :
+      OracleComp (oSpec + duplexSpongeForwardOracle StmtIn U) (Option StmtOut) :=
+    ((V.toDSFS δ).run stmtIn (fun i => match i with | ⟨0, _⟩ => proof)).run
+  liftComp verifyCompNarrow (oSpec + duplexSpongeChallengeOracle StmtIn U)
+
+/-- Short alias for `Verifier.singleSaltFiatShamir` — lift an interactive `Verifier` to the
+paper-faithful FS-standard salted NARG verifier `𝒱_std^f` (`FSStdSaltedVerifier`).
+
+Consumes `(τ, π) : FSSaltedProof pSpec Salt` and queries a single FS challenge oracle
+`fsChallengeOracle (StmtIn × Salt) pSpec` keyed at the augmented statement `(stmtIn, τ)`. -/
+@[inline, reducible]
+def Verifier.toSaltedFS {Salt : Type} [VCVCompatible Salt]
+    (V : Verifier oSpec StmtIn StmtOut pSpec) :
+    FSStdSaltedVerifier oSpec pSpec StmtIn StmtOut Salt :=
+  V.singleSaltFiatShamir
 
 end Execution

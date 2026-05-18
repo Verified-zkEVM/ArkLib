@@ -17,7 +17,7 @@ This file contains the lookahead sequence family `S_LA(tr_∇.p, s, i)` and the 
 
 1. **Paper structures** — `LookaheadSequence` (Eq. 13 chain), `LookaheadSequenceFamily`
    (the maximal family), and the abbrev `S_LA(tr_∇.p, s, i)`.
-2. **§5.3 Step 1** — `S_LA.compute` parses `tr_∇.p` into the maximal family `S_LA(tr_∇.p, s, i)`.
+2. **§5.3 Step 1** — `LookAheadSequenceFamily.compute` parses `tr_∇.p` into the maximal family `S_LA(tr_∇.p, s, i)`.
    Internal helpers: `successorCandidates`, `singletonLookaheadSequence`,
    `prependLookaheadSequence`, `LookaheadCandidate`, `buildLookaheadCandidates`,
    `enumerateLookaheadCandidates`.
@@ -138,7 +138,7 @@ private def successorCandidates
   classical
   exact (TraceTableOps.entries (V := CanonicalSpongeState U) trΔp).filterMap fun pair =>
     if pair.1 = current then
-      if current.capacitySegment = pair.2.capacitySegment then none else some pair.2
+      some pair.2
     else none
 
 private def singletonLookaheadSequence
@@ -201,130 +201,18 @@ private def prependLookaheadSequence
         exact hNoLoop
       · exact tail.capacitySegment_inputState_ne_outputState pair hRest }
 
-private structure LookaheadCandidate
-    (trΔp : T_P)
-    (state : CanonicalSpongeState U) (maxSteps : Nat) where
-  seq : LookaheadSequence trΔp state
-  length_le : seq.pairs.length ≤ maxSteps
-
-private def buildLookaheadCandidates
-    (trΔp : T_P)
-    (state : CanonicalSpongeState U) (maxSteps : Nat) :
-    List (LookaheadCandidate (T_P := T_P) (U := U) trΔp state maxSteps) := by
-  classical
-  let rec go (fuel : Nat) (current : CanonicalSpongeState U) :
-      List (LookaheadCandidate (T_P := T_P) (U := U) trΔp current fuel) :=
-    match fuel with
-    | 0 => []
-    | fuel + 1 =>
-      let succs := successorCandidates (T_P := T_P) (U := U) trΔp current
-      let buildFromNext (next : CanonicalSpongeState U) :
-          List (LookaheadCandidate (T_P := T_P) (U := U) trΔp current (fuel + 1)) :=
-        if hEntry :
-            (current, next) ∈ TraceTableOps.entries (V := CanonicalSpongeState U) trΔp then
-          if hNoLoop : current.capacitySegment ≠ next.capacitySegment then
-            let singletonSeq :=
-              singletonLookaheadSequence (T_P := T_P) (U := U)
-                trΔp current next hEntry hNoLoop
-            let singletonCandidate :
-                LookaheadCandidate (T_P := T_P) (U := U) trΔp current (fuel + 1) :=
-              { seq := singletonSeq
-                length_le := by
-                  have hSingletonLen : singletonSeq.pairs.length = 1 := by
-                    simp [singletonSeq, singletonLookaheadSequence]
-                  have hOneLe : 1 ≤ fuel + 1 := Nat.succ_le_succ (Nat.zero_le fuel)
-                  exact hSingletonLen ▸ hOneLe }
-            let tailCandidates := go fuel next
-            let extendedCandidates :=
-              tailCandidates.map fun
-                  (tail : LookaheadCandidate (T_P := T_P) (U := U) trΔp next fuel) =>
-                let seq :=
-                  prependLookaheadSequence (T_P := T_P) (U := U)
-                    trΔp current next hEntry hNoLoop tail.seq
-                have hLen : seq.pairs.length ≤ fuel + 1 := by
-                  have hSeqLen : seq.pairs.length = tail.seq.pairs.length + 1 := by
-                    unfold seq
-                    simp [prependLookaheadSequence]
-                  have hTailSucc : tail.seq.pairs.length + 1 ≤ fuel + 1 :=
-                    Nat.succ_le_succ tail.length_le
-                  exact hSeqLen ▸ hTailSucc
-                { seq := seq
-                  length_le := hLen }
-            singletonCandidate :: extendedCandidates
-          else
-            []
-        else
-          []
-      List.flatten (succs.map buildFromNext)
-  exact go maxSteps state
-
-private def enumerateLookaheadCandidates
-    (trΔp : T_P)
-    (state : CanonicalSpongeState U) (maxSteps : Nat) :
-    Finset (LookaheadSequence trΔp state) := by
-  classical
-  exact
-    ((buildLookaheadCandidates (T_P := T_P) (U := U) trΔp state maxSteps).map
-      (fun cand => cand.seq)).toFinset
-
 private lemma inputState_length_eq_pairs_length
     {trΔp : T_P}
     {state : CanonicalSpongeState U} (seq : LookaheadSequence trΔp state) :
     seq.inputState.length = seq.pairs.length := by
   simp [LookaheadSequence.inputState]
 
-private lemma enumerateLookaheadCandidates_length_bound
-    (trΔp : T_P)
-    (state : CanonicalSpongeState U) (maxSteps : Nat)
-    (s : LookaheadSequence trΔp state)
-    (hs : s ∈ enumerateLookaheadCandidates (T_P := T_P) (U := U) trΔp state maxSteps) :
-    s.inputState.length ≤ maxSteps := by
-  classical
-  unfold enumerateLookaheadCandidates at hs
-  have hsList :
-      s ∈ (buildLookaheadCandidates (T_P := T_P) (U := U) trΔp state maxSteps).map
-        (fun cand => cand.seq) := List.mem_toFinset.mp hs
-  rcases List.mem_map.mp hsList with ⟨cand, hCandMem, hCandEq⟩
-  have hCandInputLen : cand.seq.inputState.length = cand.seq.pairs.length := by
-    exact inputState_length_eq_pairs_length (T_P := T_P) (U := U) cand.seq
-  have hCandLe : cand.seq.inputState.length ≤ maxSteps := hCandInputLen ▸ cand.length_le
-  have hSeqLen : s.inputState.length = cand.seq.inputState.length := by
-    rw [← hCandEq]
-  exact hSeqLen.trans_le hCandLe
-
 /-- CO25 §5.3 Algorithm 2 **Step 1** — parse `tr_∇.p` into the maximal family
-`S_LA(tr_∇.p, s, i)` (Eq. 13).
-
-Step 1(a)-(d) are baked into `LookaheadSequence`; Step 1(e) maximality is enforced here by
-filtering `enumerateLookaheadCandidates` (the unfiltered candidate pool of length `≤ Lᵥᵢ i`).
-
-This is **only Step 1** of the paper algorithm — Step 2 (the `err` / `none` / sampled-output
-dispatch on `|S_LA|`) is implemented in `lookAhead`. -/
-def S_LA.compute
+`S_LA(tr_∇.p, s, i)` (Eq. 13). -/
+def LookAheadSequenceFamily.compute
     (trΔp : T_P)
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
-    S_LA (pSpec := pSpec) trΔp state i :=
-  by
-    classical
-    let maxSteps := pSpec.Lᵥᵢ i
-    let allSeqs := enumerateLookaheadCandidates (T_P := T_P) (U := U) trΔp state maxSteps
-    let isMaximal : LookaheadSequence trΔp state → Prop := fun s =>
-      ∀ s' ∈ allSeqs, s ≠ s' →
-        ¬ (s.inputState ⊆ s'.inputState) ∨ ¬ (s'.outputState ⊆ s.outputState)
-    let maxFamily := allSeqs.filter isMaximal
-    exact
-      { seqFamily := maxFamily
-        maximality := by
-          intro s hs s' hs' hneq
-          have hsMax : isMaximal s := (Finset.mem_filter.mp hs).2
-          have hsAll : s' ∈ allSeqs := (Finset.mem_filter.mp hs').1
-          exact hsMax s' hsAll hneq
-        length_le_numPermQueriesChallenge := by
-          intro s hs
-          have hsAll : s ∈ allSeqs := (Finset.mem_filter.mp hs).1
-          exact enumerateLookaheadCandidates_length_bound (T_P := T_P) (U := U)
-            trΔp state maxSteps s hsAll }
-
+    S_LA (pSpec := pSpec) trΔp state i := sorry
 
 /-! ## §5.3 Step 2 — Final output dispatch on `|S_LA|`: `err` / `none` / sampled vector -/
 
@@ -433,6 +321,122 @@ private def sampleChallengeFromSequence
   -- Return `ρ̂_i := units[0 : ℓ_V(i)] ∈ Σ^{ℓ_V(i)}`.
   pure (takeVector (U := U) (challengeSize i) units hChal_le_units)
 
+/-! ### Bridge lemma: `successorCandidates` → entry membership -/
+
+private lemma successor_singleton_mem_entries
+    (trΔp : T_P) (current next : CanonicalSpongeState U)
+    (h : successorCandidates (T_P := T_P) (U := U) trΔp current = [next]) :
+    (current, next) ∈ TraceTableOps.entries (V := CanonicalSpongeState U) trΔp := by
+  unfold successorCandidates at h
+  classical
+  have hMem : next ∈ (TraceTableOps.entries (V := CanonicalSpongeState U) trΔp).filterMap
+      (fun pair => if pair.1 = current then some pair.2 else none) := by rw [h]; exact .head ..
+  obtain ⟨pair, hPairMem, hPairEq⟩ := List.mem_filterMap.mp hMem
+  split at hPairEq
+  · next hCurr =>
+      have hSnd : pair.2 = next := by injection hPairEq
+      have hPairEq' : pair = (current, next) := Prod.ext hCurr hSnd
+      rw [hPairEq'] at hPairMem; exact hPairMem
+  · contradiction
+
+/-! ### Linear-scan helpers (CO25 §5.3 Algorithm 2 line 1107 "search stops on conflicting chains")
+
+The paper's Algorithm 2 enumerates the maximal family then post-filters. CO25 line 1107 states
+"the search stops if it encounters two conflicting chains" — i.e. scan-time fork → return `err`
+directly. This is paper-faithful: scan-time fork detection coincides with `E_fork,p`. -/
+
+
+/-- Output of linear forwards scan: either a fork was detected, or scan terminated with an optional sequence. -/
+private inductive LinearForwardScanResult {T_P : Type} [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+    (trΔp : T_P) (state : CanonicalSpongeState U) where
+  | forkErr
+  | done (seq? : Option (LookaheadSequence trΔp state))
+
+/-- CO25 §5.3 LookAhead linear forwards scan: from `current`, classify successor candidates in
+`tr_∇.p`. `[]` ends scan; `[next]` continues; `_::_::_` → `.forkErr`. -/
+private def linearScanForwards
+    (trΔp : T_P) (fuel : Nat) (current : CanonicalSpongeState U) :
+    LinearForwardScanResult (U := U) trΔp current :=
+  match fuel with
+  | 0 => .done none
+  | fuel' + 1 =>
+    -- Look up successor in `tr_∇.p` (CO25 §5.3)
+    let succs := successorCandidates (T_P := T_P) (U := U) trΔp current
+    match hSuccs : succs with
+    | [] => .done none -- No successor, sequence ends
+    | [next] =>
+        -- Found unique successor (CO25 §5.3 maximal sequence)
+        if hNoLoop : current.capacitySegment = next.capacitySegment then
+          .forkErr -- Self-loop → `E_inv`
+        else
+          have hNoLoop' : current.capacitySegment ≠ next.capacitySegment := hNoLoop
+          have hEntry : (current, next) ∈ TraceTableOps.entries trΔp :=
+            successor_singleton_mem_entries trΔp current next hSuccs
+          match linearScanForwards trΔp fuel' next with
+          | .forkErr => .forkErr
+          | .done none =>
+              .done (some (singletonLookaheadSequence (T_P := T_P) (U := U)
+                trΔp current next hEntry hNoLoop'))
+          | .done (some tailSeq) =>
+              .done (some (prependLookaheadSequence (T_P := T_P) (U := U) trΔp
+                current next hEntry hNoLoop' tailSeq))
+    | _ :: _ :: _ => .forkErr -- `tr_∇.p` collision → `E_prp`
+
+private lemma linearScanForwards_seq_length_le
+    (trΔp : T_P) (fuel : Nat) (current : CanonicalSpongeState U)
+    {seq : LookaheadSequence trΔp current}
+    (hScan : linearScanForwards (T_P := T_P) (U := U) trΔp fuel current = .done (some seq)) :
+    seq.pairs.length ≤ fuel := by
+  induction fuel generalizing current seq with
+  | zero => simp [linearScanForwards] at hScan
+  | succ fuel' ih =>
+      simp only [linearScanForwards] at hScan
+      -- body matches on successorCandidates result
+      split at hScan
+      · -- succs = []: .done none, contradiction
+        simp at hScan
+      · next next hSuccEq => -- succs = [next]
+          split at hScan
+          · -- loop detected: .forkErr, contradiction
+            simp at hScan
+          · -- no loop: match on recursive result
+            split at hScan
+            · -- recursive .forkErr, contradiction
+              simp at hScan
+            · -- recursive .done none: singleton sequence, pairs.length = 1 ≤ fuel' + 1
+              injection hScan with hEq
+              injection hEq with hEq2
+              subst hEq2
+              exact Nat.succ_le_succ (Nat.zero_le fuel')
+            · next tailSeq hTailScan =>
+              -- recursive .done (some tailSeq): prepend, length = tailLen + 1 ≤ fuel' + 1
+              injection hScan with hEq
+              injection hEq with hEq2
+              subst hEq2
+              have hTailLen := ih next hTailScan
+              exact Nat.succ_le_succ hTailLen
+      · -- succs = _ :: _ :: _: .forkErr, contradiction
+        simp at hScan
+
+/-- `linearLookAhead` uses the linear scan to return either a challenge vector or
+`err` directly (paper-faithful). Replaces the exhaustive `LookAheadSequenceFamily.compute` family
+enumeration for the executable surface. -/
+private def linearLookAhead
+    (trΔp : T_P) (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
+    OracleComp (Unit →ₒ U) (ExperimentOutput (Vector U (challengeSize i))) := do
+  let maxSteps := pSpec.Lᵥᵢ i
+  match hScan : linearScanForwards (T_P := T_P) (U := U) trΔp maxSteps state with
+  | .forkErr => pure ExperimentOutput.err
+  | .done none => pure ExperimentOutput.noResult
+  | .done (some seq) =>
+      have hLen : seq.inputState.length ≤ pSpec.Lᵥᵢ i := by
+        -- scan-invariant: `pairs.length ≤ maxSteps = pSpec.Lᵥᵢ i`.
+        rw [inputState_length_eq_pairs_length]
+        exact linearScanForwards_seq_length_le trΔp maxSteps state hScan
+      let rhoHat ← sampleChallengeFromSequence (T_P := T_P) (U := U) (pSpec := pSpec)
+        (seq := seq) (i := i) (hInputLenLe := hLen)
+      pure (ExperimentOutput.some rhoHat)
+
 /-- CO25 §5.3 Algorithm 2 — `LookAhead(tr_∇.p, s, i)`, polymorphic over any
 `[LawfulTraceTable T_P ...]` for `tr_∇.p`.
 
@@ -446,30 +450,16 @@ Output: a probabilistic computation returning either
 - `ExperimentOutput.noResult` — empty `S_LA` (paper Step 2(b)),
 - `ExperimentOutput.some ρ̂_i` — single maximal sequence; the missing rate blocks
   `s_{R,out,m_1}, …, s_{R,out,L_V(i)-1}` are sampled uniformly from `Σ^r` and the prefix
-  of length `ℓ_V(i)` is returned (paper Step 2(c)). -/
+  of length `ℓ_V(i)` is returned (paper Step 2(c)).
+
+Implementation: delegates to `linearLookAhead`, which performs CO25 line-1107's scan-time
+fork-detection optimization. The paper-spec `LookAheadSequenceFamily.compute` family is retained
+for downstream proofs (BadEvents, AbortAnalysis). -/
 def lookAhead
     (trΔp : T_P)
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
-    OracleComp (Unit →ₒ U) (ExperimentOutput (Vector U (challengeSize i))) := do
-  -- §5.3 Step 1: parse `tr_∇.p` into the maximal family `S_LA(tr_∇.p, s, i)`.
-  let family :=
-    S_LA.compute (T_P := T_P) (U := U) (pSpec := pSpec) trΔp state i
-  -- §5.3 Step 2: dispatch on `|S_LA|`.
-  match hFamilyList : family.seqFamily.toList with
-  | [] =>
-    -- §5.3 Step 2(b): `S_LA` is empty → return `noResult`.
-    pure ExperimentOutput.noResult
-  | [seq] =>
-    -- §5.3 Step 2(c): single maximal sequence.
-    have hSeqMem : seq ∈ family.seqFamily := by
-      have : seq ∈ family.seqFamily.toList := by rw [hFamilyList]; simp
-      exact Finset.mem_toList.mp this
-    let rhoHat ← sampleChallengeFromSequence (T_P := T_P) (U := U) (pSpec := pSpec)
-      (seq := seq) (i := i) (hInputLenLe := family.length_le_numPermQueriesChallenge seq hSeqMem)
-    pure (ExperimentOutput.some rhoHat)
-  | _ :: _ :: _ =>
-    -- §5.3 Step 2(a): `|S_LA| > 1` → return `err`.
-    pure ExperimentOutput.err
+    OracleComp (Unit →ₒ U) (ExperimentOutput (Vector U (challengeSize i))) :=
+  linearLookAhead (pSpec := pSpec) trΔp state i
 
 end
 

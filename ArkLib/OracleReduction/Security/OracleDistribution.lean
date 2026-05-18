@@ -31,7 +31,7 @@ import ArkLib.OracleReduction.Execution
   development.
 -/
 
-namespace ArkLib.OracleReduction
+namespace OracleReduction
 
 open OracleComp OracleSpec
 open scoped ENNReal
@@ -87,8 +87,17 @@ def runWith (D : OracleDistribution spec) {α : Type} (A : OracleComp spec α) :
   let c ← D.sample
   simulateQ (D.toImpl c) A
 
+/-- Eager state-based implementation wrapper.
+Turns a stateless `toImpl` bound to a specific carrier into a `StateT` querying interpreter
+that reads the pre-sampled carrier from the state. -/
+def eagerImpl (D : OracleDistribution spec) :
+    QueryImpl spec (StateT D.Carrier ProbComp) :=
+  fun q => do
+    let k ← StateT.get
+    StateT.lift (D.toImpl k q)
+
 /-- The function-table realization (random-function oracles).
-Used for `D_Σ`, `D_IP`, `D_ROM`, etc. -/
+Used for `D_ROM`, `D_IP`, `D_Σ`, , etc. -/
 def functionTable (D : ProbComp (OracleFamily spec)) : OracleDistribution spec where
   Carrier := OracleFamily spec
   sample  := D
@@ -258,8 +267,8 @@ This section demonstrates the *random-function* `OracleDistribution` shape — s
 function-table over a finite spec, then expose it as a deterministic interpreter. All examples
 below are instances of `OracleDistribution.uniform`. They cover three reusable shapes:
 
-- `DROM` — generic random oracle `Input →ₒ Output` (not DSFS-specific).
-- `DIP`  — uniform random function over `fsChallengeOracle Statement pSpec`. Generic; DSFS uses
+- `D_ROM` — generic random oracle `Input →ₒ Output` (not DSFS-specific).
+- `D_IP`  — uniform random function over `fsChallengeOracle Statement pSpec`. Generic; DSFS uses
   this with a salted statement type at the call sites (see "DSFS mapping" below).
 - (concrete `D_Σ` / Hyb2 — illustrated as code sketches; concrete instances live downstream.)
 
@@ -277,7 +286,8 @@ require `Carrier := Equiv.Perm State` to enforce the bijection invariant. The co
 - Eq. 52 — Hyb2 (decoded). Spec `section58DecodedChallengeOracle StmtIn pSpec δ`.
   Shape: random function (this is *not* `D_Σ`). Same file as Hyb1.
 - `D_IP` — Hyb3 / Hyb4 (salted). Spec
-  `fsChallengeOracle (Vector U δ × StmtIn) pSpec`. Shape: random function.
+  `fsChallengeOracle (StmtIn × Salt) pSpec` (paper's pre-encoded `{0,1}^{δ⋆}`; the on-sponge
+  `Vector U δ` salt is bridged via `SaltCodec.encode = bin`). Shape: random function.
   Realized at call sites.
 
 The §5.8-specific encoded/decoded challenge oracles currently live in
@@ -287,14 +297,14 @@ the *generic* random-function shapes; concrete DSFS instances are produced at th
 partial application of `OracleDistribution.uniform`.
 -/
 
-namespace OracleDistribution.Examples
+section OracleDistribution.Examples
 
 /-! ### `D_ROM` — random-function constructor. -/
 
 /-- Generic `D_ROM` constructor for any random-function oracle spec:
 uniformly sample one deterministic table realization. -/
 @[reducible]
-def DROM {ι : Type} (spec : OracleSpec ι) [SampleableType (OracleFamily spec)] :
+def D_ROM {ι : Type} (spec : OracleSpec ι) [SampleableType (OracleFamily spec)] :
     OracleDistribution spec :=
   OracleDistribution.uniform spec
 
@@ -305,7 +315,7 @@ The Fiat-Shamir challenge oracle (`fsChallengeOracle` / `srChallengeOracle`) is 
 `D_IP` samples a single deterministic such function.
 
 DSFS Hyb3 / Hyb4 (salted) instantiate `D_IP` with the *salted* statement type
-`Statement := Vector U δ × StmtIn`, i.e. `DIP (Vector U δ × StmtIn) pSpec`. -/
+`Statement := StmtIn × Vector U δ`, i.e. `D_IP (StmtIn × Vector U δ) pSpec`. -/
 
 /-- Bridge instance: granular `VCVCompatible` hypotheses on statement, message, and challenge
 types suffice to derive `SampleableType (OracleFamily (fsChallengeOracle Statement pSpec))`.
@@ -330,14 +340,14 @@ noncomputable instance instSampleableTypeFSChallengeOracle
   sorry
 
 /-- `D_IP` over `fsChallengeOracle Statement pSpec`: uniform random function from prover-prefix
-queries to challenges. DSFS Hyb3 / Hyb4 use this with `Statement := Vector U δ × StmtIn`. -/
+queries to challenges. DSFS Hyb3 / Hyb4 use this with `Statement := StmtIn × Vector U δ`. -/
 @[reducible]
-noncomputable def DIP {n : ℕ} (Statement : Type) (pSpec : ProtocolSpec n)
+noncomputable def D_IP {n : ℕ} (Statement : Type) (pSpec : ProtocolSpec n)
     [VCVCompatible Statement]
     [∀ i, VCVCompatible (pSpec.Message i)]
     [∀ i, VCVCompatible (pSpec.Challenge i)] :
     OracleDistribution (ProtocolSpec.fsChallengeOracle Statement pSpec) :=
-  DROM (spec := ProtocolSpec.fsChallengeOracle Statement pSpec)
+  D_ROM (spec := ProtocolSpec.fsChallengeOracle Statement pSpec)
 
 /-! ### `D_Σ` — §5.8 encoded-challenge oracle.
 
@@ -351,7 +361,7 @@ def DΣ_encoded {n : ℕ} (StmtIn : Type) (pSpec : ProtocolSpec n) (δ : ℕ) �
     OracleDistribution (section58EncodedChallengeOracle StmtIn pSpec δ) :=
   OracleDistribution.uniform _
 ```
-The pattern is identical to `DROM` / `DIP`; only the underlying spec differs. -/
+The pattern is identical to `D_ROM` / `D_IP`; only the underlying spec differs. -/
 
 /-! ### Hyb2 decoded challenge distribution.
 
@@ -414,4 +424,4 @@ noncomputable example {U : Type} (n : ℕ) [VCVCompatible U] :
 
 end BridgeProbes
 
-end ArkLib.OracleReduction
+end OracleReduction

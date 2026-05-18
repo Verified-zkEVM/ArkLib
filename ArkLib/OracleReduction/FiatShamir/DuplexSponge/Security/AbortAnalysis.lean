@@ -18,13 +18,13 @@ Fiat-Shamir, following Section 5.7 in the paper.
    `isConsistentTrace(tr) ∧ ¬ E(tr)`.  Used by Lemmas 5.17 and 5.18.
 2. **Claim 5.20** (`claim_5_20_lookAhead_noAbort`) — `LookAhead(tr.p, s, i) ≠ err` under
    `¬ E(tr)`.  Used by Lemma 5.17.
-3. **Lemma 5.17** (`lemma_5_17_stdTrace_noAbort`) — `StdTrace(tr)` does not abort under
+3. **Lemma 5.17** (`lemma_5_17_d2sTrace_noAbort`) — `D2STrace(tr)` does not abort under
    `isConsistentTrace(tr) ∧ ¬ E(tr)`.  Used to derive Theorem 5.20.
 4. **Lemma 5.18** (`lemma_5_18_d2sQuery_noAbort`) — `A^D2SQuery` does not abort under
    `isConsistentTrace(tr_A) ∧ ¬ E(tr_A)`.  Used to derive Theorem 5.19.
 5. **Theorem 5.19** (`theorem_5_19_d2sQuery_abort_implies_badEvent`) — contrapositive of
    Lemma 5.18: if `A^D2SQuery` aborts then `E(tr_A)` holds.  Used in Section 5.8.
-6. **Theorem 5.20** (`theorem_5_20_stdTrace_abort_implies_badEvent`) — contrapositive of
+6. **Theorem 5.20** (`theorem_5_20_d2sTrace_abort_implies_badEvent`) — contrapositive of
    Lemma 5.17: if `StdTrace(tr)` aborts then `E(tr)` holds.  Used in Section 5.8.
 -/
 
@@ -40,27 +40,27 @@ variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
   [codec : Codec pSpec U]
   {δ : ℕ}
 
-/-- Predicate: `StdTrace` on `trace` does not abort.
+/-- Predicate: `D2STrace` on `trace` does not abort.
 
-Blackbox over `T_H T_P` via `[LawfulTraceNablaImpl …]` (matches `stdTraceSingle`). -/
-def StdTraceNoAbort [DecidableEq StmtIn] [DecidableEq U]
+Blackbox over `T_H T_P` via `[LawfulTraceNablaImpl …]` (matches `d2sTrace`). -/
+def D2STraceNoAbort [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
     {T_H T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
-  stdTraceSingle (T_H := T_H) (T_P := T_P) (δ := δ)
+  d2sTrace (T_H := T_H) (T_P := T_P) (δ := δ)
       (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
       trace ≠
     (failure : UnitSampleM U
       (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)))
 
-/-- Predicate: `StdTrace` on `trace` aborts. -/
-def StdTraceAbort [DecidableEq StmtIn] [DecidableEq U]
+/-- Predicate: `D2STrace` on `trace` aborts. -/
+def D2STraceAbort [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
     {T_H T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
-  ¬ StdTraceNoAbort (T_H := T_H) (T_P := T_P) (δ := δ)
+  ¬ D2STraceNoAbort (T_H := T_H) (T_P := T_P) (δ := δ)
       (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
       trace
 
@@ -107,13 +107,21 @@ variable [DecidableEq StmtIn] [DecidableEq U]
 Stepped through `d2sQueryStep` (encoded `gSpec` target). The codec composition
 `ψ⁻¹∘f∘φ⁻¹` lives in `d2sCodecBridgeImpl` as a `QueryImpl`, applied post-hoc by `d2sAlgo`. -/
 def D2SQueryNoAbortOnTrace
-    [Fintype U]
+    [DecidableEq StmtIn] [DecidableEq U] [Fintype U]
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Message i)]
+    {T_H : Type}
+    {T_P : Type}
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
-  ∀ q : (duplexSpongeChallengeOracle StmtIn U).Domain,
+  -- TODO: fix this to generalize arbitrary D2SQuery procedure.
+    -- an `trace`, `cacheP`, and `trΔ` come with some relations between them
+  ∀ (cacheP : List (CanonicalSpongeState U × CanonicalSpongeState U))
+    (q : (duplexSpongeChallengeOracle StmtIn U).Domain),
     (d2sQueryStep (δ := δ)
         (T_H := T_H) (T_P := T_P)
         (StmtIn := StmtIn) (pSpec := pSpec) (U := U) q).run
-        ({ trace := trace, cacheP := [] } :
+        ({ trace := trace, cacheP := cacheP, trΔ := TraceNabla.ofQueryLog trace } :
           D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
             (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) ≠
       (failure : AbortComp
@@ -186,24 +194,24 @@ lemma claim_5_20_lookAhead_noAbort [DecidableEq StmtIn] [DecidableEq U]
 /-! ## Lemma 5.17 and Lemma 5.18 — full algorithm no-abort -/
 
 /-- CO25 Lemma 5.17 — For every `(h, p, p⁻¹)`-trace `tr`, if `isConsistentTrace(tr) ∧ ¬ E(tr)`
-then `StdTrace(tr)` does not abort.
+then `D2STrace(tr)` does not abort.
 
-Paper statement (CO25 §5.7 Lemma 5.17): if `E(tr) = 0` then `StdTrace(tr)` does not abort.
+Paper statement (CO25 §5.7 Lemma 5.17): if `E(tr) = 0` then `D2STrace(tr)` does not abort.
 We additionally require `isConsistentTrace(tr)` (implicit in the paper from the `(h, p, p⁻¹)`
 sampling context) because our `lemma_5_10` needs it to derive `¬ E_prp(tr)`.
 
-Proof sketch: StdTrace aborts in two sub-calls:
+Proof sketch: D2STrace aborts in two sub-calls:
 - The `BackTrack` sub-call: derive `¬ E_inv` (via `lemma_5_12`), `¬ E_prp` (via `lemma_5_10`),
   `¬ E_fork` (via `lemma_5_14`), then apply Claim 5.19.
 - The `LookAhead` sub-call: derive `¬ E_prp` (via `lemma_5_10`), then apply Claim 5.20. -/
-lemma lemma_5_17_stdTrace_noAbort [DecidableEq StmtIn] [DecidableEq U]
+lemma lemma_5_17_d2sTrace_noAbort [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
     {T_H T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (hConsistent : BadEventDS.isConsistentTrace trace)
     (hE : ¬ BadEventDS.E trace) :
-    StdTraceNoAbort (T_H := T_H) (T_P := T_P) (δ := δ)
+    D2STraceNoAbort (T_H := T_H) (T_P := T_P) (δ := δ)
       (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
       trace := by
   sorry
@@ -260,24 +268,24 @@ theorem theorem_5_19_d2sQuery_abort_implies_badEvent
       (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
       traceA hConsistent hE)
 
-/-- CO25 Theorem 5.20 — If `StdTrace(tr)` aborts then `E(tr)` holds.
+/-- CO25 Theorem 5.20 — If `D2STrace(tr)` aborts then `E(tr)` holds.
 
 This is the contrapositive of Lemma 5.17, and is the form used in Section 5.8. -/
-theorem theorem_5_20_stdTrace_abort_implies_badEvent [DecidableEq StmtIn] [DecidableEq U]
+theorem theorem_5_20_d2sTrace_abort_implies_badEvent [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
     {T_H T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (hConsistent : BadEventDS.isConsistentTrace trace)
     (hAbort :
-      StdTraceAbort (T_H := T_H) (T_P := T_P) (δ := δ)
+      D2STraceAbort (T_H := T_H) (T_P := T_P) (δ := δ)
         (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
         trace) :
     BadEventDS.E trace := by
   classical
   by_contra hE
   exact hAbort
-    (lemma_5_17_stdTrace_noAbort (T_H := T_H) (T_P := T_P) (δ := δ)
+    (lemma_5_17_d2sTrace_noAbort (T_H := T_H) (T_P := T_P) (δ := δ)
       (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
       trace hConsistent hE)
 
