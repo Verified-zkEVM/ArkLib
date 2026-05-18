@@ -15,6 +15,7 @@ import ArkLib.Data.Classes.Slice
 import ArkLib.Data.CodingTheory.Basic.DecodingRadius
 import ArkLib.Data.CodingTheory.Basic.Distance
 import ArkLib.Data.CodingTheory.Basic.LinearCode
+import ArkLib.Data.CodingTheory.Basic.MDSCode
 import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
 import ArkLib.Data.CodingTheory.BerlekampWelch.Condition
@@ -57,6 +58,8 @@ import ArkLib.Data.CodingTheory.ProximityGap.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.MainResults
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.ReedSolomon
+import ArkLib.Data.CodingTheory.ProximityGap.Folding
+import ArkLib.Data.CodingTheory.ProximityGap.ProximityGenerators
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.CodingTheory.ReedSolomon.FftDomain
 import ArkLib.Data.EllipticCurve.BN254
@@ -68,6 +71,7 @@ import ArkLib.Data.Fin.Tuple.Defs
 import ArkLib.Data.Fin.Tuple.Lemmas
 import ArkLib.Data.Fin.Tuple.Notation
 import ArkLib.Data.Fin.Tuple.TakeDrop
+import ArkLib.Data.Finset.PickSubset
 import ArkLib.Data.GroupTheory.PrimeOrder
 import ArkLib.Data.GroupTheory.Smooth
 import ArkLib.Data.Hash.DomainSep
@@ -81,8 +85,10 @@ import ArkLib.Data.MvPolynomial.Degrees
 import ArkLib.Data.MvPolynomial.Interpolation
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLib.Data.MvPolynomial.Multilinear
+import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.FoldingPolynomial
+import ArkLib.Data.Polynomial.Indicator
 import ArkLib.Data.Polynomial.Interface
 import ArkLib.Data.Polynomial.Prelims
 import ArkLib.Data.Polynomial.RationalFunctions
@@ -161,7 +167,6 @@ import ArkLib.ProofSystem.Fri.Spec.SingleRound
 import ArkLib.ProofSystem.Plonk.Basic
 import ArkLib.ProofSystem.Spartan.Basic
 import ArkLib.ProofSystem.Stir.Combine
-import ArkLib.ProofSystem.Stir.Folding
 import ArkLib.ProofSystem.Stir.MainThm
 import ArkLib.ProofSystem.Stir.OutOfDomSmpl
 import ArkLib.ProofSystem.Stir.ProximityBound
@@ -188,3 +193,6 @@ import ArkLib.ToVCVio.OracleComp.EvalDist
 import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
 import ArkLib.ToVCVio.ToMathlib.Control.StateT
 import ArkLib.ToVCVio.ToMathlib.Data.Vector.Basic
+import ArkLib.ToMathlib.Polynomial.DegreeLT
+import ArkLib.ToMathlib.Polynomial.EvalExt
+import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum

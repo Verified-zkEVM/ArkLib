@@ -32,7 +32,6 @@ underlying Reed-Solomon proximity and list-decoding machinery.
 
 - [`ArkLib/Data/CodingTheory/ListDecodability.lean`](../../../ArkLib/Data/CodingTheory/ListDecodability.lean)
 - [`ArkLib/ProofSystem/Stir/Combine.lean`](../../../ArkLib/ProofSystem/Stir/Combine.lean)
-- [`ArkLib/ProofSystem/Stir/Folding.lean`](../../../ArkLib/ProofSystem/Stir/Folding.lean)
 - [`ArkLib/ProofSystem/Stir/MainThm.lean`](../../../ArkLib/ProofSystem/Stir/MainThm.lean)
 - [`ArkLib/ProofSystem/Stir/OutOfDomSmpl.lean`](../../../ArkLib/ProofSystem/Stir/OutOfDomSmpl.lean)
 - [`ArkLib/ProofSystem/Stir/ProximityGap.lean`](../../../ArkLib/ProofSystem/Stir/ProximityGap.lean)

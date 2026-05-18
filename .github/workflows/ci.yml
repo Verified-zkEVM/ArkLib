@@ -257,39 +257,3 @@ jobs:
             cat "$BUILD_TIMING_REPORT"
           } > "$BUILD_TIMING_COMMENT"
 
-      - name: Upsert build timing PR comment
-        if: >-
-          always() &&
-          github.event_name == 'pull_request' &&
-          github.event.pull_request.head.repo.full_name == github.repository
-        uses: actions/github-script@v9
-        with:
-          script: |
-            const fs = require('fs');
-            const marker = '<!-- arklib-build-timing-report -->';
-            const body = fs.readFileSync(process.env.BUILD_TIMING_COMMENT, 'utf8');
-            const { owner, repo } = context.repo;
-            const issue_number = context.issue.number;
-            const comments = await github.paginate(
-              github.rest.issues.listComments,
-              { owner, repo, issue_number, per_page: 100 }
-            );
-            const existing = comments.find(comment =>
-              comment.user?.type === 'Bot' && comment.body?.includes(marker)
-            );
-
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner,
-                repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number,
-                body,
-              });
-            }

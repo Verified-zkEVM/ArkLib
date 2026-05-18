@@ -7,12 +7,15 @@ Authors: Katerina Hristova, František Silváši, Julian Sutherland, Chung Thai 
 import Mathlib.Algebra.Lie.OfAssociative
 import Mathlib.LinearAlgebra.Matrix.Rank
 import Mathlib.LinearAlgebra.AffineSpace.Pointwise
+import Mathlib.LinearAlgebra.AffineSpace.Combination
+import Mathlib.RingTheory.Henselian
 
 /-! # Coding-Theory Preliminaries -/
 
 section TensorCombination
 variable {F : Type*} [CommRing F] [Fintype F] [DecidableEq F]
-variable {A : Type*} [AddCommMonoid A] [Module F A]
+         {A : Type*} [AddCommMonoid A] [Module F A]
+
 /--
 The tensor product weight `⊗_{i=0}^{ϑ-1}(1 - rᵢ, rᵢ)` for a specific index `i` given randomness `r`.
 Corresponds to `eq(i, r)` in multilinear polynomial literature.
@@ -37,13 +40,12 @@ noncomputable section
 variable {F : Type*}
          {ι : Type*} [Fintype ι]
          {ι' : Type*} [Fintype ι']
-         {m n : ℕ}
+         {m n k : ℕ}
 
 namespace Matrix
 
 /-- The set of column indices where two matrices differ. -/
-def neqCols [DecidableEq F] (U V : Matrix ι ι' F) : Finset ι' :=
-  {j | ∃ i : ι, V i j ≠ U i j}
+def neqCols [DecidableEq F] (U V : Matrix ι ι' F) : Finset ι' := {j | ∃ i : ι, V i j ≠ U i j}
 
 section
 
@@ -62,9 +64,7 @@ def colSpan : Submodule F (ι → F) :=
   Submodule.span F {Matrix.transpose U i | i : ι'}
 
 /-- The column rank of a matrix (dimension of the column span). -/
-def colRank : ℕ :=
-  Module.finrank F (colSpan U)
-
+def colRank : ℕ := Module.finrank F (colSpan U)
 
 end
 
@@ -83,7 +83,7 @@ variable [CommRing F] [Nontrivial F]
 
 /-- An m×n matrix has full rank if the submatrix consisting of rows 1 through n has rank n. -/
 lemma rank_eq_if_subUpFull_eq (h : n ≤ m) :
-    (subUpFull U (Fin.castLE h)).rank = n  → U.rank = n  := by
+    (subUpFull U (Fin.castLE h)).rank = n → U.rank = n  := by
    intro h_sub_mat_rank
    apply le_antisymm
    ·  exact Matrix.rank_le_width U
@@ -130,7 +130,6 @@ lemma rank_eq_if_det_ne_zero {U : Matrix (Fin n) (Fin n) F} [IsDomain F] :
       Fintype.card_fin
     ]
 
-
 end
 
 section
@@ -172,6 +171,26 @@ lemma rank_eq_min_row_col_rank : U.rank = min (rowRank U) (colRank U) := by
 end
 
 end Matrix
+
+namespace LinearCombination
+
+/-- A nonzero linear combination of linearly independent vectors is nonzero. -/
+theorem linearCombination_ne_zero
+    {F : Type*} [Field F] {ℓ : Type*} [Fintype ℓ]
+    {M : Type*} [AddCommMonoid M] [Module F M]
+    {P : ℓ → M} (hP : LinearIndependent F P)
+    {v : ℓ → F} (hv : v ≠ 0) :
+    ∑ j : ℓ, v j • P j ≠ 0 := by
+  have := @Fintype.linearIndependent_iff (ℓ) F M
+  contrapose! hv
+  contrapose! this
+  refine ⟨?_,? _, ?_, ?_⟩
+  · all_goals try infer_instance
+  · exact Module.addCommMonoidToAddCommGroup F
+  · exact inferInstance
+  · refine ⟨P, inferInstance, Or.inl ⟨hP, v, hv, Function.ne_iff.mp this⟩⟩
+
+end LinearCombination
 
 end
 

@@ -309,7 +309,9 @@ noncomputable def oracleImpl
       let fi : 𝔽[X] := List.foldl (fun f (i, α) => FoldingPolynomial.polyFold f (s i) α) f0 chals
       let st : Spec.FinalOracleStatement (F := 𝔽) s ω i :=
         if h : i.1 = k + 1 then
-          cast (by simp [Spec.FinalOracleStatement, h]) fi
+          cast (by simp [Spec.FinalOracleStatement, h]; rfl)
+            (⟨fi.toImpl, CompPoly.CPolynomial.Raw.isCanonical_toImpl fi⟩ :
+              CompPoly.CPolynomial 𝔽)
         else
           cast
             (by {

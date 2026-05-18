@@ -97,4 +97,61 @@ theorem proximity_gap_divisibility (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code �
     X - C (codewordToPoly p) ∣ Q :=
   dvd_property (f := f) hk hm p hQ.Q_deg hQ.Q_multiplicity h_dist
 
+/-- GS existence with rate-corrected degree bound (ρ = k/n). Requires k > 1
+    for the counting argument and m ≥ 1 for multiplicity. -/
+theorem gs_existence (k n : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
+    (hk : 1 < k) (hn : n ≠ 0) (hm : 1 ≤ m) :
+    ∃ Q, Conditions k m (gs_degree_bound k n m) ωs f Q := by
+  set D := gs_degree_bound k n m
+  have hcount := gs_numVars_gt_numConstraints_of_gt_one hn hk hm
+  obtain ⟨c, hc_ne, hc_zero⟩ := exists_nonzero_solution_gen k n m ωs f D hcount
+  use coeffsToPoly k D c
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · -- ne_zero
+    have h_inj : Function.Injective (coeffsToPoly (F := F) k D) := by
+      have : Function.Injective (linearCombination F
+        (fun p : weigthBoundIndices k D ↦ monomial (F := F) p.1.1 p.1.2)) :=
+        linearIndependent_monomials.comp _ (fun p q h ↦ by aesop)
+      exact this.comp (LinearEquiv.injective _)
+    exact fun h ↦ hc_ne <| h_inj <| by simpa using h
+  · -- weightedDegree
+    convert Option.some_le_some.mpr (natWeightedDegree_coeffsToPoly_le k D c) using 1
+    exact weightedDegree_eq_natWeightedDegree
+  · -- roots
+    intro i
+    exact eval_eq_zero_of_constraint_zero hm fun s t hst ↦ by
+      simp only [constraintMap, LinearMap.coe_mk, AddHom.coe_mk] at hc_zero
+      have := congr_fun (congr_fun hc_zero i) ⟨(s, t), Finset.mem_filter.2
+        ⟨Finset.mem_product.mpr ⟨Finset.mem_range.mpr (by linarith),
+          Finset.mem_range.mpr (by linarith)⟩, by linarith⟩⟩
+      aesop
+  · -- multiplicity
+    intro i
+    apply rootMultiplicity_ge_of_shift_zero
+    · have h_inj : Function.Injective (coeffsToPoly (F := F) k D) := by
+        have : Function.Injective (linearCombination F
+          (fun p : weigthBoundIndices k D ↦ monomial (F := F) p.1.1 p.1.2)) :=
+          linearIndependent_monomials.comp _ (fun p q h ↦ by aesop)
+        exact this.comp (LinearEquiv.injective _)
+      exact fun h ↦ hc_ne <| h_inj <| by simpa using h
+    · intro s t hst
+      have h := congr_fun (congr_fun hc_zero i) ⟨(s, t), by
+        exact Finset.mem_filter.mpr ⟨Finset.mem_product.mpr ⟨Finset.mem_range.mpr (by linarith),
+          Finset.mem_range.mpr (by linarith)⟩, by linarith⟩⟩
+      -- Mirror the approach in polySol_multiplicity:
+      -- unfold constraintMap in hc_zero, extract component
+      simp only [constraintMap, LinearMap.coe_mk, AddHom.coe_mk] at hc_zero
+      have := congr_fun (congr_fun hc_zero i) ⟨(s, t), by
+        exact Finset.mem_filter.mpr ⟨Finset.mem_product.mpr ⟨Finset.mem_range.mpr (by linarith),
+          Finset.mem_range.mpr (by linarith)⟩, by linarith⟩⟩
+      aesop
+
+/-- GS divisibility with rate-corrected Johnson radius (ρ = k/n). -/
+theorem gs_divisibility (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k)
+    {Q : F[X][Y]} (hQ : Conditions k m (gs_degree_bound k n m) ωs f Q)
+    (h_dist : (hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) : ℝ) / n <
+      gs_johnson k n m) :
+    X - C (codewordToPoly p) ∣ Q :=
+  gs_dvd_property (f := f) hk hm p hQ.Q_deg hQ.Q_multiplicity h_dist
+
 end GuruswamiSudan

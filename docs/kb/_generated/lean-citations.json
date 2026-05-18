@@ -1,8 +1,8 @@
 {
   "counts": {
-    "files_with_citations": 47,
-    "keys_cited": 19,
-    "total_citation_edges": 59
+    "files_with_citations": 48,
+    "keys_cited": 17,
+    "total_citation_edges": 58
   },
   "files": {
     "ArkLib/AGM/Basic.lean": [
@@ -81,6 +81,9 @@
     "ArkLib/Data/CodingTheory/ProximityGap/Basic.lean": [
       "BCIKS20"
     ],
+    "ArkLib/Data/CodingTheory/ProximityGap/Folding.lean": [
+      "ACFY24"
+    ],
     "ArkLib/Data/CodingTheory/ReedSolomon.lean": [
       "ACFY24"
     ],
@@ -88,6 +91,9 @@
       "Poseidon2"
     ],
     "ArkLib/Data/Polynomial/FoldingPolynomial.lean": [
+      "ACFY24"
+    ],
+    "ArkLib/Data/Polynomial/Indicator.lean": [
       "ACFY24"
     ],
     "ArkLib/Data/Polynomial/RationalFunctions.lean": [
@@ -123,11 +129,6 @@
     "ArkLib/ProofSystem/Stir/Combine.lean": [
       "ACFY24stir"
     ],
-    "ArkLib/ProofSystem/Stir/Folding.lean": [
-      "ACFY24stir",
-      "BSS08",
-      "STIR2005"
-    ],
     "ArkLib/ProofSystem/Stir/MainThm.lean": [
       "ACFY24stir"
     ],
@@ -162,8 +163,10 @@
   "keys": {
     "ACFY24": [
       "ArkLib/Data/CodingTheory/ListDecodability.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/Folding.lean",
       "ArkLib/Data/CodingTheory/ReedSolomon.lean",
       "ArkLib/Data/Polynomial/FoldingPolynomial.lean",
+      "ArkLib/Data/Polynomial/Indicator.lean",
       "ArkLib/ProofSystem/Whir/BlockRelDistance.lean",
       "ArkLib/ProofSystem/Whir/Folding.lean",
       "ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean",
@@ -173,7 +176,6 @@
     "ACFY24stir": [
       "ArkLib/Data/CodingTheory/ListDecodability.lean",
       "ArkLib/ProofSystem/Stir/Combine.lean",
-      "ArkLib/ProofSystem/Stir/Folding.lean",
       "ArkLib/ProofSystem/Stir/MainThm.lean",
       "ArkLib/ProofSystem/Stir/OutOfDomSmpl.lean",
       "ArkLib/ProofSystem/Stir/ProximityGap.lean"
@@ -216,9 +218,6 @@
       "ArkLib/OracleReduction/Basic.lean",
       "ArkLib/OracleReduction/VectorIOR.lean"
     ],
-    "BSS08": [
-      "ArkLib/ProofSystem/Stir/Folding.lean"
-    ],
     "DP24": [
       "ArkLib/ProofSystem/Binius/BinaryBasefold/General.lean",
       "ArkLib/ProofSystem/Binius/FRIBinius/General.lean",
@@ -244,9 +243,6 @@
     ],
     "Poseidon2": [
       "ArkLib/Data/Hash/Poseidon2.lean"
-    ],
-    "STIR2005": [
-      "ArkLib/ProofSystem/Stir/Folding.lean"
     ],
     "Spi95": [
       "ArkLib/Data/CodingTheory/PolishchukSpielman/PolishchukSpielman.lean"

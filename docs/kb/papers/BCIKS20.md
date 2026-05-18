@@ -61,8 +61,9 @@ machinery.
 
 ## Open Formalization Gaps
 
-- Keep a persistent theorem/status matrix in an audit page rather than overloading this landing
-  page.
+- Keep persistent theorem/status matrices in audit pages rather than overloading this landing page.
+  The Appendix A rational-function layer is tracked in
+  [`../audits/bciks20-appendix-a-rational-functions.md`](../audits/bciks20-appendix-a-rational-functions.md).
 - Record when paper-level statements are only represented through more abstract ArkLib interfaces.
 - Revisit once the existing paper audit is migrated or mirrored under `docs/kb/audits/`.
 
