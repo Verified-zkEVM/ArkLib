@@ -7,7 +7,22 @@ Authors: Tobias Rothmann
 import ArkLib.CommitmentScheme.KZG.Basic
 import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
 
-/-! ## Correctness of the KZG Polynomial Commitment Scheme -/
+/-!
+# Correctness of the KZG Polynomial Commitment Scheme
+
+This file proves that the concrete KZG commitment, opening, and verification operations from
+`KZG.Basic` satisfy the expected evaluation equation. It then lifts that algebraic statement to
+`Commitment.perfectCorrectness` for the commitment-scheme interface.
+
+## Notation
+
+The main algebraic theorem is `KZG.correctness`; the interface-level theorem is
+`KZG.CommitmentScheme.correctness`.
+
+## References
+
+This file proves correctness from the definitions.
+-/
 
 open CompPoly CompPoly.CPolynomial
 
@@ -19,35 +34,33 @@ variable {G : Type} [Group G] {p : outParam ℕ} [hp : Fact (Nat.Prime p)] [Fact
 variable {G₁ : Type} [Group G₁] [PrimeOrderWith G₁ p] [DecidableEq G₁] {g₁ : G₁}
   {G₂ : Type} [Group G₂] [PrimeOrderWith G₂ p] {g₂ : G₂}
   {Gₜ : Type} [Group Gₜ] [PrimeOrderWith Gₜ p] [DecidableEq Gₜ]
-  [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] [Module (ZMod p) (Additive Gₜ)]
+  [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)]
+  [Module (ZMod p) (Additive Gₜ)]
   (pairing : (Additive G₁) →ₗ[ZMod p] (Additive G₂) →ₗ[ZMod p] (Additive Gₜ))
 
-variable {n : ℕ} -- the maximal degree of polynomials that can be commited to/opened.
+variable {n : ℕ} -- the maximal degree of polynomials that can be committed to/opened.
 
--- Helper: toPoly commutes with divByMonic for monic divisors
-lemma toPoly_divByMonic {p : ℕ} [Fact (Nat.Prime p)]
+/-- Conversion to mathlib polynomials commutes with division by a monic polynomial. -/
+lemma to_poly_div_by_monic {p : ℕ} [Fact (Nat.Prime p)]
     (f q : CPolynomial (ZMod p)) (hq : q.toPoly.Monic) :
     (f.divByMonic q).toPoly = f.toPoly /ₘ q.toPoly :=
   CPolynomial.toPoly_divByMonic f q hq
 
--- p(a) - p(z) = q(a) * (a - z)
--- e ( C / g₁ ^ v , g₂ ) = e ( O , g₂ ^ a / g₂ ^ z)
 omit [DecidableEq G₁] [Fact (0 < p)] in
+/-- Algebraic correctness of one KZG opening for a coefficient vector. -/
 theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
-  (coeffs : Fin (n + 1) → ZMod p) (z : ZMod p) :
+    (coeffs : Fin (n + 1) → ZMod p) (z : ZMod p) :
   let poly : CPolynomial (ZMod p) :=
     ⟨(Raw.mk (Array.ofFn coeffs)).trim, Raw.Trim.isCanonical_trim _⟩
   let v : ZMod p := eval z poly
-  let srs : Vector G₁ (n + 1) × Vector G₂ 2 := generateSrs (g₁:=g₁) (g₂:=g₂) n a
+  let srs : Vector G₁ (n + 1) × Vector G₂ 2 := generateSrs (g₁ := g₁) (g₂ := g₂) n a
   let C : G₁ := commit srs.1 coeffs
-  let opening: G₁ := generateOpening srs.1 coeffs z
-  verifyOpening pairing (g₁:=g₁) (g₂:=g₂) srs.2 C opening z v := by
+  let opening : G₁ := generateOpening srs.1 coeffs z
+  verifyOpening pairing (g₁ := g₁) (g₂ := g₂) srs.2 C opening z v := by
   intro poly v
   unfold verifyOpening generateSrs
   simp only [decide_eq_true_eq]
-
   -- helper facts for the proof
-
   -- coeffs is the finite coefficients map of poly
   have hcoeffs : coeffs = (coeff poly) ∘ Fin.val := by
     simp_all only [poly]
@@ -58,7 +71,6 @@ theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
     have : ↑x < (Array.ofFn coeffs).size := by simp; omega
     simp [Array.getD]
     omega
-
   -- the (mathematical) degree of poly is at most n
   have hpdeg : degree poly ≤ n := by
     unfold CPolynomial.degree
@@ -70,63 +82,57 @@ theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
         change (Raw.mk (Array.ofFn coeffs)).trim.size ≤ n + 1
         exact le_trans (Raw.Trim.size_le_size _) (by simp [Array.size_ofFn])
       omega
-
   -- expansion of (a-z) to Polynomial form
-  have haz : (a-z) = eval a (X - C z) := by
+  have haz : (a - z) = eval a (X - C z) := by
     rw [eval_toPoly, CPolynomial.toPoly_sub, Polynomial.eval_sub, X_toPoly, C_toPoly,
       Polynomial.eval_X, Polynomial.eval_C]
-
   -- the polynomial form of (a-z) is monic
   have hmonic : Polynomial.Monic ((X : CPolynomial (ZMod p)) - C z).toPoly := by
     rw [CPolynomial.toPoly_sub, X_toPoly, C_toPoly]
     exact Polynomial.monic_X_sub_C z
-
   -- the proof
-
   -- restate the commitment as the evaluation of poly at a (C => g₁^poly(a))
-  simp_rw [hcoeffs, commit_eq_CPolynomial hpG1 poly hpdeg]
-
+  simp_rw [hcoeffs, commit_eq_c_polynomial hpG1 poly hpdeg]
   -- define q(X) := (poly(X) - poly(z)) / (X-z)
   -- and restate the opening as the evaluation of q at a (opening => g₁^q(a))
   simp_rw [generateOpening, ←hcoeffs]
   set q := (poly - C (eval z poly)).divByMonic (X - C z)
   have hqdeg : degree q ≤ n := by
-    rw [degree_toPoly, toPoly_divByMonic _ _ hmonic]
+    rw [degree_toPoly, to_poly_div_by_monic _ _ hmonic]
     apply le_trans (Polynomial.degree_divByMonic_le _ _)
     rw [CPolynomial.toPoly_sub, C_toPoly]
     apply le_trans (Polynomial.degree_sub_le _ _)
     apply max_le
     · rw [← degree_toPoly]; exact hpdeg
     · exact le_trans Polynomial.degree_C_le (by exact_mod_cast Nat.zero_le n)
-  have hfun: (fun i ↦ q.coeff ↑i : Fin (n+1) → ZMod p) = (coeff q) ∘ Fin.val := by rfl
+  have hfun :
+      (fun i ↦ q.coeff ↑i : Fin (n + 1) → ZMod p) = (coeff q) ∘ Fin.val := by
+    rfl
   simp_rw [ofFn]
   change pairing (g₁ ^ (eval a poly).val / g₁ ^ v.val) (towerOfExponents g₂ a 1)[0] =
     pairing (commit (towerOfExponents g₁ a n) (fun i : Fin (n + 1) => q.coeff i) : G₁)
       ((towerOfExponents g₂ a 1)[1] / g₂ ^ z.val)
   rw [hfun]
-  rw [commit_eq_CPolynomial hpG1 q hqdeg]
-
+  rw [commit_eq_c_polynomial hpG1 q hqdeg]
   -- evaluate the pairing linearly.
   -- e (g₁^poly(a) / g₂^poly(z), g₂)= e (g₁^q(a), g₂^a / g₂^(z))
   -- => (poly(a) - poly(z)) • e (g₁,g₂) = (q(a) * (a-z)) • e (g₁,g₂)
   simp only [towerOfExponents, Nat.reduceAdd, Vector.getElem_ofFn, pow_zero, pow_one]
-  simp_rw [←zpow_natCast_sub_natCast, ←zpow_natCast, ←lin_snd, ←lin_fst, smul_smul]
-
+  simp_rw [← zpow_natCast_sub_natCast, ← zpow_natCast, ← lin_snd, ← lin_fst, smul_smul]
   -- eliminate the pairing and reason only about the exponents: poly(a) - poly(z) = q(a) * (a-z)
-  apply modp_eq_additive
+  apply mod_p_eq_additive
   refine (Int.modEq_iff_dvd).2 ?_
   let x : ℤ := (↑(eval a poly).val) - (↑v.val)
   let y : ℤ := (↑(a.val) - ↑(z.val)) * ↑(eval a q).val
   refine (Iff.mp (ZMod.intCast_eq_intCast_iff_dvd_sub (a := x) (b := y) (c := p))) ?_
   subst x y; simp only [ZMod.natCast_val, Int.cast_sub, ZMod.intCast_cast, ZMod.cast_id', id_eq,
     Int.cast_mul]
-
   -- unfold q to obtain the self canceling goal:
   -- poly(a) - poly(z) = (poly(a) - poly(z)) / (a-z) * (a-z)
   -- prove the goal using the eval isomorphism to mathlib Polynomials
   subst v q
   simp_rw [haz]
-  simp_rw [eval_toPoly, toPoly_divByMonic _ _ hmonic, CPolynomial.toPoly_sub,
+  simp_rw [eval_toPoly, to_poly_div_by_monic _ _ hmonic, CPolynomial.toPoly_sub,
     ←Polynomial.eval_mul, C_toPoly, X_toPoly]
   simp_rw [Polynomial.X_sub_C_mul_divByMonic_eq_sub_modByMonic,
     Polynomial.modByMonic_X_sub_C_eq_C_eval]
@@ -148,17 +154,18 @@ open OracleSpec _root_.OracleComp SubSpec ProtocolSpec
 
 section Correctness
 
-/- the KZG satisfies perfect correctness as defined in `CommitmentScheme` -/
-theorem correctness (hpG1 : Nat.card G₁ = p) (_a : ZMod p) {g₁ : G₁} {g₂ : G₂}
+omit [Fact (0 < p)] [DecidableEq G₁] in
+/-- The KZG scheme satisfies perfect correctness as defined in `CommitmentScheme`. -/
+theorem correctness (hpG1 : Nat.card G₁ = p) {g₁ : G₁} {g₂ : G₂}
     [SampleableType G₁] :
     Commitment.perfectCorrectness (pure ∅) (randomOracle)
-    (KZG (n:=n) (g₁:=g₁) (g₂:=g₂) (pairing:=pairing)) := by
+    (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) := by
   intro data query
   simp only [ENNReal.coe_zero, tsub_zero]
   rw [ge_iff_le, one_le_probEvent_iff]
   refine OptionT.probEvent_eq_one_of_simulateQ_support _ _ ∅ _ ?_
   intro x hx
-  simp only [KZG] at hx
+  simp only [kzg] at hx
   rw [mem_support_bind_iff] at hx
   obtain ⟨⟨ck, vk⟩, hkeygen, hx⟩ := hx
   rw [mem_support_bind_iff] at hx

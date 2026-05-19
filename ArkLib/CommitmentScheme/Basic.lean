@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao and Tobias Rothmann
+Authors: Quang Dao, Tobias Rothmann
 -/
 
 import VCVio
@@ -11,9 +11,9 @@ import ArkLib.Data.Fin.Fold
 /-!
   # Functional Commitment Schemes (with Oracle Openings)
 
-  A commitment scheme, relative to an oracle `oSpec : OracleSpec ι`, and for a given function
-  `oracle : Data → Query → Response` transforming underlying data `Data` into an oracle `Query →
-  Response`, is a tuple of three operations:
+  A commitment scheme, relative to an oracle `oSpec : OracleSpec ι`, and for a given
+  function `oracle : Data → Query → Response` transforming underlying data `Data` into an
+  oracle `Query → Response`, is a tuple of three operations:
 
   - KeyGen, which is a function `keygen : OracleComp oSpec (ComKey × VerifKey)` that samples keys
     for the committer and the verifier.
@@ -24,7 +24,7 @@ import ArkLib.Data.Fin.Fold
     - `StmtIn := (cm : Commitment) × (x : Query) × (y : Response)`
     - `WitIn := Data × Decommitment`
     - `rel : StmtIn → WitIn → Prop :=
-        fun ⟨cm, x, y⟩ ⟨d, dc⟩ => commit d ⇝ (cm, dc) ∧ oracle d x = y`
+        fun ⟨cm, x, y⟩ ⟨d, dc⟩ ↦ commit d ⇝ (cm, dc) ∧ oracle d x = y`
 
   For deterministic schemes (e.g. KZG), `Decommitment` is `Unit`.
   For randomized schemes (e.g. Pedersen, RO-based), `Decommitment` carries the blinding factor.
@@ -32,10 +32,12 @@ import ArkLib.Data.Fin.Fold
   There is one inaccuracy about the relation above: `commit` is an oracle computation, and not a
   deterministic function; hence the relation is not literally true as described. This is why
   security definitions for commitment schemes have to be stated differently than those for IOPs.
--/
 
--- Note: remove this once we properly define the security definitions for commitment schemes
-set_option linter.unusedVariables false
+  ## References
+
+  * [Chiesa, A., Guan, Z., Knabenhans, C., and Yu, Z., *On the Fiat-Shamir Security of
+      Succinct Arguments from Functional Commitments*][CGKY25]
+-/
 
 namespace Commitment
 
@@ -43,18 +45,22 @@ open OracleSpec OracleComp SubSpec ProtocolSpec
 
 variable {ι : Type} (oSpec : OracleSpec ι) (Data Commitment Decommitment ComKey VerifKey : Type)
 
+/-- Key generation for a commitment scheme, producing a committer key and a verifier key. -/
 structure KeyGen where
   keygen : OracleComp oSpec (ComKey × VerifKey)
 
+/-- The commitment algorithm, parameterized by the committer key and the data to commit. -/
 structure Commit where
   commit : ComKey → Data → OracleComp oSpec (Commitment × Decommitment)
 
 variable [O : OracleInterface Data] {n : ℕ} (pSpec : ProtocolSpec n)
 
+/-- The opening protocol used to prove a claimed oracle response for committed data. -/
 structure Opening where
   opening : (ComKey × VerifKey) →
     Proof oSpec (Commitment × (q : O.Query) × O.Response q) (Data × Decommitment) pSpec
 
+/-- A commitment scheme with key generation, commitment, and opening algorithms. -/
 structure Scheme extends
     KeyGen oSpec ComKey VerifKey,
     Commit oSpec Data Commitment Decommitment ComKey,
@@ -81,26 +87,27 @@ variable [DecidableEq ι]
 -/
 def correctness (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey pSpec)
     (correctnessError : ℝ≥0) : Prop :=
-    ∀ data : Data,
-    ∀ query : O.Query,
-    let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
-      QueryImpl.addLift impl challengeQueryImpl
-    Pr[fun ⟨⟨_, (prvStmtOut, witOut)⟩, stmtOut⟩ =>
-      (stmtOut, witOut) ∈ acceptRejectRel ∧ prvStmtOut = stmtOut
-    | OptionT.mk do
-        (simulateQ pImpl (do
-          let (ck,vk) ← liftComp scheme.keygen _
-          let (cm, decomm) ← liftComp (scheme.commit ck data) _
-          let proof := scheme.opening (ck,vk)
-          let stmt : Commitment × (q : O.Query) × O.Response q := (cm, ⟨query, O.answer data query⟩)
-          let wit : Data × Decommitment := (data, decomm)
-          (proof.run stmt wit).run
-        )).run' (← init)] ≥ 1 - correctnessError
+  ∀ data : Data,
+  ∀ query : O.Query,
+  let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
+    QueryImpl.addLift impl challengeQueryImpl
+  Pr[fun ⟨⟨_, (prvStmtOut, witOut)⟩, stmtOut⟩ ↦
+    (stmtOut, witOut) ∈ acceptRejectRel ∧ prvStmtOut = stmtOut
+  | OptionT.mk do
+      (simulateQ pImpl (do
+        let (ck, vk) ← liftComp scheme.keygen _
+        let (cm, decomm) ← liftComp (scheme.commit ck data) _
+        let proof := scheme.opening (ck, vk)
+        let stmt : Commitment × (q : O.Query) × O.Response q :=
+          (cm, ⟨query, O.answer data query⟩)
+        let wit : Data × Decommitment := (data, decomm)
+        (proof.run stmt wit).run
+      )).run' (← init)] ≥ 1 - correctnessError
 
 /-- A commitment scheme satisfies **perfect correctness** if it satisfies correctness with no error.
 -/
-def perfectCorrectness (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey pSpec)
-    : Prop :=
+def perfectCorrectness
+    (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey pSpec) : Prop :=
   correctness init impl scheme 0
 
 /-- An adversary in the (evaluation) binding game returns a commitment `cm`, a query `q`, two
@@ -131,33 +138,36 @@ def binding (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey 
     (bindingError : ℝ≥0) : Prop :=
   ∀ AuxState : Type,
   ∀ adversary : BindingAdversary oSpec Data Commitment AuxState pSpec ComKey,
-    Pr[fun (result : (query : O.Query) × O.Response query × O.Response query × Bool × Bool) =>
+    let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
+      QueryImpl.addLift impl (challengeQueryImpl (pSpec := pSpec))
+    Pr[fun (result : (query : O.Query) × O.Response query × O.Response query × Bool × Bool) ↦
         let ⟨_, resp₁, resp₂, accept₁, accept₂⟩ := result
         resp₁ ≠ resp₂ ∧ accept₁ ∧ accept₂
        | OptionT.mk do
-        (simulateQ (QueryImpl.addLift impl (challengeQueryImpl (pSpec := pSpec))
-          : QueryImpl _ (StateT σ ProbComp)) <| (do
-          let (ck,vk) ← liftComp scheme.keygen _
+        (simulateQ pImpl <| (show OracleComp _ _ from do
+          let (ck, vk) ← liftComp scheme.keygen _
           let ⟨cm, query, resp₁, resp₂, st₁, st₂⟩ ← liftComp (adversary.claim ck) _
-          let reduction := Reduction.mk (adversary.prover ck) (scheme.opening (ck,vk)).verifier
+          let reduction := Reduction.mk (adversary.prover ck) (scheme.opening (ck, vk)).verifier
           let accept₁ := (← (reduction.verdict
             (cm, (⟨query, resp₁⟩ : (q : O.Query) × O.Response q)) st₁).run).getD false
           let accept₂ := (← (reduction.verdict
             (cm, (⟨query, resp₂⟩ : (q : O.Query) × O.Response q)) st₂).run).getD false
-          pure (some (⟨query, resp₁, resp₂, accept₁, accept₂⟩ :
-            (query : O.Query) × O.Response query × O.Response query × Bool × Bool))
-        : OracleComp _ _)).run' (← init)] ≤ bindingError
+          pure (some ((⟨query, resp₁, resp₂, accept₁, accept₂⟩ :
+            (query : O.Query) × O.Response query × O.Response query × Bool × Bool)))
+        )).run' (← init)] ≤ bindingError
 
 /-- A **straightline extractor** for a commitment scheme takes in the commitment, the log of queries
     made during the commitment phase, and returns the underlying data for the commitment. -/
-def StraightlineExtractor (oSpec : OracleSpec ι) (Data Commitment : Type) :=
+abbrev StraightlineExtractor (oSpec : OracleSpec ι) (Data Commitment : Type) :=
   Commitment → QueryLog oSpec → Data
 
 /-- An adversary in the extractability game is an oracle computation that returns a commitment, a
   query, a response value, and some auxiliary state (to be used in the opening procedure). -/
-def ExtractabilityAdversary (oSpec : OracleSpec ι) (Data Commitment AuxState : Type)
+abbrev ExtractabilityAdversary (oSpec : OracleSpec ι) (Data Commitment AuxState : Type)
     [O : OracleInterface Data] :=
   OracleComp oSpec (Commitment × (q : O.Query) × O.Response q × AuxState)
+
+set_option linter.unusedVariables false
 
 /-- A commitment scheme satisfies **extractability** with error `extractabilityError` if there
     exists a straightline extractor `E` such that for all adversaries that output a commitment `cm`,
@@ -178,8 +188,8 @@ def extractability (scheme : Scheme oSpec Data Commitment Decommitment ComKey Ve
   ∀ AuxState : Type,
   ∀ adversary : ExtractabilityAdversary oSpec Data Commitment AuxState,
   ∀ prover : Prover oSpec (Commitment × (q : O.Query) × O.Response q) AuxState Bool Unit pSpec,
-    False --TODO fill this in from the EPFL paper.
-    -- [ fun ⟨b, d, q, r⟩ => b ∧ O.answer d q = r | do
+    False
+    -- [ fun ⟨b, d, q, r⟩ ↦ b ∧ O.answer d q = r | do
     --     let result ← liftM (simulate loggingOracle ∅ adversary)
     --     let ⟨⟨cm, query, response, st⟩, queryLog⟩ := result
     --     let proof : Proof pSpec oSpec (Commitment × O.Query × O.Response) AuxState :=
@@ -187,6 +197,8 @@ def extractability (scheme : Scheme oSpec Data Commitment Decommitment ComKey Ve
     --     let ⟨accept, _⟩ ← proof.run ⟨cm, query, response⟩ st
     --     letI data := extractor cm queryLog
     --     return (accept, data, query, response)] ≤ extractabilityError
+
+set_option linter.unusedVariables true
 
 -- TODO: version where the query is chosen according to some public coin?
 
@@ -206,30 +218,35 @@ where
   prover : (ComKey →
     Prover oSpec (Commitment × (q : O.Query) × O.Response q) AuxState Bool Unit pSpec)
 
-/-- The probabillity of breaking function binding for a specific adversary. -/
-def functionBinding_Experiment {L : ℕ} (hn : n = 1) (hpSpec : NonInteractive (hn ▸ pSpec))
-    (AuxState : Type) --TODO take AuxState to the ∀level
+/-- The probability of breaking function binding for a specific adversary. -/
+def functionBindingExperiment {L : ℕ} (hn : n = 1)
+    (AuxState : Type)
     [∀ i, VCVCompatible ((hn ▸ pSpec).Challenge i)]
     [∀ i, SampleableType ((hn ▸ pSpec).Challenge i)]
     (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey (hn ▸ pSpec))
-    (adversary : FunctionBindingAdversary oSpec Data Commitment AuxState L (hn ▸ pSpec) ComKey)
-    : ℝ≥0∞ :=
-    Pr[fun (⟨queryOf, responseOf, acceptedOf⟩) =>
+    (adversary :
+      FunctionBindingAdversary oSpec Data Commitment AuxState L (hn ▸ pSpec)
+        ComKey) : ℝ≥0∞ :=
+    let pImpl : QueryImpl (oSpec + [(hn ▸ pSpec).Challenge]ₒ) (StateT σ ProbComp) :=
+      QueryImpl.addLift impl (challengeQueryImpl (pSpec := hn ▸ pSpec))
+    Pr[fun (⟨queryOf, responseOf, acceptedOf⟩) ↦
         let S : Finset (Fin L) := Finset.univ
         (∀ i ∈ S, acceptedOf i = true)
         ∧ (¬ ∃ (d : Data), ∀ i ∈ S, O.answer d (queryOf i) = responseOf i)
         ∧ Function.Injective queryOf
        | OptionT.mk do
-        (simulateQ (QueryImpl.addLift impl (challengeQueryImpl (pSpec := hn ▸ pSpec))
-          : QueryImpl _ (StateT σ ProbComp)) <| (do
-          let (ck,vk) ← liftComp scheme.keygen _
+        (simulateQ pImpl <| (show OracleComp _ _ from do
+          let (ck, vk) ← liftComp scheme.keygen _
           let ⟨cm, queryOf, responseOf, stateOf⟩ ← liftComp (adversary.claim ck) _
-          let reduction := Reduction.mk (adversary.prover ck) (scheme.opening (ck,vk)).verifier
+          let reduction := Reduction.mk (adversary.prover ck) (scheme.opening (ck, vk)).verifier
           let (accepts : Option (Fin L → Bool)) ← reduction.allVerdicts
-            (fun i => (cm, (⟨queryOf i, responseOf i⟩ : (q : O.Query) × O.Response q))) stateOf
-          pure (accepts.map fun accepts => (⟨queryOf, responseOf, accepts⟩ :
-            (queryOf : Fin L → O.Query) × ((i : Fin L) → O.Response (queryOf i)) × (Fin L → Bool)))
-        : OracleComp _ _)).run' (← init)]
+            (fun i ↦
+              (cm, (⟨queryOf i, responseOf i⟩ : (q : O.Query) × O.Response q)))
+            stateOf
+          pure (accepts.map fun accepts ↦ (⟨queryOf, responseOf, accepts⟩ :
+            (queryOf : Fin L → O.Query) ×
+              ((i : Fin L) → O.Response (queryOf i)) × (Fin L → Bool)))
+        )).run' (← init)]
 
 /-- A commitment scheme satisfies **function binding** with error `functionBindingError` if for all
 adversaries that output a commitment `cm`, and a vector of length `L` of queries `q_i`, claimed
@@ -239,30 +256,34 @@ prover in the opening procedure), and for all malicious provers in the opening p
 
   1. The verifier accepts all `r_i` to the respective `q_i` in the opening procedure for `cm`
   2. There exists no data `d` that is consistent with the claimed responses
-    (i.e.for all data `d`, for some `i`, `O.answer d q_i ≠ r_i`)
+    (i.e. for all data `d`, for some `i`, `O.answer d q_i ≠ r_i`)
 
   is at most `functionBindingError`.
 
   Informally, function binding says it's computationally infeasible to convince the
   verifier to accept responses for which no consistent (source) data exists.
 
-  Note: This is an adaption of the function binding property introduced in https://eprint.iacr.org/2025/902 -/
-def functionBinding {L : ℕ} (hn : n = 1) (hpSpec : NonInteractive (hn ▸ pSpec)) (AuxState : Type)
+  Note: This is an adaptation of the function binding property introduced in [CGKY25]. -/
+def functionBinding {L : ℕ} (hn : n = 1)
     [∀ i, VCVCompatible ((hn ▸ pSpec).Challenge i)]
     [∀ i, SampleableType ((hn ▸ pSpec).Challenge i)]
     (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey (hn ▸ pSpec))
     (functionBindingError : ℝ≥0) : Prop :=
-    ∀ adversary : FunctionBindingAdversary oSpec Data Commitment AuxState L (hn ▸ pSpec) ComKey,
-      functionBinding_Experiment init impl hn hpSpec AuxState scheme adversary ≤
-        functionBindingError
+  ∀ AuxState : Type,
+  ∀ adversary : FunctionBindingAdversary oSpec Data Commitment AuxState L (hn ▸ pSpec) ComKey,
+    functionBindingExperiment init impl hn AuxState scheme adversary ≤
+      functionBindingError
 
+set_option linter.unusedVariables false
 
-/-- A commitment scheme satisfies **hiding** with error `hidingError` if ....
+/-- Placeholder for the hiding property of a commitment scheme.
 
-Note: have to put it as `hiding'` because `hiding` is already used somewhere else. -/
+This declaration uses the primed name `hiding'` because `hiding` is already reserved elsewhere. -/
 def hiding'
     (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey pSpec) : Prop :=
   sorry
+
+set_option linter.unusedVariables true
 
 end
 

@@ -1,5 +1,5 @@
 {
-  "count": 40,
+  "count": 43,
   "entries": {
     "ACFY24": {
       "authors": [
@@ -312,6 +312,29 @@
       "venue": "SIAM Journal on Computing",
       "year": "2008"
     },
+    "CGKY25": {
+      "authors": [
+        "Alessandro Chiesa",
+        "Ziyi Guan",
+        "Christian Knabenhans",
+        "Zihan Yu"
+      ],
+      "authors_text": "Alessandro Chiesa and Ziyi Guan and Christian Knabenhans and Zihan Yu",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Alessandro Chiesa and Ziyi Guan and Christian Knabenhans and Zihan Yu",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2025/902",
+        "title": "On the Fiat-Shamir Security of Succinct Arguments from Functional Commitments",
+        "url": "https://eprint.iacr.org/2025/902",
+        "year": "2025"
+      },
+      "key": "CGKY25",
+      "title": "On the Fiat-Shamir Security of Succinct Arguments from Functional Commitments",
+      "url": "https://eprint.iacr.org/2025/902",
+      "venue": "",
+      "year": "2025"
+    },
     "ChiesaYogev2024": {
       "authors": [
         "Chiesa, Alessandro",
@@ -560,6 +583,56 @@
       "url": "https://link.springer.com/content/pdf/10.1007/978-3-031-68388-6_2",
       "venue": "Annual International Cryptology Conference",
       "year": "2024"
+    },
+    "KZG10": {
+      "authors": [
+        "Aniket Kate",
+        "Gregory M. Zaverucha",
+        "Ian Goldberg"
+      ],
+      "authors_text": "Aniket Kate and Gregory M. Zaverucha and Ian Goldberg",
+      "doi": "10.1007/978-3-642-17373-8_11",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Aniket Kate and Gregory M. Zaverucha and Ian Goldberg",
+        "booktitle": "Advances in Cryptology -- ASIACRYPT 2010",
+        "doi": "10.1007/978-3-642-17373-8_11",
+        "pages": "177--194",
+        "publisher": "Springer",
+        "series": "Lecture Notes in Computer Science",
+        "title": "Constant-Size Commitments to Polynomials and Their Applications",
+        "url": "https://www.iacr.org/archive/asiacrypt2010/6477178/6477178.pdf",
+        "volume": "6477",
+        "year": "2010"
+      },
+      "key": "KZG10",
+      "title": "Constant-Size Commitments to Polynomials and Their Applications",
+      "url": "https://www.iacr.org/archive/asiacrypt2010/6477178/6477178.pdf",
+      "venue": "Advances in Cryptology -- ASIACRYPT 2010",
+      "year": "2010"
+    },
+    "KZG10TR": {
+      "authors": [
+        "Aniket Kate",
+        "Gregory M. Zaverucha",
+        "Ian Goldberg"
+      ],
+      "authors_text": "Aniket Kate and Gregory M. Zaverucha and Ian Goldberg",
+      "doi": "",
+      "entry_type": "techreport",
+      "fields": {
+        "author": "Aniket Kate and Gregory M. Zaverucha and Ian Goldberg",
+        "institution": "Centre for Applied Cryptographic Research, University of Waterloo",
+        "number": "CACR 2010-10",
+        "title": "Polynomial Commitments",
+        "url": "https://cacr.uwaterloo.ca/techreports/2010/cacr2010-10.pdf",
+        "year": "2010"
+      },
+      "key": "KZG10TR",
+      "title": "Polynomial Commitments",
+      "url": "https://cacr.uwaterloo.ca/techreports/2010/cacr2010-10.pdf",
+      "venue": "",
+      "year": "2010"
     },
     "LCH14": {
       "authors": [
