@@ -308,17 +308,6 @@ def bindingReduction (AuxState : Type)
           (srs, cm, query, resp₁, resp₂, accept₁, accept₂, proof₁, proof₂))
       ))
 
-/-- Running `Reduction.verdict` is running the reduction and projecting the verdict. -/
-lemma Reduction.verdict_run_eq_map_run
-    {ι : Type} {oSpec : OracleSpec ι} {StmtIn WitIn StmtOut WitOut : Type}
-    {n : ℕ} {pSpec : ProtocolSpec n}
-    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (stmt : StmtIn) (wit : WitIn) :
-    (reduction.verdict stmt wit).run =
-      Option.map (fun result : (FullTranscript pSpec × StmtOut × WitOut) × StmtOut =>
-        result.2) <$> (reduction.run stmt wit).run := by
-  simp [Reduction.verdict, OptionT.run_map]
-
 /-- Relate two option-valued monadic computations before and after adding extended output. -/
 lemma bind_two_option_project_get_d
     {m : Type → Type} [Monad m] [LawfulMonad m]

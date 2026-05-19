@@ -234,6 +234,15 @@ def Reduction.verdict (stmt : StmtIn) (wit : WitIn)
   let ⟨_, stmtOut⟩ ← reduction.run stmt wit
   return stmtOut
 
+/-- Running `Reduction.verdict` is running the reduction and projecting the verdict. -/
+lemma Reduction.verdict_run_eq_map_run
+    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (stmt : StmtIn) (wit : WitIn) :
+    (reduction.verdict stmt wit).run =
+      Option.map (fun result : (FullTranscript pSpec × StmtOut × WitOut) × StmtOut =>
+        result.2) <$> (reduction.run stmt wit).run := by
+  simp [Reduction.verdict, OptionT.run_map]
+
 /-- Run a reduction on `L` instances (given by indexed statements and witnesses), and sequence the
   full successful run results. Returns `none` if any instance fails, otherwise returns a function
   from indices to the full run data. -/
@@ -274,7 +283,31 @@ lemma Reduction.allVerdicts_eq_map_allOutputs_fst {L : ℕ} {β : Type}
     reduction.allVerdicts stmts wits =
       (Option.map (fun resultOf => fun i => (resultOf i).1)) <$>
         reduction.allOutputs (fun result => (result.2, extract result)) stmts wits := by
-  sorry
+  unfold Reduction.allVerdicts Reduction.allOutputs Reduction.allRuns
+  simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind, Function.comp_apply]
+  rw [Vector.mapM_bind_map_eq
+    (v := Vector.ofFn (id : Fin L → Fin L))
+    (f₁ := fun i => (reduction.verdict (stmts i) (wits i)).run)
+    (f₂ := fun i => (reduction.run (stmts i) (wits i)).run)
+    (g := Option.map (fun result : (FullTranscript pSpec × StmtOut × WitOut) × StmtOut =>
+      result.2))
+    (post₁ := fun results =>
+      pure ((results.mapM id).map fun v => fun i => v[i]))
+    (post₂ := fun results =>
+      pure (Option.map (fun resultOf => fun i => (resultOf i).1)
+        (Option.map (fun resultOf => fun i => ((resultOf i).2, extract (resultOf i)))
+          (Option.map (fun v => fun i => v[i]) (results.mapM id)))))]
+  · intro i
+    exact Reduction.verdict_run_eq_map_run reduction (stmts i) (wits i)
+  · intro results
+    congr 1
+    rw [Vector.mapM_id_option_map_comm]
+    cases h : results.mapM id with
+    | none => simp
+    | some v =>
+        simp only [Option.map_some, Option.some.injEq]
+        funext i
+        simp
 
 lemma Reduction.support_allOutputs_index
     {StmtIn WitIn StmtOut WitOut α : Type} {n : ℕ} {pSpec : ProtocolSpec n} {L : ℕ}
