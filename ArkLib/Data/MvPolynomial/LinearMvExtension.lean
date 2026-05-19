@@ -38,23 +38,55 @@ def bitExpo (i : ℕ) : (Fin m) →₀ ℕ :=
 /-- The linear map that maps univariate polynomials of degree < 2ᵐ onto
     degree wise linear m-variate polynomials, sending
     `aᵢ Xⁱ ↦ aᵢ ∏ⱼ Xⱼ^(bitⱼ(i))`, where `bitⱼ(i)` is the j-th binary digit of `(i mod 2ᵐ)`. -/
-def linearMvExtension :
+def linearMvExtension (p : Polynomial.degreeLT F (2 ^ m)) : MvPolynomial (Fin m) F :=
+  p.val.sum fun i a ↦ monomial (bitExpo i) a
+
+@[simp]
+lemma linearMvExtension_add_comm {p q : Polynomial.degreeLT F (2 ^ m)} : 
+  linearMvExtension (p + q) = linearMvExtension p + linearMvExtension q := by
+  simp [linearMvExtension, Polynomial.sum_add_index]
+
+@[simp]
+lemma linearMvExtension_smul_comm {c : F} {p : Polynomial.degreeLT F (2 ^ m)} : 
+  linearMvExtension (c • p) = c • linearMvExtension p := by
+  simp only [linearMvExtension, SetLike.val_smul]
+  rw [Polynomial.sum_smul_index _ _ _ (by simp)]
+  aesop 
+    (add simp 
+      [smul_monomial,
+        Polynomial.sum, 
+        Finset.smul_sum])
+
+lemma bitExpo_apply (i : ℕ) (j : Fin m) :
+  (bitExpo i : Fin m →₀ ℕ) j = if Nat.testBit i j.1 then 1 else 0 := by
+  simp [bitExpo, Finsupp.onFinset_apply]
+
+lemma bitExpo_le_one (i : ℕ) (j : Fin m) :
+  (bitExpo i : Fin m →₀ ℕ) j ≤ 1 := by aesop (add simp [bitExpo_apply])
+
+lemma linearMvExtension_degreeOf_lt {p : Polynomial.degreeLT F (2 ^ m)} {i : Fin m} : 
+  MvPolynomial.degreeOf i (linearMvExtension p) ≤ 1 := by
+  have h_monomial_degrees {x} (hx : x ∈ p.val.support) : 
+      (degreeOf i (monomial (bitExpo x) (p.val.coeff x))) ≤ 1 := by
+    aesop (add simp [degreeOf_eq_sup, bitExpo_le_one])
+  have h_sum_degrees : 
+    (degreeOf i (p.val.sum fun i a ↦ monomial (bitExpo i) a)) ≤ 
+      (Finset.sup p.val.support 
+        (fun x ↦ degreeOf i (monomial (bitExpo x) (p.val.coeff x)))) := by
+    convert MvPolynomial.degreeOf_sum_le _ _ _
+  exact h_sum_degrees.trans (Finset.sup_le @h_monomial_degrees)
+
+
+/-- The linear map that maps univariate polynomials of degree < 2ᵐ onto
+    degree wise linear m-variate polynomials, sending
+    `aᵢ Xⁱ ↦ aᵢ ∏ⱼ Xⱼ^(bitⱼ(i))`, where `bitⱼ(i)` is the j-th binary digit of `(i mod 2ᵐ)`. 
+    This is a linear map version. -/
+def linearMvExtensionLMap :
     Polynomial.degreeLT F (2^m) →ₗ[F] MvPolynomial (Fin m) F where
     -- p(X) = aᵢ Xᶦ ↦ aᵢ ∏ⱼ Xⱼ^(bitⱼ(i))
-    toFun p := (p : Polynomial F).sum fun i a =>
-      MvPolynomial.monomial (bitExpo i) a
-    map_add' := by
-      rintro p q
-      simp [Polynomial.sum_add_index]
-    map_smul' := by
-      rintro c p
-      simp only [SetLike.val_smul, RingHom.id_apply]
-      rw [Polynomial.sum_smul_index (hf := by
-        intro i
-        simp)]
-      simp_rw [← smul_eq_mul, ← smul_monomial]
-      unfold Polynomial.sum
-      simp_rw [← Finset.smul_sum]
+    toFun p := linearMvExtension p
+    map_add' := by simp
+    map_smul' := by simp
 
 /-- `partialEval` takes a m-variate polynomial f and a k-vector α as input,
   partially evaluates f(X_0, X_1,..X_(m-1)) at {X_0 = α_0, X_1 = α_1,.., X_{k-1} = α_{k-1}}
@@ -174,10 +206,10 @@ private lemma binary_repr_sum (m i : ℕ) (hi : i < 2 ^ m) :
    right inverse to linear multivariate extensions on F^(< 2ᵐ)[X]  -/
 lemma powContraction_is_right_inverse_to_linearMvExtension
     (p : Polynomial.degreeLT F (2 ^ m)) :
-    powContraction.comp linearMvExtension p = p := by
-  have h_comp : powContraction (linearMvExtension p) =
+    powContraction.comp linearMvExtensionLMap p = p := by
+  have h_comp : powContraction (linearMvExtensionLMap p) =
       ∑ i ∈ Finset.range (2 ^ m), p.val.coeff i • Polynomial.X ^ i := by
-    unfold powContraction linearMvExtension
+    unfold powContraction linearMvExtensionLMap linearMvExtension
     simp +decide only [LinearMap.coe_mk, AddHom.coe_mk, AlgHom.toLinearMap_apply, powAlgHom]
     rw [MvPolynomial.aeval_def]
     have h_sum_range :
@@ -213,6 +245,12 @@ lemma powContraction_is_right_inverse_to_linearMvExtension
     rcases eq_or_ne (↑p : Polynomial F) 0 with hp | hp
     · rw [hp, Polynomial.natDegree_zero]; positivity
     · exact (Polynomial.natDegree_lt_iff_degree_lt hp).mpr this
+
+lemma powAlgHom_is_right_inverse_to_linearMvExtension
+  (p : Polynomial.degreeLT F (2 ^ m)) :
+  powAlgHom (linearMvExtension p) = p := by
+  rw [←powContraction_is_right_inverse_to_linearMvExtension]
+  rfl
 
 end
 
