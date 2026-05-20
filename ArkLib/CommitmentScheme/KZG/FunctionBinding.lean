@@ -575,6 +575,64 @@ lemma h1_zs_eq_h2 (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
 
 -- case 2: there's no conflicting evaluation, but more than D distinct evaluations (degree failure)
 
+/- we introduce one middle case (case 2.1 so to say) to handle the case where the discovered value
+`τ` is part of the queries. This explcit step lets us convert the probibalistic step 4 from the
+paper into a deterministic step. -/
+
+/-- choose a size-`n + 1` set that avoids the discovered value `α`(= `τ`).
+
+If `α` lies among the first `n + 2` representatives, remove it from that set. Otherwise the
+first `n + 1` representatives already avoid `α`. -/
+def chooseSMiddle (n : ℕ) (α : ZMod p) : Finset (ZMod p) :=
+  let base : Finset (ZMod p) := (Finset.range (n + 2)).image ((↑) : ℕ → ZMod p)
+  if α ∈ base then base.erase α else (Finset.range (n + 1)).image ((↑) : ℕ → ZMod p)
+
+lemma nat_cast_range_card_zmod_of_le {k : ℕ} (hk : k ≤ p) :
+    ((Finset.range k).image ((↑) : ℕ → ZMod p)).card = k := by
+  have h_inj : Set.InjOn ((↑) : ℕ → ZMod p) ↑(Finset.range k) := by
+    intro a ha b hb hab
+    simp only [Finset.coe_range, Set.mem_Iio] at ha hb
+    have hap : a < p := lt_of_lt_of_le ha hk
+    have hbp : b < p := lt_of_lt_of_le hb hk
+    have hv := congrArg ZMod.val hab
+    rwa [ZMod.val_natCast_of_lt hap, ZMod.val_natCast_of_lt hbp] at hv
+  rw [Finset.card_image_of_injOn h_inj, Finset.card_range]
+
+lemma nat_cast_range_card_zmod (hp : p ≥ n + 2) :
+    ((Finset.range (n + 1)).image ((↑) : ℕ → ZMod p)).card = n + 1 := by
+  exact nat_cast_range_card_zmod_of_le (k := n + 1) (by omega)
+
+lemma choose_s_middle_card (hp : p ≥ n + 2) (α : ZMod p) :
+    (chooseSMiddle n α).card = n + 1 := by
+  unfold chooseSMiddle
+  set base : Finset (ZMod p) := (Finset.range (n + 2)).image ((↑) : ℕ → ZMod p)
+    with hbase_def
+  by_cases hα : α ∈ base
+  · rw [if_pos hα, Finset.card_erase_of_mem hα]
+    have hbase : base.card = n + 2 := by
+      rw [hbase_def]
+      exact nat_cast_range_card_zmod_of_le (k := n + 2) hp
+    omega
+  · rw [if_neg hα]
+    exact nat_cast_range_card_zmod hp
+
+lemma choose_s_middle_not_mem (α : ZMod p) :
+    α ∉ chooseSMiddle n α := by
+  unfold chooseSMiddle
+  set base : Finset (ZMod p) := (Finset.range (n + 2)).image ((↑) : ℕ → ZMod p)
+  by_cases hα : α ∈ base
+  · simp [hα]
+  · rw [if_neg hα]
+    intro hmem
+    apply hα
+    simp only [base, Finset.mem_image, Finset.mem_range] at hmem ⊢
+    obtain ⟨i, hi, rfl⟩ := hmem
+    exact ⟨i, by omega, rfl⟩
+
+lemma choose_s_middle_eval_ne_zero (α : ZMod p) :
+    (∏ s ∈ chooseSMiddle n α, (X - C s : CPolynomial (ZMod p))).eval α ≠ 0 := by
+  exact prod_x_sub_c_eval_ne_zero (choose_s_middle_not_mem α)
+
 /-- Step 4a (from the paper reduction):
     find a subset whose interpolation polynomial has degree `n`. -/
 def findA {L : ℕ} (n : ℕ) (query : Fin L → ZMod p) (response : Fin L → ZMod p) :
@@ -712,7 +770,7 @@ lemma find_a_successful {L : ℕ} (n : ℕ) (hL : n < L) (S : Finset (Fin L))
 
 /-- Step 4b (from the paper reduction): find a subset whose interpolation commitment differs from
 the adversary's commitment `c`. -/
-def findSPrime {L : ℕ} (n : ℕ) (A : Finset (Fin L)) (c : G₁)
+def findS {L : ℕ} (n : ℕ) (A : Finset (Fin L)) (c : G₁)
     (srs : Vector G₁ (n + 1) × Vector G₂ 2) (query : Fin L → ZMod p)
     (response : Fin L → ZMod p) :
     Option (Finset (Fin L)) :=
@@ -721,7 +779,7 @@ def findSPrime {L : ℕ} (n : ℕ) (A : Finset (Fin L)) (c : G₁)
   candidates.find? fun s =>
     commit srs.1 ((CLagrange.interpolate s query response).val.coeff ∘ Fin.val) ≠ c
 
-lemma find_s_prime_existence {L : ℕ} (n : ℕ) (τ c : ZMod p) (A : Finset (Fin L))
+lemma find_s_existence {L : ℕ} (n : ℕ) (τ c : ZMod p) (A : Finset (Fin L))
     (query : Fin L → ZMod p) (response : Fin L → ZMod p)
     (hA : (CLagrange.interpolate A query response).degree = n + 1)
     (hquery : Function.Injective query) (hn : 1 ≤ n) :
@@ -856,19 +914,19 @@ lemma finset_subset_mem_sublists_len_map {L : ℕ} (S A : Finset (Fin L))
 
 omit [PrimeOrderWith G₂ p] [Module (ZMod p) (Additive G₁)]
   [Module (ZMod p) (Additive G₂)] in
-lemma find_s_prime_successful {L : ℕ} (n : ℕ) (τ : ZMod p) (c : G₁) (A : Finset (Fin L))
+lemma find_s_successful {L : ℕ} (n : ℕ) (τ : ZMod p) (c : G₁) (A : Finset (Fin L))
     (query : Fin L → ZMod p) (response : Fin L → ZMod p)
     (srs : Vector G₁ (n + 1) × Vector G₂ 2)
     (hsrs : srs = generateSrs (g₁ := g₁) (g₂ := g₂) n τ) (hgen : srs.1[0] ≠ 1)
     (hA : (CLagrange.interpolate A query response).degree = n + 1)
     (hquery : Function.Injective query) (hn : 1 ≤ n) :
-    (findSPrime n A c srs query response).isSome := by
+    (findS n A c srs query response).isSome := by
   by_contra h_not
-  have h_none : findSPrime n A c srs query response = none := by
-    match hc : findSPrime n A c srs query response with
+  have h_none : findS n A c srs query response = none := by
+    match hc : findS n A c srs query response with
     | none => rfl
     | some _ => simp [hc] at h_not
-  unfold findSPrime at h_none
+  unfold findS at h_none
   rw [List.find?_eq_none] at h_none
   simp only [decide_eq_true_eq, not_not] at h_none
   have hg₁ : g₁ ≠ 1 := g1_ne_one_of_srs_gen τ srs hsrs hgen
@@ -903,19 +961,19 @@ lemma find_s_prime_successful {L : ℕ} (n : ℕ) (τ : ZMod p) (c : G₁) (A : 
           from by rw [hord]; exact ZMod.val_lt _)
         hcommit_eq
     exact ZMod.val_injective p hinj
-  -- But find_s_prime_existence gives an S with eval τ ≠ c'
+  -- But find_s_existence gives an S with eval τ ≠ c'
   obtain ⟨S₀, hS₀_sub, hS₀_card, hS₀_ne⟩ :=
-    find_s_prime_existence n τ c' A query response hA hquery hn
+    find_s_existence n τ c' A query response hA hquery hn
   exact hS₀_ne (h_all_eq S₀ hS₀_sub hS₀_card)
 
 omit [Group G₂] [PrimeOrderWith G₂ p]
   [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
-lemma find_s_prime_card
+lemma find_s_card
     {L : ℕ} (n : ℕ) (c : G₁) (A S : Finset (Fin L))
     (srs : Vector G₁ (n + 1) × Vector G₂ 2) (query : Fin L → ZMod p)
-    (response : Fin L → ZMod p) (hres : some (S) = findSPrime n A c srs query response) :
+    (response : Fin L → ZMod p) (hres : some (S) = findS n A c srs query response) :
     S.card = n + 1 := by
-    unfold findSPrime at hres
+    unfold findS at hres
     have hS_mem := List.mem_of_find?_eq_some hres.symm
     rw [List.mem_map] at hS_mem
     obtain ⟨l, hl_mem, hl_eq⟩ := hS_mem
@@ -925,13 +983,13 @@ lemma find_s_prime_card
 
 omit [Group G₂] [PrimeOrderWith G₂ p]
   [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
-lemma find_s_prime_diverges
+lemma find_s_diverges
     {L : ℕ} (n : ℕ) (c : G₁) (A S : Finset (Fin L))
     (query : Fin L → ZMod p) (response : Fin L → ZMod p)
     (srs : Vector G₁ (n + 1) × Vector G₂ 2)
-    (hres : some (S) = findSPrime n A c srs query response) :
+    (hres : some (S) = findS n A c srs query response) :
     commit srs.1 ((CLagrange.interpolate S query response).val.coeff ∘ Fin.val) ≠ c := by
-  unfold findSPrime at hres
+  unfold findS at hres
   have h := List.find?_some hres.symm
   simp only [decide_eq_true_eq] at h
   exact h
@@ -1114,13 +1172,77 @@ lemma h1_zs_eq_h2_prime {L : ℕ} (n : ℕ) (τ : ZMod p) (cm : G₁) (S : Finse
 
 -- put all steps together
 
-/-- choose a size-`n + 1` set that avoids the discovered value `α`(= `τ`).
+/-- Transcript data kept by the extended function-binding game, excluding the sampled secret. -/
+structure FunctionBindingExtTranscript (n L : ℕ) (G₁ G₂ : Type) where
+  srs : Vector G₁ (n + 1) × Vector G₂ 2
+  cm : G₁
+  queryOf : Fin L → ZMod p
+  responseOf : Fin L → ZMod p
+  accepts : Fin L → Bool
+  proofs : Fin L → G₁
 
-If `α` lies among the first `n + 2` representatives, remove it from that set. Otherwise the
-first `n + 1` representatives already avoid `α`. -/
-def chooseSMiddle (n : ℕ) (α : ZMod p) : Finset (ZMod p) :=
-  let base : Finset (ZMod p) := (Finset.range (n + 2)).image ((↑) : ℕ → ZMod p)
-  if α ∈ base then base.erase α else (Finset.range (n + 1)).image ((↑) : ℕ → ZMod p)
+namespace FunctionBindingExtTranscript
+
+/-- Turn the legacy nested tuple transcript into the named record used by the reduction map. -/
+def ofTuple {L : ℕ}
+    (val : (Vector G₁ (n + 1) × Vector G₂ 2) × G₁ ×
+      (Fin L → ZMod p) × (Fin L → ZMod p) × (Fin L → Bool) × (Fin L → G₁)) :
+    FunctionBindingExtTranscript (p := p) n L G₁ G₂ where
+  srs := val.1
+  cm := val.2.1
+  queryOf := val.2.2.1
+  responseOf := val.2.2.2.1
+  accepts := val.2.2.2.2.1
+  proofs := val.2.2.2.2.2
+
+end FunctionBindingExtTranscript
+
+/-- The ARSDH instance produced by one branch of the function-binding reduction. -/
+structure FunctionBindingArsdhOutput (G₁ : Type) where
+  support : Finset (ZMod p)
+  base : G₁
+  solution : G₁
+
+namespace FunctionBindingArsdhOutput
+
+/-- Return to the tuple shape expected by `Groups.arsdhCondition`. -/
+def toTuple (out : FunctionBindingArsdhOutput (p := p) G₁) :
+    Finset (ZMod p) × G₁ × G₁ :=
+  (out.support, out.base, out.solution)
+
+end FunctionBindingArsdhOutput
+
+/-- ARSDH output for the conflicting-evaluations branch of the reduction. -/
+def conflictingEvaluationsArsdhOutput {L : ℕ} (hn : 1 ≤ n)
+    (tr : FunctionBindingExtTranscript (p := p) n L G₁ G₂) (i₁ i₂ : Fin L) :
+    FunctionBindingArsdhOutput (p := p) G₁ :=
+  let S := chooseSConflict (tr.queryOf i₁) tr.srs hn
+  let Zₛ := ∏ s ∈ S, (X - C s)
+  let h₁ := KZG.commit tr.srs.1 (Zₛ.coeff ∘ Fin.val)
+  let h₂ : G₁ := (tr.proofs i₁ / tr.proofs i₂) ^
+    (1 / (tr.responseOf i₂ - tr.responseOf i₁)).val
+  { support := S ∪ {tr.queryOf i₁}, base := h₁, solution := h₂ }
+
+/-- ARSDH output for the branch that discovers a query equal to `τ`. -/
+def queryEqTauArsdhOutput (n : ℕ) (α : ZMod p)
+    (srs : Vector G₁ (n + 1) × Vector G₂ 2) :
+    FunctionBindingArsdhOutput (p := p) G₁ :=
+  let S : Finset (ZMod p) := chooseSMiddle n α
+  let Zₛ := ∏ s ∈ S, (X - C s)
+  { support := S, base := srs.1[0], solution := srs.1[0] ^ (1 / Zₛ.eval α).val }
+
+/-- ARSDH output for the interpolation branch of the reduction. -/
+def interpolationArsdhOutput {L : ℕ} (S : Finset (Fin L))
+    (tr : FunctionBindingExtTranscript (p := p) n L G₁ G₂) :
+    FunctionBindingArsdhOutput (p := p) G₁ :=
+  let Zₛ := ∏ s ∈ S.image tr.queryOf, (X - C s)
+  let c' : G₁ :=
+    commit tr.srs.1 ((CLagrange.interpolate S tr.queryOf tr.responseOf).val.coeff ∘ Fin.val)
+  let h₁ := tr.cm / c'
+  let d := fun α => 1 / eval α (divByMonic Zₛ (X - C α))
+    -- 1/(Z_{S \ {α}}(α))
+  let h₂ : G₁ := ∏ i ∈ S, (tr.proofs i) ^ (d (tr.queryOf i)).val
+  { support := S.image tr.queryOf, base := h₁, solution := h₂ }
 
 /-- Steps 3 and 4 of the ARSDH reduction from [CGKY25]. -/
 def mapFunctionBindingInstanceToArsdhInstAux {L : ℕ} (hn : 1 ≤ n)
@@ -1128,36 +1250,23 @@ def mapFunctionBindingInstanceToArsdhInstAux {L : ℕ} (hn : 1 ≤ n)
       (Fin L → ZMod p) × (Fin L → ZMod p) × (Fin L → Bool) × (Fin L → G₁)) :
     Option (Finset (ZMod p) × G₁ × G₁) :=
   do
-  let (srs, cm, queryOf, responseOf, _accepts, proofs) := val
-  if let some (i₁, i₂) := findConflict queryOf responseOf then
+  let tr := FunctionBindingExtTranscript.ofTuple (p := p) val
+  if let some (i₁, i₂) := findConflict tr.queryOf tr.responseOf then
     -- step 3
-    let S := chooseSConflict (queryOf i₁) srs hn
-    let Zₛ := ∏ s ∈ S, (X - C s)
-    let h₁ := KZG.commit srs.1 (Zₛ.coeff ∘ Fin.val)
-    let h₂ : G₁ := (proofs i₁ / proofs i₂) ^ (1 / (responseOf i₂ - responseOf i₁)).val
-    return (S ∪ {queryOf i₁}, h₁, h₂)
+    return (conflictingEvaluationsArsdhOutput hn tr i₁ i₂).toTuple
   else if -- additional subcase (not in the paper): find τ in queries
     let some α₁ := (List.finRange L).findSome? fun i =>
-      if srs.1[0] ^ (queryOf i).val == srs.1[1]'(Nat.lt_add_of_pos_left hn)
-      then some (queryOf i) else none
+      if tr.srs.1[0] ^ (tr.queryOf i).val == tr.srs.1[1]'(Nat.lt_add_of_pos_left hn)
+      then some (tr.queryOf i) else none
   then
     -- α₁ = τ
-    let S : Finset (ZMod p) := chooseSMiddle n α₁
-    let Zₛ := ∏ s ∈ S, (X - C s)
-    return (S, srs.1[0], srs.1[0] ^ (1 / Zₛ.eval α₁).val)
+    return (queryEqTauArsdhOutput n α₁ tr.srs).toTuple
     -- h₂ = h₁ ^ (1 / Zₛ.eval τ).val with h₁:= g₁
   else
     -- step 4
-    let A ← findA (n+1) queryOf responseOf
-    let S ← findSPrime n A cm srs queryOf responseOf
-    let Zₛ := ∏ s ∈ S.image queryOf, (X - C s)
-    let c' : G₁ :=
-      commit srs.1 ((CLagrange.interpolate S queryOf responseOf).val.coeff ∘ Fin.val)
-    let h₁ := cm / c'
-    let d := fun α => 1 / eval α (divByMonic Zₛ (X - C α))
-      -- 1/(Z_{S \ {α}}(α))
-    let h₂ : G₁ := ∏ i ∈ S, (proofs i) ^ (d (queryOf i)).val
-    return (S.image queryOf, h₁, h₂)
+    let A ← findA (n+1) tr.queryOf tr.responseOf
+    let S ← findS n A tr.cm tr.srs tr.queryOf tr.responseOf
+    return (interpolationArsdhOutput S tr).toTuple
 
 def mapFunctionBindingInstanceToArsdhInst {L : ℕ} (hn : 1 ≤ n)
     (val : (Vector G₁ (n + 1) × Vector G₂ 2) × G₁ ×
@@ -1447,52 +1556,6 @@ lemma function_binding_game_ext_support_verify_all {n L : ℕ} {AuxState : Type}
       exact heq
   exact hP hai
 
-lemma nat_cast_range_card_zmod_of_le {k : ℕ} (hk : k ≤ p) :
-    ((Finset.range k).image ((↑) : ℕ → ZMod p)).card = k := by
-  have h_inj : Set.InjOn ((↑) : ℕ → ZMod p) ↑(Finset.range k) := by
-    intro a ha b hb hab
-    simp only [Finset.coe_range, Set.mem_Iio] at ha hb
-    have hap : a < p := lt_of_lt_of_le ha hk
-    have hbp : b < p := lt_of_lt_of_le hb hk
-    have hv := congrArg ZMod.val hab
-    rwa [ZMod.val_natCast_of_lt hap, ZMod.val_natCast_of_lt hbp] at hv
-  rw [Finset.card_image_of_injOn h_inj, Finset.card_range]
-
-lemma nat_cast_range_card_zmod (hp : p ≥ n + 2) :
-    ((Finset.range (n + 1)).image ((↑) : ℕ → ZMod p)).card = n + 1 := by
-  exact nat_cast_range_card_zmod_of_le (k := n + 1) (by omega)
-
-lemma choose_s_middle_card (hp : p ≥ n + 2) (α : ZMod p) :
-    (chooseSMiddle n α).card = n + 1 := by
-  unfold chooseSMiddle
-  set base : Finset (ZMod p) := (Finset.range (n + 2)).image ((↑) : ℕ → ZMod p)
-    with hbase_def
-  by_cases hα : α ∈ base
-  · rw [if_pos hα, Finset.card_erase_of_mem hα]
-    have hbase : base.card = n + 2 := by
-      rw [hbase_def]
-      exact nat_cast_range_card_zmod_of_le (k := n + 2) hp
-    omega
-  · rw [if_neg hα]
-    exact nat_cast_range_card_zmod hp
-
-lemma choose_s_middle_not_mem (α : ZMod p) :
-    α ∉ chooseSMiddle n α := by
-  unfold chooseSMiddle
-  set base : Finset (ZMod p) := (Finset.range (n + 2)).image ((↑) : ℕ → ZMod p)
-  by_cases hα : α ∈ base
-  · simp [hα]
-  · rw [if_neg hα]
-    intro hmem
-    apply hα
-    simp only [base, Finset.mem_image, Finset.mem_range] at hmem ⊢
-    obtain ⟨i, hi, rfl⟩ := hmem
-    exact ⟨i, by omega, rfl⟩
-
-lemma choose_s_middle_eval_ne_zero (α : ZMod p) :
-    (∏ s ∈ chooseSMiddle n α, (X - C s : CPolynomial (ZMod p))).eval α ≠ 0 := by
-  exact prod_x_sub_c_eval_ne_zero (choose_s_middle_not_mem α)
-
 omit hp [PrimeOrderWith G₁ p] [Group G₂] [PrimeOrderWith G₂ p]
   [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
 lemma find_query_with_srs_power_success {L : ℕ} (hn : 1 ≤ n)
@@ -1646,6 +1709,142 @@ lemma fin_length_gt_of_univ_interpolate_degree_ge {n L : ℕ}
   omega
 
 include g₁ g₂ pairing in
+lemma function_binding_conflicting_evaluations_branch_maps_to_arsdh {n L : ℕ}
+    (hn : 1 ≤ n) (hp : p ≥ n + 2) (hpair : pairing g₁ g₂ ≠ 0)
+    {τ : ZMod p} {srs : Vector G₁ (n + 1) × Vector G₂ 2} {cm : G₁}
+    {queryOf responseOf : Fin L → ZMod p} {accepts : Fin L → Bool} {proofs : Fin L → G₁}
+    (hsrs : srs = generateSrs (g₁ := g₁) (g₂ := g₂) n τ)
+    (hgen : srs.1[0] ≠ 1)
+    (hverify_all : ∀ i : Fin L, accepts i = true →
+      KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+        srs.2 cm (proofs i) (queryOf i) (responseOf i))
+    (hFBcond : functionBindingCondExt n L (τ, srs, cm, queryOf, responseOf, accepts, proofs))
+    {i₁ i₂ : Fin L} (hfc : findConflict queryOf responseOf = some (i₁, i₂)) :
+    Groups.arsdhCondition n
+      (τ, (conflictingEvaluationsArsdhOutput (p := p) (G₂ := G₂) hn
+        ({ srs := srs, cm := cm, queryOf := queryOf, responseOf := responseOf,
+           accepts := accepts, proofs := proofs } :
+          FunctionBindingExtTranscript (p := p) n L G₁ G₂) i₁ i₂).toTuple) := by
+  simp only [conflictingEvaluationsArsdhOutput, FunctionBindingArsdhOutput.toTuple,
+    Groups.arsdhCondition, ne_eq, one_div, Finset.union_singleton]
+  have hαβ := find_conflict_successful queryOf responseOf hfc
+  obtain ⟨hα, hβ⟩ := hαβ
+  have h_acc_all : ∀ i ∈ (Finset.univ : Finset (Fin L)), accepts i = true :=
+    hFBcond.1
+  have hai₁ : accepts i₁ = true := h_acc_all i₁ (Finset.mem_univ _)
+  have hai₂ : accepts i₂ = true := h_acc_all i₂ (Finset.mem_univ _)
+  have hverify₁ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+      srs.2 cm (proofs i₁) (queryOf i₁) (responseOf i₁) :=
+    hverify_all i₁ hai₁
+  have hverify₂ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+      srs.2 cm (proofs i₂) (queryOf i₂) (responseOf i₂) :=
+    hverify_all i₂ hai₂
+  constructor
+  · simpa [Finset.union_singleton] using
+      choose_s_conflict_size_adjoined hp hn (queryOf i₁) srs hgen
+  · constructor
+    · have hα_ne_τ : queryOf i₁ ≠ τ :=
+        conflict_query_ne_tau (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+          PrimeOrderWith.hCard hn (queryOf i₁) (queryOf i₂)
+          (responseOf i₁) (responseOf i₂) τ cm (proofs i₁) (proofs i₂)
+          hα hβ srs hsrs hgen hpair hverify₁ hverify₂
+      change (∏ s ∈ insert (queryOf i₁) (chooseSConflict (queryOf i₁) srs hn),
+        (X - C s : CPolynomial (ZMod p))).eval τ ≠ 0
+      exact choose_s_conflict_insert_eval_ne_zero
+        (g₁ := g₁) (g₂ := g₂) hn (queryOf i₁) τ srs hsrs hα_ne_τ
+    · constructor
+      · exact h1_ne_one (g₁ := g₁) (g₂ := g₂) hp PrimeOrderWith.hCard hn
+          (queryOf i₁) τ srs hsrs hgen
+      · have key := h1_zs_eq_h2 (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+          hp PrimeOrderWith.hCard hn (queryOf i₁) (queryOf i₂)
+          (responseOf i₁) (responseOf i₂) τ cm (proofs i₁) (proofs i₂)
+          hα hβ srs hsrs hgen hpair hverify₁ hverify₂
+        simpa [Finset.union_singleton, one_div] using key
+
+omit [DecidableEq G₁] [PrimeOrderWith G₂ p]
+  [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
+lemma function_binding_query_eq_tau_branch_maps_to_arsdh {n : ℕ}
+    (hn : 1 ≤ n) (hp : p ≥ n + 2) (hg₁ : g₁ ≠ 1)
+    {τ α : ZMod p} {srs : Vector G₁ (n + 1) × Vector G₂ 2}
+    (hsrs : srs = generateSrs (g₁ := g₁) (g₂ := g₂) n τ)
+    (hgen : srs.1[0] ≠ 1)
+    (hpow : srs.1[0] ^ α.val = srs.1[1]'(Nat.lt_add_of_pos_left hn)) :
+    Groups.arsdhCondition n (τ, (queryEqTauArsdhOutput (p := p) n α srs).toTuple) := by
+  simp only [queryEqTauArsdhOutput, FunctionBindingArsdhOutput.toTuple,
+    Groups.arsdhCondition, ne_eq, one_div]
+  have hord : orderOf g₁ = p := order_of_eq_prime_of_ne_one g₁ hg₁
+  have hα_τ : α = τ :=
+    zmod_eq_of_srs_power_eq (g₁ := g₁) hn srs hsrs hord hpow
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact choose_s_middle_card hp α
+  · rw [← hα_τ]
+    exact choose_s_middle_eval_ne_zero α
+  · exact hgen
+  · rw [hα_τ]
+
+include g₁ g₂ pairing in
+lemma function_binding_interpolation_branch_maps_to_arsdh {n L : ℕ}
+    (hn : 1 ≤ n) (hpair : pairing g₁ g₂ ≠ 0)
+    {τ : ZMod p} {srs : Vector G₁ (n + 1) × Vector G₂ 2} {cm : G₁}
+    {queryOf responseOf : Fin L → ZMod p} {accepts : Fin L → Bool} {proofs : Fin L → G₁}
+    (hsrs : srs = generateSrs (g₁ := g₁) (g₂ := g₂) n τ)
+    (hgen : srs.1[0] ≠ 1)
+    (hverify_all : ∀ i : Fin L, accepts i = true →
+      KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+        srs.2 cm (proofs i) (queryOf i) (responseOf i))
+    (hFBcond : functionBindingCondExt n L (τ, srs, cm, queryOf, responseOf, accepts, proofs))
+    {A S : Finset (Fin L)}
+    (hresS : findS n A cm srs queryOf responseOf = some S)
+    (hfs_none : List.findSome?
+        (fun i ↦ if srs.1[0] ^ (queryOf i).val = srs.1[1]'(Nat.lt_add_of_pos_left hn)
+                  then some (queryOf i) else none)
+        (List.finRange L) = none) :
+    Groups.arsdhCondition n
+      (τ, (interpolationArsdhOutput (p := p) (G₂ := G₂) S
+        ({ srs := srs, cm := cm, queryOf := queryOf, responseOf := responseOf,
+           accepts := accepts, proofs := proofs } :
+          FunctionBindingExtTranscript (p := p) n L G₁ G₂)).toTuple) := by
+  simp only [interpolationArsdhOutput, FunctionBindingArsdhOutput.toTuple,
+    Groups.arsdhCondition, ne_eq, one_div]
+  have hquery : Function.Injective queryOf := hFBcond.2.2
+  have hresS_symm : some S = findS n A cm srs queryOf responseOf := hresS.symm
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [Finset.card_image_of_injective _ hquery]
+    exact find_s_card n cm A S srs queryOf responseOf hresS_symm
+  · have hτneq_all : ∀ i : Fin L, queryOf i ≠ τ :=
+      query_ne_tau_of_find_query_with_srs_power_none
+        (g₁ := g₁) hn τ srs queryOf hsrs hfs_none
+    have hτ_not_image : τ ∉ S.image queryOf := by
+      simp only [Finset.mem_image, not_exists, not_and]
+      intro i _
+      exact hτneq_all i
+    exact prod_x_sub_c_eval_ne_zero hτ_not_image
+  · intro hdiv
+    have hcm_eq_c' : cm =
+        commit srs.1 ((CLagrange.interpolate S queryOf responseOf).val.coeff ∘ Fin.val) :=
+      div_eq_one.mp hdiv
+    exact (find_s_diverges n cm A S queryOf responseOf srs hresS_symm) hcm_eq_c'.symm
+  · have hcard : S.card = n + 1 :=
+      find_s_card n cm A S srs queryOf responseOf hresS_symm
+    have hdeg : (CLagrange.interpolate S queryOf responseOf).degree ≤ (n : WithBot ℕ) := by
+      exact interp_degree_le_of_card S queryOf responseOf hquery hcard
+    have hS_ne : S.Nonempty := by
+      rw [← Finset.card_pos, hcard]; exact Nat.succ_pos _
+    have hτneq : ∀ i ∈ S, queryOf i ≠ τ := by
+      intro i _
+      exact query_ne_tau_of_find_query_with_srs_power_none
+        (g₁ := g₁) hn τ srs queryOf hsrs hfs_none i
+    have hVer : ∀ i ∈ S,
+        KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+          srs.2 cm (proofs i) (queryOf i) (responseOf i) := by
+      intro i _
+      exact hverify_all i (hFBcond.1 i (Finset.mem_univ _))
+    have key := h1_zs_eq_h2_prime (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+      n τ cm S queryOf responseOf proofs srs hn hsrs hτneq hVer
+      hgen hpair hdeg hS_ne hquery
+    simpa only [one_div] using key
+
+include g₁ g₂ pairing in
 lemma function_binding_cond_ext_output_maps_to_arsdh {n L : ℕ} {AuxState : Type}
     [SampleableType G₁]
     (hn : 1 ≤ n) (hp : p ≥ n + 2) (hg₁ : g₁ ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
@@ -1671,94 +1870,25 @@ lemma function_binding_cond_ext_output_maps_to_arsdh {n L : ℕ} {AuxState : Typ
     exact function_binding_game_ext_support_verify_all (pairing := pairing) adversary hgame
   unfold mapFunctionBindingToArsdh
   unfold mapFunctionBindingInstanceToArsdhInst mapFunctionBindingInstanceToArsdhInstAux
-  simp only [one_div, Finset.union_singleton, Option.pure_def, beq_iff_eq, Option.bind_eq_bind,
-    Function.comp_apply]
-  -- first branch from mapFunctionBindingInstanceToArsdhInstAux
-  set fc := findConflict queryOf responseOf with hfc_def
-  cases hfc : fc with
+  simp only [FunctionBindingExtTranscript.ofTuple, Option.pure_def, beq_iff_eq,
+    Option.bind_eq_bind, Function.comp_apply]
+  cases hfc : findConflict queryOf responseOf with
   | some c =>
       obtain ⟨i₁, i₂⟩ := c
-      -- goal for the first branch
-      simp only [Groups.arsdhCondition, Option.getD_some, ne_eq, one_div]
-      constructor
-      · rw [← Finset.union_singleton]
-        exact choose_s_conflict_size_adjoined hp hn (queryOf i₁) srs hgen
-      · constructor
-        · have hfc' : findConflict queryOf responseOf = some (i₁, i₂) := hfc_def ▸ hfc
-          have hαβ := find_conflict_successful queryOf responseOf hfc'
-          obtain ⟨hα, hβ⟩ := hαβ
-          have h_acc_all : ∀ i ∈ (Finset.univ : Finset (Fin L)), accepts i = true :=
-            hFBcond.1
-          have hai₁ : accepts i₁ = true := h_acc_all i₁ (Finset.mem_univ _)
-          have hai₂ : accepts i₂ = true := h_acc_all i₂ (Finset.mem_univ _)
-          have hverify₁ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-              srs.2 cm (proofs i₁) (queryOf i₁) (responseOf i₁) :=
-            hverify_all i₁ hai₁
-          have hverify₂ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-              srs.2 cm (proofs i₂) (queryOf i₂) (responseOf i₂) :=
-            hverify_all i₂ hai₂
-          have hα_ne_τ : queryOf i₁ ≠ τ :=
-            conflict_query_ne_tau (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-              PrimeOrderWith.hCard hn (queryOf i₁) (queryOf i₂)
-              (responseOf i₁) (responseOf i₂) τ cm (proofs i₁) (proofs i₂)
-              hα hβ srs hsrs hgen hpair hverify₁ hverify₂
-          change (∏ s ∈ insert (queryOf i₁) (chooseSConflict (queryOf i₁) srs hn),
-            (X - C s : CPolynomial (ZMod p))).eval τ ≠ 0
-          exact choose_s_conflict_insert_eval_ne_zero
-            (g₁ := g₁) (g₂ := g₂) hn (queryOf i₁) τ srs hsrs hα_ne_τ
-        · constructor
-          · exact h1_ne_one (g₁ := g₁) (g₂ := g₂) hp PrimeOrderWith.hCard hn
-              (queryOf i₁) τ srs hsrs hgen
-          · -- h₂ = h₁ ^ (1 / Zₛᵤₐ.eval τ).val by `h1_zs_eq_h2`.
-            have hfc' : findConflict queryOf responseOf = some (i₁, i₂) := hfc_def ▸ hfc
-            have hαβ := find_conflict_successful queryOf responseOf hfc'
-            obtain ⟨hα, hβ⟩ := hαβ
-            have h_acc_all : ∀ i ∈ (Finset.univ : Finset (Fin L)), accepts i = true :=
-              hFBcond.1
-            have hai₁ : accepts i₁ = true := h_acc_all i₁ (Finset.mem_univ _)
-            have hai₂ : accepts i₂ = true := h_acc_all i₂ (Finset.mem_univ _)
-            have hverify₁ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-                srs.2 cm (proofs i₁) (queryOf i₁) (responseOf i₁) :=
-              hverify_all i₁ hai₁
-            have hverify₂ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-                srs.2 cm (proofs i₂) (queryOf i₂) (responseOf i₂) :=
-              hverify_all i₂ hai₂
-            have key := h1_zs_eq_h2 (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-              hp PrimeOrderWith.hCard hn (queryOf i₁) (queryOf i₂)
-              (responseOf i₁) (responseOf i₂) τ cm (proofs i₁) (proofs i₂)
-              hα hβ srs hsrs hgen hpair hverify₁ hverify₂
-            simpa [Finset.union_singleton, one_div] using key
-  | none => -- second branch from mapFunctionBindingInstanceToArsdhInstAux
-      set fs := List.findSome?
+      simp only [Option.getD_some]
+      exact function_binding_conflicting_evaluations_branch_maps_to_arsdh
+        (pairing := pairing) hn hp hpair hsrs hgen hverify_all hFBcond hfc
+  | none =>
+      cases hfs : List.findSome?
         (fun i ↦ if srs.1[0] ^ (queryOf i).val = srs.1[1] then some (queryOf i) else none)
-        (List.finRange L) with hfs_def
-      cases hfs : fs with
+        (List.finRange L) with
       | some α₁ =>
-          simp only [Groups.arsdhCondition, Option.getD_some, ne_eq, one_div]
-          -- branch where `List.findSome? = some α₁`
-          -- Extract the precondition: `srs.1[0] ^ α₁.val = srs.1[1]`.
-          have hfs' : List.findSome?
-              (fun i ↦ if srs.1[0] ^ (queryOf i).val
-                            = srs.1[1]'(Nat.lt_add_of_pos_left hn)
-                        then some (queryOf i) else none)
-              (List.finRange L) = some α₁ := hfs_def.symm.trans hfs
+          simp only [Option.getD_some]
           have hcond : srs.1[0] ^ α₁.val = srs.1[1]'(Nat.lt_add_of_pos_left hn) := by
-            exact find_query_with_srs_power_success hn srs queryOf hfs'
-          have hord : orderOf g₁ = p := order_of_eq_prime_of_ne_one g₁ hg₁
-          have hα_τ : α₁ = τ := by
-            exact zmod_eq_of_srs_power_eq (g₁ := g₁) hn srs hsrs hord hcond
-          refine ⟨?_, ?_, ?_, ?_⟩
-          · -- `S.card = n + 1`
-            exact choose_s_middle_card hp α₁
-          · -- `Zₛ.eval τ ≠ 0`
-            rw [← hα_τ]
-            exact choose_s_middle_eval_ne_zero α₁
-          · -- `srs.1[0] ≠ 1`
-            exact hgen
-          · -- `h₂ = h₁ ^ (1 / eval τ Zₛ).val`
-            rw [hα_τ]
-      | none => -- third branch from mapFunctionBindingInstanceToArsdhInstAux
-          set fa := findA (n+1) queryOf responseOf with hfa_def
+            exact find_query_with_srs_power_success hn srs queryOf hfs
+          exact function_binding_query_eq_tau_branch_maps_to_arsdh
+            (g₁ := g₁) (g₂ := g₂) hn hp hg₁ hsrs hgen hcond
+      | none =>
           -- The interpolation has degree ≥ n + 1, since otherwise its first n + 1
           -- coefficients would witness a degree-`n` polynomial fitting all pairs,
           -- contradicting the function-binding hypothesis `hFBcond`.
@@ -1769,95 +1899,25 @@ lemma function_binding_cond_ext_output_maps_to_arsdh {n L : ℕ} {AuxState : Typ
             exact univ_interpolate_degree_ge_of_function_binding_cond hFBcond
           have hL : n + 1 < L := by
             exact fin_length_gt_of_univ_interpolate_degree_ge queryOf responseOf hquery huniv_deg
-          cases hfa : fa with
+          cases hfa : findA (n+1) queryOf responseOf with
           | some a =>
-              set fs' := findSPrime n a cm srs queryOf responseOf with hfs'_def
-              cases hfs' : fs' with
+              cases hfs' : findS n a cm srs queryOf responseOf with
               | some a' =>
-                  -- third branch actual content (rest are irrelevant corner cases)
-                  -- Recover the underlying option equalities from the `set`+`cases` shells.
-                  have hresA : findA (n+1) queryOf responseOf = some a :=
-                    hfa_def.symm.trans hfa
-                  have hresS : findSPrime n a cm srs queryOf responseOf = some a' :=
-                    hfs'_def.symm.trans hfs'
-                  have hres_a' : some a' = findSPrime n a cm srs queryOf responseOf := hresS.symm
-                  -- Reduce the do-block to its `some` value, then unfold `arsdhCondition`.
-                  simp only [hresS, Option.bind, Groups.arsdhCondition, Option.getD_some,
-                    ne_eq, one_div]
-                  refine ⟨?_, ?_, ?_, ?_⟩
-                  · -- `(a'.image queryOf).card = n + 1`
-                    rw [Finset.card_image_of_injective _ hquery]
-                    exact find_s_prime_card n cm a a' srs queryOf responseOf hres_a'
-                  · -- `Zₛ.eval τ ≠ 0`
-                    have hfs_none :
-                        List.findSome?
-                          (fun i ↦ if srs.1[0] ^ (queryOf i).val
-                                        = srs.1[1]'(Nat.lt_add_of_pos_left hn)
-                                    then some (queryOf i) else none)
-                          (List.finRange L) = none := hfs_def.symm.trans hfs
-                    have hτneq_all : ∀ i : Fin L, queryOf i ≠ τ :=
-                      query_ne_tau_of_find_query_with_srs_power_none
-                        (g₁ := g₁) hn τ srs queryOf hsrs hfs_none
-                    have hτ_not_image : τ ∉ a'.image queryOf := by
-                      simp only [Finset.mem_image, not_exists, not_and]
-                      intro i hi
-                      exact hτneq_all i
-                    exact prod_x_sub_c_eval_ne_zero hτ_not_image
-                  · -- `cm / c' ≠ 1`, equivalently `cm ≠ c'`, from `find_s_prime_diverges`.
-                    intro hdiv
-                    have hcm_eq_c' : cm =
-                        commit srs.1
-                          ((CLagrange.interpolate a' queryOf responseOf).val.coeff ∘ Fin.val) :=
-                      div_eq_one.mp hdiv
-                    exact (find_s_prime_diverges n cm a a' queryOf responseOf srs hres_a')
-                      hcm_eq_c'.symm
-                  · -- `h₂ = h₁ ^ (1 / Zₛ.eval τ).val`
-                    -- Card and degree bound for `a'` (|a'| = n+1 ⇒ degree ≤ n).
-                    have hcard : a'.card = n + 1 :=
-                      find_s_prime_card n cm a a' srs queryOf responseOf hres_a'
-                    have hdeg :
-                        (CLagrange.interpolate a' queryOf responseOf).degree
-                          ≤ (n : WithBot ℕ) := by
-                      exact interp_degree_le_of_card a' queryOf responseOf hquery hcard
-                    have ha'_ne : a'.Nonempty := by
-                      rw [← Finset.card_pos, hcard]; exact Nat.succ_pos _
-                    -- Queries in `a'` cannot equal τ (else the second branch would have fired).
-                    have hτneq : ∀ i ∈ a', queryOf i ≠ τ := by
-                      have hfs_none :
-                          List.findSome?
-                            (fun i ↦ if srs.1[0] ^ (queryOf i).val
-                                          = srs.1[1]'(Nat.lt_add_of_pos_left hn)
-                                      then some (queryOf i) else none)
-                            (List.finRange L) = none := hfs_def.symm.trans hfs
-                      intro i _
-                      exact query_ne_tau_of_find_query_with_srs_power_none
-                        (g₁ := g₁) hn τ srs queryOf hsrs hfs_none i
-                    -- Every accepted index passes verification.
-                    have hVer : ∀ i ∈ a',
-                        KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-                          srs.2 cm (proofs i) (queryOf i) (responseOf i) := by
-                      intro i _
-                      exact hverify_all i (hFBcond.1 i (Finset.mem_univ _))
-                    have key := h1_zs_eq_h2_prime (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-                      n τ cm a' queryOf responseOf proofs srs hn hsrs hτneq hVer
-                      hgen hpair hdeg ha'_ne hquery
-                    simp only [one_div] at key
-                    exact key
+                  simp only [hfs', Option.bind, Option.getD_some]
+                  exact function_binding_interpolation_branch_maps_to_arsdh
+                    (pairing := pairing) hn hpair hsrs hgen hverify_all hFBcond hfs' hfs
               | none =>
-                  -- `findSPrime` failed: contradicts `find_s_prime_successful`.
+                  -- `findS` failed: contradicts `find_s_successful`.
                   exfalso
                   have hres_a : some a = findA (n+1) queryOf responseOf := by
-                    rw [← hfa_def]; exact hfa.symm
+                    exact hfa.symm
                   have hAdeg :=
                     find_a_deg (n+1) a queryOf responseOf hres_a
                   have hsome :=
-                    find_s_prime_successful (g₁ := g₁) n τ cm a queryOf responseOf srs hsrs
+                    find_s_successful (g₁ := g₁) n τ cm a queryOf responseOf srs hsrs
                       hgen
                       (by exact_mod_cast hAdeg) hquery hn
-                  have hnone :
-                      findSPrime n a cm srs queryOf responseOf = none := by
-                    rw [← hfs'_def]; exact hfs'
-                  rw [hnone] at hsome
+                  rw [hfs'] at hsome
                   simp at hsome
           | none =>
               -- `findA` failed: contradicts `find_a_successful` via `huniv_deg`.
@@ -1865,9 +1925,7 @@ lemma function_binding_cond_ext_output_maps_to_arsdh {n L : ℕ} {AuxState : Typ
               have hsome :=
                 find_a_successful (n+1) hL (Finset.univ : Finset (Fin L)) queryOf responseOf
                   hquery huniv_deg
-              have hnone : findA (n+1) queryOf responseOf = none := by
-                rw [← hfa_def]; exact hfa
-              rw [hnone] at hsome
+              rw [hfa] at hsome
               simp at hsome
 
 include g₁ g₂ pairing in
