@@ -175,10 +175,14 @@ private lemma roots_in_domain_card_eq_if_x_in_domain
         (add simp [Nat.sub_zero, mem_filter, CosetFftDomain.mem_coset_finset_iff_mem_coset_domain]) 
         (add safe [(by rw [CosetFftDomain.subdomainNatReversed_zero])])
     })
-    (by aesop (add unsafe (by apply CosetFftDomain.injective (ω := domain))))
+    (fun _ _ _ _ h ↦ CosetFftDomain.injective h)
     (fun b ↦ by
-      simp only [Nat.sub_zero, mem_filter] 
-      rw [CosetFftDomain.mem_coset_finset_iff_mem_coset_domain,
+      simp only [Nat.sub_zero, mem_filter,
+        CosetFftDomain.mem_coset_finset_iff_mem_coset_domain, mem_univ, true_and,
+        exists_prop, and_imp]
+      intro h
+      simp [CosetFftDomain.subdomainNatReversed_zero] at h
+      rw [
         CosetFftDomain.subdomainNatReversed_zero,
         CosetFftDomain.mem_coset_def] 
       aesop
