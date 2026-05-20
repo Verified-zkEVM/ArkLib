@@ -1170,12 +1170,6 @@ def reduction (L : ℕ) (hn : 1 ≤ n) (AuxState : Type)
                 (srs, cm, queryOf, responseOf, accepts, proofs))
           ))
 
-/-- ARSDH condition for an adversary "to win" -/
-def arsdhCond (D : ℕ) : (ZMod p × Finset (ZMod p) × G₁ × G₁) → Prop :=
-  fun (τ, S, (h₁ : G₁), h₂) =>
-    let Zₛ : CPolynomial (ZMod p) := ∏ s ∈ S, (X - C s)
-    S.card = D + 1 ∧ h₁ ≠ 1 ∧ h₂ = h₁ ^ (1 / eval τ Zₛ).val
-
 /-- Function binding condition for an adversary "to win" -/
 def functionBindingCond (n L : ℕ) :
     (queryOf : Fin L → OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
@@ -1601,7 +1595,7 @@ lemma function_binding_cond_ext_output_maps_to_arsdh {n L : ℕ} {AuxState : Typ
       support (functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
         (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))))
     (hFBcond : functionBindingCondExt n L (τ, srs, cm, queryOf, responseOf, accepts, proofs)) :
-    ((arsdhCond n) ∘ mapFunctionBindingToArsdh hn)
+    ((Groups.arsdhCondition n) ∘ mapFunctionBindingToArsdh hn)
       (τ, srs, cm, queryOf, responseOf, accepts, proofs) := by
   have hsrs : srs = generateSrs n τ (g₂ := g₂) (g₁ := g₁) := by
     exact function_binding_game_ext_support_srs (pairing := pairing) adversary hgame
@@ -1624,7 +1618,7 @@ lemma function_binding_cond_ext_output_maps_to_arsdh {n L : ℕ} {AuxState : Typ
   | some c =>
       obtain ⟨i₁, i₂⟩ := c
       -- goal for the first branch
-      simp only [arsdhCond, Option.getD_some, ne_eq, one_div]
+      simp only [Groups.arsdhCondition, Option.getD_some, ne_eq, one_div]
       constructor
       · rw [← Finset.union_singleton]
         exact choose_s_conflict_size_adjoined hp hn (queryOf i₁) srs hgen
@@ -1656,7 +1650,7 @@ lemma function_binding_cond_ext_output_maps_to_arsdh {n L : ℕ} {AuxState : Typ
         (List.finRange L) with hfs_def
       cases hfs : fs with
       | some α₁ =>
-          simp only [arsdhCond, Option.getD_some, ne_eq, one_div]
+          simp only [Groups.arsdhCondition, Option.getD_some, ne_eq, one_div]
           -- branch where `List.findSome? = some α₁`
           -- Extract the precondition: `srs.1[0] ^ α₁.val = srs.1[1]`.
           have hfs' : List.findSome?
@@ -1700,8 +1694,8 @@ lemma function_binding_cond_ext_output_maps_to_arsdh {n L : ℕ} {AuxState : Typ
                   have hresS : findSPrime n a cm srs queryOf responseOf = some a' :=
                     hfs'_def.symm.trans hfs'
                   have hres_a' : some a' = findSPrime n a cm srs queryOf responseOf := hresS.symm
-                  -- Reduce the do-block to its `some` value, then unfold `arsdhCond`.
-                  simp only [hresS, Option.bind, arsdhCond, Option.getD_some,
+                  -- Reduce the do-block to its `some` value, then unfold `arsdhCondition`.
+                  simp only [hresS, Option.bind, Groups.arsdhCondition, Option.getD_some,
                     ne_eq, one_div]
                   refine ⟨?_, ?_, ?_⟩
                   · -- `(a'.image queryOf).card = n + 1`
@@ -1782,7 +1776,7 @@ lemma function_binding_cond_le_arsdh_cond {n L : ℕ} {AuxState : Type} [Samplea
     Pr[functionBindingCondExt n L |
       functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
       (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))]
-    ≤ Pr[(arsdhCond n) ∘ mapFunctionBindingToArsdh hn |
+    ≤ Pr[(Groups.arsdhCondition n) ∘ mapFunctionBindingToArsdh hn |
       functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
         (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))] := by
   apply probEvent_mono
@@ -1797,9 +1791,9 @@ lemma map_instance_drag {n L : ℕ} {AuxState : Type} [SampleableType G₁]
     (scheme : Commitment.Scheme unifSpec (Fin (n + 1) → ZMod p) G₁ Unit
       (Vector G₁ (n + 1) × Vector G₂ 2) (Vector G₁ (n + 1) × Vector G₂ 2)
       ⟨!v[.P_to_V], !v[G₁]⟩) :
-    Pr[(arsdhCond n) ∘ mapFunctionBindingToArsdh hn |
+    Pr[(Groups.arsdhCondition n) ∘ mapFunctionBindingToArsdh hn |
       functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme]
-    = Pr[(arsdhCond n) |
+    = Pr[(Groups.arsdhCondition n) |
       mapFunctionBindingToArsdh hn <$>
         functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme] := by
   exact probEvent_comp _ _ _
@@ -1807,14 +1801,14 @@ lemma map_instance_drag {n L : ℕ} {AuxState : Type} [SampleableType G₁]
 /-- Transition 4: the mapped game equals the ARSDH experiment -/
 lemma arsdh_game_eq {n L : ℕ} {AuxState : Type} [SampleableType G₁]
     (hn : 1 ≤ n) (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState) :
-    Pr[(arsdhCond n) |
+    Pr[(Groups.arsdhCondition n) |
       mapFunctionBindingToArsdh hn <$> functionBindingGameExt (g₁ := g₁) (g₂ := g₂)
         AuxState adversary (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))]
     = Groups.arsdhExperiment (g₁ := g₁) (g₂ := g₂) n
       (reduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) L hn AuxState adversary) := by
   let scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
   simp only [Groups.arsdhExperiment]
-  unfold arsdhCond
+  unfold Groups.arsdhCondition
   simp only
   congr 1
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
@@ -1919,9 +1913,9 @@ theorem function_binding {g₁ : G₁} {g₂ : G₂}
     calc Pr[functionBindingCond n L | game]
     _ = Pr[functionBindingCondExt n L | game_ext] :=
       function_binding_game_ext_eq_function_binding_game (pairing := pairing) adversary
-    _ ≤ Pr[(arsdhCond n) ∘ mapFunctionBindingToArsdh hn | game_ext] :=
+    _ ≤ Pr[(Groups.arsdhCondition n) ∘ mapFunctionBindingToArsdh hn | game_ext] :=
       function_binding_cond_le_arsdh_cond (pairing := pairing) hn hp hg₁ hpair adversary
-    _ = Pr[(arsdhCond n) | mapFunctionBindingToArsdh hn <$> game_ext] :=
+    _ = Pr[(Groups.arsdhCondition n) | mapFunctionBindingToArsdh hn <$> game_ext] :=
       map_instance_drag hn adversary scheme
     _ = Groups.arsdhExperiment (g₁ := g₁) (g₂ := g₂) n
       (reduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) L hn AuxState adversary) :=

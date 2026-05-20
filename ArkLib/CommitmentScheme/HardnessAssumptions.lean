@@ -88,15 +88,18 @@ def arsdhAdversary (D : ℕ) :=
   Vector G₁ (D + 1) × Vector G₂ 2 →
     StateT unifSpec.QueryCache ProbComp (Option (Finset (ZMod p) × G₁ × G₁))
 
+/-- ARSDH condition for an adversary to win. -/
+abbrev arsdhCondition (D : ℕ) : (ZMod p × Finset (ZMod p) × G₁ × G₁) → Prop :=
+  fun (τ, S, h₁, h₂) =>
+    let Zₛ : CompPoly.CPolynomial (ZMod p) :=
+      ∏ s ∈ S, (CompPoly.CPolynomial.X - CompPoly.CPolynomial.C s)
+    S.card = D + 1 ∧ h₁ ≠ 1 ∧ h₂ = h₁ ^ (1 / Zₛ.eval τ).val
+
 /-- The probability of breaking ARSDH for a specific adversary. -/
 noncomputable def arsdhExperiment [∀ i, SampleableType (unifSpec.Range i)]
     {g₁ : G₁} {g₂ : G₂} (D : ℕ)
     (adversary : arsdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) : ℝ≥0∞ :=
-  Pr[fun (τ, S, h₁, h₂) =>
-    let Zₛ : CompPoly.CPolynomial (ZMod p) :=
-      ∏ s ∈ S, (CompPoly.CPolynomial.X - CompPoly.CPolynomial.C s)
-    S.card = D + 1 ∧ h₁ ≠ 1 ∧ h₂ = h₁ ^ (1 / Zₛ.eval τ).val
-  | OptionT.mk ((do
+  Pr[arsdhCondition D | OptionT.mk ((do
     let τ ← simulateQ randomOracle ($ᵗ(ZMod p))
     let srs := generateSrs (g₁ := g₁) (g₂ := g₂) D τ
     let result ← adversary srs
