@@ -63,19 +63,28 @@ def tSdhAdversary (D : ℕ) :=
   Vector G₁ (D + 1) × Vector G₂ 2 →
     StateT unifSpec.QueryCache ProbComp (Option (ZMod p × G₁))
 
-/-- The probability of breaking `t`-SDH for a specific adversary. -/
-noncomputable def tSdhExperiment [∀ i, SampleableType (unifSpec.Range i)]
-    {g₁ : G₁} {g₂ : G₂} (D : ℕ)
-    (adversary : tSdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) : ℝ≥0∞ :=
-  Pr[fun (τ, c, h) =>
+/-- t-SDH condition for an adversary to win. -/
+abbrev tSdhCondition {g₁ : G₁} : (ZMod p × ZMod p × G₁) → Prop :=
+  fun (τ, c, h) =>
     τ + c ≠ 0 ∧ h = g₁ ^ (1 / (τ + c)).val
-  | OptionT.mk ((do
+
+/-- The t-SDH game for a specific adversary. -/
+abbrev tSdhGame [∀ i, SampleableType (unifSpec.Range i)]
+    {g₁ : G₁} {g₂ : G₂} (D : ℕ)
+    (adversary : tSdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) :
+    OptionT ProbComp (ZMod p × ZMod p × G₁) :=
+  OptionT.mk ((do
     let τ ← simulateQ randomOracle ($ᵗ(ZMod p))
     let srs := generateSrs (g₁ := g₁) (g₂ := g₂) D τ
     let result ← adversary srs
     pure (result.map (fun ((c, h) : ZMod p × G₁) =>
       (τ, c, h)))).run' (∅))
-  ]
+
+/-- The probability of breaking `t`-SDH for a specific adversary. -/
+noncomputable def tSdhExperiment [∀ i, SampleableType (unifSpec.Range i)]
+    {g₁ : G₁} {g₂ : G₂} (D : ℕ)
+    (adversary : tSdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) : ℝ≥0∞ :=
+  Pr[tSdhCondition (g₁ := g₁) | tSdhGame (g₁ := g₁) (g₂ := g₂) D adversary]
 
 /-- The `t`-SDH assumption bounds every adversary's success probability by `error`. -/
 def tSdhAssumption [∀ i, SampleableType (unifSpec.Range i)]
@@ -93,19 +102,25 @@ abbrev arsdhCondition (D : ℕ) : (ZMod p × Finset (ZMod p) × G₁ × G₁) �
   fun (τ, S, h₁, h₂) =>
     let Zₛ : CompPoly.CPolynomial (ZMod p) :=
       ∏ s ∈ S, (CompPoly.CPolynomial.X - CompPoly.CPolynomial.C s)
-    S.card = D + 1 ∧ h₁ ≠ 1 ∧ h₂ = h₁ ^ (1 / Zₛ.eval τ).val
+    S.card = D + 1 ∧ Zₛ.eval τ ≠ 0 ∧ h₁ ≠ 1 ∧ h₂ = h₁ ^ (1 / Zₛ.eval τ).val
 
-/-- The probability of breaking ARSDH for a specific adversary. -/
-noncomputable def arsdhExperiment [∀ i, SampleableType (unifSpec.Range i)]
+/-- The ARSDH game for a specific adversary. -/
+abbrev arsdhGame [∀ i, SampleableType (unifSpec.Range i)]
     {g₁ : G₁} {g₂ : G₂} (D : ℕ)
-    (adversary : arsdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) : ℝ≥0∞ :=
-  Pr[arsdhCondition D | OptionT.mk ((do
+    (adversary : arsdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) :
+    OptionT ProbComp (ZMod p × Finset (ZMod p) × G₁ × G₁) :=
+  OptionT.mk ((do
     let τ ← simulateQ randomOracle ($ᵗ(ZMod p))
     let srs := generateSrs (g₁ := g₁) (g₂ := g₂) D τ
     let result ← adversary srs
     pure (result.map (fun ((S, h₁, h₂) : Finset (ZMod p) × G₁ × G₁) =>
       (τ, S, h₁, h₂)))).run' (∅))
-  ]
+
+/-- The probability of breaking ARSDH for a specific adversary. -/
+noncomputable def arsdhExperiment [∀ i, SampleableType (unifSpec.Range i)]
+    {g₁ : G₁} {g₂ : G₂} (D : ℕ)
+    (adversary : arsdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) : ℝ≥0∞ :=
+  Pr[arsdhCondition D | arsdhGame (g₁ := g₁) (g₂ := g₂) D adversary]
 
 /-! ### Oracle Simulation Note
 
