@@ -89,7 +89,7 @@ def bindingGameExt {n : ℕ} {g₁ : G₁} {g₂ : G₂} (AuxState : Type)
       ⟨!v[.P_to_V], !v[G₁]⟩) : OptionT ProbComp (BindingExtOutput (p := p) n G₁ G₂) :=
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
   OptionT.mk do
-    let τ ← ($ᵗ (ZMod p) : ProbComp (ZMod p))
+    let τ ← Groups.sampleNonzeroZMod (p := p)
     let srs := generateSrs (g₁ := g₁) (g₂ := g₂) n τ
     (simulateQ
       (QueryImpl.addLift randomOracle (challengeQueryImpl (pSpec := pSpec')) :
@@ -329,53 +329,37 @@ lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableTy
   simp only [Commitment.bindingGame, bindingGameExt, kzg, OptionT.run, OptionT.mk]
   rw [pure_bind]
   have hsample :
-      (simulateQ randomOracle ($ᵗ (ZMod p))).run' ∅ = ($ᵗ (ZMod p)) := by
-    change unifSpec.withCacheOverlay ∅ ($ᵗ (ZMod p)) = ($ᵗ (ZMod p))
-    have hsel :
-        (SampleableType.selectElem (β := ZMod p)) =
-          (ZMod.finEquiv p : Fin p ≃ ZMod p) <$> ($ᵗ (Fin p)) := by
-      rfl
-    unfold uniformSample
-    rw [hsel]
-    rw [withCacheOverlay_map]
-    congr 1
-    cases p with
-    | zero =>
-        exact False.elim (Nat.not_prime_zero hp.out)
-    | succ p' =>
-        have hfin :
-            (SampleableType.selectElem (β := Fin (p' + 1))) = $[0..p'] := by
-          rfl
-        unfold uniformSample
-        rw [hfin]
-        exact withCacheOverlay_query_miss ∅ p' (by rfl)
+      (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ =
+        Groups.sampleNonzeroZMod (p := p) :=
+    Groups.simulateQ_randomOracle_sampleNonzeroZMod (p := p)
   have hkeygen :
       (simulateQ randomOracle (do
-        let a ← $ᵗ (ZMod p)
+        let a ← Groups.sampleNonzeroZMod (p := p)
         pure (generateSrs (g₁ := g₁) (g₂ := g₂) n a,
           generateSrs (g₁ := g₁) (g₂ := g₂) n a))).run' ∅
         =
       (fun a => (generateSrs (g₁ := g₁) (g₂ := g₂) n a,
-        generateSrs (g₁ := g₁) (g₂ := g₂) n a)) <$> ($ᵗ (ZMod p)) := by
+        generateSrs (g₁ := g₁) (g₂ := g₂) n a)) <$> Groups.sampleNonzeroZMod (p := p) := by
     calc
       (simulateQ randomOracle (do
-        let a ← $ᵗ (ZMod p)
+        let a ← Groups.sampleNonzeroZMod (p := p)
         pure (generateSrs (g₁ := g₁) (g₂ := g₂) n a,
           generateSrs (g₁ := g₁) (g₂ := g₂) n a))).run' ∅
           = (fun a => (generateSrs (g₁ := g₁) (g₂ := g₂) n a,
               generateSrs (g₁ := g₁) (g₂ := g₂) n a))
-              <$> (simulateQ randomOracle ($ᵗ (ZMod p))).run' ∅ := by
+              <$> (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ := by
             rw [← StateT.run'_map_comm, ← simulateQ_map]
             rfl
       _ = (fun a => (generateSrs (g₁ := g₁) (g₂ := g₂) n a,
-              generateSrs (g₁ := g₁) (g₂ := g₂) n a)) <$> ($ᵗ (ZMod p)) := by
+              generateSrs (g₁ := g₁) (g₂ := g₂) n a))
+              <$> Groups.sampleNonzeroZMod (p := p) := by
             rw [hsample]
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
   let impl : QueryImpl _ (StateT unifSpec.QueryCache ProbComp) :=
     QueryImpl.addLift
       (randomOracle : QueryImpl unifSpec (StateT unifSpec.QueryCache ProbComp))
       (challengeQueryImpl (pSpec := pSpec'))
-  let sample : ProbComp (ZMod p) := $ᵗ (ZMod p)
+  let sample : ProbComp (ZMod p) := Groups.sampleNonzeroZMod (p := p)
   let bodyBase : ZMod p → OracleComp _ (Option (BindingOutput (p := p) n)) := fun τ => do
     let srs := generateSrs (g₁ := g₁) (g₂ := g₂) n τ
     let ⟨cm, query, resp₁, resp₂, st₁, st₂⟩ ← liftComp (adversary.claim srs) _
@@ -494,7 +478,7 @@ lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G�
   letI : ∀ i, OracleInterface (pSpec'.Challenge i) := ProtocolSpec.challengeOracleInterface
   let RunResult : Type := (FullTranscript pSpec' × Bool × Unit) × Bool
   let spec' := unifSpec + [pSpec'.Challenge]ₒ
-  let sample : ProbComp (ZMod p) := $ᵗ (ZMod p)
+  let sample : ProbComp (ZMod p) := Groups.sampleNonzeroZMod (p := p)
   let body : ZMod p → OracleComp spec' Claim := fun τ =>
     liftComp (adversary.claim (generateSrs (g₁ := g₁) (g₂ := g₂) n τ)) spec'
   let run₁ : ZMod p → Claim → OracleComp spec' (Option RunResult) := fun τ claim =>
@@ -679,7 +663,7 @@ lemma t_sdh_game_eq {n : ℕ} {AuxState : Type} [SampleableType G₁]
   simpa only [bindingGameExt, bindingReduction, kzg, OptionT.mk, pSpec', impl, scheme,
       OptionT.run_map] using
     OptionT.map_mk_bind_eq_of_body
-      (sample := (($ᵗ (ZMod p)) : ProbComp (ZMod p)))
+      (sample := (Groups.sampleNonzeroZMod (p := p) : ProbComp (ZMod p)))
       (body₁ := fun τ => (simulateQ impl (do
         let srs := generateSrs (g₁ := g₁) (g₂ := g₂) n τ
         let ⟨cm, query, resp₁, resp₂, st₁, st₂⟩ ← liftComp (adversary.claim srs) _

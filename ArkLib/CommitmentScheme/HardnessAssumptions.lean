@@ -7,6 +7,7 @@ Authors: Tobias Rothmann
 import VCVio
 import ArkLib.Data.GroupTheory.PrimeOrder
 import ArkLib.Data.Classes.Serde
+import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.ToPoly
 import Mathlib.Algebra.Field.ZMod
@@ -23,6 +24,7 @@ This file defines hardness assumptions used in security reductions for commitmen
 
 * `towerOfExponents` builds vectors of group-element powers from a secret exponent.
 * `generateSrs` builds the structured reference string used by KZG-style reductions.
+* `sampleNonzeroZMod` samples the SRS trapdoor from `ZMod p \ {0}`.
 * `tSdhExperiment` and `arsdhExperiment` are the success probabilities for the corresponding
   hardness games.
 
@@ -58,8 +60,38 @@ def towerOfExponents (g : G) (a : ZMod p) (n : ℕ) : Vector G (n + 1) :=
 def generateSrs (n : ℕ) (a : ZMod p) : Vector G₁ (n + 1) × Vector G₂ 2 :=
   (towerOfExponents g₁ a n, towerOfExponents g₂ a 1)
 
+/-- Uniformly sample a nonzero element of `ZMod p`.
+
+The implementation samples an index in `{0, ..., p - 2}` and shifts it by one, so the support is
+exactly the canonical representatives `1, ..., p - 1` modulo `p`. -/
+def sampleNonzeroZMod : ProbComp (ZMod p) :=
+  haveI : NeZero (p - 1) :=
+    ⟨Nat.pos_iff_ne_zero.mp (Nat.sub_pos_of_lt (Nat.Prime.one_lt Fact.out))⟩
+  (fun i : Fin (p - 1) => ((i : ℕ) + 1 : ZMod p)) <$> ($ᵗ (Fin (p - 1)))
+
+/-- Simulating the random oracle leaves the nonzero SRS trapdoor sampler unchanged. -/
+lemma simulateQ_randomOracle_sampleNonzeroZMod :
+    ((simulateQ (unifSpec.randomOracle :
+      QueryImpl unifSpec (StateT unifSpec.QueryCache ProbComp))
+      (sampleNonzeroZMod (p := p) : ProbComp (ZMod p)) :
+        StateT unifSpec.QueryCache ProbComp (ZMod p))).run' ∅ =
+      sampleNonzeroZMod (p := p) := by
+  haveI : NeZero (p - 1) :=
+    ⟨Nat.pos_iff_ne_zero.mp (Nat.sub_pos_of_lt (Nat.Prime.one_lt Fact.out))⟩
+  unfold sampleNonzeroZMod
+  cases p with
+  | zero =>
+      exact False.elim (Nat.not_prime_zero Fact.out)
+  | succ p' =>
+      cases p' with
+      | zero =>
+          exact False.elim (Nat.not_prime_one Fact.out)
+      | succ p'' =>
+          exact simulateQ_randomOracle_map_uniformFin p''
+            (fun i : Fin (p'' + 1) => ((i : ℕ) + 1 : ZMod (p'' + 1 + 1)))
+
 /-- A `t`-SDH adversary returns a challenge offset and a group element upon receiving the SRS. -/
-def tSdhAdversary (D : ℕ) :=
+abbrev tSdhAdversary (D : ℕ) :=
   Vector G₁ (D + 1) × Vector G₂ 2 →
     StateT unifSpec.QueryCache ProbComp (Option (ZMod p × G₁))
 
@@ -74,7 +106,7 @@ abbrev tSdhGame [∀ i, SampleableType (unifSpec.Range i)]
     (adversary : tSdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) :
     OptionT ProbComp (ZMod p × ZMod p × G₁) :=
   OptionT.mk (do
-    let τ ← ($ᵗ(ZMod p) : ProbComp (ZMod p))
+    let τ ← sampleNonzeroZMod (p := p)
     let srs := generateSrs (g₁ := g₁) (g₂ := g₂) D τ
     let result ← (adversary srs).run' ∅
     pure (result.map (fun ((c, h) : ZMod p × G₁) =>
@@ -93,7 +125,7 @@ def tSdhAssumption [∀ i, SampleableType (unifSpec.Range i)]
     tSdhExperiment (g₁ := g₁) (g₂ := g₂) D adversary ≤ (error : ℝ≥0∞)
 
 /-- An ARSDH adversary returns a set and two group elements upon receiving the SRS. -/
-def arsdhAdversary (D : ℕ) :=
+abbrev arsdhAdversary (D : ℕ) :=
   Vector G₁ (D + 1) × Vector G₂ 2 →
     StateT unifSpec.QueryCache ProbComp (Option (Finset (ZMod p) × G₁ × G₁))
 
@@ -110,7 +142,7 @@ abbrev arsdhGame [∀ i, SampleableType (unifSpec.Range i)]
     (adversary : arsdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) :
     OptionT ProbComp (ZMod p × Finset (ZMod p) × G₁ × G₁) :=
   OptionT.mk (do
-    let τ ← ($ᵗ(ZMod p) : ProbComp (ZMod p))
+    let τ ← sampleNonzeroZMod (p := p)
     let srs := generateSrs (g₁ := g₁) (g₂ := g₂) D τ
     let result ← (adversary srs).run' ∅
     pure (result.map (fun ((S, h₁, h₂) : Finset (ZMod p) × G₁ × G₁) =>

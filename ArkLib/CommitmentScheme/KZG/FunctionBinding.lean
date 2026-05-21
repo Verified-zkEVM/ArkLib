@@ -1440,7 +1440,7 @@ def functionBindingGameExt {n L : ℕ} {g₁ : G₁} {g₂ : G₂} (AuxState : T
       (Fin L → ZMod p) × (Fin L → ZMod p) × (Fin L → Bool) × (Fin L → G₁)) :=
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
   OptionT.mk do
-    let τ ← ($ᵗ (ZMod p) : ProbComp (ZMod p))
+    let τ ← Groups.sampleNonzeroZMod (p := p)
     let srs := generateSrs (g₁ := g₁) (g₂ := g₂) n τ
     (simulateQ
       (QueryImpl.addLift randomOracle (challengeQueryImpl (pSpec := pSpec')) :
@@ -1499,46 +1499,30 @@ lemma function_binding_game_ext_eq_function_binding_game {n L : ℕ} {AuxState :
     OptionT.mk]
   rw [pure_bind]
   have hsample :
-      (simulateQ randomOracle ($ᵗ (ZMod p))).run' ∅ = ($ᵗ (ZMod p)) := by
-    change unifSpec.withCacheOverlay ∅ ($ᵗ (ZMod p)) = ($ᵗ (ZMod p))
-    have hsel :
-        (SampleableType.selectElem (β := ZMod p)) =
-          (ZMod.finEquiv p : Fin p ≃ ZMod p) <$> ($ᵗ (Fin p)) := by
-      rfl
-    unfold uniformSample
-    rw [hsel]
-    rw [withCacheOverlay_map]
-    congr 1
-    cases p with
-    | zero =>
-        exact False.elim (Nat.not_prime_zero hp.out)
-    | succ p' =>
-        have hfin :
-            (SampleableType.selectElem (β := Fin (p' + 1))) = $[0..p'] := by
-          rfl
-        unfold uniformSample
-        rw [hfin]
-        exact withCacheOverlay_query_miss ∅ p' (by rfl)
+      (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ =
+        Groups.sampleNonzeroZMod (p := p) :=
+    Groups.simulateQ_randomOracle_sampleNonzeroZMod (p := p)
   have hkeygen :
       (simulateQ randomOracle (do
-        let a ← $ᵗ (ZMod p)
+        let a ← Groups.sampleNonzeroZMod (p := p)
         pure (generateSrs (g₁ := g₁) (g₂ := g₂) n a,
           generateSrs (g₁ := g₁) (g₂ := g₂) n a))).run' ∅
         =
       (fun a => (generateSrs (g₁ := g₁) (g₂ := g₂) n a,
-        generateSrs (g₁ := g₁) (g₂ := g₂) n a)) <$> ($ᵗ (ZMod p)) := by
+        generateSrs (g₁ := g₁) (g₂ := g₂) n a)) <$> Groups.sampleNonzeroZMod (p := p) := by
     calc
       (simulateQ randomOracle (do
-        let a ← $ᵗ (ZMod p)
+        let a ← Groups.sampleNonzeroZMod (p := p)
         pure (generateSrs (g₁ := g₁) (g₂ := g₂) n a,
           generateSrs (g₁ := g₁) (g₂ := g₂) n a))).run' ∅
           = (fun a => (generateSrs (g₁ := g₁) (g₂ := g₂) n a,
               generateSrs (g₁ := g₁) (g₂ := g₂) n a))
-              <$> (simulateQ randomOracle ($ᵗ (ZMod p))).run' ∅ := by
+              <$> (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ := by
             rw [← StateT.run'_map_comm, ← simulateQ_map]
             rfl
       _ = (fun a => (generateSrs (g₁ := g₁) (g₂ := g₂) n a,
-              generateSrs (g₁ := g₁) (g₂ := g₂) n a)) <$> ($ᵗ (ZMod p)) := by
+              generateSrs (g₁ := g₁) (g₂ := g₂) n a))
+              <$> Groups.sampleNonzeroZMod (p := p) := by
             rw [hsample]
   rw [hkeygen]
   simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind, Function.comp]
@@ -2139,7 +2123,7 @@ lemma arsdh_game_eq {n L : ℕ} {AuxState : Type} [SampleableType G₁]
   simpa only [functionBindingGameExt, reduction, kzg, OptionT.mk, pSpec', impl, scheme,
       OptionT.run_map] using
     OptionT.map_mk_bind_eq_of_body
-      (sample := (($ᵗ (ZMod p)) : ProbComp (ZMod p)))
+      (sample := (Groups.sampleNonzeroZMod (p := p) : ProbComp (ZMod p)))
       (body₁ := fun τ => (simulateQ impl (do
         let srs := generateSrs (g₁ := g₁) (g₂ := g₂) n τ
         let claimResult ← liftComp (adversary.claim srs) _

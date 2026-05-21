@@ -246,7 +246,7 @@ def kzg :
     (Vector G₁ (n + 1) × Vector G₂ 2)
     (Vector G₁ (n + 1) × Vector G₂ 2) ⟨!v[.P_to_V], !v[G₁]⟩ where
   keygen := do
-    let a ← $ᵗ(ZMod p)
+    let a ← Groups.sampleNonzeroZMod (p := p)
     let srs := generateSrs (g₁ := g₁) (g₂ := g₂) n a
     return (srs, srs)
   commit := fun ck coeffs => return (commit ck.1 coeffs, ())

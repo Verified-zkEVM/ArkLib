@@ -7,6 +7,7 @@ import ArkLib.ToVCVio.EvalDist.Instances.OptionT
 import ArkLib.ToVCVio.OracleComp.Coercions.SubSpec
 import ArkLib.ToVCVio.ToMathlib.Control.StateT
 import VCVio.EvalDist.Defs.NeverFails
+import VCVio.OracleComp.QueryTracking.RandomOracle.Basic
 import VCVio.OracleComp.SimSemantics.StateT
 
 /-!
@@ -14,6 +15,16 @@ import VCVio.OracleComp.SimSemantics.StateT
 -/
 
 open OracleSpec OracleComp
+
+/-- Simulating the random oracle leaves a mapped uniform `Fin` sample unchanged. -/
+lemma simulateQ_randomOracle_map_uniformFin {α : Type} (n : ℕ) (f : Fin (n + 1) → α) :
+    ((simulateQ (unifSpec.randomOracle :
+      QueryImpl unifSpec (StateT unifSpec.QueryCache ProbComp))
+      (f <$> uniformSample (Fin (n + 1)) : ProbComp α) :
+        StateT unifSpec.QueryCache ProbComp α).run' ∅) =
+      (f <$> uniformSample (Fin (n + 1))) := by
+  rw [simulateQ_map, StateT.run'_map_comm]
+  congr 1
 
 lemma support_simulateQ_run'_subset
     {ι σ α : Type} {spec : OracleSpec ι}
