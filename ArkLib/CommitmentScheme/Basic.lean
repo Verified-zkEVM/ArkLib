@@ -136,8 +136,9 @@ abbrev bindingGame (AuxState : Type)
   let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
     QueryImpl.addLift impl (challengeQueryImpl (pSpec := pSpec))
   OptionT.mk do
+    let s ← init
+    let (ck, vk) ← (simulateQ impl scheme.keygen).run' s
     (simulateQ pImpl <| (show OracleComp _ _ from do
-      let (ck, vk) ← liftComp scheme.keygen _
       let ⟨cm, query, resp₁, resp₂, st₁, st₂⟩ ← liftComp (adversary.claim ck) _
       let reduction := Reduction.mk (adversary.prover ck) (scheme.opening (ck, vk)).verifier
       let accept₁ := (← (reduction.verdict
@@ -146,7 +147,7 @@ abbrev bindingGame (AuxState : Type)
         (cm, (⟨query, resp₂⟩ : (q : O.Query) × O.Response q)) st₂).run).getD false
       pure (some ((⟨query, resp₁, resp₂, accept₁, accept₂⟩ :
         (query : O.Query) × O.Response query × O.Response query × Bool × Bool)))
-    )).run' (← init)
+    )).run' s
 
 /-- The probability of breaking evaluation binding for a specific adversary. -/
 def bindingExperiment (AuxState : Type)
@@ -242,7 +243,6 @@ abbrev functionBindingCondition {L : ℕ} :
     let S : Finset (Fin L) := Finset.univ
     (∀ i ∈ S, acceptedOf i = true)
     ∧ (¬ ∃ (d : Data), ∀ i ∈ S, O.answer d (queryOf i) = responseOf i)
-    ∧ Function.Injective queryOf
 
 /-- The function-binding game for a specific adversary. -/
 abbrev functionBindingGame {L : ℕ} (hn : n = 1)
@@ -258,8 +258,9 @@ abbrev functionBindingGame {L : ℕ} (hn : n = 1)
     let pImpl : QueryImpl (oSpec + [(hn ▸ pSpec).Challenge]ₒ) (StateT σ ProbComp) :=
       QueryImpl.addLift impl (challengeQueryImpl (pSpec := hn ▸ pSpec))
     OptionT.mk do
+      let s ← init
+      let (ck, vk) ← (simulateQ impl scheme.keygen).run' s
       (simulateQ pImpl <| (show OracleComp _ _ from do
-        let (ck, vk) ← liftComp scheme.keygen _
         let ⟨cm, queryOf, responseOf, stateOf⟩ ← liftComp (adversary.claim ck) _
         let reduction := Reduction.mk (adversary.prover ck) (scheme.opening (ck, vk)).verifier
         let (accepts : Option (Fin L → Bool)) ← reduction.allVerdicts
@@ -269,7 +270,7 @@ abbrev functionBindingGame {L : ℕ} (hn : n = 1)
         pure (accepts.map fun accepts ↦ (⟨queryOf, responseOf, accepts⟩ :
           (queryOf : Fin L → O.Query) ×
             ((i : Fin L) → O.Response (queryOf i)) × (Fin L → Bool)))
-      )).run' (← init)
+      )).run' s
 
 /-- The probability of breaking function binding for a specific adversary. -/
 def functionBindingExperiment {L : ℕ} (hn : n = 1)

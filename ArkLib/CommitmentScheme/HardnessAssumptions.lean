@@ -73,12 +73,12 @@ abbrev tSdhGame [∀ i, SampleableType (unifSpec.Range i)]
     {g₁ : G₁} {g₂ : G₂} (D : ℕ)
     (adversary : tSdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) :
     OptionT ProbComp (ZMod p × ZMod p × G₁) :=
-  OptionT.mk ((do
-    let τ ← simulateQ randomOracle ($ᵗ(ZMod p))
+  OptionT.mk (do
+    let τ ← ($ᵗ(ZMod p) : ProbComp (ZMod p))
     let srs := generateSrs (g₁ := g₁) (g₂ := g₂) D τ
-    let result ← adversary srs
+    let result ← (adversary srs).run' ∅
     pure (result.map (fun ((c, h) : ZMod p × G₁) =>
-      (τ, c, h)))).run' (∅))
+      (τ, c, h))))
 
 /-- The probability of breaking `t`-SDH for a specific adversary. -/
 noncomputable def tSdhExperiment [∀ i, SampleableType (unifSpec.Range i)]
@@ -109,12 +109,12 @@ abbrev arsdhGame [∀ i, SampleableType (unifSpec.Range i)]
     {g₁ : G₁} {g₂ : G₂} (D : ℕ)
     (adversary : arsdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) :
     OptionT ProbComp (ZMod p × Finset (ZMod p) × G₁ × G₁) :=
-  OptionT.mk ((do
-    let τ ← simulateQ randomOracle ($ᵗ(ZMod p))
+  OptionT.mk (do
+    let τ ← ($ᵗ(ZMod p) : ProbComp (ZMod p))
     let srs := generateSrs (g₁ := g₁) (g₂ := g₂) D τ
-    let result ← adversary srs
+    let result ← (adversary srs).run' ∅
     pure (result.map (fun ((S, h₁, h₂) : Finset (ZMod p) × G₁ × G₁) =>
-      (τ, S, h₁, h₂)))).run' (∅))
+      (τ, S, h₁, h₂))))
 
 /-- The probability of breaking ARSDH for a specific adversary. -/
 noncomputable def arsdhExperiment [∀ i, SampleableType (unifSpec.Range i)]
@@ -122,31 +122,11 @@ noncomputable def arsdhExperiment [∀ i, SampleableType (unifSpec.Range i)]
     (adversary : arsdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) : ℝ≥0∞ :=
   Pr[arsdhCondition D | arsdhGame (g₁ := g₁) (g₂ := g₂) D adversary]
 
-/-! ### Oracle Simulation Note
+/-! ### Private Setup Note
 
-Why is `simulateQ` only applied to the `τ` sampling?
-
-We can think of three alternatives (none of which we got to work so far):
-1. leave out the simulateQ completely
-2. apply simulateQ randomOracle to the whole game/monad
-3. apply simulateQ (impl), where impl is a QueryImpl that both the τ sampling, and the adversary
-call can be lifted to.
-
-Ultimately we test this definition in our KZG function binding proof.
-We ran in the following issues for each approach:
-1. the function binding game simulates its whole monad with "impl" which for unifSpec is
-randomOracle (stateful), so not collecting the oracle entry for τ fundamentally changes the
-structure of ARSDH+reduction vs a function binding game.
-Note, unifOracle, a stateless version of randomOracle exists, but does not satisfy the type
-constraints of function binding (StateT σ ProbComp). One could build a wrapper around this though
-which might be sensible. Throughout the repo StateT σ ProbComp is frequently used.
-
-2. double simulation of randomOracle with idOracle didn't work.
-
-3. conflict of lifting to self (no reflexivity for liftComp)
-
-Thus for now it seems sensible to simulate the sampling of τ separately and pass the resulting
-state of this simulation to the adversary (to use in its own simulation).
+The SRS trapdoor `τ` is sampled as private setup randomness in the outer `ProbComp`, not through
+the cache-backed `randomOracle` implementation.  The adversary is run from an empty query cache and
+receives only the public SRS generated from `τ`.
 -/
 
 /-- The adaptive rational strong Diffie–Hellman (ARSDH) assumption.

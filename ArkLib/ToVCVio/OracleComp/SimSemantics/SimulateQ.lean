@@ -66,6 +66,58 @@ lemma OptionT.aux_mem_support_simulateQ_run'
   rw [OptionT.mem_support_iff] at hx
   exact h (some x) (support_simulateQ_run'_subset impl oa s₀ hx) x rfl
 
+namespace OptionT
+
+lemma mem_support_bind_mk
+    {α β : Type} (sample : ProbComp α) (body : α → ProbComp (Option β))
+    {x : β}
+    (hx : x ∈ support (OptionT.mk (do
+      let a ← sample
+      body a))) :
+    ∃ a, a ∈ support sample ∧ x ∈ support (OptionT.mk (body a)) := by
+  rw [OptionT.mem_support_iff] at hx
+  simp only [OptionT.run_mk] at hx
+  rw [mem_support_bind_iff] at hx
+  obtain ⟨a, _, hx⟩ := hx
+  exact ⟨a, ‹a ∈ support sample›, by simpa [OptionT.mem_support_iff] using hx⟩
+
+lemma map_mk_bind_eq_of_body
+    {α β γ δ : Type}
+    (sample : ProbComp α)
+    (body₁ : α → ProbComp (Option β))
+    (body₂ : α → ProbComp (Option γ))
+    (f : β → δ) (post : α → γ → δ)
+    (hBody : ∀ a, Option.map f <$> body₁ a = Option.map (post a) <$> body₂ a) :
+    f <$> OptionT.mk (do
+      let a ← sample
+      body₁ a)
+    =
+    OptionT.mk (do
+      let a ← sample
+      let r ← body₂ a
+      pure (Option.map (post a) r)) := by
+  apply OptionT.ext
+  rw [OptionT.run_map]
+  simp only [OptionT.run_mk, map_eq_bind_pure_comp, bind_assoc]
+  congr 1
+  funext a
+  rw [← map_eq_bind_pure_comp, hBody a, map_eq_bind_pure_comp]
+  rfl
+
+end OptionT
+
+namespace StateT
+
+lemma map_run'_eq_of_map_eq {m : Type → Type} {σ α β γ : Type}
+    [Monad m] [LawfulMonad m] (f : α → γ) (g : β → γ)
+    (mx : StateT σ m α) (my : StateT σ m β) (s : σ)
+    (h : f <$> mx = g <$> my) :
+    f <$> mx.run' s = g <$> my.run' s := by
+  rw [← StateT.run'_map_comm f, ← StateT.run'_map_comm g]
+  exact congrArg (fun mx : StateT σ m γ => mx.run' s) h
+
+end StateT
+
 lemma simulateQ_bind_map_eq_of_body
     {ι σ α β γ : Type} {spec : OracleSpec ι}
     (impl : QueryImpl spec (StateT σ ProbComp))
@@ -91,54 +143,3 @@ lemma StateT.run'_simulateQ_bind_map_eq_of_body
   rw [← StateT.run'_map_comm f]
   exact congrArg (fun mx : StateT σ ProbComp β => mx.run' s)
     (simulateQ_bind_map_eq_of_body impl oa body₁ body₂ f hBody)
-
-lemma StateT.run'_map_simulateQ_bind_eq_of_body
-    {ι₀ ι σ α β γ δ : Type} {spec₀ : OracleSpec ι₀} {spec : OracleSpec ι}
-    (impl : QueryImpl spec (StateT σ ProbComp))
-    (impl₀ : QueryImpl spec₀ (StateT σ ProbComp))
-    (oa : OracleComp spec α) (oa₀ : OracleComp spec₀ α)
-    (body₁ : α → OracleComp spec β) (body₂ : α → OracleComp spec γ)
-    (f : β → δ) (post : α → γ → δ) (s : σ)
-    (hSample : simulateQ impl oa = simulateQ impl₀ oa₀)
-    (hBody : ∀ a, f <$> simulateQ impl (body₁ a) =
-      post a <$> simulateQ impl (body₂ a)) :
-    (f <$> (simulateQ impl (oa >>= body₁)).run' s)
-    =
-    ((do
-      let a ← simulateQ impl₀ oa₀
-      let r ← simulateQ impl (body₂ a)
-      pure (post a r)).run' s) := by
-  rw [← StateT.run'_map_comm f]
-  rw [← simulateQ_map]
-  simp only [map_eq_bind_pure_comp, simulateQ_bind, simulateQ_pure, bind_assoc,
-    Function.comp]
-  rw [hSample]
-  apply congrArg (fun mx : StateT σ ProbComp δ => mx.run' s)
-  congr 1
-  funext a
-  exact hBody a
-
-lemma OptionT.map_mk_run'_simulateQ_bind_eq_of_body
-    {ι₀ ι σ α β γ δ : Type} {spec₀ : OracleSpec ι₀} {spec : OracleSpec ι}
-    (impl : QueryImpl spec (StateT σ ProbComp))
-    (impl₀ : QueryImpl spec₀ (StateT σ ProbComp))
-    (oa : OracleComp spec α) (oa₀ : OracleComp spec₀ α)
-    (body₁ : α → OracleComp spec (Option β))
-    (body₂ : α → OracleComp spec (Option γ))
-    (f : β → δ) (post : α → γ → δ) (s : σ)
-    (hSample : simulateQ impl oa = simulateQ impl₀ oa₀)
-    (hBody : ∀ a, Option.map f <$> simulateQ impl (body₁ a) =
-      Option.map (post a) <$> simulateQ impl (body₂ a)) :
-    f <$> OptionT.mk ((simulateQ impl (oa >>= body₁)).run' s)
-    =
-    OptionT.mk ((do
-      let a ← simulateQ impl₀ oa₀
-      let r ← simulateQ impl (body₂ a)
-      pure (Option.map (post a) r)).run' s) := by
-  apply OptionT.ext
-  rw [OptionT.run_map]
-  exact
-    (StateT.run'_map_simulateQ_bind_eq_of_body
-      (impl := impl) (impl₀ := impl₀) (oa := oa) (oa₀ := oa₀)
-      (body₁ := body₁) (body₂ := body₂) (f := Option.map f)
-      (post := fun a => Option.map (post a)) (s := s) hSample hBody)
