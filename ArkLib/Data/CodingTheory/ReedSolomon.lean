@@ -653,7 +653,7 @@ noncomputable def smoothCode
 `m`-variate polynomial. -/
 noncomputable def mVdecode :
   (smoothCode domain m) →ₗ[F] MvPolynomial (Fin m) F :=
-    linearMvExtension.comp decodeLT
+    linearMvExtensionLMap.comp decodeLT
 
 /-- Auxiliary function to assign values to the weight polynomial variables: index `0` ↦ `p.eval b`,
 index `j+1` ↦ `b j`. -/

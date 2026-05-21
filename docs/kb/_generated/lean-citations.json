@@ -102,6 +102,9 @@
     "ArkLib/Data/CodingTheory/ReedSolomon.lean": [
       "ACFY24"
     ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/Multilinear.lean": [
+      "ACFY24"
+    ],
     "ArkLib/Data/Hash/Poseidon2.lean": [
       "Poseidon2"
     ],
@@ -179,6 +182,7 @@
     "ACFY24": [
       "ArkLib/Data/CodingTheory/ListDecodability.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/Folding.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/Multilinear.lean",
       "ArkLib/Data/CodingTheory/ReedSolomon.lean",
       "ArkLib/Data/Polynomial/FoldingPolynomial.lean",
       "ArkLib/Data/Polynomial/Indicator.lean",
