@@ -1479,28 +1479,6 @@ lemma subdomain_root_exists {n} {ω : SmoothCosetFftDomain n F}
   rw [mem_coset_finset_iff_mem_coset_domain] at h'
   exact h'
 
-
-
-omit [DecidableEq F] in
-lemma neg_mem_subdomain_of_mem_subdomain {n} {ω : SmoothCosetFftDomain n F}
-  {i : Fin n.succ}
-  {x : F}
-  (hi : 0 < i)
-  (h : x ∈ (ω.subdomain i)) :
-  -x ∈ (ω.subdomain i) := by
-  simp only [mem_coset_domain, FftDomain.mem_domain_iff_exists] at h ⊢
-  obtain ⟨y, ⟨k, rfl⟩, rfl⟩ := h
-  -- Get the element mapping to -1 in ω.fftDomain.subdomain i
-  obtain ⟨k₀, hk₀⟩ := FftDomain.neg_one_mem_domain
-    (nz := ⟨Nat.ne_zero_of_lt hi⟩) (F := F) 
-    (ω := (ω.subdomain i).fftDomain) 
-  -- -x = coset_shift * (fft(-1) * fft(k)) = coset_shift * fft(k₀ + k)
-  refine ⟨(ω.subdomain i).fftDomain (k₀ + k), ⟨k₀ + k, rfl⟩, ?_⟩
-  simp only [subdomain_fftDomain, FftDomain.domain_add_eq_mul_domain]
-  simp only [subdomain_fftDomain] at hk₀
-  rw [hk₀]
-  ring
-
 lemma mul_property {n : ℕ} {ω : SmoothCosetFftDomain n F}
   {i j : Fin n.succ} (hji : j ≤ i)
   {a b : F}
