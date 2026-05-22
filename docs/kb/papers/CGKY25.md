@@ -8,7 +8,7 @@ canonical_url: https://eprint.iacr.org/2025/902
 source_metadata: ../sources/CGKY25/metadata.yml
 status: seeded
 related_modules:
-  - ArkLib/CommitmentScheme/KZG/FunctionBinding.lean
+  - ArkLib/CommitmentScheme/KZG/FunctionBinding/Basic.lean
 ---
 
 # CGKY25
@@ -25,7 +25,7 @@ the ARSDH-style extraction argument for functional commitments.
 
 ## Main ArkLib Touchpoints
 
-- [`ArkLib/CommitmentScheme/KZG/FunctionBinding.lean`](../../../ArkLib/CommitmentScheme/KZG/FunctionBinding.lean)
+- [`ArkLib/CommitmentScheme/KZG/FunctionBinding/Basic.lean`](../../../ArkLib/CommitmentScheme/KZG/FunctionBinding/Basic.lean)
   cites `CGKY25` directly.
 
 ## Version Notes
@@ -35,7 +35,7 @@ the ARSDH-style extraction argument for functional commitments.
 ## Open Formalization Gaps
 
 - The current page is a lightweight landing page. A fuller audit should record which steps of the
-  paper reduction correspond to each major lemma in `FunctionBinding.lean`.
+  paper reduction correspond to each major lemma in `FunctionBinding/Basic.lean`.
 
 ## Source Access
 

@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
 
-import ArkLib.CommitmentScheme.KZG.FunctionBinding
+import ArkLib.CommitmentScheme.KZG.Correctness
+import ArkLib.CommitmentScheme.KZG.Algebra
 import ArkLib.ToVCVio.EvalDist.Defs.Support
 
 /-!
@@ -45,7 +46,8 @@ variable {n : ℕ} -- the maximal degree of polynomials that can be committed to
 
 open Commitment
 
-local instance : OracleInterface (Fin (n + 1) → ZMod p) where
+/-- Local oracle interface for evaluating coefficient vectors as computable polynomials. -/
+local instance bindingOracleInterface : OracleInterface (Fin (n + 1) → ZMod p) where
   Query := ZMod p
   toOC.spec := ZMod p →ₒ ZMod p
   toOC.impl z := do return (CPolynomial.ofFn (← read)).eval z
@@ -90,7 +92,7 @@ def bindingGameExt {n : ℕ} {g₁ : G₁} {g₂ : G₂} (AuxState : Type)
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
   OptionT.mk do
     let τ ← Groups.sampleNonzeroZMod (p := p)
-    let srs := generateSrs (g₁ := g₁) (g₂ := g₂) n τ
+    let srs := Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ
     (simulateQ
       (QueryImpl.addLift randomOracle (challengeQueryImpl (pSpec := pSpec')) :
         QueryImpl _ (StateT unifSpec.QueryCache ProbComp))
@@ -178,7 +180,7 @@ two `verifyOpening` facts from the extended game, then apply this lemma. -/
 lemma t_sdh_cond_of_two_valid_openings
     (τ query resp₁ resp₂ : ZMod p) (cm proof₁ proof₂ : G₁)
     (srs : Vector G₁ (n + 1) × Vector G₂ 2)
-    (hsrs : srs = generateSrs (g₁ := g₁) (g₂ := g₂) n τ)
+    (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
     (hresp : resp₁ ≠ resp₂) (hg₁ : g₁ ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
     (hverify₁ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
       srs.2 cm proof₁ query resp₁)
@@ -210,7 +212,7 @@ lemma t_sdh_cond_of_two_valid_openings
     have hτq_ne : τ - query ≠ 0 := by simpa [sub_eq_add_neg] using hdenom
     rw [div_eq_div_iff hresp_ne hτq_ne]
     linear_combination hfield_conflict
-  rw [hprf₁, hprf₂, gpow_div_eq hord, ← pow_mul, pow_eq_pow_iff_modEq, hord]
+  rw [hprf₁, hprf₂, Groups.gpow_div_eq hord, ← pow_mul, pow_eq_pow_iff_modEq, hord]
   change (prf₁ - prf₂).val * (1 / (resp₂ - resp₁)).val % p =
     (1 / (τ + -query)).val % p
   rw [Nat.mod_eq_of_lt (ZMod.val_lt _)]
@@ -228,7 +230,7 @@ include g₁ g₂ pairing in
 lemma map_binding_to_t_sdh_of_two_valid_openings
     (τ query resp₁ resp₂ : ZMod p) (cm proof₁ proof₂ : G₁) (accept₁ accept₂ : Bool)
     (srs : Vector G₁ (n + 1) × Vector G₂ 2)
-    (hsrs : srs = generateSrs (g₁ := g₁) (g₂ := g₂) n τ)
+    (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
     (hresp : resp₁ ≠ resp₂) (hg₁ : g₁ ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
     (hverify₁ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
       srs.2 cm proof₁ query resp₁)
@@ -335,23 +337,24 @@ lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableTy
   have hkeygen :
       (simulateQ randomOracle (do
         let a ← Groups.sampleNonzeroZMod (p := p)
-        pure (generateSrs (g₁ := g₁) (g₂ := g₂) n a,
-          generateSrs (g₁ := g₁) (g₂ := g₂) n a))).run' ∅
+        pure (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
+          Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))).run' ∅
         =
-      (fun a => (generateSrs (g₁ := g₁) (g₂ := g₂) n a,
-        generateSrs (g₁ := g₁) (g₂ := g₂) n a)) <$> Groups.sampleNonzeroZMod (p := p) := by
+      (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
+        Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
+          <$> Groups.sampleNonzeroZMod (p := p) := by
     calc
       (simulateQ randomOracle (do
         let a ← Groups.sampleNonzeroZMod (p := p)
-        pure (generateSrs (g₁ := g₁) (g₂ := g₂) n a,
-          generateSrs (g₁ := g₁) (g₂ := g₂) n a))).run' ∅
-          = (fun a => (generateSrs (g₁ := g₁) (g₂ := g₂) n a,
-              generateSrs (g₁ := g₁) (g₂ := g₂) n a))
+        pure (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
+          Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))).run' ∅
+          = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
+              Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
               <$> (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ := by
             rw [← StateT.run'_map_comm, ← simulateQ_map]
             rfl
-      _ = (fun a => (generateSrs (g₁ := g₁) (g₂ := g₂) n a,
-              generateSrs (g₁ := g₁) (g₂ := g₂) n a))
+      _ = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
+              Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
               <$> Groups.sampleNonzeroZMod (p := p) := by
             rw [hsample]
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
@@ -361,7 +364,7 @@ lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableTy
       (challengeQueryImpl (pSpec := pSpec'))
   let sample : ProbComp (ZMod p) := Groups.sampleNonzeroZMod (p := p)
   let bodyBase : ZMod p → OracleComp _ (Option (BindingOutput (p := p) n)) := fun τ => do
-    let srs := generateSrs (g₁ := g₁) (g₂ := g₂) n τ
+    let srs := Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ
     let ⟨cm, query, resp₁, resp₂, st₁, st₂⟩ ← liftComp (adversary.claim srs) _
     let reduction := Reduction.mk (adversary.prover srs)
       ((kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)).opening
@@ -377,7 +380,7 @@ lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableTy
     pure (some (⟨query, resp₁, resp₂, accept₁, accept₂⟩ : BindingOutput (p := p) n))
   let bodyExt : ZMod p → OracleComp _ (Option (BindingExtOutput (p := p) n G₁ G₂)) :=
     fun τ => do
-      let srs := generateSrs (g₁ := g₁) (g₂ := g₂) n τ
+      let srs := Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ
       let ⟨cm, query, resp₁, resp₂, st₁, st₂⟩ ← liftComp (adversary.claim srs) _
       let reduction := Reduction.mk (adversary.prover srs)
         ((kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)).opening
@@ -427,18 +430,18 @@ lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableTy
           rw [Reduction.verdict_run_eq_map_run, Reduction.verdict_run_eq_map_run]
           exact bind_two_option_project_get_d
             (mx := ((Reduction.mk
-              (adversary.prover (generateSrs (g₁ := g₁) (g₂ := g₂) n τ))
+              (adversary.prover (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ))
               ((kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)).opening
-                (generateSrs (g₁ := g₁) (g₂ := g₂) n τ,
-                  generateSrs (g₁ := g₁) (g₂ := g₂) n τ)).verifier).run
+                (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ,
+                  Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)).verifier).run
               (cm, (⟨query, resp₁⟩ :
                 (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
                   OracleInterface.Response q)) st₁).run)
             (my := ((Reduction.mk
-              (adversary.prover (generateSrs (g₁ := g₁) (g₂ := g₂) n τ))
+              (adversary.prover (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ))
               ((kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)).opening
-                (generateSrs (g₁ := g₁) (g₂ := g₂) n τ,
-                  generateSrs (g₁ := g₁) (g₂ := g₂) n τ)).verifier).run
+                (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ,
+                  Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)).verifier).run
               (cm, (⟨query, resp₂⟩ :
                 (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
                   OracleInterface.Response q)) st₂).run)
@@ -448,7 +451,8 @@ lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableTy
             (mkBase := fun accept₁ accept₂ =>
               (⟨query, resp₁, resp₂, accept₁, accept₂⟩ : BindingOutput (p := p) n))
             (mkExt := fun result₁ result₂ =>
-              (τ, generateSrs (g₁ := g₁) (g₂ := g₂) n τ, cm, query, resp₁, resp₂,
+              (τ, Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ, cm, query,
+                resp₁, resp₂,
                 (Option.map (fun result => result.2) result₁).getD false,
                 (Option.map (fun result => result.2) result₂).getD false,
                 (Option.map (fun result => result.1.1 0) result₁).getD (1 : G₁),
@@ -480,28 +484,30 @@ lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G�
   let spec' := unifSpec + [pSpec'.Challenge]ₒ
   let sample : ProbComp (ZMod p) := Groups.sampleNonzeroZMod (p := p)
   let body : ZMod p → OracleComp spec' Claim := fun τ =>
-    liftComp (adversary.claim (generateSrs (g₁ := g₁) (g₂ := g₂) n τ)) spec'
+    liftComp (adversary.claim (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)) spec'
   let run₁ : ZMod p → Claim → OracleComp spec' (Option RunResult) := fun τ claim =>
     (Reduction.run
       (claim.1, (⟨claim.2.1, claim.2.2.1⟩ :
         (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) × OracleInterface.Response q))
       claim.2.2.2.2.1
-      (Reduction.mk (adversary.prover (generateSrs (g₁ := g₁) (g₂ := g₂) n τ))
+      (Reduction.mk
+        (adversary.prover (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ))
         ((kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)).opening
-          (generateSrs (g₁ := g₁) (g₂ := g₂) n τ,
-           generateSrs (g₁ := g₁) (g₂ := g₂) n τ)).verifier)).run
+          (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ,
+           Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)).verifier)).run
   let run₂ : ZMod p → Claim → OracleComp spec' (Option RunResult) := fun τ claim =>
     (Reduction.run
       (claim.1, (⟨claim.2.1, claim.2.2.2.1⟩ :
         (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) × OracleInterface.Response q))
       claim.2.2.2.2.2
-      (Reduction.mk (adversary.prover (generateSrs (g₁ := g₁) (g₂ := g₂) n τ))
+      (Reduction.mk (adversary.prover (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ))
         ((kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)).opening
-          (generateSrs (g₁ := g₁) (g₂ := g₂) n τ,
-           generateSrs (g₁ := g₁) (g₂ := g₂) n τ)).verifier)).run
+          (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ,
+           Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)).verifier)).run
   let pack : ZMod p → Claim → Option RunResult → Option RunResult →
       BindingExtOutput (p := p) n G₁ G₂ := fun τ claim result₁ result₂ =>
-    (τ, generateSrs (g₁ := g₁) (g₂ := g₂) n τ, claim.1, claim.2.1, claim.2.2.1,
+    (τ, Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ, claim.1, claim.2.1,
+      claim.2.2.1,
       claim.2.2.2.1, (Option.map (fun result => result.2) result₁).getD false,
       (Option.map (fun result => result.2) result₂).getD false,
       (Option.map (fun result => result.1.1 0) result₁).getD (1 : G₁),
@@ -563,19 +569,20 @@ lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G�
     dsimp [run₂] at hresult₂
     have hverify₁ :
         KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-          (generateSrs (g₁ := g₁) (g₂ := g₂) n τ).2 cm
+          (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ).2 cm
           ((Option.map (fun result : RunResult => result.1.1 0) result₁).getD (1 : G₁))
           query resp₁ := by
       rw [hrun₁] at hresult₁
       have hverif :=
         Reduction.support_run_pure_verifier
-          (Reduction.mk (adversary.prover (generateSrs (g₁ := g₁) (g₂ := g₂) n τ))
+          (Reduction.mk
+            (adversary.prover (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ))
             ((kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)).opening
-              (generateSrs (g₁ := g₁) (g₂ := g₂) n τ,
-               generateSrs (g₁ := g₁) (g₂ := g₂) n τ)).verifier)
+              (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ,
+               Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)).verifier)
           (fun stmt td =>
             KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-              (generateSrs (g₁ := g₁) (g₂ := g₂) n τ).2 stmt.1
+              (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ).2 stmt.1
               (td ⟨0, by decide⟩) stmt.2.1 stmt.2.2)
           (by intros; rfl)
           (cm, (⟨query, resp₁⟩ :
@@ -589,19 +596,20 @@ lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G�
       exact hverif.symm.trans haccept₁
     have hverify₂ :
         KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-          (generateSrs (g₁ := g₁) (g₂ := g₂) n τ).2 cm
+          (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ).2 cm
           ((Option.map (fun result : RunResult => result.1.1 0) result₂).getD (1 : G₁))
           query resp₂ := by
       rw [hrun₂] at hresult₂
       have hverif :=
         Reduction.support_run_pure_verifier
-          (Reduction.mk (adversary.prover (generateSrs (g₁ := g₁) (g₂ := g₂) n τ))
+          (Reduction.mk
+            (adversary.prover (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ))
             ((kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)).opening
-              (generateSrs (g₁ := g₁) (g₂ := g₂) n τ,
-               generateSrs (g₁ := g₁) (g₂ := g₂) n τ)).verifier)
+              (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ,
+               Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)).verifier)
           (fun stmt td =>
             KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-              (generateSrs (g₁ := g₁) (g₂ := g₂) n τ).2 stmt.1
+              (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ).2 stmt.1
               (td ⟨0, by decide⟩) stmt.2.1 stmt.2.2)
           (by intros; rfl)
           (cm, (⟨query, resp₂⟩ :
@@ -619,7 +627,7 @@ lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G�
       ((Option.map (fun result : RunResult => result.1.1 0) result₂).getD (1 : G₁))
       ((Option.map (fun result : RunResult => result.2) result₁).getD false)
       ((Option.map (fun result : RunResult => result.2) result₂).getD false)
-      (generateSrs (g₁ := g₁) (g₂ := g₂) n τ) rfl hresp hg₁ hpair
+      (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ) rfl hresp hg₁ hpair
       hverify₁ hverify₂
   simpa only [bindingGameExt, kzg, OptionT.mk, pSpec', impl, sample, body, run₁, run₂,
       pack, gameComp, P, Q] using hmono
@@ -665,7 +673,7 @@ lemma t_sdh_game_eq {n : ℕ} {AuxState : Type} [SampleableType G₁]
     OptionT.map_mk_bind_eq_of_body
       (sample := (Groups.sampleNonzeroZMod (p := p) : ProbComp (ZMod p)))
       (body₁ := fun τ => (simulateQ impl (do
-        let srs := generateSrs (g₁ := g₁) (g₂ := g₂) n τ
+        let srs := Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ
         let ⟨cm, query, resp₁, resp₂, st₁, st₂⟩ ← liftComp (adversary.claim srs) _
         let reduction := Reduction.mk (adversary.prover srs) (scheme.opening (srs, srs)).verifier
         let result₁ ← (reduction.run
@@ -683,7 +691,7 @@ lemma t_sdh_game_eq {n : ℕ} {AuxState : Type} [SampleableType G₁]
         pure (some (τ, srs, cm, query, resp₁, resp₂, accept₁, accept₂, proof₁,
           proof₂)))).run' (∅ : unifSpec.QueryCache))
       (body₂ := fun τ => (simulateQ impl (do
-        let srs := generateSrs (g₁ := g₁) (g₂ := g₂) n τ
+        let srs := Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ
         let ⟨cm, query, resp₁, resp₂, st₁, st₂⟩ ← liftComp (adversary.claim srs) _
         let reduction := Reduction.mk (adversary.prover srs) (scheme.opening (srs, srs)).verifier
         let result₁ ← (reduction.run

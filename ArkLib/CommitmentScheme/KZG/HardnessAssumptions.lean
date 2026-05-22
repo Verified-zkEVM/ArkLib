@@ -5,6 +5,7 @@ Authors: Tobias Rothmann
 -/
 
 import VCVio
+import ArkLib.CommitmentScheme.KZG.Algebra
 import ArkLib.Data.GroupTheory.PrimeOrder
 import ArkLib.Data.Classes.Serde
 import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
@@ -22,8 +23,8 @@ This file defines hardness assumptions used in security reductions for commitmen
 
 ## Notation
 
-* `towerOfExponents` builds vectors of group-element powers from a secret exponent.
-* `generateSrs` builds the structured reference string used by KZG-style reductions.
+* `Groups.PowerSrs.tower` builds vectors of group-element powers from a secret exponent.
+* `Groups.PowerSrs.generate` builds the structured reference string used by KZG-style reductions.
 * `sampleNonzeroZMod` samples the SRS trapdoor from `ZMod p \ {0}`.
 * `tSdhExperiment` and `arsdhExperiment` are the success probabilities for the corresponding
   hardness games.
@@ -48,17 +49,6 @@ variable {G : Type} [Group G] {p : outParam ℕ} [Fact (Nat.Prime p)]
 
 variable {G₁ : Type} [Group G₁] [PrimeOrderWith G₁ p] {g₁ : G₁}
   {G₂ : Type} [Group G₂] [PrimeOrderWith G₂ p] {g₂ : G₂}
-
-/-- The vector of length `n + 1` consisting of powers
-`#v[g, g ^ a.val, g ^ (a.val ^ 2), ..., g ^ (a.val ^ n)]`. -/
-def towerOfExponents (g : G) (a : ZMod p) (n : ℕ) : Vector G (n + 1) :=
-  .ofFn (fun i => g ^ (a.val ^ i.val))
-
-/-- The structured reference string for the KZG commitment scheme with secret exponent `a`:
-`#v[g₁, g₁ ^ a, g₁ ^ (a ^ 2), ..., g₁ ^ (a ^ n)]` for the prover and
-`#v[g₂, g₂ ^ a]` for the verifier. -/
-def generateSrs (n : ℕ) (a : ZMod p) : Vector G₁ (n + 1) × Vector G₂ 2 :=
-  (towerOfExponents g₁ a n, towerOfExponents g₂ a 1)
 
 /-- Uniformly sample a nonzero element of `ZMod p`.
 
@@ -100,6 +90,13 @@ abbrev tSdhCondition {g₁ : G₁} : (ZMod p × ZMod p × G₁) → Prop :=
   fun (τ, c, h) =>
     τ + c ≠ 0 ∧ h = g₁ ^ (1 / (τ + c)).val
 
+/-! ### Private Setup Note
+
+The SRS trapdoor `τ` is sampled as private setup randomness in the outer `ProbComp`, not through
+the cache-backed `randomOracle` implementation.  The adversary is run from an empty query cache and
+receives only the public SRS generated from `τ`.
+-/
+
 /-- The t-SDH game for a specific adversary. -/
 abbrev tSdhGame [∀ i, SampleableType (unifSpec.Range i)]
     {g₁ : G₁} {g₂ : G₂} (D : ℕ)
@@ -107,7 +104,7 @@ abbrev tSdhGame [∀ i, SampleableType (unifSpec.Range i)]
     OptionT ProbComp (ZMod p × ZMod p × G₁) :=
   OptionT.mk (do
     let τ ← sampleNonzeroZMod (p := p)
-    let srs := generateSrs (g₁ := g₁) (g₂ := g₂) D τ
+    let srs := Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) D τ
     let result ← (adversary srs).run' ∅
     pure (result.map (fun ((c, h) : ZMod p × G₁) =>
       (τ, c, h))))
@@ -136,6 +133,13 @@ abbrev arsdhCondition (D : ℕ) : (ZMod p × Finset (ZMod p) × G₁ × G₁) �
       ∏ s ∈ S, (CompPoly.CPolynomial.X - CompPoly.CPolynomial.C s)
     S.card = D + 1 ∧ Zₛ.eval τ ≠ 0 ∧ h₁ ≠ 1 ∧ h₂ = h₁ ^ (1 / Zₛ.eval τ).val
 
+/-! ### Private Setup Note
+
+The SRS trapdoor `τ` is sampled as private setup randomness in the outer `ProbComp`, not through
+the cache-backed `randomOracle` implementation.  The adversary is run from an empty query cache and
+receives only the public SRS generated from `τ`.
+-/
+
 /-- The ARSDH game for a specific adversary. -/
 abbrev arsdhGame [∀ i, SampleableType (unifSpec.Range i)]
     {g₁ : G₁} {g₂ : G₂} (D : ℕ)
@@ -143,7 +147,7 @@ abbrev arsdhGame [∀ i, SampleableType (unifSpec.Range i)]
     OptionT ProbComp (ZMod p × Finset (ZMod p) × G₁ × G₁) :=
   OptionT.mk (do
     let τ ← sampleNonzeroZMod (p := p)
-    let srs := generateSrs (g₁ := g₁) (g₂ := g₂) D τ
+    let srs := Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) D τ
     let result ← (adversary srs).run' ∅
     pure (result.map (fun ((S, h₁, h₂) : Finset (ZMod p) × G₁ × G₁) =>
       (τ, S, h₁, h₂))))
@@ -153,13 +157,6 @@ noncomputable def arsdhExperiment [∀ i, SampleableType (unifSpec.Range i)]
     {g₁ : G₁} {g₂ : G₂} (D : ℕ)
     (adversary : arsdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) : ℝ≥0∞ :=
   Pr[arsdhCondition D | arsdhGame (g₁ := g₁) (g₂ := g₂) D adversary]
-
-/-! ### Private Setup Note
-
-The SRS trapdoor `τ` is sampled as private setup randomness in the outer `ProbComp`, not through
-the cache-backed `randomOracle` implementation.  The adversary is run from an empty query cache and
-receives only the public SRS generated from `τ`.
--/
 
 /-- The adaptive rational strong Diffie–Hellman (ARSDH) assumption.
 Taken from Definition 9.6 in [CGKY25]. -/

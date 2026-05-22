@@ -5,7 +5,7 @@ Authors: Tobias Rothmann, Quang Dao
 -/
 
 import ArkLib.CommitmentScheme.Basic
-import ArkLib.CommitmentScheme.HardnessAssumptions
+import ArkLib.CommitmentScheme.KZG.HardnessAssumptions
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.ToPoly
 import CompPoly.Univariate.Lagrange
@@ -24,7 +24,7 @@ functional commitment scheme. Correctness and security proofs live in sibling fi
 
 ## Notation
 
-* `generateSrs` builds the prover and verifier structured reference strings.
+* `Groups.PowerSrs.generate` builds the prover and verifier structured reference strings.
 * `commit`, `generateOpening`, and `verifyOpening` are the concrete KZG operations.
 
 ## References
@@ -47,23 +47,7 @@ variable {G₁ : Type} [Group G₁] [PrimeOrderWith G₁ p] [DecidableEq G₁] {
   [Module (ZMod p) (Additive Gₜ)]
   (pairing : (Additive G₁) →ₗ[ZMod p] (Additive G₂) →ₗ[ZMod p] (Additive Gₜ))
 
-/-- The vector of length `n + 1` that consists of powers:
-  `#v[1, g, g ^ a.val, g ^ (a.val ^ 2), ..., g ^ (a.val ^ n)` -/
-def towerOfExponents (g : G) (a : ZMod p) (n : ℕ) : Vector G (n + 1) :=
-  .ofFn (fun i => g ^ (a.val ^ i.val))
-
 variable {n : ℕ} -- the maximal degree of polynomials that can be committed to/opened.
-
-/-- The `srs` (structured reference string) for the KZG commitment scheme with secret exponent `a`
-is defined as the prover powers `#v[g₁, g₁ ^ a, ..., g₁ ^ (a ^ n)]` and the verifier
-powers `#v[g₂, g₂ ^ a]`. -/
-def generateSrs (n : ℕ) (a : ZMod p) : Vector G₁ (n + 1) × Vector G₂ 2 :=
-  (towerOfExponents g₁ a n, towerOfExponents g₂ a 1)
-
-/-- One can verify that the `srs` is valid via using the pairing -/
-def checkSrs (proveSrs : Vector G₁ (n + 1)) (verifySrs : Vector G₂ 2) : Prop :=
-  ∀ i : Fin n,
-    pairing (proveSrs[i.succ]) (verifySrs[0]) = pairing (proveSrs[i.castSucc]) (verifySrs[1])
 
 /-- To commit to an `n + 1`-tuple of coefficients `coeffs` (corresponding to a polynomial of
 maximum degree `n`), we compute: `∏ i : Fin (n + 1), srs[i] ^ (p.coeff i)`. -/
@@ -91,11 +75,11 @@ omit [Module (ZMod p) (Additive G₁)] [DecidableEq G₁] [Fact (0 < p)] in
 `g₁ ^ (poly.1.eval a).val` -/
 theorem commit_eq {a : ZMod p} (hpG1 : Nat.card G₁ = p)
     (poly : Polynomial.degreeLT (ZMod p) (n + 1)) :
-    commit (towerOfExponents g₁ a n) (Polynomial.degreeLTEquiv _ _ poly)
+    commit (Groups.PowerSrs.tower g₁ a n) (Polynomial.degreeLTEquiv _ _ poly)
       = g₁ ^ (poly.1.eval a).val := by
   have {g₁ : G₁} (a b : ℕ) : g₁ ^ a = g₁ ^ b ↔ g₁ ^ (a : ℤ) = g₁ ^ (b : ℤ) := by
     simp only [zpow_natCast]
-  simp only [commit, towerOfExponents, Fin.getElem_fin, Vector.getElem_ofFn]
+  simp only [commit, Groups.PowerSrs.tower, Fin.getElem_fin, Vector.getElem_ofFn]
   simp_rw [← pow_mul, Finset.prod_pow_eq_pow_sum,
     Polynomial.eval_eq_sum_degreeLTEquiv poly.property,
       this,
@@ -118,7 +102,7 @@ omit [Module (ZMod p) (Additive G₁)] [DecidableEq G₁] [Fact (0 < p)] in
 maximum degree `n` is equal to `g₁ ^ (poly.eval a).val`. -/
 theorem commit_eq_c_polynomial {a : ZMod p} (hpG1 : Nat.card G₁ = p)
     (poly : CPolynomial (ZMod p)) (hn : poly.degree ≤ n) :
-    commit (towerOfExponents g₁ a n)
+    commit (Groups.PowerSrs.tower g₁ a n)
       ((coeff poly) ∘ Fin.val)
       = g₁ ^ (poly.eval a).val := by
   have h_mem : poly.toPoly ∈ Polynomial.degreeLT (ZMod p) (n + 1) := by
@@ -175,7 +159,7 @@ omit [Fact (0 < p)] [DecidableEq G₁] in
 /-- Extract the exponent equation enforced by a successful KZG opening verification. -/
 lemma verify_opening_equation (α₁ β₁ τ cm prf₁ : ZMod p) (c pf₁ : G₁)
     (srs : Vector G₁ (n + 1) × Vector G₂ 2)
-    (hsrs : srs = generateSrs (g₁ := g₁) (g₂ := g₂) n τ)
+    (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
     (hpair : pairing g₁ g₂ ≠ 0) (hcm : c = g₁ ^ cm.val)
     (hprf : pf₁ = g₁ ^ prf₁.val)
     (hverify₁ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
@@ -183,7 +167,7 @@ lemma verify_opening_equation (α₁ β₁ τ cm prf₁ : ZMod p) (c pf₁ : G�
     cm - β₁ = prf₁ * (τ - α₁) := by
     simp only [verifyOpening, decide_eq_true_eq] at hverify₁
     rw [hsrs] at hverify₁
-    simp only [generateSrs, towerOfExponents, Nat.reduceAdd, Vector.getElem_ofFn,
+    simp only [Groups.PowerSrs.generate, Groups.PowerSrs.tower, Nat.reduceAdd, Vector.getElem_ofFn,
       pow_zero, pow_one] at hverify₁
     rw [hcm, hprf] at hverify₁
     simp_rw [← zpow_natCast_sub_natCast, ← zpow_natCast, ← lin_snd, ← lin_fst,
@@ -210,7 +194,8 @@ omit [Fact (0 < p)] [DecidableEq G₁] in
 /-- Solve the exponent equation from `verify_opening_equation` for the proof exponent. -/
 lemma verify_opening_prf_equation (α₁ β₁ τ cm prf₁ : ZMod p) (c pf₁ : G₁)
     (srs : Vector G₁ (n + 1) × Vector G₂ 2)
-  (hsrs : srs = generateSrs (g₁ := g₁) (g₂ := g₂) n τ) (hpair : pairing g₁ g₂ ≠ 0)
+  (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
+  (hpair : pairing g₁ g₂ ≠ 0)
   (hverify₁ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
     srs.2 c pf₁ α₁ β₁)
   (hcm : c = g₁ ^ cm.val) (hprf : pf₁ = g₁ ^ prf₁.val) (hτα : τ ≠ α₁) :
@@ -221,6 +206,7 @@ lemma verify_opening_prf_equation (α₁ β₁ τ cm prf₁ : ZMod p) (c pf₁ :
 
 open Commitment
 
+/-- Local oracle interface for evaluating coefficient vectors as computable polynomials. -/
 local instance : OracleInterface (Fin (n + 1) → ZMod p) where
   Query := ZMod p
   toOC.spec := ZMod p →ₒ ZMod p
@@ -233,7 +219,7 @@ namespace CommitmentScheme
 /-- The KZG instantiated as a **(functional) commitment scheme**.
 
   The scheme takes a pregenerated structured reference string (srs) for the
-  committer and the verifier (generated by `generateSrs`).
+  committer and the verifier (generated by `Groups.PowerSrs.generate`).
 
   - `commit` : a function that commits to an `n + 1`-tuple of coefficients `coeffs`
   (corresponding to a polynomial of maximum degree `n`)
@@ -247,7 +233,7 @@ def kzg :
     (Vector G₁ (n + 1) × Vector G₂ 2) ⟨!v[.P_to_V], !v[G₁]⟩ where
   keygen := do
     let a ← Groups.sampleNonzeroZMod (p := p)
-    let srs := generateSrs (g₁ := g₁) (g₂ := g₂) n a
+    let srs := Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a
     return (srs, srs)
   commit := fun ck coeffs => return (commit ck.1 coeffs, ())
   opening := fun (ck, vk) => {

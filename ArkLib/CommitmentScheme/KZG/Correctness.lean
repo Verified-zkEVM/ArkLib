@@ -53,12 +53,13 @@ theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
   let poly : CPolynomial (ZMod p) :=
     ⟨(Raw.mk (Array.ofFn coeffs)).trim, Raw.Trim.isCanonical_trim _⟩
   let v : ZMod p := eval z poly
-  let srs : Vector G₁ (n + 1) × Vector G₂ 2 := generateSrs (g₁ := g₁) (g₂ := g₂) n a
+  let srs : Vector G₁ (n + 1) × Vector G₂ 2 :=
+    Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a
   let C : G₁ := commit srs.1 coeffs
   let opening : G₁ := generateOpening srs.1 coeffs z
   verifyOpening pairing (g₁ := g₁) (g₂ := g₂) srs.2 C opening z v := by
   intro poly v
-  unfold verifyOpening generateSrs
+  unfold verifyOpening Groups.PowerSrs.generate
   simp only [decide_eq_true_eq]
   -- helper facts for the proof
   -- coeffs is the finite coefficients map of poly
@@ -109,15 +110,15 @@ theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
       (fun i ↦ q.coeff ↑i : Fin (n + 1) → ZMod p) = (coeff q) ∘ Fin.val := by
     rfl
   simp_rw [ofFn]
-  change pairing (g₁ ^ (eval a poly).val / g₁ ^ v.val) (towerOfExponents g₂ a 1)[0] =
-    pairing (commit (towerOfExponents g₁ a n) (fun i : Fin (n + 1) => q.coeff i) : G₁)
-      ((towerOfExponents g₂ a 1)[1] / g₂ ^ z.val)
+  change pairing (g₁ ^ (eval a poly).val / g₁ ^ v.val) (Groups.PowerSrs.tower g₂ a 1)[0] =
+    pairing (commit (Groups.PowerSrs.tower g₁ a n) (fun i : Fin (n + 1) => q.coeff i) : G₁)
+      ((Groups.PowerSrs.tower g₂ a 1)[1] / g₂ ^ z.val)
   rw [hfun]
   rw [commit_eq_c_polynomial hpG1 q hqdeg]
   -- evaluate the pairing linearly.
   -- e (g₁^poly(a) / g₂^poly(z), g₂)= e (g₁^q(a), g₂^a / g₂^(z))
   -- => (poly(a) - poly(z)) • e (g₁,g₂) = (q(a) * (a-z)) • e (g₁,g₂)
-  simp only [towerOfExponents, Nat.reduceAdd, Vector.getElem_ofFn, pow_zero, pow_one]
+  simp only [Groups.PowerSrs.tower, Nat.reduceAdd, Vector.getElem_ofFn, pow_zero, pow_one]
   simp_rw [← zpow_natCast_sub_natCast, ← zpow_natCast, ← lin_snd, ← lin_fst, smul_smul]
   -- eliminate the pairing and reason only about the exponents: poly(a) - poly(z) = q(a) * (a-z)
   apply mod_p_eq_additive
@@ -141,6 +142,7 @@ theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
 
 open Commitment
 
+/-- Local oracle interface for evaluating coefficient vectors as computable polynomials. -/
 local instance : OracleInterface (Fin (n + 1) → ZMod p) where
   Query := ZMod p
   toOC.spec := ZMod p →ₒ ZMod p
@@ -185,9 +187,9 @@ theorem correctness (hpG1 : Nat.card G₁ = p) {g₁ : G₁} {g₂ : G₂}
   rw [Reduction.run_of_prover_first] at hx
   simp only [OptionT.run_bind, OptionT.run_pure] at hx
   have hverify : verifyOpening (g₁ := g₁) (g₂ := g₂) pairing
-      (generateSrs (g₁ := g₁) (g₂ := g₂) n τ).2
-      (commit (generateSrs (g₁ := g₁) (g₂ := g₂) n τ).1 data)
-      (generateOpening (generateSrs (g₁ := g₁) (g₂ := g₂) n τ).1 data query)
+      (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ).2
+      (commit (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ).1 data)
+      (generateOpening (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ).1 data query)
       query (OracleInterface.answer data query) := by
     simpa [OracleInterface.answer] using
       (KZG.correctness (pairing := pairing) (g₁ := g₁) (g₂ := g₂) hpG1 n τ data query)
