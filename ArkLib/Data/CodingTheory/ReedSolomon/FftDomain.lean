@@ -407,8 +407,9 @@ abbrev SmoothFftDomain (n : ℕ) (F : Type) [Field F] : Type := FftDomain (Fin (
 namespace FftDomain
 
 omit [DecidableEq F] in
-private lemma neg_one_in_domain' {n} [nz : NeZero n] {ω : SmoothFftDomain n F} :
-  ∃ k : Fin (2 ^ n), (ω k : F) = -1 := by
+@[simp]
+lemma neg_one_mem_domain {n} [nz : NeZero n] {ω : SmoothFftDomain n F} :
+  -1 ∈ ω := by
   have hn : n ≠ 0 := NeZero.ne _
   -- Let's denote this element as `k = 2^(i-1) : Fin (2^i)`.
   set k : Fin (2 ^ n) := ⟨2 ^ (n - 1), by
@@ -438,13 +439,6 @@ private lemma neg_one_in_domain' {n} [nz : NeZero n] {ω : SmoothFftDomain n F} 
     exact fun h ↦ h_ne_one <| h.trans <| by simp )
   generalize_proofs at *
   (exact ⟨k, Or.resolve_left (sq_eq_one_iff.mp h_order) h_ne_one⟩))
-
-omit [DecidableEq F] in
-@[simp]
-lemma neg_one_mem_domain {n} [nz : NeZero n] {ω : SmoothFftDomain n F} :
-  -1 ∈ ω := by
-  rw [mem_domain_iff_exists]
-  exact neg_one_in_domain'
 
 omit [DecidableEq F] in
 lemma neg_mem_domain_of_mem {n} [nz : NeZero n] {ω : SmoothFftDomain n F}
