@@ -103,7 +103,8 @@ Important lemmas include:
 * `CosetFftDomain.subdomain_pow_property`
 * `CosetFftDomain.subdomain_roots_card`
 * `CosetFftDomain.subdomain_root_exists`
-* `CosetFftDomain.neg_mem_dom_of_mem_dom`
+* `CosetFftDomain.neg_mem_domain_of_mem`
+* `CosetFftDomain.neg_mem_domain_iff_mem`
 * `CosetFftDomain.mul_property`
 
 as well as the `subdomainNat` and `subdomainNatReversed` API for cosets.
