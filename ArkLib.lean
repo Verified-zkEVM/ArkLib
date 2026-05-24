@@ -11,6 +11,7 @@ import ArkLib.CommitmentScheme.KZG.FunctionBinding.EvaluationBindingConflict
 import ArkLib.CommitmentScheme.KZG.FunctionBinding.Support
 import ArkLib.CommitmentScheme.KZG.FunctionBinding.TauInQueries
 import ArkLib.CommitmentScheme.KZG.HardnessAssumptions
+import ArkLib.CommitmentScheme.KZG.Sampling
 import ArkLib.CommitmentScheme.SimpleRO
 import ArkLib.Data.Classes.FunEquiv
 import ArkLib.Data.Classes.HasSize

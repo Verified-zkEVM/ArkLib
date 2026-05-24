@@ -6,6 +6,7 @@ Authors: Tobias Rothmann
 
 import ArkLib.CommitmentScheme.KZG.Correctness
 import ArkLib.CommitmentScheme.KZG.Algebra
+import ArkLib.CommitmentScheme.KZG.HardnessAssumptions
 import ArkLib.ToVCVio.EvalDist.Defs.Support
 
 /-!

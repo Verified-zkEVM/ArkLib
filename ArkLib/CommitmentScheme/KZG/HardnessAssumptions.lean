@@ -6,9 +6,9 @@ Authors: Tobias Rothmann
 
 import VCVio
 import ArkLib.CommitmentScheme.KZG.Algebra
+import ArkLib.CommitmentScheme.KZG.Sampling
 import ArkLib.Data.GroupTheory.PrimeOrder
 import ArkLib.Data.Classes.Serde
-import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.ToPoly
 import Mathlib.Algebra.Field.ZMod
@@ -25,7 +25,6 @@ This file defines hardness assumptions used in security reductions for commitmen
 
 * `Groups.PowerSrs.tower` builds vectors of group-element powers from a secret exponent.
 * `Groups.PowerSrs.generate` builds the structured reference string used by KZG-style reductions.
-* `sampleNonzeroZMod` samples the SRS trapdoor from `ZMod p \ {0}`.
 * `tSdhExperiment` and `arsdhExperiment` are the success probabilities for the corresponding
   hardness games.
 
@@ -50,36 +49,6 @@ variable {G : Type} [Group G] {p : outParam ℕ} [Fact (Nat.Prime p)]
 variable {G₁ : Type} [Group G₁] [PrimeOrderWith G₁ p] {g₁ : G₁}
   {G₂ : Type} [Group G₂] [PrimeOrderWith G₂ p] {g₂ : G₂}
 
-/-- Uniformly sample a nonzero element of `ZMod p`.
-
-The implementation samples an index in `{0, ..., p - 2}` and shifts it by one, so the support is
-exactly the canonical representatives `1, ..., p - 1` modulo `p`. -/
-def sampleNonzeroZMod : ProbComp (ZMod p) :=
-  haveI : NeZero (p - 1) :=
-    ⟨Nat.pos_iff_ne_zero.mp (Nat.sub_pos_of_lt (Nat.Prime.one_lt Fact.out))⟩
-  (fun i : Fin (p - 1) => ((i : ℕ) + 1 : ZMod p)) <$> ($ᵗ (Fin (p - 1)))
-
-/-- Simulating the random oracle leaves the nonzero SRS trapdoor sampler unchanged. -/
-lemma simulateQ_randomOracle_sampleNonzeroZMod :
-    ((simulateQ (unifSpec.randomOracle :
-      QueryImpl unifSpec (StateT unifSpec.QueryCache ProbComp))
-      (sampleNonzeroZMod (p := p) : ProbComp (ZMod p)) :
-        StateT unifSpec.QueryCache ProbComp (ZMod p))).run' ∅ =
-      sampleNonzeroZMod (p := p) := by
-  haveI : NeZero (p - 1) :=
-    ⟨Nat.pos_iff_ne_zero.mp (Nat.sub_pos_of_lt (Nat.Prime.one_lt Fact.out))⟩
-  unfold sampleNonzeroZMod
-  cases p with
-  | zero =>
-      exact False.elim (Nat.not_prime_zero Fact.out)
-  | succ p' =>
-      cases p' with
-      | zero =>
-          exact False.elim (Nat.not_prime_one Fact.out)
-      | succ p'' =>
-          exact simulateQ_randomOracle_map_uniformFin p''
-            (fun i : Fin (p'' + 1) => ((i : ℕ) + 1 : ZMod (p'' + 1 + 1)))
-
 /-- A `t`-SDH adversary returns a challenge offset and a group element upon receiving the SRS. -/
 abbrev tSdhAdversary (D : ℕ) :=
   Vector G₁ (D + 1) × Vector G₂ 2 →
@@ -92,9 +61,9 @@ abbrev tSdhCondition {g₁ : G₁} : (ZMod p × ZMod p × G₁) → Prop :=
 
 /-! ### Private Setup Note
 
-The SRS trapdoor `τ` is sampled as private setup randomness in the outer `ProbComp`, not through
-the cache-backed `randomOracle` implementation.  The adversary is run from an empty query cache and
-receives only the public SRS generated from `τ`.
+Both hardness games sample the SRS trapdoor `τ` as private setup randomness in the outer
+`ProbComp`, not through the cache-backed `randomOracle` implementation. The adversary is run from
+an empty query cache and receives only the public SRS generated from `τ`.
 -/
 
 /-- The t-SDH game for a specific adversary. -/
@@ -132,13 +101,6 @@ abbrev arsdhCondition (D : ℕ) : (ZMod p × Finset (ZMod p) × G₁ × G₁) �
     let Zₛ : CompPoly.CPolynomial (ZMod p) :=
       ∏ s ∈ S, (CompPoly.CPolynomial.X - CompPoly.CPolynomial.C s)
     S.card = D + 1 ∧ Zₛ.eval τ ≠ 0 ∧ h₁ ≠ 1 ∧ h₂ = h₁ ^ (1 / Zₛ.eval τ).val
-
-/-! ### Private Setup Note
-
-The SRS trapdoor `τ` is sampled as private setup randomness in the outer `ProbComp`, not through
-the cache-backed `randomOracle` implementation.  The adversary is run from an empty query cache and
-receives only the public SRS generated from `τ`.
--/
 
 /-- The ARSDH game for a specific adversary. -/
 abbrev arsdhGame [∀ i, SampleableType (unifSpec.Range i)]
