@@ -2829,10 +2829,9 @@ def extractMiddleFinMask (v : (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨0, by exact
   let middleBits := Nat.getMiddleBits (offset := i.val) (len := steps) (n := vToFin.val)
   exact ⟨middleBits, Nat.getMiddleBits_lt_two_pow⟩
 
-/-- The equality polynomial eq̃(r, r') that evaluates to 1 when r = r' and 0 otherwise.
-This is used in the final sumcheck identity : s_ℓ = c · eq̃(r, r') -/
-def eqTilde {L : Type} [CommRing L] {ℓ : ℕ} (r r' : Fin ℓ → L) : L :=
-  MvPolynomial.eval r' (MvPolynomial.eqPolynomial r)
+-- `eqTilde` is now defined generically in `ArkLib.Data.MvPolynomial.Multilinear` as
+-- `MvPolynomial.eqTilde r r' := eval r' (eqPolynomial r)`, accessible here unqualified via the
+-- file-level `open MvPolynomial`.
 
 end Essentials
 

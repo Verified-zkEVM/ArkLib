@@ -47,7 +47,7 @@ namespace Binius.FRIBinius.CoreInteractionPhase
 noncomputable section
 
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial
-  MvPolynomial TensorProduct Module Binius.BinaryBasefold Binius.RingSwitching
+  MvPolynomial TensorProduct Module Binius.BinaryBasefold RingSwitching
 open scoped NNReal
 
 -- TODO: how to make params cleaner while can explicitly reuse across sections?
