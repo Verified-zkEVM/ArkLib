@@ -63,13 +63,13 @@ Here:
 -/
 structure Conditions (D : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) (Q : F[X][Y]) where
   /-- `Q ≠ 0` -/
-  qNeZero : Q ≠ 0
+  Q_ne_0 : Q ≠ 0
   /-- `(1, k - 1)`-weighted degree of the polynomial is bounded. -/
-  qDeg : weightedDegree Q 1 (k - 1) ≤ D
+  Q_deg : weightedDegree Q 1 (k - 1) ≤ D
   /-- `(ωs i, f i)` must be a root of the polynomial `Q`. -/
-  qRoots : ∀ i, (Q.eval (C <| f i)).eval (ωs i) = 0
+  Q_roots : ∀ i, (Q.eval (C <| f i)).eval (ωs i) = 0
   /-- Multiplicity of the roots is at least `m`. -/
-  qMultiplicity : ∀ i, m ≤ rootMultiplicity Q (ωs i) (f i)
+  Q_multiplicity : ∀ i, m ≤ rootMultiplicity Q (ωs i) (f i)
 
 /-! ## Guruswami-Sudan Decoder
 
@@ -785,25 +785,23 @@ private lemma mem_computableDecoder_imp [Fintype F] {k r D e : ℕ} {ωs : Fin n
 theorem computableDecoder_mem_impl_dist
     [Fintype F]
     {k r D e : ℕ}
-    (_h_e : e ≤ n - Real.sqrt (k * n))
-    {ωs : Fin n ↪ F}
-    {f : Fin n → F}
-    {p : F[X]}
-    (h_in : p ∈ computableDecoder k r D e ωs f) :
-    Δ₀(f, p.eval ∘ ωs) ≤ e := by
-  exact (mem_computableDecoder_imp h_in).2
-
-/-- Alias for the computable decoder distance guarantee. -/
-theorem computableDecoder_output_dist_le
-    [Fintype F]
-    {k r D e : ℕ}
-    (h_e : e ≤ n - Real.sqrt (k * n))
     {ωs : Fin n ↪ F}
     {f : Fin n → F}
     {p : F[X]}
     (h_in : p ∈ computableDecoder k r D e ωs f) :
     Δ₀(f, p.eval ∘ ωs) ≤ e :=
-  computableDecoder_mem_impl_dist (k := k) (r := r) (D := D) (e := e) h_e h_in
+  (mem_computableDecoder_imp h_in).2
+
+/-- Alias for the computable decoder distance guarantee. -/
+theorem computableDecoder_output_dist_le
+    [Fintype F]
+    {k r D e : ℕ}
+    {ωs : Fin n ↪ F}
+    {f : Fin n → F}
+    {p : F[X]}
+    (h_in : p ∈ computableDecoder k r D e ωs f) :
+    Δ₀(f, p.eval ∘ ωs) ≤ e :=
+  computableDecoder_mem_impl_dist (k := k) (r := r) (D := D) (e := e) h_in
 
 /-- Alias to the `Basic` module degree bound used in lemma 5.3 of [BCIKS20]. -/
 noncomputable def proximityGapDegreeBound (k m : ℕ) : ℕ :=
@@ -986,8 +984,9 @@ theorem proximity_gap_divisibility (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code �
     (hdist : (hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) : ℝ) / n <
       proximity_gap_johnson k n m) :
     X - C (codewordToPoly p) ∣ Q :=
-  dvd_property (f := f) hk hm p hQ.qDeg
-    hQ.qMultiplicity hdist
+  dvd_property (f := f) hk hm p hQ.Q_deg
+    hQ.Q_multiplicity hdist
+
 
 /-- GS existence with rate-corrected degree bound (ρ = k/n). Requires k > 1
     for the counting argument and m ≥ 1 for multiplicity. -/
