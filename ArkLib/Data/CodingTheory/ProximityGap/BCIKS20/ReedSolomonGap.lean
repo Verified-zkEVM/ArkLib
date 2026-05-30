@@ -31,11 +31,13 @@ The `hε : errorBound δ deg domain < 1` hypothesis is required for the `Xor'` e
 `δ_ε_proximityGap`: without `ε < 1`, the two branches `Pr = 1` and `Pr ≤ ε` could both hold
 when `ε = 1`, violating `Xor'`.
 
-This proof depends on `correlatedAgreement_affine_spaces` (Theorem 1.6), which is currently
-`sorry`'d in `AffineSpaces.lean`. The reduction itself is complete. -/
+This proof depends on `correlatedAgreement_affine_spaces` (Theorem 1.7) in `AffineSpaces.lean`. -/
 theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {domain : ι ↪ F}
+    (hdeg : 0 < deg)
+    (hRS : deg + 1 ≤ Fintype.card ι)
     (C : Fin t → (Fin k → (ι → F))) {δ : ℝ≥0}
-    (hδ : δ ≤ 1 - ReedSolomon.sqrtRate deg domain)
+    (_hδ_pos : 0 < δ)
+    (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)
     (hε : errorBound δ deg domain < 1) :
     δ_ε_proximityGap
       (ReedSolomon.toFinset domain deg)
@@ -96,8 +98,8 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
       -- `toFinset` coerces to the same Set.
       convert h_prox using 2
       simp [ReedSolomon.toFinset]
-    -- Step 3: obtain jointAgreement from Thm 1.6 via sampling bridge.
-    -- Case split: k = 1 (singleton, direct) vs k ≥ 2 (Thm 1.6 chain).
+    -- Step 3: obtain jointAgreement from Thm 1.7 via sampling bridge.
+    -- Case split: k = 1 (singleton, direct) vs k ≥ 2 (Thm 1.7 chain).
     by_cases hk1 : k = 1
     · -- k = 1: AffSpanFinset is a singleton {C i 0}. Pr > ε forces the event,
       -- giving individual δ-closeness → jointAgreement for a Fin 1 word stack.
@@ -146,7 +148,7 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
           Finset.mem_filter.mpr ⟨Finset.mem_univ _, by
             rw [show j = 0 from Fin.eq_zero j]
             exact ((hS'_agree col).1 hcol).symm⟩⟩⟩
-    · -- k ≥ 2: Apply Thm 1.6 via reindexing + sampling bridge.
+    · -- k ≥ 2: Apply Thm 1.7 via reindexing + sampling bridge.
       -- Write k = m + 2 so that k - 1 = m + 1 avoids Fin casting.
       obtain ⟨m, rfl⟩ : ∃ m, k = m + 2 := ⟨k - 2, by have := NeZero.pos k; omega⟩
       -- Reindex: u' 0 = C i 0, u' j.succ = C i j.succ - C i 0.
@@ -221,10 +223,10 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
             (fun a₁ _ a₂ _ h => e.injective h)
             (fun b hb => ⟨e.symm b, by simpa using hb, e.apply_symm_apply b⟩)
         rw [hcard, hfilt]; exact hcase_code
-      -- Apply Thm 1.6 at k := m + 1 to get jointAgreement (W := u').
+      -- Apply Thm 1.7 at k := m + 1 to get jointAgreement (W := u').
       have hja_u' : jointAgreement (C := (ReedSolomon.code domain deg : Set (ι → F)))
           (δ := δ) (W := u') :=
-        correlatedAgreement_affine_spaces (k := m + 1) hδ u' hPr_aff
+        correlatedAgreement_affine_spaces (k := m + 1) hdeg _hδ_pos hδ hRS hε u' hPr_aff
       -- Convert jointAgreement (W := u') → jointAgreement (W := C i).
       -- Witnesses: v_0 for C i 0 stays, v_{j+1} + v_0 ∈ RS.code (submodule closure)
       -- agrees with C i (j+1) on S because v_{j+1} agrees with u'(j+1) = C i (j+1) - C i 0

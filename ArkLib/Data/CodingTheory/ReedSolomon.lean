@@ -8,6 +8,7 @@ Mirco Richter, Chung Thai Nguyen
 import ArkLib.Data.Matrix.Vandermonde
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLib.Data.Polynomial.Interface
+import ArkLib.ToMathlib.Polynomial.DegreeLT
 import CompPoly.Data.Polynomial.MonomialBasis
 import Mathlib.LinearAlgebra.Lagrange
 import Mathlib.RingTheory.Henselian
@@ -24,6 +25,7 @@ import Mathlib.Data.NNReal.Basic -- for instFloorSemiring of ℝ≥0
 
 * [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *WHIR: Reed–Solomon Proximity Testing
     with Super-Fast Verification*][ACFY24]
+* [Guruswami, V., Rudra, A., Sudan M., *Essential Coding Theory*, online copy][GRS25]
 -/
 
 namespace ReedSolomon
@@ -133,6 +135,68 @@ lemma genMatIsVandermonde [Fintype ι] [Field F] [inst : NeZero m] {α : ι ↪ 
 
 section
 
+variable [Semiring F]
+
+lemma mem_code_of_polynomial_of_degree_lt_of_eval {n : ℕ} {α : ι ↪ F} {f : ι → F}
+  (p : Polynomial F)
+  (hdeg : p.degree < n) (heval : ∀ i, f i = p.eval (α i)) :
+  f ∈ code α n := by
+  aesop
+    (add simp [code, evalOnPoints,
+               Polynomial.degreeLT,
+               Polynomial.degree_lt_iff_coeff_zero])
+
+lemma mem_code_of_polynomial_of_natDegree_lt_of_eval {n : ℕ} {α : ι ↪ F} {f : ι → F}
+  (p : Polynomial F)
+  (hdeg : p.natDegree < n) (heval : ∀ i, f i = p.eval (α i)) :
+  f ∈ code α n := by
+  by_cases h0 : p = 0
+  · have hf : f = 0 := by aesop
+    simp [hf]
+  · rw [Polynomial.natDegree_lt_iff_degree_lt h0] at hdeg
+    exact mem_code_of_polynomial_of_degree_lt_of_eval _ hdeg heval
+
+lemma mem_code_iff_exists_polynomial {n : ℕ} {α : ι ↪ F} {f : ι → F} :
+  f ∈ code α n ↔ ∃ p : Polynomial F, p.degree < n ∧ f = evalOnPoints α p := by
+  constructor <;>
+    intro h <;>
+    obtain ⟨p, h₁, h₂⟩ := h <;>
+    exists p <;>
+    aesop (add simp
+            [Polynomial.degreeLT,
+             Polynomial.degree_lt_iff_coeff_zero])
+
+lemma mem_code_iff_exists_polynomial_of_ne_zero {n : ℕ} [ne : NeZero n] {α : ι ↪ F} {f : ι → F} :
+  f ∈ code α n ↔ ∃ p : Polynomial F, p.natDegree < n ∧ f = evalOnPoints α p := by
+  rw [mem_code_iff_exists_polynomial]
+  have hne := ne.out
+  constructor <;>
+  intro h <;>
+  obtain ⟨p, h₁, h₂⟩ := h <;>
+  exists p <;>
+  by_cases hy : p = 0 <;>
+  aesop
+    (add simp [Polynomial.natDegree_lt_iff_degree_lt])
+    (add safe (by omega))
+
+/-- **Monotonicity of `code` in the degree bound.** If `n ≤ m`, the degree-`n` Reed-Solomon code
+is contained in the degree-`m` code over the same domain. -/
+@[mono]
+lemma code_mono {n m : ℕ} (h : n ≤ m) (α : ι ↪ F) :
+    code α n ≤ code α m :=
+  Submodule.map_mono (Polynomial.degreeLT_mono h)
+
+/-- **The degree-zero Reed-Solomon code is trivial.** Only the zero word is a codeword of
+`code α 0`. A direct corollary of `Polynomial.degreeLT_zero` (general polynomial fact) +
+`Submodule.map_bot` (general linear-algebra fact). -/
+@[simp]
+lemma code_zero (α : ι ↪ F) : code α 0 = ⊥ := by
+  rw [code, Polynomial.degreeLT_zero, Submodule.map_bot]
+
+end
+
+section
+
 open NNReal
 
 variable [Field F]
@@ -182,7 +246,7 @@ lemma dim_eq_deg_of_le' {ι : Type*} [Fintype ι] {F : Type*} [Field F]
           · subst hn
             have h : ∀ i, p.val.coeff i = 0 := by
               intro i
-              rcases p with ⟨p, hp⟩ 
+              rcases p with ⟨p, hp⟩
               simp [S, Polynomial.degreeLT] at hp
               simp [hp i]
             have h : p.val.natDegree = 0 := by
@@ -194,7 +258,7 @@ lemma dim_eq_deg_of_le' {ι : Type*} [Fintype ι] {F : Type*} [Field F]
             rw [h]
             simp
             omega
-          · calc p.val.natDegree < n 
+          · calc p.val.natDegree < n
               := @natDegree_lt_of_mem_degreeLT _ _ _ _ (⟨hn⟩) p.2
                 _ ≤ Fintype.card ι := h
       · intro hfp
@@ -215,31 +279,20 @@ lemma dim_eq_card_of_lt {ι : Type*} [Fintype ι] {F : Type*} [Field F]
     simp [Submodule.mem_map]
   simp only [ModuleCode]
   apply le_antisymm
-  · apply le_trans 
+  · apply le_trans
     · apply Submodule.finrank_le
     · simp
-  · have h_sub : ReedSolomon.code α (Fintype.card ι) ≤ 
-      ReedSolomon.code α n := by
-      intro x hx 
-      simp only [code, Submodule.mem_map] at hx
-      rcases hx with ⟨y, hy⟩
-      simp only [code, Submodule.mem_map]
-      exists y
-      constructor
-      · simp only [LinearMap.range_domRestrict, degreeLT, ge_iff_le, Submodule.mem_iInf,
-        LinearMap.mem_ker, lcoeff_apply] at *
-        intro i hi 
-        exact (hy.1 i (by omega))
-      · tauto
+  · have h_sub : ReedSolomon.code α (Fintype.card ι) ≤ ReedSolomon.code α n :=
+      code_mono (le_of_lt h) α
     have h_sub := Submodule.finrank_mono h_sub
-    have dim_eq := dim_eq_deg_of_le' 
+    have dim_eq := dim_eq_deg_of_le'
       (n := Fintype.card ι)
       (α := α)
       (by simp)
     simp only [dim] at dim_eq
     rw [dim_eq] at h_sub
     exact h_sub
- 
+
 /-- Assumption-less expression for the dimension of an RS-code.
   The dimension equals the minimum of the degree and the cardinality
   of the evaluation set. -/
@@ -275,7 +328,7 @@ lemma rateOfLinearCode_eq_div' {ι : Type*} [Fintype ι] {F : Type*} [Field F]
     rate (ReedSolomon.code α n) = n / Fintype.card ι := by
   rw [rate, dim_eq_deg_of_le' h, length_eq_domain_card']
 
-/- Assumption-less formula for the rate of an RS-code: the minimun of degree 
+/- Assumption-less formula for the rate of an RS-code: the minimun of degree
   and the cardinality of the evaluation set divided by the cardinality. -/
 lemma rateOfLinearCode_eq_min_div
     {ι : Type*} [Fintype ι] {F : Type*} [Field F]
@@ -412,6 +465,14 @@ theorem minDist' {ι : Type*} [Fintype ι] {F : Type*} [Field F] [DecidableEq F]
       rw [wt, Finset.card_filter_add_card_filter_not]
       simp
     omega
+
+/-- Reed-Solomon codes are maximum distance separable (MDS). -/
+lemma isMDS_code {ι : Type} [Fintype ι] {F : Type*} [Field F] [DecidableEq F]
+  {α : ι ↪ F} [NeZero n] (h : n ≤ Fintype.card ι) : LinearCode.IsMDS (ReedSolomon.code α n) := by
+  classical
+  unfold IsMDS
+  rw [length_eq_domain_card', dim_eq_deg_of_le' h, Code.dist_eq_minDist]
+  exact minDist' h
 
 /-- Generalized distance equality for RS code with arbitrary finite index type `ι`. -/
 theorem dist_eq' {ι : Type*} [Fintype ι] {F : Type*} {n : ℕ} {α : ι ↪ F}
@@ -592,7 +653,7 @@ noncomputable def smoothCode
 `m`-variate polynomial. -/
 noncomputable def mVdecode :
   (smoothCode domain m) →ₗ[F] MvPolynomial (Fin m) F :=
-    linearMvExtension.comp decodeLT
+    linearMvExtensionLMap.comp decodeLT
 
 /-- Auxiliary function to assign values to the weight polynomial variables: index `0` ↦ `p.eval b`,
 index `j+1` ↦ `b j`. -/

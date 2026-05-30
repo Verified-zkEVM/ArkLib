@@ -359,6 +359,25 @@ theorem relDistFromCode_le_iff_distFromCode_le {C : Set (ι → F)} (u : ι → 
   intro hv_mem
   rw [pairRelDist_le_iff_pairDist_le]
 
+theorem relDistFromCode_le_iff_distFromCode_toENNReal_le {C : Set (ι → F)} (u : ι → F) (δ : ℝ≥0) :
+    δᵣ(u, C) ≤ δ ↔ (Δ₀(u, C) : ENNReal) ≤ δ * (Fintype.card ι : ℝ≥0) := by
+  rw [relDistFromCode_le_iff_distFromCode_le] 
+  constructor <;> intro h 
+  · simp_all only [ENNReal.coe_natCast]
+    convert ENNReal.ofReal_le_ofReal 
+      (Nat.floor_le (show 0 ≤ δ * (Fintype.card ι : ℝ≥0) by positivity)) |> 
+        le_trans (ENNReal.ofReal_le_ofReal <| ?_) using 1
+    any_goals exact Nat.cast (distFromCode u C |> ENat.toNat)
+    · cases h : distFromCode u C <;> aesop
+    · simp [ENNReal.ofReal_mul]
+    · cases h' : distFromCode u C <;> aesop
+  · contrapose! h
+    cases h' : distFromCode u C 
+    · simp_all only [ENat.coe_lt_top, ENNReal.coe_natCast, ENat.toENNReal_top]
+      exact ENNReal.mul_lt_top (ENNReal.coe_lt_top) (ENNReal.natCast_lt_top _)
+    · simp_all only [Nat.cast_lt, ENNReal.coe_natCast, ENat.toENNReal_coe]
+      exact_mod_cast Nat.lt_of_floor_lt h
+        
 theorem relCloseToWord_iff_exists_possibleDisagreeCols
     {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [DecidableEq F] (u v : ι → F) (δ : ℝ≥0) :
     δᵣ(u, v) ≤ δ ↔ ∃ (D : Finset ι), D.card ≤ Nat.floor (δ * Fintype.card ι)

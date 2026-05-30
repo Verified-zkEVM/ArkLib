@@ -27,6 +27,6 @@ jobs:
           github_repository: ${{ github.repository }}
           pr_number: ${{ github.event.pull_request.number }}
           # Optional:
-          style_guide_path: 'CONTRIBUTING.md'
+          additional_instructions_path: 'CONTRIBUTING.md'
           validate_title: 'true'
           # upstream_path: 'ToMathlib/'

@@ -8,7 +8,6 @@ canonical_url: https://people.csail.mit.edu/madhu/papers/2005/rspcpp-full.pdf
 source_metadata: ../sources/BSS08/metadata.yml
 status: seeded
 related_modules:
-  - ArkLib/ProofSystem/Stir/Folding.lean
 ---
 
 # BSS08
@@ -20,14 +19,10 @@ It appears as supporting background rather than as the main protocol paper.
 
 ## What ArkLib Uses From This Paper
 
-- Background for the bivariate division and folding constructions cited in
-  [`ArkLib/ProofSystem/Stir/Folding.lean`](../../../ArkLib/ProofSystem/Stir/Folding.lean).
 - A source for the proposition-level polynomial identities that STIR reuses.
 
 ## Main ArkLib Touchpoints
 
-- [`ArkLib/ProofSystem/Stir/Folding.lean`](../../../ArkLib/ProofSystem/Stir/Folding.lean) cites
-  `BSS08` directly and references Proposition 6.3 in comments and definitions.
 
 ## Version Notes
 

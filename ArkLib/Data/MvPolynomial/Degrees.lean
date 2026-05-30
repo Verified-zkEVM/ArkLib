@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao
+Authors: Quang Dao, Katerina Hristova
 -/
 
 import Mathlib.Algebra.MvPolynomial.Degrees
@@ -105,6 +105,30 @@ theorem degrees_eval [DecidableEq σ] {τ : Type*} {f : τ → R} {p : R[X σ][X
   rw [←map_prod]
   exact degrees_mul_C_le _ _
 
+/-- The max total degree of a family of multivariate polynomials. -/
+noncomputable def maxTotalDegree {F : Type} [CommSemiring F] {s : ℕ} {ℓ : Type} [Fintype ℓ]
+    (P : ℓ → MvPolynomial (Fin s) F) : ℕ := Finset.sup Finset.univ (fun j => (P j).totalDegree)
+
+/-- The total degree of a linear combination is at most the maximum of the total degrees. -/
+theorem totalDegree_linearCombination_le
+    {F : Type} [Field F] {s : ℕ} {ℓ : Type} [Fintype ℓ]
+    (P : ℓ → MvPolynomial (Fin s) F) (v : ℓ → F) (d : ℕ)
+    (hd : ∀ j, (P j).totalDegree ≤ d) :
+    (∑ j : ℓ, v j • P j).totalDegree ≤ d := by
+  apply MvPolynomial.totalDegree_finsetSum_le
+  intro j _
+  exact le_trans (MvPolynomial.totalDegree_smul_le _ _) (hd j)
+
+/-- The dot product `G(x) • v` equals the evaluation of the linear combination `∑ v_j P_j`
+when `G` is defined by polynomial evaluation. -/
+theorem dotProduct_eq_eval_linearCombination
+    {F : Type} [Field F] {s : ℕ} {ℓ : Type} [Fintype ℓ]
+    (P : ℓ → MvPolynomial (Fin s) F)
+    (x : Fin s → F) (v : ℓ → F) :
+    dotProduct (MvPolynomial.eval x ∘ P) v =
+    MvPolynomial.eval x (∑ j : ℓ, v j • P j) := by
+  simp [dotProduct, mul_comm]
+
 end Degrees
 
 section DegreeOf
@@ -169,7 +193,6 @@ theorem mem_restrictDegree_iff_degreeOf_le (p : MvPolynomial σ R) (n : ℕ) :
   simp only [degreeOf]
 
 end DegreeOf
-
 
 section Equiv
 

@@ -1,5 +1,6 @@
 import ArkLib.OracleReduction.Basic
 import ArkLib.Data.Fin.Basic
+import ArkLib.ToVCVio.OracleComp.EvalDist
 
 /-!
   # Execution Semantics of Interactive Oracle Reductions
@@ -224,6 +225,167 @@ def Reduction.run (stmt : StmtIn) (wit : WitIn)
   let proverResult ← reduction.prover.run stmt wit
   let stmtOut ← liftM (reduction.verifier.run stmt proverResult.1).run
   return ⟨proverResult, ← stmtOut.getM⟩
+
+/-- Run a reduction and return only the verifier's output statement, discarding the full transcript
+  and prover witness. Useful when only the final verdict matters (e.g. for `Proof`s). -/
+def Reduction.verdict (stmt : StmtIn) (wit : WitIn)
+    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+      OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ)) StmtOut := do
+  let ⟨_, stmtOut⟩ ← reduction.run stmt wit
+  return stmtOut
+
+/-- Running `Reduction.verdict` is running the reduction and projecting the verdict. -/
+lemma Reduction.verdict_run_eq_map_run
+    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (stmt : StmtIn) (wit : WitIn) :
+    (reduction.verdict stmt wit).run =
+      Option.map (fun result : (FullTranscript pSpec × StmtOut × WitOut) × StmtOut =>
+        result.2) <$> (reduction.run stmt wit).run := by
+  simp [Reduction.verdict, OptionT.run_map]
+
+/-- Run a reduction on `L` instances (given by indexed statements and witnesses), and sequence the
+  full successful run results. Returns `none` if any instance fails, otherwise returns a function
+  from indices to the full run data. -/
+def Reduction.allRuns {L : ℕ}
+    (stmts : Fin L → StmtIn) (wits : Fin L → WitIn)
+    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+      OracleComp (oSpec + [pSpec.Challenge]ₒ)
+        (Option (Fin L → ((FullTranscript pSpec × StmtOut × WitOut) × StmtOut))) := do
+  let results ← (Vector.ofFn id).mapM fun i => (reduction.run (stmts i) (wits i)).run
+  return (results.mapM id).map fun v => fun i => v[i]
+
+/-- Run a reduction on `L` instances and project each successful full run result through `extract`.
+  Returns `none` if any instance fails, otherwise returns the indexed extracted outputs. -/
+def Reduction.allOutputs {L : ℕ} {α : Type}
+    (extract : ((FullTranscript pSpec × StmtOut × WitOut) × StmtOut) → α)
+    (stmts : Fin L → StmtIn) (wits : Fin L → WitIn)
+    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+      OracleComp (oSpec + [pSpec.Challenge]ₒ) (Option (Fin L → α)) := do
+  let results ← reduction.allRuns stmts wits
+  return results.map fun resultOf => fun i => extract (resultOf i)
+
+/-- Run a reduction on `L` instances (given by indexed statements and witnesses), and sequence the
+  results. Returns `none` if any instance fails, otherwise returns a function from indices to
+  the verifier's output statements. -/
+def Reduction.allVerdicts {L : ℕ}
+    (stmts : Fin L → StmtIn) (wits : Fin L → WitIn)
+    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+      OracleComp (oSpec + [pSpec.Challenge]ₒ) (Option (Fin L → StmtOut)) := do
+  let results ← (Vector.ofFn id).mapM fun i => (reduction.verdict (stmts i) (wits i)).run
+  return (results.mapM id).map fun v => fun i => v[i]
+
+/-- `allVerdicts` has the same distribution as `allOutputs` with a projection retaining the
+  verifier output as the first component; it differs only by a pure post-map. -/
+lemma Reduction.allVerdicts_eq_map_allOutputs_fst {L : ℕ} {β : Type}
+    (extract : ((FullTranscript pSpec × StmtOut × WitOut) × StmtOut) → β)
+    (stmts : Fin L → StmtIn) (wits : Fin L → WitIn)
+    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+    reduction.allVerdicts stmts wits =
+      (Option.map (fun resultOf => fun i => (resultOf i).1)) <$>
+        reduction.allOutputs (fun result => (result.2, extract result)) stmts wits := by
+  unfold Reduction.allVerdicts Reduction.allOutputs Reduction.allRuns
+  simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind, Function.comp_apply]
+  rw [Vector.mapM_bind_map_eq
+    (v := Vector.ofFn (id : Fin L → Fin L))
+    (f₁ := fun i => (reduction.verdict (stmts i) (wits i)).run)
+    (f₂ := fun i => (reduction.run (stmts i) (wits i)).run)
+    (g := Option.map (fun result : (FullTranscript pSpec × StmtOut × WitOut) × StmtOut =>
+      result.2))
+    (post₁ := fun results =>
+      pure ((results.mapM id).map fun v => fun i => v[i]))
+    (post₂ := fun results =>
+      pure (Option.map (fun resultOf => fun i => (resultOf i).1)
+        (Option.map (fun resultOf => fun i => ((resultOf i).2, extract (resultOf i)))
+          (Option.map (fun v => fun i => v[i]) (results.mapM id)))))]
+  · intro i
+    exact Reduction.verdict_run_eq_map_run reduction (stmts i) (wits i)
+  · intro results
+    congr 1
+    rw [Vector.mapM_id_option_map_comm]
+    cases h : results.mapM id with
+    | none => simp
+    | some v =>
+        simp only [Option.map_some, Option.some.injEq]
+        funext i
+        simp
+
+lemma Reduction.support_allOutputs_index
+    {StmtIn WitIn StmtOut WitOut α : Type} {n : ℕ} {pSpec : ProtocolSpec n} {L : ℕ}
+    (extract : ((FullTranscript pSpec × StmtOut × WitOut) × StmtOut) → α)
+    (stmts : Fin L → StmtIn) (wits : Fin L → WitIn)
+    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    {y : Option (Fin L → α)}
+    (hy : y ∈ support (reduction.allOutputs extract stmts wits))
+    {resultOf : Fin L → α} (hy_eq : y = some resultOf) (i : Fin L) :
+      ∃ result, some result ∈ support (reduction.run (stmts i) (wits i)).run ∧
+        extract result = resultOf i := by
+  unfold Reduction.allOutputs at hy
+  rw [mem_support_bind_iff] at hy
+  obtain ⟨runsOpt, hrunsOpt, hy_mem⟩ := hy
+  rw [mem_support_pure_iff] at hy_mem
+  rw [hy_eq] at hy_mem
+  cases hruns : runsOpt with
+  | none => simp [hruns] at hy_mem
+  | some runOf =>
+      simp only [hruns, Option.map_some, Option.some.injEq] at hy_mem
+      unfold Reduction.allRuns at hrunsOpt
+      rw [mem_support_bind_iff] at hrunsOpt
+      obtain ⟨results, hresults, hrunsOpt⟩ := hrunsOpt
+      rw [mem_support_pure_iff] at hrunsOpt
+      cases hseq : results.mapM id with
+      | none => simp [hseq, hruns] at hrunsOpt
+      | some results' =>
+          simp only [hseq, Option.map_some] at hrunsOpt
+          rw [hruns] at hrunsOpt
+          simp only [Option.some.injEq] at hrunsOpt
+          have hidx : results[i] = some results'[i] :=
+            Vector.mapM_id_some_index hseq i
+          refine ⟨results'[i], ?_, ?_⟩
+          · simpa [hidx] using
+              OracleComp.support_ofFn_mapM_index
+                (fun i => (reduction.run (stmts i) (wits i)).run) hresults i
+          · have hrunOf_i := congrFun hrunsOpt i
+            have hresult_i := congrFun hy_mem i
+            rw [hresult_i, hrunOf_i]
+
+/-- If a reduction's verifier is a pure function `f` of the input statement and full transcript,
+    then the verifier output of any complete result in the support of `Reduction.run` equals
+    `f stmt td` applied to the input statement and the produced transcript. -/
+lemma Reduction.support_run_pure_verifier
+    {StmtIn WitIn StmtOut WitOut : Type}
+    {n : ℕ} {pSpec : ProtocolSpec n}
+    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (f : StmtIn → FullTranscript pSpec → StmtOut)
+    (hf : ∀ stmt td,
+      reduction.verifier.verify stmt td =
+        (pure (f stmt td) : OptionT (OracleComp oSpec) StmtOut))
+    (stmt : StmtIn) (wit : WitIn)
+    {y : Option ((FullTranscript pSpec × StmtOut × WitOut) × StmtOut)}
+    (hy : y ∈ support (reduction.run stmt wit).run)
+    {td : FullTranscript pSpec} {prv : StmtOut × WitOut} {vOut : StmtOut}
+    (heq : y = some ((td, prv), vOut)) : vOut = f stmt td := by
+  rw [heq] at hy
+  unfold Reduction.run at hy
+  simp only [OptionT.run_bind, Option.elimM] at hy
+  rw [mem_support_bind_iff] at hy
+  obtain ⟨proverResultOpt, _hprover, hy⟩ := hy
+  cases proverResultOpt with
+  | none =>
+      exfalso
+      simp at hy
+  | some proverResult =>
+      simp only [Option.elim_some] at hy
+      rw [mem_support_bind_iff] at hy
+      obtain ⟨stmtOutOpt, hstmtOutOpt, hy⟩ := hy
+      simp only [ChallengeIdx, Challenge, Verifier.run, hf, OptionT.run_pure, liftM_pure,
+        support_pure, Set.mem_singleton_iff] at hstmtOutOpt
+      subst stmtOutOpt
+      simp only [Option.elim_some, Option.getM_some, OptionT.run_pure] at hy
+      injection hy with hpair
+      have htd : td = proverResult.1 := congrArg Prod.fst (congrArg Prod.fst hpair)
+      have hvOut : vOut = f stmt proverResult.1 := congrArg Prod.snd hpair
+      rw [htd]
+      exact hvOut
 
 /-- An execution of an interactive reduction on a given initial statement and witness. Consists of
   first running the prover, and then the verifier. Returns the full transcript, the output statement

@@ -10,7 +10,6 @@ import ArkLib.Data.CodingTheory.Basic.LinearCode
 import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 import ArkLib.Data.CodingTheory.ProximityGap.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ReedSolomonGap
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.Probability.Notation
 import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Defs
@@ -184,8 +183,11 @@ theorem proximity_gap_affineSubspace {ι : Type} [Fintype ι] [Nonempty ι] [Dec
     {F : Type} [Fintype F] [Field F] [DecidableEq F]
   {deg : ℕ} {domain : ι ↪ F}
   (U : AffineSubspace F (ι → F)) [Nonempty U] {δ : ℝ≥0}
-  (hδ : δ ≤ 1 - ReedSolomon.sqrtRate deg domain)
-  (hε : ProximityGap.errorBound δ deg domain < 1) :
+  (_hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)
+  (hPG : ∀ {k t : ℕ} [NeZero k] [NeZero t] (C : Fin t → (Fin k → (ι → F))),
+    ProximityGap.δ_ε_proximityGap
+      (ReedSolomon.toFinset domain deg)
+      (Affine.AffSpanFinsetCollection C) δ (errorBound δ deg domain)) :
   Xor'
     (Pr_{let u ← $ᵖ U}[Code.relDistFromCode u (RScodeSet domain deg) ≤ δ] = 1)
     (Pr_{let u ← $ᵖ U}[Code.relDistFromCode u (RScodeSet domain deg) ≤ δ] ≤
@@ -199,13 +201,13 @@ theorem proximity_gap_affineSubspace {ι : Type} [Fintype ι] [Nonempty ι] [Dec
   let u : Fin k → (ι → F) := fun i => (e i : U)
   -- Turn this into a (trivial) collection of one affine span
   let C : Fin 1 → (Fin k → (ι → F)) := fun _ => u
-  -- Apply ProximityGap Theorem 1.2
+  -- Apply ProximityGap Theorem 1.2 via hypothesis
   have hpg : ProximityGap.δ_ε_proximityGap
       (ReedSolomon.toFinset domain deg)
       (Affine.AffSpanFinsetCollection C)
       δ
       (errorBound δ deg domain) :=
-    ProximityGap.proximity_gap_RSCodes (C := C) (deg := deg) (domain := domain) (δ := δ) hδ hε
+    hPG C
   -- Specialize to the unique element of the collection
   let S : Finset (ι → F) := Affine.AffSpanFinset (C 0)
   have hS_mem : S ∈ Affine.AffSpanFinsetCollection C := by
@@ -801,8 +803,11 @@ theorem concentration_bounds {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq
   (hdiv_pos : 0 < (divergence U (RScodeSet domain deg) : ℝ≥0))
   (hdiv_lt : (divergence U (RScodeSet domain deg) : ℝ≥0) <
     1 - ReedSolomon.sqrtRate deg domain)
-  (hε_cb : ∀ (δ' : ℝ≥0), δ' ≤ 1 - ReedSolomon.sqrtRate deg domain →
-    ProximityGap.errorBound δ' deg domain < 1) :
+  (hPG : ∀ {δ : ℝ≥0}, 0 < δ → δ < 1 - ReedSolomon.sqrtRate deg domain →
+    ∀ {k t : ℕ} [NeZero k] [NeZero t] (C : Fin t → (Fin k → (ι → F))),
+    ProximityGap.δ_ε_proximityGap
+      (ReedSolomon.toFinset domain deg)
+      (Affine.AffSpanFinsetCollection C) δ (errorBound δ deg domain)) :
     let δ' := divergence U (RScodeSet domain deg)
     Pr_{let u ← $ᵖ U}[Code.relDistFromCode u (RScodeSet domain deg) ≠ δ']
       ≤ errorBound δ' deg domain := by
@@ -870,75 +875,98 @@ theorem concentration_bounds {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq
       simpa using (hiffU u)
     simp [hfun]
   -- Apply proximity gap at parameter δ
-  have hδ_bound : (δ : ℝ≥0) ≤ 1 - ReedSolomon.sqrtRate deg domain := by
+  have hδ_bound : (δ : ℝ≥0) < 1 - ReedSolomon.sqrtRate deg domain := by
     have hδ_lt_div : (δ : ℝ≥0) < (δ' : ℝ≥0) := by
       exact_mod_cast hδlt'
-    have hδ_lt_bound : (δ : ℝ≥0) < 1 - ReedSolomon.sqrtRate deg domain :=
-      lt_trans hδ_lt_div hdiv_lt'
-    exact le_of_lt hδ_lt_bound
-  have hx :
-      Xor'
-        (Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ (δ : ℝ≥0)] = 1)
-        (Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ (δ : ℝ≥0)]
-          ≤ errorBound (δ : ℝ≥0) deg domain) := by
-    -- rewrite the lemma `proximity_gap_affineSubspace` using `V`
-    simpa [V] using
-      (proximity_gap_affineSubspace (deg := deg) (domain := domain) (U := U) (δ := (δ : ℝ≥0))
-        (hδ := hδ_bound) (hε := hε_cb (δ : ℝ≥0) hδ_bound))
-  have hPr_le_errorBound_δ :
-      Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ (δ : ℝ≥0)] ≤
-        errorBound (δ : ℝ≥0) deg domain := by
-    -- show the probability cannot be 1 using a maximizer of divergence
-    rcases divergence_attains (U := (U : Set (ι → F))) (V := V) with ⟨u_max, hu_max, hmax⟩
-    have hu_max_eq : δᵣ'(u_max, V) = δ' := by
-      simpa [δ'] using hmax
-    let u_max_sub : U := ⟨u_max, hu_max⟩
-    have hnotA : (Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ (δ : ℝ≥0)] = 1) → False := by
-      intro hA
-      have hall : ∀ u : U, Code.relDistFromCode u V ≤ (δ : ℝ≥0) :=
-        Pr_uniform_eq_one_imp_forall
-          (α := U)
-          (P := fun u : U => Code.relDistFromCode u V ≤ (δ : ℝ≥0))
-          hA
-      have hle_umax : Code.relDistFromCode u_max_sub V ≤ (δ : ℝ≥0) := hall u_max_sub
-      have hnot_le : ¬ Code.relDistFromCode u_max_sub V ≤ (δ : ℝ≥0) := by
-        intro hle
-        -- rewrite using the bridge lemma
-        have hle' : (δᵣ'(u_max, V) : ENNReal) ≤ (δ : ENNReal) := by
-          -- `u_max_sub` coerces to `u_max`
-          simpa [u_max_sub, hbridge (u := u_max)] using hle
-        have hle_q : δᵣ'(u_max, V) ≤ δ := (cast_ennreal_le_iff (δᵣ'(u_max, V)) δ).1 hle'
-        have hδ_lt_umax : δ < δᵣ'(u_max, V) := by
-          simpa [hu_max_eq] using hδlt'
-        exact (not_le_of_gt hδ_lt_umax) hle_q
-      exact hnot_le hle_umax
-    -- extract the desired bound from the XOR
-    cases hx with
-    | inl h =>
-        -- h : (Pr = 1) ∧ ¬(Pr ≤ errorBound)
-        exact False.elim (hnotA h.1)
-    | inr h =>
-        -- h : (Pr ≤ errorBound) ∧ ¬(Pr = 1)
-        exact h.1
-  -- Monotonicity of the error bound: errorBound δ ≤ errorBound δ'
-  have hδ_le_δ' : (δ : ℝ≥0) ≤ (δ' : ℝ≥0) := by
-    exact_mod_cast (le_of_lt hδlt')
-  have herr_mono : errorBound (δ : ℝ≥0) deg domain ≤ errorBound (δ' : ℝ≥0) deg domain :=
-    errorBound_mono (deg := deg) (domain := domain) (hdeg := hdeg)
-      (δ₁ := (δ : ℝ≥0)) (δ₂ := (δ' : ℝ≥0)) hδ_le_δ' hdiv_lt'
-  have herr_mono_ennreal :
-      (errorBound (δ : ℝ≥0) deg domain : ENNReal) ≤
-        (errorBound (δ' : ℝ≥0) deg domain : ENNReal) := by
-    exact_mod_cast herr_mono
-  -- Combine everything
+    exact lt_trans hδ_lt_div hdiv_lt'
+  -- Maximizer: some u_max achieves divergence δ', proves Pr[≤ δ] ≠ 1
+  rcases divergence_attains (U := (U : Set (ι → F))) (V := V) with ⟨u_max, hu_max, hmax⟩
+  have hu_max_eq : δᵣ'(u_max, V) = δ' := by simpa [δ'] using hmax
+  let u_max_sub : U := ⟨u_max, hu_max⟩
+  have hnotA : (Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ (δ : ℝ≥0)] = 1) → False := by
+    intro hA
+    have hall : ∀ u : U, Code.relDistFromCode u V ≤ (δ : ℝ≥0) :=
+      Pr_uniform_eq_one_imp_forall (α := U)
+        (P := fun u : U => Code.relDistFromCode u V ≤ (δ : ℝ≥0)) hA
+    have hle_umax : Code.relDistFromCode u_max_sub V ≤ (δ : ℝ≥0) := hall u_max_sub
+    have hnot_le : ¬ Code.relDistFromCode u_max_sub V ≤ (δ : ℝ≥0) := by
+      intro hle
+      have hle' : (δᵣ'(u_max, V) : ENNReal) ≤ (δ : ENNReal) := by
+        simpa [u_max_sub, hbridge (u := u_max)] using hle
+      have hle_q : δᵣ'(u_max, V) ≤ δ := (cast_ennreal_le_iff (δᵣ'(u_max, V)) δ).1 hle'
+      have hδ_lt_umax : δ < δᵣ'(u_max, V) := by simpa [hu_max_eq] using hδlt'
+      exact (not_le_of_gt hδ_lt_umax) hle_q
+    exact hnot_le hle_umax
+  -- Case split: 0 < δ uses proximity gap via hPG; δ = 0 uses hPG at δ'/2
   have hmain :
       Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≠ (δ' : ENNReal)] ≤
         (errorBound (δ' : ℝ≥0) deg domain : ENNReal) := by
-    calc
-      Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≠ (δ' : ENNReal)]
-          = Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ (δ : ℝ≥0)] := hPr_eq
-      _ ≤ (errorBound (δ : ℝ≥0) deg domain : ENNReal) := hPr_le_errorBound_δ
-      _ ≤ (errorBound (δ' : ℝ≥0) deg domain : ENNReal) := herr_mono_ennreal
+    rcases eq_or_lt_of_le (zero_le (δ : ℝ≥0)) with hδ0 | hδ_pos
+    · -- δ = 0: use hPG at δ₁ = δ'/2 > 0 instead.
+      -- relDist values are {0, δ'}, so Pr[≤ 0] = Pr[≤ δ₁] for δ₁ < δ'.
+      -- Then Pr[≤ δ₁] ≤ errorBound(δ₁) ≤ errorBound(δ').
+      set δ₁ : ℝ≥0 := (δ' : ℝ≥0) / 2 with hδ₁_def
+      have hδ₁_pos : 0 < δ₁ := by positivity
+      have hδ₁_lt_δ' : δ₁ < (δ' : ℝ≥0) := NNReal.half_lt_self (ne_of_gt hdiv_pos)
+      have hδ₁_bound : δ₁ < 1 - ReedSolomon.sqrtRate deg domain :=
+        lt_trans hδ₁_lt_δ' hdiv_lt'
+      -- Pr[≤ δ] = Pr[≤ δ₁]: both count codewords (relDist ∈ {0, δ'}, δ₁ < δ')
+      have hPr_eq_δ₁ :
+          Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ (δ : ℝ≥0)] =
+            Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ δ₁] := by
+        have hfun₁ : (fun u : U => Code.relDistFromCode u V ≤ (δ : ℝ≥0)) =
+            (fun u : U => Code.relDistFromCode u V ≤ δ₁) := by
+          funext u; apply propext
+          constructor
+          · intro hle; exact le_trans hle (by rw [← hδ0]; exact zero_le _)
+          · intro hle
+            have hne : Code.relDistFromCode (u : ι → F) V ≠ (δ' : ENNReal) := by
+              intro heq; exact absurd (heq ▸ hle : (δ' : ENNReal) ≤ δ₁)
+                (not_le.mpr (by exact_mod_cast hδ₁_lt_δ'))
+            exact (hiffU u).mp hne
+        simp [hfun₁]
+      -- Proximity gap at δ₁
+      have hx₁ : Xor'
+          (Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ δ₁] = 1)
+          (Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ δ₁] ≤
+            errorBound δ₁ deg domain) := by
+        simpa [V] using
+          (proximity_gap_affineSubspace (deg := deg) (domain := domain) (U := U) (δ := δ₁)
+            (_hδ := hδ₁_bound) (hPG := hPG hδ₁_pos hδ₁_bound))
+      have hnotA₁ : (Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ δ₁] = 1) → False := by
+        rw [← hPr_eq_δ₁]; exact hnotA
+      have hPr_le₁ : Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ δ₁] ≤
+          errorBound δ₁ deg domain := by
+        cases hx₁ with
+        | inl h => exact False.elim (hnotA₁ h.1)
+        | inr h => exact h.1
+      have herr₁ : errorBound δ₁ deg domain ≤ errorBound (δ' : ℝ≥0) deg domain :=
+        errorBound_mono hdeg (le_of_lt hδ₁_lt_δ') hdiv_lt'
+      calc Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≠ (δ' : ENNReal)]
+            = Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ (δ : ℝ≥0)] := hPr_eq
+        _ = Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ δ₁] := hPr_eq_δ₁
+        _ ≤ (errorBound δ₁ deg domain : ENNReal) := hPr_le₁
+        _ ≤ (errorBound (δ' : ℝ≥0) deg domain : ENNReal) := by exact_mod_cast herr₁
+    · -- 0 < δ: standard path via proximity gap
+      have hx : Xor'
+          (Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ (δ : ℝ≥0)] = 1)
+          (Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ (δ : ℝ≥0)]
+            ≤ errorBound (δ : ℝ≥0) deg domain) := by
+        simpa [V] using
+          (proximity_gap_affineSubspace (deg := deg) (domain := domain) (U := U) (δ := (δ : ℝ≥0))
+            (_hδ := hδ_bound) (hPG := hPG hδ_pos hδ_bound))
+      have hPr_le : Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ (δ : ℝ≥0)] ≤
+          errorBound (δ : ℝ≥0) deg domain := by
+        cases hx with
+        | inl h => exact False.elim (hnotA h.1)
+        | inr h => exact h.1
+      have hδ_le_δ' : (δ : ℝ≥0) ≤ (δ' : ℝ≥0) := by exact_mod_cast (le_of_lt hδlt')
+      have herr_mono : errorBound (δ : ℝ≥0) deg domain ≤ errorBound (δ' : ℝ≥0) deg domain :=
+        errorBound_mono hdeg hδ_le_δ' hdiv_lt'
+      calc Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≠ (δ' : ENNReal)]
+            = Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≤ (δ : ℝ≥0)] := hPr_eq
+        _ ≤ (errorBound (δ : ℝ≥0) deg domain : ENNReal) := hPr_le
+        _ ≤ (errorBound (δ' : ℝ≥0) deg domain : ENNReal) := by exact_mod_cast herr_mono
   -- rewrite back to the original goal
   simpa [δ', V] using hmain
 
