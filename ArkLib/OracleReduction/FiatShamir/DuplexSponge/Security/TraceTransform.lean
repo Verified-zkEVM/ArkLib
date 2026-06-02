@@ -293,20 +293,17 @@ private noncomputable def stdTraceHandlePQuery
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (dsTrace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (dsTrΔ : TraceNabla T_H T_P StmtIn U)
+    (h_trΔ : dsTrΔ.IsSubsetOfQueryLog dsTrace)
     (depthBound : Nat)
     (stateIn : CanonicalSpongeState U)
     (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     UnitSampleM U
       (StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
-  -- TODO: `stdTraceDelta` builds `dsTrΔ` via `TraceNabla.ofQueryLogForwardOnly`, but the
-  -- updated `backTrack` signature demands `dsTrΔ = TraceNabla.ofQueryLog dsTrace`. These
-  -- differ on inverse-`p` entries; resolving this requires either widening `stdTraceDelta`
-  -- to keep `p⁻¹` entries or relaxing `backTrack`'s `h_trΔ` hypothesis. `sorry`'d here.
   -- Item 4(a)i-ii — call `BackTrack(tr, tr_∇, s_in)` to recover `(i, 𝕩, α̂_{<i}, τ̂)` ∈ Σ★.
   match
       backTrack (δ := δ)
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-        dsTrace dsTrΔ (by sorry) stateIn depthBound with
+        dsTrace dsTrΔ h_trΔ stateIn depthBound with
   | .err =>
       failure
   | .noResult =>
@@ -326,6 +323,7 @@ private noncomputable def stdTraceHandleEntry
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (dsTrace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (dsTrΔ : TraceNabla T_H T_P StmtIn U)
+    (h_trΔ : dsTrΔ.IsSubsetOfQueryLog dsTrace)
     (depthBound : Nat)
     (entry : Sigma (oSpec + duplexSpongeChallengeOracle StmtIn U))
     (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
@@ -335,7 +333,7 @@ private noncomputable def stdTraceHandleEntry
   | ⟨.inr (.inr (.inl stateIn)), _stateOut⟩ =>
       stdTraceHandlePQuery (δ := δ)
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-        dsTrace dsTrΔ depthBound stateIn st
+        dsTrace dsTrΔ h_trΔ depthBound stateIn st
   | _ =>
       pure st
 
@@ -386,6 +384,7 @@ private noncomputable def stdTraceEntries
   let dsTrace := dsTraceOfLog (oSpec := oSpec) (StmtIn := StmtIn) (U := U) log
   let dsTrΔ : TraceNabla T_H T_P StmtIn U :=
     stdTraceDelta (StmtIn := StmtIn) (U := U) dsTrace
+  have h_trΔ : dsTrΔ.IsSubsetOfQueryLog dsTrace := TraceNabla.ofQueryLogForwardOnly_isSubset dsTrace
   let depthBound := dsTrace.length + 1
   let rec go
       (remaining : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
@@ -401,7 +400,7 @@ private noncomputable def stdTraceEntries
         let st' ←
           stdTraceHandleEntry (δ := δ)
             (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-            dsTrace dsTrΔ depthBound entry st
+            dsTrace dsTrΔ h_trΔ depthBound entry st
         go rest st'
   let st ← go log { trStd := [], trStdLA := [] }
   pure st.trStd

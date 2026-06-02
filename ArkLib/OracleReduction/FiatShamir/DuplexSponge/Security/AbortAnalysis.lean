@@ -66,7 +66,7 @@ def D2STraceAbort [DecidableEq StmtIn] [DecidableEq U]
 
 /-- Predicate: `BackTrack` does not hit the `err` branch on `(trace, state)`.
 
-The caller supplies the generic `tr_∇` alongside its provenance `h_trΔ : trΔ = ofQueryLog trace`;
+The caller supplies the generic `tr_∇` alongside its provenance `h_trΔ : trΔ.IsSubsetOfQueryLog trace`;
 `backTrack` consumes both. -/
 def BackTrackNoAbort [DecidableEq StmtIn] [DecidableEq U]
     {T_H : Type}
@@ -75,7 +75,7 @@ def BackTrackNoAbort [DecidableEq StmtIn] [DecidableEq U]
     (depthBound : ℕ)
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (trΔ : TraceNabla T_H T_P StmtIn U)
-    (h_trΔ : trΔ = TraceNabla.ofQueryLog trace)
+    (h_trΔ : trΔ.IsSubsetOfQueryLog trace)
     (state : CanonicalSpongeState U) : Prop :=
   backTrack (δ := δ) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
     trace trΔ h_trΔ state depthBound ≠
@@ -121,7 +121,8 @@ def D2SQueryNoAbortOnTrace
     (d2sQueryStep (δ := δ)
         (T_H := T_H) (T_P := T_P)
         (StmtIn := StmtIn) (pSpec := pSpec) (U := U) q).run
-        ({ trace := trace, cacheP := cacheP, trΔ := TraceNabla.ofQueryLog trace } :
+        ({ trace := trace, cacheP := cacheP, trΔ := TraceNabla.ofQueryLog trace,
+           h_inv := TraceNabla.ofQueryLog_isSubset trace } :
           D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
             (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)) ≠
       (failure : AbortComp
@@ -160,7 +161,7 @@ lemma claim_5_19_backTrack_noAbort [DecidableEq StmtIn] [DecidableEq U]
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (trΔ : TraceNabla T_H T_P StmtIn U)
-    (h_trΔ : trΔ = TraceNabla.ofQueryLog trace)
+    (h_trΔ : trΔ.IsSubsetOfQueryLog trace)
     (state : CanonicalSpongeState U)
     (S_BT : S_BT trace state)
     (hInv : ¬ BadEventDS.E_inv trace state S_BT)

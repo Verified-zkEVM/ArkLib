@@ -66,13 +66,18 @@ structure D2SQueryState where
   -- `tr_∇`: deduplicated index for `O(log N)` `inlu`/`outlu` lookups (CO25 Def. 5.2, §5.1)
   trΔ : TraceNabla T_H T_P StmtIn U :=
     ⟨TraceTableOps.empty, TraceTableOps.empty⟩
+  -- Invariant: every entry in `trΔ` appears in `trace`. Maintained by construction:
+  -- each step that appends to `trace` either leaves `trΔ` unchanged or adds an entry
+  -- that matches the new trace element. Required by `backTrack` (CO25 §5.2).
+  h_inv : trΔ.IsSubsetOfQueryLog trace
   -- Phantom: auto-binds `δ` and `pSpec` as implicit struct params (matches the original
   -- shape pre-`gMemo`-deletion, so `set { st with … }` resolves `MonadStateOf` cleanly).
   _phantom : Option (BacktrackOutput
     (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) := none
 
 instance : Inhabited (D2SQueryState
-    (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) := ⟨{}⟩
+    (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
+  ⟨{ h_inv := TraceNabla.IsSubsetOfQueryLog_empty_nil }⟩
 
 /-- Executable approximation of Item 4(d)/(e) tuple-image branching, tightened with
 `BackTrack`-shape checks and challenge-block length sanity. -/
@@ -367,20 +372,26 @@ private def d2sHandleHashQuery
         (d2sQueryOracles (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)))
       (Vector U SpongeSize.C) := do
   let st ← get
-  let (capOut, trΔ') ←
-    match TraceTableOps.inlu st.trΔ.h stmt with
-    -- Item 2(a) — cache hit: `s_{C,out} := tr_∇.h.inlu(𝕩)`.
-    | some capSeg => pure (capSeg, st.trΔ)
-    | none =>
-        -- Item 2(b) — cache miss: `s_{C,out} ←$ 𝒰(Σ^c)`; then `tr_∇.h.add(𝕩, s_{C,out})`.
-        let sampled ← StateT.lift <| OptionT.lift <|
-          d2sSampleCapacity (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
-        pure (sampled,
-          { st.trΔ with h := TraceTableOps.add st.trΔ.h stmt sampled })
-  -- Item 2(c) — append `('h', 𝕩, s_{C,out})` to `tr`; return `s_{C,out}`.
-  let tr' := st.trace ++ [⟨dsHashQuery stmt, capOut⟩]
-  set { st with trace := tr', trΔ := trΔ' }
-  return capOut
+  match TraceTableOps.inlu st.trΔ.h stmt with
+  -- Item 2(a) — cache hit: `s_{C,out} := tr_∇.h.inlu(𝕩)`.
+  | some capSeg =>
+      let trace' := st.trace ++ [⟨dsHashQuery stmt, capSeg⟩]
+      let h_inv' : st.trΔ.IsSubsetOfQueryLog trace' := TraceNabla.IsSubsetOfQueryLog_append_any
+        st.h_inv ⟨dsHashQuery stmt, capSeg⟩
+      set { st with trace := trace', h_inv := h_inv' }
+      return capSeg
+  | none =>
+      -- Item 2(b) — cache miss: `s_{C,out} ←$ 𝒰(Σ^c)`; then `tr_∇.h.add(𝕩, s_{C,out})`.
+      let sampled ← StateT.lift <| OptionT.lift <| d2sSampleCapacity (U := U) (StmtIn := StmtIn)
+        (pSpec := pSpec) (δ := δ)
+      -- Item 2(c) — append `('h', 𝕩, s_{C,out})` to `tr`; return `s_{C,out}`.
+      let trace' := st.trace ++ [⟨dsHashQuery stmt, sampled⟩]
+      let trΔ' : TraceNabla T_H T_P StmtIn U :=
+        { st.trΔ with h := TraceTableOps.add st.trΔ.h stmt sampled }
+      let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
+        TraceNabla.IsSubsetOfQueryLog_append_hash st.h_inv stmt sampled
+      set { st with trace := trace', trΔ := trΔ', h_inv := h_inv' }
+      return sampled
 
 /-- CO25 §5.4 Item 3 — inverse-permutation (`p⁻¹`) branch of `D2SQuery`.
 
@@ -396,20 +407,26 @@ private def d2sHandleInversePermQuery
         (d2sQueryOracles (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)))
       (CanonicalSpongeState U) := do
   let st ← get
-  let (stateIn, trΔ') ←
-    match TraceTableOps.outlu st.trΔ.p stateOut with
-    -- Item 3(a) — reverse cache hit: `s_in := tr_∇.p.outlu(s_out)`.
-    | some recovered => pure (recovered, st.trΔ)
-    | none =>
-        -- Item 3(b) — miss: `s_in ←$ 𝒰(Σ^{r+c})`; then `tr_∇.p.add(s_in, s_out)`.
-        let sampled ← StateT.lift <| OptionT.lift <|
-          d2sSampleState (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
-        pure (sampled,
-          { st.trΔ with p := TraceTableOps.add st.trΔ.p sampled stateOut })
-  -- Item 3(c) — append `('p⁻¹', s_out, s_in)` to `tr`; return `s_in`.
-  let trace' := st.trace ++ [⟨dsPermInvQuery stateOut, stateIn⟩]
-  set { st with trace := trace', trΔ := trΔ' }
-  return stateIn
+  match TraceTableOps.outlu st.trΔ.p stateOut with
+  -- Item 3(a) — reverse cache hit: `s_in := tr_∇.p.outlu(s_out)`.
+  | some recovered =>
+      let trace' := st.trace ++ [⟨dsPermInvQuery stateOut, recovered⟩]
+      let h_inv' : st.trΔ.IsSubsetOfQueryLog trace' :=
+        TraceNabla.IsSubsetOfQueryLog_append_any st.h_inv ⟨dsPermInvQuery stateOut, recovered⟩
+      set { st with trace := trace', h_inv := h_inv' }
+      return recovered
+  | none =>
+      -- Item 3(b) — miss: `s_in ←$ 𝒰(Σ^{r+c})`; then `tr_∇.p.add(s_in, s_out)`.
+      let sampled ← StateT.lift <| OptionT.lift <|
+        d2sSampleState (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+      -- Item 3(c) — append `('p⁻¹', s_out, s_in)` to `tr`; return `s_in`.
+      let trace' := st.trace ++ [⟨dsPermInvQuery stateOut, sampled⟩]
+      let trΔ' : TraceNabla T_H T_P StmtIn U :=
+        { st.trΔ with p := TraceTableOps.add st.trΔ.p sampled stateOut }
+      let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
+        TraceNabla.IsSubsetOfQueryLog_append_perm_inv st.h_inv sampled stateOut
+      set { st with trace := trace', trΔ := trΔ', h_inv := h_inv' }
+      return sampled
 
 /-- CO25 §5.4 Item 4(c) — `BackTrack` returned `.noResult`.
 
@@ -425,29 +442,39 @@ private def d2sHandleBacktrackNoResult
       (CanonicalSpongeState U) := do
   -- find `s_out` for `s_in` from `Cache_p -> inlu -> sample`
   let st ← get
-  let (stateOut, cache', trΔ') ←
-    match popCacheByInput (U := U) st.cacheP stateIn with
-    -- Item 4(c)i — cache pop: `(s_out, Cache_p') := pop(Cache_p, s_in)`, `tr_∇.p.add(s_in, s_out)`.
-    | some (cachedOut, cacheTail) =>
-        let trΔ' := -- Add to trΔ' since we haven't
-          { st.trΔ with p := TraceTableOps.add st.trΔ.p stateIn cachedOut }
-        pure (cachedOut, cacheTail, trΔ')
-    | none =>
-        match TraceTableOps.inlu st.trΔ.p stateIn with
-        -- Item 4(c)ii — forward cache hit: `s_out := tr_∇.p.inlu(s_in)`.
-        | some recovered => pure (recovered, st.cacheP, st.trΔ)
-        | none =>
-            -- Item 4(c)iii — fresh sample: `s_out ←$ 𝒰(Σ^{r+c})`; `tr_∇.p.add(s_in, s_out)`.
-            let sampledOut ← StateT.lift <| OptionT.lift <|
-              d2sSampleState (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
-            let trΔ' :=
-              { st.trΔ with p :=
-                  TraceTableOps.add st.trΔ.p stateIn sampledOut }
-            pure (sampledOut, st.cacheP, trΔ')
-  -- Item 4(c)iv — append `('p', s_in, s_out)` to `tr`; return `s_out`.
-  let trace' := st.trace ++ [⟨dsPermQuery stateIn, stateOut⟩]
-  set { st with trace := trace', cacheP := cache', trΔ := trΔ' }
-  return stateOut
+  match popCacheByInput (U := U) st.cacheP stateIn with
+  -- Item 4(c)i — cache pop: `(s_out, Cache_p') := pop(Cache_p, s_in)`, `tr_∇.p.add(s_in, s_out)`.
+  | some (cachedOut, cacheTail) =>
+      -- Item 4(c)iv — append `('p', s_in, s_out)` to `tr`.
+      let trace' := st.trace ++ [⟨dsPermQuery stateIn, cachedOut⟩]
+      let trΔ' : TraceNabla T_H T_P StmtIn U :=
+        { st.trΔ with p := TraceTableOps.add st.trΔ.p stateIn cachedOut }
+      let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
+        TraceNabla.IsSubsetOfQueryLog_append_perm st.h_inv stateIn cachedOut
+      set { st with trace := trace', cacheP := cacheTail, trΔ := trΔ', h_inv := h_inv' }
+      return cachedOut
+  | none =>
+      match TraceTableOps.inlu st.trΔ.p stateIn with
+      -- Item 4(c)ii — forward cache hit: `s_out := tr_∇.p.inlu(s_in)`.
+      | some recovered =>
+          -- Item 4(c)iv — append `('p', s_in, s_out)` to `tr`.
+          let trace' := st.trace ++ [⟨dsPermQuery stateIn, recovered⟩]
+          let h_inv' : st.trΔ.IsSubsetOfQueryLog trace' :=
+            TraceNabla.IsSubsetOfQueryLog_append_any st.h_inv ⟨dsPermQuery stateIn, recovered⟩
+          set { st with trace := trace', h_inv := h_inv' }
+          return recovered
+      | none =>
+          -- Item 4(c)iii — fresh sample: `s_out ←$ 𝒰(Σ^{r+c})`; `tr_∇.p.add(s_in, s_out)`.
+          let sampledOut ← StateT.lift <| OptionT.lift <|
+            d2sSampleState (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+          -- Item 4(c)iv — append `('p', s_in, s_out)` to `tr`.
+          let trace' := st.trace ++ [⟨dsPermQuery stateIn, sampledOut⟩]
+          let trΔ' : TraceNabla T_H T_P StmtIn U :=
+            { st.trΔ with p := TraceTableOps.add st.trΔ.p stateIn sampledOut }
+          let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
+            TraceNabla.IsSubsetOfQueryLog_append_perm st.h_inv stateIn sampledOut
+          set { st with trace := trace', trΔ := trΔ', h_inv := h_inv' }
+          return sampledOut
 
 /-- CO25 §5.4 Item 4(e)iii.B — synthesize `s_out` from the first rate block and chain the
 remaining rate blocks into `Cache_p` extensions.
@@ -455,7 +482,6 @@ remaining rate blocks into `Cache_p` extensions.
 Parses `ρ̂_i ‖ z` as exactly `L_V(i)` rate segments: the first becomes the rate half of the
 sampled `s_out`; the rest seed paired states that extend `Cache_p`. -/
 private def d2sSynthesizeStateFromRateBlocks
-    (stateIn : CanonicalSpongeState U)
     (rateBlocks : List (Vector U SpongeSize.R)) :
     StateT
       (D2SQueryState
@@ -463,9 +489,7 @@ private def d2sSynthesizeStateFromRateBlocks
         (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (AbortComp
         (d2sQueryOracles (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)))
-      (CanonicalSpongeState U ×
-        List (CanonicalSpongeState U × CanonicalSpongeState U) ×
-        TraceNabla T_H T_P StmtIn U) := do
+      (CanonicalSpongeState U × List (CanonicalSpongeState U × CanonicalSpongeState U)) := do
   let st ← get
   match rateBlocks with
   | [] => StateT.lift failure
@@ -486,35 +510,7 @@ private def d2sSynthesizeStateFromRateBlocks
           --   `(s_out, s^{(1)}), …, (s^{(L_V(i)-2)}, s^{(L_V(i)-1)})`.
           let extraPairs :=
             chainPairsFrom (U := U) synthesized_s_out extraStates
-          -- Item 4(e)iii.F — `tr_∇.p.add(s_in, s_out)`.
-          let trΔ' :=
-            { st.trΔ with p :=
-                TraceTableOps.add st.trΔ.p stateIn synthesized_s_out }
-          pure (synthesized_s_out, st.cacheP ++ extraPairs, trΔ')
-
-/-- CO25 §5.4 Item 4(d) — fallback `p` handling when the recovered tuple is **not** in the
-codec image: normal `tr_∇.p.inlu`, sample `s_out` on miss. -/
-private def d2sHandleNonImagePermStep
-    (stateIn : CanonicalSpongeState U) :
-    StateT
-      (D2SQueryState
-        (δ := δ) (T_H := T_H) (T_P := T_P)
-        (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-      (AbortComp
-        (d2sQueryOracles (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)))
-      (CanonicalSpongeState U × TraceNabla T_H T_P StmtIn U) := do
-  let st ← get
-  match TraceTableOps.inlu st.trΔ.p stateIn with
-  -- Item 4(d)i — forward cache hit: `s_out := tr_∇.p.inlu(s_in)`.
-  | some recovered => pure (recovered, st.trΔ)
-  | none =>
-      -- Item 4(d)ii — fresh sample: `s_out ←$ 𝒰(Σ^{r+c})`; `tr_∇.p.add(s_in, s_out)`.
-      let sampledOut ← StateT.lift <| OptionT.lift <|
-        d2sSampleState (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
-      let trΔ' :=
-        { st.trΔ with p :=
-            TraceTableOps.add st.trΔ.p stateIn sampledOut }
-      pure (sampledOut, trΔ')
+          pure (synthesized_s_out, st.cacheP ++ extraPairs)
 
 /-- CO25 §5.4 Items 4(d)/4(e) — `BackTrack` returned `some (i, 𝕩, τ̂, α̂_1, …, α̂_i)`.
 
@@ -542,45 +538,65 @@ private def d2sHandleBacktrackSome
         (d2sQueryOracles (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)))
       (CanonicalSpongeState U) := do
   let st ← get
-  let (stateOut, cache', trΔ') ←
-    if d2sInCodecImagePredicate -- all encoded-messages `α̂ᵢ` are in `Im(φᵢ)`
-        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) backtrackOut then
-      -- Paper Item 4(e)i — **unconditional** `g_i` query: `ρ̂_i := g_i(𝕩, τ̂, α̂_1, …, α̂_i)`.
-      -- Determinism w.r.t. the encoded key is enforced by `D2SAlgo`'s `tr_i` memo at the
-      -- bridge layer (`d2sCodecBridgeImplMemo` in §5.4 D2SAlgo); same key ⇒ same response.
-      let sampledRhoHat ← StateT.lift <| OptionT.lift <|
-        d2sQueryG (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
-          backtrackOut.roundIdx backtrackOut.stmt backtrackOut.salt
-          backtrackOut.encodedMessages
-      -- Paper Item 4(e)ii — `s_out := tr_∇.p.inlu(s_in)`, if any.
-      match TraceTableOps.inlu st.trΔ.p stateIn with
-      | some recovered =>
-          pure (recovered, st.cacheP, st.trΔ)
-      | none =>
-          -- Paper Item 4(e)iii.A/B — sample `z`, concat `ρ̂_i ‖ z`, reshape into `L_V(i)`
-          -- rate blocks.
-          let rateBlocks ← StateT.lift <| OptionT.lift <|
-            d2sRateBlocksFromChallenge
-              (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
-              (i := backtrackOut.roundIdx) sampledRhoHat
-          -- Paper Item 4(e)iii.C/D/E — **sample capacities** for tail rate blocks, extend `Cache_p`,
-          -- emit `s_out := (s_R^(0), s_C^(0))`, and `tr_∇.p.add(s_in, s_out)`.
-          let (s_out, cache', trΔ') ←
-            d2sSynthesizeStateFromRateBlocks (δ := δ) (T_H := T_H) (T_P := T_P)
-              (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-              stateIn rateBlocks.toList
-          pure (s_out, cache', trΔ')
-    else
-      -- Paper Item 4(d) — tuple not in image; `tr_∇.p.inlu(s_in)` else fresh sample,
-      -- no `g_i` query, no `Cache_p` extension.
-      let (stateOut, trΔ') ←
-        d2sHandleNonImagePermStep (δ := δ) (T_H := T_H) (T_P := T_P)
-          (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stateIn
-      pure (stateOut, st.cacheP, trΔ')
-  -- Paper Item 4(f) — add `('p', s_in, s_out)` to `tr`; Item 4(g) returns `s_out`.
-  let trace' := st.trace ++ [⟨dsPermQuery stateIn, stateOut⟩]
-  set { st with trace := trace', cacheP := cache', trΔ := trΔ' }
-  return stateOut
+  if d2sInCodecImagePredicate -- all encoded-messages `α̂ᵢ` are in `Im(φᵢ)`
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) backtrackOut then
+    -- Paper Item 4(e)i — **unconditional** `g_i` query: `ρ̂_i := g_i(𝕩, τ̂, α̂_1, …, α̂_i)`.
+    -- Determinism w.r.t. the encoded key is enforced by `D2SAlgo`'s `tr_i` memo at the
+    -- bridge layer (`d2sCodecBridgeImplMemo` in §5.4 D2SAlgo); same key ⇒ same response.
+    let sampledRhoHat ← StateT.lift <| OptionT.lift <|
+      d2sQueryG (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+        backtrackOut.roundIdx backtrackOut.stmt backtrackOut.salt
+        backtrackOut.encodedMessages
+    -- Paper Item 4(e)ii — `s_out := tr_∇.p.inlu(s_in)`, if any.
+    match TraceTableOps.inlu st.trΔ.p stateIn with
+    | some recovered =>
+        -- Paper Item 4(f) — append `('p', s_in, s_out)` to `tr`; Item 4(g) returns `s_out`.
+        let trace' := st.trace ++ [⟨dsPermQuery stateIn, recovered⟩]
+        let h_inv' : st.trΔ.IsSubsetOfQueryLog trace' :=
+          TraceNabla.IsSubsetOfQueryLog_append_any st.h_inv ⟨dsPermQuery stateIn, recovered⟩
+        set { st with trace := trace', h_inv := h_inv' }
+        return recovered
+    | none =>
+        -- Paper Item 4(e)iii.A/B — sample `z`, concat `ρ̂_i ‖ z`, reshape into `L_V(i)`
+        -- rate blocks.
+        let rateBlocks ← StateT.lift <| OptionT.lift <|
+          d2sRateBlocksFromChallenge
+            (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+            (i := backtrackOut.roundIdx) sampledRhoHat
+        -- Paper Item 4(e)iii.C/D/E — **sample capacities** for tail rate blocks, extend `Cache_p`,
+        -- emit `s_out := (s_R^(0), s_C^(0))`.
+        let (s_out, cache') ←
+          d2sSynthesizeStateFromRateBlocks (δ := δ) (T_H := T_H) (T_P := T_P)
+            (StmtIn := StmtIn) (pSpec := pSpec) (U := U) rateBlocks.toList
+        -- Paper Item 4(e)iii.F — `tr_∇.p.add(s_in, s_out)`
+        let trace' := st.trace ++ [⟨dsPermQuery stateIn, s_out⟩]
+        let trΔ' : TraceNabla T_H T_P StmtIn U :=
+          { st.trΔ with p := TraceTableOps.add st.trΔ.p stateIn s_out }
+        let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
+          TraceNabla.IsSubsetOfQueryLog_append_perm st.h_inv stateIn s_out
+        set { st with trace := trace', cacheP := cache', trΔ := trΔ', h_inv := h_inv' }
+        return s_out
+  else
+    -- Paper Item 4(d) — tuple not in image; `tr_∇.p.inlu(s_in)` else fresh sample
+    match TraceTableOps.inlu st.trΔ.p stateIn with
+    | some recovered =>
+        -- Item 4(d)i — cache hit
+        let trace' := st.trace ++ [⟨dsPermQuery stateIn, recovered⟩]
+        let h_inv' : st.trΔ.IsSubsetOfQueryLog trace' :=
+          TraceNabla.IsSubsetOfQueryLog_append_any st.h_inv ⟨dsPermQuery stateIn, recovered⟩
+        set { st with trace := trace', h_inv := h_inv' }
+        return recovered
+    | none =>
+        -- Item 4(d)ii — fresh sample
+        let sampledOut ← StateT.lift <| OptionT.lift <|
+          d2sSampleState (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+        let trace' := st.trace ++ [⟨dsPermQuery stateIn, sampledOut⟩]
+        let trΔ' : TraceNabla T_H T_P StmtIn U :=
+          { st.trΔ with p := TraceTableOps.add st.trΔ.p stateIn sampledOut }
+        let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
+          TraceNabla.IsSubsetOfQueryLog_append_perm st.h_inv stateIn sampledOut
+        set { st with trace := trace', trΔ := trΔ', h_inv := h_inv' }
+        return sampledOut
 
 /-- CO25 §5.4 Item 4 — forward-permutation (`p`) branch of `D2SQuery`.
 
@@ -601,11 +617,7 @@ private def d2sHandleForwardPermQuery
       backTrack
         (δ := δ)
         (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-        -- TODO: `st.trΔ` is maintained in lockstep with `st.trace` by this very stepper, but
-        -- the equation `st.trΔ = TraceNabla.ofQueryLog st.trace` is a stepper-level invariant
-        -- not currently exposed at the type level. Discharging it with `sorry` for now;
-        -- factoring this out as a `D2SQueryState` invariant lemma is tracked separately.
-        st.trace st.trΔ (by sorry) stateIn (st.trace.length + 1) with
+        st.trace st.trΔ st.h_inv stateIn (st.trace.length + 1) with
   | .err =>
       -- Paper Item 4(b): `err` branch aborts.
       StateT.lift failure
