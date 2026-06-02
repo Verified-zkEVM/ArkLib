@@ -13,9 +13,10 @@ import CompPoly.Bivariate.GuruswamiSudan
 /-!
 # Executable Guruswami-Sudan Decoder
 
-ArkLib integration layer for the executable CompPoly Guruswami-Sudan core.
-The decoder uses CompPoly's packed runtime formats, and correctness statements
-are collected in `ArkLib.Data.CodingTheory.GuruswamiSudan.Correctness`.
+ArkLib integration layer for the executable CompPoly Guruswami-Sudan decoder.
+ArkLib-specific parameter certificates and selectors wrap CompPoly's packed
+point-array API; correctness statements are collected in
+`ArkLib.Data.CodingTheory.GuruswamiSudan.Correctness`.
 -/
 
 namespace GuruswamiSudan
@@ -80,7 +81,7 @@ def searchParamsUpTo
         some (execParamsOfMultiplicityAndDegree k e multiplicity weightedDegreeBound)
     | none => none
 
-/-- Parameter selector for the selector-backed executable decoder. -/
+/-- ArkLib-certified view of a CompPoly parameter selector. -/
 structure GSParamSelector where
   toCompPolySelector : CompPoly.GuruswamiSudan.GSParamSelector
   sound :
@@ -94,7 +95,7 @@ structure GSParamSelector where
           toCompPolySelector.choose k n e = some params ∧
             GSParamCert k n e params
 
-/-- Certificate for using bounded integer search as a parameter selector. -/
+/-- Certificate for using bounded integer search as an ArkLib parameter selector. -/
 structure GSBoundedSearchCert (maxMultiplicity maxWeightedDegree : Nat) : Prop where
   sound :
     ∀ {k n e params},
@@ -107,7 +108,7 @@ structure GSBoundedSearchCert (maxMultiplicity maxWeightedDegree : Nat) : Prop w
           searchParamsUpTo maxMultiplicity maxWeightedDegree k n e = some params ∧
             GSParamCert k n e params
 
-/-- Parameter selector backed by bounded integer search and a proof certificate. -/
+/-- ArkLib parameter selector backed by bounded integer search and a proof certificate. -/
 def boundedSearchParamSelector
     {maxMultiplicity maxWeightedDegree : Nat}
     (cert : GSBoundedSearchCert maxMultiplicity maxWeightedDegree) :
