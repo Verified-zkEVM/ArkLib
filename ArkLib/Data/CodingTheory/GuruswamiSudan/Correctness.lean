@@ -332,7 +332,7 @@ theorem decodeWithParams_complete
     (ctx := ctx) (params := params) (hparams := hparams) (hrep := hrep)
     (p := p)).2 hp
 
-/-- Soundness corollary for the selector-backed executable decoder. -/
+/-- Soundness corollary for the selector-backed executable decoder under selector completeness. -/
 theorem decode_sound
     (ctx : CompPoly.GuruswamiSudan.GSFilteredCoreContext F)
     (selector : GSParamSelector)
@@ -347,7 +347,8 @@ theorem decode_sound
     (p := cp.toPoly)).1 ⟨cp, hcp, rfl⟩
   simpa [GSSpecSet] using hp
 
-/-- Completeness corollary for the selector-backed executable decoder. -/
+/-- Completeness corollary for the selector-backed executable decoder under
+selector completeness. -/
 theorem decode_complete
     (ctx : CompPoly.GuruswamiSudan.GSFilteredCoreContext F)
     (selector : GSParamSelector)
@@ -364,8 +365,8 @@ theorem decode_complete
 
 /--
 Compatibility with the specification `decoder`, under an explicit degree
-hypothesis. The degree hypothesis supplies the bounded-degree premise used in
-the reverse direction.
+hypothesis. The degree hypothesis supplies the bounded-degree premise needed to
+compare with the specification decoder.
 -/
 theorem mem_decodeWithParams_iff_mem_decoder_of_degree_lt
     (ctx : CompPoly.GuruswamiSudan.GSFilteredCoreContext F)
@@ -398,7 +399,7 @@ theorem mem_decodeWithParams_iff_mem_decoder_of_degree_lt
 /--
 Selector-backed compatibility with the specification `decoder`, under an
 explicit degree hypothesis. The proof factors through the shared
-degree-and-distance specification.
+degree-and-distance specification and the selector completeness condition.
 -/
 theorem mem_decode_iff_mem_decoder_of_degree_lt
     (ctx : CompPoly.GuruswamiSudan.GSFilteredCoreContext F)

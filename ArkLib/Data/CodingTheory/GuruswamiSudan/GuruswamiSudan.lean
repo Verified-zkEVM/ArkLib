@@ -20,12 +20,12 @@ import CompPoly.Univariate.Lagrange
 /-!
 # Guruswami-Sudan Decoder
 
-This module keeps the abstract Guruswami-Sudan specification decoder alongside
+This module contains the abstract Guruswami-Sudan specification decoder and
 constructive candidate generation for Reed-Solomon codes.
 
 The witness search is implemented by `computeGsWitness`, which solves a linearized
 system of Hasse-derivative constraints with a normalization equation. Candidate
-message polynomials are then filtered by a computable root check for
+message polynomials are filtered by a computable root check for
 `$Q(X, p(X)) = 0$` using CompPoly arithmetic.
 
 ## References
@@ -87,9 +87,8 @@ $< k$ that is $e$-close to `f` appears in the output, provided $e$ is
 within the Johnson bound.  This relies on `dvd_property`.
 
 NOTE: The hypothesis in both theorems uses
-$e < n - \sqrt{(k + 1) \cdot n}$ (matching the GS rate
-parameter $\rho = (k + 1) / n$ used in `proximity_gap_johnson`),
-rather than the original $e \leq n - \sqrt{k \cdot n}$.
+$e < n - \sqrt{(k + 1) \cdot n}$, matching the GS rate
+parameter $\rho = (k + 1) / n$ used in `proximity_gap_johnson`.
 -/
 
 open Classical in
@@ -294,14 +293,15 @@ lemma mem_polynomials_degree_lt
 
 /-! ### CompPoly-based interpolation candidate
 
-The following private helpers use CompPoly's computable `CPolynomial.Raw` type to build a
-Lagrange interpolation candidate from the first `min k n` evaluation points. The result is
-converted back to Mathlib's `Polynomial F` via coefficient extraction (`polynomialOfCoeffs`),
-which is fully computable.
+Private helpers use CompPoly's computable `CPolynomial.Raw` type to build a
+Lagrange interpolation candidate from the first `min k n` evaluation points. The
+result is converted back to Mathlib's `Polynomial F` via coefficient extraction
+(`polynomialOfCoeffs`), which is fully computable.
 
 The candidate is constructed with `rawToPolyBounded`, whose output has bounded degree by
-construction (`degree_polynomialOfCoeffs_deg_lt_deg`). CompPoly's `Raw.toPoly` bridge is
-noncomputable, so we validate the candidate by degree and distance checks before insertion.
+construction (`degree_polynomialOfCoeffs_deg_lt_deg`). CompPoly's `Raw.toPoly`
+conversion is noncomputable, so set membership includes degree and distance
+checks.
 -/
 
 /-- General Lagrange interpolation over arbitrary evaluation points, computed using
@@ -331,7 +331,7 @@ private def rawToPolyBounded (raw : CompPoly.CPolynomial.Raw F) (bound : ℕ) : 
   polynomialOfCoeffs (fun i : Fin bound ↦ raw.coeff i.val)
 
 /-- Build an interpolation candidate from the first `min k n` evaluation points.
-    Returns `none` when `k = 0` (no meaningful interpolation).
+    Returns `none` when `k = 0` or there are no evaluation points to use.
     The result, when `some`, has `degree < k` by construction of `rawToPolyBounded`. -/
 private def compPolyCandidate [Fintype F] (k : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
     Option F[X] :=
@@ -377,7 +377,7 @@ For a bivariate polynomial `Q = ∑ cᵢⱼ X^i Y^j`, the `(a,b)`-Hasse derivati
 `(x₀, y₀)` is `∑ C(i,a) C(j,b) cᵢⱼ x₀^{i-a} y₀^{j-b}`, where `C(n,k)` denotes
 the binomial coefficient.
 
-The following functions compute this evaluation purely computably over coefficient
+These functions compute this evaluation purely computably over coefficient
 vectors, with no reliance on classical choice or nonconstructive root extraction.
 -/
 
@@ -610,7 +610,7 @@ private noncomputable def computeGsWitness (k D r : ℕ) (ωs : Fin n ↪ F) (f 
     Option {c : Fin (D + 1) × Fin (D + 1) → F // isWitnessC k D r ωs f c = true} :=
   (witnessTargets k D).findSome? (solveGsWitnessAtTarget (n := n) k D r ωs f)
 
-/-- Constructive witness-availability check computed from `computeGsWitness`. -/
+/-- Boolean witness-availability predicate computed from `computeGsWitness`. -/
 private noncomputable def hasWitnessC (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) : Bool :=
   (computeGsWitness (n := n) k D r ωs f).isSome
 
@@ -693,8 +693,8 @@ private lemma isQRootRaw_iff_all_coeff_zero {k D : ℕ}
 /-- Candidate polynomials validated against a finite constructive witness search
     with Hasse-derivative multiplicity checking and CompPoly-based Q-root extraction.
 
-    The filter first computes one concrete witness `Q` (as coefficient vector `c`)
-    using `computeGsWitness`. Then for each degree-`< k` candidate `p`, it verifies:
+    The filter uses one concrete witness `Q` (as coefficient vector `c`) from
+    `computeGsWitness`. For each degree-`< k` candidate `p`, it verifies:
     1. `Q(X, p(X)) = 0` (Y-root extraction), and
     2. The Hamming distance `Δ₀(f, p ∘ ωs) ≤ e`.
 -/
@@ -718,9 +718,10 @@ private lemma mem_witness_candidate_set_imp [Fintype F] {k r D e : ℕ} {ωs : F
     exact ⟨mem_polynomials_degree_lt.mp hp.1, hp.2.2⟩
   · simp at hp
 
-/-- Strengthened witness soundness: when `r > 0`, every candidate in `witnessCandidateSet`
-    is backed by a witness whose Hasse-derivative multiplicity conditions imply pointwise
-    root vanishing at every interpolation point.
+/-- Witness-backed candidate soundness. When `r > 0`, every candidate in
+    `witnessCandidateSet` is backed by a witness whose Hasse-derivative
+    multiplicity conditions imply pointwise root vanishing at every interpolation
+    point.
 
     Concretely, there exists a coefficient vector `c` satisfying:
     * `isWitnessC` (nonzero in the weighted-degree region and full multiplicity vanishing), and
@@ -748,24 +749,26 @@ private lemma witness_candidate_set_witness_vanishes [Fintype F] {k r D e : ℕ}
       exact ⟨w.1, w.2, hcond.1, fun i ↦ isWitnessC_imp_eval_zero_at_points hr w.2 i⟩
 
 /--
-Constructive decoder candidate set inspired by Guruswami–Sudan.
+Finite decoder candidate set inspired by Guruswami–Sudan.
 
 **Definition.** The computable decoder returns the union of:
-* a CompPoly interpolation fast-path candidate set, and
+* a CompPoly Lagrange interpolation candidate set, and
 * a GS witness-filtered set computed from a constructive linear-system witness search.
 
 The implementation combines two candidate sources:
 
-1. **CompPoly Lagrange candidate** (`compPolyCandidateSet`): A fast-path candidate
+1. **CompPoly Lagrange candidate** (`compPolyCandidateSet`): A candidate
    constructed via CompPoly's computable Lagrange interpolation from the first
-   `min k n` evaluation points. Included only if it passes degree and distance checks.
+   `min k n` evaluation points. The candidate is included when it passes degree
+   and distance checks.
 
 2. **GS witness-filtered candidates** (`witnessCandidateSet`): A concrete witness
    coefficient vector is computed by solving a linearized GS system with normalization.
    Candidates are filtered by `Q(X, p(X)) = 0` and the distance bound.
 
-The implementation is fully computable and avoids classical choice operators,
-classical proof-only decidability wrappers, and nonconstructive root extraction.
+The candidate-generation steps use explicit interpolation, witness search, and
+`Q(X, p(X))` checks, with no nonconstructive root extraction. The definition is
+marked `noncomputable` because it returns a theorem-level `Finset F[X]`.
 -/
 noncomputable def computableDecoder [Fintype F] (k r D e : ℕ) (ωs : Fin n ↪ F)
     (f : Fin n → F) :
@@ -816,11 +819,11 @@ noncomputable def proximityGapDelta0 (k m : ℕ) : ℝ :=
 noncomputable def proximityGapJohnson (k m : ℕ) : ℕ :=
   Nat.floor ((n : ℝ) * proximityGapDelta0 (n := n) k m)
 
-/-! ### Bridge to classical formulations
+/-! ### Classical Formulations
 
-The following definitions and lemmas provide a noncomputable bridge between the computable
-coefficient-vector representation `c : Fin (D+1) × Fin (D+1) → F` and the classical
-Mathlib bivariate polynomial type `F[X][Y]`.
+These definitions and lemmas relate the computable coefficient-vector
+representation `c : Fin (D+1) × Fin (D+1) → F` to the classical Mathlib
+bivariate polynomial type `F[X][Y]`.
 
 The key function `coeffVecToBivariate` constructs a Mathlib bivariate polynomial from a
 bounded coefficient vector. Coefficient agreement between the two representations is
@@ -875,7 +878,7 @@ lemma coeff_vec_to_bivariate_ne_zero_of_isWitnessC
     When the computable `hasWitnessC` check returns `true`, we can extract a concrete
     coefficient vector `c` satisfying `isWitnessC`.
 
-    Additionally, when `m > 0`, the witness satisfies:
+    For `m > 0`, the witness satisfies:
     * Nonzero coefficient in the weighted-degree region (`isWitnessC_nonzero`).
     * All Hasse derivatives of order `< m` vanish at every interpolation point
       (`isWitnessC_hasse_deriv_vanishes`).
@@ -897,13 +900,13 @@ lemma guruswami_sudan_for_proximity_gap_existence
       (proximityGapDegreeBound (n := n) k m) m ωs f).1 hw
   exact ⟨w.1, w.2⟩
 
-/-- Strengthened existence: when the witness check passes and `m > 0`, the extracted
-    witness additionally satisfies pointwise evaluation vanishing at every interpolation
-    point, and the corresponding bivariate polynomial is nonzero.
+/-- Witness extraction with pointwise vanishing. When the witness check passes
+    and `m > 0`, the extracted witness satisfies pointwise evaluation vanishing
+    at every interpolation point, and the corresponding bivariate polynomial is
+    nonzero.
 
-    This is a computable strengthening of
-    `guruswami_sudan_for_proximity_gap_existence`, not a full paper-level
-    quantifier match for lemma 5.3 in [BCIKS20]. -/
+    This lemma exposes computable witness properties associated with
+    `guruswami_sudan_for_proximity_gap_existence`. -/
 lemma guruswami_sudan_for_proximity_gap_existence_strong
     {k m : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F}
     (hm : 0 < m)
@@ -941,13 +944,12 @@ lemma guruswami_sudan_for_proximity_gap_property [Fintype F] {k m : ℕ} {ωs : 
         evalCoeffVecAt k (proximityGapDegreeBound (n := n) k m) c (ωs i) (f i) = 0 := by
   exact witness_candidate_set_witness_vanishes hm hp
 
-/-- Strengthened proximity gap property: additionally asserts that the Q-root extraction
-    result has all coefficients zero (via `isQRootRaw_iff_all_coeff_zero`), and the
-    corresponding bivariate polynomial is nonzero.
+/-- Proximity-gap witness property with zero Q-root coefficients. The Q-root
+    extraction result has all coefficients zero (via `isQRootRaw_iff_all_coeff_zero`),
+    and the corresponding bivariate polynomial is nonzero.
 
-    This lemma is conditional on membership in `witnessCandidateSet`; it should be read
-    as a constructive bridge lemma rather than a direct restatement of lemma 5.3 in
-    [BCIKS20]. -/
+    This lemma assumes membership in `witnessCandidateSet` and exposes the
+    coefficient-vector properties used by the proximity-gap interface. -/
 lemma guruswami_sudan_for_proximity_gap_property_strong [Fintype F] {k m : ℕ} {ωs : Fin n ↪ F}
     {f : Fin n → F}
     {p : ReedSolomon.code ωs k}

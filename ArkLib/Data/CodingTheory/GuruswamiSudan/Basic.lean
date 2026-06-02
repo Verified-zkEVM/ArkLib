@@ -35,8 +35,7 @@ noncomputable def proximity_gap_johnson (k n m : ℕ) : ℝ :=
   let rho := (k + 1 : ℚ) / n
   1 - √ rho - √ rho / (2 * m)
 
-/-- Degree bound with ρ = k/n (matching RS code rate). The original
-    `proximity_gap_degree_bound` uses ρ = (k+1)/n which is conservative. -/
+/-- Degree bound with ρ = k/n, matching the RS code rate. -/
 noncomputable def gs_degree_bound (k n m : ℕ) : ℕ :=
   let rho := (k : ℚ) / n
   ⌊(m + 1 / 2) * √ rho * n⌋₊
@@ -637,7 +636,7 @@ lemma rootMultiplicity_le_of_coeff_ne_zero [DecidableEq F] {Q : F[X][Y]} {x y : 
             (natWeightedDegree g 1 1 + 1)) (List.range (natWeightedDegree g 1 1 + 1)))) <;> aesop
 
 /-- Shifting a polynomial by (x, y) results in the zero polynomial if and only if the
-    original polynomial was zero. -/
+    input polynomial is zero. -/
 lemma shift_eq_zero_iff {F : Type} [Field F] (f : F[X][Y]) (x y : F) : shift f x y = 0 ↔ f = 0 := by
   constructor <;> intro h <;> simp_all only [shift, zero_comp, Polynomial.map_zero]
   have h_comp : f.comp (Y + C (C y)) = 0 := by
@@ -1018,8 +1017,8 @@ lemma gs_sufficient_multiplicity_bound {dist : ℕ}
     · unfold gs_johnson; ring_nf; norm_num
       norm_num [mul_assoc, mul_comm, mul_left_comm, ne_of_gt (zero_lt_one.trans_le hm)]
 
-/-- Divisibility via the rate-corrected GS system. Uses gs_degree_bound (ρ=k/n)
-    and gs_johnson instead of the conservative proximity_gap versions. -/
+/-- Divisibility via the rate-corrected GS system using `gs_degree_bound`
+    (ρ = k/n) and `gs_johnson`. -/
 theorem gs_dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k)
     {Q : F[X][Y]}
   (hQ_deg : weightedDegree Q 1 (k - 1) ≤ gs_degree_bound k n m)
