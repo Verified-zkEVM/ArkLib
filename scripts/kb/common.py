@@ -14,6 +14,7 @@ DEFAULT_BIB_PATH = REPO_ROOT / "blueprint" / "src" / "references.bib"
 DEFAULT_REFERENCES_JSON = REPO_ROOT / "docs" / "kb" / "_generated" / "references.json"
 DEFAULT_CITATIONS_JSON = REPO_ROOT / "docs" / "kb" / "_generated" / "lean-citations.json"
 DEFAULT_DECLARATIONS_JSON = REPO_ROOT / "docs" / "kb" / "_generated" / "declarations.json"
+DEFAULT_DEDUP_REPORT = REPO_ROOT / "docs" / "kb" / "_generated" / "dedup-report.md"
 DEFAULT_LEAN_ROOT = REPO_ROOT / "ArkLib"
 
 
