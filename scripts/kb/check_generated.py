@@ -9,10 +9,12 @@ from pathlib import Path
 from common import (
     DEFAULT_BIB_PATH,
     DEFAULT_CITATIONS_JSON,
+    DEFAULT_DECLARATIONS_JSON,
     DEFAULT_LEAN_ROOT,
     DEFAULT_REFERENCES_JSON,
     REPO_ROOT,
 )
+from extract_declarations import extract_declarations
 from extract_lean_citations import extract_citations
 from sync_from_bib import build_payload
 
@@ -55,6 +57,13 @@ def main() -> int:
             "extract_lean_citations.py",
             expected_citations(keys),
             DEFAULT_CITATIONS_JSON,
+        )
+    )
+    errors.extend(
+        compare_payload(
+            "extract_declarations.py",
+            extract_declarations([DEFAULT_LEAN_ROOT]),
+            DEFAULT_DECLARATIONS_JSON,
         )
     )
 
