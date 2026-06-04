@@ -284,8 +284,7 @@ def d2sSampleCapacityList :
       pure (head :: tail)
 
 /-- CO25 §5.4 Item 4(e)iiiB — Split units into `m` rate blocks of size `r`,
-padding the final partial block with fresh `𝒰(Σ)` samples.
-TODO: make this iterative instead of recursive -/
+padding the final partial block with fresh `𝒰(Σ)` samples. -/
 private def d2sRateBlocksFromUnitsM :
     (m : Nat) → List U →
       OracleComp (d2sQueryOracles (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))

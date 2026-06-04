@@ -84,6 +84,13 @@ structure BacktrackSequence (trace : QueryLog (duplexSpongeChallengeOracle StmtI
   capacitySegment_input_ne_output : ∀ i : Fin outputState.length,
     inputState[i].capacitySegment ≠ outputState[i].capacitySegment
 
+/-- The flattened sequence of states: `[s_{in,0}, s_{out,0}, s_{in,1}, s_{out,1}, ..., s]`. -/
+def BacktrackSequence.flattenStateSequence
+    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {state : CanonicalSpongeState U}
+    (seq : BacktrackSequence trace state) : List (CanonicalSpongeState U) :=
+  (seq.inputState.zip seq.outputState).foldr (fun p acc => p.1 :: p.2 :: acc) [state]
+
 /-- First-occurrence index of an entry in a trace. -/
 private def firstOccurrenceIndex
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
@@ -149,10 +156,10 @@ structure BacktrackSequenceFamily (trace : QueryLog (duplexSpongeChallengeOracle
     (state : CanonicalSpongeState U) where
   /-- `S_BT(tr, s)` — finite set of backtrack sequences (CO25 Def 5.3). -/
   seqFamily : Finset (BacktrackSequence trace state)
-  /-- Maximality: no `s ≠ s'` with `s ⊆ s'` both in `S_BT` (CO25 Def 5.3 maximality). -/
-  -- TODO: write the correct `subsequence` condition
+  /-- Maximality: no `s ≠ s'` with `s ⊆ s'` both in `S_BT` (CO25 Def 5.3 maximality).
+  Subsequence is defined over the flattened sequence of states. -/
   maximality : ∀ s ∈ seqFamily, ∀ s' ∈ seqFamily, s ≠ s' →
-    ¬ (s.stmt = s'.stmt ∧ s.inputState ⊆ s'.inputState ∧ s.outputState ⊆ s'.outputState)
+    ¬ (s.stmt = s'.stmt ∧ s.flattenStateSequence.Sublist s'.flattenStateSequence)
 
 /-- Definition 5.3: `S_BT(tr,s)` family of backtracking sequences. -/
 abbrev S_BT

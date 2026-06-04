@@ -100,6 +100,14 @@ lemma LookaheadSequence.inputState_length_eq_outputState_length
     seq.inputState.length = seq.outputState.length := by
   simp [LookaheadSequence.inputState, LookaheadSequence.outputState]
 
+/-- The flattened sequence of states: `[s_{in,0}, s_{out,0}, s_{in,1}, s_{out,1}, ...]`. -/
+def LookaheadSequence.flattenStateSequence
+    {trΔp : T_P}
+    {state : CanonicalSpongeState U} (seq : LookaheadSequence trΔp state) :
+    List (CanonicalSpongeState U) :=
+  -- `state` is already included (`seq.pairs[0].1`)
+  seq.pairs.foldr (fun p acc => p.1 :: p.2 :: acc) []
+
 /-- A family of look-ahead sequences (Equation 13), parametrized by a black-box permutation
   table `tr_∇.p`, an initial state, and a challenge round index `i`, is defined as a finite set
   of look-ahead sequences such that:
@@ -110,10 +118,11 @@ structure LookaheadSequenceFamily
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) where
   /-- `S_LA` — the finite family of look-ahead sequences (LookAhead §5.3 Step 1). -/
   seqFamily : Finset (LookaheadSequence trΔp state)
-  /-- LookAhead §5.3 Step 1(e) maximality: no sequence strictly contains another. -/
+  /-- LookAhead §5.3 Step 1(e) maximality: no sequence strictly contains another.
+  Subsequence is defined over the flattened sequence of states. -/
   maximality : ∀ s ∈ seqFamily, ∀ s' ∈ seqFamily,
     s ≠ s' →
-      ¬ (s.inputState ⊆ s'.inputState) ∨ ¬ (s'.outputState ⊆ s.outputState)
+      ¬ (s.flattenStateSequence.Sublist s'.flattenStateSequence)
   /-- `m_k ≤ L_V(i)` — LookAhead §5.3 Step 1(a) length bound. -/
   length_le_numPermQueriesChallenge : ∀ s ∈ seqFamily, s.inputState.length ≤ pSpec.Lᵥᵢ i
 

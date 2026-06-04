@@ -262,7 +262,7 @@ lemma lemma_5_18_d2sQuery_noAbort
     (hE : ¬ BadEventDS.E tr_A) :
     D2SQueryNoAbort (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n)
       (pSpec := pSpec) (U := U) gImpl A initM
-    -- This almost means tr_A is the full trace that we can collect from
+    -- This also means tr_A is the full trace that we can collect from
       -- the non-aborted D2SQuery-simulated computation A
     := by sorry
 

@@ -520,8 +520,8 @@ omit [SpongeSize] in
 /-- CO25 §5.8. Four-step hybrid composition bound via triangle inequality.
 Combines `tvDist H₀ H₁ ≤ e₀₁`, …, `tvDist H₃ H₄ ≤ e₃₄` into
 `tvDist H₀ H₄ ≤ e₀₁ + e₁₂ + e₂₃ + e₃₄`. This remains a generic helper; the
-Section 5.8 claim statements below are exposed as public theorem surfaces. -/
-theorem tvDist_hybridChain4
+Section 5.8 claim statements below are exposed as public lemma surfaces. -/
+lemma tvDist_hybridChain4
     {α : Type}
     (H₀ H₁ H₂ H₃ H₄ : ProbComp α)
     {e₀₁ e₁₂ e₂₃ e₃₄ : ℝ}

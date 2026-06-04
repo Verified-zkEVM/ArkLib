@@ -169,6 +169,21 @@ and `p⁻¹` -/
 indexing is from 0 or from 1. We assume they mean from 1, and since indexing here is from 0, we just
 write `∃ j`. -/
 
+/-- A unified check for whether a capacity segment `capSeg` has appeared previously as an
+output capacity (strictly before `j`) or as an input capacity (up to and including `j`).
+This exactly captures the redundancy conditions in `E_h`, `E_p`, and `E_{p⁻¹}`. -/
+def isDuplicatedPriorCapacity (baseTrace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (j : Fin baseTrace.length) (capSeg : Vector U SpongeSize.C) : Prop :=
+  (∃ j' < j, ∃ stmt', baseTrace[j'] = ⟨.inl stmt', capSeg⟩) ∨
+  (∃ j' < j, ∃ stateIn1 stateOut1, baseTrace[j'] = ⟨.inr <|.inl stateIn1, stateOut1⟩ ∧
+    stateOut1.capacitySegment = capSeg) ∨
+  (∃ j' < j, ∃ stateOut2 stateIn2, baseTrace[j'] = ⟨.inr <|.inr stateOut2, stateIn2⟩ ∧
+    stateIn2.capacitySegment = capSeg) ∨
+  (∃ j' ≤ j, ∃ stateIn3 stateOut3, baseTrace[j'] = ⟨.inr <|.inl stateIn3, stateOut3⟩ ∧
+    stateIn3.capacitySegment = capSeg) ∨
+  (∃ j' ≤ j, ∃ stateOut4 stateIn4, baseTrace[j'] = ⟨.inr <|.inr stateOut4, stateIn4⟩ ∧
+    stateOut4.capacitySegment = capSeg)
+
 /-- CO25 Definition 5.7 — Event `E_h(tr)` (Eq. 23).
 An output capacity segment `s_C` of an `h`-entry in the base trace `tr̄` previously appears
 as an output or input capacity segment of `h`, `p`, or `p⁻¹`:
@@ -179,21 +194,12 @@ E_h(tr) := ∃ j > 0, s_C ∈ Σ^c :  tr̄_j = (h, ·, s_C)  and  ∃ j' < j :
   ∨  tr̄_{j'} = (p, (·, s_C), ·)  ∨  tr̄_{j'} = (p⁻¹, (·, s_C), ·)
 ```
 
-All five prior-entry branches are explicit in the Lean definition. -/
+All five prior-entry branches are unified via `isDuplicatedPriorCapacity`. -/
 def capacitySegmentDupHash : Prop :=
   let ⟨baseTrace, _⟩ := getBaseTrace trace
   ∃ j : Fin baseTrace.length, ∃ capSeg : Vector U SpongeSize.C,
-    ∃ stmt : StmtIn, baseTrace[j] = ⟨.inl stmt, capSeg⟩ ∧
-      ∃ j' < j,
-        ∃ stmt', baseTrace[j'] = ⟨.inl stmt', capSeg⟩ ∨
-        (∃ stateIn1 stateOut1, baseTrace[j'] = ⟨.inr <|.inl stateIn1, stateOut1⟩
-          ∧ stateOut1.capacitySegment = capSeg) ∨
-        (∃ stateOut2 stateIn2, baseTrace[j'] = ⟨.inr <|.inr stateOut2, stateIn2⟩
-          ∧ stateIn2.capacitySegment = capSeg) ∨
-        (∃ stateIn3 stateOut3, baseTrace[j'] = ⟨.inr <|.inl stateIn3, stateOut3⟩
-          ∧ stateIn3.capacitySegment = capSeg) ∨
-        (∃ stateOut4 stateIn4, baseTrace[j'] = ⟨.inr <|.inr stateOut4, stateIn4⟩
-          ∧ stateOut4.capacitySegment = capSeg)
+    (∃ stmt : StmtIn, baseTrace[j] = ⟨.inl stmt, capSeg⟩) ∧
+    isDuplicatedPriorCapacity baseTrace j capSeg
 
 alias E_h := capacitySegmentDupHash
 
@@ -213,17 +219,7 @@ def capacitySegmentDupPerm : Prop :=
   ∃ j : Fin baseTrace.length, ∃ capSeg : Vector U SpongeSize.C,
     (∃ stateIn stateOut, baseTrace[j] = ⟨.inr <|.inl stateIn, stateOut⟩ ∧
       stateOut.capacitySegment = capSeg) ∧
-      (
-        (∃ j' < j, ∃ stmt', baseTrace[j'] = ⟨.inl stmt', capSeg⟩) ∨
-        (∃ j' < j, ∃ stateIn1 stateOut1, baseTrace[j'] = ⟨.inr <|.inl stateIn1, stateOut1⟩ ∧
-          stateOut1.capacitySegment = capSeg) ∨
-        (∃ j' ≤ j, ∃ stateOut2 stateIn2, baseTrace[j'] = ⟨.inr <|.inr stateOut2, stateIn2⟩ ∧
-          stateIn2.capacitySegment = capSeg) ∨
-        (∃ j' ≤ j, ∃ stateIn3 stateOut3, baseTrace[j'] = ⟨.inr <|.inl stateIn3, stateOut3⟩ ∧
-          stateIn3.capacitySegment = capSeg) ∨
-        (∃ j' ≤ j, ∃ stateOut4 stateIn4, baseTrace[j'] = ⟨.inr <|.inr stateOut4, stateIn4⟩ ∧
-          stateOut4.capacitySegment = capSeg)
-      )
+    isDuplicatedPriorCapacity baseTrace j capSeg
 
 alias E_p := capacitySegmentDupPerm
 
@@ -243,17 +239,7 @@ def capacitySegmentDupPermInv : Prop :=
   ∃ j : Fin baseTrace.length, ∃ capSeg : Vector U SpongeSize.C,
     (∃ stateOut stateIn, baseTrace[j] = ⟨.inr <|.inr stateOut, stateIn⟩ ∧
       stateIn.capacitySegment = capSeg) ∧
-      (
-        (∃ j' < j, ∃ stmt', baseTrace[j'] = ⟨.inl stmt', capSeg⟩) ∨
-        (∃ j' < j, ∃ stateIn1 stateOut1, baseTrace[j'] = ⟨.inr <|.inl stateIn1, stateOut1⟩ ∧
-          stateOut1.capacitySegment = capSeg) ∨
-        (∃ j' < j, ∃ stateIn2 stateOut2, baseTrace[j'] = ⟨.inr <|.inr stateOut2, stateIn2⟩ ∧
-          CanonicalSpongeState.capacitySegment stateIn2 = capSeg) ∨
-        (∃ j' ≤ j, ∃ stateIn3 stateOut3, baseTrace[j'] = ⟨.inr <|.inl stateIn3, stateOut3⟩ ∧
-          stateIn3.capacitySegment = capSeg) ∨
-        (∃ j' ≤ j, ∃ stateIn4 stateOut4, baseTrace[j'] = ⟨.inr <|.inr stateOut4, stateIn4⟩ ∧
-          stateOut4.capacitySegment = capSeg)
-      )
+    isDuplicatedPriorCapacity baseTrace j capSeg
 
 alias E_pinv := capacitySegmentDupPermInv
 
@@ -755,10 +741,10 @@ lemma not_collisionBwdBwd_of_not_combined (h : ¬ E trace) : ¬ collisionBwdBwd 
   rcases Nat.lt_or_gt_of_ne hij with h_lt | h_lt
   · refine ⟨⟨j, hj⟩, sI.capacitySegment, ⟨sO', sI, hgj, rfl⟩, ?_⟩
     right; right; left
-    exact ⟨⟨i, hi⟩, h_lt, sI, sO, hgi, rfl⟩
+    exact ⟨⟨i, hi⟩, h_lt, sO, sI, hgi, rfl⟩
   · refine ⟨⟨i, hi⟩, sI.capacitySegment, ⟨sO, sI, hgi, rfl⟩, ?_⟩
     right; right; left
-    exact ⟨⟨j, hj⟩, h_lt, sI, sO', hgj, rfl⟩
+    exact ⟨⟨j, hj⟩, h_lt, sO', sI, hgj, rfl⟩
 
 /-- CO25 Lemma 5.10 — helper.
 For a well-formed `(h, p, p⁻¹)` trace, if `E(tr) = 0`, then the exact paper-form
