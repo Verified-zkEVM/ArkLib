@@ -54,8 +54,7 @@ lemma evalOnPointsRingHom_eq_evalOnPoints [CommSemiring F] {p : F[X]} {domain : 
 
 @[simp]
 lemma evalOnPoints_mul [CommSemiring F] {domain : ι ↪ F} {p q : F[X]} :
-  evalOnPoints domain (p * q) = 
-    (evalOnPoints domain p) * (evalOnPoints domain q) := by
+  evalOnPoints domain (p * q) = evalOnPoints domain p * evalOnPoints domain q := by
   aesop (add unsafe (by rw [←evalOnPointsRingHom_eq_evalOnPoints]))
 
 /-- The Reed-Solomon code for polynomials of degree less than `deg` and evaluation points `domain`.
