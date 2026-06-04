@@ -47,21 +47,6 @@ universe u
 
 namespace DuplexSpongeFS
 
-/-- `OracleComp σ` paired with a paper-faithful abort layer (`OptionT`).
-
-`OracleComp σ` queries `σ`; `OptionT` adds `none = abort` (CO25 §5 `err` outcome). Section 5
-simulators (`D2SQuery`, `LookAhead`, `BackTrack`, `StdTrace`, `D2STrace`) all live in this stack
-with various choices of `σ`. -/
-abbrev AbortComp {ι : Type} (σ : OracleSpec ι) := OptionT (OracleComp σ)
-
-/-- Shared abort/randomness monad stack used by Section 5 algorithms.
-
-`OptionT` provides paper-binary `abort`/`success`; the inner `OracleComp (Unit →ₒ U)` provides the
-fresh `𝒰(Σ)` sampling oracle used by `D2SQuery`/`D2SAlgo`/`StdTrace`/`D2STrace`/`LookAhead`.
-
-This is `AbortComp (Unit →ₒ U)` — specialized to the uniform-`U` sampling oracle. -/
-abbrev UnitSampleM (U : Type) [SpongeUnit U] := AbortComp (Unit →ₒ U)
-
 namespace DSTraceStorage
 
 /-- The canonical duplex-sponge `(h, p, p⁻¹)`-trace in Definition 5.2 -/

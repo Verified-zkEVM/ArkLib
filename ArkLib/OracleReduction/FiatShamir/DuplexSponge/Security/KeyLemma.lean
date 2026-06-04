@@ -210,26 +210,6 @@ def dsfsGame (V : Verifier oSpec StmtIn StmtOut pSpec)
   let ⟨stmtOut, verifyQueryLog⟩ ← liftM (simulateQ loggingOracle verifyCompWide).run
   return ⟨stmtIn, ← stmtOut.getM, proof, proveQueryLog ++ verifyQueryLog⟩
 
-/-! ### `D2SAlgo` (§5.4 Eq. 16) and §5.8 line-4 trace map runners -/
-
-/-- CO25 §5.4 Eq. 16 LHS — type for the full `D2SAlgo^f(𝒫̃)` prover transform (Items 1-6).
-- Inner prover `D2FQueryProver` runs `𝒫̃^{D2SQuery}` (outputs `τ ∈ Σ^δ`)
-- Post-processing applies `τ̌ := bin(τ)` (outputs `τ̌ ∈ {0,1}^{δ⋆}`)
--/
-abbrev D2SAlgoTransform :=
-  MaliciousProver oSpec pSpec StmtIn U δ →
-    AbortComp (oSpec +
-      D2SChallengePlusUnitOracle (U := U) (fsChallengeOracle (StmtIn × Salt) pSpec))
-      (StmtIn × FSSaltedProof pSpec Salt)
-
-/-- Type for CO25 §5.8 line-4 trace maps (e.g. `D2STrace`, `(φ⁻¹, ψ)(tr)`).
-Transforms a left-hand game query log into a basic-FS query log using
-auxiliary uniform sampling. -/
-abbrev D2STraceTransform {κ : Type} (challengeSpec : OracleSpec κ) :=
-  QueryLog (oSpec + challengeSpec) →
-    UnitSampleM U
-      (QueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec))
-
 /-- CO25 §5.8. Execute a Section 5.8 line-4 trace map (e.g. D2STrace = `(φ⁻¹, ψ) ∘ StdTrace`)
 inside `ProbComp` by interpreting the auxiliary unit-sampling oracle uniformly. -/
 def runSection58TraceMap
@@ -326,7 +306,7 @@ that `gImpl` carries beneath `D2SQuery`'s own `StateT (D2SQueryState …)` layer
 - `Hyb_1` / `Hyb_2`: trivial inner state `M := PUnit` (no memo — pass `StateT.lift ∘ oldGImpl`).
 - `Hyb_3` (paper §5.4 D2SAlgo Item 3): `M := D2SAlgoMemo …`. The `tr_i` memo is
   **initialized fresh at the start of the prover run** and **passed forward to the verifier
-  run** (same `simulateQ d2sOuterImpl` pipeline), so a repeated encoded `gᵢ` key reuses the
+  run** (same `d2fRaw` pipeline), so a repeated encoded `gᵢ` key reuses the
   cached `ρ̂_i` — paper's "`tr_i` is global to a single run of `D2SAlgo`".
 
 For `M := PUnit`, the threaded state is vacuous and the body collapses to the plain
@@ -347,31 +327,22 @@ def hybridGame
       (StmtIn × StmtOut × DSSaltedProof (pSpec := pSpec) (U := U) δ ×
         QueryLog (oSpec + challengeSpec)) := do
   -- D2SQuery wraps gImpl, layering `StateT (D2SQueryState …)` on top. Built once via the
-  -- shared `d2fOuterImpl` helper (paper Eq. 16 outer simulator: `id_oSpec ⊕ D2SQuery^{gImpl}`);
-  -- reused by both the prover-half (`d2fProverRaw`) and the verifier-half below.
-  let d2sOuterImpl := d2fOuterImpl (T_H := T_H) (T_P := T_P) gImpl
   -- Prover: fresh `D2SQueryState`, fresh inner state `M`. The post-run inner state is
   -- exposed via the outer `StateT M` layer so it can be threaded into the verifier.
-  let proverComp := d2fProverRaw (T_H := T_H) (T_P := T_P) gImpl P
+  let proverComp := d2fRaw (T_H := T_H) (T_P := T_P) gImpl P default
   let ⟨proverTriple?, proveQueryLogRaw⟩ ← (simulateQ loggingOracle proverComp.run).run
   let ⟨⟨⟨stmtIn, proof⟩, _⟩, memo₁⟩ ←
     match proverTriple? with
     | some triple => pure triple
     | none => failure
   -- Type-level CO25 Figure 4 line 3 (`𝒱^{h,p}`): the narrow forward-only verifier is built and
-  -- `liftComp`-ed to the wide spec consumed by `d2sOuterImpl`, via `runForwardVerifierWide`.
-  let verifyCompWide := runForwardVerifierWide δ V stmtIn proof
+  -- `liftComp`-ed to the wide spec, via `runForwardVerifierWide`.
+  let rawVerifierComp := runForwardVerifierWide δ V stmtIn proof
   -- Verifier: fresh `D2SQueryState` (independent run) but **shares inner state `memo₁`**
   -- with the prover (CO25 §5.4 D2SAlgo Item 3 — paper `tr_i` is global to a single run;
-  -- for `M := PUnit` this threading is vacuous).
-  let verifierComp :
-      OptionT
-        (OracleComp (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec))
-        ((Option StmtOut ×
-            D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
-              (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) ×
-          M) :=
-    (((simulateQ d2sOuterImpl verifyCompWide).run default).run memo₁)
+  -- for `M := PUnit` this threading is vacuous). Uses `d2fRaw` to share the same monadic
+  -- pipeline as the prover (only differing in `initM`).
+  let verifierComp := d2fRaw (T_H := T_H) (T_P := T_P) gImpl rawVerifierComp memo₁
   -- V has same simulated (h,p,p⁻¹) oracle access via `D2SQuery^{gImpl}` as P~.
   let ⟨verifierTriple?, verifyQueryLogRaw⟩ ← (simulateQ loggingOracle verifierComp.run).run
   let ⟨⟨stmtOut?, _⟩, _⟩ ←
@@ -831,7 +802,7 @@ the paper's `{0,1}^{δ⋆}` via `SaltCodec.encode = bin` at the FS-oracle query 
 
 - `Hyb_3` (`hybridGame` instantiated at `M := D2SAlgoMemo …` with
   `gImpl := d2sCodecBridgeImplMemo`): verifier surface is `V.toDSFS δ` (paper `𝒱^{h,p}`)
-  reading `π` as a **DSFS proof**, then `liftComp` wide and `simulateQ d2sOuterImpl` wraps
+  reading `π` as a **DSFS proof**, then `liftComp` wide and `d2fRaw` wraps
   its `(h, p)` queries through `D2SQuery^{ψ⁻¹∘f∘φ⁻¹}`.
 - `Hyb_4` (`basicFiatShamirGame`): verifier surface is `V.verify` directly on a
   `deriveTranscriptFS`-derived transcript, reading `π` as a **standard FS proof** with

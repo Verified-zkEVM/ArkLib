@@ -550,7 +550,7 @@ private def Lδ : Nat := Nat.ceil ((δ : ℚ) / SpongeSize.R)
 private def challengeIdxList : List pSpec.ChallengeIdx :=
   (Finset.univ : Finset pSpec.ChallengeIdx).toList
 
-private def messageIdxListBefore (i : pSpec.ChallengeIdx) : List pSpec.MessageIdx :=
+def messageIdxListBefore (i : pSpec.ChallengeIdx) : List pSpec.MessageIdx :=
   ((Finset.univ : Finset pSpec.MessageIdx).filter (fun j => j.1 < i.1)).toList
 
 private def challengeIdxListBefore (i : pSpec.ChallengeIdx) : List pSpec.ChallengeIdx :=
@@ -565,19 +565,7 @@ private def sumMessageBlocksBefore (i : pSpec.ChallengeIdx) : Nat :=
 private def sumChallengeBlocksBefore (i : pSpec.ChallengeIdx) : Nat :=
   (challengeIdxListBefore (pSpec := pSpec) i).foldl (fun acc j => acc + pSpec.Lᵥᵢ j) 0
 
-/-- Executable check for the paper branch condition
-`∀ ι ≤ i, α̂_ι ∈ Im(φ_ι)` on one parsed `BackTrack` output.
-TODO: make this better
--/
-def backtrackOutputMessagesInImage
-    (inImage : (msgIdx : pSpec.MessageIdx) → Vector U (messageSize msgIdx) → Bool)
-    (out : BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) : Bool :=
-  let before : List pSpec.MessageIdx := messageIdxListBefore (pSpec := pSpec) out.roundIdx
-  (before.pmap
-      (fun j (hmem : j ∈ before) =>
-        let hlt := (Finset.mem_filter.mp (Finset.mem_toList.mp hmem)).2
-        inImage j (out.encodedMessages ⟨j, hlt⟩))
-      (fun _ hj => hj)).all id
+
 
 /-- BackTrack §5.2 Step 1: initialize the input-state list for a candidate chain. -/
 private def backtrackStep1Init
@@ -893,7 +881,7 @@ linear scan, which is a strict over-approximation under the bad-event analysis. 
 def backTrack
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (trΔ : TraceNabla T_H T_P StmtIn U)
-    (h_trΔ : trΔ.IsSubsetOfQueryLog trace) -- TODO: this might not be satisfied all the time
+    (h_trΔ : trΔ.IsSubsetOfQueryLog trace)
     (state : CanonicalSpongeState U)
     (depthBound : Nat := trace.length + 1) :
     ExperimentOutput (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=

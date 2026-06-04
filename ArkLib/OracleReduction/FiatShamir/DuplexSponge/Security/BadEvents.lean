@@ -29,8 +29,6 @@ The bad-event surface mirrors the paper definitions directly:
 
 Lemmas `lemma_5_12` / `lemma_5_14` / `lemma_5_16` are the paper-faithful "if `E(tr) = 0` then
 the BackTrack-family event vanishes" statements.
-
-(TODO: may have to split this into multiple files given the number of lemmas)
 -/
 
 open OracleComp OracleSpec ProtocolSpec

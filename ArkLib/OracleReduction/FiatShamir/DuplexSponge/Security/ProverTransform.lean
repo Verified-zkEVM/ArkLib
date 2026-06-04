@@ -86,6 +86,16 @@ private def messageInSerializeImage
     (encoded : Vector U (messageSize msgIdx)) : Bool := by
   exact decide (∃ msg : pSpec.Message msgIdx, Serialize.serialize msg = encoded)
 
+/-- Executable check for the paper branch condition
+`∀ ι ≤ i, α̂_ι ∈ Im(φ_ι)` on one parsed `BackTrack` output. -/
+def backtrackOutputMessagesInImage
+    (inImage : (msgIdx : pSpec.MessageIdx) → Vector U (messageSize msgIdx) → Bool)
+    (out : BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) : Bool :=
+  let before : List pSpec.MessageIdx := messageIdxListBefore (pSpec := pSpec) out.roundIdx
+  before.attach.all fun ⟨j, hj⟩ =>
+    let hlt := (Finset.mem_filter.mp (Finset.mem_toList.mp hj)).2
+    inImage j (out.encodedMessages ⟨j, hlt⟩)
+
 /-- CO25 §5.4 Items 4(d)/(e) — paper predicate `∀ ι ∈ [i], α̂_ι ∈ Im(φ_ι)`, decided as a
 `Serialize`-image check on the recovered encoded messages. -/
 private noncomputable def d2sInCodecImagePredicate
@@ -143,32 +153,6 @@ variable [DecidableEq StmtIn] [DecidableEq U]
   [∀ i, Fintype (pSpec.Message i)]
   [∀ i, DecidableEq (pSpec.Message i)]
 
-/-- CO25 §5.4 — External challenge-oracle family augmented with the auxiliary sampling oracles.
-
-`D2SChallengePlusUnitOracle challengeSpec` is `challengeSpec + (Unit →ₒ U) + unifSpec`:
-the sum of the caller-supplied challenge oracle `gᵢ`-family, the auxiliary unit-sampling
-oracle `𝒰(Σ)` used by D2SQuery fresh-sample branches (§5.4 Items 2(b), 3(b), 4(c)iii, 4(e)iiiC),
-and `unifSpec` for any additional uniform randomness. -/
-abbrev D2SChallengePlusUnitOracle {κ : Type} (challengeSpec : OracleSpec κ) :=
-  challengeSpec + ((Unit →ₒ U) + unifSpec)
-
-/-- CO25 §5.4 Eq. 16 — Shorthand for the recurring `gᵢ`-realization shape: a `QueryImpl`
-from the `gSpec` source into `StateT M (OptionT (OracleComp …))` over the basic-FS-style
-outer spec `D2SChallengePlusUnitOracle challengeSpec`.
-
-Polymorphic over:
-- inner state `M` — paper §5.4 D2SAlgo Item 3's `tr_i` table type (`D2SAlgoMemo …` for the
-  memoized bridge `d2sCodecBridgeImplMemo`; `PUnit` for hybrids with inline `gᵢ`
-  realizations such as `Hyb_1` / `Hyb_2`);
-- basic-FS challenge spec `challengeSpec` (e.g. `gSpec` / `eSpec` /
-  `fsChallengeOracle (StmtIn × Salt) pSpec` per-hybrid).
-
-Used by `d2sCodecBridgeImplMemo`, `d2fOuterImpl`, `d2fProverRaw` (this file) and by
-`KeyLemma.hybridGame` / `hybridGameDist` / inline `Hyb_i` `gImpl` realizations. -/
-abbrev GImpl {κ : Type} (challengeSpec : OracleSpec κ) (M : Type) :=
-  QueryImpl (gSpec (U := U) StmtIn pSpec δ)
-    (StateT M
-      (OptionT (OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec))))
 
 /-- CO25 §5.8 — Finite preimage set of a verifier-message decoder `ψᵢ`.
 
@@ -186,9 +170,21 @@ noncomputable def deserializePreimageFinset
   exact (Finset.univ : Finset (Vector U (challengeSize (pSpec := pSpec) i))).filter fun encoded =>
     Deserialize.deserialize encoded = challenge
 
+/-- Sample a uniformly random element from a non-empty list using the `unifSpec` branch. -/
+def sampleFromList {α κ : Type} {challengeSpec : OracleSpec κ} [SpongeUnit U]
+    (l : List α) (hl : l ≠ []) :
+    OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec) α := do
+  let idxRaw ← query
+    (spec := D2SChallengePlusUnitOracle (U := U) challengeSpec)
+    (.inr (.inr (l.length - 1))) -- from unifSpec
+  let idx : Fin l.length := ⟨idxRaw.1, by
+    have hlen_pos : 0 < l.length := List.length_pos_iff_ne_nil.mpr hl
+    have hlen_eq : (l.length - 1) + 1 = l.length := Nat.sub_add_cancel (Nat.succ_le_of_lt hlen_pos)
+    simpa [hlen_eq] using idxRaw.2⟩
+  pure (l.get idx)
+
 /-- CO25 §5.4 / §5.8 — Uniform `ψᵢ⁻¹` preimage sampler: samples `α̂ ←$ ψᵢ⁻¹(α)` by toListing
-`deserializePreimageFinset α` and indexing via `unifSpec`
-TODO: clean up this def -/
+`deserializePreimageFinset α` and indexing via `unifSpec` -/
 noncomputable def uniformDeserializePreimage
     {κ : Type} {challengeSpec : OracleSpec κ}
     [Fintype U] [DecidableEq U]
@@ -202,23 +198,10 @@ noncomputable def uniformDeserializePreimage
     rcases codec.decode_surjective i challenge with ⟨encoded, hencoded⟩
     have hencoded' : Deserialize.deserialize encoded = challenge := hencoded
     exact ⟨encoded, by simp [deserializePreimageFinset, hencoded']⟩
-  --- get preimages of `α̂ᵢ`
   let preimages := (deserializePreimageFinset (pSpec := pSpec) (U := U) challenge).toList
   have hpreimages_ne : preimages ≠ [] := by
     simpa [preimages] using hpreimages_nonempty.toList_ne_nil
-  have hlen_pos : 0 < preimages.length := List.length_pos_iff_ne_nil.mpr hpreimages_ne
-  --- uniformaly select an index in the set
-  let idxRaw ←
-    (show OracleComp
-        (D2SChallengePlusUnitOracle (U := U) challengeSpec)
-        (Fin ((preimages.length - 1) + 1)) from
-      query
-        (spec := D2SChallengePlusUnitOracle (U := U) challengeSpec)
-        (.inr (.inr (preimages.length - 1))))
-  have hlen_eq : (preimages.length - 1) + 1 = preimages.length := Nat.sub_add_cancel
-    (Nat.succ_le_of_lt hlen_pos)
-  let idx : Fin preimages.length := ⟨idxRaw.1, by simpa [hlen_eq] using idxRaw.2⟩
-  pure (preimages.get idx)
+  sampleFromList preimages hpreimages_ne
 
 end D2SChallengePlusUnit
 
@@ -923,26 +906,26 @@ noncomputable def d2fOuterImpl
           (spec := D2SChallengePlusUnitOracle (U := U) challengeSpec)
           (Sum.inr aux))))
 
-/-- CO25 §5.4 Eq. 16 RHS — **raw** inner pipeline for `𝒜^{D2SQuery^{gImpl}}`, keeping the
-post-run `D2SQueryState` and inner `M` (e.g. `D2SAlgoMemo` for the paper Item 3 `tr_i`
-table; `PUnit` for hybrids with inline `gᵢ` realizations).
+/-- CO25 §5.4 Eq. 16 RHS — generic raw pipeline for `comp^{D2SQuery^{gImpl}}`, keeping the
+post-run `D2SQueryState` and inner `M`.
 
-Shared by `D2FQueryProver` (Eq. 16 RHS, projects state away) and `KeyLemma.hybridGame`
-(keeps state to re-thread `M` into the verifier-half, mirroring paper §5.4 D2SAlgo Item 3
-that `tr_i` is global to a single run).
-TODO: generalize to `V`?
--/
-noncomputable def d2fProverRaw
+Generalizes `d2fProverRaw` from prover-only to any wide-DSFS computation. Two call sites:
+- **Prover**: `d2fProverRaw gImpl 𝒜 = d2fRaw gImpl 𝒜 default` (fresh inner state).
+- **Verifier** (in `KeyLemma.hybridGame`): `d2fRaw gImpl verifyCompWide memo₁`
+  (threads the prover's post-run `M` as the verifier's initial state, matching CO25 §5.4
+  D2SAlgo Item 3 that `tr_i` is global to a single run). -/
+noncomputable def d2fRaw
+    {α : Type}
     {κ : Type} {challengeSpec : OracleSpec κ}
     {M : Type} [Inhabited M]
     (gImpl : GImpl (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) challengeSpec M)
-    (𝒜 : MaliciousProver oSpec pSpec StmtIn U δ) :
+    (comp : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) α)
+    (initM : M) :
     AbortComp (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)
-      (((StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ) ×
-          D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
-            (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) ×
-        M) :=
-  (((simulateQ (d2fOuterImpl (T_H := T_H) (T_P := T_P) gImpl) 𝒜).run default).run default)
+        ((α × D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
+              (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) ×
+          M) :=
+  (((simulateQ (d2fOuterImpl (T_H := T_H) (T_P := T_P) gImpl) comp).run default).run initM)
 
 end D2FProverRaw
 
@@ -1002,10 +985,10 @@ noncomputable def D2FQueryProver
   -- both states `default`-initialized. Strip `D2SQueryState` and `D2SAlgoMemo` at the
   -- boundary; `none` propagates as `OptionT` abort.
   Prod.fst <$> Prod.fst <$> -- DTOP the states (from the two nested StateT)
-    d2fProverRaw (T_H := T_H) (T_P := T_P)
+    (d2fRaw (T_H := T_H) (T_P := T_P)
       (gImpl := d2sCodecBridgeImplMemo (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
         (Salt := Salt))
-      𝒜
+      𝒜 default)
 
 /-- CO25 §5.4 Eq. 16 LHS — full `D2SAlgo^f(𝒜)` (paper Items 1-6, lines 1121-1138). Thin
 wrapper over `D2FQueryProver` (Items 1-3) that applies the paper's Items 4-6 post-processing:

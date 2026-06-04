@@ -27,6 +27,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type} [DecidableEq StmtIn
   [∀ i, Fintype (pSpec.Message i)]
   {δ : Nat}
 
+
 noncomputable section
 
 /-- Key for `StdTrace` memoized `gᵢ`-style entries (CO25 §5.2 Step 4.D output; strict shape
@@ -92,9 +93,8 @@ predicate/function field. -/
 /-- Implements the deterministic inverse codec map `φ_i⁻¹ : Im(φ_i) → ℳ_{P,i}`.
 Because `φ_i` (via `instSerializeMessageInjective`) is strictly injective and the message domain
 is finite, we can invert the serialization computationally via brute-force search.
-TODO: make this cleaner
 -/
-private noncomputable def decodeMessagePhiInv?
+private def decodeMessagePhiInv?
     (msgIdx : pSpec.MessageIdx)
     (encoded : Vector U (messageSize msgIdx)) :
     Option (pSpec.Message msgIdx) := by
@@ -505,7 +505,7 @@ noncomputable def d2sTraceSalted
     stdTraceEntries (T_H := T_H) (T_P := T_P) (δ := δ)
       (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
       log
-  let sharedLog := -- syntax stuff, TODO: remove these oSpec logs across hybrids
+  let sharedLog :=
     projectSharedQueryLogSalted (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec)
       (U := U) (Salt := Salt) log
   let remappedLog :=
@@ -596,5 +596,3 @@ end Line4Trace
 end
 
 end DuplexSpongeFS.TraceTransform
-
--- TODO: move core defs to outer file

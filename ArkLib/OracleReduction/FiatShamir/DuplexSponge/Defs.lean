@@ -135,7 +135,6 @@ class Codec {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
   encode_injective : ∀ i, Function.Injective (encode i) -- `φᵢ` is injective
   /-- `ψᵢ : Σ^{ℓ_V(i)} → Challenge i` — challenge decoder (CO25 Def. 4.1). -/
   decode : (i : pSpec.ChallengeIdx) → Vector U (challengeSize i) → pSpec.Challenge i
-  -- TODO: should we let it depend on `λ, n`?
   decodingBias : pSpec.ChallengeIdx → NNReal -- `ε_cdc`
   /-- For every `i`, `decode i` is ε-biased: `dist (𝒰 Challenge_i) (decode_i <$> 𝒰 Domain_i)`
     ≤ `decodingBias i`. Matches `Deserialize.CloseToUniform.ε_close` (CO25 Definition 4.1). -/
@@ -1008,3 +1007,77 @@ def Verifier.toSaltedFS {Salt : Type} [VCVCompatible Salt]
   V.singleSaltFiatShamir
 
 end Execution
+
+/-! ### Section 5 Transforms and Monads -/
+
+/-- `OracleComp σ` paired with a paper-faithful abort layer (`OptionT`).
+
+`OracleComp σ` queries `σ`; `OptionT` adds `none = abort` (CO25 §5 `err` outcome). Section 5
+simulators (`D2SQuery`, `LookAhead`, `BackTrack`, `StdTrace`, `D2STrace`) all live in this stack
+with various choices of `σ`. -/
+abbrev AbortComp {ι : Type} (σ : OracleSpec ι) := OptionT (OracleComp σ)
+
+/-- Shared abort/randomness monad stack used by Section 5 algorithms.
+
+`OptionT` provides paper-binary `abort`/`success`; the inner `OracleComp (Unit →ₒ U)` provides the
+fresh `𝒰(Σ)` sampling oracle used by `D2SQuery`/`D2SAlgo`/`StdTrace`/`D2STrace`/`LookAhead`.
+
+This is `AbortComp (Unit →ₒ U)` — specialized to the uniform-`U` sampling oracle. -/
+abbrev UnitSampleM (U : Type) [SpongeUnit U] := AbortComp (Unit →ₒ U)
+
+section TransformTypes
+
+variable {ι : Type} {oSpec : OracleSpec ι}
+  {n : ℕ} {pSpec : ProtocolSpec n}
+  {StmtIn : Type} {U : Type} [SpongeUnit U] [SpongeSize]
+  {δ : Nat}
+  [codec : Codec pSpec U]
+
+/-- CO25 §5.4 — External challenge-oracle family augmented with the auxiliary sampling oracles.
+
+`D2SChallengePlusUnitOracle challengeSpec` is `challengeSpec + (Unit →ₒ U) + unifSpec`:
+the sum of the caller-supplied challenge oracle `gᵢ`-family, the auxiliary unit-sampling
+oracle `𝒰(Σ)` used by D2SQuery fresh-sample branches (§5.4 Items 2(b), 3(b), 4(c)iii, 4(e)iiiC),
+and `unifSpec` for any additional uniform randomness. -/
+abbrev D2SChallengePlusUnitOracle {κ : Type} (challengeSpec : OracleSpec κ) :=
+  challengeSpec + ((Unit →ₒ U) + unifSpec)
+
+/-- CO25 §5.4 Eq. 16 — Shorthand for the recurring `gᵢ`-realization shape: a `QueryImpl`
+from the `gSpec` source into `StateT M (OptionT (OracleComp …))` over the basic-FS-style
+outer spec `D2SChallengePlusUnitOracle challengeSpec`.
+
+Polymorphic over:
+- inner state `M` — paper §5.4 D2SAlgo Item 3's `tr_i` table type (`D2SAlgoMemo …` for the
+  memoized bridge `d2sCodecBridgeImplMemo`; `PUnit` for hybrids with inline `gᵢ`
+  realizations such as `Hyb_1` / `Hyb_2`);
+- basic-FS challenge spec `challengeSpec` (e.g. `gSpec` / `eSpec` /
+  `fsChallengeOracle (StmtIn × Salt) pSpec` per-hybrid).
+
+Used by `d2sCodecBridgeImplMemo`, `d2fOuterImpl`, `d2fProverRaw` (this file) and by
+`KeyLemma.hybridGame` / `hybridGameDist` / inline `Hyb_i` `gImpl` realizations. -/
+abbrev GImpl {κ : Type} (challengeSpec : OracleSpec κ) (M : Type) :=
+  QueryImpl (gSpec (U := U) StmtIn pSpec δ)
+    (StateT M
+      (OptionT (OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec))))
+
+variable {Salt : Type}
+
+/-- CO25 §5.4 Eq. 16 LHS — type for the full `D2SAlgo^f(𝒫̃)` prover transform (Items 1-6).
+- Inner prover `D2FQueryProver` runs `𝒫̃^{D2SQuery}` (outputs `τ ∈ Σ^δ`)
+- Post-processing applies `τ̌ := bin(τ)` (outputs `τ̌ ∈ {0,1}^{δ⋆}`)
+-/
+abbrev D2SAlgoTransform :=
+  MaliciousProver oSpec pSpec StmtIn U δ →
+    AbortComp (oSpec +
+      D2SChallengePlusUnitOracle (U := U) (fsChallengeOracle (StmtIn × Salt) pSpec))
+      (StmtIn × FSSaltedProof pSpec Salt)
+
+/-- Type for CO25 §5.8 line-4 trace maps (e.g. `D2STrace`, `(φ⁻¹, ψ)(tr)`).
+Transforms a left-hand game query log into a basic-FS query log using
+auxiliary uniform sampling. -/
+abbrev D2STraceTransform {κ : Type} (challengeSpec : OracleSpec κ) :=
+  QueryLog (oSpec + challengeSpec) →
+    UnitSampleM U
+      (QueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec))
+
+end TransformTypes
