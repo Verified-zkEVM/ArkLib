@@ -1,8 +1,8 @@
 {
   "counts": {
-    "files_with_citations": 58,
+    "files_with_citations": 59,
     "keys_cited": 20,
-    "total_citation_edges": 68
+    "total_citation_edges": 69
   },
   "files": {
     "ArkLib/AGM/Basic.lean": [
@@ -153,6 +153,9 @@
     "ArkLib/ProofSystem/Fri/Spec/SingleRound.lean": [
       "FRI1216"
     ],
+    "ArkLib/ProofSystem/Fri/Spec/Soundness.lean": [
+      "BCIKS20"
+    ],
     "ArkLib/ProofSystem/Plonk/Basic.lean": [
       "GWZC19"
     ],
@@ -242,6 +245,7 @@
       "ArkLib/Data/Polynomial/RationalFunctions.lean",
       "ArkLib/Data/Polynomial/Trivariate.lean",
       "ArkLib/ProofSystem/BatchedFri/Security.lean",
+      "ArkLib/ProofSystem/Fri/Spec/Soundness.lean",
       "ArkLib/ProofSystem/Stir/ProximityGap.lean",
       "ArkLib/ProofSystem/Whir/ProximityGen.lean"
     ],

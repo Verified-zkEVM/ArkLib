@@ -171,6 +171,7 @@ import ArkLib.ProofSystem.ConstraintSystem.R1CS
 import ArkLib.ProofSystem.Fri.RoundConsistency
 import ArkLib.ProofSystem.Fri.Spec.General
 import ArkLib.ProofSystem.Fri.Spec.SingleRound
+import ArkLib.ProofSystem.Fri.Spec.Soundness
 import ArkLib.ProofSystem.Plonk.Basic
 import ArkLib.ProofSystem.Spartan.Basic
 import ArkLib.ProofSystem.Stir.Combine
