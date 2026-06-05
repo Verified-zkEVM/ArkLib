@@ -40,6 +40,9 @@ def pSpec : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[Witness]⟩
 
 instance : ∀ i, VCVCompatible ((pSpec Witness).Challenge i) | ⟨0, h⟩ => nomatch h
 
+instance : ProverOnly (pSpec Witness) where
+  prover_first' := rfl
+
 @[inline, specialize]
 def prover : Prover oSpec Statement Witness (Statement × Witness) Unit (pSpec Witness) where
   PrvState
@@ -67,14 +70,41 @@ variable {Statement} {Witness}
 def toRelOut : Set ((Statement × Witness) × Unit) :=
   Prod.fst ⁻¹' relIn
 
+set_option maxHeartbeats 800000 in
 open Classical in
 /-- The `SendWitness` reduction satisfies perfect completeness. -/
 @[simp]
 theorem reduction_completeness :
     (reduction oSpec Statement Witness).perfectCompleteness init impl relIn (toRelOut relIn) := by
-  unfold Reduction.perfectCompleteness Reduction.completeness
+  simp only [Reduction.perfectCompleteness, Reduction.completeness, ENNReal.coe_zero, tsub_zero]
   intro stmtIn witIn hIn
-  sorry
+  have hrun : (reduction oSpec Statement Witness).run stmtIn witIn =
+      (pure (⟨fun | ⟨0, _⟩ => witIn, (stmtIn, witIn), ()⟩, (stmtIn, witIn)) :
+        OptionT (OracleComp _) _) := by
+    rw [Reduction.run_of_prover_first]
+    simp [reduction, prover, verifier]
+    rfl
+  simp only [hrun]
+  rw [ge_iff_le, one_le_probEvent_iff, probEvent_eq_one_iff]
+  refine ⟨?_, ?_⟩
+  · rw [OptionT.probFailure_eq, OptionT.run_mk]
+    simp only [probFailure_eq_zero, zero_add]
+    apply probOutput_eq_zero_of_not_mem_support
+    simp only [support_bind, Set.mem_iUnion, not_exists]
+    intro s _
+    erw [simulateQ_pure]
+    rw [StateT.run'_eq, StateT.run_pure]
+    simp [map_pure, support_pure]
+    tauto
+  · intro x hx
+    rw [OptionT.mem_support_iff] at hx
+    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
+    obtain ⟨s, _, hx⟩ := hx
+    erw [simulateQ_pure] at hx
+    rw [StateT.run'_eq, StateT.run_pure] at hx
+    simp only [map_pure, support_pure, Set.mem_singleton_iff] at hx
+    cases hx
+    exact ⟨hIn, rfl⟩
 
 theorem reduction_rbr_knowledge_soundness : True := trivial
 

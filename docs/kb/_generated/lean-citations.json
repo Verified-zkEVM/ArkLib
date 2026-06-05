@@ -1,8 +1,8 @@
 {
   "counts": {
-    "files_with_citations": 58,
+    "files_with_citations": 59,
     "keys_cited": 20,
-    "total_citation_edges": 68
+    "total_citation_edges": 69
   },
   "files": {
     "ArkLib/AGM/Basic.lean": [
@@ -156,6 +156,9 @@
     "ArkLib/ProofSystem/Plonk/Basic.lean": [
       "GWZC19"
     ],
+    "ArkLib/ProofSystem/Plonk/PermutationCheck.lean": [
+      "GWZC19"
+    ],
     "ArkLib/ProofSystem/Stir/Combine.lean": [
       "ACFY24stir"
     ],
@@ -267,7 +270,8 @@
       "ArkLib/ProofSystem/Fri/Spec/SingleRound.lean"
     ],
     "GWZC19": [
-      "ArkLib/ProofSystem/Plonk/Basic.lean"
+      "ArkLib/ProofSystem/Plonk/Basic.lean",
+      "ArkLib/ProofSystem/Plonk/PermutationCheck.lean"
     ],
     "JM24": [
       "ArkLib/AGM/Basic.lean"
