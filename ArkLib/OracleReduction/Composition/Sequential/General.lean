@@ -156,29 +156,11 @@ end OracleProver
 
 namespace OracleVerifier
 
-/-- Sequential composition of verifiers in oracle reductions.
+/-- Sequential composition of verifiers in oracle reductions (tactic version to avoid compiler issues).
 
-This is the auxiliary version that has instance parameters as implicit parameters, so that matching
-on `m` can properly specialize those parameters.
-
-TODO: have to fix instance diamonds to make this work -/
-def seqCompose' {m : ℕ}
-    (Stmt : Fin (m + 1) → Type)
-    {ιₛ : Fin (m + 1) → Type} (OStmt : (i : Fin (m + 1)) → ιₛ i → Type)
-    (Oₛ : ∀ i, ∀ j, OracleInterface (OStmt i j))
-    {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
-    (Oₘ : ∀ i, ∀ j, OracleInterface ((pSpec i).Message j))
-    (V : (i : Fin m) →
-      OracleVerifier oSpec (Stmt i.castSucc) (OStmt i.castSucc) (Stmt i.succ) (OStmt i.succ)
-        (pSpec i)) :
-    OracleVerifier oSpec (Stmt 0) (OStmt 0) (Stmt (Fin.last m)) (OStmt (Fin.last m))
-      (seqCompose pSpec) := match m with
-  | 0 => @OracleVerifier.id ι oSpec (Stmt 0) (ιₛ 0) (OStmt 0) (Oₛ := Oₛ 0)
-  | _ + 1 => append (V 0) (seqCompose' (Stmt ∘ Fin.succ) (fun i => OStmt (Fin.succ i))
-      (Oₛ := fun i => Oₛ (Fin.succ i)) (Oₘ := fun i => Oₘ (Fin.succ i)) (fun i => V (Fin.succ i)))
-
-/-- Sequential composition of oracle verifiers (in oracle reductions), defined via iteration of the
-  composition (append) of two oracle verifiers. -/
+This version uses tactic-mode recursion instead of match to avoid LCNF specialization issues
+with implicit instance parameters.
+-/
 def seqCompose {m : ℕ}
     (Stmt : Fin (m + 1) → Type)
     {ιₛ : Fin (m + 1) → Type} (OStmt : (i : Fin (m + 1)) → ιₛ i → Type)
@@ -189,8 +171,17 @@ def seqCompose {m : ℕ}
       OracleVerifier oSpec (Stmt i.castSucc) (OStmt i.castSucc) (Stmt i.succ) (OStmt i.succ)
         (pSpec i)) :
     OracleVerifier oSpec (Stmt 0) (OStmt 0) (Stmt (Fin.last m)) (OStmt (Fin.last m))
-      (seqCompose pSpec) :=
-  seqCompose' Stmt OStmt Oₛ Oₘ V
+      (seqCompose pSpec) := by
+  clear Oₘ
+  revert Oₛ
+  induction m with
+  | zero =>
+    intro _
+    exact @OracleVerifier.id ι oSpec (Stmt 0) (ιₛ 0) (OStmt 0)
+  | succ m ih =>
+    intro _
+    exact append (V 0) (ih (Stmt ∘ Fin.succ) (fun i => OStmt (Fin.succ i))
+      (fun i => V (Fin.succ i)))
 
 @[simp]
 lemma seqCompose_zero
