@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mirco Richter (Least Authority)
+Authors: Ilia Vlasov, Mirco Richter (Least Authority), Aristotle (Harmonic)
 -/
 
 import ArkLib.Data.CodingTheory.Basic.DecodingRadius

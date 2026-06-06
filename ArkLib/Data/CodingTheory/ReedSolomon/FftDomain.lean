@@ -9,6 +9,7 @@ import Mathlib.Algebra.Group.TypeTags.Basic
 import Mathlib.Algebra.Group.Defs
 import Mathlib.Tactic.Cases
 import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.LinearCombination
 import Mathlib.Tactic.Field
 
 /-!
@@ -128,7 +129,7 @@ algorithm.
 set_option linter.style.induction false
 set_option linter.unusedDecidableInType false
 set_option linter.unusedFintypeInType false
-set_option linter.style.longFile 1900
+set_option linter.style.longFile 2100
 
 namespace ReedSolomon
 
@@ -354,6 +355,12 @@ lemma zero_is_not_in_domain {ω : FftDomain ι F} :
   intro x
   have h := domain_elem_invertible (ω := ω) (i := x)
   aesop
+
+@[simp]
+lemma domain_ne_zero {ω : FftDomain ι F} {i : ι} :
+  ω i ≠ 0 := fun contra ↦ zero_is_not_in_domain (ω := ω) <| by
+    rw [mem_domain_iff_exists]
+    exact ⟨_, contra⟩
 
 @[simp]
 lemma domain_zero_eq_one {ω : FftDomain ι F} :
@@ -651,6 +658,13 @@ lemma zero_is_not_in_domain {ω : CosetFftDomain ι F} :
 
 omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 @[simp]
+lemma coset_domain_ne_zero {ω : CosetFftDomain ι F} {i : ι} :
+  ω i ≠ 0 := fun contra ↦ zero_is_not_in_domain (ω := ω) <| by
+  rw [mem_coset_def]
+  exact ⟨_, symm contra⟩
+
+omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
+@[simp]
 lemma coset_domain_zero_eq_x {ω : CosetFftDomain ι F} :
   ω 0 = ω.x := by cases ω with
   | mk x _ =>
@@ -747,6 +761,16 @@ lemma log_left_inverse {n : ℕ} {ω : SmoothFftDomain n F} :
   Function.LeftInverse ω.log (fun x ↦ ⟨ω x, by simp⟩) := 
     fun x ↦ injective (ω := ω) (by simp)
 
+@[simp]
+lemma log_injective {n : ℕ} {ω : SmoothFftDomain n F} :
+  Function.Injective (log ω) := 
+  Function.LeftInverse.injective 
+    (Function.RightInverse.leftInverse log_right_inverse)
+    
+@[simp]
+lemma log_injOn {n : ℕ} {ω : SmoothFftDomain n F} {s : Set ω.toFinset} :
+  Set.InjOn (log ω) s := fun _ _ _ _ h ↦ log_injective h
+  
 private def subdomain_embed {n : ℕ} (i : Fin n.succ) (k : Fin (2 ^ (i : ℕ))) :
   Fin (2 ^ n) :=
   ⟨2 ^ (n - i) * k.val, match i, k with
@@ -1081,6 +1105,32 @@ lemma subdomain_subdomain_eq_subdomain {n} {ω : SmoothFftDomain n F}
       omega
     · rfl
 
+omit [DecidableEq F] in
+lemma subdomain_implies_char_ne_2 {n} [NeZero n] (ω : SmoothFftDomain n F) :
+  ¬CharP F 2 := fun hchar ↦ by 
+  have hn : n ≠ 0 := NeZero.ne _
+  set k : Fin (2 ^ n) := ⟨2 ^ (n - 1), pow_lt_pow_right₀ (by decide) (by omega)⟩
+  have hk_ne_zero : k ≠ 0 := by simp [Fin.ext_iff, k]
+  have h_ne_val : ω k ≠ ω 0 := fun h => hk_ne_zero (ω.injective h)
+  have h_ne_one : ω k ≠ 1 := by rwa [domain_zero_eq_one] at h_ne_val
+  have h_kk : k + k = 0 := by
+    ext
+    simp only [Fin.val_add, Fin.coe_ofNat_eq_mod, Nat.zero_mod, k]
+    rcases n with _ | n <;> simp_all
+    ring_nf
+    simp 
+  have h_sq : (ω k) ^ 2 = 1 := by
+    rw [sq, ←domain_add_eq_mul_domain, h_kk, domain_zero_eq_one]
+  have h_eq : ω k = 1 ∨ ω k = -1 := sq_eq_one_iff.mp h_sq
+  have h_neg_eq_pos : (-1 : F) = 1 := by
+    have : (2 : F) = 0 := CharP.cast_eq_zero F 2
+    conv_rhs =>
+      rw [show (1 : F) = 2 - 1 by norm_num, this]
+    simp
+  rcases h_eq with h | h
+  · exact h_ne_one h
+  · exact h_ne_one (by rwa [h_neg_eq_pos] at h)
+
 /-- Same as `subdomain` but takes a natural number. -/
 def subdomainNat {n} (ω : SmoothFftDomain n F) (i : ℕ) :
   SmoothFftDomain (Fin.ofNat n.succ i) F :=
@@ -1306,6 +1356,16 @@ lemma log_left_inverse {n : ℕ} {ω : SmoothCosetFftDomain n F} :
   Function.LeftInverse ω.log (fun x ↦ ⟨ω x, by simp⟩) := 
     fun x ↦ injective (ω := ω) (by simp)
 
+@[simp]
+lemma log_injective {n : ℕ} {ω : SmoothCosetFftDomain n F} :
+  Function.Injective (log ω) := 
+  Function.LeftInverse.injective 
+    (Function.RightInverse.leftInverse log_right_inverse)
+    
+@[simp]
+lemma log_injOn {n : ℕ} {ω : SmoothCosetFftDomain n F} {s : Set ω.toFinset} :
+  Set.InjOn (log ω) s := fun _ _ _ _ h ↦ log_injective h
+
 /-- Given a smooth coset FFT domain `ω` of log-order `n` returns
   a subdomain of log-order `i`. -/
 def subdomain {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : Fin n.succ) :
@@ -1498,6 +1558,67 @@ lemma mul_property {n : ℕ} {ω : SmoothCosetFftDomain n F}
         simp +decide [FftDomain.domain_add_eq_mul_domain]
       exact h_mul _ _ hy (by simpa using FftDomain.subdomain_le_mem hji hb)
     }, by ring⟩
+
+omit [DecidableEq F] in
+lemma subdomain_implies_char_ne_2 {n} [NeZero n] (ω : SmoothCosetFftDomain n F) :
+  ¬CharP F 2 := FftDomain.subdomain_implies_char_ne_2 ω.fftDomain
+
+omit [DecidableEq F] in
+private lemma y_ne_neg_y_of_mem_coset {n} [NeZero n]
+  {ω : SmoothCosetFftDomain n F}
+  {y : F} (hy_mem : y ∈ ω) : y ≠ -y := by
+  have h_char := CosetFftDomain.subdomain_implies_char_ne_2 ω
+  contrapose! h_char
+  have h_char : (2 : F) = 0 := mul_left_cancel₀ (a := y) 
+      (fun contra ↦ by simp [contra] at hy_mem)
+      (by linear_combination h_char)
+  constructor
+  intro x
+  rw [←Nat.mod_add_div x 2]
+  cases Nat.mod_two_eq_zero_or_one x <;> simp +decide [*]
+
+omit [DecidableEq ι] in
+private lemma filter_sq_subset {ω : CosetFftDomain ι F}
+  {x y : F} (hy_mem : y ∈ ω.toFinset) (hy : y ^ 2 = x)
+  (hny_mem : -y ∈ ω.toFinset) :
+  {y, -y} ⊆ {z ∈ ω.toFinset | z ^ 2 = x} := by simp_all +decide [Finset.subset_iff]
+
+lemma sq_root_mem_subdomain {n} [NeZero n] {ω : SmoothCosetFftDomain n F}
+  {i : Fin n.succ} (hi : 0 < i) {x : F} {y : F}
+  (hx : x ∈ (ω.subdomain (i - 1)))
+  (hy : y ^ 2 = x) :
+  y ∈ subdomain ω i := by
+  have hn1 : 1 < n + 1 := by { have := NeZero.pos n; omega }
+  have h1 : (1 : Fin n.succ) ≤ i := by
+    rw [Fin.le_def, Fin.lt_def] at *
+    simp only [Fin.val_zero] at hi
+    simp only [Nat.succ_eq_add_one, Fin.coe_ofNat_eq_mod, Nat.mod_eq_of_lt hn1]
+    exact hi
+  obtain ⟨y', hy'_mem, hy'_pow⟩ := CosetFftDomain.subdomain_root_exists h1 hx
+  have hval : (1 : Fin n.succ).val = 1 := by simp [Nat.mod_eq_of_lt hn1]
+  rw [hval, pow_one] at hy'_pow
+  have hsq : y ^ 2 = y' ^ 2 := by rw [hy, hy'_pow]
+  rcases eq_or_eq_neg_of_sq_eq_sq _ _ hsq with rfl | rfl
+  · exact hy'_mem
+  · have : NeZero (↑i : ℕ) := ⟨by omega⟩
+    exact neg_mem_domain_of_mem hy'_mem
+
+lemma subdomain_square_roots_explicit {n} [NeZero n] {ω : SmoothCosetFftDomain n F}
+  {i : Fin n.succ} (hi : 0 < i) {x : F} {y : F}
+  (hx : x ∈ (ω.subdomain (i - 1)))
+  (hy : y ^ 2 = x) :
+  {y ∈ (ω.subdomain i).toFinset | y ^ 2 = x} = {y, -y} := by 
+  apply Finset.Subset.antisymm
+  · intro z hz
+    simp_all only [Nat.succ_eq_add_one, Finset.mem_filter,
+      mem_coset_finset_iff_mem_coset_domain, Finset.mem_insert, Finset.mem_singleton] 
+    exact eq_or_eq_neg_of_sq_eq_sq _ _ <| by rw [hz.2, hy]
+  · have hy_mem : y ∈ subdomain ω i := sq_root_mem_subdomain hi hx hy
+    simp_all only [Nat.succ_eq_add_one, Finset.subset_iff, Finset.mem_insert,
+    Finset.mem_singleton, Finset.mem_filter, mem_coset_finset_iff_mem_coset_domain,
+    forall_eq_or_imp, and_self, even_two, Even.neg_pow, and_true, forall_eq, true_and]
+    have : NeZero (↑i : ℕ) := ⟨by omega⟩
+    exact neg_mem_domain_of_mem hy_mem
 
 /-- Same as `subdomain` but takes a natural number. -/
 def subdomainNat {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : ℕ) :
@@ -1755,6 +1876,22 @@ lemma subdomainNatReversed_mem_of_eq {n m k} {ω : SmoothCosetFftDomain n F}
   x ∈ ω.subdomainNatReversed m ↔ x ∈ ω.subdomainNatReversed k := by
   aesop (add simp [subdomainNatReversed, subdomainNat])
 
+lemma subdomainNatReversed_square_roots_explicit {n} [NeZero n] {ω : SmoothCosetFftDomain n F}
+  {i : ℕ} (hi : i < n) {x : F} {y : F}
+  (hx : x ∈ (ω.subdomainNatReversed (i + 1))) (hy : y ^ 2 = x) :
+  {y ∈ (ω.subdomainNatReversed i).toFinset | y ^ 2 = x} = {y, -y} := by 
+  unfold subdomainNatReversed at *
+  have hn : (n + 1 - 1 % (n + 1) + (n - i)) % (n + 1) =
+    (n - i - 1) % (n + 1) :=
+    Nat.mod_eq_mod_iff.mpr ⟨0, ⟨1, by rw [Nat.mod_eq_of_lt (by omega)]; grind⟩⟩
+  rw [←subdomain_square_roots_explicit 
+        (ω := ω) (i := ⟨n - i, by omega⟩) (x := x) 
+        (by aesop (add simp [Fin.lt_def])) (by 
+          convert hx <;> 
+            aesop
+              (add simp [Nat.sub_add_eq, Fin.val_sub])
+              (add safe (by grind))) hy]
+
 end
 
 def twoNthRootAux (n i : ℕ) (ω : SmoothCosetFftDomain n F)
@@ -1798,6 +1935,19 @@ lemma twoNthRoot_correct {n i : ℕ} {ω : SmoothCosetFftDomain n F}
   rw [subdomainNatReversed_zero, mem_coset_def] at hy_mem
   obtain ⟨j, rfl⟩ := hy_mem
   exact twoNthRootAux_correct _ _ le_rfl ⟨j, j.isLt, hy_pow⟩
+
+@[simp]
+lemma twoNthRoot_correct_one {n : ℕ} {ω : SmoothCosetFftDomain n F}
+  [nz : NeZero n]
+  {x : ω.subdomainNatReversed 1} :
+  (twoNthRoot x).val ^ 2 = x := by
+  have hi : 1 ≤ n := by 
+    have hn : n ≠ 0 := NeZero.ne _
+    omega
+  conv_lhs =>
+    rhs 
+    rw [←pow_one 2]
+  rw [twoNthRoot_correct hi]
 
 end CosetFftDomain
 

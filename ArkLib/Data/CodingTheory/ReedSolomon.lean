@@ -37,9 +37,25 @@ variable {F : Type*} {ι : Type*} (domain : ι ↪ F)
 /-- The evaluation of a polynomial at a set of points specified by `domain : ι ↪ F`, as a linear
 map. -/
 def evalOnPoints [Semiring F] : F[X] →ₗ[F] (ι → F) where
-  toFun := fun p => fun x => p.eval (domain x)
-  map_add' := fun x y => by simp; congr
-  map_smul' := fun m x => by simp; congr
+  toFun p x := p.eval (domain x)
+  map_add'  := by aesop
+  map_smul' := by aesop
+
+/-- Proves that `evalOnPoints` preserves multiplication as well. -/
+def evalOnPointsRingHom [CommSemiring F] : F[X] →+* (ι → F) where
+  toFun p x := p.eval (domain x)
+  map_zero' := by aesop
+  map_one'  := by aesop
+  map_add'  := by aesop
+  map_mul'  := by aesop
+
+lemma evalOnPointsRingHom_eq_evalOnPoints [CommSemiring F] {p : F[X]} {domain : ι ↪ F} :
+  evalOnPointsRingHom domain p = evalOnPoints domain p := rfl
+
+@[simp]
+lemma evalOnPoints_mul [CommSemiring F] {domain : ι ↪ F} {p q : F[X]} :
+  evalOnPoints domain (p * q) = evalOnPoints domain p * evalOnPoints domain q := by
+  aesop (add unsafe (by rw [←evalOnPointsRingHom_eq_evalOnPoints]))
 
 /-- The Reed-Solomon code for polynomials of degree less than `deg` and evaluation points `domain`.
 -/
@@ -90,6 +106,14 @@ variable {deg m n : ℕ} {α : Fin m → F}
 section
 
 variable [Semiring F] {p : F[X]}
+
+@[simp]
+lemma evalOnPoints_C {domain : ι ↪ F} {a : F} :
+  evalOnPoints domain (Polynomial.C a) = fun _ ↦ a := by simp [evalOnPoints]
+
+@[simp]
+lemma evalOnPoints_X {domain : ι ↪ F} :
+  evalOnPoints domain Polynomial.X = domain := by simp [evalOnPoints]
 
 lemma natDegree_lt_of_mem_degreeLT [NeZero deg] (h : p ∈ degreeLT F deg) : p.natDegree < deg := by
   by_cases p = 0

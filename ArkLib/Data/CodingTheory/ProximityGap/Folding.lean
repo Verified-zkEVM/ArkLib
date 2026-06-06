@@ -67,6 +67,98 @@ section
 variable {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))}
 variable {k : ℕ} {x : F}
 
+omit [DecidableEq F] in
+private lemma even_add_odd_eq_of_2_ne_0
+  (x y z : F) (hz : z ≠ 0) (hchar : (2 : F) ≠ 0) :
+  x = (x + y) / 2 + (x - y) / (2 * z) * z := by grind
+
+omit [DecidableEq F] in
+private lemma even_add_odd_eq_of_not_charp_2
+  (x y z : F) (hz : z ≠ 0) (hchar : ¬CharP F 2) :
+  x = (x + y) / 2 + (x - y) / (2 * z) * z := 
+  even_add_odd_eq_of_2_ne_0 _ _ _ hz <| fun contra ↦ hchar <|
+    ringChar.of_eq (CharP.ringChar_of_prime_eq_zero Nat.prime_two contra)
+
+/-- An explicit formula to compute `foldWordAux` when `k = 2`
+  not involving Lagrange interpolation. -/
+lemma foldWordAux_of_k_2
+  [NeZero n]
+  {i : Fin (2 ^ (n - 1))} :
+  foldWordAux domain f 2 (domain.subdomainNatReversed 1 i) = 
+    let x : domain := CosetFftDomain.twoNthRoot (i := 1)
+      ⟨domain.subdomainNatReversed 1 i, by simp⟩
+    let i := domain.log x
+    let i' := domain.log ⟨-x.1, by obtain ⟨x, hx⟩ := x; simpa using hx⟩
+    C ((f i + f i') / 2) + Polynomial.X * C ((f i - f i') / (2 * x)) := by
+  unfold foldWordAux 
+  have hn : n ≠ 0 := NeZero.ne _
+  extract_lets y j j'
+  have h : 
+    ({i_1 | domain i_1 ^ 2 = (CosetFftDomain.subdomainNatReversed domain 1) i} : Finset _) = 
+    {j, j'} := by 
+    have h := CosetFftDomain.subdomainNatReversed_square_roots_explicit 
+      (ω := domain) (i := 0) (by omega) (y := y) 
+      (x := (CosetFftDomain.subdomainNatReversed domain 1) i)
+      (by simp) (by simp [y])
+    have hpre : Finset.preimage {y.1, -y.1} domain (by simp) = {j, j'} := by 
+      aesop (add unsafe (by apply CosetFftDomain.injective (ω := domain))) 
+    ext u 
+    simp only [mem_filter, mem_univ, true_and, ←hpre, ←h, Nat.sub_zero, mem_preimage,
+      CosetFftDomain.mem_coset_finset_iff_mem_coset_domain, iff_and_self]
+    have := @CosetFftDomain.subdomainNatReversed_zero (ω := domain)
+    aesop 
+  rw [h]
+  have hcard : Finset.card {j, j'} = 2 := by
+    rw [←h]
+    conv_rhs => 
+      rw [←pow_one 2,
+          ←CosetFftDomain.subdomainNatReversed_roots_card (ω := domain) (i := 0)
+              (x := (CosetFftDomain.subdomainNatReversed domain 1) i)
+              (by omega) (by simp)]
+    exact Finset.card_bij
+      (fun a _ ↦ domain a)
+      (fun a ha ↦ by
+        simp only [mem_filter, CosetFftDomain.mem_coset_finset_iff_mem_coset_domain]
+        rw [CosetFftDomain.subdomainNatReversed_zero]
+        aesop)
+      (fun _ _ _ _ h ↦ CosetFftDomain.injective h)
+      (fun b hb ↦ by 
+        obtain ⟨⟨j, hb⟩, hb'⟩ : 
+          b ∈ domain ∧ b ^ 2 = (CosetFftDomain.subdomainNatReversed domain 1) i := by 
+          have := @CosetFftDomain.subdomainNatReversed_zero (ω := domain)
+          aesop
+        exact ⟨j, by simp [hb, hb'], by simp [hb]⟩)
+  apply Polynomial.eq_of_eval_eq_degree (n := 2) (s := {y.1, -y.1})
+  · exact lt_of_lt_of_le 
+      (Lagrange.degree_interpolate_lt _ CosetFftDomain.injOn) 
+      (by simp [hcard])
+  · exact lt_of_le_of_lt (Polynomial.degree_add_le _ _) <| by
+      simp only [X_mul_C, degree_mul, degree_X, WithBot.coe_ofNat, sup_lt_iff]
+      constructor 
+      · exact lt_trans Polynomial.degree_C_lt (by simp)
+      · exact lt_of_lt_of_le 
+          (WithBot.add_lt_add_right (by simp) Polynomial.degree_C_lt) (by rfl)
+  · conv_rhs => 
+      rw [←hcard] 
+    exact Finset.card_le_card_of_injOn (f := domain)
+      (fun x hx ↦ by aesop) CosetFftDomain.injOn
+  · intro x hx
+    have hx : (x = domain j ∧ y.1 = domain j) ∨ 
+              (x = domain j' ∧ y.1 = -domain j') := by aesop 
+    have hj := even_add_odd_eq_of_not_charp_2 (f j) (f j') (domain j) (by simp)
+      (CosetFftDomain.subdomain_implies_char_ne_2 domain)
+    have hj' := even_add_odd_eq_of_not_charp_2 (f j') (f j) (domain j') (by simp)
+      (CosetFftDomain.subdomain_implies_char_ne_2 domain)
+    rcases hx with ⟨rfl, hy⟩ | ⟨rfl, hy⟩
+    · rw [Lagrange.eval_interpolate_at_node _ CosetFftDomain.injOn (by simp),
+          hy]
+      conv_lhs => rw [hj]
+      simp
+    · rw [Lagrange.eval_interpolate_at_node _ CosetFftDomain.injOn (by simp), hy]
+      conv_lhs => rw [hj']
+      simp
+      grind
+
 private lemma roots_of_x_in_domain_eq
   (hk : k ≠ 0) :
   ({i | domain i ^ k = x} : Finset (Fin (2 ^ n))) = 
@@ -109,7 +201,7 @@ lemma foldWordAux_natDegree {k : ℕ} {x : F}
     · rw [Polynomial.natDegree_lt_iff_degree_lt heq]
       exact Lagrange.degree_interpolate_lt _ (by simp)
     · exact roots_of_x_in_domain_le_k hne
-            
+
 /-- Compute value of the folded word. 
   Takes the auxiliary polynomial `foldWordAux` and evaluates it on `a`,
   the folding randomness. -/
@@ -133,6 +225,18 @@ lemma foldValue_pow_x_k {i : Fin (2 ^ n)} :
 @[simp]
 lemma foldValue_zero {k : ℕ} :
   foldValue domain 0 k = 0 := by aesop (add simp [foldValue, foldWordAux])
+ 
+/-- An explicit formula for `foldValue` when `k = 1`. -/
+lemma foldValue_k_1 [NeZero n] {i : Fin (2 ^ (n - 1))} {α : F} :
+  foldValue domain f 1 α (domain.subdomainNatReversed 1 i) = 
+    let x : domain := CosetFftDomain.twoNthRoot (i := 1)
+        ⟨domain.subdomainNatReversed 1 i, by simp⟩
+    let i := domain.log x
+    let i' := domain.log ⟨-x.1, by obtain ⟨x, hx⟩ := x; simpa using hx⟩
+    ((f i + f i') / 2) + α * ((f i - f i') / (2 * x)) := by 
+  aesop 
+    (add simp [foldValue, foldWordAux_of_k_2])
+    (add safe (by grind))
 
 /-- Fold a word. Takes a word `f` over `Fin (2 ^ n)` and randomness
   `a`, and returns a word over `Fin (2 ^ (n - k))`. -/
@@ -144,6 +248,17 @@ noncomputable def foldWord (domain : SmoothCosetFftDomain n F)
 @[simp]
 lemma foldWord_zero {k : ℕ} :
   foldWord domain 0 k = 0 := by aesop (add simp [foldWord])
+
+/-- An explicit formula for `foldWord` when `k = 1` that
+  does not use Lagrange interpolation. -/
+theorem foldWord_k_1 [NeZero n] {i : Fin (2 ^ (n - 1))} {α : F} :
+  foldWord domain f 1 α i = 
+    let x : domain := CosetFftDomain.twoNthRoot (i := 1)
+        ⟨domain.subdomainNatReversed 1 i, by simp⟩
+    let i := domain.log x
+    let i' := domain.log ⟨-x.1, by obtain ⟨x, hx⟩ := x; simpa using hx⟩
+    ((f i + f i') / 2) + α * ((f i - f i') / (2 * x)) := by 
+  simp [foldWord, foldValue_k_1]
 
 omit [DecidableEq F] in
 /-- TODO: this will go once this https://github.com/Verified-zkEVM/CompPoly/pull/203
@@ -851,6 +966,7 @@ theorem folding_preserves_distance
         norm_cast
     simp only [lt_inf_iff] at δ_lt
     simpa using lt_of_lt_of_le δ_lt.1 contradiction 
-    
+
 end
+    
 end ProximityGap
