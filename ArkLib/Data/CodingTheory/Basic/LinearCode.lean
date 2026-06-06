@@ -6,12 +6,26 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 -/
 
 import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+import ArkLib.Data.CodingTheory.Prelims
+import ArkLib.Data.CodingTheory.Basic.Distance
+import Mathlib.LinearAlgebra.FreeModule.PID
+import Mathlib.RingTheory.PicardGroup
+import Mathlib.RingTheory.RegularLocalRing.Defs
+import Mathlib.RingTheory.SimpleRing.Principal
+import CompPoly.Data.Nat.Bitwise
 
 /-!
 # Linear-Code Constructions and Bounds
 
 This module contains weight/projection lemmas, the singleton bound for arbitrary and
 linear codes, and basic constructions and dimension/rate facts for linear codes.
+
+## References
+
+* [Guruswami, V., Rudra, A., Sudan M., *Essential Coding Theory*, online copy][GRS25]
+* [Bordage, S., Chiesa, A., Guan, Z., Manzur, I., *All Polynomial Generators Preserve Distance
+with Mutual Correlated Agreement*][BCGM25]
+
 -/
 
 variable {n : Type*} [Fintype n] {R : Type*} [DecidableEq R]
@@ -164,8 +178,6 @@ lemma LinearCode_is_ModuleCode.{u, v} {ι : Type u} [Fintype ι] {F : Type v} [S
     LinearCode ι F = ModuleCode ι F F := by
   rfl
 
--- TODO: MDS code
-
 namespace LinearCode
 
 section
@@ -173,25 +185,6 @@ section
 variable {F : Type*} {A : Type*} [AddCommMonoid A]
          {ι : Type*} [Fintype ι]
          {κ : Type*} [Fintype κ]
-
-
-/-- Module code defined by left multiplication by its generator matrix.
-  For a matrix G : Matrix κ ι F (over field F) and module A over F, this generates
-  the F-submodule of (ι → A) spanned by the rows of G acting on (κ → A).
-  The matrix acts on vectors v : κ → A by: (G • v)(i) = ∑ k, G k i • v k
-  where G k i : F is the scalar and v k : A is the module element.
--/
-noncomputable def fromRowGenMat [Semiring F] (G : Matrix κ ι F) : LinearCode ι F :=
-  LinearMap.range G.vecMulLinear
-
-/-- Linear code defined by right multiplication by a generator matrix.
--/
-noncomputable def fromColGenMat [CommRing F] (G : Matrix ι κ F) : LinearCode ι F :=
-  LinearMap.range G.mulVecLin
-
-/-- Define a linear code from its (parity) check matrix -/
-noncomputable def byCheckMatrix [CommRing F] (H : Matrix ι κ F) : LinearCode κ F :=
-  LinearMap.ker H.mulVecLin
 
 /-- The Hamming distance of a linear code can also be defined as the minimum Hamming norm of a
   non-zero vector in the code -/
@@ -236,11 +229,6 @@ The dimension of a linear code.
 noncomputable def dim [Semiring F] {A : Type*} [AddCommMonoid A] [Module F A]
     (MC : ModuleCode ι F A) : ℕ := Module.finrank F MC
 
-/-- The dimension of a linear code equals the rank of its associated generator matrix.
--/
-lemma rank_eq_dim_fromColGenMat [CommRing F] {G : Matrix κ ι F} :
-    G.rank = dim (fromColGenMat G) := rfl
-
 /--
 The length of a linear code.
 -/
@@ -264,6 +252,142 @@ scoped syntax &"ρ" term : term
 
 scoped macro_rules
   | `(ρ $t:term) => `(LinearCode.rate $t)
+
+/-- Let `c` be a word of length `ι`. For every finite `ι`-subset `T` , we define the projection of a
+word `c` to `T` as the word obtained by restricting the indexing set of `c` to `T`.
+We denote this by `c|[T]`.
+Definition 3.7 [BCGM25]. -/
+def projectedWord [Fintype ι] (c : ι → F) (T : Finset ι) : T → F := Set.restrict T c
+
+notation:60 c "|[" T "]" => projectedWord c T
+
+/-- Let `C` be a code of length `ι`. For every finite `ι`-subset `T`, we define the projected code
+`C|[T]` as the set of projected codewords `c|[T]`, for `c ∈ C`.
+Definition 3.7 [BCGM25]. -/
+def projectedCode [Fintype ι] (C : Set (ι → F)) (T : Finset ι) : Set (T → F) :=
+  {w | ∃ c ∈ C, w = c|[T]}
+
+notation:60 C "|[" T "]" => projectedCode C T
+
+/-- A linear code is maximum distance separable (MDS) if its parameters meet the singleton bound. -/
+def IsMDS {ι : Type} [Fintype ι] [CommRing F] [DecidableEq F] (LC : LinearCode ι F) : Prop :=
+  Code.dist LC.carrier = length LC - dim LC + 1
+
+/-- Every linear code over a field `F` is a finitely generated `F`-module. -/
+lemma linear_code_is_FG [Field F] (LC : LinearCode ι F) : LC.FG := Submodule.FG.of_finite
+
+/-- Module code defined by left multiplication by its generator matrix.
+For a matrix `G : Matrix κ ι F` (over field `F`) and module `A` over `F`, this generates
+the `F`-submodule of `(ι → A)` spanned by the rows of `G` acting on `(κ → A)`.
+The matrix acts on vectors `v : κ → A` by : `(G • v)(i) = ∑ k, G k i • v k`
+where `G k i : F` is the scalar and `v k : A` is the module element.
+-/
+noncomputable def fromRowGenMat [Semiring F] (G : Matrix κ ι F) : LinearCode ι F :=
+  LinearMap.range G.vecMulLinear
+
+/-- Linear code defined by right multiplication by a generator matrix. -/
+noncomputable def fromColGenMat [CommRing F] (G : Matrix ι κ F) : LinearCode ι F :=
+  LinearMap.range G.mulVecLin
+
+/-- Define a linear code from its (parity) check matrix -/
+noncomputable def byCheckMatrix [CommRing F] (H : Matrix ι κ F) : LinearCode κ F :=
+  LinearMap.ker H.mulVecLin
+
+/-- Given a linear code of length `ι` and dimension `dim` over a field `F`, there exists a
+`dim × ι` matrix over `F` which generates the code.
+Theorem 2.2.7 [GRS25]. -/
+lemma gen_matrix_exists [Field F] (LC : LinearCode ι F) :
+    ∃ (G : Matrix (Fin (dim LC)) ι F), LC = fromRowGenMat G := by
+  unfold fromRowGenMat
+  have LC_basis := Module.finBasis F LC
+  let G : Matrix (Fin (Module.finrank F ↥LC)) ι F :=
+    fun i => LC_basis i
+  use G
+  simp only [range_vecMulLinear, G, Matrix.row]
+  ext x
+  rw [Submodule.mem_span_range_iff_exists_fun]
+  constructor
+  · intros h
+    use LC_basis.equivFun ⟨x, h⟩
+    have x_to_lin_comb : (⟨x, h⟩ : LC).1 = ∑ i, LC_basis.equivFun ⟨x, h⟩ i • (LC_basis i).1 := by
+      rw (occs := .pos [1]) [←Module.Basis.sum_equivFun LC_basis ⟨x, h⟩, @Submodule.coe_sum]
+      congr
+    simp only [Module.Basis.equivFun_apply] at x_to_lin_comb ⊢
+    exact x_to_lin_comb.symm
+  · rintro ⟨x, h⟩
+    rw [←h]
+    apply Submodule.sum_smul_mem LC x
+    intros c _
+    exact Submodule.coe_mem (LC_basis c)
+
+/-- A matrix whose rows are a basis of a linear code over a field `F`. -/
+noncomputable def matrixFromBasis [Field F] (LC : LinearCode ι F) : Matrix (Fin (dim LC)) ι F :=
+  fun i => Module.finBasis F LC i
+
+/-- A linear code is equal to the submodule spanned by the rows of the matrix whose rows form a
+basis of the code. -/
+lemma eq_span_rows [Field F] (LC : LinearCode ι F) :
+    LC = Submodule.span F (Set.range LC.matrixFromBasis) := by
+  unfold matrixFromBasis
+  ext x
+  rw [Submodule.mem_span_range_iff_exists_fun]
+  constructor
+  · intros h
+    use (Module.finBasis F LC).equivFun ⟨x, h⟩
+    have x_to_lin_comb : (⟨x, h⟩ : LC).1 =
+      ∑ i, (Module.finBasis F LC).equivFun ⟨x, h⟩ i • ((Module.finBasis F LC) i).1 := by
+      rw (occs := .pos [1]) [←Module.Basis.sum_equivFun (Module.finBasis F LC) ⟨x, h⟩,
+       @Submodule.coe_sum]
+      congr
+    simp only [Module.Basis.equivFun_apply] at x_to_lin_comb ⊢
+    exact x_to_lin_comb.symm
+  · rintro ⟨x, h⟩
+    rw [←h]
+    apply Submodule.sum_smul_mem LC x
+    intros c _
+    exact Submodule.coe_mem ((Module.finBasis F LC) c)
+
+/-- A linear code is equal to the code generated by the rows of the matrix constructed
+from a basis of the code.
+Note: eq_span_rows is good for linear-algebra-style reasoning, whereas
+eq_fromRowGenMat_matrixFromBasis is essentially a coding theory language restatement of it. -/
+lemma eq_fromRowGenMat_matrixFromBasis [Field F] (LC : LinearCode ι F) :
+    LC = fromRowGenMat (matrixFromBasis LC) := by
+  unfold fromRowGenMat
+  simp only [range_vecMulLinear, Matrix.row]
+  exact eq_span_rows LC
+
+/-- The rank of the generator matrix equals the dimension of the linear code. -/
+lemma rank_genMatrix_eq_dim [Field F] (LC : LinearCode ι F) :
+    dim LC = (matrixFromBasis LC).rank := by
+  unfold dim
+  have h := Matrix.rank_eq_finrank_span_row (matrixFromBasis LC)
+  symm
+  erw [h]
+  have := congrArg (fun K : Submodule F (ι → F) => Module.finrank F ↥K) (eq_span_rows LC)
+  exact this.symm
+
+/-- The dimension of the linear code given by a generator matrix is the rank of the matrix. -/
+lemma dim_fromRowGenMat {k n : ℕ} [Field F] {G : Matrix (Fin k) (Fin n) F} :
+    dim (fromRowGenMat G) = G.rank := by
+  unfold fromRowGenMat;
+  convert congr_arg (fun s : Submodule F _ => Module.finrank F s) _;
+  rotate_left;
+  · exact Submodule.span F (Set.range (fun i => G i));
+  · ext; simp [Matrix.vecMulLinear];
+    simp +decide [funext_iff, Matrix.vecMul, Submodule.mem_span_range_iff_exists_fun];
+    rfl;
+  · convert Matrix.rank_eq_finrank_span_row G using 1
+
+/-- Given a linear code of length `ι` and dimension `dim` over a field `F`, we define its `ι × dim`
+generator matrix as a matrix whose columns are an `F`-basis of the code. -/
+noncomputable def genMatrixCols [Field F] (LC : LinearCode ι F) :
+    Matrix ι (Fin (dim LC)) F := (matrixFromBasis LC).transpose
+
+/-- The dimension of a linear code equals the rank of its associated generator matrix.
+-/
+lemma rank_eq_dim_fromColGenMat [CommRing F] {G : Matrix κ ι F} :
+  G.rank = dim (fromColGenMat G) := rfl
 
 end
 

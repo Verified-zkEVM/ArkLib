@@ -55,7 +55,6 @@ def verify [DecidableEq γ] (cm : γ) (v : α) (r : β) :
 @[reducible, simp]
 def openingPSpec (β : Type) : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[β]⟩
 
--- The trivial `OracleInterface` instance for `α`
 local instance : OracleInterface α where
   Query := Unit
   toOC.spec := fun () => α
@@ -82,10 +81,12 @@ def openingVerifier [DecidableEq γ] : Verifier (oSpec α β γ)
     return true
 
 def commitmentScheme [DecidableEq γ] :
-    Commitment.Scheme (oSpec α β γ) α β γ (openingPSpec β) where
-  commit := commit
-  opening :=
-    { prover := openingProver
-      verifier := openingVerifier }
+    Commitment.Scheme (oSpec α β γ) α γ β Unit Unit (openingPSpec β) where
+  keygen := pure ((), ())
+  commit := fun _ v => do
+    let r ← sampleRandomness (α := α) (β := β) (γ := γ)
+    let cm ← commit v r
+    return (cm, r)
+  opening := fun _ => { prover := openingProver, verifier := openingVerifier }
 
 end SimpleRO

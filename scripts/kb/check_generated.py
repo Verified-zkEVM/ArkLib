@@ -9,11 +9,15 @@ from pathlib import Path
 from common import (
     DEFAULT_BIB_PATH,
     DEFAULT_CITATIONS_JSON,
+    DEFAULT_DECLARATIONS_JSON,
+    DEFAULT_DEDUP_REPORT,
     DEFAULT_LEAN_ROOT,
     DEFAULT_REFERENCES_JSON,
     REPO_ROOT,
 )
+from extract_declarations import extract_declarations
 from extract_lean_citations import extract_citations
+from find_dedup_candidates import build_report
 from sync_from_bib import build_payload
 
 
@@ -21,6 +25,18 @@ def load_json(path: Path) -> dict[str, object]:
     """Load a committed generated JSON file."""
 
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def compare_text(name: str, expected: str, actual_path: Path) -> list[str]:
+    """Return a human-readable error if a generated text file is stale."""
+
+    actual = actual_path.read_text(encoding="utf-8")
+    if actual == expected:
+        return []
+    return [
+        f"{actual_path.relative_to(REPO_ROOT)} is out of date; regenerate it with "
+        f"`python3 ./scripts/kb/{name}`."
+    ]
 
 
 def expected_citations(keys: list[str]) -> dict[str, object]:
@@ -55,6 +71,21 @@ def main() -> int:
             "extract_lean_citations.py",
             expected_citations(keys),
             DEFAULT_CITATIONS_JSON,
+        )
+    )
+    expected_declarations = extract_declarations([DEFAULT_LEAN_ROOT])
+    errors.extend(
+        compare_payload(
+            "extract_declarations.py",
+            expected_declarations,
+            DEFAULT_DECLARATIONS_JSON,
+        )
+    )
+    errors.extend(
+        compare_text(
+            "find_dedup_candidates.py",
+            build_report(expected_declarations) + "\n",
+            DEFAULT_DEDUP_REPORT,
         )
     )
 

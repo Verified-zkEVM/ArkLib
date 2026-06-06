@@ -1727,19 +1727,9 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
     -- For deg = 0: degreeLT F 0 = ⊥, so code = {0}, closeWords ⊆ {0}.
     push Not at hdeg
     interval_cases deg
-    · -- deg = 0: code = {0}, so closeWords ⊆ {0}, card ≤ 1 < |F|
-      have hcode_triv : ∀ v ∈ closeWords, v = 0 := by
-        intro v hv
-        have hvc := (hclose v hv).1
-        rw [ReedSolomon.code] at hvc
-        obtain ⟨p, hp, he⟩ := Submodule.mem_map.mp hvc
-        have hp0 : p = 0 := by
-          rw [Polynomial.mem_degreeLT] at hp
-          cases h : p.degree with
-          | bot => exact Polynomial.degree_eq_bot.mp h
-          | coe n => simp [h] at hp
-        simp [hp0, ReedSolomon.evalOnPoints] at he
-        exact he.symm
+    · -- deg = 0: code α 0 = ⊥, so closeWords ⊆ {0}, card ≤ 1 < |F|.
+      have hcode_triv : ∀ v ∈ closeWords, v = 0 := fun v hv => by
+        simpa [ReedSolomon.code_zero] using (hclose v hv).1
       have : closeWords.card ≤ 1 :=
         Finset.card_le_one_iff.mpr (fun hx hy => (hcode_triv _ hx).trans (hcode_triv _ hy).symm)
       linarith [Fintype.one_lt_card_iff_nontrivial.mpr (Field.toNontrivial : Nontrivial F)]

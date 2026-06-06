@@ -65,7 +65,7 @@ theorem large_agreement_set_on_curve_implies_correlated_agreement {l : ℕ}
         ∀ z,
           δᵣ(Curve.polynomialCurveEval (F := F) (A := F) u z,
             Curve.polynomialCurveEval (F := F) (A := F) v z) ≤ δ ∧
-          ({ x : Fin n | Finset.image u ≠ Finset.image v } : Finset _).card ≤ δ * n := by
+          ({ x : Fin n | ∃ i, u i x ≠ v i x } : Finset _).card ≤ δ * n := by
   sorry
 
 /-- The distance bound from [BCIKS20]. -/

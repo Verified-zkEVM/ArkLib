@@ -63,6 +63,7 @@ namespace Reduction
 
 section Completeness
 
+
 /-- A reduction satisfies **completeness** with regards to:
   - an initialization function `init : ProbComp σ` for some ambient state `σ`,
   - a stateful query implementation `impl` (in terms of `StateT σ ProbComp`)

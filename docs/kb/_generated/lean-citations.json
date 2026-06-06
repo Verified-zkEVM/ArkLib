@@ -1,13 +1,40 @@
 {
   "counts": {
-    "files_with_citations": 48,
-    "keys_cited": 17,
-    "total_citation_edges": 58
+    "files_with_citations": 58,
+    "keys_cited": 20,
+    "total_citation_edges": 68
   },
   "files": {
     "ArkLib/AGM/Basic.lean": [
       "JM24",
       "LPS24"
+    ],
+    "ArkLib/CommitmentScheme/Basic.lean": [
+      "CGKY25"
+    ],
+    "ArkLib/CommitmentScheme/KZG/Basic.lean": [
+      "KZG10"
+    ],
+    "ArkLib/CommitmentScheme/KZG/Binding.lean": [
+      "KZG10TR"
+    ],
+    "ArkLib/CommitmentScheme/KZG/FunctionBinding/Basic.lean": [
+      "CGKY25"
+    ],
+    "ArkLib/CommitmentScheme/KZG/FunctionBinding/DegreeConflict.lean": [
+      "CGKY25"
+    ],
+    "ArkLib/CommitmentScheme/KZG/FunctionBinding/EvaluationBindingConflict.lean": [
+      "CGKY25"
+    ],
+    "ArkLib/CommitmentScheme/KZG/FunctionBinding/Support.lean": [
+      "CGKY25"
+    ],
+    "ArkLib/CommitmentScheme/KZG/FunctionBinding/TauInQueries.lean": [
+      "CGKY25"
+    ],
+    "ArkLib/CommitmentScheme/KZG/HardnessAssumptions.lean": [
+      "CGKY25"
     ],
     "ArkLib/Data/CodingTheory/DivergenceOfSets.lean": [
       "BCIKS20"
@@ -87,6 +114,9 @@
     "ArkLib/Data/CodingTheory/ReedSolomon.lean": [
       "ACFY24"
     ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/Multilinear.lean": [
+      "ACFY24"
+    ],
     "ArkLib/Data/Hash/Poseidon2.lean": [
       "Poseidon2"
     ],
@@ -164,6 +194,7 @@
     "ACFY24": [
       "ArkLib/Data/CodingTheory/ListDecodability.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/Folding.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/Multilinear.lean",
       "ArkLib/Data/CodingTheory/ReedSolomon.lean",
       "ArkLib/Data/Polynomial/FoldingPolynomial.lean",
       "ArkLib/Data/Polynomial/Indicator.lean",
@@ -218,6 +249,15 @@
       "ArkLib/OracleReduction/Basic.lean",
       "ArkLib/OracleReduction/VectorIOR.lean"
     ],
+    "CGKY25": [
+      "ArkLib/CommitmentScheme/Basic.lean",
+      "ArkLib/CommitmentScheme/KZG/FunctionBinding/Basic.lean",
+      "ArkLib/CommitmentScheme/KZG/FunctionBinding/DegreeConflict.lean",
+      "ArkLib/CommitmentScheme/KZG/FunctionBinding/EvaluationBindingConflict.lean",
+      "ArkLib/CommitmentScheme/KZG/FunctionBinding/Support.lean",
+      "ArkLib/CommitmentScheme/KZG/FunctionBinding/TauInQueries.lean",
+      "ArkLib/CommitmentScheme/KZG/HardnessAssumptions.lean"
+    ],
     "DP24": [
       "ArkLib/ProofSystem/Binius/BinaryBasefold/General.lean",
       "ArkLib/ProofSystem/Binius/FRIBinius/General.lean",
@@ -231,6 +271,12 @@
     ],
     "JM24": [
       "ArkLib/AGM/Basic.lean"
+    ],
+    "KZG10": [
+      "ArkLib/CommitmentScheme/KZG/Basic.lean"
+    ],
+    "KZG10TR": [
+      "ArkLib/CommitmentScheme/KZG/Binding.lean"
     ],
     "LFKN92": [
       "ArkLib/ProofSystem/Sumcheck/Spec/General.lean"

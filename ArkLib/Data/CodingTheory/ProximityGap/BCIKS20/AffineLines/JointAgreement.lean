@@ -250,12 +250,7 @@ theorem RS_jointAgreement_of_goodCoeffs_card_gt {deg : ℕ} {domain : ι ↪ F} 
   · subst hdeg_zero
     let S0 : Finset ι := Finset.univ.filter (fun i => u 0 i = 0 ∧ u 1 i = 0)
     have hcode0_zero : ∀ w ∈ (ReedSolomon.code domain 0 : Set (ι → F)), w = 0 := by
-      intro w hw
-      rcases hw with ⟨p, hpdeg, hp_eval⟩
-      have hp0 : p = 0 := by
-        simpa [Polynomial.mem_degreeLT] using hpdeg
-      ext i
-      simpa [hp0] using (congrArg (fun f => f i) hp_eval).symm
+      simp [ReedSolomon.code_zero]
     have hzero_card :
         ∀ z ∈ good,
           n - e ≤ (Finset.univ.filter (fun i : ι => u 0 i + z * u 1 i = 0)).card := by
