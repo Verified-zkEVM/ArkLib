@@ -2047,18 +2047,18 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
       Submodule.mem_map.mpr ⟨choosePoly v hv, hP_deg, rfl⟩
     let p : ReedSolomon.code ωs deg :=
       ⟨fun i => (choosePoly v hv).eval (ωs i), hP_in_code⟩
-    have h_poly_eq : ReedSolomon.codewordToPoly p = choosePoly v hv := by
-      symm; rw [ReedSolomon.codewordToPoly]
+    have h_poly_eq : ReedSolomon.toPolynomial p = choosePoly v hv := by
+      symm; rw [ReedSolomon.toPolynomial]
       exact Lagrange.eq_interpolate (ωs.injective.injOn) (by
         rw [Polynomial.mem_degreeLT] at hP_deg
         calc (choosePoly v hv).degree < deg := hP_deg
           _ ≤ Fintype.card (Fin (Fintype.card ι)) := by simp; omega)
     rw [← h_poly_eq]
     apply GuruswamiSudan.gs_divisibility hRS hm p hQ
-    -- Bridge: hammingDist f (codewordToPoly p ∘ ωs) / n ≤ δᵣ(w,v) ≤ δ < gs_johnson
+    -- Bridge: hammingDist f (toPolynomial p ∘ ωs) / n ≤ δᵣ(w,v) ≤ δ < gs_johnson
     have hv_dist : (δᵣ(w, v) : ℝ≥0) ≤ δ := (hclose v hv).2
     have h_dist_eq : hammingDist f (fun i =>
-        (ReedSolomon.codewordToPoly p).eval (ωs i)) = hammingDist w v := by
+        (ReedSolomon.toPolynomial p).eval (ωs i)) = hammingDist w v := by
       have hvi : ∀ i : Fin (Fintype.card ι),
           (choosePoly v hv).eval (ωs i) = v ((Fintype.equivFin ι).symm i) := by
         intro i
@@ -2074,7 +2074,7 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
             true_and] at hj ⊢; exact hj,
           (Fintype.equivFin ι).symm_apply_apply j⟩)
     rw [show (Fintype.card ι : ℝ) = ((Fintype.card ι : ℚ≥0) : ℝ) from by push_cast; ring]
-    calc (hammingDist f (fun i => (ReedSolomon.codewordToPoly p).eval (ωs i)) : ℝ) /
+    calc (hammingDist f (fun i => (ReedSolomon.toPolynomial p).eval (ωs i)) : ℝ) /
           ((Fintype.card ι : ℚ≥0) : ℝ)
         = (hammingDist w v : ℝ) / ((Fintype.card ι : ℚ≥0) : ℝ) := by rw [h_dist_eq]
       _ = ((δᵣ(w, v) : ℚ≥0) : ℝ) := by
