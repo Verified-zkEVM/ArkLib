@@ -206,9 +206,9 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `toFinset` (4 declarations, 3 files)
 
 - `def ReedSolomon.toFinset` [ArkLib/Data/CodingTheory/ReedSolomon.lean:97](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean#L97) — (no docstring)
-- `def Domain.CosetFftDomainClass.toFinset` [ArkLib/Data/Domain/CosetFftDomain/Defs.lean:229](../../../ArkLib/Data/Domain/CosetFftDomain/Defs.lean#L229) — (no docstring)
-- `abbrev Domain.CosetFftDomain.toFinset` [ArkLib/Data/Domain/CosetFftDomain/Defs.lean:245](../../../ArkLib/Data/Domain/CosetFftDomain/Defs.lean#L245) — (no docstring)
-- `abbrev Domain.FftDomain.toFinset` [ArkLib/Data/Domain/FftDomain/Defs.lean:114](../../../ArkLib/Data/Domain/FftDomain/Defs.lean#L114) — (no docstring)
+- `def Domain.CosetFftDomainClass.toFinset` [ArkLib/Data/Domain/CosetFftDomain/Defs.lean:258](../../../ArkLib/Data/Domain/CosetFftDomain/Defs.lean#L258) — The elements of a domain as a finset.
+- `abbrev Domain.CosetFftDomain.toFinset` [ArkLib/Data/Domain/CosetFftDomain/Defs.lean:277](../../../ArkLib/Data/Domain/CosetFftDomain/Defs.lean#L277) — The finset of elements of a concrete coset FFT domain.
+- `abbrev Domain.FftDomain.toFinset` [ArkLib/Data/Domain/FftDomain/Defs.lean:129](../../../ArkLib/Data/Domain/FftDomain/Defs.lean#L129) — The finite set of field elements contained in an FFT domain.
 
 ### `verifier_rbrKnowledgeSoundness` (4 declarations, 3 files)
 
@@ -457,10 +457,10 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `subdomain` (4 declarations, 2 files)
 
-- `def Domain.CosetFftDomainClass.subdomain` [ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean:75](../../../ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean#L75) — Given a smooth coset FFT domain `ω` of log-order `n` this function returns its subdomain of log-orde
-- `abbrev Domain.CosetFftDomain.subdomain` [ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean:408](../../../ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean#L408) — (no docstring)
-- `def Domain.FftDomainClass.subdomain` [ArkLib/Data/Domain/FftDomain/Subdomain.lean:32](../../../ArkLib/Data/Domain/FftDomain/Subdomain.lean#L32) — (no docstring)
-- `abbrev Domain.FftDomain.subdomain` [ArkLib/Data/Domain/FftDomain/Subdomain.lean:122](../../../ArkLib/Data/Domain/FftDomain/Subdomain.lean#L122) — (no docstring)
+- `def Domain.CosetFftDomainClass.subdomain` [ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean:80](../../../ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean#L80) — Given a smooth coset FFT domain `ω` of log-order `n`, return its subdomain of log-order `n - i`. The
+- `abbrev Domain.CosetFftDomain.subdomain` [ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean:435](../../../ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean#L435) — Concrete notation for taking the `i`th subdomain of a smooth coset FFT domain.
+- `def Domain.FftDomainClass.subdomain` [ArkLib/Data/Domain/FftDomain/Subdomain.lean:34](../../../ArkLib/Data/Domain/FftDomain/Subdomain.lean#L34) — The `i`th subdomain of a smooth FFT domain, obtained by taking the corresponding coset subdomain and
+- `abbrev Domain.FftDomain.subdomain` [ArkLib/Data/Domain/FftDomain/Subdomain.lean:138](../../../ArkLib/Data/Domain/FftDomain/Subdomain.lean#L138) — Concrete notation for the `i`th subdomain of a smooth FFT domain.
 
 ### `OStmtIn` (3 declarations, 2 files)
 
@@ -512,9 +512,9 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `mem_toFinset_iff_mem` (3 declarations, 2 files)
 
-- `lemma Domain.CosetFftDomainClass.mem_toFinset_iff_mem` [ArkLib/Data/Domain/CosetFftDomain/Mem.lean:61](../../../ArkLib/Data/Domain/CosetFftDomain/Mem.lean#L61) — (no docstring)
-- `lemma Domain.CosetFftDomain.mem_toFinset_iff_mem` [ArkLib/Data/Domain/CosetFftDomain/Mem.lean:102](../../../ArkLib/Data/Domain/CosetFftDomain/Mem.lean#L102) — (no docstring)
-- `lemma Domain.FftDomain.mem_toFinset_iff_mem` [ArkLib/Data/Domain/FftDomain/Mem.lean:60](../../../ArkLib/Data/Domain/FftDomain/Mem.lean#L60) — (no docstring)
+- `lemma Domain.CosetFftDomainClass.mem_toFinset_iff_mem` [ArkLib/Data/Domain/CosetFftDomain/Mem.lean:69](../../../ArkLib/Data/Domain/CosetFftDomain/Mem.lean#L69) — Membership in the finset of elements is the same as membership in the coset FFT domain.
+- `lemma Domain.CosetFftDomain.mem_toFinset_iff_mem` [ArkLib/Data/Domain/CosetFftDomain/Mem.lean:122](../../../ArkLib/Data/Domain/CosetFftDomain/Mem.lean#L122) — Membership in the finset of elements is the same as membership in the concrete coset FFT domain.
+- `lemma Domain.FftDomain.mem_toFinset_iff_mem` [ArkLib/Data/Domain/FftDomain/Mem.lean:69](../../../ArkLib/Data/Domain/FftDomain/Mem.lean#L69) — Membership in the finset of elements is the same as membership in the FFT domain.
 
 ### `rdrop` (3 declarations, 2 files)
 
@@ -615,8 +615,8 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `domain_implies_char_ne_2` (2 declarations, 2 files)
 
-- `lemma Domain.CosetFftDomainClass.domain_implies_char_ne_2` [ArkLib/Data/Domain/CosetFftDomain/Ops.lean:88](../../../ArkLib/Data/Domain/CosetFftDomain/Ops.lean#L88) — (no docstring)
-- `lemma Domain.FftDomainClass.domain_implies_char_ne_2` [ArkLib/Data/Domain/FftDomain/Ops.lean:125](../../../ArkLib/Data/Domain/FftDomain/Ops.lean#L125) — (no docstring)
+- `lemma Domain.CosetFftDomainClass.domain_implies_char_ne_2` [ArkLib/Data/Domain/CosetFftDomain/Ops.lean:100](../../../ArkLib/Data/Domain/CosetFftDomain/Ops.lean#L100) — The existence of a nontrivial smooth coset FFT domain rules out characteristic `2`.
+- `lemma Domain.FftDomainClass.domain_implies_char_ne_2` [ArkLib/Data/Domain/FftDomain/Ops.lean:136](../../../ArkLib/Data/Domain/FftDomain/Ops.lean#L136) — The existence of a nontrivial smooth FFT domain rules out characteristic `2`.
 
 ### `finalSumcheckKnowledgeError` (2 declarations, 2 files)
 
@@ -660,13 +660,13 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `injOn` (2 declarations, 2 files)
 
-- `lemma Domain.CosetFftDomain.injOn` [ArkLib/Data/Domain/CosetFftDomain/Defs.lean:220](../../../ArkLib/Data/Domain/CosetFftDomain/Defs.lean#L220) — (no docstring)
-- `lemma Domain.FftDomain.injOn` [ArkLib/Data/Domain/FftDomain/Defs.lean:104](../../../ArkLib/Data/Domain/FftDomain/Defs.lean#L104) — (no docstring)
+- `lemma Domain.CosetFftDomain.injOn` [ArkLib/Data/Domain/CosetFftDomain/Defs.lean:247](../../../ArkLib/Data/Domain/CosetFftDomain/Defs.lean#L247) — A concrete coset FFT domain is injective on every set.
+- `lemma Domain.FftDomain.injOn` [ArkLib/Data/Domain/FftDomain/Defs.lean:117](../../../ArkLib/Data/Domain/FftDomain/Defs.lean#L117) — An FFT domain is injective on every set.
 
 ### `injective` (2 declarations, 2 files)
 
-- `lemma Domain.CosetFftDomain.injective` [ArkLib/Data/Domain/CosetFftDomain/Defs.lean:215](../../../ArkLib/Data/Domain/CosetFftDomain/Defs.lean#L215) — (no docstring)
-- `lemma Domain.FftDomain.injective` [ArkLib/Data/Domain/FftDomain/Defs.lean:100](../../../ArkLib/Data/Domain/FftDomain/Defs.lean#L100) — (no docstring)
+- `lemma Domain.CosetFftDomain.injective` [ArkLib/Data/Domain/CosetFftDomain/Defs.lean:241](../../../ArkLib/Data/Domain/CosetFftDomain/Defs.lean#L241) — A concrete coset FFT domain is injective as a function.
+- `lemma Domain.FftDomain.injective` [ArkLib/Data/Domain/FftDomain/Defs.lean:112](../../../ArkLib/Data/Domain/FftDomain/Defs.lean#L112) — An FFT domain is injective as a function.
 
 ### `knowledgeStateFunction` (2 declarations, 2 files)
 
@@ -808,7 +808,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def Binius.BinaryBasefold.witnessStructuralInvariant` [ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean:875](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean#L875) — This condition ensures that the witness polynomial `H` has the correct structure `eq(...) * t(...)`
 - `def Binius.RingSwitching.witnessStructuralInvariant` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:406](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L406) — This condition ensures that the witness polynomial `H` has the correct structure `A(...) * t'(...)`
 
-## Near-duplicate docstrings (Jaccard ≥ 0.85, 63 cross-file pairs)
+## Near-duplicate docstrings (Jaccard ≥ 0.85, 64 cross-file pairs)
 
 Each pair has docstrings sharing a high fraction of (4+-letter) words, in different files. Most are unrelated coincidences in boilerplate; look for pairs where the *concept* matches.
 
@@ -980,6 +980,9 @@ Each pair has docstrings sharing a high fraction of (4+-letter) words, in differ
 - **0.88** `OracleVerifier.knowledgeSoundness` [ArkLib/OracleReduction/Security/Basic.lean:394](../../../ArkLib/OracleReduction/Security/Basic.lean#L394) vs `OracleVerifier.rbrKnowledgeSoundness` [ArkLib/OracleReduction/Security/RoundByRound.lean:463](../../../ArkLib/OracleReduction/Security/RoundByRound.lean#L463)
     - a: Knowledge soundness of an oracle reduction is the same as for non-oracle reductions.
     - b: Round-by-round knowledge soundness of an oracle reduction is the same as for non-oracle reductions.
+- **0.86** `Domain.CosetFftDomainClass.domain_implies_char_ne_2` [ArkLib/Data/Domain/CosetFftDomain/Ops.lean:100](../../../ArkLib/Data/Domain/CosetFftDomain/Ops.lean#L100) vs `Domain.FftDomainClass.domain_implies_char_ne_2` [ArkLib/Data/Domain/FftDomain/Ops.lean:136](../../../ArkLib/Data/Domain/FftDomain/Ops.lean#L136)
+    - a: The existence of a nontrivial smooth coset FFT domain rules out characteristic `2`.
+    - b: The existence of a nontrivial smooth FFT domain rules out characteristic `2`.
 - **0.86** `OracleProof.soundness` [ArkLib/OracleReduction/Security/Basic.lean:465](../../../ArkLib/OracleReduction/Security/Basic.lean#L465) vs `OracleProof.rbrSoundness` [ArkLib/OracleReduction/Security/RoundByRound.lean:498](../../../ArkLib/OracleReduction/Security/RoundByRound.lean#L498)
     - a: Soundness of an oracle reduction is the same as for non-oracle reductions.
     - b: Round-by-round soundness of an oracle reduction is the same as for non-oracle reductions.
