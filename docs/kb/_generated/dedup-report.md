@@ -4,9 +4,9 @@ Generated from `docs/kb/_generated/declarations.json`. **Eyeball, do not auto-re
 
 ## Stats
 
-- `ArkLib` — 238 files, 4300 declarations
+- `ArkLib` — 226 files, 4334 declarations
 
-## Same short-name across multiple files (125 groups)
+## Same short-name across multiple files (120 groups)
 
 Each group lists declarations sharing a short name across ≥2 files. Most are legitimate (overloaded interface, paper-shape vs general form), but the list is the right anchor to look for duplicates.
 
@@ -54,7 +54,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def BatchedFri.Spec.OracleStatement` [ArkLib/ProofSystem/BatchedFri/Spec/SingleRound.lean:40](../../../ArkLib/ProofSystem/BatchedFri/Spec/SingleRound.lean#L40) — An oracle for each batched polynomial.
 - `def Binius.BinaryBasefold.OracleStatement` [ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean:547](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean#L547) — For the `i`-th round of the protocol, there will be oracle statements corresponding to all committed
 - `def R1CS.OracleStatement` [ArkLib/ProofSystem/ConstraintSystem/R1CS.lean:48](../../../ArkLib/ProofSystem/ConstraintSystem/R1CS.lean#L48) — (no docstring)
-- `def Fri.Spec.OracleStatement` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:86](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L86) — For the `i`-th round of the protocol, there will be `i + 1` oracle statements, one for the beginning
+- `def Fri.Spec.OracleStatement` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:82](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L82) — For the `i`-th round of the protocol, there will be `i + 1` oracle statements, one for the beginning
 - `abbrev Spartan.Spec.OracleStatement` [ArkLib/ProofSystem/Spartan/Basic.lean:144](../../../ArkLib/ProofSystem/Spartan/Basic.lean#L144) — This unfolds to `A, B, C : Matrix (Fin 2 ^ ℓ_m) (Fin 2 ^ ℓ_n) R`
 - `def StirIOP.OracleStatement` [ArkLib/ProofSystem/Stir/MainThm.lean:81](../../../ArkLib/ProofSystem/Stir/MainThm.lean#L81) — `OracleStatement` defines the oracle message type for a multi-indexed setting: given base input type
 - `def Sumcheck.Spec.OracleStatement` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:134](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L134) — Oracle statement for sum-check, which is a multivariate polynomial over `n` variables of individual 
@@ -88,9 +88,9 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def RandomQuery.pSpec` [ArkLib/ProofSystem/Component/RandomQuery.lean:53](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L53) — (no docstring)
 - `def SendClaim.pSpec` [ArkLib/ProofSystem/Component/SendClaim.lean:31](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L31) — (no docstring)
 - `def SendWitness.pSpec` [ArkLib/ProofSystem/Component/SendWitness.lean:39](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L39) — (no docstring)
-- `def Fri.Spec.FoldPhase.pSpec` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:290](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L290) — Each round of the FRI protocol begins with the verifier sending a random field element as the challe
-- `def Fri.Spec.FinalFoldPhase.pSpec` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:492](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L492) — The final folding round of the FRI protocol begins with the verifier sending a random field element 
-- `def Fri.Spec.QueryRound.pSpec` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:667](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L667) — (no docstring)
+- `def Fri.Spec.FoldPhase.pSpec` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:286](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L286) — Each round of the FRI protocol begins with the verifier sending a random field element as the challe
+- `def Fri.Spec.FinalFoldPhase.pSpec` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:488](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L488) — The final folding round of the FRI protocol begins with the verifier sending a random field element 
+- `def Fri.Spec.QueryRound.pSpec` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:663](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L663) — (no docstring)
 - `def Sumcheck.Spec.pSpec` [ArkLib/ProofSystem/Sumcheck/Spec/General.lean:125](../../../ArkLib/ProofSystem/Sumcheck/Spec/General.lean#L125) — The protocol specification for the general sum-check protocol, which is the composition of the singl
 - `def Sumcheck.Spec.SingleRound.pSpec` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:147](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L147) — The protocol specification for a single round of sum-check. Has the form `⟨!v[.P_to_V, .V_to_P], !v[
 
@@ -119,9 +119,9 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def BatchedFri.Spec.inputRelation` [ArkLib/ProofSystem/BatchedFri/Spec/General.lean:41](../../../ArkLib/ProofSystem/BatchedFri/Spec/General.lean#L41) — (no docstring)
 - `def BatchedFri.Spec.BatchingRound.inputRelation` [ArkLib/ProofSystem/BatchedFri/Spec/SingleRound.lean:56](../../../ArkLib/ProofSystem/BatchedFri/Spec/SingleRound.lean#L56) — (no docstring)
 - `def Fri.Spec.inputRelation` [ArkLib/ProofSystem/Fri/Spec/General.lean:37](../../../ArkLib/ProofSystem/Fri/Spec/General.lean#L37) — (no docstring)
-- `def Fri.Spec.FoldPhase.inputRelation` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:269](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L269) — (no docstring)
-- `def Fri.Spec.FinalFoldPhase.inputRelation` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:469](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L469) — (no docstring)
-- `def Fri.Spec.QueryRound.inputRelation` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:646](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L646) — (no docstring)
+- `def Fri.Spec.FoldPhase.inputRelation` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:265](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L265) — (no docstring)
+- `def Fri.Spec.FinalFoldPhase.inputRelation` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:465](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L465) — (no docstring)
+- `def Fri.Spec.QueryRound.inputRelation` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:642](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L642) — (no docstring)
 - `def Sumcheck.Spec.SingleRound.Simpler.inputRelation` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:241](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L241) — (no docstring)
 - `def Sumcheck.Spec.SingleRound.Simple.inputRelation` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:366](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L366) — (no docstring)
 
@@ -140,16 +140,16 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def BatchedFri.Spec.Witness` [ArkLib/ProofSystem/BatchedFri/Spec/SingleRound.lean:48](../../../ArkLib/ProofSystem/BatchedFri/Spec/SingleRound.lean#L48) — The Batched FRI protocol has as witness for each batched polynomial that is supposed to correspond t
 - `structure Binius.BinaryBasefold.Witness` [ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean:568](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean#L568) — The round witness for round `i` of `t ∈ L[≤ 2][X Fin ℓ]` and `Hᵢ(Xᵢ, ..., Xₗ₋₁) := h(r₀', ..., rᵢ₋₁'
 - `def R1CS.Witness` [ArkLib/ProofSystem/ConstraintSystem/R1CS.lean:51](../../../ArkLib/ProofSystem/ConstraintSystem/R1CS.lean#L51) — (no docstring)
-- `def Fri.Spec.Witness` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:107](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L107) — The FRI protocol has as witness the polynomial that is supposed to correspond to the codeword in the
+- `def Fri.Spec.Witness` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:103](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L103) — The FRI protocol has as witness the polynomial that is supposed to correspond to the codeword in the
 - `abbrev Spartan.Spec.Witness` [ArkLib/ProofSystem/Spartan/Basic.lean:148](../../../ArkLib/ProofSystem/Spartan/Basic.lean#L148) — This unfolds to `𝕨 : Fin 2 ^ ℓ_w → R`
 
 ### `outputRelation` (7 declarations, 4 files)
 
 - `def BatchedFri.Spec.BatchingRound.outputRelation` [ArkLib/ProofSystem/BatchedFri/Spec/SingleRound.lean:65](../../../ArkLib/ProofSystem/BatchedFri/Spec/SingleRound.lean#L65) — (no docstring)
 - `def Fri.Spec.outputRelation` [ArkLib/ProofSystem/Fri/Spec/General.lean:47](../../../ArkLib/ProofSystem/Fri/Spec/General.lean#L47) — (no docstring)
-- `def Fri.Spec.FoldPhase.outputRelation` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:278](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L278) — (no docstring)
-- `def Fri.Spec.FinalFoldPhase.outputRelation` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:481](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L481) — (no docstring)
-- `def Fri.Spec.QueryRound.outputRelation` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:654](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L654) — (no docstring)
+- `def Fri.Spec.FoldPhase.outputRelation` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:274](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L274) — (no docstring)
+- `def Fri.Spec.FinalFoldPhase.outputRelation` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:477](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L477) — (no docstring)
+- `def Fri.Spec.QueryRound.outputRelation` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:650](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L650) — (no docstring)
 - `def Sumcheck.Spec.SingleRound.Simpler.outputRelation` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:270](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L270) — (no docstring)
 - `def Sumcheck.Spec.SingleRound.Simple.outputRelation` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:369](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L369) — (no docstring)
 
@@ -157,7 +157,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 - `structure Binius.BinaryBasefold.Statement` [ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean:524](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean#L524) — Statement per iterated sumcheck round
 - `def R1CS.Statement` [ArkLib/ProofSystem/ConstraintSystem/R1CS.lean:45](../../../ArkLib/ProofSystem/ConstraintSystem/R1CS.lean#L45) — (no docstring)
-- `def Fri.Spec.Statement` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:77](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L77) — For the `i`-th round of the protocol, the input statement is equal to the challenges sent from round
+- `def Fri.Spec.Statement` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:73](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L73) — For the `i`-th round of the protocol, the input statement is equal to the challenges sent from round
 - `abbrev Spartan.Spec.Statement` [ArkLib/ProofSystem/Spartan/Basic.lean:140](../../../ArkLib/ProofSystem/Spartan/Basic.lean#L140) — This unfolds to `𝕩 : Fin (2 ^ ℓ_n - 2 ^ ℓ_w) → R`
 
 ### `disagreementSet` (4 declarations, 4 files)
@@ -202,13 +202,6 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `theorem Sumcheck.Spec.reduction_perfectCompleteness` [ArkLib/ProofSystem/Sumcheck/Spec/General.lean:208](../../../ArkLib/ProofSystem/Sumcheck/Spec/General.lean#L208) — Perfect completeness for the (full) sum-check protocol
 - `theorem Sumcheck.Spec.SingleRound.Simple.reduction_perfectCompleteness` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:473](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L473) — Perfect completeness for the (non-oracle) reduction
 - `theorem Sumcheck.Spec.SingleRound.reduction_perfectCompleteness` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:874](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L874) — (no docstring)
-
-### `toFinset` (4 declarations, 3 files)
-
-- `def ReedSolomon.toFinset` [ArkLib/Data/CodingTheory/ReedSolomon.lean:97](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean#L97) — (no docstring)
-- `def Domain.CosetFftDomainClass.toFinset` [ArkLib/Data/Domain/CosetFftDomain/Defs.lean:287](../../../ArkLib/Data/Domain/CosetFftDomain/Defs.lean#L287) — The elements of a domain as a finset.
-- `abbrev Domain.CosetFftDomain.toFinset` [ArkLib/Data/Domain/CosetFftDomain/Defs.lean:306](../../../ArkLib/Data/Domain/CosetFftDomain/Defs.lean#L306) — The finset of elements of a concrete coset FFT domain.
-- `abbrev Domain.FftDomain.toFinset` [ArkLib/Data/Domain/FftDomain/Defs.lean:150](../../../ArkLib/Data/Domain/FftDomain/Defs.lean#L150) — The finite set of field elements contained in an FFT domain.
 
 ### `verifier_rbrKnowledgeSoundness` (4 declarations, 3 files)
 
@@ -455,13 +448,6 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `theorem Sumcheck.Spec.SingleRound.Simple.oracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:692](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L692) — Perfect completeness for the oracle reduction
 - `theorem Sumcheck.Spec.SingleRound.oracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:892](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L892) — Completeness theorem for single-round of sum-check, obtained by transporting the completeness proof 
 
-### `subdomain` (4 declarations, 2 files)
-
-- `def Domain.CosetFftDomainClass.subdomain` [ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean:112](../../../ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean#L112) — Given a smooth coset FFT domain `ω` of log-order `n`, return its subdomain of log-order `n - i`. The
-- `abbrev Domain.CosetFftDomain.subdomain` [ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean:467](../../../ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean#L467) — Concrete notation for taking the `i`th subdomain of a smooth coset FFT domain.
-- `def Domain.FftDomainClass.subdomain` [ArkLib/Data/Domain/FftDomain/Subdomain.lean:60](../../../ArkLib/Data/Domain/FftDomain/Subdomain.lean#L60) — The `i`th subdomain of a smooth FFT domain, obtained by taking the corresponding coset subdomain and
-- `abbrev Domain.FftDomain.subdomain` [ArkLib/Data/Domain/FftDomain/Subdomain.lean:164](../../../ArkLib/Data/Domain/FftDomain/Subdomain.lean#L164) — Concrete notation for the `i`th subdomain of a smooth FFT domain.
-
 ### `OStmtIn` (3 declarations, 2 files)
 
 - `def RandomQuery.OStmtIn` [ArkLib/ProofSystem/Component/RandomQuery.lean:33](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L33) — (no docstring)
@@ -510,12 +496,6 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def ProtocolSpec.extract` [ArkLib/OracleReduction/ProtocolSpec/Basic.lean:125](../../../ArkLib/OracleReduction/ProtocolSpec/Basic.lean#L125) — Extract the slice of the rounds of a `ProtocolSpec n` from `start` to `stop - 1`.
 - `abbrev ProtocolSpec.FullTranscript.extract` [ArkLib/OracleReduction/ProtocolSpec/Basic.lean:182](../../../ArkLib/OracleReduction/ProtocolSpec/Basic.lean#L182) — (no docstring)
 
-### `mem_toFinset_iff_mem` (3 declarations, 2 files)
-
-- `lemma Domain.CosetFftDomainClass.mem_toFinset_iff_mem` [ArkLib/Data/Domain/CosetFftDomain/Mem.lean:90](../../../ArkLib/Data/Domain/CosetFftDomain/Mem.lean#L90) — Membership in the finset of elements is the same as membership in the coset FFT domain.
-- `lemma Domain.CosetFftDomain.mem_toFinset_iff_mem` [ArkLib/Data/Domain/CosetFftDomain/Mem.lean:143](../../../ArkLib/Data/Domain/CosetFftDomain/Mem.lean#L143) — Membership in the finset of elements is the same as membership in the concrete coset FFT domain.
-- `lemma Domain.FftDomain.mem_toFinset_iff_mem` [ArkLib/Data/Domain/FftDomain/Mem.lean:85](../../../ArkLib/Data/Domain/FftDomain/Mem.lean#L85) — Membership in the finset of elements is the same as membership in the FFT domain.
-
 ### `rdrop` (3 declarations, 2 files)
 
 - `abbrev Fin.rdrop` [ArkLib/Data/Fin/Tuple/Defs.lean:68](../../../ArkLib/Data/Fin/Tuple/Defs.lean#L68) — Drop the last `m` elements of an `n`-tuple where `m ≤ n`, returning an `(n - m)`-tuple. This is defi
@@ -527,6 +507,12 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def Fin.rtake` [ArkLib/Data/Fin/Tuple/Defs.lean:55](../../../ArkLib/Data/Fin/Tuple/Defs.lean#L55) — Take the last `m` elements of a finite vector
 - `def ProtocolSpec.rtake` [ArkLib/OracleReduction/ProtocolSpec/Basic.lean:113](../../../ArkLib/OracleReduction/ProtocolSpec/Basic.lean#L113) — Take the last `m ≤ n` rounds of a `ProtocolSpec n`
 - `abbrev ProtocolSpec.FullTranscript.rtake` [ArkLib/OracleReduction/ProtocolSpec/Basic.lean:170](../../../ArkLib/OracleReduction/ProtocolSpec/Basic.lean#L170) — Take the last `m ≤ n` rounds of a (full) transcript for a protocol specification `pSpec`
+
+### `toFinset` (3 declarations, 2 files)
+
+- `def ReedSolomon.toFinset` [ArkLib/Data/CodingTheory/ReedSolomon.lean:97](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean#L97) — (no docstring)
+- `def ReedSolomon.FftDomain.toFinset` [ArkLib/Data/CodingTheory/ReedSolomon/FftDomain.lean:184](../../../ArkLib/Data/CodingTheory/ReedSolomon/FftDomain.lean#L184) — (no docstring)
+- `def ReedSolomon.CosetFftDomain.toFinset` [ArkLib/Data/CodingTheory/ReedSolomon/FftDomain.lean:552](../../../ArkLib/Data/CodingTheory/ReedSolomon/FftDomain.lean#L552) — (no docstring)
 
 ### `ChallengeIdx` (2 declarations, 2 files)
 
@@ -613,11 +599,6 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def BerlekampWelch.decoder` [ArkLib/Data/CodingTheory/BerlekampWelch/BerlekampWelch.lean:52](../../../ArkLib/Data/CodingTheory/BerlekampWelch/BerlekampWelch.lean#L52) — Berlekamp-Welch decoder for Reed-Solomon codes. Given received codeword evaluations with potential e
 - `def GuruswamiSudan.decoder` [ArkLib/Data/CodingTheory/GuruswamiSudan/GuruswamiSudan.lean:98](../../../ArkLib/Data/CodingTheory/GuruswamiSudan/GuruswamiSudan.lean#L98) — Guruswami-Sudan decoder.  Returns all roots of the GS interpolation polynomial whose evaluation is w
 
-### `domain_implies_char_ne_2` (2 declarations, 2 files)
-
-- `lemma Domain.CosetFftDomainClass.domain_implies_char_ne_2` [ArkLib/Data/Domain/CosetFftDomain/Ops.lean:123](../../../ArkLib/Data/Domain/CosetFftDomain/Ops.lean#L123) — The existence of a nontrivial smooth coset FFT domain rules out characteristic `2`.
-- `lemma Domain.FftDomainClass.domain_implies_char_ne_2` [ArkLib/Data/Domain/FftDomain/Ops.lean:161](../../../ArkLib/Data/Domain/FftDomain/Ops.lean#L161) — The existence of a nontrivial smooth FFT domain rules out characteristic `2`.
-
 ### `finalSumcheckKnowledgeError` (2 declarations, 2 files)
 
 - `def Binius.BinaryBasefold.CoreInteraction.finalSumcheckKnowledgeError` [ArkLib/ProofSystem/Binius/BinaryBasefold/Steps.lean:927](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Steps.lean#L927) — RBR knowledge error for the final sumcheck step
@@ -626,7 +607,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `foldOracleReduction` (2 declarations, 2 files)
 
 - `def Binius.BinaryBasefold.CoreInteraction.foldOracleReduction` [ArkLib/ProofSystem/Binius/BinaryBasefold/Steps.lean:198](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Steps.lean#L198) — The oracle reduction that is the `i`-th round of Binary Foldfold.
-- `def Fri.Spec.FoldPhase.foldOracleReduction` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:413](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L413) — The oracle reduction that is the `i`-th round of the FRI protocol.
+- `def Fri.Spec.FoldPhase.foldOracleReduction` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:409](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L409) — The oracle reduction that is the `i`-th round of the FRI protocol.
 
 ### `fullOracleVerifier_rbrKnowledgeSoundness` (2 declarations, 2 files)
 
@@ -657,16 +638,6 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 - `def DomainSeparator.hint` [ArkLib/Data/Hash/DomainSep.lean:196](../../../ArkLib/Data/Hash/DomainSep.lean#L196) — Hint `count` native elements. Rust interface: ```rust pub fn hint(self, label: &str) -> Self ```
 - `def HashStateWithInstructions.hint` [ArkLib/OracleReduction/FiatShamir/DuplexSponge/State.lean:129](../../../ArkLib/OracleReduction/FiatShamir/DuplexSponge/State.lean#L129) — Process a hint operation. Rust interface: ```rust pub fn hint(&mut self) -> Result<(), DomainSeparat
-
-### `injOn` (2 declarations, 2 files)
-
-- `lemma Domain.CosetFftDomain.injOn` [ArkLib/Data/Domain/CosetFftDomain/Defs.lean:276](../../../ArkLib/Data/Domain/CosetFftDomain/Defs.lean#L276) — A concrete coset FFT domain is injective on every set.
-- `lemma Domain.FftDomain.injOn` [ArkLib/Data/Domain/FftDomain/Defs.lean:138](../../../ArkLib/Data/Domain/FftDomain/Defs.lean#L138) — An FFT domain is injective on every set.
-
-### `injective` (2 declarations, 2 files)
-
-- `lemma Domain.CosetFftDomain.injective` [ArkLib/Data/Domain/CosetFftDomain/Defs.lean:270](../../../ArkLib/Data/Domain/CosetFftDomain/Defs.lean#L270) — A concrete coset FFT domain is injective as a function.
-- `lemma Domain.FftDomain.injective` [ArkLib/Data/Domain/FftDomain/Defs.lean:133](../../../ArkLib/Data/Domain/FftDomain/Defs.lean#L133) — An FFT domain is injective as a function.
 
 ### `knowledgeStateFunction` (2 declarations, 2 files)
 
@@ -746,12 +717,12 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `queryCodeword` (2 declarations, 2 files)
 
 - `def Binius.BinaryBasefold.QueryPhase.queryCodeword` [ArkLib/ProofSystem/Binius/BinaryBasefold/QueryPhase.lean:146](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/QueryPhase.lean#L146) — Oracle query helper: query a committed codeword at a given domain point. Restricted to codeword indi
-- `def Fri.Spec.QueryRound.queryCodeword` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:731](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L731) — (no docstring)
+- `def Fri.Spec.QueryRound.queryCodeword` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:727](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L727) — (no docstring)
 
 ### `queryOracleReduction` (2 declarations, 2 files)
 
 - `def Binius.BinaryBasefold.QueryPhase.queryOracleReduction` [ArkLib/ProofSystem/Binius/BinaryBasefold/QueryPhase.lean:306](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/QueryPhase.lean#L306) — The oracle reduction for the final query phase.
-- `def Fri.Spec.QueryRound.queryOracleReduction` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:849](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L849) — (no docstring)
+- `def Fri.Spec.QueryRound.queryOracleReduction` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:838](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L838) — (no docstring)
 
 ### `reduction_verifier_eq_verifier` (2 declarations, 2 files)
 
@@ -808,7 +779,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def Binius.BinaryBasefold.witnessStructuralInvariant` [ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean:875](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean#L875) — This condition ensures that the witness polynomial `H` has the correct structure `eq(...) * t(...)`
 - `def Binius.RingSwitching.witnessStructuralInvariant` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:406](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L406) — This condition ensures that the witness polynomial `H` has the correct structure `A(...) * t'(...)`
 
-## Near-duplicate docstrings (Jaccard ≥ 0.85, 64 cross-file pairs)
+## Near-duplicate docstrings (Jaccard ≥ 0.85, 63 cross-file pairs)
 
 Each pair has docstrings sharing a high fraction of (4+-letter) words, in different files. Most are unrelated coincidences in boilerplate; look for pairs where the *concept* matches.
 
@@ -980,9 +951,6 @@ Each pair has docstrings sharing a high fraction of (4+-letter) words, in differ
 - **0.88** `OracleVerifier.knowledgeSoundness` [ArkLib/OracleReduction/Security/Basic.lean:394](../../../ArkLib/OracleReduction/Security/Basic.lean#L394) vs `OracleVerifier.rbrKnowledgeSoundness` [ArkLib/OracleReduction/Security/RoundByRound.lean:463](../../../ArkLib/OracleReduction/Security/RoundByRound.lean#L463)
     - a: Knowledge soundness of an oracle reduction is the same as for non-oracle reductions.
     - b: Round-by-round knowledge soundness of an oracle reduction is the same as for non-oracle reductions.
-- **0.86** `Domain.CosetFftDomainClass.domain_implies_char_ne_2` [ArkLib/Data/Domain/CosetFftDomain/Ops.lean:123](../../../ArkLib/Data/Domain/CosetFftDomain/Ops.lean#L123) vs `Domain.FftDomainClass.domain_implies_char_ne_2` [ArkLib/Data/Domain/FftDomain/Ops.lean:161](../../../ArkLib/Data/Domain/FftDomain/Ops.lean#L161)
-    - a: The existence of a nontrivial smooth coset FFT domain rules out characteristic `2`.
-    - b: The existence of a nontrivial smooth FFT domain rules out characteristic `2`.
 - **0.86** `OracleProof.soundness` [ArkLib/OracleReduction/Security/Basic.lean:465](../../../ArkLib/OracleReduction/Security/Basic.lean#L465) vs `OracleProof.rbrSoundness` [ArkLib/OracleReduction/Security/RoundByRound.lean:498](../../../ArkLib/OracleReduction/Security/RoundByRound.lean#L498)
     - a: Soundness of an oracle reduction is the same as for non-oracle reductions.
     - b: Round-by-round soundness of an oracle reduction is the same as for non-oracle reductions.
