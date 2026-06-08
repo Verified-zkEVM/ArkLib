@@ -25,7 +25,7 @@ This file defines n-way splitting and folding operations on polynomials.
 
 When `n = 2`, this recovers the even/odd splitting: `splitNth f 2 0` gives the even
 coefficients and `splitNth f 2 1` gives the odd coefficients (after appropriate
-reindexing). 
+reindexing).
 
 -/
 
@@ -254,7 +254,7 @@ lemma splitNth_degree_le {n : ℕ} {f : 𝔽[X]} [inst : NeZero n] :
 lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽]
   {f : Polynomial 𝔽} {n : ℕ}
   [inst : NeZero n] :
-  FoldingPolynomial.foldingPolynomial (X ^ n) f = 
+  FoldingPolynomial.foldingPolynomial (X ^ n) f =
     ∑ i, C (splitNth f n i) * (X ^ i.val) := by
   symm
   apply FoldingPolynomial.folding_polynomial_is_unique'
@@ -263,8 +263,8 @@ lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽]
       rw [splitNth_def (f := f) (inst := inst)]
     rw [
       Polynomial.map_sum,
-      Polynomial.eval_finset_sum] 
-    simp only [Polynomial.map_mul, map_C, coe_compRingHom, Polynomial.map_pow, map_X, 
+      Polynomial.eval_finset_sum]
+    simp only [Polynomial.map_mul, map_C, coe_compRingHom, Polynomial.map_pow, map_X,
     eval_mul, eval_C, eval_pow, eval_X]
     simp only [comp]
     conv =>
@@ -292,7 +292,7 @@ lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽]
     apply Polynomial.natDegree_sum_le_of_forall_le
     intro i _
     apply Nat.le_trans Polynomial.natDegree_mul_le
-    rcases i with ⟨i, hi⟩ 
+    rcases i with ⟨i, hi⟩
     simp
     omega
 
@@ -301,11 +301,11 @@ lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽]
 lemma polyFold_eq_sum_of_splitNth {𝔽 : Type} [Field 𝔽]
   {f : 𝔽[X]} {n : ℕ} {r : 𝔽}
   [inst : NeZero n] :
-  FoldingPolynomial.polyFold f n r = 
+  FoldingPolynomial.polyFold f n r =
     ∑ i, C (r ^ i.val) * splitNth f n i := by
   simp only [FoldingPolynomial.polyFold, folding_polynomial_eq_sum_splitNth, map_pow]
   rw [Polynomial.eval_finset_sum]
-  simp only [eval_mul, eval_C, eval_pow, eval_X] 
+  simp only [eval_mul, eval_C, eval_pow, eval_X]
   conv =>
     lhs
     rhs

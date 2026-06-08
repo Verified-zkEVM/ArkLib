@@ -91,9 +91,9 @@ def cosetEnum (s₀ : evalDomainSigma s ω i) (k_le_n : ∑ j', (s j').1 ≤ n)
           apply Finset.sum_le_sum_of_subset
           simp
       }) (by omega) (by {
-        rcases s₀ with ⟨s₀, hs₀⟩ 
+        rcases s₀ with ⟨s₀, hs₀⟩
         simp only
-        simp only [evalDomainSigma] at hs₀ 
+        simp only [evalDomainSigma] at hs₀
         rw [CosetFftDomain.mem_coset_finset_iff_mem_coset_domain] at hs₀
         exact hs₀
       }) r.2
@@ -143,7 +143,7 @@ noncomputable def fin_equiv_coset (s₀ : evalDomainSigma s ω ↑i)
       subst h
       simp only [Nat.succ_eq_add_one, finRangeTo.eq_1, Fin.ofNat_eq_cast, Fin.val_natCast,
         evalDomainSigma, CosetFftDomain.subdomainNatReversed, CosetFftDomain.subdomainNat] at hs₀
-      rw [CosetFftDomain.mem_coset_finset_iff_mem_coset_domain] at hs₀ 
+      rw [CosetFftDomain.mem_coset_finset_iff_mem_coset_domain] at hs₀
       have hs₀ := CosetFftDomain.zero_is_not_in_domain hs₀
       simp at hs₀
   · rintro ⟨⟨y, h'⟩, h⟩
@@ -224,9 +224,9 @@ noncomputable def f_succ'
       s₀.1 ^ (2 ^ (s i).1) = s₀'.1 := by
     rcases s₀' with ⟨s₀', hs₀'⟩
     simp only [Fin.val_natCast]
-    simp only [evalDomainSigma] at hs₀' 
+    simp only [evalDomainSigma] at hs₀'
     rw [CosetFftDomain.mem_coset_finset_iff_mem_coset_domain] at hs₀'
-    rw [CosetFftDomain.subdomainNatReversed_mem_of_eq 
+    rw [CosetFftDomain.subdomainNatReversed_mem_of_eq
       (ω := ω)
       (k := (∑ j' ∈ finRangeTo (k + 1) ↑i, (s j').1 + (s i).1))
       (by {
@@ -243,7 +243,7 @@ noncomputable def f_succ'
         apply (swap le_trans) k_le_n
         apply Finset.sum_le_sum_of_subset (by simp)
       })
-      hs₀' 
+      hs₀'
     rcases h with ⟨y, ⟨h1, h2⟩⟩
     exists ⟨y, by {
       rw [CosetFftDomain.mem_coset_finset_iff_mem_coset_domain]
@@ -288,7 +288,7 @@ noncomputable def correlated_agreement_density {ι : Type} [Fintype ι]
   haveI : Fintype Fₛ.carrier := Set.Finite.fintype (Set.toFinite _)
   haveI : Fintype V.carrier := Set.Finite.fintype (Set.toFinite _)
   let Fc := Fₛ.carrier.toFinset
-  let Vc := V.carrier.toFinset  
+  let Vc := V.carrier.toFinset
   (Fc ∩ Vc).card / Fc.card
 
 open Polynomial
