@@ -1,14 +1,13 @@
 ArkLib/Data/CodingTheory/JohnsonBound/Family.lean : line 1 : ERR_NUM_LIN : 2000 file contains 1884 lines, try to split it up
-ArkLib/Data/CodingTheory/ListDecoding/Bounds.lean : line 1 : ERR_NUM_LIN : 2100 file contains 1933 lines, try to split it up
+ArkLib/Data/CodingTheory/ListDecoding/Bounds.lean : line 1 : ERR_NUM_LIN : 2800 file contains 2591 lines, try to split it up
 ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/BWMatrix.lean : line 1 : ERR_NUM_LIN : 2000 file contains 1870 lines, try to split it up
 ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineSpaces.lean : line 1 : ERR_NUM_LIN : 2500 file contains 2383 lines, try to split it up
-ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/Curves.lean : line 1 : ERR_NUM_LIN : 2900 file contains 2786 lines, try to split it up
+ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/Curves.lean : line 1 : ERR_NUM_LIN : 3100 file contains 2912 lines, try to split it up
 ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/HenselNumerator.lean : line 1 : ERR_NUM_LIN : 2700 file contains 2523 lines, try to split it up
 ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/ListDecoding/Agreement.lean : line 1 : ERR_NUM_LIN : 7600 file contains 7418 lines, try to split it up
 ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/ListDecoding/CurvesBridge.lean : line 1 : ERR_NUM_LIN : 1900 file contains 1581 lines, try to split it up
 ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/ListDecoding/Extraction.lean : line 1 : ERR_NUM_LIN : 1700 file contains 1540 lines, try to split it up
 ArkLib/Data/CodingTheory/ProximityGap/Errors.lean : line 1 : ERR_NUM_LIN : 1900 file contains 1762 lines, try to split it up
-ArkLib/Data/CodingTheory/ProximityGap/GrandChallengesLattice.lean : line 1 : ERR_NUM_LIN : 1700 file contains 1541 lines, try to split it up
 ArkLib/Data/CodingTheory/ReedSolomon/FftDomain.lean : line 1 : ERR_NUM_LIN : 2100 file contains 1954 lines, try to split it up
 ArkLib/Data/Polynomial/RationalFunctionsCore.lean : line 1 : ERR_NUM_LIN : 3200 file contains 3027 lines, try to split it up
 ArkLib/OracleReduction/Composition/Sequential/Append.lean : line 1 : ERR_NUM_LIN : 3000 file contains 2410 lines, try to split it up
