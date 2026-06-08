@@ -23,6 +23,10 @@ validate_spaces () {
     fi
     rm -f "$tmpfile"
 
+    if [ $issues_found ]; then
+        echo "Run \`bash ./scripts/lintWhitespace.sh -i\` to fix whitespace issues."; 
+    fi
+
     exit $issues_found
 }
 
