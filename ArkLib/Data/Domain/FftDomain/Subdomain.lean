@@ -17,6 +17,32 @@ import ArkLib.Data.Domain.CosetFftDomain.Subdomain
 import ArkLib.Data.Domain.FftDomain.Ops
 import ArkLib.Data.Domain.FftDomain.ToSubgroup
 
+/-!
+# Subdomains of smooth FFT domains
+
+This file develops the subdomain tower for smooth FFT domains and relates it to
+the corresponding construction for coset FFT domains.
+
+## Main definitions
+
+- `FftDomainClass.subdomain`: The `i`th FFT subdomain.
+- `FftDomain.subdomain`: Concrete notation for FFT subdomains.
+
+## Main results
+
+- `mem_fft_subdomain_iff_mem_coset_subdomain`:
+  FFT and coset subdomains have the same underlying elements.
+- `mem_subdomain_of_mem_subdomain_of_le`:
+  Membership descends along the subdomain tower.
+- `subdomain_toFinset_subset_subdomain_toFinset_of_le`:
+  Inclusion of image finsets.
+- `subdomain_toSubgroup_subset_subdomain_toSubgroup_of_le`:
+  Inclusion of associated subgroups.
+- `subdomain_toFftDomain_comm`:
+  Taking subdomains commutes with normalization.
+
+-/
+
 namespace Domain
 
 variable {F : Type} [Field F]

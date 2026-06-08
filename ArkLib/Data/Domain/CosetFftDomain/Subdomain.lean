@@ -19,6 +19,38 @@ import Mathlib.Tactic.Field
 import ArkLib.Data.Domain.CosetFftDomain.Ops
 import ArkLib.Data.Domain.FftDomain.Ops
 
+/-!
+# Subdomains of smooth coset FFT domains
+
+This file develops the hierarchy of subdomains of a smooth coset FFT domain.
+
+It also studies roots, cardinalities of fibers of powering maps, and provides
+a root-finding procedure.
+
+## Main definitions
+
+- `CosetFftDomainClass.subdomain_embed`:
+  Embedding of subdomain indices into the ambient domain.
+- `CosetFftDomainClass.subdomain`:
+  The `i`th subdomain.
+- `CosetFftDomain.twoNthRoot`:
+  A constructive `2 ^ i`th-root operation.
+
+## Main results
+
+- `pow_mem_of_mem`:
+  Powers move elements down the subdomain tower.
+- `card_roots`:
+  Exact cardinality of fibers of powering maps.
+- `root_exists`:
+  Existence of roots in higher subdomains.
+- `square_roots_explicit`:
+  Explicit description of square roots.
+- `twoNthRoot_correct`:
+  Correctness of the root-finding algorithm.
+
+-/
+
 namespace Domain
 
 variable {F : Type} [Field F] [DecidableEq F]

@@ -17,6 +17,29 @@ import ArkLib.Data.Domain.CosetFftDomain.Mem
 import ArkLib.Data.Domain.CosetFftDomain.ToFftDomain
 import ArkLib.Data.Domain.FftDomain.Ops
 
+/-!
+# Algebraic operations on coset FFT domains
+
+This file proves the multiplicative identities satisfied by coset FFT domains
+and establishes closure properties of smooth coset FFT domains.
+
+## Main results
+
+- `CosetFftDomain.apply_add_eq_inv_mul_mul`
+- `CosetFftDomain.apply_neg_eq_sq_mul_inv`
+- `CosetFftDomain.apply_sub_eq_mul_div`
+
+For smooth domains:
+
+- `CosetFftDomainClass.neg_mem_domain_of_mem`:
+  Membership is closed under negation.
+- `CosetFftDomainClass.neg_mem_domain_iff_mem`:
+  Membership is invariant under negation.
+- `CosetFftDomainClass.domain_implies_char_ne_2`:
+  Smooth coset FFT domains of size `≠ 1` cannot exist in characteristic `2`.
+
+-/
+
 namespace Domain
 
 variable {ι : Type} [Fintype ι] [AddCommGroup ι] [DecidableEq ι]

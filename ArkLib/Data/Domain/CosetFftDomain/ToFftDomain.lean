@@ -16,6 +16,28 @@ import Mathlib.Tactic.Field
 import ArkLib.Data.Domain.CosetFftDomain.Mem
 import ArkLib.Data.Domain.FftDomain.Mem
 
+/-!
+# Normalization of coset FFT domains
+
+This file constructs an FFT domain from a coset FFT domain by dividing out the
+coset generator.
+
+## Main definitions
+
+- `CosetFftDomainClass.toFftDomain`: Normalization of a coset FFT domain.
+- `CosetFftDomain.toFftDomain`: Concrete version of the construction.
+
+## Main results
+
+- `CosetFftDomainClass.eval_toFftDomain`:
+  Explicit evaluation formula for the normalized domain.
+- `CosetFftDomainClass.mem_toFftDomain_iff_mul_mem`:
+  Membership correspondence between a domain and its normalization.
+- `FftDomain.toFftDomain_eq_self`:
+  Normalization is the identity on FFT domains.
+
+-/
+
 namespace Domain
 
 variable {ι : Type} [AddCommGroup ι]

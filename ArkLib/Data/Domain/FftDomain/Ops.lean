@@ -15,6 +15,31 @@ import Mathlib.Tactic.Field
 
 import ArkLib.Data.Domain.FftDomain.Mem
 
+/-!
+# Algebraic operations on FFT domains
+
+This file proves the basic multiplicative identities satisfied by FFT domains.
+
+## Main results
+
+- `FftDomainClass.apply_add_eq_mul`: Addition of indices corresponds to multiplication.
+- `FftDomainClass.apply_neg_eq_inv`: Negation corresponds to inversion.
+- `FftDomainClass.domain_sub_eq_div_domain`: Subtraction corresponds to division.
+- `FftDomainClass.apply_nsmul`: Repeated addition corresponds to exponentiation.
+
+For smooth FFT domains:
+
+- `FftDomainClass.neg_one_mem_domain`:
+  `-1` is a member of a non-trivial FFT domain.
+- `FftDomainClass.apply_eq_pow_of_generator`:
+  Every element is a power of the value at `1`.
+- `FftDomainClass.eq_iff_generators_eq`:
+  Smooth FFT domains are determined by their generator.
+- `FftDomainClass.domain_implies_char_ne_2`:
+  Smooth FFT domains of positive size cannot exist in characteristic `2`.
+
+-/
+
 namespace Domain
 
 variable {ι : Type} [AddCommGroup ι]

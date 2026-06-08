@@ -16,6 +16,22 @@ import ArkLib.Data.Domain.CosetFftDomain.Mem
 import ArkLib.Data.Domain.FftDomain.Defs
 import ArkLib.ToMathlib.Finset.ToListWithProof
 
+/-!
+# Membership in FFT domains
+
+This file develops membership lemmas for FFT domains and relates them to the
+corresponding coset FFT domain constructions.
+
+## Main results
+
+- `FftDomainClass.one_mem`: The element `1` belongs to every FFT domain.
+- `FftDomain.mem_iff_exists`: Membership via the subgroup parametrization.
+- `FftDomain.mem_iff_mem_toCosetFftDomain`:
+  Membership agrees with the associated coset FFT domain.
+- `FftDomain.mem_toFinset_iff_mem`:
+  Membership agrees with membership in the finset of elements.
+-/
+
 namespace Domain
 
 variable {ι : Type} [Fintype ι] [AddCommGroup ι] [DecidableEq ι]

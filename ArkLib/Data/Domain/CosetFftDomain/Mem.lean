@@ -15,6 +15,27 @@ import Mathlib.Tactic.Field
 import ArkLib.Data.Domain.CosetFftDomain.Defs
 import ArkLib.ToMathlib.Finset.ToListWithProof
 
+/-!
+# Membership in coset FFT domains
+
+This file develops membership and `toFinset` constructions for coset FFT
+domains.
+
+## Main definitions
+
+- `Membership F D`: Membership in a domain via evaluation.
+- `CosetFftDomainClass.toFinset`: The finset of elements of a domain.
+- `CosetFftDomain.toFinset`: The finset of elements of a concrete coset FFT domain.
+
+## Main results
+
+- `CosetFftDomainClass.mem_def`: Characterization of membership.
+- `CosetFftDomainClass.not_zero_mem`: Zero does not belong to a coset FFT domain.
+- `CosetFftDomain.mem_iff_exists_mul`: Membership as a coset-generator multiple.
+- `CosetFftDomainClass.card_toFinset`: Cardinality of the image finset.
+
+-/
+
 namespace Domain
 
 open Function

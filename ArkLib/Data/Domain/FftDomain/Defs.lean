@@ -14,6 +14,27 @@ import Mathlib.Tactic.Field
 
 import ArkLib.Data.Domain.CosetFftDomain.Defs
 
+/-!
+# FFT domains
+
+This file defines FFT domains and their abstract interface.
+
+An FFT domain is a coset FFT domain whose coset generator is `1`. Equivalently,
+it is a finite multiplicative subgroup of a field equipped with an additive
+indexing.
+
+## Main definitions
+
+- `FftDomain`: A concrete FFT domain.
+- `FftDomainClass`: Typeclass for objects behaving like FFT domains.
+- `SmoothFftDomain`: FFT domains indexed by `Fin (2 ^ n)`.
+
+## Main results
+
+- `FftDomain.injective`: FFT domains are injective.
+
+-/
+
 namespace Domain
 
 variable {ι : Type} [Fintype ι] [AddCommGroup ι] [DecidableEq ι]

@@ -15,6 +15,25 @@ import Mathlib.Tactic.Field
 
 import ArkLib.Data.Domain.FftDomain.Mem
 
+/-!
+# FFT domains as subgroups
+
+This file associates a multiplicative subgroup of `Fˣ` to an FFT domain.
+
+## Main definitions
+
+- `FftDomainClass.toSubgroup`: The subgroup represented by an FFT domain.
+- `FftDomain.toSubgroup`: Concrete version of the construction.
+
+## Main results
+
+- `mem_subgroup_iff_mem_finset`:
+  Membership in the subgroup is equivalent to membership in the finset of elements.
+- `mem_subgroup_iff_mem_domain`:
+  Membership in the subgroup is equivalent to membership in the FFT domain.
+
+-/
+
 namespace Domain
 
 variable {ι : Type} [Fintype ι] [AddCommGroup ι]

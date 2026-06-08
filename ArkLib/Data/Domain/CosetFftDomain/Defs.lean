@@ -12,6 +12,35 @@ import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.LinearCombination
 import Mathlib.Tactic.Field
 
+/-!
+# Coset FFT domains
+
+This file defines coset FFT domains and their abstract interface.
+
+A coset FFT domain is a multiplicative coset of a finite subgroup of a field,
+indexed additively. The typeclass `CosetFftDomainClass` provides an abstract
+axiomatization of such domains, while `CosetFftDomain` gives a concrete
+representation.
+
+## Main definitions
+
+- `CosetFftDomain`: A concrete coset FFT domain.
+- `CosetFftDomainClass`: Typeclass for objects behaving like coset FFT domains.
+- `CosetFftDomainClass.mkSubgroupUnit`: Recovers the underlying subgroup element.
+- `CosetFftDomainClass.toCosetFftDomain`: Constructs a concrete domain from a class instance.
+- `SmoothCosetFftDomain`: Coset FFT domains indexed by `Fin (2 ^ n)`.
+
+## Main results
+
+- `CosetFftDomainClass.ne_zero`: Elements of a coset FFT domain are nonzero.
+- `CosetFftDomainClass.toCosetFftDomain_of_CosetFftDomain`:
+  Reconstruction is the identity on concrete domains.
+- `CosetFftDomain.map_0_eq_coset_generator`:
+  The value at zero is the coset generator.
+- `CosetFftDomain.injective`: Coset FFT domains are injective.
+
+-/
+
 namespace Domain
 
 open Function

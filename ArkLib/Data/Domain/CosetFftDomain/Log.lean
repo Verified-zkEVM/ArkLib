@@ -10,6 +10,29 @@ import Mathlib.Data.Fintype.Defs
 import ArkLib.Data.Domain.CosetFftDomain.Mem
 import ArkLib.Data.Domain.FftDomain.Mem
 
+/-!
+# Discrete logarithms in smooth FFT domains
+
+This file defines a logarithm operation for smooth FFT domains and smooth coset
+FFT domains.
+
+Given an element of the image of a domain, `log` recovers the unique index that
+maps to it.
+
+## Main definitions
+
+- `CosetFftDomainClass.log`: Inverse to the domain parametrization.
+- `CosetFftDomain.log`: Concrete logarithm for smooth coset FFT domains.
+- `FftDomain.log`: Concrete logarithm for smooth FFT domains.
+
+## Main results
+
+- `log_right_inverse'`: Evaluating at `log` recovers the original element.
+- `log_right_inverse`: `log` is a right inverse.
+- `log_left_inverse`: `log` is a left inverse.
+
+-/
+
 namespace Domain
 
 variable {n : ℕ}
