@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 tmpfile=$(mktemp)
 issues_found=0
