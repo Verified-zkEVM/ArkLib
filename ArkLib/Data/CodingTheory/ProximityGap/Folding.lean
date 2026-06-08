@@ -346,8 +346,7 @@ private lemma interpolate_eq_folding_poly_eval
 theorem foldWord_codeword {d : ℕ}
   {α : F}
   (hk : k ≤ n)
-  {p : ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d}
-  :
+  {p : ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d} :
   foldWord domain p k α
     = evalOnPoints (domain.subdomainNatReversed k)
         (FoldingPolynomial.polyFold (ReedSolomon.codewordToPoly p) (2 ^ k) α) := by
@@ -356,6 +355,36 @@ theorem foldWord_codeword {d : ℕ}
     Embedding.coeFn_mk, codewordToPoly, LinearMap.coe_mk, AddHom.coe_mk,
     FoldingPolynomial.polyFold]
   rw [eval_comm, interpolate_eq_folding_poly_eval hk (by simp)]
+
+theorem foldWord_mem_code_of_mem_code {d : ℕ}
+  {α : F}
+  (hk : k ≤ n)
+  {f : Word F (Fin (2 ^ n))}
+  (hf : f ∈ ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d) :
+  foldWord domain f k α ∈ 
+    ReedSolomon.code (domain.subdomainNatReversed k : Fin (2 ^ (n - k)) ↪ F) d := by 
+  by_cases hd : d = 0
+  · aesop
+  · have hf' := hf
+    rw [ReedSolomon.mem_code_iff_exists_polynomial] at hf
+    obtain ⟨p, hf⟩ := hf
+    apply ReedSolomon.mem_code_of_polynomial_of_natDegree_lt_of_eval 
+      (p := FoldingPolynomial.polyFold p (2 ^ k) α)
+    · exact lt_of_le_of_lt FoldingPolynomial.polyFold_natDegree_le <| by
+        by_cases hp : p = 0 
+        · aesop (add safe (by omega))
+        · exact lt_of_le_of_lt (Nat.div_le_self _ _) <| by
+            aesop (add simp [Polynomial.natDegree_lt_iff_degree_lt])
+    · intro i 
+      have := foldWord_codeword (α := α) hk (p := ⟨f, hf'⟩)
+      simp only at this
+      simp only [this, evalOnPoints, Embedding.coeFn_mk, 
+        LinearMap.coe_mk, AddHom.coe_mk]
+      rfl
+            
+        
+       
+
 
 private noncomputable def foldWordAuxCoeff (domain : SmoothCosetFftDomain n F)
   (f : Word F (Fin (2 ^ n))) (k : ℕ) (i : Fin k) (x : F) : F :=
