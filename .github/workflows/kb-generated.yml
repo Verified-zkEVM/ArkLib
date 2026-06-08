@@ -1,0 +1,55 @@
+name: Refresh KB Generated Files
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "ArkLib/**/*.lean"
+      - "blueprint/src/references.bib"
+      - "docs/kb/papers/**"
+      - "docs/kb/sources/**"
+      - "scripts/kb/**"
+      - ".github/workflows/kb-generated.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Regenerate KB files
+        run: python3 ./scripts/kb/regenerate.py
+
+      - name: Check generated files
+        run: python3 ./scripts/kb/check_generated.py
+
+      - name: Lint generated KB state
+        run: python3 ./scripts/kb/lint.py --strict-cited-pages --use-generated-indexes
+
+      - name: Commit generated updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A docs/kb/_generated docs/kb/papers docs/kb/sources
+          if git diff --cached --quiet; then
+            echo "No KB generated updates to commit."
+            exit 0
+          fi
+          git commit -m "chore(kb): refresh generated files"
+          git push

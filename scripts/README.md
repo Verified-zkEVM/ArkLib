@@ -26,7 +26,7 @@ This directory contains various utility scripts for the ArkLib project.
 - **`kb/`** - Scripts for syncing and inspecting the repository knowledge base
   - Export bibliography metadata
   - Extract citation usage from `ArkLib/**/*.lean`
-  - Scaffold paper pages and lint KB structure
+  - Regenerate derived KB indexes, scaffold missing cited-paper stubs, and lint KB structure
   - Resolve review context from cited keys or changed Lean files
   - See `kb/README.md` for usage
 
@@ -83,6 +83,7 @@ python3 ./scripts/check-docs-integrity.py
 ```bash
 python3 ./scripts/kb/sync_from_bib.py
 python3 ./scripts/kb/extract_lean_citations.py
+python3 ./scripts/kb/regenerate.py
 python3 ./scripts/kb/check_generated.py
 python3 ./scripts/kb/lint.py
 python3 ./scripts/kb/review_context.py --files ArkLib/ProofSystem/Fri/Spec/SingleRound.lean
