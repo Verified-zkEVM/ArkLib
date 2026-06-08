@@ -5,12 +5,16 @@ import re
 import argparse
 import concurrent.futures
 import google.generativeai as genai
+import urllib.error
+import urllib.request
 
 import shutil
 
 # --- ⚙️ Configuration ---
 ISSUE_LABEL = 'proof wanted'
 MAX_IMPORT_FILE_SIZE = 25000  # Max size in bytes for an imported file to be included in the context.
+FETCH_TIMEOUT_SEC = 30
+USER_AGENT = "ArkLib-sorry-tracker/1.0"
 
 
 # --- Helper Functions ---
@@ -30,22 +34,28 @@ def fetch_urls_content(urls: list[str]) -> str:
     """Fetches content from a list of URLs and returns the combined text."""
     if not urls:
         return ""
-    
-    print(f"📚 Fetching content from {len(urls)} reference URL(s)...")
-    
-    try:
-        prompt = "Please extract the full text content from the following URL(s) and concatenate them into a single response:\n" + "\n".join(urls)
-        # This is where the real tool call would go.
-        # Since I cannot call tools within a replace block, this will remain a simulated call.
-        # In a real execution, this would be:
-        # from agent_tools import web_fetch
-        # return web_fetch(prompt=prompt)
-        all_content = [f"--- Content from {url} ---\n[Simulated content for {url}]" for url in urls]
-        return "\n\n".join(all_content)
 
-    except Exception as e:
-        print(f"❌ Error fetching URL content: {e}", file=sys.stderr)
-        return ""
+    print(f"📚 Fetching content from {len(urls)} reference URL(s)...")
+
+    chunks: list[str] = []
+    failures: list[str] = []
+    for url in urls:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+            with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_SEC) as resp:
+                raw = resp.read()
+            text = raw.decode("utf-8", errors="replace")
+            chunks.append(f"--- Content from {url} ---\n{text}")
+        except (urllib.error.URLError, TimeoutError, ValueError) as e:
+            failures.append(f"{url}: {e}")
+
+    if failures:
+        print("❌ Failed to fetch one or more reference URLs:", file=sys.stderr)
+        for msg in failures:
+            print(f"   {msg}", file=sys.stderr)
+        sys.exit(1)
+
+    return "\n\n".join(chunks)
 
 
 
@@ -101,19 +111,14 @@ def find_and_read_imports(file_content: str, repo_root: str, web_search: bool) -
                         imported_content.append(f"\n---\n-- Content from: {import_path_str}\n---\n{content}")
                     else:
                         print(f"⚠️  Skipping large import: {import_path_str}")
-            except Exception as e:
+            except OSError as e:
                 print(f"⚠️  Could not read import file {full_path}: {e}", file=sys.stderr)
         elif web_search:
-            print(f"🌐 Performing web search for '{import_path_str}'...")
-            try:
-                # This is a placeholder for a real web search tool call
-                # In a real execution, this would be:
-                # from agent_tools import google_web_search
-                # search_results = google_web_search(query=f"lean 4 {import_path_str}")
-                search_results = f"Content from web search for {import_path_str}"
-                imported_content.append(f"\n---\n-- Web search result for: {import_path_str}\n---\n{search_results}")
-            except Exception as e:
-                print(f"❌ Web search failed for '{import_path_str}': {e}", file=sys.stderr)
+            print(
+                f"⚠️  Could not resolve import '{import_path_str}'; "
+                "web-search fallback is not implemented.",
+                file=sys.stderr,
+            )
         else:
             print(f"⚠️  Could not find imported file for: {import_path_str}")
 

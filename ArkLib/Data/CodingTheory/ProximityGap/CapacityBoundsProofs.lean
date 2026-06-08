@@ -3,11 +3,15 @@ import ArkLib.Data.CodingTheory.ProximityGap.CapacityBoundsAdmissible
 import ArkLib.Data.CodingTheory.ReedSolomon.AdmissibleSubspaceDesign
 
 /-!
-# Axiom-backed proofs for CapacityBounds external Prop statements
+# Axiom-backed proof terms for CapacityBounds external Prop statements
 
 This file provides axiom-backed proof terms for the genuinely external paper results
 catalogued in `CapacityBounds.lean`. Each axiom is named after its paper source and
 documented with the precise citation.
+
+**Naming:** declarations suffixed with `_from_paper_axiom` are thin wrappers around the
+matching allowlisted `axiom` in this file. They are **not** kernel-derived from Mathlib
+alone; do not read the suffix as “independently proven”.
 
 ## Covered issues
 
@@ -62,7 +66,7 @@ axiom bgks20_etaMargin_ca_bound
     (hδ : (δ : ℝ) ≤ 1 - ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3))) :
     linear_epsCA_1_5_johnson_bgks20 C δ_min η δ h_δ_min hη hη_lt_δ_min hδ
 
-theorem linear_epsMCA_1_5_johnson_gkl24_proven
+theorem linear_epsMCA_1_5_johnson_gkl24_from_paper_axiom
     (C : ModuleCode ι F A) (δ_min η δ : ℝ≥0)
     (h_δ_min : (δ_min : ℝ) = (Code.minDist (C : Set (ι → A)) : ℝ) / Fintype.card ι)
     (hη : 0 < η) (hη_lt_δ_min : η < δ_min)
@@ -70,7 +74,7 @@ theorem linear_epsMCA_1_5_johnson_gkl24_proven
     linear_epsMCA_1_5_johnson_gkl24 C δ_min η δ h_δ_min hη hη_lt_δ_min hδ :=
   gkl24_cubeRoot_mca_bound C δ_min η δ h_δ_min hη hη_lt_δ_min hδ
 
-theorem linear_epsCA_1_5_johnson_bgks20_proven
+theorem linear_epsCA_1_5_johnson_bgks20_from_paper_axiom
     (C : ModuleCode ι F A) (δ_min η δ : ℝ≥0)
     (h_δ_min : (δ_min : ℝ) = (Code.minDist (C : Set (ι → A)) : ℝ) / Fintype.card ι)
     (hη : 0 < η) (hη_lt_δ_min : η < δ_min)
@@ -95,7 +99,7 @@ axiom bchks25_rs_epsCA_item2
     (h_lt : δ_fld < δ_int) :
     rs_epsCA_bchks25_item2 domain k δ_fld δ_int h_dmin h_lt
 
-theorem rs_epsCA_bchks25_item2_proven
+theorem rs_epsCA_bchks25_item2_from_paper_axiom
     (domain : ι ↪ F) (k : ℕ) (δ_fld δ_int : ℝ≥0)
     (h_dmin : (Code.minDist ((ReedSolomon.code domain k : Set (ι → F))) : ℝ)
                 / Fintype.card ι / 3 ≤ δ_fld)
@@ -110,7 +114,7 @@ axiom bchks25_rs_epsMCA_johnson_range
     (hδ : rs_epsMCA_johnson_range_condition domain k η δ) :
     rs_epsMCA_johnson_range_bchks25 domain k η δ hη hδ
 
-theorem rs_epsMCA_johnson_range_bchks25_proven
+theorem rs_epsMCA_johnson_range_bchks25_from_paper_axiom
     (domain : ι ↪ F) (k : ℕ) (η δ : ℝ≥0)
     (hη : 0 < η)
     (hδ : rs_epsMCA_johnson_range_condition domain k η δ) :
@@ -122,7 +126,7 @@ axiom bchks25_kk25_rs_epsCA_lower_capacity
     (c : ℝ≥0) (hc : 0 < c) (ρ : ℝ≥0) (hρ_pos : 0 < ρ) (hρ_lt : ρ < (1 / 2 : ℝ≥0)) :
     rs_epsCA_lower_capacity_bchks25_kk25 c hc ρ hρ_pos hρ_lt
 
-theorem rs_epsCA_lower_capacity_bchks25_kk25_proven
+theorem rs_epsCA_lower_capacity_bchks25_kk25_from_paper_axiom
     (c : ℝ≥0) (hc : 0 < c) (ρ : ℝ≥0) (hρ_pos : 0 < ρ) (hρ_lt : ρ < (1 / 2 : ℝ≥0)) :
     rs_epsCA_lower_capacity_bchks25_kk25 c hc ρ hρ_pos hρ_lt :=
   bchks25_kk25_rs_epsCA_lower_capacity c hc ρ hρ_pos hρ_lt
@@ -140,7 +144,7 @@ axiom cs25_rs_epsCA_breakdown_lower
     (hδ_hi : (k : ℝ) / Fintype.card ι ≤ 1 - (δ : ℝ) - 2 / (Fintype.card ι : ℝ)) :
     rs_epsCA_breakdown_cs25_entropyBallLowerWitness domain k δ hq_ge hδ_lo hδ_hi
 
-theorem rs_epsCA_breakdown_cs25_proven
+theorem rs_epsCA_breakdown_cs25_from_paper_axiom
     (domain : ι ↪ F) (k : ℕ) (δ : ℝ≥0)
     (hq_ge : 10 ≤ Fintype.card F)
     (hδ_lo :
@@ -159,7 +163,7 @@ axiom bchks25_rs_epsCA_johnson_jump
     (ε : ℝ≥0) (hε : 0 < ε) :
     rs_epsCA_johnson_jump_bchks25 (FC := FC) ε hε
 
-theorem rs_epsCA_johnson_jump_bchks25_proven
+theorem rs_epsCA_johnson_jump_bchks25_from_paper_axiom
     {FC : Type} [Field FC] [Fintype FC] [DecidableEq FC] [CharP FC 2]
     (ε : ℝ≥0) (hε : 0 < ε) :
     rs_epsCA_johnson_jump_bchks25 (FC := FC) ε hε :=
@@ -181,7 +185,7 @@ axiom gg25_subspaceDesign_epsMCA
     (t : ℕ) (ht : 0 < t) :
     subspaceDesign_epsMCA_gg25 s τ C h t ht
 
-theorem subspaceDesign_epsMCA_gg25_proven
+theorem subspaceDesign_epsMCA_gg25_from_paper_axiom
     (s : ℕ) (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
     (h : IsSubspaceDesign s τ C)
     (t : ℕ) (ht : 0 < t) :
@@ -195,7 +199,7 @@ axiom gg25_frs_epsMCA_capacity
     (hs_gt : (s : ℝ) > 16 / η ^ 2) :
     frs_epsMCA_capacity_gg25 domain k s ω η hη_pos hη_lt hs_gt
 
-theorem frs_epsMCA_capacity_gg25_proven
+theorem frs_epsMCA_capacity_gg25_from_paper_axiom
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (η : ℝ) (hη_pos : 0 < η) (hη_lt : η < 1)
     (hs_gt : (s : ℝ) > 16 / η ^ 2) :
@@ -216,7 +220,7 @@ proved) yields the public folded-RS MCA-up-to-capacity statement.
 This witnesses T4.14 as a genuine corollary of **T4.13 alone** (T2.18 being now proved), discharged
 without appeal to the standalone `gg25_frs_epsMCA_capacity` axiom — exactly the
 "reduce to T4.13 + T2.18" disposition recorded in the `CapacityBounds` ledger. -/
-theorem frs_epsMCA_capacity_gg25_proven_of_t413
+theorem frs_epsMCA_capacity_gg25_from_paper_axiom_of_t413
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (η : ℝ) (hη_pos : 0 < η) (hη_lt : η < 1) (hs_gt : (s : ℝ) > 16 / η ^ 2)
     (t : ℕ) (ht : 0 < t) (hts : t + 1 ≤ s)
@@ -235,12 +239,12 @@ theorem frs_epsMCA_capacity_gg25_proven_of_t413
     (gg25_subspaceDesign_epsMCA s _ (ReedSolomon.Folded.frsCode domain k s ω) hT218 t ht)
     hη htη
 
-/-- Coset-separation companion to `frs_epsMCA_capacity_gg25_proven_of_t413`.
+/-- Coset-separation companion to `frs_epsMCA_capacity_gg25_from_paper_axiom_of_t413`.
 
 This uses the fully packaged order/coset folded-RS T2.18 front door, so callers can instantiate
 the T4.14-from-T4.13 proof supply from `0 ∉ L`, `s ≤ orderOf ω`, and the coset-separation
 condition directly. -/
-theorem frs_epsMCA_capacity_gg25_proven_of_t413_cosetSep
+theorem frs_epsMCA_capacity_gg25_from_paper_axiom_of_t413_cosetSep
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (η : ℝ) (hη_pos : 0 < η) (hη_lt : η < 1) (hs_gt : (s : ℝ) > 16 / η ^ 2)
     (t : ℕ) (ht : 0 < t) (hts : t + 1 ≤ s)
@@ -259,12 +263,12 @@ theorem frs_epsMCA_capacity_gg25_proven_of_t413_cosetSep
     (gg25_subspaceDesign_epsMCA s _ (ReedSolomon.Folded.frsCode domain k s ω) hT218 t ht)
     hη htη
 
-/-- Canonical geometric-domain companion to `frs_epsMCA_capacity_gg25_proven_of_t413`.
+/-- Canonical geometric-domain companion to `frs_epsMCA_capacity_gg25_from_paper_axiom_of_t413`.
 
 This routes the GR08 folded-RS domain `i ↦ γ^(s*i)` through the proved geometric-domain
 T2.18/CZ25-profile wrapper, then uses the GG25 T4.13 proof supply to derive the public
 T4.14 capacity statement without the standalone T4.14 axiom. -/
-theorem frs_epsMCA_capacity_gg25_proven_of_t413_geomDomain
+theorem frs_epsMCA_capacity_gg25_from_paper_axiom_of_t413_geomDomain
     {n : ℕ} [NeZero n]
     (γ : F) (k s : ℕ)
     (hs : 0 < s) (hγ : γ ≠ 0) (hsn : s * n ≤ orderOf γ)
@@ -291,10 +295,10 @@ theorem frs_epsMCA_capacity_gg25_proven_of_t413_geomDomain
 
 /-- T4.13-backed `t ≤ 2 / η` frontier for the order/inter-orbit FRS route.
 
-This packages the same proof supply as `frs_epsMCA_capacity_gg25_proven_of_t413`, but returns the
+This packages the same proof supply as `frs_epsMCA_capacity_gg25_from_paper_axiom_of_t413`, but returns the
 frontier object consumed by `frs_epsMCA_capacity_gg25_of_tle_frontier` instead of immediately
 closing the public Prop endpoint. -/
-noncomputable def frs_epsMCA_capacity_gg25_tleFrontier_proven_of_t413
+noncomputable def frs_epsMCA_capacity_gg25_tleFrontier_from_paper_axiom_of_t413
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (η : ℝ) (hη_pos : 0 < η) (hη_lt : η < 1) (hs_gt : (s : ℝ) > 16 / η ^ 2)
     (t : ℕ) (ht : 0 < t) (hts : t + 1 ≤ s)
@@ -316,8 +320,8 @@ noncomputable def frs_epsMCA_capacity_gg25_tleFrontier_proven_of_t413
     hη htη
 
 /-- Coset-separation companion to
-`frs_epsMCA_capacity_gg25_tleFrontier_proven_of_t413`. -/
-noncomputable def frs_epsMCA_capacity_gg25_tleFrontier_proven_of_t413_cosetSep
+`frs_epsMCA_capacity_gg25_tleFrontier_from_paper_axiom_of_t413`. -/
+noncomputable def frs_epsMCA_capacity_gg25_tleFrontier_from_paper_axiom_of_t413_cosetSep
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (η : ℝ) (hη_pos : 0 < η) (hη_lt : η < 1) (hs_gt : (s : ℝ) > 16 / η ^ 2)
     (t : ℕ) (ht : 0 < t) (hts : t + 1 ≤ s)
@@ -339,7 +343,7 @@ noncomputable def frs_epsMCA_capacity_gg25_tleFrontier_proven_of_t413_cosetSep
     hη htη
 
 /-- Canonical geometric-domain T4.13-backed `t ≤ 2 / η` frontier. -/
-noncomputable def frs_epsMCA_capacity_gg25_tleFrontier_proven_of_t413_geomDomain
+noncomputable def frs_epsMCA_capacity_gg25_tleFrontier_from_paper_axiom_of_t413_geomDomain
     {n : ℕ} [NeZero n]
     (γ : F) (k s : ℕ)
     (hs : 0 < s) (hγ : γ ≠ 0) (hsn : s * n ≤ orderOf γ)
@@ -368,7 +372,7 @@ noncomputable def frs_epsMCA_capacity_gg25_tleFrontier_proven_of_t413_geomDomain
 This is the older `FRSEpsMCACapacityGG25Frontier` API, obtained from the honest
 `t ≤ 2 / η` frontier by the checked arithmetic conversion
 `FRSEpsMCACapacityGG25TLeFrontier.toFrontier`. -/
-noncomputable def frs_epsMCA_capacity_gg25_frontier_proven_of_t413
+noncomputable def frs_epsMCA_capacity_gg25_frontier_from_paper_axiom_of_t413
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (η : ℝ) (hη_pos : 0 < η) (hη_lt : η < 1) (hs_gt : (s : ℝ) > 16 / η ^ 2)
     (t : ℕ) (ht : 0 < t) (hts : t + 1 ≤ s)
@@ -380,13 +384,13 @@ noncomputable def frs_epsMCA_capacity_gg25_frontier_proven_of_t413
         - (k : ℝ) / Fintype.card ι + 3 / (2 * t))
     (htη : (t : ℝ) ≤ 2 / η) :
     FRSEpsMCACapacityGG25Frontier domain k s ω η :=
-  (frs_epsMCA_capacity_gg25_tleFrontier_proven_of_t413
+  (frs_epsMCA_capacity_gg25_tleFrontier_from_paper_axiom_of_t413
     domain k s ω η hη_pos hη_lt hs_gt t ht hts
     L hL_dom h0 hω0 hs_order hinter hkLs hkord hη htη).toFrontier
 
 /-- Coset-separation companion to
-`frs_epsMCA_capacity_gg25_frontier_proven_of_t413`. -/
-noncomputable def frs_epsMCA_capacity_gg25_frontier_proven_of_t413_cosetSep
+`frs_epsMCA_capacity_gg25_frontier_from_paper_axiom_of_t413`. -/
+noncomputable def frs_epsMCA_capacity_gg25_frontier_from_paper_axiom_of_t413_cosetSep
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (η : ℝ) (hη_pos : 0 < η) (hη_lt : η < 1) (hs_gt : (s : ℝ) > 16 / η ^ 2)
     (t : ℕ) (ht : 0 < t) (hts : t + 1 ≤ s)
@@ -398,12 +402,12 @@ noncomputable def frs_epsMCA_capacity_gg25_frontier_proven_of_t413_cosetSep
         - (k : ℝ) / Fintype.card ι + 3 / (2 * t))
     (htη : (t : ℝ) ≤ 2 / η) :
     FRSEpsMCACapacityGG25Frontier domain k s ω η :=
-  (frs_epsMCA_capacity_gg25_tleFrontier_proven_of_t413_cosetSep
+  (frs_epsMCA_capacity_gg25_tleFrontier_from_paper_axiom_of_t413_cosetSep
     domain k s ω η hη_pos hη_lt hs_gt t ht hts
     L hL_dom h0 hω0 hs_order hcoset hkLs hkord hη htη).toFrontier
 
 /-- Canonical geometric-domain T4.13-backed raw-bound frontier. -/
-noncomputable def frs_epsMCA_capacity_gg25_frontier_proven_of_t413_geomDomain
+noncomputable def frs_epsMCA_capacity_gg25_frontier_from_paper_axiom_of_t413_geomDomain
     {n : ℕ} [NeZero n]
     (γ : F) (k s : ℕ)
     (hs : 0 < s) (hγ : γ ≠ 0) (hsn : s * n ≤ orderOf γ)
@@ -415,29 +419,29 @@ noncomputable def frs_epsMCA_capacity_gg25_frontier_proven_of_t413_geomDomain
     (htη : (t : ℝ) ≤ 2 / η) :
     FRSEpsMCACapacityGG25Frontier
       (ReedSolomon.Folded.geomDomainEmb γ s n hs hsn) k s γ η :=
-  (frs_epsMCA_capacity_gg25_tleFrontier_proven_of_t413_geomDomain
+  (frs_epsMCA_capacity_gg25_tleFrontier_from_paper_axiom_of_t413_geomDomain
     (n := n) γ k s hs hγ hsn hkLs hkord η hη_pos hη_lt hs_gt
     t ht hts hη htη).toFrontier
 
 end SubspaceDesign
 
-#print axioms CodingTheory.linear_epsMCA_1_5_johnson_gkl24_proven
-#print axioms CodingTheory.linear_epsCA_1_5_johnson_bgks20_proven
-#print axioms CodingTheory.rs_epsCA_bchks25_item2_proven
-#print axioms CodingTheory.rs_epsMCA_johnson_range_bchks25_proven
-#print axioms CodingTheory.rs_epsCA_lower_capacity_bchks25_kk25_proven
-#print axioms CodingTheory.rs_epsCA_breakdown_cs25_proven
-#print axioms CodingTheory.rs_epsCA_johnson_jump_bchks25_proven
-#print axioms CodingTheory.subspaceDesign_epsMCA_gg25_proven
-#print axioms CodingTheory.frs_epsMCA_capacity_gg25_proven
-#print axioms CodingTheory.frs_epsMCA_capacity_gg25_proven_of_t413
-#print axioms CodingTheory.frs_epsMCA_capacity_gg25_proven_of_t413_cosetSep
-#print axioms CodingTheory.frs_epsMCA_capacity_gg25_proven_of_t413_geomDomain
-#print axioms CodingTheory.frs_epsMCA_capacity_gg25_tleFrontier_proven_of_t413
-#print axioms CodingTheory.frs_epsMCA_capacity_gg25_tleFrontier_proven_of_t413_cosetSep
-#print axioms CodingTheory.frs_epsMCA_capacity_gg25_tleFrontier_proven_of_t413_geomDomain
-#print axioms CodingTheory.frs_epsMCA_capacity_gg25_frontier_proven_of_t413
-#print axioms CodingTheory.frs_epsMCA_capacity_gg25_frontier_proven_of_t413_cosetSep
-#print axioms CodingTheory.frs_epsMCA_capacity_gg25_frontier_proven_of_t413_geomDomain
+#print axioms CodingTheory.linear_epsMCA_1_5_johnson_gkl24_from_paper_axiom
+#print axioms CodingTheory.linear_epsCA_1_5_johnson_bgks20_from_paper_axiom
+#print axioms CodingTheory.rs_epsCA_bchks25_item2_from_paper_axiom
+#print axioms CodingTheory.rs_epsMCA_johnson_range_bchks25_from_paper_axiom
+#print axioms CodingTheory.rs_epsCA_lower_capacity_bchks25_kk25_from_paper_axiom
+#print axioms CodingTheory.rs_epsCA_breakdown_cs25_from_paper_axiom
+#print axioms CodingTheory.rs_epsCA_johnson_jump_bchks25_from_paper_axiom
+#print axioms CodingTheory.subspaceDesign_epsMCA_gg25_from_paper_axiom
+#print axioms CodingTheory.frs_epsMCA_capacity_gg25_from_paper_axiom
+#print axioms CodingTheory.frs_epsMCA_capacity_gg25_from_paper_axiom_of_t413
+#print axioms CodingTheory.frs_epsMCA_capacity_gg25_from_paper_axiom_of_t413_cosetSep
+#print axioms CodingTheory.frs_epsMCA_capacity_gg25_from_paper_axiom_of_t413_geomDomain
+#print axioms CodingTheory.frs_epsMCA_capacity_gg25_tleFrontier_from_paper_axiom_of_t413
+#print axioms CodingTheory.frs_epsMCA_capacity_gg25_tleFrontier_from_paper_axiom_of_t413_cosetSep
+#print axioms CodingTheory.frs_epsMCA_capacity_gg25_tleFrontier_from_paper_axiom_of_t413_geomDomain
+#print axioms CodingTheory.frs_epsMCA_capacity_gg25_frontier_from_paper_axiom_of_t413
+#print axioms CodingTheory.frs_epsMCA_capacity_gg25_frontier_from_paper_axiom_of_t413_cosetSep
+#print axioms CodingTheory.frs_epsMCA_capacity_gg25_frontier_from_paper_axiom_of_t413_geomDomain
 
 end CodingTheory

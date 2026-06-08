@@ -8,10 +8,19 @@ import Mathlib.NumberTheory.LucasLehmer
 /-!
 # The §1 Grand Challenge prize resolution: a single judge-facing file (issue #120)
 
-This file assembles the complete formal resolution of the ABF26 §1 Grand-Challenge prize
-predicates into one apex deliverable, and — crucially — **exhibits a concrete instance** that
-discharges every numeric hypothesis with no remaining holes, no `sorry`/`admit`/`axiom`, and no
-`native_decide`.
+This file assembles the formal resolution of the ABF26 §1 Grand-Challenge **predicates as
+formalized in this repository** into one apex deliverable, and exhibits a concrete instance
+that discharges every numeric hypothesis with no remaining `sorry`/`admit`/`native_decide`.
+
+**Scope honesty (Finding F6):** the formal `mcaPrize` / `grandMCAChallenge` predicates here
+collapse to radius-one counting (`GrandChallengeCollapse.lean`). Proving them is **not**
+the same as resolving the external million-dollar MCA conjecture from the paper's `\ignore{}`
+block (`mcaConjecture`). This file proves the **in-repo formal prize**, not open research math.
+
+**Axiom honesty:** the pinned apex theorems in this file depend only on
+`{propext, Classical.choice, Quot.sound}` when checked in isolation. Downstream capacity
+routes may consume allowlisted paper axioms via `CapacityBoundsProofs` (`*_from_paper_axiom`);
+those are separate from this file's `#print axioms` block.
 
 ## Deliverables
 
