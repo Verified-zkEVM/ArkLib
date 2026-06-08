@@ -12822,9 +12822,18 @@
     "ArkLib/Data/Domain/CosetFftDomain/Defs.lean": {
       "declarations": [
         {
+          "doc": "",
+          "kind": "axiom",
+          "line": 22,
+          "name": "_anon_axiom_22",
+          "namespace": "",
+          "short_name": "_anon_axiom_22",
+          "signature": "axiom axiomatization of such domains, while `CosetFftDomain` gives a concrete"
+        },
+        {
           "doc": "A coset FFT domain is a domain of the form `x \u00b7 G` for an FFT domain `G`.",
           "kind": "structure",
-          "line": 24,
+          "line": 53,
           "name": "Domain.CosetFftDomain",
           "namespace": "Domain",
           "short_name": "CosetFftDomain",
@@ -12833,7 +12842,7 @@
         {
           "doc": "Typeclass for objects behaving like coset FFT domains as functions `\u03b9 \u2192 F`. The axioms say that the image is a shifted multiplicative subgroup: `\u03c9 0` is the coset representative, multiplication in the subgroup corresponds to addition in `\u03b9`, negation gives inverses up to the coset factor, and the map is injective.",
           "kind": "class",
-          "line": 35,
+          "line": 64,
           "name": "Domain.CosetFftDomainClass.",
           "namespace": "Domain",
           "short_name": "CosetFftDomainClass.",
@@ -12842,7 +12851,7 @@
         {
           "doc": "Every point of a coset FFT domain is nonzero.",
           "kind": "lemma",
-          "line": 50,
+          "line": 79,
           "name": "Domain.CosetFftDomainClass.ne_zero",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "ne_zero",
@@ -12851,7 +12860,7 @@
         {
           "doc": "Two concrete coset FFT domains are equal iff their coset generators and subgroup parametrizations are equal.",
           "kind": "lemma",
-          "line": 64,
+          "line": 93,
           "name": "Domain.CosetFftDomain.eq_iff_gen_and_domains_eq",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "eq_iff_gen_and_domains_eq",
@@ -12860,16 +12869,16 @@
         {
           "doc": "",
           "kind": "instance",
-          "line": 72,
-          "name": "Domain._anon_instance_72",
+          "line": 101,
+          "name": "Domain._anon_instance_101",
           "namespace": "Domain",
-          "short_name": "_anon_instance_72",
+          "short_name": "_anon_instance_101",
           "signature": "instance instance : FunLike (CosetFftDomain \u03b9 F) \u03b9 F where"
         },
         {
           "doc": "Evaluation of a concrete coset FFT domain is multiplication of the coset generator by the subgroup element indexed by `i`.",
           "kind": "lemma",
-          "line": 97,
+          "line": 126,
           "name": "Domain.CosetFftDomain.eval_coset_fft_domain_eq_eval_generator_mul_domain",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "eval_coset_fft_domain_eq_eval_generator_mul_domain",
@@ -12878,16 +12887,16 @@
         {
           "doc": "`CosetFftDomain` is indeed an instance of `CosetFftDomainClass`.",
           "kind": "instance",
-          "line": 104,
-          "name": "Domain._anon_instance_104",
+          "line": 133,
+          "name": "Domain._anon_instance_133",
           "namespace": "Domain",
-          "short_name": "_anon_instance_104",
+          "short_name": "_anon_instance_133",
           "signature": "instance instance : CosetFftDomainClass (CosetFftDomain \u03b9 F) \u03b9 F where"
         },
         {
           "doc": "The normalized value `(\u03c9 0)\u207b\u00b9 * \u03c9 i`, packaged as a unit of `F`. This removes the coset shift and recovers the underlying subgroup element.",
           "kind": "def",
-          "line": 132,
+          "line": 161,
           "name": "Domain.CosetFftDomainClass.mkSubgroupUnit",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mkSubgroupUnit",
@@ -12896,7 +12905,7 @@
         {
           "doc": "The normalized subgroup unit map sends addition in the index type to multiplication.",
           "kind": "lemma",
-          "line": 147,
+          "line": 176,
           "name": "Domain.CosetFftDomainClass.mkSubgroupUnit_mul",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mkSubgroupUnit_mul",
@@ -12905,7 +12914,7 @@
         {
           "doc": "The normalized subgroup unit map is injective.",
           "kind": "lemma",
-          "line": 156,
+          "line": 185,
           "name": "Domain.CosetFftDomainClass.mkSubgroupUnit_injective",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mkSubgroupUnit_injective",
@@ -12914,7 +12923,7 @@
         {
           "doc": "Reconstruct a concrete `CosetFftDomain` from any object of a type satisfying `CosetFftDomainClass`.",
           "kind": "def",
-          "line": 168,
+          "line": 197,
           "name": "Domain.CosetFftDomainClass.toCosetFftDomain",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "toCosetFftDomain",
@@ -12923,7 +12932,7 @@
         {
           "doc": "Reconstructing a concrete coset FFT domain from its class instance gives back the original domain.",
           "kind": "lemma",
-          "line": 190,
+          "line": 219,
           "name": "Domain.CosetFftDomainClass.toCosetFftDomain_of_CosetFftDomain",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "toCosetFftDomain_of_CosetFftDomain",
@@ -12932,7 +12941,7 @@
         {
           "doc": "Reconstructing a concrete coset FFT domain preserves evaluation.",
           "kind": "lemma",
-          "line": 203,
+          "line": 232,
           "name": "Domain.CosetFftDomainClass.toCosetFftDomain_apply_self",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "toCosetFftDomain_apply_self",
@@ -12941,16 +12950,16 @@
         {
           "doc": "Any class-level coset FFT domain coerces to an embedding into `F`.",
           "kind": "instance",
-          "line": 212,
-          "name": "Domain._anon_instance_212",
+          "line": 241,
+          "name": "Domain._anon_instance_241",
           "namespace": "Domain",
-          "short_name": "_anon_instance_212",
+          "short_name": "_anon_instance_241",
           "signature": "instance instance {D : Type} [FunLike D \u03b9 F] [CosetFftDomainClass D \u03b9 F] :"
         },
         {
           "doc": "Extensionality for class-level coset FFT domains. Domains are equal if their evaluations are equal.",
           "kind": "theorem",
-          "line": 225,
+          "line": 254,
           "name": "Domain.CosetFftDomainClass.ext",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "ext",
@@ -12959,7 +12968,7 @@
         {
           "doc": "The value at zero is the coset generator.",
           "kind": "lemma",
-          "line": 233,
+          "line": 262,
           "name": "Domain.CosetFftDomain.map_0_eq_coset_generator",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "map_0_eq_coset_generator",
@@ -12968,7 +12977,7 @@
         {
           "doc": "A concrete coset FFT domain is injective as a function.",
           "kind": "lemma",
-          "line": 241,
+          "line": 270,
           "name": "Domain.CosetFftDomain.injective",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "injective",
@@ -12977,7 +12986,7 @@
         {
           "doc": "A concrete coset FFT domain is injective on every set.",
           "kind": "lemma",
-          "line": 247,
+          "line": 276,
           "name": "Domain.CosetFftDomain.injOn",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "injOn",
@@ -12986,7 +12995,7 @@
         {
           "doc": "A smooth coset FFT domain is a coset domain indexed by `Fin (2 ^ n)`.",
           "kind": "abbrev",
-          "line": 253,
+          "line": 282,
           "name": "Domain.SmoothCosetFftDomain",
           "namespace": "Domain",
           "short_name": "SmoothCosetFftDomain",
@@ -12995,7 +13004,7 @@
         {
           "doc": "The elements of a domain as a finset.",
           "kind": "def",
-          "line": 258,
+          "line": 287,
           "name": "Domain.CosetFftDomainClass.toFinset",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "toFinset",
@@ -13004,7 +13013,7 @@
         {
           "doc": "The cardinality of the finset of elements of a domain is the cardinality of the indexing type.",
           "kind": "lemma",
-          "line": 265,
+          "line": 294,
           "name": "Domain.CosetFftDomainClass.card_toFinset",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "card_toFinset",
@@ -13013,7 +13022,7 @@
         {
           "doc": "The finset of elements of a concrete coset FFT domain.",
           "kind": "abbrev",
-          "line": 277,
+          "line": 306,
           "name": "Domain.CosetFftDomain.toFinset",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "toFinset",
@@ -13026,7 +13035,7 @@
         {
           "doc": "Auxiliary bounded search for the index of `x` in a smooth coset FFT domain. The `fuel` parameter bounds the search through `Fin (2 ^ n)`.",
           "kind": "def",
-          "line": 25,
+          "line": 48,
           "name": "Domain.CosetFftDomainClass.logAux",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "logAux",
@@ -13035,7 +13044,7 @@
         {
           "doc": "Finds a preimage of `x` under the mapping `\u03c9`.",
           "kind": "def",
-          "line": 35,
+          "line": 58,
           "name": "Domain.CosetFftDomainClass.log",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "log",
@@ -13044,7 +13053,7 @@
         {
           "doc": "Evaluating `\u03c9` at the index found by `log` recovers `x`.",
           "kind": "lemma",
-          "line": 39,
+          "line": 62,
           "name": "Domain.CosetFftDomainClass.log_right_inverse'",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "log_right_inverse'",
@@ -13053,7 +13062,7 @@
         {
           "doc": "The logarithm is a right inverse to the subtype-valued parametrization of the domain.",
           "kind": "lemma",
-          "line": 56,
+          "line": 79,
           "name": "Domain.CosetFftDomainClass.log_right_inverse",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "log_right_inverse",
@@ -13062,7 +13071,7 @@
         {
           "doc": "The logarithm is a left inverse to the subtype-valued parametrization of the domain.",
           "kind": "lemma",
-          "line": 60,
+          "line": 83,
           "name": "Domain.CosetFftDomainClass.log_left_inverse",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "log_left_inverse",
@@ -13071,7 +13080,7 @@
         {
           "doc": "Concrete notation for the logarithm on a smooth coset FFT domain.",
           "kind": "abbrev",
-          "line": 69,
+          "line": 92,
           "name": "Domain.CosetFftDomain.log",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "log",
@@ -13080,7 +13089,7 @@
         {
           "doc": "Concrete notation for the logarithm on a smooth FFT domain.",
           "kind": "abbrev",
-          "line": 77,
+          "line": 100,
           "name": "Domain.FftDomain.log",
           "namespace": "Domain.FftDomain",
           "short_name": "log",
@@ -13093,25 +13102,25 @@
         {
           "doc": "Membership in a class-level coset FFT domain means being equal to one of the values of its indexing function.",
           "kind": "instance",
-          "line": 27,
-          "name": "Domain._anon_instance_27",
+          "line": 48,
+          "name": "Domain._anon_instance_48",
           "namespace": "Domain",
-          "short_name": "_anon_instance_27",
+          "short_name": "_anon_instance_48",
           "signature": "instance instance {D : Type}"
         },
         {
           "doc": "A class-level coset FFT domain coerces to the type associated to its finset of elements.",
           "kind": "instance",
-          "line": 32,
-          "name": "Domain._anon_instance_32",
+          "line": 53,
+          "name": "Domain._anon_instance_53",
           "namespace": "Domain",
-          "short_name": "_anon_instance_32",
+          "short_name": "_anon_instance_53",
           "signature": "instance instance"
         },
         {
           "doc": "Unfold membership in a class-level coset FFT domain.",
           "kind": "lemma",
-          "line": 46,
+          "line": 67,
           "name": "Domain.CosetFftDomainClass.mem_def",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mem_def",
@@ -13120,7 +13129,7 @@
         {
           "doc": "Every value of a coset FFT domain belongs to that domain.",
           "kind": "lemma",
-          "line": 51,
+          "line": 72,
           "name": "Domain.CosetFftDomainClass.mem_self",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mem_self",
@@ -13129,7 +13138,7 @@
         {
           "doc": "Membership is preserved by converting a class-level coset FFT domain to the concrete `CosetFftDomain` structure.",
           "kind": "lemma",
-          "line": 58,
+          "line": 79,
           "name": "Domain.CosetFftDomainClass.mem_toCosetFftDomain_iff_mem",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mem_toCosetFftDomain_iff_mem",
@@ -13138,7 +13147,7 @@
         {
           "doc": "Membership in the finset of elements is the same as membership in the coset FFT domain.",
           "kind": "lemma",
-          "line": 69,
+          "line": 90,
           "name": "Domain.CosetFftDomainClass.mem_toFinset_iff_mem",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mem_toFinset_iff_mem",
@@ -13147,7 +13156,7 @@
         {
           "doc": "Every value of a coset FFT domain belongs to the set of its elements.",
           "kind": "lemma",
-          "line": 75,
+          "line": 96,
           "name": "Domain.CosetFftDomainClass.mem_toFinset_self",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mem_toFinset_self",
@@ -13156,7 +13165,7 @@
         {
           "doc": "Zero is not a member of a coset FFT domain.",
           "kind": "lemma",
-          "line": 81,
+          "line": 102,
           "name": "Domain.CosetFftDomainClass.not_zero_mem",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "not_zero_mem",
@@ -13165,43 +13174,43 @@
         {
           "doc": "The finset of elements of a concrete coset FFT domain is inhabited. There always exists `\u03c9 0`.",
           "kind": "instance",
-          "line": 93,
-          "name": "Domain._anon_instance_93",
+          "line": 114,
+          "name": "Domain._anon_instance_114",
           "namespace": "Domain",
-          "short_name": "_anon_instance_93",
+          "short_name": "_anon_instance_114",
           "signature": "instance instance {\u03c9 : CosetFftDomain \u03b9 F} : Inhabited \u03c9.toFinset where"
         },
         {
           "doc": "",
           "kind": "def",
-          "line": 94,
-          "name": "Domain._anon_def_94",
+          "line": 115,
+          "name": "Domain._anon_def_115",
           "namespace": "Domain",
-          "short_name": "_anon_def_94",
+          "short_name": "_anon_def_115",
           "signature": "def default := \u27e8\u03c9 0, by simp [CosetFftDomainClass.toFinset]\u27e9"
         },
         {
           "doc": "A concrete coset FFT domain coerced to `Type` is inhabited.",
           "kind": "instance",
-          "line": 97,
-          "name": "Domain._anon_instance_97",
+          "line": 118,
+          "name": "Domain._anon_instance_118",
           "namespace": "Domain",
-          "short_name": "_anon_instance_97",
+          "short_name": "_anon_instance_118",
           "signature": "instance instance {\u03c9 : CosetFftDomain \u03b9 F} : Inhabited \u03c9 where"
         },
         {
           "doc": "",
           "kind": "def",
-          "line": 98,
-          "name": "Domain._anon_def_98",
+          "line": 119,
+          "name": "Domain._anon_def_119",
           "namespace": "Domain",
-          "short_name": "_anon_def_98",
+          "short_name": "_anon_def_119",
           "signature": "def default := \u27e8\u03c9 0, by simp [CosetFftDomainClass.toFinset]\u27e9"
         },
         {
           "doc": "Membership in a concrete coset FFT domain means being a coset generator times some subgroup element.",
           "kind": "lemma",
-          "line": 107,
+          "line": 128,
           "name": "Domain.CosetFftDomain.mem_iff_exists_mul",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "mem_iff_exists_mul",
@@ -13210,7 +13219,7 @@
         {
           "doc": "Membership in the finset of elements of a concrete coset FFT domain means being a coset generator times some subgroup element.",
           "kind": "lemma",
-          "line": 114,
+          "line": 135,
           "name": "Domain.CosetFftDomain.mem_toFinset_iff_exists_mul",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "mem_toFinset_iff_exists_mul",
@@ -13219,7 +13228,7 @@
         {
           "doc": "Membership in the finset of elements is the same as membership in the concrete coset FFT domain.",
           "kind": "lemma",
-          "line": 122,
+          "line": 143,
           "name": "Domain.CosetFftDomain.mem_toFinset_iff_mem",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "mem_toFinset_iff_mem",
@@ -13228,7 +13237,7 @@
         {
           "doc": "Every value of a concrete coset FFT domain belongs to its finset of elements.",
           "kind": "lemma",
-          "line": 128,
+          "line": 149,
           "name": "Domain.CosetFftDomain.mem_toFinset_self",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "mem_toFinset_self",
@@ -13237,10 +13246,10 @@
         {
           "doc": "Membership in a concrete coset FFT domain is decidable via membership in its finset of elements.",
           "kind": "instance",
-          "line": 135,
-          "name": "Domain._anon_instance_135",
+          "line": 156,
+          "name": "Domain._anon_instance_156",
           "namespace": "Domain",
-          "short_name": "_anon_instance_135",
+          "short_name": "_anon_instance_156",
           "signature": "instance instance {x : F} {\u03c9 : CosetFftDomain \u03b9 F} : Decidable (x \u2208 \u03c9) :="
         }
       ]
@@ -13250,7 +13259,7 @@
         {
           "doc": "The value of a concrete coset FFT domain at `0` is its coset generator.",
           "kind": "lemma",
-          "line": 31,
+          "line": 54,
           "name": "Domain.CosetFftDomain.apply_zero",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "apply_zero",
@@ -13259,7 +13268,7 @@
         {
           "doc": "Evaluation at a sum of indices in a coset FFT domain multiplies the two values and removes one copy of the coset generator.",
           "kind": "lemma",
-          "line": 39,
+          "line": 62,
           "name": "Domain.CosetFftDomain.apply_add_eq_inv_mul_mul",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "apply_add_eq_inv_mul_mul",
@@ -13268,7 +13277,7 @@
         {
           "doc": "Evaluation at the negated index gives the inverse value, scaled by the square of the coset generator.",
           "kind": "lemma",
-          "line": 50,
+          "line": 73,
           "name": "Domain.CosetFftDomain.apply_neg_eq_sq_mul_inv",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "apply_neg_eq_sq_mul_inv",
@@ -13277,7 +13286,7 @@
         {
           "doc": "Evaluation at a difference of indices gives the quotient of the corresponding values, scaled by the coset generator.",
           "kind": "lemma",
-          "line": 61,
+          "line": 84,
           "name": "Domain.CosetFftDomain.apply_sub_eq_mul_div",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "apply_sub_eq_mul_div",
@@ -13286,7 +13295,7 @@
         {
           "doc": "In a smooth coset FFT domain of nonzero logarithmic size, membership is closed under negation.",
           "kind": "theorem",
-          "line": 82,
+          "line": 105,
           "name": "Domain.CosetFftDomainClass.neg_mem_domain_of_mem",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "neg_mem_domain_of_mem",
@@ -13295,7 +13304,7 @@
         {
           "doc": "In a smooth coset FFT domain of nonzero logarithmic size, negation preserves and reflects membership.",
           "kind": "lemma",
-          "line": 91,
+          "line": 114,
           "name": "Domain.CosetFftDomainClass.neg_mem_domain_iff_mem",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "neg_mem_domain_iff_mem",
@@ -13304,7 +13313,7 @@
         {
           "doc": "The existence of a nontrivial smooth coset FFT domain rules out characteristic `2`.",
           "kind": "lemma",
-          "line": 100,
+          "line": 123,
           "name": "Domain.CosetFftDomainClass.domain_implies_char_ne_2",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "domain_implies_char_ne_2",
@@ -13317,7 +13326,7 @@
         {
           "doc": "Embed the index type of the `i`th subdomain into the index type of the ambient smooth coset FFT domain. When `i < n`, this sends `k` to `2 ^ i * k`; when `i \u2265 n`, the subdomain is trivial and everything maps to `0`.",
           "kind": "def",
-          "line": 35,
+          "line": 67,
           "name": "Domain.CosetFftDomainClass.subdomain_embed",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "subdomain_embed",
@@ -13326,7 +13335,7 @@
         {
           "doc": "The subdomain embedding preserves addition.",
           "kind": "lemma",
-          "line": 47,
+          "line": 79,
           "name": "Domain.CosetFftDomainClass.subdomain_embed_add",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "subdomain_embed_add",
@@ -13335,7 +13344,7 @@
         {
           "doc": "The subdomain embedding sends `0` to `0`.",
           "kind": "lemma",
-          "line": 61,
+          "line": 93,
           "name": "Domain.CosetFftDomainClass.subdomain_embed_zero",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "subdomain_embed_zero",
@@ -13344,7 +13353,7 @@
         {
           "doc": "The subdomain embedding is injective.",
           "kind": "lemma",
-          "line": 66,
+          "line": 98,
           "name": "Domain.CosetFftDomainClass.subdomain_embed_injective",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "subdomain_embed_injective",
@@ -13353,7 +13362,7 @@
         {
           "doc": "Given a smooth coset FFT domain `\u03c9` of log-order `n`, return its subdomain of log-order `n - i`. The resulting coset generator is `\u03c9 0 ^ 2 ^ i`.",
           "kind": "def",
-          "line": 80,
+          "line": 112,
           "name": "Domain.CosetFftDomainClass.subdomain",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "subdomain",
@@ -13362,7 +13371,7 @@
         {
           "doc": "Membership in subdomains is invariant under equal subdomain indices.",
           "kind": "lemma",
-          "line": 102,
+          "line": 134,
           "name": "Domain.CosetFftDomainClass.mem_subdomain_of_eq_vals",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mem_subdomain_of_eq_vals",
@@ -13371,7 +13380,7 @@
         {
           "doc": "The coset generator of the `i`th subdomain is `\u03c9 0 ^ 2 ^ i`.",
           "kind": "lemma",
-          "line": 110,
+          "line": 142,
           "name": "Domain.CosetFftDomainClass.subdomain_generator_pow_generator",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "subdomain_generator_pow_generator",
@@ -13380,7 +13389,7 @@
         {
           "doc": "Membership to the `0`th subdomain is the same as membership to the original coset FFT domain.",
           "kind": "lemma",
-          "line": 117,
+          "line": 149,
           "name": "Domain.CosetFftDomainClass.mem_subdomain_0_iff_mem",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mem_subdomain_0_iff_mem",
@@ -13389,7 +13398,7 @@
         {
           "doc": "The `n`th subdomain consists exactly of the single element `\u03c9 0 ^ 2 ^ n`.",
           "kind": "lemma",
-          "line": 130,
+          "line": 162,
           "name": "Domain.CosetFftDomainClass.mem_subdomain_n_iff_eq_pow_generator",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mem_subdomain_n_iff_eq_pow_generator",
@@ -13398,7 +13407,7 @@
         {
           "doc": "Powers of normalized subgroup units correspond to additive multiples of their indices.",
           "kind": "lemma",
-          "line": 141,
+          "line": 173,
           "name": "Domain.CosetFftDomainClass.mkSubgroupUnit_pow",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mkSubgroupUnit_pow",
@@ -13407,7 +13416,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 157,
+          "line": 189,
           "name": "Domain.CosetFftDomainClass.nat_mul_pow_mod",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "nat_mul_pow_mod",
@@ -13416,7 +13425,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 163,
+          "line": 195,
           "name": "Domain.CosetFftDomainClass.fin_nsmul_val",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "fin_nsmul_val",
@@ -13425,7 +13434,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 168,
+          "line": 200,
           "name": "Domain.CosetFftDomainClass.subdomain_embed_val",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "subdomain_embed_val",
@@ -13434,7 +13443,7 @@
         {
           "doc": "If `x` lies in the `j`th subdomain, then `x ^ 2 ^ i` lies in the `(j + i)`th subdomain, provided `j + i \u2264 n`.",
           "kind": "theorem",
-          "line": 174,
+          "line": 206,
           "name": "Domain.CosetFftDomainClass.pow_mem_of_mem",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "pow_mem_of_mem",
@@ -13443,7 +13452,7 @@
         {
           "doc": "If `x` lies in the original domain, then `x ^ 2 ^ i` lies in the `i`th subdomain.",
           "kind": "lemma",
-          "line": 242,
+          "line": 274,
           "name": "Domain.CosetFftDomainClass.pow_mem_subdomain_of_mem_subdomain_0",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "pow_mem_subdomain_of_mem_subdomain_0",
@@ -13452,7 +13461,7 @@
         {
           "doc": "`toFinset`-version of `pow_mem_subdomain_of_mem_subdomain_0`.",
           "kind": "lemma",
-          "line": 250,
+          "line": 282,
           "name": "Domain.CosetFftDomainClass.pow_mem_subdomain_of_mem_subdomain_0_toFinset",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "pow_mem_subdomain_of_mem_subdomain_0_toFinset",
@@ -13461,7 +13470,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 256,
+          "line": 288,
           "name": "Domain.CosetFftDomainClass.subdomain_embed_of_le",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "subdomain_embed_of_le",
@@ -13470,7 +13479,7 @@
         {
           "doc": "If `j \u2264 i`, then we do not have `x \u2208 subdomain \u03c9 i \u2192 x \u2208 subdomain \u03c9 j` in the general case but rescaling `x` as `\u03c9 0 ^ 2 ^ j * (\u03c9 0)\u207b\u00b9 ^ 2 ^ i * x` gives us a member of `subdomain \u03c9 j`.",
           "kind": "lemma",
-          "line": 275,
+          "line": 307,
           "name": "Domain.CosetFftDomainClass.mem_subdomain_of_le_of_mem_subdomain",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mem_subdomain_of_le_of_mem_subdomain",
@@ -13479,7 +13488,7 @@
         {
           "doc": "Evaluation in the `i`th subdomain, raised to `2 ^ j`, is evaluation in the `(i + j)`th subdomain at the reduced index.",
           "kind": "lemma",
-          "line": 289,
+          "line": 321,
           "name": "Domain.CosetFftDomainClass.subdomain_eval_pow'",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "subdomain_eval_pow'",
@@ -13488,7 +13497,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 330,
+          "line": 362,
           "name": "Domain.CosetFftDomainClass.card_fin_filter_mod_eq",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "card_fin_filter_mod_eq",
@@ -13497,7 +13506,7 @@
         {
           "doc": "If `x` lies in the `(i + j)`th subdomain, then it has exactly `2 ^ j` preimages under `y \u21a6 y ^ 2 ^ j` from the `i`th subdomain.",
           "kind": "lemma",
-          "line": 361,
+          "line": 393,
           "name": "Domain.CosetFftDomainClass.card_roots",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "card_roots",
@@ -13506,7 +13515,7 @@
         {
           "doc": "Every element of the `(i + j)`th subdomain has a `2 ^ j`th root in the `i`th subdomain.",
           "kind": "lemma",
-          "line": 396,
+          "line": 428,
           "name": "Domain.CosetFftDomainClass.root_exists",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "root_exists",
@@ -13515,7 +13524,7 @@
         {
           "doc": "Any square root of an element of the `(i + 1)`th subdomain lies in the `i`th subdomain.",
           "kind": "lemma",
-          "line": 405,
+          "line": 437,
           "name": "Domain.CosetFftDomainClass.sq_root_mem_subdomain",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "sq_root_mem_subdomain",
@@ -13524,7 +13533,7 @@
         {
           "doc": "The square roots of `x` inside the `i`th subdomain are exactly `y` and `-y`, for any square root `y` of `x`.",
           "kind": "lemma",
-          "line": 419,
+          "line": 451,
           "name": "Domain.CosetFftDomainClass.square_roots_explicit",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "square_roots_explicit",
@@ -13533,7 +13542,7 @@
         {
           "doc": "Concrete notation for taking the `i`th subdomain of a smooth coset FFT domain.",
           "kind": "abbrev",
-          "line": 435,
+          "line": 467,
           "name": "Domain.CosetFftDomain.subdomain",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "subdomain",
@@ -13542,7 +13551,7 @@
         {
           "doc": "Search through a smooth coset FFT domain for an element whose `2 ^ i`th power is `x`, using `fuel` as the remaining search bound.",
           "kind": "def",
-          "line": 440,
+          "line": 472,
           "name": "Domain.CosetFftDomain.twoNthRootAux",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "twoNthRootAux",
@@ -13551,7 +13560,7 @@
         {
           "doc": "Finds a `2 ^ n`th root of `x`.",
           "kind": "def",
-          "line": 449,
+          "line": 481,
           "name": "Domain.CosetFftDomain.twoNthRoot",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "twoNthRoot",
@@ -13560,7 +13569,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 452,
+          "line": 484,
           "name": "Domain.CosetFftDomain.twoNthRootAux_correct",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "twoNthRootAux_correct",
@@ -13569,7 +13578,7 @@
         {
           "doc": "The value returned by `twoNthRoot` is a `2 ^ i`th root of its input.",
           "kind": "lemma",
-          "line": 467,
+          "line": 499,
           "name": "Domain.CosetFftDomain.twoNthRoot_correct",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "twoNthRoot_correct",
@@ -13578,7 +13587,7 @@
         {
           "doc": "Specialized correctness statement for square roots from the first subdomain.",
           "kind": "lemma",
-          "line": 483,
+          "line": 515,
           "name": "Domain.CosetFftDomain.twoNthRoot_correct_one",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "twoNthRoot_correct_one",
@@ -13591,7 +13600,7 @@
         {
           "doc": "Normalize a class-level coset FFT domain to an FFT domain by dividing out its value at `0`. The resulting domain has trivial coset generator and parametrizes the subgroup underlying the original coset.",
           "kind": "def",
-          "line": 31,
+          "line": 53,
           "name": "Domain.CosetFftDomainClass.toFftDomain",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "toFftDomain",
@@ -13600,7 +13609,7 @@
         {
           "doc": "Evaluation in the normalized FFT domain is `(\u03c9 0)\u207b\u00b9 * \u03c9 i`.",
           "kind": "lemma",
-          "line": 38,
+          "line": 60,
           "name": "Domain.CosetFftDomainClass.eval_toFftDomain",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "eval_toFftDomain",
@@ -13609,7 +13618,7 @@
         {
           "doc": "An element lies in the normalized FFT domain iff multiplying it by the original coset representative gives an element of the original coset domain.",
           "kind": "lemma",
-          "line": 49,
+          "line": 71,
           "name": "Domain.CosetFftDomainClass.mem_toFftDomain_iff_mul_mem",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mem_toFftDomain_iff_mul_mem",
@@ -13618,7 +13627,7 @@
         {
           "doc": "Multiplying an element of the normalized FFT domain by an element of the original coset domain gives another element of the original coset domain.",
           "kind": "lemma",
-          "line": 64,
+          "line": 86,
           "name": "Domain.CosetFftDomainClass.mul_mem_of_mem_toFftDomain_of_mem",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mul_mem_of_mem_toFftDomain_of_mem",
@@ -13627,7 +13636,7 @@
         {
           "doc": "Multiplying an element of the original coset domain by an element of the normalized FFT domain gives another element of the original coset domain.",
           "kind": "lemma",
-          "line": 82,
+          "line": 104,
           "name": "Domain.CosetFftDomainClass.mul_mem_of_mem_of_mem_toFftDomain",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mul_mem_of_mem_of_mem_toFftDomain",
@@ -13636,7 +13645,7 @@
         {
           "doc": "Scaling the normalized FFT-domain image by `\u03c9 0` recovers the original coset FFT-domain image.",
           "kind": "lemma",
-          "line": 92,
+          "line": 114,
           "name": "Domain.CosetFftDomainClass.toFinset_image_toFftDomain_eq_toFinset",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "toFinset_image_toFftDomain_eq_toFinset",
@@ -13645,7 +13654,7 @@
         {
           "doc": "The original coset FFT domain and its normalized FFT domain have the same number of elements.",
           "kind": "lemma",
-          "line": 111,
+          "line": 133,
           "name": "Domain.CosetFftDomainClass.card_toFinset_eq_card_toFftDomain_toFinset",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "card_toFinset_eq_card_toFftDomain_toFinset",
@@ -13654,7 +13663,7 @@
         {
           "doc": "",
           "kind": "abbrev",
-          "line": 121,
+          "line": 143,
           "name": "Domain.CosetFftDomain.toFftDomain",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "toFftDomain",
@@ -13663,7 +13672,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 124,
+          "line": 146,
           "name": "Domain.CosetFftDomain.mem_toFftDomain_iff_mul_mem",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "mem_toFftDomain_iff_mul_mem",
@@ -13672,7 +13681,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 131,
+          "line": 153,
           "name": "Domain.CosetFftDomain.mul_mem_of_mem_toFftDomain_of_mem",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "mul_mem_of_mem_toFftDomain_of_mem",
@@ -13681,7 +13690,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 140,
+          "line": 162,
           "name": "Domain.FftDomain.toFftDomain_eq_self",
           "namespace": "Domain.FftDomain",
           "short_name": "toFftDomain_eq_self",
@@ -13734,7 +13743,7 @@
         {
           "doc": "An FFT domain is a coset FFT domain whose coset generator is `1`. Equivalently, an FFT domain is exactly a finite multiplicative subgroup of `F\u02e3` indexed additively by `\u03b9`.",
           "kind": "structure",
-          "line": 25,
+          "line": 46,
           "name": "Domain.FftDomain",
           "namespace": "Domain",
           "short_name": "FftDomain",
@@ -13743,7 +13752,7 @@
         {
           "doc": "Two FFT domains are equal iff their underlying subgroup parametrizations are equal.",
           "kind": "lemma",
-          "line": 33,
+          "line": 54,
           "name": "Domain.FftDomain.eq_iff_domains_eq",
           "namespace": "Domain.FftDomain",
           "short_name": "eq_iff_domains_eq",
@@ -13752,16 +13761,16 @@
         {
           "doc": "",
           "kind": "instance",
-          "line": 41,
-          "name": "Domain._anon_instance_41",
+          "line": 62,
+          "name": "Domain._anon_instance_62",
           "namespace": "Domain",
-          "short_name": "_anon_instance_41",
+          "short_name": "_anon_instance_62",
           "signature": "instance instance : FunLike (FftDomain \u03b9 F) \u03b9 F where"
         },
         {
           "doc": "Evaluation of an FFT domain is evaluation of its underlying subgroup parametrization.",
           "kind": "lemma",
-          "line": 54,
+          "line": 75,
           "name": "Domain.FftDomain.eval_fft_domain_eq_eval_domain",
           "namespace": "Domain.FftDomain",
           "short_name": "eval_fft_domain_eq_eval_domain",
@@ -13770,16 +13779,16 @@
         {
           "doc": "`FftDomain` is a `CosetFftDomainClass`.",
           "kind": "instance",
-          "line": 61,
-          "name": "Domain._anon_instance_61",
+          "line": 82,
+          "name": "Domain._anon_instance_82",
           "namespace": "Domain",
-          "short_name": "_anon_instance_61",
+          "short_name": "_anon_instance_82",
           "signature": "instance instance : CosetFftDomainClass (FftDomain \u03b9 F) \u03b9 F where"
         },
         {
           "doc": "Typeclass for types behaving like FFT domains. This extends `CosetFftDomainClass` by requiring the distinguished value at `0` to be `1`, corresponding to the fact that the coset representative is trivial.",
           "kind": "class",
-          "line": 82,
+          "line": 103,
           "name": "Domain.FftDomainClass.",
           "namespace": "Domain",
           "short_name": "FftDomainClass.",
@@ -13788,16 +13797,16 @@
         {
           "doc": "`FftDomain` is indeed an `FftDomainClass`.",
           "kind": "instance",
-          "line": 89,
-          "name": "Domain._anon_instance_89",
+          "line": 110,
+          "name": "Domain._anon_instance_110",
           "namespace": "Domain",
-          "short_name": "_anon_instance_89",
+          "short_name": "_anon_instance_110",
           "signature": "instance instance : FftDomainClass (FftDomain \u03b9 F) \u03b9 F where"
         },
         {
           "doc": "Viewing an FFT domain as a coset FFT domain does not change its values.",
           "kind": "lemma",
-          "line": 99,
+          "line": 120,
           "name": "Domain.FftDomain.eval_fft_domain_eq_eval_coset_fft_domain",
           "namespace": "Domain.FftDomain",
           "short_name": "eval_fft_domain_eq_eval_coset_fft_domain",
@@ -13806,7 +13815,7 @@
         {
           "doc": "An FFT domain is injective as a function.",
           "kind": "lemma",
-          "line": 112,
+          "line": 133,
           "name": "Domain.FftDomain.injective",
           "namespace": "Domain.FftDomain",
           "short_name": "injective",
@@ -13815,7 +13824,7 @@
         {
           "doc": "An FFT domain is injective on every set.",
           "kind": "lemma",
-          "line": 117,
+          "line": 138,
           "name": "Domain.FftDomain.injOn",
           "namespace": "Domain.FftDomain",
           "short_name": "injOn",
@@ -13824,7 +13833,7 @@
         {
           "doc": "A smooth FFT domain is an FFT domain indexed by `Fin (2 ^ n)`.",
           "kind": "abbrev",
-          "line": 123,
+          "line": 144,
           "name": "Domain.SmoothFftDomain",
           "namespace": "Domain",
           "short_name": "SmoothFftDomain",
@@ -13833,7 +13842,7 @@
         {
           "doc": "The finite set of field elements contained in an FFT domain.",
           "kind": "abbrev",
-          "line": 129,
+          "line": 150,
           "name": "Domain.FftDomain.toFinset",
           "namespace": "Domain.FftDomain",
           "short_name": "toFinset",
@@ -13846,7 +13855,7 @@
         {
           "doc": "The element `1` belongs to every FFT domain.",
           "kind": "lemma",
-          "line": 32,
+          "line": 48,
           "name": "Domain.FftDomainClass.one_mem",
           "namespace": "Domain.FftDomainClass",
           "short_name": "one_mem",
@@ -13855,7 +13864,7 @@
         {
           "doc": "Membership in a concrete FFT domain means being one of the values of its subgroup parametrization.",
           "kind": "lemma",
-          "line": 45,
+          "line": 61,
           "name": "Domain.FftDomain.mem_iff_exists",
           "namespace": "Domain.FftDomain",
           "short_name": "mem_iff_exists",
@@ -13864,7 +13873,7 @@
         {
           "doc": "Membership in an FFT domain is the same as membership in the same domain viewed as a coset FFT domain.",
           "kind": "lemma",
-          "line": 52,
+          "line": 68,
           "name": "Domain.FftDomain.mem_iff_mem_toCosetFftDomain",
           "namespace": "Domain.FftDomain",
           "short_name": "mem_iff_mem_toCosetFftDomain",
@@ -13873,7 +13882,7 @@
         {
           "doc": "Membership in the image finset of an FFT domain means being one of the values of its subgroup parametrization.",
           "kind": "lemma",
-          "line": 59,
+          "line": 75,
           "name": "Domain.FftDomain.mem_toFinset_iff_exists",
           "namespace": "Domain.FftDomain",
           "short_name": "mem_toFinset_iff_exists",
@@ -13882,7 +13891,7 @@
         {
           "doc": "Membership in the finset of elements is the same as membership in the FFT domain.",
           "kind": "lemma",
-          "line": 69,
+          "line": 85,
           "name": "Domain.FftDomain.mem_toFinset_iff_mem",
           "namespace": "Domain.FftDomain",
           "short_name": "mem_toFinset_iff_mem",
@@ -13891,10 +13900,10 @@
         {
           "doc": "Membership in a concrete FFT domain is decidable via membership in the finset of its elements.",
           "kind": "instance",
-          "line": 78,
-          "name": "Domain._anon_instance_78",
+          "line": 94,
+          "name": "Domain._anon_instance_94",
           "namespace": "Domain",
-          "short_name": "_anon_instance_78",
+          "short_name": "_anon_instance_94",
           "signature": "instance instance {x : F} {\u03c9 : FftDomain \u03b9 F} : Decidable (x \u2208 \u03c9) :="
         }
       ]
@@ -13904,7 +13913,7 @@
         {
           "doc": "The value of an FFT domain at `0` is `1`.",
           "kind": "lemma",
-          "line": 30,
+          "line": 55,
           "name": "Domain.FftDomainClass.apply_zero_eq_one",
           "namespace": "Domain.FftDomainClass",
           "short_name": "apply_zero_eq_one",
@@ -13913,7 +13922,7 @@
         {
           "doc": "Evaluation of an FFT domain turns addition in the index type into multiplication in the field.",
           "kind": "lemma",
-          "line": 35,
+          "line": 60,
           "name": "Domain.FftDomainClass.apply_add_eq_mul",
           "namespace": "Domain.FftDomainClass",
           "short_name": "apply_add_eq_mul",
@@ -13922,7 +13931,7 @@
         {
           "doc": "The product of two elements of an FFT domain is again in the domain.",
           "kind": "lemma",
-          "line": 40,
+          "line": 65,
           "name": "Domain.FftDomainClass.mul_mem_of_mem",
           "namespace": "Domain.FftDomainClass",
           "short_name": "mul_mem_of_mem",
@@ -13931,7 +13940,7 @@
         {
           "doc": "Evaluation at the negated index gives the inverse field element.",
           "kind": "lemma",
-          "line": 50,
+          "line": 75,
           "name": "Domain.FftDomainClass.apply_neg_eq_inv",
           "namespace": "Domain.FftDomainClass",
           "short_name": "apply_neg_eq_inv",
@@ -13940,7 +13949,7 @@
         {
           "doc": "Evaluation at a difference of indices gives the quotient of the corresponding evaluations.",
           "kind": "lemma",
-          "line": 58,
+          "line": 83,
           "name": "Domain.FftDomainClass.domain_sub_eq_div_domain",
           "namespace": "Domain.FftDomainClass",
           "short_name": "domain_sub_eq_div_domain",
@@ -13949,7 +13958,7 @@
         {
           "doc": "Evaluation at a natural multiple of an index gives the corresponding power of the evaluation.",
           "kind": "lemma",
-          "line": 67,
+          "line": 92,
           "name": "Domain.FftDomainClass.apply_nsmul",
           "namespace": "Domain.FftDomainClass",
           "short_name": "apply_nsmul",
@@ -13958,7 +13967,7 @@
         {
           "doc": "In a smooth FFT domain of nonzero logarithmic size, `-1` belongs to the domain.",
           "kind": "lemma",
-          "line": 81,
+          "line": 106,
           "name": "Domain.FftDomainClass.neg_one_mem_domain",
           "namespace": "Domain.FftDomainClass",
           "short_name": "neg_one_mem_domain",
@@ -13967,7 +13976,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 112,
+          "line": 137,
           "name": "Domain.FftDomainClass.val_eq_nsmul_one",
           "namespace": "Domain.FftDomainClass",
           "short_name": "val_eq_nsmul_one",
@@ -13976,7 +13985,7 @@
         {
           "doc": "In a smooth FFT domain, every value is a power of the value at `1`.",
           "kind": "lemma",
-          "line": 123,
+          "line": 148,
           "name": "Domain.FftDomainClass.apply_eq_pow_of_generator",
           "namespace": "Domain.FftDomainClass",
           "short_name": "apply_eq_pow_of_generator",
@@ -13985,7 +13994,7 @@
         {
           "doc": "Two smooth FFT domains are equal iff their values at `1` are equal.",
           "kind": "theorem",
-          "line": 129,
+          "line": 154,
           "name": "Domain.FftDomainClass.eq_iff_generators_eq",
           "namespace": "Domain.FftDomainClass",
           "short_name": "eq_iff_generators_eq",
@@ -13994,7 +14003,7 @@
         {
           "doc": "The existence of a nontrivial smooth FFT domain rules out characteristic `2`.",
           "kind": "lemma",
-          "line": 136,
+          "line": 161,
           "name": "Domain.FftDomainClass.domain_implies_char_ne_2",
           "namespace": "Domain.FftDomainClass",
           "short_name": "domain_implies_char_ne_2",
@@ -14007,7 +14016,7 @@
         {
           "doc": "The `i`th subdomain of a smooth FFT domain, obtained by taking the corresponding coset subdomain and normalizing it back to an FFT domain.",
           "kind": "def",
-          "line": 34,
+          "line": 60,
           "name": "Domain.FftDomainClass.subdomain",
           "namespace": "Domain.FftDomainClass",
           "short_name": "subdomain",
@@ -14016,7 +14025,7 @@
         {
           "doc": "Membership in an FFT subdomain is the same as membership in the corresponding coset subdomain.",
           "kind": "lemma",
-          "line": 39,
+          "line": 65,
           "name": "Domain.FftDomainClass.mem_fft_subdomain_iff_mem_coset_subdomain",
           "namespace": "Domain.FftDomainClass",
           "short_name": "mem_fft_subdomain_iff_mem_coset_subdomain",
@@ -14025,7 +14034,7 @@
         {
           "doc": "If `x` is a member of `subdomain \u03c9 i` it is a member of any `subdomain \u03c9 j` with `j \u2264 i`.",
           "kind": "lemma",
-          "line": 45,
+          "line": 71,
           "name": "Domain.FftDomainClass.mem_subdomain_of_mem_subdomain_of_le",
           "namespace": "Domain.FftDomainClass",
           "short_name": "mem_subdomain_of_mem_subdomain_of_le",
@@ -14034,7 +14043,7 @@
         {
           "doc": "If `j \u2264 i`, then the finset of elements of the `i`th FFT subdomain is contained in the finset of elements of the `j`th FFT subdomain.",
           "kind": "lemma",
-          "line": 53,
+          "line": 79,
           "name": "Domain.FftDomainClass.subdomain_toFinset_subset_subdomain_toFinset_of_le",
           "namespace": "Domain.FftDomainClass",
           "short_name": "subdomain_toFinset_subset_subdomain_toFinset_of_le",
@@ -14043,7 +14052,7 @@
         {
           "doc": "If `j \u2264 i`, then the subgroup associated to the `i`th FFT subdomain is contained in the subgroup associated to the `j`th FFT subdomain.",
           "kind": "lemma",
-          "line": 60,
+          "line": 86,
           "name": "Domain.FftDomainClass.subdomain_toSubgroup_subset_subdomain_toSubgroup_of_le",
           "namespace": "Domain.FftDomainClass",
           "short_name": "subdomain_toSubgroup_subset_subdomain_toSubgroup_of_le",
@@ -14052,7 +14061,7 @@
         {
           "doc": "Normalizing the `i`th coset subdomain agrees with taking the `i`th FFT subdomain of the normalized domain.",
           "kind": "lemma",
-          "line": 75,
+          "line": 101,
           "name": "Domain.CosetFftDomainClass.subdomain_toFftDomain_comm",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "subdomain_toFftDomain_comm",
@@ -14061,7 +14070,7 @@
         {
           "doc": "Multiplying an element of a coset subdomain by an element of a deeper FFT subdomain of the normalized domain stays in the original coset subdomain.",
           "kind": "lemma",
-          "line": 111,
+          "line": 137,
           "name": "Domain.CosetFftDomainClass.mem_subdomain_of_mem_subdomain_of_mem_fft_subdomain",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mem_subdomain_of_mem_subdomain_of_mem_fft_subdomain",
@@ -14070,7 +14079,7 @@
         {
           "doc": "Multiplying an element of a deeper FFT subdomain of the normalized domain by an element of a coset subdomain stays in the coset subdomain.",
           "kind": "lemma",
-          "line": 124,
+          "line": 150,
           "name": "Domain.CosetFftDomainClass.mem_subdomain_of_mem_fft_subdomain_of_mem_subdomain",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mem_subdomain_of_mem_fft_subdomain_of_mem_subdomain",
@@ -14079,7 +14088,7 @@
         {
           "doc": "Concrete notation for the `i`th subdomain of a smooth FFT domain.",
           "kind": "abbrev",
-          "line": 138,
+          "line": 164,
           "name": "Domain.FftDomain.subdomain",
           "namespace": "Domain.FftDomain",
           "short_name": "subdomain",
@@ -14092,7 +14101,7 @@
         {
           "doc": "The multiplicative subgroup of `F\u02e3` represented by an FFT domain. This subgroup consists exactly of the normalized subgroup units arising from the domain parametrization. Since FFT domains satisfy `\u03c9 0 = 1`, these units coincide with the values of the domain itself.",
           "kind": "def",
-          "line": 32,
+          "line": 51,
           "name": "Domain.FftDomainClass.toSubgroup",
           "namespace": "Domain.FftDomainClass",
           "short_name": "toSubgroup",
@@ -14101,7 +14110,7 @@
         {
           "doc": "A unit belongs to the subgroup associated to an FFT domain iff its value belongs to the finset of elements of the domain.",
           "kind": "lemma",
-          "line": 58,
+          "line": 77,
           "name": "Domain.FftDomainClass.mem_subgroup_iff_mem_finset",
           "namespace": "Domain.FftDomainClass",
           "short_name": "mem_subgroup_iff_mem_finset",
@@ -14110,7 +14119,7 @@
         {
           "doc": "A unit belongs to the subgroup associated to an FFT domain iff its value belongs to the FFT domain.",
           "kind": "lemma",
-          "line": 67,
+          "line": 86,
           "name": "Domain.FftDomainClass.mem_subgroup_iff_mem_domain",
           "namespace": "Domain.FftDomainClass",
           "short_name": "mem_subgroup_iff_mem_domain",
@@ -14119,7 +14128,7 @@
         {
           "doc": "The subgroup of units associated to a concrete FFT domain.",
           "kind": "abbrev",
-          "line": 78,
+          "line": 97,
           "name": "Domain.FftDomain.toSubgroup",
           "namespace": "Domain.FftDomain",
           "short_name": "toSubgroup",
@@ -39633,7 +39642,7 @@
   },
   "stats": {
     "ArkLib": {
-      "declarations": 4299,
+      "declarations": 4300,
       "files": 238
     }
   }
