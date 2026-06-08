@@ -12,6 +12,8 @@ This directory contains various utility scripts for the ArkLib project.
 - **`check-imports.sh`** - Check if ArkLib.lean is up to date with all imports
 - **`check-warning-log.py`** - Fail on scoped warning classes found in a captured build log
 - **`check-docs-integrity.py`** - Check docs links and the `CLAUDE.md` symlink
+- **`production-readiness-check.sh`** - Fast pre-deploy checklist (static gates + security scan)
+- **`security-scan.sh`** - `pip-audit` over pinned Python manifests
 - **`proximity_prize_cleanroom_audit.py`** - Optional post-build clean-room audit for
   proximity-prize final declarations: checks blessed axioms and rejects residual or
   goal-equivalent `Prop` assumptions in active manifest targets
@@ -90,6 +92,15 @@ python3 scripts/proximity_prize_cleanroom_audit.py --dry-run
 ```bash
 python3 ./scripts/check-docs-integrity.py
 ```
+
+### Production Readiness Preflight
+```bash
+bash scripts/production-readiness-check.sh   # no Lean required
+bash scripts/security-scan.sh                # pip-audit only
+```
+
+See [`../docs/operations/PRODUCTION-READINESS.md`](../docs/operations/PRODUCTION-READINESS.md)
+for rollback and monitoring procedures.
 
 ### Knowledge Base Indexes
 ```bash

@@ -25,6 +25,7 @@ Default checks (mirrors the CI gates so local == CI):
   - python3 ./scripts/check-docs-integrity.py
   - python3 ./scripts/kb/check_generated.py
   - python3 ./scripts/kb/lint.py --strict-cited-pages
+  - bash ./scripts/security-scan.sh
 
 Optional checks:
   --lint   Run ./scripts/lint-style.sh
@@ -90,6 +91,10 @@ echo "# Axiom audit (flagship theorems)"
 python3 ./scripts/axiom_audit.py
 
 echo ""
+echo "# Proximity prize clean-room audit (pinned prize-resolution declarations)"
+python3 ./scripts/proximity_prize_cleanroom_audit.py
+
+echo ""
 echo "# Checking umbrella imports"
 ./scripts/check-imports.sh
 
@@ -101,6 +106,10 @@ echo ""
 echo "# Checking knowledge base"
 python3 ./scripts/kb/check_generated.py
 python3 ./scripts/kb/lint.py --strict-cited-pages
+
+echo ""
+echo "# Security scan (pinned Python manifests)"
+bash ./scripts/security-scan.sh
 
 if (( run_lint )); then
   echo ""

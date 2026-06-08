@@ -1,9 +1,15 @@
-version: 2  # Specifies the version of the Dependabot configuration file format
+version: 2
 
 updates:
-  # Configuration for dependency updates
-  - package-ecosystem: "github-actions"  # Specifies the ecosystem to check for updates
-    directory: "/"  # Specifies the directory to check for dependencies; "/" means the root directory
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
-      # Check for updates to GitHub Actions every month
       interval: "monthly"
+
+  - package-ecosystem: "pip"
+    directory: "/scripts"
+    schedule:
+      interval: "monthly"
+    allow:
+      - dependency-name: "google-generativeai"
+      - dependency-name: "pip-audit"

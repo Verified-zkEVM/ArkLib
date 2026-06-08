@@ -4,9 +4,9 @@ Generated from `docs/kb/_generated/declarations.json`. **Eyeball, do not auto-re
 
 ## Stats
 
-- `ArkLib` — 688 files, 12777 declarations
+- `ArkLib` — 788 files, 14544 declarations
 
-## Same short-name across multiple files (430 groups)
+## Same short-name across multiple files (509 groups)
 
 Each group lists declarations sharing a short name across ≥2 files. Most are legitimate (overloaded interface, paper-shape vs general form), but the list is the right anchor to look for duplicates.
 
@@ -14,11 +14,11 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 - `def Binius.RingSwitching.BatchingPhase.oracleVerifier` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:365](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L365) — (no docstring)
 - `def CheckClaim.oracleVerifier` [ArkLib/ProofSystem/Component/CheckClaim.lean:250](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L250) — The oracle verifier for the `CheckClaim` oracle reduction.
-- `def DoNothing.oracleVerifier` [ArkLib/ProofSystem/Component/DoNothing.lean:72](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L72) — The oracle verifier for the `DoNothing` oracle reduction.
-- `def RandomQuery.oracleVerifier` [ArkLib/ProofSystem/Component/RandomQuery.lean:82](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L82) — The oracle verifier simply returns the challenge, and performs no checks.
+- `def DoNothing.oracleVerifier` [ArkLib/ProofSystem/Component/DoNothing.lean:106](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L106) — The oracle verifier for the `DoNothing` oracle reduction.
+- `def RandomQuery.oracleVerifier` [ArkLib/ProofSystem/Component/RandomQuery.lean:87](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L87) — The oracle verifier simply returns the challenge, and performs no checks.
 - `def ReduceClaim.oracleVerifier` [ArkLib/ProofSystem/Component/ReduceClaim.lean:260](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L260) — The oracle verifier for the `ReduceClaim` oracle reduction.
-- `def SendClaim.oracleVerifier` [ArkLib/ProofSystem/Component/SendClaim.lean:63](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L63) — The verifier checks that the relationship `rel oldStmt newStmt` holds. It has access to the original
-- `def SendSingleWitness.oracleVerifier` [ArkLib/ProofSystem/Component/SendWitness.lean:351](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L351) — The oracle verifier for the `SendSingleWitness` oracle reduction. The verifier receives the input st
+- `def SendClaim.oracleVerifier` [ArkLib/ProofSystem/Component/SendClaim.lean:67](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L67) — The verifier checks that the relationship `rel oldStmt newStmt` holds. It has access to the original
+- `def SendSingleWitness.oracleVerifier` [ArkLib/ProofSystem/Component/SendWitness.lean:352](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L352) — The oracle verifier for the `SendSingleWitness` oracle reduction. The verifier receives the input st
 - `def RingSwitching.BatchingPhase.oracleVerifier` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:176](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L176) — (no docstring)
 - `def Sumcheck.Spec.oracleVerifier` [ArkLib/ProofSystem/Sumcheck/Spec/General.lean:158](../../../ArkLib/ProofSystem/Sumcheck/Spec/General.lean#L158) — The oracle verifier for the (full) sum-check protocol
 - `def Sumcheck.Spec.SingleRound.Simple.oracleVerifier` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:702](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L702) — (no docstring)
@@ -29,10 +29,10 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 - `def KZG.CommitmentScheme.reduction` [ArkLib/CommitmentScheme/KZG/FunctionBinding/Basic.lean:115](../../../ArkLib/CommitmentScheme/KZG/FunctionBinding/Basic.lean#L115) — The reduction breaking ARSDH using a successful function-binding adversary. The reduction follows th
 - `def CheckClaim.reduction` [ArkLib/ProofSystem/Component/CheckClaim.lean:56](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L56) — The reduction for the `CheckClaim` reduction.
-- `def DoNothing.reduction` [ArkLib/ProofSystem/Component/DoNothing.lean:43](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L43) — The reduction for the `DoNothing` reduction. - Prover simply returns the statement and witness. - Ve
-- `def NoInteraction.reduction` [ArkLib/ProofSystem/Component/NoInteraction.lean:62](../../../ArkLib/ProofSystem/Component/NoInteraction.lean#L62) — The no-interaction reduction can be specified by a tuple of functions: - `mapStmt : StmtIn → OracleC
+- `def DoNothing.reduction` [ArkLib/ProofSystem/Component/DoNothing.lean:44](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L44) — The reduction for the `DoNothing` reduction. - Prover simply returns the statement and witness. - Ve
+- `def NoInteraction.reduction` [ArkLib/ProofSystem/Component/NoInteraction.lean:63](../../../ArkLib/ProofSystem/Component/NoInteraction.lean#L63) — The no-interaction reduction can be specified by a tuple of functions: - `mapStmt : StmtIn → OracleC
 - `def ReduceClaim.reduction` [ArkLib/ProofSystem/Component/ReduceClaim.lean:59](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L59) — The reduction for the `ReduceClaim` reduction.
-- `def SendWitness.reduction` [ArkLib/ProofSystem/Component/SendWitness.lean:76](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L76) — (no docstring)
+- `def SendWitness.reduction` [ArkLib/ProofSystem/Component/SendWitness.lean:77](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L77) — (no docstring)
 - `def Fri.Spec.reduction` [ArkLib/ProofSystem/Fri/Spec/General.lean:107](../../../ArkLib/ProofSystem/Fri/Spec/General.lean#L107) — (no docstring)
 - `def Sumcheck.Spec.reduction` [ArkLib/ProofSystem/Sumcheck/Spec/General.lean:168](../../../ArkLib/ProofSystem/Sumcheck/Spec/General.lean#L168) — The sum-check protocol as a reduction
 - `def Sumcheck.Spec.SingleRound.Simple.reduction` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:642](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L642) — The reduction for the simple description of a single round of sum-check
@@ -42,9 +42,9 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `pSpec` (12 declarations, 10 files)
 
-- `def RandomQuery.pSpec` [ArkLib/ProofSystem/Component/RandomQuery.lean:53](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L53) — (no docstring)
-- `def SendClaim.pSpec` [ArkLib/ProofSystem/Component/SendClaim.lean:31](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L31) — (no docstring)
-- `def SendWitness.pSpec` [ArkLib/ProofSystem/Component/SendWitness.lean:52](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L52) — (no docstring)
+- `def RandomQuery.pSpec` [ArkLib/ProofSystem/Component/RandomQuery.lean:55](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L55) — (no docstring)
+- `def SendClaim.pSpec` [ArkLib/ProofSystem/Component/SendClaim.lean:32](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L32) — (no docstring)
+- `def SendWitness.pSpec` [ArkLib/ProofSystem/Component/SendWitness.lean:53](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L53) — (no docstring)
 - `def Fri.Spec.FoldPhase.pSpec` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:340](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L340) — Each round of the FRI protocol begins with the verifier sending a random field element as the challe
 - `def Fri.Spec.FinalFoldPhase.pSpec` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:645](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L645) — The final folding round of the FRI protocol begins with the verifier sending a random field element
 - `def Fri.Spec.QueryRound.pSpec` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:956](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L956) — (no docstring)
@@ -60,7 +60,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `abbrev Interaction.OracleStatement` [ArkLib/Interaction/Oracle/Core.lean:100](../../../ArkLib/Interaction/Oracle/Core.lean#L100) — (no docstring)
 - `def BatchedFri.Spec.OracleStatement` [ArkLib/ProofSystem/BatchedFri/Spec/SingleRound.lean:46](../../../ArkLib/ProofSystem/BatchedFri/Spec/SingleRound.lean#L46) — An oracle for each batched polynomial.
 - `def Binius.BinaryBasefold.OracleStatement` [ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean:746](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean#L746) — For the `i`-th round of the protocol, there will be oracle statements corresponding to all committed
-- `def R1CS.OracleStatement` [ArkLib/ProofSystem/ConstraintSystem/R1CS.lean:48](../../../ArkLib/ProofSystem/ConstraintSystem/R1CS.lean#L48) — (no docstring)
+- `def R1CS.OracleStatement` [ArkLib/ProofSystem/ConstraintSystem/R1CS.lean:150](../../../ArkLib/ProofSystem/ConstraintSystem/R1CS.lean#L150) — (no docstring)
 - `def Fri.Spec.OracleStatement` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:89](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L89) — For the `i`-th round of the protocol, there will be `i + 1` oracle statements, one for the beginning
 - `abbrev Spartan.Spec.OracleStatement` [ArkLib/ProofSystem/Spartan/Basic.lean:60](../../../ArkLib/ProofSystem/Spartan/Basic.lean#L60) — This unfolds to `A, B, C : Matrix (Fin 2 ^ ℓ_m) (Fin 2 ^ ℓ_n) R`
 - `def StirIOP.OracleStatement` [ArkLib/ProofSystem/Stir/MainThm.lean:84](../../../ArkLib/ProofSystem/Stir/MainThm.lean#L84) — `OracleStatement` defines the oracle message type for a multi-indexed setting: given base input type
@@ -71,11 +71,11 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `oracleReduction` (11 declarations, 9 files)
 
 - `def CheckClaim.oracleReduction` [ArkLib/ProofSystem/Component/CheckClaim.lean:258](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L258) — The oracle reduction for the `CheckClaim` oracle reduction.
-- `def DoNothing.oracleReduction` [ArkLib/ProofSystem/Component/DoNothing.lean:82](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L82) — The oracle reduction for the `DoNothing` oracle reduction. - Prover simply returns the (non-oracle a
-- `def RandomQuery.oracleReduction` [ArkLib/ProofSystem/Component/RandomQuery.lean:100](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L100) — Combine the trivial prover and this verifier to form the `RandomQuery` oracle reduction: the input o
+- `def DoNothing.oracleReduction` [ArkLib/ProofSystem/Component/DoNothing.lean:116](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L116) — The oracle reduction for the `DoNothing` oracle reduction. - Prover simply returns the (non-oracle a
+- `def RandomQuery.oracleReduction` [ArkLib/ProofSystem/Component/RandomQuery.lean:105](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L105) — Combine the trivial prover and this verifier to form the `RandomQuery` oracle reduction: the input o
 - `def ReduceClaim.oracleReduction` [ArkLib/ProofSystem/Component/ReduceClaim.lean:277](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L277) — The oracle reduction for the `ReduceClaim` oracle reduction.
-- `def SendClaim.oracleReduction` [ArkLib/ProofSystem/Component/SendClaim.lean:92](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L92) — Combine the prover and verifier into an oracle reduction. The input has no statement or witness, but
-- `def SendSingleWitness.oracleReduction` [ArkLib/ProofSystem/Component/SendWitness.lean:364](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L364) — (no docstring)
+- `def SendClaim.oracleReduction` [ArkLib/ProofSystem/Component/SendClaim.lean:96](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L96) — Combine the prover and verifier into an oracle reduction. The input has no statement or witness, but
+- `def SendSingleWitness.oracleReduction` [ArkLib/ProofSystem/Component/SendWitness.lean:365](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L365) — (no docstring)
 - `def Sumcheck.Spec.oracleReduction` [ArkLib/ProofSystem/Sumcheck/Spec/General.lean:180](../../../ArkLib/ProofSystem/Sumcheck/Spec/General.lean#L180) — The sum-check protocol as an oracle reduction
 - `def Sumcheck.Spec.SingleRound.Simpler.oracleReduction` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:566](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L566) — (no docstring)
 - `def Sumcheck.Spec.SingleRound.Simple.oracleReduction` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:721](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L721) — (no docstring)
@@ -85,10 +85,10 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `verifier` (11 declarations, 9 files)
 
 - `def CheckClaim.verifier` [ArkLib/ProofSystem/Component/CheckClaim.lean:51](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L51) — The verifier for the `CheckClaim` reduction.
-- `def DoNothing.verifier` [ArkLib/ProofSystem/Component/DoNothing.lean:34](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L34) — The verifier for the `DoNothing` reduction.
-- `def NoInteraction.verifier` [ArkLib/ProofSystem/Component/NoInteraction.lean:53](../../../ArkLib/ProofSystem/Component/NoInteraction.lean#L53) — The verifier in a no-interaction reduction takes an empty transcript, and hence reduce to a function
+- `def DoNothing.verifier` [ArkLib/ProofSystem/Component/DoNothing.lean:35](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L35) — The verifier for the `DoNothing` reduction.
+- `def NoInteraction.verifier` [ArkLib/ProofSystem/Component/NoInteraction.lean:54](../../../ArkLib/ProofSystem/Component/NoInteraction.lean#L54) — The verifier in a no-interaction reduction takes an empty transcript, and hence reduce to a function
 - `def ReduceClaim.verifier` [ArkLib/ProofSystem/Component/ReduceClaim.lean:55](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L55) — The verifier for the `ReduceClaim` reduction.
-- `def SendWitness.verifier` [ArkLib/ProofSystem/Component/SendWitness.lean:72](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L72) — (no docstring)
+- `def SendWitness.verifier` [ArkLib/ProofSystem/Component/SendWitness.lean:73](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L73) — (no docstring)
 - `def Sumcheck.Spec.verifier` [ArkLib/ProofSystem/Sumcheck/Spec/General.lean:149](../../../ArkLib/ProofSystem/Sumcheck/Spec/General.lean#L149) — The verifier for the (full) sum-check protocol
 - `def Sumcheck.Spec.SingleRound.Simple.verifier` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:633](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L633) — The verifier for the simple description of a single round of sum-check
 - `def Sumcheck.Spec.SingleRound.verifier` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:1343](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L1343) — The verifier for the `i`-th round of the sum-check protocol
@@ -100,22 +100,22 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 - `def Binius.RingSwitching.BatchingPhase.oracleProver` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:326](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L326) — (no docstring)
 - `def CheckClaim.oracleProver` [ArkLib/ProofSystem/Component/CheckClaim.lean:237](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L237) — The oracle prover for the `CheckClaim` oracle reduction.
-- `def DoNothing.oracleProver` [ArkLib/ProofSystem/Component/DoNothing.lean:67](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L67) — The oracle prover for the `DoNothing` oracle reduction.
-- `def RandomQuery.oracleProver` [ArkLib/ProofSystem/Component/RandomQuery.lean:62](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L62) — The prover is trivial: it has no messages to send.  It only receives the verifier's challenge `q`, a
+- `def DoNothing.oracleProver` [ArkLib/ProofSystem/Component/DoNothing.lean:101](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L101) — The oracle prover for the `DoNothing` oracle reduction.
+- `def RandomQuery.oracleProver` [ArkLib/ProofSystem/Component/RandomQuery.lean:67](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L67) — The prover is trivial: it has no messages to send.  It only receives the verifier's challenge `q`, a
 - `def ReduceClaim.oracleProver` [ArkLib/ProofSystem/Component/ReduceClaim.lean:250](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L250) — The oracle prover for the `ReduceClaim` oracle reduction.
-- `def SendClaim.oracleProver` [ArkLib/ProofSystem/Component/SendClaim.lean:36](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L36) — The prover takes in the old oracle statement as input, and sends it as the protocol message.
-- `def SendWitness.oracleProver` [ArkLib/ProofSystem/Component/SendWitness.lean:267](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L267) — The oracle prover for the `SendWitness` oracle reduction. For each round `i : Fin (FinEnum.card ιw)`
-- `def SendSingleWitness.oracleProver` [ArkLib/ProofSystem/Component/SendWitness.lean:335](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L335) — The oracle prover for the `SendSingleWitness` oracle reduction. The prover sends the witness `wit` t
+- `def SendClaim.oracleProver` [ArkLib/ProofSystem/Component/SendClaim.lean:40](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L40) — The prover takes in the old oracle statement as input, and sends it as the protocol message.
+- `def SendWitness.oracleProver` [ArkLib/ProofSystem/Component/SendWitness.lean:268](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L268) — The oracle prover for the `SendWitness` oracle reduction. For each round `i : Fin (FinEnum.card ιw)`
+- `def SendSingleWitness.oracleProver` [ArkLib/ProofSystem/Component/SendWitness.lean:336](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L336) — The oracle prover for the `SendSingleWitness` oracle reduction. The prover sends the witness `wit` t
 - `def RingSwitching.BatchingPhase.oracleProver` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:128](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L128) — (no docstring)
 - `def ToyProblem.Spec.oracleProver` [ArkLib/ProofSystem/ToyProblem/Spec/General.lean:528](../../../ArkLib/ProofSystem/ToyProblem/Spec/General.lean#L528) — Same as `prover` but exposed at the `OracleProver` signature. The underlying `Prover` is identical (
 
 ### `prover` (9 declarations, 8 files)
 
 - `def CheckClaim.prover` [ArkLib/ProofSystem/Component/CheckClaim.lean:40](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L40) — The prover for the `CheckClaim` reduction.
-- `def DoNothing.prover` [ArkLib/ProofSystem/Component/DoNothing.lean:30](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L30) — The prover for the `DoNothing` reduction.
-- `def NoInteraction.prover` [ArkLib/ProofSystem/Component/NoInteraction.lean:43](../../../ArkLib/ProofSystem/Component/NoInteraction.lean#L43) — The prover in a no-interaction reduction can be specified by a tuple of functions: - `mapStmt : Stmt
+- `def DoNothing.prover` [ArkLib/ProofSystem/Component/DoNothing.lean:31](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L31) — The prover for the `DoNothing` reduction.
+- `def NoInteraction.prover` [ArkLib/ProofSystem/Component/NoInteraction.lean:44](../../../ArkLib/ProofSystem/Component/NoInteraction.lean#L44) — The prover in a no-interaction reduction can be specified by a tuple of functions: - `mapStmt : Stmt
 - `def ReduceClaim.prover` [ArkLib/ProofSystem/Component/ReduceClaim.lean:47](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L47) — The prover for the `ReduceClaim` reduction.
-- `def SendWitness.prover` [ArkLib/ProofSystem/Component/SendWitness.lean:62](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L62) — (no docstring)
+- `def SendWitness.prover` [ArkLib/ProofSystem/Component/SendWitness.lean:63](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L63) — (no docstring)
 - `def Sumcheck.Spec.SingleRound.Simple.prover` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:611](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L611) — The prover in the simple description of a single round of sum-check. Takes in input `target : R` and
 - `def Sumcheck.Spec.SingleRound.Unfolded.prover` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:1881](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L1881) — The overall prover for the `i`-th round of the sum-check protocol, where `i < n`. This is only well-
 - `def ToyProblem.Spec.prover` [ArkLib/ProofSystem/ToyProblem/Spec/General.lean:441](../../../ArkLib/ProofSystem/ToyProblem/Spec/General.lean#L441) — Honest prover for Construction 6.2. After receiving the combination randomness `γ`, the prover sends
@@ -129,7 +129,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def MemoryChecking.ReadOnly.relation` [ArkLib/ProofSystem/ConstraintSystem/MemoryChecking.lean:128](../../../ArkLib/ProofSystem/ConstraintSystem/MemoryChecking.lean#L128) — The read-only memory checking relation. It takes a memory `mem` and a list of read operations `ops`.
 - `def MemoryChecking.ReadWrite.relation` [ArkLib/ProofSystem/ConstraintSystem/MemoryChecking.lean:161](../../../ArkLib/ProofSystem/ConstraintSystem/MemoryChecking.lean#L161) — The read-write memory checking relation. It takes an initial memory `startMem`, a final memory `fina
 - `def Plonk.relation` [ArkLib/ProofSystem/ConstraintSystem/Plonk.lean:193](../../../ArkLib/ProofSystem/ConstraintSystem/Plonk.lean#L193) — To define a relation based on the constraint system, we extend it with: - A natural number `ℓ ≤ m` r
-- `def R1CS.relation` [ArkLib/ProofSystem/ConstraintSystem/R1CS.lean:61](../../../ArkLib/ProofSystem/ConstraintSystem/R1CS.lean#L61) — The R1CS relation: `(A *ᵥ 𝕫) * (B *ᵥ 𝕫) = (C *ᵥ 𝕫)`, where `*` is understood to mean component-wise
+- `def R1CS.relation` [ArkLib/ProofSystem/ConstraintSystem/R1CS.lean:163](../../../ArkLib/ProofSystem/ConstraintSystem/R1CS.lean#L163) — The R1CS relation: `(A *ᵥ 𝕫) * (B *ᵥ 𝕫) = (C *ᵥ 𝕫)`, where `*` is understood to mean component-wise
 - `abbrev Spartan.Spec.relation` [ArkLib/ProofSystem/Spartan/Basic.lean:68](../../../ArkLib/ProofSystem/Spartan/Basic.lean#L68) — This unfolds to `(A *ᵥ 𝕫) * (B *ᵥ 𝕫) = (C *ᵥ 𝕫)`, where `𝕫 = 𝕩 ‖ 𝕨`
 - `def ToyProblem.relation` [ArkLib/ProofSystem/ToyProblem/Definitions.lean:78](../../../ArkLib/ProofSystem/ToyProblem/Definitions.lean#L78) — **Definition 6.1 of [ABF26]** (toy problem relation `R_C^ℓ`). Given a base code `C ⊆ (ι → F)` (the p
 
@@ -162,18 +162,82 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 - `def BatchedFri.Spec.Witness` [ArkLib/ProofSystem/BatchedFri/Spec/SingleRound.lean:54](../../../ArkLib/ProofSystem/BatchedFri/Spec/SingleRound.lean#L54) — The Batched FRI protocol has as witness for each batched polynomial that is supposed to correspond t
 - `structure Binius.BinaryBasefold.Witness` [ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean:767](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean#L767) — The round witness for round `i` of `t ∈ L[≤ 2][X Fin ℓ]` and `Hᵢ(Xᵢ, ..., Xₗ₋₁) := h(r₀', ..., rᵢ₋₁'
-- `def R1CS.Witness` [ArkLib/ProofSystem/ConstraintSystem/R1CS.lean:51](../../../ArkLib/ProofSystem/ConstraintSystem/R1CS.lean#L51) — (no docstring)
+- `def R1CS.Witness` [ArkLib/ProofSystem/ConstraintSystem/R1CS.lean:153](../../../ArkLib/ProofSystem/ConstraintSystem/R1CS.lean#L153) — (no docstring)
 - `def Fri.Spec.Witness` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:110](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L110) — The FRI protocol has as witness the polynomial that is supposed to correspond to the codeword in the
 - `abbrev Spartan.Spec.Witness` [ArkLib/ProofSystem/Spartan/Basic.lean:64](../../../ArkLib/ProofSystem/Spartan/Basic.lean#L64) — This unfolds to `𝕨 : Fin 2 ^ ℓ_w → R`
 - `def ToyProblem.Spec.Witness` [ArkLib/ProofSystem/ToyProblem/Spec/General.lean:107](../../../ArkLib/ProofSystem/ToyProblem/Spec/General.lean#L107) — Honest witness: the underlying messages `M₁, M₂ : Fin k → F` whose encodings are the oracle codeword
 
 ### `Statement` (5 declarations, 5 files)
 
-- `def R1CS.Statement` [ArkLib/ProofSystem/ConstraintSystem/R1CS.lean:45](../../../ArkLib/ProofSystem/ConstraintSystem/R1CS.lean#L45) — (no docstring)
+- `def R1CS.Statement` [ArkLib/ProofSystem/ConstraintSystem/R1CS.lean:147](../../../ArkLib/ProofSystem/ConstraintSystem/R1CS.lean#L147) — (no docstring)
 - `def Fri.Spec.Statement` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:80](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L80) — For the `i`-th round of the protocol, the input statement is equal to the challenges sent from round
 - `abbrev Spartan.Spec.Statement` [ArkLib/ProofSystem/Spartan/Basic.lean:56](../../../ArkLib/ProofSystem/Spartan/Basic.lean#L56) — This unfolds to `𝕩 : Fin (2 ^ ℓ_n - 2 ^ ℓ_w) → R`
 - `structure Sumcheck.Structured.Statement` [ArkLib/ProofSystem/Sumcheck/Structured.lean:197](../../../ArkLib/ProofSystem/Sumcheck/Structured.lean#L197) — Statement per iterated sumcheck round
 - `def ToyProblem.Spec.Statement` [ArkLib/ProofSystem/ToyProblem/Spec/General.lean:93](../../../ArkLib/ProofSystem/ToyProblem/Spec/General.lean#L93) — Input (explicit) statement of Construction 6.2: the linear-constraint vector `v ∈ F^k` and the two c
+
+### `oracleReduction_isHVZK` (5 declarations, 5 files)
+
+- `theorem CheckClaim.oracleReduction_isHVZK` [ArkLib/ProofSystem/Component/CheckClaim.lean:292](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L292) — The `CheckClaim` oracle reduction has an explicit perfect-HVZK simulator for any input relation.
+- `theorem DoNothing.oracleReduction_isHVZK` [ArkLib/ProofSystem/Component/DoNothing.lean:194](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L194) — The `DoNothing` oracle reduction has an explicit perfect-HVZK simulator for any oracle-input relatio
+- `theorem RandomQuery.oracleReduction_isHVZK` [ArkLib/ProofSystem/Component/RandomQuery.lean:229](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L229) — `RandomQuery` has an explicit perfect-HVZK simulator as an oracle reduction.
+- `theorem ReduceClaim.oracleReduction_isHVZK` [ArkLib/ProofSystem/Component/ReduceClaim.lean:423](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L423) — The plain `ReduceClaim` oracle reduction has an explicit perfect-HVZK simulator for any input relati
+- `theorem SendClaim.oracleReduction_isHVZK` [ArkLib/ProofSystem/Component/SendClaim.lean:285](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L285) — `SendClaim` has an explicit perfect-HVZK simulator as an oracle reduction.
+
+### `oracleReduction_isStatHVZK` (5 declarations, 5 files)
+
+- `theorem CheckClaim.oracleReduction_isStatHVZK` [ArkLib/ProofSystem/Component/CheckClaim.lean:303](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L303) — The `CheckClaim` oracle reduction has statistical HVZK for any input relation and error budget.
+- `theorem DoNothing.oracleReduction_isStatHVZK` [ArkLib/ProofSystem/Component/DoNothing.lean:202](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L202) — The `DoNothing` oracle reduction has statistical HVZK for any oracle-input relation and error budget
+- `theorem RandomQuery.oracleReduction_isStatHVZK` [ArkLib/ProofSystem/Component/RandomQuery.lean:237](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L237) — `RandomQuery` has statistical HVZK at every error budget as an oracle reduction.
+- `theorem ReduceClaim.oracleReduction_isStatHVZK` [ArkLib/ProofSystem/Component/ReduceClaim.lean:434](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L434) — The plain `ReduceClaim` oracle reduction has statistical HVZK for any input relation and error budge
+- `theorem SendClaim.oracleReduction_isStatHVZK` [ArkLib/ProofSystem/Component/SendClaim.lean:295](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L295) — `SendClaim` has statistical HVZK at every error budget as an oracle reduction.
+
+### `oracleReduction_perfectHVZK` (5 declarations, 5 files)
+
+- `theorem CheckClaim.oracleReduction_perfectHVZK` [ArkLib/ProofSystem/Component/CheckClaim.lean:269](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L269) — The `CheckClaim` oracle reduction is perfectly HVZK for any input relation: it has no prover message
+- `theorem DoNothing.oracleReduction_perfectHVZK` [ArkLib/ProofSystem/Component/DoNothing.lean:176](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L176) — The `DoNothing` oracle reduction is perfectly HVZK for any oracle-input relation.
+- `theorem RandomQuery.oracleReduction_perfectHVZK` [ArkLib/ProofSystem/Component/RandomQuery.lean:210](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L210) — `RandomQuery` is perfectly HVZK as an oracle reduction: it has no private witness, and the single ve
+- `theorem ReduceClaim.oracleReduction_perfectHVZK` [ArkLib/ProofSystem/Component/ReduceClaim.lean:400](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L400) — The plain `ReduceClaim` oracle reduction is perfectly HVZK for any input relation: it has no message
+- `theorem SendClaim.oracleReduction_perfectHVZK` [ArkLib/ProofSystem/Component/SendClaim.lean:264](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L264) — `SendClaim` is perfectly HVZK as an oracle reduction for any input relation: the protocol has no pri
+
+### `oracleReduction_statisticalHVZK` (5 declarations, 5 files)
+
+- `theorem CheckClaim.oracleReduction_statisticalHVZK` [ArkLib/ProofSystem/Component/CheckClaim.lean:280](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L280) — Perfect HVZK implies statistical HVZK for the `CheckClaim` oracle reduction at every error budget.
+- `theorem DoNothing.oracleReduction_statisticalHVZK` [ArkLib/ProofSystem/Component/DoNothing.lean:185](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L185) — The `DoNothing` oracle reduction is statistically HVZK for any oracle-input relation and error budge
+- `theorem RandomQuery.oracleReduction_statisticalHVZK` [ArkLib/ProofSystem/Component/RandomQuery.lean:220](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L220) — Perfect HVZK implies statistical HVZK for `RandomQuery` at every error budget.
+- `theorem ReduceClaim.oracleReduction_statisticalHVZK` [ArkLib/ProofSystem/Component/ReduceClaim.lean:412](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L412) — Perfect HVZK implies statistical HVZK for the plain `ReduceClaim` oracle reduction at every error bu
+- `theorem SendClaim.oracleReduction_statisticalHVZK` [ArkLib/ProofSystem/Component/SendClaim.lean:275](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L275) — Perfect HVZK implies statistical HVZK for `SendClaim` at every error budget.
+
+### `oracleReduction_toReduction_isHVZK` (5 declarations, 5 files)
+
+- `theorem CheckClaim.oracleReduction_toReduction_isHVZK` [ArkLib/ProofSystem/Component/CheckClaim.lean:334](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L334) — The underlying non-oracle reduction of `CheckClaim.oracleReduction` has an explicit perfect-HVZK sim
+- `theorem DoNothing.oracleReduction_toReduction_isHVZK` [ArkLib/ProofSystem/Component/DoNothing.lean:159](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L159) — The `DoNothing` oracle reduction, viewed as a plain reduction, has an explicit perfect-HVZK simulato
+- `theorem RandomQuery.oracleReduction_toReduction_isHVZK` [ArkLib/ProofSystem/Component/RandomQuery.lean:264](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L264) — The underlying non-oracle reduction of `RandomQuery` has an explicit perfect-HVZK simulator.
+- `theorem ReduceClaim.oracleReduction_toReduction_isHVZK` [ArkLib/ProofSystem/Component/ReduceClaim.lean:466](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L466) — The underlying non-oracle reduction of the plain `ReduceClaim` oracle reduction has an explicit perf
+- `theorem SendClaim.oracleReduction_toReduction_isHVZK` [ArkLib/ProofSystem/Component/SendClaim.lean:324](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L324) — The underlying non-oracle reduction of `SendClaim` has an explicit perfect-HVZK simulator.
+
+### `oracleReduction_toReduction_isStatHVZK` (5 declarations, 5 files)
+
+- `theorem CheckClaim.oracleReduction_toReduction_isStatHVZK` [ArkLib/ProofSystem/Component/CheckClaim.lean:345](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L345) — The underlying non-oracle reduction of `CheckClaim.oracleReduction` has statistical HVZK for any inp
+- `theorem DoNothing.oracleReduction_toReduction_isStatHVZK` [ArkLib/ProofSystem/Component/DoNothing.lean:167](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L167) — The `DoNothing` oracle reduction, viewed as a plain reduction, has statistical HVZK for any relation
+- `theorem RandomQuery.oracleReduction_toReduction_isStatHVZK` [ArkLib/ProofSystem/Component/RandomQuery.lean:274](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L274) — The underlying non-oracle reduction of `RandomQuery` has statistical HVZK at every error budget.
+- `theorem ReduceClaim.oracleReduction_toReduction_isStatHVZK` [ArkLib/ProofSystem/Component/ReduceClaim.lean:477](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L477) — The underlying non-oracle reduction of the plain `ReduceClaim` oracle reduction has statistical HVZK
+- `theorem SendClaim.oracleReduction_toReduction_isStatHVZK` [ArkLib/ProofSystem/Component/SendClaim.lean:335](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L335) — The underlying non-oracle reduction of `SendClaim` has statistical HVZK at every error budget.
+
+### `oracleReduction_toReduction_perfectHVZK` (5 declarations, 5 files)
+
+- `theorem CheckClaim.oracleReduction_toReduction_perfectHVZK` [ArkLib/ProofSystem/Component/CheckClaim.lean:312](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L312) — The underlying non-oracle reduction of `CheckClaim.oracleReduction` is perfectly HVZK for any input
+- `theorem DoNothing.oracleReduction_toReduction_perfectHVZK` [ArkLib/ProofSystem/Component/DoNothing.lean:139](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L139) — The `DoNothing` oracle reduction, viewed as a plain reduction, is perfectly HVZK for any relation. T
+- `theorem RandomQuery.oracleReduction_toReduction_perfectHVZK` [ArkLib/ProofSystem/Component/RandomQuery.lean:244](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L244) — The underlying non-oracle reduction of `RandomQuery` is perfectly HVZK.
+- `theorem ReduceClaim.oracleReduction_toReduction_perfectHVZK` [ArkLib/ProofSystem/Component/ReduceClaim.lean:444](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L444) — The underlying non-oracle reduction of the plain `ReduceClaim` oracle reduction is perfectly HVZK fo
+- `theorem SendClaim.oracleReduction_toReduction_perfectHVZK` [ArkLib/ProofSystem/Component/SendClaim.lean:303](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L303) — The underlying non-oracle reduction of `SendClaim` is perfectly HVZK.
+
+### `oracleReduction_toReduction_statisticalHVZK` (5 declarations, 5 files)
+
+- `theorem CheckClaim.oracleReduction_toReduction_statisticalHVZK` [ArkLib/ProofSystem/Component/CheckClaim.lean:323](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L323) — The underlying non-oracle reduction of `CheckClaim.oracleReduction` is statistically HVZK for any in
+- `theorem DoNothing.oracleReduction_toReduction_statisticalHVZK` [ArkLib/ProofSystem/Component/DoNothing.lean:148](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L148) — The `DoNothing` oracle reduction, viewed as a plain reduction, is statistically HVZK for any relatio
+- `theorem RandomQuery.oracleReduction_toReduction_statisticalHVZK` [ArkLib/ProofSystem/Component/RandomQuery.lean:254](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L254) — The underlying non-oracle reduction of `RandomQuery` is statistically HVZK at every error budget.
+- `theorem ReduceClaim.oracleReduction_toReduction_statisticalHVZK` [ArkLib/ProofSystem/Component/ReduceClaim.lean:455](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L455) — The underlying non-oracle reduction of the plain `ReduceClaim` oracle reduction is statistically HVZ
+- `theorem SendClaim.oracleReduction_toReduction_statisticalHVZK` [ArkLib/ProofSystem/Component/SendClaim.lean:314](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L314) — The underlying non-oracle reduction of `SendClaim` is statistically HVZK at every error budget.
 
 ### `toFinset` (6 declarations, 4 files)
 
@@ -186,7 +250,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `StmtIn` (5 declarations, 4 files)
 
-- `def RandomQuery.StmtIn` [ArkLib/ProofSystem/Component/RandomQuery.lean:30](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L30) — (no docstring)
+- `def RandomQuery.StmtIn` [ArkLib/ProofSystem/Component/RandomQuery.lean:32](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L32) — (no docstring)
 - `structure Logup.StmtIn` [ArkLib/ProofSystem/Logup/Common.lean:233](../../../ArkLib/ProofSystem/Logup/Common.lean#L233) — Public parameter assumptions for Protocol 2. The paper fixes a finite field with characteristic larg
 - `def Sumcheck.Spec.StmtIn` [ArkLib/ProofSystem/Sumcheck/Spec/General.lean:137](../../../ArkLib/ProofSystem/Sumcheck/Spec/General.lean#L137) — The input statement for the (full) sum-check protocol, which contains only the target sum value
 - `def Sumcheck.Spec.SingleRound.Simpler.StmtIn` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:335](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L335) — (no docstring)
@@ -194,17 +258,17 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `coreInteractionOracleReduction` (4 declarations, 4 files)
 
-- `def coreInteractionOracleReduction` [ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean:1111](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean#L1111) — (no docstring)
-- `def Binius.FRIBinius.CoreInteractionPhase.coreInteractionOracleReduction` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1634](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1634) — The final oracle reduction that composes sumcheckFold with finalSumcheckStep
+- `def coreInteractionOracleReduction` [ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean:1122](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean#L1122) — (no docstring)
+- `def Binius.FRIBinius.CoreInteractionPhase.coreInteractionOracleReduction` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1653](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1653) — The final oracle reduction that composes sumcheckFold with finalSumcheckStep
 - `def Binius.RingSwitching.SumcheckPhase.coreInteractionOracleReduction` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1721](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1721) — Large-field reduction: Sumcheck seqCompose, then append FinalSum
-- `def RingSwitching.SumcheckPhase.coreInteractionOracleReduction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1337](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1337) — Large-field reduction: Sumcheck seqCompose, then append FinalSum
+- `def RingSwitching.SumcheckPhase.coreInteractionOracleReduction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1579](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1579) — Large-field reduction: Sumcheck seqCompose, then append FinalSum
 
 ### `coreInteractionOracleVerifier` (4 declarations, 4 files)
 
-- `def coreInteractionOracleVerifier` [ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean:1095](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean#L1095) — (no docstring)
-- `def Binius.FRIBinius.CoreInteractionPhase.coreInteractionOracleVerifier` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1615](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1615) — The final oracle verifier that composes sumcheckFold with finalSumcheckStep
+- `def coreInteractionOracleVerifier` [ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean:1106](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean#L1106) — (no docstring)
+- `def Binius.FRIBinius.CoreInteractionPhase.coreInteractionOracleVerifier` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1634](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1634) — The final oracle verifier that composes sumcheckFold with finalSumcheckStep
 - `def Binius.RingSwitching.SumcheckPhase.coreInteractionOracleVerifier` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1712](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1712) — Large-field reduction verifier: Sumcheck seqCompose, then append FinalSum
-- `def RingSwitching.SumcheckPhase.coreInteractionOracleVerifier` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1301](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1301) — Large-field reduction verifier: Sumcheck seqCompose, then append FinalSum
+- `def RingSwitching.SumcheckPhase.coreInteractionOracleVerifier` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1543](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1543) — Large-field reduction verifier: Sumcheck seqCompose, then append FinalSum
 
 ### `disagreementSet` (4 declarations, 4 files)
 
@@ -216,51 +280,51 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `finalSumcheckKStateProp` (4 declarations, 4 files)
 
 - `def Binius.BinaryBasefold.CoreInteraction.finalSumcheckKStateProp` [ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean:1668](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean#L1668) — (no docstring)
-- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckKStateProp` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1336](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1336) — (no docstring)
+- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckKStateProp` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1355](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1355) — (no docstring)
 - `def Binius.RingSwitching.SumcheckPhase.finalSumcheckKStateProp` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1494](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1494) — KState for the final sumcheck step, in the same style as BBF `finalSumcheckKStateProp`: m=0: same as
-- `def RingSwitching.SumcheckPhase.finalSumcheckKStateProp` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1065](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1065) — (no docstring)
+- `def RingSwitching.SumcheckPhase.finalSumcheckKStateProp` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1307](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1307) — (no docstring)
 
 ### `finalSumcheckKnowledgeStateFunction` (4 declarations, 4 files)
 
 - `def Binius.BinaryBasefold.CoreInteraction.finalSumcheckKnowledgeStateFunction` [ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean:1698](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean#L1698) — (no docstring)
-- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckKnowledgeStateFunction` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1376](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1376) — The knowledge state function for the final sumcheck step
+- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckKnowledgeStateFunction` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1395](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1395) — The knowledge state function for the final sumcheck step
 - `def Binius.RingSwitching.SumcheckPhase.finalSumcheckKnowledgeStateFunction` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1522](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1522) — The knowledge state function for the final sumcheck step
-- `def RingSwitching.SumcheckPhase.finalSumcheckKnowledgeStateFunction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1103](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1103) — The knowledge state function for the final sumcheck step
+- `def RingSwitching.SumcheckPhase.finalSumcheckKnowledgeStateFunction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1345](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1345) — The knowledge state function for the final sumcheck step
 
 ### `finalSumcheckOracleReduction` (4 declarations, 4 files)
 
 - `def Binius.BinaryBasefold.CoreInteraction.finalSumcheckOracleReduction` [ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean:126](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean#L126) — (no docstring)
-- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckOracleReduction` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:646](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L646) — The oracle reduction for the final sumcheck step
+- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckOracleReduction` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:665](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L665) — The oracle reduction for the final sumcheck step
 - `def Binius.RingSwitching.SumcheckPhase.finalSumcheckOracleReduction` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1265](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1265) — The oracle reduction for the final sumcheck step
-- `def RingSwitching.SumcheckPhase.finalSumcheckOracleReduction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:943](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L943) — The oracle reduction for the final sumcheck step
+- `def RingSwitching.SumcheckPhase.finalSumcheckOracleReduction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1185](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1185) — The oracle reduction for the final sumcheck step
 
 ### `finalSumcheckOracleVerifier_rbrKnowledgeSoundness` (4 declarations, 4 files)
 
 - `theorem Binius.BinaryBasefold.CoreInteraction.finalSumcheckOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean:1892](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean#L1892) — (no docstring)
-- `theorem Binius.FRIBinius.CoreInteractionPhase.finalSumcheckOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1588](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1588) — Round-by-round knowledge soundness for the final sumcheck step
+- `theorem Binius.FRIBinius.CoreInteractionPhase.finalSumcheckOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1607](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1607) — Round-by-round knowledge soundness for the final sumcheck step
 - `theorem Binius.RingSwitching.SumcheckPhase.finalSumcheckOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1660](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1660) — Round-by-round knowledge soundness for the final sumcheck step
-- `theorem RingSwitching.SumcheckPhase.finalSumcheckOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1234](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1234) — Round-by-round knowledge soundness for the final sumcheck step
+- `theorem RingSwitching.SumcheckPhase.finalSumcheckOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1476](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1476) — Round-by-round knowledge soundness for the final sumcheck step
 
 ### `finalSumcheckProver` (4 declarations, 4 files)
 
 - `def Binius.BinaryBasefold.CoreInteraction.finalSumcheckProver` [ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean:66](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean#L66) — (no docstring)
-- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckProver` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:588](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L588) — The prover for the final sumcheck step
+- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckProver` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:607](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L607) — The prover for the final sumcheck step
 - `def Binius.RingSwitching.SumcheckPhase.finalSumcheckProver` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1207](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1207) — The prover for the final sumcheck step
-- `def RingSwitching.SumcheckPhase.finalSumcheckProver` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:846](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L846) — The prover for the final sumcheck step
+- `def RingSwitching.SumcheckPhase.finalSumcheckProver` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1088](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1088) — The prover for the final sumcheck step
 
 ### `finalSumcheckRbrExtractor` (4 declarations, 4 files)
 
 - `def Binius.BinaryBasefold.CoreInteraction.finalSumcheckRbrExtractor` [ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean:1626](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean#L1626) — (no docstring)
-- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckRbrExtractor` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1298](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1298) — The round-by-round extractor for the final sumcheck step
+- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckRbrExtractor` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1317](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1317) — The round-by-round extractor for the final sumcheck step
 - `def Binius.RingSwitching.SumcheckPhase.finalSumcheckRbrExtractor` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1471](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1471) — The round-by-round extractor for the final sumcheck step. We do not collapse the witness away (unlik
-- `def RingSwitching.SumcheckPhase.finalSumcheckRbrExtractor` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1045](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1045) — The round-by-round extractor for the final sumcheck step
+- `def RingSwitching.SumcheckPhase.finalSumcheckRbrExtractor` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1287](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1287) — The round-by-round extractor for the final sumcheck step
 
 ### `finalSumcheckVerifier` (4 declarations, 4 files)
 
 - `def Binius.BinaryBasefold.CoreInteraction.finalSumcheckVerifier` [ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean:100](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean#L100) — (no docstring)
-- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckVerifier` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:622](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L622) — The verifier for the final sumcheck step
+- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckVerifier` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:641](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L641) — The verifier for the final sumcheck step
 - `def Binius.RingSwitching.SumcheckPhase.finalSumcheckVerifier` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1238](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1238) — The verifier for the final sumcheck step
-- `def RingSwitching.SumcheckPhase.finalSumcheckVerifier` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:882](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L882) — The verifier for the final sumcheck step
+- `def RingSwitching.SumcheckPhase.finalSumcheckVerifier` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1124](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1124) — The verifier for the final sumcheck step
 
 ### `fullOracleProof` (4 declarations, 4 files)
 
@@ -276,13 +340,6 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def Binius.RingSwitching.FullRingSwitching.fullOracleReduction` [ArkLib/ProofSystem/Binius/RingSwitching/General.lean:74](../../../ArkLib/ProofSystem/Binius/RingSwitching/General.lean#L74) — The reduction for the full Binary Basefold protocol
 - `def RingSwitching.FullRingSwitching.fullOracleReduction` [ArkLib/ProofSystem/RingSwitching/General.lean:84](../../../ArkLib/ProofSystem/RingSwitching/General.lean#L84) — The reduction for the full Binary Basefold protocol
 
-### `fullOracleReduction_perfectCompleteness` (4 declarations, 4 files)
-
-- `theorem Binius.BinaryBasefold.FullBinaryBasefold.fullOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/BinaryBasefold/General.lean:117](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/General.lean#L117) — Perfect completeness for the full Binary Basefold protocol (reduction)
-- `theorem Binius.FRIBinius.FullFRIBinius.fullOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/FRIBinius/General.lean:191](../../../ArkLib/ProofSystem/Binius/FRIBinius/General.lean#L191) — Perfect completeness for the full Binary Basefold protocol (reduction)
-- `theorem Binius.RingSwitching.FullRingSwitching.fullOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/RingSwitching/General.lean:147](../../../ArkLib/ProofSystem/Binius/RingSwitching/General.lean#L147) — (no docstring)
-- `theorem RingSwitching.FullRingSwitching.fullOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/RingSwitching/General.lean:166](../../../ArkLib/ProofSystem/RingSwitching/General.lean#L166) — (no docstring)
-
 ### `fullOracleVerifier` (4 declarations, 4 files)
 
 - `def Binius.BinaryBasefold.FullBinaryBasefold.fullOracleVerifier` [ArkLib/ProofSystem/Binius/BinaryBasefold/General.lean:51](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/General.lean#L51) — The oracle verifier for the full Binary Basefold protocol
@@ -295,34 +352,76 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `theorem Binius.BinaryBasefold.FullBinaryBasefold.fullOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/BinaryBasefold/General.lean:149](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/General.lean#L149) — Round-by-round knowledge soundness for the full Binary Basefold oracle verifier
 - `theorem Binius.FRIBinius.FullFRIBinius.fullOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/FRIBinius/General.lean:237](../../../ArkLib/ProofSystem/Binius/FRIBinius/General.lean#L237) — Round-by-round knowledge soundness for the full FRI-Binius oracle verifier.
 - `theorem Binius.RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/RingSwitching/General.lean:204](../../../ArkLib/ProofSystem/Binius/RingSwitching/General.lean#L204) — Round-by-round knowledge soundness for the full ring-switching oracle verifier
-- `theorem RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/RingSwitching/General.lean:238](../../../ArkLib/ProofSystem/RingSwitching/General.lean#L238) — Round-by-round knowledge soundness for the full ring-switching oracle verifier. `IsDomain K` (with t
+- `theorem RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/RingSwitching/General.lean:226](../../../ArkLib/ProofSystem/RingSwitching/General.lean#L226) — Round-by-round knowledge soundness for the full ring-switching oracle verifier. `IsDomain K` (with t
 
 ### `fullRbrKnowledgeError` (4 declarations, 4 files)
 
 - `def Binius.BinaryBasefold.FullBinaryBasefold.fullRbrKnowledgeError` [ArkLib/ProofSystem/Binius/BinaryBasefold/General.lean:139](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/General.lean#L139) — Combined RBR knowledge soundness error for the full protocol
 - `def Binius.FRIBinius.FullFRIBinius.fullRbrKnowledgeError` [ArkLib/ProofSystem/Binius/FRIBinius/General.lean:227](../../../ArkLib/ProofSystem/Binius/FRIBinius/General.lean#L227) — Combined RBR knowledge error for full FRI-Binius.
 - `def Binius.RingSwitching.FullRingSwitching.fullRbrKnowledgeError` [ArkLib/ProofSystem/Binius/RingSwitching/General.lean:197](../../../ArkLib/ProofSystem/Binius/RingSwitching/General.lean#L197) — (no docstring)
-- `def RingSwitching.FullRingSwitching.fullRbrKnowledgeError` [ArkLib/ProofSystem/RingSwitching/General.lean:222](../../../ArkLib/ProofSystem/RingSwitching/General.lean#L222) — (no docstring)
+- `def RingSwitching.FullRingSwitching.fullRbrKnowledgeError` [ArkLib/ProofSystem/RingSwitching/General.lean:210](../../../ArkLib/ProofSystem/RingSwitching/General.lean#L210) — (no docstring)
+
+### `honestTranscriptDist_oracleReduction_evalDist` (4 declarations, 4 files)
+
+- `theorem RandomQuery.honestTranscriptDist_oracleReduction_evalDist` [ArkLib/ProofSystem/Component/RandomQuery.lean:201](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L201) — The honest transcript distribution for `RandomQuery` is definitionally the simulator distribution.
+- `theorem ReduceClaim.honestTranscriptDist_oracleReduction_evalDist` [ArkLib/ProofSystem/Component/ReduceClaim.lean:372](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L372) — The honest transcript distribution for the plain `ReduceClaim` oracle reduction is the deterministic
+- `theorem SendClaim.honestTranscriptDist_oracleReduction_evalDist` [ArkLib/ProofSystem/Component/SendClaim.lean:254](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L254) — The honest transcript distribution for `SendClaim` is exactly the simulator distribution, because th
+- `theorem SendSingleWitness.honestTranscriptDist_oracleReduction_evalDist` [ArkLib/ProofSystem/Component/SendWitness.lean:417](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L417) — The honest transcript distribution for `SendSingleWitness` is the deterministic one-message transcri
+
+### `honestTranscriptDist_reduction_evalDist` (4 declarations, 4 files)
+
+- `theorem CheckClaim.honestTranscriptDist_reduction_evalDist` [ArkLib/ProofSystem/Component/CheckClaim.lean:121](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L121) — The honest transcript distribution for a valid `CheckClaim` statement is the deterministic empty tra
+- `theorem NoInteraction.honestTranscriptDist_reduction_evalDist` [ArkLib/ProofSystem/Component/NoInteraction.lean:256](../../../ArkLib/ProofSystem/Component/NoInteraction.lean#L256) — The honest transcript distribution for a no-interaction reduction is the deterministic empty transcr
+- `theorem ReduceClaim.honestTranscriptDist_reduction_evalDist` [ArkLib/ProofSystem/Component/ReduceClaim.lean:116](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L116) — The honest transcript distribution for `ReduceClaim` is the deterministic empty transcript. The mapp
+- `theorem SendWitness.honestTranscriptDist_reduction_evalDist` [ArkLib/ProofSystem/Component/SendWitness.lean:108](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L108) — The honest transcript distribution for `SendWitness` is the deterministic one-message transcript con
 
 ### `oracleVerifier_rbrKnowledgeSoundness` (4 declarations, 4 files)
 
-- `theorem DoNothing.oracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Component/DoNothing.lean:98](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L98) — The `DoNothing` oracle verifier is perfectly round-by-round knowledge sound.
-- `theorem RandomQuery.oracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Component/RandomQuery.lean:275](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L275) — The `RandomQuery` oracle reduction is round-by-round knowledge sound. The key fact governing the sou
-- `theorem ReduceClaim.oracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Component/ReduceClaim.lean:410](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L410) — The `ReduceClaim` oracle reduction satisfies perfect round-by-round knowledge soundness. Note that s
+- `theorem DoNothing.oracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Component/DoNothing.lean:132](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L132) — The `DoNothing` oracle verifier is perfectly round-by-round knowledge sound.
+- `theorem RandomQuery.oracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Component/RandomQuery.lean:383](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L383) — The `RandomQuery` oracle reduction is round-by-round knowledge sound. The key fact governing the sou
+- `theorem ReduceClaim.oracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Component/ReduceClaim.lean:537](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L537) — The `ReduceClaim` oracle reduction satisfies perfect round-by-round knowledge soundness. Note that s
 - `theorem Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:1216](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L1216) — Round-by-round knowledge soundness for the oracle verifier
 
 ### `reduction_completeness` (4 declarations, 4 files)
 
 - `theorem CheckClaim.reduction_completeness` [ArkLib/ProofSystem/Component/CheckClaim.lean:71](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L71) — The `CheckClaim` reduction satisfies perfect completeness with respect to the predicate as the input
-- `theorem NoInteraction.reduction_completeness` [ArkLib/ProofSystem/Component/NoInteraction.lean:93](../../../ArkLib/ProofSystem/Component/NoInteraction.lean#L93) — Completeness of a no-interaction reduction. **Faithfulness of the hypothesis `hRel`.** `Reduction.ru
+- `theorem NoInteraction.reduction_completeness` [ArkLib/ProofSystem/Component/NoInteraction.lean:199](../../../ArkLib/ProofSystem/Component/NoInteraction.lean#L199) — Completeness of a no-interaction reduction. **Faithfulness of the hypothesis `hRel`.** `Reduction.ru
 - `theorem ReduceClaim.reduction_completeness` [ArkLib/ProofSystem/Component/ReduceClaim.lean:69](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L69) — The `ReduceClaim` reduction satisfies perfect completeness for any relation.
-- `theorem SendWitness.reduction_completeness` [ArkLib/ProofSystem/Component/SendWitness.lean:172](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L172) — The `SendWitness` reduction satisfies perfect completeness.
+- `theorem SendWitness.reduction_completeness` [ArkLib/ProofSystem/Component/SendWitness.lean:173](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L173) — The `SendWitness` reduction satisfies perfect completeness.
+
+### `reduction_isHVZK` (4 declarations, 4 files)
+
+- `theorem CheckClaim.reduction_isHVZK` [ArkLib/ProofSystem/Component/CheckClaim.lean:156](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L156) — `CheckClaim` has an explicit perfect-HVZK simulator.
+- `theorem DoNothing.reduction_isHVZK` [ArkLib/ProofSystem/Component/DoNothing.lean:79](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L79) — The `DoNothing` reduction has an explicit perfect-HVZK simulator for any relation.
+- `theorem NoInteraction.reduction_isHVZK` [ArkLib/ProofSystem/Component/NoInteraction.lean:315](../../../ArkLib/ProofSystem/Component/NoInteraction.lean#L315) — A no-interaction reduction has an explicit perfect-HVZK simulator for any input relation.
+- `theorem ReduceClaim.reduction_isHVZK` [ArkLib/ProofSystem/Component/ReduceClaim.lean:153](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L153) — `ReduceClaim` has an explicit perfect-HVZK simulator for any input relation.
+
+### `reduction_isStatHVZK` (4 declarations, 4 files)
+
+- `theorem CheckClaim.reduction_isStatHVZK` [ArkLib/ProofSystem/Component/CheckClaim.lean:161](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L161) — `CheckClaim` has statistical HVZK at every error budget.
+- `theorem DoNothing.reduction_isStatHVZK` [ArkLib/ProofSystem/Component/DoNothing.lean:85](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L85) — The `DoNothing` reduction has statistical HVZK for any relation and error budget.
+- `theorem NoInteraction.reduction_isStatHVZK` [ArkLib/ProofSystem/Component/NoInteraction.lean:321](../../../ArkLib/ProofSystem/Component/NoInteraction.lean#L321) — A no-interaction reduction has statistical HVZK for any input relation and error budget.
+- `theorem ReduceClaim.reduction_isStatHVZK` [ArkLib/ProofSystem/Component/ReduceClaim.lean:159](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L159) — `ReduceClaim` has statistical HVZK for any input relation and error budget.
+
+### `reduction_perfectHVZK` (4 declarations, 4 files)
+
+- `theorem CheckClaim.reduction_perfectHVZK` [ArkLib/ProofSystem/Component/CheckClaim.lean:142](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L142) — `CheckClaim` is perfectly HVZK for the predicate relation. The simulator is the identity transcript
+- `theorem DoNothing.reduction_perfectHVZK` [ArkLib/ProofSystem/Component/DoNothing.lean:64](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L64) — The `DoNothing` reduction is perfectly HVZK for any relation.
+- `theorem NoInteraction.reduction_perfectHVZK` [ArkLib/ProofSystem/Component/NoInteraction.lean:300](../../../ArkLib/ProofSystem/Component/NoInteraction.lean#L300) — A no-interaction reduction is perfectly HVZK for any input relation: it has no messages or challenge
+- `theorem ReduceClaim.reduction_perfectHVZK` [ArkLib/ProofSystem/Component/ReduceClaim.lean:138](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L138) — `ReduceClaim` is perfectly HVZK for any input relation: it has no messages or challenges, so the ide
+
+### `reduction_statisticalHVZK` (4 declarations, 4 files)
+
+- `theorem CheckClaim.reduction_statisticalHVZK` [ArkLib/ProofSystem/Component/CheckClaim.lean:150](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L150) — Perfect HVZK implies statistical HVZK at every error budget.
+- `theorem DoNothing.reduction_statisticalHVZK` [ArkLib/ProofSystem/Component/DoNothing.lean:71](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L71) — The `DoNothing` reduction is statistically HVZK for any relation and error budget.
+- `theorem NoInteraction.reduction_statisticalHVZK` [ArkLib/ProofSystem/Component/NoInteraction.lean:308](../../../ArkLib/ProofSystem/Component/NoInteraction.lean#L308) — Perfect HVZK implies statistical HVZK for a no-interaction reduction at every error budget.
+- `theorem ReduceClaim.reduction_statisticalHVZK` [ArkLib/ProofSystem/Component/ReduceClaim.lean:146](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L146) — Perfect HVZK implies statistical HVZK for `ReduceClaim` at every error budget.
 
 ### `simulateQ_simOracle2_messageQuery` (4 declarations, 4 files)
 
 - `lemma Binius.RingSwitching.simulateQ_simOracle2_messageQuery` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:953](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L953) — **`simOracle2` message-query collapse (`OracleComp` form).** Simulating, via `simOracle2 oSpec t₁ t₂
 - `lemma RingSwitching.BatchingPhase.simulateQ_simOracle2_messageQuery` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:59](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L59) — Local message-query collapse for `OracleInterface.simOracle2`.
-- `lemma RingSwitching.simulateQ_simOracle2_messageQuery` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1415](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1415) — **`simOracle2` message-query collapse (`OracleComp` form).** Simulating, via `simOracle2 oSpec t₁ t₂
+- `lemma RingSwitching.simulateQ_simOracle2_messageQuery` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1416](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1416) — **`simOracle2` message-query collapse (`OracleComp` form).** Simulating, via `simOracle2 oSpec t₁ t₂
 - `lemma ToyProblem.Spec.simulateQ_simOracle2_messageQuery` [ArkLib/ProofSystem/ToyProblem/Spec/General.lean:718](../../../ArkLib/ProofSystem/ToyProblem/Spec/General.lean#L718) — `simOracle2` message-query collapse (`OracleComp` form), RIGHT (message) family.
 
 ### `prizeRates_le_half` (4 declarations, 4 files)
@@ -335,19 +434,19 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `completeness` (6 declarations, 3 files)
 
 - `abbrev DuplexSpongeFS.NARG.completeness` [ArkLib/OracleReduction/FiatShamir/DuplexSponge/Basic.lean:59](../../../ArkLib/OracleReduction/FiatShamir/DuplexSponge/Basic.lean#L59) — Paper-facing alias for CO25 Section 3.4 completeness.
-- `def Reduction.completeness` [ArkLib/OracleReduction/Security/Basic.lean:117](../../../ArkLib/OracleReduction/Security/Basic.lean#L117) — A reduction satisfies **completeness** with regards to: - an initialization function `init : ProbCom
-- `def OracleReduction.completeness` [ArkLib/OracleReduction/Security/Basic.lean:463](../../../ArkLib/OracleReduction/Security/Basic.lean#L463) — Completeness of an oracle reduction is the same as for non-oracle reductions.
-- `def Proof.completeness` [ArkLib/OracleReduction/Security/Basic.lean:517](../../../ArkLib/OracleReduction/Security/Basic.lean#L517) — (no docstring)
-- `def OracleProof.completeness` [ArkLib/OracleReduction/Security/Basic.lean:546](../../../ArkLib/OracleReduction/Security/Basic.lean#L546) — Completeness of an oracle reduction is the same as for non-oracle reductions.
-- `theorem SendClaim.completeness` [ArkLib/ProofSystem/Component/SendClaim.lean:110](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L110) — (no docstring)
+- `def Reduction.completeness` [ArkLib/OracleReduction/Security/Basic.lean:175](../../../ArkLib/OracleReduction/Security/Basic.lean#L175) — A reduction satisfies **completeness** with regards to: - an initialization function `init : ProbCom
+- `def OracleReduction.completeness` [ArkLib/OracleReduction/Security/Basic.lean:521](../../../ArkLib/OracleReduction/Security/Basic.lean#L521) — Completeness of an oracle reduction is the same as for non-oracle reductions.
+- `def Proof.completeness` [ArkLib/OracleReduction/Security/Basic.lean:575](../../../ArkLib/OracleReduction/Security/Basic.lean#L575) — (no docstring)
+- `def OracleProof.completeness` [ArkLib/OracleReduction/Security/Basic.lean:604](../../../ArkLib/OracleReduction/Security/Basic.lean#L604) — Completeness of an oracle reduction is the same as for non-oracle reductions.
+- `theorem SendClaim.completeness` [ArkLib/ProofSystem/Component/SendClaim.lean:114](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L114) — (no docstring)
 
 ### `soundness` (6 declarations, 3 files)
 
 - `abbrev DuplexSpongeFS.NARG.soundness` [ArkLib/OracleReduction/FiatShamir/DuplexSponge/Basic.lean:72](../../../ArkLib/OracleReduction/FiatShamir/DuplexSponge/Basic.lean#L72) — Paper-facing alias for CO25 Section 3.4 soundness.
-- `def Verifier.soundness` [ArkLib/OracleReduction/Security/Basic.lean:295](../../../ArkLib/OracleReduction/Security/Basic.lean#L295) — A reduction satisfies **soundness** with error `soundnessError ≥ 0` and with respect to input langua
-- `def OracleVerifier.soundness` [ArkLib/OracleReduction/Security/Basic.lean:484](../../../ArkLib/OracleReduction/Security/Basic.lean#L484) — Soundness of an oracle reduction is the same as for non-oracle reductions.
-- `def Proof.soundness` [ArkLib/OracleReduction/Security/Basic.lean:527](../../../ArkLib/OracleReduction/Security/Basic.lean#L527) — (no docstring)
-- `def OracleProof.soundness` [ArkLib/OracleReduction/Security/Basic.lean:563](../../../ArkLib/OracleReduction/Security/Basic.lean#L563) — Soundness of an oracle reduction is the same as for non-oracle reductions.
+- `def Verifier.soundness` [ArkLib/OracleReduction/Security/Basic.lean:353](../../../ArkLib/OracleReduction/Security/Basic.lean#L353) — A reduction satisfies **soundness** with error `soundnessError ≥ 0` and with respect to input langua
+- `def OracleVerifier.soundness` [ArkLib/OracleReduction/Security/Basic.lean:542](../../../ArkLib/OracleReduction/Security/Basic.lean#L542) — Soundness of an oracle reduction is the same as for non-oracle reductions.
+- `def Proof.soundness` [ArkLib/OracleReduction/Security/Basic.lean:585](../../../ArkLib/OracleReduction/Security/Basic.lean#L585) — (no docstring)
+- `def OracleProof.soundness` [ArkLib/OracleReduction/Security/Basic.lean:621](../../../ArkLib/OracleReduction/Security/Basic.lean#L621) — Soundness of an oracle reduction is the same as for non-oracle reductions.
 - `def Verifier.StateRestoration.soundness` [ArkLib/OracleReduction/Security/StateRestoration.lean:127](../../../ArkLib/OracleReduction/Security/StateRestoration.lean#L127) — State-restoration soundness
 
 ### `subdomain` (6 declarations, 3 files)
@@ -378,35 +477,35 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `Adversary` (4 declarations, 3 files)
 
-- `def AGM.Adversary` [ArkLib/AGM/Basic.lean:372](../../../ArkLib/AGM/Basic.lean#L372) — An adversary in the Algebraic Group Model (AGM) is defined as follows: - It is given knowledge of th
+- `def AGM.Adversary` [ArkLib/AGM/Basic.lean:468](../../../ArkLib/AGM/Basic.lean#L468) — An adversary in the Algebraic Group Model (AGM) is defined as follows: - It is given knowledge of th
 - `abbrev ArkLib.Lattices.Ajtai.InnerOuter.WeakBinding.Adversary` [ArkLib/CommitmentScheme/Ajtai/InnerOuter/Security.lean:92](../../../ArkLib/CommitmentScheme/Ajtai/InnerOuter/Security.lean#L92) — A weak-binding adversary outputs two weak openings for the same commitment.
 - `abbrev ArkLib.Lattices.SIS.Adversary` [ArkLib/Data/Lattices/ModuleSIS.lean:53](../../../ArkLib/Data/Lattices/ModuleSIS.lean#L53) — A search adversary for a SIS-style problem.
 - `abbrev ArkLib.Lattices.ModuleSIS.Adversary` [ArkLib/Data/Lattices/ModuleSIS.lean:96](../../../ArkLib/Data/Lattices/ModuleSIS.lean#L96) — A Module-SIS adversary.
 
 ### `OStmtIn` (4 declarations, 3 files)
 
-- `def RandomQuery.OStmtIn` [ArkLib/ProofSystem/Component/RandomQuery.lean:33](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L33) — (no docstring)
+- `def RandomQuery.OStmtIn` [ArkLib/ProofSystem/Component/RandomQuery.lean:35](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L35) — (no docstring)
 - `def Logup.OStmtIn` [ArkLib/ProofSystem/Logup/Common.lean:241](../../../ArkLib/ProofSystem/Logup/Common.lean#L241) — Input oracle statements: the table `t` and lookup columns `fᵢ`, as multilinear oracles.
 - `def Sumcheck.Spec.SingleRound.Simpler.OStmtIn` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:336](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L336) — (no docstring)
 - `def Sumcheck.Spec.SingleRound.Simple.OStmtIn` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:591](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L591) — (no docstring)
 
 ### `OStmtOut` (4 declarations, 3 files)
 
-- `def RandomQuery.OStmtOut` [ArkLib/ProofSystem/Component/RandomQuery.lean:34](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L34) — (no docstring)
+- `def RandomQuery.OStmtOut` [ArkLib/ProofSystem/Component/RandomQuery.lean:36](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L36) — (no docstring)
 - `def Logup.OStmtOut` [ArkLib/ProofSystem/Logup/Common.lean:290](../../../ArkLib/ProofSystem/Logup/Common.lean#L290) — Output oracle statements for the full LogUp protocol.
 - `def Sumcheck.Spec.SingleRound.Simpler.OStmtOut` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:365](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L365) — (no docstring)
 - `def Sumcheck.Spec.SingleRound.Simple.OStmtOut` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:594](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L594) — (no docstring)
 
 ### `StmtOut` (4 declarations, 3 files)
 
-- `def RandomQuery.StmtOut` [ArkLib/ProofSystem/Component/RandomQuery.lean:31](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L31) — (no docstring)
+- `def RandomQuery.StmtOut` [ArkLib/ProofSystem/Component/RandomQuery.lean:33](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L33) — (no docstring)
 - `def Logup.StmtOut` [ArkLib/ProofSystem/Logup/Common.lean:280](../../../ArkLib/ProofSystem/Logup/Common.lean#L280) — The full LogUp protocol returns no additional public data on success.
 - `def Sumcheck.Spec.SingleRound.Simpler.StmtOut` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:364](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L364) — (no docstring)
 - `def Sumcheck.Spec.SingleRound.Simple.StmtOut` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:588](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L588) — (no docstring)
 
 ### `append` (4 declarations, 3 files)
 
-- `def AGM.GroupRepresentation.append` [ArkLib/AGM/RepresentationLemmas.lean:156](../../../ArkLib/AGM/RepresentationLemmas.lean#L156) — **Representations compose multiplicatively.** Concatenating the bases and exponent vectors of two al
+- `def AGM.GroupRepresentation.append` [ArkLib/AGM/RepresentationLemmas.lean:164](../../../ArkLib/AGM/RepresentationLemmas.lean#L164) — **Representations compose multiplicatively.** Concatenating the bases and exponent vectors of two al
 - `def Interaction.Oracle.Spec.append` [ArkLib/Interaction/Oracle/Spec.lean:216](../../../ArkLib/Interaction/Oracle/Spec.lean#L216) — (no docstring)
 - `abbrev ProtocolSpec.append` [ArkLib/OracleReduction/ProtocolSpec/SeqCompose.lean:49](../../../ArkLib/OracleReduction/ProtocolSpec/SeqCompose.lean#L49) — Appending two `ProtocolSpec`s
 - `def ProtocolSpec.FullTranscript.append` [ArkLib/OracleReduction/ProtocolSpec/SeqCompose.lean:160](../../../ArkLib/OracleReduction/ProtocolSpec/SeqCompose.lean#L160) — Appending two transcripts for two `ProtocolSpec`s
@@ -441,7 +540,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `reduction_perfectCompleteness` (4 declarations, 3 files)
 
-- `theorem DoNothing.reduction_perfectCompleteness` [ArkLib/ProofSystem/Component/DoNothing.lean:51](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L51) — The `DoNothing` reduction satisfies perfect completeness for any relation.
+- `theorem DoNothing.reduction_perfectCompleteness` [ArkLib/ProofSystem/Component/DoNothing.lean:52](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L52) — The `DoNothing` reduction satisfies perfect completeness for any relation.
 - `theorem Fri.Spec.Completeness.reduction_perfectCompleteness` [ArkLib/ProofSystem/Fri/Spec/Completeness.lean:111](../../../ArkLib/ProofSystem/Fri/Spec/Completeness.lean#L111) — **Brick D — composed FRI reduction perfect completeness.** The honest FRI protocol is perfectly comp
 - `theorem Sumcheck.Spec.SingleRound.Simple.reduction_perfectCompleteness` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:742](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L742) — Perfect completeness for the (non-oracle) reduction
 - `theorem Sumcheck.Spec.SingleRound.reduction_perfectCompleteness` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:1780](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L1780) — (no docstring)
@@ -474,8 +573,8 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 - `abbrev Interaction.Oracle.Prover` [ArkLib/Interaction/Oracle/Core.lean:1140](../../../ArkLib/Interaction/Oracle/Core.lean#L1140) — (no docstring)
 - `abbrev Interaction.Prover` [ArkLib/Interaction/Reduction.lean:115](../../../ArkLib/Interaction/Reduction.lean#L115) — (no docstring)
-- `structure Prover` [ArkLib/OracleReduction/Basic.lean:178](../../../ArkLib/OracleReduction/Basic.lean#L178) — (no docstring)
-- `structure Prover` [ArkLib/OracleReduction/Basic.lean:426](../../../ArkLib/OracleReduction/Basic.lean#L426) — The type of honest provers for an interactive reduction with `n` messages. This consists of: - `PrvS
+- `structure Prover` [ArkLib/OracleReduction/Basic.lean:168](../../../ArkLib/OracleReduction/Basic.lean#L168) — (no docstring)
+- `structure Prover` [ArkLib/OracleReduction/Basic.lean:413](../../../ArkLib/OracleReduction/Basic.lean#L413) — The type of honest provers for an interactive reduction with `n` messages. This consists of: - `PrvS
 
 ### `PublicParams` (3 declarations, 3 files)
 
@@ -483,12 +582,11 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `abbrev ArkLib.Lattices.Ajtai.Simple.PublicParams` [ArkLib/CommitmentScheme/Ajtai/Simple/Scheme.lean:29](../../../ArkLib/CommitmentScheme/Ajtai/Simple/Scheme.lean#L29) — Public parameters: the Ajtai matrix `A`.
 - `structure Spartan.PublicParams` [ArkLib/ProofSystem/Spartan/Basic.lean:26](../../../ArkLib/ProofSystem/Spartan/Basic.lean#L26) — The public parameters of the (padded) Spartan protocol. Consists of the number of bits of the R1CS d
 
-### `Reduction` (4 declarations, 3 files)
+### `Reduction` (3 declarations, 3 files)
 
 - `structure Interaction.Oracle.Reduction` [ArkLib/Interaction/Oracle/Core.lean:1217](../../../ArkLib/Interaction/Oracle/Core.lean#L1217) — (no docstring)
 - `structure Interaction.Reduction` [ArkLib/Interaction/Reduction.lean:187](../../../ArkLib/Interaction/Reduction.lean#L187) — (no docstring)
-- `structure Reduction` [ArkLib/OracleReduction/Basic.lean:196](../../../ArkLib/OracleReduction/Basic.lean#L196) — (no docstring)
-- `structure Reduction` [ArkLib/OracleReduction/Basic.lean:710](../../../ArkLib/OracleReduction/Basic.lean#L710) — An **interactive reduction** for a given protocol specification `pSpec`, and relative to oracles def
+- `structure Reduction` [ArkLib/OracleReduction/Basic.lean:698](../../../ArkLib/OracleReduction/Basic.lean#L698) — An **interactive reduction** for a given protocol specification `pSpec`, and relative to oracles def
 
 ### `StraightlineExtractor` (3 declarations, 3 files)
 
@@ -499,14 +597,14 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `SumcheckWitness` (3 declarations, 3 files)
 
 - `abbrev Binius.RingSwitching.SumcheckWitness` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:226](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L226) — (no docstring)
-- `abbrev RingSwitching.SumcheckWitness` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:236](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L236) — (no docstring)
+- `abbrev RingSwitching.SumcheckWitness` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:237](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L237) — (no docstring)
 - `structure Sumcheck.Structured.SumcheckWitness` [ArkLib/ProofSystem/Sumcheck/Structured.lean:231](../../../ArkLib/ProofSystem/Sumcheck/Structured.lean#L231) — Witness for the structured sumcheck at round `i`: - `t'` — the original multilinear polynomial (the
 
 ### `Verifier` (3 declarations, 3 files)
 
 - `structure Interaction.Oracle.Verifier` [ArkLib/Interaction/Oracle/Core.lean:1180](../../../ArkLib/Interaction/Oracle/Core.lean#L1180) — (no docstring)
 - `abbrev Interaction.Verifier` [ArkLib/Interaction/Reduction.lean:130](../../../ArkLib/Interaction/Reduction.lean#L130) — (no docstring)
-- `structure Verifier` [ArkLib/OracleReduction/Basic.lean:451](../../../ArkLib/OracleReduction/Basic.lean#L451) — A verifier of an interactive protocol is a function that takes in the input statement and the transc
+- `structure Verifier` [ArkLib/OracleReduction/Basic.lean:438](../../../ArkLib/OracleReduction/Basic.lean#L438) — A verifier of an interactive protocol is a function that takes in the input statement and the transc
 
 ### `absorb` (3 declarations, 3 files)
 
@@ -514,11 +612,17 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def DuplexSponge.absorb` [ArkLib/Data/Hash/DuplexSponge.lean:416](../../../ArkLib/Data/Hash/DuplexSponge.lean#L416) — ### Absorb a list of units into the sponge (paper version) Paper algorithm (process one element at a
 - `def HashStateWithInstructions.absorb` [ArkLib/OracleReduction/FiatShamir/DuplexSponge/State.lean:110](../../../ArkLib/OracleReduction/FiatShamir/DuplexSponge/State.lean#L110) — Perform secure absorption of elements into the sponge. Rust interface: ```rust pub fn absorb(&mut se
 
+### `badPolyAgreement` (3 declarations, 3 files)
+
+- `def Issue19Scratch.badPolyAgreement` [ArkLib/ProofSystem/RingSwitching/BadPolyAgreementCount.lean:29](../../../ArkLib/ProofSystem/RingSwitching/BadPolyAgreementCount.lean#L29) — The bad event tolerated by the weakened sum-check KState at one round: the prover message `p` differ
+- `def Issue29Ring.badPolyAgreement` [ArkLib/ProofSystem/RingSwitching/TraceTensorAlgebra.lean:40](../../../ArkLib/ProofSystem/RingSwitching/TraceTensorAlgebra.lean#L40) — **Named per-round residual = the weakened-KState bad event.** The prover message `p` differs from th
+- `def KStateWeaken.badPolyAgreement` [ArkLib/ToMathlib/KStateWeaken.lean:70](../../../ArkLib/ToMathlib/KStateWeaken.lean#L70) — **Named per-round residual (weakened KState surface).** `badPolyAgreement r p q` is the bad event to
+
 ### `batchingCoreRbrKnowledgeError` (3 declarations, 3 files)
 
 - `def Binius.FRIBinius.FullFRIBinius.batchingCoreRbrKnowledgeError` [ArkLib/ProofSystem/Binius/FRIBinius/General.lean:217](../../../ArkLib/ProofSystem/Binius/FRIBinius/General.lean#L217) — Combined RBR knowledge error for batching + core interaction.
 - `def Binius.RingSwitching.FullRingSwitching.batchingCoreRbrKnowledgeError` [ArkLib/ProofSystem/Binius/RingSwitching/General.lean:191](../../../ArkLib/ProofSystem/Binius/RingSwitching/General.lean#L191) — (no docstring)
-- `def RingSwitching.FullRingSwitching.batchingCoreRbrKnowledgeError` [ArkLib/ProofSystem/RingSwitching/General.lean:216](../../../ArkLib/ProofSystem/RingSwitching/General.lean#L216) — (no docstring)
+- `def RingSwitching.FullRingSwitching.batchingCoreRbrKnowledgeError` [ArkLib/ProofSystem/RingSwitching/General.lean:204](../../../ArkLib/ProofSystem/RingSwitching/General.lean#L204) — (no docstring)
 
 ### `batchingCoreReduction` (3 declarations, 3 files)
 
@@ -537,6 +641,12 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def Commitment.binding` [ArkLib/CommitmentScheme/Basic.lean:170](../../../ArkLib/CommitmentScheme/Basic.lean#L170) — A commitment scheme satisfies **(evaluation) binding** with error `bindingError` if for all adversar
 - `def CommitmentScheme.binding` [ArkLib/CommitmentScheme/CommitmentScheme.lean:104](../../../ArkLib/CommitmentScheme/CommitmentScheme.lean#L104) — A commitment scheme satisfies **binding** with error `bindingError` if every adversary's probability
 - `theorem KZG.CommitmentScheme.binding` [ArkLib/CommitmentScheme/KZG/Binding.lean:737](../../../ArkLib/CommitmentScheme/KZG/Binding.lean#L737) — The KZG scheme satisfies evaluation binding provided `t`-SDH holds.
+
+### `card_filter_eval_eq_le_natDegree` (3 declarations, 3 files)
+
+- `theorem Issue19Scratch.card_filter_eval_eq_le_natDegree` [ArkLib/ProofSystem/RingSwitching/BadPolyAgreementCount.lean:35](../../../ArkLib/ProofSystem/RingSwitching/BadPolyAgreementCount.lean#L35) — **Root-counting core.** For distinct `p q`, the challenges at which they agree number at most `natDe
+- `theorem Issue29Ring.card_filter_eval_eq_le_natDegree` [ArkLib/ProofSystem/RingSwitching/TraceTensorAlgebra.lean:48](../../../ArkLib/ProofSystem/RingSwitching/TraceTensorAlgebra.lean#L48) — **Root-counting core (Schwartz–Zippel, finite-field form).** For two distinct polynomials, the set o
+- `theorem KStateWeaken.card_filter_eval_eq_le_natDegree` [ArkLib/ToMathlib/KStateWeaken.lean:91](../../../ArkLib/ToMathlib/KStateWeaken.lean#L91) — **Root-counting core (CompPoly-free).** For two *distinct* polynomials, the set of challenges on whi
 
 ### `coeff_pow_sub_at` (3 declarations, 3 files)
 
@@ -562,35 +672,53 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def ArkLib.Lattices.Ajtai.Simple.commitmentScheme` [ArkLib/CommitmentScheme/Ajtai/Simple/Scheme.lean:56](../../../ArkLib/CommitmentScheme/Ajtai/Simple/Scheme.lean#L56) — The simple Ajtai commitment as a `CommitmentScheme`. An opening is accepted only when the message sa
 - `def SimpleRO.commitmentScheme` [ArkLib/CommitmentScheme/SimpleRO.lean:83](../../../ArkLib/CommitmentScheme/SimpleRO.lean#L83) — (no docstring)
 
+### `epsMCA_le_one` (3 declarations, 3 files)
+
+- `theorem ProximityGap.epsMCA_le_one` [ArkLib/Data/CodingTheory/ProximityGap/Errors.lean:316](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean#L316) — The MCA error is bounded by the total probability mass.
+- `theorem ProximityGap.MCAGS.epsMCA_le_one` [ArkLib/Data/CodingTheory/ProximityGap/GrandChallenge141PrizeMath.lean:92](../../../ArkLib/Data/CodingTheory/ProximityGap/GrandChallenge141PrizeMath.lean#L92) — **The abstract MCA error is a probability ceiling: `ε_mca ≤ 1`.** (Companion to `epsMCAgs_le_one`; t
+- `theorem CodingTheory.Bridge.epsMCA_le_one` [ArkLib/ToMathlib/BridgeListDecodingCA.lean:77](../../../ArkLib/ToMathlib/BridgeListDecodingCA.lean#L77) — **`ε_mca ≤ 1`.** The mutual-correlated-agreement error is a supremum of PMF probabilities, hence at
+
+### `finSumFinEquiv_symm_dite` (3 declarations, 3 files)
+
+- `theorem RingSwitching.finSumFinEquiv_symm_dite` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1533](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1533) — Value-form of `finSumFinEquiv.symm`: classify the index by whether its value is `< m`.
+- `theorem ScratchRS.finSumFinEquiv_symm_dite` [ArkLib/ProofSystem/RingSwitching/Scratch.lean:28](../../../ArkLib/ProofSystem/RingSwitching/Scratch.lean#L28) — (no docstring)
+- `theorem finSumFinEquiv_symm_dite` [ArkLib/ToMathlib/FinSumMvPolyBricks.lean:24](../../../ArkLib/ToMathlib/FinSumMvPolyBricks.lean#L24) — Value-form classification of `finSumFinEquiv.symm`.
+
 ### `finalSumcheckKnowledgeError` (3 declarations, 3 files)
 
 - `def Binius.BinaryBasefold.CoreInteraction.finalSumcheckKnowledgeError` [ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean:318](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean#L318) — (no docstring)
-- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckKnowledgeError` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1287](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1287) — RBR knowledge error for the final sumcheck step
+- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckKnowledgeError` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1306](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1306) — RBR knowledge error for the final sumcheck step
 - `def Binius.RingSwitching.SumcheckPhase.finalSumcheckKnowledgeError` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1463](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1463) — RBR knowledge error for the final sumcheck step
 
 ### `finalSumcheckOracleReduction_perfectCompleteness` (3 declarations, 3 files)
 
 - `theorem Binius.BinaryBasefold.CoreInteraction.finalSumcheckOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean:141](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean#L141) — (no docstring)
-- `theorem Binius.FRIBinius.CoreInteractionPhase.finalSumcheckOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1107](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1107) — Perfect completeness for the final sumcheck step
+- `theorem Binius.FRIBinius.CoreInteractionPhase.finalSumcheckOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1126](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1126) — Perfect completeness for the final sumcheck step
 - `theorem Binius.RingSwitching.SumcheckPhase.finalSumcheckOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1279](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1279) — Perfect completeness for the final sumcheck step
 
 ### `finalSumcheckStepLogic` (3 declarations, 3 files)
 
 - `def Binius.BinaryBasefold.CoreInteraction.finalSumcheckStepLogic` [ArkLib/ProofSystem/Binius/BinaryBasefold/ReductionLogic.lean:899](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/ReductionLogic.lean#L899) — The Logic Instance for the final sumcheck step. This is a 1-message protocol where the prover sends
-- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckStepLogic` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:555](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L555) — The logic instance for the FRI final sumcheck step.
+- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckStepLogic` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:574](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L574) — The logic instance for the FRI final sumcheck step.
 - `def Binius.RingSwitching.SumcheckPhase.finalSumcheckStepLogic` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1000](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1000) — The Logic Instance for the final sumcheck step. This is a 1-message protocol where the prover sends
 
 ### `finalSumcheckStep_is_logic_complete` (3 declarations, 3 files)
 
 - `lemma Binius.BinaryBasefold.CoreInteraction.finalSumcheckStep_is_logic_complete` [ArkLib/ProofSystem/Binius/BinaryBasefold/ReductionLogic.lean:1355](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/ReductionLogic.lean#L1355) — Final sumcheck step logic is strongly complete. **Key Proof Obligations:** 1. **Verifier Check**: Sh
-- `lemma Binius.FRIBinius.CoreInteractionPhase.finalSumcheckStep_is_logic_complete` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1054](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1054) — Strong completeness of the FRI final sumcheck logic step.
+- `lemma Binius.FRIBinius.CoreInteractionPhase.finalSumcheckStep_is_logic_complete` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1073](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1073) — Strong completeness of the FRI final sumcheck logic step.
 - `lemma Binius.RingSwitching.SumcheckPhase.finalSumcheckStep_is_logic_complete` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1155](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1155) — Final sumcheck step logic is strongly complete. **Key Proof Obligations:** 1. **Verifier Check**: Sh
 
 ### `finalSumcheckStep_verifierCheck_passed` (3 declarations, 3 files)
 
 - `lemma Binius.BinaryBasefold.CoreInteraction.finalSumcheckStep_verifierCheck_passed` [ArkLib/ProofSystem/Binius/BinaryBasefold/ReductionLogic.lean:1212](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/ReductionLogic.lean#L1212) — The verifier check passes in the final sumcheck step. **Proof structure:** 1. From `sumcheckConsiste
-- `lemma Binius.FRIBinius.CoreInteractionPhase.finalSumcheckStep_verifierCheck_passed` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:969](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L969) — Verifier check passes in the FRI final sumcheck logic step.
+- `lemma Binius.FRIBinius.CoreInteractionPhase.finalSumcheckStep_verifierCheck_passed` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:988](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L988) — Verifier check passes in the FRI final sumcheck logic step.
 - `lemma Binius.RingSwitching.SumcheckPhase.finalSumcheckStep_verifierCheck_passed` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1093](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1093) — **Main helper lemma**: The verifier check passes in the final sumcheck step. **Proof Structure** (fo
+
+### `fullOracleReduction_perfectCompleteness` (3 declarations, 3 files)
+
+- `theorem Binius.BinaryBasefold.FullBinaryBasefold.fullOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/BinaryBasefold/General.lean:117](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/General.lean#L117) — Perfect completeness for the full Binary Basefold protocol (reduction)
+- `theorem Binius.FRIBinius.FullFRIBinius.fullOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/FRIBinius/General.lean:191](../../../ArkLib/ProofSystem/Binius/FRIBinius/General.lean#L191) — Perfect completeness for the full Binary Basefold protocol (reduction)
+- `theorem Binius.RingSwitching.FullRingSwitching.fullOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/RingSwitching/General.lean:147](../../../ArkLib/ProofSystem/Binius/RingSwitching/General.lean#L147) — (no docstring)
 
 ### `fullPspec` (3 declarations, 3 files)
 
@@ -598,33 +726,27 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def Binius.RingSwitching.fullPspec` [ArkLib/ProofSystem/Binius/RingSwitching/Spec.lean:73](../../../ArkLib/ProofSystem/Binius/RingSwitching/Spec.lean#L73) — (no docstring)
 - `def RingSwitching.fullPspec` [ArkLib/ProofSystem/RingSwitching/Spec.lean:57](../../../ArkLib/ProofSystem/RingSwitching/Spec.lean#L57) — (no docstring)
 
-### `honestTranscriptDist_reduction_evalDist` (3 declarations, 3 files)
-
-- `theorem CheckClaim.honestTranscriptDist_reduction_evalDist` [ArkLib/ProofSystem/Component/CheckClaim.lean:121](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L121) — The honest transcript distribution for a valid `CheckClaim` statement is the deterministic empty tra
-- `theorem ReduceClaim.honestTranscriptDist_reduction_evalDist` [ArkLib/ProofSystem/Component/ReduceClaim.lean:116](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L116) — The honest transcript distribution for `ReduceClaim` is the deterministic empty transcript. The mapp
-- `theorem SendWitness.honestTranscriptDist_reduction_evalDist` [ArkLib/ProofSystem/Component/SendWitness.lean:107](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L107) — The honest transcript distribution for `SendWitness` is the deterministic one-message transcript con
-
 ### `knowledgeStateFunction` (3 declarations, 3 files)
 
 - `def CheckClaim.knowledgeStateFunction` [ArkLib/ProofSystem/Component/CheckClaim.lean:174](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L174) — The knowledge state function for the `CheckClaim` reduction. Since there is no challenge round, the
-- `def RandomQuery.knowledgeStateFunction` [ArkLib/ProofSystem/Component/RandomQuery.lean:230](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L230) — The knowledge state function for the `RandomQuery` oracle reduction.
+- `def RandomQuery.knowledgeStateFunction` [ArkLib/ProofSystem/Component/RandomQuery.lean:338](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L338) — The knowledge state function for the `RandomQuery` oracle reduction.
 - `def ReduceClaim.knowledgeStateFunction` [ArkLib/ProofSystem/Component/ReduceClaim.lean:192](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L192) — The knowledge state function for the `ReduceClaim` reduction.
 
 ### `masterKStateProp` (3 declarations, 3 files)
 
 - `def Binius.BinaryBasefold.masterKStateProp` [ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean:1399](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean#L1399) — Before V's challenge of the `i-th` foldStep, we ignore the bad-folding-event of the `i-th` oracle if
 - `def Binius.RingSwitching.masterKStateProp` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:430](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L430) — (no docstring)
-- `def RingSwitching.masterKStateProp` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:445](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L445) — (no docstring)
+- `def RingSwitching.masterKStateProp` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:446](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L446) — (no docstring)
 
 ### `oracleReduction_completeness` (3 declarations, 3 files)
 
-- `theorem RandomQuery.oracleReduction_completeness` [ArkLib/ProofSystem/Component/RandomQuery.lean:114](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L114) — The `RandomQuery` oracle reduction is perfectly complete.
+- `theorem RandomQuery.oracleReduction_completeness` [ArkLib/ProofSystem/Component/RandomQuery.lean:119](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L119) — The `RandomQuery` oracle reduction is perfectly complete.
 - `theorem ReduceClaim.oracleReduction_completeness` [ArkLib/ProofSystem/Component/ReduceClaim.lean:293](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L293) — The `ReduceClaim` oracle reduction satisfies perfect completeness for any relation. Proof strategy m
-- `theorem SendSingleWitness.oracleReduction_completeness` [ArkLib/ProofSystem/Component/SendWitness.lean:409](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L409) — The `SendSingleWitness` oracle reduction satisfies perfect completeness.
+- `theorem SendSingleWitness.oracleReduction_completeness` [ArkLib/ProofSystem/Component/SendWitness.lean:545](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L545) — The `SendSingleWitness` oracle reduction satisfies perfect completeness.
 
 ### `oracleReduction_perfectCompleteness` (3 declarations, 3 files)
 
-- `theorem DoNothing.oracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Component/DoNothing.lean:92](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L92) — The `DoNothing` oracle reduction satisfies perfect completeness for any relation.
+- `theorem DoNothing.oracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Component/DoNothing.lean:126](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L126) — The `DoNothing` oracle reduction satisfies perfect completeness for any relation.
 - `theorem Sumcheck.Spec.SingleRound.Simple.oracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:1033](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L1033) — Perfect completeness for the oracle reduction
 - `theorem ToyProblem.Spec.oracleReduction_perfectCompleteness` [ArkLib/ProofSystem/ToyProblem/Spec/General.lean:945](../../../ArkLib/ProofSystem/ToyProblem/Spec/General.lean#L945) — **Honest completeness for Construction 6.2** (protocol-level form). The honest oracle reduction is p
 
@@ -643,8 +765,8 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `relOut` (3 declarations, 3 files)
 
 - `def CheckClaim.relOut` [ArkLib/ProofSystem/Component/CheckClaim.lean:64](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L64) — (no docstring)
-- `def RandomQuery.relOut` [ArkLib/ProofSystem/Component/RandomQuery.lean:49](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L49) — The output relation states that if the verifier's single query was `q`, then `a` and `b` agree on th
-- `def SendClaim.relOut` [ArkLib/ProofSystem/Component/SendClaim.lean:98](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L98) — (no docstring)
+- `def RandomQuery.relOut` [ArkLib/ProofSystem/Component/RandomQuery.lean:51](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L51) — The output relation states that if the verifier's single query was `q`, then `a` and `b` agree on th
+- `def SendClaim.relOut` [ArkLib/ProofSystem/Component/SendClaim.lean:102](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L102) — (no docstring)
 
 ### `rename_finCongr_heq` (3 declarations, 3 files)
 
@@ -656,7 +778,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 - `lemma Binius.RingSwitching.simulateQ_simOracle2_query` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:975](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L975) — **`simOracle2` message-query collapse (`OptionT`-`query` form).** The same reduction as `simulateQ_s
 - `lemma RingSwitching.BatchingPhase.simulateQ_simOracle2_query` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:77](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L77) — OptionT/query form of `simulateQ_simOracle2_messageQuery`.
-- `lemma RingSwitching.simulateQ_simOracle2_query` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1437](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1437) — **`simOracle2` message-query collapse (`OptionT`-`query` form).** The same reduction as `simulateQ_s
+- `lemma RingSwitching.simulateQ_simOracle2_query` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1438](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1438) — **`simOracle2` message-query collapse (`OptionT`-`query` form).** The same reduction as `simulateQ_s
 
 ### `squeeze` (3 declarations, 3 files)
 
@@ -668,7 +790,13 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 - `def Interaction.OracleDecoration.OracleReduction.toVerifier` [ArkLib/Interaction/Oracle/Core.lean:1096](../../../ArkLib/Interaction/Oracle/Core.lean#L1096) — (no docstring)
 - `def Interaction.PublicCoinVerifier.toVerifier` [ArkLib/Interaction/Reduction.lean:162](../../../ArkLib/Interaction/Reduction.lean#L162) — (no docstring)
-- `def OracleVerifier.toVerifier` [ArkLib/OracleReduction/Basic.lean:529](../../../ArkLib/OracleReduction/Basic.lean#L529) — An oracle verifier can be seen as a (non-oracle) verifier by providing the oracle interface using it
+- `def OracleVerifier.toVerifier` [ArkLib/OracleReduction/Basic.lean:553](../../../ArkLib/OracleReduction/Basic.lean#L553) — An oracle verifier can be seen as a (non-oracle) verifier by providing the oracle interface using it
+
+### `transcriptSimulator` (3 declarations, 3 files)
+
+- `def RandomQuery.transcriptSimulator` [ArkLib/ProofSystem/Component/RandomQuery.lean:192](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L192) — The simulator for `RandomQuery`: the protocol is witness-free, so the simulator can rerun the honest
+- `def SendClaim.transcriptSimulator` [ArkLib/ProofSystem/Component/SendClaim.lean:246](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L246) — The simulator for `SendClaim`: the component has no private witness, so the simulator can run the ho
+- `def SendWitness.transcriptSimulator` [ArkLib/ProofSystem/Component/SendWitness.lean:102](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L102) — The simulator for the `SendWitness` reduction when the relation's witness is determined by the input
 
 ### `verify` (3 declarations, 3 files)
 
@@ -680,7 +808,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 - `def Binius.BinaryBasefold.witnessStructuralInvariant` [ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean:1154](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean#L1154) — This condition ensures that the witness polynomial `H` has the correct structure `eq(...) * t(...)`
 - `def Binius.RingSwitching.witnessStructuralInvariant` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:423](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L423) — This condition ensures that the witness polynomial `H` has the correct structure `A(...) * t'(...)`
-- `def RingSwitching.witnessStructuralInvariant` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:438](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L438) — This condition ensures that the witness polynomial `H` has the correct structure `A(...) * t'(...)`
+- `def RingSwitching.witnessStructuralInvariant` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:439](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L439) — This condition ensures that the witness polynomial `H` has the correct structure `A(...) * t'(...)`
 
 ### `TranscriptSimulator` (3 declarations, 3 files)
 
@@ -691,13 +819,13 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `id_isHVZK` (3 declarations, 3 files)
 
 - `theorem OracleReduction.id_isHVZK` [ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean:245](../../../ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean#L245) — The zero-round identity oracle reduction is HVZK for any oracle-input relation.
-- `theorem Reduction.id_isHVZK` [ArkLib/OracleReduction/Security/ZeroKnowledge.lean:301](../../../ArkLib/OracleReduction/Security/ZeroKnowledge.lean#L301) — The zero-round identity reduction is honest-verifier zero-knowledge for any relation.
+- `theorem Reduction.id_isHVZK` [ArkLib/OracleReduction/Security/ZeroKnowledge.lean:332](../../../ArkLib/OracleReduction/Security/ZeroKnowledge.lean#L332) — The zero-round identity reduction is honest-verifier zero-knowledge for any relation.
 - `theorem OracleReduction.id_isHVZK` [ArkLib/ToMathlib/ZKDefC.lean:118](../../../ArkLib/ToMathlib/ZKDefC.lean#L118) — The zero-round identity oracle reduction is honest-verifier zero-knowledge for any relation over bun
 
 ### `id_perfectHVZK` (3 declarations, 3 files)
 
 - `theorem OracleReduction.id_perfectHVZK` [ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean:217](../../../ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean#L217) — The zero-round identity oracle reduction is perfect HVZK for any oracle-input relation.
-- `theorem Reduction.id_perfectHVZK` [ArkLib/OracleReduction/Security/ZeroKnowledge.lean:281](../../../ArkLib/OracleReduction/Security/ZeroKnowledge.lean#L281) — The zero-round identity reduction satisfies perfect honest-verifier zero-knowledge for any input rel
+- `theorem Reduction.id_perfectHVZK` [ArkLib/OracleReduction/Security/ZeroKnowledge.lean:312](../../../ArkLib/OracleReduction/Security/ZeroKnowledge.lean#L312) — The zero-round identity reduction satisfies perfect honest-verifier zero-knowledge for any input rel
 - `theorem OracleReduction.id_perfectHVZK` [ArkLib/ToMathlib/ZKDefC.lean:105](../../../ArkLib/ToMathlib/ZKDefC.lean#L105) — The zero-round identity oracle reduction satisfies perfect honest-verifier zero-knowledge for any re
 
 ### `isHVZK` (3 declarations, 3 files)
@@ -767,11 +895,11 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `knowledgeSoundness` (5 declarations, 2 files)
 
-- `def Verifier.knowledgeSoundness` [ArkLib/OracleReduction/Security/Basic.lean:357](../../../ArkLib/OracleReduction/Security/Basic.lean#L357) — A reduction satisfies **(straightline) knowledge soundness** with error `knowledgeError ≥ 0` and wit
-- `def OracleVerifier.knowledgeSoundness` [ArkLib/OracleReduction/Security/Basic.lean:492](../../../ArkLib/OracleReduction/Security/Basic.lean#L492) — Knowledge soundness of an oracle reduction is the same as for non-oracle reductions.
-- `def Proof.knowledgeSoundness` [ArkLib/OracleReduction/Security/Basic.lean:533](../../../ArkLib/OracleReduction/Security/Basic.lean#L533) — (no docstring)
-- `def OracleProof.knowledgeSoundness` [ArkLib/OracleReduction/Security/Basic.lean:571](../../../ArkLib/OracleReduction/Security/Basic.lean#L571) — Knowledge soundness of an oracle reduction is the same as for non-oracle reductions.
-- `def Verifier.StateRestoration.knowledgeSoundness` [ArkLib/OracleReduction/Security/StateRestoration.lean:141](../../../ArkLib/OracleReduction/Security/StateRestoration.lean#L141) — State-restoration knowledge soundness (w/ straightline extractor).
+- `def Verifier.knowledgeSoundness` [ArkLib/OracleReduction/Security/Basic.lean:415](../../../ArkLib/OracleReduction/Security/Basic.lean#L415) — A reduction satisfies **(straightline) knowledge soundness** with error `knowledgeError ≥ 0` and wit
+- `def OracleVerifier.knowledgeSoundness` [ArkLib/OracleReduction/Security/Basic.lean:550](../../../ArkLib/OracleReduction/Security/Basic.lean#L550) — Knowledge soundness of an oracle reduction is the same as for non-oracle reductions.
+- `def Proof.knowledgeSoundness` [ArkLib/OracleReduction/Security/Basic.lean:591](../../../ArkLib/OracleReduction/Security/Basic.lean#L591) — (no docstring)
+- `def OracleProof.knowledgeSoundness` [ArkLib/OracleReduction/Security/Basic.lean:629](../../../ArkLib/OracleReduction/Security/Basic.lean#L629) — Knowledge soundness of an oracle reduction is the same as for non-oracle reductions.
+- `def Verifier.StateRestoration.knowledgeSoundness` [ArkLib/OracleReduction/Security/StateRestoration.lean:195](../../../ArkLib/OracleReduction/Security/StateRestoration.lean#L195) — State-restoration knowledge soundness (w/ straightline extractor).
 
 ### `log` (5 declarations, 2 files)
 
@@ -792,10 +920,10 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `perfectCompleteness` (5 declarations, 2 files)
 
 - `abbrev DuplexSpongeFS.NARG.perfectCompleteness` [ArkLib/OracleReduction/FiatShamir/DuplexSponge/Basic.lean:66](../../../ArkLib/OracleReduction/FiatShamir/DuplexSponge/Basic.lean#L66) — Paper-facing alias for CO25 Section 3.4 perfect completeness.
-- `def Reduction.perfectCompleteness` [ArkLib/OracleReduction/Security/Basic.lean:126](../../../ArkLib/OracleReduction/Security/Basic.lean#L126) — A reduction satisfies **perfect completeness** if it satisfies completeness with error `0`.
-- `def OracleReduction.perfectCompleteness` [ArkLib/OracleReduction/Security/Basic.lean:472](../../../ArkLib/OracleReduction/Security/Basic.lean#L472) — Perfect completeness of an oracle reduction is the same as for non-oracle reductions.
-- `def Proof.perfectCompleteness` [ArkLib/OracleReduction/Security/Basic.lean:522](../../../ArkLib/OracleReduction/Security/Basic.lean#L522) — (no docstring)
-- `def OracleProof.perfectCompleteness` [ArkLib/OracleReduction/Security/Basic.lean:555](../../../ArkLib/OracleReduction/Security/Basic.lean#L555) — Perfect completeness of an oracle reduction is the same as for non-oracle reductions.
+- `def Reduction.perfectCompleteness` [ArkLib/OracleReduction/Security/Basic.lean:184](../../../ArkLib/OracleReduction/Security/Basic.lean#L184) — A reduction satisfies **perfect completeness** if it satisfies completeness with error `0`.
+- `def OracleReduction.perfectCompleteness` [ArkLib/OracleReduction/Security/Basic.lean:530](../../../ArkLib/OracleReduction/Security/Basic.lean#L530) — Perfect completeness of an oracle reduction is the same as for non-oracle reductions.
+- `def Proof.perfectCompleteness` [ArkLib/OracleReduction/Security/Basic.lean:580](../../../ArkLib/OracleReduction/Security/Basic.lean#L580) — (no docstring)
+- `def OracleProof.perfectCompleteness` [ArkLib/OracleReduction/Security/Basic.lean:613](../../../ArkLib/OracleReduction/Security/Basic.lean#L613) — Perfect completeness of an oracle reduction is the same as for non-oracle reductions.
 
 ### `cast_eq_dcast₂` (4 declarations, 2 files)
 
@@ -868,7 +996,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `mem_toFinset_iff_mem` (3 declarations, 2 files)
 
 - `lemma Domain.CosetFftDomainClass.mem_toFinset_iff_mem` [ArkLib/Data/Domain/CosetFftDomain/Mem.lean:71](../../../ArkLib/Data/Domain/CosetFftDomain/Mem.lean#L71) — (no docstring)
-- `lemma Domain.CosetFftDomain.mem_toFinset_iff_mem` [ArkLib/Data/Domain/CosetFftDomain/Mem.lean:112](../../../ArkLib/Data/Domain/CosetFftDomain/Mem.lean#L112) — (no docstring)
+- `lemma Domain.CosetFftDomain.mem_toFinset_iff_mem` [ArkLib/Data/Domain/CosetFftDomain/Mem.lean:117](../../../ArkLib/Data/Domain/CosetFftDomain/Mem.lean#L117) — (no docstring)
 - `lemma Domain.FftDomain.mem_toFinset_iff_mem` [ArkLib/Data/Domain/FftDomain/Mem.lean:69](../../../ArkLib/Data/Domain/FftDomain/Mem.lean#L69) — (no docstring)
 
 ### `neg_mem_domain_iff_mem` (3 declarations, 2 files)
@@ -934,22 +1062,22 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `AbstractOStmtIn` (2 declarations, 2 files)
 
 - `structure Binius.RingSwitching.AbstractOStmtIn` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:241](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L241) — (no docstring)
-- `structure RingSwitching.AbstractOStmtIn` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:251](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L251) — (no docstring)
+- `structure RingSwitching.AbstractOStmtIn` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:252](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L252) — (no docstring)
 
 ### `AbstractOStmtIn.toRelInput` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.AbstractOStmtIn.toRelInput` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:249](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L249) — (no docstring)
-- `def RingSwitching.AbstractOStmtIn.toRelInput` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:259](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L259) — (no docstring)
+- `def RingSwitching.AbstractOStmtIn.toRelInput` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:260](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L260) — (no docstring)
 
 ### `BatchingStmtIn` (2 declarations, 2 files)
 
 - `structure Binius.RingSwitching.BatchingStmtIn` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:216](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L216) — (no docstring)
-- `structure RingSwitching.BatchingStmtIn` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:220](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L220) — (no docstring)
+- `structure RingSwitching.BatchingStmtIn` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:221](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L221) — (no docstring)
 
 ### `BatchingWitIn` (2 declarations, 2 files)
 
 - `structure Binius.RingSwitching.BatchingWitIn` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:212](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L212) — (no docstring)
-- `structure RingSwitching.BatchingWitIn` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:216](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L216) — (no docstring)
+- `structure RingSwitching.BatchingWitIn` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:217](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L217) — (no docstring)
 
 ### `BindingAdversary` (2 declarations, 2 files)
 
@@ -1014,7 +1142,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `FinalSumcheckWit` (2 declarations, 2 files)
 
 - `def Binius.BinaryBasefold.CoreInteraction.FinalSumcheckWit` [ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean:1620](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Steps/FinalSumcheck.lean#L1620) — (no docstring)
-- `def Binius.FRIBinius.CoreInteractionPhase.FinalSumcheckWit` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1292](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1292) — (no docstring)
+- `def Binius.FRIBinius.CoreInteractionPhase.FinalSumcheckWit` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1311](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1311) — (no docstring)
 
 ### `GenMutualCorrParams` (2 declarations, 2 files)
 
@@ -1028,28 +1156,28 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `MLE_eval_eq_sum_eqTilde` (2 declarations, 2 files)
 
-- `theorem MvPolynomial.MLE_eval_eq_sum_eqTilde` [ArkLib/Data/MvPolynomial/Multilinear.lean:295](../../../ArkLib/Data/MvPolynomial/Multilinear.lean#L295) — **MLE evaluation as an eq-weighted sum over the hypercube.**  Evaluating the multilinear extension a
-- `lemma RingSwitching.MLE_eval_eq_sum_eqTilde` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1013](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1013) — **MLE evaluation as an `eq̃`-weighted hypercube sum.** Evaluating the multilinear extension `MLE f`
+- `theorem MvPolynomial.MLE_eval_eq_sum_eqTilde` [ArkLib/Data/MvPolynomial/Multilinear.lean:319](../../../ArkLib/Data/MvPolynomial/Multilinear.lean#L319) — **MLE evaluation as an eq-weighted sum over the hypercube.**  Evaluating the multilinear extension a
+- `lemma RingSwitching.MLE_eval_eq_sum_eqTilde` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1014](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1014) — **MLE evaluation as an `eq̃`-weighted hypercube sum.** Evaluating the multilinear extension `MLE f`
 
 ### `MLIOPCS` (2 declarations, 2 files)
 
 - `structure Binius.RingSwitching.MLIOPCS` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:255](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L255) — (no docstring)
-- `structure RingSwitching.MLIOPCS` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:265](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L265) — (no docstring)
+- `structure RingSwitching.MLIOPCS` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:266](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L266) — (no docstring)
 
 ### `MLIOPCSStmt` (2 declarations, 2 files)
 
 - `structure Binius.RingSwitching.MLIOPCSStmt` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:231](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L231) — (no docstring)
-- `structure RingSwitching.MLIOPCSStmt` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:241](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L241) — (no docstring)
+- `structure RingSwitching.MLIOPCSStmt` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:242](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L242) — (no docstring)
 
 ### `MLPEvalRelation` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.MLPEvalRelation` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:236](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L236) — Standard input relation for MLIOPCS: polynomial evaluation at point equals claimed evaluation
-- `def RingSwitching.MLPEvalRelation` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:246](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L246) — Standard input relation for MLIOPCS: polynomial evaluation at point equals claimed evaluation
+- `def RingSwitching.MLPEvalRelation` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:247](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L247) — Standard input relation for MLIOPCS: polynomial evaluation at point equals claimed evaluation
 
 ### `MLPEvalStatement` (2 declarations, 2 files)
 
 - `structure Binius.RingSwitching.MLPEvalStatement` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:203](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L203) — Initial input (input to the batching phase): a polynomial-evaluation claim `s = t(r)`.
-- `structure RingSwitching.MLPEvalStatement` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:207](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L207) — Initial input (input to the Batching Phase): a polynomial-evaluation claim `s = t(r)`.
+- `structure RingSwitching.MLPEvalStatement` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:208](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L208) — Initial input (input to the Batching Phase): a polynomial-evaluation claim `s = t(r)`.
 
 ### `MessageIdx` (2 declarations, 2 files)
 
@@ -1059,23 +1187,23 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `OStmt` (2 declarations, 2 files)
 
 - `def StirIOP.Round.OStmt` [ArkLib/ProofSystem/Stir/RoundProtocol.lean:53](../../../ArkLib/ProofSystem/Stir/RoundProtocol.lean#L53) — The single-index oracle statement family for a STIR fold round: the prover holds one oracle function
-- `def WhirIOP.Construction.OStmt` [ArkLib/ToMathlib/WhirBricksConstruction.lean:47](../../../ArkLib/ToMathlib/WhirBricksConstruction.lean#L47) — The single-index oracle statement family for the WHIR Vector IOPP: the prover holds one oracle funct
+- `def WhirIOP.Construction.OStmt` [ArkLib/ToMathlib/WhirBricksConstruction.lean:48](../../../ArkLib/ToMathlib/WhirBricksConstruction.lean#L48) — The single-index oracle statement family for the WHIR Vector IOPP: the prover holds one oracle funct
 
 ### `OracleProver` (2 declarations, 2 files)
 
 - `abbrev Interaction.OracleDecoration.OracleProver` [ArkLib/Interaction/Oracle/Core.lean:898](../../../ArkLib/Interaction/Oracle/Core.lean#L898) — (no docstring)
-- `def OracleProver` [ArkLib/OracleReduction/Basic.lean:459](../../../ArkLib/OracleReduction/Basic.lean#L459) — An **(oracle) prover** in an interactive **oracle** reduction is a prover in the non-oracle reductio
+- `def OracleProver` [ArkLib/OracleReduction/Basic.lean:446](../../../ArkLib/OracleReduction/Basic.lean#L446) — An **(oracle) prover** in an interactive **oracle** reduction is a prover in the non-oracle reductio
 
 ### `OracleReduction` (2 declarations, 2 files)
 
 - `structure Interaction.OracleDecoration.OracleReduction` [ArkLib/Interaction/Oracle/Core.lean:928](../../../ArkLib/Interaction/Oracle/Core.lean#L928) — (no docstring)
-- `structure OracleReduction` [ArkLib/OracleReduction/Basic.lean:718](../../../ArkLib/OracleReduction/Basic.lean#L718) — An **interactive oracle reduction** for a given protocol specification `pSpec`, and relative to orac
+- `structure OracleReduction` [ArkLib/OracleReduction/Basic.lean:706](../../../ArkLib/OracleReduction/Basic.lean#L706) — An **interactive oracle reduction** for a given protocol specification `pSpec`, and relative to orac
 
 ### `OracleVerifier` (3 declarations, 2 files)
 
 - `structure Interaction.OracleVerifier` [ArkLib/Interaction/Oracle/Core.lean:1042](../../../ArkLib/Interaction/Oracle/Core.lean#L1042) — (no docstring)
-- `structure OracleVerifier` [ArkLib/OracleReduction/Basic.lean:186](../../../ArkLib/OracleReduction/Basic.lean#L186) — (no docstring)
-- `structure OracleVerifier` [ArkLib/OracleReduction/Basic.lean:479](../../../ArkLib/OracleReduction/Basic.lean#L479) — An **(oracle) verifier** of an interactive **oracle** reduction consists of: - an oracle computation
+- `structure OracleVerifier` [ArkLib/OracleReduction/Basic.lean:175](../../../ArkLib/OracleReduction/Basic.lean#L175) — (no docstring)
+- `structure OracleVerifier` [ArkLib/OracleReduction/Basic.lean:466](../../../ArkLib/OracleReduction/Basic.lean#L466) — An **(oracle) verifier** of an interactive **oracle** reduction consists of: - an oracle computation
 
 ### `OutputOracleStatement` (2 declarations, 2 files)
 
@@ -1095,7 +1223,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `Proof` (2 declarations, 2 files)
 
 - `abbrev Interaction.Proof` [ArkLib/Interaction/Reduction.lean:232](../../../ArkLib/Interaction/Reduction.lean#L232) — (no docstring)
-- `def Proof` [ArkLib/OracleReduction/Basic.lean:742](../../../ArkLib/OracleReduction/Basic.lean#L742) — An **interactive proof (IP)** is an interactive reduction where the output statement is a boolean, t
+- `def Proof` [ArkLib/OracleReduction/Basic.lean:730](../../../ArkLib/OracleReduction/Basic.lean#L730) — An **interactive proof (IP)** is an interactive reduction where the output statement is a boolean, t
 
 ### `PrvState` (2 declarations, 2 files)
 
@@ -1110,12 +1238,12 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `RingSwitchingBaseContext` (2 declarations, 2 files)
 
 - `structure Binius.RingSwitching.RingSwitchingBaseContext` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:220](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L220) — (no docstring)
-- `structure RingSwitching.RingSwitchingBaseContext` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:224](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L224) — (no docstring)
+- `structure RingSwitching.RingSwitchingBaseContext` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:225](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L225) — (no docstring)
 
 ### `RingSwitching_SumcheckMultParam` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.RingSwitching_SumcheckMultParam` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:381](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L381) — Ring-Switching multiplier parameter for sumcheck, using `A_MLE` as the multiplier.
-- `def RingSwitching.RingSwitching_SumcheckMultParam` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:388](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L388) — Ring-Switching multiplier parameter for sumcheck, using `A_MLE` as the multiplier.
+- `def RingSwitching.RingSwitching_SumcheckMultParam` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:389](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L389) — Ring-Switching multiplier parameter for sumcheck, using `A_MLE` as the multiplier.
 
 ### `Scheme` (2 declarations, 2 files)
 
@@ -1145,7 +1273,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `TensorAlgebra` (2 declarations, 2 files)
 
 - `abbrev Binius.RingSwitching.TensorAlgebra` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:63](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L63) — Tensor Algebra A = L ⊗_K L. Based on the spec, it's viewed as (2^κ)x(2^κ) arrays of K-elements. The
-- `abbrev RingSwitching.TensorAlgebra` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:62](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L62) — Tensor Algebra A = L ⊗_K L. Based on the spec, it's viewed as (2^κ)x(2^κ) arrays of K-elements. The
+- `abbrev RingSwitching.TensorAlgebra` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:63](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L63) — Tensor Algebra A = L ⊗_K L. Based on the spec, it's viewed as (2^κ)x(2^κ) arrays of K-elements. The
 
 ### `Verifier.run` (2 declarations, 2 files)
 
@@ -1154,23 +1282,23 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `WitIn` (2 declarations, 2 files)
 
-- `def RandomQuery.WitIn` [ArkLib/ProofSystem/Component/RandomQuery.lean:36](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L36) — (no docstring)
+- `def RandomQuery.WitIn` [ArkLib/ProofSystem/Component/RandomQuery.lean:38](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L38) — (no docstring)
 - `def Logup.WitIn` [ArkLib/ProofSystem/Logup/Common.lean:368](../../../ArkLib/ProofSystem/Logup/Common.lean#L368) — Protocol 2 has no private witness beyond the input oracles at this layer.
 
 ### `WitMLP` (2 declarations, 2 files)
 
 - `structure Binius.RingSwitching.WitMLP` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:209](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L209) — (no docstring)
-- `structure RingSwitching.WitMLP` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:213](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L213) — (no docstring)
+- `structure RingSwitching.WitMLP` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:214](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L214) — (no docstring)
 
 ### `aeval_eqPolynomial_zeroOne` (2 declarations, 2 files)
 
 - `lemma Binius.RingSwitching.aeval_eqPolynomial_zeroOne` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:683](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L683) — `aeval` of `eqPolynomial` at a Boolean coefficient vector lands in `L₀` as `eqTilde`.
-- `lemma RingSwitching.aeval_eqPolynomial_zeroOne` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:774](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L774) — `aeval` of `eqPolynomial` at a Boolean coefficient vector lands in `L₀` as `eqTilde`.
+- `lemma RingSwitching.aeval_eqPolynomial_zeroOne` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:775](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L775) — `aeval` of `eqPolynomial` at a Boolean coefficient vector lands in `L₀` as `eqTilde`.
 
 ### `aeval_eq_sum_eqTilde` (2 declarations, 2 files)
 
 - `lemma Binius.RingSwitching.aeval_eq_sum_eqTilde` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:700](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L700) — **MLE evaluation identity (through the algebra map).** For a multilinear `t` over `K₀`, its `L₀`-eva
-- `lemma RingSwitching.aeval_eq_sum_eqTilde` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:791](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L791) — **MLE evaluation identity (through the algebra map).** For a multilinear `t` over `K₀`, its `L₀`-eva
+- `lemma RingSwitching.aeval_eq_sum_eqTilde` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:792](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L792) — **MLE evaluation identity (through the algebra map).** For a multilinear `t` over `K₀`, its `L₀`-eva
 
 ### `agree` (2 declarations, 2 files)
 
@@ -1185,7 +1313,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `appendRight` (2 declarations, 2 files)
 
 - `def Interaction.OracleDecoration.QueryHandle.appendRight` [ArkLib/Interaction/Oracle/Core.lean:202](../../../ArkLib/Interaction/Oracle/Core.lean#L202) — (no docstring)
-- `def Transcript.appendRight` [ArkLib/OracleReduction/ProtocolSpec/TranscriptRecompose.lean:43](../../../ArkLib/OracleReduction/ProtocolSpec/TranscriptRecompose.lean#L43) — Append a full `pSpec₁` transcript and a *partial* `pSpec₂` transcript into a partial transcript for
+- `def ProtocolSpec.Transcript.appendRight` [ArkLib/OracleReduction/ProtocolSpec/TranscriptRecompose.lean:56](../../../ArkLib/OracleReduction/ProtocolSpec/TranscriptRecompose.lean#L56) — Append a full `pSpec₁` transcript and a *partial* `pSpec₂` transcript into a partial transcript for
 
 ### `append_left_injective` (2 declarations, 2 files)
 
@@ -1196,6 +1324,11 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 - `theorem Fin.append_right_injective` [ArkLib/Data/Fin/Basic.lean:270](../../../ArkLib/Data/Fin/Basic.lean#L270) — (no docstring)
 - `theorem ProtocolSpec.append_right_injective` [ArkLib/OracleReduction/ProtocolSpec/SeqCompose.lean:78](../../../ArkLib/OracleReduction/ProtocolSpec/SeqCompose.lean#L78) — (no docstring)
+
+### `badBatchingEventProp` (2 declarations, 2 files)
+
+- `def Binius.RingSwitching.BatchingPhase.badBatchingEventProp` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:1045](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L1045) — The "bad batching event": the prover's ŝ (`msg0`) disagrees with the honest ŝ (`s_bar`), but their `
+- `def RingSwitching.BatchingPhase.badBatchingEventProp` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:659](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L659) — The "bad batching event": the prover's ŝ (`msg0`) disagrees with the honest ŝ (`s_bar`), but their `
 
 ### `badSumcheckEventProp` (2 declarations, 2 files)
 
@@ -1227,6 +1360,21 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def Binius.RingSwitching.BatchingPhase.batchingKnowledgeStateFunction` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:483](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L483) — Knowledge state function for the batching phase.
 - `def RingSwitching.BatchingPhase.batchingKnowledgeStateFunction` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:406](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L406) — Knowledge state function for the batching phase.
 
+### `batchingMismatchPoly` (2 declarations, 2 files)
+
+- `def Binius.RingSwitching.BatchingPhase.batchingMismatchPoly` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:854](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L854) — Mismatch polynomial from row-decomposition difference `msg0 - s_bar`.
+- `def RingSwitching.BatchingPhase.batchingMismatchPoly` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:569](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L569) — Mismatch polynomial from row-decomposition difference `msg0 - s_bar`.
+
+### `batchingMismatchPoly_nonzero_of_embed_ne` (2 declarations, 2 files)
+
+- `lemma Binius.RingSwitching.BatchingPhase.batchingMismatchPoly_nonzero_of_embed_ne` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:908](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L908) — If embedded evaluation mismatches `msg0`, the mismatch polynomial is nonzero.
+- `lemma RingSwitching.BatchingPhase.batchingMismatchPoly_nonzero_of_embed_ne` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:611](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L611) — If embedded evaluation mismatches `msg0`, the mismatch polynomial is nonzero.
+
+### `batchingMismatchPoly_totalDegree_le` (2 declarations, 2 files)
+
+- `lemma Binius.RingSwitching.BatchingPhase.batchingMismatchPoly_totalDegree_le` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:878](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L878) — Degree bound for mismatch polynomial: multilinear in `κ` vars, so total degree ≤ `κ`.
+- `lemma RingSwitching.BatchingPhase.batchingMismatchPoly_totalDegree_le` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:583](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L583) — Degree bound for mismatch polynomial: multilinear in `κ` vars, so total degree ≤ `κ`.
+
 ### `batchingOracleReduction` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.BatchingPhase.batchingOracleReduction` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:394](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L394) — The Oracle Reduction for the Batching Phase.
@@ -1257,6 +1405,21 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def Binius.RingSwitching.BatchingPhase.batchingWitMid` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:408](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L408) — Intermediate witness types for RBR knowledge soundness.
 - `def RingSwitching.BatchingPhase.batchingWitMid` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:306](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L306) — Intermediate witness types for RBR knowledge soundness.
 
+### `batching_compute_s0_sub_eq_eval_mismatch` (2 declarations, 2 files)
+
+- `lemma Binius.RingSwitching.BatchingPhase.batching_compute_s0_sub_eq_eval_mismatch` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:860](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L860) — The mismatch polynomial evaluates to the `compute_s0` difference.
+- `lemma RingSwitching.BatchingPhase.batching_compute_s0_sub_eq_eval_mismatch` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:574](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L574) — The mismatch polynomial evaluates to the `compute_s0` difference.
+
+### `batching_doom_escape_probability_bound` (2 declarations, 2 files)
+
+- `lemma Binius.RingSwitching.BatchingPhase.batching_doom_escape_probability_bound` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:1153](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L1153) — Per-transcript batching bound: for a fixed prover message `msg0`, the probability (over batching cha
+- `lemma RingSwitching.BatchingPhase.batching_doom_escape_probability_bound` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:760](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L760) — (no docstring)
+
+### `batching_rbrExtractionFailureEvent_imply_badBatchingEvent` (2 declarations, 2 files)
+
+- `lemma Binius.RingSwitching.BatchingPhase.batching_rbrExtractionFailureEvent_imply_badBatchingEvent` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:1092](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L1092) — Extraction failure implies a witness-dependent bad batching event. The extracted `witMid` also carri
+- `lemma RingSwitching.BatchingPhase.batching_rbrExtractionFailureEvent_imply_badBatchingEvent` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:721](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L721) — Extraction failure implies a witness-dependent bad batching event.
+
 ### `binomial_separation` (2 declarations, 2 files)
 
 - `theorem ProximityGap.MultiplicativeRigidity.binomial_separation` [ArkLib/Data/CodingTheory/ProximityGap/MultiplicativeRigidityFiber.lean:154](../../../ArkLib/Data/CodingTheory/ProximityGap/MultiplicativeRigidityFiber.lean#L154) — **Binomial separation.** If `0 < b < a ≤ k`, then two distinct monomials `c₁ * X ^ a` and `c₂ * X ^
@@ -1265,17 +1428,17 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `boolHypercubeEmb` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.boolHypercubeEmb` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:889](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L889) — The Boolean hypercube embedding `(Fin k → Fin 2) ↪ (Fin k → L₀)` induced by a 2-element domain embed
-- `def RingSwitching.boolHypercubeEmb` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1350](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1350) — The Boolean hypercube embedding `(Fin k → Fin 2) ↪ (Fin k → L₀)` induced by a 2-element domain embed
+- `def RingSwitching.boolHypercubeEmb` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1351](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1351) — The Boolean hypercube embedding `(Fin k → Fin 2) ↪ (Fin k → L₀)` induced by a 2-element domain embed
 
 ### `boolHypercube_sum_eq` (2 declarations, 2 files)
 
 - `lemma Binius.RingSwitching.boolHypercube_sum_eq` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:897](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L897) — **`𝓑`-domain hypercube sum reindexes to the Boolean hypercube.** For any `𝓑 : Fin 2 ↪ L₀`, summing `
-- `lemma RingSwitching.boolHypercube_sum_eq` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1358](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1358) — **`𝓑`-domain hypercube sum reindexes to the Boolean hypercube.** For any `𝓑 : Fin 2 ↪ L₀`, summing `
+- `lemma RingSwitching.boolHypercube_sum_eq` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1359](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1359) — **`𝓑`-domain hypercube sum reindexes to the Boolean hypercube.** For any `𝓑 : Fin 2 ↪ L₀`, summing `
 
 ### `boolHypercube_sum_pinned` (2 declarations, 2 files)
 
 - `lemma Binius.RingSwitching.boolHypercube_sum_pinned` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:917](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L917) — **Pinned-`𝓑` Boolean-domain sumcheck sum.** When `𝓑` is pinned to the Boolean embedding (`𝓑 c = if c
-- `lemma RingSwitching.boolHypercube_sum_pinned` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1378](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1378) — **Pinned-`𝓑` Boolean-domain sumcheck sum.** When `𝓑` is pinned to the Boolean embedding (`𝓑 c = if c
+- `lemma RingSwitching.boolHypercube_sum_pinned` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1379](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1379) — **Pinned-`𝓑` Boolean-domain sumcheck sum.** When `𝓑` is pinned to the Boolean embedding (`𝓑 c = if c
 
 ### `c0_ne_c1` (2 declarations, 2 files)
 
@@ -1297,15 +1460,35 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `theorem Probability.SizeSubset.card` [ArkLib/Data/Probability/Combinatorial.lean:47](../../../ArkLib/Data/Probability/Combinatorial.lean#L47) — The number of size-`n` subsets of a finite type is `\|α\| choose n`.
 - `theorem Probability.SizedSubset.card` [ArkLib/Data/Probability/UniformSubset.lean:43](../../../ArkLib/Data/Probability/UniformSubset.lean#L43) — (no docstring)
 
+### `card_allQueriesIn` (2 declarations, 2 files)
+
+- `theorem Issue14Scratch.card_allQueriesIn` [ArkLib/ProofSystem/BatchedFri/QueryRoundAnalysis.lean:31](../../../ArkLib/ProofSystem/BatchedFri/QueryRoundAnalysis.lean#L31) — (= `Fri.QueryRound.card_allQueriesIn`) The number of length-`t` query tuples landing entirely in `G`
+- `theorem Fri.QueryRound.card_allQueriesIn` [ArkLib/ProofSystem/BatchedFri/Security.lean:352](../../../ArkLib/ProofSystem/BatchedFri/Security.lean#L352) — The number of length-`t` query tuples landing entirely in a set `G` is `\|G\| ^ t`. This counts the ac
+
+### `card_filter_badPolyAgreement_degree_two_le` (2 declarations, 2 files)
+
+- `theorem Issue19Scratch.card_filter_badPolyAgreement_degree_two_le` [ArkLib/ProofSystem/RingSwitching/BadPolyAgreementCount.lean:88](../../../ArkLib/ProofSystem/RingSwitching/BadPolyAgreementCount.lean#L88) — **Degree-2 specialization (ring-switching/Binius round polynomial, carrier `↥F⦃≤ 2⦄[X]`).** Mirrors
+- `theorem KStateWeaken.card_filter_badPolyAgreement_degree_two_le` [ArkLib/ToMathlib/KStateWeaken.lean:144](../../../ArkLib/ToMathlib/KStateWeaken.lean#L144) — Degree-2 cardinality specialization for the exact bad-agreement event.
+
+### `card_filter_badPolyAgreement_le` (2 declarations, 2 files)
+
+- `theorem Issue19Scratch.card_filter_badPolyAgreement_le` [ArkLib/ProofSystem/RingSwitching/BadPolyAgreementCount.lean:57](../../../ArkLib/ProofSystem/RingSwitching/BadPolyAgreementCount.lean#L57) — **Schwartz–Zippel counting bound (general degree).** For any common degree budget `D`, the number of
+- `theorem KStateWeaken.card_filter_badPolyAgreement_le` [ArkLib/ToMathlib/KStateWeaken.lean:137](../../../ArkLib/ToMathlib/KStateWeaken.lean#L137) — Cardinality bound for the exact bad-agreement event from a common degree bound.
+
 ### `card_filter_eval_zero_le` (2 declarations, 2 files)
 
-- `theorem RingSwitching.card_filter_eval_zero_le` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1723](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1723) — **Root-set cardinality bound.** Over an integral domain `L`, the number of field elements at which a
+- `theorem RingSwitching.card_filter_eval_zero_le` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1724](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1724) — **Root-set cardinality bound.** Over an integral domain `L`, the number of field elements at which a
 - `theorem Polynomial.card_filter_eval_zero_le` [ArkLib/ToMathlib/ExtractedIssueBricks.lean:57](../../../ArkLib/ToMathlib/ExtractedIssueBricks.lean#L57) — **Root-set cardinality bound.** Over a finite integral domain `L`, a nonzero `p : L[X]` vanishes at
+
+### `card_filter_forall_pi` (2 declarations, 2 files)
+
+- `lemma OutOfDomSmpl.card_filter_forall_pi` [ArkLib/ProofSystem/Stir/OutOfDomSmpl.lean:71](../../../ArkLib/ProofSystem/Stir/OutOfDomSmpl.lean#L71) — Counting a coordinatewise event: the tuples satisfying `Q` in every coordinate form the `piFinset` o
+- `theorem card_filter_forall_pi` [ArkLib/ToMathlib/CountingAgreementBricks.lean:32](../../../ArkLib/ToMathlib/CountingAgreementBricks.lean#L32) — Count of length-`s` tuples whose every coordinate satisfies `Q` equals `(#Q)^s`.
 
 ### `check_rows_sum_eq_aeval` (2 declarations, 2 files)
 
 - `lemma Binius.RingSwitching.check_rows_sum_eq_aeval` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:740](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L740) — **DP24 ring-switching capstone (sum form).** The verifier's row-decomposition check sum, applied to
-- `lemma RingSwitching.check_rows_sum_eq_aeval` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1208](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1208) — **DP24 ring-switching capstone (sum form).** The verifier's row-decomposition check sum, applied to
+- `lemma RingSwitching.check_rows_sum_eq_aeval` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1209](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1209) — **DP24 ring-switching capstone (sum form).** The verifier's row-decomposition check sum, applied to
 
 ### `coeffHom` (2 declarations, 2 files)
 
@@ -1355,7 +1538,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `componentWise_φ₁_embed_MLE` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.componentWise_φ₁_embed_MLE` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:171](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L171) — **Component-wise `φ₁` embedding**. Takes a polynomial `t'` with coefficients in `L` and embeds it in
-- `def RingSwitching.componentWise_φ₁_embed_MLE` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:192](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L192) — Binius-named alias: component-wise `φ₁` embedding into the tensor algebra `L ⊗[K] L`.
+- `def RingSwitching.componentWise_φ₁_embed_MLE` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:193](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L193) — Binius-named alias: component-wise `φ₁` embedding into the tensor algebra `L ⊗[K] L`.
 
 ### `computeRoundPoly` (2 declarations, 2 files)
 
@@ -1365,27 +1548,27 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `compute_A_MLE` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.compute_A_MLE` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:370](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L370) — Step 4b: P writes `A(X_0, ..., X_{ℓ'-1})` for its multilinear extension of `A_func`.
-- `def RingSwitching.compute_A_MLE` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:377](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L377) — Step 4b: P writes `A(X_0, ..., X_{ℓ'-1})` for its multilinear extension of `A_func`.
+- `def RingSwitching.compute_A_MLE` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:378](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L378) — Step 4b: P writes `A(X_0, ..., X_{ℓ'-1})` for its multilinear extension of `A_func`.
 
 ### `compute_A_func` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.compute_A_func` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:353](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L353) — Step 4a: For each `w ∈ {0,1}^{ℓ'}`, P decompose `eq̃(r_κ, ..., r_{ℓ-1}, w_0, ..., w_{ℓ'-1})` `=: Σ_{
-- `def RingSwitching.compute_A_func` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:360](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L360) — Step 4a: For each `w ∈ {0,1}^{ℓ'}`, P decompose `eq̃(r_κ, ..., r_{ℓ-1}, w_0, ..., w_{ℓ'-1})` `=: Σ_{
+- `def RingSwitching.compute_A_func` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:361](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L361) — Step 4a: For each `w ∈ {0,1}^{ℓ'}`, P decompose `eq̃(r_κ, ..., r_{ℓ-1}, w_0, ..., w_{ℓ'-1})` `=: Σ_{
 
 ### `compute_final_eq_tensor` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.compute_final_eq_tensor` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:401](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L401) — Compute the tensor `e := eq̃(φ₀(r_κ), ..., φ₀(r_{ℓ-1}), φ₁(r'_0), ..., φ₁(r'_{ℓ'-1}))`
-- `def RingSwitching.compute_final_eq_tensor` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:409](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L409) — Compute the tensor `e := eq̃(φ₀(r_κ), ..., φ₀(r_{ℓ-1}), φ₁(r'_0), ..., φ₁(r'_{ℓ'-1}))`
+- `def RingSwitching.compute_final_eq_tensor` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:410](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L410) — Compute the tensor `e := eq̃(φ₀(r_κ), ..., φ₀(r_{ℓ-1}), φ₁(r'_0), ..., φ₁(r'_{ℓ'-1}))`
 
 ### `compute_final_eq_value` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.compute_final_eq_value` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:411](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L411) — Decompose the final eq tensor `e := Σ_{u ∈ {0,1}^κ} eq̃(u, r'') ⨂ e_u`, where e_u is the row compone
-- `def RingSwitching.compute_final_eq_value` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:419](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L419) — Decompose the final eq tensor `e := Σ_{u ∈ {0,1}^κ} eq̃(u, r'') ⨂ e_u`, where e_u is the row compone
+- `def RingSwitching.compute_final_eq_value` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:420](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L420) — Decompose the final eq tensor `e := Σ_{u ∈ {0,1}^κ} eq̃(u, r'') ⨂ e_u`, where e_u is the row compone
 
 ### `compute_s0` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.compute_s0` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:394](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L394) — Step 5 (V): Compute `s₀ := Σ_{u ∈ {0,1}^κ} eqTilde(u, r'') ⋅ ŝ_u`, where ŝ_u is the row components o
-- `def RingSwitching.compute_s0` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:402](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L402) — Step 5 (V): Compute `s₀ := Σ_{u ∈ {0,1}^κ} eqTilde(u, r'') ⋅ ŝ_u`, where ŝ_u is the row components o
+- `def RingSwitching.compute_s0` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:403](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L403) — Step 5 (V): Compute `s₀ := Σ_{u ∈ {0,1}^κ} eqTilde(u, r'') ⋅ ŝ_u`, where ŝ_u is the row components o
 
 ### `constantCoeff_γ` (2 declarations, 2 files)
 
@@ -1399,33 +1582,33 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `coreInteractionOracleRbrKnowledgeError` (2 declarations, 2 files)
 
-- `def coreInteractionOracleRbrKnowledgeError` [ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean:1159](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean#L1159) — (no docstring)
-- `def Binius.FRIBinius.CoreInteractionPhase.coreInteractionOracleRbrKnowledgeError` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1696](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1696) — (no docstring)
+- `def coreInteractionOracleRbrKnowledgeError` [ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean:1172](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean#L1172) — (no docstring)
+- `def Binius.FRIBinius.CoreInteractionPhase.coreInteractionOracleRbrKnowledgeError` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1715](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1715) — (no docstring)
 
 ### `coreInteractionOracleReduction_perfectCompleteness` (2 declarations, 2 files)
 
-- `theorem coreInteractionOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean:1131](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean#L1131) — (no docstring)
-- `theorem Binius.FRIBinius.CoreInteractionPhase.coreInteractionOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1656](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1656) — Perfect completeness for the core interaction oracle reduction
+- `theorem coreInteractionOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean:1142](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean#L1142) — (no docstring)
+- `theorem Binius.FRIBinius.CoreInteractionPhase.coreInteractionOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1675](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1675) — Perfect completeness for the core interaction oracle reduction
 
 ### `coreInteractionOracleVerifier_rbrKnowledgeSoundness` (2 declarations, 2 files)
 
-- `theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean:1167](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean#L1167) — (no docstring)
-- `theorem Binius.FRIBinius.CoreInteractionPhase.coreInteractionOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1705](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1705) — Round-by-round knowledge soundness for the core interaction oracle verifier
+- `theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean:1180](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean#L1180) — (no docstring)
+- `theorem Binius.FRIBinius.CoreInteractionPhase.coreInteractionOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1724](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1724) — Round-by-round knowledge soundness for the core interaction oracle verifier
 
 ### `coreInteractionRbrKnowledgeError` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.SumcheckPhase.coreInteractionRbrKnowledgeError` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1776](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1776) — standard sumcheck error
-- `def RingSwitching.SumcheckPhase.coreInteractionRbrKnowledgeError` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1398](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1398) — standard sumcheck error
+- `def RingSwitching.SumcheckPhase.coreInteractionRbrKnowledgeError` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1640](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1640) — standard sumcheck error
 
 ### `coreInteraction_perfectCompleteness` (2 declarations, 2 files)
 
 - `theorem Binius.RingSwitching.SumcheckPhase.coreInteraction_perfectCompleteness` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1735](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1735) — Perfect completeness for large-field reduction (Sumcheck ++ FinalSum)
-- `theorem RingSwitching.SumcheckPhase.coreInteraction_perfectCompleteness` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1364](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1364) — Perfect completeness for large-field reduction (Sumcheck ++ FinalSum), conditional on the explicit i
+- `theorem RingSwitching.SumcheckPhase.coreInteraction_perfectCompleteness` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1606](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1606) — Perfect completeness for large-field reduction (Sumcheck ++ FinalSum), conditional on the explicit i
 
 ### `coreInteraction_rbrKnowledgeSoundness` (2 declarations, 2 files)
 
 - `theorem Binius.RingSwitching.SumcheckPhase.coreInteraction_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1809](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1809) — RBR knowledge soundness for large-field reduction (Sumcheck ++ FinalSum)
-- `theorem RingSwitching.SumcheckPhase.coreInteraction_rbrKnowledgeSoundness` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1409](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1409) — RBR knowledge soundness for large-field reduction (Sumcheck ++ FinalSum)
+- `theorem RingSwitching.SumcheckPhase.coreInteraction_rbrKnowledgeSoundness` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1651](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1651) — RBR knowledge soundness for large-field reduction (Sumcheck ++ FinalSum)
 
 ### `correlatedAgreement_affine_curves_of_lattice_data` (2 declarations, 2 files)
 
@@ -1445,27 +1628,27 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `decompose_rows_packMLE` (2 declarations, 2 files)
 
 - `lemma Binius.RingSwitching.decompose_rows_packMLE` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:598](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L598) — **Row recovery of `t`-evaluations.** The row components of the prover's tensor `ŝ = embedded_MLP_eva
-- `lemma RingSwitching.decompose_rows_packMLE` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1187](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1187) — **Row recovery of `t`-evaluations.** The row components of the prover's tensor `ŝ = embedded_MLP_eva
+- `lemma RingSwitching.decompose_rows_packMLE` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1188](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1188) — **Row recovery of `t`-evaluations.** The row components of the prover's tensor `ŝ = embedded_MLP_eva
 
 ### `decompose_rows_sum` (2 declarations, 2 files)
 
 - `lemma Binius.RingSwitching.decompose_rows_sum` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:552](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L552) — `decompose_tensor_algebra_rows` is additive over finite sums of tensors.
-- `lemma RingSwitching.decompose_rows_sum` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:669](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L669) — `decompose_tensor_algebra_rows` is additive over finite sums of tensors.
+- `lemma RingSwitching.decompose_rows_sum` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:670](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L670) — `decompose_tensor_algebra_rows` is additive over finite sums of tensors.
 
 ### `decompose_rows_φ₀φ₁` (2 declarations, 2 files)
 
 - `lemma Binius.RingSwitching.decompose_rows_φ₀φ₁` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:562](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L562) — Row decomposition of a separated tensor `φ₀(a) · φ₁(b) = a ⊗ b`: the `u`-th row component represents
-- `lemma RingSwitching.decompose_rows_φ₀φ₁` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:679](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L679) — Row decomposition of a separated tensor `φ₀(a) · φ₁(b) = a ⊗ b`: the `u`-th row component represents
+- `lemma RingSwitching.decompose_rows_φ₀φ₁` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:680](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L680) — Row decomposition of a separated tensor `φ₀(a) · φ₁(b) = a ⊗ b`: the `u`-th row component represents
 
 ### `decompose_tensor_algebra_columns` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.decompose_tensor_algebra_columns` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:100](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L100) — Decompose `ŝ` into column components `(ŝ =: Σ_{v ∈ {0,1}^κ} ŝ_v ⊗ β_v)`. This views `L ⊗ L` as a mod
-- `def RingSwitching.decompose_tensor_algebra_columns` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:99](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L99) — Decompose `ŝ` into column components `(ŝ =: Σ_{v ∈ {0,1}^κ} ŝ_v ⊗ β_v)`. This views `L ⊗ L` as a mod
+- `def RingSwitching.decompose_tensor_algebra_columns` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:100](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L100) — Decompose `ŝ` into column components `(ŝ =: Σ_{v ∈ {0,1}^κ} ŝ_v ⊗ β_v)`. This views `L ⊗ L` as a mod
 
 ### `decompose_tensor_algebra_rows` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.decompose_tensor_algebra_rows` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:92](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L92) — Decompose `ŝ` into row components `(ŝ =: Σ_{u ∈ {0,1}^κ} β_u ⊗ ŝ_u)`. This views `L ⊗ L` as a module
-- `def RingSwitching.decompose_tensor_algebra_rows` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:91](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L91) — Decompose `ŝ` into row components `(ŝ =: Σ_{u ∈ {0,1}^κ} β_u ⊗ ŝ_u)`. This views `L ⊗ L` as a module
+- `def RingSwitching.decompose_tensor_algebra_rows` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:92](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L92) — Decompose `ŝ` into row components `(ŝ =: Σ_{u ∈ {0,1}^κ} β_u ⊗ ŝ_u)`. This views `L ⊗ L` as a module
 
 ### `degree` (2 declarations, 2 files)
 
@@ -1490,12 +1673,12 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `embedded_MLP_eval` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.embedded_MLP_eval` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:320](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L320) — Compute the tensor value ŝ := φ₁(t')(φ₀(r_κ), ..., φ₀(r_{ℓ-1}))
-- `def RingSwitching.embedded_MLP_eval` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:328](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L328) — Compute the tensor value ŝ := φ₁(t')(φ₀(r_κ), ..., φ₀(r_{ℓ-1}))
+- `def RingSwitching.embedded_MLP_eval` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:329](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L329) — Compute the tensor value ŝ := φ₁(t')(φ₀(r_κ), ..., φ₀(r_{ℓ-1}))
 
 ### `embedded_MLP_eval_eq_sum` (2 declarations, 2 files)
 
 - `lemma Binius.RingSwitching.embedded_MLP_eval_eq_sum` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:523](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L523) — **DP24 packing expansion.** The prover's tensor `ŝ := φ₁(t')(φ₀(r_κ), …, φ₀(r_{ℓ-1}))` expands over
-- `lemma RingSwitching.embedded_MLP_eval_eq_sum` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1151](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1151) — **DP24 packing expansion.** The prover's tensor `ŝ := φ₁(t')(φ₀(r_κ), …, φ₀(r_{ℓ-1}))` expands over
+- `lemma RingSwitching.embedded_MLP_eval_eq_sum` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1152](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1152) — **DP24 packing expansion.** The prover's tensor `ŝ := φ₁(t')(φ₀(r_κ), …, φ₀(r_{ℓ-1}))` expands over
 
 ### `empty` (2 declarations, 2 files)
 
@@ -1507,25 +1690,20 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `theorem ProximityGap.epsCA_le_one` [ArkLib/Data/CodingTheory/ProximityGap/Errors.lean:247](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean#L247) — The CA error is bounded by the total probability mass.
 - `theorem CodingTheory.Bridge.epsCA_le_one` [ArkLib/ToMathlib/BridgeListDecodingCA.lean:65](../../../ArkLib/ToMathlib/BridgeListDecodingCA.lean#L65) — **`ε_ca ≤ 1`.** The correlated-agreement error is a supremum of values each of which is either `0` o
 
-### `epsMCA_le_one` (2 declarations, 2 files)
-
-- `theorem ProximityGap.epsMCA_le_one` [ArkLib/Data/CodingTheory/ProximityGap/Errors.lean:316](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean#L316) — The MCA error is bounded by the total probability mass.
-- `theorem CodingTheory.Bridge.epsMCA_le_one` [ArkLib/ToMathlib/BridgeListDecodingCA.lean:77](../../../ArkLib/ToMathlib/BridgeListDecodingCA.lean#L77) — **`ε_mca ≤ 1`.** The mutual-correlated-agreement error is a supremum of PMF probabilities, hence at
-
 ### `eqPoly_collapse` (2 declarations, 2 files)
 
 - `lemma Binius.RingSwitching.eqPoly_collapse` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:508](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L508) — The full `eqPolynomial` collapses through the mixed embedding to `φ₀` of its ordinary evaluation, by
-- `lemma RingSwitching.eqPoly_collapse` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:656](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L656) — The full `eqPolynomial` collapses through the mixed embedding to `φ₀` of its ordinary evaluation, by
+- `lemma RingSwitching.eqPoly_collapse` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:657](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L657) — The full `eqPolynomial` collapses through the mixed embedding to `φ₀` of its ordinary evaluation, by
 
 ### `eqTilde_concat_split` (2 declarations, 2 files)
 
 - `lemma Binius.RingSwitching.eqTilde_concat_split` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:665](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L665) — `eqTilde` of concatenated Boolean / point data factors along the κ/ℓ' split: `eqTilde (concat fp fs)
-- `lemma RingSwitching.eqTilde_concat_split` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:757](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L757) — `eqTilde` of concatenated Boolean / point data factors along the κ/ℓ' split: `eqTilde (concat fp fs)
+- `lemma RingSwitching.eqTilde_concat_split` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:758](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L758) — `eqTilde` of concatenated Boolean / point data factors along the κ/ℓ' split: `eqTilde (concat fp fs)
 
 ### `eqTilde_prod` (2 declarations, 2 files)
 
 - `lemma Binius.RingSwitching.eqTilde_prod` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:616](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L616) — `eqTilde` written as a product over coordinates of the symmetric Boolean factor.
-- `lemma RingSwitching.eqTilde_prod` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:709](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L709) — `eqTilde` written as a product over coordinates of the symmetric Boolean factor.
+- `lemma RingSwitching.eqTilde_prod` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:710](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L710) — `eqTilde` written as a product over coordinates of the symmetric Boolean factor.
 
 ### `eq_iff_domains_eq` (2 declarations, 2 files)
 
@@ -1587,29 +1765,34 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def Binius.RingSwitching.BatchingPhase.failureState` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:71](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L71) — A dummy state returned by the verifier upon failure of Check 1.
 - `def RingSwitching.BatchingPhase.failureState` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:106](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L106) — A dummy state returned by the verifier upon failure of Check 1.
 
-### `finSumFinEquiv_symm_dite` (2 declarations, 2 files)
+### `fiatShamir_completeness_of_runEq` (2 declarations, 2 files)
 
-- `theorem RingSwitching.finSumFinEquiv_symm_dite` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1532](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1532) — Value-form of `finSumFinEquiv.symm`: classify the index by whether its value is `< m`.
-- `theorem ScratchRS.finSumFinEquiv_symm_dite` [ArkLib/ProofSystem/RingSwitching/Scratch.lean:28](../../../ArkLib/ProofSystem/RingSwitching/Scratch.lean#L28) — (no docstring)
+- `theorem Reduction.fiatShamir_completeness_of_runEq` [ArkLib/OracleReduction/FiatShamir/Basic.lean:356](../../../ArkLib/OracleReduction/FiatShamir/Basic.lean#L356) — Basic Fiat-Shamir completeness follows from the named run-equality residual and completeness of the
+- `theorem Issue116.fiatShamir_completeness_of_runEq` [ArkLib/OracleReduction/FiatShamir/CompletenessUnroll.lean:79](../../../ArkLib/OracleReduction/FiatShamir/CompletenessUnroll.lean#L79) — Forward direction packaged for downstream users: basic FS completeness from the run-equality residua
+
+### `fiatShamir_completeness_unroll_of_runEq` (2 declarations, 2 files)
+
+- `theorem Reduction.fiatShamir_completeness_unroll_of_runEq` [ArkLib/OracleReduction/FiatShamir/Basic.lean:319](../../../ArkLib/OracleReduction/FiatShamir/Basic.lean#L319) — The named run-equality residual is enough to unroll basic-Fiat-Shamir completeness to the explicit h
+- `theorem Issue116.fiatShamir_completeness_unroll_of_runEq` [ArkLib/OracleReduction/FiatShamir/CompletenessUnroll.lean:65](../../../ArkLib/OracleReduction/FiatShamir/CompletenessUnroll.lean#L65) — Completeness of the transformed one-message basic Fiat-Shamir reduction is equivalent to the explici
 
 ### `finalSumcheckProverComputeMsg` (2 declarations, 2 files)
 
-- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckProverComputeMsg` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:543](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L543) — Pure prover message computation for FRI final sumcheck step.
+- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckProverComputeMsg` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:562](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L562) — Pure prover message computation for FRI final sumcheck step.
 - `def Binius.RingSwitching.SumcheckPhase.finalSumcheckProverComputeMsg` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:986](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L986) — Pure prover message computation: computes s' from the witness.
 
 ### `finalSumcheckProverWitOut` (2 declarations, 2 files)
 
-- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckProverWitOut` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:550](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L550) — Pure prover output witness for FRI final sumcheck step.
+- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckProverWitOut` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:569](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L569) — Pure prover output witness for FRI final sumcheck step.
 - `def Binius.RingSwitching.SumcheckPhase.finalSumcheckProverWitOut` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:993](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L993) — Pure prover output: computes the output witness given the transcript.
 
 ### `finalSumcheckVerifierCheck` (2 declarations, 2 files)
 
-- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckVerifierCheck` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:517](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L517) — Pure verifier check for FRI final sumcheck step.
+- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckVerifierCheck` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:536](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L536) — Pure verifier check for FRI final sumcheck step.
 - `def Binius.RingSwitching.SumcheckPhase.finalSumcheckVerifierCheck` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:968](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L968) — Pure verifier check: validates that s_{ℓ'} = eq_tilde_eval * s'. 8. `V` sets `e := eq̃(φ₀(r_κ), ...,
 
 ### `finalSumcheckVerifierStmtOut` (2 declarations, 2 files)
 
-- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckVerifierStmtOut` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:528](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L528) — Pure verifier output for FRI final sumcheck step.
+- `def Binius.FRIBinius.CoreInteractionPhase.finalSumcheckVerifierStmtOut` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:547](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L547) — Pure verifier output for FRI final sumcheck step.
 - `def Binius.RingSwitching.SumcheckPhase.finalSumcheckVerifierStmtOut` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:977](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L977) — Pure verifier output: computes the output statement given the transcript.
 
 ### `firstOracleWitnessConsistency_unique` (2 declarations, 2 files)
@@ -1619,12 +1802,12 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `fixVars_eq_bind₁` (2 declarations, 2 files)
 
-- `theorem RingSwitching.fixVars_eq_bind₁` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1546](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1546) — Characterization of `fixFirstVariablesOfMQP` as a `bind₁` partial substitution: it sends the survivi
+- `theorem RingSwitching.fixVars_eq_bind₁` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1547](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1547) — Characterization of `fixFirstVariablesOfMQP` as a `bind₁` partial substitution: it sends the survivi
 - `theorem ScratchRS.fixVars_eq_bind₁` [ArkLib/ProofSystem/RingSwitching/Scratch.lean:35](../../../ArkLib/ProofSystem/RingSwitching/Scratch.lean#L35) — (no docstring)
 
 ### `fixVars_step` (2 declarations, 2 files)
 
-- `theorem RingSwitching.fixVars_step` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1586](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1586) — **Round-transition for `fixFirstVariablesOfMQP` (cons form).** Fixing the last `v` variables of `pol
+- `theorem RingSwitching.fixVars_step` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1587](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1587) — **Round-transition for `fixFirstVariablesOfMQP` (cons form).** Fixing the last `v` variables of `pol
 - `theorem ScratchRS.fixVars_step` [ArkLib/ProofSystem/RingSwitching/Scratch.lean:47](../../../ArkLib/ProofSystem/RingSwitching/Scratch.lean#L47) — (no docstring)
 
 ### `foldOracleReduction` (2 declarations, 2 files)
@@ -1645,7 +1828,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `getEvaluationPointSuffix` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.getEvaluationPointSuffix` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:377](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L377) — (no docstring)
-- `def RingSwitching.getEvaluationPointSuffix` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:384](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L384) — (no docstring)
+- `def RingSwitching.getEvaluationPointSuffix` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:385](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L385) — (no docstring)
 
 ### `getSumcheckRoundPoly_eval_eq_sum_snoc` (2 declarations, 2 files)
 
@@ -1682,6 +1865,11 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def GSMultInterp.hasseCoeff` [ArkLib/Data/CodingTheory/GuruswamiSudan/MultiplicityInterpolation.lean:136](../../../ArkLib/Data/CodingTheory/GuruswamiSudan/MultiplicityInterpolation.lean#L136) — The order-`(a, b)` *Hasse coefficient* of the bivariate polynomial `Q = ∑_{(s,t)∈monoIdx} c(s,t)·X^s
 - `def ArkLib.GS.hasseCoeff` [ArkLib/Data/CodingTheory/ProximityGap/BivariateVanishing.lean:67](../../../ArkLib/Data/CodingTheory/ProximityGap/BivariateVanishing.lean#L67) — The bivariate Hasse–Taylor coefficient of bidegree `(i, j)` of `Q` at `(a, b)`: take the `j`-th oute
 
+### `hasseDeriv_eval_eq_sum` (2 declarations, 2 files)
+
+- `theorem Issue9Hensel.hasseDeriv_eval_eq_sum` [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/HasseEvalConnectives.lean:29](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/HasseEvalConnectives.lean#L29) — (no docstring)
+- `theorem Polynomial.hasseDeriv_eval_eq_sum` [ArkLib/ToMathlib/Polynomial/HasseDerivEval.lean:36](../../../ArkLib/ToMathlib/Polynomial/HasseDerivEval.lean#L36) — **Hasse-derivative evaluation identity (★).** The evaluation of the order-`k` Hasse derivative of `p
+
 ### `heavyCoords_card_mul_le` (2 declarations, 2 files)
 
 - `lemma ProximityGap.heavyCoords_card_mul_le` [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/ListDecoding/Agreement.lean:6643](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/ListDecoding/Agreement.lean#L6643) — Generic double-counting brick for Claim 5.11. If each `z ∈ S` has at most `m` bad coordinates, then
@@ -1700,22 +1888,22 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `hypercubeSplitEquiv` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.hypercubeSplitEquiv` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:715](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L715) — The κ-then-ℓ' hypercube concatenation `concatBit v w i = v i` for `i < κ`, `= w (i - κ)` otherwise —
-- `def RingSwitching.hypercubeSplitEquiv` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:806](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L806) — The κ-then-ℓ' hypercube concatenation `concatBit v w i = v i` for `i < κ`, `= w (i - κ)` otherwise —
+- `def RingSwitching.hypercubeSplitEquiv` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:807](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L807) — The κ-then-ℓ' hypercube concatenation `concatBit v w i = v i` for `i < κ`, `= w (i - κ)` otherwise —
 
 ### `idTranscriptSimulator` (2 declarations, 2 files)
 
-- `def Reduction.idTranscriptSimulator` [ArkLib/OracleReduction/Security/ZeroKnowledge.lean:257](../../../ArkLib/OracleReduction/Security/ZeroKnowledge.lean#L257) — The simulator for the zero-round identity reduction: ignore the statement and emit the unique empty
+- `def Reduction.idTranscriptSimulator` [ArkLib/OracleReduction/Security/ZeroKnowledge.lean:288](../../../ArkLib/OracleReduction/Security/ZeroKnowledge.lean#L288) — The simulator for the zero-round identity reduction: ignore the statement and emit the unique empty
 - `abbrev OracleReduction.idTranscriptSimulator` [ArkLib/ToMathlib/ZKDefC.lean:98](../../../ArkLib/ToMathlib/ZKDefC.lean#L98) — The simulator for the zero-round identity oracle reduction.
 
 ### `id_isStatHVZK` (2 declarations, 2 files)
 
 - `theorem OracleReduction.id_isStatHVZK` [ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean:255](../../../ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean#L255) — The zero-round identity oracle reduction is statistical HVZK for any oracle-input relation and any e
-- `theorem Reduction.id_isStatHVZK` [ArkLib/OracleReduction/Security/ZeroKnowledge.lean:310](../../../ArkLib/OracleReduction/Security/ZeroKnowledge.lean#L310) — The zero-round identity reduction is statistically honest-verifier zero-knowledge for any relation a
+- `theorem Reduction.id_isStatHVZK` [ArkLib/OracleReduction/Security/ZeroKnowledge.lean:341](../../../ArkLib/OracleReduction/Security/ZeroKnowledge.lean#L341) — The zero-round identity reduction is statistically honest-verifier zero-knowledge for any relation a
 
 ### `id_statisticalHVZK` (2 declarations, 2 files)
 
 - `theorem OracleReduction.id_statisticalHVZK` [ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean:231](../../../ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean#L231) — The zero-round identity oracle reduction is statistical HVZK for any oracle-input relation and any e
-- `theorem Reduction.id_statisticalHVZK` [ArkLib/OracleReduction/Security/ZeroKnowledge.lean:292](../../../ArkLib/OracleReduction/Security/ZeroKnowledge.lean#L292) — The zero-round identity reduction satisfies statistical honest-verifier zero-knowledge for any relat
+- `theorem Reduction.id_statisticalHVZK` [ArkLib/OracleReduction/Security/ZeroKnowledge.lean:323](../../../ArkLib/OracleReduction/Security/ZeroKnowledge.lean#L323) — The zero-round identity reduction satisfies statistical honest-verifier zero-knowledge for any relat
 
 ### `instFintypeOracleSpecEmpty` (2 declarations, 2 files)
 
@@ -1745,12 +1933,22 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `instOstmtMLIOPCS` (2 declarations, 2 files)
 
 - `instance Binius.RingSwitching.instOstmtMLIOPCS` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:294](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L294) — (no docstring)
-- `instance RingSwitching.instOstmtMLIOPCS` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:304](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L304) — (no docstring)
+- `instance RingSwitching.instOstmtMLIOPCS` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:305](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L305) — (no docstring)
 
 ### `interpolate` (2 declarations, 2 files)
 
-- `def ReedSolomon.interpolate` [ArkLib/Data/CodingTheory/ReedSolomon.lean:606](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean#L606) — The linear map that maps a codeword `f : ι → F` to a degree < \|ι\| polynomial p, such that `p(x) = f(
+- `def ReedSolomon.interpolate` [ArkLib/Data/CodingTheory/ReedSolomon.lean:631](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean#L631) — The linear map that maps a codeword `f : ι → F` to a degree < \|ι\| polynomial p, such that `p(x) = f(
 - `def UniPoly.Lagrange.interpolate` [ArkLib/Data/UniPoly/Basic.lean:1120](../../../ArkLib/Data/UniPoly/Basic.lean#L1120) — This function produces the polynomial which is of degree n and is equal to r i at ω^i for i = 0, 1,
+
+### `isHVZK.congr_honestDist` (2 declarations, 2 files)
+
+- `theorem OracleReduction.isHVZK.congr_honestDist` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:397](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L397) — **OracleReduction `isHVZK` transfers along an equal honest distribution.**
+- `theorem Reduction.isHVZK.congr_honestDist` [ArkLib/ToMathlib/ZKTransferBricks.lean:480](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L480) — **`isHVZK` transfers along an `evalDist`-equal honest distribution.**
+
+### `isHVZK.congr_honestDist_symm` (2 declarations, 2 files)
+
+- `theorem OracleReduction.isHVZK.congr_honestDist_symm` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:424](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L424) — **OracleReduction `isHVZK` honest-distribution congruence with opposite-order equality.**
+- `theorem Reduction.isHVZK.congr_honestDist_symm` [ArkLib/ToMathlib/ZKTransferBricks.lean:506](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L506) — **`isHVZK` honest-distribution congruence with opposite-order equality.**
 
 ### `isHVZK.isStatHVZK` (2 declarations, 2 files)
 
@@ -1762,15 +1960,45 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `theorem OracleReduction.isHVZK.mono_relation` [ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean:118](../../../ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean#L118) — `isHVZK` for oracle reductions is antitone in the relation.
 - `theorem Reduction.isHVZK.mono_relation` [ArkLib/OracleReduction/Security/ZeroKnowledge.lean:167](../../../ArkLib/OracleReduction/Security/ZeroKnowledge.lean#L167) — **`isHVZK` is antitone in the relation.** HVZK for `rel` implies HVZK for any `rel' ⊆ rel` (the same
 
+### `isHVZK.triangle_honestDist_symm_zero` (2 declarations, 2 files)
+
+- `theorem OracleReduction.isHVZK.triangle_honestDist_symm_zero` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:523](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L523) — **Existential symmetric-facing zero-error approximate honest-distribution transfer for exact HVZK at
+- `theorem Reduction.isHVZK.triangle_honestDist_symm_zero` [ArkLib/ToMathlib/ZKTransferBricks.lean:597](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L597) — **Existential symmetric-facing zero-error approximate honest-distribution transfer for exact HVZK.**
+
+### `isHVZK.triangle_honestDist_zero` (2 declarations, 2 files)
+
+- `theorem OracleReduction.isHVZK.triangle_honestDist_zero` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:509](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L509) — **Existential zero-error approximate honest-distribution transfer for exact HVZK at the OracleReduct
+- `theorem Reduction.isHVZK.triangle_honestDist_zero` [ArkLib/ToMathlib/ZKTransferBricks.lean:583](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L583) — **Existential zero-error approximate honest-distribution transfer for exact HVZK.**
+
 ### `isHVZK_iff_isStatHVZK_zero` (2 declarations, 2 files)
 
 - `theorem OracleReduction.isHVZK_iff_isStatHVZK_zero` [ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean:174](../../../ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean#L174) — Perfect HVZK existence for oracle reductions is equivalent to zero-error statistical HVZK existence.
 - `theorem Reduction.isHVZK_iff_isStatHVZK_zero` [ArkLib/OracleReduction/Security/ZeroKnowledge.lean:218](../../../ArkLib/OracleReduction/Security/ZeroKnowledge.lean#L218) — **Perfect HVZK existence is equivalent to zero-error statistical HVZK existence.**
 
+### `isHVZK_of_const_eq_honestDist` (2 declarations, 2 files)
+
+- `theorem OracleReduction.isHVZK_of_const_eq_honestDist` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:372](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L372) — **OracleReduction `isHVZK` from the symmetric-facing constant-simulator criterion.**
+- `theorem Reduction.isHVZK_of_const_eq_honestDist` [ArkLib/ToMathlib/ZKTransferBricks.lean:455](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L455) — **`isHVZK` from the symmetric-facing constant-simulator criterion.**
+
+### `isHVZK_of_honestDist_eq_const` (2 declarations, 2 files)
+
+- `theorem OracleReduction.isHVZK_of_honestDist_eq_const` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:347](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L347) — **OracleReduction `isHVZK` from the constant-simulator criterion.**
+- `theorem Reduction.isHVZK_of_honestDist_eq_const` [ArkLib/ToMathlib/ZKTransferBricks.lean:432](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L432) — **`isHVZK` from the constant-simulator criterion.**
+
 ### `isStatHVZK` (2 declarations, 2 files)
 
 - `def OracleReduction.isStatHVZK` [ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean:71](../../../ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean#L71) — Existential statistical HVZK for an oracle reduction.
 - `def Reduction.isStatHVZK` [ArkLib/OracleReduction/Security/ZeroKnowledge.lean:98](../../../ArkLib/OracleReduction/Security/ZeroKnowledge.lean#L98) — A reduction is *statistically* honest-verifier zero-knowledge with error `ε` if some simulator achie
+
+### `isStatHVZK.congr_honestDist` (2 declarations, 2 files)
+
+- `theorem OracleReduction.isStatHVZK.congr_honestDist` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:410](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L410) — **OracleReduction `isStatHVZK` transfers along an equal honest distribution.**
+- `theorem Reduction.isStatHVZK.congr_honestDist` [ArkLib/ToMathlib/ZKTransferBricks.lean:493](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L493) — **`isStatHVZK` transfers along an `evalDist`-equal honest distribution.**
+
+### `isStatHVZK.congr_honestDist_symm` (2 declarations, 2 files)
+
+- `theorem OracleReduction.isStatHVZK.congr_honestDist_symm` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:436](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L436) — **OracleReduction `isStatHVZK` honest-distribution congruence with opposite-order equality.**
+- `theorem Reduction.isStatHVZK.congr_honestDist_symm` [ArkLib/ToMathlib/ZKTransferBricks.lean:518](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L518) — **`isStatHVZK` honest-distribution congruence with opposite-order equality.**
 
 ### `isStatHVZK.mono_error` (2 declarations, 2 files)
 
@@ -1782,6 +2010,36 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `theorem OracleReduction.isStatHVZK.mono_relation` [ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean:187](../../../ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean#L187) — `isStatHVZK` for oracle reductions is antitone in the relation.
 - `theorem Reduction.isStatHVZK.mono_relation` [ArkLib/OracleReduction/Security/ZeroKnowledge.lean:230](../../../ArkLib/OracleReduction/Security/ZeroKnowledge.lean#L230) — **`isStatHVZK` is antitone in the relation.**
 
+### `isStatHVZK.triangle_honestDist` (2 declarations, 2 files)
+
+- `theorem OracleReduction.isStatHVZK.triangle_honestDist` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:449](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L449) — **Existential approximate honest-distribution transfer at the OracleReduction API boundary.**
+- `theorem Reduction.isStatHVZK.triangle_honestDist` [ArkLib/ToMathlib/ZKTransferBricks.lean:530](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L530) — **Existential approximate honest-distribution transfer for statistical HVZK.**
+
+### `isStatHVZK.triangle_honestDist_symm` (2 declarations, 2 files)
+
+- `theorem OracleReduction.isStatHVZK.triangle_honestDist_symm` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:464](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L464) — **Existential symmetric-facing approximate honest-distribution transfer at the OracleReduction API b
+- `theorem Reduction.isStatHVZK.triangle_honestDist_symm` [ArkLib/ToMathlib/ZKTransferBricks.lean:543](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L543) — **Existential symmetric-facing approximate honest-distribution transfer.**
+
+### `isStatHVZK.triangle_honestDist_symm_zero` (2 declarations, 2 files)
+
+- `theorem OracleReduction.isStatHVZK.triangle_honestDist_symm_zero` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:494](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L494) — **Existential symmetric-facing zero-error approximate honest-distribution transfer for statistical H
+- `theorem Reduction.isStatHVZK.triangle_honestDist_symm_zero` [ArkLib/ToMathlib/ZKTransferBricks.lean:570](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L570) — **Existential symmetric-facing zero-error approximate honest-distribution transfer for statistical H
+
+### `isStatHVZK.triangle_honestDist_zero` (2 declarations, 2 files)
+
+- `theorem OracleReduction.isStatHVZK.triangle_honestDist_zero` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:479](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L479) — **Existential zero-error approximate honest-distribution transfer for statistical HVZK at the Oracle
+- `theorem Reduction.isStatHVZK.triangle_honestDist_zero` [ArkLib/ToMathlib/ZKTransferBricks.lean:556](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L556) — **Existential zero-error approximate honest-distribution transfer for statistical HVZK.**
+
+### `isStatHVZK_of_const_eq_honestDist` (2 declarations, 2 files)
+
+- `theorem OracleReduction.isStatHVZK_of_const_eq_honestDist` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:384](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L384) — **OracleReduction `isStatHVZK` from the symmetric-facing constant-simulator criterion.**
+- `theorem Reduction.isStatHVZK_of_const_eq_honestDist` [ArkLib/ToMathlib/ZKTransferBricks.lean:467](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L467) — **`isStatHVZK` from the symmetric-facing constant-simulator criterion.**
+
+### `isStatHVZK_of_honestDist_eq_const` (2 declarations, 2 files)
+
+- `theorem OracleReduction.isStatHVZK_of_honestDist_eq_const` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:359](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L359) — **OracleReduction `isStatHVZK` from the constant-simulator criterion.**
+- `theorem Reduction.isStatHVZK_of_honestDist_eq_const` [ArkLib/ToMathlib/ZKTransferBricks.lean:443](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L443) — **`isStatHVZK` from the constant-simulator criterion.**
+
 ### `isStatHVZK_zero.isHVZK` (2 declarations, 2 files)
 
 - `theorem OracleReduction.isStatHVZK_zero.isHVZK` [ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean:162](../../../ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean#L162) — Zero-error statistical HVZK existence for oracle reductions recovers perfect HVZK existence.
@@ -1790,12 +2048,12 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `iteratedSumcheckKStateProp` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.SumcheckPhase.iteratedSumcheckKStateProp` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:563](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L563) — KState for the iterated sumcheck step, matching the structure of Binary Basefold's `foldKStateProp`:
-- `def RingSwitching.SumcheckPhase.iteratedSumcheckKStateProp` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:719](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L719) — This follows the KState of `foldKStateProp`
+- `def RingSwitching.SumcheckPhase.iteratedSumcheckKStateProp` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:729](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L729) — This follows the KState of `foldKStateProp`
 
 ### `iteratedSumcheckKnowledgeStateFunction` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.SumcheckPhase.iteratedSumcheckKnowledgeStateFunction` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:606](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L606) — Knowledge state function (KState) for single round
-- `def RingSwitching.SumcheckPhase.iteratedSumcheckKnowledgeStateFunction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:795](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L795) — Knowledge state function (KState) for single round
+- `def RingSwitching.SumcheckPhase.iteratedSumcheckKnowledgeStateFunction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:789](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L789) — Knowledge state function (KState) for single round
 
 ### `iteratedSumcheckOracleProver` (2 declarations, 2 files)
 
@@ -1820,7 +2078,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `iteratedSumcheckOracleVerifier_rbrKnowledgeSoundness` (2 declarations, 2 files)
 
 - `theorem Binius.RingSwitching.SumcheckPhase.iteratedSumcheckOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:888](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L888) — RBR knowledge soundness for a single round oracle verifier
-- `theorem RingSwitching.SumcheckPhase.iteratedSumcheckOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:823](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L823) — RBR knowledge soundness for one sumcheck round under the current weak post-challenge state. The boun
+- `theorem RingSwitching.SumcheckPhase.iteratedSumcheckOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1065](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1065) — (no docstring)
 
 ### `iteratedSumcheckPrvState` (2 declarations, 2 files)
 
@@ -1830,17 +2088,42 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `iteratedSumcheckRbrExtractor` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.SumcheckPhase.iteratedSumcheckRbrExtractor` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:535](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L535) — (no docstring)
-- `def RingSwitching.SumcheckPhase.iteratedSumcheckRbrExtractor` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:540](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L540) — (no docstring)
+- `def RingSwitching.SumcheckPhase.iteratedSumcheckRbrExtractor` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:546](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L546) — (no docstring)
 
 ### `iteratedSumcheckRoundKnowledgeError` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.SumcheckPhase.iteratedSumcheckRoundKnowledgeError` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:524](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L524) — (no docstring)
-- `def RingSwitching.SumcheckPhase.iteratedSumcheckRoundKnowledgeError` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1395](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1395) — Per-round knowledge error for the iterated sumcheck rounds.
+- `def RingSwitching.SumcheckPhase.iteratedSumcheckRoundKnowledgeError` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1637](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1637) — Per-round knowledge error for the iterated sumcheck rounds.
+
+### `iteratedSumcheckWitMid` (2 declarations, 2 files)
+
+- `def Binius.RingSwitching.SumcheckPhase.iteratedSumcheckWitMid` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:529](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L529) — Witness type at each message index for the iterated sumcheck step (counterpart of BBF `foldWitMid`).
+- `def RingSwitching.SumcheckPhase.iteratedSumcheckWitMid` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:540](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L540) — (no docstring)
+
+### `iteratedSumcheck_doom_escape_probability_bound` (2 declarations, 2 files)
+
+- `lemma Binius.RingSwitching.SumcheckPhase.iteratedSumcheck_doom_escape_probability_bound` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:819](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L819) — Per-transcript bound: for prover message h_i, the probability (over verifier challenge y) that extra
+- `lemma RingSwitching.SumcheckPhase.iteratedSumcheck_doom_escape_probability_bound` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1004](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1004) — **Schwartz-Zippel bound for the bad sumcheck extraction event.** Proof strategy (follows `foldStep_d
+
+### `iteratedSumcheck_rbrExtractionFailureEvent_imply_badSumcheck` (2 declarations, 2 files)
+
+- `lemma Binius.RingSwitching.SumcheckPhase.iteratedSumcheck_rbrExtractionFailureEvent_imply_badSumcheck` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:732](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L732) — Extraction failure implies a witness-dependent bad sumcheck event (no folding here). The extracted `
+- `lemma RingSwitching.SumcheckPhase.iteratedSumcheck_rbrExtractionFailureEvent_imply_badSumcheck` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:900](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L900) — Extraction failure implies a witness-dependent bad sumcheck event. The extracted `witMid` also carri
 
 ### `iterated_fold_to_const_strict` (2 declarations, 2 files)
 
 - `lemma Binius.BinaryBasefold.CoreInteraction.iterated_fold_to_const_strict` [ArkLib/ProofSystem/Binius/BinaryBasefold/ReductionLogic.lean:969](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/ReductionLogic.lean#L969) — **Strict version**: When folding the last oracle to level `ℓ` (final sumcheck), the iterated fold of
-- `lemma Binius.FRIBinius.CoreInteractionPhase.iterated_fold_to_const_strict` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:711](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L711) — Strict helper: folding the last oracle block in the final sumcheck step yields the constant function
+- `lemma Binius.FRIBinius.CoreInteractionPhase.iterated_fold_to_const_strict` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:730](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L730) — Strict helper: folding the last oracle block in the final sumcheck step yields the constant function
+
+### `knowledgeSoundness.mono_error` (2 declarations, 2 files)
+
+- `theorem Verifier.knowledgeSoundness.mono_error` [ArkLib/OracleReduction/Security/Basic.lean:439](../../../ArkLib/OracleReduction/Security/Basic.lean#L439) — Straightline knowledge soundness is monotone in the allowed knowledge error.
+- `theorem Verifier.StateRestoration.knowledgeSoundness.mono_error` [ArkLib/OracleReduction/Security/StateRestoration.lean:218](../../../ArkLib/OracleReduction/Security/StateRestoration.lean#L218) — State-restoration knowledge soundness is monotone in the allowed knowledge-soundness error.
+
+### `knowledgeSoundness.mono_relations` (2 declarations, 2 files)
+
+- `theorem Verifier.knowledgeSoundness.mono_relations` [ArkLib/OracleReduction/Security/Basic.lean:455](../../../ArkLib/OracleReduction/Security/Basic.lean#L455) — Straightline knowledge soundness is monotone in the input and output relations. If knowledge soundne
+- `theorem Verifier.StateRestoration.knowledgeSoundness.mono_relations` [ArkLib/OracleReduction/Security/StateRestoration.lean:232](../../../ArkLib/OracleReduction/Security/StateRestoration.lean#L232) — State-restoration knowledge soundness is monotone under enlarging the valid input relation and shrin
 
 ### `lambda_le_ggr11_of_Lambda_top` (2 declarations, 2 files)
 
@@ -1947,6 +2230,11 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `theorem ArkLib.BetaToCurveCoeffPolys.mk_eq_trunc_of_tail_zero` [ArkLib/ToMathlib/BetaToCurveCoeffPolysOffcentre.lean:86](../../../ArkLib/ToMathlib/BetaToCurveCoeffPolysOffcentre.lean#L86) — A power series whose coefficients vanish from index `k` on **is** (the coercion of) its `k`-truncati
 - `theorem PowerSeries.mk_eq_trunc_of_tail_zero` [ArkLib/ToMathlib/ExtractedIssueBricks.lean:77](../../../ArkLib/ToMathlib/ExtractedIssueBricks.lean#L77) — A power series whose coefficients vanish from index `k` on equals the coercion of its `k`-truncation
 
+### `multilinearWeight` (2 declarations, 2 files)
+
+- `def multilinearWeight` [ArkLib/Data/CodingTheory/Prelims.lean:23](../../../ArkLib/Data/CodingTheory/Prelims.lean#L23) — The tensor product weight `⊗_{i=0}^{ϑ-1}(1 - rᵢ, rᵢ)` for a specific index `i` given randomness `r`.
+- `def Issue33Binius.multilinearWeight` [ArkLib/ProofSystem/Binius/BinaryBasefold/MultilinearWeightRecursion.lean:24](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/MultilinearWeightRecursion.lean#L24) — Tensor product weight `⊗_{j<ϑ}(1 - r_j, r_j)` at index `i` given challenges `r`. This is a verbatim
+
 ### `natDegree_taylor_lt` (2 declarations, 2 files)
 
 - `theorem ArkLib.BetaToCurveCoeffPolys.natDegree_taylor_lt` [ArkLib/ToMathlib/BetaToCurveCoeffPolysOffcentre.lean:141](../../../ArkLib/ToMathlib/BetaToCurveCoeffPolysOffcentre.lean#L141) — Taylor shift preserves the strict degree bound of a coefficient profile.
@@ -1957,10 +2245,15 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `lemma ReedSolomon.FftDomain.neg_one_mem_domain` [ArkLib/Data/CodingTheory/ReedSolomon/FftDomain.lean:419](../../../ArkLib/Data/CodingTheory/ReedSolomon/FftDomain.lean#L419) — (no docstring)
 - `lemma Domain.FftDomainClass.neg_one_mem_domain` [ArkLib/Data/Domain/FftDomain/Ops.lean:82](../../../ArkLib/Data/Domain/FftDomain/Ops.lean#L82) — (no docstring)
 
+### `one_le_Lambda_of_nonempty` (2 declarations, 2 files)
+
+- `theorem CodingTheory.one_le_Lambda_of_nonempty` [ArkLib/Data/CodingTheory/ListSizeVolumeBound.lean:184](../../../ArkLib/Data/CodingTheory/ListSizeVolumeBound.lean#L184) — **List-size lower bound `1 ≤ \|Λ(C,δ)\|` for a nonempty code and `δ ≥ 0`.** Any codeword is `0`-close
+- `lemma InterleavedCode.GGR11.one_le_Lambda_of_nonempty` [ArkLib/ToMathlib/GGR11TreeConstruction.lean:1247](../../../ArkLib/ToMathlib/GGR11TreeConstruction.lean#L1247) — With a nonempty code, a nonnegative radius, and finite lists, the maximised list size is at least on
+
 ### `oracleVerifier_toVerifier_run` (2 declarations, 2 files)
 
 - `theorem ReduceClaim.oracleVerifier_toVerifier_run` [ArkLib/ProofSystem/Component/ReduceClaim.lean:267](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L267) — Running the (oracle) verifier of the `ReduceClaim` oracle reduction deterministically returns the ma
-- `theorem SendSingleWitness.oracleVerifier_toVerifier_run` [ArkLib/ProofSystem/Component/SendWitness.lean:382](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L382) — (no docstring)
+- `theorem SendSingleWitness.oracleVerifier_toVerifier_run` [ArkLib/ProofSystem/Component/SendWitness.lean:383](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L383) — (no docstring)
 
 ### `pSpecBatching` (2 declarations, 2 files)
 
@@ -1990,32 +2283,87 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `packMLE` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.packMLE` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:114](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L114) — **Definition 2.1 (MLE packing)**. Packs a small-field multilinear `t` into a large-field multilinear
-- `def RingSwitching.packMLE` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:113](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L113) — **Definition 2.1 (MLE packing)**. Packs a small-field multilinear `t` into a large-field multilinear
+- `def RingSwitching.packMLE` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:114](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L114) — **Definition 2.1 (MLE packing)**. Packs a small-field multilinear `t` into a large-field multilinear
 
 ### `packMLE_repr_eval` (2 declarations, 2 files)
 
 - `lemma Binius.RingSwitching.packMLE_repr_eval` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:575](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L575) — The basis coordinate of a packed evaluation recovers the small-field coefficient: `β.repr (t'(w)) u
-- `lemma RingSwitching.packMLE_repr_eval` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:692](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L692) — The basis coordinate of a packed evaluation recovers the small-field coefficient: `β.repr (t'(w)) u
+- `lemma RingSwitching.packMLE_repr_eval` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:693](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L693) — The basis coordinate of a packed evaluation recovers the small-field coefficient: `β.repr (t'(w)) u
 
 ### `perfectCorrectness` (2 declarations, 2 files)
 
 - `def Commitment.perfectCorrectness` [ArkLib/CommitmentScheme/Basic.lean:109](../../../ArkLib/CommitmentScheme/Basic.lean#L109) — A commitment scheme satisfies **perfect correctness** if it satisfies correctness with no error.
 - `def CommitmentScheme.perfectCorrectness` [ArkLib/CommitmentScheme/CommitmentScheme.lean:74](../../../ArkLib/CommitmentScheme/CommitmentScheme.lean#L74) — A commitment scheme satisfies **perfect correctness** if it satisfies correctness with no error.
 
+### `perfectHVZK.congr_honestDist` (2 declarations, 2 files)
+
+- `theorem OracleReduction.perfectHVZK.congr_honestDist` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:33](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L33) — **OracleReduction perfect HVZK transfers along an equal honest distribution.**
+- `theorem Reduction.perfectHVZK.congr_honestDist` [ArkLib/ToMathlib/ZKTransferBricks.lean:64](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L64) — **Perfect HVZK transfers along an `evalDist`-equal honest distribution.** If two reductions have the
+
+### `perfectHVZK.congr_honestDist_symm` (2 declarations, 2 files)
+
+- `theorem OracleReduction.perfectHVZK.congr_honestDist_symm` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:59](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L59) — **OracleReduction perfect HVZK honest-distribution congruence with opposite-order equality.**
+- `theorem Reduction.perfectHVZK.congr_honestDist_symm` [ArkLib/ToMathlib/ZKTransferBricks.lean:96](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L96) — **Perfect HVZK honest-distribution congruence with opposite-order equality.**
+
+### `perfectHVZK.isHVZK` (2 declarations, 2 files)
+
+- `theorem OracleReduction.perfectHVZK.isHVZK` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:130](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L130) — **A concrete OracleReduction perfect-HVZK simulator witnesses existential HVZK.**
+- `theorem Reduction.perfectHVZK.isHVZK` [ArkLib/ToMathlib/ZKTransferBricks.lean:174](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L174) — **A concrete perfect-HVZK simulator witnesses existential HVZK.**
+
+### `perfectHVZK.isHVZK_of_simulator_congr` (2 declarations, 2 files)
+
+- `theorem OracleReduction.perfectHVZK.isHVZK_of_simulator_congr` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:152](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L152) — **Package an OracleReduction perfect-HVZK proof after normalizing the simulator distribution.**
+- `theorem Reduction.perfectHVZK.isHVZK_of_simulator_congr` [ArkLib/ToMathlib/ZKTransferBricks.lean:194](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L194) — **Package a perfect-HVZK proof after normalizing the simulator distribution.**
+
+### `perfectHVZK.isHVZK_of_simulator_congr_symm` (2 declarations, 2 files)
+
+- `theorem OracleReduction.perfectHVZK.isHVZK_of_simulator_congr_symm` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:176](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L176) — **Package an OracleReduction perfect-HVZK proof after simulator normalization in the opposite direct
+- `theorem Reduction.perfectHVZK.isHVZK_of_simulator_congr_symm` [ArkLib/ToMathlib/ZKTransferBricks.lean:216](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L216) — **Package a perfect-HVZK proof after simulator normalization in the opposite direction.**
+
 ### `perfectHVZK.mono_relation` (2 declarations, 2 files)
 
 - `theorem OracleReduction.perfectHVZK.mono_relation` [ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean:107](../../../ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean#L107) — Perfect HVZK for oracle reductions is antitone in the relation.
 - `theorem Reduction.perfectHVZK.mono_relation` [ArkLib/OracleReduction/Security/ZeroKnowledge.lean:156](../../../ArkLib/OracleReduction/Security/ZeroKnowledge.lean#L156) — **Perfect HVZK is antitone in the relation.** A simulator that matches the honest transcript distrib
+
+### `perfectHVZK.simulator_congr` (2 declarations, 2 files)
+
+- `theorem OracleReduction.perfectHVZK.simulator_congr` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:86](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L86) — **OracleReduction perfect HVZK is preserved under an equal simulator distribution.**
+- `theorem Reduction.perfectHVZK.simulator_congr` [ArkLib/ToMathlib/ZKTransferBricks.lean:123](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L123) — **Perfect HVZK is preserved under an `evalDist`-equal simulator.** Swapping in a simulator that prod
+
+### `perfectHVZK.simulator_congr_symm` (2 declarations, 2 files)
+
+- `theorem OracleReduction.perfectHVZK.simulator_congr_symm` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:108](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L108) — **OracleReduction perfect HVZK simulator congruence with opposite-order equality.**
+- `theorem Reduction.perfectHVZK.simulator_congr_symm` [ArkLib/ToMathlib/ZKTransferBricks.lean:152](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L152) — **Perfect HVZK simulator congruence with opposite-order equality.**
 
 ### `perfectHVZK.statisticalHVZK` (2 declarations, 2 files)
 
 - `theorem OracleReduction.perfectHVZK.statisticalHVZK` [ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean:96](../../../ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean#L96) — Perfect HVZK for oracle reductions implies statistical HVZK with any error bound.
 - `theorem Reduction.perfectHVZK.statisticalHVZK` [ArkLib/OracleReduction/Security/ZeroKnowledge.lean:137](../../../ArkLib/OracleReduction/Security/ZeroKnowledge.lean#L137) — Perfect HVZK implies statistical HVZK with any error `ε`.
 
+### `perfectHVZK.triangle_honestDist_symm_zero` (2 declarations, 2 files)
+
+- `theorem OracleReduction.perfectHVZK.triangle_honestDist_symm_zero` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:283](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L283) — Symmetric-facing zero-error approximate honest-distribution transfer for perfect HVZK at the OracleR
+- `theorem Reduction.perfectHVZK.triangle_honestDist_symm_zero` [ArkLib/ToMathlib/ZKTransferBricks.lean:362](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L362) — Symmetric-facing zero-error approximate honest-distribution transfer for perfect HVZK.
+
+### `perfectHVZK.triangle_honestDist_zero` (2 declarations, 2 files)
+
+- `theorem OracleReduction.perfectHVZK.triangle_honestDist_zero` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:269](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L269) — **Zero-error approximate honest-distribution transfer for perfect HVZK at the OracleReduction API bo
+- `theorem Reduction.perfectHVZK.triangle_honestDist_zero` [ArkLib/ToMathlib/ZKTransferBricks.lean:342](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L342) — **Zero-error approximate honest-distribution transfer for perfect HVZK.** If the honest-transcript b
+
 ### `perfectHVZK_iff_statisticalHVZK_zero` (2 declarations, 2 files)
 
 - `theorem OracleReduction.perfectHVZK_iff_statisticalHVZK_zero` [ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean:85](../../../ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean#L85) — Perfect HVZK for oracle reductions is exactly statistical HVZK with error `0`.
 - `theorem Reduction.perfectHVZK_iff_statisticalHVZK_zero` [ArkLib/OracleReduction/Security/ZeroKnowledge.lean:109](../../../ArkLib/OracleReduction/Security/ZeroKnowledge.lean#L109) — Perfect HVZK is exactly statistical HVZK with error `0`.
+
+### `perfectHVZK_of_const_eq_honestDist` (2 declarations, 2 files)
+
+- `theorem OracleReduction.perfectHVZK_of_const_eq_honestDist` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:321](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L321) — **Symmetric-facing OracleReduction constant-simulator criterion for perfect HVZK.**
+- `theorem Reduction.perfectHVZK_of_const_eq_honestDist` [ArkLib/ToMathlib/ZKTransferBricks.lean:406](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L406) — **Symmetric-facing constant-simulator criterion for perfect HVZK.**
+
+### `perfectHVZK_of_honestDist_eq_const` (2 declarations, 2 files)
+
+- `theorem OracleReduction.perfectHVZK_of_honestDist_eq_const` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:296](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L296) — **OracleReduction constant-simulator criterion for perfect HVZK.**
+- `theorem Reduction.perfectHVZK_of_honestDist_eq_const` [ArkLib/ToMathlib/ZKTransferBricks.lean:380](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L380) — **Constant-simulator criterion for perfect HVZK.** If the honest transcript distribution is `evalDis
 
 ### `perfectlyCorrect` (2 declarations, 2 files)
 
@@ -2025,22 +2373,27 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `performCheckOriginalEvaluation` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.performCheckOriginalEvaluation` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:339](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L339) — Step 2 (V): Check 1: s ?= Σ_{v ∈ {0,1}^κ} eqTilde(v, r_{0..κ-1}) ⋅ ŝ_v. Note (soundness fix): the de
-- `def RingSwitching.performCheckOriginalEvaluation` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:347](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L347) — Step 2 (V): Check 1: s ?= Σ_{v ∈ {0,1}^κ} eqTilde(v, r_{0..κ-1}) ⋅ ŝ_v. Note (soundness fix): the de
+- `def RingSwitching.performCheckOriginalEvaluation` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:348](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L348) — Step 2 (V): Check 1: s ?= Σ_{v ∈ {0,1}^κ} eqTilde(v, r_{0..κ-1}) ⋅ ŝ_v. Note (soundness fix): the de
 
 ### `performCheckOriginalEvaluation_packMLE_iff` (2 declarations, 2 files)
 
 - `lemma Binius.RingSwitching.performCheckOriginalEvaluation_packMLE_iff` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:805](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L805) — **DP24 ring-switching capstone (decision form).** The verifier's Step-2 check on the prover's honest
-- `lemma RingSwitching.performCheckOriginalEvaluation_packMLE_iff` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:981](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L981) — **Generic DP24 ring-switching capstone (decision form)** over an abstract `P`. The verifier's Step-2
+- `lemma RingSwitching.performCheckOriginalEvaluation_packMLE_iff` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:982](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L982) — **Generic DP24 ring-switching capstone (decision form)** over an abstract `P`. The verifier's Step-2
 
 ### `pow_eq_card_eq_zero_or_gcd` (2 declarations, 2 files)
 
 - `theorem ProximityGap.MultiplicativeRigidity.pow_eq_card_eq_zero_or_gcd` [ArkLib/Data/CodingTheory/ProximityGap/MultiplicativeRigidityFiber.lean:63](../../../ArkLib/Data/CodingTheory/ProximityGap/MultiplicativeRigidityFiber.lean#L63) — **Lemma 1 (monomial agreement / coset rigidity).** In a finite cyclic commutative group `G` of order
 - `theorem MultiplicativeRigidity.pow_eq_card_eq_zero_or_gcd` [ArkLib/Data/CodingTheory/ProximityGap/MultiplicativeRigidityZMod.lean:99](../../../ArkLib/Data/CodingTheory/ProximityGap/MultiplicativeRigidityZMod.lean#L99) — **Coset rigidity / monomial agreement (core).** In a finite cyclic group `G` of order `n = Fintype.c
 
+### `probability_bound_badBatchingEventProp` (2 declarations, 2 files)
+
+- `lemma Binius.RingSwitching.BatchingPhase.probability_bound_badBatchingEventProp` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:1052](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L1052) — **Schwartz-Zippel bound for the bad batching event.** When `msg0 = s_bar`, the event never holds (fi
+- `lemma RingSwitching.BatchingPhase.probability_bound_badBatchingEventProp` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:663](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L663) — **Schwartz-Zippel bound for the bad batching event.**
+
 ### `prod_concat_split` (2 declarations, 2 files)
 
 - `lemma Binius.RingSwitching.prod_concat_split` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:627](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L627) — A product over `Fin (ℓ' + κ₀)` of a function defined by the κ/ℓ'-dichotomy splits as the product of
-- `lemma RingSwitching.prod_concat_split` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:720](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L720) — A product over `Fin (ℓ' + κ₀)` of a function defined by the κ/ℓ'-dichotomy splits as the product of
+- `lemma RingSwitching.prod_concat_split` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:721](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L721) — A product over `Fin (ℓ' + κ₀)` of a function defined by the κ/ℓ'-dichotomy splits as the product of
 
 ### `prop_4_23_singleRepetition_proximityCheck_bound` (2 declarations, 2 files)
 
@@ -2062,26 +2415,6 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def Binius.BinaryBasefold.QueryPhase.queryOracleReduction` [ArkLib/ProofSystem/Binius/BinaryBasefold/QueryPhase.lean:174](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/QueryPhase.lean#L174) — The oracle reduction for the final query phase.
 - `def Fri.Spec.QueryRound.queryOracleReduction` [ArkLib/ProofSystem/Fri/Spec/SingleRound.lean:1137](../../../ArkLib/ProofSystem/Fri/Spec/SingleRound.lean#L1137) — (no docstring)
 
-### `reduction_isHVZK` (2 declarations, 2 files)
-
-- `theorem CheckClaim.reduction_isHVZK` [ArkLib/ProofSystem/Component/CheckClaim.lean:156](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L156) — `CheckClaim` has an explicit perfect-HVZK simulator.
-- `theorem ReduceClaim.reduction_isHVZK` [ArkLib/ProofSystem/Component/ReduceClaim.lean:153](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L153) — `ReduceClaim` has an explicit perfect-HVZK simulator for any input relation.
-
-### `reduction_isStatHVZK` (2 declarations, 2 files)
-
-- `theorem CheckClaim.reduction_isStatHVZK` [ArkLib/ProofSystem/Component/CheckClaim.lean:161](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L161) — `CheckClaim` has statistical HVZK at every error budget.
-- `theorem ReduceClaim.reduction_isStatHVZK` [ArkLib/ProofSystem/Component/ReduceClaim.lean:159](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L159) — `ReduceClaim` has statistical HVZK for any input relation and error budget.
-
-### `reduction_perfectHVZK` (2 declarations, 2 files)
-
-- `theorem CheckClaim.reduction_perfectHVZK` [ArkLib/ProofSystem/Component/CheckClaim.lean:142](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L142) — `CheckClaim` is perfectly HVZK for the predicate relation. The simulator is the identity transcript
-- `theorem ReduceClaim.reduction_perfectHVZK` [ArkLib/ProofSystem/Component/ReduceClaim.lean:138](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L138) — `ReduceClaim` is perfectly HVZK for any input relation: it has no messages or challenges, so the ide
-
-### `reduction_statisticalHVZK` (2 declarations, 2 files)
-
-- `theorem CheckClaim.reduction_statisticalHVZK` [ArkLib/ProofSystem/Component/CheckClaim.lean:150](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L150) — Perfect HVZK implies statistical HVZK at every error budget.
-- `theorem ReduceClaim.reduction_statisticalHVZK` [ArkLib/ProofSystem/Component/ReduceClaim.lean:146](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L146) — Perfect HVZK implies statistical HVZK for `ReduceClaim` at every error budget.
-
 ### `reduction_verifier_eq_verifier` (2 declarations, 2 files)
 
 - `lemma Sumcheck.Spec.reduction_verifier_eq_verifier` [ArkLib/ProofSystem/Sumcheck/Spec/General.lean:193](../../../ArkLib/ProofSystem/Sumcheck/Spec/General.lean#L193) — (no docstring)
@@ -2090,7 +2423,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `relIn` (2 declarations, 2 files)
 
 - `def CheckClaim.relIn` [ArkLib/ProofSystem/Component/CheckClaim.lean:61](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L61) — (no docstring)
-- `def RandomQuery.relIn` [ArkLib/ProofSystem/Component/RandomQuery.lean:41](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L41) — The input relation is that the two oracles are equal.
+- `def RandomQuery.relIn` [ArkLib/ProofSystem/Component/RandomQuery.lean:43](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L43) — The input relation is that the two oracles are equal.
 
 ### `rewindingKnowledgeSoundness` (2 declarations, 2 files)
 
@@ -2119,7 +2452,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `run` (2 declarations, 2 files)
 
-- `def AGM.Adversary.run` [ArkLib/AGM/Basic.lean:388](../../../ArkLib/AGM/Basic.lean#L388) — Running the adversary on a given table, returning the list of group elements it is supposed to outpu
+- `def AGM.Adversary.run` [ArkLib/AGM/Basic.lean:484](../../../ArkLib/AGM/Basic.lean#L484) — Running the adversary on a given table, returning the list of group elements it is supposed to outpu
 - `def Prover.run` [ArkLib/OracleReduction/Execution.lean:97](../../../ArkLib/OracleReduction/Execution.lean#L97) — Run the prover in an interactive reduction. Returns the output statement and witness, and the transc
 
 ### `shiftSeries` (2 declarations, 2 files)
@@ -2145,12 +2478,22 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `singleEq_collapse` (2 declarations, 2 files)
 
 - `lemma Binius.RingSwitching.singleEq_collapse` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:491](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L491) — A single `eqPolynomial` factor, evaluated through the mixed embedding `eval₂ φ₁ (φ₀ ∘ g)` at a Boole
-- `lemma RingSwitching.singleEq_collapse` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:639](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L639) — A single `eqPolynomial` factor, evaluated through the mixed embedding `eval₂ φ₁ (φ₀ ∘ g)` at a Boole
+- `lemma RingSwitching.singleEq_collapse` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:640](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L640) — A single `eqPolynomial` factor, evaluated through the mixed embedding `eval₂ φ₁ (φ₀ ∘ g)` at a Boole
 
 ### `size_of_smooth_coset_domain_eq_pow_of_2` (2 declarations, 2 files)
 
 - `lemma ReedSolomon.CosetFftDomain.size_of_smooth_coset_domain_eq_pow_of_2` [ArkLib/Data/CodingTheory/ReedSolomon/FftDomain.lean:1317](../../../ArkLib/Data/CodingTheory/ReedSolomon/FftDomain.lean#L1317) — (no docstring)
 - `lemma Domain.size_of_smooth_coset_domain_eq_pow_of_2` [ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean:515](../../../ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean#L515) — Compatibility form of the smooth-coset domain size: the `toFinset` of a `SmoothCosetFftDomain n F` h
+
+### `soundness.mono_error` (2 declarations, 2 files)
+
+- `theorem Verifier.soundness.mono_error` [ArkLib/OracleReduction/Security/Basic.lean:373](../../../ArkLib/OracleReduction/Security/Basic.lean#L373) — Verifier soundness is monotone in the allowed soundness error.
+- `theorem Verifier.StateRestoration.soundness.mono_error` [ArkLib/OracleReduction/Security/StateRestoration.lean:143](../../../ArkLib/OracleReduction/Security/StateRestoration.lean#L143) — State-restoration soundness is monotone in the allowed soundness error.
+
+### `soundness.mono_languages` (2 declarations, 2 files)
+
+- `theorem Verifier.soundness.mono_languages` [ArkLib/OracleReduction/Security/Basic.lean:389](../../../ArkLib/OracleReduction/Security/Basic.lean#L389) — Verifier soundness is monotone in the input and output languages. If soundness holds for a smaller h
+- `theorem Verifier.StateRestoration.soundness.mono_languages` [ArkLib/OracleReduction/Security/StateRestoration.lean:157](../../../ArkLib/OracleReduction/Security/StateRestoration.lean#L157) — State-restoration soundness is monotone under enlarging the honest input language and shrinking the
 
 ### `sq_root_mem_subdomain` (2 declarations, 2 files)
 
@@ -2162,6 +2505,31 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `theorem Finset.sq_sum_le_card_support_mul_sum_sq` [ArkLib/ToMathlib/SqSumCardSupport.lean:20](../../../ArkLib/ToMathlib/SqSumCardSupport.lean#L20) — (no docstring)
 - `theorem ArkLib.sq_sum_le_card_support_mul_sum_sq` [ArkLib/ToMathlib/SupportSqBound.lean:25](../../../ArkLib/ToMathlib/SupportSqBound.lean#L25) — **Cauchy-Schwarz support bound.** Over a finite type, `(∑ f)² ≤ \|support f\| · (∑ f²)`.
 
+### `statisticalHVZK.congr_honestDist` (2 declarations, 2 files)
+
+- `theorem OracleReduction.statisticalHVZK.congr_honestDist` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:46](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L46) — **OracleReduction statistical HVZK transfers along an equal honest distribution.**
+- `theorem Reduction.statisticalHVZK.congr_honestDist` [ArkLib/ToMathlib/ZKTransferBricks.lean:80](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L80) — **Statistical HVZK transfers along an `evalDist`-equal honest distribution.** The same simulator and
+
+### `statisticalHVZK.congr_honestDist_symm` (2 declarations, 2 files)
+
+- `theorem OracleReduction.statisticalHVZK.congr_honestDist_symm` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:73](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L73) — **OracleReduction statistical HVZK honest-distribution congruence with opposite-order equality.**
+- `theorem Reduction.statisticalHVZK.congr_honestDist_symm` [ArkLib/ToMathlib/ZKTransferBricks.lean:109](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L109) — **Statistical HVZK honest-distribution congruence with opposite-order equality.**
+
+### `statisticalHVZK.isStatHVZK` (2 declarations, 2 files)
+
+- `theorem OracleReduction.statisticalHVZK.isStatHVZK` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:141](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L141) — **A concrete OracleReduction statistical-HVZK simulator witnesses existential statistical HVZK.**
+- `theorem Reduction.statisticalHVZK.isStatHVZK` [ArkLib/ToMathlib/ZKTransferBricks.lean:184](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L184) — **A concrete statistical-HVZK simulator witnesses existential statistical HVZK.**
+
+### `statisticalHVZK.isStatHVZK_of_simulator_congr` (2 declarations, 2 files)
+
+- `theorem OracleReduction.statisticalHVZK.isStatHVZK_of_simulator_congr` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:164](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L164) — **Package an OracleReduction statistical-HVZK proof after normalizing the simulator distribution.**
+- `theorem Reduction.statisticalHVZK.isStatHVZK_of_simulator_congr` [ArkLib/ToMathlib/ZKTransferBricks.lean:205](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L205) — **Package a statistical-HVZK proof after normalizing the simulator distribution.**
+
+### `statisticalHVZK.isStatHVZK_of_simulator_congr_symm` (2 declarations, 2 files)
+
+- `theorem OracleReduction.statisticalHVZK.isStatHVZK_of_simulator_congr_symm` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:188](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L188) — **Package an OracleReduction statistical-HVZK proof after simulator normalization in the opposite di
+- `theorem Reduction.statisticalHVZK.isStatHVZK_of_simulator_congr_symm` [ArkLib/ToMathlib/ZKTransferBricks.lean:227](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L227) — **Package a statistical-HVZK proof after simulator normalization in the opposite direction.**
+
 ### `statisticalHVZK.mono_error` (2 declarations, 2 files)
 
 - `theorem OracleReduction.statisticalHVZK.mono_error` [ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean:140](../../../ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean#L140) — Statistical HVZK for oracle reductions is monotone in the error bound.
@@ -2172,10 +2540,55 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `theorem OracleReduction.statisticalHVZK.mono_relation` [ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean:129](../../../ArkLib/OracleReduction/Security/OracleZeroKnowledge.lean#L129) — Statistical HVZK for oracle reductions is antitone in the relation.
 - `theorem Reduction.statisticalHVZK.mono_relation` [ArkLib/OracleReduction/Security/ZeroKnowledge.lean:177](../../../ArkLib/OracleReduction/Security/ZeroKnowledge.lean#L177) — **Statistical HVZK is antitone in the relation.**
 
+### `statisticalHVZK.simulator_congr` (2 declarations, 2 files)
+
+- `theorem OracleReduction.statisticalHVZK.simulator_congr` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:97](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L97) — **OracleReduction statistical HVZK is preserved under an equal simulator distribution.**
+- `theorem Reduction.statisticalHVZK.simulator_congr` [ArkLib/ToMathlib/ZKTransferBricks.lean:138](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L138) — **Statistical HVZK is preserved under an `evalDist`-equal simulator.** Swapping in a simulator that
+
+### `statisticalHVZK.simulator_congr_symm` (2 declarations, 2 files)
+
+- `theorem OracleReduction.statisticalHVZK.simulator_congr_symm` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:119](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L119) — **OracleReduction statistical HVZK simulator congruence with opposite-order equality.**
+- `theorem Reduction.statisticalHVZK.simulator_congr_symm` [ArkLib/ToMathlib/ZKTransferBricks.lean:163](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L163) — **Statistical HVZK simulator congruence with opposite-order equality.**
+
+### `statisticalHVZK.simulator_triangle` (2 declarations, 2 files)
+
+- `theorem OracleReduction.statisticalHVZK.simulator_triangle` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:199](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L199) — **Triangle composition of statistical HVZK at the OracleReduction API boundary.**
+- `theorem Reduction.statisticalHVZK.simulator_triangle` [ArkLib/ToMathlib/ZKTransferBricks.lean:240](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L240) — **Triangle composition of statistical HVZK.** If `sim₁` is within `ε₁` of the honest distribution an
+
+### `statisticalHVZK.triangle_honestDist` (2 declarations, 2 files)
+
+- `theorem OracleReduction.statisticalHVZK.triangle_honestDist` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:213](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L213) — **Approximate honest-distribution transfer at the OracleReduction API boundary.**
+- `theorem Reduction.statisticalHVZK.triangle_honestDist` [ArkLib/ToMathlib/ZKTransferBricks.lean:265](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L265) — **Approximate honest-distribution transfer for statistical HVZK.** If a simulator is statistical-HVZ
+
+### `statisticalHVZK.triangle_honestDist_symm` (2 declarations, 2 files)
+
+- `theorem OracleReduction.statisticalHVZK.triangle_honestDist_symm` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:227](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L227) — **Symmetric-facing approximate honest-distribution transfer at the OracleReduction API boundary.**
+- `theorem Reduction.statisticalHVZK.triangle_honestDist_symm` [ArkLib/ToMathlib/ZKTransferBricks.lean:291](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L291) — **Symmetric-facing approximate honest-distribution transfer.** This is the same result as `statistic
+
+### `statisticalHVZK.triangle_honestDist_symm_zero` (2 declarations, 2 files)
+
+- `theorem OracleReduction.statisticalHVZK.triangle_honestDist_symm_zero` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:255](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L255) — Symmetric-facing zero-error approximate honest-distribution transfer for statistical HVZK at the Ora
+- `theorem Reduction.statisticalHVZK.triangle_honestDist_symm_zero` [ArkLib/ToMathlib/ZKTransferBricks.lean:324](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L324) — Symmetric-facing zero-error approximate honest-distribution transfer for statistical HVZK.
+
+### `statisticalHVZK.triangle_honestDist_zero` (2 declarations, 2 files)
+
+- `theorem OracleReduction.statisticalHVZK.triangle_honestDist_zero` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:241](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L241) — **Zero-error approximate honest-distribution transfer for statistical HVZK at the OracleReduction AP
+- `theorem Reduction.statisticalHVZK.triangle_honestDist_zero` [ArkLib/ToMathlib/ZKTransferBricks.lean:308](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L308) — **Zero-error approximate honest-distribution transfer for statistical HVZK.** If the honest transcri
+
+### `statisticalHVZK_of_const_eq_honestDist` (2 declarations, 2 files)
+
+- `theorem OracleReduction.statisticalHVZK_of_const_eq_honestDist` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:334](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L334) — **Symmetric-facing OracleReduction constant-simulator criterion for statistical HVZK.**
+- `theorem Reduction.statisticalHVZK_of_const_eq_honestDist` [ArkLib/ToMathlib/ZKTransferBricks.lean:419](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L419) — **Symmetric-facing constant-simulator criterion for statistical HVZK.**
+
+### `statisticalHVZK_of_honestDist_eq_const` (2 declarations, 2 files)
+
+- `theorem OracleReduction.statisticalHVZK_of_honestDist_eq_const` [ArkLib/ToMathlib/OracleZKTransferBricks.lean:308](../../../ArkLib/ToMathlib/OracleZKTransferBricks.lean#L308) — **OracleReduction constant-simulator criterion for statistical HVZK.**
+- `theorem Reduction.statisticalHVZK_of_honestDist_eq_const` [ArkLib/ToMathlib/ZKTransferBricks.lean:394](../../../ArkLib/ToMathlib/ZKTransferBricks.lean#L394) — **Statistical constant-simulator criterion.** If the honest transcript distribution is `evalDist`-eq
+
 ### `subdomainZeroEquiv` (2 declarations, 2 files)
 
 - `def Domain.CosetFftDomainClass.subdomainZeroEquiv` [ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean:133](../../../ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean#L133) — The zeroth subdomain has the same finite set of field points as the ambient domain.
-- `def Fri.subdomainZeroEquiv` [ArkLib/ProofSystem/BatchedFri/Security.lean:1201](../../../ArkLib/ProofSystem/BatchedFri/Security.lean#L1201) — The round-zero Batched FRI subdomain is equivalent to the original evaluation domain.
+- `def Fri.subdomainZeroEquiv` [ArkLib/ProofSystem/BatchedFri/Security.lean:1333](../../../ArkLib/ProofSystem/BatchedFri/Security.lean#L1333) — The round-zero Batched FRI subdomain is equivalent to the original evaluation domain.
 
 ### `subdomain_embed` (2 declarations, 2 files)
 
@@ -2202,6 +2615,11 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `lemma ReedSolomon.FftDomain.subdomain_embed_zero` [ArkLib/Data/CodingTheory/ReedSolomon/FftDomain.lean:793](../../../ArkLib/Data/CodingTheory/ReedSolomon/FftDomain.lean#L793) — (no docstring)
 - `lemma Domain.CosetFftDomainClass.subdomain_embed_zero` [ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean:69](../../../ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean#L69) — (no docstring)
 
+### `sum_div_mul_prod_eq_sum_mul_prod_erase` (2 declarations, 2 files)
+
+- `theorem Logup.sum_div_mul_prod_eq_sum_mul_prod_erase` [ArkLib/ProofSystem/Logup/Common.lean:755](../../../ArkLib/ProofSystem/Logup/Common.lean#L755) — (no docstring)
+- `theorem Finset.sum_div_mul_prod_eq_sum_mul_prod_erase` [ArkLib/ToMathlib/ProtocolCountingBricks.lean:30](../../../ArkLib/ToMathlib/ProtocolCountingBricks.lean#L30) — **LogUp clear-denominators core.** `(∑ num/den)·(∏ den) = ∑ num·∏_{erase} den`.
+
 ### `sumcheckConsistencyProp` (2 declarations, 2 files)
 
 - `def Binius.BinaryBasefold.sumcheckConsistencyProp` [ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean:1162](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean#L1162) — Sumcheck consistency: the claimed sumcheck target equals the sum of `H` over the boolean hypercube o
@@ -2209,58 +2627,58 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `sumcheckConsistency_at_last_simplifies` (2 declarations, 2 files)
 
-- `lemma Binius.FRIBinius.CoreInteractionPhase.sumcheckConsistency_at_last_simplifies` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:663](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L663) — At `Fin.last ℓ'`, sumcheck consistency simplifies to a single evaluation.
+- `lemma Binius.FRIBinius.CoreInteractionPhase.sumcheckConsistency_at_last_simplifies` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:682](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L682) — At `Fin.last ℓ'`, sumcheck consistency simplifies to a single evaluation.
 - `lemma Binius.RingSwitching.SumcheckPhase.sumcheckConsistency_at_last_simplifies` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1042](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1042) — At `Fin.last ℓ'`, the sumcheck consistency sum is over 0 variables, simplifying to a single evaluati
 
 ### `sumcheckFoldOracleReduction` (2 declarations, 2 files)
 
-- `def sumcheckFoldOracleReduction` [ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean:809](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean#L809) — (no docstring)
+- `def sumcheckFoldOracleReduction` [ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean:815](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean#L815) — (no docstring)
 - `def Binius.FRIBinius.CoreInteractionPhase.sumcheckFoldOracleReduction` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:154](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L154) — (no docstring)
 
 ### `sumcheckFoldOracleReduction_perfectCompleteness` (2 declarations, 2 files)
 
-- `theorem sumcheckFoldOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean:913](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean#L913) — (no docstring)
+- `theorem sumcheckFoldOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean:922](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean#L922) — (no docstring)
 - `theorem Binius.FRIBinius.CoreInteractionPhase.sumcheckFoldOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:252](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L252) — (no docstring)
 
 ### `sumcheckFoldOracleVerifier` (2 declarations, 2 files)
 
-- `def sumcheckFoldOracleVerifier` [ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean:525](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean#L525) — (no docstring)
+- `def sumcheckFoldOracleVerifier` [ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean:531](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean#L531) — (no docstring)
 - `def Binius.FRIBinius.CoreInteractionPhase.sumcheckFoldOracleVerifier` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:147](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L147) — (no docstring)
 
 ### `sumcheckFoldOracleVerifier_rbrKnowledgeSoundness` (2 declarations, 2 files)
 
-- `theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean:1066](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean#L1066) — (no docstring)
-- `theorem Binius.FRIBinius.CoreInteractionPhase.sumcheckFoldOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:421](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L421) — (no docstring)
+- `theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean:1077](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean#L1077) — (no docstring)
+- `theorem Binius.FRIBinius.CoreInteractionPhase.sumcheckFoldOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:440](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L440) — (no docstring)
 
 ### `sumcheckLoopOracleReduction` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.SumcheckPhase.sumcheckLoopOracleReduction` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1691](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1691) — Composed oracle reduction for the SumcheckStep (seqCompose over ℓ')
-- `def RingSwitching.SumcheckPhase.sumcheckLoopOracleReduction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1274](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1274) — Composed oracle reduction for the SumcheckStep (seqCompose over ℓ')
+- `def RingSwitching.SumcheckPhase.sumcheckLoopOracleReduction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1516](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1516) — Composed oracle reduction for the SumcheckStep (seqCompose over ℓ')
 
 ### `sumcheckLoopOracleVerifier` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.SumcheckPhase.sumcheckLoopOracleVerifier` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1682](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1682) — Composed oracle verifier for the SumcheckStep (seqCompose over ℓ')
-- `def RingSwitching.SumcheckPhase.sumcheckLoopOracleVerifier` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1255](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1255) — Composed oracle verifier for the SumcheckStep (seqCompose over ℓ')
+- `def RingSwitching.SumcheckPhase.sumcheckLoopOracleVerifier` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1497](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1497) — Composed oracle verifier for the SumcheckStep (seqCompose over ℓ')
 
 ### `sumcheckRoundRelation` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.sumcheckRoundRelation` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:447](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L447) — Input relation for single round: proper sumcheck statement
-- `def RingSwitching.sumcheckRoundRelation` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:462](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L462) — Input relation for single round: proper sumcheck statement
+- `def RingSwitching.sumcheckRoundRelation` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:463](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L463) — Input relation for single round: proper sumcheck statement
 
 ### `sumcheckRoundRelationProp` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.sumcheckRoundRelationProp` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:440](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L440) — (no docstring)
-- `def RingSwitching.sumcheckRoundRelationProp` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:455](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L455) — (no docstring)
+- `def RingSwitching.sumcheckRoundRelationProp` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:456](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L456) — (no docstring)
 
 ### `sumcheckSum_X0_eq` (2 declarations, 2 files)
 
 - `lemma Binius.RingSwitching.sumcheckSum_X0_eq` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:849](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L849) — **Sumcheck hypercube sum depends on the evaluation domain `𝓑`.** The single-variable sumcheck consis
-- `lemma RingSwitching.sumcheckSum_X0_eq` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1310](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1310) — **Sumcheck hypercube sum depends on the evaluation domain `𝓑`.** The single-variable sumcheck consis
+- `lemma RingSwitching.sumcheckSum_X0_eq` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1311](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1311) — **Sumcheck hypercube sum depends on the evaluation domain `𝓑`.** The single-variable sumcheck consis
 
 ### `sumcheckTarget_domain_indep` (2 declarations, 2 files)
 
 - `lemma Binius.RingSwitching.sumcheckTarget_domain_indep` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:868](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L868) — **No `𝓑`-free target satisfies sumcheck consistency for all domains `𝓑`.** If a single value `c` (in
-- `lemma RingSwitching.sumcheckTarget_domain_indep` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1329](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1329) — **No `𝓑`-free target satisfies sumcheck consistency for all domains `𝓑`.** If a single value `c` (in
+- `lemma RingSwitching.sumcheckTarget_domain_indep` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1330](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1330) — **No `𝓑`-free target satisfies sumcheck consistency for all domains `𝓑`.** If a single value `c` (in
 
 ### `support_mk` (2 declarations, 2 files)
 
@@ -2315,7 +2733,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `unpackMLE` (2 declarations, 2 files)
 
 - `def Binius.RingSwitching.unpackMLE` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:144](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L144) — **Unpacking a Packed Multilinear Polynomial**. Reverses the packing defined in `packMLE`. It reconst
-- `def RingSwitching.unpackMLE` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:143](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L143) — **Unpacking a Packed Multilinear Polynomial**. Reverses the packing defined in `packMLE`. It reconst
+- `def RingSwitching.unpackMLE` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:144](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L144) — **Unpacking a Packed Multilinear Polynomial**. Reverses the packing defined in `packMLE`. It reconst
 
 ### `val_eq_nsmul_one` (2 declarations, 2 files)
 
@@ -2334,7 +2752,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `verifier_rbrKnowledgeSoundness` (2 declarations, 2 files)
 
-- `theorem DoNothing.verifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Component/DoNothing.lean:57](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L57) — The `DoNothing` verifier is perfectly round-by-round knowledge sound.
+- `theorem DoNothing.verifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Component/DoNothing.lean:58](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L58) — The `DoNothing` verifier is perfectly round-by-round knowledge sound.
 - `theorem ReduceClaim.verifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Component/ReduceClaim.lean:225](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L225) — The `ReduceClaim` oracle reduction satisfies perfect round-by-round knowledge soundness. Note that s
 
 ### `verifyOpening` (2 declarations, 2 files)
@@ -2369,19 +2787,9 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `OracleInterface` (3 declarations, 2 files)
 
-- `structure OracleInterface` [ArkLib/OracleReduction/Basic.lean:94](../../../ArkLib/OracleReduction/Basic.lean#L94) — (no docstring)
-- `structure OracleInterface` [ArkLib/OracleReduction/Basic.lean:172](../../../ArkLib/OracleReduction/Basic.lean#L172) — (no docstring)
+- `structure OracleInterface` [ArkLib/OracleReduction/Basic.lean:88](../../../ArkLib/OracleReduction/Basic.lean#L88) — (no docstring)
+- `structure OracleInterface` [ArkLib/OracleReduction/Basic.lean:162](../../../ArkLib/OracleReduction/Basic.lean#L162) — (no docstring)
 - `class OracleInterface` [ArkLib/OracleReduction/OracleInterface.lean:52](../../../ArkLib/OracleReduction/OracleInterface.lean#L52) — `OracleInterface` is a type class that provides an oracle interface for a type `Message`. It consist
-
-### `card_agreement_le` (2 declarations, 2 files)
-
-- `lemma OutOfDomSmpl.card_agreement_le` [ArkLib/ProofSystem/Stir/OutOfDomSmpl.lean:102](../../../ArkLib/ProofSystem/Stir/OutOfDomSmpl.lean#L102) — The agreement set of two distinct codewords' polynomials (inside any subtype of `F`) has at most `de
-- `lemma OutOfDomSmpl.card_agreement_le` [ArkLib/ProofSystem/Whir/OutofDomainSmpl.lean:208](../../../ArkLib/ProofSystem/Whir/OutofDomainSmpl.lean#L208) — Two distinct smooth codewords' decoded polynomials agree on at most `2^m - 1` field points: agreemen
-
-### `card_filter_forall_pi` (2 declarations, 2 files)
-
-- `lemma OutOfDomSmpl.card_filter_forall_pi` [ArkLib/ProofSystem/Stir/OutOfDomSmpl.lean:71](../../../ArkLib/ProofSystem/Stir/OutOfDomSmpl.lean#L71) — Counting a coordinatewise event: the tuples satisfying `Q` in every coordinate form the `piFinset` o
-- `lemma OutOfDomSmpl.card_filter_forall_pi` [ArkLib/ProofSystem/Whir/OutofDomainSmpl.lean:180](../../../ArkLib/ProofSystem/Whir/OutofDomainSmpl.lean#L180) — Tuples satisfying `Q` in every coordinate form the `piFinset` of the per-coordinate solution set, so
 
 ### `choose_pow_le_qEntropy` (2 declarations, 2 files)
 
@@ -2401,7 +2809,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `decodeLT_ne_of_val_ne` (2 declarations, 2 files)
 
 - `lemma OutOfDomSmpl.decodeLT_ne_of_val_ne` [ArkLib/ProofSystem/Stir/OutOfDomSmpl.lean:87](../../../ArkLib/ProofSystem/Stir/OutOfDomSmpl.lean#L87) — Distinct codewords decode to distinct polynomials: the decoded polynomial interpolates the codeword
-- `lemma OutOfDomSmpl.decodeLT_ne_of_val_ne` [ArkLib/ProofSystem/Whir/OutofDomainSmpl.lean:194](../../../ArkLib/ProofSystem/Whir/OutofDomainSmpl.lean#L194) — Distinct smooth codewords decode to distinct univariate polynomials (the decoded polynomial interpol
+- `lemma OutOfDomSmpl.decodeLT_ne_of_val_ne` [ArkLib/ProofSystem/Whir/OutofDomainSmpl.lean:181](../../../ArkLib/ProofSystem/Whir/OutofDomainSmpl.lean#L181) — Distinct smooth codewords decode to distinct univariate polynomials (the decoded polynomial interpol
 
 ### `ehQ` (2 declarations, 2 files)
 
@@ -2412,6 +2820,11 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 - `def MvPolynomial.ehY` [ArkLib/ToMathlib/RestrictedSumset.lean:169](../../../ArkLib/ToMathlib/RestrictedSumset.lean#L169) — Abbreviation for the "diagonal" variable `y = X₀ + X₁`.
 - `def MvPolynomial.ehY` [ArkLib/ToMathlib/RestrictedSumsetGeneral.lean:191](../../../ArkLib/ToMathlib/RestrictedSumsetGeneral.lean#L191) — The "diagonal" variable `y = ∑_k X k`.
+
+### `epsCA_ge_one_sub_inv_of_allButOne` (2 declarations, 2 files)
+
+- `theorem CodingTheory.Bridge.epsCA_ge_one_sub_inv_of_allButOne` [ArkLib/ToMathlib/BGKS20AllButOne.lean:96](../../../ArkLib/ToMathlib/BGKS20AllButOne.lean#L96) — **T5.4 endpoint from the "all but one scalar" producer.** Under the hypotheses of `nearCertainBadLin
+- `theorem CodingTheory.Bridge.epsCA_ge_one_sub_inv_of_allButOne` [ArkLib/ToMathlib/NearCertainBadLineProof.lean:103](../../../ArkLib/ToMathlib/NearCertainBadLineProof.lean#L103) — **T5.4 endpoint from an all-but-one near-certain bad line.**
 
 ### `eval_ehQ_eq_zero` (2 declarations, 2 files)
 
@@ -2427,6 +2840,26 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 - `lemma ProximityGap.finset_card_gt_of_natCast_le_ennreal_lt` [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/Curves.lean:120](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/Curves.lean#L120) — (no docstring)
 - `theorem ProximityGap.finset_card_gt_of_natCast_le_ennreal_lt` [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/Curves/Assembly.lean:120](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/Curves/Assembly.lean#L120) — Convert an ENNReal lower bound on a finite set cardinality into a natural number strict cardinality
+
+### `frs_list_decoding_capacity_cz25_of_coordFiberCap_T218_prop` (2 declarations, 2 files)
+
+- `theorem CodingTheory.frs_list_decoding_capacity_cz25_of_coordFiberCap_T218_prop` [ArkLib/Data/CodingTheory/ListDecoding/Bounds.lean:2293](../../../ArkLib/Data/CodingTheory/ListDecoding/Bounds.lean#L2293) — Prop-level C3.5 endpoint from coordinate-fiber cap plus T2.18. This wraps the unfolded reduction `fr
+- `theorem CodingTheory.frs_list_decoding_capacity_cz25_of_coordFiberCap_T218_prop` [ArkLib/Data/CodingTheory/ListDecoding/CZ25CapacityPropEndpoint.lean:64](../../../ArkLib/Data/CodingTheory/ListDecoding/CZ25CapacityPropEndpoint.lean#L64) — **ABF26 Corollary 3.5 [CZ25 Cor 2.21] — named-`Prop` endpoint from the coordinate-fiber cap.** Concl
+
+### `mcaPrizeLatticeResolved_with_spec_of_GSMassFrontiers_and_adjacent_upperWitnesses` (2 declarations, 2 files)
+
+- `theorem ProximityGap.GrandChallengesLattice.mcaPrizeLatticeResolved_with_spec_of_GSMassFrontiers_and_adjacent_upperWitnesses` [ArkLib/Data/CodingTheory/ProximityGap/MCAGSLatticePrizeSpec.lean:281](../../../ArkLib/Data/CodingTheory/ProximityGap/MCAGSLatticePrizeSpec.lean#L281) — Adjacent GS mass frontiers resolve the four-rate MCA prize at the lower-frontier lattice indices and
+- `theorem ProximityGap.GrandChallengesLattice.mcaPrizeLatticeResolved_with_spec_of_GSMassFrontiers_and_adjacent_upperWitnesses` [ArkLib/Data/CodingTheory/ProximityGap/MCAGSLatticeResolvedSpec.lean:38](../../../ArkLib/Data/CodingTheory/ProximityGap/MCAGSLatticeResolvedSpec.lean#L38) — Faithful GS mass frontiers plus adjacent explicit upper witnesses resolve the four-rate MCA prize at
+
+### `mcaPrizeLatticeResolved_with_spec_of_GSPivotFrontiers_and_adjacent_upperWitnesses` (2 declarations, 2 files)
+
+- `theorem ProximityGap.GrandChallengesLattice.mcaPrizeLatticeResolved_with_spec_of_GSPivotFrontiers_and_adjacent_upperWitnesses` [ArkLib/Data/CodingTheory/ProximityGap/MCAGSLatticePrizeSpec.lean:316](../../../ArkLib/Data/CodingTheory/ProximityGap/MCAGSLatticePrizeSpec.lean#L316) — Adjacent GS pivot/list-size frontiers resolve the four-rate MCA prize at the lower-frontier lattice
+- `theorem ProximityGap.GrandChallengesLattice.mcaPrizeLatticeResolved_with_spec_of_GSPivotFrontiers_and_adjacent_upperWitnesses` [ArkLib/Data/CodingTheory/ProximityGap/MCAGSLatticeResolvedSpec.lean:76](../../../ArkLib/Data/CodingTheory/ProximityGap/MCAGSLatticeResolvedSpec.lean#L76) — Faithful GS pivot/list-size frontiers plus adjacent explicit upper witnesses resolve the four-rate M
+
+### `nearCertainBadLine_of_allButOne` (2 declarations, 2 files)
+
+- `theorem CodingTheory.Bridge.nearCertainBadLine_of_allButOne` [ArkLib/ToMathlib/BGKS20AllButOne.lean:80](../../../ArkLib/ToMathlib/BGKS20AllButOne.lean#L80) — **"All but one scalar" producer (BGKS20 line-witness shape).** Given a stack `u` that is **not** joi
+- `theorem CodingTheory.Bridge.nearCertainBadLine_of_allButOne` [ArkLib/ToMathlib/NearCertainBadLineProof.lean:84](../../../ArkLib/ToMathlib/NearCertainBadLineProof.lean#L84) — **All-but-one producer for `NearCertainBadLine`.** If a stack is not jointly close and every scalar
 
 ### `qEntropy_mul_log_eq_qaryEntropy` (2 declarations, 2 files)
 
@@ -2446,14 +2879,14 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `uniform_event_mass` (2 declarations, 2 files)
 
 - `lemma OutOfDomSmpl.uniform_event_mass` [ArkLib/ProofSystem/Stir/OutOfDomSmpl.lean:55](../../../ArkLib/ProofSystem/Stir/OutOfDomSmpl.lean#L55) — The mass that the `Pr_{...}[...]` PMF encoding assigns to an event under uniform sampling is exactly
-- `lemma OutOfDomSmpl.uniform_event_mass` [ArkLib/ProofSystem/Whir/OutofDomainSmpl.lean:165](../../../ArkLib/ProofSystem/Whir/OutofDomainSmpl.lean#L165) — The mass that the `Pr_{...}[...]` PMF encoding assigns to an event under uniform sampling is exactly
+- `lemma OutOfDomSmpl.uniform_event_mass` [ArkLib/ProofSystem/Whir/OutofDomainSmpl.lean:166](../../../ArkLib/ProofSystem/Whir/OutofDomainSmpl.lean#L166) — The mass that the `Pr_{...}[...]` PMF encoding assigns to an event under uniform sampling is exactly
 
 ### `with` (2 declarations, 2 files)
 
 - `instance with` [ArkLib/Data/CodingTheory/ProximityGap/GrandChallengeLDAttainment.lean:32](../../../ArkLib/Data/CodingTheory/ProximityGap/GrandChallengeLDAttainment.lean#L32) — (no docstring)
 - `theorem with` [ArkLib/Data/CodingTheory/ProximityGap/PermanentlyBlocked.lean:55](../../../ArkLib/Data/CodingTheory/ProximityGap/PermanentlyBlocked.lean#L55) — (no docstring)
 
-## Near-duplicate docstrings (Jaccard ≥ 0.85, 129 cross-file pairs)
+## Near-duplicate docstrings (Jaccard ≥ 0.85, 149 cross-file pairs)
 
 Each pair has docstrings sharing a high fraction of (4+-letter) words, in different files. Most are unrelated coincidences in boilerplate; look for pairs where the *concept* matches.
 
@@ -2493,31 +2926,25 @@ Each pair has docstrings sharing a high fraction of (4+-letter) words, in differ
 - **1.00** `Binius.BinaryBasefold.witnessStructuralInvariant` [ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean:1154](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean#L1154) vs `Binius.RingSwitching.witnessStructuralInvariant` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:423](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L423)
     - a: This condition ensures that the witness polynomial `H` has the correct structure `eq(...) * t(...)`
     - b: This condition ensures that the witness polynomial `H` has the correct structure `A(...) * t'(...)`
-- **1.00** `Binius.BinaryBasefold.witnessStructuralInvariant` [ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean:1154](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean#L1154) vs `RingSwitching.witnessStructuralInvariant` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:438](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L438)
+- **1.00** `Binius.BinaryBasefold.witnessStructuralInvariant` [ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean:1154](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Basic.lean#L1154) vs `RingSwitching.witnessStructuralInvariant` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:439](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L439)
     - a: This condition ensures that the witness polynomial `H` has the correct structure `eq(...) * t(...)`
     - b: This condition ensures that the witness polynomial `H` has the correct structure `A(...) * t'(...)`
-- **1.00** `Binius.FRIBinius.CoreInteractionPhase.finalSumcheckKnowledgeError` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1287](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1287) vs `Binius.RingSwitching.SumcheckPhase.finalSumcheckKnowledgeError` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1463](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1463)
+- **1.00** `Binius.FRIBinius.CoreInteractionPhase.finalSumcheckKnowledgeError` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1306](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1306) vs `Binius.RingSwitching.SumcheckPhase.finalSumcheckKnowledgeError` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1463](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1463)
     - a: RBR knowledge error for the final sumcheck step
     - b: RBR knowledge error for the final sumcheck step
-- **1.00** `Binius.FRIBinius.CoreInteractionPhase.finalSumcheckKnowledgeError` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1287](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1287) vs `RingSwitching.SumcheckPhase.finalSumcheckRbrKnowledgeError` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1042](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1042)
+- **1.00** `Binius.FRIBinius.CoreInteractionPhase.finalSumcheckKnowledgeError` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1306](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1306) vs `RingSwitching.SumcheckPhase.finalSumcheckRbrKnowledgeError` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1284](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1284)
     - a: RBR knowledge error for the final sumcheck step
     - b: RBR knowledge error for the final sumcheck step
-- **1.00** `Binius.FRIBinius.CoreInteractionPhase.finalSumcheckOracleReduction` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:646](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L646) vs `Binius.RingSwitching.SumcheckPhase.finalSumcheckOracleReduction` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1265](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1265)
+- **1.00** `Binius.FRIBinius.CoreInteractionPhase.finalSumcheckOracleReduction` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:665](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L665) vs `Binius.RingSwitching.SumcheckPhase.finalSumcheckOracleReduction` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1265](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1265)
     - a: The oracle reduction for the final sumcheck step
     - b: The oracle reduction for the final sumcheck step
-- **1.00** `Binius.FRIBinius.CoreInteractionPhase.finalSumcheckOracleReduction` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:646](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L646) vs `RingSwitching.SumcheckPhase.finalSumcheckOracleReduction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:943](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L943)
+- **1.00** `Binius.FRIBinius.CoreInteractionPhase.finalSumcheckOracleReduction` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:665](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L665) vs `RingSwitching.SumcheckPhase.finalSumcheckOracleReduction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1185](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1185)
     - a: The oracle reduction for the final sumcheck step
     - b: The oracle reduction for the final sumcheck step
-- **1.00** `Binius.FRIBinius.CoreInteractionPhase.finalSumcheckOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1107](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1107) vs `Binius.RingSwitching.SumcheckPhase.finalSumcheckOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1279](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1279)
+- **1.00** `Binius.FRIBinius.CoreInteractionPhase.finalSumcheckOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1126](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1126) vs `Binius.RingSwitching.SumcheckPhase.finalSumcheckOracleReduction_perfectCompleteness` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1279](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1279)
     - a: Perfect completeness for the final sumcheck step
     - b: Perfect completeness for the final sumcheck step
-- **1.00** `Binius.FRIBinius.CoreInteractionPhase.finalSumcheckOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1588](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1588) vs `Binius.RingSwitching.SumcheckPhase.finalSumcheckOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1660](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1660)
-    - a: Round-by-round knowledge soundness for the final sumcheck step
-    - b: Round-by-round knowledge soundness for the final sumcheck step
-- **1.00** `Binius.FRIBinius.CoreInteractionPhase.finalSumcheckOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1588](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1588) vs `RingSwitching.SumcheckPhase.finalSumcheckOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1234](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1234)
-    - a: Round-by-round knowledge soundness for the final sumcheck step
-    - b: Round-by-round knowledge soundness for the final sumcheck step
-- **1.00** `Binius.FRIBinius.CoreInteractionPhase.finalSumcheckRbrExtractor` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1298](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1298) vs `RingSwitching.SumcheckPhase.finalSumcheckRbrExtractor` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1045](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1045)
+- **1.00** `Binius.FRIBinius.CoreInteractionPhase.finalSumcheckRbrExtractor` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:1317](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L1317) vs `RingSwitching.SumcheckPhase.finalSumcheckRbrExtractor` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1287](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1287)
     - a: The round-by-round extractor for the final sumcheck step
     - b: The round-by-round extractor for the final sumcheck step
 - **1.00** `Binius.FRIBinius.FullFRIBinius.fullOracleProof` [ArkLib/ProofSystem/Binius/FRIBinius/General.lean:171](../../../ArkLib/ProofSystem/Binius/FRIBinius/General.lean#L171) vs `Binius.RingSwitching.FullRingSwitching.fullOracleProof` [ArkLib/ProofSystem/Binius/RingSwitching/General.lean:86](../../../ArkLib/ProofSystem/Binius/RingSwitching/General.lean#L86)
@@ -2547,9 +2974,21 @@ Each pair has docstrings sharing a high fraction of (4+-letter) words, in differ
 - **1.00** `Binius.RingSwitching.BatchingPhase.batchingKnowledgeStateFunction` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:483](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L483) vs `RingSwitching.BatchingPhase.batchingKnowledgeStateFunction` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:406](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L406)
     - a: Knowledge state function for the batching phase.
     - b: Knowledge state function for the batching phase.
+- **1.00** `Binius.RingSwitching.BatchingPhase.batchingMismatchPoly` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:854](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L854) vs `RingSwitching.BatchingPhase.batchingMismatchPoly` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:569](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L569)
+    - a: Mismatch polynomial from row-decomposition difference `msg0 - s_bar`.
+    - b: Mismatch polynomial from row-decomposition difference `msg0 - s_bar`.
+- **1.00** `Binius.RingSwitching.BatchingPhase.batchingMismatchPoly_nonzero_of_embed_ne` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:908](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L908) vs `RingSwitching.BatchingPhase.batchingMismatchPoly_nonzero_of_embed_ne` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:611](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L611)
+    - a: If embedded evaluation mismatches `msg0`, the mismatch polynomial is nonzero.
+    - b: If embedded evaluation mismatches `msg0`, the mismatch polynomial is nonzero.
+- **1.00** `Binius.RingSwitching.BatchingPhase.batchingMismatchPoly_totalDegree_le` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:878](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L878) vs `RingSwitching.BatchingPhase.batchingMismatchPoly_totalDegree_le` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:583](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L583)
+    - a: Degree bound for mismatch polynomial: multilinear in `κ` vars, so total degree ≤ `κ`.
+    - b: Degree bound for mismatch polynomial: multilinear in `κ` vars, so total degree ≤ `κ`.
 - **1.00** `Binius.RingSwitching.BatchingPhase.batchingWitMid` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:408](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L408) vs `RingSwitching.BatchingPhase.batchingWitMid` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:306](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L306)
     - a: Intermediate witness types for RBR knowledge soundness.
     - b: Intermediate witness types for RBR knowledge soundness.
+- **1.00** `Binius.RingSwitching.BatchingPhase.batching_compute_s0_sub_eq_eval_mismatch` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:860](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L860) vs `RingSwitching.BatchingPhase.batching_compute_s0_sub_eq_eval_mismatch` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:574](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L574)
+    - a: The mismatch polynomial evaluates to the `compute_s0` difference.
+    - b: The mismatch polynomial evaluates to the `compute_s0` difference.
 - **1.00** `Binius.RingSwitching.BatchingPhase.failureState` [ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean:71](../../../ArkLib/ProofSystem/Binius/RingSwitching/BatchingPhase.lean#L71) vs `RingSwitching.BatchingPhase.failureState` [ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean:106](../../../ArkLib/ProofSystem/RingSwitching/BatchingPhase.lean#L106)
     - a: A dummy state returned by the verifier upon failure of Check 1.
     - b: A dummy state returned by the verifier upon failure of Check 1.
@@ -2562,139 +3001,133 @@ Each pair has docstrings sharing a high fraction of (4+-letter) words, in differ
 - **1.00** `Binius.RingSwitching.FullRingSwitching.fullOracleVerifier` [ArkLib/ProofSystem/Binius/RingSwitching/General.lean:56](../../../ArkLib/ProofSystem/Binius/RingSwitching/General.lean#L56) vs `RingSwitching.FullRingSwitching.fullOracleVerifier` [ArkLib/ProofSystem/RingSwitching/General.lean:60](../../../ArkLib/ProofSystem/RingSwitching/General.lean#L60)
     - a: The oracle verifier for the full Binary Basefold protocol
     - b: The oracle verifier for the full Binary Basefold protocol
-- **1.00** `Binius.RingSwitching.MLPEvalRelation` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:236](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L236) vs `RingSwitching.MLPEvalRelation` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:246](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L246)
+- **1.00** `Binius.RingSwitching.MLPEvalRelation` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:236](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L236) vs `RingSwitching.MLPEvalRelation` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:247](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L247)
     - a: Standard input relation for MLIOPCS: polynomial evaluation at point equals claimed evaluation
     - b: Standard input relation for MLIOPCS: polynomial evaluation at point equals claimed evaluation
-- **1.00** `Binius.RingSwitching.MLPEvalStatement` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:203](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L203) vs `RingSwitching.MLPEvalStatement` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:207](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L207)
+- **1.00** `Binius.RingSwitching.MLPEvalStatement` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:203](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L203) vs `RingSwitching.MLPEvalStatement` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:208](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L208)
     - a: Initial input (input to the batching phase): a polynomial-evaluation claim `s = t(r)`.
     - b: Initial input (input to the Batching Phase): a polynomial-evaluation claim `s = t(r)`.
-- **1.00** `Binius.RingSwitching.RingSwitching_SumcheckMultParam` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:381](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L381) vs `RingSwitching.RingSwitching_SumcheckMultParam` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:388](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L388)
+- **1.00** `Binius.RingSwitching.RingSwitching_SumcheckMultParam` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:381](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L381) vs `RingSwitching.RingSwitching_SumcheckMultParam` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:389](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L389)
     - a: Ring-Switching multiplier parameter for sumcheck, using `A_MLE` as the multiplier.
     - b: Ring-Switching multiplier parameter for sumcheck, using `A_MLE` as the multiplier.
-- **1.00** `Binius.RingSwitching.SumcheckPhase.coreInteractionOracleReduction` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1721](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1721) vs `RingSwitching.SumcheckPhase.coreInteractionOracleReduction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1337](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1337)
+- **1.00** `Binius.RingSwitching.SumcheckPhase.coreInteractionOracleReduction` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1721](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1721) vs `RingSwitching.SumcheckPhase.coreInteractionOracleReduction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1579](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1579)
     - a: Large-field reduction: Sumcheck seqCompose, then append FinalSum
     - b: Large-field reduction: Sumcheck seqCompose, then append FinalSum
-- **1.00** `Binius.RingSwitching.SumcheckPhase.coreInteractionOracleVerifier` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1712](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1712) vs `RingSwitching.SumcheckPhase.coreInteractionOracleVerifier` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1301](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1301)
+- **1.00** `Binius.RingSwitching.SumcheckPhase.coreInteractionOracleVerifier` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1712](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1712) vs `RingSwitching.SumcheckPhase.coreInteractionOracleVerifier` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1543](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1543)
     - a: Large-field reduction verifier: Sumcheck seqCompose, then append FinalSum
     - b: Large-field reduction verifier: Sumcheck seqCompose, then append FinalSum
-- **1.00** `Binius.RingSwitching.SumcheckPhase.coreInteraction_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1809](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1809) vs `RingSwitching.SumcheckPhase.coreInteraction_rbrKnowledgeSoundness` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1409](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1409)
+- **1.00** `Binius.RingSwitching.SumcheckPhase.coreInteraction_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1809](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1809) vs `RingSwitching.SumcheckPhase.coreInteraction_rbrKnowledgeSoundness` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1651](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1651)
     - a: RBR knowledge soundness for large-field reduction (Sumcheck ++ FinalSum)
     - b: RBR knowledge soundness for large-field reduction (Sumcheck ++ FinalSum)
-- **1.00** `Binius.RingSwitching.SumcheckPhase.finalSumcheckKnowledgeError` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1463](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1463) vs `RingSwitching.SumcheckPhase.finalSumcheckRbrKnowledgeError` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1042](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1042)
+- **1.00** `Binius.RingSwitching.SumcheckPhase.finalSumcheckKnowledgeError` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1463](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1463) vs `RingSwitching.SumcheckPhase.finalSumcheckRbrKnowledgeError` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1284](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1284)
     - a: RBR knowledge error for the final sumcheck step
     - b: RBR knowledge error for the final sumcheck step
-- **1.00** `Binius.RingSwitching.SumcheckPhase.finalSumcheckOracleReduction` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1265](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1265) vs `RingSwitching.SumcheckPhase.finalSumcheckOracleReduction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:943](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L943)
+- **1.00** `Binius.RingSwitching.SumcheckPhase.finalSumcheckOracleReduction` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1265](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1265) vs `RingSwitching.SumcheckPhase.finalSumcheckOracleReduction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1185](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1185)
     - a: The oracle reduction for the final sumcheck step
     - b: The oracle reduction for the final sumcheck step
-- **1.00** `Binius.RingSwitching.SumcheckPhase.finalSumcheckOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1660](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1660) vs `RingSwitching.SumcheckPhase.finalSumcheckOracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1234](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1234)
-    - a: Round-by-round knowledge soundness for the final sumcheck step
-    - b: Round-by-round knowledge soundness for the final sumcheck step
-- **1.00** `Binius.RingSwitching.SumcheckPhase.iteratedSumcheckKnowledgeStateFunction` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:606](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L606) vs `RingSwitching.SumcheckPhase.iteratedSumcheckKnowledgeStateFunction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:795](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L795)
+- **1.00** `Binius.RingSwitching.SumcheckPhase.iteratedSumcheckKnowledgeStateFunction` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:606](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L606) vs `RingSwitching.SumcheckPhase.iteratedSumcheckKnowledgeStateFunction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:789](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L789)
     - a: Knowledge state function (KState) for single round
     - b: Knowledge state function (KState) for single round
-- **1.00** `Binius.RingSwitching.SumcheckPhase.sumcheckLoopOracleReduction` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1691](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1691) vs `RingSwitching.SumcheckPhase.sumcheckLoopOracleReduction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1274](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1274)
+- **1.00** `Binius.RingSwitching.SumcheckPhase.sumcheckLoopOracleReduction` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1691](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1691) vs `RingSwitching.SumcheckPhase.sumcheckLoopOracleReduction` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1516](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1516)
     - a: Composed oracle reduction for the SumcheckStep (seqCompose over ℓ')
     - b: Composed oracle reduction for the SumcheckStep (seqCompose over ℓ')
-- **1.00** `Binius.RingSwitching.SumcheckPhase.sumcheckLoopOracleVerifier` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1682](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1682) vs `RingSwitching.SumcheckPhase.sumcheckLoopOracleVerifier` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1255](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1255)
+- **1.00** `Binius.RingSwitching.SumcheckPhase.sumcheckLoopOracleVerifier` [ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean:1682](../../../ArkLib/ProofSystem/Binius/RingSwitching/SumcheckPhase.lean#L1682) vs `RingSwitching.SumcheckPhase.sumcheckLoopOracleVerifier` [ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean:1497](../../../ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean#L1497)
     - a: Composed oracle verifier for the SumcheckStep (seqCompose over ℓ')
     - b: Composed oracle verifier for the SumcheckStep (seqCompose over ℓ')
-- **1.00** `Binius.RingSwitching.TensorAlgebra` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:63](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L63) vs `RingSwitching.TensorAlgebra` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:62](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L62)
+- **1.00** `Binius.RingSwitching.TensorAlgebra` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:63](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L63) vs `RingSwitching.TensorAlgebra` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:63](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L63)
     - a: Tensor Algebra A = L ⊗_K L. Based on the spec, it's viewed as (2^κ)x(2^κ) arrays of K-elements. The
     - b: Tensor Algebra A = L ⊗_K L. Based on the spec, it's viewed as (2^κ)x(2^κ) arrays of K-elements. The
-- **1.00** `Binius.RingSwitching.aeval_eqPolynomial_zeroOne` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:683](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L683) vs `RingSwitching.aeval_eqPolynomial_zeroOne` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:774](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L774)
+- **1.00** `Binius.RingSwitching.aeval_eqPolynomial_zeroOne` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:683](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L683) vs `RingSwitching.aeval_eqPolynomial_zeroOne` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:775](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L775)
     - a: `aeval` of `eqPolynomial` at a Boolean coefficient vector lands in `L₀` as `eqTilde`.
     - b: `aeval` of `eqPolynomial` at a Boolean coefficient vector lands in `L₀` as `eqTilde`.
-- **1.00** `Binius.RingSwitching.aeval_eq_sum_eqTilde` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:700](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L700) vs `RingSwitching.aeval_eq_sum_eqTilde` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:791](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L791)
+- **1.00** `Binius.RingSwitching.aeval_eq_sum_eqTilde` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:700](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L700) vs `RingSwitching.aeval_eq_sum_eqTilde` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:792](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L792)
     - a: **MLE evaluation identity (through the algebra map).** For a multilinear `t` over `K₀`, its `L₀`-eva
     - b: **MLE evaluation identity (through the algebra map).** For a multilinear `t` over `K₀`, its `L₀`-eva
-- **1.00** `Binius.RingSwitching.boolHypercubeEmb` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:889](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L889) vs `RingSwitching.boolHypercubeEmb` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1350](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1350)
+- **1.00** `Binius.RingSwitching.boolHypercubeEmb` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:889](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L889) vs `RingSwitching.boolHypercubeEmb` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1351](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1351)
     - a: The Boolean hypercube embedding `(Fin k → Fin 2) ↪ (Fin k → L₀)` induced by a 2-element domain embed
     - b: The Boolean hypercube embedding `(Fin k → Fin 2) ↪ (Fin k → L₀)` induced by a 2-element domain embed
-- **1.00** `Binius.RingSwitching.boolHypercube_sum_eq` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:897](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L897) vs `RingSwitching.boolHypercube_sum_eq` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1358](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1358)
+- **1.00** `Binius.RingSwitching.boolHypercube_sum_eq` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:897](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L897) vs `RingSwitching.boolHypercube_sum_eq` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1359](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1359)
     - a: **`𝓑`-domain hypercube sum reindexes to the Boolean hypercube.** For any `𝓑 : Fin 2 ↪ L₀`, summing `
     - b: **`𝓑`-domain hypercube sum reindexes to the Boolean hypercube.** For any `𝓑 : Fin 2 ↪ L₀`, summing `
-- **1.00** `Binius.RingSwitching.boolHypercube_sum_pinned` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:917](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L917) vs `RingSwitching.boolHypercube_sum_pinned` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1378](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1378)
+- **1.00** `Binius.RingSwitching.boolHypercube_sum_pinned` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:917](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L917) vs `RingSwitching.boolHypercube_sum_pinned` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1379](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1379)
     - a: **Pinned-`𝓑` Boolean-domain sumcheck sum.** When `𝓑` is pinned to the Boolean embedding (`𝓑 c = if c
     - b: **Pinned-`𝓑` Boolean-domain sumcheck sum.** When `𝓑` is pinned to the Boolean embedding (`𝓑 c = if c
-- **1.00** `Binius.RingSwitching.check_rows_sum_eq_aeval` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:740](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L740) vs `RingSwitching.check_rows_sum_eq_aeval` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1208](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1208)
+- **1.00** `Binius.RingSwitching.check_rows_sum_eq_aeval` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:740](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L740) vs `RingSwitching.check_rows_sum_eq_aeval` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1209](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1209)
     - a: **DP24 ring-switching capstone (sum form).** The verifier's row-decomposition check sum, applied to
     - b: **DP24 ring-switching capstone (sum form).** The verifier's row-decomposition check sum, applied to
-- **1.00** `Binius.RingSwitching.componentWise_φ₁_embed_MLE` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:171](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L171) vs `RingSwitching.componentWise_embed_MLE` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:170](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L170)
+- **1.00** `Binius.RingSwitching.componentWise_φ₁_embed_MLE` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:171](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L171) vs `RingSwitching.componentWise_embed_MLE` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:171](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L171)
     - a: **Component-wise `φ₁` embedding**. Takes a polynomial `t'` with coefficients in `L` and embeds it in
     - b: **Component-wise `φ₁` embedding**. Takes a polynomial `t'` with coefficients in `L` and embeds it in
-- **1.00** `Binius.RingSwitching.compute_A_MLE` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:370](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L370) vs `RingSwitching.compute_A_MLE` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:377](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L377)
+- **1.00** `Binius.RingSwitching.compute_A_MLE` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:370](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L370) vs `RingSwitching.compute_A_MLE` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:378](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L378)
     - a: Step 4b: P writes `A(X_0, ..., X_{ℓ'-1})` for its multilinear extension of `A_func`.
     - b: Step 4b: P writes `A(X_0, ..., X_{ℓ'-1})` for its multilinear extension of `A_func`.
-- **1.00** `Binius.RingSwitching.compute_A_func` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:353](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L353) vs `RingSwitching.compute_A_func` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:360](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L360)
+- **1.00** `Binius.RingSwitching.compute_A_func` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:353](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L353) vs `RingSwitching.compute_A_func` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:361](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L361)
     - a: Step 4a: For each `w ∈ {0,1}^{ℓ'}`, P decompose `eq̃(r_κ, ..., r_{ℓ-1}, w_0, ..., w_{ℓ'-1})` `=: Σ_{
     - b: Step 4a: For each `w ∈ {0,1}^{ℓ'}`, P decompose `eq̃(r_κ, ..., r_{ℓ-1}, w_0, ..., w_{ℓ'-1})` `=: Σ_{
-- **1.00** `Binius.RingSwitching.compute_final_eq_value` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:411](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L411) vs `RingSwitching.compute_final_eq_value` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:419](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L419)
+- **1.00** `Binius.RingSwitching.compute_final_eq_value` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:411](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L411) vs `RingSwitching.compute_final_eq_value` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:420](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L420)
     - a: Decompose the final eq tensor `e := Σ_{u ∈ {0,1}^κ} eq̃(u, r'') ⨂ e_u`, where e_u is the row compone
     - b: Decompose the final eq tensor `e := Σ_{u ∈ {0,1}^κ} eq̃(u, r'') ⨂ e_u`, where e_u is the row compone
-- **1.00** `Binius.RingSwitching.compute_s0` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:394](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L394) vs `RingSwitching.compute_s0` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:402](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L402)
+- **1.00** `Binius.RingSwitching.compute_s0` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:394](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L394) vs `RingSwitching.compute_s0` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:403](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L403)
     - a: Step 5 (V): Compute `s₀ := Σ_{u ∈ {0,1}^κ} eqTilde(u, r'') ⋅ ŝ_u`, where ŝ_u is the row components o
     - b: Step 5 (V): Compute `s₀ := Σ_{u ∈ {0,1}^κ} eqTilde(u, r'') ⋅ ŝ_u`, where ŝ_u is the row components o
-- **1.00** `Binius.RingSwitching.decompose_rows_packMLE` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:598](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L598) vs `RingSwitching.decompose_rows_packMLE` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1187](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1187)
+- **1.00** `Binius.RingSwitching.decompose_rows_packMLE` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:598](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L598) vs `RingSwitching.decompose_rows_packMLE` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1188](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1188)
     - a: **Row recovery of `t`-evaluations.** The row components of the prover's tensor `ŝ = embedded_MLP_eva
     - b: **Row recovery of `t`-evaluations.** The row components of the prover's tensor `ŝ = embedded_MLP_eva
-- **1.00** `Binius.RingSwitching.decompose_rows_sum` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:552](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L552) vs `RingSwitching.decompose_rows_sum` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:669](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L669)
+- **1.00** `Binius.RingSwitching.decompose_rows_sum` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:552](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L552) vs `RingSwitching.decompose_rows_sum` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:670](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L670)
     - a: `decompose_tensor_algebra_rows` is additive over finite sums of tensors.
     - b: `decompose_tensor_algebra_rows` is additive over finite sums of tensors.
-- **1.00** `Binius.RingSwitching.decompose_rows_φ₀φ₁` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:562](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L562) vs `RingSwitching.decompose_rows_φ₀φ₁` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:679](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L679)
+- **1.00** `Binius.RingSwitching.decompose_rows_φ₀φ₁` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:562](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L562) vs `RingSwitching.decompose_rows_φ₀φ₁` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:680](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L680)
     - a: Row decomposition of a separated tensor `φ₀(a) · φ₁(b) = a ⊗ b`: the `u`-th row component represents
     - b: Row decomposition of a separated tensor `φ₀(a) · φ₁(b) = a ⊗ b`: the `u`-th row component represents
-- **1.00** `Binius.RingSwitching.decompose_tensor_algebra_columns` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:100](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L100) vs `RingSwitching.decompose_tensor_algebra_columns` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:99](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L99)
+- **1.00** `Binius.RingSwitching.decompose_tensor_algebra_columns` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:100](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L100) vs `RingSwitching.decompose_tensor_algebra_columns` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:100](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L100)
     - a: Decompose `ŝ` into column components `(ŝ =: Σ_{v ∈ {0,1}^κ} ŝ_v ⊗ β_v)`. This views `L ⊗ L` as a mod
     - b: Decompose `ŝ` into column components `(ŝ =: Σ_{v ∈ {0,1}^κ} ŝ_v ⊗ β_v)`. This views `L ⊗ L` as a mod
-- **1.00** `Binius.RingSwitching.decompose_tensor_algebra_rows` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:92](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L92) vs `RingSwitching.decompose_tensor_algebra_rows` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:91](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L91)
+- **1.00** `Binius.RingSwitching.decompose_tensor_algebra_rows` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:92](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L92) vs `RingSwitching.decompose_tensor_algebra_rows` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:92](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L92)
     - a: Decompose `ŝ` into row components `(ŝ =: Σ_{u ∈ {0,1}^κ} β_u ⊗ ŝ_u)`. This views `L ⊗ L` as a module
     - b: Decompose `ŝ` into row components `(ŝ =: Σ_{u ∈ {0,1}^κ} β_u ⊗ ŝ_u)`. This views `L ⊗ L` as a module
-- **1.00** `Binius.RingSwitching.embedded_MLP_eval_eq_sum` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:523](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L523) vs `RingSwitching.embedded_MLP_eval_eq_sum` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1151](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1151)
+- **1.00** `Binius.RingSwitching.embedded_MLP_eval_eq_sum` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:523](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L523) vs `RingSwitching.embedded_MLP_eval_eq_sum` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1152](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1152)
     - a: **DP24 packing expansion.** The prover's tensor `ŝ := φ₁(t')(φ₀(r_κ), …, φ₀(r_{ℓ-1}))` expands over
     - b: **DP24 packing expansion.** The prover's tensor `ŝ := φ₁(t')(φ₀(r_κ), …, φ₀(r_{ℓ-1}))` expands over
-- **1.00** `Binius.RingSwitching.eqPoly_collapse` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:508](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L508) vs `RingSwitching.eqPoly_collapse` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:656](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L656)
+- **1.00** `Binius.RingSwitching.eqPoly_collapse` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:508](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L508) vs `RingSwitching.eqPoly_collapse` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:657](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L657)
     - a: The full `eqPolynomial` collapses through the mixed embedding to `φ₀` of its ordinary evaluation, by
     - b: The full `eqPolynomial` collapses through the mixed embedding to `φ₀` of its ordinary evaluation, by
-- **1.00** `Binius.RingSwitching.eqTilde_concat_split` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:665](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L665) vs `RingSwitching.eqTilde_concat_split` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:757](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L757)
+- **1.00** `Binius.RingSwitching.eqTilde_concat_split` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:665](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L665) vs `RingSwitching.eqTilde_concat_split` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:758](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L758)
     - a: `eqTilde` of concatenated Boolean / point data factors along the κ/ℓ' split: `eqTilde (concat fp fs)
     - b: `eqTilde` of concatenated Boolean / point data factors along the κ/ℓ' split: `eqTilde (concat fp fs)
-- **1.00** `Binius.RingSwitching.eqTilde_prod` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:616](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L616) vs `RingSwitching.eqTilde_prod` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:709](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L709)
+- **1.00** `Binius.RingSwitching.eqTilde_prod` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:616](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L616) vs `RingSwitching.eqTilde_prod` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:710](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L710)
     - a: `eqTilde` written as a product over coordinates of the symmetric Boolean factor.
     - b: `eqTilde` written as a product over coordinates of the symmetric Boolean factor.
-- **1.00** `Binius.RingSwitching.hypercubeSplitEquiv` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:715](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L715) vs `RingSwitching.hypercubeSplitEquiv` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:806](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L806)
+- **1.00** `Binius.RingSwitching.hypercubeSplitEquiv` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:715](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L715) vs `RingSwitching.hypercubeSplitEquiv` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:807](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L807)
     - a: The κ-then-ℓ' hypercube concatenation `concatBit v w i = v i` for `i < κ`, `= w (i - κ)` otherwise —
     - b: The κ-then-ℓ' hypercube concatenation `concatBit v w i = v i` for `i < κ`, `= w (i - κ)` otherwise —
-- **1.00** `Binius.RingSwitching.packMLE` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:114](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L114) vs `RingSwitching.packMLE` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:113](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L113)
+- **1.00** `Binius.RingSwitching.packMLE` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:114](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L114) vs `RingSwitching.packMLE` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:114](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L114)
     - a: **Definition 2.1 (MLE packing)**. Packs a small-field multilinear `t` into a large-field multilinear
     - b: **Definition 2.1 (MLE packing)**. Packs a small-field multilinear `t` into a large-field multilinear
-- **1.00** `Binius.RingSwitching.packMLE_repr_eval` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:575](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L575) vs `RingSwitching.packMLE_repr_eval` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:692](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L692)
+- **1.00** `Binius.RingSwitching.packMLE_repr_eval` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:575](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L575) vs `RingSwitching.packMLE_repr_eval` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:693](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L693)
     - a: The basis coordinate of a packed evaluation recovers the small-field coefficient: `β.repr (t'(w)) u
     - b: The basis coordinate of a packed evaluation recovers the small-field coefficient: `β.repr (t'(w)) u
-- **1.00** `Binius.RingSwitching.performCheckOriginalEvaluation_packMLE_iff` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:805](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L805) vs `RingSwitching.performCheckOriginalEvaluation_packMLE_iff_binaryTower` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1265](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1265)
+- **1.00** `Binius.RingSwitching.performCheckOriginalEvaluation_packMLE_iff` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:805](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L805) vs `RingSwitching.performCheckOriginalEvaluation_packMLE_iff_binaryTower` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1266](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1266)
     - a: **DP24 ring-switching capstone (decision form).** The verifier's Step-2 check on the prover's honest
     - b: **DP24 ring-switching capstone (decision form).** The verifier's Step-2 check on the prover's honest
-- **1.00** `Binius.RingSwitching.prod_concat_split` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:627](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L627) vs `RingSwitching.prod_concat_split` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:720](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L720)
+- **1.00** `Binius.RingSwitching.prod_concat_split` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:627](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L627) vs `RingSwitching.prod_concat_split` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:721](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L721)
     - a: A product over `Fin (ℓ' + κ₀)` of a function defined by the κ/ℓ'-dichotomy splits as the product of
     - b: A product over `Fin (ℓ' + κ₀)` of a function defined by the κ/ℓ'-dichotomy splits as the product of
-- **1.00** `Binius.RingSwitching.simulateQ_simOracle2_messageQuery` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:953](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L953) vs `RingSwitching.simulateQ_simOracle2_messageQuery` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1415](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1415)
+- **1.00** `Binius.RingSwitching.simulateQ_simOracle2_messageQuery` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:953](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L953) vs `RingSwitching.simulateQ_simOracle2_messageQuery` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1416](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1416)
     - a: **`simOracle2` message-query collapse (`OracleComp` form).** Simulating, via `simOracle2 oSpec t₁ t₂
     - b: **`simOracle2` message-query collapse (`OracleComp` form).** Simulating, via `simOracle2 oSpec t₁ t₂
-- **1.00** `Binius.RingSwitching.simulateQ_simOracle2_query` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:975](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L975) vs `RingSwitching.simulateQ_simOracle2_query` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1437](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1437)
+- **1.00** `Binius.RingSwitching.simulateQ_simOracle2_query` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:975](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L975) vs `RingSwitching.simulateQ_simOracle2_query` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1438](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1438)
     - a: **`simOracle2` message-query collapse (`OptionT`-`query` form).** The same reduction as `simulateQ_s
     - b: **`simOracle2` message-query collapse (`OptionT`-`query` form).** The same reduction as `simulateQ_s
-- **1.00** `Binius.RingSwitching.singleEq_collapse` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:491](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L491) vs `RingSwitching.singleEq_collapse` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:639](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L639)
+- **1.00** `Binius.RingSwitching.singleEq_collapse` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:491](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L491) vs `RingSwitching.singleEq_collapse` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:640](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L640)
     - a: A single `eqPolynomial` factor, evaluated through the mixed embedding `eval₂ φ₁ (φ₀ ∘ g)` at a Boole
     - b: A single `eqPolynomial` factor, evaluated through the mixed embedding `eval₂ φ₁ (φ₀ ∘ g)` at a Boole
-- **1.00** `Binius.RingSwitching.sumcheckRoundRelation` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:447](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L447) vs `RingSwitching.sumcheckRoundRelation` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:462](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L462)
+- **1.00** `Binius.RingSwitching.sumcheckRoundRelation` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:447](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L447) vs `RingSwitching.sumcheckRoundRelation` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:463](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L463)
     - a: Input relation for single round: proper sumcheck statement
     - b: Input relation for single round: proper sumcheck statement
-- **1.00** `Binius.RingSwitching.sumcheckSum_X0_eq` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:849](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L849) vs `RingSwitching.sumcheckSum_X0_eq` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1310](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1310)
+- **1.00** `Binius.RingSwitching.sumcheckSum_X0_eq` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:849](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L849) vs `RingSwitching.sumcheckSum_X0_eq` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1311](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1311)
     - a: **Sumcheck hypercube sum depends on the evaluation domain `𝓑`.** The single-variable sumcheck consis
     - b: **Sumcheck hypercube sum depends on the evaluation domain `𝓑`.** The single-variable sumcheck consis
-- **1.00** `Binius.RingSwitching.sumcheckTarget_domain_indep` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:868](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L868) vs `RingSwitching.sumcheckTarget_domain_indep` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1329](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1329)
+- **1.00** `Binius.RingSwitching.sumcheckTarget_domain_indep` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:868](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L868) vs `RingSwitching.sumcheckTarget_domain_indep` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:1330](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L1330)
     - a: **No `𝓑`-free target satisfies sumcheck consistency for all domains `𝓑`.** If a single value `c` (in
     - b: **No `𝓑`-free target satisfies sumcheck consistency for all domains `𝓑`.** If a single value `c` (in
-- **1.00** `Binius.RingSwitching.unpackMLE` [ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean:144](../../../ArkLib/ProofSystem/Binius/RingSwitching/Prelude.lean#L144) vs `RingSwitching.unpackMLE` [ArkLib/ProofSystem/RingSwitching/Prelude.lean:143](../../../ArkLib/ProofSystem/RingSwitching/Prelude.lean#L143)
-    - a: **Unpacking a Packed Multilinear Polynomial**. Reverses the packing defined in `packMLE`. It reconst
-    - b: **Unpacking a Packed Multilinear Polynomial**. Reverses the packing defined in `packMLE`. It reconst
 
