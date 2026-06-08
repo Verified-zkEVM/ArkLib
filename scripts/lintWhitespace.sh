@@ -35,13 +35,8 @@ fix_spaces_inplace() {
     do 
         # Remove trailing `\t` and ` `.
         sed -i 's/[ \t]*$//' "$file"
-
-        # Check if the last line ends with a new line
-        # if not, append it. 
-        if [ "$(tail -c 1 "$file" | od -c | awk 'NR==1 {print $2}')" != "\n" ]; then
-            echo "\n" >> $file
-        fi
-
+        # Add trailing '\n' to the file
+        sed -i -e '$a\' "$file"
     done
 }
 

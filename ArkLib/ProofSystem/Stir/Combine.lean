@@ -721,4 +721,4 @@ theorem combine_theorem
         simp only [pow_zero, one_mul] at hv
         exact hv
 
-end Combine\n
+end Combine
