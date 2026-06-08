@@ -23,7 +23,7 @@ If you only need the practical workflow:
 
 1. If a Lean file cites `[KEY]`, start at `docs/kb/papers/KEY.md`.
 2. If that page does not exist yet, add the BibTeX entry first if needed. Main-branch automation
-   will scaffold a missing cited paper page and source metadata after merge.
+   will open a follow-up PR for missing cited paper pages and source metadata after merge.
 3. If your PR changes how ArkLib uses or interprets a paper, update the corresponding KB page in
    the same PR.
 4. Before sending a paper-driven PR for review, attach the relevant KB paper pages or use
@@ -98,7 +98,7 @@ If you are unsure where to start, use [`index.md`](index.md) first.
 - Prefer stable, reviewable markdown over ad hoc scratch notes.
 - If a PR introduces a new paper citation key that matters to active work, add or scaffold the
   corresponding paper page in the same PR only when you are adding ArkLib-specific content.
-  Stub-only pages are generated on `main` after merge.
+  Stub-only pages are proposed by generated-files PRs after merge.
 - If a PR substantially changes ArkLib's interpretation, coverage, or formalization status for a
   paper, update the corresponding KB page or audit page in the same PR.
 
@@ -125,7 +125,8 @@ If you are unsure where to start, use [`index.md`](index.md) first.
 
 1. Add the BibTeX entry in `blueprint/src/references.bib`.
 2. If you already know the ArkLib-specific summary, add or update `docs/kb/papers/KEY.md`.
-3. If you only need the stub, leave it out of the PR; `main` will generate it.
+3. If you only need the stub, leave it out of the PR; the generated-files workflow will propose
+   it after merge.
 4. Run `python3 ./scripts/kb/lint.py`.
 
 ### I am updating a paper-backed development
@@ -146,7 +147,7 @@ If you are unsure where to start, use [`index.md`](index.md) first.
 1. Add or update the BibTeX entry in `blueprint/src/references.bib`.
 2. Add or update `docs/kb/papers/KEY.md` only if the PR carries real ArkLib-specific context.
 3. Leave stub-only paper pages, source metadata, and `_generated` index changes to the
-   main-branch KB workflow.
+   main-branch KB workflow's generated-files PR.
 4. Update [`index.md`](index.md) and append to [`log.md`](log.md) when the KB content itself
    changes.
 
@@ -187,7 +188,7 @@ python3 ./scripts/check-docs-integrity.py
 ```
 
 If the page would only be a stub, omit those files. The `Refresh KB Generated Files` workflow
-will run `python3 ./scripts/kb/regenerate.py` on `main`.
+will run `python3 ./scripts/kb/regenerate.py` after merge and open a generated-files PR.
 
 ### Example: use the KB during review
 

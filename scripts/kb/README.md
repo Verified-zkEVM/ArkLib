@@ -43,7 +43,8 @@ python3 ./scripts/kb/review_context.py --files ArkLib/ProofSystem/Fri/Spec/Singl
 1. Update `blueprint/src/references.bib`
 2. Update an existing paper page when the PR changes ArkLib's interpretation or use of that paper
 3. Do not commit `docs/kb/_generated/**` changes in feature PRs
-4. Let the main-branch KB workflow regenerate indexes and scaffold missing cited paper/source stubs
+4. Let the main-branch KB workflow open a follow-up PR for regenerated indexes and missing
+   cited paper/source stubs
 
 Run `python3 ./scripts/kb/regenerate.py` locally when you need to inspect the generated state.
 Commit the generated results only from the main-branch automation, not from ordinary feature PRs.

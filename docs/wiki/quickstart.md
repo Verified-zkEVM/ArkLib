@@ -72,8 +72,8 @@ python3 -m pip install leanblueprint
 - By default it runs `lake build`, `./scripts/check-imports.sh`, and
   `python3 ./scripts/check-docs-integrity.py`, plus knowledge-base linting from source inputs.
 - The lower-level scripts remain valid when you only want one specific check.
-- `docs/kb/_generated/**` freshness is handled by the main-branch KB workflow, not by ordinary PR
-  validation.
+- `docs/kb/_generated/**` freshness is handled by generated-files PRs from the main-branch KB
+  workflow, not by ordinary PR validation.
 - `scripts/build-project.sh` is now just a compile-only helper, not the convenience wrapper.
 - `scripts/README.md` is still useful as an inventory of helper scripts.
 - Only run docs and site builds when those surfaces are relevant; they are slower and more
@@ -113,7 +113,7 @@ python3 -m pip install leanblueprint
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
   checks local markdown links and the `CLAUDE.md` symlink.
 - [`../../.github/workflows/kb-generated.yml`](../../.github/workflows/kb-generated.yml)
-  refreshes committed KB generated files and missing cited-paper stubs after pushes to `main`.
+  opens generated-files PRs for KB indexes and missing cited-paper stubs after pushes to `main`.
 
 ## Manual Timing Helper
 
