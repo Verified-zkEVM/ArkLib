@@ -14,7 +14,7 @@ import Mathlib.LinearAlgebra.LinearIndependent.Lemmas
 # Building Blocks for Lyubashevsky–Seiler Short-Element Invertibility
 
 Reusable lemmas feeding the proof of `isUnit_of_l1Norm_le` in
-`NormBounds.LyubashevskySeiler`, grouped by phase:
+`NormBounds.LyubashevskySeiler`:
 
 * **Iso** — the ring isomorphism `Rq Ψ ≃+* Ψ.CyclotomicRing` (surjectivity of the existing
   injective `toQuotientHom`) and unit-transfer along it.
@@ -209,7 +209,8 @@ theorem dvd_cyclotomic_factor (R : Type*) [Field R] (r : R) (hr : r ^ 2 = -1) (h
       = X ^ (2 ^ (α - 1)) * X ^ (2 ^ (α - 1)) - C r * C r := by ring
   rw [this, ← pow_add, hpow, ← C_mul, ← sq, hr, C_neg, C_1, sub_neg_eq_add]
 
-/-- **Phase A irreducibility.** `X^{2^{α-1}} - r` is irreducible over `ZMod q`, given the order
+/-- **Irreducibility of the splitting factor.** `X^{2^{α-1}} - r` is irreducible over `ZMod q`,
+given the order
 fact `horder` (supplied by `orderOf_q_mod_two_pow`). Uses
 `ZMod.irreducible_of_dvd_cyclotomic_of_natDegree`: the factor divides
 `cyclotomic 2^{α+1} = X^{2^α}+1` and has degree `2^{α-1} = orderOf (q mod 2^{α+1})`. -/
@@ -299,7 +300,7 @@ theorem dvd_valMinAbs_sq_add_sq (s x y : ZMod q) (hs : s ^ 2 = -1) (hxy : x + s 
   exact_mod_cast hzero
 
 omit [NeZero q] in
-/-- **Phase C kernel.** A vanishing degree-`2^α` combination of powers of `ζ` (with
+/-- **Coefficient-extraction kernel.** A vanishing degree-`2^α` combination of powers of `ζ` (with
 `ζ^{2^{α-1}} = s`, `s² = -1`, and `1,…,ζ^{2^{α-1}-1}` independent) yields, for each half-index
 `j`, the integer divisibility `q ∣ (â_j² + â_{2^{α-1}+j}²)`. -/
 theorem dvd_sq_add_sq (α : ℕ) (hα : 1 ≤ α) (ζ : F) (s : ZMod q)

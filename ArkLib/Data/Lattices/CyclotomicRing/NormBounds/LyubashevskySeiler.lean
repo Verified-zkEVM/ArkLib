@@ -28,38 +28,30 @@ This is one of the two unproven lemmas for the Greyhound [NS24] / Hachi [NOZ26]
 weak-binding argument; the other is `scalarVecMul_mul_l2NormSq_le` in
 `NormBounds.MicciancioYoung`.
 
-## Proof plan
+## Overview
 
-The argument specializes to the `k = 2` splitting case and, crucially, needs **no** ideal
-lattices, canonical embedding, or Minkowski bound (contrary to the original sketch): it
-reduces to an elementary `mod q` divisibility count. Write `n := 2^α`. All Mathlib pieces
-exist, so the remaining work is formalization, not new theory.
+Write `n := 2^α`. The argument is the `k = 2` splitting case and reduces to an elementary
+`mod q` divisibility count, needing no ideal lattices, canonical embedding, or Minkowski bound.
 
-* **A. Order of `q` and factor degree.** For `q ≡ 5 (mod 8)`, lifting-the-exponent
-  (`Int.two_pow_sub_pow'`) gives `v₂(q^{2^k} - 1) = k + 2`, so the multiplicative order of
-  `q` modulo `2^{α+1}` is `2^{α-1}`. Hence every irreducible factor of
-  `cyclotomic (2^{α+1}) (ZMod q) = X^n + 1` has degree `2^{α-1} = n/2`
-  (`Polynomial.natDegree_of_dvd_cyclotomic_of_irreducible`); a root `ζ` (`ζ^n = -1`) then has
-  `[ZMod q (ζ) : ZMod q] = n/2`. Edge case `α = 0`: `Rq = ZMod q` is a field, nonzero ⇒ unit.
-* **B. Square root of `-1`.** `q ≡ 5 (mod 8) ⇒ q % 4 ≠ 3`, so `∃ r : ZMod q, r^2 = -1`
-  (`ZMod.exists_sq_eq_neg_one_iff`). For a root `ζ`, `s := ζ^{n/2}` has `s^2 = ζ^n = -1`, so
-  `s = ±r ∈ ZMod q`.
-* **C. Coefficient relations (replaces the lattice argument).** If `c` is a non-unit, an
-  irreducible factor divides its lift, giving a root `ζ` with `c̃(ζ) = 0`. Splitting the `n`
-  coefficients into low/high halves, `c̃(ζ) = Σ_{j<n/2} (c_j + s·c_{n/2+j}) ζ^j`; by the
-  degree-`n/2` independence of `1,…,ζ^{n/2-1}` from A, every `c_j + s·c_{n/2+j} = 0` in
-  `ZMod q`. Squaring with `s^2 = -1` gives, over `ℤ`, `q ∣ (c̃_j² + c̃_{n/2+j}²)` for each `j`.
-* **D. Finish (norm bridge proven below).** `‖c‖₂² = Σ_{j<n/2} (c̃_j² + c̃_{n/2+j}²)` is a sum
-  of nonnegative multiples of `q`, while `‖c‖₂² ≤ ‖c‖₁² ≤ κ² < q` (`l2NormSq_le_l1Norm_sq`),
-  so every term is `0`, forcing `c = 0` and contradicting `‖c‖₁ > 0`. Hence `c` is a unit.
+Since `q ≡ 5 (mod 8)`, `-1` is a square in `ZMod q` (`ZMod.exists_sq_eq_neg_one_iff`), say
+`r^2 = -1`, and the negacyclic modulus splits as `X^n + 1 = (X^{n/2} - r)(X^{n/2} + r)`. Both
+factors are irreducible over `ZMod q`: the multiplicative order of `q` modulo `2^{α+1}` is
+`2^{α-1}` (lifting-the-exponent, `v₂(q^{2^k} - 1) = k + 2`), so every irreducible factor of
+`cyclotomic (2^{α+1}) (ZMod q) = X^n + 1` has degree `n/2`, which forces each degree-`n/2`
+factor to be irreducible.
 
-The main theorem `isUnit_of_l1Norm_le` is assembled from the algebraic-core lemma
-`q_dvd_l2NormSq_of_not_isUnit` (a non-unit forces `q ∣ ‖c‖₂²`, packaging phases A–C), the
-Phase-D bridge `l2NormSq_le_l1Norm_sq`, and the zero-norm characterization
-`Rq.eq_zero_of_l2NormSq_eq_zero`. The core lemma is built on `NormBounds.LSCore` (the iso
-`Rq.equivQuotient`, the order computation `orderOf_q_mod_two_pow`, the irreducibility
-`irreducible_X_pow_sub_C_r`, and the coefficient kernel `dvd_sq_add_sq`) together with the
-explicit splitting `powTwoCyclotomic_splits_of_sq_eq_neg_one` and `exists_sq_eq_neg_one_of_q5`.
+A non-unit `c` is therefore not coprime to `X^n + 1`, so one factor `g = X^{n/2} - s`
+(`s = ±r`, `s^2 = -1`) divides its lift `c̃`; evaluating at a root `ζ` of `g` (so
+`ζ^{n/2} = s`) gives `c̃(ζ) = Σ_{j<n/2} (c̃_j + s·c̃_{n/2+j}) ζ^j = 0`. As `1, …, ζ^{n/2-1}`
+are independent over `ZMod q`, each `c̃_j + s·c̃_{n/2+j} = 0`, and squaring (`s^2 = -1`) gives
+`q ∣ (c̃_j² + c̃_{n/2+j}²)` over `ℤ`. Summing, `q ∣ ‖c‖₂²`. With `‖c‖₂² ≤ ‖c‖₁² ≤ κ² < q` this
+forces `‖c‖₂² = 0`, hence `c = 0`, contradicting `‖c‖₁ > 0`. (Edge case `α = 0`: `Rq` is a
+field, so a nonzero element is a unit.)
+
+The supporting lemmas live in `NormBounds.LSCore` (the iso `Rq.equivQuotient`, the order
+computation `orderOf_q_mod_two_pow`, the irreducibility `irreducible_X_pow_sub_C_r`, and the
+coefficient kernel `dvd_sq_add_sq`); the splitting and `√-1` existence are
+`powTwoCyclotomic_splits_of_sq_eq_neg_one` and `exists_sq_eq_neg_one_of_q5`.
 
 ## References
 
@@ -80,7 +72,7 @@ variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZM
 local notation "Φ" => (powTwoCyclotomic (R := ZMod q) α)
 
 omit [NeZero q] in
-/-- **Phase D norm bridge.** The centered squared `ℓ₂` norm is at most the square of the
+/-- **Norm bridge.** The centered squared `ℓ₂` norm is at most the square of the
 centered `ℓ₁` norm: `‖c‖₂² ≤ ‖c‖₁²`. This is `Σ aₖ² ≤ (Σ aₖ)²` for nonnegative `aₖ`. -/
 theorem Rq.l2NormSq_le_l1Norm_sq (c : Rq Φ) :
     Rq.l2NormSq Φ c ≤ (Rq.l1Norm Φ c) ^ 2 := by
@@ -97,7 +89,7 @@ theorem exists_sq_eq_neg_one_of_q5 (hq5 : q % 8 = 5) : ∃ r : ZMod q, r ^ 2 = -
 
 omit [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
 open Polynomial in
-/-- **Phase A splitting (explicit factors).** Over `ZMod q`, given `r² = -1`, the negacyclic
+/-- **Splitting into explicit factors.** Over `ZMod q`, given `r² = -1`, the negacyclic
 modulus `X^{2^α}+1` factors as `(X^{2^{α-1}} - r)·(X^{2^{α-1}} + r)` for `α ≥ 1`. These are
 the two degree-`2^{α-1}` pieces of the LS `k = 2` splitting; over `q ≡ 5 (mod 8)` they are
 irreducible (the order-of-`q` argument), which is what makes the CRT factors fields. -/
@@ -141,11 +133,10 @@ theorem isUnit_mk_of_isCoprime {a f : (ZMod q)[X]} (h : IsCoprime a f) :
   rw [mul_comm]; exact hkey
 
 set_option maxHeartbeats 1600000 in
--- The assembly is elaboration-heavy: CRT/coprimality split, `AdjoinRoot` power basis, and the
--- centered-norm reindex are combined in a single proof, so the default budget is insufficient.
+-- This combined assembly proof exceeds the default heartbeat budget.
 omit [NeZero q] in
 open Polynomial in
-/-- **Algebraic core (LS phases A–C).** If `c : Rq Φ` over `q ≡ 5 (mod 8)` is *not* a unit,
+/-- **Algebraic core.** If `c : Rq Φ` over `q ≡ 5 (mod 8)` is *not* a unit,
 then `q` divides its centered squared `ℓ₂` norm. A non-unit's image in
 `(ZMod q)[X]/(X^{2^α}+1)` is non-coprime to the modulus, so an irreducible factor
 `φᵢ = X^{2^{α-1}} ∓ r` of `X^{2^α}+1` (`powTwoCyclotomic_splits_of_sq_eq_neg_one`,
