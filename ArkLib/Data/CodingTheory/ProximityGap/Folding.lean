@@ -351,7 +351,7 @@ theorem foldWord_codeword {d : ℕ}
   {p : ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d}
   :
   foldWord domain p k α
-    = evalOnPoints (domain.subdomainNatReversed k)
+    = evalOnPoints (domain.subdomain k)
         (FoldingPolynomial.polyFold (ReedSolomon.toPolynomial p) (2 ^ k) α) := by
   ext x
   simp only [foldWord, foldValue, foldWordAux, evalOnPoints,
