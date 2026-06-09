@@ -352,12 +352,13 @@ theorem foldWord_codeword {d : ℕ}
   :
   foldWord domain p k α
     = evalOnPoints (domain.subdomain k)
-        (FoldingPolynomial.polyFold (ReedSolomon.codewordToPoly p) (2 ^ k) α) := by
+        (FoldingPolynomial.polyFold (ReedSolomon.toPolynomial p) (2 ^ k) α) := by
   ext x
   simp only [foldWord, foldValue, foldWordAux, evalOnPoints,
-    Embedding.coeFn_mk, codewordToPoly, LinearMap.coe_mk, AddHom.coe_mk,
+    Embedding.coeFn_mk, toPolynomial, LinearMap.coe_mk, AddHom.coe_mk,
     FoldingPolynomial.polyFold]
   rw [eval_comm, interpolate_eq_folding_poly_eval hk (by simp)]
+  aesop
 
 private noncomputable def foldWordAuxCoeff (domain : SmoothCosetFftDomain n F)
   (f : Word F (Fin (2 ^ n))) (k : ℕ) (i : Fin k) (x : F) : F :=
