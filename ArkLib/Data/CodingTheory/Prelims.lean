@@ -88,7 +88,7 @@ lemma rank_eq_if_subUpFull_eq (h : n ≤ m) :
    apply le_antisymm
    ·  exact Matrix.rank_le_width U
    ·  calc n = (subUpFull U (Fin.castLE h)).rank := by rw[h_sub_mat_rank]
-           _ ≤ U.rank := by exact Matrix.rank_submatrix_le (Fin.castLE h) (Equiv.refl (Fin n)) U
+           _ ≤ U.rank := by exact Matrix.rank_submatrix_le U (Fin.castLE h) (Equiv.refl (Fin n))
 
 /-- cRank and Rank agree for a finite matirx -/
 lemma cRank_rank_conversion :

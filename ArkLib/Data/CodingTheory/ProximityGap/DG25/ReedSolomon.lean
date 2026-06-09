@@ -201,7 +201,7 @@ theorem reedSolomon_multilinearCorrelatedAgreement [Nontrivial (ReedSolomon.code
         simp only [e]; rw [div_le_iff₀ (hc := by
           simp only [Nat.cast_pos]; exact Nat.pos_of_neZero n)]
         apply Nat.floor_le;
-        exact zero_le (δ * ↑n)
+        exact zero_le
       _ ≤ _ := by exact he
   )
   let h_CA_Nat := hCA_Nat_if_then u (by

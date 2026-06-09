@@ -8,7 +8,7 @@ import ArkLib.Data.Polynomial.Bivariate
 
 import Mathlib.Algebra.Polynomial.Basic
 import Mathlib.Tactic.Cases
-import Mathlib.Tactic.LinearCombination'
+import Mathlib.Tactic.LinearCombinationPrime
 import CompPoly.Univariate.ToPoly.Impl
 
 /-!
@@ -386,7 +386,7 @@ lemma eval_property_of_folding_polynomial {q f : F[X]} {x : F} :
    convert h_subst using 1
    simp +decide [Polynomial.eval₂_eq_sum_range]
    ring_nf
-   simp +decide [Polynomial.eval_finset_sum])
+   simp +decide [Polynomial.eval_finsetSum])
 
 /-- A means to evaluate the original polynomial in terms of
   the folding polynomial when `q = X ^ k`. -/
@@ -907,7 +907,7 @@ private lemma X_pow_div_mod_decomp (f : F[X]) (k : ℕ) :
       + X^k * Polynomial.divX^[k] f = f := by
   apply Polynomial.ext
   intro n
-  rw [Polynomial.coeff_add, Polynomial.finset_sum_coeff, Polynomial.coeff_X_pow_mul',
+  rw [Polynomial.coeff_add, Polynomial.finsetSum_coeff, Polynomial.coeff_X_pow_mul',
       coeff_iterate_divX]
   simp only [coeff_C_mul, coeff_X_pow, mul_ite, mul_one, mul_zero]
   by_cases hnk : n < k
@@ -950,7 +950,7 @@ private lemma eval_C_map_C (f : F[X]) (r : F) :
 /-- Evaluating the remainder `f %ₘ X^k` at `r` is the truncated Horner sum. -/
 private lemma modByMonic_X_pow_eval (f : F[X]) (k : ℕ) (r : F) :
     (f %ₘ X^k).eval r = ∑ i ∈ Finset.range k, f.coeff i * r^i := by
-  rw [(divByMonic_modByMonic_X_pow f k).2, eval_finset_sum]
+  rw [(divByMonic_modByMonic_X_pow f k).2, eval_finsetSum]
   simp only [eval_mul, eval_C, eval_pow, eval_X]
 
 /-- Base case of `polyFold`: when `k = 0` or `f` has degree below `k`,
@@ -1023,6 +1023,7 @@ def cpolyFoldAux (p : CompPoly.CPolynomial F) (k : ℕ) (r : F) : ℕ → CompPo
 def cpolyFold (p : CompPoly.CPolynomial F) (k : ℕ) (r : F) : CompPoly.CPolynomial F :=
   cpolyFoldAux p k r p.natDegree
 
+set_option linter.unusedDecidableInType false in
 private lemma toPoly_iterate_divX (p : CompPoly.CPolynomial F) (k : ℕ) :
     (CompPoly.CPolynomial.divX^[k] p).toPoly = Polynomial.divX^[k] p.toPoly := by
   induction k generalizing p with
@@ -1031,6 +1032,7 @@ private lemma toPoly_iterate_divX (p : CompPoly.CPolynomial F) (k : ℕ) :
     rw [Function.iterate_succ', Function.comp_apply, Function.iterate_succ',
         Function.comp_apply, CompPoly.CPolynomial.divX_toPoly, ih]
 
+set_option linter.unusedDecidableInType false in
 private lemma natDegree_iterate_divX_le (p : CompPoly.CPolynomial F) (k : ℕ) :
     (CompPoly.CPolynomial.divX^[k] p).natDegree ≤ p.natDegree - k := by
   have h_p : p.natDegree = p.toPoly.natDegree := CompPoly.CPolynomial.natDegree_toPoly p

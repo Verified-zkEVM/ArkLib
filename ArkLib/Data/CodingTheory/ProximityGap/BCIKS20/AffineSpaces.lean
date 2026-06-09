@@ -40,7 +40,7 @@ theorem exists_of_weighted_avg_gt {α : Type} (p : PMF α) (f : α → ENNReal) 
     exact le_of_not_gt this
   have hmul : ∀ a, p a * f a ≤ p a * ε := by
     intro a
-    exact mul_le_mul_of_nonneg_left (hle a) (zero_le (p a))
+    exact mul_le_mul_of_nonneg_left (hle a) (zero_le)
   have htsum : (∑' a, p a * f a) ≤ ∑' a, p a * ε := by
     exact ENNReal.tsum_le_tsum hmul
   have htsum' : (∑' a, p a * f a) ≤ ε := by
@@ -1242,7 +1242,7 @@ theorem bucket_exists_common_codeword
         · intro x hx
           have h := bW.sum_repr ⟨x, hx⟩
           apply_fun Subtype.val at h
-          simp only [AddSubmonoidClass.coe_finset_sum, SetLike.val_smul] at h
+          simp only [AddSubmonoidClass.coe_finsetSum, SetLike.val_smul] at h
           rw [← h]
           exact Submodule.sum_mem _ fun i _ =>
             Submodule.smul_mem _ _ (Submodule.subset_span
@@ -1616,7 +1616,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
         · -- Otherwise: impossible since δ > 0 and δ < 1 - sqrtRate
           exfalso
           have h1 : ¬(δ ≤ (1 - (↑(LinearCode.rate (ReedSolomon.code domain deg)) : ℝ≥0)) / 2) :=
-            fun hle => h_ud (Set.mem_Icc.mpr ⟨zero_le _, hle⟩)
+            fun hle => h_ud (Set.mem_Icc.mpr ⟨zero_le, hle⟩)
           have h2 : (1 - (↑(LinearCode.rate (ReedSolomon.code domain deg)) : ℝ≥0)) / 2 < δ :=
             not_le.mp h1
           have h3 : δ < 1 - NNReal.sqrt ↑(LinearCode.rate (ReedSolomon.code domain deg)) := by
@@ -2047,18 +2047,18 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
       Submodule.mem_map.mpr ⟨choosePoly v hv, hP_deg, rfl⟩
     let p : ReedSolomon.code ωs deg :=
       ⟨fun i => (choosePoly v hv).eval (ωs i), hP_in_code⟩
-    have h_poly_eq : ReedSolomon.codewordToPoly p = choosePoly v hv := by
-      symm; rw [ReedSolomon.codewordToPoly]
+    have h_poly_eq : ReedSolomon.toPolynomial p = choosePoly v hv := by
+      symm; rw [ReedSolomon.toPolynomial]
       exact Lagrange.eq_interpolate (ωs.injective.injOn) (by
         rw [Polynomial.mem_degreeLT] at hP_deg
         calc (choosePoly v hv).degree < deg := hP_deg
           _ ≤ Fintype.card (Fin (Fintype.card ι)) := by simp; omega)
     rw [← h_poly_eq]
     apply GuruswamiSudan.gs_divisibility hRS hm p hQ
-    -- Bridge: hammingDist f (codewordToPoly p ∘ ωs) / n ≤ δᵣ(w,v) ≤ δ < gs_johnson
+    -- Bridge: hammingDist f (toPolynomial p ∘ ωs) / n ≤ δᵣ(w,v) ≤ δ < gs_johnson
     have hv_dist : (δᵣ(w, v) : ℝ≥0) ≤ δ := (hclose v hv).2
     have h_dist_eq : hammingDist f (fun i =>
-        (ReedSolomon.codewordToPoly p).eval (ωs i)) = hammingDist w v := by
+        (ReedSolomon.toPolynomial p).eval (ωs i)) = hammingDist w v := by
       have hvi : ∀ i : Fin (Fintype.card ι),
           (choosePoly v hv).eval (ωs i) = v ((Fintype.equivFin ι).symm i) := by
         intro i
@@ -2074,7 +2074,7 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
             true_and] at hj ⊢; exact hj,
           (Fintype.equivFin ι).symm_apply_apply j⟩)
     rw [show (Fintype.card ι : ℝ) = ((Fintype.card ι : ℚ≥0) : ℝ) from by push_cast; ring]
-    calc (hammingDist f (fun i => (ReedSolomon.codewordToPoly p).eval (ωs i)) : ℝ) /
+    calc (hammingDist f (fun i => (ReedSolomon.toPolynomial p).eval (ωs i)) : ℝ) /
           ((Fintype.card ι : ℚ≥0) : ℝ)
         = (hammingDist w v : ℝ) / ((Fintype.card ι : ℚ≥0) : ℝ) := by rw [h_dist_eq]
       _ = ((δᵣ(w, v) : ℚ≥0) : ℝ) := by
@@ -2240,7 +2240,7 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
           (fun v hv => ⟨(hclose v hv).1, (hclose v hv).2⟩)
       · -- δ_star = 0: only w itself can be at distance 0, so |closeWords| ≤ 1 < |F|
         push Not at hδs_pos
-        have hδs_eq : δ_star = 0 := le_antisymm hδs_pos (zero_le _)
+        have hδs_eq : δ_star = 0 := le_antisymm hδs_pos (zero_le)
         have hclose_eq : ∀ v ∈ close, v = w := by
           intro v hv
           have hd := (hclose v hv).2

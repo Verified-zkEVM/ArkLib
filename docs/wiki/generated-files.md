@@ -13,10 +13,17 @@ Edit the source of truth, not the output.
 | `dependency_graphs/` | generated dependency visualizations | No | rerun scripts under `scripts/dependency_analysis/` |
 | `docs/kb/_generated/references.json` | normalized bibliography export | No | `python3 ./scripts/kb/sync_from_bib.py` |
 | `docs/kb/_generated/lean-citations.json` | generated map from Lean files to cited keys | No | `python3 ./scripts/kb/extract_lean_citations.py` |
+| `docs/kb/_generated/declarations.json` | declaration catalog across `ArkLib/` (file, line, kind, namespace, name, brief signature, docstring head) | No | `python3 ./scripts/kb/extract_declarations.py` |
+| `docs/kb/_generated/dedup-report.md` | duplicate-candidate review aid (same-short-name groups + cross-file near-duplicate docstrings) derived from the catalog | No | `python3 ./scripts/kb/find_dedup_candidates.py` |
 
 ## Important Notes
 
 - `./scripts/update-lib.sh` only uses tracked `ArkLib/**/*.lean` files and now fails fast if
   untracked Lean files would be skipped.
+- Do not commit `docs/kb/_generated/**` changes from ordinary feature PRs. They are proposed by
+  generated-files PRs opened from `.github/workflows/kb-generated.yml`.
+- Missing cited-paper stubs under `docs/kb/papers/` and `docs/kb/sources/` are also scaffolded by
+  that workflow. Commit paper pages in feature PRs only when they contain real ArkLib-specific
+  content.
 - Generated site and blueprint output are for review and deployment, not authoring.
 - If a path looks derived, confirm its source of truth before editing it.

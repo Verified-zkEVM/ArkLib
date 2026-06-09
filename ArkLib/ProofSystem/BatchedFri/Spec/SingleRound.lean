@@ -15,7 +15,7 @@ import CompPoly.Univariate.ToPoly.Impl
 
 namespace BatchedFri
 
-open Polynomial MvPolynomial OracleSpec OracleComp ProtocolSpec Finset Fri NNReal
+open Polynomial MvPolynomial OracleSpec OracleComp ProtocolSpec Finset Fri NNReal Domain
 
 namespace Spec
 
@@ -32,12 +32,12 @@ variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
 variable {n : ℕ}
 variable {k : ℕ} (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 variable (m : ℕ)
-variable {ω : ReedSolomon.SmoothCosetFftDomain n F}
+variable {ω : SmoothCosetFftDomain n F}
 
 
 /-- An oracle for each batched polynomial. -/
 @[reducible]
-def OracleStatement (ω : ReedSolomon.SmoothCosetFftDomain n F) : Fin (m + 1) → Type :=
+def OracleStatement (ω : SmoothCosetFftDomain n F) : Fin (m + 1) → Type :=
   fun _ => ω.toFinset → F
 
 /-- The Batched FRI protocol has as witness for each batched polynomial
