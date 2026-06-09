@@ -15,13 +15,10 @@ Fiat-Shamir, following Section 5.7 in the paper.
 ## Declaration order (bottom-up by dependency)
 
 1. **Claim 5.19** (`claim_5_19_backTrack_noAbort`) — `BackTrack(tr, s) ≠ err` under
-   `isConsistentTrace(tr) ∧ ¬ E(tr)`.  Used by Lemmas 5.17 and 5.18.
 2. **Claim 5.20** (`claim_5_20_lookAhead_noAbort`) — `LookAhead(tr.p, s, i) ≠ err` under
    `¬ E(tr)`.  Used by Lemma 5.17.
 3. **Lemma 5.17** (`lemma_5_17_d2sTrace_noAbort`) — `D2STrace(tr)` does not abort under
-   `isConsistentTrace(tr) ∧ ¬ E(tr)`.  Used to derive Theorem 5.20.
 4. **Lemma 5.18** (`lemma_5_18_d2sQuery_noAbort`) — `A^D2SQuery` does not abort under
-   `isConsistentTrace(tr_A) ∧ ¬ E(tr_A)`.  Used to derive Theorem 5.19.
    The no-abort predicate replays the trace through `d2sQueryStep` from the default
    `D2SQueryState`, so that `cacheP` evolves naturally rather than being universally
    quantified.
@@ -143,7 +140,6 @@ end D2SQueryNoAbort
 
 Paper-faithful (CO25 §5.7 Claim 5.19). `S_BT` is the backtrack-sequence family for
 `(trace, state)`; callers derive `hInv` and `hFork` via `lemma_5_12` / `lemma_5_14` (both
-hold for any `S_BT` under `¬ E`), and `hPrp` via `lemma_5_10` (under `isConsistentTrace ∧ ¬ E`).
 The proof connects this `S_BT` to the one computed by `BackTrackNoAbort`. -/
 lemma claim_5_19_backTrack_noAbort [DecidableEq StmtIn] [DecidableEq U]
     {T_H : Type}
@@ -165,8 +161,7 @@ lemma claim_5_19_backTrack_noAbort [DecidableEq StmtIn] [DecidableEq U]
 
 /-- CO25 Claim 5.20 — If `¬ E_prp(tr)`, then `LookAhead(tr.p, s, i) ≠ err` for all `(s, i)`.
 
-Paper-faithful (CO25 §5.7 Claim 5.20). Callers derive `hPrp` via `lemma_5_10`
-(under `isConsistentTrace ∧ ¬ E`). -/
+Paper-faithful (CO25 §5.7 Claim 5.20). Callers derive `hPrp` via `lemma_5_10`. -/
 lemma claim_5_20_lookAhead_noAbort [DecidableEq StmtIn] [DecidableEq U]
     {T_H : Type}
     {T_P : Type}
@@ -184,12 +179,10 @@ lemma claim_5_20_lookAhead_noAbort [DecidableEq StmtIn] [DecidableEq U]
 
 /-! ## Lemma 5.17 and Lemma 5.18 — full algorithm no-abort -/
 
-/-- CO25 Lemma 5.17 — For every `(h, p, p⁻¹)`-trace `tr`, if `isConsistentTrace(tr) ∧ ¬ E(tr)`
+/-- CO25 Lemma 5.17 — For every `(h, p, p⁻¹)`-trace `tr`, if `¬ E(tr)`
 then `D2STrace(tr)` does not abort.
 
 Paper statement (CO25 §5.7 Lemma 5.17): if `E(tr) = 0` then `D2STrace(tr)` does not abort.
-We additionally require `isConsistentTrace(tr)` (implicit in the paper from the `(h, p, p⁻¹)`
-sampling context) because our `lemma_5_10` needs it to derive `¬ E_prp(tr)`.
 
 Proof sketch: D2STrace aborts in two sub-calls:
 - The `BackTrack` sub-call: derive `¬ E_inv` (via `lemma_5_12`), `¬ E_prp` (via `lemma_5_10`),
@@ -200,7 +193,6 @@ lemma lemma_5_17_d2sTrace_noAbort [DecidableEq StmtIn] [DecidableEq U]
     {T_H T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (hConsistent : BadEventDS.isConsistentTrace trace)
     (hE : ¬ BadEventDS.E trace) :
     D2STraceNoAbort (T_H := T_H) (T_P := T_P) (δ := δ)
       (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
@@ -232,10 +224,9 @@ noncomputable def duplexSpongeTrace
 set_option linter.unusedDecidableInType false in
 /-- CO25 Lemma 5.18 — For every `(t_h, t_p, t_{p⁻¹})`-query algorithm `A`, let
 `tr_A := duplexSpongeTrace gImpl A initM` be the query-answer trace from `A` with `D2SQuery`
-oracle access.  If `isConsistentTrace(tr_A) ∧ ¬ E(tr_A)` then `A^D2SQuery` does not abort.
+oracle access. If `¬ E(tr_A)` then `A^D2SQuery` does not abort.
 
 Paper statement (CO25 §5.7 Lemma 5.18): if `E(tr_A) = 0` then `A^D2SQuery` does not abort.
-We additionally require `isConsistentTrace(tr_A)` for the same reason as Lemma 5.17.
 
 The property holds for all oracle implementations `gImpl`, since the abort
 depends only on `BackTrack`'s structural analysis of the trace, not on oracle responses.
@@ -258,7 +249,6 @@ lemma lemma_5_18_d2sQuery_noAbort
     (tr_A : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (h_tr_A_mem_support : some tr_A ∈ support (duplexSpongeTrace (δ := δ) (T_H := T_H) (T_P := T_P)
         gImpl A initM).run)
-    (hConsistent : BadEventDS.isConsistentTrace tr_A)
     (hE : ¬ BadEventDS.E tr_A) :
     D2SQueryNoAbort (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n)
       (pSpec := pSpec) (U := U) gImpl A initM
@@ -271,8 +261,7 @@ lemma lemma_5_18_d2sQuery_noAbort
 /-- CO25 Theorem 5.19 — If `A^{D2SQuery}` aborts then `E(tr_A)` holds.
 
 This is the contrapositive of Lemma 5.18, and is the form used in Section 5.8.
-Given a specific trace `tr_A` from a successful execution path, if `D2SQueryAbort` holds
-and `isConsistentTrace(tr_A)`, then `E(tr_A)` must hold. -/
+Given a specific trace `tr_A` from a successful execution path, if `D2SQueryAbort` holds, then `E(tr_A)` must hold. -/
 theorem theorem_5_19_d2sQuery_abort_implies_badEvent
     [DecidableEq StmtIn] [DecidableEq U] [Fintype U]
     [∀ i, Fintype (pSpec.Message i)]
@@ -289,14 +278,13 @@ theorem theorem_5_19_d2sQuery_abort_implies_badEvent
     (tr_A : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (h_tr_A_mem_support : some tr_A ∈ support (duplexSpongeTrace (δ := δ) (T_H := T_H) (T_P := T_P)
         gImpl A initM).run)
-    (hConsistent : BadEventDS.isConsistentTrace tr_A)
     (hAbort : D2SQueryAbort (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n)
       (pSpec := pSpec) (U := U) gImpl A initM) :
     BadEventDS.E tr_A := by
   by_contra hE
   exact hAbort (lemma_5_18_d2sQuery_noAbort (δ := δ) (T_H := T_H) (T_P := T_P)
     (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-    gImpl A initM tr_A h_tr_A_mem_support hConsistent hE)
+    gImpl A initM tr_A h_tr_A_mem_support hE)
 
 /-- CO25 Theorem 5.20 — If `D2STrace(tr)` aborts then `E(tr)` holds.
 
@@ -306,7 +294,6 @@ theorem theorem_5_20_d2sTrace_abort_implies_badEvent [DecidableEq StmtIn] [Decid
     {T_H T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (hConsistent : BadEventDS.isConsistentTrace trace)
     (hAbort :
       D2STraceAbort (T_H := T_H) (T_P := T_P) (δ := δ)
         (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
@@ -317,6 +304,6 @@ theorem theorem_5_20_d2sTrace_abort_implies_badEvent [DecidableEq StmtIn] [Decid
   exact hAbort
     (lemma_5_17_d2sTrace_noAbort (T_H := T_H) (T_P := T_P) (δ := δ)
       (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      trace hConsistent hE)
+      trace hE)
 
 end DuplexSpongeFS.AbortAnalysis

@@ -33,28 +33,6 @@ the BackTrack-family event vanishes" statements.
 
 open OracleComp OracleSpec ProtocolSpec
 
-namespace OracleSpec
-
-namespace QueryLog
-
-section
--- WIP defining more general properties for query log
-
-variable {ι : Type*} [DecidableEq ι] {spec : OracleSpec ι} [spec.DecidableEq]
-
-/-- A query tuple `(i, q, r)` is redundant in a query log if it appears more than once -/
-def redundantQuery (log : QueryLog spec) (q : spec.Domain) (r : spec.Range q) : Prop :=
-  (log.count ⟨q, r⟩) > 1
-
-/-- Check whether a query-answer entry at position `idx` has an identical prior entry in `log`. -/
-def existPriorSameQuery (log : QueryLog spec) (idx : Fin log.length) : Prop :=
-  ∃ j' < idx, log[j'] = log[idx]
-
-end
-end QueryLog
-
-end OracleSpec
-
 namespace DuplexSpongeFS
 
 /-! ## Definition 5.5 and Definition 5.6 - Redundant entries in a trace -/
@@ -64,7 +42,7 @@ variable {StmtIn : Type} {n : ℕ} {pSpec : ProtocolSpec n}
   {U : Type} [SpongeUnit U] [SpongeSize]
 
 /-- **Definition 5.5**: Redundancy test for a new entry against a prefix of the trace -/
-private def redundantEntryDSPrefix
+def isRedundantEntryOfPrefix
     (pref : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (entry : Sigma (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
   match entry with
@@ -78,35 +56,38 @@ private def redundantEntryDSPrefix
       ∨ ⟨.inr (.inl stateIn), stateOut⟩ ∈ pref
 
 /-- CO25 Definition 5.6 — Base trace `tr̄` side condition.
-`NoRedundantEntryDS log` holds iff no entry of `log` is redundant in the sense of
+`hasNoRedundantEntries log` holds iff no entry of `log` is redundant in the sense of
 Definition 5.5.  The base trace `tr̄` is the unique sub-log satisfying this predicate
 (see `getBaseTrace`). -/
-def NoRedundantEntryDS (log : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
+def hasNoRedundantEntries (log : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
   ∀ i : ℕ, ∀ hi : i < log.length,
-    ¬ redundantEntryDSPrefix (log.take i) log[i]
+    ¬ isRedundantEntryOfPrefix (log.take i) log[i]
 
-private lemma noRedundantEntryDS_nil : NoRedundantEntryDS (StmtIn := StmtIn) (U := U) [] := by
+private lemma noRedundantEntryDS_nil : hasNoRedundantEntries (StmtIn := StmtIn) (U := U) [] := by
   intro i hi _
   exact (Nat.not_lt_zero i) hi
 
 private lemma noRedundantEntryDS_append_singleton
     (acc : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (entry : Sigma (duplexSpongeChallengeOracle StmtIn U))
-    (hAcc : NoRedundantEntryDS acc)
-    (hEntry : ¬ redundantEntryDSPrefix acc entry) :
-    NoRedundantEntryDS (acc ++ [entry]) := by
+    (hAcc : hasNoRedundantEntries acc)
+    (hEntry : ¬ isRedundantEntryOfPrefix acc entry) :
+    hasNoRedundantEntries (acc ++ [entry]) := by
   intro i hi
-  have hi' : i < acc.length + 1 := by simpa using hi
+  have hi' : i < acc.length + 1 := by
+    rw [List.length_append, List.length_singleton] at hi
+    exact hi
   by_cases hlt : i < acc.length
   · have hOld :
-      ¬ redundantEntryDSPrefix (acc.take i) acc[i] := hAcc i hlt
-    simpa [List.take_append_of_le_length (Nat.le_of_lt hlt), List.getElem_append_left hlt]
-      using hOld
+      ¬ isRedundantEntryOfPrefix (acc.take i) acc[i] := hAcc i hlt
+    simp only [List.take_append_of_le_length (Nat.le_of_lt hlt), List.getElem_append_left hlt]
+    exact hOld
   · have hEq : i = acc.length := Nat.eq_of_lt_succ_of_not_lt hi' hlt
     subst hEq
-    simpa [List.take_left, redundantEntryDSPrefix] using hEntry
+    revert hEntry
+    simp [isRedundantEntryOfPrefix]
 
-private noncomputable def getBaseTraceAux
+noncomputable def getBaseTraceAux
     (remaining : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (acc : QueryLog (duplexSpongeChallengeOracle StmtIn U)) :
     QueryLog (duplexSpongeChallengeOracle StmtIn U) := by
@@ -114,7 +95,7 @@ private noncomputable def getBaseTraceAux
   exact match remaining with
   | [] => acc
   | entry :: rest =>
-      if hRed : redundantEntryDSPrefix acc entry then
+      if hRed : isRedundantEntryOfPrefix acc entry then
         getBaseTraceAux rest acc
       else
         getBaseTraceAux rest (acc ++ [entry])
@@ -122,28 +103,30 @@ private noncomputable def getBaseTraceAux
 private lemma getBaseTraceAux_noRedundant
     (remaining : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (acc : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (hAcc : NoRedundantEntryDS acc) :
-    NoRedundantEntryDS (getBaseTraceAux remaining acc) := by
+    (hAcc : hasNoRedundantEntries acc) :
+    hasNoRedundantEntries (getBaseTraceAux remaining acc) := by
   classical
   induction remaining generalizing acc with
-  | nil =>
-      simpa [getBaseTraceAux] using hAcc
+  | nil => exact hAcc
   | cons entry rest ih =>
-      by_cases hRed : redundantEntryDSPrefix acc entry
-      · simpa [getBaseTraceAux, hRed] using ih acc hAcc
+      by_cases hRed : isRedundantEntryOfPrefix acc entry
+      · simp only [getBaseTraceAux, hRed, ↓reduceDIte]
+        exact ih acc hAcc
       · let hAcc' := noRedundantEntryDS_append_singleton acc entry hAcc hRed
-        simpa [getBaseTraceAux, hRed] using ih (acc ++ [entry]) hAcc'
+        simp only [getBaseTraceAux, hRed, ↓reduceDIte]
+        exact ih (acc ++ [entry]) hAcc'
 
 /-- CO25 Definition 5.6 — Compute the base trace `tr̄` of a duplex-sponge query-answer trace by
-removing all redundant entries (in the sense of Definition 5.5).  The result carries a proof that
-no entry in the returned list is redundant. -/
+removing all redundant entries (in the sense of Definition 5.5). -/
 noncomputable def getBaseTrace
     (log : QueryLog (duplexSpongeChallengeOracle StmtIn U)) :
-    {baseTrace : QueryLog (duplexSpongeChallengeOracle StmtIn U) |
-      NoRedundantEntryDS baseTrace} := by
-  refine ⟨getBaseTraceAux log [], ?_⟩
-  simpa using getBaseTraceAux_noRedundant
-    log [] (noRedundantEntryDS_nil (StmtIn := StmtIn) (U := U))
+    QueryLog (duplexSpongeChallengeOracle StmtIn U) :=
+  getBaseTraceAux log []
+
+lemma getBaseTrace_noRedundant
+    (log : QueryLog (duplexSpongeChallengeOracle StmtIn U)) :
+    hasNoRedundantEntries (getBaseTrace log) :=
+  getBaseTraceAux_noRedundant log [] (noRedundantEntryDS_nil (StmtIn := StmtIn) (U := U))
 
 end Def_5_5_6_RedundantEntryDSHelpers
 
@@ -160,10 +143,8 @@ variable (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) (state : Cano
 
 section Def57_TraceOnlyBadEvents
 
-/-! Fist, we define the main bad event, which consists of two main conditions:
-1. No duplicate in the capacity segment (for the base trace that removed redundant entries)
-2. The same query to `p` leads to different answers, or there are inconsistent queries across `p`
-and `p⁻¹` -/
+/-! The main bad event `E` (Def 5.7) is the disjunction of two conditions: a capacity-segment
+duplication on the base trace (`E_dup`), or `p` behaving non-functionally (`E_func`). -/
 
 /- NOTE: the paper write `∃ j > 0`, which can be confusing since we don't know whether the intended
 indexing is from 0 or from 1. We assume they mean from 1, and since indexing here is from 0, we just
@@ -196,7 +177,7 @@ E_h(tr) := ∃ j > 0, s_C ∈ Σ^c :  tr̄_j = (h, ·, s_C)  and  ∃ j' < j :
 
 All five prior-entry branches are unified via `isDuplicatedPriorCapacity`. -/
 def capacitySegmentDupHash : Prop :=
-  let ⟨baseTrace, _⟩ := getBaseTrace trace
+  let baseTrace := getBaseTrace trace
   ∃ j : Fin baseTrace.length, ∃ capSeg : Vector U SpongeSize.C,
     (∃ stmt : StmtIn, baseTrace[j] = ⟨.inl stmt, capSeg⟩) ∧
     isDuplicatedPriorCapacity baseTrace j capSeg
@@ -213,9 +194,12 @@ E_p(tr) := ∃ j > 0, s_C ∈ Σ^c :  tr̄_j = (p, ·, (·, s_C))  and
   ∃ j' < j : tr̄_{j'} = (h, ·, s_C)  ∨  ∃ j' < j : tr̄_{j'} = (p, ·, (·, s_C))
   ∨  ∃ j' < j : tr̄_{j'} = (p⁻¹, ·, (·, s_C))
   ∨  ∃ j' ≤ j : tr̄_{j'} = (p, (·, s_C), ·)  ∨  ∃ j' < j : tr̄_{j'} = (p⁻¹, (·, s_C), ·)
-``` -/
+```
+
+Branches realized by `isDuplicatedPriorCapacity`'s uniform `≤ j`; extensionally equal to the
+paper's asymmetric `< j`/`≤ j` (the extra `j' = j` cases are vacuous). -/
 def capacitySegmentDupPerm : Prop :=
-  let ⟨baseTrace, _⟩ := getBaseTrace trace
+  let baseTrace := getBaseTrace trace
   ∃ j : Fin baseTrace.length, ∃ capSeg : Vector U SpongeSize.C,
     (∃ stateIn stateOut, baseTrace[j] = ⟨.inr <|.inl stateIn, stateOut⟩ ∧
       stateOut.capacitySegment = capSeg) ∧
@@ -233,9 +217,12 @@ E_{p⁻¹}(tr) := ∃ j > 0, s_C ∈ Σ^c :  tr̄_j = (p⁻¹, ·, (·, s_C))  a
   ∃ j' < j : tr̄_{j'} = (h, ·, s_C)  ∨  ∃ j' < j : tr̄_{j'} = (p, ·, (·, s_C))
   ∨  ∃ j' < j : tr̄_{j'} = (p⁻¹, ·, (·, s_C))
   ∨  ∃ j' ≤ j : tr̄_{j'} = (p, (·, s_C), ·)  ∨  ∃ j' ≤ j : tr̄_{j'} = (p⁻¹, (·, s_C), ·)
-``` -/
+```
+
+Same uniform-`≤ j` caveat as `E_p` (via `isDuplicatedPriorCapacity`); extensionally equal to
+Eq. 25's asymmetric quantifiers. -/
 def capacitySegmentDupPermInv : Prop :=
-  let ⟨baseTrace, _⟩ := getBaseTrace trace
+  let baseTrace := getBaseTrace trace
   ∃ j : Fin baseTrace.length, ∃ capSeg : Vector U SpongeSize.C,
     (∃ stateOut stateIn, baseTrace[j] = ⟨.inr <|.inr stateOut, stateIn⟩ ∧
       stateIn.capacitySegment = capSeg) ∧
@@ -262,16 +249,27 @@ E_func(tr) := ∃ j > 0, s_in ∈ Σ^{r+c} :  tr̄_j = (p, s_in, ·)  and  ∃ j
 ```
 
 Note: `E_func(tr)` never holds for a true permutation `p` and its inverse `p⁻¹`, but may hold
-(with small probability) for the D2SQuery simulator. -/
+(with small probability) for the D2SQuery simulator.
+
+**Strengthening:** bidirectional. Case 1 (`j`-th entry `p`-forward) is Eq. 26; Case 2 (`j`-th entry
+`p⁻¹`) has no paper counterpart but is *required* by `not_collisionFwdBwd_of_not_combined`
+(Lemma 5.10, Item 3). The `≠`-output conditions are forced by base-trace non-redundancy.
+See `DSFS-archive/BadEvents_deep_analysis.md` §7. -/
 def E_func : Prop :=
-  let ⟨baseTrace, _⟩ := getBaseTrace trace
+  let baseTrace := getBaseTrace trace
   ∃ j : Fin baseTrace.length, ∃ stateIn stateOut : CanonicalSpongeState U,
-    baseTrace[j] = ⟨.inr <|.inl stateIn, stateOut⟩ ∧
+    (baseTrace[j] = ⟨.inr <|.inl stateIn, stateOut⟩ ∧
       ∃ j' < j,
         (∃ stateOut1 : CanonicalSpongeState U,
           baseTrace[j'] = ⟨.inr <|.inl stateIn, stateOut1⟩ ∧ stateOut1 ≠ stateOut) ∨
         (∃ stateOut2 : CanonicalSpongeState U,
-          baseTrace[j'] = ⟨.inr <|.inr stateOut2, stateIn⟩ ∧ stateOut2 ≠ stateOut)
+          baseTrace[j'] = ⟨.inr <|.inr stateOut2, stateIn⟩ ∧ stateOut2 ≠ stateOut)) ∨
+    (baseTrace[j] = ⟨.inr <|.inr stateOut, stateIn⟩ ∧
+      ∃ j' < j,
+        (∃ stateIn1 : CanonicalSpongeState U,
+          baseTrace[j'] = ⟨.inr <|.inr stateOut, stateIn1⟩ ∧ stateIn1 ≠ stateIn) ∨
+        (∃ stateIn2 : CanonicalSpongeState U,
+          baseTrace[j'] = ⟨.inr <|.inl stateIn2, stateOut⟩ ∧ stateIn2 ≠ stateIn))
 
 /-- CO25 Definition 5.7 — Combined bad event `E(tr)`.
 `E(tr)` is the disjunction `E_dup(tr) ∨ E_func(tr)`, i.e., either a capacity-segment
@@ -284,7 +282,7 @@ end Def57_TraceOnlyBadEvents
 
 /-! ## Lemma 5.8 — closed-form bound
 This section is consistency-free: `lemma_5_8` bounds `Pr[E]` directly via birthday-style
-counting on freshly-sampled values, so its statement does not take `isConsistentTrace`. -/
+counting on freshly-sampled values. -/
 section Lemma_5_8
 
 /-- CO25 Lemma 5.8 — Closed-form upper bound on `max{Pr[E | 𝒟_𝔖], Pr[E | 𝒟_Σ]}`.
@@ -367,20 +365,9 @@ where the right summand is the abortable DS impl. -/
 private def lemma5_8EmptyQueryImplGeneric {m : Type → Type} : QueryImpl []ₒ m :=
   fun q => PEmpty.elim q
 
-/-- CO25 §5.6 (Option G — paper-faithful abort) — Monad-reorder + logging wrapper.
-
-Lifts a partially-defined DS implementation
-  `QueryImpl DS (StateT σ (OptionT ProbComp))`
-into a partially-defined, logging DS implementation
-  `QueryImpl DS (OptionT (StateT (σ × QueryLog DS) ProbComp))`.
-
-Two operations happen here:
-- **Monad reorder**: in `StateT σ (OptionT ProbComp)` an `OptionT`-abort drops the state; in
-  `OptionT (StateT (σ × QueryLog) ProbComp)` the state (including the log) is preserved at the
-  moment of abort. This is precisely the paper-1417 abort semantics: "abort halts execution;
-  trace is partial".
-- **Logging**: every successful query `q ↦ a` extends the log with `⟨q, a⟩`; on abort the log is
-  frozen. -/
+/-- CO25 §5.6 (Option G) — Monad-reorder + logging wrapper. Reorders `StateT σ (OptionT ProbComp)`
+into `OptionT (StateT (σ × QueryLog) ProbComp)` so the log survives an abort (paper line 1417:
+"abort halts execution; trace is partial"), and appends `⟨q, a⟩` on each successful query. -/
 private def lemma5_8LoggingWrapper {σ : Type}
     (impl : QueryImpl (duplexSpongeChallengeOracle StmtIn U)
       (StateT σ (OptionT ProbComp))) :
@@ -393,31 +380,12 @@ private def lemma5_8LoggingWrapper {σ : Type}
     | none => pure (none, st)
     | some (a, s') => pure (some a, (s', st.2 ++ [⟨q, a⟩]))
 
-/-- CO25 §5.6 (Option G — paper-faithful abort) — Abortable Lemma-5.8 trace experiment with
-separate prover and verifier query-log slots.
+/-- CO25 §5.6 (Option G) — Abortable Lemma-5.8 trace experiment, mirroring the §5.8 hybrid skeleton
+(`KeyLemma.dsfsGame` / `hybridGame`): the salted `maliciousProver` runs under `impl`, then the
+forward-only verifier `𝒱^{h,p} := V.toDSFS δ` (paper Figure 4 line 3) runs on its output, with the
+carrier `σ` (e.g. `D_𝔖.Carrier` / `D2SQueryState`) threaded throughout.
 
-Mirrors the §5.8 hybrid skeleton (`KeyLemma.dsfsGame` / `hybridGame`):
-
-- The prover is the salted `MaliciousProver []ₒ pSpec StmtIn U δ` outputting
-  `(𝕩, (τ, messages)) : StmtIn × DSSaltedProof pSpec U δ`.
-- The verifier is the narrow forward-only `𝒱^{h,p} := V.toDSFS δ` (paper Figure 4 line 3),
-  lifted to the wide `[]ₒ + duplexSpongeChallengeOracle` spec via `runForwardVerifierWide`
-  so its salt-absorb + transcript-derivation queries are recorded against the same wide log
-  as the prover's queries.
-
-Runs the prover under `impl` (wrapped via `lemma5_8LoggingWrapper`, then composed with the
-unreachable `[]ₒ` branch via `lemma5_8EmptyQueryImplGeneric`) on a fresh log `[]`, yielding
-either an abort or the prover output. The carrier state `σ` (e.g., `D_𝔖.Carrier` or
-`D2SQueryState`) is threaded; the log accumulates the prover-phase trace `tr_P̃`. If the prover
-aborts mid-execution, the returned pair is `(tr_P̃, [])` (paper line 1417: abort halts the
-experiment; `V` never runs; `tr_V` is empty).
-
-On `some`, the verifier reuses the post-prover carrier state `s₁` but starts with a fresh log
-`[]` so the returned `tr_V` contains only verifier-phase queries. The combined `[]ₒ + DS`
-trace logs are projected down to bare DS via `lemma5_8ProjectTraceLog`.
-
-Returns the pair `(tr_P̃, tr_V)`. The bad-event predicate of CO25 Def 5.7 is evaluated on the
-concatenation `tr_P̃ ++ tr_V`. -/
+Returns `(tr_P̃, tr_V)`; the bad event `E` (Def 5.7) is evaluated on `tr_P̃ ++ tr_V`. -/
 noncomputable def lemma5_8ProjectedTraceDistAbortable
     {σ : Type}
     (init : ProbComp σ)
@@ -428,6 +396,7 @@ noncomputable def lemma5_8ProjectedTraceDistAbortable
     ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U) ×
               QueryLog (duplexSpongeChallengeOracle StmtIn U)) := do
   let s₀ ← init
+  -- Log each DS query into the wide `[]ₒ + DS` log (tagged `Sum.inr`); the log is kept on abort.
   let wrappedDSImpl :
       QueryImpl (duplexSpongeChallengeOracle StmtIn U)
         (OptionT
@@ -438,6 +407,7 @@ noncomputable def lemma5_8ProjectedTraceDistAbortable
       match r with
       | none => pure (none, st)
       | some (a, s') => pure (some a, (s', st.2 ++ [⟨Sum.inr q, a⟩]))
+  -- The `[]ₒ` summand is unreachable, so compose it via the generic empty impl.
   let combinedImpl :
       QueryImpl ([]ₒ + duplexSpongeChallengeOracle StmtIn U)
         (OptionT
@@ -448,16 +418,21 @@ noncomputable def lemma5_8ProjectedTraceDistAbortable
         (StateT (σ ×
           QueryLog ([]ₒ + duplexSpongeChallengeOracle StmtIn U)) ProbComp)))
     + wrappedDSImpl
+  -- Prover phase on a fresh log `[]`; the log accumulates the prover trace `tr_P̃`.
   let proverResult ← ((simulateQ combinedImpl maliciousProver).run) (s₀, [])
   match proverResult with
   | (none, (_, trP)) =>
+      -- Abort (paper line 1417): execution halts, `V` never runs, so `tr_V = []`.
       pure (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP, [])
   | (some ⟨stmtIn, proof⟩, (s₁, trP)) =>
+      -- Success: verifier reuses carrier `s₁` but a fresh log, so `tr_V` is verifier-only.
+      -- `runForwardVerifierWide` lifts the forward verifier to the wide spec (shared log surface).
       let verifyCompWide :
           OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) (Option StmtOut) :=
         runForwardVerifierWide (oSpec := []ₒ) δ V stmtIn proof
       let verifierResult ← ((simulateQ combinedImpl verifyCompWide).run) (s₁, [])
       let trV := verifierResult.2.2
+      -- Project both `[]ₒ + DS` logs down to bare DS.
       pure (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP,
             lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trV)
 
@@ -619,7 +594,7 @@ if the combined event doesn't hold (`= 0`)
 There exist `(p, s_in, s_out)` and `(p, s_in', s_out)` in `tr̄` with `s_in ≠ s_in'`:
 two distinct forward-permutation inputs map to the same output. -/
 def collisionFwdFwd : Prop :=
-  let ⟨baseTrace, _⟩ := getBaseTrace trace
+  let baseTrace := getBaseTrace trace
   ∃ stateIn stateIn' stateOut,
     ⟨.inr <|.inl stateIn, stateOut⟩ ∈ baseTrace ∧
     ⟨.inr <|.inl stateIn', stateOut⟩ ∈ baseTrace ∧
@@ -631,7 +606,7 @@ alias E_col_p := collisionFwdFwd
 There exist `(p⁻¹, s_out, s_in)` and `(p⁻¹, s_out', s_in)` in `tr̄` with `s_out ≠ s_out'`:
 two distinct inverse-permutation inputs map to the same output. -/
 def collisionBwdBwd : Prop :=
-  let ⟨baseTrace, _⟩ := getBaseTrace trace
+  let baseTrace := getBaseTrace trace
   ∃ stateOut stateOut' stateIn,
     ⟨.inr <| .inr stateOut, stateIn⟩ ∈ baseTrace ∧
     ⟨.inr <| .inr stateOut', stateIn⟩ ∈ baseTrace ∧
@@ -643,7 +618,7 @@ alias E_col_pinv := collisionBwdBwd
 There exist `(p, s_in, s_out)` and `(p⁻¹, s_out, s_in')` in `tr̄` with `s_out = s_out'` and
 `s_in ≠ s_in'`: `p` is onto but its inverse is not a function. -/
 def collisionFwdBwd : Prop :=
-  let ⟨baseTrace, _⟩ := getBaseTrace trace
+  let baseTrace := getBaseTrace trace
   ∃ stateIn stateOut stateIn',
     ⟨.inr <| .inl stateIn, stateOut⟩ ∈ baseTrace ∧
     ⟨.inr <| .inr stateOut, stateIn'⟩ ∈ baseTrace ∧
@@ -655,7 +630,7 @@ alias E_col_p_pinv := collisionFwdBwd
 There exist `(p⁻¹, s_out, s_in)` and `(p, s_in, s_out')` in `tr̄` with `s_out ≠ s_out'`:
 `p⁻¹` is onto but `p` is not a function. -/
 def collisionBwdFwd : Prop :=
-  let ⟨baseTrace, _⟩ := getBaseTrace trace
+  let baseTrace := getBaseTrace trace
   ∃ stateOut stateIn stateOut',
     ⟨.inr <| .inr stateOut, stateIn⟩ ∈ baseTrace ∧
     ⟨.inr <| .inl stateIn, stateOut'⟩ ∈ baseTrace ∧
@@ -663,42 +638,14 @@ def collisionBwdFwd : Prop :=
 
 alias E_col_pinv_p := collisionBwdFwd
 
-/-- CO25 Definition 5.9 — Event `E_prp(tr)` in exact paper form.
-`E_prp(tr)` is the disjunction of:
-1. `E_{col,p}(tr)` — two `p`-entries share the same output.
-2. `E_{col,p⁻¹}(tr)` — two `p⁻¹`-entries share the same output.
-3. `E_{col,p,p⁻¹}(tr)` — a `p`-entry and a `p⁻¹`-entry share the same middle state with
-   distinct endpoints.
-4. `E_{col,p⁻¹,p}(tr)` — same as above with roles swapped.
-
-Informally: Items 1 or 3 make `p` non-injective; Items 2 or 4 make `p⁻¹` non-injective. -/
+/-- CO25 Definition 5.9 — Event `E_prp(tr)`: the disjunction of the four collision events above
+(`E_col_p`, `E_col_pinv`, `E_col_p_pinv`, `E_col_pinv_p`). Informally, Items 1/3 make `p`
+non-injective; Items 2/4 make `p⁻¹` non-injective. -/
 def collisionPerm : Prop :=
   collisionFwdFwd trace ∨ collisionBwdBwd trace
     ∨ collisionFwdBwd trace ∨ collisionBwdFwd trace
 
-
 alias E_prp := collisionPerm
-
-/-- `(h, p, p⁻¹)`-trace consistency predicate for a trace, which guarantees both the following:
-- `¬ E_{col,p,p⁻¹}(tr): (p, s_in, s_out) ∈ tr̄ ∧ (p⁻¹, s_out, s_in') ∈ tr̄ → s_in = s_in'`
-  (this is item #3 of Definition 5.9)
-- `¬E_{col,p⁻¹,p}(tr): (p⁻¹, s_out, s_in) ∈ tr̄ ∧ (p, s_in, s_out') ∈ tr̄ → s_out = s_out'`
-  (this is item #4 of Definition 5.9 - `E_prp`) -/
-def isConsistentTrace : Prop :=
-  let ⟨baseTrace, _⟩ := getBaseTrace trace
-  -- `¬ E_{col,p,p⁻¹}(tr)`
-  (∀ stateIn stateOut stateIn',
-      ⟨.inr <| .inl stateIn, stateOut⟩ ∈ baseTrace →
-      ⟨.inr <| .inr stateOut, stateIn'⟩ ∈ baseTrace →
-      stateIn = stateIn') ∧
-  -- `¬ E_{col,p⁻¹,p}(tr)`
-  (∀ stateOut stateIn stateOut',
-      ⟨.inr <| .inr stateOut, stateIn⟩ ∈ baseTrace →
-      ⟨.inr <| .inl stateIn, stateOut'⟩ ∈ baseTrace →
-      stateOut = stateOut')
-
--- TODO: investigate when & how we need to prove implications of the form
--- `tr ∈ support experimentTraceDist → isConsistentTrace tr` in hybrid experiments
 
 end Def5_9_CollisionsAndConsistency
 
@@ -746,27 +693,66 @@ lemma not_collisionBwdBwd_of_not_combined (h : ¬ E trace) : ¬ collisionBwdBwd 
     right; right; left
     exact ⟨⟨j, hj⟩, h_lt, sO', sI, hgj, rfl⟩
 
+/-- CO25 Lemma 5.10 helper: `¬E(tr)` rules out Item 3 of Definition 5.9. -/
+lemma not_collisionFwdBwd_of_not_combined (h : ¬ E trace) : ¬ collisionFwdBwd trace := by
+  intro hfb
+  apply h; clear h
+  obtain ⟨sI, sO, sI', hm1, hm2, hne⟩ := hfb
+  rw [List.mem_iff_get] at hm1 hm2
+  obtain ⟨⟨i, hi⟩, hgi⟩ := hm1
+  obtain ⟨⟨j, hj⟩, hgj⟩ := hm2
+  simp only [List.get_eq_getElem] at hgi hgj
+  have hij : i ≠ j := by
+    intro heq; subst heq; rw [hgi] at hgj
+    have hq : true = false :=
+      congrArg (fun x => match x with | ⟨.inr (.inl _), _⟩ => true | _ => false) hgj
+    contradiction
+  rcases Nat.lt_or_gt_of_ne hij with h_lt | h_lt
+  · right
+    refine ⟨⟨j, hj⟩, sI', sO, Or.inr ⟨hgj, ⟨⟨i, hi⟩, h_lt, Or.inr ⟨sI, hgi, hne⟩⟩⟩⟩
+  · left; right; left
+    unfold capacitySegmentDupPerm
+    refine ⟨⟨i, hi⟩, sO.capacitySegment, ⟨sI, sO, hgi, rfl⟩,
+      Or.inr (Or.inr (Or.inr (Or.inr ⟨⟨j, hj⟩, h_lt.le, sO, sI', hgj, rfl⟩)))⟩
+
+/-- CO25 Lemma 5.10 helper: `¬E(tr)` rules out Item 4 of Definition 5.9. -/
+lemma not_collisionBwdFwd_of_not_combined (h : ¬ E trace) : ¬ collisionBwdFwd trace := by
+  intro hbf
+  apply h; clear h
+  obtain ⟨sO, sI, sO', hm1, hm2, hne⟩ := hbf
+  rw [List.mem_iff_get] at hm1 hm2
+  obtain ⟨⟨i, hi⟩, hgi⟩ := hm1
+  obtain ⟨⟨j, hj⟩, hgj⟩ := hm2
+  simp only [List.get_eq_getElem] at hgi hgj
+  have hij : i ≠ j := by
+    intro heq; subst heq; rw [hgi] at hgj
+    have hq : true = false :=
+      congrArg (fun x => match x with | ⟨.inr (.inr _), _⟩ => true | _ => false) hgj
+    contradiction
+  rcases Nat.lt_or_gt_of_ne hij with h_lt | h_lt
+  · right
+    refine ⟨⟨j, hj⟩, sI, sO', Or.inl ⟨hgj, ⟨⟨i, hi⟩, h_lt, Or.inr ⟨sO, hgi, hne⟩⟩⟩⟩
+  · left; right; right
+    unfold capacitySegmentDupPermInv
+    refine ⟨⟨i, hi⟩, sI.capacitySegment, ⟨sO, sI, hgi, rfl⟩,
+      Or.inr (Or.inr (Or.inr (Or.inl ⟨⟨j, hj⟩, h_lt.le, sI, sO', hgj, rfl⟩)))⟩
+
 /-- CO25 Lemma 5.10 — helper.
 For a well-formed `(h, p, p⁻¹)` trace, if `E(tr) = 0`, then the exact paper-form
 `E_prp(tr)` does not hold. -/
 lemma not_collisionPerm_of_not_combined
-    (hTrace : isConsistentTrace trace)
     (h : ¬ E trace) : ¬ E_prp trace := by
   intro hprp
   rcases hprp with hff | hbb | hfb | hbf
   · exact not_collisionFwdFwd_of_not_combined (trace := trace) h hff
   · exact not_collisionBwdBwd_of_not_combined (trace := trace) h hbb
-  · rcases hTrace with ⟨hFwdBwd, _⟩
-    rcases hfb with ⟨stateIn, stateOut, stateIn', hm1, hm2, hne⟩
-    exact hne (hFwdBwd stateIn stateOut stateIn' hm1 hm2)
-  · rcases hTrace with ⟨_, hBwdFwd⟩
-    rcases hbf with ⟨stateOut, stateIn, stateOut', hm1, hm2, hne⟩
-    exact hne (hBwdFwd stateOut stateIn stateOut' hm1 hm2)
+  · exact not_collisionFwdBwd_of_not_combined (trace := trace) h hfb
+  · exact not_collisionBwdFwd_of_not_combined (trace := trace) h hbf
 
 /-- CO25 Lemma 5.10.
 For a well-formed `(h, p, p⁻¹)` trace, if `E(tr) = 0` then `E_prp(tr) = 0`. -/
-theorem lemma_5_10 (hTrace : isConsistentTrace trace) (h : ¬ E trace) : ¬ E_prp trace :=
-  not_collisionPerm_of_not_combined (trace := trace) hTrace h
+theorem lemma_5_10 (h : ¬ E trace) : ¬ E_prp trace :=
+  not_collisionPerm_of_not_combined (trace := trace) h
 
 end Lemma5_10
 
@@ -793,24 +779,16 @@ def E_inv (S_BT : Backtrack.S_BT trace state) : Prop :=
     -- (Eq. 36): ι = 0
     -- (Eq. 37): 0 < ι ≤ m_k - 1
 
-/-- CO25 Lemma 5.12 — If `E(tr) = 0` then `E_inv(tr, s) = 0`.
-
-Paper-direct statement (CO25 Def 5.11 / Eq. 35): no BackTrack sequence in `S_BT(tr, s)` uses a
-`p⁻¹` step. -/
+/-- CO25 Lemma 5.12 — If `E(tr) = 0` then `E_inv(tr, s) = 0`. -/
 lemma lemma_5_12 (h : ¬ E trace)
-    (S_BT : Backtrack.S_BT trace state) :
-    ¬ E_inv trace state S_BT := by
+    (seq_BT : Backtrack.S_BT trace state) :
+    ¬ E_inv trace state seq_BT := by
   sorry
 
 end Def511_Lemma512
 
-/-! ## Definition 5.13 and Lemma 5.14 — BackTrack fork event -/
+/-! ## Lemma 5.14 -/
 section Def513_Lemma514
-
-/-- CO25 Definition 5.13 — Event `E_fork(tr, s)`: there is a (capacity-segment) collision for
-`h` or `p`, formalized directly as `|𝒮_BT(tr, s)| > 1`. -/
-def E_fork (S_BT : Backtrack.S_BT trace state) : Prop :=
-  S_BT.seqFamily.card > 1
 
 /-- CO25 Definition 5.13 / Eq. 38 — `E_{fork,h}(tr, s)`: collision of two outputs of `h`.
 Two backtrack sequences in `𝒮_BT(tr, s)` have distinct input statements `𝕩^{(1)} ≠ 𝕩^{(2)}` but
@@ -831,33 +809,28 @@ coincide). -/
 def E_fork_p (S_BT : Backtrack.S_BT trace state) : Prop :=
   ∃ S₁ ∈ S_BT.seqFamily, ∃ S₂ ∈ S_BT.seqFamily,
   ∃ ι₁ : Fin S₁.outputState.length, ∃ ι₂ : Fin S₂.outputState.length,
-    (S₁.inputState[ι₁.val]'(by
-      have := S₁.inputState_length_eq_outputState_length_succ
-      have := ι₁.isLt; omega)) ≠
-    (S₂.inputState[ι₂.val]'(by
-      have := S₂.inputState_length_eq_outputState_length_succ
-      have := ι₂.isLt; omega)) ∧
+    S₁.inputState[ι₁.val]'(by have := S₁.inputState_length_eq_outputState_length_succ; omega) ≠
+    S₂.inputState[ι₂.val]'(by have := S₂.inputState_length_eq_outputState_length_succ; omega) ∧
     S₁.outputState[ι₁].capacitySegment = S₂.outputState[ι₂].capacitySegment
 
 /-- CO25 Definition 5.13 / Eq. 40 — `E_{fork,h,p}(tr, s)`: collision of `h` with the output
 capacity segment of a query to `p`.  There exist `S^{(1)}, S^{(2)} ∈ 𝒮_BT(tr, s)` and
-`ι ∈ [m_2 - 1]` with `s_{C,in,0}^{(1)} = s_{C,out,ι}^{(2)}`. -/
+`ι ∈ [m_2 - 1]` (paper notation: `{1, …, m₂ - 1}`) with
+`s_{C,in,0}^{(1)} = s_{C,out,ι}^{(2)}`.
+
+Note: `ι ≥ 1` is required by the paper — the `ι = 0` case cannot arise in the
+exhaustiveness proof (Claim 5.19) because it would be handled by `E_fork_h` instead. -/
 def E_fork_h_p (S_BT : Backtrack.S_BT trace state) : Prop :=
   ∃ S₁ ∈ S_BT.seqFamily, ∃ S₂ ∈ S_BT.seqFamily,
   ∃ ι : Fin S₂.outputState.length,
-    (S₁.inputState[0]'(by
+    0 < ι.val ∧ (S₁.inputState[0]'(by
       have := S₁.inputState_length_eq_outputState_length_succ; omega)).capacitySegment =
     S₂.outputState[ι].capacitySegment
 
-/-- CO25 Definition 5.13 — Collective exhaustiveness (CE, **not** ME) of the three special cases.
-If `E_fork(tr, s) = 1`, i.e. `|𝒮_BT(tr, s)| > 1`, then at least one of `E_{fork,h}`, `E_{fork,p}`,
-`E_{fork,h,p}` holds.  The cases are not mutually exclusive — multiple may hold simultaneously. -/
-lemma E_fork_implies_subcases
-    (S_BT : Backtrack.S_BT trace state) (h : E_fork trace state S_BT) (h_not_E : ¬ E trace) :
-    E_fork_h trace state S_BT ∨ E_fork_p trace state S_BT ∨ E_fork_h_p trace state S_BT := by
-  sorry
+def E_fork (S_BT : Backtrack.S_BT trace state) : Prop :=
+  S_BT.seqFamily.card > 1
 
-/-- CO25 Lemma 5.14 — If `E(tr) = 0` then `E_fork(tr, s) = 0`, i.e. `|𝒮_BT(tr, s)| ≤ 1`. -/
+/-- CO25 Lemma 5.14 — If `E(tr) = 0` then `E_fork(tr, s) = 0`. -/
 lemma lemma_5_14 (h : ¬ E trace)
     (S_BT : Backtrack.S_BT trace state) :
     ¬ E_fork trace state S_BT := by
@@ -865,7 +838,7 @@ lemma lemma_5_14 (h : ¬ E trace)
 
 end Def513_Lemma514
 
-/-! ## Definition 5.15 and Lemma 5.16 — ordering event -/
+/-! ## Lemma 5.16 -/
 section Def515_Lemma516
 
 /-- CO25 Definition 5.15 / Eq. 41 — `E_{time,h}(tr, s)`: the query to `h` is out of order.
@@ -877,11 +850,13 @@ def E_time_h (S_BT : Backtrack.S_BT trace state) : Prop :=
       have := p.1.inputState_length_eq_outputState_length_succ; omega⟩).val
 
 /-- CO25 Definition 5.15 / Eq. 42 — `E_{time,p}(tr, s)`: a query to `p` is out of order.
-There exists `J^{(k)} ∈ 𝒥_BT(tr, s)` and `ι ∈ [m_k - 1]` (paper indexing) with
-`j_{ι-1}^{(k)} > j_ι^{(k)}`, i.e. some consecutive pair of `j`-indices is out of order. -/
+There exists `J^{(k)} ∈ 𝒥_BT(tr, s)` and `ι ∈ [m_k - 1]` (paper notation: `{1, …, m_k - 1}`)
+with `j_{ι-1}^{(k)} > j_ι^{(k)}`, i.e. some consecutive pair of permutation-step `j`-indices is
+out of order.  In 0-based indexing this checks `j_ι > j_{ι+1}` for `ι ∈ {0, …, m_k - 2}`. -/
 def E_time_p (S_BT : Backtrack.S_BT trace state) : Prop :=
   ∃ p ∈ Backtrack.J_BT S_BT,
   ∃ ι : Fin p.1.outputState.length,
+    ι.val + 1 < p.1.outputState.length ∧
     (p.2.2 ⟨ι.val, by
       have := p.1.inputState_length_eq_outputState_length_succ
       have := ι.isLt; omega⟩).val >
@@ -889,7 +864,7 @@ def E_time_p (S_BT : Backtrack.S_BT trace state) : Prop :=
       have := p.1.inputState_length_eq_outputState_length_succ
       have := ι.isLt; omega⟩).val
 
-/-- CO25 Definition 5.15 — `E_time(tr, s) := E_{time,h}(tr, s) ∨ E_{time,p}(tr, s)`. -/
+/-- CO25 Definition 5.15 — `E_time(tr, s)` -/
 def E_time (S_BT : Backtrack.S_BT trace state) : Prop :=
   E_time_h trace state S_BT ∨ E_time_p trace state S_BT
 
