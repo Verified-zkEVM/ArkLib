@@ -596,7 +596,8 @@ lemma toPolynomial_lt_deg (c : ReedSolomon.code domain deg) :
   rcases c.property with ⟨p, hp_deg, hp_eval⟩
   -- Two cases depending on comparison between `deg` and `|ι|`
   by_cases hle : deg ≤ Fintype.card ι
-  · -- In this case, `p` has degree < |ι|, hence uniqueness of interpolation gives `toPolynomial c = p`.
+  · -- In this case, `p` has degree < |ι|,
+    -- hence uniqueness of interpolation gives `toPolynomial c = p`.
     have hp_lt_card : p.degree < (Fintype.card ι : WithBot ℕ) :=
       lt_of_lt_of_le (Polynomial.mem_degreeLT.mp hp_deg) (by exact_mod_cast hle)
     -- Interpolants of equal data are equal
