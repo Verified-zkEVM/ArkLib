@@ -637,6 +637,50 @@ lemma toPolynomial_lt_deg (c : ReedSolomon.code domain deg) :
     have : (toPolynomial c).degree < deg := lt_of_lt_of_le hdeg_lt_card hcard_le_deg
     simpa [Polynomial.mem_degreeLT] using this
 
+theorem toPolynomial_eq_self_of_le_of_deg_lt_of_eq
+  {c : code domain deg}
+  (p : Polynomial F)
+  (hle : deg ≤ Fintype.card ι)
+  (hdeg : p.degree < deg)
+  (hc : c.1 = evalOnPoints domain p) :
+  toPolynomial c = p := by 
+  by_cases hp : p = 0
+  · aesop
+  · obtain ⟨c, hc'⟩ := c
+    subst hc
+    simp only [toPolynomial_def] 
+    apply Polynomial.eq_of_natDegree_lt_card_of_eval_eq
+      (f := domain)
+    · aesop (add safe cases Function.Embedding)
+    · aesop 
+        (erase simp [Lagrange.interpolate_apply])
+        (add simp [Lagrange.eval_interpolate_at_node])
+        (add safe cases Function.Embedding)
+    · simp only [sup_lt_iff] 
+      have hpnd : p.natDegree < Fintype.card ι := 
+        lt_of_le_of_lt' hle <| by
+          aesop (add simp [Polynomial.natDegree_lt_iff_degree_lt])
+      constructor 
+      · rw [Polynomial.natDegree_lt_iff_degree_lt]
+        · exact lt_of_lt_of_le 
+            (Lagrange.degree_interpolate_lt _ 
+              (by aesop (add safe cases Function.Embedding)))
+              (by simp)
+        · intro contra
+          exact hp <| by
+            apply (Polynomial.eq_of_natDegree_lt_card_of_eval_eq
+              (f := domain))
+            · aesop (add safe cases Function.Embedding)
+            · intro i
+              have := congrArg (eval (domain i)) contra
+              rw [Lagrange.eval_interpolate_at_node] at this
+                <;> aesop 
+                      (erase simp [Lagrange.interpolate_apply])
+                      (add unsafe cases Function.Embedding)
+            · simpa using hpnd
+      · exact hpnd
+
+
 /-- The linear map that maps a Reed-Solomon codeword to its associated polynomial of degree less
 than `deg`. -/
 noncomputable def toPolynomialLT :

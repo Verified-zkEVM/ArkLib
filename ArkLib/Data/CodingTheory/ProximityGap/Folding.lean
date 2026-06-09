@@ -385,6 +385,10 @@ theorem foldWord_mem_code_of_mem_code {d : ℕ}
         LinearMap.coe_mk, AddHom.coe_mk]
       obtain ⟨hp_deg, hf'⟩ := hf'
       subst hf'
+      rw [ReedSolomon.toPolynomial_eq_self_of_le_of_deg_lt_of_eq]
+      · sorry
+      · exact hp_deg
+      · simp
 
 
 private noncomputable def foldWordAuxCoeff (domain : SmoothCosetFftDomain n F)
