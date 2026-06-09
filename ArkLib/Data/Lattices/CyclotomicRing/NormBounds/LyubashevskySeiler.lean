@@ -28,30 +28,31 @@ weak-binding argument; the other is `scalarVecMul_mul_l2NormSq_le` in
 
 ## Proof plan (issue #549)
 
-The argument is a genuine piece of algebraic number theory, specialized to the `k = 2`
-splitting case, and is *not* available in Mathlib in directly usable form. Write `n := 2^α`.
-The plan decomposes it into provable sub-lemmas:
+The argument specializes to the `k = 2` splitting case and, crucially, needs **no** ideal
+lattices, canonical embedding, or Minkowski bound (contrary to the original sketch): it
+reduces to an elementary `mod q` divisibility count. Write `n := 2^α`. All Mathlib pieces
+exist, so the remaining work is formalization, not new theory.
 
-* **A. Splitting of the modulus mod `q`.** `q ≡ 5 (mod 8)` forces the multiplicative order
-  of `q` in `(ZMod (2^{α+1}))ˣ` to be `2^{α-1}` (the structure of the 2-power unit group).
-  Hence `cyclotomic (2^{α+1}) (ZMod q) = X^n + 1` factors into *exactly two* monic
-  irreducibles `φ₁ · φ₂`, each of degree `n / 2`, via
-  `natDegree_of_dvd_cyclotomic_of_irreducible` (factor degree `= orderOf`) plus counting.
-  Edge case `α = 0`: `Rq = ZMod q` is a field, so nonzero implies unit; handle separately.
-* **B. CRT and the unit criterion.** `φ₁, φ₂` are coprime, so
-  `Rq Φ ≅ (ZMod q)[X]/(φ₁) × (ZMod q)[X]/(φ₂)` (`Ideal.quotientInfRingEquivPiQuotient`), with
-  each factor a field. Thus `c` is a unit iff `φᵢ ∤ c` for both `i`.
-* **C. Minimum-distance bound (the hard core).** If `φᵢ | c` with `c ≠ 0` and `deg c < n`,
-  then `c` is a nonzero element of the ideal lattice `(φᵢ)` of determinant `q^{n/2}`, so its
-  centered Euclidean norm obeys `‖c‖₂ ≥ √q`. The most tractable Lean route is the LS `k = 2`
-  field-norm trick (multiply by the Galois conjugate; `q` divides a quantity `≤ ‖c‖₂²`),
-  rather than the general `min ≥ det^{1/n}` Minkowski bound. No Mathlib lemma covers this.
-* **D. Norm bridge and assembly.** `‖c‖₂² ≤ ‖c‖₁² ≤ κ² < q` (elementary `l2NormSq ≤ l1Norm²`,
-  provable from the definitions in `NormBounds.Basic`), i.e. `‖c‖₂ < √q`. With C, a nonzero
-  non-unit `c` would force `‖c‖₂² ≥ q`, a contradiction; hence `c` is a unit.
+* **A. Order of `q` and factor degree.** For `q ≡ 5 (mod 8)`, lifting-the-exponent
+  (`Int.two_pow_sub_pow'`) gives `v₂(q^{2^k} - 1) = k + 2`, so the multiplicative order of
+  `q` modulo `2^{α+1}` is `2^{α-1}`. Hence every irreducible factor of
+  `cyclotomic (2^{α+1}) (ZMod q) = X^n + 1` has degree `2^{α-1} = n/2`
+  (`Polynomial.natDegree_of_dvd_cyclotomic_of_irreducible`); a root `ζ` (`ζ^n = -1`) then has
+  `[ZMod q (ζ) : ZMod q] = n/2`. Edge case `α = 0`: `Rq = ZMod q` is a field, nonzero ⇒ unit.
+* **B. Square root of `-1`.** `q ≡ 5 (mod 8) ⇒ q % 4 ≠ 3`, so `∃ r : ZMod q, r^2 = -1`
+  (`ZMod.exists_sq_eq_neg_one_iff`). For a root `ζ`, `s := ζ^{n/2}` has `s^2 = ζ^n = -1`, so
+  `s = ±r ∈ ZMod q`.
+* **C. Coefficient relations (replaces the lattice argument).** If `c` is a non-unit, an
+  irreducible factor divides its lift, giving a root `ζ` with `c̃(ζ) = 0`. Splitting the `n`
+  coefficients into low/high halves, `c̃(ζ) = Σ_{j<n/2} (c_j + s·c_{n/2+j}) ζ^j`; by the
+  degree-`n/2` independence of `1,…,ζ^{n/2-1}` from A, every `c_j + s·c_{n/2+j} = 0` in
+  `ZMod q`. Squaring with `s^2 = -1` gives, over `ℤ`, `q ∣ (c̃_j² + c̃_{n/2+j}²)` for each `j`.
+* **D. Finish (norm bridge proven below).** `‖c‖₂² = Σ_{j<n/2} (c̃_j² + c̃_{n/2+j}²)` is a sum
+  of nonnegative multiples of `q`, while `‖c‖₂² ≤ ‖c‖₁² ≤ κ² < q` (`l2NormSq_le_l1Norm_sq`),
+  so every term is `0`, forcing `c = 0` and contradicting `‖c‖₁ > 0`. Hence `c` is a unit.
 
-Phase D is routine ArkLib-norm bookkeeping; phases A and C are the heavy number-theoretic
-lifts and may need new Mathlib-level lemmas. Proof currently deferred (`sorry`).
+Phase D's `‖c‖₂² ≤ ‖c‖₁²` is proven as `l2NormSq_le_l1Norm_sq`; phases A–C remain to be
+formalized. Main theorem currently `sorry`.
 
 ## References
 
@@ -70,6 +71,14 @@ variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZM
 
 /-- The power-of-two ("Hachi") cyclotomic modulus `X^{2^α}+1` over `ZMod q`. -/
 local notation "Φ" => (powTwoCyclotomic (R := ZMod q) α)
+
+omit [NeZero q] in
+/-- **Phase D norm bridge.** The centered squared `ℓ₂` norm is at most the square of the
+centered `ℓ₁` norm: `‖c‖₂² ≤ ‖c‖₁²`. This is `Σ aₖ² ≤ (Σ aₖ)²` for nonnegative `aₖ`. -/
+theorem Rq.l2NormSq_le_l1Norm_sq (c : Rq Φ) :
+    Rq.l2NormSq Φ c ≤ (Rq.l1Norm Φ c) ^ 2 := by
+  unfold Rq.l2NormSq Rq.l1Norm
+  exact Finset.sum_sq_le_sq_sum_of_nonneg (fun i _ => Nat.zero_le _)
 
 /-- **Lyubashevsky–Seiler: short elements are invertible** (LS18, Cor. 1.2; Hachi, Lemma 3).
 Over the power-of-two cyclotomic modulus `powTwoCyclotomic α` (`φ = X^{2^α}+1`) with a prime
