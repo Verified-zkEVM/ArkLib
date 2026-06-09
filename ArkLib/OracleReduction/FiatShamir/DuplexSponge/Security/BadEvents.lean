@@ -244,8 +244,12 @@ alias E_dup := capacitySegmentDup
 and `p⁻¹`:
 
 ```
-E_func(tr) := ∃ j > 0, s_in ∈ Σ^{r+c} :  tr̄_j = (p, s_in, ·)  and  ∃ j' < j :
-  tr̄_{j'} = (p, s_in, ·)  ∨  tr̄_{j'} = (p⁻¹, ·, s_in)
+E_func(tr) := ∃ j > 0 :
+  [Case 1] tr̄_j = (p, s_in, s_out)  and  ∃ j' < j :
+    (tr̄_{j'} = (p, s_in, s_out') ∧ s_out' ≠ s_out)  ∨  (tr̄_{j'} = (p⁻¹, s_out', s_in) ∧ s_out' ≠ s_out)
+  or
+  [Case 2] tr̄_j = (p⁻¹, s_out, s_in)  and  ∃ j' < j :
+    (tr̄_{j'} = (p⁻¹, s_out, s_in') ∧ s_in' ≠ s_in)  ∨  (tr̄_{j'} = (p, s_in', s_out) ∧ s_in' ≠ s_in)
 ```
 
 Note: `E_func(tr)` never holds for a true permutation `p` and its inverse `p⁻¹`, but may hold

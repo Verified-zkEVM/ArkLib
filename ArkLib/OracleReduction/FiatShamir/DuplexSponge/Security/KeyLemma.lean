@@ -164,7 +164,10 @@ def basicFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
   let ⟨stmtIn, proof⟩ ←
     match stmtAndProof? with
     | some stmtAndProof => pure stmtAndProof
-    | none => failure
+    -- De-aborted: a failed compiled prover (`D2SAlgo^f` lookahead/backtrack failure) yields a
+    -- `default` statement+proof instead of aborting; the *same* `default` is used by the induced SR
+    -- prover (`hyb4_eq_coinSRExperiment`), and acceptance on it is part of the §5 `η★` budget.
+    | none => pure default
   let verifierComp :
       OracleComp (oSpec +
         D2SChallengePlusUnitOracle (U := U) (fsChallengeOracle (StmtIn × Salt) pSpec))
@@ -331,10 +334,14 @@ def hybridGame
   -- exposed via the outer `StateT M` layer so it can be threaded into the verifier.
   let proverComp := d2fRaw (T_H := T_H) (T_P := T_P) gImpl P default
   let ⟨proverTriple?, proveQueryLogRaw⟩ ← (simulateQ loggingOracle proverComp.run).run
-  let ⟨⟨⟨stmtIn, proof⟩, _⟩, memo₁⟩ ←
+  -- De-aborted (consistent with `basicFiatShamirGame`): on `gImpl` compilation failure, take a
+  -- `default` statement/proof and inner state instead of aborting.  We extract only the *needed*
+  -- components (each `Inhabited`) — the full `d2fRaw` triple is not `Inhabited`, so `pure default`
+  -- on the whole triple would not typecheck (`default : AbortComp …` is `OptionT.fail`, an abort).
+  let ⟨stmtIn, proof, memo₁⟩ :=
     match proverTriple? with
-    | some triple => pure triple
-    | none => failure
+    | some ⟨⟨⟨stmtIn, proof⟩, _⟩, memo₁⟩ => (stmtIn, proof, memo₁)
+    | none => (default, default, default)
   -- Type-level CO25 Figure 4 line 3 (`𝒱^{h,p}`): the narrow forward-only verifier is built and
   -- `liftComp`-ed to the wide spec, via `runForwardVerifierWide`.
   let rawVerifierComp := runForwardVerifierWide δ V stmtIn proof
@@ -345,10 +352,13 @@ def hybridGame
   let verifierComp := d2fRaw (T_H := T_H) (T_P := T_P) gImpl rawVerifierComp memo₁
   -- V has same simulated (h,p,p⁻¹) oracle access via `D2SQuery^{gImpl}` as P~.
   let ⟨verifierTriple?, verifyQueryLogRaw⟩ ← (simulateQ loggingOracle verifierComp.run).run
-  let ⟨⟨stmtOut?, _⟩, _⟩ ←
+  -- De-aborted likewise: on verifier-side compilation failure, treat it as a verifier *reject*
+  -- (`stmtOut? := none`) rather than aborting the game. `Option StmtOut` is `Inhabited` (`none`),
+  -- so this needs no `Inhabited StmtOut`. The genuine verifier-reject is still the `getM` below.
+  let stmtOut? :=
     match verifierTriple? with
-    | some triple => pure triple
-    | none => failure
+    | some ⟨⟨stmtOut?, _⟩, _⟩ => stmtOut?
+    | none => none
   let proveQueryLog :=
     projectD2SChallengePlusUnitQueryLog
       (oSpec := oSpec) (U := U) proveQueryLogRaw
@@ -397,18 +407,20 @@ def hybridGameDist -- apply traceMap into output of `hybridGame`
   match hybridOutput with
   | none => return none
   | some ⟨stmtIn, stmtOut, proof, projectedTrace⟩ => do
+      -- Paper Items 4-6: bridge on-sponge `Vector U δ` salt → FS-std `Salt` via
+      -- `SaltCodec.encode = bin` at the hybrid game boundary.
+      let π : FSSaltedProof pSpec Salt :=
+        (SaltCodec.encode (Salt := Salt) proof.1, proof.2)
       let outputFS? ←
         runSection58TraceMap
           (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (Salt := Salt)
           traceMap projectedTrace
       match outputFS? with
-      | none => return none
+      | none => -- NOTE: this is for consistency with `mappedDSFSGameDist`,
+        -- even though this branch won't be reached in `Hyb₂, Hyb₃, Hyb₄`
+        return some (stmtIn, stmtOut, π, [])
       | some fullTraceFS =>
-          -- Paper Items 4-6: bridge on-sponge `Vector U δ` salt → FS-std `Salt` via
-          -- `SaltCodec.encode = bin` at the hybrid game boundary.
-          let proofFS : FSSaltedProof pSpec Salt :=
-            (SaltCodec.encode (Salt := Salt) proof.1, proof.2)
-          return some (stmtIn, stmtOut, proofFS, fullTraceFS)
+          return some (stmtIn, stmtOut, π, fullTraceFS)
 
 /-- CO25 Theorem 5.1. Distribution of the basic-FS game (`Hyb_4` right-hand side) under a
 concrete oracle implementation (oracle family `𝒟_IP`). Used for `hyb_4`. -/
@@ -424,7 +436,7 @@ def basicFiatShamirGameDist
       (StmtIn × FSSaltedProof pSpec Salt)) :
     ProbComp (Option <| BasicFiatShamirGameOutput (oSpec := oSpec) (StmtIn := StmtIn)
       (StmtOut := StmtOut) (pSpec := pSpec) (Salt := Salt)) := do
-  (simulateQ impl (basicFiatShamirGame (V := V) (Salt := Salt) P).run).run' (← init)
+  (simulateQ impl (basicFiatShamirGame (V := V) (Salt := Salt) P)).run' (← init)
 
 /-- CO25 Theorem 5.1. Distribution of the DSFS game (`Hyb_0` left-hand side) under a concrete
 oracle implementation (oracle family `𝒟_𝔖`). Used via `mappedDSFSGameDist`. -/
@@ -436,7 +448,7 @@ def dsfsGameDist
     (P : MaliciousProver oSpec pSpec StmtIn U δ) :
     ProbComp (Option <| DSFSGameOutput (oSpec := oSpec) (StmtIn := StmtIn)
       (StmtOut := StmtOut) (pSpec := pSpec) (U := U) (δ := δ)) := do
-  (simulateQ impl (dsfsGame (V := V) P).run).run' (← init)
+  (simulateQ impl (dsfsGame (V := V) P)).run' (← init)
 
 /-- CO25 Theorem 5.1. Left experiment of Lemma 5.1 (`Hyb_0`): run the DSFS game under
 `𝒟_𝔖(λ,n)` and apply the line-4 trace map D2STrace = `(φ⁻¹, ψ) ∘ StdTrace` to produce a
@@ -459,18 +471,22 @@ def mappedDSFSGameDist
   match outputDS with
   | none => return none
   | some ⟨stmtIn, stmtOut, proof, fullTraceDS⟩ => do
+      -- Paper Items 4-6: bridge on-sponge `Vector U δ` salt → FS-std `Salt` via
+      -- `SaltCodec.encode = bin` at the DS→FS boundary on the LHS experiment.
+      let π : FSSaltedProof pSpec Salt :=
+        (SaltCodec.encode (Salt := Salt) proof.1, proof.2)
       let outputFS? ←
         runSection58TraceMap
           (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
           traceMap fullTraceDS
       match outputFS? with
-      | none => return none
-      | some fullTraceFS =>
-          -- Paper Items 4-6: bridge on-sponge `Vector U δ` salt → FS-std `Salt` via
-          -- `SaltCodec.encode = bin` at the DS→FS boundary on the LHS experiment.
-          let proofFS : FSSaltedProof pSpec Salt :=
-            (SaltCodec.encode (Salt := Salt) proof.1, proof.2)
-          return some (stmtIn, stmtOut, proofFS, fullTraceFS)
+      -- Trace-synthesis abort (a sponge bad event) is a distinguished bad-trace value, NOT a
+      -- suppressed acceptance: the verifier's `(𝕩, stmtOut)` decision survives. Matches CO25
+      -- Hyb₀, where a `tr = ⊥` bad event keeps the acceptance bit `b`; the abort then lives only
+      -- in the trace component, inside `tvDist(Hyb₀, Hyb₄) ≤ η★` (Claims 5.21–5.24), rather than
+      -- wrongly zeroing the soundness event.
+      | none => return some (stmtIn, stmtOut, π, [])
+      | some fullTraceFS => return some (stmtIn, stmtOut, π, fullTraceFS)
 
 end SecurityGames
 
