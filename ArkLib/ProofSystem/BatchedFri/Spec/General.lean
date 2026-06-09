@@ -15,7 +15,7 @@ namespace BatchedFri
 
 namespace Spec
 
-open OracleSpec OracleComp ProtocolSpec NNReal BatchingRound
+open OracleSpec OracleComp ProtocolSpec NNReal BatchingRound Domain
 
 /- Batched FRI parameters:
    - `F` a non-binary finite field.
@@ -35,7 +35,7 @@ variable {n : ℕ}
 variable (k : ℕ) (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 variable (dom_size_cond : (2 ^ (∑ i, (s i).1)) * d ≤ 2 ^ n)
 variable (l m : ℕ)
-variable {ω : ReedSolomon.SmoothCosetFftDomain n F}
+variable {ω : SmoothCosetFftDomain n F}
 
 -- /- Input/Output relations for the Batched FRI protocol. -/
 def inputRelation [DecidableEq F] (δ : ℝ≥0) :
@@ -63,20 +63,17 @@ def liftingLens :
       stmt,
       fun j v =>
           have : v.1 ∈ ω.toFinset := by {
-            rw [ReedSolomon.CosetFftDomain.mem_coset_finset_iff_mem_coset_domain]
+            simp only [CosetFftDomainClass.mem_toFinset_iff_mem]
             rcases j with ⟨j, h⟩
             have : j = 0 := by simpa using h
-            simp only [Nat.succ_eq_add_one, Fin.coe_ofNat_eq_mod, Nat.zero_mod, Nat.reduceAdd,
-              Fin.ofNat_eq_cast, Fin.val_natCast] at v
+            simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, Nat.reduceAdd] at v
             rcases v with ⟨v, h'⟩
             simp only
             subst this
             simp only [finRangeTo.eq_1, List.take_zero, List.toFinset_nil, Finset.sum_empty,
-              Nat.sub_zero, ReedSolomon.CosetFftDomain.subdomainNatReversed,
-              ReedSolomon.CosetFftDomain.subdomainNat, Nat.succ_eq_add_one, Fin.ofNat_eq_cast] at h'
-            rw [ReedSolomon.CosetFftDomain.mem_coset_finset_iff_mem_coset_domain] at h'
-            rw [←ReedSolomon.CosetFftDomain.subdomain_n']
-            exact (ReedSolomon.CosetFftDomain.mem_subdomain_of_eq_vals (by simp)).1 h'
+              Nat.sub_zero, CosetFftDomainClass.mem_toFinset_iff_mem] at h'
+            rw [←CosetFftDomainClass.mem_subdomain_0_iff_mem]
+            exact h'
           }
           (ostmt 0) ⟨v.1, this⟩ + ∑ j, cs j * ostmt j.succ ⟨v.1, this⟩
     ⟩
