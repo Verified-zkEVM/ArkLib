@@ -20,9 +20,12 @@ coefficient vector, which holds for the cyclic/negacyclic rings `X^n ∓ 1` of [
 Phrasing this for an arbitrary `Φ` would therefore be unsound.
 
 This is one of the two unproven lemmas for the Greyhound [NS24] / Hachi [NOZ26]
-weak-binding argument. The paper proof is in [Mic07, Lemma 2]: discrete Cauchy–Schwarz over
-the negacyclic convolution, together with minimality of the centered representative, gives the
-product norm inequality `‖fg‖ ≤ ‖f‖₁·‖g‖`.
+weak-binding argument. For the *cyclic* ring `X^n − 1`, Micciancio proves the analogous
+convolution-norm bounds `‖f ⊗ g‖∞ ≤ ‖f‖₂·‖g‖₂` and `‖f ⊗ g‖∞ ≤ ‖f‖₁·‖g‖∞`
+([Mic07, ineqs. (2.6)–(2.7)]). The `ℓ₂` bound `‖f·g‖₂ ≤ ‖f‖₁·‖g‖₂` proved here is the same
+discrete Young / Cauchy–Schwarz convolution inequality, adapted sign-invariantly (via
+`natAbs`) to the *negacyclic* ring `X^n + 1`; minimality of the centered representative
+supplies the per-coefficient bound.
 
 ## References
 
@@ -254,8 +257,8 @@ private lemma sum_conv_sq_le {n : ℕ} (da wb c : ℕ → ℤ)
         rw [← Finset.sum_mul]
     _ = (∑ i ∈ Finset.range n, da i) ^ 2 * ∑ j ∈ Finset.range n, wb j ^ 2 := by ring
 
-/-- **Per-entry product norm bound (Micciancio/Young, [Mic07, Lemma 2]).** Over the negacyclic
-ring `X^{2^α}+1`, `‖d·w‖₂² ≤ ‖d‖₁²·‖w‖₂²`. -/
+/-- **Per-entry product norm bound (Micciancio/Young, cf. [Mic07, ineqs. (2.6)–(2.7)]).**
+Over the negacyclic ring `X^{2^α}+1`, `‖d·w‖₂² ≤ ‖d‖₁²·‖w‖₂²`. -/
 theorem Rq.l2NormSq_mul_le (d w : Rq Φ) :
     Rq.l2NormSq Φ (d * w) ≤ (Rq.l1Norm Φ d) ^ 2 * Rq.l2NormSq Φ w := by
   have hAzero : ∀ i, 2 ^ α ≤ i → (d.1.coeff i).valMinAbs = 0 := by
