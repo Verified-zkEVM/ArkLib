@@ -23,11 +23,35 @@ condition and the `√q` bound are simply wrong, so phrasing the lemma for an ar
 `Φ` with `deg φ = 2^α` would be unsound.
 
 This is one of the two unproven lemmas for the Greyhound [NS24] / Hachi [NOZ26]
-weak-binding argument. The proof is a genuine piece of algebraic number theory
-(factorization of `X^{2^α}+1 mod q` into two factors, the maximal ideals realized as ideal
-lattices of determinant `q^{2^{α-1}}`, and a minimum-distance lower bound via the cyclotomic
-embedding). None of this is available in Mathlib in directly usable form, so the result is
-deferred (`sorry`) for now.
+weak-binding argument; the other is `scalarVecMul_mul_l2NormSq_le` in
+`NormBounds.MicciancioYoung`.
+
+## Proof plan (issue #549)
+
+The argument is a genuine piece of algebraic number theory, specialized to the `k = 2`
+splitting case, and is *not* available in Mathlib in directly usable form. Write `n := 2^α`.
+The plan decomposes it into provable sub-lemmas:
+
+* **A. Splitting of the modulus mod `q`.** `q ≡ 5 (mod 8)` forces the multiplicative order
+  of `q` in `(ZMod (2^{α+1}))ˣ` to be `2^{α-1}` (the structure of the 2-power unit group).
+  Hence `cyclotomic (2^{α+1}) (ZMod q) = X^n + 1` factors into *exactly two* monic
+  irreducibles `φ₁ · φ₂`, each of degree `n / 2`, via
+  `natDegree_of_dvd_cyclotomic_of_irreducible` (factor degree `= orderOf`) plus counting.
+  Edge case `α = 0`: `Rq = ZMod q` is a field, so nonzero implies unit; handle separately.
+* **B. CRT and the unit criterion.** `φ₁, φ₂` are coprime, so
+  `Rq Φ ≅ (ZMod q)[X]/(φ₁) × (ZMod q)[X]/(φ₂)` (`Ideal.quotientInfRingEquivPiQuotient`), with
+  each factor a field. Thus `c` is a unit iff `φᵢ ∤ c` for both `i`.
+* **C. Minimum-distance bound (the hard core).** If `φᵢ | c` with `c ≠ 0` and `deg c < n`,
+  then `c` is a nonzero element of the ideal lattice `(φᵢ)` of determinant `q^{n/2}`, so its
+  centered Euclidean norm obeys `‖c‖₂ ≥ √q`. The most tractable Lean route is the LS `k = 2`
+  field-norm trick (multiply by the Galois conjugate; `q` divides a quantity `≤ ‖c‖₂²`),
+  rather than the general `min ≥ det^{1/n}` Minkowski bound. No Mathlib lemma covers this.
+* **D. Norm bridge and assembly.** `‖c‖₂² ≤ ‖c‖₁² ≤ κ² < q` (elementary `l2NormSq ≤ l1Norm²`,
+  provable from the definitions in `NormBounds.Basic`), i.e. `‖c‖₂ < √q`. With C, a nonzero
+  non-unit `c` would force `‖c‖₂² ≥ q`, a contradiction; hence `c` is a unit.
+
+Phase D is routine ArkLib-norm bookkeeping; phases A and C are the heavy number-theoretic
+lifts and may need new Mathlib-level lemmas. Proof currently deferred (`sorry`).
 
 ## References
 
