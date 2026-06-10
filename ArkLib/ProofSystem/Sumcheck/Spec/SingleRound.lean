@@ -7,7 +7,7 @@ Authors: Quang Dao
 import ArkLib.OracleReduction.Security.Basic
 import ArkLib.OracleReduction.Composition.Sequential.General
 import ArkLib.OracleReduction.LiftContext.OracleReduction
-import ArkLib.OracleReduction.SimulateQ
+import VCVio.OracleComp.SimSemantics.OptionT.Basic
 import ArkLib.ProofSystem.Component.SendClaim
 import ArkLib.ProofSystem.Component.CheckClaim
 import ArkLib.ProofSystem.Component.RandomQuery

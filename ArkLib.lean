@@ -170,7 +170,6 @@ import ArkLib.OracleReduction.Security.Rewinding
 import ArkLib.OracleReduction.Security.RoundByRound
 import ArkLib.OracleReduction.Security.SpecialSoundness
 import ArkLib.OracleReduction.Security.StateRestoration
-import ArkLib.OracleReduction.SimulateQ
 import ArkLib.OracleReduction.VectorIOR
 import ArkLib.ProofSystem.BatchedFri.Security
 import ArkLib.ProofSystem.BatchedFri.Spec.General
