@@ -24,6 +24,13 @@ Reusable lemmas feeding the proof of `isUnit_of_l1Norm_le` in
 * **Coeff** — the abstract coefficient-extraction kernel: a vanishing combination of powers of a
   root `ζ` (with `ζ^{2^{α-1}}` a scalar square root of `-1`) forces, per coefficient pair,
   `q ∣ (â_j² + â_{2^{α-1}+j}²)` over `ℤ`.
+
+## References
+
+* [Lyubashevsky, V., and Seiler, G., *Short, Invertible Elements in Partially Splitting
+    Cyclotomic Rings and Applications to Lattice-Based Zero-Knowledge Proofs*][LS18]
+* [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
+    Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
 open scoped BigOperators
@@ -84,7 +91,7 @@ variable {q : ℕ} [Fact (Nat.Prime q)]
 
 omit [Fact (Nat.Prime q)] in
 /-- For a prime `q` with `q % 8 = 5`, `q - 1 ≡ 4 (mod 8)`, hence `v₂(q-1) = 2`. -/
-theorem emult_two_q_sub_one (hq5 : q % 8 = 5) :
+theorem emultiplicity_two_q_sub_one (hq5 : q % 8 = 5) :
     emultiplicity (2 : ℤ) ((q : ℤ) - 1) = 2 := by
   have h4 : (4 : ℤ) ∣ ((q : ℤ) - 1) := by
     have : ((q : ℤ) - 1) % 4 = 0 := by omega
@@ -109,14 +116,14 @@ theorem four_dvd_q_sub_one (hq5 : q % 8 = 5) : (4 : ℤ) ∣ ((q : ℤ) - 1) := 
 
 omit [Fact (Nat.Prime q)] in
 /-- The 2-adic valuation of `q^(2^k) - 1` is `k + 2`. -/
-theorem emult_main (hq5 : q % 8 = 5) (k : ℕ) :
+theorem emultiplicity_two_q_pow_sub_one (hq5 : q % 8 = 5) (k : ℕ) :
     emultiplicity (2 : ℤ) ((q : ℤ) ^ (2 ^ k) - 1) = (k : ℕ∞) + 2 := by
   have hxy : (4 : ℤ) ∣ ((q : ℤ) - 1) := four_dvd_q_sub_one hq5
   have hx : ¬ (2 : ℤ) ∣ (q : ℤ) := not_two_dvd_q hq5
   have key := Int.two_pow_sub_pow' (x := (q : ℤ)) (y := 1) (2 ^ k) (by simpa using hxy)
     (by simpa using hx)
   rw [one_pow] at key
-  rw [key, emult_two_q_sub_one hq5]
+  rw [key, emultiplicity_two_q_sub_one hq5]
   have h2 : emultiplicity (2 : ℤ) ((2 ^ k : ℕ) : ℤ) = (k : ℕ∞) := by
     have hc : ((2 ^ k : ℕ) : ℤ) = (2 : ℤ) ^ k := by push_cast; ring
     rw [hc, emultiplicity_pow_self_of_prime (Int.prime_two) k]
@@ -126,13 +133,13 @@ omit [Fact (Nat.Prime q)] in
 /-- `2^(k+2) ∣ q^(2^k) - 1`. -/
 theorem two_pow_dvd (hq5 : q % 8 = 5) (k : ℕ) :
     ((2 : ℤ) ^ (k + 2)) ∣ ((q : ℤ) ^ (2 ^ k) - 1) := by
-  rw [pow_dvd_iff_le_emultiplicity, emult_main hq5 k]; push_cast; rw [add_comm]
+  rw [pow_dvd_iff_le_emultiplicity, emultiplicity_two_q_pow_sub_one hq5 k]; push_cast; rw [add_comm]
 
 omit [Fact (Nat.Prime q)] in
 /-- `¬ 2^(k+3) ∣ q^(2^k) - 1`. -/
 theorem not_two_pow_dvd (hq5 : q % 8 = 5) (k : ℕ) :
     ¬ (((2 : ℤ) ^ (k + 3)) ∣ ((q : ℤ) ^ (2 ^ k) - 1)) := by
-  rw [← emultiplicity_lt_iff_not_dvd, emult_main hq5 k]
+  rw [← emultiplicity_lt_iff_not_dvd, emultiplicity_two_q_pow_sub_one hq5 k]
   have : ((k : ℕ∞) + 2) = ((k + 2 : ℕ) : ℕ∞) := by push_cast; ring
   rw [this]
   exact_mod_cast WithTop.coe_lt_coe.mpr (by omega : (k + 2 : ℕ) < (k + 3 : ℕ))
@@ -269,21 +276,21 @@ omit [NeZero q] in
 /-- Linear independence of `1, ζ, …, ζ^{2^{α-1}-1}` makes each collected coefficient vanish. -/
 theorem halfSum_coeff_eq_zero (α : ℕ) (hα : 1 ≤ α) (ζ : F) (s : ZMod q)
     (hζ : ζ ^ (2 ^ (α - 1)) = algebraMap (ZMod q) F s)
-    (hindep : LinearIndependent (ZMod q) (fun i : Fin (2 ^ (α - 1)) => ζ ^ (i : ℕ)))
+    (hindep : LinearIndependent (ZMod q) (fun i : Fin (2 ^ (α - 1)) ↦ ζ ^ (i : ℕ)))
     (a : ℕ → ZMod q)
     (hsum : ∑ k ∈ Finset.range (2 ^ α), algebraMap (ZMod q) F (a k) * ζ ^ k = 0)
     (j : ℕ) (hj : j < 2 ^ (α - 1)) :
     a j + s * a (2 ^ (α - 1) + j) = 0 := by
   set g : Fin (2 ^ (α - 1)) → ZMod q :=
-    fun i => a (i : ℕ) + s * a (2 ^ (α - 1) + (i : ℕ)) with hg
+    fun i ↦ a (i : ℕ) + s * a (2 ^ (α - 1) + (i : ℕ)) with hg
   have hcollapse := sum_eq_halfSum α hα ζ s hζ a hsum
   have hsmul : ∀ i : Fin (2 ^ (α - 1)), g i • ζ ^ (i : ℕ)
       = algebraMap (ZMod q) F (a (i : ℕ) + s * a (2 ^ (α - 1) + (i : ℕ))) * ζ ^ (i : ℕ) := by
     intro i; rw [hg, Algebra.smul_def]
   have huniv : ∑ i : Fin (2 ^ (α - 1)), g i • ζ ^ (i : ℕ) = 0 := by
-    rw [Finset.sum_congr rfl (fun i _ => hsmul i)]
+    rw [Finset.sum_congr rfl (fun i _ ↦ hsmul i)]
     rw [Fin.sum_univ_eq_sum_range
-      (fun k => algebraMap (ZMod q) F (a k + s * a (2 ^ (α - 1) + k)) * ζ ^ k)]
+      (fun k ↦ algebraMap (ZMod q) F (a k + s * a (2 ^ (α - 1) + k)) * ζ ^ k)]
     exact hcollapse
   have := (Fintype.linearIndependent_iff.mp hindep) g huniv ⟨j, hj⟩
   simpa [hg] using this
@@ -305,7 +312,7 @@ omit [NeZero q] in
 `j`, the integer divisibility `q ∣ (â_j² + â_{2^{α-1}+j}²)`. -/
 theorem dvd_sq_add_sq (α : ℕ) (hα : 1 ≤ α) (ζ : F) (s : ZMod q)
     (hζ : ζ ^ (2 ^ (α - 1)) = algebraMap (ZMod q) F s) (hs : s ^ 2 = -1)
-    (hindep : LinearIndependent (ZMod q) (fun i : Fin (2 ^ (α - 1)) => ζ ^ (i : ℕ)))
+    (hindep : LinearIndependent (ZMod q) (fun i : Fin (2 ^ (α - 1)) ↦ ζ ^ (i : ℕ)))
     (a : ℕ → ZMod q)
     (hsum : ∑ k ∈ Finset.range (2 ^ α), algebraMap (ZMod q) F (a k) * ζ ^ k = 0)
     (j : ℕ) (hj : j < 2 ^ (α - 1)) :

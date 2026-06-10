@@ -110,7 +110,7 @@ import ArkLib.Data.Lattices.CyclotomicRing.Basic
 import ArkLib.Data.Lattices.CyclotomicRing.Modulus
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
-import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.LSCore
+import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.LsCore
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.LyubashevskySeiler
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.MicciancioYoung
 import ArkLib.Data.Lattices.CyclotomicRing.Norms

@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
-import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.LSCore
+import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.LsCore
 import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.NumberTheory.LegendreSymbol.Basic
 
@@ -48,10 +48,10 @@ are independent over `ZMod q`, each `c̃_j + s·c̃_{n/2+j} = 0`, and squaring (
 forces `‖c‖₂² = 0`, hence `c = 0`, contradicting `‖c‖₁ > 0`. (Edge case `α = 0`: `Rq` is a
 field, so a nonzero element is a unit.)
 
-The supporting lemmas live in `NormBounds.LSCore` (the iso `Rq.equivQuotient`, the order
+The supporting lemmas live in `NormBounds.LsCore` (the iso `Rq.equivQuotient`, the order
 computation `orderOf_q_mod_two_pow`, the irreducibility `irreducible_X_pow_sub_C_r`, and the
 coefficient kernel `dvd_sq_add_sq`); the splitting and `√-1` existence are
-`powTwoCyclotomic_splits_of_sq_eq_neg_one` and `exists_sq_eq_neg_one_of_q5`.
+`powTwoCyclotomic_splits_of_sq_eq_neg_one` and `exists_sq_eq_neg_one_of_mod_eight_eq_five`.
 
 ## References
 
@@ -77,12 +77,13 @@ centered `ℓ₁` norm: `‖c‖₂² ≤ ‖c‖₁²`. This is `Σ aₖ² ≤ 
 theorem Rq.l2NormSq_le_l1Norm_sq (c : Rq Φ) :
     Rq.l2NormSq Φ c ≤ (Rq.l1Norm Φ c) ^ 2 := by
   unfold Rq.l2NormSq Rq.l1Norm
-  exact Finset.sum_sq_le_sq_sum_of_nonneg (fun i _ => Nat.zero_le _)
+  exact Finset.sum_sq_le_sq_sum_of_nonneg (fun i _ ↦ Nat.zero_le _)
 
 omit [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
 /-- For a prime `q ≡ 5 (mod 8)` we have `q % 4 = 1 ≠ 3`, so `-1` is a square in `ZMod q`
 (`ZMod.exists_sq_eq_neg_one_iff`). This `r` (`r² = -1`) drives the explicit splitting. -/
-theorem exists_sq_eq_neg_one_of_q5 (hq5 : q % 8 = 5) : ∃ r : ZMod q, r ^ 2 = -1 := by
+theorem exists_sq_eq_neg_one_of_mod_eight_eq_five (hq5 : q % 8 = 5) :
+    ∃ r : ZMod q, r ^ 2 = -1 := by
   have h4 : q % 4 ≠ 3 := by omega
   obtain ⟨r, hr⟩ := (ZMod.exists_sq_eq_neg_one_iff (p := q)).mpr h4
   exact ⟨r, by rw [sq]; exact hr.symm⟩
@@ -173,12 +174,12 @@ theorem q_dvd_l2NormSq_of_not_isUnit (hq5 : q % 8 = 5) {c : Rq Φ} (hc : ¬ IsUn
     rw [hc0]
     have hzero : Rq.l2NormSq (powTwoCyclotomic (R := ZMod q) 0) (0 : Rq _) = 0 := by
       unfold Rq.l2NormSq
-      refine Finset.sum_eq_zero (fun k _ => ?_)
+      refine Finset.sum_eq_zero (fun k _ ↦ ?_)
       rw [Rq.zero_val, CompPoly.CPolynomial.coeff_zero, ZMod.valMinAbs_zero, Int.natAbs_zero]
       norm_num
     rw [hzero]; norm_num
   · have hα : 1 ≤ α := hαpos
-    obtain ⟨r, hr⟩ := exists_sq_eq_neg_one_of_q5 (q := q) hq5
+    obtain ⟨r, hr⟩ := exists_sq_eq_neg_one_of_mod_eight_eq_five (q := q) hq5
     set g1 : (ZMod q)[X] := X ^ (2 ^ (α - 1)) - C r with hg1
     set g2 : (ZMod q)[X] := X ^ (2 ^ (α - 1)) + C r with hg2
     set ct : (ZMod q)[X] := c.1.toPoly with hct
@@ -251,17 +252,17 @@ theorem q_dvd_l2NormSq_of_not_isUnit (hq5 : q % 8 = 5) {c : Rq Φ} (hc : ¬ IsUn
         apply Finset.sum_congr rfl
         intro k _; rw [Algebra.smul_def]
       have hindep : LinearIndependent (ZMod q)
-          (fun i : Fin (2 ^ (α - 1)) => ζ ^ (i : ℕ)) := by
+          (fun i : Fin (2 ^ (α - 1)) ↦ ζ ^ (i : ℕ)) := by
         have hli := (AdjoinRoot.powerBasis' hgmonic).basis.linearIndependent
         have hbpow : ⇑(AdjoinRoot.powerBasis' hgmonic).basis
-            = fun i : Fin (AdjoinRoot.powerBasis' hgmonic).dim =>
+            = fun i : Fin (AdjoinRoot.powerBasis' hgmonic).dim ↦
               (AdjoinRoot.powerBasis' hgmonic).gen ^ (i : ℕ) :=
           (AdjoinRoot.powerBasis' hgmonic).coe_basis
         rw [hbpow] at hli
         have hdim : (AdjoinRoot.powerBasis' hgmonic).dim = 2 ^ (α - 1) := hgnd
         rw [hdim] at hli
         exact hli
-      set a : ℕ → ZMod q := fun k => ct.coeff k with ha
+      set a : ℕ → ZMod q := fun k ↦ ct.coeff k with ha
       have hcoeff_eq : ∀ k, c.1.coeff k = a k := by
         intro k; rw [ha, hct, CompPoly.CPolynomial.coeff_toPoly]
       have hdvdj : ∀ j, j < 2 ^ (α - 1) →
@@ -354,7 +355,7 @@ theorem isUnit_of_l1Norm_le (hq5 : q % 8 = 5) {c : Rq Φ} {κ : ℕ}
   have hc0 : c = 0 := Rq.eq_zero_of_l2NormSq_eq_zero α hz
   have hl1zero : Rq.l1Norm Φ (0 : Rq Φ) = 0 := by
     unfold Rq.l1Norm
-    refine Finset.sum_eq_zero fun k _ => ?_
+    refine Finset.sum_eq_zero fun k _ ↦ ?_
     rw [Rq.zero_val, CompPoly.CPolynomial.coeff_zero, ZMod.valMinAbs_zero, Int.natAbs_zero]
   rw [hc0, hl1zero] at hpos
   exact absurd hpos (lt_irrefl 0)
