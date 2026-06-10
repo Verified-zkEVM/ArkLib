@@ -125,7 +125,12 @@ lemma minSeedCard_pos {F : Type} {s : ℕ} (S : Fin s → Set F)
     [∀ i, Fintype ↥(S i)] [∀ i, Nonempty ↥(S i)] :
     0 < minSeedCard S := by
   unfold minSeedCard
-  split_ifs <;> simp_all
+  have hne : ∀ i, (S i).Nonempty := fun i => Set.nonempty_coe_sort.mp inferInstance
+  split_ifs with h
+  · rw [Finset.lt_inf'_iff]
+    intro i _
+    exact Fintype.card_pos_iff.mpr (Set.nonempty_coe_sort.2 (hne i))
+  · norm_num
 
 
 /-- The minimum of the cardinality of a family of nonempty sets is smaller than the cardinality of

@@ -345,6 +345,9 @@ instance {l : ℕ} : ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Fintype
     have h := this ▸ i.1.2
     simp at h
 
+noncomputable instance {l : ℕ} : IsUniformSpec ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ) :=
+  IsUniformSpec.ofFintypeInhabited _
+
 open ENNReal in
 noncomputable def εC
     (𝔽 : Type) [Fintype 𝔽] (n : ℕ) {k : ℕ} (s : Fin (k + 1) → ℕ+) (m : ℕ) (ρ_sqrt : ℝ≥0) : ℝ≥0∞ :=
@@ -604,31 +607,13 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
                       Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Range q))
 
 noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
-    HasEvalPMF
-      (OracleComp
-        ([]ₒ +
-          [((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
-              (Spec.pSpecFold (ω := ω) k s ++ₚ
-                Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-                  Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ)) := by
-  infer_instance
---HasEvalSPMF
---       (OptionT
---         (OracleComp
---           ([]ₒ +
---             [(BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t ++ₚ
---                   (Spec.pSpecFold k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ Spec.QueryRound.pSpec l)).Challenge]ₒ)))
---
-noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
-    HasEvalSPMF
-      (OptionT
-        (OracleComp
-          ([]ₒ +
-            [((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
-                (Spec.pSpecFold (ω := ω) k s ++ₚ
-                  Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-                    Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ))) := by
-  infer_instance
+    IsUniformSpec
+      ([]ₒ +
+        [((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
+            (Spec.pSpecFold (ω := ω) k s ++ₚ
+              Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
+                Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ) :=
+  IsUniformSpec.ofFintypeInhabited _
 
 open ENNReal in
 /-- Corresponds to Claim 8.2 of [BCIKS20] -/

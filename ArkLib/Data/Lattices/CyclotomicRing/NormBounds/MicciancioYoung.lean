@@ -91,9 +91,10 @@ private lemma coeff_modByMonic_X_pow_add_one {R : Type*} [CommRing R] [Nontrivia
 private lemma weighted_cauchy_schwarz {ι : Type*} (s : Finset ι) (w x : ι → ℤ)
     (hw : ∀ i ∈ s, 0 ≤ w i) :
     (∑ i ∈ s, w i * x i) ^ 2 ≤ (∑ i ∈ s, w i) * (∑ i ∈ s, w i * x i ^ 2) := by
-  refine Finset.sum_sq_le_sum_mul_sum_of_sq_eq_mul s hw ?_ ?_
+  refine Finset.sum_sq_le_sum_mul_sum_of_sq_le_mul s hw ?_ ?_
   · exact fun i hi => mul_nonneg (hw i hi) (sq_nonneg _)
-  · exact fun i _ => by ring
+  · intro i hi
+    nlinarith [hw i hi]
 
 /-- **Negacyclic reindexing (the `ℓ₂`-isometry of multiplication by `X`).** The cyclic shift
 `k ↦ (k + n - i) % n` is a bijection of `range n`, so it preserves the squared-`ℓ₂` sum. -/

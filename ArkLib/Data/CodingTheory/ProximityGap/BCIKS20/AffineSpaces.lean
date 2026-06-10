@@ -40,7 +40,7 @@ theorem exists_of_weighted_avg_gt {α : Type} (p : PMF α) (f : α → ENNReal) 
     exact le_of_not_gt this
   have hmul : ∀ a, p a * f a ≤ p a * ε := by
     intro a
-    exact mul_le_mul_of_nonneg_left (hle a) (zero_le (p a))
+    exact mul_le_mul_of_nonneg_left (hle a) (zero_le)
   have htsum : (∑' a, p a * f a) ≤ ∑' a, p a * ε := by
     exact ENNReal.tsum_le_tsum hmul
   have htsum' : (∑' a, p a * f a) ≤ ε := by
@@ -1242,7 +1242,7 @@ theorem bucket_exists_common_codeword
         · intro x hx
           have h := bW.sum_repr ⟨x, hx⟩
           apply_fun Subtype.val at h
-          simp only [AddSubmonoidClass.coe_finset_sum, SetLike.val_smul] at h
+          simp only [AddSubmonoidClass.coe_finsetSum, SetLike.val_smul] at h
           rw [← h]
           exact Submodule.sum_mem _ fun i _ =>
             Submodule.smul_mem _ _ (Submodule.subset_span
@@ -1616,7 +1616,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
         · -- Otherwise: impossible since δ > 0 and δ < 1 - sqrtRate
           exfalso
           have h1 : ¬(δ ≤ (1 - (↑(LinearCode.rate (ReedSolomon.code domain deg)) : ℝ≥0)) / 2) :=
-            fun hle => h_ud (Set.mem_Icc.mpr ⟨zero_le _, hle⟩)
+            fun hle => h_ud (Set.mem_Icc.mpr ⟨zero_le, hle⟩)
           have h2 : (1 - (↑(LinearCode.rate (ReedSolomon.code domain deg)) : ℝ≥0)) / 2 < δ :=
             not_le.mp h1
           have h3 : δ < 1 - NNReal.sqrt ↑(LinearCode.rate (ReedSolomon.code domain deg)) := by
@@ -2240,7 +2240,7 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
           (fun v hv => ⟨(hclose v hv).1, (hclose v hv).2⟩)
       · -- δ_star = 0: only w itself can be at distance 0, so |closeWords| ≤ 1 < |F|
         push Not at hδs_pos
-        have hδs_eq : δ_star = 0 := le_antisymm hδs_pos (zero_le _)
+        have hδs_eq : δ_star = 0 := le_antisymm hδs_pos (zero_le)
         have hclose_eq : ∀ v ∈ close, v = w := by
           intro v hv
           have hd := (hclose v hv).2

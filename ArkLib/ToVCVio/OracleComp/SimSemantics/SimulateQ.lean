@@ -8,7 +8,7 @@ import ArkLib.ToVCVio.OracleComp.Coercions.SubSpec
 import ArkLib.ToVCVio.ToMathlib.Control.StateT
 import VCVio.EvalDist.Defs.NeverFails
 import VCVio.OracleComp.QueryTracking.RandomOracle.Basic
-import VCVio.OracleComp.SimSemantics.StateT
+import VCVio.OracleComp.SimSemantics.StateT.Basic
 
 /-!
 # Additions to VCV-io's `OracleComp.SimSemantics.SimulateQ`
@@ -26,20 +26,6 @@ lemma simulateQ_randomOracle_map_uniformFin {α : Type} (n : ℕ) (f : Fin (n + 
   rw [simulateQ_map, StateT.run'_map_comm]
   congr 1
 
-lemma support_simulateQ_run'_subset
-    {ι σ α : Type} {spec : OracleSpec ι}
-    (impl : QueryImpl spec (StateT σ ProbComp)) (oa : OracleComp spec α) (s : σ) :
-    support ((simulateQ impl oa).run' s) ⊆ support oa := by
-  intro y hy
-  induction oa using OracleComp.inductionOn generalizing y s with
-  | pure x =>
-      simpa [simulateQ_pure, StateT.run'_eq, StateT.run_pure] using hy
-  | query_bind t oa ih =>
-      simp only [simulateQ_bind, simulateQ_query, OracleQuery.input_query,
-        OracleQuery.cont_query, StateT.run'_eq, StateT.run_bind, support_map,
-        Set.mem_image, support_bind, Set.mem_iUnion] at hy ⊢
-      aesop
-
 /-- If all outputs of the original `OracleComp` are successful and satisfy `P`, then the
     simulated `OptionT` computation satisfies `P` with probability one. -/
 lemma OptionT.probEvent_eq_one_of_simulateQ_support
@@ -53,7 +39,7 @@ lemma OptionT.probEvent_eq_one_of_simulateQ_support
   constructor
   · rw [OptionT.probFailure_eq, OptionT.run_mk]
     have hfail : Pr[⊥ | (simulateQ impl oa).run' s₀] = 0 :=
-      HasEvalPMF.probFailure_eq_zero _
+      probFailure_eq_zero
     rw [hfail, _root_.zero_add]
     exact probOutput_eq_zero_of_not_mem_support fun hnone =>
       let hnone' := support_simulateQ_run'_subset impl oa s₀ hnone

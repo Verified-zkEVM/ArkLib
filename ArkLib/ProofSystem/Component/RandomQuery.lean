@@ -147,7 +147,7 @@ theorem oracleReduction_completeness :
     Challenge, ofPFunctor_toPFunctor, QueryImpl.liftTarget_self, MessageIdx, OStmtIn,
     Message, bind_map_left, StateT.run'_eq, StateT.run_bind, map_bind, OptionT.mk_bind,
     Set.mem_setOf_eq, probEvent_eq_one_iff, probFailure_bind_eq_zero_iff,
-    OptionT.probFailure_liftM, HasEvalPMF.probFailure_eq_zero, OptionT.support_liftM,
+    OptionT.probFailure_liftM, probFailure_eq_zero, OptionT.support_liftM,
     Prod.forall, true_and, support_bind, Set.mem_iUnion, OptionT.mem_support_iff,
     OptionT.run_mk, support_map, Set.mem_image, Prod.exists, exists_and_right,
     exists_eq_right, exists_prop, forall_exists_index, and_imp, Prod.mk.injEq]

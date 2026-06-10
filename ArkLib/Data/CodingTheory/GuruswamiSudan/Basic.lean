@@ -420,7 +420,7 @@ section neZero
     of the combination. -/
 lemma coeff_linearCombination_monomial (c : ℕ × ℕ →₀ F) (i j : ℕ) :
     ((linearCombination F (fun p ↦ monomial (F := F) p.1 p.2) c).coeff j).coeff i = c (i, j) := by
-    simp only [linearCombination_apply, Finsupp.sum, finset_sum_coeff, coeff_smul, smul_eq_mul]
+    simp only [linearCombination_apply, Finsupp.sum, finsetSum_coeff, coeff_smul, smul_eq_mul]
     rw [Finset.sum_eq_single (i, j)] <;> simp +contextual only [Finsupp.mem_support_iff, ne_eq,
       mul_eq_zero, false_or, Prod.forall, Prod.mk.injEq, not_and]
     · erw [coeff_monomial, if_pos rfl]; aesop
@@ -845,7 +845,7 @@ lemma interpolate_eq_of_degree_lt (q : F[X]) (hq : q.natDegree < n) :
     · simp +contextual only [mem_image, mem_univ, true_and, Lagrange.interpolate_apply,
         forall_exists_index, forall_apply_eq_imp_iff]
       intro i
-      rw [eval_finset_sum, Finset.sum_eq_single i]
+      rw [eval_finsetSum, Finset.sum_eq_single i]
       · rw [eval_mul, Lagrange.eval_basis_self (by exact ωs.injective.injOn) (mem_univ i)]
         norm_num
       all_goals aesop

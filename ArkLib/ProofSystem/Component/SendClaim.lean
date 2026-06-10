@@ -131,7 +131,7 @@ theorem completeness [Nonempty σ] :
   simp only [OptionT.probFailure_eq, OptionT.mem_support_iff, OptionT.run_mk]
   simp only [support_bind, Set.mem_iUnion]
   exact ⟨by {
-    simp only [HasEvalPMF.probFailure_eq_zero, zero_add, probOutput_eq_zero_iff]
+    simp only [probFailure_eq_zero, zero_add, probOutput_eq_zero_iff]
     intro h
     rw [mem_support_bind_iff] at h
     obtain ⟨s, -, hs⟩ := h
