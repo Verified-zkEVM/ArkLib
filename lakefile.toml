@@ -7,20 +7,22 @@ pp.unicode.fun = true
 autoImplicit = false
 weak.linter.mathlibStandardSet = true
 weak.linter.style.longFile = 1500
+weak.linter.style.header = false
 
 [moreServerOptions]
 linter.mathlibStandardSet = true
 linter.style.longFile = 1500
+linter.style.header = false
 
 [[require]]
 name = "VCVio"
 git = "https://github.com/Verified-zkEVM/VCV-io"
-rev = "f85df0b4ec3ef4249876996da28a07c38e9137c2"
+rev = "v4.30.0"
 
 [[require]]
 name = "«doc-gen4»"
 git = "https://github.com/leanprover/doc-gen4"
-rev = "v4.29.0"
+rev = "v4.30.0"
 
 [[require]]
 name = "checkdecls"
@@ -30,7 +32,7 @@ rev = "lean4.18.0"
 [[require]]
 name = "CompPoly"
 git = "https://github.com/Verified-zkEVM/CompPoly"
-rev = "067a22b6623a0d61f27deda02f8c8a0b8b339b33"
+rev = "v4.30.0"
 
 [[lean_lib]]
 name = "ArkLib"

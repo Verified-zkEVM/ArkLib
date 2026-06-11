@@ -93,7 +93,7 @@ lemma splitNth_def (n : ℕ) (f : 𝔽[X]) [inst : NeZero n] :
         (Polynomial.X ^ i.1) *
           Polynomial.eval₂ Polynomial.C (Polynomial.X ^ n) (splitNth f n i) := by
   ext e
-  rw [Polynomial.finset_sum_coeff]
+  rw [Polynomial.finsetSum_coeff]
   have h₀ {b e : ℕ} {f : 𝔽[X]} : (X ^ b * f).coeff e = if e < b then 0 else f.coeff (e - b) := by
     rw [Polynomial.coeff_X_pow_mul' f b e]
     aesop
@@ -263,7 +263,7 @@ lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽]
       rw [splitNth_def (f := f) (inst := inst)]
     rw [
       Polynomial.map_sum,
-      Polynomial.eval_finset_sum]
+      Polynomial.eval_finsetSum]
     simp only [Polynomial.map_mul, map_C, coe_compRingHom, Polynomial.map_pow, map_X,
     eval_mul, eval_C, eval_pow, eval_X]
     simp only [comp]
@@ -273,9 +273,9 @@ lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽]
       ext x
       rw [mul_comm]
       rfl
-  · simp only [Bivariate.degreeX, finset_sum_coeff, coeff_C_mul, coeff_X_pow, mul_ite, mul_one,
+  · simp only [Bivariate.degreeX, finsetSum_coeff, coeff_C_mul, coeff_X_pow, mul_ite, mul_one,
     mul_zero, natDegree_pow, natDegree_X]
-    simp only [Finset.sup_le_iff, mem_support_iff, finset_sum_coeff, coeff_C_mul, coeff_X_pow,
+    simp only [Finset.sup_le_iff, mem_support_iff, finsetSum_coeff, coeff_C_mul, coeff_X_pow,
     mul_ite, mul_one, mul_zero, ne_eq]
     intro b hb
     apply natDegree_sum_le_of_forall_le
@@ -304,7 +304,7 @@ lemma polyFold_eq_sum_of_splitNth {𝔽 : Type} [Field 𝔽]
   FoldingPolynomial.polyFold f n r =
     ∑ i, C (r ^ i.val) * splitNth f n i := by
   simp only [FoldingPolynomial.polyFold, folding_polynomial_eq_sum_splitNth, map_pow]
-  rw [Polynomial.eval_finset_sum]
+  rw [Polynomial.eval_finsetSum]
   simp only [eval_mul, eval_C, eval_pow, eval_X]
   conv =>
     lhs

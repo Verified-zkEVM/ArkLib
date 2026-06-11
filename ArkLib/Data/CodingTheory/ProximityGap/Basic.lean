@@ -95,7 +95,7 @@ We call `δ` the proximity parameter and `ε` the error parameter. -/
 noncomputable def δ_ε_proximityGap {α : Type} [DecidableEq α] [Nonempty α]
   (P : Finset (ι → α)) (C : Set (Finset (ι → α))) (δ ε : ℝ≥0) : Prop :=
   ∀ S ∈ C, ∀ [Nonempty S],
-  Xor'
+  Xor
   ( Pr_{let x ← $ᵖ S}[δᵣ(x.val, P) ≤ δ] = 1 )
   ( Pr_{let x ← $ᵖ S}[δᵣ(x.val, P) ≤ δ] ≤ ε )
 

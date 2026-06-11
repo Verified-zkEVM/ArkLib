@@ -846,7 +846,7 @@ lemma coeff_vec_to_bivariate_coeff (k D : ℕ)
     (hwd : i.val + (k - 1) * j.val ≤ D) :
     ((coeffVecToBivariate k D c).coeff j.val).coeff i.val = c (i, j) := by
   unfold coeffVecToBivariate
-  simp only [Polynomial.finset_sum_coeff]
+  simp only [Polynomial.finsetSum_coeff]
   rw [Finset.sum_eq_single j]
   · rw [Finset.sum_eq_single i]
     · simp [hwd]

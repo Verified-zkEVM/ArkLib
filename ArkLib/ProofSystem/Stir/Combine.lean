@@ -6,7 +6,7 @@ Authors: František Silváši, Ilia Vlasov, Mirco Richter, Poulami Das (Least Au
 
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Cases
-import Mathlib.Tactic.LinearCombination'
+import Mathlib.Tactic.LinearCombinationPrime
 
 import ArkLib.Data.CodingTheory.ProximityGap.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves

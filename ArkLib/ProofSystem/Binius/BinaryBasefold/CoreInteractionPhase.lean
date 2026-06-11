@@ -282,11 +282,17 @@ def nonLastBlockOracleVerifier (bIdx : Fin (ℓ / ϑ - 1)) :=
       ⟩)
       (Stmt₂:=Statement (L := L) Context ⟨bIdx * ϑ + (ϑ - 1), h1_succ⟩)
       (Stmt₃:=Statement (L := L) Context ⟨(bIdx + 1) * ϑ, bIdx_succ_mul_ϑ_lt_ℓ_succ bIdx⟩)
-      (OStmt₁:=OracleStatement 𝔽q β ϑ ⟨bIdx * ϑ, Nat.lt_of_add_right_lt h1_succ⟩)
+      (OStmt₁:=OracleStatement 𝔽q β ϑ ⟨bIdx * ϑ, by
+        change ↑bIdx * ϑ + (⟨0, Nat.pos_of_neZero ϑ⟩ : Fin ϑ).val < ℓ + 1
+        exact bIdx_mul_ϑ_add_i_lt_ℓ_succ bIdx _⟩)
       (OStmt₂:=OracleStatement 𝔽q β ϑ ⟨bIdx * ϑ + (ϑ - 1), h1_succ⟩)
       (OStmt₃:=OracleStatement 𝔽q β ϑ ⟨(bIdx + 1) * ϑ, bIdx_succ_mul_ϑ_lt_ℓ_succ bIdx⟩)
       (pSpec₁:=pSpecFoldRelaySequence (L:=L) (n:=ϑ - 1))
-      (pSpec₂:=pSpecFoldCommit 𝔽q β ⟨bIdx * ϑ + (ϑ - 1), h1⟩)
+      (pSpec₂:=pSpecFoldCommit 𝔽q β ⟨bIdx * ϑ + (ϑ - 1), by
+        change
+          ↑bIdx * ϑ + (⟨ϑ - 1, Nat.sub_one_lt_of_lt NeZero.one_le⟩ : Fin ϑ).val <
+            ℓ + 0
+        apply bIdx_mul_ϑ_add_i_lt_ℓ_succ⟩)
       (V₁:=by
         simp [stmt, oStmt, Nat.zero_mod] at firstFoldRelayRoundsOracleVerifier
         exact firstFoldRelayRoundsOracleVerifier
@@ -441,7 +447,11 @@ def nonLastBlockOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) :=
       (OStmt₂:=OracleStatement 𝔽q β ϑ ⟨bIdx * ϑ + (ϑ - 1), h1_succ⟩)
       (OStmt₃:=OracleStatement 𝔽q β ϑ ⟨(bIdx + 1) * ϑ, bIdx_succ_mul_ϑ_lt_ℓ_succ bIdx⟩)
       (pSpec₁:=pSpecFoldRelaySequence (L:=L) (n:=ϑ - 1))
-      (pSpec₂:=pSpecFoldCommit 𝔽q β ⟨bIdx * ϑ + (ϑ - 1), h1⟩)
+      (pSpec₂:=pSpecFoldCommit 𝔽q β ⟨bIdx * ϑ + (ϑ - 1), by
+        change
+          ↑bIdx * ϑ + (⟨ϑ - 1, Nat.sub_one_lt_of_lt NeZero.one_le⟩ : Fin ϑ).val <
+            ℓ + 0
+        apply bIdx_mul_ϑ_add_i_lt_ℓ_succ⟩)
       (R₁:=by
         simp [stmt, oStmt, Nat.zero_mod] at firstFoldRelayRoundsOracleReduction
         exact firstFoldRelayRoundsOracleReduction

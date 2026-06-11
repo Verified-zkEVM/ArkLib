@@ -1073,7 +1073,7 @@ lemma e_le_dist_over_3
     (he : (e : ℚ≥0) < ‖(RScodeSet α deg)‖₀ / 3)
     (hv : v ≠ 0)
     (hFd : ‖(RScodeSet α deg)‖₀ < Fintype.card F) :
-    Xor'
+    Xor
       (∀ x ∈ Affine.affineLineAtOrigin (F := F) u v, Δ₀(x, ReedSolomon.code α deg) ≤ e)
       (numberOfClosePts u v deg α e ≤ ‖(RScodeSet α deg)‖₀) := by
   classical
