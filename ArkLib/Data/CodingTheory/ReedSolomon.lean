@@ -642,8 +642,8 @@ lemma toPolynomial_mem_lt_deg (c : ReedSolomon.code domain deg) :
 @[simp]
 lemma toPolynomial_lt_deg (c : ReedSolomon.code domain deg) :
   (toPolynomial c).degree < deg := by
-  have := toPolynomial_mem_lt_deg c 
-  aesop 
+  have := toPolynomial_mem_lt_deg c
+  aesop
     (add simp [degreeLT, Polynomial.degree_lt_iff_coeff_zero])
 
 @[simp]
@@ -652,26 +652,26 @@ lemma toPolynomial_lt_min_deg_card (c : ReedSolomon.code domain deg) :
   by_cases h0 : toPolynomial c = 0
   · simp [h0]
   · rw [←Polynomial.natDegree_lt_iff_degree_lt h0, lt_min_iff]
-    constructor 
+    constructor
     · aesop (add simp [Polynomial.natDegree_lt_iff_degree_lt])
-    · rw [Polynomial.natDegree_lt_iff_degree_lt h0, toPolynomial_def] 
-      exact lt_of_lt_of_le (Lagrange.degree_interpolate_lt _ 
+    · rw [Polynomial.natDegree_lt_iff_degree_lt h0, toPolynomial_def]
+      exact lt_of_lt_of_le (Lagrange.degree_interpolate_lt _
         (by aesop (add safe cases Function.Embedding))) (by simp)
-  
+
 @[simp]
 lemma toPolynomial_eval_at_domain
   {c : ReedSolomon.code domain deg} {i : ι} :
   (toPolynomial c).eval (domain i) = c.1 i := by
-  aesop 
+  aesop
     (erase simp Lagrange.interpolate_apply)
     (add simp [toPolynomial_def, Lagrange.eval_interpolate_at_node])
     (add safe cases Function.Embedding)
-  
+
 set_option linter.unusedDecidableInType false in -- false alarm
 lemma mem_code_iff_exists_polynomial' {n : ℕ} {α : ι ↪ F} {f : ι → F} :
-  f ∈ code α n ↔ 
-    ∃ p : Polynomial F, p.degree < min n (Fintype.card ι) ∧ 
-      f = evalOnPoints α p := by 
+  f ∈ code α n ↔
+    ∃ p : Polynomial F, p.degree < min n (Fintype.card ι) ∧
+      f = evalOnPoints α p := by
   constructor
   · intro h
     by_cases hd : n ≤ Fintype.card ι
@@ -682,54 +682,10 @@ lemma mem_code_iff_exists_polynomial' {n : ℕ} {α : ι ↪ F} {f : ι → F} :
   · by_cases hd : n ≤ Fintype.card ι
     · aesop
         (add simp [mem_code_iff_exists_polynomial])
-    · rintro ⟨p, hp₁, hp₂⟩ 
-      rw [mem_code_iff_exists_polynomial] 
-      have : p.degree < n := lt_trans hp₁ (by simpa using hd)  
+    · rintro ⟨p, hp₁, hp₂⟩
+      rw [mem_code_iff_exists_polynomial]
+      have : p.degree < n := lt_trans hp₁ (by simpa using hd)
       aesop
-
-theorem toPolynomial_eq_self_of_le_of_deg_lt_of_eq
-  {c : code domain deg}
-  (p : Polynomial F)
-  (hle : deg ≤ Fintype.card ι)
-  (hdeg : p.degree < deg)
-  (hc : c.1 = evalOnPoints domain p) :
-  toPolynomial c = p := by 
-  by_cases hp : p = 0
-  · aesop
-  · obtain ⟨c, hc'⟩ := c
-    subst hc
-    simp only [toPolynomial_def] 
-    apply Polynomial.eq_of_natDegree_lt_card_of_eval_eq
-      (f := domain)
-    · aesop (add safe cases Function.Embedding)
-    · aesop 
-        (erase simp [Lagrange.interpolate_apply])
-        (add simp [Lagrange.eval_interpolate_at_node])
-        (add safe cases Function.Embedding)
-    · simp only [sup_lt_iff] 
-      have hpnd : p.natDegree < Fintype.card ι := 
-        lt_of_le_of_lt' hle <| by
-          aesop (add simp [Polynomial.natDegree_lt_iff_degree_lt])
-      constructor 
-      · rw [Polynomial.natDegree_lt_iff_degree_lt]
-        · exact lt_of_lt_of_le 
-            (Lagrange.degree_interpolate_lt _ 
-              (by aesop (add safe cases Function.Embedding)))
-              (by simp)
-        · intro contra
-          exact hp <| by
-            apply (Polynomial.eq_of_natDegree_lt_card_of_eval_eq
-              (f := domain))
-            · aesop (add safe cases Function.Embedding)
-            · intro i
-              have := congrArg (eval (domain i)) contra
-              rw [Lagrange.eval_interpolate_at_node] at this
-                <;> aesop 
-                      (erase simp [Lagrange.interpolate_apply])
-                      (add unsafe cases Function.Embedding)
-            · simpa using hpnd
-      · exact hpnd
-
 
 /-- The linear map that maps a Reed-Solomon codeword to its associated polynomial of degree less
 than `deg`. -/

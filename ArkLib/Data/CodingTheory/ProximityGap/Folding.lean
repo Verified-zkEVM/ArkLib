@@ -368,35 +368,35 @@ theorem foldWord_mem_code_of_mem_code {d : ℕ}
   (hk_d_dvd : 2 ^ k ∣ d)
   {f : Word F (Fin (2 ^ n))}
   (hf : f ∈ ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d) :
-  foldWord domain f k α ∈ 
-    ReedSolomon.code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) (d / (2 ^ k)) := by 
+  foldWord domain f k α ∈
+    ReedSolomon.code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) (d / (2 ^ k)) := by
   by_cases hd : d = 0
   · aesop
-  · have hf' := 
+  · have hf' :=
       ReedSolomon.mem_code_iff_exists_polynomial'.mp hf
     obtain ⟨p, hf'⟩ := hf'
     have hk_d_le : 2 ^ k ≤ d := Nat.le_of_dvd (by omega) hk_d_dvd
-    apply ReedSolomon.mem_code_of_polynomial_of_natDegree_lt_of_eval 
+    apply ReedSolomon.mem_code_of_polynomial_of_natDegree_lt_of_eval
       (p := FoldingPolynomial.polyFold p (2 ^ k) α)
     · exact lt_of_le_of_lt FoldingPolynomial.polyFold_natDegree_le <| by
-        by_cases hp : p = 0 
+        by_cases hp : p = 0
         · aesop (add safe (by omega))
         · rw [Nat.div_lt_iff_lt_mul (by simp)]
-          by_cases hd : d ≤ 2 ^ n 
+          by_cases hd : d ≤ 2 ^ n
           · have : p.natDegree < d := by
               rw [←Polynomial.natDegree_lt_iff_degree_lt hp] at hf'
               aesop
             exact lt_of_lt_of_le this <| by
               rw [Nat.div_mul_cancel hk_d_dvd]
-          · have : p.degree < d := lt_trans hf'.1 <| by 
+          · have : p.degree < d := lt_trans hf'.1 <| by
               aesop (add unsafe (by rw [WithBot.lt_def]))
             rw [Nat.div_mul_cancel hk_d_dvd]
-            aesop 
+            aesop
               (add simp [Polynomial.natDegree_lt_iff_degree_lt])
-    · intro i 
+    · intro i
       have := foldWord_codeword (α := α) hk (p := ⟨f, hf⟩)
       simp only at this
-      simp only [this, evalOnPoints, Embedding.coeFn_mk, 
+      simp only [this, evalOnPoints, Embedding.coeFn_mk,
         LinearMap.coe_mk, AddHom.coe_mk]
       obtain ⟨hp_deg, hf'⟩ := hf'
       subst hf'
