@@ -267,10 +267,24 @@ class IsSound (langIn : Set StmtIn) (langOut : Set StmtOut)
   - there exists a straightline extractor `E`, such that
   - for all input statement `stmtIn`, witness `witIn`, and (malicious) prover `prover`,
   - if the execution with the honest verifier results in a pair `(stmtOut, witOut)`,
-  - and the extractor produces some `witIn'`,
 
-  then the probability that `(stmtIn, witIn')` is not valid and yet `(stmtOut, witOut)` is valid
-  is at most `knowledgeError`.
+  then the probability that `(stmtOut, witOut)` is valid and yet the extractor fails to produce
+  a witness `witIn'` such that `(stmtIn, witIn')` is valid is at most `knowledgeError`.
+
+  Implementation note: the extractor returns an `OptionT` computation, so it may fail. We run
+  this `OptionT` layer explicitly (via `.run`) and keep the resulting `Option WitIn` in the
+  game's output, so that extractor failure counts as a "bad" event (the adversary wins).
+
+  This is essential for the definition to be meaningful: if instead the extractor were bound
+  inside the surrounding `OptionT` computation, its failure would contribute to the failure
+  mass of the whole game, which `probEvent` excludes (it only measures `some` outputs). The
+  always-failing extractor `fun _ _ _ _ _ => failure` would then drive the game's event
+  probability to `0`, vacuously discharging knowledge soundness (at error `0`!) for any
+  verifier and any relations.
+
+  In contrast, failures of the reduction execution itself (e.g. the verifier aborting) are
+  still excluded from the event, matching the convention for (plain) soundness: a run in which
+  the verifier does not accept imposes no obligation on the extractor.
 -/
 def knowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) (knowledgeError : ℝ≥0) : Prop :=
@@ -283,10 +297,12 @@ def knowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut ×
     let exec := do
       let ⟨⟨⟨transcript, ⟨_, witOut⟩⟩, stmtOut⟩, proveQueryLog, verifyQueryLog⟩
         ← (Reduction.mk prover verifier).runWithLog stmtIn witIn
-      let extractedWitIn ← extractor stmtIn witOut transcript proveQueryLog.fst verifyQueryLog
-      return (stmtIn, extractedWitIn, stmtOut, witOut)
-    Pr[fun ⟨stmtIn, witIn, stmtOut, witOut⟩ =>
-        (stmtIn, witIn) ∉ relIn ∧ (stmtOut, witOut) ∈ relOut
+      let extractedWitIn? ←
+        liftM (extractor stmtIn witOut transcript proveQueryLog.fst verifyQueryLog).run
+      return (stmtIn, extractedWitIn?, stmtOut, witOut)
+    Pr[fun ⟨stmtIn, extractedWitIn?, stmtOut, witOut⟩ =>
+        (∀ extractedWitIn ∈ extractedWitIn?, (stmtIn, extractedWitIn) ∉ relIn) ∧
+          (stmtOut, witOut) ∈ relOut
       | OptionT.mk do (simulateQ pImpl exec.run).run' (← init)] ≤ knowledgeError
 
 /-- Type class for knowledge soundness for a verifier -/
@@ -552,10 +568,48 @@ def Extractor.Straightline.id : Extractor.Straightline oSpec StmtIn WitIn WitIn 
 @[simp]
 theorem Verifier.id_knowledgeSoundness {rel : Set (StmtIn × WitIn)} :
     (Verifier.id : Verifier oSpec _ _ _).knowledgeSoundness init impl rel rel 0 := by
-  sorry
-  -- Approach: Extractor.Straightline.id returns input witness.
-  -- Event (stmtIn, witIn) ∉ rel ∧ (stmtIn, witIn) ∈ rel is contradiction.
-  -- Same blocker: needs StateT.run'_bind/pure or manual support reasoning.
+  -- `Extractor.Straightline.id` returns the (adversarial) output witness. On the support of the
+  -- game, the identity verifier outputs the input statement, so the bad event requires both
+  -- `(stmtIn, witOut) ∉ rel` (extracted witness invalid) and `(stmtIn, witOut) ∈ rel`
+  -- (output pair valid): a contradiction.
+  refine ⟨Extractor.Straightline.id, fun stmtIn witIn prover => ?_⟩
+  simp only [ENNReal.coe_zero, le_zero_iff]
+  refine probEvent_eq_zero fun x hx => ?_
+  rw [OptionT.mem_support_iff, OptionT.run_mk] at hx
+  simp only [support_bind, Set.mem_iUnion] at hx
+  obtain ⟨s, _, hx⟩ := hx
+  simp only [Reduction.runWithLog, Verifier.run, Verifier.id, Extractor.Straightline.id,
+    OptionT.run_bind, OptionT.run_pure, Option.getM, Option.elimM,
+    simulateQ_bind, StateT.run'_bind', support_bind, Set.mem_iUnion] at hx
+  obtain ⟨⟨o, s'⟩, hi, hx2⟩ := hx
+  cases o with
+  | none =>
+    simp only [Option.elim, simulateQ_pure, StateT.run'_pure', support_pure,
+      Set.mem_singleton_iff] at hx2
+    exact (Option.some_ne_none x hx2).elim
+  | some x' =>
+    -- From `hx2`: `x = (stmtIn, some witOut, x'.1.2, witOut)`
+    simp only [Option.elim, simulateQ_pure, OptionT.run_pure, liftM_pure, pure_bind,
+      StateT.run'_pure', support_pure, Set.mem_singleton_iff] at hx2
+    -- From `hi`: the verifier is the identity, so `x'.1.2 = stmtIn`
+    rw [show (pure stmtIn : OptionT (OracleComp oSpec) StmtIn) =
+      (pure (some stmtIn) : OracleComp oSpec (Option StmtIn)) from rfl] at hi
+    simp only [Option.elim, simulateQ_pure, OptionT.run_pure, WriterT.run_pure, liftM_pure,
+      pure_bind, support_bind, Set.mem_iUnion, StateT.run_bind] at hi
+    obtain ⟨⟨o2, s2⟩, _, hi2⟩ := hi
+    cases o2 with
+    | none =>
+      simp only [simulateQ_pure, StateT.run_pure, support_pure,
+        Set.mem_singleton_iff, Prod.mk.injEq] at hi2
+      exact (Option.some_ne_none x' hi2.1).elim
+    | some pr =>
+      simp only [simulateQ_pure, StateT.run_pure, support_pure,
+        Set.mem_singleton_iff, Prod.mk.injEq, Option.some.injEq] at hi2
+      obtain ⟨rfl, -⟩ := hi2
+      simp only [Option.some.injEq] at hx2
+      subst hx2
+      rintro ⟨h1, h2⟩
+      exact h1 _ rfl h2
 
 /-- The identity / trivial reduction is perfectly complete. -/
 @[simp]
