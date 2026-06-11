@@ -24,6 +24,8 @@ probability of obtaining a zero output from a non-zero vector is bounded above b
 function is a generator matrix for an MDS code
 - `MCA generator`: A generator has mutual correlated agreement (MCA) with error `ε_mca` if the
 probability that the generator satisfies the MCA condition is bounded above by `ε_mca`.
+- `tensor product of generators`: given two generators over a field `F` of output sizes `ℓ` and `ℓ'`
+respectively, we can define their tensor product componentwise. This is a generator on `F^ℓ ⊗ 𝔽^ℓ'`
 
 ## References
 
@@ -40,9 +42,8 @@ open NNReal ENNReal unitInterval LinearCode
 open scoped ProbabilityTheory
 
 variable {ι : Type} [Fintype ι]
-         {F : Type} [Field F] [Fintype F]
+         {F : Type} [Field F]
          {ℓ : Type} [Fintype ℓ]
-         {S : Type} [Nonempty S] [Fintype S]
 
 /-- The type of generators, where a generator `G` over a field `F` with output size `ℓ` is a
 function that maps a seed `x` in a set `S` to a coefficient vector in `F^ℓ`.
@@ -52,9 +53,9 @@ abbrev Generator (S ℓ F : Type) : Type := S → (ℓ → F)
 /-- A generator `G` is zero-evading with a zero-evading error `ε_ze` if the probability of obtaining
 a zero output from a non-zero vector is bounded above by `ε_ze`.
 Definition 3.11 [BCGM25]. -/
-def IsZeroEvadingGenerator (G : Generator S ℓ F) (ε_ze : I) :
+def IsZeroEvadingGenerator {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (ε_ze : I) :
   Prop :=
-    (sSup {y | ∃ v : ℓ → F, v ≠ 0 ∧ y = Pr_{let x ←$ᵖ S}[dotProduct (G x) v = 0]})
+  (sSup {y | ∃ v : ℓ → F, v ≠ 0 ∧ y = Pr_{let x ←$ᵖ S}[dotProduct (G x) v = 0]})
     ≤ ENNReal.ofReal ε_ze
 
 /-- Let the set `S` be a product of `ℓ` subsets of `F`. A polynomial generator is a generator if
@@ -71,31 +72,69 @@ def IsPolynomialGeneratorOf {s : ℕ} (S : Fin s → Set F) (G : Generator (∀ 
 
 /-- A matrix whose rows are the outputs of the generator function.
 Defined inside Definition 3.12 [BCGM25]. -/
-def M_G (G : Generator S ℓ F) : Matrix S ℓ F :=
+def M_G {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) : Matrix S ℓ F :=
   Matrix.of G
 
-noncomputable example [DecidableEq F] (G : Generator S ℓ F) : LinearCode S F :=
-  LinearCode.fromColGenMat (M_G G)
+noncomputable example {S : Type} [Nonempty S] [Fintype S] [DecidableEq F] (G : Generator S ℓ F) :
+  LinearCode S F := LinearCode.fromColGenMat (M_G G)
 
 /-- A generator `G` is MDS if the matrix `M_G` whose rows are the outputs of the generator
 function is a generator matrix for an MDS code.
 Definition 3.12 [BCGM25]. -/
-def IsMDSGenerator [DecidableEq F] (G : Generator S ℓ F) : Prop :=
-    LinearCode.IsMDS (LinearCode.fromColGenMat (M_G G))
+def IsMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F] (G : Generator S ℓ F) :
+  Prop := LinearCode.IsMDS (LinearCode.fromColGenMat (M_G G))
 
 /-- The condition for MCA generator. -/
-def IsMCA (G : Generator S ℓ F) (LC : LinearCode ι F) (x : S) (U : ℓ → (ι → F)) (γ : I) : Prop :=
-    let v := Matrix.vecMul (G x) (U)
-    ∃ (T : Finset ι), (T.card : ℝ) ≥ (Fintype.card ι) * (1 - γ) ∧
-    projectedWord v T ∈ projectedCode LC T ∧
-    ∃ j : ℓ, projectedWord (U j) T ∉ projectedCode LC T
+def IsMCA {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (LC : LinearCode ι F)
+  (x : S) (U : ℓ → (ι → F)) (γ : I) : Prop :=
+  let v := Matrix.vecMul (G x) (U)
+  ∃ (T : Finset ι), (T.card : ℝ) ≥ (Fintype.card ι) * (1 - γ) ∧
+  projectedWord v T ∈ projectedCode LC T ∧
+  ∃ j : ℓ, projectedWord (U j) T ∉ projectedCode LC T
 
-/-- A generator has mututual correlated agreement (MCA) with error `ε_mca` if the probability that
-the generator satisfies the MCA condition is bounded above by `ε_mca`.
+/-- A generator has mutual correlated agreement (MCA) with error `ε_mca` if the probability that the
+generator satisfies the MCA condition is bounded above by `ε_mca`.
 Definition 3.14 [BCGM25]. -/
-def IsMCAGenerator (G : Generator S ℓ F) (ε_mca : I → I) (LC : LinearCode ι F) : Prop :=
-    ∀ U : ℓ → (ι → F), ∀ γ : I,
-      Pr_{let x ←$ᵖ S}[(IsMCA G LC x U γ)] ≤ ENNReal.ofReal (ε_mca γ)
+def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (ε_mca : I → I)
+  (LC : LinearCode ι F) : Prop :=
+  ∀ U : ℓ → (ι → F), ∀ γ : I,
+    Pr_{let x ←$ᵖ S}[(IsMCA G LC x U γ)] ≤ ENNReal.ofReal (ε_mca γ)
+
+/-- Let `G : S →F^ℓ` and `G′: S′→F^ℓ` be two generators. Their tensor product is the generator
+`G ⊗ G′: S × S′→ F^ℓ ⊗ F^ℓ′` defined by `(x,x′) ↦ G(x) ⊗ G′(x′)`.
+Definition 4.3 [BCGM25]. -/
+def TensorGenerator {ℓ' : Type} [Fintype ℓ'] {S S' : Type}
+  (G : Generator S ℓ F) (G' : Generator S' ℓ' F) :
+  (S × S') → TensorProduct F (ℓ → F) (ℓ' → F)
+| (x, x') => TensorProduct.tmul F (G x) (G' x')
+
+/-- Explicit construction of the tensor generator. The output type here is a generator
+`G ⊗ G′: S × S′→ F^(ℓ * ℓ')`.
+Definition 4.3 [BCGM25]. -/
+def TensorGenerator_Explicit {ℓ' : Type} [Fintype ℓ'] {S S' : Type}
+    (G : Generator S ℓ F) (G' : Generator S' ℓ' F) :
+    Generator (S × S') (ℓ × ℓ') F
+  | (x, x'), (i, j) => G x i * G' x' j
+
+/-- The canonical linear isomorphism between the tensor product of function spaces
+and the function space on the product type. -/
+noncomputable def tensorProductPiFunEquiv (F : Type) [Field F] (ℓ ℓ' : Type)
+    [Fintype ℓ] [DecidableEq ℓ] [Fintype ℓ'] [DecidableEq ℓ'] :
+    TensorProduct F (ℓ → F) (ℓ' → F) ≃ₗ[F] (ℓ × ℓ' → F) :=
+  ((Pi.basisFun F ℓ).tensorProduct (Pi.basisFun F ℓ')).equivFun
+
+/-- The tensor product generator `TensorGenerator` and the explicit componentwise generator
+`TensorGenerator_Explicit` agree under the canonical isomorphism between
+`F^ℓ ⊗ F^ℓ′` and `(ℓ × ℓ') → F`. -/
+theorem TensorGenerator_eq_TensorGenerator_Explicit {ℓ' : Type} [Fintype ℓ'] [DecidableEq ℓ]
+  [DecidableEq ℓ'] {S S' : Type} (G : Generator S ℓ F) (G' : Generator S' ℓ' F) (p : S × S') :
+    tensorProductPiFunEquiv F ℓ ℓ' (TensorGenerator G G' p) = TensorGenerator_Explicit G G' p := by
+  unfold tensorProductPiFunEquiv TensorGenerator TensorGenerator_Explicit
+  convert (Pi.basisFun F ℓ).tensorProduct (Pi.basisFun F ℓ') |> fun b =>
+                                                     b.equivFun_apply ( G p.1 ⊗ₜ[F] G' p.2 ) using 1
+  ext ⟨i, j⟩
+  simp only [Module.Basis.tensorProduct_repr_tmul_apply, Pi.basisFun_repr, smul_eq_mul]
+  ring
 
 end CoreDefinitions
 
@@ -132,11 +171,11 @@ lemma minSeedCard_pos {F : Type} {s : ℕ} (S : Fin s → Set F)
     exact Fintype.card_pos_iff.mpr (Set.nonempty_coe_sort.2 (hne i))
   · norm_num
 
-
 /-- The minimum of the cardinality of a family of nonempty sets is smaller than the cardinality of
 each set in the family. -/
-lemma minSeedCard_le {F : Type} {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype ↥(S i)]
-(hs : 0 < s) (i : Fin s) : minSeedCard S ≤ (S i).toFinset.card := by
+lemma minSeedCard_le {F : Type} {s : ℕ} (S : Fin s → Set F)
+    [∀ i, Fintype ↥(S i)] (hs : 0 < s) (i : Fin s) :
+    minSeedCard S ≤ (S i).toFinset.card := by
   unfold minSeedCard
   split_ifs
   aesop
@@ -157,17 +196,17 @@ theorem poly_gen_is_zero_evading
   {S : Fin s → Set F} [∀ i, Nonempty ↥(S i)]
   {P : ℓ → MvPolynomial (Fin s) F}
   {G : Generator (∀ i, ↥(S i)) ℓ F} (hG : IsPolynomialGeneratorOf S G P)
-  (hdm : maxTotalDegree P ≤ minSeedCard S)
+  (hdm : MvPolynomial.maxTotalDegree P ≤ minSeedCard S)
   : IsZeroEvadingGenerator G ⟨(maxTotalDegree P : ℝ) / minSeedCard S,
     error_in_unit_interval (maxTotalDegree P) (minSeedCard S) (minSeedCard_pos S) hdm⟩ := by
   classical
-  unfold IsZeroEvadingGenerator;
+  unfold IsZeroEvadingGenerator
   simp only [ne_eq, bind_pure_comp, sSup_le_iff, Set.mem_setOf_eq, forall_exists_index,
     and_imp]
   intros b x hx hb
   rw [hb]
-  convert prob_eval_zero_le_div (∑ j, x j • P j) _ (maxTotalDegree P) (minSeedCard S) _ _ _ using 1;
-  any_goals intro i; exact minSeedCard_le S (Fin.pos_iff_nonempty.mpr ⟨i⟩) i;
+  convert prob_eval_zero_le_div (∑ j, x j • P j) _ (maxTotalDegree P) (minSeedCard S) _ _ _ using 1
+  any_goals intro i; exact minSeedCard_le S (Fin.pos_iff_nonempty.mpr ⟨i⟩) i
   any_goals assumption
   · convert rfl
     ext; simp +decide [MvPolynomial.dotProduct_eq_eval_linearCombination, hG.2]
