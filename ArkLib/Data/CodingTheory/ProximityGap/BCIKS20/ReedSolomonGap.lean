@@ -8,14 +8,13 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineSpaces
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
 import ArkLib.Data.Probability.Notation
-/-! # BCIKS20 Reed-Solomon Proximity Gaps -/
 
+/-! # BCIKS20 Reed-Solomon Proximity Gaps -/
 
 namespace ProximityGap
 
-open NNReal Finset Function ProbabilityTheory
+open NNReal Finset Function ProbabilityTheory Code
 open scoped BigOperators LinearCode ProbabilityTheory
-open Code
 
 section CoreResults
 
