@@ -1,6 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Tobias Rothmann
 -/
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.ToPoly
@@ -241,8 +242,7 @@ theorem toPoly_divByMonic (fp fq : CPolynomial R) (hq : fq.toPoly.Monic) :
   set quot := (Raw.divModByMonicAux.go fuel fp.val fq.val).1
   set rem := (Raw.divModByMonicAux.go fuel fp.val fq.val).2
   have hd : (fp.divByMonic fq).toPoly = quot.toPoly := by
-    change (Raw.divByMonic fp.val fq.val).trim.toPoly = quot.toPoly
-    rw [Raw.toPoly_trim]
+    change (Raw.divByMonic fp.val fq.val).toPoly = quot.toPoly
     change (Raw.divModByMonicAux fp.val fq.val).1.toPoly = quot.toPoly
     simp only [Raw.divModByMonicAux, fuel, quot]
   have huniq := @Polynomial.div_modByMonic_unique R _ fp.toPoly fq.toPoly
@@ -250,6 +250,84 @@ theorem toPoly_divByMonic (fp fq : CPolynomial R) (hq : fq.toPoly.Monic) :
   rw [hd]
   exact huniq.1.symm
 
+theorem toPoly_modByMonic (fp fq : CPolynomial R) (hq : fq.toPoly.Monic) :
+    (fp.modByMonic fq).toPoly = fp.toPoly %ₘ fq.toPoly := by
+  set fuel := fp.val.size
+  have heq := divModByMonicAux_go_eq fuel fp.val fq.val
+  have hdeg :=
+    divModByMonicAux_go_degree_bound fuel fp.val fq.val (trim_eq fp) (trim_eq fq) hq
+      (by
+        have hq_size_pos : 0 < fq.val.size := Raw.size_pos_of_toPoly_ne_zero hq.ne_zero
+        omega)
+  set quot := (Raw.divModByMonicAux.go fuel fp.val fq.val).1
+  set rem := (Raw.divModByMonicAux.go fuel fp.val fq.val).2
+  have hd : (fp.modByMonic fq).toPoly = rem.toPoly := by
+    change (Raw.modByMonic fp.val fq.val).toPoly = rem.toPoly
+    change (Raw.divModByMonicAux fp.val fq.val).2.toPoly = rem.toPoly
+    simp only [Raw.divModByMonicAux, fuel, rem]
+  have huniq := @Polynomial.div_modByMonic_unique R _ fp.toPoly fq.toPoly
+    quot.toPoly rem.toPoly hq ⟨by rw [_root_.add_comm]; exact heq, hdeg⟩
+  rw [hd]
+  exact huniq.2.symm
+
 end DivisionToPoly
+
+section OfFinCoeff
+
+open Polynomial Finset
+
+variable {R : Type*} [CommRing R] [BEq R] [LawfulBEq R] [DecidableEq R] [Nontrivial R]
+
+/-- Extracting the `k`-th coefficient as an additive homomorphism. -/
+def coeffHom (k : ℕ) : CPolynomial R →+ R where
+  toFun p := p.coeff k
+  map_zero' := coeff_zero k
+  map_add' p q := coeff_add p q k
+
+omit [DecidableEq R] in
+@[simp] theorem coeffHom_apply (k : ℕ) (p : CPolynomial R) : coeffHom k p = p.coeff k := rfl
+
+/-- The polynomial with prescribed finite coefficient function: `Σ_{k<N} cₖ Xᵏ`. -/
+def ofFinCoeff (N : ℕ) (c : ℕ → R) : CPolynomial R :=
+  ∑ k ∈ range N, monomial k (c k)
+
+@[simp] theorem coeff_ofFinCoeff (N : ℕ) (c : ℕ → R) (j : ℕ) :
+    (ofFinCoeff N c).coeff j = if j < N then c j else 0 := by
+  rw [ofFinCoeff,
+    show (∑ k ∈ range N, monomial k (c k)).coeff j
+        = ∑ k ∈ range N, (monomial k (c k)).coeff j from map_sum (coeffHom j) _ _]
+  simp only [coeff_monomial]
+  rw [Finset.sum_ite_eq (range N) j (fun k => c k)]
+  simp
+
+omit [DecidableEq R] [Nontrivial R] in
+/-- `toPoly` of a constant is the Mathlib constant. -/
+theorem toPoly_C (c : R) : (C c).toPoly = Polynomial.C c := by
+  ext i
+  rw [show (C c).toPoly = (C c).val.toPoly from rfl, Raw.coeff_toPoly, Polynomial.coeff_C]
+  exact coeff_C c i
+
+omit [Nontrivial R] in
+/-- `toPoly` of a monomial is the Mathlib monomial. -/
+theorem toPoly_monomial (n : ℕ) (c : R) :
+    (monomial n c).toPoly = Polynomial.monomial n c := by
+  ext i
+  rw [show (monomial n c).toPoly = (monomial n c).val.toPoly from rfl, Raw.coeff_toPoly,
+    show (monomial n c).val.coeff i = (monomial n c).coeff i from rfl,
+    coeff_monomial, Polynomial.coeff_monomial]
+  exact if_congr eq_comm rfl rfl
+
+omit [Nontrivial R] in
+/-- The polynomial built from `N` coefficients has degree below `N`. -/
+theorem degree_toPoly_ofFinCoeff_lt (N : ℕ) (c : ℕ → R) :
+    (ofFinCoeff N c).toPoly.degree < (N : WithBot ℕ) := by
+  rw [ofFinCoeff, toPoly_sum]
+  refine lt_of_le_of_lt (Polynomial.degree_sum_le _ _)
+    ((Finset.sup_lt_iff (WithBot.bot_lt_coe N)).mpr (fun k hk => ?_))
+  rw [toPoly_monomial]
+  exact lt_of_le_of_lt (Polynomial.degree_monomial_le k (c k))
+    (WithBot.coe_lt_coe.mpr (mem_range.mp hk))
+
+end OfFinCoeff
 
 end CompPoly.CPolynomial

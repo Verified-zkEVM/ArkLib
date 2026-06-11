@@ -25,6 +25,25 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Reject generated KB updates in PRs
+        if: >-
+          github.event_name == 'pull_request' &&
+          (
+            github.event.pull_request.user.login != 'github-actions[bot]' ||
+            !startsWith(github.head_ref, 'automation/kb-generated-')
+          )
+        run: |
+          changed="$(git diff --name-only \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.event.pull_request.head.sha }}" \
+            -- docs/kb/_generated)"
+          if [ -n "$changed" ]; then
+            echo "Do not commit docs/kb/_generated files in feature PRs."
+            echo "They are refreshed on main by the KB generated-files workflow."
+            echo "$changed"
+            exit 1
+          fi
+
       - name: Initialize timing paths
         run: |
           echo "BUILD_TIMING_RESULTS=$RUNNER_TEMP/build-timing.jsonl" >> "$GITHUB_ENV"
@@ -256,4 +275,3 @@ jobs:
             echo
             cat "$BUILD_TIMING_REPORT"
           } > "$BUILD_TIMING_COMMENT"
-

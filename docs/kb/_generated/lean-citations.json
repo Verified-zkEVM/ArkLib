@@ -1,13 +1,53 @@
 {
   "counts": {
-    "files_with_citations": 58,
-    "keys_cited": 20,
-    "total_citation_edges": 68
+    "files_with_citations": 74,
+    "keys_cited": 25,
+    "total_citation_edges": 104
   },
   "files": {
     "ArkLib/AGM/Basic.lean": [
       "JM24",
       "LPS24"
+    ],
+    "ArkLib/CommitmentScheme/Ajtai/Gadget.lean": [
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/CommitmentScheme/Ajtai/GadgetNorms.lean": [
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/CommitmentScheme/Ajtai/InnerOuter.lean": [
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/CommitmentScheme/Ajtai/InnerOuter/Arithmetic.lean": [
+      "LS18",
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/CommitmentScheme/Ajtai/InnerOuter/Correctness.lean": [
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/CommitmentScheme/Ajtai/InnerOuter/Scheme.lean": [
+      "LS18",
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/CommitmentScheme/Ajtai/InnerOuter/Security.lean": [
+      "LS18",
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/CommitmentScheme/Ajtai/Simple.lean": [
+      "Ajt96"
+    ],
+    "ArkLib/CommitmentScheme/Ajtai/Simple/Scheme.lean": [
+      "Ajt96"
+    ],
+    "ArkLib/CommitmentScheme/Ajtai/Simple/Security.lean": [
+      "Ajt96"
     ],
     "ArkLib/CommitmentScheme/Basic.lean": [
       "CGKY25"
@@ -120,6 +160,34 @@
     "ArkLib/Data/Hash/Poseidon2.lean": [
       "Poseidon2"
     ],
+    "ArkLib/Data/Lattices/CyclotomicRing/Modulus.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/NormBounds.lean": [
+      "LS18",
+      "Mic07",
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/Basic.lean": [
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/LyubashevskySeiler.lean": [
+      "LS18",
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/MicciancioYoung.lean": [
+      "Mic07",
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/Data/Lattices/ModuleSIS.lean": [
+      "Ajt96",
+      "NOZ26",
+      "NS24"
+    ],
     "ArkLib/Data/Polynomial/FoldingPolynomial.lean": [
       "ACFY24"
     ],
@@ -217,6 +285,12 @@
       "ArkLib/Data/CodingTheory/ProximityGap/AHIV22.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/AHIV22Support.lean"
     ],
+    "Ajt96": [
+      "ArkLib/CommitmentScheme/Ajtai/Simple/Scheme.lean",
+      "ArkLib/CommitmentScheme/Ajtai/Simple/Security.lean",
+      "ArkLib/CommitmentScheme/Ajtai/Simple.lean",
+      "ArkLib/Data/Lattices/ModuleSIS.lean"
+    ],
     "BBS24": [
       "ArkLib/ProofSystem/Sumcheck/Spec/General.lean"
     ],
@@ -283,6 +357,46 @@
     ],
     "LPS24": [
       "ArkLib/AGM/Basic.lean"
+    ],
+    "LS18": [
+      "ArkLib/CommitmentScheme/Ajtai/InnerOuter/Arithmetic.lean",
+      "ArkLib/CommitmentScheme/Ajtai/InnerOuter/Scheme.lean",
+      "ArkLib/CommitmentScheme/Ajtai/InnerOuter/Security.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/LyubashevskySeiler.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/NormBounds.lean"
+    ],
+    "Mic07": [
+      "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/MicciancioYoung.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/NormBounds.lean"
+    ],
+    "NOZ26": [
+      "ArkLib/CommitmentScheme/Ajtai/Gadget.lean",
+      "ArkLib/CommitmentScheme/Ajtai/GadgetNorms.lean",
+      "ArkLib/CommitmentScheme/Ajtai/InnerOuter/Arithmetic.lean",
+      "ArkLib/CommitmentScheme/Ajtai/InnerOuter/Correctness.lean",
+      "ArkLib/CommitmentScheme/Ajtai/InnerOuter/Scheme.lean",
+      "ArkLib/CommitmentScheme/Ajtai/InnerOuter/Security.lean",
+      "ArkLib/CommitmentScheme/Ajtai/InnerOuter.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Modulus.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/Basic.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/LyubashevskySeiler.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/MicciancioYoung.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/NormBounds.lean",
+      "ArkLib/Data/Lattices/ModuleSIS.lean"
+    ],
+    "NS24": [
+      "ArkLib/CommitmentScheme/Ajtai/Gadget.lean",
+      "ArkLib/CommitmentScheme/Ajtai/GadgetNorms.lean",
+      "ArkLib/CommitmentScheme/Ajtai/InnerOuter/Arithmetic.lean",
+      "ArkLib/CommitmentScheme/Ajtai/InnerOuter/Correctness.lean",
+      "ArkLib/CommitmentScheme/Ajtai/InnerOuter/Scheme.lean",
+      "ArkLib/CommitmentScheme/Ajtai/InnerOuter/Security.lean",
+      "ArkLib/CommitmentScheme/Ajtai/InnerOuter.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/Basic.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/LyubashevskySeiler.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/MicciancioYoung.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/NormBounds.lean",
+      "ArkLib/Data/Lattices/ModuleSIS.lean"
     ],
     "PS94": [
       "ArkLib/Data/CodingTheory/PolishchukSpielman/PolishchukSpielman.lean"

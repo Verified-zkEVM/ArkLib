@@ -10,7 +10,7 @@ import ArkLib.ProofSystem.Fri.Spec.SingleRound
 
 namespace Fri
 
-open OracleSpec OracleComp ProtocolSpec NNReal
+open OracleSpec OracleComp ProtocolSpec NNReal Domain
 
 namespace Spec
 
@@ -31,7 +31,7 @@ variable {n : ℕ}
 variable (k : ℕ) (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 variable (dom_size_cond : (2 ^ (∑ i, (s i).1)) * d ≤ 2 ^ n)
 variable (l : ℕ)
-variable {ω : ReedSolomon.SmoothCosetFftDomain n F}
+variable {ω : SmoothCosetFftDomain n F}
 
 /- Input/Output relations for the FRI protocol. -/
 def inputRelation [DecidableEq F] (δ : ℝ≥0) :

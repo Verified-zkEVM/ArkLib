@@ -63,7 +63,8 @@ lemma Vector.mapM_bind_map_eq {m : Type → Type} {α β γ δ : Type} {n : ℕ}
 /-- Index-extraction for `Vector.mapM`: any component of a vector in the support of
     the sequenced computation lies in the support of the corresponding component computation. -/
 lemma Vector.support_mapM_index
-    {m : Type → Type} [Monad m] [LawfulMonad m] [HasEvalSet m]
+    {m : Type → Type} [Monad m] [LawfulMonad m]
+    [MonadLiftT m SetM] [LawfulMonadLiftT m SetM]
     {α β : Type} {L : ℕ} (xs : Vector β L) (f : β → m α)
     {v : Vector α L} (hv : v ∈ support (xs.mapM f)) (i : Fin L) :
     v[i] ∈ support (f xs[i]) := by

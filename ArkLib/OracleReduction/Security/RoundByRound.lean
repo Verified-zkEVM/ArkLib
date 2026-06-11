@@ -249,7 +249,7 @@ def KnowledgeStateFunctionOneShot.toKnowledgeStateFunction
       have hTr : tr = default := by ext i; exact Fin.elim0 i
       subst hTr
       have := stF.toFun_empty stmtIn
-      grind
+      tauto
     · grind
 
 /-- Coercion to the underlying function of a state function -/

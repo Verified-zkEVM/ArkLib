@@ -42,8 +42,8 @@ noncomputable def listDecodingCollisionProbability
                                     u.val ∈ closeCodewordsRel (code φ degree) f δ ∧
                                     u'.val ∈ closeCodewordsRel (code φ degree) f δ ∧
                                     ∀ i : Fin s,
-                                    let uPoly := decodeLT u
-                                    let uPoly' := decodeLT u'
+                                    let uPoly := toPolynomialLT u
+                                    let uPoly' := toPolynomialLT u'
                                     (uPoly : F[X]).eval (r i).1
                                       = (uPoly' : F[X]).eval (r i).1
                                     ]

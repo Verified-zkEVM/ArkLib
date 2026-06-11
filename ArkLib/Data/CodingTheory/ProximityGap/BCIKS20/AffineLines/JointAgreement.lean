@@ -203,12 +203,12 @@ theorem RS_exists_bivariate_AB_of_goodCoeffs_card_gt
         Polynomial.Bivariate.evalY (domain i) A0 =
           ∑ t : Fin (e + 1), a t * (Polynomial.C (domain i) : F[X]) ^ t.1 := by
       classical
-      simp [Polynomial.Bivariate.evalY, A0, Polynomial.eval_finset_sum]
+      simp [Polynomial.Bivariate.evalY, A0, Polynomial.eval_finsetSum]
     have hEvalB :
         Polynomial.Bivariate.evalY (domain i) B0 =
           ∑ s : Fin (e + deg), b s * (Polynomial.C (domain i) : F[X]) ^ s.1 := by
       classical
-      simp [Polynomial.Bivariate.evalY, B0, Polynomial.eval_finset_sum]
+      simp [Polynomial.Bivariate.evalY, B0, Polynomial.eval_finsetSum]
     have hEq_eval :
         Polynomial.Bivariate.evalY (domain i) A0 *
             (Polynomial.C (u 0 i) + Polynomial.X * Polynomial.C (u 1 i))

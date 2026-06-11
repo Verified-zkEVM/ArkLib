@@ -193,7 +193,7 @@ lemma eq_splitHalf_iff_merge_eq {ϑ : ℕ}
       exact res
     · funext rowIdx
       let res := congr_fun h_merge_eq_split ⟨rowIdx + 2 ^ ϑ, by omega⟩
-      simp only [add_lt_iff_neg_right, not_lt_zero', ↓reduceDIte, add_tsub_cancel_right,
+      simp only [add_lt_iff_neg_right, not_lt_zero, ↓reduceDIte, add_tsub_cancel_right,
         Fin.eta] at res
       exact res
 
