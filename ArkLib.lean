@@ -77,6 +77,7 @@ import ArkLib.Data.CodingTheory.ProximityGap.DG25.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.MainResults
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.ReedSolomon
 import ArkLib.Data.CodingTheory.ProximityGap.Folding
+import ArkLib.Data.CodingTheory.ProximityGap.Folding.Multilinear
 import ArkLib.Data.CodingTheory.ProximityGap.MCAGenerator
 import ArkLib.Data.CodingTheory.ProximityGap.ProximityGenerators
 import ArkLib.Data.CodingTheory.ReedSolomon
@@ -142,6 +143,7 @@ import ArkLib.Data.Matrix.Sparse
 import ArkLib.Data.Matrix.Vandermonde
 import ArkLib.Data.Misc.Basic
 import ArkLib.Data.MvPolynomial.Degrees
+import ArkLib.Data.MvPolynomial.EvenAndOdd
 import ArkLib.Data.MvPolynomial.Interpolation
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLib.Data.MvPolynomial.Multilinear
