@@ -369,7 +369,7 @@ theorem foldWord_mem_code_of_mem_code {d : ℕ}
   by_cases hd : d = 0
   · aesop
   · have hf' := 
-      ReedSolomon.mem_code_iff_exists_polynomial.mp hf
+      ReedSolomon.mem_code_iff_exists_polynomial'.mp hf
     obtain ⟨p, hf'⟩ := hf'
     apply ReedSolomon.mem_code_of_polynomial_of_natDegree_lt_of_eval 
       (p := FoldingPolynomial.polyFold p (2 ^ k) α)
@@ -377,7 +377,11 @@ theorem foldWord_mem_code_of_mem_code {d : ℕ}
         by_cases hp : p = 0 
         · aesop (add safe (by omega))
         · exact lt_of_le_of_lt (Nat.div_le_self _ _) <| by
-            aesop (add simp [Polynomial.natDegree_lt_iff_degree_lt])
+            by_cases hd : d ≤ 2 ^ n 
+            · aesop (add simp [Polynomial.natDegree_lt_iff_degree_lt])
+            · have : p.degree < d := lt_trans hf'.1 <| by 
+                aesop (add unsafe (by rw [WithBot.lt_def]))
+              aesop (add simp [Polynomial.natDegree_lt_iff_degree_lt])
     · intro i 
       have := foldWord_codeword (α := α) hk (p := ⟨f, hf⟩)
       simp only at this
@@ -385,11 +389,22 @@ theorem foldWord_mem_code_of_mem_code {d : ℕ}
         LinearMap.coe_mk, AddHom.coe_mk]
       obtain ⟨hp_deg, hf'⟩ := hf'
       subst hf'
-      rw [ReedSolomon.toPolynomial_eq_self_of_le_of_deg_lt_of_eq]
-      · sorry
-      · exact hp_deg
-      · simp
-
+      congr
+      apply Polynomial.eq_of_degrees_lt_of_eval_index_eq
+        (v := domain) (s := univ) (by simp)
+      · exact lt_of_lt_of_le (ReedSolomon.toPolynomial_lt_min_deg_card _) <| by
+          by_cases hd : d ≤ 2 ^ n
+          · aesop (add unsafe (by rw [WithBot.le_def]))
+          · simp [min, hd]
+      · exact lt_of_lt_of_le hp_deg <| by
+          by_cases hd : d ≤ 2 ^ n
+          · aesop (add unsafe (by rw [WithBot.le_def]))
+          · simp [min, hd]
+      · intro i _
+        conv_lhs =>
+          rw [show domain i = (domain : (Fin (2 ^ n)) ↪ F) i by rfl]
+        rw [ReedSolomon.toPolynomial_eval_at_domain]
+        simp [evalOnPoints]
 
 private noncomputable def foldWordAuxCoeff (domain : SmoothCosetFftDomain n F)
   (f : Word F (Fin (2 ^ n))) (k : ℕ) (i : Fin k) (x : F) : F :=
