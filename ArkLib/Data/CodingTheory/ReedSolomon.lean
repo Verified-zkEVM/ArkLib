@@ -658,7 +658,6 @@ lemma toPolynomial_lt_min_deg_card (c : ReedSolomon.code domain deg) :
       exact lt_of_lt_of_le (Lagrange.degree_interpolate_lt _
         (by aesop (add safe cases Function.Embedding))) (by simp)
 
-@[simp]
 lemma toPolynomial_eval_at_domain
   {c : ReedSolomon.code domain deg} {i : ι} :
   (toPolynomial c).eval (domain i) = c.1 i := by
@@ -678,7 +677,7 @@ lemma mem_code_iff_exists_polynomial' {n : ℕ} {α : ι ↪ F} {f : ι → F} :
     · aesop
         (add simp [mem_code_iff_exists_polynomial])
     · exists (toPolynomial ⟨f, h⟩)
-      aesop (add simp [evalOnPoints])
+      aesop (add simp [evalOnPoints, toPolynomial_eval_at_domain])
   · by_cases hd : n ≤ Fintype.card ι
     · aesop
         (add simp [mem_code_iff_exists_polynomial])

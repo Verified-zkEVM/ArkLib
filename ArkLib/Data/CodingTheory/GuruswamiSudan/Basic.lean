@@ -1085,6 +1085,7 @@ theorem gs_dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : c
     norm_num [Nat.cast_sub (show hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) ≤ n
       from le_trans (Finset.card_le_univ _) (by norm_num))]
 
+
 end gs_rate
 
 end GuruswamiSudan
