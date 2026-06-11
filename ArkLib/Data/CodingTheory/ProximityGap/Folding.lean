@@ -359,29 +359,40 @@ theorem foldWord_codeword {d : ℕ}
   rw [eval_comm, interpolate_eq_folding_poly_eval hk (by simp)]
   aesop
 
+/-- Perfect completeness of folding: if a word belongs to an RS-code
+  then its `foldWord` belongs to a folded RS-code.
+-/
 theorem foldWord_mem_code_of_mem_code {d : ℕ}
   {α : F}
   (hk : k ≤ n)
+  (hk_d_dvd : 2 ^ k ∣ d)
   {f : Word F (Fin (2 ^ n))}
   (hf : f ∈ ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d) :
   foldWord domain f k α ∈ 
-    ReedSolomon.code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) d := by 
+    ReedSolomon.code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) (d / (2 ^ k)) := by 
   by_cases hd : d = 0
   · aesop
   · have hf' := 
       ReedSolomon.mem_code_iff_exists_polynomial'.mp hf
     obtain ⟨p, hf'⟩ := hf'
+    have hk_d_le : 2 ^ k ≤ d := Nat.le_of_dvd (by omega) hk_d_dvd
     apply ReedSolomon.mem_code_of_polynomial_of_natDegree_lt_of_eval 
       (p := FoldingPolynomial.polyFold p (2 ^ k) α)
     · exact lt_of_le_of_lt FoldingPolynomial.polyFold_natDegree_le <| by
         by_cases hp : p = 0 
         · aesop (add safe (by omega))
-        · exact lt_of_le_of_lt (Nat.div_le_self _ _) <| by
-            by_cases hd : d ≤ 2 ^ n 
-            · aesop (add simp [Polynomial.natDegree_lt_iff_degree_lt])
-            · have : p.degree < d := lt_trans hf'.1 <| by 
-                aesop (add unsafe (by rw [WithBot.lt_def]))
-              aesop (add simp [Polynomial.natDegree_lt_iff_degree_lt])
+        · rw [Nat.div_lt_iff_lt_mul (by simp)]
+          by_cases hd : d ≤ 2 ^ n 
+          · have : p.natDegree < d := by
+              rw [←Polynomial.natDegree_lt_iff_degree_lt hp] at hf'
+              aesop
+            exact lt_of_lt_of_le this <| by
+              rw [Nat.div_mul_cancel hk_d_dvd]
+          · have : p.degree < d := lt_trans hf'.1 <| by 
+              aesop (add unsafe (by rw [WithBot.lt_def]))
+            rw [Nat.div_mul_cancel hk_d_dvd]
+            aesop 
+              (add simp [Polynomial.natDegree_lt_iff_degree_lt])
     · intro i 
       have := foldWord_codeword (α := α) hk (p := ⟨f, hf⟩)
       simp only at this
