@@ -457,43 +457,102 @@ def sqFoldMapGen {i : ℕ} (u : Fin (2 ^ n)) : Fin (2 ^ (n - i)) :=
   ⟨u.val % 2 ^ (n - i), Nat.mod_lt _ (Nat.two_pow_pos _)⟩
 
 omit [DecidableEq F] in
+/-- `ReedSolomon.evalOnPoints` related on the domain and a subdomain. -/
 lemma evalOnPoints_pow_of_two_eq_evalOnPoints_subdomain
   [NeZero n] {p : Polynomial F} {i : ℕ} :
   ReedSolomon.evalOnPoints (ω : Fin (2 ^ n) ↪ F) (p.comp (Polynomial.X ^ (2 ^ i))) =
     (ReedSolomon.evalOnPoints (subdomain ω i : Fin (2 ^ (n - i)) ↪ F) p) ∘
       sqFoldMapGen := by
-        ext u; simp +decide [ ReedSolomon.evalOnPoints, subdomain ] ;
-        congr 1;
-        -- By definition of exponentiation in the field F, we can rewrite the right-hand side.
-        have h_exp : ω u ^ (2 ^ i) = (ω 0) ^ (2 ^ i - 1) * ω (CosetFftDomainClass.subdomain_embed i (Fin.mk (u.val % 2 ^ (n - i)) (Nat.mod_lt _ (Nat.two_pow_pos _)))) := by
-          have h_exp : ∀ i : ℕ, ∀ u : Fin (2 ^ n), ω u ^ 2 ^ i = ω 0 ^ (2 ^ i - 1) * ω (Fin.mk (2 ^ i * u.val % 2 ^ n) (Nat.mod_lt _ (Nat.two_pow_pos _))) := by
-            intro i u; induction' i with i ih generalizing u <;> simp_all +decide [ pow_succ, pow_mul ] ;
-            · norm_num [ Nat.mod_eq_of_lt ];
-            · have h_exp : ω (Fin.mk (2 ^ i * u.val % 2 ^ n) (Nat.mod_lt _ (Nat.two_pow_pos _))) ^ 2 = ω 0 * ω (Fin.mk (2 ^ (i + 1) * u.val % 2 ^ n) (Nat.mod_lt _ (Nat.two_pow_pos _))) := by
-                have h_exp : ∀ u v : Fin (2 ^ n), ω u * ω v = ω 0 * ω (u + v) := by
-                  intro u v; have := ‹CosetFftDomainClass D ( Fin ( 2 ^ n ) ) F›.map_add ω u v; simp_all +decide [ mul_comm, mul_assoc, mul_left_comm ] ;
-                convert h_exp _ _ using 2 ; ring;
-                rw [ sq ];
-                congr 1 ; norm_num [ Fin.add_def, Nat.mod_eq_of_lt ] ; ring;
-              convert congr_arg ( · * ( ω 0 ^ ( 2 ^ i - 1 ) ) ^ 2 ) h_exp using 1 <;> ring;
-              rw [ show 2 ^ i * 2 - 1 = ( 2 ^ i - 1 ) * 2 + 1 by zify ; norm_num ; ring ] ; ring;
-          by_cases hi : i ≥ n;
-          · simp_all +decide [ Nat.sub_eq_zero_of_le hi, CosetFftDomainClass.subdomain_embed ];
-            norm_num [ Nat.mod_eq_zero_of_dvd ( dvd_mul_of_dvd_left ( pow_dvd_pow _ hi ) _ ) ];
-          · convert h_exp i u using 3;
-            simp +decide [ CosetFftDomainClass.subdomain_embed, Nat.mul_mod_mul_left ];
-            split_ifs <;> simp_all +decide [ Nat.mod_eq_of_lt ];
-            rw [ ← Nat.mul_mod_mul_left ];
-            rw [ ← pow_add, Nat.add_sub_of_le ( le_of_not_ge ‹¬n ≤ i› ) ];
-        convert h_exp using 1;
-        convert congr_arg ( fun x : Fˣ => ( x : F ) ) ( show ( { val := ω 0 ^ 2 ^ i, inv := ( ω 0 ^ 2 ^ i ) ⁻¹, val_inv := _, inv_val := _ } : Fˣ ) * ( { val := ( ω 0 ) ⁻¹ * ω ( CosetFftDomainClass.subdomain_embed i ⟨ u.val % 2 ^ ( n - i ), Nat.mod_lt _ ( Nat.two_pow_pos _ ) ⟩ ), inv := ω 0 * ( ω ( CosetFftDomainClass.subdomain_embed i ⟨ u.val % 2 ^ ( n - i ), Nat.mod_lt _ ( Nat.two_pow_pos _ ) ⟩ ) ) ⁻¹, val_inv := _, inv_val := _ } : Fˣ ) = { val := ω 0 ^ ( 2 ^ i - 1 ) * ω ( CosetFftDomainClass.subdomain_embed i ⟨ u.val % 2 ^ ( n - i ), Nat.mod_lt _ ( Nat.two_pow_pos _ ) ⟩ ), inv := _, val_inv := _, inv_val := _ } from ?_ ) using 1;
-        exact ( ω 0 ^ ( 2 ^ i - 1 ) * ω ( CosetFftDomainClass.subdomain_embed i ⟨ u.val % 2 ^ ( n - i ), Nat.mod_lt _ ( Nat.two_pow_pos _ ) ⟩ ) ) ⁻¹;
-        all_goals norm_num [ Units.ext_iff ];
-        · field_simp;
-        · field_simp;
-        · cases k : 2 ^ i <;> simp_all +decide [ pow_succ, mul_assoc ]
+  ext u
+  simp only [ReedSolomon.evalOnPoints, Function.Embedding.coeFn_mk, LinearMap.coe_mk,
+    AddHom.coe_mk, Polynomial.eval_comp, Polynomial.eval_pow, Polynomial.eval_X, subdomain, inv_pow,
+    Function.comp_apply]
+  congr 1
+  -- By definition of exponentiation in the field F, we can rewrite the right-hand side.
+  have h_exp :
+    ω u ^ (2 ^ i) =
+      (ω 0) ^ (2 ^ i - 1) *
+        ω (CosetFftDomainClass.subdomain_embed
+            i (Fin.mk
+                (u.val % 2 ^ (n - i))
+                (Nat.mod_lt _ (Nat.two_pow_pos _)))) := by
+    have h_exp :
+      ∀ i : ℕ, ∀ u : Fin (2 ^ n),
+        ω u ^ 2 ^ i = ω 0 ^ (2 ^ i - 1) *
+          ω (Fin.mk
+              (2 ^ i * u.val % 2 ^ n)
+              (Nat.mod_lt _ (Nat.two_pow_pos _))) := by
+      intro i u
+      induction i generalizing u with
+      | zero =>
+        simp_all only [pow_zero, pow_one, tsub_self, one_mul]
+        norm_num [Nat.mod_eq_of_lt]
+      | succ i ih =>
+        simp_all only [pow_succ, pow_mul, pow_zero, one_mul]
+        have h_exp :
+          ω (Fin.mk
+              (2 ^ i * u.val % 2 ^ n)
+              (Nat.mod_lt _ (Nat.two_pow_pos _))) ^ 2 =
+                ω 0 *
+                  ω (Fin.mk
+                      (2 ^ (i + 1) * u.val % 2 ^ n)
+                      (Nat.mod_lt _ (Nat.two_pow_pos _))) := by
+          have h_exp : ∀ u v : Fin (2 ^ n), ω u * ω v = ω 0 * ω (u + v) := by
+            intro u v
+            have := ‹CosetFftDomainClass D (Fin (2 ^ n)) F›.map_add ω u v
+            simp_all [mul_comm, mul_left_comm]
+          convert h_exp _ _ using 2
+          · ring_nf
+            rw [sq]
+          · congr 1
+            norm_num [Fin.add_def, Nat.mod_eq_of_lt]
+            ring_nf
+        convert congr_arg (· * (ω 0 ^ (2 ^ i - 1)) ^ 2) h_exp using 1
+          <;> ring_nf
+        rw [show 2 ^ i * 2 - 1 = (2 ^ i - 1) * 2 + 1 by zify; norm_num; ring]
+        ring_nf
+    by_cases hi : i ≥ n
+    · simp_all only [ge_iff_le, CosetFftDomainClass.subdomain_embed, ↓reduceDIte,
+      mul_eq_mul_left_iff, pow_eq_zero_iff', ne_zero, ne_eq, false_and, or_false]
+      norm_num [Nat.mod_eq_zero_of_dvd (dvd_mul_of_dvd_left (pow_dvd_pow _ hi) _)]
+    · convert h_exp i u using 3
+      simp only [CosetFftDomainClass.subdomain_embed, ge_iff_le]
+      split_ifs
+      · simp_all
+      · simp_all only [ge_iff_le, not_false_eq_true, Fin.mk.injEq]
+        rw [←Nat.mul_mod_mul_left,
+            ←pow_add,
+            Nat.add_sub_of_le (le_of_not_ge ‹¬n ≤ i›)]
+  convert h_exp using 1
+  convert congr_arg
+    (fun x : Fˣ => x.val)
+    (show
+      ({ val := ω 0 ^ 2 ^ i, inv := (ω 0 ^ 2 ^ i) ⁻¹, val_inv := _, inv_val := _ } : Fˣ) *
+      ({ val := (ω 0) ⁻¹ *
+           ω (CosetFftDomainClass.subdomain_embed i ⟨u.val % 2 ^ (n - i),
+            Nat.mod_lt _ (Nat.two_pow_pos _)⟩),
+         inv := ω 0 *
+           (ω (CosetFftDomainClass.subdomain_embed i
+              ⟨u.val % 2 ^ (n - i), Nat.mod_lt _ (Nat.two_pow_pos _)⟩)) ⁻¹,
+         val_inv := _,
+         inv_val := _} : Fˣ) =
+          { val := ω 0 ^ (2 ^ i - 1) *
+              ω (CosetFftDomainClass.subdomain_embed i ⟨u.val % 2 ^ (n - i),
+                  Nat.mod_lt _ (Nat.two_pow_pos _) ⟩),
+            inv := _,
+            val_inv := _,
+            inv_val := _} from ?_) using 1
+  · exact (ω 0 ^ (2 ^ i - 1) *
+      ω (CosetFftDomainClass.subdomain_embed i ⟨u.val % 2 ^ ( n - i ),
+          Nat.mod_lt _ (Nat.two_pow_pos _)⟩))⁻¹
+  all_goals norm_num [Units.ext_iff]
+  · field_simp
+  · field_simp
+  · cases k : 2 ^ i <;> simp_all [pow_succ, mul_assoc]
 
 omit [DecidableEq F] in
+/-- A particularly useful special case of `evalOnPoints_pow_of_two_eq_evalOnPoints_subdomain`
+  when `i = 1`. -/
 lemma evalOnPoints_sq_eq_evalOnPoints_subdomain [NeZero n] {p : Polynomial F} :
   ReedSolomon.evalOnPoints (ω : Fin (2 ^ n) ↪ F) (p.comp (Polynomial.X ^ 2)) =
     (ReedSolomon.evalOnPoints (subdomain ω 1 : Fin (2 ^ (n - 1)) ↪ F) p) ∘
@@ -502,6 +561,7 @@ lemma evalOnPoints_sq_eq_evalOnPoints_subdomain [NeZero n] {p : Polynomial F} :
       evalOnPoints_pow_of_two_eq_evalOnPoints_subdomain]
 
 omit [DecidableEq F] in
+/-- Powers of domain values in terms of subdomain values. -/
 lemma subdomain_sqFoldMapGen_eq_pow_domain [NeZero n] {i : ℕ} {j : Fin (2 ^ n)} :
   subdomain ω i (sqFoldMapGen j) = ω j ^ 2 ^ i := by
   have := @evalOnPoints_pow_of_two_eq_evalOnPoints_subdomain
@@ -509,37 +569,74 @@ lemma subdomain_sqFoldMapGen_eq_pow_domain [NeZero n] {i : ℕ} {j : Fin (2 ^ n)
   simp_all [funext_iff, ReedSolomon.evalOnPoints]
 
 omit [DecidableEq F] in
+/-- `sqFoldMapGen j` equals `sqFoldMapGen j'`
+  if `ω j ^ 2 ^ j` equals `ω j ^ 2 ^ j'`. -/
 lemma sqFoldMapGen_eq_sqFoldMapGen_of_pow_apply_eq_pow_apply
   [NeZero n] {i : ℕ} {j j' : Fin (2 ^ n)}
   (h : ω j ^ 2 ^ i = ω j' ^ 2 ^ i) :
   sqFoldMapGen (i := i) j = sqFoldMapGen j' := by
-    contrapose! h with h_contra;
-    have h_key_id : ∀ i u, ω u ^ 2 ^ i = ω 0 ^ (2 ^ i - 1) * ω (Fin.mk (2 ^ i * u.val % 2 ^ n) (Nat.mod_lt _ (Nat.two_pow_pos _))) := by
-      intro i u; induction' i with i ih generalizing u <;> simp_all +decide [ pow_succ, pow_mul ] ;
-      · norm_num [ Nat.mod_eq_of_lt ];
-      · have h_sq : ∀ u : Fin (2 ^ n), ω u ^ 2 = ω 0 * ω (Fin.mk (2 * u.val % 2 ^ n) (Nat.mod_lt _ (Nat.two_pow_pos _))) := by
-          intro u; have := ‹CosetFftDomainClass D ( Fin ( 2 ^ n ) ) F›.map_add ω u u; simp_all +decide [ sq, mul_assoc ] ;
-          simp_all +decide [ two_mul, Fin.add_def ];
-        convert congr_arg ( · ^ 2 ) ( ih u ) using 1 <;> ring;
-        · convert congr_arg ( · ^ 2 ) ( ih u ) |> Eq.symm using 1 ; ring;
-          norm_num [ pow_mul ];
-        · rw [ h_sq ] ; ring;
-          rw [ show ( 2 ^ i * 2 - 1 : ℕ ) = ( 2 ^ i - 1 ) * 2 + 1 by zify ; norm_num ; ring ] ; ring;
-          norm_num [ mul_assoc, Nat.mul_mod_mul_right ];
-    have h_cancel : ω (Fin.mk (2 ^ i * j.val % 2 ^ n) (Nat.mod_lt _ (Nat.two_pow_pos _))) ≠ ω (Fin.mk (2 ^ i * j'.val % 2 ^ n) (Nat.mod_lt _ (Nat.two_pow_pos _))) := by
-      intro h_eq; have := ( ‹CosetFftDomainClass D ( Fin ( 2 ^ n ) ) F›.injective ω ) h_eq; simp_all +decide [ Fin.ext_iff ] ;
-      -- Since $2^i * j \equiv 2^i * j' \pmod{2^n}$, we can divide both sides by $2^i$ (which is valid since $2^i$ is coprime to $2^n$).
+    contrapose! h with h_contra
+    have h_key_id :
+      ∀ i u, ω u ^ 2 ^ i =
+          ω 0 ^ (2 ^ i - 1) *
+            ω (Fin.mk (2 ^ i * u.val % 2 ^ n) (Nat.mod_lt _ (Nat.two_pow_pos _))) := by
+      intro i u
+      induction i generalizing u with
+      | zero =>
+        simp_all only [ne_eq, pow_zero, pow_one, tsub_self, one_mul]
+        norm_num [Nat.mod_eq_of_lt]
+      | succ i ih =>
+        simp_all only [ne_eq, pow_succ, pow_mul, pow_zero, one_mul]
+        have h_sq :
+          ∀ u : Fin (2 ^ n), ω u ^ 2 =
+            ω 0 * ω (Fin.mk (2 * u.val % 2 ^ n) (Nat.mod_lt _ (Nat.two_pow_pos _))) := by
+          intro u
+          have := ‹CosetFftDomainClass D (Fin ( 2 ^ n )) F›.map_add ω u u
+          simp_all only [mul_assoc, sq]
+          simp_all only [Fin.add_def, two_mul, ne_eq, ne_zero, not_false_eq_true,
+            mul_inv_cancel_left₀]
+        convert congr_arg (· ^ 2) (ih u) using 1 <;> ring_nf
+        · convert congr_arg (· ^ 2) (ih u) |> Eq.symm using 1
+          · ring_nf
+          · norm_num [pow_mul]
+        · rw [h_sq]
+          ring_nf
+          rw [show (2 ^ i * 2 - 1 : ℕ) = (2 ^ i - 1) * 2 + 1
+                by zify; norm_num; ring]
+          ring_nf
+          norm_num [mul_assoc, Nat.mul_mod_mul_right]
+    have h_cancel :
+      ω (Fin.mk
+          (2 ^ i * j.val % 2 ^ n)
+          (Nat.mod_lt _ (Nat.two_pow_pos _))) ≠
+            ω (Fin.mk
+                (2 ^ i * j'.val % 2 ^ n)
+                (Nat.mod_lt _ (Nat.two_pow_pos _))) := by
+      intro h_eq
+      have := (‹CosetFftDomainClass D (Fin (2 ^ n)) F›.injective ω) h_eq
+      simp_all only [ne_eq, Fin.ext_iff]
+      -- Since $2^i * j \equiv 2^i * j' \pmod{2^n}$,
+      -- we can divide both sides by $2^i$ (which is valid since $2^i$ is coprime to $2^n$).
       have h_div : j.val % 2 ^ (n - i) = j'.val % 2 ^ (n - i) := by
         by_cases hi : i ≤ n;
         · have h_div : 2 ^ i * (j.val - j'.val) ≡ 0 [ZMOD 2 ^ n] := by
-            exact Int.modEq_zero_iff_dvd.mpr ⟨ 2 ^ i * j / 2 ^ n - 2 ^ i * j' / 2 ^ n, by linarith [ Int.emod_add_mul_ediv ( 2 ^ i * j ) ( 2 ^ n ), Int.emod_add_mul_ediv ( 2 ^ i * j' ) ( 2 ^ n ) ] ⟩;
+            exact Int.modEq_zero_iff_dvd.mpr
+              ⟨2 ^ i * j / 2 ^ n - 2 ^ i * j' / 2 ^ n,
+                by linarith
+                      [Int.emod_add_mul_ediv (2 ^ i * j) (2 ^ n),
+                       Int.emod_add_mul_ediv (2 ^ i * j') (2 ^ n)]⟩
           have h_div : (j.val - j'.val : ℤ) ≡ 0 [ZMOD 2 ^ (n - i)] := by
-            rw [ Int.modEq_zero_iff_dvd ] at *;
-            exact Exists.elim h_div fun k hk => ⟨ k, by rw [ show ( 2 ^ n : ℤ ) = 2 ^ i * 2 ^ ( n - i ) by rw [ ← pow_add, Nat.add_sub_of_le hi ] ] at hk; nlinarith [ pow_pos ( zero_lt_two' ℤ ) i ] ⟩;
-          exact Nat.ModEq.symm ( Nat.modEq_of_dvd <| by simpa [ ← Int.natCast_dvd_natCast ] using h_div.symm.dvd );
-        · grind;
-      exact h_contra h_div;
-    simp_all +decide [ mul_comm ]
+            rw [Int.modEq_zero_iff_dvd] at *
+            exact Exists.elim h_div fun k hk ↦
+              ⟨k, by
+                    rw [show ( 2 ^ n : ℤ ) = 2 ^ i * 2 ^ (n - i) by
+                      rw [←pow_add, Nat.add_sub_of_le hi]] at hk;
+                      nlinarith [pow_pos (zero_lt_two' ℤ) i]⟩
+          exact Nat.ModEq.symm
+            (Nat.modEq_of_dvd <| by simpa [←Int.natCast_dvd_natCast] using h_div.symm.dvd)
+        · grind
+      exact h_contra h_div
+    simp_all [mul_comm]
 
 end CosetFftDomainClass
 

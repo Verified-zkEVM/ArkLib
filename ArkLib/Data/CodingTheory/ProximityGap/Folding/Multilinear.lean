@@ -15,6 +15,16 @@ import ArkLib.Data.Domain.CosetFftDomain.Log
 import ArkLib.Data.MvPolynomial.EvenAndOdd
 import CompPoly.Data.MvPolynomial.Notation
 
+/-! This module provides an equivalent statement
+  of folding completeness of RS-codes in terms of multilinear polynomials
+  as can be found in [ACFY24].
+
+## References
+
+  * [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *WHIR: Reed–Solomon Proximity Testing
+      with Super-Fast Verification*][ACFY24]
+-/
+
 namespace ProximityGap
 
 open NNReal Finset Function
@@ -30,6 +40,7 @@ variable {n : ℕ}
 variable {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))}
 variable {k : ℕ} {x : F}
 
+/-- One step of lemma 4.15 from [ACFY24]. -/
 lemma foldWord_eq_evalOnPoints_powAlgHom [NeZero n] {α : F}
   {g : F⦃≤ 1⦄[X (Fin n)]}
   (hf : f = evalOnPoints domain (powAlgHom g.1)) :
