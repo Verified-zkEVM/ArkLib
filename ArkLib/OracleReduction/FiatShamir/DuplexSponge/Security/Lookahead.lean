@@ -249,7 +249,7 @@ private def sampleArrayExact :
     (m : Nat) → OracleComp (Unit →ₒ U) {xs : Array U // xs.size = m}
   | 0 => pure ⟨#[], rfl⟩
   | m + 1 => do
-      let u ← liftM (query (spec := (Unit →ₒ U)) ())
+      let u ← query (spec := (Unit →ₒ U)) ()
       let ⟨xs, hxs⟩ ← sampleArrayExact m
       pure ⟨xs.push u, by simp [hxs]⟩
 

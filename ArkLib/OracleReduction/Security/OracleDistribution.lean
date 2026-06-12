@@ -148,30 +148,29 @@ section MarginalLaws
 variable {spec : OracleSpec ι}
 
 private noncomputable def mapRangeAt {spec : OracleSpec ι} (q : spec.Domain)
-    (e : spec.Range q ≃ spec.Range q) : OracleFamily spec ≃ OracleFamily spec := by
-  classical
-  refine
-    { toFun := fun g => Function.update g q (e (g q))
-      invFun := fun g => Function.update g q (e.symm (g q))
-      left_inv := ?_
-      right_inv := ?_ }
-  · intro g
-    funext q'
-    by_cases h : q' = q
-    · subst q'
-      simp [Function.update]
-    · simp [Function.update, h]
-  · intro g
-    funext q'
-    by_cases h : q' = q
-    · subst q'
-      simp [Function.update]
-    · simp [Function.update, h]
+    (e : spec.Range q ≃ spec.Range q) : OracleFamily spec ≃ OracleFamily spec :=
+  letI : DecidableEq spec.Domain := Classical.typeDecidableEq _
+  { toFun := fun g => Function.update g q (e (g q))
+    invFun := fun g => Function.update g q (e.symm (g q))
+    left_inv := by
+      intro g
+      funext q'
+      by_cases h : q' = q
+      · subst q'
+        simp [Function.update]
+      · simp [Function.update, h]
+    right_inv := by
+      intro g
+      funext q'
+      by_cases h : q' = q
+      · subst q'
+        simp [Function.update]
+      · simp [Function.update, h] }
 
 private lemma mapRangeAt_apply_self {spec : OracleSpec ι} (q : spec.Domain)
     (e : spec.Range q ≃ spec.Range q) (g : OracleFamily spec) :
     (mapRangeAt q e g) q = e (g q) := by
-  classical
+  letI : DecidableEq spec.Domain := Classical.typeDecidableEq _
   simp [mapRangeAt, Function.update]
 
 private theorem probOutput_uniform_marginal_eq
@@ -179,7 +178,7 @@ private theorem probOutput_uniform_marginal_eq
     (y z : spec.Range q) :
     Pr[= y | do let g ← (OracleDistribution.uniform spec).sample; pure (g q)] =
       Pr[= z | do let g ← (OracleDistribution.uniform spec).sample; pure (g q)] := by
-  classical
+  letI : DecidableEq (spec.Range q) := Classical.typeDecidableEq _
   let e : spec.Range q ≃ spec.Range q := Equiv.swap y z
   let T : OracleFamily spec ≃ OracleFamily spec := mapRangeAt q e
   rw [probOutput_bind_eq_tsum, probOutput_bind_eq_tsum]
@@ -224,13 +223,12 @@ theorem probOutput_uniform_marginal
     [Fintype (spec.Range q)] (y : spec.Range q) :
     Pr[= y | do let g ← (OracleDistribution.uniform spec).sample; pure (g q)] =
       (Fintype.card (spec.Range q) : ℝ≥0∞)⁻¹ := by
-  classical
   let M : ProbComp (spec.Range q) := do
     let g ← (OracleDistribution.uniform spec).sample
     pure (g q)
   change Pr[= y | M] = (Fintype.card (spec.Range q) : ℝ≥0∞)⁻¹
   have hsum : ∑ z, Pr[= z | M] = 1 := by
-    exact sum_probOutput_eq_one (HasEvalPMF.probFailure_eq_zero M)
+    exact sum_probOutput_eq_one probFailure_eq_zero
   have hconst : ∑ _z : spec.Range q, Pr[= y | M] = 1 := by
     rw [← hsum]
     apply Finset.sum_congr rfl

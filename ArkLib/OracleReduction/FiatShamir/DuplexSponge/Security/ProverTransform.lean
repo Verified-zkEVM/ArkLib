@@ -901,9 +901,9 @@ noncomputable def d2fOuterImpl
       (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
       (gImpl := gImpl)
       (auxImpl := fun aux =>
-        liftM (query
+        query
           (spec := D2SChallengePlusUnitOracle (U := U) challengeSpec)
-          (Sum.inr aux))))
+          (Sum.inr aux)))
 
 /-- CO25 §5.4 Eq. 16 RHS — generic raw pipeline for `comp^{D2SQuery^{gImpl}}`, keeping the
 post-run `D2SQueryState` and inner `M`.

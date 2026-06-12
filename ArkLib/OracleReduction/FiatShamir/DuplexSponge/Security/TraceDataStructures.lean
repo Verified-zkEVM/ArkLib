@@ -254,7 +254,7 @@ private lemma hash_ms_foldl_inv
       have hIH := ih {init with h := TraceTableOps.add init.h stmt' a} hp
       have : ({init with h := TraceTableOps.add init.h stmt' a} :
           TraceNabla T_H T_P StmtIn U).h = TraceTableOps.add init.h stmt' a := rfl
-      rw [this, LawfulTraceTable.toMultiSet_add] at hIH
+      rw [this] at hIH; erw [LawfulTraceTable.toMultiSet_add] at hIH
       rcases hIH with hMem | hIn
       · rw [Multiset.mem_cons] at hMem
         rcases hMem with hEq | hRest
@@ -306,7 +306,7 @@ private lemma perm_ms_foldl_inv
       have hIH := ih {init with p := TraceTableOps.add init.p sIn' a} hp
       have : ({init with p := TraceTableOps.add init.p sIn' a} :
           TraceNabla T_H T_P StmtIn U).p = TraceTableOps.add init.p sIn' a := rfl
-      rw [this, LawfulTraceTable.toMultiSet_add] at hIH
+      rw [this] at hIH; erw [LawfulTraceTable.toMultiSet_add] at hIH
       rcases hIH with hMem | hIn
       · rw [Multiset.mem_cons] at hMem
         rcases hMem with hEq | hRest
@@ -321,7 +321,7 @@ private lemma perm_ms_foldl_inv
       have hIH := ih {init with p := TraceTableOps.add init.p a sOut'} hp
       have : ({init with p := TraceTableOps.add init.p a sOut'} :
           TraceNabla T_H T_P StmtIn U).p = TraceTableOps.add init.p a sOut' := rfl
-      rw [this, LawfulTraceTable.toMultiSet_add] at hIH
+      rw [this] at hIH; erw [LawfulTraceTable.toMultiSet_add] at hIH
       rcases hIH with hMem | hIn
       · rw [Multiset.mem_cons] at hMem
         rcases hMem with hEq | hRest
@@ -403,7 +403,7 @@ private lemma hash_ms_foldl_fwd_inv
       have hIH := ih {init with h := TraceTableOps.add init.h stmt' a} hp
       have : ({init with h := TraceTableOps.add init.h stmt' a} :
           TraceNabla T_H T_P StmtIn U).h = TraceTableOps.add init.h stmt' a := rfl
-      rw [this, LawfulTraceTable.toMultiSet_add] at hIH
+      rw [this] at hIH; erw [LawfulTraceTable.toMultiSet_add] at hIH
       rcases hIH with hMem | hIn
       · rw [Multiset.mem_cons] at hMem
         rcases hMem with hEq | hRest
@@ -449,7 +449,7 @@ private lemma perm_ms_foldl_fwd_inv
       have hIH := ih {init with p := TraceTableOps.add init.p sIn' a} hp
       have : ({init with p := TraceTableOps.add init.p sIn' a} :
           TraceNabla T_H T_P StmtIn U).p = TraceTableOps.add init.p sIn' a := rfl
-      rw [this, LawfulTraceTable.toMultiSet_add] at hIH
+      rw [this] at hIH; erw [LawfulTraceTable.toMultiSet_add] at hIH
       rcases hIH with hMem | hIn
       · rw [Multiset.mem_cons] at hMem
         rcases hMem with hEq | hRest

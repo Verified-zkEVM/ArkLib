@@ -9,8 +9,6 @@ import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.ProverTransform
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
 import ArkLib.OracleReduction.FiatShamir.SingleSalt
-import VCVio.EvalDist.TVDist
-import VCVio.OracleComp.QueryTracking.RandomOracle
 import VCVio.OracleComp.QueryTracking.QueryBound
 
 /-!
