@@ -148,6 +148,145 @@ def BacktrackSequence.Index (trace : QueryLog (duplexSpongeChallengeOracle StmtI
       else
         ⟨trace.length, Nat.lt_succ_self trace.length⟩) -- last pair
 
+/-! ### First-occurrence / `Index` specification lemmas
+
+These expose what `BacktrackSequence.Index` computes: the hash-query index points at the hash
+anchor entry (and is the first such occurrence), and each permutation-step index points at one of
+the two query forms `(p, s_in, s_out)` / `(p⁻¹, s_out, s_in)` (and is the first occurrence of
+either form).  Downstream (Lemmas 5.12/5.14/5.16) these "first occurrence" facts are what place
+the representative into the base trace `tr̄`. -/
+
+section IndexSpec
+
+variable {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+  {state : CanonicalSpongeState U}
+
+/-- `firstOccurrenceIndex` indexes the given entry. -/
+private lemma firstOccurrenceIndex_get
+    (entry : duplexSpongeTraceEntry) (hEntry : entry ∈ trace) :
+    trace.get (firstOccurrenceIndex trace entry hEntry) = entry := by
+  classical
+  rw [List.get_eq_getElem]
+  have h := List.findIdx_getElem (xs := trace) (p := fun x => decide (x = entry))
+    (w := (firstOccurrenceIndex trace entry hEntry).isLt)
+  simpa using h
+
+/-- No earlier position than `firstOccurrenceIndex` carries the entry. -/
+private lemma firstOccurrenceIndex_not_mem_take
+    (entry : duplexSpongeTraceEntry) (hEntry : entry ∈ trace) :
+    entry ∉ trace.take (firstOccurrenceIndex trace entry hEntry).val := by
+  classical
+  intro hmem
+  rw [List.mem_take_iff_getElem] at hmem
+  obtain ⟨m, hm, hget⟩ := hmem
+  have hmlt : m < (firstOccurrenceIndex trace entry hEntry).val :=
+    lt_of_lt_of_le hm (min_le_left _ _)
+  have hfalse := List.not_of_lt_findIdx (p := fun x => decide (x = entry)) hmlt
+  rw [decide_eq_false_iff_not] at hfalse
+  exact hfalse hget
+
+/-- `firstOccurrenceOfEither` indexes one of the two entries. -/
+private lemma firstOccurrenceOfEither_get
+    (entryA entryB : duplexSpongeTraceEntry) (hEntry : entryA ∈ trace ∨ entryB ∈ trace) :
+    trace.get (firstOccurrenceOfEither trace entryA entryB hEntry) = entryA ∨
+    trace.get (firstOccurrenceOfEither trace entryA entryB hEntry) = entryB := by
+  classical
+  rw [List.get_eq_getElem]
+  have h := List.findIdx_getElem (xs := trace)
+    (p := fun x => decide (x = entryA ∨ x = entryB))
+    (w := (firstOccurrenceOfEither trace entryA entryB hEntry).isLt)
+  simpa only [decide_eq_true_eq] using h
+
+/-- No earlier position than `firstOccurrenceOfEither` carries either entry. -/
+private lemma firstOccurrenceOfEither_not_mem_take
+    (entryA entryB : duplexSpongeTraceEntry) (hEntry : entryA ∈ trace ∨ entryB ∈ trace) :
+    entryA ∉ trace.take (firstOccurrenceOfEither trace entryA entryB hEntry).val ∧
+    entryB ∉ trace.take (firstOccurrenceOfEither trace entryA entryB hEntry).val := by
+  classical
+  constructor <;>
+  · intro hmem
+    rw [List.mem_take_iff_getElem] at hmem
+    obtain ⟨m, hm, hget⟩ := hmem
+    have hmlt : m < (firstOccurrenceOfEither trace entryA entryB hEntry).val :=
+      lt_of_lt_of_le hm (min_le_left _ _)
+    have hfalse := List.not_of_lt_findIdx
+      (p := fun x => decide (x = entryA ∨ x = entryB)) hmlt
+    rw [decide_eq_false_iff_not] at hfalse
+    simp only [not_or] at hfalse
+    first
+      | exact hfalse.1 hget
+      | exact hfalse.2 hget
+
+/-- The hash-query index `j_h` of a sequence indexes the hash anchor entry. -/
+lemma BacktrackSequence.Index_fst_get (seq : BacktrackSequence trace state)
+    (hpos : 0 < seq.inputState.length) :
+    trace.get (BacktrackSequence.Index trace state seq).1
+      = ⟨.inl seq.stmt, Vector.drop (seq.inputState[0]'hpos) SpongeSize.R⟩ :=
+  firstOccurrenceIndex_get _ seq.hash_in_trace
+
+/-- The hash anchor entry of a sequence does not occur before its `j_h` index. -/
+lemma BacktrackSequence.Index_fst_not_mem_take (seq : BacktrackSequence trace state)
+    (hpos : 0 < seq.inputState.length) :
+    (⟨.inl seq.stmt, Vector.drop (seq.inputState[0]'hpos) SpongeSize.R⟩ : duplexSpongeTraceEntry)
+        ∉ trace.take ((BacktrackSequence.Index trace state seq).1).val :=
+  firstOccurrenceIndex_not_mem_take _ seq.hash_in_trace
+
+/-- The value of the permutation-step index reduces to the first occurrence of either query form. -/
+lemma BacktrackSequence.Index_snd_val (seq : BacktrackSequence trace state)
+    (i : Fin seq.outputState.length) (hi : (i : ℕ) < seq.inputState.length) :
+    ((BacktrackSequence.Index trace state seq).2 ⟨i.val, hi⟩).val
+      = (firstOccurrenceOfEither trace
+          ⟨.inr (.inl seq.inputState[i.val]), seq.outputState[i.val]⟩
+          ⟨.inr (.inr seq.outputState[i.val]), seq.inputState[i.val]⟩
+          (seq.permute_or_inv_in_trace i)).val := by
+  classical
+  simp only [BacktrackSequence.Index]
+  rw [dif_pos i.isLt]
+  rfl
+
+/-- Each permutation-step index `j_ι` indexes one of the two query forms of the step. -/
+lemma BacktrackSequence.Index_snd_getElem? (seq : BacktrackSequence trace state)
+    (i : Fin seq.outputState.length) (hi : (i : ℕ) < seq.inputState.length) :
+    (trace)[((BacktrackSequence.Index trace state seq).2 ⟨i.val, hi⟩).val]?
+        = some ⟨.inr (.inl seq.inputState[i.val]), seq.outputState[i.val]⟩ ∨
+    (trace)[((BacktrackSequence.Index trace state seq).2 ⟨i.val, hi⟩).val]?
+        = some ⟨.inr (.inr seq.outputState[i.val]), seq.inputState[i.val]⟩ := by
+  classical
+  have hval := BacktrackSequence.Index_snd_val (trace := trace) (state := state) seq i hi
+  have hb : (firstOccurrenceOfEither trace
+      ⟨.inr (.inl seq.inputState[i.val]), seq.outputState[i.val]⟩
+      ⟨.inr (.inr seq.outputState[i.val]), seq.inputState[i.val]⟩
+      (seq.permute_or_inv_in_trace i)).val < trace.length :=
+    (firstOccurrenceOfEither trace _ _ (seq.permute_or_inv_in_trace i)).isLt
+  rcases firstOccurrenceOfEither_get (trace := trace)
+      ⟨.inr (.inl seq.inputState[i.val]), seq.outputState[i.val]⟩
+      ⟨.inr (.inr seq.outputState[i.val]), seq.inputState[i.val]⟩
+      (seq.permute_or_inv_in_trace i) with h | h <;>
+    rw [List.get_eq_getElem] at h
+  · exact Or.inl (by rw [hval, List.getElem?_eq_getElem hb, h])
+  · exact Or.inr (by rw [hval, List.getElem?_eq_getElem hb, h])
+
+/-- Past the last permutation step, the index function returns `|trace|` (the "current state"
+sentinel). -/
+lemma BacktrackSequence.Index_snd_eq_length (seq : BacktrackSequence trace state)
+    {k : ℕ} (hk : seq.outputState.length ≤ k) (hki : k < seq.inputState.length) :
+    ((BacktrackSequence.Index trace state seq).2 ⟨k, hki⟩).val = trace.length := by
+  classical
+  simp only [BacktrackSequence.Index]
+  rw [dif_neg (by omega)]
+
+/-- Neither query form of step `ι` occurs before its `j_ι` index. -/
+lemma BacktrackSequence.Index_snd_not_mem_take (seq : BacktrackSequence trace state)
+    (i : Fin seq.outputState.length) (hi : (i : ℕ) < seq.inputState.length) :
+    (⟨.inr (.inl seq.inputState[i.val]), seq.outputState[i.val]⟩ : duplexSpongeTraceEntry)
+        ∉ trace.take ((BacktrackSequence.Index trace state seq).2 ⟨i.val, hi⟩).val ∧
+    (⟨.inr (.inr seq.outputState[i.val]), seq.inputState[i.val]⟩ : duplexSpongeTraceEntry)
+        ∉ trace.take ((BacktrackSequence.Index trace state seq).2 ⟨i.val, hi⟩).val := by
+  rw [BacktrackSequence.Index_snd_val]
+  exact firstOccurrenceOfEither_not_mem_take _ _ (seq.permute_or_inv_in_trace i)
+
+end IndexSpec
+
 /-- CO25 Def 5.3 `S_BT(tr, s)` — maximal family of backtrack sequences
 (Eq. 8 & BackTrack §5.2 Step 2, Eq. 10): a finite set of `BacktrackSequence` pairs
 `(s_{in,ι}, s_{out,ι})` starting at an initial `StmtIn` and ending at sponge state `s`,
@@ -166,6 +305,22 @@ abbrev S_BT
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (state : CanonicalSpongeState U) :=
   BacktrackSequenceFamily trace state
+
+/-- Extensionality for `BacktrackSequence`: two sequences are equal once their three data fields
+(`stmt`, `inputState`, `outputState`) agree.  The remaining fields are `Prop`-valued, so they are
+equal by proof irrelevance. -/
+@[ext]
+lemma BacktrackSequence.ext
+    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {state : CanonicalSpongeState U}
+    {s₁ s₂ : BacktrackSequence trace state}
+    (hstmt : s₁.stmt = s₂.stmt)
+    (hin : s₁.inputState = s₂.inputState)
+    (hout : s₁.outputState = s₂.outputState) : s₁ = s₂ := by
+  cases s₁; cases s₂
+  simp only at hstmt hin hout
+  subst hstmt; subst hin; subst hout
+  rfl
 
 /-- Definition 5.4: index list payload attached to one sequence. -/
 abbrev BacktrackIndexList
