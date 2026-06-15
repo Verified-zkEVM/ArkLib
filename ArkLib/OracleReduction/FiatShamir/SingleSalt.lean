@@ -165,3 +165,14 @@ def Reduction.singleSaltFiatShamir {Salt : Type} [VCVCompatible Salt]
       StmtIn WitIn StmtOut WitOut where
   prover := R.prover.singleSaltFiatShamir sampleSalt
   verifier := R.verifier.singleSaltFiatShamir
+
+/-- The single-salt FS verifier run as a NARG `verify` (CO25 `V_std^f(x,·)`): build the
+single-message transcript from the FS proof and run `Verifier.singleSaltFiatShamir V`. Used by
+the DSFS Section 5 `Hyb₄`/basic-FS game so both games refer to the same verifier. -/
+def fsSaltedVerify {Salt : Type} [VCVCompatible Salt]
+    (V : Verifier oSpec StmtIn StmtOut pSpec) :
+    StmtIn → FSSaltedProof pSpec Salt →
+      OptionT (OracleComp (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) StmtOut :=
+  fun stmtIn proof =>
+    (Verifier.singleSaltFiatShamir (Salt := Salt) V).verify stmtIn
+      (Fin.cons proof (fun i => i.elim0))

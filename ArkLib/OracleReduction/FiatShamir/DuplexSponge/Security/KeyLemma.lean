@@ -164,7 +164,7 @@ def basicFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
     | some stmtAndProof => pure stmtAndProof
     -- De-aborted: a failed compiled prover (`D2SAlgo^f` lookahead/backtrack failure) yields a
     -- `default` statement+proof instead of aborting; the *same* `default` is used by the induced SR
-    -- prover (`hyb4_eq_coinSRExperiment`), and acceptance on it is part of the §5 `η★` budget.
+    -- prover (`hyb4_eq_coinNARGgame`), and acceptance on it is part of the §5 `η★` budget.
     | none => pure default
   let verifierComp :
       OracleComp (oSpec +
