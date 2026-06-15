@@ -269,6 +269,20 @@ def projectedCode [Fintype ι] (C : Set (ι → F)) (T : Finset ι) : Set (T →
 
 notation:60 C "|[" T "]" => projectedCode C T
 
+/-- Let `T` be a finite subset of `ι`. If every word in a collection lies in the projected code
+`C|[T]`, then so do all `F`-linear combinations of these. -/
+lemma projectedCode_linearCombination [Field F] (LC : LinearCode ι F) (T : Finset ι) {α : Type}
+    [Fintype α] (U : α → (ι → F)) (c : α → F)
+    (hU : ∀ j, projectedWord (U j) T ∈ projectedCode LC.carrier T) :
+    projectedWord (fun k => ∑ j, c j * U j k) T ∈ projectedCode LC.carrier T := by
+  obtain ⟨w, hw⟩ : ∃ w ∈ LC, ∀ t ∈ T, w t = ∑ j, c j * U j t := by
+    choose w hw using hU
+    use ∑ j, c j • w j
+    exact ⟨Submodule.sum_mem _ fun j _ => Submodule.smul_mem _ _ (hw j |>.1),
+      fun t ht => by simp [show ∀ j, U j t = w j t from
+        fun j => congr_fun (hw j |>.2) ⟨t, ht⟩]⟩
+  exact ⟨w, hw.1, funext fun t => by simpa using Eq.symm (hw.2 t t.2)⟩
+
 /-- A linear code is maximum distance separable (MDS) if its parameters meet the singleton bound. -/
 def IsMDS {ι : Type} [Fintype ι] [CommRing F] [DecidableEq F] (LC : LinearCode ι F) : Prop :=
   Code.dist LC.carrier = length LC - dim LC + 1

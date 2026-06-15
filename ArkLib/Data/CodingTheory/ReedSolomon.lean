@@ -37,19 +37,30 @@ variable {F : Type*} {ι : Type*} (domain : ι ↪ F)
 /-- The evaluation of a polynomial at a set of points specified by `domain : ι ↪ F`, as a linear
 map. -/
 def evalOnPoints [Semiring F] : F[X] →ₗ[F] (ι → F) where
-  toFun := fun p => fun x => p.eval (domain x)
-  map_add' := fun x y => by simp; congr
-  map_smul' := fun m x => by simp; congr
+  toFun p x := p.eval (domain x)
+  map_add'  := by aesop
+  map_smul' := by aesop
+
+/-- Proves that `evalOnPoints` preserves multiplication as well. -/
+def evalOnPointsRingHom [CommSemiring F] : F[X] →+* (ι → F) where
+  toFun p x := p.eval (domain x)
+  map_zero' := by aesop
+  map_one'  := by aesop
+  map_add'  := by aesop
+  map_mul'  := by aesop
+
+lemma evalOnPointsRingHom_eq_evalOnPoints [CommSemiring F] {p : F[X]} {domain : ι ↪ F} :
+  evalOnPointsRingHom domain p = evalOnPoints domain p := rfl
+
+@[simp]
+lemma evalOnPoints_mul [CommSemiring F] {domain : ι ↪ F} {p q : F[X]} :
+  evalOnPoints domain (p * q) = evalOnPoints domain p * evalOnPoints domain q := by
+  aesop (add unsafe (by rw [←evalOnPointsRingHom_eq_evalOnPoints]))
 
 /-- The Reed-Solomon code for polynomials of degree less than `deg` and evaluation points `domain`.
 -/
 noncomputable def code (deg : ℕ) [Semiring F] : Submodule F (ι → F) :=
   (Polynomial.degreeLT F deg).map (evalOnPoints domain)
-
-noncomputable def codewordToPoly
-  [Fintype ι] [Field F] [DecidableEq ι]
-  {deg : ℕ} {domain : ι ↪ F} (f : code domain deg) : F[X] :=
-  Lagrange.interpolate Finset.univ domain.toFun f
 
 /-- The generator matrix of the Reed-Solomon code of degree `deg` and evaluation points `domain`. -/
 def genMatrix (deg : ℕ) [Semiring F] : Matrix (Fin deg) ι F :=
@@ -90,6 +101,14 @@ variable {deg m n : ℕ} {α : Fin m → F}
 section
 
 variable [Semiring F] {p : F[X]}
+
+@[simp]
+lemma evalOnPoints_C {domain : ι ↪ F} {a : F} :
+  evalOnPoints domain (Polynomial.C a) = fun _ ↦ a := by simp [evalOnPoints]
+
+@[simp]
+lemma evalOnPoints_X {domain : ι ↪ F} :
+  evalOnPoints domain Polynomial.X = domain := by simp [evalOnPoints]
 
 lemma natDegree_lt_of_mem_degreeLT [NeZero deg] (h : p ∈ degreeLT F deg) : p.natDegree < deg := by
   by_cases p = 0
@@ -166,6 +185,8 @@ lemma mem_code_iff_exists_polynomial {n : ℕ} {α : ι ↪ F} {f : ι → F} :
             [Polynomial.degreeLT,
              Polynomial.degree_lt_iff_coeff_zero])
 
+
+
 lemma mem_code_iff_exists_polynomial_of_ne_zero {n : ℕ} [ne : NeZero n] {α : ι ↪ F} {f : ι → F} :
   f ∈ code α n ↔ ∃ p : Polynomial F, p.natDegree < n ∧ f = evalOnPoints α p := by
   rw [mem_code_iff_exists_polynomial]
@@ -218,7 +239,7 @@ lemma dim_eq_deg_of_le' {ι : Type*} [Fintype ι] {F : Type*} [Field F]
     rw [Fintype.card_eq_zero_iff] at hcard
     simp only [nonpos_iff_eq_zero] at h
     subst h
-    simp [ReedSolomon.code, dim]
+    simp [ReedSolomon.code, dim, Module.finrank_eq_zero_of_subsingleton]
   · rw [LinearCode.dim]
     let f := ReedSolomon.evalOnPoints (F := F) α
     let S := Polynomial.degreeLT F n
@@ -562,19 +583,23 @@ private noncomputable def interpolate : (ι → F) →ₗ[F] F[X] :=
   Lagrange.interpolate univ domain
 
 /-- The linear map that maps a Reed-Solomon codeword to its associated polynomial. -/
-noncomputable def decode : (ReedSolomon.code domain deg) →ₗ[F] F[X] :=
+noncomputable def toPolynomial : (ReedSolomon.code domain deg) →ₗ[F] F[X] :=
   domRestrict
     (interpolate (domain := domain))
     (ReedSolomon.code domain deg)
 
-/-- Reed-Solomon codewords are decoded into degree smaller than `deg` polynomials. -/
-lemma decoded_polynomial_lt_deg (c : ReedSolomon.code domain deg) :
-    decode c ∈ (degreeLT F deg : Submodule F F[X]) := by
+lemma toPolynomial_def {f : ReedSolomon.code domain deg} :
+  toPolynomial f = Lagrange.interpolate univ domain f := rfl
+
+/-- The polynomials corresponding to Reed-Solomon codewords are of degree smaller than `deg`. -/
+lemma toPolynomial_mem_lt_deg (c : ReedSolomon.code domain deg) :
+  toPolynomial c ∈ (degreeLT F deg : Submodule F F[X]) := by
   -- Unpack the witness polynomial for this codeword
   rcases c.property with ⟨p, hp_deg, hp_eval⟩
   -- Two cases depending on comparison between `deg` and `|ι|`
   by_cases hle : deg ≤ Fintype.card ι
-  · -- In this case, `p` has degree < |ι|, hence uniqueness of interpolation gives `decode c = p`.
+  · -- In this case, `p` has degree < |ι|,
+    -- hence uniqueness of interpolation gives `toPolynomial c = p`.
     have hp_lt_card : p.degree < (Fintype.card ι : WithBot ℕ) :=
       lt_of_lt_of_le (Polynomial.mem_degreeLT.mp hp_deg) (by exact_mod_cast hle)
     -- Interpolants of equal data are equal
@@ -592,35 +617,83 @@ lemma decoded_polynomial_lt_deg (c : ReedSolomon.code domain deg) :
       p = Lagrange.interpolate (Finset.univ : Finset ι) domain (fun i => p.eval (domain i)) :=
         Lagrange.eq_interpolate (s := Finset.univ) (v := domain) (f := p)
           (by intro x _ y _ hxy; exact domain.injective hxy) hp_lt_card
-    -- Chain equalities to get `decode c = p`
-    have hdecode_eq : decode c = p := by
+    -- Chain equalities to get `toPolynomial c = p`
+    have htoPolynomial_eq : toPolynomial c = p := by
       -- `hinterp_eq_vals` gives: interpolate _ c = interpolate _ (eval p ∘ domain)
       -- `hp_eq_interp` gives: p = interpolate _ (eval p ∘ domain)
-      -- Hence, decode c = p
+      -- Hence, toPolynomial c = p
       have : (interpolate (domain := domain)) c = p :=
         hinterp_eq_vals.trans hp_eq_interp.symm
-      simpa [decode, interpolate] using this
+      simpa [toPolynomial, interpolate] using this
     -- Conclude degree bound from membership of `p` in `degreeLT F deg`.
-    simpa [hdecode_eq, Polynomial.mem_degreeLT] using hp_deg
+    simpa [htoPolynomial_eq, Polynomial.mem_degreeLT] using hp_deg
   · -- Otherwise, `deg > |ι|`, and interpolation has degree < |ι| ≤ deg
-    have hdeg_lt_card : (decode c).degree < (Fintype.card ι : WithBot ℕ) := by
+    have hdeg_lt_card : (toPolynomial c).degree < (Fintype.card ι : WithBot ℕ) := by
       -- Degree bound for Lagrange interpolation over `univ`
       have := Lagrange.degree_interpolate_lt (s := Finset.univ) (v := domain)
         (r := (c : ι → F)) (by intro x _ y _ hxy; exact domain.injective hxy)
-      simpa [decode, interpolate] using this
+      simpa [toPolynomial, interpolate] using this
     have hcard_le_deg : (Fintype.card ι : WithBot ℕ) ≤ deg := by
       have hlt : Fintype.card ι < deg := Nat.lt_of_not_ge hle
       exact le_of_lt (by exact_mod_cast hlt)
-    have : (decode c).degree < deg := lt_of_lt_of_le hdeg_lt_card hcard_le_deg
+    have : (toPolynomial c).degree < deg := lt_of_lt_of_le hdeg_lt_card hcard_le_deg
     simpa [Polynomial.mem_degreeLT] using this
+
+@[simp]
+lemma toPolynomial_lt_deg (c : ReedSolomon.code domain deg) :
+  (toPolynomial c).degree < deg := by
+  have := toPolynomial_mem_lt_deg c
+  aesop
+    (add simp [degreeLT, Polynomial.degree_lt_iff_coeff_zero])
+
+@[simp]
+lemma toPolynomial_lt_min_deg_card (c : ReedSolomon.code domain deg) :
+  (toPolynomial c).degree < min deg (Fintype.card ι) := by
+  by_cases h0 : toPolynomial c = 0
+  · simp [h0]
+  · rw [←Polynomial.natDegree_lt_iff_degree_lt h0, lt_min_iff]
+    constructor
+    · aesop (add simp [Polynomial.natDegree_lt_iff_degree_lt])
+    · rw [Polynomial.natDegree_lt_iff_degree_lt h0, toPolynomial_def]
+      exact lt_of_lt_of_le (Lagrange.degree_interpolate_lt _
+        (by aesop (add safe cases Function.Embedding))) (by simp)
+
+lemma toPolynomial_eval_at_domain
+  {c : ReedSolomon.code domain deg} {i : ι} :
+  (toPolynomial c).eval (domain i) = c.1 i := by
+  aesop
+    (erase simp Lagrange.interpolate_apply)
+    (add simp [toPolynomial_def, Lagrange.eval_interpolate_at_node])
+    (add safe cases Function.Embedding)
+
+set_option linter.unusedDecidableInType false in -- false alarm
+lemma mem_code_iff_exists_polynomial' {n : ℕ} {α : ι ↪ F} {f : ι → F} :
+  f ∈ code α n ↔
+    ∃ p : Polynomial F, p.degree < min n (Fintype.card ι) ∧
+      f = evalOnPoints α p := by
+  constructor
+  · intro h
+    by_cases hd : n ≤ Fintype.card ι
+    · aesop
+        (add simp [mem_code_iff_exists_polynomial])
+    · exists (toPolynomial ⟨f, h⟩)
+      aesop (add simp [evalOnPoints, toPolynomial_eval_at_domain])
+  · by_cases hd : n ≤ Fintype.card ι
+    · aesop
+        (add simp [mem_code_iff_exists_polynomial])
+    · rintro ⟨p, hp₁, hp₂⟩
+      rw [mem_code_iff_exists_polynomial]
+      have : p.degree < n := lt_trans hp₁ (by simpa using hd)
+      aesop
 
 /-- The linear map that maps a Reed-Solomon codeword to its associated polynomial of degree less
 than `deg`. -/
-noncomputable def decodeLT : (ReedSolomon.code domain deg) →ₗ[F] (Polynomial.degreeLT F deg) :=
+noncomputable def toPolynomialLT :
+  (ReedSolomon.code domain deg) →ₗ[F] (Polynomial.degreeLT F deg) :=
   codRestrict
     (Polynomial.degreeLT F deg)
-    decode
-    (fun c => decoded_polynomial_lt_deg c)
+    toPolynomial
+    toPolynomial_mem_lt_deg
 
 open LinearMvExtension
 
@@ -649,11 +722,11 @@ noncomputable def smoothCode
     (domain : ι ↪ F) [Smooth domain]
   (m : ℕ) : Submodule F (ι → F) := ReedSolomon.code domain (2^m)
 
-/-- The linear map that maps smooth Reed-Solomon Code words to their decoded degreewise linear
+/-- The linear map that maps smooth Reed-Solomon Code words to their corresponding degreewise linear
 `m`-variate polynomial. -/
 noncomputable def mVdecode :
   (smoothCode domain m) →ₗ[F] MvPolynomial (Fin m) F :=
-    linearMvExtensionLMap.comp decodeLT
+    linearMvExtensionLMap.comp toPolynomialLT
 
 /-- Auxiliary function to assign values to the weight polynomial variables: index `0` ↦ `p.eval b`,
 index `j+1` ↦ `b j`. -/

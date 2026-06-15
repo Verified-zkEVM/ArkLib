@@ -119,17 +119,16 @@ variable {mapWitInv : StmtIn → WitOut → WitIn}
 
 
 @[simp]
-lemma support_liftM (m : Type _ → Type _) [Monad m] [HasEvalSet m]
+lemma support_liftM (m : Type _ → Type _) [Monad m]
+    [MonadLiftT m SetM] [LawfulMonadLiftT m SetM]
     {α} (mx : m α) : support (liftM mx : OptionT m α) = support mx := by
-  simp [support_def, HasEvalSet.toSet, OptionT.mapM']
-  sorry
+  simp
 
 @[simp]
-lemma support_mk (m : Type _ → Type _) [Monad m] [HasEvalSet m]
+lemma support_mk (m : Type _ → Type _) [Monad m] [MonadLiftT m SetM]
     {α} (mx : m (Option α)) :
     support (OptionT.mk mx) = {x | some x ∈ support mx} := by
-  simp [support_def, HasEvalSet.toSet, OptionT.mapM']
-  sorry
+  rfl
 
 /-- The knowledge state function for the `ReduceClaim` reduction. -/
 def knowledgeStateFunction (hRel : ∀ stmtIn witOut,

@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.OracleReduction.Security.Basic
-import ToMathlib.PFunctor.Lens.Basic
+import PolyFun.PFunctor.Lens.Basic
 
 /-!
   ## Lens between Input and Output Contexts of (Oracle) Reductions

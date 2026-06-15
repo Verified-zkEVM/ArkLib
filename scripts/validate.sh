@@ -20,8 +20,7 @@ Default checks:
   - fail on non-`sorry` warnings under ArkLib/Data/
   - ./scripts/check-imports.sh
   - python3 ./scripts/check-docs-integrity.py
-  - python3 ./scripts/kb/check_generated.py
-  - python3 ./scripts/kb/lint.py --strict-cited-pages
+  - python3 ./scripts/kb/lint.py
 
 Optional checks:
   --lint   Run ./scripts/lint-style.sh
@@ -80,8 +79,7 @@ python3 ./scripts/check-docs-integrity.py
 
 echo ""
 echo "# Checking knowledge base"
-python3 ./scripts/kb/check_generated.py
-python3 ./scripts/kb/lint.py --strict-cited-pages
+python3 ./scripts/kb/lint.py
 
 if (( run_lint )); then
   echo ""

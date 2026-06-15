@@ -213,7 +213,8 @@ theorem drop_update_of_lt (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) (i 
   simp only [Fin.cast, val_addNat, drop_apply, update, dite_eq_right_iff]
   intro h'
   subst h'
-  simp_all only [add_lt_iff_neg_right, not_lt_zero']
+  simp_all only [add_lt_iff_neg_right]
+  omega
 
 /-- `drop` commutes with `update` for indices at or after the drop point. -/
 @[simp]

@@ -88,11 +88,44 @@ def build_metadata_template(key: str, entry: dict[str, object]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def scaffold_paths(key: str) -> tuple[Path, Path]:
+    """Return the paper page and metadata paths for ``key``."""
+
+    return PAPERS_DIR / f"{key}.md", SOURCES_DIR / key / "metadata.yml"
+
+
+def scaffold_key(key: str, entry: dict[str, object], *, force: bool = False) -> list[Path]:
+    """Scaffold missing files for one key and return the paths written."""
+
+    paper_path, metadata_path = scaffold_paths(key)
+    written: list[Path] = []
+
+    if force or not paper_path.exists():
+        write_if_allowed(paper_path, build_paper_template(key, entry), force)
+        written.append(paper_path)
+    if force or not metadata_path.exists():
+        write_if_allowed(metadata_path, build_metadata_template(key, entry), force)
+        written.append(metadata_path)
+
+    return written
+
+
+def scaffold_missing(keys: list[str], entries: dict[str, dict[str, object]]) -> list[Path]:
+    """Scaffold missing paper pages or source metadata for ``keys``."""
+
+    written: list[Path] = []
+    for key in sorted(keys):
+        if key not in entries:
+            continue
+        written.extend(scaffold_key(key, entries[key]))
+    return written
+
+
 def parse_args() -> argparse.Namespace:
     """Parse CLI arguments."""
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("key", help="BibTeX key to scaffold")
+    parser.add_argument("key", nargs="?", help="BibTeX key to scaffold")
     parser.add_argument(
         "--references-json",
         type=Path,
@@ -110,6 +143,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Overwrite existing files instead of refusing to modify them",
     )
+    parser.add_argument(
+        "--all-missing",
+        action="store_true",
+        help="Scaffold missing paper/source files for every known BibTeX key",
+    )
     return parser.parse_args()
 
 
@@ -126,23 +164,34 @@ def main() -> int:
     """Entry point."""
 
     args = parse_args()
-    key = args.key.strip()
     entries = load_entries(args.references_json.resolve(), args.bib.resolve())
+
+    if args.all_missing:
+        written = scaffold_missing(sorted(entries), entries)
+        if written:
+            for path in written:
+                print(f"Scaffolded {path.relative_to(REPO_ROOT)}")
+        else:
+            print("No missing paper pages or source metadata to scaffold.")
+        return 0
+
+    if args.key is None:
+        raise SystemExit("Provide a BibTeX key or pass --all-missing.")
+
+    key = args.key.strip()
     if key not in entries:
         available = ", ".join(sorted(entries)[:10])
         raise SystemExit(f"Unknown BibTeX key {key!r}. Example known keys: {available}")
 
-    paper_path = PAPERS_DIR / f"{key}.md"
-    metadata_path = SOURCES_DIR / key / "metadata.yml"
-    entry = entries[key]
+    written = scaffold_key(key, entries[key], force=args.force)
 
-    write_if_allowed(paper_path, build_paper_template(key, entry), args.force)
-    write_if_allowed(metadata_path, build_metadata_template(key, entry), args.force)
-
-    rel_paper = paper_path.relative_to(REPO_ROOT)
-    rel_metadata = metadata_path.relative_to(REPO_ROOT)
-    print(f"Scaffolded {rel_paper}")
-    print(f"Scaffolded {rel_metadata}")
+    if written:
+        for path in written:
+            print(f"Scaffolded {path.relative_to(REPO_ROOT)}")
+    else:
+        paper_path, metadata_path = scaffold_paths(key)
+        print(f"Already present: {paper_path.relative_to(REPO_ROOT)}")
+        print(f"Already present: {metadata_path.relative_to(REPO_ROOT)}")
     return 0
 
 

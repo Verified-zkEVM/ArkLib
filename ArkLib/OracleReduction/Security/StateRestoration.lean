@@ -75,7 +75,10 @@ end OracleProver
 
 namespace Extractor
 
-/-- A straightline extractor for state-restoration. -/
+/-- A straightline extractor for state-restoration.
+
+The extractor is partial: failure to output a witness must count as extraction failure in the
+knowledge-soundness game whenever the prover convinces the verifier. -/
 def StateRestoration (oSpec : OracleSpec ι)
     (StmtIn WitIn WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) :=
   StmtIn → -- input statement
@@ -83,7 +86,7 @@ def StateRestoration (oSpec : OracleSpec ι)
   pSpec.FullTranscript → -- transcript
   QueryLog (oSpec + (srChallengeOracle StmtIn pSpec)) → -- prover's query log
   QueryLog oSpec → -- verifier's query log
-  OracleComp oSpec WitIn -- an oracle computation that outputs an input witness
+  OptionT (OracleComp oSpec) WitIn -- an oracle computation that outputs an input witness
 
 end Extractor
 
@@ -137,21 +140,32 @@ def soundness
     return (stmtIn, stmtOut))).run' (← init)
   ] ≤ srSoundnessError
 
-/-- State-restoration knowledge soundness (w/ straightline extractor). -/
+/-- State-restoration knowledge soundness (w/ straightline extractor).
+
+The state-restoration extractor returns an `OptionT` computation, so it may fail. We run this
+`OptionT` layer explicitly and keep the resulting `Option WitIn` in the game output. Thus,
+extractor failure counts as a bad event whenever the state-restoration prover convinces the
+verifier, matching the standard knowledge-soundness experiment where the extractor is required
+to produce a valid witness on accepting executions.
+-/
 def knowledgeSoundness
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (srKnowledgeSoundnessError : ENNReal) : Prop :=
   ∃ srExtractor : Extractor.StateRestoration oSpec StmtIn WitIn WitOut pSpec,
   ∀ srProver : Prover.StateRestoration.KnowledgeSoundness oSpec StmtIn WitOut pSpec,
-    Pr[ fun | ⟨stmtIn, witIn, some stmtOut, witOut⟩ => (stmtOut, witOut) ∈ relOut ∧ (stmtIn, witIn) ∉ relIn | _ => False
+    Pr[ fun
+      | ⟨stmtIn, extractedWitIn?, some stmtOut, witOut⟩ =>
+          (∀ extractedWitIn ∈ extractedWitIn?, (stmtIn, extractedWitIn) ∉ relIn) ∧
+            (stmtOut, witOut) ∈ relOut
+      | _ => False
     | do
       (simulateQ (impl.addLift srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
           <| (do
             let ⟨transcript, stmtIn, witOut⟩ ← srKnowledgeSoundnessGame srProver
             let stmtOut ← liftComp (verifier.run stmtIn transcript) _
-            let witIn ← srExtractor stmtIn witOut transcript default default
-            return (stmtIn, witIn, stmtOut, witOut))).run' (← init)
+            let extractedWitIn? ← liftM (srExtractor stmtIn witOut transcript default default).run
+            return (stmtIn, extractedWitIn?, stmtOut, witOut))).run' (← init)
     ] ≤ srKnowledgeSoundnessError
 
 end StateRestoration

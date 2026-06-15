@@ -70,8 +70,10 @@ python3 -m pip install leanblueprint
 
 - `./scripts/validate.sh` is the recommended convenience wrapper for routine local validation.
 - By default it runs `lake build`, `./scripts/check-imports.sh`, and
-  `python3 ./scripts/check-docs-integrity.py`.
+  `python3 ./scripts/check-docs-integrity.py`, plus knowledge-base linting from source inputs.
 - The lower-level scripts remain valid when you only want one specific check.
+- `docs/kb/_generated/**` freshness is handled by generated-files PRs from the main-branch KB
+  workflow, not by ordinary PR validation.
 - `scripts/build-project.sh` is now just a compile-only helper, not the convenience wrapper.
 - `scripts/README.md` is still useful as an inventory of helper scripts.
 - Only run docs and site builds when those surfaces are relevant; they are slower and more
@@ -85,6 +87,7 @@ You can still run the underlying pieces directly when debugging a specific issue
 lake build
 ./scripts/check-imports.sh
 python3 ./scripts/check-docs-integrity.py
+python3 ./scripts/kb/lint.py
 ```
 
 If you specifically need to regenerate `ArkLib.lean`, use:
@@ -109,6 +112,8 @@ python3 -m pip install leanblueprint
   checks that `ArkLib.lean` matches the tracked source tree.
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
   checks local markdown links and the `CLAUDE.md` symlink.
+- [`../../.github/workflows/kb-generated.yml`](../../.github/workflows/kb-generated.yml)
+  opens generated-files PRs for KB indexes and missing cited-paper stubs after pushes to `main`.
 
 ## Manual Timing Helper
 
