@@ -34,11 +34,6 @@ structure GSParamCert
   interpolation_capacity :
     numVars k params.interp.weightedDegreeBound >
       numConstraints n params.interp.multiplicity
-  interpolation_witness_exists :
-    ∀ {F : Type} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F],
-      (points : Array (F × F)) →
-      points.size = n →
-        ∃ Q, CompPoly.GuruswamiSudan.ValidInterpolationWitness points params.interp Q
   enough_agreement_bound :
     params.interp.weightedDegreeBound <
       params.interp.multiplicity * (n - e)
@@ -94,28 +89,5 @@ structure GSParamSelector where
         ∃ params,
           toCompPolySelector.choose k n e = some params ∧
             GSParamCert k n e params
-
-/-- Certificate for using bounded integer search as an ArkLib parameter selector. -/
-structure GSBoundedSearchCert (maxMultiplicity maxWeightedDegree : Nat) : Prop where
-  sound :
-    ∀ {k n e params},
-      searchParamsUpTo maxMultiplicity maxWeightedDegree k n e = some params →
-        GSParamCert k n e params
-  complete :
-    ∀ {k n e},
-      JohnsonSpecCondition k n e →
-        ∃ params,
-          searchParamsUpTo maxMultiplicity maxWeightedDegree k n e = some params ∧
-            GSParamCert k n e params
-
-/-- ArkLib parameter selector backed by bounded integer search and a proof certificate. -/
-def boundedSearchParamSelector
-    {maxMultiplicity maxWeightedDegree : Nat}
-    (cert : GSBoundedSearchCert maxMultiplicity maxWeightedDegree) :
-    GSParamSelector where
-  toCompPolySelector :=
-    { choose := searchParamsUpTo maxMultiplicity maxWeightedDegree }
-  sound := cert.sound
-  complete := cert.complete
 
 end GuruswamiSudan
