@@ -98,7 +98,7 @@ section SecurityGames
 /-- Simple query impl lift:
 Lift salted basic-FS verifier queries into the external `f_i` oracle plus D2S auxiliary
 sampling oracles used by `D2SAlgo^f`.  Salt is the pre-encoded type `{0,1}^{δ⋆}` (paper). -/
-private def liftFSSaltedQueriesToD2SChallengePlusUnit :
+def liftFSSaltedQueriesToD2SChallengePlusUnit :
     QueryImpl (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
       (OracleComp (oSpec +
         D2SChallengePlusUnitOracle (U := U) (fsChallengeOracle (StmtIn × Salt) pSpec))) :=
@@ -145,6 +145,28 @@ abbrev DSFSGameOutput :=
   StmtIn × StmtOut × DSSaltedProof (pSpec := pSpec) (U := U) δ ×
     QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)
 
+/-- CO25 Theorem 5.1. The basic-FS verifier `𝒱_std^f` as a standalone computation: derive the FS
+transcript from the salted proof — routing `fsChallengeOracle` queries into the wide
+`D2SChallengePlusUnitOracle` spec via `liftFSSaltedQueriesToD2SChallengePlusUnit`, lifting the
+`V.verify` call (which uses only `oSpec`) the same way — and return the optional output statement.
+Factored out of `basicFiatShamirGame` so the `hyb4_eq` log-strip treats it opaquely; it equals
+the FS-NARG verifier `fsSaltedVerify` routed through the same lift (the `hyb4_eq` verifier part). -/
+def basicFSVerifierComp (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (stmtAndProof : StmtIn × FSSaltedProof pSpec Salt) :
+    OracleComp
+      (oSpec + D2SChallengePlusUnitOracle (U := U) (fsChallengeOracle (StmtIn × Salt) pSpec))
+      (Option StmtOut) :=
+  -- `𝒱_std^f` IS the FS-NARG verifier `fsSaltedVerify`, with ALL its queries (the
+  -- `deriveTranscriptFS` challenge queries AND the `oSpec`-only `V.verify` queries) routed into the
+  -- wide spec by the single relabel `liftFSSaltedQueriesToD2SChallengePlusUnit`.  Defining it this
+  -- way (not routing `deriveTranscriptFS` and `V.verify` separately) makes the `hyb4_eq` verifier
+  -- collapse a one-liner: `simulateQ Hyb₄ (basicFSVerifierComp V p) = simulateQ ⟨Hyb₄ ∘ₛ liftFS⟩
+  -- (fsSaltedVerify …).run` by `simulateQ_compose` + infra lemma 2.
+  simulateQ
+    (liftFSSaltedQueriesToD2SChallengePlusUnit
+      (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    ((fsSaltedVerify (Salt := Salt) V stmtAndProof.1 stmtAndProof.2).run)
+
 /-- CO25 Theorem 5.1. Right-hand game for Lemma 5.1 (the basic-FS game).
 Runs `𝒱_std^f` against the compiled prover `D2SAlgo^f(𝒫̃~)`.
 - Prover outputs `(𝕩, (τ̌, messages))`
@@ -159,29 +181,16 @@ def basicFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
       (BasicFiatShamirGameOutput (oSpec := oSpec) (StmtIn := StmtIn)
         (StmtOut := StmtOut) (pSpec := pSpec) (Salt := Salt)) := do
   let ⟨stmtAndProof?, proveQueryLogRaw⟩ ← (simulateQ loggingOracle P).run
-  let ⟨stmtIn, proof⟩ ←
-    match stmtAndProof? with
-    | some stmtAndProof => pure stmtAndProof
-    -- De-aborted: a failed compiled prover (`D2SAlgo^f` lookahead/backtrack failure) yields a
-    -- `default` statement+proof instead of aborting; the *same* `default` is used by the induced SR
-    -- prover (`hyb4_eq_coinNARGgame`), and acceptance on it is part of the §5 `η★` budget.
-    | none => pure default
+  -- De-aborted via `getD default` bound to a *single, non-destructured* `let` (project with
+  -- `.1`/`.2` below) — crucially NOT `let ⟨stmtIn, proof⟩ := …`, since the pair-destructure floats
+  -- `getD`'s `some/none` match out and duplicates the verifier into both branches, blocking the
+  -- `hyb4_eq` log-strip.  A failed compiled prover yields `default` statement+proof; the same
+  -- `default` is used by the induced SR prover (`nargInducedProver`); acceptance on it is in `η★`.
+  let stmtAndProof := stmtAndProof?.getD default
   let verifierComp :
       OracleComp (oSpec +
         D2SChallengePlusUnitOracle (U := U) (fsChallengeOracle (StmtIn × Salt) pSpec))
-        (Option StmtOut) :=
-    (do
-      let π := proof.1
-      let messages : pSpec.Messages := proof.2 -- `π = (τ̂, (α₁, α₂, ...))`
-      -- `P` has access to oracles like `(Unit →ₒ U) + unifSpec` but `V` don't have,
-        -- so we have to lift the computation though `V` don't use them
-      let transcript ← OptionT.lift <|
-        simulateQ
-          (impl := liftFSSaltedQueriesToD2SChallengePlusUnit
-            (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-          (mx := messages.deriveTranscriptFS (oSpec := oSpec) (StmtIn := StmtIn × Salt) (stmtIn, π))
-      let b_opt ← OptionT.lift <| liftComp ((V.verify stmtIn transcript).run) _
-      b_opt.getM).run
+        (Option StmtOut) := basicFSVerifierComp V stmtAndProof
   let ⟨stmtOut, verifyQueryLogRaw⟩ ← (simulateQ loggingOracle verifierComp).run
   let proveQueryLog :=
     projectD2SChallengePlusUnitQueryLog
@@ -191,7 +200,7 @@ def basicFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
     projectD2SChallengePlusUnitQueryLog
       (oSpec := oSpec) (U := U)
       verifyQueryLogRaw
-  return ⟨stmtIn, ← stmtOut.getM, proof, proveQueryLog ++ verifyQueryLog⟩
+  return ⟨stmtAndProof.1, ← stmtOut.getM, stmtAndProof.2, proveQueryLog ++ verifyQueryLog⟩
 
 /-- CO25 Theorem 5.1. Left-hand game for Lemma 5.1 (the DSFS game).
 Runs `𝒱^{h,p}` against the malicious prover `𝒫̃~` (this is `Hyb_0`).
