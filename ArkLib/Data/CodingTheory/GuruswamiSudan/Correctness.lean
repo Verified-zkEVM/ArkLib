@@ -31,11 +31,6 @@ def RepresentsArkInput
 def GSSpecSet (k e : Nat) (ωs : Fin n ↪ F) (f : Fin n → F) : Set F[X] :=
   {p | p.degree < (k : WithBot Nat) ∧ Δ₀(f, p.eval ∘ ωs) ≤ e}
 
-/-- Output array represents exactly a semantic set of mathlib polynomials. -/
-def OutputRepresentsSet
-    (out : Array (CompPoly.CPolynomial F)) (spec : Set F[X]) : Prop :=
-  ∀ p, (∃ cp, cp ∈ out.toList ∧ cp.toPoly = p) ↔ p ∈ spec
-
 private lemma list_foldl_count_false {α : Type*}
     (xs : List α) (p : α → Bool) (acc : Nat) :
     xs.foldl (fun count x => if p x then count else count + 1) acc =
