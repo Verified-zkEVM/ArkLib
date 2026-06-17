@@ -122,3 +122,21 @@ end IsAccepting
 end ChallengeTree
 
 end ProtocolSpec
+
+namespace Extractor
+
+open ProtocolSpec
+
+/-- A **tree-based extractor**: a deterministic algorithm that, given the input statement and a tree
+  of transcripts (rooted at round `0`), outputs an input witness.
+
+  This is the type of extractor used by tree-based knowledge-extraction notions — plain `k`-special
+  soundness and coordinate-wise special soundness alike. The tree already contains all transcripts,
+  so the extractor is a plain function; it is the rewinding/forking extractor of the
+  knowledge-soundness reduction that actually *produces* the tree. Both notions share it, so it
+  lives here on the shared `ChallengeTree` rather than in either notion's file. -/
+def TreeBased (StmtIn WitIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
+    (arity : pSpec.ChallengeIdx → ℕ) : Type :=
+  StmtIn → ProtocolSpec.ChallengeTree pSpec arity 0 → WitIn
+
+end Extractor
