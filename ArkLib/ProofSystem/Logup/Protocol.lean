@@ -188,19 +188,19 @@ variable (F : Type) [Field F] [Fintype F] [DecidableEq F] (n M : ℕ)
 variable (params : ProtocolParams M)
 
 @[grind]
-private def outerChallengeXIdx : (outerPSpec F n params).ChallengeIdx :=
+def outerChallengeXIdx : (outerPSpec F n params).ChallengeIdx :=
   ⟨1, rfl⟩
 
 @[grind]
-private def outerChallengeBatchIdx : (outerPSpec F n params).ChallengeIdx :=
+def outerChallengeBatchIdx : (outerPSpec F n params).ChallengeIdx :=
   ⟨3, rfl⟩
 
 @[grind]
-private def outerMultiplicityMessageIdx : (outerPSpec F n params).MessageIdx :=
+def outerMultiplicityMessageIdx : (outerPSpec F n params).MessageIdx :=
   ⟨0, rfl⟩
 
 @[grind]
-private def outerHelpersMessageIdx : (outerPSpec F n params).MessageIdx :=
+def outerHelpersMessageIdx : (outerPSpec F n params).MessageIdx :=
   ⟨2, rfl⟩
 
 /-- The verifier for the outer LogUp phase. -/
@@ -213,7 +213,9 @@ noncomputable def outerVerifier :
   -- TODO: Replace the current table-scan rejection check with a faithful sampler
   -- for x ∉ { -t(u) : u ∈ H }.
     for u in (Finset.univ : Finset (Hypercube n)).toList do
-      let tAtU : F ← query (spec := [OStmtIn F n M]ₒ) ⟨InputOracleIdx.table, signPoint F u⟩
+      let tAtU : F ← OptionT.lift <| OracleComp.liftComp
+        (OracleComp.lift <| OracleSpec.query
+          (show [OStmtIn F n M]ₒ.Domain from ⟨InputOracleIdx.table, signPoint F u⟩)) _
       guard (x + tAtU ≠ 0)
     let batch : BatchingChallenge F n params.numGroups :=
       challenges (outerChallengeBatchIdx F n M params)

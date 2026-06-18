@@ -83,7 +83,7 @@ private theorem signedLinearFactor_degreeOf (a : F) (i j : Fin n) :
         _ ≤ 0 + 0 := by
           gcongr
           · exact (MvPolynomial.degreeOf_C (R := F) a i).le
-          · exact (MvPolynomial.degreeOf_X_of_ne (R := F) i j hij).le
+          · exact (MvPolynomial.degreeOf_X_of_ne (R := F) hij).le
         _ = 0 := by omega
     exact (MvPolynomial.degreeOf_add_le i _ _).trans (max_le hone hmul)
 
@@ -172,6 +172,45 @@ private theorem multilinearOraclePolynomial_eval (oracle : MultilinearOracle F n
       lagrangeOracleEval oracle r := by
   simp [multilinearOraclePolynomial, signedMLEPolynomial_eval, lagrangeOracleEval,
     evalOnHypercube]
+
+/-- On the signed hypercube the Lagrange kernel is a delta function. -/
+theorem lagrangeKernel_signPoint (hs : (-1 : F) ≠ 1) (v u : Hypercube n) :
+    lagrangeKernel F v (signPoint F u) = if v = u then 1 else 0 := by
+  have h2 : (2 : F) ≠ 0 := fun h => hs (by linear_combination -h)
+  unfold lagrangeKernel lagrangeKernelAtPoint
+  by_cases h : v = u
+  · subst h
+    rw [if_pos rfl]
+    have hfac : ∀ j, 1 + signPoint F v j * signPoint F v j = (2 : F) := by
+      intro j
+      show (1 : F) + bitToSign F (v j) * bitToSign F (v j) = 2
+      generalize v j = b
+      fin_cases b <;> norm_num [bitToSign]
+    rw [Finset.prod_congr rfl (fun j _ => hfac j), Finset.prod_const, Finset.card_univ,
+      Fintype.card_fin, inv_mul_cancel₀ (pow_ne_zero n h2)]
+  · rw [if_neg h]
+    obtain ⟨j, hj⟩ := Function.ne_iff.mp h
+    have hfac : 1 + signPoint F v j * signPoint F u j = 0 := by
+      show (1 : F) + bitToSign F (v j) * bitToSign F (u j) = 0
+      generalize hvj : v j = b at hj
+      generalize huj : u j = c at hj
+      fin_cases b <;> fin_cases c <;> simp_all [bitToSign]
+    rw [Finset.prod_eq_zero (Finset.mem_univ j) hfac, mul_zero]
+
+/-- The MLE of an oracle, evaluated at a signed-hypercube point, recovers the oracle's value. -/
+theorem lagrangeOracleEval_signPoint (hs : (-1 : F) ≠ 1)
+    (oracle : MultilinearOracle F n) (u : Hypercube n) :
+    lagrangeOracleEval oracle (signPoint F u) = evalOnHypercube oracle u := by
+  unfold lagrangeOracleEval
+  rw [Finset.sum_congr rfl (fun v _ => by rw [lagrangeKernel_signPoint F n hs v u])]
+  simp only [mul_ite, mul_one, mul_zero, Finset.sum_ite_eq', Finset.mem_univ, if_true,
+    evalOnHypercube]
+
+private theorem multilinearOraclePolynomial_eval_sign (hs : (-1 : F) ≠ 1)
+    (oracle : MultilinearOracle F n) (u : Hypercube n) :
+    MvPolynomial.eval (signPoint F u) (multilinearOraclePolynomial F n oracle)
+      = evalOnHypercube oracle u := by
+  rw [multilinearOraclePolynomial_eval, lagrangeOracleEval_signPoint F n hs]
 
 private noncomputable def inputOraclePolynomial
     (oStmt : ∀ i, OStmtAfterOuter F n M params i) (idx : InputOracleIdx M) :
@@ -410,6 +449,60 @@ theorem logupQPolynomial_degreeOf
           _ = M + 3 := by
             omega
       exact (MvPolynomial.degreeOf_add_le i _ _).trans (max_le hHelper hProduct)
+
+private theorem termPhiPolynomial_eval_sign (hs : (-1 : F) ≠ 1)
+    (stmt : StmtAfterOuter F n M params) (oStmt : ∀ i, OStmtAfterOuter F n M params i)
+    (i : TermIdx M) (u : Hypercube n) :
+    MvPolynomial.eval (signPoint F u) (termPhiPolynomial F n M params stmt oStmt i)
+      = termPhi (fun idx => oStmt (.input idx)) stmt.xChallenge i u := by
+  rcases h : termToInput i with _ | c <;>
+    simp only [termPhiPolynomial, termPhi, phi, h, inputOraclePolynomial, tableOracle,
+      columnOracle, map_add, MvPolynomial.eval_C, multilinearOraclePolynomial_eval_sign F n hs]
+
+private theorem termNumeratorPolynomial_eval_sign (hs : (-1 : F) ≠ 1)
+    (oStmt : ∀ i, OStmtAfterOuter F n M params i) (i : TermIdx M) (u : Hypercube n) :
+    MvPolynomial.eval (signPoint F u) (termNumeratorPolynomial F n M params oStmt i)
+      = termNumerator (oStmt .multiplicity) i u := by
+  unfold termNumeratorPolynomial termNumerator numerator
+  cases termToInput i with
+  | table => simp only [multiplicityPolynomial, multilinearOraclePolynomial_eval_sign F n hs]
+  | column c => simp
+
+private theorem domainIdentityPolynomial_eval_sign (hs : (-1 : F) ≠ 1)
+    (stmt : StmtAfterOuter F n M params) (oStmt : ∀ i, OStmtAfterOuter F n M params i)
+    (k : Fin params.numGroups) (u : Hypercube n) :
+    MvPolynomial.eval (signPoint F u) (domainIdentityPolynomial F n M params stmt oStmt k)
+      = domainIdentityTerm (canonicalGroups params) (fun idx => oStmt (.input idx))
+          (oStmt .multiplicity) (oStmt .helpers) stmt.xChallenge k u := by
+  rw [domainIdentityPolynomial, map_sub, map_mul, map_prod, domainIdentityTerm,
+    denominatorProduct, map_sum]
+  congr 1
+  · congr 1
+    · simp only [helperPolynomial]; exact multilinearOraclePolynomial_eval_sign F n hs _ u
+    · exact Finset.prod_congr rfl
+        (fun i _ => termPhiPolynomial_eval_sign F n M params hs stmt oStmt i u)
+  · refine Finset.sum_congr rfl (fun i _ => ?_)
+    rw [map_mul, map_prod, termNumeratorPolynomial_eval_sign F n M params hs]
+    congr 1
+    exact Finset.prod_congr rfl
+      (fun j _ => termPhiPolynomial_eval_sign F n M params hs stmt oStmt j u)
+
+/-- `logupQPolynomial` restricted to the signed hypercube agrees with `qOnHypercube`. -/
+theorem logupQPolynomial_eval_signPoint (hs : (-1 : F) ≠ 1)
+    (stmt : StmtAfterOuter F n M params) (oStmt : ∀ i, OStmtAfterOuter F n M params i)
+    (u : Hypercube n) :
+    MvPolynomial.eval (signPoint F u) (logupQPolynomial F n M params stmt oStmt)
+      = qOnHypercube (canonicalGroups params) (fun i => oStmt (.input i)) (oStmt .multiplicity)
+          (oStmt .helpers) stmt.xChallenge stmt.zChallenge stmt.batchingScalars u := by
+  rw [logupQPolynomial, qOnHypercube, map_sum]
+  refine Finset.sum_congr rfl (fun k _ => ?_)
+  rw [map_add, map_mul, map_mul, MvPolynomial.eval_C,
+    show MvPolynomial.eval (signPoint F u) (helperPolynomial F n M params oStmt k)
+        = evalOnHypercube ((oStmt .helpers) k) u from by
+      simp only [helperPolynomial]; exact multilinearOraclePolynomial_eval_sign F n hs _ u,
+    show MvPolynomial.eval (signPoint F u) (lagrangeKernelPolynomial F n stmt.zChallenge)
+        = lagrangeKernel F u stmt.zChallenge from by rw [lagrangeKernelPolynomial_eval]; rfl,
+    domainIdentityPolynomial_eval_sign F n M params hs]
 
 end SumcheckPolynomial
 

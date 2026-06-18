@@ -77,6 +77,13 @@ noncomputable def logupOuterSumcheckClaim
     qOnHypercube (canonicalGroups params) (fun i => oStmt (.input i)) (oStmt .multiplicity)
       (oStmt .helpers) stmt.xChallenge stmt.zChallenge stmt.batchingScalars u
 
+/-- Relation handed from the outer LogUp phase to the embedded sumcheck: the polynomial bridge
+agrees on the hypercube and the outer algebra produced a genuine zero-sum claim. -/
+def logupMidRelation :
+    Set ((StmtAfterOuter F n M params × (∀ i, OStmtAfterOuter F n M params i)) × Unit) :=
+  { x | logupSumcheckPolynomialRowsAgree F n M params x.1.1 x.1.2 ∧
+        logupOuterSumcheckClaim F n M params x.1.1 x.1.2 = 0 }
+
 /-- Semantic agreement between final oracle-query answers and the retained LogUp oracles. -/
 def logupPointEvaluationsAgree
     (r : Fin n → F)
