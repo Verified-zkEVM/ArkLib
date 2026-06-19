@@ -6,12 +6,8 @@ import ArkLib.ProofSystem.Logup.Sumcheck.Security
 /-!
 # LogUp Completeness
 
-Main completeness statement for the LogUp protocol.
-
-`logupOracleReduction` is `outerOracleReduction ++ₚ sumcheckOracleReduction`, so completeness is
-proved compositionally via `append_completeness`: the outer phase reaches `logupMidRelation` (with
-the pole-rejection error), the embedded sumcheck phase carries it to `outputRelation` with no extra
-error. The two halves are the remaining obligations.
+Completeness statements for Protocol 2 of Haböck's LogUp lookup argument (Cryptology ePrint
+Archive, Paper 2022/1530, <https://eprint.iacr.org/2022/1530>).
 -/
 
 open scoped NNReal

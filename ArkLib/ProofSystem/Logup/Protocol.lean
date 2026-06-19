@@ -4,7 +4,21 @@ import ArkLib.ProofSystem.Logup.Sumcheck.SumcheckBridge
 /-!
 # LogUp Protocol
 
-Outer and full protocol specs, prover, verifier, and oracle reductions for LogUp Protocol 2.
+Protocol specs, honest prover, verifier, and oracle reductions for Protocol 2 of Haböck's LogUp
+lookup argument (Cryptology ePrint Archive, Paper 2022/1530,
+<https://eprint.iacr.org/2022/1530>).
+
+The formalization is split into two ArkLib reductions.
+
+* The outer LogUp phase sends the honest multiplicity oracle `m`, samples the logarithmic-derivative
+  challenge `x`, sends helper oracles for the partial-sum groups, and samples the batching
+  challenge `(z, lambda)`. These challenges and retained oracles define the zero-sum claim that the
+  next phase checks.
+* The embedded phase reuses ArkLib's generic sumcheck reduction through the LogUp sumcheck layer in
+  `Logup/Sumcheck/`.
+
+The main exported objects are `outerOracleReduction`, `sumcheckOracleReduction`, and
+`logupOracleReduction`.
 -/
 
 namespace Logup

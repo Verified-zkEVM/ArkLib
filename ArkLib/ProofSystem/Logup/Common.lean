@@ -10,7 +10,16 @@ import ArkLib.OracleReduction.Basic
 /-!
 # LogUp Common Definitions
 
-Domain types, protocol statements, and the outer-round algebra shared across all LogUp modules.
+Shared vocabulary for the LogUp lookup argument formalization, following Protocol 2 of Haböck's
+LogUp paper (Cryptology ePrint Archive, Paper 2022/1530,
+<https://eprint.iacr.org/2022/1530>).
+
+The protocol checks that every value in the `M` lookup-column oracles occurs somewhere in the table
+oracle. Rows are indexed by the signed hypercube `H = {±1}^n`, represented here as bit vectors and
+embedded into a field by `signPoint`. The table oracle and lookup-column oracles are stored in
+Lagrange form, so a query at `z : Fin n → F` is the inner product against the kernel `L_H(., z)`.
+
+This file collects the common definitions and algebraic tools reused by the other LogUp files.
 -/
 
 namespace Logup

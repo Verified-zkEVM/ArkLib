@@ -4,8 +4,21 @@ import ArkLib.ProofSystem.Sumcheck.Spec.General
 /-!
 # LogUp Sumcheck Bridge
 
-Packages `logupQPolynomial` from `SumcheckPolynomial.lean` into ArkLib's Sumcheck interface
-types, then connects it to the generic Sumcheck relation, verifier, reduction, and context lift.
+Bridge from the LogUp outer transcript to ArkLib's generic sumcheck reduction, for Protocol 2 of
+Haböck's LogUp paper (Cryptology ePrint Archive, Paper 2022/1530,
+<https://eprint.iacr.org/2022/1530>).
+
+The outer phase produces an `x` challenge, batching data `(z, lambda)`, the original input oracles,
+the honest multiplicity oracle, and helper oracles. From these data, `SumcheckPolynomial.lean`
+constructs the LogUp polynomial `Q`. This file packages `Q` as the single bounded-degree oracle
+statement expected by `Sumcheck.Spec`, states the zero-sum relation that starts the embedded
+sumcheck, and defines the context lens/reduction that runs generic sumcheck after the outer phase.
+
+The main bridge predicates are:
+
+* `logupMidRelation`, the handoff relation from outer LogUp into sumcheck;
+* `logupSumcheckRelationInput`, the corresponding generic sumcheck initial relation; and
+* `logupOutputRelationFromSumcheck`, the final LogUp check after sumcheck.
 -/
 
 namespace Logup

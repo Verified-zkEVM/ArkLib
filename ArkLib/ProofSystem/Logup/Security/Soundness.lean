@@ -4,7 +4,8 @@ import ArkLib.ProofSystem.Logup.Protocol
 /-!
 # LogUp Soundness
 
-Main soundness statement for Protocol 2 of `paper.txt`.
+Soundness target for Protocol 2 of Haböck's LogUp lookup argument (Cryptology ePrint Archive,
+Paper 2022/1530, <https://eprint.iacr.org/2022/1530>).
 -/
 
 open scoped NNReal

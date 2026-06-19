@@ -4,9 +4,14 @@ import ArkLib.ProofSystem.Logup.Common
 /-!
 # LogUp Sumcheck Polynomial
 
-Constructs `logupQPolynomial`, an `MvPolynomial (Fin n) F` whose restriction to the signed
-hypercube agrees with `qOnHypercube` from `Common.lean`, and proves its individual degree is
-at most `M + 3`. Depends only on `Common.lean` and Mathlib — no ArkLib Sumcheck types.
+Construction of the concrete polynomial used by LogUp's embedded sumcheck, following Protocol 2 of
+Haböck's LogUp paper (Cryptology ePrint Archive, Paper 2022/1530,
+<https://eprint.iacr.org/2022/1530>).
+
+The outer LogUp algebra defines a row-wise expression `qOnHypercube`. This file builds its
+multilinear-extension-style polynomial `logupQPolynomial : MvPolynomial (Fin n) F`, proves that it
+agrees with `qOnHypercube` on the signed hypercube, and proves the individual-degree bound
+`degreeOf ≤ M + 3` needed by the generic sumcheck.
 -/
 
 namespace Logup

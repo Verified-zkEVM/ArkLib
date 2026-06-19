@@ -4,10 +4,17 @@ import ArkLib.ProofSystem.Sumcheck.Spec.General
 /-!
 # Full Oracle Sum-check Completeness (LogUp-local)
 
-Perfect completeness for the full oracle sum-check reduction, which LogUp's embedded phase needs but
-`General.lean` does not provide (it has the full *non-oracle* and single-round oracle versions only).
+LogUp-local completeness bridge for the full oracle sumcheck reduction used by Protocol 2 of
+Haböck's LogUp paper (Cryptology ePrint Archive, Paper 2022/1530,
+<https://eprint.iacr.org/2022/1530>).
 
-Placeholder: currently a `sorry`, to be replaced by the proved theorem and ideally upstreamed.
+`ArkLib.ProofSystem.Sumcheck.Spec.General` provides the full non-oracle and single-round oracle
+perfect-completeness theorems. LogUp needs the full composed oracle version for its embedded
+sumcheck phase, so this file states the composed theorem by chaining the single-round result with
+`OracleReduction.seqCompose_perfectCompleteness`.
+
+This file is intentionally LogUp-local for now; the theorem is a candidate for upstreaming into the
+generic sumcheck development.
 -/
 
 namespace Sumcheck
