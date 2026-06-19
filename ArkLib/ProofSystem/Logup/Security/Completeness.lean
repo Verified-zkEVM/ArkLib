@@ -22,6 +22,7 @@ section OuterAlgebra
 
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F] {n M K : ℕ}
 
+omit [Fintype F] [DecidableEq F] in
 /-- For honest helpers (`hₖ = ∑ᵢ mᵢ/φᵢ`) the domain-identity term vanishes pointwise, away from
 poles (`φᵢ ≠ 0`). -/
 theorem domainIdentityTerm_eq_zero (groups : PartialSumGroups M K)
@@ -37,11 +38,12 @@ theorem domainIdentityTerm_eq_zero (groups : PartialSumGroups M K)
 
 /-- The honest log-derivative identity (heart of LogUp): with the normalized multiplicity, the table
 side equals the column side. Needs every column value to occur in the table (`hcols`) and the table
-counts to be nonzero in `F` (`hchar`, from `charLarge`). Holds even at poles, since `x/0 = 0`. -/
+counts used by nonzero lookup multiplicities to be nonzero in `F` (`hchar`, from `charLarge`).
+Holds even at poles, since `x/0 = 0`. -/
 theorem honest_multiplicity_identity (oStmt : ∀ i, OStmtIn F n M i) (x : F)
     (hcols : ∀ j : Fin M, ∀ u : Hypercube n, ∃ v : Hypercube n,
       evalOnHypercube (columnOracle oStmt j) u = evalOnHypercube (tableOracle oStmt) v)
-    (hchar : ∀ a : F, tableMultiplicityCount oStmt a ≠ 0 →
+    (hchar : ∀ a : F, lookupMultiplicityCount oStmt a ≠ 0 →
       (tableMultiplicityCount oStmt a : F) ≠ 0) :
     (∑ u : Hypercube n,
         evalOnHypercube (honestMultiplicity oStmt) u / (x + evalOnHypercube (tableOracle oStmt) u))
@@ -66,8 +68,10 @@ theorem honest_multiplicity_identity (oStmt : ∀ i, OStmtIn F n M i) (x : F)
               fun w => evalOnHypercube (tableOracle oStmt) w = a by simp [hav]))
       simp [hT, hL]
     · rw [nsmul_eq_mul, nsmul_eq_mul]
-      have hTF := hchar a hT
-      field_simp
+      by_cases hL : lookupMultiplicityCount oStmt a = 0
+      · simp [hL]
+      · have hTF := hchar a hL
+        field_simp
   -- group the table side by table value
   have hLHS :
       (∑ u : Hypercube n, evalOnHypercube (honestMultiplicity oStmt) u /
@@ -114,6 +118,7 @@ theorem honest_multiplicity_identity (oStmt : ∀ i, OStmtIn F n M i) (x : F)
   rw [hLHS, hRHS]
   exact Finset.sum_congr rfl (fun a _ => key a)
 
+omit [Fintype F] [DecidableEq F] in
 /-- The canonical groups partition the term indices `{0,…,M}`, so summing group-by-group equals
 summing over all terms. -/
 theorem sum_canonicalGroups (params : ProtocolParams M) (g : TermIdx M → F) :
@@ -148,7 +153,7 @@ theorem logupOuterClaim_zero (params : ProtocolParams M) (oStmtIn : ∀ i, OStmt
     (x : F) (z : Fin n → F) (lam : Fin params.numGroups → F)
     (hcols : ∀ j : Fin M, ∀ u : Hypercube n, ∃ v : Hypercube n,
       evalOnHypercube (columnOracle oStmtIn j) u = evalOnHypercube (tableOracle oStmtIn) v)
-    (hchar : ∀ a : F, tableMultiplicityCount oStmtIn a ≠ 0 →
+    (hchar : ∀ a : F, lookupMultiplicityCount oStmtIn a ≠ 0 →
       (tableMultiplicityCount oStmtIn a : F) ≠ 0)
     (hpoles : ∀ (i : TermIdx M) (u : Hypercube n), termPhi oStmtIn x i u ≠ 0) :
     (∑ u : Hypercube n,
@@ -203,6 +208,7 @@ theorem logupOuterClaim_zero (params : ProtocolParams M) (oStmtIn : ∀ i, OStmt
   rw [← Finset.sum_add_distrib]
   exact Finset.sum_eq_zero (fun u _ => by ring)
 
+omit [Fintype F] [DecidableEq F] in
 /-- The polynomial `Q` agrees with `qOnHypercube` on the signed hypercube — a structural fact (no
 honesty needed), from `logupQPolynomial_eval_signPoint`. -/
 theorem logupRowsAgree (params : ProtocolParams M) (hs : (-1 : F) ≠ 1)
@@ -229,6 +235,7 @@ theorem pole_card_le (oStmt : ∀ i, OStmtIn F n M i) :
     _ ≤ Fintype.card (Hypercube n) := by
         rw [← Finset.card_univ]; exact Finset.card_image_le
 
+omit [Fintype F] [DecidableEq F] in
 /-- A `LagrangeOracle` query at a signed-hypercube point returns the oracle's value there. -/
 theorem lagrange_answer_signPoint (hs : (-1 : F) ≠ 1) (oracle : MultilinearOracle F n)
     (a : Hypercube n) :
@@ -246,6 +253,10 @@ variable (n M : ℕ)
 variable (params : ProtocolParams M)
 variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
+local instance instOracleCompLawfulMonad' {τ : Type} (spec : OracleSpec τ) :
+    LawfulMonad (OracleComp spec) :=
+  OracleComp.instLawfulMonad spec
+
 /-- Completeness error from the current `x`-sampling model: the verifier samples `x` from all of `F`
 and rejects table poles, so completeness carries this bad-`x` probability. It would be `0` if `x`
 were sampled from the pole complement, as the LogUp protocol intends. -/
@@ -254,7 +265,7 @@ noncomputable def logupCompletenessError (F : Type) [Fintype F] (n : ℕ) : ℝ�
 
 /-- `simulateQ` distributes over a `forIn` loop in `OptionT (OracleComp spec)`: the OptionT
 sibling of `simulateQ_list_forIn`, built on `simulateQ_optionT_bind`. -/
-theorem simulateQ_optionT_list_forIn {ι : Type} {spec : OracleSpec ι}
+private theorem simulateQ_optionT_list_forIn {ι : Type} {spec : OracleSpec ι}
     {nn : Type → Type*} [Monad nn] [LawfulMonad nn] (impl : QueryImpl spec nn)
     {α β : Type} (xs : List α) (init : β)
     (f : α → β → OptionT (OracleComp spec) (ForInStep β)) :
@@ -270,18 +281,8 @@ theorem simulateQ_optionT_list_forIn {ι : Type} {spec : OracleSpec ι}
     | done b => rfl
     | yield b => exact ih b
 
-/-- `simulateQ` distributes over `OptionT.map` (the `<$>` form), the OptionT sibling of
-`simulateQ_map`. -/
-theorem simulateQ_optionT_map {ι : Type} {spec : OracleSpec ι}
-    {nn : Type → Type*} [Monad nn] [LawfulMonad nn] (impl : QueryImpl spec nn)
-    {α β : Type} (f : α → β) (x : OptionT (OracleComp spec) α) :
-    simulateQ impl (f <$> x : OptionT (OracleComp spec) β)
-      = (f <$> simulateQ impl x : OptionT nn β) := by
-  rw [map_eq_pure_bind, simulateQ_optionT_bind, map_eq_pure_bind]
-  rfl
-
 /-- `simulateQ` leaves a `guard` unchanged: `guard` has no queries, so its simulation is itself. -/
-theorem simulateQ_optionT_guard {ι : Type} {spec : OracleSpec ι}
+private theorem simulateQ_optionT_guard {ι : Type} {spec : OracleSpec ι}
     {nn : Type → Type*} [Monad nn] [LawfulMonad nn] (impl : QueryImpl spec nn)
     (P : Prop) [Decidable P] :
     simulateQ impl (guard P : OptionT (OracleComp spec) Unit) = (guard P : OptionT nn Unit) := by
@@ -291,43 +292,62 @@ theorem simulateQ_optionT_guard {ι : Type} {spec : OracleSpec ι}
   · rw [if_pos hP, if_pos hP]; rfl
   · rw [if_neg hP, if_neg hP]; rfl
 
-/-- Resolve `simulateQ` over a `bind`-then-`guard` loop step in `OptionT (OracleComp spec)`:
-`simulateQ` passes through the bind and leaves the guard on the simulated value. -/
-theorem simulateQ_optionT_bind_guard {ι : Type} {spec : OracleSpec ι}
-    {nn : Type → Type*} [Monad nn] [LawfulMonad nn] (impl : QueryImpl spec nn)
-    {γ : Type} (mx : OptionT (OracleComp spec) γ) (Pf : γ → Prop) [DecidablePred Pf] :
-    simulateQ impl ((mx >>=
-        fun t => (fun _ => ForInStep.yield PUnit.unit) <$> guard (Pf t)) :
-        OptionT (OracleComp spec) (ForInStep PUnit))
-      = ((simulateQ impl mx >>=
-        fun t => (fun _ => ForInStep.yield PUnit.unit) <$> guard (Pf t)) :
-        OptionT nn (ForInStep PUnit)) := by
-  rw [simulateQ_optionT_bind]
-  congr 1
-  funext t
-  rw [simulateQ_optionT_map, simulateQ_optionT_guard]
-
-/-- A guarded `forIn` loop in `OptionT (OracleComp spec)` only lands in `support` (succeeds) when
-every guard passed. The key fact behind the verifier's pole-rejection check. -/
-theorem guarded_forIn_succeeds {ι : Type} {spec : OracleSpec ι}
-    {β : Type} (L : List β) (P : β → Prop) [DecidablePred P] (r : PUnit) :
-    r ∈ support (forIn L PUnit.unit
-        (fun u (_ : PUnit) => (fun _ => ForInStep.yield PUnit.unit) <$>
-          (guard (P u) : OptionT (OracleComp spec) PUnit))) →
-      ∀ u ∈ L, P u := by
+/-- A list of abort-on-`P` checks can only return successfully when every check avoided `P`. -/
+private theorem guarded_foldlM_succeeds {ι : Type} {spec : OracleSpec ι}
+    {β γ : Type} (L : List β) (P : β → Prop) [DecidablePred P] (r : γ) :
+    r ∈ support (List.foldlM (m := OptionT (OracleComp spec))
+        (fun (_ : γ) (u : β) =>
+          if P u then failure else pure r) r L) →
+      ∀ u ∈ L, ¬ P u := by
   induction L with
   | nil => intro _ u hu; simp at hu
   | cons a L' ih =>
-    intro hr u hu
-    rw [List.forIn_cons] at hr
-    by_cases hPa : P a
-    · simp only [guard, hPa, if_true, map_pure, pure_bind] at hr
-      rcases List.mem_cons.mp hu with rfl | hu'
-      · exact hPa
-      · exact ih hr u hu'
-    · simp [guard, hPa] at hr
+      intro h u hu
+      rw [List.foldlM_cons] at h
+      by_cases hPa : P a
+      · simp [hPa] at h
+      · simp only [hPa, ↓reduceIte, pure_bind, OptionT.mem_support_iff] at h
+        rcases List.mem_cons.mp hu with rfl | hu'
+        · exact hPa
+        · exact ih h u hu'
+
+private theorem support_bind_exists {m : Type → Type*} [Monad m] [LawfulMonad m]
+    [MonadLiftT m SetM] [LawfulMonadLiftT m SetM]
+    {α β : Type} (x : m α) (f : α → m β) {y : β}
+    (hy : y ∈ support (x >>= f)) : ∃ a, a ∈ support x ∧ y ∈ support (f a) := by
+  simpa [mem_support_bind_iff] using hy
+
+private theorem support_pure_eq {m : Type → Type*} [Monad m] [LawfulMonad m]
+    [MonadLiftT m SetM] [LawfulMonadLiftT m SetM]
+    {α : Type} {x y : α} (h : y ∈ support (pure x : m α)) : y = x := by
+  simpa [mem_support_pure_iff] using h
+
+private theorem mem_support_of_mem_support_liftComp {ι τ α : Type} {spec : OracleSpec ι}
+    {superSpec : OracleSpec τ} [MonadLiftT (OracleQuery spec) (OracleQuery superSpec)]
+    (oa : OracleComp spec α) (x : α) :
+    x ∈ support (oa.liftComp superSpec) → x ∈ support oa := by
+  intro hx
+  induction oa using OracleComp.inductionOn generalizing x with
+  | pure y =>
+      simpa using hx
+  | query_bind q oa ih =>
+      rw [OracleComp.liftComp_bind, mem_support_bind_iff] at hx
+      rw [mem_support_bind_iff]
+      obtain ⟨u, _hu, hx⟩ := hx
+      exact ⟨u, OracleComp.mem_support_query q u, ih u x hx⟩
+
+private theorem support_simulateQ_run_fst_subset {ι : Type} {spec : OracleSpec ι}
+    {m : Type → Type*} [Monad m] [LawfulMonad m] [MonadLiftT m SetM]
+    [LawfulMonadLiftT m SetM] {σ α : Type}
+    (impl : QueryImpl spec (StateT σ m)) {oa : OracleComp spec α} {s s' : σ} {y : α}
+    (h : (y, s') ∈ support ((simulateQ impl oa).run s)) :
+    y ∈ support oa :=
+  OracleComp.support_simulateQ_run'_subset impl oa s (by
+    rw [StateT.run'_eq, support_map, Set.mem_image]
+    exact ⟨(y, s'), h, rfl⟩)
 
 open OracleComp OracleSpec in
+omit [SampleableType F] in
 /-- Simulating the outer verifier's table queries against the honest oracles `oStmt` turns the
 oracle-accessing pole-rejection scan into a query-free `evalOnHypercube` loop. This is the LogUp
 analog of `Sumcheck.Spec.SingleRound.oracleVerifier_eq_verifier`: it does the `simOracle2` peel
@@ -345,32 +365,11 @@ theorem outerVerify_simulateQ_eq (stmt : StmtIn F n M) (oStmt : ∀ i, OStmtIn F
             challenges (outerChallengeBatchIdx F n M params)
           pure { xChallenge := x, zChallenge := batch.1, batchingScalars := batch.2 }
         : OptionT (OracleComp oSpec) (StmtAfterOuter F n M params)) := by
-  classical
-  -- Per iteration, simulating the lifted table query against `oStmt` returns the honest table
-  -- value. Proved standalone (the multi-lemma `SubSpec`/`simOracle0` routing chains here but not
-  -- under the `forIn` binder); as a single rewrite rule it then fires under the binder below.
-  have hquery : ∀ a : Hypercube n,
-      simulateQ (QueryImpl.liftTarget (OracleComp oSpec) (QueryImpl.id oSpec) +
-          QueryImpl.liftTarget (OracleComp oSpec)
-            ((OracleInterface.simOracle0 (OStmtIn F n M) oStmt).add
-              (OracleInterface.simOracle0 (outerPSpec F n params).Message messages)))
-          (liftM (OracleSpec.query (spec := [OStmtIn F n M]ₒ)
-            ⟨InputOracleIdx.table, signPoint F a⟩))
-        = (pure (evalOnHypercube (tableOracle oStmt) a) : OracleComp oSpec F) := by
-    intro a
-    rw [← lagrange_answer_signPoint Fact.out (tableOracle oStmt) a]
-    rfl
   simp only [outerVerifier, OracleInterface.simOracle2, QueryImpl.addLift_def,
-    simulateQ_optionT_bind, simulateQ_optionT_list_forIn, simulateQ_optionT_map,
-    simulateQ_optionT_guard, simulateQ_optionT_lift, simulateQ_pure, simulateQ_map,
-    QueryImpl.add_apply_inr, QueryImpl.add_apply_inl, QueryImpl.liftTarget_apply,
-    QueryImpl.add, OracleInterface.simOracle0,
-    OracleComp.liftComp_bind, OracleComp.liftComp_pure, OracleComp.liftComp_query,
-    OracleComp.liftComp_map, OracleQuery.cont_query, OracleQuery.input_query,
-    OptionT.lift, OptionT.mk, id_map, id_eq, Function.comp,
-    bind_pure_comp, map_pure, pure_bind, bind_assoc]
-  -- Reduce the table query per element: discharge the `forIn` binder via `congr`/`funext`, then
-  -- `rw [hquery]` (which works outside binders where `simp` could not match it).
+    simulateQ_optionT_bind, simulateQ_optionT_list_forIn,
+    simulateQ_optionT_guard, OracleComp.liftComp_query, OracleQuery.cont_query, OracleQuery.input_query,
+    OptionT.lift, OptionT.mk, id_map]
+  -- Reduce the table query under the `forIn` binder.
   congr 1
   congr 1
   funext a b
@@ -404,12 +403,8 @@ theorem logup_outer_completeness [Inhabited F] :
     Prover.processRound, outerPSpec]
   repeat' split <;> rename_i hd <;> first | exact absurd hd (by decide) | skip
   simp only [ProtocolSpec.getChallenge, liftM, monadLift, MonadLift.monadLift,
-    MonadLiftT.monadLift, OracleComp.liftComp_pure, OracleComp.liftComp_query,
-    bind_pure_comp, map_pure, pure_bind, bind_assoc, Functor.map_map, Function.comp,
-    QueryImpl.addLift_def, QueryImpl.simulateQ_add_liftComp_right,
-    QueryImpl.simulateQ_add_liftComp_left, simulateQ_query, simulateQ_pure, simulateQ_bind,
-    simulateQ_map, StateT.run_bind, StateT.run_pure, StateT.run_map,
-    ProtocolSpec.challengeQueryImpl]
+    MonadLiftT.monadLift, OracleComp.liftComp_pure, bind_pure_comp, map_pure,
+    QueryImpl.addLift_def]
   rw [ge_iff_le, probEvent_ext (q := fun _ => True) ?allSuccess, probEvent_True_eq_sub]
   · -- pole-probability bound `Pr[⊥] ≤ |H|/|F|`
     refine tsub_le_tsub_left ?_ 1
@@ -461,6 +456,8 @@ theorem logup_outer_completeness [Inhabited F] :
     obtain ⟨rfl, rfl⟩ := Prod.mk.inj ha3eq
     obtain ⟨rfl, rfl⟩ := Prod.mk.inj hpval_eq
     obtain ⟨rfl, rfl⟩ := Prod.mk.inj hpeq
+    change F at xval
+    change BatchingChallenge F n params.numGroups at zlam
     -- peel the verifier (match on `some pval` resolves; then its bind)
     simp only at hver
     erw [simulateQ_bind, StateT.run_bind] at hver
@@ -470,16 +467,176 @@ theorem logup_outer_completeness [Inhabited F] :
     simp only [OracleVerifier.toVerifier] at hverify
     rw [outerVerify_simulateQ_eq] at hverify
     -- The verifier accepted: `vstmt = some _` (the `none` branch of `hvout` yields `none ≠ some`).
-    rcases vstmt with _ | ⟨vStmtOut, vOracles⟩
+    rcases vstmt with _ | vAccepted
     · simp only [simulateQ_pure, StateT.run_pure, support_pure, Set.mem_singleton_iff] at hvout
       simp at hvout
-    · -- The honest output: `out` pairs the prover view with the verifier's accepted statement.
-      dsimp only [Option.getM] at hvout
-      simp only [simulateQ_map, simulateQ_pure, StateT.run_map, StateT.run_pure,
-        support_map, support_pure, Set.mem_image, Set.mem_singleton_iff, pure_bind,
-        Functor.map_map, Function.comp, map_pure] at hvout
-      skip
-    
+    · rcases vAccepted with _ | vAccepted
+      · simp [Option.getM] at hvout
+        have hvoutBase := support_simulateQ_run_fst_subset
+          (impl + QueryImpl.liftTarget (StateT σ ProbComp)
+            (ProtocolSpec.challengeQueryImpl (pSpec := outerPSpec F n params))) hvout
+        letI :
+            (i : (outerPSpec F n params).ChallengeIdx) →
+              OracleInterface ((outerPSpec F n params).Challenge i) :=
+          ProtocolSpec.challengeOracleInterface
+        letI : LawfulMonad (OracleComp (oSpec + [(outerPSpec F n params).Challenge]ₒ)) :=
+          OracleComp.instLawfulMonad _
+        change some out ∈ support
+          ((_ <$> (failure :
+            OptionT (OracleComp (oSpec + [(outerPSpec F n params).Challenge]ₒ)) _)).run) at hvoutBase
+        rw [OptionT.run_map, OptionT.run_failure] at hvoutBase
+        rw [support_map, support_pure, Set.mem_image] at hvoutBase
+        obtain ⟨a, ha, hmap⟩ := hvoutBase
+        rw [Set.mem_singleton_iff] at ha
+        subst a
+        simp at hmap
+      · -- The honest output: `out` pairs the prover view with the verifier's accepted statement.
+        rw [show (some (some vAccepted), sv).1 = some (some vAccepted) by rfl] at hvout
+        simp only [Option.getM_some, map_pure] at hvout
+        obtain ⟨rfl, rfl⟩ := hvout
+        simp at hverify
+        have hverifyBase := support_simulateQ_run_fst_subset
+          (impl + QueryImpl.liftTarget (StateT σ ProbComp)
+            (ProtocolSpec.challengeQueryImpl (pSpec := outerPSpec F n params))) hverify
+        letI :
+            (i : (outerPSpec F n params).ChallengeIdx) →
+              OracleInterface ((outerPSpec F n params).Challenge i) :=
+          ProtocolSpec.challengeOracleInterface
+        letI : LawfulMonad (OracleComp (oSpec + [(outerPSpec F n params).Challenge]ₒ)) :=
+          OracleComp.instLawfulMonad _
+        dsimp only [OptionT.mk] at hverifyBase
+        rw [@map_eq_pure_bind _ _ _ (OracleComp.instMonad _) (OracleComp.instLawfulMonad _) _ _]
+          at hverifyBase
+        erw [@simulateQ_bind _ _ _ _ _ (OracleComp.instMonad _)
+          _ (OracleComp.instLawfulMonad _) _ _] at hverifyBase
+        simp only [simulateQ_pure] at hverifyBase
+        obtain ⟨foldOut, hfoldSim, hfoldPure⟩ := support_bind_exists _ _ hverifyBase
+        have hfoldPureEq := support_pure_eq
+          (m := OracleComp (oSpec + [(outerPSpec F n params).Challenge]ₒ)) hfoldPure
+        cases foldOut with
+        | none =>
+            simp at hfoldPureEq
+        | some foldUnit =>
+            cases foldUnit
+            simp only [Option.map_some, Option.some.injEq] at hfoldPureEq
+            subst vAccepted
+            have hfoldRawRun := mem_support_of_mem_support_liftComp _ _ hfoldSim
+            let transcript0 : ProtocolSpec.Transcript (0 : Fin 5) (outerPSpec F n params) :=
+              default
+            let transcript1 : ProtocolSpec.Transcript (1 : Fin 5) (outerPSpec F n params) :=
+              ProtocolSpec.Transcript.concat (m := (0 : Fin 4))
+                (honestMultiplicity oStmt) transcript0
+            let transcript2 : ProtocolSpec.Transcript (2 : Fin 5) (outerPSpec F n params) :=
+              ProtocolSpec.Transcript.concat (m := (1 : Fin 4)) xval transcript1
+            let transcript3 : ProtocolSpec.Transcript (3 : Fin 5) (outerPSpec F n params) :=
+              ProtocolSpec.Transcript.concat (m := (2 : Fin 4))
+                (honestHelpers params oStmt xval) transcript2
+            let transcript : ProtocolSpec.Transcript (4 : Fin 5) (outerPSpec F n params) :=
+              ProtocolSpec.Transcript.concat (m := (3 : Fin 4)) zlam transcript3
+            have hfoldRaw' : () ∈ support (List.foldlM
+                (m := OptionT (OracleComp oSpec))
+                (fun (_ : Unit) (a : Hypercube n) =>
+                  if xval + evalOnHypercube (tableOracle oStmt) a = 0 then
+                    failure
+                  else pure ())
+                () Finset.univ.toList) := by
+              rw [OptionT.mem_support_iff]
+              simpa [transcript, transcript3, transcript2, transcript1, transcript0, tableOracle,
+                ProtocolSpec.FullTranscript.challenges, ProtocolSpec.Transcript.concat,
+                outerChallengeXIdx, Fin.snoc] using hfoldRawRun
+            have hguard :
+                ∀ u ∈ (Finset.univ : Finset (Hypercube n)).toList,
+                  xval + evalOnHypercube (tableOracle oStmt) u ≠ 0 :=
+              guarded_foldlM_succeeds
+                (spec := oSpec)
+                (Finset.univ.toList)
+                (fun a : Hypercube n => xval + evalOnHypercube (tableOracle oStmt) a = 0)
+                ()
+                hfoldRaw'
+            have hNoTablePoles :
+                ∀ u : Hypercube n, xval + evalOnHypercube (tableOracle oStmt) u ≠ 0 := by
+              intro u
+              exact hguard u (by simp)
+            have hcols : ∀ j : Fin M, ∀ u : Hypercube n, ∃ v : Hypercube n,
+                evalOnHypercube (columnOracle oStmt j) u =
+                  evalOnHypercube (tableOracle oStmt) v := by
+              simpa [inputRelation] using hIn
+            have hchar : ∀ a : F, lookupMultiplicityCount oStmt a ≠ 0 →
+                (tableMultiplicityCount oStmt a : F) ≠ 0 := by
+              intro a hlookup
+              classical
+              have hlookupCard :
+                  ((Finset.univ : Finset (Fin M × Hypercube n)).filter fun ix =>
+                    evalOnHypercube (columnOracle oStmt ix.1) ix.2 = a).card ≠ 0 := by
+                simpa [lookupMultiplicityCount] using hlookup
+              obtain ⟨⟨j, u⟩, hju⟩ := Finset.card_ne_zero.mp hlookupCard
+              simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hju
+              obtain ⟨v, hv⟩ := hcols j u
+              have hvTable : evalOnHypercube (tableOracle oStmt) v = a := hv.symm.trans hju
+              have htablePos : 0 < tableMultiplicityCount oStmt a := by
+                rw [tableMultiplicityCount, Finset.card_pos]
+                exact ⟨v, by simp [hvTable]⟩
+              have hMpos : 0 < M := lt_of_le_of_lt (Nat.zero_le j.val) j.isLt
+              have htable_le_card :
+                  tableMultiplicityCount oStmt a ≤ Fintype.card (Hypercube n) := by
+                rw [tableMultiplicityCount, ← Finset.card_univ]
+                exact Finset.card_filter_le _ _
+              have hcard_hypercube : Fintype.card (Hypercube n) = 2 ^ n := by
+                simp [Hypercube]
+              have hpow_le : 2 ^ n ≤ M * 2 ^ n := by
+                have hMone : 1 ≤ M := Nat.succ_le_of_lt hMpos
+                nth_rewrite 1 [← Nat.one_mul (2 ^ n)]
+                exact Nat.mul_le_mul_right (2 ^ n) hMone
+              have htable_lt_char : tableMultiplicityCount oStmt a < ringChar F := by
+                calc
+                  tableMultiplicityCount oStmt a ≤ Fintype.card (Hypercube n) := htable_le_card
+                  _ = 2 ^ n := hcard_hypercube
+                  _ ≤ M * 2 ^ n := hpow_le
+                  _ < ringChar F := stmt.charLarge
+              intro hzero
+              have hdvd : ringChar F ∣ tableMultiplicityCount oStmt a :=
+                (ringChar.spec F (tableMultiplicityCount oStmt a)).1 hzero
+              exact (Nat.not_dvd_of_pos_of_lt htablePos htable_lt_char) hdvd
+            have hpoles : ∀ (i : TermIdx M) (u : Hypercube n), termPhi oStmt xval i u ≠ 0 := by
+              intro i u
+              cases hti : termToInput i with
+              | table =>
+                  rw [termPhi, hti]
+                  simpa [phi, tableOracle] using hNoTablePoles u
+              | column j =>
+                  obtain ⟨v, hv⟩ := hcols j u
+                  rw [termPhi, hti, phi]
+                  simpa [hv] using hNoTablePoles v
+            let stmtAfter : StmtAfterOuter F n M params :=
+              { xChallenge := xval, zChallenge := zlam.1, batchingScalars := zlam.2 }
+            let oStmtAfter : ∀ i, OStmtAfterOuter F n M params i :=
+              fun
+                | .input i => oStmt i
+                | .multiplicity => honestMultiplicity oStmt
+                | .helpers => honestHelpers params oStmt xval
+            have hmid : ((stmtAfter, oStmtAfter), ()) ∈ logupMidRelation F n M params := by
+              constructor
+              · exact logupRowsAgree params Fact.out stmtAfter oStmtAfter
+              · simpa [stmtAfter, oStmtAfter, logupOuterSumcheckClaim] using
+                  logupOuterClaim_zero (F := F) (n := n) (M := M) params oStmt xval
+                    zlam.1 zlam.2 hcols hchar hpoles
+            constructor
+            · intro _; trivial
+            · intro _
+              simp [outerVerifier, outerChallengeXIdx, outerChallengeBatchIdx,
+                ProtocolSpec.FullTranscript.challenges, ProtocolSpec.FullTranscript.messages,
+                ProtocolSpec.Transcript.concat, Fin.snoc]
+              constructor
+              · convert hmid using 2
+                apply Prod.ext
+                · rfl
+                · funext i
+                  cases i <;> simp [oStmtAfter, outerMultiplicityMessageIdx,
+                    outerHelpersMessageIdx]
+              · funext i
+                cases i <;> simp [outerMultiplicityMessageIdx,
+                  outerHelpersMessageIdx]
+
 
 /-- Lens-completeness for the LogUp→Sumcheck lens: `proj` is the zero-sum instance
 (`logupSumcheckRelationInput_of_rowsAgree`), `lift` is trivial as `outputRelation = univ`. -/
@@ -499,6 +656,7 @@ instance logupSumcheckLensComplete :
     intro _ _ _ _ _ _ _
     simp [outputRelation]
 
+omit [Fintype F] in
 /-- Completeness of the embedded sumcheck phase: it carries `logupMidRelation` to `outputRelation`
 with no extra error, by reusing the generic sumcheck's perfect completeness through the
 LogUp-to-Sumcheck context lens. -/
