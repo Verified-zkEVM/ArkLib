@@ -7,7 +7,48 @@ Authors: Quang Dao, Chung Thai Nguyen
 import ArkLib.Data.Hash.DuplexSponge
 import ArkLib.OracleReduction.FiatShamir.Basic
 import ArkLib.OracleReduction.FiatShamir.SingleSalt
+
 import ArkLib.OracleReduction.Security.OracleDistribution
+
+
+/-- Explicitly distinguish Prover and Verifier queries within a single combined query log.
+Used by the §5 Fiat-Shamir games to preserve boundary information after trace-concatenation,
+allowing `ksFactKernel` to extract `tr_P` and `tr_V` securely. -/
+inductive SourceTag | prover | verifier
+  deriving Inhabited, DecidableEq, Repr
+
+/-- A combined query log explicitly tagged with its source. -/
+abbrev TaggedQueryLog {ι : Type} (spec : OracleSpec ι) := List (SourceTag × Sigma spec)
+
+namespace TaggedQueryLog
+
+def proverLog {ι : Type} {spec : OracleSpec ι} (log : TaggedQueryLog spec) : OracleSpec.QueryLog spec :=
+  log.filterMap fun ⟨tag, entry⟩ => if tag = SourceTag.prover then some entry else none
+
+def verifierLog {ι : Type} {spec : OracleSpec ι} (log : TaggedQueryLog spec) : OracleSpec.QueryLog spec :=
+  log.filterMap fun ⟨tag, entry⟩ => if tag = SourceTag.verifier then some entry else none
+
+def untagged {ι : Type} {spec : OracleSpec ι} (log : TaggedQueryLog spec) : OracleSpec.QueryLog spec :=
+  log.map Prod.snd
+
+/-- Tagging the prover/verifier logs then concatenating, then projecting the prover side, recovers
+the original prover log exactly — regardless of how many entries (incl. `oSpec` queries) each side
+made.  This is what makes `ksFactKernel`'s boundary recovery exact (replacing the old `len − k`
+suffix split). -/
+theorem proverLog_tagAppend {ι : Type} {spec : OracleSpec ι}
+    (P V : OracleSpec.QueryLog spec) :
+    proverLog (P.map (fun e => (SourceTag.prover, e)) ++ V.map (fun e => (SourceTag.verifier, e)))
+      = P := by
+  simp [proverLog, List.filterMap_append, List.filterMap_map, Function.comp]
+
+/-- Verifier-side dual of `proverLog_tagAppend`. -/
+theorem verifierLog_tagAppend {ι : Type} {spec : OracleSpec ι}
+    (P V : OracleSpec.QueryLog spec) :
+    verifierLog (P.map (fun e => (SourceTag.prover, e)) ++ V.map (fun e => (SourceTag.verifier, e)))
+      = V := by
+  simp [verifierLog, List.filterMap_append, List.filterMap_map, Function.comp]
+
+end TaggedQueryLog
 
 /-!
 # Duplex Sponge Fiat-Shamir
@@ -1076,8 +1117,8 @@ abbrev D2SAlgoTransform :=
 Transforms a left-hand game query log into a basic-FS query log using
 auxiliary uniform sampling. -/
 abbrev D2STraceTransform {κ : Type} (challengeSpec : OracleSpec κ) :=
-  QueryLog (oSpec + challengeSpec) →
+  TaggedQueryLog (oSpec + challengeSpec) →
     UnitSampleM U
-      (QueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec))
+      (TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec))
 
 end TransformTypes

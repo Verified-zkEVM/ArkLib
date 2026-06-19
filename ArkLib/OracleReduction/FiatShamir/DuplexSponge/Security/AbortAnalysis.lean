@@ -45,22 +45,22 @@ variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
 Blackbox over `T_H T_P` via `[LawfulTraceNablaImpl …]` (matches `d2sTrace`). -/
 def D2STraceNoAbort [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
-    {T_H T_P : Type}
+    {T_H T_P : Type} {Salt : Type} [SaltCodec U δ Salt]
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
-  none ∉ support (d2sTrace (T_H := T_H) (T_P := T_P) (δ := δ)
-      (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      trace).run
+    (log : TaggedQueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) : Prop :=
+  none ∉ support (d2sTraceSalted (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+      log).run
 
 /-- Predicate: `D2STrace` on `trace` aborts. -/
 def D2STraceAbort [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
-    {T_H T_P : Type}
+    {T_H T_P : Type} {Salt : Type} [SaltCodec U δ Salt]
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) : Prop :=
-  ¬ D2STraceNoAbort (T_H := T_H) (T_P := T_P) (δ := δ)
-      (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      trace
+    (log : TaggedQueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) : Prop :=
+  ¬ D2STraceNoAbort (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+      log
 
 /-- Predicate: `BackTrack` does not hit the `err` branch on `(trace, state)`.
 
@@ -190,13 +190,14 @@ Proof sketch: D2STrace aborts in two sub-calls:
 - The `LookAhead` sub-call: derive `¬ E_prp` (via `lemma_5_10`), then apply Claim 5.20. -/
 lemma lemma_5_17_d2sTrace_noAbort [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
-    {T_H T_P : Type}
+    {T_H T_P : Type} {Salt : Type} [SaltCodec U δ Salt]
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (hE : ¬ BadEventDS.E trace) :
-    D2STraceNoAbort (T_H := T_H) (T_P := T_P) (δ := δ)
-      (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      trace := by
+    (log : TaggedQueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
+    (hE : ¬ BadEventDS.E (dsTraceOfLog (oSpec := oSpec) (StmtIn := StmtIn) (U := U)
+      (TaggedQueryLog.untagged log))) :
+    D2STraceNoAbort (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+      log := by
   sorry
 
 /-- `duplexSpongeTrace gImpl A initM` — the internal duplex-sponge query log (`tr_A`) produced
@@ -291,19 +292,20 @@ theorem theorem_5_19_d2sQuery_abort_implies_badEvent
 This is the contrapositive of Lemma 5.17, and is the form used in Section 5.8. -/
 theorem theorem_5_20_d2sTrace_abort_implies_badEvent [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
-    {T_H T_P : Type}
+    {T_H T_P : Type} {Salt : Type} [SaltCodec U δ Salt]
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (log : TaggedQueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
     (hAbort :
-      D2STraceAbort (T_H := T_H) (T_P := T_P) (δ := δ)
-        (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-        trace) :
-    BadEventDS.E trace := by
+      D2STraceAbort (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+        (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+        log) :
+    BadEventDS.E (dsTraceOfLog (oSpec := oSpec) (StmtIn := StmtIn) (U := U)
+      (TaggedQueryLog.untagged log)) := by
   classical
   by_contra hE
   exact hAbort
-    (lemma_5_17_d2sTrace_noAbort (T_H := T_H) (T_P := T_P) (δ := δ)
-      (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      trace hE)
+    (lemma_5_17_d2sTrace_noAbort (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+      log hE)
 
 end DuplexSpongeFS.AbortAnalysis

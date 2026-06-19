@@ -52,7 +52,7 @@ private structure StdTraceState where
   trStdLA : StdTraceEntries (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
 
 /-- Project DS-oracle entries from a mixed `oSpec + DS` log. -/
-private def dsTraceOfLog
+def dsTraceOfLog
     (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
     QueryLog (duplexSpongeChallengeOracle StmtIn U) :=
   log.filterMap fun entry =>
@@ -179,21 +179,6 @@ private noncomputable def stdTraceInCodecImage
   | some _ => true
   | none => false
 
-/-- CO25 §5.5.1 Item 4(a)v — `e_i := ψ_i(ρ̂_i)` entry remap. Partial because the codec-image
-preimage may not exist; callers compose with `stdTraceInCodecImage` to guarantee `some`. -/
-private noncomputable def stdTraceEntryToFSQuery?
-    (entry : StdTraceEntry (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
-    Option (Sigma (fsChallengeOracle StmtIn pSpec)) := do
-  -- Item 4(a)v.A — `φ⁻¹`: decode `(α_1, …, α_{i-1}) := φ⁻¹(α̂_1, …, α̂_{i-1})`; abort on `⊥`.
-  let messagesBefore ←
-    stdTraceMessagesBefore?
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-      entry.query
-  -- Item 4(a)v.B — `ψ`: `ρ_i := ψ_i(ρ̂_i)`; emit FS entry `((i, 𝕩, α_{<i}), ρ_i)`.
-  let challenge : pSpec.Challenge entry.query.roundIdx :=
-    Deserialize.deserialize entry.response
-  pure ⟨⟨entry.query.roundIdx, (entry.query.stmt, messagesBefore)⟩, challenge⟩
-
 /-- StdTrace Step 3: build `tr_∇` from the DS trace, keeping `h` and forward `p` entries.
 
 Kept polymorphic in the trace-table implementations `T_H`/`T_P` (with a `LawfulTraceNablaImpl`
@@ -315,28 +300,6 @@ private noncomputable def stdTraceHandlePQuery
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
         dsTrΔ.p stateIn backtrackOut st
 
-/-- StdTrace Item 4 loop body — ignore non-forward-`p` entries; process forward `p` entries.
-
-Blackbox over `T_H T_P`. -/
-private noncomputable def stdTraceHandleEntry
-    {T_H T_P : Type}
-    [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    (dsTrace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (dsTrΔ : TraceNabla T_H T_P StmtIn U)
-    (h_trΔ : dsTrΔ.IsSubsetOfQueryLog dsTrace)
-    (depthBound : Nat)
-    (entry : Sigma (oSpec + duplexSpongeChallengeOracle StmtIn U))
-    (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
-    UnitSampleM U
-      (StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
-  match entry with
-  | ⟨.inr (.inr (.inl stateIn)), _stateOut⟩ =>
-      stdTraceHandlePQuery (δ := δ)
-        (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-        dsTrace dsTrΔ h_trΔ depthBound stateIn st
-  | _ =>
-      pure st
-
 /-- Public wrapper for the Section 5.8 `φ⁻¹` parser from the encoded-message tuple returned by
 `BackTrack` to basic-FS message prefixes.
 
@@ -349,102 +312,6 @@ noncomputable def hybEncodedMessagesBefore?
   decodeMessagesPrefixPhiInv?
     (pSpec := pSpec) (U := U)
     roundIdx encodedMessages
-
-/-- Keep only shared-oracle entries from a DSFS query log, and reinterpret them as basic-FS
-query-log entries. Needed in `d2sTrace`, where the output is `sharedLog ++ remappedLog`. -/
-def projectSharedQueryLog
-    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-    QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) :=
-  log.filterMap fun entry =>
-    match entry with
-    | ⟨.inl query, response⟩ => some ⟨.inl query, response⟩
-    | ⟨.inr _, _⟩ => none
-
-/-- Compute `StdTrace` query-answer entries (`tr_std`) from a full mixed log.
-
-This implements Section 5.5.1 Item 4(a) control-flow over the DS entries:
-- abort on `backTrack = err` or `lookAhead = err`,
-- skip on `backTrack = none` or non-challenge backtrack tuples,
-- skip when `stdTraceInCodecImage` rejects the backtrack output (CO25 §5.5.1 Item 4(a)iii),
-- memoize `LookAhead` outputs in `tr_std^LA` keyed by backtrack tuples.
-
-The codec-image predicate is now baked in as `stdTraceInCodecImage` rather than a free
-`BacktrackOutput → Bool` parameter, eliminating the prior non-canonical adversarial instantiation
-surface.
-
-Blackbox over `T_H T_P` via `[LawfulTraceNablaImpl …]`; the same typeclass propagates down through
-`stdTraceDelta`, `stdTraceHandleEntry`, and ultimately `backTrack`/`lookAhead`. -/
-private noncomputable def stdTraceEntries
-    {T_H T_P : Type}
-    [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-    UnitSampleM U
-      (List (StdTraceEntry
-        (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))) := do
-  let dsTrace := dsTraceOfLog (oSpec := oSpec) (StmtIn := StmtIn) (U := U) log
-  let dsTrΔ : TraceNabla T_H T_P StmtIn U :=
-    stdTraceDelta (StmtIn := StmtIn) (U := U) dsTrace
-  have h_trΔ : dsTrΔ.IsSubsetOfQueryLog dsTrace := TraceNabla.ofQueryLogForwardOnly_isSubset dsTrace
-  let depthBound := dsTrace.length + 1
-  let rec go
-      (remaining : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
-      (st : StdTraceState
-        (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
-      UnitSampleM U
-        (StdTraceState
-          (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) := do
-    match remaining with
-    | [] =>
-        pure st
-    | entry :: rest =>
-        let st' ←
-          stdTraceHandleEntry (δ := δ)
-            (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-            dsTrace dsTrΔ h_trΔ depthBound entry st
-        go rest st'
-  let st ← go log { trStd := [], trStdLA := [] }
-  pure st.trStd
-
-/-- Map synthesized `StdTrace` entries to basic-FS challenge-log entries via
-`stdTraceEntryToFSQuery?` (CO25 §5.5.1 Item 4(a)v). Entries whose codec preimage is missing are
-dropped; under `stdTraceEntries`'s baked-in `stdTraceInCodecImage` filter, every entry that
-survives has `stdTraceMessagesBefore? entry.query = some _`, so the remap returns `some` on every
-input in practice. This replaces the prior free `mapEntry` field. -/
-private noncomputable def remapStdTraceEntries
-    (entries : List (StdTraceEntry
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))) :
-    QueryLog (oSpec + fsChallengeOracle StmtIn pSpec) :=
-  entries.filterMap fun entry =>
-    match stdTraceEntryToFSQuery?
-        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) entry with
-    | none => none
-    | some mapped => some ⟨.inr mapped.1, mapped.2⟩
-
-/-- §5.5.2 `D2STrace` single-log surface (Item 4(a) control flow).
-
-Synthesized `StdTrace` entries are remapped into FS challenge-log entries via
-`stdTraceEntryToFSQuery?` (Item 4(a)v) and appended to the shared-oracle projection,
-implementing CO25's single-log `D2STrace = (φ⁻¹, ψ) ∘ StdTrace` transform. The codec-image predicate
-(Item 4(a)iii) is baked into `stdTraceEntries` directly via `stdTraceInCodecImage`; no free remap
-field is exposed.
-
-Blackbox over `T_H T_P` (the trace-table implementations) via `[LawfulTraceNablaImpl …]`. -/
-noncomputable def d2sTrace
-    {T_H T_P : Type}
-    [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-    UnitSampleM U
-      (QueryLog (oSpec + fsChallengeOracle StmtIn pSpec)) := do
-  let entries ←
-    stdTraceEntries (T_H := T_H) (T_P := T_P) (δ := δ)
-      (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      log
-  let sharedLog :=
-    projectSharedQueryLog (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) log
-  let remappedLog :=
-    remapStdTraceEntries (δ := δ)
-      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) entries
-  pure (sharedLog ++ remappedLog)
 
 /-! ## Salted FS variants (CO25 §5.5.1 Item 4(a)v)
 
@@ -469,49 +336,51 @@ private noncomputable def stdTraceEntryToFSQuerySalted?
   pure ⟨⟨entry.query.roundIdx,
     ((entry.query.stmt, SaltCodec.encode entry.query.salt), messagesBefore)⟩, challenge⟩
 
-/-- Salted variant of `remapStdTraceEntries` — produces a salted-FS query log. -/
-private noncomputable def remapStdTraceEntriesSalted
-    {Salt : Type} [SaltCodec U δ Salt]
-    (entries : List (StdTraceEntry
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))) :
-    QueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) :=
-  entries.filterMap fun entry =>
-    match stdTraceEntryToFSQuerySalted?
-        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) entry with
-    | none => none
-    | some mapped => some ⟨.inr mapped.1, mapped.2⟩
+/-- §5.5.2 `D2STrace` — the single D2STrace engine.  Processes a `TaggedQueryLog` iteratively to
+map DSFS traces to FS-standard traces while preserving the `SourceTag` and exact ordering.
 
-/-- Salted variant of `projectSharedQueryLog` — keeps `oSpec` shared entries, reinterpreted as
-salted-FS log entries. -/
-def projectSharedQueryLogSalted
-    {Salt : Type}
-    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-    QueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) :=
-  log.filterMap fun entry =>
-    match entry with
-    | ⟨.inl query, response⟩ => some ⟨.inl query, response⟩
-    | ⟨.inr _, _⟩ => none
-
-/-- Salted variant of `d2sTrace` — produces a salted-FS query log per Encoding A.
-
-Blackbox over `T_H T_P` via `[LawfulTraceNablaImpl …]`. -/
+Because this map is stateful and traverses the combined trace sequentially, the prover's
+sponge state seamlessly threads into the verifier's queries, correctly building the
+global `TraceNabla` graph. `oSpec` queries are forwarded in-place. -/
 noncomputable def d2sTraceSalted
     {T_H T_P : Type} {Salt : Type} [SaltCodec U δ Salt]
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    (log : QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
+    (log : TaggedQueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
     UnitSampleM U
-      (QueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) := do
-  let entries ←
-    stdTraceEntries (T_H := T_H) (T_P := T_P) (δ := δ)
-      (oSpec := oSpec) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      log
-  let sharedLog :=
-    projectSharedQueryLogSalted (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec)
-      (U := U) (Salt := Salt) log
-  let remappedLog :=
-    remapStdTraceEntriesSalted (δ := δ)
-      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (Salt := Salt) entries
-  pure (sharedLog ++ remappedLog)
+      (TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) := do
+  let combinedRaw := TaggedQueryLog.untagged log
+  let dsTrace := dsTraceOfLog (oSpec := oSpec) (StmtIn := StmtIn) (U := U) combinedRaw
+  let dsTrΔ : TraceNabla T_H T_P StmtIn U :=
+    stdTraceDelta (StmtIn := StmtIn) (U := U) dsTrace
+  have h_trΔ : dsTrΔ.IsSubsetOfQueryLog dsTrace := TraceNabla.ofQueryLogForwardOnly_isSubset dsTrace
+  let depthBound := dsTrace.length + 1
+  let rec go
+      (remaining : TaggedQueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
+      (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+      (out : TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) :
+      UnitSampleM U (TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) := do
+    match remaining with
+    | [] => pure out
+    | (tag, entry) :: rest =>
+        match entry with
+        | ⟨.inl query, response⟩ =>
+            -- Forward oSpec entries verbatim, preserving their tag (C1)
+            let outEntry : Sigma (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) :=
+              ⟨.inl query, response⟩
+            go rest st (out ++ [(tag, outEntry)])
+        | ⟨.inr (.inr (.inl stateIn)), _stateOut⟩ =>
+            let st' ← stdTraceHandlePQuery (δ := δ) (StmtIn := StmtIn) (n := n)
+              (pSpec := pSpec) (U := U) dsTrace dsTrΔ h_trΔ depthBound stateIn st
+            -- Extract newly synthesized basic-FS challenge queries
+            let newEntries := st'.trStd.drop st.trStd.length
+            -- Apply line-4 transform to them
+            let mappedNewEntries := newEntries.filterMap fun e =>
+              match stdTraceEntryToFSQuerySalted? (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (Salt := Salt) e with
+              | none => none
+              | some mapped => some (tag, ⟨.inr mapped.1, mapped.2⟩)
+            go rest st' (out ++ mappedNewEntries)
+        | _ => go rest st out
+  go log { trStd := [], trStdLA := [] } []
 
 section Line4Trace
 
@@ -543,11 +412,13 @@ This is the explicit `(φ⁻¹, ψ)(tr)` post-processing map applied directly to
 query-answer trace `tr = tr_P̃ || tr_V`. -/
 noncomputable def hyb1Line4Trace
     {Salt : Type} [SaltCodec U δ Salt]
-    (log : QueryLog (oSpec + gSpec (U := U) StmtIn pSpec δ)) :
+    (log : TaggedQueryLog (oSpec + gSpec (U := U) StmtIn pSpec δ)) :
     UnitSampleM U
-      (QueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) :=
-  pure (log.filterMap (hyb1RemapEntry?
-    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)))
+      (TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) :=
+  pure (log.filterMap fun ⟨tag, entry⟩ =>
+    match hyb1RemapEntry? (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) entry with
+    | some mapped => some (tag, mapped)
+    | none => none)
 
 /-- Section 5.8 `Hyb₂` line-4 per-entry remap. Encoded prover-prefix + decoded verifier response
 ↦ decoded prover-prefix + decoded challenge. Salt is projected `Σ^δ → Salt` via
@@ -573,11 +444,13 @@ This is the explicit `φ⁻¹(tr)` post-processing map applied directly to the s
 query-answer trace `tr = tr_P̃ || tr_V`. -/
 noncomputable def hyb2Line4Trace
     {Salt : Type} [SaltCodec U δ Salt]
-    (log : QueryLog (oSpec + eSpec (U := U) StmtIn pSpec δ)) :
+    (log : TaggedQueryLog (oSpec + eSpec (U := U) StmtIn pSpec δ)) :
     UnitSampleM U
-      (QueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) :=
-  pure (log.filterMap (hyb2RemapEntry?
-    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)))
+      (TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) :=
+  pure (log.filterMap fun ⟨tag, entry⟩ =>
+    match hyb2RemapEntry? (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) entry with
+    | some mapped => some (tag, mapped)
+    | none => none)
 
 /-- Section 5.8 `Hyb₃` line-4 trace translation.
 
@@ -585,9 +458,9 @@ This is the identity-on-line-4 trace surface, viewed through the common single-l
 interface used by `KeyLemma`. -/
 noncomputable def hyb3Line4Trace
     {Salt : Type}
-    (log : QueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) :
+    (log : TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) :
     UnitSampleM U
-      (QueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) :=
+      (TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) :=
   -- `Hyb₃` line 4 — identity: trace already lives on the salted-FS oracle; no remap needed.
   pure log
 

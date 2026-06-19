@@ -47,7 +47,7 @@ error bound of `lemma_5_1`.
 
 1. **Setup** — universe-quantified variable block, `SampleableType` bridge instances.
 2. **`section SecurityGames`** — the experiment shells:
-   - `liftFSSaltedQueriesToD2SChallengePlusUnit`, `projectD2SChallengePlusUnitQueryLog` —
+   - `liftFSSaltedQueriesToD2SChallengePlusUnit`, `filterD2SChallengePlusUnitQueryLog` —
      spec plumbing between basic-FS and wide D2S spec.
    - `BasicFiatShamirGameOutput`, `DSFSGameOutput` — output types.
    - `basicFiatShamirGame`, `dsfsGame` — paper game bodies.
@@ -117,7 +117,7 @@ def liftFSSaltedQueriesToD2SChallengePlusUnit :
 
 /-- CO25 §5.8. Project out the auxiliary unit-sampling queries from logs over
 `oSpec + (challengeSpec + Unit →ₒ U)`, retaining only shared and challenge entries. -/
-def projectD2SChallengePlusUnitQueryLog
+def filterD2SChallengePlusUnitQueryLog
     {κ : Type} {challengeSpec : OracleSpec κ}
     (log : QueryLog (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)) :
     QueryLog (oSpec + challengeSpec) :=
@@ -136,14 +136,14 @@ def projectD2SChallengePlusUnitQueryLog
 -/
 abbrev BasicFiatShamirGameOutput :=
   StmtIn × StmtOut × FSSaltedProof pSpec Salt ×
-    QueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
+    TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
 
 /-- CO25 Theorem 5.1. Output type for the duplex-sponge Fiat-Shamir game (`Hyb_0` left-hand
 experiment): statement-in, statement-out, salted proof, and combined query log over
 `duplexSpongeChallengeOracle`. -/
 abbrev DSFSGameOutput :=
   StmtIn × StmtOut × DSSaltedProof (pSpec := pSpec) (U := U) δ ×
-    QueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)
+    TaggedQueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)
 
 /-- CO25 Theorem 5.1. The basic-FS verifier `𝒱_std^f` as a standalone computation: derive the FS
 transcript from the salted proof — routing `fsChallengeOracle` queries into the wide
@@ -193,14 +193,12 @@ def basicFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
         (Option StmtOut) := basicFSVerifierComp V stmtAndProof
   let ⟨stmtOut, verifyQueryLogRaw⟩ ← (simulateQ loggingOracle verifierComp).run
   let proveQueryLog :=
-    projectD2SChallengePlusUnitQueryLog
-      (oSpec := oSpec) (U := U)
-      proveQueryLogRaw
+    filterD2SChallengePlusUnitQueryLog (oSpec := oSpec) (U := U) proveQueryLogRaw
   let verifyQueryLog :=
-    projectD2SChallengePlusUnitQueryLog
-      (oSpec := oSpec) (U := U)
-      verifyQueryLogRaw
-  return ⟨stmtAndProof.1, ← stmtOut.getM, stmtAndProof.2, proveQueryLog ++ verifyQueryLog⟩
+    filterD2SChallengePlusUnitQueryLog (oSpec := oSpec) (U := U) verifyQueryLogRaw
+  let taggedP := proveQueryLog.map fun e => (SourceTag.prover, e)
+  let taggedV := verifyQueryLog.map fun e => (SourceTag.verifier, e)
+  return ⟨stmtAndProof.1, ← stmtOut.getM, stmtAndProof.2, taggedP ++ taggedV⟩
 
 /-- CO25 Theorem 5.1. Left-hand game for Lemma 5.1 (the DSFS game).
 Runs `𝒱^{h,p}` against the malicious prover `𝒫̃~` (this is `Hyb_0`).
@@ -218,7 +216,9 @@ def dsfsGame (V : Verifier oSpec StmtIn StmtOut pSpec)
   -- `simulateQ loggingOracle` emits a wide-spec query log with no `p⁻¹` entries from `V`.
   let verifyCompWide := runForwardVerifierWide δ V stmtIn proof
   let ⟨stmtOut, verifyQueryLog⟩ ← liftM (simulateQ loggingOracle verifyCompWide).run
-  return ⟨stmtIn, ← stmtOut.getM, proof, proveQueryLog ++ verifyQueryLog⟩
+  let taggedP := proveQueryLog.map fun e => (SourceTag.prover, e)
+  let taggedV := verifyQueryLog.map fun e => (SourceTag.verifier, e)
+  return ⟨stmtIn, ← stmtOut.getM, proof, taggedP ++ taggedV⟩
 
 /-- CO25 §5.8. Execute a Section 5.8 line-4 trace map (e.g. D2STrace = `(φ⁻¹, ψ) ∘ StdTrace`)
 inside `ProbComp` by interpreting the auxiliary unit-sampling oracle uniformly. -/
@@ -227,9 +227,9 @@ def runSection58TraceMap
     {κ : Type} {challengeSpec : OracleSpec κ}
     (traceMap : D2STraceTransform (Salt := Salt) (oSpec := oSpec)
       (StmtIn := StmtIn) (pSpec := pSpec) (U := U) challengeSpec)
-    (fullTrace : QueryLog (oSpec + challengeSpec)) :
+    (fullTrace : TaggedQueryLog (oSpec + challengeSpec)) :
     ProbComp
-      (Option (QueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec))) :=
+      (Option (TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec))) :=
   simulateQ
     (d2sUnitSampleImpl (U := U))
     ((traceMap fullTrace).run)
@@ -335,7 +335,7 @@ def hybridGame
     (P : MaliciousProver oSpec pSpec StmtIn U δ) :
     AbortComp (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)
       (StmtIn × StmtOut × DSSaltedProof (pSpec := pSpec) (U := U) δ ×
-        QueryLog (oSpec + challengeSpec)) := do
+        TaggedQueryLog (oSpec + challengeSpec)) := do
   -- D2SQuery wraps gImpl, layering `StateT (D2SQueryState …)` on top. Built once via the
   -- Prover: fresh `D2SQueryState`, fresh inner state `M`. The post-run inner state is
   -- exposed via the outer `StateT M` layer so it can be threaded into the verifier.
@@ -367,12 +367,14 @@ def hybridGame
     | some ⟨⟨stmtOut?, _⟩, _⟩ => stmtOut?
     | none => none
   let proveQueryLog :=
-    projectD2SChallengePlusUnitQueryLog
+    filterD2SChallengePlusUnitQueryLog
       (oSpec := oSpec) (U := U) proveQueryLogRaw
   let verifyQueryLog :=
-    projectD2SChallengePlusUnitQueryLog
+    filterD2SChallengePlusUnitQueryLog
       (oSpec := oSpec) (U := U) verifyQueryLogRaw
-  return ⟨stmtIn, ← stmtOut?.getM, proof, proveQueryLog ++ verifyQueryLog⟩
+  let taggedP := proveQueryLog.map fun e => (SourceTag.prover, e)
+  let taggedV := verifyQueryLog.map fun e => (SourceTag.verifier, e)
+  return ⟨stmtIn, ← stmtOut?.getM, proof, taggedP ++ taggedV⟩
 
 /-! ### Distribution wrappers (game → `ProbComp`) -/
 
@@ -413,7 +415,7 @@ def hybridGameDist -- apply traceMap into output of `hybridGame`
         gImpl V P).run)).run' (← init)
   match hybridOutput with
   | none => return none
-  | some ⟨stmtIn, stmtOut, proof, projectedTrace⟩ => do
+  | some (⟨stmtIn, stmtOut, proof, projectedTrace⟩ : (StmtIn × StmtOut × DSSaltedProof (pSpec := pSpec) (U := U) δ × TaggedQueryLog (oSpec + challengeSpec))) => do
       -- Paper Items 4-6: bridge on-sponge `Vector U δ` salt → FS-std `Salt` via
       -- `SaltCodec.encode = bin` at the hybrid game boundary.
       let π : FSSaltedProof pSpec Salt :=
@@ -898,6 +900,48 @@ abbrev IsLemma5_1QueryBound
 
 set_option linter.unusedDecidableInType false in
 set_option linter.unusedFintypeInType false in
+/-- CO25 Theorem 5.1 (Main lemma §5.8) — **inner, concrete-transform form.**  Identical to
+`lemma_5_1` but with the two transforms *fixed* to the concrete `ProverTransform.d2sAlgo` and
+`d2sTraceSalted` (rather than hidden behind `∃`).  This is the form §6.2 consumes
+(`theorem_6_2_straightline`): Construction 6.3's extractor runs the concrete `d2sTraceSalted`, so
+`Hyb₀`/`Hyb₄` must carry the *same* concrete maps for the game-match `hL1`/`hL3` to hold
+definitionally — an opaque `∃`-witness would block that defeq.  `lemma_5_1` re-packages this as the
+existential.  The body is the deep §5.8 distance bound (`claim_5_21`–`claim_5_24` triangle) +
+`D2SAlgo` query bound — the single remaining `sorry`. -/
+theorem lemma_5_1_inner
+    [DecidableEq U] [DecidableEq StmtIn] [DecidableEq ι]
+    {T_H : Type} {T_P : Type}
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (tShared : oSpec.Domain → ℕ) (tₕ tₚ tₚᵢ : ℕ)
+    (hTp : tₚ ≥ max pSpec.totalNumPermQueriesMessage pSpec.totalNumPermQueriesChallenge) :
+      ∀ (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ),
+      IsLemma5_1QueryBound maliciousProver tShared tₕ tₚ tₚᵢ →
+      tvDist
+        (hyb_0 (δ := δ) (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn)
+          (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
+          oSpecImpl V maliciousProver
+          (d2sTraceSalted (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+            (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
+        (hyb_4 (δ := δ) (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn)
+          (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
+          oSpecImpl V maliciousProver
+          (ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
+            (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
+        ≤ (ηStar U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries (εcodec := codec.decodingBias) : ℝ)
+      ∧ OracleComp.IsTotalQueryBound
+          (ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
+            (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) maliciousProver)
+          (θStar tₕ tₚ tₚᵢ) := by
+  intro maliciousProver hMaliciousBound
+  let _ := hTp
+  let _ := hMaliciousBound
+  sorry
+
+set_option linter.unusedDecidableInType false in
+set_option linter.unusedFintypeInType false in
+set_option linter.unusedSectionVars false in
 /-- CO25 Theorem 5.1 (Main lemma §5.8, canonical existential form).
 For every malicious prover `𝒫̃` making at most `t_h` queries to `h` and `t_p` / `t_{p⁻¹}`
 queries to `p / p⁻¹`, there exist a D2SAlgo prover transform and a D2STrace line-4 map
@@ -913,10 +957,8 @@ the caller-supplied handler `oSpecImpl`. Left: `oSpecImpl` plus
 `𝒟_𝔖(λ,n) = duplexSpongeOracleDistribution` for `(h, p, p⁻¹)`. Right: `oSpecImpl` plus
 salted `𝒟_IP(λ,n) = D_IP_salted` for `f`.
 
-The distance component is supplied by the public claim theorems
-`claim_5_21`, `claim_5_22`, `claim_5_23`, and `claim_5_24`, applied to the
-hybrid-chain endpoints `hyb_0` / `hyb_4` via the triangle inequality on `tvDist`.
-The remaining `sorry` is the query-bound component for the chosen `D2SAlgo`. -/
+Re-packages the concrete `lemma_5_1_inner` (the witnesses are `ProverTransform.d2sAlgo` and
+`d2sTraceSalted`) as the existential consumed by `theorem_6_1_soundness`. -/
 theorem lemma_5_1
     [DecidableEq U] [DecidableEq StmtIn] [DecidableEq ι]
     {T_H : Type} {T_P : Type}
@@ -942,19 +984,12 @@ theorem lemma_5_1
           oSpecImpl V maliciousProver d2sAlgoTransform)
         ≤ (ηStar U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries
             (εcodec := codec.decodingBias) : ℝ)
-      ∧ OracleComp.IsTotalQueryBound (d2sAlgoTransform maliciousProver) (θStar tₕ tₚ tₚᵢ) := by
-  refine ⟨?_, ?_, ?_⟩
-  · use ProverTransform.d2sAlgo
-      (δ := δ) (Salt := Salt)
-      (T_H := T_H) (T_P := T_P)
-      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-  · use d2sTraceSalted
-      (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
-      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-  · intro maliciousProver hMaliciousBound
-    let _ := hTp
-    let _ := hMaliciousBound
-    sorry
+      ∧ OracleComp.IsTotalQueryBound (d2sAlgoTransform maliciousProver) (θStar tₕ tₚ tₚᵢ) :=
+  ⟨ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
+      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U),
+    d2sTraceSalted (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U),
+    lemma_5_1_inner (T_H := T_H) (T_P := T_P) oSpecImpl V tShared tₕ tₚ tₚᵢ hTp⟩
 
 end KeyLemma
 
