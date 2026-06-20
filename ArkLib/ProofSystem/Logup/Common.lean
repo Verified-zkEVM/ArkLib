@@ -4,6 +4,7 @@ import Mathlib.Data.Fin.Basic
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Tactic
+import ArkLib.Data.MvPolynomial.Multilinear
 import ArkLib.OracleReduction.Composition.Sequential.Append
 import ArkLib.OracleReduction.Basic
 
@@ -14,11 +15,6 @@ Shared vocabulary for the LogUp lookup argument formalization, following Protoco
 LogUp paper (Cryptology ePrint Archive, Paper 2022/1530,
 <https://eprint.iacr.org/2022/1530>).
 
-The protocol checks that every value in the `M` lookup-column oracles occurs somewhere in the table
-oracle. Rows are indexed by the signed hypercube `H = {±1}^n`, represented here as bit vectors and
-embedded into a field by `signPoint`. The table oracle and lookup-column oracles are stored in
-Lagrange form, so a query at `z : Fin n → F` is the inner product against the kernel `L_H(., z)`.
-
 This file collects the common definitions and algebraic tools reused by the other LogUp files.
 -/
 
@@ -28,41 +24,19 @@ universe u
 
 open scoped BigOperators
 
-/-- The boolean hypercube with `2^n` points.
-
-The paper writes this domain as `H = {±1}^n`; we use bit vectors as row indices and embed
-them into a field by `bitToSign`.
--/
+/-- The Boolean hypercube with `2^n` points. -/
 @[reducible]
 def Hypercube (n : ℕ) : Type :=
   Fin n → Fin 2
 
-/-- Embed a hypercube bit as a `{±1}` field element. -/
-def bitToSign (F : Type u) [One F] [Neg F] (b : Fin 2) : F :=
-  if b = 0 then -1 else 1
-
-/-- Embed a hypercube row as a point of `{±1}^n ⊂ Fⁿ`. -/
-def signPoint (F : Type u) [One F] [Neg F] {n : ℕ} (u : Hypercube n) : Fin n → F :=
-  fun j => bitToSign F (u j)
-
-/-- The Lagrange kernel `L_H(x, z) = 2^{-n} * ∏ᵢ (1 + xᵢ zᵢ)` for `H = {±1}^n`. -/
-noncomputable def lagrangeKernelAtPoint (F : Type u) [Field F] {n : ℕ}
-    (x z : Fin n → F) : F :=
-  ((2 : F) ^ n)⁻¹ * ∏ j : Fin n, (1 + x j * z j)
-
-/-- The Lagrange kernel with the first argument restricted to a hypercube row. -/
-noncomputable def lagrangeKernel (F : Type u) [Field F] {n : ℕ}
-    (u : Hypercube n) (z : Fin n → F) : F :=
-  lagrangeKernelAtPoint F (signPoint F u) z
-
-/-- A Lagrange oracle is a function on `H`; queries ask for inner products with `L_H(., z)`. -/
+/-- A Lagrange oracle is a function on `H`; queries evaluate its Boolean MLE. -/
 structure LagrangeOracle (F : Type u) (n : ℕ) where
   values : Hypercube n → F
 
 instance {F : Type u} {n : ℕ} : CoeFun (LagrangeOracle F n) (fun _ => Hypercube n → F) where
   coe oracle := oracle.values
 
-/-- A multilinear oracle over the row variables of `H = {±1}^n`, represented in Lagrange form. -/
+/-- A multilinear oracle over Boolean row variables, represented in Lagrange form. -/
 @[reducible]
 def MultilinearOracle (F : Type u) (n : ℕ) : Type u :=
   LagrangeOracle F n
@@ -72,19 +46,26 @@ def evalOnHypercube {F : Type u} {n : ℕ}
     (p : MultilinearOracle F n) (u : Hypercube n) : F :=
   p u
 
-/-- Lagrange-oracle queries are exactly the paper's inner products with `L_H(., z)`. -/
+/-- Lagrange-oracle queries evaluate the Boolean multilinear extension at `z`. -/
 noncomputable instance instLagrangeOracleInterface {F : Type u} [Field F] {n : ℕ} :
     OracleInterface (LagrangeOracle F n) where
   Query := Fin n → F
   toOC.spec := (Fin n → F) →ₒ F
   toOC.impl z := do
     let oracle ← read
-    return ∑ u : Hypercube n, oracle u * lagrangeKernel F u z
+    return MvPolynomial.eval z (MvPolynomial.MLE oracle.values)
 
 /-- The semantic value returned by querying a Lagrange-form multilinear oracle at `z`. -/
 noncomputable def lagrangeOracleEval {F : Type u} [Field F] {n : ℕ}
     (oracle : MultilinearOracle F n) (z : Fin n → F) : F :=
-  ∑ u : Hypercube n, oracle u * lagrangeKernel F u z
+  MvPolynomial.eval z (MvPolynomial.MLE oracle.values)
+
+/-- Querying a Boolean-hypercube row returns the stored value at that row. -/
+theorem lagrangeOracleEval_hypercube {F : Type u} [Field F] {n : ℕ}
+    (oracle : MultilinearOracle F n) (u : Hypercube n) :
+    lagrangeOracleEval oracle (u : Fin n → F) = evalOnHypercube oracle u := by
+  change MvPolynomial.eval (u : Fin n → F) (MvPolynomial.MLE oracle.values) = oracle.values u
+  simp
 
 /-- Input oracle labels for Protocol 2: one table oracle and `M` lookup-column oracles. -/
 inductive InputOracleIdx (M : ℕ) where
@@ -132,16 +113,10 @@ def group {M : ℕ} (params : ProtocolParams M) (k : Fin params.numGroups) :
 
 end ProtocolParams
 
-/-- Public parameter assumptions for Protocol 2.
-
-The paper fixes a finite field with characteristic larger than `M * 2^n`; we also record that
-`-1` and `1` are distinct so that `{±1}^n` is genuinely a Boolean hypercube in the field.
--/
+/-- Public parameter assumptions for Protocol 2. -/
 structure StmtIn (F : Type u) [Field F] [Fintype F] (n M : ℕ) : Type u where
   /-- The paper's characteristic condition `char(F) > M * 2^n`. -/
   charLarge : M * 2 ^ n < ringChar F
-  /-- The two signs used for the hypercube are distinct. -/
-  signsDistinct : (-1 : F) ≠ 1
 
 /-- Input oracle statements: the table `t` and lookup columns `fᵢ`, as multilinear oracles. -/
 @[reducible, simp]
@@ -225,7 +200,7 @@ variable (F : Type) [Field F] [Fintype F] (n M : ℕ) (params : ProtocolParams M
 structure StmtAfterOuter where
   /-- The logarithmic-derivative challenge `x`. -/
   xChallenge : F
-  /-- The Lagrange-kernel point `z ∈ Fⁿ`. -/
+  /-- The equality-kernel point `z ∈ Fⁿ`. -/
   zChallenge : Fin n → F
   /-- The batching scalars `λ₁, ..., λ_K`. -/
   batchingScalars : Fin params.numGroups → F
@@ -283,7 +258,7 @@ structure OuterTranscriptData (F : Type) [Field F] [Fintype F] (n M : ℕ)
   xChallenge : F
   /-- The helper functions `h₁, ..., h_K : H → F`. -/
   helpers : HelperMessages F n params.numGroups
-  /-- The Lagrange-kernel point `z ∈ Fⁿ`. -/
+  /-- The equality-kernel point `z ∈ Fⁿ`. -/
   zChallenge : Fin n → F
   /-- The batching scalars `λ₁, ..., λ_K`. -/
   batchingScalars : Fin params.numGroups → F
@@ -369,7 +344,8 @@ noncomputable def qOnHypercube (groups : PartialSumGroups M K)
     (batchingScalars : Fin K → F) (u : Hypercube n) : F :=
   ∑ k : Fin K, (
     evalOnHypercube (helpers k) u +
-      lagrangeKernel F u zChallenge * batchingScalars k *
+      MvPolynomial.eval (u : Fin n → F) (MvPolynomial.eqPolynomial zChallenge) *
+        batchingScalars k *
         domainIdentityTerm groups oStmt multiplicity helpers xChallenge k u)
 
 /-- Point evaluations queried by the verifier at the final sumcheck point `r`. -/
@@ -382,6 +358,16 @@ structure PointEvaluations (F : Type) (M K : ℕ) where
   columns : Fin M → F
   /-- Claimed values `hₖ(r)`. -/
   helpers : Fin K → F
+
+/-- Semantic agreement between final oracle-query answers and the retained LogUp oracles. -/
+def logupPointEvaluationsAgree
+    (r : Fin n → F)
+    (oStmt : ∀ i, OStmtAfterOuter F n M params i)
+    (evals : PointEvaluations F M params.numGroups) : Prop :=
+  evals.multiplicity = lagrangeOracleEval (oStmt .multiplicity) r ∧
+    evals.table = lagrangeOracleEval (oStmt (.input .table)) r ∧
+    (∀ i : Fin M, evals.columns i = lagrangeOracleEval (oStmt (.input (.column i))) r) ∧
+      ∀ k : Fin params.numGroups, evals.helpers k = lagrangeOracleEval ((oStmt .helpers) k) r
 
 /-- Denominator term at the final sumcheck point, reconstructed from oracle query answers. -/
 def phiAtPoint (xChallenge : F) (evals : PointEvaluations F M K) :
@@ -410,13 +396,13 @@ noncomputable def domainIdentityAtPoint (groups : PartialSumGroups M K)
       termNumeratorAtPoint evals i *
         ∏ j ∈ (groups k).erase i, termPhiAtPoint xChallenge evals j
 
-/-- The verifier's final check value `Q(L_H(r,z), m(r), φᵢ(r), hₖ(r))` from paper (19). -/
+/-- The verifier's final check value `Q(eq(r,z), m(r), φᵢ(r), hₖ(r))` from paper (19). -/
 noncomputable def qAtPoint (groups : PartialSumGroups M K) (xChallenge : F)
     (zChallenge rChallenge : Fin n → F) (batchingScalars : Fin K → F)
     (evals : PointEvaluations F M K) : F :=
   ∑ k : Fin K, (
     evals.helpers k +
-      lagrangeKernelAtPoint F rChallenge zChallenge * batchingScalars k *
+      MvPolynomial.eval rChallenge (MvPolynomial.eqPolynomial zChallenge) * batchingScalars k *
         domainIdentityAtPoint groups xChallenge evals k)
 
 /-- Predicate for paper step 4: final oracle-query answers match the sumcheck's expected value. -/

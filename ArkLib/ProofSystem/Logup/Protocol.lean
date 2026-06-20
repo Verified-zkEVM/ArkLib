@@ -8,17 +8,59 @@ Protocol specs, honest prover, verifier, and oracle reductions for Protocol 2 of
 lookup argument (Cryptology ePrint Archive, Paper 2022/1530,
 <https://eprint.iacr.org/2022/1530>).
 
-The formalization is split into two ArkLib reductions.
+The protocol checks that every value in the `M` lookup-column oracles occurs somewhere in the table
+oracle.
 
-* The outer LogUp phase sends the honest multiplicity oracle `m`, samples the logarithmic-derivative
-  challenge `x`, sends helper oracles for the partial-sum groups, and samples the batching
-  challenge `(z, lambda)`. These challenges and retained oracles define the zero-sum claim that the
-  next phase checks.
-* The embedded phase reuses ArkLib's generic sumcheck reduction through the LogUp sumcheck layer in
-  `Logup/Sumcheck/`.
+## Protocol Specification
 
-The main exported objects are `outerOracleReduction`, `sumcheckOracleReduction`, and
-`logupOracleReduction`.
+Protocol 2 is parameterized by:
+- a field `F`;
+- a row dimension `n`, with rows indexed by the Boolean hypercube;
+- `M` lookup-column oracles `fᵢ : H → F` and one table oracle `t : H → F`;
+- a partial-sum size `ell`, stored in `ProtocolParams`, which determines the number `K` of helper
+  oracles; and
+- the characteristic condition `char(F) > M * 2^n`.
+
+The input relation says that every value appearing in any lookup column also appears somewhere in
+the table. The protocol proves this relation as follows.
+
+1. The prover sends the normalized multiplicity oracle `m`, which records how often table values are
+   used by the lookup columns. The verifier samples the logarithmic-derivative challenge `x`.
+2. Using `x`, the prover sends helper oracles `h₁, ..., h_K` for the partial-sum groups of the
+   logarithmic-derivative identity.
+3. The verifier samples a point `z : Fin n → F` and batching scalars `λ₁, ..., λ_K`. These data turn
+   the helper identities into one batched polynomial `Q`, and the prover and verifier run generic
+   sumcheck on the claim `∑ u ∈ H, Q(u) = 0`.
+4. Sumcheck leaves a final point `r` and a claimed value `v = Q(r)`. The verifier queries the
+   retained LogUp oracles at `r`, reconstructs `Q(r)`, and accepts only if this reconstructed value
+   equals `v`.
+
+### Formalization
+
+The LogUp paper writes the row domain as `{±1}^n`; this formalization uses the affine-equivalent
+Boolean hypercube together with ArkLib's existing equality polynomial and
+[`MLE`](ArkLib/Data/MvPolynomial/Multilinear.lean) definitions.
+
+The formalization is split into three ArkLib reductions.
+
+* The outer LogUp phase sends the multiplicity oracle `m`, samples the challenge `x`, sends the
+  helper oracles, and samples the batching challenge `(z, lambda)`. At the end of this phase, the
+  verifier has the data needed to state a single zero-sum claim about the LogUp polynomial `Q`.
+* The sumcheck phase turns the values retained from the outer phase into the polynomial `Q`, then
+  runs ArkLib's generic sumcheck protocol on the claim that `Q` sums to zero. The translation tools
+  and polynomial construction live in the
+  [`Logup/Sumcheck`](ArkLib/ProofSystem/Logup/Sumcheck/) directory, with the bridge connecting the
+  LogUp-specific data to the generic sumcheck input and output.
+* The final zero-round phase queries the retained LogUp oracles at sumcheck's final point and checks
+  that those oracle values really give the value claimed by sumcheck.
+
+This file defines the transcript shapes; the prover-side objects for the outer, sumcheck,
+final-check, and full protocol; the matching verifier-side objects; and then the oracle reductions
+for each phase and for the composed protocol.
+
+The main artefacts that define the protocol are `pSpec`, `logupProver`, `logupVerifier`,
+and `logupOracleReduction`.
+
 -/
 
 namespace Logup
@@ -80,37 +122,67 @@ instance instOuterPSpecChallengeSampleable
 
 end ProtocolSpec
 
+section FinalCheckSpec
+
+/-- The final LogUp point check has no transcript messages; it only queries retained oracles. -/
+@[reducible]
+def finalCheckPSpec : ProtocolSpec 0 :=
+  !p[]
+
+end FinalCheckSpec
+
 section FullProtocolSpec
 
 open ProtocolSpec
 
-/-- Protocol 2 transcript shape: the outer LogUp messages followed by ArkLib's generic sumcheck. -/
+/-- Protocol 2 before the final point check: outer LogUp followed by generic sumcheck. -/
 @[reducible]
-noncomputable def pSpec (F : Type) [Field F] [Fintype F] [DecidableEq F]
-    (n M : ℕ) (params : ProtocolParams M) :
-    ProtocolSpec (4 + Fin.vsum (fun _ : Fin n => 2)) :=
+noncomputable def pSpecBeforeFinal (F : Type) [Field F] [Fintype F] [DecidableEq F]
+    (n M : ℕ) (params : ProtocolParams M) :=
   outerPSpec F n params ++ₚ logupSumcheckPSpec F n M params
 
-/-- The full LogUp prover messages are oracle-accessible: outer LogUp messages followed by the
+/-- Protocol 2 transcript shape: outer LogUp, ArkLib's generic sumcheck, and the final point check.
+-/
+@[reducible]
+noncomputable def pSpec (F : Type) [Field F] [Fintype F] [DecidableEq F]
+    (n M : ℕ) (params : ProtocolParams M) :=
+  pSpecBeforeFinal F n M params ++ₚ finalCheckPSpec
+
+/-- The prover messages before the final check are oracle-accessible: outer LogUp followed by the
 embedded sumcheck messages. -/
+noncomputable instance instPSpecBeforeFinalMessageOracleInterface
+    {F : Type} [Field F] [Fintype F] [DecidableEq F] {n M : ℕ}
+    {params : ProtocolParams M} :
+    ∀ i, OracleInterface ((pSpecBeforeFinal F n M params).Message i) := by
+  unfold pSpecBeforeFinal
+  exact ProtocolSpec.instOracleInterfaceMessageAppend
+
+/-- The full LogUp prover messages are oracle-accessible: outer LogUp and sumcheck messages; the
+final point check has no messages. -/
 noncomputable instance instPSpecMessageOracleInterface
     {F : Type} [Field F] [Fintype F] [DecidableEq F] {n M : ℕ}
     {params : ProtocolParams M} :
     ∀ i, OracleInterface ((pSpec F n M params).Message i) := by
-  change ∀ i,
-    OracleInterface (((outerPSpec F n params) ++ₚ logupSumcheckPSpec F n M params).Message i)
+  unfold pSpec
   exact ProtocolSpec.instOracleInterfaceMessageAppend
 
-/-- The full LogUp verifier challenges are sampleable: outer LogUp challenges followed by the
+/-- The verifier challenges before the final check are sampleable: outer LogUp followed by the
 embedded sumcheck challenges. -/
+noncomputable instance instPSpecBeforeFinalChallengeSampleable
+    {F : Type} [Field F] [Fintype F] [DecidableEq F] [SampleableType F] {n M : ℕ}
+    {params : ProtocolParams M} :
+    ∀ i, SampleableType ((pSpecBeforeFinal F n M params).Challenge i) := by
+  letI : Inhabited F := ⟨0⟩
+  unfold pSpecBeforeFinal
+  exact ProtocolSpec.instSampleableTypeChallengeAppend
+
+/-- The full LogUp verifier challenges are sampleable: the final point check has no challenges. -/
 noncomputable instance instPSpecChallengeSampleable
     {F : Type} [Field F] [Fintype F] [DecidableEq F] [SampleableType F] {n M : ℕ}
     {params : ProtocolParams M} :
     ∀ i, SampleableType ((pSpec F n M params).Challenge i) := by
   letI : Inhabited F := ⟨0⟩
-  change ∀ i,
-    SampleableType (((outerPSpec F n params) ++ₚ
-      logupSumcheckPSpec F n M params).Challenge i)
+  unfold pSpec
   exact ProtocolSpec.instSampleableTypeChallengeAppend
 
 end FullProtocolSpec
@@ -163,27 +235,92 @@ noncomputable def outerProver :
 
 end OuterProver
 
+section ConcreteSumcheckReduction
+
+variable {ι : Type} (oSpec : OracleSpec ι)
+variable (F : Type) [Field F] [Fintype F] [DecidableEq F] (n M : ℕ)
+variable (params : ProtocolParams M)
+
+/-- ArkLib's generic sumcheck prover specialized to LogUp's Boolean domain and degree bound. -/
+noncomputable def logupConcreteSumcheckOracleProver [SampleableType F] :
+    OracleProver oSpec (LogupSumcheckStmtIn F n M params)
+      (LogupSumcheckOracleStatement F n M params) Unit
+      (LogupSumcheckStmtOut F n M params)
+      (LogupSumcheckOracleStatement F n M params) Unit
+      (logupSumcheckPSpec F n M params) :=
+  (Sumcheck.Spec.oracleReduction F (logupSumcheckDegree M params)
+    (booleanDomain F) n oSpec).prover
+
+/-- ArkLib's generic sumcheck verifier specialized to LogUp's Boolean domain and degree bound. -/
+noncomputable def logupConcreteSumcheckOracleVerifier [SampleableType F] :
+    OracleVerifier oSpec (LogupSumcheckStmtIn F n M params)
+      (LogupSumcheckOracleStatement F n M params)
+      (LogupSumcheckStmtOut F n M params)
+      (LogupSumcheckOracleStatement F n M params)
+      (logupSumcheckPSpec F n M params) :=
+  Sumcheck.Spec.oracleVerifier F (logupSumcheckDegree M params)
+    (booleanDomain F) n oSpec
+
+/-- ArkLib's generic sumcheck reduction specialized to LogUp's Boolean domain and degree bound. -/
+noncomputable def logupConcreteSumcheckOracleReduction [SampleableType F] :
+    OracleReduction oSpec (LogupSumcheckStmtIn F n M params)
+      (LogupSumcheckOracleStatement F n M params) Unit
+      (LogupSumcheckStmtOut F n M params)
+      (LogupSumcheckOracleStatement F n M params) Unit
+      (logupSumcheckPSpec F n M params) :=
+  Sumcheck.Spec.oracleReduction F (logupSumcheckDegree M params)
+    (booleanDomain F) n oSpec
+
+end ConcreteSumcheckReduction
+
 section SumcheckProver
 
 variable {ι : Type} (oSpec : OracleSpec ι)
-variable (F : Type) [Field F] [Fintype F] [DecidableEq F] [Fact ((-1 : F) ≠ 1)]
-  [SampleableType F] (n M : ℕ)
+variable (F : Type) [Field F] [Fintype F] [DecidableEq F] [SampleableType F] (n M : ℕ)
 variable (params : ProtocolParams M)
 
 /-- The prover for the embedded sumcheck phase of LogUp Protocol 2. -/
-noncomputable def sumcheckProver [SampleableType F] :
+noncomputable def sumcheckProver :
     OracleProver oSpec (StmtAfterOuter F n M params) (OStmtAfterOuter F n M params) Unit
-      (StmtOut) (OStmtOut) Unit
+      (StmtAfterSumcheck F n M params) (OStmtAfterSumcheck F n M params) Unit
       (logupSumcheckPSpec F n M params) :=
-  (sumcheckOracleReduction oSpec F n M params).prover
+  let lens :
+      OracleContext.Lens.{0, 0, 0, 0}
+        (StmtAfterOuter F n M params) (StmtAfterSumcheck F n M params)
+        (LogupSumcheckStmtIn F n M params) (LogupSumcheckStmtOut F n M params)
+        (OStmtAfterOuter F n M params) (OStmtAfterSumcheck F n M params)
+        (LogupSumcheckOracleStatement F n M params)
+        (LogupSumcheckOracleStatement F n M params)
+        Unit Unit Unit Unit :=
+    logupSumcheckContextLens F n M params
+  (logupConcreteSumcheckOracleProver oSpec F n M params).liftContext lens
 
 end SumcheckProver
+
+section FinalCheckProver
+
+variable {ι : Type} (oSpec : OracleSpec ι)
+variable (F : Type) [Field F] [Fintype F] [DecidableEq F] (n M : ℕ)
+variable (params : ProtocolParams M)
+
+/-- The prover for the final LogUp point check; there are no messages in this phase. -/
+noncomputable def finalCheckProver :
+    OracleProver oSpec (StmtAfterSumcheck F n M params) (OStmtAfterSumcheck F n M params) Unit
+      StmtOut OStmtOut Unit
+      finalCheckPSpec where
+  PrvState := fun _ => StmtAfterSumcheck F n M params ×
+    (∀ i, OStmtAfterSumcheck F n M params i)
+  input := fun ⟨ctx, _⟩ => ctx
+  sendMessage := fun i => Fin.elim0 i
+  receiveChallenge := fun i => Fin.elim0 i
+  output := fun _ => pure ((((), fun i => Fin.elim0 i), ()))
+
+end FinalCheckProver
 
 section FullProver
 
 variable {ι : Type} (oSpec : OracleSpec ι)
-variable (F : Type) [Field F] [Fintype F] [DecidableEq F] [Fact ((-1 : F) ≠ 1)]
-  [SampleableType F] (n M : ℕ)
+variable (F : Type) [Field F] [Fintype F] [DecidableEq F] [SampleableType F] (n M : ℕ)
 variable (params : ProtocolParams M)
 
 /-- The full LogUp prover, composed from the outer prover and embedded sumcheck prover. -/
@@ -191,7 +328,9 @@ noncomputable def logupProver :
     OracleProver oSpec (StmtIn F n M) (OStmtIn F n M) (WitIn F n M params)
       (StmtOut) (OStmtOut) Unit
       (pSpec F n M params) :=
-  Prover.append (outerProver oSpec F n M params) (sumcheckProver oSpec F n M params)
+  Prover.append
+    (Prover.append (outerProver oSpec F n M params) (sumcheckProver oSpec F n M params))
+    (finalCheckProver oSpec F n M params)
 
 end FullProver
 
@@ -224,13 +363,9 @@ noncomputable def outerVerifier :
       (outerPSpec F n params) where
   verify := fun _ challenges => do
     let x : F := challenges (outerChallengeXIdx F n M params)
-  -- TODO: Replace the current table-scan rejection check with a faithful sampler
-  -- for x ∉ { -t(u) : u ∈ H }.
-    for u in (Finset.univ : Finset (Hypercube n)).toList do
-      let tAtU : F ← OptionT.lift <| OracleComp.liftComp
-        (OracleComp.lift <| OracleSpec.query
-          (show [OStmtIn F n M]ₒ.Domain from ⟨InputOracleIdx.table, signPoint F u⟩)) _
-      guard (x + tAtU ≠ 0)
+    -- Following Remark 3 of the LogUp paper, the verifier samples `x` uniformly and does not
+    -- scan the table to reject poles. Pole challenges are treated as bad/failing inputs for the
+    -- honest handoff, and `Completeness.lean` accounts for that event.
     let batch : BatchingChallenge F n params.numGroups :=
       challenges (outerChallengeBatchIdx F n M params)
     pure { xChallenge := x, zChallenge := batch.1, batchingScalars := batch.2 }
@@ -257,32 +392,93 @@ end OuterVerifier
 section SumcheckVerifier
 
 variable {ι : Type} (oSpec : OracleSpec ι)
-variable (F : Type) [Field F] [Fintype F] [DecidableEq F] [Fact ((-1 : F) ≠ 1)] (n M : ℕ)
+variable (F : Type) [Field F] [Fintype F] [DecidableEq F] (n M : ℕ)
 variable (params : ProtocolParams M)
 
 /-- The verifier for the embedded sumcheck phase of LogUp Protocol 2. -/
 noncomputable def sumcheckVerifier [SampleableType F] :
     OracleVerifier oSpec (StmtAfterOuter F n M params) (OStmtAfterOuter F n M params)
-      (StmtOut) (OStmtOut)
+      (StmtAfterSumcheck F n M params) (OStmtAfterSumcheck F n M params)
       (logupSumcheckPSpec F n M params) :=
-  (sumcheckOracleReduction oSpec F n M params).verifier
+  let lens :
+      OracleContext.Lens.{0, 0, 0, 0}
+        (StmtAfterOuter F n M params) (StmtAfterSumcheck F n M params)
+        (LogupSumcheckStmtIn F n M params) (LogupSumcheckStmtOut F n M params)
+        (OStmtAfterOuter F n M params) (OStmtAfterSumcheck F n M params)
+        (LogupSumcheckOracleStatement F n M params)
+        (LogupSumcheckOracleStatement F n M params)
+        Unit Unit Unit Unit :=
+    logupSumcheckContextLens F n M params
+  (logupConcreteSumcheckOracleVerifier oSpec F n M params).liftContext lens.stmt
 
 end SumcheckVerifier
+
+section FinalCheckVerifier
+
+variable {ι : Type} (oSpec : OracleSpec ι)
+variable (F : Type) [Field F] [Fintype F] [DecidableEq F] (n M : ℕ)
+variable (params : ProtocolParams M)
+
+/-- Query one retained LogUp oracle during the final point check. -/
+private def finalCheckQuery
+    (i : OuterOracleIdx M)
+    (q : (instOStmtAfterOuterOracleInterface (F := F) (n := n) (params := params) i).Query) :
+    OptionT
+      (OracleComp (oSpec + ([OStmtAfterSumcheck F n M params]ₒ + [finalCheckPSpec.Message]ₒ)))
+      ((instOStmtAfterOuterOracleInterface (F := F) (n := n) (params := params) i).Response q) :=
+  OptionT.lift <| OracleComp.liftComp
+    (OracleComp.lift <|
+      OracleSpec.query (show [OStmtAfterSumcheck F n M params]ₒ.Domain from ⟨i, q⟩))
+    _
+
+/-- The verifier's final Protocol 2 check: reconstruct `Q(r)` from retained LogUp oracle
+evaluations and compare it with the expected value output by sumcheck. -/
+noncomputable def finalCheckVerifier :
+    OracleVerifier oSpec (StmtAfterSumcheck F n M params) (OStmtAfterSumcheck F n M params)
+      StmtOut OStmtOut
+      finalCheckPSpec where
+  verify := fun stmt _ => do
+    let r : Fin n → F := stmt.finalClaim.challenges
+    let expectedValue : F := stmt.finalClaim.target
+    let multiplicity ← finalCheckQuery oSpec F n M params .multiplicity r
+    let table ← finalCheckQuery oSpec F n M params (.input .table) r
+    let columnValues ← (Vector.finRange M).mapM
+      (fun i => finalCheckQuery oSpec F n M params (.input (.column i)) r)
+    let helperValues ← (Vector.finRange params.numGroups).mapM
+      (fun k => finalCheckQuery oSpec F n M params .helpers ⟨k, r⟩)
+    let evals : PointEvaluations F M params.numGroups :=
+      { multiplicity := multiplicity
+        table := table
+        columns := fun i => columnValues[i]
+        helpers := fun k => helperValues[k] }
+    guard (qAtPoint (canonicalGroups params) stmt.outer.xChallenge stmt.outer.zChallenge r
+      stmt.outer.batchingScalars evals = expectedValue)
+    pure ()
+
+  embed :=
+    { toFun := fun i => Fin.elim0 i
+      inj' := fun i => Fin.elim0 i }
+
+  hEq := fun i => Fin.elim0 i
+
+end FinalCheckVerifier
 
 section FullVerifier
 
 variable {ι : Type} (oSpec : OracleSpec ι)
-variable (F : Type) [Field F] [Fintype F] [DecidableEq F] [Fact ((-1 : F) ≠ 1)]
-  [SampleableType F] (n M : ℕ)
+variable (F : Type) [Field F] [Fintype F] [DecidableEq F] [SampleableType F] (n M : ℕ)
 variable (params : ProtocolParams M)
 
 /-- The full LogUp verifier, obtained by composing the outer verifier with the embedded sumcheck
-verifier. -/
+verifier and final point check. -/
 noncomputable def logupVerifier :
     OracleVerifier oSpec (StmtIn F n M) (OStmtIn F n M)
       (StmtOut) (OStmtOut)
       (pSpec F n M params) :=
-  OracleVerifier.append (outerVerifier oSpec F n M params) (sumcheckVerifier oSpec F n M params)
+  OracleVerifier.append
+    (OracleVerifier.append (outerVerifier oSpec F n M params)
+      (sumcheckVerifier oSpec F n M params))
+    (finalCheckVerifier oSpec F n M params)
 
 end FullVerifier
 
@@ -302,11 +498,43 @@ noncomputable def outerOracleReduction :
 
 end OuterReduction
 
+section SumcheckReduction
+
+variable {ι : Type} (oSpec : OracleSpec ι)
+variable (F : Type) [Field F] [Fintype F] [DecidableEq F] [SampleableType F] (n M : ℕ)
+variable (params : ProtocolParams M)
+
+/-- The embedded LogUp sumcheck phase, obtained by lifting ArkLib's generic Sumcheck reduction
+through the LogUp-to-Sumcheck context lens. -/
+noncomputable def sumcheckOracleReduction :
+    OracleReduction oSpec (StmtAfterOuter F n M params) (OStmtAfterOuter F n M params) Unit
+      (StmtAfterSumcheck F n M params) (OStmtAfterSumcheck F n M params) Unit
+      (logupSumcheckPSpec F n M params) where
+  prover := sumcheckProver oSpec F n M params
+  verifier := sumcheckVerifier oSpec F n M params
+
+end SumcheckReduction
+
+section FinalCheckReduction
+
+variable {ι : Type} (oSpec : OracleSpec ι)
+variable (F : Type) [Field F] [Fintype F] [DecidableEq F] (n M : ℕ)
+variable (params : ProtocolParams M)
+
+/-- The final LogUp point check as an ArkLib oracle reduction. -/
+noncomputable def finalCheckOracleReduction :
+    OracleReduction oSpec (StmtAfterSumcheck F n M params) (OStmtAfterSumcheck F n M params) Unit
+      (StmtOut) (OStmtOut) Unit
+      finalCheckPSpec where
+  prover := finalCheckProver oSpec F n M params
+  verifier := finalCheckVerifier oSpec F n M params
+
+end FinalCheckReduction
+
 section FullReduction
 
 variable {ι : Type} (oSpec : OracleSpec ι)
-variable (F : Type) [Field F] [Fintype F] [DecidableEq F] [Fact ((-1 : F) ≠ 1)]
-  [SampleableType F] (n M : ℕ)
+variable (F : Type) [Field F] [Fintype F] [DecidableEq F] [SampleableType F] (n M : ℕ)
 variable (params : ProtocolParams M)
 
 /-- The full LogUp Protocol as an ArkLib oracle reduction. -/

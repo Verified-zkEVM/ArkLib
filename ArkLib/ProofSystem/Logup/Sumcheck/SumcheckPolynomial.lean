@@ -1,4 +1,4 @@
-import ArkLib.Data.MvPolynomial.Degrees
+import ArkLib.Data.MvPolynomial.Multilinear
 import ArkLib.ProofSystem.Logup.Common
 
 /-!
@@ -8,10 +8,14 @@ Construction of the concrete polynomial used by LogUp's embedded sumcheck, follo
 Haböck's LogUp paper (Cryptology ePrint Archive, Paper 2022/1530,
 <https://eprint.iacr.org/2022/1530>).
 
-The outer LogUp algebra defines a row-wise expression `qOnHypercube`. This file builds its
-multilinear-extension-style polynomial `logupQPolynomial : MvPolynomial (Fin n) F`, proves that it
-agrees with `qOnHypercube` on the signed hypercube, and proves the individual-degree bound
-`degreeOf ≤ M + 3` needed by the generic sumcheck.
+This file defines the polynomial `logupQPolynomial : MvPolynomial (Fin n) F` used as LogUp's
+sumcheck instance after the outer phase.
+
+It proves direct facts about this polynomial, namely:
+* its individual-degree bound `degreeOf ≤ M + 3`,
+* its agreement with `qOnHypercube` on the
+Boolean hypercube, and
+* its agreement with the final-query reconstruction at sumcheck's final point.
 -/
 
 namespace Logup
@@ -23,216 +27,29 @@ section SumcheckPolynomial
 variable (F : Type) [Field F] (n M : ℕ)
 variable (params : ProtocolParams M)
 
-/-- The `{±1}` Lagrange basis polynomial for one hypercube row. -/
-private noncomputable def signedBasisPolynomial (u : Hypercube n) :
-    MvPolynomial (Fin n) F :=
-  MvPolynomial.C (((2 : F) ^ n)⁻¹) *
-    ∏ j : Fin n, (1 + MvPolynomial.C (bitToSign F (u j)) * MvPolynomial.X j)
-
-/-- Multilinear extension of a function on the signed hypercube `{±1}ⁿ`. -/
-private noncomputable def signedMLEPolynomial (values : Hypercube n → F) :
-    MvPolynomial (Fin n) F :=
-  ∑ u : Hypercube n, MvPolynomial.C (values u) * signedBasisPolynomial F n u
-
-/-- The polynomial whose value at `r` is `L_H(r, z)`. -/
-private noncomputable def lagrangeKernelPolynomial (z : Fin n → F) :
-    MvPolynomial (Fin n) F :=
-  MvPolynomial.C (((2 : F) ^ n)⁻¹) *
-    ∏ j : Fin n, (1 + MvPolynomial.C (z j) * MvPolynomial.X j)
-
-private theorem signedBasisPolynomial_eval (u : Hypercube n) (r : Fin n → F) :
-    MvPolynomial.eval r (signedBasisPolynomial F n u) = lagrangeKernel F u r := by
-  simp [signedBasisPolynomial, lagrangeKernel, lagrangeKernelAtPoint, signPoint]
-
-private theorem signedMLEPolynomial_eval (values : Hypercube n → F) (r : Fin n → F) :
-    MvPolynomial.eval r (signedMLEPolynomial F n values) =
-      ∑ u : Hypercube n, values u * lagrangeKernel F u r := by
-  simp [signedMLEPolynomial, signedBasisPolynomial_eval]
-
-private theorem lagrangeKernelPolynomial_eval (z r : Fin n → F) :
-    MvPolynomial.eval r (lagrangeKernelPolynomial F n z) =
-      lagrangeKernelAtPoint F r z := by
-  simp [lagrangeKernelPolynomial, lagrangeKernelAtPoint, mul_comm]
-
-private theorem signedLinearFactor_degreeOf (a : F) (i j : Fin n) :
-    MvPolynomial.degreeOf i (1 + MvPolynomial.C a * MvPolynomial.X j) ≤
-      if i = j then 1 else 0 := by
-  by_cases hij : i = j
-  · subst i
-    simp only [↓reduceIte]
-    have hone :
-        MvPolynomial.degreeOf j (1 : MvPolynomial (Fin n) F) ≤ 1 := by
-      simp
-    have hmul :
-        MvPolynomial.degreeOf j (MvPolynomial.C a * MvPolynomial.X j) ≤ 1 := by
-      calc
-        _ ≤ MvPolynomial.degreeOf j (MvPolynomial.C a) +
-            MvPolynomial.degreeOf j (MvPolynomial.X j) := by
-          exact MvPolynomial.degreeOf_mul_le j _ _
-        _ ≤ 0 + 1 := by
-          gcongr
-          · exact (MvPolynomial.degreeOf_C (R := F) a j).le
-          · exact MvPolynomial.degreeOf_X_le (R := F) j j
-        _ = 1 := by omega
-    exact (MvPolynomial.degreeOf_add_le j _ _).trans (max_le hone hmul)
-  · simp only [hij, ↓reduceIte]
-    have hone :
-        MvPolynomial.degreeOf i (1 : MvPolynomial (Fin n) F) ≤ 0 := by
-      simp
-    have hmul :
-        MvPolynomial.degreeOf i (MvPolynomial.C a * MvPolynomial.X j) ≤ 0 := by
-      calc
-        _ ≤ MvPolynomial.degreeOf i (MvPolynomial.C a) +
-            MvPolynomial.degreeOf i (MvPolynomial.X j) := by
-          exact MvPolynomial.degreeOf_mul_le i _ _
-        _ ≤ 0 + 0 := by
-          gcongr
-          · exact (MvPolynomial.degreeOf_C (R := F) a i).le
-          · exact (MvPolynomial.degreeOf_X_of_ne (R := F) hij).le
-        _ = 0 := by omega
-    exact (MvPolynomial.degreeOf_add_le i _ _).trans (max_le hone hmul)
-
-private theorem signedBasisPolynomial_degreeOf (u : Hypercube n) (i : Fin n) :
-    MvPolynomial.degreeOf i (signedBasisPolynomial F n u) ≤ 1 := by
-  calc
-    _ ≤ MvPolynomial.degreeOf i (MvPolynomial.C (((2 : F) ^ n)⁻¹)) +
-        MvPolynomial.degreeOf i
-          (∏ j : Fin n, (1 + MvPolynomial.C (bitToSign F (u j)) * MvPolynomial.X j)) := by
-      exact MvPolynomial.degreeOf_mul_le i _ _
-    _ ≤ 0 +
-        MvPolynomial.degreeOf i
-          (∏ j : Fin n, (1 + MvPolynomial.C (bitToSign F (u j)) * MvPolynomial.X j)) := by
-      gcongr
-      exact (MvPolynomial.degreeOf_C (R := F) (((2 : F) ^ n)⁻¹) i).le
-    _ =
-        MvPolynomial.degreeOf i
-          (∏ j : Fin n, (1 + MvPolynomial.C (bitToSign F (u j)) * MvPolynomial.X j)) := by
-      simp
-    _ ≤ ∑ j : Fin n,
-        MvPolynomial.degreeOf i (1 + MvPolynomial.C (bitToSign F (u j)) * MvPolynomial.X j) := by
-      exact MvPolynomial.degreeOf_prod_le i _ _
-    _ ≤ ∑ j : Fin n, if i = j then 1 else 0 := by
-      apply Finset.sum_le_sum
-      intro j _
-      exact signedLinearFactor_degreeOf F n (bitToSign F (u j)) i j
-    _ = 1 := by
-      norm_num
-
-private theorem signedMLEPolynomial_degreeOf (values : Hypercube n → F) (i : Fin n) :
-    MvPolynomial.degreeOf i (signedMLEPolynomial F n values) ≤ 1 := by
-  classical
-  calc
-    _ ≤ (Finset.univ : Finset (Hypercube n)).sup
-        fun u => MvPolynomial.degreeOf i
-          (MvPolynomial.C (values u) * signedBasisPolynomial F n u) := by
-      exact MvPolynomial.degreeOf_sum_le i _ _
-    _ ≤ 1 := by
-      apply Finset.sup_le
-      intro u _
-      calc
-        MvPolynomial.degreeOf i (MvPolynomial.C (values u) * signedBasisPolynomial F n u)
-            ≤ MvPolynomial.degreeOf i (MvPolynomial.C (values u)) +
-              MvPolynomial.degreeOf i (signedBasisPolynomial F n u) := by
-          exact MvPolynomial.degreeOf_mul_le i _ _
-        _ ≤ 0 + 1 := by
-          gcongr
-          · exact (MvPolynomial.degreeOf_C (R := F) (values u) i).le
-          · exact signedBasisPolynomial_degreeOf F n u i
-        _ = 1 := by omega
-
-private theorem lagrangeKernelPolynomial_degreeOf (z : Fin n → F) (i : Fin n) :
-    MvPolynomial.degreeOf i (lagrangeKernelPolynomial F n z) ≤ 1 := by
-  calc
-    _ ≤ MvPolynomial.degreeOf i (MvPolynomial.C (((2 : F) ^ n)⁻¹)) +
-        MvPolynomial.degreeOf i
-          (∏ j : Fin n, (1 + MvPolynomial.C (z j) * MvPolynomial.X j)) := by
-      exact MvPolynomial.degreeOf_mul_le i _ _
-    _ ≤ 0 +
-        MvPolynomial.degreeOf i
-          (∏ j : Fin n, (1 + MvPolynomial.C (z j) * MvPolynomial.X j)) := by
-      gcongr
-      exact (MvPolynomial.degreeOf_C (R := F) (((2 : F) ^ n)⁻¹) i).le
-    _ =
-        MvPolynomial.degreeOf i
-          (∏ j : Fin n, (1 + MvPolynomial.C (z j) * MvPolynomial.X j)) := by
-      simp
-    _ ≤ ∑ j : Fin n,
-        MvPolynomial.degreeOf i (1 + MvPolynomial.C (z j) * MvPolynomial.X j) := by
-      exact MvPolynomial.degreeOf_prod_le i _ _
-    _ ≤ ∑ j : Fin n, if i = j then 1 else 0 := by
-      apply Finset.sum_le_sum
-      intro j _
-      exact signedLinearFactor_degreeOf F n (z j) i j
-    _ = 1 := by
-      norm_num
-
-/-- Polynomial extension of one retained Lagrange-form multilinear oracle. -/
-private noncomputable def multilinearOraclePolynomial (oracle : MultilinearOracle F n) :
-    MvPolynomial (Fin n) F :=
-  signedMLEPolynomial F n fun u => evalOnHypercube oracle u
-
-private theorem multilinearOraclePolynomial_eval (oracle : MultilinearOracle F n)
-    (r : Fin n → F) :
-    MvPolynomial.eval r (multilinearOraclePolynomial F n oracle) =
-      lagrangeOracleEval oracle r := by
-  simp [multilinearOraclePolynomial, signedMLEPolynomial_eval, lagrangeOracleEval,
-    evalOnHypercube]
-
-/-- On the signed hypercube the Lagrange kernel is a delta function. -/
-theorem lagrangeKernel_signPoint (hs : (-1 : F) ≠ 1) (v u : Hypercube n) :
-    lagrangeKernel F v (signPoint F u) = if v = u then 1 else 0 := by
-  have h2 : (2 : F) ≠ 0 := fun h => hs (by linear_combination -h)
-  unfold lagrangeKernel lagrangeKernelAtPoint
-  by_cases h : v = u
-  · subst h
-    rw [if_pos rfl]
-    have hfac : ∀ j, 1 + signPoint F v j * signPoint F v j = (2 : F) := by
-      intro j
-      show (1 : F) + bitToSign F (v j) * bitToSign F (v j) = 2
-      generalize v j = b
-      fin_cases b <;> norm_num [bitToSign]
-    rw [Finset.prod_congr rfl (fun j _ => hfac j), Finset.prod_const, Finset.card_univ,
-      Fintype.card_fin, inv_mul_cancel₀ (pow_ne_zero n h2)]
-  · rw [if_neg h]
-    obtain ⟨j, hj⟩ := Function.ne_iff.mp h
-    have hfac : 1 + signPoint F v j * signPoint F u j = 0 := by
-      show (1 : F) + bitToSign F (v j) * bitToSign F (u j) = 0
-      generalize hvj : v j = b at hj
-      generalize huj : u j = c at hj
-      fin_cases b <;> fin_cases c <;> simp_all [bitToSign]
-    rw [Finset.prod_eq_zero (Finset.mem_univ j) hfac, mul_zero]
-
-/-- The MLE of an oracle, evaluated at a signed-hypercube point, recovers the oracle's value. -/
-theorem lagrangeOracleEval_signPoint (hs : (-1 : F) ≠ 1)
+private theorem oraclePolynomial_eval_hypercube
     (oracle : MultilinearOracle F n) (u : Hypercube n) :
-    lagrangeOracleEval oracle (signPoint F u) = evalOnHypercube oracle u := by
-  unfold lagrangeOracleEval
-  rw [Finset.sum_congr rfl (fun v _ => by rw [lagrangeKernel_signPoint F n hs v u])]
-  simp only [mul_ite, mul_one, mul_zero, Finset.sum_ite_eq', Finset.mem_univ, if_true,
-    evalOnHypercube]
-
-private theorem multilinearOraclePolynomial_eval_sign (hs : (-1 : F) ≠ 1)
-    (oracle : MultilinearOracle F n) (u : Hypercube n) :
-    MvPolynomial.eval (signPoint F u) (multilinearOraclePolynomial F n oracle)
+    MvPolynomial.eval (u : Fin n → F) (MvPolynomial.MLE oracle.values)
       = evalOnHypercube oracle u := by
-  rw [multilinearOraclePolynomial_eval, lagrangeOracleEval_signPoint F n hs]
+  change MvPolynomial.eval (u : Fin n → F) (MvPolynomial.MLE oracle.values) = oracle.values u
+  simp
 
 private noncomputable def inputOraclePolynomial
     (oStmt : ∀ i, OStmtAfterOuter F n M params i) (idx : InputOracleIdx M) :
     MvPolynomial (Fin n) F :=
   match idx with
-  | .table => multilinearOraclePolynomial F n (oStmt (.input .table))
-  | .column i => multilinearOraclePolynomial F n (oStmt (.input (.column i)))
+  | .table => MvPolynomial.MLE (oStmt (.input .table)).values
+  | .column i => MvPolynomial.MLE (oStmt (.input (.column i))).values
 
 private noncomputable def multiplicityPolynomial
     (oStmt : ∀ i, OStmtAfterOuter F n M params i) :
     MvPolynomial (Fin n) F :=
-  multilinearOraclePolynomial F n (oStmt .multiplicity)
+  MvPolynomial.MLE (oStmt .multiplicity).values
 
 private noncomputable def helperPolynomial
     (oStmt : ∀ i, OStmtAfterOuter F n M params i) (k : Fin params.numGroups) :
     MvPolynomial (Fin n) F :=
-  multilinearOraclePolynomial F n ((oStmt .helpers) k)
+  MvPolynomial.MLE ((oStmt .helpers) k).values
 
 private noncomputable def termPhiPolynomial
     (stmt : StmtAfterOuter F n M params)
@@ -258,12 +75,6 @@ private noncomputable def domainIdentityPolynomial
         ∏ j ∈ (canonicalGroups params k).erase i,
           termPhiPolynomial F n M params stmt oStmt j
 
-private theorem multilinearOraclePolynomial_degreeOf (oracle : MultilinearOracle F n)
-    (i : Fin n) :
-    MvPolynomial.degreeOf i (multilinearOraclePolynomial F n oracle) ≤ 1 := by
-  simpa [multilinearOraclePolynomial] using
-    signedMLEPolynomial_degreeOf F n (fun u => evalOnHypercube oracle u) i
-
 private theorem inputOraclePolynomial_degreeOf
     (oStmt : ∀ i, OStmtAfterOuter F n M params i) (idx : InputOracleIdx M)
     (i : Fin n) :
@@ -271,21 +82,23 @@ private theorem inputOraclePolynomial_degreeOf
   cases idx with
   | table =>
       simpa [inputOraclePolynomial] using
-        multilinearOraclePolynomial_degreeOf F n (oStmt (.input .table)) i
+        (MvPolynomial.MLE_degreeOf (R := F) ((oStmt (.input .table)).values) i)
   | column j =>
       simpa [inputOraclePolynomial] using
-        multilinearOraclePolynomial_degreeOf F n (oStmt (.input (.column j))) i
+        (MvPolynomial.MLE_degreeOf (R := F) ((oStmt (.input (.column j))).values) i)
 
 private theorem multiplicityPolynomial_degreeOf
     (oStmt : ∀ i, OStmtAfterOuter F n M params i) (i : Fin n) :
-    MvPolynomial.degreeOf i (multiplicityPolynomial F n M params oStmt) ≤ 1 :=
-  multilinearOraclePolynomial_degreeOf F n (oStmt .multiplicity) i
+    MvPolynomial.degreeOf i (multiplicityPolynomial F n M params oStmt) ≤ 1 := by
+  simpa [multiplicityPolynomial] using
+    (MvPolynomial.MLE_degreeOf (R := F) ((oStmt .multiplicity).values) i)
 
 private theorem helperPolynomial_degreeOf
     (oStmt : ∀ i, OStmtAfterOuter F n M params i) (k : Fin params.numGroups)
     (i : Fin n) :
-    MvPolynomial.degreeOf i (helperPolynomial F n M params oStmt k) ≤ 1 :=
-  multilinearOraclePolynomial_degreeOf F n ((oStmt .helpers) k) i
+    MvPolynomial.degreeOf i (helperPolynomial F n M params oStmt k) ≤ 1 := by
+  simpa [helperPolynomial] using
+    (MvPolynomial.MLE_degreeOf (R := F) (((oStmt .helpers) k).values) i)
 
 private theorem termPhiPolynomial_degreeOf
     (stmt : StmtAfterOuter F n M params)
@@ -405,7 +218,7 @@ noncomputable def logupQPolynomial
     MvPolynomial (Fin n) F :=
   ∑ k : Fin params.numGroups, (
     helperPolynomial F n M params oStmt k +
-      lagrangeKernelPolynomial F n stmt.zChallenge *
+      MvPolynomial.eqPolynomial stmt.zChallenge *
         MvPolynomial.C (stmt.batchingScalars k) *
           domainIdentityPolynomial F n M params stmt oStmt k)
 
@@ -419,7 +232,7 @@ theorem logupQPolynomial_degreeOf
     _ ≤ (Finset.univ : Finset (Fin params.numGroups)).sup fun k =>
         MvPolynomial.degreeOf i
           (helperPolynomial F n M params oStmt k +
-            lagrangeKernelPolynomial F n stmt.zChallenge *
+            MvPolynomial.eqPolynomial stmt.zChallenge *
               MvPolynomial.C (stmt.batchingScalars k) *
                 domainIdentityPolynomial F n M params stmt oStmt k) := by
       exact MvPolynomial.degreeOf_sum_le i _ _
@@ -430,17 +243,17 @@ theorem logupQPolynomial_degreeOf
         (helperPolynomial_degreeOf F n M params oStmt k i).trans (by omega)
       have hProduct :
           MvPolynomial.degreeOf i
-            (lagrangeKernelPolynomial F n stmt.zChallenge *
+            (MvPolynomial.eqPolynomial stmt.zChallenge *
               MvPolynomial.C (stmt.batchingScalars k) *
                 domainIdentityPolynomial F n M params stmt oStmt k) ≤ M + 3 := by
         calc
           _ ≤ MvPolynomial.degreeOf i
-                (lagrangeKernelPolynomial F n stmt.zChallenge *
+                (MvPolynomial.eqPolynomial stmt.zChallenge *
                   MvPolynomial.C (stmt.batchingScalars k)) +
               MvPolynomial.degreeOf i
                 (domainIdentityPolynomial F n M params stmt oStmt k) := by
             exact MvPolynomial.degreeOf_mul_le i _ _
-          _ ≤ (MvPolynomial.degreeOf i (lagrangeKernelPolynomial F n stmt.zChallenge) +
+          _ ≤ (MvPolynomial.degreeOf i (MvPolynomial.eqPolynomial stmt.zChallenge) +
                 MvPolynomial.degreeOf i (MvPolynomial.C (stmt.batchingScalars k))) +
               MvPolynomial.degreeOf i
                 (domainIdentityPolynomial F n M params stmt oStmt k) := by
@@ -448,66 +261,137 @@ theorem logupQPolynomial_degreeOf
             exact MvPolynomial.degreeOf_mul_le i _ _
           _ ≤ (1 + 0) + (M + 2) := by
             gcongr
-            · exact lagrangeKernelPolynomial_degreeOf F n stmt.zChallenge i
+            · exact MvPolynomial.eqPolynomial_degreeOf (R := F) stmt.zChallenge i
             · exact (MvPolynomial.degreeOf_C (R := F) (stmt.batchingScalars k) i).le
             · exact domainIdentityPolynomial_degreeOf F n M params stmt oStmt k i
           _ = M + 3 := by
             omega
       exact (MvPolynomial.degreeOf_add_le i _ _).trans (max_le hHelper hProduct)
 
-private theorem termPhiPolynomial_eval_sign (hs : (-1 : F) ≠ 1)
+private theorem termPhiPolynomial_eval_hypercube
     (stmt : StmtAfterOuter F n M params) (oStmt : ∀ i, OStmtAfterOuter F n M params i)
     (i : TermIdx M) (u : Hypercube n) :
-    MvPolynomial.eval (signPoint F u) (termPhiPolynomial F n M params stmt oStmt i)
+    MvPolynomial.eval (u : Fin n → F) (termPhiPolynomial F n M params stmt oStmt i)
       = termPhi (fun idx => oStmt (.input idx)) stmt.xChallenge i u := by
   rcases h : termToInput i with _ | c <;>
     simp only [termPhiPolynomial, termPhi, phi, h, inputOraclePolynomial, tableOracle,
-      columnOracle, map_add, MvPolynomial.eval_C, multilinearOraclePolynomial_eval_sign F n hs]
+      columnOracle, map_add, MvPolynomial.eval_C, oraclePolynomial_eval_hypercube F n]
 
-private theorem termNumeratorPolynomial_eval_sign (hs : (-1 : F) ≠ 1)
+private theorem termNumeratorPolynomial_eval_hypercube
     (oStmt : ∀ i, OStmtAfterOuter F n M params i) (i : TermIdx M) (u : Hypercube n) :
-    MvPolynomial.eval (signPoint F u) (termNumeratorPolynomial F n M params oStmt i)
+    MvPolynomial.eval (u : Fin n → F) (termNumeratorPolynomial F n M params oStmt i)
       = termNumerator (oStmt .multiplicity) i u := by
   unfold termNumeratorPolynomial termNumerator numerator
   cases termToInput i with
-  | table => simp only [multiplicityPolynomial, multilinearOraclePolynomial_eval_sign F n hs]
+  | table => simp only [multiplicityPolynomial, oraclePolynomial_eval_hypercube F n]
   | column c => simp
 
-private theorem domainIdentityPolynomial_eval_sign (hs : (-1 : F) ≠ 1)
+private theorem domainIdentityPolynomial_eval_hypercube
     (stmt : StmtAfterOuter F n M params) (oStmt : ∀ i, OStmtAfterOuter F n M params i)
     (k : Fin params.numGroups) (u : Hypercube n) :
-    MvPolynomial.eval (signPoint F u) (domainIdentityPolynomial F n M params stmt oStmt k)
+    MvPolynomial.eval (u : Fin n → F) (domainIdentityPolynomial F n M params stmt oStmt k)
       = domainIdentityTerm (canonicalGroups params) (fun idx => oStmt (.input idx))
           (oStmt .multiplicity) (oStmt .helpers) stmt.xChallenge k u := by
   rw [domainIdentityPolynomial, map_sub, map_mul, map_prod, domainIdentityTerm,
     denominatorProduct, map_sum]
   congr 1
   · congr 1
-    · simp only [helperPolynomial]; exact multilinearOraclePolynomial_eval_sign F n hs _ u
+    · simp only [helperPolynomial]; exact oraclePolynomial_eval_hypercube F n _ u
     · exact Finset.prod_congr rfl
-        (fun i _ => termPhiPolynomial_eval_sign F n M params hs stmt oStmt i u)
+        (fun i _ => termPhiPolynomial_eval_hypercube F n M params stmt oStmt i u)
   · refine Finset.sum_congr rfl (fun i _ => ?_)
-    rw [map_mul, map_prod, termNumeratorPolynomial_eval_sign F n M params hs]
+    rw [map_mul, map_prod, termNumeratorPolynomial_eval_hypercube F n M params]
     congr 1
     exact Finset.prod_congr rfl
-      (fun j _ => termPhiPolynomial_eval_sign F n M params hs stmt oStmt j u)
+      (fun j _ => termPhiPolynomial_eval_hypercube F n M params stmt oStmt j u)
 
-/-- `logupQPolynomial` restricted to the signed hypercube agrees with `qOnHypercube`. -/
-theorem logupQPolynomial_eval_signPoint (hs : (-1 : F) ≠ 1)
+/-- Denominator polynomials evaluated at an arbitrary point match the reconstructed final-query
+denominators. -/
+private theorem termPhiPolynomial_eval_point
+    (stmt : StmtAfterOuter F n M params) (oStmt : ∀ i, OStmtAfterOuter F n M params i)
+    (r : Fin n → F) (evals : PointEvaluations F M params.numGroups)
+    (hEval : logupPointEvaluationsAgree (F := F) (n := n) (M := M) params r oStmt evals)
+    (i : TermIdx M) :
+    MvPolynomial.eval r (termPhiPolynomial F n M params stmt oStmt i)
+      = termPhiAtPoint stmt.xChallenge evals i := by
+  rcases h : termToInput i with _ | c
+  · simp only [termPhiPolynomial, termPhiAtPoint, phiAtPoint, h, inputOraclePolynomial,
+      map_add, MvPolynomial.eval_C]
+    exact congrArg (fun y => stmt.xChallenge + y) hEval.2.1.symm
+  · simp only [termPhiPolynomial, termPhiAtPoint, phiAtPoint, h, inputOraclePolynomial,
+      map_add, MvPolynomial.eval_C]
+    exact congrArg (fun y => stmt.xChallenge + y) (hEval.2.2.1 c).symm
+
+/-- Numerator polynomials evaluated at an arbitrary point match the reconstructed final-query
+numerators. -/
+private theorem termNumeratorPolynomial_eval_point
+    (oStmt : ∀ i, OStmtAfterOuter F n M params i)
+    (r : Fin n → F) (evals : PointEvaluations F M params.numGroups)
+    (hEval : logupPointEvaluationsAgree (F := F) (n := n) (M := M) params r oStmt evals)
+    (i : TermIdx M) :
+    MvPolynomial.eval r (termNumeratorPolynomial F n M params oStmt i)
+      = termNumeratorAtPoint evals i := by
+  unfold termNumeratorPolynomial termNumeratorAtPoint numeratorAtPoint
+  cases h : termToInput i with
+  | table =>
+      simp only [multiplicityPolynomial]
+      exact hEval.1.symm
+  | column c =>
+      simp
+
+/-- The cleared-denominator identity polynomial evaluated at the final point matches the
+reconstructed final-query expression. -/
+private theorem domainIdentityPolynomial_eval_point
+    (stmt : StmtAfterOuter F n M params) (oStmt : ∀ i, OStmtAfterOuter F n M params i)
+    (r : Fin n → F) (evals : PointEvaluations F M params.numGroups)
+    (hEval : logupPointEvaluationsAgree (F := F) (n := n) (M := M) params r oStmt evals)
+    (k : Fin params.numGroups) :
+    MvPolynomial.eval r (domainIdentityPolynomial F n M params stmt oStmt k)
+      = domainIdentityAtPoint (canonicalGroups params) stmt.xChallenge evals k := by
+  rw [domainIdentityPolynomial, domainIdentityAtPoint, map_sub, map_mul, map_prod, map_sum]
+  congr 1
+  · congr 1
+    · simp only [helperPolynomial]
+      exact (hEval.2.2.2 k).symm
+    · exact Finset.prod_congr rfl
+        (fun i _ => termPhiPolynomial_eval_point F n M params stmt oStmt r evals hEval i)
+  · refine Finset.sum_congr rfl (fun i _ => ?_)
+    rw [map_mul, map_prod, termNumeratorPolynomial_eval_point F n M params oStmt r evals hEval]
+    congr 1
+    exact Finset.prod_congr rfl
+      (fun j _ => termPhiPolynomial_eval_point F n M params stmt oStmt r evals hEval j)
+
+/-- `logupQPolynomial` restricted to the Boolean hypercube agrees with `qOnHypercube`. -/
+theorem logupQPolynomial_eval_hypercube
     (stmt : StmtAfterOuter F n M params) (oStmt : ∀ i, OStmtAfterOuter F n M params i)
     (u : Hypercube n) :
-    MvPolynomial.eval (signPoint F u) (logupQPolynomial F n M params stmt oStmt)
+    MvPolynomial.eval (u : Fin n → F) (logupQPolynomial F n M params stmt oStmt)
       = qOnHypercube (canonicalGroups params) (fun i => oStmt (.input i)) (oStmt .multiplicity)
           (oStmt .helpers) stmt.xChallenge stmt.zChallenge stmt.batchingScalars u := by
   rw [logupQPolynomial, qOnHypercube, map_sum]
   refine Finset.sum_congr rfl (fun k _ => ?_)
   rw [map_add, map_mul, map_mul, MvPolynomial.eval_C,
-    show MvPolynomial.eval (signPoint F u) (helperPolynomial F n M params oStmt k)
+    show MvPolynomial.eval (u : Fin n → F) (helperPolynomial F n M params oStmt k)
         = evalOnHypercube ((oStmt .helpers) k) u from by
-      simp only [helperPolynomial]; exact multilinearOraclePolynomial_eval_sign F n hs _ u,
-    show MvPolynomial.eval (signPoint F u) (lagrangeKernelPolynomial F n stmt.zChallenge)
-        = lagrangeKernel F u stmt.zChallenge from by rw [lagrangeKernelPolynomial_eval]; rfl,
-    domainIdentityPolynomial_eval_sign F n M params hs]
+      simp only [helperPolynomial]; exact oraclePolynomial_eval_hypercube F n _ u,
+    domainIdentityPolynomial_eval_hypercube F n M params]
+
+/-- `logupQPolynomial` evaluated at the sumcheck point agrees with the value reconstructed from
+the final LogUp oracle-query answers. -/
+theorem logupQPolynomial_eval_point
+    (stmt : StmtAfterOuter F n M params) (oStmt : ∀ i, OStmtAfterOuter F n M params i)
+    (r : Fin n → F) (evals : PointEvaluations F M params.numGroups)
+    (hEval : logupPointEvaluationsAgree (F := F) (n := n) (M := M) params r oStmt evals) :
+    MvPolynomial.eval r (logupQPolynomial F n M params stmt oStmt)
+      = qAtPoint (canonicalGroups params) stmt.xChallenge stmt.zChallenge r
+          stmt.batchingScalars evals := by
+  rw [logupQPolynomial, qAtPoint, map_sum]
+  refine Finset.sum_congr rfl (fun k _ => ?_)
+  rw [map_add, map_mul, map_mul, MvPolynomial.eval_C,
+    show MvPolynomial.eval r (helperPolynomial F n M params oStmt k) = evals.helpers k from by
+      simp only [helperPolynomial]
+      exact (hEval.2.2.2 k).symm,
+    domainIdentityPolynomial_eval_point F n M params stmt oStmt r evals hEval]
 
 end SumcheckPolynomial
 

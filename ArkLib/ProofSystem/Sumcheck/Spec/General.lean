@@ -213,6 +213,15 @@ theorem reduction_perfectCompleteness :
     (R := SingleRound.reduction R n deg D oSpec)
     (h := fun i => SingleRound.reduction_perfectCompleteness i)
 
+/-- Perfect completeness for the (full) sum-check oracle reduction. -/
+theorem oracleReduction_perfectCompleteness :
+    (oracleReduction R deg D n oSpec).perfectCompleteness init impl
+      (relationRound R n deg D 0) (relationRound R n deg D (.last n)) :=
+  OracleReduction.seqCompose_perfectCompleteness
+    (rel := relationRound R n deg D)
+    (R := SingleRound.oracleReduction R n deg D oSpec)
+    (h := fun i => SingleRound.oracleReduction_perfectCompleteness i)
+
 /-- Round-by-round knowledge soundness with error `deg / |R|` per challenge for the (full)
   sum-check protocol -/
 theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :

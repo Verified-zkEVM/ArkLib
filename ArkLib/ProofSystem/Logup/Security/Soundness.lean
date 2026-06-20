@@ -15,8 +15,7 @@ namespace Logup
 section Soundness
 
 variable {ι : Type} (oSpec : OracleSpec ι)
-variable (F : Type) [Field F] [Fintype F] [DecidableEq F] [Fact ((-1 : F) ≠ 1)]
-  [SampleableType F]
+variable (F : Type) [Field F] [Fintype F] [DecidableEq F] [SampleableType F]
 variable (n M : ℕ)
 variable (params : ProtocolParams M)
 variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
