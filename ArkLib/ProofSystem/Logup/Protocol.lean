@@ -420,16 +420,16 @@ variable (F : Type) [Field F] [Fintype F] [DecidableEq F] (n M : ℕ)
 variable (params : ProtocolParams M)
 
 /-- Query one retained LogUp oracle during the final point check. -/
-private def finalCheckQuery
+def finalCheckQuery
     (i : OuterOracleIdx M)
     (q : (instOStmtAfterOuterOracleInterface (F := F) (n := n) (params := params) i).Query) :
     OptionT
       (OracleComp (oSpec + ([OStmtAfterSumcheck F n M params]ₒ + [finalCheckPSpec.Message]ₒ)))
       ((instOStmtAfterOuterOracleInterface (F := F) (n := n) (params := params) i).Response q) :=
-  OptionT.lift <| OracleComp.liftComp
-    (OracleComp.lift <|
-      OracleSpec.query (show [OStmtAfterSumcheck F n M params]ₒ.Domain from ⟨i, q⟩))
-    _
+  OptionT.mk <| some <$> OracleComp.lift
+    (OracleSpec.query
+      (show (oSpec + ([OStmtAfterSumcheck F n M params]ₒ +
+          [finalCheckPSpec.Message]ₒ)).Domain from Sum.inr (Sum.inl ⟨i, q⟩)))
 
 /-- The verifier's final Protocol 2 check: reconstruct `Q(r)` from retained LogUp oracle
 evaluations and compare it with the expected value output by sumcheck. -/
