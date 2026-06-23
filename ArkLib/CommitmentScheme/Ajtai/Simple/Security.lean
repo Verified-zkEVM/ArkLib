@@ -94,11 +94,11 @@ theorem bindingAdvantage_le_moduleSIS {rows cols : Nat}
     [DecidableEq (Message Φ cols)] [DecidableEq (Commitment Φ rows)] (boundSq : ℕ)
     (adv : BindingAdv (PublicParams Φ rows cols) (Message Φ cols) (Commitment Φ rows) Opening) :
     bindingAdvantage
-        (commitmentScheme Φ rows cols (fun s => decide (vecL2NormSq Φ s ≤ boundSq))) adv ≤
+        (commitmentScheme Φ rows cols (fun s => decide (‖s‖₂² ≤ boundSq))) adv ≤
       ModuleSIS.advantage Φ rows cols
-        (fun z => decide (vecL2NormSq Φ z ≤ subL2NormSqBound boundSq))
+        (fun z => decide (‖z‖₂² ≤ subL2NormSqBound boundSq))
         (bindingAdvToModuleSIS Φ
-          (fun z => decide (vecL2NormSq Φ z ≤ subL2NormSqBound boundSq)) adv) :=
+          (fun z => decide (‖z‖₂² ≤ subL2NormSqBound boundSq)) adv) :=
   bindingAdvantage_le_moduleSIS_of_shortClosure Φ _ _
     (fun s₁ s₂ h₁ h₂ => by
       simp only [decide_eq_true_eq] at h₁ h₂ ⊢

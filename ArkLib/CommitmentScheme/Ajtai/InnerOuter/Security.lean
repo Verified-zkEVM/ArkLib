@@ -103,7 +103,7 @@ abbrev Adversary (Φ : CyclotomicModulus (ZMod q))
 def scaledMessage
     (opening₁ opening₂ : Opening Φ innerRows messageRows messageDigits blocks innerDigits)
     (i : Fin blocks) : PolyVec (Rq Φ) (messageRows * messageDigits) :=
-  scalarVecMul (opening₁.challenge i * opening₂.challenge i) (opening₁.message i)
+  (opening₁.challenge i * opening₂.challenge i) •ᵥ opening₁.message i
 
 /-- Turn two weak openings into either an inner or outer Module-SIS witness: if the inner
 decompositions flatten equally, use the first differing message block (scaled witness);
@@ -128,10 +128,10 @@ structure VerifiedBlock (base : ZMod q) (βSq κ : Nat)
   /-- The challenge is invertible (Lyubashevsky–Seiler). -/
   unit : IsUnit (opening.challenge i)
   /-- The challenge is `ℓ₁`-short. -/
-  challenge_short : Rq.l1Norm Φ (opening.challenge i) ≤ κ
+  challenge_short : ‖opening.challenge i‖₁ ≤ κ
   /-- The scaled message is `ℓ₂²`-short. -/
   scaled_short :
-    vecL2NormSq Φ (scalarVecMul (opening.challenge i) (opening.message i)) ≤ βSq
+    ‖opening.challenge i •ᵥ opening.message i‖₂² ≤ βSq
   /-- The inner gadget relation holds. -/
   inner_eq :
     Simple.commit Φ (gadgetMatrix Φ base innerRows innerDigits) (opening.innerDecomp i) =
@@ -153,7 +153,7 @@ structure VerifiedOpening (base : ZMod q) (βSq γ κ : Nat)
 /-- Inner Module-SIS shortness: the extracted scaled-message witness has squared `ℓ₂` norm
 within `subL2NormSqBound (scalarVecMulMulL2NormSqBound κ β²)`. -/
 def innerShort (κ βSq : ℕ) : ModuleSIS.Solution Φ (messageRows * messageDigits) → Bool :=
-  fun z => decide (vecL2NormSq Φ z ≤ subL2NormSqBound (scalarVecMulMulL2NormSqBound κ βSq))
+  fun z => decide (‖z‖₂² ≤ subL2NormSqBound (scalarVecMulMulL2NormSqBound κ βSq))
 
 /-- Outer Module-SIS shortness: the extracted inner-decomposition difference has `ℓ∞`
 norm within `subLInftyNormBound γ = 2·γ`. -/
@@ -162,6 +162,7 @@ def outerShort (γ : ℕ) : ModuleSIS.Solution Φ (blocks * (innerRows * innerDi
 
 /-! ## Security: pinned to the power-of-two modulus `𝓜(q, α)` -/
 
+omit [NeZero q] in
 /-- Extract reusable weak-opening facts from a successful verification (over `𝓜(q, α)`,
 where Lyubashevsky–Seiler invertibility applies). -/
 theorem verifiedOpening_of_verify_eq_true {base : ZMod q}
@@ -227,7 +228,7 @@ theorem scaledMessage_l2NormSq_le {base : ZMod q} {βSq κ : Nat}
     {i : Fin blocks}
     (hB₁ : VerifiedBlock 𝓜(q, α) base βSq κ pp opening₁ i)
     (hB₂ : VerifiedBlock 𝓜(q, α) base βSq κ pp opening₂ i) :
-    vecL2NormSq 𝓜(q, α) (scaledMessage 𝓜(q, α) opening₁ opening₂ i) ≤
+    ‖scaledMessage 𝓜(q, α) opening₁ opening₂ i‖₂² ≤
       scalarVecMulMulL2NormSqBound κ βSq :=
   scalarVecMul_mul_l2NormSq_le α (opening₁.challenge i) (opening₂.challenge i)
     (opening₁.message i) hB₂.challenge_short hB₁.scaled_short
@@ -253,9 +254,8 @@ theorem inner_relation_of_verified {base : ZMod q} {βSq γ κ : Nat}
   have hne : scaledMessage 𝓜(q, α) opening₁ opening₂ i -
       scaledMessage 𝓜(q, α) opening₂ opening₁ i ≠ 0 :=
     sub_ne_zero.mpr (scaledMessage_ne_of_message_ne 𝓜(q, α) hB₁ hB₂ hmsgNe)
-  have hshort : vecL2NormSq 𝓜(q, α)
-      (scaledMessage 𝓜(q, α) opening₁ opening₂ i -
-        scaledMessage 𝓜(q, α) opening₂ opening₁ i) ≤
+  have hshort : ‖scaledMessage 𝓜(q, α) opening₁ opening₂ i -
+        scaledMessage 𝓜(q, α) opening₂ opening₁ i‖₂² ≤
         subL2NormSqBound (scalarVecMulMulL2NormSqBound κ βSq) :=
     sub_l2NormSq_le 𝓜(q, α) _ _ (scaledMessage_l2NormSq_le α hB₁ hB₂)
       (scaledMessage_l2NormSq_le α hB₂ hB₁)

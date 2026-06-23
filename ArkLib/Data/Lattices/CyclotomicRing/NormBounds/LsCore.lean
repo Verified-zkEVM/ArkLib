@@ -46,27 +46,7 @@ open Polynomial CompPoly CompPoly.CPolynomial
 variable {R : Type*} [Field R] [BEq R] [LawfulBEq R]
 variable (Ψ : CyclotomicModulus R) [IsCyclotomic Ψ]
 
-omit [IsCyclotomic Ψ] in
-/-- `quotientHom` is surjective: it factors through the surjective `Ideal.Quotient.mk`
-and the surjective `CPolynomial.ringEquiv`. -/
-theorem quotientHom_surjective : Function.Surjective Ψ.quotientHom := by
-  intro y
-  obtain ⟨p, rfl⟩ := Ideal.Quotient.mk_surjective y
-  obtain ⟨cp, rfl⟩ :=
-    (CPolynomial.ringEquiv : CPolynomial R ≃+* Polynomial R).surjective p
-  exact ⟨cp, by rw [quotientHom_apply]; rfl⟩
-
-/-- `Rq.toQuotient` is surjective. -/
-theorem Rq.toQuotient_surjective : Function.Surjective (Rq.toQuotient Ψ) := by
-  intro y
-  obtain ⟨p, rfl⟩ := quotientHom_surjective Ψ y
-  exact ⟨Rq.mk Ψ p, by rw [Rq.toQuotient_mk]⟩
-
-/-- The ring isomorphism `Rq Ψ ≃+* Ψ.CyclotomicRing`, built from the injective ring
-hom `toQuotientHom` and the surjectivity above. -/
-noncomputable def Rq.equivQuotient : Rq Ψ ≃+* Ψ.CyclotomicRing :=
-  RingEquiv.ofBijective (Rq.toQuotientHom Ψ)
-    ⟨Rq.toQuotient_injective Ψ, Rq.toQuotient_surjective Ψ⟩
+-- `Rq.toQuotient_surjective` and `Rq.equivQuotient` live in `CyclotomicRing.Rq`; reuse them here.
 
 @[simp] theorem Rq.coe_equivQuotient :
     ⇑(Rq.equivQuotient Ψ) = Rq.toQuotientHom Ψ := rfl

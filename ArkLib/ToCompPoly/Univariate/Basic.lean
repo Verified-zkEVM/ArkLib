@@ -328,6 +328,11 @@ theorem degree_toPoly_ofFinCoeff_lt (N : ℕ) (c : ℕ → R) :
   exact lt_of_le_of_lt (Polynomial.degree_monomial_le k (c k))
     (WithBot.coe_lt_coe.mpr (mem_range.mp hk))
 
+omit [Nontrivial R] in
+/-- A monomial with zero coefficient is the zero polynomial. -/
+theorem monomial_eq_zero (n : ℕ) : (monomial n (0 : R) : CPolynomial R) = 0 :=
+  eq_zero_iff_coeff_zero.mpr (fun j => by rw [coeff_monomial]; split_ifs <;> rfl)
+
 end OfFinCoeff
 
 end CompPoly.CPolynomial

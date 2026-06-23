@@ -9,7 +9,7 @@ source_metadata: ../sources/NOZ26/metadata.yml
 status: seeded
 related_modules:
   - ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean
-  - ArkLib/Data/Lattices/CyclotomicRing/Modulus.lean
+  - ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean
   - ArkLib/CommitmentScheme/Ajtai/Gadget.lean
   - ArkLib/CommitmentScheme/Ajtai/InnerOuter/Scheme.lean
   - ArkLib/CommitmentScheme/Ajtai/InnerOuter/Security.lean
@@ -48,7 +48,7 @@ Security analysis:
 - [`ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean`](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean)
   cites `NOZ26` in its module docstring and follows its Definition 3 for the multi-round
   coordinate-wise special-soundness notion.
-- [`ArkLib/Data/Lattices/CyclotomicRing/Modulus.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Modulus.lean)
+- [`ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean)
   — `powTwoCyclotomic`.
 - [`ArkLib/CommitmentScheme/Ajtai/Gadget.lean`](../../../ArkLib/CommitmentScheme/Ajtai/Gadget.lean)
   — the gadget matrix and `gadgetDecompose`.

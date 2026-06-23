@@ -104,7 +104,7 @@ theorem gadgetDecompose_zmod_vecLInftyNorm_le {b digits rows : ℕ} (hb : 1 < b)
 theorem gadgetDecompose_zmod_l2NormSq_le {b digits rows : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)
     (hbq : b - 1 ≤ q / 2) (h : 1 ≤ Φ.φ.natDegree) (x : PolyVec (Rq Φ) rows)
     (j : Fin (rows * digits)) :
-    Rq.l2NormSq Φ (gadgetDecompose Φ (zmodDigitDecomposition b digits hb hq) x j) ≤
+    ‖gadgetDecompose Φ (zmodDigitDecomposition b digits hb hq) x j‖₂² ≤
       Φ.φ.natDegree * (b - 1) ^ 2 := by
   unfold Rq.l2NormSq
   calc ∑ k ∈ Finset.range Φ.φ.natDegree,
@@ -121,7 +121,7 @@ theorem gadgetDecompose_zmod_l2NormSq_le {b digits rows : ℕ} (hb : 1 < b) (hq 
 most `(rows·digits)·(deg φ)·(b-1)²`. -/
 theorem gadgetDecompose_zmod_vecL2NormSq_le {b digits rows : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)
     (hbq : b - 1 ≤ q / 2) (h : 1 ≤ Φ.φ.natDegree) (x : PolyVec (Rq Φ) rows) :
-    vecL2NormSq Φ (gadgetDecompose Φ (zmodDigitDecomposition b digits hb hq) x) ≤
+    ‖gadgetDecompose Φ (zmodDigitDecomposition b digits hb hq) x‖₂² ≤
       rows * digits * (Φ.φ.natDegree * (b - 1) ^ 2) := by
   unfold vecL2NormSq
   calc ∑ i : Fin (rows * digits),
