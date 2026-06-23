@@ -59,8 +59,8 @@ variable {R : Type*} {nl nh : Nat}
 
 /-! ## The split index equivalence -/
 
-/-- The little-endian split of a `(nl + nh)`-bit index into a low `nl`-bit part `y` (column index)
-and a high `nh`-bit part `x` (row index): `(x, y) ↦ y + 2 ^ nl * x`. -/
+/-- The little-endian split of a `(nl + nh)`-bit index into a high `nh`-bit part `x`
+(column index) and a low `nl`-bit part `y` (row index): `(x, y) ↦ y + 2 ^ nl * x`. -/
 def splitEquiv (nl nh : Nat) : Fin (2 ^ nh) × Fin (2 ^ nl) ≃ Fin (2 ^ (nl + nh)) :=
   finProdFinEquiv.trans (finCongr (by rw [Nat.mul_comm, ← pow_add]))
 
