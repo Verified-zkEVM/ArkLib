@@ -316,14 +316,7 @@ DSFS Hyb3 / Hyb4 (salted) instantiate `D_IP` with the *salted* statement type
 `Statement := StmtIn × Vector U δ`, i.e. `D_IP (StmtIn × Vector U δ) pSpec`. -/
 
 /-- Bridge instance: granular `VCVCompatible` hypotheses on statement, message, and challenge
-types suffice to derive `SampleableType (OracleFamily (fsChallengeOracle Statement pSpec))`.
-
-The oracle family is a finite function table `(q : Domain) → pSpec.Challenge q.1` where the
-domain is a dependent sigma type over the challenge index and the message-prefix history.
-Finiteness follows from `VCVCompatible` on each component via `FinEnum.sigma` + `Pi.finEnum`.
-
-Note: The connection `pSpec.MessageUpTo k pSpec i = pSpec.Message i_orig` requires unfolding
-`ProtocolSpec.take` which is not `@[reducible]`. The proof is deferred (see `sorry`). -/
+types suffice to derive `SampleableType (OracleFamily (fsChallengeOracle Statement pSpec))`. -/
 noncomputable instance instSampleableTypeFSChallengeOracle
     {n : ℕ} {pSpec : ProtocolSpec n} {Statement : Type}
     [VCVCompatible Statement]

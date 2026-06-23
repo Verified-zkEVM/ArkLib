@@ -337,11 +337,7 @@ private noncomputable def stdTraceEntryToFSQuerySalted?
     ((entry.query.stmt, SaltCodec.encode entry.query.salt), messagesBefore)⟩, challenge⟩
 
 /-- §5.5.2 `D2STrace` — the single D2STrace engine.  Processes a `TaggedQueryLog` iteratively to
-map DSFS traces to FS-standard traces while preserving the `SourceTag` and exact ordering.
-
-Because this map is stateful and traverses the combined trace sequentially, the prover's
-sponge state seamlessly threads into the verifier's queries, correctly building the
-global `TraceNabla` graph. `oSpec` queries are forwarded in-place. -/
+map DSFS traces to FS-standard traces while preserving the `SourceTag` and exact ordering. -/
 noncomputable def d2sTraceSalted
     {T_H T_P : Type} {Salt : Type} [SaltCodec U δ Salt]
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
