@@ -24,18 +24,16 @@ import ArkLib.OracleReduction.Security.TranscriptTree
   ## What is defined here
 
   1. The combinatorics of `SS(S, ℓ, k)`: `CoordEq` (the relation `≡ᵢ`) and `IsSpecialSoundFamily`.
-  2. A `CWSSStructure`, packaging the per-round coordinate decomposition `Challenge i ≃ Sᵢ^{ℓᵢ}` and
-     soundness parameters `kᵢ`.
-  3. `ChallengeTree.IsStructured`: the predicate that a tree's sibling challenges form `SS`-sets.
+  2. A `CWSSStructure`, packaging intrinsically valid per-round coordinate decompositions
+     `Challenge i ≃ Sᵢ^{ℓᵢ}` and soundness parameters `kᵢ`.
+  3. `CWSSStructure.toShape`: the generic challenge-tree shape whose node predicate is the CWSS
+     `SS(Sᵢ, ℓᵢ, kᵢ)` condition.
   4. `Verifier.coordinateWiseSpecialSound`: existence of a (deterministic) tree-based extractor that
-     turns any structured, accepting tree into a valid input witness — exactly [NOZ26] Def. 3.
-  5. `CWSSStructure.knowledgeError`: the knowledge error `∑ᵢ ℓᵢ·(kᵢ-1) / |Sᵢ|` of [FMN24]
-     Lemma 2.31. ([NOZ26] Lemma 4 misprints the denominator as `|Sᵢ|^{ℓᵢ}`; see the docstring.)
+     turns any structured tree accepting into an output relation into a valid input witness — the
+     IOR form of [NOZ26] Def. 3.
 
   Plain `(k)`-special soundness is the `ℓᵢ = 1` case (`Verifier.specialSound` in
-  `Security.SpecialSoundness`); the coordinate oracle realizing the rewinding extraction lives in
-  `CoordinateOracle.lean`, and the CWSS ⇒ rewinding-knowledge-soundness implication in
-  `Security.Implications.CoordinateWiseSpecialSoundnessRewinding`.
+  `Security.SpecialSoundness`).
 
   ## References
 
@@ -114,30 +112,50 @@ variable {n : ℕ}
 
 /-- A **coordinate-wise special-soundness structure** for a protocol `pSpec`. For each challenge
   round `i` it provides:
-  - the number `coordIndex i = ℓᵢ` of coordinates,
+  - the positive number `coordIndex i = ℓᵢ` of coordinates,
   - the per-coordinate alphabet `alphabet i = Sᵢ`,
   - an identification `decompose i : Challenge i ≃ Sᵢ^{ℓᵢ}` of the challenge as a coordinate-vector,
-  - the soundness parameter `soundnessParam i = kᵢ`.
+  - the non-trivial soundness parameter `soundnessParam i = kᵢ`,
+  - the induced branching arity `ℓᵢ·(kᵢ-1)+1`.
 
   The branching arity it induces at round `i` is `arity i = ℓᵢ·(kᵢ-1)+1`. -/
 structure CWSSStructure (pSpec : ProtocolSpec n) where
   /-- Number of coordinates `ℓᵢ` of the `i`-th challenge. -/
-  coordIndex : pSpec.ChallengeIdx → ℕ
+  coordIndex : pSpec.ChallengeIdx → { ell : ℕ // 0 < ell }
   /-- Per-coordinate alphabet `Sᵢ` of the `i`-th challenge. -/
   alphabet : pSpec.ChallengeIdx → Type
   /-- Identification of the `i`-th challenge as a coordinate-vector `Sᵢ^{ℓᵢ}`. -/
-  decompose : (i : pSpec.ChallengeIdx) → pSpec.Challenge i ≃ (Fin (coordIndex i) → alphabet i)
+  decompose : (i : pSpec.ChallengeIdx) →
+    pSpec.Challenge i ≃ (Fin ((coordIndex i).val) → alphabet i)
   /-- The soundness parameter `kᵢ` for the `i`-th challenge. -/
-  soundnessParam : pSpec.ChallengeIdx → ℕ
+  soundnessParam : pSpec.ChallengeIdx → { k : ℕ // 2 ≤ k }
+  /-- Branching arity at the `i`-th challenge. -/
+  arity : pSpec.ChallengeIdx → ℕ
+  /-- The branching arity is exactly `ℓᵢ·(kᵢ-1)+1`. -/
+  arity_eq :
+    arity = fun i => (coordIndex i).val * ((soundnessParam i).val - 1) + 1
 
 namespace CWSSStructure
 
 variable {pSpec : ProtocolSpec n} (D : CWSSStructure pSpec)
 
-/-- The branching arity `arity i = ℓᵢ·(kᵢ-1)+1` of the transcript tree at challenge round `i`. -/
-@[reducible]
-def arity : pSpec.ChallengeIdx → ℕ :=
-  fun i => D.coordIndex i * (D.soundnessParam i - 1) + 1
+/-- The coordinate count `ℓᵢ` as a natural number. -/
+abbrev ell (i : pSpec.ChallengeIdx) : ℕ := (D.coordIndex i).val
+
+/-- The soundness parameter `kᵢ` as a natural number. -/
+abbrev k (i : pSpec.ChallengeIdx) : ℕ := (D.soundnessParam i).val
+
+/-- The coordinate-wise node predicate at a challenge round. -/
+def nodeOk (i : pSpec.ChallengeIdx)
+    (challenges : Fin (D.arity i) → pSpec.Challenge i) : Prop :=
+  let hArity : D.arity i = D.ell i * (D.k i - 1) + 1 := congrFun D.arity_eq i
+  CoordinateWise.IsSpecialSoundFamily (D.ell i) (D.k i)
+    (fun j => D.decompose i (challenges (Fin.cast hArity.symm j)))
+
+/-- The generic challenge-tree shape induced by a CWSS structure. -/
+def toShape : ChallengeTreeShape pSpec where
+  arity := D.arity
+  nodeOk := D.nodeOk
 
 /-- The canonical coordinate-wise structure underlying plain `k`-special soundness: every challenge
   has a single coordinate (`ℓᵢ = 1`) over the alphabet `Challenge i`, with soundness parameters `k`.
@@ -146,55 +164,16 @@ def arity : pSpec.ChallengeIdx → ℕ :=
   Marked `@[reducible]` so that instances on `pSpec.Challenge i` (e.g. `Fintype`, `SampleableType`)
   are found for `(ofSpecialSound k).alphabet i`. -/
 @[reducible]
-def ofSpecialSound (k : pSpec.ChallengeIdx → ℕ) : CWSSStructure pSpec where
-  coordIndex := fun _ => 1
+def ofSpecialSound (k : pSpec.ChallengeIdx → ℕ)
+    (hk : ∀ i : pSpec.ChallengeIdx, 2 ≤ k i) : CWSSStructure pSpec where
+  coordIndex := fun _ => ⟨1, Nat.zero_lt_one⟩
   alphabet := fun i => pSpec.Challenge i
   decompose := fun i => (Equiv.funUnique (Fin 1) (pSpec.Challenge i)).symm
-  soundnessParam := k
-
-/-- The CWSS knowledge error `∑ᵢ ℓᵢ·(kᵢ-1) / |Sᵢ|`, summed over challenge rounds: the
-  per-round generalization of [FMN24] Lemma 2.31 (stated there, for a common alphabet `S` and
-  parameter `k`, as `(ℓ₁ + ⋯ + ℓ_μ)·(k-1)/|S|`).
-
-  **[NOZ26] misprint.** Hachi's Lemma 4 states this error as `∑ᵢ ℓᵢ·kᵢ / |Sᵢ|^{ℓᵢ}` while citing
-  [FMN24, Section 7], whose Lemma 2.31 has denominator `|S|`, not `|S|^ℓ`. This is a typo in the
-  Hachi paper (soon to be corrected).
-
-  Achieving this linear error requires an *expected-time* rewinding extractor ([FMN24] Fig. 11,
-  a retry-until-accept loop); strictly bounded extractors (every `OracleComp` makes finitely many
-  queries) can only achieve forking-lemma-style bounds. This constant is therefore the reference
-  target; the bound actually proved by the implication in
-  `Security.Implications.CoordinateWiseSpecialSoundnessRewinding` is the forking-style one. -/
-def knowledgeError (D : CWSSStructure pSpec) [∀ i, Fintype (D.alphabet i)] : ℝ≥0 :=
-  ∑ i : pSpec.ChallengeIdx,
-    (D.coordIndex i * (D.soundnessParam i - 1) : ℝ≥0) /
-      (Fintype.card (D.alphabet i) : ℝ≥0)
+  soundnessParam := fun i => ⟨k i, hk i⟩
+  arity := fun i => 1 * (k i - 1) + 1
+  arity_eq := rfl
 
 end CWSSStructure
-
-namespace ProtocolSpec.ChallengeTree
-
-open CoordinateWise
-
-variable {pSpec : ProtocolSpec n}
-
-/-- A tree of transcripts with arity `D.arity` is **`D`-structured** if, at every challenge node,
-  the sibling challenges — read as coordinate-vectors via `D.decompose` — form a coordinate-wise
-  special-sound family `SS(Sᵢ, ℓᵢ, kᵢ)`.
-
-  This is the structural condition that makes a tree usable by a coordinate-wise special-soundness
-  extractor. With `D = CWSSStructure.ofSpecialSound k` it specializes to "the `k` sibling challenges
-  at each node are pairwise distinct", i.e. the condition for plain `k`-special soundness. -/
-def IsStructured (D : CWSSStructure pSpec) :
-    {m : Fin (n + 1)} → ChallengeTree pSpec D.arity m → Prop
-  | _, .leaf => True
-  | _, .msgNode _ _ _ child => child.IsStructured D
-  | _, .chalNode m h challenges children =>
-      IsSpecialSoundFamily (D.coordIndex ⟨m, h⟩) (D.soundnessParam ⟨m, h⟩)
-        (fun j => D.decompose ⟨m, h⟩ (challenges j))
-      ∧ ∀ j, (children j).IsStructured D
-
-end ProtocolSpec.ChallengeTree
 
 /-! ## The coordinate-wise special-soundness predicate -/
 
@@ -203,31 +182,47 @@ namespace Verifier
 open ProtocolSpec ProtocolSpec.ChallengeTree
 
 variable {ι : Type} {oSpec : OracleSpec ι}
-  {StmtIn WitIn StmtOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
+  {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
   [∀ i, SampleableType (pSpec.Challenge i)]
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
-/-- A verifier is **coordinate-wise special sound** with respect to a coordinate-wise structure `D`,
-  an input relation `relIn` and an output language `langOut` if there is a tree-based extractor `E`
+/-- A verifier is **tree special sound** with respect to a generic challenge-tree shape `S`, an
+  input relation `relIn` and an output relation `relOut` if there is a tree-based extractor `E`
   such that: for every input statement `stmtIn` and every tree of transcripts that is
 
-  - `D`-structured (its sibling challenges form `SS(Sᵢ, ℓᵢ, kᵢ)`-sets), and
-  - accepting (the verifier accepts every root-to-leaf transcript, landing in `langOut`),
+  - `S`-structured (its sibling challenges satisfy the shape's `nodeOk` predicate), and
+  - accepting (the verifier accepts every root-to-leaf transcript, landing in `relOut.language`),
 
   the extracted witness `E stmtIn tree` satisfies `(stmtIn, E stmtIn tree) ∈ relIn`.
 
+  This is the shape-generic core of tree-based knowledge extraction. Coordinate-wise special
+  soundness (`coordinateWiseSpecialSound` below) is the instance obtained by supplying the CWSS
+  shape `D.toShape`; plain `k`-special soundness is another instance. Phrasing the notion over an
+  arbitrary `ChallengeTreeShape` is what lets the composition theory be proved once generically
+  (see `Verifier.append_treeSpecialSound`) and reused by each concrete notion.
+-/
+def treeSpecialSound (S : ChallengeTreeShape pSpec)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec) : Prop :=
+  ∃ E : Extractor.TreeBased StmtIn WitIn pSpec S.arity,
+  ∀ stmtIn : StmtIn,
+  ∀ tree : ChallengeTree pSpec S.arity 0,
+    tree.IsStructured S →
+    tree.IsAccepting init impl verifier stmtIn relOut.language →
+      (stmtIn, E stmtIn tree) ∈ relIn
+
+/-- A verifier is **coordinate-wise special sound** with respect to a coordinate-wise structure `D`,
+  an input relation `relIn` and an output relation `relOut` if it is tree-special-sound for the
+  generic shape induced by `D`.
+
   This is the multi-round coordinate-wise special soundness of [NOZ26] Def. 3 / [FMN24] Def. 2.10,
-  phrased over ArkLib's IOR machinery. Specializing `D` to `CWSSStructure.ofSpecialSound k`
+  phrased over ArkLib's IOR machinery. The papers' accept/reject condition is represented by the
+  language of the output relation. Specializing `D` to `CWSSStructure.ofSpecialSound k`
   corresponds to the standard notion of `k`-special soundness (`Verifier.specialSound`). -/
 def coordinateWiseSpecialSound (D : CWSSStructure pSpec)
-    (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) : Prop :=
-  ∃ E : Extractor.TreeBased StmtIn WitIn pSpec D.arity,
-  ∀ stmtIn : StmtIn,
-  ∀ tree : ChallengeTree pSpec D.arity 0,
-    tree.IsStructured D →
-    tree.IsAccepting init impl verifier stmtIn langOut →
-      (stmtIn, E stmtIn tree) ∈ relIn
+  verifier.treeSpecialSound init impl (CWSSStructure.toShape D) relIn relOut
 
 end Verifier
 
@@ -236,7 +231,7 @@ namespace OracleVerifier
 open ProtocolSpec
 
 variable {ι : Type} {oSpec : OracleSpec ι}
-  {StmtIn WitIn StmtOut : Type}
+  {StmtIn WitIn StmtOut WitOut : Type}
   {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [∀ i, OracleInterface (OStmtIn i)]
   {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
   {n : ℕ} {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)]
@@ -248,8 +243,8 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   The challenge structure `D` is unchanged, since the verifier's challenges are the same. -/
 def coordinateWiseSpecialSound (D : CWSSStructure pSpec)
     (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
-    (langOut : Set (StmtOut × ∀ i, OStmtOut i))
+    (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) : Prop :=
-  verifier.toVerifier.coordinateWiseSpecialSound init impl D relIn langOut
+  verifier.toVerifier.coordinateWiseSpecialSound init impl D relIn relOut
 
 end OracleVerifier

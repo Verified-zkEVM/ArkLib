@@ -23,8 +23,7 @@ that turns (coordinate-wise) special soundness into knowledge soundness.
 ## What ArkLib Uses From This Paper
 
 - The tree-of-transcripts extraction strategy and forking analysis for multi-round special-sound
-  protocols, which underlies ArkLib's intended proof of
-  `coordinateWiseSpecialSound_implies_knowledgeSoundness`.
+  protocols, which informs ArkLib's transcript-tree extraction abstractions.
 
 ## Main ArkLib Touchpoints
 

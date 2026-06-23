@@ -40,9 +40,6 @@ Security analysis:
 - **Definition 3 (coordinate-wise special soundness, multi-round).** This is the notion ArkLib
   formalizes as `Verifier.coordinateWiseSpecialSound`: existence of a tree-based extractor that
   turns any structured, accepting tree of transcripts into a valid input witness.
-- **Lemma 4 (knowledge error).** The CWSS-to-knowledge-soundness bound `∑ᵢ ℓᵢ·kᵢ / |Sᵢ|^{ℓᵢ}`,
-  formalized as `CWSSStructure.knowledgeError` and stated in
-  `coordinateWiseSpecialSound_implies_knowledgeSoundness`.
 - The §2.3 description of the special-sound family `SS(S, ℓ, k)`, rendered as
   `CoordinateWise.IsSpecialSoundFamily`.
 
@@ -72,9 +69,6 @@ Security analysis:
 
 ## Open Formalization Gaps
 
-- The implication `coordinateWiseSpecialSound_implies_knowledgeSoundness` (Lemma 4) is currently
-  stated with a `sorry`; the rewinding/forking construction of the tree of transcripts is future
-  work.
 - The norm-growth and short-element invertibility inputs (`Mic07`, `LS18`) are deferred.
 - The sumcheck / ring-switching evaluation machinery of the paper is not yet formalized.
 

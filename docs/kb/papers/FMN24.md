@@ -18,8 +18,7 @@ related_modules:
 `FMN24` is a lattice-based polynomial commitment scheme aiming at asymptotic and concrete
 efficiency (Journal of Cryptology, 2024). For ArkLib its relevance is foundational: it **introduces
 coordinate-wise special soundness** as the security notion underlying its extractor, and supplies
-the combinatorial structure `SS(S, ℓ, k)` and the forking-based knowledge-error analysis that
-ArkLib formalizes.
+the combinatorial structure `SS(S, ℓ, k)` that ArkLib formalizes.
 
 ## What ArkLib Uses From This Paper
 
@@ -27,15 +26,11 @@ ArkLib formalizes.
   challenge vectors, and the (single-/multi-round) coordinate-wise special-soundness notion. ArkLib
   renders these as `CoordinateWise.IsSpecialSoundFamily` and
   `Verifier.coordinateWiseSpecialSound`.
-- **§7–8.** The rewinding/forking analysis bounding the knowledge error, which ArkLib records as
-  `CWSSStructure.knowledgeError` and targets in
-  `coordinateWiseSpecialSound_implies_knowledgeSoundness`.
 
 ## Main ArkLib Touchpoints
 
 - [`ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean`](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean)
-  cites `FMN24` as the originating reference for coordinate-wise special soundness and follows its
-  §7–8 error analysis.
+  cites `FMN24` as the originating reference for coordinate-wise special soundness.
 
 ## Version Notes
 

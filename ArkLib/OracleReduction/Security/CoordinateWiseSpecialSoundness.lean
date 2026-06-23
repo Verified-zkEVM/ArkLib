@@ -5,28 +5,27 @@ Authors: Tobias Rothmann
 -/
 
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.CoordinateOracle
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ForkOracle
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
 
 /-!
   # Coordinate-Wise Special Soundness (CWSS)
 
-  Re-exports the coordinate-wise special-soundness development of [FMN24] / [NOZ26]:
+  Re-exports the coordinate-wise special-soundness development of [FMN24] / [NOZ26]. CWSS is built
+  as one instance of the protocol-generic, shape-based tree-soundness machinery in
+  `Security.TranscriptTree`:
 
   * `Basic` — the notion: the `SS(S, ℓ, k)` combinatorics (`CoordEq`, `IsSpecialSoundFamily`), the
-    `CWSSStructure` (per-round challenge decomposition + soundness parameters), the structured-tree
-    predicate `ChallengeTree.IsStructured`, the predicate `Verifier.coordinateWiseSpecialSound`, and
-    the reference knowledge error `CWSSStructure.knowledgeError`.
-  * `CoordinateOracle` — the coordinate-indexed challenge oracle
-    `CWSSStructure.coordChallengeOracle` (the per-coordinate execution substrate), with Bridge 1
-    (`challenge_uniform_eq_bundle_coords`).
-  * `ForkOracle` — the fork oracle `CWSSStructure.forkOracle` (the rewinding extractor's
-    interface: fork a parent run at one challenge coordinate, receive a sibling run), its concrete
-    implementation `CWSSStructure.cwssForkImpl` by indexed replay, and the structural fork
-    guarantees (`cwssForkImpl_coordEq`, `cwssForkImpl_prefix_eq`).
+    intrinsic `CWSSStructure` (per-round challenge decomposition with built-in valid soundness
+    parameters) and its induced `ChallengeTreeShape` (`CWSSStructure.toShape`), the shape-generic
+    core `Verifier.treeSpecialSound`, and the CWSS predicate `Verifier.coordinateWiseSpecialSound`
+    obtained by instantiating that core at `D.toShape`.
+  * `Composition` — transport of CWSS structures across sequential composition
+    (`CWSSStructure.append` / `seqCompose`), their agreement with the generic appended shape
+    (`toShape_append` / `toShape_seqCompose`), and preservation of CWSS under binary verifier append
+    (`Verifier.append_coordinateWiseSpecialSound`) as a thin wrapper over the generic
+    `Verifier.append_treeSpecialSound`.
 
-  The CWSS ⇒ rewinding-knowledge-soundness implication (tree builder, extraction bound) lives in
-  `Security.Implications.CoordinateWiseSpecialSoundnessRewinding`; plain `(k)`-special soundness is
+  Plain `(k)`-special soundness is the `ℓᵢ = 1` instance (`CWSSStructure.ofSpecialSound`); see also
   `Security.SpecialSoundness`.
 
   ## References
