@@ -87,13 +87,14 @@ def scalarVecMul {cols : Nat} (c : P) (v : PolyVec P cols) : PolyVec P cols :=
 
 @[inherit_doc matVecMul] scoped infixr:73 " *ᵥ " => matVecMul
 @[inherit_doc dot] scoped infixl:72 " ⬝ᵥ " => dot
+@[inherit_doc scalarVecMul] scoped infixr:73 " •ᵥ " => scalarVecMul
 
 @[simp] theorem matVecMul_apply {rows cols : Nat} (A : PolyMatrix P rows cols)
     (v : PolyVec P cols) (i : Fin rows) : (A *ᵥ v) i = (A i) ⬝ᵥ v := rfl
 
 omit [Add P] [Zero P] in
 @[simp] theorem scalarVecMul_apply {cols : Nat} (c : P) (v : PolyVec P cols) (i : Fin cols) :
-    scalarVecMul c v i = c * v i := rfl
+    (c •ᵥ v) i = c * v i := rfl
 
 end Defs
 
@@ -111,7 +112,7 @@ theorem dot_sub {k : ℕ} (u v w : PolyVec P k) : u ⬝ᵥ (v - w) = u ⬝ᵥ v 
 
 /-- `dot` pulls out a left scalar from the second argument. -/
 theorem dot_scalarVecMul {k : ℕ} (c : P) (u v : PolyVec P k) :
-    u ⬝ᵥ scalarVecMul c v = c * (u ⬝ᵥ v) := by
+    u ⬝ᵥ (c •ᵥ v) = c * (u ⬝ᵥ v) := by
   simp only [dot_eq_sum, Finset.mul_sum, scalarVecMul_apply]
   exact Finset.sum_congr rfl (fun i _ => mul_left_comm _ _ _)
 
@@ -122,7 +123,7 @@ theorem matVecMul_sub {rows cols : ℕ} (A : PolyMatrix P rows cols) (v w : Poly
 
 /-- Matrix–vector multiplication commutes with left scalar multiplication. -/
 theorem matVecMul_scalarVecMul {rows cols : ℕ} (A : PolyMatrix P rows cols) (c : P)
-    (v : PolyVec P cols) : A *ᵥ scalarVecMul c v = scalarVecMul c (A *ᵥ v) := by
+    (v : PolyVec P cols) : A *ᵥ (c •ᵥ v) = c •ᵥ (A *ᵥ v) := by
   funext i; simp only [matVecMul_apply, scalarVecMul_apply, dot_scalarVecMul]
 
 /-- Left scalar multiplication by a unit is injective. -/
@@ -137,7 +138,7 @@ theorem scalarVecMul_injective_of_isUnit {cols : ℕ} {c : P} (hc : IsUnit c) :
 /-- Scaling by a product of two units preserves vector inequality. -/
 theorem scalarVecMul_mul_ne_of_ne {cols : ℕ} {c d : P} {v w : PolyVec P cols}
     (hc : IsUnit c) (hd : IsUnit d) (hvw : v ≠ w) :
-    scalarVecMul (c * d) v ≠ scalarVecMul (d * c) w := by
+    (c * d) •ᵥ v ≠ (d * c) •ᵥ w := by
   intro h; apply hvw
   rw [mul_comm d c] at h
   exact scalarVecMul_injective_of_isUnit (hc.mul hd) h
@@ -145,7 +146,7 @@ theorem scalarVecMul_mul_ne_of_ne {cols : ℕ} {c d : P} {v w : PolyVec P cols}
 /-- Equality of matrix products is preserved by scaling with a product of two scalars. -/
 theorem matVecMul_scalarVecMul_mul_eq_of_eq {rows cols : ℕ} (A : PolyMatrix P rows cols)
     (c d : P) {v w : PolyVec P cols} (h : A *ᵥ v = A *ᵥ w) :
-    A *ᵥ scalarVecMul (c * d) v = A *ᵥ scalarVecMul (d * c) w := by
+    A *ᵥ ((c * d) •ᵥ v) = A *ᵥ ((d * c) •ᵥ w) := by
   rw [matVecMul_scalarVecMul A (c * d) v, matVecMul_scalarVecMul A (d * c) w, mul_comm d c, h]
 
 end Algebra

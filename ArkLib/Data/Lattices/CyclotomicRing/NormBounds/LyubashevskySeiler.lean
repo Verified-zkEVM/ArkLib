@@ -340,7 +340,7 @@ Over the power-of-two cyclotomic modulus `powTwoCyclotomic α` (`φ = X^{2^α}+1
 `≤ κ` and `κ² < q` is a unit: by the algebraic core a non-unit forces `q ∣ ‖c‖₂²`, while
 `‖c‖₂² ≤ ‖c‖₁² ≤ κ² < q`, so `‖c‖₂² = 0`, forcing `c = 0` against `‖c‖₁ > 0`. -/
 theorem isUnit_of_l1Norm_le (hq5 : q % 8 = 5) {c : Rq Φ} {κ : ℕ}
-    (hpos : 0 < Rq.l1Norm Φ c) (hle : Rq.l1Norm Φ c ≤ κ) (hκ : κ ^ 2 < q) :
+    (hpos : 0 < ‖c‖₁) (hle : ‖c‖₁ ≤ κ) (hκ : κ ^ 2 < q) :
     IsUnit c := by
   by_contra hc
   -- Algebraic core: a non-unit has `q ∣ ‖c‖₂²`.

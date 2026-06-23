@@ -119,6 +119,19 @@ instance powTwoCyclotomic_isCyclotomic (α : ℕ) :
     rw [hX, cyclotomic_prime_pow_eq_geom_sum (R := R) (p := 2) (n := α) Nat.prime_two]
     rw [Finset.sum_range_succ, Finset.sum_range_one, pow_zero, pow_one, _root_.add_comm]
 
+/-- The power-of-two modulus, as a Mathlib polynomial, is `X^{2^α} + 1`. -/
+theorem powTwoCyclotomic_toPoly (α : ℕ) :
+    (powTwoCyclotomic (R := R) α).φ.toPoly = Polynomial.X ^ (2 ^ α) + 1 := by
+  change (CPolynomial.X ^ (2 ^ α) + 1 : CPolynomial R).toPoly = _
+  rw [toPoly_add, toPoly_pow, toPoly_X, toPoly_one]
+
+/-- The ring dimension: `natDegree` of the power-of-two modulus is `2^α`. -/
+theorem powTwoCyclotomic_natDegree (α : ℕ) :
+    (powTwoCyclotomic (R := R) α).φ.natDegree = 2 ^ α := by
+  rw [CompPoly.CPolynomial.natDegree_toPoly, powTwoCyclotomic_toPoly,
+    show (Polynomial.X ^ 2 ^ α + 1 : Polynomial R) = Polynomial.X ^ 2 ^ α + Polynomial.C 1 by
+      rw [Polynomial.C_1], Polynomial.natDegree_X_pow_add_C]
+
 end CyclotomicModulus
 
 end ArkLib.Lattices

@@ -3,7 +3,7 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Modulus
+import ArkLib.Data.Lattices.CyclotomicRing.Core.Modulus
 import Mathlib.RingTheory.Ideal.Quotient.Operations
 
 /-!
@@ -11,7 +11,7 @@ import Mathlib.RingTheory.Ideal.Quotient.Operations
 
 This file builds the cyclotomic ring on top of CompPoly's computable polynomial
 type `CompPoly.CPolynomial R`, given a `CyclotomicModulus R` (see
-`ArkLib.Data.Lattices.CyclotomicRing.Modulus`).
+`ArkLib.Data.Lattices.CyclotomicRing.Core.Modulus`).
 
 It is split into two layers, bridged by a single ring homomorphism:
 

@@ -8,7 +8,7 @@ canonical_url: https://eprint.iacr.org/2026/156
 source_metadata: ../sources/NOZ26/metadata.yml
 status: seeded
 related_modules:
-  - ArkLib/Data/Lattices/CyclotomicRing/Modulus.lean
+  - ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean
   - ArkLib/Commitments/Functional/Hachi/Gadget.lean
   - ArkLib/Commitments/Functional/Hachi/InnerOuter/Scheme.lean
   - ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean
@@ -32,7 +32,7 @@ inner-outer commitment with weak binding.
 
 ## Main ArkLib Touchpoints
 
-- [`ArkLib/Data/Lattices/CyclotomicRing/Modulus.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Modulus.lean)
+- [`ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean)
   — `powTwoCyclotomic`.
 - [`ArkLib/Commitments/Functional/Hachi/Gadget.lean`](../../../ArkLib/Commitments/Functional/Hachi/Gadget.lean)
   — the gadget matrix and `gadgetDecompose`.
