@@ -8,27 +8,30 @@ canonical_url: https://eprint.iacr.org/2021/1377
 source_metadata: ../sources/AFK22/metadata.yml
 status: seeded
 related_modules:
-  - ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean
+  - ArkLib/OracleReduction/Security/TranscriptTree.lean
+  - ArkLib/OracleReduction/Security/SpecialSoundness.lean
 ---
 
 # AFK22
 
 ## At A Glance
 
-`AFK22` analyzes the Fiat–Shamir transformation of multi-round public-coin interactive proofs,
-showing that for `(k₁, …, kμ)`-special-sound protocols the soundness/knowledge loss is much smaller
-than the generic `Qᵘ` bound. For ArkLib it is the reference for the **rewinding / forking** analysis
-that turns (coordinate-wise) special soundness into knowledge soundness.
+`AFK22` analyzes the Fiat-Shamir transformation of multi-round public-coin interactive proofs,
+showing that for `(k₁, …, kμ)`-special-sound protocols the loss can be much smaller than the
+generic `Qᵘ` bound. For ArkLib it is background for the tree-of-transcripts viewpoint used by
+special-soundness-style extractors.
 
 ## What ArkLib Uses From This Paper
 
-- The tree-of-transcripts extraction strategy and forking analysis for multi-round special-sound
-  protocols, which informs ArkLib's transcript-tree extraction abstractions.
+- The tree-of-transcripts extraction strategy for multi-round special-sound protocols, which
+  informs ArkLib's transcript-tree extraction abstractions.
 
 ## Main ArkLib Touchpoints
 
-- [`ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean`](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean)
-  cites `AFK22` for the Fiat–Shamir / forking analysis backing the rewinding knowledge extractor.
+- [`ArkLib/OracleReduction/Security/TranscriptTree.lean`](../../../ArkLib/OracleReduction/Security/TranscriptTree.lean)
+  provides the shared tree abstraction used by special soundness and CWSS.
+- [`ArkLib/OracleReduction/Security/SpecialSoundness.lean`](../../../ArkLib/OracleReduction/Security/SpecialSoundness.lean)
+  uses that tree abstraction for plain `(k)`-special soundness.
 
 ## Version Notes
 
@@ -37,14 +40,7 @@ that turns (coordinate-wise) special soundness into knowledge soundness.
 ## Known Divergences From ArkLib
 
 - ArkLib's tree of transcripts (`ChallengeTree`) branches only at challenge rounds and is
-  arity-indexed; the forking primitive used is `VCVio.CryptoFoundations.forkReplay` rather than the
-  paper's abstract rewinding argument.
-
-## Open Formalization Gaps
-
-- The forking-based construction of an accepting, structured tree from a single prover — the core of
-  the knowledge-soundness implication — is not yet formalized (a `sorry` in the implication
-  theorem).
+  arity-indexed; it abstracts the transcript bundle consumed by tree-based extractors.
 
 ## Source Access
 

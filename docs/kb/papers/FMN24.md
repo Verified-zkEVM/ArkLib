@@ -45,9 +45,7 @@ the combinatorial structure `SS(S, ℓ, k)` that ArkLib formalizes.
 
 ## Open Formalization Gaps
 
-- Only the combinatorial structure and the statement of the knowledge-soundness implication are
-  formalized; the forking-bound proof of §7–8 remains future work (a `sorry` in the implication
-  theorem).
+- Protocol-specific uses of CWSS for lattice commitment schemes remain future work.
 
 ## Source Access
 

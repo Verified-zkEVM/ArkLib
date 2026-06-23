@@ -61,15 +61,21 @@ home_page/            site assets and assembled website root
   (`eval_on_Z`, `toRatFuncPoly`, `D_Y`, `D_YZ`, and related notation) live in
   `ArkLib/Data/Polynomial/Trivariate.lean`, not in `ProximityGap/Basic.lean` or
   `ProximityGap/BCIKS20/ListDecoding/Guruswami.lean`.
-- Special soundness ([FMN24]/[NOZ26]) lives in `Security/SpecialSoundness.lean`, built on the
-  challenge-tree machinery in `Security/TranscriptTree.lean`. Generic structured-tree predicates
-  are represented by `ChallengeTreeShape` and `ChallengeTree.IsStructured`.
-- Coordinate-wise special soundness ([FMN24]/[NOZ26]) is its own peer subpackage
-  `Security/CoordinateWiseSpecialSoundness/`: `Basic` holds the notion + combinatorics
-  (`CoordEq`, `IsSpecialSoundFamily`, intrinsic `CWSSStructure`, `CWSSStructure.toShape`, and
-  `Verifier.coordinateWiseSpecialSound`), while `Composition` contains the shape-based append and
-  sequential-composition API; both are re-exported by the umbrella
-  `CoordinateWiseSpecialSoundness.lean`.
+- Transcript-tree infrastructure for special-soundness-style notions lives in
+  `Security/TranscriptTree/`: `Basic` defines `ChallengeTree`, `LeafPath`,
+  `ChallengeTreeShape`, `ChallengeTree.IsStructured`, `ChallengeTree.IsAccepting`, and
+  `Extractor.TreeBased`; `Composition` defines shape append, `appendSplit`, and the generic
+  structure-preservation/recombination lemmas for sequential protocol append. The umbrella
+  `Security/TranscriptTree.lean` re-exports both files.
+- Plain `(k)`-special soundness lives in `Security/SpecialSoundness.lean`. It uses the
+  transcript-tree API directly with pairwise-distinct sibling challenges; it is also the
+  `ℓᵢ = 1` specialization of coordinate-wise special soundness.
+- Coordinate-wise special soundness ([FMN24]/[NOZ26]) lives in
+  `Security/CoordinateWiseSpecialSoundness/`: `Basic` defines the `SS(S, ℓ, k)` combinatorics
+  (`CoordEq`, `IsSpecialSoundFamily`), `CWSSStructure`, `CWSSStructure.toShape`, and
+  `Verifier.coordinateWiseSpecialSound`; `Composition` transports CWSS structures across
+  sequential composition and proves binary append preservation via the generic transcript-tree
+  split. The umbrella `CoordinateWiseSpecialSoundness.lean` re-exports both files.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.
 - Before assuming a file is authoritative, check whether it is source or derived output. See

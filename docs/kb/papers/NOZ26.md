@@ -46,8 +46,8 @@ Security analysis:
 ## Main ArkLib Touchpoints
 
 - [`ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean`](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean)
-  cites `NOZ26` in its module docstring and follows its Definition 3 / Lemma 4 for the multi-round
-  notion and the knowledge-error bound.
+  cites `NOZ26` in its module docstring and follows its Definition 3 for the multi-round
+  coordinate-wise special-soundness notion.
 - [`ArkLib/Data/Lattices/CyclotomicRing/Modulus.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Modulus.lean)
   — `powTwoCyclotomic`.
 - [`ArkLib/CommitmentScheme/Ajtai/Gadget.lean`](../../../ArkLib/CommitmentScheme/Ajtai/Gadget.lean)
@@ -58,8 +58,7 @@ Security analysis:
 ## Version Notes
 
 - Cryptology ePrint Archive, Paper 2026/156. ArkLib tracks the ePrint version.
-- Read together with [`FMN24.md`](FMN24.md), which introduces coordinate-wise special soundness, and
-  [`AFK22.md`](AFK22.md), whose forking/Fiat–Shamir analysis underlies the rewinding extractor.
+- Read together with [`FMN24.md`](FMN24.md), which introduces coordinate-wise special soundness.
 
 ## Known Divergences From ArkLib
 
