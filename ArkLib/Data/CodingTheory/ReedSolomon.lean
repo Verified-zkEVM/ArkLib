@@ -185,6 +185,8 @@ lemma mem_code_iff_exists_polynomial {n : ℕ} {α : ι ↪ F} {f : ι → F} :
             [Polynomial.degreeLT,
              Polynomial.degree_lt_iff_coeff_zero])
 
+
+
 lemma mem_code_iff_exists_polynomial_of_ne_zero {n : ℕ} [ne : NeZero n] {α : ι ↪ F} {f : ι → F} :
   f ∈ code α n ↔ ∃ p : Polynomial F, p.natDegree < n ∧ f = evalOnPoints α p := by
   rw [mem_code_iff_exists_polynomial]
@@ -590,7 +592,7 @@ lemma toPolynomial_def {f : ReedSolomon.code domain deg} :
   toPolynomial f = Lagrange.interpolate univ domain f := rfl
 
 /-- The polynomials corresponding to Reed-Solomon codewords are of degree smaller than `deg`. -/
-lemma toPolynomial_lt_deg (c : ReedSolomon.code domain deg) :
+lemma toPolynomial_mem_lt_deg (c : ReedSolomon.code domain deg) :
   toPolynomial c ∈ (degreeLT F deg : Submodule F F[X]) := by
   -- Unpack the witness polynomial for this codeword
   rcases c.property with ⟨p, hp_deg, hp_eval⟩
@@ -637,6 +639,53 @@ lemma toPolynomial_lt_deg (c : ReedSolomon.code domain deg) :
     have : (toPolynomial c).degree < deg := lt_of_lt_of_le hdeg_lt_card hcard_le_deg
     simpa [Polynomial.mem_degreeLT] using this
 
+@[simp]
+lemma toPolynomial_lt_deg (c : ReedSolomon.code domain deg) :
+  (toPolynomial c).degree < deg := by
+  have := toPolynomial_mem_lt_deg c
+  aesop
+    (add simp [degreeLT, Polynomial.degree_lt_iff_coeff_zero])
+
+@[simp]
+lemma toPolynomial_lt_min_deg_card (c : ReedSolomon.code domain deg) :
+  (toPolynomial c).degree < min deg (Fintype.card ι) := by
+  by_cases h0 : toPolynomial c = 0
+  · simp [h0]
+  · rw [←Polynomial.natDegree_lt_iff_degree_lt h0, lt_min_iff]
+    constructor
+    · aesop (add simp [Polynomial.natDegree_lt_iff_degree_lt])
+    · rw [Polynomial.natDegree_lt_iff_degree_lt h0, toPolynomial_def]
+      exact lt_of_lt_of_le (Lagrange.degree_interpolate_lt _
+        (by aesop (add safe cases Function.Embedding))) (by simp)
+
+lemma toPolynomial_eval_at_domain
+  {c : ReedSolomon.code domain deg} {i : ι} :
+  (toPolynomial c).eval (domain i) = c.1 i := by
+  aesop
+    (erase simp Lagrange.interpolate_apply)
+    (add simp [toPolynomial_def, Lagrange.eval_interpolate_at_node])
+    (add safe cases Function.Embedding)
+
+set_option linter.unusedDecidableInType false in -- false alarm
+lemma mem_code_iff_exists_polynomial' {n : ℕ} {α : ι ↪ F} {f : ι → F} :
+  f ∈ code α n ↔
+    ∃ p : Polynomial F, p.degree < min n (Fintype.card ι) ∧
+      f = evalOnPoints α p := by
+  constructor
+  · intro h
+    by_cases hd : n ≤ Fintype.card ι
+    · aesop
+        (add simp [mem_code_iff_exists_polynomial])
+    · exists (toPolynomial ⟨f, h⟩)
+      aesop (add simp [evalOnPoints, toPolynomial_eval_at_domain])
+  · by_cases hd : n ≤ Fintype.card ι
+    · aesop
+        (add simp [mem_code_iff_exists_polynomial])
+    · rintro ⟨p, hp₁, hp₂⟩
+      rw [mem_code_iff_exists_polynomial]
+      have : p.degree < n := lt_trans hp₁ (by simpa using hd)
+      aesop
+
 /-- The linear map that maps a Reed-Solomon codeword to its associated polynomial of degree less
 than `deg`. -/
 noncomputable def toPolynomialLT :
@@ -644,7 +693,7 @@ noncomputable def toPolynomialLT :
   codRestrict
     (Polynomial.degreeLT F deg)
     toPolynomial
-    toPolynomial_lt_deg
+    toPolynomial_mem_lt_deg
 
 open LinearMvExtension
 
