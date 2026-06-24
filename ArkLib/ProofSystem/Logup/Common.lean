@@ -1,13 +1,6 @@
-import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.Algebra.CharP.Defs
 import Mathlib.Algebra.Order.Floor.Div
-import Mathlib.Data.Fin.Basic
-import Mathlib.Data.Finset.Basic
-import Mathlib.Data.Fintype.Basic
-import Mathlib.Tactic
 import ArkLib.Data.MvPolynomial.Multilinear
-import ArkLib.OracleReduction.Composition.Sequential.Append
-import ArkLib.OracleReduction.Basic
+import ArkLib.OracleReduction.OracleInterface
 
 /-!
 # LogUp Common Definitions
@@ -25,27 +18,17 @@ universe u
 
 open scoped BigOperators
 
-/-- The Boolean hypercube with `2^n` points. -/
-@[reducible]
-def Hypercube (n : ℕ) : Type :=
-  Fin n → Fin 2
-
 /-- A Lagrange oracle is a function on `H`; queries evaluate its Boolean MLE. -/
 structure LagrangeOracle (F : Type u) (n : ℕ) where
-  values : Hypercube n → F
+  values : (Fin n → Fin 2) → F
 
-instance {F : Type u} {n : ℕ} : CoeFun (LagrangeOracle F n) (fun _ => Hypercube n → F) where
+instance {F : Type u} {n : ℕ} : CoeFun (LagrangeOracle F n) (fun _ => (Fin n → Fin 2) → F) where
   coe oracle := oracle.values
 
 /-- A multilinear oracle over Boolean row variables, represented in Lagrange form. -/
 @[reducible]
 def MultilinearOracle (F : Type u) (n : ℕ) : Type u :=
   LagrangeOracle F n
-
-/-- Evaluate a multilinear oracle on a Boolean-hypercube row. -/
-def evalOnHypercube {F : Type u} {n : ℕ}
-    (p : MultilinearOracle F n) (u : Hypercube n) : F :=
-  p u
 
 /-- Lagrange-oracle queries evaluate the Boolean multilinear extension at `z`. -/
 noncomputable instance instLagrangeOracleInterface {F : Type u} [Field F] {n : ℕ} :
@@ -60,13 +43,6 @@ noncomputable instance instLagrangeOracleInterface {F : Type u} [Field F] {n : �
 noncomputable def lagrangeOracleEval {F : Type u} [Field F] {n : ℕ}
     (oracle : MultilinearOracle F n) (z : Fin n → F) : F :=
   MvPolynomial.eval z (MvPolynomial.MLE oracle.values)
-
-/-- Querying a Boolean-hypercube row returns the stored value at that row. -/
-theorem lagrangeOracleEval_hypercube {F : Type u} [Field F] {n : ℕ}
-    (oracle : MultilinearOracle F n) (u : Hypercube n) :
-    lagrangeOracleEval oracle (u : Fin n → F) = evalOnHypercube oracle u := by
-  change MvPolynomial.eval (u : Fin n → F) (MvPolynomial.MLE oracle.values) = oracle.values u
-  simp
 
 /-- Input oracle labels for Protocol 2: one table oracle and `M` lookup-column oracles. -/
 inductive InputOracleIdx (M : ℕ) where
@@ -123,16 +99,6 @@ namespace ProtocolParams
 def numGroups {M : ℕ} (params : ProtocolParams M) : ℕ :=
   (M + params.sumSize) / params.sumSize
 
-/-- `numGroups` really is the ceiling `⌈(M + 1) / ℓ⌉`: the floor-division formula
-`(M + ℓ) / ℓ` agrees with `Nat.ceilDiv` because `ℓ ≥ 1` (`sumSize_pos`). -/
-theorem numGroups_eq_ceilDiv {M : ℕ} (params : ProtocolParams M) :
-    params.numGroups = (M + 1) ⌈/⌉ params.sumSize := by
-  have h := params.sumSize_pos
-  rw [Nat.ceilDiv_eq_add_pred_div]
-  unfold numGroups
-  congr 1
-  omega
-
 /-- The consecutive interval `Iₖ = [(k - 1)ℓ, kℓ) ∩ [0, M]`, zero-indexed. -/
 def group {M : ℕ} (params : ProtocolParams M) (k : Fin params.numGroups) :
     Finset (TermIdx M) :=
@@ -174,8 +140,8 @@ def columnOracle {F : Type u} {n M : ℕ}
 def inputRelation (F : Type u) [Field F] [Fintype F] (n M : ℕ) :
     Set ((StmtIn F n M × (∀ i, OStmtIn F n M i)) × Unit) :=
   { ⟨⟨_, oStmt⟩, _⟩ |
-    ∀ i : Fin M, ∀ x : Hypercube n, ∃ y : Hypercube n,
-      evalOnHypercube (columnOracle oStmt i) x = evalOnHypercube (tableOracle oStmt) y }
+    ∀ i : Fin M, ∀ x : (Fin n → Fin 2), ∃ y : (Fin n → Fin 2),
+      (columnOracle oStmt i) x = (tableOracle oStmt) y }
 
 /-- The full LogUp protocol returns no additional public data on success. -/
 @[reducible, simp]
@@ -277,34 +243,20 @@ def PartialSumGroups (M K : ℕ) : Type :=
 def canonicalGroups : PartialSumGroups M params.numGroups :=
   fun k => params.group k
 
-/-- Outer transcript data produced before entering the embedded sumcheck. -/
-structure OuterTranscriptData (F : Type) [Field F] [Fintype F] (n M : ℕ)
-    (params : ProtocolParams M) where
-  /-- The multiplicity function `m : H → F`. -/
-  multiplicity : MultiplicityMessage F n
-  /-- The verifier challenge `x : F`. -/
-  xChallenge : F
-  /-- The helper functions `h₁, ..., h_K : H → F`. -/
-  helpers : HelperMessages F n params.numGroups
-  /-- The equality-kernel point `z ∈ Fⁿ`. -/
-  zChallenge : Fin n → F
-  /-- The batching scalars `λ₁, ..., λ_K`. -/
-  batchingScalars : Fin params.numGroups → F
-
 /-- Number of table rows with value `a`. -/
 def tableMultiplicityCount (oStmt : ∀ i, OStmtIn F n M i) (a : F) : ℕ :=
-  ((Finset.univ : Finset (Hypercube n)).filter fun u =>
-    evalOnHypercube (tableOracle oStmt) u = a).card
+  ((Finset.univ : Finset (Fin n → Fin 2)).filter fun u =>
+    (tableOracle oStmt) u = a).card
 
 /-- Total number of lookup-column entries with value `a`. -/
 def lookupMultiplicityCount (oStmt : ∀ i, OStmtIn F n M i) (a : F) : ℕ :=
-  ((Finset.univ : Finset (Fin M × Hypercube n)).filter fun ix =>
-    evalOnHypercube (columnOracle oStmt ix.1) ix.2 = a).card
+  ((Finset.univ : Finset (Fin M × (Fin n → Fin 2))).filter fun ix =>
+    (columnOracle oStmt ix.1) ix.2 = a).card
 
 /-- The normalized multiplicity from paper equation (14), evaluated at one table row. -/
 noncomputable def normalizedMultiplicityValue (oStmt : ∀ i, OStmtIn F n M i)
-    (u : Hypercube n) : F :=
-  let a := evalOnHypercube (tableOracle oStmt) u
+    (u : (Fin n → Fin 2)) : F :=
+  let a := (tableOracle oStmt) u
   (lookupMultiplicityCount oStmt a : F) / (tableMultiplicityCount oStmt a : F)
 
 /-- The honest multiplicity oracle `m : H → F` from paper equation (14). -/
@@ -314,43 +266,43 @@ noncomputable def honestMultiplicity (oStmt : ∀ i, OStmtIn F n M i) :
 
 /-- The denominator term `φᵢ(u)` from Protocol 2. -/
 noncomputable def phi (oStmt : ∀ i, OStmtIn F n M i) (xChallenge : F) :
-    InputOracleIdx M → Hypercube n → F
-  | .table => fun u => xChallenge + evalOnHypercube (tableOracle oStmt) u
-  | .column i => fun u => xChallenge + evalOnHypercube (columnOracle oStmt i) u
+    InputOracleIdx M → (Fin n → Fin 2) → F
+  | .table => fun u => xChallenge + (tableOracle oStmt) u
+  | .column i => fun u => xChallenge + (columnOracle oStmt i) u
 
 /-- The numerator term `mᵢ(u)` from Protocol 2, with `m₀ = m` and `mᵢ = -1` for columns. -/
 noncomputable def numerator (multiplicity : MultilinearOracle F n) :
-    InputOracleIdx M → Hypercube n → F
-  | .table => evalOnHypercube multiplicity
+    InputOracleIdx M → (Fin n → Fin 2) → F
+  | .table => multiplicity
   | .column _ => fun _ => -1
 
 /-- The denominator term, indexed as `0, ..., M` as in the paper. -/
 noncomputable def termPhi (oStmt : ∀ i, OStmtIn F n M i) (xChallenge : F)
-    (i : TermIdx M) (u : Hypercube n) : F :=
+    (i : TermIdx M) (u : (Fin n → Fin 2)) : F :=
   phi oStmt xChallenge (termToInput i) u
 
 /-- The numerator term, indexed as `0, ..., M` as in the paper. -/
 noncomputable def termNumerator (multiplicity : MultilinearOracle F n)
-    (i : TermIdx M) (u : Hypercube n) : F :=
+    (i : TermIdx M) (u : (Fin n → Fin 2)) : F :=
   numerator multiplicity (termToInput i) u
 
 /-- Product of the denominator terms in one partial-sum group. -/
 noncomputable def denominatorProduct (groups : PartialSumGroups M K)
-    (oStmt : ∀ i, OStmtIn F n M i) (xChallenge : F) (k : Fin K) (u : Hypercube n) : F :=
+    (oStmt : ∀ i, OStmtIn F n M i) (xChallenge : F) (k : Fin K) (u : (Fin n → Fin 2)) : F :=
   ∏ i ∈ groups k, termPhi oStmt xChallenge i u
 
 /-- The domain-identity expression for one helper function `hₖ`. -/
 noncomputable def domainIdentityTerm (groups : PartialSumGroups M K)
     (oStmt : ∀ i, OStmtIn F n M i) (multiplicity : MultilinearOracle F n)
-    (helpers : HelperMessages F n K) (xChallenge : F) (k : Fin K) (u : Hypercube n) : F :=
-  evalOnHypercube (helpers k) u * denominatorProduct groups oStmt xChallenge k u -
+    (helpers : HelperMessages F n K) (xChallenge : F) (k : Fin K) (u : (Fin n → Fin 2)) : F :=
+  (helpers k) u * denominatorProduct groups oStmt xChallenge k u -
     ∑ i ∈ groups k,
       termNumerator multiplicity i u * ∏ j ∈ (groups k).erase i, termPhi oStmt xChallenge j u
 
 /-- The helper value `hₖ(u) = Σᵢ mᵢ(u)/φᵢ(u)` from paper equation (16). -/
 noncomputable def helperValue (groups : PartialSumGroups M K)
     (oStmt : ∀ i, OStmtIn F n M i) (multiplicity : MultilinearOracle F n)
-    (xChallenge : F) (k : Fin K) (u : Hypercube n) : F :=
+    (xChallenge : F) (k : Fin K) (u : (Fin n → Fin 2)) : F :=
   ∑ i ∈ groups k, termNumerator multiplicity i u / termPhi oStmt xChallenge i u
 
 /-- The honest helper oracle `hₖ : H → F` for one partial-sum group. -/
@@ -364,17 +316,6 @@ noncomputable def honestHelpers (oStmt : ∀ i, OStmtIn F n M i) (xChallenge : F
     HelperMessages F n params.numGroups :=
   let multiplicity := honestMultiplicity oStmt
   fun k => helperOracle (canonicalGroups params) oStmt multiplicity xChallenge k
-
-/-- The batched polynomial expression `Q` from paper equation (18), evaluated on a row `u ∈ H`. -/
-noncomputable def qOnHypercube (groups : PartialSumGroups M K)
-    (oStmt : ∀ i, OStmtIn F n M i) (multiplicity : MultilinearOracle F n)
-    (helpers : HelperMessages F n K) (xChallenge : F) (zChallenge : Fin n → F)
-    (batchingScalars : Fin K → F) (u : Hypercube n) : F :=
-  ∑ k : Fin K, (
-    evalOnHypercube (helpers k) u +
-      MvPolynomial.eval (u : Fin n → F) (MvPolynomial.eqPolynomial zChallenge) *
-        batchingScalars k *
-        domainIdentityTerm groups oStmt multiplicity helpers xChallenge k u)
 
 /-- Point evaluations queried by the verifier at the final sumcheck point `r`. -/
 structure PointEvaluations (F : Type) (M K : ℕ) where
@@ -396,48 +337,6 @@ def logupPointEvaluationsAgree
     evals.table = lagrangeOracleEval (oStmt (.input .table)) r ∧
     (∀ i : Fin M, evals.columns i = lagrangeOracleEval (oStmt (.input (.column i))) r) ∧
       ∀ k : Fin params.numGroups, evals.helpers k = lagrangeOracleEval ((oStmt .helpers) k) r
-
-/-- Denominator term at the final sumcheck point, reconstructed from oracle query answers. -/
-def phiAtPoint (xChallenge : F) (evals : PointEvaluations F M K) :
-    InputOracleIdx M → F
-  | .table => xChallenge + evals.table
-  | .column i => xChallenge + evals.columns i
-
-/-- Numerator term at the final sumcheck point, reconstructed from oracle query answers. -/
-def numeratorAtPoint (evals : PointEvaluations F M K) : InputOracleIdx M → F
-  | .table => evals.multiplicity
-  | .column _ => -1
-
-/-- Term denominator at the final sumcheck point, indexed by `0, ..., M`. -/
-def termPhiAtPoint (xChallenge : F) (evals : PointEvaluations F M K) (i : TermIdx M) : F :=
-  phiAtPoint xChallenge evals (termToInput i)
-
-/-- Term numerator at the final sumcheck point, indexed by `0, ..., M`. -/
-def termNumeratorAtPoint (evals : PointEvaluations F M K) (i : TermIdx M) : F :=
-  numeratorAtPoint evals (termToInput i)
-
-/-- The domain-identity expression at the final sumcheck point `r`. -/
-noncomputable def domainIdentityAtPoint (groups : PartialSumGroups M K)
-    (xChallenge : F) (evals : PointEvaluations F M K) (k : Fin K) : F :=
-  evals.helpers k * (∏ i ∈ groups k, termPhiAtPoint xChallenge evals i) -
-    ∑ i ∈ groups k,
-      termNumeratorAtPoint evals i *
-        ∏ j ∈ (groups k).erase i, termPhiAtPoint xChallenge evals j
-
-/-- The verifier's final check value `Q(eq(r,z), m(r), φᵢ(r), hₖ(r))` from paper (19). -/
-noncomputable def qAtPoint (groups : PartialSumGroups M K) (xChallenge : F)
-    (zChallenge rChallenge : Fin n → F) (batchingScalars : Fin K → F)
-    (evals : PointEvaluations F M K) : F :=
-  ∑ k : Fin K, (
-    evals.helpers k +
-      MvPolynomial.eval rChallenge (MvPolynomial.eqPolynomial zChallenge) * batchingScalars k *
-        domainIdentityAtPoint groups xChallenge evals k)
-
-/-- Predicate for paper step 4: final oracle-query answers match the sumcheck's expected value. -/
-noncomputable def finalQueryCheck (groups : PartialSumGroups M K) (xChallenge : F)
-    (zChallenge rChallenge : Fin n → F) (batchingScalars : Fin K → F)
-    (evals : PointEvaluations F M K) (expectedValue : F) : Prop :=
-  qAtPoint groups xChallenge zChallenge rChallenge batchingScalars evals = expectedValue
 
 end ProtocolAlgebra
 

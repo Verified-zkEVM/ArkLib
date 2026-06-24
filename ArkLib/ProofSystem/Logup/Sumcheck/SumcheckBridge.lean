@@ -89,7 +89,7 @@ noncomputable def logupSumcheckOracleStmt
 noncomputable def logupOuterSumcheckClaim
     (stmt : StmtAfterOuter F n M params)
     (oStmt : ∀ i, OStmtAfterOuter F n M params i) : F :=
-  ∑ u : Hypercube n,
+  ∑ u : (Fin n → Fin 2),
     qOnHypercube (canonicalGroups params) (fun i => oStmt (.input i)) (oStmt .multiplicity)
       (oStmt .helpers) stmt.xChallenge stmt.zChallenge stmt.batchingScalars u
 
@@ -128,33 +128,6 @@ def logupAfterSumcheckRelation :
       Sumcheck.Spec.relationRound F n (logupSumcheckDegree M params) (booleanDomain F)
         (Fin.last n) }
 
-private theorem sum_piFinset_map_univ_eq_sum_hypercube
-    (D : Fin 2 ↪ F) (f : (Fin n → F) → F) :
-    (∑ x ∈ Fintype.piFinset fun _ : Fin n => Finset.univ.map D, f x) =
-      ∑ u : Hypercube n, f (fun j => D (u j)) := by
-  let e : Hypercube n ↪ (Fin n → F) := Function.Embedding.arrowCongrRight D
-  change (∑ x ∈ Fintype.piFinset fun _ : Fin n => Finset.univ.map D, f x) =
-    ∑ u : Hypercube n, f (e u)
-  rw [← Finset.sum_map]
-  congr 1
-  ext x
-  constructor
-  · intro hx
-    rw [Fintype.mem_piFinset] at hx
-    have hx_coord : ∀ j : Fin n, ∃ b : Fin 2, D b = x j := by
-      intro j
-      rcases Finset.mem_map.mp (hx j) with ⟨b, _, hb⟩
-      exact ⟨b, hb⟩
-    let u : Hypercube n := fun j => Classical.choose (hx_coord j)
-    exact Finset.mem_map.mpr ⟨u, Finset.mem_univ _, by
-      funext j
-      exact Classical.choose_spec (hx_coord j)⟩
-  · intro hx
-    rw [Fintype.mem_piFinset]
-    intro j
-    rcases Finset.mem_map.mp hx with ⟨u, _, rfl⟩
-    exact Finset.mem_map.mpr ⟨u j, Finset.mem_univ _, rfl⟩
-
 /-- The initial generic Sumcheck relation induced by a LogUp outer transcript. -/
 def logupSumcheckRelationInput
     (stmt : StmtAfterOuter F n M params)
@@ -162,54 +135,6 @@ def logupSumcheckRelationInput
   ((logupInitialSumcheckStatement F n M params, logupSumcheckOracleStmt F n M params stmt oStmt),
       ()) ∈
     Sumcheck.Spec.relationRound F n (logupSumcheckDegree M params) (booleanDomain F) 0
-
-/-- If LogUp's outer algebra proves a zero sum, then the generic Sumcheck input relation is exactly
-the claim sent to Sumcheck. -/
-theorem logupSumcheckRelationInput_of_zero
-    {stmt : StmtAfterOuter F n M params}
-    {oStmt : ∀ i, OStmtAfterOuter F n M params i}
-    (hZero : logupOuterSumcheckClaim F n M params stmt oStmt = 0) :
-    logupSumcheckRelationInput F n M params stmt oStmt := by
-  unfold logupSumcheckRelationInput Sumcheck.Spec.relationRound
-  simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, Nat.sub_zero, logupInitialSumcheckStatement,
-    Set.mem_setOf_eq, Fin.elim0_append, logupSumcheckOracleStmt]
-  change
-    (∑ x ∈ Fintype.piFinset fun _ : Fin n => Finset.univ.map (booleanDomain F),
-      MvPolynomial.eval ((x ∘ Fin.cast (by omega)) ∘ Fin.cast (by omega))
-        (logupSumcheckPolynomial F n M params stmt oStmt).val) = 0
-  rw [sum_piFinset_map_univ_eq_sum_hypercube
-    (F := F) (n := n) (D := booleanDomain F)
-    (f := fun x =>
-      MvPolynomial.eval ((x ∘ Fin.cast (by omega)) ∘ Fin.cast (by omega))
-        (logupSumcheckPolynomial F n M params stmt oStmt).val)]
-  calc
-    (∑ u : Hypercube n,
-        MvPolynomial.eval
-          ((((fun j => (booleanDomain F) (u j)) ∘ Fin.cast (by omega)) ∘
-              Fin.cast (by omega)))
-          (logupSumcheckPolynomial F n M params stmt oStmt).val)
-        =
-      logupOuterSumcheckClaim F n M params stmt oStmt := by
-        rw [logupOuterSumcheckClaim]
-        apply Finset.sum_congr rfl
-        intro u _
-        simpa [booleanDomain, logupSumcheckPolynomial] using
-          logupQPolynomial_eval_hypercube F n M params stmt oStmt u
-    _ = 0 := hZero
-
-/-- The obligations needed to replace the current abstract embedded sumcheck by ArkLib's generic
-sumcheck plus LogUp's final oracle-query check. -/
-structure LogupSumcheckBridge
-    (stmt : StmtAfterOuter F n M params)
-    (oStmt : ∀ i, OStmtAfterOuter F n M params i) where
-  claimZero : logupOuterSumcheckClaim F n M params stmt oStmt = 0
-  finalEval :
-    ∀ (r : Fin n → F) (evals : PointEvaluations F M params.numGroups),
-      logupPointEvaluationsAgree (F := F) (n := n) (M := M) params r oStmt evals →
-        MvPolynomial.eval r (logupSumcheckPolynomial F n M params stmt oStmt).1 =
-          qAtPoint (canonicalGroups params) stmt.xChallenge stmt.zChallenge r
-            stmt.batchingScalars evals
-
 
 end SumcheckBridge
 

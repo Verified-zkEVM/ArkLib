@@ -27,8 +27,8 @@ be sampled from. This expression is only meaningful when `|H| < |F|` (see `logup
 otherwise the natural-number subtraction truncates to `0` and the term silently vanishes. -/
 noncomputable def logupSoundnessError (F : Type) [Fintype F] (n M : ℕ) (params : ProtocolParams M)
     (sumcheckSoundnessError : ℝ≥0) : ℝ≥0 :=
-  ((((M + 1) * Fintype.card (Hypercube n) - 1 : ℕ) : ℝ≥0) /
-      ((Fintype.card F - Fintype.card (Hypercube n) : ℕ) : ℝ≥0)) +
+  ((((M + 1) * Fintype.card (Fin n → Fin 2) - 1 : ℕ) : ℝ≥0) /
+      ((Fintype.card F - Fintype.card (Fin n → Fin 2) : ℕ) : ℝ≥0)) +
     (((params.numGroups + 1 : ℕ) : ℝ≥0) / (Fintype.card F : ℝ≥0)) +
       sumcheckSoundnessError
 
@@ -38,7 +38,7 @@ The hypothesis `hcard : |H| < |F|` guarantees there exist non-pole field element
 challenge from, and makes the `|F| - |H|` denominator of `logupSoundnessError` positive (so the
 natural-number subtraction equals the true difference rather than truncating to `0`). -/
 theorem logup_soundness (sumcheckSoundnessError : ℝ≥0)
-    (hcard : Fintype.card (Hypercube n) < Fintype.card F) :
+    (hcard : Fintype.card (Fin n → Fin 2) < Fintype.card F) :
     (logupVerifier oSpec F n M params).soundness init impl
       (inputRelation F n M).language outputRelation.language
       (logupSoundnessError F n M params sumcheckSoundnessError) := by

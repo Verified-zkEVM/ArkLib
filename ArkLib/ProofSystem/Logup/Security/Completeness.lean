@@ -24,8 +24,8 @@ omit [Fintype F] [DecidableEq F] in
 poles (`φᵢ ≠ 0`). -/
 theorem domainIdentityTerm_eq_zero (groups : PartialSumGroups M K)
     (oStmt : ∀ i, OStmtIn F n M i) (mult : MultilinearOracle F n)
-    (helpers : HelperMessages F n K) (x : F) (k : Fin K) (u : Hypercube n)
-    (hh : evalOnHypercube (helpers k) u = helperValue groups oStmt mult x k u)
+    (helpers : HelperMessages F n K) (x : F) (k : Fin K) (u : (Fin n → Fin 2))
+    (hh : (helpers k) u = helperValue groups oStmt mult x k u)
     (hφ : ∀ i ∈ groups k, termPhi oStmt x i u ≠ 0) :
     domainIdentityTerm groups oStmt mult helpers x k u = 0 := by
   rw [domainIdentityTerm, denominatorProduct, hh, helperValue, Finset.sum_mul, sub_eq_zero]
@@ -39,14 +39,14 @@ side equals the column side. Needs every column value to occur in the table (`hc
 counts used by nonzero lookup multiplicities to be nonzero in `F` (`hchar`, from `charLarge`).
 Holds even at poles, since `x/0 = 0`. -/
 theorem honest_multiplicity_identity [Finite F] (oStmt : ∀ i, OStmtIn F n M i) (x : F)
-    (hcols : ∀ j : Fin M, ∀ u : Hypercube n, ∃ v : Hypercube n,
-      evalOnHypercube (columnOracle oStmt j) u = evalOnHypercube (tableOracle oStmt) v)
+    (hcols : ∀ j : Fin M, ∀ u : (Fin n → Fin 2), ∃ v : (Fin n → Fin 2),
+      (columnOracle oStmt j) u = (tableOracle oStmt) v)
     (hchar : ∀ a : F, lookupMultiplicityCount oStmt a ≠ 0 →
       (tableMultiplicityCount oStmt a : F) ≠ 0) :
-    (∑ u : Hypercube n,
-        evalOnHypercube (honestMultiplicity oStmt) u / (x + evalOnHypercube (tableOracle oStmt) u))
-      = ∑ j : Fin M, ∑ u : Hypercube n,
-          (1 : F) / (x + evalOnHypercube (columnOracle oStmt j) u) := by
+    (∑ u : (Fin n → Fin 2),
+        (honestMultiplicity oStmt) u / (x + (tableOracle oStmt) u))
+      = ∑ j : Fin M, ∑ u : (Fin n → Fin 2),
+          (1 : F) / (x + (columnOracle oStmt j) u) := by
   letI : Fintype F := Fintype.ofFinite F
   classical
   -- per-value cancellation
@@ -60,11 +60,11 @@ theorem honest_multiplicity_identity [Finite F] (oStmt : ∀ i, OStmtIn F n M i)
         rw [lookupMultiplicityCount, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
         rintro ⟨j, u⟩ - hja
         obtain ⟨v, hv⟩ := hcols j u
-        have hav : evalOnHypercube (tableOracle oStmt) v = a := hv.symm.trans hja
+        have hav : (tableOracle oStmt) v = a := hv.symm.trans hja
         rw [tableMultiplicityCount] at hT
         exact absurd hT (Finset.card_ne_zero_of_mem
           (show v ∈ Finset.univ.filter
-              fun w => evalOnHypercube (tableOracle oStmt) w = a by simp [hav]))
+              fun w => (tableOracle oStmt) w = a by simp [hav]))
       simp [hT, hL]
     · rw [nsmul_eq_mul, nsmul_eq_mul]
       by_cases hL : lookupMultiplicityCount oStmt a = 0
@@ -73,42 +73,42 @@ theorem honest_multiplicity_identity [Finite F] (oStmt : ∀ i, OStmtIn F n M i)
         field_simp
   -- group the table side by table value
   have hLHS :
-      (∑ u : Hypercube n, evalOnHypercube (honestMultiplicity oStmt) u /
-          (x + evalOnHypercube (tableOracle oStmt) u))
+      (∑ u : (Fin n → Fin 2), (honestMultiplicity oStmt) u /
+          (x + (tableOracle oStmt) u))
         = ∑ a : F, tableMultiplicityCount oStmt a •
             ((lookupMultiplicityCount oStmt a : F) / (tableMultiplicityCount oStmt a : F)
               / (x + a)) := by
-    rw [← Finset.sum_fiberwise (Finset.univ : Finset (Hypercube n))
-        (fun u => evalOnHypercube (tableOracle oStmt) u)]
+    rw [← Finset.sum_fiberwise (Finset.univ : Finset (Fin n → Fin 2))
+        (fun u => (tableOracle oStmt) u)]
     refine Finset.sum_congr rfl (fun a _ => ?_)
     have h : ∀ u ∈ Finset.univ.filter
-          (fun u => evalOnHypercube (tableOracle oStmt) u = a),
-        evalOnHypercube (honestMultiplicity oStmt) u /
-            (x + evalOnHypercube (tableOracle oStmt) u)
+          (fun u => (tableOracle oStmt) u = a),
+        (honestMultiplicity oStmt) u /
+            (x + (tableOracle oStmt) u)
           = (lookupMultiplicityCount oStmt a : F) / (tableMultiplicityCount oStmt a : F)
               / (x + a) := by
       intro u hu
       simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hu
-      change (lookupMultiplicityCount oStmt (evalOnHypercube (tableOracle oStmt) u) : F) /
-            (tableMultiplicityCount oStmt (evalOnHypercube (tableOracle oStmt) u) : F) /
-            (x + evalOnHypercube (tableOracle oStmt) u)
+      change (lookupMultiplicityCount oStmt ((tableOracle oStmt) u) : F) /
+            (tableMultiplicityCount oStmt ((tableOracle oStmt) u) : F) /
+            (x + (tableOracle oStmt) u)
           = (lookupMultiplicityCount oStmt a : F) / (tableMultiplicityCount oStmt a : F) / (x + a)
       rw [hu]
     rw [Finset.sum_congr rfl h, Finset.sum_const]
     rfl
   -- group the column side by column value
   have hRHS :
-      (∑ j : Fin M, ∑ u : Hypercube n, (1 : F) /
-          (x + evalOnHypercube (columnOracle oStmt j) u))
+      (∑ j : Fin M, ∑ u : (Fin n → Fin 2), (1 : F) /
+          (x + (columnOracle oStmt j) u))
         = ∑ a : F, lookupMultiplicityCount oStmt a • ((1 : F) / (x + a)) := by
     rw [← Finset.sum_product', Finset.univ_product_univ,
-      ← Finset.sum_fiberwise (Finset.univ : Finset (Fin M × Hypercube n))
-        (fun p => evalOnHypercube (columnOracle oStmt p.1) p.2)]
+      ← Finset.sum_fiberwise (Finset.univ : Finset (Fin M × (Fin n → Fin 2)))
+        (fun p => (columnOracle oStmt p.1) p.2)]
     refine Finset.sum_congr rfl (fun a _ => ?_)
     have h : ∀ p ∈ Finset.univ.filter
-          (fun p : Fin M × Hypercube n =>
-            evalOnHypercube (columnOracle oStmt p.1) p.2 = a),
-        (1 : F) / (x + evalOnHypercube (columnOracle oStmt p.1) p.2) = (1 : F) / (x + a) := by
+          (fun p : Fin M × (Fin n → Fin 2) =>
+            (columnOracle oStmt p.1) p.2 = a),
+        (1 : F) / (x + (columnOracle oStmt p.1) p.2) = (1 : F) / (x + a) := by
       intro p hp
       simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hp
       simp only [hp]
@@ -121,36 +121,36 @@ theorem honest_multiplicity_identity [Finite F] (oStmt : ∀ i, OStmtIn F n M i)
 multiplicity is nonzero as an element of `F`. -/
 theorem tableMultiplicityCount_cast_ne_zero_of_lookupMultiplicityCount_ne_zero
     (stmt : StmtIn F n M) (oStmt : ∀ i, OStmtIn F n M i)
-    (hcols : ∀ j : Fin M, ∀ u : Hypercube n, ∃ v : Hypercube n,
-      evalOnHypercube (columnOracle oStmt j) u = evalOnHypercube (tableOracle oStmt) v)
+    (hcols : ∀ j : Fin M, ∀ u : (Fin n → Fin 2), ∃ v : (Fin n → Fin 2),
+      (columnOracle oStmt j) u = (tableOracle oStmt) v)
     {a : F} (hlookup : lookupMultiplicityCount oStmt a ≠ 0) :
     (tableMultiplicityCount oStmt a : F) ≠ 0 := by
   classical
   have hlookupCard :
-      ((Finset.univ : Finset (Fin M × Hypercube n)).filter fun ix =>
-        evalOnHypercube (columnOracle oStmt ix.1) ix.2 = a).card ≠ 0 := by
+      ((Finset.univ : Finset (Fin M × (Fin n → Fin 2))).filter fun ix =>
+        (columnOracle oStmt ix.1) ix.2 = a).card ≠ 0 := by
     simpa [lookupMultiplicityCount] using hlookup
   obtain ⟨⟨j, u⟩, hju⟩ := Finset.card_ne_zero.mp hlookupCard
   simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hju
   obtain ⟨v, hv⟩ := hcols j u
-  have hvTable : evalOnHypercube (tableOracle oStmt) v = a := hv.symm.trans hju
+  have hvTable : (tableOracle oStmt) v = a := hv.symm.trans hju
   have htablePos : 0 < tableMultiplicityCount oStmt a := by
     rw [tableMultiplicityCount, Finset.card_pos]
     exact ⟨v, by simp [hvTable]⟩
   have hMpos : 0 < M := lt_of_le_of_lt (Nat.zero_le j.val) j.isLt
   have htable_le_card :
-      tableMultiplicityCount oStmt a ≤ Fintype.card (Hypercube n) := by
+      tableMultiplicityCount oStmt a ≤ Fintype.card (Fin n → Fin 2) := by
     rw [tableMultiplicityCount, ← Finset.card_univ]
     exact Finset.card_filter_le _ _
-  have hcard_hypercube : Fintype.card (Hypercube n) = 2 ^ n := by
-    simp [Hypercube]
+  have hcard_hypercube : Fintype.card (Fin n → Fin 2) = 2 ^ n := by
+    simp
   have hpow_le : 2 ^ n ≤ M * 2 ^ n := by
     have hMone : 1 ≤ M := Nat.succ_le_of_lt hMpos
     nth_rewrite 1 [← Nat.one_mul (2 ^ n)]
     exact Nat.mul_le_mul_right (2 ^ n) hMone
   have htable_lt_char : tableMultiplicityCount oStmt a < ringChar F := by
     calc
-      tableMultiplicityCount oStmt a ≤ Fintype.card (Hypercube n) := htable_le_card
+      tableMultiplicityCount oStmt a ≤ Fintype.card (Fin n → Fin 2) := htable_le_card
       _ = 2 ^ n := hcard_hypercube
       _ ≤ M * 2 ^ n := hpow_le
       _ < ringChar F := stmt.charLarge
@@ -163,11 +163,11 @@ omit [Fintype F] [DecidableEq F] in
 /-- If `x` avoids the table poles, then it avoids all table and lookup-column denominator poles
 under the input relation. -/
 theorem termPhi_ne_zero_of_table_poles (oStmt : ∀ i, OStmtIn F n M i) (x : F)
-    (hcols : ∀ j : Fin M, ∀ u : Hypercube n, ∃ v : Hypercube n,
-      evalOnHypercube (columnOracle oStmt j) u = evalOnHypercube (tableOracle oStmt) v)
-    (hNoTablePoles : ∀ u : Hypercube n,
-      x + evalOnHypercube (tableOracle oStmt) u ≠ 0) :
-    ∀ (i : TermIdx M) (u : Hypercube n), termPhi oStmt x i u ≠ 0 := by
+    (hcols : ∀ j : Fin M, ∀ u : (Fin n → Fin 2), ∃ v : (Fin n → Fin 2),
+      (columnOracle oStmt j) u = (tableOracle oStmt) v)
+    (hNoTablePoles : ∀ u : (Fin n → Fin 2),
+      x + (tableOracle oStmt) u ≠ 0) :
+    ∀ (i : TermIdx M) (u : (Fin n → Fin 2)), termPhi oStmt x i u ≠ 0 := by
   intro i u
   cases hti : termToInput i with
   | table =>
@@ -213,16 +213,16 @@ away from poles. Combines `domainIdentityTerm_eq_zero`, `sum_canonicalGroups`, a
 theorem logupOuterClaim_zero [Finite F] (params : ProtocolParams M)
     (oStmtIn : ∀ i, OStmtIn F n M i)
     (x : F) (z : Fin n → F) (lam : Fin params.numGroups → F)
-    (hcols : ∀ j : Fin M, ∀ u : Hypercube n, ∃ v : Hypercube n,
-      evalOnHypercube (columnOracle oStmtIn j) u = evalOnHypercube (tableOracle oStmtIn) v)
+    (hcols : ∀ j : Fin M, ∀ u : (Fin n → Fin 2), ∃ v : (Fin n → Fin 2),
+      (columnOracle oStmtIn j) u = (tableOracle oStmtIn) v)
     (hchar : ∀ a : F, lookupMultiplicityCount oStmtIn a ≠ 0 →
       (tableMultiplicityCount oStmtIn a : F) ≠ 0)
-    (hpoles : ∀ (i : TermIdx M) (u : Hypercube n), termPhi oStmtIn x i u ≠ 0) :
-    (∑ u : Hypercube n,
+    (hpoles : ∀ (i : TermIdx M) (u : (Fin n → Fin 2)), termPhi oStmtIn x i u ≠ 0) :
+    (∑ u : (Fin n → Fin 2),
         qOnHypercube (canonicalGroups params) oStmtIn (honestMultiplicity oStmtIn)
           (honestHelpers params oStmtIn x) x z lam u) = 0 := by
   -- honest helpers kill the domain-identity term, leaving `∑ₖ helperValue`
-  have hq : ∀ u : Hypercube n,
+  have hq : ∀ u : (Fin n → Fin 2),
       qOnHypercube (canonicalGroups params) oStmtIn (honestMultiplicity oStmtIn)
           (honestHelpers params oStmtIn x) x z lam u
         = ∑ k : Fin params.numGroups,
@@ -234,7 +234,7 @@ theorem logupOuterClaim_zero [Finite F] (params : ProtocolParams M)
       (honestHelpers params oStmtIn x) x k u rfl (fun i _ => hpoles i u), mul_zero, add_zero]
     rfl
   -- each helper expands to the per-group term sum, which partitions to the full term sum
-  have hsum : ∀ u : Hypercube n,
+  have hsum : ∀ u : (Fin n → Fin 2),
       (∑ k : Fin params.numGroups,
           helperValue (canonicalGroups params) oStmtIn (honestMultiplicity oStmtIn) x k u)
         = ∑ i : TermIdx M,
@@ -244,16 +244,16 @@ theorem logupOuterClaim_zero [Finite F] (params : ProtocolParams M)
     exact sum_canonicalGroups params
       (fun i => termNumerator (honestMultiplicity oStmtIn) i u / termPhi oStmtIn x i u)
   -- split the term sum into the table term and the column terms
-  have hterm : ∀ u : Hypercube n,
+  have hterm : ∀ u : (Fin n → Fin 2),
       (∑ i : TermIdx M, termNumerator (honestMultiplicity oStmtIn) i u / termPhi oStmtIn x i u)
-        = evalOnHypercube (honestMultiplicity oStmtIn) u /
-              (x + evalOnHypercube (tableOracle oStmtIn) u)
-          + ∑ j : Fin M, (-1 : F) / (x + evalOnHypercube (columnOracle oStmtIn j) u) := by
+        = (honestMultiplicity oStmtIn) u /
+              (x + (tableOracle oStmtIn) u)
+          + ∑ j : Fin M, (-1 : F) / (x + (columnOracle oStmtIn j) u) := by
     intro u
     have hcol : ∀ j : Fin M,
         termNumerator (honestMultiplicity oStmtIn) (Fin.succ j) u /
             termPhi oStmtIn x (Fin.succ j) u
-          = (-1 : F) / (x + evalOnHypercube (columnOracle oStmtIn j) u) := by
+          = (-1 : F) / (x + (columnOracle oStmtIn j) u) := by
       intro j
       have htt : termToInput (Fin.succ j : TermIdx M) = InputOracleIdx.column j := by
         simp only [termToInput, Fin.val_succ, Nat.succ_ne_zero, ↓reduceDIte]
@@ -264,7 +264,7 @@ theorem logupOuterClaim_zero [Finite F] (params : ProtocolParams M)
     exact Finset.sum_congr rfl (fun j _ => hcol j)
   simp_rw [hq, hsum, hterm]
   rw [Finset.sum_add_distrib, honest_multiplicity_identity oStmtIn x hcols hchar,
-    Finset.sum_comm (f := fun u j => (-1 : F) / (x + evalOnHypercube (columnOracle oStmtIn j) u)),
+    Finset.sum_comm (f := fun u j => (-1 : F) / (x + (columnOracle oStmtIn j) u)),
     ← Finset.sum_add_distrib]
   refine Finset.sum_eq_zero (fun j _ => ?_)
   rw [← Finset.sum_add_distrib]
@@ -273,20 +273,20 @@ theorem logupOuterClaim_zero [Finite F] (params : ProtocolParams M)
 /-- The table poles `{x : ∃ u, x + t(u) = 0} = {-t(u) : u ∈ H}` number at most `|H|`. This is the
 counting fact behind the pole-sampling completeness error. -/
 theorem pole_card_le (oStmt : ∀ i, OStmtIn F n M i) :
-    (Finset.univ.filter (fun x : F => ∃ u : Hypercube n,
-        x + evalOnHypercube (tableOracle oStmt) u = 0)).card
-      ≤ Fintype.card (Hypercube n) := by
+    (Finset.univ.filter (fun x : F => ∃ u : (Fin n → Fin 2),
+        x + (tableOracle oStmt) u = 0)).card
+      ≤ Fintype.card (Fin n → Fin 2) := by
   classical
-  calc (Finset.univ.filter (fun x : F => ∃ u : Hypercube n,
-          x + evalOnHypercube (tableOracle oStmt) u = 0)).card
+  calc (Finset.univ.filter (fun x : F => ∃ u : (Fin n → Fin 2),
+          x + (tableOracle oStmt) u = 0)).card
       ≤ (Finset.univ.image
-          (fun u : Hypercube n => -evalOnHypercube (tableOracle oStmt) u)).card := by
+          (fun u : (Fin n → Fin 2) => -(tableOracle oStmt) u)).card := by
         apply Finset.card_le_card
         intro x hx
         simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hx
         obtain ⟨u, hu⟩ := hx
         exact Finset.mem_image.mpr ⟨u, Finset.mem_univ u, (eq_neg_of_add_eq_zero_left hu).symm⟩
-    _ ≤ Fintype.card (Hypercube n) := by
+    _ ≤ Fintype.card (Fin n → Fin 2) := by
         rw [← Finset.card_univ]; exact Finset.card_image_le
 
 end OuterAlgebra
@@ -308,27 +308,90 @@ local instance instOuterChallengeOracleInterface' :
       OracleInterface ((outerPSpec F n params).Challenge i) :=
   ProtocolSpec.challengeOracleInterface
 
+omit [Fintype F] [DecidableEq F] [SampleableType F] in
+private theorem sum_piFinset_map_univ_eq_sum_hypercube
+    (D : Fin 2 ↪ F) (f : (Fin n → F) → F) :
+    (∑ x ∈ Fintype.piFinset fun _ : Fin n => Finset.univ.map D, f x) =
+      ∑ u : (Fin n → Fin 2), f (fun j => D (u j)) := by
+  let e : (Fin n → Fin 2) ↪ (Fin n → F) := Function.Embedding.arrowCongrRight D
+  change (∑ x ∈ Fintype.piFinset fun _ : Fin n => Finset.univ.map D, f x) =
+    ∑ u : (Fin n → Fin 2), f (e u)
+  rw [← Finset.sum_map]
+  congr 1
+  ext x
+  constructor
+  · intro hx
+    rw [Fintype.mem_piFinset] at hx
+    have hx_coord : ∀ j : Fin n, ∃ b : Fin 2, D b = x j := by
+      intro j
+      rcases Finset.mem_map.mp (hx j) with ⟨b, _, hb⟩
+      exact ⟨b, hb⟩
+    let u : (Fin n → Fin 2) := fun j => Classical.choose (hx_coord j)
+    exact Finset.mem_map.mpr ⟨u, Finset.mem_univ _, by
+      funext j
+      exact Classical.choose_spec (hx_coord j)⟩
+  · intro hx
+    rw [Fintype.mem_piFinset]
+    intro j
+    rcases Finset.mem_map.mp hx with ⟨u, _, rfl⟩
+    exact Finset.mem_map.mpr ⟨u j, Finset.mem_univ _, rfl⟩
+
+omit [Fintype F] [DecidableEq F] [SampleableType F] in
+/-- If LogUp's outer algebra proves a zero sum, then the generic Sumcheck input relation is exactly
+the claim sent to Sumcheck. -/
+theorem logupSumcheckRelationInput_of_zero
+    {stmt : StmtAfterOuter F n M params}
+    {oStmt : ∀ i, OStmtAfterOuter F n M params i}
+    (hZero : logupOuterSumcheckClaim F n M params stmt oStmt = 0) :
+    logupSumcheckRelationInput F n M params stmt oStmt := by
+  unfold logupSumcheckRelationInput Sumcheck.Spec.relationRound
+  simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, Nat.sub_zero, logupInitialSumcheckStatement,
+    Set.mem_setOf_eq, Fin.elim0_append, logupSumcheckOracleStmt]
+  change
+    (∑ x ∈ Fintype.piFinset fun _ : Fin n => Finset.univ.map (booleanDomain F),
+      MvPolynomial.eval ((x ∘ Fin.cast (by omega)) ∘ Fin.cast (by omega))
+        (logupSumcheckPolynomial F n M params stmt oStmt).val) = 0
+  rw [sum_piFinset_map_univ_eq_sum_hypercube
+    (F := F) (n := n) (D := booleanDomain F)
+    (f := fun x =>
+      MvPolynomial.eval ((x ∘ Fin.cast (by omega)) ∘ Fin.cast (by omega))
+        (logupSumcheckPolynomial F n M params stmt oStmt).val)]
+  calc
+    (∑ u : (Fin n → Fin 2),
+        MvPolynomial.eval
+          ((((fun j => (booleanDomain F) (u j)) ∘ Fin.cast (by omega)) ∘
+              Fin.cast (by omega)))
+          (logupSumcheckPolynomial F n M params stmt oStmt).val)
+        =
+      logupOuterSumcheckClaim F n M params stmt oStmt := by
+        rw [logupOuterSumcheckClaim]
+        apply Finset.sum_congr rfl
+        intro u _
+        simpa [booleanDomain, logupSumcheckPolynomial] using
+          logupQPolynomial_eval_hypercube F n M params stmt oStmt u
+    _ = 0 := hZero
+
 /-- Completeness error from the current `x`-sampling model: the verifier samples `x` from all of
 `F`. Following Remark 3 of the LogUp paper, table-pole challenges are treated as bad inputs for
 the honest handoff rather than rejected by an exponential verifier scan. -/
 noncomputable def logupCompletenessError (F : Type) [Fintype F] (n : ℕ) : ℝ≥0 :=
-  (Fintype.card (Hypercube n) : ℝ≥0) / (Fintype.card F)
+  (Fintype.card (Fin n → Fin 2) : ℝ≥0) / (Fintype.card F)
 
 private theorem uniform_avoids_table_poles_prob [Inhabited F]
     (oStmt : ∀ i, OStmtIn F n M i) :
     (1 : ENNReal) - (logupCompletenessError F n : ENNReal) ≤
-      Pr[fun x : F => ∀ u : Hypercube n,
-        x + evalOnHypercube (tableOracle oStmt) u ≠ 0 | $ᵗ F] := by
+      Pr[fun x : F => ∀ u : (Fin n → Fin 2),
+        x + (tableOracle oStmt) u ≠ 0 | $ᵗ F] := by
   classical
   let bad : F → Prop :=
-    fun x => ∃ u : Hypercube n, x + evalOnHypercube (tableOracle oStmt) u = 0
+    fun x => ∃ u : (Fin n → Fin 2), x + (tableOracle oStmt) u = 0
   have hbad :
       Pr[bad | $ᵗ F] ≤ (logupCompletenessError F n : ENNReal) := by
     rw [probEvent_uniformSample]
     unfold logupCompletenessError
     have hcard :
         ((Finset.univ.filter bad).card : ENNReal) ≤
-          (Fintype.card (Hypercube n) : ENNReal) := by
+          (Fintype.card (Fin n → Fin 2) : ENNReal) := by
       exact_mod_cast (by simpa [bad] using pole_card_le (F := F) (n := n) (M := M) oStmt)
     convert ENNReal.div_le_div_right hcard (Fintype.card F : ENNReal) using 1; norm_num
   have hcompl :
@@ -357,69 +420,6 @@ private theorem le_probEvent_bind_of_forall_le {m : Type → Type*} [Monad m] [L
     (p := fun _ : α => True) (q := q) (r := 1) (r' := r)
     (by simp [htrue]) (fun x hx _ => h x hx)
   simpa using hmul
-
-omit [Field F] [DecidableEq F] in
-private theorem simulateQ_outer_x_challenge [Inhabited F] :
-    simulateQ
-        (impl + QueryImpl.liftTarget (StateT σ ProbComp)
-          (ProtocolSpec.challengeQueryImpl (pSpec := outerPSpec F n params)))
-        (OracleComp.liftComp
-          (ProtocolSpec.getChallenge (outerPSpec F n params)
-            (outerChallengeXIdx F n M params))
-          (oSpec + [(outerPSpec F n params).Challenge]ₒ))
-      = (StateT.lift ($ᵗ F) : StateT σ ProbComp F) := by
-  rw [QueryImpl.simulateQ_add_liftComp_right, simulateQ_liftTarget]
-  have h :
-      simulateQ (ProtocolSpec.challengeQueryImpl (pSpec := outerPSpec F n params))
-          (ProtocolSpec.getChallenge (outerPSpec F n params)
-            (outerChallengeXIdx F n M params))
-        = ($ᵗ F : ProbComp F) := by
-    unfold ProtocolSpec.getChallenge
-    change simulateQ (ProtocolSpec.challengeQueryImpl (pSpec := outerPSpec F n params))
-        (liftM (OracleSpec.query (spec := [(outerPSpec F n params).Challenge]ₒ)
-          ⟨outerChallengeXIdx F n M params, ()⟩) :
-          OracleComp ([(outerPSpec F n params).Challenge]ₒ) F)
-      = ($ᵗ F : ProbComp F)
-    rw [simulateQ_query]
-    change id <$> ($ᵗ F : ProbComp F) = ($ᵗ F : ProbComp F)
-    simp
-  rw [h]
-  rfl
-
-omit [Field F] [DecidableEq F] in
-private theorem simulateQ_outer_batch_challenge [Inhabited F] :
-    simulateQ
-        (impl + QueryImpl.liftTarget (StateT σ ProbComp)
-          (ProtocolSpec.challengeQueryImpl (pSpec := outerPSpec F n params)))
-        (OracleComp.liftComp
-          (ProtocolSpec.getChallenge (outerPSpec F n params)
-            (outerChallengeBatchIdx F n M params))
-          (oSpec + [(outerPSpec F n params).Challenge]ₒ))
-      = (StateT.lift ($ᵗ BatchingChallenge F n params.numGroups) :
-          StateT σ ProbComp (BatchingChallenge F n params.numGroups)) := by
-  rw [QueryImpl.simulateQ_add_liftComp_right, simulateQ_liftTarget]
-  have h :
-      simulateQ (ProtocolSpec.challengeQueryImpl (pSpec := outerPSpec F n params))
-          (ProtocolSpec.getChallenge (outerPSpec F n params)
-            (outerChallengeBatchIdx F n M params))
-        = ($ᵗ BatchingChallenge F n params.numGroups :
-          ProbComp (BatchingChallenge F n params.numGroups)) := by
-    unfold ProtocolSpec.getChallenge
-    change simulateQ (ProtocolSpec.challengeQueryImpl (pSpec := outerPSpec F n params))
-        (liftM (OracleSpec.query (spec := [(outerPSpec F n params).Challenge]ₒ)
-          ⟨outerChallengeBatchIdx F n M params, ()⟩) :
-          OracleComp ([(outerPSpec F n params).Challenge]ₒ)
-            (BatchingChallenge F n params.numGroups))
-      = ($ᵗ BatchingChallenge F n params.numGroups :
-          ProbComp (BatchingChallenge F n params.numGroups))
-    rw [simulateQ_query]
-    change id <$> ($ᵗ BatchingChallenge F n params.numGroups :
-        ProbComp (BatchingChallenge F n params.numGroups)) =
-      ($ᵗ BatchingChallenge F n params.numGroups :
-        ProbComp (BatchingChallenge F n params.numGroups))
-    simp
-  rw [h]
-  rfl
 
 private theorem support_pure_eq {m : Type → Type*} [Monad m] [LawfulMonad m]
     [MonadLiftT m SetM] [LawfulMonadLiftT m SetM]
@@ -634,8 +634,8 @@ theorem logup_outer_completeness [Inhabited F] :
     MonadLiftT.monadLift, OracleComp.liftComp_pure, bind_pure_comp, map_pure,
     QueryImpl.addLift_def]
   refine ge_trans (probEvent_mono
-    (p := fun out => ∀ u : Hypercube n,
-      out.2.1.xChallenge + evalOnHypercube (tableOracle oStmt) u ≠ 0) ?goodOutputs) ?goodProb
+    (p := fun out => ∀ u : (Fin n → Fin 2),
+      out.2.1.xChallenge + (tableOracle oStmt) u ≠ 0) ?goodOutputs) ?goodProb
   · -- every output with a non-pole outer challenge satisfies the success predicate
     intro out hout hGood
     rw [OptionT.mem_support_iff] at hout
@@ -722,21 +722,21 @@ theorem logup_outer_completeness [Inhabited F] :
         simp only [Option.some.injEq] at hverifyEq
         subst vAccepted
         have hNoTablePoles :
-            ∀ u : Hypercube n, xval + evalOnHypercube (tableOracle oStmt) u ≠ 0 := by
+            ∀ u : (Fin n → Fin 2), xval + (tableOracle oStmt) u ≠ 0 := by
           intro u
           simpa [outerVerifier, outerChallengeXIdx, outerChallengeBatchIdx,
             ProtocolSpec.FullTranscript.challenges, ProtocolSpec.Transcript.concat, Fin.snoc]
             using hGood u
-        have hcols : ∀ j : Fin M, ∀ u : Hypercube n, ∃ v : Hypercube n,
-            evalOnHypercube (columnOracle oStmt j) u =
-              evalOnHypercube (tableOracle oStmt) v := by
+        have hcols : ∀ j : Fin M, ∀ u : (Fin n → Fin 2), ∃ v : (Fin n → Fin 2),
+            (columnOracle oStmt j) u =
+              (tableOracle oStmt) v := by
           simpa [inputRelation] using hIn
         have hchar : ∀ a : F, lookupMultiplicityCount oStmt a ≠ 0 →
             (tableMultiplicityCount oStmt a : F) ≠ 0 :=
           fun _ hlookup =>
             tableMultiplicityCount_cast_ne_zero_of_lookupMultiplicityCount_ne_zero
               stmt oStmt hcols hlookup
-        have hpoles : ∀ (i : TermIdx M) (u : Hypercube n), termPhi oStmt xval i u ≠ 0 :=
+        have hpoles : ∀ (i : TermIdx M) (u : (Fin n → Fin 2)), termPhi oStmt xval i u ≠ 0 :=
           termPhi_ne_zero_of_table_poles oStmt xval hcols hNoTablePoles
         let stmtAfter : StmtAfterOuter F n M params :=
           { xChallenge := xval, zChallenge := zlam.1, batchingScalars := zlam.2 }
@@ -789,10 +789,10 @@ theorem logup_outer_completeness [Inhabited F] :
       · simpa [probEvent_uniformSample] using
           (mul_le_probEvent_bind
             (mx := (liftM ($ᵗ F : ProbComp F) : OptionT ProbComp F))
-            (p := fun x : F => ∀ u : Hypercube n,
-              x + evalOnHypercube (tableOracle oStmt) u ≠ 0)
-            (r := Pr[fun x : F => ∀ u : Hypercube n,
-              x + evalOnHypercube (tableOracle oStmt) u ≠ 0 | $ᵗ F])
+            (p := fun x : F => ∀ u : (Fin n → Fin 2),
+              x + (tableOracle oStmt) u ≠ 0)
+            (r := Pr[fun x : F => ∀ u : (Fin n → Fin 2),
+              x + (tableOracle oStmt) u ≠ 0 | $ᵗ F])
             (r' := 1) (by simp) (by
               intro x hx hGood
               erw [simulateQ_pure]

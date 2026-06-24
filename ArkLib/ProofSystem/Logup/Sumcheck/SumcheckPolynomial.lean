@@ -22,16 +22,68 @@ namespace Logup
 
 open scoped BigOperators
 
+section QEvaluation
+
+variable {F : Type} [Field F] [Fintype F] [DecidableEq F] {n M K : ℕ}
+
+/-- The batched polynomial expression `Q` from paper equation (18), evaluated on a row `u ∈ H`. -/
+noncomputable def qOnHypercube (groups : PartialSumGroups M K)
+    (oStmt : ∀ i, OStmtIn F n M i) (multiplicity : MultilinearOracle F n)
+    (helpers : HelperMessages F n K) (xChallenge : F) (zChallenge : Fin n → F)
+    (batchingScalars : Fin K → F) (u : (Fin n → Fin 2)) : F :=
+  ∑ k : Fin K, (
+    (helpers k) u +
+      MvPolynomial.eval (u : Fin n → F) (MvPolynomial.eqPolynomial zChallenge) *
+        batchingScalars k *
+        domainIdentityTerm groups oStmt multiplicity helpers xChallenge k u)
+
+/-- Denominator term at the final sumcheck point, reconstructed from oracle query answers. -/
+def phiAtPoint (xChallenge : F) (evals : PointEvaluations F M K) :
+    InputOracleIdx M → F
+  | .table => xChallenge + evals.table
+  | .column i => xChallenge + evals.columns i
+
+/-- Numerator term at the final sumcheck point, reconstructed from oracle query answers. -/
+def numeratorAtPoint (evals : PointEvaluations F M K) : InputOracleIdx M → F
+  | .table => evals.multiplicity
+  | .column _ => -1
+
+/-- Term denominator at the final sumcheck point, indexed by `0, ..., M`. -/
+def termPhiAtPoint (xChallenge : F) (evals : PointEvaluations F M K) (i : TermIdx M) : F :=
+  phiAtPoint xChallenge evals (termToInput i)
+
+/-- Term numerator at the final sumcheck point, indexed by `0, ..., M`. -/
+def termNumeratorAtPoint (evals : PointEvaluations F M K) (i : TermIdx M) : F :=
+  numeratorAtPoint evals (termToInput i)
+
+/-- The domain-identity expression at the final sumcheck point `r`. -/
+noncomputable def domainIdentityAtPoint (groups : PartialSumGroups M K)
+    (xChallenge : F) (evals : PointEvaluations F M K) (k : Fin K) : F :=
+  evals.helpers k * (∏ i ∈ groups k, termPhiAtPoint xChallenge evals i) -
+    ∑ i ∈ groups k,
+      termNumeratorAtPoint evals i *
+        ∏ j ∈ (groups k).erase i, termPhiAtPoint xChallenge evals j
+
+/-- The verifier's final check value `Q(eq(r,z), m(r), φᵢ(r), hₖ(r))` from paper (19). -/
+noncomputable def qAtPoint (groups : PartialSumGroups M K) (xChallenge : F)
+    (zChallenge rChallenge : Fin n → F) (batchingScalars : Fin K → F)
+    (evals : PointEvaluations F M K) : F :=
+  ∑ k : Fin K, (
+    evals.helpers k +
+      MvPolynomial.eval rChallenge (MvPolynomial.eqPolynomial zChallenge) * batchingScalars k *
+        domainIdentityAtPoint groups xChallenge evals k)
+
+end QEvaluation
+
 section SumcheckPolynomial
 
 variable (F : Type) [Field F] (n M : ℕ)
 variable (params : ProtocolParams M)
 
 private theorem oraclePolynomial_eval_hypercube
-    (oracle : MultilinearOracle F n) (u : Hypercube n) :
+    (oracle : MultilinearOracle F n) (u : (Fin n → Fin 2)) :
     MvPolynomial.eval (u : Fin n → F) (MvPolynomial.MLE oracle.values)
-      = evalOnHypercube oracle u := by
-  change MvPolynomial.eval (u : Fin n → F) (MvPolynomial.MLE oracle.values) = oracle.values u
+      = oracle u := by
   simp
 
 private noncomputable def inputOraclePolynomial
@@ -270,7 +322,7 @@ theorem logupQPolynomial_degreeOf
 
 private theorem termPhiPolynomial_eval_hypercube
     (stmt : StmtAfterOuter F n M params) (oStmt : ∀ i, OStmtAfterOuter F n M params i)
-    (i : TermIdx M) (u : Hypercube n) :
+    (i : TermIdx M) (u : (Fin n → Fin 2)) :
     MvPolynomial.eval (u : Fin n → F) (termPhiPolynomial F n M params stmt oStmt i)
       = termPhi (fun idx => oStmt (.input idx)) stmt.xChallenge i u := by
   rcases h : termToInput i with _ | c <;>
@@ -278,7 +330,7 @@ private theorem termPhiPolynomial_eval_hypercube
       columnOracle, map_add, MvPolynomial.eval_C, oraclePolynomial_eval_hypercube F n]
 
 private theorem termNumeratorPolynomial_eval_hypercube
-    (oStmt : ∀ i, OStmtAfterOuter F n M params i) (i : TermIdx M) (u : Hypercube n) :
+    (oStmt : ∀ i, OStmtAfterOuter F n M params i) (i : TermIdx M) (u : (Fin n → Fin 2)) :
     MvPolynomial.eval (u : Fin n → F) (termNumeratorPolynomial F n M params oStmt i)
       = termNumerator (oStmt .multiplicity) i u := by
   unfold termNumeratorPolynomial termNumerator numerator
@@ -288,7 +340,7 @@ private theorem termNumeratorPolynomial_eval_hypercube
 
 private theorem domainIdentityPolynomial_eval_hypercube
     (stmt : StmtAfterOuter F n M params) (oStmt : ∀ i, OStmtAfterOuter F n M params i)
-    (k : Fin params.numGroups) (u : Hypercube n) :
+    (k : Fin params.numGroups) (u : (Fin n → Fin 2)) :
     MvPolynomial.eval (u : Fin n → F) (domainIdentityPolynomial F n M params stmt oStmt k)
       = domainIdentityTerm (canonicalGroups params) (fun idx => oStmt (.input idx))
           (oStmt .multiplicity) (oStmt .helpers) stmt.xChallenge k u := by
@@ -364,7 +416,7 @@ private theorem domainIdentityPolynomial_eval_point
 /-- `logupQPolynomial` restricted to the Boolean hypercube agrees with `qOnHypercube`. -/
 theorem logupQPolynomial_eval_hypercube
     (stmt : StmtAfterOuter F n M params) (oStmt : ∀ i, OStmtAfterOuter F n M params i)
-    (u : Hypercube n) :
+    (u : (Fin n → Fin 2)) :
     MvPolynomial.eval (u : Fin n → F) (logupQPolynomial F n M params stmt oStmt)
       = qOnHypercube (canonicalGroups params) (fun i => oStmt (.input i)) (oStmt .multiplicity)
           (oStmt .helpers) stmt.xChallenge stmt.zChallenge stmt.batchingScalars u := by
@@ -372,7 +424,7 @@ theorem logupQPolynomial_eval_hypercube
   refine Finset.sum_congr rfl (fun k _ => ?_)
   rw [map_add, map_mul, map_mul, MvPolynomial.eval_C,
     show MvPolynomial.eval (u : Fin n → F) (helperPolynomial F n M params oStmt k)
-        = evalOnHypercube ((oStmt .helpers) k) u from by
+        = ((oStmt .helpers) k) u from by
       simp only [helperPolynomial]; exact oraclePolynomial_eval_hypercube F n _ u,
     domainIdentityPolynomial_eval_hypercube F n M params]
 
