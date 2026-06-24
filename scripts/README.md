@@ -111,5 +111,6 @@ baseline without rerunning that baseline in the same job. This supports
 - Some scripts may require specific Lean toolchain versions
 - `validate.sh` is the recommended local wrapper; use the lower-level scripts directly when you
   want to run or debug one piece in isolation
-- `validate.sh` currently enforces a zero non-`sorry` warning budget under `ArkLib/Data/**`
+- `validate.sh` currently enforces a zero non-`sorry` warning budget under
+  `ArkLib/Data/**` and `ArkLib/Interaction/**`
 - New `ArkLib/**/*.lean` files must be staged before `update-lib.sh` or `check-imports.sh`

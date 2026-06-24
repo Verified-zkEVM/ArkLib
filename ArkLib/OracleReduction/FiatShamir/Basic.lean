@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
+import ArkLib.Data.Fin.Basic
 import ArkLib.OracleReduction.Security.Basic
 
 /-!
@@ -34,19 +35,7 @@ universe u v
 
 section find_home
 
-variable {n : ℕ} {σ τ : Type u} {m : Type u → Type v} [Monad m]
-
-/-- Traverse a dependent function indexed by `Fin n` in any monad. -/
-def Fin.traverseM {β : Fin n → Type u}
-    (f : (i : Fin n) → m (β i)) : m ((i : Fin n) → β i) :=
-  let rec aux (k : ℕ) (h : k ≤ n) : m ((i : Fin k) → β (Fin.castLE h i)) :=
-    match k with
-    | 0 => pure (fun i => i.elim0)
-    | k' + 1 => do
-      let tail ← aux k' (Nat.le_of_succ_le h)
-      let head ← f (Fin.castLE h (Fin.last k'))
-      return (Fin.snoc tail head)
-  aux n (le_refl n)
+variable {σ τ : Type u} {m : Type u → Type v} [Monad m]
 
 instance : MonadLift (StateT σ m) (StateT (σ × τ) m) where
   monadLift := fun x st => do let y ← x st.1; return (y.1, y.2, st.2)

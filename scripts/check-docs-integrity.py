@@ -11,6 +11,7 @@ Exit code 0 if all checks pass, 1 otherwise.
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -22,10 +23,17 @@ MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]+\]\(([^)]+)\)")
 
 
 def tracked_markdown_files() -> list[Path]:
+    result = subprocess.run(
+        ["git", "ls-files", "--", "AGENTS.md", "scripts/README.md", "docs"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
     return [
-        AGENTS_PATH,
-        REPO_ROOT / "scripts" / "README.md",
-        *sorted((REPO_ROOT / "docs").rglob("*.md")),
+        REPO_ROOT / rel_path
+        for rel_path in result.stdout.splitlines()
+        if rel_path.endswith(".md")
     ]
 
 

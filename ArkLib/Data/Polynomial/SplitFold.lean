@@ -85,6 +85,10 @@ def splitNth (f : 𝔽[X]) (n : ℕ) [inst : NeZero n] : Fin n → 𝔽[X] :=
             simp [this]
       ⟩
 
+/-- Recombine the `n`-way split of `f` using powers of `α`. -/
+noncomputable def foldNth (f : 𝔽[X]) (n : ℕ) [NeZero n] (α : 𝔽) : 𝔽[X] :=
+  ∑ i : Fin n, C (α ^ (i : ℕ)) * splitNth f n i
+
 /- Proof of key identity `splitNth` has to satisfy. -/
 omit [NoZeroDivisors 𝔽] in
 lemma splitNth_def (n : ℕ) (f : 𝔽[X]) [inst : NeZero n] :

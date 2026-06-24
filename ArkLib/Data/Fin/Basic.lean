@@ -61,6 +61,131 @@ namespace Fin
 
 open Function
 
+/-- Traverse a dependent function indexed by `Fin n` in any monad. -/
+def traverseM {m : Type u → Type v} [Monad m] {n : ℕ} {β : Fin n → Type u}
+    (f : (i : Fin n) → m (β i)) : m ((i : Fin n) → β i) :=
+  match n with
+  | 0 => pure fun i => i.elim0
+  | n + 1 => do
+      let tail ← traverseM (β := fun i : Fin n => β i.castSucc) fun i => f i.castSucc
+      let head ← f (Fin.last n)
+      pure (Fin.snoc tail head)
+
+@[simp]
+theorem traverseM_zero {m : Type u → Type v} [Monad m] {β : Fin 0 → Type u}
+    (f : (i : Fin 0) → m (β i)) :
+    traverseM f = pure (fun i => i.elim0) :=
+  rfl
+
+@[simp]
+theorem traverseM_succ {m : Type u → Type v} [Monad m] {n : ℕ}
+    {β : Fin (n + 1) → Type u} (f : (i : Fin (n + 1)) → m (β i)) :
+    traverseM f = (do
+      let tail ← traverseM (β := fun i : Fin n => β i.castSucc) fun i => f i.castSucc
+      let head ← f (Fin.last n)
+      pure (Fin.snoc tail head)) :=
+  rfl
+
+/-- Implementation-oriented worker for `Fin.traverseM`.
+
+The public `Fin.traverseM` above is recursive on `n`, giving clean definitional reduction for
+`0` and `n + 1`. This version keeps the accumulator index explicit, which is a better shape for
+compiled code. -/
+def traverseMImpl {m : Type u → Type v} [Monad m] {n : ℕ} {β : Fin n → Type u}
+    (f : (i : Fin n) → m (β i)) : m ((i : Fin n) → β i) :=
+  let rec aux (k : ℕ) (e : Fin k → Fin n) : m ((i : Fin k) → β (e i)) :=
+    match k with
+    | 0 => pure fun i => i.elim0
+    | k' + 1 => do
+        let tail ← aux k' fun i => e i.castSucc
+        let head ← f (e (Fin.last k'))
+        pure (Fin.snoc tail head)
+  aux n id
+
+@[simp]
+theorem traverseMImpl_zero {m : Type u → Type v} [Monad m] {β : Fin 0 → Type u}
+    (f : (i : Fin 0) → m (β i)) :
+    traverseMImpl f = pure (fun i => i.elim0) :=
+  rfl
+
+/-- Reindexing the implementation worker into its local index type. -/
+theorem traverseMImpl_aux_comp {m : Type u → Type v} [Monad m] {n k : ℕ}
+    {β : Fin n → Type u} (f : (i : Fin n) → m (β i)) (e : Fin k → Fin n) :
+    traverseMImpl.aux f k e =
+      traverseMImpl.aux (n := k) (β := fun i => β (e i)) (fun i => f (e i)) k id := by
+  induction k generalizing n with
+  | zero =>
+      rfl
+  | succ k ih =>
+      unfold traverseMImpl.aux
+      rw [ih (n := n) (β := β) f (fun i : Fin k => e i.castSucc)]
+      rw [ih (n := k + 1) (β := fun i : Fin (k + 1) => β (e i))
+        (fun i : Fin (k + 1) => f (e i)) (fun i : Fin k => id i.castSucc)]
+      simp only [id_eq]
+
+@[simp]
+theorem traverseMImpl_succ {m : Type u → Type v} [Monad m] {n : ℕ}
+    {β : Fin (n + 1) → Type u} (f : (i : Fin (n + 1)) → m (β i)) :
+    traverseMImpl f = (do
+      let tail ← traverseMImpl (β := fun i : Fin n => β i.castSucc) fun i => f i.castSucc
+      let head ← f (Fin.last n)
+      pure (Fin.snoc tail head)) :=
+  by
+    change traverseMImpl.aux f (n + 1) id = _
+    unfold traverseMImpl.aux
+    rw [traverseMImpl_aux_comp f (fun i : Fin n => id i.castSucc)]
+    simp only [id_eq]
+    rfl
+
+@[csimp]
+theorem traverseM_eq_traverseMImpl :
+    @traverseM = @traverseMImpl := by
+  funext m inst n β f
+  induction n with
+  | zero =>
+      rw [traverseM_zero, traverseMImpl_zero]
+  | succ n ih =>
+      rw [traverseM_succ, traverseMImpl_succ, ih]
+
+theorem traverseM_congr {m : Type u → Type v} [Monad m] {n : ℕ} {β : Fin n → Type u}
+    {f g : (i : Fin n) → m (β i)} (h : ∀ i, f i = g i) :
+    traverseM f = traverseM g := by
+  congr 1
+  funext i
+  exact h i
+
+@[simp]
+theorem traverseM_pure {m : Type u → Type v} [Monad m] [LawfulMonad m] {n : ℕ}
+    {β : Fin n → Type u} (x : (i : Fin n) → β i) :
+    traverseM (fun i => (pure (x i) : m (β i))) = (pure x : m ((i : Fin n) → β i)) := by
+  induction n with
+  | zero =>
+      rw [traverseM_zero]
+      congr
+      ext i
+      exact i.elim0
+  | succ n ih =>
+      rw [traverseM_succ]
+      rw [ih (β := fun i : Fin n => β i.castSucc) (fun i => x i.castSucc)]
+      simp only [bind_pure_comp, map_pure]
+      rw [show (fun i : Fin n => x i.castSucc) = Fin.init x by rfl]
+      rw [Fin.snoc_init_self]
+
+@[simp]
+theorem traverseM_id {n : ℕ} {β : Fin n → Type u} (x : (i : Fin n) → β i) :
+    traverseM (m := Id) (fun i => x i) = x := by
+  induction n with
+  | zero =>
+      rw [traverseM_zero]
+      ext i
+      exact i.elim0
+  | succ n ih =>
+      rw [traverseM_succ]
+      rw [ih (β := fun i : Fin n => β i.castSucc) (fun i => x i.castSucc)]
+      rw [show (fun i : Fin n => x i.castSucc) = Fin.init x by rfl]
+      change Fin.snoc (Fin.init x) (x (Fin.last n)) = x
+      rw [Fin.snoc_init_self]
+
 /-- Version of `Fin.heq_fun_iff` for dependent functions `f : (i : Fin k) → α i`. -/
 protected theorem heq_fun_iff' {k l : ℕ} {α : Fin k → Sort u} {β : Fin l → Sort u} (h : k = l)
     (h' : ∀ i : Fin k, (α i) = (β (Fin.cast h i))) {f : (i : Fin k) → α i} {g : (j : Fin l) → β j} :

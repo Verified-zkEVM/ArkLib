@@ -25,6 +25,17 @@ variable (R : Type*) [CommSemiring R]
 
 inductive MatrixIdx where | A | B | C deriving Inhabited, DecidableEq
 
+instance : Fintype MatrixIdx where
+  elems := { val := [MatrixIdx.A, MatrixIdx.B, MatrixIdx.C], nodup := by decide }
+  complete := by
+    intro idx
+    cases idx <;> simp
+
+@[simp]
+theorem MatrixIdx.sum_univ {α : Type*} [AddCommMonoid α] (f : MatrixIdx → α) :
+    (∑ idx : MatrixIdx, f idx) = f .A + f .B + f .C := by
+  simp [Finset.univ, Fintype.elems, add_assoc]
+
 structure Size where
   m : ℕ -- number of columns
   n : ℕ -- number of rows

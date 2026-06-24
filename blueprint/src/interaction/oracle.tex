@@ -1,0 +1,147 @@
+% interaction/oracle.tex — OracleDecoration, path-dependent access, OracleReduction
+
+\section{Oracle Access and Oracle Reductions}\label{sec:interaction-oracle}
+
+In the IOP model, the verifier does not read prover messages directly; instead,
+it queries them as oracles.  In a $W$-type interaction, the oracle interfaces
+available to the verifier depend on the \emph{actual transcript}---which path
+through the tree was taken.  This \emph{path-dependent oracle access} is the
+distinguishing feature of the interaction-native oracle layer.
+
+The guiding idea is simple: the interaction tree determines \emph{which}
+messages have been sent so far, and the oracle layer turns exactly those sent
+messages into queryable interfaces for the verifier.
+
+\subsection{Oracle decoration}
+
+\begin{definition}[OracleDecoration]
+  \label{int:oracle-decoration}
+  An $\mathsf{OracleDecoration}$ is a
+  $\mathsf{Role.Refine}\;\OracleInterface$: it assigns an
+  $\OracleInterface$ instance (carried as data, not as a typeclass) to each
+  sender node, and recurses directly at receiver nodes.
+  \lean{Interaction.OracleDecoration}
+  \uses{int:role-refine}
+\end{definition}
+
+\subsection{Path-dependent oracle queries}
+
+\begin{definition}[QueryHandle]
+  \label{int:query-handle}
+  Given a transcript $\mathit{tr} : \Transcript\;\mathit{spec}$, the
+  \emph{query handle} $\mathsf{QueryHandle}\;\mathit{spec}\;\mathit{roles}\;
+  \mathit{od}\;\mathit{tr}$ is the index type for oracle queries available
+  along the path~$\mathit{tr}$:
+  \begin{itemize}
+    \item At a sender node with oracle interface $\mathit{oi}$: the verifier can
+      query the current oracle ($\mathsf{inl}\;q$ for $q : \mathit{oi}.\mathsf{Query}$)
+      or recurse into the subtree ($\mathsf{inr}\;h$).
+    \item At a receiver node: recurse immediately (no oracle to query).
+    \item At $\mathsf{done}$: $\mathsf{Empty}$ (no queries possible).
+  \end{itemize}
+  \lean{Interaction.OracleDecoration.QueryHandle}
+  \uses{int:oracle-decoration, int:transcript}
+\end{definition}
+
+\begin{definition}[toOracleSpec]
+  \label{int:to-oracle-spec}
+  $\mathsf{toOracleSpec}\;\mathit{spec}\;\mathit{roles}\;\mathit{od}\;
+  \mathit{tr}$ is the VCVio $\OracleSpec$ mapping each $\mathsf{QueryHandle}$
+  to its response type along the path~$\mathit{tr}$.
+  \lean{Interaction.OracleDecoration.toOracleSpec}
+  \uses{int:query-handle}
+\end{definition}
+
+$\mathsf{answerQuery}$ answers queries using the actual message values from the
+transcript: at each sender node, the transcript provides the concrete move~$x$,
+which serves as the argument to the $\OracleInterface$'s implementation.
+
+\subsection{Bridge to \texorpdfstring{$\mathsf{Counterpart.withMonads}$}{Counterpart.withMonads}}
+
+Rather than defining a bespoke oracle verifier tree, we reuse the generic
+per-node-monad counterpart from Section~\ref{sec:interaction-two-party}.
+
+\begin{definition}[toMonadDecoration]
+  \label{int:to-monad-decoration}
+  $\mathsf{toMonadDecoration}$ computes the per-node $\mathsf{MonadDecoration}$
+  from an oracle decoration and an accumulated oracle spec $\mathit{accSpec}$:
+  \begin{itemize}
+    \item Sender nodes: monad is $\mathsf{Id}$ (pure observation; $\mathsf{Id}\;\alpha = \alpha$ definitionally).
+    \item Receiver nodes: monad is $\OracleComp\;(\mathit{oSpec} + [\mathit{OStmtIn}]_o + \mathit{accSpec})$.
+  \end{itemize}
+  The accumulated spec grows at each sender node:
+  $\mathit{accSpec}_0 = []_o$, and
+  $\mathit{accSpec}_{i+1} = \mathit{accSpec}_i + \mathit{oi}_i.\mathsf{spec}$.
+  \lean{Interaction.OracleDecoration.toMonadDecoration}
+  \uses{int:oracle-decoration, int:counterpart-with-monads}
+\end{definition}
+
+\begin{definition}[OracleCounterpart]
+  \label{int:oracle-counterpart}
+  $\mathsf{OracleCounterpart}$ is defined as
+  $\mathsf{Counterpart.withMonads}$ with the monad decoration from
+  $\mathsf{toMonadDecoration}$.  This means all generic composition
+  combinators---$\mathsf{withMonads.append}$,
+  $\mathsf{withMonads.stateChainComp}$, etc.---apply directly to oracle
+  counterparts.
+  \lean{Interaction.OracleDecoration.OracleCounterpart}
+  \uses{int:to-monad-decoration, int:counterpart-with-monads}
+\end{definition}
+
+\subsection{Oracle verifier and oracle reduction}
+
+\begin{definition}[OracleVerifier]
+  \label{int:oracle-verifier}
+  An $\OracleVerifier$ bundles:
+  \begin{itemize}
+    \item $\mathit{iov}$: a round-by-round interactive oracle verifier
+      (an instance of $\mathsf{OracleCounterpart}$).
+    \item $\mathit{simulate}$: a transcript-dependent query implementation
+      exposing access to the output oracle family.
+  \end{itemize}
+  Concrete reification of the output oracle data is intentionally \emph{not}
+  part of this structure.  The core oracle layer records only query-level
+  simulation; concrete materialization belongs to optional reification layers,
+  such as the boundary reification layer from
+  Section~\ref{sec:interaction-boundary}.
+  \lean{Interaction.OracleDecoration.OracleVerifier}
+  \uses{int:oracle-counterpart}
+\end{definition}
+
+\begin{definition}[OracleReduction]
+  \label{int:oracle-reduction}
+  An $\OracleReduction$ combines:
+  \begin{itemize}
+    \item An $\mathsf{OracleProver}$: given a statement bundled with input
+      oracle data, produces a role-dependent strategy in $\OracleComp$.
+    \item A verifier: a $\mathsf{Counterpart.withMonads}$ with the monad
+      decoration from $\mathsf{toMonadDecoration}$.
+    \item $\mathit{simulate}$: transcript-dependent output oracle query
+      implementation.
+  \end{itemize}
+  $\mathsf{run}$ and $\mathsf{execute}$ are derived operations that thread the
+  prover strategy against the oracle counterpart.
+  \lean{Interaction.OracleDecoration.OracleReduction}
+  \uses{int:oracle-verifier}
+\end{definition}
+
+\subsection{Oracle composition}
+
+The key distributivity result is:
+
+\begin{theorem}[toMonadDecoration distributes over append]
+  \label{thm:to-monad-decoration-append}
+  The monad decoration of $s_1.\mathsf{append}\;s_2$ equals
+  $\mathsf{Decoration.append}$ of the individual monad decorations, where the
+  second phase starts from the accumulated oracle spec of the first.
+  \lean{Interaction.OracleDecoration.toMonadDecoration_append}
+  \uses{int:to-monad-decoration, int:spec-append}
+\end{theorem}
+
+This theorem, together with query routing lemmas for $\mathsf{appendLeft}$ and
+$\mathsf{appendRight}$, enables compositional oracle reduction:
+$\mathsf{OracleReduction.Continuation}$ supports binary composition, and
+$\mathsf{OracleDecoration.OracleReduction.stateChainComp}$ handles $n$-ary
+state-chain composition.  In other words, once the oracle layer is expressed
+through $\mathsf{Counterpart.withMonads}$, it inherits the same composition
+machinery as the plain interaction layer.

@@ -1,5 +1,5 @@
 {
-  "count": 50,
+  "count": 60,
   "entries": {
     "ACFY24": {
       "authors": [
@@ -158,6 +158,31 @@
       "url": "",
       "venue": "Cryptology ePrint Archive",
       "year": "2024"
+    },
+    "AttemaFehrKlooss2023": {
+      "authors": [
+        "Attema, Thomas",
+        "Fehr, Serge",
+        "Kloo{\\ss}, Michael"
+      ],
+      "authors_text": "Attema, Thomas and Fehr, Serge and Kloo{\\ss}, Michael",
+      "doi": "10.1007/s00145-023-09478-y",
+      "entry_type": "article",
+      "fields": {
+        "author": "Attema, Thomas and Fehr, Serge and Kloo{\\ss}, Michael",
+        "doi": "10.1007/s00145-023-09478-y",
+        "journal": "Journal of Cryptology",
+        "number": "4",
+        "title": "Fiat--Shamir Transformation of Multi-Round Interactive Proofs",
+        "url": "https://doi.org/10.1007/s00145-023-09478-y",
+        "volume": "36",
+        "year": "2023"
+      },
+      "key": "AttemaFehrKlooss2023",
+      "title": "Fiat--Shamir Transformation of Multi-Round Interactive Proofs",
+      "url": "https://doi.org/10.1007/s00145-023-09478-y",
+      "venue": "Journal of Cryptology",
+      "year": "2023"
     },
     "BBS24": {
       "authors": [
@@ -332,6 +357,27 @@
       "venue": "SIAM Journal on Computing",
       "year": "2008"
     },
+    "CFRGFiatShamir2025": {
+      "authors": [
+        "Orr{\\`u}, Michele",
+        "others"
+      ],
+      "authors_text": "Orr{\\`u}, Michele and others",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Orr{\\`u}, Michele and others",
+        "howpublished": "Internet-Draft, IRTF CFRG",
+        "title": "Fiat-Shamir Transformation",
+        "url": "https://datatracker.ietf.org/doc/draft-irtf-cfrg-fiat-shamir/",
+        "year": "2025"
+      },
+      "key": "CFRGFiatShamir2025",
+      "title": "Fiat-Shamir Transformation",
+      "url": "https://datatracker.ietf.org/doc/draft-irtf-cfrg-fiat-shamir/",
+      "venue": "",
+      "year": "2025"
+    },
     "CGKY25": {
       "authors": [
         "Alessandro Chiesa",
@@ -353,6 +399,29 @@
       "title": "On the Fiat-Shamir Security of Succinct Arguments from Functional Commitments",
       "url": "https://eprint.iacr.org/2025/902",
       "venue": "",
+      "year": "2025"
+    },
+    "ChiesaDiHuZheng2025": {
+      "authors": [
+        "Chiesa, Alessandro",
+        "Di, Zijing",
+        "Hu, Zihan",
+        "Zheng, Yuxi"
+      ],
+      "authors_text": "Chiesa, Alessandro and Di, Zijing and Hu, Zihan and Zheng, Yuxi",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Chiesa, Alessandro and Di, Zijing and Hu, Zihan and Zheng, Yuxi",
+        "booktitle": "EUROCRYPT 2026",
+        "note": "Cryptology ePrint Archive, Report 2025/2166",
+        "title": "How to Prove Post-Quantum Security for Succinct Non-Interactive Reductions",
+        "year": "2025"
+      },
+      "key": "ChiesaDiHuZheng2025",
+      "title": "How to Prove Post-Quantum Security for Succinct Non-Interactive Reductions",
+      "url": "",
+      "venue": "EUROCRYPT 2026",
       "year": "2025"
     },
     "ChiesaYogev2024": {
@@ -470,6 +539,72 @@
       "venue": "Advances in Cryptology \u2013 EUROCRYPT 2025: 44th Annual International Conference on the Theory and Applications of Cryptographic Techniques, Madrid, Spain, May 4\u20138, 2025, Proceedings, Part IV",
       "year": "2025"
     },
+    "DagandMcBride2014": {
+      "authors": [
+        "Dagand, Pierre-{\\'E}variste",
+        "McBride, Conor"
+      ],
+      "authors_text": "Dagand, Pierre-{\\'E}variste and McBride, Conor",
+      "doi": "10.1017/S0956796814000189",
+      "entry_type": "article",
+      "fields": {
+        "author": "Dagand, Pierre-{\\'E}variste and McBride, Conor",
+        "doi": "10.1017/S0956796814000189",
+        "journal": "Journal of Functional Programming",
+        "number": "2--3",
+        "pages": "316--383",
+        "title": "Transporting Functions Across Ornaments",
+        "volume": "24",
+        "year": "2014"
+      },
+      "key": "DagandMcBride2014",
+      "title": "Transporting Functions Across Ornaments",
+      "url": "",
+      "venue": "Journal of Functional Programming",
+      "year": "2014"
+    },
+    "Decree2024": {
+      "authors": [
+        "{Trail of Bits}"
+      ],
+      "authors_text": "{Trail of Bits}",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "{Trail of Bits}",
+        "title": "Decree Fiat Shamir Library",
+        "url": "https://github.com/trailofbits/decree",
+        "year": "2024"
+      },
+      "key": "Decree2024",
+      "title": "Decree Fiat Shamir Library",
+      "url": "https://github.com/trailofbits/decree",
+      "venue": "",
+      "year": "2024"
+    },
+    "EscardoOliva2023": {
+      "authors": [
+        "Escard{\\'o}, Mart{\\'i}n",
+        "Oliva, Paulo"
+      ],
+      "authors_text": "Escard{\\'o}, Mart{\\'i}n and Oliva, Paulo",
+      "doi": "10.1016/j.tcs.2023.114111",
+      "entry_type": "article",
+      "fields": {
+        "author": "Escard{\\'o}, Mart{\\'i}n and Oliva, Paulo",
+        "doi": "10.1016/j.tcs.2023.114111",
+        "journal": "Theoretical Computer Science",
+        "pages": "114111",
+        "title": "Higher-Order Games with Dependent Types",
+        "volume": "974",
+        "year": "2023"
+      },
+      "key": "EscardoOliva2023",
+      "title": "Higher-Order Games with Dependent Types",
+      "url": "",
+      "venue": "Theoretical Computer Science",
+      "year": "2023"
+    },
     "FMN24": {
       "authors": [
         "Fenzi, Giacomo",
@@ -582,6 +717,27 @@
       "venue": "Cryptology ePrint Archive",
       "year": "2019"
     },
+    "HancockSetzer2000": {
+      "authors": [
+        "Hancock, Peter",
+        "Setzer, Anton"
+      ],
+      "authors_text": "Hancock, Peter and Setzer, Anton",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Hancock, Peter and Setzer, Anton",
+        "note": "Manuscript",
+        "title": "Interactive Programs in Dependent Type Theory",
+        "url": "https://csetzer.github.io/articles/iopreprint.pdf",
+        "year": "2000"
+      },
+      "key": "HancockSetzer2000",
+      "title": "Interactive Programs in Dependent Type Theory",
+      "url": "https://csetzer.github.io/articles/iopreprint.pdf",
+      "venue": "",
+      "year": "2000"
+    },
     "IOPs": {
       "authors": [
         "Ben-Sasson, Eli",
@@ -626,6 +782,30 @@
       "title": "Generic and algebraic computation models: When AGM proofs transfer to the GGM",
       "url": "https://link.springer.com/content/pdf/10.1007/978-3-031-68388-6_2",
       "venue": "Annual International Cryptology Conference",
+      "year": "2024"
+    },
+    "Jolt": {
+      "authors": [
+        "Arun, Arasu",
+        "Setty, Srinath",
+        "Thaler, Justin"
+      ],
+      "authors_text": "Arun, Arasu and Setty, Srinath and Thaler, Justin",
+      "doi": "10.1007/978-3-031-58751-1_1",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Arun, Arasu and Setty, Srinath and Thaler, Justin",
+        "booktitle": "Advances in Cryptology -- {EUROCRYPT} 2024",
+        "doi": "10.1007/978-3-031-58751-1_1",
+        "pages": "3--33",
+        "publisher": "Springer",
+        "title": "Jolt: {SNARKs} for Virtual Machines via Lookups",
+        "year": "2024"
+      },
+      "key": "Jolt",
+      "title": "Jolt: {SNARKs} for Virtual Machines via Lookups",
+      "url": "",
+      "venue": "Advances in Cryptology -- {EUROCRYPT} 2024",
       "year": "2024"
     },
     "KZG10": {
@@ -829,6 +1009,26 @@
       "url": "",
       "venue": "Advances in Cryptology--EUROCRYPT 2020: 39th Annual International Conference on the Theory and Applications of Cryptographic Techniques, Zagreb, Croatia, May 10--14, 2020, Proceedings, Part I 39",
       "year": "2020"
+    },
+    "McBride2010": {
+      "authors": [
+        "McBride, Conor"
+      ],
+      "authors_text": "McBride, Conor",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "McBride, Conor",
+        "note": "Manuscript",
+        "title": "Ornamental Algebras, Algebraic Ornaments",
+        "url": "https://personal.cis.strath.ac.uk/conor.mcbride/ornaments.pdf",
+        "year": "2011"
+      },
+      "key": "McBride2010",
+      "title": "Ornamental Algebras, Algebraic Ornaments",
+      "url": "https://personal.cis.strath.ac.uk/conor.mcbride/ornaments.pdf",
+      "venue": "",
+      "year": "2011"
     },
     "Mic07": {
       "authors": [
@@ -1076,6 +1276,36 @@
       "url": "https://doi.org/10.1080/00150517.1988.12429608",
       "venue": "The Fibonacci Quarterly",
       "year": "1988"
+    },
+    "Zinc": {
+      "authors": [
+        "Garreta, Albert",
+        "Waldner, Hendrik",
+        "Vlasov, Ilia",
+        "Hristova, Katerina",
+        "Dall'Ava, Luca",
+        "{\\v{C}}upi{\\'c}, Marko",
+        "Klein, Matthew"
+      ],
+      "authors_text": "Garreta, Albert and Waldner, Hendrik and Vlasov, Ilia and Hristova, Katerina and Dall'Ava, Luca and {\\v{C}}upi{\\'c}, Marko and Klein, Matthew",
+      "doi": "10.1007/978-3-032-01907-3_9",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Garreta, Albert and Waldner, Hendrik and Vlasov, Ilia and Hristova, Katerina and Dall'Ava, Luca and {\\v{C}}upi{\\'c}, Marko and Klein, Matthew",
+        "booktitle": "Advances in Cryptology -- {CRYPTO} 2025",
+        "doi": "10.1007/978-3-032-01907-3_9",
+        "pages": "259--291",
+        "publisher": "Springer",
+        "series": "Lecture Notes in Computer Science",
+        "title": "{\\textsf{Zinc}}: Succinct Arguments with Small Arithmetization Overheads from {IOPs} of Proximity to the Integers",
+        "volume": "16006",
+        "year": "2025"
+      },
+      "key": "Zinc",
+      "title": "{\\textsf{Zinc}}: Succinct Arguments with Small Arithmetization Overheads from {IOPs} of Proximity to the Integers",
+      "url": "",
+      "venue": "Advances in Cryptology -- {CRYPTO} 2025",
+      "year": "2025"
     },
     "codingtheory": {
       "authors": [

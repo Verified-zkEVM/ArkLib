@@ -1,0 +1,182 @@
+% interaction/boundary.tex — same-transcript interface adaptation
+
+\section{Boundaries: Same-Transcript Interface Adaptation}\label{sec:interaction-boundary}
+
+A \emph{boundary} reinterprets a protocol's statement, witness, or oracle
+interface without changing the transcript or round structure.  This is the
+interaction-native redesign of the context lenses
+($\mathsf{Statement.Lens}$, $\mathsf{Context.Lens}$, etc.)\ from the
+flat-indexed model.  The concept is the same---project the outer input, run
+the inner protocol, lift the output back---but the implementation is now
+dependent-type-native and split cleanly into a plain layer plus oracle access
+and oracle reification layers.
+
+Compared to the old $\mathsf{liftContext}$ mechanism, the new boundary layer
+differs in three main ways:
+\begin{enumerate}
+  \item Output types can depend on the transcript (the $W$-type allows this).
+  \item The oracle layer is split into \emph{access} (query simulation,
+    sufficient for verifiers) and \emph{reification} (concrete data, needed
+    for provers).
+  \item The $\mathsf{Realizes}$ coherence predicate is explicit rather than
+    implicit.
+\end{enumerate}
+
+\subsection{Core layer: statement and witness boundaries}
+
+\begin{definition}[Boundary.StatementProjection and Boundary.Statement]
+  \label{int:boundary-statement}
+  The statement layer is split into two pieces:
+  \begin{itemize}
+    \item $\mathsf{Boundary.StatementProjection}$ carries only
+      $\mathsf{proj} : \mathit{OuterStmtIn} \to \mathit{InnerStmtIn}$ and hence
+      determines the outer specification by precomposition.
+    \item $\mathsf{Boundary.Statement}$ is the lifting half over a fixed
+      projection and an explicit outer output family
+      $\mathit{OuterStmtOut} : \mathit{OuterStmtIn} \to \Transcript\;(\ldots)
+      \to \Type$.
+  \end{itemize}
+  The field $\mathsf{lift}$ is one-directional: inner output $\to$ outer
+  output.  Keeping the output family explicit in the ambient context is
+  precisely what avoids the bundled dependent-type friction of the older lens
+  formulation.
+  \lean{Interaction.Boundary.StatementProjection}
+  \lean{Interaction.Boundary.Statement}
+  \uses{int:spec}
+\end{definition}
+
+$\mathsf{Boundary.WitnessProjection}$ and $\mathsf{Boundary.Witness}$ provide
+the analogous split for witnesses: first project the outer input witness to the
+inner one, then lift the inner output witness back to an outer output witness.
+$\mathsf{Boundary.Context}$ bundles these statement and witness layers together.
+Smart constructors $\mathsf{id}$, $\mathsf{ofInputOnly}$, and
+$\mathsf{ofOutputOnly}$ cover degenerate cases.
+\lean{Interaction.Boundary.WitnessProjection}
+\lean{Interaction.Boundary.Witness}
+\lean{Interaction.Boundary.Context}
+
+\begin{definition}[Pullback]
+  \label{int:boundary-pullback}
+  Given a boundary~$b$ and an inner participant (verifier, prover, or
+  reduction), $\mathsf{pullback}\;b$ produces an outer participant that
+  projects its input through~$b$, runs the inner participant, and lifts
+  the output back.
+  \lean{Interaction.Boundary.Verifier.pullback}
+  \lean{Interaction.Boundary.Reduction.pullback}
+  \uses{int:boundary-statement, int:reduction}
+\end{definition}
+
+\subsection{Oracle access layer}
+
+The verifier never holds concrete oracle data; it only issues queries.
+Pulling back a verifier therefore requires only \emph{query-level simulation}.
+
+\begin{remark}[Layer map]
+  The full boundary stack has four levels:
+  \[
+    \text{plain projection/lifting}
+    \;\subseteq\;
+    \text{oracle access}
+    \;\subseteq\;
+    \text{oracle reification}
+    \;\subseteq\;
+    \text{bundled oracle context}.
+  \]
+  The plain layer suffices for non-oracle protocols; oracle access suffices for
+  verifiers; oracle reification is needed for honest provers; and the bundled
+  caps collect all data together with the coherence proof that simulation and
+  materialization agree.
+\end{remark}
+
+\begin{definition}[OracleStatementAccess]
+  \label{int:oracle-statement-access}
+  An $\mathsf{OracleStatementAccess}$ carries two simulation fields:
+  \begin{itemize}
+    \item $\mathsf{simulateIn}$: translates an inner input oracle query into a
+      computation over outer input oracles.  Statement-independent (the input
+      oracle is fixed before the interaction).
+    \item $\mathsf{simulateOut}$: translates an outer output oracle query into a
+      computation over both outer input oracles and inner output oracles.
+      Statement- and transcript-dependent.
+  \end{itemize}
+  \lean{Interaction.Boundary.OracleStatementAccess}
+  \lean{Interaction.Boundary.OracleContextAccess}
+  \uses{int:boundary-statement, int:oracle-decoration}
+\end{definition}
+
+$\mathsf{pullbackCounterpart}$ walks the
+$\mathsf{Counterpart.withMonads}$ tree and rewires every receiver-node
+oracle query through $\mathsf{simulateIn}$ via $\mathsf{simulateQ}$.  This is
+an instance of interpreter lifting: an inner oracle interface is implemented by
+routing its queries through an outer one.
+
+\subsection{Reification layer}
+
+The prover, by contrast, holds concrete oracle data ($\mathsf{OracleStatement}$).
+So pulling it back requires \emph{materializing} concrete oracle data, not just
+simulating queries.
+
+\begin{definition}[OracleStatementReification]
+  \label{int:oracle-statement-reification}
+  An $\mathsf{OracleStatementReification}$ carries:
+  \begin{itemize}
+    \item $\mathsf{materializeIn}$: maps concrete outer input oracle data to
+      concrete inner input oracle data.
+    \item $\mathsf{materializeOut}$: maps concrete inner output oracle data
+      (plus outer input oracle as context) to concrete outer output oracle data.
+  \end{itemize}
+  \lean{Interaction.Boundary.OracleStatementReification}
+  \lean{Interaction.Boundary.OracleContextReification}
+  \uses{int:boundary-statement, int:oracle-decoration}
+\end{definition}
+
+\begin{definition}[Realizes]
+  \label{int:realizes}
+  The coherence predicate $\mathsf{Realizes}$ asserts that for every concrete
+  oracle data, the simulation (access layer) and the materialization
+  (reification layer) agree on every query answer.  It is an
+  \emph{operational coherence} condition: the same oracle transport is viewed
+  both as query simulation and as concrete materialization.
+  \lean{Interaction.Boundary.OracleStatementReification.Realizes}
+  \uses{int:oracle-statement-access, int:oracle-statement-reification}
+\end{definition}
+
+The bundled structures $\mathsf{Boundary.OracleStatement}$ and
+$\mathsf{Boundary.OracleContext}$ combine the plain boundary, oracle access,
+oracle reification, and a proof of $\mathsf{Realizes}$ into single records.
+\lean{Interaction.Boundary.OracleStatement}
+\lean{Interaction.Boundary.OracleContext}
+
+\subsection{Compatibility and security transport}
+
+\begin{definition}[Statement.IsSound / Context.IsComplete]
+  \label{int:boundary-compatibility}
+A statement boundary is \emph{sound} if projecting invalid outer inputs yields
+invalid inner inputs and lifting invalid inner outputs yields invalid outer
+outputs.  A context boundary is \emph{complete} if the analogous conditions
+  hold for valid inputs and outputs.  These are the logical compatibility
+  predicates used to transport soundness and completeness.
+  \lean{Interaction.Boundary.Statement.IsSound}
+  \lean{Interaction.Boundary.Context.IsComplete}
+  \uses{int:boundary-statement}
+\end{definition}
+
+\begin{theorem}[Verifier pullback correctness]
+  \label{thm:verifier-run-pullback}
+  Running a pulled-back verifier equals running the inner verifier on the
+  projected input and lifting the output through the boundary.
+  \lean{Interaction.Boundary.Verifier.run_pullback}
+  \uses{int:boundary-pullback}
+\end{theorem}
+
+Security preservation combines two ingredients:
+\begin{itemize}
+  \item operational coherence, via $\mathsf{Realizes}$ on the oracle side and
+    the run/execute pullback theorems;
+  \item logical compatibility, via $\mathsf{Statement.IsSound}$ and
+    $\mathsf{Context.IsComplete}$.
+\end{itemize}
+In particular, soundness transport is verifier-side, while completeness
+transport additionally depends on the reduction-side execution theorem
+$\mathsf{Reduction.execute\_pullback}$.
+\lean{Interaction.Boundary.Reduction.execute_pullback}

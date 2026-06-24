@@ -1,0 +1,184 @@
+% interaction/security.tex — completeness, soundness, knowledge soundness, claim trees
+
+\section{Security Definitions}\label{sec:interaction-security}
+
+Security definitions are conceptually the same as in the flat-indexed model but
+now sit on the $\mathsf{Spec} + \mathsf{RoleDecoration}$ foundation.  At the
+oracle level, the key difference is that verifier-side acceptance is phrased in
+terms of the \emph{existence} of concrete oracle data compatible with the
+verifier's query-level simulation, rather than by assuming a built-in
+reification function.
+
+Thus the security layer changes much less than the interaction layer itself:
+the semantics are richer, but the core completeness/soundness/knowledge
+soundness pattern remains the same.
+
+\subsection{Protocol participants}
+
+\begin{definition}[Prover, Verifier, Reduction]
+  \label{int:reduction}
+  A \emph{prover} takes $(\mathit{stmt}, \mathit{wit})$ and produces, via
+  monadic setup, a $\Strategy.\mathsf{withRoles}$ whose output is
+  $\mathsf{HonestProverOutput}\;(\mathit{StmtOut}\;s\;\mathit{tr})\;
+  (\mathit{WitOut}\;s\;\mathit{tr})$.
+  A \emph{verifier} is a statement-indexed $\mathsf{Counterpart}$ with
+  $\mathit{StmtOut}\;s\;\mathit{tr}$ at $\mathsf{done}$.
+  A \emph{reduction} pairs a prover with a verifier.
+  $\mathit{WitnessIn}$ is intentionally not statement-dependent; compatibility
+  is expressed in the security relations.
+  \lean{Interaction.Reduction}
+  \uses{int:strategy-with-roles, int:counterpart}
+\end{definition}
+
+$\Reduction.\mathsf{execute}$ runs the prover's strategy against the verifier
+via $\mathsf{runWithRoles}$, returning the transcript and both outputs.
+$\Reduction.\mathsf{Continuation}$ supports transcript-indexed second-stage
+composition.
+
+\subsection{Completeness, soundness, knowledge soundness}
+
+All definitions use a generic monad~$m$ with $[\mathsf{HasEvalSPMF}\;m]$ for
+probability semantics.
+
+\begin{definition}[Completeness]
+  \label{int:completeness}
+  A reduction satisfies \emph{completeness with error $\varepsilon$} if for all
+  valid inputs, honest execution produces valid output with probability at
+  least $1 - \varepsilon$.
+  \lean{Interaction.Reduction.completeness}
+  \uses{int:reduction}
+\end{definition}
+
+\begin{definition}[Soundness]
+  \label{int:soundness}
+  A verifier satisfies \emph{soundness with error $\varepsilon$} if for all
+  inputs outside the input language and all (possibly malicious) provers, the
+  probability that the verifier's output falls in the output language is at
+  most~$\varepsilon$.  Thus soundness is verifier-side: the honest prover does
+  not appear in the definition.
+  \lean{Interaction.soundness}
+  \uses{int:reduction}
+\end{definition}
+
+\begin{definition}[Knowledge Soundness]
+  \label{int:knowledge-soundness}
+  A verifier satisfies \emph{knowledge soundness with error $\varepsilon$} if
+  there exists a straightline extractor such that for all provers, the
+  probability that the verifier accepts but the extractor fails to produce a
+  valid witness is at most~$\varepsilon$.
+  \lean{Interaction.knowledgeSoundness}
+  \uses{int:reduction}
+\end{definition}
+
+\subsection{Composition theorems}
+
+\begin{theorem}[Completeness composes]
+  \label{thm:completeness-comp}
+  If reduction~1 has completeness error~$\varepsilon_1$ and reduction~2
+  (a continuation) has completeness error~$\varepsilon_2$ at every first-phase
+  transcript, then the composed reduction has completeness error at most
+  $\varepsilon_1 + \varepsilon_2$.
+  \lean{Interaction.Reduction.completeness_comp}
+  \uses{int:completeness}
+\end{theorem}
+
+Analogous theorems hold for perfect completeness and soundness.
+
+\subsection{Round-by-round analysis}
+
+\begin{definition}[Claim Tree]
+  \label{int:claim-tree}
+  A \emph{claim tree} is a recursive soundness witness on $\mathsf{Spec} +
+  \mathsf{RoleDecoration}$.  At each sender (prover-message) node, bad claims
+  must stay bad.  At each receiver (verifier-challenge) node, a bad claim may
+  flip to good with probability at most $\mathit{error}$.
+  \lean{Interaction.ClaimTree}
+  \uses{int:role-decoration}
+\end{definition}
+
+\begin{theorem}[Terminal probability bound]
+  \label{thm:bound-terminal-prob}
+  If a $\mathsf{ClaimTree}$ is sound with per-round error bounds, then the
+  probability of reaching a good terminal claim from a bad root is bounded by
+  the sum of the per-round errors along any path.
+  \lean{Interaction.ClaimTree.IsSound.bound_terminalProb}
+  \uses{int:claim-tree}
+\end{theorem}
+
+\subsection{Oracle security}\label{subsec:oracle-security}
+
+Security definitions for oracle reductions involve three layers.
+An \emph{input implementation} is a deterministic query implementation
+$\mathit{InputImpl} := \mathsf{QueryImpl}\;[\mathit{OStmtIn}]_o\;\mathsf{Id}$,
+concretizing the input oracles.
+An \emph{output implementation} (or \emph{simulate}) is a monadic query
+implementation $\mathsf{QueryImpl}\;[\mathit{OStmtOut}]_o\;(\mathsf{OracleComp}\;\ldots)$
+that the verifier exposes for its output oracles, without committing to
+concrete underlying data.
+$\mathsf{OutputRealizes}$ connects the two: it asserts query-level agreement
+between a simulate function and a concrete output oracle family
+$\mathit{oStmtOut}$, relative to a deterministic input implementation
+and the transcript.
+
+\begin{definition}[Oracle input/output relation]
+  \label{int:oracle-relation}
+  An \emph{input relation} takes $(\mathit{shared}, \mathit{stmt},
+  \mathit{inputImpl}, \mathit{witIn})$ and returns $\mathsf{Prop}$.
+  An \emph{output relation} takes $(\mathit{shared}, \mathit{inputImpl},
+  \mathit{pt}, \mathit{stmtOut}, \mathit{outputImpl}, \mathit{witOut})$
+  and returns $\mathsf{Prop}$.
+  An \emph{input/output language} is the witness-free variant.
+  \lean{Interaction.Oracle.Reduction.InputRelation,
+        Interaction.Oracle.Reduction.OutputRelation}
+\end{definition}
+
+\begin{definition}[Oracle completeness]
+  \label{int:oracle-completeness}
+  An oracle reduction satisfies \emph{completeness with error $\varepsilon$}
+  if, for every valid input $(\mathit{shared}, s, w)$ with $\mathit{relIn}$
+  satisfied, honest execution produces output satisfying three conditions
+  with probability at least $1 - \varepsilon$:
+  \begin{enumerate}
+    \item The prover's output statement agrees with the verifier's.
+    \item $\mathsf{OutputRealizes}$ holds: the verifier's simulate function
+      agrees with the prover's concrete output oracle data
+      $\mathit{oStmtOut}$.
+    \item $\mathit{relOut}$ holds for the output.
+  \end{enumerate}
+  \lean{Interaction.Oracle.Reduction.completeness}
+  \uses{int:oracle-relation}
+\end{definition}
+
+\begin{definition}[Oracle knowledge soundness]
+  \label{int:oracle-knowledge-soundness}
+  A verifier satisfies \emph{knowledge soundness with error $\varepsilon$}
+  if there exists a straightline extractor~$E$ such that for every malicious
+  prover, the following holds.
+  The adversarial prover is required to output both concrete output oracle
+  data $\mathit{oStmtOut}$ and an output witness $\mathit{witOut}$.
+  The event of interest is:
+  $\mathsf{OutputRealizes}(\mathit{simulate}, \mathit{oStmtOut})$
+  $\wedge$ $\mathit{relOut}(\ldots, \mathit{simulate}, \mathit{witOut})$
+  $\wedge$ $\neg\,\mathit{relIn}(\ldots,
+    E(\ldots, \mathit{oStmtOut}, \mathit{simulate}, \mathit{witOut}))$.
+  The probability of this event is at most~$\varepsilon$.
+
+  The extractor sees the transcript, input statement, input implementation,
+  output statement, concrete $\mathit{oStmtOut}$, simulate, and
+  $\mathit{witOut}$, and produces a candidate $\mathit{witIn}$.
+  \lean{Interaction.Oracle.Verifier.knowledgeSoundness}
+  \uses{int:oracle-relation, int:oracle-completeness}
+\end{definition}
+
+\begin{definition}[Oracle soundness]
+  \label{int:oracle-soundness}
+  A verifier satisfies \emph{soundness with error $\varepsilon$} if for
+  every input outside the input language and every malicious prover, the
+  probability that the verifier's output falls in the output language is at
+  most~$\varepsilon$.
+  Soundness follows from knowledge soundness under standard hypotheses (the
+  input language is the witness-free projection of the input relation, and
+  the output language is implied by the output relation for any witness).
+  \lean{Interaction.Oracle.Verifier.soundness}
+  \uses{int:oracle-knowledge-soundness}
+\end{definition}

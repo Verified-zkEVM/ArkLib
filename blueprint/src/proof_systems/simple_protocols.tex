@@ -16,12 +16,14 @@ The simplest possible oracle reduction is one that performs no computation at al
         \item \textbf{Input relation}: Any relation $R_{\mathsf{in}} : \StmtIn \to \WitIn \to \Prop$
         \item \textbf{Output relation}: The same relation $R_{\mathsf{out}} := R_{\mathsf{in}}$
     \end{itemize}
-    \lean{DoNothing.reduction, DoNothing.oracleReduction}
+    \lean{DoNothing.reduction}
+    \lean{DoNothing.oracleReduction}
 \end{definition}
 
 \begin{theorem}[DoNothing Perfect Completeness]
     The DoNothing reduction satisfies perfect completeness for any input relation.
-    \lean{DoNothing.reduction_perfectCompleteness, DoNothing.oracleReduction_perfectCompleteness}
+    \lean{DoNothing.reduction_perfectCompleteness}
+    \lean{DoNothing.oracleReduction_perfectCompleteness}
     \uses{def:donothing_reduction}
 \end{theorem}
 
@@ -307,7 +309,6 @@ Another essential building block is the ability to verify that a given predicate
 
 \begin{theorem}[CheckClaim Oracle Perfect Completeness]
     The CheckClaim oracle reduction satisfies perfect completeness.
-    \lean{CheckClaim.oracleReduction_completeness}
     \uses{def:checkclaim_oracle_reduction}
 \end{theorem}
 

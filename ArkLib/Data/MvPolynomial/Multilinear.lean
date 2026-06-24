@@ -27,6 +27,10 @@ variable {σ : Type*} {R : Type*}
 instance coeFunctionFin2 [NatCast R] : Coe (σ → Fin 2) (σ → R) where
   coe := fun vec i => vec i
 
+/-- Boolean hypercube point associated with a little-endian `Fin (2 ^ n)` index. -/
+def booleanPoint [NatCast R] (n : ℕ) (idx : Fin (2 ^ n)) : Fin n → R :=
+  (finFunctionFinEquiv.symm idx : Fin n → R)
+
 variable [CommRing R]
 
 def toEvalsZeroOne (p : MvPolynomial σ R) : (σ → Fin 2) → R :=
@@ -75,6 +79,10 @@ abbrev eqPolynomial' : R[X (σ ⊕ σ)] :=
 -- Should be in `R[X σ ⊕ σ]`
 abbrev eqPolynomial (r : σ → R) : R[X σ] :=
   ∏ i : σ, singleEqPolynomial (r i) (X i)
+
+/-- Lagrange equality weight for a Boolean hypercube index at an arbitrary point. -/
+def eqWeight {n : ℕ} (point : Fin n → R) (idx : Fin (2 ^ n)) : R :=
+  eval point (eqPolynomial (booleanPoint (R := R) n idx))
 
 theorem eqPolynomial_expanded (r : σ → R) :
     eqPolynomial r = ∏ i : σ, ((1 - C (r i)) * (1 - X i) + C (r i) * X i) := rfl

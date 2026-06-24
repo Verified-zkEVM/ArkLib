@@ -42,3 +42,11 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   large contributions.
 - [`../../ROADMAP.md`](../../ROADMAP.md) - planned directions.
 - [`../../BACKGROUND.md`](../../BACKGROUND.md) - background references.
+- [`../../INTERACTION_BOUNDARIES.md`](../../INTERACTION_BOUNDARIES.md) - current interaction
+  boundary-layer design reference.
+- [`../../INTERACTION_CONCURRENT_SPEC.md`](../../INTERACTION_CONCURRENT_SPEC.md) - concurrent
+  interaction design reference.
+- [`../../INTERACTION_PROTOCOL_ROADMAP.md`](../../INTERACTION_PROTOCOL_ROADMAP.md) - literature-
+  driven roadmap for protocol families and future `Interaction` frontends.
+- [`../../INTERACTION_BRACHA_VERIFICATION.md`](../../INTERACTION_BRACHA_VERIFICATION.md) -
+  Bracha reliable broadcast benchmark note and verified-protocol landscape.

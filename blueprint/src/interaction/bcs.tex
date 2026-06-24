@@ -1,0 +1,461 @@
+% interaction/bcs.tex — BCS transformation for hybrid oracle reductions
+
+\section{The BCS Transformation}\label{sec:interaction-bcs}
+
+The BCS (Ben-Sasson--Chiesa--Spooner) transformation converts an interactive
+oracle reduction into a non-interactive argument by replacing oracle messages
+with commitments.
+In the IOP literature, BCS is typically stated for \emph{oracle proofs}
+(output = accept/reject, no output oracles).
+Here we develop BCS for \emph{oracle reductions}, where the output includes
+oracle statements that downstream reductions can query.
+This generalization is necessary for modular composition of SNARKs: each
+sub-reduction in a composed pipeline may produce oracle outputs that the next
+sub-reduction queries.
+
+\subsection{Hybrid oracle reductions}
+
+Recall from Section~\ref{sec:interaction-oracle} that an
+$\OracleReduction$ pairs an oracle prover with a verifier whose oracle
+access grows along the transcript path.
+In practice, not every sender message is an oracle: some prover messages are
+plain metadata (trace length, layout information, binding order for
+sumcheck, etc.) that may legitimately shape the protocol tree.
+
+\begin{definition}[HybridDecoration]
+  \label{bcs:hybrid-decoration}
+  A \emph{hybrid decoration} assigns an optional $\OracleInterface$ at
+  each sender node:
+  \[
+    \mathsf{HybridDecoration} \;\defeq\;
+    \mathsf{Role.Refine}\;(\lambda X.\; \Option\;\OracleInterface\;X).
+  \]
+  Sender nodes marked $\mathsf{some}\;\mathit{oi}$ are \emph{oracle senders}
+  (queryable, candidates for commitment).
+  Sender nodes marked $\mathsf{none}$ are \emph{plain senders}
+  (sent in the clear, may shape the tree).
+  \lean{Interaction.HybridDecoration}
+  \uses{int:oracle-decoration}
+\end{definition}
+
+\begin{definition}[HybridOracleReduction]
+  \label{bcs:hybrid-oracle-reduction}
+  A \emph{hybrid oracle reduction} is the analog of $\OracleReduction$ using
+  $\mathsf{HybridDecoration}$ instead of $\OracleDeco$.
+  It consists of:
+  \begin{itemize}
+    \item A prover $P$ (an $\OracleProver$).
+    \item A verifier $V$: a $\Counterpart.\mathsf{withMonads}$ with
+      the monad decoration from
+      $\mathsf{HybridDecoration.toMonadDecoration}$, which accumulates
+      oracle access only at $\mathsf{some}\;\mathit{oi}$ sender nodes.
+    \item An output oracle simulation $\mathit{sim}$: given a transcript
+      $\mathit{tr}$, maps queries to output oracle family
+      $\OStmtOut(\mathit{tr})$ into computations in
+      $\OracleComp([\OStmtIn]_o + \mathsf{toOracleSpec}(\mathit{hd},
+      \mathit{tr}))$.
+  \end{itemize}
+  \lean{Interaction.HybridDecoration.HybridOracleReduction}
+  \uses{bcs:hybrid-decoration, int:oracle-reduction}
+\end{definition}
+
+\subsection{HybridSpec and commitment decoration}
+
+To formalize BCS computably, we use $\mathsf{HybridSpec}$, a variant of
+$\Spec$ with two kinds of nodes:
+
+\begin{definition}[HybridSpec]
+  \label{bcs:hybrid-spec}
+  \begin{align*}
+    \mathsf{HybridSpec} \;::=\;
+    &\;\mathsf{done} \\
+    \mid\;&\;\mathsf{branch}\;X\;(\mathit{rest} : X \to \mathsf{HybridSpec})
+      & \text{(continuation depends on } x : X \text{)} \\
+    \mid\;&\;\mathsf{pass}\;X\;\mathit{rest}
+      & \text{(continuation is structurally constant)}
+  \end{align*}
+  $\mathsf{branch}$ nodes are used for plain senders (metadata) and receivers
+  (challenges), where the continuation may depend on the message.
+  $\mathsf{pass}$ nodes are used for oracle senders, where the continuation
+  \emph{must not} depend on the message value (since BCS will hide the
+  message behind a commitment).
+  \lean{Interaction.HybridSpec}
+  \uses{}
+\end{definition}
+
+The key property: at a $\mathsf{pass}\;X\;\mathit{rest}$ node,
+$\Transcript\;\mathit{rest}.\mathsf{toSpec}$ does not depend on
+$x : X$ \emph{definitionally}.
+This eliminates the need for $\mathsf{Classical.arbitrary}$ or propositional
+casts when projecting transcripts.
+
+\begin{definition}[CommitDeco]
+  \label{bcs:commit-deco}
+  A \emph{commitment decoration} selects, at each $\mathsf{pass}$ node,
+  whether to commit the oracle message ($\mathsf{some}\;\mathit{nc}$) or
+  leave it in the clear ($\mathsf{none}$).
+  At $\mathsf{branch}$ nodes, the selection is indexed by the message value
+  (since the subtree depends on it).
+  \lean{Interaction.HybridSpec.CommitDeco}
+  \uses{bcs:hybrid-spec}
+\end{definition}
+
+\begin{definition}[SharedTranscript]
+  \label{bcs:shared-transcript}
+  The \emph{shared transcript} relative to a commitment decoration retains
+  all $\mathsf{branch}$ messages and non-committed $\mathsf{pass}$ messages,
+  but drops committed $\mathsf{pass}$ messages.
+  This is the data visible to both the original and BCS-transformed
+  protocols.
+  \lean{Interaction.HybridSpec.SharedTranscript}
+  \uses{bcs:commit-deco}
+\end{definition}
+
+\subsection{The BCS-transformed protocol spec}
+
+\begin{definition}[bcsSpec]
+  \label{bcs:bcs-spec}
+  The BCS-transformed spec replaces each committed $\mathsf{pass}\;X$ node
+  with $\mathsf{pass}\;\mathit{nc}.\mathsf{CommType}$ (the message type becomes
+  the commitment type).
+  Non-committed $\mathsf{pass}$ nodes and all $\mathsf{branch}$ nodes are
+  unchanged.
+  \lean{Interaction.HybridSpec.bcsSpec}
+  \uses{bcs:commit-deco, bcs:hybrid-spec}
+\end{definition}
+
+\begin{definition}[bcsHybridDeco]
+  \label{bcs:bcs-hybrid-deco}
+  The \emph{BCS hybrid decoration} on $\mathsf{bcsSpec}$ reflects the
+  restricted oracle access after commitment:
+  \begin{itemize}
+    \item Committed $\mathsf{pass}$ nodes $\to$ $\mathsf{none}$
+      (commitment type has no oracle interface).
+    \item Non-committed $\mathsf{pass}$ nodes $\to$
+      $\mathsf{some}\;\mathit{oi}$ (retain oracle interface).
+    \item $\mathsf{branch}$ sender nodes $\to$ $\mathsf{none}$
+      (plain messages).
+    \item $\mathsf{branch}$ receiver nodes $\to$ recurse.
+  \end{itemize}
+  \lean{Interaction.HybridSpec.bcsHybridDeco}
+  \uses{bcs:bcs-spec, bcs:hybrid-decoration}
+\end{definition}
+
+\subsection{The public-query verifier decomposition}
+
+The BCS verifier is decomposed into three components that together express
+the \emph{public-query property}: the verifier's queries to committed oracles
+depend only on publicly visible data.
+
+\begin{definition}[PublicQueryVerifier]
+  \label{bcs:public-query-verifier}
+  A \emph{public-query verifier} consists of:
+  \begin{enumerate}
+    \item \textbf{Challenger} (Phase 1): a $\Counterpart.\mathsf{withMonads}$
+      on $\mathsf{bcsSpec}$ with oracle access restricted to non-committed
+      oracles via $\mathsf{bcsHybridDeco}$.
+      Parametric in an accumulated oracle spec $\mathit{accSpec}$
+      for composability.
+    \item \textbf{Query function} (Phase 2a): a deterministic function
+      $\mathit{queryFn} : \StmtIn \to
+      \mathsf{SharedTranscript} \to \mathsf{OracleQueryDeco}$
+      producing queries to committed oracles.
+      The public-query property is implicit in the type: queries depend
+      only on the shared transcript (publicly visible data).
+    \item \textbf{Decision function} (Phase 2b): given the shared transcript
+      and query responses, produces the output.
+      Runs in $\OracleComp$ with access to external oracles, input oracle
+      statements, and non-committed message oracles.
+  \end{enumerate}
+  \lean{Interaction.HybridSpec.PublicQueryVerifier}
+  \uses{bcs:bcs-hybrid-deco, bcs:shared-transcript}
+\end{definition}
+
+\subsection{The central difficulty: output oracle simulation}
+\label{ssec:bcs-simulate}
+
+For oracle \emph{proofs} (output = accept/reject), the BCS transformation
+is straightforward: the prover commits, the verifier challenges, openings
+are verified, and the verifier decides.
+There are no output oracles, so $\mathit{sim}$ is trivial.
+
+For oracle \emph{reductions}, the situation is fundamentally more subtle.
+The original reduction produces output oracle statements $\OStmtOut$
+together with a simulation function
+\begin{equation}\label{eq:sim-orig}
+  \mathit{sim}_{\mathrm{orig}} :
+  \forall\,\mathit{tr}.\;
+  \mathsf{QueryImpl}\;[\OStmtOut(\mathit{tr})]_o\;
+  \bigl(\OracleComp([\OStmtIn]_o +
+    \mathsf{toOracleSpec}(\mathit{hd}, \mathit{tr}))\bigr)
+\end{equation}
+that answers output oracle queries using input oracles and the
+protocol's own oracle messages.
+
+After BCS, committed oracle messages are replaced by commitments.
+The oracle spec $\mathsf{toOracleSpec}(\mathsf{bcsHybridDeco},
+\mathit{bcsTr})$ includes only non-committed oracle messages.
+If $\mathit{sim}_{\mathrm{orig}}$ queries a committed oracle to answer an
+output oracle query, the BCS-transformed simulation
+$\mathit{sim}_{\mathrm{bcs}}$ cannot do the same: it has lost access to
+exactly the oracles it may need.
+
+\begin{remark}[Why this difficulty does not arise for proofs]
+  For an oracle proof, $\OStmtOut$ is empty (the output is a Boolean).
+  Hence $\mathit{sim}$ is vacuous and the problem disappears.
+  This is why the standard BCS literature (which treats only proofs)
+  never encounters this issue.
+\end{remark}
+
+A natural but incorrect impulse is to ``transform'' $\StmtOut$ and
+$\OStmtOut$ to account for the commitment step (e.g., replacing oracle
+response types with commitment types or enriching the output statement).
+This does not work generically: there is no uniform way to rewrite the
+output interface in terms of commitments.
+Instead, the output types are \emph{preserved exactly}: $\StmtOut$,
+$\OStmtOut$, $\WitOut$ are the same for $\mathsf{BCS}(\calR)$ as for
+$\calR$.
+What changes is the internal mechanism by which the verifier computes
+$\StmtOut$ and by which $\mathit{sim}$ answers output oracle queries.
+
+\subsection{Resolution: composed spec with Phase 2}
+
+The resolution is to include the Phase 2 opening protocol in the BCS
+reduction's interaction spec.
+The BCS reduction operates on a \emph{composed} spec:
+\[
+  \mathsf{bcsFullSpec}(\mathit{cd}, \mathit{opDeco})
+  \;\defeq\;
+  \mathsf{bcsSpec}(\mathit{cd})
+  \;\mathbin{;}\;
+  \mathsf{openingSpec}(\mathit{cd}, \mathit{opDeco}, -)
+\]
+where the semicolon denotes \emph{dependent} composition: the Phase 2 spec
+depends on the Phase 1 transcript (because the query set depends on the
+shared transcript via $\mathit{queryFn}$).
+
+A full transcript of the composed spec is a pair
+$(\mathit{tr}_1, \mathit{tr}_2)$ where:
+\begin{itemize}
+  \item $\mathit{tr}_1 : \Transcript(\mathsf{bcsSpec}(\mathit{cd}))$
+    is the Phase 1 transcript (commitments, challenges, non-committed
+    messages).
+  \item $\mathit{tr}_2 : \Transcript(\mathsf{openingSpec}(\ldots,
+    \mathit{tr}_1))$ is the Phase 2 transcript (opening proofs).
+\end{itemize}
+
+The Phase 2 transcript data provides query-response pairs for committed
+oracles at the points determined by $\mathit{queryFn}$.
+These query-response pairs fill the gap left by the absent committed oracle
+access.
+
+\subsection{BCS-transformed simulation}
+
+The original reduction has simulation type
+\begin{equation}\label{eq:sim-type}
+  \mathit{sim}_{\mathrm{orig}} :
+  \forall\,\mathit{tr}.\;
+  \forall\,i : \iota_{so}.\;
+  \OStmtOut(i).\Query \to
+  \OracleComp([\OStmtIn]_o +
+    \mathsf{toOracleSpec}(\mathit{hd}, \mathit{tr})) \;
+  \OStmtOut(i).\Response
+\end{equation}
+where $\mathsf{toOracleSpec}(\mathit{hd}, \mathit{tr})$ includes all oracle
+messages from the original protocol (both those that will be committed and
+those that will not).
+
+The BCS-transformed simulation $\mathit{sim}'$ has the \emph{same} outer
+type signature, but operates on the composed full transcript
+$\mathit{tr}_{\mathrm{full}} = (\mathit{tr}_1, \mathit{tr}_2)$
+instead of the original transcript $\mathit{tr}$.
+Its oracle environment is
+$\OracleComp([\OStmtIn]_o +
+  \mathsf{toOracleSpec}(\mathsf{bcsHybridDeco}, \mathit{tr}_1) +
+  \mathit{phase2Oracles})$,
+which includes input oracles, non-committed message oracles, and
+query-response data from Phase 2.
+
+Given an output oracle query $q_{\mathrm{out}}$ for index $i$,
+$\mathit{sim}'$ constructs the answer as follows:
+\begin{enumerate}
+  \item Run $\mathit{sim}_{\mathrm{orig}}(q_{\mathrm{out}})$ as a
+    computation, intercepting its oracle queries.
+  \item When $\mathit{sim}_{\mathrm{orig}}$ queries a \emph{non-committed}
+    oracle message, answer it directly via $\mathsf{bcsHybridDeco}$
+    (these oracles are still present in $\mathit{tr}_1$).
+  \item When $\mathit{sim}_{\mathrm{orig}}$ queries a \emph{committed}
+    oracle at point $q$, look up the query-response pair $(q, v)$ in the
+    Phase 2 data $\mathit{tr}_2$.
+  \item Input oracle queries ($[\OStmtIn]_o$) pass through unchanged.
+\end{enumerate}
+
+Step~3 requires that $q$ actually appears in the Phase 2 query set.
+This is not automatic: $\mathit{sim}_{\mathrm{orig}}$ might query a
+committed oracle at a point that $\mathit{queryFn}$ did not include.
+
+\subsection{Query completeness}
+
+\begin{definition}[Query completeness]
+  \label{bcs:query-completeness}
+  A public-query verifier decomposition
+  $(\mathit{challenger}, \mathit{queryFn}, \mathit{decide})$ together with
+  a simulation function $\mathit{sim}$ is \emph{query-complete} if the
+  Phase 2 query set covers all committed oracle queries that $\mathit{sim}$
+  might make:
+  \[
+    \forall\;\mathit{tr}.\;
+    \forall\;q_{\mathrm{out}} : \OStmtOut(\mathit{tr}).\mathsf{Query}.\;
+    \text{every committed oracle query made by }
+    \mathit{sim}(q_{\mathrm{out}})
+    \text{ is in }
+    \mathit{queryFn}(\mathit{st})
+  \]
+  where $\mathit{st} = \mathsf{projectShared}(\mathit{tr})$.
+\end{definition}
+
+In practice, query completeness is straightforward to verify: the
+verifier's own queries (for $\mathit{decide}$) and the simulation queries
+(for $\mathit{sim}$) are both determined from the shared transcript.
+The query function $\mathit{queryFn}$ is defined to cover both.
+
+\begin{remark}[Query completeness for proofs]
+  When $\OStmtOut$ is empty (oracle proofs), query completeness is
+  vacuously true.
+  The query function only needs to cover the verifier's own queries, which
+  is the standard public-query condition from the IOP literature.
+\end{remark}
+
+\subsection{The full BCS oracle reduction}
+
+\begin{definition}[BCS reduction]
+  \label{bcs:bcs-reduction}
+  Given:
+  \begin{itemize}
+    \item A hybrid oracle reduction $\calR = (P, V, \mathit{sim})$ on
+      $\mathit{hs}.\mathsf{toSpec}$ with hybrid decoration $\mathit{hd}$,
+      input/output oracle families $\OStmtIn$, $\OStmtOut$,
+      statement types $\StmtIn$, $\StmtOut$,
+      and simulation $\mathit{sim}$.
+    \item A commitment decoration $\mathit{cd}$ (which oracle senders to
+      commit).
+    \item An opening decoration $\mathit{opDeco}$ (opening protocols for
+      each committed sender).
+    \item A public-query verifier decomposition
+      $(\mathit{challenger}, \mathit{queryFn}, \mathit{decide})$.
+    \item Query completeness (Definition~\ref{bcs:query-completeness}).
+  \end{itemize}
+  The BCS-transformed reduction
+  $\mathsf{BCS}(\calR) = (P', V', \mathit{sim}')$ is a
+  $\mathsf{HybridOracleReduction}$ on
+  $\mathsf{bcsFullSpec}(\mathit{cd}, \mathit{opDeco})$ with:
+  \begin{itemize}
+    \item \textbf{Context}: $\mathsf{bcsFullSpec}$ (composed Phase 1 + Phase 2).
+    \item \textbf{Hybrid decoration}: $\mathsf{bcsHybridDeco}$ extended to
+      the full composed spec.
+    \item \textbf{Prover} $P'$: commits to oracle messages (Phase 1),
+      then provides openings at all queried points (Phase 2).
+      The prover knows the original oracle messages, so it can produce the
+      same $\StmtOut$, $\OStmtOut$, and $\WitOut$ data as the original
+      prover.
+    \item \textbf{Verifier} $V'$: runs the challenger (Phase 1), verifies
+      openings (Phase 2), then runs $\mathit{decide}$.
+      The verifier computes the same $\StmtOut$ as the original, but
+      using Phase 2 query-response data in place of direct committed oracle
+      access.
+    \item \textbf{Simulation} $\mathit{sim}'$:
+      runs $\mathit{sim}_{\mathrm{orig}}$ with committed oracle queries
+      answered from Phase 2 data (Subsection~\ref{ssec:bcs-simulate}).
+  \end{itemize}
+  Crucially, the output interface is preserved: $\StmtOut$, $\OStmtOut$,
+  and $\WitOut$ are the same types as in the original reduction $\calR$.
+  There is no generic way to ``transform'' the output types to account for
+  commitments, and none is needed.
+  What changes is the \emph{implementation}: how the verifier computes
+  $\StmtOut$ and how $\mathit{sim}'$ answers output oracle queries.
+  \uses{bcs:public-query-verifier, bcs:query-completeness,
+    bcs:hybrid-oracle-reduction, bcs:bcs-spec}
+\end{definition}
+
+\begin{remark}[Phase 2 is protocol-internal]
+  The Phase 2 opening protocol is part of the BCS reduction's interaction
+  spec, not part of the output interface.
+  From the perspective of the downstream consumer, the output oracle
+  interface is unchanged: queries to $\OStmtOut$ are answered by
+  $\mathit{sim}'$, which internally uses Phase 2 data.
+  The opening mechanism is transparent to the downstream reduction.
+\end{remark}
+
+\begin{remark}[Specialization to proofs]
+  For oracle proofs, $\StmtOut = \Bool$ and $\OStmtOut$ is empty.
+  The output is trivially preserved (a Boolean is a Boolean).
+  The verifier's $\mathit{decide}$ computes the same accept/reject decision,
+  just using opening data instead of direct oracle queries.
+  This matches the standard BCS formulation.
+\end{remark}
+
+\subsection{Security}
+
+\begin{definition}[BCS completeness]
+  \label{bcs:completeness}
+  If the original reduction $\calR$ is complete with error
+  $\varepsilon_{\mathrm{orig}}$ and the commitment schemes are correct
+  (openings succeed on honestly committed data), then
+  $\mathsf{BCS}(\calR)$ is complete with error
+  $\varepsilon_{\mathrm{orig}} + \varepsilon_{\mathrm{commit}}$,
+  where $\varepsilon_{\mathrm{commit}}$ accounts for commitment scheme
+  completeness error.
+  \uses{bcs:bcs-reduction, int:completeness}
+\end{definition}
+
+\begin{definition}[BCS soundness]
+  \label{bcs:soundness}
+  If the original reduction $\calR$ has round-by-round soundness with
+  error $\varepsilon_{\mathrm{rbr}}$ and the commitment schemes satisfy
+  \emph{function binding} with error $\varepsilon_{\mathrm{bind}}$ at each
+  committed oracle, then $\mathsf{BCS}(\calR)$ has round-by-round
+  soundness with error
+  $\varepsilon_{\mathrm{rbr}} + Q \cdot \varepsilon_{\mathrm{bind}}$,
+  where $Q$ is the total number of committed oracle queries (from
+  $\mathit{queryFn}$).
+
+  The function-binding property ensures that each commitment is bound to a
+  specific function, so the original reduction's soundness analysis applies
+  to the decommitted oracle messages.
+  The error $Q \cdot \varepsilon_{\mathrm{bind}}$ accounts for the
+  possibility that the adversary produces a commitment that opens
+  inconsistently.
+  \uses{bcs:bcs-reduction, int:rbr-soundness}
+\end{definition}
+
+\begin{remark}[Comparison with BCS for proofs]
+  \label{bcs:comparison-with-proofs}
+  When $\OStmtOut$ is empty (oracle proofs), the formulation above
+  specializes to the standard BCS transformation:
+  \begin{itemize}
+    \item Query completeness is vacuous.
+    \item $\mathit{sim}'$ is trivial.
+    \item The composed spec reduces to $\mathsf{bcsSpec}$ plus
+      the verifier's own opening queries.
+    \item Soundness is the standard BCS bound from
+      \cite{BCS16}.
+  \end{itemize}
+  The generalization to reductions adds two new elements: query
+  completeness (ensuring Phase 2 covers simulation queries) and the
+  composed spec (incorporating Phase 2 data into the transcript).
+\end{remark}
+
+\begin{remark}[Relationship to Chiesa--Di--Hu--Zheng]
+  \label{bcs:cdh-comparison}
+  The recent work of Chiesa, Di, Hu, and Zheng
+  \cite{ChiesaDiHuZheng2025}
+  extends BCS to interactive oracle reductions and establishes
+  post-quantum security.
+  Their formulation does not use $\mathsf{HybridSpec}$ or dependent
+  interaction trees, but the core insight is the same: the BCS
+  transformation must account for output oracle simulation, and the
+  query set must be complete with respect to both the verifier's queries
+  and the simulation queries.
+  Our formulation makes this explicit through the query completeness
+  condition and the composed spec.
+\end{remark}

@@ -1,0 +1,131 @@
+% interaction/two_party.tex — Role, withRoles, Counterpart, N-party
+
+\section{Two-Party and Multi-Party Interactions}\label{sec:interaction-two-party}
+
+A $\mathsf{Spec}$ describes \emph{what} moves are exchanged but not \emph{who}
+makes them.  Two-party structure is introduced as a decoration---a
+$\mathsf{Decoration}\;(\lambda\,\_.\;\mathsf{Role})$---rather than as a
+separate inductive type.  This means all $\mathsf{Spec}$ infrastructure
+(transcripts, append, replicate, state chains) works unchanged under role
+annotations.
+
+\subsection{Roles and the \texorpdfstring{$\Sigma/\Pi$}{Sigma/Pi} duality}
+
+\begin{definition}[Role]
+  \label{int:role}
+  $\mathsf{Role}$ is the two-element type $\{\mathsf{sender},\;
+  \mathsf{receiver}\}$.  $\mathsf{Role.swap}$ exchanges the two values;
+  it is an involution.
+  \lean{Interaction.Role}
+\end{definition}
+
+The key observation is that ``choosing a move'' ($\Sigma$-type) and ``responding
+to any possible move'' ($\Pi$-type) are dual operations:
+
+\begin{definition}[Action and Dual]
+  \label{int:role-action-dual}
+  For a move type~$X$, continuation family $\mathit{Cont} : X \to \Type$, and
+  monad~$m$:
+  \begin{align*}
+    \mathsf{Action}\;\mathsf{sender}\;m\;X\;\mathit{Cont}
+      &= (x : X) \times m\;(\mathit{Cont}\;x), \\
+    \mathsf{Action}\;\mathsf{receiver}\;m\;X\;\mathit{Cont}
+      &= (x : X) \to m\;(\mathit{Cont}\;x), \\[4pt]
+    \mathsf{Dual}\;\mathsf{sender}\;m\;X\;\mathit{Cont}
+      &= (x : X) \to \mathit{Cont}\;x, \\
+    \mathsf{Dual}\;\mathsf{receiver}\;m\;X\;\mathit{Cont}
+      &= m\;\bigl((x : X) \times \mathit{Cont}\;x\bigr).
+  \end{align*}
+  \lean{Interaction.Role.Action}
+  \lean{Interaction.Role.Dual}
+  \uses{int:role}
+\end{definition}
+
+\subsection{Role decorations, strategies, and counterparts}
+
+\begin{definition}[RoleDecoration]
+  \label{int:role-decoration}
+  A \emph{role decoration} is $\mathsf{Decoration}\;(\lambda\,\_.\;
+  \mathsf{Role})\;\mathit{spec}$: each node is labeled sender or receiver.
+  $\mathsf{swap}$ exchanges all labels (involutive).
+  \lean{Interaction.RoleDecoration}
+  \uses{int:decoration, int:role}
+\end{definition}
+
+\begin{definition}[Strategy.withRoles]
+  \label{int:strategy-with-roles}
+  The \emph{focal strategy} $\Strategy.\mathsf{withRoles}\;m\;\mathit{spec}\;
+  \mathit{roles}\;\mathit{Output}$ applies $\mathsf{Action}$ at each node
+  according to its role: the focal party \emph{chooses} at its own nodes and
+  \emph{responds} at the other party's nodes.
+  \lean{Interaction.Spec.Strategy.withRoles}
+  \uses{int:role-action-dual, int:role-decoration}
+\end{definition}
+
+\begin{definition}[Counterpart]
+  \label{int:counterpart}
+  The \emph{counterpart} (or \emph{environment}) $\mathsf{Counterpart}\;m\;
+  \mathit{spec}\;\mathit{roles}\;\mathit{Output}$ applies $\mathsf{Dual}$ at
+  each node: it observes the focal party's choices and effectfully produces its
+  own moves in the monad~$m$.
+  \lean{Interaction.Spec.Counterpart}
+  \uses{int:role-action-dual, int:role-decoration}
+\end{definition}
+
+$\mathsf{runWithRoles}$ executes a focal strategy against a counterpart,
+producing the full transcript together with both parties' outputs.
+
+\subsection{Per-node monad variants}
+
+For oracle verifiers, different nodes need different monadic effects: a sender
+node (prover message) is observed purely, while a receiver node (verifier
+challenge) involves oracle computation.
+
+\begin{definition}[Counterpart.withMonads]
+  \label{int:counterpart-with-monads}
+  Given a $\mathsf{MonadDecoration}$---a per-node choice of monad---the
+  counterpart $\mathsf{Counterpart.withMonads}$ uses the node's own monad at
+  each step.
+  \lean{Interaction.Spec.Counterpart.withMonads}
+  \uses{int:counterpart, int:decoration}
+\end{definition}
+
+This is the type that oracle verifiers instantiate (Section~\ref{sec:interaction-oracle}):
+sender nodes get $\mathsf{Id}$ (pure observation, since $\mathsf{Id}\;\alpha =
+\alpha$ definitionally), and receiver nodes get $\OracleComp$ with accumulated
+oracle access.  All generic composition combinators for
+$\mathsf{Counterpart.withMonads}$ therefore apply directly to oracle
+counterparts.
+
+\subsection{Role-aware refinement}
+
+\begin{definition}[Role.Refine]
+  \label{int:role-refine}
+  $\mathsf{Role.Refine}\;S\;\mathit{spec}\;\mathit{roles}$ is a
+  ``sender-only'' decoration: it carries $S\;X$ at sender nodes and recurses
+  directly at receiver nodes, with no padding data.  This avoids the
+  $\mathsf{PUnit}$ junk that $\mathsf{Decoration.Over}$ would introduce at
+  receiver nodes.
+  \lean{Interaction.Role.Refine}
+  \uses{int:role-decoration, int:decoration-over}
+\end{definition}
+
+$\mathsf{Role.Refine}$ is equivalent to
+$\mathsf{Decoration.Over}\;(\lambda\,X\;r.\;\mathsf{SenderData}\;S\;X\;r)$
+via an explicit $\mathsf{Equiv}$.  This is the type used for
+$\mathsf{OracleDecoration}$ (Section~\ref{sec:interaction-oracle}).
+
+\subsection{Multi-party interactions}
+
+For $N > 2$ parties, we introduce a $\mathsf{PartyDecoration}$---a
+$\mathsf{Decoration}\;(\lambda\,\_.\;\mathsf{Party})$ for some type
+$\mathsf{Party}$---and project to a $\mathsf{RoleDecoration}$ via a
+\emph{resolve} function $\mathsf{Party} \to \mathsf{Role}$ (following the
+MPST local type projection pattern).
+
+The formalization includes a three-party knowledge-soundness example (prover,
+verifier, extractor) with a comparative evaluation.  The conclusion: the
+three-party formulation is more general but not uniformly better.  For
+straightline extraction the function-based formulation is simpler; for
+simulation and state-restoration extraction, the $N$-party interaction
+naturally captures the simulator or extractor as a strategy.

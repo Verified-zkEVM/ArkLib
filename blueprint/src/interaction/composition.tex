@@ -1,0 +1,163 @@
+% interaction/composition.tex — append, liftAppend, replicate, stateChain, Chain
+
+\section{Sequential Composition}\label{sec:interaction-composition}
+
+Sequential composition is the primary way protocols grow: run one interaction,
+then continue with a second whose shape may depend on the outcome of the first.
+The key technical tool in this section is the $\mathsf{liftAppend}$
+combinator, which eliminates a cascade of type casts that would otherwise infect
+every downstream definition.
+
+\subsection{Dependent append}
+
+\begin{definition}[Spec.append]
+  \label{int:spec-append}
+  Given $s_1 : \mathsf{Spec}$ and $s_2 : \Transcript\;s_1 \to \mathsf{Spec}$,
+  the \emph{dependent append} $s_1.\mathsf{append}\;s_2$ fuses the two
+  interactions into one.  Informally, at each leaf of~$s_1$ the corresponding
+  $s_2\;\mathit{tr}_1$ is grafted on.
+  \lean{Interaction.Spec.append}
+  \uses{int:spec}
+\end{definition}
+
+\begin{definition}[Transcript.append / split]
+  \label{int:transcript-append-split}
+  $\Transcript.\mathsf{append}$ combines a first-phase transcript $\mathit{tr}_1$
+  and a second-phase transcript $\mathit{tr}_2$ into a transcript of the composed
+  interaction.  $\Transcript.\mathsf{split}$ is its inverse: it decomposes a
+  transcript of $s_1.\mathsf{append}\;s_2$ into its two components.  The
+  round-trip lemmas $\mathsf{split\_append}$ and $\mathsf{append\_split}$ hold.
+  \lean{Interaction.Spec.Transcript.append}
+  \lean{Interaction.Spec.Transcript.split}
+  \uses{int:spec-append, int:transcript}
+\end{definition}
+
+\subsection{The \texorpdfstring{$\mathsf{liftAppend}$}{liftAppend} combinator}
+
+When composing strategies, the output type of the second phase depends on the
+first-phase transcript.  A natural formulation is a two-argument family
+$F : \Transcript\;s_1 \to \Transcript\;(s_2\;\mathit{tr}_1) \to \Type$.
+But strategies on $s_1.\mathsf{append}\;s_2$ need a \emph{single-argument}
+family on $\Transcript\;(s_1.\mathsf{append}\;s_2)$.
+
+\begin{definition}[Transcript.liftAppend]
+  \label{int:lift-append}
+  $\mathsf{liftAppend}\;s_1\;s_2\;F$ lifts $F$ to a single-argument family on
+  $\Transcript\;(s_1.\mathsf{append}\;s_2)$.  The crucial property is
+  \emph{definitional computation}:
+  \[
+    \mathsf{liftAppend}\;s_1\;s_2\;F\;
+      (\Transcript.\mathsf{append}\;s_1\;s_2\;\mathit{tr}_1\;\mathit{tr}_2)
+    \;\equiv\;
+    F\;\mathit{tr}_1\;\mathit{tr}_2
+  \]
+  where $\equiv$ denotes judgmental equality---no explicit cast or transport is
+  needed.
+  \lean{Interaction.Spec.Transcript.liftAppend}
+  \uses{int:spec-append, int:transcript}
+\end{definition}
+
+This property propagates through the entire stack. $\mathsf{stateChainFamily}$
+(Section~\ref{sec:iteration}) uses $\mathsf{liftAppend}$ at each stage of a
+state chain; $\mathsf{Chain.outputFamily}$ uses it at each round of a
+continuation chain; and all strategy composition combinators and security
+composition theorems factor through it.  Without $\mathsf{liftAppend}$, every
+such combinator would require explicit casts between the two-argument and
+single-argument views.
+
+Companion operations include $\mathsf{packAppend}$ and
+$\mathsf{unpackAppend}$ (transport between the two views),
+$\mathsf{liftAppendRel}$ and $\mathsf{liftAppendPred}$ (lift binary
+relations and predicates for use in security statements).
+
+\subsection{Strategy composition}
+
+\begin{definition}[Strategy.comp]
+  \label{int:strategy-comp}
+  $\Strategy.\mathsf{comp}\;s_1\;s_2$ composes two strategies along
+  $\mathsf{Spec.append}$.  The continuation receives the first phase's output
+  and produces a second-phase strategy.  The composed output type is given by
+  $\mathsf{liftAppend}$:
+  \[
+    \Strategy.\mathsf{comp} :
+      \Strategy\;m\;s_1\;\mathit{Mid} \to
+      \bigl(\forall\;\mathit{tr}_1,\;
+        \mathit{Mid}\;\mathit{tr}_1 \to
+        m\,(\Strategy\;m\;(s_2\;\mathit{tr}_1)\;(F\;\mathit{tr}_1))\bigr)
+      \to m\,\bigl(\Strategy\;m\;(s_1.\mathsf{append}\;s_2)\;
+        (\mathsf{liftAppend}\;s_1\;s_2\;F)\bigr).
+  \]
+  A ``flat'' variant $\mathsf{compFlat}$ uses a single output family directly.
+  $\mathsf{splitPrefix}$ decomposes a composed strategy into its prefix and
+  continuation.
+  \lean{Interaction.Spec.Strategy.comp}
+  \uses{int:spec-append, int:strategy, int:lift-append}
+\end{definition}
+
+\subsection{Iteration mechanisms}\label{sec:iteration}
+
+Protocols frequently iterate a single-round interaction multiple times.
+We provide three iteration mechanisms at increasing levels of generality.
+
+\begin{definition}[Spec.replicate]
+  \label{int:spec-replicate}
+  $\mathit{spec}.\mathsf{replicate}\;n$ is the $n$-fold non-dependent append of
+  the same $\mathsf{Spec}$.  The continuation ignores the transcript of each
+  round.
+  \lean{Interaction.Spec.replicate}
+  \uses{int:spec-append}
+\end{definition}
+
+\begin{definition}[Spec.stateChain]
+  \label{int:spec-state-chain}
+  $\mathsf{stateChain}\;\mathit{Stage}\;\mathit{spec}\;\mathit{advance}\;n\;i\;s$
+  is an $n$-stage state-indexed composition.  At each stage~$i$ with
+  state $s : \mathit{Stage}\;i$, the interaction is
+  $\mathit{spec}\;i\;s$; after the stage completes with
+  transcript~$\mathit{tr}$, the state advances to
+  $\mathit{advance}\;i\;s\;\mathit{tr} : \mathit{Stage}\;(i+1)$.
+  \lean{Interaction.Spec.stateChain}
+  \uses{int:spec-append}
+\end{definition}
+
+\begin{definition}[Spec.Chain]
+  \label{int:spec-chain}
+  A \emph{chain} $\mathsf{Chain}\;n$ is a depth-indexed telescope: at each
+  level it carries the current round's $\mathsf{Spec}$ and, for each possible
+  transcript, the recipe for the remaining rounds.  There is no external state
+  type.
+  \[
+    \mathsf{Chain}\;0 = \Unit, \qquad
+    \mathsf{Chain}\;(n+1) =
+      (\mathit{spec} : \mathsf{Spec}) \times
+      (\Transcript\;\mathit{spec} \to \mathsf{Chain}\;n).
+  \]
+  $\mathsf{Chain.toSpec}$ converts a chain to a concrete $\mathsf{Spec}$ via
+  iterated $\mathsf{append}$.
+  \lean{Interaction.Spec.Chain}
+  \uses{int:spec, int:spec-append}
+\end{definition}
+
+These three mechanisms are related by specialization:
+%
+\begin{center}
+\begin{tabular}{l c c l}
+  \textbf{Mechanism} & \textbf{State?} & \textbf{Transcript-dep.?} & \textbf{Primary use} \\
+  \hline
+  $\mathsf{replicate}$ & No & No & Uniform rounds \\
+  $\mathsf{stateChain}$ & Yes ($\mathit{Stage}\;i$) & Yes & State machines \\
+  $\mathsf{Chain}$ & No (baked in) & Yes & Continuation-style \\
+\end{tabular}
+\end{center}
+
+$\mathsf{Chain}$ is the most fundamental: $\mathsf{Chain.replicate}$ recovers
+$\mathsf{Spec.replicate}$, and $\mathsf{Chain.ofStateMachine}$ recovers
+$\mathsf{Spec.stateChain}$.
+
+\begin{remark}
+  The $\mathsf{Chain}$ examples in the formalization include a
+  \emph{growing-messages} protocol (round~$k$ exchanges a value from
+  $\Fin\;(k+1)$) and a \emph{prefix-dependent} protocol where the third-round
+  message type genuinely depends on both prior moves.  These demonstrate that
+  transcript dependence is expressible without any external state.
+\end{remark}

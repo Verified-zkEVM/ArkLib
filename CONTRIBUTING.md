@@ -153,6 +153,24 @@ When translating theorem statements into names, we use standard mappings for sym
   ```
 * **Imports**: Group imports at the top of the file.
 * **Operators**: Put spaces on both sides of `:`, `:=`, and infix operators. Place them before a line break rather than at the start of the next line.
+* **Readable Notation**: Prefer Lean notation such as `∑`, `∏`, infix operators, binder
+  notation, and dot notation over more verbose combinator forms when this makes the code
+  easier to read and still elaborates cleanly.
+* **Definitions**: Prefer term-style definitions over tactic-style definitions. Avoid
+  starting a `def` with a `by` block unless there is a strong reason; if a definition
+  seems to require tactics, first reconsider the helper API or surrounding design.
+* **Definitional transports**: Core definitions should not contain proof-generated
+  transports such as `cast`, `Eq.mp`, `Eq.mpr`, `eq_mpr`, or transports produced by
+  `rw`, `simp`, `convert`, or similar tactics. This is especially important in
+  `ArkLib/Interaction/`, where protocols should compute by structural recursion and
+  pattern matching. If such a transport appears, first revisit the indexing/API design
+  instead of hiding the mismatch in the term. Intrinsic typed reindexing operations such
+  as `Fin.castLE`, `Fin.succ`, and established mathlib combinators are fine when they
+  are the actual transformation being modeled.
+* **Library Combinators**: Prefer existing standard-library or repo combinators over bespoke
+  helper definitions for simple tuple/index plumbing. If a definition is just
+  snoc/append/update/projection/reindexing and a clear combinator already exists, use it
+  directly rather than introducing or keeping a wrapper definition.
 * **Hypotheses**: Prefer placing hypotheses to the left of the colon (e.g., `(h : P) : Q`) rather than using arrows (`: P → Q`) when the proof introduces them.
 * **Functions**: Prefer `fun x ↦ ...` over `λ x, ...`.
 * **Instances**: Use the `where` syntax for defining instances and structures.
@@ -206,6 +224,11 @@ Every definition and major theorem should have a docstring.
     * Use backticks for Lean names: `` `List.map` ``.
     * Use LaTeX for math: `$ f(x) = y $` (inline) or `$$ \sum_{i=0}^n i $$` (display).
 * **Tactic Documentation**: Complete and self-contained descriptions for tactics.
+* **Docstring Quality**: Docstrings must describe what a definition *is* or what a theorem
+  *states*, not how it came about or what change introduced it. Cross-references to other
+  *live* definitions in the codebase are encouraged (e.g., "See also `Strategy.comp`"), but
+  references to removed or renamed definitions, change history, or reactive language
+  (e.g., "renamed from X", "replaces the old Y") are prohibited.
 
 ### Citation Standards
 

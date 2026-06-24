@@ -1,0 +1,278 @@
+% interaction/fiat_shamir.tex — interaction-native Fiat-Shamir
+
+\section{Fiat--Shamir in the Dependent Interaction Core}\label{sec:interaction-fiat-shamir}
+
+The Fiat--Shamir transform is a natural test case for the interaction-native
+framework.  It is simple enough to explain concretely, but subtle enough to
+reveal which parts of the framework are merely convenient and which parts are
+mathematically necessary.
+
+At a high level, the transform has the same familiar shape as in the flat
+oracle-reduction setting: replace verifier challenges by deterministic values
+derived from the transcript prefix, let the prover compute all of its messages
+without further interaction, and let the verifier reconstruct the interactive
+transcript before checking it.  The difference is that, in the dependent core,
+the \emph{rest of the protocol} may depend on those challenge values.  So the
+transform must do more than merely recover the right list of challenges: it
+must recover the right \emph{subtree} of the interaction specification at each
+receiver node.
+
+\subsection{Replay oracles and messages-only proofs}
+
+The key input to the basic transform is a deterministic \emph{replay oracle}:
+given the current transcript prefix, it returns exactly the verifier challenge
+that Fiat--Shamir would have produced there.
+
+\begin{definition}[ReplayOracle]
+  \label{int:replay-oracle}
+  For a role-decorated interaction $(\mathit{spec}, \mathit{roles})$, a
+  \emph{replay oracle} is the deterministic counterpart
+  \[
+    \mathsf{ReplayOracle}\;\mathit{spec}\;\mathit{roles}
+    \;\defeq\;
+    \mathsf{Counterpart}\;\mathsf{Id}\;\mathit{spec}\;\mathit{roles}\;
+      (\lambda\,\_.\;\mathsf{PUnit}).
+  \]
+  At sender nodes, it observes the sender's move and continues.  At receiver
+  nodes, it deterministically chooses a challenge and continues with the
+  subtree indexed by that challenge.
+  \lean{Interaction.ReplayOracle}
+  \uses{int:counterpart}
+\end{definition}
+
+Once a replay oracle is fixed, the prover no longer needs to store verifier
+challenges explicitly.  It suffices to store only the sender messages; the
+receiver moves can be read back from the replay oracle.
+
+\begin{definition}[MessagesOnly and transcript reconstruction]
+  \label{int:messages-only}
+  Given a replay oracle $\rho : \mathsf{ReplayOracle}\;\mathit{spec}\;
+  \mathit{roles}$, the type
+  $\mathsf{MessagesOnly}\;\mathit{spec}\;\mathit{roles}\;\rho$ stores exactly
+  the sender moves of the protocol:
+  \begin{itemize}
+    \item At $\mathsf{done}$, it is $\mathsf{PUnit}$.
+    \item At a sender node, it stores the chosen message together with the
+      recursively stored sender messages of the resulting subtree.
+    \item At a receiver node, it stores no new data and recurses directly into
+      the subtree determined by $\rho$'s chosen challenge.
+  \end{itemize}
+  The function
+  $\mathsf{MessagesOnly.deriveTranscript}$ reconstructs the full transcript by
+  combining the stored sender moves with the replay oracle's receiver
+  challenges.
+  \lean{Interaction.MessagesOnly}
+  \lean{Interaction.MessagesOnly.deriveTranscript}
+  \uses{int:replay-oracle, int:transcript}
+\end{definition}
+
+This is the point where the dependent interaction tree pays off.  The type of
+the tail at a receiver node is not ``the same protocol with one more slot
+filled''; it is literally the subtree selected by the replayed challenge.  In
+other words, transcript reconstruction is not a post-processing pass over a
+flat vector of messages, but a structurally recursive walk through the same
+interaction tree as the original protocol.
+
+\subsection{Why verifier-side Fiat--Shamir needs more than a counterpart}
+
+On the prover side, the replay oracle alone is enough.  On the verifier side,
+however, we need to \emph{replay} a prescribed transcript through the original
+interactive verifier.  This is exactly where the ordinary counterpart type is
+too weak.
+
+Recall that an ordinary receiver node in
+$\mathsf{Counterpart}\;m\;\mathit{spec}\;\mathit{roles}\;\mathit{Output}$ has
+the shape
+\[
+  m\bigl((x : X) \times \mathit{Cont}(x)\bigr).
+\]
+This is perfect for execution: it tells us how to sample the next challenge and
+continue.  But it does \emph{not} tell us how to recover the continuation for a
+\emph{prescribed} challenge $x$ without actually running the sampler.
+
+\begin{definition}[PublicCoinCounterpart]
+  \label{int:public-coin-counterpart}
+  A \emph{public-coin counterpart} factors each receiver node into two pieces:
+  \[
+    \mathsf{sample} : m\,X,
+    \qquad
+    \mathsf{next} : (x : X) \to \mathsf{PublicCoinCounterpart}(\mathit{rest}(x)).
+  \]
+  Sender nodes are unchanged: the verifier simply observes the sender's move
+  and continues.  This factorization captures the public-coin property needed
+  for Fiat--Shamir: all verifier randomness is used only to sample the next
+  challenge, and the rest of the verifier is a deterministic continuation in
+  that challenge.
+  \lean{Interaction.Spec.PublicCoinCounterpart}
+  \uses{int:counterpart}
+\end{definition}
+
+Two generic operations come with this factorization:
+
+\begin{definition}[Forgetting and replaying public-coin structure]
+  \label{int:public-coin-replay}
+  A public-coin counterpart supports:
+  \begin{itemize}
+    \item $\mathsf{toCounterpart}$, which forgets the factorization and
+      recovers an ordinary executable counterpart by sampling a challenge and
+      following its continuation;
+    \item $\mathsf{replay}$, which follows a prescribed transcript and ignores
+      the samplers entirely, using only the continuation family.
+  \end{itemize}
+  \lean{Interaction.Spec.PublicCoinCounterpart.toCounterpart}
+  \lean{Interaction.Spec.PublicCoinCounterpart.replay}
+  \uses{int:public-coin-counterpart}
+\end{definition}
+
+This is the missing ingredient that makes verifier-side Fiat--Shamir honest in
+the new framework.  We do not transform an arbitrary interactive verifier into
+a Fiat--Shamir verifier; we transform a verifier whose receiver nodes are
+already known to be public-coin in this replayable sense.
+
+\subsection{Public-coin verifiers and reductions}
+
+\begin{definition}[PublicCoinVerifier and PublicCoinReduction]
+  \label{int:public-coin-verifier-reduction}
+  A \emph{public-coin verifier} is a statement-indexed family of public-coin
+  counterparts.  A \emph{public-coin reduction} is a reduction whose prover is
+  unchanged, but whose verifier is public-coin in this sense.
+  Forgetful maps
+  $\mathsf{PublicCoinVerifier.toVerifier}$ and
+  $\mathsf{PublicCoinReduction.toReduction}$ recover the ordinary interaction
+  objects.
+  \lean{Interaction.PublicCoinVerifier}
+  \lean{Interaction.PublicCoinVerifier.toVerifier}
+  \lean{Interaction.PublicCoinReduction}
+  \lean{Interaction.PublicCoinReduction.toReduction}
+  \uses{int:public-coin-replay, int:reduction}
+\end{definition}
+
+\subsection{The basic Fiat--Shamir transform}
+
+With these ingredients in place, the transform itself is straightforward.
+
+\begin{definition}[Running the prover against a replay oracle]
+  \label{int:run-with-replay-oracle}
+  $\mathsf{Strategy.runWithReplayOracle}$ executes a prover strategy against a
+  replay oracle.  At sender nodes, it records the prover's chosen move in the
+  resulting $\mathsf{MessagesOnly}$ proof.  At receiver nodes, it reads the
+  challenge from the replay oracle and continues without storing any additional
+  proof data.
+  \lean{Interaction.Strategy.runWithReplayOracle}
+  \uses{int:messages-only, int:strategy-with-roles}
+\end{definition}
+
+\begin{definition}[Interaction-native Fiat--Shamir]
+  \label{int:interaction-fiat-shamir}
+  The transformed statement is the pair of the original statement with a replay
+  oracle.  The transformed protocol is a single sender node carrying a
+  $\mathsf{MessagesOnly}$ proof.
+
+  The prover-side transform runs the original prover against the replay oracle:
+  \[
+    \mathsf{Prover.fiatShamir}.
+  \]
+  The verifier-side transform takes a public-coin verifier, reconstructs the
+  full transcript from the replay oracle and messages-only proof, and replays
+  that transcript through the original verifier:
+  \[
+    \mathsf{PublicCoinVerifier.fiatShamir}.
+  \]
+  Combining the two yields
+  $\mathsf{PublicCoinReduction.fiatShamir}$.
+  \lean{Interaction.Prover.fiatShamir}
+  \lean{Interaction.PublicCoinVerifier.fiatShamir}
+  \lean{Interaction.PublicCoinReduction.fiatShamir}
+  \uses{int:run-with-replay-oracle, int:public-coin-verifier-reduction}
+\end{definition}
+
+\begin{remark}[What this formalizes, and what it does not]
+  This is the \emph{basic} Fiat--Shamir transform at the interaction level.  It
+  formalizes the messages-only collapse of a public-coin interactive protocol
+  against a fixed replay oracle.  It does \emph{not} yet model the replay oracle
+  itself as a random oracle or sponge; that oracle-level formulation belongs in
+  a later security layer.
+\end{remark}
+
+\subsection{Comparison with the flat oracle-reduction core}
+
+It is instructive to compare this with the older flat, $\Fin$-indexed
+formalization from Section~\ref{sec:fiat_shamir}.
+
+\begin{remark}[Flat core versus dependent interaction core]
+  \label{int:fiat-shamir-comparison}
+  The two formalizations solve related but genuinely different problems.
+
+  In the old flat oracle-reduction core:
+  \begin{itemize}
+    \item the protocol shape is fixed in advance by a
+      $\mathsf{ProtocolSpec}\;n$;
+    \item prover messages and verifier challenges are separated globally by
+      index sets $\mathsf{MessageIdx}$ and $\mathsf{ChallengeIdx}$;
+    \item the Fiat--Shamir oracle is a family indexed by challenge positions;
+    \item the verifier already appears as a function of the \emph{full
+      transcript}, so verifier-side Fiat--Shamir is obtained simply by
+      reconstructing that transcript and calling the original verifier.
+  \end{itemize}
+
+  In the new interaction-native core:
+  \begin{itemize}
+    \item the protocol shape may depend on earlier moves, so the remainder of
+      the interaction is a subtree selected by the actual transcript;
+    \item a messages-only proof stores precisely the sender moves along the
+      realized path, with no global $\Fin$-indexed tuple of all messages;
+    \item transcript reconstruction is structurally recursive on the interaction
+      tree and therefore automatically follows challenge-dependent subprotocols;
+    \item verifier-side Fiat--Shamir requires an explicit public-coin
+      factorization of the verifier counterpart, because an ordinary interactive
+      verifier is no longer \emph{already} a function on full transcripts.
+  \end{itemize}
+
+  So the new formalization is both more general and more explicit.  It is more
+  general because it handles genuinely dependent interaction trees.  It is more
+  explicit because it isolates the precise replayability property needed on the
+  verifier side, rather than baking that property implicitly into the old
+  verifier interface.
+\end{remark}
+
+\begin{remark}[Position in the literature]
+  \label{int:fiat-shamir-literature}
+  The standard Fiat--Shamir literature usually starts from a fixed-round
+  public-coin protocol.  A representative example is the treatment of
+  multi-round Fiat--Shamir by Attema, Fehr, and Kloo{\ss}
+  \cite{AttemaFehrKlooss2023}, where the protocol is a $(2\mu+1)$-move
+  interactive proof with fixed challenge sets, and the analysis proceeds via
+  reconstructed transcript trees.  In that setting, verifier-side
+  Fiat--Shamir naturally appears as ``reconstruct the transcript, then run the
+  original verifier.''
+
+  Our interaction-native formulation agrees with that picture when the protocol
+  has a fixed round schedule, but it identifies an additional structural point
+  that becomes unavoidable in the dependent setting: replaying a transcript
+  through the verifier requires not just a verifier algorithm, but a
+  \emph{replayable public-coin continuation structure}.  This is what
+  $\mathsf{PublicCoinCounterpart}$ makes explicit.
+
+  Formal verification work on public-coin proofs, such as the Isabelle
+  formalization of sumcheck by Bosshard, Bootle, and Sprenger
+  \cite{BBS24}, is closely adjacent in spirit, but it still treats a
+  fixed-round protocol rather than a dependent interaction tree.  On the
+  engineering side, recent transcript-specification efforts such as the CFRG
+  Fiat--Shamir draft \cite{CFRGFiatShamir2025} and the Decree library
+  \cite{Decree2024} emphasize staged transcript discipline and challenge-order
+  correctness.  Our formulation can be viewed as a semantic counterpart to that
+  engineering discipline: in a dependent protocol, requesting the next
+  challenge does not merely extend a transcript prefix, but selects the
+  continuation subtree in which the rest of the verifier lives.
+\end{remark}
+
+\begin{remark}[Why the new formulation is worth keeping]
+  The flat formulation remains useful for textbook-style oracle reductions with
+  a fixed round schedule, and it is the right home for the random-oracle-model
+  security story already developed there.  But the interaction-native
+  formulation identifies the structural essence of Fiat--Shamir more cleanly:
+  a deterministic replay oracle for transcript reconstruction, and a replayable
+  public-coin verifier for the verifier side.  That is the right abstraction
+  boundary for protocols whose later message types genuinely depend on earlier
+  challenges.
+\end{remark}

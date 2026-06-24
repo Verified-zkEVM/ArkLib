@@ -29,7 +29,9 @@ Some examples of oracle specifications (and their intended behavior) are as foll
     \item \verb|coinSpec|: A coin flipping oracle that produces a random Boolean value
     \item \verb|unifSpec|: A family of oracles that for every natural number $n \in \mathbb{N}$ chooses uniformly from the set $\{0, \ldots, n\}$.
 \end{itemize}
-    \lean{emptySpec, singletonSpec, coinSpec, unifSpec}
+    \lean{OracleSpec.emptySpec}
+    \lean{coinSpec}
+    \lean{unifSpec}
 
 We often require extra properties on the domains and ranges of oracles. For example, we may require that the domains and ranges come equipped with decidable equality \lean{OracleSpec.DecidableEq}
 or finiteness properties \lean{OracleSpec.Fintype}.
@@ -42,7 +44,7 @@ or finiteness properties \lean{OracleSpec.Fintype}.
         \item Make an oracle query and continue with the response (via \texttt{queryBind})
         \item Signal failure (via \texttt{failure})
     \end{itemize}
-    The formal implementation uses a free monad on the inductive type of oracle queries \lean{OracleSpec.OracleQuery} wrapped in an option monad transformer (i.e. \verb|OptionT(FreeMonad(OracleQuery spec))|).
+    The formal implementation uses a free monad on the inductive type of oracle queries \lean{OracleQuery} wrapped in an option monad transformer (i.e. \verb|OptionT(FreeMonad(OracleQuery spec))|).
     \lean{OracleComp}
     \uses{def:oracle_spec}
 \end{definition}
@@ -61,7 +63,7 @@ or finiteness properties \lean{OracleSpec.Fintype}.
     oracles respond uniformly at random. This gives rise to a probability distribution over possible 
     outputs (including the possibility of failure). The semantics maps each oracle query to a 
     uniform distribution over its possible responses.
-    \lean{OracleComp.evalDist}
+    \lean{evalDist}
     \uses{def:oracle_computation}
 \end{definition}
 
@@ -83,7 +85,8 @@ Once we have mapped an oracle computation to a probability distribution, we can 
         \item Caching remembers query responses and reuses them for repeated queries
     \end{itemize}
     These are implemented as special cases of simulation oracles.
-    \lean{loggingOracle, cachingOracle}
+    \lean{loggingOracle}
+    \lean{cachingOracle}
     \uses{def:oracle_computation, def:handling_oracle_queries}
 \end{definition}
 

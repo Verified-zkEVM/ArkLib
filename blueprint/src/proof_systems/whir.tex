@@ -64,7 +64,8 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \end{lemma}
 
 \begin{theorem}\label{conjecture:whir}
-\lean{MutualCorrAgreement.mca_johnson_bound_CONJECTURE,MutualCorrAgreement.mca_capacity_bound_CONJECTURE}
+\lean{MutualCorrAgreement.mca_johnson_bound_CONJECTURE}
+\lean{MutualCorrAgreement.mca_capacity_bound_CONJECTURE}
 \uses{def:reed_solomon_code,lemma:gen_mutual_corr_agreement}
     The function $\gen(\parl; \alpha) := (1, \alpha, \ldots, \alpha^{\parl - 1})$ is a proximity generator with mutual correlated agreement for every smooth Reed Solomon code $\code := \rscode[\field, \evaldomain, m]$ (with rate $\rate := 2^m / |\evaldomain|$). We give two conjectures, for the parameters of the proximity bound ${\bound}^\star$ and the error $\err^\star$:
     \begin{enumerate}
@@ -113,7 +114,8 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
 \end{definition}
 
 \begin{definition}\label{def:fold_k}
-\lean{Fold.fold_k_core,Fold.fold_k}
+\lean{Fold.fold_k_core}
+\lean{Fold.fold_k}
 \uses{def:foldf}
     For $k \leq m$ and $\vec{\alpha} = (\alpha_0, \ldots, \alpha_{k-1}) \in \field^k$ we define $\mathrm{Fold}(f, \vec{\alpha}) : \evaldomain^{2^k} \to \field$ to equal $\mathrm{Fold}(f, \vec{\alpha}) := f_k$ where $f_k$ is defined recursively as follows: $f_0 := f$, and $f_i := \mathrm{Fold_f}(f_{i-1}, \alpha_i)$. 
 \end{definition}
@@ -286,5 +288,4 @@ $\forall i \in [0, (\parl-1)]$, $\exists u \in \code, \forall x \in S$, $f_i(x)=
     \item $\varepsilon^{\mathrm{fin}} \leq (1 - \delta_{M-1})^{t_M - 1}$.
 \end{itemize}
 \end{theorem}
-
 

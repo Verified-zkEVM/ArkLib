@@ -7,7 +7,6 @@ This section documents our formalization of the Binius commitment scheme protoco
 We define the binary tower fields \cite{DP25} as defined originally as iterated quadratic extensions by Wie88\cite{Wie88}. These fields, denoted $(\mathcal{T})_{\iota \in \mathbb{N}}$, provide a chain of nested field extensions for efficient arithmetic, particularly for operations involving subfields, by leveraging a highly compatible basis structure across the tower.
 
 \begin{definition}[Binary Tower Field]
-    \lean{BinaryTower.BTField}
     \label{def:binary_tower_field}
     A binary tower field $\mathcal{T}_{\iota}$ for $\iota \in \mathbb{N}$ is defined inductively as the $\iota$-th field in the sequence of quadratic extensions over the ground field $\mathbb{F}_2$.
     \begin{itemize}
@@ -17,13 +16,11 @@ We define the binary tower fields \cite{DP25} as defined originally as iterated 
 \end{definition}
 
 \begin{theorem}[Irreducible defining polynomial]
-    \lean{BinaryTower.polyIrreducible}
     \label{thm:binary_tower_field_irreducible}
     The defining polynomial $X_{\iota-1}^{2}+X_{\iota-2} \cdot X_{\iota-1}+1$ of $\mathcal{T}_{\iota}$ is irreducible over $\mathcal{T}_{\iota-1}$ for all $\iota > 0$.
 \end{theorem}
 
 \begin{theorem}[Binary Tower Fields are fields]
-  \lean{BinaryTower.BTFieldIsField, BinaryTower.BTFieldCard, BinaryTower.BTFieldChar2}
   \uses{def:binary_tower_field, thm:binary_tower_field_irreducible}
   We prove that the binary tower fields are finite fields:
   \label{thm:binary_tower_fields_are_fields}
@@ -47,7 +44,6 @@ The structure of the tower provides a natural way to represent elements using a 
 \end{definition}
 
 \begin{definition}[Computable Binary Tower Fields]
-  \lean{ConcreteBinaryTower.instFieldConcrete}
   \uses{def:binary_tower_field, def:multilinear_basis, thm:binary_tower_fields_are_fields}
   \label{def:computable_binary_tower_field}
   Building upon the abstract definition of binary tower fields, we define a concrete, computable representation of binary tower fields. This construction, which underpins our formalization, represents each element of the field $\mathcal{T}_\iota$ as a bit vector of length $2^\iota$ corresponding to the coefficients of the multilinear $\mathbb{F}_2$-basis.

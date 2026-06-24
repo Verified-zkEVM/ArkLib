@@ -88,7 +88,8 @@ The following lemma, implicit in prior works, shows that if the function is ``qu
 
 \subsubsection{Out of domain sampling}\label{sec:out_of_domain_smpl}
 \begin{lemma}\label{lemma:out_of_domain_smpl}
-\lean{OutOfDomSmpl.out_of_dom_smpl_1, OutOfDomSmpl.out_of_dom_smpl_2}
+\lean{OutOfDomSmpl.out_of_dom_smpl_1}
+\lean{OutOfDomSmpl.out_of_dom_smpl_2}
 \uses{def:reed_solomon_code,def:list_decodable,def:list_close_codewords}
     Let $f:\evaldomain\rightarrow\field$ be a function, $\degree\in\N$ be a degree parameter, $s\in\N$ be a repetition parameter, and $\distance\in[0,1]$ be a distance parameter. If $\rscode[\field,\evaldomain,\degree]$ be $(\degree,l)$-list decodable then
         \[
@@ -113,7 +114,8 @@ The following lemma, implicit in prior works, shows that if the function is ``qu
 STIR relies on $k$-wise folding of functions and polynomials - this is similar to prior works, although presented in a slightly different form. As shown below, folding a function preserves proximity from the Reed-Solomon code with high probability. The folding operator is based on the following fact, decomposing univariate polynomials into bivariate ones.
 
 \begin{lemma}\label{fact:poly_folding}
-\lean{Folding.exists_unique_bivariate,Folding.degree_bound_bivariate}
+\lean{Folding.exists_unique_bivariate}
+\lean{Folding.degree_bound_bivariate}
 Given a polynomial $\hat{q}\in\field[X]$:
 \begin{itemize}
         \item For every univariate polynomial $\hat{f}\in\field[X]$, there exists a unique bivariate polynomial $\hat{Q}\in\field[X,Y]$ with:

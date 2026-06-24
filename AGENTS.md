@@ -27,13 +27,33 @@ Start with [`README.md`](README.md) for project overview.
 
 ## Guardrails
 
-- Lean defaults: `autoImplicit = false`; the long-file linter cap is `1500` unless a file opts
-  out locally.
+- `autoImplicit = false` is set globally in `lakefile.toml`; do **not** add
+  `set_option autoImplicit false` in individual files.
+- The long-file linter cap is `1500` unless a file opts out locally.
 - `ArkLib.lean` is generated; do not hand-edit it.
+- Prefer readable Lean notation when it helps clarity: use notation such as `∑`, `∏`,
+  infix operators, binder notation, and dot notation instead of more verbose combinator
+  forms when the result is clearer and elaborates cleanly.
+- Prefer term-style definitions over tactic-style definitions. Do not start a definition
+  with a `by` block unless there is a strong reason; if a definition seems to require
+  tactics, first reconsider the surrounding API, helper definitions, or expected normal form.
+- Keep core definitions, especially in `ArkLib/Interaction/`, free of proof-generated
+  transports such as `cast`, `Eq.mp`, `Eq.mpr`, `eq_mpr`, or casts introduced by `rw`,
+  `simp`, `convert`, or similar tactics. These usually indicate that the dependent
+  indexing or recursion principle is not definitionally aligned. Prefer redesigning the
+  type/API so branches compute by pattern matching. Intrinsic typed reindexing operations
+  such as `Fin.castLE`, `Fin.succ`, or established mathlib combinators are acceptable
+  when they are the intended data transformation.
+- Prefer existing library and repo combinators over bespoke helper definitions for simple
+  tuple/index plumbing. If a definition is just snoc/append/update/projection/reindexing and a
+  clear standard combinator already expresses it, use that directly instead of writing or keeping
+  a wrapper definition.
 - Edit source, not derived output such as `.lake/`, `blueprint/web/`, `blueprint/print/`,
   `dependency_graphs/`, or `home_page/docs/`.
 - Pre-existing `sorry` blocks exist in active formalizations; distinguish existing gaps from new
   regressions.
+- Docstrings must be intrinsic and descriptive. Cross-reference *live* sibling definitions, but
+  never reference removed/renamed definitions, change history, or use reactive language.
 - If a PR changes commands, repo structure, generated outputs, or the blueprint/citation
   workflow, update the matching page in [`docs/wiki/`](docs/wiki/README.md) in the same PR.
 - Promote recurring agent learnings into [`docs/wiki/`](docs/wiki/README.md); do not let stable
