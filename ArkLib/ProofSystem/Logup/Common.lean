@@ -1,5 +1,6 @@
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.CharP.Defs
+import Mathlib.Algebra.Order.Floor.Div
 import Mathlib.Data.Fin.Basic
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Fintype.Basic
@@ -90,6 +91,23 @@ def inputToTerm {M : ℕ} : InputOracleIdx M → TermIdx M
   | .table => ⟨0, by omega⟩
   | .column i => ⟨i.val + 1, by omega⟩
 
+/-- `termToInput` is a left inverse of `inputToTerm`: numbering an input label and reading it
+back recovers the original label. -/
+@[simp]
+theorem termToInput_inputToTerm {M : ℕ} (i : InputOracleIdx M) :
+    termToInput (inputToTerm i) = i := by
+  cases i <;> simp [termToInput, inputToTerm]
+
+/-- `inputToTerm` is a left inverse of `termToInput`: reading a term index as a label and
+re-numbering it recovers the original index. -/
+@[simp]
+theorem inputToTerm_termToInput {M : ℕ} (i : TermIdx M) :
+    inputToTerm (termToInput i) = i := by
+  unfold termToInput
+  split
+  · next h => exact Fin.ext h.symm
+  · next h => apply Fin.ext; simp only [inputToTerm]; omega
+
 /-- Protocol parameter `ℓ`, the chosen partial-sum size from Protocol 2. -/
 structure ProtocolParams (M : ℕ) where
   /-- The partial-sum size `ℓ`. -/
@@ -104,6 +122,16 @@ namespace ProtocolParams
 /-- The number of partial-sum groups `K = ceil((M + 1) / ℓ)`. -/
 def numGroups {M : ℕ} (params : ProtocolParams M) : ℕ :=
   (M + params.sumSize) / params.sumSize
+
+/-- `numGroups` really is the ceiling `⌈(M + 1) / ℓ⌉`: the floor-division formula
+`(M + ℓ) / ℓ` agrees with `Nat.ceilDiv` because `ℓ ≥ 1` (`sumSize_pos`). -/
+theorem numGroups_eq_ceilDiv {M : ℕ} (params : ProtocolParams M) :
+    params.numGroups = (M + 1) ⌈/⌉ params.sumSize := by
+  have h := params.sumSize_pos
+  rw [Nat.ceilDiv_eq_add_pred_div]
+  unfold numGroups
+  congr 1
+  omega
 
 /-- The consecutive interval `Iₖ = [(k - 1)ℓ, kℓ) ∩ [0, M]`, zero-indexed. -/
 def group {M : ℕ} (params : ProtocolParams M) (k : Fin params.numGroups) :

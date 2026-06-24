@@ -20,7 +20,11 @@ variable (n M : ℕ)
 variable (params : ProtocolParams M)
 variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
-/-- Paper-shaped soundness error for the LogUp outer checks plus the embedded sumcheck error. -/
+/-- Paper-shaped soundness error for the LogUp outer checks plus the embedded sumcheck error.
+
+The first term divides by `|F| - |H|`, the number of non-pole field elements a good challenge can
+be sampled from. This expression is only meaningful when `|H| < |F|` (see `logup_soundness`);
+otherwise the natural-number subtraction truncates to `0` and the term silently vanishes. -/
 noncomputable def logupSoundnessError (F : Type) [Fintype F] (n M : ℕ) (params : ProtocolParams M)
     (sumcheckSoundnessError : ℝ≥0) : ℝ≥0 :=
   ((((M + 1) * Fintype.card (Hypercube n) - 1 : ℕ) : ℝ≥0) /
@@ -28,8 +32,13 @@ noncomputable def logupSoundnessError (F : Type) [Fintype F] (n M : ℕ) (params
     (((params.numGroups + 1 : ℕ) : ℝ≥0) / (Fintype.card F : ℝ≥0)) +
       sumcheckSoundnessError
 
-/-- Main ArkLib soundness theorem for LogUp Protocol 2. -/
-theorem logup_soundness (sumcheckSoundnessError : ℝ≥0) :
+/-- Main ArkLib soundness theorem for LogUp Protocol 2.
+
+The hypothesis `hcard : |H| < |F|` guarantees there exist non-pole field elements to sample a
+challenge from, and makes the `|F| - |H|` denominator of `logupSoundnessError` positive (so the
+natural-number subtraction equals the true difference rather than truncating to `0`). -/
+theorem logup_soundness (sumcheckSoundnessError : ℝ≥0)
+    (hcard : Fintype.card (Hypercube n) < Fintype.card F) :
     (logupVerifier oSpec F n M params).soundness init impl
       (inputRelation F n M).language outputRelation.language
       (logupSoundnessError F n M params sumcheckSoundnessError) := by

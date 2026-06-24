@@ -104,7 +104,7 @@ noncomputable instance instOuterPSpecMessageOracleInterface
 
 /-- The verifier challenges in the outer LogUp transcript are sampled uniformly from their types. -/
 instance instOuterPSpecChallengeSampleable
-    {F : Type} [Fintype F] [Inhabited F] [SampleableType F] {n M : ℕ}
+    {F : Type} [Field F] [Fintype F] [SampleableType F] {n M : ℕ}
     {params : ProtocolParams M} :
     ∀ i, SampleableType ((outerPSpec F n params).Challenge i)
   | ⟨0, h0⟩ => by
@@ -117,6 +117,9 @@ instance instOuterPSpecChallengeSampleable
       change Direction.P_to_V = Direction.V_to_P at h2
       cases h2
   | ⟨3, _⟩ => by
+      -- `BatchingChallenge` is a product type, and VCVio's `SampleableType (α × β)` instance
+      -- requires `Inhabited` on each factor; supply it from the field's zero.
+      letI : Inhabited F := ⟨0⟩
       change SampleableType (BatchingChallenge F n params.numGroups)
       infer_instance
 
@@ -172,7 +175,6 @@ noncomputable instance instPSpecBeforeFinalChallengeSampleable
     {F : Type} [Field F] [Fintype F] [DecidableEq F] [SampleableType F] {n M : ℕ}
     {params : ProtocolParams M} :
     ∀ i, SampleableType ((pSpecBeforeFinal F n M params).Challenge i) := by
-  letI : Inhabited F := ⟨0⟩
   unfold pSpecBeforeFinal
   exact ProtocolSpec.instSampleableTypeChallengeAppend
 
@@ -181,7 +183,6 @@ noncomputable instance instPSpecChallengeSampleable
     {F : Type} [Field F] [Fintype F] [DecidableEq F] [SampleableType F] {n M : ℕ}
     {params : ProtocolParams M} :
     ∀ i, SampleableType ((pSpec F n M params).Challenge i) := by
-  letI : Inhabited F := ⟨0⟩
   unfold pSpec
   exact ProtocolSpec.instSampleableTypeChallengeAppend
 
