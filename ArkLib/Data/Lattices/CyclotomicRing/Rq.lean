@@ -3,8 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Basic
+import ArkLib.Data.Lattices.CyclotomicRing.Core.Basic
 import Mathlib.Algebra.Ring.InjSurj
+import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 
 /-!
 # `Rq Φ` — the Cyclotomic Ring as a Computable `CommRing`
@@ -119,11 +120,12 @@ theorem toQuotient_injective : Function.Injective (Rq.toQuotient Φ) := by
     exact absurd (lt_of_le_of_lt (Polynomial.degree_le_of_dvd hdvd hne) hsmall) (lt_irrefl _)
   exact sub_eq_zero.mp hzero
 
-/-- The transported commutative ring on canonical reduced representatives. The
-instance itself is noncomputable (its axioms are transported through the
-noncomputable `toQuotient`), but the ring operations reduce to the primitive
-computable `Add`/`Mul`/… instances above, so `Rq Φ` arithmetic is `#eval`-able. -/
-noncomputable instance commRing : CommRing (Rq Φ) :=
+/-- The commutative-ring axioms on canonical reduced representatives, transported across the
+injection `toQuotient` into the semantic quotient. This is the *proof carrier* only: it is
+`noncomputable` (the axioms route through the noncomputable `toQuotient`), and the public
+`commRing` instance below reuses its (`Prop`-valued, hence erased) axiom fields while pinning all
+*data* fields to the primitive computable `Add`/`Mul`/… instances. -/
+@[reducible] noncomputable def commRingAux : CommRing (Rq Φ) :=
   Function.Injective.commRing (Rq.toQuotient Φ) (toQuotient_injective Φ)
     (by rw [show (0 : Rq Φ) = Rq.mk Φ 0 from rfl, toQuotient_mk, map_zero])
     (by rw [show (1 : Rq Φ) = Rq.mk Φ 1 from rfl, toQuotient_mk, map_one])
@@ -139,6 +141,49 @@ noncomputable instance commRing : CommRing (Rq Φ) :=
     (fun n => by rw [show (n : Rq Φ) = Rq.mk Φ (n : CPolynomial R) from rfl, toQuotient_mk,
       map_intCast])
 
+/-- **The commutative ring on canonical reduced representatives** — *computable*. All ring
+operations are the primitive `Add`/`Mul`/`Neg`/… instances above (each `Rq.mk Φ (·)` on the
+underlying `CPolynomial`), so `Rq Φ` arithmetic is `#eval`-able; the axioms are borrowed from the
+noncomputable `commRingAux` (they are `Prop`s, erased at compile time, and the primitive data is
+definitionally what `Function.Injective.commRing` uses). -/
+instance commRing : CommRing (Rq Φ) where
+  zero := 0
+  one := 1
+  add := fun a b => a + b
+  mul := fun a b => a * b
+  neg := fun a => -a
+  sub := fun a b => a - b
+  nsmul := fun n a => n • a
+  zsmul := fun n a => n • a
+  npow := fun n a => a ^ n
+  natCast := fun n => (n : Rq Φ)
+  intCast := fun n => (n : Rq Φ)
+  add_assoc := (commRingAux Φ).add_assoc
+  zero_add := (commRingAux Φ).zero_add
+  add_zero := (commRingAux Φ).add_zero
+  add_comm := (commRingAux Φ).add_comm
+  neg_add_cancel := (commRingAux Φ).neg_add_cancel
+  sub_eq_add_neg := (commRingAux Φ).sub_eq_add_neg
+  nsmul_zero := (commRingAux Φ).nsmul_zero
+  nsmul_succ := (commRingAux Φ).nsmul_succ
+  zsmul_zero' := (commRingAux Φ).zsmul_zero'
+  zsmul_succ' := (commRingAux Φ).zsmul_succ'
+  zsmul_neg' := (commRingAux Φ).zsmul_neg'
+  mul_assoc := (commRingAux Φ).mul_assoc
+  one_mul := (commRingAux Φ).one_mul
+  mul_one := (commRingAux Φ).mul_one
+  npow_zero := (commRingAux Φ).npow_zero
+  npow_succ := (commRingAux Φ).npow_succ
+  mul_comm := (commRingAux Φ).mul_comm
+  left_distrib := (commRingAux Φ).left_distrib
+  right_distrib := (commRingAux Φ).right_distrib
+  zero_mul := (commRingAux Φ).zero_mul
+  mul_zero := (commRingAux Φ).mul_zero
+  natCast_zero := (commRingAux Φ).natCast_zero
+  natCast_succ := (commRingAux Φ).natCast_succ
+  intCast_ofNat := (commRingAux Φ).intCast_ofNat
+  intCast_negSucc := (commRingAux Φ).intCast_negSucc
+
 /-- `toQuotient` packaged as a ring homomorphism into the semantic cyclotomic ring. -/
 noncomputable def toQuotientHom : Rq Φ →+* Φ.CyclotomicRing where
   toFun := Rq.toQuotient Φ
@@ -146,6 +191,23 @@ noncomputable def toQuotientHom : Rq Φ →+* Φ.CyclotomicRing where
   map_mul' a b := by rw [show a * b = Rq.mk Φ (a.1 * b.1) from rfl, toQuotient_mk, map_mul]; rfl
   map_zero' := by rw [show (0 : Rq Φ) = Rq.mk Φ 0 from rfl, toQuotient_mk, map_zero]
   map_add' a b := by rw [show a + b = Rq.mk Φ (a.1 + b.1) from rfl, toQuotient_mk, map_add]; rfl
+
+/-- `toQuotient` is surjective: `quotientHom` is `(Ideal.Quotient.mk) ∘ ringEquiv`, a composite
+of surjections, and every class has a (reduced) representative. -/
+theorem toQuotient_surjective : Function.Surjective (Rq.toQuotient Φ) := by
+  intro y
+  obtain ⟨P, hP⟩ := Ideal.Quotient.mk_surjective y
+  refine ⟨Rq.mk Φ (CompPoly.CPolynomial.ringEquiv.symm P), ?_⟩
+  rw [toQuotient_mk, quotientHom_apply,
+    show (CompPoly.CPolynomial.ringEquiv.symm P).toPoly = P from
+      CompPoly.CPolynomial.ringEquiv.apply_symm_apply P]
+  exact hP
+
+/-- The **ring isomorphism `Φ.Rq ≃+* Φ.CyclotomicRing`** between the computable reduced-rep ring
+and the semantic quotient. Bundles `toQuotient` (injective and surjective). Lets `IsUnit` and
+other ring-theoretic properties transfer between the two presentations. -/
+noncomputable def equivQuotient : Rq Φ ≃+* Φ.CyclotomicRing :=
+  RingEquiv.ofBijective (toQuotientHom Φ) ⟨toQuotient_injective Φ, toQuotient_surjective Φ⟩
 
 /-- Subtraction of canonical reduced representatives is coefficientwise: the
 underlying `CPolynomial` of `a - b` is `a.1 - b.1` (no further reduction occurs, as both
@@ -156,6 +218,13 @@ theorem sub_val (a b : Rq Φ) : (a - b).1 = a.1 - b.1 := by
   rw [CPolynomial.toPoly_sub]
   exact lt_of_le_of_lt (Polynomial.degree_sub_le _ _)
     (max_lt (Φ.degree_toPoly_lt_of_reduced a.2) (Φ.degree_toPoly_lt_of_reduced b.2))
+
+/-- Negation of canonical reduced representatives is coefficientwise. -/
+theorem neg_val (a : Rq Φ) : (-a).1 = -a.1 := by
+  change Φ.reduce (-a.1) = -a.1
+  apply Φ.reduce_eq_self_of_degree_lt
+  rw [CPolynomial.toPoly_neg, Polynomial.degree_neg]
+  exact Φ.degree_toPoly_lt_of_reduced a.2
 
 /-- Addition of canonical reduced representatives is coefficientwise. -/
 theorem add_val (a b : Rq Φ) : (a + b).1 = a.1 + b.1 := by
@@ -193,6 +262,47 @@ theorem ofFinCoeff_coeff [DecidableEq R] {N : ℕ} (c : ℕ → R)
       (lt_of_lt_of_le (CompPoly.CPolynomial.degree_toPoly_ofFinCoeff_lt N c) hN)
   change (Φ.reduce (CompPoly.CPolynomial.ofFinCoeff N c)).coeff k = _
   rw [hred, CompPoly.CPolynomial.coeff_ofFinCoeff]
+
+/-- `Rq.mk` commutes with addition: reduction is additive in the quotient. -/
+theorem mk_add (p q : CPolynomial R) : mk Φ (p + q) = mk Φ p + mk Φ q := by
+  apply toQuotient_injective Φ
+  simp only [show ∀ x y : Rq Φ, toQuotient Φ (x + y) = toQuotient Φ x + toQuotient Φ y
+        from fun x y => map_add (toQuotientHom Φ) x y,
+      toQuotient_mk, map_add]
+
+/-- `Rq.mk` commutes with multiplication: reduction is multiplicative in the quotient. -/
+theorem mk_mul (p q : CPolynomial R) : mk Φ (p * q) = mk Φ p * mk Φ q := by
+  apply toQuotient_injective Φ
+  simp only [show ∀ x y : Rq Φ, toQuotient Φ (x * y) = toQuotient Φ x * toQuotient Φ y
+        from fun x y => map_mul (toQuotientHom Φ) x y,
+      toQuotient_mk, map_mul]
+
+/-- A reduced representative equals `mk` of itself. -/
+theorem mk_self (a : Rq Φ) : mk Φ a.1 = a := Subtype.ext a.2
+
+/-- The underlying `CPolynomial` of `mk Φ p` is `reduce p` (a syntactic-rewrite handle that avoids
+unfolding `reduce` definitionally). -/
+theorem mk_val (p : CPolynomial R) : (mk Φ p).1 = Φ.reduce p := rfl
+
+/-- `Rq.mk` commutes with finite sums. -/
+theorem mk_sum {ι : Type*} (s : Finset ι) (f : ι → CPolynomial R) :
+    mk Φ (∑ k ∈ s, f k) = ∑ k ∈ s, mk Φ (f k) := by
+  classical
+  refine Finset.induction_on s ?_ ?_
+  · simp only [Finset.sum_empty]; rfl
+  · intro a s ha ih
+    rw [Finset.sum_insert ha, Finset.sum_insert ha, mk_add, ih]
+
+/-- A reduced representative of the power-of-two cyclotomic ring has `natDegree` below the ring
+dimension `2^α`. -/
+theorem natDegree_val_toPoly_lt (α : ℕ) (a : Rq (powTwoCyclotomic (R := R) α)) :
+    a.1.toPoly.natDegree < (powTwoCyclotomic (R := R) α).φ.natDegree := by
+  rcases eq_or_ne a.1.toPoly 0 with h0 | hne
+  · rw [h0, Polynomial.natDegree_zero, powTwoCyclotomic_natDegree]
+    exact pow_pos (by norm_num) α
+  · rw [CompPoly.CPolynomial.natDegree_toPoly]
+    exact Polynomial.natDegree_lt_natDegree hne
+      ((powTwoCyclotomic (R := R) α).degree_toPoly_lt_of_reduced a.2)
 
 end Rq
 

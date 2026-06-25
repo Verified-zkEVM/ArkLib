@@ -9,7 +9,7 @@ source_metadata: ../sources/NOZ26/metadata.yml
 status: seeded
 related_modules:
   - ArkLib/ProofSystem/RingSwitching/Profile.lean
-  - ArkLib/Data/Lattices/CyclotomicRing/Modulus.lean
+  - ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean
   - ArkLib/CommitmentScheme/Ajtai/Gadget.lean
   - ArkLib/CommitmentScheme/Ajtai/InnerOuter/Scheme.lean
   - ArkLib/CommitmentScheme/Ajtai/InnerOuter/Security.lean
@@ -50,7 +50,7 @@ Ring-switching layer:
 ## Main ArkLib Touchpoints
 
 - [`../../../ArkLib/ProofSystem/RingSwitching/Profile.lean`](../../../ArkLib/ProofSystem/RingSwitching/Profile.lean)
-- [`ArkLib/Data/Lattices/CyclotomicRing/Modulus.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Modulus.lean)
+- [`ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean)
   — `powTwoCyclotomic`.
 - [`ArkLib/CommitmentScheme/Ajtai/Gadget.lean`](../../../ArkLib/CommitmentScheme/Ajtai/Gadget.lean)
   — the gadget matrix and `gadgetDecompose`.

@@ -123,11 +123,11 @@ theorem perfectlyCorrect_of_lawful (base : ZMod q) (βSq γ κ : Nat)
     (decomp : Decomposition Φ messageRows messageDigits innerRows innerDigits)
     (hMessageDecomp : IsLawfulGadgetDecomposition Φ base decomp.message)
     (hInnerDecomp : IsLawfulGadgetDecomposition Φ base decomp.inner)
-    (hκpos : 0 < Rq.l1Norm Φ (1 : Rq Φ))
-    (hκle : Rq.l1Norm Φ (1 : Rq Φ) ≤ κ)
+    (hκpos : 0 < ‖(1 : Rq Φ)‖₁)
+    (hκle : ‖(1 : Rq Φ)‖₁ ≤ κ)
     (hβ : ∀ (pp : PublicParams Φ innerRows messageRows messageDigits outerRows blocks innerDigits)
             (m : Message Φ messageRows blocks) (i : Fin blocks),
-            vecL2NormSq Φ ((generateDecomps Φ decomp pp m).message i) ≤ βSq)
+            ‖(generateDecomps Φ decomp pp m).message i‖₂² ≤ βSq)
     (hγ : ∀ (pp : PublicParams Φ innerRows messageRows messageDigits outerRows blocks innerDigits)
             (m : Message Φ messageRows blocks),
             vecLInftyNorm Φ
@@ -146,7 +146,7 @@ theorem perfectlyCorrect_of_lawful (base : ZMod q) (βSq γ κ : Nat)
     exact generateDecomps_derivedMessage Φ base decomp hMessageDecomp pp m i
   · -- the honest opening (challenge `cᵢ = 1`) passes weak verification
     have hone : ∀ (v : PolyVec (Rq Φ) (messageRows * messageDigits)),
-        scalarVecMul (1 : Rq Φ) v = v := fun v => by funext j; simp
+        (1 : Rq Φ) •ᵥ v = v := fun v => by funext j; simp
     simp only [verify_weak, Bool.and_eq_true]
     refine ⟨⟨?_, ?_⟩, ?_⟩
     · rw [List.all_eq_true]
@@ -170,11 +170,10 @@ theorem perfectlyCorrect_of_digits (base : ZMod q) (βSq γ κ : Nat)
     (hdeg : 1 ≤ Φ.φ.natDegree) (hmsg : 0 < messageDigits) (hinner : 0 < innerDigits)
     (ddMsg : DigitDecomposition base messageDigits)
     (ddInner : DigitDecomposition base innerDigits)
-    (hκpos : 0 < Rq.l1Norm Φ (1 : Rq Φ)) (hκle : Rq.l1Norm Φ (1 : Rq Φ) ≤ κ)
+    (hκpos : 0 < ‖(1 : Rq Φ)‖₁) (hκle : ‖(1 : Rq Φ)‖₁ ≤ κ)
     (hβ : ∀ (pp : PublicParams Φ innerRows messageRows messageDigits outerRows blocks innerDigits)
             (m : Message Φ messageRows blocks) (i : Fin blocks),
-            vecL2NormSq Φ
-              ((generateDecomps Φ (Decomposition.ofDigits Φ ddMsg ddInner) pp m).message i) ≤ βSq)
+            ‖(generateDecomps Φ (Decomposition.ofDigits Φ ddMsg ddInner) pp m).message i‖₂² ≤ βSq)
     (hγ : ∀ (pp : PublicParams Φ innerRows messageRows messageDigits outerRows blocks innerDigits)
             (m : Message Φ messageRows blocks),
             vecLInftyNorm Φ (PolyVec.flattenBlocks
