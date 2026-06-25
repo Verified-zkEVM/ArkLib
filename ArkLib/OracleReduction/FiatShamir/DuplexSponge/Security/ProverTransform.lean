@@ -93,7 +93,7 @@ def backtrackOutputMessagesInImage
     (out : BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) : Bool :=
   let before : List pSpec.MessageIdx := messageIdxListBefore (pSpec := pSpec) out.roundIdx
   before.attach.all fun ⟨j, hj⟩ =>
-    let hlt := (Finset.mem_filter.mp (Finset.mem_toList.mp hj)).2
+    let hlt : j.1 < out.roundIdx.1 := of_decide_eq_true (List.mem_filter.mp hj).2
     inImage j (out.encodedMessages ⟨j, hlt⟩)
 
 /-- CO25 §5.4 Items 4(d)/(e) — paper predicate `∀ ι ∈ [i], α̂_ι ∈ Im(φ_ι)`, decided as a

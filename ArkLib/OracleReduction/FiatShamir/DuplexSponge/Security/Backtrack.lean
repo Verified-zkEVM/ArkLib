@@ -34,8 +34,7 @@ variable {StmtIn : Type}
   [HasMessageSize pSpec] [HasChallengeSize pSpec]
   {δ : Nat}
 
-noncomputable section CoreDefinitions
-
+section CoreDefinitions
 /-- A backtracking sequence (Definition 5.3) for a given hash-duplex-sponge oracle trace `tr` and
   final duplex-sponge state `s` consists of the following data:
 - An input statement `𝕩`
@@ -83,6 +82,8 @@ structure BacktrackSequence (trace : QueryLog (duplexSpongeChallengeOracle StmtI
     for all `ι < m_k`. CO25 Def 5.3 condition (e). -/
   capacitySegment_input_ne_output : ∀ i : Fin outputState.length,
     inputState[i].capacitySegment ≠ outputState[i].capacitySegment
+
+noncomputable section
 
 /-- The flattened sequence of states: `[s_{in,0}, s_{out,0}, s_{in,1}, s_{out,1}, ..., s]`. -/
 def BacktrackSequence.flattenStateSequence
@@ -332,16 +333,17 @@ abbrev BacktrackIndexList
 open Classical in
 /-- Definition 5.4: `J_BT(tr,s)` — the image of `S_BT(tr,s)` under `BacktrackSequence.Index`.
 Every sequence in `S_BT` is paired with its unique index list; no sequence is omitted. -/
-noncomputable def J_BT
+def J_BT
     {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
     {state : CanonicalSpongeState U}
     (family : BacktrackSequenceFamily trace state) :
     Finset (Sigma fun seq : BacktrackSequence trace state => BacktrackIndexList trace seq) :=
   family.seqFamily.image (fun seq => ⟨seq, BacktrackSequence.Index trace state seq⟩)
 
+end
 end CoreDefinitions
 
-noncomputable section BacktrackProcedure
+section BacktrackProcedure
 
 variable [DecidableEq StmtIn] [DecidableEq U] {T_H T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
@@ -416,8 +418,9 @@ each fold step adds exactly one pair to the multiset. So induction on the trace
 connects multiset membership back to the original trace entry. -/
 
 /-- An intermediate data structure representing a partially constructed backtrack sequence.
-It carries all incremental properties of a valid chain from `head` to `targetState`, without the hash anchor.
-This allows us to construct the sequence iteratively via prepending (`::`), making structural induction proofs trivial. -/
+It carries all incremental properties of a valid chain from `head` to
+`targetState`, without the hash anchor. This allows us to construct the sequence
+iteratively via prepending (`::`), making structural induction proofs trivial. -/
 private structure PartialBacktrackSequence (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (head targetState : CanonicalSpongeState U) where
   inputState : List (CanonicalSpongeState U)
@@ -450,7 +453,7 @@ private def emptyPartialSequence (trace : QueryLog (duplexSpongeChallengeOracle 
     capacitySegment_output_eq_input := by intro i; exact i.elim0
     capacitySegment_input_ne_output := by intro i; exact i.elim0 }
 
-private noncomputable def prependPartialSequence
+private def prependPartialSequence
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (targetState seq_head : CanonicalSpongeState U)
     (s_in s_out : CanonicalSpongeState U)
@@ -511,7 +514,7 @@ private noncomputable def prependPartialSequence
             omega
           exact seq.capacitySegment_input_ne_output ⟨i', hi'⟩ }
 
-private noncomputable def completeBacktrackSequence
+private def completeBacktrackSequence
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (targetState head : CanonicalSpongeState U)
     (stmt : StmtIn)
@@ -543,7 +546,8 @@ private noncomputable def completeBacktrackSequence
 
 /-! ### Bridge lemmas: `classifyLookup` + `filterMap` → entry membership -/
 
-private lemma classifyLookup_filterMap_singleton_mem {α β : Type _} [DecidableEq β]
+omit [SpongeSize] in
+private lemma classifyLookup_filterMap_singleton_mem {α β : Type _}
     (l : List α) (f : α → Option β) (b : β)
     (h : classifyLookup (l.filterMap f) = .unique b) :
     ∃ a ∈ l, f a = some b := by
@@ -650,7 +654,8 @@ private def linearScanBackwards
           else
             have hMatch : s_out.capacitySegment = currentState.capacitySegment :=
               (pred_unique_mem_and_cap trΔ currentState.capacitySegment s_in s_out hClsPred).2
-            have hEntry : ⟨.inr (.inl s_in), s_out⟩ ∈ trace ∨ ⟨.inr (.inr s_out), s_in⟩ ∈ trace := by
+            have hEntry : ⟨.inr (.inl s_in), s_out⟩ ∈ trace ∨
+              ⟨.inr (.inr s_out), s_in⟩ ∈ trace := by
               have hMem : (s_in, s_out) ∈
                 TraceTableOps.entries (V := CanonicalSpongeState U) trΔ.p :=
                 (pred_unique_mem_and_cap trΔ currentState.capacitySegment s_in s_out hClsPred).1
@@ -710,13 +715,18 @@ end S_BT_BacktrackComputation
 private def Lδ : Nat := Nat.ceil ((δ : ℚ) / SpongeSize.R)
 
 private def challengeIdxList : List pSpec.ChallengeIdx :=
-  (Finset.univ : Finset pSpec.ChallengeIdx).toList
+  (List.finRange n).filterMap fun i =>
+    if h : pSpec.dir i = .V_to_P then some (⟨i, h⟩ : pSpec.ChallengeIdx) else none
+
+private def messageIdxList : List pSpec.MessageIdx :=
+  (List.finRange n).filterMap fun i =>
+    if h : pSpec.dir i = .P_to_V then some (⟨i, h⟩ : pSpec.MessageIdx) else none
 
 def messageIdxListBefore (i : pSpec.ChallengeIdx) : List pSpec.MessageIdx :=
-  ((Finset.univ : Finset pSpec.MessageIdx).filter (fun j => j.1 < i.1)).toList
+  messageIdxList.filter fun j => decide (j.1 < i.1)
 
 private def challengeIdxListBefore (i : pSpec.ChallengeIdx) : List pSpec.ChallengeIdx :=
-  ((Finset.univ : Finset pSpec.ChallengeIdx).filter (fun j => j.1 < i.1)).toList
+  challengeIdxList.filter fun j => decide (j.1 < i.1)
 
 private def lastMessageBefore? (i : pSpec.ChallengeIdx) : Option pSpec.MessageIdx :=
   (messageIdxListBefore (pSpec := pSpec) i).getLast?
@@ -726,8 +736,6 @@ private def sumMessageBlocksBefore (i : pSpec.ChallengeIdx) : Nat :=
 
 private def sumChallengeBlocksBefore (i : pSpec.ChallengeIdx) : Nat :=
   (challengeIdxListBefore (pSpec := pSpec) i).foldl (fun acc j => acc + pSpec.Lᵥᵢ j) 0
-
-
 
 /-- BackTrack §5.2 Step 1: initialize the input-state list for a candidate chain. -/
 private def backtrackStep1Init
@@ -743,7 +751,7 @@ private def guardH (P : Prop) [Decidable P] : Option (PLift P) :=
 `some ⟨v, hLen⟩` carrying a proof that `xs` actually had at least `len` elements, so callers
 can use `do`-notation while still recovering the length bound. -/
 private def vectorOfListExact
-    (len : Nat) (xs : List U) : Option { v : Vector U len // len ≤ xs.length } := by
+    (len : Nat) (xs : List U) : Option { _v : Vector U len // len ≤ xs.length } := by
   let ys := xs.take len
   if hLen : ys.length = len then
     refine some ⟨⟨ys.toArray, ?_⟩, ?_⟩
@@ -769,6 +777,7 @@ private def BacktrackSequence.rateUnits
     (seq : BacktrackSequence trace state) : List U :=
   rateUnitsOf seq.inputState
 
+omit [DecidableEq U] in
 /-- Generalized form: rate-segment concatenation over any state list with any accumulator. -/
 private lemma rateConcat_length_aux
     (xs : List (CanonicalSpongeState U)) (acc : List U) :
@@ -783,6 +792,7 @@ private lemma rateConcat_length_aux
     rw [List.length_append, hRate, List.length_cons]
     ring
 
+omit [DecidableEq U] in
 /-- `|rateUnitsOf xs| = |xs| · R` — reusable helper for `Lδ` block-count bounds. -/
 private lemma rateUnitsOf_length (xs : List (CanonicalSpongeState U)) :
     (rateUnitsOf (U := U) xs).length = xs.length * SpongeSize.R := by
@@ -791,6 +801,7 @@ private lemma rateUnitsOf_length (xs : List (CanonicalSpongeState U)) :
   rw [List.length_nil, Nat.zero_add] at this
   exact this
 
+omit [DecidableEq StmtIn] [DecidableEq U] in
 /-- `|seq.rateUnits| = |seq.inputState| · R`. -/
 private lemma BacktrackSequence.rateUnits_length
     {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
@@ -813,6 +824,7 @@ private lemma Lδ_ge_two_of_gt_R (h : SpongeSize.R < δ) : 2 ≤ Lδ (δ := δ) 
   -- `⌈x⌉ ≥ 2` when `x > 1`.
   exact Nat.add_one_le_iff.mpr (Nat.lt_ceil.mpr (by exact_mod_cast hδ_gt))
 
+omit [DecidableEq StmtIn] [DecidableEq U] in
 /-- From `δ ≤ |seq.rateUnits|`, the rate-block count of an `inputState`
 chain satisfies `Lδ ≤ |inputState|`. -/
 private lemma Lδ_le_inputState_length
@@ -1006,7 +1018,7 @@ After the scan, `hashAnchorCandidates` is classified the same way over `tr_∇.h
 existing `constructCandidateSalt` + `extractCandidate` extractors are run; their `none` becomes
 `noResult`. Scan-time forks are a strict over-approximation of CO25 `E_fork,p ∪ E_fork,h,p ⊆
 E_fork`, so the soundness bound of Theorem 5.19 is preserved. -/
-private noncomputable def linearBackTrack
+private def linearBackTrack
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (trΔ : TraceNabla T_H T_P StmtIn U)
     (h_trΔ : trΔ.IsSubsetOfQueryLog trace)
@@ -1014,7 +1026,8 @@ private noncomputable def linearBackTrack
     (depthBound : Nat := trace.length + 1) :
     ExperimentOutput (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) := by
   exact
-    match linearScanBackwards trace trΔ h_trΔ depthBound state state [state.capacitySegment] (emptyPartialSequence trace state) with
+    match linearScanBackwards trace trΔ h_trΔ depthBound state state
+      [state.capacitySegment] (emptyPartialSequence trace state) with
     | .forkErr => ExperimentOutput.err
     | .noResult => ExperimentOutput.noResult
     | .done seq =>
@@ -1026,7 +1039,6 @@ private noncomputable def linearBackTrack
           | none => ExperimentOutput.noResult
           | some out => ExperimentOutput.some out
 
-open Classical in
 /-- The backtracking procedure in Section 5.2, which takes in:
 - the query-answer trace for the oracle `(h, p, p⁻¹)`
 - a state (vector of `N` units)

@@ -16,9 +16,10 @@ This file contains the lookahead sequence family `S_LA(tr_∇.p, s, i)` and the 
 ## Declaration order (top-to-bottom, matching CO25 §5.3 Algorithm 2)
 
 1. **Paper structures** — `LookaheadSequence` (Eq. 13 chain), `LookaheadSequenceFamily`
-   (the maximal family), and the abbrev `S_LA(tr_∇.p, s, i)`.
-2. **§5.3 Step 1** — `LookAheadSequenceFamily.compute` parses `tr_∇.p` into the maximal family `S_LA(tr_∇.p, s, i)`.
-   Internal helpers: `successorCandidates`, `singletonLookaheadSequence`,
+  (the maximal family), and the abbrev `S_LA(tr_∇.p, s, i)`.
+2. **§5.3 Step 1** — `LookAheadSequenceFamily.compute` parses `tr_∇.p`
+  into the maximal family `S_LA(tr_∇.p, s, i)`.
+  Internal helpers: `successorCandidates`, `singletonLookaheadSequence`,
    `prependLookaheadSequence`, `LookaheadCandidate`, `buildLookaheadCandidates`,
    `enumerateLookaheadCandidates`.
 3. **§5.3 Step 2** — `lookAhead` dispatches on `|S_LA|`: `err` (multiple), `none` (empty),
@@ -44,7 +45,7 @@ variable {StmtIn : Type}
   {U : Type} [SpongeUnit U] [SpongeSize] [DecidableEq U]
   [HasChallengeSize pSpec]
 
-noncomputable section
+section
 
 /-! ## §5.3 paper structures — `LookaheadSequence`, `S_LA(tr_∇.p, s, i)` -/
 
@@ -143,9 +144,8 @@ Unlike `TraceTableOps.inlu`, this keeps all forward matches so multiple successo
 `S_LA` and are reported as paper-`err` by Step 2. -/
 private def successorCandidates
     (trΔp : T_P) (current : CanonicalSpongeState U) :
-    List (CanonicalSpongeState U) := by
-  classical
-  exact (TraceTableOps.entries (V := CanonicalSpongeState U) trΔp).filterMap fun pair =>
+    List (CanonicalSpongeState U) :=
+  (TraceTableOps.entries (V := CanonicalSpongeState U) trΔp).filterMap fun pair =>
     if pair.1 = current then
       some pair.2
     else none
@@ -355,8 +355,10 @@ The paper's Algorithm 2 enumerates the maximal family then post-filters. CO25 li
 directly. This is paper-faithful: scan-time fork detection coincides with `E_fork,p`. -/
 
 
-/-- Output of linear forwards scan: either a fork was detected, or scan terminated with an optional sequence. -/
-private inductive LinearForwardScanResult {T_P : Type} [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+/-- Output of linear forwards scan: either a fork was detected,
+or scan terminated with an optional sequence. -/
+private inductive LinearForwardScanResult {T_P : Type}
+  [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (trΔp : T_P) (state : CanonicalSpongeState U) where
   | forkErr
   | done (seq? : Option (LookaheadSequence trΔp state))
