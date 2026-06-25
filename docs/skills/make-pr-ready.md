@@ -22,6 +22,19 @@ Work through these in order. Do not stop until every item is complete.
   a stale local `main` inflates the file list and can report phantom `_generated/` drift that
   actually matches the remote. Use `git diff --stat origin/main...HEAD` for scope and
   `git diff --quiet origin/main...HEAD -- docs/kb/_generated/` for the CI guard's real view.
+- **Also account for uncommitted work.** `origin/main...HEAD` (three-dot) only shows *committed*
+  changes; a make-pr-ready pass often runs with staged/working-tree edits still in flight (e.g. a
+  half-finished file). Those appear only in `git diff HEAD` (or `git diff origin/main`, two-dot).
+  Compute the real PR surface as the **union** of `git diff --stat origin/main...HEAD` (committed)
+  and `git diff --stat HEAD` (uncommitted), and audit/lint every file in that union — not just the
+  committed ones. The whole-tree view is `git diff --stat origin/main`.
+- **If `_generated/` drift is already committed** (the branch committed regenerated outputs, not
+  just dirtied the working tree), `git checkout origin/main -- docs/kb/_generated/` stages a
+  *revert*, and you must **commit it** for the guard to pass — the guard compares the committed
+  branch tip to `main`, so an uncommitted revert leaves HEAD still drifted. After staging the
+  revert, `git diff --cached --stat` shows huge index-vs-HEAD numbers for `_generated/` — that is
+  the size of the revert, **not** new drift; do not panic. Confirm the post-commit guard view with
+  `git diff --cached --quiet origin/main -- docs/kb/_generated/` (must be clean).
 
 ### 1. Follow the contribution guidelines
 
@@ -111,6 +124,15 @@ Work through these in order. Do not stop until every item is complete.
   keys yourself: grep each `[KEY]` used in docstrings against `blueprint/src/references.bib` and
   add any missing entry (then regenerate). A key can be "present-looking" but actually a different
   paper — confirm the entry's title/authors match the citation, not just that the key exists.
+- Also check the **reverse direction — orphan entries**: a BibTeX key (and/or a scaffolded
+  `docs/kb/papers/<KEY>.md` + `docs/kb/sources/<KEY>/` page) that **no** `[KEY]` in any `.lean`
+  docstring or blueprint `.tex` actually cites. `kb/lint` passes on these (they are internally
+  consistent), but they are cruft a reviewer will question — especially a kb page whose
+  `related_modules` frontmatter points at files that do not cite it. For each orphan, decide with
+  the author whether to (a) wire it in as a real `[KEY]` citation in the relevant file (+ a
+  `## References` section), or (b) remove it: drop the bib entry and `git rm` the
+  `papers/<KEY>.md` + `sources/<KEY>/` pages. After removing, grep tracked files for any markdown
+  link to the deleted page (`check-docs-integrity.py` fails on a broken link).
 - If you **moved or renamed** any `.lean` file, regeneration does **not** fix hand-maintained
   `docs/kb/papers/*.md` pages (they are scaffolded once, then curated). Grep `docs/**/*.md` for the
   old path and update curated links + `related_modules` frontmatter — the default `validate.sh`

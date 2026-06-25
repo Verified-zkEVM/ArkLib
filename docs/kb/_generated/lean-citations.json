@@ -1,8 +1,8 @@
 {
   "counts": {
-    "files_with_citations": 76,
-    "keys_cited": 26,
-    "total_citation_edges": 108
+    "files_with_citations": 74,
+    "keys_cited": 25,
+    "total_citation_edges": 104
   },
   "files": {
     "ArkLib/AGM/Basic.lean": [
@@ -203,14 +203,6 @@
     "ArkLib/OracleReduction/Basic.lean": [
       "BCS16"
     ],
-    "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean": [
-      "FMN24",
-      "NOZ26"
-    ],
-    "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean": [
-      "FMN24",
-      "NOZ26"
-    ],
     "ArkLib/OracleReduction/VectorIOR.lean": [
       "BCS16"
     ],
@@ -345,10 +337,6 @@
       "ArkLib/ProofSystem/Binius/FRIBinius/General.lean",
       "ArkLib/ProofSystem/Binius/RingSwitching/General.lean"
     ],
-    "FMN24": [
-      "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean",
-      "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean"
-    ],
     "FRI1216": [
       "ArkLib/ProofSystem/Fri/Spec/SingleRound.lean"
     ],
@@ -394,9 +382,7 @@
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/LyubashevskySeiler.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/MicciancioYoung.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds.lean",
-      "ArkLib/Data/Lattices/ModuleSIS.lean",
-      "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean",
-      "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean"
+      "ArkLib/Data/Lattices/ModuleSIS.lean"
     ],
     "NS24": [
       "ArkLib/CommitmentScheme/Ajtai/Gadget.lean",

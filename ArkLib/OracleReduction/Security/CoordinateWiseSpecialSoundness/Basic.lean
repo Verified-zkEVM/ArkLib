@@ -104,6 +104,21 @@ theorem isSpecialSoundFamily_one {k : ℕ} (c : Fin (1 * (k - 1) + 1) → (Fin 1
     refine ⟨J, heJ, hcard, fun j hj => ⟨hdiff j hj, fun j' hj' => ?_⟩⟩
     exact absurd (Subsingleton.elim _ _) hj'
 
+/-- For a single coordinate (`ℓ = 1`), membership in the special-sound family `SS(S, 1, k)` is
+  exactly injectivity of the `k` challenge vectors: a central vector together with `k-1` siblings
+  differing in the unique coordinate is just `k` pairwise-distinct values. This is the cleaner
+  `ℓ = 1` characterization underlying the bridge to plain `k`-special soundness. -/
+theorem isSpecialSoundFamily_one_iff_injective {k : ℕ}
+    (c : Fin (1 * (k - 1) + 1) → (Fin 1 → S)) :
+    IsSpecialSoundFamily 1 k c ↔ Function.Injective c := by
+  rw [isSpecialSoundFamily_one]
+  refine ⟨fun h => h.1, fun hinj => ⟨hinj, 0, Finset.univ.erase 0,
+    Finset.notMem_erase _ _, ?_, ?_⟩⟩
+  · rw [Finset.card_erase_of_mem (Finset.mem_univ _), Finset.card_univ, Fintype.card_fin]; omega
+  · intro j hj h0
+    exact (Finset.ne_of_mem_erase hj)
+      (hinj (funext fun x => by obtain rfl : x = 0 := Subsingleton.elim x 0; exact h0)).symm
+
 end CoordinateWise
 
 /-! ## Coordinate-wise structure on a protocol -/
@@ -185,31 +200,6 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
   [∀ i, SampleableType (pSpec.Challenge i)]
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-
-/-- A verifier is **tree special sound** with respect to a generic challenge-tree shape `S`, an
-  input relation `relIn` and an output relation `relOut` if there is a tree-based extractor `E`
-  such that: for every input statement `stmtIn` and every tree of transcripts that is
-
-  - `S`-structured (its sibling challenges satisfy the shape's `nodeOk` predicate), and
-  - accepting (the verifier accepts every root-to-leaf transcript, landing in `relOut.language`),
-
-  the extracted witness `E stmtIn tree` satisfies `(stmtIn, E stmtIn tree) ∈ relIn`.
-
-  This is the shape-generic core of tree-based knowledge extraction. Coordinate-wise special
-  soundness (`coordinateWiseSpecialSound` below) is the instance obtained by supplying the CWSS
-  shape `D.toShape`; plain `k`-special soundness is another instance. Phrasing the notion over an
-  arbitrary `ChallengeTreeShape` is what lets the composition theory be proved once generically
-  (see `Verifier.append_treeSpecialSound`) and reused by each concrete notion.
--/
-def treeSpecialSound (S : ChallengeTreeShape pSpec)
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec) : Prop :=
-  ∃ E : Extractor.TreeBased StmtIn WitIn pSpec S.arity,
-  ∀ stmtIn : StmtIn,
-  ∀ tree : ChallengeTree pSpec S.arity 0,
-    tree.IsStructured S →
-    tree.IsAccepting init impl verifier stmtIn relOut.language →
-      (stmtIn, E stmtIn tree) ∈ relIn
 
 /-- A verifier is **coordinate-wise special sound** with respect to a coordinate-wise structure `D`,
   an input relation `relIn` and an output relation `relOut` if it is tree-special-sound for the

@@ -780,13 +780,14 @@ theorem leftPrefix_concat {i : Fin m} (pre : Transcript i.castSucc pSpec₁)
 
 /-- Two casts into a common type are equal as soon as their arguments are `HEq`. Lets cast-equality
 goals be discharged by reasoning about the (cast-free) underlying values. -/
-theorem castEq {α α' β : Sort _} (h1 : α = β) (h2 : α' = β) {a : α} {a' : α'}
+theorem cast_eq_cast_of_heq {α α' β : Sort _} (h1 : α = β) (h2 : α' = β) {a : α} {a' : α'}
     (h : HEq a a') : cast h1 a = cast h2 a' :=
   eq_of_heq ((cast_heq h1 a).trans (h.trans (cast_heq h2 a').symm))
 
 /-- `rightPrefix` commutes with extending the right prefix by one round. The
 `rightPrefix`/`Fin.snoc` `dite`s are split by `split_ifs`; contradictory combinations close by
-`omega` (with `idx`'s bound), matching ones by `castEq` (stripping casts to a base `HEq`, then
+`omega` (with `idx`'s bound), matching ones by `cast_eq_cast_of_heq` (stripping casts to a base
+`HEq`, then
 `rfl`/index `omega`). -/
 theorem rightPrefix_concat (tr₁ : FullTranscript pSpec₁) {i : Fin n}
     (pre₂ : Transcript i.castSucc pSpec₂) (x : pSpec₂.«Type» i) :
@@ -803,7 +804,7 @@ theorem rightPrefix_concat (tr₁ : FullTranscript pSpec₁) {i : Fin n}
     first
       | (exfalso; omega)
       | rfl
-      | (apply castEq
+      | (apply cast_eq_cast_of_heq
          try simp only [cast_heq_iff_heq]
          first
            | rfl

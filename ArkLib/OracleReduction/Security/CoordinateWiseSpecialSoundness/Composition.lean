@@ -125,26 +125,32 @@ section AppendChar
 
 variable (D₁ : CWSSStructure pSpec₁) (D₂ : CWSSStructure pSpec₂)
 
+/-- The appended structure's coordinate index at a left index is the left component's. -/
 @[simp] theorem append_coordIndex_inl (i₁ : pSpec₁.ChallengeIdx) :
     (append D₁ D₂).coordIndex (ChallengeIdx.inl i₁) = D₁.coordIndex i₁ := by
   simp only [append, ChallengeIdx.sumEquiv_symm_inl]
 
+/-- The appended structure's coordinate index at a right index is the right component's. -/
 @[simp] theorem append_coordIndex_inr (i₂ : pSpec₂.ChallengeIdx) :
     (append D₁ D₂).coordIndex (ChallengeIdx.inr i₂) = D₂.coordIndex i₂ := by
   simp only [append, ChallengeIdx.sumEquiv_symm_inr]
 
+/-- The appended structure's alphabet at a left index is the left component's. -/
 @[simp] theorem append_alphabet_inl (i₁ : pSpec₁.ChallengeIdx) :
     (append D₁ D₂).alphabet (ChallengeIdx.inl i₁) = D₁.alphabet i₁ := by
   simp only [append, ChallengeIdx.sumEquiv_symm_inl]
 
+/-- The appended structure's alphabet at a right index is the right component's. -/
 @[simp] theorem append_alphabet_inr (i₂ : pSpec₂.ChallengeIdx) :
     (append D₁ D₂).alphabet (ChallengeIdx.inr i₂) = D₂.alphabet i₂ := by
   simp only [append, ChallengeIdx.sumEquiv_symm_inr]
 
+/-- The appended structure's soundness parameter at a left index is the left component's. -/
 @[simp] theorem append_soundnessParam_inl (i₁ : pSpec₁.ChallengeIdx) :
     (append D₁ D₂).soundnessParam (ChallengeIdx.inl i₁) = D₁.soundnessParam i₁ := by
   simp only [append, ChallengeIdx.sumEquiv_symm_inl]
 
+/-- The appended structure's soundness parameter at a right index is the right component's. -/
 @[simp] theorem append_soundnessParam_inr (i₂ : pSpec₂.ChallengeIdx) :
     (append D₁ D₂).soundnessParam (ChallengeIdx.inr i₂) = D₂.soundnessParam i₂ := by
   simp only [append, ChallengeIdx.sumEquiv_symm_inr]
@@ -159,6 +165,7 @@ theorem append_decompose_heqL {i : (pSpec₁ ++ₚ pSpec₂).ChallengeIdx} {i₁
   rw [h]
   exact HEq.rfl
 
+/-- The appended `decompose` at a left index is the left component's `decompose`, up to cast. -/
 theorem append_decompose_inl (i₁ : pSpec₁.ChallengeIdx) :
     HEq ((append D₁ D₂).decompose (ChallengeIdx.inl i₁)) (D₁.decompose i₁) :=
   append_decompose_heqL D₁ D₂ (ChallengeIdx.sumEquiv_symm_inl i₁)

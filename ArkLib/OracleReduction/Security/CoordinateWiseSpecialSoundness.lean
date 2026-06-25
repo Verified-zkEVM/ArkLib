@@ -16,9 +16,9 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Compositio
 
   * `Basic` — the notion: the `SS(S, ℓ, k)` combinatorics (`CoordEq`, `IsSpecialSoundFamily`), the
     intrinsic `CWSSStructure` (per-round challenge decomposition with built-in valid soundness
-    parameters) and its induced `ChallengeTreeShape` (`CWSSStructure.toShape`), the shape-generic
-    core `Verifier.treeSpecialSound`, and the CWSS predicate `Verifier.coordinateWiseSpecialSound`
-    obtained by instantiating that core at `D.toShape`.
+    parameters) and its induced `ChallengeTreeShape` (`CWSSStructure.toShape`), and the CWSS
+    predicate `Verifier.coordinateWiseSpecialSound` obtained by instantiating the shape-generic core
+    `Verifier.treeSpecialSound` (`Security.TranscriptTree`) at `D.toShape`.
   * `Composition` — transport of CWSS structures across sequential composition
     (`CWSSStructure.append` / `seqCompose`), their agreement with the generic appended shape
     (`toShape_append` / `toShape_seqCompose`), and preservation of CWSS under binary verifier append

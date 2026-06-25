@@ -51,6 +51,10 @@ import ArkLib.OracleReduction.Security.Basic
     language with probability one.
   - `Extractor.TreeBased` — the deterministic tree-consuming extractor shared by all tree-based
     notions.
+  - `Verifier.treeSpecialSound` — the shape-generic tree-soundness predicate: a tree-based extractor
+    that, on every `S`-structured accepting tree, recovers a witness. Plain special soundness
+    (`Security.SpecialSoundness`) and coordinate-wise special soundness
+    (`Security.CoordinateWiseSpecialSoundness`) are both instances, for different shapes.
 
   ## Caveat
 
@@ -275,3 +279,40 @@ def TreeBased (StmtIn WitIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
   StmtIn → ProtocolSpec.ChallengeTree pSpec arity 0 → WitIn
 
 end Extractor
+
+namespace Verifier
+
+open ProtocolSpec ProtocolSpec.ChallengeTree
+
+variable {ι : Type} {oSpec : OracleSpec ι}
+  {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
+  [∀ i, SampleableType (pSpec.Challenge i)]
+  {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+
+/-- A verifier is **tree special sound** with respect to a generic challenge-tree shape `S`, an
+  input relation `relIn` and an output relation `relOut` if there is a tree-based extractor `E`
+  such that: for every input statement `stmtIn` and every tree of transcripts that is
+
+  - `S`-structured (its sibling challenges satisfy the shape's `nodeOk` predicate), and
+  - accepting (the verifier accepts every root-to-leaf transcript, landing in `relOut.language`),
+
+  the extracted witness `E stmtIn tree` satisfies `(stmtIn, E stmtIn tree) ∈ relIn`.
+
+  This is the shape-generic core of tree-based knowledge extraction: every concrete special-
+  soundness-style notion is an instance obtained by supplying a shape. Plain `k`-special soundness
+  (`Verifier.specialSound`, `Security.SpecialSoundness`) supplies the pairwise-distinct shape;
+  coordinate-wise special soundness (`Verifier.coordinateWiseSpecialSound`,
+  `Security.CoordinateWiseSpecialSoundness`) supplies the CWSS shape `D.toShape`. Phrasing the
+  notion over an arbitrary `ChallengeTreeShape` is what lets the composition theory be proved once
+  generically (see `Verifier.append_treeSpecialSound`) and reused by each concrete notion. -/
+def treeSpecialSound (S : ChallengeTreeShape pSpec)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec) : Prop :=
+  ∃ E : Extractor.TreeBased StmtIn WitIn pSpec S.arity,
+  ∀ stmtIn : StmtIn,
+  ∀ tree : ChallengeTree pSpec S.arity 0,
+    tree.IsStructured S →
+    tree.IsAccepting init impl verifier stmtIn relOut.language →
+      (stmtIn, E stmtIn tree) ∈ relIn
+
+end Verifier

@@ -1,5 +1,5 @@
 {
-  "count": 51,
+  "count": 50,
   "entries": {
     "ACFY24": {
       "authors": [
@@ -71,29 +71,6 @@
       "url": "",
       "venue": "Annual International Conference on the Theory and Applications of Cryptographic Techniques",
       "year": "2025"
-    },
-    "AFK22": {
-      "authors": [
-        "Attema, Thomas",
-        "Fehr, Serge",
-        "Kloo{\\ss}, Michael"
-      ],
-      "authors_text": "Attema, Thomas and Fehr, Serge and Kloo{\\ss}, Michael",
-      "doi": "",
-      "entry_type": "inproceedings",
-      "fields": {
-        "author": "Attema, Thomas and Fehr, Serge and Kloo{\\ss}, Michael",
-        "booktitle": "Theory of Cryptography Conference (TCC)",
-        "organization": "Springer",
-        "title": "Fiat-Shamir Transformation of Multi-Round Interactive Proofs",
-        "url": "https://eprint.iacr.org/2021/1377",
-        "year": "2022"
-      },
-      "key": "AFK22",
-      "title": "Fiat-Shamir Transformation of Multi-Round Interactive Proofs",
-      "url": "https://eprint.iacr.org/2021/1377",
-      "venue": "Theory of Cryptography Conference (TCC)",
-      "year": "2022"
     },
     "AHIV22": {
       "authors": [
@@ -500,23 +477,20 @@
         "Nguyen, Ngoc Khanh"
       ],
       "authors_text": "Fenzi, Giacomo and Moghaddas, Hossein and Nguyen, Ngoc Khanh",
-      "doi": "10.1007/s00145-024-09511-8",
+      "doi": "",
       "entry_type": "article",
       "fields": {
         "author": "Fenzi, Giacomo and Moghaddas, Hossein and Nguyen, Ngoc Khanh",
-        "doi": "10.1007/s00145-024-09511-8",
         "journal": "Journal of Cryptology",
         "number": "3",
         "pages": "31",
-        "publisher": "Springer",
-        "title": "Lattice-Based Polynomial Commitments: Towards Asymptotic and Concrete Efficiency",
-        "url": "https://eprint.iacr.org/2023/846",
+        "title": "Lattice-based polynomial commitments: Towards asymptotic and concrete efficiency",
         "volume": "37",
         "year": "2024"
       },
       "key": "FMN24",
-      "title": "Lattice-Based Polynomial Commitments: Towards Asymptotic and Concrete Efficiency",
-      "url": "https://eprint.iacr.org/2023/846",
+      "title": "Lattice-based polynomial commitments: Towards asymptotic and concrete efficiency",
+      "url": "",
       "venue": "Journal of Cryptology",
       "year": "2024"
     },

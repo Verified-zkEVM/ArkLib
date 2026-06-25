@@ -262,12 +262,14 @@ def ChallengeIdx.sumEquiv :
     simp [ChallengeIdx.inl, ChallengeIdx.inr, hi]
     congr; omega
 
+/-- `sumEquiv.symm` maps a left-embedded composed challenge index back to `Sum.inl`. -/
 @[simp]
 theorem ChallengeIdx.sumEquiv_symm_inl (i₁ : ChallengeIdx pSpec₁) :
     (ChallengeIdx.sumEquiv (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂)).symm (ChallengeIdx.inl i₁)
       = Sum.inl i₁ := by
   rw [Equiv.symm_apply_eq]; simp
 
+/-- `sumEquiv.symm` maps a right-embedded composed challenge index back to `Sum.inr`. -/
 @[simp]
 theorem ChallengeIdx.sumEquiv_symm_inr (i₂ : ChallengeIdx pSpec₂) :
     (ChallengeIdx.sumEquiv (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂)).symm (ChallengeIdx.inr i₂)
