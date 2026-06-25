@@ -4,9 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
 
-import ArkLib.CommitmentScheme.KZG.FunctionBinding.EvaluationBindingConflict
-import ArkLib.CommitmentScheme.KZG.FunctionBinding.TauInQueries
-import ArkLib.CommitmentScheme.KZG.FunctionBinding.DegreeConflict
+import ArkLib.Commitments.Functional.KZG.FunctionBinding.EvaluationBindingConflict
+import ArkLib.Commitments.Functional.KZG.FunctionBinding.TauInQueries
+import ArkLib.Commitments.Functional.KZG.FunctionBinding.DegreeConflict
 
 /-!
 # Function Binding for the KZG Polynomial Commitment Scheme

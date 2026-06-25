@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
 
-import ArkLib.CommitmentScheme.KZG.FunctionBinding.Support
+import ArkLib.Commitments.Functional.KZG.FunctionBinding.Support
 
 /-!
 # Tau-in-Queries Branch for KZG Function Binding

@@ -8,7 +8,7 @@ canonical_url: https://cacr.uwaterloo.ca/techreports/2010/cacr2010-10.pdf
 source_metadata: ../sources/KZG10TR/metadata.yml
 status: seeded
 related_modules:
-  - ArkLib/CommitmentScheme/KZG/Binding.lean
+  - ArkLib/Commitments/Functional/KZG/Binding.lean
 ---
 
 # KZG10TR
@@ -25,7 +25,7 @@ evaluation-binding reduction because this version includes the security proofs.
 
 ## Main ArkLib Touchpoints
 
-- [`ArkLib/CommitmentScheme/KZG/Binding.lean`](../../../ArkLib/CommitmentScheme/KZG/Binding.lean)
+- [`ArkLib/Commitments/Functional/KZG/Binding.lean`](../../../ArkLib/Commitments/Functional/KZG/Binding.lean)
   cites `KZG10TR` directly.
 
 ## Version Notes

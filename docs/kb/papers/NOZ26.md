@@ -10,9 +10,9 @@ status: seeded
 related_modules:
   - ArkLib/ProofSystem/RingSwitching/Profile.lean
   - ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean
-  - ArkLib/CommitmentScheme/Ajtai/Gadget.lean
-  - ArkLib/CommitmentScheme/Ajtai/InnerOuter/Scheme.lean
-  - ArkLib/CommitmentScheme/Ajtai/InnerOuter/Security.lean
+  - ArkLib/Commitments/Functional/Hachi/Gadget.lean
+  - ArkLib/Commitments/Functional/Hachi/InnerOuter/Scheme.lean
+  - ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean
 ---
 
 # NOZ26
@@ -52,9 +52,9 @@ Ring-switching layer:
 - [`../../../ArkLib/ProofSystem/RingSwitching/Profile.lean`](../../../ArkLib/ProofSystem/RingSwitching/Profile.lean)
 - [`ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean)
   — `powTwoCyclotomic`.
-- [`ArkLib/CommitmentScheme/Ajtai/Gadget.lean`](../../../ArkLib/CommitmentScheme/Ajtai/Gadget.lean)
+- [`ArkLib/Commitments/Functional/Hachi/Gadget.lean`](../../../ArkLib/Commitments/Functional/Hachi/Gadget.lean)
   — the gadget matrix and `gadgetDecompose`.
-- [`ArkLib/CommitmentScheme/Ajtai/InnerOuter/Security.lean`](../../../ArkLib/CommitmentScheme/Ajtai/InnerOuter/Security.lean)
+- [`ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean`](../../../ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean)
   — weak binding.
 - Concept page: [`../concepts/ring-switching.md`](../concepts/ring-switching.md)
 

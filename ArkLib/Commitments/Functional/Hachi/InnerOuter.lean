@@ -3,8 +3,8 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.CommitmentScheme.Ajtai.InnerOuter.Correctness
-import ArkLib.CommitmentScheme.Ajtai.InnerOuter.Security
+import ArkLib.Commitments.Functional.Hachi.InnerOuter.Correctness
+import ArkLib.Commitments.Functional.Hachi.InnerOuter.Security
 
 /-!
 # Inner-Outer Ajtai Commitment

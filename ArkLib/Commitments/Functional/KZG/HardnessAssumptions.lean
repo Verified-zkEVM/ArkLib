@@ -5,8 +5,8 @@ Authors: Tobias Rothmann
 -/
 
 import VCVio
-import ArkLib.CommitmentScheme.KZG.Algebra
-import ArkLib.CommitmentScheme.KZG.Sampling
+import ArkLib.Commitments.Functional.KZG.Algebra
+import ArkLib.Commitments.Functional.KZG.Sampling
 import ArkLib.Data.GroupTheory.PrimeOrder
 import ArkLib.Data.Classes.Serde
 import CompPoly.Univariate.Basic

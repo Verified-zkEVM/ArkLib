@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
 
-import ArkLib.CommitmentScheme.KZG.Basic
+import ArkLib.Commitments.Functional.KZG.Basic
 import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
 
 /-!

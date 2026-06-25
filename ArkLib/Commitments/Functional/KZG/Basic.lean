@@ -4,9 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann, Quang Dao
 -/
 
-import ArkLib.CommitmentScheme.Basic
-import ArkLib.CommitmentScheme.KZG.Algebra
-import ArkLib.CommitmentScheme.KZG.Sampling
+import ArkLib.Commitments.Functional.Basic
+import ArkLib.Commitments.Functional.KZG.Algebra
+import ArkLib.Commitments.Functional.KZG.Sampling
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.ToPoly
 import CompPoly.Univariate.Lagrange
