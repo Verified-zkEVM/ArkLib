@@ -118,7 +118,7 @@ lemma rename_equiv_mem_restrictDegreeVar {R : Type*} [CommSemiring R]
     simp only [SetLike.mem_coe, Finsupp.mem_support_iff, ne_eq, mem_support_iff] at *
     rw [MvPolynomial.rename_eq] at hm
     contrapose! hm
-    rw [Finsupp.mapDomain, Finsupp.sum, Finsupp.finset_sum_apply]
+    rw [Finsupp.mapDomain, Finsupp.sum, Finsupp.finsetSum_apply]
     exact Finset.sum_eq_zero fun x hx =>
       Finsupp.single_eq_of_ne (hm x (by aesop))
   intro i
@@ -146,7 +146,7 @@ lemma sumAlgEquiv_mem_restrictDegreeVar {R : Type*} [CommSemiring R]
       exact Finset.sum_congr rfl fun _ _ => sumToIter_monomial_aux _ _
     contrapose! hs
     simp only [h_sum, SetLike.mem_coe, Finsupp.mem_support_iff, ne_eq, not_not]
-    erw [Finsupp.finset_sum_apply]
+    erw [Finsupp.finsetSum_apply]
     refine Finset.sum_eq_zero fun x hx => ?_
     erw [AddMonoidAlgebra.lsingle_apply, AddMonoidAlgebra.lsingle_apply]; aesop
   intro i
