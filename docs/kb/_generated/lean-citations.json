@@ -1,8 +1,8 @@
 {
   "counts": {
-    "files_with_citations": 75,
+    "files_with_citations": 74,
     "keys_cited": 25,
-    "total_citation_edges": 106
+    "total_citation_edges": 104
   },
   "files": {
     "ArkLib/AGM/Basic.lean": [
@@ -173,10 +173,6 @@
       "NOZ26",
       "NS24"
     ],
-    "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/LsCore.lean": [
-      "LS18",
-      "NOZ26"
-    ],
     "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/LyubashevskySeiler.lean": [
       "LS18",
       "NOZ26",
@@ -219,14 +215,14 @@
     "ArkLib/ProofSystem/Binius/FRIBinius/General.lean": [
       "DP24"
     ],
+    "ArkLib/ProofSystem/Binius/RingSwitching/General.lean": [
+      "DP24"
+    ],
     "ArkLib/ProofSystem/Fri/Spec/SingleRound.lean": [
       "FRI1216"
     ],
     "ArkLib/ProofSystem/Plonk/Basic.lean": [
       "GWZC19"
-    ],
-    "ArkLib/ProofSystem/RingSwitching/General.lean": [
-      "DP24"
     ],
     "ArkLib/ProofSystem/Stir/Combine.lean": [
       "ACFY24stir"
@@ -339,7 +335,7 @@
     "DP24": [
       "ArkLib/ProofSystem/Binius/BinaryBasefold/General.lean",
       "ArkLib/ProofSystem/Binius/FRIBinius/General.lean",
-      "ArkLib/ProofSystem/RingSwitching/General.lean"
+      "ArkLib/ProofSystem/Binius/RingSwitching/General.lean"
     ],
     "FRI1216": [
       "ArkLib/ProofSystem/Fri/Spec/SingleRound.lean"
@@ -366,7 +362,6 @@
       "ArkLib/CommitmentScheme/Ajtai/InnerOuter/Arithmetic.lean",
       "ArkLib/CommitmentScheme/Ajtai/InnerOuter/Scheme.lean",
       "ArkLib/CommitmentScheme/Ajtai/InnerOuter/Security.lean",
-      "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/LsCore.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/LyubashevskySeiler.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds.lean"
     ],
@@ -384,7 +379,6 @@
       "ArkLib/CommitmentScheme/Ajtai/InnerOuter.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/Modulus.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/Basic.lean",
-      "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/LsCore.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/LyubashevskySeiler.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/MicciancioYoung.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds.lean",
