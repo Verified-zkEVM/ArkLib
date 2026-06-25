@@ -3,9 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.CommitmentScheme.Ajtai.InnerOuter.Scheme
-import ArkLib.CommitmentScheme.Ajtai.Simple.Correctness
-import ArkLib.CommitmentScheme.Ajtai.GadgetNorms
+import ArkLib.Commitments.Functional.Hachi.InnerOuter.Scheme
+import ArkLib.Commitments.Ordinary.Ajtai.Simple.Correctness
+import ArkLib.Commitments.Functional.Hachi.GadgetNorms
 
 /-!
 # Correctness of the Inner-Outer Ajtai Commitment

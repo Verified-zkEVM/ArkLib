@@ -50,7 +50,7 @@ the rating and placement decisions are what keep the result maintainable.
   - general-purpose extensions meant for upstreaming → `ArkLib/ToMathlib/`
   - IOR core / security theory → `ArkLib/OracleReduction/`
   - protocol-specific → `ArkLib/ProofSystem/`
-  - commitment-specific → `ArkLib/CommitmentScheme/`
+  - commitment-specific → `ArkLib/Commitments/`
 - Prefer keeping a lemma next to the definitions it is about, not next to the theorem that happens
   to need it. A reusable algebraic fact about an existing structure usually belongs in `Data/` or
   `ToMathlib/`, not buried in a protocol file.

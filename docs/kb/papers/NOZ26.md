@@ -10,9 +10,9 @@ status: seeded
 related_modules:
   - ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean
   - ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean
-  - ArkLib/CommitmentScheme/Ajtai/Gadget.lean
-  - ArkLib/CommitmentScheme/Ajtai/InnerOuter/Scheme.lean
-  - ArkLib/CommitmentScheme/Ajtai/InnerOuter/Security.lean
+  - ArkLib/Commitments/Functional/Hachi/Gadget.lean
+  - ArkLib/Commitments/Functional/Hachi/InnerOuter/Scheme.lean
+  - ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean
 ---
 
 # NOZ26
@@ -50,9 +50,9 @@ Security analysis:
   coordinate-wise special-soundness notion.
 - [`ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean)
   — `powTwoCyclotomic`.
-- [`ArkLib/CommitmentScheme/Ajtai/Gadget.lean`](../../../ArkLib/CommitmentScheme/Ajtai/Gadget.lean)
+- [`ArkLib/Commitments/Functional/Hachi/Gadget.lean`](../../../ArkLib/Commitments/Functional/Hachi/Gadget.lean)
   — the gadget matrix and `gadgetDecompose`.
-- [`ArkLib/CommitmentScheme/Ajtai/InnerOuter/Security.lean`](../../../ArkLib/CommitmentScheme/Ajtai/InnerOuter/Security.lean)
+- [`ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean`](../../../ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean)
   — weak binding.
 
 ## Version Notes

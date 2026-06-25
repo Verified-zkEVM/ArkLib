@@ -27,7 +27,7 @@ automorphisms, the trace map, and the packing map `ψ`). Those two consumers car
 The object lives here, in `Data/Lattices`, rather than next to any one consumer: it is pure
 power-of-two cyclotomic ring theory over a prime field. The inner-outer commitment re-exports
 it under the names `hachiModulus` / `HachiRing` (see
-`ArkLib/CommitmentScheme/Ajtai/InnerOuter/Arithmetic.lean`).
+`ArkLib/Commitments/Functional/Hachi/InnerOuter/Arithmetic.lean`).
 
 Because `primePowTwoModulus` is *reducibly* equal to `powTwoCyclotomic α`, the
 `powTwoCyclotomic`-stated lemmas and the `IsCyclotomic` instance apply transparently.

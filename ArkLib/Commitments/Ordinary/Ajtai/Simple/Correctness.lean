@@ -3,7 +3,7 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.CommitmentScheme.Ajtai.Simple.Scheme
+import ArkLib.Commitments.Ordinary.Ajtai.Simple.Scheme
 
 /-!
 # Correctness of the Simple Ajtai Commitment

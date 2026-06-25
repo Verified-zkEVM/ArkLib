@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
 
-import ArkLib.CommitmentScheme.KZG.Correctness
-import ArkLib.CommitmentScheme.KZG.HardnessAssumptions
+import ArkLib.Commitments.Functional.KZG.Correctness
+import ArkLib.Commitments.Functional.KZG.HardnessAssumptions
 import ArkLib.ToCompPoly.Univariate.Lagrange
 
 /-!
