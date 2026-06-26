@@ -4,10 +4,9 @@ import Mathlib.Algebra.Order.Floor.Div
 /-!
 # LogUp algebra and sumcheck polynomial
 
-This file contains the protocol-independent algebra used to express LogUp as a sumcheck claim. It
-does not define statements, transcripts, provers, or verifiers. Instead, it works with plain
-hypercube functions `(Fin n → Fin 2) → F`, polynomial inputs `MvPolynomial (Fin n) F`, challenges,
-and partial-sum groups.
+This file contains the  algebra used to express LogUp as a sumcheck claim and tries to be decoupled
+from the protocol types. It works with plain hypercube functions `(Fin n → Fin 2) → F`, polynomial
+inputs `MvPolynomial (Fin n) F`, challenges, and partial-sum groups.
 
 The main output is `logupQPolynomial`, the polynomial `Q` that the protocol sends to sumcheck, plus
 `logupQPolynomial_degreeOf`, the individual-degree bound needed by sumcheck. The row-level and
@@ -204,6 +203,165 @@ theorem inputToTerm_termToInput {M : ℕ} (i : TermIdx M) :
   · next h => exact Fin.ext h.symm
   · next h => apply Fin.ext; simp only [inputToTerm]; omega
 
+/-! ## Fractional decompositions in `F[X]` (paper Section 2.3)
+
+Paper-shaped statements over the polynomial ring `F[X]`, in cleared-denominator form:
+`clearedDecomp` is the numerator left after multiplying the formal `∑_z m(z)/(X + z)` by the common
+denominator `∏_{w∈F}(X + w)`. Working in `F[X]` (rather than `RatFunc F`) keeps these formal and
+dependency-light. We prove `clearedDecomp`'s uniqueness (Lemma 4), the "collecting" bridge
+`clearedSum_eq_clearedDecomp`, and the set-inclusion criterion (Lemma 5). -/
+
+section FractionalDecomposition
+
+open Polynomial
+
+variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+
+/-- The cleared-denominator decomposition `∑_{z ∈ F} m(z) · ∏_{w ≠ z}(X + w)` in `F[X]`: the
+numerator left after multiplying the formal `∑_z m(z)/(X + z)` by `∏_{w∈F}(X + w)`. -/
+noncomputable def clearedDecomp (m : F → F) : F[X] :=
+  ∑ z : F, C (m z) * ∏ w ∈ Finset.univ.erase z, (X + C w)
+
+/-- **Lemma 4** (uniqueness of fractional decompositions). Over a finite field the coefficient map
+`m ↦ clearedDecomp m` is injective: two cleared decompositions coincide in `F[X]` iff their
+coefficient functions agree everywhere. -/
+theorem clearedDecomp_injective {m₁ m₂ : F → F} :
+    clearedDecomp m₁ = clearedDecomp m₂ ↔ m₁ = m₂ := by
+  refine ⟨fun H => ?_, fun H => by rw [H]⟩
+  funext w
+  -- The coefficient-difference decomposition is the zero polynomial.
+  have hp0 : (∑ z : F, C (m₁ z - m₂ z) * ∏ u ∈ Finset.univ.erase z, (X + C u)) = 0 := by
+    have hsub : clearedDecomp m₁ - clearedDecomp m₂ = 0 := by rw [H, sub_self]
+    rw [clearedDecomp, clearedDecomp, ← Finset.sum_sub_distrib] at hsub
+    rw [← hsub]
+    exact Finset.sum_congr rfl (fun z _ => by rw [map_sub, sub_mul])
+  -- Evaluating at `-w` isolates the `w`-th coefficient.
+  have heval := congrArg (Polynomial.eval (-w)) hp0
+  simp only [Polynomial.eval_finsetSum, Polynomial.eval_mul, Polynomial.eval_C,
+    Polynomial.eval_prod, Polynomial.eval_add, Polynomial.eval_X, Polynomial.eval_zero] at heval
+  have hsingle : (∑ z : F, (m₁ z - m₂ z) * ∏ u ∈ Finset.univ.erase z, (-w + u))
+      = (m₁ w - m₂ w) * ∏ u ∈ Finset.univ.erase w, (-w + u) := by
+    refine Finset.sum_eq_single w (fun z _ hzw => ?_)
+      (fun h => absurd (Finset.mem_univ w) h)
+    have hwmem : w ∈ Finset.univ.erase z :=
+      Finset.mem_erase.mpr ⟨fun hwz => hzw hwz.symm, Finset.mem_univ w⟩
+    exact mul_eq_zero_of_right _ (Finset.prod_eq_zero hwmem (neg_add_cancel w))
+  rw [hsingle] at heval
+  have hprodne : (∏ u ∈ Finset.univ.erase w, (-w + u)) ≠ 0 := by
+    rw [Finset.prod_ne_zero_iff]
+    intro u hu hzero
+    rw [Finset.mem_erase] at hu
+    exact hu.1 (neg_injective (add_eq_zero_iff_eq_neg.mp hzero)).symm
+  exact sub_eq_zero.mp ((mul_eq_zero.mp heval).resolve_right hprodne)
+
+/-- "Collecting": an indexed sum of cleared single terms `∑ i, c i · ∏_{w ≠ a i}(X + w)` equals the
+cleared decomposition whose coefficient at `z` is the total weight `∑_{a i = z} c i`. This is the
+bridge between sequence-indexed sums (the protocol side) and `clearedDecomp` (Lemmas 4/5). -/
+theorem clearedSum_eq_clearedDecomp {ι : Type*} [Fintype ι] (a c : ι → F) :
+    (∑ i, C (c i) * ∏ w ∈ Finset.univ.erase (a i), (X + C w))
+      = clearedDecomp (fun z => ∑ i ∈ Finset.univ.filter (fun i => a i = z), c i) := by
+  unfold clearedDecomp
+  rw [← Finset.sum_fiberwise (Finset.univ : Finset ι) a
+        (fun i => C (c i) * ∏ w ∈ Finset.univ.erase (a i), (X + C w))]
+  refine Finset.sum_congr rfl (fun z _ => ?_)
+  rw [map_sum, Finset.sum_mul]
+  refine Finset.sum_congr rfl (fun i hi => ?_)
+  rw [Finset.mem_filter] at hi
+  rw [hi.2]
+
+/-- The multiplicity of a value `z` in a finite sequence `a : ι → F`. -/
+def seqMultiplicity {ι : Type*} [Fintype ι] (a : ι → F) (z : F) : ℕ :=
+  (Finset.univ.filter fun i => a i = z).card
+
+/-- **Lemma 5** (set inclusion), cleared-denominator form. When the field characteristic exceeds the
+sizes of the index types, the set underlying `a` is contained in that of `b` iff there exist
+multiplicities `m` making the cleared logarithmic-derivative identity hold in `F[X]` (the cleared
+form of `∑_i 1/(X + a i) = ∑_j m j/(X + b j)`). The honest witness is the normalized multiplicity
+`m j = ma(b j)/mb(b j)`. Generalizes the paper's equal-length sequences to arbitrary index types. -/
+theorem setInclusion_iff_cleared {ι κ : Type*} [Fintype ι] [Fintype κ]
+    (hNa : Fintype.card ι < ringChar F) (hNb : Fintype.card κ < ringChar F)
+    (a : ι → F) (b : κ → F) :
+    (∀ i, ∃ j, a i = b j) ↔
+      ∃ m : κ → F,
+        (∑ i, ∏ w ∈ Finset.univ.erase (a i), (X + C w))
+          = ∑ j, C (m j) * ∏ w ∈ Finset.univ.erase (b j), (X + C w) := by
+  -- Nonzero-cast of multiplicities: any count below `ringChar F` survives.
+  have hcastne : ∀ k : ℕ, 0 < k → k < ringChar F → (k : F) ≠ 0 := by
+    intro k hk hkr hzero
+    exact (Nat.not_dvd_of_pos_of_lt hk hkr) ((ringChar.spec F k).1 hzero)
+  have hleA : ∀ w : F, seqMultiplicity a w ≤ Fintype.card ι := by
+    intro w
+    calc seqMultiplicity a w ≤ (Finset.univ : Finset ι).card := Finset.card_filter_le _ _
+      _ = Fintype.card ι := Finset.card_univ
+  have hleB : ∀ w : F, seqMultiplicity b w ≤ Fintype.card κ := by
+    intro w
+    calc seqMultiplicity b w ≤ (Finset.univ : Finset κ).card := Finset.card_filter_le _ _
+      _ = Fintype.card κ := Finset.card_univ
+  have hcast : ∀ z : F, (∑ _i ∈ Finset.univ.filter (fun i => a i = z), (1 : F))
+      = (seqMultiplicity a z : F) := by
+    intro z; rw [Finset.sum_const, nsmul_eq_mul, mul_one]; rfl
+  -- Collecting turns each side into a `clearedDecomp`.
+  have hL : (∑ i, ∏ w ∈ Finset.univ.erase (a i), (X + C w))
+      = clearedDecomp (fun z => (seqMultiplicity a z : F)) := by
+    have h1 : (∑ i, ∏ w ∈ Finset.univ.erase (a i), (X + C w))
+        = ∑ i, C (1 : F) * ∏ w ∈ Finset.univ.erase (a i), (X + C w) := by simp
+    rw [h1, clearedSum_eq_clearedDecomp a (fun _ => 1)]
+    exact congrArg clearedDecomp (funext (fun z => hcast z))
+  have hR : ∀ m : κ → F, (∑ j, C (m j) * ∏ w ∈ Finset.univ.erase (b j), (X + C w))
+      = clearedDecomp (fun z => ∑ j ∈ Finset.univ.filter (fun j => b j = z), m j) :=
+    fun m => clearedSum_eq_clearedDecomp b m
+  -- By Lemma 4 the identity is exactly fiberwise equality of total weights.
+  have key : ∀ m : κ → F,
+      ((∑ i, ∏ w ∈ Finset.univ.erase (a i), (X + C w))
+          = ∑ j, C (m j) * ∏ w ∈ Finset.univ.erase (b j), (X + C w))
+        ↔ ∀ z : F, (seqMultiplicity a z : F)
+            = ∑ j ∈ Finset.univ.filter (fun j => b j = z), m j := by
+    intro m
+    rw [hL, hR m, clearedDecomp_injective]
+    exact funext_iff
+  constructor
+  · -- Forward: the normalized multiplicity is a valid witness.
+    intro hinc
+    refine ⟨fun j => (seqMultiplicity a (b j) : F) / (seqMultiplicity b (b j) : F), (key _).2 ?_⟩
+    intro z
+    by_cases hz : seqMultiplicity a z = 0
+    · rw [hz, Nat.cast_zero]
+      symm
+      refine Finset.sum_eq_zero (fun j hj => ?_)
+      rw [Finset.mem_filter] at hj
+      rw [hj.2, hz, Nat.cast_zero, zero_div]
+    · obtain ⟨i₀, hi₀⟩ :=
+        Finset.card_ne_zero.mp (show (Finset.univ.filter (fun i => a i = z)).card ≠ 0 from hz)
+      rw [Finset.mem_filter] at hi₀
+      obtain ⟨j₀, hj₀⟩ := hinc i₀
+      have hbz_ne : seqMultiplicity b z ≠ 0 := by
+        refine Finset.card_ne_zero.mpr ⟨j₀, Finset.mem_filter.mpr ⟨Finset.mem_univ j₀, ?_⟩⟩
+        rw [hj₀.symm.trans hi₀.2]
+      have hconst : ∀ j ∈ Finset.univ.filter (fun j => b j = z),
+          (seqMultiplicity a (b j) : F) / (seqMultiplicity b (b j) : F)
+            = (seqMultiplicity a z : F) / (seqMultiplicity b z : F) := by
+        intro j hj; rw [Finset.mem_filter] at hj; rw [hj.2]
+      have hcard : ((Finset.univ.filter (fun j => b j = z)).card : F) = (seqMultiplicity b z : F) :=
+        rfl
+      rw [Finset.sum_congr rfl hconst, Finset.sum_const, nsmul_eq_mul, hcard]
+      have hbzF : (seqMultiplicity b z : F) ≠ 0 :=
+        hcastne _ (Nat.pos_of_ne_zero hbz_ne) (lt_of_le_of_lt (hleB z) hNb)
+      field_simp
+  · -- Converse: a value of `a` has nonzero multiplicity, so its fiber in `b` is nonempty.
+    rintro ⟨m, hm⟩ i
+    have hcoef := (key m).1 hm (a i)
+    by_contra hcon
+    simp only [not_exists] at hcon
+    have hempty : Finset.univ.filter (fun j => b j = a i) = ∅ := by
+      rw [Finset.filter_eq_empty_iff]
+      exact fun j _ hbj => hcon j hbj.symm
+    rw [hempty, Finset.sum_empty] at hcoef
+    have hpos : 0 < seqMultiplicity a (a i) :=
+      Finset.card_pos.mpr ⟨i, Finset.mem_filter.mpr ⟨Finset.mem_univ i, rfl⟩⟩
+    exact hcastne _ hpos (lt_of_le_of_lt (hleA (a i)) hNa) hcoef
+
+end FractionalDecomposition
+
 /-! ## Fractional-identity algebra
 
 LogUp's logarithmic-derivative construction, evaluated on hypercube rows. The table, columns,
@@ -256,8 +414,8 @@ noncomputable def domainIdentityTerm (groups : Fin K → Finset (TermIdx M))
     (multiplicity : (Fin n → Fin 2) → F) (helpers : Fin K → (Fin n → Fin 2) → F)
     (xChallenge : F) (k : Fin K) (u : Fin n → Fin 2) : F :=
   helpers k u * (∏ i ∈ groups k, termPhi table columns xChallenge i u) -
-    ∑ i ∈ groups k,
-      termNumerator multiplicity i u * ∏ j ∈ (groups k).erase i, termPhi table columns xChallenge j u
+    ∑ i ∈ groups k, termNumerator multiplicity i u * ∏ j
+        ∈ (groups k).erase i, termPhi table columns xChallenge j u
 
 /-- The helper value `hₖ(u) = Σᵢ mᵢ(u)/φᵢ(u)` from paper equation (16). -/
 noncomputable def helperValue (groups : Fin K → Finset (TermIdx M))
