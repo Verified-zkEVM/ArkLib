@@ -102,15 +102,20 @@ jobs:
       - name: Fetch dependency cache
         run: lake exe cache get
 
-      - name: Time clean build
+      - name: Time cached build
         run: |
-          bash scripts/build_timing_report.sh run clean_build "$BUILD_TIMING_RESULTS" -- \
-            bash -eo pipefail -c 'rm -rf .lake/build && lake build'
+          bash scripts/build_timing_report.sh run cached_build "$BUILD_TIMING_RESULTS" -- \
+            bash -eo pipefail -c 'lake build'
 
       - name: Time warm rebuild
         run: |
           bash scripts/build_timing_report.sh run warm_rebuild "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c 'lake build'
+
+      - name: Time Lean lint
+        run: |
+          bash scripts/build_timing_report.sh run lean_lint "$BUILD_TIMING_RESULTS" -- \
+            bash -eo pipefail -c 'lake lint -- --no-build ArkLib'
 
       - name: Time validation wrapper
         run: |
@@ -132,8 +137,8 @@ jobs:
           if [ -f "$BUILD_TIMING_RESULTS" ]; then
             cp "$BUILD_TIMING_RESULTS" "$BUILD_TIMING_ARTIFACT_DIR/results.jsonl"
           fi
-          if [ -f "$BUILD_TIMING_LOG_DIR/clean_build.log" ]; then
-            cp "$BUILD_TIMING_LOG_DIR/clean_build.log" "$BUILD_TIMING_ARTIFACT_DIR/clean_build.log"
+          if [ -f "$BUILD_TIMING_LOG_DIR/cached_build.log" ]; then
+            cp "$BUILD_TIMING_LOG_DIR/cached_build.log" "$BUILD_TIMING_ARTIFACT_DIR/cached_build.log"
           fi
 
       - name: Upload timing artifact

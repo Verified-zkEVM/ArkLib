@@ -1,0 +1,2 @@
+-- Manual exceptions for the Lean text-based style linter.
+-- Keep this small; prefer fixing style issues when practical.

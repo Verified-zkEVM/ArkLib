@@ -54,9 +54,10 @@ clean.
 ### Long File
 
 - Add `set_option linter.style.longFile N` near the top with a reasonable ceiling.
-- In ArkLib, `scripts/lint-style.py` tracks `ERR_NUM_LIN` via `scripts/style-exceptions.txt`.
-  If you are keeping a large legacy file for now, add or refresh the matching watermark there too;
-  the local `set_option linter.style.longFile N` does not silence the repo style script by itself.
+- ArkLib's main text-style entry point is `lake env lean --run scripts/lint-style.lean`;
+  accepted Lean text-style findings live in `scripts/nolints-style.txt`.
+- Some legacy checks still live in `scripts/lint-style.py` while they are being ported upstream.
+  Those use `scripts/style-exceptions.txt`; prefer fixing the issue over adding an exception.
 
 ### Unused Simp Arguments
 

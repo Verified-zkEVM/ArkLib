@@ -23,7 +23,7 @@ Default checks:
   - python3 ./scripts/kb/lint.py
 
 Optional checks:
-  --lint   Run ./scripts/lint-style.sh
+  --lint   Run baseline-aware Lean linting
   --docs   Run DISABLE_EQUATIONS=1 lake build ArkLib:docs
   --site   Run ./scripts/build-web.sh (implies --docs)
 EOF
@@ -83,8 +83,12 @@ python3 ./scripts/kb/lint.py
 
 if (( run_lint )); then
   echo ""
-  echo "# Running Lean style lint"
-  ./scripts/lint-style.sh
+  echo "# Running Lean declaration linter"
+  lake lint -- --no-build ArkLib
+
+  echo ""
+  echo "# Checking tracked Lean file metadata"
+  ./scripts/lint-repo-structure.sh
 fi
 
 if (( run_docs )); then

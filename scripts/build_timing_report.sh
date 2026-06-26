@@ -8,8 +8,9 @@ Usage:
   build_timing_report.sh render <results-file> [baseline-artifact-dir]
 
 Labels:
-  clean_build
+  cached_build
   warm_rebuild
+  lean_lint
   test_path
 EOF
 }
@@ -112,20 +113,24 @@ test_path_name = os.environ.get("BUILD_TIMING_TEST_NAME", "Validation wrapper")
 test_path_command = os.environ.get("BUILD_TIMING_TEST_COMMAND", "./scripts/validate.sh")
 
 display = {
-    "clean_build": {
-        "name": "Clean build",
-        "command": "`rm -rf .lake/build && lake build`",
+    "cached_build": {
+        "name": "Cached build",
+        "command": "`lake build` after cache restore and `lake exe cache get`",
     },
     "warm_rebuild": {
         "name": "Warm rebuild",
         "command": "`lake build`",
+    },
+    "lean_lint": {
+        "name": "Lean lint",
+        "command": "`lake lint -- --no-build ArkLib`",
     },
     "test_path": {
         "name": test_path_name,
         "command": f"`{test_path_command}`",
     },
 }
-ordered_labels = ["clean_build", "warm_rebuild", "test_path"]
+ordered_labels = ["cached_build", "warm_rebuild", "lean_lint", "test_path"]
 repo_prefixes = ("ArkLib",)
 
 
@@ -174,7 +179,7 @@ def module_to_source_path(target: str) -> str | None:
     return None
 
 
-def extract_clean_build_targets(log_path: pathlib.Path | None) -> list[dict]:
+def extract_build_targets(log_path: pathlib.Path | None) -> list[dict]:
     if log_path is None or not log_path.exists():
         return []
 
@@ -212,11 +217,17 @@ current_records = load_records(results_path)
 baseline_records = load_records(baseline_dir / "results.jsonl") if baseline_dir else {}
 
 current_log_dir = os.environ.get("BUILD_TIMING_LOG_DIR")
-current_log_path = pathlib.Path(current_log_dir) / "clean_build.log" if current_log_dir else None
-current_clean_build_targets = extract_clean_build_targets(current_log_path)
-baseline_clean_build_targets = (
-    extract_clean_build_targets(baseline_dir / "clean_build.log") if baseline_dir else []
-)
+current_log_path = pathlib.Path(current_log_dir) / "cached_build.log" if current_log_dir else None
+current_build_targets = extract_build_targets(current_log_path)
+baseline_log_path = None
+if baseline_dir:
+    # `clean_build.log` is the legacy artifact name from before PR CI stopped deleting `.lake/build`.
+    for candidate in ("cached_build.log", "clean_build.log"):
+        candidate_path = baseline_dir / candidate
+        if candidate_path.exists():
+            baseline_log_path = candidate_path
+            break
+baseline_build_targets = extract_build_targets(baseline_log_path)
 
 source_sha = os.environ.get("BUILD_TIMING_SOURCE_SHA")
 source_subject = os.environ.get("BUILD_TIMING_SOURCE_SUBJECT")
@@ -297,49 +308,49 @@ else:
         record = current_records[label]
         print(f"| {display[label]['name']} | {fmt(record['real'])} | {status(record)} |")
 
-clean = current_records.get("clean_build")
+cached = current_records.get("cached_build")
 warm = current_records.get("warm_rebuild")
 
 print()
 print("### Incremental Rebuild Signal")
 print()
-if clean and warm:
-    delta = clean["real"] - warm["real"]
-    ratio = clean["real"] / warm["real"] if warm["real"] else None
+if cached and warm:
+    delta = cached["real"] - warm["real"]
+    ratio = cached["real"] / warm["real"] if warm["real"] else None
     if ratio is None:
-        print(f"- Warm rebuild saved `{delta:.2f}s` vs clean.")
-        print("- Clean:warm ratio is unavailable because `warm rebuild` reported `0.00s`.")
+        print(f"- Warm rebuild saved `{delta:.2f}s` vs cached build.")
+        print("- Cached:warm ratio is unavailable because `warm rebuild` reported `0.00s`.")
     elif delta > 0:
-        print(f"- Warm rebuild saved `{delta:.2f}s` vs clean (`{ratio:.2f}x` faster).")
+        print(f"- Warm rebuild saved `{delta:.2f}s` vs cached build (`{ratio:.2f}x` faster).")
     elif delta < 0:
-        slowdown = warm["real"] - clean["real"]
-        slowdown_ratio = warm["real"] / clean["real"] if clean["real"] else None
+        slowdown = warm["real"] - cached["real"]
+        slowdown_ratio = warm["real"] / cached["real"] if cached["real"] else None
         if slowdown_ratio is None:
-            print(f"- Warm rebuild took `{slowdown:.2f}s` longer than clean in this run.")
+            print(f"- Warm rebuild took `{slowdown:.2f}s` longer than cached build in this run.")
         else:
             print(
-                f"- Warm rebuild took `{slowdown:.2f}s` longer than clean in this run "
+                f"- Warm rebuild took `{slowdown:.2f}s` longer than cached build in this run "
                 f"(`{slowdown_ratio:.2f}x` slower)."
             )
     else:
-        print("- Warm rebuild matched clean build wall-clock in this run.")
+        print("- Warm rebuild matched cached build wall-clock in this run.")
 else:
-    print("- Clean:warm comparison is unavailable because one of the build measurements is missing.")
+    print("- Cached:warm comparison is unavailable because one of the build measurements is missing.")
 
 print()
 print(
-    "This compares a clean project build against an incremental rebuild in the same CI job; "
+    "This compares a cached project build against an immediate warm rebuild in the same CI job; "
     "it is a lightweight variability signal, not a full cross-run benchmark."
 )
 
 print()
-print("### Slowest Current Clean-Build Files")
+print("### Slowest Current Cached-Build Files")
 print()
-if current_clean_build_targets:
-    shown = current_clean_build_targets[:20]
-    if baseline_clean_build_targets:
+if current_build_targets:
+    shown = current_build_targets[:20]
+    if baseline_build_targets:
         baseline_targets_by_key = {
-            target_key(entry): entry for entry in baseline_clean_build_targets
+            target_key(entry): entry for entry in baseline_build_targets
         }
         print(
             f"Showing {len(shown)} slowest current targets, with comparison against the selected baseline when available."
@@ -359,7 +370,7 @@ if current_clean_build_targets:
             print(f"| {fmt(entry['seconds'])} | {baseline_time} | {delta} | {md_code(key)} |")
     else:
         print(
-            f"Showing {len(shown)} slowest of {len(current_clean_build_targets)} repo targets parsed from the current clean build log."
+            f"Showing {len(shown)} slowest of {len(current_build_targets)} repo targets parsed from the current cached build log."
         )
         print()
         print("| Wall (s) | Path |")
@@ -367,7 +378,7 @@ if current_clean_build_targets:
         for entry in shown:
             print(f"| {fmt(entry['seconds'])} | {md_code(target_key(entry))} |")
 else:
-    print("No per-target timings were parsed from the current clean build log.")
+    print("No per-target timings were parsed from the current cached build log.")
 PY
 }
 
@@ -381,6 +392,9 @@ main() {
   shift
 
   case "$command" in
+    --help|-h|help)
+      usage
+      ;;
     run)
       run_command "$@"
       ;;

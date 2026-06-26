@@ -1,0 +1,79 @@
+name: Lint
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  text-style:
+    name: Text and style lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up Lean environment
+        uses: leanprover/lean-action@v1.5.0
+        with:
+          auto-config: false
+          build: false
+          test: false
+          lint: false
+          use-github-cache: false
+          use-mathlib-cache: false
+
+      - name: Fetch dependency cache
+        run: lake exe cache get
+
+      - name: Determine comparison range
+        id: range
+        shell: bash
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+          else
+            base="${{ github.event.before }}"
+            if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+              if git rev-parse HEAD^ >/dev/null 2>&1; then
+                base="$(git rev-parse HEAD^)"
+              else
+                base="$(git rev-list --max-parents=0 HEAD)"
+              fi
+            fi
+          fi
+
+          head="$GITHUB_SHA"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          echo "head=$head" >> "$GITHUB_OUTPUT"
+          echo "Comparing $base..$head"
+
+      - name: Lint trailing whitespace
+        run: bash ./scripts/lintWhitespace.sh
+
+      - name: Check tracked Lean file metadata
+        run: bash ./scripts/lint-repo-structure.sh
+
+      - name: Run Lean text-style linter
+        run: lake env lean --run scripts/lint-style.lean --github
+
+      - name: Check Lean style regressions
+        run: |
+          python3 ./scripts/lint-style-diff.py \
+            --base "${{ steps.range.outputs.base }}" \
+            --head "${{ steps.range.outputs.head }}" \
+            --github

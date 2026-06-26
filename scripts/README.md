@@ -7,13 +7,15 @@ This directory contains various utility scripts for the ArkLib project.
 ### Build and Validation
 - **`validate.sh`** - Recommended convenience wrapper for routine local validation
 - **`build-project.sh`** - Compile-only helper (`lake build`)
-- **`build_timing_report.sh`** - CI timing/report helper for clean builds, warm rebuilds, and the validation wrapper
+- **`build_timing_report.sh`** - CI timing/report helper for cached builds, warm rebuilds, and the validation wrapper
 - **`update-lib.sh`** - Update ArkLib.lean with all imports from source files
 - **`check-imports.sh`** - Check if ArkLib.lean is up to date with all imports
 - **`check-warning-log.py`** - Fail on scoped warning classes found in a captured build log
 - **`check-docs-integrity.py`** - Check docs links and the `CLAUDE.md` symlink
-- **`lint-style.py`** - Python-based style linting
-- **`lint-style.lean`** - Lean-based style linting
+- **`lint-style.lean`** - Lean text-style linter run with `lake env lean --run`
+- **`lint-style.py`** - Legacy Python text-style checks not yet ported to Lean
+- **`lint-style-diff.py`** - CI wrapper that rejects new text-style lint errors in changed Lean files
+- **`lint-repo-structure.sh`** - Cheap tracked Lean file metadata checks
 
 ### Dependency Analysis
 - **`dependency_analysis/`** - Complete dependency analysis toolkit
@@ -39,7 +41,7 @@ This directory contains various utility scripts for the ArkLib project.
 
 ### Validation With Optional Checks
 ```bash
-# Add Lean style linting
+# Add baseline-aware Lean linting
 ./scripts/validate.sh --lint
 
 # Build API docs too
@@ -79,6 +81,24 @@ bash scripts/build_timing_report.sh --help
 python3 ./scripts/check-docs-integrity.py
 ```
 
+### Linting
+```bash
+# Baseline-aware declaration lint and cheap tracked-file checks
+./scripts/validate.sh --lint
+
+# Lean text-style sweep
+./scripts/lint-style.sh
+
+# Lean text-style linter directly
+lake env lean --run scripts/lint-style.lean
+
+# Generate candidate Lean text-style baseline entries
+lake env lean --run scripts/lint-style.lean --exceptions
+
+# PR-style legacy text lint comparison against a base revision
+python3 ./scripts/lint-style-diff.py --base origin/main --head HEAD
+```
+
 ### Knowledge Base Indexes
 ```bash
 python3 ./scripts/kb/sync_from_bib.py
@@ -91,7 +111,7 @@ python3 ./scripts/kb/review_context.py --files ArkLib/ProofSystem/Fri/Spec/Singl
 
 ### `build_timing_report.sh`
 
-Helper used by CI to measure and render build timings for clean builds, warm
+Helper used by CI to measure and render build timings for cached builds, warm
 rebuilds, and the `./scripts/validate.sh` path. The CI workflow uploads
 timing-data artifacts so PR runs can compare against a previously recorded
 baseline without rerunning that baseline in the same job. This supports
