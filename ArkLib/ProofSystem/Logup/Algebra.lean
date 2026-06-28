@@ -15,28 +15,23 @@ LogUp data and to the verifier's final point check.
 
 ## Sections
 
-* **Generic batched polynomial** defines the abstract polynomial shape used by the sumcheck claim:
-  for each helper group, multiply by the relevant denominators to clear fractions, then batch all
-  group identities with the equality-polynomial weight and verifier scalars. This section also
-  proves the generic individual-degree bound, so the later LogUp-specific proof only has to show
-  that its ingredients are multilinear.
-* **Term indexing** gives names to the `M + 1` fractional terms. The table term has input label
-  `InputIdx.table` and paper index `0`; lookup column `j` has input label `InputIdx.column j` and
-  paper index `j + 1`. The conversion lemmas here keep later sums over `Fin (M + 1)` aligned with
-  the table/column oracle labels.
-* **Fractional-identity algebra** defines the row-wise LogUp quantities on the Boolean hypercube.
-  It computes the normalized table multiplicity, forms the logarithmic-derivative terms
-  `mᵢ(u) / φᵢ(u)` for the table and lookup columns, groups those terms into helper values, clears
-  denominators inside each group, and combines the cleared identities into the row value
+* **Generic batched polynomial** is the abstract polynomial shape used by the sumcheck claim, with
+  its generic individual-degree bound. The later LogUp proof only has to show its ingredients are
+  multilinear.
+* **Term indexing** names the `M + 1` fractional terms and relates the table/column oracle labels to
+  paper indices `0, …, M`.
+* **Fractional decompositions in `F[X]`** are the protocol-independent, paper-shaped statements over
+  the polynomial ring (cleared-denominator form): uniqueness of fractional decompositions
+  (Lemma 4), the collecting bridge, and the set-inclusion criterion (Lemma 5).
+* **Fractional-identity algebra** builds the row-wise LogUp quantities on the Boolean hypercube:
+  normalized multiplicities, logarithmic-derivative terms, helper groups, and the row value
   `qOnHypercube`.
-* **Final-point reconstructions** defines the verifier-side version of the same expressions at
-  sumcheck's final point `r`. At this point the verifier has scalar oracle answers `m(r)`, `t(r)`,
-  `fᵢ(r)`, and `hₖ(r)`, not whole row functions, so this section rebuilds the value that should
-  equal the final sumcheck claim.
-* **The LogUp polynomial** builds the actual multivariate polynomial `Q` from the table, column,
-  multiplicity, and helper polynomials. It instantiates the generic batched polynomial with LogUp's
-  concrete denominator and numerator polynomials, then proves the `M + 3` individual-degree bound
-  required by ArkLib's generic sumcheck protocol.
+* **Final-point reconstructions** rebuilds the same value from the verifier's scalar oracle answers
+  at sumcheck's final point `r`.
+* **The LogUp polynomial** assembles the concrete polynomial `Q` from the input polynomials and
+  proves the individual-degree bound required by ArkLib's generic sumcheck protocol.
+* **Polynomial evaluation agreement** shows `Q` agrees on Boolean rows with the row-wise expression
+  built from its inputs' Boolean evaluations.
 -/
 
 namespace Logup
@@ -360,13 +355,14 @@ theorem setInclusion_iff_cleared {ι κ : Type*} [Fintype ι] [Fintype κ]
       Finset.card_pos.mpr ⟨i, Finset.mem_filter.mpr ⟨Finset.mem_univ i, rfl⟩⟩
     exact hcastne _ hpos (lt_of_le_of_lt (hleA (a i)) hNa) hcoef
 
+set_option linter.unusedFintypeInType false in
 /-- **Lemma 5**, forward direction evaluated at a point `x` (paper eq. (15)). If every value of `a`
 occurs among the values of `b`, then the logarithmic-derivative identity holds at `x` with the
 normalized multiplicity `seqMultiplicity a (b j) / seqMultiplicity b (b j)` as witness. This is the
 evaluated specialization that the completeness proof consumes; the formal `F[X]` statement is
 `setInclusion_iff_cleared`. The hypothesis `hchar` (that a nonzero `a`-multiplicity forces a nonzero
-`b`-multiplicity in `F`) packages set inclusion together with the characteristic bound, exactly as in
-the protocol. Lean's `_ / 0 = 0` convention makes pole hypotheses unnecessary. -/
+`b`-multiplicity in `F`) packages set inclusion together with the characteristic bound, exactly as
+in the protocol. Lean's `_ / 0 = 0` convention makes pole hypotheses unnecessary. -/
 theorem setInclusion_eval_forward {ι κ : Type*} [Fintype ι] [Fintype κ]
     (a : ι → F) (b : κ → F) (x : F)
     (hchar : ∀ z : F, seqMultiplicity a z ≠ 0 → (seqMultiplicity b z : F) ≠ 0) :
@@ -578,8 +574,6 @@ theorem logupOuterClaim_zero [Fintype F] [DecidableEq F]
     (hgroups : ∀ g : TermIdx M → F, (∑ k : Fin K, ∑ i ∈ groups k, g i) = ∑ i : TermIdx M, g i)
     (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
     (xChallenge : F) (zChallenge : Fin n → F) (batchingScalars : Fin K → F)
-    (hcols : ∀ j : Fin M, ∀ u : Fin n → Fin 2, ∃ v : Fin n → Fin 2,
-      columns j u = table v)
     (hchar : ∀ a : F, lookupMultiplicityCount columns a ≠ 0 →
       (tableMultiplicityCount table a : F) ≠ 0)
     (hpoles : ∀ (i : TermIdx M) (u : Fin n → Fin 2),

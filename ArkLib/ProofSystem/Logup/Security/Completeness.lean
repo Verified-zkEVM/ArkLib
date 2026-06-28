@@ -203,7 +203,7 @@ private theorem mem_support_liftM_oracleComp {ι τ : Type} {spec : OracleSpec �
   rw [← OracleComp.liftComp_eq_liftM (superSpec := superSpec) oa] at h
   exact OracleComp.mem_support_of_mem_support_liftComp oa x h
 
-set_option linter.flexible false in
+
 private theorem reduction_run_prover_mem {ι : Type} {oSpec : OracleSpec ι}
     {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
     (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
@@ -211,20 +211,23 @@ private theorem reduction_run_prover_mem {ι : Type} {oSpec : OracleSpec ι}
     (tr : pSpec.FullTranscript) (out : StmtOut) (witOut : WitOut) (verOut : StmtOut)
     (h : some ((tr, out, witOut), verOut) ∈ support (R.run stmt wit).run) :
     (tr, out, witOut) ∈ support (Prover.run stmt wit R.prover) := by
-  simp [Reduction.run, OptionT.run_bind] at h
+  simp only [ProtocolSpec.ChallengeIdx, ProtocolSpec.Challenge, Reduction.run, bind_pure_comp,
+    OptionT.run_bind, OptionT.run_monadLift, monadLift_self,
+    OracleSpec.ProgrammingPolicy.empty_apply, OptionT.run_map, Option.elimM_map, Option.elim_some,
+    support_bind, Set.mem_iUnion, exists_prop, Prod.exists] at h
   rcases h with ⟨a, a_1, b, hp, hv⟩
   suffices hEq : (a, a_1, b) = (tr, out, witOut) by
     simpa [hEq] using hp
-  simp [Option.elimM] at hv
+  simp only [Option.elimM, support_bind, Set.mem_iUnion, exists_prop] at hv
   rcases hv with ⟨i, _hi, hv⟩
   cases i with
   | none => simp at hv
   | some verCandidate =>
-      simp at hv
+      simp only [Option.elim_some, support_map, Set.mem_image, Option.map_eq_some_iff,
+        Prod.mk.injEq, exists_eq_right_right, ↓existsAndEq, true_and] at hv
       rcases hv with ⟨_, rfl, rfl, rfl⟩
       rfl
 
-set_option linter.flexible false in
 private theorem seqCompose_prover_preserves {ι : Type} {oSpec : OracleSpec ι} (m : ℕ) :
     ∀ {Stmt : Fin (m + 1) → Type} {O : Type}
       {rounds : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (rounds i)}
@@ -242,7 +245,9 @@ private theorem seqCompose_prover_preserves {ι : Type} {oSpec : OracleSpec ι} 
   | zero =>
       intro Stmt O rounds pSpec P proj hP stmt out tr h
       rw [Prover.seqCompose_zero] at h
-      simp [Prover.run, Prover.id, Prover.runToRound] at h
+      simp only [Fin.vsum_zero, Fin.reduceLast, Nat.reduceAdd, ProtocolSpec.ChallengeIdx,
+        ProtocolSpec.Challenge, Prover.run, Fin.isValue, Prover.id, ProtocolSpec.MessageIdx,
+        ProtocolSpec.Message, Prover.runToRound, id_eq, Fin.induction_zero] at h
       cases h
       rfl
   | succ m ih =>
@@ -379,7 +384,7 @@ private theorem Fin.induction_four {motive : Fin 5 → Sort*} {zero : motive 0}
 set_option maxHeartbeats 1000000 in
 -- The proof peels the whole four-round outer transcript and reconstructs the handoff relation;
 -- the generated support terms are large even though the reasoning is deterministic.
-set_option linter.flexible false in
+
 /-- Completeness of the outer LogUp phase: the honest outer prover reaches the zero-sum handoff
 relation, except with the pole-sampling error. -/
 theorem logup_outer_completeness [Inhabited F] :
@@ -540,7 +545,7 @@ theorem logup_outer_completeness [Inhabited F] :
             (table := MvPolynomial.toEvalsZeroOne (oStmt .table).1)
             (columns := fun j => MvPolynomial.toEvalsZeroOne (oStmt (.column j)).1)
             (xChallenge := xval) (zChallenge := zlam.1) (batchingScalars := zlam.2)
-            hcols hchar hpoles]
+            hchar hpoles]
           apply Finset.sum_congr rfl
           intro u _
           rw [logupQPolynomial_eval_hypercube]
@@ -661,8 +666,6 @@ theorem logup_outer_completeness [Inhabited F] :
                 cases hout
                 exact hGood))
 
-
-set_option linter.flexible false in
 /-- Lens-completeness for the LogUp→Sumcheck lens: `proj` builds the zero-sum instance, and `lift`
 retains the outer LogUp data together with sumcheck's final valid point claim. -/
 instance logupSumcheckLensComplete :
@@ -713,7 +716,7 @@ theorem logupSumcheckPhaseCompleteness :
     (Sumcheck.Spec.oracleReduction_perfectCompleteness
       F (logupSumcheckDegree M params) (booleanDomain F) n oSpec)
 
-set_option linter.flexible false in
+
 omit [Fintype F] [SampleableType F] in
 /-- Completeness of the final LogUp point check: once sumcheck's final claim is valid for the
 retained LogUp polynomial, the verifier's oracle queries reconstruct the same value. -/
