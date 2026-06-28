@@ -360,6 +360,50 @@ theorem setInclusion_iff_cleared {ι κ : Type*} [Fintype ι] [Fintype κ]
       Finset.card_pos.mpr ⟨i, Finset.mem_filter.mpr ⟨Finset.mem_univ i, rfl⟩⟩
     exact hcastne _ hpos (lt_of_le_of_lt (hleA (a i)) hNa) hcoef
 
+/-- **Lemma 5**, forward direction evaluated at a point `x` (paper eq. (15)). If every value of `a`
+occurs among the values of `b`, then the logarithmic-derivative identity holds at `x` with the
+normalized multiplicity `seqMultiplicity a (b j) / seqMultiplicity b (b j)` as witness. This is the
+evaluated specialization that the completeness proof consumes; the formal `F[X]` statement is
+`setInclusion_iff_cleared`. The hypothesis `hchar` (that a nonzero `a`-multiplicity forces a nonzero
+`b`-multiplicity in `F`) packages set inclusion together with the characteristic bound, exactly as in
+the protocol. Lean's `_ / 0 = 0` convention makes pole hypotheses unnecessary. -/
+theorem setInclusion_eval_forward {ι κ : Type*} [Fintype ι] [Fintype κ]
+    (a : ι → F) (b : κ → F) (x : F)
+    (hchar : ∀ z : F, seqMultiplicity a z ≠ 0 → (seqMultiplicity b z : F) ≠ 0) :
+    (∑ i, (1 : F) / (x + a i))
+      = ∑ j, (seqMultiplicity a (b j) : F) / (seqMultiplicity b (b j) : F) / (x + b j) := by
+  have key : ∀ z : F,
+      seqMultiplicity b z • ((seqMultiplicity a z : F) / (seqMultiplicity b z : F) / (x + z))
+        = seqMultiplicity a z • ((1 : F) / (x + z)) := by
+    intro z
+    by_cases ha : seqMultiplicity a z = 0
+    · simp [ha]
+    · rw [nsmul_eq_mul, nsmul_eq_mul]
+      have hbF : (seqMultiplicity b z : F) ≠ 0 := hchar z ha
+      field_simp
+  have hLHS : (∑ i, (1 : F) / (x + a i))
+      = ∑ z : F, seqMultiplicity a z • ((1 : F) / (x + z)) := by
+    rw [← Finset.sum_fiberwise (Finset.univ : Finset ι) a]
+    refine Finset.sum_congr rfl (fun z _ => ?_)
+    have h : ∀ i ∈ Finset.univ.filter (fun i => a i = z),
+        (1 : F) / (x + a i) = (1 : F) / (x + z) :=
+      fun i hi => by rw [Finset.mem_filter] at hi; rw [hi.2]
+    rw [Finset.sum_congr rfl h, Finset.sum_const]
+    rfl
+  have hRHS : (∑ j, (seqMultiplicity a (b j) : F) / (seqMultiplicity b (b j) : F) / (x + b j))
+      = ∑ z : F, seqMultiplicity b z •
+          ((seqMultiplicity a z : F) / (seqMultiplicity b z : F) / (x + z)) := by
+    rw [← Finset.sum_fiberwise (Finset.univ : Finset κ) b]
+    refine Finset.sum_congr rfl (fun z _ => ?_)
+    have h : ∀ j ∈ Finset.univ.filter (fun j => b j = z),
+        (seqMultiplicity a (b j) : F) / (seqMultiplicity b (b j) : F) / (x + b j)
+          = (seqMultiplicity a z : F) / (seqMultiplicity b z : F) / (x + z) :=
+      fun j hj => by rw [Finset.mem_filter] at hj; rw [hj.2]
+    rw [Finset.sum_congr rfl h, Finset.sum_const]
+    rfl
+  rw [hLHS, hRHS]
+  exact Finset.sum_congr rfl (fun z _ => (key z).symm)
+
 end FractionalDecomposition
 
 /-! ## Fractional-identity algebra
@@ -447,80 +491,6 @@ theorem domainIdentityTerm_eq_zero (groups : Fin K → Finset (TermIdx M))
   refine Finset.sum_congr rfl (fun i hi => ?_)
   rw [← Finset.mul_prod_erase _ _ hi]
   field_simp [hφ i hi]
-
-/-- The normalized multiplicity makes the table-side logarithmic derivative equal the sum of the
-lookup-column logarithmic derivatives. -/
-theorem honest_multiplicity_identity [Fintype F] [DecidableEq F]
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F) (xChallenge : F)
-    (hcols : ∀ j : Fin M, ∀ u : Fin n → Fin 2, ∃ v : Fin n → Fin 2,
-      columns j u = table v)
-    (hchar : ∀ a : F, lookupMultiplicityCount columns a ≠ 0 →
-      (tableMultiplicityCount table a : F) ≠ 0) :
-    (∑ u : Fin n → Fin 2,
-        normalizedMultiplicityValue table columns u / (xChallenge + table u))
-      = ∑ j : Fin M, ∑ u : Fin n → Fin 2,
-          (1 : F) / (xChallenge + columns j u) := by
-  classical
-  have key : ∀ a : F,
-      tableMultiplicityCount table a •
-          ((lookupMultiplicityCount columns a : F) /
-            (tableMultiplicityCount table a : F) / (xChallenge + a))
-        = lookupMultiplicityCount columns a • ((1 : F) / (xChallenge + a)) := by
-    intro a
-    by_cases hT : tableMultiplicityCount table a = 0
-    · have hL : lookupMultiplicityCount columns a = 0 := by
-        rw [lookupMultiplicityCount, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
-        rintro ⟨j, u⟩ - hja
-        obtain ⟨v, hv⟩ := hcols j u
-        have hav : table v = a := hv.symm.trans hja
-        rw [tableMultiplicityCount] at hT
-        exact absurd hT (Finset.card_ne_zero_of_mem
-          (show v ∈ Finset.univ.filter (fun w => table w = a) by simp [hav]))
-      simp [hT, hL]
-    · rw [nsmul_eq_mul, nsmul_eq_mul]
-      by_cases hL : lookupMultiplicityCount columns a = 0
-      · simp [hL]
-      · have hTF := hchar a hL
-        field_simp
-  have hLHS :
-      (∑ u : Fin n → Fin 2, normalizedMultiplicityValue table columns u /
-          (xChallenge + table u))
-        = ∑ a : F, tableMultiplicityCount table a •
-            ((lookupMultiplicityCount columns a : F) / (tableMultiplicityCount table a : F)
-              / (xChallenge + a)) := by
-    rw [← Finset.sum_fiberwise (Finset.univ : Finset (Fin n → Fin 2)) table]
-    refine Finset.sum_congr rfl (fun a _ => ?_)
-    have h : ∀ u ∈ Finset.univ.filter (fun u => table u = a),
-        normalizedMultiplicityValue table columns u / (xChallenge + table u)
-          = (lookupMultiplicityCount columns a : F) / (tableMultiplicityCount table a : F)
-              / (xChallenge + a) := by
-      intro u hu
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hu
-      change (lookupMultiplicityCount columns (table u) : F) /
-            (tableMultiplicityCount table (table u) : F) /
-            (xChallenge + table u)
-          = (lookupMultiplicityCount columns a : F) /
-            (tableMultiplicityCount table a : F) / (xChallenge + a)
-      rw [hu]
-    rw [Finset.sum_congr rfl h, Finset.sum_const]
-    rfl
-  have hRHS :
-      (∑ j : Fin M, ∑ u : Fin n → Fin 2, (1 : F) / (xChallenge + columns j u))
-        = ∑ a : F, lookupMultiplicityCount columns a • ((1 : F) / (xChallenge + a)) := by
-    rw [← Finset.sum_product', Finset.univ_product_univ,
-      ← Finset.sum_fiberwise (Finset.univ : Finset (Fin M × (Fin n → Fin 2)))
-        (fun p => columns p.1 p.2)]
-    refine Finset.sum_congr rfl (fun a _ => ?_)
-    have h : ∀ p ∈ Finset.univ.filter
-          (fun p : Fin M × (Fin n → Fin 2) => columns p.1 p.2 = a),
-        (1 : F) / (xChallenge + columns p.1 p.2) = (1 : F) / (xChallenge + a) := by
-      intro p hp
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hp
-      simp only [hp]
-    rw [Finset.sum_congr rfl h, Finset.sum_const]
-    rfl
-  rw [hLHS, hRHS]
-  exact Finset.sum_congr rfl (fun a _ => key a)
 
 /-- If a lookup value appears in a column and every lookup value appears in the table, then the
 corresponding table multiplicity is nonzero as a field element under the LogUp characteristic
@@ -664,8 +634,17 @@ theorem logupOuterClaim_zero [Fintype F] [DecidableEq F]
     rw [Fin.sum_univ_succ]
     refine congrArg₂ (· + ·) rfl ?_
     exact Finset.sum_congr rfl (fun j _ => hcol j)
+  -- Paper eq. (15): the honest identity at `xChallenge`, as the evaluated forward of Lemma 5
+  -- (`setInclusion_eval_forward`) with the lookup columns as `a` and the table as `b`.
+  have hmi : (∑ u : Fin n → Fin 2,
+        normalizedMultiplicityValue table columns u / (xChallenge + table u))
+      = ∑ j : Fin M, ∑ u : Fin n → Fin 2, (1 : F) / (xChallenge + columns j u) := by
+    have h := setInclusion_eval_forward (fun p : Fin M × (Fin n → Fin 2) => columns p.1 p.2)
+      table xChallenge hchar
+    rw [Fintype.sum_prod_type] at h
+    exact h.symm
   simp_rw [hq, hsum, hterm]
-  rw [Finset.sum_add_distrib, honest_multiplicity_identity table columns xChallenge hcols hchar,
+  rw [Finset.sum_add_distrib, hmi,
     Finset.sum_comm (f := fun u j => (-1 : F) / (xChallenge + columns j u)),
     ← Finset.sum_add_distrib]
   refine Finset.sum_eq_zero (fun j _ => ?_)
