@@ -453,10 +453,10 @@ noncomputable def logupSumcheckPolynomial
   intro i
   exact logupQPolynomial_degreeOf (params.group)
     ((MvPolynomial.mem_restrictDegree_iff_degreeOf_le _ _).mp (oStmt (.input .table)).2)
-    (fun j => (MvPolynomial.mem_restrictDegree_iff_degreeOf_le _ _).mp (oStmt (.input (.column j))).2)
-    ((MvPolynomial.mem_restrictDegree_iff_degreeOf_le _ _).mp (oStmt .multiplicity).2)
-    (fun k => (MvPolynomial.mem_restrictDegree_iff_degreeOf_le _ _).mp (oStmt .helpers k).2)
-    stmt.xChallenge stmt.zChallenge stmt.batchingScalars i
+    (fun j => (MvPolynomial.mem_restrictDegree_iff_degreeOf_le _ _).mp
+    (oStmt (.input (.column j))).2) ((MvPolynomial.mem_restrictDegree_iff_degreeOf_le _ _).mp
+    (oStmt .multiplicity).2) (fun k => (MvPolynomial.mem_restrictDegree_iff_degreeOf_le _ _).mp
+    (oStmt .helpers k).2) stmt.xChallenge stmt.zChallenge stmt.batchingScalars i
 
 /-- Package the LogUp `Q` polynomial as the single oracle statement expected by Sumcheck. -/
 noncomputable def logupSumcheckOracleStmt
@@ -585,13 +585,15 @@ variable (F : Type) [Field F] [Fintype F] [DecidableEq F] [SampleableType F] (n 
 variable (params : ProtocolParams M)
 
 /-- The embedded LogUp sumcheck phase, obtained by lifting ArkLib's generic Sumcheck reduction
-through the LogUp-to-Sumcheck context lens. -/
+through the LogUp-to-Sumcheck context lens with the generic `OracleReduction.liftContext`. Its
+prover and verifier are defeq to `sumcheckProver`/`sumcheckVerifier`, which the full-protocol
+appends consume directly. -/
 noncomputable def sumcheckOracleReduction :
     OracleReduction oSpec (StmtAfterOuter F n M params) (OStmtAfterOuter F n M params) Unit
       (StmtAfterSumcheck F n M params) (OStmtAfterOuter F n M params) Unit
-      ((Sumcheck.Spec.pSpec F (logupSumcheckDegree M params) n)) where
-  prover := sumcheckProver oSpec F n M params
-  verifier := sumcheckVerifier oSpec F n M params
+      ((Sumcheck.Spec.pSpec F (logupSumcheckDegree M params) n)) :=
+  (logupConcreteSumcheckOracleReduction oSpec F n M params).liftContext
+    (logupSumcheckContextLens F n M params)
 
 end Phase2
 

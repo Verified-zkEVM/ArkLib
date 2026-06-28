@@ -550,7 +550,7 @@ theorem logup_outer_completeness [Inhabited F] :
           intro u _
           rw [logupQPolynomial_eval_hypercube]
           simp [stmtAfter, oStmtAfter, hMultiplicity, hHelpers]
-        simp [outerVerifier, outerChallengeXIdx, outerChallengeBatchIdx,
+        simp? [outerVerifier, outerChallengeXIdx, outerChallengeBatchIdx,
           ProtocolSpec.FullTranscript.challenges, ProtocolSpec.FullTranscript.messages,
           ProtocolSpec.Transcript.concat, Fin.snoc]
         constructor
@@ -684,7 +684,10 @@ instance logupSumcheckLensComplete :
     intro outerStmt outerWit innerStmtOut innerWitOut hCompat _ hRelOut
     have hOStmt :
         innerStmtOut.2 = logupSumcheckOracleStmt F n M params outerStmt.1 outerStmt.2 := by
-      simp [Reduction.compatContext] at hCompat
+      simp only [Reduction.compatContext, Function.comp_apply, ProtocolSpec.ChallengeIdx,
+        ProtocolSpec.Challenge, OStmtAfterOuter, OStmtIn, MultiplicityMessage, HelperMessages,
+        Set.mem_image, OptionT.mem_support_iff, Prod.exists, exists_and_right,
+        exists_eq_right] at hCompat
       rcases hCompat with ⟨td, vOut, verOStmt, hRun⟩
       have hProver := reduction_run_prover_mem
         ((logupConcreteSumcheckOracleReduction oSpec F n M params).toReduction)
