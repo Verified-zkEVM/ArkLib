@@ -9,7 +9,7 @@ Many developments are paper-scoped and spread across several modules.
 ArkLib/
   Data/               foundational math, coding theory, polynomials, probability, etc.
   OracleReduction/    core IOR abstractions and security theory
-  CommitmentScheme/   commitments and opening arguments
+  Commitments/        commitments and opening arguments
   ProofSystem/        protocol families and higher-level proofs
   ToMathlib/          local additions not upstreamed to Mathlib
   ToCompPoly/         local additions not upstreamed to CompPoly
@@ -35,8 +35,9 @@ home_page/            site assets and assembled website root
 - Changing core reduction or security abstractions: start in `ArkLib/OracleReduction/`.
 - Working on protocol statements or proofs: start in `ArkLib/ProofSystem/`.
 - Updating commitment interfaces or concrete schemes: start in `ArkLib/Commitments/`
-  (`Ordinary/` for non-interactive schemes built on the VCV-io `CommitmentScheme`,
-  `Functional/` for commitments with oracle openings such as KZG).
+  (`Ordinary/` for plain commit-and-open schemes whose definition comes from the VCV-io
+  `CommitmentScheme`, `Functional/` for commit-plus-oracle-evaluation schemes defined by
+  ArkLib's own `Commitment.Scheme` in `ArkLib/Commitments/Functional/Basic.lean`).
 - Moving reusable helper lemmas that ideally belong upstream: start in `ArkLib/ToMathlib/`,
   `ArkLib/ToCompPoly/`, or `ArkLib/ToVCVio/`, depending on the upstream project.
 - Updating theory docs, references, or long-form exposition: start in `blueprint/src/`.
@@ -47,10 +48,34 @@ home_page/            site assets and assembled website root
 - `ArkLib.lean` is a generated umbrella import file, not a hand-maintained module index.
 - `ArkLib/ToVCVio/` mirrors VCV-io module structure under the importable Lean prefix
   `ArkLib.ToVCVio`; use it for reusable `VCVio` helper lemmas before they are upstreamed.
+- `ArkLib/Commitments/` splits into two families by *what an opening proves*:
+  - `Ordinary/` — standard commitments that only **commit and open** (reveal the committed
+    message). These reuse the VCV-io `CommitmentScheme` definition rather than redefining it;
+    the concrete schemes are `SimpleRO` (a random-oracle commitment, `Ordinary/SimpleRO.lean`)
+    and the simple Ajtai lattice commitment (`Ordinary/Ajtai/Simple/`, with `Scheme`,
+    `Correctness`, and `Security` modules).
+  - `Functional/` — *functional* commitments that **commit and then prove oracle evaluations**
+    of the committed data (an opening proves `oracle data query = response`, not the data
+    itself). These have their own, unrelated definition in
+    `ArkLib/Commitments/Functional/Basic.lean` (`Commitment.Scheme`, plus correctness,
+    evaluation/function binding, and extractability games). KZG and Hachi are the concrete
+    functional schemes.
 - KZG commitment-scheme modules live under `ArkLib/Commitments/Functional/KZG/`: `Basic` for the
   construction and scheme instance, `Correctness` for correctness proofs, `FunctionBinding` for
   the function-binding reduction, and `Binding` for evaluation binding. Shared
   CPolynomial/Polynomial division bridge lemmas live under `ArkLib/ToCompPoly/`.
+- Hachi commitment-scheme modules live under `ArkLib/Commitments/Functional/Hachi/` and formalize
+  the Greyhound [NS24] / Hachi [NOZ26] *inner-outer* Ajtai lattice commitment over a cyclotomic
+  ring `Rq Φ`. **This development is in progress.** Layout:
+  - `Gadget.lean` / `GadgetNorms.lean` — the base-`b` gadget matrix `G`, its norm-reducing digit
+    decomposition `G⁻¹`, and the centered `ℓ₂²`/`ℓ∞` shortness bounds the honest case needs.
+  - `InnerOuter/` — the scheme itself: `Scheme` (the inner/outer commit composition and its
+    *weak opening*, following [NOZ26, §4.1]), `Correctness` (perfect correctness for lawful
+    gadget decompositions), `Security` (the weak-binding reduction to Module-SIS via
+    `verify_weak`), and `Arithmetic` (pins the modulus to the power-of-two cyclotomic
+    `X^{2^α}+1`, which the security proofs genuinely require).
+  - `InnerOuter.lean` — top-level re-export of the scheme, its correctness, and its
+    weak-binding reduction.
 - The Merkle tree implementations now live upstream in `VCVio`, so use
   `VCVio.CryptoFoundations.MerkleTree` or `VCVio.CryptoFoundations.InductiveMerkleTree`
   instead of the old ArkLib-local modules.
@@ -65,5 +90,13 @@ home_page/            site assets and assembled website root
   `ProximityGap/BCIKS20/ListDecoding/Guruswami.lean`.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.
+- Ring switching is a **generic, instantiable compiler** under `ProofSystem/RingSwitching/`, not a
+  Binius-only protocol: `Profile.lean` holds the `RingSwitchingProfile` abstraction (packing data +
+  reconstruction laws), `Prelude.lean` the shared defs + the Binius instance `binaryTowerProfile`,
+  and `General.lean` the full reduction and generic security theorems. Binius instantiates it in
+  `ProofSystem/Binius/FRIBinius/` (`biniusProfile`); Hachi (`NOZ26`) is the intended next instance.
+  Background: KB concept page `docs/kb/concepts/ring-switching.md`; blueprint section
+  `proof_systems/ring_switching.tex`. Structured sum-check support lives in
+  `ProofSystem/Sumcheck/Structured*` and `ProofSystem/Sumcheck/Domain.lean`.
 - Before assuming a file is authoritative, check whether it is source or derived output. See
   [`generated-files.md`](generated-files.md).

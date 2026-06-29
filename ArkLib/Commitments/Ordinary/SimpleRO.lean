@@ -26,6 +26,13 @@ import VCVio
   `CommitmentScheme PP M C D` directly. It mirrors VCV-io's standard-model hash commitment
   `CollisionResistance.KeyedHashFamily.toCommitment`, with a random oracle in place of a keyed
   hash family. For commitments with oracle openings, see `ArkLib.Commitments.Functional.Basic`.
+
+  DISCLAIMER: this works but is a bit weird — it's an oracle commitment scheme without an oracle.
+  VCV-io's `CommitmentScheme` only supports `ProbComp` (`OracleComp unifSpec`), not a general
+  `OracleComp`, so the random oracle is baked in as a sampled function `ro : α × β → γ`. Two
+  cleaner fixes: (1) model it as a functional commitment whose function just opens the whole
+  commitment (weird, since it's then not really functional), or (2) extend VCV-io's
+  `CommitmentScheme` to support a general `OracleComp`, not just `ProbComp`.
 -/
 
 open OracleComp CommitmentScheme

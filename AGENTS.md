@@ -20,7 +20,7 @@ Start with [`README.md`](README.md) for project overview.
 - `ArkLib/Data/` - reusable math, coding theory, polynomials, and supporting definitions.
 - `ArkLib/OracleReduction/` - core IOR abstractions and security theory.
 - `ArkLib/ProofSystem/` - protocol formalizations built on the core.
-- `ArkLib/CommitmentScheme/` - commitments and opening arguments.
+- `ArkLib/Commitments/` - commitments and opening arguments.
 - `ArkLib/ToMathlib/` - local extensions intended for upstreaming.
 - `blueprint/src/` - deep design docs and bibliography.
 - `scripts/` - repo utilities.

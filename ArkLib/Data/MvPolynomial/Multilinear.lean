@@ -76,6 +76,12 @@ abbrev eqPolynomial' : R[X (σ ⊕ σ)] :=
 abbrev eqPolynomial (r : σ → R) : R[X σ] :=
   ∏ i : σ, singleEqPolynomial (r i) (X i)
 
+/-- The equality polynomial value `eq̃(r, r') := eval r' (eqPolynomial r)` — the multilinear
+extension of the equality indicator on `{0,1}^σ`. Equals `1` iff `r = r'` on the Boolean cube.
+This is the canonical `eq̃` used in multilinear-extension-based sumcheck protocols (Binius
+ring-switching, Hachi range checks, …). -/
+noncomputable def eqTilde (r r' : σ → R) : R := eval r' (eqPolynomial r)
+
 theorem eqPolynomial_expanded (r : σ → R) :
     eqPolynomial r = ∏ i : σ, ((1 - C (r i)) * (1 - X i) + C (r i) * X i) := rfl
 

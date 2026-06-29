@@ -179,9 +179,9 @@ def verify_weak (base : ZMod q) (βSq γ κ : Nat)
     (u : Commitment Φ outerRows)
     (opening : Opening Φ innerRows messageRows messageDigits blocks innerDigits) : Bool :=
   (List.finRange blocks).all (fun i =>
-    decide (0 < Rq.l1Norm Φ (opening.challenge i)) &&
-      decide (Rq.l1Norm Φ (opening.challenge i) ≤ κ) &&
-      decide (vecL2NormSq Φ (scalarVecMul (opening.challenge i) (opening.message i)) ≤ βSq) &&
+    decide (0 < ‖opening.challenge i‖₁) &&
+      decide (‖opening.challenge i‖₁ ≤ κ) &&
+      decide (‖opening.challenge i •ᵥ opening.message i‖₂² ≤ βSq) &&
       Simple.verify Φ (gadgetMatrix Φ base innerRows innerDigits)
         (opening.innerDecomp i) (Simple.commit Φ pp.innerMatrix (opening.message i)) ()) &&
     decide (vecLInftyNorm Φ (PolyVec.flattenBlocks opening.innerDecomp) ≤ γ) &&

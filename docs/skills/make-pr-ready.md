@@ -14,6 +14,15 @@ churn.
 
 Work through these in order. Do not stop until every item is complete.
 
+### 0. Establish the real PR base
+
+- Run `git fetch origin main` first, then compute scope and `_generated/` drift against
+  **`origin/main`**, not local `main`. The local `main` ref can be many commits stale (e.g. you
+  branched, then `origin/main` advanced via merges you never pulled). Diffing `main...HEAD` against
+  a stale local `main` inflates the file list and can report phantom `_generated/` drift that
+  actually matches the remote. Use `git diff --stat origin/main...HEAD` for scope and
+  `git diff --quiet origin/main...HEAD -- docs/kb/_generated/` for the CI guard's real view.
+
 ### 1. Follow the contribution guidelines
 
 - Read [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md) in full and make sure every changed file
@@ -46,6 +55,16 @@ Work through these in order. Do not stop until every item is complete.
     verify those directly (every decl has a `/-- … -/`; citation keys resolve in
     `references.bib`; the `kb` regeneration below is consistent) and note the `--docs` limitation
     rather than churning on it.
+  - `--lint` (`lint-style.sh`) reports **repo-wide pre-existing** style debt — hundreds of
+    `ERR_*` lines in files you did not touch. Do **not** try to clear all of it; scope style
+    fixes to your changed files (lint them individually with
+    `python3 scripts/lint-style.py <your-files>`), and treat the **default** `validate.sh`
+    (build + Data warning budget + `check-imports` + `check-docs-integrity` + `kb/lint`) as the
+    real gate. Capture its true exit with `rc=$?` on its own line — a trailing
+    `… ; echo "EXIT $?"` reports the `echo`'s exit (always 0) and masks a failing validate.
+  - The **Data warning budget** fails on any non-`sorry` warning under `ArkLib/Data/`. A
+    toolchain/Mathlib bump commonly introduces **deprecation** warnings (e.g.
+    `X has been deprecated: Use Y instead`) — fix these by switching to the suggested name.
 - Confirm the eventual PR title/description will follow the
   `<type>(<scope>): <subject>` convention (imperative, lowercase, no trailing dot) and includes
   motivation, contrast with previous behavior, and issue references.
@@ -63,15 +82,41 @@ Work through these in order. Do not stop until every item is complete.
   `blueprint/src/references.bib` (see the citation policy in
   [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md) and the workflow in
   [`../wiki/blueprint-and-citations.md`](../wiki/blueprint-and-citations.md)).
-- Regenerate the derived citation metadata — do not hand-edit it:
+- **Do not commit `docs/kb/_generated/` changes in a feature PR.** The CI job's first step,
+  "Reject generated KB updates in PRs" ([`ci.yml`](../../.github/workflows/ci.yml)), fails the
+  build if your branch's `docs/kb/_generated/` differs from `main` in **any** way — and a
+  **deletion counts as a diff** just like a modification or addition. These files are refreshed
+  only on `main`, by [`kb-generated.yml`](../../.github/workflows/kb-generated.yml), which opens an
+  `automation/kb-generated-*` PR after merge. The guard runs before the Lean build, so a stray
+  `_generated/` diff blocks CI before the build even starts (and removing the files does **not**
+  help — the directory must match `main` exactly).
+- You may regenerate the derived metadata **locally to check consistency** — do not hand-edit it —
+  but **revert the `_generated/` outputs before committing** so the directory matches `main`:
 
   ```bash
-  python3 ./scripts/kb/sync_from_bib.py          # refresh docs/kb/_generated/references.json
-  python3 ./scripts/kb/extract_lean_citations.py # refresh docs/kb/_generated/lean-citations.json
+  python3 ./scripts/kb/sync_from_bib.py          # writes docs/kb/_generated/references.json
+  python3 ./scripts/kb/extract_lean_citations.py # writes docs/kb/_generated/lean-citations.json
+  # ... inspect for consistency, then:
+  git checkout origin/main -- docs/kb/_generated/ # restore to main's state; do NOT stage these
   ```
 
-- Confirm the regenerated files are consistent (no dangling keys, no missing entries) and stage
-  them alongside your source changes.
+  If your branch has already diverged in `docs/kb/_generated/` (drift, an accidental delete, or a
+  regenerate that got committed), restore it the same way: `git fetch origin main` then
+  `git checkout origin/main -- docs/kb/_generated/`, and commit so the guard passes.
+- Confirm the regenerated files are consistent (no dangling keys, no missing entries), but stage
+  **only** your source changes plus any scaffolded `docs/kb/papers/` / `docs/kb/sources/` pages
+  (those are *not* under `_generated/` and are allowed in feature PRs) — never the `_generated/`
+  outputs.
+- `kb/lint.py` does **not** verify that every cited key has a BibTeX entry. Check for dangling
+  keys yourself: grep each `[KEY]` used in docstrings against `blueprint/src/references.bib` and
+  add any missing entry (then regenerate). A key can be "present-looking" but actually a different
+  paper — confirm the entry's title/authors match the citation, not just that the key exists.
+- If you **moved or renamed** any `.lean` file, regeneration does **not** fix hand-maintained
+  `docs/kb/papers/*.md` pages (they are scaffolded once, then curated). Grep `docs/**/*.md` for the
+  old path and update curated links + `related_modules` frontmatter — the default `validate.sh`
+  `check-docs-integrity.py` step fails on broken links. Running `kb/regenerate.py` after adding a
+  new cited key also **scaffolds** a new `docs/kb/papers/<KEY>.md` + `docs/kb/sources/<KEY>/`;
+  stage those too.
 
 ### 4. Suggest skill improvements
 
