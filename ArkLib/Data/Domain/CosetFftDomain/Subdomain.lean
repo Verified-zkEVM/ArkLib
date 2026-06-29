@@ -643,7 +643,7 @@ private lemma subdomain_embed_comp {k : ℕ} (hk : k + 1 ≤ n)
     (a : Fin (2 ^ (n - k - 1)))
     (i : Fin (2 ^ (n - (k + 1)))) (hai : (a : ℕ) = (i : ℕ)) :
     CosetFftDomainClass.subdomain_embed (n := n) k
-        (CosetFftDomainClass.subdomain_embed (n := n - k) 1 a) = 
+        (CosetFftDomainClass.subdomain_embed (n := n - k) 1 a) =
         CosetFftDomainClass.subdomain_embed (n := n) (k + 1) i := by
   ext
   by_cases hk1 : k + 1 = n
@@ -661,7 +661,7 @@ private lemma subdomain_embed_comp {k : ℕ} (hk : k + 1 ≤ n)
 omit [DecidableEq F] in
 private lemma subdomain_eval (ω : D) (j : ℕ)
     (b : Fin (2 ^ (n - j))) :
-    (subdomain ω j) b = 
+    (subdomain ω j) b =
       ω 0 ^ 2 ^ j * ((ω 0)⁻¹ * ω (CosetFftDomainClass.subdomain_embed j b)) := rfl
 
 omit [DecidableEq F] in
@@ -701,10 +701,10 @@ omit [DecidableEq F] in
   is itself on the nose. -/
 @[simp]
 lemma subdomain_zero_eq_self {n : ℕ} {ω : SmoothCosetFftDomain n F} :
-  ω.subdomain 0 = ω := by 
-  aesop 
-    (add simp 
-      [subdomain, 
+  ω.subdomain 0 = ω := by
+  aesop
+    (add simp
+      [subdomain,
        CosetFftDomainClass.subdomain,
        CosetFftDomainClass.mkSubgroupUnit,
        CosetFftDomainClass.subdomain_embed])

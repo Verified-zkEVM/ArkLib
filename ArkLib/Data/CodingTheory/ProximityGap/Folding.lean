@@ -277,14 +277,14 @@ theorem foldWord_k_1' [NeZero n] {α : F} :
   of k=1 folding. -/
 noncomputable def iteratedFoldWord (domain : SmoothCosetFftDomain n F)
   (f : Word F (Fin (2 ^ n))) (k : ℕ) (α : Fin k → F) :
-  Word F (Fin (2 ^ (n - k))) := 
+  Word F (Fin (2 ^ (n - k))) :=
   match k with
   | 0 => f
-  | Nat.succ k => 
-    let prev := iteratedFoldWord domain f k (fun i ↦ α ⟨i.val, by omega⟩) 
-    let foldedPrev := 
-      foldWord (domain.subdomain k) prev 1 (α ⟨k, by omega⟩) 
-    fun i ↦ foldedPrev ⟨i.val, by aesop (add safe cases Fin)⟩ 
+  | Nat.succ k =>
+    let prev := iteratedFoldWord domain f k (fun i ↦ α ⟨i.val, by omega⟩)
+    let foldedPrev :=
+      foldWord (domain.subdomain k) prev 1 (α ⟨k, by omega⟩)
+    fun i ↦ foldedPrev ⟨i.val, by aesop (add safe cases Fin)⟩
 
 @[simp]
 lemma iteratedFoldWord_zero {α : Fin 0 → F} :
@@ -459,7 +459,7 @@ theorem iteratedFoldWord_mem_code_of_mem_code {d : ℕ}
     ReedSolomon.code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) (d / (2 ^ k)) := by
   induction k with
   | zero => simp [hf]
-  | succ k ih => 
+  | succ k ih =>
     have hdvd_k : 2 ^ k ∣ d := dvd_trans (pow_dvd_pow 2 (Nat.le_succ k)) hk_d_dvd
     have hprev := ih (α := fun i ↦ α ⟨i.val, by omega⟩) (by omega) hdvd_k
     have hk1 : (1 : ℕ) ≤ n - k := by omega
@@ -472,7 +472,7 @@ theorem iteratedFoldWord_mem_code_of_mem_code {d : ℕ}
     rw [ReedSolomon.mem_code_iff_exists_polynomial] at hfold
     obtain ⟨p, hpdeg, hpeval⟩ := hfold
     rw [div_two_pow_div_two] at hpdeg
-    have hunfold : iteratedFoldWord domain f (k + 1) α = 
+    have hunfold : iteratedFoldWord domain f (k + 1) α =
         fun i : Fin (2 ^ (n - (k + 1))) ↦
             foldWord (domain.subdomain k)
               (iteratedFoldWord domain f k (fun j ↦ α ⟨j.val, by omega⟩)) 1

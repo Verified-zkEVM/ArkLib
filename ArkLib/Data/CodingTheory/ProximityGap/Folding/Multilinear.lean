@@ -120,7 +120,7 @@ private lemma aeval_substFun_mem [NeZero n] {gg : F⦃≤ 1⦄[X (Fin n)]}
     intro hm β
     haveI : NeZero (n - m) := ⟨by omega⟩
     have hchar : ¬CharP F 2 := CosetFftDomainClass.domain_implies_char_ne_2 domain
-    have hq : MvPolynomial.aeval (substFun m (fun j ↦ β ⟨j.val, by omega⟩)) gg.1 ∈ 
+    have hq : MvPolynomial.aeval (substFun m (fun j ↦ β ⟨j.val, by omega⟩)) gg.1 ∈
       MvPolynomial.restrictDegree (Fin (n - m)) F 1 := ih (by omega) _
     have hmem :
         (MvPolynomial.aeval (substFun m (fun j ↦ β ⟨j.val, by omega⟩)) gg.1).aeval
@@ -142,7 +142,7 @@ theorem iteratedFoldWord_eq_evalOnPoints_powAlgHom [NeZero n] {α : Fin k → F}
       evalOnPoints
         (domain.subdomain k)
         (powAlgHom (g.1.aeval (fun i ↦
-          if h : i.val < k then C (α ⟨i.val, h⟩) else MvPolynomial.X 
+          if h : i.val < k then C (α ⟨i.val, h⟩) else MvPolynomial.X
             (⟨i.val - k, by omega⟩ : Fin (n - k))))) := by
   suffices H : ∀ (k : ℕ), k ≤ n → ∀ (α : Fin k → F),
       iteratedFoldWord domain f k α
