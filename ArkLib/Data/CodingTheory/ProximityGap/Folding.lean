@@ -272,6 +272,9 @@ theorem foldWord_k_1' [NeZero n] {α : F} :
     let i' := domain.log ⟨-x.1, by obtain ⟨x, hx⟩ := x; simpa using hx⟩
     ((f i + f i') / 2) + α * ((f i - f i') / (2 * x)) := by aesop (add simp [foldWord_k_1])
 
+/-- The version of a folding where
+  k steps are achieved via iterated application
+  of k=1 folding. -/
 noncomputable def iteratedFoldWord (domain : SmoothCosetFftDomain n F)
   (f : Word F (Fin (2 ^ n))) (k : ℕ) (α : Fin k → F) :
   Word F (Fin (2 ^ (n - k))) := 

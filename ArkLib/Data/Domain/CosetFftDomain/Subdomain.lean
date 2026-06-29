@@ -697,6 +697,8 @@ abbrev subdomain {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : ℕ) :
   SmoothCosetFftDomain (n - i) F := CosetFftDomainClass.subdomain ω i
 
 omit [DecidableEq F] in
+/-- The zeroth subdomain of a `SmoothCosetFftDomain`
+  is itself on the nose. -/
 @[simp]
 lemma subdomain_zero_eq_self {n : ℕ} {ω : SmoothCosetFftDomain n F} :
   ω.subdomain 0 = ω := by 

@@ -85,26 +85,17 @@ private lemma aeval_substFun_comp {k : ℕ} [NeZero (n - k)] (γ : Fin (k + 1) �
           else MvPolynomial.X (⟨i.val - 1, by omega⟩ : Fin (n - k - 1)))
       = MvPolynomial.aeval (substFun (k + 1) γ) g0 := by
   rw [MvPolynomial.comp_aeval_apply]
-  refine congrArg (fun φ => MvPolynomial.aeval φ g0) ?_
+  refine congrArg (fun φ ↦ MvPolynomial.aeval φ g0) ?_
   funext i
   unfold substFun
   by_cases h1 : i.val < k
-  · rw [dif_pos h1, dif_pos (show i.val < k + 1 by omega),
-        MvPolynomial.aeval_C, MvPolynomial.algebraMap_eq]
-  · rw [dif_neg h1, MvPolynomial.aeval_X]
+  · rw [dif_pos h1, dif_pos (show i.val < k + 1 by omega)]
+    simp
+  · rw [dif_neg h1]
     by_cases h2 : i.val = k
-    · have e0 : (⟨i.val - k, by omega⟩ : Fin (n - k)) = 0 :=
-        Fin.ext (by simp only [Fin.val_mk, Fin.val_zero]; omega)
-      rw [e0, dif_pos rfl, dif_pos (show i.val < k + 1 by omega)]
-      exact congrArg MvPolynomial.C (congrArg γ (Fin.ext (by simp only [Fin.val_mk]; omega)))
-    · have hik : k < i.val := lt_of_le_of_ne (not_lt.mp h1) (Ne.symm h2)
-      have hne : (⟨i.val - k, by omega⟩ : Fin (n - k)) ≠ 0 := fun hc => by
-        have : i.val - k = 0 := by simpa [Fin.ext_iff] using hc
-        omega
-      rw [dif_neg hne, dif_neg (show ¬ i.val < k + 1 by omega)]
-      exact congrArg MvPolynomial.X (Fin.ext (by simp only [Fin.val_mk]; omega))
+      <;> aesop (add safe (by grind))
 
-lemma aeval_split_mem {n : ℕ} [NeZero n] {R : Type} [Field R]
+private lemma aeval_split_mem {n : ℕ} [NeZero n] {R : Type} [Field R]
   (hchar : ¬CharP R 2)
   (p : R⦃≤ 1⦄[X (Fin n)]) (α : R) :
   p.1.aeval
@@ -114,6 +105,7 @@ lemma aeval_split_mem {n : ℕ} [NeZero n] {R : Type} [Field R]
   exact Submodule.add_mem _ (even_pred p).2
     (by rw [MvPolynomial.C_mul']; exact Submodule.smul_mem _ _ (odd_pred p).2)
 
+omit [DecidableEq F] in
 private lemma aeval_substFun_mem [NeZero n] {gg : F⦃≤ 1⦄[X (Fin n)]}
   {domain : SmoothCosetFftDomain n F} :
   ∀ (m : ℕ), m ≤ n → ∀ (β : Fin m → F),
@@ -122,17 +114,14 @@ private lemma aeval_substFun_mem [NeZero n] {gg : F⦃≤ 1⦄[X (Fin n)]}
   induction m with
   | zero =>
     intro hm β
-    have hsub : (substFun (n := n) 0 β) = MvPolynomial.X := by
-      funext i
-      simp only [substFun, Nat.not_lt_zero, dif_neg, not_false_eq_true, Nat.sub_zero]
-    rw [hsub, MvPolynomial.aeval_X_left_apply]
-    exact gg.2
+    have : (substFun (n := n) 0 β) = MvPolynomial.X := by aesop
+    aesop
   | succ m ih =>
     intro hm β
     haveI : NeZero (n - m) := ⟨by omega⟩
     have hchar : ¬CharP F 2 := CosetFftDomainClass.domain_implies_char_ne_2 domain
-    have hq : MvPolynomial.aeval (substFun m (fun j ↦ β ⟨j.val, by omega⟩)) gg.1
-                ∈ MvPolynomial.restrictDegree (Fin (n - m)) F 1 := ih (by omega) _
+    have hq : MvPolynomial.aeval (substFun m (fun j ↦ β ⟨j.val, by omega⟩)) gg.1 ∈ 
+      MvPolynomial.restrictDegree (Fin (n - m)) F 1 := ih (by omega) _
     have hmem :
         (MvPolynomial.aeval (substFun m (fun j ↦ β ⟨j.val, by omega⟩)) gg.1).aeval
           (fun i : Fin (n - m) ↦ if h : i = 0 then MvPolynomial.C (β ⟨m, by omega⟩)
@@ -142,7 +131,10 @@ private lemma aeval_substFun_mem [NeZero n] {gg : F⦃≤ 1⦄[X (Fin n)]}
     rw [←aeval_substFun_comp (k := m) β gg.1]
     exact hmem
 
-lemma iteratedFoldWord_eq_evalOnPoints_powAlgHom [NeZero n] {α : Fin k → F}
+/-- Lemma 4.15 from [ACFY24]. Provides a way to
+  compute the corresponding multilinear extension
+  for the interated folding of codewords. -/
+theorem iteratedFoldWord_eq_evalOnPoints_powAlgHom [NeZero n] {α : Fin k → F}
   {g : F⦃≤ 1⦄[X (Fin n)]}
   (hk : k ≤ n)
   (hf : f = evalOnPoints domain (powAlgHom g.1)) :
@@ -160,11 +152,8 @@ lemma iteratedFoldWord_eq_evalOnPoints_powAlgHom [NeZero n] {α : Fin k → F}
   induction k with
   | zero =>
     intro _ α
-    rw [iteratedFoldWord_zero, hf]
-    have hsub : (substFun (n := n) 0 α) = MvPolynomial.X := by
-      funext i
-      simp only [substFun, Nat.not_lt_zero, dif_neg, not_false_eq_true, Nat.sub_zero]
-    simp [hsub]
+    have : (substFun (n := n) 0 α) = MvPolynomial.X := by aesop
+    aesop
   | succ k ih =>
     intro hk α
     haveI : NeZero (n - k) := ⟨by omega⟩
@@ -181,7 +170,7 @@ lemma iteratedFoldWord_eq_evalOnPoints_powAlgHom [NeZero n] {α : Fin k → F}
         (g := ⟨g.1.aeval (substFun k (fun j ↦ α ⟨j.val, by omega⟩)), hmem⟩)
         hprev
     funext i
-    have hi2 : i.val < 2 ^ (n - k - 1) := by rw [Nat.sub_sub]; exact i.isLt
+    have hi2 : i.val < 2 ^ (n - k - 1) := by grind
     change foldWord (domain.subdomain k)
           (iteratedFoldWord domain f k (fun j ↦ α ⟨j.val, by omega⟩)) 1 (α ⟨k, by omega⟩)
           ⟨i.val, hi2⟩ = _
