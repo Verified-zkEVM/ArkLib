@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Ilia Vlasov
+Authors: Ilia Vlasov, Aristotle (Harmonic)
 -/
 
 import Mathlib.Algebra.Polynomial.Roots
@@ -71,5 +71,123 @@ lemma foldWord_eq_evalOnPoints_powAlgHom [NeZero n] {α : F}
       [(by ring_nf),
        (by rw [add_comm, mul_comm]),
        sqFoldMapGen_eq_sqFoldMapGen_of_pow_apply_eq_pow_apply])
+
+private noncomputable def substFun (m : ℕ) (β : Fin m → F) (i : Fin n) :
+    MvPolynomial (Fin (n - m)) F :=
+  if h : i.val < m then MvPolynomial.C (β ⟨i.val, h⟩)
+  else MvPolynomial.X ⟨i.val - m, by omega⟩
+
+omit [DecidableEq F] in
+private lemma aeval_substFun_comp {k : ℕ} [NeZero (n - k)] (γ : Fin (k + 1) → F)
+    (g0 : MvPolynomial (Fin n) F) :
+    (MvPolynomial.aeval (substFun k (fun j ↦ γ ⟨j.val, by omega⟩)) g0).aeval
+        (fun i : Fin (n - k) ↦ if h : i = 0 then MvPolynomial.C (γ ⟨k, by omega⟩)
+          else MvPolynomial.X (⟨i.val - 1, by omega⟩ : Fin (n - k - 1)))
+      = MvPolynomial.aeval (substFun (k + 1) γ) g0 := by
+  rw [MvPolynomial.comp_aeval_apply]
+  refine congrArg (fun φ => MvPolynomial.aeval φ g0) ?_
+  funext i
+  unfold substFun
+  by_cases h1 : i.val < k
+  · rw [dif_pos h1, dif_pos (show i.val < k + 1 by omega),
+        MvPolynomial.aeval_C, MvPolynomial.algebraMap_eq]
+  · rw [dif_neg h1, MvPolynomial.aeval_X]
+    by_cases h2 : i.val = k
+    · have e0 : (⟨i.val - k, by omega⟩ : Fin (n - k)) = 0 :=
+        Fin.ext (by simp only [Fin.val_mk, Fin.val_zero]; omega)
+      rw [e0, dif_pos rfl, dif_pos (show i.val < k + 1 by omega)]
+      exact congrArg MvPolynomial.C (congrArg γ (Fin.ext (by simp only [Fin.val_mk]; omega)))
+    · have hik : k < i.val := lt_of_le_of_ne (not_lt.mp h1) (Ne.symm h2)
+      have hne : (⟨i.val - k, by omega⟩ : Fin (n - k)) ≠ 0 := fun hc => by
+        have : i.val - k = 0 := by simpa [Fin.ext_iff] using hc
+        omega
+      rw [dif_neg hne, dif_neg (show ¬ i.val < k + 1 by omega)]
+      exact congrArg MvPolynomial.X (Fin.ext (by simp only [Fin.val_mk]; omega))
+
+lemma aeval_split_mem {n : ℕ} [NeZero n] {R : Type} [Field R]
+  (hchar : ¬CharP R 2)
+  (p : R⦃≤ 1⦄[X (Fin n)]) (α : R) :
+  p.1.aeval
+    (fun i ↦ if h : i = 0 then C α else (MvPolynomial.X ⟨i.val - 1, by omega⟩ : R[X (Fin (n - 1))]))
+      ∈ restrictDegree (Fin (n - 1)) R 1 := by
+  rw [even_and_odd_eval hchar]
+  exact Submodule.add_mem _ (even_pred p).2
+    (by rw [MvPolynomial.C_mul']; exact Submodule.smul_mem _ _ (odd_pred p).2)
+
+private lemma aeval_substFun_mem [NeZero n] {gg : F⦃≤ 1⦄[X (Fin n)]}
+  {domain : SmoothCosetFftDomain n F} :
+  ∀ (m : ℕ), m ≤ n → ∀ (β : Fin m → F),
+    MvPolynomial.aeval (substFun m β) gg.1 ∈ MvPolynomial.restrictDegree (Fin (n - m)) F 1 := by
+  intro m
+  induction m with
+  | zero =>
+    intro hm β
+    have hsub : (substFun (n := n) 0 β) = MvPolynomial.X := by
+      funext i
+      simp only [substFun, Nat.not_lt_zero, dif_neg, not_false_eq_true, Nat.sub_zero]
+    rw [hsub, MvPolynomial.aeval_X_left_apply]
+    exact gg.2
+  | succ m ih =>
+    intro hm β
+    haveI : NeZero (n - m) := ⟨by omega⟩
+    have hchar : ¬CharP F 2 := CosetFftDomainClass.domain_implies_char_ne_2 domain
+    have hq : MvPolynomial.aeval (substFun m (fun j ↦ β ⟨j.val, by omega⟩)) gg.1
+                ∈ MvPolynomial.restrictDegree (Fin (n - m)) F 1 := ih (by omega) _
+    have hmem :
+        (MvPolynomial.aeval (substFun m (fun j ↦ β ⟨j.val, by omega⟩)) gg.1).aeval
+          (fun i : Fin (n - m) ↦ if h : i = 0 then MvPolynomial.C (β ⟨m, by omega⟩)
+            else MvPolynomial.X (⟨i.val - 1, by omega⟩ : Fin (n - m - 1)))
+          ∈ MvPolynomial.restrictDegree (Fin (n - m - 1)) F 1 :=
+      aeval_split_mem hchar ⟨_, hq⟩ (β ⟨m, by omega⟩)
+    rw [←aeval_substFun_comp (k := m) β gg.1]
+    exact hmem
+
+lemma iteratedFoldWord_eq_evalOnPoints_powAlgHom [NeZero n] {α : Fin k → F}
+  {g : F⦃≤ 1⦄[X (Fin n)]}
+  (hk : k ≤ n)
+  (hf : f = evalOnPoints domain (powAlgHom g.1)) :
+  iteratedFoldWord domain f k α =
+      evalOnPoints
+        (domain.subdomain k)
+        (powAlgHom (g.1.aeval (fun i ↦
+          if h : i.val < k then C (α ⟨i.val, h⟩) else MvPolynomial.X 
+            (⟨i.val - k, by omega⟩ : Fin (n - k))))) := by
+  suffices H : ∀ (k : ℕ), k ≤ n → ∀ (α : Fin k → F),
+      iteratedFoldWord domain f k α
+        = evalOnPoints (domain.subdomain k) (powAlgHom (g.1.aeval (substFun k α))) by
+    exact H k hk α
+  intro k
+  induction k with
+  | zero =>
+    intro _ α
+    rw [iteratedFoldWord_zero, hf]
+    have hsub : (substFun (n := n) 0 α) = MvPolynomial.X := by
+      funext i
+      simp only [substFun, Nat.not_lt_zero, dif_neg, not_false_eq_true, Nat.sub_zero]
+    simp [hsub]
+  | succ k ih =>
+    intro hk α
+    haveI : NeZero (n - k) := ⟨by omega⟩
+    have hprev : iteratedFoldWord domain f k (fun j ↦ α ⟨j.val, by omega⟩)
+        = evalOnPoints (domain.subdomain k)
+            (powAlgHom (g.1.aeval (substFun k (fun j ↦ α ⟨j.val, by omega⟩)))) :=
+      ih (by omega) _
+    have hmem := aeval_substFun_mem (domain := domain) (gg := g) k (by omega)
+      (fun j ↦ α ⟨j.val, by omega⟩)
+    have hfold := foldWord_eq_evalOnPoints_powAlgHom
+        (domain := domain.subdomain k)
+        (f := iteratedFoldWord domain f k (fun j ↦ α ⟨j.val, by omega⟩))
+        (α := α ⟨k, by omega⟩)
+        (g := ⟨g.1.aeval (substFun k (fun j ↦ α ⟨j.val, by omega⟩)), hmem⟩)
+        hprev
+    funext i
+    have hi2 : i.val < 2 ^ (n - k - 1) := by rw [Nat.sub_sub]; exact i.isLt
+    change foldWord (domain.subdomain k)
+          (iteratedFoldWord domain f k (fun j ↦ α ⟨j.val, by omega⟩)) 1 (α ⟨k, by omega⟩)
+          ⟨i.val, hi2⟩ = _
+    rw [hfold]
+    simp only [evalOnPoints, Function.Embedding.coeFn_mk, LinearMap.coe_mk, AddHom.coe_mk]
+    rw [aeval_substFun_comp (k := k) (γ := α) g.1,
+        subdomain_one_comp (ω := domain) (by omega) ⟨i.val, hi2⟩ i rfl]
 
 end ProximityGap

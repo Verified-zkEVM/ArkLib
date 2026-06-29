@@ -9,7 +9,6 @@ import Mathlib.Tactic.IntervalCases
 import Mathlib.Algebra.CharP.Basic
 
 import CompPoly.Data.MvPolynomial.Notation
-import ArkLib.Data.MvPolynomial.Interpolation
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 
 namespace MvPolynomial

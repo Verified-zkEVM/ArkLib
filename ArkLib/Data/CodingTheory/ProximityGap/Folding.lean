@@ -272,6 +272,21 @@ theorem foldWord_k_1' [NeZero n] {α : F} :
     let i' := domain.log ⟨-x.1, by obtain ⟨x, hx⟩ := x; simpa using hx⟩
     ((f i + f i') / 2) + α * ((f i - f i') / (2 * x)) := by aesop (add simp [foldWord_k_1])
 
+noncomputable def iteratedFoldWord (domain : SmoothCosetFftDomain n F)
+  (f : Word F (Fin (2 ^ n))) (k : ℕ) (α : Fin k → F) :
+  Word F (Fin (2 ^ (n - k))) := 
+  match k with
+  | 0 => f
+  | Nat.succ k => 
+    let prev := iteratedFoldWord domain f k (fun i ↦ α ⟨i.val, by omega⟩) 
+    let foldedPrev := 
+      foldWord (domain.subdomain k) prev 1 (α ⟨k, by omega⟩) 
+    fun i ↦ foldedPrev ⟨i.val, by aesop (add safe cases Fin)⟩ 
+
+@[simp]
+lemma iteratedFoldWord_zero {α : Fin 0 → F} :
+  iteratedFoldWord domain f 0 α = f := rfl
+
 omit [DecidableEq F] in
 /-- TODO: this will go once this https://github.com/Verified-zkEVM/CompPoly/pull/203
   is merged. -/
@@ -426,6 +441,46 @@ theorem foldWord_mem_code_of_mem_code {d : ℕ}
           rw [show domain i = (domain : (Fin (2 ^ n)) ↪ F) i by rfl]
         rw [ReedSolomon.toPolynomial_eval_at_domain]
         simp [evalOnPoints]
+
+private lemma div_two_pow_div_two (d k : ℕ) :
+    d / 2 ^ k / 2 ^ 1 = d / 2 ^ (k + 1) := by
+  rw [pow_one, Nat.div_div_eq_div_mul, ←pow_succ]
+
+theorem iteratedFoldWord_mem_code_of_mem_code {d : ℕ}
+  {α : Fin k → F}
+  (hk : k ≤ n)
+  (hk_d_dvd : 2 ^ k ∣ d)
+  {f : Word F (Fin (2 ^ n))}
+  (hf : f ∈ ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d) :
+  iteratedFoldWord domain f k α ∈
+    ReedSolomon.code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) (d / (2 ^ k)) := by
+  induction k with
+  | zero => simp [hf]
+  | succ k ih => 
+    have hdvd_k : 2 ^ k ∣ d := dvd_trans (pow_dvd_pow 2 (Nat.le_succ k)) hk_d_dvd
+    have hprev := ih (α := fun i ↦ α ⟨i.val, by omega⟩) (by omega) hdvd_k
+    have hk1 : (1 : ℕ) ≤ n - k := by omega
+    have hdvd1 : (2 : ℕ) ^ 1 ∣ d / 2 ^ k := by
+      obtain ⟨c, rfl⟩ := hk_d_dvd
+      refine ⟨c, ?_⟩
+      rw [pow_succ, mul_assoc, Nat.mul_div_cancel_left _ (by positivity), pow_one]
+    have hfold := foldWord_mem_code_of_mem_code (domain := domain.subdomain k) (k := 1)
+        (α := α ⟨k, by omega⟩) hk1 hdvd1 hprev
+    rw [ReedSolomon.mem_code_iff_exists_polynomial] at hfold
+    obtain ⟨p, hpdeg, hpeval⟩ := hfold
+    rw [div_two_pow_div_two] at hpdeg
+    have hunfold : iteratedFoldWord domain f (k + 1) α = 
+        fun i : Fin (2 ^ (n - (k + 1))) ↦
+            foldWord (domain.subdomain k)
+              (iteratedFoldWord domain f k (fun j ↦ α ⟨j.val, by omega⟩)) 1
+              (α ⟨k, by omega⟩) ⟨i.val, by rw [Nat.sub_sub]; exact i.isLt⟩ := rfl
+    rw [hunfold, ReedSolomon.mem_code_iff_exists_polynomial]
+    refine ⟨p, hpdeg, ?_⟩
+    funext i
+    have hb := subdomain_one_comp (ω := domain) hk ⟨i.val, by rw [Nat.sub_sub]; exact i.isLt⟩ i rfl
+    simp only [hpeval, ReedSolomon.evalOnPoints, Function.Embedding.coeFn_mk, LinearMap.coe_mk,
+      AddHom.coe_mk]
+    rw [hb]
 
 private noncomputable def foldWordAuxCoeff (domain : SmoothCosetFftDomain n F)
   (f : Word F (Fin (2 ^ n))) (k : ℕ) (i : Fin k) (x : F) : F :=
