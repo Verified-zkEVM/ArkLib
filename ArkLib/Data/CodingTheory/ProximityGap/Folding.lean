@@ -449,6 +449,9 @@ private lemma div_two_pow_div_two (d k : ℕ) :
     d / 2 ^ k / 2 ^ 1 = d / 2 ^ (k + 1) := by
   rw [pow_one, Nat.div_div_eq_div_mul, ←pow_succ]
 
+/-- Perfect completeness of iterated folding: if a word belongs to an RS-code
+  then its `iteratedFoldWord` belongs to a folded RS-code.
+-/
 theorem iteratedFoldWord_mem_code_of_mem_code {d : ℕ}
   {α : Fin k → F}
   (hk : k ≤ n)

@@ -456,7 +456,6 @@ sending `u` to `u % 2^(n-i)`. Can be used to compute indices of powers of subdom
 def sqFoldMapGen {i : ℕ} (u : Fin (2 ^ n)) : Fin (2 ^ (n - i)) :=
   ⟨u.val % 2 ^ (n - i), Nat.mod_lt _ (Nat.two_pow_pos _)⟩
 
-omit [DecidableEq F] in
 /-- `ReedSolomon.evalOnPoints` related on the domain and a subdomain. -/
 lemma evalOnPoints_pow_of_two_eq_evalOnPoints_subdomain
   [NeZero n] {p : Polynomial F} {i : ℕ} :
@@ -550,7 +549,6 @@ lemma evalOnPoints_pow_of_two_eq_evalOnPoints_subdomain
   · field_simp
   · cases k : 2 ^ i <;> simp_all [pow_succ, mul_assoc]
 
-omit [DecidableEq F] in
 /-- A particularly useful special case of `evalOnPoints_pow_of_two_eq_evalOnPoints_subdomain`
   when `i = 1`. -/
 lemma evalOnPoints_sq_eq_evalOnPoints_subdomain [NeZero n] {p : Polynomial F} :
@@ -560,7 +558,6 @@ lemma evalOnPoints_sq_eq_evalOnPoints_subdomain [NeZero n] {p : Polynomial F} :
   rw [show Polynomial.X ^ 2 = Polynomial.X ^ (2 ^ 1) by rfl,
       evalOnPoints_pow_of_two_eq_evalOnPoints_subdomain]
 
-omit [DecidableEq F] in
 /-- Powers of domain values in terms of subdomain values. -/
 lemma subdomain_sqFoldMapGen_eq_pow_domain [NeZero n] {i : ℕ} {j : Fin (2 ^ n)} :
   subdomain ω i (sqFoldMapGen j) = ω j ^ 2 ^ i := by
@@ -568,7 +565,6 @@ lemma subdomain_sqFoldMapGen_eq_pow_domain [NeZero n] {i : ℕ} {j : Fin (2 ^ n)
   specialize @this F _ n D _ _ ω _ (Polynomial.X) i
   simp_all [funext_iff, ReedSolomon.evalOnPoints]
 
-omit [DecidableEq F] in
 /-- `sqFoldMapGen j` equals `sqFoldMapGen j'`
   if `ω j ^ 2 ^ j` equals `ω j ^ 2 ^ j'`. -/
 lemma sqFoldMapGen_eq_sqFoldMapGen_of_pow_apply_eq_pow_apply
@@ -638,7 +634,6 @@ lemma sqFoldMapGen_eq_sqFoldMapGen_of_pow_apply_eq_pow_apply
       exact h_contra h_div
     simp_all [mul_comm]
 
-omit [DecidableEq F] in
 private lemma subdomain_embed_comp {k : ℕ} (hk : k + 1 ≤ n)
     (a : Fin (2 ^ (n - k - 1)))
     (i : Fin (2 ^ (n - (k + 1)))) (hai : (a : ℕ) = (i : ℕ)) :
@@ -658,13 +653,11 @@ private lemma subdomain_embed_comp {k : ℕ} (hk : k + 1 ≤ n)
     rw [hai, pow_succ]
     ring
 
-omit [DecidableEq F] in
 private lemma subdomain_eval (ω : D) (j : ℕ)
     (b : Fin (2 ^ (n - j))) :
     (subdomain ω j) b =
       ω 0 ^ 2 ^ j * ((ω 0)⁻¹ * ω (CosetFftDomainClass.subdomain_embed j b)) := rfl
 
-omit [DecidableEq F] in
 /-- Composing the `k`th subdomain with one more folding step gives the `(k+1)`th subdomain
   (pointwise, under the index identification `n - k - 1 = n - (k + 1)`). -/
 lemma subdomain_one_comp
