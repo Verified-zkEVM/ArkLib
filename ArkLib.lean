@@ -254,6 +254,9 @@ import ArkLib.ProofSystem.Sumcheck.Domain
 import ArkLib.ProofSystem.Sumcheck.Impl.Basic
 import ArkLib.ProofSystem.Sumcheck.Spec.General
 import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
+import ArkLib.ProofSystem.Sumcheck.Structured
+import ArkLib.ProofSystem.Sumcheck.Structured.Prismalinear
+import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
 import ArkLib.ProofSystem.ToyProblem.ConstrainedCode
 import ArkLib.ProofSystem.ToyProblem.Definitions
 import ArkLib.ProofSystem.ToyProblem.Impl.FRS
