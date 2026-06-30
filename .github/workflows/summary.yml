@@ -21,12 +21,15 @@ jobs:
         uses: alexanderlhicks/lean-summary-workflow@main
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          api_key: ${{ secrets.GEMINI_API_KEY }}
-          provider: gemini  # or: anthropic, openai
-          model: gemini-3-flash-preview  # or: claude-sonnet-4-6, gpt-5.4-mini
+          api_key: ${{ secrets.OPENROUTER_KEY }}
+          # Any OpenRouter slug. google/gemma-4-26b-a4b-it is ~8x cheaper if you prefer.
+          model: google/gemini-3-flash-preview
           github_repository: ${{ github.repository }}
           pr_number: ${{ github.event.pull_request.number }}
           # Optional:
           additional_instructions_path: 'CONTRIBUTING.md'
           validate_title: 'true'
           # upstream_path: 'ToMathlib/'
+          # reasoning_effort: 'low'              # low | medium | high; default off
+          # max_file_diff_chars: '60000'         # ~1,200 Lean lines per file
+          # max_instructions_diff_chars: '400000'  # ~8,000 changed lines; fits ~128k-token models
