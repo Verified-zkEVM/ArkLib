@@ -111,5 +111,13 @@ home_page/            site assets and assembled website root
   split. The umbrella `CoordinateWiseSpecialSoundness.lean` re-exports both files.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.
+- Ring switching is a **generic, instantiable compiler** under `ProofSystem/RingSwitching/`, not a
+  Binius-only protocol: `Profile.lean` holds the `RingSwitchingProfile` abstraction (packing data +
+  reconstruction laws), `Prelude.lean` the shared defs + the Binius instance `binaryTowerProfile`,
+  and `General.lean` the full reduction and generic security theorems. Binius instantiates it in
+  `ProofSystem/Binius/FRIBinius/` (`biniusProfile`); Hachi (`NOZ26`) is the intended next instance.
+  Background: KB concept page `docs/kb/concepts/ring-switching.md`; blueprint section
+  `proof_systems/ring_switching.tex`. Structured sum-check support lives in
+  `ProofSystem/Sumcheck/Structured*` and `ProofSystem/Sumcheck/Domain.lean`.
 - Before assuming a file is authoritative, check whether it is source or derived output. See
   [`generated-files.md`](generated-files.md).

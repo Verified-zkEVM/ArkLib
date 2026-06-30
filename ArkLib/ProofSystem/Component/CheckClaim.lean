@@ -115,19 +115,52 @@ theorem reduction_completeness [Nonempty σ] [DecidableEq Statement] :
     cases hx
     simp [relOut]
 
+/-- The knowledge state function for the `CheckClaim` reduction, mirroring the trivial-verifier
+  template `Verifier.KnowledgeStateFunction.id`: at round `0` the state simply records that the
+  input is in `relIn`. -/
+def knowledgeStateFunction :
+    (verifier oSpec Statement pred).KnowledgeStateFunction
+      init impl (relIn Statement pred) (relOut Statement)
+      (Extractor.RoundByRound.id (Witness := Unit)) where
+  toFun | ⟨0, _⟩ => fun stmtIn _ witIn => (stmtIn, witIn) ∈ relIn Statement pred
+  toFun_empty := fun _ _ => by simp
+  toFun_next := fun i => Fin.elim0 i
+  toFun_full := fun stmtIn tr _ h => by
+    -- Reduce the dependent-pattern goal to `pred stmtIn`.
+    change pred stmtIn
+    by_contra hpred
+    -- If `pred stmtIn` is false then `guard` fails and the OptionT computation always returns
+    -- `none`, so no probability event can be positive.
+    rw [gt_iff_lt, probEvent_pos_iff] at h
+    obtain ⟨x, hx, _⟩ := h
+    rw [OptionT.mem_support_iff] at hx
+    -- Reduce the failing verifier by unfolding the `guard` branch.
+    have hverify : (verifier oSpec Statement pred).run stmtIn tr =
+        (OptionT.mk (pure none) : OptionT (OracleComp oSpec) Statement) := by
+      simp only [Verifier.run, verifier]
+      change (do guard (pred stmtIn); return stmtIn :
+        OptionT (OracleComp oSpec) Statement) = _
+      simp [guard, hpred]
+      rfl
+    rw [hverify] at hx
+    -- Now `simulateQ impl (OptionT.mk (pure none))` has empty support.
+    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
+    obtain ⟨s, _, hx⟩ := hx
+    rw [show ((OptionT.mk (pure none) : OptionT (OracleComp oSpec) Statement)) =
+        ((pure none : OracleComp oSpec (Option Statement)) : _) from rfl] at hx
+    rw [simulateQ_pure] at hx
+    change some x ∈ _root_.support
+      (Prod.fst <$> (pure none : StateT σ ProbComp _).run s) at hx
+    rw [StateT.run_pure] at hx
+    simp [map_pure, support_pure] at hx
+
 /-- The `CheckClaim` reduction satisfies perfect round-by-round knowledge soundness. -/
 theorem verifier_rbr_knowledge_soundness :
     (verifier oSpec Statement pred).rbrKnowledgeSoundness init impl
       (relIn Statement pred) (relOut Statement) 0 := by
-  sorry
-  -- simp only [Verifier.rbrKnowledgeSoundness, Nat.reduceAdd, relIn, relOut, verifier, guard_eq,
-  --   ChallengeIdx, Challenge, liftComp_query, OracleSpec.SubSpec.liftM_query_eq_liftM_liftM,
-  --   OracleSpec.liftM_append_right_eq, bind_pure_comp, simulateQ_bind, StateT.run'_eq,
-  --   StateT.run_bind, comp_apply, simulateQ_map, simulateQ_query, StateT.run_map, map_bind,
-  --   Functor.map_map, Pi.zero_apply, ENNReal.coe_zero, nonpos_iff_eq_zero, probEvent_eq_zero_iff,
-  --   support_bind, support_map, Set.mem_iUnion, Set.mem_image, Prod.exists, exists_and_right,
-  --   exists_prop, not_exists, not_and, forall_exists_index, and_imp, Prod.forall, Prod.mk.injEq,
-  --   IsEmpty.forall_iff, implies_true, exists_const_iff, and_true]
+  refine ⟨_, _, knowledgeStateFunction oSpec Statement pred (init := init) (impl := impl), ?_⟩
+  intro stmtIn witIn prover i
+  exact Fin.elim0 i.1
 
 end Reduction
 
