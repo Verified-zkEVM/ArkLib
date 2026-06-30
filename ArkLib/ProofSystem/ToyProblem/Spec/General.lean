@@ -116,6 +116,7 @@ namespace Spec
 open OracleSpec OracleComp ProtocolSpec
 open Code InterleavedCode ListDecodable ProximityGap
 open scoped NNReal ENNReal ProbabilityTheory
+open Probability
 
 -- `[Fintype A]`/`[DecidableEq A]` are used inside the bodies of the code-theoretic
 -- terms (`epsMCA`, `interleavedCodeSet`, the `accepts` decidability) but do not

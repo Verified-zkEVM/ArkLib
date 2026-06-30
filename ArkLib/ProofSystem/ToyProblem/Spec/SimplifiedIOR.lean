@@ -63,6 +63,7 @@ namespace SimplifiedIOR
 open OracleSpec OracleComp ProtocolSpec
 open Code InterleavedCode ListDecodable ProximityGap
 open scoped NNReal ENNReal
+open Probability
 open ToyProblem.Spec (Statement OracleStatement Witness)
 
 -- The code-theoretic terms (`epsMCA`, `interleavedCodeSet`) use `[Fintype A]`/`[DecidableEq A]`

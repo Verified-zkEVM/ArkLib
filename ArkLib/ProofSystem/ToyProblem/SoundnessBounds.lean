@@ -77,6 +77,7 @@ namespace ToyProblem
 
 open Code InterleavedCode ListDecodable ProximityGap
 open scoped NNReal ENNReal ProbabilityTheory
+open Probability
 
 -- Generalising the codeword alphabet to an `F`-module `A` (folded RS: `A = Fin s → F`)
 -- leaves many lemmas using only a subset of `A`'s `Fintype`/`DecidableEq`/`Module`

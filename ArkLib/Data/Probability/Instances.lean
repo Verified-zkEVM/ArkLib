@@ -40,6 +40,8 @@ instance [IsEmpty α] : IsEmpty (PMF α) := by
 --     · simp [hb]; sorry
 end
 
+namespace Probability
+
 section ProbabilityTools
 /-- Unrolls `Pr_{ let x ← D }[P x]` into a sum of the form
 `∑' x, Pr[x] * (if P x then 1 else 0)`. -/
@@ -117,7 +119,7 @@ theorem prob_uniform_eq_card_filter_div_card {F : Type} [Fintype F] [Nonempty F]
     rw [and_self_iff]
   rw [h_card_eq]
 
-lemma Fintype.card_fun_fin_one_eq {F : Type} [Fintype F] [Nonempty F] :
+lemma _root_.Fintype.card_fun_fin_one_eq {F : Type} [Fintype F] [Nonempty F] :
     Fintype.card (Fin 1 → F) = Fintype.card F := by
   rw [Fintype.card_fun]
   simp only [Fintype.card_unique, pow_one]
@@ -511,7 +513,7 @@ If every variable's degree in `P` is `< d`, then `P.totalDegree ≤ m * (d - 1)`
 (Mathlib-extension candidate; lives here while `prob_polynomial_identity_le` is the
 only consumer. Would belong in `Mathlib/Algebra/MvPolynomial/Degrees.lean` alongside
 `degreeOf_le_totalDegree`, which is the converse direction.) -/
-lemma MvPolynomial.totalDegree_le_of_degreeOf_lt
+lemma _root_.MvPolynomial.totalDegree_le_of_degreeOf_lt
     {R : Type*} [CommSemiring R] {m d : ℕ}
     (P : MvPolynomial (Fin m) R)
     (h_indiv_deg : ∀ i, P.degreeOf i < d) :
@@ -559,7 +561,7 @@ Useful when `f` is an affine-linear surjection: every fiber is a translate of
 the kernel and hence has constant cardinality. The proximity-gap proofs use this
 to bridge the coefficient-parameterised sampling of an affine span to the
 uniform sampling of the affine-span finset. -/
-theorem PMF.map_uniformOfFintype_of_fiber_const
+theorem _root_.PMF.map_uniformOfFintype_of_fiber_const
     {α β : Type*} [Fintype α] [Nonempty α] [DecidableEq β]
     (f : α → β) {k : ℕ} (hk : 0 < k)
     (hfib : ∀ b ∈ Finset.univ.image f,
@@ -747,3 +749,5 @@ theorem prob_uniform_pi_mem_finset_le {ι : Type} [Fintype ι] [Nonempty ι]
   le_of_eq (prob_uniform_pi_mem_finset_eq A t)
 
 end UniformProductBound
+
+end Probability

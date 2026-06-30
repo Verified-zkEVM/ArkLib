@@ -35,6 +35,7 @@ Todo: should we aim to add tags?
 namespace MutualCorrAgreement
 
 open NNReal Generator ProbabilityTheory ReedSolomon
+open Probability
 
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
           {ι parℓ : Type} [Fintype ι] [Nonempty ι] [Fintype parℓ] [Nonempty parℓ]

@@ -96,6 +96,7 @@ namespace ProximityGap
 
 open NNReal Code
 open scoped ProbabilityTheory BigOperators
+open Probability
 
 section
 

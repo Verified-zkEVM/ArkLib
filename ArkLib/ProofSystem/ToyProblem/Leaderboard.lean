@@ -99,6 +99,7 @@ namespace ToyProblem
 
 open Code InterleavedCode ListDecodable ProximityGap
 open scoped NNReal ENNReal
+open Probability
 
 variable {ι F : Type} [Fintype ι] [Field F] [Fintype F] [DecidableEq F]
 variable {A : Type} [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]

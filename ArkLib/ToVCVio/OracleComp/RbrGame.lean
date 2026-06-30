@@ -41,6 +41,7 @@ upstream candidate only after the `Pr_{…}` notation itself moves.
 
 open OracleComp OracleSpec ProtocolSpec ProbabilityTheory
 open scoped ENNReal
+open Probability
 
 namespace ProtocolSpec
 

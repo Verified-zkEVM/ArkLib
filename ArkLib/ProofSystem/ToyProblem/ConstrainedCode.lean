@@ -91,6 +91,7 @@ namespace ToyProblem
 
 open Code InterleavedCode ListDecodable ProximityGap
 open scoped NNReal ENNReal ProbabilityTheory
+open Probability
 
 set_option linter.unusedDecidableInType false
 set_option linter.unusedSectionVars false

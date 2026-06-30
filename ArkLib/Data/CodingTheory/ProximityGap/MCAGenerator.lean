@@ -27,6 +27,7 @@ namespace LinearTransformations
 
 open NNReal ENNReal unitInterval LinearCode CoreDefinitions Matrix
 open scoped ProbabilityTheory
+open Probability
 
 variable {ι : Type} [Fintype ι]
          {F : Type} [Field F]
