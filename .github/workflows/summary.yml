@@ -2,34 +2,32 @@ name: 'PR Summary'
 
 on:
   pull_request_target:
-    types: [opened, synchronize]
+    types: [opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 permissions:
-  contents: read
-  pull-requests: write
-  issues: read
+  contents: read        # required: the action checks out the PR head to read the diff
+  pull-requests: write  # required: post/update the summary comment
+  issues: read          # optional: link affected sorries to `proof wanted` issues
 
 jobs:
   summarize:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Generate PR Summary
         uses: alexanderlhicks/lean-summary-workflow@main
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           api_key: ${{ secrets.OPENROUTER_KEY }}
-          # Any OpenRouter slug. google/gemma-4-26b-a4b-it is ~8x cheaper if you prefer.
-          model: google/gemini-3-flash-preview
+          # model: inherits the action default (deepseek/deepseek-v4-flash).
+          #        Set `model: <openrouter-slug>` here to override for this repo only.
           github_repository: ${{ github.repository }}
           pr_number: ${{ github.event.pull_request.number }}
-          # Optional:
           additional_instructions_path: 'CONTRIBUTING.md'
           validate_title: 'true'
-          # upstream_path: 'ToMathlib/'
-          # reasoning_effort: 'low'              # low | medium | high; default off
-          # max_file_diff_chars: '60000'         # ~1,200 Lean lines per file
-          # max_instructions_diff_chars: '400000'  # ~8,000 changed lines; fits ~128k-token models
+          upstream_path: 'ArkLib/ToMathlib/'
+          # Other optional knobs (reasoning_effort, max_*_diff_chars): see the action README.
