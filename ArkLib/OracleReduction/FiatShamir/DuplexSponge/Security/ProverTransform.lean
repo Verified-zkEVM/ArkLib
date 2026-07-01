@@ -38,7 +38,6 @@ noncomputable section
 
 section D2SQueryState
 
-set_option linter.style.longLine false
 
 variable [DecidableEq StmtIn] [DecidableEq U]
   {T_H : Type}
@@ -257,7 +256,8 @@ private def d2sSampleArrayExact :
 private def d2sSampleVector (m : Nat) :
     OracleComp (d2sQueryOracles (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))
       (Vector U m) := do
-  let ⟨xs, hxs⟩ ← d2sSampleArrayExact (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) m
+  let ⟨xs, hxs⟩ ← d2sSampleArrayExact
+    (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) m
   pure ⟨xs, hxs⟩
 
 /-- CO25 §5.4 Item 2(b) — Sample `s_{C,out} ← 𝒰(Σ^c)`. -/
@@ -852,7 +852,8 @@ noncomputable def d2sCodecBridgeImplMemo :
               (Salt := Salt) q :
               OptionT (OracleComp _) _)
           modify (fun m =>
-            insertD2SAlgoMemo (StmtIn := StmtIn) (U := U) (δ := δ) (Salt := Salt) (pSpec := pSpec) m
+            insertD2SAlgoMemo
+              (StmtIn := StmtIn) (U := U) (δ := δ) (Salt := Salt) (pSpec := pSpec) m
               { roundIdx := roundIdx, stmt := stmt, salt := encodedSalt,
                 encodedMessages := encodedMessages, response := response })
           pure response
