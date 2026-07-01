@@ -103,6 +103,29 @@ lemma mem_blockIdx_self {i : ι} :
 lemma mem_blockIdx_iff_mem_block {i : ι} :
   i ∈ blockIdx ω k x ↔ ω i ∈ block ω k x := by simp [blockIdx]
 
+/-- There are no roots of `0` in any domain. -/
+@[simp]
+lemma blockIdx_x_0 :
+  blockIdx ω k 0 = ∅ := by aesop (add simp [mem_blockIdx_iff_mem_block])
+
+/-- If `x` is `1` then any element of a domain is its `0`th root.
+  In any other case, `x` does not have roots in the domain. -/
+@[simp]
+lemma blockIdx_k_0 :
+  blockIdx ω 0 x = if x = 1 then univ else ∅ := by aesop (add simp [mem_blockIdx_iff_mem_block])
+
+lemma blockIdx_k_1_of_eq {i : ι} (hi : ω i = x) :
+  blockIdx ω 1 x = {i} := by
+  ext j
+  have := CosetFftDomainClass.injective ω (a₁ := i) (a₂ := j)
+  aesop
+    (add simp [mem_blockIdx_iff_mem_block])
+
+lemma blockIdx_k_1_of_ne_mem (hx : x ∉ ω) :
+  blockIdx ω 1 x = ∅ := by
+  aesop
+    (add simp [mem_blockIdx_iff_mem_block])
+
 /-- `blockIdx` is the preimage of `block`. -/
 lemma blockIdx_eq_preimage_block :
   blockIdx ω k x =
