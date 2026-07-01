@@ -87,7 +87,7 @@ jobs:
 
       - name: Check out reporting scripts
         if: steps.timing-context.outputs.should-report == 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ steps.timing-context.outputs.base-ref }}
 
