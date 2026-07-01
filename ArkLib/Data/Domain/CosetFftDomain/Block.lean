@@ -66,6 +66,10 @@ lemma block_x_0 :
 lemma block_k_0 :
   block ω 0 x = if x = 1 then toFinset ω else ∅ := by aesop
 
+@[simp]
+lemma block_k_1 :
+  block ω 1 x = if x ∈ ω then {x} else ∅ := by aesop
+
 /-- An alternative definition of `block` in terms of
   `Polynomial.nthRootsFinset`. -/
 lemma block_eq_nthRootsFinset [NeZero k] :

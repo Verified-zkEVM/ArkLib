@@ -99,9 +99,7 @@ lemma not_zero_mem :
   obtain ⟨i, contra⟩ := contra
   exact CosetFftDomainClass.ne_zero ω i (by simp_all)
 
-end CosetFftDomainClass
-
-/-- The finset of elements of a concrete coset FFT domain is inhabited.
+/-- The finset of elements of a coset FFT domain is inhabited.
 
   There always exists `ω 0`.
 -/
@@ -111,6 +109,13 @@ instance [Fintype ι] [DecidableEq F] {ω : CosetFftDomain ι F} : Inhabited ω.
 /-- A concrete coset FFT domain coerced to `Type` is inhabited. -/
 instance [Fintype ι] [DecidableEq F] {ω : CosetFftDomain ι F} : Inhabited ω where
   default := ⟨ω 0, by simp [CosetFftDomainClass.toFinset]⟩
+
+/-- Membership in a coset FFT domain is decidable
+  via membership in its finset of elements. -/
+instance [Fintype ι] [DecidableEq F] : Decidable (x ∈ ω) :=
+  decidable_of_iff _ mem_toFinset_iff_mem
+
+end CosetFftDomainClass
 
 namespace CosetFftDomain
 
@@ -140,10 +145,5 @@ lemma mem_toFinset_self [Fintype ι] [DecidableEq F] {i : ι} :
   ω i ∈ ω.toFinset := CosetFftDomainClass.mem_toFinset_self
 
 end CosetFftDomain
-
-/-- Membership in a concrete coset FFT domain is decidable
-  via membership in its finset of elements. -/
-instance [Fintype ι] [DecidableEq F] {x : F} {ω : CosetFftDomain ι F} : Decidable (x ∈ ω) :=
-  decidable_of_iff _ CosetFftDomain.mem_toFinset_iff_mem
 
 end Domain
