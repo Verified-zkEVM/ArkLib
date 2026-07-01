@@ -247,28 +247,6 @@ private lemma eval_comm {f : Polynomial (Polynomial F)} {a x : F} :
   simp [h_eval, Polynomial.eval_finsetSum,
         Polynomial.eval₂_eq_sum, Polynomial.sum_def]
 
-private lemma roots_in_domain_card_eq_if_x_in_domain
-  (hk : k ≤ n)
-  (hx : x ∈ domain.subdomain k) :
-  Finset.card {i | domain i ^ 2 ^ k = x} = 2 ^ k := by
-  have h := card_block_of_mem_subdomain (ω := domain)
-          (j := k) (i := 0) (x := x)
-          (by simp [hk])
-          (by aesop (add simp [mem_subdomain_of_eq_vals]))
-  conv_rhs =>
-    rw [←h]
-  exact Finset.card_bij
-    (fun x _ ↦ domain x)
-    (by
-      aesop
-        (add simp [Nat.sub_zero, mem_filter])
-        (add safe [(by rw [mem_subdomain_0_iff_mem])])
-    )
-    (fun _ _ _ _ h ↦ CosetFftDomain.injective h)
-    (fun b ↦ by
-      have := @mem_subdomain_0_iff_mem
-      aesop (add simp [CosetFftDomainClass.mem_def]))
-
 private lemma interpolate_eq_folding_poly_eval
   (hk : k ≤ n)
   (hx : x ∈ domain.subdomain k) :
@@ -280,26 +258,9 @@ private lemma interpolate_eq_folding_poly_eval
   by_cases hf : f = 0
   · simp [hf]
   · apply eq_of_eval_eq_degree (n := 2 ^ k)
-        (s := Finset.image domain {i | domain i ^ 2 ^ k = x})
-    · rw [Finset.card_image_of_injOn (by simp),
-        roots_in_domain_card_eq_if_x_in_domain hk hx]
-    · simp only [mem_image, mem_filter, mem_univ, true_and]
-      rintro u ⟨i, hu₁, hu₂⟩
-      rw [←hu₂, ←foldValue_def', ←hu₁,
-        FoldingPolynomial.eval_property_of_folding_polynomial_x_k]
-      aesop
-        (erase Lagrange.interpolate_apply)
-        (add safe (by rw [Lagrange.eval_interpolate_at_node]))
-        (add simp [FoldingPolynomial.eval_property_of_folding_polynomial_x_k])
-    · exact lt_of_le_of_lt
-        (Lagrange.degree_interpolate_le _ (by simp))
-        (by
-          rw [card_blockIdx,
-              card_block_of_mem_subdomain' hk hx,
-              show Nat.cast (2 ^ k - 1) = WithBot.some (2 ^ k - 1) by rfl,
-              WithBot.coe_lt_coe]
-          simp
-        )
+        (s := block domain (2 ^ k) x)
+    · exact lt_of_lt_of_le (Lagrange.degree_interpolate_lt _ (by simp)) <| by
+        aesop (add simp [card_block_of_mem_subdomain'])
     · exact lt_of_le_of_lt Polynomial.degree_map_le <| by
         have h := FoldingPolynomial.folding_polynomial_deg_y_bound_x_k
           (f := (Lagrange.interpolate univ ⇑domain) f)
@@ -315,6 +276,15 @@ private lemma interpolate_eq_folding_poly_eval
                   (s := univ) (v := domain) f]))
         )] at h
         exact h
+    · aesop (add simp [card_block_of_mem_subdomain'])
+    · simp only [mem_block, and_imp]
+      rintro u ⟨i, hu₁⟩ hu₂
+      rw [←hu₂, ←foldValue_def', ←hu₁,
+        FoldingPolynomial.eval_property_of_folding_polynomial_x_k]
+      aesop
+        (erase Lagrange.interpolate_apply)
+        (add safe (by rw [Lagrange.eval_interpolate_at_node]))
+        (add simp [FoldingPolynomial.eval_property_of_folding_polynomial_x_k])
 
 /-- Perfect completeness of folding: folding a codeword is the same as
   applying `polyFold` and then encoding.
@@ -674,14 +644,16 @@ private lemma contradictory_hamming_dist_formula {s : Finset F}
       (by aesop)
       (by aesop)
       (fun a ha ↦ by
-        rw [roots_in_domain_card_eq_if_x_in_domain
-          (by {
+        rw [
+          show ({j | domain j ^ 2 ^ k = a} : Finset _) = blockIdx domain (2 ^ k) a by rfl,
+          card_blockIdx,
+          card_block_of_mem_subdomain' (by {
             rw [←Nat.pow_le_pow_iff_right (a := 2) (by simp)]
             omega
-        }) (by {
-          rw [←CosetFftDomainClass.mem_toFinset_iff_mem]
-          exact h_s ha
-        })]
+          }) (by {
+            rw [←CosetFftDomainClass.mem_toFinset_iff_mem]
+            exact h_s ha
+          })]
       )]
     aesop (add safe (by grind))
 
