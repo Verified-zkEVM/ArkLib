@@ -13,6 +13,7 @@ import ArkLib.Data.Polynomial.SplitFold
 import ArkLib.Data.CodingTheory.ProximityGap.Basic
 import ArkLib.Data.Finset.PickSubset
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
+import ArkLib.Data.Domain.CosetFftDomain.Block
 import ArkLib.Data.Domain.CosetFftDomain.Subdomain
 import ArkLib.Data.Domain.CosetFftDomain.Log
 import ArkLib.Data.Polynomial.Indicator
@@ -61,8 +62,8 @@ variable {n : ℕ}
   such that `domain i ^ k = x`. -/
 noncomputable def foldWordAux (domain : SmoothCosetFftDomain n F)
   (f : Word F (Fin (2 ^ n))) (k : ℕ) (x : F) : Polynomial F :=
-  Lagrange.interpolate {i | domain i ^ k = x}
-    (fun i => domain i) f
+  Lagrange.interpolate (blockIdx domain k x)
+    (fun i ↦ domain i) f
 
 section
 
@@ -109,18 +110,18 @@ lemma foldWordAux_of_k_2
        iff_and_self]
     have := @mem_subdomain_0_iff_mem (ω := domain)
     aesop
-  rw [h]
+  rw [blockIdx, h]
   have hcard : Finset.card {j, j'} = 2 := by
     rw [←h]
     conv_rhs =>
       rw [←pow_one 2,
-          ←card_roots (ω := domain) (i := 0)
+          ←card_block_of_mem_subdomain (ω := domain) (i := 0)
               (x := (CosetFftDomain.subdomain domain 1) i)
               (by omega) (by simp)]
     exact Finset.card_bij
       (fun a _ ↦ domain a)
       (fun a ha ↦ by
-        simp only [pow_one, Nat.sub_zero, mem_filter, CosetFftDomainClass.mem_toFinset_iff_mem]
+        simp only [Nat.sub_zero, mem_block, pow_one]
         rw [mem_subdomain_0_iff_mem]
         simpa using ha)
       (fun _ _ _ _ h ↦ CosetFftDomain.injective h)
@@ -161,34 +162,6 @@ lemma foldWordAux_of_k_2
       simp
       grind
 
-private lemma roots_of_x_in_domain_eq
-  (hk : k ≠ 0) :
-  ({i | domain i ^ k = x} : Finset (Fin (2 ^ n))) =
-    Finset.preimage
-      (nthRootsFinset k x)
-      domain
-      (by simp) := by
-  ext i
-  simp only [mem_filter, mem_univ, true_and, mem_preimage]
-  rw [Polynomial.mem_nthRootsFinset (by omega)]
-
-private lemma roots_of_x_in_domain_card
-  (hk : k ≠ 0) :
-  Finset.card {i | domain i ^ k = x} ≤
-    Finset.card
-      (nthRootsFinset k x) := by
-  rw [roots_of_x_in_domain_eq hk, Finset.card_preimage]
-  exact Finset.card_le_card (by simp)
-
-private lemma roots_of_x_in_domain_le_k
-  (hk : k ≠ 0) :
-  Finset.card {i | domain i ^ k = x} ≤ k :=
-  le_trans (roots_of_x_in_domain_card hk) <| by
-  simp only [nthRootsFinset, Multiset.toFinset, card_mk]
-  exact le_trans
-    (@Multiset.toFinset_card_le F (Classical.decEq F) _)
-    (Polynomial.card_nthRoots _ _)
-
 /-- The natDegree of the auxiliary polynomial `foldWordAux`
   is less than k. -/
 lemma foldWordAux_natDegree {k : ℕ} {x : F}
@@ -202,7 +175,7 @@ lemma foldWordAux_natDegree {k : ℕ} {x : F}
     apply lt_of_lt_of_le
     · rw [Polynomial.natDegree_lt_iff_degree_lt heq]
       exact Lagrange.degree_interpolate_lt _ (by simp)
-    · exact roots_of_x_in_domain_le_k hne
+    · simp
 
 /-- Compute value of the folded word.
   Takes the auxiliary polynomial `foldWordAux` and evaluates it on `a`,
@@ -216,8 +189,8 @@ lemma foldValue_def {α : F} {x : F} :
   foldValue domain f k α x = (foldWordAux domain f (2 ^ k) x).eval α := rfl
 
 lemma foldValue_def' {α : F} {x : F} :
-  foldValue domain f k α x = (Lagrange.interpolate {i | domain i ^ (2 ^ k) = x}
-    (fun i => domain i) f).eval α := rfl
+  foldValue domain f k α x = (Lagrange.interpolate (blockIdx domain (2 ^ k) x)
+    (fun i ↦ domain i) f).eval α := rfl
 
 @[simp]
 lemma foldValue_pow_x_k {i : Fin (2 ^ n)} :
@@ -278,7 +251,7 @@ private lemma roots_in_domain_card_eq_if_x_in_domain
   (hk : k ≤ n)
   (hx : x ∈ domain.subdomain k) :
   Finset.card {i | domain i ^ 2 ^ k = x} = 2 ^ k := by
-  have h := card_roots (ω := domain)
+  have h := card_block_of_mem_subdomain (ω := domain)
           (j := k) (i := 0) (x := x)
           (by simp [hk])
           (by aesop (add simp [mem_subdomain_of_eq_vals]))
@@ -299,7 +272,7 @@ private lemma roots_in_domain_card_eq_if_x_in_domain
 private lemma interpolate_eq_folding_poly_eval
   (hk : k ≤ n)
   (hx : x ∈ domain.subdomain k) :
-  ((Lagrange.interpolate {i | domain i ^ 2 ^ k = x} fun i ↦ domain i)
+  ((Lagrange.interpolate (blockIdx domain (2 ^ k) x) fun i ↦ domain i)
     f) =
   (Polynomial.map (evalRingHom x)
     (FoldingPolynomial.foldingPolynomial (Y ^ 2 ^ k) ((Lagrange.interpolate univ ⇑domain) f))) :=
@@ -321,7 +294,8 @@ private lemma interpolate_eq_folding_poly_eval
     · exact lt_of_le_of_lt
         (Lagrange.degree_interpolate_le _ (by simp))
         (by
-          rw [roots_in_domain_card_eq_if_x_in_domain hk hx,
+          rw [card_blockIdx,
+              card_block_of_mem_subdomain' hk hx,
               show Nat.cast (2 ^ k - 1) = WithBot.some (2 ^ k - 1) by rfl,
               WithBot.coe_lt_coe]
           simp
