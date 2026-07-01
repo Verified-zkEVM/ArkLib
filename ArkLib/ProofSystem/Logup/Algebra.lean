@@ -1,5 +1,7 @@
 import ArkLib.Data.MvPolynomial.Multilinear
+import Mathlib.Algebra.Polynomial.Taylor
 import Mathlib.Algebra.Order.Floor.Div
+import Mathlib.Tactic.DeriveFintype
 
 /-!
 # LogUp algebra and sumcheck polynomial
@@ -419,6 +421,447 @@ def tableMultiplicityCount [Fintype F] [DecidableEq F] (table : (Fin n → Fin 2
 def lookupMultiplicityCount [Fintype F] [DecidableEq F]
     (columns : Fin M → (Fin n → Fin 2) → F) (a : F) : ℕ :=
   ((Finset.univ : Finset (Fin M × (Fin n → Fin 2))).filter fun ix => columns ix.1 ix.2 = a).card
+
+/-! ### Cleared occurrence identities
+
+These are protocol-independent algebraic facts about the common denominator of the LogUp
+rational identity. They work with bare table/column functions on the Boolean hypercube.
+-/
+
+/-- One occurrence in the common denominator of the LogUp rational identity: either a table row
+or one lookup-column row. -/
+inductive LookupOccur (n M : ℕ) where
+  | table : (Fin n → Fin 2) → LookupOccur n M
+  | column : Fin M → (Fin n → Fin 2) → LookupOccur n M
+deriving DecidableEq, Fintype
+
+/-- `LookupOccur` is table rows plus all column rows. -/
+def LookupOccur.equivSum (n M : ℕ) :
+    LookupOccur n M ≃ ((Fin n → Fin 2) ⊕ (Fin M × (Fin n → Fin 2))) where
+  toFun
+    | .table u => Sum.inl u
+    | .column i u => Sum.inr (i, u)
+  invFun
+    | Sum.inl u => .table u
+    | Sum.inr (i, u) => .column i u
+  left_inv := by
+    intro x
+    cases x <;> rfl
+  right_inv := by
+    intro x
+    cases x with
+    | inl u => rfl
+    | inr iu =>
+        rcases iu with ⟨i, u⟩
+        rfl
+
+/-- Cardinality of denominator occurrences in the cleared lookup identity. -/
+theorem LookupOccur.card (n M : ℕ) :
+    Fintype.card (LookupOccur n M) = (M + 1) * Fintype.card (Fin n → Fin 2) := by
+  rw [Fintype.card_congr (LookupOccur.equivSum n M)]
+  simp [Fintype.card_sum, Fintype.card_prod, Nat.succ_mul, Nat.add_comm]
+
+/-- The field value attached to a denominator occurrence. -/
+def lookupOccurValue {F : Type} {n M : ℕ}
+    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F) :
+    LookupOccur n M → F
+  | .table u => table u
+  | .column i u => columns i u
+
+/-- The numerator attached to a denominator occurrence: `m(u)` for table rows and `-1` for lookup
+column rows. -/
+def lookupOccurNumerator {F : Type} [Neg F] [One F] {n M : ℕ}
+    (multiplicity : (Fin n → Fin 2) → F) : LookupOccur n M → F
+  | .table u => multiplicity u
+  | .column _ _ => -1
+
+/-- The cleared univariate lookup identity obtained from paper equation (13) by multiplying by the
+common denominator over all table and column occurrences. -/
+noncomputable def clearedLookupIdentity {F : Type} [Field F] {n M : ℕ}
+    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
+    (multiplicity : (Fin n → Fin 2) → F) : Polynomial F :=
+  ∑ a : LookupOccur n M,
+    Polynomial.C (lookupOccurNumerator multiplicity a) *
+      ∏ b ∈ (Finset.univ.erase a),
+        (Polynomial.X + Polynomial.C (lookupOccurValue table columns b))
+
+/-- A generic version of `clearedLookupIdentity`, indexed by arbitrary denominator occurrences. -/
+noncomputable def clearedOccurrences {α : Type} [Fintype α] [DecidableEq α]
+    (value coeff : α → F) : Polynomial F :=
+  ∑ a : α,
+    Polynomial.C (coeff a) *
+      ∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (value b))
+
+/-- The key repeated-pole coefficient calculation. After shifting by a value `z`, the coefficient
+of the first possible power of `X` in the cleared occurrence polynomial is the total coefficient
+on the `z`-fiber, times the nonzero product of the other shifted values. -/
+theorem clearedOccurrences_taylor_coeff_fiber_pred
+    {α : Type} [Fintype α] [DecidableEq α] [DecidableEq F]
+    (value coeff : α → F) (z : F)
+    (hfiber : 0 < (Finset.univ.filter fun a : α => value a = z).card) :
+    (Polynomial.taylor (-z) (clearedOccurrences (F := F) value coeff)).coeff
+        ((Finset.univ.filter fun a : α => value a = z).card - 1) =
+      (∑ a ∈ (Finset.univ.filter fun a : α => value a = z), coeff a) *
+        ∏ b ∈ (Finset.univ.filter fun b : α => value b ≠ z), (-z + value b) := by
+  classical
+  let fiber : Finset α := Finset.univ.filter fun a : α => value a = z
+  let rest : Finset α := Finset.univ.filter fun b : α => value b ≠ z
+  let shifted : α → F := fun b => -z + value b
+  have hrest_coeff0 :
+      (∏ b ∈ rest, (Polynomial.X + Polynomial.C (shifted b))).coeff 0 =
+        ∏ b ∈ rest, shifted b := by
+    simp [Polynomial.coeff_zero_prod, shifted]
+  have hterm :
+      ∀ a : α,
+        (Polynomial.taylor (-z)
+            (Polynomial.C (coeff a) *
+              ∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (value b)))).coeff
+            (fiber.card - 1) =
+          if value a = z then coeff a * ∏ b ∈ rest, shifted b else 0 := by
+    intro a
+    have htaylor :
+        Polynomial.taylor (-z)
+            (Polynomial.C (coeff a) *
+              ∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (value b))) =
+          Polynomial.C (coeff a) *
+            ∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (shifted b)) := by
+      change Polynomial.taylorAlgHom (-z)
+            (Polynomial.C (coeff a) *
+              ∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (value b))) =
+          Polynomial.C (coeff a) *
+            ∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (shifted b))
+      rw [map_mul, map_prod]
+      simp [Polynomial.taylorAlgHom, shifted, add_assoc]
+    by_cases ha : value a = z
+    · have hafiber : a ∈ fiber := by simp [fiber, ha]
+      have hfiberErase :
+          (Finset.univ.erase a).filter (fun b : α => value b = z) = fiber.erase a := by
+        simp [fiber, Finset.filter_erase]
+      have hrestErase :
+          (Finset.univ.erase a).filter (fun b : α => value b ≠ z) = rest := by
+        ext b
+        by_cases hba : b = a <;> simp [rest, hba, ha]
+      have hsplit :
+          (∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (shifted b))) =
+            Polynomial.X ^ (fiber.card - 1) *
+              ∏ b ∈ rest, (Polynomial.X + Polynomial.C (shifted b)) := by
+        calc
+          (∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (shifted b)))
+              =
+              (∏ b ∈ (Finset.univ.erase a).filter (fun b : α => value b = z),
+                (Polynomial.X + Polynomial.C (shifted b))) *
+                ∏ b ∈ (Finset.univ.erase a).filter (fun b : α => value b ≠ z),
+                  (Polynomial.X + Polynomial.C (shifted b)) := by
+                rw [← Finset.prod_filter_mul_prod_filter_not
+                  (p := fun b : α => value b = z)]
+          _ =
+              (∏ _b ∈ fiber.erase a, (Polynomial.X : Polynomial F)) *
+                ∏ b ∈ rest, (Polynomial.X + Polynomial.C (shifted b)) := by
+                rw [hfiberErase, hrestErase]
+                congr 1
+                refine Finset.prod_congr rfl ?_
+                intro b hb
+                simp [fiber, shifted] at hb ⊢
+                simp [hb.2]
+          _ =
+              Polynomial.X ^ (fiber.card - 1) *
+                ∏ b ∈ rest, (Polynomial.X + Polynomial.C (shifted b)) := by
+                simp [Finset.prod_const, Finset.card_erase_of_mem hafiber]
+      rw [htaylor, hsplit, Polynomial.coeff_C_mul]
+      have hcoeffX :
+          (Polynomial.X ^ (fiber.card - 1) *
+            ∏ b ∈ rest, (Polynomial.X + Polynomial.C (shifted b))).coeff
+              (fiber.card - 1) =
+            (∏ b ∈ rest, (Polynomial.X + Polynomial.C (shifted b))).coeff 0 := by
+        simpa using
+          (Polynomial.coeff_X_pow_mul
+            (∏ b ∈ rest, (Polynomial.X + Polynomial.C (shifted b)))
+            (fiber.card - 1) 0)
+      rw [hcoeffX, hrest_coeff0]
+      simp [ha]
+    · have hfiberErase :
+          (Finset.univ.erase a).filter (fun b : α => value b = z) = fiber := by
+        ext b
+        by_cases hba : b = a <;> simp [fiber, hba, ha]
+      have hsplit :
+          (∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (shifted b))) =
+            Polynomial.X ^ fiber.card *
+              ∏ b ∈ (Finset.univ.erase a).filter (fun b : α => value b ≠ z),
+                (Polynomial.X + Polynomial.C (shifted b)) := by
+        calc
+          (∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (shifted b)))
+              =
+              (∏ b ∈ (Finset.univ.erase a).filter (fun b : α => value b = z),
+                (Polynomial.X + Polynomial.C (shifted b))) *
+                ∏ b ∈ (Finset.univ.erase a).filter (fun b : α => value b ≠ z),
+                  (Polynomial.X + Polynomial.C (shifted b)) := by
+                rw [← Finset.prod_filter_mul_prod_filter_not
+                  (p := fun b : α => value b = z)]
+          _ =
+              (∏ _b ∈ fiber, (Polynomial.X : Polynomial F)) *
+                ∏ b ∈ (Finset.univ.erase a).filter (fun b : α => value b ≠ z),
+                  (Polynomial.X + Polynomial.C (shifted b)) := by
+                rw [hfiberErase]
+                congr 1
+                refine Finset.prod_congr rfl ?_
+                intro b hb
+                simp [fiber, shifted] at hb ⊢
+                simp [hb]
+          _ =
+              Polynomial.X ^ fiber.card *
+                ∏ b ∈ (Finset.univ.erase a).filter (fun b : α => value b ≠ z),
+                  (Polynomial.X + Polynomial.C (shifted b)) := by
+                simp [Finset.prod_const]
+      rw [htaylor, hsplit, Polynomial.coeff_C_mul, Polynomial.coeff_X_pow_mul']
+      have hfiber' : 0 < fiber.card := by
+        simpa [fiber] using hfiber
+      have hnot : ¬ fiber.card ≤ fiber.card - 1 :=
+        Nat.not_le.mpr (Nat.pred_lt (Nat.ne_of_gt hfiber'))
+      simp [ha, hnot]
+  unfold clearedOccurrences
+  change
+    (Polynomial.taylor (-z)
+      (∑ a : α,
+        Polynomial.C (coeff a) *
+          ∏ b ∈ Finset.univ.erase a, (Polynomial.X + Polynomial.C (value b)))).coeff
+        (fiber.card - 1) =
+      (∑ a ∈ fiber, coeff a) * ∏ b ∈ rest, shifted b
+  rw [map_sum, Polynomial.finsetSum_coeff]
+  calc
+    ∑ a : α,
+        (Polynomial.taylor (-z)
+          (Polynomial.C (coeff a) *
+            ∏ b ∈ Finset.univ.erase a, (Polynomial.X + Polynomial.C (value b)))).coeff
+          (fiber.card - 1)
+        = ∑ a : α, if value a = z then coeff a * ∏ b ∈ rest, shifted b else 0 := by
+          refine Finset.sum_congr rfl ?_
+          intro a _
+          exact hterm a
+    _ = ∑ a ∈ fiber, coeff a * ∏ b ∈ rest, shifted b := by
+          simp [fiber, Finset.sum_filter]
+    _ = (∑ a ∈ fiber, coeff a) * ∏ b ∈ rest, shifted b := by
+          rw [Finset.sum_mul]
+
+/-- If the total coefficient on one denominator-value fiber is nonzero, then the cleared
+occurrence polynomial cannot vanish, even when the denominator value occurs repeatedly. -/
+theorem clearedOccurrences_ne_zero_of_fiber_sum_ne_zero
+    {α : Type} [Fintype α] [DecidableEq α] [DecidableEq F]
+    (value coeff : α → F) {z : F}
+    (hfiber : 0 < (Finset.univ.filter fun a : α => value a = z).card)
+    (hsum : (∑ a ∈ (Finset.univ.filter fun a : α => value a = z), coeff a) ≠ 0) :
+    clearedOccurrences (F := F) value coeff ≠ 0 := by
+  classical
+  intro hzero
+  have hcoeff_zero :
+      (Polynomial.taylor (-z) (clearedOccurrences (F := F) value coeff)).coeff
+          ((Finset.univ.filter fun a : α => value a = z).card - 1) = 0 := by
+    rw [hzero, map_zero, Polynomial.coeff_zero]
+  rw [clearedOccurrences_taylor_coeff_fiber_pred (F := F) value coeff z hfiber] at hcoeff_zero
+  have hprod_ne :
+      (∏ b ∈ (Finset.univ.filter fun b : α => value b ≠ z), (-z + value b)) ≠ 0 := by
+    rw [Finset.prod_ne_zero_iff]
+    intro b hb hzero'
+    rw [Finset.mem_filter] at hb
+    have hsub : value b - z = 0 := by
+      simpa [sub_eq_add_neg, add_comm] using hzero'
+    exact hb.2 (sub_eq_zero.mp hsub)
+  exact (mul_ne_zero hsum hprod_ne) hcoeff_zero
+
+/-- If a value is missing from the table, its `LookupOccur` numerator fiber sum is the negative
+lookup multiplicity. -/
+theorem lookupOccurNumerator_fiber_sum_of_table_missing
+    [Fintype F] [DecidableEq F]
+    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
+    (multiplicity : (Fin n → Fin 2) → F) {z : F}
+    (hmissing : ∀ u : Fin n → Fin 2, z ≠ table u) :
+    (∑ a ∈ (Finset.univ.filter fun a : LookupOccur n M =>
+        lookupOccurValue table columns a = z), lookupOccurNumerator multiplicity a) =
+      - (lookupMultiplicityCount columns z : F) := by
+  classical
+  rw [Finset.sum_filter]
+  let e := LookupOccur.equivSum n M
+  calc
+    ∑ a : LookupOccur n M,
+        (if lookupOccurValue table columns a = z then
+          lookupOccurNumerator multiplicity a else 0)
+        =
+        ∑ x : ((Fin n → Fin 2) ⊕ (Fin M × (Fin n → Fin 2))),
+          (if lookupOccurValue table columns (e.symm x) = z then
+            lookupOccurNumerator multiplicity (e.symm x) else 0) := by
+          exact Fintype.sum_equiv e _ _ (fun x => by simp [e])
+    _ =
+        (∑ u : Fin n → Fin 2, if table u = z then multiplicity u else 0) +
+          ∑ x : Fin M × (Fin n → Fin 2),
+            (if columns x.1 x.2 = z then (-1 : F) else 0) := by
+          simp [e, LookupOccur.equivSum, lookupOccurValue, lookupOccurNumerator]
+    _ =
+        ∑ x : Fin M × (Fin n → Fin 2),
+          (if columns x.1 x.2 = z then (-1 : F) else 0) := by
+          have htable_zero :
+              (∑ u : Fin n → Fin 2, if table u = z then multiplicity u else 0) = 0 := by
+            refine Finset.sum_eq_zero ?_
+            intro u _
+            have hne : table u ≠ z := (hmissing u).symm
+            simp [hne]
+          rw [htable_zero, zero_add]
+    _ = - (lookupMultiplicityCount columns z : F) := by
+          rw [lookupMultiplicityCount, ← Finset.sum_filter]
+          simp [Finset.sum_const, nsmul_eq_mul]
+
+omit [Field F] in
+/-- The multiplicity count of an actually occurring lookup-column value is positive. -/
+theorem lookupMultiplicityCount_pos_of_column_value [Fintype F] [DecidableEq F]
+    (columns : Fin M → (Fin n → Fin 2) → F) (i : Fin M) (u : Fin n → Fin 2) :
+    0 < lookupMultiplicityCount columns (columns i u) := by
+  rw [lookupMultiplicityCount, Finset.card_pos]
+  exact ⟨(i, u), by simp⟩
+
+omit [Field F] in
+/-- A value absent from the table has table multiplicity zero. -/
+theorem tableMultiplicityCount_eq_zero_of_missing [Fintype F] [DecidableEq F]
+    (table : (Fin n → Fin 2) → F) {a : F} (hmissing : ∀ u, a ≠ table u) :
+    tableMultiplicityCount table a = 0 := by
+  rw [tableMultiplicityCount, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
+  intro u _ hu
+  exact hmissing u hu.symm
+
+/-- Under the LogUp characteristic bound, a positive lookup multiplicity remains nonzero in `F`. -/
+theorem lookupMultiplicityCount_cast_ne_zero_of_pos [Fintype F] [DecidableEq F]
+    (hcharLarge : M * 2 ^ n < ringChar F)
+    (columns : Fin M → (Fin n → Fin 2) → F) {a : F}
+    (hpos : 0 < lookupMultiplicityCount columns a) :
+    (lookupMultiplicityCount columns a : F) ≠ 0 := by
+  have hle : lookupMultiplicityCount columns a ≤ Fintype.card (Fin M × (Fin n → Fin 2)) := by
+    rw [lookupMultiplicityCount, ← Finset.card_univ]
+    exact Finset.card_filter_le _ _
+  have hcard : Fintype.card (Fin M × (Fin n → Fin 2)) = M * 2 ^ n := by
+    simp
+  have hlt : lookupMultiplicityCount columns a < ringChar F := by
+    calc
+      lookupMultiplicityCount columns a ≤ Fintype.card (Fin M × (Fin n → Fin 2)) := hle
+      _ = M * 2 ^ n := hcard
+      _ < ringChar F := hcharLarge
+  intro hzero
+  have hdvd : ringChar F ∣ lookupMultiplicityCount columns a :=
+    (ringChar.spec F (lookupMultiplicityCount columns a)).1 hzero
+  exact (Nat.not_dvd_of_pos_of_lt hpos hlt) hdvd
+
+/-- Degree bound for the cleared lookup identity: every summand omits exactly one denominator
+factor from the `(M + 1) * |H|` factors. -/
+theorem clearedLookupIdentity_natDegree_le
+    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
+    (multiplicity : (Fin n → Fin 2) → F) :
+    (clearedLookupIdentity table columns multiplicity).natDegree ≤
+      (M + 1) * Fintype.card (Fin n → Fin 2) - 1 := by
+  classical
+  unfold clearedLookupIdentity
+  refine (Polynomial.natDegree_sum_le (Finset.univ : Finset (LookupOccur n M))
+    (fun a =>
+      Polynomial.C (lookupOccurNumerator multiplicity a) *
+        ∏ b ∈ Finset.univ.erase a,
+          (Polynomial.X + Polynomial.C (lookupOccurValue table columns b)))).trans ?_
+  refine Finset.sup_le fun a _ => ?_
+  have hprod :
+      (∏ b ∈ Finset.univ.erase a,
+          (Polynomial.X + Polynomial.C (lookupOccurValue table columns b))).natDegree ≤
+        (Finset.univ.erase a).card := by
+    refine (Polynomial.natDegree_prod_le (Finset.univ.erase a)
+      (fun b => Polynomial.X + Polynomial.C (lookupOccurValue table columns b))).trans ?_
+    simp
+  calc
+    (Polynomial.C (lookupOccurNumerator multiplicity a) *
+        ∏ b ∈ Finset.univ.erase a,
+          (Polynomial.X + Polynomial.C (lookupOccurValue table columns b))).natDegree
+        ≤ (Polynomial.C (lookupOccurNumerator multiplicity a)).natDegree +
+            (∏ b ∈ Finset.univ.erase a,
+              (Polynomial.X + Polynomial.C (lookupOccurValue table columns b))).natDegree :=
+          Polynomial.natDegree_mul_le
+    _ ≤ 0 + (Finset.univ.erase a).card :=
+          add_le_add (by simp [Polynomial.natDegree_C]) hprod
+    _ = (M + 1) * Fintype.card (Fin n → Fin 2) - 1 := by
+          rw [zero_add, Finset.card_erase_of_mem (Finset.mem_univ a), Finset.card_univ,
+            LookupOccur.card]
+
+/-- Root-count form of the previous two lemmas, restricted to non-pole challenges. -/
+theorem clearedLookupIdentity_bad_x_card_le [Fintype F] [DecidableEq F]
+    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
+    (multiplicity : (Fin n → Fin 2) → F)
+    (hpoly : clearedLookupIdentity table columns multiplicity ≠ 0) :
+    (Finset.univ.filter fun x : F =>
+      (∀ u : Fin n → Fin 2, x + table u ≠ 0) ∧
+        Polynomial.eval x (clearedLookupIdentity table columns multiplicity) = 0).card ≤
+      (M + 1) * Fintype.card (Fin n → Fin 2) - 1 := by
+  classical
+  let p := clearedLookupIdentity table columns multiplicity
+  have hsubset :
+      (Finset.univ.filter fun x : F =>
+        (∀ u : Fin n → Fin 2, x + table u ≠ 0) ∧ Polynomial.eval x p = 0).card ≤
+        p.roots.toFinset.card := by
+    refine Finset.card_le_card ?_
+    intro x hx
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hx
+    exact Multiset.mem_toFinset.mpr ((Polynomial.mem_roots hpoly).mpr hx.2)
+  calc
+    (Finset.univ.filter fun x : F =>
+        (∀ u : Fin n → Fin 2, x + table u ≠ 0) ∧
+          Polynomial.eval x (clearedLookupIdentity table columns multiplicity) = 0).card
+        ≤ p.roots.toFinset.card := hsubset
+    _ ≤ p.roots.card := Multiset.toFinset_card_le p.roots
+    _ ≤ p.natDegree := Polynomial.card_roots' p
+    _ ≤ (M + 1) * Fintype.card (Fin n → Fin 2) - 1 :=
+        clearedLookupIdentity_natDegree_le (F := F) (n := n) (M := M)
+          table columns multiplicity
+
+/-- The set of denominator-pole challenges for all table and column occurrences has size at most
+the number of occurrences. -/
+theorem lookupOccur_pole_card_le [Fintype F] [DecidableEq F]
+    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F) :
+    (Finset.univ.filter fun x : F =>
+      ∃ a : LookupOccur n M, x + lookupOccurValue table columns a = 0).card ≤
+      (M + 1) * Fintype.card (Fin n → Fin 2) := by
+  classical
+  calc
+    (Finset.univ.filter fun x : F =>
+        ∃ a : LookupOccur n M, x + lookupOccurValue table columns a = 0).card
+        ≤ (Finset.univ.image
+            (fun a : LookupOccur n M => -lookupOccurValue table columns a)).card := by
+          apply Finset.card_le_card
+          intro x hx
+          simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hx
+          obtain ⟨a, ha⟩ := hx
+          exact Finset.mem_image.mpr
+            ⟨a, Finset.mem_univ a, (eq_neg_of_add_eq_zero_left ha).symm⟩
+    _ ≤ Fintype.card (LookupOccur n M) := by
+        rw [← Finset.card_univ]
+        exact Finset.card_image_le
+    _ = (M + 1) * Fintype.card (Fin n → Fin 2) := LookupOccur.card n M
+
+/-- Root-count bound for the cleared lookup identity over all field challenges. -/
+theorem clearedLookupIdentity_root_card_le [Fintype F] [DecidableEq F]
+    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
+    (multiplicity : (Fin n → Fin 2) → F)
+    (hpoly : clearedLookupIdentity table columns multiplicity ≠ 0) :
+    (Finset.univ.filter fun x : F =>
+      Polynomial.eval x (clearedLookupIdentity table columns multiplicity) = 0).card ≤
+      (M + 1) * Fintype.card (Fin n → Fin 2) - 1 := by
+  classical
+  let p := clearedLookupIdentity table columns multiplicity
+  have hsubset :
+      (Finset.univ.filter fun x : F => Polynomial.eval x p = 0).card ≤
+        p.roots.toFinset.card := by
+    refine Finset.card_le_card ?_
+    intro x hx
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hx
+    exact Multiset.mem_toFinset.mpr ((Polynomial.mem_roots hpoly).mpr hx)
+  calc
+    (Finset.univ.filter fun x : F =>
+        Polynomial.eval x (clearedLookupIdentity table columns multiplicity) = 0).card
+        ≤ p.roots.toFinset.card := hsubset
+    _ ≤ p.roots.card := Multiset.toFinset_card_le p.roots
+    _ ≤ p.natDegree := Polynomial.card_roots' p
+    _ ≤ (M + 1) * Fintype.card (Fin n → Fin 2) - 1 :=
+        clearedLookupIdentity_natDegree_le (F := F) (n := n) (M := M)
+          table columns multiplicity
 
 /-- The normalized multiplicity from paper equation (14), evaluated at one table row. -/
 noncomputable def normalizedMultiplicityValue [Fintype F] [DecidableEq F]

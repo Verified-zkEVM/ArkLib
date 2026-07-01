@@ -873,6 +873,53 @@ lemma oracleReduction_verifier_eq_verifier {i : Fin n} :
     (oracleReduction R n deg D oSpec i).verifier = oracleVerifier R n deg D oSpec i := by
   rfl
 
+omit [SampleableType R] in
+/-- One Sumcheck round preserves the oracle statement on prover-supported outputs. -/
+theorem prover_preserves_oracleStmt
+    {i : Fin n}
+    (stmt : StatementRound R n i.castSucc × (∀ j, OracleStatement R n deg j))
+    (out : StatementRound R n i.succ × (∀ j, OracleStatement R n deg j))
+    (tr : (pSpec R deg).FullTranscript)
+    (h : (tr, out, ()) ∈ support
+      (Prover.run stmt () ((oracleReduction R n deg D oSpec i).toReduction.prover))) :
+    out.2 = stmt.2 := by
+  rw [oracleReduction, OracleReduction.toReduction, OracleReduction.liftContext,
+    OracleProver.liftContext, Prover.liftContext_run] at h
+  rw [mem_support_bind_iff] at h
+  rcases h with ⟨⟨trInner, innerOut, innerWit⟩, _, hout⟩
+  rw [support_pure, Set.mem_singleton_iff] at hout
+  cases hout
+  rcases stmt with ⟨⟨oldTarget, challenges⟩, oStmt⟩
+  rcases innerOut with ⟨⟨newTarget, chal⟩, oStmt'⟩
+  rfl
+
+omit [SampleableType R] in
+/-- One Sumcheck round preserves the oracle statement on verifier-supported outputs. -/
+theorem verifier_preserves_oracleStmt
+    {i : Fin n}
+    {stmt : StatementRound R n i.castSucc × (∀ j, OracleStatement R n deg j)}
+    {out : StatementRound R n i.succ × (∀ j, OracleStatement R n deg j)}
+    {tr : (pSpec R deg).FullTranscript}
+    (h : out ∈ support ((verifier R n deg D oSpec i).run stmt tr)) :
+    out.2 = stmt.2 := by
+  rw [verifier, Verifier.run, Verifier.liftContext] at h
+  rw [mem_support_bind_iff] at h
+  rcases h with ⟨innerOut, _hInner, hOut⟩
+  rw [support_pure, Set.mem_singleton_iff] at hOut
+  cases hOut
+  rcases stmt with ⟨⟨_oldTarget, _challenges⟩, oStmt⟩
+  rcases innerOut with ⟨⟨_newTarget, _chal⟩, _oStmt'⟩
+  rfl
+
+@[simp]
+theorem oracleReduction_toReduction_verifier_eq_verifier {i : Fin n} :
+    ((oracleReduction R n deg D oSpec i).toReduction).verifier =
+      verifier R n deg D oSpec i := by
+  rw [oracleReduction]
+  rw [OracleReduction.liftContext_toReduction_comm]
+  rw [Simple.oracleReduction_eq_reduction]
+  rfl
+
 section Security
 
 open Reduction

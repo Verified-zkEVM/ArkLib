@@ -2,7 +2,8 @@ import ArkLib.OracleReduction.Security.Basic
 import ArkLib.OracleReduction.Security.Implications
 import ArkLib.OracleReduction.Composition.Sequential.Append
 import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
-import ArkLib.ProofSystem.Logup.Protocol
+import ArkLib.ProofSystem.Logup.Algebra
+import ArkLib.ProofSystem.Logup.Security.Common
 import ArkLib.ToVCVio.OracleComp.Coercions.SubSpec
 
 /-!
@@ -77,294 +78,11 @@ noncomputable def logupSumcheckSoundnessError (F : Type) [CommSemiring F] [Finty
   ∑ _ : (Sumcheck.Spec.pSpec F (logupSumcheckDegree M params) n).ChallengeIdx,
     ((logupSumcheckDegree M params : ℕ) : ℝ≥0) / (Fintype.card F : ℝ≥0)
 
-/-! ## Local outer-soundness algebra
+/-! ## Protocol-facing outer-soundness algebra
 
-These are the missing algebraic ingredients for the outer phase. They live in this file for now so
-the soundness proof has an explicit dependency graph; once the statements settle they can move to
-`Algebra.lean` or a dedicated security-algebra file.
+The protocol-independent cleared-occurrence algebra lives in `Logup/Algebra.lean`. The lemmas here
+start where that algebra is connected to protocol statements and oracle statements.
 -/
-
-/-- One occurrence in the common denominator of the LogUp rational identity: either a table row
-or one lookup-column row. -/
-inductive LookupOccur (n M : ℕ) where
-  | table : (Fin n → Fin 2) → LookupOccur n M
-  | column : Fin M → (Fin n → Fin 2) → LookupOccur n M
-deriving DecidableEq, Fintype
-
-/-- `LookupOccur` is table rows plus all column rows. -/
-def LookupOccur.equivSum (n M : ℕ) :
-    LookupOccur n M ≃ ((Fin n → Fin 2) ⊕ (Fin M × (Fin n → Fin 2))) where
-  toFun
-    | .table u => Sum.inl u
-    | .column i u => Sum.inr (i, u)
-  invFun
-    | Sum.inl u => .table u
-    | Sum.inr (i, u) => .column i u
-  left_inv := by
-    intro x
-    cases x <;> rfl
-  right_inv := by
-    intro x
-    cases x with
-    | inl u => rfl
-    | inr iu =>
-        rcases iu with ⟨i, u⟩
-        rfl
-
-/-- Cardinality of denominator occurrences in the cleared lookup identity. -/
-theorem LookupOccur.card (n M : ℕ) :
-    Fintype.card (LookupOccur n M) = (M + 1) * Fintype.card (Fin n → Fin 2) := by
-  rw [Fintype.card_congr (LookupOccur.equivSum n M)]
-  simp [Fintype.card_sum, Fintype.card_prod, Nat.succ_mul, Nat.add_comm]
-
-/-- The field value attached to a denominator occurrence. -/
-def lookupOccurValue {F : Type} {n M : ℕ}
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F) :
-    LookupOccur n M → F
-  | .table u => table u
-  | .column i u => columns i u
-
-/-- The numerator attached to a denominator occurrence: `m(u)` for table rows and `-1` for lookup
-column rows. -/
-def lookupOccurNumerator {F : Type} [Neg F] [One F] {n M : ℕ}
-    (multiplicity : (Fin n → Fin 2) → F) : LookupOccur n M → F
-  | .table u => multiplicity u
-  | .column _ _ => -1
-
-/-- The cleared univariate lookup identity obtained from paper equation (13) by multiplying by the
-common denominator over all table and column occurrences. -/
-noncomputable def clearedLookupIdentity {F : Type} [Field F] {n M : ℕ}
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
-    (multiplicity : (Fin n → Fin 2) → F) : Polynomial F :=
-  ∑ a : LookupOccur n M,
-    Polynomial.C (lookupOccurNumerator multiplicity a) *
-      ∏ b ∈ (Finset.univ.erase a),
-        (Polynomial.X + Polynomial.C (lookupOccurValue table columns b))
-
-/-- A generic version of `clearedLookupIdentity`, indexed by arbitrary denominator occurrences. -/
-noncomputable def clearedOccurrences {α : Type} [Fintype α] [DecidableEq α]
-    (value coeff : α → F) : Polynomial F :=
-  ∑ a : α,
-    Polynomial.C (coeff a) *
-      ∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (value b))
-
-omit [Fintype F] [SampleableType F] in
-/-- The key repeated-pole coefficient calculation. After shifting by a value `z`, the coefficient
-of the first possible power of `X` in the cleared occurrence polynomial is the total coefficient
-on the `z`-fiber, times the nonzero product of the other shifted values. -/
-theorem clearedOccurrences_taylor_coeff_fiber_pred
-    {α : Type} [Fintype α] [DecidableEq α]
-    (value coeff : α → F) (z : F)
-    (hfiber : 0 < (Finset.univ.filter fun a : α => value a = z).card) :
-    (Polynomial.taylor (-z) (clearedOccurrences (F := F) value coeff)).coeff
-        ((Finset.univ.filter fun a : α => value a = z).card - 1) =
-      (∑ a ∈ (Finset.univ.filter fun a : α => value a = z), coeff a) *
-        ∏ b ∈ (Finset.univ.filter fun b : α => value b ≠ z), (-z + value b) := by
-  classical
-  let fiber : Finset α := Finset.univ.filter fun a : α => value a = z
-  let rest : Finset α := Finset.univ.filter fun b : α => value b ≠ z
-  let shifted : α → F := fun b => -z + value b
-  have hrest_coeff0 :
-      (∏ b ∈ rest, (Polynomial.X + Polynomial.C (shifted b))).coeff 0 =
-        ∏ b ∈ rest, shifted b := by
-    simp [Polynomial.coeff_zero_prod, shifted]
-  have hterm :
-      ∀ a : α,
-        (Polynomial.taylor (-z)
-            (Polynomial.C (coeff a) *
-              ∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (value b)))).coeff
-            (fiber.card - 1) =
-          if value a = z then coeff a * ∏ b ∈ rest, shifted b else 0 := by
-    intro a
-    have htaylor :
-        Polynomial.taylor (-z)
-            (Polynomial.C (coeff a) *
-              ∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (value b))) =
-          Polynomial.C (coeff a) *
-            ∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (shifted b)) := by
-      change Polynomial.taylorAlgHom (-z)
-            (Polynomial.C (coeff a) *
-              ∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (value b))) =
-          Polynomial.C (coeff a) *
-            ∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (shifted b))
-      rw [map_mul, map_prod]
-      simp [Polynomial.taylorAlgHom, shifted, add_assoc]
-    by_cases ha : value a = z
-    · have hafiber : a ∈ fiber := by simp [fiber, ha]
-      have hfiberErase :
-          (Finset.univ.erase a).filter (fun b : α => value b = z) = fiber.erase a := by
-        simp [fiber, Finset.filter_erase]
-      have hrestErase :
-          (Finset.univ.erase a).filter (fun b : α => value b ≠ z) = rest := by
-        ext b
-        by_cases hba : b = a <;> simp [rest, hba, ha]
-      have hsplit :
-          (∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (shifted b))) =
-            Polynomial.X ^ (fiber.card - 1) *
-              ∏ b ∈ rest, (Polynomial.X + Polynomial.C (shifted b)) := by
-        calc
-          (∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (shifted b)))
-              =
-              (∏ b ∈ (Finset.univ.erase a).filter (fun b : α => value b = z),
-                (Polynomial.X + Polynomial.C (shifted b))) *
-                ∏ b ∈ (Finset.univ.erase a).filter (fun b : α => value b ≠ z),
-                  (Polynomial.X + Polynomial.C (shifted b)) := by
-                rw [← Finset.prod_filter_mul_prod_filter_not
-                  (p := fun b : α => value b = z)]
-          _ =
-              (∏ _b ∈ fiber.erase a, (Polynomial.X : Polynomial F)) *
-                ∏ b ∈ rest, (Polynomial.X + Polynomial.C (shifted b)) := by
-                rw [hfiberErase, hrestErase]
-                congr 1
-                refine Finset.prod_congr rfl ?_
-                intro b hb
-                simp [fiber, shifted] at hb ⊢
-                simp [hb.2]
-          _ =
-              Polynomial.X ^ (fiber.card - 1) *
-                ∏ b ∈ rest, (Polynomial.X + Polynomial.C (shifted b)) := by
-                simp [Finset.prod_const, Finset.card_erase_of_mem hafiber]
-      rw [htaylor, hsplit, Polynomial.coeff_C_mul]
-      have hcoeffX :
-          (Polynomial.X ^ (fiber.card - 1) *
-            ∏ b ∈ rest, (Polynomial.X + Polynomial.C (shifted b))).coeff
-              (fiber.card - 1) =
-            (∏ b ∈ rest, (Polynomial.X + Polynomial.C (shifted b))).coeff 0 := by
-        simpa using
-          (Polynomial.coeff_X_pow_mul
-            (∏ b ∈ rest, (Polynomial.X + Polynomial.C (shifted b)))
-            (fiber.card - 1) 0)
-      rw [hcoeffX, hrest_coeff0]
-      simp [ha]
-    · have hfiberErase :
-          (Finset.univ.erase a).filter (fun b : α => value b = z) = fiber := by
-        ext b
-        by_cases hba : b = a <;> simp [fiber, hba, ha]
-      have hsplit :
-          (∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (shifted b))) =
-            Polynomial.X ^ fiber.card *
-              ∏ b ∈ (Finset.univ.erase a).filter (fun b : α => value b ≠ z),
-                (Polynomial.X + Polynomial.C (shifted b)) := by
-        calc
-          (∏ b ∈ (Finset.univ.erase a), (Polynomial.X + Polynomial.C (shifted b)))
-              =
-              (∏ b ∈ (Finset.univ.erase a).filter (fun b : α => value b = z),
-                (Polynomial.X + Polynomial.C (shifted b))) *
-                ∏ b ∈ (Finset.univ.erase a).filter (fun b : α => value b ≠ z),
-                  (Polynomial.X + Polynomial.C (shifted b)) := by
-                rw [← Finset.prod_filter_mul_prod_filter_not
-                  (p := fun b : α => value b = z)]
-          _ =
-              (∏ _b ∈ fiber, (Polynomial.X : Polynomial F)) *
-                ∏ b ∈ (Finset.univ.erase a).filter (fun b : α => value b ≠ z),
-                  (Polynomial.X + Polynomial.C (shifted b)) := by
-                rw [hfiberErase]
-                congr 1
-                refine Finset.prod_congr rfl ?_
-                intro b hb
-                simp [fiber, shifted] at hb ⊢
-                simp [hb]
-          _ =
-              Polynomial.X ^ fiber.card *
-                ∏ b ∈ (Finset.univ.erase a).filter (fun b : α => value b ≠ z),
-                  (Polynomial.X + Polynomial.C (shifted b)) := by
-                simp [Finset.prod_const]
-      rw [htaylor, hsplit, Polynomial.coeff_C_mul, Polynomial.coeff_X_pow_mul']
-      have hfiber' : 0 < fiber.card := by
-        simpa [fiber] using hfiber
-      have hnot : ¬ fiber.card ≤ fiber.card - 1 :=
-        Nat.not_le.mpr (Nat.pred_lt (Nat.ne_of_gt hfiber'))
-      simp [ha, hnot]
-  unfold clearedOccurrences
-  change
-    (Polynomial.taylor (-z)
-      (∑ a : α,
-        Polynomial.C (coeff a) *
-          ∏ b ∈ Finset.univ.erase a, (Polynomial.X + Polynomial.C (value b)))).coeff
-        (fiber.card - 1) =
-      (∑ a ∈ fiber, coeff a) * ∏ b ∈ rest, shifted b
-  rw [map_sum, Polynomial.finsetSum_coeff]
-  calc
-    ∑ a : α,
-        (Polynomial.taylor (-z)
-          (Polynomial.C (coeff a) *
-            ∏ b ∈ Finset.univ.erase a, (Polynomial.X + Polynomial.C (value b)))).coeff
-          (fiber.card - 1)
-        = ∑ a : α, if value a = z then coeff a * ∏ b ∈ rest, shifted b else 0 := by
-          refine Finset.sum_congr rfl ?_
-          intro a _
-          exact hterm a
-    _ = ∑ a ∈ fiber, coeff a * ∏ b ∈ rest, shifted b := by
-          simp [fiber, Finset.sum_filter]
-    _ = (∑ a ∈ fiber, coeff a) * ∏ b ∈ rest, shifted b := by
-          rw [Finset.sum_mul]
-
-omit [Fintype F] [SampleableType F] in
-/-- If the total coefficient on one denominator-value fiber is nonzero, then the cleared
-occurrence polynomial cannot vanish, even when the denominator value occurs repeatedly. -/
-theorem clearedOccurrences_ne_zero_of_fiber_sum_ne_zero
-    {α : Type} [Fintype α] [DecidableEq α]
-    (value coeff : α → F) {z : F}
-    (hfiber : 0 < (Finset.univ.filter fun a : α => value a = z).card)
-    (hsum : (∑ a ∈ (Finset.univ.filter fun a : α => value a = z), coeff a) ≠ 0) :
-    clearedOccurrences (F := F) value coeff ≠ 0 := by
-  classical
-  intro hzero
-  have hcoeff_zero :
-      (Polynomial.taylor (-z) (clearedOccurrences (F := F) value coeff)).coeff
-          ((Finset.univ.filter fun a : α => value a = z).card - 1) = 0 := by
-    rw [hzero, map_zero, Polynomial.coeff_zero]
-  rw [clearedOccurrences_taylor_coeff_fiber_pred (F := F) value coeff z hfiber] at hcoeff_zero
-  have hprod_ne :
-      (∏ b ∈ (Finset.univ.filter fun b : α => value b ≠ z), (-z + value b)) ≠ 0 := by
-    rw [Finset.prod_ne_zero_iff]
-    intro b hb hzero'
-    rw [Finset.mem_filter] at hb
-    have hsub : value b - z = 0 := by
-      simpa [sub_eq_add_neg, add_comm] using hzero'
-    exact hb.2 (sub_eq_zero.mp hsub)
-  exact (mul_ne_zero hsum hprod_ne) hcoeff_zero
-
-omit [SampleableType F] in
-/-- If a value is missing from the table, its `LookupOccur` numerator fiber sum is the negative
-lookup multiplicity. -/
-theorem lookupOccurNumerator_fiber_sum_of_table_missing
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
-    (multiplicity : (Fin n → Fin 2) → F) {z : F}
-    (hmissing : ∀ u : Fin n → Fin 2, z ≠ table u) :
-    (∑ a ∈ (Finset.univ.filter fun a : LookupOccur n M =>
-        lookupOccurValue table columns a = z), lookupOccurNumerator multiplicity a) =
-      - (lookupMultiplicityCount columns z : F) := by
-  classical
-  rw [Finset.sum_filter]
-  let e := LookupOccur.equivSum n M
-  calc
-    ∑ a : LookupOccur n M,
-        (if lookupOccurValue table columns a = z then
-          lookupOccurNumerator multiplicity a else 0)
-        =
-        ∑ x : ((Fin n → Fin 2) ⊕ (Fin M × (Fin n → Fin 2))),
-          (if lookupOccurValue table columns (e.symm x) = z then
-            lookupOccurNumerator multiplicity (e.symm x) else 0) := by
-          exact Fintype.sum_equiv e _ _ (fun x => by simp [e])
-    _ =
-        (∑ u : Fin n → Fin 2, if table u = z then multiplicity u else 0) +
-          ∑ x : Fin M × (Fin n → Fin 2),
-            (if columns x.1 x.2 = z then (-1 : F) else 0) := by
-          simp [e, LookupOccur.equivSum, lookupOccurValue, lookupOccurNumerator]
-    _ =
-        ∑ x : Fin M × (Fin n → Fin 2),
-          (if columns x.1 x.2 = z then (-1 : F) else 0) := by
-          have htable_zero :
-              (∑ u : Fin n → Fin 2, if table u = z then multiplicity u else 0) = 0 := by
-            refine Finset.sum_eq_zero ?_
-            intro u _
-            have hne : table u ≠ z := (hmissing u).symm
-            simp [hne]
-          rw [htable_zero, zero_add]
-    _ = - (lookupMultiplicityCount columns z : F) := by
-          rw [lookupMultiplicityCount, ← Finset.sum_filter]
-          simp [Finset.sum_const, nsmul_eq_mul]
 
 omit [DecidableEq F] [SampleableType F] in
 /-- A false LogUp input has a concrete lookup-column value that is absent from the table. -/
@@ -376,45 +94,6 @@ theorem exists_missing_column_of_not_inputRelation
         MvPolynomial.toEvalsZeroOne (oStmt .table).1 v := by
   unfold inputRelation at hnotInput
   simpa [not_forall, not_exists] using hnotInput
-
-omit [Field F] [SampleableType F] in
-/-- The multiplicity count of an actually occurring lookup-column value is positive. -/
-theorem lookupMultiplicityCount_pos_of_column_value
-    (columns : Fin M → (Fin n → Fin 2) → F) (i : Fin M) (u : Fin n → Fin 2) :
-    0 < lookupMultiplicityCount columns (columns i u) := by
-  rw [lookupMultiplicityCount, Finset.card_pos]
-  exact ⟨(i, u), by simp⟩
-
-omit [Field F] [SampleableType F] in
-/-- A value absent from the table has table multiplicity zero. -/
-theorem tableMultiplicityCount_eq_zero_of_missing
-    (table : (Fin n → Fin 2) → F) {a : F} (hmissing : ∀ u, a ≠ table u) :
-    tableMultiplicityCount table a = 0 := by
-  rw [tableMultiplicityCount, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
-  intro u _ hu
-  exact hmissing u hu.symm
-
-omit [SampleableType F] in
-/-- Under the LogUp characteristic bound, a positive lookup multiplicity remains nonzero in `F`. -/
-theorem lookupMultiplicityCount_cast_ne_zero_of_pos
-    (hcharLarge : M * 2 ^ n < ringChar F)
-    (columns : Fin M → (Fin n → Fin 2) → F) {a : F}
-    (hpos : 0 < lookupMultiplicityCount columns a) :
-    (lookupMultiplicityCount columns a : F) ≠ 0 := by
-  have hle : lookupMultiplicityCount columns a ≤ Fintype.card (Fin M × (Fin n → Fin 2)) := by
-    rw [lookupMultiplicityCount, ← Finset.card_univ]
-    exact Finset.card_filter_le _ _
-  have hcard : Fintype.card (Fin M × (Fin n → Fin 2)) = M * 2 ^ n := by
-    simp
-  have hlt : lookupMultiplicityCount columns a < ringChar F := by
-    calc
-      lookupMultiplicityCount columns a ≤ Fintype.card (Fin M × (Fin n → Fin 2)) := hle
-      _ = M * 2 ^ n := hcard
-      _ < ringChar F := hcharLarge
-  intro hzero
-  have hdvd : ringChar F ∣ lookupMultiplicityCount columns a :=
-    (ringChar.spec F (lookupMultiplicityCount columns a)).1 hzero
-  exact (Nat.not_dvd_of_pos_of_lt hpos hlt) hdvd
 
 omit [SampleableType F] in
 /-- A false input supplies a missing lookup value whose lookup count is positive and nonzero in
@@ -497,127 +176,6 @@ theorem clearedLookupIdentity_ne_zero_of_not_input
   exact clearedOccurrences_ne_zero_of_fiber_sum_ne_zero
     (F := F) (value := lookupOccurValue table columns)
     (coeff := lookupOccurNumerator multiplicity) hfiber hsum
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- Degree bound for the cleared lookup identity: every summand omits exactly one denominator
-factor from the `(M + 1) * |H|` factors. -/
-theorem clearedLookupIdentity_natDegree_le
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
-    (multiplicity : (Fin n → Fin 2) → F) :
-    (clearedLookupIdentity table columns multiplicity).natDegree ≤
-      (M + 1) * Fintype.card (Fin n → Fin 2) - 1 := by
-  classical
-  unfold clearedLookupIdentity
-  refine (Polynomial.natDegree_sum_le (Finset.univ : Finset (LookupOccur n M))
-    (fun a =>
-      Polynomial.C (lookupOccurNumerator multiplicity a) *
-        ∏ b ∈ Finset.univ.erase a,
-          (Polynomial.X + Polynomial.C (lookupOccurValue table columns b)))).trans ?_
-  refine Finset.sup_le fun a _ => ?_
-  have hprod :
-      (∏ b ∈ Finset.univ.erase a,
-          (Polynomial.X + Polynomial.C (lookupOccurValue table columns b))).natDegree ≤
-        (Finset.univ.erase a).card := by
-    refine (Polynomial.natDegree_prod_le (Finset.univ.erase a)
-      (fun b => Polynomial.X + Polynomial.C (lookupOccurValue table columns b))).trans ?_
-    simp
-  calc
-    (Polynomial.C (lookupOccurNumerator multiplicity a) *
-        ∏ b ∈ Finset.univ.erase a,
-          (Polynomial.X + Polynomial.C (lookupOccurValue table columns b))).natDegree
-        ≤ (Polynomial.C (lookupOccurNumerator multiplicity a)).natDegree +
-            (∏ b ∈ Finset.univ.erase a,
-              (Polynomial.X + Polynomial.C (lookupOccurValue table columns b))).natDegree :=
-          Polynomial.natDegree_mul_le
-    _ ≤ 0 + (Finset.univ.erase a).card :=
-          add_le_add (by simp [Polynomial.natDegree_C]) hprod
-    _ = (M + 1) * Fintype.card (Fin n → Fin 2) - 1 := by
-          rw [zero_add, Finset.card_erase_of_mem (Finset.mem_univ a), Finset.card_univ,
-            LookupOccur.card]
-
-omit [SampleableType F] in
-/-- Root-count form of the previous two lemmas, restricted to non-pole challenges. -/
-theorem clearedLookupIdentity_bad_x_card_le
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
-    (multiplicity : (Fin n → Fin 2) → F)
-    (hpoly : clearedLookupIdentity table columns multiplicity ≠ 0) :
-    (Finset.univ.filter fun x : F =>
-      (∀ u : Fin n → Fin 2, x + table u ≠ 0) ∧
-        Polynomial.eval x (clearedLookupIdentity table columns multiplicity) = 0).card ≤
-      (M + 1) * Fintype.card (Fin n → Fin 2) - 1 := by
-  classical
-  let p := clearedLookupIdentity table columns multiplicity
-  have hsubset :
-      (Finset.univ.filter fun x : F =>
-        (∀ u : Fin n → Fin 2, x + table u ≠ 0) ∧ Polynomial.eval x p = 0).card ≤
-        p.roots.toFinset.card := by
-    refine Finset.card_le_card ?_
-    intro x hx
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hx
-    exact Multiset.mem_toFinset.mpr ((Polynomial.mem_roots hpoly).mpr hx.2)
-  calc
-    (Finset.univ.filter fun x : F =>
-        (∀ u : Fin n → Fin 2, x + table u ≠ 0) ∧
-          Polynomial.eval x (clearedLookupIdentity table columns multiplicity) = 0).card
-        ≤ p.roots.toFinset.card := hsubset
-    _ ≤ p.roots.card := Multiset.toFinset_card_le p.roots
-    _ ≤ p.natDegree := Polynomial.card_roots' p
-    _ ≤ (M + 1) * Fintype.card (Fin n → Fin 2) - 1 :=
-        clearedLookupIdentity_natDegree_le (F := F) (n := n) (M := M)
-          table columns multiplicity
-
-omit [SampleableType F] in
-/-- The set of denominator-pole challenges for all table and column occurrences has size at most
-the number of occurrences. -/
-theorem lookupOccur_pole_card_le
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F) :
-    (Finset.univ.filter fun x : F =>
-      ∃ a : LookupOccur n M, x + lookupOccurValue table columns a = 0).card ≤
-      (M + 1) * Fintype.card (Fin n → Fin 2) := by
-  classical
-  calc
-    (Finset.univ.filter fun x : F =>
-        ∃ a : LookupOccur n M, x + lookupOccurValue table columns a = 0).card
-        ≤ (Finset.univ.image
-            (fun a : LookupOccur n M => -lookupOccurValue table columns a)).card := by
-          apply Finset.card_le_card
-          intro x hx
-          simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hx
-          obtain ⟨a, ha⟩ := hx
-          exact Finset.mem_image.mpr
-            ⟨a, Finset.mem_univ a, (eq_neg_of_add_eq_zero_left ha).symm⟩
-    _ ≤ Fintype.card (LookupOccur n M) := by
-        rw [← Finset.card_univ]
-        exact Finset.card_image_le
-    _ = (M + 1) * Fintype.card (Fin n → Fin 2) := LookupOccur.card n M
-
-omit [SampleableType F] in
-/-- Root-count bound for the cleared lookup identity over all field challenges. -/
-theorem clearedLookupIdentity_root_card_le
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
-    (multiplicity : (Fin n → Fin 2) → F)
-    (hpoly : clearedLookupIdentity table columns multiplicity ≠ 0) :
-    (Finset.univ.filter fun x : F =>
-      Polynomial.eval x (clearedLookupIdentity table columns multiplicity) = 0).card ≤
-      (M + 1) * Fintype.card (Fin n → Fin 2) - 1 := by
-  classical
-  let p := clearedLookupIdentity table columns multiplicity
-  have hsubset :
-      (Finset.univ.filter fun x : F => Polynomial.eval x p = 0).card ≤
-        p.roots.toFinset.card := by
-    refine Finset.card_le_card ?_
-    intro x hx
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hx
-    exact Multiset.mem_toFinset.mpr ((Polynomial.mem_roots hpoly).mpr hx)
-  calc
-    (Finset.univ.filter fun x : F =>
-        Polynomial.eval x (clearedLookupIdentity table columns multiplicity) = 0).card
-        ≤ p.roots.toFinset.card := hsubset
-    _ ≤ p.roots.card := Multiset.toFinset_card_le p.roots
-    _ ≤ p.natDegree := Polynomial.card_roots' p
-    _ ≤ (M + 1) * Fintype.card (Fin n → Fin 2) - 1 :=
-        clearedLookupIdentity_natDegree_le (F := F) (n := n) (M := M)
-          table columns multiplicity
 
 /-- Uniform `x` bound for the division-safe bad event: either `x` is a denominator pole for some
 occurrence, or it is a root of the nonzero cleared lookup identity. -/
@@ -742,34 +300,6 @@ theorem helper_eq_helperValue_of_domainIdentityTerm_eq_zero
     _ = helperValue groups table columns multiplicity xChallenge k u *
           ∏ i ∈ groups k, φ i := by
         rfl
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- Local copy of the protocol-group partition theorem: summing over all concrete helper groups
-is the same as summing over all `TermIdx` values. -/
-theorem sum_protocolGroups_soundness (params : ProtocolParams M) (g : TermIdx M → F) :
-    (∑ k : Fin params.numGroups, ∑ i ∈ params.group k, g i) = ∑ i : TermIdx M, g i := by
-  classical
-  have hℓ := params.sumSize_pos
-  have hidx : ∀ i : TermIdx M, i.val / params.sumSize < params.numGroups := by
-    intro i
-    have hiM : i.val ≤ M := Nat.lt_succ_iff.mp i.isLt
-    have hle : i.val / params.sumSize ≤ M / params.sumSize := Nat.div_le_div_right hiM
-    rw [ProtocolParams.numGroups, Nat.add_div_right _ hℓ]
-    omega
-  rw [← Finset.sum_fiberwise Finset.univ
-      (fun i : TermIdx M => (⟨i.val / params.sumSize, hidx i⟩ : Fin params.numGroups)) g]
-  refine Finset.sum_congr rfl (fun k _ => ?_)
-  congr 1
-  ext i
-  simp only [ProtocolParams.group, Finset.mem_filter, Finset.mem_univ, true_and, Fin.ext_iff]
-  constructor
-  · rintro ⟨h1, h2⟩
-    have ha : k.val ≤ i.val / params.sumSize := (Nat.le_div_iff_mul_le hℓ).mpr h1
-    have hb : i.val / params.sumSize < k.val + 1 := (Nat.div_lt_iff_lt_mul hℓ).mpr h2
-    omega
-  · intro h
-    exact ⟨(Nat.le_div_iff_mul_le hℓ).mp (by omega),
-      (Nat.div_lt_iff_lt_mul hℓ).mp (by omega)⟩
 
 omit [Fintype F] [DecidableEq F] [SampleableType F] in
 /-- Convert a term index and Boolean row into the corresponding denominator occurrence. -/
@@ -1621,7 +1151,7 @@ theorem logupOuterSumcheckClaim_ne_zero_of_good_challenges
   have hlinear :=
     outer_linear_claim_ne_zero_of_good_challenges
       (F := F) (n := n) (M := M) (K := params.numGroups) (params.group)
-      (sum_protocolGroups_soundness (F := F) (M := M) params) table columns multiplicity helpers
+      (sum_protocolGroups (F := F) (M := M) params) table columns multiplicity helpers
       stmt.xChallenge stmt.zChallenge stmt.batchingScalars
       (by simpa [table, columns] using hden)
       (by simpa [table, columns, multiplicity] using heval)
@@ -1629,30 +1159,6 @@ theorem logupOuterSumcheckClaim_ne_zero_of_good_challenges
       (by simpa [table, columns, multiplicity, helpers] using hBatchGood)
   rw [logupOuterSumcheckClaim_eq_linear_batch]
   simpa [table, columns, multiplicity, helpers] using hlinear
-
-omit σ init impl [DecidableEq F] [SampleableType F] in
-/-- Simulating the scan-free outer verifier leaves only the public challenge data packaged as the
-outer statement. -/
-theorem outerVerify_simulateQ_eq_soundness (stmt : StmtIn F n M) (oStmt : ∀ i, OStmtIn F n M i)
-    (messages : ∀ i, (outerPSpec F n params).Message i)
-    (challenges : ∀ i, (outerPSpec F n params).Challenge i) :
-    simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
-        ((outerVerifier oSpec F n M params).verify stmt challenges)
-      = (do
-          let x : F := challenges (outerChallengeXIdx F n M params)
-          let batch : BatchingChallenge F n params.numGroups :=
-            challenges (outerChallengeBatchIdx F n M params)
-          pure { xChallenge := x, zChallenge := batch.1, batchingScalars := batch.2 }
-        : OptionT (OracleComp oSpec) (StmtAfterOuter F n M params)) := by
-  simp [outerVerifier, outerChallengeXIdx, outerChallengeBatchIdx]
-  rfl
-
-omit oSpec F n M params σ init impl [Field F] [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- Four-round unfolding of `Fin.induction`, used when expanding the outer protocol run. -/
-private theorem Fin.induction_four_soundness {motive : Fin 5 → Sort*} {zero : motive 0}
-    {succ : ∀ i : Fin 4, motive i.castSucc → motive i.succ} :
-    Fin.induction (motive := motive) zero succ (Fin.last 4)
-      = succ 3 (succ 2 (succ 1 (succ 0 zero))) := rfl
 
 private def outerBadX
     (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
@@ -2152,7 +1658,7 @@ private theorem outerSoundnessState_full_prob_zero
       (verifier := outerVerifier oSpec F n M params))]
     unfold OracleVerifier.run
     simp only
-    rw [outerVerify_simulateQ_eq_soundness
+    rw [outerVerify_simulateQ_eq
       (oSpec := oSpec) (F := F) (n := n) (M := M) (params := params)
       stmtPair.1 stmtPair.2
       (ProtocolSpec.FullTranscript.messages tr)
@@ -2575,7 +2081,7 @@ private theorem logup_outer_soundness_from_local_algebra
                 outerBatchChallenge_bad_prob_le
                   (F := F) (n := n) (M := M) (params := params)
                   hBatch (params.group)
-                  (sum_protocolGroups_soundness (F := F) (M := M) params)
+                  (sum_protocolGroups (F := F) (M := M) params)
                   table columns multiplicity helpers x hden heval
             refine le_trans (probEvent_mono'' ?_) hBatchBound
             intro batch hbad
@@ -2708,204 +2214,6 @@ private theorem logup_outer_soundness_from_local_algebra
 
 One soundness statement per phase, against the intermediate languages handed between phases. -/
 
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-private theorem sum_piFinset_map_univ_eq_sum_hypercube
-    (D : Fin 2 ↪ F) (f : (Fin n → F) → F) :
-    (∑ x ∈ Fintype.piFinset fun _ : Fin n => Finset.univ.map D, f x) =
-      ∑ u : (Fin n → Fin 2), f (fun j => D (u j)) := by
-  let e : (Fin n → Fin 2) ↪ (Fin n → F) := Function.Embedding.arrowCongrRight D
-  change (∑ x ∈ Fintype.piFinset fun _ : Fin n => Finset.univ.map D, f x) =
-    ∑ u : (Fin n → Fin 2), f (e u)
-  rw [← Finset.sum_map]
-  congr 1
-  ext x
-  simp only [Fintype.mem_piFinset, Finset.mem_map, Finset.mem_univ, true_and, true_imp_iff]
-  constructor
-  · intro hx
-    choose y hy using hx
-    refine ⟨y, ?_⟩
-    funext i
-    exact hy i
-  · rintro ⟨y, rfl⟩ i
-    exact ⟨y i, rfl⟩
-
-private theorem logupSumcheckRelationInput_iff
-    {stmt : StmtAfterOuter F n M params}
-    {oStmt : ∀ i, OStmtAfterOuter F n M params i} :
-    logupSumcheckRelationInput F n M params stmt oStmt ↔
-      logupOuterSumcheckClaim F n M params stmt oStmt = 0 := by
-  unfold logupSumcheckRelationInput Sumcheck.Spec.relationRound
-  simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, Nat.sub_zero, logupInitialSumcheckStatement,
-    Set.mem_setOf_eq, Fin.elim0_append, logupSumcheckOracleStmt]
-  change
-    (∑ x ∈ Fintype.piFinset fun _ : Fin n => Finset.univ.map (booleanDomain F),
-      MvPolynomial.eval ((x ∘ Fin.cast (by omega)) ∘ Fin.cast (by omega))
-        (logupSumcheckPolynomial F n M params stmt oStmt).val) = 0 ↔
-      logupOuterSumcheckClaim F n M params stmt oStmt = 0
-  rw [sum_piFinset_map_univ_eq_sum_hypercube
-    (F := F) (n := n) (D := booleanDomain F)
-    (f := fun x =>
-      MvPolynomial.eval ((x ∘ Fin.cast (by omega)) ∘ Fin.cast (by omega))
-        (logupSumcheckPolynomial F n M params stmt oStmt).val)]
-  change
-    (∑ u : (Fin n → Fin 2),
-        MvPolynomial.eval (fun i => (u i : F))
-          (logupSumcheckPolynomial F n M params stmt oStmt).val) = 0 ↔
-      logupOuterSumcheckClaim F n M params stmt oStmt = 0
-  have hsum :
-      (∑ u : (Fin n → Fin 2),
-          MvPolynomial.eval (fun i => (u i : F))
-            (logupSumcheckPolynomial F n M params stmt oStmt).val) =
-        logupOuterSumcheckClaim F n M params stmt oStmt := by
-    rw [logupOuterSumcheckClaim]
-    apply Finset.sum_congr rfl
-    intro u _
-    simp only [booleanDomain, logupSumcheckPolynomial]
-  rw [hsum]
-
-private theorem seqCompose_verifier_preserves {ι : Type} {oSpec : OracleSpec ι} (m : ℕ) :
-    ∀ {Stmt : Fin (m + 1) → Type} {O : Type}
-      {rounds : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (rounds i)}
-      (V : (i : Fin m) → Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
-      (proj : (i : Fin (m + 1)) → Stmt i → O),
-      (∀ (i : Fin m) (stmt : Stmt i.castSucc) (out : Stmt i.succ)
-          (tr : (pSpec i).FullTranscript),
-        out ∈ support ((V i).run stmt tr) →
-          proj i.succ out = proj i.castSucc stmt) →
-      ∀ (stmt : Stmt 0) (out : Stmt (Fin.last m))
-        (tr : (ProtocolSpec.seqCompose pSpec).FullTranscript),
-        out ∈ support ((Verifier.seqCompose Stmt V).run stmt tr) →
-        proj (Fin.last m) out = proj 0 stmt := by
-  induction m with
-  | zero =>
-      intro Stmt O rounds pSpec V proj _hV stmt out tr h
-      rw [Verifier.seqCompose_zero] at h
-      simp only [Verifier.run, Verifier.id] at h
-      cases h
-      rfl
-  | succ m ih =>
-      intro Stmt O rounds pSpec V proj hV stmt out tr h
-      let tailSpec : ProtocolSpec (Fin.vsum fun i : Fin m => rounds (Fin.succ i)) :=
-        ProtocolSpec.seqCompose (fun i : Fin m => pSpec (Fin.succ i))
-      let tail : Verifier oSpec (Stmt (Fin.succ 0)) (Stmt (Fin.last (m + 1))) tailSpec :=
-        Verifier.seqCompose (fun i => Stmt i.succ) (fun i => V (Fin.succ i))
-      let trApp : ((pSpec 0) ++ₚ tailSpec).FullTranscript := tr
-      have h' : out ∈ support (((do
-          let stmt₂ ← (V 0).run stmt trApp.fst
-          let stmt₃ ← tail.run stmt₂ trApp.snd
-          return stmt₃) : OptionT (OracleComp oSpec) (Stmt (Fin.last (m + 1))))) := by
-        change out ∈ support ((Verifier.append (V 0) tail).run stmt trApp) at h
-        rw [Verifier.append_run] at h
-        exact h
-      rw [mem_support_bind_iff] at h'
-      rcases h' with ⟨stmt₂, h₁, hrest⟩
-      rw [mem_support_bind_iff] at hrest
-      rcases hrest with ⟨stmt₃, h₂, hpure⟩
-      rw [support_pure, Set.mem_singleton_iff] at hpure
-      cases hpure
-      calc
-        proj (Fin.last (m + 1)) out = proj (Fin.succ (Fin.last m)) out := rfl
-        _ = proj (Fin.succ (0 : Fin (m + 1))) stmt₂ := by
-          exact ih
-            (V := fun i => V (Fin.succ i))
-            (proj := fun i => proj (Fin.succ i))
-            (fun i stmt out tr h => hV (Fin.succ i) stmt out tr h)
-            stmt₂ out trApp.snd h₂
-        _ = proj 0 stmt := hV 0 stmt stmt₂ trApp.fst h₁
-
-omit [Fintype F] [SampleableType F] in
-private theorem sumcheckSingleRoundVerifier_preserves_oracleStmt
-    {deg : ℕ} (D : Fin 2 ↪ F) (i : Fin n)
-    {stmt : Sumcheck.Spec.StatementRound F n i.castSucc ×
-      (∀ j, Sumcheck.Spec.OracleStatement F n deg j)}
-    {out : Sumcheck.Spec.StatementRound F n i.succ ×
-      (∀ j, Sumcheck.Spec.OracleStatement F n deg j)}
-    {tr : (Sumcheck.Spec.SingleRound.pSpec F deg).FullTranscript}
-    (h : out ∈ support ((Sumcheck.Spec.SingleRound.verifier F n deg D oSpec i).run stmt tr)) :
-    out.2 = stmt.2 := by
-  rw [Sumcheck.Spec.SingleRound.verifier, Verifier.run, Verifier.liftContext] at h
-  rw [mem_support_bind_iff] at h
-  rcases h with ⟨innerOut, _hInner, hOut⟩
-  rw [support_pure, Set.mem_singleton_iff] at hOut
-  cases hOut
-  rcases stmt with ⟨⟨_oldTarget, _challenges⟩, oStmt⟩
-  rcases innerOut with ⟨⟨_newTarget, _chal⟩, _oStmt'⟩
-  rfl
-
-private theorem sumcheckVerifier_preserves_oracleStmt
-    {deg : ℕ} (D : Fin 2 ↪ F)
-    {stmt : Sumcheck.Spec.StatementRound F n 0 ×
-      (∀ j, Sumcheck.Spec.OracleStatement F n deg j)}
-    {out : Sumcheck.Spec.StatementRound F n (Fin.last n) ×
-      (∀ j, Sumcheck.Spec.OracleStatement F n deg j)}
-    {tr : (Sumcheck.Spec.pSpec F deg n).FullTranscript}
-    (h : out ∈ support ((Sumcheck.Spec.verifier F deg D n oSpec).run stmt tr)) :
-    out.2 = stmt.2 := by
-  refine @seqCompose_verifier_preserves ι oSpec n
-    (Stmt := fun i => Sumcheck.Spec.StatementRound F n i ×
-      (∀ j, Sumcheck.Spec.OracleStatement F n deg j))
-    (O := ∀ j, Sumcheck.Spec.OracleStatement F n deg j)
-    (rounds := fun _ => 2)
-    (pSpec := fun _ => Sumcheck.Spec.SingleRound.pSpec F deg)
-    (V := fun i => Sumcheck.Spec.SingleRound.verifier F n deg D oSpec i)
-    (proj := fun _ stmt => stmt.2) ?_ stmt out tr ?_
-  · intro i stmt out tr h
-    exact sumcheckSingleRoundVerifier_preserves_oracleStmt
-      (oSpec := oSpec) (F := F) (n := n) D i h
-  · exact h
-
-omit [Fintype F] in
-private theorem sumcheckSingleRoundOracleReduction_toReduction_verifier_eq_verifier
-    {deg : ℕ} (D : Fin 2 ↪ F) (i : Fin n) :
-    ((Sumcheck.Spec.SingleRound.oracleReduction F n deg D oSpec i).toReduction).verifier =
-      Sumcheck.Spec.SingleRound.verifier F n deg D oSpec i := by
-  rw [Sumcheck.Spec.SingleRound.oracleReduction]
-  rw [OracleReduction.liftContext_toReduction_comm]
-  rw [Sumcheck.Spec.SingleRound.Simple.oracleReduction_eq_reduction]
-  rfl
-
-private theorem sumcheckOracleReductionVerifier_toVerifier_eq_verifier
-    {deg : ℕ} (D : Fin 2 ↪ F) :
-    (Sumcheck.Spec.oracleReduction F deg D n oSpec).verifier.toVerifier =
-      Sumcheck.Spec.verifier F deg D n oSpec := by
-  have h := congrArg Reduction.verifier
-    (OracleReduction.seqCompose_toReduction
-      (oSpec := oSpec)
-      (Stmt := Sumcheck.Spec.StatementRound F n)
-      (OStmt := fun _ => Sumcheck.Spec.OracleStatement F n deg)
-      (Wit := fun _ => Unit)
-      (pSpec := fun _ => Sumcheck.Spec.SingleRound.pSpec F deg)
-      (R := Sumcheck.Spec.SingleRound.oracleReduction F n deg D oSpec))
-  change (Sumcheck.Spec.oracleReduction F deg D n oSpec).verifier.toVerifier =
-      (Reduction.seqCompose
-        (fun i => Sumcheck.Spec.StatementRound F n i ×
-          (∀ j, Sumcheck.Spec.OracleStatement F n deg j))
-        (fun _ => Unit)
-        (fun i => (Sumcheck.Spec.SingleRound.oracleReduction F n deg D oSpec i).toReduction)
-      ).verifier at h
-  rw [h]
-  change
-      Verifier.seqCompose
-        (fun i => Sumcheck.Spec.StatementRound F n i ×
-          (∀ j, Sumcheck.Spec.OracleStatement F n deg j))
-        (fun i =>
-          ((Sumcheck.Spec.SingleRound.oracleReduction F n deg D oSpec i).toReduction).verifier) =
-      Sumcheck.Spec.verifier F deg D n oSpec
-  change
-      Verifier.seqCompose
-        (fun i => Sumcheck.Spec.StatementRound F n i ×
-          (∀ j, Sumcheck.Spec.OracleStatement F n deg j))
-        (fun i =>
-          ((Sumcheck.Spec.SingleRound.oracleReduction F n deg D oSpec i).toReduction).verifier) =
-      Verifier.seqCompose
-        (fun i => Sumcheck.Spec.StatementRound F n i ×
-          (∀ j, Sumcheck.Spec.OracleStatement F n deg j))
-        (Sumcheck.Spec.SingleRound.verifier F n deg D oSpec)
-  congr
-  funext i
-  exact sumcheckSingleRoundOracleReduction_toReduction_verifier_eq_verifier
-    (oSpec := oSpec) (F := F) (n := n) D i
-
 private theorem sumcheckVerifier_compat_oracleStmt
     {outerStmt : StmtAfterOuter F n M params × (∀ i, OStmtAfterOuter F n M params i)}
     {innerStmtOut : Sumcheck.Spec.StatementRound F n (Fin.last n) ×
@@ -2921,14 +2229,14 @@ private theorem sumcheckVerifier_compat_oracleStmt
         (logupInitialSumcheckStatement F n,
           logupSumcheckOracleStmt F n M params outerStmt.1 outerStmt.2) tr) := by
     rw [logupConcreteSumcheckOracleReduction,
-      sumcheckOracleReductionVerifier_toVerifier_eq_verifier] at htr
+      Sumcheck.Spec.oracleReduction_toReduction_verifier_eq_verifier] at htr
     change innerStmtOut ∈ support
       ((Sumcheck.Spec.verifier F (logupSumcheckDegree M params) (booleanDomain F) n oSpec).run
         (logupInitialSumcheckStatement F n,
           logupSumcheckOracleStmt F n M params outerStmt.1 outerStmt.2) tr) at htr
     exact htr
-  exact sumcheckVerifier_preserves_oracleStmt (oSpec := oSpec) (F := F) (n := n)
-    (D := booleanDomain F) hrun
+  exact Sumcheck.Spec.verifier_preserves_oracleStmt F (logupSumcheckDegree M params)
+    (booleanDomain F) n oSpec hrun
 
 private instance logupSumcheckLensSound :
     (logupSumcheckContextLens F n M params).stmt.IsSound
