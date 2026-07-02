@@ -31,6 +31,13 @@ local instance instOuterChallengeOracleInterface' :
       OracleInterface ((outerPSpec F n params).Challenge i) :=
   ProtocolSpec.challengeOracleInterface
 
+/-! ## Helper Lemmas
+
+This section collects the shared estimates and support-manipulation facts used by the phase
+completeness proofs.  The algebraic identities used by honest LogUp data live in
+`Logup/Algebra.lean`; the lemmas here are about probabilities, support membership, and peeling
+simulated oracle computations. -/
+
 /-- Completeness error from the current `x`-sampling model: the verifier samples `x` from all of
 `F`. Following Remark 3 of the LogUp paper, table-pole challenges are treated as bad inputs for
 the honest handoff rather than rejected by an exponential verifier scan. -/
@@ -38,6 +45,11 @@ noncomputable def logupCompletenessError (F : Type) [Fintype F] (n : ℕ) : ℝ�
   (Fintype.card (Fin n → Fin 2) : ℝ≥0) / (Fintype.card F)
 
 omit [DecidableEq F] in
+/-- A uniformly sampled outer challenge avoids all table denominator poles with probability at
+least `1 - logupCompletenessError`.
+
+The bad challenges are exactly negatives of table values on Boolean rows, so their count is bounded
+by the hypercube size. -/
 private theorem uniform_avoids_table_poles_prob [Inhabited F]
     (oStmt : ∀ i, OStmtIn F n M i) :
     (1 : ENNReal) - (logupCompletenessError F n : ENNReal) ≤
@@ -72,6 +84,12 @@ private theorem uniform_avoids_table_poles_prob [Inhabited F]
     funext x
     simp [bad]
 
+/-- Lower-bound a bind event by proving the same lower bound for every supported first-stage
+output.
+
+This is the completeness-side bind rule used after peeling a deterministic prefix of a computation:
+if the prefix does not fail and every reachable continuation succeeds with probability at least
+`r`, then the whole bind succeeds with probability at least `r`. -/
 private theorem le_probEvent_bind_of_forall_le {m : Type → Type*} [Monad m] [LawfulMonad m]
     [MonadLiftT m SPMF] [LawfulMonadLiftT m SPMF] [MonadLiftT m SetM]
     [LawfulMonadLiftT m SetM] [EvalDistCompatible m]
@@ -85,11 +103,17 @@ private theorem le_probEvent_bind_of_forall_le {m : Type → Type*} [Monad m] [L
     (by simp [htrue]) (fun x hx _ => h x hx)
   simpa using hmul
 
+/-- Any value in the support of `pure x` is definitionally equal to `x`. -/
 private theorem support_pure_eq {m : Type → Type*} [Monad m] [LawfulMonad m]
     [MonadLiftT m SetM] [LawfulMonadLiftT m SetM]
     {α : Type} {x y : α} (h : y ∈ support (pure x : m α)) : y = x := by
   simpa [mem_support_pure_iff] using h
 
+/-- If simulating an oracle computation can return `(y, s')`, then `y` was possible in the
+underlying oracle computation.
+
+This strips away the simulator state when a proof only needs the support fact about the oracle
+computation itself. -/
 private theorem support_simulateQ_run_fst_subset {ι : Type} {spec : OracleSpec ι}
     {m : Type → Type*} [Monad m] [LawfulMonad m] [MonadLiftT m SetM]
     [LawfulMonadLiftT m SetM] {σ α : Type}
@@ -100,6 +124,10 @@ private theorem support_simulateQ_run_fst_subset {ι : Type} {spec : OracleSpec 
     rw [StateT.run'_eq, support_map, Set.mem_image]
     exact ⟨(y, s'), h, rfl⟩)
 
+/-- A successful full reduction run contains a prover transcript that was produced by the prover.
+
+Completeness of the lifted sumcheck phase needs this to apply the generic sumcheck prover-side
+oracle-statement preservation theorem to the transcript extracted from the reduction run. -/
 private theorem reduction_run_prover_mem {ι : Type} {oSpec : OracleSpec ι}
     {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
     (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
@@ -136,10 +164,16 @@ local macro "peel_sim_bind " h:ident " with " pat:rcasesPat : tactic =>
      rw [mem_support_bind_iff] at $h:ident
      obtain $pat := $h))
 
-set_option maxHeartbeats 1000000 in
 -- The proof peels the whole four-round outer transcript and reconstructs the handoff relation;
 -- the generated support terms are large even though the reasoning is deterministic.
 
+/-! ## Outer Phase Completeness
+
+The honest outer prover sends multiplicities and helpers, samples the outer challenges, and reaches
+the LogUp-to-sumcheck handoff relation except when the sampled `x` challenge hits a table pole. -/
+
+set_option linter.style.maxHeartbeats false in
+set_option maxHeartbeats 1000000 in
 /-- Completeness of the outer LogUp phase: the honest outer prover reaches the zero-sum handoff
 relation, except with the pole-sampling error. -/
 theorem logup_outer_completeness [Inhabited F] :
@@ -306,9 +340,16 @@ theorem logup_outer_completeness [Inhabited F] :
           intro u _
           rw [logupQPolynomial_eval_hypercube]
           simp [stmtAfter, oStmtAfter, hMultiplicity, hHelpers]
-        simp? [outerVerifier, outerChallengeXIdx, outerChallengeBatchIdx,
-          ProtocolSpec.FullTranscript.challenges, ProtocolSpec.FullTranscript.messages,
-          ProtocolSpec.Transcript.concat, Fin.snoc]
+        simp only [OStmtAfterOuter, OStmtIn, MultiplicityMessage, HelperMessages,
+          ProtocolSpec.FullTranscript.challenges, ProtocolSpec.Transcript.concat, Fin.snoc,
+          Fin.isValue, Fin.coe_ofNat_eq_mod, Nat.reduceMod, Nat.reduceAdd, Fin.vcons_fin_zero,
+          BatchingChallenge, outerChallengeXIdx, Nat.one_mod, Nat.mod_succ, Nat.one_lt_ofNat,
+          ↓reduceDIte, Fin.reduceSucc, Fin.reduceCastLT, Fin.castSucc_one, ProtocolSpec.take_Type,
+          Order.lt_two_iff, Std.le_refl, lt_self_iff_false, Fin.succ_one_eq_two, Fin.reduceLast,
+          cast_eq, outerChallengeBatchIdx, ProtocolSpec.MessageIdx, outerVerifier,
+          ProtocolSpec.Message, Lean.Elab.WF.paramLet, ProtocolSpec.FullTranscript.messages,
+          Fin.castSucc_castLT, Fin.val_castLT, Order.lt_one_iff, Fin.val_eq_zero_iff, Nat.zero_mod,
+          Fin.val_eq_zero, Fin.succ_zero_eq_one, Prod.mk.injEq, true_and]
         constructor
         · convert hmid using 2
           apply Prod.ext
@@ -407,9 +448,17 @@ theorem logup_outer_completeness [Inhabited F] :
                 rw [OptionT.support_liftM] at hverified'
                 simp only [OracleVerifier.toVerifier] at hverified'
                 erw [outerVerify_simulateQ_eq] at hverified'
-                simp [outerChallengeXIdx, outerChallengeBatchIdx,
-                  ProtocolSpec.FullTranscript.challenges, ProtocolSpec.Transcript.concat,
-                  Fin.snoc] at hverified'
+                simp only [OStmtAfterOuter, OStmtIn, MultiplicityMessage, HelperMessages,
+                  ProtocolSpec.FullTranscript.challenges, ProtocolSpec.Transcript.concat, Fin.snoc,
+                  Fin.isValue, Fin.coe_ofNat_eq_mod, Nat.reduceMod, Nat.reduceAdd,
+                  outerChallengeXIdx, Fin.vcons_fin_zero, BatchingChallenge, Nat.one_mod,
+                  Nat.mod_succ, Nat.one_lt_ofNat, ↓reduceDIte, Fin.reduceSucc, Fin.reduceCastLT,
+                  Fin.castSucc_one, ProtocolSpec.take_Type, Order.lt_two_iff, Std.le_refl,
+                  lt_self_iff_false, Fin.succ_one_eq_two, Fin.reduceLast, cast_eq,
+                  outerChallengeBatchIdx, ProtocolSpec.MessageIdx, ProtocolSpec.Message,
+                  Nat.zero_mod, Fin.succ_zero_eq_one, Fin.castSucc_castLT, Fin.val_castLT,
+                  Order.lt_one_iff, Fin.val_eq_zero_iff, Fin.val_eq_zero, bind_pure_comp, map_pure,
+                  OptionT.run_pure, simulateQ_pure] at hverified'
                 erw [simulateQ_bind, StateT.run_bind] at hverified'
                 rw [mem_support_bind_iff] at hverified'
                 obtain ⟨⟨verOpt, sver⟩, hverOpt, hverified''⟩ := hverified'
@@ -421,6 +470,12 @@ theorem logup_outer_completeness [Inhabited F] :
                 subst verifiedState
                 cases hout
                 exact hGood))
+
+/-! ## Sumcheck Phase Completeness
+
+The embedded sumcheck phase reuses ArkLib's generic perfect completeness theorem through the LogUp
+context lens.  The lens proof shows that the projected sumcheck statement is the zero-sum instance
+and that a valid final sumcheck claim lifts back to the retained LogUp data. -/
 
 /-- Lens-completeness for the LogUp→Sumcheck lens: `proj` builds the zero-sum instance, and `lift`
 retains the outer LogUp data together with sumcheck's final valid point claim. -/
@@ -476,6 +531,12 @@ theorem logupSumcheckPhaseCompleteness :
     (Sumcheck.Spec.oracleReduction_perfectCompleteness
       F (logupSumcheckDegree M params) (booleanDomain F) n oSpec)
 
+
+/-! ## Final-Check Phase Completeness
+
+The final check is deterministic.  If the retained post-sumcheck relation is valid, the verifier's
+oracle queries reconstruct exactly the value of `logupQPolynomial` at the final sumcheck point, so
+the guard accepts with probability one. -/
 
 omit [Fintype F] [SampleableType F] in
 /-- Completeness of the final LogUp point check: once sumcheck's final claim is valid for the
@@ -650,11 +711,16 @@ theorem finalCheckCompleteness :
       (finalCheckOracleReduction oSpec F n M params).toReduction.run (stmt, oStmt) () =
         (pure ((default, ((), fun i => Fin.elim0 i), ()), ((), fun i => Fin.elim0 i)) :
           OptionT (OracleComp _) _) := by
-    simp [finalCheckOracleReduction, OracleReduction.toReduction, Reduction.run,
-      finalCheckProver, Prover.run, Verifier.run, Prover.runToRound,
-      finalCheckPSpec, OracleVerifier.toVerifier]
+    simp only [finalCheckPSpec, ProtocolSpec.ChallengeIdx, ProtocolSpec.Challenge, StmtOut,
+      OutputOracleIdx, OStmtOut, Reduction.run, Prover.run, Fin.reduceLast, OStmtAfterOuter,
+      OStmtIn, MultiplicityMessage, HelperMessages, finalCheckOracleReduction, finalCheckProver,
+      Nat.reduceAdd, Fin.isValue, ProtocolSpec.MessageIdx, ProtocolSpec.Message,
+      OracleReduction.toReduction, OracleVerifier.toVerifier, Prover.runToRound, Fin.induction_zero,
+      liftM_pure, bind_pure_comp, map_pure, Verifier.run, OptionT.run_map, liftM_map, bind_map_left,
+      pure_bind]
     erw [hVerifyDefaultT']
-    simp
+    simp only [StmtOut, liftM_pure, Fin.isValue, pure_bind, Option.map_some, Option.getM_some,
+      map_pure]
     congr
     funext i
     exact Fin.elim0 i
@@ -694,9 +760,16 @@ theorem finalCheckCompleteness :
         ((default, ((), fun i => Fin.elim0 i), ()), ((), fun i => Fin.elim0 i))) :
           StateT σ ProbComp _).run s) at hout
     rw [StateT.run_pure] at hout
-    simp [map_pure, support_pure] at hout
+    simp only [StmtOut, OutputOracleIdx, OStmtOut, map_pure, support_pure, Set.mem_singleton_iff,
+      Option.some.injEq] at hout
     cases hout
     exact ⟨Set.mem_univ _, rfl⟩
+
+/-! ## Composed LogUp Completeness
+
+The full oracle reduction is the sequential composition of the outer phase, embedded sumcheck, and
+final check.  Completeness follows by composing the three phase completeness bounds; only the outer
+phase contributes the current pole-sampling error. -/
 
 /-- Main ArkLib completeness theorem for LogUp Protocol 2. -/
 theorem logup_completeness :

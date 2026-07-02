@@ -31,10 +31,12 @@ variable (n M : ℕ)
 variable (params : ProtocolParams M)
 variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
-/-! ## Per-phase soundness errors
+/-! ## Helper Lemmas
 
-The three named errors below correspond to the failure events of the three protocol phases. Their
-sum is the full LogUp soundness error `logupSoundnessError`. -/
+This section collects the error budgets, probability estimates, transcript projections, and local
+protocol bridges used by the phase soundness proofs below.  The purely algebraic identities live in
+`Logup/Algebra.lean`; the lemmas here connect those identities to protocol statements, oracle
+statements, and probabilistic challenge sampling. -/
 
 /-- Soundness error of the outer LogUp reduction.
 
@@ -78,23 +80,6 @@ noncomputable def logupSumcheckSoundnessError (F : Type) [CommSemiring F] [Finty
   ∑ _ : (Sumcheck.Spec.pSpec F (logupSumcheckDegree M params) n).ChallengeIdx,
     ((logupSumcheckDegree M params : ℕ) : ℝ≥0) / (Fintype.card F : ℝ≥0)
 
-/-! ## Protocol-facing outer-soundness algebra
-
-The protocol-independent cleared-occurrence algebra lives in `Logup/Algebra.lean`. The lemmas here
-start where that algebra is connected to protocol statements and oracle statements.
--/
-
-omit [DecidableEq F] [SampleableType F] in
-/-- A false LogUp input has a concrete lookup-column value that is absent from the table. -/
-theorem exists_missing_column_of_not_inputRelation
-    (stmt : StmtIn F n M) (oStmt : ∀ i, OStmtIn F n M i)
-    (hnotInput : ((stmt, oStmt), ()) ∉ inputRelation F n M) :
-    ∃ i : Fin M, ∃ u : Fin n → Fin 2, ∀ v : Fin n → Fin 2,
-      MvPolynomial.toEvalsZeroOne (oStmt (.column i)).1 u ≠
-        MvPolynomial.toEvalsZeroOne (oStmt .table).1 v := by
-  unfold inputRelation at hnotInput
-  simpa [not_forall, not_exists] using hnotInput
-
 omit [SampleableType F] in
 /-- A false input supplies a missing lookup value whose lookup count is positive and nonzero in
 the field, while its table count is zero. -/
@@ -113,9 +98,14 @@ theorem exists_missing_column_with_nonzero_lookup_count
           (MvPolynomial.toEvalsZeroOne (oStmt (.column i)).1 u) : F) ≠ 0 ∧
       tableMultiplicityCount (MvPolynomial.toEvalsZeroOne (oStmt .table).1)
           (MvPolynomial.toEvalsZeroOne (oStmt (.column i)).1 u) = 0 := by
+  have hmissing_exists :
+      ∃ i : Fin M, ∃ u : Fin n → Fin 2, ∀ v : Fin n → Fin 2,
+        MvPolynomial.toEvalsZeroOne (oStmt (.column i)).1 u ≠
+          MvPolynomial.toEvalsZeroOne (oStmt .table).1 v := by
+    unfold inputRelation at hnotInput
+    simpa [not_forall, not_exists] using hnotInput
   obtain ⟨i, u, hmissing⟩ :=
-    exists_missing_column_of_not_inputRelation (F := F) (n := n) (M := M)
-      stmt oStmt hnotInput
+    hmissing_exists
   let table := MvPolynomial.toEvalsZeroOne (oStmt .table).1
   let columns : Fin M → (Fin n → Fin 2) → F :=
     fun j => MvPolynomial.toEvalsZeroOne (oStmt (.column j)).1
@@ -131,6 +121,7 @@ theorem exists_missing_column_with_nonzero_lookup_count
       (a := a) hmissing
   exact ⟨i, u, hmissing, hpos, hcast, htable⟩
 
+set_option linter.unusedDecidableInType false in
 omit [SampleableType F] in
 /-- Contrapositive of LogUp's set-inclusion lemma for an arbitrary malicious multiplicity oracle:
 if the lookup input is false, the cleared rational identity is not the zero polynomial. -/
@@ -177,6 +168,7 @@ theorem clearedLookupIdentity_ne_zero_of_not_input
     (F := F) (value := lookupOccurValue table columns)
     (coeff := lookupOccurNumerator multiplicity) hfiber hsum
 
+set_option linter.unusedDecidableInType false in
 /-- Uniform `x` bound for the division-safe bad event: either `x` is a denominator pole for some
 occurrence, or it is a root of the nonzero cleared lookup identity. -/
 theorem clearedLookupIdentity_bad_x_prob_le
@@ -205,284 +197,8 @@ theorem clearedLookupIdentity_bad_x_prob_le
           table columns multiplicity hpoly))
       (Fintype.card F : ENNReal))
 
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- Evaluating the cleared lookup identity away from denominator poles factors as the common
-denominator times the original fractional lookup sum. -/
-theorem clearedLookupIdentity_eval_eq_prod_mul_fractionalSum
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
-    (multiplicity : (Fin n → Fin 2) → F) (x : F)
-    (hden :
-      ∀ a : LookupOccur n M, x + lookupOccurValue table columns a ≠ 0) :
-    Polynomial.eval x (clearedLookupIdentity table columns multiplicity) =
-      ((Finset.univ : Finset (LookupOccur n M)).prod
-        (fun a => x + lookupOccurValue table columns a)) *
-        (Finset.univ : Finset (LookupOccur n M)).sum
-          (fun a => lookupOccurNumerator multiplicity a /
-            (x + lookupOccurValue table columns a)) := by
-  classical
-  unfold clearedLookupIdentity
-  rw [Polynomial.eval_finsetSum, Finset.mul_sum]
-  refine Finset.sum_congr rfl ?_
-  intro a _
-  rw [Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_prod]
-  simp only [Polynomial.eval_add, Polynomial.eval_X, Polynomial.eval_C]
-  calc
-    lookupOccurNumerator multiplicity a *
-        ∏ b ∈ Finset.univ.erase a, (x + lookupOccurValue table columns b)
-        =
-      ((x + lookupOccurValue table columns a) *
-          ∏ b ∈ Finset.univ.erase a, (x + lookupOccurValue table columns b)) *
-        (lookupOccurNumerator multiplicity a /
-          (x + lookupOccurValue table columns a)) := by
-        field_simp [hden a]
-    _ =
-      ((Finset.univ : Finset (LookupOccur n M)).prod
-          (fun b => x + lookupOccurValue table columns b)) *
-        (lookupOccurNumerator multiplicity a /
-          (x + lookupOccurValue table columns a)) := by
-        rw [Finset.mul_prod_erase (Finset.univ : Finset (LookupOccur n M))
-          (fun b => x + lookupOccurValue table columns b) (Finset.mem_univ a)]
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- Away from denominator poles, a nonzero cleared lookup identity evaluation means the original
-fractional lookup sum is nonzero. -/
-theorem fractionalSum_ne_zero_of_clearedLookupIdentity_eval_ne_zero
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
-    (multiplicity : (Fin n → Fin 2) → F) (x : F)
-    (hden :
-      ∀ a : LookupOccur n M, x + lookupOccurValue table columns a ≠ 0)
-    (heval : Polynomial.eval x (clearedLookupIdentity table columns multiplicity) ≠ 0) :
-    (Finset.univ : Finset (LookupOccur n M)).sum
-        (fun a => lookupOccurNumerator multiplicity a /
-          (x + lookupOccurValue table columns a)) ≠ 0 := by
-  intro hsum
-  have hfactor :=
-    clearedLookupIdentity_eval_eq_prod_mul_fractionalSum
-      (F := F) (n := n) (M := M) table columns multiplicity x hden
-  rw [hfactor, hsum, mul_zero] at heval
-  exact heval rfl
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- Conversely to `domainIdentityTerm_eq_zero`, away from the group's denominator poles a zero
-domain-identity term forces the helper value to be the fractional partial sum. -/
-theorem helper_eq_helperValue_of_domainIdentityTerm_eq_zero
-    {K : ℕ} (groups : Fin K → Finset (TermIdx M))
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
-    (multiplicity : (Fin n → Fin 2) → F)
-    (helpers : Fin K → (Fin n → Fin 2) → F)
-    (xChallenge : F) (k : Fin K) (u : Fin n → Fin 2)
-    (hD : domainIdentityTerm groups table columns multiplicity helpers xChallenge k u = 0)
-    (hφ : ∀ i ∈ groups k, termPhi table columns xChallenge i u ≠ 0) :
-    helpers k u = helperValue groups table columns multiplicity xChallenge k u := by
-  classical
-  let φ : TermIdx M → F := fun i => termPhi table columns xChallenge i u
-  let μ : TermIdx M → F := fun i => termNumerator multiplicity i u
-  have hprod_ne : (∏ i ∈ groups k, φ i) ≠ 0 := by
-    rw [Finset.prod_ne_zero_iff]
-    intro i hi
-    exact hφ i hi
-  unfold domainIdentityTerm at hD
-  have hmul :
-      helpers k u * (∏ i ∈ groups k, φ i) =
-        ∑ i ∈ groups k, μ i * ∏ j ∈ (groups k).erase i, φ j := by
-    simpa [φ, μ] using sub_eq_zero.mp hD
-  unfold helperValue
-  apply mul_right_cancel₀ hprod_ne
-  calc
-    helpers k u * (∏ i ∈ groups k, φ i)
-        = ∑ i ∈ groups k, μ i * ∏ j ∈ (groups k).erase i, φ j := hmul
-    _ = (∑ i ∈ groups k, μ i / φ i) * ∏ i ∈ groups k, φ i := by
-        rw [Finset.sum_mul]
-        refine Finset.sum_congr rfl ?_
-        intro i hi
-        rw [← Finset.mul_prod_erase (groups k) φ hi]
-        field_simp [φ, hφ i hi]
-    _ = helperValue groups table columns multiplicity xChallenge k u *
-          ∏ i ∈ groups k, φ i := by
-        rfl
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- Convert a term index and Boolean row into the corresponding denominator occurrence. -/
-def termLookupOccur {n M : ℕ} (i : TermIdx M) (u : Fin n → Fin 2) : LookupOccur n M :=
-  match termToInput i with
-  | .table => .table u
-  | .column j => .column j u
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- `TermIdx × H` is the same occurrence set as table rows plus lookup-column rows. -/
-def termLookupOccurEquiv (n M : ℕ) :
-    (TermIdx M × (Fin n → Fin 2)) ≃ LookupOccur n M where
-  toFun p := termLookupOccur p.1 p.2
-  invFun
-    | .table u => (inputToTerm .table, u)
-    | .column j u => (inputToTerm (.column j), u)
-  left_inv := by
-    rintro ⟨i, u⟩
-    unfold termLookupOccur
-    cases h : termToInput i with
-    | table =>
-        have hi : inputToTerm InputIdx.table = i := by
-          simpa [h] using (inputToTerm_termToInput i)
-        simp [h, hi]
-    | column j =>
-        have hi : inputToTerm (InputIdx.column j) = i := by
-          simpa [h] using (inputToTerm_termToInput i)
-        simp [h, hi]
-  right_inv := by
-    intro a
-    cases a with
-    | table u =>
-        simp [termLookupOccur]
-    | column j u =>
-        simp [termLookupOccur]
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-@[simp]
-theorem lookupOccurNumerator_termLookupOccur
-    (multiplicity : (Fin n → Fin 2) → F) (i : TermIdx M) (u : Fin n → Fin 2) :
-    lookupOccurNumerator multiplicity (termLookupOccur i u) =
-      termNumerator multiplicity i u := by
-  unfold termLookupOccur termNumerator numerator lookupOccurNumerator
-  cases termToInput i <;> rfl
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-@[simp]
-theorem add_lookupOccurValue_termLookupOccur
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
-    (xChallenge : F) (i : TermIdx M) (u : Fin n → Fin 2) :
-    xChallenge + lookupOccurValue table columns (termLookupOccur i u) =
-      termPhi table columns xChallenge i u := by
-  unfold termLookupOccur termPhi phi lookupOccurValue
-  cases termToInput i <;> rfl
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- The cleared-identity fractional sum over table/column occurrences is the same as the
-row-by-row sum over `TermIdx`. -/
-theorem lookupOccur_fractionalSum_eq_sum_termFractions
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
-    (multiplicity : (Fin n → Fin 2) → F) (xChallenge : F) :
-    (∑ a : LookupOccur n M,
-        lookupOccurNumerator multiplicity a / (xChallenge + lookupOccurValue table columns a)) =
-      ∑ u : Fin n → Fin 2, ∑ i : TermIdx M,
-        termNumerator multiplicity i u / termPhi table columns xChallenge i u := by
-  classical
-  let e := termLookupOccurEquiv n M
-  calc
-    (∑ a : LookupOccur n M,
-        lookupOccurNumerator multiplicity a / (xChallenge + lookupOccurValue table columns a))
-        =
-        ∑ p : TermIdx M × (Fin n → Fin 2),
-          lookupOccurNumerator multiplicity (e p) /
-            (xChallenge + lookupOccurValue table columns (e p)) := by
-          exact Fintype.sum_equiv e.symm _ _ (fun a => by simp [e])
-    _ =
-        ∑ p : TermIdx M × (Fin n → Fin 2),
-          termNumerator multiplicity p.1 p.2 / termPhi table columns xChallenge p.1 p.2 := by
-          refine Finset.sum_congr rfl ?_
-          intro p _
-          simp [e, termLookupOccurEquiv]
-    _ =
-        ∑ i : TermIdx M, ∑ u : Fin n → Fin 2,
-          termNumerator multiplicity i u / termPhi table columns xChallenge i u := by
-          rw [Fintype.sum_prod_type]
-    _ =
-        ∑ u : Fin n → Fin 2, ∑ i : TermIdx M,
-          termNumerator multiplicity i u / termPhi table columns xChallenge i u := by
-          rw [Finset.sum_comm]
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- One factor of the Boolean equality polynomial has total degree at most one. -/
-theorem singleEqPolynomial_X_totalDegree_le_one (r : F) (i : Fin n) :
-    (MvPolynomial.singleEqPolynomial r (MvPolynomial.X i) :
-      MvPolynomial (Fin n) F).totalDegree ≤ 1 := by
-  rw [MvPolynomial.singleEqPolynomial_nf]
-  have hcoeff :
-      (MvPolynomial.C (2 : F) * MvPolynomial.C r - 1 :
-        MvPolynomial (Fin n) F).totalDegree = 0 := by
-    have hconst :
-        (MvPolynomial.C (2 : F) * MvPolynomial.C r - 1 :
-          MvPolynomial (Fin n) F) =
-          MvPolynomial.C (2 * r - 1) := by
-      calc
-        (MvPolynomial.C (2 : F) * MvPolynomial.C r - 1 :
-            MvPolynomial (Fin n) F)
-            = MvPolynomial.C (2 * r) - MvPolynomial.C (1 : F) := by simp
-        _ = MvPolynomial.C (2 * r - 1) := by
-            simp
-    calc
-      (MvPolynomial.C (2 : F) * MvPolynomial.C r - 1 :
-          MvPolynomial (Fin n) F).totalDegree
-          = (MvPolynomial.C (2 * r - 1) : MvPolynomial (Fin n) F).totalDegree := by
-            exact congrArg MvPolynomial.totalDegree hconst
-      _ = 0 := MvPolynomial.totalDegree_C (σ := Fin n) (2 * r - 1)
-  have hconst :
-      ((1 : MvPolynomial (Fin n) F) - MvPolynomial.C r).totalDegree = 0 := by
-    have hconst' :
-        ((1 : MvPolynomial (Fin n) F) - MvPolynomial.C r) =
-          MvPolynomial.C (1 - r) := by
-      simp
-    calc
-      ((1 : MvPolynomial (Fin n) F) - MvPolynomial.C r).totalDegree
-          = (MvPolynomial.C (1 - r) : MvPolynomial (Fin n) F).totalDegree := by
-            exact congrArg MvPolynomial.totalDegree hconst'
-      _ = 0 := MvPolynomial.totalDegree_C (σ := Fin n) (1 - r)
-  calc
-    ((MvPolynomial.C (2 : F) * MvPolynomial.C r - 1) * MvPolynomial.X i +
-        (1 - MvPolynomial.C r)).totalDegree
-        ≤ max (((MvPolynomial.C (2 : F) * MvPolynomial.C r - 1) *
-            MvPolynomial.X i).totalDegree)
-            ((1 - MvPolynomial.C r : MvPolynomial (Fin n) F).totalDegree) :=
-          MvPolynomial.totalDegree_add _ _
-    _ ≤ max (0 + 1) 0 := by
-          gcongr
-          · calc
-              (((MvPolynomial.C (2 : F) * MvPolynomial.C r - 1) *
-                    MvPolynomial.X i).totalDegree)
-                  ≤ (MvPolynomial.C (2 : F) * MvPolynomial.C r - 1).totalDegree +
-                      (MvPolynomial.X i : MvPolynomial (Fin n) F).totalDegree :=
-                    MvPolynomial.totalDegree_mul _ _
-              _ = 0 + 1 := by simp [hcoeff]
-          · simp [hconst]
-    _ = 1 := by norm_num
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- Equality polynomials are multilinear, hence have total degree at most the number of
-variables. -/
-theorem eqPolynomial_totalDegree_le (r : Fin n → F) :
-    (MvPolynomial.eqPolynomial r : MvPolynomial (Fin n) F).totalDegree ≤ n := by
-  unfold MvPolynomial.eqPolynomial
-  calc
-    (∏ i : Fin n, MvPolynomial.singleEqPolynomial (r i) (MvPolynomial.X i)).totalDegree
-        ≤ ∑ i : Fin n,
-            (MvPolynomial.singleEqPolynomial (r i) (MvPolynomial.X i) :
-              MvPolynomial (Fin n) F).totalDegree :=
-          MvPolynomial.totalDegree_finsetProd Finset.univ
-            (fun i => MvPolynomial.singleEqPolynomial (r i) (MvPolynomial.X i))
-    _ ≤ ∑ _i : Fin n, 1 := by
-          exact Finset.sum_le_sum fun i _ =>
-            singleEqPolynomial_X_totalDegree_le_one (F := F) (n := n) (r i) i
-    _ = n := by simp
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- Multilinear extensions over the Boolean hypercube have total degree at most `n`. -/
-theorem MLE_totalDegree_le (evals : (Fin n → Fin 2) → F) :
-    (MvPolynomial.MLE evals : MvPolynomial (Fin n) F).totalDegree ≤ n := by
-  unfold MvPolynomial.MLE
-  refine MvPolynomial.totalDegree_finsetSum_le ?_
-  intro u _
-  calc
-    ((MvPolynomial.eqPolynomial (u : Fin n → F) : MvPolynomial (Fin n) F) *
-        MvPolynomial.C (evals u)).totalDegree
-        ≤ (MvPolynomial.eqPolynomial (u : Fin n → F) : MvPolynomial (Fin n) F).totalDegree +
-            (MvPolynomial.C (evals u) : MvPolynomial (Fin n) F).totalDegree :=
-          MvPolynomial.totalDegree_mul _ _
-    _ ≤ n + 0 := by
-          gcongr
-          · exact eqPolynomial_totalDegree_le (F := F) (n := n) (u : Fin n → F)
-          · simp
-    _ = n := by simp
-
-/-- Schwartz-Zippel for the verifier's uniform `z : Fin n → F` sampling, phrased in the
+set_option linter.unusedDecidableInType false in
+/-- Schwartz-Zippel for the verifier's uniform `z : F`i`n n → F` sampling, phrased in the
 `ProbComp` notation used by the protocol proofs. -/
 theorem mvPolynomial_uniform_eval_zero_prob_le_div
     (p : MvPolynomial (Fin n) F) (hp : p ≠ 0) (d : ℕ) (hd : p.totalDegree ≤ d) :
@@ -592,6 +308,7 @@ theorem random_linear_batch_bad_card_le_of_coeff_ne_zero (K : ℕ)
         Finset.card_le_card_of_injOn drop (fun _ _ => Finset.mem_univ _) hdrop_inj
     _ = Fintype.card Rest := Finset.card_univ
 
+set_option linter.unusedDecidableInType false in
 /-- The batched outer sumcheck claim is a random linear combination of the helper-sum claim and
 the `K` domain-identity claims, so if one unbatched claim is nonzero the random batching scalar
 hits zero with probability at most `1 / |F|`. -/
@@ -652,191 +369,7 @@ theorem random_linear_batch_zero_prob_le (K : ℕ)
     rw [hempty]
     simp
 
-/-! ### The missing `z`-side algebra
-
-The outer sumcheck claim is a random linear batch after the random point `z` has turned each
-Boolean-domain identity into evaluation of the identity's multilinear extension. These lemmas make
-that decomposition explicit, so the remaining protocol bridge can charge the bad-`x`, bad-`z`, and
-bad-`lambda` events separately.
--/
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- Scalar product with the equality kernel is evaluation of the multilinear extension. This is
-the Boolean-hypercube version of the paper's Lagrange-query to point-query correspondence. -/
-theorem sum_eqPolynomial_mul_eq_MLE_eval
-    (evals : (Fin n → Fin 2) → F) (z : Fin n → F) :
-    (∑ u : Fin n → Fin 2,
-        MvPolynomial.eval (u : Fin n → F) (MvPolynomial.eqPolynomial z) * evals u) =
-      MvPolynomial.eval z (MvPolynomial.MLE evals) := by
-  classical
-  unfold MvPolynomial.MLE
-  rw [map_sum]
-  refine Finset.sum_congr rfl ?_
-  intro u _
-  rw [MvPolynomial.eval_mul, MvPolynomial.eval_C]
-  rw [MvPolynomial.eqPolynomial_symm (x := (u : Fin n → F)) (y := z)]
-
-omit [SampleableType F] in
-/-- The multilinear extension of one LogUp domain-identity table. -/
-noncomputable def domainIdentityMLE
-    {K : ℕ} (groups : Fin K → Finset (TermIdx M))
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
-    (multiplicity : (Fin n → Fin 2) → F)
-    (helpers : Fin K → (Fin n → Fin 2) → F)
-    (xChallenge : F) (k : Fin K) : MvPolynomial (Fin n) F :=
-  MvPolynomial.MLE
-    (fun u => domainIdentityTerm groups table columns multiplicity helpers xChallenge k u)
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- If a domain-identity MLE is the zero polynomial, then the corresponding row identity is zero
-at every Boolean row. -/
-theorem domainIdentityTerm_eq_zero_of_domainIdentityMLE_eq_zero
-    {K : ℕ} (groups : Fin K → Finset (TermIdx M))
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
-    (multiplicity : (Fin n → Fin 2) → F)
-    (helpers : Fin K → (Fin n → Fin 2) → F)
-    (xChallenge : F) (k : Fin K)
-    (hzero :
-      domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
-        helpers xChallenge k = 0)
-    (u : Fin n → Fin 2) :
-    domainIdentityTerm groups table columns multiplicity helpers xChallenge k u = 0 := by
-  have hEval := congrArg (fun p : MvPolynomial (Fin n) F =>
-    MvPolynomial.eval (u : Fin n → F) p) hzero
-  simpa [domainIdentityMLE] using hEval
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- If every domain-identity MLE is the zero polynomial, then the helpers are exactly the
-fractional terms, hence their total sum is the cleared-identity fractional sum. -/
-theorem helperSum_eq_lookupOccur_fractionalSum_of_domainIdentityMLEs_zero
-    {K : ℕ} (groups : Fin K → Finset (TermIdx M))
-    (hgroups : ∀ g : TermIdx M → F,
-      (∑ k : Fin K, ∑ i ∈ groups k, g i) = ∑ i : TermIdx M, g i)
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
-    (multiplicity : (Fin n → Fin 2) → F)
-    (helpers : Fin K → (Fin n → Fin 2) → F)
-    (xChallenge : F)
-    (hDzero : ∀ k : Fin K,
-      domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
-        helpers xChallenge k = 0)
-    (hden : ∀ a : LookupOccur n M, xChallenge + lookupOccurValue table columns a ≠ 0) :
-    (∑ u : Fin n → Fin 2, ∑ k : Fin K, helpers k u) =
-      ∑ a : LookupOccur n M,
-        lookupOccurNumerator multiplicity a / (xChallenge + lookupOccurValue table columns a) := by
-  classical
-  calc
-    (∑ u : Fin n → Fin 2, ∑ k : Fin K, helpers k u)
-        =
-        ∑ u : Fin n → Fin 2, ∑ k : Fin K,
-          helperValue groups table columns multiplicity xChallenge k u := by
-          refine Finset.sum_congr rfl ?_
-          intro u _
-          refine Finset.sum_congr rfl ?_
-          intro k _
-          exact helper_eq_helperValue_of_domainIdentityTerm_eq_zero
-            (F := F) (n := n) (M := M) groups table columns multiplicity helpers
-            xChallenge k u
-            (domainIdentityTerm_eq_zero_of_domainIdentityMLE_eq_zero
-              (F := F) (n := n) (M := M) groups table columns multiplicity helpers
-              xChallenge k (hDzero k) u)
-            (fun i hi => by
-              have h := hden (termLookupOccur i u)
-              simpa using h)
-    _ =
-        ∑ u : Fin n → Fin 2, ∑ k : Fin K, ∑ i ∈ groups k,
-          termNumerator multiplicity i u / termPhi table columns xChallenge i u := by
-          simp [helperValue]
-    _ =
-        ∑ u : Fin n → Fin 2, ∑ i : TermIdx M,
-          termNumerator multiplicity i u / termPhi table columns xChallenge i u := by
-          refine Finset.sum_congr rfl ?_
-          intro u _
-          exact hgroups
-            (fun i => termNumerator multiplicity i u / termPhi table columns xChallenge i u)
-    _ =
-        ∑ a : LookupOccur n M,
-          lookupOccurNumerator multiplicity a /
-            (xChallenge + lookupOccurValue table columns a) := by
-          exact (lookupOccur_fractionalSum_eq_sum_termFractions
-            (F := F) (n := n) (M := M) table columns multiplicity xChallenge).symm
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- If the helper zero-sum vanishes but the global fractional LogUp sum is nonzero, then at least
-one domain-identity MLE is a nonzero polynomial. -/
-theorem exists_nonzero_domainIdentityMLE_of_helperSum_zero_of_fractionalSum_ne_zero
-    {K : ℕ} (groups : Fin K → Finset (TermIdx M))
-    (hgroups : ∀ g : TermIdx M → F,
-      (∑ k : Fin K, ∑ i ∈ groups k, g i) = ∑ i : TermIdx M, g i)
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
-    (multiplicity : (Fin n → Fin 2) → F)
-    (helpers : Fin K → (Fin n → Fin 2) → F)
-    (xChallenge : F)
-    (hden : ∀ a : LookupOccur n M, xChallenge + lookupOccurValue table columns a ≠ 0)
-    (hhelper :
-      (∑ u : Fin n → Fin 2, ∑ k : Fin K, helpers k u) = 0)
-    (hfractional :
-      (∑ a : LookupOccur n M,
-        lookupOccurNumerator multiplicity a / (xChallenge + lookupOccurValue table columns a))
-          ≠ 0) :
-    ∃ k : Fin K,
-      domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
-        helpers xChallenge k ≠ 0 := by
-  classical
-  by_contra hnone
-  have hDzero : ∀ k : Fin K,
-      domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
-        helpers xChallenge k = 0 := by
-    intro k
-    by_contra hk
-    exact hnone ⟨k, hk⟩
-  have hsum := helperSum_eq_lookupOccur_fractionalSum_of_domainIdentityMLEs_zero
-    (F := F) (n := n) (M := M) groups hgroups table columns multiplicity helpers
-    xChallenge hDzero hden
-  exact hfractional (by simpa [hhelper] using hsum.symm)
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- The scalar product used by the outer claim for one domain identity is the corresponding MLE
-evaluated at the sampled point `z`. -/
-theorem domainIdentityKernelClaim_eq_eval_domainIdentityMLE
-    {K : ℕ} (groups : Fin K → Finset (TermIdx M))
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
-    (multiplicity : (Fin n → Fin 2) → F)
-    (helpers : Fin K → (Fin n → Fin 2) → F)
-    (xChallenge : F) (zChallenge : Fin n → F) (k : Fin K) :
-    (∑ u : Fin n → Fin 2,
-        MvPolynomial.eval (u : Fin n → F) (MvPolynomial.eqPolynomial zChallenge) *
-          domainIdentityTerm groups table columns multiplicity helpers xChallenge k u) =
-      MvPolynomial.eval zChallenge
-        (domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
-          helpers xChallenge k) := by
-  exact sum_eqPolynomial_mul_eq_MLE_eval (F := F) (n := n)
-    (fun u => domainIdentityTerm groups table columns multiplicity helpers xChallenge k u)
-    zChallenge
-
-/-- A nonzero domain-identity MLE vanishes at a uniformly sampled `z` with the standard
-Schwartz-Zippel multilinear bound `n / |F|`. -/
-theorem domainIdentityMLE_eval_zero_prob_le
-    {K : ℕ} (groups : Fin K → Finset (TermIdx M))
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
-    (multiplicity : (Fin n → Fin 2) → F)
-    (helpers : Fin K → (Fin n → Fin 2) → F)
-    (xChallenge : F) (k : Fin K)
-    (hpoly :
-      domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
-        helpers xChallenge k ≠ 0) :
-    Pr[fun z : Fin n → F =>
-        MvPolynomial.eval z
-          (domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
-            helpers xChallenge k) = 0 | $ᵗ (Fin n → F)] ≤
-      (n : ENNReal) / (Fintype.card F : ENNReal) := by
-  exact mvPolynomial_uniform_eval_zero_prob_le_div (F := F) (n := n)
-    (domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity helpers
-      xChallenge k) hpoly n
-    (by
-      unfold domainIdentityMLE
-      exact MLE_totalDegree_le (F := F) (n := n)
-        (fun u => domainIdentityTerm groups table columns multiplicity helpers xChallenge k u))
-
+set_option linter.unusedDecidableInType false in
 /-- Union bound over the `K` domain-identity MLEs: the chance that any nonzero one vanishes at
 the sampled `z` is at most `K * n / |F|`. -/
 theorem domainIdentityMLE_exists_bad_z_prob_le
@@ -886,103 +419,17 @@ theorem domainIdentityMLE_exists_bad_z_prob_le
             rw [hfalse]
             simp
           · refine le_trans (probEvent_mono'' ?_)
-              (domainIdentityMLE_eval_zero_prob_le (F := F) (n := n) (M := M)
-                groups table columns multiplicity helpers xChallenge k hpoly)
+              (mvPolynomial_uniform_eval_zero_prob_le_div (F := F) (n := n)
+                (P k) hpoly n (by
+                  dsimp [P]
+                  unfold domainIdentityMLE
+                  exact MLE_totalDegree_le (F := F) (n := n)
+                    (fun u =>
+                      domainIdentityTerm groups table columns multiplicity helpers xChallenge k u)))
             intro z hz
             exact hz.2
     _ = (K : ENNReal) * ((n : ENNReal) / (Fintype.card F : ENNReal)) := by
         simp [Finset.card_univ, nsmul_eq_mul]
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- If the cleared lookup identity is nonzero at `x` and `z` does not hide any nonzero domain
-identity, then the linear batching equation has a nonzero constant term or a nonzero coefficient. -/
-theorem outer_batch_coefficients_nontrivial_of_good_xz
-    {K : ℕ} (groups : Fin K → Finset (TermIdx M))
-    (hgroups : ∀ g : TermIdx M → F,
-      (∑ k : Fin K, ∑ i ∈ groups k, g i) = ∑ i : TermIdx M, g i)
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
-    (multiplicity : (Fin n → Fin 2) → F)
-    (helpers : Fin K → (Fin n → Fin 2) → F)
-    (xChallenge : F) (zChallenge : Fin n → F)
-    (hden : ∀ a : LookupOccur n M, xChallenge + lookupOccurValue table columns a ≠ 0)
-    (heval : Polynomial.eval xChallenge
-      (clearedLookupIdentity table columns multiplicity) ≠ 0)
-    (hzGood : ∀ k : Fin K,
-      domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
-          helpers xChallenge k ≠ 0 →
-        MvPolynomial.eval zChallenge
-          (domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
-            helpers xChallenge k) ≠ 0) :
-    (∑ u : Fin n → Fin 2, ∑ k : Fin K, helpers k u) ≠ 0 ∨
-      ∃ k : Fin K,
-        MvPolynomial.eval zChallenge
-          (domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
-            helpers xChallenge k) ≠ 0 := by
-  classical
-  letI : DecidableEq F := Classical.decEq F
-  let c0 : F := ∑ u : Fin n → Fin 2, ∑ k : Fin K, helpers k u
-  by_cases hhelper : c0 = 0
-  · right
-    have hhelper' :
-        (∑ u : Fin n → Fin 2, ∑ k : Fin K, helpers k u) = 0 := by
-      simpa [c0] using hhelper
-    have hfractional :=
-      fractionalSum_ne_zero_of_clearedLookupIdentity_eval_ne_zero
-        (F := F) (n := n) (M := M) table columns multiplicity xChallenge hden heval
-    obtain ⟨k, hk⟩ :=
-      exists_nonzero_domainIdentityMLE_of_helperSum_zero_of_fractionalSum_ne_zero
-        (F := F) (n := n) (M := M) groups hgroups table columns multiplicity helpers
-        xChallenge hden hhelper' hfractional
-    exact ⟨k, hzGood k hk⟩
-  · exact Or.inl (by
-      intro hsum
-      exact hhelper (by simpa [c0] using hsum))
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- Deterministic core of outer soundness. If `x` makes the cleared lookup identity nonzero,
-`z` does not hide any nonzero domain-identity MLE, and `lambda` avoids the resulting nontrivial
-linear equation, then the expanded outer sumcheck claim is nonzero. -/
-theorem outer_linear_claim_ne_zero_of_good_challenges
-    {K : ℕ} (groups : Fin K → Finset (TermIdx M))
-    (hgroups : ∀ g : TermIdx M → F,
-      (∑ k : Fin K, ∑ i ∈ groups k, g i) = ∑ i : TermIdx M, g i)
-    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
-    (multiplicity : (Fin n → Fin 2) → F)
-    (helpers : Fin K → (Fin n → Fin 2) → F)
-    (xChallenge : F) (zChallenge : Fin n → F) (batchingScalars : Fin K → F)
-    (hden : ∀ a : LookupOccur n M, xChallenge + lookupOccurValue table columns a ≠ 0)
-    (heval : Polynomial.eval xChallenge
-      (clearedLookupIdentity table columns multiplicity) ≠ 0)
-    (hzGood : ∀ k : Fin K,
-      domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
-          helpers xChallenge k ≠ 0 →
-        MvPolynomial.eval zChallenge
-          (domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
-            helpers xChallenge k) ≠ 0)
-    (hBatchGood :
-      ((∑ u : Fin n → Fin 2, ∑ k : Fin K, helpers k u) ≠ 0 ∨
-          ∃ k : Fin K,
-            MvPolynomial.eval zChallenge
-              (domainIdentityMLE (F := F) (n := n) (M := M) groups table columns
-                multiplicity helpers xChallenge k) ≠ 0) →
-        (∑ u : Fin n → Fin 2, ∑ k : Fin K, helpers k u) +
-            ∑ k : Fin K,
-              batchingScalars k *
-                MvPolynomial.eval zChallenge
-                  (domainIdentityMLE (F := F) (n := n) (M := M) groups table columns
-                    multiplicity helpers xChallenge k) ≠ 0) :
-    (∑ u : Fin n → Fin 2, ∑ k : Fin K, helpers k u) +
-        ∑ k : Fin K,
-          batchingScalars k *
-            MvPolynomial.eval zChallenge
-              (domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
-                helpers xChallenge k) ≠ 0 := by
-  classical
-  letI : DecidableEq F := Classical.decEq F
-  exact hBatchGood
-    (outer_batch_coefficients_nontrivial_of_good_xz
-      (F := F) (n := n) (M := M) groups hgroups table columns multiplicity helpers
-      xChallenge zChallenge hden heval hzGood)
 
 omit [Fintype F] [DecidableEq F] [SampleableType F] in
 /-- Expanding the outer sumcheck claim: after `x` and `z` are fixed it is a linear polynomial in
@@ -1160,12 +607,21 @@ theorem logupOuterSumcheckClaim_ne_zero_of_good_challenges
   rw [logupOuterSumcheckClaim_eq_linear_batch]
   simpa [table, columns, multiplicity, helpers] using hlinear
 
+/-- Bad `x` challenges for the outer phase.
+
+An `x` challenge is bad if it is a denominator pole for some table/column occurrence or if it is a
+root of the cleared lookup identity.  Outside this event, a false input gives a nonzero fractional
+lookup sum. -/
 private def outerBadX
     (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
     (multiplicity : (Fin n → Fin 2) → F) (x : F) : Prop :=
   (∃ a : LookupOccur n M, x + lookupOccurValue table columns a = 0) ∨
     Polynomial.eval x (clearedLookupIdentity table columns multiplicity) = 0
 
+/-- Bad `z` challenges for the outer phase.
+
+After `x` is fixed, a `z` challenge is bad if it evaluates some nonzero domain-identity MLE to
+zero, hiding a nonzero group identity from the equality-kernel check. -/
 private noncomputable def outerBadZ
     (groups : Fin params.numGroups → Finset (TermIdx M))
     (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
@@ -1178,6 +634,10 @@ private noncomputable def outerBadZ
         (domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
           helpers x k) = 0
 
+/-- Bad batching scalars for the outer phase.
+
+For fixed `x` and `z`, the outer claim is a linear equation in the batching scalars.  This event is
+the zero set of that linear equation. -/
 private noncomputable def outerBadBatch
     (groups : Fin params.numGroups → Finset (TermIdx M))
     (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
@@ -1192,11 +652,16 @@ private noncomputable def outerBadBatch
               multiplicity helpers x k) =
     0
 
+set_option linter.unusedDecidableInType false in
+/-- Probability bound for bad batching scalars once the linear equation is nontrivial.
+
+This packages the generic random-linear-batch bound for the concrete constant term and coefficients
+that arise from the outer LogUp claim. -/
 private theorem outerBadBatch_prob_le
     (hBatch :
       ∀ (K : ℕ) (c₀ : F) (c : Fin K → F),
         c₀ ≠ 0 ∨ (∃ k, c k ≠ 0) →
-          Pr[fun lam : Fin K → F => c₀ + ∑ k : Fin K, lam k * c k = 0 |
+          Pr[ fun lam : Fin K → F => c₀ + ∑ k : Fin K, lam k * c k = 0 |
               $ᵗ (Fin K → F)] ≤
             ((1 : ℕ) : ENNReal) / (Fintype.card F : ENNReal))
     (groups : Fin params.numGroups → Finset (TermIdx M))
@@ -1223,11 +688,17 @@ private theorem outerBadBatch_prob_le
             multiplicity helpers x k))
       hNontriv
 
+set_option linter.unusedDecidableInType false in
+/-- Conditional batching bound after ruling out bad `z`.
+
+If `x` is good and `z` does not hide any nonzero domain-identity MLE, then the deterministic LogUp
+algebra makes the batching equation nontrivial.  Therefore the probability of bad batching scalars
+is at most `1 / |F|`. -/
 private theorem outerBadBatch_given_good_z_prob_le [Inhabited F]
     (hBatch :
       ∀ (K : ℕ) (c₀ : F) (c : Fin K → F),
         c₀ ≠ 0 ∨ (∃ k, c k ≠ 0) →
-          Pr[fun lam : Fin K → F => c₀ + ∑ k : Fin K, lam k * c k = 0 |
+          Pr[ fun lam : Fin K → F => c₀ + ∑ k : Fin K, lam k * c k = 0 |
               $ᵗ (Fin K → F)] ≤
             ((1 : ℕ) : ENNReal) / (Fintype.card F : ENNReal))
     (groups : Fin params.numGroups → Finset (TermIdx M))
@@ -1309,11 +780,17 @@ private theorem outerBadBatch_given_good_z_prob_le [Inhabited F]
     rw [probEvent_bind_pure_comp]
     simpa [Function.comp_def, hzBad] using hLam
 
+
+set_option linter.unusedDecidableInType false in
+/-- Joint bound for the sampled pair `(z, lambda)` in the outer phase.
+
+The event splits into a bad `z` event, bounded by a union bound over group MLEs, and a bad batching
+event conditioned on `z` being good. -/
 private theorem outerBatchChallenge_bad_prob_le [Inhabited F]
     (hBatch :
       ∀ (K : ℕ) (c₀ : F) (c : Fin K → F),
         c₀ ≠ 0 ∨ (∃ k, c k ≠ 0) →
-          Pr[fun lam : Fin K → F => c₀ + ∑ k : Fin K, lam k * c k = 0 |
+          Pr[ fun lam : Fin K → F => c₀ + ∑ k : Fin K, lam k * c k = 0 |
               $ᵗ (Fin K → F)] ≤
             ((1 : ℕ) : ENNReal) / (Fintype.card F : ENNReal))
     (groups : Fin params.numGroups → Finset (TermIdx M))
@@ -1396,47 +873,62 @@ private theorem outerBatchChallenge_bad_prob_le [Inhabited F]
           ((1 : ℕ) : ENNReal) / (Fintype.card F : ENNReal) := by
           exact add_le_add hZ hLam
 
+/-- Multiplicity message after the first prover round. -/
 private def outerTranscriptMultiplicity
     (tr : (outerPSpec F n params).Transcript (1 : Fin 5)) : MultiplicityMessage F n :=
   tr ⟨0, by decide⟩
 
+/-- Multiplicity message available when the transcript has reached the `x` challenge. -/
 private def outerTranscriptMultiplicityAt2
     (tr : (outerPSpec F n params).Transcript (2 : Fin 5)) : MultiplicityMessage F n :=
   tr ⟨0, by decide⟩
 
+/-- Sampled outer `x` challenge from a transcript of length two. -/
 private def outerTranscriptXAt2
     (tr : (outerPSpec F n params).Transcript (2 : Fin 5)) : F :=
   tr ⟨1, by decide⟩
 
+/-- Multiplicity message available when the transcript has reached helper messages. -/
 private def outerTranscriptMultiplicityAt3
     (tr : (outerPSpec F n params).Transcript (3 : Fin 5)) : MultiplicityMessage F n :=
   tr ⟨0, by decide⟩
 
+/-- Sampled outer `x` challenge from a transcript of length three. -/
 private def outerTranscriptXAt3
     (tr : (outerPSpec F n params).Transcript (3 : Fin 5)) : F :=
   tr ⟨1, by decide⟩
 
+/-- Helper messages from a transcript of length three. -/
 private def outerTranscriptHelpersAt3
     (tr : (outerPSpec F n params).Transcript (3 : Fin 5)) :
     HelperMessages F n params.numGroups :=
   tr ⟨2, by decide⟩
 
+/-- Multiplicity message from a full outer transcript. -/
 private def outerTranscriptMultiplicityFull
     (tr : (outerPSpec F n params).FullTranscript) : MultiplicityMessage F n :=
   tr ⟨0, by decide⟩
 
+/-- Sampled outer `x` challenge from a full outer transcript. -/
 private def outerTranscriptXFull
     (tr : (outerPSpec F n params).FullTranscript) : F :=
   tr ⟨1, by decide⟩
 
+/-- Helper messages from a full outer transcript. -/
 private def outerTranscriptHelpersFull
     (tr : (outerPSpec F n params).FullTranscript) : HelperMessages F n params.numGroups :=
   tr ⟨2, by decide⟩
 
+/-- Sampled `(z, lambda)` batching challenge from a full outer transcript. -/
 private def outerTranscriptBatchFull
     (tr : (outerPSpec F n params).FullTranscript) : BatchingChallenge F n params.numGroups :=
   tr ⟨3, by decide⟩
 
+/-- Round-by-round bad-event invariant used for round-by-round soundness of the outer verifier.
+
+Before challenges are sampled, the invariant is just membership in the input language.  After `x`,
+it allows the bad-`x` event.  After the batching challenge, it additionally allows bad `z` or bad
+batching.  The state function proves that outside this invariant, the verifier cannot accept. -/
 private noncomputable def outerSoundnessState
     (stmtPair : StmtIn F n M × (∀ i, OStmtIn F n M i)) :
     (m : Fin 5) → (outerPSpec F n params).Transcript m → Prop
@@ -1479,6 +971,15 @@ private noncomputable def outerSoundnessState
             outerBadBatch (F := F) (n := n) (M := M) (params := params)
               (params.group) table columns multiplicity helpers x batch.1 batch.2
 
+section
+
+omit [DecidableEq F] [SampleableType F]
+/-- If the final outer transcript is outside the bad-event invariant, its handoff statement is not
+in the middle language.
+
+This is where the deterministic outer algebra is used: outside bad `x`, bad `z`, and bad batching,
+the expanded outer sumcheck claim is nonzero, so the verifier cannot have produced a valid
+`logupMidRelation` statement. -/
 private theorem outerSoundnessState_full_not_lang
     (stmtPair : StmtIn F n M × (∀ i, OStmtIn F n M i))
     (tr : (outerPSpec F n params).FullTranscript)
@@ -1513,11 +1014,11 @@ private theorem outerSoundnessState_full_not_lang
     outerTranscriptBatchFull (F := F) (n := n) (M := M) (params := params) tr
   have hnotLang : stmtPair ∉ (inputRelation F n M).language := by
     intro h
-    exact hfalse (by simp [outerSoundnessState, h, table, columns, multiplicity, helpers, x, batch])
+    exact hfalse (by simp [outerSoundnessState, h])
   have hnotBadX : ¬ outerBadX (F := F) (n := n) (M := M) table columns multiplicity x := by
     intro hbad
     exact hfalse (by simp [outerSoundnessState, hnotLang, hbad, table, columns, multiplicity,
-      helpers, x, batch])
+      x])
   have hnotBadZ :
       ¬ outerBadZ (F := F) (n := n) (M := M) (params := params)
         (params.group) table columns multiplicity helpers x batch.1 := by
@@ -1589,12 +1090,18 @@ private theorem outerSoundnessState_full_not_lang
         using hden
     · simpa [table, columns, multiplicity, x]
         using heval
-    · simpa [table, columns, multiplicity, helpers, x, batch]
+    · simpa only [table, columns, multiplicity, helpers, x, batch]
         using hzGood
-    · simpa [table, columns, multiplicity, helpers, x, batch]
+    · simpa only [table, columns, multiplicity, helpers, x, batch]
         using hbatchGood
   exact hne hmid
 
+end
+
+section
+
+omit [DecidableEq F] [SampleableType F]
+/-- The initial state-function invariant is exactly membership in the input language. -/
 private theorem outerSoundnessState_empty
     (stmtPair : StmtIn F n M × (∀ i, OStmtIn F n M i)) :
     stmtPair ∈ (inputRelation F n M).language ↔
@@ -1602,6 +1109,15 @@ private theorem outerSoundnessState_empty
         stmtPair 0 default := by
   simp [outerSoundnessState]
 
+end
+
+section
+
+omit [DecidableEq F] [SampleableType F]
+/-- Prover messages preserve failure of the outer bad-event invariant.
+
+The round-by-round soundness state only changes on verifier challenge rounds.  When the next round
+is prover-to-verifier, adding the prover message cannot move a transcript back into the invariant.-/
 private theorem outerSoundnessState_next
     (m : Fin 4) (hDir : (outerPSpec F n params).dir m = .P_to_V)
     (stmtPair : StmtIn F n M × (∀ i, OStmtIn F n M i))
@@ -1612,7 +1128,7 @@ private theorem outerSoundnessState_next
     (msg : (outerPSpec F n params).«Type» m) :
     ¬ outerSoundnessState (F := F) (n := n) (M := M) (params := params)
         stmtPair m.succ (tr.concat msg) := by
-  fin_cases m <;> simp [outerPSpec] at hDir
+  fin_cases m <;> simp at hDir
   · simpa [outerSoundnessState] using hfalse
   · contradiction
   · simpa [outerSoundnessState, outerTranscriptMultiplicityAt2, outerTranscriptMultiplicityAt3,
@@ -1620,6 +1136,15 @@ private theorem outerSoundnessState_next
       using hfalse
   · contradiction
 
+end
+
+section
+
+omit [DecidableEq F] [SampleableType F]
+/-- Outside the final outer invariant, the verifier accepts with probability zero.
+
+The verifier's output is deterministic once the full transcript is fixed; by
+`outerSoundnessState_full_not_lang`, that output is outside the target middle language. -/
 private theorem outerSoundnessState_full_prob_zero
     (stmtPair : StmtIn F n M × (∀ i, OStmtIn F n M i))
     (tr : (outerPSpec F n params).FullTranscript)
@@ -1663,10 +1188,9 @@ private theorem outerSoundnessState_full_prob_zero
       stmtPair.1 stmtPair.2
       (ProtocolSpec.FullTranscript.messages tr)
       (ProtocolSpec.FullTranscript.challenges tr)]
-    simp [outerVerifier, outerChallengeXIdx, outerChallengeBatchIdx,
-      outerMultiplicityMessageIdx, outerHelpersMessageIdx, outerTranscriptXFull,
-      outerTranscriptBatchFull, outerTranscriptMultiplicityFull, outerTranscriptHelpersFull,
-      ProtocolSpec.FullTranscript.challenges, ProtocolSpec.FullTranscript.messages]
+    simp only [OStmtAfterOuter, OStmtIn, MultiplicityMessage, HelperMessages,
+      ProtocolSpec.MessageIdx, Nat.reduceAdd, Fin.vcons_fin_zero, BatchingChallenge,
+      ProtocolSpec.Message, bind_pure_comp, map_pure]
     congr
     funext i
     cases i <;> rfl
@@ -1721,6 +1245,10 @@ private theorem outerSoundnessState_full_prob_zero
   subst out
   exact hnot (by simpa [out0] using houtLang)
 
+end
+
+/-- State function used to convert the outer phase's local bad-event bounds into verifier
+round-by-round soundness. -/
 private noncomputable def outerSoundnessStateFunction :
     ((outerVerifier oSpec F n M params).toVerifier).StateFunction init impl
       (inputRelation F n M).language (logupMidRelation F n M params).language where
@@ -1739,6 +1267,10 @@ private noncomputable def outerSoundnessStateFunction :
       (oSpec := oSpec) (F := F) (n := n) (M := M) (params := params)
       (init := init) (impl := impl) stmtPair tr hfalse
 
+section
+
+omit [Fintype F] [DecidableEq F] [SampleableType F]
+/-- The outer phase has exactly two verifier challenge rounds: `x` and `(z, lambda)`. -/
 private theorem outerChallengeIdx_univ :
     (Finset.univ : Finset (outerPSpec F n params).ChallengeIdx) =
       {outerChallengeXIdx F n M params, outerChallengeBatchIdx F n M params} := by
@@ -1757,10 +1289,12 @@ private theorem outerChallengeIdx_univ :
   · intro _
     exact Finset.mem_univ i
 
+end
+
 /-- Protocol-level bridge for the outer phase: the local algebraic ingredients above imply the
 conservative scan-free outer soundness bound used by `logupOuterSoundnessError`. -/
 private theorem logup_outer_soundness_from_local_algebra
-    (hcard : Fintype.card (Fin n → Fin 2) < Fintype.card F)
+    (_hcard : Fintype.card (Fin n → Fin 2) < Fintype.card F)
     (hClearedNonzero :
       ∀ (stmt : StmtIn F n M) (oStmt : ∀ i, OStmtIn F n M i)
         (multiplicity : (Fin n → Fin 2) → F),
@@ -1769,12 +1303,12 @@ private theorem logup_outer_soundness_from_local_algebra
               (MvPolynomial.toEvalsZeroOne (oStmt .table).1)
               (fun i => MvPolynomial.toEvalsZeroOne (oStmt (.column i)).1)
               multiplicity ≠ 0)
-    (hClearedDegree :
+    (_hClearedDegree :
       ∀ (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
         (multiplicity : (Fin n → Fin 2) → F),
         (clearedLookupIdentity table columns multiplicity).natDegree ≤
           (M + 1) * Fintype.card (Fin n → Fin 2) - 1)
-    (hBadRoots :
+    (_hBadRoots :
       ∀ (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
         (multiplicity : (Fin n → Fin 2) → F),
         clearedLookupIdentity table columns multiplicity ≠ 0 →
@@ -1940,7 +1474,7 @@ private theorem logup_outer_soundness_from_local_algebra
               pure (tr, x.1)) =
                 (($ᵗ F) >>= (pure ∘ fun x : F => (tr, x)))
           rw [hq]
-          simp [StateT.run_liftM, bind_assoc, map_eq_bind_pure_comp]
+          simp [bind_assoc, map_eq_bind_pure_comp]
         rw [hchallenge]
         calc
           Pr[BadXPair | (($ᵗ F) >>= (pure ∘ fun x : F => (tr, x)))]
@@ -2085,12 +1619,12 @@ private theorem logup_outer_soundness_from_local_algebra
                   table columns multiplicity helpers x hden heval
             refine le_trans (probEvent_mono'' ?_) hBatchBound
             intro batch hbad
-            simpa [BadBatchPair, hfalse, multiplicity, helpers, x] using hbad
+            simpa [BadBatchPair, hfalse] using hbad
           · have hfalseEvent :
                 (fun batch : BatchingChallenge F n params.numGroups =>
                     BadBatchPair (tr, batch)) = fun _ => False := by
               funext batch
-              simp [BadBatchPair, hfalse, multiplicity, helpers, x]
+              simp [BadBatchPair, hfalse]
             rw [hfalseEvent]
             simp [batchErr]
         change
@@ -2142,8 +1676,10 @@ private theorem logup_outer_soundness_from_local_algebra
               (liftM ($ᵗ (BatchingChallenge F n params.numGroups)) :
                 StateT σ ProbComp (BatchingChallenge F n params.numGroups)) := by
             rw [simulateQ_query]
-            simp [qIn, ProtocolSpec.challengeQueryImpl, QueryImpl.liftTarget_apply,
-              outerChallengeBatchIdx]
+            simp only [BatchingChallenge, ProtocolSpec.ChallengeIdx, Nat.reduceAdd,
+              Fin.vcons_fin_zero, MultiplicityMessage, HelperMessages, ProtocolSpec.Challenge,
+              outerChallengeBatchIdx, Fin.isValue, OracleQuery.input_query, OracleQuery.cont_query,
+              QueryImpl.liftTarget_apply, ProtocolSpec.challengeQueryImpl, qIn]
             change id <$> (liftM (($ᵗ (BatchingChallenge F n params.numGroups)) :
                 ProbComp (BatchingChallenge F n params.numGroups)) :
                 StateT σ ProbComp (BatchingChallenge F n params.numGroups)) =
@@ -2165,7 +1701,7 @@ private theorem logup_outer_soundness_from_local_algebra
                 (($ᵗ (BatchingChallenge F n params.numGroups)) >>=
                   (pure ∘ fun batch : BatchingChallenge F n params.numGroups => (tr, batch)))
           rw [hq]
-          simp [StateT.run_liftM, bind_assoc, map_eq_bind_pure_comp]
+          simp [bind_assoc, map_eq_bind_pure_comp]
         rw [hchallenge]
         calc
           Pr[BadBatchPair |
@@ -2210,10 +1746,51 @@ private theorem logup_outer_soundness_from_local_algebra
   rw [hsum]
   simp [xErr, batchErr, logupOuterSoundnessError, add_assoc]
 
-/-! ## Phase soundness lemmas
+/-! ## Outer Phase Soundness
 
-One soundness statement per phase, against the intermediate languages handed between phases. -/
+The outer phase samples the `x`, `z`, and batching challenges and turns a false lookup statement
+into a nonzero outer sumcheck claim except with the error budget `logupOuterSoundnessError`. -/
 
+section
+
+omit [DecidableEq F]
+/-- Soundness of the outer LogUp phase, with the conservative error `logupOuterSoundnessError`.
+
+The hypothesis `hcard : |H| < |F|` is retained from the paper-shaped statement; the current formal
+bound itself is an unconditional union bound over occurrence poles, cleared-identity roots, bad
+`z`, and bad batching scalars. -/
+theorem logup_outer_soundness
+    (hcard : Fintype.card (Fin n → Fin 2) < Fintype.card F) :
+    (outerVerifier oSpec F n M params).soundness init impl
+      (inputRelation F n M).language (logupMidRelation F n M params).language
+      (logupOuterSoundnessError F n M params) := by
+  classical
+  letI : DecidableEq F := Classical.decEq F
+  exact logup_outer_soundness_from_local_algebra
+    (oSpec := oSpec) (F := F) (n := n) (M := M) (params := params)
+    (init := init) (impl := impl) hcard
+    (fun stmt oStmt multiplicity hnot =>
+      clearedLookupIdentity_ne_zero_of_not_input (F := F) (n := n) (M := M)
+        stmt oStmt multiplicity hnot)
+    (fun table columns multiplicity =>
+      clearedLookupIdentity_natDegree_le (F := F) (n := n) (M := M)
+        table columns multiplicity)
+    (fun table columns multiplicity hpoly =>
+      clearedLookupIdentity_bad_x_card_le (F := F) (n := n) (M := M)
+        table columns multiplicity hpoly)
+    (fun K c₀ c hNonzero => random_linear_batch_zero_prob_le (F := F) K c₀ c hNonzero)
+
+end
+
+/-! ## Sumcheck Phase Soundness
+
+The embedded sumcheck phase is ArkLib's generic sumcheck verifier lifted through the LogUp context
+lens.  The helper lemmas in this section preserve the oracle statement through that lift and allow
+the generic sumcheck soundness bound to be widened to the requested error. -/
+
+section
+
+omit [Fintype F]
 private theorem sumcheckVerifier_compat_oracleStmt
     {outerStmt : StmtAfterOuter F n M params × (∀ i, OStmtAfterOuter F n M params i)}
     {innerStmtOut : Sumcheck.Spec.StatementRound F n (Fin.last n) ×
@@ -2237,6 +1814,8 @@ private theorem sumcheckVerifier_compat_oracleStmt
     exact htr
   exact Sumcheck.Spec.verifier_preserves_oracleStmt F (logupSumcheckDegree M params)
     (booleanDomain F) n oSpec hrun
+
+end
 
 private instance logupSumcheckLensSound :
     (logupSumcheckContextLens F n M params).stmt.IsSound
@@ -2277,6 +1856,9 @@ private instance logupSumcheckLensSound :
       simpa using hOStmt.symm
     simpa [hPair, logupSumcheckContextLens, logupAfterSumcheckRelation] using hOuter
 
+section
+
+omit [Fintype F] [DecidableEq F]
 private theorem OracleVerifier.soundness_mono
     {V : OracleVerifier oSpec (StmtAfterOuter F n M params) (OStmtAfterOuter F n M params)
       (StmtAfterSumcheck F n M params) (OStmtAfterOuter F n M params)
@@ -2290,32 +1872,8 @@ private theorem OracleVerifier.soundness_mono
   intro WitIn WitOut witIn prover stmtIn hstmt
   exact le_trans (h WitIn WitOut witIn prover stmtIn hstmt) (by exact_mod_cast hle)
 
-set_option linter.unusedDecidableInType false in
-/-- Soundness of the outer LogUp phase, with the conservative error `logupOuterSoundnessError`.
+end
 
-The hypothesis `hcard : |H| < |F|` is retained from the paper-shaped statement; the current formal
-bound itself is an unconditional union bound over occurrence poles, cleared-identity roots, bad
-`z`, and bad batching scalars. -/
-theorem logup_outer_soundness
-    (hcard : Fintype.card (Fin n → Fin 2) < Fintype.card F) :
-    (outerVerifier oSpec F n M params).soundness init impl
-      (inputRelation F n M).language (logupMidRelation F n M params).language
-      (logupOuterSoundnessError F n M params) := by
-  exact logup_outer_soundness_from_local_algebra
-    (oSpec := oSpec) (F := F) (n := n) (M := M) (params := params)
-    (init := init) (impl := impl) hcard
-    (fun stmt oStmt multiplicity hnot =>
-      clearedLookupIdentity_ne_zero_of_not_input (F := F) (n := n) (M := M)
-        stmt oStmt multiplicity hnot)
-    (fun table columns multiplicity =>
-      clearedLookupIdentity_natDegree_le (F := F) (n := n) (M := M)
-        table columns multiplicity)
-    (fun table columns multiplicity hpoly =>
-      clearedLookupIdentity_bad_x_card_le (F := F) (n := n) (M := M)
-        table columns multiplicity hpoly)
-    (fun K c₀ c hNonzero => random_linear_batch_zero_prob_le (F := F) K c₀ c hNonzero)
-
-set_option linter.unusedFintypeInType false in
 /-- Soundness of the embedded sumcheck phase, with error `sumcheckSoundnessError`.
 
 This is the soundness of ArkLib's generic sumcheck reduction lifted through the LogUp context lens;
@@ -2385,6 +1943,12 @@ theorem logup_sumcheck_soundness (sumcheckSoundnessError : ℝ≥0)
     convert hSound using 1
   exact OracleVerifier.soundness_mono (oSpec := oSpec) (F := F) (n := n) (M := M)
     (params := params) (init := init) (impl := impl) hSoundConcrete hSumcheckSoundness
+
+/-! ## Final-Check Phase Soundness
+
+The final check is deterministic: if the retained sumcheck final claim is not in the post-sumcheck
+language, the reconstructed value `qAtPoint` disagrees with the claimed target and the verifier
+rejects. -/
 
 omit [SampleableType F] in
 /-- Soundness of the final LogUp point check, with error `logupFinalCheckSoundnessError`
@@ -2593,6 +2157,11 @@ theorem logup_finalCheck_soundness :
   simp only [StateT.run'_map', support_map, Set.mem_image] at hx
   obtain ⟨_, _, hx⟩ := hx
   cases hx
+
+/-! ## Composed LogUp Soundness
+
+The full verifier is the sequential composition of the outer phase, the embedded sumcheck phase,
+and the final check.  The composed soundness error is the sum of the per-phase errors. -/
 
 /-- Main ArkLib soundness theorem for the LogUp protocol.
 

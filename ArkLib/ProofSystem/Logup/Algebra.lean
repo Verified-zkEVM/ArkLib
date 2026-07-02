@@ -3,44 +3,29 @@ import Mathlib.Algebra.Polynomial.Taylor
 import Mathlib.Algebra.Order.Floor.Div
 import Mathlib.Tactic.DeriveFintype
 
+set_option linter.style.longFile 2000
+
 /-!
 # LogUp algebra and sumcheck polynomial
 
-This file contains the  algebra used to express LogUp as a sumcheck claim and tries to be decoupled
-from the protocol types. It works with plain hypercube functions `(Fin n → Fin 2) → F`, polynomial
-inputs `MvPolynomial (Fin n) F`, challenges, and partial-sum groups.
+This file contains the protocol-independent algebra behind the LogUp lookup argument.  The
+definitions are phrased in terms of plain Boolean-hypercube functions, multivariate polynomials,
+field challenges, and groups of fractional terms, rather than verifier/prover states or oracle
+transcripts.
 
-The main output is `logupQPolynomial`, the polynomial `Q` that the protocol sends to sumcheck, plus
-`logupQPolynomial_degreeOf`, the individual-degree bound needed by sumcheck. The row-level and
-point-level definitions in this file are the semantic versions used to connect `Q` back to honest
-LogUp data and to the verifier's final point check.
-
-## Sections
-
-* **Generic batched polynomial** is the abstract polynomial shape used by the sumcheck claim, with
-  its generic individual-degree bound. The later LogUp proof only has to show its ingredients are
-  multilinear.
-* **Term indexing** names the `M + 1` fractional terms and relates the table/column oracle labels to
-  paper indices `0, …, M`.
-* **Fractional decompositions in `F[X]`** are the protocol-independent, paper-shaped statements over
-  the polynomial ring (cleared-denominator form): uniqueness of fractional decompositions
-  (Lemma 4), the collecting bridge, and the set-inclusion criterion (Lemma 5).
-* **Fractional-identity algebra** builds the row-wise LogUp quantities on the Boolean hypercube:
-  normalized multiplicities, logarithmic-derivative terms, helper groups, and the row value
-  `qOnHypercube`.
-* **Final-point reconstructions** rebuilds the same value from the verifier's scalar oracle answers
-  at sumcheck's final point `r`.
-* **The LogUp polynomial** assembles the concrete polynomial `Q` from the input polynomials and
-  proves the individual-degree bound required by ArkLib's generic sumcheck protocol.
-* **Polynomial evaluation agreement** shows `Q` agrees on Boolean rows with the row-wise expression
-  built from its inputs' Boolean evaluations.
 -/
 
 namespace Logup
 
 open scoped BigOperators
 
-/-! ## Generic batched polynomial -/
+/-! ## Generic batched polynomial
+
+This section isolates the polynomial shape used for a batched sumcheck claim.  It does not mention
+LogUp-specific table or lookup data: each term has an abstract denominator polynomial, numerator
+polynomial, and helper polynomial.  The degree lemmas here say that once those ingredients are
+multilinear, batching the cleared identities with an equality kernel only raises the individual
+degree in the expected way. -/
 
 section BatchedPolynomial
 
@@ -49,14 +34,21 @@ variable (groups : Fin K → Finset (Fin T))
 variable (phiPoly numerPoly : Fin T → MvPolynomial (Fin n) F)
 variable (helperPoly : Fin K → MvPolynomial (Fin n) F)
 
-/-- One group's cleared-denominator identity, as a polynomial in abstract per-term denominator
-(`phiPoly`) and numerator (`numerPoly`) polynomials and per-group helper polynomials. -/
+/-- The cleared-denominator identity for one group of fractional terms.
+
+For a group `k`, this is the polynomial form of
+`helper = sum_i numerator_i / denominator_i` after multiplying by the product of all denominators in
+that group.  It is abstract in the sense that the denominator, numerator, and helper polynomials are
+parameters; LogUp instantiates them later. -/
 noncomputable def batchedDomainIdentity (k : Fin K) : MvPolynomial (Fin n) F :=
   helperPoly k * (∏ i ∈ groups k, phiPoly i) -
     ∑ i ∈ groups k, numerPoly i * ∏ j ∈ (groups k).erase i, phiPoly j
 
-/-- The generic batched sumcheck polynomial: a `λ`-batched sum of per-group cleared-denominator
-identities, weighted by an equality kernel. Independent of any particular protocol. -/
+/-- The generic polynomial whose Boolean-hypercube sum is checked by sumcheck.
+
+The first summand asks that the helpers themselves sum to zero.  The second summand batches every
+group's cleared-denominator identity using the equality kernel at `zChallenge` and the random
+batching scalars.  This is the protocol-free shape later instantiated by `logupQPolynomial`. -/
 noncomputable def batchedSumcheckPolynomial
     (zChallenge : Fin n → F) (batchingScalars : Fin K → F) : MvPolynomial (Fin n) F :=
   ∑ k : Fin K, (helperPoly k +
@@ -73,7 +65,10 @@ private theorem prod_phiPoly_degreeOf
     _ = s.card := by simp
     _ ≤ T := le_trans (Finset.card_le_univ s) (by simp)
 
-/-- Each group identity has individual degree at most `T + 1`. -/
+/-- A cleared identity over at most `T` fractional terms has individual degree at most `T + 1`.
+
+The extra `+ 1` comes from the helper or numerator factor.  This lemma is the local degree bound
+used before the equality kernel and random batching scalar are added. -/
 theorem batchedDomainIdentity_degreeOf
     (hphi : ∀ i v, MvPolynomial.degreeOf v (phiPoly i) ≤ 1)
     (hnumer : ∀ i v, MvPolynomial.degreeOf v (numerPoly i) ≤ 1)
@@ -113,7 +108,10 @@ theorem batchedDomainIdentity_degreeOf
           _ = T + 1 := by omega
   exact (MvPolynomial.degreeOf_sub_le v _ _).trans (max_le hLeft hRight)
 
-/-- The batched polynomial has individual degree at most `T + 2`. -/
+/-- The generic batched sumcheck polynomial has individual degree at most `T + 2`.
+
+Compared with a single cleared identity, batching adds one equality-kernel factor, which contributes
+one more degree in each variable.  Constants such as the batching scalars do not affect the bound. -/
 theorem batchedSumcheckPolynomial_degreeOf
     (zChallenge : Fin n → F) (batchingScalars : Fin K → F)
     (hphi : ∀ i v, MvPolynomial.degreeOf v (phiPoly i) ≤ 1)
@@ -165,7 +163,10 @@ end BatchedPolynomial
 
 /-! ## Term indexing
 
-LogUp has `M + 1` terms: term `0` is the table, terms `1, …, M` are the lookup columns. -/
+LogUp's rational identity has `M + 1` fractional terms.  The paper indexes them by numbers:
+term `0` is the table term and terms `1, ..., M` are lookup-column terms.  The protocol code often
+uses the semantic labels `table` and `column i`; this section provides the conversions and proves
+they are inverse to each other. -/
 
 /-- Labels for the `M + 1` LogUp terms: the table and the `M` lookup columns. -/
 inductive InputIdx (M : ℕ) where
@@ -202,11 +203,13 @@ theorem inputToTerm_termToInput {M : ℕ} (i : TermIdx M) :
 
 /-! ## Fractional decompositions in `F[X]` (paper Section 2.3)
 
-Paper-shaped statements over the polynomial ring `F[X]`, in cleared-denominator form:
-`clearedDecomp` is the numerator left after multiplying the formal `∑_z m(z)/(X + z)` by the common
-denominator `∏_{w∈F}(X + w)`. Working in `F[X]` (rather than `RatFunc F`) keeps these formal and
-dependency-light. We prove `clearedDecomp`'s uniqueness (Lemma 4), the "collecting" bridge
-`clearedSum_eq_clearedDecomp`, and the set-inclusion criterion (Lemma 5). -/
+This section formalizes the paper's univariate logarithmic-derivative facts without using rational
+functions.  Instead, every identity is multiplied by the common denominator
+`prod_w (X + w)` and expressed as a polynomial identity in `F[X]`.
+
+The key idea is that the cleared numerator remembers the multiplicity function. This gives a
+polynomial proof of uniqueness for fractional decompositions, a bridge from indexed sums to
+value-multiplicity sums, and the set-inclusion criterion used by LogUp completeness and soundness.-/
 
 section FractionalDecomposition
 
@@ -406,8 +409,13 @@ end FractionalDecomposition
 
 /-! ## Fractional-identity algebra
 
-LogUp's logarithmic-derivative construction, evaluated on hypercube rows. The table, columns,
-multiplicity, and helper functions are bare hypercube functions `(Fin n → Fin 2) → F`. -/
+This section turns LogUp's lookup condition into row-wise algebra over the Boolean hypercube.  The
+table, lookup columns, multiplicity, and helpers are plain functions `(Fin n -> Fin 2) -> F`; no
+oracle statements or protocol transcripts appear here.
+
+The definitions describe the denominator occurrences, the cleared univariate identity in the outer
+challenge `x`, the helper equations for grouped terms, and the Boolean-row expression `qOnHypercube`
+that will later be lifted into the polynomial sent to sumcheck. -/
 
 section Algebra
 
@@ -424,9 +432,11 @@ def lookupMultiplicityCount [Fintype F] [DecidableEq F]
 
 /-! ### Cleared occurrence identities
 
-These are protocol-independent algebraic facts about the common denominator of the LogUp
-rational identity. They work with bare table/column functions on the Boolean hypercube.
--/
+The LogUp rational identity has one denominator for each table row and each lookup-column row.
+Multiplying by the product of all denominators gives a single univariate polynomial in the outer
+challenge `x`.  The lemmas below explain when that cleared polynomial is nonzero, how large its bad
+root/pole sets can be, and how to translate between table/column occurrences and grouped term
+indices. -/
 
 /-- One occurrence in the common denominator of the LogUp rational identity: either a table row
 or one lookup-column row. -/
@@ -863,35 +873,55 @@ theorem clearedLookupIdentity_root_card_le [Fintype F] [DecidableEq F]
         clearedLookupIdentity_natDegree_le (F := F) (n := n) (M := M)
           table columns multiplicity
 
-/-- The normalized multiplicity from paper equation (14), evaluated at one table row. -/
+/-- The honest table multiplicity value used in the LogUp identity at one Boolean row.
+
+For a table value `a = table u`, this is `lookup_count(a) / table_count(a)`.  Under the lookup
+containment assumptions used elsewhere, it is the normalized multiplicity assigned to row `u` in
+paper equation (14). -/
 noncomputable def normalizedMultiplicityValue [Fintype F] [DecidableEq F]
     (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F) (u : Fin n → Fin 2) : F :=
   let a := table u
   (lookupMultiplicityCount columns a : F) / (tableMultiplicityCount table a : F)
 
-/-- The denominator term `φᵢ(u)` from Protocol 2. -/
+/-- The denominator function for a table or lookup-column term at a Boolean row.
+
+The table term uses `x + table u`; a lookup-column term `i` uses `x + columns i u`.  These are the
+`phi_i(u)` denominators of LogUp's logarithmic-derivative identity. -/
 noncomputable def phi (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
     (xChallenge : F) : InputIdx M → (Fin n → Fin 2) → F
   | .table => fun u => xChallenge + table u
   | .column i => fun u => xChallenge + columns i u
 
-/-- The numerator term `mᵢ(u)`, with `m₀ = m` and `mᵢ = -1` for columns. -/
+/-- The numerator function for a table or lookup-column term at a Boolean row.
+
+The table term contributes the claimed multiplicity `m(u)`, while every lookup-column term
+contributes `-1`.  This is the signed numerator convention used in the rational lookup identity. -/
 noncomputable def numerator (multiplicity : (Fin n → Fin 2) → F) :
     InputIdx M → (Fin n → Fin 2) → F
   | .table => multiplicity
   | .column _ => fun _ => -1
 
-/-- The denominator term, indexed as `0, ..., M` as in the paper. -/
+/-- The denominator `phi_i(u)` using the paper's numeric term index `i : TermIdx M`.
+
+This is the same data as `phi`, but with term `0` representing the table and positive terms
+representing lookup columns. -/
 noncomputable def termPhi (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
     (xChallenge : F) (i : TermIdx M) (u : Fin n → Fin 2) : F :=
   phi table columns xChallenge (termToInput i) u
 
-/-- The numerator term, indexed as `0, ..., M` as in the paper. -/
+/-- The signed numerator `m_i(u)` using the paper's numeric term index `i : TermIdx M`.
+
+Term `0` returns the multiplicity value, while lookup-column terms return `-1`. -/
 noncomputable def termNumerator (multiplicity : (Fin n → Fin 2) → F)
     (i : TermIdx M) (u : Fin n → Fin 2) : F :=
   numerator multiplicity (termToInput i) u
 
-/-- The domain-identity expression for one helper function `hₖ`. -/
+/-- The cleared helper equation for one group of LogUp terms at one Boolean row.
+
+For group `k`, the intended equation is
+`helpers k u = sum_{i in group k} termNumerator i u / termPhi i u`.  This definition multiplies by
+the product of denominators in the group, so it is meaningful even as a polynomial identity.  A
+value of zero means the helper is consistent with that group's fractional sum. -/
 noncomputable def domainIdentityTerm (groups : Fin K → Finset (TermIdx M))
     (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
     (multiplicity : (Fin n → Fin 2) → F) (helpers : Fin K → (Fin n → Fin 2) → F)
@@ -900,13 +930,19 @@ noncomputable def domainIdentityTerm (groups : Fin K → Finset (TermIdx M))
     ∑ i ∈ groups k, termNumerator multiplicity i u * ∏ j
         ∈ (groups k).erase i, termPhi table columns xChallenge j u
 
-/-- The helper value `hₖ(u) = Σᵢ mᵢ(u)/φᵢ(u)` from paper equation (16). -/
+/-- The fractional helper value expected for one group at one Boolean row.
+
+This is the right-hand side of paper equation (16): the sum of signed numerators divided by
+denominators over all terms assigned to group `k`. -/
 noncomputable def helperValue (groups : Fin K → Finset (TermIdx M))
     (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
     (multiplicity : (Fin n → Fin 2) → F) (xChallenge : F) (k : Fin K) (u : Fin n → Fin 2) : F :=
   ∑ i ∈ groups k, termNumerator multiplicity i u / termPhi table columns xChallenge i u
 
-/-- The batched polynomial expression `Q` from paper equation (18), evaluated on a row `u ∈ H`. -/
+/-- The row-wise value of the LogUp polynomial `Q` before it is represented as an MvPolynomial.
+
+At each Boolean row, `Q` adds the helper value and a batched, equality-kernel-weighted cleared
+domain identity for every group.  Summing this over the hypercube gives the outer sumcheck claim. -/
 noncomputable def qOnHypercube (groups : Fin K → Finset (TermIdx M))
     (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
     (multiplicity : (Fin n → Fin 2) → F) (helpers : Fin K → (Fin n → Fin 2) → F)
@@ -918,7 +954,10 @@ noncomputable def qOnHypercube (groups : Fin K → Finset (TermIdx M))
         batchingScalars k *
         domainIdentityTerm groups table columns multiplicity helpers xChallenge k u)
 
-/-- Honest helper values make the cleared-denominator identity vanish pointwise, away from poles. -/
+/-- If a helper is exactly its fractional group sum, the corresponding cleared identity is zero.
+
+The nonzero-denominator hypothesis lets us multiply the fractional helper equation by the product
+of all denominators in the group.  This is the row-wise algebra behind honest helper correctness. -/
 theorem domainIdentityTerm_eq_zero (groups : Fin K → Finset (TermIdx M))
     (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
     (multiplicity : (Fin n → Fin 2) → F) (helpers : Fin K → (Fin n → Fin 2) → F)
@@ -931,9 +970,561 @@ theorem domainIdentityTerm_eq_zero (groups : Fin K → Finset (TermIdx M))
   rw [← Finset.mul_prod_erase _ _ hi]
   field_simp [hφ i hi]
 
-/-- If a lookup value appears in a column and every lookup value appears in the table, then the
-corresponding table multiplicity is nonzero as a field element under the LogUp characteristic
-bound. -/
+/-- Away from denominator poles, the cleared lookup polynomial evaluates to denominator product
+times the original fractional lookup sum.
+
+This connects the univariate polynomial `clearedLookupIdentity` back to the rational identity from
+the paper: if no denominator `x + value` is zero, then clearing denominators is reversible. -/
+theorem clearedLookupIdentity_eval_eq_prod_mul_fractionalSum
+    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
+    (multiplicity : (Fin n → Fin 2) → F) (x : F)
+    (hden :
+      ∀ a : LookupOccur n M, x + lookupOccurValue table columns a ≠ 0) :
+    Polynomial.eval x (clearedLookupIdentity table columns multiplicity) =
+      ((Finset.univ : Finset (LookupOccur n M)).prod
+        (fun a => x + lookupOccurValue table columns a)) *
+        (Finset.univ : Finset (LookupOccur n M)).sum
+          (fun a => lookupOccurNumerator multiplicity a /
+            (x + lookupOccurValue table columns a)) := by
+  classical
+  unfold clearedLookupIdentity
+  rw [Polynomial.eval_finsetSum, Finset.mul_sum]
+  refine Finset.sum_congr rfl ?_
+  intro a _
+  rw [Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_prod]
+  simp only [Polynomial.eval_add, Polynomial.eval_X, Polynomial.eval_C]
+  calc
+    lookupOccurNumerator multiplicity a *
+        ∏ b ∈ Finset.univ.erase a, (x + lookupOccurValue table columns b)
+        =
+      ((x + lookupOccurValue table columns a) *
+          ∏ b ∈ Finset.univ.erase a, (x + lookupOccurValue table columns b)) *
+        (lookupOccurNumerator multiplicity a /
+          (x + lookupOccurValue table columns a)) := by
+        field_simp [hden a]
+    _ =
+      ((Finset.univ : Finset (LookupOccur n M)).prod
+          (fun b => x + lookupOccurValue table columns b)) *
+        (lookupOccurNumerator multiplicity a /
+          (x + lookupOccurValue table columns a)) := by
+        rw [Finset.mul_prod_erase (Finset.univ : Finset (LookupOccur n M))
+          (fun b => x + lookupOccurValue table columns b) (Finset.mem_univ a)]
+
+/-- A nonzero cleared lookup evaluation implies a nonzero fractional lookup sum, provided no
+denominator vanishes.
+
+This is the soundness-facing contrapositive of denominator clearing: if the common-denominator
+product is nonzero and the cleared polynomial is nonzero at `x`, then the rational lookup identity
+also fails at `x`. -/
+theorem fractionalSum_ne_zero_of_clearedLookupIdentity_eval_ne_zero
+    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
+    (multiplicity : (Fin n → Fin 2) → F) (x : F)
+    (hden :
+      ∀ a : LookupOccur n M, x + lookupOccurValue table columns a ≠ 0)
+    (heval : Polynomial.eval x (clearedLookupIdentity table columns multiplicity) ≠ 0) :
+    (Finset.univ : Finset (LookupOccur n M)).sum
+        (fun a => lookupOccurNumerator multiplicity a /
+          (x + lookupOccurValue table columns a)) ≠ 0 := by
+  intro hsum
+  have hfactor :=
+    clearedLookupIdentity_eval_eq_prod_mul_fractionalSum
+      (F := F) (n := n) (M := M) table columns multiplicity x hden
+  rw [hfactor, hsum, mul_zero] at heval
+  exact heval rfl
+
+/-- A zero cleared domain identity forces the helper to equal its fractional group sum.
+
+This is the converse of `domainIdentityTerm_eq_zero` under nonzero denominators.  It lets later
+proofs recover the intended helper equation from the cleared polynomial equation. -/
+theorem helper_eq_helperValue_of_domainIdentityTerm_eq_zero
+    (groups : Fin K → Finset (TermIdx M))
+    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
+    (multiplicity : (Fin n → Fin 2) → F)
+    (helpers : Fin K → (Fin n → Fin 2) → F)
+    (xChallenge : F) (k : Fin K) (u : Fin n → Fin 2)
+    (hD : domainIdentityTerm groups table columns multiplicity helpers xChallenge k u = 0)
+    (hφ : ∀ i ∈ groups k, termPhi table columns xChallenge i u ≠ 0) :
+    helpers k u = helperValue groups table columns multiplicity xChallenge k u := by
+  classical
+  let φ : TermIdx M → F := fun i => termPhi table columns xChallenge i u
+  let μ : TermIdx M → F := fun i => termNumerator multiplicity i u
+  have hprod_ne : (∏ i ∈ groups k, φ i) ≠ 0 := by
+    rw [Finset.prod_ne_zero_iff]
+    intro i hi
+    exact hφ i hi
+  unfold domainIdentityTerm at hD
+  have hmul :
+      helpers k u * (∏ i ∈ groups k, φ i) =
+        ∑ i ∈ groups k, μ i * ∏ j ∈ (groups k).erase i, φ j := by
+    simpa [φ, μ] using sub_eq_zero.mp hD
+  unfold helperValue
+  apply mul_right_cancel₀ hprod_ne
+  calc
+    helpers k u * (∏ i ∈ groups k, φ i)
+        = ∑ i ∈ groups k, μ i * ∏ j ∈ (groups k).erase i, φ j := hmul
+    _ = (∑ i ∈ groups k, μ i / φ i) * ∏ i ∈ groups k, φ i := by
+        rw [Finset.sum_mul]
+        refine Finset.sum_congr rfl ?_
+        intro i hi
+        rw [← Finset.mul_prod_erase (groups k) φ hi]
+        field_simp [φ, hφ i hi]
+    _ = helperValue groups table columns multiplicity xChallenge k u *
+          ∏ i ∈ groups k, φ i := by
+        rfl
+
+/-- Convert a numeric LogUp term and Boolean row into the matching table/column occurrence.
+
+This is the bridge between grouped term sums (`TermIdx M`) and the flattened occurrence type used
+by the cleared univariate lookup identity. -/
+def termLookupOccur {n M : ℕ} (i : TermIdx M) (u : Fin n → Fin 2) : LookupOccur n M :=
+  match termToInput i with
+  | .table => .table u
+  | .column j => .column j u
+
+/-- The pair of a term index and Boolean row is equivalent to a denominator occurrence.
+
+This equivalence justifies rewriting sums over all table/column occurrences as row-by-row sums over
+all LogUp terms. -/
+def termLookupOccurEquiv (n M : ℕ) :
+    (TermIdx M × (Fin n → Fin 2)) ≃ LookupOccur n M where
+  toFun p := termLookupOccur p.1 p.2
+  invFun
+    | .table u => (inputToTerm .table, u)
+    | .column j u => (inputToTerm (.column j), u)
+  left_inv := by
+    rintro ⟨i, u⟩
+    unfold termLookupOccur
+    cases h : termToInput i with
+    | table =>
+        have hi : inputToTerm InputIdx.table = i := by
+          simpa [h] using (inputToTerm_termToInput i)
+        simp [h, hi]
+    | column j =>
+        have hi : inputToTerm (InputIdx.column j) = i := by
+          simpa [h] using (inputToTerm_termToInput i)
+        simp [h, hi]
+  right_inv := by
+    intro a
+    cases a with
+    | table u =>
+        simp [termLookupOccur]
+    | column j u =>
+        simp [termLookupOccur]
+
+/-- The numerator attached to a converted term occurrence is the term numerator. -/
+@[simp]
+theorem lookupOccurNumerator_termLookupOccur
+    (multiplicity : (Fin n → Fin 2) → F) (i : TermIdx M) (u : Fin n → Fin 2) :
+    lookupOccurNumerator multiplicity (termLookupOccur i u) =
+      termNumerator multiplicity i u := by
+  unfold termLookupOccur termNumerator numerator lookupOccurNumerator
+  cases termToInput i <;> rfl
+
+/-- The denominator attached to a converted term occurrence is the term denominator. -/
+@[simp]
+theorem add_lookupOccurValue_termLookupOccur
+    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
+    (xChallenge : F) (i : TermIdx M) (u : Fin n → Fin 2) :
+    xChallenge + lookupOccurValue table columns (termLookupOccur i u) =
+      termPhi table columns xChallenge i u := by
+  unfold termLookupOccur termPhi phi lookupOccurValue
+  cases termToInput i <;> rfl
+
+/-- The global fractional lookup sum can be written row-by-row over numeric LogUp terms.
+
+The left side sums over flattened table/column occurrences.  The right side first chooses a Boolean
+row and then sums over the paper's term indices `0, ..., M`.  This is the bookkeeping bridge needed
+to compare the cleared lookup identity with grouped helper sums. -/
+theorem lookupOccur_fractionalSum_eq_sum_termFractions
+    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
+    (multiplicity : (Fin n → Fin 2) → F) (xChallenge : F) :
+    (∑ a : LookupOccur n M,
+        lookupOccurNumerator multiplicity a / (xChallenge + lookupOccurValue table columns a)) =
+      ∑ u : Fin n → Fin 2, ∑ i : TermIdx M,
+        termNumerator multiplicity i u / termPhi table columns xChallenge i u := by
+  classical
+  let e := termLookupOccurEquiv n M
+  calc
+    (∑ a : LookupOccur n M,
+        lookupOccurNumerator multiplicity a / (xChallenge + lookupOccurValue table columns a))
+        =
+        ∑ p : TermIdx M × (Fin n → Fin 2),
+          lookupOccurNumerator multiplicity (e p) /
+            (xChallenge + lookupOccurValue table columns (e p)) := by
+          exact Fintype.sum_equiv e.symm _ _ (fun a => by simp [e])
+    _ =
+        ∑ p : TermIdx M × (Fin n → Fin 2),
+          termNumerator multiplicity p.1 p.2 / termPhi table columns xChallenge p.1 p.2 := by
+          refine Finset.sum_congr rfl ?_
+          intro p _
+          simp [e, termLookupOccurEquiv]
+    _ =
+        ∑ i : TermIdx M, ∑ u : Fin n → Fin 2,
+          termNumerator multiplicity i u / termPhi table columns xChallenge i u := by
+          rw [Fintype.sum_prod_type]
+    _ =
+        ∑ u : Fin n → Fin 2, ∑ i : TermIdx M,
+          termNumerator multiplicity i u / termPhi table columns xChallenge i u := by
+          rw [Finset.sum_comm]
+
+/-- One coordinate factor of the Boolean equality polynomial has total degree at most one.
+
+This local degree fact is used to show that equality kernels and multilinear extensions have total
+degree at most the number of variables. -/
+theorem singleEqPolynomial_X_totalDegree_le_one (r : F) (i : Fin n) :
+    (MvPolynomial.singleEqPolynomial r (MvPolynomial.X i) :
+      MvPolynomial (Fin n) F).totalDegree ≤ 1 := by
+  rw [MvPolynomial.singleEqPolynomial_nf]
+  have hcoeff :
+      (MvPolynomial.C (2 : F) * MvPolynomial.C r - 1 :
+        MvPolynomial (Fin n) F).totalDegree = 0 := by
+    have hconst :
+        (MvPolynomial.C (2 : F) * MvPolynomial.C r - 1 :
+          MvPolynomial (Fin n) F) =
+          MvPolynomial.C (2 * r - 1) := by
+      calc
+        (MvPolynomial.C (2 : F) * MvPolynomial.C r - 1 :
+            MvPolynomial (Fin n) F)
+            = MvPolynomial.C (2 * r) - MvPolynomial.C (1 : F) := by simp
+        _ = MvPolynomial.C (2 * r - 1) := by
+            simp
+    calc
+      (MvPolynomial.C (2 : F) * MvPolynomial.C r - 1 :
+          MvPolynomial (Fin n) F).totalDegree
+          = (MvPolynomial.C (2 * r - 1) : MvPolynomial (Fin n) F).totalDegree := by
+            exact congrArg MvPolynomial.totalDegree hconst
+      _ = 0 := MvPolynomial.totalDegree_C (σ := Fin n) (2 * r - 1)
+  have hconst :
+      ((1 : MvPolynomial (Fin n) F) - MvPolynomial.C r).totalDegree = 0 := by
+    have hconst' :
+        ((1 : MvPolynomial (Fin n) F) - MvPolynomial.C r) =
+          MvPolynomial.C (1 - r) := by
+      simp
+    calc
+      ((1 : MvPolynomial (Fin n) F) - MvPolynomial.C r).totalDegree
+          = (MvPolynomial.C (1 - r) : MvPolynomial (Fin n) F).totalDegree := by
+            exact congrArg MvPolynomial.totalDegree hconst'
+      _ = 0 := MvPolynomial.totalDegree_C (σ := Fin n) (1 - r)
+  calc
+    ((MvPolynomial.C (2 : F) * MvPolynomial.C r - 1) * MvPolynomial.X i +
+        (1 - MvPolynomial.C r)).totalDegree
+        ≤ max (((MvPolynomial.C (2 : F) * MvPolynomial.C r - 1) *
+            MvPolynomial.X i).totalDegree)
+            ((1 - MvPolynomial.C r : MvPolynomial (Fin n) F).totalDegree) :=
+          MvPolynomial.totalDegree_add _ _
+    _ ≤ max (0 + 1) 0 := by
+          gcongr
+          · calc
+              (((MvPolynomial.C (2 : F) * MvPolynomial.C r - 1) *
+                    MvPolynomial.X i).totalDegree)
+                  ≤ (MvPolynomial.C (2 : F) * MvPolynomial.C r - 1).totalDegree +
+                      (MvPolynomial.X i : MvPolynomial (Fin n) F).totalDegree :=
+                    MvPolynomial.totalDegree_mul _ _
+              _ = 0 + 1 := by simp [hcoeff]
+          · simp [hconst]
+    _ = 1 := by norm_num
+
+/-- The Boolean equality polynomial in `n` variables has total degree at most `n`.
+
+It is a product of one degree-one factor per coordinate, so this is the total-degree version of
+multilinearity for `MvPolynomial.eqPolynomial`. -/
+theorem eqPolynomial_totalDegree_le (r : Fin n → F) :
+    (MvPolynomial.eqPolynomial r : MvPolynomial (Fin n) F).totalDegree ≤ n := by
+  unfold MvPolynomial.eqPolynomial
+  calc
+    (∏ i : Fin n, MvPolynomial.singleEqPolynomial (r i) (MvPolynomial.X i)).totalDegree
+        ≤ ∑ i : Fin n,
+            (MvPolynomial.singleEqPolynomial (r i) (MvPolynomial.X i) :
+              MvPolynomial (Fin n) F).totalDegree :=
+          MvPolynomial.totalDegree_finsetProd Finset.univ
+            (fun i => MvPolynomial.singleEqPolynomial (r i) (MvPolynomial.X i))
+    _ ≤ ∑ _i : Fin n, 1 := by
+          exact Finset.sum_le_sum fun i _ =>
+            singleEqPolynomial_X_totalDegree_le_one (F := F) (n := n) (r i) i
+    _ = n := by simp
+
+/-- The multilinear extension of any Boolean-hypercube table has total degree at most `n`.
+
+`MvPolynomial.MLE` is a linear combination of equality polynomials, one for each Boolean row, so it
+inherits the same total-degree bound. -/
+theorem MLE_totalDegree_le (evals : (Fin n → Fin 2) → F) :
+    (MvPolynomial.MLE evals : MvPolynomial (Fin n) F).totalDegree ≤ n := by
+  unfold MvPolynomial.MLE
+  refine MvPolynomial.totalDegree_finsetSum_le ?_
+  intro u _
+  calc
+    ((MvPolynomial.eqPolynomial (u : Fin n → F) : MvPolynomial (Fin n) F) *
+        MvPolynomial.C (evals u)).totalDegree
+        ≤ (MvPolynomial.eqPolynomial (u : Fin n → F) : MvPolynomial (Fin n) F).totalDegree +
+            (MvPolynomial.C (evals u) : MvPolynomial (Fin n) F).totalDegree :=
+          MvPolynomial.totalDegree_mul _ _
+    _ ≤ n + 0 := by
+          gcongr
+          · exact eqPolynomial_totalDegree_le (F := F) (n := n) (u : Fin n → F)
+          · simp
+    _ = n := by simp
+
+/-- Pairing Boolean evaluations with the equality kernel evaluates the multilinear extension.
+
+The sum `sum_u eq_z(u) * evals u` is exactly `MLE evals` evaluated at `z`.  This is the algebraic
+reason the verifier's Lagrange-kernel query corresponds to a point evaluation. -/
+theorem sum_eqPolynomial_mul_eq_MLE_eval
+    (evals : (Fin n → Fin 2) → F) (z : Fin n → F) :
+    (∑ u : Fin n → Fin 2,
+        MvPolynomial.eval (u : Fin n → F) (MvPolynomial.eqPolynomial z) * evals u) =
+      MvPolynomial.eval z (MvPolynomial.MLE evals) := by
+  classical
+  unfold MvPolynomial.MLE
+  rw [map_sum]
+  refine Finset.sum_congr rfl ?_
+  intro u _
+  rw [MvPolynomial.eval_mul, MvPolynomial.eval_C]
+  rw [MvPolynomial.eqPolynomial_symm (x := (u : Fin n → F)) (y := z)]
+
+/-- The multilinear extension of one group's cleared domain-identity values.
+
+For fixed table, columns, multiplicity, helpers, and `x`, this polynomial extends the Boolean table
+`u ↦ domainIdentityTerm ... k u` from the hypercube to all field points. -/
+noncomputable def domainIdentityMLE
+    (groups : Fin K → Finset (TermIdx M))
+    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
+    (multiplicity : (Fin n → Fin 2) → F)
+    (helpers : Fin K → (Fin n → Fin 2) → F)
+    (xChallenge : F) (k : Fin K) : MvPolynomial (Fin n) F :=
+  MvPolynomial.MLE
+    (fun u => domainIdentityTerm groups table columns multiplicity helpers xChallenge k u)
+
+/-- If a group's domain-identity MLE is the zero polynomial, every Boolean-row identity vanishes.
+
+The proof evaluates the zero polynomial at a Boolean point.  This lets later arguments turn a
+polynomial zero statement back into row-wise helper equations. -/
+theorem domainIdentityTerm_eq_zero_of_domainIdentityMLE_eq_zero
+    (groups : Fin K → Finset (TermIdx M))
+    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
+    (multiplicity : (Fin n → Fin 2) → F)
+    (helpers : Fin K → (Fin n → Fin 2) → F)
+    (xChallenge : F) (k : Fin K)
+    (hzero :
+      domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
+        helpers xChallenge k = 0)
+    (u : Fin n → Fin 2) :
+    domainIdentityTerm groups table columns multiplicity helpers xChallenge k u = 0 := by
+  have hEval := congrArg (fun p : MvPolynomial (Fin n) F =>
+    MvPolynomial.eval (u : Fin n → F) p) hzero
+  simpa [domainIdentityMLE] using hEval
+
+/-- If all group MLEs are zero, the total helper sum equals the global fractional lookup sum.
+
+Zero MLEs give zero cleared identities on every Boolean row.  Away from denominator poles, those
+cleared identities force each helper to equal its fractional group sum; summing over groups and rows
+then reconstructs the flattened occurrence sum from `clearedLookupIdentity`. -/
+theorem helperSum_eq_lookupOccur_fractionalSum_of_domainIdentityMLEs_zero
+    (groups : Fin K → Finset (TermIdx M))
+    (hgroups : ∀ g : TermIdx M → F,
+      (∑ k : Fin K, ∑ i ∈ groups k, g i) = ∑ i : TermIdx M, g i)
+    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
+    (multiplicity : (Fin n → Fin 2) → F)
+    (helpers : Fin K → (Fin n → Fin 2) → F)
+    (xChallenge : F)
+    (hDzero : ∀ k : Fin K,
+      domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
+        helpers xChallenge k = 0)
+    (hden : ∀ a : LookupOccur n M, xChallenge + lookupOccurValue table columns a ≠ 0) :
+    (∑ u : Fin n → Fin 2, ∑ k : Fin K, helpers k u) =
+      ∑ a : LookupOccur n M,
+        lookupOccurNumerator multiplicity a / (xChallenge + lookupOccurValue table columns a) := by
+  classical
+  calc
+    (∑ u : Fin n → Fin 2, ∑ k : Fin K, helpers k u)
+        =
+        ∑ u : Fin n → Fin 2, ∑ k : Fin K,
+          helperValue groups table columns multiplicity xChallenge k u := by
+          refine Finset.sum_congr rfl ?_
+          intro u _
+          refine Finset.sum_congr rfl ?_
+          intro k _
+          exact helper_eq_helperValue_of_domainIdentityTerm_eq_zero
+            (F := F) (n := n) (M := M) groups table columns multiplicity helpers
+            xChallenge k u
+            (domainIdentityTerm_eq_zero_of_domainIdentityMLE_eq_zero
+              (F := F) (n := n) (M := M) groups table columns multiplicity helpers
+              xChallenge k (hDzero k) u)
+            (fun i hi => by
+              have h := hden (termLookupOccur i u)
+              simpa using h)
+    _ =
+        ∑ u : Fin n → Fin 2, ∑ k : Fin K, ∑ i ∈ groups k,
+          termNumerator multiplicity i u / termPhi table columns xChallenge i u := by
+          simp [helperValue]
+    _ =
+        ∑ u : Fin n → Fin 2, ∑ i : TermIdx M,
+          termNumerator multiplicity i u / termPhi table columns xChallenge i u := by
+          refine Finset.sum_congr rfl ?_
+          intro u _
+          exact hgroups
+            (fun i => termNumerator multiplicity i u / termPhi table columns xChallenge i u)
+    _ =
+        ∑ a : LookupOccur n M,
+          lookupOccurNumerator multiplicity a /
+            (xChallenge + lookupOccurValue table columns a) := by
+          exact (lookupOccur_fractionalSum_eq_sum_termFractions
+            (F := F) (n := n) (M := M) table columns multiplicity xChallenge).symm
+
+/-- If helpers sum to zero while the fractional lookup sum is nonzero, some group MLE is nonzero.
+
+This is the deterministic source of the bad-`z` event in soundness.  If every group MLE were zero,
+the previous lemma would force the helper sum and fractional lookup sum to be equal, contradicting
+the hypotheses. -/
+theorem exists_nonzero_domainIdentityMLE_of_helperSum_zero_of_fractionalSum_ne_zero
+    (groups : Fin K → Finset (TermIdx M))
+    (hgroups : ∀ g : TermIdx M → F,
+      (∑ k : Fin K, ∑ i ∈ groups k, g i) = ∑ i : TermIdx M, g i)
+    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
+    (multiplicity : (Fin n → Fin 2) → F)
+    (helpers : Fin K → (Fin n → Fin 2) → F)
+    (xChallenge : F)
+    (hden : ∀ a : LookupOccur n M, xChallenge + lookupOccurValue table columns a ≠ 0)
+    (hhelper :
+      (∑ u : Fin n → Fin 2, ∑ k : Fin K, helpers k u) = 0)
+    (hfractional :
+      (∑ a : LookupOccur n M,
+        lookupOccurNumerator multiplicity a / (xChallenge + lookupOccurValue table columns a))
+          ≠ 0) :
+    ∃ k : Fin K,
+      domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
+        helpers xChallenge k ≠ 0 := by
+  classical
+  by_contra hnone
+  have hDzero : ∀ k : Fin K,
+      domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
+        helpers xChallenge k = 0 := by
+    intro k
+    by_contra hk
+    exact hnone ⟨k, hk⟩
+  have hsum := helperSum_eq_lookupOccur_fractionalSum_of_domainIdentityMLEs_zero
+    (F := F) (n := n) (M := M) groups hgroups table columns multiplicity helpers
+    xChallenge hDzero hden
+  exact hfractional (by simpa [hhelper] using hsum.symm)
+
+/-- The equality-kernel-weighted sum of one group identity is its MLE evaluated at `z`.
+
+This specializes `sum_eqPolynomial_mul_eq_MLE_eval` to the Boolean table of cleared domain-identity
+values for group `k`.  It is the algebraic bridge from row-wise outer claims to point evaluations. -/
+theorem domainIdentityKernelClaim_eq_eval_domainIdentityMLE
+    (groups : Fin K → Finset (TermIdx M))
+    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
+    (multiplicity : (Fin n → Fin 2) → F)
+    (helpers : Fin K → (Fin n → Fin 2) → F)
+    (xChallenge : F) (zChallenge : Fin n → F) (k : Fin K) :
+    (∑ u : Fin n → Fin 2,
+        MvPolynomial.eval (u : Fin n → F) (MvPolynomial.eqPolynomial zChallenge) *
+          domainIdentityTerm groups table columns multiplicity helpers xChallenge k u) =
+      MvPolynomial.eval zChallenge
+        (domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
+          helpers xChallenge k) := by
+  exact sum_eqPolynomial_mul_eq_MLE_eval (F := F) (n := n)
+    (fun u => domainIdentityTerm groups table columns multiplicity helpers xChallenge k u)
+    zChallenge
+
+/-- Good `x` and `z` challenges make the final batching equation nontrivial.
+
+If the cleared lookup identity is nonzero at `x`, the fractional lookup sum is nonzero.  If `z`
+does not evaluate any nonzero domain-identity MLE to zero, then either the helper-sum constant term
+is already nonzero or some `z`-evaluated group coefficient is nonzero. -/
+theorem outer_batch_coefficients_nontrivial_of_good_xz
+    (groups : Fin K → Finset (TermIdx M))
+    (hgroups : ∀ g : TermIdx M → F,
+      (∑ k : Fin K, ∑ i ∈ groups k, g i) = ∑ i : TermIdx M, g i)
+    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
+    (multiplicity : (Fin n → Fin 2) → F)
+    (helpers : Fin K → (Fin n → Fin 2) → F)
+    (xChallenge : F) (zChallenge : Fin n → F)
+    (hden : ∀ a : LookupOccur n M, xChallenge + lookupOccurValue table columns a ≠ 0)
+    (heval : Polynomial.eval xChallenge
+      (clearedLookupIdentity table columns multiplicity) ≠ 0)
+    (hzGood : ∀ k : Fin K,
+      domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
+          helpers xChallenge k ≠ 0 →
+        MvPolynomial.eval zChallenge
+          (domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
+            helpers xChallenge k) ≠ 0) :
+    (∑ u : Fin n → Fin 2, ∑ k : Fin K, helpers k u) ≠ 0 ∨
+      ∃ k : Fin K,
+        MvPolynomial.eval zChallenge
+          (domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
+            helpers xChallenge k) ≠ 0 := by
+  classical
+  letI : DecidableEq F := Classical.decEq F
+  let c0 : F := ∑ u : Fin n → Fin 2, ∑ k : Fin K, helpers k u
+  by_cases hhelper : c0 = 0
+  · right
+    have hhelper' :
+        (∑ u : Fin n → Fin 2, ∑ k : Fin K, helpers k u) = 0 := by
+      simpa [c0] using hhelper
+    have hfractional :=
+      fractionalSum_ne_zero_of_clearedLookupIdentity_eval_ne_zero
+        (F := F) (n := n) (M := M) table columns multiplicity xChallenge hden heval
+    obtain ⟨k, hk⟩ :=
+      exists_nonzero_domainIdentityMLE_of_helperSum_zero_of_fractionalSum_ne_zero
+        (F := F) (n := n) (M := M) groups hgroups table columns multiplicity helpers
+        xChallenge hden hhelper' hfractional
+    exact ⟨k, hzGood k hk⟩
+  · exact Or.inl (by
+      intro hsum
+      exact hhelper (by simpa [c0] using hsum))
+
+/-- Deterministic core of outer soundness after all challenges are fixed.
+
+Good `x` makes the rational lookup identity fail, good `z` prevents nonzero group MLEs from being
+hidden, and good batching scalars avoid the resulting nontrivial linear equation.  Under those three
+conditions, the expanded outer sumcheck claim cannot be zero. -/
+theorem outer_linear_claim_ne_zero_of_good_challenges
+    (groups : Fin K → Finset (TermIdx M))
+    (hgroups : ∀ g : TermIdx M → F,
+      (∑ k : Fin K, ∑ i ∈ groups k, g i) = ∑ i : TermIdx M, g i)
+    (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
+    (multiplicity : (Fin n → Fin 2) → F)
+    (helpers : Fin K → (Fin n → Fin 2) → F)
+    (xChallenge : F) (zChallenge : Fin n → F) (batchingScalars : Fin K → F)
+    (hden : ∀ a : LookupOccur n M, xChallenge + lookupOccurValue table columns a ≠ 0)
+    (heval : Polynomial.eval xChallenge
+      (clearedLookupIdentity table columns multiplicity) ≠ 0)
+    (hzGood : ∀ k : Fin K,
+      domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
+          helpers xChallenge k ≠ 0 →
+        MvPolynomial.eval zChallenge
+          (domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
+            helpers xChallenge k) ≠ 0)
+    (hBatchGood :
+      ((∑ u : Fin n → Fin 2, ∑ k : Fin K, helpers k u) ≠ 0 ∨
+          ∃ k : Fin K,
+            MvPolynomial.eval zChallenge
+              (domainIdentityMLE (F := F) (n := n) (M := M) groups table columns
+                multiplicity helpers xChallenge k) ≠ 0) →
+        (∑ u : Fin n → Fin 2, ∑ k : Fin K, helpers k u) +
+            ∑ k : Fin K,
+              batchingScalars k *
+                MvPolynomial.eval zChallenge
+                  (domainIdentityMLE (F := F) (n := n) (M := M) groups table columns
+                    multiplicity helpers xChallenge k) ≠ 0) :
+    (∑ u : Fin n → Fin 2, ∑ k : Fin K, helpers k u) +
+        ∑ k : Fin K,
+          batchingScalars k *
+            MvPolynomial.eval zChallenge
+              (domainIdentityMLE (F := F) (n := n) (M := M) groups table columns multiplicity
+                helpers xChallenge k) ≠ 0 := by
+  classical
+  letI : DecidableEq F := Classical.decEq F
+  exact hBatchGood
+    (outer_batch_coefficients_nontrivial_of_good_xz
+      (F := F) (n := n) (M := M) groups hgroups table columns multiplicity helpers
+      xChallenge zChallenge hden heval hzGood)
+
+/-- Lookup containment makes table multiplicities nonzero as field elements.
+
+If a value has nonzero lookup multiplicity and every lookup-column value appears somewhere in the
+table, then that value has positive table multiplicity.  The characteristic bound ensures this
+positive natural count does not cast to zero in `F`. -/
 theorem tableMultiplicityCount_cast_ne_zero_of_lookupMultiplicityCount_ne_zero [Fintype F]
     [DecidableEq F] (hcharLarge : M * 2 ^ n < ringChar F)
     (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
@@ -975,8 +1566,11 @@ theorem tableMultiplicityCount_cast_ne_zero_of_lookupMultiplicityCount_ne_zero [
     (ringChar.spec F (tableMultiplicityCount table a)).1 hzero
   exact (Nat.not_dvd_of_pos_of_lt htablePos htable_lt_char) hdvd
 
-/-- If `x` avoids the table poles, then it avoids all table and lookup-column denominator poles
-under lookup containment. -/
+/-- Avoiding table poles is enough to avoid all LogUp denominators under lookup containment.
+
+When every lookup-column value appears in the table, each lookup denominator `x + column j u` is
+also some table denominator `x + table v`.  Thus checking table poles rules out both table and
+lookup-column denominator zeros. -/
 theorem termPhi_ne_zero_of_table_poles
     (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F) (xChallenge : F)
     (hcols : ∀ j : Fin M, ∀ u : Fin n → Fin 2, ∃ v : Fin n → Fin 2,
@@ -993,7 +1587,10 @@ theorem termPhi_ne_zero_of_table_poles
       rw [termPhi, hti, phi]
       simpa [hv] using hNoTablePoles v
 
-/-- The table-pole set has size at most the Boolean hypercube. -/
+/-- There are at most `|H|` outer challenges that make a table denominator vanish.
+
+Each bad challenge is of the form `-table u` for some Boolean row `u`, so the pole set is bounded by
+the number of Boolean rows. -/
 theorem pole_card_le [Fintype F] [DecidableEq F] (table : (Fin n → Fin 2) → F) :
     (Finset.univ.filter (fun x : F => ∃ u : Fin n → Fin 2, x + table u = 0)).card
       ≤ Fintype.card (Fin n → Fin 2) := by
@@ -1011,7 +1608,11 @@ theorem pole_card_le [Fintype F] [DecidableEq F] (table : (Fin n → Fin 2) → 
         rw [← Finset.card_univ]
         exact Finset.card_image_le
 
-/-- The honest row-wise LogUp claim sums to zero away from denominator poles. -/
+/-- Honest LogUp data makes the row-wise outer sumcheck claim sum to zero.
+
+Assuming lookup containment, nonzero denominator terms, and the characteristic bound needed for
+normalized multiplicities, the honest helper values cancel the rational lookup identity.  Therefore
+the hypercube sum of `qOnHypercube` is zero for any `z` and batching scalars. -/
 theorem logupOuterClaim_zero [Fintype F] [DecidableEq F]
     (groups : Fin K → Finset (TermIdx M))
     (hgroups : ∀ g : TermIdx M → F, (∑ k : Fin K, ∑ i ∈ groups k, g i) = ∑ i : TermIdx M, g i)
@@ -1092,32 +1693,43 @@ end Algebra
 
 /-! ## Final-point reconstructions
 
-The verifier's reconstruction of `Q` at the sumcheck point `r` from the claimed evaluation values
-`mVal = m(r)`, `tVal = t(r)`, `colVals i = fᵢ(r)`, `helperVals k = hₖ(r)`. -/
+The final LogUp verifier does not evaluate the whole polynomial `Q` directly.  Instead, after
+sumcheck fixes a point `r`, it receives scalar openings such as `m(r)`, `table(r)`, `column_i(r)`,
+and `helper_k(r)`.  This section defines the scalar expression reconstructed from those openings,
+mirroring the row-wise definitions above but with field elements instead of Boolean-row functions. -/
 
 section AtPoint
 
 variable {F : Type} [Field F] {n M K : ℕ}
 
-/-- Denominator term at the final sumcheck point, from the claimed evaluation values. -/
+/-- The denominator value for a table or lookup-column term at the final sumcheck point.
+
+The table term uses `x + table(r)`, while lookup-column term `i` uses `x + column_i(r)`. -/
 def phiAtPoint (xChallenge tVal : F) (colVals : Fin M → F) : InputIdx M → F
   | .table => xChallenge + tVal
   | .column i => xChallenge + colVals i
 
-/-- Numerator term at the final sumcheck point, from the claimed multiplicity value. -/
+/-- The numerator value for a table or lookup-column term at the final sumcheck point.
+
+The table term uses the opened multiplicity `m(r)`, while lookup-column terms still contribute
+`-1`. -/
 def numeratorAtPoint (mVal : F) : InputIdx M → F
   | .table => mVal
   | .column _ => -1
 
-/-- Term denominator at the final sumcheck point, indexed by `0, ..., M`. -/
+/-- The final-point denominator value using the paper's numeric term index `0, ..., M`. -/
 def termPhiAtPoint (xChallenge tVal : F) (colVals : Fin M → F) (i : TermIdx M) : F :=
   phiAtPoint xChallenge tVal colVals (termToInput i)
 
-/-- Term numerator at the final sumcheck point, indexed by `0, ..., M`. -/
+/-- The final-point numerator value using the paper's numeric term index `0, ..., M`. -/
 def termNumeratorAtPoint (mVal : F) (i : TermIdx M) : F :=
   numeratorAtPoint mVal (termToInput i)
 
-/-- The domain-identity expression at the final sumcheck point `r`. -/
+/-- The cleared helper equation reconstructed from scalar openings at the final point.
+
+This is the point-value analogue of `domainIdentityTerm`: it checks whether the opened helper value
+for group `k` is consistent with the opened table, column, and multiplicity values after clearing
+denominators. -/
 noncomputable def domainIdentityAtPoint (groups : Fin K → Finset (TermIdx M))
     (xChallenge mVal tVal : F) (colVals : Fin M → F) (helperVals : Fin K → F) (k : Fin K) : F :=
   helperVals k * (∏ i ∈ groups k, termPhiAtPoint xChallenge tVal colVals i) -
@@ -1125,7 +1737,11 @@ noncomputable def domainIdentityAtPoint (groups : Fin K → Finset (TermIdx M))
       termNumeratorAtPoint mVal i *
         ∏ j ∈ (groups k).erase i, termPhiAtPoint xChallenge tVal colVals j
 
-/-- The verifier's final check value `Q(eq(r,z), m(r), φᵢ(r), hₖ(r))` from paper (19). -/
+/-- The scalar value of `Q` reconstructed by the final verifier from oracle openings.
+
+This is paper equation (19): the verifier combines opened helpers, final-point denominators,
+final-point numerators, the equality-kernel value at `(r, z)`, and batching scalars to reproduce
+what `logupQPolynomial` should evaluate to at `r`. -/
 noncomputable def qAtPoint (groups : Fin K → Finset (TermIdx M))
     (xChallenge : F) (zChallenge rChallenge : Fin n → F) (batchingScalars : Fin K → F)
     (mVal tVal : F) (colVals : Fin M → F) (helperVals : Fin K → F) : F :=
@@ -1138,14 +1754,19 @@ end AtPoint
 
 /-! ## The LogUp polynomial
 
-The input polynomials (table, columns, multiplicity, helpers) combined into LogUp's instantiation of
-the generic batched polynomial. -/
+This section instantiates the generic batched polynomial with LogUp's actual oracle polynomials:
+the table polynomial, lookup-column polynomials, multiplicity polynomial, and helper polynomials.
+The resulting `logupQPolynomial` is the polynomial committed to the embedded sumcheck protocol, and
+the degree lemmas here provide the individual-degree bound required by sumcheck. -/
 
 section Polynomial
 
 variable {F : Type} [Field F] {n M K : ℕ}
 
-/-- Denominator polynomial `φ` for one term: `x + (its oracle polynomial)`. -/
+/-- The denominator polynomial for one LogUp term.
+
+For the table term this is `x + table`; for a lookup-column term it is `x + column_i`.  It is the
+polynomial analogue of `termPhi`. -/
 noncomputable def termPhiPolynomial (table : MvPolynomial (Fin n) F)
     (columns : Fin M → MvPolynomial (Fin n) F) (xChallenge : F) (i : TermIdx M) :
     MvPolynomial (Fin n) F :=
@@ -1154,13 +1775,20 @@ noncomputable def termPhiPolynomial (table : MvPolynomial (Fin n) F)
     | .table => table
     | .column j => columns j
 
-/-- Numerator polynomial for one term: the multiplicity polynomial for the table term, `-1` else. -/
+/-- The numerator polynomial for one LogUp term.
+
+The table term uses the multiplicity polynomial, while lookup-column terms are the constant
+polynomial `-1`.  It is the polynomial analogue of `termNumerator`. -/
 noncomputable def termNumeratorPolynomial (multiplicity : MvPolynomial (Fin n) F) (i : TermIdx M) :
     MvPolynomial (Fin n) F :=
   match termToInput i with
   | .table => multiplicity
   | .column _ => MvPolynomial.C (-1)
 
+/-- Denominator polynomials are multilinear when the table and column polynomials are multilinear.
+
+Adding the scalar challenge `x` does not increase individual degree, so every variable still has
+degree at most one. -/
 theorem termPhiPolynomial_degreeOf {table : MvPolynomial (Fin n) F}
     {columns : Fin M → MvPolynomial (Fin n) F}
     (htable : ∀ v, MvPolynomial.degreeOf v table ≤ 1)
@@ -1183,6 +1811,10 @@ theorem termPhiPolynomial_degreeOf {table : MvPolynomial (Fin n) F}
         | column c => exact hcolumns c i
     _ = 1 := by omega
 
+/-- Numerator polynomials are multilinear when the multiplicity polynomial is multilinear.
+
+The table numerator inherits the multiplicity degree bound; lookup-column numerators are constants,
+so their individual degree is zero. -/
 theorem termNumeratorPolynomial_degreeOf {multiplicity : MvPolynomial (Fin n) F}
     (hmult : ∀ v, MvPolynomial.degreeOf v multiplicity ≤ 1) (j : TermIdx M) (i : Fin n) :
     MvPolynomial.degreeOf i (termNumeratorPolynomial multiplicity j) ≤ 1 := by
@@ -1191,8 +1823,10 @@ theorem termNumeratorPolynomial_degreeOf {multiplicity : MvPolynomial (Fin n) F}
   | table => exact hmult i
   | column c => exact (MvPolynomial.degreeOf_C (R := F) (-1 : F) i).le.trans (by omega)
 
-/-- The concrete multivariate LogUp sumcheck polynomial `Q`: the generic batched polynomial
-instantiated with the oracle polynomials. -/
+/-- The concrete multivariate LogUp polynomial sent to sumcheck.
+
+This instantiates `batchedSumcheckPolynomial` with LogUp denominator polynomials, numerator
+polynomials, helper polynomials, the equality-kernel challenge `z`, and batching scalars. -/
 noncomputable def logupQPolynomial (groups : Fin K → Finset (TermIdx M))
     (table : MvPolynomial (Fin n) F) (columns : Fin M → MvPolynomial (Fin n) F)
     (multiplicity : MvPolynomial (Fin n) F) (helpers : Fin K → MvPolynomial (Fin n) F)
@@ -1201,7 +1835,10 @@ noncomputable def logupQPolynomial (groups : Fin K → Finset (TermIdx M))
   batchedSumcheckPolynomial groups (termPhiPolynomial table columns xChallenge)
     (termNumeratorPolynomial multiplicity) helpers zChallenge batchingScalars
 
-/-- `Q` has individual degree at most `M + 3`, given that the oracle polynomials are multilinear. -/
+/-- `logupQPolynomial` has the individual-degree bound required by the embedded sumcheck.
+
+If every oracle polynomial is multilinear, then the generic batched-polynomial degree bound applies
+with `T = M + 1`, giving individual degree at most `M + 3`. -/
 theorem logupQPolynomial_degreeOf (groups : Fin K → Finset (TermIdx M))
     {table : MvPolynomial (Fin n) F} {columns : Fin M → MvPolynomial (Fin n) F}
     {multiplicity : MvPolynomial (Fin n) F} {helpers : Fin K → MvPolynomial (Fin n) F}
@@ -1222,14 +1859,22 @@ theorem logupQPolynomial_degreeOf (groups : Fin K → Finset (TermIdx M))
 
 end Polynomial
 
-/-! ## Polynomial evaluation agreement -/
+/-! ## Polynomial evaluation agreement
+
+These lemmas connect the three views of the same LogUp expression.  On Boolean rows,
+`logupQPolynomial` evaluates to the semantic row-wise expression `qOnHypercube`.  At an arbitrary
+field point, it evaluates to the scalar reconstruction `qAtPoint` used by the final verifier. -/
 
 section PolynomialEval
 
 variable {F : Type} [Field F] {n M K : ℕ}
 
-/-- On Boolean rows, the concrete polynomial `Q` agrees with the row-wise LogUp expression built
-from the Boolean evaluations of its input polynomials. -/
+/-- On Boolean rows, `logupQPolynomial` agrees with the row-wise LogUp expression.
+
+Evaluating the polynomial inputs on a Boolean row turns denominator polynomials into `termPhi`,
+numerator polynomials into `termNumerator`, and the generic batched polynomial into
+`qOnHypercube`.  This is the bridge used by completeness to relate honest polynomial data to the
+hypercube sum. -/
 theorem logupQPolynomial_eval_hypercube (groups : Fin K → Finset (TermIdx M))
     (table : MvPolynomial (Fin n) F) (columns : Fin M → MvPolynomial (Fin n) F)
     (multiplicity : MvPolynomial (Fin n) F) (helpers : Fin K → MvPolynomial (Fin n) F)
@@ -1270,8 +1915,11 @@ theorem logupQPolynomial_eval_hypercube (groups : Fin K → Finset (TermIdx M))
     congr 1
     exact Finset.prod_congr rfl (fun j _ => hphi j)
 
-/-- At an arbitrary point, the concrete polynomial `Q` agrees with the value reconstructed from
-the scalar evaluations of its input polynomials. -/
+/-- At any field point, `logupQPolynomial` agrees with the final verifier's scalar reconstruction.
+
+After the verifier receives openings of the multiplicity, table, column, and helper polynomials at
+`rChallenge`, this lemma says that `qAtPoint` computes the same value as directly evaluating
+`logupQPolynomial` at `rChallenge`. -/
 theorem logupQPolynomial_eval_point (groups : Fin K → Finset (TermIdx M))
     (table : MvPolynomial (Fin n) F) (columns : Fin M → MvPolynomial (Fin n) F)
     (multiplicity : MvPolynomial (Fin n) F) (helpers : Fin K → MvPolynomial (Fin n) F)
