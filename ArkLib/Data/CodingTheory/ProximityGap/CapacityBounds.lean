@@ -507,6 +507,15 @@ of 16 not exceeding `|F|`; with `|F| = 2^m ≥ 2^10` we get `|F|^{(1+ε)/2} > 32
 "constant `ε`, `F` large" regime — without them the universally-quantified-`F` form
 is falsifiable on small fields.
 
+**Note on `δ_int = J(δ_min) + 1/8 + 1/n`** (2026-07-05 faithfulness audit). The original
+[BCHKS25] Corollary 1.7 states the witness farness as `Δ([f,g], C²) ≥ 7/8 = J(δ_min) + 1/8`
+(*exactly* `+1/8`); ABF26 `.tex` L1956 adds the `+1/n` and we follow ABF26. Since `ε_ca` is
+*antitone* in `δ_int` and a tuple contributes only when its joint interleaved distance is
+strictly `> δ_int`, the extra `+1/n` makes the claim strictly *stronger* than the literal
+`≥ 7/8`: it is licensed not by the bare `≥ 7/8` but by the fact that the actual monomial
+witnesses (`f = X^u, g = X^v`, `u > v > k`) sit well beyond `7/8 + 1/n` from `C²`. Faithful
+to ABF26; a strict reading of BCHKS25 alone would use `+1/8`.
+
 Admitted as an external result. -/
 theorem rs_epsCA_johnson_jump_bchks25
     {FC : Type} [Field FC] [Fintype FC] [DecidableEq FC] [CharP FC 2]
@@ -561,7 +570,13 @@ section SubspaceDesignFRS
 /-- **ABF26 Theorem 4.13 [GG25 Corollary 4.9].** τ-subspace-design codes have MCA bounds.
 Let `C : F^k → (F^s)^n` be a τ-subspace-design code. For every `t ∈ ℕ`:
 
-  `ε_mca(C, 1 - τ(t+1) - 3/(2t)) ≤ (t·n + 4·t²) / |F|`
+  `ε_mca(C, 1 - τ(t+1) - 3/(2t)) ≤ (t·n + 4·t³) / |F|`
+
+**Constant is `4t³`, not `4t²`** (2026-07-05 faithfulness audit): GG25 Corollary 4.9
+states MCA `(ℓ, 1 − τ(t·ℓ+ℓ) − 3/2t, t·ℓ·(n + 2t²(ℓ+1))/|F|)`; the ABF26 affine case
+`ℓ = 1` gives `t·(n + 4t²)/|F| = (t·n + 4t³)/|F|`, which is exactly the constant used in
+ABF26's own application (`.tex` L2929, `4r³`). ABF26's *theorem statement* (`.tex` L1830)
+has a `4t²` transcription typo; we follow the source-backed `4t³` (safe/weaker for `t ≥ 2`).
 
 Combined with `IsSubspaceDesign` (D2.16) and `subspaceDesign_tau_lower` (L2.17), this
 gives MCA up to capacity for subspace-design codes. Admitted as an external result. -/
@@ -573,7 +588,7 @@ theorem subspaceDesign_epsMCA_gg25
     (t : ℕ) (_ht : 0 < t) :
     epsMCA (F := F) (A := Fin s → F) ((C : Set (ι → Fin s → F)))
         ((1 - τ (t + 1) - 3 / (2 * t)).toNNReal) ≤
-      ENNReal.ofReal (((t : ℝ) * Fintype.card ι + 4 * t ^ 2) / Fintype.card F) := by
+      ENNReal.ofReal (((t : ℝ) * Fintype.card ι + 4 * t ^ 3) / Fintype.card F) := by
   sorry -- ABF26-T4.13; external admit [GG25 Cor 4.9].
 
 /-- **ABF26 Theorem 4.14 [GG25 Corollary 4.10].** Folded Reed-Solomon codes have MCA
@@ -617,7 +632,7 @@ How it under-claims the source, on three axes:
   (It is at least not a copy of T4.13 `subspaceDesign_epsMCA_gg25`, whose LHS is the affine
   `epsMCA`.)
 * **Borrowed constants & extra hypothesis.** It gates on `IsSubspaceDesign` (BCGM25 covers all
-  linear codes) and reuses the GG25 affine bound shape `(t·n + 4t²)/|F|` rather than [BCGM25]'s
+  linear codes) and reuses the GG25 affine bound shape `(t·n + 4t³)/|F|` rather than [BCGM25]'s
   own polynomial-generator constants.
 
 **What [BCGM25] actually says.** The correlated/mutual agreement of subspace-design codes is
@@ -642,7 +657,7 @@ theorem subspaceDesign_epsCA_curves_polynomial_generators_bcgm25
     epsCA_curves (F := F) (A := Fin s → F) ((C : Set (ι → Fin s → F))) k
         ((1 - τ (t + 1) - 3 / (2 * t)).toNNReal)
         ((1 - τ (t + 1) - 3 / (2 * t)).toNNReal) ≤
-      ENNReal.ofReal (((t : ℝ) * Fintype.card ι + 4 * t ^ 2) / Fintype.card F) := by
+      ENNReal.ofReal (((t : ℝ) * Fintype.card ι + 4 * t ^ 3) / Fintype.card F) := by
   sorry -- ABF26-BCGM25; external admit. Polynomial-generator (curve) CA extension of T4.13.
 
 end SubspaceDesignFRS

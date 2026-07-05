@@ -40,8 +40,10 @@ finite index type `ι` to `Fin n` via `reidx_hammingDist`.
 `mds_johnson_lambda_le` (C3.3) is derived from T3.2 + the Singleton/rate-distance bridge
 (`IsMDS_iff_rate_distance`) and the domination `domination_core`. It is complete except for
 the very-low-rate MDS "Plotkin corner" (where the `Jqℓ` radicand guard fails), which is
-isolated as a single tagged `sorry` requiring the classical MDS length bound
-(`n ≤ q + k - 1`, a projective-arc fact not currently in mathlib/ArkLib); see that `sorry`.
+isolated as a single tagged `sorry`. That corner is genuinely *reachable* (not vacuous —
+e.g. `[4,2,3]` over `𝔽₃` enters it), so it needs an actual `Lambda` bound there — the
+min-distance separation `Lambda ≤ 1/(2ηρ)` argument plus a `Lambda ≤ |C| = q^k` count for
+`k = 1` — not an emptiness/`n ≤ q + k - 1` argument; see that `sorry`.
 
 ## References
 
@@ -524,10 +526,14 @@ empty and `Lambda = 0`; (b) when `ℓ ≥ 2` and the `Jqℓ` radicand guard hold
 `Lambda C (1-√ρ-η) ≤ Lambda C (Jqℓ q ℓ δ_min) ≤ ℓ ≤ 1/(2ηρ)` closes it.
 
 The **one remaining gap** is the very-low-rate "Plotkin corner" where the radicand guard
-`frac · (ℓ-1)/ℓ · δ_min ≤ 1` fails (e.g. binary repetition codes). Closing it rigorously needs
-the classical MDS length bound `n ≤ q + k - 1` (a projective-arc / GRS fact not currently in
-mathlib or ArkLib) to rule out the `k ≥ 2` sub-corner plus a `Lambda ≤ |C| = q^k` count for
-`k = 1`. This is isolated as a single tagged `sorry` (see it below), the one external fact for
+`frac · (ℓ-1)/ℓ · δ_min ≤ 1` fails (e.g. binary repetition codes). This corner is genuinely
+*reachable* — it is NOT vacuous: e.g. the MDS code `[4,2,3]` over `𝔽₃` (`ρ = 1/2`,
+`δ_min = 3/4`) enters the branch at small `η`, and there `n = q + k - 1 = 4` holds with
+equality — so an emptiness argument via the classical MDS length bound `n ≤ q + k - 1`
+does **not** discharge it. Closing it rigorously needs a direct `Lambda` bound in the corner:
+the min-distance separation gives `Lambda ≤ 1/(2ηρ)` (the conclusion is true there, e.g.
+`Lambda ≤ 1 ≤ 20` in the `[4,2,3]/𝔽₃` instance), plus a `Lambda ≤ |C| = q^k` count for
+`k = 1`. This is isolated as a single tagged `sorry` (see it below), the one owed fact for
 this corollary; the statement here is exactly the paper's `cor:Jonhson-for-mds`.
 
 **Rate derivation.** `ρ` is bound inline as `(Module.finrank F C : ℝ) / Fintype.card ι`
@@ -727,11 +733,12 @@ theorem mds_johnson_lambda_le
         _ ≤ ENNReal.ofReal (1 / (2 * η * ρ)) := hstep3
     · -- Plotkin corner: the radicand guard `frac·((ℓ-1)/ℓ)·δ_min > 1` fails, so T3.2 is
       -- unavailable at this `ℓ`. This regime is the very-low-rate MDS boundary (e.g. binary
-      -- repetition codes). Closing it rigorously requires the classical MDS length bound
-      -- (`n ≤ q + k - 1` for `k ≥ 2`, a projective-arc / generalized-Reed–Solomon fact not
-      -- currently in mathlib or ArkLib) to rule out the `k ≥ 2` sub-corner as vacuous, plus a
-      -- direct `Lambda ≤ |C| = q^k` count for `k = 1`. Isolated as the one documented external
-      -- fact for this corollary; see report.
+      -- repetition codes). NB the corner is genuinely REACHABLE, not vacuous: e.g. `[4,2,3]`
+      -- over `𝔽₃` (`ρ = 1/2`, `δ_min = 3/4`) enters here at small `η` with `n = q+k-1 = 4`
+      -- holding — so the MDS length bound `n ≤ q+k-1` does NOT rule it out by emptiness.
+      -- Closing it needs a direct `Lambda` bound: min-distance separation gives
+      -- `Lambda ≤ 1/(2ηρ)` (true here — e.g. `Lambda ≤ 1` in the `[4,2,3]/𝔽₃` instance),
+      -- plus a `Lambda ≤ |C| = q^k` count for `k = 1`. The one owed fact for this corollary.
       sorry
 
 

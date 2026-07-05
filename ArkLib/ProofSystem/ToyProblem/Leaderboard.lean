@@ -869,14 +869,26 @@ list-decoding capacity (`δ_E ≈ 0.4678`, where the interleaved list first exce
 the interleaved list `Λ(C^{≡2}, 3/10)` is small (`≪ |F| = q^6 ≈ 2^186`), so
 `|Λ|/|F|` is negligible and `ε_mca(C, 3/10)` is likewise small; the paper's own
 §6.3.1 analysis, evaluated at its optimizing `δ = 1 - √ρ - η` with `η = 2^{-21}`,
-gives the companion figure `≈ 2^(-71.5)` for this term (`.tex` ~2718). Every such
-`ε_mca`/`ε_ca`/`Λ` upper bound in ArkLib is a **by-design external literature
-admit** (`CapacityBounds.rs_epsMCA_*`, the list-size bounds — `sorry`-backed from
-BCHKS25/ACFY25/KKH26); this anchor inherits exactly that one external dependency,
-not an opaque hand-wave. (Closing it requires formalizing the cited coding-theory
-results — the prize's own research content — not session-level work.) The `δ = 3/10`
-choice keeps the block-length-independent spot-check `(7/10)^128 ≤ 2^(-65)` clean;
-the paper's optimal `δ = 1 - √ρ - η` reaches the same `≈ 64`-bit conclusion.
+gives the companion figure `≈ 2^(-71.5)` for this term (`.tex` ~2718).
+
+**Faithfulness caveat (2026-07-05 audit): this is an OPEN-REGIME admit, not a routing
+through a cited theorem.** Because `δ = 3/10` sits *above* the Johnson bound, none of
+ArkLib's positive `ε_mca` upper bounds apply at this exact `δ`:
+`rs_epsMCA_johnson_range_bchks25` (BCHKS25 T4.12) requires `δ < 1 - √(ρ+1/n) - η ≈ 0.2929`,
+and the 1.5-Johnson `linear_epsMCA_1_5_johnson_gkl24` needs an even smaller `δ`. So the owed
+bound here is genuinely a by-design admit in the paper's *open* regime — true in the safe
+(*upper*-bound) direction (`|F| = q^6 ≈ 2^186` makes `|Λ|/|F| ≪ 2^(-65)`, and `ε_mca` below
+capacity is likewise small), but **not** licensed by a named in-tree lemma; the earlier
+"inherits `CapacityBounds.rs_epsMCA_*`" phrasing over-claimed. A fully Lean-*derived* version
+would re-anchor at the paper's own optimizing point `δ = 1 - √ρ` (the Johnson boundary, where
+the spot-check is exactly `(√ρ)^128 = (1/2)^64 = 2^(-64.00)`) and route the `ε_mca` term
+through `rs_epsMCA_johnson_range_bchks25`, discharging its formula at the koala params. That is
+a numerically *tight* `rpow` formalization — the paper's own `2^(-64.00) + 2^(-71.5)` split
+leaves only `≈ 0.3` bits against the `2^(-63.99)` target — i.e. a milestone (the prize's own
+coding-theory content), not a session edit; and `δ = 1 - √ρ` sits exactly on (not inside) the
+lemma's `+1/n`-corrected regime boundary, so the derivation must reason at that boundary. The
+`δ = 3/10` choice keeps the block-length-independent spot-check `(7/10)^128 ≤ 2^(-65)` clean at
+the cost of this open-regime caveat.
 
 **Why `bits := 63.99`, not 64** (2026-06-10 second adversarial review, M1):
 the paper itself notes (`.tex` 2718–2719) that `(1/√2 + η)^128 > 2^(-64)`
@@ -914,10 +926,11 @@ noncomputable def irsLowerBoundT128 : SecurityLowerBound koalaIRS where
       -- threshold δ* = 0.468, so the interleaved list Λ(C^{≡2}, 3/10) is small
       -- (≪ |F|), making |Λ|/|F| negligible and ε_mca(C, 3/10) small; the paper's
       -- §6.3.1 analysis reports the companion figure ≈ 2^(-71.5) for this term.
-      -- Every such ε_mca/ε_ca/Λ upper bound in ArkLib is a by-design external admit
-      -- (`CapacityBounds.rs_epsMCA_*`, the list-size bounds — `sorry`-backed from
-      -- BCHKS25/ACFY25/KKH26); this anchor inherits exactly that single external
-      -- dependency. Cited external / external-owed.
+      -- NB (2026-07-05 audit): δ = 3/10 is ABOVE the Johnson bound, so no in-tree
+      -- positive ε_mca lemma applies at this exact δ (rs_epsMCA_johnson_range_bchks25
+      -- needs δ < 1-√(ρ+1/n)-η ≈ 0.2929). This is an OPEN-REGIME admit, true in the
+      -- safe (upper-bound) direction; a fully-derived version re-anchors at δ = 1-√ρ
+      -- through rs_epsMCA_johnson_range_bchks25 (rpow-tight; see docstring). External-owed.
       sorry
     -- The spot-check term and the `2^(-64) ≤ 2^(-63.99)` headroom.
     have ha : ((1 : ℝ≥0) - 3 / 10) ^ (128 : ℕ) ≤ (2 : ℝ≥0) ^ (-(65 : ℝ)) := koala_spotcheck
