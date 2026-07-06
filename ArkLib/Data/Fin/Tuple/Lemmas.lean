@@ -1089,19 +1089,52 @@ theorem happend_eq_addCases {α : Fin m → Sort u} {β : Fin n → Sort u}
     rw [this]
     simp only [addCases_right, happend_right]
 
+/-- Access into a heterogeneous append on the left, by value: if `↑j < m`, then `happend u v j` is
+(heterogeneously) the `j`-th entry of `u`. -/
+theorem happend_heq_left {m n : ℕ} {α : Fin m → Sort u} {β : Fin n → Sort u}
+    (u : (i : Fin m) → α i) (v : (i : Fin n) → β i) (j : Fin (m + n)) (h : (j : ℕ) < m) :
+    HEq (happend u v j) (u ⟨(j : ℕ), h⟩) := by
+  have key : HEq (happend u v (Fin.castAdd n ⟨(j : ℕ), h⟩)) (u ⟨(j : ℕ), h⟩) := by
+    rw [happend_left]; exact cast_heq _ _
+  have hj : Fin.castAdd n ⟨(j : ℕ), h⟩ = j := by ext; simp
+  rwa [hj] at key
+
+/-- Access into a heterogeneous append on the right, by value: if `m ≤ ↑j`, then `happend u v j` is
+(heterogeneously) the `(↑j - m)`-th entry of `v`. -/
+theorem happend_heq_right {m n : ℕ} {α : Fin m → Sort u} {β : Fin n → Sort u}
+    (u : (i : Fin m) → α i) (v : (i : Fin n) → β i) (j : Fin (m + n)) (h : ¬ (j : ℕ) < m) :
+    HEq (happend u v j) (v ⟨(j : ℕ) - m, by omega⟩) := by
+  have key : HEq (happend u v (Fin.natAdd m ⟨(j : ℕ) - m, by omega⟩))
+      (v ⟨(j : ℕ) - m, by omega⟩) := by
+    rw [happend_right]; exact cast_heq _ _
+  have hj : Fin.natAdd m ⟨(j : ℕ) - m, by omega⟩ = j := by ext; simp; omega
+  rwa [hj] at key
+
 theorem happend_assoc {α : Fin m → Sort u} {β : Fin n → Sort u} {p : ℕ} {γ : Fin p → Sort u}
     (u : (i : Fin m) → α i) (v : (i : Fin n) → β i) (w : (i : Fin p) → γ i) :
     happend (happend u v) w =
       fun i => cast (by simp [vappend_assoc])
-        (happend u (happend v w) (i.cast (by omega))) := by sorry
-  -- induction p with
-  -- | zero => simp [append]
-  -- | succ p ih =>
-  --   simp [append, ih, concat_last]
-  --   ext i
-  --   simp [Fin.castSucc, Fin.last, concat_eq_fin_snoc, Fin.snoc]
-  --   by_cases h : i.val < m + n + p
-  --   · simp [h]
+        (happend u (happend v w) (i.cast (by omega))) := by
+  funext i
+  by_cases hm : (i : ℕ) < m
+  · rw [show i = Fin.castAdd p (Fin.castAdd n ⟨(i : ℕ), hm⟩) from by ext; simp]
+    simp only [happend_left]
+    simp only [Fin.castAdd_castAdd, Fin.cast_cast, Fin.cast_eq_self, happend_left, _root_.cast_cast]
+  · by_cases hn : (i : ℕ) < m + n
+    · rw [show i = Fin.castAdd p (Fin.natAdd m ⟨(i : ℕ) - m, by omega⟩) from by ext; simp; omega]
+      simp only [happend_left, happend_right]
+      simp only [← Fin.natAdd_castAdd, happend_left, happend_right, _root_.cast_cast]
+    · apply eq_of_heq
+      refine HEq.trans (happend_heq_right (happend u v) w i (by omega)) ?_
+      refine HEq.trans ?_ (cast_heq _ _).symm
+      refine HEq.trans ?_
+        (happend_heq_right u (happend v w) (i.cast (by omega)) (by simp; omega)).symm
+      refine HEq.trans ?_
+        (happend_heq_right v w
+          ⟨((i.cast (by omega) : Fin (m + (n + p))) : ℕ) - m, by simp; omega⟩
+          (by simp; omega)).symm
+      congr 1
+      simp [Nat.sub_sub]
 
 -- Relationship with cons/concat
 theorem happend_hcons {β : Fin m → Sort u} {γ : Fin n → Sort u}
