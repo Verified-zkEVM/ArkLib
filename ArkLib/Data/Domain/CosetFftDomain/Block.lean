@@ -44,41 +44,34 @@ open Finset Polynomial
 
 /-- The `k`th roots of `x` from the domain `ω`.
 
-  This is the definition 4.16 from [ACFY24]. Note, for simplicity of
-  the definition, we do not require `k` to be a power of two,
-  nor `x` to be from a subdomain. -/
+  This is the definition 4.16 from [ACFY24].
+  Note, we do not require `x` to be from a subdomain. -/
 def block (ω : D) (k : ℕ) (x : F) : Finset F :=
-  {y ∈ toFinset ω | y ^ k = x}
+  {y ∈ toFinset ω | y ^ 2 ^ k = x}
 
 /-- An equivalent definition of the membership to a block. -/
 @[simp]
 lemma mem_block :
-  y ∈ block ω k x ↔ y ∈ ω ∧ y ^ k = x := by simp [block]
+  y ∈ block ω k x ↔ y ∈ ω ∧ y ^ 2 ^ k = x := by simp [block]
 
 /-- There are no roots of `0` in any domain. -/
 @[simp]
 lemma block_x_0 :
   block ω k 0 = ∅ := by aesop
 
-/-- If `x` is `1` then any element of a domain is its `0`th root.
-  In any other case, `x` does not have roots in the domain. -/
-@[simp]
-lemma block_k_0 :
-  block ω 0 x = if x = 1 then toFinset ω else ∅ := by aesop
-
 @[simp]
 lemma block_k_1 :
-  block ω 1 x = if x ∈ ω then {x} else ∅ := by aesop
+  block ω 0 x = if x ∈ ω then {x} else ∅ := by aesop
 
 /-- An alternative definition of `block` in terms of
   `Polynomial.nthRootsFinset`. -/
-lemma block_eq_nthRootsFinset [NeZero k] :
-  block ω k x = nthRootsFinset k x ∩ toFinset ω := by aesop (add unsafe cases Nat)
+lemma block_eq_nthRootsFinset :
+  block ω k x = nthRootsFinset (2 ^ k) x ∩ toFinset ω := by aesop (add unsafe cases Nat)
 
 /-- The cardinality of a block does not exceed its degree. -/
 @[simp]
-lemma card_block_le [NeZero k] :
-  (block ω k x).card ≤ k := by
+lemma card_block_le :
+  (block ω k x).card ≤ 2 ^ k := by
   rw [block_eq_nthRootsFinset]
   exact le_trans (card_le_card inter_subset_left) <| by
     simp only [nthRootsFinset, Multiset.toFinset, card_mk]
@@ -88,17 +81,17 @@ lemma card_block_le [NeZero k] :
 
 /-- The set of indices of a block of `ω` at `x` of the degree `k`. -/
 def blockIdx (ω : D) (k : ℕ) (x : F) : Finset ι :=
-  {i | ω i ^ k = x}
+  {i | ω i ^ 2 ^ k = x}
 
 omit [AddCommGroup ι] [CosetFftDomainClass D ι F] in
 /-- The definition of membership to a `blockIdx`. -/
 lemma mem_blockIdx {i : ι} :
-  i ∈ blockIdx ω k x ↔ ω i ^ k = x := by simp [blockIdx]
+  i ∈ blockIdx ω k x ↔ ω i ^ 2 ^ k = x := by simp [blockIdx]
 
 omit [AddCommGroup ι] [CosetFftDomainClass D ι F] in
 @[simp]
 lemma mem_blockIdx_self {i : ι} :
-  i ∈ blockIdx ω k (ω i ^ k) := by simp [blockIdx]
+  i ∈ blockIdx ω k (ω i ^ 2 ^ k) := by simp [blockIdx]
 
 lemma mem_blockIdx_iff_mem_block {i : ι} :
   i ∈ blockIdx ω k x ↔ ω i ∈ block ω k x := by simp [blockIdx]
@@ -108,21 +101,15 @@ lemma mem_blockIdx_iff_mem_block {i : ι} :
 lemma blockIdx_x_0 :
   blockIdx ω k 0 = ∅ := by aesop (add simp [mem_blockIdx_iff_mem_block])
 
-/-- If `x` is `1` then any element of a domain is its `0`th root.
-  In any other case, `x` does not have roots in the domain. -/
-@[simp]
-lemma blockIdx_k_0 :
-  blockIdx ω 0 x = if x = 1 then univ else ∅ := by aesop (add simp [mem_blockIdx_iff_mem_block])
-
 lemma blockIdx_k_1_of_eq {i : ι} (hi : ω i = x) :
-  blockIdx ω 1 x = {i} := by
+  blockIdx ω 0 x = {i} := by
   ext j
   have := CosetFftDomainClass.injective ω (a₁ := i) (a₂ := j)
   aesop
     (add simp [mem_blockIdx_iff_mem_block])
 
 lemma blockIdx_k_1_of_ne_mem (hx : x ∉ ω) :
-  blockIdx ω 1 x = ∅ := by
+  blockIdx ω 0 x = ∅ := by
   aesop
     (add simp [mem_blockIdx_iff_mem_block])
 

@@ -41,8 +41,8 @@ a root-finding procedure.
 
 - `pow_mem_of_mem`:
   Powers move elements down the subdomain tower.
-- `card_roots`:
-  Exact cardinality of fibers of powering maps.
+- `card_block_of_mem_subdomain`:
+  Exact cardinality of blocks when the block point is a member of a subdomain.
 - `root_exists`:
   Existence of roots in higher subdomains.
 - `square_roots_explicit`:
@@ -384,7 +384,7 @@ private lemma card_fin_filter_mod_eq {a j : ℕ} (hj : j ≤ a) (c : ℕ) (hc : 
   then it has exactly `2 ^ j` preimages under `y ↦ y ^ 2 ^ j` from the `i`th subdomain. -/
 lemma card_block_of_mem_subdomain [DecidableEq F]
   {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)) :
-  Finset.card (block (subdomain ω i) (2 ^ j) x) = 2 ^ j := by
+  Finset.card (block (subdomain ω i) j x) = 2 ^ j := by
   have hinj : Function.Injective (subdomain ω i) := CosetFftDomainClass.injective _
   unfold block
   obtain ⟨m, hm⟩ := h
@@ -418,8 +418,9 @@ lemma card_block_of_mem_subdomain [DecidableEq F]
 
 set_option linter.unusedDecidableInType false in -- false alert
 /-- Every element of the `(i + j)`th subdomain has a `2 ^ j`th root in the `i`th subdomain. -/
-lemma root_exists [DecidableEq F] {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)) :
-  ∃ y ∈ subdomain ω i, y ^ (2 ^ j) = x := by
+lemma root_exists [DecidableEq F]
+  {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)) :
+  ∃ y ∈ subdomain ω i, y ^ 2 ^ j = x := by
   have h' : Finset.Nonempty {y ∈ (subdomain ω i).toFinset | y ^ 2 ^ j = x} := by
     have := card_block_of_mem_subdomain hij h
     aesop
@@ -457,7 +458,7 @@ lemma square_roots_explicit [DecidableEq F] {i : ℕ} (hi : i < n) {y : F}
 lemma card_block_of_mem_subdomain' [DecidableEq F] {k : ℕ}
   (hk : k ≤ n)
   (hx : x ∈ subdomain ω k) :
-  Finset.card (block ω (2 ^ k) x) = 2 ^ k := by
+  Finset.card (block ω k x) = 2 ^ k := by
   have h := card_block_of_mem_subdomain (ω := ω)
           (j := k) (i := 0) (x := x)
           (by simp [hk])
