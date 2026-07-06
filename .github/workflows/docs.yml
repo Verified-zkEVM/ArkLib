@@ -19,11 +19,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout project
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # --- Lean and Blueprint Build ---
       - name: Cache Lean dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ./.lake
           key: ${{ runner.os }}-lean-docs-${{ hashFiles('lake-manifest.json') }}

@@ -232,7 +232,9 @@ theorem drop_update_of_ge (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) (i 
   next h_1 =>
     subst h_1
     simp_all only [add_tsub_cancel_right, Fin.eta, ↓reduceDIte]
-    sorry
+    simp only [dcast, eqRec_eq_cast]
+    rw [_root_.cast_cast]
+    exact (cast_eq _ x).symm
   next h_1 =>
     simp_all only [right_eq_dite_iff]
     intro h_2
@@ -356,7 +358,8 @@ theorem take_drop_addCases' (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) :
   · simp
   · have : i.val - m + m = i.val := by omega
     rw! [this]
-    sorry
+    simp only [eqRec_eq_cast]
+    rw [_root_.cast_cast]
 
 /-- The concatenation of the first `m` elements and the last `n - m` elements of a tuple is the
 same as the original tuple. -/
