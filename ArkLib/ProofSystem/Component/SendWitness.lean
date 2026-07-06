@@ -344,10 +344,10 @@ theorem oracleReduction_completeness (h : NeverFail init) :
   -- TODO: clean up this proof
   -- simp only [OracleReduction.perfectCompleteness, oraclePSpec, toORelOut, Fin.isValue,
   --   OracleReduction.toReduction, MessageIdx, Reduction.perfectCompleteness_eq_prob_one,
-  --   ChallengeIdx, StateT.run'_eq, Set.mem_setOf_eq, probEvent_eq_one_iff, probFailure_eq_zero_iff,
-  --   neverFails_bind_iff, neverFails_map_iff, support_bind, support_map, Set.mem_iUnion,
-  --   Set.mem_image, Prod.exists, exists_and_right, exists_eq_right, exists_prop, forall_exists_index,
-  --   and_imp, Prod.forall, Prod.mk.injEq]
+  --   ChallengeIdx, StateT.run'_eq, Set.mem_setOf_eq, probEvent_eq_one_iff,
+  --   probFailure_eq_zero_iff, neverFails_bind_iff, neverFails_map_iff, support_bind,
+  --   support_map, Set.mem_iUnion, Set.mem_image, Prod.exists, exists_and_right,
+  --   exists_eq_right, exists_prop, forall_exists_index, and_imp, Prod.forall, Prod.mk.injEq]
   -- simp_rw [h, Reduction.run, oracleReduction, oracleVerifier_toVerifier_run, oracleProver_run]
   -- simp only [ChallengeIdx, oraclePSpec, id_eq, liftM_eq_liftComp,
   --   liftComp_pure, bind_pure_comp, map_pure, simulateQ_pure, StateT.run_pure,

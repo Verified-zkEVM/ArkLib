@@ -133,7 +133,7 @@ lemma support_mk (m : Type _ → Type _) [Monad m] [MonadLiftT m SetM]
 
 /-- The knowledge state function for the `ReduceClaim` reduction. -/
 def knowledgeStateFunction (hRel : ∀ stmtIn witOut,
-      (mapStmt stmtIn, witOut) ∈ relOut → (stmtIn, mapWitInv stmtIn witOut) ∈ relIn) :
+    (mapStmt stmtIn, witOut) ∈ relOut → (stmtIn, mapWitInv stmtIn witOut) ∈ relIn) :
     (verifier oSpec mapStmt).KnowledgeStateFunction
       init impl relIn relOut (extractor mapWitInv) where
   toFun | ⟨0, _⟩ => fun stmtIn _ witIn => ⟨stmtIn, witIn⟩ ∈ relIn
@@ -148,7 +148,8 @@ def knowledgeStateFunction (hRel : ∀ stmtIn witOut,
     rw [OptionT.mem_support_iff] at hx
     simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
     obtain ⟨s, _, hx⟩ := hx
-    have key : (simulateQ impl (pure (mapStmt stmtIn) : OptionT (OracleComp oSpec) StmtOut)).run' s =
+    have key : (simulateQ impl
+        (pure (mapStmt stmtIn) : OptionT (OracleComp oSpec) StmtOut)).run' s =
         pure (some (mapStmt stmtIn)) := by
       change (simulateQ impl
         (pure (some (mapStmt stmtIn)) : OracleComp oSpec (Option StmtOut))).run' s = _
@@ -166,7 +167,7 @@ Note that since there is no challenge round, all the work is done in the definit
 knowledge state function. -/
 @[simp]
 theorem verifier_rbrKnowledgeSoundness (hRel : ∀ stmtIn witOut,
-      (mapStmt stmtIn, witOut) ∈ relOut → (stmtIn, mapWitInv stmtIn witOut) ∈ relIn) :
+    (mapStmt stmtIn, witOut) ∈ relOut → (stmtIn, mapWitInv stmtIn witOut) ∈ relIn) :
     (verifier oSpec mapStmt).rbrKnowledgeSoundness init impl relIn relOut 0 := by
   refine ⟨_, _, knowledgeStateFunction relIn relOut hRel, ?_⟩
   simp only [ProtocolSpec.ChallengeIdx]
@@ -324,8 +325,8 @@ variable {mapWitInv : (StmtIn × (∀ i, OStmtIn i)) → WitOut → WitIn}
 
 /-- The knowledge state function for the `ReduceClaim` oracle reduction. -/
 def oracleKnowledgeStateFunction (hRel : ∀ stmtIn oStmtIn witOut,
-      ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), witOut) ∈ relOut →
-      ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
+    ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), witOut) ∈ relOut →
+    ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
     (oracleVerifier oSpec mapStmt embedIdx hEq).KnowledgeStateFunction
       init impl relIn relOut (extractor mapWitInv) where
   toFun | ⟨0, _⟩ => fun ⟨stmtIn, oStmtIn⟩ _ witIn => ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ ∈ relIn
@@ -360,8 +361,8 @@ Note that since there is no challenge round, all the work is done in the definit
 knowledge state function. -/
 @[simp]
 theorem oracleVerifier_rbrKnowledgeSoundness (hRel : ∀ stmtIn oStmtIn witOut,
-      ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), witOut) ∈ relOut →
-      ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
+    ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), witOut) ∈ relOut →
+    ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
     (oracleVerifier oSpec mapStmt embedIdx hEq).rbrKnowledgeSoundness init impl relIn relOut 0 := by
   refine ⟨_, _, oracleKnowledgeStateFunction relIn relOut hRel, ?_⟩
   intro stmtIn witIn prover i

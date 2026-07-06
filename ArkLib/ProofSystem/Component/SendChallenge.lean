@@ -12,22 +12,28 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
   A one-round, verifier-first (`V_to_P`) oracle reduction: the verifier samples a **challenge
   vector** `c : Fin ℓ → C`, sends it to the prover, and appends it to the output statement. There is
   no witness and **no check** — this is the definitional challenge-round building block of the
-  Hachi/Greyhound fold (Figure 3), where `ℓ = 2ʳ` and `C ⊆ Rq`.
+  Greyhound [NS24] / Hachi [NOZ26] fold ([NOZ26, Figure 3]), where `ℓ = 2ʳ` and `C ⊆ Rq`.
 
-  Per §1.4 of the Hachi CWSS plan, a lone challenge round has no relation to extract into, so it is
-  *not* coordinate-wise special sound on its own; its CWSS is established only as part of the
-  surrounding fold block (Lemma 8, out of scope here). What this file provides is:
+  A lone challenge round has no relation to extract into, so it is *not* coordinate-wise special
+  sound on its own; its CWSS is established only as part of the surrounding fold block
+  ([NOZ26, Lemma 8], out of scope here). What this file provides is:
 
   - the component itself (`oracleProver` / `oracleVerifier` / `oracleReduction`);
   - `instIsPure`: the verifier is pure — it reads the challenge off the transcript and appends it,
-    with no runtime check (§1.2) — so it can be a left factor in a CWSS `append`;
+    with no runtime check — so it can be a left factor in a CWSS `append`;
   - `foldBlockStructure`: the `CWSSStructure` this round contributes to the block — one challenge
     round with `coordIndex = ℓ`, `alphabet = C`, `soundnessParam = 2` (so `arity = ℓ·(2−1)+1 = ℓ+1`
-    and `nodeOk = IsSpecialSoundFamily ℓ 2`), matching Hachi Lemma 4 / Def. 3 exactly.
+    and `nodeOk = IsSpecialSoundFamily ℓ 2`), matching [NOZ26, Lemma 4 / Definition 3] exactly.
 
   To *run* the reduction (completeness / soundness) one additionally needs
   `[SampleableType (Fin ℓ → C)]` (available from `[SampleableType C]` via the derived `Fin`-domain
   product instance); it is not required for the definitions, `IsPure`, or the structure above.
+
+  ## References
+
+  * [Nguyen, N. K., and Seiler, G., *Greyhound: Fast Polynomial Commitments from Lattices*][NS24]
+  * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
+      Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
 open OracleSpec OracleComp OracleQuery OracleInterface ProtocolSpec Function
@@ -102,8 +108,8 @@ instance instIsPure : (oracleVerifier oSpec Statement OStatement C ℓ).toVerifi
 /-- The **fold-block coordinate-wise structure**: the single challenge round of `SendChallenge`
 carries `ℓ` coordinates over the alphabet `C`, decomposed by the identity (`Challenge = Fin ℓ → C`
 already), with soundness parameter `k = 2`. Hence `arity = ℓ·(2−1)+1 = ℓ+1` and the node predicate
-is `IsSpecialSoundFamily ℓ 2` — exactly the branching required by Hachi Lemma 4 / Def. 3 (with
-`ℓ = 2ʳ`). This is the shape the fold block's CWSS (Lemma 8) is proven against. -/
+is `IsSpecialSoundFamily ℓ 2` — exactly the branching required by [NOZ26, Lemma 4 / Definition 3]
+(with `ℓ = 2ʳ`). This is the shape the fold block's CWSS ([NOZ26, Lemma 8]) is proven against. -/
 def foldBlockStructure (hℓ : 0 < ℓ) : CWSSStructure (pSpec C ℓ) where
   coordIndex := fun _ => ⟨ℓ, hℓ⟩
   alphabet := fun _ => C

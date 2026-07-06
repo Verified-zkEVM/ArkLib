@@ -11,13 +11,14 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
 
   The prover sends a **claim** (a single oracle message) to the verifier, computed from the input
   (combined) statement by a function `f`. This is the "prover-computed message" building block, e.g.
-  the Hachi/Greyhound first message `v := D ŵ` or the Sumcheck round polynomial `q`.
+  the Greyhound [NS24] / Hachi [NOZ26] first message `v := D ŵ` or the Sumcheck round polynomial
+  `q`.
 
   - There is no witness (`Witness = Unit`).
   - The prover sends a message of type `Message` (with an `OracleInterface`), namely `f stmt oStmt`.
-  - The **verifier is a pure pass-through** (`verify := fun stmt _ => pure stmt`): per §1.2 of the
-    Hachi CWSS plan, the claim is *not* checked by a runtime `guard`; the check lives in the output
-    relation `toORelOut` (the predicate `P` over statement / oracle statements / message).
+  - The **verifier is a pure pass-through** (`verify := fun stmt _ => pure stmt`): the claim is
+    *not* checked by a runtime `guard`; the check lives in the output relation `toORelOut` (the
+    predicate `P` over statement / oracle statements / message).
   - The output oracle statements are the input oracle statements together with the sent message,
     `OStatement ⊕ᵥ (fun _ : Fin 1 => Message)`.
 
@@ -36,6 +37,12 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
   oracle-reduction completeness reasoning as `SendSingleWitness.oracleReduction_completeness`, and
   is orthogonal to the CWSS target here. This design supersedes the previous effectful-verifier one
   (whose completeness proof no longer applies).
+
+  ## References
+
+  * [Nguyen, N. K., and Seiler, G., *Greyhound: Fast Polynomial Commitments from Lattices*][NS24]
+  * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
+      Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
 open OracleSpec OracleComp OracleQuery OracleInterface ProtocolSpec Function Equiv

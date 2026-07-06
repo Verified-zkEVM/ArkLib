@@ -180,8 +180,8 @@ def oracleProver : OracleProver oSpec
   receiveChallenge := fun i => nomatch i
   output := fun stmt => pure (stmt, ())
 
-/-- The oracle verifier for the `CheckClaim` oracle reduction is a **pure pass-through** (per §1.2
-of the Hachi CWSS plan): it returns the statement and all oracle statements unchanged. The predicate
+/-- The oracle verifier for the `CheckClaim` oracle reduction is a **pure pass-through**: it
+returns the statement and all oracle statements unchanged. The predicate
 being checked is *not* run as an effectful `guard`/oracle computation here; instead it lives in the
 output relation `oracleRelOut`. This keeps the verifier `IsPure` (so it can be a left factor in a
 CWSS composition) and sidesteps the unfinished no-failure `OracleComp` refactor. (The `guard`-based
