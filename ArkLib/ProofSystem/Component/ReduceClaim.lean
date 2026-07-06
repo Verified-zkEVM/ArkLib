@@ -188,18 +188,21 @@ theorem verifier_coordinateWiseSpecialSound [Nonempty WitIn]
     (hRel : ∀ stmtIn witOut,
       (mapStmt stmtIn, witOut) ∈ relOut → (stmtIn, mapWitInv stmtIn witOut) ∈ relIn) :
     (verifier oSpec mapStmt).coordinateWiseSpecialSound init impl D relIn relOut := by
-  classical
+  -- For each input statement, some candidate input witness works as soon as any output witness
+  -- makes the mapped statement accepted.
+  have hpick : ∀ stmtIn : StmtIn, ∃ witIn : WitIn,
+      (∃ witOut, (mapStmt stmtIn, witOut) ∈ relOut) → (stmtIn, witIn) ∈ relIn := by
+    intro stmtIn
+    rcases or_not (p := ∃ witOut, (mapStmt stmtIn, witOut) ∈ relOut) with ⟨witOut, hw⟩ | h
+    · exact ⟨mapWitInv stmtIn witOut, fun _ => hRel stmtIn witOut hw⟩
+    · exact ⟨Nonempty.some inferInstance, fun hex => absurd hex h⟩
   refine Verifier.coordinateWiseSpecialSound_of_isEmpty_challengeIdx init impl D
-    (verifier oSpec mapStmt) relIn relOut
-    (fun stmtIn _ => if h : ∃ witOut, (mapStmt stmtIn, witOut) ∈ relOut
-      then mapWitInv stmtIn h.choose else Classical.ofNonempty) ?_
+    (verifier oSpec mapStmt) relIn relOut (fun stmtIn _ => (hpick stmtIn).choose) ?_
   intro stmtIn tr hAcc
   have hlang : mapStmt stmtIn ∈ relOut.language :=
     Verifier.mem_of_pure_accepting init impl (verifier oSpec mapStmt) stmtIn tr
       relOut.language (mapStmt stmtIn) rfl hAcc
-  have hex : ∃ witOut, (mapStmt stmtIn, witOut) ∈ relOut := (Set.mem_language_iff _ _).1 hlang
-  simp only [dif_pos hex]
-  exact hRel stmtIn hex.choose hex.choose_spec
+  exact (hpick stmtIn).choose_spec ((Set.mem_language_iff _ _).1 hlang)
 
 end Reduction
 
@@ -396,21 +399,25 @@ theorem oracleVerifier_coordinateWiseSpecialSound [Nonempty WitIn]
       ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
     (oracleVerifier oSpec mapStmt embedIdx hEq).coordinateWiseSpecialSound init impl D
       relIn relOut := by
-  classical
+  -- For each combined input statement, some candidate input witness works as soon as any output
+  -- witness makes the mapped statement accepted.
+  have hpick : ∀ s : StmtIn × (∀ i, OStmtIn i), ∃ witIn : WitIn,
+      (∃ witOut, ((mapStmt s.1, mapOStmt embedIdx hEq s.2), witOut) ∈ relOut) →
+        (s, witIn) ∈ relIn := by
+    intro s
+    rcases or_not (p := ∃ witOut, ((mapStmt s.1, mapOStmt embedIdx hEq s.2), witOut) ∈ relOut)
+      with ⟨witOut, hw⟩ | h
+    · exact ⟨mapWitInv s witOut, fun _ => hRel s.1 s.2 witOut hw⟩
+    · exact ⟨Nonempty.some inferInstance, fun hex => absurd hex h⟩
   refine OracleVerifier.coordinateWiseSpecialSound_of_isEmpty_challengeIdx init impl D
     (oracleVerifier oSpec mapStmt embedIdx hEq) relIn relOut
-    (fun s _ => if h : ∃ witOut,
-        ((mapStmt s.1, mapOStmt embedIdx hEq s.2), witOut) ∈ relOut
-      then mapWitInv s h.choose else Classical.ofNonempty) ?_
+    (fun s _ => (hpick s).choose) ?_
   rintro ⟨stmt, oStmt⟩ tr hAcc
   have hlang : (mapStmt stmt, mapOStmt embedIdx hEq oStmt) ∈ relOut.language :=
     Verifier.mem_of_pure_accepting init impl
       (oracleVerifier oSpec mapStmt embedIdx hEq).toVerifier ⟨stmt, oStmt⟩ tr relOut.language _
       (oracleVerifier_toVerifier_run (oSpec := oSpec)) hAcc
-  have hex : ∃ witOut, ((mapStmt stmt, mapOStmt embedIdx hEq oStmt), witOut) ∈ relOut :=
-    (Set.mem_language_iff _ _).1 hlang
-  simp only [dif_pos hex]
-  exact hRel stmt oStmt hex.choose hex.choose_spec
+  exact (hpick (stmt, oStmt)).choose_spec ((Set.mem_language_iff _ _).1 hlang)
 
 end OracleReduction
 

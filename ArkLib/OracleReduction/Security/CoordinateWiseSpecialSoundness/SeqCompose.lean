@@ -94,22 +94,25 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 
 /-- **n-ary base case.** The identity verifier is tree-special-sound for any shape `S`, with input
 relation equal to output relation: the empty protocol `!p[]` has no challenge rounds, so this is the
-no-challenge bridge with the extractor that picks (classically) a witness of `stmtIn` whenever one
+no-challenge bridge with the extractor that noncomputably picks a witness of `stmtIn` whenever one
 exists. -/
 theorem id_treeSpecialSound {Statement Witness : Type} [Nonempty Witness]
     (S : ChallengeTreeShape (!p[] : ProtocolSpec 0))
     (rel : Set (Statement × Witness)) :
     (Verifier.id (oSpec := oSpec) (Statement := Statement)).treeSpecialSound
       init impl S rel rel := by
-  classical
+  -- For each statement, some candidate witness works as soon as any witness exists.
+  have hpick : ∀ stmt : Statement, ∃ w : Witness, (∃ w', (stmt, w') ∈ rel) → (stmt, w) ∈ rel := by
+    intro stmt
+    rcases or_not (p := ∃ w', (stmt, w') ∈ rel) with ⟨w, hw⟩ | h
+    · exact ⟨w, fun _ => hw⟩
+    · exact ⟨Nonempty.some inferInstance, fun hex => absurd hex h⟩
   refine treeSpecialSound_of_isEmpty_challengeIdx init impl S Verifier.id rel rel
-    (fun stmt _ => if h : ∃ w, (stmt, w) ∈ rel then h.choose else Classical.ofNonempty) ?_
+    (fun stmt _ => (hpick stmt).choose) ?_
   intro stmtIn tr hAcc
   have hlang : stmtIn ∈ rel.language :=
     mem_of_pure_accepting init impl Verifier.id stmtIn tr rel.language stmtIn rfl hAcc
-  have hex : ∃ w, (stmtIn, w) ∈ rel := (Set.mem_language_iff rel stmtIn).1 hlang
-  simp only [dif_pos hex]
-  exact hex.choose_spec
+  exact (hpick stmtIn).choose_spec ((Set.mem_language_iff rel stmtIn).1 hlang)
 
 end Verifier
 
