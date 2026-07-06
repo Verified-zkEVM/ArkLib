@@ -1,0 +1,271 @@
+/-
+Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Tobias Rothmann
+-/
+import ArkLib.Commitments.Functional.Hachi.InnerOuter.Scheme
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
+
+/-!
+  # Hachi polynomial-evaluation reduction — gadget algebra (Hachi §4.2, Figure 3)
+
+  Gadget algebra supporting **Hachi Lemma 8** (coordinate-wise special soundness of Hachi's
+  polynomial-evaluation reduction — proving `f(x) = y` via the quadratic form `bᵀ M a`, Hachi
+  [NOZ26] §4.2, Figure 3): the short-commitment matrix `D` and its commitment `v`, the carrier
+  `w`/`ŵ`, the `J` gadget and `ẑ`, and the block-weighted `tensorG` / `tensorG1` sums together
+  with their algebra (`tensorG_sub`, `tensorG_sub_challenge`, `tensorG_coordDiff` — the
+  coordinate-isolation crux).
+
+  Hachi's reduction (§4.2) is the multilinear / inner-outer lift of Greyhound's [NS24, §3.1]
+  folding-based polynomial-evaluation protocol; this file is its gadget layer. The naming
+  `QuadEval` reflects the content — an evaluation claim expressed as a quadratic equation — while
+  "fold" below refers to Greyhound's mechanism of folding the `2ʳ` carrier blocks under the
+  verifier's challenge vector.
+
+  Implements §9.3 of `Commitments/Functional/Hachi/LEMMA8_FOLDBLOCK_PLAN.md` (milestone M1).
+
+  ## References
+
+  * [Nguyen, N. K., and Seiler, G., *Greyhound: Fast Polynomial Commitments from Lattices*][NS24]
+  * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
+      Polynomial Commitments over Extension Fields*][NOZ26]
+-/
+
+open CompPoly ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus ArkLib.Lattices.Ajtai
+open scoped BigOperators
+
+namespace ArkLib.Lattices.Hachi
+
+variable {R : Type} [Field R] [BEq R] [LawfulBEq R] (Φ : CyclotomicModulus R) [IsCyclotomic Φ]
+
+/-- Inner-outer params `(A, B)` extended with the Hachi short-commitment matrix `D`
+(Hachi [NOZ26] Eq. (16); the analogue of Greyhound's [NS24, §3.1] carrier commitment): `D`
+commits to the block-major carrier decomposition `ŵ ∈ Rq^{blocks·messageDigits}`. -/
+structure PublicParamsD (Φ : CyclotomicModulus R)
+    (innerRows messageRows messageDigits outerRows blocks innerDigits dRows : Nat) extends
+    InnerOuter.PublicParams Φ innerRows messageRows messageDigits outerRows blocks innerDigits where
+  /-- The Hachi short-commitment matrix `D` (Hachi [NOZ26] Eq. (16)). -/
+  dMatrix : Simple.PublicParams Φ dRows (blocks * messageDigits)
+
+/-! ## The carrier `w`, its decomposition `ŵ`, and the short commitment `v = D ŵ` -/
+
+section Carrier
+variable {messageRows messageDigits blocks : Nat} (base : R)
+
+/-- The carrier entry `wᵢ := aᵀ · G_{2^m} · sᵢ` (Hachi Eq. (16)/(17); only `gadgetMatrix`, no
+`DecidableEq R`). -/
+def carrierEntry (a : PolyVec (Rq Φ) messageRows)
+    (s : PolyVec (Rq Φ) (messageRows * messageDigits)) : Rq Φ :=
+  ArkLib.Lattices.splitForm (gadgetMatrix Φ base messageRows messageDigits) a s
+
+/-- The carrier `w := (w₁, …, w_{2ʳ})`, `wᵢ = aᵀ G_{2^m} sᵢ` (Hachi [NOZ26] Eq. (16)). -/
+def carrier (a : PolyVec (Rq Φ) messageRows)
+    (s : PolyVec (PolyVec (Rq Φ) (messageRows * messageDigits)) blocks) : PolyVec (Rq Φ) blocks :=
+  fun i => carrierEntry Φ base a (s i)
+
+variable [DecidableEq R]   -- ← introduced AFTER the pure defs (else unusedSectionVars)
+
+/-- The carrier decomposition `ŵ := G⁻¹_{blocks}(w)` (Hachi [NOZ26] Eq. (16)/(17)), block-major,
+length `blocks * messageDigits`. `base` is IMPLICIT (pinned by `ddCarrier`). -/
+def carrierDecomp {base : R} (ddCarrier : DigitDecomposition base messageDigits)
+    (a : PolyVec (Rq Φ) messageRows)
+    (s : PolyVec (PolyVec (Rq Φ) (messageRows * messageDigits)) blocks) :
+    PolyVec (Rq Φ) (blocks * messageDigits) :=
+  gadgetDecompose Φ ddCarrier (carrier Φ base a s)
+
+/-- Roundtrip `w = G_{blocks} *ᵥ ŵ` (Hachi Eq. (17)). -/
+theorem carrier_eq_gadget {base : R} (hd : 0 < messageDigits) (h1 : 1 ≤ Φ.φ.natDegree)
+    (ddCarrier : DigitDecomposition base messageDigits) (a : PolyVec (Rq Φ) messageRows)
+    (s : PolyVec (PolyVec (Rq Φ) (messageRows * messageDigits)) blocks) :
+    carrier Φ base a s
+      = gadgetMatrix Φ base blocks messageDigits *ᵥ carrierDecomp Φ ddCarrier a s := by
+  rw [carrierDecomp]; exact (gadgetDecompose_lawful Φ hd h1 ddCarrier (carrier Φ base a s)).symm
+
+/-- The honest short carrier commitment `v := D ŵ` (Hachi Eq. (16), Figure 3 round 0). -/
+def carrierCommit {dRows : Nat} (D : Simple.PublicParams Φ dRows (blocks * messageDigits))
+    {base : R} (ddCarrier : DigitDecomposition base messageDigits)
+    (a : PolyVec (Rq Φ) messageRows)
+    (s : PolyVec (PolyVec (Rq Φ) (messageRows * messageDigits)) blocks) :
+    Simple.Commitment Φ dRows :=
+  Simple.commit Φ D (carrierDecomp Φ ddCarrier a s)
+
+end Carrier
+
+/-! ## The `J` gadget and the response decomposition `ẑ` -/
+
+section JGadget
+
+/-- The `J` gadget `J_n := I_n ⊗ [1, base, …, base^(zDigits-1)]` (Hachi Eq. (18)–(20)); in this
+reduction `n = messageRows * messageDigits` and `zDigits = τ`. -/
+def jMatrix (base : R) (n zDigits : Nat) : PolyMatrix (Rq Φ) n (n * zDigits) :=
+  gadgetMatrix Φ base n zDigits
+
+variable [DecidableEq R]
+
+/-- The response decomposition `ẑ := J⁻¹(z)` (Hachi Eq. (20), the `ẑ` the prover commits to
+implicitly), block-major, length `n * zDigits`. `base` is IMPLICIT (pinned by `ddZ`). -/
+def zDecomp {n zDigits : Nat} {base : R} (ddZ : DigitDecomposition base zDigits)
+    (z : PolyVec (Rq Φ) n) : PolyVec (Rq Φ) (n * zDigits) :=
+  gadgetDecompose Φ ddZ z
+
+/-- Roundtrip `z = J *ᵥ ẑ` (the verifier's reconstruction of `z` from `ẑ`, Eq. (20)). -/
+theorem z_eq_jMatrix {n zDigits : Nat} {base : R} (hd : 0 < zDigits)
+    (h1 : 1 ≤ Φ.φ.natDegree) (ddZ : DigitDecomposition base zDigits) (z : PolyVec (Rq Φ) n) :
+    z = jMatrix Φ base n zDigits *ᵥ zDecomp Φ ddZ z := by
+  rw [zDecomp, jMatrix]; exact (gadgetDecompose_lawful Φ hd h1 ddZ z).symm
+
+end JGadget
+
+/-! ## The block-weighted gadget sums `tensorG` (c5) and `tensorG1` (c4) -/
+
+section TensorG
+variable {k digits blocks : Nat}
+
+/-- `tensorG_k c x := Σᵢ cᵢ •ᵥ (G_k *ᵥ xᵢ) : PolyVec (Rq Φ) k` — the Lean rendering of
+`(cᵀ ⊗ G_{k}) x̂` on a block family `x` (Eq. (19)/(20) row 5, with `k = n_A`). -/
+def tensorG (base : R) (k digits : Nat) (c : PolyVec (Rq Φ) blocks)
+    (x : PolyVec (PolyVec (Rq Φ) (k * digits)) blocks) : PolyVec (Rq Φ) k :=
+  ∑ i : Fin blocks, (c i) •ᵥ (gadgetMatrix Φ base k digits *ᵥ x i)
+
+/-- `tensorG` is subtractive in the block family (algebra for Hachi Lemma 8's two-transcript
+subtraction of Eq. (20) row 5). -/
+theorem tensorG_sub (base : R) (k digits : Nat) (c : PolyVec (Rq Φ) blocks)
+    (x y : PolyVec (PolyVec (Rq Φ) (k * digits)) blocks) :
+    tensorG Φ base k digits c (x - y)
+      = tensorG Φ base k digits c x - tensorG Φ base k digits c y := by
+  simp only [tensorG, ← Finset.sum_sub_distrib]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  have hxy : (x - y) i = x i - y i := rfl
+  rw [hxy, matVecMul_sub]
+  funext r
+  simp only [scalarVecMul_apply, Pi.sub_apply, mul_sub]
+
+/-- `tensorG` is subtractive in the challenge vector (Hachi Lemma 8's two-transcript subtraction
+of Eq. (20) row 5). -/
+theorem tensorG_sub_challenge (base : R) (k digits : Nat) (c c' : PolyVec (Rq Φ) blocks)
+    (x : PolyVec (PolyVec (Rq Φ) (k * digits)) blocks) :
+    tensorG Φ base k digits (c - c') x
+      = tensorG Φ base k digits c x - tensorG Φ base k digits c' x := by
+  simp only [tensorG, ← Finset.sum_sub_distrib]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  funext r
+  simp only [Pi.sub_apply, scalarVecMul_apply, sub_mul]
+
+/-- Coordinate isolation (Hachi Lemma 8, case (C), the c5 subtract-and-divide crux): if
+`c ≡ⱼ c'`, the challenge-difference sum collapses to the `j`-th block,
+`tensorG (c − c') x = (cⱼ − c'ⱼ) •ᵥ (G_k *ᵥ xⱼ)`. -/
+theorem tensorG_coordDiff (base : R) (k digits : Nat)
+    {c c' : PolyVec (Rq Φ) blocks} {j : Fin blocks} (h : CoordinateWise.CoordEq j c c')
+    (x : PolyVec (PolyVec (Rq Φ) (k * digits)) blocks) :
+    tensorG Φ base k digits (c - c') x = (c j - c' j) •ᵥ (gadgetMatrix Φ base k digits *ᵥ x j) := by
+  simp only [tensorG]; rw [Finset.sum_eq_single j]
+  · funext r; simp only [scalarVecMul_apply, Pi.sub_apply]
+  · intro i _ hij
+    have hzero : (c - c') i = 0 := by simp only [Pi.sub_apply]; rw [h.2 i hij, sub_self]
+    funext r; simp only [scalarVecMul_apply, hzero, Pi.zero_apply, zero_mul]
+  · intro hj; exact absurd (Finset.mem_univ j) hj
+
+end TensorG
+
+section TensorG1
+variable {blocks : Nat}
+
+/-- The scalar `(cᵀ ⊗ G₁) x` of Eq. (18)/(20) row 4, on the block-major FLAT carrier
+decomposition `x = ŵ ∈ Rq^{blocks·digits}`: since `cᵀ ⊗ G₁ = cᵀ · (I_blocks ⊗ G₁)`, this is
+`⟨c, G_blocks *ᵥ x⟩` — the challenge-weighted sum of the recomposed carrier `w = G_blocks ŵ`. -/
+def tensorG1 (base : R) (digits : Nat) (c : PolyVec (Rq Φ) blocks)
+    (x : PolyVec (Rq Φ) (blocks * digits)) : Rq Φ :=
+  dot c (gadgetMatrix Φ base blocks digits *ᵥ x)
+
+/-- `tensorG1` is literally the per-block `G₁`-row form `Σᵢ cᵢ · (Σₑ baseᵉ · x_{(i,e)})` — the
+Kronecker reading `(cᵀ ⊗ G₁) ŵ` of Hachi Eq. (18)/(20) row 4. -/
+theorem tensorG1_eq_sum_blocks (base : R) (digits : Nat) (hd : 0 < digits)
+    (c : PolyVec (Rq Φ) blocks) (x : PolyVec (Rq Φ) (blocks * digits)) :
+    tensorG1 Φ base digits c x
+      = ∑ i : Fin blocks, c i
+          * ∑ e : Fin digits, constRq Φ (base ^ (e : ℕ)) * x (finProdFinEquiv (i, e)) := by
+  simp only [tensorG1, dot_eq_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [show (gadgetMatrix Φ base blocks digits *ᵥ x) i = gadgetMul Φ base x i from rfl,
+    gadgetMul_apply Φ base hd]
+
+/-- `tensorG1` is subtractive in the challenge vector (Hachi Lemma 8's two-transcript subtraction
+of Eq. (20) row 4). -/
+theorem tensorG1_sub_challenge (base : R) (digits : Nat) (c c' : PolyVec (Rq Φ) blocks)
+    (x : PolyVec (Rq Φ) (blocks * digits)) :
+    tensorG1 Φ base digits (c - c') x
+      = tensorG1 Φ base digits c x - tensorG1 Φ base digits c' x := by
+  simp only [tensorG1, dot_eq_sum, Pi.sub_apply, sub_mul, Finset.sum_sub_distrib]
+
+/-- Coordinate isolation at `k = 1` (Hachi Lemma 8, case (C), the c4 subtract-and-divide crux):
+if `c ≡ⱼ c'`, then `tensorG1 (c − c') ŵ = (cⱼ − c'ⱼ) · wⱼ` where `w := G_blocks *ᵥ ŵ` is the
+recomposed carrier. -/
+theorem tensorG1_coordDiff (base : R) (digits : Nat)
+    {c c' : PolyVec (Rq Φ) blocks} {j : Fin blocks} (h : CoordinateWise.CoordEq j c c')
+    (x : PolyVec (Rq Φ) (blocks * digits)) :
+    tensorG1 Φ base digits (c - c') x
+      = (c j - c' j) * (gadgetMatrix Φ base blocks digits *ᵥ x) j := by
+  simp only [tensorG1, dot_eq_sum]; rw [Finset.sum_eq_single j]
+  · simp only [Pi.sub_apply]
+  · intro i _ hij
+    have hzero : (c - c') i = 0 := by simp only [Pi.sub_apply]; rw [h.2 i hij, sub_self]
+    rw [hzero, zero_mul]
+  · intro hj; exact absurd (Finset.mem_univ j) hj
+
+end TensorG1
+
+/-- `splitForm` is subtractive in the inner (right) basis vector (companion to Vectors.lean's
+`splitForm_add_right`; Hachi Lemma 8's c4-side two-transcript subtraction `aᵀG(z⁽ʲ⁾) − aᵀG(z⁽⁰⁾)`
+of Eq. (20) row 4). -/
+theorem splitForm_sub_right {P : Type} [CommRing P] {n m : ℕ} (M : PolyMatrix P n m)
+    (u : PolyVec P n) (v w : PolyVec P m) :
+    ArkLib.Lattices.splitForm M u (v - w)
+      = ArkLib.Lattices.splitForm M u v - ArkLib.Lattices.splitForm M u w := by
+  simp only [ArkLib.Lattices.splitForm, matVecMul_sub, dot_sub]
+
+/-! ## Interface checks: the c3/c4/c5 verifier rows of Eq. (20) read off these defs -/
+
+section InterfaceChecks
+variable {messageRows messageDigits zDigits blocks innerRows innerDigits : Nat}
+
+-- c3 (Eq. 20 row 3): `bᵀ (G_{2ʳ} ŵ) = 𝓎` on the flat carrier decomposition `ŵ`.
+example (base : R) (b : PolyVec (Rq Φ) blocks) (what : PolyVec (Rq Φ) (blocks * messageDigits))
+    (y : Rq Φ) : Prop :=
+  dot b (gadgetMatrix Φ base blocks messageDigits *ᵥ what) = y
+
+-- c4 (Eq. 20 row 4): `(cᵀ ⊗ G₁) ŵ = aᵀ G_{2^m} (J ẑ)` reads off `tensorG1`/`jMatrix`.
+example (base : R) (c : PolyVec (Rq Φ) blocks) (what : PolyVec (Rq Φ) (blocks * messageDigits))
+    (zhat : PolyVec (Rq Φ) ((messageRows * messageDigits) * zDigits))
+    (a : PolyVec (Rq Φ) messageRows) : Prop :=
+  tensorG1 Φ base messageDigits c what
+    = ArkLib.Lattices.splitForm (gadgetMatrix Φ base messageRows messageDigits) a
+        (jMatrix Φ base (messageRows * messageDigits) zDigits *ᵥ zhat)
+
+-- c5 (Eq. 20 row 5): `(cᵀ ⊗ G_{n_A}) t̂ = A (J ẑ)` reads off `tensorG`/`jMatrix`.
+example (base : R) (c : PolyVec (Rq Φ) blocks)
+    (that : PolyVec (PolyVec (Rq Φ) (innerRows * innerDigits)) blocks)
+    (A : Simple.PublicParams Φ innerRows (messageRows * messageDigits))
+    (zhat : PolyVec (Rq Φ) ((messageRows * messageDigits) * zDigits)) : Prop :=
+  tensorG Φ base innerRows innerDigits c that
+    = A *ᵥ (jMatrix Φ base (messageRows * messageDigits) zDigits *ᵥ zhat)
+
+-- c4-subtract chain (Lemma 8, extraction step 2): from the two branches' c4 rows sharing `ŵ`
+-- and `CoordEq j c_s c_e`, the challenge difference isolates `(c_sⱼ − c_eⱼ) · wⱼ`, where
+-- `w := G_blocks *ᵥ ŵ`. (`z_s`/`z_e` stand for the J-recompositions `J ẑ⁽ʲ⁾`/`J ẑ⁽⁰⁾`.)
+example (base : R) {c_s c_e : PolyVec (Rq Φ) blocks} {j : Fin blocks}
+    (h : CoordinateWise.CoordEq j c_s c_e)
+    (what : PolyVec (Rq Φ) (blocks * messageDigits)) (a : PolyVec (Rq Φ) messageRows)
+    (z_s z_e : PolyVec (Rq Φ) (messageRows * messageDigits))
+    (hc4s : tensorG1 Φ base messageDigits c_s what
+      = splitForm (gadgetMatrix Φ base messageRows messageDigits) a z_s)
+    (hc4e : tensorG1 Φ base messageDigits c_e what
+      = splitForm (gadgetMatrix Φ base messageRows messageDigits) a z_e) :
+    (c_s j - c_e j) * (gadgetMatrix Φ base blocks messageDigits *ᵥ what) j
+      = splitForm (gadgetMatrix Φ base messageRows messageDigits) a (z_s - z_e) := by
+  rw [splitForm_sub_right, ← hc4s, ← hc4e, ← tensorG1_sub_challenge,
+    tensorG1_coordDiff Φ base messageDigits h]
+
+end InterfaceChecks
+
+
+end ArkLib.Lattices.Hachi

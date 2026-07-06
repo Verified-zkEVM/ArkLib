@@ -1,5 +1,6 @@
 import ArkLib.AGM.Basic
 import ArkLib.Commitments.Functional.Basic
+import ArkLib.Commitments.Functional.Hachi.Basic
 import ArkLib.Commitments.Functional.Hachi.Gadget
 import ArkLib.Commitments.Functional.Hachi.GadgetNorms
 import ArkLib.Commitments.Functional.Hachi.InnerOuter
@@ -8,6 +9,9 @@ import ArkLib.Commitments.Functional.Hachi.InnerOuter.Correctness
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Scheme
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Security
 import ArkLib.Commitments.Functional.Hachi.PolynomialEvalSplit
+import ArkLib.Commitments.Functional.Hachi.PolynomialQuadraticEq.PolyEvalReduction
+import ArkLib.Commitments.Functional.Hachi.PolynomialQuadraticEq.QuadEval
+import ArkLib.Commitments.Functional.Hachi.PolynomialQuadraticEq.QuadEvalGadgets
 import ArkLib.Commitments.Functional.KZG.Algebra
 import ArkLib.Commitments.Functional.KZG.Basic
 import ArkLib.Commitments.Functional.KZG.Binding
@@ -194,6 +198,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
 import ArkLib.OracleReduction.Security.Implications
 import ArkLib.OracleReduction.Security.Rewinding
 import ArkLib.OracleReduction.Security.RoundByRound

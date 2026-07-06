@@ -240,4 +240,108 @@ theorem sub_lInftyNorm_le {cols : ℕ} (v w : PolyVec (Rq Φ) cols) {bound : ℕ
   unfold subLInftyNormBound
   omega
 
+/-! ## Deliverable 1: ℓ₁ triangle inequality for subtraction -/
+
+/-- **`ℓ₁` subtraction triangle inequality** (ring element): `‖a - b‖₁ ≤ ‖a‖₁ + ‖b‖₁`. -/
+theorem Rq.l1Norm_sub_le (a b : Rq Φ) : ‖a - b‖₁ ≤ ‖a‖₁ + ‖b‖₁ := by
+  unfold Rq.l1Norm
+  rw [← Finset.sum_add_distrib]
+  refine Finset.sum_le_sum (fun k _ => ?_)
+  have hcoeff : (a - b).1.coeff k = a.1.coeff k - b.1.coeff k := by
+    rw [Rq.sub_val, CompPoly.CPolynomial.coeff_sub]
+  rw [hcoeff]
+  exact valMinAbs_sub_natAbs_le _ _
+
+/-! ## Deliverable 2: ℓ₁ positivity (the `hpos` bridge for `isUnit_of_l1Norm_le`) -/
+
+omit [NeZero q] in
+/-- The centered `ℓ₁` norm of `0` is `0`. -/
+theorem Rq.l1Norm_zero : ‖(0 : Rq Φ)‖₁ = 0 := by
+  unfold Rq.l1Norm
+  refine Finset.sum_eq_zero fun k _ => ?_
+  rw [Rq.zero_val, CompPoly.CPolynomial.coeff_zero, ZMod.valMinAbs_zero, Int.natAbs_zero]
+
+omit [NeZero q] in
+/-- A ring element with zero centered `ℓ₁` norm is `0`: every centered coefficient
+representative below `deg φ` vanishes (`ZMod.valMinAbs_eq_zero`), and the representative is
+reduced (degree `< deg φ`), so the underlying polynomial is `0`. -/
+theorem Rq.eq_zero_of_l1Norm_eq_zero {x : Rq Φ} (h : ‖x‖₁ = 0) : x = 0 := by
+  unfold Rq.l1Norm at h
+  -- Each centered coefficient below `deg φ` is zero.
+  have hlt : ∀ k, k < Φ.φ.natDegree → x.1.coeff k = 0 := by
+    intro k hk
+    have hz0 : (x.1.coeff k).valMinAbs.natAbs = 0 :=
+      (Finset.sum_eq_zero_iff.mp h) k (Finset.mem_range.mpr hk)
+    rw [← ZMod.valMinAbs_eq_zero, ← Int.natAbs_eq_zero]
+    exact hz0
+  -- Hence the underlying polynomial is `0` (coeffs below `deg φ` by the above, coeffs at or
+  -- above `deg φ` by reducedness).
+  have htoP : x.1.toPoly = 0 := by
+    apply Polynomial.ext
+    intro k
+    rw [Polynomial.coeff_zero]
+    by_cases hk : k < Φ.φ.natDegree
+    · rw [← CompPoly.CPolynomial.coeff_toPoly]; exact hlt k hk
+    · rw [not_lt] at hk
+      have hdeg : x.1.toPoly.degree < Φ.φ.toPoly.degree := Φ.degree_toPoly_lt_of_reduced x.2
+      have hφne : Φ.φ.toPoly ≠ 0 := (IsCyclotomic.monic (Φ := Φ)).ne_zero
+      have hdegφ : Φ.φ.toPoly.degree = (Φ.φ.natDegree : WithBot ℕ) := by
+        rw [Polynomial.degree_eq_natDegree hφne, CompPoly.CPolynomial.natDegree_toPoly]
+      have hle' : Φ.φ.toPoly.degree ≤ (k : WithBot ℕ) := by
+        rw [hdegφ]; exact_mod_cast hk
+      exact Polynomial.coeff_eq_zero_of_degree_lt (lt_of_lt_of_le hdeg hle')
+  have hx1 : x.1 = 0 := (CompPoly.CPolynomial.toPoly_eq_zero_iff x.1).mp htoP
+  exact Subtype.ext (by rw [Rq.zero_val]; exact hx1)
+
+omit [NeZero q] in
+/-- The centered `ℓ₁` norm vanishes exactly on `0`. -/
+theorem Rq.l1Norm_eq_zero_iff (x : Rq Φ) : ‖x‖₁ = 0 ↔ x = 0 :=
+  ⟨fun h => Rq.eq_zero_of_l1Norm_eq_zero Φ h, fun h => h ▸ Rq.l1Norm_zero Φ⟩
+
+omit [NeZero q] in
+/-- **`ℓ₁` positivity.** A nonzero ring element has positive centered `ℓ₁` norm — the `hpos`
+input to `isUnit_of_l1Norm_le` for the extracted difference challenge `c̄ⱼ ≠ 0`. -/
+theorem Rq.l1Norm_pos_of_ne_zero {x : Rq Φ} (hx : x ≠ 0) : 0 < ‖x‖₁ :=
+  Nat.pos_of_ne_zero fun h0 => hx (Rq.eq_zero_of_l1Norm_eq_zero Φ h0)
+
+/-! ## Deliverable 3(b): ℓ∞ → ℓ₂² aggregation bridge -/
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- **`ℓ∞ → ℓ₂²` bridge** (ring element): `‖x‖₂² ≤ deg φ · ‖x‖∞²` — each of the `deg φ`
+centered coefficients contributes at most `‖x‖∞²`. -/
+theorem Rq.l2NormSq_le_natDegree_mul_lInftyNorm_sq (x : Rq Φ) :
+    ‖x‖₂² ≤ Φ.φ.natDegree * (Rq.lInftyNorm Φ x) ^ 2 := by
+  unfold Rq.l2NormSq
+  calc ∑ k ∈ Finset.range Φ.φ.natDegree, (x.1.coeff k).valMinAbs.natAbs ^ 2
+      ≤ ∑ _k ∈ Finset.range Φ.φ.natDegree, (Rq.lInftyNorm Φ x) ^ 2 :=
+        Finset.sum_le_sum fun k hk =>
+          Nat.pow_le_pow_left
+            (Finset.le_sup (f := fun k => (x.1.coeff k).valMinAbs.natAbs) hk) 2
+    _ = Φ.φ.natDegree * (Rq.lInftyNorm Φ x) ^ 2 := by
+        rw [Finset.sum_const, Finset.card_range, smul_eq_mul]
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- **`ℓ∞ → ℓ₂²` bridge** (vector): `‖v‖₂² ≤ cols · (deg φ · ‖v‖∞²)`. -/
+theorem vecL2NormSq_le_card_mul_lInftyNorm_sq {cols : ℕ} (v : PolyVec (Rq Φ) cols) :
+    ‖v‖₂² ≤ cols * (Φ.φ.natDegree * (vecLInftyNorm Φ v) ^ 2) := by
+  unfold vecL2NormSq
+  calc ∑ i : Fin cols, Rq.l2NormSq Φ (v i)
+      ≤ ∑ _i : Fin cols, Φ.φ.natDegree * (vecLInftyNorm Φ v) ^ 2 :=
+        Finset.sum_le_sum fun i _ =>
+          le_trans (Rq.l2NormSq_le_natDegree_mul_lInftyNorm_sq Φ (v i))
+            (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left
+              (Finset.le_sup (f := fun i => Rq.lInftyNorm Φ (v i)) (Finset.mem_univ i)) 2))
+    _ = cols * (Φ.φ.natDegree * (vecLInftyNorm Φ v) ^ 2) := by
+        rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul]
+
+/-! ## Deliverable 3(c), constant: the recomposition growth bound -/
+
+/-- Squared-`ℓ₂` bound for a base-`b` gadget **recomposition** `z = J·ẑ` of an
+`ℓ∞`-range-checked decomposed vector (`‖ẑ‖∞ ≤ γ`): each of the `cols` entries of `z` is a
+`τ`-digit base-`b` weighted sum, so its centered coefficients are at most `(∑_{u<τ} bᵘ)·γ`,
+and squaring/summing over `d = deg φ` coefficients and `cols` entries gives
+`cols · (d · ((∑_{u<τ} bᵘ)·γ)²)`. -/
+def zRecomposeL2SqBound (γ b τ d cols : ℕ) : ℕ :=
+  cols * (d * ((∑ u ∈ Finset.range τ, b ^ u) * γ) ^ 2)
+
 end ArkLib.Lattices.CyclotomicModulus

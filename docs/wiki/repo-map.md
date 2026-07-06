@@ -76,6 +76,36 @@ home_page/            site assets and assembled website root
     `X^{2^α}+1`, which the security proofs genuinely require).
   - `InnerOuter.lean` — top-level re-export of the scheme, its correctness, and its
     weak-binding reduction.
+  - `PolynomialQuadraticEq/` — Hachi's polynomial-evaluation reduction ([NOZ26, §4.2, Figure 3]),
+    which proves
+    `f(x) = y` by expressing the evaluation as the quadratic form `bᵀ M a` and folding the `2ʳ`
+    carrier blocks under the challenge vector (hence the name `QuadEval`); it is Hachi's
+    multilinear/inner-outer lift of Greyhound's [NS24, §3.1] folding protocol. `QuadEvalGadgets`
+    holds the gadget algebra (`PublicParamsD`, the carrier/short commitment `v = D ŵ`, the
+    `J`-decomposition of `z`, and the `tensorG`/`tensorG1` challenge combinations); `QuadEval` is
+    the 2-round protocol, its `relOut` (Eq. (20) + range balls) / `relIn` (weak opening
+    ∨ MSIS(B) ∨ MSIS(D)), the subtract-and-divide extractor `buildWitness`, and **Lemma 8**
+    (coordinate-wise special soundness) as `quadEval_coordinateWiseSpecialSound(')`, `sorryAx`-free.
+    The generic tree plumbing lives in `Security/CoordinateWiseSpecialSoundness/SingleRound`; the
+    supporting norm bounds are in `Data/Lattices/CyclotomicRing/NormBounds/Basic` and `GadgetNorms`.
+    `PolynomialQuadraticEq/PolyEvalReduction` adds the **polynomial-level bridge**: a zero-round
+    `ReduceClaim` head
+    (`bridgeVerifier`) that reinterprets a `CMlPolynomial`-level statement `PolyEvalStatement` as a
+    `QuadEvalStatement` via the monomial tensor bases (`toQuadEvalStatement`), the pulled-back input
+    relation `relPolyEval` (the extracted polynomial evaluates to `y`, or MSIS(B/D)), and its CWSS
+    `bridge_coordinateWiseSpecialSound` (any `D`, via the pull-back `mem_relPolyEval_of_relIn`).
+  - `PolynomialEvalSplit.lean` — the matrix split underlying the evaluation argument: multilinear
+    evaluation `eval p (xl ++ xh)` factors as the vector–matrix–vector product
+    `mb(xl) ⬝ᵥ (toMatrix p *ᵥ mb(xh))` (`evalSplit_eq_eval`), with the inverse reshape
+    `toPolynomial` and the bridge lemma `splitForm_monomialBasis_eq_eval` consumed by
+    `PolynomialQuadraticEq/PolyEvalReduction`.
+  - `Basic.lean` — the **designated home of Hachi as a functional commitment** and of the growing
+    n-ary composition. `evalVerifier` is `bridge.append QuadEval.verifier`;
+    `hachi_eval_coordinateWiseSpecialSound` is the composed CWSS (`sorryAx`-free), assembled by
+    `Verifier.append_coordinateWiseSpecialSound` from the bridge and Lemma 8. It also holds the FC
+    scaffolding: the eval `OracleInterface`, honest `hachiKeygen`/`hachiCommit`, and the
+    `Commitment.Scheme` value `hachiFC` (its opening `Proof` is a documented `sorry` pending the
+    remaining §4.3+ subprotocols and the completeness layer).
 - The Merkle tree implementations now live upstream in `VCVio`, so use
   `VCVio.CryptoFoundations.MerkleTree` or `VCVio.CryptoFoundations.InductiveMerkleTree`
   instead of the old ArkLib-local modules.
@@ -108,7 +138,15 @@ home_page/            site assets and assembled website root
   (`CoordEq`, `IsSpecialSoundFamily`), `CWSSStructure`, `CWSSStructure.toShape`, and
   `Verifier.coordinateWiseSpecialSound`; `Composition` transports CWSS structures across
   sequential composition and proves binary append preservation via the generic transcript-tree
-  split. The umbrella `CoordinateWiseSpecialSoundness.lean` re-exports both files.
+  split; `NoChallenge` and `SeqCompose` supply the empty-challenge base case and the n-ary
+  sequential wrappers. `NoChallenge` also provides `CWSSStructure.ofIsEmpty`, the concrete
+  challenge-free structure used as the left factor when appending a zero-round `ReduceClaim` head
+  (e.g. Hachi's `bridgeVerifier`). `SingleRound` is the generic single-challenge-round navigation
+  layer
+  (tree shape recovery `tree_shape`/`tree_eq_tree2`, the star-center machinery, the tree extractor
+  `E`, and the assembly `coordinateWiseSpecialSound_of_mkWitness`) used by Hachi's polynomial-
+  evaluation reduction `QuadEval` (Lemma 8). The umbrella `CoordinateWiseSpecialSoundness.lean`
+  re-exports the core files.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.
 - Ring switching is a **generic, instantiable compiler** under `ProofSystem/RingSwitching/`, not a
