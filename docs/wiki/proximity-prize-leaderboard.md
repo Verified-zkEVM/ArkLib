@@ -149,21 +149,22 @@ owed §6 proof.
 The carrier is the genuine KoalaBear *sextic* extension `KoalaSextic =
 GaloisField (2^31 − 2^24 + 1) 6` (`|F| = q^6 ≈ 2^186`, large enough for the
 `[2^(-117), 2^(-64)]` window to be representable). `koalaEnc` is a real
-degree-`< 2` Reed–Solomon encoder on `4` points (`ι = Fin 4`, `k = 2`,
-realised rate `ρ = k/|ι| = 1/2`), with `koalaEnc_injective` proven sorry-free.
+degree-`< 2^20` Reed–Solomon encoder on `2^21` points (`ι = Fin (2^21)`,
+`k = 2^20`, realised rate `ρ = k/|ι| = 1/2`), with `koalaEnc_injective` proven
+sorry-free.
 
 ### Interleaved Reed–Solomon — `koalaIRS` (`A = F`, `t = 128`)
 
 | Anchor | `bits` | Basis |
 |---|---|---|
 | `irsLowerBoundT128 : SecurityLowerBound koalaIRS` | **63.99** | ABF26 Lemmas 6.10 / 6.6 / 6.8 at `δ = 3/10`; full derivation reduced to one owed bound `ε_mca(C,3/10) + |Λ|/|F| ≤ 2^(-65)` |
-| `listDecodingUpperBoundAttack : SecurityUpperBound koalaIRS` | **117** | ABF26 Lemma 6.12 + Elias/[KKH26]; full derivation, band-split at `δ* = 117/250` (sorry-free spot-check `(133/250)^128 ≥ 2^(-117)` for small δ; proven L6.12 hook + owed list-size bound for large δ) |
+| `caUpperBoundAttack : SecurityUpperBound koalaIRS` | **117** | ABF26 Lemma 6.13 + CS25 base-field correlated-agreement lower bound; full derivation, band-split at `δ* = 117/250` (sorry-free spot-check `(133/250)^128 ≥ 2^(-117)` for small δ; proven L6.13 hook + owed CA lower bound for large δ) |
 
 so `securityGap = 117 − 63.99 = 53.01` (`securityGap_koalaIRS_anchors`).
 
 - **The connective tissue is proven; only the coding-theory numerics are owed.**
   Both anchors are *full formalized reductions* (not opaque `sorry`s): the
-  δ-window admissibility (`koalaIRS_minRelDist = 3/4`), the spot-check integer
+  δ-window admissibility (`koalaIRS_minRelDist = (2^20 + 1) / 2^21`), the spot-check integer
   inequalities (`koala_spotcheck`, `koala_spotcheck_lb`), the L6.10 bridge, and
   the proven L6.12/L6.13 hooks are all axiom-clean. What remains `sorryAx` is
   exactly the external `ε_mca`/`ε_ca`/`Λ` bounds (BCHKS25/ACFY25/KKH26) — closing
@@ -202,6 +203,15 @@ ArkLib carries only finished/winning proofs. (Mirrors `Impl/FRS.lean` lines 36�
 The corresponding security gap, computed over in the external repo, is
 `securityGap_koalaFRS = 128.01 − 29.10 = 98.91` (the upper anchor is ArkLib's;
 the lower anchor and the gap readoff are the open prize entry).
+
+**ArkLib vs. contest provenance.** ArkLib intentionally does **not** import the
+`proximity-prize` leaderboard generator, submission gates, provenance rows, or re-export
+machinery. Those belong to the contest repository, where multiple candidate submissions and
+their Cited/Verified status are tracked. ArkLib's responsibility is narrower: host the reusable
+definitions, reductions, parameter points, and finished/winning anchors that downstream users can
+depend on. When a proof remains an open contest target or reduces to the Grand MCA/List Decoding
+challenge, the corresponding row should stay in `proximity-prize` and be referenced here rather
+than duplicated as an ArkLib `SecurityLowerBound`.
 
 > **Round-down correction (`29.11 → 29.10`).** The spot-check term at the `r = 8`
 > operating point is `(τ(9)+3/(2·8))^128 = (41/48)^128 = 2^(−29.1085)` *exactly*,

@@ -451,7 +451,7 @@ code's **MDS relative distance** `δ_min = 32769/65536` (`koalaFRS_minRelDist`) 
 (via `minDist_frsCode` + the proven `koalaFRSγ_exists`), so this attack anchor is **fully
 axiom-clean** (`[propext, Classical.choice, Quot.sound]`, no `sorryAx`) — the whole Y side
 owes nothing, and no Elias/list-size lower bound enters (strictly stronger than the
-interleaved attack `listDecodingUpperBoundAttack`, which owes two list-size bounds).
+interleaved IRS attack `caUpperBoundAttack`, which owes one CA lower bound).
 
 **Why `128.01`, and stronger than the paper's per-`δ*` reading.** `(1-δ_min)^128 =
 (32767/65536)^128 ≈ 2^(-128.006)`, so the ceiling rounds **up** to `128.01`. The
