@@ -123,6 +123,26 @@ end RoundByRoundOneShot
 
 end Extractor
 
+/-- **RBR Extraction Failure Event**: generic predicate for round-by-round knowledge soundness.
+
+Captures when the round-by-round extractor fails to produce a valid witness at round
+`i.1.castSucc`, yet a valid witness exists at round `i.1.succ` — the fundamental "bad event" that
+every RBR-knowledge-soundness proof must bound. Instantiate with the protocol's `kSF`, `extractor`,
+transcript, and challenge. This is the failure predicate produced by `unroll_rbrKnowledgeSoundness`;
+keeping it as one shared `@[reducible]` definition lets per-protocol doom bounds and the
+`rbrKnowledgeSoundness_of_*` round-reducers match syntactically (no unfolding of a heavy statement
+type at the seam). -/
+@[reducible]
+def rbrExtractionFailureEvent {WitMid : Fin (n + 1) → Type}
+    (kSF : (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → WitMid m → Prop)
+    (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
+    (i : pSpec.ChallengeIdx) (stmtIn : StmtIn)
+    (transcript : Transcript i.1.castSucc pSpec) (challenge : pSpec.Challenge i) : Prop :=
+  ∃ witMid : WitMid i.1.succ,
+    ¬ kSF i.1.castSucc stmtIn transcript
+      (extractor.extractMid i.1 stmtIn (transcript.concat challenge) witMid) ∧
+    kSF i.1.succ stmtIn (transcript.concat challenge) witMid
+
 namespace Verifier
 
 section RoundByRound

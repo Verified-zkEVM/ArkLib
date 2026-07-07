@@ -1168,4 +1168,221 @@ theorem probEvent_StateT_run'_eq_tsum
 
 end ProbEventToPrNotation
 
+/-! ## Round-by-round knowledge soundness reducers (per protocol shape)
+
+These package the repetitive `unroll_rbrKnowledgeSoundness` + `soundness_unroll_runToRound_*` +
+uniform-challenge-sampling boilerplate into a single lemma per protocol shape. Each reduces
+`rbrKnowledgeSoundness` to one clean per-transcript "doom bound": the probability, over the fresh
+uniform challenge, that the round-by-round extractor fails is at most `rbrKnowledgeError` at the
+challenge index.
+
+They are protocol-agnostic (parametrised by the verifier's `kSF`, `extractor`, `rbrKnowledgeError`,
+and the doom bound), so every sumcheck-round / FRI-fold style leaf — in Binius or any later
+protocol — becomes a one-liner instead of the ~90-line `erw`/`conv`/`simp` chain. -/
+section RbrKSReducers
+
+open OracleSpec OracleComp ProtocolSpec ProbComp ProbabilityTheory
+open scoped ProbabilityTheory NNReal
+
+variable {ι : Type} {oSpec : OracleSpec ι}
+  {StmtIn WitIn StmtOut WitOut : Type} {σ : Type}
+
+/-- **Round-reducer — 2-message, prover-first, uniform challenge** (shape `⟨![P_to_V, V_to_P], _⟩`).
+
+For the shape of every sumcheck-round / FRI-fold style leaf reduction, this reduces
+`rbrKnowledgeSoundness` to a single clean bound `hbound`: for each input statement and first prover
+message, the probability over the fresh uniform challenge `y` that the round-by-round extractor
+fails (the "doom event" `∃ witMid, ¬ kSF … ∧ kSF …`) is at most `rbrKnowledgeError ⟨1, hDir1⟩`.
+
+The `∃ witMid, ¬ kSF … ∧ kSF …` doom event is definitionally the failure predicate produced by
+`unroll_rbrKnowledgeSoundness`; a protocol's `rbrExtractionFailureEvent`-style abbreviation unifies
+with it by reducibility, so existing per-transcript bounds can be passed to `hbound` directly. -/
+theorem rbrKnowledgeSoundness_of_2msg_PtoV_uniformChallenge
+    {pSpec : ProtocolSpec 2} [oSpec.Fintype]
+    [∀ i, SampleableType (pSpec.Challenge i)]
+    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, Inhabited (pSpec.Challenge i)]
+    [IsUniformSpec (oSpec + [pSpec.Challenge]ₒ)]
+    {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+    (hDir0 : pSpec.dir 0 = .P_to_V) (hDir1 : pSpec.dir 1 = .V_to_P)
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0)
+    (WitMid : Fin 3 → Type)
+    (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
+    (kSF : verifier.KnowledgeStateFunction init impl relIn relOut extractor)
+    (hbound : ∀ (stmtIn : StmtIn) (msg₀ : pSpec.Message ⟨0, hDir0⟩),
+      Pr_{ let y ← $ᵖ (pSpec.Challenge (⟨1, hDir1⟩ : pSpec.ChallengeIdx)) }[
+        rbrExtractionFailureEvent kSF extractor (⟨1, hDir1⟩ : pSpec.ChallengeIdx) stmtIn
+          (FullTranscript.mk1 msg₀) y] ≤ rbrKnowledgeError ⟨1, hDir1⟩) :
+    verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError := by
+  classical
+  apply unroll_rbrKnowledgeSoundness (kSF := kSF)
+  intro stmtIn witIn prover j initState
+  let P : pSpec.Transcript j.1.castSucc → pSpec.Challenge j → Prop :=
+    fun transcript challenge =>
+      ∃ witMid, ¬ kSF j.1.castSucc stmtIn transcript
+          (extractor.extractMid j.1 stmtIn (transcript.concat challenge) witMid) ∧
+        kSF j.1.succ stmtIn (transcript.concat challenge) witMid
+  rw [probEvent_soundness_goal_unroll_log' (pSpec := pSpec) (P := P) (impl := impl)
+    (prover := prover) (i := j) (stmt := stmtIn) (wit := witIn) (s := initState)]
+  have h_j_eq_1 : j = ⟨1, hDir1⟩ := by
+    obtain ⟨i, hj⟩ := j
+    fin_cases i
+    · exact absurd (hDir0.symm.trans hj) (by decide)
+    · rfl
+  subst h_j_eq_1
+  conv_lhs => simp only [Fin.isValue, Fin.castSucc_one]
+  rw [soundness_unroll_runToRound_1_P_to_V_pSpec_2 (pSpec := pSpec) (prover := prover)
+    (hDir0 := hDir0)]
+  simp only [Fin.isValue, Challenge, ChallengeIdx, QueryImpl.addLift_def, QueryImpl.liftTarget_self,
+    Message, Fin.succ_zero_eq_one, Nat.reduceAdd, Fin.coe_ofNat_eq_mod, Nat.reduceMod,
+    bind_pure_comp, liftComp_eq_liftM, bind_map_left, simulateQ_bind,
+    simulateQ_map, StateT.run'_eq, StateT.run_bind, StateT.run_map, map_bind, Functor.map_map]
+  rw [probEvent_bind_eq_tsum]
+  apply ENNReal.tsum_mul_le_of_le_of_sum_le_one
+  · intro x
+    simp only [Fin.isValue, probEvent_map, Function.comp_def]
+    let q : OracleQuery [pSpec.Challenge]ₒ _ := OracleSpec.query ⟨⟨1, hDir1⟩, ()⟩
+    erw [probEvent_StateT_run_ignore_state
+      (comp := simulateQ (impl.addLift challengeQueryImpl) (liftM (query q.input)))
+      (s := x.2)
+      (P := fun a => P (FullTranscript.mk1 x.1.1) (q.cont a))]
+    rw [probEvent_eq_tsum_ite]
+    erw [simulateQ_query]
+    simp only [ChallengeIdx, Challenge, Fin.isValue, Nat.reduceAdd,
+      monadLift_self, QueryImpl.addLift_def, QueryImpl.liftTarget_self,
+      OracleQuery.input_query, StateT.run'_eq, StateT.run_map, Functor.map_map, ge_iff_le]
+    -- Routing a challenge query through `impl + challengeQueryImpl` is definitionally uniform
+    -- sampling; the `+`-routing to the right branch holds by `rfl` for any `oSpec`.
+    have hchal : ((impl + QueryImpl.liftTarget (StateT σ ProbComp) challengeQueryImpl)
+          (MonadLift.monadLift (OracleSpec.query q.input) :
+            OracleQuery (oSpec + [pSpec.Challenge]ₒ) _).input).run x.2 =
+        ((liftM (challengeQueryImpl (pSpec := pSpec) q.input)) : StateT σ ProbComp _).run x.2 := rfl
+    conv_lhs =>
+      enter [1, x_1, 2, 1, 2]
+      rw [hchal]
+    erw [StateT.run_monadLift, monadLift_self]
+    rw [bind_pure_comp]
+    conv =>
+      enter [1, 1, x_1, 2]
+      erw [Functor.map_map]
+      rw [← probEvent_eq_eq_probOutput]
+      rw [probEvent_map]
+      rw [OracleQuery.cont_apply]
+      dsimp only [MonadLift.monadLift]
+      rw [OracleQuery.cont_apply]
+      dsimp only [q]
+    simp_rw [OracleQuery.input_query, OracleQuery.snd_query]
+    conv_lhs => change (∑' (x_1 : pSpec.Challenge (⟨1, hDir1⟩ : pSpec.ChallengeIdx)), _)
+    simp only [id_eq, Function.comp_def]
+    conv =>
+      enter [1, 1, x_1, 2]
+      rw [probEvent_eq_eq_probOutput]
+      change Pr[=x_1 | $ᵗ (pSpec.Challenge (⟨1, hDir1⟩ : pSpec.ChallengeIdx))]
+      rw [probOutput_uniformOfFintype_eq_Pr (L := _) (x := x_1)]
+    erw [tsum_uniform_Pr_eq_Pr
+      (L := pSpec.Challenge (⟨1, hDir1⟩ : pSpec.ChallengeIdx))
+      (P := fun x_1 => P (FullTranscript.mk1 x.1.1) (q.cont x_1))]
+    change Pr_{ let y ← $ᵖ (pSpec.Challenge (⟨1, hDir1⟩ : pSpec.ChallengeIdx)) }[
+      P (FullTranscript.mk1 x.1.1) y ] ≤ rbrKnowledgeError ⟨1, hDir1⟩
+    exact hbound stmtIn x.1.1
+  · apply tsum_probOutput_le_one
+
+/-- **Round-reducer — 1-message, verifier-first, uniform challenge** (shape `⟨![V_to_P], _⟩`).
+
+For a single verifier challenge with no prior prover message — the shape of the FRI query round —
+this reduces `rbrKnowledgeSoundness` to one clean bound `hbound`: the probability, over the fresh
+uniform challenge `y`, that the round-by-round extractor fails on the (empty) round-0 transcript is
+at most `rbrKnowledgeError` at the challenge index. Sibling of
+`rbrKnowledgeSoundness_of_2msg_PtoV_uniformChallenge` for the 1-message verifier-first shape. -/
+theorem rbrKnowledgeSoundness_of_1msg_VtoP_uniformChallenge
+    {pSpec : ProtocolSpec 1} [oSpec.Fintype]
+    [∀ i, SampleableType (pSpec.Challenge i)]
+    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, Inhabited (pSpec.Challenge i)]
+    [IsUniformSpec (oSpec + [pSpec.Challenge]ₒ)]
+    {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+    (hDir0 : pSpec.dir 0 = .V_to_P)
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0)
+    (WitMid : Fin 2 → Type)
+    (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
+    (kSF : verifier.KnowledgeStateFunction init impl relIn relOut extractor)
+    (hbound : ∀ (stmtIn : StmtIn)
+        (transcript : pSpec.Transcript (⟨0, hDir0⟩ : pSpec.ChallengeIdx).1.castSucc),
+      Pr_{ let y ← $ᵖ (pSpec.Challenge (⟨0, hDir0⟩ : pSpec.ChallengeIdx)) }[
+        rbrExtractionFailureEvent kSF extractor (⟨0, hDir0⟩ : pSpec.ChallengeIdx) stmtIn
+          transcript y] ≤ rbrKnowledgeError ⟨0, hDir0⟩) :
+    verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError := by
+  classical
+  apply unroll_rbrKnowledgeSoundness (kSF := kSF)
+  intro stmtIn witIn prover j initState
+  let P : pSpec.Transcript j.1.castSucc → pSpec.Challenge j → Prop :=
+    fun transcript challenge =>
+      ∃ witMid, ¬ kSF j.1.castSucc stmtIn transcript
+          (extractor.extractMid j.1 stmtIn (transcript.concat challenge) witMid) ∧
+        kSF j.1.succ stmtIn (transcript.concat challenge) witMid
+  rw [probEvent_soundness_goal_unroll_log' (pSpec := pSpec) (P := P) (impl := impl)
+    (prover := prover) (i := j) (stmt := stmtIn) (wit := witIn) (s := initState)]
+  have h_j_eq_0 : j = ⟨0, hDir0⟩ := by
+    obtain ⟨i, hj⟩ := j
+    fin_cases i
+    · rfl
+  subst h_j_eq_0
+  conv_lhs => simp only [Fin.isValue, Fin.castSucc_zero]
+  rw [soundness_unroll_runToRound_0_pSpec_1_V_to_P (pSpec := pSpec) (prover := prover)
+    (stmtIn := stmtIn) (witIn := witIn)]
+  simp only [Fin.isValue, Challenge, ChallengeIdx, QueryImpl.addLift_def, QueryImpl.liftTarget_self,
+    bind_pure_comp, liftComp_eq_liftM, simulateQ_bind, simulateQ_map, StateT.run'_eq,
+    StateT.run_bind, StateT.run_map, map_bind, Functor.map_map]
+  rw [probEvent_bind_eq_tsum]
+  apply ENNReal.tsum_mul_le_of_le_of_sum_le_one
+  · intro x
+    simp only [Fin.isValue, probEvent_map, Function.comp_def]
+    let q : OracleQuery [pSpec.Challenge]ₒ _ := OracleSpec.query ⟨⟨0, hDir0⟩, ()⟩
+    erw [probEvent_StateT_run_ignore_state
+      (comp := simulateQ (impl.addLift challengeQueryImpl) (liftM (query q.input)))
+      (s := x.2)
+      (P := fun a => P x.1.1 (q.cont a))]
+    rw [probEvent_eq_tsum_ite]
+    erw [simulateQ_query]
+    simp only [ChallengeIdx, Challenge, Fin.isValue, Nat.reduceAdd,
+      monadLift_self, QueryImpl.addLift_def, QueryImpl.liftTarget_self,
+      OracleQuery.input_query, StateT.run'_eq, StateT.run_map, Functor.map_map, ge_iff_le]
+    have hchal : ((impl + QueryImpl.liftTarget (StateT σ ProbComp) challengeQueryImpl)
+          (MonadLift.monadLift (OracleSpec.query q.input) :
+            OracleQuery (oSpec + [pSpec.Challenge]ₒ) _).input).run x.2 =
+        ((liftM (challengeQueryImpl (pSpec := pSpec) q.input)) : StateT σ ProbComp _).run x.2 := rfl
+    conv_lhs =>
+      enter [1, x_1, 2, 1, 2]
+      rw [hchal]
+    erw [StateT.run_monadLift, monadLift_self]
+    rw [bind_pure_comp]
+    conv =>
+      enter [1, 1, x_1, 2]
+      erw [Functor.map_map]
+      rw [← probEvent_eq_eq_probOutput]
+      rw [probEvent_map]
+      rw [OracleQuery.cont_apply]
+      dsimp only [MonadLift.monadLift]
+      rw [OracleQuery.cont_apply]
+      dsimp only [q]
+    simp_rw [OracleQuery.input_query, OracleQuery.snd_query]
+    conv_lhs => change (∑' (x_1 : pSpec.Challenge (⟨0, hDir0⟩ : pSpec.ChallengeIdx)), _)
+    simp only [id_eq, Function.comp_def]
+    conv =>
+      enter [1, 1, x_1, 2]
+      rw [probEvent_eq_eq_probOutput]
+      change Pr[=x_1 | $ᵗ (pSpec.Challenge (⟨0, hDir0⟩ : pSpec.ChallengeIdx))]
+      rw [probOutput_uniformOfFintype_eq_Pr (L := _) (x := x_1)]
+    erw [tsum_uniform_Pr_eq_Pr
+      (L := pSpec.Challenge (⟨0, hDir0⟩ : pSpec.ChallengeIdx))
+      (P := fun x_1 => P x.1.1 (q.cont x_1))]
+    change Pr_{ let y ← $ᵖ (pSpec.Challenge (⟨0, hDir0⟩ : pSpec.ChallengeIdx)) }[
+      P x.1.1 y ] ≤ rbrKnowledgeError ⟨0, hDir0⟩
+    exact hbound stmtIn x.1.1
+  · apply tsum_probOutput_le_one
+
+end RbrKSReducers
+
 end OracleReduction

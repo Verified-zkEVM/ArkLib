@@ -9,9 +9,6 @@ import ArkLib.ToVCVio.Simulation
 import ArkLib.OracleReduction.Completeness
 import ArkLib.Data.Misc.Basic
 
-set_option maxHeartbeats 400000  -- Increase if needed
-set_option profiler true
--- set_option profiler.threshold 50  -- Show anything taking over 10ms
 namespace Binius.BinaryBasefold
 /-!
 ## Binary Basefold single steps
@@ -58,25 +55,6 @@ def hEq {ιₒᵢ ιₒₒ : Type} {OracleIn : ιₒᵢ → Type}
     match embed i with
     | Sum.inl j => OracleIn j
     | Sum.inr j => pSpec.Message j
-
-/-- **RBR Extraction Failure Event**: Generic predicate for round-by-round knowledge soundness.
-
-This captures when the RBR extractor fails to produce a valid witness at round `i.1.castSucc`,
-but a valid witness exists at round `i.1.succ`. This is the fundamental "bad event" that must
-be bounded in all RBR knowledge soundness proofs.
-
-**Usage:** Instantiate with protocol-specific `kSF`, `extractor`, and transcript to get the -/
-@[reducible]
-def rbrExtractionFailureEvent {ι : Type} {oSpec : OracleSpec ι} {StmtIn WitIn WitOut : Type} {n : ℕ}
-  {pSpec : ProtocolSpec n} {WitMid : Fin (n + 1) → Type}
-  (kSF : (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → WitMid m → Prop)
-  (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
-  (i : pSpec.ChallengeIdx) (stmtIn : StmtIn)
-  (transcript : Transcript i.1.castSucc pSpec) (challenge : pSpec.Challenge i) : Prop :=
-  ∃ witMid : WitMid i.1.succ,
-    ¬ kSF i.1.castSucc stmtIn transcript
-      (extractor.extractMid i.1 stmtIn (transcript.concat challenge) witMid) ∧
-    kSF i.1.succ stmtIn (transcript.concat challenge) witMid
 
 /-- The Pure Logic of an interactive reduction step.
 Parametrized by a 'Challenges' type that aggregates all verifier randomness. -/

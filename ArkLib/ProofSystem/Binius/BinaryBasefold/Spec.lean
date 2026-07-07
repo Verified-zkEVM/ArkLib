@@ -358,9 +358,10 @@ instance : ∀ i, OracleInterface ((pSpecQuery 𝔽q β γ_repetitions
 
 instance : ∀ i, Fintype ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i)
-  | ⟨0, _⟩ => by
-      change Fintype (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0)
-      infer_instance
+  -- Direct term (not a tactic proof) so `instance ⟨0, rfl⟩` is *definitionally* the `Fin γ → …`
+  -- instance — lets the round-reducer's `$ᵖ (Challenge ⟨0,_⟩)` unify cheaply with a doom bound's
+  -- `$ᵖ (Fin γ_repetitions → sDomain …)` (a tactic proof buries it under casts and the defeq diverges).
+  | ⟨0, _⟩ => inferInstanceAs (Fintype (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0))
 
 instance : ∀ i, Inhabited ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i)
@@ -712,9 +713,10 @@ noncomputable instance instIsUniformSpecPSpecFinalSumcheckStepChallenge :
 
 instance : ∀ i, Fintype ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i)
-  | ⟨0, _⟩ => by
-      change Fintype (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0)
-      infer_instance
+  -- Direct term (not a tactic proof) so `instance ⟨0, rfl⟩` is *definitionally* the `Fin γ → …`
+  -- instance — lets the round-reducer's `$ᵖ (Challenge ⟨0,_⟩)` unify cheaply with a doom bound's
+  -- `$ᵖ (Fin γ_repetitions → sDomain …)` (a tactic proof buries it under casts and the defeq diverges).
+  | ⟨0, _⟩ => inferInstanceAs (Fintype (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0))
 
 instance : ∀ i, Inhabited ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i)

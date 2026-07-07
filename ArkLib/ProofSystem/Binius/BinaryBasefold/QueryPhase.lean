@@ -245,16 +245,23 @@ lemma mem_support_queryFiberPoints
       simulateQ_map, OracleQuery.input_query, OracleQuery.cont_query, id_map,
       OptionT.mem_support_iff, toPFunctor_emptySpec, OptionT.support_run_eq, support_map,
       Set.mem_image, Option.some.injEq, exists_eq_right]
-    erw [simulateQ_query]
-    erw [simulateQ_simOracle2_lift_liftComp_query_T1]
-  simp only [monadLift_self, LawfulApplicative.map_pure, support_pure,
-    Set.mem_singleton_iff] at h_fiber_mem
+    erw [OptionT.run_monadLift, simulateQ_map, simulateQ_spec_query,
+      simulateQ_simOracle2_liftM_query_T1]
   simp only
   intro fiberIndex
   have h_res := h_fiber_mem fiberIndex
-  convert h_res using 1
+  -- reduce `f_i_on_fiber[i] ∈ support (some <$> pure answer)` (OracleComp map on `Option`)
+  -- to the equality: `some <$> pure a = pure (some a)` (defeq), whose support is `{some a}`,
+  -- so membership defeq-reduces to `some f_i[i] = some (answer …)`.
+  have key : (some f_i_on_fiber[fiberIndex.val] : Option L) =
+      some (OracleInterface.answer (oStmtIn ⟨oraclePositionIdx.val, by
+        simp only [toOutCodewordsCount, Fin.val_last, lt_self_iff_false, ↓reduceIte, add_zero,
+          Fin.is_lt]⟩)
+        (getFiberPoint 𝔽q β oraclePositionIdx v (Array.finRange (2 ^ ϑ))[fiberIndex.val])) := h_res
+  rw [Vector.get_eq_getElem]
+  injection key with key'
+  rw [key', Array.getElem_finRange]
   congr 1
-  simp only [Array.getElem_finRange, Fin.cast_mk, Fin.eta]
 
 /-! Simulated `queryFiberPoints` has zero failure probability. -/
 omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ in
@@ -669,7 +676,7 @@ lemma query_phase_step_preserves_fold
       (destIdx := ⟨k * ϑ + ϑ, by omega⟩) (h_destIdx := by simp only [Nat.add_right_cancel_iff]; rfl)
       (h_destIdx_le := by omega) (f := f_mid) (y := y_left) (r_challenges :=
         fun j => stmtIn.challenges ⟨k.val * ϑ + j.val, by simp only [Fin.val_last]; omega⟩)
-    conv_lhs => rw [h_eq]
+    conv_lhs => erw [h_eq]
     dsimp only [f_mid]
     -- Now rw the oStmtIn k_oracle_idx into the iterated_fold of f⁽⁰⁾ form
     -- Extract t and strictOracleFoldingConsistencyProp from h_relIn
@@ -696,7 +703,7 @@ lemma query_phase_step_preserves_fold
     -- Step 1: Align steps (k * ϑ + ϑ = (k + 1) * ϑ)
     have h_steps_eq : k.val * ϑ + ϑ = (k.val + 1) * ϑ := by rw [Nat.add_mul, Nat.one_mul]
     conv_lhs =>
-      rw [iterated_fold_congr_steps_index 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0)
+      erw [iterated_fold_congr_steps_index 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0)
         (steps := k.val * ϑ + ϑ) (steps' := (k.val + 1) * ϑ)
         (h_destIdx := by
           simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]) (h_destIdx_le := by omega)
@@ -849,16 +856,11 @@ lemma query_phase_step_preserves_fold
         (sourceIdx₂ := 0) (h_sourceIdx_eq := h_i_eq)
         (h_destIdx := by dsimp only [destIdx]; rw [Nat.add_mul, Nat.one_mul])
         (h_destIdx_le := by omega) (y := y) (x := x)
-      rw [←hsrc_fun]
-      have hdest_congr := qMap_total_fiber_congr_dest 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (sourceIdx := ⟨k * ϑ, by omega⟩) (steps := ϑ) (destIdx₁ := ⟨k.val * ϑ + ϑ, by omega⟩)
-        (destIdx₂ := destIdx) (h_destIdx_congr := by omega) (h_destIdx := by dsimp only)
-        (h_destIdx_le := by omega)
-      rw [hdest_congr]
-      congr 1
-      rw [←extractSuffixFromChallenge_congr_destIdx 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (v := v) (destIdx := destIdx) (destIdx' := ⟨k.val * ϑ + ϑ, by omega⟩)
-        (h_idx_eq := by omega) (h_le := by omega) (h_le' := by omega)]
+      -- qMap_total_fiber source/dest congruence over `k*ϑ+ϑ` vs `(k+1)*ϑ`: the suffix and the
+      -- extra `cast` are all heterogeneously equal (source indices agree, `cast_heq`).
+      rw [hy_def]
+      convert hsrc_fun using 3
+      exact cast_heq _ _
     rw [h_fiber_vec_get]
     -- Step 4: Apply the congruence lemma of single_point_localized_fold_matrix_form
       -- 1. Establish that the step counts are equal
@@ -874,7 +876,7 @@ lemma query_phase_step_preserves_fold
         funext j
         dsimp only [challenges_full, getFoldingChallenges]
         simp only [Fin.val_last, zero_add]
-    conv_lhs => rw [h_challenges_eq]
+    conv_lhs => erw [h_challenges_eq]
     have h_sDomain_eq : (sDomain 𝔽q β h_ℓ_add_R_rate ⟨↑k * ϑ + ϑ, by omega⟩)
       = (sDomain 𝔽q β h_ℓ_add_R_rate ⟨(↑k + 1) * ϑ, by omega⟩) := by
       apply sDomain_eq_of_eq; simp only [Fin.mk.injEq]; omega
@@ -1001,9 +1003,8 @@ lemma query_phase_final_fold_eq_constant
   rw [h_chalLeft_eq_chalRight_cast]
   conv_lhs =>
     -- 1. Locate the specific sub-term corresponding to the folding function
-    --    This finds the lambda "fun y ↦ ..."
-    pattern (fun y ↦ iterated_fold _ _ _ _ _ _ _ _ _)
-    enter [y]
+    --    This enters the folding-function lambda "fun y ↦ ..." (7th positional arg)
+    enter [7, y]
     rw [iterated_fold_congr_steps_index 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0)
     (steps := 0 % toOutCodewordsCount ℓ ϑ (Fin.last ℓ) * ϑ) (steps' := 0) (h_destIdx := by
       simp only [toOutCodewordsCount_last, Nat.zero_mod, zero_mul, Fin.coe_ofNat_eq_mod, add_zero])
@@ -1028,13 +1029,13 @@ lemma query_phase_final_fold_eq_constant
   let point := extractSuffixFromChallenge 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (v := v)
     (destIdx := ⟨ℓ / ϑ * ϑ, by omega⟩) (h_destIdx_le := by simp only; omega)
   conv_lhs =>
-    rw [iterated_fold_congr_dest_index 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0)
+    erw [iterated_fold_congr_dest_index 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0)
       (steps := ↑lastOraclePositionIndex * ϑ + ϑ) (destIdx := ⟨ℓ / ϑ * ϑ, by omega⟩)
       (destIdx' := destIdx') (h_destIdx := by
         dsimp only [lastOraclePositionIndex];
         simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; omega)
       (h_destIdx_le := by simp only; omega) (h_destIdx_eq_destIdx' := by
-        dsimp only [destIdx']; simp only [Fin.mk.injEq]; omega) (f := f₀)
+        dsimp only [destIdx']; simp only [Fin.mk.injEq]; omega)
       (r_challenges := chalRight) (y := point)]
   rw [iterated_fold_congr_steps_index 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0)
     (steps := ↑lastOraclePositionIndex * ϑ + ϑ) (steps' := ℓ) (h_destIdx := by
@@ -1058,7 +1059,10 @@ lemma query_phase_final_fold_eq_constant
     (challenges := fun (cIdx : Fin ℓ) =>
       chalRight ⟨cIdx, by dsimp only [lastOraclePositionIndex]; omega⟩)
     (x := cast (by rw [h_sDomain_eq]) point) (y := 0)
-  rw [res]
+  -- `res` matches up to η-expansion of the `f`-argument and a `cast ∘ cast` on the input
+  -- (both `sDomain`s are equal, so the composite cast is the identity).
+  convert res using 4
+  exact eq_of_heq ((cast_heq _ _).trans (cast_heq _ _))
 
 /-- Relation used in the forIn loop of `checkSingleRepetition`: at index 0 the folded value is 0;
   at index `oraclePositionIdx > 0` it equals `iterated_fold` up to that position with challenges
@@ -1800,9 +1804,9 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
                   exact h_k⟩)
             exact h_le
           ⟩
-          conv_lhs => rw [single_point_localized_fold_matrix_form_congr_dest_index 𝔽q β
+          conv_lhs => erw [single_point_localized_fold_matrix_form_congr_dest_index 𝔽q β
             (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (destIdx' := destIdx) (h_destIdx_eq_destIdx' := by
-            simp only [add_tsub_cancel_right]; dsimp only [destIdx])]
+            dsimp only [destIdx]; apply Fin.ext; simp only [add_tsub_cancel_right])]
           conv_rhs => rw [single_point_localized_fold_matrix_form_congr_dest_index 𝔽q β
             (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (destIdx' := destIdx) (h_destIdx_eq_destIdx' := by
             simp only [List.getElem_finRange, Fin.eta, Fin.val_cast]; dsimp only [destIdx])]
@@ -2436,7 +2440,6 @@ theorem queryOracleProof_perfectCompleteness {σ : Type}
       erw [OptionT.support_mk]
       dsimp only [ChallengeIdx, Challenge, liftComp_eq_liftM, monadLift, MonadLift.monadLift,
         Set.mem_setOf_eq]
-      rw [liftComp_id]
       simp only [Fin.reduceLast, Fin.isValue]
       dsimp only [OptionT.lift];
       erw [support_bind]; dsimp only [liftM, monadLift, MonadLift.monadLift];
@@ -2528,9 +2531,8 @@ theorem queryOracleProof_perfectCompleteness {σ : Type}
       dsimp only [queryOracleProof, queryOracleReduction, queryPhaseLogicStep, queryOracleProver,
         queryOracleVerifier, OracleVerifier.toVerifier, FullTranscript.mk1]
       dsimp only [liftM, monadLift, MonadLift.monadLift]
-      rw [liftComp_id]
-      rw [support_liftComp]
-      simp only [support_pure, Set.mem_singleton_iff, Prod.mk.injEq, and_true]
+      simp only [liftComp_id, support_liftComp, support_pure, Set.mem_singleton_iff,
+        Prod.mk.injEq, and_true]
     -- Step 2c: Simplify the verifier computation
     conv at h_verOut_mem_support =>
       erw [simulateQ_bind]
@@ -2761,6 +2763,98 @@ then the verifier accepts with at most negligible probability:
   `Pr[V accepts] ≤ ((1/2) + 1/(2 * 2^𝓡))^γ_repetitions`
 
 This is exactly `queryRbrKnowledgeError`. -/
+open scoped OracleSpec.PrimitiveQuery in
+/-- Per-challenge extraction-failure ("doom") bound for the FRI query round: the honest-verifier
+extraction event holds with probability at most `queryRbrKnowledgeError`.  Factored out of
+`queryOracleVerifier_rbrKnowledgeSoundness` so the reducer call is a one-liner (mirrors
+`foldStep_/iteratedSumcheck_/batching_doom_escape_probability_bound`). -/
+lemma query_doom_escape_probability_bound {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp))
+    (stmtIn_oStmtIn : (FinalSumcheckStatementOut (L := L) (ℓ := ℓ)) ×
+      (∀ j, OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j))
+    (transcript : (pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Transcript
+      (⟨0, rfl⟩ : (pSpecQuery 𝔽q β γ_repetitions
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).ChallengeIdx).1.castSucc) :
+    Pr_{ let y ← $ᵖ (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
+      rbrExtractionFailureEvent
+        (kSF := queryKnowledgeStateFunction 𝔽q β (ϑ:=ϑ) γ_repetitions init impl)
+        (extractor := queryRbrExtractor 𝔽q β (ϑ:=ϑ) γ_repetitions
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+        ⟨0, rfl⟩ stmtIn_oStmtIn transcript y ] ≤
+      queryRbrKnowledgeError 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨0, rfl⟩ := by
+  classical
+  change Pr_{ let y ← $ᵖ (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
+    rbrExtractionFailureEvent
+      (kSF := queryKnowledgeStateFunction 𝔽q β (ϑ:=ϑ) γ_repetitions init impl)
+      (extractor := queryRbrExtractor 𝔽q β (ϑ:=ϑ) γ_repetitions
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+      ⟨0, rfl⟩ stmtIn_oStmtIn transcript y ] ≤
+    ↑(queryRbrKnowledgeError_singleRepetition (𝓡 := 𝓡) ^ γ_repetitions)
+  have hP_eq : ∀ y : Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0,
+      rbrExtractionFailureEvent
+        (kSF := queryKnowledgeStateFunction 𝔽q β (ϑ:=ϑ) γ_repetitions init impl)
+        (extractor := queryRbrExtractor 𝔽q β (ϑ:=ϑ) γ_repetitions
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+        ⟨0, rfl⟩ stmtIn_oStmtIn transcript y ↔
+        (¬ finalSumcheckRelOutProp 𝔽q β
+            (input := ⟨⟨stmtIn_oStmtIn.1, stmtIn_oStmtIn.2⟩, ()⟩) ∧
+          ∀ rep : Fin γ_repetitions,
+            logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+              stmtIn_oStmtIn.2 (y rep) stmtIn_oStmtIn.1 stmtIn_oStmtIn.1.final_constant) := by
+    intro y
+    simp only [rbrExtractionFailureEvent, queryRbrExtractor, queryKnowledgeStateFunction,
+      queryKStateProp, logical_proximityChecksSpec, Fin.isValue,
+      Fin.castSucc_zero, Fin.succ_zero_eq_one]
+    simp only [FullTranscript.challenges, Transcript.concat, Fin.isValue, Fin.snoc_last]
+    constructor
+    · rintro ⟨_, h⟩; exact h
+    · intro h; exact ⟨(), h⟩
+  rw [Pr_congr (h := hP_eq)]
+  -- Bound `A ∧ (∀ rep, B (y rep))` by dropping `A` and applying the γ-fold product bound.
+  by_cases hA : finalSumcheckRelOutProp 𝔽q β
+      (input := ⟨⟨stmtIn_oStmtIn.1, stmtIn_oStmtIn.2⟩, ()⟩)
+  · -- `A` false: the extraction-failure event never holds, so the probability is `0`.
+    have h_false : ∀ y : Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0,
+        (¬ finalSumcheckRelOutProp 𝔽q β
+              (input := ⟨⟨stmtIn_oStmtIn.1, stmtIn_oStmtIn.2⟩, ()⟩) ∧
+            ∀ rep : Fin γ_repetitions,
+              logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+                stmtIn_oStmtIn.2 (y rep) stmtIn_oStmtIn.1 stmtIn_oStmtIn.1.final_constant)
+          ↔ False :=
+      fun y => iff_false_intro (fun hy => hy.1 hA)
+    rw [Pr_congr (h := h_false)]
+    simp only [prob_tsum_form_singleton, ↓reduceIte, mul_zero, tsum_zero, zero_le]
+  · -- `¬ A`: the two negated preconditions of Proposition 4.24 hold (De Morgan).
+    rw [finalSumcheckRelOutProp, finalSumcheckStepFoldingStateProp, not_or] at hA
+    obtain ⟨h_not_consistent, h_no_bad⟩ := hA
+    -- Drop the constant conjunct `A` (which holds), reducing to the all-repetitions event.
+    calc Pr_{ let y ← $ᵖ (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
+            ¬ finalSumcheckRelOutProp 𝔽q β
+                (input := ⟨⟨stmtIn_oStmtIn.1, stmtIn_oStmtIn.2⟩, ()⟩) ∧
+              ∀ rep : Fin γ_repetitions,
+                logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+                  stmtIn_oStmtIn.2 (y rep) stmtIn_oStmtIn.1 stmtIn_oStmtIn.1.final_constant ]
+        ≤ Pr_{ let y ← $ᵖ (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
+              ∀ rep : Fin γ_repetitions,
+                logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+                  stmtIn_oStmtIn.2 (y rep) stmtIn_oStmtIn.1 stmtIn_oStmtIn.1.final_constant ] := by
+          apply Pr_le_Pr_of_implies
+          intro y hy
+          exact hy.2
+      _ ≤ (queryRbrKnowledgeError_singleRepetition (𝓡 := 𝓡)) ^ γ_repetitions := by
+          apply prob_pow_bound_of_forall
+            (A := sDomain 𝔽q β h_ℓ_add_R_rate 0)
+            (n := γ_repetitions)
+            (P := fun v => logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+              stmtIn_oStmtIn.2 v stmtIn_oStmtIn.1 stmtIn_oStmtIn.1.final_constant)
+            (ε := queryRbrKnowledgeError_singleRepetition (𝓡 := 𝓡))
+          exact singleRepetition_proximityCheck_bound (𝔽q := 𝔽q) (β := β)
+            (stmtIn := stmtIn_oStmtIn.1) (oStmtIn := stmtIn_oStmtIn.2)
+            (h_not_oracleFoldingConsistent := h_not_consistent)
+            (h_no_bad_event := h_no_bad)
+      _ = ↑(queryRbrKnowledgeError_singleRepetition (𝓡 := 𝓡) ^ γ_repetitions) := by
+          rw [ENNReal.coe_pow]
+
 theorem queryOracleVerifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (queryOracleVerifier 𝔽q β (ϑ:=ϑ) γ_repetitions).rbrKnowledgeSoundness init impl
@@ -2769,166 +2863,18 @@ theorem queryOracleVerifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp �
     (rbrKnowledgeError := queryRbrKnowledgeError 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) := by
   classical
-  apply OracleReduction.unroll_rbrKnowledgeSoundness
-    (kSF := queryKnowledgeStateFunction 𝔽q β (ϑ:=ϑ) γ_repetitions init impl)
-  intro stmtIn_oStmtIn witIn prover j initState
-  let P := rbrExtractionFailureEvent
+  -- The FRI query round is 1-message verifier-first; reduce r.b.r. knowledge soundness to the
+  -- (now-extracted) per-challenge product bound — a one-liner like the other leaves.
+  exact OracleReduction.rbrKnowledgeSoundness_of_1msg_VtoP_uniformChallenge
+    (WitMid := fun _ => Unit)
+    (rbrKnowledgeError := queryRbrKnowledgeError 𝔽q β γ_repetitions
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (kSF := queryKnowledgeStateFunction 𝔽q β (ϑ:=ϑ) γ_repetitions init impl)
     (extractor := queryRbrExtractor 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (i := j) (stmtIn := stmtIn_oStmtIn)
-  rw [OracleReduction.probEvent_soundness_goal_unroll_log' (pSpec := pSpecQuery 𝔽q β γ_repetitions
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) (P := P) (impl := impl) (prover := prover) (i := j)
-    (stmt := stmtIn_oStmtIn) (wit := witIn) (s := initState)]
-  have h_j_eq_1 : j = ⟨0, rfl⟩ :=
-    match j with
-    | ⟨0, h0⟩ => rfl
-  subst h_j_eq_1
-  conv_lhs => simp only [Fin.isValue, Fin.castSucc_zero];
-  rw [OracleReduction.soundness_unroll_runToRound_0_pSpec_1_V_to_P
-    (prover := prover) (stmtIn := stmtIn_oStmtIn) (witIn := witIn)]
-  simp only [Fin.isValue, Challenge,  Matrix.cons_val_zero, ChallengeIdx,
-    QueryImpl.addLift_def, QueryImpl.liftTarget_self,  bind_pure_comp,
-    liftComp_eq_liftM, simulateQ_bind, simulateQ_map, StateT.run'_eq,
-    StateT.run_bind, StateT.run_map, map_bind, Functor.map_map]
-  rw [probEvent_bind_eq_tsum]
-  -- erw [simulateQ_simOracle2_lift_liftComp_query_T1]
-  -- conv =>
-  --   enter [1]
-  --   erw [probEvent_map]
-  --   rw [OracleQuery.cont_apply]
-  -- erw [probEvent_bind_eq_tsum]
-  apply OracleReduction.ENNReal.tsum_mul_le_of_le_of_sum_le_one
-  · -- Bound the conditional probability for each transcript
-    intro x
-    -- rw [OracleComp.probEvent_map]
-    simp only [Fin.isValue, probEvent_map]
-    let q : OracleQuery
-        [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge]ₒ
-        _ := query ⟨⟨0, by rfl⟩, ()⟩
-    erw [OracleReduction.probEvent_StateT_run_ignore_state
-      (comp := simulateQ (impl.addLift challengeQueryImpl) (liftM (query q.input)))
-      (s := x.2)
-      (P := fun a => P (x.1.1) (q.cont a))]
-    rw [probEvent_eq_tsum_ite]
-    erw [simulateQ_query]
-    simp only [ChallengeIdx, Challenge, Fin.isValue, monadLift_self,
-      QueryImpl.addLift_def, QueryImpl.liftTarget_self, StateT.run'_eq, StateT.run_map,
-      Functor.map_map, ge_iff_le]
-    have h_L_inhabited : Inhabited L := ⟨0⟩
-    conv_lhs =>
-      enter [1, x_1, 2, 1, 2]
-      rw [addLift_challengeQueryImpl_input_run_eq_liftM_run (impl := impl) (q := q) (s := x.2)]
-    erw [StateT.run_monadLift, monadLift_self, liftComp_id]
-    rw [bind_pure_comp]
-    conv =>
-      enter [1, 1, x_1, 2]
-      rw [Functor.map_map]
-      rw [← probEvent_eq_eq_probOutput]
-      rw [probEvent_map]
-      rw [OracleQuery.cont_apply]
-      dsimp only [MonadLift.monadLift]
-      rw [OracleQuery.cont_apply]
-      dsimp only [q]
-    simp_rw [OracleQuery.input_query, OracleQuery.snd_query]
-    conv_lhs => change (∑' (x_1 : (Fin γ_repetitions → ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0))), _)
-    simp only [Function.comp_id]
-    conv =>
-      enter [1, 1, x_1, 2]
-      rw [probEvent_eq_eq_probOutput]
-      change Pr[=x_1 | $ᵗ (Fin γ_repetitions → ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0))]
-      rw [OracleReduction.probOutput_uniformOfFintype_eq_Pr (L := _) (x := x_1)]
-    rw [OracleReduction.tsum_uniform_Pr_eq_Pr
-      (L := (Fin γ_repetitions → ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0)))
-      (P := fun x_1 => P x.1.1 (q.2 x_1))]
-      -- Now the goal is in do-notation form, which is exactly what Pr_ notation expands to
-    -- Make this explicit using change
-    conv_lhs => change (∑' (x_1 : (Fin γ_repetitions → ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0))), _)
-    -- Now the goal is in do-notation form, which is exactly what Pr_ notation expands to
-    -- Make this explicit using change
-    change Pr_{ let y ← $ᵖ (Fin γ_repetitions → ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0)) }[(P x.1.1) y] ≤
-      queryRbrKnowledgeError 𝔽q β γ_repetitions
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨0, rfl⟩
-    -- Factor over independent repetitions using the structure of rbrExtractionFailureEvent
-    --
-    -- Key observations:
-    -- 1. P = rbrExtractionFailureEvent = ∃ witMid : Unit, ¬kSF 0 ... ∧ kSF 1 ...
-    -- 2. Since witMid : Unit, the existential is trivial (there's only ())
-    -- 3. kSF 1 = logical_proximityChecksSpec = ∀ rep, single_check (challenges rep)
-    -- 4. The bound follows from: P y → ∀ rep, single_check (y rep)
-    --    So Pr[P y] ≤ Pr[∀ rep, single_check (y rep)] = Pr[single_check c]^γ
-    --
-    -- Strategy: Use monotonicity of probability, then factor the forall
-    obtain ⟨stmtIn, oStmtIn⟩ := stmtIn_oStmtIn
-    -- Step 1: Define the single-repetition predicate
-    let single_P : ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0) → Prop := fun v =>
-      logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtIn v stmtIn
-        stmtIn.final_constant
-    -- Case split FIRST: if P is empty, handle directly; otherwise extract preconditions
-    by_cases h_P_nonempty : ∃ y, P x.1.1 y
-    case neg =>
-      -- If no y satisfies P x.1.1 y, then Pr[P x.1.1 _] = 0 ≤ bound trivially
-      push_neg at h_P_nonempty
-      -- Show Pr[P x.1.1 _] = 0 using that P is never true
-      calc Pr_{ let y ← $ᵖ (Fin γ_repetitions →
-            ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0)) }[ P x.1.1 y ]
-        _ = Pr_{ let y ← $ᵖ (Fin γ_repetitions →
-            ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0)) }[ False ] := by
-          congr 1; ext y;
-          simp only [Fin.isValue, h_P_nonempty, PMF.monad_pure_eq_pure, PMF.monad_bind_eq_bind,
-            PMF.bind_const, PMF.pure_apply, eq_iff_iff, iff_false, ite_not]
-        _ = 0 := by
-          simp only [PMF.monad_pure_eq_pure, PMF.monad_bind_eq_bind, PMF.bind_const, PMF.pure_apply,
-            eq_iff_iff, iff_false, not_true_eq_false, ↓reduceIte]
-        _ ≤ _ := zero_le _
-    case pos =>
-      -- P is non-empty: extract preconditions from a witness
-      obtain ⟨y₀, h_P_y₀⟩ := h_P_nonempty
-      -- Step 2: Show P implies the forall form
-      have h_P_implies_forall : ∀ y, P x.1.1 y → (∀ rep : Fin γ_repetitions, single_P (y rep)) := by
-        intro y h_P
-        unfold rbrExtractionFailureEvent at h_P
-        rcases h_P with ⟨witMid, h_kSF_false_before, h_kSF_true_after⟩
-        unfold queryKnowledgeStateFunction queryKStateProp logical_proximityChecksSpec
-          at h_kSF_true_after
-        exact h_kSF_true_after
-      -- Step 2b: Extract the preconditions from h_kSF_false_before via De Morgan
-      have h_preconditions :
-          (¬ finalSumcheckStepOracleConsistencyProp 𝔽q β
-            (h_le := by apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ) (hdiv.out))
-            (stmtOut := stmtIn) (oStmtOut := oStmtIn)) ∧
-          (¬ blockBadEventExistsProp 𝔽q β (stmtIdx := Fin.last ℓ)
-            (oracleIdx := OracleFrontierIndex.mkFromStmtIdx (Fin.last ℓ))
-            (oStmt := oStmtIn) (challenges := stmtIn.challenges)) := by
-        -- Use h_P_y₀ to extract preconditions
-        -- First substitute P with its definition
-        simp only [P] at h_P_y₀
-        unfold rbrExtractionFailureEvent at h_P_y₀
-        rcases h_P_y₀ with ⟨witMid, h_kSF_false_before, h_kSF_true_after⟩
-        unfold queryKnowledgeStateFunction at h_kSF_false_before
-        simp only [Fin.castSucc_zero, queryRbrExtractor] at h_kSF_false_before
-        unfold queryKStateProp at h_kSF_false_before
-        simp only at h_kSF_false_before
-        unfold finalSumcheckRelOutProp finalSumcheckStepFoldingStateProp at h_kSF_false_before
-        simp only at h_kSF_false_before
-        push_neg at h_kSF_false_before
-        exact h_kSF_false_before
-      obtain ⟨h_not_consistent, h_no_bad⟩ := h_preconditions
-      -- Step 3: Apply monotonicity
-      apply le_trans (prob_mono (D := $ᵖ (Fin γ_repetitions →
-        ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0))) (P x.1.1)
-        (fun y => ∀ rep : Fin γ_repetitions, single_P (y rep)) h_P_implies_forall)
-      -- Step 4: Factor independent repetitions
-      rw [prob_pow_of_forall_finFun (n := γ_repetitions) (P := single_P)]
-      -- Step 5: Bound single repetition using singleRepetition_proximityCheck_bound
-      have h_single_repetition_bound :
-          Pr_{ let v ← $ᵖ ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0) }[ single_P v ] ≤
-          queryRbrKnowledgeError_singleRepetition (𝓡 := 𝓡) :=
-        singleRepetition_proximityCheck_bound 𝔽q β stmtIn oStmtIn h_not_consistent h_no_bad
-      -- Step 6: Finalize exponential bound
-      unfold queryRbrKnowledgeError
-      exact ENNReal.pow_le_pow_left h_single_repetition_bound
-  · -- Prove: ∑' x, [=x|transcript computation] ≤ 1
-    apply tsum_probOutput_le_one
+    (hDir0 := rfl)
+    (hbound := fun stmtIn_oStmtIn transcript =>
+      query_doom_escape_probability_bound (init := init) (impl := impl)
+        (stmtIn_oStmtIn := stmtIn_oStmtIn) (transcript := transcript))
 
 end FinalQueryRoundIOR
 end
