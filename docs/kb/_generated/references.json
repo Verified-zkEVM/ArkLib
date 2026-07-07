@@ -1,5 +1,5 @@
 {
-  "count": 52,
+  "count": 50,
   "entries": {
     "ACFY24": {
       "authors": [
@@ -736,31 +736,6 @@
       "venue": "J. ACM",
       "year": "1992"
     },
-    "LNP22": {
-      "authors": [
-        "Lyubashevsky, Vadim",
-        "Nguyen, Ngoc Khanh",
-        "Plan{\\c{c}}on, Maxime"
-      ],
-      "authors_text": "Lyubashevsky, Vadim and Nguyen, Ngoc Khanh and Plan{\\c{c}}on, Maxime",
-      "doi": "",
-      "entry_type": "inproceedings",
-      "fields": {
-        "author": "Lyubashevsky, Vadim and Nguyen, Ngoc Khanh and Plan{\\c{c}}on, Maxime",
-        "booktitle": "Advances in Cryptology -- CRYPTO 2022",
-        "pages": "71--101",
-        "publisher": "Springer",
-        "series": "Lecture Notes in Computer Science",
-        "title": "Lattice-Based Zero-Knowledge Proofs and Applications: Shorter, Simpler, and More General",
-        "volume": "13508",
-        "year": "2022"
-      },
-      "key": "LNP22",
-      "title": "Lattice-Based Zero-Knowledge Proofs and Applications: Shorter, Simpler, and More General",
-      "url": "",
-      "venue": "Advances in Cryptology -- CRYPTO 2022",
-      "year": "2022"
-    },
     "LPS24": {
       "authors": [
         "Helger Lipmaa",
@@ -1110,18 +1085,20 @@
       ],
       "authors_text": "Guruswami, Venkatesan and Rudra, Atri and Sudan, Madhu",
       "doi": "",
-      "entry_type": "misc",
+      "entry_type": "article",
       "fields": {
         "author": "Guruswami, Venkatesan and Rudra, Atri and Sudan, Madhu",
-        "note": "Draft (latest revision 2025), available at \\url{https://cse.buffalo.edu/faculty/atri/courses/coding-theory/book/}",
+        "journal": "Draft available at http://www. cse. buffalo. edu/atri/courses/coding-theory/book",
+        "number": "1",
         "title": "Essential coding theory",
-        "year": "2025"
+        "volume": "2",
+        "year": "2012"
       },
       "key": "codingtheory",
       "title": "Essential coding theory",
       "url": "",
-      "venue": "",
-      "year": "2025"
+      "venue": "Draft available at http://www. cse. buffalo. edu/atri/courses/coding-theory/book",
+      "year": "2012"
     },
     "fics-facs": {
       "authors": [
