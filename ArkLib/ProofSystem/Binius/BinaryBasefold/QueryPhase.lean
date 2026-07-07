@@ -277,7 +277,7 @@ lemma probFailure_simulateQ_queryFiberPoints_eq_zero
   erw [OptionT.probFailure_mk_do_bind_eq_zero_iff.{0, 0}]
   constructor
   · erw [OptionT.simulateQ_vector_mapM]
-    simp only [MessageIdx, Message, List.get_eq_getElem, HasEvalPMF.probFailure_eq_zero]
+    simp only [MessageIdx, Message, List.get_eq_getElem, probFailure_eq_zero]
   · intro x hx_mem_support
     erw [OptionT.simulateQ_vector_mapM.{0}] at hx_mem_support
     cases x with
@@ -287,7 +287,7 @@ lemma probFailure_simulateQ_queryFiberPoints_eq_zero
           apply OptionT.probFailure_vector_mapM_eq_zero
           intro x _
           erw [OptionT.probFailure_eq (m := OracleComp []ₒ)]
-          simp only [HasEvalPMF.probFailure_eq_zero, zero_add]
+          simp only [probFailure_eq_zero, zero_add]
           rw [probOutput_eq_zero_iff]
           erw [simulateQ_map]
           simp))
@@ -1178,7 +1178,7 @@ lemma checkSingleRepetition_inner_forIn_probFailure_eq_zero
       constructor
       · -- queryFiberPoints never fails (oracle queries)
         simp only [MessageIdx, List.get_eq_getElem, List.getElem_finRange, Fin.eta,
-          HasEvalPMF.probFailure_eq_zero]
+          probFailure_eq_zero]
       · -- The guard and pure computation
         intro fiber_vec_opt h_fiber_vec_opt_mem_support
         have h_fiber_vec_eq_some :=
@@ -1320,7 +1320,7 @@ lemma checkSingleRepetition_probFailure_eq_zero
   conv =>
     enter [1];
     simp only [MessageIdx, List.forIn_yield_eq_foldlM, id_map', List.foldlM_range, bind_pure_comp,
-      HasEvalPMF.probFailure_eq_zero, zero_add, probOutput_eq_zero_iff', finSupport_map,
+      probFailure_eq_zero, zero_add, probOutput_eq_zero_iff', finSupport_map,
       Finset.mem_image, reduceCtorEq, and_false, exists_const, not_false_eq_true]
   rw [true_and]
   intro c h_c_support_inner_loop
@@ -1437,7 +1437,7 @@ lemma checkSingleRepetition_probFailure_eq_zero
 /-- Pair-support projection wrapper of `support_simulateQ_run'_eq`.
 `Prod.fst` of the stateful run support matches the spec support. -/
 lemma support_run_simulateQ_run_fst_eq {ι : Type}
-    {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited] {σ α : Type}
+    {oSpec : OracleSpec ι} [IsUniformSpec oSpec] {σ α : Type}
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (oa : OracleComp oSpec (Option α)) (s : σ)
     (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
@@ -1756,7 +1756,7 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
             OptionT.support_failure_run, Set.mem_singleton_iff, reduceCtorEq] at h_c_k_mem_output
         rw [h_V_check_def] at h_V_check_passed
         simp only [h_V_check_passed, ↓reduceIte] at h_c_k_mem_output
-        erw [simulateQ_pure, support_bind] at h_c_k_mem_output
+        erw [simulateQ_pure, _root_.map_pure] at h_c_k_mem_output
         simp only [support_pure, Set.mem_singleton_iff, Function.comp_apply,
           Set.iUnion_iUnion_eq_left, OptionT.support_OptionT_pure_run,
           Option.some.injEq] at h_c_k_mem_output
@@ -2268,7 +2268,7 @@ theorem queryPhaseLogicStep_isStronglyComplete :
     conv_lhs => -- first summand is 0
       enter [1]; simp only [MessageIdx, Message, Fin.isValue, liftM_OptionT_eq, bind_pure_comp,
         map_pure, id_map', List.foldlM_range, OptionT.simulateQ_map,
-        HasEvalPMF.probFailure_eq_zero]
+        probFailure_eq_zero]
     rw [zero_add]
     -- 2. Push simulation inside the 'bind' structure
     -- simulateQ (do a <- x; b) = do a <- simulateQ x; simulateQ b
@@ -2294,7 +2294,7 @@ theorem queryPhaseLogicStep_isStronglyComplete :
       -- conv_lhs =>
       --   enter [1]; simp only [MessageIdx, Message, Fin.isValue, liftM_OptionT_eq, bind_pure_comp,
       --     map_pure, List.forIn_yield_eq_foldlM, id_map', List.foldlM_range,
-      --     HasEvalPMF.probFailure_eq_zero]
+      --     probFailure_eq_zero]
       -- rw [zero_add]
       -- -- ⊢ Pr[=none | simulateQ_forIn_block] = 0
       -- change (Pr[=none | simulateQ_forIn_block] = 0)
@@ -2315,7 +2315,7 @@ theorem queryPhaseLogicStep_isStronglyComplete :
       conv_lhs =>
         enter [1];
         simp only [MessageIdx, Message, Fin.isValue, liftM_OptionT_eq, bind_pure_comp, map_pure,
-          HasEvalPMF.probFailure_eq_zero]
+          probFailure_eq_zero]
       rw [zero_add]
       apply OptionT.probOutput_none_run_eq_zero_of_probFailure_eq_zero
       erw [OptionT.probFailure_mk_bind_eq_zero_iff]
@@ -2328,7 +2328,7 @@ theorem queryPhaseLogicStep_isStronglyComplete :
         OptionT.probOutput_none_run_eq_zero_of_probFailure_eq_zero
           (hfail := h_probFailure_simulateQ_singleRepetition_eq_0)
       constructor
-      · simp only [HasEvalPMF.probFailure_eq_zero]
+      · simp only [probFailure_eq_zero]
       · intro x hx -- output from the single repetition
         have h_x_eq : ∃ val, x = some (val) := by
           have h_exists_some := exists_eq_some_of_mem_support_of_probOutput_none_eq_zero (x := x)
@@ -2337,7 +2337,7 @@ theorem queryPhaseLogicStep_isStronglyComplete :
         rcases h_x_eq with ⟨val, h_x_eq⟩
         rw [h_x_eq]
         rw [OptionT.probFailure_mk]
-        simp only [MessageIdx, Message, bind_pure_comp, HasEvalPMF.probFailure_eq_zero, zero_add]
+        simp only [MessageIdx, Message, bind_pure_comp, probFailure_eq_zero, zero_add]
         erw [simulateQ_pure]
         simp only [probOutput_eq_zero_iff, support_pure, Set.mem_singleton_iff, reduceCtorEq,
           not_false_eq_true]
@@ -2345,7 +2345,7 @@ theorem queryPhaseLogicStep_isStronglyComplete :
       OptionT.probOutput_none_run_eq_zero_of_probFailure_eq_zero
         (hfail := h_probFailure_simulateQ_forIn_eq_0)
     constructor
-    · simp only [HasEvalPMF.probFailure_eq_zero]
+    · simp only [probFailure_eq_zero]
     · intro x hx -- output from the forIn loop
       have h_x_eq : ∃ val, x = some (val) := by
         have h_exists_some := exists_eq_some_of_mem_support_of_probOutput_none_eq_zero (x := x)
@@ -2354,7 +2354,7 @@ theorem queryPhaseLogicStep_isStronglyComplete :
       rcases h_x_eq with ⟨val, h_x_eq⟩
       rw [h_x_eq]
       rw [OptionT.probFailure_mk]
-      simp only [HasEvalPMF.probFailure_eq_zero, zero_add]
+      simp only [probFailure_eq_zero, zero_add]
       erw [simulateQ_pure]
       simp only [probOutput_pure, reduceCtorEq, ↓reduceIte]
   exact ⟨h_guards_pass, rfl, rfl, rfl⟩
@@ -2409,7 +2409,7 @@ theorem queryOracleProof_perfectCompleteness {σ : Type}
       dsimp only [liftM, monadLift, MonadLift.monadLift]
       rw [OptionT.probFailure_lift]
       simp only [ChallengeIdx, Challenge, Fin.isValue, Matrix.cons_val_zero, liftComp_eq_liftM,
-        liftComp_id, HasEvalPMF.probFailure_eq_zero]
+        liftComp_id, probFailure_eq_zero]
     rw [true_and]
     intro chal h_chal_support
     -- 1.B Handle the `let receiveChallengeFn ← pure (...)`
@@ -2418,7 +2418,7 @@ theorem queryOracleProof_perfectCompleteness {σ : Type}
         Fin.succ_zero_eq_one, liftComp_eq_liftM]
       dsimp only [liftM, monadLift, MonadLift.monadLift]
       rw [OptionT.probFailure_lift]
-      simp only [Fin.isValue, liftComp_eq_liftM, liftComp_id, HasEvalPMF.probFailure_eq_zero]
+      simp only [Fin.isValue, liftComp_eq_liftM, liftComp_id, probFailure_eq_zero]
     rw [true_and]
     intro h_receiveChallengeFn h_receiveChallengeFn_support
     -- 1.B Handle the `(queryOracleReduction 𝔽q β γ_repetitions).prover.output
@@ -2429,7 +2429,7 @@ theorem queryOracleProof_perfectCompleteness {σ : Type}
         Fin.succ_zero_eq_one, liftComp_eq_liftM]
       dsimp only [liftM, monadLift, MonadLift.monadLift]
       rw [OptionT.probFailure_lift]
-      simp only [Fin.isValue, liftComp_eq_liftM, liftComp_id, HasEvalPMF.probFailure_eq_zero]
+      simp only [Fin.isValue, liftComp_eq_liftM, liftComp_id, probFailure_eq_zero]
     rw [true_and]
     intro prover_final_output h_prover_final_output_support
     conv at h_prover_final_output_support =>
@@ -2456,7 +2456,7 @@ theorem queryOracleProof_perfectCompleteness {σ : Type}
     conv_lhs =>
       enter [1]
       simp only [MessageIdx, Fin.isValue, Message, Matrix.cons_val_zero, Fin.succ_zero_eq_one,
-        id_eq, bind_pure_comp, OptionT.run_map, HasEvalPMF.probFailure_eq_zero]
+        id_eq, bind_pure_comp, OptionT.run_map, probFailure_eq_zero]
     rw [zero_add]
     simp only [probOutput_eq_zero_iff]
     rw [OptionT.support_run_eq]

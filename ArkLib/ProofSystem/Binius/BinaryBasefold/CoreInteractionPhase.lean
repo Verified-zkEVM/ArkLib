@@ -348,7 +348,15 @@ Iterative composition across ℓ rounds: for each i, use Fold+Commitment when
 block verifiers/reductions built earlier to avoid dependent casts.
 -/
 section composedOracleVerifiers
-def nonLastSingleBlockOracleVerifier (bIdx : Fin (ℓ / ϑ - 1)) :=
+def nonLastSingleBlockOracleVerifier (bIdx : Fin (ℓ / ϑ - 1)) :
+    OracleVerifier []ₒ
+      (Statement (L := L) (ℓ := ℓ) Context ⟨↑bIdx.castSucc * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ bIdx.castSucc⟩)
+      (OracleStatement 𝔽q β ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        ⟨↑bIdx.castSucc * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ bIdx.castSucc⟩)
+      (Statement (L := L) (ℓ := ℓ) Context ⟨↑bIdx.succ * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ bIdx.succ⟩)
+      (OracleStatement 𝔽q β ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        ⟨↑bIdx.succ * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ bIdx.succ⟩)
+      (pSpecFullNonLastBlock 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx) :=
   let stmt : Fin (ϑ - 1 + 1) → Type :=
     fun i => Statement (L := L) Context ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_cast_lt_ℓ_succ bIdx i⟩
   let oStmt := fun i: Fin (ϑ - 1 + 1) => OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ
@@ -377,7 +385,7 @@ def nonLastSingleBlockOracleVerifier (bIdx : Fin (ℓ / ϑ - 1)) :=
   let lastOracleVerifier := foldCommitOracleVerifier 𝔽q β (mp := mp)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
     (i := ⟨bIdx * ϑ + (ϑ - 1), h1⟩) (hCR:=isCommitmentRoundOfNonLastBlock (𝓡:=𝓡) (r:=r) bIdx)
-  let nonLastSingleBlockOracleVerifier :=
+  let result :=
     OracleVerifier.append (oSpec:=[]ₒ)
       (Stmt₁:=Statement (L := L) (ℓ := ℓ) Context ⟨bIdx * ϑ, by
         apply Nat.lt_trans (m:=ℓ) (h₁:=by
@@ -434,7 +442,7 @@ def nonLastSingleBlockOracleVerifier (bIdx : Fin (ℓ / ϑ - 1)) :=
             apply instOracleStatementBinaryBasefold_heq_of_fin_eq
             ext; simp only [Fin.castSucc, Fin.castAdd_mk])
       )
-  nonLastSingleBlockOracleVerifier
+  result
 
 def nonLastBlocksOracleVerifier :
   OracleVerifier []ₒ
@@ -574,7 +582,19 @@ end composedOracleVerifiers
 
 section composedOracleRedutions
 
-def nonLastSingleBlockOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) :=
+def nonLastSingleBlockOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) :
+    OracleReduction []ₒ
+      (Statement (L := L) (ℓ := ℓ) Context ⟨↑bIdx * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ bIdx.castSucc⟩)
+      (OracleStatement 𝔽q β ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        ⟨↑bIdx * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ bIdx.castSucc⟩)
+      (Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ)
+        ⟨↑bIdx * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ bIdx.castSucc⟩)
+      (Statement (L := L) (ℓ := ℓ) Context ⟨(↑bIdx + 1) * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ bIdx.succ⟩)
+      (OracleStatement 𝔽q β ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        ⟨(↑bIdx + 1) * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ bIdx.succ⟩)
+      (Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ)
+        ⟨(↑bIdx + 1) * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ bIdx.succ⟩)
+      (pSpecFullNonLastBlock 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx) :=
   let stmt : Fin (ϑ - 1 + 1) → Type :=
     fun i => Statement (L := L) (ℓ := ℓ) Context
       ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_cast_lt_ℓ_succ bIdx i⟩
@@ -607,7 +627,7 @@ def nonLastSingleBlockOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) :=
   let lastOracleReduction := foldCommitOracleReduction 𝔽q β (mp := mp)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (i := ⟨bIdx * ϑ + (ϑ - 1), h1⟩)
     (hCR:=isCommitmentRoundOfNonLastBlock (𝓡:=𝓡) (r:=r) bIdx)
-  let nonLastSingleBlockOracleReduction :=
+  let result :=
     OracleReduction.append (oSpec:=[]ₒ)
       (Stmt₁:=Statement (L := L) (ℓ := ℓ) Context ⟨bIdx * ϑ, by
         apply Nat.lt_trans (m:=ℓ) (h₁:=by
@@ -684,7 +704,7 @@ def nonLastSingleBlockOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) :=
           apply instOracleStatementBinaryBasefold_heq_of_fin_eq
           ext; simp only [Fin.castSucc, Fin.castAdd_mk])
       )
-  nonLastSingleBlockOracleReduction
+  result
 
 def nonLastBlocksOracleReduction :
   OracleReduction []ₒ
@@ -924,7 +944,7 @@ lemma nonLastSingleBlockOracleReduction_perfectCompleteness
         simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, add_zero])
       (h_relIn := by
         apply strictRoundRelation.of_fin_eq
-        simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, add_zero])
+        simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, add_zero, Fin.val_zero])
       (h_relOut := by rfl)
       (impl := impl) (init := init)
     let stmt : Fin (ϑ - 1 + 1) → Type :=

@@ -634,7 +634,7 @@ lemma multilinearCombine_recursive_form_first {ϑ : ℕ}
     intro rowIdx _
     simp [f]
   rw [h_lhs_as_f]
-  rw [← Fin.sum_univ_odd_even (n := ϑ) (f := f)]
+  rw [Fin.sum_univ_odd_even (n := ϑ) (f := f)]
   simp [f]
   simp only [U_even, U_odd, splitEvenOddRowWiseInterleavedWords]
   have h_tensor_even : ∀ i : Fin (2 ^ ϑ),
@@ -1205,7 +1205,7 @@ lemma prop_4_21_2_case_2_fiberwise_far_incremental
       rw [prob_uniform_eq_card_filter_div_card]
       simp only [not_not.mpr h_Ek_close, filter_False, card_empty, CharP.cast_eq_zero,
         ENNReal.coe_zero, ENNReal.coe_natCast, ENNReal.zero_div]
-    rw [this]; exact zero_le _
+    rw [this]; exact bot_le
   · apply le_trans (Pr_le_Pr_of_implies ($ᵖ L) _ _ (fun r_new h => h.2))
     have h_midIdx_i_lt_ℓ : midIdx_i.val < ℓ := by omega
     let s := ϑ - k - 1

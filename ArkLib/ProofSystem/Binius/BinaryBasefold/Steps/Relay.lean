@@ -172,7 +172,7 @@ theorem relayOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : F
     conv_lhs =>
       simp only [liftM, monadLift, MonadLift.monadLift]
       simp only [ChallengeIdx, Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_zero,
-        liftComp_eq_liftM, OptionT.probFailure_lift, HasEvalPMF.probFailure_eq_zero]
+        liftComp_eq_liftM, OptionT.probFailure_lift, probFailure_eq_zero]
     erw [simulateQ_pure];
     -- erw [OptionT.probFailure_mk]
     simp only [ liftComp_eq_liftM, ChallengeIdx, Challenge,
@@ -183,7 +183,7 @@ theorem relayOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : F
     conv_lhs =>
       enter [1]
       simp only [MessageIdx, Fin.isValue, Message, Matrix.cons_val_zero, Fin.succ_zero_eq_one,
-        id_eq, bind_pure_comp, OptionT.run_map, HasEvalPMF.probFailure_eq_zero]
+        id_eq, bind_pure_comp, OptionT.run_map, probFailure_eq_zero]
     rw [zero_add]
     simp only [probOutput_eq_zero_iff]
     rw [OptionT.support_run_eq]

@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 import ArkLib.ProofSystem.Binius.BinaryBasefold.ReductionLogic
-import ArkLib.ToVCVio.Oracle
 import ArkLib.ToVCVio.Simulation
 import ArkLib.OracleReduction.Completeness
 
@@ -165,7 +164,7 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
     conv_lhs =>
       simp only [liftM, monadLift, MonadLift.monadLift]
       simp only [ChallengeIdx, Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_zero,
-        liftComp_eq_liftM, OptionT.probFailure_lift, HasEvalPMF.probFailure_eq_zero]
+        liftComp_eq_liftM, OptionT.probFailure_lift, probFailure_eq_zero]
     rw [true_and]
     -- ⊢ ∀ x ∈ .. support, ... ∧ ... ∧ ...
     intro h_prover_final_output h_prover_final_output_support
@@ -179,12 +178,11 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
     conv_lhs =>
       enter [1]
       simp only [MessageIdx, Fin.isValue, Message, Matrix.cons_val_zero, Fin.succ_zero_eq_one,
-        id_eq, bind_pure_comp, OptionT.run_map, HasEvalPMF.probFailure_eq_zero]
+        id_eq, bind_pure_comp, OptionT.run_map, probFailure_eq_zero]
     rw [zero_add]
     simp only [probOutput_eq_zero_iff]
     rw [OptionT.support_run_eq]
     simp only [←probOutput_eq_zero_iff]
-    simp_all only
     change Pr[= none | OptionT.run (m := (OracleComp []ₒ)) (x := (OptionT.bind _ _)) ] = 0
     rw [OptionT.probOutput_none_bind_eq_zero_iff]
     conv =>
@@ -194,25 +192,19 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
     conv at h_vStmtOut_mem_support =>
       erw [simulateQ_bind]
       -- turn the simulated oracle query into OracleInterface.answer form
-      rw [OptionT.simulateQ_simOracle2_liftM_query_T2] -- V queries P's message
-      change vStmtOut ∈ _root_.support (Bind.bind (m := (OracleComp []ₒ)) _ _)
+      erw [OptionT.simulateQ_simOracle2_liftM_query_T2] -- V queries P's message
       erw [_root_.bind_pure_simulateQ_comp]
       simp only [Matrix.cons_val_zero, guard_eq]
-      -- simp  [bind_pure_comp,
-      -- OptionT.simulateQ_map, OptionT.simulateQ_ite, OptionT.simulateQ_pure,
-      -- OptionT.support_map_run, OptionT.support_ite_run, support_pure,
-      -- OptionT.support_failure_run, Set.mem_image, Set.mem_ite_empty_right,
-      -- Set.mem_singleton_iff, and_true, exists_const, Prod.mk.injEq, existsAndEq]
-      rw [bind_pure_comp]
-      dsimp only [Functor.map]
-      rw [OptionT.simulateQ_bind]
-      erw [support_bind]
-      rw [simulateQ_ite]
+      erw [simulateQ_bind]
+      simp only [show OptionT.pure (m := (OracleComp ([]ₒ + ([OracleStatement 𝔽q β ϑ (Fin.last ℓ)]ₒ +
+        [pSpecFinalSumcheckStep.Message]ₒ)))) = pure by rfl]
+      erw [simulateQ_ite]
       simp only [Fin.isValue, Message, Matrix.cons_val_zero, id_eq, MessageIdx, support_ite,
         toPFunctor_emptySpec, Function.comp_apply, OptionT.simulateQ_pure, Set.mem_iUnion,
         exists_prop]
       simp only [OptionT.simulateQ_failure]
       erw [_root_.simulateQ_pure]
+    subst hInputState_mem_support
     set V_check := step.verifierCheck stmtIn
       (FullTranscript.mk1 (msg0 := _)) with h_V_check_def
     obtain ⟨h_V_check, h_rel, h_agree⟩ := strongly_complete (stmtIn := stmtIn)
@@ -262,16 +254,16 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
     -- Step 2c: Simplify the verifier computation
     conv at h_verOut_mem_support =>
       erw [simulateQ_bind]
-      simp only [Set.mem_singleton_iff]
-      change some (verStmtOut, verOStmtOut) ∈ _root_.support (liftComp _ _)
-      rw [support_liftComp]
-      dsimp only [Functor.map]
-      erw [support_bind]
-      simp only [Fin.isValue, Fin.val_last, OptionT.simulateQ_simOracle2_liftM_query_T2, pure_bind,
-        OptionT.simulateQ_bind, toPFunctor_emptySpec, Function.comp_apply, OptionT.simulateQ_pure,
-        Set.mem_iUnion, exists_prop]
-      rw [simulateQ_ite]; erw [simulateQ_pure]
-      simp only [OptionT.simulateQ_failure]
+      -- strip the sub-spec `liftM` on the `OptionT (OracleComp)` computation
+      erw [support_liftM_optionT]
+      -- turn the simulated oracle query into OracleInterface.answer form
+      erw [OptionT.simulateQ_simOracle2_liftM_query_T2] -- V queries P's message
+      erw [_root_.bind_pure_simulateQ_comp]
+      erw [OptionT.simulateQ_map]
+      erw [OptionT.simulateQ_ite]
+      simp only [Fin.isValue, Message, Matrix.cons_val_zero, id_eq, MessageIdx,
+        toPFunctor_emptySpec, Function.comp_apply, OptionT.simulateQ_pure,
+        OptionT.simulateQ_failure, _root_.map_pure, support_ite, support_pure]
     set V_check := step.verifierCheck stmtIn
       (FullTranscript.mk1
         (msg0 := _))with h_V_check_def
@@ -288,20 +280,23 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
           exact hj_ne hj
       )
     have h_V_check_is_true : V_check := h_V_check
-    simp only [h_V_check_is_true, ↓reduceIte, Fin.isValue] at h_verOut_mem_support
-    erw [support_bind, support_pure] at h_verOut_mem_support
-    simp only [Set.mem_singleton_iff, Fin.isValue, Set.iUnion_iUnion_eq_left,
-      OptionT.support_OptionT_pure_run, exists_eq_left, Option.some.injEq,
-      Prod.mk.injEq] at h_verOut_mem_support
-    rcases h_verOut_mem_support with ⟨verStmtOut_eq, verOStmtOut_eq⟩
+    simp only [h_V_check_is_true, ↓reduceIte, Fin.isValue,
+      Function.comp_apply] at h_verOut_mem_support
+    erw [OptionT.support_OptionT_pure] at h_verOut_mem_support
+    simp only [Set.mem_singleton_iff, Fin.isValue, Prod.mk.injEq] at h_verOut_mem_support
+    obtain ⟨verStmtOut_eq, verOStmtOut_eq⟩ := h_verOut_mem_support
     obtain ⟨prvStmtOut_eq, prvOStmtOut_eq⟩ := h_prvOut_mem_support
-    constructor
-    · rw [verStmtOut_eq, verOStmtOut_eq];
+    subst verStmtOut_eq verOStmtOut_eq
+    refine ⟨?_, ?_, ?_⟩
+    · -- membership in strictFinalSumcheckRelOut: `h_rel` is exactly this, up to the defeq
+      -- `mk1 (answer (mk1 (witIn.f 0)).messages 0 ()) = honestProverTranscript ... = mk1 (witIn.f 0)`
       exact h_rel
-    · constructor
-      · rw [verStmtOut_eq, prvStmtOut_eq]; rfl
-      · rw [verOStmtOut_eq, prvOStmtOut_eq];
-        exact h_agree.2
+    · -- prvStmtOut = verStmtOut
+      rw [prvStmtOut_eq]
+      exact h_agree.1
+    · -- prvOStmtOut = verOStmtOut
+      rw [prvOStmtOut_eq]
+      exact h_agree.2
 
 /-! RBR knowledge error for the final sumcheck step -/
 def finalSumcheckKnowledgeError (m : pSpecFinalSumcheckStep (L := L).ChallengeIdx) :
@@ -407,6 +402,8 @@ lemma extractMLP_some_of_oracleFoldingConsistency
     refine OracleStatement.oracle_eval_congr (oStmtIn := oStmt)
       (h_j := h_jLast_eq_zero.symm) (h_x := ?_)
     simp only [Fin.coe_ofNat_eq_mod, cast_cast]
+    rfl
+    rfl
   · -- We reason on h_oracle_cons
     dsimp only [oracleFoldingConsistencyProp] at h_oracle_cons
     have h_lt : ϑ < ℓ := by omega
@@ -784,7 +781,7 @@ private theorem finalOracleRaw_zero_heq_getFirstOracle
     cases h_j0
     dsimp [finalOracleRaw, getFirstOracle]
     rw [cast_cast]
-    simp)
+    congr)
 
 set_option maxHeartbeats 10000 in
 -- This zero-step close transport crosses from the final-oracle view back to the first oracle.
@@ -1340,7 +1337,7 @@ lemma extracted_t_poly_eval_eq_final_constant
   rcases h_final_consistency with ⟨h_oracle_cons, h_final_cons⟩
   let P₀ : L⦃< 2^ℓ⦄[X] :=
     polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-      (fun ω => tpoly.val.eval (bitsOfIndex ω))
+      (witnessNovelCoeffs tpoly)
   let f₀ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := (0 : Fin r)) :=
     polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
   have h_pair :
@@ -1350,7 +1347,7 @@ lemma extracted_t_poly_eval_eq_final_constant
     have h_pair' :=
       (extractMLP_eq_some_iff_pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (f := getFirstOracle 𝔽q β oStmtOut) (tpoly := tpoly)).1 h_extractMLP
-    dsimp only [f₀] at h_pair' ⊢
+    dsimp [f₀, P₀, witnessNovelCoeffs] at h_pair' ⊢
     exact h_pair'
   let C₀ : Set ((sDomain 𝔽q β h_ℓ_add_R_rate (0 : Fin r)) → L) :=
     (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := (0 : Fin r)))
@@ -1425,8 +1422,6 @@ lemma extracted_t_poly_eval_eq_final_constant
   have h_oracle_cons' := h_oracle_cons
   dsimp only [oracleFoldingConsistencyProp] at h_oracle_cons'
   rcases h_final_cons with ⟨h_fw_last, h_close_const, h_fold_last⟩
-  have h_last_const := congr_fun h_fold_last 0
-  simp only at h_last_const
   -- The last decoded oracle equals the constant oracle fun _ => stmtOut.final_constant.
   -- We apply the same unique-decoding argument as for the first oracle, but now at the
   -- last oracle index with code C_last and center u := oStmtOut jLast.
@@ -1532,6 +1527,7 @@ lemma extracted_t_poly_eval_eq_final_constant
     rw [h_f_last_eq_decoded, h_last_decoded_eq_prefix]
     dsimp [f_f₀_folded_to_last, finalDecodedPrefixFold, k, lastDomainIdx, jLast]
     rw [h_preFinalChallenges_eq]
+    rfl
   -- **f_final_virtual = iterated_fold (f_last, ...)**
   let f_last_folded_to_final := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := lastDomainIdx) (steps := ϑ) (destIdx := finalDomainIdx) (h_destIdx := by
@@ -1629,11 +1625,13 @@ noncomputable def finalSumcheckRbrExtractor :
     let f0 := getFirstOracle 𝔽q β oStmtMid
     let polyOpt := extractMLP 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := ⟨0, by exact Nat.pos_of_neZero ℓ⟩) (f := f0)
-    let H_constant : L⦃≤ 2⦄[X Fin (ℓ - ↑(Fin.last ℓ))] := ⟨MvPolynomial.C stmtMid.sumcheck_target,
-      by
-        simp only [Fin.val_last, mem_restrictDegree, MvPolynomial.mem_support_iff,
-          MvPolynomial.coeff_C, ne_eq, ite_eq_right_iff, Classical.not_imp, and_imp, forall_eq',
-          Finsupp.coe_zero, Pi.zero_apply, zero_le, implies_true]⟩
+    have h_C_mem : MvPolynomial.C stmtMid.sumcheck_target ∈
+        L⦃≤ 2⦄[X Fin (ℓ - ↑(Fin.last ℓ))] := by
+      rw [mem_restrictDegree_iff_degreeOf_le]
+      intro n
+      exact le_trans (by rw [MvPolynomial.degreeOf_C]) (Nat.zero_le _)
+    let H_constant : L⦃≤ 2⦄[X Fin (ℓ - ↑(Fin.last ℓ))] :=
+      ⟨MvPolynomial.C stmtMid.sumcheck_target, h_C_mem⟩
     match polyOpt with
     | none =>
       -- Extraction failed - use constant H to satisfy sumcheckConsistencyProp trivially
@@ -1697,7 +1695,7 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
     finalSumcheckKStateProp 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (tr := tr) (stmtIn := stmtIn) (witMid := witMid) (oStmtIn := oStmtIn)
   toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witMid => by
-    rw [cast_eq]; rfl
+    rfl
   toFun_next := fun m hDir (stmtIn, oStmtIn) tr msg witMid => by
     -- toFun_next is impacted by how we build extractMid
     -- For pSpecCommit, the only P_to_V message is at index 0
@@ -1738,8 +1736,15 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
       · -- local check at m=0
         unfold finalSumcheckRbrExtractor sumcheckConsistencyProp
         simp only [Fin.val_last, Fin.mk_zero', h_extractMLP, Fin.coe_ofNat_eq_mod]
-        simp only [MvPolynomial.eval_C, sum_const, Fintype.card_piFinset, card_map, card_univ,
-          Fintype.card_fin, prod_const, tsub_self, Fintype.card_eq_zero, pow_zero, one_smul]
+        symm
+        calc ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ℓ), (MvPolynomial.eval x)
+                (MvPolynomial.C stmtIn.sumcheck_target)
+            = ∑ _x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ℓ), stmtIn.sumcheck_target :=
+              Finset.sum_congr rfl (fun x _ => MvPolynomial.eval_C (f := x) stmtIn.sumcheck_target)
+          _ = stmtIn.sumcheck_target := by
+              simp only [Finset.sum_const, Fintype.card_piFinset, Finset.card_map,
+                Finset.card_univ, Fintype.card_fin, Finset.prod_const, tsub_self, pow_zero,
+                one_smul]
       · -- witnessStructuralInvariant
         unfold finalSumcheckRbrExtractor witnessStructuralInvariant
         simp only [Fin.val_last, Fin.mk_zero', h_extractMLP, Fin.coe_ofNat_eq_mod, and_true]
@@ -1758,6 +1763,7 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
             (h_extractMLP := h_extractMLP) (h_finalSumcheckStepOracleConsistency := hConsistent)
         simp only
           [h_sumcheck_target_eq, Fin.val_last, Fin.coe_ofNat_eq_mod, MvPolynomial.C_mul]
+        rfl
       · -- firstOracleWitnessConsistencyProp
         dsimp only [finalSumcheckRbrExtractor, firstOracleWitnessConsistencyProp]
         simp only [Fin.mk_zero', h_extractMLP, Fin.coe_ofNat_eq_mod, Fin.val_last,
@@ -1836,8 +1842,13 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
     · simp only [Fin.isValue, h_V_check, ↓reduceIte, OptionT.run_pure, simulateQ_pure,
         Set.mem_iUnion, exists_prop, Prod.exists] at h_output_mem_V_run_support
       erw [simulateQ_bind] at h_output_mem_V_run_support
-      simp only [simulateQ_pure, Fin.isValue, Function.comp_apply,
-        pure_bind] at h_output_mem_V_run_support
+      erw [simulateQ_pure, pure_bind] at h_output_mem_V_run_support
+      erw [OptionT.simulateQ_map] at h_output_mem_V_run_support
+      erw [OptionT.simulateQ_ite] at h_output_mem_V_run_support
+      rw [if_pos h_V_check] at h_output_mem_V_run_support
+      erw [simulateQ_pure] at h_output_mem_V_run_support
+      simp only [OptionT.run_pure, simulateQ_pure, Fin.isValue,
+        Function.comp_apply, _root_.map_pure, pure_bind] at h_output_mem_V_run_support
       erw [support_pure] at h_output_mem_V_run_support
       simp only [Set.mem_singleton_iff, Prod.mk.injEq, ↓existsAndEq, and_true, exists_eq_left,
         ] at h_output_mem_V_run_support
@@ -1866,14 +1877,22 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
     · simp only [Fin.isValue, h_V_check, ↓reduceIte, OptionT.run_failure, simulateQ_pure,
         Set.mem_iUnion, exists_prop, Prod.exists] at h_output_mem_V_run_support
       erw [simulateQ_bind] at h_output_mem_V_run_support
-      simp only [simulateQ_pure, Fin.isValue, Function.comp_apply,
-        pure_bind] at h_output_mem_V_run_support
-      erw [support_pure] at h_output_mem_V_run_support
-      simp only [Set.mem_singleton_iff, Prod.mk.injEq, ↓existsAndEq, and_true, exists_eq_left,
-        simulateQ_pure] at h_output_mem_V_run_support
-      erw [support_pure] at h_output_mem_V_run_support
-      simp only [Set.mem_singleton_iff, Prod.mk.injEq, reduceCtorEq, false_and,
-        exists_false] at h_output_mem_V_run_support -- False
+      erw [simulateQ_pure, pure_bind] at h_output_mem_V_run_support
+      erw [OptionT.simulateQ_map] at h_output_mem_V_run_support
+      erw [OptionT.simulateQ_ite] at h_output_mem_V_run_support
+      erw [if_neg h_V_check] at h_output_mem_V_run_support
+      erw [OptionT.simulateQ_failure] at h_output_mem_V_run_support
+      erw [map_failure] at h_output_mem_V_run_support
+      obtain ⟨x, a, b, hmem, ha⟩ := h_output_mem_V_run_support
+      erw [simulateQ_pure] at hmem
+      change (a, b) ∈ _root_.support (pure (none, s)) at hmem
+      simp only [support_pure, Set.mem_singleton_iff, Prod.mk.injEq] at hmem
+      obtain ⟨ha_eq, -⟩ := hmem
+      subst ha_eq
+      erw [simulateQ_pure] at ha
+      change (some (stmtOut, oStmtOut), x) ∈ _root_.support (pure (none, b)) at ha
+      simp only [support_pure, Set.mem_singleton_iff, Prod.mk.injEq, reduceCtorEq,
+        false_and] at ha
 
 omit [Fintype L] [CharP L 2] in
 /-! Round-by-round knowledge soundness for the final sumcheck step -/

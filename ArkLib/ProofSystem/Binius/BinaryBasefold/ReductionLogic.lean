@@ -191,7 +191,7 @@ structure OracleAwareReductionLogicStep
   - `[pSpec.Message]ₒ` are the prover messages the verifier can query -/
 @[reducible]
 def OracleAwareReductionLogicStep.IsStronglyCompleteUnderSimulation
-    {ι : Type} {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
+    {ι : Type} {oSpec : OracleSpec ι} [IsUniformSpec oSpec]
     {StmtIn WitIn : Type}
     {ιₒᵢ ιₒₒ : Type} {OracleIn : ιₒᵢ → Type} {OracleOut : ιₒₒ → Type}
     {StmtOut WitOut : Type}

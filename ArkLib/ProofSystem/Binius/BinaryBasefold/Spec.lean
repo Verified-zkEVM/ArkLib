@@ -518,6 +518,11 @@ instance instInhabitedOracleSpecEmpty : (([]ₒ : OracleSpec PEmpty).Inhabited) 
 instance instFintypeOracleSpecEmpty : (([]ₒ : OracleSpec PEmpty).Fintype) where
   fintype_B i := nomatch i
 
+/-- `IsUniformSpec` (VCVio v4.30 opt-in) for the empty oracle spec, so
+`unroll_*_reduction_perfectCompleteness` and `unroll_rbrKnowledgeSoundness` can lift to `Pr[...]`. -/
+noncomputable instance instIsUniformSpecOracleSpecEmpty :
+    IsUniformSpec ([]ₒ : OracleSpec PEmpty) := IsUniformSpec.ofFintypeInhabited _
+
 /-! ## OracleSpec.Inhabited for OracleStatement and all pSpec.Message -/
 
 instance instInhabitedOracleStatement {i : Fin (ℓ + 1)} :
@@ -624,6 +629,9 @@ instance instInhabitedPSpecFoldChallenge :
       change Inhabited L
       exact ⟨0⟩
 
+noncomputable instance instIsUniformSpecPSpecFoldChallenge :
+    IsUniformSpec [(pSpecFold (L := L)).Challenge]ₒ := IsUniformSpec.ofFintypeInhabited _
+
 instance : ∀ i, ∀ j, Inhabited
   ((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j)
   | _, ⟨0, h⟩ => nomatch h
@@ -698,6 +706,10 @@ instance instInhabitedPSpecFinalSumcheckStepChallenge :
     cases hi
   exact False.elim hfalse
 
+noncomputable instance instIsUniformSpecPSpecFinalSumcheckStepChallenge :
+    IsUniformSpec [(pSpecFinalSumcheckStep (L:=L)).Challenge]ₒ :=
+  IsUniformSpec.ofFintypeInhabited _
+
 instance : ∀ i, Fintype ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i)
   | ⟨0, _⟩ => by
@@ -732,6 +744,10 @@ instance instInhabitedPSpecQueryChallenge :
   change Inhabited (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0)
   exact ⟨fun _ => 0⟩
 
+noncomputable instance instIsUniformSpecPSpecQueryChallenge :
+    IsUniformSpec [(pSpecQuery 𝔽q β γ_repetitions
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge]ₒ := IsUniformSpec.ofFintypeInhabited _
+
 instance instFintypePspecCommit_AllChallenges {i : Fin ℓ} :
   ∀ j, Fintype ((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j)
   | ⟨0, h⟩ => nomatch h
@@ -760,6 +776,10 @@ instance instInhabitedPspecCommitChallenge {i : Fin ℓ} :
     cases hj
   exact False.elim hfalse
 
+noncomputable instance instIsUniformSpecPspecCommitChallenge {i : Fin ℓ} :
+    IsUniformSpec [((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge)]ₒ :=
+  IsUniformSpec.ofFintypeInhabited _
+
 instance instFintypePSpecRelay_AllChallenges : ∀ i, Fintype ((pSpecRelay).Challenge i)
   | ⟨x, h⟩ => x.elim0
 
@@ -777,6 +797,9 @@ instance instInhabitedPSpecRelayChallenge :
   refine { inhabited_B := ?_ }
   intro x
   nomatch x.1
+
+noncomputable instance instIsUniformSpecPSpecRelayChallenge :
+    IsUniformSpec [(pSpecRelay).Challenge]ₒ := IsUniformSpec.ofFintypeInhabited _
 
 instance instFintypeOracleStatementFinLast :
   [fun j => OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)

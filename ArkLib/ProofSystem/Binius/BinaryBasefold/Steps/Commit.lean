@@ -179,7 +179,7 @@ theorem commitOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : 
     conv_lhs =>
       simp only [liftM, monadLift, MonadLift.monadLift]
       simp only [ChallengeIdx, Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_zero,
-        liftComp_eq_liftM, OptionT.probFailure_lift, HasEvalPMF.probFailure_eq_zero]
+        liftComp_eq_liftM, OptionT.probFailure_lift, probFailure_eq_zero]
     rw [true_and]
     intro r_i' h_r_i'_mem_query_1_support
     conv =>
@@ -201,7 +201,7 @@ theorem commitOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : 
     conv_lhs =>
       enter [1];
       simp only [Fin.isValue, Message, Matrix.cons_val_zero, Fin.succ_zero_eq_one, MessageIdx,
-        OptionT.run_map, HasEvalPMF.probFailure_eq_zero]
+        OptionT.run_map, probFailure_eq_zero]
     rw [zero_add]
     simp only [probOutput_eq_zero_iff]
     rw [OptionT.support_run_eq]
