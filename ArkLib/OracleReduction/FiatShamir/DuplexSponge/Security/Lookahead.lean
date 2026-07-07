@@ -16,12 +16,11 @@ This file contains the lookahead sequence family `S_LA(tr_∇.p, s, i)` and the 
 ## Declaration order (top-to-bottom, matching CO25 §5.3 Algorithm 2)
 
 1. **Paper structures** — `LookaheadSequence` (Eq. 13 chain), `LookaheadSequenceFamily`
-  (the maximal family), and the abbrev `S_LA(tr_∇.p, s, i)`.
-2. **§5.3 Step 1** — `LookAheadSequenceFamily.compute` parses `tr_∇.p`
-  into the maximal family `S_LA(tr_∇.p, s, i)`.
+  (the maximal family), and the abbrev `S_LA(tr_∇.p, s, i)`; consumed as explicit structure
+  hypotheses by proofs. No family-enumeration algorithm is provided (design note before
+  Step 2) — the executable surface is the forward linear scan `linearScanForwards`.
   Internal helpers: `successorCandidates`, `singletonLookaheadSequence`,
-   `prependLookaheadSequence`, `LookaheadCandidate`, `buildLookaheadCandidates`,
-   `enumerateLookaheadCandidates`.
+   `prependLookaheadSequence`.
 3. **§5.3 Step 2** — `lookAhead` dispatches on `|S_LA|`: `err` (multiple), `none` (empty),
    or a sampled `Vector U (challengeSize i)` (single).  Internal helpers: `sampleArrayExact`,
    `sampleRateVector`, `sampleRateVectorsExact`, `takeVector`, plus the size lemma
@@ -216,12 +215,12 @@ private lemma inputState_length_eq_pairs_length
     seq.inputState.length = seq.pairs.length := by
   simp [LookaheadSequence.inputState]
 
-/-- CO25 §5.3 Algorithm 2 **Step 1** — parse `tr_∇.p` into the maximal family
-`S_LA(tr_∇.p, s, i)` (Eq. 13). -/
-def LookAheadSequenceFamily.compute
-    (trΔp : T_P)
-    (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
-    S_LA (pSpec := pSpec) trΔp state i := sorry
+/- Design note (CO25 §5.3): we deliberately provide **no executable enumeration** of the full
+lookahead-sequence family `S_LA(tr_∇.p, s, i)` (Eq. 13, paper Algorithm 2 Step 1). The
+executable `lookAhead` below uses the single-chain forward linear scan with scan-time fork
+detection — CO25's own line-1107 optimization: whenever the scan would branch, the family has
+more than one maximal element and `lookAhead` must return `err` anyway. Proofs quantify over
+`S_LA` as an explicit structure hypothesis when needed. -/
 
 /-! ## §5.3 Step 2 — Final output dispatch on `|S_LA|`: `err` / `none` / sampled vector -/
 
@@ -430,8 +429,8 @@ private lemma linearScanForwards_seq_length_le
         simp at hScan
 
 /-- `linearLookAhead` uses the linear scan to return either a challenge vector or
-`err` directly (paper-faithful). Replaces the exhaustive `LookAheadSequenceFamily.compute` family
-enumeration for the executable surface. -/
+`err` directly (paper-faithful): a scan-time fork means `|S_LA| > 1`, which the paper's
+Step 2(a) maps to `err` anyway, so no family enumeration is needed. -/
 private def linearLookAhead
     (trΔp : T_P) (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
     OracleComp (Unit →ₒ U) (ExperimentOutput (Vector U (challengeSize i))) := do
@@ -444,9 +443,9 @@ private def linearLookAhead
         -- scan-invariant: `pairs.length ≤ maxSteps = pSpec.Lᵥᵢ i`.
         rw [inputState_length_eq_pairs_length]
         exact linearScanForwards_seq_length_le trΔp maxSteps state hScan
-      let rhoHat ← sampleChallengeFromSequence (T_P := T_P) (U := U) (pSpec := pSpec)
+      let rhoHat_i ← sampleChallengeFromSequence (T_P := T_P) (U := U) (pSpec := pSpec)
         (seq := seq) (i := i) (hInputLenLe := hLen)
-      pure (ExperimentOutput.some rhoHat)
+      pure (ExperimentOutput.some rhoHat_i)
 
 /-- CO25 §5.3 Algorithm 2 — `LookAhead(tr_∇.p, s, i)`, polymorphic over any
 `[LawfulTraceTable T_P ...]` for `tr_∇.p`.
@@ -464,8 +463,8 @@ Output: a probabilistic computation returning either
   of length `ℓ_V(i)` is returned (paper Step 2(c)).
 
 Implementation: delegates to `linearLookAhead`, which performs CO25 line-1107's scan-time
-fork-detection optimization. The paper-spec `LookAheadSequenceFamily.compute` family is retained
-for downstream proofs (BadEvents, AbortAnalysis). -/
+fork-detection optimization. Proofs quantify over the family structure `S_LA` as an explicit
+hypothesis when needed — no family enumeration is computed (design note above). -/
 def lookAhead
     (trΔp : T_P)
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :

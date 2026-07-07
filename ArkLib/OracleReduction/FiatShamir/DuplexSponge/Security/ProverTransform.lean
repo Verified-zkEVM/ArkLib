@@ -425,21 +425,23 @@ private def d2sHandleBacktrackNoResult
   -- find `s_out` for `s_in` from `Cache_p -> inlu -> sample`
   let st ← get
   match popCacheByInput (U := U) st.cacheP stateIn with
-  -- Item 4(c)i — cache pop: `(s_out, Cache_p') := pop(Cache_p, s_in)`, `tr_∇.p.add(s_in, s_out)`.
+  -- Item 4(c)i — cache pop: `(s_out, Cache_p') := pop(Cache_p, s_in)`. The paper adds to
+  -- `tr_∇.p` ONLY in Item 4(c)iii (its Eq. 47 consistency list excludes 4(c)i): a
+  -- Cache_p-popped answer must NOT enter `tr_∇`, so a later repeat `p`-query on the same
+  -- `s_in` falls through to 4(c)iii and can answer inconsistently — exactly the `E_func`
+  -- event that Lemma 5.8 bounds via the `Cache_p ∩ tr` count (CO25 Eqs. 31–33).
   | some (cachedOut, cacheTail) =>
-      -- Item 4(c)iv — append `('p', s_in, s_out)` to `tr`.
+      -- Item 4(f) — append `('p', s_in, s_out)` to `tr` (shared across 4(c)/(d)/(e)).
       let trace' := st.trace ++ [⟨dsPermQuery stateIn, cachedOut⟩]
-      let trΔ' : TraceNabla T_H T_P StmtIn U :=
-        { st.trΔ with p := TraceTableOps.add st.trΔ.p stateIn cachedOut }
-      let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
-        TraceNabla.IsSubsetOfQueryLog_append_perm st.h_inv stateIn cachedOut
-      set { st with trace := trace', cacheP := cacheTail, trΔ := trΔ', h_inv := h_inv' }
+      let h_inv' : st.trΔ.IsSubsetOfQueryLog trace' :=
+        TraceNabla.IsSubsetOfQueryLog_append_any st.h_inv ⟨dsPermQuery stateIn, cachedOut⟩
+      set { st with trace := trace', cacheP := cacheTail, h_inv := h_inv' }
       return cachedOut
   | none =>
       match TraceTableOps.inlu st.trΔ.p stateIn with
       -- Item 4(c)ii — forward cache hit: `s_out := tr_∇.p.inlu(s_in)`.
       | some recovered =>
-          -- Item 4(c)iv — append `('p', s_in, s_out)` to `tr`.
+          -- Item 4(f) — append `('p', s_in, s_out)` to `tr` (shared across 4(c)/(d)/(e)).
           let trace' := st.trace ++ [⟨dsPermQuery stateIn, recovered⟩]
           let h_inv' : st.trΔ.IsSubsetOfQueryLog trace' :=
             TraceNabla.IsSubsetOfQueryLog_append_any st.h_inv ⟨dsPermQuery stateIn, recovered⟩
@@ -449,7 +451,7 @@ private def d2sHandleBacktrackNoResult
           -- Item 4(c)iii — fresh sample: `s_out ←$ 𝒰(Σ^{r+c})`; `tr_∇.p.add(s_in, s_out)`.
           let sampledOut ← StateT.lift <| OptionT.lift <|
             d2sSampleState (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
-          -- Item 4(c)iv — append `('p', s_in, s_out)` to `tr`.
+          -- Item 4(f) — append `('p', s_in, s_out)` to `tr` (shared across 4(c)/(d)/(e)).
           let trace' := st.trace ++ [⟨dsPermQuery stateIn, sampledOut⟩]
           let trΔ' : TraceNabla T_H T_P StmtIn U :=
             { st.trΔ with p := TraceTableOps.add st.trΔ.p stateIn sampledOut }

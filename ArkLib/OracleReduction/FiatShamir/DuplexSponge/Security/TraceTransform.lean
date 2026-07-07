@@ -193,22 +193,22 @@ private def stdTraceDelta
 private def StdTraceState.appendEntry
     (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (q : StdTraceQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (rhoHat : Vector U (challengeSize q.roundIdx)) :
+    (rhoHat_i : Vector U (challengeSize q.roundIdx)) :
     StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
       :=
-  { st with trStd := st.trStd ++ [{ query := q, response := rhoHat }] }
+  { st with trStd := st.trStd ++ [{ query := q, response := rhoHat_i }] }
 
 private def StdTraceState.appendMemoAndEntry
     (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (q : StdTraceQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (rhoHat : Vector U (challengeSize q.roundIdx)) :
+    (rhoHat_i : Vector U (challengeSize q.roundIdx)) :
     StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
       :=
-  { trStd := st.trStd ++ [{ query := q, response := rhoHat }]
+  { trStd := st.trStd ++ [{ query := q, response := rhoHat_i }]
     -- cache `((i, 𝕩, τ, α̂_{<i}), ρ̂_i)` into `tr_std^LA`
     trStdLA := insertStdTraceMemo
       (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-      st.trStdLA q rhoHat }
+      st.trStdLA q rhoHat_i }
 
 /-- StdTrace Item 4(a)iv-v — reuse memoized LookAhead output or call LookAhead and append
 `tr_std`.
@@ -226,13 +226,13 @@ private def stdTraceLookupOrLookAhead
       (StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) := do
   match lookupStdTraceMemo
       (StmtIn := StmtIn) (pSpec := pSpec) (U := U) st.trStdLA q with
-  | some rhoHat =>
+  | some rhoHat_i =>
       -- Item 4(a)ivA — `tr_std^LA` hit on key `(i, 𝕩, τ, α̂_{<i})`: reuse cached `ρ̂_i`.
-      pure (st.appendEntry (StmtIn := StmtIn) (pSpec := pSpec) (U := U) q rhoHat)
+      pure (st.appendEntry (StmtIn := StmtIn) (pSpec := pSpec) (U := U) q rhoHat_i)
   | none =>
       -- Item 4(a)ivB — `tr_std^LA` miss on `(i, 𝕩, τ, α̂_{<i})`: call `LookAhead(tr_∇.p, s_in, i)`.
-      let rhoHat? ← lookAhead (pSpec := pSpec) (U := U) trΔp stateIn q.roundIdx
-      match rhoHat? with
+      let rhoHat_i? ← lookAhead (pSpec := pSpec) (U := U) trΔp stateIn q.roundIdx
+      match rhoHat_i? with
       | .err =>
           -- CO25 `err`: multiple lookahead chains found (unexpected after backtrack).
           failure
@@ -240,10 +240,10 @@ private def stdTraceLookupOrLookAhead
           -- CO25 §5.5.1 Item 4(a)ivB-D: once BackTrack returns a valid tuple for the
           -- current `p` entry, LookAhead should find the matching successor in `tr`.
           failure
-      | .some rhoHat =>
+      | .some rhoHat_i =>
           -- Item 4(a)ivD — append `((i, 𝕩, τ, α̂_{<i}), ρ̂_i)` to `tr_std^LA` and `tr_std`.
           pure (st.appendMemoAndEntry
-            (StmtIn := StmtIn) (pSpec := pSpec) (U := U) q rhoHat)
+            (StmtIn := StmtIn) (pSpec := pSpec) (U := U) q rhoHat_i)
 
 /-- StdTrace Item 4(a)iii-v — check codec image, then memo/lookahead and append an entry.
 
@@ -371,7 +371,8 @@ noncomputable def d2sTraceSalted
             let newEntries := st'.trStd.drop st.trStd.length
             -- Apply line-4 transform to them
             let mappedNewEntries := newEntries.filterMap fun e =>
-              match stdTraceEntryToFSQuerySalted? (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (Salt := Salt) e with
+              match stdTraceEntryToFSQuerySalted? (δ := δ) (StmtIn := StmtIn)
+              (pSpec := pSpec) (U := U) (Salt := Salt) e with
               | none => none
               | some mapped => some (tag, ⟨.inr mapped.1, mapped.2⟩)
             go rest st' (out ++ mappedNewEntries)

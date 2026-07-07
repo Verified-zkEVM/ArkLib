@@ -14,9 +14,10 @@ This file contains the backtracking sequence family and procedure for the analys
 Fiat-Shamir, following Section 5.2 in the paper.
 
 - `BacktrackSequence`: a single backtrack sequence
-- `S_BT/BacktrackSequenceFamily`: a set of lawful backtrack sequences of a `(h,p,p⁻¹)`-trace
-  - `BacktrackSequenceFamily.backtrackCompute`: the backtrack algorithm to compute all backtrack
-    sequences from the query trace `tr`.
+- `S_BT/BacktrackSequenceFamily`: a set of lawful backtrack sequences of a `(h,p,p⁻¹)`-trace,
+  consumed as an explicit structure hypothesis by the bad-event lemmas (`BadEvents`,
+  `AbortAnalysis`); no family-enumeration algorithm is provided — the executable surface is
+  the linear scan (see the design note in `section S_BT_BacktrackComputation`).
 - `J_BT`: the set of occurence index sequences of `S_BT`
   - `BacktrackSequence.Index`: compute the index sequence of a single backtrack sequence.
 - `backTrack`: the core backtrack algorithm
@@ -359,9 +360,13 @@ structure BacktrackOutput where
 
 section S_BT_BacktrackComputation
 
-private inductive BuildBacktrackResult (U : Type) [SpongeUnit U] [SpongeSize] where
-  | err
-  | ok (stepFamilies : List (List (CanonicalSpongeState U × CanonicalSpongeState U)))
+/- Design note (CO25 §5.2): we deliberately provide **no executable enumeration** of the full
+backtrack-sequence family `S_BT(tr, s)` (Definition 5.3). The executable `backTrack` below uses
+the single-chain linear scan with scan-time fork detection — CO25's own "look for at most one
+element" optimization (line 1056): under `¬E_fork` (Lemma 5.14) the maximal family has at most
+one element, and any scan-time fork is subsumed by the bad events `E_fork,p ∪ E_fork,h,p`.
+Downstream proofs (`BadEvents`, `AbortAnalysis`) quantify over `S_BT` as an explicit structure
+hypothesis and never need to compute the family. -/
 
 /-- Paper §5.2 partial-cap-segment matching for `BackTrack`: enumerate all `(stateIn, stateOut)`
 pairs in `tr_∇.p` whose `stateOut.capacitySegment` equals `nextInput.capacitySegment`, with the
@@ -667,48 +672,6 @@ private def linearScanBackwards
               (s_in.capacitySegment :: vCap) acc'
     | .conflict => .forkErr -- `L_p` collision → `E_fork`
 
-/-- BackTrack §5.2 Step 2: A concrete backtrack algorithm to exhausively scan an
-and compute a valid sequence family `S_BT(tr, s)`. -/
-private def BacktrackSequenceFamily.sequenceScan
-    (trΔ : TraceNabla T_H T_P StmtIn U)
-    (depthBound : Nat)
-    (state : CanonicalSpongeState U) :
-    BuildBacktrackResult U :=
-  -- scan backwards
-  let rec go (fuel : Nat) (current : CanonicalSpongeState U)
-      (stepsRev : List (CanonicalSpongeState U × CanonicalSpongeState U)) :
-      BuildBacktrackResult U :=
-    match fuel with
-    | 0 => .err
-    | fuel + 1 =>
-      let preds := predecessorCandidates (T_P := T_P) (U := U) trΔ current.capacitySegment
-      let validPreds := preds.filter (fun p => p.1.capacitySegment ≠ p.2.capacitySegment)
-      match validPreds with
-      | [] => .ok [stepsRev.reverse]
-      | _ =>
-        let rec collect
-            (remaining : List (CanonicalSpongeState U × CanonicalSpongeState U))
-            (acc : List (List (CanonicalSpongeState U × CanonicalSpongeState U))) :
-            BuildBacktrackResult U :=
-          match remaining with
-          | [] => .ok acc
-          | pred :: rest =>
-            match go fuel pred.1 (pred :: stepsRev) with
-            | .err => .err
-            | .ok childFamilies => collect rest (acc ++ childFamilies)
-        collect preds []
-  go depthBound state []
-
-/-- BackTrack §5.2 Step 2: A concrete backtrack algorithm to exhausively scan an
-and compute a valid sequence family `S_BT(tr, s)`. -/
-private def BacktrackSequenceFamily.compute
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (trΔ : TraceNabla T_H T_P StmtIn U)
-    (h_trΔ : trΔ.IsSubsetOfQueryLog trace)
-    (state : CanonicalSpongeState U) (depthBound : Nat) :
-    BacktrackSequenceFamily (trace := trace) (state := state):=
-  sorry
-
 end S_BT_BacktrackComputation
 
 /-- CO25 Eq. 6 — `L_δ = ⌈δ / r⌉`: number of rate blocks for the salt. -/
@@ -856,10 +819,10 @@ private def BacktrackSequence.assembleEncodedMessage
     {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
     {state : CanonicalSpongeState U}
     (seq : BacktrackSequence trace state)
-    (L_ptr lpCur : Nat) (msgIdx : pSpec.MessageIdx) :
+    (L_ptr L_P_i : Nat) (msgIdx : pSpec.MessageIdx) :
     Option (Vector U (messageSize msgIdx)) := do
   let blockUnits :=
-    ((seq.inputState.drop L_ptr).take lpCur).foldl
+    ((seq.inputState.drop L_ptr).take L_P_i).foldl
       (fun acc s => acc ++ s.rateSegment.toList) []
   let ⟨v, _⟩ ← vectorOfListExact (U := U) (messageSize msgIdx) blockUnits
   return v
@@ -907,6 +870,11 @@ private def BacktrackSequence.constructCandidateSalt
   if hδR : δ ≤ SpongeSize.R then
     -- No remainder to check; just return the salt.
     return saltₖ
+  else if δ % SpongeSize.R = 0 then
+    -- Exact-block salt (`R ∣ δ`): the final salt block overwrites the entire rate, leaving no
+    -- inherited remainder — the check window `[δ mod r : r)` is empty. Without this guard,
+    -- `drop 0` degenerates to a spurious full-rate comparison that rejects honest traces.
+    return saltₖ
   else
     -- `δ > R` ⟹ `Lδ ≥ 2`, so `Lδ - 1` and `Lδ - 2` are valid indices.
     have hLδ_ge2 : 2 ≤ Lδ (δ := δ) := Lδ_ge_two_of_gt_R (Nat.lt_of_not_le hδR)
@@ -931,10 +899,10 @@ private def BacktrackSequence.extractCandidate
     (salt : Vector U δ) :
     Option (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) := Id.run do
   -- `m_k + 1 = |inputState^(k)|` — number of permutation calls reconstructed for this sequence.
-  let m_plus_1 := seq.inputState.length
+  let m_k_plus_1 := seq.inputState.length
   -- Accumulator `(α̂_1^(k), …, α̂_{i-1}^(k))` built across the loop iterations.
   -- Each entry `⟨msgIdx, v⟩` carries the encoded message `α̂_{msgIdx} ∈ Σ^{ℓ_P(msgIdx)}`.
-  let mut encodedAcc : List
+  let mut alphaHat_acc : List
       (Sigma fun msgIdx : pSpec.MessageIdx => Vector U (messageSize msgIdx)) := []
   -- Step 4(a): For every i ∈ [k] = {1, …, k}.
   for i in challengeIdxList (pSpec := pSpec) do
@@ -945,19 +913,19 @@ private def BacktrackSequence.extractCandidate
     let L_ptr := Lδ (δ := δ) + L_P_before + L_V_before
     let msgIdx? := lastMessageBefore? (pSpec := pSpec) i
     -- `L_P(i) := ⌈ℓ_P(i) / r⌉` — permutation blocks needed for the i-th prover message.
-    let lpCur := msgIdx?.elim 0 (fun msgIdx => pSpec.Lₚᵢ msgIdx)
+    let L_P_i := msgIdx?.elim 0 (fun msgIdx => pSpec.Lₚᵢ msgIdx)
     -- `ℓ_P(i) := messageSize msgIdx` — char-length of the i-th prover message in `Σ`.
-    let msgSizeUnits := msgIdx?.elim 0 (fun msgIdx => messageSize msgIdx)
+    let ℓ_P_i := msgIdx?.elim 0 (fun msgIdx => messageSize msgIdx)
     -- Step 4(a).ii — guard `L_ptr(i) + L_P(i) ≤ m_k + 1`.
     -- (Otherwise the chain is too short to host this message window.)
-    if L_ptr + lpCur > m_plus_1 then
+    if L_ptr + L_P_i > m_k_plus_1 then
       return none -- not enough rate blocks to host the i-th message ⇒ remove from S_BT
     -- Step 4(a).iii.A — assemble `α̂_i^(k) ∈ Σ^{ℓ_P(i)}` via `assembleEncodedMessage`
     -- (CO25 Eq. 11). Returns `none` if the rate-block window has fewer than `ℓ_P(i)` chars.
     match msgIdx? with
     | some msgIdx =>
-      match seq.assembleEncodedMessage L_ptr lpCur msgIdx with
-      | some v => encodedAcc := encodedAcc ++ [⟨msgIdx, v⟩]
+      match seq.assembleEncodedMessage L_ptr L_P_i msgIdx with
+      | some v => alphaHat_acc := alphaHat_acc ++ [⟨msgIdx, v⟩]
       | none => return none -- not enough units in this block window ⇒ remove from S_BT
     | none => pure ()
     -- Step 4(a).iii.B — define the message-remainder rate suffix:
@@ -966,27 +934,42 @@ private def BacktrackSequence.extractCandidate
     -- that did NOT contribute to `α̂_i^(k)`.
     --
     -- Step 4(a).iii.C — check that `z_i^(k)` equals the corresponding suffix of the
-    -- last output-rate block:
-    --   `z_i^(k)  ?=  s_{R,out,L_ptr(i)+L_P(i)-1}[ℓ_P(i) mod r : r]`.
-    -- (CO25 Step 4(a).iii.C remainder check; in chars, the unused tail of the in/out rate
-    -- blocks must agree, since the permutation only XORs the first `ℓ_P(i) mod r` chars.)
-    if 0 < lpCur then
-      let msgEndIdx := L_ptr + lpCur - 1
-      if h_bounds : msgEndIdx < m_plus_1 ∧ msgEndIdx < seq.outputState.length then
-        let z_i := (seq.inputState.get ⟨msgEndIdx, h_bounds.1⟩).rateSegment.toList.drop
-          (msgSizeUnits % SpongeSize.R)
-        let outSuffix := (seq.outputState.get ⟨msgEndIdx, h_bounds.2⟩).rateSegment.toList.drop
-          (msgSizeUnits % SpongeSize.R)
+    -- **previous** output-rate block:
+    --   `z_i^(k)  ?=  s_{R,out,L_ptr(i)+L_P(i)-2}[ℓ_P(i) mod r : r]`.
+    -- Lazy-permute absorb (`DuplexSponge.absorb`) overwrites the last (partial) message chunk
+    -- onto the previous permutation output, so the untouched suffix is inherited from
+    -- `s_out,msgEndBlock−1`. NOTE: CO25's printed Step C subscript is `L_ptr(i)+L_P(i)−1`
+    -- (same index as the input side) — an erratum: the paper's own Step E pairing
+    -- (`in[j+1] = out[j]`), its "previous output" prose, and its Step 3 salt check all use the
+    -- shifted pairing, and the printed index does not exist in the exact-fit case (Def 5.3
+    -- Eq. 8: the chain ends on an input state, so `s_out,m_k` is not in the sequence).
+    --
+    -- The check applies only when the final block is partial (`ℓ_P(i) mod r ≠ 0`): a full
+    -- final block overwrites the entire rate, leaving no inherited remainder.
+    if 0 < L_P_i ∧ ℓ_P_i % SpongeSize.R ≠ 0 then
+      let msgEndBlock := L_ptr + L_P_i - 1
+      if h_bounds : msgEndBlock < m_k_plus_1 ∧ 0 < msgEndBlock ∧
+          msgEndBlock - 1 < seq.outputState.length then
+        let z_i := (seq.inputState.get ⟨msgEndBlock, h_bounds.1⟩).rateSegment.toList.drop
+          (ℓ_P_i % SpongeSize.R)
+        let outSuffix := (seq.outputState.get
+            ⟨msgEndBlock - 1, h_bounds.2.2⟩).rateSegment.toList.drop
+          (ℓ_P_i % SpongeSize.R)
         if z_i ≠ outSuffix then
           return none -- B/C remainder check failed ⇒ remove from S_BT
       else
-        return none
+        -- `msgEndBlock = 0` (no salt blocks, first block of the first message): the remainder
+        -- is inherited from the post-`Start` state, which the chain does not carry. Skip the
+        -- check — removal from `S_BT` happens only on a *failed* check, never on a missing
+        -- comparand (this was the Step-D-unreachable bug: rejecting here killed every
+        -- exact-fit candidate, since `s_out,m_k` never exists).
+        pure ()
     -- Step 4(a).iii.D — exact fit: `L_ptr(i) + L_P(i) = m_k + 1`.
     -- Char-based view: the chain ends exactly after the i-th message is absorbed; no
     -- challenge squeeze follows. Store the output tuple
     --   `(i, 𝕩^(k), τ^(k), (α̂_1^(k), …, α̂_i^(k)))` in `Outs`.
-    if L_ptr + lpCur == m_plus_1 then
-      let acc := encodedAcc
+    if L_ptr + L_P_i == m_k_plus_1 then
+      let acc := alphaHat_acc
       let msgs : pSpec.EncodedMessagesBefore U i.1.castSucc :=
         fun ⟨j, _⟩ =>
           match acc.findSome? (fun p => if h : p.1 = j then some (h ▸ p.2) else none) with
@@ -995,9 +978,9 @@ private def BacktrackSequence.extractCandidate
       return some { roundIdx := i, stmt := seq.stmt, salt := salt, encodedMessages := msgs }
     -- Step 4(a).iii.E — verifier squeeze window check via `checkSqueezeWindow`
     -- on the range `[L_ptr(i)+L_P(i), L_ptr(i)+L_P(i)+L_V(i))` (CO25 Step 4(a).iii.E).
-    let lvCur := pSpec.Lᵥᵢ i
-    if L_ptr + lpCur + lvCur < m_plus_1 then
-      if not (seq.checkSqueezeWindow (L_ptr + lpCur) lvCur) then
+    let L_V_i := pSpec.Lᵥᵢ i
+    if L_ptr + L_P_i + L_V_i < m_k_plus_1 then
+      if not (seq.checkSqueezeWindow (L_ptr + L_P_i) L_V_i) then
         return none -- E squeeze window check failed ⇒ remove from S_BT
     else
       -- Step 4(a).iii.F — neither D (exact fit) nor E (squeeze fits) applies.
@@ -1048,10 +1031,11 @@ And returns one of the following:
 - `ExperimentOutput.err` — paper-`err` (multiple elements in Outs, ambiguous)
 - `ExperimentOutput.some out` — paper-success (unique tuple `(i, 𝕩, τ, (α̂_1, …, α̂_i))` in Outs)
 
-Implementation: delegates to `linearBackTrack` (CO25 §5.2 line 1056 optimization). The legacy
-paper-spec `BacktrackSequenceFamily.compute` is retained for downstream proofs (BadEvents,
-AbortAnalysis) which quantify over `S_BT.seqFamily`; the executable surface here uses the
-linear scan, which is a strict over-approximation under the bad-event analysis. -/
+Implementation: delegates to `linearBackTrack` (CO25 §5.2 line 1056 optimization). Downstream
+proofs (BadEvents, AbortAnalysis) quantify over the family structure `S_BT` as an explicit
+hypothesis — no family enumeration is computed (see the design note in
+`section S_BT_BacktrackComputation`); the linear scan's scan-time fork is a strict
+over-approximation under the bad-event analysis. -/
 def backTrack
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (trΔ : TraceNabla T_H T_P StmtIn U)
