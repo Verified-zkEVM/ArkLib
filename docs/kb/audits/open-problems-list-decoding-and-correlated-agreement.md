@@ -282,6 +282,8 @@ than mathematical. These drive the grand-challenge instantiation phase.
    file is WHIR/proximity-generator specific and is not a drop-in
    formalization of Section 4. Phase 1 re-expresses the WHIR notion as a
    specialization of the new general `epsMCA`.
+   Jo26 should be treated as the sharper follow-up reference for transferring generator-MCA bounds
+   to row-wise interleaved codes once the general MCA interface exists.
 
 3. **The non-unique-decoding branch of BCIKS20 AffineLines is still open.**
    [BCIKS20/AffineLines/Main.lean:40](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean)
