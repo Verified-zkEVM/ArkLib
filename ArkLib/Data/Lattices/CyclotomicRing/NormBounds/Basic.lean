@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
 import ArkLib.Data.Lattices.CyclotomicRing.Rq
-import ArkLib.Data.Lattices.CyclotomicRing.Vectors
+import ArkLib.Data.Lattices.Vectors
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Data.ZMod.ValMinAbs
 
@@ -95,6 +95,19 @@ def vecL2NormSq {cols : ℕ} (z : PolyVec (Rq Φ) cols) : ℕ :=
 def vecLInftyNorm {cols : ℕ} (z : PolyVec (Rq Φ) cols) : ℕ :=
   (Finset.univ : Finset (Fin cols)).sup (fun i => Rq.lInftyNorm Φ (z i))
 
+/-! ### Norm notation
+
+Notation for the centered norms, with the modulus `Φ` left implicit (inferred from the
+argument's type). `‖·‖₂²` is overloaded for both ring elements (`Rq.l2NormSq`) and vectors
+(`vecL2NormSq`); elaboration disambiguates by the argument type. -/
+
+/-- Centered `ℓ₁` norm `‖a‖₁` of a ring element (`Φ` inferred). -/
+notation "‖" a "‖₁" => Rq.l1Norm _ a
+/-- Centered squared-`ℓ₂` norm `‖a‖₂²` of a ring element (`Φ` inferred). -/
+notation "‖" a "‖₂²" => Rq.l2NormSq _ a
+/-- Centered squared-`ℓ₂` norm `‖z‖₂²` of a vector (`Φ` inferred). -/
+notation "‖" z "‖₂²" => vecL2NormSq _ z
+
 omit [NeZero q] in
 /-- The underlying polynomial of `1 : Rq Φ` is the constant `1` (no reduction occurs, as
 `deg 1 = 0 < deg φ`). -/
@@ -109,7 +122,7 @@ theorem Rq.one_val (h : 1 ≤ Φ.φ.natDegree) : (1 : Rq Φ).1 = 1 := by
 omit [NeZero q] in
 /-- The centered `ℓ₁` norm of `1 : Rq Φ` is `1` (when `1 ≤ deg φ`): the trivial challenge `c = 1`
 used by the honest committer is nonzero and `ℓ₁`-short. -/
-theorem Rq.l1Norm_one (h : 1 ≤ Φ.φ.natDegree) : Rq.l1Norm Φ (1 : Rq Φ) = 1 := by
+theorem Rq.l1Norm_one (h : 1 ≤ Φ.φ.natDegree) : ‖(1 : Rq Φ)‖₁ = 1 := by
   have hq2 : 2 ≤ q := (Fact.out (p := Nat.Prime q)).two_le
   unfold Rq.l1Norm
   rw [Finset.sum_eq_single (0 : ℕ)]
@@ -158,7 +171,7 @@ def scalarVecMulMulL2NormSqBound (κ βSq : ℕ) : ℕ := κ ^ 2 * βSq
 
 /-- Per-element subtraction bound: `‖a - b‖₂² ≤ 2·(‖a‖₂² + ‖b‖₂²)`. -/
 theorem Rq.l2NormSq_sub_le (a b : Rq Φ) :
-    Rq.l2NormSq Φ (a - b) ≤ 2 * (Rq.l2NormSq Φ a + Rq.l2NormSq Φ b) := by
+    ‖a - b‖₂² ≤ 2 * (‖a‖₂² + ‖b‖₂²) := by
   unfold Rq.l2NormSq
   rw [← Finset.sum_add_distrib, Finset.mul_sum]
   refine Finset.sum_le_sum (fun k _ => ?_)
@@ -178,9 +191,9 @@ theorem Rq.l2NormSq_sub_le (a b : Rq Φ) :
 /-- **Subtraction bound.** The squared `ℓ₂` norm of a difference of two vectors, each
 within `boundSq`, is within `subL2NormSqBound boundSq = 4·boundSq`. -/
 theorem sub_l2NormSq_le {cols : ℕ} (v w : PolyVec (Rq Φ) cols) {boundSq : ℕ}
-    (hv : vecL2NormSq Φ v ≤ boundSq) (hw : vecL2NormSq Φ w ≤ boundSq) :
-    vecL2NormSq Φ (v - w) ≤ subL2NormSqBound boundSq := by
-  have hstep : vecL2NormSq Φ (v - w) ≤ 2 * (vecL2NormSq Φ v + vecL2NormSq Φ w) := by
+    (hv : ‖v‖₂² ≤ boundSq) (hw : ‖w‖₂² ≤ boundSq) :
+    ‖v - w‖₂² ≤ subL2NormSqBound boundSq := by
+  have hstep : ‖v - w‖₂² ≤ 2 * (‖v‖₂² + ‖w‖₂²) := by
     unfold vecL2NormSq
     rw [← Finset.sum_add_distrib, Finset.mul_sum]
     refine Finset.sum_le_sum (fun i _ => ?_)

@@ -38,7 +38,7 @@
    "rev": "5f7707fbeb0c53754580b0a506af8952f75e9019",
    "name": "VCVio",
    "manifestFile": "lake-manifest.json",
-   "inputRev": "5f7707fbeb0c53754580b0a506af8952f75e9019",
+   "inputRev": "v4.30.0",
    "inherited": false,
    "configFile": "lakefile.lean"},
   {"url": "https://github.com/leanprover-community/mathlib4",

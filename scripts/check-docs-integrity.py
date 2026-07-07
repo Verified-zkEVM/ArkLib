@@ -22,10 +22,17 @@ MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]+\]\(([^)]+)\)")
 
 
 def tracked_markdown_files() -> list[Path]:
+    # `docs/kb/_generated/` is machine-generated and refreshed on `main` by the KB
+    # generated-files workflow (and is off-limits to feature PRs per the CI guard).
+    # Its line-anchored source links are inherently fragile and not hand-maintained,
+    # so they are excluded from the link-integrity check.
+    docs_md = sorted(
+        p for p in (REPO_ROOT / "docs").rglob("*.md") if "_generated" not in p.parts
+    )
     return [
         AGENTS_PATH,
         REPO_ROOT / "scripts" / "README.md",
-        *sorted((REPO_ROOT / "docs").rglob("*.md")),
+        *docs_md,
     ]
 
 

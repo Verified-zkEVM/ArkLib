@@ -2,31 +2,32 @@ name: 'PR Summary'
 
 on:
   pull_request_target:
-    types: [opened, synchronize]
+    types: [opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 permissions:
-  contents: read
-  pull-requests: write
-  issues: read
+  contents: read        # required: the action checks out the PR head to read the diff
+  pull-requests: write  # required: post/update the summary comment
+  issues: read          # optional: link affected sorries to `proof wanted` issues
 
 jobs:
   summarize:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Generate PR Summary
         uses: alexanderlhicks/lean-summary-workflow@main
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          api_key: ${{ secrets.GEMINI_API_KEY }}
-          provider: gemini  # or: anthropic, openai
-          model: gemini-3-flash-preview  # or: claude-sonnet-4-6, gpt-5.4-mini
+          api_key: ${{ secrets.OPENROUTER_KEY }}
+          # model: inherits the action default (deepseek/deepseek-v4-flash).
+          #        Set `model: <openrouter-slug>` here to override for this repo only.
           github_repository: ${{ github.repository }}
           pr_number: ${{ github.event.pull_request.number }}
-          # Optional:
           additional_instructions_path: 'CONTRIBUTING.md'
           validate_title: 'true'
-          # upstream_path: 'ToMathlib/'
+          upstream_path: 'ArkLib/ToMathlib/'
+          # Other optional knobs (reasoning_effort, max_*_diff_chars): see the action README.

@@ -1,185 +1,95 @@
 /-
-Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao
+Authors: Tobias Rothmann
 -/
 
-import ArkLib.OracleReduction.Security.Basic
-import ArkLib.OracleReduction.ProtocolSpec.Basic
+import ArkLib.OracleReduction.Security.TranscriptTree
 
 /-!
-  # Special Soundness
+  # (Plain) Special Soundness
 
-  Define arity-indexed trees (skeleton and data) to later express
-  special soundness over transcript trees.
+  This file defines the classic notion of `(k₁, …, k_μ)`-**special soundness** for multi-round
+  public-coin (oracle) reductions.
+
+  A `(2μ+1)`-round protocol is `k`-special sound for a relation if there is a deterministic
+  tree-based extractor that turns any *accepting* tree of transcripts in which, at each challenge
+  round `i`, the `kᵢ` sibling challenges are **pairwise distinct**, into a valid input witness.
+
+  Rather than re-deriving the tree machinery, special soundness is defined as the instance of the
+  shape-generic `Verifier.treeSpecialSound` (`Security.TranscriptTree`) for the **distinct shape**
+  `distinctShape k`: the `ChallengeTreeShape` with branching arity `kᵢ` whose node predicate
+  requires the `kᵢ` sibling challenges at each round to be pairwise distinct (`Function.Injective`).
+
+  This is standalone — independent of the coordinate-wise generalization in
+  `Security.CoordinateWiseSpecialSoundness`. Both notions are *sibling* instances of
+  `Verifier.treeSpecialSound` over the shared `Security.TranscriptTree` machinery; neither file
+  imports the other. The bridge `coordinateWiseSpecialSound (ofSpecialSound k) ↔ specialSound k`
+  (the `ℓᵢ = 1` case) is `Verifier.coordinateWiseSpecialSound_ofSpecialSound_iff` in
+  `Security.Implications`.
 -/
 
--- Define a tree skeleton of given depth `n` and arities `ar : Fin n → ℕ`
+noncomputable section
 
+open OracleComp OracleSpec ProtocolSpec
 
-namespace ArityTree
+variable {n : ℕ} {pSpec : ProtocolSpec n}
 
-/-- A tree skeleton of depth `n` with arities `ar : Fin n → ℕ`.
-At depth `0`, only a leaf is allowed. At depth `n+1`, a node has
-`ar 0` children, each a skeleton of depth `n` with arities reindexed
-by `Fin.succ`.
--/
-inductive Skeleton :
-    (n : ℕ) → (ar : Fin n → ℕ) → Type where
-  | leaf {ar0 : Fin 0 → ℕ} : Skeleton 0 ar0
-  | node {n : ℕ} {ar : Fin (n+1) → ℕ}
-      (children : Fin (ar 0) →
-        Skeleton n (fun i => ar i.succ)) :
-      Skeleton (n+1) ar
+/-- The **distinct shape** of plain `(k)`-special soundness: the `ChallengeTreeShape` with branching
+  arity `kᵢ` whose node predicate requires the `kᵢ` sibling challenges at each challenge round to be
+  pairwise distinct (`Function.Injective`). It is the `ℓ = 1` special case of
+  `CWSSStructure.toShape` (`Security.CoordinateWiseSpecialSoundness`), and supplying it to
+  `Verifier.treeSpecialSound` yields plain special soundness (`Verifier.specialSound`). -/
+def distinctShape (k : pSpec.ChallengeIdx → ℕ) : ChallengeTreeShape pSpec where
+  arity := k
+  nodeOk := fun _ challenges => Function.Injective challenges
 
-/-- A tree with the given skeleton, storing values of type `α` at
-every node (root and internal nodes as well as leaves).
-This is the arity-generalized analogue of `BinaryTree.FullData` from
-`ToMathlib/Data/IndexedBinaryTree`.
--/
-inductive Data (α : Type) :
-    {n : ℕ} → {ar : Fin n → ℕ} → Skeleton n ar → Type where
-  | leaf {ar0 : Fin 0 → ℕ} (value : α) :
-      Data α (Skeleton.leaf (ar0 := ar0))
-  | node {n : ℕ} {ar : Fin (n+1) → ℕ}
-      {children : Fin (ar 0) →
-        Skeleton n (fun i => ar i.succ)}
-      (value : α)
-      (childrenData : (i : Fin (ar 0)) →
-        Data α (children i)) :
-      Data α (Skeleton.node children)
+/-! ## The special-soundness predicate -/
 
-end ArityTree
+namespace Verifier
 
-section Examples
+open ProtocolSpec ProtocolSpec.ChallengeTree
 
-open ArityTree
+variable {ι : Type} {oSpec : OracleSpec ι}
+  {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
+  [∀ i, SampleableType (pSpec.Challenge i)]
+  {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
-/-- Depth-0 skeleton (single leaf). -/
-def exSkel0 : ArityTree.Skeleton 0 (fun i => nomatch i) :=
-  ArityTree.Skeleton.leaf
+/-- A verifier is `(k₁, …, k_μ)`-**special sound** for an input relation `relIn` and output relation
+  `relOut` if it is `Verifier.treeSpecialSound` for the distinct shape `distinctShape k`: there is a
+  tree-based extractor `E` such that, for every input statement `stmtIn` and every tree of
+  transcripts that is
 
-/-- Depth-0 data example. -/
-def exData0 {α} (a : α) : ArityTree.Data α exSkel0 :=
-  ArityTree.Data.leaf a
+  - structured by `distinctShape k` (the `kᵢ` sibling challenges at each round are pairwise
+    distinct), and
+  - accepting (the verifier accepts every root-to-leaf transcript, landing in `relOut.language`),
 
-/-- Arity function for depth-1 trees with `k` children at the root. -/
-def ar1 (k : ℕ) : Fin 1 → ℕ := fun _ => k
+  the extracted witness `E stmtIn tree` satisfies `(stmtIn, E stmtIn tree) ∈ relIn`. -/
+def specialSound (k : pSpec.ChallengeIdx → ℕ)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec) : Prop :=
+  verifier.treeSpecialSound init impl (distinctShape k) relIn relOut
 
-/-- Depth-1 "star" skeleton with `k` leaves under the root. -/
-def starSkel (k : ℕ) : ArityTree.Skeleton 1 (ar1 k) :=
-  ArityTree.Skeleton.node (fun _ => ArityTree.Skeleton.leaf)
+end Verifier
 
-/-- Depth-1 data example: root value and `k` leaf values. -/
-def starData {α} (k : ℕ) (root : α) (leaves : Fin k → α) :
-    ArityTree.Data α (starSkel k) := by
-  change
-    ArityTree.Data α
-      (ArityTree.Skeleton.node (fun _ => ArityTree.Skeleton.leaf))
-  exact
-    ArityTree.Data.node root (fun i => ArityTree.Data.leaf (leaves i))
-
-/-- Arity function for depth-2 trees with `k0` children at root and
-`k1` children at every depth-1 node. -/
-def ar2 (k0 k1 : ℕ) : Fin 2 → ℕ
-  | ⟨0, _⟩ => k0
-  | ⟨1, _⟩ => k1
-
-/-- Depth-2 uniform skeleton. -/
-def twoLevelSkel (k0 k1 : ℕ) :
-    ArityTree.Skeleton 2 (ar2 k0 k1) :=
-  ArityTree.Skeleton.node (fun _ =>
-    ArityTree.Skeleton.node (fun _ => ArityTree.Skeleton.leaf))
-
-/-- Depth-2 data example with values at root, level-1, and leaves. -/
-def twoLevelData {α} (k0 k1 : ℕ)
-    (root : α)
-    (lvl1 : Fin k0 → α)
-    (lvl2 : (i : Fin k0) → Fin k1 → α) :
-    ArityTree.Data α (twoLevelSkel k0 k1) := by
-  change
-    ArityTree.Data α
-      (ArityTree.Skeleton.node (fun _ =>
-        ArityTree.Skeleton.node (fun _ => ArityTree.Skeleton.leaf)))
-  refine ArityTree.Data.node root (fun i => ?_)
-  change
-    ArityTree.Data α
-      (ArityTree.Skeleton.node (fun _ => ArityTree.Skeleton.leaf)
-      )
-  refine ArityTree.Data.node (lvl1 i) (fun j => ?_)
-  exact ArityTree.Data.leaf (lvl2 i j)
-
-end Examples
-
-/-!
-## Transcript trees for a given ProtocolSpec
-
-We refine `ArityTree` to a transcript tree whose node value at level `i`
-is the message/challenge dictated by a protocol specification `pSpec`.
-The branching arity across levels is given by a vector `ar : Fin n → ℕ`.
--/
-
-namespace TranscriptTree
+namespace OracleVerifier
 
 open ProtocolSpec
 
-variable {n : ℕ}
+variable {ι : Type} {oSpec : OracleSpec ι}
+  {StmtIn WitIn StmtOut WitOut : Type}
+  {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [∀ i, OracleInterface (OStmtIn i)]
+  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
+  {n : ℕ} {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)]
+  [∀ i, OracleInterface (pSpec.Message i)]
+  {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
-/-- The dependent transcript data over a skeleton for `pSpec`.
+/-- Special soundness of an oracle reduction, via its underlying non-oracle verifier on the combined
+  (oracle + non-oracle) statements. -/
+def specialSound (k : pSpec.ChallengeIdx → ℕ)
+    (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
+    (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
+    (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) : Prop :=
+  verifier.toVerifier.specialSound init impl k relIn relOut
 
-At the root of a nonempty protocol `(n+1)`, we store either a message
-or a challenge of round `0` (depending on `pSpec.dir 0`). The children
-are transcript data for the tail protocol `pSpec.drop 1` and the tail
-arities `fun i => ar i.succ`.
-
-At depth `0` (empty protocol), there is no data (we use `PUnit`).
--/
-inductive Data :
-    {n : ℕ} → (pSpec : ProtocolSpec n) →
-    {ar : Fin n → ℕ} → ArityTree.Skeleton n ar → Type 1 where
-  | leaf {pSpec : ProtocolSpec 0} {ar0 : Fin 0 → ℕ} :
-      Data pSpec (ArityTree.Skeleton.leaf (ar0 := ar0))
-  | msgNode {n : ℕ}
-      {pSpec : ProtocolSpec (n + 1)} {ar : Fin (n + 1) → ℕ}
-      (h : pSpec.dir 0 = Direction.P_to_V)
-      (val : pSpec.Message' 0 h)
-      {children : Fin (ar 0) →
-        ArityTree.Skeleton n (fun i => ar i.succ)}
-      (childrenData : (i : Fin (ar 0)) →
-        Data (pSpec := pSpec.drop 1 (Nat.succ_le_succ (Nat.zero_le n))) (children i)) :
-      Data pSpec (ArityTree.Skeleton.node children)
-  | chalNode {n : ℕ}
-      {pSpec : ProtocolSpec (n + 1)} {ar : Fin (n + 1) → ℕ}
-      (h : pSpec.dir 0 = Direction.V_to_P)
-      (val : pSpec.Challenge' 0 h)
-      {children : Fin (ar 0) →
-        ArityTree.Skeleton n (fun i => ar i.succ)}
-      (childrenData : (i : Fin (ar 0)) →
-        Data (pSpec := pSpec.drop 1 (Nat.succ_le_succ (Nat.zero_le n))) (children i)) :
-      Data pSpec (ArityTree.Skeleton.node children)
-
-/-! ### Small constructors/examples for length-1 protocols -/
-
--- /-- For a length-1 protocol with a message at round 0, build a star transcript. -/
--- def starMsg {pSpec : ProtocolSpec 1}
---     (h : pSpec.dir 0 = Direction.P_to_V)
---     (k : ℕ)
---     (msg : pSpec.Message' 0 h) :
---     Data pSpec (ar := !v[1])
---       (ArityTree.Skeleton.node (children :=
---         (fun _ : Fin k => by dsimp))) :=
---   Data.msgNode h msg (children := fun _ : Fin k => ArityTree.Skeleton.leaf)
---     (fun _ => Data.leaf)
-
--- /-- For a length-1 protocol with a challenge at round 0, build a star transcript. -/
--- def starChal {pSpec : ProtocolSpec 1}
---     (h : pSpec.dir 0 = Direction.V_to_P)
---     (k : ℕ)
---     (chal : pSpec.Challenge' 0 h) :
---     Data pSpec
---       (ArityTree.Skeleton.node (children :=
---         (fun _ : Fin k => ArityTree.Skeleton.leaf))) :=
---   Data.chalNode h chal (children := fun _ : Fin k => ArityTree.Skeleton.leaf)
---     (fun _ => Data.leaf)
-
-end TranscriptTree
+end OracleVerifier

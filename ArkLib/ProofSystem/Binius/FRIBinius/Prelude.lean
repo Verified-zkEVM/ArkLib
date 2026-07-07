@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 
-import ArkLib.ProofSystem.Binius.RingSwitching.Prelude
+import ArkLib.ProofSystem.RingSwitching.Prelude
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 
 /-!
@@ -30,7 +30,6 @@ variable (β : Basis (Fin (2 ^ κ)) K L)
 variable (ℓ ℓ' 𝓡 ϑ γ_repetitions : ℕ) [NeZero ℓ] [NeZero ℓ'] [NeZero 𝓡] [NeZero ϑ]
 variable (h_ℓ_add_R_rate : ℓ' + 𝓡 < 2 ^ κ)
 variable (h_l : ℓ = ℓ' + κ)
-variable {𝓑 : Fin 2 ↪ L}
 variable [hdiv : Fact (ϑ ∣ ℓ')]
 
 omit [NeZero κ] in
