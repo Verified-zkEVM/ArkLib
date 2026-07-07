@@ -64,19 +64,13 @@ def BinaryBasefoldAbstractOStmtIn : (RingSwitching.AbstractOStmtIn L ℓ') where
 `initialCompatibility_eq_biniusCommitsTo`), re-oriented for the S7 migration onto the generic
 PCS interface.
 
-**Upstream caveat (found at the S5 close-review, confirmed by compiled probe).** As currently
-spelled, `firstOracleWitnessConsistencyProp` builds `P₀` from `fun ω => t.val.eval ω`, where the
-silent coercion `Fin (2^ℓ) → (Fin ℓ → L)` is the *constant* function `fun _ => ↑ω` (pointwise
-`Nat`-cast) — so the coefficient vector holds `t`'s *diagonal* evaluations, not its hypercube
-table, and `t ↦ P₀` is **non-injective** (e.g. `X 0` and `X 1` collapse; `getMidCodewords`
-shares the same spelling). The intended predicate — the [DP24] novel-basis encoding of `t`'s
-cube table within unique decoding radius — requires evaluating `t` at `ω`'s *bit decomposition*.
-Consequently the **functionality proof** (`commitsTo c t → commitsTo c t' → t = t'`) is *not
-provable* against the current spelling; the recorded S7 obligation is two-step: (1) fix the
-upstream coercion, then (2) prove functionality, which then follows by unique decoding (two
-codewords within half the code distance of one word coincide; the novel-basis coefficient map
-is injective; a multilinear is determined by its cube table). Only then does this bundle into a
-`PackedCommitment`. -/
+The underlying predicate reads `t`'s cube table via `witnessNovelCoeffs` (LSB-first bit order;
+see its docstring for the history: the original spelling read `t`'s *diagonal* evaluations
+through a silent coercion, making the encoding non-injective — found at the S5 close-review and
+fixed in this PR). The **functionality proof** (`commitsTo c t → commitsTo c t' → t = t'`) is
+the recorded S7 obligation, provable by unique decoding: two codewords within half the code
+distance of one word coincide; the novel-basis coefficient map is injective; a multilinear is
+determined by its cube table. It bundles into a `PackedCommitment` at S7. -/
 def biniusCommitsTo
     (oStmt : ∀ j, (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).OStmtIn j)
     (t : Sumcheck.Structured.MultilinearPoly L ℓ') : Prop :=

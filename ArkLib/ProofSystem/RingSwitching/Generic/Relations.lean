@@ -59,10 +59,9 @@ obligations, not hooks):
 it is law-constrained (`commitsTo_functional`) and consumed by the structure's own security
 fields, unlike the legacy free `initialCompatibility` hook it replaces (retirement of the legacy
 hook is the S7 Binius-migration step; the Binius codeword-consistency predicate is re-expressed
-in `commitsTo` orientation as `Binius.FRIBinius.biniusCommitsTo` — NB its functionality is *not
-provable against the current upstream spelling*, which reads `t`'s diagonal evaluations via a
-silent coercion; the S7 obligation is fix-the-coercion-then-prove-functionality, see that
-docstring).
+in `commitsTo` orientation as `Binius.FRIBinius.biniusCommitsTo`, whose functionality proof —
+by unique decoding, over the `witnessNovelCoeffs` cube-table encoding fixed at the S5
+close-review — is the logged S7 obligation).
 
 ## References
 

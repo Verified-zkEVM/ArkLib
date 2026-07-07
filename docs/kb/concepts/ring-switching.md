@@ -121,11 +121,11 @@ theorem under `[IsDomain P]`; non-domain rings (Hachi `R_q`) can still *state* a
 proven gap — the fork lives at the theorem, not the vocabulary.
 
 **Not yet built**: the assembled `ringSwitch` reduction and its soundness statement (gated on
-the upstream composition/sumcheck sorries), the Binius migration (incl. fixing the upstream
-`firstOracleWitnessConsistencyProp` coercion — as spelled it reads `t`'s *diagonal* evaluations,
-so `t ↦ P₀` is non-injective and `biniusCommitsTo` functionality is unprovable until fixed, see
-its docstring — then the functionality proof, and retirement of the legacy
-`initialCompatibility` hook), and the MBP-`B̂` efficiency layer ([HJRRR25] §4).
+the upstream composition/sumcheck sorries), the Binius migration (the `biniusCommitsTo`
+functionality proof — by unique decoding over the `witnessNovelCoeffs` cube-table encoding,
+whose original diagonal-reading coercion bug was found at the S5 close-review and fixed in this
+PR — and retirement of the legacy `initialCompatibility` hook), and the MBP-`B̂` efficiency
+layer ([HJRRR25] §4).
 
 ## Core References
 
