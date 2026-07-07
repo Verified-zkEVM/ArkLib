@@ -472,6 +472,8 @@ lemma constantCode_eq_ofNat_zero_iff [Nonempty ι] :
 lemma wt_constantCode [DecidableEq F] [NeZero x] :
   wt (constantCode x ι) = Fintype.card ι := by aesop (add simp [constantCode, wt])
 
+-- `[Fintype ι]` is required by the proof (`constantCode`), not the statement type.
+set_option linter.unusedFintypeInType false in
 instance instNontrivial {F ι : Type*} {n : ℕ} [Field F] [Fintype ι] {α : ι ↪ F}
   [NeZero n] [Nonempty ι] : Nontrivial (ReedSolomon.code α n) := by
   let c1 := constantCode (1 : F) ι

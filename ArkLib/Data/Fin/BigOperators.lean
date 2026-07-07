@@ -117,7 +117,7 @@ lemma eq_split_finMap_PO2_iff_merge_finMap_PO2_eq {L : Type*} {n : ℕ} (v : Fin
       unfold splitFinMap_PO2_right
       rw [funext_iff] at hright
       let res := hright ⟨iRight.val + 2 ^ n, by omega⟩
-      simp only [add_lt_iff_neg_right, not_lt_zero', ↓reduceDIte, add_tsub_cancel_right,
+      simp only [add_lt_iff_neg_right, not_lt_zero, ↓reduceDIte, add_tsub_cancel_right,
         Fin.eta] at res
       exact res
 
@@ -305,13 +305,13 @@ lemma Matrix.from4Blocks_mul_from4Blocks {mTop mBot pLeft pRight nLeft nRight : 
   · -- CASE: Bottom Row (i >= mTop) and Right Column (j ≥ nLeft)
     -- Logic is symmetric to above
     simp only [Fin.val_castAdd, Fin.is_lt, ↓reduceDIte, Fin.eta, Fin.val_natAdd,
-      add_lt_iff_neg_left, not_lt_zero', add_tsub_cancel_left]
+      add_lt_iff_neg_left, not_lt_zero, add_tsub_cancel_left]
   · -- CASE: Bottom Row (i >= mTop) and Left Column (j < nLeft)
     simp only [Fin.val_castAdd, Fin.is_lt, ↓reduceDIte, Fin.eta, Fin.val_natAdd,
-      add_lt_iff_neg_left, not_lt_zero', add_tsub_cancel_left]
+      add_lt_iff_neg_left, not_lt_zero, add_tsub_cancel_left]
   · -- CASE: Bottom Row (i >= mTop) and Right Column (j ≥ nLeft)
     simp only [Fin.val_castAdd, Fin.is_lt, ↓reduceDIte, Fin.eta, Fin.val_natAdd,
-      add_lt_iff_neg_left, not_lt_zero', add_tsub_cancel_left]
+      add_lt_iff_neg_left, not_lt_zero, add_tsub_cancel_left]
 
 /-- Helper: Link manual `from4Blocks` to Mathlib's `fromBlocks` via `finSumFinEquiv`.
     This allows us to reuse Mathlib's determinant theorems. -/
@@ -355,7 +355,7 @@ lemma Matrix.from4Blocks_eq_fromBlocks {m n : ℕ} {α : Type*}
       -- 2. natAdd m x < m is false (it is ≥ m)
       -- 3. (m + x) - m = x
       simp only [from4Blocks, Equiv.symm_symm, fromBlocks, of_apply, Sum.elim_inl, Sum.elim_inr]
-      simp only [h_e_itop, Fin.is_lt, ↓reduceDIte, h_e_jright, add_lt_iff_neg_right, not_lt_zero',
+      simp only [h_e_itop, Fin.is_lt, ↓reduceDIte, h_e_jright, add_lt_iff_neg_right, not_lt_zero,
         Fin.eta, add_tsub_cancel_right]
   | inr i_bot =>
     have h_e_ibot: e (Sum.inr i_bot) = ⟨i_bot + m, by omega⟩ := by
@@ -368,7 +368,7 @@ lemma Matrix.from4Blocks_eq_fromBlocks {m n : ℕ} {α : Type*}
       rw [← Equiv.eq_symm_apply] at hi hj
       rw [hi, hj]
       simp only [from4Blocks, Equiv.symm_symm, fromBlocks, of_apply, Sum.elim_inr, Sum.elim_inl]
-      simp only [h_e_ibot, add_lt_iff_neg_right, not_lt_zero', ↓reduceDIte, h_e_jleft, Fin.is_lt,
+      simp only [h_e_ibot, add_lt_iff_neg_right, not_lt_zero, ↓reduceDIte, h_e_jleft, Fin.is_lt,
         add_tsub_cancel_right, Fin.eta]
     | inr j_right =>
       have h_e_jright: e (Sum.inr j_right) = ⟨j_right + m, by omega⟩ := by
@@ -377,7 +377,7 @@ lemma Matrix.from4Blocks_eq_fromBlocks {m n : ℕ} {α : Type*}
       rw [← Equiv.eq_symm_apply] at hi hj
       rw [hi, hj]
       simp only [from4Blocks, Equiv.symm_symm, fromBlocks, of_apply, Sum.elim_inr]
-      simp only [h_e_ibot, add_lt_iff_neg_right, not_lt_zero', ↓reduceDIte, h_e_jright,
+      simp only [h_e_ibot, add_lt_iff_neg_right, not_lt_zero, ↓reduceDIte, h_e_jright,
         add_tsub_cancel_right, Fin.eta]
 
 /-- Determinant commutes with Ring Homomorphisms (avoids clash with Mathlib `Matrix.det_map`). -/
@@ -533,3 +533,21 @@ lemma Matrix.det_from4Blocks_of_squareSubblocks_commute {n : ℕ} {R : Type*}
 end MatrixFrom4BlocksHelpers
 
 end MatrixHelpers
+
+/-- Splitting a sum over `Fin (2 ^ (n + 1))` into the even- and odd-indexed halves, each a sum
+over `Fin (2 ^ n)`. -/
+theorem Fin.sum_univ_odd_even {M : Type*} [AddCommMonoid M] (n : ℕ) (f : ℕ → M) :
+    ∑ x : Fin (2 ^ (n + 1)), f x =
+      ∑ x : Fin (2 ^ n), f (2 * x) + ∑ x : Fin (2 ^ n), f (2 * x + 1) := by
+  rw [_root_.Fin.sum_univ_eq_sum_range (f := f), _root_.Fin.sum_univ_eq_sum_range
+    (f := fun x => f (2 * x)), _root_.Fin.sum_univ_eq_sum_range (f := fun x => f (2 * x + 1))]
+  rw [pow_succ]
+  induction (2 ^ n) with
+  | zero => simp
+  | succ m ih =>
+    rw [show (m + 1) * 2 = m * 2 + 1 + 1 from by omega]
+    rw [Finset.sum_range_succ, Finset.sum_range_succ, ih]
+    rw [Finset.sum_range_succ (f := fun x => f (2 * x)),
+      Finset.sum_range_succ (f := fun x => f (2 * x + 1))]
+    simp only [mul_comm 2]
+    abel
