@@ -810,6 +810,26 @@ coercion `Fin (2^ℓ) → (Fin ℓ → L)` is the *constant* function `fun _ => 
 def witnessNovelCoeffs (t : L⦃≤ 1⦄[X Fin ℓ]) : Fin (2^ℓ) → L :=
   fun ω => t.val.eval (fun j => (Nat.getBit j.val ω.val : L))
 
+-- Regression probe for the R7 fix: under the pre-fix diagonal spelling `fun ω => t.val.eval ω`
+-- (whose silent coercion evaluates at the *constant* point `fun _ => ↑ω`), `X 0` and `X 1`
+-- produced identical coefficient vectors, so this inequality was unprovable. The cube-table
+-- encoding pins them apart at `ω = 1`, where bit 0 is `1` but bit 1 is `0`.
+example :
+    witnessNovelCoeffs (L := L) (ℓ := 2)
+      ⟨MvPolynomial.X ⟨0, by omega⟩, by
+        rw [MvPolynomial.mem_restrictDegree_iff_degreeOf_le]
+        intro j; rw [MvPolynomial.degreeOf_X]; split <;> omega⟩
+      ⟨1, by norm_num⟩ ≠
+    witnessNovelCoeffs (L := L) (ℓ := 2)
+      ⟨MvPolynomial.X ⟨1, by omega⟩, by
+        rw [MvPolynomial.mem_restrictDegree_iff_degreeOf_le]
+        intro j; rw [MvPolynomial.degreeOf_X]; split <;> omega⟩
+      ⟨1, by norm_num⟩ := by
+  have h0 : Nat.getBit 0 1 = 1 := rfl
+  have h1 : Nat.getBit 1 1 = 0 := rfl
+  simp only [witnessNovelCoeffs, MvPolynomial.eval_X, h0, h1, Nat.cast_one, Nat.cast_zero]
+  exact one_ne_zero
+
 /-- This condition ensures that the folding witness `f` is properly generated from `t` -/
 def getMidCodewords {i : Fin (ℓ + 1)} (t : L⦃≤ 1⦄[X Fin ℓ]) -- original polynomial t
     (challenges : Fin i → L) : (sDomain 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) → L) :=
