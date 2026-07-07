@@ -543,9 +543,10 @@ special soundness (via rewinding). At the moment, we only care about non-rewindi
         \item there exists a straightline extractor $E$, such that
         \item for all input statement $x_{\text{in}}$, witness $w_{\text{in}}$, and (malicious) prover,
         \item if the execution with the honest verifier results in a pair $(x_{\text{out}}, w_{\text{out}})$,
-        \item and the extractor produces some $w'_{\text{in}}$,
     \end{itemize}
-    then the probability that $(x_{\text{in}}, w'_{\text{in}})$ is not valid for $R_{\text{in}}$ and yet $(x_{\text{out}}, w_{\text{out}})$ is valid for $R_{\text{out}}$ is at most $\epsilon$.
+    then the probability that $(x_{\text{out}}, w_{\text{out}})$ is valid for $R_{\text{out}}$ and yet the extractor fails to produce a witness $w'_{\text{in}}$ such that $(x_{\text{in}}, w'_{\text{in}})$ is valid for $R_{\text{in}}$ is at most $\epsilon$.
+
+    Note that the extractor failing outright (it is a partial computation) counts as a win for the adversary: whenever the prover convinces the verifier, the extractor is obliged to succeed and produce a valid witness. (Excluding extractor failure from the bad event would render the definition vacuous, as the always-failing extractor would satisfy it for any verifier.) In contrast, runs in which the protocol execution itself fails (e.g.\ the verifier aborts) impose no obligation on the extractor, matching the convention for plain soundness.
 
     A (straightline) extractor for knowledge soundness is a deterministic algorithm that takes in the output public context after executing the oracle reduction, the side information (i.e. log of oracle queries from the malicious prover) observed during execution, and outputs the witness for the input context.
 
@@ -787,8 +788,13 @@ By default, the properties we consider are perfect completeness and (straightlin
     requirement that there exists a straightline extractor that can recover valid witnesses from
     any state-restoration prover that convinces the verifier.
 
-    \emph{Note: This definition is currently under development in the Lean formalization.}
-    % \lean{Verifier.srKnowledgeSoundness}
+    Equivalently, for every state-restoration prover, the probability that the prover outputs a
+    valid output witness and induces an accepting verifier output, while the extractor fails to
+    produce any valid input witness, is bounded by the state-restoration knowledge-soundness error.
+    The extractor is partial in the Lean formalization, so extractor failure counts as a bad event
+    on accepting executions.
+
+    \lean{Verifier.StateRestoration.knowledgeSoundness}
 \end{definition}
 
 

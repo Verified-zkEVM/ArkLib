@@ -2,7 +2,7 @@ import Mathlib.LinearAlgebra.Lagrange
 
 namespace Polynomial
 
-variable {𝔽 : Type*} [Field 𝔽] 
+variable {𝔽 : Type*} [Field 𝔽]
 
 lemma eq_of_eval_eq_degree {p q : 𝔽[X]} {n : ℕ}
       (hp : p.degree < .some n) (hq : q.degree < .some n) (s : Finset 𝔽) :

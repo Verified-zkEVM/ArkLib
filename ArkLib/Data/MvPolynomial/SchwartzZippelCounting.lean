@@ -10,10 +10,6 @@ import Mathlib.Data.Rat.Star
 import Mathlib.Probability.Distributions.Uniform
 import Mathlib.RingTheory.SimpleRing.Principal
 
-open NNReal ENNReal unitInterval
-open scoped ProbabilityTheory ENNReal NNReal BigOperators
-
-
 /-! ## Schwartz-Zippel derived bound
 
 We state and prove a counting version of the Schwartz-Zippel lemma for multivariate polynomials with
@@ -21,6 +17,9 @@ finitely many variables over a (possibly inifinite) field `F`.
 
 The lemma is derived from mathlib's version `MvPolynomial.schwartz_zippel_sup_sum`.
 -/
+
+open NNReal ENNReal unitInterval
+open scoped ProbabilityTheory ENNReal NNReal BigOperators
 
 /-- For a nonzero multivariate polynomial `f` of total degree at most `d`, evaluated over a
 product of finite subsets of a field `F`, each of cardinality at least `m`, the number of roots is

@@ -262,6 +262,20 @@ def ChallengeIdx.sumEquiv :
     simp [ChallengeIdx.inl, ChallengeIdx.inr, hi]
     congr; omega
 
+/-- `sumEquiv.symm` maps a left-embedded composed challenge index back to `Sum.inl`. -/
+@[simp]
+theorem ChallengeIdx.sumEquiv_symm_inl (i₁ : ChallengeIdx pSpec₁) :
+    (ChallengeIdx.sumEquiv (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂)).symm (ChallengeIdx.inl i₁)
+      = Sum.inl i₁ := by
+  rw [Equiv.symm_apply_eq]; simp
+
+/-- `sumEquiv.symm` maps a right-embedded composed challenge index back to `Sum.inr`. -/
+@[simp]
+theorem ChallengeIdx.sumEquiv_symm_inr (i₂ : ChallengeIdx pSpec₂) :
+    (ChallengeIdx.sumEquiv (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂)).symm (ChallengeIdx.inr i₂)
+      = Sum.inr i₂ := by
+  rw [Equiv.symm_apply_eq]; simp
+
 /-- Sequential composition of a family of `ProtocolSpec`s, indexed by `i : Fin m`.
 
 Defined for definitional equality, so that:
@@ -460,6 +474,19 @@ def seqComposeChallengeIdxToSigma {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, 
     have hk : k.1 = Fin.embedSum ij.1 ij.2 := by simp [ij]
     simp [hk] at this
     exact this⟩⟩
+
+/-- The challenge type of a sequential composition at a combined challenge index equals the
+challenge type of the component protocol at the decoded component challenge index. This is the
+transport fact needed whenever per-round challenge data must be moved across `seqCompose`. -/
+theorem seqCompose_challenge_eq {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (i : (seqCompose pSpec).ChallengeIdx) :
+    (seqCompose pSpec).Challenge i =
+      (pSpec (seqComposeChallengeIdxToSigma i).1).Challenge
+        (seqComposeChallengeIdxToSigma i).2 := by
+  unfold ProtocolSpec.Challenge seqComposeChallengeIdxToSigma
+  simp only [seqCompose_type]
+  conv_lhs => rw [← Fin.embedSum_splitSum i.1]
+  rw [Fin.vflatten_embedSum]
 
 /-- The equivalence between the challenge indices of the individual protocols and the challenge
     indices of the sequential composition. -/

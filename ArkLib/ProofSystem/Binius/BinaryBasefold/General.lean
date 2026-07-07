@@ -34,7 +34,6 @@ variable (β : Fin r → L) [hβ_lin_indep : Fact (LinearIndependent 𝔽q β)]
   [h_β₀_eq_1 : Fact (β 0 = 1)]
 variable {ℓ 𝓡 ϑ : ℕ} (γ_repetitions : ℕ) [NeZero ℓ] [NeZero 𝓡] [NeZero ϑ] -- Should we allow ℓ = 0?
 variable {h_ℓ_add_R_rate : ℓ + 𝓡 < r} -- ℓ ∈ {1, ..., r-1}
-variable {𝓑 : Fin 2 ↪ L}
 variable [hdiv : Fact (ϑ ∣ ℓ)]
 
 instance {_ : Empty} : OracleInterface (Unit) := OracleInterface.instDefault
@@ -59,7 +58,7 @@ noncomputable def fullOracleVerifier :
     (pSpec₁ := pSpecCoreInteraction 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (pSpec₂ := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (V₁ := CoreInteraction.coreInteractionOracleVerifier 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) )
     (V₂ := QueryPhase.queryOracleVerifier 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
 
@@ -87,7 +86,7 @@ noncomputable def fullOracleReduction :
     (pSpec₁ := pSpecCoreInteraction 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (pSpec₂ := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (R₁ := CoreInteraction.coreInteractionOracleReduction 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) (𝓑:=𝓑))
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) )
     (R₂ := QueryPhase.queryOracleReduction 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
 
@@ -99,7 +98,7 @@ noncomputable def fullOracleProof :
     (OStatement := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
     (Witness := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ:=ℓ) 0)
     (pSpec:=fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  fullOracleReduction 𝔽q β γ_repetitions (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
+  fullOracleReduction 𝔽q β γ_repetitions (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
 
 /-!
 ## Security Properties
@@ -111,24 +110,25 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
 theorem fullOracleReduction_perfectCompleteness :
   OracleReduction.perfectCompleteness
     (oracleReduction := fullOracleReduction 𝔽q β γ_repetitions (ϑ:=ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑))
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) )
     (relIn := roundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) 0)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0)
     (relOut := acceptRejectOracleRel)
     (init := init)
     (impl := impl) := by
   apply OracleReduction.append_perfectCompleteness
     (R₁ := CoreInteraction.coreInteractionOracleReduction 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) (𝓑:=𝓑))
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) )
     (R₂ := QueryPhase.queryOracleReduction 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
     (Oₛ₃ := fun _ => OracleInterface.instDefault)
-    (rel₁ := roundRelation 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) 0)
+      (rel₁ := roundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0)
     (rel₂ := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (rel₃ := acceptRejectOracleRel)
     (h₁ := by
       apply CoreInteraction.coreInteractionOracleReduction_perfectCompleteness 𝔽q β
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) (𝓑:=𝓑)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ)
     )
     (h₂ := by
       apply QueryPhase.queryOracleProof_perfectCompleteness 𝔽q β γ_repetitions (ϑ:=ϑ)
@@ -150,19 +150,20 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
 /-- Round-by-round knowledge soundness for the full Binary Basefold oracle verifier -/
 theorem fullOracleVerifier_rbrKnowledgeSoundness :
   (fullOracleVerifier 𝔽q β γ_repetitions (ϑ:=ϑ)
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).rbrKnowledgeSoundness init impl
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ).rbrKnowledgeSoundness init impl
     (relIn := roundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) 0)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0)
     (relOut := acceptRejectOracleRel)
     (rbrKnowledgeError := fullRbrKnowledgeError 𝔽q β γ_repetitions (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) := by
   apply OracleVerifier.append_rbrKnowledgeSoundness
     (init:=init) (impl:=impl)
-    (rel₁ := roundRelation 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) 0)
+      (rel₁ := roundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0)
     (rel₂ := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (rel₃ := acceptRejectOracleRel)
     (V₁ := CoreInteraction.coreInteractionOracleVerifier 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) )
     (V₂ := QueryPhase.queryOracleVerifier 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
     (Oₛ₃:=by exact fun i ↦ by exact OracleInterface.instDefault)

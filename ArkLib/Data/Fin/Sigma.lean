@@ -131,14 +131,25 @@ theorem embedSum_splitSum {m : ℕ} {n : Fin m → ℕ} (k : Fin (vsum n)) :
     embedSum (splitSum k).1 (splitSum k).2 = k := by
   induction m with
   | zero => exact Fin.elim0 k
-  | succ m ih => sorry
+  | succ m ih =>
+    induction k using Fin.addCases with
+    | left k₀ => rw [splitSum_succ]; erw [dappend_left]; rfl
+    | right k₁ =>
+      rw [splitSum_succ]; erw [dappend_right]
+      simp only [embedSum_succ_succ, ih]
+      rfl
 
 @[simp]
 theorem splitSum_embedSum {m : ℕ} {n : Fin m → ℕ} (i : Fin m) (j : Fin (n i)) :
     splitSum (embedSum i j) = ⟨i, j⟩ := by
   induction m with
   | zero => exact Fin.elim0 i
-  | succ m ih => sorry
+  | succ m ih =>
+    induction i using Fin.cases with
+    | zero => rw [embedSum_succ_zero, splitSum_succ]; erw [dappend_left]
+    | succ i' =>
+      rw [embedSum_succ_succ, splitSum_succ]; erw [dappend_right]
+      rw [ih]
 
 def finSum'FinEquiv' {m : ℕ} {n : Fin m → ℕ} : (i : Fin m) × Fin (n i) ≃ Fin (vsum n) where
   toFun := fun ij => embedSum ij.1 ij.2

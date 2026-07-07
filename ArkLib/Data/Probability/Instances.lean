@@ -368,7 +368,7 @@ theorem Pr_le_Pr_of_implies {α : Type} (D : PMF α)
     · simp only [hf, ↓reduceIte, h_imp, le_refl]
     · simp only [hf, ↓reduceIte, zero_le]
   -- 5. Prove the factor `D r` is non-negative
-  · exact zero_le (D r) -- Probabilities are always non-negative
+  · exact zero_le -- Probabilities are always non-negative
 
 theorem Pr_multi_let_equiv_single_let {α β : Type}
     (D₁ : PMF α) (D₂ : PMF β) -- Assuming D₂ is independent for simplicity

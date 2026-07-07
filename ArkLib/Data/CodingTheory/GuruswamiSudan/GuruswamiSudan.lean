@@ -230,10 +230,10 @@ theorem mem_decoder_of_dist
       ⟨p, mem_degreeLT.mpr hpDeg, rfl⟩
   set p' : code ωs k :=
     ⟨p.eval ∘ (ωs : Fin n → F), hpCode⟩
-  -- `codewordToPoly` recovers p from its evaluations
+  -- `toPolynomial` recovers p from its evaluations
   -- (since deg p < k ≤ n)
-  have hctp : codewordToPoly p' = p := by
-    simp only [codewordToPoly, p']
+  have hctp : toPolynomial p' = p := by
+    simp only [toPolynomial, p']
     exact interpolate_eq_of_degree_lt p
       (lt_of_lt_of_le hdeg hkLeN)
   -- `dvd_property` gives divisibility
@@ -244,7 +244,7 @@ theorem mem_decoder_of_dist
       polySol_weightedDegree_le
       polySol_multiplicity (by
         have hfEq :
-            (fun i ↦ (codewordToPoly p').eval (ωs i)) =
+            (fun i ↦ (toPolynomial p').eval (ωs i)) =
             p.eval ∘ ωs := by
           ext i
           simp [hctp]
@@ -846,7 +846,7 @@ lemma coeff_vec_to_bivariate_coeff (k D : ℕ)
     (hwd : i.val + (k - 1) * j.val ≤ D) :
     ((coeffVecToBivariate k D c).coeff j.val).coeff i.val = c (i, j) := by
   unfold coeffVecToBivariate
-  simp only [Polynomial.finset_sum_coeff]
+  simp only [Polynomial.finsetSum_coeff]
   rw [Finset.sum_eq_single j]
   · rw [Finset.sum_eq_single i]
     · simp [hwd]
@@ -919,7 +919,7 @@ lemma guruswami_sudan_for_proximity_gap_existence_strong
     coeff_vec_to_bivariate_ne_zero_of_isWitnessC hc⟩
 
 /-- Constructive witness property for the Guruswami–Sudan system.
-    When `m > 0` and the codeword polynomial `ReedSolomon.codewordToPoly p` appears in
+    When `m > 0` and the codeword polynomial `ReedSolomon.toPolynomial p` appears in
     `witnessCandidateSet`, we can extract a witness coefficient vector `c` satisfying:
     * `isWitnessC` (nonzero + full multiplicity vanishing),
     * `Q(X, p(X)) = 0` via CompPoly root extraction, and
@@ -929,14 +929,14 @@ lemma guruswami_sudan_for_proximity_gap_property [Fintype F] {k m : ℕ} {ωs : 
     {f : Fin n → F}
     {p : ReedSolomon.code ωs k}
     (hm : 0 < m)
-    (hp : ReedSolomon.codewordToPoly p ∈
+    (hp : ReedSolomon.toPolynomial p ∈
       witnessCandidateSet k m (proximityGapDegreeBound (n := n) k m)
         (proximityGapJohnson (n := n) k m) ωs f) :
     ∃ c : Fin (proximityGapDegreeBound (n := n) k m + 1) ×
           Fin (proximityGapDegreeBound (n := n) k m + 1) → F,
       isWitnessC k (proximityGapDegreeBound (n := n) k m) m ωs f c = true ∧
       isQRootRaw k (proximityGapDegreeBound (n := n) k m) c
-        (polyToRaw (ReedSolomon.codewordToPoly p) k) = true ∧
+        (polyToRaw (ReedSolomon.toPolynomial p) k) = true ∧
       ∀ i : Fin n,
         evalCoeffVecAt k (proximityGapDegreeBound (n := n) k m) c (ωs i) (f i) = 0 := by
   exact witness_candidate_set_witness_vanishes hm hp
@@ -952,16 +952,16 @@ lemma guruswami_sudan_for_proximity_gap_property_strong [Fintype F] {k m : ℕ} 
     {f : Fin n → F}
     {p : ReedSolomon.code ωs k}
     (hm : 0 < m)
-    (hp : ReedSolomon.codewordToPoly p ∈
+    (hp : ReedSolomon.toPolynomial p ∈
       witnessCandidateSet k m (proximityGapDegreeBound (n := n) k m)
         (proximityGapJohnson (n := n) k m) ωs f) :
     ∃ c : Fin (proximityGapDegreeBound (n := n) k m + 1) ×
           Fin (proximityGapDegreeBound (n := n) k m + 1) → F,
       isWitnessC k (proximityGapDegreeBound (n := n) k m) m ωs f c = true ∧
       (∀ idx : Fin (evalQAtPRaw k (proximityGapDegreeBound (n := n) k m) c
-          (polyToRaw (ReedSolomon.codewordToPoly p) k)).size,
+          (polyToRaw (ReedSolomon.toPolynomial p) k)).size,
         (evalQAtPRaw k (proximityGapDegreeBound (n := n) k m) c
-          (polyToRaw (ReedSolomon.codewordToPoly p) k))[idx] = 0) ∧
+          (polyToRaw (ReedSolomon.toPolynomial p) k))[idx] = 0) ∧
       (∀ i : Fin n,
         evalCoeffVecAt k (proximityGapDegreeBound (n := n) k m) c (ωs i) (f i) = 0) ∧
       coeffVecToBivariate k (proximityGapDegreeBound (n := n) k m) c ≠ 0 := by
@@ -981,9 +981,9 @@ theorem proximity_gap_existence (k n : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F
 /-- Classical divisibility consequence for Guruswami-Sudan witnesses. -/
 theorem proximity_gap_divisibility (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k)
     {Q : F[X][Y]} (hQ : Conditions k m (proximity_gap_degree_bound k n m) ωs f Q)
-    (hdist : (hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) : ℝ) / n <
+    (hdist : (hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) : ℝ) / n <
       proximity_gap_johnson k n m) :
-    X - C (codewordToPoly p) ∣ Q :=
+    X - C (toPolynomial p) ∣ Q :=
   dvd_property (f := f) hk hm p hQ.Q_deg
     hQ.Q_multiplicity hdist
 
@@ -1040,9 +1040,9 @@ theorem gs_existence (k n : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
 /-- GS divisibility with rate-corrected Johnson radius (ρ = k/n). -/
 theorem gs_divisibility (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k)
     {Q : F[X][Y]} (hQ : Conditions k m (gs_degree_bound k n m) ωs f Q)
-    (h_dist : (hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) : ℝ) / n <
+    (h_dist : (hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) : ℝ) / n <
       gs_johnson k n m) :
-    X - C (codewordToPoly p) ∣ Q :=
+    X - C (toPolynomial p) ∣ Q :=
   gs_dvd_property (f := f) hk hm p hQ.Q_deg hQ.Q_multiplicity h_dist
 
 end GuruswamiSudan

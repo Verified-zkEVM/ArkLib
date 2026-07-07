@@ -103,7 +103,7 @@ lemma ps_coeff_mul_sum_monomial {R : Type} [CommRing R]
         then A.coeff (i - (j : ℕ)) * c j else 0 := by
   classical
   have hdeg : ∀ N : ℕ, m < N → A.coeff N = 0 := (natDegree_le_iff_coeff_eq_zero).1 hm
-  simp [Finset.mul_sum, finset_sum_coeff, ps_coeff_mul_monomial_ite]
+  simp [Finset.mul_sum, finsetSum_coeff, ps_coeff_mul_monomial_ite]
   grind only [cases Or]
 
 private lemma ps_swap_coeff {F : Type} [CommRing F] (g : F[X][Y]) (i j : ℕ) :
@@ -115,10 +115,10 @@ private lemma ps_swap_coeff {F : Type} [CommRing F] (g : F[X][Y]) (i j : ℕ) :
     have h_swap_def : ∀ g : F[X][Y], swap g = ∑ i ∈ g.support,
         ∑ j ∈ (g.coeff i).support, monomial j (monomial i ((g.coeff i).coeff j)) := by
       intro g
-      simp [swap, eval_finset_sum, aeval_def, eval₂_eq_sum, sum_def,
+      simp [swap, eval_finsetSum, aeval_def, eval₂_eq_sum, sum_def,
         ← C_mul_X_pow_eq_monomial, Finset.sum_mul _ _ _ ]
       ac_rfl
-    simp only [h_swap_def, finset_sum_coeff, coeff_monomial, sum_ite_eq', mem_support_iff, ne_eq]
+    simp only [h_swap_def, finsetSum_coeff, coeff_monomial, sum_ite_eq', mem_support_iff, ne_eq]
     intro g i j
     rw [Finset.sum_eq_single i] <;> simp_all only [swap_apply, mem_support_iff, ne_eq]
     · split_ifs <;> simp_all
@@ -267,9 +267,9 @@ lemma ps_exists_y_preserve_degree_x {F : Type} [Field F]
     exact le_trans
       (natDegree_sum_le _ _) (Finset.sup_le fun i hi ↦ le_trans (natDegree_mul_le ..) (by aesop))
   have h_deg_y_eq : (evalY y B).coeff d = g.eval y := by
-    simp only [sum_def, eval_finset_sum, eval_monomial, g]
+    simp only [sum_def, eval_finsetSum, eval_monomial, g]
     unfold evalY
-    simp only [eval_eq_sum, sum_def, finset_sum_coeff]
+    simp only [eval_eq_sum, sum_def, finsetSum_coeff]
     refine Finset.sum_congr rfl fun i hi ↦ ?_
     induction i <;> simp_all [coeff_mul, coeff_C, pow_succ'] ; ring_nf
     rw [sum_eq_single (degreeX B, 0)] <;> simp only [mem_antidiagonal, ne_eq,
@@ -400,7 +400,8 @@ lemma ps_is_rel_prime_swap {F : Type} [CommRing F] {A B : F[X][Y]}
   let f : F[X][Y] ≃+* F[X][Y] := swap.toRingEquiv
   refine fun d hdA hdB ↦ ?_
   have hunit : IsUnit (f.symm d) :=
-    h ((map_dvd_iff f).1 (by simpa [f] using hdA)) ((map_dvd_iff f).1 (by simpa [f] using hdB))
+    h ((map_dvd_iff f).1 (by rw [RingEquiv.apply_symm_apply]; exact hdA))
+      ((map_dvd_iff f).1 (by rw [RingEquiv.apply_symm_apply]; exact hdB))
   have : IsUnit (f (f.symm d)) := f.toRingHom.isUnit_map hunit
   simpa [f] using this
 
