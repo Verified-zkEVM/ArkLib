@@ -108,8 +108,8 @@ def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (
   ∀ U : ℓ → (ι → F), ∀ γ : I,
     Pr_{let x ←$ᵖ S}[(IsMCA G LC x U γ)] ≤ ENNReal.ofReal (ε_mca γ)
 
-/-- Let `G : S →F^ℓ` and `G′: S′→F^ℓ` be two generators. Their tensor product is the generator
-`G ⊗ G′: S × S′→ F^ℓ ⊗ F^ℓ′` defined by `(x,x′) ↦ G(x) ⊗ G′(x′)`.
+/-- Let `G : S → F^ℓ` and `G′: S′ → F^ℓ` be two generators. Their tensor product is the generator
+`G ⊗ G′: S × S′→ F^ℓ ⊗ F^ℓ′` defined by `(x , x′) ↦ G(x) ⊗ G′(x′)`.
 Definition 4.3 [BCGM25]. -/
 def TensorGenerator {ℓ' : Type} [Fintype ℓ'] {S S' : Type}
   (G : Generator S ℓ F) (G' : Generator S' ℓ' F) :
@@ -132,14 +132,14 @@ noncomputable def tensorProductPiFunEquiv (F : Type) [Field F] (ℓ ℓ' : Type)
   ((Pi.basisFun F ℓ).tensorProduct (Pi.basisFun F ℓ')).equivFun
 
 /-- The tensor product generator `TensorGenerator` and the explicit componentwise generator
-`TensorGenerator_Explicit` agree under the canonical isomorphism between
-`F^ℓ ⊗ F^ℓ′` and `(ℓ × ℓ') → F`. -/
+`TensorGenerator_Explicit` agree under the canonical isomorphism between `F^ℓ ⊗ F^ℓ′` and
+`(ℓ × ℓ') → F`. -/
 theorem TensorGenerator_eq_TensorGenerator_Explicit {ℓ' : Type} [Fintype ℓ'] [DecidableEq ℓ]
   [DecidableEq ℓ'] {S S' : Type} (G : Generator S ℓ F) (G' : Generator S' ℓ' F) (p : S × S') :
     tensorProductPiFunEquiv F ℓ ℓ' (TensorGenerator G G' p) = TensorGenerator_Explicit G G' p := by
   unfold tensorProductPiFunEquiv TensorGenerator TensorGenerator_Explicit
   convert (Pi.basisFun F ℓ).tensorProduct (Pi.basisFun F ℓ') |> fun b =>
-                                                     b.equivFun_apply ( G p.1 ⊗ₜ[F] G' p.2 ) using 1
+                                                     b.equivFun_apply (G p.1 ⊗ₜ[F] G' p.2) using 1
   ext ⟨i, j⟩
   simp only [Module.Basis.tensorProduct_repr_tmul_apply, Pi.basisFun_repr, smul_eq_mul]
   ring
@@ -235,7 +235,8 @@ theorem poly_gen_is_zero_evading
   any_goals intro i; exact minSeedCard_le S (Fin.pos_iff_nonempty.mpr ⟨i⟩) i
   any_goals assumption
   · convert rfl
-    ext; simp +decide [MvPolynomial.dotProduct_eq_eval_linearCombination, hG.2]
+    ext
+    simp [MvPolynomial.dotProduct_eq_eval_linearCombination, hG.2]
   · rw [ENNReal.ofReal_div_of_pos] <;> norm_cast
     exact minSeedCard_pos S
   · exact LinearCombination.linearCombination_ne_zero hG.1 hx

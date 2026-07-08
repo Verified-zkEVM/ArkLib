@@ -16,6 +16,12 @@ with a left  pseudoinverse. Then the generator `G'` obtained from `G` by right m
 is an MCA generator with the same error `ε_mca` as `G`.
 - Corollary 4.2 [BCGM25] : Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca`, and `κ` a
 subset of `ℓ`. Then the projected generator over `κ` is an MCA generator with the same error as `G`.
+- `isMCAGenerator_reindex` : MCA is invariant under bijective relabellings of the seed space and
+of the output coordinates of a generator.
+- Lemma 4.4 [BCGM25] : the tensor product of two MCA generators is an MCA generator, with the
+weaker error `ε_mca + |ℓ| • ε_mca'` (`tensor_of_MCA_is_MCA`, fully proved) and with the tight
+error `ε_mca + ε_mca'` of the paper (`tensor_of_MCA_is_MCA_tight`, currently `sorry`ed pending a
+generalisation of `IsMCAGenerator` to module alphabets).
 
 ## References
 
@@ -114,6 +120,46 @@ lemma generatorSubset [Nonempty S] (G : Generator S ℓ F) (ε_mca : I → ℝ) 
           fun x h => isMCA_projectedGenerator_of_isMCA LC G κ U γ x h)
     (hGMCA (zeroExtend κ U) γ)
 
+/-- Mutual correlated agreement is invariant under bijective relabellings of the seed space and of
+the output coordinates of a generator. This lets us transport MCA statements along the canonical
+equivalences (such as `Fin.consEquiv`) that arise when iterating tensor products of generators. -/
+lemma isMCAGenerator_reindex {S' : Type} [Fintype S'] [Nonempty S'] [Nonempty S]
+    (LC : LinearCode ι F) (G : Generator S ℓ F) (ε_mca : I → ℝ)
+    (hGMCA : IsMCAGenerator G ε_mca LC) (eS : S' ≃ S) (eL : ℓ ≃ ℓ') :
+    IsMCAGenerator (fun x' j' => G (eS x') (eL.symm j')) ε_mca LC := by
+  classical
+  intro U γ
+  -- The reindexed combination is the original combination of the relabelled words `U ∘ eL`.
+  have hvec : ∀ x' : S', Matrix.vecMul (fun j' => G (eS x') (eL.symm j')) U
+      = Matrix.vecMul (G (eS x')) (fun j => U (eL j)) := by
+    intro x'
+    funext kk
+    simp only [Matrix.vecMul, dotProduct]
+    rw [← Equiv.sum_comp eL fun j' => G (eS x') (eL.symm j') * U j' kk]
+    simp
+  have hiff : ∀ x' : S',
+      IsMCA (fun x' j' => G (eS x') (eL.symm j')) LC x' U γ
+        ↔ IsMCA G LC (eS x') (fun j => U (eL j)) γ := by
+    intro x'
+    constructor
+    · rintro ⟨T, hT, hmem, j', hj'⟩
+      refine ⟨T, hT, ?_, eL.symm j', by simpa using hj'⟩
+      rw [← hvec x']
+      exact hmem
+    · rintro ⟨T, hT, hmem, j, hj⟩
+      refine ⟨T, hT, ?_, eL j, hj⟩
+      rw [hvec x']
+      exact hmem
+  have hcard : (Finset.univ.filter fun x' : S' =>
+        IsMCA G LC (eS x') (fun j => U (eL j)) γ).card
+      = (Finset.univ.filter fun x : S => IsMCA G LC x (fun j => U (eL j)) γ).card :=
+    Finset.card_equiv eS fun x' => by simp
+  calc Pr_{let x' ←$ᵖ S'}[IsMCA (fun x' j' => G (eS x') (eL.symm j')) LC x' U γ]
+      = Pr_{let x' ←$ᵖ S'}[IsMCA G LC (eS x') (fun j => U (eL j)) γ] := Pr_congr hiff
+    _ = Pr_{let x ←$ᵖ S}[IsMCA G LC x (fun j => U (eL j)) γ] := by
+        rw [prob_uniform_eq_ofReal, prob_uniform_eq_ofReal, hcard, Fintype.card_congr eS]
+    _ ≤ ENNReal.ofReal (ε_mca γ) := hGMCA _ γ
+
 /-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca` and `G' : S' → 𝔽^ℓ'` be an MCA
 generator with error `ε_mca'`. Then the (explicit) tensor generator `G ⊗ G' : S × S' → 𝔽^(ℓ × ℓ')`
 is an MCA generator.
@@ -184,5 +230,23 @@ lemma tensor_of_MCA_is_MCA [Nonempty S] {S' : Type} [Fintype S'] [Nonempty S'] (
   refine le_trans (Pr_or_le ($ᵖ (S × S')) _ _) ?_
   rw [← hEq]
   exact add_le_add hA hB
+
+/-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca` and `G' : S' → 𝔽^ℓ'` be an MCA
+generator with error `ε_mca'`. Then the (explicit) tensor generator `G ⊗ G' : S × S' → 𝔽^(ℓ × ℓ')`
+is an MCA generator with error `ε_mca + ε_mca'`.
+
+This is Lemma 4.4 [BCGM25] with the tight error bound. The paper's proof bounds the second term of
+its case split (Equation 5 in [BCGM25]) by applying the MCA property of `G'` to the `ℓ`-fold
+interleaving of `LC`, an MCA statement over the module alphabet `𝔽^ℓ`. The current
+`IsMCAGenerator` is fixed to the base alphabet `𝔽`, so this step cannot yet be expressed and the
+lemma is `sorry`ed, pending the planned generalisation of `IsMCAGenerator` to module alphabets.
+See `tensor_of_MCA_is_MCA` above for a fully proved version with the weaker error
+`ε_mca + |ℓ| • ε_mca'`. -/
+lemma tensor_of_MCA_is_MCA_tight [Nonempty S] {S' : Type} [Fintype S'] [Nonempty S']
+    (LC : LinearCode ι F)
+    (G : Generator S ℓ F) (ε_mca : I → ℝ) (hGMCA : IsMCAGenerator G ε_mca LC)
+    (G' : Generator S' ℓ' F) (ε_mca' : I → ℝ) (hG'MCA : IsMCAGenerator G' ε_mca' LC) :
+    IsMCAGenerator (TensorGenerator_Explicit G G') (ε_mca + ε_mca') LC := by
+  sorry
 
 end LinearTransformations
