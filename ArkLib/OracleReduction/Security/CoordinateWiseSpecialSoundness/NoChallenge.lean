@@ -78,6 +78,7 @@ def onlyTranscript [IsEmpty pSpec.ChallengeIdx]
     (tree : ChallengeTree pSpec arity 0) : FullTranscript pSpec :=
   (fullTranscripts_eq_singleton tree).choose
 
+/-- The unique full transcript `onlyTranscript` is a member of the tree's `fullTranscripts`. -/
 theorem onlyTranscript_mem [IsEmpty pSpec.ChallengeIdx]
     (tree : ChallengeTree pSpec arity 0) :
     tree.onlyTranscript ∈ tree.fullTranscripts := by

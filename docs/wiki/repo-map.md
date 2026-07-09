@@ -81,11 +81,12 @@ home_page/            site assets and assembled website root
     `f(x) = y` by expressing the evaluation as the quadratic form `bᵀ M a` and folding the `2ʳ`
     carrier blocks under the challenge vector (hence the name `QuadEval`); it is Hachi's
     multilinear/inner-outer lift of Greyhound's [NS24, §3.1] folding protocol. `QuadEvalGadgets`
-    holds the gadget algebra (`PublicParamsD`, the carrier/short commitment `v = D ŵ`, the
-    `J`-decomposition of `z`, and the `tensorG`/`tensorG1` challenge combinations); `QuadEval` is
+    holds the gadget algebra (`PublicParamsD`, the honest-prover carrier/short commitment
+    `v = D ŵ`, the `J`-decomposition of `z`, and the `tensorG`/`tensorG1` challenge
+    combinations); `QuadEval` is
     the 2-round protocol, its `relOut` (Eq. (20) + range balls) / `relIn` (weak opening
     ∨ MSIS(B) ∨ MSIS(D)), the subtract-and-divide extractor `buildWitness`, and **Lemma 8**
-    (coordinate-wise special soundness) as `quadEval_coordinateWiseSpecialSound(')`, `sorryAx`-free.
+    (coordinate-wise special soundness) as `quadEval_coordinateWiseSpecialSound`, `sorryAx`-free.
     The generic tree plumbing lives in `Security/CoordinateWiseSpecialSoundness/SingleRound`; the
     supporting norm bounds are in `Data/Lattices/CyclotomicRing/NormBounds/Basic` and `GadgetNorms`.
     `PolynomialQuadraticEq/PolyEvalReduction` adds the **polynomial-level bridge**: a zero-round
@@ -142,8 +143,7 @@ home_page/            site assets and assembled website root
   sequential wrappers. `NoChallenge` also provides `CWSSStructure.ofIsEmpty`, the concrete
   challenge-free structure used as the left factor when appending a zero-round `ReduceClaim` head
   (e.g. Hachi's `bridgeVerifier`). `SingleRound` is the generic single-challenge-round navigation
-  layer
-  (tree shape recovery `tree_shape`/`tree_eq_tree2`, the star-center machinery, the tree extractor
+  layer (tree shape recovery `tree_shape`, the star-center machinery, the tree extractor
   `E`, and the assembly `coordinateWiseSpecialSound_of_mkWitness`) used by Hachi's polynomial-
   evaluation reduction `QuadEval` (Lemma 8). The umbrella `CoordinateWiseSpecialSoundness.lean`
   re-exports the core files.

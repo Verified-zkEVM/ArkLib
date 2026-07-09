@@ -6,6 +6,8 @@ Authors: Tobias Rothmann
 import ArkLib.Commitments.Functional.Hachi.PolynomialQuadraticEq.QuadEval
 import ArkLib.Commitments.Functional.Hachi.PolynomialEvalSplit
 import ArkLib.ProofSystem.Component.ReduceClaim
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
 /-!
   # Polynomial-level bridge into Hachi's `QuadEval` reduction
@@ -61,7 +63,7 @@ namespace ArkLib.Lattices.Ajtai.InnerOuter
 
 open CompPoly ArkLib.Lattices.CyclotomicModulus
 open WeakBinding
-open OracleComp OracleSpec ProtocolSpec CoordinateWise.SingleRound
+open OracleComp OracleSpec ProtocolSpec CoordinateWise CoordinateWise.SingleRound
 
 /-! ## The polynomial-level statement and the bridge map (any coefficient field `R`) -/
 
@@ -191,12 +193,30 @@ theorem bridge_coordinateWiseSpecialSound {σ : Type}
     (bridgeVerifier (oSpec := oSpec) Φ (innerRows := innerRows) (messageDigits := messageDigits)
         (outerRows := outerRows) (innerDigits := innerDigits) (dRows := dRows) (m := m)
         (r := r)).coordinateWiseSpecialSound init impl D
-      (relPolyEval Φ base βSq γ κ) (relIn Φ base βSq γ κ) := by
-  refine ReduceClaim.verifier_coordinateWiseSpecialSound
+      (relPolyEval Φ base βSq γ κ) (relIn Φ base βSq γ κ) :=
+  ReduceClaim.verifier_coordinateWiseSpecialSound
     (relIn := relPolyEval Φ base βSq γ κ) (relOut := relIn Φ base βSq γ κ)
-    (mapWitInv := fun _ w => w) (D := D) ?_
-  intro s w h
-  exact mem_relPolyEval_of_relIn Φ base βSq γ κ s w h
+    (mapWitInv := fun _ w => w) (D := D)
+    (mem_relPolyEval_of_relIn Φ base βSq γ κ)
+
+/-- **The polynomial-level bridge as a `CWSSPackage`** (Hachi [NOZ26, §4.2]): the zero-round
+`ReduceClaim` head `bridgeVerifier` bundled with the empty challenge structure (`ofIsEmpty`) and its
+CWSS certificate `bridge_coordinateWiseSpecialSound`, ready to be `▷`-composed before `QuadEval`.
+Its `relOut` is `QuadEval`'s input relation `relIn`, so the seam with `quadEvalPackage` is `rfl`. -/
+def bridgePackage {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (base : ZMod q) (βSq γ κ : ℕ) :
+    CWSSPackage init impl
+      (PolyEvalStatement Φ innerRows messageDigits outerRows innerDigits dRows m r)
+      (QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
+      (QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
+      (QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
+      (!p[] : ProtocolSpec 0) where
+  verifier := bridgeVerifier (oSpec := oSpec) Φ
+  struct := CWSSStructure.ofIsEmpty
+  relIn := relPolyEval Φ base βSq γ κ
+  relOut := relIn Φ base βSq γ κ
+  isPure := ⟨fun stmt _ => toQuadEvalStatement Φ stmt, fun _ _ => rfl⟩
+  isCWSS := bridge_coordinateWiseSpecialSound Φ init impl CWSSStructure.ofIsEmpty base βSq γ κ
 
 end ZModDefs
 

@@ -151,18 +151,18 @@ digit decompositions. -/
 theorem gadgetMul_zmod_coeff_natAbs_le {b rows digits : ℕ} (hd : 0 < digits)
     (h1 : 1 ≤ Φ.φ.natDegree) {γ : ℕ} (v : PolyVec (Rq Φ) (rows * digits))
     (hv : vecLInftyNorm Φ v ≤ γ) (i : Fin rows) {k : ℕ} (hk : k < Φ.φ.natDegree) :
-    ((gadgetMul Φ ((b : ZMod q)) v i).1.coeff k).valMinAbs.natAbs
+    ((gadgetMul Φ (b : ZMod q) v i).1.coeff k).valMinAbs.natAbs
       ≤ (∑ u ∈ Finset.range digits, b ^ u) * γ := by
   -- the coefficient of the gadget product is the digit-weighted sum of block coefficients
-  have hcoeff : (gadgetMul Φ ((b : ZMod q)) v i).1.coeff k
-      = ∑ e : Fin digits, ((b : ZMod q)) ^ (e : ℕ) * (v (finProdFinEquiv (i, e))).1.coeff k := by
-    rw [gadgetMul_apply Φ ((b : ZMod q)) hd v i, ← Rq.coeffHom_apply Φ k, map_sum]
+  have hcoeff : (gadgetMul Φ (b : ZMod q) v i).1.coeff k
+      = ∑ e : Fin digits, (b : ZMod q) ^ (e : ℕ) * (v (finProdFinEquiv (i, e))).1.coeff k := by
+    rw [gadgetMul_apply Φ (b : ZMod q) hd v i, ← Rq.coeffHom_apply Φ k, map_sum]
     simp only [Rq.coeffHom_apply]
     exact Finset.sum_congr rfl fun e _ => constRq_mul_coeff Φ h1 _ _ k
   -- the explicit integer representative of that coefficient
   have hrep : ((∑ e : Fin digits,
         (b : ℤ) ^ (e : ℕ) * ((v (finProdFinEquiv (i, e))).1.coeff k).valMinAbs : ℤ) : ZMod q)
-      = (gadgetMul Φ ((b : ZMod q)) v i).1.coeff k := by
+      = (gadgetMul Φ (b : ZMod q) v i).1.coeff k := by
     rw [hcoeff, Int.cast_sum]
     refine Finset.sum_congr rfl fun e _ => ?_
     rw [Int.cast_mul, Int.cast_pow, Int.cast_natCast, ZMod.coe_valMinAbs]
@@ -177,7 +177,7 @@ theorem gadgetMul_zmod_coeff_natAbs_le {b rows digits : ℕ} (hd : 0 < digits)
           Finset.le_sup (f := fun j => Rq.lInftyNorm Φ (v j)) (Finset.mem_univ _)
       _ ≤ γ := hv
   -- minimality of the centered representative + triangle over the integer representative
-  calc ((gadgetMul Φ ((b : ZMod q)) v i).1.coeff k).valMinAbs.natAbs
+  calc ((gadgetMul Φ (b : ZMod q) v i).1.coeff k).valMinAbs.natAbs
       ≤ (∑ e : Fin digits,
           (b : ℤ) ^ (e : ℕ) * ((v (finProdFinEquiv (i, e))).1.coeff k).valMinAbs).natAbs :=
         valMinAbs_natAbs_le _ hrep
@@ -197,34 +197,34 @@ theorem gadgetMul_zmod_coeff_natAbs_le {b rows digits : ℕ} (hd : 0 < digits)
 theorem gadgetMul_zmod_lInftyNorm_le {b rows digits : ℕ} (hd : 0 < digits)
     (h1 : 1 ≤ Φ.φ.natDegree) {γ : ℕ} (v : PolyVec (Rq Φ) (rows * digits))
     (hv : vecLInftyNorm Φ v ≤ γ) (i : Fin rows) :
-    Rq.lInftyNorm Φ (gadgetMul Φ ((b : ZMod q)) v i)
+    Rq.lInftyNorm Φ (gadgetMul Φ (b : ZMod q) v i)
       ≤ (∑ u ∈ Finset.range digits, b ^ u) * γ := by
   unfold Rq.lInftyNorm
   exact Finset.sup_le fun k hkmem =>
     gadgetMul_zmod_coeff_natAbs_le Φ hd h1 v hv i (Finset.mem_range.mp hkmem)
 
-/-- **Deliverable 3(a): `ℓ∞` growth of the gadget recomposition.**
+/-- **`ℓ∞` growth of the gadget recomposition.**
 `‖G_{b,rows} ·ᵥ v‖∞ ≤ (∑_{u<digits} bᵘ) · γ` whenever `‖v‖∞ ≤ γ` — for **any**
 range-bounded `v` (adversarial `ẑ` included). -/
 theorem gadgetMul_zmod_vecLInftyNorm_le {b rows digits : ℕ} (hd : 0 < digits)
     (h1 : 1 ≤ Φ.φ.natDegree) {γ : ℕ} (v : PolyVec (Rq Φ) (rows * digits))
     (hv : vecLInftyNorm Φ v ≤ γ) :
-    vecLInftyNorm Φ (gadgetMul Φ ((b : ZMod q)) v)
+    vecLInftyNorm Φ (gadgetMul Φ (b : ZMod q) v)
       ≤ (∑ u ∈ Finset.range digits, b ^ u) * γ := by
   unfold vecLInftyNorm
   exact Finset.sup_le fun i _ => gadgetMul_zmod_lInftyNorm_le Φ hd h1 v hv i
 
-/-- **Deliverable 3(c): the J-recomposition `ℓ₂²` chain.** From the range check `‖ẑ‖∞ ≤ γ`
+/-- **The `J`-recomposition `ℓ₂²` chain.** From the range check `‖ẑ‖∞ ≤ γ`
 (Eq. (20)'s `ẑ ∈ S_b`, symmetric model), the recomposed `z = J·ẑ` satisfies
-`‖z‖₂² ≤ zRecomposeL2SqBound γ b τ (deg φ) rows`. This is the derivation that replaces v1's
-primitive `‖z‖₂² ≤ B_z` verifier check (see the plan's change ledger, §10). -/
+`‖z‖₂² ≤ zRecomposeL2SqBound γ b τ (deg φ) rows` — no primitive `‖z‖₂²` verifier check
+is needed. -/
 theorem gadgetMul_zmod_vecL2NormSq_le {b rows digits : ℕ} (hd : 0 < digits)
     (h1 : 1 ≤ Φ.φ.natDegree) {γ : ℕ} (v : PolyVec (Rq Φ) (rows * digits))
     (hv : vecLInftyNorm Φ v ≤ γ) :
-    ‖gadgetMul Φ ((b : ZMod q)) v‖₂²
+    ‖gadgetMul Φ (b : ZMod q) v‖₂²
       ≤ zRecomposeL2SqBound γ b digits Φ.φ.natDegree rows := by
-  calc vecL2NormSq Φ (gadgetMul Φ ((b : ZMod q)) v)
-      ≤ rows * (Φ.φ.natDegree * (vecLInftyNorm Φ (gadgetMul Φ ((b : ZMod q)) v)) ^ 2) :=
+  calc vecL2NormSq Φ (gadgetMul Φ (b : ZMod q) v)
+      ≤ rows * (Φ.φ.natDegree * (vecLInftyNorm Φ (gadgetMul Φ (b : ZMod q) v)) ^ 2) :=
         vecL2NormSq_le_card_mul_lInftyNorm_sq Φ _
     _ ≤ rows * (Φ.φ.natDegree * ((∑ u ∈ Finset.range digits, b ^ u) * γ) ^ 2) :=
         Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left
@@ -237,12 +237,12 @@ difference is `ℓ₂²`-bounded by `subL2NormSqBound (zRecomposeL2SqBound …) 
 theorem gadgetMul_zmod_sub_l2NormSq_le {b rows digits : ℕ} (hd : 0 < digits)
     (h1 : 1 ≤ Φ.φ.natDegree) {γ : ℕ} (v w : PolyVec (Rq Φ) (rows * digits))
     (hv : vecLInftyNorm Φ v ≤ γ) (hw : vecLInftyNorm Φ w ≤ γ) :
-    ‖gadgetMul Φ ((b : ZMod q)) v - gadgetMul Φ ((b : ZMod q)) w‖₂²
+    ‖gadgetMul Φ (b : ZMod q) v - gadgetMul Φ (b : ZMod q) w‖₂²
       ≤ subL2NormSqBound (zRecomposeL2SqBound γ b digits Φ.φ.natDegree rows) :=
   sub_l2NormSq_le Φ _ _ (gadgetMul_zmod_vecL2NormSq_le Φ hd h1 v hv)
     (gadgetMul_zmod_vecL2NormSq_le Φ hd h1 w hw)
 
-/-! ## Deliverable 4: the constants of Hachi's polynomial-evaluation reduction (`B_z`, `βSq`) -/
+/-! ## The constants of Hachi's polynomial-evaluation reduction (`B_z`, `βSq`) -/
 
 /-- **The reduction's derived `B_z`** (Hachi Lemma 8) — the `ℓ₂²` bound on `z = J_{2^m}·ẑ` that
 follows from
@@ -261,17 +261,6 @@ def quadEvalZL2SqBound (γ b τ d m δ : ℕ) : ℕ := zRecomposeL2SqBound γ b 
 /-- **The reduction's `βSq`** (Hachi Lemma 8) := `subL2NormSqBound B_z = 4·B_z` — the `ℓ₂²` bound
 on the extracted `c̄ⱼ •ᵥ sⱼ = z_sib − z_central` fed to `VerifiedBlock.scaled_short`. -/
 def quadEvalBetaSq (γ b τ d m δ : ℕ) : ℕ := subL2NormSqBound (quadEvalZL2SqBound γ b τ d m δ)
-
-/-- `βSq = 4·B_z`, definitionally. -/
-theorem quadEvalBetaSq_eq_four_mul (γ b τ d m δ : ℕ) :
-    quadEvalBetaSq γ b τ d m δ = 4 * quadEvalZL2SqBound γ b τ d m δ := rfl
-
-/-- The plan-facing instantiation: a range-checked `ẑ : Rq^{(2^m·δ)·τ}` recomposes to
-`z = J·ẑ` with `‖z‖₂² ≤ B_z = quadEvalZL2SqBound γ b τ (deg φ) m δ`. -/
-theorem quadEvalZ_l2NormSq_le {b m δ τ : ℕ} (hτ : 0 < τ) (h1 : 1 ≤ Φ.φ.natDegree) {γ : ℕ}
-    (zhat : PolyVec (Rq Φ) ((2 ^ m * δ) * τ)) (hγ : vecLInftyNorm Φ zhat ≤ γ) :
-    ‖gadgetMul Φ ((b : ZMod q)) zhat‖₂² ≤ quadEvalZL2SqBound γ b τ Φ.φ.natDegree m δ :=
-  gadgetMul_zmod_vecL2NormSq_le Φ hτ h1 zhat hγ
 
 end ZModGadgetRecomposeNorms
 

@@ -240,7 +240,7 @@ theorem sub_lInftyNorm_le {cols : ℕ} (v w : PolyVec (Rq Φ) cols) {bound : ℕ
   unfold subLInftyNormBound
   omega
 
-/-! ## Deliverable 1: ℓ₁ triangle inequality for subtraction -/
+/-! ## `ℓ₁` triangle inequality for subtraction -/
 
 /-- **`ℓ₁` subtraction triangle inequality** (ring element): `‖a - b‖₁ ≤ ‖a‖₁ + ‖b‖₁`. -/
 theorem Rq.l1Norm_sub_le (a b : Rq Φ) : ‖a - b‖₁ ≤ ‖a‖₁ + ‖b‖₁ := by
@@ -252,14 +252,7 @@ theorem Rq.l1Norm_sub_le (a b : Rq Φ) : ‖a - b‖₁ ≤ ‖a‖₁ + ‖b‖
   rw [hcoeff]
   exact valMinAbs_sub_natAbs_le _ _
 
-/-! ## Deliverable 2: ℓ₁ positivity (the `hpos` bridge for `isUnit_of_l1Norm_le`) -/
-
-omit [NeZero q] in
-/-- The centered `ℓ₁` norm of `0` is `0`. -/
-theorem Rq.l1Norm_zero : ‖(0 : Rq Φ)‖₁ = 0 := by
-  unfold Rq.l1Norm
-  refine Finset.sum_eq_zero fun k _ => ?_
-  rw [Rq.zero_val, CompPoly.CPolynomial.coeff_zero, ZMod.valMinAbs_zero, Int.natAbs_zero]
+/-! ## `ℓ₁` positivity (the `hpos` bridge for `isUnit_of_l1Norm_le`) -/
 
 omit [NeZero q] in
 /-- A ring element with zero centered `ℓ₁` norm is `0`: every centered coefficient
@@ -294,17 +287,12 @@ theorem Rq.eq_zero_of_l1Norm_eq_zero {x : Rq Φ} (h : ‖x‖₁ = 0) : x = 0 :=
   exact Subtype.ext (by rw [Rq.zero_val]; exact hx1)
 
 omit [NeZero q] in
-/-- The centered `ℓ₁` norm vanishes exactly on `0`. -/
-theorem Rq.l1Norm_eq_zero_iff (x : Rq Φ) : ‖x‖₁ = 0 ↔ x = 0 :=
-  ⟨fun h => Rq.eq_zero_of_l1Norm_eq_zero Φ h, fun h => h ▸ Rq.l1Norm_zero Φ⟩
-
-omit [NeZero q] in
 /-- **`ℓ₁` positivity.** A nonzero ring element has positive centered `ℓ₁` norm — the `hpos`
 input to `isUnit_of_l1Norm_le` for the extracted difference challenge `c̄ⱼ ≠ 0`. -/
 theorem Rq.l1Norm_pos_of_ne_zero {x : Rq Φ} (hx : x ≠ 0) : 0 < ‖x‖₁ :=
   Nat.pos_of_ne_zero fun h0 => hx (Rq.eq_zero_of_l1Norm_eq_zero Φ h0)
 
-/-! ## Deliverable 3(b): ℓ∞ → ℓ₂² aggregation bridge -/
+/-! ## `ℓ∞ → ℓ₂²` aggregation bridge -/
 
 omit [NeZero q] [IsCyclotomic Φ] in
 /-- **`ℓ∞ → ℓ₂²` bridge** (ring element): `‖x‖₂² ≤ deg φ · ‖x‖∞²` — each of the `deg φ`
@@ -334,7 +322,7 @@ theorem vecL2NormSq_le_card_mul_lInftyNorm_sq {cols : ℕ} (v : PolyVec (Rq Φ) 
     _ = cols * (Φ.φ.natDegree * (vecLInftyNorm Φ v) ^ 2) := by
         rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul]
 
-/-! ## Deliverable 3(c), constant: the recomposition growth bound -/
+/-! ## The recomposition growth bound -/
 
 /-- Squared-`ℓ₂` bound for a base-`b` gadget **recomposition** `z = J·ẑ` of an
 `ℓ∞`-range-checked decomposed vector (`‖ẑ‖∞ ≤ γ`): each of the `cols` entries of `z` is a

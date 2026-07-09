@@ -8,51 +8,38 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
 /-!
   # Single-challenge-round tree navigation (generic CWSS building block)
 
-  Reusable navigation for a challenge tree of shape `msgNode(pre) → chalNode → leaves`: exactly
-  one pre-challenge message, one challenge round, and nothing after. This is the generic core
-  shared by any coordinate-wise special sound (CWSS) protocol with a single challenge round over
-  a `2^r`-coordinate challenge vector — in particular Hachi's polynomial-evaluation reduction
-  (`QuadEval`, Hachi [NOZ26] Lemma 8; originally Greyhound's [NS24, §3.1] folding protocol).
+  Generic machinery for coordinate-wise special soundness (CWSS) of any two-round protocol —
+  one prover message, then one challenge vector `Fin (2 ^ r) → C` — such as Hachi's
+  polynomial-evaluation reduction (`QuadEval`, Hachi [NOZ26] Lemma 8; originally Greyhound's
+  [NS24, §3.1] folding protocol).
 
-  It provides:
+  Main pieces:
 
-  - the two-round `pSpec` (`P_to_V` carrier commitment, then `V_to_P` challenge vector);
-  - the index-generic round readers `topMsgAux`/`readPre` (round-0 message) and
-    `chalsAux`/`readChallenges` (the round-1 sibling-challenge family, *plainly typed* as
-    `Fin (arity ⟨1, rfl⟩) → Challenge ⟨1, rfl⟩` — the arity is baked into the tree's type, so no
-    `Σ'`-packaging or arity guard is needed);
-  - the star tree `tree2` with the reader computation rules (`readPre_tree2`,
-    `readChallenges_tree2`, both `rfl`);
-  - **shape recovery** (`tree_shape`, `tree_eq_tree2`): *every* tree of this `pSpec` rooted at
-    round `0` is a `tree2` — in fact `tree = tree2 (readPre tree) (readChallenges tree)`. This
-    is what lets the top-level CWSS proof rewrite an arbitrary structured accepting tree into
-    the synthetic star shape that all branch lemmas below are pinned to;
-  - the per-branch transcripts `branchPath`/`branchTr` and the navigation lemmas `branch_pre`,
-    `branch_challenge`, `branch_mem`;
-  - the CWSS structure `foldStructure` (`ℓ = 2^r`, `k = 2`, arity `2^r + 1`) with
-    `foldStructure_arity` and `nodeOk_iff_family`;
-  - the star-center machinery `StarAt`/`central`/`sib`, `exists_starAt`, `sib_coordEq`, and the
-    orientation/pointwise bridges `coordEq_symm`, `sib_coordEq_ne`, `sib_coordEq_apply_off`
-    (consumers get `challenges (sib i) i ≠ challenges (central …) i`, hence
-    `challenges (sib i) i - challenges (central …) i ≠ 0` via `sub_ne_zero_of_ne`, and
-    off-coordinate agreement for the subtract-and-cancel step);
-  - the pure-acceptance bridge `branch_relOut_language`;
-  - the tree extractor `E`, generic over *separate* relation-witness (`WitOut`) and extracted
-    input-witness (`WitIn`) types: it reads `(v, challenge family)` off the tree, sources one
-    `WitOut` per branch from `relOut` by classical choice, and hands everything to a caller-
-    supplied `mkWitness`; and
-  - the **generic assembly** `coordinateWiseSpecialSound_of_mkWitness`: any pure statement-
-    extending verifier of this `pSpec` is CWSS for `foldStructure` given only the protocol-
-    specific witness assembler `hmk` — all tree navigation, shape recovery, guard-firing, and
-    star-center plumbing is discharged here once.
+  - the two-round `pSpec` and its CWSS structure `foldStructure`
+    (`ℓ = 2 ^ r`, `k = 2`, arity `2 ^ r + 1`);
+  - **shape recovery** (`tree_shape`): every challenge tree of this `pSpec` is a star `tree2` —
+    one message `v`, one node of `arity` sibling challenge vectors, leaves below;
+  - the **star-center machinery** (`StarAt`, `central`, `sib`, `exists_starAt`, `sib_coordEq`):
+    a special-sound sibling family has a center and, per coordinate `i`, a sibling differing
+    from the center exactly at `i`;
+  - the tree extractor `treeExtractor` and the **generic assembly**
+    `coordinateWiseSpecialSound_of_mkWitness`: any pure statement-extending verifier of this
+    `pSpec` is CWSS for `foldStructure`, given only a protocol-specific witness assembler
+    `mkWitness` turning per-branch `relOut`-witnesses at star-shaped challenge families into a
+    `relIn`-witness — all tree navigation, shape recovery, and guard-firing is discharged here
+    once.
 
-  This module is milestone **M2** of `Commitments/Functional/Hachi/LEMMA8_FOLDBLOCK_PLAN.md`
-  (§9.4).
+  ## References
+
+  * [Nguyen, N. K., and Seiler, G., *Greyhound: Fast Polynomial Commitments from Lattices*][NS24]
+  * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
+      Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
 open OracleComp OracleSpec ProtocolSpec ProtocolSpec.ChallengeTree CoordinateWise
 
--- NB: `central`/`sib`/`E` need classical choice; the `linter.style.openClassical` linter (active
+-- NB: `central`/`sib`/`treeExtractor` need classical choice; the `linter.style.openClassical`
+-- linter (active
 -- via `mathlibStandardSet`) forbids a file-level `open Classical`, so we use `open Classical in`
 -- per definition instead.
 
@@ -60,9 +47,9 @@ namespace CoordinateWise.SingleRound
 
 /-- The two-round single-challenge-round protocol (instantiated by Hachi's `QuadEval` reduction):
 the prover sends a carrier commitment `CarrierCom` (round 0, `P_to_V`), the verifier replies with
-a challenge vector `Fin (2^r) → C` (round 1, `V_to_P`). -/
+a challenge vector `Fin (2 ^ r) → C` (round 1, `V_to_P`). -/
 @[reducible] def pSpec (CarrierCom C : Type) (r : ℕ) : ProtocolSpec 2 :=
-  ⟨!v[.P_to_V, .V_to_P], !v[CarrierCom, Fin (2^r) → C]⟩
+  ⟨!v[.P_to_V, .V_to_P], !v[CarrierCom, Fin (2 ^ r) → C]⟩
 
 variable {CarrierCom C : Type} {r : ℕ}
   {arity : (pSpec CarrierCom C r).ChallengeIdx → ℕ}
@@ -72,10 +59,7 @@ variable {CarrierCom C : Type} {r : ℕ}
 Naive `match tree` on a `ChallengeTree … 0` fails ("dependent elimination failed"), so each
 reader is index-generic: it matches at an arbitrary round index `a` and carries the proof
 `a = 0` (resp. `a = 1`), discharged per constructor via `congrArg Fin.val` +
-`Direction.noConfusion`. Since the arity function is a parameter of `ChallengeTree`'s *type*
-(and challenge-index proofs are definitionally irrelevant), the sibling family stored in the
-round-1 `chalNode` already has the plain type `Fin (arity ⟨1, rfl⟩) → Challenge ⟨1, rfl⟩` — no
-`Σ' K, Fin K → _` packaging is needed. -/
+`Direction.noConfusion`. -/
 
 /-- Index-generic round-0 message reader: peel the top `msgNode` of a tree at any index `a`
 together with a proof `a = 0`. -/
@@ -127,7 +111,7 @@ where
 /-! ## The star tree and shape recovery -/
 
 /-- The star tree: one message node carrying `v`, one challenge node carrying the sibling
-family, leaves below. Every tree of this `pSpec` has this shape (`tree_eq_tree2`). -/
+family, leaves below. Every tree of this `pSpec` has this shape (`tree_shape`). -/
 def tree2 (v : CarrierCom)
     (challenges : Fin (arity ⟨1, rfl⟩) → (pSpec CarrierCom C r).Challenge ⟨1, rfl⟩) :
     ChallengeTree (pSpec CarrierCom C r) arity 0 :=
@@ -186,21 +170,14 @@ theorem tree_shape_aux : {a : Fin 3} → (t : ChallengeTree (pSpec CarrierCom C 
       obtain rfl : m = 0 := Fin.ext (by have := congrArg Fin.val ha; simpa using this)
       exact absurd h Direction.noConfusion
 
-/-- **Shape recovery (existential form).** Every full tree of the two-round `pSpec` is a star
-tree. -/
+/-- **Shape recovery.** Every full tree of the two-round `pSpec` is a star tree. This is the
+rewrite that turns an arbitrary structured accepting tree into the synthetic `tree2` that the
+branch lemmas (`branch_pre`/`branch_challenge`/`branch_mem`/`branch_relOut_language`) are
+pinned to. -/
 theorem tree_shape (tree : ChallengeTree (pSpec CarrierCom C r) arity 0) :
     ∃ v challenges, tree = tree2 (arity := arity) v challenges := by
   obtain ⟨v, challenges, h⟩ := tree_shape_aux tree rfl
   exact ⟨v, challenges, eq_of_heq h⟩
-
-/-- **Shape recovery.** Every full tree of the two-round `pSpec` *is* the star tree of its
-reads: `tree = tree2 (readPre tree) (readChallenges tree)`. This is the load-bearing rewrite
-that turns an arbitrary structured accepting tree into the synthetic `tree2` that the branch
-lemmas (`branch_pre`/`branch_challenge`/`branch_mem`/`branch_relOut_language`) are pinned to. -/
-theorem tree_eq_tree2 (tree : ChallengeTree (pSpec CarrierCom C r) arity 0) :
-    tree = tree2 (readPre tree) (readChallenges tree) := by
-  obtain ⟨v, challenges, rfl⟩ := tree_shape tree
-  rfl
 
 /-! ## Per-branch transcripts -/
 
@@ -247,33 +224,33 @@ theorem branch_mem (v : CarrierCom)
 /-! ## The CWSS structure -/
 
 /-- The single-round CWSS structure (Hachi's `QuadEval` reduction, Hachi Lemma 8): the single
-challenge round carries `ℓ = 2^r` coordinates over
-the alphabet `C`, decomposed by the identity (`Challenge ⟨1, rfl⟩ = (Fin (2^r) → C)` already),
-with soundness parameter `k = 2`; hence arity `2^r·(2−1)+1 = 2^r+1` and
-`nodeOk = IsSpecialSoundFamily (2^r) 2` — the branching of Hachi Lemma 8 / Def. 3. -/
+challenge round carries `ℓ = 2 ^ r` coordinates over
+the alphabet `C`, decomposed by the identity (`Challenge ⟨1, rfl⟩ = (Fin (2 ^ r) → C)` already),
+with soundness parameter `k = 2`; hence arity `2 ^ r·(2−1)+1 = 2 ^ r + 1` and
+`nodeOk = IsSpecialSoundFamily (2 ^ r) 2` — the branching of Hachi Lemma 8 / Def. 3. -/
 def foldStructure : CWSSStructure (pSpec CarrierCom C r) where
-  coordIndex := fun _ => ⟨2^r, Nat.two_pow_pos r⟩
+  coordIndex := fun _ => ⟨2 ^ r, Nat.two_pow_pos r⟩
   alphabet := fun _ => C
   decompose := fun i => Equiv.cast (by rcases i with ⟨j, hj⟩; fin_cases j
                                        · exact (Direction.noConfusion hj : _)
                                        · rfl)
   soundnessParam := fun _ => ⟨2, le_refl 2⟩
-  arity := fun _ => 2^r * (2 - 1) + 1
+  arity := fun _ => 2 ^ r * (2 - 1) + 1
   arity_eq := rfl
 
-/-- The single-round arity is `2^r + 1` (propositionally — `2^r * (2 - 1) + 1` is not `rfl`-equal
-to `2^r + 1`; this is the bridge the extractor's `Fin.cast` uses). -/
+/-- The single-round arity is `2 ^ r + 1` (propositionally — `2 ^ r * (2 - 1) + 1` is not
+`rfl`-equal to `2 ^ r + 1`; this is the bridge the extractor's `Fin.cast` uses). -/
 theorem foldStructure_arity :
-    (foldStructure (CarrierCom := CarrierCom) (C := C) (r := r)).arity ⟨1, rfl⟩ = 2^r + 1 := by
+    (foldStructure (CarrierCom := CarrierCom) (C := C) (r := r)).arity ⟨1, rfl⟩ = 2 ^ r + 1 := by
   simp [foldStructure]
 
-/-- The single-round node predicate is exactly the `SS(C, 2^r, 2)` condition on the sibling
+/-- The single-round node predicate is exactly the `SS(C, 2 ^ r, 2)` condition on the sibling
 family (Hachi Lemma 8 / Def. 3). -/
 theorem nodeOk_iff_family
     (challenges : Fin ((foldStructure (CarrierCom := CarrierCom) (C := C) (r := r)).arity
         ⟨1, rfl⟩) → (pSpec CarrierCom C r).Challenge ⟨1, rfl⟩) :
     (foldStructure (CarrierCom := CarrierCom) (C := C) (r := r)).nodeOk ⟨1, rfl⟩ challenges ↔
-      IsSpecialSoundFamily (2^r) 2
+      IsSpecialSoundFamily (2 ^ r) 2
         (fun j => (challenges (Fin.cast (by simp [foldStructure]) j))) := by
   unfold CWSSStructure.nodeOk
   simp only [foldStructure, CWSSStructure.ell, CWSSStructure.k]
@@ -302,7 +279,7 @@ noncomputable def sib {ℓ K : ℕ} (challenges : Fin K → (Fin ℓ → C)) [No
 
 /-- A special-sound family has a star center (promotes the family's central index; needs
 `2 ≤ k` so each coordinate's sibling set is nonempty). -/
-theorem exists_starAt {ℓ k K : ℕ} (hk : 2 ≤ k) (hK : K = ℓ*(k-1)+1)
+theorem exists_starAt {ℓ k K : ℕ} (hk : 2 ≤ k) (hK : K = ℓ * (k - 1) + 1)
     (challenges : Fin K → (Fin ℓ → C))
     (hfam : IsSpecialSoundFamily ℓ k (fun j => challenges (Fin.cast hK.symm j))) :
     ∃ e, StarAt challenges e := by
@@ -333,13 +310,6 @@ theorem sib_coordEq_ne {ℓ K : ℕ} (challenges : Fin K → (Fin ℓ → C)) [N
     challenges (sib challenges i) i ≠ challenges (central challenges) i :=
   (coordEq_symm (sib_coordEq challenges hstar i)).1
 
-/-- Sibling-first pointwise agreement off coordinate `i` (the off-coordinate cancellation of the
-subtract-and-divide step). -/
-theorem sib_coordEq_apply_off {ℓ K : ℕ} (challenges : Fin K → (Fin ℓ → C)) [Nonempty (Fin K)]
-    (hstar : ∃ e, StarAt challenges e) (i : Fin ℓ) {j : Fin ℓ} (hj : j ≠ i) :
-    challenges (sib challenges i) j = challenges (central challenges) j :=
-  ((sib_coordEq challenges hstar i).2 j hj).symm
-
 /-! ## Pure-acceptance bridge and extractor -/
 
 section Bridge
@@ -351,9 +321,9 @@ verifier output `(stmtIn, v, challenges j)` in `relOut.language` — for any pur
 outputs the statement extended by the transcript's message and challenge. -/
 theorem branch_relOut_language (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (V : Verifier oSpec StmtIn (StmtIn × CarrierCom × (Fin (2^r) → C)) (pSpec CarrierCom C r))
+    (V : Verifier oSpec StmtIn (StmtIn × CarrierCom × (Fin (2 ^ r) → C)) (pSpec CarrierCom C r))
     (hpure : ∀ s tr, V.verify s tr = pure (s, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩))
-    (relOut : Set ((StmtIn × CarrierCom × (Fin (2^r) → C)) × WitOut))
+    (relOut : Set ((StmtIn × CarrierCom × (Fin (2 ^ r) → C)) × WitOut))
     (stmtIn : StmtIn) (v : CarrierCom)
     (challenges : Fin (arity ⟨1, rfl⟩) → (pSpec CarrierCom C r).Challenge ⟨1, rfl⟩)
     (hAcc : (tree2 v challenges).IsAccepting init impl V stmtIn relOut.language)
@@ -368,21 +338,21 @@ end Bridge
 open Classical in
 /-- The tree extractor, generic over separate witness types: `relOut` relates the extended
 statement to a per-branch response `WitOut`; `mkWitness` assembles the extracted input witness
-`WitIn` from the shared message, the `2^r + 1` sibling challenge vectors, and one classically
+`WitIn` from the shared message, the `2 ^ r + 1` sibling challenge vectors, and one classically
 chosen `WitOut` per branch (`Classical.ofNonempty` where none exists — on structured accepting
 trees `branch_relOut_language` fires every guard). Hypothesis-free: all correctness is proven
 downstream. -/
-noncomputable def E {StmtIn WitOut WitIn : Type} [Nonempty WitOut]
-    (relOut : Set ((StmtIn × CarrierCom × (Fin (2^r) → C)) × WitOut))
-    (mkWitness : StmtIn → CarrierCom → (Fin (2^r+1) → (Fin (2^r) → C)) →
-      (Fin (2^r+1) → WitOut) → WitIn) :
+noncomputable def treeExtractor {StmtIn WitOut WitIn : Type} [Nonempty WitOut]
+    (relOut : Set ((StmtIn × CarrierCom × (Fin (2 ^ r) → C)) × WitOut))
+    (mkWitness : StmtIn → CarrierCom → (Fin (2 ^ r + 1) → (Fin (2 ^ r) → C)) →
+      (Fin (2 ^ r + 1) → WitOut) → WitIn) :
     Extractor.TreeBased StmtIn WitIn (pSpec CarrierCom C r)
       (foldStructure (CarrierCom := CarrierCom) (C := C) (r := r)).arity :=
   fun stmtIn tree =>
     let v := readPre tree
-    let fam : Fin (2^r+1) → (Fin (2^r) → C) := fun j =>
+    let fam : Fin (2 ^ r + 1) → (Fin (2 ^ r) → C) := fun j =>
       readChallenges tree (Fin.cast foldStructure_arity.symm j)
-    let resp : Fin (2^r+1) → WitOut := fun j =>
+    let resp : Fin (2 ^ r + 1) → WitOut := fun j =>
       if h : ∃ w, ((stmtIn, v, fam j), w) ∈ relOut then h.choose else Classical.ofNonempty
     mkWitness stmtIn v fam resp
 
@@ -399,25 +369,25 @@ protocol-specific work (Hachi Lemma 8's case split and subtract-divide) lives en
 `hmk`. -/
 theorem coordinateWiseSpecialSound_of_mkWitness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (V : Verifier oSpec StmtIn (StmtIn × CarrierCom × (Fin (2^r) → C)) (pSpec CarrierCom C r))
+    (V : Verifier oSpec StmtIn (StmtIn × CarrierCom × (Fin (2 ^ r) → C)) (pSpec CarrierCom C r))
     (hpure : ∀ s tr, V.verify s tr = pure (s, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩))
     (relIn : Set (StmtIn × WitIn))
-    (relOut : Set ((StmtIn × CarrierCom × (Fin (2^r) → C)) × WitOut))
-    (mkWitness : StmtIn → CarrierCom → (Fin (2^r+1) → (Fin (2^r) → C)) →
-      (Fin (2^r+1) → WitOut) → WitIn)
-    (hmk : ∀ stmtIn v (fam : Fin (2^r+1) → (Fin (2^r) → C)) (resp : Fin (2^r+1) → WitOut),
+    (relOut : Set ((StmtIn × CarrierCom × (Fin (2 ^ r) → C)) × WitOut))
+    (mkWitness : StmtIn → CarrierCom → (Fin (2 ^ r + 1) → (Fin (2 ^ r) → C)) →
+      (Fin (2 ^ r + 1) → WitOut) → WitIn)
+    (hmk : ∀ stmtIn v (fam : Fin (2 ^ r + 1) → (Fin (2 ^ r) → C)) (resp : Fin (2 ^ r + 1) → WitOut),
       (∀ j, ((stmtIn, v, fam j), resp j) ∈ relOut) →
       (∃ e, StarAt fam e) →
       (stmtIn, mkWitness stmtIn v fam resp) ∈ relIn) :
     V.coordinateWiseSpecialSound init impl
       (foldStructure (CarrierCom := CarrierCom) (C := C) (r := r)) relIn relOut := by
   classical
-  refine ⟨E relOut mkWitness, ?_⟩
+  refine ⟨treeExtractor relOut mkWitness, ?_⟩
   intro stmtIn tree hStruct hAcc
   obtain ⟨v, challenges, rfl⟩ := tree_shape tree
   have harity := (foldStructure_arity (CarrierCom := CarrierCom) (C := C) (r := r)).symm
   -- each branch's guard fires: per-branch membership in `relOut.language`
-  have hmem : ∀ j : Fin (2^r+1),
+  have hmem : ∀ j : Fin (2 ^ r + 1),
       ∃ w, ((stmtIn, v, challenges (Fin.cast harity j)), w) ∈ relOut := by
     intro j
     have h := branch_relOut_language init impl V hpure relOut stmtIn v challenges hAcc
@@ -426,10 +396,10 @@ theorem coordinateWiseSpecialSound_of_mkWitness
   -- the sibling family is special sound, hence has a star center
   have hfam := (nodeOk_iff_family challenges).1 hStruct.1
   have hstar : ∃ e, StarAt
-      (fun j : Fin (2^r+1) => challenges (Fin.cast harity j)) e :=
+      (fun j : Fin (2 ^ r + 1) => challenges (Fin.cast harity j)) e :=
     exists_starAt (le_refl 2) (by omega) _ hfam
   -- each chosen response satisfies the relation (the extractor's guards fire)
-  have hbranch : ∀ j : Fin (2^r+1),
+  have hbranch : ∀ j : Fin (2 ^ r + 1),
       ((stmtIn, v, challenges (Fin.cast harity j)),
         if h : ∃ w, ((stmtIn, v, challenges (Fin.cast harity j)), w) ∈ relOut
           then h.choose else Classical.ofNonempty) ∈ relOut := by
@@ -447,12 +417,10 @@ section Instances
 
 variable {CarrierCom C : Type} {r : ℕ} [SampleableType C] [OracleInterface CarrierCom]
 
-/-- Hand-written 2-round instances (NOT auto-derived for `ProtocolSpec 2`).
-Generic in `C`; with `C := ShortChallenge Φ ω` they discharge from the instance ARGUMENT
-`[SampleableType (ShortChallenge Φ ω)]` (see the `example`s in `QuadEval.lean`). -/
+/-- Hand-written 2-round instances (not auto-derived for `ProtocolSpec 2`), generic in `C`. -/
 instance : ∀ i, SampleableType ((pSpec CarrierCom C r).Challenge i)
   | ⟨0, h⟩ => nomatch h
-  | ⟨1, _⟩ => (inferInstance : SampleableType (Fin (2^r) → C))
+  | ⟨1, _⟩ => (inferInstance : SampleableType (Fin (2 ^ r) → C))
 
 instance : ∀ i, OracleInterface ((pSpec CarrierCom C r).Message i)
   | ⟨0, _⟩ => (inferInstance : OracleInterface CarrierCom)

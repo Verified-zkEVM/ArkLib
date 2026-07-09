@@ -64,6 +64,7 @@ variable {R : Type*} {nl nh : Nat}
 def splitEquiv (nl nh : Nat) : Fin (2 ^ nh) × Fin (2 ^ nl) ≃ Fin (2 ^ (nl + nh)) :=
   finProdFinEquiv.trans (finCongr (by rw [Nat.mul_comm, ← pow_add]))
 
+/-- The underlying value of `splitEquiv nl nh (x, y)` is `y + 2 ^ nl * x`. -/
 @[simp] theorem splitEquiv_val (x : Fin (2 ^ nh)) (y : Fin (2 ^ nl)) :
     (splitEquiv nl nh (x, y)).val = y.val + 2 ^ nl * x.val := rfl
 

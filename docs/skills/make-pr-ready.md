@@ -28,6 +28,13 @@ Work through these in order. Do not stop until every item is complete.
   Compute the real PR surface as the **union** of `git diff --stat origin/main...HEAD` (committed)
   and `git diff --stat HEAD` (uncommitted), and audit/lint every file in that union — not just the
   committed ones. The whole-tree view is `git diff --stat origin/main`.
+- **Separate your own work from a merged-in sibling branch.** If this branch has merged another
+  in-flight feature branch (e.g. `foo-infra`), the `origin/main...HEAD` scope will include files
+  that are **byte-identical** to that sibling branch's PR. Detect them with
+  `git diff --quiet origin/<sibling-branch> HEAD -- <file>` (clean = owned by the sibling PR). Do
+  **not** audit or "fix" those files here: it is redundant with the sibling PR and any edit invites
+  a merge conflict. Scope the audit/lint/warning-fix work to files this branch actually authored or
+  extended (differs from both `origin/main` and the sibling branch).
 - **If `_generated/` drift is already committed** (the branch committed regenerated outputs, not
   just dirtied the working tree), `git checkout origin/main -- docs/kb/_generated/` stages a
   *revert*, and you must **commit it** for the guard to pass — the guard compares the committed
@@ -71,7 +78,11 @@ Work through these in order. Do not stop until every item is complete.
   - `--lint` (`lint-style.sh`) reports **repo-wide pre-existing** style debt — hundreds of
     `ERR_*` lines in files you did not touch. Do **not** try to clear all of it; scope style
     fixes to your changed files (lint them individually with
-    `python3 scripts/lint-style.py <your-files>`), and treat the **default** `validate.sh`
+    `python3 scripts/lint-style.py <your-files>`). **Line length is codepoints, not bytes**: these
+    files are dense with multi-byte Unicode math (`ℓ₂²`, `∑`, `·ᵥ`, `c̄ⱼ`), so `awk length` / naive
+    byte counts over-report by 2–3× and can invent dozens of phantom "over-100" lines. Trust
+    `lint-style.py` and the Lean `linter.style.longLine` (both count codepoints); if in doubt verify
+    with Python `len(line)`, never `awk`/`wc -c`. Otherwise treat the **default** `validate.sh`
     (build + Data warning budget + `check-imports` + `check-docs-integrity` + `kb/lint`) as the
     real gate. Capture its true exit with `rc=$?` on its own line — a trailing
     `… ; echo "EXIT $?"` reports the `echo`'s exit (always 0) and masks a failing validate.

@@ -197,6 +197,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
 import ArkLib.OracleReduction.Security.Implications
