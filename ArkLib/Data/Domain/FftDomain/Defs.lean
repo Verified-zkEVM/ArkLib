@@ -37,8 +37,8 @@ indexing.
 
 namespace Domain
 
-variable {ι : Type} [Fintype ι] [AddCommGroup ι] [DecidableEq ι]
-variable {F : Type} [Field F] [DecidableEq F]
+variable {ι : Type} [AddCommGroup ι]
+variable {F : Type} [Field F]
 
 /-- An FFT domain is a coset FFT domain whose coset generator is `1`.
   Equivalently, an FFT domain is exactly
@@ -49,7 +49,6 @@ structure FftDomain (ι : Type) [AddCommGroup ι]
 
 namespace FftDomain
 
-omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 /-- Two FFT domains are equal iff their underlying subgroup parametrizations are equal. -/
 private lemma eq_iff_domains_eq {ω₁ ω₂ : FftDomain ι F} :
   ω₁ = ω₂ ↔ ω₁.subgroupDomain = ω₂.subgroupDomain := by
@@ -70,7 +69,6 @@ instance : FunLike (FftDomain ι F) ι F where
 
 namespace FftDomain
 
-omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 /-- Evaluation of an FFT domain is evaluation of its underlying subgroup parametrization. -/
 lemma eval_fft_domain_eq_eval_domain
   {fftDomain : FftDomain ι F} {i : ι} :
@@ -115,7 +113,6 @@ instance : FftDomainClass (FftDomain ι F) ι F where
 
 namespace FftDomain
 
-omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 /-- Viewing an FFT domain as a coset FFT domain does not change its values. -/
 lemma eval_fft_domain_eq_eval_coset_fft_domain
   {ω : FftDomain ι F} {i : ι} :
@@ -128,12 +125,10 @@ end FftDomain
 
 namespace FftDomain
 
-omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 /-- An FFT domain is injective as a function. -/
 lemma injective {ω : FftDomain ι F} :
   Function.Injective ω := CosetFftDomainClass.injective _
 
-omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 /-- An FFT domain is injective on every set. -/
 lemma injOn {ω : FftDomain ι F} {s : Set ι} :
   Set.InjOn ω s := fun _ _ _ _ h ↦ ω.injective h
@@ -147,7 +142,7 @@ abbrev SmoothFftDomain (n : ℕ) (F : Type) [Field F] : Type :=
 namespace FftDomain
 
 /-- The finite set of field elements contained in an FFT domain. -/
-abbrev toFinset (ω : FftDomain ι F) : Finset F :=
+abbrev toFinset [Fintype ι] [DecidableEq F] (ω : FftDomain ι F) : Finset F :=
   CosetFftDomainClass.toFinset ω
 
 end FftDomain
