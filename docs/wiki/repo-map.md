@@ -88,6 +88,27 @@ home_page/            site assets and assembled website root
   (`eval_on_Z`, `toRatFuncPoly`, `D_Y`, `D_YZ`, and related notation) live in
   `ArkLib/Data/Polynomial/Trivariate.lean`, not in `ProximityGap/Basic.lean` or
   `ProximityGap/BCIKS20/ListDecoding/Guruswami.lean`.
+- Transcript-tree infrastructure for special-soundness-style notions lives in
+  `Security/TranscriptTree/`: `Basic` defines `ChallengeTree`, `LeafPath`,
+  `ChallengeTreeShape`, `ChallengeTree.IsStructured`, `ChallengeTree.IsAccepting`,
+  `Extractor.TreeBased`, and the shape-generic soundness core `Verifier.treeSpecialSound` (a
+  tree-based extractor recovering a witness from every `S`-structured accepting tree); `Composition`
+  defines shape append, `appendSplit`, and the generic structure-preservation/recombination lemmas
+  for sequential protocol append. The umbrella `Security/TranscriptTree.lean` re-exports both files.
+  Both plain and coordinate-wise special soundness are instances of `Verifier.treeSpecialSound` for
+  different shapes; neither special-soundness file imports the other.
+- Plain `(k)`-special soundness lives in `Security/SpecialSoundness.lean`. It is the instance of
+  `Verifier.treeSpecialSound` for the pairwise-distinct shape `distinctShape k` (arity `kᵢ`, node
+  predicate `Function.Injective`), with input/output relations like CWSS; it is the `ℓᵢ = 1`
+  specialization of coordinate-wise special soundness. The bridge
+  `coordinateWiseSpecialSound (ofSpecialSound k) ↔ specialSound k` lives in
+  `Security/Implications.lean`.
+- Coordinate-wise special soundness ([FMN24]/[NOZ26]) lives in
+  `Security/CoordinateWiseSpecialSoundness/`: `Basic` defines the `SS(S, ℓ, k)` combinatorics
+  (`CoordEq`, `IsSpecialSoundFamily`), `CWSSStructure`, `CWSSStructure.toShape`, and
+  `Verifier.coordinateWiseSpecialSound`; `Composition` transports CWSS structures across
+  sequential composition and proves binary append preservation via the generic transcript-tree
+  split. The umbrella `CoordinateWiseSpecialSoundness.lean` re-exports both files.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.
 - Ring switching is a **generic, instantiable compiler** under `ProofSystem/RingSwitching/`, not a
