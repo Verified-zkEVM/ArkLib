@@ -5,7 +5,7 @@ Authors: Katerina Hristova, Julian Sutherland
 -/
 
 import ArkLib.Data.CodingTheory.InterleavedCode
-import ArkLib.Data.Codingtheory.ListDecodability
+import ArkLib.Data.CodingTheory.ListDecodability
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.Domain.CosetFftDomain.Defs
 import ArkLib.Data.CodingTheory.ProximityGap.ProximityGenerators
@@ -49,9 +49,8 @@ theorem grand_MCA_challenge {n : ℕ} [Fintype F] [DecidableEq F]
     (hrate : LinearCode.rate (ReedSolomon.code (L : Fin (2 ^ n) ↪ F) k)
             ∈ ({1 / 2, 1 / 4, 1 / 8, 1 / 16} : Set ℚ≥0))
     (ε_star : QI) :
-        (ε_mca (ReedSolomon.code (L : Fin (2 ^ n) ↪ F) k) (δ_C k L ε_star)).toReal ≤ ε_star.1 ∧
-        ∀ δ : I, (ε_mca (ReedSolomon.code (L : Fin (2 ^ n) ↪ F) k) δ).toReal ≤ ε_star.1 →
-        δ < δ_C k L ε_star := by
+        (ε_mca (ReedSolomon.code (L : Fin (2 ^ n) ↪ F) k) (δ_C k L ε_star)).toReal > ε_star.1 ∧
+        ∀ δ : I, δ < (δ_C k L ε_star) → (ε_mca (ReedSolomon.code (L : Fin (2 ^ n) ↪ F) k) δ).toReal ≤ ε_star.1 := by
     sorry
 
 def δ_C' {n : ℕ} [Fintype F] [DecidableEq F] (k : ℕ) (L : Domain.SmoothCosetFftDomain n F)
