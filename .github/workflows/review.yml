@@ -115,7 +115,7 @@ jobs:
         uses: alexanderlhicks/lean4repo-utils/review@0.1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          api_key: ${{ secrets.OPENROUTER_REVIEW_KEY }}
+          api_key: ${{ secrets.OPENROUTER_KEY }}
           pr_number: ${{ github.event.issue.number }}
           # Auto-pulled KB paper pages for the changed files + any manual Internal: refs.
           spec_refs: ${{ steps.kb.outputs.spec_refs }}
