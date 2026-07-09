@@ -81,7 +81,13 @@ section Lambda
 variable {ι : Type*} [Fintype ι] {F : Type*}
 
 /-- **ABF26 Definition 2.8 (maximised list size).** The maximum over words `f` of
-`|Λ(C, δ, f)| = |closeCodewordsRel C f δ|`. Named to match the paper's `|Λ(C, δ)|`. -/
+`|Λ(C, δ, f)| = |closeCodewordsRel C f δ|`. Named to match the paper's `|Λ(C, δ)|`.
+
+Membership in `closeCodewordsRel C f δ` is `δᵣ(f, ·) ≤ δ`, and relative Hamming distance is
+`1/n`-quantised (`n := |ι|`, `relHammingDistRange`), so `Λ(C, ·)` is a step function of `δ`,
+constant on each cell `[k/n, (k+1)/n)`. Read `δ`-indexed list-decoding statements modulo
+this — cf. the boundary framing in `ProximityGap.GrandChallenges` (the list challenge is
+likewise pinned by an integer boundary index, not a real `δ*`). -/
 noncomputable def Lambda (C : Code ι F) (δ : ℝ) : ℕ∞ :=
   ⨆ f : ι → F, ((closeCodewordsRel C f δ).ncard : ℕ∞)
 

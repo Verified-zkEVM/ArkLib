@@ -38,6 +38,22 @@ The paper intentionally does **not** define a proximity-loss variant of `ε_mca`
 `ε_ca(C, δ_fld, δ_int)`. Per Remark 4.4 this remains to be thoroughly explored, so this file
 exposes only the no-loss `ε_mca(C, δ)`.
 
+## `δ` is `1/n`-quantised — `ε_ca` and `ε_mca` are step functions
+
+For a length-`n` code (`n := |ι| = |L|`), relative Hamming distance takes values only in
+`{0, 1/n, …, 1}`, and both `ε_ca` and `ε_mca` depend on their distance argument **only
+through** `⌊δ · n⌋`: the events gate on an *integer* agreement-set size `|S| ≥ (1-δ)·n`
+(bridged by `Code.relDist_floor_bound_iff_complement_bound`: `n - ⌊δ·n⌋ ≤ |S| ↔
+(1-δ)·n ≤ |S|`). Consequently `ε_ca(C, ·)` and `ε_mca(C, ·)` are right-continuous **step
+functions**, constant on every cell `[k/n, (k+1)/n)` — this is `epsCA_eq_of_floor_eq`
+(ABF26 Remark 4.2, "level-set form") and its `ε_mca` analogue `epsMCA_eq_of_floor_eq`.
+
+**Read every `δ`-indexed statement below modulo this quantization**: a `δ` strictly inside
+a cell behaves identically to the cell's left endpoint `k/n`. In particular a "largest `δ*`
+with `ε ≤ ε*`" is generally *not* attained as a real number (the supremum is the grid point
+where the step jumps up); the well-posed, constructive datum is the integer boundary index
+`k*`, formalised as `ProximityGap.GrandChallenges.GrandMCAResolution`.
+
 ## Open follow-ups
 
 The following items from ABF26 Section 4 are tracked in `docs/kb/ABF26_PLAN.md` §7 and remain to be
@@ -228,7 +244,10 @@ The worst-case probability over pairs `(f₁, f₂)` and over `γ ← $ᵖ F` of
 of codewords agrees with `(f₁, f₂)` on `S`. MCA strengthens CA (Definition 4.1)
 by requiring the witness set for closeness and non-agreement to coincide.
 
-Per Remark 4.4, the paper intentionally does not define a proximity-loss variant. -/
+Per Remark 4.4, the paper intentionally does not define a proximity-loss variant.
+
+`δ` enters only via the size clause `|S| ≥ (1-δ)·n`, so `ε_mca(C, ·)` is a step function on
+the `1/n` grid (see the module note "`δ` is `1/n`-quantised" and `epsMCA_eq_of_floor_eq`). -/
 noncomputable def epsMCA (C : Set (ι → A)) (δ : ℝ≥0) : ENNReal :=
   ⨆ u : WordStack A (Fin 2) ι,
     Pr_{let γ ← $ᵖ F}[mcaEvent C δ (u 0) (u 1) γ]
