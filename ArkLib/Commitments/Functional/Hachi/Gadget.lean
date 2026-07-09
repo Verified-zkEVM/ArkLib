@@ -139,14 +139,6 @@ def IsLawfulGadgetDecomposition (base : R) {rows digits : Nat}
     (decompose : PolyVec (Rq Φ) rows → PolyVec (Rq Φ) (rows * digits)) : Prop :=
   ∀ x, gadgetMul Φ base (decompose x) = x
 
-omit [DecidableEq R] in
-@[simp] theorem constRq_one : constRq Φ (1 : R) = 1 := by
-  have hC : (CompPoly.CPolynomial.C (1 : R)) = 1 := by
-    refine CompPoly.CPolynomial.eq_iff_coeff.mpr (fun i => ?_)
-    rw [CompPoly.CPolynomial.coeff_C, CompPoly.CPolynomial.coeff_one]
-  change Rq.mk Φ (CompPoly.CPolynomial.C 1) = 1
-  rw [hC]; rfl
-
 /-! ## Degree / coefficient facts for reduced representatives -/
 
 omit [DecidableEq R] in
