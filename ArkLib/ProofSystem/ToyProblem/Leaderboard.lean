@@ -651,8 +651,8 @@ is a fraction `|Ω|/|F|`, so to even *represent* a value in the target window
 `|Ω|/|F|` lives in `{0, 1/2, 1}` and the two anchors would be *jointly*
 unsatisfiable.)
 
-The encoder `koalaEnc` is a genuine Reed–Solomon encoder: the degree-`< 2`
-evaluation map on `3` distinct points, built from `ReedSolomon.evalOnPoints`
+The encoder `koalaEnc` is a genuine Reed–Solomon encoder: the degree-`< 2^20`
+evaluation map on `2^21` distinct points, built from `ReedSolomon.evalOnPoints`
 and `Polynomial.degreeLTEquiv`. Its injectivity (`koalaEnc_injective`, proven
 sorry-free) is [ABF26] Definition 6.1's "code as the injective map".
 
@@ -757,7 +757,7 @@ theorem koala_spotcheck :
 `128·2.39794 = 306.93 ≤ 271.85 + 35.22 = 307.07 = 128·log 133 + 117·log 2`). This
 is *tight* — the `≈ 0.14`-decade (`≈ 0.46-bit`) margin is exactly why the attack
 ceiling rounds **up** to `bits := 117`, not `116` (a 116-bit floor fails on the
-band `(0.46604, 0.468)`; see `listDecodingUpperBoundAttack`). A proven integer
+band `(0.46604, 0.468)`; see `caUpperBoundAttack`). A proven integer
 inequality, no float `#eval`. -/
 theorem koala_spotcheck_lb :
     (2 : ℝ≥0) ^ (-(117 : ℝ)) ≤ ((133 : ℝ≥0) / 250) ^ (128 : ℕ) := by
@@ -1018,7 +1018,7 @@ split at the crossover `δ* = 117/250`:
    closing it is the prize's own research content). **Axiom-clean is infeasible by
    design**; the reduction is full down to this single named admit (one fewer than the
    previous, now-unsound, two-admit list-size route). -/
-noncomputable def listDecodingUpperBoundAttack : SecurityUpperBound koalaIRS where
+noncomputable def caUpperBoundAttack : SecurityUpperBound koalaIRS where
   bits := 117
   proof := by
     -- ABF26 §6.4.1, fully formalized **down to one owed external CA bound**.
@@ -1092,8 +1092,8 @@ readoff of the two `bits` fields — it does not depend on the anchors' owed §6
 their tagged `sorry`; the metric lemma `bits_le_of` is the anchor-independent,
 axiom-clean guarantee). -/
 theorem securityGap_koalaIRS_anchors :
-    securityGap irsLowerBoundT128 listDecodingUpperBoundAttack = 53.01 := by
-  simp only [securityGap, irsLowerBoundT128, listDecodingUpperBoundAttack]
+    securityGap irsLowerBoundT128 caUpperBoundAttack = 53.01 := by
+  simp only [securityGap, irsLowerBoundT128, caUpperBoundAttack]
   norm_num
 
 end ToyProblem

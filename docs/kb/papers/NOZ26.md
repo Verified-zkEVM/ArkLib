@@ -66,6 +66,17 @@ Ring-switching layer:
   theorem does not instantiate Hachi. Hachi soundness (a CWSS-style argument) is a separate theorem
   with a different error and is out of scope for the current ring-switching module.
 
+## Version Notes
+
+- Cryptology ePrint Archive, Paper 2026/156. ArkLib tracks the ePrint version.
+- Read together with [`FMN24.md`](FMN24.md), which introduces coordinate-wise special soundness.
+
+## Known Divergences From ArkLib
+
+- ArkLib phrases the definition over its own IOR machinery (`ProtocolSpec`, `Verifier`,
+  `ChallengeTree`) rather than the paper's interactive-argument syntax. The transcript tree is made
+  arity-indexed and challenge-branching only, abstracting away the commitment scheme of the paper.
+
 ## Open Formalization Gaps
 
 - Construct `hachiProfile : RingSwitchingProfile R_qH R_q κ_pack` and discharge

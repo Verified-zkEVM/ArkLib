@@ -70,10 +70,10 @@ Krachun-Kazanin-Haböck, *Failure of proximity gaps close to capacity*, ePrint 2
 ## Prize relevance
 
 These are the list-decoding *attack-side* lower bounds feeding ABF26's attack table
-(tex `tab:kikh-lowerbound`, ~L2799). The toy-problem leaderboard's owed attack-side
-externals (`ArkLib/ProofSystem/ToyProblem/Leaderboard.lean`, the two owed bounds in
-`listDecodingUpperBoundAttack` around L1026-1038) cite exactly the Elias/[KKH26]
-list-size lower bounds restated here.
+(tex `tab:kikh-lowerbound`, ~L2799). They remain available for list-decoding-route
+attack analyses. The current Koala IRS upper anchor in
+`ArkLib/ProofSystem/ToyProblem/Leaderboard.lean` uses the correlated-agreement route
+instead, via ABF26 Lemma 6.13 and the CS25 base-field CA lower bound.
 
 ## References
 
