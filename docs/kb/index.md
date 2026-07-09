@@ -17,11 +17,17 @@ This is the main catalog for ArkLib's knowledge base.
   `ProofSystem/Stir` development.
 - [`papers/BCIKS20.md`](papers/BCIKS20.md) - proximity gaps for Reed-Solomon codes and the main
   coding-theory formalization it drives in ArkLib.
+- [`papers/BCGM25.md`](papers/BCGM25.md) - polynomial-generator MCA and related ArkLib
+  proximity-generator infrastructure.
 - [`papers/BCS16.md`](papers/BCS16.md) - original IOP reference used by the core oracle-reduction
   layer.
 - [`papers/BBS24.md`](papers/BBS24.md) - formal verification reference for sum-check.
+- [`papers/DG25.md`](papers/DG25.md) - interleaved-code proximity gaps and the DG25 formalization
+  subtree.
 - [`papers/DP24.md`](papers/DP24.md) - binary-tower multilinear proof reference for the Binius
   development.
+- [`papers/Jo26.md`](papers/Jo26.md) - interleaving stability for generator MCA and curve
+  decodability.
 
 The paper index now also includes scaffolded landing pages for all other citation keys currently
 used in `ArkLib/**/*.lean`, including:
