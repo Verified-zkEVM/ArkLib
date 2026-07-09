@@ -8,6 +8,7 @@ import ArkLib.Data.CodingTheory.ProximityGap.Errors
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.CodingTheory.ListDecodability
+import Mathlib
 
 /-!
 # Grand Challenges from ABF26 §1
@@ -78,9 +79,72 @@ def grandMCAChallenge {F ι : Type} [Field F] [Fintype F] [DecidableEq F]
     (C : LinearCode ι F) (ε_star : ℝ≥0) : Prop :=
   ∃ δ_C_star : ℝ≥0,
     δ_C_star ≤ 1 ∧
-    epsMCA (F := F) (A := F) ((C : Set (ι → F))) δ_C_star ≤ (ε_star : ENNReal) ∧
-    ∀ δ : ℝ≥0, δ_C_star < δ → δ ≤ 1 →
-      epsMCA (F := F) (A := F) ((C : Set (ι → F))) δ > (ε_star : ENNReal)
+    (epsMCA (F := F) (A := F) ((C : Set (ι → F))) δ_C_star ≤ (ε_star : ENNReal) ∧
+      ∀ δ : ℝ≥0, δ_C_star < δ → δ ≤ 1 →
+        epsMCA (F := F) (A := F) ((C : Set (ι → F))) δ > (ε_star : ENNReal)
+    ) ∨
+    (
+      (epsMCA (F := F) (A := F) ((C : Set (ι → F))) δ_C_star > (ε_star : ENNReal)) ∧
+      ∀ δ : ℝ≥0,
+        δ < δ_C_star → (epsMCA (F := F) (A := F) ((C : Set (ι → F))) δ ≤ (ε_star : ENNReal))
+    )
+
+example {F ι : Type} [Field F] [Fintype F] [DecidableEq F]
+    [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    (C : LinearCode ι F) (ε_star : ℝ≥0) :
+      epsMCA (F := F) (A := F) (C : Set (ι → F)) 0 ≤ ε_star → grandMCAChallenge C ε_star := by
+    intros h
+    unfold grandMCAChallenge
+    let S := {δ : ℝ≥0 | δ ≤ 1 ∧ epsMCA (F := F) (A := F) (C : Set (ι → F)) δ ≤ ε_star }
+    let δ_C_star : ℝ≥0 := SupSet.sSup S
+    by_cases cond : δ_C_star ∈ S
+    · have : δ_C_star ≤ 1 ∧ epsMCA (F := F) (A := F) (C : Set (ι → F)) δ_C_star ≤ ε_star := by
+        dsimp [δ_C_star, S]
+        refine And.intro ?_ cond.2
+        · apply csSup_le
+          · exact ⟨0, zero_le_one, h⟩
+          · rintro b ⟨hb, -⟩
+            exact hb
+      have S_bounded {δ : ℝ≥0} : δ ∈ S → δ ≤ sSup S := by
+          dsimp [S]
+          rintro ⟨h₁, h₂⟩
+          exact le_csSup ⟨1, fun x hx => hx.1⟩ ⟨h₁, h₂⟩
+      have h : ∀ δ ∈ S, δ ≤ δ_C_star := by
+        intros δ h
+        dsimp [δ_C_star]
+        dsimp [S] at h ⊢
+        apply S_bounded
+        dsimp [S]
+        exact h
+      use δ_C_star
+      left
+      apply And.intro this.1
+      apply And.intro this.2
+      intros δ h' h''
+      have : δ ∉ S := by
+        intros g
+        specialize h δ g
+        linarith
+      dsimp [S] at this
+      simp only [h'', true_and, not_le] at this
+      exact this
+    · have δ_C_star_le_1 : δ_C_star ≤ 1 := by
+        dsimp [δ_C_star, S]
+        apply csSup_le
+        · exact ⟨0, zero_le_one, h⟩
+        · rintro b ⟨hb, -⟩
+          exact hb
+      use δ_C_star
+      right
+      apply And.intro
+      · simp only [Set.mem_setOf_eq, not_and, not_le, S] at cond
+        exact cond δ_C_star_le_1
+      · intros δ hδ
+        replace hδ : δ < sSup S := hδ
+        obtain ⟨δ', hδ'S, hlt⟩ :=
+          exists_lt_of_lt_csSup (s := S) ⟨0, zero_le_one, h⟩ hδ
+        obtain ⟨-, hδ'bound⟩ := hδ'S
+        exact le_trans (epsMCA_mono (F := F) (A := F) (C : Set (ι → F)) hlt.le) hδ'bound
 
 /-- **ABF26 §1 Grand List Decoding Challenge.**
 
@@ -203,7 +267,7 @@ structure MCAUpperWitness (C : Set (ι → F)) (ε_star : ℝ≥0) where
 theorem grandMCAChallenge_of_resolution {C : LinearCode ι F} {ε_star : ℝ≥0}
     (R : GrandMCAResolution (C : Set (ι → F)) ε_star) :
     grandMCAChallenge C ε_star :=
-  ⟨R.δStar, R.le_one, R.bound, R.maximal⟩
+  ⟨R.δStar, R.le_one, Or.inl ⟨R.bound, R.maximal⟩⟩
 
 /-- A lower witness bounds every resolution's threshold from below: `δ ≤ δ*`. -/
 theorem MCALowerWitness.le_δStar {C : Set (ι → F)} {ε_star : ℝ≥0}
