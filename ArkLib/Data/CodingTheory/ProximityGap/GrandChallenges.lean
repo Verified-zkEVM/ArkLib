@@ -91,12 +91,41 @@ theorem gridPt_mono {ι : Type} [Fintype ι] {k k' : ℕ} (h : k ≤ k') :
     gridPt (ι := ι) k ≤ gridPt (ι := ι) k' := by
   unfold gridPt; gcongr
 
+/-- `(k/n) · n = k` on the grid (`n := |ι| > 0`). -/
+theorem gridPt_mul_card {ι : Type} [Fintype ι] [Nonempty ι] (k : ℕ) :
+    gridPt (ι := ι) k * (Fintype.card ι : ℝ≥0) = (k : ℝ≥0) := by
+  have hn : (Fintype.card ι : ℝ≥0) ≠ 0 := by exact_mod_cast Fintype.card_ne_zero
+  rw [gridPt, div_mul_cancel₀ _ hn]
+
 /-- Monotonicity of `ε_mca` along the grid: `k ≤ k' ⇒ ε_mca(k/n) ≤ ε_mca(k'/n)`. -/
 theorem epsMCA_gridPt_mono {F ι : Type} [Field F] [Fintype F] [DecidableEq F]
     [Fintype ι] [Nonempty ι] [DecidableEq ι] (C : Set (ι → F)) {k k' : ℕ} (h : k ≤ k') :
     epsMCA (F := F) (A := F) C (gridPt (ι := ι) k) ≤
       epsMCA (F := F) (A := F) C (gridPt (ι := ι) k') :=
   epsMCA_mono C (gridPt_mono h)
+
+/-- **`ε_mca` is a step function on the `1/n` grid.** `epsMCA C δ` depends on `δ` only
+through `⌊δ·n⌋`: `δ` enters `mcaEvent` solely via the size clause `|S| ≥ (1-δ)·n`, and
+`|S| ∈ ℕ` makes that clause equivalent to `n - ⌊δ·n⌋ ≤ |S|`
+(`relDist_floor_bound_iff_complement_bound`). Hence `ε_mca` is constant on every cell
+`[k/n, (k+1)/n)`. This is the `epsMCA` analogue of `epsCA_eq_of_floor_eq`; it upgrades the
+monotone bracket to an *exact* boundary (`GrandMCAResolution.le_of_lt_next`). -/
+theorem epsMCA_eq_of_floor_eq {F ι : Type} [Field F] [Fintype F] [DecidableEq F]
+    [Fintype ι] [Nonempty ι] [DecidableEq ι] (C : Set (ι → F)) {δ δ' : ℝ≥0}
+    (h : ⌊δ * (Fintype.card ι : ℝ≥0)⌋₊ = ⌊δ' * (Fintype.card ι : ℝ≥0)⌋₊) :
+    epsMCA (F := F) (A := F) C δ = epsMCA (F := F) (A := F) C δ' := by
+  unfold epsMCA
+  refine iSup_congr fun u => ?_
+  have hev : mcaEvent (F := F) (A := F) C δ (u 0) (u 1)
+      = mcaEvent (F := F) (A := F) C δ' (u 0) (u 1) := by
+    funext γ
+    apply propext
+    simp only [mcaEvent]
+    refine exists_congr fun S => and_congr ?_ Iff.rfl
+    rw [ge_iff_le, ge_iff_le,
+        ← Code.relDist_floor_bound_iff_complement_bound (Fintype.card ι) S.card δ,
+        ← Code.relDist_floor_bound_iff_complement_bound (Fintype.card ι) S.card δ', h]
+  rw [hev]
 
 /-- **ABF26 §1 Grand MCA Challenge** (boundary form).
 
@@ -213,14 +242,15 @@ tighten. -/
 grid index `k`. Satisfiable (at `k = k*`) and constructive, unlike the unattained
 "largest real `δ*`" form. -/
 structure GrandMCAResolution (C : Set (ι → F)) (ε_star : ℝ≥0) where
-  /-- The boundary grid index `k` (the true threshold lies in `(k/n, (k+1)/n]`). -/
-  k : ℕ
-  /-- `k < n`, so both `k/n` and `(k+1)/n` lie in `[0, 1]`. -/
-  lt_card : k < Fintype.card ι
-  /-- `ε_mca(C, k/n) ≤ ε*` — the bound still holds at `k/n`. -/
-  below : epsMCA (F := F) (A := F) C (gridPt (ι := ι) k) ≤ (ε_star : ENNReal)
-  /-- `ε_mca(C, (k+1)/n) > ε*` — the bound has failed by the next grid point. -/
-  above : epsMCA (F := F) (A := F) C (gridPt (ι := ι) (k + 1)) > (ε_star : ENNReal)
+  /-- The boundary grid index `k*` (the true threshold lies in `(k*/n, (k*+1)/n]`). Named
+  `kStar` to distinguish it from the Reed-Solomon message length `k` (`ρ = k/n`). -/
+  kStar : ℕ
+  /-- `k* < n`, so both `k*/n` and `(k*+1)/n` lie in `[0, 1]`. -/
+  lt_card : kStar < Fintype.card ι
+  /-- `ε_mca(C, k*/n) ≤ ε*` — the bound still holds at `k*/n`. -/
+  below : epsMCA (F := F) (A := F) C (gridPt (ι := ι) kStar) ≤ (ε_star : ENNReal)
+  /-- `ε_mca(C, (k*+1)/n) > ε*` — the bound has failed by the next grid point. -/
+  above : epsMCA (F := F) (A := F) C (gridPt (ι := ι) (kStar + 1)) > (ε_star : ENNReal)
 
 /-- **Lower one-sided progress.** A radius `δ ≤ 1` at which `ε_mca` is still within `ε*`.
 Forces the boundary `≥ δ`. -/
@@ -246,31 +276,62 @@ variable {C : Set (ι → F)} {ε_star : ℝ≥0}
 
 /-- Below the boundary cell (`δ ≤ k/n`), `ε_mca` is within `ε*`. -/
 theorem le_of_gridPt (R : GrandMCAResolution C ε_star) {δ : ℝ≥0}
-    (hδ : δ ≤ gridPt (ι := ι) R.k) :
+    (hδ : δ ≤ gridPt (ι := ι) R.kStar) :
     epsMCA (F := F) (A := F) C δ ≤ (ε_star : ENNReal) :=
   le_trans (epsMCA_mono C hδ) R.below
 
 /-- At or above the next grid point (`(k+1)/n ≤ δ`), `ε_mca` exceeds `ε*`. -/
 theorem gt_of_gridPt (R : GrandMCAResolution C ε_star) {δ : ℝ≥0}
-    (hδ : gridPt (ι := ι) (R.k + 1) ≤ δ) :
+    (hδ : gridPt (ι := ι) (R.kStar + 1) ≤ δ) :
     epsMCA (F := F) (A := F) C δ > (ε_star : ENNReal) :=
   lt_of_lt_of_le R.above (epsMCA_mono C hδ)
+
+/-- **Exact lower half (uses `epsMCA_eq_of_floor_eq`).** `ε_mca` stays within `ε*` on the
+*whole* open cell below the boundary: for **every** `δ < (k*+1)/n`, not just `δ ≤ k*/n`.
+Because `ε_mca` is constant across each `1/n`-cell, `δ`'s value collapses to `⌊δ·n⌋/n ≤ k*/n`. -/
+theorem le_of_lt_next (R : GrandMCAResolution C ε_star) {δ : ℝ≥0}
+    (hδ : δ < gridPt (ι := ι) (R.kStar + 1)) :
+    epsMCA (F := F) (A := F) C δ ≤ (ε_star : ENNReal) := by
+  have hn : (0 : ℝ≥0) < (Fintype.card ι : ℝ≥0) := by exact_mod_cast Fintype.card_pos
+  have hfloor : ⌊δ * (Fintype.card ι : ℝ≥0)⌋₊ ≤ R.kStar := by
+    have hlt : δ * (Fintype.card ι : ℝ≥0) < ((R.kStar + 1 : ℕ) : ℝ≥0) := by
+      have hd := hδ
+      rw [gridPt, lt_div_iff₀ hn] at hd
+      exact_mod_cast hd
+    have := (Nat.floor_lt (by positivity)).mpr hlt
+    omega
+  have hgrid : ⌊gridPt (ι := ι) ⌊δ * (Fintype.card ι : ℝ≥0)⌋₊
+      * (Fintype.card ι : ℝ≥0)⌋₊ = ⌊δ * (Fintype.card ι : ℝ≥0)⌋₊ := by
+    rw [gridPt_mul_card]; exact Nat.floor_natCast _
+  rw [epsMCA_eq_of_floor_eq C hgrid.symm]
+  exact le_trans (epsMCA_gridPt_mono C hfloor) R.below
+
+/-- **Exact sublevel set (the boundary is pinned).** With `ε_mca` a step function on the
+`1/n` grid, `ε_mca(C, δ) ≤ ε*` holds *iff* `δ < (k*+1)/n`: the sublevel set is exactly the
+right-open interval `[0, (k*+1)/n)`, so `δ*_C = (k*+1)/n` is its (unattained) supremum. -/
+theorem sublevel_iff (R : GrandMCAResolution C ε_star) {δ : ℝ≥0} :
+    epsMCA (F := F) (A := F) C δ ≤ (ε_star : ENNReal) ↔
+      δ < gridPt (ι := ι) (R.kStar + 1) := by
+  refine ⟨fun hle => ?_, R.le_of_lt_next⟩
+  by_contra hge
+  push Not at hge
+  exact absurd hle (not_le.mpr (R.gt_of_gridPt hge))
 
 /-- **Paper resolution criterion (ABF26 §1, ef-millenium.tex L841–845).** A resolution meets
 the paper's operational criterion at `δ* := (k+1)/n`: `ε_mca(δ) > ε*` for every `δ > δ*`.
 Non-vacuity (that `δ*` is not spuriously large) is witnessed separately by `below`. -/
 theorem paper_criterion (R : GrandMCAResolution C ε_star) :
-    ∀ δ : ℝ≥0, gridPt (ι := ι) (R.k + 1) < δ →
+    ∀ δ : ℝ≥0, gridPt (ι := ι) (R.kStar + 1) < δ →
       epsMCA (F := F) (A := F) C δ > (ε_star : ENNReal) :=
   fun _ hδ => R.gt_of_gridPt (le_of_lt hδ)
 
 /-- A resolution yields a lower one-sided witness at `k/n`. -/
 noncomputable def toLowerWitness (R : GrandMCAResolution C ε_star) : MCALowerWitness C ε_star :=
-  ⟨gridPt (ι := ι) R.k, gridPt_le_one (le_of_lt R.lt_card), R.below⟩
+  ⟨gridPt (ι := ι) R.kStar, gridPt_le_one (le_of_lt R.lt_card), R.below⟩
 
 /-- A resolution yields an upper one-sided witness at `(k+1)/n`. -/
 noncomputable def toUpperWitness (R : GrandMCAResolution C ε_star) : MCAUpperWitness C ε_star :=
-  ⟨gridPt (ι := ι) (R.k + 1), R.above⟩
+  ⟨gridPt (ι := ι) (R.kStar + 1), R.above⟩
 
 end GrandMCAResolution
 
@@ -278,13 +339,13 @@ end GrandMCAResolution
 theorem grandMCAChallenge_of_resolution {C : LinearCode ι F} {ε_star : ℝ≥0}
     (R : GrandMCAResolution (C : Set (ι → F)) ε_star) :
     grandMCAChallenge C ε_star :=
-  ⟨R.k, R.lt_card, R.below, R.above⟩
+  ⟨R.kStar, R.lt_card, R.below, R.above⟩
 
 /-- A lower witness sits strictly below the upper edge of the boundary cell:
 `w.δ < (k+1)/n` for any resolution. -/
 theorem MCALowerWitness.lt_boundary {C : Set (ι → F)} {ε_star : ℝ≥0}
     (w : MCALowerWitness C ε_star) (R : GrandMCAResolution C ε_star) :
-    w.δ < gridPt (ι := ι) (R.k + 1) := by
+    w.δ < gridPt (ι := ι) (R.kStar + 1) := by
   by_contra h
   push Not at h
   exact absurd w.bound (not_le.mpr (R.gt_of_gridPt h))
@@ -293,7 +354,7 @@ theorem MCALowerWitness.lt_boundary {C : Set (ι → F)} {ε_star : ℝ≥0}
 `k/n < w.δ` for any resolution. Uses `epsMCA_mono`. -/
 theorem MCAUpperWitness.boundary_lt {C : Set (ι → F)} {ε_star : ℝ≥0}
     (w : MCAUpperWitness C ε_star) (R : GrandMCAResolution C ε_star) :
-    gridPt (ι := ι) R.k < w.δ := by
+    gridPt (ι := ι) R.kStar < w.δ := by
   by_contra h
   push Not at h
   exact absurd (R.le_of_gridPt h) (not_le.mpr w.exceeds)
@@ -422,15 +483,15 @@ identical: `Λ` is a step function on the `1/n` grid, so the resolution is a gri
 /-- A full resolution of the Grand List Decoding Challenge for `C`, `m`-fold interleaved:
 the boundary grid index `k`. -/
 structure GrandListResolution (C : Set (ι → F)) (m : ℕ) (ε_star : ℝ≥0) where
-  /-- The boundary grid index `k`. -/
-  k : ℕ
-  /-- `k < n`. -/
-  lt_card : k < Fintype.card ι
-  /-- `|Λ(C^⋈m, k/n)| ≤ ε* · |F|`. -/
-  below : (ListDecodable.Lambda (C^⋈ (Fin m)) (gridPt (ι := ι) k : ℝ) : ENNReal) ≤
+  /-- The boundary grid index `k*` (distinct from the RS message length `k`). -/
+  kStar : ℕ
+  /-- `k* < n`. -/
+  lt_card : kStar < Fintype.card ι
+  /-- `|Λ(C^⋈m, k*/n)| ≤ ε* · |F|`. -/
+  below : (ListDecodable.Lambda (C^⋈ (Fin m)) (gridPt (ι := ι) kStar : ℝ) : ENNReal) ≤
     ((ε_star : ENNReal) * (Fintype.card F : ENNReal))
-  /-- `|Λ(C^⋈m, (k+1)/n)| > ε* · |F|`. -/
-  above : (ListDecodable.Lambda (C^⋈ (Fin m)) (gridPt (ι := ι) (k + 1) : ℝ) : ENNReal) >
+  /-- `|Λ(C^⋈m, (k*+1)/n)| > ε* · |F|`. -/
+  above : (ListDecodable.Lambda (C^⋈ (Fin m)) (gridPt (ι := ι) (kStar + 1) : ℝ) : ENNReal) >
     ((ε_star : ENNReal) * (Fintype.card F : ENNReal))
 
 /-- **Lower one-sided progress** for list decoding. A radius `δ ≤ 1` at which the list
@@ -467,14 +528,14 @@ variable {C : Set (ι → F)} {m : ℕ} {ε_star : ℝ≥0}
 
 /-- Below the boundary cell (`δ ≤ k/n`), the list size is within `ε* · |F|`. -/
 theorem le_of_gridPt (R : GrandListResolution C m ε_star) {δ : ℝ≥0}
-    (hδ : δ ≤ gridPt (ι := ι) R.k) :
+    (hδ : δ ≤ gridPt (ι := ι) R.kStar) :
     (ListDecodable.Lambda (C^⋈ (Fin m)) (δ : ℝ) : ENNReal) ≤
       ((ε_star : ENNReal) * (Fintype.card F : ENNReal)) :=
   le_trans (lambda_coe_mono hδ) R.below
 
 /-- At or above the next grid point (`(k+1)/n ≤ δ`), the list size exceeds `ε* · |F|`. -/
 theorem gt_of_gridPt (R : GrandListResolution C m ε_star) {δ : ℝ≥0}
-    (hδ : gridPt (ι := ι) (R.k + 1) ≤ δ) :
+    (hδ : gridPt (ι := ι) (R.kStar + 1) ≤ δ) :
     (ListDecodable.Lambda (C^⋈ (Fin m)) (δ : ℝ) : ENNReal) >
       ((ε_star : ENNReal) * (Fintype.card F : ENNReal)) :=
   lt_of_lt_of_le R.above (lambda_coe_mono hδ)
@@ -485,12 +546,12 @@ end GrandListResolution
 theorem grandListDecodingChallenge_of_resolution {C : Set (ι → F)} {m : ℕ} {ε_star : ℝ≥0}
     (R : GrandListResolution C m ε_star) :
     grandListDecodingChallenge C m ε_star :=
-  ⟨R.k, R.lt_card, R.below, R.above⟩
+  ⟨R.kStar, R.lt_card, R.below, R.above⟩
 
 /-- A list lower witness sits strictly below the upper edge of the boundary cell. -/
 theorem ListLowerWitness.lt_boundary {C : Set (ι → F)} {m : ℕ} {ε_star : ℝ≥0}
     (w : ListLowerWitness C m ε_star) (R : GrandListResolution C m ε_star) :
-    w.δ < gridPt (ι := ι) (R.k + 1) := by
+    w.δ < gridPt (ι := ι) (R.kStar + 1) := by
   by_contra h
   push Not at h
   exact absurd w.bound (not_le.mpr (R.gt_of_gridPt h))
@@ -498,7 +559,7 @@ theorem ListLowerWitness.lt_boundary {C : Set (ι → F)} {m : ℕ} {ε_star : �
 /-- A list upper witness sits strictly above the lower edge of the boundary cell. -/
 theorem ListUpperWitness.boundary_lt {C : Set (ι → F)} {m : ℕ} {ε_star : ℝ≥0}
     (w : ListUpperWitness C m ε_star) (R : GrandListResolution C m ε_star) :
-    gridPt (ι := ι) R.k < w.δ := by
+    gridPt (ι := ι) R.kStar < w.δ := by
   by_contra h
   push Not at h
   exact absurd (R.le_of_gridPt h) (not_le.mpr w.exceeds)
@@ -523,7 +584,7 @@ theorem mca_threshold_bracketed
     (wlo : MCALowerWitness (ReedSolomon.code domain k : Set (ι → F)) ε_star)
     (whi : MCAUpperWitness (ReedSolomon.code domain k : Set (ι → F)) ε_star)
     (R : GrandMCAResolution (ReedSolomon.code domain k : Set (ι → F)) ε_star) :
-    gridPt (ι := ι) R.k < whi.δ ∧ wlo.δ < gridPt (ι := ι) (R.k + 1) :=
+    gridPt (ι := ι) R.kStar < whi.δ ∧ wlo.δ < gridPt (ι := ι) (R.kStar + 1) :=
   ⟨whi.boundary_lt R, wlo.lt_boundary R⟩
 
 end GrandChallenges
