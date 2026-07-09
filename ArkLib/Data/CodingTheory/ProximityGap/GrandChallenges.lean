@@ -317,6 +317,20 @@ theorem sublevel_iff (R : GrandMCAResolution C ε_star) {δ : ℝ≥0} :
   push Not at hge
   exact absurd hle (not_le.mpr (R.gt_of_gridPt hge))
 
+/-- **The boundary index is unique — the challenge determines a single answer.** Any two
+resolutions of the same `(C, ε*)` agree on `k*` (hence on `δ*_C = (k*+1)/n`). This is what
+makes "*determine* the largest `δ*`" well-posed: the boundary is pinned, not merely bounded.
+Elementary — it needs only monotonicity (`epsMCA_gridPt_mono`), not the step-function fact:
+if `k < k'` then `ε_mca((k+1)/n) ≤ ε_mca(k'/n) ≤ ε*`, contradicting the strict failure at
+`(k+1)/n`. -/
+theorem kStar_unique (R R' : GrandMCAResolution C ε_star) : R.kStar = R'.kStar := by
+  rcases lt_trichotomy R.kStar R'.kStar with h | h | h
+  · exact absurd (le_trans (epsMCA_gridPt_mono C (by omega : R.kStar + 1 ≤ R'.kStar)) R'.below)
+      (not_le.mpr R.above)
+  · exact h
+  · exact absurd (le_trans (epsMCA_gridPt_mono C (by omega : R'.kStar + 1 ≤ R.kStar)) R.below)
+      (not_le.mpr R'.above)
+
 /-- **Paper resolution criterion (ABF26 §1, ef-millenium.tex L841–845).** A resolution meets
 the paper's operational criterion at `δ* := (k+1)/n`: `ε_mca(δ) > ε*` for every `δ > δ*`.
 Non-vacuity (that `δ*` is not spuriously large) is witnessed separately by `below`. -/
