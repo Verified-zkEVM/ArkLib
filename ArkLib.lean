@@ -266,6 +266,7 @@ import ArkLib.ToMathlib.Polynomial.EvalExt
 import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 import ArkLib.ToVCVio.EvalDist.Defs.Support
 import ArkLib.ToVCVio.EvalDist.Instances.OptionT
+import ArkLib.ToVCVio.EvalDist.Monad.Basic
 import ArkLib.ToVCVio.OracleComp.Coercions.SubSpec
 import ArkLib.ToVCVio.OracleComp.EvalDist
 import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
