@@ -37,16 +37,6 @@ section ZModGadgetNorms
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- The degree bound needed to read off gadget coefficients: `deg φ` does not exceed the degree
-of the modulus polynomial. -/
-theorem natDegree_le_degree_toPoly (h : 1 ≤ Φ.φ.natDegree) :
-    (Φ.φ.natDegree : WithBot ℕ) ≤ Φ.φ.toPoly.degree := by
-  have hnd : 1 ≤ Φ.φ.toPoly.natDegree := by
-    rw [← CompPoly.CPolynomial.natDegree_toPoly]; exact h
-  have hne : Φ.φ.toPoly ≠ 0 := fun h0 => by simp [h0] at hnd
-  rw [Polynomial.degree_eq_natDegree hne, ← CompPoly.CPolynomial.natDegree_toPoly]
-
 omit [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
 /-- **Core digit bound.** Each base-`b` digit of `zmodDigitDecomposition`, viewed as a centered
 residue, has absolute value at most `b - 1` — provided `b - 1 ≤ q/2`, so the digit (a natural
@@ -69,40 +59,40 @@ omit [NeZero q] in
 /-- The `k`-th coefficient (`k < deg φ`) of a gadget-decomposition block is exactly the
 corresponding digit of the corresponding input coefficient. -/
 theorem gadgetDecompose_coeff {base : ZMod q} {rows digits : ℕ}
-    (dd : DigitDecomposition base digits) (h : 1 ≤ Φ.φ.natDegree)
-    (x : PolyVec (Rq Φ) rows) (j : Fin (rows * digits)) {k : ℕ} (hk : k < Φ.φ.natDegree) :
+    (dd : DigitDecomposition base digits) (x : PolyVec (Rq Φ) rows) (j : Fin (rows * digits))
+    {k : ℕ} (hk : k < Φ.φ.natDegree) :
     (gadgetDecompose Φ dd x j).1.coeff k =
       dd.digit ((x (finProdFinEquiv.symm j).1).1.coeff k) (finProdFinEquiv.symm j).2 := by
   rw [show gadgetDecompose Φ dd x j =
       Rq.ofFinCoeff Φ Φ.φ.natDegree (fun k =>
         dd.digit ((x (finProdFinEquiv.symm j).1).1.coeff k) (finProdFinEquiv.symm j).2) from rfl,
-    Rq.ofFinCoeff_coeff Φ _ (natDegree_le_degree_toPoly Φ h) k, if_pos hk]
+    Rq.ofFinCoeff_coeff Φ _ (Rq.phi_natDegree_le_degree Φ) k, if_pos hk]
 
 /-! ## `ℓ∞` bound -/
 
 /-- Each gadget-decomposition block is `ℓ∞`-short: its centered `ℓ∞` norm is `≤ b - 1`. -/
 theorem gadgetDecompose_zmod_lInftyNorm_le {b digits rows : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)
-    (hbq : b - 1 ≤ q / 2) (h : 1 ≤ Φ.φ.natDegree) (x : PolyVec (Rq Φ) rows)
+    (hbq : b - 1 ≤ q / 2) (x : PolyVec (Rq Φ) rows)
     (j : Fin (rows * digits)) :
     Rq.lInftyNorm Φ (gadgetDecompose Φ (zmodDigitDecomposition b digits hb hq) x j) ≤ b - 1 := by
   unfold Rq.lInftyNorm
   refine Finset.sup_le (fun k hk => ?_)
-  rw [gadgetDecompose_coeff Φ _ h x j (Finset.mem_range.mp hk)]
+  rw [gadgetDecompose_coeff Φ _ x j (Finset.mem_range.mp hk)]
   exact zmodDigit_natAbs_le hb hq hbq _ _
 
 /-- **`ℓ∞` shortness of `G⁻¹`.** The full gadget decomposition has centered `ℓ∞` norm `≤ b - 1`. -/
 theorem gadgetDecompose_zmod_vecLInftyNorm_le {b digits rows : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)
-    (hbq : b - 1 ≤ q / 2) (h : 1 ≤ Φ.φ.natDegree) (x : PolyVec (Rq Φ) rows) :
+    (hbq : b - 1 ≤ q / 2) (x : PolyVec (Rq Φ) rows) :
     vecLInftyNorm Φ (gadgetDecompose Φ (zmodDigitDecomposition b digits hb hq) x) ≤ b - 1 := by
   unfold vecLInftyNorm
-  exact Finset.sup_le (fun j _ => gadgetDecompose_zmod_lInftyNorm_le Φ hb hq hbq h x j)
+  exact Finset.sup_le (fun j _ => gadgetDecompose_zmod_lInftyNorm_le Φ hb hq hbq x j)
 
 /-! ## `ℓ₂²` bound -/
 
 /-- Each gadget-decomposition block is `ℓ₂²`-short: its centered squared-`ℓ₂` norm is at most
 `(deg φ)·(b-1)²` (each of the `deg φ` coefficients contributes at most `(b-1)²`). -/
 theorem gadgetDecompose_zmod_l2NormSq_le {b digits rows : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)
-    (hbq : b - 1 ≤ q / 2) (h : 1 ≤ Φ.φ.natDegree) (x : PolyVec (Rq Φ) rows)
+    (hbq : b - 1 ≤ q / 2) (x : PolyVec (Rq Φ) rows)
     (j : Fin (rows * digits)) :
     ‖gadgetDecompose Φ (zmodDigitDecomposition b digits hb hq) x j‖₂² ≤
       Φ.φ.natDegree * (b - 1) ^ 2 := by
@@ -112,7 +102,7 @@ theorem gadgetDecompose_zmod_l2NormSq_le {b digits rows : ℕ} (hb : 1 < b) (hq 
           ^ 2
       ≤ ∑ _k ∈ Finset.range Φ.φ.natDegree, (b - 1) ^ 2 := by
         refine Finset.sum_le_sum (fun k hk => ?_)
-        rw [gadgetDecompose_coeff Φ _ h x j (Finset.mem_range.mp hk)]
+        rw [gadgetDecompose_coeff Φ _ x j (Finset.mem_range.mp hk)]
         exact Nat.pow_le_pow_left (zmodDigit_natAbs_le hb hq hbq _ _) 2
     _ = Φ.φ.natDegree * (b - 1) ^ 2 := by
         rw [Finset.sum_const, Finset.card_range, smul_eq_mul]
@@ -120,14 +110,14 @@ theorem gadgetDecompose_zmod_l2NormSq_le {b digits rows : ℕ} (hb : 1 < b) (hq 
 /-- **`ℓ₂²` shortness of `G⁻¹`.** The full gadget decomposition has centered squared-`ℓ₂` norm at
 most `(rows·digits)·(deg φ)·(b-1)²`. -/
 theorem gadgetDecompose_zmod_vecL2NormSq_le {b digits rows : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)
-    (hbq : b - 1 ≤ q / 2) (h : 1 ≤ Φ.φ.natDegree) (x : PolyVec (Rq Φ) rows) :
+    (hbq : b - 1 ≤ q / 2) (x : PolyVec (Rq Φ) rows) :
     ‖gadgetDecompose Φ (zmodDigitDecomposition b digits hb hq) x‖₂² ≤
       rows * digits * (Φ.φ.natDegree * (b - 1) ^ 2) := by
   unfold vecL2NormSq
   calc ∑ i : Fin (rows * digits),
         Rq.l2NormSq Φ (gadgetDecompose Φ (zmodDigitDecomposition b digits hb hq) x i)
       ≤ ∑ _i : Fin (rows * digits), Φ.φ.natDegree * (b - 1) ^ 2 :=
-        Finset.sum_le_sum (fun i _ => gadgetDecompose_zmod_l2NormSq_le Φ hb hq hbq h x i)
+        Finset.sum_le_sum (fun i _ => gadgetDecompose_zmod_l2NormSq_le Φ hb hq hbq x i)
     _ = rows * digits * (Φ.φ.natDegree * (b - 1) ^ 2) := by
         rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul]
 
