@@ -260,15 +260,10 @@ theorem powTwoCyclotomic_toPoly_degree (α : ℕ) :
 
 omit [DecidableEq R] in
 /-- A reduced representative of `Rq (powTwoCyclotomic α)` has vanishing coefficients at and above
-the modulus degree `2^α`. -/
+the modulus degree `2^α`. The power-of-two special case of `Rq.coeff_eq_zero_of_natDegree_le`. -/
 theorem coeff_eq_zero_of_le (α : ℕ) (a : Rq (powTwoCyclotomic (R := R) α)) {k : ℕ}
-    (hk : 2 ^ α ≤ k) : a.1.coeff k = 0 := by
-  have hdeg : a.1.toPoly.degree < ((2 ^ α : ℕ) : WithBot ℕ) := by
-    rw [← powTwoCyclotomic_toPoly_degree (R := R) α]
-    exact (powTwoCyclotomic α).degree_toPoly_lt_of_reduced a.2
-  have hz : a.1.toPoly.coeff k = 0 :=
-    Polynomial.coeff_eq_zero_of_degree_lt (lt_of_lt_of_le hdeg (by exact_mod_cast hk))
-  rw [coeff_toPoly]; exact hz
+    (hk : 2 ^ α ≤ k) : a.1.coeff k = 0 :=
+  Rq.coeff_eq_zero_of_natDegree_le _ a (by rw [powTwoCyclotomic_natDegree]; exact hk)
 
 /-- **`Rq` is in bijection with its coefficient vectors** `Fin (2^α) → R`: a reduced
 representative is determined by its `2^α` low coefficients. -/

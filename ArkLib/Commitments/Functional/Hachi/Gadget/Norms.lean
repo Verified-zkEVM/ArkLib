@@ -61,16 +61,6 @@ section ZModGadgetNorms
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- The degree bound needed to read off gadget coefficients: `deg φ` does not exceed the degree
-of the modulus polynomial. -/
-theorem natDegree_le_degree_toPoly (h : 1 ≤ Φ.φ.natDegree) :
-    (Φ.φ.natDegree : WithBot ℕ) ≤ Φ.φ.toPoly.degree := by
-  have hnd : 1 ≤ Φ.φ.toPoly.natDegree := by
-    rw [← CompPoly.CPolynomial.natDegree_toPoly]; exact h
-  have hne : Φ.φ.toPoly ≠ 0 := fun h0 => by simp [h0] at hnd
-  rw [Polynomial.degree_eq_natDegree hne, ← CompPoly.CPolynomial.natDegree_toPoly]
-
 omit [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
 /-- **Core digit bound.** Each base-`b` digit of `zmodDigitDecomposition`, viewed as a centered
 residue, has absolute value at most `b - 1` — provided `b - 1 ≤ q/2`, so the digit (a natural
@@ -93,14 +83,14 @@ omit [NeZero q] in
 /-- The `k`-th coefficient (`k < deg φ`) of a gadget-decomposition block is exactly the
 corresponding digit of the corresponding input coefficient. -/
 theorem gadgetDecompose_coeff {base : ZMod q} {rows digits : ℕ}
-    (dd : DigitDecomposition base digits) (h : 1 ≤ Φ.φ.natDegree)
+    (dd : DigitDecomposition base digits) (_h : 1 ≤ Φ.φ.natDegree)
     (x : PolyVec (Rq Φ) rows) (j : Fin (rows * digits)) {k : ℕ} (hk : k < Φ.φ.natDegree) :
     (gadgetDecompose Φ dd x j).1.coeff k =
       dd.digit ((x (finProdFinEquiv.symm j).1).1.coeff k) (finProdFinEquiv.symm j).2 := by
   rw [show gadgetDecompose Φ dd x j =
       Rq.ofFinCoeff Φ Φ.φ.natDegree (fun k =>
         dd.digit ((x (finProdFinEquiv.symm j).1).1.coeff k) (finProdFinEquiv.symm j).2) from rfl,
-    Rq.ofFinCoeff_coeff Φ _ (natDegree_le_degree_toPoly Φ h) k, if_pos hk]
+    Rq.ofFinCoeff_coeff Φ _ (Rq.phi_natDegree_le_degree Φ) k, if_pos hk]
 
 /-! ## `ℓ∞` bound -/
 
@@ -182,7 +172,7 @@ theorem gadgetMul_zmod_coeff_natAbs_le {b rows digits : ℕ} (hd : 0 < digits)
       = ∑ e : Fin digits, (b : ZMod q) ^ (e : ℕ) * (v (finProdFinEquiv (i, e))).1.coeff k := by
     rw [gadgetMul_apply Φ (b : ZMod q) hd v i, ← Rq.coeffHom_apply Φ k, map_sum]
     simp only [Rq.coeffHom_apply]
-    exact Finset.sum_congr rfl fun e _ => constRq_mul_coeff Φ h1 _ _ k
+    exact Finset.sum_congr rfl fun e _ => Rq.constRq_mul_coeff Φ h1 _ _ k
   -- the explicit integer representative of that coefficient
   have hrep : ((∑ e : Fin digits,
         (b : ℤ) ^ (e : ℕ) * ((v (finProdFinEquiv (i, e))).1.coeff k).valMinAbs : ℤ) : ZMod q)
