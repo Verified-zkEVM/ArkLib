@@ -3,42 +3,60 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.PolynomialQuadraticEq.QuadEvalGadgets
-import ArkLib.Commitments.Functional.Hachi.InnerOuter.Security
+import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
+import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 
 /-!
-  # Hachi polynomial-evaluation reduction (QuadEval) — coordinate-wise special soundness
+  # Hachi polynomial-evaluation reduction (`QuadEval`) — coordinate-wise special soundness
     (Hachi Lemma 8)
 
-  Hachi's polynomial-evaluation reduction proves `f(x) = y` by rewriting the evaluation as the
-  quadratic form `bᵀ M a` and folding the `2ʳ` carrier blocks under the verifier's challenge
-  vector — hence the name `QuadEval`. It is Hachi's multilinear / inner-outer lift of Greyhound's
-  [NS24, §3.1] polynomial-evaluation protocol.
+  **Hachi Lemma 8** (Hachi [NOZ26] §4.2, Figure 3, p. 17–18): the `QuadEval` reduction of
+  `QuadEval/Reduction.lean` is coordinate-wise special sound. Concretely: from `2ʳ+1` accepting
+  transcripts whose challenge vectors form a star in `SS(C, 2ʳ, 2)` — a central branch plus, for
+  each coordinate `j`, a sibling branch differing from it exactly at `j` — the tree extractor
+  either reconstructs a valid weak `InnerOuter.Opening` by subtract-and-divide (subtract the
+  sibling's response from the central one, then divide by the invertible challenge difference),
+  or outputs a Module-SIS solution for `B` or `D`. The file is `sorry`-free.
 
-  **Lemma 8** (Hachi [NOZ26] §4.2, Figure 3, p. 17–18): this reduction is coordinate-wise special
-  sound. From `2ʳ+1` accepting transcripts with challenge vectors in `SS(C, 2ʳ, 2)`, the tree
-  extractor either reconstructs a valid weak `InnerOuter.Opening` by subtract-and-divide, or
-  outputs a Module-SIS solution for `B` or `D`.
+  ## Main definitions
 
-  The reduction is modeled as the two-round
-  `pSpec ⟨!v[.P_to_V, .V_to_P], !v[CarrierCom, Fin 2ʳ → C]⟩`: round 0 (P→V) sends the short
-  commitment `v = D ŵ`; round 1 (V→P) is the challenge vector. The triple `(ŵ, t̂, ẑ)` is the
-  **output witness** (`QuadEvalResponse`, never sent — §4.3 proves knowledge of it instead), so
-  the verifier is a pure pass-through and the extractor sources per-branch triples from
-  `relOut.language`.
+  * `quadEvalZL2SqBound` — the reduction's derived `B_z`: the `ℓ₂²` bound on the recomposed
+    `z = J ẑ` that follows from Eq. (20)'s range check on `ẑ` alone (no extra verifier check).
+  * `quadEvalBetaSq` — Lemma 8's `βSq := 4·B_z`, the bound on the extracted `c̄ⱼ •ᵥ sⱼ` fed to
+    `VerifiedBlock.scaled_short`.
+  * `extractedOpening` — the subtract-and-divide weak opening assembled from a star of accepting
+    branches (total, no `IsUnit`/star hypotheses; correctness lives in the lemmas below).
+  * `buildWitness` — Lemma 8's three-case witness assembler: a divergent inner decomposition `t̂`
+    gives a `B`-kernel MSIS solution, a divergent carrier decomposition `ŵ` a `D`-kernel one,
+    and otherwise the star yields `extractedOpening`.
+  * `quadEvalPackage` — the reduction's `verifier` bundled with its CWSS certificate as a
+    composable `CWSSPackage`, ready to be `▷`-composed after the polynomial-level bridge.
 
-  Contents: the reduction's types and relations (`QuadEvalStatement`, `QuadEvalResponse`,
-  `QuadEvalWitness`, `ShortChallenge`, `relOut` = Eq. (20) + range checks, `relIn` = weak opening
-  ∨ MSIS(B) ∨ MSIS(D)); the pure `verifier` and the honest `prover` skeleton; the extractor
-  (`extractedOpening`, `buildWitness`) with its correctness lemmas; and the top-level theorem
-  `quadEval_coordinateWiseSpecialSound`.
+  ## Main results
 
-  The file sits inside `namespace ArkLib.Lattices.Ajtai.InnerOuter` (required: that namespace
-  activates the scoped `PolyVec`/`*ᵥ`/`•ᵥ`/`dot`/`splitForm`), with `open WeakBinding` (so
-  `VerifiedOpening`/`outerShort` resolve). Never `open ArkLib.Lattices` here (the `⬝ᵥ` token is
-  ambiguous between `Matrix.dotProduct` and `ArkLib.Lattices.dot`); spell `dot _ _`.
+  * `msis_of_commit_eq` — two-transcript step of cases (A)/(B): two `γ`-short openings of the
+    same commitment differ by an `ℓ∞`-short (bound `2·γ`) Module-SIS solution.
+  * `inner_eq_of_chain` — the unit-cancellation core of subtract-and-divide.
+  * `slack_isUnit` — the challenge slack `c̄ⱼ` is a unit, by Lyubashevsky–Seiler [LS18]
+    invertibility of short elements.
+  * `verifiedOpening_of_star`, `evalConsistency_of_relOut_star` — case (C): the extracted
+    opening is a `VerifiedOpening` at `βSq`/`γ`/`2ω` and satisfies Eq. (15) eval-consistency.
+  * `buildWitness_mem_relIn` — every case of `buildWitness` lands in `relIn`; the single math
+    lemma to which the whole of Lemma 8 reduces.
+  * `quadEval_coordinateWiseSpecialSound` — **Hachi Lemma 8**: assembled from
+    `buildWitness_mem_relIn` by the generic `coordinateWiseSpecialSound_of_mkWitness`
+    (`SingleRound.lean`), which discharges every tree/extractor/guard obligation.
+
+  Mirroring `InnerOuter/Security.lean`, the extraction lemmas carry the Lyubashevsky–Seiler
+  [LS18] hypotheses `q ≡ 5 (mod 8)`, `(2ω)² < q` (only there does challenge invertibility
+  enter), so they are stated over the power-of-two modulus `𝓜(q, α)`. An `OracleVerifier`
+  wrapper is deliberately omitted (see the comment after the top-level theorem); the
+  plain-`Verifier` statement is the intended Lemma 8 interface.
+
+  Same namespace/opens discipline as `QuadEval/Reduction.lean`
+  (`namespace ArkLib.Lattices.Ajtai.InnerOuter`, `open WeakBinding`; never `open ArkLib.Lattices`).
 
   ## References
 
@@ -55,128 +73,32 @@ open CompPoly ArkLib.Lattices.CyclotomicModulus
 open WeakBinding
 open OracleComp OracleSpec ProtocolSpec CoordinateWise CoordinateWise.SingleRound
 
-/-! ## Generic definitions (any coefficient field `R`) -/
+/-! ## The constants of Hachi's polynomial-evaluation reduction (`B_z`, `βSq`) -/
 
-section Defs
+/-- **The reduction's derived `B_z`** (Hachi Lemma 8) — the `ℓ₂²` bound on `z = J_{2^m}·ẑ` that
+follows from
+Eq. (20)'s range check on `ẑ` alone (no extra verifier check): `z` has `2^m·δ` entries
+(`cols = 2^m·δ`, `d = deg φ`, `τ = ⌈log_b β⌉` digits of the `J` gadget), so
+`B_z = 2^m·δ · (d · ((∑_{u<τ} bᵘ)·γ)²)`.
 
-variable {R : Type} [Field R] [BEq R] [LawfulBEq R] (Φ : CyclotomicModulus R) [IsCyclotomic Φ]
-variable {innerRows messageRows messageDigits outerRows blocks innerDigits dRows zDigits : Nat}
+**Honest values (paper footnote):** `γ` plays the paper's `b` — Eq. (20) checks
+`ẑ ∈ S_b` (centered coefficients in `[⌈-b/2⌉, ⌈b/2⌉-1]`, magnitude `≤ b`), which the
+symmetric model relaxes to `‖ẑ‖∞ ≤ γ` with `γ := b`. Then the entrywise `ℓ∞` bound
+`(∑_{u<τ} bᵘ)·b = b·(b^τ-1)/(b-1) ≤ 2·b^τ` recovers (up to the constant 2) the paper's
+derived `‖z⁽ʲ⁾‖∞ ≤ b^τ` (Lemma 8's `β̄ = 2b^τ` slack), and
+`B_z ≈ 2^m·δ·d·b^{2τ}` up to small constants. -/
+def quadEvalZL2SqBound (γ b τ d m δ : ℕ) : ℕ := zRecomposeL2SqBound γ b τ d (2 ^ m * δ)
 
-/-- The carrier commitment space: `v = D ŵ` lives in the `D`-row space. -/
-abbrev CarrierCom (Φ : CyclotomicModulus R) (dRows : Nat) := Simple.Commitment Φ dRows
+/-- **The reduction's `βSq`** (Hachi Lemma 8) := `subL2NormSqBound B_z = 4·B_z` — the `ℓ₂²` bound
+on the extracted `c̄ⱼ •ᵥ sⱼ = z_sib − z_central` fed to `VerifiedBlock.scaled_short`. -/
+def quadEvalBetaSq (γ b τ d m δ : ℕ) : ℕ := subL2NormSqBound (quadEvalZL2SqBound γ b τ d m δ)
 
-/-- Input statement of Hachi's polynomial-evaluation reduction (Hachi §4.2, Figure 3): the public
-parameters `(A, B, D)`, the outer commitment `u`, the two evaluation basis vectors
-`a ∈ Rq^{2^m}` (`avec`) and `b ∈ Rq^{2^r}` (`bvec`) of Eq. (12), and the claimed evaluation
-`y = u_eval`. -/
-structure QuadEvalStatement (Φ : CyclotomicModulus R)
-    (innerRows messageRows messageDigits outerRows blocks innerDigits dRows : Nat) where
-  /-- Public matrices `(A, B, D)`. -/
-  pp : Hachi.PublicParamsD Φ innerRows messageRows messageDigits outerRows blocks innerDigits dRows
-  /-- The outer commitment `u`. -/
-  u : Commitment Φ outerRows
-  /-- The inner evaluation basis `aᵀ = (x_{r+1}^{j₁} ⋯ x_l^{j_m})_j ∈ Rq^{2^m}` (Eq. 12). -/
-  avec : PolyVec (Rq Φ) messageRows
-  /-- The outer evaluation basis `bᵀ = (x_1^{i₁} ⋯ x_r^{i_r})_i ∈ Rq^{2^r}` (Eq. 12). -/
-  bvec : PolyVec (Rq Φ) blocks
-  /-- The claimed evaluation `y = u_eval = f(x)`. -/
-  y : Rq Φ
-
-/-- The reduction's output witness `(ŵ, t̂, ẑ)` of Hachi Eq. (20) — Figure 3's final "message",
-never sent in the composed protocol (§4.3 proves knowledge of it instead). Block-major layouts
-(`finProdFinEquiv`, block = outer index). -/
-structure QuadEvalResponse (Φ : CyclotomicModulus R)
-    (innerRows messageRows messageDigits blocks innerDigits zDigits : Nat) where
-  /-- `ŵ := G⁻¹_{2^r}(w)`, the decomposed carrier (block-major, `blocks · messageDigits`). -/
-  carrierDec : PolyVec (Rq Φ) (blocks * messageDigits)
-  /-- `t̂ = (t̂ᵢ)ᵢ`, the per-block inner decompositions. -/
-  innerDec : PolyVec (PolyVec (Rq Φ) (innerRows * innerDigits)) blocks
-  /-- `ẑ := J⁻¹(z)`, the decomposed masked opening (`τ = zDigits` digits). -/
-  zDec : PolyVec (Rq Φ) ((messageRows * messageDigits) * zDigits)
-
-/-- `QuadEvalResponse` is inhabited (the all-zero triple). -/
-instance : Nonempty
-    (QuadEvalResponse Φ innerRows messageRows messageDigits blocks innerDigits zDigits) :=
-  ⟨⟨fun _ => 0, fun _ _ => 0, fun _ => 0⟩⟩
-
-/-- The extracted (input-side) witness of Hachi Lemma 8: either a weak `Opening` for `u`, or a
-Module-SIS solution for the outer matrix `B`, or one for the short-commitment matrix `D`. -/
-inductive QuadEvalWitness (Φ : CyclotomicModulus R)
-    (innerRows messageRows messageDigits blocks innerDigits : Nat) where
-  /-- A weak opening `(sᵢ, t̂ᵢ, c̄ᵢ)ᵢ` for the outer commitment `u`. -/
-  | opening (o : Opening Φ innerRows messageRows messageDigits blocks innerDigits)
-  /-- A Module-SIS solution for the outer matrix `B`. -/
-  | msisB (z : ModuleSIS.Solution Φ (blocks * (innerRows * innerDigits)))
-  /-- A Module-SIS solution for the short-commitment matrix `D`. -/
-  | msisD (z : ModuleSIS.Solution Φ (blocks * messageDigits))
-
-/-- `QuadEvalWitness` is inhabited (a trivial `msisB` witness). -/
-instance : Nonempty (QuadEvalWitness Φ innerRows messageRows messageDigits blocks innerDigits) :=
-  ⟨.msisB (fun _ => 0)⟩
-
-end Defs
-
-/-! ## The challenge space (over `ZMod q`, where the norms live) -/
-
-section ShortChallenge
-
-variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
-
-/-- **The reduction's challenge space, carried by the type** (Hachi §4.2): the paper's
-`C ⊆ {c ∈ Rq : ‖c‖₁ ≤ ω}` is rendered as the subtype of `ℓ₁`-short ring elements. The
-verifier's relation `relOut` therefore needs NO challenge-norm checks (faithful to Eq. (20),
-which never checks the challenge); extraction recovers `‖cᵢ‖₁ ≤ ω` from the subtype property. -/
-def ShortChallenge (Φ : CyclotomicModulus (ZMod q)) (ω : ℕ) : Type :=
-  {c : Rq Φ // Rq.l1Norm Φ c ≤ ω}
-
-variable {Φ : CyclotomicModulus (ZMod q)} [IsCyclotomic Φ] {ω : ℕ}
-
-namespace ShortChallenge
-
-/-- The underlying ring element `c ∈ Rq` of a short challenge (Hachi §4.2's challenge `cᵢ`). -/
-def val (c : ShortChallenge Φ ω) : Rq Φ := Subtype.val c
-
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- The subtype bound: every challenge is `ℓ₁`-short. -/
-theorem l1Norm_le (c : ShortChallenge Φ ω) : ‖c.val‖₁ ≤ ω := Subtype.prop c
-
-/-- Coordinate difference of two short challenges is `ℓ₁`-bounded by `2ω` — the extractor's
-`hshort` for the slack `c̄ⱼ = c_{j,j} - c_{0,j}` (Hachi Lemma 8), for free from the subtype. -/
-theorem l1Norm_val_sub_le (c c' : ShortChallenge Φ ω) : ‖c.val - c'.val‖₁ ≤ 2 * ω :=
-  calc ‖c.val - c'.val‖₁ ≤ ‖c.val‖₁ + ‖c'.val‖₁ := Rq.l1Norm_sub_le Φ c.val c'.val
-    _ ≤ ω + ω := Nat.add_le_add c.l1Norm_le c'.l1Norm_le
-    _ = 2 * ω := (Nat.two_mul ω).symm
-
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- `≠` on the subtype transfers to `≠` on the underlying ring elements — the extractor's
-nonzero-slack input (`CoordEq` gives subtype-`≠` at the differing coordinate). -/
-theorem val_ne_of_ne {c c' : ShortChallenge Φ ω} (h : c ≠ c') : c.val ≠ c'.val :=
-  fun hval => h (Subtype.ext hval)
-
-end ShortChallenge
-
-end ShortChallenge
-
-/-! ## Eval consistency (Eq. 15) and the relations -/
-
-section ZModDefs
+section Extraction
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {innerRows messageRows messageDigits outerRows blocks innerDigits dRows zDigits
   m r : Nat}
-
-/-- The matrix `M` of Hachi Eq. (15): row `i` = derived message block `G_{2^m} · sᵢ`; rows are
-indexed by the outer basis `b`, columns by the inner basis `a`. -/
-def derivedMsgMatrix (base : ZMod q)
-    (o : Opening Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) :
-    PolyMatrix (Rq Φ) (2 ^ r) (2 ^ m) := fun i k => derivedMessage Φ base o.toDecomp i k
-
-/-- Eq. (15): the derived messages of the weak opening evaluate to `y` under the split
-bilinear form (`splitForm`, argument order `b a` load-bearing). -/
-def evalConsistency (base : ZMod q) (a : PolyVec (Rq Φ) (2 ^ m)) (b : PolyVec (Rq Φ) (2 ^ r))
-    (y : Rq Φ) (o : Opening Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) : Prop :=
-  splitForm (derivedMsgMatrix Φ base o) b a = y
 
 omit [NeZero q] in
 /-- Eq. (15) for the extracted opening (an internal step of Hachi Lemma 8, case (C)): from c3
@@ -193,70 +115,6 @@ theorem evalConsistency_of_star (base : ZMod q) (a : PolyVec (Rq Φ) (2 ^ m))
   refine Finset.sum_congr rfl (fun j _ => ?_)
   rw [c4 j, matVecMul_apply, dot_comm]
   rfl
-
-/-- Shortness predicate for the extracted `D`-kernel witness (Hachi Lemma 8, case (B)): the
-`D`-matrix analogue of `outerShort`, at `subLInftyNormBound γ = 2·γ`. -/
-def dShort (γ : ℕ) : ModuleSIS.Solution Φ (blocks * messageDigits) → Bool :=
-  fun z => decide (vecLInftyNorm Φ z ≤ subLInftyNormBound γ)
-
-/-- **`relOut` — exactly Hachi Eq. (20) plus the `S_b` range checks** on
-`((stmt, v, c), (ŵ, t̂, ẑ))`, with `z := J ẑ`:
-
-* c1: `D ŵ = v`
-* c2: `B (flatten t̂) = u`
-* c3: `bᵀ (G_{2^r} ŵ) = y` (row 3 of Eq. (20), `u_eval`)
-* c4: `(cᵀ ⊗ G₁) ŵ = aᵀ G_{2^m} J ẑ` (row 4; challenges coerced from the subtype)
-* c5: `(cᵀ ⊗ G_{n_A}) t̂ = A J ẑ` (row 5)
-* c6: the `S_b` range checks, as symmetric `ℓ∞` balls `≤ γ`.
-
-**`S_b` modeling**: Eq. (20) checks `(ŵ, t̂, ẑ) ∈ S_b^…`, whose elements have centered
-coefficients in `[⌈-b/2⌉, ⌈b/2⌉-1]`; c6 uses the symmetric ball `‖·‖∞ ≤ γ`, which with `γ ≥
-⌈b/2⌉` **contains** the paper's box — so every Eq.-(20)-valid transcript is `relOut`-valid and
-the CWSS theorem covers the paper's verifier. No challenge-norm checks appear (the challenge
-TYPE carries `‖cᵢ‖₁ ≤ ω`), and no `‖z‖₂²` check appears (`‖z‖∞ ≤ …` is derived downstream from
-c6's `‖ẑ‖∞ ≤ γ` via the `J`-recomposition norm lemma, `GadgetNorms.lean`) — both exactly as in the
-paper. -/
-def relOut (base : ZMod q) (ω γ : ℕ) :
-    Set ((QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows ×
-          CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω)) ×
-         QuadEvalResponse Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits) :=
-  { p | match p with
-    | ((stmt, v, chals), resp) =>
-      let c : PolyVec (Rq Φ) (2 ^ r) := fun i => (chals i).val
-      let z : PolyVec (Rq Φ) ((2 ^ m) * messageDigits) :=
-        Hachi.jMatrix Φ base ((2 ^ m) * messageDigits) zDigits *ᵥ resp.zDec
-      -- c1: `D ŵ = v`
-      Simple.commit Φ stmt.pp.dMatrix resp.carrierDec = v ∧
-      -- c2: `B (flatten t̂) = u`
-      Simple.commit Φ stmt.pp.outerMatrix (PolyVec.flattenBlocks resp.innerDec) = stmt.u ∧
-      -- c3: `bᵀ (G_{2^r} ŵ) = y`
-      dot stmt.bvec (gadgetMatrix Φ base (2 ^ r) messageDigits *ᵥ resp.carrierDec) = stmt.y ∧
-      -- c4: `(cᵀ ⊗ G₁) ŵ = aᵀ (G_{2^m} z)`
-      Hachi.tensorG1 Φ base messageDigits c resp.carrierDec =
-        dot stmt.avec (gadgetMatrix Φ base (2 ^ m) messageDigits *ᵥ z) ∧
-      -- c5: `(cᵀ ⊗ G_{n_A}) t̂ = A z`
-      Hachi.tensorG Φ base innerRows innerDigits c resp.innerDec =
-        stmt.pp.innerMatrix *ᵥ z ∧
-      -- c6: the `S_b` range checks (as `ℓ∞` balls)
-      vecLInftyNorm Φ resp.carrierDec ≤ γ ∧
-      vecLInftyNorm Φ (PolyVec.flattenBlocks resp.innerDec) ≤ γ ∧
-      vecLInftyNorm Φ resp.zDec ≤ γ }
-
-/-- **`relIn` — Hachi Lemma 8's extraction disjunction**: a weak `VerifiedOpening` for `u` that is
-also eval-consistent (Eq. 15), or a Module-SIS solution for `B`, or one for `D`. The `.opening`
-disjunct is the interface into `outputToModuleSIS_valid_of_verified` for the downstream
-cross-run knowledge-soundness step. -/
-def relIn (base : ZMod q) (βSq γ κ : ℕ) :
-    Set (QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows ×
-         QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) :=
-  { p | match p with
-    | (stmt, .opening o) =>
-        VerifiedOpening Φ base βSq γ κ stmt.pp.toPublicParams stmt.u o ∧
-        evalConsistency Φ base stmt.avec stmt.bvec stmt.y o
-    | (stmt, .msisB z) =>
-        ModuleSIS.relation Φ (outerShort Φ γ) stmt.pp.outerMatrix z = true
-    | (stmt, .msisD z) =>
-        ModuleSIS.relation Φ (dShort Φ γ) stmt.pp.dMatrix z = true }
 
 /-! ## The two-transcript MSIS extraction step (Hachi Lemma 8, cases (A)/(B)) -/
 
@@ -296,68 +154,7 @@ theorem inner_eq_of_chain {base : ZMod q} {cols : Nat}
   rw [hAs, ← hchain]; funext i
   simp only [scalarVecMul_apply, ← mul_assoc, Ring.inverse_mul_cancel c hc, one_mul]
 
-/-! ## The protocol: pure pass-through verifier and honest prover -/
-
-section Protocol
-
-variable {ι : Type} {oSpec : OracleSpec ι} {ω : ℕ}
-
-/-- The reduction's verifier (Hachi §4.2, Figure 3) is a **pure pass-through**: it re-emits the
-statement, the round-0 carrier commitment `v`, and the round-1 challenge vector. The Eq.-(20)
-checks live in `relOut` (the `(ŵ, t̂, ẑ)` triple is never sent — §4.3 proves knowledge of it),
-so there is no runtime `guard`. -/
-def verifier :
-    Verifier oSpec
-      (QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
-      (QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows ×
-        CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω))
-      (pSpec (CarrierCom Φ dRows) (ShortChallenge Φ ω) r) where
-  verify := fun stmt tr => pure (stmt, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩)
-
-/-- The honest prover (Hachi §4.2, Figure 3; completeness is out of scope for Lemma 8): round 0
-sends the carrier commitment `v`, round 1 receives the challenge vector, and the output witness
-is the `QuadEvalResponse` `(ŵ, t̂, ẑ)` of Eq. (20). The honest computations (`v = D ŵ` with
-`ŵ = G⁻¹(w)`, `ẑ = J⁻¹(Σᵢ cᵢ sᵢ)`, …) are the parameters `computeV` / `computeResp`, to be
-instantiated by the completeness layer from the `QuadEvalGadgets` carrier/decomposition
-definitions. -/
-def prover (WitIn : Type)
-    (computeV :
-      QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows →
-      WitIn → CarrierCom Φ dRows)
-    (computeResp :
-      QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows →
-      WitIn → (Fin (2 ^ r) → ShortChallenge Φ ω) →
-      QuadEvalResponse Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits) :
-    Prover oSpec
-      (QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
-      WitIn
-      (QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows ×
-        CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω))
-      (QuadEvalResponse Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits)
-      (pSpec (CarrierCom Φ dRows) (ShortChallenge Φ ω) r) where
-  PrvState
-    | 0 =>
-      QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows
-        × WitIn
-    | 1 =>
-      QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows
-        × WitIn
-    | 2 =>
-      (QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows
-          × WitIn) × (Fin (2 ^ r) → ShortChallenge Φ ω)
-  input := id
-  sendMessage
-    | ⟨0, _⟩ => fun st => pure (computeV st.1 st.2, st)
-    | ⟨1, h⟩ => nomatch h
-  receiveChallenge
-    | ⟨0, h⟩ => nomatch h
-    | ⟨1, _⟩ => fun st => pure fun c => (st, c)
-  output := fun ⟨⟨stmt, wit⟩, c⟩ =>
-    pure ((stmt, computeV stmt wit, c), computeResp stmt wit c)
-
-end Protocol
-
-end ZModDefs
+end Extraction
 
 /-! ## The extracted opening and the witness assembler (generic `Φ`) -/
 
@@ -420,7 +217,7 @@ noncomputable def buildWitness (base : ZMod q)
 omit [NeZero q] [IsCyclotomic Φ] in
 /-- Coordinate difference transfers from the `ShortChallenge` subtype to the underlying ring
 vectors — the bridge from `sib_coordEq` (subtype-level `CoordEq`) to the ring-level
-coordinate-isolation lemmas `tensorG_coord_diff`/`tensorG1_coord_diff` (`QuadEvalGadgets.lean`). -/
+coordinate-isolation lemmas `tensorG_coord_diff`/`tensorG1_coord_diff` (`QuadEval/Gadgets.lean`). -/
 theorem ShortChallenge.coordEq_val {ℓ : ℕ} {i : Fin ℓ} {x y : Fin ℓ → ShortChallenge Φ ω}
     (h : CoordEq i x y) :
     CoordEq i (fun j => (x j).val) (fun j => (y j).val) :=
@@ -456,7 +253,7 @@ At a star-shaped family of `2^r + 1` `relOut`-accepting branches sharing the car
 `v` and (cases (A)/(B) excluded) sharing `t̂` and `ŵ`, the subtract-and-divide
 `extractedOpening` is a `VerifiedOpening` at
 
-* `βSq := quadEvalBetaSq γ b zDigits (deg φ) m messageDigits = 4·B_z`, the `GadgetNorms`-derived
+* `βSq := quadEvalBetaSq γ b zDigits (deg φ) m messageDigits = 4·B_z`, the `Gadget/Norms`-derived
   `J`-recomposition bound (`deg φ = 2^α`; no primitive `‖z‖₂²` verifier check anywhere);
 * `γ' := γ` — **not** `2γ`: `outer_short` constrains the extracted opening's `innerDecomp`,
   which is the CENTRAL branch's `t̂` verbatim, and relOut c6 bounds it by `γ` directly (the
@@ -487,7 +284,7 @@ theorem verifiedOpening_of_star (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω
   have hunit := slack_isUnit hq5 hκ fam hstar i
   refine ⟨hunit, ShortChallenge.l1Norm_val_sub_le _ _, ?_, ?_⟩
   · -- scaled_short: `c̄ᵢ •ᵥ (c̄ᵢ⁻¹ •ᵥ Δzᵢ) = Δzᵢ = J ẑ^{(sib i)} − J ẑ^{(e)}`, then the
-    -- `J`-recomposition ℓ₂² bound from the two branches' c6z (`GadgetNorms.lean`).
+    -- `J`-recomposition ℓ₂² bound from the two branches' c6z (`Gadget/Norms.lean`).
     have h1 : 1 ≤ (𝓜(q, α)).φ.natDegree := by
       rw [hachiModulus_natDegree]; exact Nat.one_le_two_pow
     obtain ⟨-, -, -, -, -, -, -, hc6zs⟩ := hrel (sib fam i)

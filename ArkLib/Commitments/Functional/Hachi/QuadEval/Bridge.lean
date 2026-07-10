@@ -3,8 +3,8 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.PolynomialQuadraticEq.QuadEval
-import ArkLib.Commitments.Functional.Hachi.PolynomialEvalSplit
+import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
+import ArkLib.Commitments.Functional.Hachi.EvalSplit
 import ArkLib.ProofSystem.Component.ReduceClaim
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
@@ -12,32 +12,50 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
 /-!
   # Polynomial-level bridge into Hachi's `QuadEval` reduction
 
-  `PolynomialQuadraticEq/QuadEval.lean` (Hachi Lemma 8) states its evaluation claim over *opaque*
-  Eq. (12) basis vectors `avec`/`bvec` — it never mentions `CMlPolynomial`.
-  `PolynomialEvalSplit.lean` proves that a multilinear evaluation factors as the split bilinear form
+  `QuadEval/Reduction.lean` (Hachi Lemma 8, proven in `QuadEval/Soundness.lean`) states its
+  evaluation claim over *opaque* Eq. (12) basis vectors `avec`/`bvec` — it never mentions
+  `CMlPolynomial` (a computable multilinear polynomial, stored as its coefficient vector).
+  `EvalSplit.lean` proves that a multilinear evaluation factors as the split bilinear form
   of a reshaped coefficient matrix against the monomial tensor bases (`evalSplit_eq_eval`,
-  `splitForm_monomialBasis_eq_eval`), but
-  nothing connects the two.
+  `splitForm_monomialBasis_eq_eval`), but nothing connects the two.
 
   This module is the connective tissue: a zero-round **bridge** that reinterprets a
   `CMlPolynomial`-level statement (`PolyEvalStatement`) as a `QuadEvalStatement` by taking the
   Eq. (12) bases to be the monomial tensor bases `mb(xl)` / `mb(xh)` of the low/high halves of the
   evaluation point (`toQuadEvalStatement`), realized as the `ReduceClaim` reduction. Because
   `ReduceClaim`'s verifier is pure with no challenge rounds, its coordinate-wise special soundness
-  (`ReduceClaim.verifier_coordinateWiseSpecialSound`) collapses to the transcript-level pull-back
-  `mem_relPolyEval_of_relIn`, so the bridge is CWSS for **any** `D`
+  (CWSS; `ReduceClaim.verifier_coordinateWiseSpecialSound`) collapses to the transcript-level
+  pull-back `mem_relPolyEval_of_relIn`, so the bridge is CWSS for **any** `D`
   (`bridge_coordinateWiseSpecialSound`).
 
   The result is a polynomial-level input relation `relPolyEval` (a weak `VerifiedOpening` whose
   *extracted polynomial* evaluates to `y` at `xl ++ xh`, or a Module-SIS solution for `B`/`D`) that
-  `QuadEval`'s two-round reduction refines to Hachi Eq. (20). `Basic.lean` composes the two
-  (`bridge.append QuadEval.verifier`) into the sorry-free
-  `hachi_eval_coordinateWiseSpecialSound`.
+  `QuadEval`'s two-round reduction refines to Hachi Eq. (20). `Composition.lean` chains the bridge
+  before `QuadEval` (`evalChain = bridgePackage ▷ quadEvalPackage`), yielding the sorry-free
+  `eval_coordinateWiseSpecialSound`.
+
+  ## Main definitions
+
+  * `PolyEvalStatement`: the polynomial-level statement — public parameters `(A, B, D)`, outer
+    commitment `u`, split evaluation point `(xl, xh)`, and claimed value `y`.
+  * `toQuadEvalStatement`: the reinterpretation, with `bvec := mb(xl)` and `avec := mb(xh)`.
+  * `bridgeVerifier`: the zero-round `ReduceClaim` verifier realizing it.
+  * `extractedPoly`: the polynomial read back from a weak opening's Eq. (15) derived-message
+    matrix via `Hachi.toPolynomial` (round-trip: `toMatrix_extractedPoly`).
+  * `relPolyEval`: the polynomial-level input relation described above.
+  * `bridgePackage`: the bridge as a composable `CWSSPackage` (empty challenge structure).
+
+  ## Main results
+
+  * `mem_relPolyEval_of_relIn`: `QuadEval`'s `relIn` at `toQuadEvalStatement Φ s` pulls back to
+    `relPolyEval` at `s`, via `splitForm_monomialBasis_eq_eval`.
+  * `bridge_coordinateWiseSpecialSound`: the bridge is CWSS for any `D`. All proofs in this file
+    are sorry-free.
 
   ## Faithfulness note (Eq. (12) convention)
 
   The paper's `bᵀ = (x₁^{i₁}⋯x_r^{i_r})ᵢ` ranges over the **first** `r` variables and indexes the
-  matrix **rows**; `aᵀ` over the **last** `m` variables indexes the columns. `PolynomialEvalSplit`
+  matrix **rows**; `aᵀ` over the **last** `m` variables indexes the columns. `EvalSplit`
   fixes exactly this split (low/first = rows = `b`), and `QuadEval`'s `derivedMsgMatrix` has
   rows = outer/`b` blocks. Hence `bvec := mb(xl)` (over `xl`, the first `r` variables) and
   `avec := mb(xh)` (over `xh`, the last `m` variables) is the faithful instantiation, and

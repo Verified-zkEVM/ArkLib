@@ -10,11 +10,14 @@ import ArkLib.Commitments.Functional.Hachi.InnerOuter.Arithmetic
 # Weak-Binding Security of the Inner-Outer Ajtai Commitment
 
 The Greyhound [NS24] / Hachi [NOZ26] weak-binding reduction over the cyclotomic ring `Rq Φ`
-(`R = ZMod q`).
+(`R = ZMod q`). *Binding* says no commitment can be opened to two different messages; the
+*weak* variant proved here relaxes the shortness check by a per-block challenge — exactly the
+guarantee special-soundness extraction provides (the `experiment` docstring discusses ordinary
+vs. weak binding in detail).
 A weak opening carries, per block `i`, a message `sᵢ`, an inner-decomposition `t̂ᵢ`, and a
-challenge `cᵢ`; the verifier `verify_weak` bounds each challenge (nonzero, `ℓ₁ ≤ κ`), bounds
-each scaled message (`‖cᵢ·sᵢ‖₂² ≤ β²`), checks the inner gadget relation, and bounds and
-checks the outer commitment.
+challenge `cᵢ`; the verifier `verify_weak` (defined with `Opening` in `InnerOuter.Scheme`)
+bounds each challenge (nonzero, `ℓ₁ ≤ κ`), bounds each scaled message (`‖cᵢ·sᵢ‖₂² ≤ β²`),
+checks the inner gadget relation, and bounds and checks the outer commitment.
 
 The *definitions* (opening, verifier, experiment, advantage, reductions) are polymorphic in
 the cyclotomic modulus `Φ`. The *security statements*, however, are pinned to the power-of-two
@@ -25,9 +28,28 @@ scaled messages stay short via the Micciancio/Young product bound
 (`scalarVecMul_mul_l2NormSq_le`). The reductions therefore carry the remaining [LS18]
 hypotheses: `q ≡ 5 (mod 8)` and `κ² < q`.
 
-`outputToModuleSIS_valid` is the cryptographic heart: a winning pair of distinct weak
-openings yields a valid inner *or* outer Module-SIS witness. `advantage_le_moduleSIS` wraps
-it probabilistically.
+## Main definitions
+
+* `outputToModuleSIS` — the extractor: two differing weak openings become an inner *or* outer
+  Module-SIS witness.
+* `VerifiedBlock` / `VerifiedOpening` — the per-block and per-opening facts a successful
+  `verify_weak` run yields, packaged for reuse by downstream soundness arguments.
+* `innerShort` / `outerShort` — the shortness predicates the extracted witnesses satisfy.
+* `experiment` / `advantage` — the weak-binding game and its winning probability.
+* `innerAdvToModuleSIS` / `outerAdvToModuleSIS` — the reductions attacking the inner and outer
+  Module-SIS matrices.
+
+## Main results
+
+* `outputToModuleSIS_valid_of_verified` — the cryptographic heart: two differing *verified*
+  weak openings yield a valid inner or outer Module-SIS witness. Stated on `VerifiedOpening`
+  facts, independent of how they were obtained, so the evaluation protocol's soundness
+  argument (Hachi [NOZ26, Lemma 8], `QuadEval/`) can reuse it on openings reconstructed from
+  special-soundness transcripts.
+* `outputToModuleSIS_valid` — its boolean-verification wrapper: a winning pair of openings
+  passing `verify_weak` yields such a witness.
+* `advantage_le_moduleSIS` — **weak binding reduces to Module-SIS**: the weak-binding advantage
+  is at most the sum of the extracted inner and outer Module-SIS advantages.
 
 ## References
 

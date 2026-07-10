@@ -3,23 +3,47 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.Gadget
+import ArkLib.Commitments.Functional.Hachi.Gadget.Basic
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds
 
 /-!
-# Centered Norm Bounds for the Gadget Decomposition `G⁻¹`
+# Centered Norm Bounds for the Gadget Decomposition `G⁻¹` and Recomposition `G·ẑ`
 
-Centered `ℓ₂²` and `ℓ∞` shortness of the Hachi gadget inverse `gadgetDecompose` over `ZMod q`,
+Centered `ℓ₂²` and `ℓ∞` norm bounds for both directions of the base-`b` gadget algebra over
+`ZMod q`: the gadget matrix `G` packs the powers `1, b, …, b^(digits-1)`, so `G⁻¹` rewrites a
+vector over `Rq Φ` in base-`b` digits and `G` recombines it. "Centered" means every coefficient
+is measured through its representative in `(-q/2, q/2]` — the shortness measure of the lattice
+commitment.
+
+**Part I — decomposition (honest case).** Shortness of the gadget inverse `gadgetDecompose`
 when instantiated with the genuine base-`b` digit decomposition `zmodDigitDecomposition`. These
 are the honest-case norm bounds the inner-outer Ajtai commitment needs for perfect correctness
-(`InnerOuter.Correctness.perfectlyCorrect`).
+(`InnerOuter.Correctness.perfectlyCorrect`). The single analytic input is `zmodDigit_natAbs_le`:
+each base-`b` digit, as a centered residue, has absolute value `≤ b - 1` (under `b - 1 ≤ q/2`,
+so the residue does not wrap). Everything else is bookkeeping over the gadget's coefficient
+layout (`Rq.ofFinCoeff_coeff`).
 
-The single analytic input is `zmodDigit_natAbs_le`: each base-`b` digit, as a centered residue,
-has absolute value `≤ b - 1` (under `b - 1 ≤ q/2`, so the residue does not wrap). Everything else
-is bookkeeping over the gadget's coefficient layout (`Rq.ofFinCoeff_coeff`).
+**Part II — recomposition (adversarial case).** Multiplying by the gadget matrix (`gadgetMul`)
+grows norms controllably for **any** `ℓ∞`-range-bounded input — in particular an adversarial
+`ẑ` that merely passed the verifier's range check (Eq. (20) of [NOZ26]), not an honest digit
+decomposition. The analytic input is `valMinAbs_natAbs_le`: the centered representative of a
+residue is minimal among all its integer representatives, so wraparound of the `ZMod q` powers
+`bᵘ` is immaterial. The resulting subtraction bound has exactly the `βSq = 4·B_z` shape that
+the extractor's `VerifiedBlock.scaled_short` obligation consumes in Lemma 8
+(`QuadEval.Soundness`).
 
-This file bridges the gadget algebra (`CommitmentScheme.Ajtai.Gadget`) and the centered norms
-(`Data.Lattices.CyclotomicRing.NormBounds`).
+This file bridges the gadget algebra (`Hachi.Gadget.Basic`) and the centered norms
+(`Data.Lattices.CyclotomicRing.NormBounds`). The Hachi-reduction-specific norm constants
+`B_z` / `βSq` that these bounds feed live with Lemma 8 in `QuadEval.Soundness`, not here.
+
+## Main results
+
+* `gadgetDecompose_zmod_vecLInftyNorm_le` / `gadgetDecompose_zmod_vecL2NormSq_le`: the honest
+  decomposition satisfies `‖·‖∞ ≤ b - 1` and `‖·‖₂² ≤ (rows·digits)·(deg φ)·(b-1)²`.
+* `gadgetMul_zmod_vecLInftyNorm_le` / `gadgetMul_zmod_vecL2NormSq_le`: if `‖v‖∞ ≤ γ` then
+  `‖G ·ᵥ v‖∞ ≤ (∑_{u<digits} bᵘ) · γ`, hence `‖G ·ᵥ v‖₂²` is within `zRecomposeL2SqBound`.
+* `gadgetMul_zmod_sub_l2NormSq_le`: two range-checked recompositions differ in `ℓ₂²` by at most
+  `subL2NormSqBound (zRecomposeL2SqBound …)` — the `4·B_z` bound Lemma 8 needs.
 
 ## References
 
@@ -241,26 +265,6 @@ theorem gadgetMul_zmod_sub_l2NormSq_le {b rows digits : ℕ} (hd : 0 < digits)
       ≤ subL2NormSqBound (zRecomposeL2SqBound γ b digits Φ.φ.natDegree rows) :=
   sub_l2NormSq_le Φ _ _ (gadgetMul_zmod_vecL2NormSq_le Φ hd h1 v hv)
     (gadgetMul_zmod_vecL2NormSq_le Φ hd h1 w hw)
-
-/-! ## The constants of Hachi's polynomial-evaluation reduction (`B_z`, `βSq`) -/
-
-/-- **The reduction's derived `B_z`** (Hachi Lemma 8) — the `ℓ₂²` bound on `z = J_{2^m}·ẑ` that
-follows from
-Eq. (20)'s range check on `ẑ` alone (no extra verifier check): `z` has `2^m·δ` entries
-(`cols = 2^m·δ`, `d = deg φ`, `τ = ⌈log_b β⌉` digits of the `J` gadget), so
-`B_z = 2^m·δ · (d · ((∑_{u<τ} bᵘ)·γ)²)`.
-
-**Honest values (paper footnote):** `γ` plays the paper's `b` — Eq. (20) checks
-`ẑ ∈ S_b` (centered coefficients in `[⌈-b/2⌉, ⌈b/2⌉-1]`, magnitude `≤ b`), which the
-symmetric model relaxes to `‖ẑ‖∞ ≤ γ` with `γ := b`. Then the entrywise `ℓ∞` bound
-`(∑_{u<τ} bᵘ)·b = b·(b^τ-1)/(b-1) ≤ 2·b^τ` recovers (up to the constant 2) the paper's
-derived `‖z⁽ʲ⁾‖∞ ≤ b^τ` (Lemma 8's `β̄ = 2b^τ` slack), and
-`B_z ≈ 2^m·δ·d·b^{2τ}` up to small constants. -/
-def quadEvalZL2SqBound (γ b τ d m δ : ℕ) : ℕ := zRecomposeL2SqBound γ b τ d (2 ^ m * δ)
-
-/-- **The reduction's `βSq`** (Hachi Lemma 8) := `subL2NormSqBound B_z = 4·B_z` — the `ℓ₂²` bound
-on the extracted `c̄ⱼ •ᵥ sⱼ = z_sib − z_central` fed to `VerifiedBlock.scaled_short`. -/
-def quadEvalBetaSq (γ b τ d m δ : ℕ) : ℕ := subL2NormSqBound (quadEvalZL2SqBound γ b τ d m δ)
 
 end ZModGadgetRecomposeNorms
 

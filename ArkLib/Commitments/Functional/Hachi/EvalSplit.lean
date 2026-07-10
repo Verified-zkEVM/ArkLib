@@ -37,6 +37,15 @@ _` and the basis vectors `PolyVec (Rq Φ) _` slot directly into the Ajtai commit
 `ArkLib.Lattices.Ajtai.Simple.commit` (which is itself a `matVecMul`) and the inner-outer
 construction.
 
+The reshape `toMatrix` has an explicit inverse `toPolynomial`, reading a matrix back into the
+coefficient vector along `splitEquiv`, with round-trip lemmas `toMatrix_toPolynomial` /
+`toPolynomial_toMatrix`. Through it, the bridge lemma `splitForm_monomialBasis_eq_eval` restates
+the bilinear form `splitForm M u v = u ⬝ᵥ (M *ᵥ v)` of *any* matrix `M` against the two monomial
+bases as the polynomial-level evaluation `eval (toPolynomial M) (xl ++ xh)`; the Hachi evaluation
+bridge (`QuadEval/Bridge.lean`) consumes it to turn its matrix-shaped consistency claim into a
+`CMlPolynomial` evaluation claim. `evalSplit` itself is linear in the coefficient vector
+(`evalSplit_add` / `evalSplit_smul`), as needed for random-linear-combination / batching steps.
+
 ## Index convention
 
 The coefficient/value vectors are indexed **little-endian** (bit `0` is the least significant), as

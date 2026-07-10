@@ -9,14 +9,39 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
 /-!
   # Hachi polynomial-evaluation reduction — gadget algebra (Hachi §4.2, Figure 3)
 
-  Gadget algebra supporting **Hachi Lemma 8** (coordinate-wise special soundness of Hachi's
-  polynomial-evaluation reduction, Hachi [NOZ26] §4.2, Figure 3): the public parameters extended
-  with the short-commitment matrix `D` (`PublicParamsD`); the honest-prover layer — the carrier
-  `w`/`ŵ` and its short commitment `v = D ŵ` (`carrier`, `carrierDecomp`, `carrierCommit`) and
-  the `J` gadget with the response decomposition `ẑ` (`jMatrix`, `zDecomp`); and the
-  block-weighted gadget sums `tensorG` / `tensorG1` with their subtraction and
-  coordinate-isolation lemmas (`tensorG_sub_challenge`, `tensorG_coord_diff`, and the `tensorG1`
-  analogues) — the algebraic crux of the Lemma 8 subtract-and-divide extraction.
+  Gadget algebra supporting **Hachi Lemma 8** — the coordinate-wise special soundness of Hachi's
+  polynomial-evaluation reduction (Hachi [NOZ26] §4.2, Figure 3), proved in
+  `QuadEval/Soundness.lean`. In that reduction the prover folds `2ʳ` committed witness blocks
+  under a verifier challenge vector `c`, and the extractor recovers block `j` from two accepting
+  transcripts whose challenges differ only in coordinate `j`: subtract the two verification
+  equations so every other block cancels, then divide by the challenge difference. This file
+  provides the definitions those equations are stated in and the subtraction/isolation identities
+  the extraction step relies on; the protocol itself lives in `QuadEval/Reduction.lean`.
+
+  Throughout, `G` is the base-`b` gadget matrix `I ⊗ [1, b, …]` of `Gadget/Basic.lean` and `G⁻¹`
+  its digit decomposition, with `G *ᵥ G⁻¹(x) = x`.
+
+  ## Main definitions
+
+  * `PublicParamsD`: the inner-outer public parameters `(A, B)` extended with the Hachi
+    short-commitment matrix `D` (Hachi Eq. (16)).
+  * `carrier`, `carrierDecomp`, `carrierCommit`: the honest-prover carrier `w` with
+    `wᵢ = aᵀ G sᵢ` — the intermediate values tying the witness blocks `sᵢ` to the evaluation —
+    its decomposition `ŵ = G⁻¹(w)`, and its short commitment `v = D ŵ` (Figure 3 round 0);
+    `carrier_eq_gadget` is the roundtrip `w = G *ᵥ ŵ`.
+  * `jMatrix`, `zDecomp`: the `J` gadget `J := I ⊗ [1, base, …]` (Eq. (18)–(20)) and the
+    decomposed response `ẑ = J⁻¹(z)`; `z_eq_jMatrix` is the verifier's reconstruction
+    `z = J *ᵥ ẑ`.
+  * `tensorG`, `tensorG1`: the block-weighted gadget sums — the vector `(cᵀ ⊗ G_k) x̂`
+    (Eq. (20) row 5) and the scalar `(cᵀ ⊗ G₁) ŵ` (Eq. (20) row 4).
+
+  ## Main results
+
+  * `tensorG_sub_challenge`, `tensorG1_sub_challenge`: both sums are subtractive in the challenge
+    vector — Lemma 8's two-transcript subtraction.
+  * `tensorG_coord_diff`, `tensorG1_coord_diff`: if `c` and `c'` differ only in coordinate `j`,
+    the difference sum collapses to the single block `j` — the coordinate isolation that is the
+    algebraic crux of the Lemma 8 subtract-and-divide extraction.
 
   Hachi's reduction (§4.2) is the multilinear / inner-outer lift of Greyhound's [NS24, §3.1]
   folding-based polynomial-evaluation protocol; this file is its gadget layer.
