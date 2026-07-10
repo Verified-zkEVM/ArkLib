@@ -261,3 +261,22 @@ the intermediate context, and is given in a "strongest post-condition" style whe
 the verifier's check along with the initial predicate. We can also view the final state function as
 a form of "canonical" post-condition, that is implied by the previous predicate except with small
 probability.
+
+\subsection{Batched and Zero-Check Claim Interfaces}\label{sec:sumcheck_batching}
+
+ArkLib also exposes a semantic layer for forming and composing sum-check claims.  A claim consists
+of a function-valued summand and a target.  Its validity is the equality between the target and the
+sum over a common finite domain.  When a degree-bounded polynomial oracle agrees pointwise with the
+summand, the semantic relation refines the input relation of the existing sum-check oracle
+reduction.
+
+A family of valid claims over the same domain remains valid after taking a fixed random linear
+combination.  The zero-check interface uses this construction to combine the constraint
+polynomials and attached evaluation claims of each table.  Tables with different Boolean-cube
+dimensions can be merged into one back-loaded claim: a shorter table reads a suffix of the shared
+point, while the unused prefix coordinates contribute a product selector.
+
+These declarations specify the claim relations and their algebraic completeness properties.  They
+do not by themselves establish a new protocol soundness theorem; such a theorem must additionally
+connect the semantic functions to committed polynomial oracles and compose the applicable
+batching, interpolation, and sum-check error bounds.

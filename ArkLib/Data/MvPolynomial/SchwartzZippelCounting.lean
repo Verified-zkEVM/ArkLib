@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Katerina Hristova, Aristotle
+Authors: Katerina Hristova, Aristotle (Harmonic), Elias Judin
 -/
 
 import ArkLib.Data.Probability.Notation
@@ -10,10 +10,11 @@ import Mathlib.Data.Rat.Star
 import Mathlib.Probability.Distributions.Uniform
 import Mathlib.RingTheory.SimpleRing.Principal
 
-/-! ## Schwartz-Zippel derived bound
+/-!
+# A counting form of the Schwartz--Zippel bound
 
 We state and prove a counting version of the Schwartz-Zippel lemma for multivariate polynomials with
-finitely many variables over a (possibly inifinite) field `F`.
+finitely many variables over a possibly infinite field `F`.
 
 The lemma is derived from mathlib's version `MvPolynomial.schwartz_zippel_sup_sum`.
 -/
@@ -78,7 +79,8 @@ theorem schwartz_zippel_counting
 to total outcomes, expressed in `ℝ≥0∞`. -/
 lemma uniform_prob_eq_card_div {α : Type} [Fintype α] [Nonempty α]
     (P : α → Prop) [DecidablePred P] :
-    Pr_{let x ←$ᵖ α}[P x] = ↑((Finset.univ.filter (fun x => P x)).card) / ↑(Fintype.card α) := by
+    Pr_{let x ←$ᵖ α}[P x] =
+      ↑((Finset.univ.filter (fun x => P x)).card) / ↑(Fintype.card α) := by
   erw [PMF.map_apply]
   simp [div_eq_mul_inv, Finset.sum_ite]
 
@@ -101,7 +103,7 @@ lemma card_filter_eval_subtype_eq_piFinset
     true_and, exists_prop, and_imp]
     exact fun b hb hb' => ⟨fun i => ⟨b i, hb i⟩, hb', rfl⟩
 
-/- If `k * m ≤ d * n` with `m > 0` and `n > 0`, then `k / n ≤ d / m` in `ℝ≥0∞`. -/
+/-- If `k * m ≤ d * n` with `m > 0` and `n > 0`, then `k / n ≤ d / m` in `ℝ≥0∞`. -/
 lemma ENNReal.div_le_div_of_mul_le {k n d m : ℕ}
     (hm_pos : 0 < m) (hn_pos : 0 < n) (h : k * m ≤ d * n) :
     (k : ℝ≥0∞) / n ≤ d / m := by
@@ -112,32 +114,76 @@ lemma ENNReal.div_le_div_of_mul_le {k n d m : ℕ}
   · grind
   · exact Or.inl <| ENNReal.natCast_ne_top _
 
-/- A PMF probability is always at most `1`. -/
-lemma pmf_prob_le_one {α : Type} [Fintype α] [Nonempty α] (P : α → Prop) :
-    Pr_{let x ←$ᵖ α}[P x] ≤ 1 := by
-  erw [PMF.bind_apply, tsum_fintype]
-  refine le_trans (Finset.sum_le_sum fun _ _ => mul_le_of_le_one_right ( by positivity ) ?_) ?_
-  · exact PMF.coe_le_one _ True
-  · norm_num
-
 /-- Probability of a nonzero polynomial evaluating to zero over a uniform product distribution
 is at most `d / m`, where `d` bounds the total degree and `m` bounds below the cardinality
 of each factor. This bridges `schwartz_zippel_counting` with the probability formulation. -/
 lemma prob_eval_zero_le_div
-  {F : Type} [Field F]
-  {s : ℕ}
-  {S : Fin s → Set F} [∀ i, Fintype ↥(S i)] [∀ i, Nonempty ↥(S i)]
-  (f : MvPolynomial (Fin s) F) (hf : f ≠ 0)
-  (d m : ℕ) (hd : f.totalDegree ≤ d) (hm_pos : 0 < m)
-  (hm : ∀ i, m ≤ (S i).toFinset.card) :
-  Pr_{let x ←$ᵖ (∀ i, ↥(S i))}[MvPolynomial.eval (fun i => (↑(x i) : F)) f = 0] ≤ (d : ℝ≥0∞) / m :=
-  by
+    {F : Type} [Field F]
+    {s : ℕ}
+    {S : Fin s → Set F} [∀ i, Fintype ↥(S i)] [∀ i, Nonempty ↥(S i)]
+    (f : MvPolynomial (Fin s) F) (hf : f ≠ 0)
+    (d m : ℕ) (hd : f.totalDegree ≤ d) (hm_pos : 0 < m)
+    (hm : ∀ i, m ≤ (S i).toFinset.card) :
+    Pr_{let x ←$ᵖ (∀ i, ↥(S i))}[
+        MvPolynomial.eval (fun i => (↑(x i) : F)) f = 0] ≤
+      (d : ℝ≥0∞) / m := by
   classical
   convert ENNReal.div_le_div_of_mul_le hm_pos _ _ using 1
   · convert uniform_prob_eq_card_div _
     · infer_instance
   · exact Fintype.card_pos_iff.mpr ⟨fun _ => Classical.arbitrary _⟩
-  · convert schwartz_zippel_counting f hf ( fun i => ( S i ).toFinset ) d m hd hm_pos hm using 1
+  · convert schwartz_zippel_counting f hf (fun i ↦ (S i).toFinset) d m hd hm_pos hm using 1
     · convert congr_arg₂ (· * ·) (card_filter_eval_subtype_eq_piFinset S f) rfl
     · rw [Fintype.card_pi]
       aesop
+
+/-- The probability that a nonzero polynomial of total degree at most `d` vanishes at a uniformly
+sampled point of `F ^ n` is at most `d / |F|`. -/
+theorem prob_eval_zero_uniform_le_div
+    {F : Type} [Field F] [Fintype F] {n : ℕ}
+    (f : MvPolynomial (Fin n) F) (hf : f ≠ 0) (d : ℕ) (hd : f.totalDegree ≤ d) :
+    Pr_{let x ←$ᵖ (Fin n → F)}[MvPolynomial.eval x f = 0] ≤
+      (d : ℝ≥0∞) / Fintype.card F := by
+  classical
+  have hcardF : 0 < Fintype.card F := Fintype.card_pos
+  rw [uniform_prob_eq_card_div]
+  have hcount := schwartz_zippel_counting f hf (fun _ ↦ Finset.univ) d
+    (Fintype.card F) hd hcardF (by intro i; simp)
+  rw [Fintype.piFinset_univ] at hcount
+  have hcardpi : Fintype.card (Fin n → F) = Fintype.card F ^ n := by
+    simp [Fintype.card_pi]
+  rw [hcardpi]
+  refine ENNReal.div_le_div_of_mul_le hcardF (by positivity) ?_
+  simpa [Finset.prod_const, Finset.card_univ, Fintype.card_fin] using hcount
+
+/-- If every individual-variable degree of a polynomial in `n` variables is at most one, then its
+total degree is at most `n`. -/
+theorem MvPolynomial.totalDegree_le_card_of_degreeOf_le_one
+    {R : Type*} [CommRing R] {n : ℕ} {f : MvPolynomial (Fin n) R}
+    (hdegree : ∀ i, f.degreeOf i ≤ 1) : f.totalDegree ≤ n := by
+  rw [MvPolynomial.totalDegree]
+  apply Finset.sup_le
+  intro s hs
+  calc
+    s.sum (fun _ e ↦ e) = ∑ i : Fin n, s i := by
+      rw [Finsupp.sum_fintype]
+      intro
+      rfl
+    _ ≤ ∑ _i : Fin n, 1 := by
+      apply Finset.sum_le_sum
+      intro i _
+      have hsi : s i ≤ f.degreeOf i := by
+        rw [MvPolynomial.degreeOf_eq_sup]
+        exact Finset.le_sup (f := fun m ↦ m i) hs
+      exact hsi.trans (hdegree i)
+    _ = n := by simp
+
+/-- A nonzero multilinear polynomial in `n` variables vanishes at a uniformly sampled point with
+probability at most `n / |F|`. -/
+theorem prob_eval_zero_uniform_le_div_of_degreeOf_le_one
+    {F : Type} [Field F] [Fintype F] {n : ℕ}
+    (f : MvPolynomial (Fin n) F) (hf : f ≠ 0) (hdegree : ∀ i, f.degreeOf i ≤ 1) :
+    Pr_{let x ←$ᵖ (Fin n → F)}[MvPolynomial.eval x f = 0] ≤
+      (n : ℝ≥0∞) / Fintype.card F :=
+  prob_eval_zero_uniform_le_div f hf n
+    (MvPolynomial.totalDegree_le_card_of_degreeOf_le_one hdegree)
