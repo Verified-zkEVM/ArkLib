@@ -323,7 +323,18 @@ theorem fflatten_embedSum {A : Sort u} {F : A → Sort v} {m : ℕ} {n : Fin m �
     {α : (i : Fin m) → (j : Fin (n i)) → A}
     (v : (i : Fin m) → (j : Fin (n i)) → F (α i j)) (i : Fin m) (j : Fin (n i)) :
     fflatten v (embedSum i j) = cast (by simp) (v i j) := by
-  sorry
+  induction m with
+  | zero => exact Fin.elim0 i
+  | succ m ih =>
+    induction i using Fin.cases with
+    | zero =>
+      simp only [embedSum_succ_zero, fflatten_succ]
+      erw [fappend_left]
+      rfl
+    | succ i =>
+      simp only [embedSum_succ_succ, fflatten_succ]
+      erw [fappend_right, ih (fun i => v i.succ) i j, _root_.cast_cast]
+      rfl
 
 /-- Functorial flatten with two arguments: flattens two nested heterogeneous tuple
 `(i : Fin m) → (j : Fin (n i)) → F (α i j)` into a single heterogeneous tuple with type
@@ -380,7 +391,18 @@ theorem fflatten₂_embedSum {A : Sort u} {B : Sort v} {F : A → B → Sort w} 
     {β : (i : Fin m) → (j : Fin (n i)) → B}
     (v : (i : Fin m) → (j : Fin (n i)) → F (α i j) (β i j)) (i : Fin m) (j : Fin (n i)) :
     fflatten₂ v (embedSum i j) = cast (by simp) (v i j) := by
-  sorry
+  induction m with
+  | zero => exact Fin.elim0 i
+  | succ m ih =>
+    induction i using Fin.cases with
+    | zero =>
+      simp only [embedSum_succ_zero, fflatten₂_succ]
+      erw [fappend₂_left]
+      rfl
+    | succ i =>
+      simp only [embedSum_succ_succ, fflatten₂_succ]
+      erw [fappend₂_right, ih (fun i => v i.succ) i j, _root_.cast_cast]
+      rfl
 
 /-- Heterogeneous flatten: flattens a nested heterogeneous tuple
 `(i : Fin m) → (j : Fin (n i)) → α i j` into a single heterogeneous tuple with type

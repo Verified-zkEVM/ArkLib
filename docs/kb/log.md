@@ -129,3 +129,20 @@ Updated `ArkLib/Data/Polynomial/RationalFunctions.lean` with an explicit functio
 variable, regular-element closure lemmas, and a concrete low-degree `ξ` regularity helper.
 The Appendix A rational-functions audit now records this as the next denominator-clearing layer
 toward `ClaimA2.ξ_regular`.
+
+## [2026-06-16] seed | MCA and interleaving references
+
+Seeded paper pages and source metadata for:
+
+- `BCGM25`
+- `DG25`
+- `Jo26`
+
+and updated the Reed-Solomon proximity concept page to include the current MCA-generator and
+interleaved-code reference lineage.
+
+## [2026-06-16] refine | interleaving MCA audit target
+
+Updated the list-decoding and correlated-agreement audit to record `Jo26` as the sharper follow-up
+target for the missing interleaving-vs-MCA theorem once ArkLib has a general MCA error-function
+interface.

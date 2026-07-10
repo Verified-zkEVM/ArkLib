@@ -79,14 +79,14 @@ variable [DecidableEq ι]
   [∀ i, VCVCompatible (pSpec.Challenge i)]
   [∀ i, SampleableType (pSpec.Challenge i)]
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+  (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey pSpec)
 
 /-- A commitment scheme satisfies **correctness** with error `correctnessError` if for all
   `data : Data` and `query : O.Query`, the probability of accepting upon executing the commitment
   and opening procedures honestly is at least `1 - correctnessError`. Any randomness used by the
   committer is sampled inside the `OracleComp` in `scheme.commit`.
 -/
-def correctness (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey pSpec)
-    (correctnessError : ℝ≥0) : Prop :=
+def correctness (correctnessError : ℝ≥0) : Prop :=
   ∀ data : Data,
   ∀ query : O.Query,
   let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
@@ -106,8 +106,7 @@ def correctness (scheme : Scheme oSpec Data Commitment Decommitment ComKey Verif
 
 /-- A commitment scheme satisfies **perfect correctness** if it satisfies correctness with no error.
 -/
-def perfectCorrectness
-    (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey pSpec) : Prop :=
+def perfectCorrectness : Prop :=
   correctness init impl scheme 0
 
 /-- An adversary in the (evaluation) binding game returns a commitment `cm`, a query `q`, two
@@ -130,7 +129,6 @@ abbrev bindingCondition :
 
 /-- The evaluation-binding game for a specific adversary. -/
 abbrev bindingGame (AuxState : Type)
-    (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey pSpec)
     (adversary : BindingAdversary oSpec Data Commitment AuxState pSpec ComKey) :
     OptionT ProbComp ((query : O.Query) × O.Response query × O.Response query × Bool × Bool) :=
   let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
@@ -151,9 +149,8 @@ abbrev bindingGame (AuxState : Type)
 
 /-- The probability of breaking evaluation binding for a specific adversary. -/
 def bindingExperiment (AuxState : Type)
-    (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey pSpec)
     (adversary : BindingAdversary oSpec Data Commitment AuxState pSpec ComKey) : ℝ≥0∞ :=
-  Pr[bindingCondition (Data := Data) | bindingGame init impl AuxState scheme adversary]
+  Pr[bindingCondition (Data := Data) | bindingGame init impl scheme AuxState adversary]
 
 /-- A commitment scheme satisfies **(evaluation) binding** with error `bindingError` if for all
     adversaries that output a commitment `cm`, query `q`, two responses `resp₁, resp₂`, and
@@ -167,11 +164,10 @@ def bindingExperiment (AuxState : Type)
 
   Informally, evaluation binding says that it's computationally infeasible to open a commitment to
   two different responses for the same query. -/
-def binding (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey pSpec)
-    (bindingError : ℝ≥0) : Prop :=
+def binding (bindingError : ℝ≥0) : Prop :=
   ∀ AuxState : Type,
   ∀ adversary : BindingAdversary oSpec Data Commitment AuxState pSpec ComKey,
-    bindingExperiment init impl AuxState scheme adversary ≤ bindingError
+    bindingExperiment init impl scheme AuxState adversary ≤ bindingError
 
 /-- A **straightline extractor** for a commitment scheme takes in the commitment, the log of queries
     made during the commitment phase, and returns the underlying data for the commitment. -/
@@ -199,8 +195,7 @@ set_option linter.unusedVariables false
   Informally, extractability says that if an adversary can convince the verifier to accept an
   opening, then the extractor must be able to recover some underlying data that is consistent with
   the evaluation query. -/
-def extractability (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey pSpec)
-    (extractabilityError : ℝ≥0) : Prop :=
+def extractability (extractabilityError : ℝ≥0) : Prop :=
   ∃ extractor : StraightlineExtractor oSpec Data Commitment,
   ∀ AuxState : Type,
   ∀ adversary : ExtractabilityAdversary oSpec Data Commitment AuxState,
