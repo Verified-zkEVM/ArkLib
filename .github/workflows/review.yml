@@ -1,7 +1,7 @@
 name: PR Review
 
-# Initial trusted CHATOPS-ONLY pilot of the consolidated OpenRouter review action
-# (lean4repo-utils/review@0.1). Invoked by a maintainer commenting `/review` on a PR.
+# Trusted CHATOPS-ONLY deployment of the consolidated OpenRouter review action
+# (lean4repo-utils/review@main). Invoked by a maintainer commenting `/review` on a PR.
 # The auto pull_request trigger is intentionally dropped for now.
 on:
   issue_comment:
@@ -9,7 +9,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.issue.number }}
-  cancel-in-progress: false     
+  cancel-in-progress: false
 
 # Least privilege: the reviewer's lean_tools execute model-directed Lean IO and the
 # action builds the PR-head code, so a token exfiltrated there must not be able to push
@@ -33,7 +33,7 @@ jobs:
         github.event.comment.author_association == 'COLLABORATOR'
       )
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 240
     steps:
       # Parse the /review comment: `Internal:` lines → manual spec/KB refs, everything
       # under `External:`/`Comments:` → free-text instructions (the action auto-extracts
@@ -112,7 +112,7 @@ jobs:
           echo "Resolved KB spec_refs: ${spec_refs:-(none)}"
 
       - name: AI review
-        uses: alexanderlhicks/lean4repo-utils/review@0.1
+        uses: alexanderlhicks/lean4repo-utils/review@main
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           api_key: ${{ secrets.OPENROUTER_KEY }}
@@ -120,9 +120,11 @@ jobs:
           # Auto-pulled KB paper pages for the changed files + any manual Internal: refs.
           spec_refs: ${{ steps.kb.outputs.spec_refs }}
           additional_comments: ${{ steps.get_args.outputs.additional_comments }}
-          # Per-run spend ceiling: bounds a single /review even if the key limit is
-          # generous. Tune to taste. Sourced from the workflow, never PR content.
+          # Coverage-first budget control: this sizes/trims prompts for large PRs,
+          # but advisory mode does not stop later files from being reviewed.
+          # Source these from workflow config, never PR content.
           llm_max_run_tokens: "400000"
+          llm_budget_mode: advisory
           # model: omitted → the action's default OpenRouter slug. Set an explicit slug
           # here if you want a specific model for the pilot.
           # lean_tools defaults true (full-quality, compiler-grounded review — trusted
