@@ -45,8 +45,8 @@ namespace Domain
 
 open Function
 
-variable {ι : Type} [Fintype ι] [AddCommGroup ι] [DecidableEq ι]
-variable {F : Type} [Field F] [DecidableEq F]
+variable {ι : Type} [AddCommGroup ι]
+variable {F : Type} [Field F]
 
 /-- A coset FFT domain is a domain of the form `x · G` for
   an FFT domain `G`. -/
@@ -73,7 +73,6 @@ namespace CosetFftDomainClass
 
 variable {D : Type} [FunLike D ι F] [CosetFftDomainClass D ι F]
 
-omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 /-- Every point of a coset FFT domain is nonzero. -/
 @[simp]
 lemma ne_zero (ω : D) (i : ι) : ω i ≠ 0 := fun h ↦ by
@@ -87,7 +86,6 @@ end CosetFftDomainClass
 
 namespace CosetFftDomain
 
-omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 /-- Two concrete coset FFT domains are equal iff
   their coset generators and subgroup parametrizations are equal. -/
 private lemma eq_iff_gen_and_domains_eq {ω₁ ω₂ : CosetFftDomain ι F} :
@@ -120,7 +118,6 @@ instance : FunLike (CosetFftDomain ι F) ι F where
 
 namespace CosetFftDomain
 
-omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 /-- Evaluation of a concrete coset FFT domain is multiplication of
   the coset generator by the subgroup element indexed by `i`. -/
 lemma eval_coset_fft_domain_eq_eval_generator_mul_domain
@@ -171,7 +168,6 @@ def mkSubgroupUnit {D : Type} [FunLike D ι F] [CosetFftDomainClass D ι F]
     have hi := CosetFftDomainClass.ne_zero ω i
     field_simp
 
-omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 /-- The normalized subgroup unit map sends addition in the index type to multiplication. -/
 private lemma mkSubgroupUnit_mul {D : Type} [FunLike D ι F] [CosetFftDomainClass D ι F]
     (ω : D) (a b : ι) :
@@ -180,7 +176,6 @@ private lemma mkSubgroupUnit_mul {D : Type} [FunLike D ι F] [CosetFftDomainClas
   have := (‹CosetFftDomainClass D ι F›.map_add ω a b)
   aesop (add safe (by grind))
 
-omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 /-- The normalized subgroup unit map is injective. -/
 private lemma mkSubgroupUnit_injective {D : Type} [FunLike D ι F] [CosetFftDomainClass D ι F]
     (ω : D) : Injective (mkSubgroupUnit ω) := by
@@ -213,7 +208,6 @@ def toCosetFftDomain {D : Type} [FunLike D ι F] [CosetFftDomainClass D ι F]
     mul_inv_cancel₀ (CosetFftDomainClass.ne_zero ω (0 : ι)),
     inv_mul_cancel₀ (CosetFftDomainClass.ne_zero ω (0 : ι))⟩
 
-omit [DecidableEq ι] [DecidableEq F] [Fintype ι] in
 /-- Reconstructing a concrete coset FFT domain from its class instance
   gives back the original domain. -/
 lemma toCosetFftDomain_of_CosetFftDomain {ω : CosetFftDomain ι F} :
@@ -227,7 +221,6 @@ lemma toCosetFftDomain_of_CosetFftDomain {ω : CosetFftDomain ι F} :
     aesop
       (add simp [CosetFftDomain.eval_coset_fft_domain_eq_eval_generator_mul_domain, mkSubgroupUnit])
 
-omit [DecidableEq ι] [DecidableEq F] [Fintype ι] in
 /-- Reconstructing a concrete coset FFT domain preserves evaluation. -/
 lemma toCosetFftDomain_apply_self {ω : CosetFftDomain ι F} {i : ι} :
   toCosetFftDomain ω i = ω i := by
@@ -247,7 +240,6 @@ namespace CosetFftDomainClass
 variable {D : Type} [FunLike D ι F] [CosetFftDomainClass D ι F]
 
 set_option linter.unusedSectionVars false in
-omit [DecidableEq ι] [DecidableEq F] [Fintype ι] in
 /-- Extensionality for class-level coset FFT domains.
   Domains are equal if their evaluations are equal. -/
 @[ext]
@@ -257,20 +249,17 @@ end CosetFftDomainClass
 
 namespace CosetFftDomain
 
-omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 /-- The value at zero is the coset generator. -/
 lemma map_0_eq_coset_generator {ω : CosetFftDomain ι F} :
   ω 0 = ω.cosetGenerator := by
   simp [eval_coset_fft_domain_eq_eval_generator_mul_domain,
         show (0 : ι) = (1 : Multiplicative ι) by rfl]
 
-omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 /-- A concrete coset FFT domain is injective as a function. -/
 @[simp]
 lemma injective {ω : CosetFftDomain ι F} :
   Injective ω := CosetFftDomainClass.injective _
 
-omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 /-- A concrete coset FFT domain is injective on every set. -/
 @[simp]
 lemma injOn {ω : CosetFftDomain ι F} {s : Set ι} :
@@ -282,12 +271,13 @@ end CosetFftDomain
 abbrev SmoothCosetFftDomain (n : ℕ) (F : Type) [Field F] : Type :=
   CosetFftDomain (Fin (2 ^ n)) F
 
+variable [Fintype ι] [DecidableEq F]
+
 namespace CosetFftDomainClass
 /-- The elements of a domain as a finset. -/
 def toFinset {D : Type} [FunLike D ι F] [CosetFftDomainClass D ι F]
   (ω : D) : Finset F := Finset.image ω Finset.univ
 
-omit [DecidableEq ι] in
 /-- The cardinality of the finset of elements of a domain is
   the cardinality of the indexing type. -/
 @[simp]

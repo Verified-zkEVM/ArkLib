@@ -23,6 +23,15 @@ variable {R : Type*}
 def ofFn [Zero R] [BEq R] [LawfulBEq R] {n : ℕ} (f : Fin n → R) : CPolynomial R :=
   ⟨(Raw.mk (Array.ofFn f)).trim, Raw.Trim.isCanonical_trim _⟩
 
+/-- A `CPolynomial` coefficient past the stored `size` is `0` (`coeff` reads `Array.getD … 0`). -/
+theorem coeff_eq_zero_of_size_le [Zero R] (p : CPolynomial R) {pos : ℕ} (h : p.size ≤ pos) :
+    p.coeff pos = 0 := by
+  change p.val.getD pos 0 = 0
+  unfold Array.getD
+  split_ifs with hh
+  · exact absurd hh (Nat.not_lt.mpr h)
+  · rfl
+
 section DivisionToPoly
 
 open Polynomial

@@ -53,7 +53,7 @@ a root-finding procedure.
 
 namespace Domain
 
-variable {F : Type} [Field F] [DecidableEq F]
+variable {F : Type} [Field F]
 
 namespace CosetFftDomainClass
 
@@ -129,20 +129,17 @@ def subdomain (ω : D) (i : ℕ) :
 
 variable {ω : D} {x : F}
 
-omit [DecidableEq F] in
 /-- Membership in subdomains is invariant under equal subdomain indices. -/
 lemma mem_subdomain_of_eq_vals
   {i j : ℕ}
   (hij : i = j) :
   x ∈ subdomain ω i ↔ x ∈ subdomain ω j := by rw [hij]
 
-omit [DecidableEq F] in
 /-- The coset generator of the `i`th subdomain is `ω 0 ^ 2 ^ i`. -/
 @[simp]
 lemma subdomain_generator_pow_generator (i : ℕ) :
   (subdomain ω i).cosetGenerator = ω 0 ^ 2 ^ i := rfl
 
-omit [DecidableEq F] in
 /-- Membership to the `0`th subdomain is
   the same as membership to the original coset FFT domain. -/
 @[simp]
@@ -157,7 +154,6 @@ lemma mem_subdomain_0_iff_mem :
              mem_def,
              CosetFftDomain.eval_coset_fft_domain_eq_eval_generator_mul_domain])
 
-omit [DecidableEq F] in
 /-- The `n`th subdomain consists exactly of the single element `ω 0 ^ 2 ^ n`. -/
 lemma mem_subdomain_n_iff_eq_pow_generator :
   x ∈ subdomain ω n ↔ x = ω 0 ^ 2 ^ n := by
@@ -168,7 +164,6 @@ lemma mem_subdomain_n_iff_eq_pow_generator :
     , mem_def
     , CosetFftDomain.eval_coset_fft_domain_eq_eval_generator_mul_domain])
 
-omit [DecidableEq F] in
 /-- Powers of normalized subgroup units correspond to additive multiples of their indices. -/
 private lemma mkSubgroupUnit_pow (ω : D) (a : Fin (2 ^ n)) (k : ℕ) :
   (mkSubgroupUnit ω a : F) ^ k = mkSubgroupUnit ω (k • a) := by
@@ -200,7 +195,6 @@ private lemma fin_nsmul_val {m : ℕ} (k : ℕ) (a : Fin (2 ^ m)) :
 private lemma subdomain_embed_val {i : ℕ} (hi : i < n) (k : Fin (2 ^ (n - i))) :
   (CosetFftDomainClass.subdomain_embed (n := n) i k).val = 2 ^ i * k.val := by grind +locals
 
-omit [DecidableEq F] in
 /-- If `x` lies in the `j`th subdomain,
   then `x ^ 2 ^ i` lies in the `(j + i)`th subdomain, provided `j + i ≤ n`. -/
 theorem pow_mem_of_mem {i j : ℕ} (hsum : j + i ≤ n) (h : x ∈ subdomain ω j) :
@@ -269,7 +263,6 @@ theorem pow_mem_of_mem {i j : ℕ} (hsum : j + i ≤ n) (h : x ∈ subdomain ω 
     (Mathlib.Tactic.CancelDenoms.derive_trans₂
       rfl (congrArg Units.val (congrArg (mkSubgroupUnit ω) h_eq)) rfl)
 
-omit [DecidableEq F] in
 /-- If `x` lies in the original domain, then `x ^ 2 ^ i` lies in the `i`th subdomain. -/
 lemma pow_mem_subdomain_of_mem_subdomain_0 {i : ℕ} (hi : i ≤ n)
   (h : x ∈ subdomain ω 0) :
@@ -279,7 +272,7 @@ lemma pow_mem_subdomain_of_mem_subdomain_0 {i : ℕ} (hi : i ≤ n)
   exact key
 
 /-- `toFinset`-version of `pow_mem_subdomain_of_mem_subdomain_0`. -/
-lemma pow_mem_subdomain_of_mem_subdomain_0_toFinset {i : ℕ} (hi : i ≤ n)
+lemma pow_mem_subdomain_of_mem_subdomain_0_toFinset [DecidableEq F] {i : ℕ} (hi : i ≤ n)
   (h : x ∈ (subdomain ω 0).toFinset) :
   x ^ (2 ^ i) ∈ (subdomain ω i).toFinset := by
   rw [mem_toFinset_iff_mem]
@@ -300,7 +293,6 @@ private lemma subdomain_embed_of_le (i j : ℕ) (h : j ≤ i)
       simp only [CosetFftDomainClass.subdomain_embed, ge_iff_le, hi, ↓reduceDIte, this, Fin.ext_iff]
       rw [←mul_assoc, ←pow_add, Nat.add_sub_of_le h]
 
-omit [DecidableEq F] in
 /-- If `j ≤ i`, then we do not have `x ∈ subdomain ω i → x ∈ subdomain ω j`
   in the general case but rescaling `x` as `ω 0 ^ 2 ^ j * (ω 0)⁻¹ ^ 2 ^ i * x`
   gives us a member of `subdomain ω j`. -/
@@ -315,7 +307,6 @@ lemma mem_subdomain_of_le_of_mem_subdomain {i j : ℕ} (h : j ≤ i) (hx : x ∈
   rw [←hx, ←mul_assoc, mul_assoc (ω 0 ^ 2 ^ j)]
   aesop (add simp [CosetFftDomain.mem_iff_exists_mul])
 
-omit [DecidableEq F] in
 /-- Evaluation in the `i`th subdomain, raised to `2 ^ j`,
   is evaluation in the `(i + j)`th subdomain at the reduced index. -/
 private lemma subdomain_eval_pow' {i j : ℕ} (hij : i + j ≤ n)
@@ -390,7 +381,7 @@ private lemma card_fin_filter_mod_eq {a j : ℕ} (hj : j ≤ a) (c : ℕ) (hc : 
 
 /-- If `x` lies in the `(i + j)`th subdomain,
   then it has exactly `2 ^ j` preimages under `y ↦ y ^ 2 ^ j` from the `i`th subdomain. -/
-lemma card_roots {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)) :
+lemma card_roots [DecidableEq F] {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)) :
   Finset.card {y ∈ (subdomain ω i).toFinset | y ^ (2 ^ j) = x} = 2 ^ j := by
   have hinj : Function.Injective (subdomain ω i) := CosetFftDomainClass.injective _
   simp only [CosetFftDomain.toFinset]
@@ -425,7 +416,7 @@ lemma card_roots {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)
 
 set_option linter.unusedDecidableInType false in -- false alert
 /-- Every element of the `(i + j)`th subdomain has a `2 ^ j`th root in the `i`th subdomain. -/
-lemma root_exists {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)) :
+lemma root_exists [DecidableEq F] {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)) :
   ∃ y ∈ subdomain ω i, y ^ (2 ^ j) = x := by
   have h' : Finset.Nonempty {y ∈ (subdomain ω i).toFinset | y ^ 2 ^ j = x} := by
     have := card_roots hij h
@@ -434,7 +425,7 @@ lemma root_exists {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j
 
 set_option linter.unusedDecidableInType false in -- false alert
 /-- Any square root of an element of the `(i + 1)`th subdomain lies in the `i`th subdomain. -/
-lemma sq_root_mem_subdomain {i : ℕ} (hi : i < n) {y : F}
+lemma sq_root_mem_subdomain [DecidableEq F] {i : ℕ} (hi : i < n) {y : F}
   (hx : x ∈ subdomain ω (i + 1))
   (hy : y ^ 2 = x) :
   y ∈ subdomain ω i := by
@@ -448,7 +439,7 @@ lemma sq_root_mem_subdomain {i : ℕ} (hi : i < n) {y : F}
 
 /-- The square roots of `x` inside the `i`th subdomain are exactly `y` and `-y`,
   for any square root `y` of `x`. -/
-lemma square_roots_explicit {i : ℕ} (hi : i < n) {y : F}
+lemma square_roots_explicit [DecidableEq F] {i : ℕ} (hi : i < n) {y : F}
   (hx : x ∈ subdomain ω (i + 1)) (hy : y ^ 2 = x) :
   {y ∈ (subdomain ω i).toFinset | y ^ 2 = x} = {y, -y} := by
   have : NeZero (n - i) := ⟨by omega⟩
@@ -462,6 +453,8 @@ lemma square_roots_explicit {i : ℕ} (hi : i < n) {y : F}
 end CosetFftDomainClass
 
 namespace CosetFftDomain
+
+variable [DecidableEq F]
 
 /-- Concrete notation for taking the `i`th subdomain of a smooth coset FFT domain. -/
 abbrev subdomain {n : ℕ} (ω : SmoothCosetFftDomain n F) (i : ℕ) :

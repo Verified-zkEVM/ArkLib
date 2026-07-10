@@ -117,13 +117,10 @@ end ZModDigit
 variable {R : Type} [Field R] [BEq R] [LawfulBEq R] [DecidableEq R]
   (Φ : CyclotomicModulus R) [IsCyclotomic Φ]
 
-/-- Embed a base-ring scalar `c : R` as the constant element `C c ∈ Rq Φ`. -/
-def constRq (c : R) : Rq Φ := Rq.mk Φ (CPolynomial.C c)
-
 /-- Entry of the base-`base` gadget matrix `I_rows ⊗ [1, base, …, base^(digits-1)]`:
 column `j` of row `i` is `base^(j % digits)` when `j / digits = i`, else `0`. -/
 def gadgetEntry (base : R) {rows digits : Nat} (i : Fin rows) (j : Fin (rows * digits)) : Rq Φ :=
-  if j.val / digits = i.val then constRq Φ (base ^ (j.val % digits)) else 0
+  if j.val / digits = i.val then Rq.constRq Φ (base ^ (j.val % digits)) else 0
 
 /-- The base-`base` gadget matrix `I_rows ⊗ [1, base, …, base^(digits-1)]`. -/
 def gadgetMatrix (base : R) (rows digits : Nat) : PolyMatrix (Rq Φ) rows (rows * digits) :=
@@ -139,64 +136,6 @@ def IsLawfulGadgetDecomposition (base : R) {rows digits : Nat}
     (decompose : PolyVec (Rq Φ) rows → PolyVec (Rq Φ) (rows * digits)) : Prop :=
   ∀ x, gadgetMul Φ base (decompose x) = x
 
-omit [DecidableEq R] in
-@[simp] theorem constRq_one : constRq Φ (1 : R) = 1 := by
-  have hC : (CompPoly.CPolynomial.C (1 : R)) = 1 := by
-    refine CompPoly.CPolynomial.eq_iff_coeff.mpr (fun i => ?_)
-    rw [CompPoly.CPolynomial.coeff_C, CompPoly.CPolynomial.coeff_one]
-  change Rq.mk Φ (CompPoly.CPolynomial.C 1) = 1
-  rw [hC]; rfl
-
-/-! ## Degree / coefficient facts for reduced representatives -/
-
-omit [DecidableEq R] in
-/-- `Φ.φ.natDegree`, the truncation length of decompositions, does not exceed `deg φ`. -/
-theorem phi_natDegree_le_degree : (Φ.φ.natDegree : WithBot ℕ) ≤ Φ.φ.toPoly.degree :=
-  le_of_eq (by rw [CompPoly.CPolynomial.natDegree_toPoly,
-    Polynomial.degree_eq_natDegree (IsCyclotomic.monic (Φ := Φ)).ne_zero])
-
-omit [DecidableEq R] in
-/-- A reduced representative has zero coefficients at and beyond `deg φ`. -/
-theorem coeff_eq_zero_of_natDegree_le (a : Rq Φ) {k : ℕ} (hk : Φ.φ.natDegree ≤ k) :
-    a.1.coeff k = 0 := by
-  rw [CompPoly.CPolynomial.coeff_toPoly]
-  apply Polynomial.coeff_eq_zero_of_degree_lt
-  calc a.1.toPoly.degree
-      < Φ.φ.toPoly.degree := Φ.degree_toPoly_lt_of_reduced a.2
-    _ = (Φ.φ.natDegree : WithBot ℕ) := by
-        rw [CompPoly.CPolynomial.natDegree_toPoly]
-        exact Polynomial.degree_eq_natDegree (IsCyclotomic.monic (Φ := Φ)).ne_zero
-    _ ≤ (k : WithBot ℕ) := by exact_mod_cast hk
-
-omit [DecidableEq R] in
-/-- The constant `constRq Φ c` has underlying polynomial `C c` (no reduction occurs, as
-`deg (C c) = 0 < deg φ`). -/
-theorem constRq_val (h1 : 1 ≤ Φ.φ.natDegree) (c : R) :
-    (constRq Φ c).1 = CompPoly.CPolynomial.C c := by
-  change Φ.reduce (CompPoly.CPolynomial.C c) = CompPoly.CPolynomial.C c
-  apply Φ.reduce_eq_self_of_degree_lt
-  rw [CompPoly.CPolynomial.toPoly_C]
-  have hpos : (0 : WithBot ℕ) < Φ.φ.toPoly.degree := by
-    rw [Polynomial.degree_eq_natDegree (IsCyclotomic.monic (Φ := Φ)).ne_zero,
-        ← CompPoly.CPolynomial.natDegree_toPoly]
-    exact_mod_cast (h1 : 0 < Φ.φ.natDegree)
-  exact lt_of_le_of_lt Polynomial.degree_C_le hpos
-
-omit [DecidableEq R] in
-/-- Multiplying by the constant `constRq Φ c` scales coefficients by `c`. -/
-theorem constRq_mul_coeff (h1 : 1 ≤ Φ.φ.natDegree) (c : R) (x : Rq Φ) (k : ℕ) :
-    (constRq Φ c * x).1.coeff k = c * x.1.coeff k := by
-  have hmul : (constRq Φ c * x).1 = Φ.reduce ((constRq Φ c).1 * x.1) := rfl
-  have hred : Φ.reduce (CompPoly.CPolynomial.C c * x.1) = CompPoly.CPolynomial.C c * x.1 := by
-    apply Φ.reduce_eq_self_of_degree_lt
-    rw [CompPoly.CPolynomial.toPoly_mul, CompPoly.CPolynomial.toPoly_C]
-    have hx : x.1.toPoly.degree < Φ.φ.toPoly.degree := Φ.degree_toPoly_lt_of_reduced x.2
-    rcases eq_or_ne c 0 with hc | hc
-    · simpa [hc] using lt_of_le_of_lt bot_le hx
-    · rwa [Polynomial.degree_C_mul hc]
-  rw [hmul, constRq_val Φ h1, hred]
-  exact CompPoly.CPolynomial.coeff_C_mul x.1 c k
-
 /-! ## The gadget product as a block digit-sum -/
 
 omit [DecidableEq R] in
@@ -205,7 +144,7 @@ on the diagonal block and `0` elsewhere. -/
 theorem gadgetEntry_finProdFinEquiv (base : R) {rows digits : Nat} (hd : 0 < digits)
     (i i' : Fin rows) (e : Fin digits) :
     gadgetEntry Φ base i (finProdFinEquiv (i', e))
-      = if i' = i then constRq Φ (base ^ (e : ℕ)) else 0 := by
+      = if i' = i then Rq.constRq Φ (base ^ (e : ℕ)) else 0 := by
   unfold gadgetEntry
   have hval : (finProdFinEquiv (i', e)).val = e.val + digits * i'.val := rfl
   have hdiv : (finProdFinEquiv (i', e)).val / digits = i'.val := by
@@ -221,7 +160,7 @@ slots of block `i`. -/
 theorem gadgetMul_apply (base : R) {rows digits : Nat} (hd : 0 < digits)
     (v : PolyVec (Rq Φ) (rows * digits)) (i : Fin rows) :
     gadgetMul Φ base v i
-      = ∑ e : Fin digits, constRq Φ (base ^ (e : ℕ)) * v (finProdFinEquiv (i, e)) := by
+      = ∑ e : Fin digits, Rq.constRq Φ (base ^ (e : ℕ)) * v (finProdFinEquiv (i, e)) := by
   rw [gadgetMul, matVecMul_apply, dot_eq_sum]
   simp only [gadgetMatrix]
   rw [← Equiv.sum_comp finProdFinEquiv (fun j => gadgetEntry Φ base i j * v j),
@@ -273,25 +212,25 @@ theorem gadgetDecompose_lawful {rows digits : Nat} (hd : 0 < digits) (h1 : 1 ≤
   rw [CompPoly.CPolynomial.eq_iff_coeff]
   intro k
   have hsum : (∑ e : Fin digits,
-        constRq Φ (base ^ (e : ℕ)) * Rq.ofFinCoeff Φ Φ.φ.natDegree
+        Rq.constRq Φ (base ^ (e : ℕ)) * Rq.ofFinCoeff Φ Φ.φ.natDegree
           (fun k' => dd.digit ((x i).1.coeff k') e)).1.coeff k
       = ∑ e : Fin digits,
-        (constRq Φ (base ^ (e : ℕ)) * Rq.ofFinCoeff Φ Φ.φ.natDegree
+        (Rq.constRq Φ (base ^ (e : ℕ)) * Rq.ofFinCoeff Φ Φ.φ.natDegree
           (fun k' => dd.digit ((x i).1.coeff k') e)).1.coeff k := by
     rw [← Rq.coeffHom_apply Φ k, map_sum]
     simp only [Rq.coeffHom_apply]
   have hterm : ∀ e : Fin digits,
-      (constRq Φ (base ^ (e : ℕ)) * Rq.ofFinCoeff Φ Φ.φ.natDegree
+      (Rq.constRq Φ (base ^ (e : ℕ)) * Rq.ofFinCoeff Φ Φ.φ.natDegree
           (fun k' => dd.digit ((x i).1.coeff k') e)).1.coeff k
         = base ^ (e : ℕ) * (if k < Φ.φ.natDegree then dd.digit ((x i).1.coeff k) e else 0) := by
     intro e
-    rw [constRq_mul_coeff Φ h1, Rq.ofFinCoeff_coeff Φ _ (phi_natDegree_le_degree Φ)]
+    rw [Rq.constRq_mul_coeff Φ h1, Rq.ofFinCoeff_coeff Φ _ (Rq.phi_natDegree_le_degree Φ)]
   rw [hsum]
   simp_rw [hterm]
   by_cases hk : k < Φ.φ.natDegree
   · simp only [if_pos hk]
     exact dd.reconstruct ((x i).1.coeff k)
   · simp only [if_neg hk, mul_zero, Finset.sum_const_zero]
-    exact (coeff_eq_zero_of_natDegree_le Φ (x i) (not_lt.mp hk)).symm
+    exact (Rq.coeff_eq_zero_of_natDegree_le Φ (x i) (not_lt.mp hk)).symm
 
 end ArkLib.Lattices.Ajtai

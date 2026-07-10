@@ -34,15 +34,14 @@ corresponding coset FFT domain constructions.
 
 namespace Domain
 
-variable {ι : Type} [Fintype ι] [AddCommGroup ι] [DecidableEq ι]
-variable {F : Type} [Field F] [DecidableEq F]
+variable {ι : Type} [AddCommGroup ι]
+variable {F : Type} [Field F]
 
 namespace FftDomainClass
 
 variable {D : Type} [FunLike D ι F] [FftDomainClass D ι F]
 variable {ω : D}
 
-omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 /-- The element `1` belongs to every FFT domain. -/
 @[simp]
 lemma one_mem : 1 ∈ ω := ⟨0, FftDomainClass.generator_eq_one ω⟩
@@ -55,34 +54,30 @@ open CosetFftDomain
 
 variable {ω : FftDomain ι F} {x : F}
 
-omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 /-- Membership in a concrete FFT domain means
   being one of the values of its subgroup parametrization. -/
 lemma mem_iff_exists :
   x ∈ ω ↔ ∃ i, x = ω.subgroupDomain i := by
   aesop (add simp [Membership.mem])
 
-omit [Fintype ι] [DecidableEq ι] [DecidableEq F] in
 /-- Membership in an FFT domain is the same as
   membership in the same domain viewed as a coset FFT domain. -/
 lemma mem_iff_mem_toCosetFftDomain :
   x ∈ ω ↔ x ∈ ω.toCosetFftDomain := by
   simp [mem_iff_exists, mem_iff_exists_mul, ω.cosetGenerator_one]
 
-omit [DecidableEq ι] in
 /-- Membership in the image finset of an FFT domain means
   being one of the values of its subgroup parametrization. -/
-lemma mem_toFinset_iff_exists :
+lemma mem_toFinset_iff_exists [Fintype ι] [DecidableEq F] :
   x ∈ ω.toFinset ↔ ∃ i, x = ω.subgroupDomain i := by
   aesop
     (add simp
       [CosetFftDomainClass.mem_toFinset_iff_mem,
        CosetFftDomainClass.mem_def])
 
-omit [DecidableEq ι] in
 /-- Membership in the finset of elements is the same as membership in the FFT domain. -/
 @[simp]
-lemma mem_toFinset_iff_mem :
+lemma mem_toFinset_iff_mem [Fintype ι] [DecidableEq F] :
   x ∈ ω.toFinset ↔ x ∈ ω := by
   rw [CosetFftDomainClass.mem_toFinset_iff_mem,
       mem_iff_mem_toCosetFftDomain]
@@ -91,7 +86,7 @@ end FftDomain
 
 /-- Membership in a concrete FFT domain is decidable
   via membership in the finset of its elements. -/
-instance {x : F} {ω : FftDomain ι F} : Decidable (x ∈ ω) :=
+instance [Fintype ι] [DecidableEq F] {x : F} {ω : FftDomain ι F} : Decidable (x ∈ ω) :=
   decidable_of_iff _ FftDomain.mem_toFinset_iff_mem
 
 end Domain
