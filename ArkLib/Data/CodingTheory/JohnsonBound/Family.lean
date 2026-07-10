@@ -37,13 +37,12 @@ ABF26's `Lambda`/`Jqℓ` form. The numeric core is factored into `johnson_card_l
 (stated over an abstract `Finset (Fin n → α)`), and the theorem reindexes an arbitrary
 finite index type `ι` to `Fin n` via `reidx_hammingDist`.
 
-`mds_johnson_lambda_le` (C3.3) is derived from T3.2 + the Singleton/rate-distance bridge
-(`IsMDS_iff_rate_distance`) and the domination `domination_core`. It is complete except for
-the very-low-rate MDS "Plotkin corner" (where the `Jqℓ` radicand guard fails), which is
-isolated as a single tagged `sorry`. That corner is genuinely *reachable* (not vacuous —
-e.g. `[4,2,3]` over `𝔽₃` enters it), so it needs an actual `Lambda` bound there — the
-min-distance separation `Lambda ≤ 1/(2ηρ)` argument plus a `Lambda ≤ |C| = q^k` count for
-`k = 1` — not an emptiness/`n ≤ q + k - 1` argument; see that `sorry`.
+`mds_johnson_lambda_le` (C3.3) is **fully proven**, derived from T3.2 + the
+Singleton/rate-distance bridge (`IsMDS_iff_rate_distance`) and the domination
+`domination_core`. The very-low-rate MDS "Plotkin corner" (where the `Jqℓ` radicand guard
+fails — genuinely reachable, e.g. `[4,2,3]` over `𝔽₃`) is closed by `plotkin_card_le_ell`,
+a q-ary Plotkin bound extracted from the in-tree Johnson counting lemma: past the Plotkin
+radius the *whole code* has fewer than `ℓ` words, so `Lambda ≤ |C| ≤ ℓ ≤ 1/(2ηρ)`.
 
 ## References
 
@@ -310,6 +309,56 @@ lemma johnson_card_le_ell {n : ℕ} {α : Type} [Fintype α] [DecidableEq α]
       _ = (ℓ:ℚ) := hbx_eq_ℓ
   exact_mod_cast hcard_le
 
+/-- **q-ary Plotkin bound**, in list-factor form: if the average pairwise distance of `B`
+(lower-bounded by `mDist`, e.g. a code's minimum distance) exceeds the Plotkin radius
+`(1 - 1/q)` by the list factor `ℓ/(ℓ-1)` — i.e. exactly when the `Jqℓ` radicand guard
+*fails* at `ℓ` — then the **whole set** `B` has at most `ℓ` elements.
+
+Extracted from the in-tree Johnson counting lemma `JohnsonBound.johnson_bound_lemma` by
+dropping its nonnegative square term: with `D := q/(q-1) · d(B)/n` the counting lemma gives
+`|B| · (D - 1) ≤ D`, and the failed guard pins `D > ℓ/(ℓ-1) > 1`, hence `|B| < ℓ`. This is
+the numeric core for the very-low-rate "Plotkin corner" of `mds_johnson_lambda_le`; it is
+tight there (repetition codes and `[4,2,3]/𝔽₃` meet it with equality `|B| = δ/(δ-(1-1/q))`). -/
+lemma plotkin_card_le_ell {n : ℕ} {α : Type} [Fintype α] [DecidableEq α]
+    (B : Finset (Fin n → α)) (ℓ : ℕ) (mDist : ℕ)
+    (hℓ2 : 2 ≤ ℓ) (hn_pos : 0 < n) (hα2 : 2 ≤ Fintype.card α) (hB2 : 2 ≤ B.card)
+    (d_fact : (mDist : ℚ) ≤ JohnsonBound.d B)
+    (hguard : 1 < ((Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1))
+        * (((ℓ : ℚ) - 1) / (ℓ : ℚ)) * ((mDist : ℚ) / n)) :
+    B.card ≤ ℓ := by
+  obtain ⟨a⟩ : Nonempty α := Fintype.card_pos_iff.mp (by omega)
+  have hjb := JohnsonBound.johnson_bound_lemma (B := B) (v := fun _ => a) hn_pos hB2 hα2
+  have hq2 : (2 : ℚ) ≤ (Fintype.card α : ℚ) := by exact_mod_cast hα2
+  have hq1_pos : (0 : ℚ) < (Fintype.card α : ℚ) - 1 := by linarith
+  have hnQ : (0 : ℚ) < (n : ℚ) := by exact_mod_cast hn_pos
+  have hℓQ : (2 : ℚ) ≤ (ℓ : ℚ) := by exact_mod_cast hℓ2
+  have hℓQ_pos : (0 : ℚ) < (ℓ : ℚ) := by linarith
+  set frac : ℚ := (Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1) with hfrac_def
+  have hfrac_pos : (0 : ℚ) < frac := div_pos (by linarith) hq1_pos
+  set D : ℚ := frac * (JohnsonBound.d B / n) with hD_def
+  -- Square term of the counting lemma dropped: `|B| · (D - 1) ≤ D`.
+  have hmain : (B.card : ℚ) * (D - 1) ≤ D := by
+    have hsq : (0 : ℚ) ≤ (B.card : ℚ) *
+        (1 - frac * (JohnsonBound.e B (fun _ => a) / n)) ^ 2 :=
+      mul_nonneg (Nat.cast_nonneg _) (sq_nonneg _)
+    have hD_eq : frac * JohnsonBound.d B / n = D := by rw [hD_def]; ring
+    rw [hD_eq] at hjb
+    nlinarith [hjb, hsq]
+  -- Failed guard: `D > ℓ/(ℓ-1)`, i.e. `ℓ < D · (ℓ-1)`.
+  have hDgt : (ℓ : ℚ) < D * ((ℓ : ℚ) - 1) := by
+    have hmd : ((mDist : ℚ) / n) ≤ JohnsonBound.d B / n := by gcongr
+    have h1 : 1 < frac * (((ℓ : ℚ) - 1) / ℓ) * (JohnsonBound.d B / n) :=
+      lt_of_lt_of_le hguard (mul_le_mul_of_nonneg_left hmd
+        (mul_nonneg hfrac_pos.le (div_nonneg (by linarith) (by linarith))))
+    calc (ℓ : ℚ) = 1 * ℓ := (one_mul _).symm
+      _ < frac * (((ℓ : ℚ) - 1) / ℓ) * (JohnsonBound.d B / n) * ℓ :=
+          mul_lt_mul_of_pos_right h1 hℓQ_pos
+      _ = D * ((ℓ : ℚ) - 1) := by rw [hD_def]; field_simp
+  -- `D > 1`, then `|B| ≤ D/(D-1) < ℓ`.
+  have hD1 : (1 : ℚ) < D := by nlinarith [hDgt, hℓQ]
+  have hfinal : (B.card : ℚ) < (ℓ : ℚ) := by nlinarith [hmain, hDgt, hD1]
+  exact_mod_cast hfinal.le
+
 set_option maxHeartbeats 1000000 in
 -- The reindexing setup plus the `johnson_card_le_ell` application need more than the default
 -- heartbeat budget.
@@ -517,24 +566,19 @@ rate `ρ := dim C / n` and `η > 0`:
 
   `|Λ(C, 1 - √ρ - η)| ≤ 1 / (2 · η · ρ)`
 
-**Status: PROVEN modulo one classical corner.** Derived in-tree from T3.2
+**Status: FULLY PROVEN.** Derived in-tree from T3.2
 (`johnson_bound_lambda_le_ell`) + the Singleton/rate-distance bridge `IsMDS_iff_rate_distance`
 (MDS `⟹ δ_min = 1 - ρ + 1/n`). The optimise-over-`ℓ` step is realised concretely with
 `ℓ := ⌊1/(2ηρ)⌋₊`, and the radius domination `1 - √ρ - η ≤ Jqℓ q ℓ δ_min` is `domination_core`.
-Two branches are complete: (a) when `ℓ ≤ 1` the radius `1 - √ρ - η` is negative, so the list is
+Three branches: (a) when `ℓ ≤ 1` the radius `1 - √ρ - η` is negative, so the list is
 empty and `Lambda = 0`; (b) when `ℓ ≥ 2` and the `Jqℓ` radicand guard holds, the chain
-`Lambda C (1-√ρ-η) ≤ Lambda C (Jqℓ q ℓ δ_min) ≤ ℓ ≤ 1/(2ηρ)` closes it.
-
-The **one remaining gap** is the very-low-rate "Plotkin corner" where the radicand guard
-`frac · (ℓ-1)/ℓ · δ_min ≤ 1` fails (e.g. binary repetition codes). This corner is genuinely
-*reachable* — it is NOT vacuous: e.g. the MDS code `[4,2,3]` over `𝔽₃` (`ρ = 1/2`,
-`δ_min = 3/4`) enters the branch at small `η`, and there `n = q + k - 1 = 4` holds with
-equality — so an emptiness argument via the classical MDS length bound `n ≤ q + k - 1`
-does **not** discharge it. Closing it rigorously needs a direct `Lambda` bound in the corner:
-the min-distance separation gives `Lambda ≤ 1/(2ηρ)` (the conclusion is true there, e.g.
-`Lambda ≤ 1 ≤ 20` in the `[4,2,3]/𝔽₃` instance), plus a `Lambda ≤ |C| = q^k` count for
-`k = 1`. This is isolated as a single tagged `sorry` (see it below), the one owed fact for
-this corollary; the statement here is exactly the paper's `cor:Jonhson-for-mds`.
+`Lambda C (1-√ρ-η) ≤ Lambda C (Jqℓ q ℓ δ_min) ≤ ℓ ≤ 1/(2ηρ)` closes it; (c) the
+very-low-rate "Plotkin corner" where the guard fails — genuinely *reachable*, e.g.
+binary repetition codes or `[4,2,3]` over `𝔽₃` (`ρ = 1/2`, `δ_min = 3/4`, entered at small
+`η`) — is closed by the q-ary Plotkin bound `plotkin_card_le_ell`: the failed guard means
+`δ_min` exceeds the Plotkin radius `1 - 1/q` by the factor `ℓ/(ℓ-1)`, so the *whole code*
+has fewer than `ℓ` words and `Lambda ≤ |C| ≤ ℓ ≤ 1/(2ηρ)` — no radius analysis needed.
+The statement here is exactly the paper's `cor:Jonhson-for-mds`.
 
 **Rate derivation.** `ρ` is bound inline as `(Module.finrank F C : ℝ) / Fintype.card ι`
 rather than passed as a separate parameter — this matches the upstream `IsMDS`
@@ -723,7 +767,7 @@ theorem mds_johnson_lambda_le
           rw [show s + η = √((s+η)^2) from by rw [Real.sqrt_sq hrhs_nn]]
           exact Real.sqrt_le_sqrt hsq_le
         rw [hs_def] at hsuff; linarith [hsuff]
-
+      -- Chain: `Lambda` monotone in the radius, then T3.2, then `ℓ ≤ 1/(2ηρ)`.
       have hstep1 : Lambda (C : Set (ι → F)) (1 - √ρ - η)
           ≤ Lambda (C : Set (ι → F)) (Jqℓ q ℓ δ_minQ) := Lambda_mono hdom
       calc (Lambda (C : Set (ι → F)) (1 - √ρ - η) : ENNReal)
@@ -731,15 +775,71 @@ theorem mds_johnson_lambda_le
         _ ≤ ((ℓ : ℕ∞) : ENNReal) := by exact_mod_cast hT32
         _ = (ℓ : ENNReal) := by simp
         _ ≤ ENNReal.ofReal (1 / (2 * η * ρ)) := hstep3
-    · -- Plotkin corner: the radicand guard `frac·((ℓ-1)/ℓ)·δ_min > 1` fails, so T3.2 is
-      -- unavailable at this `ℓ`. This regime is the very-low-rate MDS boundary (e.g. binary
-      -- repetition codes). NB the corner is genuinely REACHABLE, not vacuous: e.g. `[4,2,3]`
-      -- over `𝔽₃` (`ρ = 1/2`, `δ_min = 3/4`) enters here at small `η` with `n = q+k-1 = 4`
-      -- holding — so the MDS length bound `n ≤ q+k-1` does NOT rule it out by emptiness.
-      -- Closing it needs a direct `Lambda` bound: min-distance separation gives
-      -- `Lambda ≤ 1/(2ηρ)` (true here — e.g. `Lambda ≤ 1` in the `[4,2,3]/𝔽₃` instance),
-      -- plus a `Lambda ≤ |C| = q^k` count for `k = 1`. The one owed fact for this corollary.
-      sorry
+    · -- Plotkin corner: the radicand guard `frac·((ℓ-1)/ℓ)·δ_min ≤ 1` FAILS at this `ℓ`,
+      -- i.e. `δ_min` exceeds the Plotkin radius `1 - 1/q` by the list factor `ℓ/(ℓ-1)`.
+      -- There the *whole code* has fewer than `ℓ` words by the q-ary Plotkin bound
+      -- (`plotkin_card_le_ell`, extracted from the in-tree Johnson counting lemma), so
+      -- `Lambda ≤ |C| ≤ ℓ ≤ 1/(2ηρ)` closes the corner with no radius analysis at all.
+      -- This is tight on the reachable witnesses: repetition codes (`|C| = q`, corner
+      -- forces `ℓ > q`) and `[4,2,3]/𝔽₃` (`|C| = 9 = δ/(δ-(1-1/q))`, corner forces `ℓ > 9`).
+      classical
+      -- `|C| ≥ 2`: `k ≥ 1` gives a nonzero codeword, and `0 ∈ C`.
+      obtain ⟨v0, hv0C, hv0⟩ : ∃ v0 ∈ C, v0 ≠ 0 := by
+        rw [← Submodule.ne_bot_iff]
+        intro hbot
+        rw [hk_def, hbot] at hk1
+        simp [finrank_bot] at hk1
+      -- Reindex `ι ≃ Fin n` and view the whole code as a `Finset (Fin n → F)`.
+      set eqv : ι ≃ Fin n := Fintype.equivFin ι with heqv
+      set reIdx : (ι → F) → (Fin n → F) := fun x => x ∘ eqv.symm with hreIdx
+      have hreIdx_inj : Function.Injective reIdx := by
+        intro x y h
+        funext i
+        simpa [hreIdx] using congrFun h (eqv i)
+      have hCfin : (C : Set (ι → F)).Finite := Set.toFinite _
+      set B : Finset (Fin n → F) := hCfin.toFinset.image reIdx with hB
+      have hBcard : B.card = (C : Set (ι → F)).ncard := by
+        rw [hB, Finset.card_image_of_injective _ hreIdx_inj,
+          Set.ncard_eq_toFinset_card _ hCfin]
+      have hB2 : 2 ≤ B.card := by
+        refine Finset.one_lt_card.mpr ⟨reIdx v0, ?_, reIdx 0, ?_, fun h => hv0 (hreIdx_inj h)⟩
+        · exact Finset.mem_image_of_mem _ (hCfin.mem_toFinset.mpr hv0C)
+        · exact Finset.mem_image_of_mem _ (hCfin.mem_toFinset.mpr (zero_mem C))
+      -- The code's minimum distance lower-bounds the average pairwise distance of `B`.
+      have d_fact : (Code.minDist (C : Set (ι → F)) : ℚ) ≤ JohnsonBound.d B := by
+        have hmin_le : sInf { d | ∃ u ∈ B, ∃ w ∈ B, u ≠ w ∧ hammingDist u w = d }
+            ≤ JohnsonBound.d B := min_dist_le_d hB2
+        have hminDist_lb : Code.minDist (C : Set (ι → F)) ≤
+            sInf { d | ∃ u ∈ B, ∃ w ∈ B, u ≠ w ∧ hammingDist u w = d } := by
+          apply le_csInf
+          · obtain ⟨u, hu, w, hw, huw⟩ := Finset.one_lt_card.mp hB2
+            exact ⟨hammingDist u w, u, hu, w, hw, huw, rfl⟩
+          · rintro m ⟨u, hu, w, hw, huw, rfl⟩
+            rw [hB, Finset.mem_image] at hu hw
+            obtain ⟨c1, hc1, rfl⟩ := hu
+            obtain ⟨c2, hc2, rfl⟩ := hw
+            have hc12 : c1 ≠ c2 := fun h => huw (by rw [h])
+            rw [show hammingDist (reIdx c1) (reIdx c2) = hammingDist c1 c2 from
+              reidx_hammingDist eqv c1 c2]
+            apply Nat.sInf_le
+            exact ⟨c1, hCfin.mem_toFinset.mp hc1, c2, hCfin.mem_toFinset.mp hc2, hc12, rfl⟩
+        calc (Code.minDist (C : Set (ι → F)) : ℚ)
+            ≤ ((sInf { d | ∃ u ∈ B, ∃ w ∈ B, u ≠ w ∧ hammingDist u w = d } : ℕ) : ℚ) := by
+              exact_mod_cast hminDist_lb
+          _ ≤ JohnsonBound.d B := hmin_le
+      -- Plotkin bound: the whole code has at most `ℓ` words.
+      have hcard_le : B.card ≤ ℓ := by
+        refine plotkin_card_le_ell B ℓ (Code.minDist (C : Set (ι → F)))
+          hℓ2 hn_pos hq2 hB2 d_fact ?_
+        rw [hq_def, hδ_def] at hguard
+        exact hguard
+      calc (Lambda (C : Set (ι → F)) (1 - √ρ - η) : ENNReal)
+          ≤ (((C : Set (ι → F)).ncard : ℕ∞) : ENNReal) := by
+            exact_mod_cast Lambda_le_ncard _ hCfin
+        _ ≤ (ℓ : ENNReal) := by
+            rw [← hBcard]
+            exact_mod_cast hcard_le
+        _ ≤ ENNReal.ofReal (1 / (2 * η * ρ)) := hstep3
 
 
 
