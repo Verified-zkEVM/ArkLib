@@ -473,6 +473,36 @@ example :
     Fintype.ofFinite _
   ringSwitchPhase decoupledFieldCarrier 3 _ (PackedCommitment.trivial _ 3)
 
+-- Close-review pins (2026-07-12): `phaseRelIn` is NONEMPTY — true claims + the trivial
+-- commitment on honest data — so the RBR theorem's obligation is not discharged by an empty
+-- input relation…
+example (r : Fin 3 → decoupledToyCarrier.E)
+    (Ps : decoupledToyCarrier.ιP → MultilinearPoly (ZMod 2) 3) :
+    ((((fun i => MvPolynomial.aeval r (Ps i).val), r),
+        fun _ : (PackedCommitment.trivial decoupledToyCarrier.P 3).ιC =>
+          decoupledToyCarrier.packedMLE Ps), Ps)
+      ∈ phaseRelIn decoupledToyCarrier 3 (PackedCommitment.trivial _ 3) :=
+  ⟨fun _ => rfl, rfl⟩
+
+-- …and the RBR theorem itself applies end-to-end at a concrete carrier + PROVEN strategy
+-- (γ-powers on 𝔽₄, separation error 3/4 — a real, nonzero, non-unit error).
+example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    letI : IsDomain decoupledFieldCarrier.P := inferInstanceAs (IsDomain (GaloisField 2 2))
+    letI : Fintype decoupledFieldCarrier.P :=
+      letI : Finite decoupledFieldCarrier.P := inferInstanceAs (Finite (GaloisField 2 2))
+      Fintype.ofFinite _
+    ringSwitchPhaseRBRKnowledgeSound decoupledFieldCarrier 3
+      ((BatchingStrategy.gammaPowers decoupledFieldCarrier.P
+          (Fintype.card decoupledFieldCarrier.ιE)).reindex
+          (Fintype.equivFin decoupledFieldCarrier.ιE))
+      (PackedCommitment.trivial _ 3) init impl :=
+  letI : IsDomain decoupledFieldCarrier.P := inferInstanceAs (IsDomain (GaloisField 2 2))
+  letI : Fintype decoupledFieldCarrier.P :=
+    letI : Finite decoupledFieldCarrier.P := inferInstanceAs (Finite (GaloisField 2 2))
+    Fintype.ofFinite _
+  letI : IsDomain decoupledFieldCarrier.E := inferInstanceAs (IsDomain (GaloisField 2 3))
+  ringSwitchPhase_rbrKnowledgeSound decoupledFieldCarrier 3 _ _ init impl
+
 -- INV-5 pin: the phase error vector is *definitionally* the strategy's separation error at
 -- the challenge round (and 0 elsewhere — there is no other challenge round).
 example (i : (pSpecRingSwitchPhase car bat).ChallengeIdx) (h : i.1 = 1) :
