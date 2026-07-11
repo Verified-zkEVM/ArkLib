@@ -279,4 +279,23 @@ lemma out_of_dom_smpl_2
         apply ENNReal.div_le_div_right
         exact tsub_le_self
 
+set_option maxHeartbeats 1000000 in
+-- This packages the theorem's full polymorphic interface for lightweight downstream consumers.
+/-- Consumer-facing proposition corresponding exactly to STIR Lemma 4.5.2. -/
+def outOfDomainSamplingBound : Prop :=
+  ∀ {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {δ l : ℝ≥0} {s : ℕ} {f : ι → F} {degree : ℕ} {φ : ι ↪ F}
+    (C : Set (ι → F)) (_hC : C = code φ degree)
+    (_h_decodable : listDecodable C δ l)
+    (h_nonempty : Nonempty (domainComplement φ)),
+    listDecodingCollisionProbability φ f δ s degree h_nonempty ≤
+      ((l ^ 2 / 2)) * (degree / (Fintype.card F - Fintype.card ι)) ^ s
+
+set_option maxHeartbeats 5000000 in
+-- Unfolding the packaged proposition requires a larger one-time elaboration budget.
+/-- Kernel-checked bridge from `out_of_dom_smpl_2` to its compact consumer interface. -/
+lemma out_of_dom_smpl_2_statement : outOfDomainSamplingBound := by
+  simpa only [outOfDomainSamplingBound] using @out_of_dom_smpl_2
+
 end OutOfDomSmpl
