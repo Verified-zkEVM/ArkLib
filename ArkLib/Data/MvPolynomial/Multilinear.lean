@@ -314,7 +314,7 @@ theorem aeval_multilinear_eq_sum_eqTilde {A : Type*} [CommRing A] [Algebra R A] 
     _ = ∑ y : σ → Fin 2, eqTilde (y : σ → A) r * algebraMap R A (eval (y : σ → R) p) := by
         refine Finset.sum_congr rfl fun y _ => ?_
         congr 1
-        show eval (y : σ → A) (map (algebraMap R A) p) = algebraMap R A (eval (y : σ → R) p)
+        change eval (y : σ → A) (map (algebraMap R A) p) = algebraMap R A (eval (y : σ → R) p)
         have hpt : (y : σ → A) = fun i => algebraMap R A ((y : σ → R) i) :=
           funext fun i => (map_natCast (algebraMap R A) _).symm
         rw [hpt, eval_map]
