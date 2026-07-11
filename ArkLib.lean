@@ -81,6 +81,7 @@ import ArkLib.Data.CodingTheory.ProximityGap.MCAGenerator
 import ArkLib.Data.CodingTheory.ProximityGap.ProximityGenerators
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.CodingTheory.ReedSolomon.Multilinear
+import ArkLib.Data.CompPoly.Basic
 import ArkLib.Data.Domain.CosetFftDomain.Defs
 import ArkLib.Data.Domain.CosetFftDomain.Log
 import ArkLib.Data.Domain.CosetFftDomain.Mem
@@ -158,6 +159,15 @@ import ArkLib.Data.Polynomial.SplitFold
 import ArkLib.Data.Polynomial.Trivariate
 import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.Notation
+import ArkLib.Interaction.Oracle.Bridge
+import ArkLib.Interaction.Oracle.Chain
+import ArkLib.Interaction.Oracle.Composition
+import ArkLib.Interaction.Oracle.Continuation
+import ArkLib.Interaction.Oracle.Core
+import ArkLib.Interaction.Oracle.Execution
+import ArkLib.Interaction.Oracle.Spec
+import ArkLib.Interaction.Oracle.StateChain
+import ArkLib.Interaction.Reduction
 import ArkLib.OracleReduction.BCS.Basic
 import ArkLib.OracleReduction.Basic
 import ArkLib.OracleReduction.Cast
@@ -243,6 +253,13 @@ import ArkLib.ProofSystem.Stir.ProximityGap
 import ArkLib.ProofSystem.Stir.Quotienting
 import ArkLib.ProofSystem.Sumcheck.Domain
 import ArkLib.ProofSystem.Sumcheck.Impl.Basic
+import ArkLib.ProofSystem.Sumcheck.Interaction.CompPoly
+import ArkLib.ProofSystem.Sumcheck.Interaction.CompPolyHelpers
+import ArkLib.ProofSystem.Sumcheck.Interaction.Defs
+import ArkLib.ProofSystem.Sumcheck.Interaction.Examples
+import ArkLib.ProofSystem.Sumcheck.Interaction.General
+import ArkLib.ProofSystem.Sumcheck.Interaction.Oracle
+import ArkLib.ProofSystem.Sumcheck.Interaction.SingleRound
 import ArkLib.ProofSystem.Sumcheck.Spec.General
 import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 import ArkLib.ProofSystem.Sumcheck.Structured
