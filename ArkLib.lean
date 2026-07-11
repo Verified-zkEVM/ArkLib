@@ -81,6 +81,7 @@ import ArkLib.Data.CodingTheory.ProximityGap.MCAGenerator
 import ArkLib.Data.CodingTheory.ProximityGap.ProximityGenerators
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.CodingTheory.ReedSolomon.Multilinear
+import ArkLib.Data.CompPoly.Basic
 import ArkLib.Data.Domain.CosetFftDomain.Defs
 import ArkLib.Data.Domain.CosetFftDomain.Log
 import ArkLib.Data.Domain.CosetFftDomain.Mem
@@ -158,6 +159,10 @@ import ArkLib.Data.Polynomial.SplitFold
 import ArkLib.Data.Polynomial.Trivariate
 import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.Notation
+import ArkLib.Interaction.Oracle.Core
+import ArkLib.Interaction.Oracle.Examples
+import ArkLib.Interaction.Oracle.Spec
+import ArkLib.Interaction.Reduction
 import ArkLib.OracleReduction.BCS.Basic
 import ArkLib.OracleReduction.Basic
 import ArkLib.OracleReduction.Cast
