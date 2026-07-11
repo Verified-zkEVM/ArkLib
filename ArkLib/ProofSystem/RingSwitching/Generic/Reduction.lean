@@ -5,6 +5,7 @@ Authors: Alexander Hicks
 -/
 
 import ArkLib.ProofSystem.RingSwitching.Generic.Relations
+import ArkLib.OracleReduction.Security.ChallengeRound
 
 /-!
 # Generic Ring-Switching — The Phase Reduction (S6-ii)
@@ -51,7 +52,8 @@ noncomputable section
 namespace RingSwitching.Generic
 
 open OracleSpec OracleComp ProtocolSpec Module MvPolynomial Sumcheck.Structured
-open scoped NNReal
+  ProbabilityTheory
+open scoped NNReal ENNReal
 
 variable {B : Type} [CommRing B] (car : RingSwitchCarrier B) (m : ℕ)
   (bat : BatchingStrategy car.P car.ιE) (pc : PackedCommitment car.P m)
@@ -243,6 +245,186 @@ def ringSwitchPhaseRBRKnowledgeSound {σ : Type} (init : ProbComp σ)
     (relIn := phaseRelIn car m pc)
     (relOut := phaseRelOut car m bat pc)
     (rbrKnowledgeError := phaseRBRError car bat)
+
+/-! ## Round-by-round knowledge soundness (the S6 stretch goal) -/
+
+section RBRKnowledgeSoundness
+
+variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp))
+
+/-- Auxiliary: an everywhere-false event has probability `0` under any `PMF`. -/
+private lemma pr_eq_zero_of_forall_not {α : Type} (D : PMF α) (P : α → Prop)
+    (h : ∀ x, ¬ P x) : Pr_{ let x ← D }[ P x ] = 0 := by
+  classical
+  rw [prob_tsum_form_singleton]
+  simp [h]
+
+/-- **The phase's knowledge state function.** Round 0 tracks `phaseRelIn` of the extracted
+witness (forced by `toFun_empty`); round 1 (after the slices `s`) tracks the verifier's
+Remark-5 check, the binding conjunct, and the slice relation for the intermediate packed
+witness; round 2 (the full transcript) tracks the check again (the verifier `failure`s
+without it, so no output can land in `phaseRelOut`), binding, and the batched sumcheck claim
+at the challenge's weights.
+
+`[IsDomain car.E]` enters only through `toFun_next` at the message round: the Remark-5
+read-back `openingClaimRel_of_claimConsistent` (the logged S6 deviation, see
+`Relations.lean`). -/
+noncomputable def phaseKnowledgeStateFunction [IsDomain car.E] :
+    (ringSwitchPhaseVerifier car m bat pc).KnowledgeStateFunction init impl
+      (phaseRelIn car m pc) (phaseRelOut car m bat pc)
+      (phaseRbrExtractor car m bat pc) where
+  toFun
+    | ⟨0, _⟩ => fun stmtIn _ witMid => (stmtIn, witMid) ∈ phaseRelIn car m pc
+    | ⟨1, _⟩ => fun stmtIn tr witMid =>
+        car.claimConsistent stmtIn.1.1 (tr 0)
+          ∧ pc.commitsTo stmtIn.2 witMid
+          ∧ ((tr 0 : car.ιE → car.P), witMid) ∈ car.sliceRel m stmtIn.1.2
+    | ⟨2, _⟩ => fun stmtIn tr witMid =>
+        car.claimConsistent stmtIn.1.1 (tr 0)
+          ∧ pc.commitsTo stmtIn.2 witMid
+          ∧ ((∑ u, bat.weight (tr 1) u * (tr 0 : car.ιE → car.P) u), witMid)
+              ∈ car.sumcheckClaimRel m stmtIn.1.2 (bat.weight (tr 1))
+  toFun_empty := fun stmtIn witMid => Iff.rfl
+  toFun_next
+    | ⟨0, _⟩ => fun _ stmtIn tr msg witMid h => by
+        obtain ⟨hc, hcommit, hslice⟩ := h
+        refine ⟨car.openingClaimRel_of_claimConsistent hc hslice, ?_⟩
+        change pc.commitsTo _ (car.packedMLE (car.unpack witMid))
+        rw [car.packedMLE_unpack]
+        exact hcommit
+    | ⟨1, _⟩ => fun hDir => absurd hDir (by simp)
+  toFun_full := fun stmtIn tr witOut h => by
+    classical
+    rw [gt_iff_lt, probEvent_pos_iff] at h
+    obtain ⟨x, hx, hRel⟩ := h
+    rw [OptionT.mem_support_iff] at hx
+    simp only [Verifier.run, OracleVerifier.toVerifier, ringSwitchPhaseVerifier,
+      OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
+    obtain ⟨s0, _, hx⟩ := hx
+    simp only [simulateQ_optionT_bind] at hx
+    -- The verifier's slice read is deterministic: the simulated whole-message query *is*
+    -- (definitionally) the transcript's round-0 message.
+    have hq : (simulateQ
+          (OracleInterface.simOracle2 ([]ₒ : OracleSpec PEmpty.{1}) stmtIn.2
+            (FullTranscript.messages (pSpec := pSpecRingSwitchPhase car bat) tr))
+          (query (spec := [(pSpecRingSwitchPhase car bat).Message]ₒ) ⟨⟨0, rfl⟩, ()⟩
+            : OptionT (OracleComp (([]ₒ : OracleSpec PEmpty.{1})
+                + ([pc.OStmt]ₒ + [(pSpecRingSwitchPhase car bat).Message]ₒ))) _)
+          : OptionT (OracleComp ([]ₒ : OracleSpec PEmpty.{1})) _)
+        = (pure (some (tr (0 : Fin 2)))
+            : OracleComp ([]ₒ : OracleSpec PEmpty.{1}) (Option (car.ιE → car.P))) := rfl
+    rw [hq] at hx
+    -- Collapse the (definitional) pure-binds: the bound slice variable *is* `tr 0`, so the
+    -- verifier's check becomes a concrete `if` we can case on.
+    replace hx : some x ∈ _root_.support (StateT.run'
+        ((simulateQ impl (simulateQ
+            (OracleInterface.simOracle2 ([]ₒ : OracleSpec PEmpty.{1}) stmtIn.2
+              (FullTranscript.messages (pSpec := pSpecRingSwitchPhase car bat) tr))
+            (if car.claimConsistent stmtIn.1.1 (tr (0 : Fin 2))
+              then pure ((stmtIn.1.2, (tr (1 : Fin 2) : bat.Challenge)),
+                ∑ u, bat.weight (tr (1 : Fin 2) : bat.Challenge) u
+                  * (tr (0 : Fin 2) : car.ιE → car.P) u)
+              else failure
+              : OptionT (OracleComp (([]ₒ : OracleSpec PEmpty.{1})
+                  + ([pc.OStmt]ₒ + [(pSpecRingSwitchPhase car bat).Message]ₒ)))
+                  (((Fin m → car.E) × bat.Challenge) × car.P)))
+            : OptionT (StateT σ ProbComp) (((Fin m → car.E) × bat.Challenge) × car.P))
+          >>= (fun a => pure (a, fun i => stmtIn.2 i))
+            : OptionT (StateT σ ProbComp) ((((Fin m → car.E) × bat.Challenge) × car.P)
+                × ((i : pc.ιC) → pc.OStmt i)))
+        s0) := hx
+    by_cases hc : car.claimConsistent stmtIn.1.1 (tr (0 : Fin 2))
+    · -- Check passes: the run is (definitionally) `pure` of the batched output; `x` is pinned.
+      rw [if_pos hc] at hx
+      replace hx : some x ∈ _root_.support
+          ((pure (some (((stmtIn.1.2, (tr (1 : Fin 2) : bat.Challenge)),
+              ∑ u, bat.weight (tr (1 : Fin 2) : bat.Challenge) u
+                * (tr (0 : Fin 2) : car.ιE → car.P) u),
+            fun i => stmtIn.2 i)) : ProbComp _)) := hx
+      simp only [support_pure] at hx
+      obtain rfl := Option.some.inj hx
+      exact ⟨hc, hRel.2, hRel.1⟩
+    · -- Check fails: the run is (definitionally) `failure`, whose support has no `some`.
+      rw [if_neg hc] at hx
+      replace hx : some x ∈ _root_.support
+          ((pure none : ProbComp (Option ((((Fin m → car.E) × bat.Challenge) × car.P)
+              × ((i : pc.ιC) → pc.OStmt i))))) := hx
+      simp at hx
+
+/-- **The per-prefix challenge-round bound**: with the prefix (statement, commitment oracles,
+slices `s`) fixed, the round-1→2 bad event of the RBR game — some intermediate witness fails
+the round-1 state but satisfies the round-2 state after the challenge — has probability at
+most `bat.error` over a uniform batching challenge. `commitsTo_functional` collapses the
+`∃ witMid` to a single committed `t'₀`; the surviving case is exactly
+`BatchingStrategy.separates` on `s` vs the honest slices of `t'₀`
+(via `sumcheckClaim_of_slices`). -/
+private theorem phase_badEvent_le
+    (α : car.ιP → car.E) (r : Fin m → car.E) (oStmt : ∀ j, pc.OStmt j) (s : car.ιE → car.P) :
+    Pr_{ let c ←$ᵖ bat.Challenge }[
+      ∃ t' : MultilinearPoly car.P m,
+        ¬(car.claimConsistent α s ∧ pc.commitsTo oStmt t' ∧ (s, t') ∈ car.sliceRel m r)
+          ∧ (car.claimConsistent α s ∧ pc.commitsTo oStmt t'
+              ∧ ((∑ u, bat.weight c u * s u), t') ∈ car.sumcheckClaimRel m r (bat.weight c)) ]
+      ≤ (bat.error : ℝ≥0∞) := by
+  classical
+  by_cases hlive : ∃ t'₀, pc.commitsTo oStmt t'₀ ∧ car.claimConsistent α s
+      ∧ (s, t'₀) ∉ car.sliceRel m r
+  · -- The live case: a committed `t'₀` whose honest slices differ from `s`.
+    obtain ⟨t'₀, hcm, _, hsl⟩ := hlive
+    have hne : s ≠ car.honestSlices r t'₀ := fun hEq => hsl fun u => congrFun hEq u
+    refine le_trans (Pr_le_Pr_of_implies _ _ _ ?_)
+      (bat.separates s (car.honestSlices r t'₀) hne)
+    rintro c ⟨t', -, -, hcm', hsum⟩
+    obtain rfl : t' = t'₀ := pc.commitsTo_functional hcm' hcm
+    have hsum' : (∑ u, bat.weight c u * s u)
+        = ∑ y : Fin m → Fin 2, car.bridge (bat.weight c) (eqTilde r (car.boolToE y))
+            * t'.val.eval (y : Fin m → car.P) := hsum
+    have h2 : (∑ u, bat.weight c u * car.honestSlices r t' u)
+        = ∑ y : Fin m → Fin 2, car.bridge (bat.weight c) (eqTilde r (car.boolToE y))
+            * t'.val.eval (y : Fin m → car.P) :=
+      car.sumcheckClaim_of_slices (car.honestSlices_mem_sliceRel r t') (bat.weight c)
+    exact hsum'.trans h2.symm
+  · -- The empty case: every committed-and-checked `t'` already satisfies the round-1 state.
+    push Not at hlive
+    refine le_of_eq_of_le (pr_eq_zero_of_forall_not _ _ ?_) zero_le'
+    rintro c ⟨t', hnot1, hc, hcm, -⟩
+    exact hnot1 ⟨hc, hcm, hlive t' hcm hc⟩
+
+/-- **Round-by-round knowledge soundness of the ring-switch phase** (the S6 stretch goal):
+the phase reduction, against the anchored relations `phaseRelIn`/`phaseRelOut`, is
+round-by-round knowledge sound with error `bat.error` at the (single) batching-challenge
+round. Witnesses: `phaseWitMid`, `phaseRbrExtractor`, `phaseKnowledgeStateFunction`; the
+challenge round factors through `Verifier.probEvent_challengeRound_le` and lands on
+`phase_badEvent_le` — `commitsTo_functional` collapses the `∃ witMid`, and the surviving
+event is exactly `BatchingStrategy.separates` on the sent slices vs. the honest slices of
+the committed polynomial (via `sumcheckClaim_of_slices`).
+
+`[IsDomain car.E]` is the accepted S6 hypothesis (Remark-5 read-back, see `Relations.lean`);
+no `[Fintype car.P]`/`[IsDomain car.P]` is needed — the batching error is abstract and
+`bat.separates` is a strategy field. -/
+theorem ringSwitchPhase_rbrKnowledgeSound [IsDomain car.E] {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    ringSwitchPhaseRBRKnowledgeSound car m bat pc init impl := by
+  refine ⟨phaseWitMid car m, phaseRbrExtractor car m bat pc,
+    phaseKnowledgeStateFunction car m bat pc init impl, ?_⟩
+  intro stmtIn witIn prover i
+  rcases i with ⟨⟨_ | _ | iv, hlt⟩, hdir⟩
+  · -- Round 0 is P_to_V: not a challenge round.
+    exact nomatch hdir
+  · -- Round 1: the batching challenge. Factor the game through the fixed prefix, then
+    -- the per-prefix PMF bound `phase_badEvent_le` (everything else is definitional:
+    -- the `Fin.snoc` reads of the extended transcript reduce to the prefix reads).
+    letI : Fintype ((pSpecRingSwitchPhase car bat).Challenge ⟨⟨1, hlt⟩, hdir⟩) :=
+      inferInstanceAs (Fintype bat.Challenge)
+    letI : Nonempty ((pSpecRingSwitchPhase car bat).Challenge ⟨⟨1, hlt⟩, hdir⟩) :=
+      inferInstanceAs (Nonempty bat.Challenge)
+    refine Verifier.probEvent_rbrGame_le init impl stmtIn witIn prover _ ?_
+    intro tr log
+    exact phase_badEvent_le car m bat pc stmtIn.1.1 stmtIn.1.2 stmtIn.2 (tr (0 : Fin 1))
+  · -- No round ≥ 2 exists.
+    exact absurd hlt (by omega)
+
+end RBRKnowledgeSoundness
 
 /-! ## Sanity / testable deliverables (S6 §5.3) -/
 

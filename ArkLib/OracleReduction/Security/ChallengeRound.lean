@@ -80,6 +80,48 @@ theorem probEvent_challengeRound_le
   change probEvent ($ᵗ (pSpec.Challenge i)) _ ≤ ε
   exact le_trans (le_of_eq (probEvent_uniformSample_eq_pr_uniformOfFintype _)) (h p.1)
 
+/-- **Game-shaped variant** of `probEvent_challengeRound_le`: specialized to the literal
+prefix-run shape of `Verifier.rbrKnowledgeSoundness` (destructuring `let` over
+`Prover.runWithLogToRound`). Unifying that destructuring bind against the plain-bind shape of
+the general lemma diverges in `whnf` (structure-eta through the prover term), so this variant
+replays the same proof script on the game shape directly — the destructuring matcher is fired
+at the constructor level by one `obtain`. -/
+theorem probEvent_rbrGame_le
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    {StmtIn WitIn StmtOut WitOut : Type}
+    (stmtIn : StmtIn) (witIn : WitIn)
+    (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (i : pSpec.ChallengeIdx)
+    [Fintype (pSpec.Challenge i)] [Nonempty (pSpec.Challenge i)]
+    {q : pSpec.Transcript i.1.castSucc × pSpec.Challenge i
+        × QueryLog (oSpec + [pSpec.Challenge]ₒ) → Prop} {ε : ℝ≥0∞}
+    (h : ∀ tr log, Pr_{ let c ← $ᵖ (pSpec.Challenge i)}[q (tr, c, log)] ≤ ε) :
+    Pr[q | do
+      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+        (do
+          let ⟨⟨transcript, _⟩, proveQueryLog⟩ ←
+            prover.runWithLogToRound i.1.castSucc stmtIn witIn
+          let challenge ← liftComp (pSpec.getChallenge i) _
+          return (transcript, challenge, proveQueryLog))).run' (← init)] ≤ ε := by
+  classical
+  -- Peel the state-threaded simulation (same script as `probEvent_challengeRound_le`).
+  simp only [StateT.run'_eq, simulateQ_bind, StateT.run_bind, QueryImpl.addLift_def,
+    QueryImpl.simulateQ_add_liftComp_right, simulateQ_pure, StateT.run_pure]
+  refine probEvent_bind_le_of_forall_le fun s0 _ => ?_
+  rw [probEvent_map]
+  refine probEvent_bind_le_of_forall_le fun p _ => ?_
+  -- Fire the destructuring matcher at the constructor level.
+  obtain ⟨⟨⟨tr, st⟩, log⟩, s1⟩ := p
+  simp only [getChallenge]
+  rw [bind_pure_comp, probEvent_map]
+  erw [simulateQ_query]
+  simp only [QueryImpl.liftTarget_apply, OracleQuery.cont, OracleQuery.input_query,
+    StateT.run_map, StateT.run_monadLift, monadLift_self, challengeQueryImpl]
+  rw [bind_pure_comp, probEvent_map]
+  rw [probEvent_map]
+  change probEvent ($ᵗ (pSpec.Challenge i)) _ ≤ ε
+  exact le_trans (le_of_eq (probEvent_uniformSample_eq_pr_uniformOfFintype _)) (h tr log)
+
 end Verifier
 
 end
