@@ -95,7 +95,11 @@ lemma combine_eq_cases {F ι : Type*} [Field F] [DecidableEq F]
 open Finset
 open BigOperators
 
-private def block_size (dstar : ℕ) (degs : Fin m → ℕ) (i : Fin m) := dstar - degs i + 1
+/-- Number of coefficient polynomials allocated to the `i`th input in the STIR
+combination. This is public because it occurs in the type of `master_lemma` and
+downstream consumers must be able to state that interface without referring to
+a generated private name. -/
+def block_size (dstar : ℕ) (degs : Fin m → ℕ) (i : Fin m) := dstar - degs i + 1
 private def block_start (dstar : ℕ) (degs : Fin m → ℕ) (i : Fin m) :=
   ∑ j ∈ univ.filter (· < i), block_size dstar degs j
 private def total_terms (dstar : ℕ) (degs : Fin m → ℕ) := ∑ i, block_size dstar degs i
