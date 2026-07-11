@@ -106,7 +106,8 @@ theorem append_runToRound_one :
 /-- **L5b**: `processRound 1` as an explicit bind (the boundary-round step). -/
 theorem processRound_one_eq
     (c : OracleComp (oSpec + [(spec₁ M₁ ++ₚ spec₂ M₂).Challenge]ₒ)
-      ((spec₁ M₁ ++ₚ spec₂ M₂).Transcript (Fin.castSucc 1) × (P₁.append P₂).PrvState (Fin.castSucc 1))) :
+
+         ((spec₁ M₁ ++ₚ spec₂ M₂).Transcript (Fin.castSucc 1) × (P₁.append P₂).PrvState (Fin.castSucc 1))) :
     Prover.processRound 1 (P₁.append P₂) c =
       c >>= fun pr =>
         liftc (M₁ := M₁) (M₂ := M₂) ((P₁.append P₂).sendMessage ⟨1, rfl⟩ pr.2) >>= fun w =>
