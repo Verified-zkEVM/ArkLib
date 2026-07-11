@@ -358,9 +358,9 @@ lemma list_agreement_on_curve_implies_correlated_agreement_bound
 This is the "integral-weight" strengthening of the list-agreement-on-a-curve =>
 correlated-agreement bound.
 
-We have two lists of functions `u, v : Fin (l + 2) → ι → F`, where each `v i` is a
-Reed-Solomon codeword of degree `deg` over the evaluation domain `domain`. From
-these lists we form the bivariate curve evaluations
+We have two lists of functions `u, v : Fin (l + 2) → ι → F`. From these lists we
+form the bivariate curve evaluations. As in Lemma 7.5, code membership is not
+needed for this combinatorial strengthening.
 
 * `w x z = Curve.polynomialCurveEval u z x`,
 * `wtilde x z = Curve.polynomialCurveEval v z x`.
@@ -377,14 +377,12 @@ coordinates agree, i.e. where `u i x = v i x` for every `i`, is at least `α`:
 
 `mu_set μ {x | ∀ i, u i x = v i x} ≥ α`. -/
 lemma sufficiently_large_list_agreement_on_curve_implies_correlated_agreement
-    {k l : ℕ} {u : Fin (l + 2) → ι → F}
-    {deg : ℕ} {domain : ι ↪ F}
+    {l : ℕ} {u : Fin (l + 2) → ι → F}
     {μ : ι → Set.Icc (0 : ℚ) 1}
     {α : ℝ≥0}
     {M : ℕ}
     (hμ : ∀ i, ∃ n : ℤ, (μ i).1 = (n : ℚ) / (M : ℚ))
     {v : Fin (l + 2) → ι → F}
-    (hv : ∀ i, v i ∈ ReedSolomon.code domain deg)
     {S' : Finset F}
     (hS'_card : S'.card > l + 1)
     (hS'_card₁ : S'.card ≥ (M * Fintype.card ι + 1) * (l + 1)) :
@@ -392,7 +390,98 @@ lemma sufficiently_large_list_agreement_on_curve_implies_correlated_agreement
     letI wtilde (x : ι) (z : F) : F := Curve.polynomialCurveEval (F := F) (A := F) v z x
     (hS'_agree : ∀ z ∈ S', agree μ (w · z) (wtilde · z) ≥ α) →
     mu_set μ { x : ι | ∀ i, u i x = v i x } ≥ α := by
-  sorry
+  dsimp only
+  classical
+  intro hS'_agree
+  let w (x : ι) (z : F) : F := Curve.polynomialCurveEval u z x
+  let wtilde (x : ι) (z : F) : F := Curve.polynomialCurveEval v z x
+  let values : Finset ℝ := S'.image fun z => agree μ (w · z) (wtilde · z)
+  have hS'_nonempty : S'.Nonempty := Finset.card_pos.mp (by omega)
+  have hvalues_nonempty : values.Nonempty := hS'_nonempty.image _
+  let β : ℝ := values.min' hvalues_nonempty
+  have hβ_le (z : F) (hz : z ∈ S') : β ≤ agree μ (w · z) (wtilde · z) := by
+    exact Finset.min'_le _ _ (Finset.mem_image.mpr ⟨z, hz, rfl⟩)
+  have hαβ : (α : ℝ) ≤ β := by
+    apply Finset.le_min'
+    intro y hy
+    rcases Finset.mem_image.mp hy with ⟨z, hz, rfl⟩
+    exact hS'_agree z hz
+  have hβ_nonneg : 0 ≤ β := le_trans α.coe_nonneg hαβ
+  let βnn : ℝ≥0 := ⟨β, hβ_nonneg⟩
+  have hcurve_bound :
+      mu_set μ {x : ι | ∀ i, u i x = v i x} >
+        β - (l + 1 : ℝ) / ((S'.card : ℝ) - (l + 1 : ℝ)) := by
+    have := list_agreement_on_curve_implies_correlated_agreement_bound
+      (u := u) (v := v) (μ := μ) (α := βnn) hS'_card
+      (fun z hz => hβ_le z hz)
+    simpa [βnn] using this
+  by_contra hnot
+  have hmu_lt_alpha :
+      mu_set μ {x : ι | ∀ i, u i x = v i x} < (α : ℝ) := by
+    simpa only [not_le] using hnot
+  have hmu_lt_beta :
+      mu_set μ {x : ι | ∀ i, u i x = v i x} < β :=
+    lt_of_lt_of_le hmu_lt_alpha hαβ
+  rcases Finset.mem_image.mp (Finset.min'_mem values hvalues_nonempty) with
+    ⟨zβ, hzβ, hβeq⟩
+  change agree μ (w · zβ) (wtilde · zβ) = β at hβeq
+  choose numerator hnum using hμ
+  have measure_grid (s : Finset ι) :
+      ∃ n : ℤ, mu_set μ s = (n : ℝ) / ((M * Fintype.card ι : ℕ) : ℝ) := by
+    refine ⟨∑ i ∈ s, numerator i, ?_⟩
+    simp only [mu_set]
+    simp_rw [hnum]
+    push_cast
+    rw [← Finset.sum_div]
+    field_simp
+  have agree_grid (a b : ι → F) :
+      ∃ n : ℤ, agree μ a b = (n : ℝ) / ((M * Fintype.card ι : ℕ) : ℝ) := by
+    simpa only [agree] using measure_grid {i | a i = b i}
+  rcases measure_grid {x : ι | ∀ i, u i x = v i x} with ⟨a, ha⟩
+  rcases agree_grid (w · zβ) (wtilde · zβ) with ⟨b, hb⟩
+  have hM_pos : 0 < M := by
+    by_contra hM
+    have hMzero : M = 0 := Nat.eq_zero_of_not_pos hM
+    have hweights_zero (i : ι) : (μ i).1 = 0 := by
+      simpa [hMzero] using hnum i
+    have hagree_zero : agree μ (w · zβ) (wtilde · zβ) = 0 := by
+      simp [agree, hweights_zero]
+    rw [← hβeq, hagree_zero] at hmu_lt_beta
+    have hmu_nonneg : 0 ≤ mu_set μ {x : ι | ∀ i, u i x = v i x} := by
+      simp [mu_set, hweights_zero]
+    linarith
+  have hd_pos : (0 : ℝ) < (M * Fintype.card ι : ℕ) := by positivity
+  have hab_real : (a : ℝ) < b := by
+    rw [ha, ← hβeq, hb] at hmu_lt_beta
+    exact (div_lt_div_iff_of_pos_right hd_pos).mp hmu_lt_beta
+  have hab : a + 1 ≤ b := by
+    have : a < b := by exact_mod_cast hab_real
+    omega
+  have hgrid_gap :
+      1 / ((M * Fintype.card ι : ℕ) : ℝ) ≤
+        β - mu_set μ {x : ι | ∀ i, u i x = v i x} := by
+    rw [ha, ← hβeq, hb]
+    rw [div_sub_div_same]
+    apply (div_le_div_iff_of_pos_right hd_pos).2
+    have : (1 : ℤ) ≤ b - a := by omega
+    exact_mod_cast this
+  have hdenom_pos : 0 < (S'.card : ℝ) - (l + 1 : ℝ) := by
+    have : (l + 1 : ℝ) < S'.card := by exact_mod_cast hS'_card
+    linarith
+  have hdenom_large :
+      ((M * Fintype.card ι : ℕ) : ℝ) * (l + 1 : ℝ) ≤
+        (S'.card : ℝ) - (l + 1 : ℝ) := by
+    have hcast :
+        (((M * Fintype.card ι + 1) * (l + 1) : ℕ) : ℝ) ≤ S'.card := by
+      exact_mod_cast hS'_card₁
+    norm_num [Nat.cast_mul] at hcast ⊢
+    nlinarith
+  have herror_le_grid :
+      (l + 1 : ℝ) / ((S'.card : ℝ) - (l + 1 : ℝ)) ≤
+        1 / ((M * Fintype.card ι : ℕ) : ℝ) := by
+    rw [div_le_div_iff₀ hdenom_pos hd_pos]
+    nlinarith
+  linarith
 
 end ListAgreementLemmas
 
