@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
 
+import ArkLib.ProofSystem.RingSwitching.Generic.Batching
+import ArkLib.ProofSystem.RingSwitching.Generic.Packing
 import ArkLib.ProofSystem.RingSwitching.Generic.Recombine
 
 /-!
@@ -28,6 +30,13 @@ carrier and the protocol data — an instance has no hook to substitute a weaker
   `σ = ∑_y Φ_w(eq(r,y)) · t'(y)`, i.e. `∑_y B(y)·t'(y) = σ` with `B = Φ∘eq` the multiplier
   (`Bmult`'s defining values). `sumcheckClaim_of_slices` proves the chain coheres: batching
   honest slices with weights `w` *is* the sumcheck claim — via the linchpin `bridge_eqTilde`.
+* `claimConsistent` — the **Remark-5 consistency check** ([BRW26] Remark 5; S6 design review F1):
+  the phase verifier's read-back of the slices against the input claims,
+  `αᵢ = ∑ᵤ (packBasis.repr sᵤ i) • bᵤ^E` — both bases at once. Completeness
+  (`claimConsistent_of_slices`, review F6-4) and the soundness read-back to the anchor
+  (`openingClaimRel_of_claimConsistent`, review F2, via the generic `unpack`) are proven below;
+  both route through `aeval_unpack_of_slices`, whose `[IsDomain car.E]` hypothesis is the one
+  logged S6 deviation (eq-expansion of the anchor by root-counting interpolation over `E`).
 
 ## The PCS interface (pillar 2: binding is the PCS's proven semantics, not a free hook)
 
@@ -140,6 +149,87 @@ theorem sumcheckClaim_of_slices {m : ℕ} {r : Fin m → car.E}
           car.bridge w (eqTilde r (car.boolToE y)) * t'.val.eval (y : Fin m → car.P) := by
         refine Finset.sum_congr rfl fun y _ => ?_
         rw [car.bridge_eqTilde]
+
+/-! ### The Remark-5 consistency check (S6 design review F1/F2/F6-4) -/
+
+/-- **The Remark-5 claim-consistency check** ([BRW26] Remark 5; design review F1): the phase
+verifier's check of the prover-sent slices against the input claims — each claim `αᵢ` must be the
+opening-basis recombination of the `i`-th packing-basis coordinates of the slices,
+`αᵢ = ∑ᵤ (packBasis.repr sᵤ i) • bᵤ^E`. This uses **both** bases, which is exactly why it is
+sound: `recombine_injective` (packing side) and `openingDecomposition_injective` (opening side)
+pin both decompositions. `claimConsistent_of_slices` is the completeness direction (honest slices
+pass), `openingClaimRel_of_claimConsistent` the soundness read-back to the anchor. -/
+def claimConsistent (α : car.ιP → car.E) (s : car.ιE → car.P) : Prop :=
+  ∀ i, α i = ∑ u, car.packBasis.repr (s u) i • car.openBasis u
+
+/-- **The slice read-back identity** (the shared core of both directions of the Remark-5 check):
+for honest slices of a packed `t'`, the recombination the check compares `αᵢ` against *is* the
+`i`-th unpacked component's evaluation at `r`:
+`∑ᵤ (packBasis.repr sᵤ i) • bᵤ^E = (unpack t')ᵢ(r)`. The proof expands the anchor evaluation over
+the hypercube (`aeval_multilinear_eq_sum_eqTilde`), reads each hypercube evaluation back through
+`unpack_eval_zeroOne`, and reassembles the eq-coordinates via `Basis.sum_repr` — Flock's "by the
+uniqueness of the 𝔽₂-decomposition" step, in equational form.
+
+**Hypothesis note (the logged S6 deviation):** `[IsDomain car.E]` is an accepted theorem
+hypothesis — the eq-expansion of the anchor interpolates the mapped multilinear over `E` by root
+counting. Both live carriers (`towerCarrier`: `E = L` a field; `decoupledFieldCarrier`:
+`E = 𝔽₈`) satisfy it; generalizing to plain `CommRing E` is future work. -/
+theorem aeval_unpack_of_slices [IsDomain car.E] {m : ℕ} {r : Fin m → car.E}
+    {s : car.ιE → car.P} {t' : MultilinearPoly car.P m}
+    (hs : (s, t') ∈ car.sliceRel m r) (i : car.ιP) :
+    MvPolynomial.aeval r (car.unpack t' i).val
+      = ∑ u, car.packBasis.repr (s u) i • car.openBasis u := by
+  calc MvPolynomial.aeval r (car.unpack t' i).val
+      = ∑ y : Fin m → Fin 2, eqTilde (y : Fin m → car.E) r
+          * algebraMap B car.E ((car.unpack t' i).val.eval (y : Fin m → B)) :=
+        aeval_multilinear_eq_sum_eqTilde (car.unpack t' i).property r
+    _ = ∑ y : Fin m → Fin 2, ∑ u, (car.eqCoord r y u
+          * car.packBasis.repr (t'.val.eval (y : Fin m → car.P)) i) • car.openBasis u := by
+        refine Finset.sum_congr rfl fun y _ => ?_
+        rw [car.unpack_eval_zeroOne]
+        have hb : car.boolToE y = (y : Fin m → car.E) := (coe_boolFun_eq_ite y).symm
+        have h1 : eqTilde (y : Fin m → car.E) r = eqTilde r (car.boolToE y) := by
+          rw [hb]; exact eqPolynomial_symm _ _
+        rw [h1, ← car.openBasis.sum_repr (eqTilde r (car.boolToE y)), Finset.sum_mul]
+        refine Finset.sum_congr rfl fun u _ => ?_
+        rw [smul_mul_assoc, ← Algebra.commutes, ← Algebra.smul_def, smul_smul]
+        rfl
+    _ = ∑ u, car.packBasis.repr (∑ y : Fin m → Fin 2,
+          car.eqCoord r y u • t'.val.eval (y : Fin m → car.P)) i • car.openBasis u := by
+        rw [Finset.sum_comm]
+        refine Finset.sum_congr rfl fun u _ => ?_
+        rw [← Finset.sum_smul]
+        congr 1
+        rw [map_sum, Finsupp.finsetSum_apply]
+        refine Finset.sum_congr rfl fun y _ => ?_
+        rw [map_smul, Finsupp.smul_apply, smul_eq_mul]
+    _ = ∑ u, car.packBasis.repr (s u) i • car.openBasis u := by
+        refine Finset.sum_congr rfl fun u _ => ?_
+        rw [← hs u]
+
+/-- **Remark-5 check completeness** (design review F6-4): honest slices of the packed family pass
+the consistency check against the honest claims — any `α` satisfying the input anchor for the
+family. `[IsDomain car.E]` is inherited from the shared core `aeval_unpack_of_slices` (the logged
+S6 deviation; see there). -/
+theorem claimConsistent_of_slices [IsDomain car.E] {m : ℕ} {r : Fin m → car.E}
+    {α : car.ιP → car.E} {Ps : car.ιP → MultilinearPoly B m} {s : car.ιE → car.P}
+    (hα : ((α, r), Ps) ∈ car.openingClaimRel m)
+    (hs : (s, car.packedMLE Ps) ∈ car.sliceRel m r) :
+    car.claimConsistent α s := fun i => by
+  have h := car.aeval_unpack_of_slices hs i
+  rw [car.unpack_packedMLE] at h
+  exact (hα i).trans h
+
+/-- **Remark-5 read-back, soundness direction** (design review F2): if the claims pass the
+consistency check against slices that are honest for some packed `t'`, then the input anchor
+`openingClaimRel` holds for the claims against the *unpacked* family — the witness the S6
+extractor returns. `[IsDomain car.E]` is inherited from the shared core `aeval_unpack_of_slices`
+(the logged S6 deviation; see there). -/
+theorem openingClaimRel_of_claimConsistent [IsDomain car.E] {m : ℕ} {r : Fin m → car.E}
+    {α : car.ιP → car.E} {s : car.ιE → car.P} {t' : MultilinearPoly car.P m}
+    (hc : car.claimConsistent α s) (hs : (s, t') ∈ car.sliceRel m r) :
+    ((α, r), car.unpack t') ∈ car.openingClaimRel m :=
+  fun i => (hc i).trans (car.aeval_unpack_of_slices hs i).symm
 
 end RingSwitchCarrier
 
@@ -312,6 +402,46 @@ example {K L ι : Type} [Field K] [Field L] [Algebra K L] [Fintype ι] (β : Bas
 -- The full PCS bundle is statable at any commutative ring (the S8 Hachi shape included) —
 -- like `BatchingStrategy`, the vocabulary is `CommRing`-only; hypotheses live on theorems.
 example : Type 1 := DenseMLPCS (ZMod 6) 3
+
+-- INV-2: the Remark-5 check (`claimConsistent`) is *statable* with no domain hypothesis, on the
+-- decoupled toy carrier (a non-domain product ring)…
+example (α : decoupledToyCarrier.ιP → decoupledToyCarrier.E)
+    (s : decoupledToyCarrier.ιE → decoupledToyCarrier.P) : Prop :=
+  decoupledToyCarrier.claimConsistent α s
+
+-- …and both of its directions instantiate on the *tower* carrier (`[IsDomain E]` from the field
+-- structure; the projection is opaque to instance search, so it is landed by `letI`)…
+example {K L ι : Type} [Field K] [Field L] [Algebra K L] [Fintype ι] (β : Basis ι K L)
+    {m : ℕ} {r : Fin m → (towerCarrier β).E} {α : (towerCarrier β).ιP → (towerCarrier β).E}
+    {s : (towerCarrier β).ιE → (towerCarrier β).P} {t' : MultilinearPoly (towerCarrier β).P m}
+    (hc : (towerCarrier β).claimConsistent α s)
+    (hs : (s, t') ∈ (towerCarrier β).sliceRel m r) :
+    ((α, r), (towerCarrier β).unpack t') ∈ (towerCarrier β).openingClaimRel m :=
+  letI : IsDomain (towerCarrier β).E := inferInstanceAs (IsDomain L)
+  (towerCarrier β).openingClaimRel_of_claimConsistent hc hs
+
+-- …and on the *decoupled field* carrier `P = 𝔽₄ ≠ E = 𝔽₈` (the R5 anti-overfit witness for the
+-- `[IsDomain E]`-gated soundness layer): completeness — honest slices pass the check.
+example {m : ℕ} {r : Fin m → decoupledFieldCarrier.E}
+    {α : decoupledFieldCarrier.ιP → decoupledFieldCarrier.E}
+    {Ps : decoupledFieldCarrier.ιP → MultilinearPoly (ZMod 2) m}
+    {s : decoupledFieldCarrier.ιE → decoupledFieldCarrier.P}
+    (hα : ((α, r), Ps) ∈ decoupledFieldCarrier.openingClaimRel m)
+    (hs : (s, decoupledFieldCarrier.packedMLE Ps) ∈ decoupledFieldCarrier.sliceRel m r) :
+    decoupledFieldCarrier.claimConsistent α s :=
+  letI : IsDomain decoupledFieldCarrier.E := inferInstanceAs (IsDomain (GaloisField 2 3))
+  decoupledFieldCarrier.claimConsistent_of_slices hα hs
+
+-- …and the soundness read-back on the decoupled field carrier too.
+example {m : ℕ} {r : Fin m → decoupledFieldCarrier.E}
+    {α : decoupledFieldCarrier.ιP → decoupledFieldCarrier.E}
+    {s : decoupledFieldCarrier.ιE → decoupledFieldCarrier.P}
+    {t' : MultilinearPoly decoupledFieldCarrier.P m}
+    (hc : decoupledFieldCarrier.claimConsistent α s)
+    (hs : (s, t') ∈ decoupledFieldCarrier.sliceRel m r) :
+    ((α, r), decoupledFieldCarrier.unpack t') ∈ decoupledFieldCarrier.openingClaimRel m :=
+  letI : IsDomain decoupledFieldCarrier.E := inferInstanceAs (IsDomain (GaloisField 2 3))
+  decoupledFieldCarrier.openingClaimRel_of_claimConsistent hc hs
 
 end Sanity
 
