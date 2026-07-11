@@ -189,6 +189,7 @@ import ArkLib.OracleReduction.Basic
 import ArkLib.OracleReduction.Cast
 import ArkLib.OracleReduction.Composition.Parallel.Basic
 import ArkLib.OracleReduction.Composition.Sequential.Append
+import ArkLib.OracleReduction.Composition.Sequential.AppendOneMsg
 import ArkLib.OracleReduction.Composition.Sequential.General
 import ArkLib.OracleReduction.Composition.Sequential.IsPure
 import ArkLib.OracleReduction.Equiv
