@@ -161,9 +161,10 @@ variable {F : Type} [Field F] [DecidableEq F]
 /-- Lemma 7.5 in [BCIKS20].
 This is the "list agreement on a curve implies correlated agreement" lemma.
 
-We are given two lists of functions `u, v : Fin (l + 2) → ι → F`, where each `v i` is a
-Reed-Solomon codeword of degree `deg` over the evaluation domain `domain`. From these
-lists we form the bivariate curve evaluations
+We are given two lists of functions `u, v : Fin (l + 2) → ι → F`. From these lists we
+form the bivariate curve evaluations. Code membership is not needed for this
+combinatorial root-counting bound; callers may separately know that every `v i` is a
+Reed-Solomon codeword.
 
 * `w x z = Curve.polynomialCurveEval u z x`,
 * `wtilde x z = Curve.polynomialCurveEval v z x`.
@@ -176,12 +177,10 @@ has μ-measure strictly larger than
 
 `α - (l + 1) / (S'.card - (l + 1))`. -/
 lemma list_agreement_on_curve_implies_correlated_agreement_bound
-    {k l : ℕ} {u : Fin (l + 2) → ι → F}
-    {deg : ℕ} {domain : ι ↪ F}
+    {l : ℕ} {u : Fin (l + 2) → ι → F}
     {μ : ι → Set.Icc (0 : ℚ) 1}
     {α : ℝ≥0}
     {v : Fin (l + 2) → ι → F}
-    (hv : ∀ i, v i ∈ ReedSolomon.code domain deg)
     {S' : Finset F}
     (hS'_card : S'.card > l + 1) :
     letI w (x : ι) (z : F) : F := Curve.polynomialCurveEval (F := F) (A := F) u z x
@@ -189,7 +188,171 @@ lemma list_agreement_on_curve_implies_correlated_agreement_bound
     (hS'_agree : ∀ z ∈ S', agree μ (w · z) (wtilde · z) ≥ α) →
     mu_set μ { x : ι | ∀ i, u i x = v i x } >
       α - ((l + 1) : ℝ) / (S'.card - (l + 1)) := by
-  sorry
+  dsimp only
+  classical
+  intro hS'_agree
+  let common : Finset ι := {x | ∀ i, u i x = v i x}
+  let agreementPoints (x : ι) : Finset F := S'.filter fun z =>
+    Curve.polynomialCurveEval u z x = Curve.polynomialCurveEval v z x
+  let difference (x : ι) : Polynomial F :=
+    ∑ i : Fin (l + 2), Polynomial.monomial i (u i x - v i x)
+  have difference_eval (x : ι) (z : F) :
+      (difference x).eval z =
+        Curve.polynomialCurveEval u z x - Curve.polynomialCurveEval v z x := by
+    simp only [difference, Polynomial.eval_finsetSum, Polynomial.eval_monomial,
+      Curve.polynomialCurveEval, Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+    rw [← Finset.sum_sub_distrib]
+    apply Finset.sum_congr rfl
+    intro i _
+    ring
+  have difference_degree (x : ι) : (difference x).natDegree ≤ l + 1 := by
+    apply Polynomial.natDegree_sum_le_of_forall_le
+    intro i _
+    exact (Polynomial.natDegree_monomial_le _).trans (by omega)
+  have difference_ne_zero {x : ι} (hx : x ∉ common) : difference x ≠ 0 := by
+    intro hzero
+    apply hx
+    simp only [common, Finset.mem_filter, Finset.mem_univ, true_and]
+    intro i
+    have hcoeff := congrArg (fun p : Polynomial F => p.coeff i) hzero
+    simp only [difference, Polynomial.finsetSum_coeff, Polynomial.coeff_monomial,
+      Polynomial.coeff_zero] at hcoeff
+    have : u i x - v i x = 0 := by
+      rw [Finset.sum_eq_single i] at hcoeff
+      · simpa using hcoeff
+      · intro j _ hji
+        simp only [if_neg (fun hval => hji (Fin.ext hval))]
+      · simp
+    exact sub_eq_zero.mp this
+  have agreementPoints_card {x : ι} (hx : x ∉ common) :
+      (agreementPoints x).card ≤ l + 1 := by
+    calc
+      (agreementPoints x).card ≤ (difference x).natDegree := by
+        apply Polynomial.card_le_degree_of_subset_roots
+        intro z hz
+        rw [Polynomial.mem_roots (difference_ne_zero hx), Polynomial.IsRoot.def,
+          difference_eval]
+        exact sub_eq_zero.mpr (Finset.mem_filter.mp hz).2
+      _ ≤ l + 1 := difference_degree x
+  have agreementPoints_eq {x : ι} (hx : x ∈ common) : agreementPoints x = S' := by
+    apply Finset.filter_eq_self.2
+    intro z _
+    have hx' : ∀ i, u i x = v i x := by simpa [common] using hx
+    simp only [Curve.polynomialCurveEval, Finset.sum_apply]
+    apply Finset.sum_congr rfl
+    intro i _
+    simp only [Pi.smul_apply, hx' i]
+  have weight_nonneg (x : ι) : 0 ≤ (μ x).1 := (μ x).property.1
+  have weight_le_one (x : ι) : (μ x).1 ≤ 1 := (μ x).property.2
+  have hsum_lower :
+      (S'.card : ℝ) * (α : ℝ) ≤
+        ∑ z ∈ S', agree μ
+          (fun x => Curve.polynomialCurveEval u z x)
+          (fun x => Curve.polynomialCurveEval v z x) := by
+    calc
+      (S'.card : ℝ) * (α : ℝ) = ∑ _z ∈ S', (α : ℝ) := by simp
+      _ ≤ ∑ z ∈ S', agree μ
+          (fun x => Curve.polynomialCurveEval u z x)
+          (fun x => Curve.polynomialCurveEval v z x) :=
+        Finset.sum_le_sum fun z hz => hS'_agree z hz
+  have hsum_eq :
+      ∑ z ∈ S', agree μ
+          (fun x => Curve.polynomialCurveEval u z x)
+          (fun x => Curve.polynomialCurveEval v z x) =
+        1 / (Fintype.card ι : ℝ) *
+          ∑ x : ι, (agreementPoints x).card * (μ x).1 := by
+    simp only [agree]
+    rw [← Finset.mul_sum]
+    congr 1
+    push_cast
+    simp_rw [Finset.sum_filter]
+    rw [Finset.sum_comm]
+    apply Finset.sum_congr rfl
+    intro x _
+    rw [← Finset.sum_filter]
+    simp [agreementPoints, nsmul_eq_mul, mul_comm]
+  have hweighted_upper :
+      (∑ x : ι, ((agreementPoints x).card : ℚ) * (μ x).1) ≤
+        (S'.card : ℚ) * (∑ x ∈ common, (μ x).1) +
+          (l + 1 : ℚ) * Fintype.card ι := by
+    calc
+      (∑ x : ι, ((agreementPoints x).card : ℚ) * (μ x).1) =
+          (∑ x ∈ common, ((agreementPoints x).card : ℚ) * (μ x).1) +
+            ∑ x ∈ Finset.univ.filter (fun x => x ∉ common),
+              ((agreementPoints x).card : ℚ) * (μ x).1 := by
+        simpa only [Finset.filter_mem_eq_inter, Finset.univ_inter] using
+          (Finset.sum_filter_add_sum_filter_not
+            (s := Finset.univ) (p := fun x => x ∈ common)
+            (f := fun x => ((agreementPoints x).card : ℚ) * (μ x).1)).symm
+      _ ≤ (S'.card : ℚ) * (∑ x ∈ common, (μ x).1) +
+            (l + 1 : ℚ) *
+              (∑ x ∈ Finset.univ.filter (fun x => x ∉ common), (μ x).1) := by
+        apply add_le_add
+        · rw [Finset.mul_sum]
+          apply Finset.sum_le_sum
+          intro x hx
+          rw [agreementPoints_eq hx]
+        · rw [Finset.mul_sum]
+          apply Finset.sum_le_sum
+          intro x hx
+          exact mul_le_mul_of_nonneg_right
+            (by exact_mod_cast agreementPoints_card (Finset.mem_filter.mp hx).2)
+            (weight_nonneg x)
+      _ ≤ (S'.card : ℚ) * (∑ x ∈ common, (μ x).1) +
+            (l + 1 : ℚ) * Fintype.card ι := by
+        apply add_le_add_right
+        apply mul_le_mul_of_nonneg_left _ (by positivity)
+        calc
+          (∑ x ∈ Finset.univ.filter (fun x => x ∉ common), (μ x).1) ≤
+              ∑ _x ∈ Finset.univ.filter (fun x => x ∉ common), (1 : ℚ) := by
+            apply Finset.sum_le_sum
+            intro i _
+            exact weight_le_one i
+          _ ≤ ∑ _x : ι, (1 : ℚ) := by
+            exact Finset.sum_le_sum_of_subset_of_nonneg
+              (Finset.filter_subset _ _) (fun _ _ _ => by positivity)
+          _ = Fintype.card ι := by simp
+  have hweighted_upper_real :
+      ((∑ x : ι, ((agreementPoints x).card : ℚ) * (μ x).1 : ℚ) : ℝ) ≤
+        (S'.card : ℝ) * ((∑ x ∈ common, (μ x).1 : ℚ) : ℝ) +
+          (l + 1 : ℝ) * Fintype.card ι := by
+    exact_mod_cast hweighted_upper
+  have hn_pos : (0 : ℝ) < Fintype.card ι := by positivity
+  have hcore :
+      (S'.card : ℝ) * (α : ℝ) ≤
+        (S'.card : ℝ) * mu_set μ common + (l + 1 : ℝ) := by
+    calc
+      (S'.card : ℝ) * (α : ℝ) ≤
+          ∑ z ∈ S', agree μ
+            (fun x => Curve.polynomialCurveEval u z x)
+            (fun x => Curve.polynomialCurveEval v z x) := hsum_lower
+      _ = 1 / (Fintype.card ι : ℝ) *
+          ((∑ x : ι, ((agreementPoints x).card : ℚ) * (μ x).1 : ℚ) : ℝ) := hsum_eq
+      _ ≤ 1 / (Fintype.card ι : ℝ) *
+          ((S'.card : ℝ) * ((∑ x ∈ common, (μ x).1 : ℚ) : ℝ) +
+            (l + 1 : ℝ) * Fintype.card ι) :=
+        mul_le_mul_of_nonneg_left hweighted_upper_real (by positivity)
+      _ = (S'.card : ℝ) * mu_set μ common + (l + 1 : ℝ) := by
+        simp only [mu_set]
+        field_simp
+  change mu_set μ common >
+    (α : ℝ) - (l + 1 : ℝ) / ((S'.card : ℝ) - (l + 1 : ℝ))
+  have hcard_real : (l + 1 : ℝ) < S'.card := by exact_mod_cast hS'_card
+  have hgap_pos : (0 : ℝ) < (S'.card : ℝ) - (l + 1 : ℝ) := by
+    linarith
+  have hcard_pos : (0 : ℝ) < S'.card := by
+    linarith
+  have hfraction :
+      (l + 1 : ℝ) / S'.card <
+        (l + 1 : ℝ) / ((S'.card : ℝ) - (l + 1 : ℝ)) := by
+    rw [div_lt_div_iff₀ hcard_pos hgap_pos]
+    nlinarith
+  have hcancel : ((l + 1 : ℝ) / S'.card) * S'.card = l + 1 := by
+    field_simp
+  have hcommon_lower :
+      (α : ℝ) - (l + 1 : ℝ) / S'.card ≤ mu_set μ common := by
+    nlinarith [hcore, hcancel]
+  exact lt_of_lt_of_le (by linarith [hfraction]) hcommon_lower
 
 /-- Lemma 7.6 in [BCIKS20].
 This is the "integral-weight" strengthening of the list-agreement-on-a-curve =>
