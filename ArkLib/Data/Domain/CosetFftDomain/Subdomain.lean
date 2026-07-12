@@ -16,6 +16,7 @@ import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.LinearCombination
 import Mathlib.Tactic.Field
 
+import ArkLib.Data.Domain.CosetFftDomain.Block
 import ArkLib.Data.Domain.CosetFftDomain.Ops
 import ArkLib.Data.Domain.FftDomain.Ops
 
@@ -40,8 +41,8 @@ a root-finding procedure.
 
 - `pow_mem_of_mem`:
   Powers move elements down the subdomain tower.
-- `card_roots`:
-  Exact cardinality of fibers of powering maps.
+- `card_block_of_mem_subdomain`:
+  Exact cardinality of blocks when the block point is a member of a subdomain.
 - `root_exists`:
   Existence of roots in higher subdomains.
 - `square_roots_explicit`:
@@ -274,7 +275,7 @@ lemma pow_mem_subdomain_of_mem_subdomain_0 {i : ℕ} (hi : i ≤ n)
 /-- `toFinset`-version of `pow_mem_subdomain_of_mem_subdomain_0`. -/
 lemma pow_mem_subdomain_of_mem_subdomain_0_toFinset [DecidableEq F] {i : ℕ} (hi : i ≤ n)
   (h : x ∈ (subdomain ω 0).toFinset) :
-  x ^ (2 ^ i) ∈ (subdomain ω i).toFinset := by
+  x ^ 2 ^ i ∈ (subdomain ω i).toFinset := by
   rw [mem_toFinset_iff_mem]
   exact pow_mem_subdomain_of_mem_subdomain_0 hi (by simpa using h)
 
@@ -381,10 +382,11 @@ private lemma card_fin_filter_mod_eq {a j : ℕ} (hj : j ≤ a) (c : ℕ) (hc : 
 
 /-- If `x` lies in the `(i + j)`th subdomain,
   then it has exactly `2 ^ j` preimages under `y ↦ y ^ 2 ^ j` from the `i`th subdomain. -/
-lemma card_roots [DecidableEq F] {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)) :
-  Finset.card {y ∈ (subdomain ω i).toFinset | y ^ (2 ^ j) = x} = 2 ^ j := by
+lemma card_block_of_mem_subdomain [DecidableEq F]
+  {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)) :
+  Finset.card (block (subdomain ω i) j x) = 2 ^ j := by
   have hinj : Function.Injective (subdomain ω i) := CosetFftDomainClass.injective _
-  simp only [CosetFftDomain.toFinset]
+  unfold block
   obtain ⟨m, hm⟩ := h
   have hinj2 : Function.Injective (subdomain ω (i + j)) := CosetFftDomainClass.injective _
   have hfilter_eq : (Finset.univ.filter (fun k : Fin (2 ^ (n - i)) =>
@@ -416,11 +418,14 @@ lemma card_roots [DecidableEq F] {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subd
 
 set_option linter.unusedDecidableInType false in -- false alert
 /-- Every element of the `(i + j)`th subdomain has a `2 ^ j`th root in the `i`th subdomain. -/
-lemma root_exists [DecidableEq F] {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)) :
-  ∃ y ∈ subdomain ω i, y ^ (2 ^ j) = x := by
+lemma root_exists [DecidableEq F]
+  {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)) :
+  ∃ y ∈ subdomain ω i, y ^ 2 ^ j = x := by
   have h' : Finset.Nonempty {y ∈ (subdomain ω i).toFinset | y ^ 2 ^ j = x} := by
-    have := card_roots hij h
-    aesop (add unsafe (by rw [←Finset.card_ne_zero]))
+    have := card_block_of_mem_subdomain hij h
+    aesop
+      (add simp [block])
+      (add unsafe (by rw [←Finset.card_ne_zero]))
   simpa [Finset.Nonempty] using h'
 
 set_option linter.unusedDecidableInType false in -- false alert
@@ -449,6 +454,19 @@ lemma square_roots_explicit [DecidableEq F] {i : ℕ} (hi : i < n) {y : F}
     exact eq_or_eq_neg_of_sq_eq_sq _ _ <| by rw [hz.2, hy]
   · have hy_mem : y ∈ subdomain ω i := sq_root_mem_subdomain hi hx hy
     simp_all [Finset.subset_iff]
+
+lemma card_block_of_mem_subdomain' [DecidableEq F] {k : ℕ}
+  (hk : k ≤ n)
+  (hx : x ∈ subdomain ω k) :
+  Finset.card (block ω k x) = 2 ^ k := by
+  have h := card_block_of_mem_subdomain (ω := ω)
+          (j := k) (i := 0) (x := x)
+          (by simp [hk])
+          (by aesop (add simp [mem_subdomain_of_eq_vals]))
+  conv_rhs =>
+    rw [←h]
+  apply congrArg
+  aesop (add safe (by rw [mem_subdomain_0_iff_mem]))
 
 end CosetFftDomainClass
 

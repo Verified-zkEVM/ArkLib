@@ -46,6 +46,11 @@ variable {ω : D}
 @[simp]
 lemma one_mem : 1 ∈ ω := ⟨0, FftDomainClass.generator_eq_one ω⟩
 
+/-- Membership in a FFT domain is decidable
+  via membership in the finset of its elements. -/
+instance [Fintype ι] [DecidableEq F] {x : F} : Decidable (x ∈ ω) :=
+  decidable_of_iff _ CosetFftDomainClass.mem_toFinset_iff_mem
+
 end FftDomainClass
 
 namespace FftDomain
@@ -83,10 +88,5 @@ lemma mem_toFinset_iff_mem [Fintype ι] [DecidableEq F] :
       mem_iff_mem_toCosetFftDomain]
 
 end FftDomain
-
-/-- Membership in a concrete FFT domain is decidable
-  via membership in the finset of its elements. -/
-instance [Fintype ι] [DecidableEq F] {x : F} {ω : FftDomain ι F} : Decidable (x ∈ ω) :=
-  decidable_of_iff _ FftDomain.mem_toFinset_iff_mem
 
 end Domain
