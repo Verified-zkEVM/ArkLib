@@ -1,24 +1,36 @@
 # ArkLib Oracle Reduction Design Suite (v2)
 
-**Date:** 2026-07-12. **Status:** normative design, pre-implementation.
-**Provenance:** four adversarial audit rounds (GPT 5.6 Sol at high/xhigh; Claude Fable 5 synthesis), a very-thorough autopsy of the retired `OracleReduction/` design on `main`, a 35-requirement literature catalog, and a per-theorem coverage audit against Chiesa–Yogev, *Building Cryptographic Proofs from Hash Functions* (2024). Full history in [`archive/`](archive/).
+**Date:** 2026-07-13. **Status:** normative architecture, pre-implementation.
+**Provenance:** the original Sol/Fable adversarial and literature audits plus a fresh source-level
+audit of current ArkLib, VCVio, and PolyFun default branches. Full prior history is in
+[`archive/`](archive/); the current-tree findings are incorporated into `00`, `01`, and `01a`.
 
 ## The design in one paragraph
 
-An oracle reduction's output claim is a **statement plus a source-scoped virtual oracle** — a typed query program over declared backing resources (input oracles, setup oracles, prover-sent oracle messages), whose extensional meaning is derived by interpretation under the handler produced by the *same* execution. Relations consume **closed claims** (statement + behavior) and never see derivation history. Composition is **handler substitution** with explicit context morphisms. Concrete data, provenance metadata, commitments, and cost are **optional strengthenings**, never the canonical carrier. Security games, extractors, and compilers live on top of a shared semantics of **adversarial oracle execution**: persistent worlds, identity-tagged query traces, trace transducers, typed budgets, and error/time functionals. Compilation to real argument systems factors into passes (represent, lower, transport, Fiat–Shamir) whose invariant is **guarantee transport**: ideal-model guarantees carried by oracle types become cryptographic obligations of commitment schemes.
+An oracle reduction's output claim is a **statement plus a source-scoped virtual oracle** — a typed
+query program over declared backing resources whose extensional meaning is derived under the
+handler produced by the *same* execution. Relations consume **closed claims** and never see
+derivation history. Composition is handler substitution with explicit context morphisms. A separate
+resource schema tracks real identity, origin, aliasing, and guarantees; a later backend assignment
+is indexed by that schema. Generic
+domain-independent cursor/run/trace/transducer algebra lives in PolyFun; VCVio supplies oracle/probability worlds,
+instrumentation, resources, and games; ArkLib supplies protocol claims, security notions, and
+compilers. Compilation factors into represent/lower/transport/Fiat–Shamir passes whose invariant is
+**guarantee transport**: ideal slot guarantees become explicit commit/open/link obligations.
 
 ## Documents
 
 | Doc | Contents | Stability |
 |---|---|---|
 | [`00-end-state.md`](00-end-state.md) | The ambition: all of SNARKs, and what we write down now to enable it | directional |
-| [`01-foundations.md`](01-foundations.md) | The sharp three-library split; named foundation requirements on PolyFun and VCVio | **normative** |
+| [`01-foundations.md`](01-foundations.md) | Ownership by parametricity; current inventory; precise semantic deltas | **normative** |
+| [`01a-foundation-pr-plan.md`](01a-foundation-pr-plan.md) | Exact PolyFun, VCVio, and ArkLib PR slices and release train | operational |
 | [`02-oracle-reduction-core.md`](02-oracle-reduction-core.md) | Claims, virtual oracles, closing, composition, core security (Δ side) | **normative** |
 | [`03-adversarial-oracle-execution.md`](03-adversarial-oracle-execution.md) | Worlds, traces, transducers, games, state restoration, extractors, budgets (Γ side) | normative core, fluid periphery |
 | [`04-oracle-elimination-compiler.md`](04-oracle-elimination-compiler.md) | The compiler passes, commitment capability records, BCS/Nova, guarantee transport | normative interfaces, fluid internals |
 | [`05-roadmap.md`](05-roadmap.md) | Phases, slices, gates, parallel tracks, risks, re-direction principles | fluid by design |
 
-Reading order for a new contributor: 00 → 02 §1–2 → 01 → 02 rest → 03 → 04 → 05.
+Reading order for a new contributor: 00 → 01 → 01a overview → 02 → 03 → 04 → 05.
 
 ## Resolved decisions (log)
 
@@ -36,4 +48,10 @@ Reading order for a new contributor: 00 → 02 §1–2 → 01 → 02 rest → 03
 4. Security definitions are never weakened without an explicit, documented decision; quantifier order is part of a notion's name.
 5. Every capability/property is a concrete game record (experiment, phases, trace inputs, budgets, error/time functions) — never a bare `Prop` name.
 
-**Interface stability legend.** *Stable* (audited signatures): `ClaimWith`/closing, `SourceCtx`/`subst`, `RunCore`/`ExecutionArtifact`, `Problem`/`ComProblem`, `OracleGuarantee`/`GuaranteeTransport`, the V1–V10/P1–P3 contracts. *Provisional* (named with intended shape, first real design at their roadmap phase): `TypedPlan`, `TranscriptTransform`, `FiniteConsumer`, `ResourceMeta` field set, `CompilePolicy` details. Provisional names may change without a decision-log entry until their phase lands.
+**Interface stability legend.** Stable today are architectural invariants (extensional closed claims,
+source-scoped virtual programs, runner-derived closing, explicit aliasing, guarantee transport, and the
+three-library dependency direction). Lean record signatures are provisional until their `01a`
+client gates pass; in particular `ClaimWith`, `SourceCtx`, `ResourceSchema`, `RunCore`, and
+`ExecutionArtifact` are signature sketches rather than frozen elaborated APIs. Compiler planning
+types (`TypedPlan`, `TranscriptTransform`, `FiniteConsumer`, `CompilePolicy`) remain fluid until
+their phase lands.

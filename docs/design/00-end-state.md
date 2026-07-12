@@ -1,44 +1,208 @@
-# 00 — End State: ArkLib as the Formalization Library for SNARKs
+# 00 — End State: A Verified Architecture for SNARKs
 
-## The ambition
+## 0. Status and scope
 
-ArkLib is to be the library in which **all of SNARKs is formalized**: hash-based (FRI, STIR, WHIR, BaseFold, Binius, BCS/Micali compilers), curve-based (KZG/PLONK, Groth16, IPA/Bulletproofs, Nova/ProtoStar folding, pairing and discrete-log assumptions, AGM), and lattice-based (Ajtai commitments, LaBRADOR/Greyhound-style arguments, RoK-and-roll style lattice reductions) — with **abstract specifications, concrete implementations, and verified refinements between them**, compositional all the way up (recursion, IVC, PCD, aggregation) and all the way down (Rust/production code ↔ Lean models via zkLean / Hax / Aeneas).
+This document is a **north star and coverage contract**, not a claim that every proof system has
+already been reduced to one carrier. The near-term scope is classical hash-, algebraic-, and
+lattice-based proof systems under explicitly stated oracle and adversary models. Quantum access,
+relativized relations that query the model's own random oracle, and other execution models require
+new semantics; the architecture must leave seams for them without pretending that the classical
+core already covers them.
 
-## The layer cake
+The design is being developed on `design/oracle-reduction-v2`, but that branch is documentation and
+prototype provenance, **not an implementation base**. At the 2026-07-13 audit it forked from ArkLib
+at `9f6e989`, while current ArkLib `main` was `e2c3710`; it also carried the older core-rebuild tree.
+Every implementation PR described in [`01a-foundation-pr-plan.md`](01a-foundation-pr-plan.md) starts
+from the then-current default branch. Prototype declarations may be transplanted only as reviewed
+source material.
 
+There is already a separate Lean 4.31 migration candidate, `quang/bump-v4.31.0` at `55a9ccc` after
+merging current `main`. It pins VCVio `cbd4144b` and VCVio's tested PolyFun revision `04a12b6`.
+AR-0 should review, rebase, validate, and land that work (or its successor), not recreate the
+migration from scratch; candidate-branch existence is not itself an acceptance result.
+
+## 1. The ambition
+
+ArkLib should become the integration library in which a broad range of SNARK constructions can be
+stated, composed, compiled, and connected to executable implementations:
+
+- hash-based protocols such as FRI, STIR, WHIR, BaseFold, Binius, and BCS/Micali compilers;
+- algebraic systems such as KZG/PLONK, IPA/Bulletproofs, Nova/ProtoStar folding, pairing-based
+  systems, and protocols proved in the AGM;
+- lattice-based commitments and arguments, including Ajtai-style commitments and structured
+  lattice reductions;
+- recursion, IVC, PCD, aggregation, preprocessing, and executable refinement.
+
+This is a **coverage hypothesis** tested by conformance cases, not an axiom. The first cases are
+sumcheck, FRI, and Nova; a polynomial-commitment protocol, a preprocessing protocol, and one
+lattice-backed protocol must follow before the common carrier is treated as mature. A construction
+that does not naturally pass through ideal oracle reduction may enter at the committed-relation or
+argument-system layer. The architecture must accommodate that route rather than force a false
+encoding.
+
+## 2. Architecture: pipeline plus two cross-cutting planes
+
+The former “layer cake” was useful intuition but misleading as a dependency stack: security games
+quantify over objects at several layers, and ideal reductions do not depend on adversarial worlds.
+The end state has one object/compilation pipeline and two cross-cutting planes.
+
+### 2.1 Object and compilation pipeline
+
+```text
+generic interaction syntax
+        ↓ specialize to oracle protocols
+ideal claims and oracle reductions (Δ)
+        ↓ represent / lower / transport
+committed relations and backend capabilities
+        ↓ Fiat–Shamir / argument compiler
+interactive or noninteractive argument systems
+        ↓ executable refinement
+production representations and implementations
 ```
-L6  Implementations            Rust ↔ Lean extraction/refinement (zkLean, Hax, Aeneas)
-L5  Argument systems           NARGs/SNARKs in oracle worlds; Fiat–Shamir; exact bounds
-L4  Compiled reductions        committed relations Com_A[R]; commitment backends
-L3  Oracle reductions (ideal)  IORs/IOPs/PIOPs; claims, virtual oracles, composition   ← 02
-L2  Adversarial execution      worlds, traces, budgets, games, extractors              ← 03
-L1  Oracle computation         OracleComp, QueryImpl, probability      (VCVio)
-L0  Interaction substrate      trees, paths, decorations, lenses       (PolyFun) + mathlib
-```
 
-Every protocol formalization is a path through this cake; every compiler (`04`) is a verified functor between adjacent layers; every security theorem transports along it with explicit error/budget bookkeeping.
+- **PolyFun** supplies domain-agnostic interaction semantics: polynomial functors, `FreeM` and
+  `ITree`, displayed data, handlers/responders, dynamical systems, finite and infinite runs,
+  structural traces, generic sequential/multiparty/concurrent wiring, and refinement.
+- **VCVio** specializes that substrate to oracle computation and probabilistic semantics:
+  `OracleSpec`, `OracleComp`, `QueryImpl`, stateful simulation, evaluation distributions, random
+  oracles, query resources, and cryptographic games.
+- **ArkLib** supplies protocol meaning: prover/verifier roles, public and oracle messages, claims,
+  relations, reductions, extractors, commitment-backend adapters, compilers, and concrete proof
+  systems.
 
-## Why this design enables that future
+### 2.2 Adversarial-execution plane (Γ)
 
-**One claim discipline for all three families.** Curve-based and lattice-based systems differ from hash-based ones in their *backends* (L4) and *assumptions* (L2 worlds and adversary classes), not in their ideal-model shape (L3). A folding scheme over Pedersen commitments, a PIOP compiled with KZG, and an IOP compiled with Merkle trees are the *same L3 objects* with different `CommitBackend` capability records and different `CompilePolicy` rules (inline / seal-and-link / homomorphic `CommitAction`). This is already demonstrated by the Nova case study (`04` §6): the fold is an ideal oracle reduction; Pedersen linearity is a `CommitAction`; binding enters only in the tree-extraction bridge.
+Worlds, persistent state, query-event traces, replay/reprogramming, probability, and resource
+accounting interpret the pipeline's objects. PolyFun owns their effect-polymorphic structural
+algebra; VCVio owns oracle/probability specializations; ArkLib owns the protocol games and security
+notions that consume them. This plane is the subject of `03`, not a prerequisite for defining the
+ideal carrier in `02`.
 
-**Assumption families are world + adversary-class data.** ROM = a lazily-sampled function world. AGM = an adversary-class restriction plus an instrumented trace. Discrete-log/SIS/pairing assumptions = hardness predicates on games over group/module worlds. Quantum = a different (linear) execution model, explicitly out of the classical core's scope. All enter at L2 without touching L3 — this is what makes "all of SNARKs" a library rather than a family of forks.
+### 2.3 Mathematical and representation plane
 
-**Refinement is built into the carrier split.** Abstract behavior (extensional) vs. `Materialization`/`ExecutableMaterialization` (data + cost) vs. `TypedPlan` (inspectable programs) is exactly the spec-to-implementation refinement seam. L6 work attaches to `ExecutableMaterialization` and plan interpreters; it never needs to reopen L3 semantics.
+`ArkLib/Data`, CompPoly, coding theory, finite fields, curves, modules, lattices, encodings, and
+serialization cross several semantic layers. They are not “below” protocol syntax in a useful
+sense. Each backend states exactly which mathematical structures and representation theorems it
+uses.
 
-**Exact bounds are structural, not aspirational.** Budgets and errors are typed functionals from day one (D4); matching or beating textbook bounds is then a matter of proving better lemmas, not re-architecting.
+## 3. The commonality claim, stated precisely
 
-## What we write down NOW to bring this future into possibility
+The target is **one capability-parametric language of ideal resources and claims**, not literal
+identity of every hash-, curve-, and lattice-based construction.
 
-1. **The stable interfaces** (this suite): `ClaimWith`/closing, `SourceCtx`/`subst`, `ExecutionArtifact`/`WorldTrace`/`TraceTransducer`, `Budget`/error functionals, `CommitBackend` capability records, compiler pass contracts. Everything else may churn; these are the load-bearing walls, so they get the audits.
-2. **The registry discipline.** Every security notion is registered with: its game record, quantifier order in the name, its position in the implication map (`03` §8), and its losses. Every backend capability likewise. New papers land as new registry entries + bridges, not as parallel frameworks.
-3. **The guarantee-transport principle** (D1) as a compiler invariant — this is the single sentence that connects ideal-model typing to cryptographic obligations across all three families.
-4. **The negative space.** Explicitly out of the classical core: quantum messages (linear execution model, separate), relativized relations querying the model's own RO (impossible-territory, per 2024/728), UC-style environments (future L2 extension, cf. VCVio-UC sketches in paper-note).
-5. **The foundation contracts** (`01`): what ArkLib demands of PolyFun and VCVio, so those libraries can evolve independently without breaking L3+.
+- A FRI fold, a Nova fold, and a polynomial-evaluation reduction may all expose virtual output
+  oracles, but their interfaces and guarantees differ.
+- A backend advertises operations it can realize: random access, batch opening, evaluation,
+  linear action on commitments, proximity enforcement, or a link argument.
+- `GuaranteeTransport` says how an ideal slot guarantee becomes a commit/open/link obligation. It
+  does not assert that every backend can realize every guarantee.
+- A conformance theorem embeds a concrete construction into the common carrier and discharges its
+  capability obligations. Failed conformance is evidence that the carrier needs a principled
+  extension, not permission to add a scheme-local parallel framework.
 
-## Non-goals for the core
+Nova and FRI remain the canonical contrast. Pedersen linearity realizes a virtual linear action on
+committed witnesses without a fresh prover message; Merkle commitments do not, so FRI requires a
+fresh committed word plus consistency and proximity obligations. The shared abstraction is the
+ideal transformation plus an explicit backend action—not a claim that the concrete protocols are
+the same.
 
-- A closed DSL of all derived oracles (the record + `ofQuery` escape hatch is canonical; constructor zoo grows by need).
-- One monolithic "secure protocol" structure (properties are separate records + bridges).
-- Category-theory-first APIs (state the algebra concretely; adopt Mathlib category theory only when several clients demonstrate payoff).
-- Uniform treatment of every "transcript" (four distinct objects, named, with conversions: `InteractionTranscript`, `VerifierLocalView`, `WorldTrace`, `SRMoveTrace`).
+## 4. Security assumptions are complete game data
+
+An assumption family is not merely “world + adversary class.” A usable computational game records:
+
+1. the security parameter and public parameter/setup distribution;
+2. the world and representation semantics in which the experiment runs;
+3. the adversary interface and admissible class (including uniformity/advice choices);
+4. the event or advantage functional;
+5. the cost/resource model and reduction loss.
+
+ROM, AGM, DLOG, SIS, and pairing assumptions instantiate different parts of this record. AGM, for
+example, combines an instrumented algebraic-representation semantics with an adversary restriction;
+it is not only a trace flag. VCVio owns generic game/reduction carriers and standalone primitive or
+hardness games (for example Merkle, DLOG, or SIS); ArkLib owns protocol-security experiments that
+consume them. AGM may therefore split into a VCVio algebraic world/representation adapter and an
+ArkLib protocol adversary restriction.
+
+## 5. Real objects and virtual views
+
+The design deliberately tracks both layers.
+
+- The **real layer** contains setup/input resources, prover messages, concrete data, world state,
+  commitments, and openings.
+- The **virtual layer** contains source-scoped query programs describing the oracle behavior a
+  claim exposes.
+- A runner-produced artifact relates them: the security-game API consumes the paired output of one
+  execution and does not expose a constructor from independently supplied parts. This prevents
+  accidental mixing by construction of the experiment; it does not claim that two executions have
+  different Lean types or that malicious Lean code cannot fabricate values.
+- Compilation transforms real resources and transfers virtual guarantees into cryptographic
+  obligations. It does not erase the distinction.
+
+This is why `SourceCtx` should remain an extensional handler presentation while resource identity,
+origin, aliasing, and guarantees live in a separate `ResourceSchema`. Combining these prematurely
+would make semantic substitution depend on compiler metadata; omitting the schema would make trace
+and guarantee claims unverifiable.
+
+## 6. Refinement obligations at the executable boundary
+
+`ExecutableMaterialization` is an attachment point, not the whole L6 story. A production refinement
+theorem may need to relate:
+
+- mathematical values to encoded/serialized representations;
+- field, group, polynomial, or lattice operations to concrete arithmetic;
+- abstract randomness and oracle calls to executable entropy sources and hash APIs;
+- partiality, faults, and termination to the mathematical outcome model;
+- executable memory/FFI traces to mathematical query and cost traces;
+- measured or certified resource use to the stated budget model;
+- constant-time or leakage behavior, when such a property is claimed.
+
+Executable correctness therefore connects back to ideal and adversarial observations; it cannot be
+proved wholly inside a detached materialization record.
+
+## 7. What is fixed now, and what is evidence
+
+Fixed design principles:
+
+1. closed relations consume extensional oracle behavior;
+2. virtual derivations are source-scoped and compose by handler substitution;
+3. security games derive real/virtual closing from one runner-produced artifact rather than accepting split parts;
+4. resource aliasing is explicit and disjoint tensor does not duplicate persistent resources;
+5. security notions expose quantifier order, views, budgets, and losses;
+6. compiler passes expose guarantee-transport and security-transfer obligations;
+7. existing PolyFun/VCVio semantics are extended, not shadowed by ArkLib-private copies.
+
+Still provisional until Lean clients elaborate:
+
+- exact universes and field layouts of `OracleFamily`, `SourceCtx`, `ClaimWith`, and `RunCore`;
+- the final `ResourceSchema` and stable-resource-identity representation;
+- compiler plan and backend capability field names;
+- whether existing `Spec.Chain` is sufficient for n-ary reduction presentation.
+
+The prototype `ArkLib/Interaction` tree on this design branch is valuable evidence and a lemma
+bank. It is not proof that those APIs are current, stable, or mergeable wholesale.
+
+## 8. Success criteria
+
+The architecture has earned its abstraction when all of the following are true:
+
+- sumcheck, FRI, Nova, one polynomial-commitment protocol, and one lattice-backed protocol use the
+  same claim/closing discipline without scheme-local security frameworks;
+- hash and homomorphic backends instantiate distinct capability sets and obtain transfer theorems
+  with explicit losses;
+- ordinary, state-restoration, and knowledge-soundness theorems compose only under their stated
+  hypotheses, with exact resource/error accounting;
+- an existing VCVio Merkle theorem is adapted into an ArkLib compiler capability without restating
+  the primitive game;
+- one executable implementation is related to its mathematical execution and resource trace;
+- the three repositories remain acyclic and are released in a reproducible dependency train.
+
+## 9. Non-goals for the first core
+
+- A closed DSL of every derived oracle; `ofQuery` remains the escape hatch.
+- One monolithic “secure protocol” structure; properties remain separate games plus bridges.
+- Category-theory-first APIs or calling translations “functors” before categories and laws exist.
+- A single transcript type: structural interaction transcripts, verifier views, world query logs,
+  and state-restoration move traces remain distinct with explicit conversions.
+- Solving quantum-access or impossible-relativization cases inside the classical runner.
+- Rebuilding generic UC machinery: PolyFun and VCVio already contain open-process and UC layers;
+  the first oracle-reduction core merely does not depend on them.

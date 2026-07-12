@@ -1,38 +1,58 @@
 # 03 — Adversarial Oracle Execution: Worlds, Games, Extractors, Budgets
 
-**Normative core (§§1–5, 8–9), fluid periphery (§§6–7).** The Γ-side companion to `02`: the semantics in which security is stated and proved. Built on VCVio foundation items V1–V9 (`01` §2.2); ArkLib owns only the protocol-shaped games on top. The CY coverage audit (archive: `gpt-cy-coverage.md`) is the requirements document for this file: every GAP it lists is closed by an object here.
+**Normative core (§§1–5, 8–9), fluid periphery (§§6–7).** The Γ-side companion to `02`: the semantics in which security is stated and proved. Built on the PolyFun/VCVio deltas in `01` and `01a`; ArkLib owns only the protocol-shaped games and views on top. The CY coverage audit (archive: `gpt-cy-coverage.md`) is the requirements catalog, but current source inventories determine whether a requirement is a new object, an adapter, or a theorem repair.
 
 ## 1. Worlds
 
-`Γ` is a VCVio **World** (V1): packaged stateful handler + initial-state distribution + public projection + trace policy. Δ (claim resources, `02` §3.2) is read-only and per-reduction; Γ is persistent, shared by all parties and phases, threaded in execution order — never duplicated by `tensor`, never closed into a claim.
+`Γ` is a VCVio **oracle runtime** (V1), optionally interpreted through a traced artifact (V2) and resumed as a session (V5): a thin package over `QueryImpl.Stateful` with a setup computation and persistent state. Public observation and query-log instrumentation are orthogonal adapters, not fields of every runtime. Δ (claim resources, `02` §3.2) is read-only and per-reduction; Γ is persistent, shared by all parties and phases, threaded in execution order — never duplicated by claim-context tensor and never closed into a claim. No product-state runtime or independence theorem is assumed without explicit joint initialization and base semantics.
 
 - ROM = the lazy-function world; CY's oracle distributions `O(λ, N)` = one **joint** world presenting an indexed family of logical oracles (2r ROs for BCS), sampled jointly; independence/domain-separation are theorems.
 - AGM = adversary-class restriction + instrumented trace (basis ownership and extension rules specified per theorem); not a resource.
 - Relativized relations (relation itself queries the model RO) are out of scope by decision (cf. 2024/728).
-- The common theorem layer takes `Γ = ∅`; every Γ-theorem names its world family explicitly.
+- The common theorem layer uses a trivial/no-extra-world runtime; every nontrivial Γ-theorem names
+  its runtime family explicitly.
 
 ## 2. The execution artifact
 
-One dependent record per run; everything else is a projection (round-4/5 repairs C1/C2). "Same run" is made structural by construction, not by field co-location: the record is **the dependent output of the runner**, its raw constructor is private, and the world's state/trace are attached by the world runner (an uninterpreted `OracleComp` cannot report the final state of the world that has not yet interpreted it):
+The experiment has a staged, runner-controlled output. AR-6B first pairs the real resources and
+virtual claim; AR-9A adds Δ logging and then asks the VCVio runtime to attach Γ state/query trace.
+Security experiments are defined by the distribution `evalDist (Γ.runArtifact executeLogged)`.
+Theorems do not quantify over arbitrary artifacts unless given a `GeneratedBy`/support-membership
+witness. A paired output prevents accidental split-projection mixing; provenance comes from the
+runner distribution, not from the carrier type:
 
 ```lean
-structure RunCore (pt : Spec.PublicTranscript (Context shared)) where
+structure CoreRun (pt : Spec.PublicTranscript (Context shared)) where
   msgs       : Spec.OracleMessagesAt (Context shared) pt   -- prover oracle payloads
   inputEnv   : InputImpl shared                             -- the game's input behavior
-  deltaTrace : QueryTrace (srcSpecAt shared pt)             -- Δ-query log (verifier's queries+answers)
   outcome    : Terminal (OracleClaim (srcSpecAt shared pt) (Stmt pt) (Out pt)) Fault
   proverOut  : ProverPayload pt
 
-def execute … : OracleComp Γ.spec ((pt : _) × RunCore pt)   -- only exported producer
+def executeCore … : OracleComp Γ.Surface ((pt : _) × CoreRun pt)
 
-def World.run (Γ : World) : OracleComp Γ.spec α → SPMF (α × Γ.State × WorldTrace Γ)
+structure LoggedRun (pt : _) where
+  core       : CoreRun pt
+  deltaTrace : QueryLog (srcSpecAt shared pt)
 
-abbrev ExecutionArtifact := ((pt : _) × RunCore pt) × Γ.State × WorldTrace Γ
+def executeLogged … : OracleComp Γ.Surface ((pt : _) × LoggedRun pt)
+
+def OracleRuntime.runArtifact (Γ : OracleRuntime Import Surface) :
+    OracleComp Surface α → OracleComp Import (RuntimeArtifact Γ α)
+
+-- ArkLib dependent view of the VCVio artifact; constructor remains controlled
+abbrev ExecutionArtifact := RuntimeArtifact Γ ((pt : _) × LoggedRun pt)
 ```
 
-Derived projections: `closingEnv` (from `inputEnv`+`msgs`), `closed` (claim closed with `closingEnv`), `VerifierLocalView` — defined **from `deltaTrace`** (Δ-queries are not in the Γ trace; recovering the view by replay would need a determinism theorem, so it is logged, not asserted), extractor views, RBR prefixes, compiler traces. Probability via `evalDist ∘ World.run`; the fault/missing-mass policy is V9's single decision, applied here once.
+`executeCore`/`CoreRun` are trace-free and belong to AR-6B. `LoggedRun`, the runtime adapter, and the
+security-game experiment belong to AR-9A. Pairing prevents accidental split-part use in supported
+games; it is not a nominal run identifier or a proof of sampling provenance.
 
-**Four transcripts, never conflated:** `InteractionTranscript` (protocol messages) / `VerifierLocalView` / `WorldTrace` / `SRMoveTrace` — with explicit conversions. "Full transcript" in legacy code means the first; extractors at the compiled layer eat the third.
+Derived projections: `closingEnv` (from one `CoreRun`'s `inputEnv`+`msgs`), `closed`, and `VerifierLocalView` — defined **from the enclosing `LoggedRun.deltaTrace`** (Δ-queries are not in the Γ trace; recovering the view by replay would need a determinism theorem, so it is logged, not asserted), extractor views, RBR prefixes, compiler traces. Probability is the evaluation distribution of the VCVio runtime runner. Missing `SPMF` mass retains VCVio's existing failure/nontermination meaning; explicit protocol `fault` is a returned value. Terminal decoding either proves `NeverFail` or invokes the one named VCVio outcome materialization.
+
+Define `WorldTrace Γ` only as the named view/alias of `QueryLog Γ.Surface` equipped with ArkLib
+resource-schema routing; it is not a parallel carrier. **Four transcripts, never conflated:**
+`InteractionTranscript` / `VerifierLocalView` / `WorldTrace` / `SRMoveTrace`. “Full transcript” in
+legacy code means the first; compiled extractors consume the third.
 
 ## 3. Outcomes
 
@@ -47,7 +67,10 @@ Malformed parses/openings fail **closed** (reject); `fault` is model failure, `P
 Quantifier order is part of a notion's identity and its **name**. The registry (per README ground rule 5) records for each game: sampling order, adversary phases, trace visibility, budget type, error/time functional signature.
 
 - **Adaptive vs. static:** `H ← O; (x, π) ← A^H` vs. `x` fixed before sampling. Both constructors provided; NARG-level defaults to adaptive (CY).
-- **Phased games** (V5): commitment games are two-phase (commit trace / open phase, state across, budget `Q₁+Q₂ ≤ Q`); preprocessing is five-phase with the *honest indexer running inside the same world* between adversary phases, four separate traces to the extractor. Temporal placement is game structure, not `ResourceMeta.origin` metadata.
+- **Phased games**: PolyFun supplies generic machine wiring; ordinary VCVio oracle phases use
+  `resume` plus monadic execution and `QueryLog.append` (PF-4 is needed only by a future operational
+  machine adapter); ArkLib defines the commit/open or five-phase adversary game. Preprocessing keeps
+  the *honest indexer inside the same runtime* between adversary phases.
 - **Soundness:** `Pr[accept out ∧ out ∈ Language R_out]`-style events over artifact projections, for admissible false inputs; **output-admissibility** is a separate probabilistic obligation of each reduction (`ε_adm`). The exact composition contract (normative, common-case scope: finite classical trees, deterministic read-only Δ, no terminal-view Γ queries, explicit challenge kernels, order-preserving sequential decomposition, fail-closed parsing):
 
 ```text
@@ -78,7 +101,7 @@ structure SRMove (Π : PublicCoinIOP) where
 -- SRTrace : the move-response log (a WorldTrace instance).
 ```
 
-`SRSoundness(s, N, B)`, straightline and **rewinding** `SRKnowledgeSoundness` (extractor gets the SR trace; rewinding adds black-box access; error/time are V7 functionals of the prover's failure probability and runtime). SR is *not* checkpoint/restore (different request type); bridges from RBR (`(B+r)·ε_RBR`), from special soundness, and to Fiat–Shamir are registry entries with named losses.
+`SRSoundness(s, N, B)`, straightline and **rewinding** `SRKnowledgeSoundness` (extractor gets the SR trace; rewinding adds black-box access; error/time are explicit functions of the prover's experiment-specific failure probability and runtime, transported through VCV-10 reductions). SR is *not* checkpoint/restore (different request type); bridges from RBR (`(B+r)·ε_RBR`), from special soundness, and to Fiat–Shamir are registry entries with named losses.
 
 ## 6. Extractors: taxonomy + composition calculus
 
@@ -88,28 +111,34 @@ Axes (orthogonal, per round-3): adversary access / execution control / oracle ev
 - `Extractor.OfflineLoggedExecution` — eats `WorldTrace`s (adversary's and verifier's); the CY compiled-layer straightline notion. **Never silently substitute the former for the latter: doing so assumes away Merkle extraction** (round-4 correction).
 - `Extractor.QueryOnly`, `BlackBox.{OnePass, PrefixOracle, CheckpointRestore}`, `PrefixWitnessTransport`, `SpecialSoundnessTree`, `RBRTranscriptTree` — each a capability-record product, with view-reduction implications proved where they exist.
 
-**Composition calculus (the round-4 gap):** compiled-layer extractors are **TraceTransducer pipelines** (V3) ending in an inner extractor — CY's BCS-KS extractor is `segment-at-FS-events → stateful multi-config Merkle extraction → hash-chain backtrack → SR-trace adapter → E_IOP-SR`. ArkLib provides: transducer-composition of extractors; black-box transport through prover wrappers; and V7-substitution of inflated characteristics (`δ' = δ_A + ε_MT + ε_chain` fed into the inner error/time functional). Stateful *online* extraction (Merkle multi-config: state across calls, trace *increments*, per-configuration projection, repeated-root coherence, native multi-instance error — CY 13534/13874) is the canonical nontrivial instance and lives with the Merkle backend (`04`), on V2/V3 objects.
+**Composition calculus (the round-4 gap):** compiled-layer extractors are causal transducer pipelines ending in an inner extractor — CY's BCS-KS extractor is `segment-at-FS-events → stateful multi-config Merkle extraction → hash-chain backtrack → SR-trace adapter → E_IOP-SR`. The pure transducer and causality algebra is PolyFun PF-5; VCVio specializes it to query logs and supplies external resource certificates; ArkLib supplies the concrete adapters, extractor composition, black-box transport, and substitution of inflated error/time functions. Stateful *online* extraction remains with the Merkle backend (`04`) and consumes the shared runtime artifacts.
 
 ## 7. RBR, trees, and the implication map
 
-- **One constrained execution tree** (on PolyFun P1 cursors): shared prover prefixes, verifier fork nodes with explicit conditional challenge kernels, pairwise-distinct sibling challenges, Γ-history agreement, stable resource identities. Decorations: CY state functions (RBRS), leaf language/witness data (special soundness), grafting data (RBRTE), `KState`+backward maps (ArkLib's strong RBRK).
+- **One constrained execution tree** (on PolyFun `FreeM.Cursor` plus cursor-restricted decorations): shared prover prefixes, verifier fork nodes with explicit conditional challenge kernels, pairwise-distinct sibling challenges, Γ-history agreement, stable ArkLib resource identities. It is bridged to, but not identified with, `DynSystem.Prefix` and concurrent `Front`.
 - **CY-compatible notions coexist with ArkLib's stronger ones**: `CYStateFunction`/`CYRBRS`/`CYRBRK` (whole-transcript extractor) alongside `ArkRBRK` (edge-local prefix witnesses); proved: `ArkRBRK → CYRBRK → {straightline KS, SRKS}` with the (B+r) losses. Textbook theorems are never forced through the stronger API. The current `KnowledgeClaimTree` is renamed as the *reversible* strong variant; the relaxed probabilistic object replaces it as the RBRKS endpoint.
 - RBR state is indexed by **full prefixes** (concrete messages included; public projection separate); `SourcesAt p` monotone under extension; no future resources at `p`.
 
 ## 8. Budgets, errors, time
 
-Per D4 (exact bounds), all core from the start, on V4/V7:
+Per D4 (exact bounds), all core from the start, by extending VCVio's existing
+`ResourceProfile`, query-bound, cost-model, and reduction APIs:
 
 ```
--- VCVio (V4): generic extensible ledger + query accounting
-Ledger (K : Type) := { amount : K → ℕ }  + feasibility predicates
--- ArkLib: the protocol resource labels
+-- VCVio: existing generic resource profile / query-cost carriers
+ResourceProfile Cost ProtocolResource
+-- ArkLib: protocol-specific labels and feasibility refinements
 ProtocolResource := oracleQuery (id) | srMove | commitment | configuration | opening
-Budget := Ledger ProtocolResource   with Σ oracleQuery ≤ totalQueries
-ε, T : Budget → Params → AdvCharacteristics → ℝ≥0∞   -- functionals, not scalars
+ProtocolBudget := ResourceProfile Cost ProtocolResource refined by feasibility predicates
+ε, T : ProtocolBudget → Params → FailureRate → RuntimeBound → ℝ≥0∞
 ```
 
-Composition modes: additive (union bound) and substitution (CY BCS-KS shape); expected-time recurrences (special-soundness extractors); per-configuration sums with heterogeneous parameters; budget transport through every reduction/transducer ("the SR prover makes ≤ Q_FS moves"). Reduction *running time* is part of every theorem statement, CY-style.
+No parallel `Ledger` or universal `AdvCharacteristics` is introduced. Failure probability is
+experiment-specific, while resource profiles and cost transforms reuse VCVio's existing carriers.
+Composition modes are additive and substitution-style (the CY BCS-KS shape); concrete expected-time
+recurrences remain ArkLib theorems until multiple clients justify a generic VCVio API. Budget
+transport accompanies every reduction/transducer ("the SR prover makes ≤ Q_FS moves"), and
+reduction running time remains explicit.
 
 ## 9. Deferred with named obligations
 

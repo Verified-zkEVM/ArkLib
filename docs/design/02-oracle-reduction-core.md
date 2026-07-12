@@ -21,7 +21,9 @@ Three objects around any oracle, never conflated: **(1)** concrete data (a polyn
 
 ## 2. Representation-indexed claims
 
-One claim shape, three representations (round-4 unification):
+One intended claim shape, three representations (round-4 unification). These snippets are design
+equations; exact universes and implicit arguments remain provisional until AR-4A through AR-7 in
+`01a` elaborate:
 
 ```lean
 structure ClaimWith (Rep : OracleFamily → Type) (Stmt : Type) (Out : OracleFamily) where
@@ -63,6 +65,13 @@ structure SourceCtx where
   impl : Env → QueryImpl spec Id
 ```
 
+`SourceCtx` is deliberately extensional. Pure `SourceHom` routes handlers and is the only morphism
+needed by semantic substitution. A separate `ResourceSchema` records stable identity, origin,
+aliasing/sharing, and reified ideal guarantees; each guarantee has a witness connecting its
+descriptor to the actual slot object/refined type. `SchemaHom` lies over a `SourceHom` and proves
+schema coherence. A later `BackendAssignment` is indexed by the schema. This keeps semantic
+substitution independent of compiler metadata without leaving provenance prose-only.
+
 For a reduction at ambient `shared` and public transcript `pt`, the source context has **three** parts:
 
 ```lean
@@ -70,7 +79,7 @@ def sourcesAt (shared) (pt) : SourceCtx :=
   (setupSources shared).tensor ((inputSources shared).tensor (messageSources shared pt))
 ```
 
-- **Setup part:** preprocessing/indexer oracles, CRS handles, correlated public parameters. Each setup source is classified as public data (in `shared`), read-only Δ behavior (here), or a persistent Γ world (`03` §1) — the classification plus stable identity/origin metadata is mandatory, because setup binding and preprocessing games (`03` §4) depend on it. Systems without setup take this part empty.
+- **Setup part:** preprocessing/indexer oracles, CRS handles, correlated public parameters. Each setup source is classified in the companion `ResourceSchema` as public data (in `shared`), read-only Δ behavior (here), or a persistent Γ runtime (`03` §1). Systems without setup take this part empty.
 - **Input part:** `InputImpl` — arbitrary deterministic behavior for the input-oracle interfaces. Soundness quantification is unchanged and unweakened.
 - **Transcript part:** the structural hidden-message fiber
 
@@ -133,7 +142,7 @@ def VirtualOracle.subst
 theorem eval_subst : (subst v w).eval (ρS + ρT) = w.eval (v.eval ρS + ρT)
 ```
 
-Stage two sees the *declared middle interface* (`A.asSource` — behavior only) plus its own suffix resources; never stage one's hidden environment. Sharing/renaming/weakening are explicit context morphisms; duplicating a handle is contraction along a resource identity, not tensoring. Laws (`subst_assoc`, identities) are stated up to `SourceEquiv` (spec iso + env equiv + naturality), under **two named equivalences**: `≈sem` (same behavior under every handler) and `≈op` (typed trace equivalence preserving order/multiplicity/cost). Semantic laws need `≈sem`; compiler theorems need `≈op`. **Reduction-level associativity is not promised**; if needed, the route is PolyFun P2 (Presentation) and/or an n-ary `Chain`/`Telescope` normal form with binary `comp` as a view.
+Stage two sees the *declared middle interface* (`A.asSource` — behavior only) plus its own suffix resources; never stage one's hidden environment. Sharing/renaming/weakening are explicit context morphisms; duplicating a handle is contraction along a resource identity, not tensoring. Laws (`subst_assoc`, identities) are stated up to `SourceEquiv` (spec iso + env equiv + naturality), under **two named equivalences**: `≈sem` (same behavior under every handler) and `≈op` (typed trace equivalence preserving order/multiplicity/cost). Semantic laws need `≈sem`; compiler theorems need `≈op`, witnessed through VCVio runtime artifacts and resource transport. **Reduction-level operational associativity is not promised**; if a three-stage client requires it, first extend PolyFun's existing `Spec.Chain` under gated PF-6. A new presentation datatype is a fallback, not a foundation assumption.
 
 What `subst` does *not* subsume: interactive-phase monad retargeting (`retargetMonads` / `retargetAmbientWithRoute`) remains — it rewrites receiver-node access during interaction, not terminal claims. Sequential execution decomposition must be proved order-preserving (no generic commutativity for `OracleComp` worlds); the commutative-monad proof from the plain layer is scoped to the pure stateless case.
 
