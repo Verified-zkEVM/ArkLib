@@ -287,7 +287,6 @@ lemma relCloseToCode_iff_relCloseToCodeword_of_minDist [Nonempty ι] [DecidableE
       use v; constructor
       · simp only [Subtype.coe_prop]
       · rw [relDistFromPickRelClosestCodeword_of_Nonempty_Code] at h_dist_le_e
-        simp only at h_dist_le_e
         rw [←ENNReal.coe_le_coe]
         exact h_dist_le_e
   · -- Direction 2: (←)
@@ -363,14 +362,11 @@ theorem relDistFromCode_le_iff_distFromCode_toENNReal_le {C : Set (ι → F)} (u
     δᵣ(u, C) ≤ δ ↔ (Δ₀(u, C) : ENNReal) ≤ δ * (Fintype.card ι : ℝ≥0) := by
   rw [relDistFromCode_le_iff_distFromCode_le]
   constructor <;> intro h
-  · simp_all only [ENNReal.coe_natCast]
-    convert ENNReal.ofReal_le_ofReal
-      (Nat.floor_le (show 0 ≤ δ * (Fintype.card ι : ℝ≥0) by positivity)) |>
-        le_trans (ENNReal.ofReal_le_ofReal <| ?_) using 1
-    any_goals exact Nat.cast (distFromCode u C |> ENat.toNat)
-    · cases h : distFromCode u C <;> aesop
-    · simp [ENNReal.ofReal_mul]
-    · cases h' : distFromCode u C <;> aesop
+  · refine (ENat.toENNReal_le.mpr h).trans ?_
+    change ((⌊δ * (Fintype.card ι : ℝ≥0)⌋₊ : ℝ≥0) : ENNReal) ≤
+      (δ * (Fintype.card ι : ℝ≥0) : ℝ≥0)
+    exact ENNReal.coe_le_coe.mpr
+      (Nat.floor_le (show 0 ≤ δ * (Fintype.card ι : ℝ≥0) by positivity))
   · contrapose! h
     cases h' : distFromCode u C
     · simp_all only [ENat.coe_lt_top, ENNReal.coe_natCast, ENat.toENNReal_top]

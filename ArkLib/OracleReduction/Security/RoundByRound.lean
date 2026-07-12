@@ -593,6 +593,6 @@ lemma OracleVerifier.id_rbrKnowledgeSoundness
     {rel : Set ((Statement × ∀ i, OStatement i) × Witness)} :
     (OracleVerifier.id : OracleVerifier oSpec Statement OStatement _ _ _).rbrKnowledgeSoundness
       init impl rel rel 0 := by
-  convert Verifier.id_rbrKnowledgeSoundness init impl (rel := rel)
+  exact Verifier.id_rbrKnowledgeSoundness init impl (rel := rel)
 
 end Trivial

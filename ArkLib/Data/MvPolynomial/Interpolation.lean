@@ -92,7 +92,8 @@ lemma schwartz_zippel' [Finite σ] {p : MvPolynomial σ R} (hp : p ≠ 0) (S : �
           by_cases hi : i ∈ p.vars
           · simpa [S', hi] using ha_mem i hi
           · simp [S', hi]
-        · simpa [extendDomain] using ha_eval
+        · change eval (extendDomain a) p = 0
+          exact ha_eval
       · intro a₁ ha₁ a₂ ha₂ h
         funext i hi
         have h' := congr_fun h i
@@ -219,6 +220,7 @@ theorem eq_zero_of_degreeOf_lt_card_of_eval_eq_zero {p : R[X σ]} (S : σ → Fi
     rw [← Equiv.apply_symm_apply equiv i]
     simp only [q, degreeOf_rename_of_injective equiv.injective]
     simp only [Equiv.apply_symm_apply]
+    rfl
   have hEval' : ∀ x ∈ piFinset fun i ↦ S' i, eval x q = 0 := fun x hx => by
     let y := x ∘ equiv
     have hy : y ∈ piFinset fun i ↦ S i := by

@@ -571,9 +571,9 @@ theorem vappend_singleton (u : Fin m → α) (a : α) :
 
 theorem singleton_append (a : α) (v : Fin n → α) :
     vappend !v[a] v = vcons a v ∘ Fin.cast (Nat.add_comm _ n) := by
-  simp only [vappend_eq_append, vcons_eq_cons]
-  convert append_left_eq_cons !v[a] v using 2
-  ext i; fin_cases i; simp
+  have ha : !v[a] 0 = a := by
+    exact vcons_zero a !v[]
+  rw [vappend_left_eq_cons, ha]
 
 -- Empty cases
 theorem empty_unique (v : Fin 0 → α) : v = !v[] :=

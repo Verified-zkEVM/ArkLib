@@ -686,7 +686,7 @@ theorem dist'_eq_dist : ‖C‖₀'.toNat = ‖C‖₀ := by
             (by simpa [hvals] using hVals_nonempty))
       -- `vals.min ≤ dStar` since `dStar ∈ vals`.
       have h_le : vals.min ≤ (dStar : ℕ∞) := by
-        simpa using (Finset.min_le hmem_min')
+        exact Finset.min_le hmem_min'
       -- `dStar ≤ a` for all `a ∈ vals`, hence `dStar ≤ vals.min`.
       have h_ge : (dStar : ℕ∞) ≤ vals.min := by
         -- Use the universal lower-bound property of `min'`.

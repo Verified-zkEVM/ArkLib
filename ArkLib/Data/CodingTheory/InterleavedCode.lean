@@ -146,7 +146,7 @@ noncomputable instance interleavedCodeSet_fintype {A : Type*} {κ ι : Type*}
 
 /-- Interleaved code submodule of any `ModuleCode`, where each row belongs to the code. -/
 @[simp]
-instance ModuleCode.moduleInterleavedCode : ModuleCode ι F (InterleavedSymbol A κ) := {
+def ModuleCode.moduleInterleavedCode : ModuleCode ι F (InterleavedSymbol A κ) := {
   -- Simple condition wrapping over Matrix
   carrier := interleavedCodeSet (C := (MC : Set (ι → A)))
   add_mem' hU hV i := MC.add_mem (hU i) (hV i)
@@ -170,7 +170,7 @@ def codewordStackSet {A : Type*} {κ ι : Type*} (C : Set (ι → A)) : Set (Wor
   { V : WordStack A κ ι | ∀ k, V.getRowWord k ∈ C }
 
 @[simp]
-instance ModuleCode.codewordStackSubmodule : Submodule F (WordStack A κ ι) := {
+def ModuleCode.codewordStackSubmodule : Submodule F (WordStack A κ ι) := {
   -- Simple condition wrapping over Matrix
   carrier := codewordStackSet (C := (MC : Set (ι → A)))
   add_mem' hU hV i := MC.add_mem (hU i) (hV i)
@@ -509,7 +509,7 @@ export InterleavedStructure (eq_iff_all_rows_eq eq_iff_all_symbols_eq eq_iff_all
     intro u v; constructor
     · intro h; rw [h]; exact fun k ↦ rfl
     · intro h; ext i k;
-      let res := h i; simp only at res; exact congrFun res k
+      exact congrFun (h i) k
   eq_iff_all_cells_eq := by
     intro u v; constructor
     · intro h; rw [h]; exact fun i k ↦ rfl

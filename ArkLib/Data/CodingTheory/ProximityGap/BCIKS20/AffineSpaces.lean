@@ -1082,7 +1082,7 @@ theorem bucket_exists_common_codeword
       exact (Submodule.mem_bot F).mp this
     set j₀ : Fin k := ⟨0, NeZero.pos k⟩
     refine ⟨v_pair j₀ 0, S_j j₀, (hv_pair j₀ 0).1, hS_j j₀, ?_, ?_⟩
-    · convert (hv_pair j₀ 0).2 using 2
+    · simpa [finMapTwoWords, h_dirs_zero j₀] using (hv_pair j₀ 0).2
     · intro j
       refine ⟨0, V.zero_mem, ?_⟩
       intro c _

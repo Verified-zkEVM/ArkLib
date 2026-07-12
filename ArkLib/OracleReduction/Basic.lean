@@ -404,13 +404,13 @@ def toOracleVerifier
       (fun q => do
         let resp ← liftM <|
           query (spec := [OStmtIn]ₒ) (m := OracleComp oc) q
-        return ⟨q.1, ⟨q.2, by simpa only using resp⟩⟩)
+        return ⟨q.1, ⟨q.2, resp⟩⟩)
     let queryResponsesOMsg : List ((i : pSpec.MessageIdx) × ((q : (Oₘ i).Query) × (Oₘ i).Response q)) ←
       (naVerifier.queryMsg stmt challenges).mapM
       (fun q => do
         let resp ← liftM <|
           query (spec := [pSpec.Message]ₒ) (m := OracleComp oc) q
-        return ⟨q.1, ⟨q.2, by simpa only using resp⟩⟩)
+        return ⟨q.1, ⟨q.2, resp⟩⟩)
     let stmtOut ← liftM <| naVerifier.verify stmt challenges queryResponsesOStmt queryResponsesOMsg
     return stmtOut
 

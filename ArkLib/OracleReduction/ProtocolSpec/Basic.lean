@@ -721,7 +721,7 @@ instance {pSpec : ProtocolSpec n} {Statement : Type}
     [∀ i, DecidableEq (pSpec.Message i)]
     [∀ i, DecidableEq (pSpec.Challenge i)] :
     OracleSpec.DecidableEq (srChallengeOracle Statement pSpec) := by
-  refine { decidableEq_A := ?_, decidableEq_B := fun q => ?_ }
+  refine { decidableEqA := ?_, decidableEqB := fun q => ?_ }
   · dsimp only [srChallengeOracle, OracleInterface.toOracleSpec,
       challengeOracleInterfaceSR, OracleSpec.toPFunctor,
       OracleInterface.Query]
@@ -733,14 +733,14 @@ instance {pSpec : ProtocolSpec n} {Statement : Type}
 
 instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
     OracleSpec.Fintype (srChallengeOracle Statement pSpec) := by
-  refine { fintype_B := fun q => ?_ }
+  refine { fintypeB := fun q => ?_ }
   dsimp only [srChallengeOracle, OracleInterface.toOracleSpec,
     challengeOracleInterfaceSR, OracleSpec.toPFunctor, OracleInterface.Response]
   infer_instance
 
 instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
     OracleSpec.Fintype (fsChallengeOracle Statement pSpec) := by
-  refine { fintype_B := fun q => ?_ }
+  refine { fintypeB := fun q => ?_ }
   dsimp only [fsChallengeOracle, srChallengeOracle, OracleInterface.toOracleSpec,
     challengeOracleInterfaceSR, OracleSpec.toPFunctor, OracleInterface.Response]
   infer_instance

@@ -630,8 +630,14 @@ lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G�
       ((Option.map (fun result : RunResult => result.2) result₂).getD false)
       (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ) rfl hresp hg₁ hpair
       hverify₁ hverify₂
-  simpa only [bindingGameExt, kzg, OptionT.mk, pSpec', impl, sample, body, run₁, run₂,
-      pack, gameComp, P, Q] using hmono
+  change
+    Pr[P | OptionT.mk (do
+      let τ ← sample
+      (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache))]
+    ≤ Pr[Q | OptionT.mk (do
+      let τ ← sample
+      (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache))]
+  exact hmono
 
 omit [DecidableEq G₁] [Module (ZMod p) (Additive G₁)]
   [Module (ZMod p) (Additive G₂)] in
@@ -662,16 +668,16 @@ lemma t_sdh_game_eq {n : ℕ} {AuxState : Type} [SampleableType G₁]
       (bindingReduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) AuxState
         adversary) := by
   let scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-  simp only [Groups.tSdhExperiment]
+  simp only [Groups.tSdhExperiment, Groups.tSdhGame]
   congr 1
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
   let impl : QueryImpl _ (StateT unifSpec.QueryCache ProbComp) :=
     QueryImpl.addLift
       (randomOracle : QueryImpl unifSpec (StateT unifSpec.QueryCache ProbComp))
       (challengeQueryImpl (pSpec := pSpec'))
-  simpa only [bindingGameExt, bindingReduction, kzg, OptionT.mk, pSpec', impl, scheme,
-      OptionT.run_map] using
-    OptionT.map_mk_bind_eq_of_body
+  dsimp only [bindingGameExt, bindingReduction, kzg, OptionT.mk, pSpec', impl, scheme,
+    OptionT.run_map]
+  convert OptionT.map_mk_bind_eq_of_body
       (sample := (Groups.sampleNonzeroZMod (p := p) : ProbComp (ZMod p)))
       (body₁ := fun τ => (simulateQ impl (do
         let srs := Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ
@@ -715,9 +721,9 @@ lemma t_sdh_game_eq {n : ℕ} {AuxState : Type} [SampleableType G₁]
       (hBody := by
         intro τ
         dsimp only
-        refine StateT.map_run'_eq_of_map_eq _ _ _ _ (∅ : unifSpec.QueryCache) ?_
+        refine StateT.map_run'_eq_of_map_eq (∅ : unifSpec.QueryCache) ?_
         simp only [simulateQ_bind, simulateQ_pure, map_eq_bind_pure_comp, bind_assoc]
-        congr 1)
+        congr 1) using 1 <;> rfl
 
 omit [DecidableEq G₁] in
 /-- The t-SDH experiment is bounded by the t-SDH error. -/
@@ -746,7 +752,8 @@ theorem binding {g₁ : G₁} {g₂ : G₂} (hg₁ : g₁ ≠ 1)
   letI game := Commitment.bindingGame (init := pure ∅) (impl := randomOracle)
     (AuxState := AuxState) (scheme := scheme) (adversary := adversary)
   letI game_ext := bindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme
-  convert (
+  change Pr[Commitment.bindingCondition (Data := Fin (n + 1) → ZMod p) | game] ≤ tSdhError
+  exact
     calc Pr[Commitment.bindingCondition (Data := Fin (n + 1) → ZMod p) | game]
     _ = Pr[bindingCondExt (p := p) (n := n) | game_ext] :=
       binding_game_ext_eq_binding_game (pairing := pairing) adversary
@@ -760,7 +767,7 @@ theorem binding {g₁ : G₁} {g₂ : G₂} (hg₁ : g₁ ≠ 1)
       (bindingReduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) AuxState adversary) :=
       t_sdh_game_eq (g₁ := g₁) (g₂ := g₂) (pairing := pairing) adversary
     _ ≤ tSdhError := t_sdh_error_bound (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-      tSdhError htSdh adversary)
+      tSdhError htSdh adversary
 
 end Binding
 

@@ -201,7 +201,9 @@ theorem q_dvd_l2NormSq_of_not_isUnit (hq5 : q % 8 = 5) {c : Rq Φ} (hc : ¬ IsUn
       have hh := Rq.not_isUnit_toQuotientHom_of_not_isUnit
         (powTwoCyclotomic (R := ZMod q) α) hc
       rw [Rq.toQuotientHom] at hh
-      simpa only [Rq.toQuotient, quotientHom_apply, modIdeal, hct] using hh
+      change ¬ IsUnit (Ideal.Quotient.mk
+        (Ideal.span {(powTwoCyclotomic (R := ZMod q) α).φ.toPoly}) c.1.toPoly) at hh
+      simpa only [hct] using hh
     have hdvd : g1 ∣ ct ∨ g2 ∣ ct := by
       by_contra hcon
       rw [not_or] at hcon
