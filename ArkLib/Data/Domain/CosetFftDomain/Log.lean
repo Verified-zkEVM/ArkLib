@@ -57,7 +57,6 @@ private def logAux (ω : D)
 /-- Finds a preimage of `x` under the mapping `ω`. -/
 def log (ω : D) (x : ω) : Fin (2 ^ n) := logAux ω x (2 ^ n)
 
-set_option linter.flexible false in
 /-- Evaluating `ω` at the index found by `log` recovers `x`. -/
 @[simp]
 lemma log_right_inverse' {ω : D} {x : ω} :
@@ -75,7 +74,7 @@ lemma log_right_inverse' {ω : D} {x : ω} :
       by_cases hfuel : fuel < 2 ^ n
       · by_cases hfound : ω (⟨fuel, hfuel⟩ : Fin (2 ^ n)) = x
         · simp [logAux, hfuel, hfound]
-        · simp [logAux, hfuel, hfound]
+        · rw [show logAux ω x (fuel + 1) = logAux ω x fuel by simp [logAux, hfuel, hfound]]
           apply ih i
           · have hi_ne : i.val ≠ fuel := by
               intro hval
@@ -85,7 +84,7 @@ lemma log_right_inverse' {ω : D} {x : ω} :
               exact hx
             omega
           · exact hx
-      · simp [logAux, hfuel]
+      · rw [show logAux ω x (fuel + 1) = logAux ω x fuel by simp [logAux, hfuel]]
         apply ih i
         · exact lt_of_lt_of_le i.isLt (Nat.le_of_not_gt hfuel)
         · exact hx

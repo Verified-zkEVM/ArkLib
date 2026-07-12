@@ -63,10 +63,7 @@ def R_star_star (U₀ U₁ V₀ V₁ : InterleavedWord A (Fin m) ι) : Finset (F
     let Vᵣ := affineLineEvaluation V₀ V₁ r
     Uᵣ j = Vᵣ j)
 
-omit [Nonempty ι] [Fintype A] [AddCommGroup A] in
-set_option linter.unusedSectionVars false in
-set_option linter.unusedDecidableInType false in
-set_option linter.unusedFintypeInType false in
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq κ] [Fintype A] [AddCommGroup A] in
 /-- Row-wise distance is bounded by interleaved distance.
 i.e. `d((U)ᵢ, (M)ᵢ) ≤ d^m(U, M)` -/
 lemma dist_row_le_dist_ToInterleavedWord (U : InterleavedWord A (κ := κ) (ι := ι))
@@ -77,11 +74,8 @@ lemma dist_row_le_dist_ToInterleavedWord (U : InterleavedWord A (κ := κ) (ι :
   refine monotone_filter_right univ ?_
   exact fun a a_1 a_2 ↦ mt (congrArg fun a ↦ a rowIdx) a_2
 
-omit [AddCommGroup A] [Fintype F] [Nonempty ι] [Fintype A]
+omit [AddCommGroup A] [Fintype F] [Nonempty ι] [DecidableEq ι] [Fintype A]
   [NoZeroDivisors F] [DecidableEq F] [Module.Free F A] in
-set_option linter.unusedSectionVars false in
-set_option linter.unusedDecidableInType false in
-set_option linter.unusedFintypeInType false in
 /-- Helper Lemma relating row distance to interleaved distance (as derived from DG25):
   `d((Uᵣ)ᵢ, C) ≤ d^m(Uᵣ, C^m)` -/
 lemma dist_row_le_dist_ToInterleavedCode (U : InterleavedWord A (Fin m) ι) :

@@ -34,9 +34,7 @@ private def Fi (B : Finset (Fin n → F)) (i : Fin n) (α : F) : Finset (Fin n �
 private abbrev K (B : Finset (Fin n → F)) (i : Fin n) (α : F) : ℕ :=
   (Fi B i α).card
 
-set_option warning.simp.varHead false in
 /-- The sets `Fi B i α` partition `B` as `α` ranges over `F`. -/
-@[simp]
 lemma Fis_cover_B : B = univ.biUnion (Fi B i) := by aesop (add simp [Fi])
 
 /-- The sets `Fi B i α` are pairwise disjoint. -/

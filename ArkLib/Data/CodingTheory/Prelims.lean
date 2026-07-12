@@ -119,7 +119,7 @@ lemma full_row_rank_via_rank_subLeftFull (h : m ≤ n) :
            _ ≤ U.cRank := by exact Matrix.cRank_submatrix_le U id (Fin.castLE h)
    simp [h_cRank]
 
-set_option linter.overlappingInstances false in
+omit [Nontrivial F] in
 /-- A square matrix over an integral domain has full rank if its determinant is nonzero. -/
 lemma rank_eq_if_det_ne_zero {U : Matrix (Fin n) (Fin n) F} [IsDomain F] :
     Matrix.det U ≠ 0 → U.rank = n  := by
