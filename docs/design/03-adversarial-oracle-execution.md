@@ -13,20 +13,24 @@
 
 ## 2. The execution artifact
 
-One dependent record per run; everything else is a projection (round-4 repairs C1/C2):
+One dependent record per run; everything else is a projection (round-4/5 repairs C1/C2). "Same run" is made structural by construction, not by field co-location: the record is **the dependent output of the runner**, its raw constructor is private, and the world's state/trace are attached by the world runner (an uninterpreted `OracleComp` cannot report the final state of the world that has not yet interpreted it):
 
 ```lean
-structure ExecutionArtifact (…parameters: shared, world Γ…) where
-  pt        : Spec.PublicTranscript (Context shared)       -- realized public path
-  msgs      : Spec.OracleMessagesAt (Context shared) pt    -- prover oracle payloads
-  inputEnv  : InputImpl …                                  -- the game's input behavior
-  outcome   : Terminal (OracleClaim (srcSpecAt shared pt) (Stmt pt) (Out pt)) Fault
-  proverOut : ProverPayload pt                             -- adversary's declared output/witness
-  γState    : Γ.State
-  γTrace    : WorldTrace Γ                                 -- V2 object
+structure RunCore (pt : Spec.PublicTranscript (Context shared)) where
+  msgs       : Spec.OracleMessagesAt (Context shared) pt   -- prover oracle payloads
+  inputEnv   : InputImpl shared                             -- the game's input behavior
+  deltaTrace : QueryTrace (srcSpecAt shared pt)             -- Δ-query log (verifier's queries+answers)
+  outcome    : Terminal (OracleClaim (srcSpecAt shared pt) (Stmt pt) (Out pt)) Fault
+  proverOut  : ProverPayload pt
+
+def execute … : OracleComp Γ.spec ((pt : _) × RunCore pt)   -- only exported producer
+
+def World.run (Γ : World) : OracleComp Γ.spec α → SPMF (α × Γ.State × WorldTrace Γ)
+
+abbrev ExecutionArtifact := ((pt : _) × RunCore pt) × Γ.State × WorldTrace Γ
 ```
 
-Derived projections: `closingEnv` (from `inputEnv`+`msgs`), `closed` (claim closed with `closingEnv` — "same run" is now structural), `VerifierLocalView` (queried positions + answers — the HVZK object), extractor views, RBR prefixes, compiler traces. Execution returns `OracleComp _ ExecutionArtifact`; probability via `evalDist`; the fault/missing-mass policy is V9's single decision, applied here once.
+Derived projections: `closingEnv` (from `inputEnv`+`msgs`), `closed` (claim closed with `closingEnv`), `VerifierLocalView` — defined **from `deltaTrace`** (Δ-queries are not in the Γ trace; recovering the view by replay would need a determinism theorem, so it is logged, not asserted), extractor views, RBR prefixes, compiler traces. Probability via `evalDist ∘ World.run`; the fault/missing-mass policy is V9's single decision, applied here once.
 
 **Four transcripts, never conflated:** `InteractionTranscript` (protocol messages) / `VerifierLocalView` / `WorldTrace` / `SRMoveTrace` — with explicit conversions. "Full transcript" in legacy code means the first; extractors at the compiled layer eat the third.
 
@@ -44,7 +48,17 @@ Quantifier order is part of a notion's identity and its **name**. The registry (
 
 - **Adaptive vs. static:** `H ← O; (x, π) ← A^H` vs. `x` fixed before sampling. Both constructors provided; NARG-level defaults to adaptive (CY).
 - **Phased games** (V5): commitment games are two-phase (commit trace / open phase, state across, budget `Q₁+Q₂ ≤ Q`); preprocessing is five-phase with the *honest indexer running inside the same world* between adversary phases, four separate traces to the extractor. Temporal placement is game structure, not `ResourceMeta.origin` metadata.
-- **Soundness:** `Pr[accept out ∧ out ∈ Language R_out]`-style events over artifact projections, for admissible false inputs; **output-admissibility** is a separate probabilistic obligation of each reduction (`ε_adm`), load-bearing for composition.
+- **Soundness:** `Pr[accept out ∧ out ∈ Language R_out]`-style events over artifact projections, for admissible false inputs; **output-admissibility** is a separate probabilistic obligation of each reduction (`ε_adm`). The exact composition contract (normative, common-case scope: finite classical trees, deterministic read-only Δ, no terminal-view Γ queries, explicit challenge kernels, order-preserving sequential decomposition, fail-closed parsing):
+
+```text
+Sound(r₁, R₀ → R₁, ε₁)
+∧ OutputAdmissible(r₁, R₁, ε_adm)
+∧ (∀ reachable mid, history, Sound(r₂[mid, history], R₁ → R₂, ε₂(mid, history)))
+∧ SequentialDecomposition(r₁, r₂)
+⇒ Sound(r₁ ; r₂, R₀ → R₂, ε₁ + ε_adm + sup ε₂ + ε_fault)
+```
+
+  proved by splitting the accepting event on the intermediate claim (true / false-but-admissible / inadmissible). With persistent Γ, the suffix theorem is parameterized by the actual prefix history; same-labeled ROs do not compose by label. Terminal offline KS does **not** generically compose — the valid routes remain prefix-measurable middle extraction, auxiliary-input-robust stage-one KS, or RBRTE grafting.
 - **Knowledge:** the event includes extractor failure; no realization clause (coherence is completeness's). `KS → soundness` needs a causally-available witness supplier, not the bare existential.
 
 ## 5. State restoration (first-class, scheduled early — D5)
@@ -87,8 +101,11 @@ Axes (orthogonal, per round-3): adversary access / execution control / oracle ev
 Per D4 (exact bounds), all core from the start, on V4/V7:
 
 ```
-Budget = { totalQueries, perOracle : ι → ℕ, srMoves, commitments, configurations, openings }
-  with feasibility Σᵢ perOracle i ≤ totalQueries
+-- VCVio (V4): generic extensible ledger + query accounting
+Ledger (K : Type) := { amount : K → ℕ }  + feasibility predicates
+-- ArkLib: the protocol resource labels
+ProtocolResource := oracleQuery (id) | srMove | commitment | configuration | opening
+Budget := Ledger ProtocolResource   with Σ oracleQuery ≤ totalQueries
 ε, T : Budget → Params → AdvCharacteristics → ℝ≥0∞   -- functionals, not scalars
 ```
 

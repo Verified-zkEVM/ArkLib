@@ -63,10 +63,16 @@ structure SourceCtx where
   impl : Env → QueryImpl spec Id
 ```
 
-For a reduction at ambient `shared` and public transcript `pt`:
+For a reduction at ambient `shared` and public transcript `pt`, the source context has **three** parts:
 
-- **Input half:** `InputImpl` — arbitrary deterministic behavior for the input-oracle interfaces. Soundness quantification is unchanged and unweakened.
-- **Transcript half:** the structural hidden-message fiber
+```lean
+def sourcesAt (shared) (pt) : SourceCtx :=
+  (setupSources shared).tensor ((inputSources shared).tensor (messageSources shared pt))
+```
+
+- **Setup part:** preprocessing/indexer oracles, CRS handles, correlated public parameters. Each setup source is classified as public data (in `shared`), read-only Δ behavior (here), or a persistent Γ world (`03` §1) — the classification plus stable identity/origin metadata is mandatory, because setup binding and preprocessing games (`03` §4) depend on it. Systems without setup take this part empty.
+- **Input part:** `InputImpl` — arbitrary deterministic behavior for the input-oracle interfaces. Soundness quantification is unchanged and unweakened.
+- **Transcript part:** the structural hidden-message fiber
 
 ```lean
 def Spec.OracleMessagesAt : (s : Spec) → Spec.PublicTranscript s → Type

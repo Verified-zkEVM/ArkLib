@@ -54,16 +54,24 @@ These are the objects the Chiesa–Yogev coverage audit identified as the missin
 
 **V8 — Probability lemma kit.** Finite conditioning, hybrid arguments, statistical distance, per-event bad-event accounting over `SPMF`, and the specific ROM lemmas (unqueried-pair unpredictability, inversion, collision, hidden-salt bounds) as generic world lemmas parameterized by V4 budgets. Coordinate with the existing paper-note designs (`VCV-io-reduction-cost-accounting-design.md`, `vcvio-itree-oraclespec-lens-unification-plan.md`).
 
+**V10 — Computational games and reductions.** Security-parameter-indexed game ensembles and a reduction calculus: `GameFamily` (`Params : ℕ → Type`, `experiment : ∀ λ, Params λ → Adversary λ → SPMF Bool`), adversary classes (PPT/uniform/nonuniform, with advice), advantage/negligibility, `SecurityReduction G H` (`mapAdversary`, advantage/time/budget bounds), setup/keygen distributions. Required before any curve/lattice backend theorem (DLOG, SIS, pairing assumptions are hardness predicates on `GameFamily`s); `AdvCharacteristics` (V7) supplies the resource vocabulary but not the ensemble/reduction structure. General-purpose, hence VCVio's (or a VCVio-adjacent crypto-foundations module).
+
 **V9 — Failure discipline.** One decision, exported as a lemma kit: how explicit game outcomes (`accept/reject/fault`) interact with `SPMF` missing mass — either `NeverFails` proofs + explicit faults, or a specified interpreter converting monadic failure to `fault`. ArkLib's `Terminal` type (`03` §3) builds on whichever is chosen; it must not be decided twice.
 
 ### 2.3 Acceptance tests for the foundation
 
-The foundation is "adequate" when these compile and are proved in VCVio (or a VCVio-adjacent support library), with no ArkLib imports:
+Each V/P item is "adequate" when its test passes, in VCVio/PolyFun with no ArkLib imports:
 
-1. A lazy-RO world with V2 traces; the collision lemma `Q(Q−1)/2^{n+1}` stated and proved against a V4 budget.
-2. A two-phase adversary game (V5) with the trace-prefix law; a toy trace-based extractor stated in the CY commit/open shape.
-3. A transducer (V3) composed with a logged execution, with budget transport (V4).
-4. The substitution composition mode (V7) on a toy: `ε'(δ_A) = ε(δ_A + c)`.
+1. (V1/V2/V4/V8) A lazy-RO world with traces; the collision lemma `Q(Q−1)/2^{n+1}` proved against a budget, via a *conditioned* bad-event argument.
+2. (V1) A **joint heterogeneous** world (two correlated logical oracles) with per-oracle trace projection; the lazy-table ↔ full-function equivalence for a finite RO.
+3. (V5/V2) A two-phase adversary game with the trace-prefix concatenation law; a toy trace-based extractor in the CY commit/open shape.
+4. (V3/V4) A transducer composed with a logged execution, with budget transport.
+5. (V6) A fork/reprogram test: reprogram one point, prove preservation of unprogrammed answers and a query-before-program event bound.
+6. (V7) Substitution composition on a toy: `ε'(δ_A) = ε(δ_A + c)`; one expected-time recurrence.
+7. (V9) A theorem converting or excluding `SPMF` missing mass per the chosen policy.
+8. (V10) One toy `SecurityReduction` with advantage and time transport.
+9. (P1/P3) Cursor extension/restriction with decoration transport, cast-free by `#print axioms`-level inspection.
+10. (P2, only when promoted from reserve) A reassociation of a three-fold append as typed reindexing.
 
 ## 3. ArkLib: everything oracle-reduction
 
@@ -73,4 +81,4 @@ Explicit *non*-ownership: ArkLib must not define private trace types, private wo
 
 ## 4. Interface freeze discipline
 
-`01` (this file) is the contract. Changes to V1–V9/P1–P3 signatures after Phase 2 require a note in the decision log (README) — the point is to let three libraries evolve in parallel without re-auditing the stack each time.
+`01` (this file) is the contract. **Each V/P item freezes only after its acceptance test (§2.3) passes; changes to already-accepted items require a decision-log entry** (README). Unaccepted items may change freely — freezing unimplemented signatures would turn debt stubs into accidental API. The point is to let three libraries evolve in parallel without re-auditing the stack each time.

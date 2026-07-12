@@ -29,31 +29,31 @@ New `Interaction/Oracle/Virtual.lean` (+ neighbors): `OracleFamily` (+ explicit-
 **Gate:** the theorem, sorry-free, with the D1 pattern documented in code.
 **Decision point:** if `ClaimWith` indexing fights elaboration here, fall back to three concrete records + morphisms (the unification is a convenience, not a wall).
 
-## Phase 3 — Substitution algebra + two more slices (T-C/T-P) [L]
+## Phase 3 — Substitution algebra + two more slices (T-C/T-P) [L; `≈op`/cost need V2/V4]
 
-`tensor`/`asSource`/morphisms (`rename`/`weaken`/`share`)/`rebase`/`subst`; `eval_subst`; laws up to `SourceEquiv` under `≈sem`/`≈op`; terminal-routing simplification in programmatic composition (keep interactive retargeting); order-preserving execution decomposition for the pure case. Slices: **Spartan first-sumcheck boundary** (virtual polynomial + preserved total materializer) and **FRI fold phase** (fresh + derived coexistence; first `fold`/`linComb` constructors). Two-round pass-through composition with the closed-evaluator equation.
+`tensor`/`asSource`/morphisms (`rename`/`weaken`/`share`)/`rebase`/`subst`; `eval_subst`; laws up to `SourceEquiv` under `≈sem`; terminal-routing simplification in programmatic composition (keep interactive retargeting); order-preserving execution decomposition for the pure case. `≈op` and cost-preservation statements **wait for V2/V4** (or ship as explicitly-marked drafts) — semantic skeletons and quantitative layers split cleanly here. Slices: **Spartan first-sumcheck boundary** (virtual polynomial + preserved total materializer) and **FRI fold phase** (fresh + derived coexistence; first `fold`/`linComb` constructors). Two-round pass-through composition with the closed-evaluator equation.
 **Gate:** boundary-as-`subst` demonstrated; constructors land with `eval` lemmas.
 **Fallback:** if `retargetMonads`-as-`subst`-action fights Lean, keep it hand-written; the claim algebra carries the proofs regardless.
 
-## Phase 4 — Execution artifact + outcomes + V2 security (T-X, needs T-F: V1/V2/V5/V9 + P1 started) [L]
+## Phase 4 — Execution artifact + outcomes + V2 security (T-X, needs T-F: V1/V2/V4/V5/V7/V9 + P1 started) [L]
 
 `ExecutionArtifact` over worlds/traces; `Terminal` outcomes with per-protocol `LegacyOutcome` decoders; `ClaimSchema`/`Problem`; closed-claim relations + generated adapters; completeness and **ordinary-soundness composition** (output admissibility + conditional suffix theorem) in `Security.V2`; per-protocol bridges for the three slices. Budget/error functionals (V4/V7) adopted in statements from the first theorem (D4).
 **Gate:** slice bridges proved two-way; soundness composition theorem sorry-free; no legacy consumer broken.
 **Risk:** this is the semantic heart; if a bridge fails, *stop and diagnose the quantifier* — that is the audit's designed tripwire, not an obstacle.
 
-## Phase 5 — State restoration + trace calculus (T-X, needs V2/V3/V5) [L] ← D5: before compiler
+## Phase 5 — State restoration + trace calculus (T-X, needs V1–V8 complete + P1) [L] ← D5: before compiler
 
 Salted SR game family + SR traces + move budgets; `TraceTransducer` instances (segmentation, backtracking, SR adapters); straightline + rewinding SRKS with V7-functional errors/times; extractor taxonomy records + transducer composition calculus + view reductions; RBR prefix objects on P1 cursors; the constrained execution tree; `CY*` vs `Ark*` RBR notions with the implication map and (B+r) bridges.
-**Gate:** RBR→SR bridge proved; the KS-composition non-theorem documented with its three valid strengthenings.
+**Gate:** the full bridge set — `RBR→SR`; `ArkRBRK → CYRBRK → {ordinary KS, SRKS}`; single- and multi-round special soundness → ordinary KS and SRKS, each under explicit replay, entropy, budget, and error hypotheses; the KS-composition non-theorem documented with its three valid strengthenings.
 
-## Phase 6 — Compiler, staged (T-K, needs Phases 3+5) [XL]
+## Phase 6 — Compiler, staged (T-K, needs Phases 3+5 and V4/V6/V7/V8/V9) [XL]
 
-Order: resource metadata + `BCSPublicView` + `TypedPlan` v1 (free typed read program; applicative fragment; certified `LinearForm`) → `RepresentOracles` → `LowerAccesses` (fixed-consumer inlining + trace coherence) → `TransportBoundary` (seal-and-link; `CommitAction` with the **Nova slice** as first conformance case) → Merkle backend capability records (CY-grade, replacing the `False` placeholder) → **iBCS** security transfer → `FiatShamir` (hash-chain; consumes Phase-5 SR) → **BCS soundness with CY's exact bound shape**, then BCS-KS via the extractor pipeline.
-**Gate per stage:** its row of the `04` §7 matrix. GuaranteeTransport obligations surfaced by `BackendAssignment` from the first stage.
+Order (**interfaces before passes**): capability/game interface records + `GuaranteeDesc`/`OracleGuarantee` + `BackendAssignment` → `ResourceMeta`/`BCSPublicView`/`TypedPlan` v1 (free typed read program; applicative fragment; certified `LinearForm`) → passes against *abstract* capabilities (`RepresentOracles` → `LowerAccesses` with fixed-consumer inlining + trace coherence → `TransportBoundary` with seal-and-link and `CommitAction`) → concrete instances (Merkle capability records CY-grade, replacing the `False` placeholder; Pedersen with the **Nova slice** as `CommitAction` conformance) → **iBCS** security transfer → `FiatShamir` (hash-chain; consumes Phase-5 SR) → **BCS soundness with CY's exact bound shape**, then BCS-KS via the extractor pipeline.
+**Gate per stage:** its row of the `04` §7 matrix (now reproduced in `04`, no archive dependency). GuaranteeTransport obligations surfaced by `BackendAssignment` from the first stage.
 
 ## Phase 7+ — Widening [XL, prioritize by demand]
 
-ZK/WI (programmable worlds, salting, local-view simulators); preprocessing/holography (five-phase games); parallel/shared-prefix combinators; curve backends (KZG/Pedersen/IPA capability records — Nova generalizes), lattice backends; indifferentiability; L6 refinement hooks (`ExecutableMaterialization` ↔ zkLean/Hax); reduction-level associativity via P2 only if a client demands it.
+ZK/WI (programmable worlds, salting, local-view simulators); preprocessing/holography (five-phase games); parallel/shared-prefix combinators; **computational backends** (needs V10): curve (KZG/Pedersen/IPA capability records — Nova generalizes) and lattice, with a gate: *one DLOG/AGM- or SIS-based backend theorem proved end-to-end through a `SecurityReduction`*; indifferentiability; L6 refinement hooks (`ExecutableMaterialization` ↔ zkLean/Hax); reduction-level associativity via P2 only if a client demands it.
 
 ## Dependency sketch
 
@@ -66,7 +66,7 @@ Phase 1 → 2 → 3 ──────────────→ 4 → 5 → 6 
 ## Risk register (top five)
 
 1. **Phase-4 bridge failure** → designed tripwire; diagnose, don't route around.
-2. **T-F slippage** → phases 1–3 don't depend on it; 4–6 do; keep `FOUNDATION-DEBT` honest and small.
+2. **T-F slippage** → phases 1–2 don't depend on it; Phase 3's quantitative half and all of 4–6 do; keep `FOUNDATION-DEBT` honest and small.
 3. **`ClaimWith`/dependent-index friction** → Phase-2 fallback ready.
 4. **Trace-slicing proof burden** (list-partition obligations everywhere) → it's a *library* (V2/V3); resist theorem-local plumbing.
 5. **Scope gravity toward the compiler** → Phases 4–5 are the value; the compiler without them is the `main`-branch failure mode again.

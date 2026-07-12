@@ -19,17 +19,27 @@ The target object is not a new framework: a compiled NARG *is* an oracle reducti
 
 ## 2. GuaranteeTransport (D1 — the pass invariant)
 
-Every type-level guarantee on an ideal oracle slot (degree bound, codeword membership, well-formedness) must be explicitly discharged by the compilation of that slot:
+Every type-level guarantee on an ideal oracle slot (degree bound, codeword membership, well-formedness) must be explicitly discharged by the compilation of that slot. Crucially, the guarantee must be **reified** — an arbitrary refined Lean type does not expose its predicate to the compiler, so subtype inspection cannot be the API:
 
-```
-for each slot s with interface guarantee G_s:
-  RepresentOracles(s) must name the backend obligation O_s  (commit-phase or open-phase)
-  and the security transfer theorem consumes a capability record proving O_s enforces G_s
-  (exactly: accepted openings of s are consistent with SOME object satisfying G_s,
-   with error ε_{G_s} entering the additive/substitution budget).
+```lean
+structure OracleGuarantee where
+  Raw    : Type                 -- unrefined carrier
+  good   : Raw → Prop           -- the reified promise
+  oracle : OracleInterface Raw
+
+abbrev OracleGuarantee.IdealObj (G) := {x : G.Raw // G.good x}
+-- Ideal slots are typed as G.IdealObj; slot metadata carries G itself.
+
+structure GuaranteeTransport (G : OracleGuarantee) (A : CommitBackend …) where
+  -- accepted openings of this slot are consistent with SOME good raw object
+  enforce       : AcceptedOpenings A → … (Σ x : G.Raw, G.good x ∧ OpeningsRealize A x)
+  error         : ErrorFunctional      -- ε_{G} enters the additive/substitution budget
+  enforce_bound : …
 ```
 
-Instances: bounded-degree slots → PCS degree enforcement or low-degree tests; codeword slots → proximity tests (FRI/STIR as *guarantee-restoring reductions* before/after transport); plain vector slots → trace coherence only. A slot whose guarantee no selected backend can discharge is a **compilation error**, surfaced at `BackendAssignment` time. This is the precise sense in which "proofs go off the wire" at compilation: the ideal promise becomes a cryptographic obligation, and the obligation's error appears in the final bound.
+`ResourceMeta` (or the slot schema) carries the `OracleGuarantee` descriptor explicitly; `BackendAssignment` matches descriptors to backend capabilities, and a slot whose guarantee no selected backend can discharge is a **compilation error surfaced at assignment time**. Promise-free slots use `good := fun _ => True`.
+
+Instances: bounded-degree slots → PCS degree enforcement or low-degree tests. **Proximity testing does not discharge an exact-codeword guarantee**: it establishes closeness, not consistency with an exact codeword behavior — an exact-codeword slot needs either an explicit guarantee-*relaxing* reduction whose output relation records proximity (FRI/STIR used as guarantee-restoring reductions, with the relaxation visible in the relation), followed by a decoding/query-agreement bridge, or a backend that extracts an exact codeword consistent with every accepted opening. Plain vector slots → trace coherence only. This is the precise sense in which "proofs go off the wire" at compilation: the ideal promise becomes a cryptographic obligation, and the obligation's error appears in the final bound.
 
 ## 3. Modes at output boundaries
 
@@ -37,7 +47,17 @@ Instances: bounded-degree slots → PCS degree enforcement or low-degree tests; 
 2. **Seal-and-link (reusable boundary):** materialize, commit, change the relation to `Com_A[R]`, and prove a **malicious link** (consistency reduction / alias theorem). Honest `Materialization.correct` is never sufficient.
 3. **Derive (`CommitAction`):** backend-specific public action on commitments for a certified plan fragment (Nova: linear/quadratic-in-challenge plans over Pedersen). Capability-indexed; no generic homomorphic action exists.
 
-`Com_A[R]` is heterogeneous by construction (`BackendAssignment`: per-resource backend, setup, encoding, ownership); the homogeneous `Com_F[R]` is the special case. Witnesses are claim-dependent (`02` §6) precisely because committed claims put openings in the witness.
+`Com_A[R]` is heterogeneous by construction (`BackendAssignment`: per-resource backend, setup, encoding, ownership); the homogeneous `Com_F[R]` is the special case. The committed-schema transformer is normative — randomized commitment execution must never hide inside `Prop`:
+
+```lean
+def ComProblem (A : BackendAssignment) (P : Problem S) : Problem (ComSchema A S) where
+  Witness ctx cc := Σ decoded : S.Claim ctx,
+                    P.Witness ctx decoded × A.OpeningWitness cc decoded
+  admissible ctx cc := …  -- WellFormedSetup ∧ EncodesPromise ∧ P.admissible on decoded
+  rel ctx cc w := P.rel ctx w.1 w.2.1 ∧ A.RealizesHandles cc w.1 w.2.2
+```
+
+Commitment randomness and openings live in the **witness**; `RealizesHandles` is a deterministic relation (or the accepted outcome of a separately modeled commitment protocol). Witnesses are claim-dependent (`02` §6) precisely because of this transformer.
 
 ## 4. Backends as game-indexed capability records
 
@@ -68,4 +88,16 @@ Kept as in the round-3 document (archive §6.10.6), now with D1 phrasing: the id
 
 ## 7. Theorem matrix and schedule
 
-The per-pass × per-property matrix from round 3 stands (correctness / soundness / knowledge / ZK per pass; batching as its own transform; recursion needs a well-founded measure). Additions from round 4: all errors/times in the matrix are V7 functionals (substitution mode for KS: `ε_NARG-KS = ε_IOP-SRKS(λ+s_FS, N, Q, δ_A + ε_MT + ε_chain) + …`); compilation fixes a topological schedule (key binding → absorption → challenges → queries → openings → decision) recorded in `ResourceMeta`; budget splits (`Q_MT + Q_FS ≤ Q`) are ledger constraints, and bounds like `ε_rbr + Q·ε_bind` are corollaries only when the conditional union bound is proved.
+The pass × property matrix (normative; reproduced from round 3 so this document has no hidden archive dependency):
+
+| Pass | Functional correctness | Ordinary soundness | Knowledge/extraction | Zero knowledge |
+|---|---|---|---|---|
+| `RepresentOracles` | honest commitment correctness; public-view projection | none by itself | none by itself | commitment leakage only |
+| `LowerAccesses` | opening correctness + plan/trace erasure | trace coherence; stronger binding only when the ideal relation needs it | multi-extraction/WEE or backend tree extraction, with fork coherence | bounded-query ideal simulator + selective/adaptive hiding + opening simulation |
+| fixed-consumer inline | composed evaluator equals lowered consumer | inherited after access lowering | inherited only with the preceding extraction theorem | leakage of the concrete consumer trace is charged |
+| seal-and-link boundary | materialization + link correctness | sound link argument + target-handle coherence | extractable link or RBRTE-compatible witness relation | simulatable link argument |
+| `CommitAction` boundary | representation commuting square | action correctness + required binding across forks | leaf openings/witnesses + relational tree bridge | action leakage + simulator compatibility |
+| batching (own transform) | batch verifier equals individual obligations | native batch soundness or proved reduction | native multi-instance extraction | batch-proof simulation |
+| `FiatShamir` | transcript/challenge agreement | state-restoration soundness in the chosen RO model | state-restoration function binding/extraction or RBRTE theorem | programmable-RO/QROM simulator as applicable |
+
+Recursive compilation of opening protocols needs a well-founded measure (unrepresented oracle nodes, then depth). Additions from round 4: all errors/times in the matrix are V7 functionals (substitution mode for KS: `ε_NARG-KS = ε_IOP-SRKS(λ+s_FS, N, Q, δ_A + ε_MT + ε_chain) + …`); compilation fixes a topological schedule (key binding → absorption → challenges → queries → openings → decision) recorded in `ResourceMeta`; budget splits (`Q_MT + Q_FS ≤ Q`) are ledger constraints, and bounds like `ε_rbr + Q·ε_bind` are corollaries only when the conditional union bound is proved.
