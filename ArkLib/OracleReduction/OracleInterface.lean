@@ -111,18 +111,18 @@ instance {ι : Type u} [DecidableEq ι] (v : ι → Type v) [O : ∀ i, OracleIn
     [h : ∀ i, DecidableEq (Query (v i))]
     [h' : ∀ i q, DecidableEq ((O i).Response q)] :
     [v]ₒ.DecidableEq where
-  decidableEq_A := inferInstanceAs (DecidableEq ((i : ι) × Query (v i)))
-  decidableEq_B | ⟨i, q⟩ => h' i q
+  decidableEqA := inferInstanceAs (DecidableEq ((i : ι) × Query (v i)))
+  decidableEqB | ⟨i, q⟩ => h' i q
 
 instance {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterface (v i)]
     [h : ∀ i q, Fintype ((O i).Response q)] :
     [v]ₒ.Fintype where
-  fintype_B | ⟨i, q⟩ => h i q
+  fintypeB | ⟨i, q⟩ => h i q
 
 instance {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterface (v i)]
     [h : ∀ i q, Inhabited ((O i).Response q)] :
     [v]ₒ.Inhabited where
-  inhabited_B | ⟨i, q⟩ => h i q
+  inhabitedB | ⟨i, q⟩ => h i q
 
 @[reducible, inline]
 instance {ι₁ : Type u} {T₁ : ι₁ → Type v} [inst₁ : ∀ i, OracleInterface (T₁ i)]

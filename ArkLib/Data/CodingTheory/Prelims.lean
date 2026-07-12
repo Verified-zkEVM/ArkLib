@@ -272,8 +272,6 @@ lemma AffSpanSet.instFinite [Finite F] [NeZero k] (u : Fin k → ι → F) :
   unfold AffSpanSet
   exact Set.toFinite _
 
-attribute [instance] AffSpanSet.instFinite
-
 /-- The affine span as a `Finset`, using `AffSpanFinite` to convert from the set. -/
 noncomputable def AffSpanFinset [NeZero k] (U : Fin k → ι → F) : Finset (ι → F) :=
   (AffSpanSet.instFinite U).toFinset
