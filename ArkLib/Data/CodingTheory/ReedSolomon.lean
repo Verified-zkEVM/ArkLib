@@ -611,7 +611,6 @@ lemma toPolynomial_mem_lt_deg (c : ReedSolomon.code domain deg) :
                 (r' := fun i => p.eval (domain i))) ?_
       intro i _
       -- From codeword property: evaluations agree on all points
-      change (c : ι → F) i = p.eval (domain i)
       exact congrArg (fun f => f i) hp_eval.symm
     -- A polynomial of degree < |ι| equals its Lagrange interpolant on `univ`
     have hp_eq_interp :

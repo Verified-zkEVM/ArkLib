@@ -224,7 +224,8 @@ lemma ps_exists_x_preserve_nat_degree_y {F : Type} [Field F]
     rw [toFinsupp_apply, coeff_eq_zero_of_natDegree_lt hm]
     simp
   · refine le_natDegree_of_ne_zero ?_
-    convert hx.2 using 1 <;> rfl
+    convert hx.2 using 1
+    all_goals rfl
 
 lemma ps_exists_y_preserve_degree_x {F : Type} [Field F]
     (B : F[X][Y]) (hB : B ≠ 0) (P_y : Finset F) (hcard : P_y.card > natDegreeY B) :

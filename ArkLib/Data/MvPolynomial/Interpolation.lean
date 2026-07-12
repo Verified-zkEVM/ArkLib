@@ -217,10 +217,10 @@ theorem eq_zero_of_degreeOf_lt_card_of_eval_eq_zero {p : R[X σ]} (S : σ → Fi
   let S' := S ∘ equiv.symm
   have hDegree' : ∀ i, q.degreeOf i < #(S' i) := fun i => by
     convert hDegree (equiv.symm i)
-    rw [← Equiv.apply_symm_apply equiv i]
-    simp only [q, degreeOf_rename_of_injective equiv.injective]
-    simp only [Equiv.apply_symm_apply]
-    rfl
+    · rw [← Equiv.apply_symm_apply equiv i]
+      simp only [q, degreeOf_rename_of_injective equiv.injective]
+      simp
+    · simp only [S', Function.comp_apply]
   have hEval' : ∀ x ∈ piFinset fun i ↦ S' i, eval x q = 0 := fun x hx => by
     let y := x ∘ equiv
     have hy : y ∈ piFinset fun i ↦ S i := by

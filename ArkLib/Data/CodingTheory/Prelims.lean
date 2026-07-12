@@ -119,6 +119,7 @@ lemma full_row_rank_via_rank_subLeftFull (h : m ≤ n) :
            _ ≤ U.cRank := by exact Matrix.cRank_submatrix_le U id (Fin.castLE h)
    simp [h_cRank]
 
+set_option linter.overlappingInstances false in
 /-- A square matrix over an integral domain has full rank if its determinant is nonzero. -/
 lemma rank_eq_if_det_ne_zero {U : Matrix (Fin n) (Fin n) F} [IsDomain F] :
     Matrix.det U ≠ 0 → U.rank = n  := by
@@ -414,7 +415,7 @@ theorem card_univ_filter_eq {e : α} :
     #{x : α | x ≠ e} = #(Finset.univ (α := α)) - 1 := by
   rw [
     Finset.filter_congr (q := (· ∉ ({e} : Finset _))) (by simp),
-    ←Finset.sdiff_eq_filter, Finset.card_univ_diff
+    ←Finset.sdiff_eq_filter, Finset.card_univ_sdiff
   ]
   simp
 

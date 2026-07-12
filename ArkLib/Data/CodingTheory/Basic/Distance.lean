@@ -789,7 +789,7 @@ lemma possibleDistsToCode_nonempty_iff
   -- Goal: (∃ d, ∃ c ∈ C, c ≠ w ∧ δf w c = d) ↔ (∃ c, c ∈ C \ {w})
 
   -- 2. Unfold set difference on RHS
-  simp only [Set.mem_diff, Set.mem_singleton_iff]
+  simp only [Set.mem_sdiff, Set.mem_singleton_iff]
   -- Goal: (∃ d, ∃ c ∈ C, c ≠ w ∧ δf w c = d) ↔ (∃ c, c ∈ C ∧ c ≠ w)
 
   -- 3. Prove the iff

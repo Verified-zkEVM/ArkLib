@@ -152,7 +152,7 @@ private lemma exists_common_support_of_wt_le
       lt_of_le_of_lt hbad0_card_le_D hD_lt_cardF
     have h_nonempty : (Finset.univ \ bad0 : Finset F).Nonempty := by
       have : 0 < (Finset.univ \ bad0 : Finset F).card := by
-        simpa [Finset.card_univ_diff] using Nat.sub_pos_of_lt hbad0_lt_cardF
+        simpa [Finset.card_univ_sdiff] using Nat.sub_pos_of_lt hbad0_lt_cardF
       exact Finset.card_pos.mp this
     rcases h_nonempty with ⟨a, ha⟩
     have ha_not_bad0 : a ∉ bad0 := (Finset.mem_sdiff.mp ha).2

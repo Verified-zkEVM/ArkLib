@@ -64,6 +64,9 @@ def R_star_star (U₀ U₁ V₀ V₁ : InterleavedWord A (Fin m) ι) : Finset (F
     Uᵣ j = Vᵣ j)
 
 omit [Nonempty ι] [Fintype A] [AddCommGroup A] in
+set_option linter.unusedSectionVars false in
+set_option linter.unusedDecidableInType false in
+set_option linter.unusedFintypeInType false in
 /-- Row-wise distance is bounded by interleaved distance.
 i.e. `d((U)ᵢ, (M)ᵢ) ≤ d^m(U, M)` -/
 lemma dist_row_le_dist_ToInterleavedWord (U : InterleavedWord A (κ := κ) (ι := ι))
@@ -76,6 +79,9 @@ lemma dist_row_le_dist_ToInterleavedWord (U : InterleavedWord A (κ := κ) (ι :
 
 omit [AddCommGroup A] [Fintype F] [Nonempty ι] [Fintype A]
   [NoZeroDivisors F] [DecidableEq F] [Module.Free F A] in
+set_option linter.unusedSectionVars false in
+set_option linter.unusedDecidableInType false in
+set_option linter.unusedFintypeInType false in
 /-- Helper Lemma relating row distance to interleaved distance (as derived from DG25):
   `d((Uᵣ)ᵢ, C) ≤ d^m(Uᵣ, C^m)` -/
 lemma dist_row_le_dist_ToInterleavedCode (U : InterleavedWord A (Fin m) ι) :
@@ -285,7 +291,6 @@ lemma affineWord_close_to_affineInterleavedCodeword
       Δ₀(getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx, Vᵣ_star_i) ≤ e := by
       have h_Δ₀_getrow_Uᵣ_Vᵣ := dist_row_le_dist_ToInterleavedWord Uᵣ Vᵣ_star.val rowIdx
       exact le_trans h_Δ₀_getrow_Uᵣ_Vᵣ h_dist_Uᵣ_Vᵣ_star_le_e
-
     -- 4. Show (Uᵣ)ᵢ is e-close to (Vᵣ)ᵢ
     -- Get the row-wise agreement for row i from the constructor
     have h_agree_i := h_row_agreement rowIdx
@@ -704,8 +709,8 @@ lemma R_star_star_upper_bound
     · congr
       exact R_star_star_eq_union MC U₀ U₁ V₀ V₁ e D
     · exact Disjoint.symm (disjoint_R_star_star_filter_columns_in_D_not_in_D MC U₀ U₁ V₀ V₁ e D)
-  simp only [ge_iff_le]
   -- 4. Apply the split
+  simp only
   rw [h_card_split]
   -- Goal: R_ss_notin_D.card + R_ss_in_D.card ≤ R_s.card * (n - D.card) + D.card
 

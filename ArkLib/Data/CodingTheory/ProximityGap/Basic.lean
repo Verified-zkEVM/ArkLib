@@ -110,6 +110,7 @@ noncomputable def δ_ε_correlatedAgreementAffineLines [Module F A]
     Pr_{let z ← $ᵖ F}[δᵣ(u 0 + z • u 1, C) ≤ δ] > ε →
     jointAgreement (F := A) (κ := Fin 2) (ι := ι) (C := C) (W := u) (δ := δ)
 
+set_option linter.overlappingInstances false in
 /-- **[Definition 2.3, DG25]** We say that `C ⊂ F^n` features multilinear correlated agreement
 with respect to the proximity parameter `δ` and the error bound `ε`, folding degree `ϑ > 0` if:
 ∀ word stack `u` of size `2^ϑ`, if the probability that

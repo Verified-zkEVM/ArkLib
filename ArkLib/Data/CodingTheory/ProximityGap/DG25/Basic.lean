@@ -18,7 +18,7 @@ import ArkLib.Data.CodingTheory.Prelims
 import Mathlib.Algebra.Lie.OfAssociative
 import Mathlib.Data.Finset.BooleanAlgebra
 import Mathlib.Data.Real.Basic
-import Mathlib.Data.Real.Sqrt
+import Mathlib.Analysis.Real.Sqrt
 import Mathlib.Data.Set.Defs
 import Mathlib.Probability.Distributions.Uniform
 import Mathlib.RingTheory.Henselian
@@ -77,6 +77,7 @@ def affineLineEvaluation {F : Type v} [Ring F] [Module F A]
 
 ----------------------------------------------------- Switch to (F : Type) for `Pr_{...}[...]` usage
 variable {F : Type} [Ring F] [Module F A] [Fintype F] (C : Set (Word A ι))
+set_option linter.overlappingInstances false in
 /-
 Definition 2.1. We say that `C ⊂ F^n` features proximity gaps for affine lines
 with respect to the proximity parameter `e` and the false witness bound `ε` if, for
@@ -126,6 +127,7 @@ theorem dist_affineCombination_le_dist_interleaved₂
 section TensorProximityGapDefinitions -- CommRing scalar set
 variable {F : Type} [CommRing F] [Module F A] [Fintype F]
 
+set_option linter.overlappingInstances false in
 def δ_ε_multilinearCorrelatedAgreement_Nat [CommRing F]
     {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι] [Module F A]
   (C : Set (ι → A)) (ϑ : ℕ) (e : ℕ) (ε : ℕ) : Prop :=

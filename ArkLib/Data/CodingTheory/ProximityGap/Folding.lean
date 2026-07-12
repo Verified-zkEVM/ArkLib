@@ -409,7 +409,7 @@ section IndicatedPolynomial
 
 variable {s' : Finset F}
 
-private def card_ne_zero (hs' : s'.Nonempty) : NeZero (Finset.card s') where
+@[reducible] private def card_ne_zero (hs' : s'.Nonempty) : NeZero (Finset.card s') where
   out := by aesop
 
 private lemma indicated_polynomial_degree_x_lt (hs' : s'.Nonempty) :
@@ -875,7 +875,7 @@ theorem folding_preserves_distance
         ∑ j, foldWordAuxCoeff domain f k j
           (domain.subdomain k x) * a ^ (↑j : ℕ)) := by
       ext x
-      simp only [Finset.sum_apply, Matrix.of_apply, smul_eq_mul]
+      simp only [Finset.sum_apply]
       change (∑ i : Fin (2 ^ k - 1 + 1),
         a ^ (i : ℕ) * foldWordAuxCoeff domain f k (cast i) (domain.subdomain k x)) =
           ∑ j : Fin (2 ^ k), foldWordAuxCoeff domain f k j
