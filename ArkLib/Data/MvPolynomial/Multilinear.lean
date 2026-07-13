@@ -27,6 +27,15 @@ variable {σ : Type*} {R : Type*}
 instance coeFunctionFin2 [NatCast R] : Coe (σ → Fin 2) (σ → R) where
   coe := fun vec i => vec i
 
+/-- The Boolean-point coercion above agrees with the if-then-else spellings used elsewhere
+(`if · = 1 then 1 else 0` as in `RingSwitchCarrier.boolToE`, or the propositionally identical
+`if · == 1` as in `RingSwitching.compute_s0`); this is the bridge between them. -/
+theorem coe_boolFun_eq_ite [AddMonoidWithOne R] (u : σ → Fin 2) :
+    (u : σ → R) = fun i => if u i = 1 then 1 else 0 := by
+  funext i
+  have h : u i = 0 ∨ u i = 1 := by fin_omega
+  rcases h with h | h <;> simp [h]
+
 variable [CommRing R]
 
 def toEvalsZeroOne (p : MvPolynomial σ R) : (σ → Fin 2) → R :=
@@ -143,6 +152,12 @@ theorem eval_zeroOne_eq_MLE_toEvalsZeroOne (p : MvPolynomial σ R) (x : σ → F
     eval (x : σ → R) p = eval (x : σ → R) (MLE p.toEvalsZeroOne) := by
   simp only [MLE_eval_zeroOne, toEvalsZeroOne]
 
+/-- Evaluating a multilinear extension at an **arbitrary** point expands over the hypercube
+against the eq-indicator: `(MLE g)(r) = ∑_x eq̃(x, r) · g(x)`. -/
+theorem MLE_eval_eq_sum_eqTilde (evals : (σ → Fin 2) → R) (r : σ → R) :
+    MvPolynomial.eval r (MLE evals) = ∑ x : σ → Fin 2, eqTilde (x : σ → R) r * evals x := by
+  simp only [MLE, map_sum, map_mul, eval_C, eqTilde]
+
 section DegreeOf
 
 omit [Fintype σ] in
@@ -210,6 +225,11 @@ theorem MLE_degreeOf (evals : (σ → Fin 2) → R) (i : σ) : degreeOf i (MLE e
   apply (mem_restrictDegree_iff_degreeOf_le _ _).mp
   exact MLE_mem_restrictDegree evals
 
+/-- A multilinear extension over `σ` variables has total degree at most `|σ|`. -/
+theorem MLE_totalDegree_le (evals : (σ → Fin 2) → R) :
+    (MLE evals).totalDegree ≤ Fintype.card σ :=
+  totalDegree_le_card_of_degreeOf_le_one _ (fun i => MLE_degreeOf evals i)
+
 end DegreeOf
 
 -- TODO: add lemmas about the uniqueness of multilinear polynomials up to evaluations on hypercube
@@ -271,6 +291,34 @@ def MLEEquiv : R⦃≤ 1⦄[X σ] ≃ ((σ → Fin 2) → R) where
 
 def MLEEquivFin {n : ℕ} : R⦃≤ 1⦄[X (Fin n)] ≃ (Fin (2 ^ n) → R) :=
   Equiv.trans MLEEquiv (Equiv.piCongr finFunctionFinEquiv (fun _ => Equiv.refl _))
+
+omit [DecidableEq R] [IsDomain R] in
+/-- **Multilinear `aeval` hypercube expansion**: evaluating a multilinear polynomial over `R` at a
+point `r` of an `R`-algebra `A` expands over the Boolean hypercube against the eq-indicator,
+`aeval r p = ∑ y, eq̃(y, r) · algebraMap R A (p(y))`. The proof self-interpolates the
+coefficient-mapped polynomial over `A` (`is_multilinear_iff_eq_evals_zeroOne`, a root-counting
+argument), whence the `[IsDomain A]` hypothesis; the identity itself holds over any commutative
+ring, and dropping the domain hypothesis is future work. -/
+theorem aeval_multilinear_eq_sum_eqTilde {A : Type*} [CommRing A] [Algebra R A] [IsDomain A]
+    {p : MvPolynomial σ R} (hp : p ∈ R⦃≤ 1⦄[X σ]) (r : σ → A) :
+    aeval r p
+      = ∑ y : σ → Fin 2, eqTilde (y : σ → A) r * algebraMap R A (eval (y : σ → R) p) := by
+  have hq : map (algebraMap R A) p ∈ A⦃≤ 1⦄[X σ] := by
+    rw [mem_restrictDegree] at hp ⊢
+    exact fun s hs i => hp s (support_map_subset _ _ hs) i
+  calc aeval r p = eval r (map (algebraMap R A) p) := by
+        rw [eval_map, aeval_def]
+    _ = ∑ y : σ → Fin 2, eqTilde (y : σ → A) r * (map (algebraMap R A) p).toEvalsZeroOne y := by
+        conv_lhs => rw [← is_multilinear_iff_eq_evals_zeroOne.mp hq]
+        exact MLE_eval_eq_sum_eqTilde _ r
+    _ = ∑ y : σ → Fin 2, eqTilde (y : σ → A) r * algebraMap R A (eval (y : σ → R) p) := by
+        refine Finset.sum_congr rfl fun y _ => ?_
+        congr 1
+        change eval (y : σ → A) (map (algebraMap R A) p) = algebraMap R A (eval (y : σ → R) p)
+        have hpt : (y : σ → A) = fun i => algebraMap R A ((y : σ → R) i) :=
+          funext fun i => (map_natCast (algebraMap R A) _).symm
+        rw [hpt, eval_map]
+        exact (eval₂_comp (algebraMap R A) (y : σ → R) p).symm
 
 end MvPolynomial
 

@@ -452,32 +452,33 @@ lemma Pr_congr {α : Type} {D : PMF α} {P Q : α → Prop}
   congr 1; exact propext (h x)
 
 /-- **Schwartz-Zippel Lemma** (Probability Form):
-For a non-zero multivariate polynomial `P` of total degree at most `d` over a finite field `L`,
-the probability that `P(r)` evaluates to 0 for a uniformly random `r` is at most `d / |L|`. -/
+For a non-zero multivariate polynomial `P` of total degree at most `d` over a finite integral
+domain `R`, the probability that `P(r)` evaluates to 0 for a uniformly random `r` is at most
+`d / |R|`. -/
 lemma prob_schwartz_zippel_mv_polynomial {R : Type} [CommRing R] [IsDomain R] [Fintype R]
     {n : ℕ}
-    (P : MvPolynomial (Fin n) R) (h_nonzero : P ≠ 0) (h_deg : P.totalDegree ≤ n) :
+    (P : MvPolynomial (Fin n) R) (d : ℕ) (h_nonzero : P ≠ 0) (h_deg : P.totalDegree ≤ d) :
     Pr_{ let r ←$ᵖ (Fin n → R) }[ MvPolynomial.eval r P = 0 ] ≤
-      (n : ℝ≥0) / (Fintype.card R : ℝ≥0) := by
+      (d : ℝ≥0) / (Fintype.card R : ℝ≥0) := by
   classical
   rw [prob_uniform_eq_card_filter_div_card]
   push_cast
   have sz_bound := MvPolynomial.schwartz_zippel_totalDegree (R := R) (n := n)
     (p := P) (hp := h_nonzero) (S := Finset.univ)
   simp only [Fintype.piFinset_univ, card_univ] at sz_bound
-  have sz_bound_le_n_div_card_R : ((#{f | (MvPolynomial.eval f) P = 0}) : ℚ≥0)
-    / ((Fintype.card R ^ n)) ≤ (n : ℚ≥0) / ((#(Finset.univ : Finset R)) : ℚ≥0) := by
+  have sz_bound_le_d_div_card_R : ((#{f | (MvPolynomial.eval f) P = 0}) : ℚ≥0)
+    / ((Fintype.card R ^ n)) ≤ (d : ℚ≥0) / ((#(Finset.univ : Finset R)) : ℚ≥0) := by
     calc
       _ ≤ (P.totalDegree : ℚ≥0) / ((#(Finset.univ : Finset R)) : ℚ≥0) := sz_bound
       _ ≤ _ := by
         simp only [card_univ]
         apply div_le_of_le_mul₀ (hb := by simp only [zero_le]) (hc := by simp only [zero_le])
-        -- ⊢ ↑P.totalDegree ≤ ↑n / ↑(Fintype.card R) * ↑(Fintype.card R)
+        -- ⊢ ↑P.totalDegree ≤ ↑d / ↑(Fintype.card R) * ↑(Fintype.card R)
         rw [div_mul_cancel₀ (h := by simp only [ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero,
           not_false_eq_true])]
         exact Nat.cast_le.mpr h_deg
   have sz_bound_ENNReal : ((#{f | (MvPolynomial.eval f) P = 0}) : ENNReal)
-    / ((Fintype.card R ^ n) : ℕ) ≤ (n : ENNReal) / (Fintype.card R : ENNReal) := by
+    / ((Fintype.card R ^ n) : ℕ) ≤ (d : ENNReal) / (Fintype.card R : ENNReal) := by
     simp_rw [ENNReal.coe_Nat_coe_NNRat]
     conv_lhs => rw [ENNReal.coe_div_of_NNRat (hb := by
       simp only [Nat.cast_pow, ne_eq, pow_eq_zero_iff', Nat.cast_eq_zero, Fintype.card_ne_zero,
@@ -486,10 +487,26 @@ lemma prob_schwartz_zippel_mv_polynomial {R : Type} [CommRing R] [IsDomain R] [F
       Fintype.card_ne_zero, not_false_eq_true])]
     rw [ENNReal.coe_le_of_NNRat]
     simp only [Nat.cast_pow]
-    exact sz_bound_le_n_div_card_R
+    exact sz_bound_le_d_div_card_R
   simp only [Fintype.card_pi, prod_const, card_univ, Fintype.card_fin, Nat.cast_pow, ge_iff_le]
   rw [Nat.cast_pow] at sz_bound_ENNReal
   exact sz_bound_ENNReal
+
+/-- **Schwartz-Zippel**, single-variable sampling form: for a non-zero polynomial in one variable
+(as an `MvPolynomial (Fin 1)`) of total degree at most `d`, the probability that it vanishes at a
+uniformly random point of `R` (sampled directly, not as `Fin 1 → R`) is at most `d / |R|`. -/
+lemma prob_schwartz_zippel_single_variable {R : Type} [CommRing R] [IsDomain R] [Fintype R]
+    (f : MvPolynomial (Fin 1) R) (d : ℕ) (h_nonzero : f ≠ 0) (h_deg : f.totalDegree ≤ d) :
+    Pr_{ let γ ←$ᵖ R }[ MvPolynomial.eval (fun _ : Fin 1 => γ) f = 0 ] ≤
+      (d : ℝ≥0) / (Fintype.card R : ℝ≥0) := by
+  rw [← prob_uniform_singleton_finFun_eq
+    (P := fun γ => MvPolynomial.eval (fun _ : Fin 1 => γ) f = 0)]
+  calc Pr_{ let r ←$ᵖ (Fin 1 → R) }[ MvPolynomial.eval (fun _ : Fin 1 => r 0) f = 0 ]
+      = Pr_{ let r ←$ᵖ (Fin 1 → R) }[ MvPolynomial.eval r f = 0 ] := by
+        refine Pr_congr fun r => ?_
+        have hr : (fun _ : Fin 1 => r 0) = r := funext fun i => congrArg r (Subsingleton.elim 0 i)
+        rw [hr]
+    _ ≤ _ := prob_schwartz_zippel_mv_polynomial f d h_nonzero h_deg
 
 /-- Pushforward of `PMF.uniformOfFintype α` under a map `f : α → β` whose fibers
 over the image all have the same cardinality `k > 0` is the uniform distribution

@@ -116,6 +116,17 @@ home_page/            site assets and assembled website root
   reconstruction laws), `Prelude.lean` the shared defs + the Binius instance `binaryTowerProfile`,
   and `General.lean` the full reduction and generic security theorems. Binius instantiates it in
   `ProofSystem/Binius/FRIBinius/` (`biniusProfile`); Hachi (`NOZ26`) is the intended next instance.
+  A second-generation layer lives under `ProofSystem/RingSwitching/Generic/`: a shrunk,
+  `Basis`-derived carrier (`Carrier.lean`: `RingSwitchCarrier`, decoupled packing/opening
+  algebras `P ≠ E` allowed), proven packing correctness + the DP24-compat bridge
+  (`Packing.lean`), the proven batching-strategy menu (`Batching.lean`: `BatchingStrategy`,
+  `gammaPowers`, `eqFold`, Schwartz–Zippel under `[IsDomain]`), recombination injectivity on
+  both bases (`Recombine.lean`, Flock Remark 5, over the reusable
+  `Data/Module/Basis.lean:sum_smul_bijective`), and the framework-fixed relation chain + PCS
+  binding interface (`Relations.lean`: `openingClaimRel` anchor, middle relations,
+  `PackedCommitment`/`DenseMLPCS` with a functionality-constrained `commitsTo`); it is intended
+  to eventually subsume the `Profile.lean` path, which it deliberately leaves untouched during
+  migration.
   Background: KB concept page `docs/kb/concepts/ring-switching.md`; blueprint section
   `proof_systems/ring_switching.tex`. Structured sum-check support lives in
   `ProofSystem/Sumcheck/Structured*` and `ProofSystem/Sumcheck/Domain.lean`.

@@ -186,6 +186,22 @@ theorem mem_restrictDegree_iff_degreeOf_le (p : MvPolynomial σ R) (n : ℕ) :
   apply Iff.trans (mem_restrictDegree_iff_sup σ p n)
   simp only [degreeOf]
 
+/-- A polynomial with degree at most `1` in each of finitely many variables (e.g. a multilinear
+polynomial) has total degree at most the number of variables. -/
+theorem totalDegree_le_card_of_degreeOf_le_one [Fintype σ] (p : MvPolynomial σ R)
+    (h : ∀ i, p.degreeOf i ≤ 1) : p.totalDegree ≤ Fintype.card σ := by
+  rw [MvPolynomial.totalDegree]
+  refine Finset.sup_le fun m hm => ?_
+  have hsum : (m.sum fun _ e => e) = ∑ i, m i := by
+    rw [Finsupp.sum_fintype]
+    intro i; rfl
+  rw [hsum]
+  calc ∑ i, m i ≤ ∑ _i : σ, 1 :=
+        Finset.sum_le_sum fun i _ =>
+          le_trans (Finset.le_sup (f := fun m => m i) hm)
+            (by rw [← MvPolynomial.degreeOf_eq_sup]; exact h i)
+    _ = Fintype.card σ := by simp
+
 end DegreeOf
 
 section Equiv
