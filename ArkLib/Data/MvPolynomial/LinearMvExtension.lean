@@ -73,7 +73,9 @@ lemma linearMvExtension_degreeOf_lt {p : Polynomial.degreeLT F (2 ^ m)} {i : Fin
     (degreeOf i (p.val.sum fun i a ↦ monomial (bitExpo i) a)) ≤
       (Finset.sup p.val.support
         (fun x ↦ degreeOf i (monomial (bitExpo x) (p.val.coeff x)))) := by
-    convert MvPolynomial.degreeOf_sum_le _ _ _
+    change degreeOf i (∑ x ∈ p.val.support,
+      monomial (bitExpo x) (p.val.coeff x)) ≤ _
+    exact MvPolynomial.degreeOf_sum_le _ _ _
   exact h_sum_degrees.trans (Finset.sup_le @h_monomial_degrees)
 
 
@@ -207,6 +209,11 @@ private lemma binary_repr_sum (m i : ℕ) (hi : i < 2 ^ m) :
 lemma powContraction_is_right_inverse_to_linearMvExtension
     (p : Polynomial.degreeLT F (2 ^ m)) :
     powContraction.comp linearMvExtensionLMap p = p := by
+  have hnat : (p : Polynomial F).natDegree < 2 ^ m := by
+    have hdeg := Polynomial.mem_degreeLT.mp p.2
+    by_cases hp : (p : Polynomial F) = 0
+    · simp [hp]
+    · exact (Polynomial.natDegree_lt_iff_degree_lt hp).mpr hdeg
   have h_comp : powContraction (linearMvExtensionLMap p) =
       ∑ i ∈ Finset.range (2 ^ m), p.val.coeff i • Polynomial.X ^ i := by
     unfold powContraction linearMvExtensionLMap linearMvExtension
@@ -216,17 +223,7 @@ lemma powContraction_is_right_inverse_to_linearMvExtension
         (p : Polynomial F).sum (fun i a => MvPolynomial.monomial (bitExpo (m := m) i) a) =
           ∑ i ∈ Finset.range (2 ^ m),
             MvPolynomial.monomial (bitExpo (m := m) i) ((p : Polynomial F).coeff i) := by
-      rw [Polynomial.sum_over_range'
-        (p := (p : Polynomial F))
-        (f := fun i a => MvPolynomial.monomial (bitExpo (m := m) i) a)
-        (h := by
-          intro n
-          simp)
-        (n := 2 ^ m)]
-      have h_deg := Polynomial.mem_degreeLT.mp p.2
-      rcases eq_or_ne (↑p : Polynomial F) 0 with hp | hp
-      · rw [hp, Polynomial.natDegree_zero]; positivity
-      · exact (Polynomial.natDegree_lt_iff_degree_lt hp).mpr h_deg
+      exact Polynomial.sum_over_range' (p : Polynomial F) (by intro n; simp) (2 ^ m) hnat
     rw [h_sum_range, MvPolynomial.eval₂_sum]
     refine Finset.sum_congr rfl ?_
     intro i hi
@@ -238,13 +235,10 @@ lemma powContraction_is_right_inverse_to_linearMvExtension
     simp_rw [← pow_mul]
     rw [Finset.prod_pow_eq_pow_sum, h_sum]
     simp [Polynomial.smul_eq_C_mul]
-  convert h_comp using 1
-  convert Polynomial.as_sum_range' p.val (2 ^ m) _ using 1
-  · simp +decide [Polynomial.smul_eq_C_mul, ← Polynomial.C_mul_X_pow_eq_monomial]
-  · have := Polynomial.mem_degreeLT.mp p.2
-    rcases eq_or_ne (↑p : Polynomial F) 0 with hp | hp
-    · rw [hp, Polynomial.natDegree_zero]; positivity
-    · exact (Polynomial.natDegree_lt_iff_degree_lt hp).mpr this
+  change powContraction (linearMvExtensionLMap p) = (p : Polynomial F)
+  rw [h_comp]
+  convert (Polynomial.as_sum_range' p.val (2 ^ m) hnat).symm using 1
+  simp +decide [Polynomial.smul_eq_C_mul, ← Polynomial.C_mul_X_pow_eq_monomial]
 
 lemma powAlgHom_is_right_inverse_to_linearMvExtension
   (p : Polynomial.degreeLT F (2 ^ m)) :

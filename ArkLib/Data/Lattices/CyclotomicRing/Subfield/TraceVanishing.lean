@@ -148,8 +148,7 @@ theorem four_pow_i_reindex (α κ i : ℕ) (hκ : κ + 1 ≤ α) :
         have hbound : (4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1) - 1 < 4 * 2 ^ κ * 2 ^ (α - κ - 1) := by
           rw [hMn]; omega
         exact Nat.div_lt_of_lt_mul hbound
-      · dsimp only
-        rw [Nat.mul_div_cancel' hdvd]; omega
+      · rw [Nat.mul_div_cancel' hdvd]; omega
     · rw [Finset.card_image_of_injOn hφinj, Finset.card_image_of_injOn hψinj]
   have e1 : ∑ a ∈ Finset.range (2 ^ (α - κ - 1)),
         Xpow (powTwoCyclotomic (R := R) α) (i * ((4 * 2 ^ κ + 1) ^ a % 2 ^ (α + 1)))
@@ -274,7 +273,6 @@ theorem traceH_Xpow_neg_one_sq (α k j : ℕ) (hk2pow : ∃ κ, k = 2 ^ κ) (hk 
       rw [show 2 * (j * m) = (2 * j) * m from by ring, Xpow_mul, hsq, hmodd.neg_one_pow]
     rw [hstep, Xpow_mul_conjExp α (j * m) hsqm, add_neg_cancel]
   · intro m hm _ hgm
-    dsimp only at hgm
     have hmodd : Odd m := Hexp_odd_mem α k m hm
     have hmlt : m < 2 ^ (α + 1) := hHlt m hm
     have hα : 1 ≤ α := by
@@ -303,7 +301,6 @@ theorem traceH_Xpow_neg_one_sq (α k j : ℕ) (hk2pow : ∃ κ, k = 2 ^ κ) (hk 
     obtain ⟨t, ht⟩ := hmodd
     omega
   · intro m hm
-    dsimp only
     have hmlt : m < 2 ^ (α + 1) := hHlt m hm
     have hcsq : conjExp α * conjExp α ≡ 1 [MOD 2 ^ (α + 1)] := by
       have hid : conjExp α * conjExp α = 2 ^ (α + 1) * (2 ^ (α + 1) - 2) + 1 := by

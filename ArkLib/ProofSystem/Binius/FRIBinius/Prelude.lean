@@ -40,7 +40,7 @@ lemma card_bool_hypercube_eq :
 def hypercubeEquivFin : (Fin κ → Fin 2) ≃ Fin (2 ^ κ) :=
   Fintype.equivFinOfCardEq (card_bool_hypercube_eq κ)
 
-instance booleanHypercubeBasis : Basis (Fin κ → Fin 2) K L :=
+def booleanHypercubeBasis : Basis (Fin κ → Fin 2) K L :=
   β.reindex (e := (hypercubeEquivFin κ).symm)
 
 instance linearIndependentBooleanHypercubeBasis : Fact (LinearIndependent K ⇑β) := by

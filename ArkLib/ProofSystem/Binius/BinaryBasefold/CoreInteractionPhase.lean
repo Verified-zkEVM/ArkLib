@@ -140,12 +140,7 @@ theorem foldRelayOracleVerifier_rbrKnowledgeSoundness
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
         relayKnowledgeError ∘ ChallengeIdx.sumEquiv.symm) by
       convert h using 1
-      simp only [Function.comp, ChallengeIdx.sumEquiv, Equiv.symm, Equiv.coe_fn_mk]
-      funext m
-      have hle : (m.1 : ℕ) ≤ 1 := by
-        have hlt : (m.1 : ℕ) < 2 := by simpa using m.1.isLt
-        omega
-      simp [hle]
+      all_goals first | rfl | (funext m; fin_cases m <;> rfl)
   exact OracleVerifier.append_rbrKnowledgeSoundness _ _
       (foldOracleVerifier_rbrKnowledgeSoundness (mp := mp) 𝔽q β i)
       (relayOracleVerifier_rbrKnowledgeSoundness 𝔽q β i hNCR)
@@ -380,7 +375,6 @@ def sumcheckFoldOracleVerifier :=
   let lastOracleVerifier := lastBlockOracleVerifier (mp := mp) 𝔽q β
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
 
-
   let sumcheckFoldOV: OracleVerifier []ₒ
     (StmtIn := Statement (L := L) (ℓ := ℓ) Context 0)
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
@@ -400,7 +394,12 @@ def sumcheckFoldOracleVerifier :=
     unfold pSpecSumcheckFold pSpecNonLastBlocks
     convert res
     all_goals simp
-    all_goals (congr 1; ext; simp)
+    all_goals first
+      | exact HEq.rfl
+      | (have hi : (⟨0 * ϑ, by omega⟩ : Fin (ℓ + 1)) = 0 := Fin.ext (by simp)
+         rw! (castMode := .all) [hi]
+         rfl)
+      | (funext j; apply OracleInterface.ext <;> rfl)
 
   sumcheckFoldOV
 
@@ -591,7 +590,12 @@ def sumcheckFoldOracleReduction :=
     unfold pSpecSumcheckFold pSpecNonLastBlocks
     convert res
     all_goals simp
-    all_goals (congr 1; ext; simp)
+    all_goals first
+      | exact HEq.rfl
+      | (have hi : (⟨0 * ϑ, by omega⟩ : Fin (ℓ + 1)) = 0 := Fin.ext (by simp)
+         rw! (castMode := .all) [hi]
+         rfl)
+      | (funext j; apply OracleInterface.ext <;> rfl)
 
   coreInteractionOracleReduction
 

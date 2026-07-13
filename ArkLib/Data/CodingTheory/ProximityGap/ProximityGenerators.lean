@@ -205,17 +205,20 @@ theorem poly_gen_is_zero_evading
     and_imp]
   intros b x hx hb
   rw [hb]
-  convert prob_eval_zero_le_div (∑ j, x j • P j) _ (maxTotalDegree P) (minSeedCard S) _ _ _ using 1
-  any_goals intro i; exact minSeedCard_le S (Fin.pos_iff_nonempty.mpr ⟨i⟩) i
-  any_goals assumption
-  · convert rfl
-    ext; simp +decide [MvPolynomial.dotProduct_eq_eval_linearCombination, hG.2]
-  · rw [ENNReal.ofReal_div_of_pos] <;> norm_cast
-    exact minSeedCard_pos S
-  · exact LinearCombination.linearCombination_ne_zero hG.1 hx
-  · exact MvPolynomial.totalDegree_linearCombination_le _ _ _ fun j =>
-                Finset.le_sup (f := fun j => (P j |> MvPolynomial.totalDegree)) (Finset.mem_univ j)
-  · exact minSeedCard_pos S
+  change ((fun a => G a ⬝ᵥ x = 0) <$> $ᵖ ((i : Fin s) → ↥(S i))) True ≤ _
+  rw [show (fun a => G a ⬝ᵥ x = 0) = fun a =>
+      MvPolynomial.eval (fun i => (a i : F)) (∑ j, x j • P j) = 0 by
+    funext a
+    simp +decide [MvPolynomial.dotProduct_eq_eval_linearCombination, hG.2]]
+  refine (prob_eval_zero_le_div (∑ j, x j • P j)
+    (LinearCombination.linearCombination_ne_zero hG.1 hx)
+    (maxTotalDegree P) (minSeedCard S)
+    (MvPolynomial.totalDegree_linearCombination_le _ _ _ fun j =>
+      Finset.le_sup (f := fun j => (P j |> MvPolynomial.totalDegree)) (Finset.mem_univ j))
+    (minSeedCard_pos S)
+    (fun i => minSeedCard_le S (Fin.pos_iff_nonempty.mpr ⟨i⟩) i)).trans_eq ?_
+  rw [ENNReal.ofReal_div_of_pos] <;> norm_cast
+  exact minSeedCard_pos S
 
 end PolynomialGenerator
 

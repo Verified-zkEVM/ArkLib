@@ -172,8 +172,10 @@ theorem correctness (hpG1 : Nat.card G₁ = p) {g₁ : G₁} {g₂ : G₂}
   obtain ⟨⟨ck, vk⟩, hkeygen, hx⟩ := hx
   rw [mem_support_bind_iff] at hx
   obtain ⟨⟨cm, decomm⟩, hcommit, hx⟩ := hx
-  replace hkeygen := OracleComp.mem_support_of_mem_support_liftComp _ _ hkeygen
-  replace hcommit := OracleComp.mem_support_of_mem_support_liftComp _ _ hcommit
+  replace hkeygen := OracleComp.mem_support_of_mem_support_liftComp
+    (superSpec := _) (oa := _) (x := (ck, vk)) hkeygen
+  replace hcommit := OracleComp.mem_support_of_mem_support_liftComp
+    (superSpec := _) (oa := _) (x := (cm, decomm)) hcommit
   rw [mem_support_bind_iff] at hkeygen
   obtain ⟨τ, _hτ, hkeygen⟩ := hkeygen
   rw [mem_support_pure_iff] at hkeygen
@@ -191,8 +193,9 @@ theorem correctness (hpG1 : Nat.card G₁ = p) {g₁ : G₁} {g₂ : G₂}
       (commit (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ).1 data)
       (generateOpening (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ).1 data query)
       query (OracleInterface.answer data query) := by
-    simpa [OracleInterface.answer] using
-      (KZG.correctness (pairing := pairing) (g₁ := g₁) (g₂ := g₂) hpG1 n τ data query)
+    change verifyOpening pairing _ _ _ query ((CPolynomial.ofFn data).eval query) = true
+    simpa only [CPolynomial.ofFn] using
+      KZG.correctness (pairing := pairing) (g₁ := g₁) (g₂ := g₂) hpG1 n τ data query
   simp only [Option.elimM] at hx
   rw [mem_support_bind_iff] at hx
   obtain ⟨openingOpt, hopeningOpt, hx⟩ := hx

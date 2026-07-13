@@ -130,10 +130,13 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
               ((Affine.AffSpanSet.instFinite (u := C i)).mem_toFinset.mp hx)
             subst hx_eq
             intro hclose
-            exact absurd (by convert hclose using 2; simp [ReedSolomon.toFinset])
-              (not_le.mpr hnotclose)
+            have hcoe : (↑(ReedSolomon.toFinset domain deg) : Set (ι → F)) =
+                ReedSolomon.code domain deg := by
+              exact Set.coe_toFinset _
+            rw [hcoe] at hclose
+            exact absurd hclose (not_le.mpr hnotclose)
           rw [this, Finset.card_empty, Nat.cast_zero]
-          simp
+          exact ENNReal.zero_div
         rw [hPr_eq] at hcase
         exact absurd hcase (not_lt.mpr (zero_le))
       -- Construct jointAgreement from the close codeword witness.
@@ -218,9 +221,18 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
           (Finset.univ.filter (fun (x : ↥S) =>
             δᵣ(x.val, (ReedSolomon.code domain deg : Set (ι → F))) ≤ δ)).card :=
           Finset.card_bij (fun a _ => e a)
-            (fun a ha => by simpa using ha)
+            (fun a ha => by
+              simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ha ⊢
+              simpa only [e, Equiv.setCongr_apply] using ha)
             (fun a₁ _ a₂ _ h => e.injective h)
-            (fun b hb => ⟨e.symm b, by simpa using hb, e.apply_symm_apply b⟩)
+            (fun b hb => ⟨e.symm b, by
+              simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hb ⊢
+              have hval : (e.symm b).1 = b.1 := by
+                have h := congrArg Subtype.val (e.apply_symm_apply b)
+                simpa only [e, Equiv.setCongr_apply] using h
+              rw [hval]
+              exact hb,
+              e.apply_symm_apply b⟩)
         rw [hcard, hfilt]; exact hcase_code
       -- Apply Thm 1.7 at k := m + 1 to get jointAgreement (W := u').
       have hja_u' : jointAgreement (C := (ReedSolomon.code domain deg : Set (ι → F)))

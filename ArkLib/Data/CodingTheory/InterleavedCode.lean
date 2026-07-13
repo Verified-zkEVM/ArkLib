@@ -13,7 +13,7 @@ import Mathlib.Logic.Equiv.Fin.Basic
 import Mathlib.Order.CompletePartialOrder
 import Mathlib.Probability.Distributions.Uniform
 import Mathlib.Data.Real.Basic
-import Mathlib.Data.Real.Sqrt
+import Mathlib.Analysis.Real.Sqrt
 import ArkLib.Data.Fin.Basic
 import ArkLib.Data.CodingTheory.Prelims
 import Mathlib.Algebra.Polynomial.Roots
@@ -146,7 +146,7 @@ noncomputable instance interleavedCodeSet_fintype {A : Type*} {κ ι : Type*}
 
 /-- Interleaved code submodule of any `ModuleCode`, where each row belongs to the code. -/
 @[simp]
-instance ModuleCode.moduleInterleavedCode : ModuleCode ι F (InterleavedSymbol A κ) := {
+def ModuleCode.moduleInterleavedCode : ModuleCode ι F (InterleavedSymbol A κ) := {
   -- Simple condition wrapping over Matrix
   carrier := interleavedCodeSet (C := (MC : Set (ι → A)))
   add_mem' hU hV i := MC.add_mem (hU i) (hV i)
@@ -170,7 +170,7 @@ def codewordStackSet {A : Type*} {κ ι : Type*} (C : Set (ι → A)) : Set (Wor
   { V : WordStack A κ ι | ∀ k, V.getRowWord k ∈ C }
 
 @[simp]
-instance ModuleCode.codewordStackSubmodule : Submodule F (WordStack A κ ι) := {
+def ModuleCode.codewordStackSubmodule : Submodule F (WordStack A κ ι) := {
   -- Simple condition wrapping over Matrix
   carrier := codewordStackSet (C := (MC : Set (ι → A)))
   add_mem' hU hV i := MC.add_mem (hU i) (hV i)
@@ -452,21 +452,18 @@ export InterleavedStructure (eq_iff_all_rows_eq eq_iff_all_symbols_eq eq_iff_all
   eq_iff_all_rows_eq := by
     intro u v; constructor
     · intro h; rw [h]; exact fun i ↦ rfl
-    · intro h; ext i k;
-      let res := h i; simp only [WordStack, codewordStackSet, Word, WordStack.getRowWord,
-        Set.mem_setOf_eq, Subtype.mk.injEq] at res; exact congrFun res k
+    · intro h; ext i k
+      exact congrFun (congrArg Subtype.val (h i)) k
   eq_iff_all_symbols_eq := by
     intro u v; constructor
     · intro h; rw [h]; exact fun k ↦ rfl
-    · intro h; ext i k;
-      let res := h k; simp only [WordStack, codewordStackSet, Word,
-        Set.mem_setOf_eq] at res; exact congrFun res i
+    · intro h; ext i k
+      exact congrFun (h k) i
   eq_iff_all_cells_eq := by
     intro u v; constructor
     · intro h; rw [h]; exact fun i k ↦ rfl
-    · intro h; ext i k;
-      let res := h i k; simp only [WordStack, codewordStackSet, Word,
-        Set.mem_setOf_eq] at res; exact res
+    · intro h; ext i k
+      exact h i k
 
 -- InterleavedWord
 @[simp] instance instInterleavedStructureInterleavedWord :
@@ -509,7 +506,7 @@ export InterleavedStructure (eq_iff_all_rows_eq eq_iff_all_symbols_eq eq_iff_all
     intro u v; constructor
     · intro h; rw [h]; exact fun k ↦ rfl
     · intro h; ext i k;
-      let res := h i; simp only at res; exact congrFun res k
+      exact congrFun (h i) k
   eq_iff_all_cells_eq := by
     intro u v; constructor
     · intro h; rw [h]; exact fun i k ↦ rfl
