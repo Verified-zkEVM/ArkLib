@@ -23,8 +23,8 @@ commitment — lives in the sibling `Commitment.lean`.)
 
 Right now the finished core chains exactly two links — the polynomial-level bridge and `QuadEval`
 (`evalChain = bridgePackage ▷ quadEvalPackage`, certificate `eval_coordinateWiseSpecialSound`). The
-remaining §3/§4.3+/§4.5 subprotocols are placeholders (see the `TODO` block); each will land as one
-more `CWSSPackage` `▷`-appended into the chain.
+remaining §4.3+ opening stages and the §3/§4.5 recursion adapters are placeholders (see the `TODO`
+block).
 
 ## Components — where each piece lives and which part of the paper it is
 
@@ -47,43 +47,62 @@ Finished pieces, each in its own file (paths under `Commitments/Functional/Hachi
 
 ## The composed verifier chain
 
-Top-to-bottom is the composition order (each `▷` is one `CWSSPackage`). The `═══` band is the
-finished core (`evalChain`); everything else is a placeholder for a future package:
+Top-to-bottom is one opening iteration of the ArkLib Hachi commitment, whose committed data is an
+`Rq`-valued multilinear polynomial. Consequently the opening starts with the Figure 3 path, not
+with §3. Section 3 only converts the smaller extension-field evaluation produced at the end back
+into an `Rq` evaluation for the **next** iteration (and may separately wrap an external
+extension-field claim). It is not the HMZ25 ring-switching subprotocol: that is Figure 4 in §4.3,
+after `QuadEval`. The `═══` band is the finished core (`evalChain`); all other links are planned
+packages (plus zero-round relation adapters where statement shapes differ):
 
 ```text
-  §3.2/§4.5  partial-evaluations head           ── planned (pure, 1 msg)
-      │ ▷
-      ▼
-  §3.1  ring-switch packing head                ── planned (guarded, 1 msg)
-      │ ▷
-      ▼
-  σ₋₁ statement adapter                         ── planned (0-round ReduceClaim)
-      │ ▷
+  committed f : CMlPolynomial Rq (r + m), with an Rq evaluation query (x, y)
+      │
   ═══════════════════════ evalChain (finished core) ═══════════════════════
       ▼
   bridge     PolyEvalStatement ⇒ QuadEval.relIn   bridgePackage   (§4.2, 0-round)
       │ ▷
       ▼
-  QuadEval   QuadEval.relIn ⇒ Eq.(20) relOut      quadEvalPackage (§4.2, Lemma 8)
+  QuadEval   QuadEval.relIn ⇒ Eq. (20) relOut     quadEvalPackage (§4.2, Figure 3,
+                                                                  Lemma 8)
   ══════════════════════════════════════════════════════════════════════════
+      │ ▷  read (t̂, ŵ, ẑ) and the block equation as an Rq-linear relation R^lin
+      ├─ optional concrete cutoff: use §4.5 JL / LaBRADOR instead of §4.3
+      │
+      ▼
+  §4.3, Figure 4   HMZ25 ring switching: commit to (z, r), sample α,
+                   reduce R^lin over Rq to constraints over F_{q^k}  planned (Lemma 9)
       │ ▷
       ▼
-  §4.3  Eq.(20) ⇒ R^lin ⇒ HMZ25 lift ⇒
-        zero-check rounds ⇒ sumcheck ⇒ final eval ── planned (Lemmas 9–11)
+  §4.3, Figure 5   batch the linear and range constraints into
+                   H_α and H_0; sample evaluation points τ₁ and τ₀  planned (Lemma 10)
       │ ▷
       ▼
-  §4.5  recursion handoff ⇒ next iteration       ── planned (guarded)
+  §4.3, Figures 6–7  sumcheck rounds g_i(X_i), challenges a_i,
+                     then open w̃(a₁, …, a_ℓ)                        planned (Lemma 11)
+      │
+      ▼
+  smaller evaluation claim over F_{q^k}
+      ├─ recurse (§4.4):
+      │     §3.2  partial evaluations (the recursive polynomial has F_q coefficients)
+      │       │ ▷
+      │       ▼
+      │     §3.1  packing / trace encoding ⇒ Rq polynomial evaluation
+      │       └────────────────────────────── loop to bridge for the next iteration
+      ├─ asymptotic termination: reveal the final polynomial once it is small (§4.4)
+      └─ concrete cutoff: §4.5 repacking without re-decomposition, then Greyhound
 ```
 
 ## Growing the composition
 
-Each further subprotocol is exported from its file as a `CWSSPackage` and `▷`-appended here; a shape
-mismatch between one package's `relOut` and the next's `relIn` gets its own zero-round `ReduceClaim`
-package (the same recipe as `bridgePackage`). Guarded subprotocols (the §3.1 head, the sumcheck
-rounds, the final-eval and §4.5 handoff — those whose runtime check reads data the next statement
-type drops) need a guarded variant of `▷`; the pure links compose as above. Once the chain is long,
-the binary `▷` can be replaced by the n-ary `Verifier.seqCompose` (every finished factor is
-`IsPure` and `seqCompose_succ_eq_append` is `rfl`, so no existing proof is reworked).
+Each §4.3 opening subprotocol is exported from its file as a `CWSSPackage` and appended after
+`evalChain`. Recursive composition then routes its final extension-field claim through the §3
+adapters before invoking `evalChain` again. A shape mismatch between one package's `relOut` and the
+next's `relIn` gets its own zero-round `ReduceClaim` package (the same recipe as `bridgePackage`).
+Links whose runtime check reads data the next statement type drops need a guarded variant of `▷`;
+the pure links compose as above. Once the chain is long, the binary `▷` can be replaced by the
+n-ary `Verifier.seqCompose` (`seqCompose_succ_eq_append` is `rfl` for the finished pure factors, so
+their existing proofs are not reworked).
 
 ## References
 
@@ -108,12 +127,13 @@ variable {ι : Type} {oSpec : OracleSpec ι} {ω : ℕ}
 variable {σ : Type}
 
 /-- **The composed evaluation reduction** (Hachi [NOZ26, §4.2, Figure 3], `Rq`-level): the bridge
-package (link 3) chained with the `QuadEval` package (link 4) via the `CWSSPackage` operator `▷`.
+package chained with the `QuadEval` package via the `CWSSPackage` operator `▷`.
 Both packages are defined next to their CWSS theorems in the component files (`bridgePackage` in
 `QuadEval/Bridge`, `quadEvalPackage` in `QuadEval/Soundness`); here they are only imported and
 composed. The seam is definitional — the bridge's `relOut` *is* `QuadEval`'s `relIn` — so `▷`
 discharges it by `rfl`. The chain's `isCWSS` field is `eval_coordinateWiseSpecialSound`; each
-further §3/§4.3+ subprotocol is one more package `▷`-appended here (see the module header). -/
+further §4.3 opening subprotocol is appended after this core, while §3 closes the recursion back
+to the next invocation (see the module header). -/
 def evalChain (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits) :
     CWSSPackage init impl
@@ -157,11 +177,12 @@ end Composition
 `evalChain` / `eval_coordinateWiseSpecialSound` is the finished `Rq`-level CWSS core (bridge ▷
 `QuadEval`). Still open:
 
-* **Remaining §3/§4.3+/§4.5 subprotocols.** Each is exported from its file as a `CWSSPackage` and
-  `▷`-appended into `evalChain`, bridged by a zero-round `ReduceClaim` package when one `relOut`
-  and the next `relIn` disagree in shape. Guarded subprotocols need a guarded variant of `▷`. Once
-  the chain is long, migrate the binary `▷` to the n-ary `Verifier.seqCompose` +
-  `seqCompose_coordinateWiseSpecialSound` (every factor is `IsPure`, `seqCompose_succ_eq_append`
-  is `rfl`). -/
+* **Remaining §3/§4.3+/§4.5 subprotocols.** Append the §4.3 packages after `evalChain`, then route
+  the final extension-field evaluation through §3 before the next iteration (or take a §4.5
+  cutoff), as shown in the module header. Insert a zero-round `ReduceClaim` package when one
+  `relOut` and the next `relIn` disagree in shape. Guarded subprotocols need a guarded variant of
+  `▷`. Once the chain is long, migrate the binary `▷` to the n-ary
+  `Verifier.seqCompose` + `seqCompose_coordinateWiseSpecialSound` (every factor is `IsPure`,
+  `seqCompose_succ_eq_append` is `rfl`). -/
 
 end ArkLib.Lattices.Ajtai.InnerOuter
