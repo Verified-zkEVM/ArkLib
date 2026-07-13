@@ -680,7 +680,8 @@ theorem folding_polynomial_is_unique {q f : F[X]} {Q : F[X][Y]}
         have hQ'_deg :
           natDegreeY (Q - foldingPolynomial q f)
             ≤ max (natDegreeY Q) (natDegreeY (foldingPolynomial q f)) := by
-          convert Polynomial.natDegree_sub_le _ _ using 1
+          unfold natDegreeY
+          exact Polynomial.natDegree_sub_le _ _
         have hQ'_deg : natDegreeY (foldingPolynomial q f) < q.natDegree := by
           by_cases hq : q.degree ≤ 0
             <;> simp_all +decide only [le_sup_iff, not_le]
@@ -732,7 +733,6 @@ lemma folded_poly_degree_bound {Q : F[X][Y]} {q : F[X]} {t : ℕ}
                     (Finset.mem_range.mpr
                       (Nat.lt_succ_of_le
                         (Polynomial.le_natDegree_of_ne_zero hn))))
-              simp +decide only
               rw [Polynomial.natDegree_mul']
                 <;> simp +decide only [
                   monic_X_pow, Monic.leadingCoeff, mul_one, ne_eq,

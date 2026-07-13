@@ -110,7 +110,8 @@ theorem coeff_psi_abs_le_two_vecCInfNorm (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0)
     by_cases hpos : pos < ((a i : Rq (powTwoCyclotomic (R := ZMod q) α)).1).size
     · exact le_trans (Finset.le_sup (f := (zmodCenteredView q).absCoeff
         (a i : Rq (powTwoCyclotomic (R := ZMod q) α)).1) (Finset.mem_range.mpr hpos)) hi
-    · rw [CompPoly.CPolynomial.coeff_eq_zero_of_size_le _ (by omega), ZMod.valMinAbs_zero]
+    · rw [CompPoly.CPolynomial.coeff_eq_zero_of_size_le _ (Nat.le_of_not_gt hpos),
+        ZMod.valMinAbs_zero]
       exact Nat.zero_le _
   have hr : p % 2 ^ (α - κ - 1) < 2 ^ (α - κ - 1) := Nat.mod_lt _ hM0
   set j₁ : Fin (2 ^ α / 2 ^ κ) := ⟨p % 2 ^ (α - κ - 1), by omega⟩ with hj1

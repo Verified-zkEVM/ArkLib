@@ -257,14 +257,14 @@ scoped macro_rules
 word `c` to `T` as the word obtained by restricting the indexing set of `c` to `T`.
 We denote this by `c|[T]`.
 Definition 3.7 [BCGM25]. -/
-def projectedWord [Fintype ι] (c : ι → F) (T : Finset ι) : T → F := Set.restrict T c
+def projectedWord (c : ι → F) (T : Finset ι) : T → F := Set.restrict T c
 
 notation:60 c "|[" T "]" => projectedWord c T
 
 /-- Let `C` be a code of length `ι`. For every finite `ι`-subset `T`, we define the projected code
 `C|[T]` as the set of projected codewords `c|[T]`, for `c ∈ C`.
 Definition 3.7 [BCGM25]. -/
-def projectedCode [Fintype ι] (C : Set (ι → F)) (T : Finset ι) : Set (T → F) :=
+def projectedCode (C : Set (ι → F)) (T : Finset ι) : Set (T → F) :=
   {w | ∃ c ∈ C, w = c|[T]}
 
 notation:60 C "|[" T "]" => projectedCode C T
@@ -281,7 +281,9 @@ lemma projectedCode_linearCombination [Field F] (LC : LinearCode ι F) (T : Fins
     exact ⟨Submodule.sum_mem _ fun j _ => Submodule.smul_mem _ _ (hw j |>.1),
       fun t ht => by simp [show ∀ j, U j t = w j t from
         fun j => congr_fun (hw j |>.2) ⟨t, ht⟩]⟩
-  exact ⟨w, hw.1, funext fun t => by simpa using Eq.symm (hw.2 t t.2)⟩
+  exact ⟨w, hw.1, funext fun t => by
+    change (∑ j, c j * U j t.1) = w t.1
+    exact Eq.symm (hw.2 t t.2)⟩
 
 /-- A linear code is maximum distance separable (MDS) if its parameters meet the singleton bound. -/
 def IsMDS {ι : Type} [Fintype ι] [CommRing F] [DecidableEq F] (LC : LinearCode ι F) : Prop :=
@@ -384,14 +386,8 @@ lemma rank_genMatrix_eq_dim [Field F] (LC : LinearCode ι F) :
 /-- The dimension of the linear code given by a generator matrix is the rank of the matrix. -/
 lemma dim_fromRowGenMat {k n : ℕ} [Field F] {G : Matrix (Fin k) (Fin n) F} :
     dim (fromRowGenMat G) = G.rank := by
-  unfold fromRowGenMat;
-  convert congr_arg (fun s : Submodule F _ => Module.finrank F s) _;
-  rotate_left;
-  · exact Submodule.span F (Set.range (fun i => G i));
-  · ext; simp [Matrix.vecMulLinear];
-    simp +decide [funext_iff, Matrix.vecMul, Submodule.mem_span_range_iff_exists_fun];
-    rfl;
-  · convert Matrix.rank_eq_finrank_span_row G using 1
+  unfold dim fromRowGenMat
+  rw [range_vecMulLinear, Matrix.rank_eq_finrank_span_row]
 
 /-- Given a linear code of length `ι` and dimension `dim` over a field `F`, we define its `ι × dim`
 generator matrix as a matrix whose columns are an `F`-basis of the code. -/
@@ -511,8 +507,8 @@ theorem singletonBound [CommRing F] [StrongRankCondition F]
       have hxS : ∀ i ∈ S, (x : ι → F) i = 0 := by
         intro i hi
         have := congrArg (fun (f : (S → F)) => f ⟨i, hi⟩) (by simpa using hx)
-        -- simp at this
-        simpa using this
+        change (x : ι → F) i = 0 at this
+        exact this
       -- bound the weight of x by |Sᶜ|
       let A : Finset ι := Finset.univ.filter (fun i => (x : ι → F) i ≠ 0)
       have hA_subset_compl : A ⊆ Sᶜ := by

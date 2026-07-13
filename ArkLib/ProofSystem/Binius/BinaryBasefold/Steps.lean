@@ -710,7 +710,7 @@ noncomputable def relayOracleVerifier (i : Fin ℓ) (hNCR : ¬ isCommitmentRound
     simp only [MessageIdx, Sum.inl.injEq, Fin.mk.injEq] at h_ab_eq
     exact Fin.ext h_ab_eq
   ⟩
-  hEq := fun oracleIdx => by simp only
+  hEq := fun oracleIdx => by rfl
 
 /-- The oracle reduction that is the `i`-th round of Binary relayfold. -/
 noncomputable def relayOracleReduction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :

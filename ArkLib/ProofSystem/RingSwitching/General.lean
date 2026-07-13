@@ -182,6 +182,7 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness [IsDomain L] :
   convert res
   · simp only [ChallengeIdx, Challenge, instSampleableTypeChallengeFullPspec]
     sorry
+  · rfl
 
 end SecurityProperties
 end

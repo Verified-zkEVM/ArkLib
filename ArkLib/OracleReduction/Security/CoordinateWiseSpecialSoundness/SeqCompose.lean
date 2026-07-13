@@ -261,14 +261,16 @@ theorem seqCompose_succ (S : ∀ i, ChallengeTreeShape (pSpec i)) :
           ProtocolSpec.seqCompose (fun i => pSpec (Fin.succ i))) i₁ :
           (ProtocolSpec.seqCompose pSpec).ChallengeIdx) := by
         have := (Equiv.symm_apply_eq ChallengeIdx.sumEquiv).mp hsplit
-        simpa [ChallengeIdx.sumEquiv_apply] using this
+        simp only [ChallengeIdx.sumEquiv_apply, Sum.elim_inl] at this
+        exact this
       rw [toSigma_inl]
       simp only [ChallengeTree.appendArity, Function.comp_apply,
         ChallengeIdx.sumEquiv_symm_inl, Sum.elim_inl]
     · obtain rfl : i = (ChallengeIdx.inr (pSpec₁ := pSpec 0) i₂ :
           (ProtocolSpec.seqCompose pSpec).ChallengeIdx) := by
         have := (Equiv.symm_apply_eq ChallengeIdx.sumEquiv).mp hsplit
-        simpa [ChallengeIdx.sumEquiv_apply] using this
+        simp only [ChallengeIdx.sumEquiv_apply, Sum.elim_inr] at this
+        exact this
       rw [toSigma_inr]
       simp only [ChallengeTree.appendArity, Function.comp_apply,
         ChallengeIdx.sumEquiv_symm_inr, Sum.elim_inr]
@@ -283,7 +285,8 @@ theorem seqCompose_succ (S : ∀ i, ChallengeTreeShape (pSpec i)) :
         ProtocolSpec.seqCompose (fun i => pSpec (Fin.succ i))) i₁ :
         (ProtocolSpec.seqCompose pSpec).ChallengeIdx) := by
       have := (Equiv.symm_apply_eq ChallengeIdx.sumEquiv).mp hsplit
-      simpa [ChallengeIdx.sumEquiv_apply] using this
+      simp only [ChallengeIdx.sumEquiv_apply, Sum.elim_inl] at this
+      exact this
     apply heq_of_eq
     rw [seqCompose_nodeOk_eq, append_nodeOk_inl]
     have hsig := toSigma_inl (pSpec := pSpec) i₁
@@ -313,7 +316,8 @@ theorem seqCompose_succ (S : ∀ i, ChallengeTreeShape (pSpec i)) :
   · obtain rfl : i = (ChallengeIdx.inr (pSpec₁ := pSpec 0) i₂ :
           (ProtocolSpec.seqCompose pSpec).ChallengeIdx) := by
       have := (Equiv.symm_apply_eq ChallengeIdx.sumEquiv).mp hsplit
-      simpa [ChallengeIdx.sumEquiv_apply] using this
+      simp only [ChallengeIdx.sumEquiv_apply, Sum.elim_inr] at this
+      exact this
     apply heq_of_eq
     rw [seqCompose_nodeOk_eq, append_nodeOk_inr, seqCompose_nodeOk_eq]
     have hsig := toSigma_inr (pSpec := pSpec) i₂
@@ -383,7 +387,7 @@ theorem Verifier.seqCompose_treeSpecialSound
     refine Verifier.append_treeSpecialSound init impl (V 0)
       (Verifier.seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
       (S 0) (ChallengeTreeShape.seqCompose (fun i => S i.succ)) f₀ hf₀ (h 0) ?_
-    simpa using htail
+    simpa [Function.comp_def] using htail
 
 /-- **`n`-ary CWSS composition.** The coordinate-wise special-soundness wrapper of
 `seqCompose_treeSpecialSound`, obtained by unfolding `coordinateWiseSpecialSound` to tree-soundness

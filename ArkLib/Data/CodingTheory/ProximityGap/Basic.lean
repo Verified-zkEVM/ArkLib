@@ -110,18 +110,27 @@ noncomputable def δ_ε_correlatedAgreementAffineLines [Module F A]
     Pr_{let z ← $ᵖ F}[δᵣ(u 0 + z • u 1, C) ≤ δ] > ε →
     jointAgreement (F := A) (κ := Fin 2) (ι := ι) (C := C) (W := u) (δ := δ)
 
+section MultilinearCA
+
+-- Shadow the section's `[Ring F]` scalars: the multilinear combination `|⨂|` needs a single
+-- coherent `CommRing` structure on `F`, and mixing it with the outer `Ring F` binder creates
+-- an instance diamond.
+variable {F : Type} [CommRing F] [Fintype F]
+
 /-- **[Definition 2.3, DG25]** We say that `C ⊂ F^n` features multilinear correlated agreement
 with respect to the proximity parameter `δ` and the error bound `ε`, folding degree `ϑ > 0` if:
 ∀ word stack `u` of size `2^ϑ`, if the probability that
   (a random multilinear combination of the word stack `u` with randomness `r` is `δ`-close to `C`)
   exceeds `ε`, then the word stack `u` has correlated agreement with `C ^⋈ (2^ϑ)`. -/
-def δ_ε_multilinearCorrelatedAgreement [CommRing F] [Module F A]
+def δ_ε_multilinearCorrelatedAgreement [Module F A]
   (C : Set (ι → A)) (ϑ : ℕ) (δ ε : ℝ≥0) : Prop :=
   ∀ (u : WordStack A (Fin (2^ϑ)) ι),
     Pr_{let r ← $ᵖ (Fin ϑ → F)}[ -- This syntax only works with (A : Type 0)
       δᵣ(r |⨂| u, C) ≤ δ
     ] > (ϑ : ℝ≥0) * ε →
     jointAgreement (F := A) (κ := Fin (2 ^ ϑ)) (ι := ι) (C := C) (W := u) (δ := δ)
+
+end MultilinearCA
 
 /-- **`(δ, ε)`-CA for low-degree parameterised (polynomial) curves**: Generalized statement of
 **Theorem 1.5, [BCIKS20]**

@@ -99,7 +99,7 @@ end CosetFftDomain
 instance : FunLike (CosetFftDomain ι F) ι F where
   coe cosetDomain i :=
     cosetDomain.cosetGenerator * cosetDomain.subgroupDomain i
-  coe_injective' ω₁ ω₂ h := by
+  coe_injective ω₁ ω₂ h := by
     simp only at h
     have h₀ := congrFun h 0
     have h := congrFun h
@@ -182,7 +182,7 @@ private lemma mkSubgroupUnit_injective {D : Type} [FunLike D ι F] [CosetFftDoma
   intro a b hab
   apply (‹CosetFftDomainClass D ι F›.injective ω)
   have h_eq : (ω 0)⁻¹ * ω a = (ω 0)⁻¹ * ω b := by
-    convert congr_arg Units.val hab using 1
+    exact congr_arg Units.val hab
   exact mul_left_cancel₀
     (inv_ne_zero (show ω 0 ≠ 0 from by have :=
       (‹CosetFftDomainClass D ι F›.ne_zero ω 0) ; aesop)) h_eq

@@ -36,7 +36,7 @@ variable {ℓ 𝓡 ϑ : ℕ} (γ_repetitions : ℕ) [NeZero ℓ] [NeZero 𝓡] [
 variable {h_ℓ_add_R_rate : ℓ + 𝓡 < r} -- ℓ ∈ {1, ..., r-1}
 variable [hdiv : Fact (ϑ ∣ ℓ)]
 
-instance {_ : Empty} : OracleInterface (Unit) := OracleInterface.instDefault
+local instance : OracleInterface Unit := OracleInterface.instDefault
 
 open CoreInteraction QueryPhase
 /-- The oracle verifier for the full Binary Basefold protocol -/

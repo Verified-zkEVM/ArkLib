@@ -64,17 +64,17 @@ def R_star_star (U₀ U₁ V₀ V₁ : InterleavedWord A (Fin m) ι) : Finset (F
     Uᵣ j = Vᵣ j)
 
 omit [Nonempty ι] [DecidableEq ι] [DecidableEq κ] [Fintype A] [AddCommGroup A] in
-open Classical in
 /-- Row-wise distance is bounded by interleaved distance.
 i.e. `d((U)ᵢ, (M)ᵢ) ≤ d^m(U, M)` -/
 lemma dist_row_le_dist_ToInterleavedWord (U : InterleavedWord A (κ := κ) (ι := ι))
-    (M : InterleavedWord A (κ := κ) (ι := ι)) (rowIdx : κ) :
+    (M : InterleavedWord A (κ := κ) (ι := ι)) (rowIdx : κ)
+    [DecidableEq (κ → A)] :
     Δ₀(getRow U rowIdx, getRow M rowIdx) ≤ Δ₀(U, M) := by
   apply Finset.card_le_card
   refine monotone_filter_right univ ?_
   exact fun a a_1 a_2 ↦ mt (congrArg fun a ↦ a rowIdx) a_2
 
-omit [DecidableEq ι] [AddCommGroup A] [Fintype F] [Nonempty ι] [Fintype A]
+omit [AddCommGroup A] [Fintype F] [Nonempty ι] [DecidableEq ι] [Fintype A]
   [NoZeroDivisors F] [DecidableEq F] [Module.Free F A] in
 /-- Helper Lemma relating row distance to interleaved distance (as derived from DG25):
   `d((Uᵣ)ᵢ, C) ≤ d^m(Uᵣ, C^m)` -/
@@ -102,9 +102,8 @@ lemma dist_row_le_dist_ToInterleavedCode (U : InterleavedWord A (Fin m) ι) :
   apply le_trans dist_le_dist
   -- ⊢ ↑Δ₀(Uᵢ, ↑Mᵢ) ≤ Δ₀(U, ↑C_m)
   have h_dist_row_le_dist_interleaved : Δ₀(Uᵢ, Mᵢ) ≤ Δ₀(U, M) := by
-    simp only [Uᵢ, Mᵢ]
-    simp only [getRow]
-    convert dist_row_le_dist_ToInterleavedWord U M i
+    change Δ₀(getRow U i, getRow M i) ≤ Δ₀(U, M)
+    exact dist_row_le_dist_ToInterleavedWord U M i
   calc
     (Δ₀(Uᵢ, Mᵢ): ℕ∞) ≤ (Δ₀(U, M): ℕ∞) :=
       ENat.coe_le_coe.mpr h_dist_row_le_dist_interleaved
@@ -285,9 +284,7 @@ lemma affineWord_close_to_affineInterleavedCodeword
     have h_dist_Uᵣi_Vᵣstari :
       Δ₀(getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx, Vᵣ_star_i) ≤ e := by
       have h_Δ₀_getrow_Uᵣ_Vᵣ := dist_row_le_dist_ToInterleavedWord Uᵣ Vᵣ_star.val rowIdx
-      apply le_trans (h_Δ₀_getrow_Uᵣ_Vᵣ)
-      convert h_dist_Uᵣ_Vᵣ_star_le_e -- can't use exact here
-
+      exact le_trans h_Δ₀_getrow_Uᵣ_Vᵣ h_dist_Uᵣ_Vᵣ_star_le_e
     -- 4. Show (Uᵣ)ᵢ is e-close to (Vᵣ)ᵢ
     -- Get the row-wise agreement for row i from the constructor
     have h_agree_i := h_row_agreement rowIdx
@@ -456,17 +453,14 @@ lemma D_card_le_e_implies_interleaved_correlatedAgreement₂
     simp only [eq_iff_iff]
     constructor
     · intro hleft
-      simp only at hleft ⊢
       by_contra h_fun_eq
       rw [funext_iff] at h_fun_eq
       by_cases h_left_1: ¬U₀ colIdx = V₀.val colIdx
       · simp only [h_left_1, not_false_eq_true, true_or] at hleft
         have h_U₀_eq_V₀ := h_fun_eq 0
-        simp only at h_U₀_eq_V₀
         exact h_left_1 h_U₀_eq_V₀
       · simp only [h_left_1, false_or] at hleft
         have h_U₁_eq_V₁ := h_fun_eq 1
-        simp only at h_U₁_eq_V₁
         exact h_left_1 fun a ↦ hleft h_U₁_eq_V₁
     · intro h_fun_ne
       rw [funext_iff] at h_fun_ne
@@ -495,7 +489,7 @@ lemma D_card_le_e_implies_interleaved_correlatedAgreement₂
   · exact hD_card_le_e
 
 omit [Nonempty ι] [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A]
-[Nontrivial ↥MC] in
+  [Nontrivial ↥MC] in
 /-- **Lemma 3.3 (Part 1): Bound on agreeing cells outside D**
     The set of agreeing cells `(r, j)` where `j ∉ D` is exactly the
     Cartesian product of `R*` and `Dᶜ` (the columns not in D).
@@ -709,8 +703,8 @@ lemma R_star_star_upper_bound
     · congr
       exact R_star_star_eq_union MC U₀ U₁ V₀ V₁ e D
     · exact Disjoint.symm (disjoint_R_star_star_filter_columns_in_D_not_in_D MC U₀ U₁ V₀ V₁ e D)
-  simp only [ge_iff_le]
   -- 4. Apply the split
+  simp only
   rw [h_card_split]
   -- Goal: R_ss_notin_D.card + R_ss_in_D.card ≤ R_s.card * (n - D.card) + D.card
 

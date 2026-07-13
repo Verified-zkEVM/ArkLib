@@ -23,15 +23,6 @@ variable {R : Type*}
 def ofFn [Zero R] [BEq R] [LawfulBEq R] {n : ℕ} (f : Fin n → R) : CPolynomial R :=
   ⟨(Raw.mk (Array.ofFn f)).trim, Raw.Trim.isCanonical_trim _⟩
 
-/-- A `CPolynomial` coefficient past the stored `size` is `0` (`coeff` reads `Array.getD … 0`). -/
-theorem coeff_eq_zero_of_size_le [Zero R] (p : CPolynomial R) {pos : ℕ} (h : p.size ≤ pos) :
-    p.coeff pos = 0 := by
-  change p.val.getD pos 0 = 0
-  unfold Array.getD
-  split_ifs with hh
-  · exact absurd hh (Nat.not_lt.mpr h)
-  · rfl
-
 section DivisionToPoly
 
 open Polynomial
@@ -115,7 +106,8 @@ private lemma Raw.toPoly_ne_zero_of_size_pos {p : CPolynomial.Raw R}
     rw [← toPoly_eq_zero_iff cp]
     exact hp0
   have hp_empty : p = (#[] : CPolynomial.Raw R) := by
-    simpa [cp] using congrArg Subtype.val hcp0
+    change p = (0 : CPolynomial R).val
+    exact congrArg Subtype.val hcp0
   have : p.size = 0 := by simpa using congrArg Array.size hp_empty
   omega
 
@@ -164,8 +156,12 @@ private lemma divModByMonicAux_step_degree_lt (p q : CPolynomial.Raw R)
   rw [Raw.toPoly_trim, Raw.toPoly_sub_eq, Raw.toPoly_mul_eq, Raw.toPoly_C,
     Raw.toPoly_mul_eq, Raw.toPoly_powFn_eq, Raw.toPoly_X,
     Raw.leadingCoeff_toPoly_eq p hp, hk]
-  convert hdrop using 2
-  ring
+  rw [show q.toPoly *
+      (Polynomial.C p.toPoly.leadingCoeff *
+        Polynomial.X ^ (p.toPoly.natDegree - q.toPoly.natDegree)) =
+      Polynomial.C p.toPoly.leadingCoeff *
+        (q.toPoly * Polynomial.X ^ (p.toPoly.natDegree - q.toPoly.natDegree)) by ring] at hdrop
+  exact hdrop
 
 private lemma divModByMonicAux_go_eq (n : ℕ) (p q : CPolynomial.Raw R) :
     q.toPoly * (Raw.divModByMonicAux.go n p q).1.toPoly +
