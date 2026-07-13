@@ -5,7 +5,7 @@ Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Correctness
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Arithmetic
-import ArkLib.ToVCVio.EvalDist.Monad.Basic
+import VCVio.EvalDist.Monad.Basic
 
 /-!
 # Weak-Binding Security of the Inner-Outer Ajtai Commitment

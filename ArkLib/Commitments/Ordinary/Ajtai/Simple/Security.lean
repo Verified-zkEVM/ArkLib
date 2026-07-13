@@ -5,7 +5,7 @@ Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Ordinary.Ajtai.Simple.Correctness
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds
-import ArkLib.ToVCVio.EvalDist.Monad.Basic
+import VCVio.EvalDist.Monad.Basic
 
 /-!
 # Binding Security of the Simple Ajtai Commitment
