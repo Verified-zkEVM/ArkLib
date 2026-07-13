@@ -188,11 +188,15 @@ def projectToMidSumcheckPoly (t : MultilinearPoly L ℓ)
 def projectToNextSumcheckPolyWithDegree {d : ℕ} (i : Fin (ℓ))
     (Hᵢ : L⦃≤ d⦄[X Fin (ℓ - i)]) (rᵢ : L) :
     L⦃≤ d⦄[X Fin (ℓ - i.succ)] := by
+  have hdim : ℓ - i.succ = ℓ - i - 1 := by
+    simp only [Fin.val_succ]
+    omega
+  rw [hdim]
   let projectedH := fixFirstVariablesOfMQP (ℓ := ℓ - i) (v := ⟨1, by omega⟩)
     (H := Hᵢ.val) (challenges := fun _ => rᵢ)
   exact ⟨projectedH, by
     have hp := Hᵢ.property
-    simpa using
+    simpa only [projectedH] using
       (fixFirstVariablesOfMQP_degreeLE (L := L) (ℓ := ℓ - i) (v := ⟨1, by omega⟩)
         (poly := Hᵢ.val) (challenges := fun _ => rᵢ) (deg := d) hp)
   ⟩

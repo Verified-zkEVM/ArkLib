@@ -61,7 +61,7 @@ end FftDomain
 instance : FunLike (FftDomain ι F) ι F where
   coe fftDomain i :=
     fftDomain.subgroupDomain i
-  coe_injective' ω₁ ω₂ h := by
+  coe_injective ω₁ ω₂ h := by
     simp only [FftDomain.eq_iff_domains_eq]
     ext i
     have h := congrFun h i

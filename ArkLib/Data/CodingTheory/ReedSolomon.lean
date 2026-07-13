@@ -460,7 +460,7 @@ theorem minDist' {ι : Type*} [Fintype ι] {F : Type*} [Field F] [DecidableEq F]
     rw [dim_eq_deg_of_le' h] at distUB
     simp only [LinearCode.length] at distUB
     have h_le_len : Code.minDist ((ReedSolomon.code α n) : Set (ι → F)) ≤ Fintype.card ι := by
-      convert dist_UB (MC := ReedSolomon.code α n)
+      simpa only [LinearCode.length] using dist_UB (MC := ReedSolomon.code α n)
     zify [h_le_len] at distUB
     omega
   case p₂ =>
@@ -611,7 +611,7 @@ lemma toPolynomial_mem_lt_deg (c : ReedSolomon.code domain deg) :
                 (r' := fun i => p.eval (domain i))) ?_
       intro i _
       -- From codeword property: evaluations agree on all points
-      simpa using congrArg (fun f => f i) hp_eval.symm
+      exact congrArg (fun f => f i) hp_eval.symm
     -- A polynomial of degree < |ι| equals its Lagrange interpolant on `univ`
     have hp_eq_interp :
       p = Lagrange.interpolate (Finset.univ : Finset ι) domain (fun i => p.eval (domain i)) :=

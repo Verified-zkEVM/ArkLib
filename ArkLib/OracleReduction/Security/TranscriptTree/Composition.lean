@@ -569,9 +569,16 @@ theorem RightProj.tree_isStructured :
     {r : Fin (n + 1)} → (R : RightProj S₁.arity S₂.arity r) →
     R.src.IsStructured (S₁.append S₂) → R.tree.IsStructured S₂
   | _, .leaf, _ => trivial
-  | _, .msg i h m₂ child, hR =>
-      RightProj.tree_isStructured child
-        (by simpa [RightProj.src, ChallengeTree.IsStructured] using hR)
+  | _, .msg i h m₂ child, hR => by
+      have hround : (Fin.natAdd m i).succ = rightRound i.succ := by
+        apply Fin.ext
+        simp only [Fin.val_succ, Fin.val_natAdd, rightRound]
+        omega
+      simp only [RightProj.src, ChallengeTree.IsStructured] at hR
+      apply RightProj.tree_isStructured child
+      convert hR using 1
+      · exact hround.symm
+      · rfl
   | _, .chal i h chals children, hR => by
       have hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.natAdd m i) = .V_to_P := by
         simpa [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_right] using h
@@ -606,9 +613,15 @@ theorem SplitData.fst_isStructured :
     {r : Fin (m + 1)} → (S : SplitData S₁.arity S₂.arity r) →
     S.src.IsStructured (S₁.append S₂) → S.fst.IsStructured S₁
   | _, .boundary _, _ => trivial
-  | _, .msg i h m₁ child, hS =>
-      SplitData.fst_isStructured child
-        (by simpa [SplitData.src, ChallengeTree.IsStructured] using hS)
+  | _, .msg i h m₁ child, hS => by
+      have hround : (Fin.castAdd n i).succ = leftRound i.succ := by
+        apply Fin.ext
+        rfl
+      simp only [SplitData.src, ChallengeTree.IsStructured] at hS
+      apply SplitData.fst_isStructured child
+      convert hS using 1
+      · exact hround.symm
+      · rfl
   | _, .chal i h chals children, hS => by
       have hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.castAdd n i) = .V_to_P := by
         simpa [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_left] using h
@@ -640,11 +653,25 @@ theorem SplitData.sndAt_isStructured :
     {r : Fin (m + 1)} → (S : SplitData S₁.arity S₂.arity r) →
     S.src.IsStructured (S₁.append S₂) → (path : LeafPath S.fst) →
     (S.sndAt path).IsStructured S₂
-  | _, .boundary rp, hS, _ =>
-      rp.tree_isStructured (by simpa [SplitData.src] using hS)
+  | _, .boundary rp, hS, _ => by
+      have hround : leftRound (n := n) (Fin.last m) =
+          rightRound (m := m) (0 : Fin (n + 1)) := by
+        apply Fin.ext
+        simp [leftRound, rightRound]
+      simp only [SplitData.src] at hS
+      apply rp.tree_isStructured
+      convert hS using 1
+      · exact hround.symm
+      · rfl
   | _, .msg i h m₁ child, hS, path => by
+      have hround : (Fin.castAdd n i).succ = leftRound i.succ := by
+        apply Fin.ext
+        rfl
+      simp only [SplitData.src, ChallengeTree.IsStructured] at hS
       have hS' : child.src.IsStructured (S₁.append S₂) := by
-        simpa [SplitData.src, ChallengeTree.IsStructured] using hS
+        convert hS using 1
+        · exact hround.symm
+        · rfl
       exact SplitData.sndAt_isStructured child hS' (peelMsg path)
   | _, .chal i h chals children, hS, path => by
       have hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.castAdd n i) = .V_to_P := by

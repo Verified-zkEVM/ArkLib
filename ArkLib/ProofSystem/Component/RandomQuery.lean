@@ -192,9 +192,10 @@ def stateFunction [Inhabited OStatement] : (oracleVerifier oSpec OStatement).Sta
     (relIn OStatement).language (relOut OStatement).language where
   toFun
   | 0 => fun ⟨_, oracles⟩ _ => oracles 0 = oracles 1
-  | 1 => fun ⟨_, oracles⟩ chal =>
-    let q : Query OStatement := by simpa [pSpec] using chal ⟨0, by aesop⟩
-    answer (oracles 0) q = answer (oracles 1) q
+  | 1 => fun ⟨_, oracles⟩ chal => by
+    let q := chal ⟨0, by aesop⟩
+    change Query OStatement at q
+    exact answer (oracles 0) q = answer (oracles 1) q
   toFun_empty := fun stmt => by simp
   toFun_next | 0 => fun hDir ⟨stmt, oStmt⟩ tr h => by simp_all
   toFun_full := fun ⟨stmt, oStmt⟩ tr h => by
@@ -237,9 +238,10 @@ def knowledgeStateFunction :
     (relIn OStatement) (relOut OStatement) (rbrExtractor oSpec OStatement) where
   toFun
   | 0 => fun ⟨_, oracles⟩ _ _ => oracles 0 = oracles 1
-  | 1 => fun ⟨_, oracles⟩ chal _ =>
-    let q : Query OStatement := by simpa [pSpec] using chal ⟨0, by aesop⟩
-    answer (oracles 0) q = answer (oracles 1) q
+  | 1 => fun ⟨_, oracles⟩ chal _ => by
+    let q := chal ⟨0, by aesop⟩
+    change Query OStatement at q
+    exact answer (oracles 0) q = answer (oracles 1) q
   toFun_empty := fun stmt => by simp
   toFun_next | 0 => fun hDir ⟨stmt, oStmt⟩ tr h => by simp_all
   toFun_full := fun ⟨stmt, oStmt⟩ tr witOut => by

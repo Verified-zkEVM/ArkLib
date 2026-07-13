@@ -229,7 +229,7 @@ theorem completeness [Nonempty σ] :
       simp only [support_map, Set.mem_image, Prod.mk.injEq, Option.some.injEq] at hval
       obtain ⟨⟨_, _⟩, _, rfl, rfl⟩ := hval
       simp only [Set.mem_setOf_eq]
-      refine ⟨trivial, Prod.ext (Subsingleton.elim _ _) ?_⟩
+      refine ⟨rfl, Prod.ext (Subsingleton.elim _ _) ?_⟩
       funext i
       rcases i with j | j <;> {
         have hj : j = default := Unique.uniq _ j
