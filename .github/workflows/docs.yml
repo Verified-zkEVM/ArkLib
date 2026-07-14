@@ -28,7 +28,7 @@ jobs:
       DISABLE_EQUATIONS: 1
     steps:
       - name: Cleanup to free disk space
-        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.0
+        uses: jlumbroso/free-disk-space@v1.3.1
         with:
           tool-cache: false
           android: true
@@ -39,7 +39,7 @@ jobs:
           swap-storage: false
 
       - name: Checkout project
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0 # Fetch all history for all branches and tags
 
@@ -55,6 +55,9 @@ jobs:
       # exist in the Lean sources, and deploys everything to GitHub Pages.
       # Deploy/upload steps are gated to `push` events by the action itself, so
       # pull requests get a validation-only build of the blueprint and decls.
+      # docgen-action publishes no tags/releases and its README suggests `@main`.
+      # A moving branch is neither reproducible nor trackable by Dependabot, so we
+      # pin the current `main` commit instead; Dependabot bumps this SHA via PR.
       - name: Build blueprint and documentation
         uses: leanprover-community/docgen-action@10db47458f91456d87804787d3dfcd914b9a19e3 # 2026-06-07
         with:
