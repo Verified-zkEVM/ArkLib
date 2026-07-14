@@ -528,21 +528,65 @@ theorem ringSwitchPhase_perfectCompleteness [IsDomain car.E] :
   have hcheck : car.claimConsistent stmtIn.1.1
       (car.honestSlices stmtIn.1.2 (car.packedMLE witIn)) :=
     honest_claimConsistent car m pc hRel
-  -- REMAINS (WIP 2026-07-14): the final verifier-side support read-off. State reached:
-  -- the prover run is fully peeled (challenge `c` fixed), the verifier's slice query is
-  -- resolved to the honest slices (`hq`), and the Remark-5 check passes (`hcheck`), so the
-  -- verifier `OptionT` subterm is *definitionally* `pure (some batchedOutput)`. What remains
-  -- is to collapse the `OptionT.run`/`Option.elim`/`getM` layers of `Reduction.run` and read
-  -- `x = some (proverResult, verifierStmtOut)`, closing with
-  -- `honest_mem_phaseRelOut car m bat pc hRel c` (relOut) and `rfl` (prover/verifier stmt
-  -- agreement). The blocker is purely monadic normalization: the `OptionT.pure`-bind is defeq
-  -- but not syntactic, so `pure_bind`/`OptionT.run_pure` don't fire and the collapse needs a
-  -- dedicated value lemma `verifierRun_simulateQ_eq_pure` in the style of the toy protocol's
-  -- `ToyProblem.Spec.verifierBody_simulateQ_eq_pure` (which needs the verifier's `Classical`
-  -- decidability instance threaded and the exact `ite` term matched). All the mathematical
-  -- content — `honest_mem_phaseRelOut`, `honest_claimConsistent`, the whole prover peel, `hq`,
-  -- `hcheck` — is DONE and axiom-clean.
-  sorry
+  classical
+  -- Collapse the (definitional) `pure`-bind: the bound slice variable *is* the honest slices,
+  -- so the verifier's `OptionT` subterm becomes a concrete `if` on `car.claimConsistent`.
+  replace hx : x ∈ _root_.support
+      (((do
+          let stmtOut ←
+            liftM
+                ((fun a ↦ (a, fun i ↦ stmtIn.2 i)) <$>
+                  simulateQ
+                    (OracleInterface.simOracle2 ([]ₒ : OracleSpec PEmpty.{1}) stmtIn.2
+                      (FullTranscript.messages (pSpec := pSpecRingSwitchPhase car bat)
+                        (Transcript.concat (m := (1 : Fin 2)) c
+                          (Transcript.concat (m := (0 : Fin 2))
+                            (car.honestSlices stmtIn.1.2 (car.packedMLE witIn))
+                            (default : (pSpecRingSwitchPhase car bat).Transcript 0)))))
+                    (if car.claimConsistent stmtIn.1.1
+                          (car.honestSlices stmtIn.1.2 (car.packedMLE witIn)) then
+                      pure
+                        ((stmtIn.1.2, c),
+                          ∑ u, bat.weight c u
+                            * car.honestSlices stmtIn.1.2 (car.packedMLE witIn) u)
+                    else failure
+                      : OptionT (OracleComp (([]ₒ : OracleSpec PEmpty.{1})
+                          + ([pc.OStmt]ₒ + [(pSpecRingSwitchPhase car bat).Message]ₒ)))
+                          (((Fin m → car.E) × bat.Challenge) × car.P))
+                    : OptionT (OracleComp ([]ₒ : OracleSpec PEmpty.{1})) _).run
+          Prod.mk
+                (Transcript.concat (m := (1 : Fin 2)) c
+                    (Transcript.concat (m := (0 : Fin 2))
+                      (car.honestSlices stmtIn.1.2 (car.packedMLE witIn))
+                      (default : (pSpecRingSwitchPhase car bat).Transcript 0)),
+                  (((stmtIn.1.2, c),
+                        ∑ u, bat.weight c u
+                          * car.honestSlices stmtIn.1.2 (car.packedMLE witIn) u), stmtIn.2),
+                  car.packedMLE witIn) <$>
+              stmtOut.getM)
+        : OptionT (OracleComp _) _).run) := hx
+  -- The honest slices pass the Remark-5 check, so the `OptionT` `failure` branch is dead.
+  rw [if_pos hcheck] at hx
+  -- Everything downstream (`simulateQ σ (pure …)`, `liftM`, `getM`, and the output map) collapses
+  -- by defeq to `pure (some finalValue)`; the support then pins `x`.
+  replace hx : x ∈ _root_.support
+      (pure (some
+          ((Transcript.concat (m := (1 : Fin 2)) c
+                (Transcript.concat (m := (0 : Fin 2))
+                  (car.honestSlices stmtIn.1.2 (car.packedMLE witIn))
+                  (default : (pSpecRingSwitchPhase car bat).Transcript 0)),
+              (((stmtIn.1.2, c),
+                    ∑ u, bat.weight c u
+                      * car.honestSlices stmtIn.1.2 (car.packedMLE witIn) u), stmtIn.2),
+              car.packedMLE witIn),
+            ((stmtIn.1.2, c),
+                ∑ u, bat.weight c u
+                  * car.honestSlices stmtIn.1.2 (car.packedMLE witIn) u), stmtIn.2))
+        : OracleComp _ _) := hx
+  obtain rfl := OracleComp.eq_of_mem_support_pure _ hx
+  -- Close: batched output in `phaseRelOut` (`honest_mem_phaseRelOut`) and prover/verifier
+  -- statement agreement (`rfl`; the honest challenge `c` matches the read-back challenge).
+  exact ⟨_, rfl, honest_mem_phaseRelOut car m bat pc hRel c, rfl⟩
 
 end Completeness
 
