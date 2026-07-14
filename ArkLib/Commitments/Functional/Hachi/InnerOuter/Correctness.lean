@@ -57,10 +57,8 @@ variable {R : Type} [Field R] [BEq R] [LawfulBEq R] (Φ : CyclotomicModulus R) [
 variable {innerRows messageRows messageDigits outerRows blocks innerDigits : Nat}
 variable [DecidableEq (PolyVec (Rq Φ) messageRows)]
 variable [DecidableEq (PolyVec (Rq Φ) innerRows)]
-variable [DecidableEq (Commitment Φ outerRows)]
 
-omit [DecidableEq (PolyVec (Rq Φ) messageRows)] [DecidableEq (PolyVec (Rq Φ) innerRows)]
-  [DecidableEq (Commitment Φ outerRows)] in
+omit [DecidableEq (PolyVec (Rq Φ) messageRows)] [DecidableEq (PolyVec (Rq Φ) innerRows)] in
 /-- Honest message decompositions recover the message: `G · sᵢ = mᵢ` (`derivedMessage = m`). -/
 theorem generateDecomps_derivedMessage (base : R)
     (decomp : Decomposition Φ messageRows messageDigits innerRows innerDigits)
@@ -70,7 +68,7 @@ theorem generateDecomps_derivedMessage (base : R)
     derivedMessage Φ base (generateDecomps Φ decomp pp m) i = m i := by
   simpa [derivedMessage, Simple.commit, gadgetMul, generateDecomps] using hMessageDecomp (m i)
 
-omit [DecidableEq (PolyVec (Rq Φ) innerRows)] [DecidableEq (Commitment Φ outerRows)] in
+omit [DecidableEq (PolyVec (Rq Φ) innerRows)] in
 /-- Honest message decompositions pass the message gadget checks. -/
 theorem generateDecomps_message_checks (base : R)
     (decomp : Decomposition Φ messageRows messageDigits innerRows innerDigits)
@@ -87,8 +85,7 @@ theorem generateDecomps_message_checks (base : R)
     simpa [Simple.commit, gadgetMul, generateDecomps] using hMessageDecomp (m i)
   simp [Simple.verify, hprod]
 
-omit [DecidableEq (PolyVec (Rq Φ) messageRows)] [DecidableEq (PolyVec (Rq Φ) innerRows)]
-  [DecidableEq (Commitment Φ outerRows)] in
+omit [DecidableEq (PolyVec (Rq Φ) messageRows)] [DecidableEq (PolyVec (Rq Φ) innerRows)] in
 /-- Honest inner decompositions satisfy the inner gadget relation `G · t̂ᵢ = A sᵢ`. -/
 theorem generateDecomps_inner_eq (base : R)
     (decomp : Decomposition Φ messageRows messageDigits innerRows innerDigits)
@@ -101,7 +98,7 @@ theorem generateDecomps_inner_eq (base : R)
   simpa [Simple.commit, gadgetMul, generateDecomps] using
     hInnerDecomp (Simple.commit Φ pp.innerMatrix (decomp.message (m i)))
 
-omit [DecidableEq (PolyVec (Rq Φ) messageRows)] [DecidableEq (Commitment Φ outerRows)] in
+omit [DecidableEq (PolyVec (Rq Φ) messageRows)] in
 /-- Honest inner decompositions pass the inner gadget checks. -/
 theorem generateDecomps_inner_checks (base : R)
     (decomp : Decomposition Φ messageRows messageDigits innerRows innerDigits)

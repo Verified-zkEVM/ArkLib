@@ -1,5 +1,5 @@
 {
-  "count": 50,
+  "count": 55,
   "entries": {
     "ACFY24": {
       "authors": [
@@ -181,6 +181,29 @@
       "url": "",
       "venue": "2024 IEEE 37th Computer Security Foundations Symposium (CSF)",
       "year": "2024"
+    },
+    "BCGM25": {
+      "authors": [
+        "Bordage, Sarah",
+        "Chiesa, Alessandro",
+        "Guan, Ziyi",
+        "Manzur, Ignacio"
+      ],
+      "authors_text": "Bordage, Sarah and Chiesa, Alessandro and Guan, Ziyi and Manzur, Ignacio",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Bordage, Sarah and Chiesa, Alessandro and Guan, Ziyi and Manzur, Ignacio",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2025/2051",
+        "title": "All Polynomial Generators Preserve Distance with Mutual Correlated Agreement",
+        "url": "https://eprint.iacr.org/2025/2051",
+        "year": "2025"
+      },
+      "key": "BCGM25",
+      "title": "All Polynomial Generators Preserve Distance with Mutual Correlated Agreement",
+      "url": "https://eprint.iacr.org/2025/2051",
+      "venue": "",
+      "year": "2025"
     },
     "BCGMMW18": {
       "authors": [
@@ -398,6 +421,30 @@
       "venue": "Advances in Cryptology--EUROCRYPT 2020: 39th Annual International Conference on the Theory and Applications of Cryptographic Techniques, Zagreb, Croatia, May 10--14, 2020, Proceedings, Part I 39",
       "year": "2020"
     },
+    "DG25": {
+      "authors": [
+        "Diamond, Benjamin E.",
+        "Gruen, Angus"
+      ],
+      "authors_text": "Diamond, Benjamin E. and Gruen, Angus",
+      "doi": "10.62056/a0ljbkrz",
+      "entry_type": "article",
+      "fields": {
+        "author": "Diamond, Benjamin E. and Gruen, Angus",
+        "doi": "10.62056/a0ljbkrz",
+        "journal": "IACR Communications in Cryptology",
+        "number": "4",
+        "title": "Proximity Gaps in Interleaved Codes",
+        "url": "https://cic.iacr.org/p/1/4/8",
+        "volume": "1",
+        "year": "2025"
+      },
+      "key": "DG25",
+      "title": "Proximity Gaps in Interleaved Codes",
+      "url": "https://cic.iacr.org/p/1/4/8",
+      "venue": "IACR Communications in Cryptology",
+      "year": "2025"
+    },
     "DP23": {
       "authors": [
         "Benjamin E. Diamond",
@@ -477,20 +524,23 @@
         "Nguyen, Ngoc Khanh"
       ],
       "authors_text": "Fenzi, Giacomo and Moghaddas, Hossein and Nguyen, Ngoc Khanh",
-      "doi": "",
+      "doi": "10.1007/s00145-024-09511-8",
       "entry_type": "article",
       "fields": {
         "author": "Fenzi, Giacomo and Moghaddas, Hossein and Nguyen, Ngoc Khanh",
+        "doi": "10.1007/s00145-024-09511-8",
         "journal": "Journal of Cryptology",
         "number": "3",
         "pages": "31",
-        "title": "Lattice-based polynomial commitments: Towards asymptotic and concrete efficiency",
+        "publisher": "Springer",
+        "title": "Lattice-Based Polynomial Commitments: Towards Asymptotic and Concrete Efficiency",
+        "url": "https://eprint.iacr.org/2023/846",
         "volume": "37",
         "year": "2024"
       },
       "key": "FMN24",
-      "title": "Lattice-based polynomial commitments: Towards asymptotic and concrete efficiency",
-      "url": "",
+      "title": "Lattice-Based Polynomial Commitments: Towards Asymptotic and Concrete Efficiency",
+      "url": "https://eprint.iacr.org/2023/846",
       "venue": "Journal of Cryptology",
       "year": "2024"
     },
@@ -628,6 +678,26 @@
       "venue": "Annual International Cryptology Conference",
       "year": "2024"
     },
+    "Jo26": {
+      "authors": [
+        "Jo, Sunghyeon"
+      ],
+      "authors_text": "Jo, Sunghyeon",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Jo, Sunghyeon",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2026/891",
+        "title": "Interleaving Stability for Mutual Correlated Agreement and Curve Decodability",
+        "url": "https://eprint.iacr.org/2026/891",
+        "year": "2026"
+      },
+      "key": "Jo26",
+      "title": "Interleaving Stability for Mutual Correlated Agreement and Curve Decodability",
+      "url": "https://eprint.iacr.org/2026/891",
+      "venue": "",
+      "year": "2026"
+    },
     "KZG10": {
       "authors": [
         "Aniket Kate",
@@ -735,6 +805,31 @@
       "url": "https://doi.org/10.1145/146585.146605",
       "venue": "J. ACM",
       "year": "1992"
+    },
+    "LNP22": {
+      "authors": [
+        "Lyubashevsky, Vadim",
+        "Nguyen, Ngoc Khanh",
+        "Plan{\\c{c}}on, Maxime"
+      ],
+      "authors_text": "Lyubashevsky, Vadim and Nguyen, Ngoc Khanh and Plan{\\c{c}}on, Maxime",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Lyubashevsky, Vadim and Nguyen, Ngoc Khanh and Plan{\\c{c}}on, Maxime",
+        "booktitle": "Advances in Cryptology -- CRYPTO 2022",
+        "pages": "71--101",
+        "publisher": "Springer",
+        "series": "Lecture Notes in Computer Science",
+        "title": "Lattice-Based Zero-Knowledge Proofs and Applications: Shorter, Simpler, and More General",
+        "volume": "13508",
+        "year": "2022"
+      },
+      "key": "LNP22",
+      "title": "Lattice-Based Zero-Knowledge Proofs and Applications: Shorter, Simpler, and More General",
+      "url": "",
+      "venue": "Advances in Cryptology -- CRYPTO 2022",
+      "year": "2022"
     },
     "LPS24": {
       "authors": [
