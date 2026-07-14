@@ -3,14 +3,14 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.LinSumcheck.SumcheckBridge
+import ArkLib.Commitments.Functional.Hachi.Sumcheck.Bridge
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 
 /-!
   # Paired sumcheck rounds — Hachi Figure 6 / Lemma 11 — skeleton (milestone F7)
 
   The sumcheck loop of Hachi §4.3: `m₀` rounds, each reducing the pair of
-  partial-hypercube-sum claims (`roundRel i`, `LinSumcheck/Constraints.lean`) by one variable.
+  partial-hypercube-sum claims (`roundRel i`, `ZeroCheck/Constraints.lean`) by one variable.
 
   ## Paired rounds (design D9)
 
@@ -161,7 +161,14 @@ tree node share the message pair `(g^{(0)}, g^{(α)})` and carry pairwise-distin
 distinct points, hence identically; evaluating at `0, 1`, summing, and using the **guard fact**
 `roundCheck = true` (available from acceptance on a guarded verifier) recovers the round-`i`
 claims. Assembled via a guarded variant of the scalar-round machinery (F4.1 + B4.1's
-`check_eq_true_of_guarded_accepting`). -/
+`check_eq_true_of_guarded_accepting`).
+
+**TODO (reuse `Sumcheck/Structured`):** this round should be the existing structured sum-check
+round (`ArkLib/ProofSystem/Sumcheck/Structured`) rather than the bespoke `roundVerifier` above —
+its CWSS discharged by the (to-be-built, wire-format-generic / guarded) analog of the scalar-round
+engine applied to `Structured.roundOracleVerifier`, with the round relations read off
+`Structured.sumcheckConsistencyProp` / `computeRoundPoly`. The verifier wiring is left `sorry` for
+now pending that reconciliation (see the `Sumcheck.lean` umbrella). -/
 theorem round_coordinateWiseSpecialSound
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))

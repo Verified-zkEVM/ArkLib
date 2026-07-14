@@ -3,7 +3,7 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.LinSumcheck.Escape
+import ArkLib.Commitments.Functional.Hachi.Escape
 
 /-!
   # Eq. (20) → `R^lin` adapter — skeleton (Hachi §4.3 entry; sumcheck-track milestone F2)
@@ -34,8 +34,8 @@ import ArkLib.Commitments.Functional.Hachi.LinSumcheck.Escape
   `tensorG`/`tensorG1`-as-matrix-rows rewriting lemmas over `QuadEval/Gadgets.lean`).
 
   Seam discipline (design decision G6): this file's `relIn` **is** `relOutE` (the
-  escape-threaded Eq. (20) relation from `LinSumcheck/Escape.lean`), and its `relOut`
-  `relRlinE` is definitionally the next link's (`LinSumcheck/Lift.lean`) `relIn`.
+  escape-threaded Eq. (20) relation from `Escape.lean`), and its `relOut`
+  `relRlinE` is definitionally the next link's (`RingSwitch/Reduction.lean`) `relIn`.
 
   ## References
 

@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.QuadEval
-import ArkLib.Commitments.Functional.Hachi.LinSumcheck.FinalEval
+import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
 import ArkLib.Commitments.Functional.Hachi.Recursion.TraceHandoff
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
@@ -57,11 +57,11 @@ seam a home for the `w̃`-commitment's weak-binding break (design G1; `E` abstra
 ---+----------------------------+----------------------+---------------------------+---------------
  1 | bridge (QuadEval/Bridge)   | 0                    | relPolyEvalE → relInE     | any (0 chals)
  2 | QuadEval (QuadEval/*)      | msg v; c ∈ C^{2^r}   | relInE → relOutE (Eq. 20) | ℓ=2^r, k=2 (L8)
- 3 | R^lin (LinSumcheck/Rlin)   | 0                    | relOutE → relRlinE        | any
- 4 | lift (LinSumcheck/Lift)    | msg t; α ∈ F         | relRlinE → relLiftE       | ℓ=1, k=2d (L9)
- 5 | batch (…/BatchBridge)      | 0                    | relLiftE → relBatchedE    | any
- 6 | zero-check (…/ZeroCheck)   | (ρ₀,ρ_α) ∈ F²        | relBatchedE → relZeroChkE | ℓ=2, k=D (L10*)
- 7 | sc bridge (…/SumcheckBridge)| 0                   | relZeroChkE → roundRelE 0 | any
+ 3 | R^lin (RingSwitch/Rlin)    | 0                    | relOutE → relRlinE        | any
+ 4 | lift (…/Reduction)         | msg t; α ∈ F         | relRlinE → relLiftE       | ℓ=1, k=2d (L9)
+ 5 | batch (ZeroCheck/Batch)    | 0                    | relLiftE → relBatchedE    | any
+ 6 | zero-check (…/Reduction)   | (ρ₀,ρ_α) ∈ F²        | relBatchedE → relZeroChkE | ℓ=2, k=D (L10*)
+ 7 | sc bridge (Sumcheck/Bridge)| 0                    | relZeroChkE → roundRelE 0 | any
  8 | rounds ×m₀ (…/Rounds)      | (g-pair; aᵢ)ᵢ        | roundRelE 0 → roundRelE m₀| ℓ=1, k=2b+1
    |  — GUARDED: gᵢ(0)+gᵢ(1)=z |                      |                           |  (L11)/round
  9 | final eval (…/FinalEval)   | msg y′ ∈ F           | roundRelE m₀ → relWEvalE  | any — GUARDED
@@ -139,7 +139,7 @@ Both packages are defined next to their CWSS theorems in the component files (`b
 composed. The seam is definitional — the bridge's `relOut` *is* `QuadEval`'s `relIn` — so `▷`
 discharges it by `rfl`. The chain's `isCWSS` field is `eval_coordinateWiseSpecialSound`. This is
 the finished, sorry-free core; the escape-threaded variant `evalChainE`
-(`LinSumcheck/Escape.lean`) is its drop-in for the extended opening chain below. -/
+(`Escape.lean`) is its drop-in for the extended opening chain below. -/
 def evalChain (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits) :
     CWSSPackage init impl

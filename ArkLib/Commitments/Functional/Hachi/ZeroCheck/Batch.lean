@@ -3,7 +3,7 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.LinSumcheck.Constraints
+import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
 
 /-!
   # Batching bridge — Hachi Eqs. (22)–(23) — skeleton (zero-round, part of milestone F6)
@@ -12,9 +12,9 @@ import ArkLib.Commitments.Functional.Hachi.LinSumcheck.Constraints
   polynomial-identity** form the zero-check tests:
 
   * `relIn = relLiftE` — opening `w̃` of `t`, per-row `α`-evaluated constraints, entrywise
-    ranges (`LinSumcheck/Lift.lean`);
+    ranges (`RingSwitch/Reduction.lean`);
   * `relOut = relBatchedE` — opening `w̃` of `t`, `H₀^{w̃} ≡ 0` and `H_α^{w̃} ≡ 0` as
-    `MvPolynomial` identities (Eqs. (22)–(23), `LinSumcheck/Constraints.lean`).
+    `MvPolynomial` identities (Eqs. (22)–(23), `ZeroCheck/Constraints.lean`).
 
   The statement is **unchanged** (`ReduceClaim` at `mapStmt := id`, witness maps `id`): only the
   *reading* of the claims changes. This isolates the batching algebra away from the zero-check's

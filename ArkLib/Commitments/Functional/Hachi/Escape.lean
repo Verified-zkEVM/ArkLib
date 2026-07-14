@@ -10,7 +10,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
 /-!
   # Escape-threaded Hachi front (`evalChainE`) — skeleton (sumcheck-track milestone F2.0)
 
-  The §4.3 opening chain (`LinSumcheck/`) introduces a **new commitment** — Figure 4's
+  The §4.3 opening chain (`RingSwitch/`, `ZeroCheck/`, `Sumcheck/`) introduces a **new
+  commitment** — Figure 4's
   `t = Com(w̃)` — whose binding break is a fresh extraction escape (Hachi [NOZ26] Remark 2:
   weak binding, a Module-SIS solution via Lemma 7). Composed CWSS extraction feeds every
   downstream extractor's output into the *previous* seam relation, so this escape must flow
@@ -171,7 +172,7 @@ def quadEvalPackageE (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ Pro
 
 /-- **The escape-threaded evaluation front** `bridgePackageE ▷ quadEvalPackageE`: the widened
 drop-in for `evalChain`, from `relPolyEvalE` to `relOutE` (Eq. (20) + ranges, widened). The
-§4.3 opening chain (`LinSumcheck/`) composes onto this front's `relOutE` seam. -/
+§4.3 opening chain (`RingSwitch/` onwards) composes onto this front's `relOutE` seam. -/
 def evalChainE (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits) (esc : Set E) :
     CWSSPackage init impl

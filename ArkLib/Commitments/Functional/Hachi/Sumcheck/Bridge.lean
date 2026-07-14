@@ -3,7 +3,7 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.LinSumcheck.ZeroCheck
+import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
 
 /-!
   # Sumcheck bridge — point claims to hypercube sums — skeleton (zero-round)
@@ -21,7 +21,7 @@ import ArkLib.Commitments.Functional.Hachi.LinSumcheck.ZeroCheck
   The statement map installs the empty challenge prefix and the initial target pair
   `(0, zcTargetAlpha)`. The bridge is pure reshaping — the two directions are the algebraic
   identities `∑ F_{0,τ₀} = H₀(τ₀)` and `∑ F_{α,τ_α} = H_α(τ_α) + zcTargetAlpha`
-  (`sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha`, `LinSumcheck/Constraints.lean`) — so the
+  (`sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha`, `ZeroCheck/Constraints.lean`) — so the
   only sorried piece is the pull-back through those (themselves sorried F5) identities.
 
   ## References

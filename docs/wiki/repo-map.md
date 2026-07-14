@@ -103,17 +103,31 @@ home_page/            site assets and assembled website root
     (`toQuadEvalStatement`), the pulled-back input relation `relPolyEval`, and its CWSS
     `bridge_coordinateWiseSpecialSound`. `QuadEval.lean` re-exports the reduction, its soundness,
     and the bridge.
-  - `LinSumcheck/` (§4.3, Figures 4–7) — the **skeleton** of Hachi's sumcheck-based opening
-    chain, one file per subprotocol/bridge, each exporting a `CWSSPackage`/`GCWSSPackage` with a
-    sorried CWSS theorem: `Escape` (escape-threaded front `evalChainE`, design G1), `Rlin`
-    (Eq. (20) → `R^lin` zero-round adapter, F2), `Lift` (HMZ25 lift, Figure 4/Lemma 9, `k = 2d`;
-    the abstract `w̃`-commitment `LiftCom`), `Constraints` (Eq. (21)–(23) encodings, sumcheck
-    polynomials, degree pins, the Kronecker curve `kroneckerPoint`, per-round seam `roundRel`),
-    `BatchBridge` (per-row/range ⇄ `H₀ ≡ 0 ∧ H_α ≡ 0`), `ZeroCheck` (Figure 5 / **corrected**
-    Lemma 10 — Kronecker seed pair, `(ℓ, k) = (2, D)`; see `HACHI_LEMMA10_GAP.md`),
-    `SumcheckBridge` (point claims → initial hypercube sums), `Rounds` (Figure 6/Lemma 11 —
-    guarded paired rounds, loop by recursion over `▷ᵍ`), `FinalEval` (Figure 7 tail — guarded
-    reveal of `w̃(a)`).
+  - §4.3 (Hachi's sumcheck-based opening, Figures 4–7) is a **skeleton** split into one flat
+    folder per paper subprotocol figure (peers of `QuadEval/`), each file exporting a
+    `CWSSPackage`/`GCWSSPackage` with a sorried CWSS theorem, plus the front-threading file
+    `Escape.lean` at the Hachi root:
+  - `Escape.lean` — the escape-threaded front `evalChainE` (design G1): widens the finished
+    `QuadEval` front relations with an abstract weak-binding escape budget so every §4.3 seam has a
+    home for the `w̃`-commitment's binding break. Front glue, not a §4.3 subprotocol; sits at the
+    Hachi root beside `EvalSplit`/`Composition`.
+  - `RingSwitch/` (§4.3 entry, Figure 4 / Lemma 9) — the HMZ25 **ring-switching lift** reducing
+    `R^lin` to a claim about the committed lifted witness evaluated at a random `α`. `RingSwitch/Rlin`
+    is the zero-round Eq. (20) → `R^lin` adapter (F2); `RingSwitch/Reduction` is the two-round lift
+    (`k = 2d`, the abstract `w̃`-commitment `LiftCom`). `RingSwitch.lean` re-exports the folder.
+    (Distinct from the §3 packing reduction under `ProofSystem/RingSwitching/`, also a ring-switch.)
+  - `ZeroCheck/` (§4.3, Figure 5 / **corrected** Lemma 10) — reduces the batched identities
+    `H₀ ≡ 0 ∧ H_α ≡ 0` to random-point evaluations. `ZeroCheck/Constraints` is the **shared**
+    encoding (Eqs. (21)–(23): the table `w̃`, `H₀`/`H_α`, the sumcheck polynomials, degree pins,
+    the Kronecker curve `kroneckerPoint`, per-round seam `roundRel`), consumed by both this
+    zero-check and `Sumcheck/`; `ZeroCheck/Batch` is the per-row/range ⇄ `H₀/H_α ≡ 0` batching
+    bridge; `ZeroCheck/Reduction` is the corrected Lemma 10 (Kronecker seed pair, `(ℓ, k) = (2, D)`;
+    see `HACHI_LEMMA10_GAP.md`). `ZeroCheck.lean` re-exports the folder.
+  - `Sumcheck/` (§4.3, Figure 6 / Lemma 11 + Figure 7 tail) — the sumcheck loop finishing the
+    opening. `Sumcheck/Bridge` reshapes the zero-check's point claims into the initial hypercube
+    sums; `Sumcheck/Rounds` is the `m₀`-round guarded paired sumcheck (loop by recursion over
+    `▷ᵍ`); `Sumcheck/FinalEval` is the guarded reveal of `w̃(a)` (Figure 7 tail) landing on the
+    recursion's evaluation claim. `Sumcheck.lean` re-exports the folder.
   - `Recursion/` (§4.5) — the recursion adapters: `PartialEval` (Eq. (24) peeling, pure
     derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
     partial-evaluation soundness gap, `HACHI_RECURSION_GAP.md`), `TraceHandoff` (Eqs. (27)–(28)

@@ -3,7 +3,7 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.LinSumcheck.Lift
+import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
 import Mathlib.Algebra.MvPolynomial.Basic
 
 /-!
@@ -47,7 +47,7 @@ import Mathlib.Algebra.MvPolynomial.Basic
   `kroneckerPoint m ρ = (ρ, ρ², ρ⁴, …, ρ^{2^{m−1}})`: the pullback of an `m`-variate multilinear
   polynomial along this curve is univariate of degree `< 2^m` and the pullback is **injective**
   (binary expansion of exponents), so univariate root counting is information-complete — the
-  engine of the corrected zero-check (`LinSumcheck/ZeroCheck.lean`).
+  engine of the corrected zero-check (`ZeroCheck/Reduction.lean`).
 
   Everything protocol-shaped built on these defs lives in the subsequent files; the defs here are
   **sorried** (their content is index bookkeeping over the F2.1 conventions plus `eqPolynomial`/
@@ -129,7 +129,14 @@ theorem hAlpha_degreeOf_le (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement �
     (hAlpha Φ m₁ φF b s a w).degreeOf j ≤ 1 := by
   sorry
 
-/-! ## The sumcheck polynomials (sorried F5 content) -/
+/-! ## The sumcheck polynomials (sorried F5 content)
+
+**TODO (reuse `Sumcheck/Structured`):** `sumcheckPolyZero`/`sumcheckPolyAlpha` should be defined as
+`Sumcheck.Structured.computeRoundPoly` instances rather than from scratch — `F_α` via the identity
+combinator (degree 2), `F_{0,τ₀}` via the range combinator `∏ⱼ (X − j)` of degree `2b` (the
+`SumcheckMultiplierParam` docstring anticipates this Hachi case) — and the round consistency
+(`hypercubeSum` / `roundRel`) via `Sumcheck.Structured.sumcheckConsistencyProp` over
+`SumcheckDomain.boolDomain`. See the `Sumcheck.lean` umbrella. -/
 
 /-- **`F_{0,τ₀}`** (the range sumcheck summand, [NOZ26] §4.3 "finish the proof using sumcheck"):
 `F_{0,τ₀}(x) := eq̃(τ₀, x)·w̃(x)·∏_{j=1}^{b−1}(w̃(x) − j)(w̃(x) + j)·1_{table}(x)`, where `w̃` is
@@ -160,7 +167,7 @@ def hypercubeSum (H : MvPolynomial (Fin m₀) F) (i : ℕ) (cs : Fin i → F) : 
   sorry
 
 /-- The sum of `F_{0,τ₀}` over the cube is `H₀(τ₀)` — the algebraic identity behind the
-sumcheck bridge (`LinSumcheck/SumcheckBridge.lean`). **Sorried (F5).** -/
+sumcheck bridge (`Sumcheck/Bridge.lean`). **Sorried (F5).** -/
 theorem sum_sumcheckPolyZero (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀ → F)
     (w : LiftedWitness Φ μ n) :
     hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b τ₀ w) 0 (fun j => j.elim0) =

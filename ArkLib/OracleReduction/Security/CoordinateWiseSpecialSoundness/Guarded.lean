@@ -51,7 +51,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 
   A guarded n-ary `seqCompose` variant (B4.4) is deliberately not skeletonized here: the Hachi
   composition builds its guarded loop by *recursion over binary `▷ᵍ`*
-  (`ArkLib/Commitments/Functional/Hachi/LinSumcheck/Rounds.lean`), which only needs the binary
+  (`ArkLib/Commitments/Functional/Hachi/Sumcheck/Rounds.lean`), which only needs the binary
   theorem.
 
   ## References

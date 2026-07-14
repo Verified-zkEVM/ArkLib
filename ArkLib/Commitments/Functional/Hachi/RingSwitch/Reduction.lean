@@ -3,7 +3,7 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.LinSumcheck.Rlin
+import ArkLib.Commitments.Functional.Hachi.RingSwitch.Rlin
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
 
 /-!
@@ -19,7 +19,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRoun
 
   * **Round 0 (P→V)** — the prover sends `t := Com(w̃)`, a binding commitment to the *lifted
     witness* `w̃` — the `R^lin` witness `z` together with the quotients `ρ` (Hachi Eq. (21); the
-    gadget digits of `ρ` arrive with the F5 table encoding, `LinSumcheck/Constraints.lean`).
+    gadget digits of `ρ` arrive with the F5 table encoding, `ZeroCheck/Constraints.lean`).
     Figure 4 draws `(z, r)` as the prover's last message, but in the composed scheme it is
     **never sent** — it is the output-relation witness (QuadEval precedent, design D6).
   * **Round 1 (V→P)** — the verifier samples `α ← F` (an extension field `F ⊇ Zq`, abstract per
@@ -154,7 +154,7 @@ def relLift (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
     bound ≤ p.1.1.bound}
 
 /-- Escape-threaded lift relation — the seam consumed by the batching bridge
-(`LinSumcheck/BatchBridge.lean`). -/
+(`ZeroCheck/Batch.lean`). -/
 def relLiftE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
     Set (LiftStatement Φ K.TCom F n μ × (LiftedWitness Φ μ n ⊕ E)) :=
