@@ -6,6 +6,7 @@ Authors: Alexander Hicks
 
 import ArkLib.ProofSystem.RingSwitching.Generic.Relations
 import ArkLib.OracleReduction.Security.ChallengeRound
+import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
 
 /-!
 # Generic Ring-Switching — The Phase Reduction (S6-ii)
@@ -425,6 +426,120 @@ theorem ringSwitchPhase_rbrKnowledgeSound [IsDomain car.E] {σ : Type} (init : P
     exact absurd hlt (by omega)
 
 end RBRKnowledgeSoundness
+
+/-! ## Perfect completeness -/
+
+section Completeness
+
+/-- **Point form of phase completeness**: for an input in `phaseRelIn` and *any* batching
+challenge `c`, the honest prover's outputs — the batched claim over its honest slices, the
+carried commitment oracles, and the packed witness — land in `phaseRelOut`. The two conjuncts
+are `sumcheckClaim_of_slices` (chain coherence at the honest slices) and the binding conjunct
+carried from the input. -/
+theorem honest_mem_phaseRelOut
+    {stmt : (car.ιP → car.E) × (Fin m → car.E)} {oStmt : ∀ j, pc.OStmt j}
+    {wit : car.ιP → MultilinearPoly B m}
+    (hIn : ((stmt, oStmt), wit) ∈ phaseRelIn car m pc) (c : bat.Challenge) :
+    ((((stmt.2, c),
+        ∑ u, bat.weight c u * car.honestSlices stmt.2 (car.packedMLE wit) u), oStmt),
+      car.packedMLE wit) ∈ phaseRelOut car m bat pc :=
+  ⟨car.sumcheckClaim_of_slices (car.honestSlices_mem_sliceRel _ _) _, hIn.2⟩
+
+/-- **The honest slices pass the verifier's Remark-5 check**: point form of the check's
+completeness against the anchored input. `[IsDomain car.E]` is the accepted S6 hypothesis
+(see `aeval_unpack_of_slices`). -/
+theorem honest_claimConsistent [IsDomain car.E]
+    {stmt : (car.ιP → car.E) × (Fin m → car.E)} {oStmt : ∀ j, pc.OStmt j}
+    {wit : car.ιP → MultilinearPoly B m}
+    (hIn : ((stmt, oStmt), wit) ∈ phaseRelIn car m pc) :
+    car.claimConsistent stmt.1 (car.honestSlices stmt.2 (car.packedMLE wit)) :=
+  car.claimConsistent_of_slices hIn.1 (car.honestSlices_mem_sliceRel _ _)
+
+variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp))
+
+/-- **Perfect completeness of the ring-switch phase** against the anchored relations: on any
+input in `phaseRelIn`, the honest execution outputs a pair in `phaseRelOut` (and prover/verifier
+statements agree) with probability `1`. The honest slices pass the verifier's claim-consistency
+check (`honest_claimConsistent`), so the `OptionT` `failure` branch is never taken; the batched
+output is in the relation for every sampled challenge (`honest_mem_phaseRelOut`).
+
+`[IsDomain car.E]` is the accepted S6 hypothesis (Remark-5 read-back; see `Relations.lean`). -/
+theorem ringSwitchPhase_perfectCompleteness [IsDomain car.E] :
+    OracleReduction.perfectCompleteness (init := init) (impl := impl)
+      (relIn := phaseRelIn car m pc)
+      (relOut := phaseRelOut car m bat pc)
+      (oracleReduction := ringSwitchPhase car m bat pc) := by
+  unfold OracleReduction.perfectCompleteness
+  rw [Reduction.perfectCompleteness_eq_prob_one]
+  intro stmtIn witIn hRel
+  -- Resolve the two round directions via the framework per-direction `processRound` unfolds,
+  -- then unfold the reduction run and the 2-round prover (`Fin.induction_two`).
+  have h0 : (pSpecRingSwitchPhase car bat).dir 0 = .P_to_V := rfl
+  have h1 : (pSpecRingSwitchPhase car bat).dir 1 = .V_to_P := rfl
+  simp only [OracleReduction.toReduction, Reduction.run, ringSwitchPhase,
+    ringSwitchPhaseProver, OracleVerifier.toVerifier, ringSwitchPhaseVerifier,
+    Prover.run, Prover.runToRound, Fin.induction_two,
+    Prover.processRound_of_dir_eq_P_to_V 0 h0,
+    Prover.processRound_of_dir_eq_V_to_P 1 h1,
+    Verifier.run, bind_pure_comp]
+  -- Reduce `Pr[…] = 1` to a support-membership obligation.
+  apply OptionT.probEvent_eq_one_of_simulateQ_support_bind
+  intro x hx
+  -- Peel the prover-run prefix of `Reduction.run`.
+  obtain ⟨proverResult, hPR, hx⟩ := OptionT.mem_support_run_lift_bind _ _ hx
+  -- Peel the prover-run bind tree by *definitional*-unification `obtain` (the elaborated
+  -- `Fin.induction` bind tree is defeq but not syntactically `>>=`, so `rw`-based peelers
+  -- do not engage; the peelers unify straight through the identity `monadLift` wrapper):
+  -- output map, round-1 (challenge `c`, pure `receiveChallenge`), round-0 (pure base, pure
+  -- `sendMessage`).
+  obtain ⟨A, hA, hPR⟩ := OracleComp.mem_support_bind_peel _ _ hPR
+  obtain ⟨out, hout, hPR⟩ := OracleComp.mem_support_map_peel _ _ hPR
+  have hout := OracleComp.eq_of_mem_support_pure _ hout
+  obtain ⟨A1, hA1, hA⟩ := OracleComp.mem_support_bind_peel _ _ hA
+  obtain ⟨c, _, hA⟩ := OracleComp.mem_support_bind_peel _ _ hA
+  obtain ⟨f, hf, hA⟩ := OracleComp.mem_support_map_peel _ _ hA
+  have hf := OracleComp.eq_of_mem_support_pure _ hf
+  obtain ⟨A0, hA0, hA1⟩ := OracleComp.mem_support_bind_peel _ _ hA1
+  have hA0 := OracleComp.eq_of_mem_support_pure _ hA0
+  obtain ⟨msg, hmsg, hA1⟩ := OracleComp.mem_support_map_peel _ _ hA1
+  have hmsg := OracleComp.eq_of_mem_support_pure _ hmsg
+  subst hA0 hmsg hA1 hf hA hout hPR
+  -- Reduce the substituted tuple projections; the transcript is now the concrete
+  -- `snoc (snoc default honestSlices) c`.
+  dsimp only at hx
+  -- The verifier's whole-message query is (definitionally) the transcript's round-0 read —
+  -- the honest slices (same move as `phaseKnowledgeStateFunction.toFun_full`).
+  simp only [simulateQ_optionT_bind] at hx
+  have hq : (simulateQ
+        (OracleInterface.simOracle2 ([]ₒ : OracleSpec PEmpty.{1}) stmtIn.2
+          (FullTranscript.messages (pSpec := pSpecRingSwitchPhase car bat)
+            (Transcript.concat (m := (1 : Fin 2)) c
+              (Transcript.concat (m := (0 : Fin 2))
+                (car.honestSlices stmtIn.1.2 (car.packedMLE witIn))
+                (default : (pSpecRingSwitchPhase car bat).Transcript 0)))))
+        (query (spec := [(pSpecRingSwitchPhase car bat).Message]ₒ) ⟨⟨0, rfl⟩, ()⟩
+          : OptionT (OracleComp (([]ₒ : OracleSpec PEmpty.{1})
+              + ([pc.OStmt]ₒ + [(pSpecRingSwitchPhase car bat).Message]ₒ))) _)
+        : OptionT (OracleComp ([]ₒ : OracleSpec PEmpty.{1})) _)
+      = (pure (car.honestSlices stmtIn.1.2 (car.packedMLE witIn))
+          : OptionT (OracleComp ([]ₒ : OracleSpec PEmpty.{1})) (car.ιE → car.P)) := rfl
+  rw [hq] at hx
+  -- The honest slices pass the Remark-5 check.
+  have hcheck : car.claimConsistent stmtIn.1.1
+      (car.honestSlices stmtIn.1.2 (car.packedMLE witIn)) :=
+    honest_claimConsistent car m pc hRel
+  -- REMAINS (WIP checkpoint 2026-07-14): the verifier-side support peel. `hx` now has the
+  -- verifier's slice query already resolved to the honest slices (`hq`), so the `if` guard is
+  -- on the *literal* honest slices; `hcheck` makes it pass. What remains is to collapse the
+  -- outer `OptionT`/`Option.elim`/`getM` layers of `Reduction.run` and read off `x = some _`
+  -- with the batched output, closing via `honest_mem_phaseRelOut car m bat pc hRel c`.
+  -- Blocker under investigation: the `pure`-bind collapse (OptionT-vs-raw instance spelling)
+  -- and `Option.elimM` simp did not fire syntactically; the `mem_support_run_bind` peel here
+  -- needs the assignment-only (non-lift) variant to avoid a diverging `whnf` on the run term.
+  -- The point-form content (`honest_mem_phaseRelOut`, `honest_claimConsistent`) is DONE.
+  sorry
+
+end Completeness
 
 /-! ## Sanity / testable deliverables (S6 §5.3) -/
 

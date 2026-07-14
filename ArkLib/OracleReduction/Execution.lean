@@ -496,6 +496,55 @@ theorem Prover.runToRound_zero_of_prover_first
       prover.runToRound 0 stmt wit = (pure (default, prover.input (stmt, wit))) := by
   simp [Prover.runToRound]
 
+/-- **One-round unfold of `runToRound`.** Running the prover up to round `i.succ` is running it up
+to round `i.castSucc` and then processing round `i`. This is the general successor step of the
+`Fin.induction` that defines `runToRound` (cf. the special cases `runToRound_zero_of_prover_first`
+and `runToRound_one_of_{verifier,prover}_first`); it lets multi-round prover runs be unfolded one
+round at a time without re-deriving the `Fin.induction` recursion at each arity. -/
+theorem Prover.runToRound_succ (i : Fin n)
+    (stmt : StmtIn) (wit : WitIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+      prover.runToRound i.succ stmt wit =
+        prover.processRound i (prover.runToRound i.castSucc stmt wit) := by
+  simp only [Prover.runToRound, Fin.induction_succ]
+
+/-- **Per-direction unfold of `processRound` (verifier-to-prover round).** When round `j` is a
+challenge round (`pSpec.dir j = .V_to_P`), processing it reads the previous result, draws the
+challenge, feeds it to `receiveChallenge`, and appends it to the transcript. This resolves the
+internal dependent `match hDir : pSpec.dir j` *once, at the framework level*, so concrete-protocol
+proofs no longer re-derive the direction split (and its `⟨j, hDir⟩` index proofs) by hand. Pairs
+with `processRound_of_dir_eq_P_to_V` and `runToRound_succ` to give a clean, monad-law-friendly
+challenge-first normal form for any `Prover.run`. -/
+theorem Prover.processRound_of_dir_eq_V_to_P (j : Fin n) (hDir : pSpec.dir j = .V_to_P)
+    (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (currentResult : OracleComp (oSpec + [pSpec.Challenge]ₒ)
+      (pSpec.Transcript j.castSucc × prover.PrvState j.castSucc)) :
+    prover.processRound j currentResult = (do
+      let ⟨transcript, state⟩ ← currentResult
+      let challenge ← pSpec.getChallenge ⟨j, hDir⟩
+      let newState := (← prover.receiveChallenge ⟨j, hDir⟩ state) challenge
+      return ⟨transcript.concat challenge, newState⟩) := by
+  simp only [Prover.processRound]
+  split <;> rename_i h
+  · rfl
+  · exact absurd (hDir.symm.trans h) (by decide)
+
+/-- **Per-direction unfold of `processRound` (prover-to-verifier round).** When round `j` is a
+message round (`pSpec.dir j = .P_to_V`), processing it reads the previous result, runs
+`sendMessage`, and appends the message to the transcript. The framework-level counterpart of
+`processRound_of_dir_eq_V_to_P`; see its docstring. -/
+theorem Prover.processRound_of_dir_eq_P_to_V (j : Fin n) (hDir : pSpec.dir j = .P_to_V)
+    (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (currentResult : OracleComp (oSpec + [pSpec.Challenge]ₒ)
+      (pSpec.Transcript j.castSucc × prover.PrvState j.castSucc)) :
+    prover.processRound j currentResult = (do
+      let ⟨transcript, state⟩ ← currentResult
+      let ⟨msg, newState⟩ ← prover.sendMessage ⟨j, hDir⟩ state
+      return ⟨transcript.concat msg, newState⟩) := by
+  simp only [Prover.processRound]
+  split <;> rename_i h
+  · exact absurd (hDir.symm.trans h) (by decide)
+  · rfl
+
 end Execution
 
 variable {ι : Type} {oSpec : OracleSpec ι}

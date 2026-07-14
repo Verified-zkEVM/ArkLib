@@ -44,10 +44,12 @@ carrier and the protocol data — an instance has no hook to substitute a weaker
 functionality law** `commitsTo_functional` (an oracle statement commits to at most one
 polynomial). Functionality is what makes the field *not* a free hook, in two enforced senses:
 
-1. `fun _ _ => True` is *unstatable* as a `commitsTo` (`commitsTo_ne_top`, backed by the `neC`
-   well-formedness guard): functionality would collapse all multilinears into one, contradicting
-   `Nontrivial P`. Compare the legacy `AbstractOStmtIn.initialCompatibility`, which type-admits
-   `True` (design Hole A).
+1. `fun _ _ => True` is *unstatable* as a `commitsTo` (`commitsTo_ne_top`, backed by the honest
+   committer `commit`): functionality would collapse all multilinears into one, contradicting
+   `Nontrivial P`. Dually, `fun _ _ => False` is unstatable (`commitsTo_ne_bot`, the S6
+   honest-committer hardening `commit`/`commitsTo_commit` — whole-PR review B-2): the empty hook
+   made the bundle's own completeness vacuous over an empty `evalRel`. Compare the legacy
+   `AbstractOStmtIn.initialCompatibility`, which type-admits `True` (design Hole A).
 2. It is exactly what the S6 round-by-round argument needs to collapse the `∃ witMid` event of
    `rbrKnowledgeSoundness` to the fixed pair fed to `BatchingStrategy.separates` — without it a
    `|WitMid|` union factor would destroy the batching error bound. (At S5 the law is carried;
@@ -63,7 +65,7 @@ a bogus-but-functional predicate survives locally but is caught at S6 compositio
 ring switch's completeness needs honest provers to *satisfy* `evalRel`.
 
 **INV-3 audit note.** `commitsTo` is the *sanctioned* hook-shaped `Prop`-valued field of the
-generic layer (well-formedness guards like `neC` are `Prop`-valued too, but are positive
+generic layer (law fields like `commitsTo_commit` are `Prop`-valued too, but are positive
 obligations, not hooks):
 it is law-constrained (`commitsTo_functional`) and consumed by the structure's own security
 fields, unlike the legacy free `initialCompatibility` hook it replaces (retirement of the legacy
@@ -248,17 +250,22 @@ structure PackedCommitment (P : Type) [CommRing P] (m : ℕ) where
   OStmt : ιC → Type
   /-- Oracle interfaces for the commitment oracles. -/
   Oᵢ : ∀ i, OracleInterface (OStmt i)
-  -- Well-formedness: a commitment value exists. Same design move as the carrier's `Nontrivial`
-  -- guards: without it, an *empty* oracle-statement type is a bona-fide instance on which
-  -- `commitsTo := fun _ _ => True` is statable (functionality vacuous) and `evalRel = ∅` —
-  -- a vacuous, self-punishing corner, but one that would falsify the "`True` is unstatable"
-  -- guarantee (`commitsTo_ne_top`). Real commitment types are inhabited.
-  [neC : Nonempty (∀ j, OStmt j)]
+  /-- **The honest committer** (S6 hardening, whole-PR review B-2): every polynomial has a
+  commitment. Together with `commitsTo_commit` this replaces the earlier bare nonemptiness
+  guard (`neC`, which it subsumes: `commit` of any polynomial inhabits `∀ j, OStmt j`) and
+  strengthens it — `commitsTo := fun _ _ => False` is now unstatable, and `evalRel` (hence the
+  phase's `phaseRelIn`) is *provably* nonempty rather than merely not-`univ`, which is what the
+  phase completeness theorem is stated against. -/
+  commit : MultilinearPoly P m → ∀ j, OStmt j
   /-- The binding predicate: the oracle statement commits to this multilinear. -/
   commitsTo : (∀ j, OStmt j) → MultilinearPoly P m → Prop
   /-- **Functionality**: an oracle statement commits to at most one multilinear. -/
   commitsTo_functional : ∀ {c : ∀ j, OStmt j} {p p' : MultilinearPoly P m},
     commitsTo c p → commitsTo c p' → p = p'
+  /-- **Honest-committer correctness**: the honest commitment to `p` commits to `p`. The
+  positive counterpart of functionality — together they pin `commit` as a section of the
+  binding relation (injective by `commitsTo_functional`). -/
+  commitsTo_commit : ∀ p, commitsTo (commit p) p
 
 namespace PackedCommitment
 
@@ -271,8 +278,10 @@ def trivial (P : Type) [CommRing P] (m : ℕ) : PackedCommitment P m where
   ιC := Unit
   OStmt := fun _ => MultilinearPoly P m
   Oᵢ := fun _ => OracleInterface.instDefault
+  commit := fun p _ => p
   commitsTo := fun c p => c () = p
   commitsTo_functional := fun h h' => h.symm.trans h'
+  commitsTo_commit := fun _ => rfl
 
 /-- **`commitsTo` cannot be the free hook `fun _ _ => True`** (design Hole A is closed, not just
 discouraged): functionality forces distinct multilinears — e.g. the constant-`0` and constant-`1`
@@ -291,13 +300,26 @@ theorem commitsTo_not_top [Nontrivial P] (pc : PackedCommitment P m) (c : ∀ j,
   exact zero_ne_one hval
 
 /-- Function-level form of the enforcement: `commitsTo` **is not** the legacy free hook
-`fun _ _ => True` — for any well-formed `PackedCommitment` (the `neC` guard supplies the
-commitment value the pointwise theorem needs). This is *syntactic* inequality against the
-literal hook; the semantic guarantee (no commitment accepts every polynomial) is
-`commitsTo_not_top`, which `neC` keeps non-vacuous. -/
+`fun _ _ => True` — for any well-formed `PackedCommitment` (the honest committer `commit`
+supplies the commitment value the pointwise theorem needs). This is *syntactic* inequality
+against the literal hook; the semantic guarantee (no commitment accepts every polynomial) is
+`commitsTo_not_top`, which `commit` keeps non-vacuous. -/
 theorem commitsTo_ne_top [Nontrivial P] (pc : PackedCommitment P m) :
     pc.commitsTo ≠ fun _ _ => True := fun h =>
-  pc.commitsTo_not_top (Classical.choice pc.neC) (fun p => by rw [h]; trivial)
+  pc.commitsTo_not_top (pc.commit ⟨MLE fun _ => 0, MLE_mem_restrictDegree _⟩)
+    (fun p => by rw [h]; trivial)
+
+/-- **The dual enforcement** (S6 hardening): `commitsTo` is not the free *empty* hook
+`fun _ _ => False` either — the honest committer witnesses satisfiability. With
+`commitsTo_ne_top` this brackets the binding predicate away from both degenerate corners:
+it must accept the honest commitments and may accept at most one polynomial per statement.
+(The `False` corner was the documented residual B-2 of the S5 close-review: it made the
+bundle's own completeness vacuously provable over an empty `evalRel`.) -/
+theorem commitsTo_ne_bot (pc : PackedCommitment P m) :
+    pc.commitsTo ≠ fun _ _ => False := fun h => by
+  have := pc.commitsTo_commit ⟨MLE fun _ => 0, MLE_mem_restrictDegree _⟩
+  rw [h] at this
+  exact this
 
 /-- **The PCS's own anchored input relation** (what its completeness and knowledge soundness are
 stated against): evaluation correctness — the legacy `MLPEvalRelation`, reused verbatim — *and*
@@ -306,6 +328,16 @@ the binding predicate `commitsTo`. This is the pillar-2 replacement of the legac
 def evalRel (pc : PackedCommitment P m) :
     Set (((MLPEvalStatement P m) × (∀ j, pc.OStmt j)) × (WitMLP P m)) :=
   { input | MLPEvalRelation P m pc.ιC pc.OStmt input ∧ pc.commitsTo input.1.2 input.2.t }
+
+/-- **`evalRel` is provably nonempty** for *every* well-formed `PackedCommitment` (the
+honest-committer hardening doing its designed job — S5 close-review residual B-2 closed): the
+honest commitment to the zero polynomial, with the true evaluation claim about it, is in the
+relation. So no instance can make the PCS's completeness obligation vacuous via an empty input
+relation. -/
+theorem evalRel_nonempty (pc : PackedCommitment P m) : pc.evalRel.Nonempty :=
+  let p₀ : MultilinearPoly P m := ⟨MLE fun _ => 0, MLE_mem_restrictDegree _⟩
+  ⟨⟨⟨⟨fun _ => 0, p₀.val.eval fun _ => 0⟩, pc.commit p₀⟩, ⟨p₀⟩⟩,
+    rfl, pc.commitsTo_commit p₀⟩
 
 end PackedCommitment
 
