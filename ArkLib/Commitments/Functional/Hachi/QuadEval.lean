@@ -28,9 +28,12 @@ inner-outer lift of Greyhound's [NS24, §3.1] folding protocol.
   Module-SIS(D)) and `relOut` (Eq. (20) + the range checks), and the pure pass-through
   `verifier` with the honest `prover` skeleton.
 * `QuadEval/Soundness.lean` — **Hachi Lemma 8**: the subtract-and-divide extractor
-  (`buildWitness`) and the `sorry`-free coordinate-wise special soundness
+  (`buildWitness`) and the coordinate-wise special soundness
   `quadEval_coordinateWiseSpecialSound`, bundled as the composable `quadEvalPackage`; also the
-  reduction's derived norm constants `B_z` / `βSq`.
+  reduction's derived norm constants `B_z` / `βSq`. The soundness is genuinely `sorry`-free —
+  axiom-clean (`#print axioms` gives only `propext` / `Classical.choice` / `Quot.sound`), and its
+  one deep input, Lyubashevsky–Seiler short-element invertibility `isUnit_of_l1Norm_le`, is itself
+  proven, not deferred.
 * `QuadEval/Bridge.lean` — the zero-round polynomial-level head: reinterprets a `CMlPolynomial`
   evaluation statement (`PolyEvalStatement`) as a `QuadEvalStatement` via the monomial tensor
   bases, with the pulled-back relation `relPolyEval` and the composable `bridgePackage`.

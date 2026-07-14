@@ -235,10 +235,10 @@ theorem perfectlyCorrect (b κ : ℕ) (hb : 1 < b) (hκ : 1 ≤ κ) (hbq : b - 1
   · rw [Rq.l1Norm_one Φ hdeg]; norm_num
   · rw [Rq.l1Norm_one Φ hdeg]; exact hκ
   · intro pp m i
-    exact gadgetDecompose_zmod_vecL2NormSq_le Φ hb hqm hbq hdeg (m i)
+    exact gadgetDecompose_zmod_vecL2NormSq_le Φ hb hqm hbq (m i)
   · intro pp m
     exact vecLInftyNorm_flattenBlocks_le Φ _
-      (fun i => gadgetDecompose_zmod_vecLInftyNorm_le Φ hb hqi hbq hdeg _)
+      (fun i => gadgetDecompose_zmod_vecLInftyNorm_le Φ hb hqi hbq _)
 
 end ZMod
 

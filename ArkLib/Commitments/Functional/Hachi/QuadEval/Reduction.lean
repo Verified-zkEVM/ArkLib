@@ -58,13 +58,18 @@ section Defs
 variable {R : Type} [Field R] [BEq R] [LawfulBEq R] (Φ : CyclotomicModulus R) [IsCyclotomic Φ]
 variable {innerRows messageRows messageDigits outerRows blocks innerDigits dRows zDigits : Nat}
 
-/-- The carrier commitment space: `v = D ŵ` lives in the `D`-row space. -/
+/-- The **carrier commitment** space (`CarrierCom` = carrier commitment): the short commitment
+`v = D ŵ` lives in the `D`-row space. -/
 abbrev CarrierCom (Φ : CyclotomicModulus R) (dRows : Nat) := Simple.Commitment Φ dRows
 
 /-- Input statement of Hachi's polynomial-evaluation reduction (Hachi §4.2, Figure 3): the public
 parameters `(A, B, D)`, the outer commitment `u`, the two evaluation basis vectors
 `a ∈ Rq^{2^m}` (`avec`) and `b ∈ Rq^{2^r}` (`bvec`) of Eq. (12), and the claimed evaluation
-`y = u_eval`. -/
+`y = u_eval`.
+
+The dimension parameters (`messageRows`, `blocks`, …) are left generic on the structure; the
+relations and protocol below specialize `messageRows := 2^m` and `blocks := 2^r` (the paper's
+Figure 3 shape), matching the genericity of the other reduction structures. -/
 structure QuadEvalStatement (Φ : CyclotomicModulus R)
     (innerRows messageRows messageDigits outerRows blocks innerDigits dRows : Nat) where
   /-- Public matrices `(A, B, D)`. -/
@@ -179,8 +184,8 @@ def evalConsistency (base : ZMod q) (a : PolyVec (Rq Φ) (2 ^ m)) (b : PolyVec (
 def dShort (γ : ℕ) : ModuleSIS.Solution Φ (blocks * messageDigits) → Bool :=
   fun z => decide (vecLInftyNorm Φ z ≤ subLInftyNormBound γ)
 
-/-- **`relOut` — exactly Hachi Eq. (20) plus the `S_b` range checks** on
-`((stmt, v, c), (ŵ, t̂, ẑ))`, with `z := J ẑ`:
+/-- **`relOut` — Hachi Eq. (20) (rows c1–c5 verbatim) plus a symmetric-`ℓ∞`-ball model of the
+`S_b` range checks (c6)** on `((stmt, v, c), (ŵ, t̂, ẑ))`, with `z := J ẑ`:
 
 * c1: `D ŵ = v`
 * c2: `B (flatten t̂) = u`
@@ -189,10 +194,15 @@ def dShort (γ : ℕ) : ModuleSIS.Solution Φ (blocks * messageDigits) → Bool 
 * c5: `(cᵀ ⊗ G_{n_A}) t̂ = A J ẑ` (row 5)
 * c6: the `S_b` range checks, as symmetric `ℓ∞` balls `≤ γ`.
 
-**`S_b` modeling**: Eq. (20) checks `(ŵ, t̂, ẑ) ∈ S_b^…`, whose elements have centered
-coefficients in `[⌈-b/2⌉, ⌈b/2⌉-1]`; c6 uses the symmetric ball `‖·‖∞ ≤ γ`, which with `γ ≥
-⌈b/2⌉` **contains** the paper's box — so every Eq.-(20)-valid transcript is `relOut`-valid and
-the CWSS theorem covers the paper's verifier. No challenge-norm checks appear (the challenge
+**`S_b` modeling (a deliberate generalization).** Eq. (20) checks `(ŵ, t̂, ẑ) ∈ S_b^…`, whose
+elements have centered coefficients in `[⌈-b/2⌉, ⌈b/2⌉-1]`; c6 instead uses the symmetric ball
+`‖·‖∞ ≤ γ`, so `relOut` is *not* pointwise identical to Eq. (20) — it is the strictly weaker
+(larger) relation obtained by replacing the `S_b` box with its enclosing `ℓ∞` ball. For any
+`γ ≥ ⌈b/2⌉` the paper's `S_b` box is **contained** in c6's ball, hence `{Eq. (20)-valid
+transcripts} ⊆ relOut`: every honest/paper-accepted transcript is `relOut`-valid, so the CWSS
+theorem below covers the paper's verifier. This generalized `relOut` (rather than an exact `S_b`
+predicate, which is intentionally not defined) is the reduction's intended output relation, and is
+the relation downstream Hachi code should cite. No challenge-norm checks appear (the challenge
 TYPE carries `‖cᵢ‖₁ ≤ ω`), and no `‖z‖₂²` check appears (`‖z‖∞ ≤ …` is derived downstream from
 c6's `‖ẑ‖∞ ≤ γ` via the `J`-recomposition norm lemma, `Gadget/Norms.lean`) — both exactly as in the
 paper. -/

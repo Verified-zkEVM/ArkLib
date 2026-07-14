@@ -109,7 +109,11 @@ instance instIsPure : (oracleVerifier oSpec Statement OStatement C ℓ).toVerifi
 carries `ℓ` coordinates over the alphabet `C`, decomposed by the identity (`Challenge = Fin ℓ → C`
 already), with soundness parameter `k = 2`. Hence `arity = ℓ·(2−1)+1 = ℓ+1` and the node predicate
 is `IsSpecialSoundFamily ℓ 2` — exactly the branching required by [NOZ26, Lemma 4 / Definition 3]
-(with `ℓ = 2ʳ`). This is the shape the fold block's CWSS ([NOZ26, Lemma 8]) is proven against. -/
+(with `ℓ = 2ʳ`). This is the shape the fold block's CWSS ([NOZ26, Lemma 8]) is proven against.
+
+The component is deliberately generic over `ℓ` (only `0 < ℓ` is needed): the power-of-two
+instantiation `ℓ = 2ʳ` of Figure 3 is imposed by the caller in the `QuadEval` composition layer,
+not here. -/
 def foldBlockStructure (hℓ : 0 < ℓ) : CWSSStructure (pSpec C ℓ) where
   coordIndex := fun _ => ⟨ℓ, hℓ⟩
   alphabet := fun _ => C

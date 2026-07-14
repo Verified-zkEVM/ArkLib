@@ -422,9 +422,19 @@ theorem buildWitness_mem_relIn (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω)
 
 /-- **Hachi Lemma 8 (CWSS of Hachi's polynomial-evaluation reduction, Figure 3; originally
 Greyhound's [NS24, §3.1] folding protocol).** The reduction's verifier is coordinate-wise
-special sound for the `(ℓ, k) = (2^r, 2)` structure, with `relOut` = Eq. (20) + the `S_b` range
-checks and `relIn` = weak opening (eval-consistent) ∨ MSIS(B) ∨ MSIS(D), at the derived
-constants `βSq = quadEvalBetaSq γ b zDigits (deg φ) m messageDigits` and `κ = 2ω`.
+special sound for the `(ℓ, k) = (2^r, 2)` structure, with `relOut` = Eq. (20) rows + the
+symmetric-ball `S_b` model (`QuadEval/Reduction.lean`) and `relIn` = weak opening (eval-consistent)
+∨ MSIS(B) ∨ MSIS(D), at the derived constants `βSq = quadEvalBetaSq γ b zDigits (deg φ) m
+messageDigits` and `κ = 2ω`.
+
+**Paper parameter mapping (an intentional generalization).** The theorem is stated over ArkLib's
+generalized relation and exposes `(βSq, γ, κ)` as free parameters: `βSq = quadEvalBetaSq γ b …` is
+a squared-`ℓ₂` bound on the scaled blocks (the shape `VerifiedOpening` records), `γ` is the
+symmetric-ball range bound of c6, and `κ = 2ω`. Hachi Lemma 8 fixes the specific triple
+`(β̄, ω̄, γ̄) = (2·bᵗ, 2ω, b)`; instantiating `γ := b` recovers the paper's `S_b`/weak-opening
+contract — the `β̄ = 2·bᵗ` bound up to the documented constant-2 slack (see `quadEvalZL2SqBound`).
+No exact-`S_b` specialization theorem is proved here: the generalized statement is deliberate and,
+via the `relOut` containment, already covers the paper's verifier.
 
 Assembled by `coordinateWiseSpecialSound_of_mkWitness` (`SingleRound.lean`), which discharges
 every tree/extractor/guard obligation generically; the whole of Hachi Lemma 8 thereby reduces
