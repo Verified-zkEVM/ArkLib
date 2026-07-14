@@ -113,13 +113,19 @@ def commit [DecidableEq (ZMod q)] (hb : 1 < b)
     pp.toPublicParams (Hachi.toMatrix p)
   (commitWithDecomps 𝓜(q, α) pp.toPublicParams decomps, decomps)
 
-/-- **Hachi as a functional commitment** (`Commitment.Scheme`) over the multilinear data
-`CMlPolynomial (Rq 𝓜(q,α)) (r + m)` — an `(r + m)`-variable polynomial, with the `r`/`m` split
-feeding the outer/inner gadgets. It commits a polynomial directly (no caller-supplied
-decompositions): the honest `commit` uses the canonical base-`b` gadget decomposition at the
-paper's width `δ = ⌈log_b q⌉ = Nat.clog b q` (Hachi [NOZ26] §2.1/§4.1), shared by the message and
-inner gadgets — so `messageDigits`/`innerDigits` are not free parameters. The only parameters are
-the gadget base `b` and `1 < b`; the scheme carries the eval oracle
+/-- **Hachi as a functional commitment** (`Commitment.Scheme`) — ⚠ **WIP scaffold.** The eval
+oracle and the honest `keygen` / `commit` are real, but the `opening` field is a placeholder
+(`sorry`, see below and the `TODO` block), so this value does **not** yet certify end-to-end
+opening correctness. It is committed now only as the target packaging the finished opening will
+slot into once the §4.3+ subprotocols and the honest-prover layer land (the follow-up tracked by
+the `TODO` here and in `Composition.lean`).
+
+Over the multilinear data `CMlPolynomial (Rq 𝓜(q,α)) (r + m)` — an `(r + m)`-variable polynomial,
+with the `r`/`m` split feeding the outer/inner gadgets. It commits a polynomial directly (no
+caller-supplied decompositions): the honest `commit` uses the canonical base-`b` gadget
+decomposition at the paper's width `δ = ⌈log_b q⌉ = Nat.clog b q` (Hachi [NOZ26] §2.1/§4.1), shared
+by the message and inner gadgets — so `messageDigits`/`innerDigits` are not free parameters. The
+only parameters are the gadget base `b` and `1 < b`; the scheme carries the eval oracle
 `multilinearEvalOracleInterface`, honest `keygen` / `commit`, committer and verifier key
 `PublicParamsD`, and decommitment `Decomp`.
 

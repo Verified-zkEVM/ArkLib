@@ -13,11 +13,14 @@ Formalization of the Hachi [NOZ26] functional commitment — a lattice-based com
 multilinear polynomials with evaluation-opening proofs, built on the Greyhound [NS24]
 inner-outer Ajtai commitment over the power-of-two cyclotomic ring `Z_q[X] / (X^{2^α} + 1)`.
 
-**This development is in progress.** Finished and `sorry`-free: the inner-outer commitment
-(§4.1) with perfect correctness and the weak-binding reduction to Module-SIS, and the
-polynomial-evaluation reduction (§4.2, Lemma 8) with its polynomial-level bridge. Still to come:
-the remaining §4.3+/§4.5 subprotocols and the completeness layer (see the `TODO` blocks in
-`Composition.lean` and `Commitment.lean`).
+**This development is in progress.** Finished and `sorry`-free — axiom-clean down to the
+Lyubashevsky–Seiler short-element invertibility (`isUnit_of_l1Norm_le`) the soundness rests on,
+which is itself proven, not deferred: the inner-outer commitment (§4.1) with perfect correctness
+and the weak-binding reduction to Module-SIS, and the polynomial-evaluation reduction
+(§4.2, Lemma 8) with its polynomial-level bridge. Still to come: the remaining §4.3+/§4.5
+subprotocols and the completeness layer — the honest-prover `opening` (`hachi.opening` in
+`Commitment.lean`) is the one documented `sorry` in the tree; see the `TODO` blocks in
+`Composition.lean` and `Commitment.lean`.
 
 ## Folder structure
 
