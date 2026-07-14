@@ -528,15 +528,20 @@ theorem ringSwitchPhase_perfectCompleteness [IsDomain car.E] :
   have hcheck : car.claimConsistent stmtIn.1.1
       (car.honestSlices stmtIn.1.2 (car.packedMLE witIn)) :=
     honest_claimConsistent car m pc hRel
-  -- REMAINS (WIP checkpoint 2026-07-14): the verifier-side support peel. `hx` now has the
-  -- verifier's slice query already resolved to the honest slices (`hq`), so the `if` guard is
-  -- on the *literal* honest slices; `hcheck` makes it pass. What remains is to collapse the
-  -- outer `OptionT`/`Option.elim`/`getM` layers of `Reduction.run` and read off `x = some _`
-  -- with the batched output, closing via `honest_mem_phaseRelOut car m bat pc hRel c`.
-  -- Blocker under investigation: the `pure`-bind collapse (OptionT-vs-raw instance spelling)
-  -- and `Option.elimM` simp did not fire syntactically; the `mem_support_run_bind` peel here
-  -- needs the assignment-only (non-lift) variant to avoid a diverging `whnf` on the run term.
-  -- The point-form content (`honest_mem_phaseRelOut`, `honest_claimConsistent`) is DONE.
+  -- REMAINS (WIP 2026-07-14): the final verifier-side support read-off. State reached:
+  -- the prover run is fully peeled (challenge `c` fixed), the verifier's slice query is
+  -- resolved to the honest slices (`hq`), and the Remark-5 check passes (`hcheck`), so the
+  -- verifier `OptionT` subterm is *definitionally* `pure (some batchedOutput)`. What remains
+  -- is to collapse the `OptionT.run`/`Option.elim`/`getM` layers of `Reduction.run` and read
+  -- `x = some (proverResult, verifierStmtOut)`, closing with
+  -- `honest_mem_phaseRelOut car m bat pc hRel c` (relOut) and `rfl` (prover/verifier stmt
+  -- agreement). The blocker is purely monadic normalization: the `OptionT.pure`-bind is defeq
+  -- but not syntactic, so `pure_bind`/`OptionT.run_pure` don't fire and the collapse needs a
+  -- dedicated value lemma `verifierRun_simulateQ_eq_pure` in the style of the toy protocol's
+  -- `ToyProblem.Spec.verifierBody_simulateQ_eq_pure` (which needs the verifier's `Classical`
+  -- decidability instance threaded and the exact `ite` term matched). All the mathematical
+  -- content — `honest_mem_phaseRelOut`, `honest_claimConsistent`, the whole prover peel, `hq`,
+  -- `hcheck` — is DONE and axiom-clean.
   sorry
 
 end Completeness
