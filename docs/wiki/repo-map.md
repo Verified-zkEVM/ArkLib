@@ -103,10 +103,28 @@ home_page/            site assets and assembled website root
     (`toQuadEvalStatement`), the pulled-back input relation `relPolyEval`, and its CWSS
     `bridge_coordinateWiseSpecialSound`. `QuadEval.lean` re-exports the reduction, its soundness,
     and the bridge.
+  - `LinSumcheck/` (§4.3, Figures 4–7) — the **skeleton** of Hachi's sumcheck-based opening
+    chain, one file per subprotocol/bridge, each exporting a `CWSSPackage`/`GCWSSPackage` with a
+    sorried CWSS theorem: `Escape` (escape-threaded front `evalChainE`, design G1), `Rlin`
+    (Eq. (20) → `R^lin` zero-round adapter, F2), `Lift` (HMZ25 lift, Figure 4/Lemma 9, `k = 2d`;
+    the abstract `w̃`-commitment `LiftCom`), `Constraints` (Eq. (21)–(23) encodings, sumcheck
+    polynomials, degree pins, the Kronecker curve `kroneckerPoint`, per-round seam `roundRel`),
+    `BatchBridge` (per-row/range ⇄ `H₀ ≡ 0 ∧ H_α ≡ 0`), `ZeroCheck` (Figure 5 / **corrected**
+    Lemma 10 — Kronecker seed pair, `(ℓ, k) = (2, D)`; see `HACHI_LEMMA10_GAP.md`),
+    `SumcheckBridge` (point claims → initial hypercube sums), `Rounds` (Figure 6/Lemma 11 —
+    guarded paired rounds, loop by recursion over `▷ᵍ`), `FinalEval` (Figure 7 tail — guarded
+    reveal of `w̃(a)`).
+  - `Recursion/` (§4.5) — the recursion adapters: `PartialEval` (Eq. (24) peeling, pure
+    derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
+    partial-evaluation soundness gap, `HACHI_RECURSION_GAP.md`), `TraceHandoff` (Eqs. (27)–(28)
+    — guarded trace check, lands on the next iteration's `QuadEval` seam over `Φ'`).
   - `Composition.lean` — the **CWSS composition home**: `evalChain` is the `bridgePackage ▷
     quadEvalPackage` chain and `eval_coordinateWiseSpecialSound` is its composed CWSS certificate
-    (`sorryAx`-free). Each further §3/§4.3+/§4.5 subprotocol lands as one more `CWSSPackage`
-    `▷`-appended here.
+    (`sorryAx`-free). `openCore` chains the escape-threaded front with the pure §4.3 links (rows
+    1–7 of the header's seam table), and `openingChain` /
+    `hachi_iteration_coordinateWiseSpecialSound` compose the guarded tail (sumcheck loop, final
+    eval, recursion adapters) into the full one-iteration certificate — a skeleton whose sorry
+    provenance is inventoried in the module header.
   - `Commitment.lean` — **Hachi as a `Commitment.Scheme`**: the eval `OracleInterface`, honest
     `keygen`/`commit` (canonical base-`b` gadget decomposition at width `δ = ⌈log_b q⌉`), and the
     `hachi` scheme value (its opening `Proof` is a documented `sorry` pending the remaining §4.3+
@@ -149,8 +167,14 @@ home_page/            site assets and assembled website root
   (e.g. Hachi's `bridgeVerifier`). `SingleRound` is the generic single-challenge-round navigation
   layer (tree shape recovery `tree_shape`, the star-center machinery, the tree extractor
   `E`, and the assembly `coordinateWiseSpecialSound_of_mkWitness`) used by Hachi's polynomial-
-  evaluation reduction `QuadEval` (Lemma 8). The umbrella `CoordinateWiseSpecialSoundness.lean`
-  re-exports the core files.
+  evaluation reduction `QuadEval` (Lemma 8). `ScalarRound` is its skeletonized `(ℓ = 1, k)`
+  scalar-challenge twin (`pSpecScalar`, `scalarStructure`; assembly sorried) for Hachi's
+  Lemmas 9/11-shaped rounds. `Escape` provides `Set.withEscape`, the escape-threading of
+  relations (`W ⊕ E` witnesses) used by composed extraction chains that can emit binding-break
+  escapes mid-chain. `Guarded` is the **B4 skeleton**: `Verifier.IsGuardedWith`/`IsGuarded`
+  (runtime-rejecting verifiers), the guarded package `GCWSSPackage` with its append `▷ᵍ`, and
+  the (sorried) guarded binary CWSS append theorem. The umbrella
+  `CoordinateWiseSpecialSoundness.lean` re-exports the core files.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.
 - Ring switching is a **generic, instantiable compiler** under `ProofSystem/RingSwitching/`, not a
